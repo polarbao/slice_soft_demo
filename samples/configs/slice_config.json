@@ -1,0 +1,69 @@
+{
+  "input": {
+    "modelPath": "samples/models/sample.stl",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/SlicePackage",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V"
+    ],
+    "bitDepth": 16,
+    "planarConfig": "contiguous",
+    "tiled": true,
+    "tileSize": [
+      256,
+      256
+    ]
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "rotationDeg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "translationMm": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "modelMaterial": {
+    "rgb": [
+      65535,
+      65535,
+      65535
+    ],
+    "whiteStrength": 0,
+    "varnishStrength": 0
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "strength": 65535,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "preview": {
+    "enabled": true,
+    "interval": 10,
+    "channels": [
+      "rgb",
+      "support"
+    ]
+  }
+}
