@@ -7,7 +7,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(slicer_core
-    src/slicer_core/dummy.cpp
+    src/slicer_core/config.cpp
+    src/slicer_core/config.h
+    src/slicer_core/json_value.cpp
+    src/slicer_core/json_value.h
+    src/slicer_core/model.cpp
+    src/slicer_core/model.h
+    src/slicer_core/rip_reader.cpp
+    src/slicer_core/rip_reader.h
+    src/slicer_core/slicer.cpp
+    src/slicer_core/slicer.h
+    src/slicer_core/tiff_io.cpp
+    src/slicer_core/tiff_io.h
 )
 
 target_include_directories(slicer_core PUBLIC
