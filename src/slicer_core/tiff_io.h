@@ -15,7 +15,7 @@ struct TiffImageSpec {
     std::uint32_t tile_width{0};
     std::uint32_t tile_height{0};
     std::uint16_t samples_per_pixel{rgbwsv_channel_count};
-    std::uint16_t bits_per_sample{16};
+    std::uint16_t bits_per_sample{8};
     std::uint16_t planar_config{1};
 };
 
@@ -27,9 +27,8 @@ struct TiffReadResult {
 void write_rgbwsv_tiled_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint16_t>& pixels);
+    const std::vector<std::uint8_t>& pixels);
 
 TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path);
 
 }  // namespace slicer_core
-

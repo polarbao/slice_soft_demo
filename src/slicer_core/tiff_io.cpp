@@ -170,12 +170,12 @@ std::vector<std::uint32_t> read_u32_array(
 void write_rgbwsv_tiled_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint16_t>& pixels) {
+    const std::vector<std::uint8_t>& pixels) {
     if (spec.width == 0 || spec.height == 0 || spec.tile_width == 0 || spec.tile_height == 0) {
         throw std::runtime_error("invalid TIFF dimensions");
     }
-    if (spec.samples_per_pixel != rgbwsv_channel_count || spec.bits_per_sample != 16 || spec.planar_config != 1) {
-        throw std::runtime_error("P0 TIFF writer only supports RGBWSV uint16 contiguous pixels");
+    if (spec.samples_per_pixel != rgbwsv_channel_count || spec.bits_per_sample != 8 || spec.planar_config != 1) {
+        throw std::runtime_error("P0 00B TIFF writer only supports RGBWSV uint8 contiguous pixels");
     }
     const std::size_t expected_pixels =
         static_cast<std::size_t>(spec.width) * spec.height * spec.samples_per_pixel;
@@ -187,7 +187,7 @@ void write_rgbwsv_tiled_tiff(
     const std::uint32_t tiles_y{(spec.height + spec.tile_height - 1U) / spec.tile_height};
     const std::uint32_t tile_count{tiles_x * tiles_y};
     const std::uint32_t tile_byte_count{
-        spec.tile_width * spec.tile_height * spec.samples_per_pixel * static_cast<std::uint32_t>(sizeof(std::uint16_t))};
+        spec.tile_width * spec.tile_height * spec.samples_per_pixel};
 
     std::vector<std::uint8_t> tile_data;
     tile_data.resize(static_cast<std::size_t>(tile_count) * tile_byte_count, 0);
@@ -208,12 +208,11 @@ void write_rgbwsv_tiled_tiff(
                     for (std::uint16_t c{0}; c < spec.samples_per_pixel; ++c) {
                         const std::size_t source_index =
                             (static_cast<std::size_t>(image_y) * spec.width + image_x) * spec.samples_per_pixel + c;
-                        const std::uint16_t value{pixels.at(source_index)};
+                        const std::uint8_t value{pixels.at(source_index)};
                         const std::size_t target_index =
                             tile_base
-                            + ((static_cast<std::size_t>(y) * spec.tile_width + x) * spec.samples_per_pixel + c) * 2U;
-                        tile_data.at(target_index) = static_cast<std::uint8_t>(value & 0xffU);
-                        tile_data.at(target_index + 1U) = static_cast<std::uint8_t>((value >> 8U) & 0xffU);
+                            + ((static_cast<std::size_t>(y) * spec.tile_width + x) * spec.samples_per_pixel + c);
+                        tile_data.at(target_index) = value;
                     }
                 }
             }
@@ -234,7 +233,7 @@ void write_rgbwsv_tiled_tiff(
     std::vector<IfdEntry> entries{
         {256, TiffType::long_value, 1, longs({spec.width})},
         {257, TiffType::long_value, 1, longs({spec.height})},
-        {258, TiffType::short_value, spec.samples_per_pixel, shorts({16, 16, 16, 16, 16, 16})},
+        {258, TiffType::short_value, spec.samples_per_pixel, shorts({8, 8, 8, 8, 8, 8})},
         {259, TiffType::short_value, 1, shorts({1})},
         {262, TiffType::short_value, 1, shorts({2})},
         {270, TiffType::ascii, 7, ascii("RGBWSV")},
@@ -331,8 +330,8 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
         throw std::runtime_error("TIFF is not a six-channel RGBWSV image: " + path.string());
     }
     for (std::size_t i{0}; i < bits_per_sample.size(); ++i) {
-        if (bits_per_sample.at(i) != 16 || sample_formats.at(i) != 1) {
-            throw std::runtime_error("TIFF channel is not uint16: " + path.string());
+        if (bits_per_sample.at(i) != 8 || sample_formats.at(i) != 1) {
+            throw std::runtime_error("TIFF channel is not uint8: " + path.string());
         }
     }
     if (result.spec.planar_config != 1) {
@@ -373,9 +372,8 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
                             tile_offset
                             + ((static_cast<std::size_t>(y) * result.spec.tile_width + x)
                                * result.spec.samples_per_pixel
-                               + c)
-                                * 2U;
-                        result.channel_checksums.at(c) += read_u16(data, value_offset);
+                               + c);
+                        result.channel_checksums.at(c) += data.at(value_offset);
                     }
                 }
             }

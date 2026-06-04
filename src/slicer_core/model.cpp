@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstring>
+#include <cstdint>
 #include <fstream>
 #include <limits>
 #include <sstream>
@@ -17,6 +19,10 @@ constexpr double pi{3.14159265358979323846};
 struct MeshData {
     std::vector<Vec3> vertices;
     std::vector<std::array<std::size_t, 3>> faces;
+    std::size_t raw_face_count{0};
+    std::string stl_encoding;
+    std::vector<std::string> material_libraries;
+    std::vector<MaterialStat> materials;
 };
 
 struct OrientationCandidate {
@@ -138,6 +144,28 @@ std::vector<Triangle> build_triangles(
     return triangles;
 }
 
+double triangle_area_squared(const Vec3& a, const Vec3& b, const Vec3& c) {
+    const Vec3 ab{b.x - a.x, b.y - a.y, b.z - a.z};
+    const Vec3 ac{c.x - a.x, c.y - a.y, c.z - a.z};
+    const Vec3 cross{
+        ab.y * ac.z - ab.z * ac.y,
+        ab.z * ac.x - ab.x * ac.z,
+        ab.x * ac.y - ab.y * ac.x};
+    return 0.25 * (cross.x * cross.x + cross.y * cross.y + cross.z * cross.z);
+}
+
+std::size_t count_degenerate_triangles(
+    const std::vector<Vec3>& vertices,
+    const std::vector<std::array<std::size_t, 3>>& faces) {
+    std::size_t count{0};
+    for (const auto& face : faces) {
+        if (triangle_area_squared(vertices.at(face.at(0)), vertices.at(face.at(1)), vertices.at(face.at(2))) <= 1.0e-18) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 OrientationCandidate make_orientation_candidate(
     const std::string& name,
     const std::array<double, 3>& rotation_deg,
@@ -237,9 +265,86 @@ void load_ascii_stl(const std::filesystem::path& path, const TransformConfig& tr
         facet_vertices.push_back(mesh.vertices.size() - 1U);
         if (facet_vertices.size() == 3) {
             mesh.faces.push_back({facet_vertices.at(0), facet_vertices.at(1), facet_vertices.at(2)});
+            ++mesh.raw_face_count;
             facet_vertices.clear();
         }
     }
+    mesh.stl_encoding = "ascii";
+}
+
+std::uint32_t read_u32_le(std::istream& input) {
+    std::array<unsigned char, 4> bytes{};
+    input.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    if (!input) {
+        throw std::runtime_error("truncated binary STL while reading uint32");
+    }
+    return static_cast<std::uint32_t>(bytes.at(0)) | (static_cast<std::uint32_t>(bytes.at(1)) << 8U)
+        | (static_cast<std::uint32_t>(bytes.at(2)) << 16U) | (static_cast<std::uint32_t>(bytes.at(3)) << 24U);
+}
+
+std::uint16_t read_u16_le(std::istream& input) {
+    std::array<unsigned char, 2> bytes{};
+    input.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    if (!input) {
+        throw std::runtime_error("truncated binary STL while reading uint16");
+    }
+    return static_cast<std::uint16_t>(bytes.at(0)) | static_cast<std::uint16_t>(bytes.at(1) << 8U);
+}
+
+float read_f32_le(std::istream& input) {
+    const std::uint32_t bits{read_u32_le(input)};
+    float value{0.0F};
+    static_assert(sizeof(value) == sizeof(bits));
+    std::memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+bool looks_like_binary_stl(const std::filesystem::path& path) {
+    const std::uintmax_t size = std::filesystem::file_size(path);
+    if (size < 84U) {
+        return false;
+    }
+    std::ifstream input{path, std::ios::binary};
+    if (!input) {
+        throw std::runtime_error("failed to open STL model: " + path.string());
+    }
+    input.seekg(80, std::ios::beg);
+    const std::uint32_t triangle_count{read_u32_le(input)};
+    return size == 84ULL + static_cast<std::uintmax_t>(triangle_count) * 50ULL;
+}
+
+void load_binary_stl(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
+    std::ifstream input{path, std::ios::binary};
+    if (!input) {
+        throw std::runtime_error("failed to open STL model: " + path.string());
+    }
+    input.seekg(80, std::ios::beg);
+    const std::uint32_t triangle_count{read_u32_le(input)};
+    mesh.vertices.reserve(static_cast<std::size_t>(triangle_count) * 3U);
+    mesh.faces.reserve(triangle_count);
+    for (std::uint32_t i{0}; i < triangle_count; ++i) {
+        (void)read_f32_le(input);
+        (void)read_f32_le(input);
+        (void)read_f32_le(input);
+        std::array<std::size_t, 3> face{};
+        for (std::size_t vertex_index{0}; vertex_index < 3U; ++vertex_index) {
+            Vec3 vertex{read_f32_le(input), read_f32_le(input), read_f32_le(input)};
+            mesh.vertices.push_back(apply_transform(vertex, transform));
+            face.at(vertex_index) = mesh.vertices.size() - 1U;
+        }
+        (void)read_u16_le(input);
+        mesh.faces.push_back(face);
+        ++mesh.raw_face_count;
+    }
+    mesh.stl_encoding = "binary";
+}
+
+void load_stl(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
+    if (looks_like_binary_stl(path)) {
+        load_binary_stl(path, transform, mesh);
+        return;
+    }
+    load_ascii_stl(path, transform, mesh);
 }
 
 std::size_t parse_obj_index(const std::string& token, const std::size_t vertex_count) {
@@ -266,19 +371,41 @@ std::size_t parse_obj_index(const std::string& token, const std::size_t vertex_c
     return static_cast<std::size_t>(resolved);
 }
 
+MaterialStat& material_stat(MeshData& mesh, const std::string& name) {
+    const auto found = std::find_if(mesh.materials.begin(), mesh.materials.end(), [&](const MaterialStat& item) {
+        return item.name == name;
+    });
+    if (found != mesh.materials.end()) {
+        return *found;
+    }
+    mesh.materials.push_back({name, 0, 0});
+    return mesh.materials.back();
+}
+
 void load_obj(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
     std::ifstream input{path};
     if (!input) {
         throw std::runtime_error("failed to open OBJ model: " + path.string());
     }
 
+    std::string active_material;
     std::string line;
     while (std::getline(input, line)) {
         std::istringstream stream{line};
         std::string token;
         stream >> token;
         if (token != "v") {
-            if (token == "f") {
+            if (token == "mtllib") {
+                std::string library;
+                while (stream >> library) {
+                    mesh.material_libraries.push_back(library);
+                }
+            } else if (token == "usemtl") {
+                stream >> active_material;
+                if (!active_material.empty()) {
+                    (void)material_stat(mesh, active_material);
+                }
+            } else if (token == "f") {
                 std::vector<std::size_t> face_indices;
                 std::string face_token;
                 while (stream >> face_token) {
@@ -286,6 +413,13 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
                 }
                 if (face_indices.size() < 3) {
                     throw std::runtime_error("OBJ face has fewer than three vertices: " + path.string());
+                }
+                ++mesh.raw_face_count;
+                const std::size_t triangle_count = face_indices.size() - 2U;
+                if (!active_material.empty()) {
+                    MaterialStat& stat = material_stat(mesh, active_material);
+                    ++stat.face_count;
+                    stat.triangle_count += triangle_count;
                 }
                 for (std::size_t i{1}; i + 1U < face_indices.size(); ++i) {
                     mesh.faces.push_back({face_indices.at(0), face_indices.at(i), face_indices.at(i + 1U)});
@@ -312,7 +446,7 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
     const std::string format = detect_format(model_path, config.input.format);
     MeshData mesh;
     if (format == "stl") {
-        load_ascii_stl(model_path, config.transform, mesh);
+        load_stl(model_path, config.transform, mesh);
     } else if (format == "obj") {
         load_obj(model_path, config.transform, mesh);
     } else {
@@ -333,8 +467,13 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
     ModelReport report;
     report.model_path = model_path;
     report.format = format;
+    report.stl_encoding = mesh.stl_encoding;
     report.vertex_count = mesh.vertices.size();
+    report.face_count = mesh.raw_face_count;
     report.triangle_count = mesh.faces.size();
+    report.degenerate_triangle_count = count_degenerate_triangles(mesh.vertices, mesh.faces);
+    report.material_libraries = mesh.material_libraries;
+    report.materials = mesh.materials;
     report.auto_orient.enabled = config.auto_orient.enabled;
     report.auto_orient.max_height_mm = config.auto_orient.max_height_mm;
     report.auto_orient.selected_orientation = orientation.name;

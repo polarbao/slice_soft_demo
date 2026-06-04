@@ -26,6 +26,12 @@ struct Triangle {
     Vec3 c;
 };
 
+struct MaterialStat {
+    std::string name;
+    std::size_t face_count{0};
+    std::size_t triangle_count{0};
+};
+
 struct AutoOrientReport {
     bool enabled{true};
     bool applied{false};
@@ -37,8 +43,13 @@ struct AutoOrientReport {
 struct ModelReport {
     std::filesystem::path model_path;
     std::string format;
+    std::string stl_encoding;
     std::size_t vertex_count{0};
+    std::size_t face_count{0};
     std::size_t triangle_count{0};
+    std::size_t degenerate_triangle_count{0};
+    std::vector<std::string> material_libraries;
+    std::vector<MaterialStat> materials;
     AutoOrientReport auto_orient;
     BoundingBox bbox_mm;
     std::vector<Triangle> triangles;

@@ -7,8 +7,10 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -35,15 +37,49 @@ struct Segment2 {
     double y1{0.0};
 };
 
+struct RasterResult {
+    std::vector<std::uint8_t> mask;
+    int odd_intersection_rows{0};
+    int filled_spans{0};
+};
+
+struct LayerDiagnostics {
+    int layer_index{0};
+    double z_mm{0.0};
+    int segment_count{0};
+    int odd_intersection_rows{0};
+    int filled_spans{0};
+    int model_pixels{0};
+    int support_pixels{0};
+    int rgb_non_zero_pixels{0};
+    int white_non_zero_pixels{0};
+    int support_non_zero_pixels{0};
+    int varnish_non_zero_pixels{0};
+};
+
+struct PreviewImage {
+    std::string channel;
+    std::string type;
+    std::string prefix;
+    std::vector<std::array<std::uint8_t, 3>> pixels;
+    int non_zero_pixels{0};
+    int max_value{0};
+};
+
 std::string layer_file_name(const int layer_index) {
     std::ostringstream stream;
     stream << "layers/layer_" << std::setw(6) << std::setfill('0') << layer_index << ".tiff";
     return stream.str();
 }
 
-std::string preview_file_name(const std::string& prefix, const int layer_index) {
+std::string preview_extension(const std::string& format) {
+    return format == "png" ? "png" : "ppm";
+}
+
+std::string preview_file_name(const std::string& prefix, const int layer_index, const std::string& format) {
     std::ostringstream stream;
-    stream << "preview/" << prefix << "_" << std::setw(6) << std::setfill('0') << layer_index << ".ppm";
+    stream << "preview/" << prefix << "_" << std::setw(6) << std::setfill('0') << layer_index << "."
+           << preview_extension(format);
     return stream.str();
 }
 
@@ -78,8 +114,8 @@ void write_json_file(const std::filesystem::path& path, const Json& value) {
     output << value.dump(2) << '\n';
 }
 
-std::uint8_t to_u8(const std::uint16_t value) {
-    return static_cast<std::uint8_t>(value / 257U);
+std::uint8_t visible_from_print_value(const std::uint8_t value) {
+    return static_cast<std::uint8_t>(255U - value);
 }
 
 void write_ppm(
@@ -100,39 +136,233 @@ void write_ppm(
     }
 }
 
+void append_be_u32(std::vector<std::uint8_t>& data, const std::uint32_t value) {
+    data.push_back(static_cast<std::uint8_t>((value >> 24U) & 0xffU));
+    data.push_back(static_cast<std::uint8_t>((value >> 16U) & 0xffU));
+    data.push_back(static_cast<std::uint8_t>((value >> 8U) & 0xffU));
+    data.push_back(static_cast<std::uint8_t>(value & 0xffU));
+}
+
+std::uint32_t crc32_update(std::uint32_t crc, const std::uint8_t byte) {
+    crc ^= byte;
+    for (int i{0}; i < 8; ++i) {
+        const std::uint32_t mask = 0U - (crc & 1U);
+        crc = (crc >> 1U) ^ (0xedb88320U & mask);
+    }
+    return crc;
+}
+
+std::uint32_t crc32_chunk(const std::array<char, 4>& type, const std::vector<std::uint8_t>& payload) {
+    std::uint32_t crc{0xffffffffU};
+    for (const char c : type) {
+        crc = crc32_update(crc, static_cast<std::uint8_t>(c));
+    }
+    for (const std::uint8_t byte : payload) {
+        crc = crc32_update(crc, byte);
+    }
+    return crc ^ 0xffffffffU;
+}
+
+std::uint32_t adler32(const std::vector<std::uint8_t>& data) {
+    std::uint32_t a{1};
+    std::uint32_t b{0};
+    for (const std::uint8_t byte : data) {
+        a = (a + byte) % 65521U;
+        b = (b + a) % 65521U;
+    }
+    return (b << 16U) | a;
+}
+
+std::vector<std::uint8_t> zlib_store_blocks(const std::vector<std::uint8_t>& raw) {
+    std::vector<std::uint8_t> result;
+    result.reserve(raw.size() + raw.size() / 65535U * 5U + 16U);
+    result.push_back(0x78U);
+    result.push_back(0x01U);
+    std::size_t offset{0};
+    while (offset < raw.size()) {
+        const std::size_t block_size = std::min<std::size_t>(65535U, raw.size() - offset);
+        const bool final_block = offset + block_size == raw.size();
+        result.push_back(final_block ? 0x01U : 0x00U);
+        const auto len = static_cast<std::uint16_t>(block_size);
+        const auto nlen = static_cast<std::uint16_t>(~len);
+        result.push_back(static_cast<std::uint8_t>(len & 0xffU));
+        result.push_back(static_cast<std::uint8_t>((len >> 8U) & 0xffU));
+        result.push_back(static_cast<std::uint8_t>(nlen & 0xffU));
+        result.push_back(static_cast<std::uint8_t>((nlen >> 8U) & 0xffU));
+        result.insert(result.end(), raw.begin() + static_cast<std::ptrdiff_t>(offset),
+                      raw.begin() + static_cast<std::ptrdiff_t>(offset + block_size));
+        offset += block_size;
+    }
+    append_be_u32(result, adler32(raw));
+    return result;
+}
+
+void write_png_chunk(
+    std::ofstream& output,
+    const std::array<char, 4>& type,
+    const std::vector<std::uint8_t>& payload) {
+    std::vector<std::uint8_t> length;
+    append_be_u32(length, static_cast<std::uint32_t>(payload.size()));
+    output.write(reinterpret_cast<const char*>(length.data()), static_cast<std::streamsize>(length.size()));
+    output.write(type.data(), static_cast<std::streamsize>(type.size()));
+    if (!payload.empty()) {
+        output.write(reinterpret_cast<const char*>(payload.data()), static_cast<std::streamsize>(payload.size()));
+    }
+    std::vector<std::uint8_t> crc;
+    append_be_u32(crc, crc32_chunk(type, payload));
+    output.write(reinterpret_cast<const char*>(crc.data()), static_cast<std::streamsize>(crc.size()));
+}
+
+void write_png(
+    const std::filesystem::path& path,
+    const GridSpec& grid,
+    const std::vector<std::array<std::uint8_t, 3>>& rgb_pixels) {
+    if (rgb_pixels.size() != static_cast<std::size_t>(grid.width_px) * grid.height_px) {
+        throw std::runtime_error("preview pixel buffer size does not match grid");
+    }
+    std::vector<std::uint8_t> raw;
+    raw.reserve(static_cast<std::size_t>(grid.height_px) * (static_cast<std::size_t>(grid.width_px) * 3U + 1U));
+    for (int y{0}; y < grid.height_px; ++y) {
+        raw.push_back(0U);
+        for (int x{0}; x < grid.width_px; ++x) {
+            const auto& pixel = rgb_pixels.at(static_cast<std::size_t>(y) * grid.width_px + x);
+            raw.insert(raw.end(), pixel.begin(), pixel.end());
+        }
+    }
+
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream output{path, std::ios::binary};
+    if (!output) {
+        throw std::runtime_error("failed to write preview image: " + path.string());
+    }
+    const std::array<std::uint8_t, 8> signature{137, 80, 78, 71, 13, 10, 26, 10};
+    output.write(reinterpret_cast<const char*>(signature.data()), static_cast<std::streamsize>(signature.size()));
+
+    std::vector<std::uint8_t> ihdr;
+    append_be_u32(ihdr, static_cast<std::uint32_t>(grid.width_px));
+    append_be_u32(ihdr, static_cast<std::uint32_t>(grid.height_px));
+    ihdr.push_back(8U);
+    ihdr.push_back(2U);
+    ihdr.push_back(0U);
+    ihdr.push_back(0U);
+    ihdr.push_back(0U);
+    write_png_chunk(output, {'I', 'H', 'D', 'R'}, ihdr);
+    write_png_chunk(output, {'I', 'D', 'A', 'T'}, zlib_store_blocks(raw));
+    write_png_chunk(output, {'I', 'E', 'N', 'D'}, {});
+}
+
+void write_preview_image(
+    const std::filesystem::path& path,
+    const GridSpec& grid,
+    const std::vector<std::array<std::uint8_t, 3>>& rgb_pixels,
+    const std::string& format) {
+    if (format == "png") {
+        write_png(path, grid, rgb_pixels);
+        return;
+    }
+    write_ppm(path, grid, rgb_pixels);
+}
+
+std::string canonical_preview_channel(const std::string& channel) {
+    if (channel == "model_rgb") {
+        return "rgb";
+    }
+    if (channel == "s") {
+        return "support";
+    }
+    if (channel == "w") {
+        return "white";
+    }
+    if (channel == "v") {
+        return "varnish";
+    }
+    return channel;
+}
+
+PreviewImage build_preview_image(
+    const std::string& requested_channel,
+    const GridSpec& grid,
+    const std::vector<std::uint8_t>& layer) {
+    const std::string channel = canonical_preview_channel(requested_channel);
+    PreviewImage image;
+    image.channel = channel;
+    image.type = channel;
+    image.prefix = channel;
+    image.pixels.resize(static_cast<std::size_t>(grid.width_px) * grid.height_px);
+    if (channel == "rgb") {
+        image.type = "model_rgb";
+        image.prefix = "model_rgb";
+    } else if (channel == "support") {
+        image.type = "support_s";
+        image.prefix = "support_s";
+    } else if (channel == "white") {
+        image.type = "white_w";
+        image.prefix = "white_w";
+    } else if (channel == "varnish") {
+        image.type = "varnish_v";
+        image.prefix = "varnish_v";
+    }
+
+    for (std::size_t i{0}; i < image.pixels.size(); ++i) {
+        const std::size_t base{i * rgbwsv_channel_count};
+        std::array<std::uint8_t, 3> pixel{};
+        if (channel == "rgb") {
+            pixel = {
+                visible_from_print_value(layer.at(base + 0U)),
+                visible_from_print_value(layer.at(base + 1U)),
+                visible_from_print_value(layer.at(base + 2U))};
+        } else if (channel == "support") {
+            pixel = {0, visible_from_print_value(layer.at(base + 4U)), 0};
+        } else if (channel == "white") {
+            const std::uint8_t white{visible_from_print_value(layer.at(base + 3U))};
+            pixel = {white, white, white};
+        } else if (channel == "varnish") {
+            const std::uint8_t varnish{visible_from_print_value(layer.at(base + 5U))};
+            pixel = {varnish, 0, varnish};
+        }
+        const int pixel_max = std::max({pixel.at(0), pixel.at(1), pixel.at(2)});
+        if (pixel_max > 0) {
+            ++image.non_zero_pixels;
+        }
+        image.max_value = std::max(image.max_value, pixel_max);
+        image.pixels.at(i) = pixel;
+    }
+    return image;
+}
+
 Json::Array write_layer_previews(
+    const PreviewConfig& preview_config,
     const std::filesystem::path& package_dir,
     const GridSpec& grid,
     const int layer_index,
-    const std::vector<std::uint16_t>& layer) {
-    std::vector<std::array<std::uint8_t, 3>> model_preview(static_cast<std::size_t>(grid.width_px) * grid.height_px);
-    std::vector<std::array<std::uint8_t, 3>> support_preview(model_preview.size());
-    std::vector<std::array<std::uint8_t, 3>> varnish_preview(model_preview.size());
-
-    for (std::size_t i{0}; i < model_preview.size(); ++i) {
-        const std::size_t base{i * rgbwsv_channel_count};
-        model_preview.at(i) = {to_u8(layer.at(base + 0U)), to_u8(layer.at(base + 1U)), to_u8(layer.at(base + 2U))};
-        support_preview.at(i) = {0, to_u8(layer.at(base + 4U)), 0};
-        const std::uint8_t varnish{to_u8(layer.at(base + 5U))};
-        varnish_preview.at(i) = {varnish, 0, varnish};
+    const std::vector<std::uint8_t>& layer) {
+    Json::Array result;
+    for (const std::string& requested_channel : preview_config.channels) {
+        PreviewImage image = build_preview_image(requested_channel, grid, layer);
+        if (preview_config.only_non_empty_layers && image.non_zero_pixels == 0) {
+            continue;
+        }
+        const std::string relative_path = preview_file_name(image.prefix, layer_index, preview_config.format);
+        write_preview_image(package_dir / relative_path, grid, image.pixels, preview_config.format);
+        result.push_back(Json::object({
+            {"layerIndex", layer_index},
+            {"channel", image.channel},
+            {"type", image.type},
+            {"format", preview_config.format},
+            {"path", relative_path},
+            {"nonZeroPixels", image.non_zero_pixels},
+            {"maxValue", image.max_value},
+        }));
     }
-
-    const std::string model_path = preview_file_name("model_rgb", layer_index);
-    const std::string support_path = preview_file_name("support_s", layer_index);
-    const std::string varnish_path = preview_file_name("varnish_v", layer_index);
-    write_ppm(package_dir / model_path, grid, model_preview);
-    write_ppm(package_dir / support_path, grid, support_preview);
-    write_ppm(package_dir / varnish_path, grid, varnish_preview);
-
-    return Json::Array{
-        Json::object({{"type", "model_rgb"}, {"path", model_path}}),
-        Json::object({{"type", "support_s"}, {"path", support_path}}),
-        Json::object({{"type", "varnish_v"}, {"path", varnish_path}}),
-    };
+    return result;
 }
 
 bool should_write_preview(const PreviewConfig& preview, const int layer_index, const int layer_count) {
     if (!preview.enabled) {
+        return false;
+    }
+    if (preview.has_layer_range
+        && (layer_index < preview.layer_range.at(0) || layer_index > preview.layer_range.at(1))) {
         return false;
     }
     const int interval{std::max(1, preview.interval)};
@@ -190,8 +420,9 @@ void fill_span(std::vector<std::uint8_t>& mask, const GridSpec& grid, const doub
     }
 }
 
-std::vector<std::uint8_t> rasterize_segments(const GridSpec& grid, const std::vector<Segment2>& segments) {
-    std::vector<std::uint8_t> mask(static_cast<std::size_t>(grid.width_px) * grid.height_px, 0);
+RasterResult rasterize_segments(const GridSpec& grid, const std::vector<Segment2>& segments) {
+    RasterResult result;
+    result.mask.resize(static_cast<std::size_t>(grid.width_px) * grid.height_px, 0);
     std::vector<double> intersections;
     intersections.reserve(segments.size());
 
@@ -208,26 +439,43 @@ std::vector<std::uint8_t> rasterize_segments(const GridSpec& grid, const std::ve
             intersections.push_back(segment.x0 + (segment.x1 - segment.x0) * t);
         }
         std::sort(intersections.begin(), intersections.end());
+        if ((intersections.size() % 2U) != 0U) {
+            ++result.odd_intersection_rows;
+        }
         for (std::size_t i{0}; i + 1U < intersections.size(); i += 2U) {
-            fill_span(mask, grid, intersections.at(i), intersections.at(i + 1U), y);
+            fill_span(result.mask, grid, intersections.at(i), intersections.at(i + 1U), y);
+            ++result.filled_spans;
         }
     }
-    return mask;
+    return result;
 }
 
 std::vector<std::vector<std::uint8_t>> sample_model_masks(
     const ModelReport& model_report,
     const GridSpec& grid,
-    const double layer_thickness_mm) {
+    const double layer_thickness_mm,
+    std::vector<LayerDiagnostics>& diagnostics) {
     std::vector<std::vector<std::uint8_t>> masks;
     masks.reserve(grid.layer_count);
+    diagnostics.clear();
+    diagnostics.reserve(grid.layer_count);
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         const double z_mm{(static_cast<double>(layer_index) + 0.5) * layer_thickness_mm};
+        LayerDiagnostics layer_diagnostics;
+        layer_diagnostics.layer_index = layer_index;
+        layer_diagnostics.z_mm = z_mm;
         if (z_mm < model_report.bbox_mm.min.z || z_mm > model_report.bbox_mm.max.z) {
             masks.emplace_back(static_cast<std::size_t>(grid.width_px) * grid.height_px, 0);
+            diagnostics.push_back(layer_diagnostics);
             continue;
         }
-        masks.push_back(rasterize_segments(grid, slice_triangles_to_segments(model_report.triangles, z_mm)));
+        const std::vector<Segment2> segments = slice_triangles_to_segments(model_report.triangles, z_mm);
+        RasterResult raster = rasterize_segments(grid, segments);
+        layer_diagnostics.segment_count = static_cast<int>(segments.size());
+        layer_diagnostics.odd_intersection_rows = raster.odd_intersection_rows;
+        layer_diagnostics.filled_spans = raster.filled_spans;
+        masks.push_back(std::move(raster.mask));
+        diagnostics.push_back(layer_diagnostics);
     }
     return masks;
 }
@@ -245,7 +493,7 @@ std::vector<int> compute_first_model_layers(const std::vector<std::vector<std::u
     return first_model_layer;
 }
 
-std::vector<std::uint16_t> compose_layer(
+std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
     const int layer_index,
@@ -253,9 +501,9 @@ std::vector<std::uint16_t> compose_layer(
     const std::vector<int>& first_model_layers,
     int& model_pixels,
     int& support_pixels) {
-    std::vector<std::uint16_t> pixels(
+    std::vector<std::uint8_t> pixels(
         static_cast<std::size_t>(grid.width_px) * grid.height_px * rgbwsv_channel_count,
-        0);
+        config.background.value);
 
     for (int y{0}; y < grid.height_px; ++y) {
         for (int x{0}; x < grid.width_px; ++x) {
@@ -266,12 +514,12 @@ std::vector<std::uint16_t> compose_layer(
                 pixels.at(base + 0U) = config.material.rgb.at(0);
                 pixels.at(base + 1U) = config.material.rgb.at(1);
                 pixels.at(base + 2U) = config.material.rgb.at(2);
-                pixels.at(base + 3U) = config.material.white_strength;
-                pixels.at(base + 4U) = 0;
-                pixels.at(base + 5U) = config.material.varnish_strength;
+                pixels.at(base + 3U) = config.material.white_value;
+                pixels.at(base + 4U) = config.background.value;
+                pixels.at(base + 5U) = config.material.varnish_value;
                 ++model_pixels;
             } else if (config.support.enabled && first_model_layers.at(pixel_index) > layer_index) {
-                pixels.at(base + 4U) = config.support.strength;
+                pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
             }
         }
@@ -280,8 +528,47 @@ std::vector<std::uint16_t> compose_layer(
     return pixels;
 }
 
+void update_layer_channel_stats(const std::vector<std::uint8_t>& layer, LayerDiagnostics& diagnostics) {
+    const std::size_t pixel_count = layer.size() / rgbwsv_channel_count;
+    for (std::size_t i{0}; i < pixel_count; ++i) {
+        const std::size_t base{i * rgbwsv_channel_count};
+        if (layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U) {
+            ++diagnostics.rgb_non_zero_pixels;
+        }
+        if (layer.at(base + 3U) < 255U) {
+            ++diagnostics.white_non_zero_pixels;
+        }
+        if (layer.at(base + 4U) < 255U) {
+            ++diagnostics.support_non_zero_pixels;
+        }
+        if (layer.at(base + 5U) < 255U) {
+            ++diagnostics.varnish_non_zero_pixels;
+        }
+    }
+}
+
 Json channel_order_json() {
     return Json::array({"R", "G", "B", "W", "S", "V"});
+}
+
+Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
+    Json::Array fill_warnings;
+    if (diagnostics.odd_intersection_rows > 0) {
+        fill_warnings.push_back("odd_scanline_intersections");
+    }
+    return Json::object({
+        {"layerIndex", diagnostics.layer_index},
+        {"zMm", diagnostics.z_mm},
+        {"segmentCount", diagnostics.segment_count},
+        {"openSegmentWarnings", diagnostics.odd_intersection_rows},
+        {"filledSpans", diagnostics.filled_spans},
+        {"fillWarnings", Json{fill_warnings}},
+        {"modelNonZeroPixels", diagnostics.model_pixels},
+        {"supportNonZeroPixels", diagnostics.support_pixels},
+        {"rgbNonZeroPixels", diagnostics.rgb_non_zero_pixels},
+        {"whiteNonZeroPixels", diagnostics.white_non_zero_pixels},
+        {"varnishNonZeroPixels", diagnostics.varnish_non_zero_pixels},
+    });
 }
 
 }  // namespace
@@ -310,18 +597,24 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     tiff_spec.tile_width = static_cast<std::uint32_t>(config.output.tile_size.at(0));
     tiff_spec.tile_height = static_cast<std::uint32_t>(config.output.tile_size.at(1));
 
+    std::vector<LayerDiagnostics> layer_diagnostics;
     const std::vector<std::vector<std::uint8_t>> model_masks =
-        sample_model_masks(model_report, grid, config.output.layer_thickness_mm);
+        sample_model_masks(model_report, grid, config.output.layer_thickness_mm, layer_diagnostics);
     const std::vector<int> first_model_layers = compute_first_model_layers(model_masks, grid);
 
     int total_model_pixels{0};
     int total_support_pixels{0};
+    int total_rgb_non_zero_pixels{0};
+    int total_white_non_zero_pixels{0};
+    int total_varnish_non_zero_pixels{0};
     Json::Array layers;
+    Json::Array slice_layers;
+    Json::Array contour_layers;
     Json::Array preview_files;
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         int layer_model_pixels{0};
         int layer_support_pixels{0};
-        const std::vector<std::uint16_t> layer = compose_layer(
+        const std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
             layer_index,
@@ -329,23 +622,32 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             first_model_layers,
             layer_model_pixels,
             layer_support_pixels);
+        LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
+        diagnostics.model_pixels = layer_model_pixels;
+        diagnostics.support_pixels = layer_support_pixels;
+        update_layer_channel_stats(layer, diagnostics);
         total_model_pixels += layer_model_pixels;
         total_support_pixels += layer_support_pixels;
+        total_rgb_non_zero_pixels += diagnostics.rgb_non_zero_pixels;
+        total_white_non_zero_pixels += diagnostics.white_non_zero_pixels;
+        total_varnish_non_zero_pixels += diagnostics.varnish_non_zero_pixels;
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
             write_rgbwsv_tiled_tiff(package_dir / relative_path, tiff_spec, layer);
         }
         if (should_write_preview(config.preview, layer_index, grid.layer_count)) {
-            Json::Array written = write_layer_previews(package_dir, grid, layer_index, layer);
+            Json::Array written = write_layer_previews(config.preview, package_dir, grid, layer_index, layer);
             preview_files.insert(preview_files.end(), written.begin(), written.end());
         }
         layers.push_back(Json::object({
             {"index", layer_index},
-            {"zMm", static_cast<double>(layer_index) * config.output.layer_thickness_mm},
+            {"zMm", diagnostics.z_mm},
             {"path", relative_path},
             {"modelPixels", layer_model_pixels},
             {"supportPixels", layer_support_pixels},
         }));
+        slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
+        contour_layers.push_back(layer_diagnostics_to_json(diagnostics));
     }
 
     const Json slice_report = Json::object({
@@ -357,7 +659,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
              {"layerThicknessMm", config.output.layer_thickness_mm},
          })},
-        {"totals", Json::object({{"modelPixels", total_model_pixels}, {"supportPixels", total_support_pixels}})},
+        {"totals",
+         Json::object({
+             {"modelPixels", total_model_pixels},
+             {"supportPixels", total_support_pixels},
+             {"rgbNonZeroPixels", total_rgb_non_zero_pixels},
+             {"whiteNonZeroPixels", total_white_non_zero_pixels},
+             {"varnishNonZeroPixels", total_varnish_non_zero_pixels},
+         })},
+        {"layers", Json{slice_layers}},
     });
 
     const Json repair_report = Json::object({
@@ -369,23 +679,54 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const Json support_report = Json::object({
         {"enabled", config.support.enabled},
         {"mode", config.support.mode},
-        {"strength", config.support.strength},
+        {"value", config.support.value},
         {"modelPriority", "Model > Support"},
         {"supportPixels", total_support_pixels},
+        {"layers", Json{contour_layers}},
     });
+
+    Json::Array preview_channels;
+    for (const std::string& channel : config.preview.channels) {
+        preview_channels.push_back(canonical_preview_channel(channel));
+    }
 
     const Json preview_report = Json::object({
         {"enabled", config.preview.enabled},
-        {"format", "PPM P6"},
+        {"format", config.preview.format},
         {"interval", config.preview.interval},
+        {"channels", Json{preview_channels}},
+        {"layerRange",
+         config.preview.has_layer_range ? Json::array({config.preview.layer_range.at(0), config.preview.layer_range.at(1)})
+                                        : Json{}},
+        {"onlyNonEmptyLayers", config.preview.only_non_empty_layers},
         {"files", Json{preview_files}},
+        {"generated", Json{preview_files}},
     });
+
+    Json::Array material_libraries;
+    for (const std::string& library : model_report.material_libraries) {
+        material_libraries.push_back(library);
+    }
+    Json::Array materials;
+    for (const MaterialStat& material : model_report.materials) {
+        materials.push_back(Json::object({
+            {"name", material.name},
+            {"faceCount", static_cast<std::uint64_t>(material.face_count)},
+            {"triangleCount", static_cast<std::uint64_t>(material.triangle_count)},
+        }));
+    }
 
     const Json model_json = Json::object({
         {"modelPath", model_report.model_path.generic_string()},
         {"format", model_report.format},
+        {"stlEncoding", model_report.stl_encoding},
         {"vertexCount", static_cast<std::uint64_t>(model_report.vertex_count)},
+        {"faceCount", static_cast<std::uint64_t>(model_report.face_count)},
         {"triangleCount", static_cast<std::uint64_t>(model_report.triangle_count)},
+        {"degenerateTriangleCount", static_cast<std::uint64_t>(model_report.degenerate_triangle_count)},
+        {"materialCount", static_cast<std::uint64_t>(model_report.materials.size())},
+        {"materialLibraries", Json{material_libraries}},
+        {"materials", Json{materials}},
         {"autoOrient",
          Json::object({
              {"enabled", model_report.auto_orient.enabled},
@@ -402,6 +743,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(package_dir / "reports/repair_report.json", repair_report);
     write_json_file(package_dir / "reports/support_report.json", support_report);
     write_json_file(package_dir / "reports/preview_report.json", preview_report);
+    write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
 
     const Json manifest = Json::object({
         {"schemaVersion", "p0.rgbwsv.1"},
@@ -424,10 +766,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          Json::object({
              {"channelOrder", channel_order_json()},
              {"channelCount", rgbwsv_channel_count},
-             {"bitDepth", 16},
+             {"bitDepth", 8},
              {"sampleFormat", "uint"},
              {"planarConfig", "contiguous"},
              {"storage", "tiled"},
+             {"polarity", "black_is_print"},
+             {"printValue", 0},
+             {"emptyValue", 255},
              {"writeTiffLayers", options.write_tiff_layers},
              {"tileSize", Json::array({config.output.tile_size.at(0), config.output.tile_size.at(1)})},
              {"layers", Json{layers}},
@@ -439,8 +784,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"repair", "reports/repair_report.json"},
              {"support", "reports/support_report.json"},
              {"preview", "reports/preview_report.json"},
+             {"contour", "reports/contour_report.json"},
          })},
-        {"preview", Json::object({{"format", "PPM P6"}, {"files", Json{preview_files}}})},
+        {"preview", Json::object({{"format", config.preview.format}, {"files", Json{preview_files}}})},
     });
     write_json_file(package_dir / "manifest.json", manifest);
 

@@ -47,14 +47,23 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
     if (tiff.at("channelCount").as_int() != 6) {
         throw std::runtime_error("manifest tiff.channelCount must be 6");
     }
-    if (tiff.at("bitDepth").as_int() != 16) {
-        throw std::runtime_error("manifest tiff.bitDepth must be 16");
+    if (tiff.at("bitDepth").as_int() != 8) {
+        throw std::runtime_error("manifest tiff.bitDepth must be 8");
     }
     if (tiff.at("planarConfig").as_string() != "contiguous") {
         throw std::runtime_error("manifest tiff.planarConfig must be contiguous");
     }
     if (tiff.at("storage").as_string() != "tiled") {
         throw std::runtime_error("manifest tiff.storage must be tiled");
+    }
+    if (tiff.at("polarity").as_string() != "black_is_print") {
+        throw std::runtime_error("manifest tiff.polarity must be black_is_print");
+    }
+    if (tiff.at("printValue").as_int() != 0) {
+        throw std::runtime_error("manifest tiff.printValue must be 0");
+    }
+    if (tiff.at("emptyValue").as_int() != 255) {
+        throw std::runtime_error("manifest tiff.emptyValue must be 255");
     }
 
     RipValidationResult result;

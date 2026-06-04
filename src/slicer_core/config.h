@@ -19,7 +19,7 @@ struct OutputConfig {
     int dpi_y{600};
     double layer_thickness_mm{0.01};
     std::vector<std::string> channel_order{"R", "G", "B", "W", "S", "V"};
-    int bit_depth{16};
+    int bit_depth{8};
     std::string planar_config{"contiguous"};
     bool tiled{true};
     std::array<int, 2> tile_size{256, 256};
@@ -38,24 +38,32 @@ struct AutoOrientConfig {
     std::string strategy{"minimize_height_by_right_angle_rotation"};
 };
 
+struct BackgroundConfig {
+    std::uint8_t value{255};
+};
+
 struct MaterialConfig {
-    std::array<std::uint16_t, 3> rgb{65535, 65535, 65535};
-    std::uint16_t white_strength{0};
-    std::uint16_t varnish_strength{0};
+    std::array<std::uint8_t, 3> rgb{255, 255, 255};
+    std::uint8_t white_value{255};
+    std::uint8_t varnish_value{255};
 };
 
 struct SupportConfig {
     bool enabled{true};
     std::string mode{"bottom_projection"};
-    std::uint16_t strength{65535};
+    std::uint8_t value{0};
     double offset_mm{0.0};
     int min_area_px{0};
 };
 
 struct PreviewConfig {
     bool enabled{false};
+    std::string format{"ppm"};
     int interval{10};
-    std::vector<std::string> channels{"rgb", "support"};
+    bool has_layer_range{false};
+    std::array<int, 2> layer_range{0, -1};
+    std::vector<std::string> channels{"rgb", "support", "white", "varnish"};
+    bool only_non_empty_layers{false};
 };
 
 struct SliceConfig {
@@ -63,6 +71,7 @@ struct SliceConfig {
     OutputConfig output;
     TransformConfig transform;
     AutoOrientConfig auto_orient;
+    BackgroundConfig background;
     MaterialConfig material;
     SupportConfig support;
     PreviewConfig preview;

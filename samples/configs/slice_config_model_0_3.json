@@ -1,6 +1,6 @@
 {
   "input": {
-    "modelPath": "model/0.3.obj",
+    "modelPath": "samples/models/0.3.obj",
     "format": "auto"
   },
   "output": {
@@ -16,7 +16,7 @@
       "S",
       "V"
     ],
-    "bitDepth": 16,
+    "bitDepth": 8,
     "planarConfig": "contiguous",
     "tiled": true,
     "tileSize": [
@@ -47,28 +47,39 @@
     "maxHeightMm": 6.0,
     "strategy": "minimize_height_by_right_angle_rotation"
   },
+  "background": {
+    "value": 255
+  },
   "modelMaterial": {
     "rgb": [
-      65535,
-      65535,
-      65535
+      255,
+      255,
+      255
     ],
-    "whiteStrength": 0,
-    "varnishStrength": 0
+    "whiteValue": 255,
+    "varnishValue": 0
   },
   "support": {
     "enabled": true,
     "mode": "bottom_projection",
-    "strength": 65535,
+    "value": 0,
     "offsetMm": 0.0,
     "minAreaPx": 0
   },
   "preview": {
     "enabled": true,
+    "format": "png",
     "interval": 50,
+    "layerRange": [
+      0,
+      727
+    ],
     "channels": [
       "rgb",
-      "support"
-    ]
+      "support",
+      "white",
+      "varnish"
+    ],
+    "onlyNonEmptyLayers": true
   }
 }

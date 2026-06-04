@@ -1,91 +1,45 @@
-# AGENTS.md
+# <PROJECT_NAME> Codex Instructions
 
-## 项目背景
+## Project identity
 
-本仓库用于开发 UV 3D 打印切片软件的 P0 Demo。
+- Project: `<PROJECT_NAME>`
+- Repository: `<REPOSITORY_URL_OR_NAME>`
+- Main branch/ref: `<CURRENT_BRANCH_OR_REF>`
+- Main application path: `<MAIN_APP_PATH>`
+- Tech stack: `<TECH_STACK>`
+- Build system: `<BUILD_SYSTEM>`
+- Test command: `<TEST_COMMAND>`
 
-当前不是做完整全彩切片器，也不是做 FDM 路径规划器，而是验证 UV 打印软件上游切片数据链路。
+## Always-on rules
 
-## 技术栈
+- 当前实现主线是 `<MAIN_APP_PATH>`，不是 `<DEPRECATED_PATHS>`。
+- 回答使用中文，除非用户明确要求英文。
+- 修改前必须读取相关源码和文档，不得仅根据文件名猜测。
+- 不虚构构建、测试、运行、部署或硬件验证结果。
+- 破坏性操作、依赖变更、架构迁移、生产路径变更前必须先给方案并等待确认。
 
-- 开发语言：C++20
-- 后续 UI：Qt 5.15
-- 构建系统：CMake
-- 包管理：vcpkg
-- IDE：VS Code
-- 主要平台：Windows / MSVC
+## Evidence classification
 
-## P0 目标
+- A：当前代码/配置/测试中已存在，可作为编码依据。
+- B：正式设计/PRD/ADR，可作为目标方向，但不能证明已实现。
+- C：历史文档/旧 Demo/旧方案，仅作背景。
+- D：废弃或冲突资料，不作为实现依据。
 
-实现 C++ CLI 切片原型：
+## Skill routing
 
-```text
-STL/OBJ 单模型
-→ 模型标准化
-→ 轻量检查/修复
-→ Occupancy/SDF-like 层采样
-→ 下表面投影支撑
-→ RGBWSV 六通道 uint16 tiled TIFF
-→ manifest.json
-→ RIP Reader 验证
-```
+- 开发需求、方案设计、任务拆解：`$project-dev-workflow`
+- 代码审查、diff/PR 检查：`$project-code-review`
+- 架构边界、模块职责、ADR：`$project-architecture-guardrails`
+- 构建、依赖、部署：`$project-build`
+- 文档新旧冲突、实现状态判断：`$project-doc-state-resolver`
+- 跨模型/跨 IDE/新会话交接：`$project-context-handoff`
+- 保存/归档当前 AI 会话：`$project-chat-save`
 
-## 固定协议
+## Reference docs
 
-TIFF 通道顺序固定为：
-
-```text
-R G B W S V
-```
-
-通道语义：
-
-- R/G/B：配置文件中指定的单材料 RGB 常量色
-- W：白墨语义通道
-- S：支撑语义通道
-- V：光油语义通道
-
-默认参数：
-
-```text
-DPI = 600
-layerThicknessMm = 0.01
-```
-
-## P0 规则
-
-- P0 不实现全彩纹理切片。
-- P0 不引入 Unity。
-- P0 不引入 VTK。
-- 不要先做 Qt UI，必须先跑通 CLI 数据闭环。
-- 优先实现 `slicer_cli`。
-- 然后实现 `rip_reader_test`。
-- Qt 只作为后续调试、配置和预览壳。
-- Python 只能用于算法草模，不作为 P0 验收对象。
-- `slicer_core` 必须独立于 CLI 和 UI。
-- 未经确认，不要引入重依赖。
-
-## 推荐 Targets
-
-```text
-slicer_core
-slicer_cli
-rip_reader_test
-slicer_qt_demo later
-```
-
-## 初始依赖建议
-
-```text
-nlohmann-json
-libtiff
-assimp
-```
-
-## 编码要求
-
-- 使用清晰的 C++20。
-- 模块要小而可测试。
-- CLI 不依赖 Qt。
-- core 不依赖 UI。
-- 每个切片包必须包含 manifest 和 reports。
+- 项目画像：`.agents/docs/project-profile.md`
+- 架构边界：`.agents/docs/architecture-boundary.md`
+- 构建与测试：`.agents/docs/build-and-test.md`
+- 代码规范：`.agents/docs/code-standards.md`
+- 文档状态：`.agents/docs/doc-state.md`
+- 会话归档：`.agents/docs/chat-save.md`

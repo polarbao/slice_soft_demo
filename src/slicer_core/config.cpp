@@ -11,15 +11,15 @@ namespace {
 
 constexpr std::array<const char*, 6> expected_channel_order{"R", "G", "B", "W", "S", "V"};
 
-std::uint16_t read_u16(const Json& object, const char* key, const std::uint16_t fallback) {
+std::uint8_t read_u8(const Json& object, const char* key, const std::uint8_t fallback) {
     if (!object.contains(key)) {
         return fallback;
     }
     const int value{object.at(key).as_int()};
-    if (value < 0 || value > 65535) {
-        throw std::runtime_error(std::string{"uint16 config field out of range: "} + key);
+    if (value < 0 || value > 255) {
+        throw std::runtime_error(std::string{"uint8 config field out of range: "} + key);
     }
-    return static_cast<std::uint16_t>(value);
+    return static_cast<std::uint8_t>(value);
 }
 
 std::array<double, 3> read_double3(const Json& object, const char* key, const std::array<double, 3>& fallback) {
@@ -44,6 +44,17 @@ std::array<int, 2> read_int2(const Json& object, const char* key, const std::arr
     return {value.at(0).as_int(), value.at(1).as_int()};
 }
 
+bool has_int2(const Json& object, const char* key) {
+    if (!object.contains(key)) {
+        return false;
+    }
+    const auto& value = object.at(key);
+    if (!value.is_array() || value.size() != 2) {
+        throw std::runtime_error(std::string{"expected 2-integer array for field: "} + key);
+    }
+    return true;
+}
+
 std::vector<std::string> read_string_array(
     const Json& object,
     const char* key,
@@ -63,23 +74,37 @@ std::vector<std::string> read_string_array(
     return result;
 }
 
-std::array<std::uint16_t, 3> read_rgb(const Json& object, const std::array<std::uint16_t, 3>& fallback) {
+std::array<std::uint8_t, 3> read_rgb(const Json& object, const std::array<std::uint8_t, 3>& fallback) {
     if (!object.contains("rgb")) {
         return fallback;
     }
     const auto& value = object.at("rgb");
     if (!value.is_array() || value.size() != 3) {
-        throw std::runtime_error("expected 3-value uint16 array for modelMaterial.rgb");
+        throw std::runtime_error("expected 3-value uint8 array for modelMaterial.rgb");
     }
-    std::array<std::uint16_t, 3> result{};
+    std::array<std::uint8_t, 3> result{};
     for (std::size_t i{0}; i < result.size(); ++i) {
         const int channel{value.at(i).as_int()};
-        if (channel < 0 || channel > 65535) {
-            throw std::runtime_error("modelMaterial.rgb value out of uint16 range");
+        if (channel < 0 || channel > 255) {
+            throw std::runtime_error("modelMaterial.rgb value out of uint8 range");
         }
-        result.at(i) = static_cast<std::uint16_t>(channel);
+        result.at(i) = static_cast<std::uint8_t>(channel);
     }
     return result;
+}
+
+std::uint8_t read_legacy_u16_as_u8(const Json& object, const char* key, const std::uint8_t fallback) {
+    if (!object.contains(key)) {
+        return fallback;
+    }
+    const int value{object.at(key).as_int()};
+    if (value < 0 || value > 65535) {
+        throw std::runtime_error(std::string{"legacy uint16 config field out of range: "} + key);
+    }
+    if (value > 255) {
+        return static_cast<std::uint8_t>(value / 257);
+    }
+    return static_cast<std::uint8_t>(value);
 }
 
 }  // namespace
@@ -128,18 +153,27 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.auto_orient.strategy = auto_orient.value("strategy", config.auto_orient.strategy);
     }
 
+    if (root.contains("background")) {
+        const auto& background = root.at("background");
+        config.background.value = read_u8(background, "value", config.background.value);
+    }
+
     if (root.contains("modelMaterial")) {
         const auto& material = root.at("modelMaterial");
         config.material.rgb = read_rgb(material, config.material.rgb);
-        config.material.white_strength = read_u16(material, "whiteStrength", config.material.white_strength);
-        config.material.varnish_strength = read_u16(material, "varnishStrength", config.material.varnish_strength);
+        config.material.white_value = read_u8(material, "whiteValue", config.material.white_value);
+        config.material.varnish_value = read_u8(material, "varnishValue", config.material.varnish_value);
+        config.material.white_value = read_legacy_u16_as_u8(material, "whiteStrength", config.material.white_value);
+        config.material.varnish_value =
+            read_legacy_u16_as_u8(material, "varnishStrength", config.material.varnish_value);
     }
 
     if (root.contains("support")) {
         const auto& support = root.at("support");
         config.support.enabled = support.value("enabled", config.support.enabled);
         config.support.mode = support.value("mode", config.support.mode);
-        config.support.strength = read_u16(support, "strength", config.support.strength);
+        config.support.value = read_u8(support, "value", config.support.value);
+        config.support.value = read_legacy_u16_as_u8(support, "strength", config.support.value);
         config.support.offset_mm = support.value("offsetMm", config.support.offset_mm);
         config.support.min_area_px = support.value("minAreaPx", config.support.min_area_px);
     }
@@ -147,8 +181,15 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     if (root.contains("preview")) {
         const auto& preview = root.at("preview");
         config.preview.enabled = preview.value("enabled", config.preview.enabled);
+        config.preview.format = preview.value("format", config.preview.format);
         config.preview.interval = preview.value("interval", config.preview.interval);
+        if (has_int2(preview, "layerRange")) {
+            config.preview.has_layer_range = true;
+            config.preview.layer_range = read_int2(preview, "layerRange", config.preview.layer_range);
+        }
         config.preview.channels = read_string_array(preview, "channels", config.preview.channels);
+        config.preview.only_non_empty_layers =
+            preview.value("onlyNonEmptyLayers", config.preview.only_non_empty_layers);
     }
 
     validate_slice_config(config);
@@ -171,8 +212,11 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.auto_orient.strategy != "minimize_height_by_right_angle_rotation") {
         throw std::runtime_error("P0 only supports autoOrient.strategy == minimize_height_by_right_angle_rotation");
     }
-    if (config.output.bit_depth != 16) {
-        throw std::runtime_error("P0 requires output.bitDepth == 16");
+    if (config.background.value != 255) {
+        throw std::runtime_error("P0 00B requires background.value == 255");
+    }
+    if (config.output.bit_depth != 8) {
+        throw std::runtime_error("P0 00B requires output.bitDepth == 8");
     }
     if (config.output.planar_config != "contiguous") {
         throw std::runtime_error("P0 requires output.planarConfig == contiguous");
@@ -185,6 +229,23 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.support.enabled && config.support.mode != "bottom_projection") {
         throw std::runtime_error("P0 only supports support.mode == bottom_projection");
+    }
+    if (config.preview.format != "ppm" && config.preview.format != "png") {
+        throw std::runtime_error("preview.format must be ppm or png");
+    }
+    if (config.preview.interval <= 0) {
+        throw std::runtime_error("preview.interval must be positive");
+    }
+    if (config.preview.has_layer_range) {
+        if (config.preview.layer_range.at(0) < 0 || config.preview.layer_range.at(1) < config.preview.layer_range.at(0)) {
+            throw std::runtime_error("preview.layerRange must be [start, end] with start >= 0 and end >= start");
+        }
+    }
+    for (const std::string& channel : config.preview.channels) {
+        if (channel != "rgb" && channel != "model_rgb" && channel != "support" && channel != "s"
+            && channel != "white" && channel != "w" && channel != "varnish" && channel != "v") {
+            throw std::runtime_error("preview.channels supports rgb, support, white, varnish");
+        }
     }
     if (config.output.channel_order.size() != expected_channel_order.size()) {
         throw std::runtime_error("P0 channelOrder must contain exactly six channels");
