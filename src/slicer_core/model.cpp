@@ -7,27 +7,23 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 namespace slicer_core {
 namespace {
 
 constexpr double pi{3.14159265358979323846};
 
-struct BboxAccumulator {
-    BoundingBox box{
-        {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()},
-        {std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest()}};
-    std::size_t vertex_count{0};
+struct MeshData {
+    std::vector<Vec3> vertices;
+    std::vector<std::array<std::size_t, 3>> faces;
+};
 
-    void add(const Vec3& point) {
-        box.min.x = std::min(box.min.x, point.x);
-        box.min.y = std::min(box.min.y, point.y);
-        box.min.z = std::min(box.min.z, point.z);
-        box.max.x = std::max(box.max.x, point.x);
-        box.max.y = std::max(box.max.y, point.y);
-        box.max.z = std::max(box.max.z, point.z);
-        ++vertex_count;
-    }
+struct OrientationCandidate {
+    std::string name;
+    std::array<double, 3> rotation_deg;
+    std::vector<Vec3> vertices;
+    BoundingBox bbox;
 };
 
 double unit_scale_to_mm(const std::string& unit) {
@@ -79,6 +75,113 @@ Vec3 apply_transform(const Vec3& input, const TransformConfig& transform) {
     return result;
 }
 
+double bbox_height(const BoundingBox& bbox) {
+    return bbox.max.z - bbox.min.z;
+}
+
+double bbox_width(const BoundingBox& bbox) {
+    return bbox.max.x - bbox.min.x;
+}
+
+double bbox_depth(const BoundingBox& bbox) {
+    return bbox.max.y - bbox.min.y;
+}
+
+double bbox_footprint_area(const BoundingBox& bbox) {
+    return bbox_width(bbox) * bbox_depth(bbox);
+}
+
+BoundingBox compute_bbox(const std::vector<Vec3>& vertices) {
+    if (vertices.empty()) {
+        throw std::runtime_error("cannot compute bbox for empty vertex list");
+    }
+    BoundingBox bbox{
+        {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()},
+        {std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest()}};
+    for (const Vec3& point : vertices) {
+        bbox.min.x = std::min(bbox.min.x, point.x);
+        bbox.min.y = std::min(bbox.min.y, point.y);
+        bbox.min.z = std::min(bbox.min.z, point.z);
+        bbox.max.x = std::max(bbox.max.x, point.x);
+        bbox.max.y = std::max(bbox.max.y, point.y);
+        bbox.max.z = std::max(bbox.max.z, point.z);
+    }
+    return bbox;
+}
+
+std::vector<Vec3> rotate_points(const std::vector<Vec3>& vertices, const std::array<double, 3>& rotation_deg) {
+    std::vector<Vec3> result;
+    result.reserve(vertices.size());
+    for (const Vec3& point : vertices) {
+        result.push_back(rotate_xyz(point, rotation_deg));
+    }
+    return result;
+}
+
+std::vector<Vec3> normalize_to_build_plate(const std::vector<Vec3>& vertices, const BoundingBox& bbox) {
+    std::vector<Vec3> result;
+    result.reserve(vertices.size());
+    for (const Vec3& point : vertices) {
+        result.push_back({point.x, point.y, point.z - bbox.min.z});
+    }
+    return result;
+}
+
+std::vector<Triangle> build_triangles(
+    const std::vector<Vec3>& vertices,
+    const std::vector<std::array<std::size_t, 3>>& faces) {
+    std::vector<Triangle> triangles;
+    triangles.reserve(faces.size());
+    for (const auto& face : faces) {
+        triangles.push_back({vertices.at(face.at(0)), vertices.at(face.at(1)), vertices.at(face.at(2))});
+    }
+    return triangles;
+}
+
+OrientationCandidate make_orientation_candidate(
+    const std::string& name,
+    const std::array<double, 3>& rotation_deg,
+    const std::vector<Vec3>& source_vertices) {
+    std::vector<Vec3> rotated = rotate_points(source_vertices, rotation_deg);
+    BoundingBox rotated_bbox = compute_bbox(rotated);
+    rotated = normalize_to_build_plate(rotated, rotated_bbox);
+    rotated_bbox = compute_bbox(rotated);
+    return {name, rotation_deg, std::move(rotated), rotated_bbox};
+}
+
+OrientationCandidate choose_auto_orientation(
+    const std::vector<Vec3>& vertices,
+    const BoundingBox& original_bbox,
+    const AutoOrientConfig& config) {
+    const OrientationCandidate identity{"identity", {0.0, 0.0, 0.0}, vertices, original_bbox};
+    if (!config.enabled || bbox_height(original_bbox) <= config.max_height_mm) {
+        return identity;
+    }
+
+    std::vector<OrientationCandidate> candidates;
+    candidates.push_back(identity);
+    candidates.push_back(make_orientation_candidate("rotate_x_90", {90.0, 0.0, 0.0}, vertices));
+    candidates.push_back(make_orientation_candidate("rotate_x_minus_90", {-90.0, 0.0, 0.0}, vertices));
+    candidates.push_back(make_orientation_candidate("rotate_y_90", {0.0, 90.0, 0.0}, vertices));
+    candidates.push_back(make_orientation_candidate("rotate_y_minus_90", {0.0, -90.0, 0.0}, vertices));
+
+    const auto better = [&](const OrientationCandidate& lhs, const OrientationCandidate& rhs) {
+        const bool lhs_fits = bbox_height(lhs.bbox) <= config.max_height_mm;
+        const bool rhs_fits = bbox_height(rhs.bbox) <= config.max_height_mm;
+        if (lhs_fits != rhs_fits) {
+            return lhs_fits;
+        }
+        if (lhs_fits && rhs_fits) {
+            return bbox_footprint_area(lhs.bbox) < bbox_footprint_area(rhs.bbox);
+        }
+        return bbox_height(lhs.bbox) < bbox_height(rhs.bbox);
+    };
+
+    return *std::min_element(candidates.begin(), candidates.end(), [&](const auto& lhs, const auto& rhs) {
+        return better(lhs, rhs);
+    });
+}
+
 std::filesystem::path resolve_path(const std::filesystem::path& path, const std::filesystem::path& config_dir) {
     if (path.is_absolute()) {
         return path;
@@ -110,12 +213,14 @@ std::string detect_format(const std::filesystem::path& path, std::string configu
     throw std::runtime_error("cannot infer model format from extension: " + path.string());
 }
 
-void load_ascii_stl(const std::filesystem::path& path, const TransformConfig& transform, BboxAccumulator& accumulator) {
+void load_ascii_stl(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
     std::ifstream input{path};
     if (!input) {
         throw std::runtime_error("failed to open STL model: " + path.string());
     }
 
+    std::vector<std::size_t> facet_vertices;
+    facet_vertices.reserve(3);
     std::string line;
     while (std::getline(input, line)) {
         std::istringstream stream{line};
@@ -128,11 +233,40 @@ void load_ascii_stl(const std::filesystem::path& path, const TransformConfig& tr
         if (!(stream >> vertex.x >> vertex.y >> vertex.z)) {
             throw std::runtime_error("invalid STL vertex line in: " + path.string());
         }
-        accumulator.add(apply_transform(vertex, transform));
+        mesh.vertices.push_back(apply_transform(vertex, transform));
+        facet_vertices.push_back(mesh.vertices.size() - 1U);
+        if (facet_vertices.size() == 3) {
+            mesh.faces.push_back({facet_vertices.at(0), facet_vertices.at(1), facet_vertices.at(2)});
+            facet_vertices.clear();
+        }
     }
 }
 
-void load_obj(const std::filesystem::path& path, const TransformConfig& transform, BboxAccumulator& accumulator) {
+std::size_t parse_obj_index(const std::string& token, const std::size_t vertex_count) {
+    const std::size_t slash = token.find('/');
+    const std::string index_text = slash == std::string::npos ? token : token.substr(0, slash);
+    if (index_text.empty()) {
+        throw std::runtime_error("OBJ face contains empty vertex index");
+    }
+    const int index = std::stoi(index_text);
+    if (index == 0) {
+        throw std::runtime_error("OBJ vertex indices are 1-based; zero is invalid");
+    }
+    if (index > 0) {
+        const std::size_t zero_based = static_cast<std::size_t>(index - 1);
+        if (zero_based >= vertex_count) {
+            throw std::runtime_error("OBJ face references vertex outside loaded range");
+        }
+        return zero_based;
+    }
+    const int resolved = static_cast<int>(vertex_count) + index;
+    if (resolved < 0) {
+        throw std::runtime_error("OBJ negative face index is outside loaded range");
+    }
+    return static_cast<std::size_t>(resolved);
+}
+
+void load_obj(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
     std::ifstream input{path};
     if (!input) {
         throw std::runtime_error("failed to open OBJ model: " + path.string());
@@ -144,13 +278,26 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
         std::string token;
         stream >> token;
         if (token != "v") {
+            if (token == "f") {
+                std::vector<std::size_t> face_indices;
+                std::string face_token;
+                while (stream >> face_token) {
+                    face_indices.push_back(parse_obj_index(face_token, mesh.vertices.size()));
+                }
+                if (face_indices.size() < 3) {
+                    throw std::runtime_error("OBJ face has fewer than three vertices: " + path.string());
+                }
+                for (std::size_t i{1}; i + 1U < face_indices.size(); ++i) {
+                    mesh.faces.push_back({face_indices.at(0), face_indices.at(i), face_indices.at(i + 1U)});
+                }
+            }
             continue;
         }
         Vec3 vertex{};
         if (!(stream >> vertex.x >> vertex.y >> vertex.z)) {
             throw std::runtime_error("invalid OBJ vertex line in: " + path.string());
         }
-        accumulator.add(apply_transform(vertex, transform));
+        mesh.vertices.push_back(apply_transform(vertex, transform));
     }
 }
 
@@ -163,25 +310,38 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
     }
 
     const std::string format = detect_format(model_path, config.input.format);
-    BboxAccumulator accumulator;
+    MeshData mesh;
     if (format == "stl") {
-        load_ascii_stl(model_path, config.transform, accumulator);
+        load_ascii_stl(model_path, config.transform, mesh);
     } else if (format == "obj") {
-        load_obj(model_path, config.transform, accumulator);
+        load_obj(model_path, config.transform, mesh);
     } else {
         throw std::runtime_error("unsupported model format for P0: " + format);
     }
 
-    if (accumulator.vertex_count == 0) {
+    if (mesh.vertices.empty()) {
         throw std::runtime_error("model contains no readable vertices: " + model_path.string());
     }
+    if (mesh.faces.empty()) {
+        throw std::runtime_error("model contains no readable triangle faces: " + model_path.string());
+    }
+
+    const BoundingBox original_bbox = compute_bbox(mesh.vertices);
+    const OrientationCandidate orientation =
+        choose_auto_orientation(mesh.vertices, original_bbox, config.auto_orient);
 
     ModelReport report;
     report.model_path = model_path;
     report.format = format;
-    report.vertex_count = accumulator.vertex_count;
-    report.triangle_count = accumulator.vertex_count / 3;
-    report.bbox_mm = accumulator.box;
+    report.vertex_count = mesh.vertices.size();
+    report.triangle_count = mesh.faces.size();
+    report.auto_orient.enabled = config.auto_orient.enabled;
+    report.auto_orient.max_height_mm = config.auto_orient.max_height_mm;
+    report.auto_orient.selected_orientation = orientation.name;
+    report.auto_orient.applied = orientation.name != "identity";
+    report.auto_orient.original_bbox_mm = original_bbox;
+    report.bbox_mm = orientation.bbox;
+    report.triangles = build_triangles(orientation.vertices, mesh.faces);
     return report;
 }
 

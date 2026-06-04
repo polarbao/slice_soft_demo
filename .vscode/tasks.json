@@ -1,0 +1,92 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake: Configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S",
+        ".",
+        "-B",
+        "build"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: Build Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "build",
+        "--config",
+        "Debug"
+      ],
+      "dependsOn": "CMake: Configure",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Run slicer_cli sample",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config.json"
+      ],
+      "dependsOn": "CMake: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run rip_reader_test sample",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/SlicePackage"
+      ],
+      "dependsOn": "Run slicer_cli sample",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run slicer_cli model 0.3",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_model_0_3.json"
+      ],
+      "dependsOn": "CMake: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "Inspect model 0.3",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_model_0_3.json",
+        "--inspect-model"
+      ],
+      "dependsOn": "CMake: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "Preview-only model 0.3",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_model_0_3.json",
+        "--preview-only"
+      ],
+      "dependsOn": "CMake: Build Debug",
+      "problemMatcher": []
+    }
+  ]
+}

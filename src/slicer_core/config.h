@@ -32,6 +32,12 @@ struct TransformConfig {
     std::array<double, 3> translation_mm{0.0, 0.0, 0.0};
 };
 
+struct AutoOrientConfig {
+    bool enabled{true};
+    double max_height_mm{6.0};
+    std::string strategy{"minimize_height_by_right_angle_rotation"};
+};
+
 struct MaterialConfig {
     std::array<std::uint16_t, 3> rgb{65535, 65535, 65535};
     std::uint16_t white_strength{0};
@@ -56,6 +62,7 @@ struct SliceConfig {
     InputConfig input;
     OutputConfig output;
     TransformConfig transform;
+    AutoOrientConfig auto_orient;
     MaterialConfig material;
     SupportConfig support;
     PreviewConfig preview;
@@ -65,4 +72,3 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path);
 void validate_slice_config(const SliceConfig& config);
 
 }  // namespace slicer_core
-

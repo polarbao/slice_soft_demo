@@ -15,7 +15,11 @@ struct SliceRunResult {
     int support_pixel_count{0};
 };
 
+struct SliceRunOptions {
+    bool write_tiff_layers{true};
+};
+
 SliceRunResult run_slicer(const std::filesystem::path& config_path);
+SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceRunOptions& options);
 
 }  // namespace slicer_core
-

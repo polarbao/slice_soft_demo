@@ -1,10 +1,10 @@
 {
   "input": {
-    "modelPath": "samples/models/sample.stl",
+    "modelPath": "model/0.3.obj",
     "format": "auto"
   },
   "output": {
-    "packageDir": "output/SlicePackage",
+    "packageDir": "output/SlicePackage_model_0_3",
     "dpiX": 600,
     "dpiY": 600,
     "layerThicknessMm": 0.01,
@@ -65,7 +65,7 @@
   },
   "preview": {
     "enabled": true,
-    "interval": 10,
+    "interval": 50,
     "channels": [
       "rgb",
       "support"

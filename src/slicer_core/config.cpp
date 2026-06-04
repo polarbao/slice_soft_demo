@@ -121,6 +121,13 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.transform.translation_mm = read_double3(transform, "translationMm", config.transform.translation_mm);
     }
 
+    if (root.contains("autoOrient")) {
+        const auto& auto_orient = root.at("autoOrient");
+        config.auto_orient.enabled = auto_orient.value("enabled", config.auto_orient.enabled);
+        config.auto_orient.max_height_mm = auto_orient.value("maxHeightMm", config.auto_orient.max_height_mm);
+        config.auto_orient.strategy = auto_orient.value("strategy", config.auto_orient.strategy);
+    }
+
     if (root.contains("modelMaterial")) {
         const auto& material = root.at("modelMaterial");
         config.material.rgb = read_rgb(material, config.material.rgb);
@@ -157,6 +164,12 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.output.layer_thickness_mm <= 0.0) {
         throw std::runtime_error("output.layerThicknessMm must be positive");
+    }
+    if (config.auto_orient.max_height_mm <= 0.0) {
+        throw std::runtime_error("autoOrient.maxHeightMm must be positive");
+    }
+    if (config.auto_orient.strategy != "minimize_height_by_right_angle_rotation") {
+        throw std::runtime_error("P0 only supports autoOrient.strategy == minimize_height_by_right_angle_rotation");
     }
     if (config.output.bit_depth != 16) {
         throw std::runtime_error("P0 requires output.bitDepth == 16");
