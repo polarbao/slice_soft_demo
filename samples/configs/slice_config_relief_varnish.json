@@ -63,22 +63,24 @@
     "varnishValue": 0
   },
   "support": {
-    "enabled": false,
+    "enabled": true,
     "mode": "bottom_projection",
     "value": 0,
     "offsetMm": 0.0,
     "minAreaPx": 0
   },
   "relief": {
-    "fillMode": "surface_to_base",
+    "fillMode": "intersection_range",
     "baseZMm": 0.0
   },
   "preview": {
     "enabled": true,
     "format": "png",
-    "interval": 10,
+    "interval": 5,
     "channels": [
-      "varnish"
+      "varnish",
+      "support",
+      "rgb"
     ],
     "onlyNonEmptyLayers": true
   }

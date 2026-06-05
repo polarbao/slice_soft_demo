@@ -1,6 +1,6 @@
 # REPORT_00_P0_Demo当前实现状态
 
-> 文档版本：v0.4  
+> 文档版本：v0.5  
 > 文档状态：Current Implementation Snapshot  
 > 适用阶段：P0 Demo / 00B / 00A / 00C  
 > 更新日期：2026-06-05  
@@ -87,7 +87,7 @@ TIFF tile padding 已按 00B 修正为默认 255，避免 tile 外补齐区域�
 - `contour_report.json`
 - `rip_reader_test --expect-error --expect-message`
 
-### 3.3 00C 单材料浮雕模式
+### 3.3 00C_FINAL 单材料浮雕光油与下表面支撑
 
 已实现新增模式：
 
@@ -121,14 +121,33 @@ surface_to_base: 填充 baseZ..z_max
 intersection_range: 填充 z_min..z_max
 ```
 
-单材料光油模式：
+00C_FINAL 定稿口径：
+
+```text
+浮雕模型默认 = 单材料光油模型 + 下表面支撑
+模型材料通道 = V
+支撑材料通道 = S
+```
+
+模型材料区域：
 
 ```text
 R/G/B/W/S = 255
 V = 0
 ```
 
-00C 默认不启用 S 支撑通道，避免把浮雕基底误写为支撑。
+支撑材料区域：
+
+```text
+R/G/B/W/V = 255
+S = 0
+```
+
+像素优先级保持：
+
+```text
+Model > Support > Empty
+```
 
 输出新增：
 
@@ -172,8 +191,10 @@ manifest.slicing.reliefFillMode
 slicingMode = relief_heightfield
 materialChannel = V
 applyMode = solid_volume
-support.enabled = false
-relief.fillMode = surface_to_base
+support.enabled = true
+support.mode = bottom_projection
+relief.fillMode = intersection_range
+preview.channels = varnish / support
 ```
 
 输出：
@@ -253,7 +274,8 @@ R G B W S V
 - relief column sampler
 - `relief_report.json`
 - manifest `slicing`
-- relief varnish 样例配置
+- relief varnish 样例配置已按 FINAL 改为 V 光油 + S 支撑
+- `support_report.json` 记录 `slicingMode` 和 `supportSource`
 - 普通模式不破坏
 - `rip_reader_test` 通过
 
@@ -272,9 +294,9 @@ build\Debug\rip_reader_test.exe --package output\SlicePackage_relief_varnish
 00C relief 第 50 层和第 400 层有效像素统计已确认：
 
 ```text
-R/G/B/W/S = 255
+R/G/B/W = 255
 V contains print pixels with value 0
-S print pixels = 0
+S contains print pixels with value 0
 ```
 
 ## 9. 下一步建议 Milestone

@@ -534,9 +534,6 @@ std::vector<std::vector<std::uint8_t>> sample_relief_heightfield_masks(
     std::vector<int> hit_count(pixel_count, 0);
 
     relief_report.total_columns = static_cast<int>(pixel_count);
-    if (config.support.enabled) {
-        relief_report.warnings.push_back("relief_heightfield_support_is_experimental");
-    }
 
     for (const Triangle& triangle : model_report.triangles) {
         const double min_x = std::min({triangle.a.x, triangle.b.x, triangle.c.x});
@@ -736,6 +733,12 @@ Json relief_report_to_json(const SliceConfig& config, const ReliefReportData& re
         {"slicingMode", config.slicing_mode},
         {"fillMode", config.relief.fill_mode},
         {"baseZMm", config.relief.base_z_mm},
+        {"support",
+         Json::object({
+             {"enabled", config.support.enabled},
+             {"source", config.slicing_mode == "relief_heightfield" ? "lower_surface" : "first_model_layer"},
+             {"expectedSupport", config.slicing_mode == "relief_heightfield" && config.support.enabled},
+         })},
         {"columns",
          Json::object({
              {"total", relief_report.total_columns},
@@ -869,6 +872,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"enabled", config.support.enabled},
         {"mode", config.support.mode},
         {"value", config.support.value},
+        {"slicingMode", config.slicing_mode},
+        {"supportSource",
+         config.slicing_mode == "relief_heightfield" ? "relief_lower_surface" : "first_model_layer"},
         {"modelPriority", "Model > Support"},
         {"supportPixels", total_support_pixels},
         {"layers", Json{contour_layers}},

@@ -87,6 +87,40 @@
       ],
       "dependsOn": "CMake: Build Debug",
       "problemMatcher": []
+    },
+    {
+      "label": "Run slicer_cli relief varnish",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_relief_varnish.json"
+      ],
+      "dependsOn": "CMake: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "Preview-only relief varnish",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_relief_varnish.json",
+        "--preview-only"
+      ],
+      "dependsOn": "CMake: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run rip_reader_test relief varnish",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/SlicePackage_relief_varnish"
+      ],
+      "dependsOn": "Run slicer_cli relief varnish",
+      "problemMatcher": []
     }
   ]
 }
