@@ -2,29 +2,29 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "CMake: Configure",
+      "label": "SliceSoft: Configure",
       "type": "shell",
       "command": "cmake",
       "args": [
         "-S",
-        ".",
+        "slice_soft_demo",
         "-B",
-        "build"
+        "slice_soft_demo/build"
       ],
       "group": "build",
       "problemMatcher": []
     },
     {
-      "label": "CMake: Build Debug",
+      "label": "SliceSoft: Build Debug",
       "type": "shell",
       "command": "cmake",
       "args": [
         "--build",
-        "build",
+        "slice_soft_demo/build",
         "--config",
         "Debug"
       ],
-      "dependsOn": "CMake: Configure",
+      "dependsOn": "SliceSoft: Configure",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -32,94 +32,118 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "Run slicer_cli sample",
+      "label": "SliceSoft: Run slicer_cli sample",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config.json"
       ],
-      "dependsOn": "CMake: Build Debug",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
     },
     {
-      "label": "Run rip_reader_test sample",
+      "label": "SliceSoft: Run rip_reader_test sample",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage"
       ],
-      "dependsOn": "Run slicer_cli sample",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Run slicer_cli sample",
       "problemMatcher": []
     },
     {
-      "label": "Run slicer_cli model 0.3",
+      "label": "SliceSoft: Run slicer_cli model 0.3",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json"
       ],
-      "dependsOn": "CMake: Build Debug",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
     },
     {
-      "label": "Inspect model 0.3",
+      "label": "SliceSoft: Inspect model 0.3",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--inspect-model"
       ],
-      "dependsOn": "CMake: Build Debug",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
     },
     {
-      "label": "Preview-only model 0.3",
+      "label": "SliceSoft: Preview-only model 0.3",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--preview-only"
       ],
-      "dependsOn": "CMake: Build Debug",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
     },
     {
-      "label": "Run slicer_cli relief varnish",
+      "label": "SliceSoft: Run slicer_cli relief varnish",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json"
       ],
-      "dependsOn": "CMake: Build Debug",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
     },
     {
-      "label": "Preview-only relief varnish",
+      "label": "SliceSoft: Preview-only relief varnish",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json",
         "--preview-only"
       ],
-      "dependsOn": "CMake: Build Debug",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
     },
     {
-      "label": "Run rip_reader_test relief varnish",
+      "label": "SliceSoft: Run rip_reader_test relief varnish",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage_relief_varnish"
       ],
-      "dependsOn": "Run slicer_cli relief varnish",
+      "options": {
+        "cwd": "${workspaceFolder}/slice_soft_demo"
+      },
+      "dependsOn": "SliceSoft: Run slicer_cli relief varnish",
       "problemMatcher": []
     }
   ]

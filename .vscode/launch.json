@@ -2,110 +2,110 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug slicer_cli sample",
+      "name": "SliceSoft: Debug slicer_cli sample",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config.json"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug rip_reader_test sample",
+      "name": "SliceSoft: Debug rip_reader_test sample",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug slicer_cli model 0.3",
+      "name": "SliceSoft: Debug slicer_cli model 0.3",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug inspect model 0.3",
+      "name": "SliceSoft: Debug inspect model 0.3",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--inspect-model"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug preview-only model 0.3",
+      "name": "SliceSoft: Debug preview-only model 0.3",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--preview-only"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug slicer_cli relief varnish",
+      "name": "SliceSoft: Debug slicer_cli relief varnish",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug preview-only relief varnish",
+      "name": "SliceSoft: Debug preview-only relief varnish",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json",
         "--preview-only"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
     {
-      "name": "Debug rip_reader_test relief varnish",
+      "name": "SliceSoft: Debug rip_reader_test relief varnish",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage_relief_varnish"
       ],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "CMake: Build Debug",
+      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     }
   ]

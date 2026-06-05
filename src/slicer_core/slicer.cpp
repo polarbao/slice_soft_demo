@@ -13,6 +13,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace slicer_core {
@@ -73,8 +74,26 @@ struct ReliefReportData {
     int multi_hit_columns{0};
     double z_min_mm{0.0};
     double z_max_mm{0.0};
+    double thickness_min_mm{0.0};
+    double thickness_max_mm{0.0};
     bool has_hits{false};
     Json::Array warnings;
+};
+
+struct ReliefColumnInfo {
+    bool has_model{false};
+    int lower_layer{-1};
+    int upper_layer{-1};
+    double z_min_mm{0.0};
+    double z_max_mm{0.0};
+    int hit_count{0};
+    bool multi_hit{false};
+};
+
+struct ReliefSamplingResult {
+    std::vector<std::vector<std::uint8_t>> model_masks;
+    std::vector<ReliefColumnInfo> columns;
+    ReliefReportData report;
 };
 
 std::string layer_file_name(const int layer_index) {
@@ -361,6 +380,8 @@ Json::Array write_layer_previews(
             {"type", image.type},
             {"format", preview_config.format},
             {"path", relative_path},
+            {"printPixels", image.non_zero_pixels},
+            {"displayNonZeroPixels", image.non_zero_pixels},
             {"nonZeroPixels", image.non_zero_pixels},
             {"maxValue", image.max_value},
         }));
@@ -522,17 +543,19 @@ int last_layer_at_or_below_z(const double z_mm, const double layer_thickness_mm)
     return static_cast<int>(std::floor(z_mm / layer_thickness_mm - 0.5));
 }
 
-std::vector<std::vector<std::uint8_t>> sample_relief_heightfield_masks(
+ReliefSamplingResult sample_relief_heightfield_masks(
     const SliceConfig& config,
     const ModelReport& model_report,
     const GridSpec& grid,
-    std::vector<LayerDiagnostics>& diagnostics,
-    ReliefReportData& relief_report) {
+    std::vector<LayerDiagnostics>& diagnostics) {
     const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
     std::vector<double> z_min(pixel_count, std::numeric_limits<double>::max());
     std::vector<double> z_max(pixel_count, std::numeric_limits<double>::lowest());
     std::vector<int> hit_count(pixel_count, 0);
 
+    ReliefSamplingResult result;
+    result.columns.resize(pixel_count);
+    ReliefReportData& relief_report = result.report;
     relief_report.total_columns = static_cast<int>(pixel_count);
 
     for (const Triangle& triangle : model_report.triangles) {
@@ -571,7 +594,7 @@ std::vector<std::vector<std::uint8_t>> sample_relief_heightfield_masks(
         }
     }
 
-    std::vector<std::vector<std::uint8_t>> masks(
+    result.model_masks.resize(
         static_cast<std::size_t>(grid.layer_count),
         std::vector<std::uint8_t>(pixel_count, 0));
     diagnostics.clear();
@@ -587,17 +610,29 @@ std::vector<std::vector<std::uint8_t>> sample_relief_heightfield_masks(
         if (hit_count.at(index) == 0) {
             continue;
         }
+        ReliefColumnInfo& column = result.columns.at(index);
+        column.has_model = true;
+        column.z_min_mm = z_min.at(index);
+        column.z_max_mm = z_max.at(index);
+        column.hit_count = hit_count.at(index);
+        column.multi_hit = hit_count.at(index) > 1;
+
         ++relief_report.hit_columns;
-        if (hit_count.at(index) > 1) {
+        if (column.multi_hit) {
             ++relief_report.multi_hit_columns;
         }
         if (!relief_report.has_hits) {
             relief_report.z_min_mm = z_min.at(index);
             relief_report.z_max_mm = z_max.at(index);
+            relief_report.thickness_min_mm = z_max.at(index) - z_min.at(index);
+            relief_report.thickness_max_mm = relief_report.thickness_min_mm;
             relief_report.has_hits = true;
         } else {
             relief_report.z_min_mm = std::min(relief_report.z_min_mm, z_min.at(index));
             relief_report.z_max_mm = std::max(relief_report.z_max_mm, z_max.at(index));
+            const double thickness_mm = z_max.at(index) - z_min.at(index);
+            relief_report.thickness_min_mm = std::min(relief_report.thickness_min_mm, thickness_mm);
+            relief_report.thickness_max_mm = std::max(relief_report.thickness_max_mm, thickness_mm);
         }
 
         const double start_z =
@@ -610,12 +645,14 @@ std::vector<std::vector<std::uint8_t>> sample_relief_heightfield_masks(
         if (start_layer > end_layer) {
             continue;
         }
+        column.lower_layer = start_layer;
+        column.upper_layer = end_layer;
         for (int layer_index{start_layer}; layer_index <= end_layer; ++layer_index) {
-            masks.at(layer_index).at(index) = 1;
+            result.model_masks.at(layer_index).at(index) = 1;
         }
     }
     relief_report.empty_columns = relief_report.total_columns - relief_report.hit_columns;
-    return masks;
+    return result;
 }
 
 std::vector<int> compute_first_model_layers(const std::vector<std::vector<std::uint8_t>>& model_masks, const GridSpec& grid) {
@@ -629,6 +666,16 @@ std::vector<int> compute_first_model_layers(const std::vector<std::vector<std::u
         }
     }
     return first_model_layer;
+}
+
+std::vector<int> compute_relief_lower_layers(const std::vector<ReliefColumnInfo>& columns) {
+    std::vector<int> lower_layers(columns.size(), -1);
+    for (std::size_t i{0}; i < columns.size(); ++i) {
+        if (columns.at(i).has_model && columns.at(i).lower_layer >= 0) {
+            lower_layers.at(i) = columns.at(i).lower_layer;
+        }
+    }
+    return lower_layers;
 }
 
 void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base, const SliceConfig& config) {
@@ -660,7 +707,7 @@ std::vector<std::uint8_t> compose_layer(
     const GridSpec& grid,
     const int layer_index,
     const std::vector<std::uint8_t>& model_mask,
-    const std::vector<int>& first_model_layers,
+    const std::vector<int>& support_source_layers,
     int& model_pixels,
     int& support_pixels) {
     std::vector<std::uint8_t> pixels(
@@ -675,7 +722,7 @@ std::vector<std::uint8_t> compose_layer(
             if (model_mask.at(pixel_index) != 0) {
                 write_model_pixel(pixels, base, config);
                 ++model_pixels;
-            } else if (config.support.enabled && first_model_layers.at(pixel_index) > layer_index) {
+            } else if (config.support.enabled && support_source_layers.at(pixel_index) > layer_index) {
                 pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
             }
@@ -724,11 +771,23 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
         {"supportNonZeroPixels", diagnostics.support_pixels},
         {"rgbNonZeroPixels", diagnostics.rgb_non_zero_pixels},
         {"whiteNonZeroPixels", diagnostics.white_non_zero_pixels},
+        {"modelPrintPixels", diagnostics.model_pixels},
+        {"supportPrintPixels", diagnostics.support_non_zero_pixels},
+        {"rgbPrintPixels", diagnostics.rgb_non_zero_pixels},
+        {"whitePrintPixels", diagnostics.white_non_zero_pixels},
+        {"varnishPrintPixels", diagnostics.varnish_non_zero_pixels},
         {"varnishNonZeroPixels", diagnostics.varnish_non_zero_pixels},
     });
 }
 
-Json relief_report_to_json(const SliceConfig& config, const ReliefReportData& relief_report) {
+Json relief_report_to_json(
+    const SliceConfig& config,
+    const ReliefReportData& relief_report,
+    const int support_pixels,
+    const int columns_with_support) {
+    const double coverage_ratio = relief_report.total_columns > 0
+        ? static_cast<double>(relief_report.hit_columns) / static_cast<double>(relief_report.total_columns)
+        : 0.0;
     return Json::object({
         {"slicingMode", config.slicing_mode},
         {"fillMode", config.relief.fill_mode},
@@ -736,8 +795,10 @@ Json relief_report_to_json(const SliceConfig& config, const ReliefReportData& re
         {"support",
          Json::object({
              {"enabled", config.support.enabled},
-             {"source", config.slicing_mode == "relief_heightfield" ? "lower_surface" : "first_model_layer"},
+             {"source", config.slicing_mode == "relief_heightfield" ? "relief_lower_surface" : "first_model_layer"},
              {"expectedSupport", config.slicing_mode == "relief_heightfield" && config.support.enabled},
+             {"supportPixels", support_pixels},
+             {"columnsWithSupport", columns_with_support},
          })},
         {"columns",
          Json::object({
@@ -745,6 +806,14 @@ Json relief_report_to_json(const SliceConfig& config, const ReliefReportData& re
              {"hit", relief_report.hit_columns},
              {"empty", relief_report.empty_columns},
              {"multiHit", relief_report.multi_hit_columns},
+             {"coverageRatio", coverage_ratio},
+         })},
+        {"height",
+         Json::object({
+             {"zMinMm", relief_report.has_hits ? relief_report.z_min_mm : 0.0},
+             {"zMaxMm", relief_report.has_hits ? relief_report.z_max_mm : 0.0},
+             {"thicknessMinMm", relief_report.has_hits ? relief_report.thickness_min_mm : 0.0},
+             {"thicknessMaxMm", relief_report.has_hits ? relief_report.thickness_max_mm : 0.0},
          })},
         {"zRangeMm",
          Json::object({
@@ -783,20 +852,32 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
 
     std::vector<LayerDiagnostics> layer_diagnostics;
     ReliefReportData relief_report;
+    std::vector<ReliefColumnInfo> relief_columns;
     std::vector<std::vector<std::uint8_t>> model_masks;
     if (config.slicing_mode == "relief_heightfield") {
-        model_masks = sample_relief_heightfield_masks(config, model_report, grid, layer_diagnostics, relief_report);
+        ReliefSamplingResult relief_sampling = sample_relief_heightfield_masks(config, model_report, grid, layer_diagnostics);
+        model_masks = std::move(relief_sampling.model_masks);
+        relief_columns = std::move(relief_sampling.columns);
+        relief_report = std::move(relief_sampling.report);
     } else {
         model_masks = sample_model_masks(model_report, grid, config.output.layer_thickness_mm, layer_diagnostics);
         relief_report.total_columns = grid.width_px * grid.height_px;
         relief_report.empty_columns = relief_report.total_columns;
     }
-    const std::vector<int> first_model_layers = compute_first_model_layers(model_masks, grid);
+    const std::vector<int> support_source_layers = config.slicing_mode == "relief_heightfield"
+        ? compute_relief_lower_layers(relief_columns)
+        : compute_first_model_layers(model_masks, grid);
+    const int columns_with_support = config.support.enabled
+        ? static_cast<int>(std::count_if(support_source_layers.begin(), support_source_layers.end(), [](const int layer) {
+              return layer > 0;
+          }))
+        : 0;
 
     int total_model_pixels{0};
     int total_support_pixels{0};
     int total_rgb_non_zero_pixels{0};
     int total_white_non_zero_pixels{0};
+    int total_support_non_zero_pixels{0};
     int total_varnish_non_zero_pixels{0};
     Json::Array layers;
     Json::Array slice_layers;
@@ -810,7 +891,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid,
             layer_index,
             model_masks.at(layer_index),
-            first_model_layers,
+            support_source_layers,
             layer_model_pixels,
             layer_support_pixels);
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
@@ -821,6 +902,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         total_support_pixels += layer_support_pixels;
         total_rgb_non_zero_pixels += diagnostics.rgb_non_zero_pixels;
         total_white_non_zero_pixels += diagnostics.white_non_zero_pixels;
+        total_support_non_zero_pixels += diagnostics.support_non_zero_pixels;
         total_varnish_non_zero_pixels += diagnostics.varnish_non_zero_pixels;
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
@@ -857,7 +939,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"supportPixels", total_support_pixels},
              {"rgbNonZeroPixels", total_rgb_non_zero_pixels},
              {"whiteNonZeroPixels", total_white_non_zero_pixels},
+             {"supportNonZeroPixels", total_support_non_zero_pixels},
              {"varnishNonZeroPixels", total_varnish_non_zero_pixels},
+             {"modelPrintPixels", total_model_pixels},
+             {"supportPrintPixels", total_support_non_zero_pixels},
+             {"rgbPrintPixels", total_rgb_non_zero_pixels},
+             {"whitePrintPixels", total_white_non_zero_pixels},
+             {"varnishPrintPixels", total_varnish_non_zero_pixels},
          })},
         {"layers", Json{slice_layers}},
     });
@@ -877,6 +965,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          config.slicing_mode == "relief_heightfield" ? "relief_lower_surface" : "first_model_layer"},
         {"modelPriority", "Model > Support"},
         {"supportPixels", total_support_pixels},
+        {"supportPrintPixels", total_support_non_zero_pixels},
+        {"columnsWithSupport", columns_with_support},
         {"layers", Json{contour_layers}},
     });
 
@@ -939,7 +1029,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(package_dir / "reports/support_report.json", support_report);
     write_json_file(package_dir / "reports/preview_report.json", preview_report);
     write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
-    write_json_file(package_dir / "reports/relief_report.json", relief_report_to_json(config, relief_report));
+    write_json_file(
+        package_dir / "reports/relief_report.json",
+        relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
 
     const Json manifest = Json::object({
         {"schemaVersion", "p0.rgbwsv.1"},

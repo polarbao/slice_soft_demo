@@ -1,7 +1,7 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "samples/models/0.3.obj",
+    "modelPath": "samples/models/relief/relief_nail_arched.obj",
     "format": "auto"
   },
   "output": {
@@ -79,8 +79,7 @@
     "interval": 5,
     "channels": [
       "varnish",
-      "support",
-      "rgb"
+      "support"
     ],
     "onlyNonEmptyLayers": true
   }
