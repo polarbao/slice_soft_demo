@@ -7,9 +7,9 @@
       "command": "cmake",
       "args": [
         "-S",
-        "slice_soft_demo",
+        ".",
         "-B",
-        "slice_soft_demo/build"
+        "build"
       ],
       "group": "build",
       "problemMatcher": []
@@ -20,7 +20,7 @@
       "command": "cmake",
       "args": [
         "--build",
-        "slice_soft_demo/build",
+        "build",
         "--config",
         "Debug"
       ],
@@ -34,13 +34,13 @@
     {
       "label": "SliceSoft: Run slicer_cli sample",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config.json"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
@@ -48,13 +48,13 @@
     {
       "label": "SliceSoft: Run rip_reader_test sample",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Run slicer_cli sample",
       "problemMatcher": []
@@ -62,13 +62,13 @@
     {
       "label": "SliceSoft: Run slicer_cli model 0.3",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
@@ -76,14 +76,14 @@
     {
       "label": "SliceSoft: Inspect model 0.3",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--inspect-model"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
@@ -91,14 +91,14 @@
     {
       "label": "SliceSoft: Preview-only model 0.3",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--preview-only"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
@@ -106,13 +106,13 @@
     {
       "label": "SliceSoft: Run slicer_cli relief varnish",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
@@ -120,14 +120,14 @@
     {
       "label": "SliceSoft: Preview-only relief varnish",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json",
         "--preview-only"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
@@ -135,15 +135,43 @@
     {
       "label": "SliceSoft: Run rip_reader_test relief varnish",
       "type": "shell",
-      "command": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage_relief_varnish"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/slice_soft_demo"
+        "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Run slicer_cli relief varnish",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run support unsupported_only",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/support/support_unsupported_only.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run support bottom_plus_unsupported",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/support/support_bottom_plus_unsupported.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
     }
   ]

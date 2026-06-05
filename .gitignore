@@ -1,2 +1,5 @@
 build/
 output/
+.dish/workspace-id
+.qodo/
+# .specstory/

@@ -179,6 +179,14 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.support.value = read_legacy_u16_as_u8(support, "strength", config.support.value);
         config.support.offset_mm = support.value("offsetMm", config.support.offset_mm);
         config.support.min_area_px = support.value("minAreaPx", config.support.min_area_px);
+        config.support.min_overlap_ratio = support.value("minOverlapRatio", config.support.min_overlap_ratio);
+        config.support.min_island_area_px = support.value("minIslandAreaPx", config.support.min_island_area_px);
+        config.support.connectivity = support.value("connectivity", config.support.connectivity);
+        config.support.unsupported_projection =
+            support.value("unsupportedProjection", config.support.unsupported_projection);
+        config.support.xy_dilation_px = support.value("xyDilationPx", config.support.xy_dilation_px);
+        config.support.write_support_type_debug =
+            support.value("writeSupportTypeDebug", config.support.write_support_type_debug);
     }
 
     if (root.contains("preview")) {
@@ -239,8 +247,32 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.output.tile_size.at(0) <= 0 || config.output.tile_size.at(1) <= 0) {
         throw std::runtime_error("output.tileSize values must be positive");
     }
-    if (config.support.enabled && config.support.mode != "bottom_projection") {
-        throw std::runtime_error("P0 only supports support.mode == bottom_projection");
+    if (config.support.enabled && config.support.mode != "bottom_projection"
+        && config.support.mode != "unsupported_only"
+        && config.support.mode != "bottom_projection_plus_unsupported"
+        && config.support.mode != "full_vertical_projection") {
+        throw std::runtime_error(
+            "support.mode must be bottom_projection, unsupported_only, bottom_projection_plus_unsupported, or full_vertical_projection");
+    }
+    if (config.support.min_overlap_ratio < 0.0 || config.support.min_overlap_ratio > 1.0) {
+        throw std::runtime_error("support.minOverlapRatio must be between 0 and 1");
+    }
+    if (config.support.min_island_area_px < 0) {
+        throw std::runtime_error("support.minIslandAreaPx must be non-negative");
+    }
+    if (config.support.connectivity != 4 && config.support.connectivity != 8) {
+        throw std::runtime_error("support.connectivity must be 4 or 8");
+    }
+    if (config.support.unsupported_projection != "project_to_build_plate"
+        && config.support.unsupported_projection != "project_to_nearest_supported_layer") {
+        throw std::runtime_error(
+            "support.unsupportedProjection must be project_to_build_plate or project_to_nearest_supported_layer");
+    }
+    if (config.support.unsupported_projection == "project_to_nearest_supported_layer") {
+        throw std::runtime_error("support.unsupportedProjection project_to_nearest_supported_layer is not implemented in 02");
+    }
+    if (config.support.xy_dilation_px < 0) {
+        throw std::runtime_error("support.xyDilationPx must be non-negative");
     }
     if (config.material.material_channel != "auto" && config.material.material_channel != "RGB"
         && config.material.material_channel != "W" && config.material.material_channel != "V") {

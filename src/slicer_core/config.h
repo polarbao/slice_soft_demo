@@ -56,6 +56,12 @@ struct SupportConfig {
     std::uint8_t value{0};
     double offset_mm{0.0};
     int min_area_px{0};
+    double min_overlap_ratio{0.2};
+    int min_island_area_px{16};
+    int connectivity{8};
+    std::string unsupported_projection{"project_to_build_plate"};
+    int xy_dilation_px{0};
+    bool write_support_type_debug{true};
 };
 
 struct PreviewConfig {

@@ -5,12 +5,12 @@
       "name": "SliceSoft: Debug slicer_cli sample",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config.json"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
@@ -18,12 +18,12 @@
       "name": "SliceSoft: Debug rip_reader_test sample",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
@@ -31,12 +31,12 @@
       "name": "SliceSoft: Debug slicer_cli model 0.3",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
@@ -44,13 +44,13 @@
       "name": "SliceSoft: Debug inspect model 0.3",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--inspect-model"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
@@ -58,13 +58,13 @@
       "name": "SliceSoft: Debug preview-only model 0.3",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_model_0_3.json",
         "--preview-only"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
@@ -72,12 +72,12 @@
       "name": "SliceSoft: Debug slicer_cli relief varnish",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
@@ -85,13 +85,13 @@
       "name": "SliceSoft: Debug preview-only relief varnish",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "samples/configs/slice_config_relief_varnish.json",
         "--preview-only"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     },
@@ -99,12 +99,38 @@
       "name": "SliceSoft: Debug rip_reader_test relief varnish",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/slice_soft_demo/build/Debug/rip_reader_test.exe",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "output/SlicePackage_relief_varnish"
       ],
-      "cwd": "${workspaceFolder}/slice_soft_demo",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug support unsupported_only",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/support/support_unsupported_only.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug support bottom_plus_unsupported",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/support/support_bottom_plus_unsupported.json"
+      ],
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
     }

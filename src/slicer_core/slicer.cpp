@@ -56,6 +56,14 @@ struct LayerDiagnostics {
     int white_non_zero_pixels{0};
     int support_non_zero_pixels{0};
     int varnish_non_zero_pixels{0};
+    int island_count{0};
+    int island_pixels{0};
+    int unsupported_pixels{0};
+    int filtered_island_count{0};
+    int filtered_island_pixels{0};
+    int bottom_projection_support_pixels{0};
+    int unsupported_island_support_pixels{0};
+    int full_vertical_projection_support_pixels{0};
 };
 
 struct PreviewImage {
@@ -94,6 +102,39 @@ struct ReliefSamplingResult {
     std::vector<std::vector<std::uint8_t>> model_masks;
     std::vector<ReliefColumnInfo> columns;
     ReliefReportData report;
+};
+
+enum class SupportType : std::uint8_t {
+    None = 0,
+    BottomProjection = 1,
+    UnsupportedIsland = 2,
+    FullVerticalProjection = 3,
+};
+
+struct IslandComponent {
+    int layer_index{0};
+    int component_id{0};
+    int area_px{0};
+    int overlap_px{0};
+    double overlap_ratio{0.0};
+    bool filtered{false};
+    std::vector<int> pixels;
+};
+
+struct SupportGenerationResult {
+    std::vector<std::vector<std::uint8_t>> support_masks;
+    std::vector<std::vector<SupportType>> support_type_maps;
+    int support_pixels{0};
+    int island_count{0};
+    int island_pixels{0};
+    int unsupported_pixels{0};
+    int filtered_island_count{0};
+    int filtered_island_pixels{0};
+    int bottom_projection_support_pixels{0};
+    int unsupported_island_support_pixels{0};
+    int full_vertical_projection_support_pixels{0};
+    int layers_with_islands{0};
+    int layers_with_support{0};
 };
 
 std::string layer_file_name(const int layer_index) {
@@ -678,6 +719,315 @@ std::vector<int> compute_relief_lower_layers(const std::vector<ReliefColumnInfo>
     return lower_layers;
 }
 
+bool support_mode_includes_bottom_projection(const std::string& mode) {
+    return mode == "bottom_projection" || mode == "bottom_projection_plus_unsupported";
+}
+
+bool support_mode_includes_unsupported(const std::string& mode) {
+    return mode == "unsupported_only" || mode == "bottom_projection_plus_unsupported";
+}
+
+int support_type_priority(const SupportType type) {
+    switch (type) {
+        case SupportType::UnsupportedIsland:
+            return 3;
+        case SupportType::FullVerticalProjection:
+            return 2;
+        case SupportType::BottomProjection:
+            return 1;
+        case SupportType::None:
+            return 0;
+    }
+    return 0;
+}
+
+std::string support_type_name(const SupportType type) {
+    switch (type) {
+        case SupportType::BottomProjection:
+            return "bottom_projection";
+        case SupportType::UnsupportedIsland:
+            return "unsupported_island";
+        case SupportType::FullVerticalProjection:
+            return "full_vertical_projection";
+        case SupportType::None:
+            return "none";
+    }
+    return "none";
+}
+
+void set_support_pixel(
+    std::vector<std::uint8_t>& support_mask,
+    std::vector<SupportType>& support_type_map,
+    const std::size_t index,
+    const SupportType type) {
+    support_mask.at(index) = 1;
+    if (support_type_priority(type) >= support_type_priority(support_type_map.at(index))) {
+        support_type_map.at(index) = type;
+    }
+}
+
+std::vector<int> compute_last_model_layers(const std::vector<std::vector<std::uint8_t>>& model_masks, const GridSpec& grid) {
+    std::vector<int> last_model_layer(static_cast<std::size_t>(grid.width_px) * grid.height_px, -1);
+    for (int layer_index{0}; layer_index < static_cast<int>(model_masks.size()); ++layer_index) {
+        const auto& mask = model_masks.at(layer_index);
+        for (std::size_t i{0}; i < mask.size(); ++i) {
+            if (mask.at(i) != 0) {
+                last_model_layer.at(i) = layer_index;
+            }
+        }
+    }
+    return last_model_layer;
+}
+
+std::vector<std::uint8_t> make_supported_base_mask(
+    const std::vector<std::uint8_t>& previous_model_mask,
+    const std::vector<std::uint8_t>& previous_support_mask,
+    const GridSpec& grid,
+    const int dilation_px) {
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::uint8_t> base(pixel_count, 0);
+    for (std::size_t i{0}; i < pixel_count; ++i) {
+        if (previous_model_mask.at(i) != 0 || previous_support_mask.at(i) != 0) {
+            base.at(i) = 1;
+        }
+    }
+    for (int iteration{0}; iteration < dilation_px; ++iteration) {
+        std::vector<std::uint8_t> dilated = base;
+        for (int y{0}; y < grid.height_px; ++y) {
+            for (int x{0}; x < grid.width_px; ++x) {
+                const std::size_t index = mask_index(grid, x, y);
+                if (base.at(index) == 0) {
+                    continue;
+                }
+                for (int dy{-1}; dy <= 1; ++dy) {
+                    for (int dx{-1}; dx <= 1; ++dx) {
+                        const int nx{x + dx};
+                        const int ny{y + dy};
+                        if (nx >= 0 && nx < grid.width_px && ny >= 0 && ny < grid.height_px) {
+                            dilated.at(mask_index(grid, nx, ny)) = 1;
+                        }
+                    }
+                }
+            }
+        }
+        base = std::move(dilated);
+    }
+    return base;
+}
+
+std::vector<IslandComponent> find_island_components(
+    const std::vector<std::uint8_t>& model_mask,
+    const std::vector<std::uint8_t>& base_mask,
+    const GridSpec& grid,
+    const SliceConfig& config,
+    const int layer_index) {
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::uint8_t> visited(pixel_count, 0);
+    std::vector<IslandComponent> islands;
+    int component_id{0};
+    const std::array<std::array<int, 2>, 8> neighbors8{{
+        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
+    }};
+    const std::array<std::array<int, 2>, 4> neighbors4{{
+        {{0, -1}}, {{-1, 0}}, {{1, 0}}, {{0, 1}},
+    }};
+
+    for (int y{0}; y < grid.height_px; ++y) {
+        for (int x{0}; x < grid.width_px; ++x) {
+            const std::size_t start = mask_index(grid, x, y);
+            if (model_mask.at(start) == 0 || visited.at(start) != 0) {
+                continue;
+            }
+
+            IslandComponent component;
+            component.layer_index = layer_index;
+            component.component_id = component_id++;
+            std::vector<int> stack{static_cast<int>(start)};
+            visited.at(start) = 1;
+            while (!stack.empty()) {
+                const int current = stack.back();
+                stack.pop_back();
+                component.pixels.push_back(current);
+                const int cx = current % grid.width_px;
+                const int cy = current / grid.width_px;
+                if (base_mask.at(static_cast<std::size_t>(current)) != 0) {
+                    ++component.overlap_px;
+                }
+
+                if (config.support.connectivity == 8) {
+                    for (const auto& neighbor : neighbors8) {
+                        const int nx{cx + neighbor.at(0)};
+                        const int ny{cy + neighbor.at(1)};
+                        if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px) {
+                            continue;
+                        }
+                        const std::size_t next = mask_index(grid, nx, ny);
+                        if (model_mask.at(next) != 0 && visited.at(next) == 0) {
+                            visited.at(next) = 1;
+                            stack.push_back(static_cast<int>(next));
+                        }
+                    }
+                } else {
+                    for (const auto& neighbor : neighbors4) {
+                        const int nx{cx + neighbor.at(0)};
+                        const int ny{cy + neighbor.at(1)};
+                        if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px) {
+                            continue;
+                        }
+                        const std::size_t next = mask_index(grid, nx, ny);
+                        if (model_mask.at(next) != 0 && visited.at(next) == 0) {
+                            visited.at(next) = 1;
+                            stack.push_back(static_cast<int>(next));
+                        }
+                    }
+                }
+            }
+
+            component.area_px = static_cast<int>(component.pixels.size());
+            component.overlap_ratio = component.area_px > 0
+                ? static_cast<double>(component.overlap_px) / static_cast<double>(component.area_px)
+                : 0.0;
+            if (component.overlap_ratio < config.support.min_overlap_ratio) {
+                component.filtered = component.area_px < config.support.min_island_area_px;
+                islands.push_back(std::move(component));
+            }
+        }
+    }
+    return islands;
+}
+
+SupportGenerationResult generate_support_masks(
+    const SliceConfig& config,
+    const GridSpec& grid,
+    const std::vector<std::vector<std::uint8_t>>& model_masks,
+    const std::vector<int>& support_source_layers,
+    std::vector<LayerDiagnostics>& diagnostics) {
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    SupportGenerationResult result;
+    result.support_masks.resize(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<std::uint8_t>(pixel_count, 0));
+    result.support_type_maps.resize(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<SupportType>(pixel_count, SupportType::None));
+
+    if (!config.support.enabled) {
+        return result;
+    }
+
+    if (support_mode_includes_bottom_projection(config.support.mode)) {
+        for (std::size_t index{0}; index < support_source_layers.size(); ++index) {
+            const int lower_layer = support_source_layers.at(index);
+            for (int layer_index{0}; layer_index < lower_layer; ++layer_index) {
+                if (model_masks.at(layer_index).at(index) == 0) {
+                    set_support_pixel(
+                        result.support_masks.at(layer_index),
+                        result.support_type_maps.at(layer_index),
+                        index,
+                        SupportType::BottomProjection);
+                }
+            }
+        }
+    }
+
+    if (config.support.mode == "full_vertical_projection") {
+        const std::vector<int> last_model_layers = compute_last_model_layers(model_masks, grid);
+        for (std::size_t index{0}; index < last_model_layers.size(); ++index) {
+            const int last_layer = last_model_layers.at(index);
+            for (int layer_index{0}; layer_index < last_layer; ++layer_index) {
+                if (model_masks.at(layer_index).at(index) == 0) {
+                    set_support_pixel(
+                        result.support_masks.at(layer_index),
+                        result.support_type_maps.at(layer_index),
+                        index,
+                        SupportType::FullVerticalProjection);
+                }
+            }
+        }
+    }
+
+    if (support_mode_includes_unsupported(config.support.mode)) {
+        for (int layer_index{1}; layer_index < grid.layer_count; ++layer_index) {
+            const std::vector<std::uint8_t> base_mask = make_supported_base_mask(
+                model_masks.at(layer_index - 1),
+                result.support_masks.at(layer_index - 1),
+                grid,
+                config.support.xy_dilation_px);
+            std::vector<IslandComponent> islands = find_island_components(
+                model_masks.at(layer_index),
+                base_mask,
+                grid,
+                config,
+                layer_index);
+
+            for (const IslandComponent& island : islands) {
+                if (island.filtered) {
+                    ++diagnostics.at(layer_index).filtered_island_count;
+                    diagnostics.at(layer_index).filtered_island_pixels += island.area_px;
+                    continue;
+                }
+                ++diagnostics.at(layer_index).island_count;
+                diagnostics.at(layer_index).island_pixels += island.area_px;
+                diagnostics.at(layer_index).unsupported_pixels += island.area_px;
+                for (int target_layer{0}; target_layer < layer_index; ++target_layer) {
+                    for (const int pixel : island.pixels) {
+                        const std::size_t index = static_cast<std::size_t>(pixel);
+                        if (model_masks.at(target_layer).at(index) == 0) {
+                            set_support_pixel(
+                                result.support_masks.at(target_layer),
+                                result.support_type_maps.at(target_layer),
+                                index,
+                                SupportType::UnsupportedIsland);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
+        bool layer_has_support{false};
+        const auto& support_mask = result.support_masks.at(layer_index);
+        const auto& support_type_map = result.support_type_maps.at(layer_index);
+        for (std::size_t index{0}; index < pixel_count; ++index) {
+            if (support_mask.at(index) == 0) {
+                continue;
+            }
+            layer_has_support = true;
+            ++result.support_pixels;
+            switch (support_type_map.at(index)) {
+                case SupportType::BottomProjection:
+                    ++result.bottom_projection_support_pixels;
+                    ++diagnostics.at(layer_index).bottom_projection_support_pixels;
+                    break;
+                case SupportType::UnsupportedIsland:
+                    ++result.unsupported_island_support_pixels;
+                    ++diagnostics.at(layer_index).unsupported_island_support_pixels;
+                    break;
+                case SupportType::FullVerticalProjection:
+                    ++result.full_vertical_projection_support_pixels;
+                    ++diagnostics.at(layer_index).full_vertical_projection_support_pixels;
+                    break;
+                case SupportType::None:
+                    break;
+            }
+        }
+        if (layer_has_support) {
+            ++result.layers_with_support;
+        }
+        if (diagnostics.at(layer_index).island_count > 0 || diagnostics.at(layer_index).filtered_island_count > 0) {
+            ++result.layers_with_islands;
+            result.island_count += diagnostics.at(layer_index).island_count;
+            result.island_pixels += diagnostics.at(layer_index).island_pixels;
+            result.unsupported_pixels += diagnostics.at(layer_index).unsupported_pixels;
+            result.filtered_island_count += diagnostics.at(layer_index).filtered_island_count;
+            result.filtered_island_pixels += diagnostics.at(layer_index).filtered_island_pixels;
+        }
+    }
+
+    return result;
+}
+
 void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base, const SliceConfig& config) {
     if (config.material.material_channel == "V") {
         pixels.at(base + 5U) = config.material.varnish_value;
@@ -705,9 +1055,8 @@ void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
-    const int layer_index,
     const std::vector<std::uint8_t>& model_mask,
-    const std::vector<int>& support_source_layers,
+    const std::vector<std::uint8_t>& support_mask,
     int& model_pixels,
     int& support_pixels) {
     std::vector<std::uint8_t> pixels(
@@ -722,7 +1071,7 @@ std::vector<std::uint8_t> compose_layer(
             if (model_mask.at(pixel_index) != 0) {
                 write_model_pixel(pixels, base, config);
                 ++model_pixels;
-            } else if (config.support.enabled && support_source_layers.at(pixel_index) > layer_index) {
+            } else if (config.support.enabled && support_mask.at(pixel_index) != 0) {
                 pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
             }
@@ -777,6 +1126,17 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
         {"whitePrintPixels", diagnostics.white_non_zero_pixels},
         {"varnishPrintPixels", diagnostics.varnish_non_zero_pixels},
         {"varnishNonZeroPixels", diagnostics.varnish_non_zero_pixels},
+        {"islandCount", diagnostics.island_count},
+        {"islandPixels", diagnostics.island_pixels},
+        {"unsupportedPixels", diagnostics.unsupported_pixels},
+        {"filteredIslandCount", diagnostics.filtered_island_count},
+        {"filteredIslandPixels", diagnostics.filtered_island_pixels},
+        {"supportTypeStats",
+         Json::object({
+             {"bottom_projection", diagnostics.bottom_projection_support_pixels},
+             {"unsupported_island", diagnostics.unsupported_island_support_pixels},
+             {"full_vertical_projection", diagnostics.full_vertical_projection_support_pixels},
+         })},
     });
 }
 
@@ -872,6 +1232,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
               return layer > 0;
           }))
         : 0;
+    const SupportGenerationResult support_generation =
+        generate_support_masks(config, grid, model_masks, support_source_layers, layer_diagnostics);
 
     int total_model_pixels{0};
     int total_support_pixels{0};
@@ -889,9 +1251,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         const std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
-            layer_index,
             model_masks.at(layer_index),
-            support_source_layers,
+            support_generation.support_masks.at(layer_index),
             layer_model_pixels,
             layer_support_pixels);
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
@@ -946,6 +1307,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"rgbPrintPixels", total_rgb_non_zero_pixels},
              {"whitePrintPixels", total_white_non_zero_pixels},
              {"varnishPrintPixels", total_varnish_non_zero_pixels},
+             {"islandCount", support_generation.island_count},
+             {"islandPixels", support_generation.island_pixels},
+             {"unsupportedPixels", support_generation.unsupported_pixels},
+             {"filteredIslandCount", support_generation.filtered_island_count},
+             {"filteredIslandPixels", support_generation.filtered_island_pixels},
+             {"supportTypeStats",
+              Json::object({
+                  {"bottom_projection", support_generation.bottom_projection_support_pixels},
+                  {"unsupported_island", support_generation.unsupported_island_support_pixels},
+                  {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
+              })},
          })},
         {"layers", Json{slice_layers}},
     });
@@ -959,7 +1331,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const Json support_report = Json::object({
         {"enabled", config.support.enabled},
         {"mode", config.support.mode},
+        {"supportMode", config.support.mode},
         {"value", config.support.value},
+        {"minOverlapRatio", config.support.min_overlap_ratio},
+        {"minIslandAreaPx", config.support.min_island_area_px},
+        {"connectivity", config.support.connectivity},
+        {"unsupportedProjection", config.support.unsupported_projection},
+        {"xyDilationPx", config.support.xy_dilation_px},
         {"slicingMode", config.slicing_mode},
         {"supportSource",
          config.slicing_mode == "relief_heightfield" ? "relief_lower_surface" : "first_model_layer"},
@@ -967,6 +1345,29 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"supportPixels", total_support_pixels},
         {"supportPrintPixels", total_support_non_zero_pixels},
         {"columnsWithSupport", columns_with_support},
+        {"islandCount", support_generation.island_count},
+        {"islandPixels", support_generation.island_pixels},
+        {"unsupportedPixels", support_generation.unsupported_pixels},
+        {"filteredIslandCount", support_generation.filtered_island_count},
+        {"filteredIslandPixels", support_generation.filtered_island_pixels},
+        {"layersWithIslands", support_generation.layers_with_islands},
+        {"layersWithSupport", support_generation.layers_with_support},
+        {"totals",
+         Json::object({
+             {"supportPixels", total_support_pixels},
+             {"supportPrintPixels", total_support_non_zero_pixels},
+             {"islandCount", support_generation.island_count},
+             {"islandPixels", support_generation.island_pixels},
+             {"unsupportedPixels", support_generation.unsupported_pixels},
+             {"filteredIslandCount", support_generation.filtered_island_count},
+             {"filteredIslandPixels", support_generation.filtered_island_pixels},
+         })},
+        {"supportTypeStats",
+         Json::object({
+             {"bottom_projection", support_generation.bottom_projection_support_pixels},
+             {"unsupported_island", support_generation.unsupported_island_support_pixels},
+             {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
+         })},
         {"layers", Json{contour_layers}},
     });
 
