@@ -190,7 +190,7 @@ void write_rgbwsv_tiled_tiff(
         spec.tile_width * spec.tile_height * spec.samples_per_pixel};
 
     std::vector<std::uint8_t> tile_data;
-    tile_data.resize(static_cast<std::size_t>(tile_count) * tile_byte_count, 0);
+    tile_data.resize(static_cast<std::size_t>(tile_count) * tile_byte_count, 255);
     for (std::uint32_t tile_y{0}; tile_y < tiles_y; ++tile_y) {
         for (std::uint32_t tile_x{0}; tile_x < tiles_x; ++tile_x) {
             const std::uint32_t tile_index{tile_y * tiles_x + tile_x};

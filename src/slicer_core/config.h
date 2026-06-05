@@ -43,6 +43,8 @@ struct BackgroundConfig {
 };
 
 struct MaterialConfig {
+    std::string material_channel{"auto"};
+    std::string apply_mode{"solid_volume"};
     std::array<std::uint8_t, 3> rgb{255, 255, 255};
     std::uint8_t white_value{255};
     std::uint8_t varnish_value{255};
@@ -66,7 +68,13 @@ struct PreviewConfig {
     bool only_non_empty_layers{false};
 };
 
+struct ReliefConfig {
+    std::string fill_mode{"surface_to_base"};
+    double base_z_mm{0.0};
+};
+
 struct SliceConfig {
+    std::string slicing_mode{"closed_mesh_scanline"};
     InputConfig input;
     OutputConfig output;
     TransformConfig transform;
@@ -75,6 +83,7 @@ struct SliceConfig {
     MaterialConfig material;
     SupportConfig support;
     PreviewConfig preview;
+    ReliefConfig relief;
 };
 
 SliceConfig load_slice_config(const std::filesystem::path& config_path);

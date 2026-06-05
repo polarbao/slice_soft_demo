@@ -1,0 +1,85 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "samples/models/0.3.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/SlicePackage_relief_varnish",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V"
+    ],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "tiled": true,
+    "tileSize": [
+      256,
+      256
+    ]
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "rotationDeg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "translationMm": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "V",
+    "applyMode": "solid_volume",
+    "rgb": [
+      255,
+      255,
+      255
+    ],
+    "whiteValue": 255,
+    "varnishValue": 0
+  },
+  "support": {
+    "enabled": false,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "relief": {
+    "fillMode": "surface_to_base",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 10,
+    "channels": [
+      "varnish"
+    ],
+    "onlyNonEmptyLayers": true
+  }
+}

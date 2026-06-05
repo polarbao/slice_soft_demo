@@ -117,6 +117,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
 
     const Json root = Json::parse(input);
     SliceConfig config;
+    config.slicing_mode = root.value("slicingMode", config.slicing_mode);
 
     if (!root.contains("input") || !root.at("input").contains("modelPath")) {
         throw std::runtime_error("missing required field: input.modelPath");
@@ -160,6 +161,8 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
 
     if (root.contains("modelMaterial")) {
         const auto& material = root.at("modelMaterial");
+        config.material.material_channel = material.value("materialChannel", config.material.material_channel);
+        config.material.apply_mode = material.value("applyMode", config.material.apply_mode);
         config.material.rgb = read_rgb(material, config.material.rgb);
         config.material.white_value = read_u8(material, "whiteValue", config.material.white_value);
         config.material.varnish_value = read_u8(material, "varnishValue", config.material.varnish_value);
@@ -192,6 +195,12 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             preview.value("onlyNonEmptyLayers", config.preview.only_non_empty_layers);
     }
 
+    if (root.contains("relief")) {
+        const auto& relief = root.at("relief");
+        config.relief.fill_mode = relief.value("fillMode", config.relief.fill_mode);
+        config.relief.base_z_mm = relief.value("baseZMm", config.relief.base_z_mm);
+    }
+
     validate_slice_config(config);
     return config;
 }
@@ -199,6 +208,9 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
 void validate_slice_config(const SliceConfig& config) {
     if (config.input.model_path.empty()) {
         throw std::runtime_error("input.modelPath must not be empty");
+    }
+    if (config.slicing_mode != "closed_mesh_scanline" && config.slicing_mode != "relief_heightfield") {
+        throw std::runtime_error("slicingMode must be closed_mesh_scanline or relief_heightfield");
     }
     if (config.output.dpi_x != 600 || config.output.dpi_y != 600) {
         throw std::runtime_error("P0 requires dpiX == dpiY == 600");
@@ -229,6 +241,19 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.support.enabled && config.support.mode != "bottom_projection") {
         throw std::runtime_error("P0 only supports support.mode == bottom_projection");
+    }
+    if (config.material.material_channel != "auto" && config.material.material_channel != "RGB"
+        && config.material.material_channel != "W" && config.material.material_channel != "V") {
+        throw std::runtime_error("modelMaterial.materialChannel must be auto, RGB, W, or V");
+    }
+    if (config.material.apply_mode != "solid_volume") {
+        throw std::runtime_error("00C only supports modelMaterial.applyMode == solid_volume");
+    }
+    if (config.relief.fill_mode != "surface_to_base" && config.relief.fill_mode != "intersection_range") {
+        throw std::runtime_error("relief.fillMode must be surface_to_base or intersection_range");
+    }
+    if (config.relief.base_z_mm < 0.0) {
+        throw std::runtime_error("relief.baseZMm must be non-negative");
     }
     if (config.preview.format != "ppm" && config.preview.format != "png") {
         throw std::runtime_error("preview.format must be ppm or png");

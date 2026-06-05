@@ -66,6 +66,17 @@ struct PreviewImage {
     int max_value{0};
 };
 
+struct ReliefReportData {
+    int total_columns{0};
+    int hit_columns{0};
+    int empty_columns{0};
+    int multi_hit_columns{0};
+    double z_min_mm{0.0};
+    double z_max_mm{0.0};
+    bool has_hits{false};
+    Json::Array warnings;
+};
+
 std::string layer_file_name(const int layer_index) {
     std::ostringstream stream;
     stream << "layers/layer_" << std::setw(6) << std::setfill('0') << layer_index << ".tiff";
@@ -480,6 +491,136 @@ std::vector<std::vector<std::uint8_t>> sample_model_masks(
     return masks;
 }
 
+bool point_in_triangle_xy(
+    const Vec3& p,
+    const Triangle& triangle,
+    double& w0,
+    double& w1,
+    double& w2) {
+    const double denominator =
+        (triangle.b.y - triangle.c.y) * (triangle.a.x - triangle.c.x)
+        + (triangle.c.x - triangle.b.x) * (triangle.a.y - triangle.c.y);
+    if (std::abs(denominator) < 1.0e-12) {
+        return false;
+    }
+    w0 = ((triangle.b.y - triangle.c.y) * (p.x - triangle.c.x)
+          + (triangle.c.x - triangle.b.x) * (p.y - triangle.c.y))
+        / denominator;
+    w1 = ((triangle.c.y - triangle.a.y) * (p.x - triangle.c.x)
+          + (triangle.a.x - triangle.c.x) * (p.y - triangle.c.y))
+        / denominator;
+    w2 = 1.0 - w0 - w1;
+    constexpr double epsilon{-1.0e-9};
+    return w0 >= epsilon && w1 >= epsilon && w2 >= epsilon;
+}
+
+int first_layer_at_or_above_z(const double z_mm, const double layer_thickness_mm) {
+    return static_cast<int>(std::ceil(z_mm / layer_thickness_mm - 0.5));
+}
+
+int last_layer_at_or_below_z(const double z_mm, const double layer_thickness_mm) {
+    return static_cast<int>(std::floor(z_mm / layer_thickness_mm - 0.5));
+}
+
+std::vector<std::vector<std::uint8_t>> sample_relief_heightfield_masks(
+    const SliceConfig& config,
+    const ModelReport& model_report,
+    const GridSpec& grid,
+    std::vector<LayerDiagnostics>& diagnostics,
+    ReliefReportData& relief_report) {
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<double> z_min(pixel_count, std::numeric_limits<double>::max());
+    std::vector<double> z_max(pixel_count, std::numeric_limits<double>::lowest());
+    std::vector<int> hit_count(pixel_count, 0);
+
+    relief_report.total_columns = static_cast<int>(pixel_count);
+    if (config.support.enabled) {
+        relief_report.warnings.push_back("relief_heightfield_support_is_experimental");
+    }
+
+    for (const Triangle& triangle : model_report.triangles) {
+        const double min_x = std::min({triangle.a.x, triangle.b.x, triangle.c.x});
+        const double max_x = std::max({triangle.a.x, triangle.b.x, triangle.c.x});
+        const double min_y = std::min({triangle.a.y, triangle.b.y, triangle.c.y});
+        const double max_y = std::max({triangle.a.y, triangle.b.y, triangle.c.y});
+        int start_x = static_cast<int>(std::floor((min_x - grid.origin_x_mm) / grid.pixel_size_x_mm)) - 1;
+        int end_x = static_cast<int>(std::ceil((max_x - grid.origin_x_mm) / grid.pixel_size_x_mm)) + 1;
+        int start_y = static_cast<int>(std::floor((min_y - grid.origin_y_mm) / grid.pixel_size_y_mm)) - 1;
+        int end_y = static_cast<int>(std::ceil((max_y - grid.origin_y_mm) / grid.pixel_size_y_mm)) + 1;
+        start_x = std::max(0, start_x);
+        start_y = std::max(0, start_y);
+        end_x = std::min(grid.width_px - 1, end_x);
+        end_y = std::min(grid.height_px - 1, end_y);
+        if (start_x > end_x || start_y > end_y) {
+            continue;
+        }
+
+        for (int y{start_y}; y <= end_y; ++y) {
+            const double y_mm = grid.origin_y_mm + (static_cast<double>(y) + 0.5) * grid.pixel_size_y_mm;
+            for (int x{start_x}; x <= end_x; ++x) {
+                const double x_mm = grid.origin_x_mm + (static_cast<double>(x) + 0.5) * grid.pixel_size_x_mm;
+                double w0{0.0};
+                double w1{0.0};
+                double w2{0.0};
+                if (!point_in_triangle_xy({x_mm, y_mm, 0.0}, triangle, w0, w1, w2)) {
+                    continue;
+                }
+                const double z_mm = w0 * triangle.a.z + w1 * triangle.b.z + w2 * triangle.c.z;
+                const std::size_t index = mask_index(grid, x, y);
+                z_min.at(index) = std::min(z_min.at(index), z_mm);
+                z_max.at(index) = std::max(z_max.at(index), z_mm);
+                ++hit_count.at(index);
+            }
+        }
+    }
+
+    std::vector<std::vector<std::uint8_t>> masks(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<std::uint8_t>(pixel_count, 0));
+    diagnostics.clear();
+    diagnostics.reserve(grid.layer_count);
+    for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
+        LayerDiagnostics layer_diagnostics;
+        layer_diagnostics.layer_index = layer_index;
+        layer_diagnostics.z_mm = (static_cast<double>(layer_index) + 0.5) * config.output.layer_thickness_mm;
+        diagnostics.push_back(layer_diagnostics);
+    }
+
+    for (std::size_t index{0}; index < pixel_count; ++index) {
+        if (hit_count.at(index) == 0) {
+            continue;
+        }
+        ++relief_report.hit_columns;
+        if (hit_count.at(index) > 1) {
+            ++relief_report.multi_hit_columns;
+        }
+        if (!relief_report.has_hits) {
+            relief_report.z_min_mm = z_min.at(index);
+            relief_report.z_max_mm = z_max.at(index);
+            relief_report.has_hits = true;
+        } else {
+            relief_report.z_min_mm = std::min(relief_report.z_min_mm, z_min.at(index));
+            relief_report.z_max_mm = std::max(relief_report.z_max_mm, z_max.at(index));
+        }
+
+        const double start_z =
+            config.relief.fill_mode == "surface_to_base" ? config.relief.base_z_mm : z_min.at(index);
+        const double end_z = z_max.at(index);
+        int start_layer = first_layer_at_or_above_z(start_z, config.output.layer_thickness_mm);
+        int end_layer = last_layer_at_or_below_z(end_z, config.output.layer_thickness_mm);
+        start_layer = std::max(0, start_layer);
+        end_layer = std::min(grid.layer_count - 1, end_layer);
+        if (start_layer > end_layer) {
+            continue;
+        }
+        for (int layer_index{start_layer}; layer_index <= end_layer; ++layer_index) {
+            masks.at(layer_index).at(index) = 1;
+        }
+    }
+    relief_report.empty_columns = relief_report.total_columns - relief_report.hit_columns;
+    return masks;
+}
+
 std::vector<int> compute_first_model_layers(const std::vector<std::vector<std::uint8_t>>& model_masks, const GridSpec& grid) {
     std::vector<int> first_model_layer(static_cast<std::size_t>(grid.width_px) * grid.height_px, -1);
     for (int layer_index{0}; layer_index < static_cast<int>(model_masks.size()); ++layer_index) {
@@ -491,6 +632,30 @@ std::vector<int> compute_first_model_layers(const std::vector<std::vector<std::u
         }
     }
     return first_model_layer;
+}
+
+void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base, const SliceConfig& config) {
+    if (config.material.material_channel == "V") {
+        pixels.at(base + 5U) = config.material.varnish_value;
+        return;
+    }
+    if (config.material.material_channel == "W") {
+        pixels.at(base + 3U) = config.material.white_value;
+        return;
+    }
+    if (config.material.material_channel == "RGB") {
+        pixels.at(base + 0U) = config.material.rgb.at(0);
+        pixels.at(base + 1U) = config.material.rgb.at(1);
+        pixels.at(base + 2U) = config.material.rgb.at(2);
+        return;
+    }
+
+    pixels.at(base + 0U) = config.material.rgb.at(0);
+    pixels.at(base + 1U) = config.material.rgb.at(1);
+    pixels.at(base + 2U) = config.material.rgb.at(2);
+    pixels.at(base + 3U) = config.material.white_value;
+    pixels.at(base + 4U) = config.background.value;
+    pixels.at(base + 5U) = config.material.varnish_value;
 }
 
 std::vector<std::uint8_t> compose_layer(
@@ -511,12 +676,7 @@ std::vector<std::uint8_t> compose_layer(
             const std::size_t base =
                 (static_cast<std::size_t>(y) * grid.width_px + x) * rgbwsv_channel_count;
             if (model_mask.at(pixel_index) != 0) {
-                pixels.at(base + 0U) = config.material.rgb.at(0);
-                pixels.at(base + 1U) = config.material.rgb.at(1);
-                pixels.at(base + 2U) = config.material.rgb.at(2);
-                pixels.at(base + 3U) = config.material.white_value;
-                pixels.at(base + 4U) = config.background.value;
-                pixels.at(base + 5U) = config.material.varnish_value;
+                write_model_pixel(pixels, base, config);
                 ++model_pixels;
             } else if (config.support.enabled && first_model_layers.at(pixel_index) > layer_index) {
                 pixels.at(base + 4U) = config.support.value;
@@ -571,6 +731,27 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
     });
 }
 
+Json relief_report_to_json(const SliceConfig& config, const ReliefReportData& relief_report) {
+    return Json::object({
+        {"slicingMode", config.slicing_mode},
+        {"fillMode", config.relief.fill_mode},
+        {"baseZMm", config.relief.base_z_mm},
+        {"columns",
+         Json::object({
+             {"total", relief_report.total_columns},
+             {"hit", relief_report.hit_columns},
+             {"empty", relief_report.empty_columns},
+             {"multiHit", relief_report.multi_hit_columns},
+         })},
+        {"zRangeMm",
+         Json::object({
+             {"min", relief_report.has_hits ? relief_report.z_min_mm : 0.0},
+             {"max", relief_report.has_hits ? relief_report.z_max_mm : 0.0},
+         })},
+        {"warnings", Json{relief_report.warnings}},
+    });
+}
+
 }  // namespace
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path) {
@@ -598,8 +779,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     tiff_spec.tile_height = static_cast<std::uint32_t>(config.output.tile_size.at(1));
 
     std::vector<LayerDiagnostics> layer_diagnostics;
-    const std::vector<std::vector<std::uint8_t>> model_masks =
-        sample_model_masks(model_report, grid, config.output.layer_thickness_mm, layer_diagnostics);
+    ReliefReportData relief_report;
+    std::vector<std::vector<std::uint8_t>> model_masks;
+    if (config.slicing_mode == "relief_heightfield") {
+        model_masks = sample_relief_heightfield_masks(config, model_report, grid, layer_diagnostics, relief_report);
+    } else {
+        model_masks = sample_model_masks(model_report, grid, config.output.layer_thickness_mm, layer_diagnostics);
+        relief_report.total_columns = grid.width_px * grid.height_px;
+        relief_report.empty_columns = relief_report.total_columns;
+    }
     const std::vector<int> first_model_layers = compute_first_model_layers(model_masks, grid);
 
     int total_model_pixels{0};
@@ -651,6 +839,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
 
     const Json slice_report = Json::object({
+        {"slicingMode", config.slicing_mode},
         {"grid",
          Json::object({
              {"widthPx", grid.width_px},
@@ -744,6 +933,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(package_dir / "reports/support_report.json", support_report);
     write_json_file(package_dir / "reports/preview_report.json", preview_report);
     write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
+    write_json_file(package_dir / "reports/relief_report.json", relief_report_to_json(config, relief_report));
 
     const Json manifest = Json::object({
         {"schemaVersion", "p0.rgbwsv.1"},
@@ -761,6 +951,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
              {"layerThicknessMm", config.output.layer_thickness_mm},
              {"originMm", Json::array({grid.origin_x_mm, grid.origin_y_mm, 0.0})},
+         })},
+        {"slicing",
+         Json::object({
+             {"mode", config.slicing_mode},
+             {"reliefFillMode", config.relief.fill_mode},
          })},
         {"tiff",
          Json::object({
@@ -785,6 +980,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"support", "reports/support_report.json"},
              {"preview", "reports/preview_report.json"},
              {"contour", "reports/contour_report.json"},
+             {"relief", "reports/relief_report.json"},
          })},
         {"preview", Json::object({{"format", config.preview.format}, {"files", Json{preview_files}}})},
     });
