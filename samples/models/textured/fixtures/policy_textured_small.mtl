@@ -1,0 +1,3 @@
+newmtl policy_tex
+Kd 1.0 1.0 1.0
+map_Kd ../textures/gradient.png

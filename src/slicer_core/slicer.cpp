@@ -192,6 +192,28 @@ struct TextureReportData {
     Json::Array warnings;
 };
 
+struct ColumnLayerRange {
+    bool has_model{false};
+    int lower_layer{-1};
+    int upper_layer{-1};
+};
+
+struct MaterialPixel {
+    std::uint8_t r{255};
+    std::uint8_t g{255};
+    std::uint8_t b{255};
+    std::uint8_t w{255};
+    std::uint8_t v{255};
+};
+
+struct MaterialPolicyReportData {
+    bool enabled{false};
+    std::uint64_t rgb_print_pixels{0};
+    std::uint64_t white_print_pixels{0};
+    std::uint64_t varnish_print_pixels{0};
+    Json::Array warnings;
+};
+
 struct RuntimeMaterialTexture {
     MaterialInfo material;
     TextureImage image;
@@ -805,6 +827,39 @@ std::vector<int> compute_relief_lower_layers(const std::vector<ReliefColumnInfo>
     return lower_layers;
 }
 
+std::vector<ColumnLayerRange> compute_relief_column_ranges(const std::vector<ReliefColumnInfo>& columns) {
+    std::vector<ColumnLayerRange> ranges(columns.size());
+    for (std::size_t i{0}; i < columns.size(); ++i) {
+        const ReliefColumnInfo& column = columns.at(i);
+        if (column.has_model && column.lower_layer >= 0 && column.upper_layer >= column.lower_layer) {
+            ranges.at(i) = {true, column.lower_layer, column.upper_layer};
+        }
+    }
+    return ranges;
+}
+
+std::vector<ColumnLayerRange> compute_mask_column_ranges(
+    const std::vector<std::vector<std::uint8_t>>& model_masks,
+    const GridSpec& grid) {
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<ColumnLayerRange> ranges(pixel_count);
+    for (int layer_index{0}; layer_index < static_cast<int>(model_masks.size()); ++layer_index) {
+        const auto& mask = model_masks.at(layer_index);
+        for (std::size_t i{0}; i < pixel_count; ++i) {
+            if (mask.at(i) == 0) {
+                continue;
+            }
+            ColumnLayerRange& range = ranges.at(i);
+            if (!range.has_model) {
+                range.has_model = true;
+                range.lower_layer = layer_index;
+            }
+            range.upper_layer = layer_index;
+        }
+    }
+    return ranges;
+}
+
 bool support_mode_includes_bottom_projection(const std::string& mode) {
     return mode == "bottom_projection" || mode == "bottom_projection_plus_unsupported";
 }
@@ -1349,13 +1404,127 @@ void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base
     pixels.at(base + 5U) = config.material.varnish_value;
 }
 
+TextureColumnColor resolve_texture_color(
+    const SliceConfig& config,
+    const std::vector<TextureColumnColor>* texture_columns,
+    const std::size_t pixel_index) {
+    TextureColumnColor color;
+    color.has_color = true;
+    color.rgb = config.texture.fallback_rgb;
+    color.used_fallback = true;
+    if (texture_columns != nullptr && pixel_index < texture_columns->size()
+        && texture_columns->at(pixel_index).has_color) {
+        color = texture_columns->at(pixel_index);
+    }
+    return color;
+}
+
+void update_texture_report_for_color(const TextureColumnColor& color, TextureReportData* texture_report) {
+    if (texture_report == nullptr) {
+        return;
+    }
+    if (color.sampled_texture) {
+        ++texture_report->sampled_pixels;
+    }
+    if (color.used_fallback) {
+        ++texture_report->fallback_pixels;
+    }
+    if (color.uv_out_of_range) {
+        ++texture_report->uv_out_of_range_pixels;
+    }
+}
+
+bool is_top_material_layer(
+    const std::vector<ColumnLayerRange>* column_ranges,
+    const std::size_t pixel_index,
+    const int layer_index,
+    const int top_layers) {
+    if (column_ranges == nullptr || pixel_index >= column_ranges->size()) {
+        return false;
+    }
+    const ColumnLayerRange& range = column_ranges->at(pixel_index);
+    if (!range.has_model || range.upper_layer < range.lower_layer) {
+        return false;
+    }
+    const int first_top_layer = std::max(range.lower_layer, range.upper_layer - top_layers + 1);
+    return layer_index >= first_top_layer && layer_index <= range.upper_layer;
+}
+
+MaterialPixel compose_material_policy_pixel(
+    const SliceConfig& config,
+    const std::vector<TextureColumnColor>* texture_columns,
+    const std::vector<ColumnLayerRange>* column_ranges,
+    const std::size_t pixel_index,
+    const int layer_index,
+    TextureReportData* texture_report) {
+    MaterialPixel pixel;
+    if (config.material_policy.rgb.enabled) {
+        if (config.material_policy.rgb.source == "texture_or_fallback" && config.texture.enabled) {
+            const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
+            pixel.r = color.rgb.at(0);
+            pixel.g = color.rgb.at(1);
+            pixel.b = color.rgb.at(2);
+            update_texture_report_for_color(color, texture_report);
+        } else {
+            pixel.r = config.material.rgb.at(0);
+            pixel.g = config.material.rgb.at(1);
+            pixel.b = config.material.rgb.at(2);
+        }
+    }
+
+    if (config.material_policy.white.enabled
+        && (config.material_policy.white.mode == "underbase" || config.material_policy.white.mode == "all_model")) {
+        pixel.w = config.material_policy.white.value;
+    }
+
+    if (config.material_policy.varnish.enabled) {
+        if (config.material_policy.varnish.mode == "all_model") {
+            pixel.v = config.material_policy.varnish.value;
+        } else if (config.material_policy.varnish.mode == "top_n_layers"
+                   && is_top_material_layer(
+                       column_ranges,
+                       pixel_index,
+                       layer_index,
+                       config.material_policy.varnish.top_layers)) {
+            pixel.v = config.material_policy.varnish.value;
+        }
+    }
+    return pixel;
+}
+
+void write_material_pixel(
+    std::vector<std::uint8_t>& pixels,
+    const std::size_t base,
+    const MaterialPixel& pixel,
+    MaterialPolicyReportData* material_policy_report) {
+    pixels.at(base + 0U) = pixel.r;
+    pixels.at(base + 1U) = pixel.g;
+    pixels.at(base + 2U) = pixel.b;
+    pixels.at(base + 3U) = pixel.w;
+    pixels.at(base + 5U) = pixel.v;
+    if (material_policy_report != nullptr) {
+        if (pixel.r < 255U || pixel.g < 255U || pixel.b < 255U) {
+            ++material_policy_report->rgb_print_pixels;
+        }
+        if (pixel.w < 255U) {
+            ++material_policy_report->white_print_pixels;
+        }
+        if (pixel.v < 255U) {
+            ++material_policy_report->varnish_print_pixels;
+        }
+    }
+}
+
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
     const std::vector<std::uint8_t>& model_mask,
     const std::vector<std::uint8_t>& support_mask,
     const std::vector<TextureColumnColor>* texture_columns,
+    const std::vector<ColumnLayerRange>* column_ranges,
+    const int layer_index,
     TextureReportData* texture_report,
+    MaterialPolicyReportData* material_policy_report,
     int& model_pixels,
     int& support_pixels) {
     std::vector<std::uint8_t> pixels(
@@ -1368,29 +1537,21 @@ std::vector<std::uint8_t> compose_layer(
             const std::size_t base =
                 (static_cast<std::size_t>(y) * grid.width_px + x) * rgbwsv_channel_count;
             if (model_mask.at(pixel_index) != 0) {
-                if (config.texture.enabled) {
-                    TextureColumnColor color;
-                    color.has_color = true;
-                    color.rgb = config.texture.fallback_rgb;
-                    color.used_fallback = true;
-                    if (texture_columns != nullptr && pixel_index < texture_columns->size()
-                        && texture_columns->at(pixel_index).has_color) {
-                        color = texture_columns->at(pixel_index);
-                    }
+                if (config.material_policy.enabled) {
+                    const MaterialPixel pixel = compose_material_policy_pixel(
+                        config,
+                        texture_columns,
+                        column_ranges,
+                        pixel_index,
+                        layer_index,
+                        texture_report);
+                    write_material_pixel(pixels, base, pixel, material_policy_report);
+                } else if (config.texture.enabled) {
+                    const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
                     pixels.at(base + 0U) = color.rgb.at(0);
                     pixels.at(base + 1U) = color.rgb.at(1);
                     pixels.at(base + 2U) = color.rgb.at(2);
-                    if (texture_report != nullptr) {
-                        if (color.sampled_texture) {
-                            ++texture_report->sampled_pixels;
-                        }
-                        if (color.used_fallback) {
-                            ++texture_report->fallback_pixels;
-                        }
-                        if (color.uv_out_of_range) {
-                            ++texture_report->uv_out_of_range_pixels;
-                        }
-                    }
+                    update_texture_report_for_color(color, texture_report);
                 } else {
                     write_model_pixel(pixels, base, config);
                 }
@@ -1601,6 +1762,36 @@ Json texture_report_to_json(const TextureReportData& report) {
     });
 }
 
+Json material_policy_report_to_json(const SliceConfig& config, const MaterialPolicyReportData& report) {
+    return Json::object({
+        {"enabled", config.material_policy.enabled},
+        {"conflictPolicy", config.material_policy.conflict_policy},
+        {"rgb",
+         Json::object({
+             {"enabled", config.material_policy.rgb.enabled},
+             {"source", config.material_policy.rgb.source},
+             {"printPixels", report.rgb_print_pixels},
+         })},
+        {"white",
+         Json::object({
+             {"enabled", config.material_policy.white.enabled},
+             {"mode", config.material_policy.white.mode},
+             {"layers", config.material_policy.white.layers},
+             {"value", static_cast<int>(config.material_policy.white.value)},
+             {"printPixels", report.white_print_pixels},
+         })},
+        {"varnish",
+         Json::object({
+             {"enabled", config.material_policy.varnish.enabled},
+             {"mode", config.material_policy.varnish.mode},
+             {"topLayers", config.material_policy.varnish.top_layers},
+             {"value", static_cast<int>(config.material_policy.varnish.value)},
+             {"printPixels", report.varnish_print_pixels},
+         })},
+        {"warnings", Json{report.warnings}},
+    });
+}
+
 Json relief_report_to_json(
     const SliceConfig& config,
     const ReliefReportData& relief_report,
@@ -1693,6 +1884,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     if (config.texture.enabled && config.slicing_mode == "relief_heightfield") {
         texture_columns = build_relief_texture_columns(config, model_report, relief_columns, texture_runtime);
     }
+    const std::vector<ColumnLayerRange> column_ranges = config.slicing_mode == "relief_heightfield"
+        ? compute_relief_column_ranges(relief_columns)
+        : compute_mask_column_ranges(model_masks, grid);
     const int columns_with_support = config.support.enabled
         ? static_cast<int>(std::count_if(support_source_layers.begin(), support_source_layers.end(), [](const int layer) {
               return layer > 0;
@@ -1712,6 +1906,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     Json::Array slice_layers;
     Json::Array contour_layers;
     Json::Array preview_files;
+    MaterialPolicyReportData material_policy_report;
+    material_policy_report.enabled = config.material_policy.enabled;
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         int layer_model_pixels{0};
         int layer_support_pixels{0};
@@ -1721,7 +1917,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             model_masks.at(layer_index),
             support_generation.support_masks.at(layer_index),
             config.texture.enabled ? &texture_columns : nullptr,
+            &column_ranges,
+            layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
+            config.material_policy.enabled ? &material_policy_report : nullptr,
             layer_model_pixels,
             layer_support_pixels);
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
@@ -1798,6 +1997,14 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"sampledPixels", texture_runtime.report.sampled_pixels},
                   {"fallbackPixels", texture_runtime.report.fallback_pixels},
                   {"uvOutOfRangePixels", texture_runtime.report.uv_out_of_range_pixels},
+              })},
+             {"materialPolicyApplied", config.material_policy.enabled},
+             {"materialPolicy",
+              Json::object({
+                  {"enabled", config.material_policy.enabled},
+                  {"rgbPrintPixels", material_policy_report.rgb_print_pixels},
+                  {"whitePrintPixels", material_policy_report.white_print_pixels},
+                  {"varnishPrintPixels", material_policy_report.varnish_print_pixels},
               })},
          })},
         {"layers", Json{slice_layers}},
@@ -1927,6 +2134,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(package_dir / "reports/support_report.json", support_report);
     write_json_file(package_dir / "reports/preview_report.json", preview_report);
     write_json_file(package_dir / "reports/texture_report.json", texture_report_to_json(texture_runtime.report));
+    write_json_file(
+        package_dir / "reports/material_policy_report.json",
+        material_policy_report_to_json(config, material_policy_report));
     write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
     write_json_file(
         package_dir / "reports/relief_report.json",
@@ -1984,6 +2194,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"support", "reports/support_report.json"},
              {"preview", "reports/preview_report.json"},
              {"texture", "reports/texture_report.json"},
+             {"materialPolicy", "reports/material_policy_report.json"},
              {"contour", "reports/contour_report.json"},
              {"relief", "reports/relief_report.json"},
          })},

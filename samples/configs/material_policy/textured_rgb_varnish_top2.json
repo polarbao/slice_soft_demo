@@ -1,0 +1,86 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../models/textured/fixtures/policy_textured_small.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/MaterialPolicyRgbVarnishTop2",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "tiled": true,
+    "tileSize": [256, 256]
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [1.0, 1.0, 1.0],
+    "rotationDeg": [0.0, 0.0, 0.0],
+    "translationMm": [0.0, 0.0, 0.0]
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "solid_volume_from_top_surface",
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [0, 0, 0],
+    "missingTexturePolicy": "warn_and_fallback"
+  },
+  "materialPolicy": {
+    "enabled": true,
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_fallback"
+    },
+    "white": {
+      "enabled": false,
+      "mode": "disabled",
+      "value": 0,
+      "layers": "all_model"
+    },
+    "varnish": {
+      "enabled": true,
+      "mode": "top_n_layers",
+      "value": 0,
+      "topLayers": 2
+    },
+    "conflictPolicy": "model_material_over_support"
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 1,
+    "channels": ["texture_rgb", "varnish", "support"],
+    "onlyNonEmptyLayers": true
+  }
+}

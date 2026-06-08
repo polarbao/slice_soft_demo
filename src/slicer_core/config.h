@@ -60,6 +60,33 @@ struct TextureConfig {
     std::string missing_texture_policy{"warn_and_fallback"};
 };
 
+struct RgbPolicyConfig {
+    bool enabled{true};
+    std::string source{"texture_or_fallback"};
+};
+
+struct WhitePolicyConfig {
+    bool enabled{false};
+    std::string mode{"disabled"};
+    std::uint8_t value{0};
+    std::string layers{"all_model"};
+};
+
+struct VarnishPolicyConfig {
+    bool enabled{false};
+    std::string mode{"disabled"};
+    std::uint8_t value{0};
+    int top_layers{1};
+};
+
+struct MaterialPolicyConfig {
+    bool enabled{false};
+    RgbPolicyConfig rgb;
+    WhitePolicyConfig white;
+    VarnishPolicyConfig varnish;
+    std::string conflict_policy{"model_material_over_support"};
+};
+
 struct SupportConfig {
     bool enabled{true};
     std::string mode{"bottom_projection"};
@@ -98,6 +125,7 @@ struct SliceConfig {
     BackgroundConfig background;
     MaterialConfig material;
     TextureConfig texture;
+    MaterialPolicyConfig material_policy;
     SupportConfig support;
     PreviewConfig preview;
     ReliefConfig relief;

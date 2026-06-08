@@ -205,6 +205,34 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             texture.value("missingTexturePolicy", config.texture.missing_texture_policy);
     }
 
+    if (root.contains("materialPolicy")) {
+        const auto& policy = root.at("materialPolicy");
+        config.material_policy.enabled = policy.value("enabled", config.material_policy.enabled);
+        config.material_policy.conflict_policy =
+            policy.value("conflictPolicy", config.material_policy.conflict_policy);
+        if (policy.contains("rgb")) {
+            const auto& rgb = policy.at("rgb");
+            config.material_policy.rgb.enabled = rgb.value("enabled", config.material_policy.rgb.enabled);
+            config.material_policy.rgb.source = rgb.value("source", config.material_policy.rgb.source);
+        }
+        if (policy.contains("white")) {
+            const auto& white = policy.at("white");
+            config.material_policy.white.enabled = white.value("enabled", config.material_policy.white.enabled);
+            config.material_policy.white.mode = white.value("mode", config.material_policy.white.mode);
+            config.material_policy.white.value = read_u8(white, "value", config.material_policy.white.value);
+            config.material_policy.white.layers = white.value("layers", config.material_policy.white.layers);
+        }
+        if (policy.contains("varnish")) {
+            const auto& varnish = policy.at("varnish");
+            config.material_policy.varnish.enabled = varnish.value("enabled", config.material_policy.varnish.enabled);
+            config.material_policy.varnish.mode = varnish.value("mode", config.material_policy.varnish.mode);
+            config.material_policy.varnish.value =
+                read_u8(varnish, "value", config.material_policy.varnish.value);
+            config.material_policy.varnish.top_layers =
+                varnish.value("topLayers", config.material_policy.varnish.top_layers);
+        }
+    }
+
     if (root.contains("support")) {
         const auto& support = root.at("support");
         config.support.enabled = support.value("enabled", config.support.enabled);
@@ -331,6 +359,31 @@ void validate_slice_config(const SliceConfig& config) {
         }
         if (config.slicing_mode != "relief_heightfield") {
             throw std::runtime_error("04 texture.enabled currently requires relief_heightfield");
+        }
+    }
+    if (config.material_policy.enabled) {
+        if (config.material_policy.rgb.source != "texture_or_fallback"
+            && config.material_policy.rgb.source != "modelMaterial") {
+            throw std::runtime_error("materialPolicy.rgb.source must be texture_or_fallback or modelMaterial");
+        }
+        if (config.material_policy.white.mode != "disabled"
+            && config.material_policy.white.mode != "underbase"
+            && config.material_policy.white.mode != "all_model") {
+            throw std::runtime_error("materialPolicy.white.mode must be disabled, underbase, or all_model");
+        }
+        if (config.material_policy.white.layers != "all_model") {
+            throw std::runtime_error("materialPolicy.white.layers currently supports all_model");
+        }
+        if (config.material_policy.varnish.mode != "disabled"
+            && config.material_policy.varnish.mode != "all_model"
+            && config.material_policy.varnish.mode != "top_n_layers") {
+            throw std::runtime_error("materialPolicy.varnish.mode must be disabled, all_model, or top_n_layers");
+        }
+        if (config.material_policy.varnish.top_layers <= 0) {
+            throw std::runtime_error("materialPolicy.varnish.topLayers must be positive");
+        }
+        if (config.material_policy.conflict_policy != "model_material_over_support") {
+            throw std::runtime_error("materialPolicy.conflictPolicy must be model_material_over_support");
         }
     }
     if (config.relief.fill_mode != "surface_to_base" && config.relief.fill_mode != "intersection_range") {

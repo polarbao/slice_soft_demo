@@ -39,7 +39,13 @@ $positive = @(
   @{ Config = "samples/configs/support/support_island_filter.json"; Package = "output/SupportIslandFilter" },
   @{ Config = "samples/configs/textured/textured_relief_rgb.json"; Package = "output/TexturedReliefRgb" },
   @{ Config = "samples/configs/textured/textured_missing_texture_fallback.json"; Package = "output/TexturedMissingTextureFallback" },
-  @{ Config = "samples/configs/textured/textured_no_uv_fallback.json"; Package = "output/TexturedNoUvFallback" }
+  @{ Config = "samples/configs/textured/textured_no_uv_fallback.json"; Package = "output/TexturedNoUvFallback" },
+  @{ Config = "samples/configs/material_policy/textured_rgb_only.json"; Package = "output/MaterialPolicyRgbOnly" },
+  @{ Config = "samples/configs/material_policy/textured_rgb_white_underbase.json"; Package = "output/MaterialPolicyRgbWhiteUnderbase" },
+  @{ Config = "samples/configs/material_policy/textured_rgb_varnish_top2.json"; Package = "output/MaterialPolicyRgbVarnishTop2" },
+  @{ Config = "samples/configs/material_policy/textured_rgb_white_varnish.json"; Package = "output/MaterialPolicyRgbWhiteVarnish" },
+  @{ Config = "samples/configs/material_policy/varnish_only_all_model.json"; Package = "output/MaterialPolicyVarnishOnly" },
+  @{ Config = "samples/configs/material_policy/white_only_all_model.json"; Package = "output/MaterialPolicyWhiteOnly" }
 )
 
 if (-not $SkipHeavyRelief) {
@@ -68,6 +74,38 @@ Run-Step "verify no-UV fallback" {
   if ($model.facesWithUv -ne 0) { throw "no-UV fallback expected facesWithUv = 0" }
   if ($model.facesWithoutUv -le 0) { throw "no-UV fallback expected facesWithoutUv > 0" }
   if ($texture.stats.fallbackPixels -le 0) { throw "no-UV fallback did not report fallbackPixels > 0" }
+}
+
+Run-Step "verify material policy samples" {
+  $rgbOnly = Read-Json "output/MaterialPolicyRgbOnly/reports/material_policy_report.json"
+  if ($rgbOnly.rgb.printPixels -le 0) { throw "RGB only expected RGB printPixels > 0" }
+  if ($rgbOnly.white.printPixels -ne 0) { throw "RGB only expected W printPixels = 0" }
+  if ($rgbOnly.varnish.printPixels -ne 0) { throw "RGB only expected V printPixels = 0" }
+
+  $rgbWhite = Read-Json "output/MaterialPolicyRgbWhiteUnderbase/reports/material_policy_report.json"
+  if ($rgbWhite.rgb.printPixels -le 0) { throw "RGB+W expected RGB printPixels > 0" }
+  if ($rgbWhite.white.printPixels -le 0) { throw "RGB+W expected W printPixels > 0" }
+  if ($rgbWhite.varnish.printPixels -ne 0) { throw "RGB+W expected V printPixels = 0" }
+
+  $rgbVarnish = Read-Json "output/MaterialPolicyRgbVarnishTop2/reports/material_policy_report.json"
+  if ($rgbVarnish.rgb.printPixels -le 0) { throw "RGB+V expected RGB printPixels > 0" }
+  if ($rgbVarnish.white.printPixels -ne 0) { throw "RGB+V expected W printPixels = 0" }
+  if ($rgbVarnish.varnish.printPixels -le 0) { throw "RGB+V expected V printPixels > 0" }
+
+  $rgbWhiteVarnish = Read-Json "output/MaterialPolicyRgbWhiteVarnish/reports/material_policy_report.json"
+  if ($rgbWhiteVarnish.rgb.printPixels -le 0) { throw "RGB+W+V expected RGB printPixels > 0" }
+  if ($rgbWhiteVarnish.white.printPixels -le 0) { throw "RGB+W+V expected W printPixels > 0" }
+  if ($rgbWhiteVarnish.varnish.printPixels -le 0) { throw "RGB+W+V expected V printPixels > 0" }
+
+  $varnishOnly = Read-Json "output/MaterialPolicyVarnishOnly/reports/material_policy_report.json"
+  if ($varnishOnly.rgb.printPixels -ne 0) { throw "V only expected RGB printPixels = 0" }
+  if ($varnishOnly.white.printPixels -ne 0) { throw "V only expected W printPixels = 0" }
+  if ($varnishOnly.varnish.printPixels -le 0) { throw "V only expected V printPixels > 0" }
+
+  $whiteOnly = Read-Json "output/MaterialPolicyWhiteOnly/reports/material_policy_report.json"
+  if ($whiteOnly.rgb.printPixels -ne 0) { throw "W only expected RGB printPixels = 0" }
+  if ($whiteOnly.white.printPixels -le 0) { throw "W only expected W printPixels > 0" }
+  if ($whiteOnly.varnish.printPixels -ne 0) { throw "W only expected V printPixels = 0" }
 }
 
 Run-Step "make bad packages" {

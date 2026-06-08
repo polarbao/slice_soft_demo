@@ -1,0 +1,77 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../models/textured/fixtures/policy_textured_small.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/MaterialPolicyWhiteOnly",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "tiled": true,
+    "tileSize": [256, 256]
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [1.0, 1.0, 1.0],
+    "rotationDeg": [0.0, 0.0, 0.0],
+    "translationMm": [0.0, 0.0, 0.0]
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "W",
+    "applyMode": "solid_volume",
+    "rgb": [255, 255, 255],
+    "whiteValue": 0,
+    "varnishValue": 255
+  },
+  "materialPolicy": {
+    "enabled": true,
+    "rgb": {
+      "enabled": false,
+      "source": "modelMaterial"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "all_model",
+      "value": 0,
+      "layers": "all_model"
+    },
+    "varnish": {
+      "enabled": false,
+      "mode": "disabled",
+      "value": 0,
+      "topLayers": 1
+    },
+    "conflictPolicy": "model_material_over_support"
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 5,
+    "channels": ["white", "support"],
+    "onlyNonEmptyLayers": true
+  }
+}
