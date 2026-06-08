@@ -55,6 +55,23 @@ struct ChannelStats {
     int max_value{0};
 };
 
+struct SupportComponentSummary {
+    int area_px{0};
+    int min_x{0};
+    int min_y{0};
+    int max_x{0};
+    int max_y{0};
+};
+
+struct SupportConnectivityDiagnostics {
+    bool enabled{false};
+    int component_count{0};
+    int largest_component_pixels{0};
+    int small_component_count{0};
+    int tiny_component_count{0};
+    std::vector<SupportComponentSummary> components;
+};
+
 struct LayerDiagnostics {
     int layer_index{0};
     double z_mm{0.0};
@@ -75,6 +92,7 @@ struct LayerDiagnostics {
     int bottom_projection_support_pixels{0};
     int unsupported_island_support_pixels{0};
     int full_vertical_projection_support_pixels{0};
+    SupportConnectivityDiagnostics support_connectivity;
     std::array<ChannelStats, rgbwsv_channel_count> channel_stats{};
 };
 
@@ -834,6 +852,92 @@ void set_support_pixel(
     }
 }
 
+SupportConnectivityDiagnostics analyze_support_connectivity(
+    const std::vector<std::uint8_t>& support_mask,
+    const GridSpec& grid,
+    const int connectivity) {
+    constexpr int tiny_component_area_px{8};
+    constexpr int small_component_area_px{512};
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    SupportConnectivityDiagnostics diagnostics;
+    diagnostics.enabled = true;
+    std::vector<std::uint8_t> visited(pixel_count, 0);
+    const std::array<std::array<int, 2>, 8> neighbors8{{
+        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
+    }};
+    const std::array<std::array<int, 2>, 4> neighbors4{{
+        {{0, -1}}, {{-1, 0}}, {{1, 0}}, {{0, 1}},
+    }};
+
+    for (std::size_t start{0}; start < pixel_count; ++start) {
+        if (support_mask.at(start) == 0 || visited.at(start) != 0) {
+            continue;
+        }
+
+        SupportComponentSummary component;
+        component.min_x = grid.width_px;
+        component.min_y = grid.height_px;
+        component.max_x = -1;
+        component.max_y = -1;
+        std::vector<int> stack{static_cast<int>(start)};
+        visited.at(start) = 1;
+        while (!stack.empty()) {
+            const int current = stack.back();
+            stack.pop_back();
+            const int x = current % grid.width_px;
+            const int y = current / grid.width_px;
+            ++component.area_px;
+            component.min_x = std::min(component.min_x, x);
+            component.min_y = std::min(component.min_y, y);
+            component.max_x = std::max(component.max_x, x);
+            component.max_y = std::max(component.max_y, y);
+
+            if (connectivity == 8) {
+                for (const auto& neighbor : neighbors8) {
+                    const int nx{x + neighbor.at(0)};
+                    const int ny{y + neighbor.at(1)};
+                    if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px) {
+                        continue;
+                    }
+                    const std::size_t next = mask_index(grid, nx, ny);
+                    if (support_mask.at(next) != 0 && visited.at(next) == 0) {
+                        visited.at(next) = 1;
+                        stack.push_back(static_cast<int>(next));
+                    }
+                }
+            } else {
+                for (const auto& neighbor : neighbors4) {
+                    const int nx{x + neighbor.at(0)};
+                    const int ny{y + neighbor.at(1)};
+                    if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px) {
+                        continue;
+                    }
+                    const std::size_t next = mask_index(grid, nx, ny);
+                    if (support_mask.at(next) != 0 && visited.at(next) == 0) {
+                        visited.at(next) = 1;
+                        stack.push_back(static_cast<int>(next));
+                    }
+                }
+            }
+        }
+
+        ++diagnostics.component_count;
+        diagnostics.largest_component_pixels =
+            std::max(diagnostics.largest_component_pixels, component.area_px);
+        if (component.area_px <= tiny_component_area_px) {
+            ++diagnostics.tiny_component_count;
+        } else if (component.area_px <= small_component_area_px) {
+            ++diagnostics.small_component_count;
+        }
+        diagnostics.components.push_back(component);
+    }
+
+    std::sort(diagnostics.components.begin(), diagnostics.components.end(), [](const auto& lhs, const auto& rhs) {
+        return lhs.area_px > rhs.area_px;
+    });
+    return diagnostics;
+}
+
 std::vector<int> compute_last_model_layers(const std::vector<std::vector<std::uint8_t>>& model_masks, const GridSpec& grid) {
     std::vector<int> last_model_layer(static_cast<std::size_t>(grid.width_px) * grid.height_px, -1);
     for (int layer_index{0}; layer_index < static_cast<int>(model_masks.size()); ++layer_index) {
@@ -1091,6 +1195,8 @@ SupportGenerationResult generate_support_masks(
             result.filtered_island_count += diagnostics.at(layer_index).filtered_island_count;
             result.filtered_island_pixels += diagnostics.at(layer_index).filtered_island_pixels;
         }
+        diagnostics.at(layer_index).support_connectivity =
+            analyze_support_connectivity(support_mask, grid, config.support.connectivity);
     }
 
     return result;
@@ -1370,6 +1476,70 @@ Json channel_order_json() {
     return Json::array({"R", "G", "B", "W", "S", "V"});
 }
 
+Json support_connectivity_to_json(const SupportConnectivityDiagnostics& diagnostics) {
+    constexpr int tiny_component_area_px{8};
+    constexpr int small_component_area_px{512};
+    Json::Array components;
+    for (const SupportComponentSummary& component : diagnostics.components) {
+        components.push_back(Json::object({
+            {"areaPx", component.area_px},
+            {"bbox",
+             Json::object({
+                 {"minX", component.min_x},
+                 {"minY", component.min_y},
+                 {"maxX", component.max_x},
+                 {"maxY", component.max_y},
+             })},
+        }));
+    }
+    return Json::object({
+        {"enabled", diagnostics.enabled},
+        {"componentCount", diagnostics.component_count},
+        {"largestComponentPixels", diagnostics.largest_component_pixels},
+        {"smallComponentCount", diagnostics.small_component_count},
+        {"tinyComponentCount", diagnostics.tiny_component_count},
+        {"tinyComponentAreaPx", tiny_component_area_px},
+        {"smallComponentAreaPx", small_component_area_px},
+        {"components", Json{components}},
+    });
+}
+
+Json support_connectivity_summary_to_json(const std::vector<LayerDiagnostics>& diagnostics) {
+    int layers_with_support_components{0};
+    int layers_with_fragmentation{0};
+    int max_component_count{0};
+    int layer_with_max_component_count{-1};
+    int max_small_component_count{0};
+    int max_tiny_component_count{0};
+    bool enabled{false};
+    for (const LayerDiagnostics& layer : diagnostics) {
+        const SupportConnectivityDiagnostics& support = layer.support_connectivity;
+        enabled = enabled || support.enabled;
+        if (!support.enabled || support.component_count <= 0) {
+            continue;
+        }
+        ++layers_with_support_components;
+        if (support.component_count > 1) {
+            ++layers_with_fragmentation;
+        }
+        if (support.component_count > max_component_count) {
+            max_component_count = support.component_count;
+            layer_with_max_component_count = layer.layer_index;
+        }
+        max_small_component_count = std::max(max_small_component_count, support.small_component_count);
+        max_tiny_component_count = std::max(max_tiny_component_count, support.tiny_component_count);
+    }
+    return Json::object({
+        {"enabled", enabled},
+        {"layersWithSupportComponents", layers_with_support_components},
+        {"layersWithFragmentation", layers_with_fragmentation},
+        {"maxComponentCount", max_component_count},
+        {"layerWithMaxComponentCount", layer_with_max_component_count},
+        {"maxSmallComponentCount", max_small_component_count},
+        {"maxTinyComponentCount", max_tiny_component_count},
+    });
+}
+
 Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
     Json::Array fill_warnings;
     if (diagnostics.odd_intersection_rows > 0) {
@@ -1403,6 +1573,7 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
              {"unsupported_island", diagnostics.unsupported_island_support_pixels},
              {"full_vertical_projection", diagnostics.full_vertical_projection_support_pixels},
          })},
+        {"supportConnectivity", support_connectivity_to_json(diagnostics.support_connectivity)},
         {"channelStats", channel_stats_array_to_json(diagnostics.channel_stats)},
     });
 }
@@ -1619,6 +1790,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"unsupported_island", support_generation.unsupported_island_support_pixels},
                   {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
               })},
+             {"supportConnectivity", support_connectivity_summary_to_json(layer_diagnostics)},
              {"channelStats", channel_stats_array_to_json(total_channel_stats)},
              {"texture",
               Json::object({
@@ -1661,6 +1833,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"filteredIslandPixels", support_generation.filtered_island_pixels},
         {"layersWithIslands", support_generation.layers_with_islands},
         {"layersWithSupport", support_generation.layers_with_support},
+        {"supportConnectivity", support_connectivity_summary_to_json(layer_diagnostics)},
         {"totals",
          Json::object({
              {"supportPixels", total_support_pixels},

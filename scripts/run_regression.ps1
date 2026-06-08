@@ -1,5 +1,6 @@
 param(
-  [switch]$SkipHeavyRelief
+  [switch]$SkipHeavyRelief,
+  [switch]$SkipHeavyTexture
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,6 +21,10 @@ function Run-Slicer([string]$Config) {
 function Run-Rip([string]$Package) {
   & .\build\Debug\rip_reader_test.exe --package $Package
   if ($LASTEXITCODE -ne 0) { throw "rip_reader_test failed: $Package" }
+}
+
+function Read-Json([string]$Path) {
+  return Get-Content -Raw $Path | ConvertFrom-Json
 }
 
 Run-Step "build Debug" {
@@ -48,6 +53,21 @@ if (-not $SkipHeavyRelief) {
 foreach ($case in $positive) {
   Run-Step "slicer $($case.Config)" { Run-Slicer $case.Config }
   Run-Step "rip $($case.Package)" { Run-Rip $case.Package }
+}
+
+Run-Step "verify missing texture fallback" {
+  $texture = Read-Json "output/TexturedMissingTextureFallback/reports/texture_report.json"
+  if ($texture.missingTextures -le 0) { throw "missing texture fallback did not report missingTextures > 0" }
+  if ($texture.warnings.Count -le 0) { throw "missing texture fallback did not report warnings" }
+  if ($texture.stats.fallbackPixels -le 0) { throw "missing texture fallback did not report fallbackPixels > 0" }
+}
+
+Run-Step "verify no-UV fallback" {
+  $model = Read-Json "output/TexturedNoUvFallback/reports/model_report.json"
+  $texture = Read-Json "output/TexturedNoUvFallback/reports/texture_report.json"
+  if ($model.facesWithUv -ne 0) { throw "no-UV fallback expected facesWithUv = 0" }
+  if ($model.facesWithoutUv -le 0) { throw "no-UV fallback expected facesWithoutUv > 0" }
+  if ($texture.stats.fallbackPixels -le 0) { throw "no-UV fallback did not report fallbackPixels > 0" }
 }
 
 Run-Step "make bad packages" {

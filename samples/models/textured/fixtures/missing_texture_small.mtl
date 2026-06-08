@@ -1,0 +1,3 @@
+newmtl missing_tex
+Kd 0.2 0.4 0.8
+map_Kd textures/does_not_exist.png
