@@ -62,6 +62,21 @@ struct AutoOrientReport {
     BoundingBox original_bbox_mm;
 };
 
+struct ThreeMfReportInfo {
+    bool enabled{false};
+    std::filesystem::path package_path;
+    std::string model_part_path;
+    std::string unit{"millimeter"};
+    double unit_scale_to_mm{1.0};
+    int object_count{0};
+    int component_count{0};
+    int mesh_object_count{0};
+    int triangle_count{0};
+    int material_resource_count{0};
+    std::vector<std::string> unsupported_extensions;
+    std::vector<std::string> warnings;
+};
+
 struct ModelReport {
     std::filesystem::path model_path;
     std::string format;
@@ -77,6 +92,7 @@ struct ModelReport {
     std::vector<MaterialStat> materials;
     std::vector<MaterialInfo> material_infos;
     AutoOrientReport auto_orient;
+    ThreeMfReportInfo three_mf;
     BoundingBox bbox_mm;
     std::vector<Triangle> triangles;
     std::vector<TriangleTextureInfo> triangle_textures;

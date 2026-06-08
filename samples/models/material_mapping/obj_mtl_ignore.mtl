@@ -1,0 +1,5 @@
+newmtl color_body
+Kd 0.2 0.7 0.3
+
+newmtl ignore_cutout
+Kd 1.0 0.0 0.0

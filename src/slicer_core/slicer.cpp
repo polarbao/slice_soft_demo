@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
@@ -211,6 +212,40 @@ struct MaterialPolicyReportData {
     std::uint64_t rgb_print_pixels{0};
     std::uint64_t white_print_pixels{0};
     std::uint64_t varnish_print_pixels{0};
+    Json::Array warnings;
+};
+
+enum class MaterialRole {
+    Rgb,
+    White,
+    Varnish,
+    Ignore,
+    SupportCandidate,
+    Support,
+};
+
+struct MaterialRoleColumn {
+    bool has_role{false};
+    MaterialRole role{MaterialRole::Rgb};
+    std::array<std::uint8_t, 3> rgb{0, 0, 0};
+};
+
+struct MaterialRoleMappingReportData {
+    bool enabled{false};
+    std::string input_format;
+    std::string default_role{"rgb"};
+    bool allow_input_support_material{false};
+    int material_count{0};
+    int mapped_rgb{0};
+    int mapped_white{0};
+    int mapped_varnish{0};
+    int mapped_ignore{0};
+    int mapped_support_candidate{0};
+    int mapped_support{0};
+    int faces_with_mapped_material{0};
+    int faces_without_mapped_material{0};
+    Json::Array rules;
+    Json::Array materials;
     Json::Array warnings;
 };
 
@@ -1271,6 +1306,184 @@ Json rgb_to_json(const std::array<std::uint8_t, 3>& rgb) {
     return Json::array({static_cast<int>(rgb.at(0)), static_cast<int>(rgb.at(1)), static_cast<int>(rgb.at(2))});
 }
 
+std::string lower_copy(std::string value) {
+    std::transform(value.begin(), value.end(), value.begin(), [](const unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    return value;
+}
+
+MaterialRole material_role_from_string(const std::string& role) {
+    if (role == "white") {
+        return MaterialRole::White;
+    }
+    if (role == "varnish") {
+        return MaterialRole::Varnish;
+    }
+    if (role == "ignore") {
+        return MaterialRole::Ignore;
+    }
+    if (role == "support_candidate") {
+        return MaterialRole::SupportCandidate;
+    }
+    if (role == "support") {
+        return MaterialRole::Support;
+    }
+    return MaterialRole::Rgb;
+}
+
+std::string material_role_to_string(const MaterialRole role) {
+    switch (role) {
+        case MaterialRole::Rgb:
+            return "rgb";
+        case MaterialRole::White:
+            return "white";
+        case MaterialRole::Varnish:
+            return "varnish";
+        case MaterialRole::Ignore:
+            return "ignore";
+        case MaterialRole::SupportCandidate:
+            return "support_candidate";
+        case MaterialRole::Support:
+            return "support";
+    }
+    return "rgb";
+}
+
+MaterialRole map_input_material_to_role(const std::string& material_name, const MaterialRoleMappingConfig& config) {
+    const std::string lower_name = lower_copy(material_name);
+    for (const MaterialRoleRuleConfig& rule : config.rules) {
+        if (lower_name.find(lower_copy(rule.match_name_contains)) != std::string::npos) {
+            MaterialRole role = material_role_from_string(rule.role);
+            if (role == MaterialRole::Support && !config.allow_input_support_material) {
+                return MaterialRole::SupportCandidate;
+            }
+            return role;
+        }
+    }
+    return material_role_from_string(config.default_role);
+}
+
+void increment_role_count(MaterialRoleMappingReportData& report, const MaterialRole role) {
+    switch (role) {
+        case MaterialRole::Rgb:
+            ++report.mapped_rgb;
+            break;
+        case MaterialRole::White:
+            ++report.mapped_white;
+            break;
+        case MaterialRole::Varnish:
+            ++report.mapped_varnish;
+            break;
+        case MaterialRole::Ignore:
+            ++report.mapped_ignore;
+            break;
+        case MaterialRole::SupportCandidate:
+            ++report.mapped_support_candidate;
+            break;
+        case MaterialRole::Support:
+            ++report.mapped_support;
+            break;
+    }
+}
+
+const MaterialInfo* find_material_info_by_name(const ModelReport& model_report, const std::string& material_name) {
+    const auto found = std::find_if(model_report.material_infos.begin(), model_report.material_infos.end(), [&](const MaterialInfo& material) {
+        return material.name == material_name;
+    });
+    if (found == model_report.material_infos.end()) {
+        return nullptr;
+    }
+    return &*found;
+}
+
+std::array<std::uint8_t, 3> material_rgb_for_role(
+    const SliceConfig& config,
+    const ModelReport& model_report,
+    const std::vector<TextureColumnColor>* texture_columns,
+    const std::size_t pixel_index,
+    const std::string& material_name) {
+    if (texture_columns != nullptr && pixel_index < texture_columns->size() && texture_columns->at(pixel_index).has_color) {
+        return texture_columns->at(pixel_index).rgb;
+    }
+    const MaterialInfo* material = find_material_info_by_name(model_report, material_name);
+    if (material != nullptr && material->has_diffuse) {
+        return material->diffuse_rgb;
+    }
+    if (config.texture.enabled) {
+        return config.texture.fallback_rgb;
+    }
+    return config.material.rgb;
+}
+
+MaterialRoleMappingReportData build_material_role_mapping_report(
+    const SliceConfig& config,
+    const ModelReport& model_report) {
+    MaterialRoleMappingReportData report;
+    report.enabled = config.material_role_mapping.enabled;
+    report.input_format = model_report.format;
+    report.default_role = config.material_role_mapping.default_role;
+    report.allow_input_support_material = config.material_role_mapping.allow_input_support_material;
+    for (const MaterialRoleRuleConfig& rule : config.material_role_mapping.rules) {
+        report.rules.push_back(Json::object({
+            {"matchNameContains", rule.match_name_contains},
+            {"role", rule.role},
+        }));
+    }
+    if (!config.material_role_mapping.enabled) {
+        return report;
+    }
+    report.material_count = static_cast<int>(model_report.material_infos.size());
+    for (const MaterialInfo& material : model_report.material_infos) {
+        const MaterialRole role = map_input_material_to_role(material.name, config.material_role_mapping);
+        increment_role_count(report, role);
+        report.materials.push_back(Json::object({
+            {"name", material.name},
+            {"role", material_role_to_string(role)},
+            {"hasDiffuse", material.has_diffuse},
+            {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
+            {"hasTexture", material.has_texture},
+            {"texturePath", material.diffuse_texture_path.generic_string()},
+        }));
+        if (role == MaterialRole::SupportCandidate) {
+            report.warnings.push_back("input material treated as support_candidate and did not write S: " + material.name);
+        }
+    }
+    for (const TriangleTextureInfo& triangle : model_report.triangle_textures) {
+        if (triangle.material_name.empty()) {
+            ++report.faces_without_mapped_material;
+        } else {
+            ++report.faces_with_mapped_material;
+        }
+    }
+    return report;
+}
+
+std::vector<MaterialRoleColumn> build_material_role_columns(
+    const SliceConfig& config,
+    const ModelReport& model_report,
+    const std::vector<ReliefColumnInfo>& columns,
+    const std::vector<TextureColumnColor>* texture_columns) {
+    std::vector<MaterialRoleColumn> result(columns.size());
+    if (!config.material_role_mapping.enabled) {
+        return result;
+    }
+    for (std::size_t index{0}; index < columns.size(); ++index) {
+        const ReliefColumnInfo& column = columns.at(index);
+        if (!column.has_model || column.top_triangle_index < 0
+            || column.top_triangle_index >= static_cast<int>(model_report.triangle_textures.size())) {
+            continue;
+        }
+        const TriangleTextureInfo& texture_info =
+            model_report.triangle_textures.at(static_cast<std::size_t>(column.top_triangle_index));
+        MaterialRoleColumn& role_column = result.at(index);
+        role_column.has_role = true;
+        role_column.role = map_input_material_to_role(texture_info.material_name, config.material_role_mapping);
+        role_column.rgb = material_rgb_for_role(config, model_report, texture_columns, index, texture_info.material_name);
+    }
+    return result;
+}
+
 TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelReport& model_report) {
     TextureRuntime runtime;
     runtime.report.enabled = config.texture.enabled;
@@ -1515,12 +1728,45 @@ void write_material_pixel(
     }
 }
 
+bool write_material_role_pixel(
+    std::vector<std::uint8_t>& pixels,
+    const std::size_t base,
+    const MaterialRoleColumn& role_column) {
+    if (!role_column.has_role) {
+        pixels.at(base + 0U) = role_column.rgb.at(0);
+        pixels.at(base + 1U) = role_column.rgb.at(1);
+        pixels.at(base + 2U) = role_column.rgb.at(2);
+        return true;
+    }
+    switch (role_column.role) {
+        case MaterialRole::Rgb:
+            pixels.at(base + 0U) = role_column.rgb.at(0);
+            pixels.at(base + 1U) = role_column.rgb.at(1);
+            pixels.at(base + 2U) = role_column.rgb.at(2);
+            return true;
+        case MaterialRole::White:
+            pixels.at(base + 3U) = 0;
+            return true;
+        case MaterialRole::Varnish:
+            pixels.at(base + 5U) = 0;
+            return true;
+        case MaterialRole::Support:
+            pixels.at(base + 4U) = 0;
+            return true;
+        case MaterialRole::Ignore:
+        case MaterialRole::SupportCandidate:
+            return false;
+    }
+    return false;
+}
+
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
     const std::vector<std::uint8_t>& model_mask,
     const std::vector<std::uint8_t>& support_mask,
     const std::vector<TextureColumnColor>* texture_columns,
+    const std::vector<MaterialRoleColumn>* material_role_columns,
     const std::vector<ColumnLayerRange>* column_ranges,
     const int layer_index,
     TextureReportData* texture_report,
@@ -1537,7 +1783,23 @@ std::vector<std::uint8_t> compose_layer(
             const std::size_t base =
                 (static_cast<std::size_t>(y) * grid.width_px + x) * rgbwsv_channel_count;
             if (model_mask.at(pixel_index) != 0) {
-                if (config.material_policy.enabled) {
+                bool counted_model_pixel{false};
+                if (config.material_role_mapping.enabled && material_role_columns != nullptr
+                    && pixel_index < material_role_columns->size()) {
+                    const MaterialRoleColumn& role_column = material_role_columns->at(pixel_index);
+                    const bool wrote_model = write_material_role_pixel(
+                        pixels,
+                        base,
+                        role_column);
+                    if (wrote_model) {
+                        counted_model_pixel = true;
+                        if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled) {
+                            const TextureColumnColor color =
+                                resolve_texture_color(config, texture_columns, pixel_index);
+                            update_texture_report_for_color(color, texture_report);
+                        }
+                    }
+                } else if (config.material_policy.enabled) {
                     const MaterialPixel pixel = compose_material_policy_pixel(
                         config,
                         texture_columns,
@@ -1546,16 +1808,21 @@ std::vector<std::uint8_t> compose_layer(
                         layer_index,
                         texture_report);
                     write_material_pixel(pixels, base, pixel, material_policy_report);
+                    counted_model_pixel = true;
                 } else if (config.texture.enabled) {
                     const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
                     pixels.at(base + 0U) = color.rgb.at(0);
                     pixels.at(base + 1U) = color.rgb.at(1);
                     pixels.at(base + 2U) = color.rgb.at(2);
                     update_texture_report_for_color(color, texture_report);
+                    counted_model_pixel = true;
                 } else {
                     write_model_pixel(pixels, base, config);
+                    counted_model_pixel = true;
                 }
-                ++model_pixels;
+                if (counted_model_pixel) {
+                    ++model_pixels;
+                }
             } else if (config.support.enabled && support_mask.at(pixel_index) != 0) {
                 pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
@@ -1792,6 +2059,99 @@ Json material_policy_report_to_json(const SliceConfig& config, const MaterialPol
     });
 }
 
+Json material_role_mapping_report_to_json(const MaterialRoleMappingReportData& report) {
+    return Json::object({
+        {"enabled", report.enabled},
+        {"inputFormat", report.input_format},
+        {"rules", Json{report.rules}},
+        {"defaultRole", report.default_role},
+        {"allowInputSupportMaterial", report.allow_input_support_material},
+        {"materialCount", report.material_count},
+        {"mappedRgb", report.mapped_rgb},
+        {"mappedWhite", report.mapped_white},
+        {"mappedVarnish", report.mapped_varnish},
+        {"mappedIgnore", report.mapped_ignore},
+        {"mappedSupportCandidate", report.mapped_support_candidate},
+        {"mappedSupport", report.mapped_support},
+        {"facesWithMappedMaterial", report.faces_with_mapped_material},
+        {"facesWithoutMappedMaterial", report.faces_without_mapped_material},
+        {"materials", Json{report.materials}},
+        {"stats",
+         Json::object({
+             {"materialCount", report.material_count},
+             {"mappedRgb", report.mapped_rgb},
+             {"mappedWhite", report.mapped_white},
+             {"mappedVarnish", report.mapped_varnish},
+             {"mappedIgnore", report.mapped_ignore},
+             {"mappedSupportCandidate", report.mapped_support_candidate},
+             {"mappedSupport", report.mapped_support},
+             {"facesWithMappedMaterial", report.faces_with_mapped_material},
+             {"facesWithoutMappedMaterial", report.faces_without_mapped_material},
+         })},
+        {"warnings", Json{report.warnings}},
+    });
+}
+
+Json obj_mtl_material_report_to_json(const ModelReport& model_report) {
+    Json::Array materials;
+    Json::Array textures;
+    for (const MaterialInfo& material : model_report.material_infos) {
+        materials.push_back(Json::object({
+            {"name", material.name},
+            {"hasDiffuse", material.has_diffuse},
+            {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
+            {"hasTexture", material.has_texture},
+            {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"textureExists", material.texture_exists},
+        }));
+        if (material.has_texture) {
+            textures.push_back(material.diffuse_texture_path.generic_string());
+        }
+    }
+    int faces_with_material{0};
+    int faces_without_material{0};
+    for (const TriangleTextureInfo& triangle : model_report.triangle_textures) {
+        if (triangle.material_name.empty()) {
+            ++faces_without_material;
+        } else {
+            ++faces_with_material;
+        }
+    }
+    return Json::object({
+        {"inputFormat", model_report.format},
+        {"materialCount", static_cast<int>(model_report.material_infos.size())},
+        {"materials", Json{materials}},
+        {"facesWithMaterial", faces_with_material},
+        {"facesWithoutMaterial", faces_without_material},
+        {"textures", Json{textures}},
+    });
+}
+
+Json three_mf_report_to_json(const ModelReport& model_report) {
+    Json::Array unsupported_extensions;
+    for (const std::string& extension : model_report.three_mf.unsupported_extensions) {
+        unsupported_extensions.push_back(extension);
+    }
+    Json::Array warnings;
+    for (const std::string& warning : model_report.three_mf.warnings) {
+        warnings.push_back(warning);
+    }
+    return Json::object({
+        {"enabled", model_report.three_mf.enabled},
+        {"packagePath", model_report.three_mf.package_path.generic_string()},
+        {"modelPartPath", model_report.three_mf.model_part_path},
+        {"unit", model_report.three_mf.unit},
+        {"unitScaleToMm", model_report.three_mf.unit_scale_to_mm},
+        {"objectCount", model_report.three_mf.object_count},
+        {"componentCount", model_report.three_mf.component_count},
+        {"meshObjectCount", model_report.three_mf.mesh_object_count},
+        {"triangleCount", model_report.three_mf.triangle_count},
+        {"materialResourceCount", model_report.three_mf.material_resource_count},
+        {"unsupportedExtensions", Json{unsupported_extensions}},
+        {"warnings", Json{warnings}},
+    });
+}
+
 Json relief_report_to_json(
     const SliceConfig& config,
     const ReliefReportData& relief_report,
@@ -1887,6 +2247,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     if (config.texture.enabled && config.slicing_mode == "relief_heightfield") {
         texture_columns = build_relief_texture_columns(config, model_report, relief_columns, texture_runtime);
     }
+    const MaterialRoleMappingReportData material_role_mapping_report =
+        build_material_role_mapping_report(config, model_report);
+    std::vector<MaterialRoleColumn> material_role_columns;
+    if (config.material_role_mapping.enabled && config.slicing_mode == "relief_heightfield") {
+        material_role_columns = build_material_role_columns(
+            config,
+            model_report,
+            relief_columns,
+            config.texture.enabled ? &texture_columns : nullptr);
+    }
     const std::vector<ColumnLayerRange> column_ranges = config.slicing_mode == "relief_heightfield"
         ? compute_relief_column_ranges(relief_columns)
         : compute_mask_column_ranges(model_masks, grid);
@@ -1920,6 +2290,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             model_masks.at(layer_index),
             support_generation.support_masks.at(layer_index),
             config.texture.enabled ? &texture_columns : nullptr,
+            config.material_role_mapping.enabled ? &material_role_columns : nullptr,
             &column_ranges,
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
@@ -2140,6 +2511,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(
         package_dir / "reports/material_policy_report.json",
         material_policy_report_to_json(config, material_policy_report));
+    write_json_file(
+        package_dir / "reports/material_role_mapping_report.json",
+        material_role_mapping_report_to_json(material_role_mapping_report));
+    write_json_file(
+        package_dir / "reports/obj_mtl_material_report.json",
+        obj_mtl_material_report_to_json(model_report));
+    write_json_file(
+        package_dir / "reports/three_mf_report.json",
+        three_mf_report_to_json(model_report));
     write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
     write_json_file(
         package_dir / "reports/relief_report.json",
@@ -2173,6 +2553,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          Json::object({
              {"configPath", config_path.generic_string()},
              {"modelPath", model_report.model_path.generic_string()},
+             {"format", model_report.format},
          })},
         {"grid",
          Json::object({
@@ -2204,6 +2585,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"preview", "reports/preview_report.json"},
              {"texture", "reports/texture_report.json"},
              {"materialPolicy", "reports/material_policy_report.json"},
+             {"materialRoleMapping", "reports/material_role_mapping_report.json"},
+             {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
+             {"threeMf", "reports/three_mf_report.json"},
              {"contour", "reports/contour_report.json"},
              {"relief", "reports/relief_report.json"},
          })},

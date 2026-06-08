@@ -1,0 +1,29 @@
+mtllib obj_mtl_ignore.mtl
+usemtl color_body
+v 0.0 0.0 0.05
+v 0.8 0.0 0.05
+v 0.8 0.6 0.05
+v 0.0 0.6 0.05
+v 0.0 0.0 0.25
+v 0.8 0.0 0.25
+v 0.8 0.6 0.25
+v 0.0 0.6 0.25
+usemtl ignore_cutout
+v 0.9 0.0 0.05
+v 1.7 0.0 0.05
+v 1.7 0.6 0.05
+v 0.9 0.6 0.05
+v 0.9 0.0 0.25
+v 1.7 0.0 0.25
+v 1.7 0.6 0.25
+v 0.9 0.6 0.25
+usemtl color_body
+f 1 2 3
+f 1 3 4
+f 5 7 6
+f 5 8 7
+usemtl ignore_cutout
+f 9 10 11
+f 9 11 12
+f 13 15 14
+f 13 16 15

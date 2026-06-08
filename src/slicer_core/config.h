@@ -89,6 +89,19 @@ struct MaterialPolicyConfig {
     std::string conflict_policy{"model_material_over_support"};
 };
 
+struct MaterialRoleRuleConfig {
+    std::string match_name_contains;
+    std::string role{"rgb"};
+};
+
+struct MaterialRoleMappingConfig {
+    bool enabled{false};
+    std::string mode{"rules_then_default"};
+    std::string default_role{"rgb"};
+    bool allow_input_support_material{false};
+    std::vector<MaterialRoleRuleConfig> rules;
+};
+
 struct SupportConfig {
     bool enabled{true};
     std::string mode{"bottom_projection"};
@@ -128,6 +141,7 @@ struct SliceConfig {
     MaterialConfig material;
     TextureConfig texture;
     MaterialPolicyConfig material_policy;
+    MaterialRoleMappingConfig material_role_mapping;
     SupportConfig support;
     PreviewConfig preview;
     ReliefConfig relief;

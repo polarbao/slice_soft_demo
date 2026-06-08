@@ -75,6 +75,18 @@ $materialPolicyCases = @(
   @{ Config = "samples/configs/material_policy/white_only_all_model.json"; Package = "output/MaterialPolicyWhiteOnly" }
 )
 
+$materialMappingCases = @(
+  @{ Config = "samples/configs/material_mapping/obj_mtl_material_mapping_rgbwv.json"; Package = "output/ObjMtlMaterialMappingRgbwv" },
+  @{ Config = "samples/configs/material_mapping/obj_mtl_material_mapping_ignore.json"; Package = "output/ObjMtlMaterialMappingIgnore" },
+  @{ Config = "samples/configs/material_mapping/obj_mtl_texture_material_mapping_rgbwv.json"; Package = "output/ObjMtlTextureMaterialMappingRgbwv" }
+)
+
+$threeMfCases = @(
+  @{ Config = "samples/configs/3mf/three_mf_single_rgb.json"; Package = "output/ThreeMfSingleRgb" },
+  @{ Config = "samples/configs/3mf/three_mf_multi_object_transform.json"; Package = "output/ThreeMfMultiObjectTransform" },
+  @{ Config = "samples/configs/3mf/three_mf_multi_material_rgbwv.json"; Package = "output/ThreeMfMultiMaterialRgbwv" }
+)
+
 $heavyReliefCases = @(
   @{ Config = "samples/configs/relief/relief_nail_varnish_support.json"; Package = "output/ReliefNailVarnishSupport" },
   @{ Config = "samples/configs/relief/relief_nail_white_support.json"; Package = "output/ReliefNailWhiteSupport" },
@@ -85,7 +97,7 @@ $heavyTextureCases = @(
   @{ Config = "samples/configs/textured/textured_relief_rgb.json"; Package = "output/TexturedReliefRgb" }
 )
 
-$quickCases = $basicCases + $storageCases + $supportCases + $textureSmallCases + $materialPolicyCases
+$quickCases = $basicCases + $storageCases + $supportCases + $textureSmallCases + $materialPolicyCases + $materialMappingCases + $threeMfCases
 $heavyCases = @()
 if (-not $SkipHeavyRelief) {
   $heavyCases += $heavyReliefCases
@@ -179,6 +191,49 @@ if ($Mode -eq "quick" -or $Mode -eq "full") {
     if ($storageRgbwvTiled.rgb.printPixels -le 0) { throw "storage RGB+W+V tiled expected RGB printPixels > 0" }
     if ($storageRgbwvTiled.white.printPixels -le 0) { throw "storage RGB+W+V tiled expected W printPixels > 0" }
     if ($storageRgbwvTiled.varnish.printPixels -le 0) { throw "storage RGB+W+V tiled expected V printPixels > 0" }
+  }
+
+  Run-Step "verify material role mapping samples" {
+    $objRgbwv = Read-Json "output/ObjMtlMaterialMappingRgbwv/reports/material_role_mapping_report.json"
+    if ($objRgbwv.enabled -ne $true) { throw "OBJ/MTL RGBWV expected material role mapping enabled" }
+    if ($objRgbwv.mappedRgb -le 0) { throw "OBJ/MTL RGBWV expected mappedRgb > 0" }
+    if ($objRgbwv.mappedWhite -le 0) { throw "OBJ/MTL RGBWV expected mappedWhite > 0" }
+    if ($objRgbwv.mappedVarnish -le 0) { throw "OBJ/MTL RGBWV expected mappedVarnish > 0" }
+
+    $objMtl = Read-Json "output/ObjMtlMaterialMappingRgbwv/reports/obj_mtl_material_report.json"
+    if ($objMtl.inputFormat -ne "obj") { throw "OBJ/MTL report expected inputFormat obj" }
+    if ($objMtl.materialCount -lt 3) { throw "OBJ/MTL RGBWV expected at least 3 materials" }
+    if ($objMtl.facesWithMaterial -le 0) { throw "OBJ/MTL RGBWV expected facesWithMaterial > 0" }
+
+    $objIgnore = Read-Json "output/ObjMtlMaterialMappingIgnore/reports/material_role_mapping_report.json"
+    if ($objIgnore.mappedIgnore -le 0) { throw "OBJ/MTL ignore expected mappedIgnore > 0" }
+
+    $objTexture = Read-Json "output/ObjMtlTextureMaterialMappingRgbwv/reports/texture_report.json"
+    if ($objTexture.stats.sampledPixels -le 0) { throw "OBJ/MTL texture mapping expected sampledPixels > 0" }
+    $objTextureRole = Read-Json "output/ObjMtlTextureMaterialMappingRgbwv/reports/material_role_mapping_report.json"
+    if ($objTextureRole.mappedRgb -le 0) { throw "OBJ/MTL texture mapping expected mappedRgb > 0" }
+    if ($objTextureRole.mappedWhite -le 0) { throw "OBJ/MTL texture mapping expected mappedWhite > 0" }
+    if ($objTextureRole.mappedVarnish -le 0) { throw "OBJ/MTL texture mapping expected mappedVarnish > 0" }
+  }
+
+  Run-Step "verify 3MF samples" {
+    $threeMfSingleModel = Read-Json "output/ThreeMfSingleRgb/reports/model_report.json"
+    if ($threeMfSingleModel.format -ne "3mf") { throw "3MF single expected model_report format 3mf" }
+    $threeMfSingle = Read-Json "output/ThreeMfSingleRgb/reports/three_mf_report.json"
+    if ($threeMfSingle.enabled -ne $true) { throw "3MF single expected three_mf_report enabled" }
+    if ($threeMfSingle.objectCount -le 0) { throw "3MF single expected objectCount > 0" }
+    if ($threeMfSingle.triangleCount -le 0) { throw "3MF single expected triangleCount > 0" }
+
+    $threeMfTransform = Read-Json "output/ThreeMfMultiObjectTransform/reports/three_mf_report.json"
+    if ($threeMfTransform.componentCount -le 0) { throw "3MF transform expected componentCount > 0" }
+    if ($threeMfTransform.meshObjectCount -le 0) { throw "3MF transform expected meshObjectCount > 0" }
+
+    $threeMfRgbwv = Read-Json "output/ThreeMfMultiMaterialRgbwv/reports/material_role_mapping_report.json"
+    if ($threeMfRgbwv.inputFormat -ne "3mf") { throw "3MF RGBWV expected material mapping inputFormat 3mf" }
+    if ($threeMfRgbwv.mappedRgb -le 0) { throw "3MF RGBWV expected mappedRgb > 0" }
+    if ($threeMfRgbwv.mappedWhite -le 0) { throw "3MF RGBWV expected mappedWhite > 0" }
+    if ($threeMfRgbwv.mappedVarnish -le 0) { throw "3MF RGBWV expected mappedVarnish > 0" }
+    if ($threeMfRgbwv.mappedSupport -ne 0) { throw "3MF RGBWV expected mappedSupport = 0 when allowInputSupportMaterial=false" }
   }
 
   Run-Step "make bad packages" {

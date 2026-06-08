@@ -1,0 +1,9 @@
+newmtl color_body
+Kd 1.0 1.0 1.0
+map_Kd ../textured/textures/gradient.png
+
+newmtl white_base
+Kd 1.0 1.0 1.0
+
+newmtl varnish_top
+Kd 0.0 0.0 0.0

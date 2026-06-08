@@ -1,0 +1,43 @@
+mtllib obj_mtl_rgb_white_varnish.mtl
+usemtl color_body
+v 0.0 0.0 0.05
+v 0.7 0.0 0.05
+v 0.7 0.6 0.05
+v 0.0 0.6 0.05
+v 0.0 0.0 0.25
+v 0.7 0.0 0.25
+v 0.7 0.6 0.25
+v 0.0 0.6 0.25
+usemtl white_base
+v 0.8 0.0 0.05
+v 1.5 0.0 0.05
+v 1.5 0.6 0.05
+v 0.8 0.6 0.05
+v 0.8 0.0 0.25
+v 1.5 0.0 0.25
+v 1.5 0.6 0.25
+v 0.8 0.6 0.25
+usemtl varnish_top
+v 1.6 0.0 0.05
+v 2.3 0.0 0.05
+v 2.3 0.6 0.05
+v 1.6 0.6 0.05
+v 1.6 0.0 0.25
+v 2.3 0.0 0.25
+v 2.3 0.6 0.25
+v 1.6 0.6 0.25
+usemtl color_body
+f 1 2 3
+f 1 3 4
+f 5 7 6
+f 5 8 7
+usemtl white_base
+f 9 10 11
+f 9 11 12
+f 13 15 14
+f 13 16 15
+usemtl varnish_top
+f 17 18 19
+f 17 19 20
+f 21 23 22
+f 21 24 23

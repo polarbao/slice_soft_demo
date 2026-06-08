@@ -1,0 +1,63 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../models/material_mapping/obj_mtl_rgb_white_varnish.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/ObjMtlMaterialMappingRgbwv",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "materialRoleMapping": {
+    "enabled": true,
+    "mode": "rules_then_default",
+    "defaultRole": "rgb",
+    "allowInputSupportMaterial": false,
+    "rules": [
+      { "matchNameContains": "white", "role": "white" },
+      { "matchNameContains": "varnish", "role": "varnish" },
+      { "matchNameContains": "clear", "role": "varnish" },
+      { "matchNameContains": "ignore", "role": "ignore" },
+      { "matchNameContains": "support", "role": "support_candidate" }
+    ]
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": false,
+    "format": "png",
+    "interval": 1,
+    "channels": ["rgb", "white", "varnish", "support"]
+  }
+}

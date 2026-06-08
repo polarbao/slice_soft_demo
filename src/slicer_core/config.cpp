@@ -240,6 +240,29 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         }
     }
 
+    if (root.contains("materialRoleMapping")) {
+        const auto& mapping = root.at("materialRoleMapping");
+        config.material_role_mapping.enabled = mapping.value("enabled", config.material_role_mapping.enabled);
+        config.material_role_mapping.mode = mapping.value("mode", config.material_role_mapping.mode);
+        config.material_role_mapping.default_role =
+            mapping.value("defaultRole", config.material_role_mapping.default_role);
+        config.material_role_mapping.allow_input_support_material =
+            mapping.value("allowInputSupportMaterial", config.material_role_mapping.allow_input_support_material);
+        if (mapping.contains("rules")) {
+            const auto& rules = mapping.at("rules");
+            if (!rules.is_array()) {
+                throw std::runtime_error("materialRoleMapping.rules must be an array");
+            }
+            config.material_role_mapping.rules.clear();
+            for (const auto& rule_json : rules.as_array()) {
+                MaterialRoleRuleConfig rule;
+                rule.match_name_contains = rule_json.value("matchNameContains", rule.match_name_contains);
+                rule.role = rule_json.value("role", rule.role);
+                config.material_role_mapping.rules.push_back(rule);
+            }
+        }
+    }
+
     if (root.contains("support")) {
         const auto& support = root.at("support");
         config.support.enabled = support.value("enabled", config.support.enabled);
@@ -395,6 +418,30 @@ void validate_slice_config(const SliceConfig& config) {
         }
         if (config.material_policy.conflict_policy != "model_material_over_support") {
             throw std::runtime_error("materialPolicy.conflictPolicy must be model_material_over_support");
+        }
+    }
+    if (config.material_role_mapping.enabled) {
+        if (config.material_role_mapping.mode != "rules_then_default") {
+            throw std::runtime_error("materialRoleMapping.mode must be rules_then_default");
+        }
+        const auto valid_role = [](const std::string& role) {
+            return role == "rgb" || role == "white" || role == "varnish" || role == "ignore"
+                || role == "support_candidate" || role == "support";
+        };
+        if (!valid_role(config.material_role_mapping.default_role)) {
+            throw std::runtime_error("materialRoleMapping.defaultRole is invalid");
+        }
+        for (const MaterialRoleRuleConfig& rule : config.material_role_mapping.rules) {
+            if (rule.match_name_contains.empty()) {
+                throw std::runtime_error("materialRoleMapping.rules[].matchNameContains must not be empty");
+            }
+            if (!valid_role(rule.role)) {
+                throw std::runtime_error("materialRoleMapping.rules[].role is invalid");
+            }
+            if (rule.role == "support" && !config.material_role_mapping.allow_input_support_material) {
+                throw std::runtime_error(
+                    "materialRoleMapping role=support requires allowInputSupportMaterial=true");
+            }
         }
     }
     if (config.relief.fill_mode != "surface_to_base" && config.relief.fill_mode != "intersection_range") {
