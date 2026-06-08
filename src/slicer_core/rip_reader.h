@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/tiff_io.h"
+
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -54,9 +56,15 @@ struct RipLayerChecksum {
 
 struct RipValidationResult {
     std::filesystem::path package_dir;
+    std::string schema;
+    std::string storage_mode;
+    int bit_depth{0};
+    std::array<std::string, 6> channel_order{"R", "G", "B", "W", "S", "V"};
     int width_px{0};
     int height_px{0};
     int layer_count{0};
+    int warnings_count{0};
+    std::array<TiffChannelStats, 6> total_channel_stats{};
     std::vector<RipLayerChecksum> layer_checksums;
 };
 

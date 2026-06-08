@@ -226,6 +226,19 @@ ValidationErrorCode classify_tiff_error(const std::string& message) {
     return ValidationErrorCode::TiffReadFailed;
 }
 
+void merge_channel_stats(
+    std::array<TiffChannelStats, rgbwsv_channel_count>& totals,
+    const std::array<TiffChannelStats, rgbwsv_channel_count>& layer_stats) {
+    for (std::size_t i{0}; i < totals.size(); ++i) {
+        totals.at(i).print_pixels += layer_stats.at(i).print_pixels;
+        totals.at(i).full_print_pixels += layer_stats.at(i).full_print_pixels;
+        totals.at(i).partial_print_pixels += layer_stats.at(i).partial_print_pixels;
+        totals.at(i).empty_pixels += layer_stats.at(i).empty_pixels;
+        totals.at(i).min_value = std::min(totals.at(i).min_value, layer_stats.at(i).min_value);
+        totals.at(i).max_value = std::max(totals.at(i).max_value, layer_stats.at(i).max_value);
+    }
+}
+
 }  // namespace
 
 std::string validation_error_code_string(const ValidationErrorCode code) {
@@ -332,6 +345,9 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
 
     RipValidationResult result;
     result.package_dir = package_dir;
+    result.schema = schema;
+    result.storage_mode = manifest_storage_mode;
+    result.bit_depth = tiff.at("bitDepth").as_int();
     validate_grid(grid, result);
 
     const Json* layers = nullptr;
@@ -418,6 +434,7 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
                 std::to_string(tiff_result.spec.width) + "x" + std::to_string(tiff_result.spec.height),
                 layer_path);
         }
+        merge_channel_stats(result.total_channel_stats, tiff_result.channel_stats);
         result.layer_checksums.push_back({index, tiff_result.channel_checksums});
     }
 
