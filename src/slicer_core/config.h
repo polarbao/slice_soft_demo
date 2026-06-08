@@ -50,6 +50,16 @@ struct MaterialConfig {
     std::uint8_t varnish_value{255};
 };
 
+struct TextureConfig {
+    bool enabled{false};
+    std::string apply_mode{"solid_volume_from_top_surface"};
+    std::string sampler{"bilinear"};
+    std::string uv_address_mode{"clamp"};
+    bool flip_v{true};
+    std::array<std::uint8_t, 3> fallback_rgb{0, 0, 0};
+    std::string missing_texture_policy{"warn_and_fallback"};
+};
+
 struct SupportConfig {
     bool enabled{true};
     std::string mode{"bottom_projection"};
@@ -87,6 +97,7 @@ struct SliceConfig {
     AutoOrientConfig auto_orient;
     BackgroundConfig background;
     MaterialConfig material;
+    TextureConfig texture;
     SupportConfig support;
     PreviewConfig preview;
     ReliefConfig relief;

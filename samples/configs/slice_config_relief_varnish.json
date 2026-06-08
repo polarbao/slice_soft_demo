@@ -76,7 +76,7 @@
   "preview": {
     "enabled": true,
     "format": "png",
-    "interval": 5,
+    "interval": 20,
     "channels": [
       "varnish",
       "support"

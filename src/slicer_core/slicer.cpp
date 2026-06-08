@@ -2,6 +2,7 @@
 
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
+#include "slicer_core/texture_image.h"
 #include "slicer_core/tiff_io.h"
 
 #include <algorithm>
@@ -11,6 +12,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -106,6 +108,8 @@ struct ReliefColumnInfo {
     double z_max_mm{0.0};
     int hit_count{0};
     bool multi_hit{false};
+    int top_triangle_index{-1};
+    std::array<double, 3> top_barycentric{0.0, 0.0, 0.0};
 };
 
 struct ReliefSamplingResult {
@@ -145,6 +149,40 @@ struct SupportGenerationResult {
     int full_vertical_projection_support_pixels{0};
     int layers_with_islands{0};
     int layers_with_support{0};
+};
+
+struct TextureColumnColor {
+    bool has_color{false};
+    std::array<std::uint8_t, 3> rgb{0, 0, 0};
+    bool sampled_texture{false};
+    bool used_fallback{false};
+    bool uv_out_of_range{false};
+};
+
+struct TextureReportData {
+    bool enabled{false};
+    std::string apply_mode;
+    int faces_with_uv{0};
+    int faces_without_uv{0};
+    std::uint64_t sampled_pixels{0};
+    std::uint64_t fallback_pixels{0};
+    std::uint64_t uv_out_of_range_pixels{0};
+    int loaded_textures{0};
+    int missing_textures{0};
+    Json::Array materials;
+    Json::Array texture_files;
+    Json::Array warnings;
+};
+
+struct RuntimeMaterialTexture {
+    MaterialInfo material;
+    TextureImage image;
+    bool loaded{false};
+};
+
+struct TextureRuntime {
+    TextureReportData report;
+    std::map<std::string, RuntimeMaterialTexture> materials;
 };
 
 constexpr std::array<const char*, rgbwsv_channel_count> channel_names{"R", "G", "B", "W", "S", "V"};
@@ -350,6 +388,9 @@ std::string canonical_preview_channel(const std::string& channel) {
     if (channel == "model_rgb") {
         return "rgb";
     }
+    if (channel == "model_rgb_true_color" || channel == "true_rgb") {
+        return "texture_rgb";
+    }
     if (channel == "s") {
         return "support";
     }
@@ -375,6 +416,9 @@ PreviewImage build_preview_image(
     if (channel == "rgb") {
         image.type = "model_rgb";
         image.prefix = "model_rgb";
+    } else if (channel == "texture_rgb") {
+        image.type = "texture_rgb";
+        image.prefix = "texture_rgb";
     } else if (channel == "support") {
         image.type = "support_s";
         image.prefix = "support_s";
@@ -394,6 +438,8 @@ PreviewImage build_preview_image(
                 visible_from_print_value(layer.at(base + 0U)),
                 visible_from_print_value(layer.at(base + 1U)),
                 visible_from_print_value(layer.at(base + 2U))};
+        } else if (channel == "texture_rgb") {
+            pixel = {layer.at(base + 0U), layer.at(base + 1U), layer.at(base + 2U)};
         } else if (channel == "support") {
             pixel = {0, visible_from_print_value(layer.at(base + 4U)), 0};
         } else if (channel == "white") {
@@ -404,7 +450,11 @@ PreviewImage build_preview_image(
             pixel = {varnish, 0, varnish};
         }
         const int pixel_max = std::max({pixel.at(0), pixel.at(1), pixel.at(2)});
-        if (pixel_max > 0) {
+        const bool has_display_data =
+            channel == "texture_rgb"
+                ? (layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U)
+                : pixel_max > 0;
+        if (has_display_data) {
             ++image.non_zero_pixels;
         }
         image.max_value = std::max(image.max_value, pixel_max);
@@ -611,7 +661,8 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     ReliefReportData& relief_report = result.report;
     relief_report.total_columns = static_cast<int>(pixel_count);
 
-    for (const Triangle& triangle : model_report.triangles) {
+    for (std::size_t triangle_index{0}; triangle_index < model_report.triangles.size(); ++triangle_index) {
+        const Triangle& triangle = model_report.triangles.at(triangle_index);
         const double min_x = std::min({triangle.a.x, triangle.b.x, triangle.c.x});
         const double max_x = std::max({triangle.a.x, triangle.b.x, triangle.c.x});
         const double min_y = std::min({triangle.a.y, triangle.b.y, triangle.c.y});
@@ -641,7 +692,12 @@ ReliefSamplingResult sample_relief_heightfield_masks(
                 const double z_mm = w0 * triangle.a.z + w1 * triangle.b.z + w2 * triangle.c.z;
                 const std::size_t index = mask_index(grid, x, y);
                 z_min.at(index) = std::min(z_min.at(index), z_mm);
-                z_max.at(index) = std::max(z_max.at(index), z_mm);
+                if (z_mm >= z_max.at(index)) {
+                    z_max.at(index) = z_mm;
+                    ReliefColumnInfo& column = result.columns.at(index);
+                    column.top_triangle_index = static_cast<int>(triangle_index);
+                    column.top_barycentric = {w0, w1, w2};
+                }
                 ++hit_count.at(index);
             }
         }
@@ -1040,6 +1096,129 @@ SupportGenerationResult generate_support_masks(
     return result;
 }
 
+const RuntimeMaterialTexture* find_runtime_material(
+    const TextureRuntime& runtime,
+    const std::string& material_name) {
+    const auto found = runtime.materials.find(material_name);
+    if (found == runtime.materials.end()) {
+        return nullptr;
+    }
+    return &found->second;
+}
+
+Json rgb_to_json(const std::array<std::uint8_t, 3>& rgb) {
+    return Json::array({static_cast<int>(rgb.at(0)), static_cast<int>(rgb.at(1)), static_cast<int>(rgb.at(2))});
+}
+
+TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelReport& model_report) {
+    TextureRuntime runtime;
+    runtime.report.enabled = config.texture.enabled;
+    runtime.report.apply_mode = config.texture.apply_mode;
+    runtime.report.faces_with_uv = static_cast<int>(model_report.faces_with_uv);
+    runtime.report.faces_without_uv = static_cast<int>(model_report.faces_without_uv);
+    if (!config.texture.enabled) {
+        return runtime;
+    }
+
+    for (const MaterialInfo& material : model_report.material_infos) {
+        RuntimeMaterialTexture runtime_material;
+        runtime_material.material = material;
+        if (material.has_texture) {
+            runtime.report.texture_files.push_back(material.diffuse_texture_path.generic_string());
+            if (!material.texture_exists) {
+                ++runtime.report.missing_textures;
+                runtime.report.warnings.push_back("missing texture: " + material.diffuse_texture_path.generic_string());
+                if (config.texture.missing_texture_policy == "fail_fast") {
+                    throw std::runtime_error("texture file does not exist: " + material.diffuse_texture_path.string());
+                }
+            } else {
+                try {
+                    runtime_material.image = load_texture_image(material.diffuse_texture_path);
+                    runtime_material.loaded = true;
+                    ++runtime.report.loaded_textures;
+                } catch (const std::exception& error) {
+                    ++runtime.report.missing_textures;
+                    runtime.report.warnings.push_back("texture decode failed: " + material.diffuse_texture_path.generic_string());
+                    if (config.texture.missing_texture_policy == "fail_fast") {
+                        throw;
+                    }
+                    (void)error;
+                }
+            }
+        }
+        runtime.report.materials.push_back(Json::object({
+            {"name", material.name},
+            {"hasDiffuse", material.has_diffuse},
+            {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
+            {"hasTexture", material.has_texture},
+            {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"textureLoaded", runtime_material.loaded},
+        }));
+        runtime.materials.emplace(material.name, std::move(runtime_material));
+    }
+
+    if (model_report.material_infos.empty()) {
+        runtime.report.warnings.push_back("model has no loaded MTL material info; fallback RGB will be used");
+    }
+    return runtime;
+}
+
+std::array<std::uint8_t, 3> fallback_texture_rgb(
+    const SliceConfig& config,
+    const RuntimeMaterialTexture* material) {
+    if (material != nullptr && material->material.has_diffuse) {
+        return material->material.diffuse_rgb;
+    }
+    return config.texture.fallback_rgb;
+}
+
+std::vector<TextureColumnColor> build_relief_texture_columns(
+    const SliceConfig& config,
+    const ModelReport& model_report,
+    const std::vector<ReliefColumnInfo>& columns,
+    TextureRuntime& runtime) {
+    std::vector<TextureColumnColor> result(columns.size());
+    if (!config.texture.enabled) {
+        return result;
+    }
+
+    const TextureSampleOptions sample_options{
+        config.texture.sampler,
+        config.texture.uv_address_mode,
+        config.texture.flip_v};
+
+    for (std::size_t index{0}; index < columns.size(); ++index) {
+        const ReliefColumnInfo& column = columns.at(index);
+        if (!column.has_model || column.top_triangle_index < 0
+            || column.top_triangle_index >= static_cast<int>(model_report.triangle_textures.size())) {
+            continue;
+        }
+
+        const TriangleTextureInfo& texture_info =
+            model_report.triangle_textures.at(static_cast<std::size_t>(column.top_triangle_index));
+        const RuntimeMaterialTexture* material = find_runtime_material(runtime, texture_info.material_name);
+        TextureColumnColor& color = result.at(index);
+        color.has_color = true;
+
+        if (texture_info.has_uv && material != nullptr && material->loaded) {
+            const double u = column.top_barycentric.at(0) * texture_info.uv.at(0).u
+                + column.top_barycentric.at(1) * texture_info.uv.at(1).u
+                + column.top_barycentric.at(2) * texture_info.uv.at(2).u;
+            const double v = column.top_barycentric.at(0) * texture_info.uv.at(0).v
+                + column.top_barycentric.at(1) * texture_info.uv.at(1).v
+                + column.top_barycentric.at(2) * texture_info.uv.at(2).v;
+            bool uv_out_of_range{false};
+            color.rgb = sample_texture_rgb(material->image, u, v, sample_options, uv_out_of_range);
+            color.sampled_texture = true;
+            color.uv_out_of_range = uv_out_of_range;
+        } else {
+            color.rgb = fallback_texture_rgb(config, material);
+            color.used_fallback = true;
+        }
+    }
+    return result;
+}
+
 void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base, const SliceConfig& config) {
     if (config.material.material_channel == "V") {
         pixels.at(base + 5U) = config.material.varnish_value;
@@ -1069,6 +1248,8 @@ std::vector<std::uint8_t> compose_layer(
     const GridSpec& grid,
     const std::vector<std::uint8_t>& model_mask,
     const std::vector<std::uint8_t>& support_mask,
+    const std::vector<TextureColumnColor>* texture_columns,
+    TextureReportData* texture_report,
     int& model_pixels,
     int& support_pixels) {
     std::vector<std::uint8_t> pixels(
@@ -1081,7 +1262,32 @@ std::vector<std::uint8_t> compose_layer(
             const std::size_t base =
                 (static_cast<std::size_t>(y) * grid.width_px + x) * rgbwsv_channel_count;
             if (model_mask.at(pixel_index) != 0) {
-                write_model_pixel(pixels, base, config);
+                if (config.texture.enabled) {
+                    TextureColumnColor color;
+                    color.has_color = true;
+                    color.rgb = config.texture.fallback_rgb;
+                    color.used_fallback = true;
+                    if (texture_columns != nullptr && pixel_index < texture_columns->size()
+                        && texture_columns->at(pixel_index).has_color) {
+                        color = texture_columns->at(pixel_index);
+                    }
+                    pixels.at(base + 0U) = color.rgb.at(0);
+                    pixels.at(base + 1U) = color.rgb.at(1);
+                    pixels.at(base + 2U) = color.rgb.at(2);
+                    if (texture_report != nullptr) {
+                        if (color.sampled_texture) {
+                            ++texture_report->sampled_pixels;
+                        }
+                        if (color.used_fallback) {
+                            ++texture_report->fallback_pixels;
+                        }
+                        if (color.uv_out_of_range) {
+                            ++texture_report->uv_out_of_range_pixels;
+                        }
+                    }
+                } else {
+                    write_model_pixel(pixels, base, config);
+                }
                 ++model_pixels;
             } else if (config.support.enabled && support_mask.at(pixel_index) != 0) {
                 pixels.at(base + 4U) = config.support.value;
@@ -1201,6 +1407,29 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
     });
 }
 
+Json texture_report_to_json(const TextureReportData& report) {
+    return Json::object({
+        {"enabled", report.enabled},
+        {"applyMode", report.apply_mode},
+        {"materials", Json{report.materials}},
+        {"textureFiles", Json{report.texture_files}},
+        {"loadedTextures", report.loaded_textures},
+        {"missingTextures", report.missing_textures},
+        {"stats",
+         Json::object({
+             {"facesWithUv", report.faces_with_uv},
+             {"facesWithoutUv", report.faces_without_uv},
+             {"sampledPixels", report.sampled_pixels},
+             {"fallbackPixels", report.fallback_pixels},
+             {"uvOutOfRangePixels", report.uv_out_of_range_pixels},
+         })},
+        {"sampledPixels", report.sampled_pixels},
+        {"fallbackPixels", report.fallback_pixels},
+        {"uvOutOfRangePixels", report.uv_out_of_range_pixels},
+        {"warnings", Json{report.warnings}},
+    });
+}
+
 Json relief_report_to_json(
     const SliceConfig& config,
     const ReliefReportData& relief_report,
@@ -1288,6 +1517,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const std::vector<int> support_source_layers = config.slicing_mode == "relief_heightfield"
         ? compute_relief_lower_layers(relief_columns)
         : compute_first_model_layers(model_masks, grid);
+    TextureRuntime texture_runtime = prepare_texture_runtime(config, model_report);
+    std::vector<TextureColumnColor> texture_columns;
+    if (config.texture.enabled && config.slicing_mode == "relief_heightfield") {
+        texture_columns = build_relief_texture_columns(config, model_report, relief_columns, texture_runtime);
+    }
     const int columns_with_support = config.support.enabled
         ? static_cast<int>(std::count_if(support_source_layers.begin(), support_source_layers.end(), [](const int layer) {
               return layer > 0;
@@ -1315,6 +1549,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid,
             model_masks.at(layer_index),
             support_generation.support_masks.at(layer_index),
+            config.texture.enabled ? &texture_columns : nullptr,
+            config.texture.enabled ? &texture_runtime.report : nullptr,
             layer_model_pixels,
             layer_support_pixels);
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
@@ -1384,6 +1620,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
               })},
              {"channelStats", channel_stats_array_to_json(total_channel_stats)},
+             {"texture",
+              Json::object({
+                  {"enabled", texture_runtime.report.enabled},
+                  {"sampledPixels", texture_runtime.report.sampled_pixels},
+                  {"fallbackPixels", texture_runtime.report.fallback_pixels},
+                  {"uvOutOfRangePixels", texture_runtime.report.uv_out_of_range_pixels},
+              })},
          })},
         {"layers", Json{slice_layers}},
     });
@@ -1467,6 +1710,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"triangleCount", static_cast<std::uint64_t>(material.triangle_count)},
         }));
     }
+    Json::Array material_infos;
+    for (const MaterialInfo& material : model_report.material_infos) {
+        material_infos.push_back(Json::object({
+            {"name", material.name},
+            {"hasDiffuse", material.has_diffuse},
+            {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
+            {"hasTexture", material.has_texture},
+            {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"textureExists", material.texture_exists},
+        }));
+    }
 
     const Json model_json = Json::object({
         {"modelPath", model_report.model_path.generic_string()},
@@ -1477,8 +1731,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"triangleCount", static_cast<std::uint64_t>(model_report.triangle_count)},
         {"degenerateTriangleCount", static_cast<std::uint64_t>(model_report.degenerate_triangle_count)},
         {"materialCount", static_cast<std::uint64_t>(model_report.materials.size())},
+        {"texcoordCount", static_cast<std::uint64_t>(model_report.texcoord_count)},
+        {"facesWithUv", static_cast<std::uint64_t>(model_report.faces_with_uv)},
+        {"facesWithoutUv", static_cast<std::uint64_t>(model_report.faces_without_uv)},
         {"materialLibraries", Json{material_libraries}},
         {"materials", Json{materials}},
+        {"materialInfos", Json{material_infos}},
         {"autoOrient",
          Json::object({
              {"enabled", model_report.auto_orient.enabled},
@@ -1495,6 +1753,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(package_dir / "reports/repair_report.json", repair_report);
     write_json_file(package_dir / "reports/support_report.json", support_report);
     write_json_file(package_dir / "reports/preview_report.json", preview_report);
+    write_json_file(package_dir / "reports/texture_report.json", texture_report_to_json(texture_runtime.report));
     write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
     write_json_file(
         package_dir / "reports/relief_report.json",
@@ -1551,6 +1810,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"repair", "reports/repair_report.json"},
              {"support", "reports/support_report.json"},
              {"preview", "reports/preview_report.json"},
+             {"texture", "reports/texture_report.json"},
              {"contour", "reports/contour_report.json"},
              {"relief", "reports/relief_report.json"},
          })},

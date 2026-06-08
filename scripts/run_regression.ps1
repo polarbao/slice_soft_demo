@@ -31,7 +31,10 @@ $positive = @(
   @{ Config = "samples/configs/support/support_bottom_projection.json"; Package = "output/SupportBottomProjection" },
   @{ Config = "samples/configs/support/support_unsupported_only.json"; Package = "output/SupportUnsupportedOnly" },
   @{ Config = "samples/configs/support/support_bottom_plus_unsupported.json"; Package = "output/SupportBottomPlusUnsupported" },
-  @{ Config = "samples/configs/support/support_island_filter.json"; Package = "output/SupportIslandFilter" }
+  @{ Config = "samples/configs/support/support_island_filter.json"; Package = "output/SupportIslandFilter" },
+  @{ Config = "samples/configs/textured/textured_relief_rgb.json"; Package = "output/TexturedReliefRgb" },
+  @{ Config = "samples/configs/textured/textured_missing_texture_fallback.json"; Package = "output/TexturedMissingTextureFallback" },
+  @{ Config = "samples/configs/textured/textured_no_uv_fallback.json"; Package = "output/TexturedNoUvFallback" }
 )
 
 if (-not $SkipHeavyRelief) {

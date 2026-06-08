@@ -1,0 +1,2 @@
+newmtl missing_texture
+map_Kd textures/does_not_exist.png

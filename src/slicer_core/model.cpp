@@ -18,11 +18,22 @@ constexpr double pi{3.14159265358979323846};
 
 struct MeshData {
     std::vector<Vec3> vertices;
+    std::vector<TexCoord> texcoords;
     std::vector<std::array<std::size_t, 3>> faces;
+    std::vector<TriangleTextureInfo> triangle_textures;
     std::size_t raw_face_count{0};
+    std::size_t faces_with_uv{0};
+    std::size_t faces_without_uv{0};
     std::string stl_encoding;
     std::vector<std::string> material_libraries;
     std::vector<MaterialStat> materials;
+    std::vector<MaterialInfo> material_infos;
+};
+
+struct ObjFaceVertex {
+    std::size_t position_index{0};
+    int texcoord_index{-1};
+    int normal_index{-1};
 };
 
 struct OrientationCandidate {
@@ -371,6 +382,55 @@ std::size_t parse_obj_index(const std::string& token, const std::size_t vertex_c
     return static_cast<std::size_t>(resolved);
 }
 
+int parse_optional_obj_index(const std::string& token, const std::size_t item_count) {
+    if (token.empty()) {
+        return -1;
+    }
+    const int index = std::stoi(token);
+    if (index == 0) {
+        throw std::runtime_error("OBJ indices are 1-based; zero is invalid");
+    }
+    if (index > 0) {
+        const int zero_based = index - 1;
+        if (zero_based >= static_cast<int>(item_count)) {
+            throw std::runtime_error("OBJ face references index outside loaded range");
+        }
+        return zero_based;
+    }
+    const int resolved = static_cast<int>(item_count) + index;
+    if (resolved < 0) {
+        throw std::runtime_error("OBJ negative face index is outside loaded range");
+    }
+    return resolved;
+}
+
+ObjFaceVertex parse_obj_face_vertex(
+    const std::string& token,
+    const std::size_t vertex_count,
+    const std::size_t texcoord_count) {
+    ObjFaceVertex result;
+    const std::size_t first_slash = token.find('/');
+    if (first_slash == std::string::npos) {
+        result.position_index = parse_obj_index(token, vertex_count);
+        return result;
+    }
+
+    const std::string position_text = token.substr(0, first_slash);
+    result.position_index = parse_obj_index(position_text, vertex_count);
+
+    const std::size_t second_slash = token.find('/', first_slash + 1U);
+    const std::string texcoord_text = second_slash == std::string::npos
+        ? token.substr(first_slash + 1U)
+        : token.substr(first_slash + 1U, second_slash - first_slash - 1U);
+    result.texcoord_index = parse_optional_obj_index(texcoord_text, texcoord_count);
+
+    if (second_slash != std::string::npos) {
+        const std::string normal_text = token.substr(second_slash + 1U);
+        result.normal_index = normal_text.empty() ? -1 : std::stoi(normal_text);
+    }
+    return result;
+}
+
 MaterialStat& material_stat(MeshData& mesh, const std::string& name) {
     const auto found = std::find_if(mesh.materials.begin(), mesh.materials.end(), [&](const MaterialStat& item) {
         return item.name == name;
@@ -380,6 +440,94 @@ MaterialStat& material_stat(MeshData& mesh, const std::string& name) {
     }
     mesh.materials.push_back({name, 0, 0});
     return mesh.materials.back();
+}
+
+MaterialInfo& material_info(MeshData& mesh, const std::string& name) {
+    const auto found = std::find_if(mesh.material_infos.begin(), mesh.material_infos.end(), [&](const MaterialInfo& item) {
+        return item.name == name;
+    });
+    if (found != mesh.material_infos.end()) {
+        return *found;
+    }
+    mesh.material_infos.push_back(MaterialInfo{});
+    mesh.material_infos.back().name = name;
+    return mesh.material_infos.back();
+}
+
+std::string trim_copy(const std::string& input) {
+    const auto first = std::find_if_not(input.begin(), input.end(), [](const unsigned char ch) {
+        return std::isspace(ch) != 0;
+    });
+    const auto last = std::find_if_not(input.rbegin(), input.rend(), [](const unsigned char ch) {
+        return std::isspace(ch) != 0;
+    }).base();
+    if (first >= last) {
+        return {};
+    }
+    return std::string(first, last);
+}
+
+std::uint8_t kd_component_to_u8(const double value) {
+    const double clamped = std::clamp(value, 0.0, 1.0);
+    return static_cast<std::uint8_t>(std::round(clamped * 255.0));
+}
+
+std::filesystem::path resolve_texture_path(
+    const std::filesystem::path& raw_path,
+    const std::filesystem::path& mtl_dir,
+    const std::filesystem::path& obj_dir) {
+    if (raw_path.is_absolute()) {
+        return raw_path.lexically_normal();
+    }
+    const std::filesystem::path from_mtl = (mtl_dir / raw_path).lexically_normal();
+    if (std::filesystem::exists(from_mtl)) {
+        return from_mtl;
+    }
+    return (obj_dir / raw_path).lexically_normal();
+}
+
+void load_mtl(
+    const std::filesystem::path& mtl_path,
+    const std::filesystem::path& obj_dir,
+    MeshData& mesh) {
+    std::ifstream input{mtl_path};
+    if (!input) {
+        return;
+    }
+
+    MaterialInfo* current{nullptr};
+    std::string line;
+    while (std::getline(input, line)) {
+        const std::size_t comment = line.find('#');
+        if (comment != std::string::npos) {
+            line = line.substr(0, comment);
+        }
+        std::istringstream stream{line};
+        std::string token;
+        stream >> token;
+        if (token == "newmtl") {
+            std::string name;
+            stream >> name;
+            current = name.empty() ? nullptr : &material_info(mesh, name);
+        } else if (token == "Kd" && current != nullptr) {
+            double r{0.0};
+            double g{0.0};
+            double b{0.0};
+            if (stream >> r >> g >> b) {
+                current->diffuse_rgb = {kd_component_to_u8(r), kd_component_to_u8(g), kd_component_to_u8(b)};
+                current->has_diffuse = true;
+            }
+        } else if (token == "map_Kd" && current != nullptr) {
+            std::string rest;
+            std::getline(stream, rest);
+            const std::string texture_name = trim_copy(rest);
+            if (!texture_name.empty()) {
+                current->diffuse_texture_path = resolve_texture_path(texture_name, mtl_path.parent_path(), obj_dir);
+                current->has_texture = true;
+                current->texture_exists = std::filesystem::exists(current->diffuse_texture_path);
+            }
+        }
+    }
 }
 
 void load_obj(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
@@ -405,24 +553,51 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
                 if (!active_material.empty()) {
                     (void)material_stat(mesh, active_material);
                 }
+            } else if (token == "vt") {
+                TexCoord texcoord{};
+                if (!(stream >> texcoord.u >> texcoord.v)) {
+                    throw std::runtime_error("invalid OBJ texture coordinate line in: " + path.string());
+                }
+                mesh.texcoords.push_back(texcoord);
             } else if (token == "f") {
-                std::vector<std::size_t> face_indices;
+                std::vector<ObjFaceVertex> face_vertices;
                 std::string face_token;
                 while (stream >> face_token) {
-                    face_indices.push_back(parse_obj_index(face_token, mesh.vertices.size()));
+                    face_vertices.push_back(parse_obj_face_vertex(face_token, mesh.vertices.size(), mesh.texcoords.size()));
                 }
-                if (face_indices.size() < 3) {
+                if (face_vertices.size() < 3) {
                     throw std::runtime_error("OBJ face has fewer than three vertices: " + path.string());
                 }
                 ++mesh.raw_face_count;
-                const std::size_t triangle_count = face_indices.size() - 2U;
+                const bool face_has_uv = std::all_of(face_vertices.begin(), face_vertices.end(), [](const ObjFaceVertex& item) {
+                    return item.texcoord_index >= 0;
+                });
+                if (face_has_uv) {
+                    ++mesh.faces_with_uv;
+                } else {
+                    ++mesh.faces_without_uv;
+                }
+                const std::size_t triangle_count = face_vertices.size() - 2U;
                 if (!active_material.empty()) {
                     MaterialStat& stat = material_stat(mesh, active_material);
                     ++stat.face_count;
                     stat.triangle_count += triangle_count;
                 }
-                for (std::size_t i{1}; i + 1U < face_indices.size(); ++i) {
-                    mesh.faces.push_back({face_indices.at(0), face_indices.at(i), face_indices.at(i + 1U)});
+                for (std::size_t i{1}; i + 1U < face_vertices.size(); ++i) {
+                    const ObjFaceVertex& a = face_vertices.at(0);
+                    const ObjFaceVertex& b = face_vertices.at(i);
+                    const ObjFaceVertex& c = face_vertices.at(i + 1U);
+                    mesh.faces.push_back({a.position_index, b.position_index, c.position_index});
+                    TriangleTextureInfo texture_info;
+                    texture_info.material_name = active_material;
+                    texture_info.has_uv = a.texcoord_index >= 0 && b.texcoord_index >= 0 && c.texcoord_index >= 0;
+                    if (texture_info.has_uv) {
+                        texture_info.uv = {
+                            mesh.texcoords.at(static_cast<std::size_t>(a.texcoord_index)),
+                            mesh.texcoords.at(static_cast<std::size_t>(b.texcoord_index)),
+                            mesh.texcoords.at(static_cast<std::size_t>(c.texcoord_index))};
+                    }
+                    mesh.triangle_textures.push_back(texture_info);
                 }
             }
             continue;
@@ -449,6 +624,10 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
         load_stl(model_path, config.transform, mesh);
     } else if (format == "obj") {
         load_obj(model_path, config.transform, mesh);
+        for (const std::string& library : mesh.material_libraries) {
+            const std::filesystem::path mtl_path = (model_path.parent_path() / library).lexically_normal();
+            load_mtl(mtl_path, model_path.parent_path(), mesh);
+        }
     } else {
         throw std::runtime_error("unsupported model format for P0: " + format);
     }
@@ -472,8 +651,12 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
     report.face_count = mesh.raw_face_count;
     report.triangle_count = mesh.faces.size();
     report.degenerate_triangle_count = count_degenerate_triangles(mesh.vertices, mesh.faces);
+    report.texcoord_count = mesh.texcoords.size();
+    report.faces_with_uv = mesh.faces_with_uv;
+    report.faces_without_uv = mesh.faces_without_uv;
     report.material_libraries = mesh.material_libraries;
     report.materials = mesh.materials;
+    report.material_infos = mesh.material_infos;
     report.auto_orient.enabled = config.auto_orient.enabled;
     report.auto_orient.max_height_mm = config.auto_orient.max_height_mm;
     report.auto_orient.selected_orientation = orientation.name;
@@ -481,6 +664,7 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
     report.auto_orient.original_bbox_mm = original_bbox;
     report.bbox_mm = orientation.bbox;
     report.triangles = build_triangles(orientation.vertices, mesh.faces);
+    report.triangle_textures = mesh.triangle_textures;
     return report;
 }
 

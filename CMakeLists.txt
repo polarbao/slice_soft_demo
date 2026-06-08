@@ -17,6 +17,8 @@ add_library(slicer_core
     src/slicer_core/rip_reader.h
     src/slicer_core/slicer.cpp
     src/slicer_core/slicer.h
+    src/slicer_core/texture_image.cpp
+    src/slicer_core/texture_image.h
     src/slicer_core/tiff_io.cpp
     src/slicer_core/tiff_io.h
 )
@@ -24,6 +26,10 @@ add_library(slicer_core
 target_include_directories(slicer_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+if(WIN32)
+    target_link_libraries(slicer_core PRIVATE windowscodecs ole32)
+endif()
 
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp

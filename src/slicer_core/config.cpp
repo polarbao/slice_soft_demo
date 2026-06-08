@@ -93,6 +93,28 @@ std::array<std::uint8_t, 3> read_rgb(const Json& object, const std::array<std::u
     return result;
 }
 
+std::array<std::uint8_t, 3> read_rgb_field(
+    const Json& object,
+    const char* key,
+    const std::array<std::uint8_t, 3>& fallback) {
+    if (!object.contains(key)) {
+        return fallback;
+    }
+    const auto& value = object.at(key);
+    if (!value.is_array() || value.size() != 3) {
+        throw std::runtime_error(std::string{"expected 3-value uint8 array for field: "} + key);
+    }
+    std::array<std::uint8_t, 3> result{};
+    for (std::size_t i{0}; i < result.size(); ++i) {
+        const int channel{value.at(i).as_int()};
+        if (channel < 0 || channel > 255) {
+            throw std::runtime_error(std::string{"RGB config field value out of uint8 range: "} + key);
+        }
+        result.at(i) = static_cast<std::uint8_t>(channel);
+    }
+    return result;
+}
+
 std::uint8_t read_legacy_u16_as_u8(const Json& object, const char* key, const std::uint8_t fallback) {
     if (!object.contains(key)) {
         return fallback;
@@ -169,6 +191,18 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.material.white_value = read_legacy_u16_as_u8(material, "whiteStrength", config.material.white_value);
         config.material.varnish_value =
             read_legacy_u16_as_u8(material, "varnishStrength", config.material.varnish_value);
+    }
+
+    if (root.contains("texture")) {
+        const auto& texture = root.at("texture");
+        config.texture.enabled = texture.value("enabled", config.texture.enabled);
+        config.texture.apply_mode = texture.value("applyMode", config.texture.apply_mode);
+        config.texture.sampler = texture.value("sampler", config.texture.sampler);
+        config.texture.uv_address_mode = texture.value("uvAddressMode", config.texture.uv_address_mode);
+        config.texture.flip_v = texture.value("flipV", config.texture.flip_v);
+        config.texture.fallback_rgb = read_rgb_field(texture, "fallbackRgb", config.texture.fallback_rgb);
+        config.texture.missing_texture_policy =
+            texture.value("missingTexturePolicy", config.texture.missing_texture_policy);
     }
 
     if (root.contains("support")) {
@@ -281,6 +315,24 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.material.apply_mode != "solid_volume") {
         throw std::runtime_error("00C only supports modelMaterial.applyMode == solid_volume");
     }
+    if (config.texture.enabled) {
+        if (config.texture.apply_mode != "solid_volume_from_top_surface") {
+            throw std::runtime_error("04 only supports texture.applyMode == solid_volume_from_top_surface");
+        }
+        if (config.texture.sampler != "nearest" && config.texture.sampler != "bilinear") {
+            throw std::runtime_error("texture.sampler must be nearest or bilinear");
+        }
+        if (config.texture.uv_address_mode != "clamp" && config.texture.uv_address_mode != "repeat") {
+            throw std::runtime_error("texture.uvAddressMode must be clamp or repeat");
+        }
+        if (config.texture.missing_texture_policy != "warn_and_fallback"
+            && config.texture.missing_texture_policy != "fail_fast") {
+            throw std::runtime_error("texture.missingTexturePolicy must be warn_and_fallback or fail_fast");
+        }
+        if (config.slicing_mode != "relief_heightfield") {
+            throw std::runtime_error("04 texture.enabled currently requires relief_heightfield");
+        }
+    }
     if (config.relief.fill_mode != "surface_to_base" && config.relief.fill_mode != "intersection_range") {
         throw std::runtime_error("relief.fillMode must be surface_to_base or intersection_range");
     }
@@ -300,8 +352,9 @@ void validate_slice_config(const SliceConfig& config) {
     }
     for (const std::string& channel : config.preview.channels) {
         if (channel != "rgb" && channel != "model_rgb" && channel != "support" && channel != "s"
-            && channel != "white" && channel != "w" && channel != "varnish" && channel != "v") {
-            throw std::runtime_error("preview.channels supports rgb, support, white, varnish");
+            && channel != "white" && channel != "w" && channel != "varnish" && channel != "v"
+            && channel != "texture_rgb" && channel != "model_rgb_true_color" && channel != "true_rgb") {
+            throw std::runtime_error("preview.channels supports rgb, texture_rgb, support, white, varnish");
         }
     }
     if (config.output.channel_order.size() != expected_channel_order.size()) {

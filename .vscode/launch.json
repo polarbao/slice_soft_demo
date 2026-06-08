@@ -133,6 +133,58 @@
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
       "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug textured relief RGB",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_relief_rgb.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug textured missing texture fallback",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_missing_texture_fallback.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug textured no UV fallback",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_no_uv_fallback.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug rip_reader_test textured relief RGB",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/TexturedReliefRgb"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Run textured relief RGB",
+      "console": "integratedTerminal"
     }
   ]
 }

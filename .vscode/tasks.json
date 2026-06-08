@@ -173,6 +173,62 @@
       },
       "dependsOn": "SliceSoft: Build Debug",
       "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run textured relief RGB",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_relief_rgb.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test textured relief RGB",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/TexturedReliefRgb"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run textured relief RGB",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run textured missing texture fallback",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_missing_texture_fallback.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run textured no UV fallback",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_no_uv_fallback.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
     }
   ]
 }
