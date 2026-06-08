@@ -11,8 +11,8 @@
     "channelOrder": ["R", "G", "B", "W", "S", "V"],
     "bitDepth": 8,
     "planarConfig": "contiguous",
-    "tiled": true,
-    "tileSize": [256, 256]
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
   },
   "modelMaterial": {
     "materialChannel": "V",

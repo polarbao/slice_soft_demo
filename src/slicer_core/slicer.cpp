@@ -1861,6 +1861,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     tiff_spec.height = static_cast<std::uint32_t>(grid.height_px);
     tiff_spec.tile_width = static_cast<std::uint32_t>(config.output.tile_size.at(0));
     tiff_spec.tile_height = static_cast<std::uint32_t>(config.output.tile_size.at(1));
+    tiff_spec.rows_per_strip = static_cast<std::uint32_t>(config.output.rows_per_strip);
+    tiff_spec.storage_mode =
+        config.output.storage_mode == "tiled" ? TiffStorageMode::Tiled : TiffStorageMode::Stripped;
 
     std::vector<LayerDiagnostics> layer_diagnostics;
     ReliefReportData relief_report;
@@ -1936,7 +1939,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         merge_channel_stats(total_channel_stats, diagnostics);
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
-            write_rgbwsv_tiled_tiff(package_dir / relative_path, tiff_spec, layer);
+            write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
         }
         if (should_write_preview(config.preview, layer_index, grid.layer_count)) {
             Json::Array written = write_layer_previews(config.preview, package_dir, grid, layer_index, layer);
@@ -2142,9 +2145,30 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         package_dir / "reports/relief_report.json",
         relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
 
+    Json::Object tiff_json{
+        {"channelOrder", channel_order_json()},
+        {"channelCount", rgbwsv_channel_count},
+        {"bitDepth", 8},
+        {"sampleFormat", "uint"},
+        {"planarConfig", "contiguous"},
+        {"tiled", config.output.storage_mode == "tiled"},
+        {"storage", config.output.storage_mode},
+        {"storageMode", config.output.storage_mode},
+        {"polarity", "black_is_print"},
+        {"printValue", 0},
+        {"emptyValue", 255},
+        {"writeTiffLayers", options.write_tiff_layers},
+        {"layers", Json{layers}},
+    };
+    if (config.output.storage_mode == "tiled") {
+        tiff_json["tileSize"] = Json::array({config.output.tile_size.at(0), config.output.tile_size.at(1)});
+    } else {
+        tiff_json["rowsPerStrip"] = config.output.rows_per_strip;
+    }
+
     const Json manifest = Json::object({
-        {"schema", "p0.rgbwsv.1"},
-        {"schemaVersion", "p0.rgbwsv.1"},
+        {"schema", "p0.rgbwsv.2"},
+        {"schemaVersion", "p0.rgbwsv.2"},
         {"source",
          Json::object({
              {"configPath", config_path.generic_string()},
@@ -2169,22 +2193,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"mode", config.slicing_mode},
              {"reliefFillMode", config.relief.fill_mode},
          })},
-        {"tiff",
-         Json::object({
-             {"channelOrder", channel_order_json()},
-             {"channelCount", rgbwsv_channel_count},
-             {"bitDepth", 8},
-             {"sampleFormat", "uint"},
-             {"planarConfig", "contiguous"},
-             {"tiled", true},
-             {"storage", "tiled"},
-             {"polarity", "black_is_print"},
-             {"printValue", 0},
-             {"emptyValue", 255},
-             {"writeTiffLayers", options.write_tiff_layers},
-             {"tileSize", Json::array({config.output.tile_size.at(0), config.output.tile_size.at(1)})},
-             {"layers", Json{layers}},
-         })},
+        {"tiff", Json{tiff_json}},
         {"layers", Json{layers}},
         {"reports",
          Json::object({

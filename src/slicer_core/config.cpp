@@ -157,8 +157,15 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.output.channel_order = read_string_array(output, "channelOrder", config.output.channel_order);
         config.output.bit_depth = output.value("bitDepth", config.output.bit_depth);
         config.output.planar_config = output.value("planarConfig", config.output.planar_config);
-        config.output.tiled = output.value("tiled", config.output.tiled);
+        if (output.contains("storageMode")) {
+            config.output.storage_mode = output.at("storageMode").as_string();
+            config.output.tiled = config.output.storage_mode == "tiled";
+        } else if (output.contains("tiled")) {
+            config.output.tiled = output.at("tiled").as_bool();
+            config.output.storage_mode = config.output.tiled ? "tiled" : "stripped";
+        }
         config.output.tile_size = read_int2(output, "tileSize", config.output.tile_size);
+        config.output.rows_per_strip = output.value("rowsPerStrip", config.output.rows_per_strip);
     }
 
     if (root.contains("modelTransform")) {
@@ -303,11 +310,15 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.output.planar_config != "contiguous") {
         throw std::runtime_error("P0 requires output.planarConfig == contiguous");
     }
-    if (!config.output.tiled) {
-        throw std::runtime_error("P0 requires tiled TIFF output");
+    if (config.output.storage_mode != "stripped" && config.output.storage_mode != "tiled") {
+        throw std::runtime_error("output.storageMode must be stripped or tiled");
     }
-    if (config.output.tile_size.at(0) <= 0 || config.output.tile_size.at(1) <= 0) {
+    if (config.output.storage_mode == "tiled"
+        && (config.output.tile_size.at(0) <= 0 || config.output.tile_size.at(1) <= 0)) {
         throw std::runtime_error("output.tileSize values must be positive");
+    }
+    if (config.output.storage_mode == "stripped" && config.output.rows_per_strip <= 0) {
+        throw std::runtime_error("output.rowsPerStrip must be positive for stripped TIFF output");
     }
     if (config.support.enabled && config.support.mode != "bottom_projection"
         && config.support.mode != "unsupported_only"

@@ -18,11 +18,8 @@
     ],
     "bitDepth": 8,
     "planarConfig": "contiguous",
-    "tiled": true,
-    "tileSize": [
-      256,
-      256
-    ]
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
   },
   "modelTransform": {
     "unit": "mm",

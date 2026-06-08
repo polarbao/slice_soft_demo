@@ -1,19 +1,20 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "../../models/relief/relief_nail_arched.obj",
+    "modelPath": "../../models/textured/fixtures/policy_textured_small.obj",
     "format": "auto"
   },
   "output": {
-    "packageDir": "output/ReliefFlatVarnishNoSupport",
+    "packageDir": "output/StorageTiledCompat",
     "dpiX": 600,
     "dpiY": 600,
     "layerThicknessMm": 0.01,
     "channelOrder": ["R", "G", "B", "W", "S", "V"],
     "bitDepth": 8,
     "planarConfig": "contiguous",
-    "storageMode": "stripped",
-    "rowsPerStrip": 64
+    "storageMode": "tiled",
+    "tiled": true,
+    "tileSize": [256, 256]
   },
   "modelTransform": {
     "unit": "mm",
@@ -30,28 +31,28 @@
     "value": 255
   },
   "modelMaterial": {
-    "materialChannel": "V",
+    "materialChannel": "RGB",
     "applyMode": "solid_volume",
-    "rgb": [255, 255, 255],
+    "rgb": [0, 0, 0],
     "whiteValue": 255,
-    "varnishValue": 0
+    "varnishValue": 255
   },
   "support": {
-    "enabled": false,
+    "enabled": true,
     "mode": "bottom_projection",
     "value": 0,
     "offsetMm": 0.0,
     "minAreaPx": 0
   },
   "relief": {
-    "fillMode": "surface_to_base",
+    "fillMode": "intersection_range",
     "baseZMm": 0.0
   },
   "preview": {
     "enabled": true,
     "format": "png",
-    "interval": 10,
-    "channels": ["varnish", "support"],
+    "interval": 1,
+    "channels": ["rgb", "support"],
     "onlyNonEmptyLayers": true
   }
 }

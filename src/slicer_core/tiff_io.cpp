@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -27,6 +28,8 @@ struct ParsedEntry {
     std::uint32_t count{0};
     std::uint32_t value_or_offset{0};
 };
+
+using ParsedEntries = std::vector<std::pair<std::uint16_t, ParsedEntry>>;
 
 void append_u16(std::vector<std::uint8_t>& data, const std::uint16_t value) {
     data.push_back(static_cast<std::uint8_t>(value & 0xffU));
@@ -165,7 +168,97 @@ std::vector<std::uint32_t> read_u32_array(
     return result;
 }
 
+ParsedEntries parse_ifd_entries(const std::vector<std::uint8_t>& data, const std::filesystem::path& path) {
+    if (data.size() < 8 || data.at(0) != 'I' || data.at(1) != 'I' || read_u16(data, 2) != 42) {
+        throw std::runtime_error("unsupported or invalid TIFF header: " + path.string());
+    }
+
+    const std::uint32_t ifd_offset{read_u32(data, 4)};
+    if (static_cast<std::size_t>(ifd_offset) + 2 > data.size()) {
+        throw std::runtime_error("TIFF IFD offset outside file: " + path.string());
+    }
+    const std::uint16_t entry_count{read_u16(data, ifd_offset)};
+    ParsedEntries entries;
+    entries.reserve(entry_count);
+    for (std::uint16_t i{0}; i < entry_count; ++i) {
+        const std::size_t offset = static_cast<std::size_t>(ifd_offset) + 2U + static_cast<std::size_t>(i) * 12U;
+        if (offset + 12 > data.size()) {
+            throw std::runtime_error("truncated TIFF IFD: " + path.string());
+        }
+        const std::uint16_t tag{read_u16(data, offset)};
+        const auto type = static_cast<TiffType>(read_u16(data, offset + 2U));
+        const std::uint32_t count{read_u32(data, offset + 4U)};
+        const std::uint32_t value_or_offset{read_u32(data, offset + 8U)};
+        entries.push_back({tag, {type, count, value_or_offset}});
+    }
+    return entries;
+}
+
+std::optional<ParsedEntry> find_optional_entry(const ParsedEntries& entries, const std::uint16_t tag) {
+    const auto found = std::find_if(entries.begin(), entries.end(), [tag](const auto& item) {
+        return item.first == tag;
+    });
+    if (found == entries.end()) {
+        return std::nullopt;
+    }
+    return found->second;
+}
+
+ParsedEntry find_required_entry(const ParsedEntries& entries, const std::uint16_t tag) {
+    const auto found = find_optional_entry(entries, tag);
+    if (!found.has_value()) {
+        throw std::runtime_error("missing required TIFF tag: " + std::to_string(tag));
+    }
+    return found.value();
+}
+
+void validate_common_spec(
+    TiffReadResult& result,
+    const std::vector<std::uint16_t>& bits_per_sample,
+    const std::vector<std::uint16_t>& sample_formats,
+    const std::filesystem::path& path) {
+    if (result.spec.samples_per_pixel != rgbwsv_channel_count || bits_per_sample.size() != rgbwsv_channel_count
+        || sample_formats.size() != rgbwsv_channel_count) {
+        throw std::runtime_error("TIFF is not a six-channel RGBWSV image: " + path.string());
+    }
+    for (std::size_t i{0}; i < bits_per_sample.size(); ++i) {
+        if (bits_per_sample.at(i) != 8 || sample_formats.at(i) != 1) {
+            throw std::runtime_error("TIFF channel is not uint8: " + path.string());
+        }
+    }
+    if (result.spec.planar_config != 1) {
+        throw std::runtime_error("TIFF planar config is not contiguous: " + path.string());
+    }
+}
+
+void update_channel_stats(TiffReadResult& result, const std::uint16_t channel, const std::uint8_t value) {
+    result.channel_checksums.at(channel) += value;
+    TiffChannelStats& stats = result.channel_stats.at(channel);
+    stats.min_value = std::min(stats.min_value, static_cast<int>(value));
+    stats.max_value = std::max(stats.max_value, static_cast<int>(value));
+    if (value == 255U) {
+        ++stats.empty_pixels;
+    } else {
+        ++stats.print_pixels;
+        if (value == 0U) {
+            ++stats.full_print_pixels;
+        } else {
+            ++stats.partial_print_pixels;
+        }
+    }
+}
+
 }  // namespace
+
+std::string tiff_storage_mode_string(const TiffStorageMode mode) {
+    switch (mode) {
+        case TiffStorageMode::Stripped:
+            return "stripped";
+        case TiffStorageMode::Tiled:
+            return "tiled";
+    }
+    return "unknown";
+}
 
 void write_rgbwsv_tiled_tiff(
     const std::filesystem::path& path,
@@ -276,70 +369,125 @@ void write_rgbwsv_tiled_tiff(
     output.write(reinterpret_cast<const char*>(ifd.data()), static_cast<std::streamsize>(ifd.size()));
 }
 
+void write_rgbwsv_stripped_tiff(
+    const std::filesystem::path& path,
+    const TiffImageSpec& spec,
+    const std::vector<std::uint8_t>& pixels) {
+    if (spec.width == 0 || spec.height == 0 || spec.rows_per_strip == 0) {
+        throw std::runtime_error("invalid TIFF dimensions");
+    }
+    if (spec.samples_per_pixel != rgbwsv_channel_count || spec.bits_per_sample != 8 || spec.planar_config != 1) {
+        throw std::runtime_error("P0 03B TIFF writer only supports RGBWSV uint8 contiguous pixels");
+    }
+    const std::size_t expected_pixels =
+        static_cast<std::size_t>(spec.width) * spec.height * spec.samples_per_pixel;
+    if (pixels.size() != expected_pixels) {
+        throw std::runtime_error("pixel buffer size does not match TIFF dimensions");
+    }
+
+    const std::uint32_t strip_count{(spec.height + spec.rows_per_strip - 1U) / spec.rows_per_strip};
+    std::vector<std::uint32_t> strip_offsets;
+    std::vector<std::uint32_t> strip_byte_counts;
+    strip_offsets.reserve(strip_count);
+    strip_byte_counts.reserve(strip_count);
+
+    constexpr std::uint32_t header_size{8};
+    std::vector<std::uint8_t> strip_data;
+    strip_data.reserve(pixels.size());
+    for (std::uint32_t strip_index{0}; strip_index < strip_count; ++strip_index) {
+        const std::uint32_t start_row{strip_index * spec.rows_per_strip};
+        const std::uint32_t rows{
+            std::min(spec.rows_per_strip, static_cast<std::uint32_t>(spec.height - start_row))};
+        const std::uint32_t byte_count{rows * spec.width * spec.samples_per_pixel};
+        strip_offsets.push_back(header_size + static_cast<std::uint32_t>(strip_data.size()));
+        strip_byte_counts.push_back(byte_count);
+        const std::size_t source_offset =
+            static_cast<std::size_t>(start_row) * spec.width * spec.samples_per_pixel;
+        strip_data.insert(
+            strip_data.end(),
+            pixels.begin() + static_cast<std::ptrdiff_t>(source_offset),
+            pixels.begin() + static_cast<std::ptrdiff_t>(source_offset + byte_count));
+    }
+
+    const std::uint32_t ifd_offset = header_size + static_cast<std::uint32_t>(strip_data.size());
+    std::vector<IfdEntry> entries{
+        {256, TiffType::long_value, 1, longs({spec.width})},
+        {257, TiffType::long_value, 1, longs({spec.height})},
+        {258, TiffType::short_value, spec.samples_per_pixel, shorts({8, 8, 8, 8, 8, 8})},
+        {259, TiffType::short_value, 1, shorts({1})},
+        {262, TiffType::short_value, 1, shorts({2})},
+        {270, TiffType::ascii, 7, ascii("RGBWSV")},
+        {273, TiffType::long_value, strip_count, longs(strip_offsets)},
+        {277, TiffType::short_value, 1, shorts({spec.samples_per_pixel})},
+        {278, TiffType::long_value, 1, longs({spec.rows_per_strip})},
+        {279, TiffType::long_value, strip_count, longs(strip_byte_counts)},
+        {284, TiffType::short_value, 1, shorts({spec.planar_config})},
+        {305, TiffType::ascii, 19, ascii("slice_soft_demo p0")},
+        {338, TiffType::short_value, 3, shorts({0, 0, 0})},
+        {339, TiffType::short_value, spec.samples_per_pixel, shorts({1, 1, 1, 1, 1, 1})}};
+    std::sort(entries.begin(), entries.end(), [](const IfdEntry& a, const IfdEntry& b) { return a.tag < b.tag; });
+
+    std::vector<std::uint8_t> ifd;
+    std::vector<std::uint8_t> extra_data;
+    append_u16(ifd, static_cast<std::uint16_t>(entries.size()));
+    const std::uint32_t extra_base_offset =
+        ifd_offset + 2U + static_cast<std::uint32_t>(entries.size() * 12U) + 4U;
+    for (const auto& entry : entries) {
+        write_entry(ifd, extra_data, entry, extra_base_offset);
+    }
+    append_u32(ifd, 0);
+    ifd.insert(ifd.end(), extra_data.begin(), extra_data.end());
+
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream output{path, std::ios::binary};
+    if (!output) {
+        throw std::runtime_error("failed to open TIFF for writing: " + path.string());
+    }
+    output.put('I');
+    output.put('I');
+    output.put(42);
+    output.put(0);
+    output.put(static_cast<char>(ifd_offset & 0xffU));
+    output.put(static_cast<char>((ifd_offset >> 8U) & 0xffU));
+    output.put(static_cast<char>((ifd_offset >> 16U) & 0xffU));
+    output.put(static_cast<char>((ifd_offset >> 24U) & 0xffU));
+    output.write(reinterpret_cast<const char*>(strip_data.data()), static_cast<std::streamsize>(strip_data.size()));
+    output.write(reinterpret_cast<const char*>(ifd.data()), static_cast<std::streamsize>(ifd.size()));
+}
+
+void write_rgbwsv_tiff(
+    const std::filesystem::path& path,
+    const TiffImageSpec& spec,
+    const std::vector<std::uint8_t>& pixels) {
+    if (spec.storage_mode == TiffStorageMode::Tiled) {
+        write_rgbwsv_tiled_tiff(path, spec, pixels);
+        return;
+    }
+    write_rgbwsv_stripped_tiff(path, spec, pixels);
+}
+
 TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
     std::ifstream input{path, std::ios::binary};
     if (!input) {
         throw std::runtime_error("failed to open TIFF for reading: " + path.string());
     }
     const std::vector<std::uint8_t> data{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
-    if (data.size() < 8 || data.at(0) != 'I' || data.at(1) != 'I' || read_u16(data, 2) != 42) {
-        throw std::runtime_error("unsupported or invalid TIFF header: " + path.string());
-    }
-
-    const std::uint32_t ifd_offset{read_u32(data, 4)};
-    if (static_cast<std::size_t>(ifd_offset) + 2 > data.size()) {
-        throw std::runtime_error("TIFF IFD offset outside file: " + path.string());
-    }
-    const std::uint16_t entry_count{read_u16(data, ifd_offset)};
-    std::vector<std::pair<std::uint16_t, ParsedEntry>> entries;
-    entries.reserve(entry_count);
-    for (std::uint16_t i{0}; i < entry_count; ++i) {
-        const std::size_t offset = static_cast<std::size_t>(ifd_offset) + 2U + static_cast<std::size_t>(i) * 12U;
-        if (offset + 12 > data.size()) {
-            throw std::runtime_error("truncated TIFF IFD: " + path.string());
-        }
-        const std::uint16_t tag{read_u16(data, offset)};
-        const auto type = static_cast<TiffType>(read_u16(data, offset + 2U));
-        const std::uint32_t count{read_u32(data, offset + 4U)};
-        const std::uint32_t value_or_offset{read_u32(data, offset + 8U)};
-        entries.push_back({tag, {type, count, value_or_offset}});
-    }
-
-    const auto find_entry = [&](const std::uint16_t tag) -> ParsedEntry {
-        const auto found = std::find_if(entries.begin(), entries.end(), [tag](const auto& item) {
-            return item.first == tag;
-        });
-        if (found == entries.end()) {
-            throw std::runtime_error("missing required TIFF tag: " + std::to_string(tag));
-        }
-        return found->second;
-    };
+    const ParsedEntries entries = parse_ifd_entries(data, path);
 
     TiffReadResult result;
-    result.spec.width = read_u32_array(data, find_entry(256), 256).at(0);
-    result.spec.height = read_u32_array(data, find_entry(257), 257).at(0);
-    const auto bits_per_sample = read_u16_array(data, find_entry(258), 258);
-    result.spec.samples_per_pixel = read_u16_array(data, find_entry(277), 277).at(0);
-    result.spec.planar_config = read_u16_array(data, find_entry(284), 284).at(0);
-    result.spec.tile_width = read_u32_array(data, find_entry(322), 322).at(0);
-    result.spec.tile_height = read_u32_array(data, find_entry(323), 323).at(0);
-    const auto sample_formats = read_u16_array(data, find_entry(339), 339);
+    result.spec.storage_mode = TiffStorageMode::Tiled;
+    result.spec.width = read_u32_array(data, find_required_entry(entries, 256), 256).at(0);
+    result.spec.height = read_u32_array(data, find_required_entry(entries, 257), 257).at(0);
+    const auto bits_per_sample = read_u16_array(data, find_required_entry(entries, 258), 258);
+    result.spec.samples_per_pixel = read_u16_array(data, find_required_entry(entries, 277), 277).at(0);
+    result.spec.planar_config = read_u16_array(data, find_required_entry(entries, 284), 284).at(0);
+    result.spec.tile_width = read_u32_array(data, find_required_entry(entries, 322), 322).at(0);
+    result.spec.tile_height = read_u32_array(data, find_required_entry(entries, 323), 323).at(0);
+    const auto sample_formats = read_u16_array(data, find_required_entry(entries, 339), 339);
+    validate_common_spec(result, bits_per_sample, sample_formats, path);
 
-    if (result.spec.samples_per_pixel != rgbwsv_channel_count || bits_per_sample.size() != rgbwsv_channel_count
-        || sample_formats.size() != rgbwsv_channel_count) {
-        throw std::runtime_error("TIFF is not a six-channel RGBWSV image: " + path.string());
-    }
-    for (std::size_t i{0}; i < bits_per_sample.size(); ++i) {
-        if (bits_per_sample.at(i) != 8 || sample_formats.at(i) != 1) {
-            throw std::runtime_error("TIFF channel is not uint8: " + path.string());
-        }
-    }
-    if (result.spec.planar_config != 1) {
-        throw std::runtime_error("TIFF planar config is not contiguous: " + path.string());
-    }
-
-    const auto tile_offsets = read_u32_array(data, find_entry(324), 324);
-    const auto tile_byte_counts = read_u32_array(data, find_entry(325), 325);
+    const auto tile_offsets = read_u32_array(data, find_required_entry(entries, 324), 324);
+    const auto tile_byte_counts = read_u32_array(data, find_required_entry(entries, 325), 325);
     if (tile_offsets.size() != tile_byte_counts.size()) {
         throw std::runtime_error("TIFF tile offset/count mismatch: " + path.string());
     }
@@ -356,6 +504,12 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
             const std::size_t tile_bytes{tile_byte_counts.at(tile_index)};
             if (tile_offset + tile_bytes > data.size()) {
                 throw std::runtime_error("TIFF tile data outside file: " + path.string());
+            }
+            const std::size_t expected_tile_bytes =
+                static_cast<std::size_t>(result.spec.tile_width) * result.spec.tile_height
+                * result.spec.samples_per_pixel;
+            if (tile_bytes != expected_tile_bytes) {
+                throw std::runtime_error("TIFF tile byte count does not match tile dimensions: " + path.string());
             }
             for (std::uint32_t y{0}; y < result.spec.tile_height; ++y) {
                 const std::uint32_t image_y{tile_y * result.spec.tile_height + y};
@@ -374,20 +528,7 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
                             }
                             continue;
                         }
-                        result.channel_checksums.at(c) += value;
-                        TiffChannelStats& stats = result.channel_stats.at(c);
-                        stats.min_value = std::min(stats.min_value, static_cast<int>(value));
-                        stats.max_value = std::max(stats.max_value, static_cast<int>(value));
-                        if (value == 255U) {
-                            ++stats.empty_pixels;
-                        } else {
-                            ++stats.print_pixels;
-                            if (value == 0U) {
-                                ++stats.full_print_pixels;
-                            } else {
-                                ++stats.partial_print_pixels;
-                            }
-                        }
+                        update_channel_stats(result, c, value);
                     }
                 }
             }
@@ -395,6 +536,87 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
     }
 
     return result;
+}
+
+TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path) {
+    std::ifstream input{path, std::ios::binary};
+    if (!input) {
+        throw std::runtime_error("failed to open TIFF for reading: " + path.string());
+    }
+    const std::vector<std::uint8_t> data{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
+    const ParsedEntries entries = parse_ifd_entries(data, path);
+
+    TiffReadResult result;
+    result.spec.storage_mode = TiffStorageMode::Stripped;
+    result.spec.width = read_u32_array(data, find_required_entry(entries, 256), 256).at(0);
+    result.spec.height = read_u32_array(data, find_required_entry(entries, 257), 257).at(0);
+    const auto bits_per_sample = read_u16_array(data, find_required_entry(entries, 258), 258);
+    result.spec.samples_per_pixel = read_u16_array(data, find_required_entry(entries, 277), 277).at(0);
+    result.spec.rows_per_strip = read_u32_array(data, find_required_entry(entries, 278), 278).at(0);
+    result.spec.planar_config = read_u16_array(data, find_required_entry(entries, 284), 284).at(0);
+    const auto sample_formats = read_u16_array(data, find_required_entry(entries, 339), 339);
+    validate_common_spec(result, bits_per_sample, sample_formats, path);
+
+    if (result.spec.rows_per_strip == 0) {
+        throw std::runtime_error("TIFF rowsPerStrip is invalid: " + path.string());
+    }
+    const auto strip_offsets = read_u32_array(data, find_required_entry(entries, 273), 273);
+    const auto strip_byte_counts = read_u32_array(data, find_required_entry(entries, 279), 279);
+    if (strip_offsets.size() != strip_byte_counts.size()) {
+        throw std::runtime_error("TIFF strip offset/count mismatch: " + path.string());
+    }
+    const std::uint32_t expected_strip_count{
+        (result.spec.height + result.spec.rows_per_strip - 1U) / result.spec.rows_per_strip};
+    if (strip_offsets.size() != static_cast<std::size_t>(expected_strip_count)) {
+        throw std::runtime_error("TIFF strip count does not match dimensions: " + path.string());
+    }
+
+    for (std::uint32_t strip_index{0}; strip_index < expected_strip_count; ++strip_index) {
+        const std::uint32_t start_row{strip_index * result.spec.rows_per_strip};
+        const std::uint32_t rows{
+            std::min(result.spec.rows_per_strip, static_cast<std::uint32_t>(result.spec.height - start_row))};
+        const std::size_t expected_strip_bytes =
+            static_cast<std::size_t>(rows) * result.spec.width * result.spec.samples_per_pixel;
+        const std::size_t strip_offset{strip_offsets.at(strip_index)};
+        const std::size_t strip_bytes{strip_byte_counts.at(strip_index)};
+        if (strip_offset + strip_bytes > data.size()) {
+            throw std::runtime_error("TIFF strip data outside file: " + path.string());
+        }
+        if (strip_bytes != expected_strip_bytes) {
+            throw std::runtime_error("TIFF strip byte count does not match dimensions: " + path.string());
+        }
+        for (std::uint32_t y{0}; y < rows; ++y) {
+            for (std::uint32_t x{0}; x < result.spec.width; ++x) {
+                for (std::uint16_t c{0}; c < result.spec.samples_per_pixel; ++c) {
+                    const std::size_t value_offset =
+                        strip_offset
+                        + ((static_cast<std::size_t>(y) * result.spec.width + x) * result.spec.samples_per_pixel + c);
+                    update_channel_stats(result, c, data.at(value_offset));
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path) {
+    std::ifstream input{path, std::ios::binary};
+    if (!input) {
+        throw std::runtime_error("failed to open TIFF for reading: " + path.string());
+    }
+    const std::vector<std::uint8_t> data{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
+    const ParsedEntries entries = parse_ifd_entries(data, path);
+    const bool has_tiles = find_optional_entry(entries, 324).has_value() || find_optional_entry(entries, 325).has_value();
+    const bool has_strips =
+        find_optional_entry(entries, 273).has_value() || find_optional_entry(entries, 279).has_value();
+    if (has_tiles && !has_strips) {
+        return read_rgbwsv_tiled_tiff(path);
+    }
+    if (has_strips && !has_tiles) {
+        return read_rgbwsv_stripped_tiff(path);
+    }
+    throw std::runtime_error("TIFF storage structure is ambiguous or missing: " + path.string());
 }
 
 }  // namespace slicer_core

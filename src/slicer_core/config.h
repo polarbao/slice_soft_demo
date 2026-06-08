@@ -21,8 +21,10 @@ struct OutputConfig {
     std::vector<std::string> channel_order{"R", "G", "B", "W", "S", "V"};
     int bit_depth{8};
     std::string planar_config{"contiguous"};
-    bool tiled{true};
+    std::string storage_mode{"stripped"};
+    bool tiled{false};
     std::array<int, 2> tile_size{256, 256};
+    int rows_per_strip{64};
 };
 
 struct TransformConfig {

@@ -28,6 +28,10 @@ enum class ValidationErrorCode {
     TiffSampleCountInvalid,
     TiffBitDepthInvalid,
     TiffPlanarConfigInvalid,
+    TiffStorageModeInvalid,
+    TiffStorageMismatch,
+    RowsPerStripInvalid,
+    TileSizeInvalid,
     TiffReadFailed,
 };
 

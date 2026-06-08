@@ -33,6 +33,10 @@ Run-Step "build Debug" {
 
 $positive = @(
   @{ Config = "samples/configs/slice_config.json"; Package = "output/SlicePackage" },
+  @{ Config = "samples/configs/storage_mode/storage_stripped_default.json"; Package = "output/StorageStrippedDefault" },
+  @{ Config = "samples/configs/storage_mode/storage_tiled_compat.json"; Package = "output/StorageTiledCompat" },
+  @{ Config = "samples/configs/storage_mode/storage_material_policy_rgbwv_stripped.json"; Package = "output/StorageMaterialPolicyRgbwvStripped" },
+  @{ Config = "samples/configs/storage_mode/storage_material_policy_rgbwv_tiled.json"; Package = "output/StorageMaterialPolicyRgbwvTiled" },
   @{ Config = "samples/configs/support/support_bottom_projection.json"; Package = "output/SupportBottomProjection" },
   @{ Config = "samples/configs/support/support_unsupported_only.json"; Package = "output/SupportUnsupportedOnly" },
   @{ Config = "samples/configs/support/support_bottom_plus_unsupported.json"; Package = "output/SupportBottomPlusUnsupported" },
@@ -76,6 +80,20 @@ Run-Step "verify no-UV fallback" {
   if ($texture.stats.fallbackPixels -le 0) { throw "no-UV fallback did not report fallbackPixels > 0" }
 }
 
+Run-Step "verify TIFF storage modes" {
+  $stripped = Read-Json "output/SlicePackage/manifest.json"
+  if ($stripped.schema -ne "p0.rgbwsv.2") { throw "default package expected schema p0.rgbwsv.2" }
+  if ($stripped.tiff.storageMode -ne "stripped") { throw "default package expected storageMode stripped" }
+  if ($stripped.tiff.tiled -ne $false) { throw "default package expected tiled=false" }
+  if ($stripped.tiff.rowsPerStrip -ne 64) { throw "default package expected rowsPerStrip=64" }
+
+  $tiled = Read-Json "output/StorageTiledCompat/manifest.json"
+  if ($tiled.schema -ne "p0.rgbwsv.2") { throw "tiled compat package expected schema p0.rgbwsv.2" }
+  if ($tiled.tiff.storageMode -ne "tiled") { throw "tiled compat package expected storageMode tiled" }
+  if ($tiled.tiff.tiled -ne $true) { throw "tiled compat package expected tiled=true" }
+  if ($tiled.tiff.tileSize[0] -ne 256 -or $tiled.tiff.tileSize[1] -ne 256) { throw "tiled compat package expected tileSize 256x256" }
+}
+
 Run-Step "verify material policy samples" {
   $rgbOnly = Read-Json "output/MaterialPolicyRgbOnly/reports/material_policy_report.json"
   if ($rgbOnly.rgb.printPixels -le 0) { throw "RGB only expected RGB printPixels > 0" }
@@ -106,6 +124,16 @@ Run-Step "verify material policy samples" {
   if ($whiteOnly.rgb.printPixels -ne 0) { throw "W only expected RGB printPixels = 0" }
   if ($whiteOnly.white.printPixels -le 0) { throw "W only expected W printPixels > 0" }
   if ($whiteOnly.varnish.printPixels -ne 0) { throw "W only expected V printPixels = 0" }
+
+  $storageRgbwvStripped = Read-Json "output/StorageMaterialPolicyRgbwvStripped/reports/material_policy_report.json"
+  if ($storageRgbwvStripped.rgb.printPixels -le 0) { throw "storage RGB+W+V stripped expected RGB printPixels > 0" }
+  if ($storageRgbwvStripped.white.printPixels -le 0) { throw "storage RGB+W+V stripped expected W printPixels > 0" }
+  if ($storageRgbwvStripped.varnish.printPixels -le 0) { throw "storage RGB+W+V stripped expected V printPixels > 0" }
+
+  $storageRgbwvTiled = Read-Json "output/StorageMaterialPolicyRgbwvTiled/reports/material_policy_report.json"
+  if ($storageRgbwvTiled.rgb.printPixels -le 0) { throw "storage RGB+W+V tiled expected RGB printPixels > 0" }
+  if ($storageRgbwvTiled.white.printPixels -le 0) { throw "storage RGB+W+V tiled expected W printPixels > 0" }
+  if ($storageRgbwvTiled.varnish.printPixels -le 0) { throw "storage RGB+W+V tiled expected V printPixels > 0" }
 }
 
 Run-Step "make bad packages" {
@@ -126,7 +154,11 @@ $bad = @(
   @{ Name = "bad_missing_layer"; Code = "E_LAYER_MISSING" },
   @{ Name = "bad_layer_size"; Code = "E_LAYER_SIZE_MISMATCH" },
   @{ Name = "bad_samples_per_pixel"; Code = "E_TIFF_SAMPLE_COUNT_INVALID" },
-  @{ Name = "bad_planar_config"; Code = "E_TIFF_PLANAR_CONFIG_INVALID" }
+  @{ Name = "bad_planar_config"; Code = "E_TIFF_PLANAR_CONFIG_INVALID" },
+  @{ Name = "bad_storage_mode"; Code = "E_TIFF_STORAGE_MODE_INVALID" },
+  @{ Name = "bad_rows_per_strip"; Code = "E_ROWS_PER_STRIP_INVALID" },
+  @{ Name = "bad_tiff_storage_mismatch"; Code = "E_TIFF_STORAGE_MISMATCH" },
+  @{ Name = "bad_tile_size"; Code = "E_TILE_SIZE_INVALID" }
 )
 
 foreach ($case in $bad) {

@@ -160,5 +160,39 @@ $layerPath = Get-FirstLayerPath $m
 Set-TiffShortTagValue (Join-Path $pkg $layerPath) 284 2
 $cases += "bad_planar_config"
 
+$pkg = Copy-Package "bad_storage_mode"
+$m = Read-Manifest $pkg
+$m.tiff.storageMode = "chunked"
+$m.tiff.storage = "chunked"
+Write-Manifest $pkg $m
+$cases += "bad_storage_mode"
+
+$pkg = Copy-Package "bad_rows_per_strip"
+$m = Read-Manifest $pkg
+$m.tiff.storageMode = "stripped"
+$m.tiff.storage = "stripped"
+$m.tiff.tiled = $false
+$m.tiff.rowsPerStrip = 0
+Write-Manifest $pkg $m
+$cases += "bad_rows_per_strip"
+
+$pkg = Copy-Package "bad_tiff_storage_mismatch"
+$m = Read-Manifest $pkg
+$m.tiff.storageMode = "tiled"
+$m.tiff.storage = "tiled"
+$m.tiff.tiled = $true
+$m.tiff | Add-Member -NotePropertyName tileSize -NotePropertyValue @(256, 256) -Force
+Write-Manifest $pkg $m
+$cases += "bad_tiff_storage_mismatch"
+
+$pkg = Copy-Package "bad_tile_size"
+$m = Read-Manifest $pkg
+$m.tiff.storageMode = "tiled"
+$m.tiff.storage = "tiled"
+$m.tiff.tiled = $true
+$m.tiff | Add-Member -NotePropertyName tileSize -NotePropertyValue @(0, 256) -Force
+Write-Manifest $pkg $m
+$cases += "bad_tile_size"
+
 Write-Host "Generated bad packages:"
 $cases | ForEach-Object { Write-Host "  $_" }

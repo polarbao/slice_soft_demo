@@ -10,7 +10,8 @@
 namespace slicer_core {
 namespace {
 
-constexpr const char* expected_schema = "p0.rgbwsv.1";
+constexpr const char* legacy_schema = "p0.rgbwsv.1";
+constexpr const char* current_schema = "p0.rgbwsv.2";
 
 Json read_json_file(const std::filesystem::path& path) {
     std::ifstream input{path};
@@ -110,6 +111,81 @@ void require_string(
     }
 }
 
+std::string read_manifest_storage_mode(const Json& tiff, const std::string& schema) {
+    std::string storage_mode;
+    if (tiff.contains("storageMode")) {
+        storage_mode = tiff.at("storageMode").as_string();
+    } else if (tiff.contains("storage")) {
+        storage_mode = tiff.at("storage").as_string();
+    } else if (tiff.contains("tiled")) {
+        storage_mode = tiff.at("tiled").as_bool() ? "tiled" : "stripped";
+    } else if (schema == legacy_schema) {
+        storage_mode = "tiled";
+    } else {
+        fail(
+            ValidationErrorCode::TiffStorageModeInvalid,
+            "manifest.tiff.storageMode",
+            "stripped|tiled",
+            "missing");
+    }
+
+    if (storage_mode != "stripped" && storage_mode != "tiled") {
+        fail(
+            ValidationErrorCode::TiffStorageModeInvalid,
+            "manifest.tiff.storageMode",
+            "stripped|tiled",
+            storage_mode);
+    }
+    if (schema == legacy_schema && storage_mode != "tiled") {
+        fail(
+            ValidationErrorCode::TiffStorageMismatch,
+            "manifest.tiff.storageMode",
+            "tiled for p0.rgbwsv.1",
+            storage_mode);
+    }
+    if (tiff.contains("tiled")) {
+        const bool tiled = tiff.at("tiled").as_bool();
+        if ((storage_mode == "tiled") != tiled) {
+            fail(
+                ValidationErrorCode::TiffStorageMismatch,
+                "manifest.tiff.tiled",
+                storage_mode == "tiled" ? "true" : "false",
+                tiled ? "true" : "false");
+        }
+    }
+    return storage_mode;
+}
+
+void validate_manifest_storage_fields(const Json& tiff, const std::string& storage_mode) {
+    if (storage_mode == "stripped") {
+        const int rows_per_strip = tiff.contains("rowsPerStrip") ? tiff.at("rowsPerStrip").as_int() : 0;
+        if (rows_per_strip <= 0) {
+            fail(
+                ValidationErrorCode::RowsPerStripInvalid,
+                "manifest.tiff.rowsPerStrip",
+                "> 0",
+                int_to_string(rows_per_strip));
+        }
+        return;
+    }
+    if (!tiff.contains("tileSize") || !tiff.at("tileSize").is_array() || tiff.at("tileSize").size() != 2) {
+        fail(ValidationErrorCode::TileSizeInvalid, "manifest.tiff.tileSize", "[positive,positive]", "missing");
+    }
+    const int tile_width = tiff.at("tileSize").at(0).as_int();
+    const int tile_height = tiff.at("tileSize").at(1).as_int();
+    if (tile_width <= 0 || tile_height <= 0) {
+        fail(
+            ValidationErrorCode::TileSizeInvalid,
+            "manifest.tiff.tileSize",
+            "[positive,positive]",
+            "[" + int_to_string(tile_width) + "," + int_to_string(tile_height) + "]");
+    }
+}
+
+std::string actual_storage_mode_string(const TiffReadResult& result) {
+    return tiff_storage_mode_string(result.spec.storage_mode);
+}
+
 void validate_grid(const Json& grid, RipValidationResult& result) {
     result.width_px = grid.at("widthPx").as_int();
     result.height_px = grid.at("heightPx").as_int();
@@ -190,6 +266,14 @@ std::string validation_error_code_string(const ValidationErrorCode code) {
             return "E_TIFF_BIT_DEPTH_INVALID";
         case ValidationErrorCode::TiffPlanarConfigInvalid:
             return "E_TIFF_PLANAR_CONFIG_INVALID";
+        case ValidationErrorCode::TiffStorageModeInvalid:
+            return "E_TIFF_STORAGE_MODE_INVALID";
+        case ValidationErrorCode::TiffStorageMismatch:
+            return "E_TIFF_STORAGE_MISMATCH";
+        case ValidationErrorCode::RowsPerStripInvalid:
+            return "E_ROWS_PER_STRIP_INVALID";
+        case ValidationErrorCode::TileSizeInvalid:
+            return "E_TILE_SIZE_INVALID";
         case ValidationErrorCode::TiffReadFailed:
             return "E_TIFF_READ_FAILED";
     }
@@ -214,12 +298,18 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
     const std::filesystem::path manifest_path = package_dir / "manifest.json";
     const Json manifest = read_json_file(manifest_path);
     const std::string schema = manifest.value<std::string>("schema", "");
-    if (schema != expected_schema) {
-        fail(ValidationErrorCode::SchemaUnsupported, "manifest.schema", expected_schema, schema, manifest_path);
+    if (schema != legacy_schema && schema != current_schema) {
+        fail(
+            ValidationErrorCode::SchemaUnsupported,
+            "manifest.schema",
+            std::string{legacy_schema} + "|" + current_schema,
+            schema,
+            manifest_path);
     }
 
     const auto& grid = manifest.at("grid");
     const auto& tiff = manifest.at("tiff");
+    const std::string manifest_storage_mode = read_manifest_storage_mode(tiff, schema);
     require_channel_order(tiff.at("channelOrder"));
     require_int(tiff, "channelCount", 6, ValidationErrorCode::ChannelCountInvalid, "manifest.tiff.channelCount");
     require_int(tiff, "bitDepth", 8, ValidationErrorCode::BitDepthInvalid, "manifest.tiff.bitDepth");
@@ -230,12 +320,7 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
         "contiguous",
         ValidationErrorCode::TiffPlanarConfigInvalid,
         "manifest.tiff.planarConfig");
-    if (tiff.contains("tiled") && !tiff.at("tiled").as_bool()) {
-        fail(ValidationErrorCode::TiffReadFailed, "manifest.tiff.tiled", "true", "false");
-    }
-    if (tiff.contains("storage") && tiff.at("storage").as_string() != "tiled") {
-        fail(ValidationErrorCode::TiffReadFailed, "manifest.tiff.storage", "tiled", tiff.at("storage").as_string());
-    }
+    validate_manifest_storage_fields(tiff, manifest_storage_mode);
     require_string(
         tiff,
         "polarity",
@@ -306,13 +391,22 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
 
         TiffReadResult tiff_result;
         try {
-            tiff_result = read_rgbwsv_tiled_tiff(layer_path);
+            tiff_result = read_rgbwsv_tiff(layer_path);
         } catch (const ValidationError&) {
             throw;
         } catch (const std::exception& error) {
             const ValidationErrorCode code = classify_tiff_error(error.what());
             throw ValidationError(code, std::string{"TIFF validation failed: field=layer path="}
                                             + layer_path.string() + " actual=" + error.what());
+        }
+        const std::string actual_storage_mode = actual_storage_mode_string(tiff_result);
+        if (actual_storage_mode != manifest_storage_mode) {
+            fail(
+                ValidationErrorCode::TiffStorageMismatch,
+                "layer.tiff.storageMode",
+                manifest_storage_mode,
+                actual_storage_mode,
+                layer_path);
         }
 
         if (tiff_result.spec.width != static_cast<std::uint32_t>(result.width_px)

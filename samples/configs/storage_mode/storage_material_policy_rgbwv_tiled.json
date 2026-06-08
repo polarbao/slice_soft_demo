@@ -1,19 +1,20 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "../../models/textured/fixtures/missing_texture_small.obj",
+    "modelPath": "../../models/textured/fixtures/policy_textured_small.obj",
     "format": "auto"
   },
   "output": {
-    "packageDir": "output/TexturedMissingTextureFallback",
+    "packageDir": "output/StorageMaterialPolicyRgbwvTiled",
     "dpiX": 600,
     "dpiY": 600,
     "layerThicknessMm": 0.01,
     "channelOrder": ["R", "G", "B", "W", "S", "V"],
     "bitDepth": 8,
     "planarConfig": "contiguous",
-    "storageMode": "stripped",
-    "rowsPerStrip": 64
+    "storageMode": "tiled",
+    "tiled": true,
+    "tileSize": [256, 256]
   },
   "modelTransform": {
     "unit": "mm",
@@ -23,7 +24,7 @@
   },
   "autoOrient": {
     "enabled": true,
-    "maxHeightMm": 8.0,
+    "maxHeightMm": 6.0,
     "strategy": "minimize_height_by_right_angle_rotation"
   },
   "background": {
@@ -39,14 +40,34 @@
   "texture": {
     "enabled": true,
     "applyMode": "solid_volume_from_top_surface",
-    "sampler": "nearest",
+    "sampler": "bilinear",
     "uvAddressMode": "clamp",
     "flipV": true,
-    "fallbackRgb": [16, 32, 64],
+    "fallbackRgb": [0, 0, 0],
     "missingTexturePolicy": "warn_and_fallback"
   },
+  "materialPolicy": {
+    "enabled": true,
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_fallback"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "underbase",
+      "value": 0,
+      "layers": "all_model"
+    },
+    "varnish": {
+      "enabled": true,
+      "mode": "top_n_layers",
+      "value": 0,
+      "topLayers": 2
+    },
+    "conflictPolicy": "model_material_over_support"
+  },
   "support": {
-    "enabled": false,
+    "enabled": true,
     "mode": "bottom_projection",
     "value": 0,
     "offsetMm": 0.0,
@@ -59,8 +80,8 @@
   "preview": {
     "enabled": true,
     "format": "png",
-    "interval": 10,
-    "channels": ["texture_rgb"],
+    "interval": 1,
+    "channels": ["texture_rgb", "white", "varnish", "support"],
     "onlyNonEmptyLayers": true
   }
 }
