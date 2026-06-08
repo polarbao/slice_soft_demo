@@ -44,6 +44,15 @@ struct RasterResult {
     int filled_spans{0};
 };
 
+struct ChannelStats {
+    std::uint64_t print_pixels{0};
+    std::uint64_t full_print_pixels{0};
+    std::uint64_t partial_print_pixels{0};
+    std::uint64_t empty_pixels{0};
+    int min_value{255};
+    int max_value{0};
+};
+
 struct LayerDiagnostics {
     int layer_index{0};
     double z_mm{0.0};
@@ -64,6 +73,7 @@ struct LayerDiagnostics {
     int bottom_projection_support_pixels{0};
     int unsupported_island_support_pixels{0};
     int full_vertical_projection_support_pixels{0};
+    std::array<ChannelStats, rgbwsv_channel_count> channel_stats{};
 };
 
 struct PreviewImage {
@@ -136,6 +146,8 @@ struct SupportGenerationResult {
     int layers_with_islands{0};
     int layers_with_support{0};
 };
+
+constexpr std::array<const char*, rgbwsv_channel_count> channel_names{"R", "G", "B", "W", "S", "V"};
 
 std::string layer_file_name(const int layer_index) {
     std::ostringstream stream;
@@ -1085,6 +1097,22 @@ void update_layer_channel_stats(const std::vector<std::uint8_t>& layer, LayerDia
     const std::size_t pixel_count = layer.size() / rgbwsv_channel_count;
     for (std::size_t i{0}; i < pixel_count; ++i) {
         const std::size_t base{i * rgbwsv_channel_count};
+        for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel) {
+            const int value = layer.at(base + channel);
+            ChannelStats& stats = diagnostics.channel_stats.at(channel);
+            stats.min_value = std::min(stats.min_value, value);
+            stats.max_value = std::max(stats.max_value, value);
+            if (value == 255) {
+                ++stats.empty_pixels;
+            } else {
+                ++stats.print_pixels;
+                if (value == 0) {
+                    ++stats.full_print_pixels;
+                } else {
+                    ++stats.partial_print_pixels;
+                }
+            }
+        }
         if (layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U) {
             ++diagnostics.rgb_non_zero_pixels;
         }
@@ -1098,6 +1126,38 @@ void update_layer_channel_stats(const std::vector<std::uint8_t>& layer, LayerDia
             ++diagnostics.varnish_non_zero_pixels;
         }
     }
+}
+
+void merge_channel_stats(std::array<ChannelStats, rgbwsv_channel_count>& totals, const LayerDiagnostics& diagnostics) {
+    for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel) {
+        ChannelStats& total = totals.at(channel);
+        const ChannelStats& layer = diagnostics.channel_stats.at(channel);
+        total.print_pixels += layer.print_pixels;
+        total.full_print_pixels += layer.full_print_pixels;
+        total.partial_print_pixels += layer.partial_print_pixels;
+        total.empty_pixels += layer.empty_pixels;
+        total.min_value = std::min(total.min_value, layer.min_value);
+        total.max_value = std::max(total.max_value, layer.max_value);
+    }
+}
+
+Json channel_stats_to_json(const ChannelStats& stats) {
+    return Json::object({
+        {"printPixels", stats.print_pixels},
+        {"fullPrintPixels", stats.full_print_pixels},
+        {"partialPrintPixels", stats.partial_print_pixels},
+        {"emptyPixels", stats.empty_pixels},
+        {"minValue", stats.min_value},
+        {"maxValue", stats.max_value},
+    });
+}
+
+Json channel_stats_array_to_json(const std::array<ChannelStats, rgbwsv_channel_count>& stats) {
+    Json::Object object;
+    for (std::size_t i{0}; i < stats.size(); ++i) {
+        object.emplace(channel_names.at(i), channel_stats_to_json(stats.at(i)));
+    }
+    return Json{object};
 }
 
 Json channel_order_json() {
@@ -1137,6 +1197,7 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
              {"unsupported_island", diagnostics.unsupported_island_support_pixels},
              {"full_vertical_projection", diagnostics.full_vertical_projection_support_pixels},
          })},
+        {"channelStats", channel_stats_array_to_json(diagnostics.channel_stats)},
     });
 }
 
@@ -1241,6 +1302,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     int total_white_non_zero_pixels{0};
     int total_support_non_zero_pixels{0};
     int total_varnish_non_zero_pixels{0};
+    std::array<ChannelStats, rgbwsv_channel_count> total_channel_stats{};
     Json::Array layers;
     Json::Array slice_layers;
     Json::Array contour_layers;
@@ -1265,6 +1327,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         total_white_non_zero_pixels += diagnostics.white_non_zero_pixels;
         total_support_non_zero_pixels += diagnostics.support_non_zero_pixels;
         total_varnish_non_zero_pixels += diagnostics.varnish_non_zero_pixels;
+        merge_channel_stats(total_channel_stats, diagnostics);
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
             write_rgbwsv_tiled_tiff(package_dir / relative_path, tiff_spec, layer);
@@ -1277,6 +1340,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"index", layer_index},
             {"zMm", diagnostics.z_mm},
             {"path", relative_path},
+            {"widthPx", grid.width_px},
+            {"heightPx", grid.height_px},
             {"modelPixels", layer_model_pixels},
             {"supportPixels", layer_support_pixels},
         }));
@@ -1318,6 +1383,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"unsupported_island", support_generation.unsupported_island_support_pixels},
                   {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
               })},
+             {"channelStats", channel_stats_array_to_json(total_channel_stats)},
          })},
         {"layers", Json{slice_layers}},
     });
@@ -1435,6 +1501,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
 
     const Json manifest = Json::object({
+        {"schema", "p0.rgbwsv.1"},
         {"schemaVersion", "p0.rgbwsv.1"},
         {"source",
          Json::object({
@@ -1446,7 +1513,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"widthPx", grid.width_px},
              {"heightPx", grid.height_px},
              {"layerCount", grid.layer_count},
+             {"dpiX", config.output.dpi_x},
+             {"dpiY", config.output.dpi_y},
              {"dpi", Json::array({config.output.dpi_x, config.output.dpi_y})},
+             {"pixelSizeXmm", grid.pixel_size_x_mm},
+             {"pixelSizeYmm", grid.pixel_size_y_mm},
              {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
              {"layerThicknessMm", config.output.layer_thickness_mm},
              {"originMm", Json::array({grid.origin_x_mm, grid.origin_y_mm, 0.0})},
@@ -1463,6 +1534,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"bitDepth", 8},
              {"sampleFormat", "uint"},
              {"planarConfig", "contiguous"},
+             {"tiled", true},
              {"storage", "tiled"},
              {"polarity", "black_is_print"},
              {"printValue", 0},
@@ -1471,6 +1543,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"tileSize", Json::array({config.output.tile_size.at(0), config.output.tile_size.at(1)})},
              {"layers", Json{layers}},
          })},
+        {"layers", Json{layers}},
         {"reports",
          Json::object({
              {"model", "reports/model_report.json"},

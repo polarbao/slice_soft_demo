@@ -3,3 +3,7 @@ output/
 .dish/workspace-id
 .qodo/
 # .specstory/
+
+
+# 切片生成文件
+tests/

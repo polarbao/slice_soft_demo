@@ -19,9 +19,19 @@ struct TiffImageSpec {
     std::uint16_t planar_config{1};
 };
 
+struct TiffChannelStats {
+    std::uint64_t print_pixels{0};
+    std::uint64_t full_print_pixels{0};
+    std::uint64_t partial_print_pixels{0};
+    std::uint64_t empty_pixels{0};
+    int min_value{255};
+    int max_value{0};
+};
+
 struct TiffReadResult {
     TiffImageSpec spec;
     std::array<std::uint64_t, rgbwsv_channel_count> channel_checksums{};
+    std::array<TiffChannelStats, rgbwsv_channel_count> channel_stats{};
 };
 
 void write_rgbwsv_tiled_tiff(

@@ -10,11 +10,13 @@ struct CliOptions {
     std::string package_path{"output/SlicePackage"};
     bool expect_error{false};
     std::string expected_message;
+    std::string expected_code;
     bool show_help{false};
 };
 
 void print_usage() {
-    std::cout << "Usage: rip_reader_test --package <SlicePackage-dir> [--expect-error] [--expect-message <text>]\n";
+    std::cout
+        << "Usage: rip_reader_test --package <SlicePackage-dir> [--expect-error] [--expect-message <text>] [--expect-code <code>]\n";
 }
 
 CliOptions parse_options(const int argc, char** argv) {
@@ -31,6 +33,8 @@ CliOptions parse_options(const int argc, char** argv) {
             options.expect_error = true;
         } else if (arg == "--expect-message" && i + 1 < argc) {
             options.expected_message = argv[++i];
+        } else if (arg == "--expect-code" && i + 1 < argc) {
+            options.expected_code = argv[++i];
         }
     }
     return options;
@@ -64,6 +68,27 @@ int main(int argc, char** argv) {
             std::cout << '\n';
         }
         return 0;
+    } catch (const slicer_core::ValidationError& error) {
+        if (options.expect_error) {
+            const std::string message{error.what()};
+            const std::string code = slicer_core::validation_error_code_string(error.code());
+            if (!options.expected_code.empty() && options.expected_code != code) {
+                std::cerr << "rip_reader_test error: expected code '" << options.expected_code
+                          << "', got: " << code << " message: " << message << '\n';
+                return 1;
+            }
+            if (!options.expected_message.empty() && message.find(options.expected_message) == std::string::npos) {
+                std::cerr << "rip_reader_test error: expected message containing '" << options.expected_message
+                          << "', got: " << message << '\n';
+                return 1;
+            }
+            std::cout << "rip_reader_test: expected error\n";
+            std::cout << "  code: " << code << '\n';
+            std::cout << "  message: " << message << '\n';
+            return 0;
+        }
+        std::cerr << "rip_reader_test error: " << error.what() << '\n';
+        return 1;
     } catch (const std::exception& error) {
         if (options.expect_error) {
             const std::string message{error.what()};

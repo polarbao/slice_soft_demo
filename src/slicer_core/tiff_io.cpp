@@ -359,21 +359,35 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
             }
             for (std::uint32_t y{0}; y < result.spec.tile_height; ++y) {
                 const std::uint32_t image_y{tile_y * result.spec.tile_height + y};
-                if (image_y >= result.spec.height) {
-                    continue;
-                }
                 for (std::uint32_t x{0}; x < result.spec.tile_width; ++x) {
                     const std::uint32_t image_x{tile_x * result.spec.tile_width + x};
-                    if (image_x >= result.spec.width) {
-                        continue;
-                    }
                     for (std::uint16_t c{0}; c < result.spec.samples_per_pixel; ++c) {
                         const std::size_t value_offset =
                             tile_offset
                             + ((static_cast<std::size_t>(y) * result.spec.tile_width + x)
                                * result.spec.samples_per_pixel
                                + c);
-                        result.channel_checksums.at(c) += data.at(value_offset);
+                        const std::uint8_t value = data.at(value_offset);
+                        if (image_y >= result.spec.height || image_x >= result.spec.width) {
+                            if (value != 255U) {
+                                throw std::runtime_error("TIFF tile padding is not 255: " + path.string());
+                            }
+                            continue;
+                        }
+                        result.channel_checksums.at(c) += value;
+                        TiffChannelStats& stats = result.channel_stats.at(c);
+                        stats.min_value = std::min(stats.min_value, static_cast<int>(value));
+                        stats.max_value = std::max(stats.max_value, static_cast<int>(value));
+                        if (value == 255U) {
+                            ++stats.empty_pixels;
+                        } else {
+                            ++stats.print_pixels;
+                            if (value == 0U) {
+                                ++stats.full_print_pixels;
+                            } else {
+                                ++stats.partial_print_pixels;
+                            }
+                        }
                     }
                 }
             }
