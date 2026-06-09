@@ -87,7 +87,10 @@ $threeMfCases = @(
   @{ Config = "samples/configs/3mf/three_mf_multi_material_rgbwv.json"; Package = "output/ThreeMfMultiMaterialRgbwv" },
   @{ Config = "samples/configs/3mf/three_mf_single_rgb_stored.json"; Package = "output/ThreeMfSingleRgbStored" },
   @{ Config = "samples/configs/3mf/three_mf_single_rgb_deflate.json"; Package = "output/ThreeMfSingleRgbDeflate" },
-  @{ Config = "samples/configs/3mf/three_mf_multi_material_deflate.json"; Package = "output/ThreeMfMultiMaterialDeflate" }
+  @{ Config = "samples/configs/3mf/three_mf_multi_material_deflate.json"; Package = "output/ThreeMfMultiMaterialDeflate" },
+  @{ Config = "samples/configs/3mf/three_mf_color_group_rgb.json"; Package = "output/ThreeMfColorGroupRgb" },
+  @{ Config = "samples/configs/3mf/three_mf_texture2d_checker.json"; Package = "output/ThreeMfTexture2dChecker" },
+  @{ Config = "samples/configs/3mf/three_mf_mixed_color_texture.json"; Package = "output/ThreeMfMixedColorTexture" }
 )
 
 $heavyReliefCases = @(
@@ -252,6 +255,25 @@ if ($Mode -eq "quick" -or $Mode -eq "full") {
 
     $threeMfStored = Read-Json "output/ThreeMfSingleRgbStored/reports/three_mf_report.json"
     if ($threeMfStored.zip.storedEntryCount -le 0) { throw "3MF stored expected storedEntryCount > 0" }
+
+    $threeMfColor = Read-Json "output/ThreeMfColorGroupRgb/reports/three_mf_report.json"
+    if ($threeMfColor.colorGroups.count -le 0) { throw "3MF ColorGroup expected colorGroups.count > 0" }
+    if ($threeMfColor.colorGroups.colorCount -le 0) { throw "3MF ColorGroup expected colorCount > 0" }
+    if ($threeMfColor.colorGroups.resolvedTriangles -le 0) { throw "3MF ColorGroup expected resolvedTriangles > 0" }
+    if ($threeMfColor.colorGroups.interpolatedColorFallbackCount -le 0) { throw "3MF ColorGroup expected interpolatedColorFallbackCount > 0" }
+
+    $threeMfTexture = Read-Json "output/ThreeMfTexture2dChecker/reports/three_mf_report.json"
+    if ($threeMfTexture.textures.texture2dCount -le 0) { throw "3MF Texture2D expected texture2dCount > 0" }
+    if ($threeMfTexture.textures.texture2dGroupCount -le 0) { throw "3MF Texture2D expected texture2dGroupCount > 0" }
+    if ($threeMfTexture.textures.loadedCount -le 0) { throw "3MF Texture2D expected loadedCount > 0" }
+    if ($threeMfTexture.textures.sampledPixels -le 0) { throw "3MF Texture2D expected sampledPixels > 0" }
+    $threeMfTextureReport = Read-Json "output/ThreeMfTexture2dChecker/reports/texture_report.json"
+    if ($threeMfTextureReport.source -ne "3mf_internal") { throw "3MF Texture2D expected texture_report source 3mf_internal" }
+    if ($threeMfTextureReport.stats.sampledPixels -le 0) { throw "3MF Texture2D expected texture_report sampledPixels > 0" }
+
+    $threeMfMixed = Read-Json "output/ThreeMfMixedColorTexture/reports/three_mf_report.json"
+    if ($threeMfMixed.colorGroups.resolvedTriangles -le 0) { throw "3MF mixed expected ColorGroup resolvedTriangles > 0" }
+    if ($threeMfMixed.textures.resolvedTriangles -le 0) { throw "3MF mixed expected Texture2DGroup resolvedTriangles > 0" }
   }
 
   Run-Step "make bad 3MF packages" {

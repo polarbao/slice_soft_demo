@@ -46,6 +46,7 @@ struct MaterialInfo {
     std::filesystem::path diffuse_texture_path;
     bool has_texture{false};
     bool texture_exists{false};
+    std::string texture_source{"filesystem"};
 };
 
 struct TriangleTextureInfo {
@@ -81,6 +82,18 @@ struct ThreeMfReportInfo {
     int invalid_reference_count{0};
     int unknown_material_count{0};
     int ignored_resource_count{0};
+    int color_group_count{0};
+    int color_count{0};
+    int color_group_resolved_triangles{0};
+    int interpolated_color_fallback_count{0};
+    int texture2d_count{0};
+    int texture2d_group_count{0};
+    int tex2coord_count{0};
+    int texture_resource_count{0};
+    int texture_loaded_count{0};
+    int texture_missing_count{0};
+    std::uint64_t texture_sampled_pixels{0};
+    int texture_group_resolved_triangles{0};
     std::vector<std::string> unsupported_resources;
     std::vector<std::string> unsupported_extensions;
     std::vector<std::string> warnings;

@@ -181,6 +181,7 @@ struct TextureColumnColor {
 struct TextureReportData {
     bool enabled{false};
     std::string apply_mode;
+    std::string source{"filesystem"};
     int faces_with_uv{0};
     int faces_without_uv{0};
     std::uint64_t sampled_pixels{0};
@@ -1499,6 +1500,9 @@ TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelRep
         runtime_material.material = material;
         if (material.has_texture) {
             runtime.report.texture_files.push_back(material.diffuse_texture_path.generic_string());
+            if (material.texture_source == "3mf_internal") {
+                runtime.report.source = "3mf_internal";
+            }
             if (!material.texture_exists) {
                 ++runtime.report.missing_textures;
                 runtime.report.warnings.push_back("missing texture: " + material.diffuse_texture_path.generic_string());
@@ -1526,6 +1530,7 @@ TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelRep
             {"diffuseRgb", rgb_to_json(material.diffuse_rgb)},
             {"hasTexture", material.has_texture},
             {"texturePath", material.diffuse_texture_path.generic_string()},
+            {"source", material.texture_source},
             {"textureLoaded", runtime_material.loaded},
         }));
         runtime.materials.emplace(material.name, std::move(runtime_material));
@@ -2010,6 +2015,7 @@ Json texture_report_to_json(const TextureReportData& report) {
     return Json::object({
         {"enabled", report.enabled},
         {"applyMode", report.apply_mode},
+        {"source", report.source},
         {"materials", Json{report.materials}},
         {"textureFiles", Json{report.texture_files}},
         {"loadedTextures", report.loaded_textures},
@@ -2179,6 +2185,36 @@ Json three_mf_report_to_json(const ModelReport& model_report) {
              {"unknownMaterialCount", model_report.three_mf.unknown_material_count},
              {"ignoredResourceCount", model_report.three_mf.ignored_resource_count},
          })},
+        {"colorGroups",
+         Json::object({
+             {"count", model_report.three_mf.color_group_count},
+             {"colorCount", model_report.three_mf.color_count},
+             {"resolvedTriangles", model_report.three_mf.color_group_resolved_triangles},
+             {"interpolatedColorFallbackCount", model_report.three_mf.interpolated_color_fallback_count},
+         })},
+        {"textures",
+         Json::object({
+             {"texture2dCount", model_report.three_mf.texture2d_count},
+             {"texture2dGroupCount", model_report.three_mf.texture2d_group_count},
+             {"tex2CoordCount", model_report.three_mf.tex2coord_count},
+             {"resourceCount", model_report.three_mf.texture_resource_count},
+             {"loadedCount", model_report.three_mf.texture_loaded_count},
+             {"missingCount", model_report.three_mf.texture_missing_count},
+             {"sampledPixels", static_cast<double>(model_report.three_mf.texture_sampled_pixels)},
+             {"resolvedTriangles", model_report.three_mf.texture_group_resolved_triangles},
+         })},
+        {"colorGroupCount", model_report.three_mf.color_group_count},
+        {"colorCount", model_report.three_mf.color_count},
+        {"texture2dCount", model_report.three_mf.texture2d_count},
+        {"texture2dGroupCount", model_report.three_mf.texture2d_group_count},
+        {"tex2CoordCount", model_report.three_mf.tex2coord_count},
+        {"textureResourceCount", model_report.three_mf.texture_resource_count},
+        {"textureLoadedCount", model_report.three_mf.texture_loaded_count},
+        {"textureMissingCount", model_report.three_mf.texture_missing_count},
+        {"textureSampledPixels", static_cast<double>(model_report.three_mf.texture_sampled_pixels)},
+        {"colorGroupResolvedTriangles", model_report.three_mf.color_group_resolved_triangles},
+        {"textureGroupResolvedTriangles", model_report.three_mf.texture_group_resolved_triangles},
+        {"interpolatedColorFallbackCount", model_report.three_mf.interpolated_color_fallback_count},
         {"invalidReferenceCount", model_report.three_mf.invalid_reference_count},
         {"ignoredResourceCount", model_report.three_mf.ignored_resource_count},
         {"objectCount", model_report.three_mf.object_count},
@@ -2247,7 +2283,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const SliceConfig config = load_slice_config(config_path);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
-    const ModelReport model_report = load_model_report(config, config_dir);
+    ModelReport model_report = load_model_report(config, config_dir);
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
 
     const std::filesystem::path package_dir = config.output.package_dir;
@@ -2284,6 +2320,25 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         ? compute_relief_lower_layers(relief_columns)
         : compute_first_model_layers(model_masks, grid);
     TextureRuntime texture_runtime = prepare_texture_runtime(config, model_report);
+    if (model_report.format == "3mf") {
+        int internal_loaded{0};
+        int internal_missing{0};
+        for (const auto& [unused_name, material] : texture_runtime.materials) {
+            (void)unused_name;
+            if (!material.material.has_texture || material.material.texture_source != "3mf_internal") {
+                continue;
+            }
+            if (material.loaded) {
+                ++internal_loaded;
+            } else {
+                ++internal_missing;
+            }
+        }
+        if (internal_loaded + internal_missing > 0) {
+            model_report.three_mf.texture_loaded_count = internal_loaded;
+            model_report.three_mf.texture_missing_count = std::max(model_report.three_mf.texture_missing_count, internal_missing);
+        }
+    }
     std::vector<TextureColumnColor> texture_columns;
     if (config.texture.enabled && config.slicing_mode == "relief_heightfield") {
         texture_columns = build_relief_texture_columns(config, model_report, relief_columns, texture_runtime);
@@ -2369,6 +2424,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
         contour_layers.push_back(layer_diagnostics_to_json(diagnostics));
     }
+
+    model_report.three_mf.texture_sampled_pixels = texture_runtime.report.sampled_pixels;
 
     const Json slice_report = Json::object({
         {"slicingMode", config.slicing_mode},

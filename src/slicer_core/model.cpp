@@ -61,6 +61,8 @@ struct ThreeMfMaterial {
 struct ThreeMfTriangle {
     std::array<std::size_t, 3> vertices{};
     std::string material_key;
+    bool has_uv{false};
+    std::array<TexCoord, 3> uv{};
 };
 
 struct ThreeMfObject {
@@ -70,6 +72,25 @@ struct ThreeMfObject {
     std::vector<Vec3> vertices;
     std::vector<ThreeMfTriangle> triangles;
     std::vector<std::pair<std::string, std::array<double, 12>>> components;
+};
+
+struct ThreeMfColorGroup {
+    std::string id;
+    std::vector<std::array<std::uint8_t, 3>> colors;
+};
+
+struct ThreeMfTexture2D {
+    std::string id;
+    std::string path;
+    std::string content_type;
+    std::filesystem::path extracted_path;
+    bool loaded{false};
+};
+
+struct ThreeMfTexture2DGroup {
+    std::string id;
+    std::string texid;
+    std::vector<TexCoord> coords;
 };
 
 struct ThreeMfXmlReader {
@@ -568,19 +589,15 @@ std::map<std::string, std::string> xml_attributes(const std::string& tag) {
     return attributes;
 }
 
+std::string xml_tag_name(const std::string& tag);
+std::string xml_local_name(const std::string& name);
+bool xml_tag_matches_local_name(const std::string& tag, const std::string& tag_name);
+std::size_t find_xml_tag_start(const std::string& xml, const std::string& tag_name, std::size_t start_pos);
+
 std::vector<std::string> find_xml_tags(const std::string& xml, const std::string& tag_name) {
     std::vector<std::string> tags;
-    const std::string needle = "<" + tag_name;
     std::size_t pos{0};
-    while ((pos = xml.find(needle, pos)) != std::string::npos) {
-        const std::size_t boundary = pos + needle.size();
-        if (boundary < xml.size()) {
-            const unsigned char next = static_cast<unsigned char>(xml.at(boundary));
-            if (std::isalnum(next) || next == '_' || next == '-' || next == ':') {
-                pos = boundary;
-                continue;
-            }
-        }
+    while ((pos = find_xml_tag_start(xml, tag_name, pos)) != std::string::npos) {
         const std::size_t end = xml.find('>', pos);
         if (end == std::string::npos) {
             break;
@@ -592,8 +609,7 @@ std::vector<std::string> find_xml_tags(const std::string& xml, const std::string
 }
 
 std::string find_xml_block(const std::string& xml, const std::string& tag_name, const std::size_t start_pos = 0) {
-    const std::string open = "<" + tag_name;
-    const std::size_t start = xml.find(open, start_pos);
+    const std::size_t start = find_xml_tag_start(xml, tag_name, start_pos);
     if (start == std::string::npos) {
         return {};
     }
@@ -601,12 +617,37 @@ std::string find_xml_block(const std::string& xml, const std::string& tag_name, 
     if (open_end == std::string::npos) {
         return {};
     }
-    const std::string close = "</" + tag_name + ">";
-    const std::size_t close_pos = xml.find(close, open_end);
-    if (close_pos == std::string::npos) {
-        return {};
+    const std::string start_tag = xml.substr(start, open_end - start + 1U);
+    if (start_tag.size() >= 2U && start_tag.at(start_tag.size() - 2U) == '/') {
+        return start_tag;
     }
-    return xml.substr(start, close_pos + close.size() - start);
+    int depth{1};
+    std::size_t pos = open_end + 1U;
+    while ((pos = xml.find('<', pos)) != std::string::npos) {
+        const std::size_t end = xml.find('>', pos);
+        if (end == std::string::npos) {
+            return {};
+        }
+        const std::string tag = xml.substr(pos, end - pos + 1U);
+        if (tag.size() >= 2U && (tag.at(1) == '!' || tag.at(1) == '?')) {
+            pos = end + 1U;
+            continue;
+        }
+        if (xml_tag_matches_local_name(tag, tag_name)) {
+            const bool closing = tag.size() >= 2U && tag.at(1) == '/';
+            const bool self_closing = tag.size() >= 2U && tag.at(tag.size() - 2U) == '/';
+            if (closing) {
+                --depth;
+                if (depth == 0) {
+                    return xml.substr(start, end - start + 1U);
+                }
+            } else if (!self_closing) {
+                ++depth;
+            }
+        }
+        pos = end + 1U;
+    }
+    return {};
 }
 
 std::vector<std::string> find_xml_blocks(const std::string& xml, const std::string& tag_name) {
@@ -643,6 +684,35 @@ std::string xml_tag_name(const std::string& tag) {
     return tag.substr(start, pos - start);
 }
 
+std::string xml_local_name(const std::string& name) {
+    const std::size_t colon = name.rfind(':');
+    return colon == std::string::npos ? name : name.substr(colon + 1U);
+}
+
+bool xml_tag_matches_local_name(const std::string& tag, const std::string& tag_name) {
+    return xml_local_name(xml_tag_name(tag)) == tag_name;
+}
+
+std::size_t find_xml_tag_start(const std::string& xml, const std::string& tag_name, std::size_t start_pos) {
+    while ((start_pos = xml.find('<', start_pos)) != std::string::npos) {
+        if (start_pos + 1U < xml.size() && (xml.at(start_pos + 1U) == '/' || xml.at(start_pos + 1U) == '!'
+                                             || xml.at(start_pos + 1U) == '?')) {
+            ++start_pos;
+            continue;
+        }
+        const std::size_t end = xml.find('>', start_pos);
+        if (end == std::string::npos) {
+            return std::string::npos;
+        }
+        const std::string tag = xml.substr(start_pos, end - start_pos + 1U);
+        if (xml_tag_matches_local_name(tag, tag_name)) {
+            return start_pos;
+        }
+        start_pos = end + 1U;
+    }
+    return std::string::npos;
+}
+
 void ThreeMfXmlReader::validate_restricted_xml(const std::string& xml) {
     if (xml.find("<!DOCTYPE") != std::string::npos || xml.find("<!ENTITY") != std::string::npos) {
         throw std::runtime_error("E_3MF_XML_PARSE_FAILED: external DTD/entity declarations are not allowed");
@@ -670,7 +740,7 @@ void ThreeMfXmlReader::validate_restricted_xml(const std::string& xml) {
         }
         const bool closing = tag.size() >= 2U && tag.at(1) == '/';
         const bool self_closing = tag.size() >= 2U && tag.at(tag.size() - 2U) == '/';
-        const std::string name = xml_tag_name(tag);
+        const std::string name = xml_local_name(xml_tag_name(tag));
         if (name.empty()) {
             throw std::runtime_error("E_3MF_XML_PARSE_FAILED: empty XML tag name");
         }
@@ -690,7 +760,7 @@ void ThreeMfXmlReader::validate_restricted_xml(const std::string& xml) {
 }
 
 std::map<std::string, std::string> ThreeMfXmlReader::root_attributes() const {
-    const std::size_t model_pos = xml_text.find("<model");
+    const std::size_t model_pos = find_xml_tag_start(xml_text, "model", 0);
     if (model_pos == std::string::npos) {
         throw std::runtime_error("E_3MF_XML_PARSE_FAILED: 3MF model XML missing model root");
     }
@@ -790,12 +860,9 @@ void collect_unsupported_3mf_metadata(const ThreeMfXmlReader& reader, ThreeMfRep
     if (resources_block.empty()) {
         return;
     }
-    const std::array<std::string, 5> unsupported_tags{
-        "texture2dgroup",
-        "colorgroup",
+    const std::array<std::string, 2> unsupported_tags{
         "compositematerials",
-        "multiproperties",
-        "texture2d"};
+        "multiproperties"};
     for (const std::string& tag_name : unsupported_tags) {
         const std::vector<std::string> tags = reader.tags_in(resources_block, tag_name);
         for (std::size_t i{0}; i < tags.size(); ++i) {
@@ -803,6 +870,71 @@ void collect_unsupported_3mf_metadata(const ThreeMfXmlReader& reader, ThreeMfRep
             ++report.ignored_resource_count;
         }
     }
+}
+
+std::string normalize_3mf_internal_path(std::string path) {
+    std::replace(path.begin(), path.end(), '\\', '/');
+    while (!path.empty() && path.front() == '/') {
+        path.erase(path.begin());
+    }
+    if (path.empty() || path.find("..") != std::string::npos) {
+        throw std::runtime_error("E_3MF_ZIP_PATH_TRAVERSAL: invalid 3MF internal texture path: " + path);
+    }
+    return path;
+}
+
+std::filesystem::path safe_cache_file_name(const std::filesystem::path& cache_dir, const std::string& id, const std::string& path) {
+    std::string name = id + "_" + std::filesystem::path(path).filename().string();
+    for (char& ch : name) {
+        if (!(std::isalnum(static_cast<unsigned char>(ch)) || ch == '.' || ch == '_' || ch == '-')) {
+            ch = '_';
+        }
+    }
+    return cache_dir / name;
+}
+
+std::filesystem::path extract_3mf_internal_texture(
+    const std::map<std::string, std::vector<std::uint8_t>>& entries,
+    const std::string& texture_id,
+    const std::string& raw_path,
+    const std::filesystem::path& cache_dir,
+    ThreeMfReportInfo& report) {
+    const std::string normalized = normalize_3mf_internal_path(raw_path);
+    const auto found = entries.find(normalized);
+    if (found == entries.end()) {
+        ++report.texture_missing_count;
+        report.warnings.push_back("E_3MF_TEXTURE_PATH_MISSING: texture entry missing: " + normalized);
+        return safe_cache_file_name(cache_dir, texture_id, normalized);
+    }
+    std::filesystem::create_directories(cache_dir);
+    const std::filesystem::path output_path = safe_cache_file_name(cache_dir, texture_id, normalized);
+    std::ofstream output{output_path, std::ios::binary};
+    if (!output) {
+        throw std::runtime_error("failed to write 3MF internal texture cache: " + output_path.string());
+    }
+    output.write(
+        reinterpret_cast<const char*>(found->second.data()),
+        static_cast<std::streamsize>(found->second.size()));
+    ++report.texture_loaded_count;
+    return output_path;
+}
+
+int parse_property_index(const std::map<std::string, std::string>& attrs, const char* name, const int fallback) {
+    const auto found = attrs.find(name);
+    if (found == attrs.end()) {
+        return fallback;
+    }
+    return std::stoi(found->second);
+}
+
+std::array<std::uint8_t, 3> average_rgb(
+    const std::array<std::uint8_t, 3>& a,
+    const std::array<std::uint8_t, 3>& b,
+    const std::array<std::uint8_t, 3>& c) {
+    return {
+        static_cast<std::uint8_t>((static_cast<int>(a.at(0)) + static_cast<int>(b.at(0)) + static_cast<int>(c.at(0))) / 3),
+        static_cast<std::uint8_t>((static_cast<int>(a.at(1)) + static_cast<int>(b.at(1)) + static_cast<int>(c.at(1))) / 3),
+        static_cast<std::uint8_t>((static_cast<int>(a.at(2)) + static_cast<int>(b.at(2)) + static_cast<int>(c.at(2))) / 3)};
 }
 
 std::uint8_t hex_to_u8(const std::string& value) {
@@ -813,10 +945,14 @@ std::optional<std::array<std::uint8_t, 3>> parse_display_color(const std::string
     if (color.size() < 7 || color.at(0) != '#') {
         return std::nullopt;
     }
+    const std::size_t offset = color.size() >= 9 ? 3U : 1U;
+    if (offset + 5U >= color.size()) {
+        return std::nullopt;
+    }
     return std::array<std::uint8_t, 3>{
-        hex_to_u8(color.substr(1, 2)),
-        hex_to_u8(color.substr(3, 2)),
-        hex_to_u8(color.substr(5, 2))};
+        hex_to_u8(color.substr(offset, 2)),
+        hex_to_u8(color.substr(offset + 2U, 2)),
+        hex_to_u8(color.substr(offset + 4U, 2))};
 }
 
 std::array<double, 12> identity_3mf_transform() {
@@ -886,7 +1022,14 @@ void add_three_mf_mesh_instance(
             vertex_offset + triangle.vertices.at(2)});
         TriangleTextureInfo texture_info;
         texture_info.material_name = triangle.material_key;
+        texture_info.has_uv = triangle.has_uv;
+        texture_info.uv = triangle.uv;
         mesh.triangle_textures.push_back(texture_info);
+        if (triangle.has_uv) {
+            ++mesh.faces_with_uv;
+        } else {
+            ++mesh.faces_without_uv;
+        }
         if (!triangle.material_key.empty()) {
             MaterialStat& stat = material_stat(mesh, triangle.material_key);
             ++stat.face_count;
@@ -922,9 +1065,10 @@ void add_three_mf_object_instance(
     }
 }
 
-void load_3mf(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
+void load_3mf(const std::filesystem::path& path, const SliceConfig& config, MeshData& mesh) {
     mesh.three_mf.enabled = true;
     mesh.three_mf.package_path = path;
+    const TransformConfig& transform = config.transform;
     const std::vector<ZipEntryData> zip_entries = read_3mf_zip_entries(path, mesh.three_mf);
     std::map<std::string, std::vector<std::uint8_t>> entries;
     for (const ZipEntryData& entry : zip_entries) {
@@ -953,6 +1097,76 @@ void load_3mf(const std::filesystem::path& path, const TransformConfig& transfor
     mesh.three_mf.unit_scale_to_mm = three_mf_unit_scale_to_mm(mesh.three_mf.unit);
 
     std::map<std::string, std::string> material_name_by_key;
+    std::map<std::string, ThreeMfColorGroup> color_groups;
+    std::map<std::string, ThreeMfTexture2D> textures;
+    std::map<std::string, ThreeMfTexture2DGroup> texture_groups;
+    const std::filesystem::path texture_cache_dir = config.output.package_dir / "cache/3mf_textures";
+
+    for (const std::string& color_group_block : model_reader.blocks("colorgroup")) {
+        const std::size_t tag_end = color_group_block.find('>');
+        const auto attrs = xml_attributes(color_group_block.substr(0, tag_end + 1U));
+        ThreeMfColorGroup group;
+        group.id = attrs.count("id") != 0 ? attrs.at("id") : "";
+        for (const std::string& color_tag : model_reader.tags_in(color_group_block, "color")) {
+            const auto color_attrs = xml_attributes(color_tag);
+            const auto color = color_attrs.find("color");
+            if (color != color_attrs.end()) {
+                const auto rgb = parse_display_color(color->second);
+                if (rgb.has_value()) {
+                    group.colors.push_back(rgb.value());
+                    ++mesh.three_mf.color_count;
+                }
+            }
+        }
+        if (!group.id.empty()) {
+            color_groups.emplace(group.id, std::move(group));
+            ++mesh.three_mf.color_group_count;
+        }
+    }
+
+    for (const std::string& texture_tag : model_reader.tags("texture2d")) {
+        const auto attrs = xml_attributes(texture_tag);
+        ThreeMfTexture2D texture;
+        texture.id = attrs.count("id") != 0 ? attrs.at("id") : "";
+        texture.path = attrs.count("path") != 0 ? attrs.at("path") : "";
+        texture.content_type = attrs.count("contenttype") != 0 ? attrs.at("contenttype") : "";
+        if (!texture.id.empty()) {
+            ++mesh.three_mf.texture2d_count;
+            ++mesh.three_mf.texture_resource_count;
+            if (!texture.path.empty()) {
+                texture.extracted_path =
+                    extract_3mf_internal_texture(entries, texture.id, texture.path, texture_cache_dir, mesh.three_mf);
+                texture.loaded = std::filesystem::exists(texture.extracted_path);
+            } else {
+                ++mesh.three_mf.texture_missing_count;
+                mesh.three_mf.warnings.push_back("E_3MF_TEXTURE_PATH_MISSING: texture2d has no path: " + texture.id);
+            }
+            textures.emplace(texture.id, std::move(texture));
+        }
+    }
+
+    for (const std::string& texture_group_block : model_reader.blocks("texture2dgroup")) {
+        const std::size_t tag_end = texture_group_block.find('>');
+        const auto attrs = xml_attributes(texture_group_block.substr(0, tag_end + 1U));
+        ThreeMfTexture2DGroup group;
+        group.id = attrs.count("id") != 0 ? attrs.at("id") : "";
+        group.texid = attrs.count("texid") != 0 ? attrs.at("texid") : "";
+        if (group.texid.empty()) {
+            mesh.three_mf.warnings.push_back("E_3MF_TEXTURE2DGROUP_MISSING_TEXID: texture2dgroup has no texid: " + group.id);
+        }
+        for (const std::string& coord_tag : model_reader.tags_in(texture_group_block, "tex2coord")) {
+            const auto coord_attrs = xml_attributes(coord_tag);
+            group.coords.push_back({
+                std::stod(coord_attrs.at("u")),
+                std::stod(coord_attrs.at("v"))});
+            ++mesh.three_mf.tex2coord_count;
+        }
+        if (!group.id.empty()) {
+            texture_groups.emplace(group.id, std::move(group));
+            ++mesh.three_mf.texture2d_group_count;
+        }
+    }
+
     for (const std::string& base_materials_block : model_reader.blocks("basematerials")) {
         const std::size_t tag_end = base_materials_block.find('>');
         const auto attrs = xml_attributes(base_materials_block.substr(0, tag_end + 1U));
@@ -1013,20 +1227,82 @@ void load_3mf(const std::filesystem::path& path, const TransformConfig& transfor
                 }
                 const auto pid = triangle_attrs.find("pid");
                 const auto p1 = triangle_attrs.find("p1");
-                if (pid != triangle_attrs.end() && p1 != triangle_attrs.end()) {
-                    const std::string material_key = pid->second + ":" + p1->second;
-                    const auto material_name = material_name_by_key.find(material_key);
-                    if (material_name == material_name_by_key.end()) {
-                        ++mesh.three_mf.unknown_material_count;
-                        mesh.three_mf.warnings.push_back(
-                            "E_3MF_UNKNOWN_MATERIAL_ID: triangle references unknown material id: " + material_key);
-                        MaterialInfo& fallback = material_info(mesh, material_key);
-                        fallback.name = material_key;
-                        fallback.diffuse_rgb = {0, 0, 0};
-                        fallback.has_diffuse = true;
-                        triangle.material_key = fallback.name;
-                    } else {
-                        triangle.material_key = material_name->second;
+                if (pid != triangle_attrs.end()) {
+                    const int pindex = triangle_attrs.count("pindex") != 0 ? std::stoi(triangle_attrs.at("pindex")) : -1;
+                    const int property_1 = parse_property_index(triangle_attrs, "p1", pindex);
+                    const int property_2 = parse_property_index(triangle_attrs, "p2", property_1);
+                    const int property_3 = parse_property_index(triangle_attrs, "p3", property_1);
+                    const auto texture_group = texture_groups.find(pid->second);
+                    const auto color_group = color_groups.find(pid->second);
+                    if (texture_group != texture_groups.end()) {
+                        const ThreeMfTexture2DGroup& group = texture_group->second;
+                        const auto texture = textures.find(group.texid);
+                        if (texture == textures.end()) {
+                            ++mesh.three_mf.invalid_reference_count;
+                            throw std::runtime_error("E_3MF_TEXTURE2DGROUP_MISSING_TEXID: texture2dgroup references missing texid: " + group.texid);
+                        }
+                        if (property_1 < 0 || property_2 < 0 || property_3 < 0
+                            || property_1 >= static_cast<int>(group.coords.size())
+                            || property_2 >= static_cast<int>(group.coords.size())
+                            || property_3 >= static_cast<int>(group.coords.size())) {
+                            ++mesh.three_mf.invalid_reference_count;
+                            throw std::runtime_error("E_3MF_TEX2COORD_INDEX_OUT_OF_RANGE: texture coordinate index outside group");
+                        }
+                        const std::string material_name = "3mf_texture2dgroup_" + group.id;
+                        MaterialInfo& info = material_info(mesh, material_name);
+                        info.name = material_name;
+                        info.has_texture = true;
+                        info.diffuse_texture_path = texture->second.extracted_path;
+                        info.texture_exists = texture->second.loaded;
+                        info.texture_source = "3mf_internal";
+                        info.diffuse_rgb = {0, 0, 0};
+                        info.has_diffuse = true;
+                        triangle.material_key = material_name;
+                        triangle.has_uv = true;
+                        triangle.uv = {
+                            group.coords.at(static_cast<std::size_t>(property_1)),
+                            group.coords.at(static_cast<std::size_t>(property_2)),
+                            group.coords.at(static_cast<std::size_t>(property_3))};
+                        ++mesh.three_mf.texture_group_resolved_triangles;
+                    } else if (color_group != color_groups.end()) {
+                        const ThreeMfColorGroup& group = color_group->second;
+                        if (property_1 < 0 || property_2 < 0 || property_3 < 0
+                            || property_1 >= static_cast<int>(group.colors.size())
+                            || property_2 >= static_cast<int>(group.colors.size())
+                            || property_3 >= static_cast<int>(group.colors.size())) {
+                            ++mesh.three_mf.invalid_reference_count;
+                            throw std::runtime_error("E_3MF_COLORGROUP_INDEX_OUT_OF_RANGE: color index outside group");
+                        }
+                        std::array<std::uint8_t, 3> rgb = group.colors.at(static_cast<std::size_t>(property_1));
+                        if (property_1 != property_2 || property_1 != property_3) {
+                            rgb = average_rgb(
+                                group.colors.at(static_cast<std::size_t>(property_1)),
+                                group.colors.at(static_cast<std::size_t>(property_2)),
+                                group.colors.at(static_cast<std::size_t>(property_3)));
+                            ++mesh.three_mf.interpolated_color_fallback_count;
+                        }
+                        const std::string material_name = "3mf_colorgroup_" + group.id + "_" + std::to_string(property_1);
+                        MaterialInfo& info = material_info(mesh, material_name);
+                        info.name = material_name;
+                        info.diffuse_rgb = rgb;
+                        info.has_diffuse = true;
+                        triangle.material_key = material_name;
+                        ++mesh.three_mf.color_group_resolved_triangles;
+                    } else if (p1 != triangle_attrs.end()) {
+                        const std::string material_key = pid->second + ":" + p1->second;
+                        const auto material_name = material_name_by_key.find(material_key);
+                        if (material_name == material_name_by_key.end()) {
+                            ++mesh.three_mf.unknown_material_count;
+                            mesh.three_mf.warnings.push_back(
+                                "E_3MF_UNKNOWN_MATERIAL_ID: triangle references unknown material id: " + material_key);
+                            MaterialInfo& fallback = material_info(mesh, material_key);
+                            fallback.name = material_key;
+                            fallback.diffuse_rgb = {0, 0, 0};
+                            fallback.has_diffuse = true;
+                            triangle.material_key = fallback.name;
+                        } else {
+                            triangle.material_key = material_name->second;
+                        }
                     }
                 }
                 object.triangles.push_back(triangle);
@@ -1341,7 +1617,7 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
             load_mtl(mtl_path, model_path.parent_path(), mesh);
         }
     } else if (format == "3mf") {
-        load_3mf(model_path, config.transform, mesh);
+        load_3mf(model_path, config, mesh);
     } else {
         throw std::runtime_error("unsupported model format for P0: " + format);
     }

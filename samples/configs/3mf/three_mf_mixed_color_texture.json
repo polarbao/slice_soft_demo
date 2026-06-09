@@ -1,0 +1,67 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../models/3mf/mixed_basematerial_colorgroup_texture.3mf",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/ThreeMfMixedColorTexture",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "materialRoleMapping": {
+    "enabled": true,
+    "mode": "rules_then_default",
+    "defaultRole": "rgb",
+    "allowInputSupportMaterial": false,
+    "rules": []
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "solid_volume_from_top_surface",
+    "sampler": "nearest",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [0, 0, 0],
+    "missingTexturePolicy": "warn_and_fallback"
+  },
+  "support": {
+    "enabled": false,
+    "mode": "none",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 10,
+    "channels": ["texture_rgb"],
+    "onlyNonEmptyLayers": true
+  }
+}
