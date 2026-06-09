@@ -1,11 +1,11 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "samples/models/3mf/texture2d_checker_cube.3mf",
+    "modelPath": "samples/models/3mf/01.3mf",
     "format": "auto"
   },
   "output": {
-    "packageDir": "output/ThreeMfTexture2dChecker",
+    "packageDir": "output/ThreeMfReal01",
     "dpiX": 600,
     "dpiY": 600,
     "layerThicknessMm": 0.01,
@@ -37,18 +37,9 @@
     "allowInputSupportMaterial": false,
     "rules": []
   },
-  "texture": {
-    "enabled": true,
-    "applyMode": "solid_volume_from_top_surface",
-    "sampler": "nearest",
-    "uvAddressMode": "clamp",
-    "flipV": true,
-    "fallbackRgb": [0, 0, 0],
-    "missingTexturePolicy": "warn_and_fallback"
-  },
   "support": {
-    "enabled": false,
-    "mode": "none",
+    "enabled": true,
+    "mode": "bottom_projection",
     "value": 0,
     "offsetMm": 0.0,
     "minAreaPx": 0
@@ -60,8 +51,14 @@
   "preview": {
     "enabled": true,
     "format": "png",
-    "interval": 10,
-    "channels": ["texture_rgb"],
-    "onlyNonEmptyLayers": true
+    "interval": 50,
+    "channels": ["rgb", "support", "white", "varnish"],
+    "onlyNonEmptyLayers": true,
+    "pseudoColors": {
+      "empty": [255, 255, 255],
+      "support": [0, 255, 0],
+      "white": [0, 170, 255],
+      "varnish": [127, 127, 127]
+    }
   }
 }

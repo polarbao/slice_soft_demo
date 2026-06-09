@@ -1,5 +1,6 @@
 #include "ConfigEditorPanel.h"
 
+#include "ConfigDiffPanel.h"
 #include "MaterialPolicyEditor.h"
 #include "MaterialProcessProfileEditor.h"
 #include "MaterialRoleMappingEditor.h"
@@ -28,8 +29,15 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     path_label_ = new QLabel("配置：未加载", this);
     path_label_->setWordWrap(true);
     dirty_label_ = new QLabel("状态：未修改", this);
+    auto* storage_row = new QHBoxLayout();
+    storage_mode_ = new QComboBox(this);
+    storage_mode_->addItems({"stripped", "tiled"});
+    storage_row->addWidget(new QLabel("TIFF 存储模式", this));
+    storage_row->addWidget(storage_mode_);
+    storage_row->addStretch(1);
     header->addWidget(path_label_);
     header->addWidget(dirty_label_);
+    header->addLayout(storage_row);
     layout->addLayout(header);
 
     auto* actions = new QHBoxLayout();
@@ -49,10 +57,12 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     policy_editor_ = new MaterialPolicyEditor(document_, tabs);
     role_mapping_editor_ = new MaterialRoleMappingEditor(document_, tabs);
     support_editor_ = new SupportEditor(document_, tabs);
+    diff_panel_ = new ConfigDiffPanel(document_, tabs);
     tabs->addTab(profile_editor_, "工艺 Profile");
     tabs->addTab(policy_editor_, "材料策略");
     tabs->addTab(role_mapping_editor_, "材料角色");
     tabs->addTab(support_editor_, "支撑");
+    tabs->addTab(diff_panel_, "配置差异");
     layout->addWidget(tabs, 1);
 
     validation_view_ = new QPlainTextEdit(this);
@@ -66,6 +76,7 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     connect(validate_button, &QPushButton::clicked, this, &ConfigEditorPanel::validate);
     connect(document_, &ConfigDocument::dirtyChanged, this, &ConfigEditorPanel::updateDirty);
     connect(document_, &ConfigDocument::validationChanged, this, &ConfigEditorPanel::updateValidation);
+    connect(storage_mode_, &QComboBox::currentTextChanged, this, &ConfigEditorPanel::updateStorageMode);
 }
 
 bool ConfigEditorPanel::loadConfig(const QString& path) {
@@ -74,6 +85,7 @@ bool ConfigEditorPanel::loadConfig(const QString& path) {
         return false;
     }
     path_label_->setText("配置：" + document_->path());
+    storage_mode_->setCurrentText(document_->value({"output", "storageMode"}).toString("stripped"));
     refreshEditors();
     emit configPathChanged(document_->path());
     emit statusMessage("已加载配置：" + document_->path());
@@ -143,10 +155,20 @@ void ConfigEditorPanel::updateValidation(const QStringList& warnings, const QStr
     validation_view_->setPlainText(lines.join('\n'));
 }
 
+void ConfigEditorPanel::updateStorageMode(const QString& value) {
+    if (!document_->document().isObject()) {
+        return;
+    }
+    if (document_->value({"output", "storageMode"}).toString() != value) {
+        document_->setValue({"output", "storageMode"}, value);
+    }
+}
+
 void ConfigEditorPanel::refreshEditors() {
     profile_editor_->loadFromDocument();
     policy_editor_->loadFromDocument();
     role_mapping_editor_->loadFromDocument();
     support_editor_->loadFromDocument();
+    diff_panel_->refresh();
     validate();
 }

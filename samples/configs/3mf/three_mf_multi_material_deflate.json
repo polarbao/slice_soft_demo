@@ -1,7 +1,7 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "../../models/3mf/multi_material_rgb_white_varnish_deflate.3mf",
+    "modelPath": "samples/models/3mf/multi_material_rgb_white_varnish_deflate.3mf",
     "format": "auto"
   },
   "output": {

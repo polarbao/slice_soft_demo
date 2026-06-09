@@ -2,6 +2,7 @@
 
 #include "../services/ConfigDocument.h"
 
+#include <QComboBox>
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QWidget>
@@ -10,6 +11,7 @@ class MaterialPolicyEditor;
 class MaterialProcessProfileEditor;
 class MaterialRoleMappingEditor;
 class SupportEditor;
+class ConfigDiffPanel;
 
 class ConfigEditorPanel final : public QWidget {
     Q_OBJECT
@@ -30,6 +32,7 @@ private slots:
     void validate();
     void updateDirty(bool dirty);
     void updateValidation(const QStringList& warnings, const QStringList& errors);
+    void updateStorageMode(const QString& value);
 
 private:
     void refreshEditors();
@@ -37,9 +40,11 @@ private:
     ConfigDocument* document_{nullptr};
     QLabel* path_label_{nullptr};
     QLabel* dirty_label_{nullptr};
+    QComboBox* storage_mode_{nullptr};
     QPlainTextEdit* validation_view_{nullptr};
     MaterialProcessProfileEditor* profile_editor_{nullptr};
     MaterialPolicyEditor* policy_editor_{nullptr};
     MaterialRoleMappingEditor* role_mapping_editor_{nullptr};
     SupportEditor* support_editor_{nullptr};
+    ConfigDiffPanel* diff_panel_{nullptr};
 };

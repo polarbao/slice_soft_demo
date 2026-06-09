@@ -15,6 +15,7 @@ class PreviewOverlayPanel final : public QWidget {
 public:
     explicit PreviewOverlayPanel(QWidget* parent = nullptr);
     void loadPackage(const PackageSummary& package);
+    int imageCount() const;
 
 private slots:
     void updateImage();

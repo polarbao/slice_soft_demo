@@ -334,6 +334,48 @@
       "problemMatcher": []
     },
     {
+      "label": "SliceSoft: Run 3MF real 01",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_01.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF real 02",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_02.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF real 03",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_03.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
       "label": "SliceSoft: Run OBJ/MTL material RGBWV",
       "type": "shell",
       "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",

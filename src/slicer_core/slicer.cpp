@@ -482,6 +482,7 @@ std::string canonical_preview_channel(const std::string& channel) {
 PreviewImage build_preview_image(
     const std::string& requested_channel,
     const GridSpec& grid,
+    const PreviewConfig& preview_config,
     const std::vector<std::uint8_t>& layer) {
     const std::string channel = canonical_preview_channel(requested_channel);
     PreviewImage image;
@@ -509,31 +510,37 @@ PreviewImage build_preview_image(
     for (std::size_t i{0}; i < image.pixels.size(); ++i) {
         const std::size_t base{i * rgbwsv_channel_count};
         std::array<std::uint8_t, 3> pixel{};
+        int display_value{0};
         if (channel == "rgb") {
             pixel = {
                 visible_from_print_value(layer.at(base + 0U)),
                 visible_from_print_value(layer.at(base + 1U)),
                 visible_from_print_value(layer.at(base + 2U))};
+            display_value = std::max({pixel.at(0), pixel.at(1), pixel.at(2)});
         } else if (channel == "texture_rgb") {
             pixel = {layer.at(base + 0U), layer.at(base + 1U), layer.at(base + 2U)};
-        } else if (channel == "support") {
-            pixel = {0, visible_from_print_value(layer.at(base + 4U)), 0};
-        } else if (channel == "white") {
-            const std::uint8_t white{visible_from_print_value(layer.at(base + 3U))};
-            pixel = {white, white, white};
-        } else if (channel == "varnish") {
-            const std::uint8_t varnish{visible_from_print_value(layer.at(base + 5U))};
-            pixel = {varnish, 0, varnish};
+            display_value =
+                layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U ? 255 : 0;
+        } else if (channel == "support" || channel == "white" || channel == "varnish") {
+            const std::size_t channel_offset =
+                channel == "support" ? 4U : (channel == "white" ? 3U : 5U);
+            const auto& print_color =
+                channel == "support"
+                    ? preview_config.support_color
+                    : (channel == "white" ? preview_config.white_color : preview_config.varnish_color);
+            const std::uint8_t visibility{visible_from_print_value(layer.at(base + channel_offset))};
+            display_value = visibility;
+            for (std::size_t c{0}; c < pixel.size(); ++c) {
+                const int empty_component{preview_config.empty_color.at(c)};
+                const int print_component{print_color.at(c)};
+                pixel.at(c) = static_cast<std::uint8_t>(
+                    (empty_component * (255 - visibility) + print_component * visibility + 127) / 255);
+            }
         }
-        const int pixel_max = std::max({pixel.at(0), pixel.at(1), pixel.at(2)});
-        const bool has_display_data =
-            channel == "texture_rgb"
-                ? (layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U)
-                : pixel_max > 0;
-        if (has_display_data) {
+        if (display_value > 0) {
             ++image.non_zero_pixels;
         }
-        image.max_value = std::max(image.max_value, pixel_max);
+        image.max_value = std::max(image.max_value, display_value);
         image.pixels.at(i) = pixel;
     }
     return image;
@@ -547,7 +554,7 @@ Json::Array write_layer_previews(
     const std::vector<std::uint8_t>& layer) {
     Json::Array result;
     for (const std::string& requested_channel : preview_config.channels) {
-        PreviewImage image = build_preview_image(requested_channel, grid, layer);
+        PreviewImage image = build_preview_image(requested_channel, grid, preview_config, layer);
         if (preview_config.only_non_empty_layers && image.non_zero_pixels == 0) {
             continue;
         }
@@ -2687,12 +2694,23 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     for (const std::string& channel : config.preview.channels) {
         preview_channels.push_back(canonical_preview_channel(channel));
     }
+    const auto color_json = [](const std::array<std::uint8_t, 3>& color) {
+        return Json::array({static_cast<int>(color.at(0)), static_cast<int>(color.at(1)), static_cast<int>(color.at(2))});
+    };
 
     const Json preview_report = Json::object({
+        {"schema", "p0.preview_report.1"},
         {"enabled", config.preview.enabled},
         {"format", config.preview.format},
         {"interval", config.preview.interval},
         {"channels", Json{preview_channels}},
+        {"pseudoColors",
+         Json::object({
+             {"empty", color_json(config.preview.empty_color)},
+             {"support", color_json(config.preview.support_color)},
+             {"white", color_json(config.preview.white_color)},
+             {"varnish", color_json(config.preview.varnish_color)},
+         })},
         {"layerRange",
          config.preview.has_layer_range ? Json::array({config.preview.layer_range.at(0), config.preview.layer_range.at(1)})
                                         : Json{}},

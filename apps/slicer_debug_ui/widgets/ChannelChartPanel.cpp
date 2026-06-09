@@ -101,6 +101,10 @@ void ChannelChartPanel::loadPackage(const PackageSummary& package) {
     update();
 }
 
+int ChannelChartPanel::layerStatCount() const {
+    return layers_.size();
+}
+
 void ChannelChartPanel::paintEvent(QPaintEvent* event) {
     QWidget::paintEvent(event);
     QPainter painter(this);

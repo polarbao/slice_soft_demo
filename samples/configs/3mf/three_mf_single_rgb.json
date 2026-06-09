@@ -1,7 +1,7 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "../../models/3mf/single_rgb_cube.3mf",
+    "modelPath": "samples/models/3mf/single_rgb_cube.3mf",
     "format": "auto"
   },
   "output": {

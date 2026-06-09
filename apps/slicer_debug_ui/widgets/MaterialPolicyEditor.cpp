@@ -28,11 +28,13 @@ MaterialPolicyEditor::MaterialPolicyEditor(ConfigDocument* document, QWidget* pa
     rgb_enabled_ = new QCheckBox("RGB 启用", this);
     rgb_source_ = new QLineEdit(this);
     white_enabled_ = new QCheckBox("白墨启用", this);
-    white_mode_ = new QLineEdit(this);
+    white_mode_ = new QComboBox(this);
+    white_mode_->addItems({"underbase", "disabled", "all_model"});
     white_layers_ = new QLineEdit(this);
     white_value_ = makeByteSpin(this);
     varnish_enabled_ = new QCheckBox("光油启用", this);
-    varnish_mode_ = new QLineEdit(this);
+    varnish_mode_ = new QComboBox(this);
+    varnish_mode_->addItems({"top_n_layers", "all_model", "disabled"});
     varnish_top_layers_ = makeLayerSpin(this);
     varnish_value_ = makeByteSpin(this);
     conflict_policy_ = new QLineEdit(this);
@@ -61,11 +63,11 @@ void MaterialPolicyEditor::loadFromDocument() {
     setBool({"materialPolicy", "rgb", "enabled"}, rgb_enabled_);
     setString({"materialPolicy", "rgb", "source"}, rgb_source_);
     setBool({"materialPolicy", "white", "enabled"}, white_enabled_);
-    setString({"materialPolicy", "white", "mode"}, white_mode_);
+    white_mode_->setCurrentText(document_->value({"materialPolicy", "white", "mode"}).toString());
     setString({"materialPolicy", "white", "layers"}, white_layers_);
     setInt({"materialPolicy", "white", "value"}, white_value_);
     setBool({"materialPolicy", "varnish", "enabled"}, varnish_enabled_);
-    setString({"materialPolicy", "varnish", "mode"}, varnish_mode_);
+    varnish_mode_->setCurrentText(document_->value({"materialPolicy", "varnish", "mode"}).toString());
     setInt({"materialPolicy", "varnish", "topLayers"}, varnish_top_layers_);
     setInt({"materialPolicy", "varnish", "value"}, varnish_value_);
     setString({"materialPolicy", "conflictPolicy"}, conflict_policy_);
@@ -100,11 +102,19 @@ void MaterialPolicyEditor::bind() {
     bind_check(rgb_enabled_, {"materialPolicy", "rgb", "enabled"});
     bind_edit(rgb_source_, {"materialPolicy", "rgb", "source"});
     bind_check(white_enabled_, {"materialPolicy", "white", "enabled"});
-    bind_edit(white_mode_, {"materialPolicy", "white", "mode"});
+    connect(white_mode_, &QComboBox::currentTextChanged, this, [this](const QString& value) {
+        if (!loading_) {
+            document_->setValue({"materialPolicy", "white", "mode"}, value);
+        }
+    });
     bind_edit(white_layers_, {"materialPolicy", "white", "layers"});
     bind_spin(white_value_, {"materialPolicy", "white", "value"});
     bind_check(varnish_enabled_, {"materialPolicy", "varnish", "enabled"});
-    bind_edit(varnish_mode_, {"materialPolicy", "varnish", "mode"});
+    connect(varnish_mode_, &QComboBox::currentTextChanged, this, [this](const QString& value) {
+        if (!loading_) {
+            document_->setValue({"materialPolicy", "varnish", "mode"}, value);
+        }
+    });
     bind_spin(varnish_top_layers_, {"materialPolicy", "varnish", "topLayers"});
     bind_spin(varnish_value_, {"materialPolicy", "varnish", "value"});
     bind_edit(conflict_policy_, {"materialPolicy", "conflictPolicy"});

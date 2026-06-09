@@ -28,11 +28,11 @@ private:
     QCheckBox* rgb_enabled_{nullptr};
     QLineEdit* rgb_source_{nullptr};
     QCheckBox* white_enabled_{nullptr};
-    QLineEdit* white_mode_{nullptr};
+    QComboBox* white_mode_{nullptr};
     QLineEdit* white_layers_{nullptr};
     QSpinBox* white_value_{nullptr};
     QCheckBox* varnish_enabled_{nullptr};
-    QLineEdit* varnish_mode_{nullptr};
+    QComboBox* varnish_mode_{nullptr};
     QSpinBox* varnish_top_layers_{nullptr};
     QSpinBox* varnish_value_{nullptr};
     QLineEdit* conflict_policy_{nullptr};

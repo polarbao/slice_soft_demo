@@ -1,7 +1,7 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "../../models/3mf/mixed_basematerial_colorgroup_texture.3mf",
+    "modelPath": "samples/models/3mf/mixed_basematerial_colorgroup_texture.3mf",
     "format": "auto"
   },
   "output": {

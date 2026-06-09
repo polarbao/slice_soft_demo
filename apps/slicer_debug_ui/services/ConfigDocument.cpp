@@ -1,7 +1,9 @@
 #include "ConfigDocument.h"
 
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonObject>
+#include <QMessageBox>
 
 namespace {
 
@@ -39,6 +41,7 @@ bool ConfigDocument::load(const QString& path) {
         return false;
     }
     document_ = document;
+    original_document_ = document;
     path_ = path;
     error_.clear();
     setDirty(false);
@@ -47,27 +50,38 @@ bool ConfigDocument::load(const QString& path) {
     return true;
 }
 
-bool ConfigDocument::save(QWidget* parent) {
-    Q_UNUSED(parent);
+bool ConfigDocument::save(QWidget* parent, SaveOptions options) {
     if (path_.isEmpty()) {
         error_ = "当前配置没有保存路径，请使用另存为。";
         return false;
     }
-    return saveAs(path_, parent);
+    return saveAs(path_, parent, options);
 }
 
-bool ConfigDocument::saveAs(const QString& path, QWidget* parent) {
-    Q_UNUSED(parent);
+bool ConfigDocument::saveAs(const QString& path, QWidget* parent, SaveOptions options) {
     const ConfigValidationResult result = validate();
     publishValidation(result);
     if (!result.isValid()) {
         error_ = "配置校验失败，禁止保存。";
         return false;
     }
+    if (QFileInfo::exists(path) && !options.allowOverwriteWithoutPrompt) {
+        const QMessageBox::StandardButton answer =
+            QMessageBox::question(parent,
+                                  "确认覆盖配置",
+                                  "目标配置文件已存在，是否覆盖？\n" + path,
+                                  QMessageBox::Yes | QMessageBox::No,
+                                  QMessageBox::No);
+        if (answer != QMessageBox::Yes) {
+            error_ = "用户取消覆盖保存。";
+            return false;
+        }
+    }
     if (!writeToPath(path)) {
         return false;
     }
     path_ = path;
+    original_document_ = document_;
     setDirty(false);
     emit changed();
     return true;
@@ -120,6 +134,10 @@ QString ConfigDocument::errorString() const {
 
 QJsonDocument ConfigDocument::document() const {
     return document_;
+}
+
+QJsonDocument ConfigDocument::originalDocument() const {
+    return original_document_;
 }
 
 ConfigValidationResult ConfigDocument::validate() const {

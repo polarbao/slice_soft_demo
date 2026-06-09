@@ -18,7 +18,12 @@ SupportEditor::SupportEditor(ConfigDocument* document, QWidget* parent) : QWidge
     auto* form = new QFormLayout();
     enabled_ = new QCheckBox("启用支撑", this);
     mode_ = new QComboBox(this);
-    mode_->addItems({"none", "bottom_projection", "unsupported_only", "bottom_plus_unsupported", "island_filter"});
+    mode_->addItems({"none",
+                     "bottom_projection",
+                     "unsupported_only",
+                     "bottom_projection_plus_unsupported",
+                     "full_vertical_projection",
+                     "island_filter"});
     min_island_area_ = makeSpin(this);
     xy_dilation_ = makeSpin(this);
     connectivity_ = makeSpin(this, 8);

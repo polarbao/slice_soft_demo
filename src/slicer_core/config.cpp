@@ -361,6 +361,13 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.preview.channels = read_string_array(preview, "channels", config.preview.channels);
         config.preview.only_non_empty_layers =
             preview.value("onlyNonEmptyLayers", config.preview.only_non_empty_layers);
+        if (preview.contains("pseudoColors")) {
+            const auto& colors = preview.at("pseudoColors");
+            config.preview.empty_color = read_rgb_field(colors, "empty", config.preview.empty_color);
+            config.preview.support_color = read_rgb_field(colors, "support", config.preview.support_color);
+            config.preview.white_color = read_rgb_field(colors, "white", config.preview.white_color);
+            config.preview.varnish_color = read_rgb_field(colors, "varnish", config.preview.varnish_color);
+        }
     }
 
     if (root.contains("relief")) {

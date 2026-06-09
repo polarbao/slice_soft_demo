@@ -1,5 +1,7 @@
 #include "PreviewOverlayPanel.h"
 
+#include "../services/PreviewReportIndex.h"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -21,34 +23,6 @@ QPushButton* makeButton(const QString& text, QWidget* parent) {
     auto* button = new QPushButton(text, parent);
     button->setMinimumHeight(28);
     return button;
-}
-
-QStringList reportPreviewFiles(const QString& package_dir) {
-    QStringList paths;
-    QFile file(QDir(package_dir).filePath("reports/preview_report.json"));
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return paths;
-    }
-    QJsonParseError parse_error{};
-    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parse_error);
-    if (parse_error.error != QJsonParseError::NoError || !document.isObject()) {
-        return paths;
-    }
-    const QJsonObject object = document.object();
-    for (const QString& key : QStringList{"files", "generated", "previewFiles"}) {
-        const QJsonArray array = object.value(key).toArray();
-        for (const QJsonValue& value : array) {
-            if (value.isString()) {
-                paths.push_back(QDir(package_dir).filePath(value.toString()));
-            } else if (value.isObject()) {
-                const QString path = value.toObject().value("path").toString(value.toObject().value("file").toString());
-                if (!path.isEmpty()) {
-                    paths.push_back(QDir(package_dir).filePath(path));
-                }
-            }
-        }
-    }
-    return paths;
 }
 
 }  // namespace
@@ -90,18 +64,31 @@ PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
 
 void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
     images_.clear();
-    QStringList paths = reportPreviewFiles(package.package_dir);
-    if (paths.isEmpty()) {
-        paths = package.preview_paths;
+    PreviewReportIndex index;
+    if (index.load(package.package_dir)) {
+        for (const PreviewReportEntry& entry : index.entries()) {
+            if (QFileInfo::exists(entry.path)) {
+                images_.push_back(
+                    PreviewImage{entry.path, entry.channel.isEmpty() ? classifyChannel(entry.path) : entry.channel, entry.layer_index});
+            }
+        }
     }
-    paths.sort();
-    for (const QString& path : paths) {
-        if (QFileInfo::exists(path)) {
-            images_.push_back(PreviewImage{path, classifyChannel(path), parseLayer(path)});
+    if (images_.isEmpty()) {
+        QStringList paths;
+        paths = package.preview_paths;
+        paths.sort();
+        for (const QString& path : paths) {
+            if (QFileInfo::exists(path)) {
+                images_.push_back(PreviewImage{path, classifyChannel(path), parseLayer(path)});
+            }
         }
     }
     rebuildLayerSlider();
     updateImage();
+}
+
+int PreviewOverlayPanel::imageCount() const {
+    return images_.size();
 }
 
 void PreviewOverlayPanel::updateImage() {
@@ -212,16 +199,12 @@ QImage PreviewOverlayPanel::composeCurrent() const {
     }
 
     QString overlay_channel;
-    QColor tint;
     if (mode.contains("W")) {
         overlay_channel = "white";
-        tint = QColor(0, 210, 170, 160);
     } else if (mode.contains("V")) {
         overlay_channel = "varnish";
-        tint = QColor(210, 60, 220, 160);
     } else {
         overlay_channel = "support";
-        tint = QColor(255, 150, 20, 170);
     }
     const QImage overlay = findImage(overlay_channel, index);
     if (overlay.isNull()) {
@@ -229,13 +212,22 @@ QImage PreviewOverlayPanel::composeCurrent() const {
     }
 
     QImage result = base.convertToFormat(QImage::Format_ARGB32);
-    QImage mask = overlay.convertToFormat(QImage::Format_ARGB32).scaled(result.size(), Qt::KeepAspectRatio, Qt::FastTransformation);
+    const QImage mask = overlay.convertToFormat(QImage::Format_ARGB32).scaled(result.size(), Qt::KeepAspectRatio, Qt::FastTransformation);
+    QImage colored_mask(result.size(), QImage::Format_ARGB32);
+    colored_mask.fill(Qt::transparent);
+    for (int y = 0; y < mask.height(); ++y) {
+        for (int x = 0; x < mask.width(); ++x) {
+            const QColor source = QColor::fromRgba(mask.pixel(x, y));
+            const int max_component = qMax(source.red(), qMax(source.green(), source.blue()));
+            const bool near_white = source.red() > 245 && source.green() > 245 && source.blue() > 245;
+            if (!near_white && max_component >= 32) {
+                colored_mask.setPixelColor(x, y, QColor(source.red(), source.green(), source.blue(), 170));
+            }
+        }
+    }
     QPainter painter(&result);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.setOpacity(0.45);
-    painter.drawImage(QPoint(0, 0), mask);
-    painter.setOpacity(0.22);
-    painter.fillRect(result.rect(), tint);
+    painter.drawImage(QPoint(0, 0), colored_mask);
     return result;
 }
 

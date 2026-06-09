@@ -79,7 +79,13 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
     if (hasObject(root, "support")) {
         const QJsonObject support = root.value("support").toObject();
         const QSet<QString> modes{
-            "none", "bottom_projection", "unsupported_only", "bottom_plus_unsupported", "island_filter"};
+            "none",
+            "bottom_projection",
+            "unsupported_only",
+            "bottom_plus_unsupported",
+            "bottom_projection_plus_unsupported",
+            "full_vertical_projection",
+            "island_filter"};
         const QString mode = stringAt(support, "mode");
         if (!isAllowed(mode, modes)) {
             result.errors.push_back("support.mode 不是当前 UI 认可的基础模式。");

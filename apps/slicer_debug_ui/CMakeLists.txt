@@ -4,6 +4,8 @@ add_executable(slicer_debug_ui
     MainWindow.h
     services/ConfigDocument.cpp
     services/ConfigDocument.h
+    services/ConfigDiffModel.cpp
+    services/ConfigDiffModel.h
     services/ConfigValidator.cpp
     services/ConfigValidator.h
     services/PackageLoader.cpp
@@ -14,12 +16,18 @@ add_executable(slicer_debug_ui
     services/ReportLoader.h
     services/ToolPaths.cpp
     services/ToolPaths.h
+    services/PreviewReportIndex.cpp
+    services/PreviewReportIndex.h
+    services/UiSmokeTestRunner.cpp
+    services/UiSmokeTestRunner.h
     widgets/LogPanel.cpp
     widgets/LogPanel.h
     widgets/ChannelChartPanel.cpp
     widgets/ChannelChartPanel.h
     widgets/ConfigEditorPanel.cpp
     widgets/ConfigEditorPanel.h
+    widgets/ConfigDiffPanel.cpp
+    widgets/ConfigDiffPanel.h
     widgets/MaterialProcessPanel.cpp
     widgets/MaterialProcessPanel.h
     widgets/MaterialPolicyEditor.cpp

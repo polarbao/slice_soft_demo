@@ -254,6 +254,48 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
+      "name": "SliceSoft: Debug 3MF real 01",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_01.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
+      "name": "SliceSoft: Debug 3MF real 02",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_02.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
+      "name": "SliceSoft: Debug 3MF real 03",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_03.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
       "name": "SliceSoft: Debug OBJ/MTL material RGBWV",
       "type": "cppvsdbg",
       "request": "launch",

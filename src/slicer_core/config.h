@@ -170,6 +170,10 @@ struct PreviewConfig {
     std::array<int, 2> layer_range{0, -1};
     std::vector<std::string> channels{"rgb", "support", "white", "varnish"};
     bool only_non_empty_layers{false};
+    std::array<std::uint8_t, 3> empty_color{255, 255, 255};
+    std::array<std::uint8_t, 3> support_color{0, 255, 0};
+    std::array<std::uint8_t, 3> white_color{0, 170, 255};
+    std::array<std::uint8_t, 3> varnish_color{127, 127, 127};
 };
 
 struct ReliefConfig {

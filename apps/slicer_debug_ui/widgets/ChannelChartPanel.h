@@ -22,6 +22,7 @@ public:
 
     explicit ChannelChartPanel(QWidget* parent = nullptr);
     void loadPackage(const PackageSummary& package);
+    int layerStatCount() const;
 
 protected:
     void paintEvent(QPaintEvent* event) override;
