@@ -68,13 +68,23 @@ struct ThreeMfReportInfo {
     std::string model_part_path;
     std::string unit{"millimeter"};
     double unit_scale_to_mm{1.0};
+    std::string xml_parser{"restricted_string_xml_reader"};
+    int entry_count{0};
+    int stored_entry_count{0};
+    int deflated_entry_count{0};
+    std::uint64_t total_uncompressed_bytes{0};
     int object_count{0};
     int component_count{0};
     int mesh_object_count{0};
     int triangle_count{0};
     int material_resource_count{0};
+    int invalid_reference_count{0};
+    int unknown_material_count{0};
+    int ignored_resource_count{0};
+    std::vector<std::string> unsupported_resources;
     std::vector<std::string> unsupported_extensions;
     std::vector<std::string> warnings;
+    std::vector<std::string> errors;
 };
 
 struct ModelReport {

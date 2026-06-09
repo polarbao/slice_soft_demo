@@ -84,7 +84,10 @@ $materialMappingCases = @(
 $threeMfCases = @(
   @{ Config = "samples/configs/3mf/three_mf_single_rgb.json"; Package = "output/ThreeMfSingleRgb" },
   @{ Config = "samples/configs/3mf/three_mf_multi_object_transform.json"; Package = "output/ThreeMfMultiObjectTransform" },
-  @{ Config = "samples/configs/3mf/three_mf_multi_material_rgbwv.json"; Package = "output/ThreeMfMultiMaterialRgbwv" }
+  @{ Config = "samples/configs/3mf/three_mf_multi_material_rgbwv.json"; Package = "output/ThreeMfMultiMaterialRgbwv" },
+  @{ Config = "samples/configs/3mf/three_mf_single_rgb_stored.json"; Package = "output/ThreeMfSingleRgbStored" },
+  @{ Config = "samples/configs/3mf/three_mf_single_rgb_deflate.json"; Package = "output/ThreeMfSingleRgbDeflate" },
+  @{ Config = "samples/configs/3mf/three_mf_multi_material_deflate.json"; Package = "output/ThreeMfMultiMaterialDeflate" }
 )
 
 $heavyReliefCases = @(
@@ -110,6 +113,13 @@ if (-not $SkipBuild) {
   Run-Step "build Debug" {
     cmake --build build --config Debug
     if ($LASTEXITCODE -ne 0) { throw "build failed" }
+  }
+}
+
+if ($Mode -eq "quick" -or $Mode -eq "full") {
+  Run-Step "make 3MF samples" {
+    & .\scripts\make_3mf_samples.ps1
+    if ($LASTEXITCODE -ne 0) { throw "make_3mf_samples failed" }
   }
 }
 
@@ -234,6 +244,24 @@ if ($Mode -eq "quick" -or $Mode -eq "full") {
     if ($threeMfRgbwv.mappedWhite -le 0) { throw "3MF RGBWV expected mappedWhite > 0" }
     if ($threeMfRgbwv.mappedVarnish -le 0) { throw "3MF RGBWV expected mappedVarnish > 0" }
     if ($threeMfRgbwv.mappedSupport -ne 0) { throw "3MF RGBWV expected mappedSupport = 0 when allowInputSupportMaterial=false" }
+
+    $threeMfDeflate = Read-Json "output/ThreeMfSingleRgbDeflate/reports/three_mf_report.json"
+    if ($threeMfDeflate.zip.deflatedEntryCount -le 0) { throw "3MF deflate expected deflatedEntryCount > 0" }
+    if ($threeMfDeflate.xml.parser -ne "restricted_string_xml_reader") { throw "3MF report expected restricted XML parser" }
+    if ($threeMfDeflate.validation.invalidReferenceCount -ne 0) { throw "3MF deflate expected invalidReferenceCount = 0" }
+
+    $threeMfStored = Read-Json "output/ThreeMfSingleRgbStored/reports/three_mf_report.json"
+    if ($threeMfStored.zip.storedEntryCount -le 0) { throw "3MF stored expected storedEntryCount > 0" }
+  }
+
+  Run-Step "make bad 3MF packages" {
+    & .\scripts\make_bad_3mf_packages.ps1
+    if ($LASTEXITCODE -ne 0) { throw "make_bad_3mf_packages failed" }
+  }
+
+  Run-Step "bad 3MF packages" {
+    & .\scripts\run_3mf_negative_tests.ps1
+    if ($LASTEXITCODE -ne 0) { throw "run_3mf_negative_tests failed" }
   }
 
   Run-Step "make bad packages" {

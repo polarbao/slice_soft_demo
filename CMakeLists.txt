@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(SliceSoftDemo LANGUAGES CXX)
+project(SliceSoftDemo LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(slicer_core
+    src/third_party/miniz/miniz.c
+    src/third_party/miniz/miniz_tdef.c
+    src/third_party/miniz/miniz_tinfl.c
+    src/third_party/miniz/miniz_zip.c
     src/slicer_core/config.cpp
     src/slicer_core/config.h
     src/slicer_core/json_value.cpp
@@ -25,6 +29,7 @@ add_library(slicer_core
 
 target_include_directories(slicer_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
 )
 
 if(WIN32)

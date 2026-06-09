@@ -2128,6 +2128,10 @@ Json obj_mtl_material_report_to_json(const ModelReport& model_report) {
 }
 
 Json three_mf_report_to_json(const ModelReport& model_report) {
+    Json::Array unsupported_resources;
+    for (const std::string& resource : model_report.three_mf.unsupported_resources) {
+        unsupported_resources.push_back(resource);
+    }
     Json::Array unsupported_extensions;
     for (const std::string& extension : model_report.three_mf.unsupported_extensions) {
         unsupported_extensions.push_back(extension);
@@ -2136,19 +2140,56 @@ Json three_mf_report_to_json(const ModelReport& model_report) {
     for (const std::string& warning : model_report.three_mf.warnings) {
         warnings.push_back(warning);
     }
+    Json::Array errors;
+    for (const std::string& error : model_report.three_mf.errors) {
+        errors.push_back(error);
+    }
     return Json::object({
         {"enabled", model_report.three_mf.enabled},
         {"packagePath", model_report.three_mf.package_path.generic_string()},
         {"modelPartPath", model_report.three_mf.model_part_path},
         {"unit", model_report.three_mf.unit},
         {"unitScaleToMm", model_report.three_mf.unit_scale_to_mm},
+        {"zipCompressionStats",
+         Json::object({
+             {"entryCount", model_report.three_mf.entry_count},
+             {"storedEntryCount", model_report.three_mf.stored_entry_count},
+             {"deflatedEntryCount", model_report.three_mf.deflated_entry_count},
+             {"totalUncompressedBytes", static_cast<double>(model_report.three_mf.total_uncompressed_bytes)},
+         })},
+        {"entryCount", model_report.three_mf.entry_count},
+        {"totalUncompressedBytes", static_cast<double>(model_report.three_mf.total_uncompressed_bytes)},
+        {"zip",
+         Json::object({
+             {"entryCount", model_report.three_mf.entry_count},
+             {"storedEntryCount", model_report.three_mf.stored_entry_count},
+             {"deflatedEntryCount", model_report.three_mf.deflated_entry_count},
+             {"totalUncompressedBytes", static_cast<double>(model_report.three_mf.total_uncompressed_bytes)},
+         })},
+        {"xml",
+         Json::object({
+             {"parser", model_report.three_mf.xml_parser},
+             {"allowExternalEntities", false},
+             {"parseWarnings", Json::array({})},
+         })},
+        {"xmlParser", model_report.three_mf.xml_parser},
+        {"validation",
+         Json::object({
+             {"invalidReferenceCount", model_report.three_mf.invalid_reference_count},
+             {"unknownMaterialCount", model_report.three_mf.unknown_material_count},
+             {"ignoredResourceCount", model_report.three_mf.ignored_resource_count},
+         })},
+        {"invalidReferenceCount", model_report.three_mf.invalid_reference_count},
+        {"ignoredResourceCount", model_report.three_mf.ignored_resource_count},
         {"objectCount", model_report.three_mf.object_count},
         {"componentCount", model_report.three_mf.component_count},
         {"meshObjectCount", model_report.three_mf.mesh_object_count},
         {"triangleCount", model_report.three_mf.triangle_count},
         {"materialResourceCount", model_report.three_mf.material_resource_count},
+        {"unsupportedResources", Json{unsupported_resources}},
         {"unsupportedExtensions", Json{unsupported_extensions}},
         {"warnings", Json{warnings}},
+        {"errors", Json{errors}},
     });
 }
 

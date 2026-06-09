@@ -185,6 +185,168 @@
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run textured relief RGB",
       "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug 3MF single RGB",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_single_rgb.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug 3MF multi object transform",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_multi_object_transform.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug 3MF multi material RGBWV",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_multi_material_rgbwv.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug OBJ/MTL material RGBWV",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/material_mapping/obj_mtl_material_mapping_rgbwv.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug OBJ/MTL material ignore",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/material_mapping/obj_mtl_material_mapping_ignore.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug OBJ/MTL texture material RGBWV",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/material_mapping/obj_mtl_texture_material_mapping_rgbwv.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug rip_reader_test 3MF single RGB",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ThreeMfSingleRgb",
+        "--summary"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Run 3MF single RGB",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug rip_reader_test 3MF multi object transform",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ThreeMfMultiObjectTransform",
+        "--summary"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Run 3MF multi object transform",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug rip_reader_test 3MF multi material RGBWV",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ThreeMfMultiMaterialRgbwv",
+        "--summary"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Run 3MF multi material RGBWV",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug rip_reader_test OBJ/MTL material RGBWV",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ObjMtlMaterialMappingRgbwv",
+        "--summary"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Run OBJ/MTL material RGBWV",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug rip_reader_test OBJ/MTL material ignore",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ObjMtlMaterialMappingIgnore",
+        "--summary"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Run OBJ/MTL material ignore",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "SliceSoft: Debug rip_reader_test OBJ/MTL texture material RGBWV",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ObjMtlTextureMaterialMappingRgbwv",
+        "--summary"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Run OBJ/MTL texture material RGBWV",
+      "console": "integratedTerminal"
     }
   ]
 }

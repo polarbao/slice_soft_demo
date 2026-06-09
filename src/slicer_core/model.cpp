@@ -1,5 +1,7 @@
 #include "slicer_core/model.h"
 
+#include "miniz.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -44,6 +46,9 @@ struct ObjFaceVertex {
 struct ZipEntryData {
     std::string name;
     std::vector<std::uint8_t> data;
+    std::uint16_t compression_method{0};
+    std::uint64_t compressed_size{0};
+    std::uint64_t uncompressed_size{0};
 };
 
 struct ThreeMfMaterial {
@@ -65,6 +70,24 @@ struct ThreeMfObject {
     std::vector<Vec3> vertices;
     std::vector<ThreeMfTriangle> triangles;
     std::vector<std::pair<std::string, std::array<double, 12>>> components;
+};
+
+struct ThreeMfXmlReader {
+    explicit ThreeMfXmlReader(std::string xml) : xml_text{std::move(xml)} {
+        validate_restricted_xml(xml_text);
+    }
+
+    std::map<std::string, std::string> root_attributes() const;
+    std::vector<std::string> tags(const std::string& tag_name) const;
+    std::string block(const std::string& tag_name, std::size_t start_pos = 0) const;
+    std::vector<std::string> blocks(const std::string& tag_name) const;
+    std::vector<std::string> tags_in(const std::string& block_text, const std::string& tag_name) const;
+    std::string block_in(const std::string& block_text, const std::string& tag_name, std::size_t start_pos = 0) const;
+
+private:
+    static void validate_restricted_xml(const std::string& xml);
+
+    std::string xml_text;
 };
 
 struct OrientationCandidate {
@@ -409,60 +432,69 @@ std::uint32_t read_u32_le_at(const std::vector<std::uint8_t>& data, const std::s
         | (static_cast<std::uint32_t>(data.at(offset + 3U)) << 24U);
 }
 
-std::vector<ZipEntryData> read_stored_zip_entries(const std::filesystem::path& path) {
-    std::ifstream input{path, std::ios::binary};
-    if (!input) {
-        throw std::runtime_error("failed to open 3MF package: " + path.string());
-    }
-    const std::vector<std::uint8_t> data{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
-    constexpr std::size_t max_entry_count{128};
-    constexpr std::size_t max_total_uncompressed{64ULL * 1024ULL * 1024ULL};
+std::vector<ZipEntryData> read_3mf_zip_entries(const std::filesystem::path& path, ThreeMfReportInfo& report) {
+    constexpr std::size_t max_entry_count{256};
+    constexpr std::uint64_t max_total_uncompressed{128ULL * 1024ULL * 1024ULL};
     std::vector<ZipEntryData> entries;
-    std::size_t offset{0};
-    std::size_t total_uncompressed{0};
-    while (offset + 4U <= data.size()) {
-        const std::uint32_t signature = read_u32_le_at(data, offset);
-        if (signature == 0x02014b50U || signature == 0x06054b50U) {
-            break;
+
+    mz_zip_archive archive{};
+    if (!mz_zip_reader_init_file(&archive, path.string().c_str(), 0)) {
+        const std::string error = mz_zip_get_error_string(mz_zip_get_last_error(&archive));
+        throw std::runtime_error("E_3MF_ZIP_OPEN_FAILED: " + error + ": " + path.string());
+    }
+
+    const auto close_archive = [&archive]() {
+        mz_zip_reader_end(&archive);
+    };
+
+    const mz_uint file_count = mz_zip_reader_get_num_files(&archive);
+    if (file_count > max_entry_count) {
+        close_archive();
+        throw std::runtime_error("E_3MF_ZIP_TOO_MANY_ENTRIES: 3MF package has too many ZIP entries");
+    }
+
+    std::uint64_t total_uncompressed{0};
+    for (mz_uint file_index{0}; file_index < file_count; ++file_index) {
+        mz_zip_archive_file_stat stat{};
+        if (!mz_zip_reader_file_stat(&archive, file_index, &stat)) {
+            const std::string error = mz_zip_get_error_string(mz_zip_get_last_error(&archive));
+            close_archive();
+            throw std::runtime_error("E_3MF_ZIP_OPEN_FAILED: failed to stat ZIP entry: " + error);
         }
-        if (signature != 0x04034b50U) {
-            throw std::runtime_error("unsupported ZIP structure in 3MF package: " + path.string());
+        if (stat.m_is_directory) {
+            continue;
         }
-        if (entries.size() >= max_entry_count) {
-            throw std::runtime_error("3MF package has too many ZIP entries");
-        }
-        const std::uint16_t compression = read_u16_le_at(data, offset + 8U);
-        const std::uint32_t compressed_size = read_u32_le_at(data, offset + 18U);
-        const std::uint32_t uncompressed_size = read_u32_le_at(data, offset + 22U);
-        const std::uint16_t name_length = read_u16_le_at(data, offset + 26U);
-        const std::uint16_t extra_length = read_u16_le_at(data, offset + 28U);
-        const std::size_t name_offset = offset + 30U;
-        const std::size_t data_offset = name_offset + name_length + extra_length;
-        if (data_offset + compressed_size > data.size()) {
-            throw std::runtime_error("truncated ZIP entry in 3MF package: " + path.string());
-        }
-        std::string name{
-            reinterpret_cast<const char*>(data.data() + name_offset),
-            reinterpret_cast<const char*>(data.data() + name_offset + name_length)};
+        std::string name{stat.m_filename};
         std::replace(name.begin(), name.end(), '\\', '/');
         if (name.find("..") != std::string::npos || (!name.empty() && name.front() == '/')) {
-            throw std::runtime_error("3MF ZIP entry path traversal is not allowed: " + name);
+            close_archive();
+            throw std::runtime_error("E_3MF_ZIP_PATH_TRAVERSAL: 3MF ZIP entry path traversal is not allowed: " + name);
         }
-        if (compression != 0) {
-            throw std::runtime_error("06 basic 3MF importer only supports stored ZIP entries: " + name);
+        if (stat.m_method != 0 && stat.m_method != 8) {
+            close_archive();
+            throw std::runtime_error("E_3MF_ZIP_UNSUPPORTED_COMPRESSION: unsupported ZIP compression method for " + name);
         }
-        if (compressed_size != uncompressed_size) {
-            throw std::runtime_error("stored ZIP entry size mismatch: " + name);
-        }
-        total_uncompressed += uncompressed_size;
+        total_uncompressed += stat.m_uncomp_size;
         if (total_uncompressed > max_total_uncompressed) {
-            throw std::runtime_error("3MF package exceeds maximum uncompressed size");
+            close_archive();
+            throw std::runtime_error("E_3MF_ZIP_TOO_LARGE: 3MF package exceeds maximum uncompressed size");
         }
-        entries.push_back({name, std::vector<std::uint8_t>(
-                                     data.begin() + static_cast<std::ptrdiff_t>(data_offset),
-                                     data.begin() + static_cast<std::ptrdiff_t>(data_offset + compressed_size))});
-        offset = data_offset + compressed_size;
+        std::vector<std::uint8_t> data(static_cast<std::size_t>(stat.m_uncomp_size));
+        if (!mz_zip_reader_extract_to_mem(&archive, file_index, data.data(), data.size(), 0)) {
+            const std::string error = mz_zip_get_error_string(mz_zip_get_last_error(&archive));
+            close_archive();
+            throw std::runtime_error("E_3MF_ZIP_OPEN_FAILED: failed to extract ZIP entry " + name + ": " + error);
+        }
+        if (stat.m_method == 0) {
+            ++report.stored_entry_count;
+        } else if (stat.m_method == 8) {
+            ++report.deflated_entry_count;
+        }
+        entries.push_back({name, data, stat.m_method, stat.m_comp_size, stat.m_uncomp_size});
     }
+    close_archive();
+    report.entry_count = static_cast<int>(entries.size());
+    report.total_uncompressed_bytes = total_uncompressed;
     return entries;
 }
 
@@ -577,10 +609,128 @@ std::string find_xml_block(const std::string& xml, const std::string& tag_name, 
     return xml.substr(start, close_pos + close.size() - start);
 }
 
-std::string find_3mf_model_part(const std::map<std::string, std::vector<std::uint8_t>>& entries) {
+std::vector<std::string> find_xml_blocks(const std::string& xml, const std::string& tag_name) {
+    std::vector<std::string> blocks;
+    std::size_t pos{0};
+    while (true) {
+        const std::string block = find_xml_block(xml, tag_name, pos);
+        if (block.empty()) {
+            break;
+        }
+        blocks.push_back(block);
+        pos = xml.find(block, pos);
+        if (pos == std::string::npos) {
+            break;
+        }
+        pos += block.size();
+    }
+    return blocks;
+}
+
+std::string xml_tag_name(const std::string& tag) {
+    std::size_t pos{1};
+    if (pos < tag.size() && tag.at(pos) == '/') {
+        ++pos;
+    }
+    while (pos < tag.size() && std::isspace(static_cast<unsigned char>(tag.at(pos))) != 0) {
+        ++pos;
+    }
+    const std::size_t start = pos;
+    while (pos < tag.size() && (std::isalnum(static_cast<unsigned char>(tag.at(pos))) != 0
+                                || tag.at(pos) == '_' || tag.at(pos) == ':' || tag.at(pos) == '-')) {
+        ++pos;
+    }
+    return tag.substr(start, pos - start);
+}
+
+void ThreeMfXmlReader::validate_restricted_xml(const std::string& xml) {
+    if (xml.find("<!DOCTYPE") != std::string::npos || xml.find("<!ENTITY") != std::string::npos) {
+        throw std::runtime_error("E_3MF_XML_PARSE_FAILED: external DTD/entity declarations are not allowed");
+    }
+
+    std::vector<std::string> stack;
+    std::size_t pos{0};
+    while ((pos = xml.find('<', pos)) != std::string::npos) {
+        if (xml.compare(pos, 4, "<!--") == 0) {
+            const std::size_t end = xml.find("-->", pos + 4U);
+            if (end == std::string::npos) {
+                throw std::runtime_error("E_3MF_XML_PARSE_FAILED: unterminated XML comment");
+            }
+            pos = end + 3U;
+            continue;
+        }
+        const std::size_t end = xml.find('>', pos + 1U);
+        if (end == std::string::npos) {
+            throw std::runtime_error("E_3MF_XML_PARSE_FAILED: unterminated XML tag");
+        }
+        const std::string tag = xml.substr(pos, end - pos + 1U);
+        if (tag.size() >= 2U && (tag.at(1) == '?' || tag.at(1) == '!')) {
+            pos = end + 1U;
+            continue;
+        }
+        const bool closing = tag.size() >= 2U && tag.at(1) == '/';
+        const bool self_closing = tag.size() >= 2U && tag.at(tag.size() - 2U) == '/';
+        const std::string name = xml_tag_name(tag);
+        if (name.empty()) {
+            throw std::runtime_error("E_3MF_XML_PARSE_FAILED: empty XML tag name");
+        }
+        if (closing) {
+            if (stack.empty() || stack.back() != name) {
+                throw std::runtime_error("E_3MF_XML_PARSE_FAILED: mismatched XML closing tag: " + name);
+            }
+            stack.pop_back();
+        } else if (!self_closing) {
+            stack.push_back(name);
+        }
+        pos = end + 1U;
+    }
+    if (!stack.empty()) {
+        throw std::runtime_error("E_3MF_XML_PARSE_FAILED: unclosed XML tag: " + stack.back());
+    }
+}
+
+std::map<std::string, std::string> ThreeMfXmlReader::root_attributes() const {
+    const std::size_t model_pos = xml_text.find("<model");
+    if (model_pos == std::string::npos) {
+        throw std::runtime_error("E_3MF_XML_PARSE_FAILED: 3MF model XML missing model root");
+    }
+    const std::size_t model_end = xml_text.find('>', model_pos);
+    if (model_end == std::string::npos) {
+        throw std::runtime_error("E_3MF_XML_PARSE_FAILED: malformed model root");
+    }
+    return xml_attributes(xml_text.substr(model_pos, model_end - model_pos + 1U));
+}
+
+std::vector<std::string> ThreeMfXmlReader::tags(const std::string& tag_name) const {
+    return find_xml_tags(xml_text, tag_name);
+}
+
+std::string ThreeMfXmlReader::block(const std::string& tag_name, const std::size_t start_pos) const {
+    return find_xml_block(xml_text, tag_name, start_pos);
+}
+
+std::vector<std::string> ThreeMfXmlReader::blocks(const std::string& tag_name) const {
+    return find_xml_blocks(xml_text, tag_name);
+}
+
+std::vector<std::string> ThreeMfXmlReader::tags_in(const std::string& block_text, const std::string& tag_name) const {
+    return find_xml_tags(block_text, tag_name);
+}
+
+std::string ThreeMfXmlReader::block_in(
+    const std::string& block_text,
+    const std::string& tag_name,
+    const std::size_t start_pos) const {
+    return find_xml_block(block_text, tag_name, start_pos);
+}
+
+std::string find_3mf_model_part(
+    const std::map<std::string, std::vector<std::uint8_t>>& entries,
+    ThreeMfReportInfo& report) {
     const std::string rels = entry_text(entries, "_rels/.rels");
     if (!rels.empty()) {
-        for (const std::string& tag : find_xml_tags(rels, "Relationship")) {
+        const ThreeMfXmlReader rels_reader{rels};
+        for (const std::string& tag : rels_reader.tags("Relationship")) {
             const auto attrs = xml_attributes(tag);
             const auto target = attrs.find("Target");
             if (target != attrs.end() && target->second.find(".model") != std::string::npos) {
@@ -592,8 +742,15 @@ std::string find_3mf_model_part(const std::map<std::string, std::vector<std::uin
                 return normalized;
             }
         }
+    } else {
+        report.warnings.push_back("E_3MF_RELS_MISSING: _rels/.rels missing; fallback to 3D/3dmodel.model");
     }
     return "3D/3dmodel.model";
+}
+
+bool is_supported_three_mf_unit(const std::string& unit) {
+    return unit == "micron" || unit == "millimeter" || unit == "mm" || unit.empty() || unit == "centimeter"
+        || unit == "inch" || unit == "foot" || unit == "meter";
 }
 
 double three_mf_unit_scale_to_mm(const std::string& unit) {
@@ -616,6 +773,36 @@ double three_mf_unit_scale_to_mm(const std::string& unit) {
         return 1000.0;
     }
     return 1.0;
+}
+
+void collect_unsupported_3mf_metadata(const ThreeMfXmlReader& reader, ThreeMfReportInfo& report) {
+    const auto attrs = reader.root_attributes();
+    for (const auto& item : attrs) {
+        if (item.first.rfind("xmlns:", 0) == 0) {
+            const std::string extension = item.first.substr(6);
+            if (extension != "xml") {
+                report.unsupported_extensions.push_back(extension + "=" + item.second);
+            }
+        }
+    }
+
+    const std::string resources_block = reader.block("resources");
+    if (resources_block.empty()) {
+        return;
+    }
+    const std::array<std::string, 5> unsupported_tags{
+        "texture2dgroup",
+        "colorgroup",
+        "compositematerials",
+        "multiproperties",
+        "texture2d"};
+    for (const std::string& tag_name : unsupported_tags) {
+        const std::vector<std::string> tags = reader.tags_in(resources_block, tag_name);
+        for (std::size_t i{0}; i < tags.size(); ++i) {
+            report.unsupported_resources.push_back(tag_name);
+            ++report.ignored_resource_count;
+        }
+    }
 }
 
 std::uint8_t hex_to_u8(const std::string& value) {
@@ -726,8 +913,8 @@ void add_three_mf_object_instance(
     for (const auto& component : object.components) {
         const auto found = objects.find(component.first);
         if (found == objects.end()) {
-            mesh.three_mf.warnings.push_back("component references missing object id: " + component.first);
-            continue;
+            ++mesh.three_mf.invalid_reference_count;
+            throw std::runtime_error("E_3MF_INVALID_COMPONENT_REFERENCE: component references missing object id: " + component.first);
         }
         const std::array<double, 12> combined = multiply_3mf_transform(component.second, instance_transform);
         add_three_mf_object_instance(found->second, objects, combined, unit_scale_to_mm, transform, mesh);
@@ -738,47 +925,40 @@ void add_three_mf_object_instance(
 void load_3mf(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
     mesh.three_mf.enabled = true;
     mesh.three_mf.package_path = path;
-    const std::vector<ZipEntryData> zip_entries = read_stored_zip_entries(path);
+    const std::vector<ZipEntryData> zip_entries = read_3mf_zip_entries(path, mesh.three_mf);
     std::map<std::string, std::vector<std::uint8_t>> entries;
     for (const ZipEntryData& entry : zip_entries) {
         entries.emplace(entry.name, entry.data);
     }
     if (entries.find("[Content_Types].xml") == entries.end()) {
-        throw std::runtime_error("3MF package missing [Content_Types].xml");
+        throw std::runtime_error("E_3MF_CONTENT_TYPES_MISSING: 3MF package missing [Content_Types].xml");
     }
-    const std::string model_part = find_3mf_model_part(entries);
+    const std::string model_part = find_3mf_model_part(entries, mesh.three_mf);
     mesh.three_mf.model_part_path = model_part;
     const std::string model_xml = entry_text(entries, model_part);
     if (model_xml.empty()) {
-        throw std::runtime_error("3MF package missing model part: " + model_part);
+        throw std::runtime_error("E_3MF_MODEL_PART_MISSING: 3MF package missing model part: " + model_part);
     }
+    const ThreeMfXmlReader model_reader{model_xml};
+    collect_unsupported_3mf_metadata(model_reader, mesh.three_mf);
 
-    const std::size_t model_tag_end = model_xml.find('>');
-    if (model_tag_end != std::string::npos) {
-        const auto model_attrs = xml_attributes(model_xml.substr(0, model_tag_end + 1U));
-        const auto unit = model_attrs.find("unit");
-        if (unit != model_attrs.end()) {
-            mesh.three_mf.unit = unit->second;
-        }
+    const auto model_attrs = model_reader.root_attributes();
+    const auto unit = model_attrs.find("unit");
+    if (unit != model_attrs.end()) {
+        mesh.three_mf.unit = unit->second;
+    }
+    if (!is_supported_three_mf_unit(mesh.three_mf.unit)) {
+        throw std::runtime_error("E_3MF_UNSUPPORTED_UNIT: unsupported 3MF unit: " + mesh.three_mf.unit);
     }
     mesh.three_mf.unit_scale_to_mm = three_mf_unit_scale_to_mm(mesh.three_mf.unit);
 
     std::map<std::string, std::string> material_name_by_key;
-    std::size_t search_pos{0};
-    while ((search_pos = model_xml.find("<basematerials", search_pos)) != std::string::npos) {
-        const std::size_t tag_end = model_xml.find('>', search_pos);
-        if (tag_end == std::string::npos) {
-            break;
-        }
-        const auto attrs = xml_attributes(model_xml.substr(search_pos, tag_end - search_pos + 1U));
+    for (const std::string& base_materials_block : model_reader.blocks("basematerials")) {
+        const std::size_t tag_end = base_materials_block.find('>');
+        const auto attrs = xml_attributes(base_materials_block.substr(0, tag_end + 1U));
         const std::string resource_id = attrs.count("id") != 0 ? attrs.at("id") : "";
-        const std::size_t close = model_xml.find("</basematerials>", tag_end);
-        if (close == std::string::npos) {
-            break;
-        }
-        const std::string block = model_xml.substr(tag_end + 1U, close - tag_end - 1U);
         int index{0};
-        for (const std::string& base_tag : find_xml_tags(block, "base")) {
+        for (const std::string& base_tag : model_reader.tags_in(base_materials_block, "base")) {
             const auto base_attrs = xml_attributes(base_tag);
             const std::string material_key = resource_id + ":" + std::to_string(index);
             MaterialInfo& info = material_info(mesh, material_key);
@@ -795,56 +975,69 @@ void load_3mf(const std::filesystem::path& path, const TransformConfig& transfor
             ++index;
         }
         mesh.three_mf.material_resource_count += index;
-        search_pos = close + 1U;
     }
 
     std::map<std::string, ThreeMfObject> objects;
-    search_pos = 0;
-    while ((search_pos = model_xml.find("<object", search_pos)) != std::string::npos) {
-        const std::size_t tag_end = model_xml.find('>', search_pos);
-        if (tag_end == std::string::npos) {
-            break;
-        }
-        const auto attrs = xml_attributes(model_xml.substr(search_pos, tag_end - search_pos + 1U));
-        const std::size_t close = model_xml.find("</object>", tag_end);
-        if (close == std::string::npos) {
-            break;
-        }
+    for (const std::string& object_block : model_reader.blocks("object")) {
+        const std::size_t tag_end = object_block.find('>');
+        const auto attrs = xml_attributes(object_block.substr(0, tag_end + 1U));
         ThreeMfObject object;
         object.id = attrs.count("id") != 0 ? attrs.at("id") : "";
-        const std::string block = model_xml.substr(tag_end + 1U, close - tag_end - 1U);
-        const std::string mesh_block = find_xml_block(block, "mesh");
-        const std::string components_block = find_xml_block(block, "components");
+        const std::string block = object_block.substr(tag_end + 1U);
+        const std::string mesh_block = model_reader.block_in(block, "mesh");
+        const std::string components_block = model_reader.block_in(block, "components");
         if (!mesh_block.empty()) {
             object.is_mesh = true;
-            for (const std::string& vertex_tag : find_xml_tags(mesh_block, "vertex")) {
+            for (const std::string& vertex_tag : model_reader.tags_in(mesh_block, "vertex")) {
                 const auto vertex_attrs = xml_attributes(vertex_tag);
                 object.vertices.push_back({
                     std::stod(vertex_attrs.at("x")),
                     std::stod(vertex_attrs.at("y")),
                     std::stod(vertex_attrs.at("z"))});
             }
-            for (const std::string& triangle_tag : find_xml_tags(mesh_block, "triangle")) {
+            if (object.vertices.empty()) {
+                throw std::runtime_error("E_3MF_XML_PARSE_FAILED: mesh object has no vertices");
+            }
+            for (const std::string& triangle_tag : model_reader.tags_in(mesh_block, "triangle")) {
                 const auto triangle_attrs = xml_attributes(triangle_tag);
                 ThreeMfTriangle triangle;
                 triangle.vertices = {
                     static_cast<std::size_t>(std::stoul(triangle_attrs.at("v1"))),
                     static_cast<std::size_t>(std::stoul(triangle_attrs.at("v2"))),
                     static_cast<std::size_t>(std::stoul(triangle_attrs.at("v3")))};
+                for (const std::size_t vertex_index : triangle.vertices) {
+                    if (vertex_index >= object.vertices.size()) {
+                        ++mesh.three_mf.invalid_reference_count;
+                        throw std::runtime_error("E_3MF_INVALID_TRIANGLE_INDEX: triangle references vertex outside loaded range");
+                    }
+                }
                 const auto pid = triangle_attrs.find("pid");
                 const auto p1 = triangle_attrs.find("p1");
                 if (pid != triangle_attrs.end() && p1 != triangle_attrs.end()) {
                     const std::string material_key = pid->second + ":" + p1->second;
                     const auto material_name = material_name_by_key.find(material_key);
-                    triangle.material_key =
-                        material_name == material_name_by_key.end() ? material_key : material_name->second;
+                    if (material_name == material_name_by_key.end()) {
+                        ++mesh.three_mf.unknown_material_count;
+                        mesh.three_mf.warnings.push_back(
+                            "E_3MF_UNKNOWN_MATERIAL_ID: triangle references unknown material id: " + material_key);
+                        MaterialInfo& fallback = material_info(mesh, material_key);
+                        fallback.name = material_key;
+                        fallback.diffuse_rgb = {0, 0, 0};
+                        fallback.has_diffuse = true;
+                        triangle.material_key = fallback.name;
+                    } else {
+                        triangle.material_key = material_name->second;
+                    }
                 }
                 object.triangles.push_back(triangle);
+            }
+            if (object.triangles.empty()) {
+                throw std::runtime_error("E_3MF_XML_PARSE_FAILED: mesh object has no triangles");
             }
             ++mesh.three_mf.mesh_object_count;
         } else if (!components_block.empty()) {
             object.is_components = true;
-            for (const std::string& component_tag : find_xml_tags(components_block, "component")) {
+            for (const std::string& component_tag : model_reader.tags_in(components_block, "component")) {
                 const auto component_attrs = xml_attributes(component_tag);
                 const std::string object_id = component_attrs.count("objectid") != 0 ? component_attrs.at("objectid") : "";
                 const std::array<double, 12> matrix =
@@ -856,20 +1049,19 @@ void load_3mf(const std::filesystem::path& path, const TransformConfig& transfor
             objects.emplace(object.id, object);
             ++mesh.three_mf.object_count;
         }
-        search_pos = close + 1U;
     }
 
-    const std::string build_block = find_xml_block(model_xml, "build");
+    const std::string build_block = model_reader.block("build");
     if (build_block.empty()) {
-        throw std::runtime_error("3MF model part does not contain build items");
+        throw std::runtime_error("E_3MF_XML_PARSE_FAILED: 3MF model part does not contain build items");
     }
-    for (const std::string& item_tag : find_xml_tags(build_block, "item")) {
+    for (const std::string& item_tag : model_reader.tags_in(build_block, "item")) {
         const auto item_attrs = xml_attributes(item_tag);
         const std::string object_id = item_attrs.count("objectid") != 0 ? item_attrs.at("objectid") : "";
         const auto found = objects.find(object_id);
         if (found == objects.end()) {
-            mesh.three_mf.warnings.push_back("build item references missing object id: " + object_id);
-            continue;
+            ++mesh.three_mf.invalid_reference_count;
+            throw std::runtime_error("E_3MF_INVALID_COMPONENT_REFERENCE: build item references missing object id: " + object_id);
         }
         const std::array<double, 12> matrix =
             parse_3mf_transform(item_attrs.count("transform") != 0 ? item_attrs.at("transform") : "");
