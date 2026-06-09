@@ -93,6 +93,13 @@ $threeMfCases = @(
   @{ Config = "samples/configs/3mf/three_mf_mixed_color_texture.json"; Package = "output/ThreeMfMixedColorTexture" }
 )
 
+$materialProcessCases = @(
+  @{ Config = "samples/configs/material_process/nail_rgb_white_varnish_top1.json"; Package = "output/NailRgbWhiteVarnishTop1" },
+  @{ Config = "samples/configs/material_process/nail_rgb_white_varnish_top2.json"; Package = "output/NailRgbWhiteVarnishTop2" },
+  @{ Config = "samples/configs/material_process/three_mf_texture_rgb_white_varnish.json"; Package = "output/ThreeMfTextureRgbWhiteVarnish" },
+  @{ Config = "samples/configs/material_process/obj_mtl_texture_rgb_white_varnish.json"; Package = "output/ObjMtlTextureRgbWhiteVarnish" }
+)
+
 $heavyReliefCases = @(
   @{ Config = "samples/configs/relief/relief_nail_varnish_support.json"; Package = "output/ReliefNailVarnishSupport" },
   @{ Config = "samples/configs/relief/relief_nail_white_support.json"; Package = "output/ReliefNailWhiteSupport" },
@@ -103,7 +110,7 @@ $heavyTextureCases = @(
   @{ Config = "samples/configs/textured/textured_relief_rgb.json"; Package = "output/TexturedReliefRgb" }
 )
 
-$quickCases = $basicCases + $storageCases + $supportCases + $textureSmallCases + $materialPolicyCases + $materialMappingCases + $threeMfCases
+$quickCases = $basicCases + $storageCases + $supportCases + $textureSmallCases + $materialPolicyCases + $materialMappingCases + $threeMfCases + $materialProcessCases
 $heavyCases = @()
 if (-not $SkipHeavyRelief) {
   $heavyCases += $heavyReliefCases
@@ -274,6 +281,46 @@ if ($Mode -eq "quick" -or $Mode -eq "full") {
     $threeMfMixed = Read-Json "output/ThreeMfMixedColorTexture/reports/three_mf_report.json"
     if ($threeMfMixed.colorGroups.resolvedTriangles -le 0) { throw "3MF mixed expected ColorGroup resolvedTriangles > 0" }
     if ($threeMfMixed.textures.resolvedTriangles -le 0) { throw "3MF mixed expected Texture2DGroup resolvedTriangles > 0" }
+  }
+
+  Run-Step "verify material process profiles" {
+    $top1 = Read-Json "output/NailRgbWhiteVarnishTop1/reports/material_process_report.json"
+    $top2 = Read-Json "output/NailRgbWhiteVarnishTop2/reports/material_process_report.json"
+    if ($top1.enabled -ne $true) { throw "05A top1 expected materialProcessProfile enabled" }
+    if ($top1.validation.pass -ne $true) { throw "05A top1 expected validation pass" }
+    if ($top2.validation.pass -ne $true) { throw "05A top2 expected validation pass" }
+    if ($top1.rgb.printPixels -le 0) { throw "05A top1 expected RGB printPixels > 0" }
+    if ($top1.white.printPixels -le 0) { throw "05A top1 expected W printPixels > 0" }
+    if ($top1.varnish.printPixels -le 0) { throw "05A top1 expected V printPixels > 0" }
+    if ($top1.varnish.activeLayerIndices.Count -ne 1) { throw "05A top1 expected one varnish active layer" }
+    if ($top2.varnish.activeLayerIndices.Count -ne 2) { throw "05A top2 expected two varnish active layers" }
+    if ($top2.varnish.printPixels -le $top1.varnish.printPixels) { throw "05A top2 expected more varnish printPixels than top1" }
+
+    $threeMfProcess = Read-Json "output/ThreeMfTextureRgbWhiteVarnish/reports/material_process_report.json"
+    if ($threeMfProcess.validation.pass -ne $true) { throw "05A 3MF texture profile expected validation pass" }
+    if ($threeMfProcess.rgb.printPixels -le 0 -or $threeMfProcess.white.printPixels -le 0 -or $threeMfProcess.varnish.printPixels -le 0) {
+      throw "05A 3MF texture profile expected RGB/W/V printPixels > 0"
+    }
+    $threeMfTextureReport = Read-Json "output/ThreeMfTextureRgbWhiteVarnish/reports/texture_report.json"
+    if ($threeMfTextureReport.source -ne "3mf_internal") { throw "05A 3MF texture profile expected texture_report source 3mf_internal" }
+
+    $objProcess = Read-Json "output/ObjMtlTextureRgbWhiteVarnish/reports/material_process_report.json"
+    if ($objProcess.validation.pass -ne $true) { throw "05A OBJ texture profile expected validation pass" }
+    if ($objProcess.rgb.printPixels -le 0 -or $objProcess.white.printPixels -le 0 -or $objProcess.varnish.printPixels -le 0) {
+      throw "05A OBJ texture profile expected RGB/W/V printPixels > 0"
+    }
+    $objTexture = Read-Json "output/ObjMtlTextureRgbWhiteVarnish/reports/texture_report.json"
+    if ($objTexture.stats.sampledPixels -le 0) { throw "05A OBJ texture profile expected sampledPixels > 0" }
+    $objMapping = Read-Json "output/ObjMtlTextureRgbWhiteVarnish/reports/material_role_mapping_report.json"
+    if ($objMapping.mappedRgb -le 0 -or $objMapping.mappedWhite -le 0 -or $objMapping.mappedVarnish -le 0) {
+      throw "05A OBJ texture profile expected mapped RGB/W/V > 0"
+    }
+
+    & .\scripts\compare_material_profiles.ps1 -PackageA "output/NailRgbWhiteVarnishTop1" -PackageB "output/NailRgbWhiteVarnishTop2" -Output "output/MaterialProfileCompare_top1_top2.json"
+    if ($LASTEXITCODE -ne 0) { throw "compare_material_profiles failed" }
+    $compare = Read-Json "output/MaterialProfileCompare_top1_top2.json"
+    if ($compare.delta.varnishPrintPixels -le 0) { throw "05A compare expected delta.varnishPrintPixels > 0" }
+    if ($compare.changedLayers -le 0) { throw "05A compare expected changedLayers > 0" }
   }
 
   Run-Step "make bad 3MF packages" {

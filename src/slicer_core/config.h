@@ -89,6 +89,52 @@ struct MaterialPolicyConfig {
     std::string conflict_policy{"model_material_over_support"};
 };
 
+struct MaterialProcessRgbConfig {
+    bool enabled{true};
+    std::string source{"texture_or_color"};
+};
+
+struct MaterialProcessWhiteConfig {
+    bool enabled{false};
+    std::string mode{"underbase"};
+    std::string coverage{"all_model"};
+    std::uint8_t value{0};
+    int expand_px{0};
+    int shrink_px{0};
+};
+
+struct MaterialProcessVarnishConfig {
+    bool enabled{false};
+    std::string mode{"top_n_layers"};
+    int top_layers{2};
+    std::uint8_t value{0};
+    std::string coverage{"model_surface"};
+};
+
+struct MaterialProcessSupportConfig {
+    bool expected{false};
+    std::string mode{"existing_support_pipeline"};
+};
+
+struct MaterialProcessValidationConfig {
+    bool require_rgb_pixels{false};
+    bool require_white_pixels{false};
+    bool require_varnish_pixels{false};
+    bool require_support_pixels{false};
+    int max_unexpected_overlap_pixels{0};
+};
+
+struct MaterialProcessProfileConfig {
+    bool enabled{false};
+    std::string name;
+    std::string target;
+    MaterialProcessRgbConfig rgb;
+    MaterialProcessWhiteConfig white;
+    MaterialProcessVarnishConfig varnish;
+    MaterialProcessSupportConfig support;
+    MaterialProcessValidationConfig validation;
+};
+
 struct MaterialRoleRuleConfig {
     std::string match_name_contains;
     std::string role{"rgb"};
@@ -141,6 +187,7 @@ struct SliceConfig {
     MaterialConfig material;
     TextureConfig texture;
     MaterialPolicyConfig material_policy;
+    MaterialProcessProfileConfig material_process_profile;
     MaterialRoleMappingConfig material_role_mapping;
     SupportConfig support;
     PreviewConfig preview;

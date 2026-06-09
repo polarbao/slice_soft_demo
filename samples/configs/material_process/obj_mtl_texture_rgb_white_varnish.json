@@ -1,0 +1,104 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../models/material_mapping/obj_mtl_texture_rgbwv.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/ObjMtlTextureRgbWhiteVarnish",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "solid_volume_from_top_surface",
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [0, 0, 0],
+    "missingTexturePolicy": "warn_and_fallback"
+  },
+  "materialRoleMapping": {
+    "enabled": true,
+    "mode": "rules_then_default",
+    "defaultRole": "rgb",
+    "allowInputSupportMaterial": false,
+    "rules": [
+      { "matchNameContains": "white", "role": "white" },
+      { "matchNameContains": "varnish", "role": "varnish" }
+    ]
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "obj_mtl_texture_rgb_white_varnish",
+    "target": "uv_relief_obj_mtl_texture",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "all_model",
+      "coverage": "all_model",
+      "value": 0,
+      "expandPx": 0,
+      "shrinkPx": 0
+    },
+    "varnish": {
+      "enabled": true,
+      "mode": "all_model",
+      "topLayers": 1,
+      "value": 0,
+      "coverage": "model_surface"
+    },
+    "support": {
+      "expected": true,
+      "mode": "existing_support_pipeline"
+    },
+    "validation": {
+      "requireRgbPixels": true,
+      "requireWhitePixels": true,
+      "requireVarnishPixels": true,
+      "requireSupportPixels": false,
+      "maxUnexpectedOverlapPixels": 0
+    }
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": false,
+    "format": "png",
+    "interval": 1,
+    "channels": ["texture_rgb", "white", "varnish", "support"]
+  }
+}

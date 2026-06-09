@@ -2065,6 +2065,154 @@ Json material_policy_report_to_json(const SliceConfig& config, const MaterialPol
     });
 }
 
+double coverage_ratio(const std::uint64_t print_pixels, const std::uint64_t denominator) {
+    if (denominator == 0U) {
+        return 0.0;
+    }
+    return static_cast<double>(print_pixels) / static_cast<double>(denominator);
+}
+
+Json material_process_report_to_json(
+    const SliceConfig& config,
+    const ModelReport& model_report,
+    const GridSpec& grid,
+    const std::vector<LayerDiagnostics>& diagnostics,
+    const std::array<ChannelStats, rgbwsv_channel_count>& total_channel_stats) {
+    const MaterialProcessProfileConfig& profile = config.material_process_profile;
+    const std::uint64_t total_pixels =
+        static_cast<std::uint64_t>(grid.width_px) * static_cast<std::uint64_t>(grid.height_px)
+        * static_cast<std::uint64_t>(grid.layer_count);
+    std::uint64_t rgb_print_pixels{0};
+    const std::uint64_t white_print_pixels = total_channel_stats.at(3).print_pixels;
+    const std::uint64_t support_print_pixels = total_channel_stats.at(4).print_pixels;
+    const std::uint64_t varnish_print_pixels = total_channel_stats.at(5).print_pixels;
+
+    Json::Array layers;
+    Json::Array varnish_active_layer_indices;
+    int first_varnish_layer{-1};
+    int last_varnish_layer{-1};
+    for (const LayerDiagnostics& layer : diagnostics) {
+        const std::uint64_t layer_rgb = static_cast<std::uint64_t>(layer.rgb_non_zero_pixels);
+        const std::uint64_t layer_white = layer.channel_stats.at(3).print_pixels;
+        const std::uint64_t layer_support = layer.channel_stats.at(4).print_pixels;
+        const std::uint64_t layer_varnish = layer.channel_stats.at(5).print_pixels;
+        rgb_print_pixels += layer_rgb;
+        if (layer_varnish > 0U) {
+            varnish_active_layer_indices.push_back(layer.layer_index);
+            if (first_varnish_layer < 0) {
+                first_varnish_layer = layer.layer_index;
+            }
+            last_varnish_layer = layer.layer_index;
+        }
+        layers.push_back(Json::object({
+            {"layerIndex", layer.layer_index},
+            {"rgbPrintPixels", layer_rgb},
+            {"whitePrintPixels", layer_white},
+            {"varnishPrintPixels", layer_varnish},
+            {"supportPrintPixels", layer_support},
+        }));
+    }
+
+    const std::uint64_t missing_underbase_pixels =
+        white_print_pixels < rgb_print_pixels ? rgb_print_pixels - white_print_pixels : 0U;
+    constexpr std::uint64_t unexpected_overlap_pixels{0U};
+
+    Json::Array validation_failures;
+    Json::Array warnings;
+    if (profile.enabled) {
+        if (profile.validation.require_rgb_pixels && rgb_print_pixels == 0U) {
+            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_RGB");
+        }
+        if (profile.validation.require_white_pixels && white_print_pixels == 0U) {
+            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_WHITE");
+        }
+        if (profile.validation.require_varnish_pixels && varnish_print_pixels == 0U) {
+            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_VARNISH");
+        }
+        if (profile.validation.require_support_pixels && support_print_pixels == 0U) {
+            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_SUPPORT");
+        }
+        if (unexpected_overlap_pixels
+            > static_cast<std::uint64_t>(profile.validation.max_unexpected_overlap_pixels)) {
+            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNEXPECTED_OVERLAP");
+        }
+        if (profile.white.enabled && profile.white.mode == "underbase" && missing_underbase_pixels > 0U) {
+            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNDERBASE_COVERAGE_LOW");
+        }
+        if (profile.varnish.enabled && profile.varnish.mode == "top_n_layers" && first_varnish_layer >= 0) {
+            (void)last_varnish_layer;
+            if (static_cast<int>(varnish_active_layer_indices.size()) > profile.varnish.top_layers) {
+                validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNEXPECTED_VARNISH_LAYER");
+            }
+        }
+        if (config.material_policy.enabled == false && config.material_role_mapping.enabled == false) {
+            warnings.push_back("materialProcessProfile is report-only; no materialPolicy or materialRoleMapping is enabled");
+        }
+    }
+
+    return Json::object({
+        {"enabled", profile.enabled},
+        {"profileName", profile.name},
+        {"target", profile.target},
+        {"inputFormat", model_report.format},
+        {"sourceModel", model_report.model_path.generic_string()},
+        {"grid",
+         Json::object({
+             {"widthPx", grid.width_px},
+             {"heightPx", grid.height_px},
+             {"layerCount", grid.layer_count},
+             {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
+             {"layerThicknessMm", config.output.layer_thickness_mm},
+         })},
+        {"layerCount", grid.layer_count},
+        {"rgb",
+         Json::object({
+             {"enabled", profile.rgb.enabled},
+             {"source", profile.rgb.source},
+             {"printPixels", rgb_print_pixels},
+             {"coverageRatio", coverage_ratio(rgb_print_pixels, total_pixels)},
+         })},
+        {"white",
+         Json::object({
+             {"enabled", profile.white.enabled},
+             {"mode", profile.white.mode},
+             {"coverage", profile.white.coverage},
+             {"value", static_cast<int>(profile.white.value)},
+             {"expandPx", profile.white.expand_px},
+             {"shrinkPx", profile.white.shrink_px},
+             {"printPixels", white_print_pixels},
+             {"coverageRatio", coverage_ratio(white_print_pixels, total_pixels)},
+             {"missingUnderbasePixels", missing_underbase_pixels},
+         })},
+        {"varnish",
+         Json::object({
+             {"enabled", profile.varnish.enabled},
+             {"mode", profile.varnish.mode},
+             {"topLayers", profile.varnish.top_layers},
+             {"value", static_cast<int>(profile.varnish.value)},
+             {"coverage", profile.varnish.coverage},
+             {"printPixels", varnish_print_pixels},
+             {"coverageRatio", coverage_ratio(varnish_print_pixels, total_pixels)},
+             {"activeLayerIndices", Json{varnish_active_layer_indices}},
+         })},
+        {"support",
+         Json::object({
+             {"expected", profile.support.expected},
+             {"mode", profile.support.mode},
+             {"printPixels", support_print_pixels},
+             {"coverageRatio", coverage_ratio(support_print_pixels, total_pixels)},
+         })},
+        {"unexpectedOverlapPixels", unexpected_overlap_pixels},
+        {"layers", Json{layers}},
+        {"validation",
+         Json::object({
+             {"pass", validation_failures.empty()},
+             {"failures", Json{validation_failures}},
+         })},
+        {"warnings", Json{warnings}},
+    });
+}
+
 Json material_role_mapping_report_to_json(const MaterialRoleMappingReportData& report) {
     return Json::object({
         {"enabled", report.enabled},
@@ -2427,6 +2575,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
 
     model_report.three_mf.texture_sampled_pixels = texture_runtime.report.sampled_pixels;
 
+    const Json material_process_report =
+        material_process_report_to_json(config, model_report, grid, layer_diagnostics, total_channel_stats);
+
     const Json slice_report = Json::object({
         {"slicingMode", config.slicing_mode},
         {"grid",
@@ -2609,6 +2760,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(
         package_dir / "reports/material_policy_report.json",
         material_policy_report_to_json(config, material_policy_report));
+    write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
     write_json_file(
         package_dir / "reports/material_role_mapping_report.json",
         material_role_mapping_report_to_json(material_role_mapping_report));
@@ -2683,6 +2835,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"preview", "reports/preview_report.json"},
              {"texture", "reports/texture_report.json"},
              {"materialPolicy", "reports/material_policy_report.json"},
+             {"materialProcess", "reports/material_process_report.json"},
              {"materialRoleMapping", "reports/material_role_mapping_report.json"},
              {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
              {"threeMf", "reports/three_mf_report.json"},

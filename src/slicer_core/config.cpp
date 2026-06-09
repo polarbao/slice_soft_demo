@@ -240,6 +240,74 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         }
     }
 
+    if (root.contains("materialProcessProfile")) {
+        const auto& profile = root.at("materialProcessProfile");
+        config.material_process_profile.enabled = profile.value("enabled", config.material_process_profile.enabled);
+        config.material_process_profile.name = profile.value("name", config.material_process_profile.name);
+        config.material_process_profile.target = profile.value("target", config.material_process_profile.target);
+        if (profile.contains("rgb")) {
+            const auto& rgb = profile.at("rgb");
+            config.material_process_profile.rgb.enabled =
+                rgb.value("enabled", config.material_process_profile.rgb.enabled);
+            config.material_process_profile.rgb.source =
+                rgb.value("source", config.material_process_profile.rgb.source);
+        }
+        if (profile.contains("white")) {
+            const auto& white = profile.at("white");
+            config.material_process_profile.white.enabled =
+                white.value("enabled", config.material_process_profile.white.enabled);
+            config.material_process_profile.white.mode =
+                white.value("mode", config.material_process_profile.white.mode);
+            config.material_process_profile.white.coverage =
+                white.value("coverage", config.material_process_profile.white.coverage);
+            config.material_process_profile.white.value =
+                read_u8(white, "value", config.material_process_profile.white.value);
+            config.material_process_profile.white.expand_px =
+                white.value("expandPx", config.material_process_profile.white.expand_px);
+            config.material_process_profile.white.shrink_px =
+                white.value("shrinkPx", config.material_process_profile.white.shrink_px);
+        }
+        if (profile.contains("varnish")) {
+            const auto& varnish = profile.at("varnish");
+            config.material_process_profile.varnish.enabled =
+                varnish.value("enabled", config.material_process_profile.varnish.enabled);
+            config.material_process_profile.varnish.mode =
+                varnish.value("mode", config.material_process_profile.varnish.mode);
+            config.material_process_profile.varnish.top_layers =
+                varnish.value("topLayers", config.material_process_profile.varnish.top_layers);
+            config.material_process_profile.varnish.value =
+                read_u8(varnish, "value", config.material_process_profile.varnish.value);
+            config.material_process_profile.varnish.coverage =
+                varnish.value("coverage", config.material_process_profile.varnish.coverage);
+        }
+        if (profile.contains("support")) {
+            const auto& support = profile.at("support");
+            config.material_process_profile.support.expected =
+                support.value("expected", config.material_process_profile.support.expected);
+            config.material_process_profile.support.mode =
+                support.value("mode", config.material_process_profile.support.mode);
+        }
+        if (profile.contains("validation")) {
+            const auto& validation = profile.at("validation");
+            config.material_process_profile.validation.require_rgb_pixels =
+                validation.value("requireRgbPixels", config.material_process_profile.validation.require_rgb_pixels);
+            config.material_process_profile.validation.require_white_pixels =
+                validation.value("requireWhitePixels", config.material_process_profile.validation.require_white_pixels);
+            config.material_process_profile.validation.require_varnish_pixels =
+                validation.value(
+                    "requireVarnishPixels",
+                    config.material_process_profile.validation.require_varnish_pixels);
+            config.material_process_profile.validation.require_support_pixels =
+                validation.value(
+                    "requireSupportPixels",
+                    config.material_process_profile.validation.require_support_pixels);
+            config.material_process_profile.validation.max_unexpected_overlap_pixels =
+                validation.value(
+                    "maxUnexpectedOverlapPixels",
+                    config.material_process_profile.validation.max_unexpected_overlap_pixels);
+        }
+    }
+
     if (root.contains("materialRoleMapping")) {
         const auto& mapping = root.at("materialRoleMapping");
         config.material_role_mapping.enabled = mapping.value("enabled", config.material_role_mapping.enabled);
@@ -418,6 +486,48 @@ void validate_slice_config(const SliceConfig& config) {
         }
         if (config.material_policy.conflict_policy != "model_material_over_support") {
             throw std::runtime_error("materialPolicy.conflictPolicy must be model_material_over_support");
+        }
+    }
+    if (config.material_process_profile.enabled) {
+        if (config.material_process_profile.name.empty()) {
+            throw std::runtime_error("materialProcessProfile.name must not be empty when enabled");
+        }
+        if (config.material_process_profile.target.empty()) {
+            throw std::runtime_error("materialProcessProfile.target must not be empty when enabled");
+        }
+        if (config.material_process_profile.rgb.source != "texture_or_color"
+            && config.material_process_profile.rgb.source != "modelMaterial") {
+            throw std::runtime_error("materialProcessProfile.rgb.source must be texture_or_color or modelMaterial");
+        }
+        if (config.material_process_profile.white.mode != "disabled"
+            && config.material_process_profile.white.mode != "underbase"
+            && config.material_process_profile.white.mode != "all_model") {
+            throw std::runtime_error("materialProcessProfile.white.mode must be disabled, underbase, or all_model");
+        }
+        if (config.material_process_profile.white.coverage != "all_model"
+            && config.material_process_profile.white.coverage != "model_surface") {
+            throw std::runtime_error("materialProcessProfile.white.coverage must be all_model or model_surface");
+        }
+        if (config.material_process_profile.white.expand_px < 0 || config.material_process_profile.white.shrink_px < 0) {
+            throw std::runtime_error("materialProcessProfile white expandPx/shrinkPx must be non-negative");
+        }
+        if (config.material_process_profile.varnish.mode != "disabled"
+            && config.material_process_profile.varnish.mode != "all_model"
+            && config.material_process_profile.varnish.mode != "top_n_layers") {
+            throw std::runtime_error("materialProcessProfile.varnish.mode must be disabled, all_model, or top_n_layers");
+        }
+        if (config.material_process_profile.varnish.top_layers <= 0) {
+            throw std::runtime_error("materialProcessProfile.varnish.topLayers must be positive");
+        }
+        if (config.material_process_profile.varnish.coverage != "all_model"
+            && config.material_process_profile.varnish.coverage != "model_surface") {
+            throw std::runtime_error("materialProcessProfile.varnish.coverage must be all_model or model_surface");
+        }
+        if (config.material_process_profile.support.mode != "existing_support_pipeline") {
+            throw std::runtime_error("materialProcessProfile.support.mode must be existing_support_pipeline");
+        }
+        if (config.material_process_profile.validation.max_unexpected_overlap_pixels < 0) {
+            throw std::runtime_error("materialProcessProfile.validation.maxUnexpectedOverlapPixels must be non-negative");
         }
     }
     if (config.material_role_mapping.enabled) {
