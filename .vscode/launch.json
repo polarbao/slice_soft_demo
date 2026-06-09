@@ -2,6 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "SliceSoft: Debug Qt slicer_debug_ui",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Debug UI",
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
       "name": "SliceSoft: Debug slicer_cli sample",
       "type": "cppvsdbg",
       "request": "launch",
@@ -12,7 +23,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test sample",
@@ -25,7 +37,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug slicer_cli model 0.3",
@@ -38,7 +51,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug inspect model 0.3",
@@ -52,7 +66,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug preview-only model 0.3",
@@ -66,7 +81,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug slicer_cli relief varnish",
@@ -79,7 +95,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug preview-only relief varnish",
@@ -93,7 +110,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test relief varnish",
@@ -106,7 +124,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug support unsupported_only",
@@ -119,7 +138,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug support bottom_plus_unsupported",
@@ -132,7 +152,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug textured relief RGB",
@@ -145,7 +166,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug textured missing texture fallback",
@@ -158,7 +180,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug textured no UV fallback",
@@ -171,7 +194,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test textured relief RGB",
@@ -184,7 +208,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run textured relief RGB",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug 3MF single RGB",
@@ -197,7 +222,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug 3MF multi object transform",
@@ -210,7 +236,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug 3MF multi material RGBWV",
@@ -223,7 +250,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug OBJ/MTL material RGBWV",
@@ -236,7 +264,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug OBJ/MTL material ignore",
@@ -249,7 +278,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug OBJ/MTL texture material RGBWV",
@@ -262,7 +292,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test 3MF single RGB",
@@ -276,7 +307,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run 3MF single RGB",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test 3MF multi object transform",
@@ -290,7 +322,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run 3MF multi object transform",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test 3MF multi material RGBWV",
@@ -304,7 +337,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run 3MF multi material RGBWV",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test OBJ/MTL material RGBWV",
@@ -318,7 +352,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run OBJ/MTL material RGBWV",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test OBJ/MTL material ignore",
@@ -332,7 +367,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run OBJ/MTL material ignore",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
       "name": "SliceSoft: Debug rip_reader_test OBJ/MTL texture material RGBWV",
@@ -346,7 +382,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Run OBJ/MTL texture material RGBWV",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     }
   ]
 }

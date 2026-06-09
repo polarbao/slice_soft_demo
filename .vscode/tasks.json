@@ -32,6 +32,22 @@
       "problemMatcher": "$msCompile"
     },
     {
+      "label": "SliceSoft: Build Debug UI",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "build",
+        "--config",
+        "Debug",
+        "--target",
+        "slicer_debug_ui"
+      ],
+      "dependsOn": "SliceSoft: Configure",
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
       "label": "SliceSoft: Run slicer_cli sample",
       "type": "shell",
       "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",

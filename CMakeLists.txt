@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(BUILD_SLICER_DEBUG_UI "Build Qt slicer debug UI" ON)
+
 add_library(slicer_core
     src/third_party/miniz/miniz.c
     src/third_party/miniz/miniz_tdef.c
@@ -47,3 +49,12 @@ add_executable(rip_reader_test
 )
 
 target_link_libraries(rip_reader_test PRIVATE slicer_core)
+
+if(BUILD_SLICER_DEBUG_UI)
+    find_package(Qt5 COMPONENTS Widgets QUIET)
+    if(Qt5Widgets_FOUND)
+        add_subdirectory(apps/slicer_debug_ui)
+    else()
+        message(STATUS "Qt5 Widgets not found; slicer_debug_ui target is skipped.")
+    endif()
+endif()
