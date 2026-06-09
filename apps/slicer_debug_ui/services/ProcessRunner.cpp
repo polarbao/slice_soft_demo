@@ -28,7 +28,7 @@ bool ProcessRunner::isRunning() const {
 
 void ProcessRunner::run(const QString& program, const QStringList& args, const QString& working_dir) {
     if (isRunning()) {
-        emit failed("another process is already running");
+        emit failed("已有命令正在执行");
         return;
     }
     process_.setProgram(program);
@@ -58,4 +58,3 @@ QString ProcessRunner::formatCommand(const QString& program, const QStringList& 
     }
     return parts.join(' ');
 }
-

@@ -2,6 +2,10 @@ add_executable(slicer_debug_ui
     main.cpp
     MainWindow.cpp
     MainWindow.h
+    services/ConfigDocument.cpp
+    services/ConfigDocument.h
+    services/ConfigValidator.cpp
+    services/ConfigValidator.h
     services/PackageLoader.cpp
     services/PackageLoader.h
     services/ProcessRunner.cpp
@@ -12,12 +16,26 @@ add_executable(slicer_debug_ui
     services/ToolPaths.h
     widgets/LogPanel.cpp
     widgets/LogPanel.h
+    widgets/ChannelChartPanel.cpp
+    widgets/ChannelChartPanel.h
+    widgets/ConfigEditorPanel.cpp
+    widgets/ConfigEditorPanel.h
     widgets/MaterialProcessPanel.cpp
     widgets/MaterialProcessPanel.h
+    widgets/MaterialPolicyEditor.cpp
+    widgets/MaterialPolicyEditor.h
+    widgets/MaterialProcessProfileEditor.cpp
+    widgets/MaterialProcessProfileEditor.h
+    widgets/MaterialRoleMappingEditor.cpp
+    widgets/MaterialRoleMappingEditor.h
     widgets/PreviewPanel.cpp
     widgets/PreviewPanel.h
+    widgets/PreviewOverlayPanel.cpp
+    widgets/PreviewOverlayPanel.h
     widgets/ReportPanel.cpp
     widgets/ReportPanel.h
+    widgets/SupportEditor.cpp
+    widgets/SupportEditor.h
 )
 
 set_target_properties(slicer_debug_ui PROPERTIES
@@ -26,3 +44,6 @@ set_target_properties(slicer_debug_ui PROPERTIES
 
 target_link_libraries(slicer_debug_ui PRIVATE Qt5::Widgets)
 
+if(MSVC)
+    target_compile_options(slicer_debug_ui PRIVATE /utf-8)
+endif()

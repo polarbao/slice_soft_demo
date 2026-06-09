@@ -18,7 +18,7 @@ PreviewPanel::PreviewPanel(QWidget* parent) : QWidget(parent) {
     layer_slider_ = new QSlider(Qt::Horizontal, this);
     controls->addWidget(layer_slider_, 1);
 
-    auto* fit_button = new QPushButton("Fit", this);
+    auto* fit_button = new QPushButton("适应", this);
     auto* actual_button = new QPushButton("1:1", this);
     auto* zoom_in_button = new QPushButton("+", this);
     auto* zoom_out_button = new QPushButton("-", this);
@@ -28,7 +28,7 @@ PreviewPanel::PreviewPanel(QWidget* parent) : QWidget(parent) {
     controls->addWidget(zoom_out_button);
     layout->addLayout(controls);
 
-    status_ = new QLabel("No preview package loaded.", this);
+    status_ = new QLabel("尚未加载预览输出包。", this);
     layout->addWidget(status_);
 
     image_label_ = new QLabel(this);
@@ -91,13 +91,25 @@ void PreviewPanel::actualSize() {
 
 QString PreviewPanel::channelFromPath(const QString& path) const {
     const QString base = QFileInfo(path).completeBaseName().toLower();
-    const QStringList known{"texture_rgb", "rgb", "white", "w", "support", "s", "varnish", "v", "alpha"};
-    for (const QString& token : known) {
-        if (base.contains(token)) {
-            return token;
-        }
+    if (base.contains("texture_rgb")) {
+        return "纹理RGB";
     }
-    return "preview";
+    if (base.contains("rgb")) {
+        return "RGB";
+    }
+    if (base.contains("white") || base.contains("_w") || base.endsWith("w")) {
+        return "白墨";
+    }
+    if (base.contains("support") || base.contains("_s") || base.endsWith("s")) {
+        return "支撑";
+    }
+    if (base.contains("varnish") || base.contains("_v") || base.endsWith("v")) {
+        return "光油";
+    }
+    if (base.contains("alpha")) {
+        return "透明度";
+    }
+    return "预览";
 }
 
 void PreviewPanel::rebuildChannelSelector() {
@@ -109,7 +121,7 @@ void PreviewPanel::rebuildChannelSelector() {
     sorted.sort();
     channel_selector_->blockSignals(true);
     channel_selector_->clear();
-    channel_selector_->addItem("all");
+    channel_selector_->addItem("全部");
     for (const QString& channel : sorted) {
         channel_selector_->addItem(channel);
     }
@@ -120,7 +132,7 @@ void PreviewPanel::rebuildVisibleList() {
     visible_images_.clear();
     const QString selected = channel_selector_->currentText();
     for (const QString& path : all_images_) {
-        if (selected == "all" || channelFromPath(path) == selected) {
+        if (selected == "全部" || channelFromPath(path) == selected) {
             visible_images_.push_back(path);
         }
     }
@@ -137,7 +149,7 @@ void PreviewPanel::showCurrentImage() {
     if (visible_images_.isEmpty()) {
         current_image_ = QImage();
         image_label_->clear();
-        status_->setText("No PNG/PPM preview found.");
+        status_->setText("未找到 PNG/PPM 预览图。");
         return;
     }
     const int index = layer_slider_->value();
@@ -146,7 +158,7 @@ void PreviewPanel::showCurrentImage() {
     current_image_ = reader.read();
     if (current_image_.isNull()) {
         image_label_->clear();
-        status_->setText("Failed to read preview: " + path + " (" + reader.errorString() + ")");
+        status_->setText("读取预览图失败：" + path + " (" + reader.errorString() + ")");
         return;
     }
     status_->setText(QString("%1/%2  %3  %4x%5")

@@ -9,7 +9,7 @@ namespace {
 
 QString scalarToString(const QJsonValue& value) {
     if (value.isBool()) {
-        return value.toBool() ? "true" : "false";
+        return value.toBool() ? "是" : "否";
     }
     if (value.isDouble()) {
         return QString::number(value.toDouble());
@@ -18,7 +18,7 @@ QString scalarToString(const QJsonValue& value) {
         return value.toString();
     }
     if (value.isNull()) {
-        return "null";
+        return "空";
     }
     return {};
 }
@@ -36,16 +36,16 @@ void appendChannel(QStringList& lines, const QJsonObject& object, const QString&
     }
     QString line = label;
     if (channel.contains("printPixels")) {
-        line += " printPixels=" + scalarToString(channel.value("printPixels"));
+        line += " 打印像素=" + scalarToString(channel.value("printPixels"));
     }
     if (channel.contains("coverageRatio")) {
-        line += " coverageRatio=" + scalarToString(channel.value("coverageRatio"));
+        line += " 覆盖率=" + scalarToString(channel.value("coverageRatio"));
     }
     if (channel.contains("missingUnderbasePixels")) {
-        line += " missingUnderbasePixels=" + scalarToString(channel.value("missingUnderbasePixels"));
+        line += " 缺失白墨底层像素=" + scalarToString(channel.value("missingUnderbasePixels"));
     }
     if (channel.contains("activeLayerIndices")) {
-        line += " activeLayers=" + QString::number(channel.value("activeLayerIndices").toArray().size());
+        line += " 生效层数=" + QString::number(channel.value("activeLayerIndices").toArray().size());
     }
     lines.push_back(line);
 }
@@ -94,23 +94,23 @@ JsonReport ReportLoader::load(const QString& path) const {
 
 QString ReportLoader::summarize(const JsonReport& report) {
     if (!report.error.isEmpty()) {
-        return "Error: " + report.error;
+        return "错误：" + report.error;
     }
     const QJsonObject object = report.document.object();
     QStringList lines;
     lines.push_back(QFileInfo(report.path).fileName());
-    appendIfPresent(lines, object, "schema", "schema");
-    appendIfPresent(lines, object, "slicingMode", "slicingMode");
-    appendIfPresent(lines, object, "profileName", "profileName");
-    appendIfPresent(lines, object, "target", "target");
-    appendIfPresent(lines, object, "inputFormat", "inputFormat");
+    appendIfPresent(lines, object, "schema", "协议");
+    appendIfPresent(lines, object, "slicingMode", "切片模式");
+    appendIfPresent(lines, object, "profileName", "工艺配置名称");
+    appendIfPresent(lines, object, "target", "目标");
+    appendIfPresent(lines, object, "inputFormat", "输入格式");
     appendChannel(lines, object, "rgb", "RGB");
     appendChannel(lines, object, "white", "W");
     appendChannel(lines, object, "varnish", "V");
     appendChannel(lines, object, "support", "S");
     const QJsonObject validation = object.value("validation").toObject();
     if (!validation.isEmpty()) {
-        appendIfPresent(lines, validation, "pass", "validation.pass");
+        appendIfPresent(lines, validation, "pass", "校验通过");
     }
     const QString warnings = collectWarningsAndFailures(report.document.object());
     if (!warnings.isEmpty()) {
@@ -125,4 +125,3 @@ QString ReportLoader::collectWarningsAndFailures(const QJsonValue& value, const 
     collectNamedArrays(lines, value, prefix);
     return lines.join('\n');
 }
-

@@ -26,7 +26,7 @@ void LogPanel::appendError(const QString& text) {
 }
 
 void LogPanel::appendResult(const int exit_code, const qint64 elapsed_ms) {
-    appendHtmlLine(QString("exitCode=%1 elapsedMs=%2").arg(exit_code).arg(elapsed_ms),
+    appendHtmlLine(QString("退出码=%1 耗时毫秒=%2").arg(exit_code).arg(elapsed_ms),
                    exit_code == 0 ? "#1f7a1f" : "#a00000");
 }
 
@@ -54,4 +54,3 @@ QString LogPanel::highlightErrorCodes(const QString& text) const {
     }
     return result;
 }
-

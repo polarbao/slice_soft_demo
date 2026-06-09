@@ -116,7 +116,7 @@ build/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe
 - 显示 `rip_reader_test` 路径。
 - 选择 config JSON。
 - 选择 output package。
-- 选择 profile compare 的 Package A / Package B。
+- 选择工艺对比包 A / B。
 - 打开输出目录。
 
 默认样例：
@@ -124,8 +124,8 @@ build/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe
 ```text
 Config = samples/configs/material_process/nail_rgb_white_varnish_top2.json
 Package = output/NailRgbWhiteVarnishTop2
-Profile A = output/NailRgbWhiteVarnishTop1
-Profile B = output/NailRgbWhiteVarnishTop3
+对比包 A = output/NailRgbWhiteVarnishTop1
+对比包 B = output/NailRgbWhiteVarnishTop3
 ```
 
 ### 4.2 ProcessRunner
@@ -144,13 +144,13 @@ Profile B = output/NailRgbWhiteVarnishTop3
 
 已实现按钮：
 
-- `Build Debug`
-- `Run Slicer`
-- `Run RIP Summary`
-- `Run Quick Regression`
-- `Compare Profiles`
-- `Load Package`
-- `Open Output Folder`
+- `构建调试版`
+- `运行切片`
+- `运行 RIP 摘要`
+- `运行快速回归`
+- `对比工艺配置`
+- `加载输出包`
+- `打开输出目录`
 
 命令：
 
@@ -215,7 +215,27 @@ reports/material_process_report.json
 - 选择 Package B。
 - 调用 `scripts/compare_material_profiles.ps1`。
 - 输出到 `output/MaterialProfileCompare_ui.json`。
-- UI 显示 compare JSON summary 和 raw JSON。
+- UI 显示对比结果 JSON 摘要和 raw JSON。
+
+### 4.8 界面中文化
+
+已完成：
+
+- 主窗口标题中文化。
+- 配置文件、输出包、对比包路径选择区中文化。
+- 运行按钮中文化。
+- 预览、报告、材料工艺、警告/失败、工艺对比标签中文化。
+- 进程状态、错误提示、退出码和耗时显示中文化。
+- 报告摘要字段中文化。
+- Preview channel selector 显示中文通道名。
+
+保留原文的内容：
+
+- 原始 JSON key。
+- 文件名。
+- 命令行参数。
+- 协议字段值。
+- 外部 CLI stdout/stderr 原始输出。
 
 ---
 
@@ -273,6 +293,13 @@ cmake --build build --config Debug
 Regression complete. mode=quick
 ```
 
+界面中文化后追加验证：
+
+```powershell
+cmake --build build --config Debug --target slicer_debug_ui
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
+```
+
 ---
 
 ## 7. 当前未实现 / 非目标范围
@@ -322,3 +349,23 @@ Regression complete. mode=quick
 
 - `08`：支撑形态与工艺优化。
 - `06C`：复杂 3MF CompositeMaterials / MultiProperties / external relationship texture。
+
+---
+
+## 9. 配置说明文档
+
+已新增：
+
+```text
+docs/slicer/QT_DEBUG_UI_软件配置说明.md
+```
+
+内容覆盖：
+
+- CMake / Qt target 配置。
+- VS Code task / launch 配置。
+- UI 默认路径配置。
+- `samples/configs` 各类切片任务配置用途。
+- output package 结构。
+- reports / preview 与 UI 面板关系。
+- 本地脚本与 UI 按钮关系。

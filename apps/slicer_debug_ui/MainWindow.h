@@ -1,11 +1,15 @@
 #pragma once
 
+#include "services/ConfigDocument.h"
 #include "services/PackageLoader.h"
 #include "services/ProcessRunner.h"
 #include "services/ReportLoader.h"
 #include "services/ToolPaths.h"
+#include "widgets/ChannelChartPanel.h"
+#include "widgets/ConfigEditorPanel.h"
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
+#include "widgets/PreviewOverlayPanel.h"
 #include "widgets/PreviewPanel.h"
 #include "widgets/ReportPanel.h"
 
@@ -49,6 +53,7 @@ private:
     void setBusy(bool busy);
 
     ToolPaths paths_;
+    ConfigDocument config_document_;
     PackageLoader package_loader_;
     ReportLoader report_loader_;
     ProcessRunner runner_;
@@ -74,7 +79,9 @@ private:
 
     PreviewPanel* preview_panel_{nullptr};
     ReportPanel* report_panel_{nullptr};
+    ConfigEditorPanel* config_editor_panel_{nullptr};
+    ChannelChartPanel* channel_chart_panel_{nullptr};
+    PreviewOverlayPanel* preview_overlay_panel_{nullptr};
     MaterialProcessPanel* material_process_panel_{nullptr};
     LogPanel* log_panel_{nullptr};
 };
-

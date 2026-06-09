@@ -8,7 +8,7 @@ PackageSummary PackageLoader::load(const QString& package_dir) const {
     summary.package_dir = QFileInfo(package_dir).absoluteFilePath();
     const QDir package(summary.package_dir);
     if (!package.exists()) {
-        summary.warnings.push_back("package directory does not exist: " + summary.package_dir);
+        summary.warnings.push_back("输出包目录不存在：" + summary.package_dir);
         return summary;
     }
 
@@ -16,7 +16,7 @@ PackageSummary PackageLoader::load(const QString& package_dir) const {
     if (QFileInfo::exists(manifest)) {
         summary.manifest_path = manifest;
     } else {
-        summary.warnings.push_back("manifest.json is missing");
+        summary.warnings.push_back("缺少 manifest.json");
     }
 
     const QDir reports(package.filePath("reports"));
@@ -26,7 +26,7 @@ PackageSummary PackageLoader::load(const QString& package_dir) const {
             summary.report_paths.push_back(reports.filePath(file));
         }
     } else {
-        summary.warnings.push_back("reports directory is missing");
+        summary.warnings.push_back("缺少 reports 目录");
     }
 
     const QDir preview(package.filePath("preview"));
@@ -36,8 +36,7 @@ PackageSummary PackageLoader::load(const QString& package_dir) const {
             summary.preview_paths.push_back(preview.filePath(file));
         }
     } else {
-        summary.warnings.push_back("preview directory is missing");
+        summary.warnings.push_back("缺少 preview 目录");
     }
     return summary;
 }
-

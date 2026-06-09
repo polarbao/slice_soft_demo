@@ -10,7 +10,7 @@
 ReportPanel::ReportPanel(QWidget* parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
     auto* row = new QHBoxLayout();
-    row->addWidget(new QLabel("Report", this));
+    row->addWidget(new QLabel("报告", this));
     report_selector_ = new QComboBox(this);
     row->addWidget(report_selector_, 1);
     layout->addLayout(row);
@@ -46,7 +46,7 @@ void ReportPanel::loadPackage(const PackageSummary& package) {
 
 void ReportPanel::selectReport(const int index) {
     if (index < 0 || index >= report_paths_.size()) {
-        summary_view_->setPlainText("No report selected.");
+        summary_view_->setPlainText("未选择报告。");
         raw_view_->clear();
         emit warningsChanged({});
         return;
