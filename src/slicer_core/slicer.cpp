@@ -513,11 +513,14 @@ PreviewImage build_preview_image(
         std::array<std::uint8_t, 3> pixel{};
         int display_value{0};
         if (channel == "rgb") {
-            pixel = {
-                visible_from_print_value(layer.at(base + 0U)),
-                visible_from_print_value(layer.at(base + 1U)),
-                visible_from_print_value(layer.at(base + 2U))};
-            display_value = std::max({pixel.at(0), pixel.at(1), pixel.at(2)});
+            const bool has_rgb_print =
+                layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U;
+            if (has_rgb_print) {
+                pixel = {layer.at(base + 0U), layer.at(base + 1U), layer.at(base + 2U)};
+                display_value = 255;
+            } else {
+                pixel = preview_config.empty_color;
+            }
         } else if (channel == "texture_rgb") {
             pixel = {layer.at(base + 0U), layer.at(base + 1U), layer.at(base + 2U)};
             display_value =
@@ -1677,6 +1680,23 @@ bool is_top_material_layer(
     return layer_index >= first_top_layer && layer_index <= range.upper_layer;
 }
 
+bool ShouldApplyTextureToLayer(
+    const SliceConfig& config,
+    const std::vector<ColumnLayerRange>* columnRanges,
+    const std::size_t pixelIndex,
+    const int layerIndex)
+{
+    if (config.texture.apply_mode == "solid_volume_from_top_surface")
+    {
+        return true;
+    }
+    if (config.texture.apply_mode == "top_surface_only")
+    {
+        return is_top_material_layer(columnRanges, pixelIndex, layerIndex, 1);
+    }
+    return true;
+}
+
 MaterialPixel compose_material_policy_pixel(
     const SliceConfig& config,
     const std::vector<TextureColumnColor>* texture_columns,
@@ -1686,7 +1706,8 @@ MaterialPixel compose_material_policy_pixel(
     TextureReportData* texture_report) {
     MaterialPixel pixel;
     if (config.material_policy.rgb.enabled) {
-        if (config.material_policy.rgb.source == "texture_or_fallback" && config.texture.enabled) {
+        if (config.material_policy.rgb.source == "texture_or_fallback" && config.texture.enabled
+            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
             const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
             pixel.r = color.rgb.at(0);
             pixel.g = color.rgb.at(1);
@@ -1801,13 +1822,21 @@ std::vector<std::uint8_t> compose_layer(
                 if (config.material_role_mapping.enabled && material_role_columns != nullptr
                     && pixel_index < material_role_columns->size()) {
                     const MaterialRoleColumn& role_column = material_role_columns->at(pixel_index);
-                    const bool wrote_model = write_material_role_pixel(
-                        pixels,
-                        base,
-                        role_column);
+                    bool wrote_model{false};
+                    if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
+                        && !ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
+                        write_model_pixel(pixels, base, config);
+                        wrote_model = true;
+                    } else {
+                        wrote_model = write_material_role_pixel(
+                            pixels,
+                            base,
+                            role_column);
+                    }
                     if (wrote_model) {
                         counted_model_pixel = true;
-                        if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled) {
+                        if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
+                            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
                             const TextureColumnColor color =
                                 resolve_texture_color(config, texture_columns, pixel_index);
                             update_texture_report_for_color(color, texture_report);
@@ -1823,7 +1852,8 @@ std::vector<std::uint8_t> compose_layer(
                         texture_report);
                     write_material_pixel(pixels, base, pixel, material_policy_report);
                     counted_model_pixel = true;
-                } else if (config.texture.enabled) {
+                } else if (config.texture.enabled
+                           && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
                     const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
                     pixels.at(base + 0U) = color.rgb.at(0);
                     pixels.at(base + 1U) = color.rgb.at(1);

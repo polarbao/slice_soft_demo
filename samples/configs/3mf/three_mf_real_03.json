@@ -1,64 +1,122 @@
 {
-  "slicingMode": "relief_heightfield",
-  "input": {
-    "modelPath": "samples/models/3mf/03.3mf",
-    "format": "auto"
-  },
-  "output": {
-    "packageDir": "output/ThreeMfReal03",
-    "dpiX": 600,
-    "dpiY": 600,
-    "layerThicknessMm": 0.01,
-    "channelOrder": ["R", "G", "B", "W", "S", "V"],
-    "bitDepth": 8,
-    "planarConfig": "contiguous",
-    "storageMode": "stripped",
-    "rowsPerStrip": 64
-  },
-  "autoOrient": {
-    "enabled": true,
-    "maxHeightMm": 6.0,
-    "strategy": "minimize_height_by_right_angle_rotation"
-  },
-  "background": {
-    "value": 255
-  },
-  "modelMaterial": {
-    "materialChannel": "RGB",
-    "applyMode": "solid_volume",
-    "rgb": [0, 0, 0],
-    "whiteValue": 255,
-    "varnishValue": 255
-  },
-  "materialRoleMapping": {
-    "enabled": true,
-    "mode": "rules_then_default",
-    "defaultRole": "rgb",
-    "allowInputSupportMaterial": false,
-    "rules": []
-  },
-  "support": {
-    "enabled": true,
-    "mode": "bottom_projection",
-    "value": 0,
-    "offsetMm": 0.0,
-    "minAreaPx": 0
-  },
-  "relief": {
-    "fillMode": "intersection_range",
-    "baseZMm": 0.0
-  },
-  "preview": {
-    "enabled": true,
-    "format": "png",
-    "interval": 50,
-    "channels": ["rgb", "support", "white", "varnish"],
-    "onlyNonEmptyLayers": true,
-    "pseudoColors": {
-      "empty": [255, 255, 255],
-      "support": [0, 255, 0],
-      "white": [0, 170, 255],
-      "varnish": [127, 127, 127]
+    "autoOrient": {
+        "enabled": true,
+        "maxHeightMm": 6,
+        "strategy": "minimize_height_by_right_angle_rotation"
+    },
+    "background": {
+        "value": 255
+    },
+    "input": {
+        "format": "auto",
+        "modelPath": "samples/models/3mf/03.3mf"
+    },
+    "materialProcessProfile": {
+        "rgb": {
+            "enabled": true
+        },
+        "support": {
+            "expected": true
+        },
+        "validation": {
+            "requireRgbPixels": true,
+            "requireSupportPixels": true
+        }
+    },
+    "materialRoleMapping": {
+        "allowInputSupportMaterial": false,
+        "defaultRole": "rgb",
+        "enabled": true,
+        "mode": "rules_then_default",
+        "rules": [
+        ]
+    },
+    "modelMaterial": {
+        "applyMode": "solid_volume",
+        "materialChannel": "RGB",
+        "rgb": [
+            0,
+            0,
+            0
+        ],
+        "varnishValue": 255,
+        "whiteValue": 255
+    },
+    "texture": {
+        "applyMode": "top_surface_only",
+        "enabled": true,
+        "fallbackRgb": [
+            0,
+            0,
+            0
+        ],
+        "flipV": true,
+        "missingTexturePolicy": "warn_and_fallback",
+        "sampler": "bilinear",
+        "uvAddressMode": "clamp"
+    },
+    "output": {
+        "bitDepth": 8,
+        "channelOrder": [
+            "R",
+            "G",
+            "B",
+            "W",
+            "S",
+            "V"
+        ],
+        "dpiX": 600,
+        "dpiY": 600,
+        "layerThicknessMm": 0.01,
+        "packageDir": "output/ThreeMfReal03",
+        "planarConfig": "contiguous",
+        "rowsPerStrip": 64,
+        "storageMode": "stripped"
+    },
+    "preview": {
+        "channels": [
+            "rgb",
+            "support",
+            "white",
+            "varnish"
+        ],
+        "enabled": true,
+        "format": "png",
+        "interval": 50,
+        "onlyNonEmptyLayers": true,
+        "pseudoColors": {
+            "empty": [
+                255,
+                255,
+                255
+            ],
+            "support": [
+                0,
+                255,
+                0
+            ],
+            "varnish": [
+                127,
+                127,
+                127
+            ],
+            "white": [
+                0,
+                170,
+                255
+            ]
+        }
+    },
+    "relief": {
+        "baseZMm": 0,
+        "fillMode": "intersection_range"
+    },
+    "slicingMode": "relief_heightfield",
+    "support": {
+        "enabled": true,
+        "minAreaPx": 0,
+        "mode": "bottom_projection",
+        "offsetMm": 0,
+        "value": 0
     }
-  }
 }

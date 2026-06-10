@@ -454,8 +454,9 @@ void validate_slice_config(const SliceConfig& config) {
         throw std::runtime_error("00C only supports modelMaterial.applyMode == solid_volume");
     }
     if (config.texture.enabled) {
-        if (config.texture.apply_mode != "solid_volume_from_top_surface") {
-            throw std::runtime_error("04 only supports texture.applyMode == solid_volume_from_top_surface");
+        if (config.texture.apply_mode != "solid_volume_from_top_surface"
+            && config.texture.apply_mode != "top_surface_only") {
+            throw std::runtime_error("texture.applyMode must be solid_volume_from_top_surface or top_surface_only");
         }
         if (config.texture.sampler != "nearest" && config.texture.sampler != "bilinear") {
             throw std::runtime_error("texture.sampler must be nearest or bilinear");
