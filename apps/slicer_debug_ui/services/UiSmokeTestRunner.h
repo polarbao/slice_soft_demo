@@ -24,6 +24,7 @@ private:
     int saveAsConfig(const UiSmokeTestOptions& options);
     int chartLoad(const UiSmokeTestOptions& options);
     int overlayLoad(const UiSmokeTestOptions& options);
+    int overlayLoadReal(const UiSmokeTestOptions& options);
     int compareProfiles(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;
     int pass(const QString& message) const;

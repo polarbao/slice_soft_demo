@@ -16,6 +16,8 @@ public:
     explicit PreviewOverlayPanel(QWidget* parent = nullptr);
     void loadPackage(const PackageSummary& package);
     int imageCount() const;
+    QStringList availableChannels() const;
+    bool canComposeMode(const QString& mode) const;
 
 private slots:
     void updateImage();
@@ -31,11 +33,13 @@ private:
     };
 
     QString classifyChannel(const QString& path) const;
+    QString normalizeChannel(const QString& channel) const;
     int parseLayer(const QString& path) const;
     void rebuildLayerSlider();
     QImage readImage(const QString& path) const;
     QImage findImage(const QString& channel, int index) const;
     QImage composeCurrent() const;
+    QImage composeForMode(const QString& mode, int index) const;
     void applyPixmap(const QImage& image);
 
     QVector<PreviewImage> images_;

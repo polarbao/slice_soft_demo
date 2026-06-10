@@ -14,6 +14,7 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QRegularExpression>
+#include <QSet>
 #include <QSizePolicy>
 #include <QVBoxLayout>
 
@@ -69,7 +70,9 @@ void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
         for (const PreviewReportEntry& entry : index.entries()) {
             if (QFileInfo::exists(entry.path)) {
                 images_.push_back(
-                    PreviewImage{entry.path, entry.channel.isEmpty() ? classifyChannel(entry.path) : entry.channel, entry.layer_index});
+                    PreviewImage{entry.path,
+                                 normalizeChannel(entry.channel.isEmpty() ? classifyChannel(entry.path) : entry.channel),
+                                 entry.layer_index});
             }
         }
     }
@@ -89,6 +92,36 @@ void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
 
 int PreviewOverlayPanel::imageCount() const {
     return images_.size();
+}
+
+QStringList PreviewOverlayPanel::availableChannels() const {
+    QSet<QString> channels;
+    for (const PreviewImage& image : images_) {
+        channels.insert(image.channel);
+    }
+    QStringList result = channels.values();
+    result.sort();
+    return result;
+}
+
+bool PreviewOverlayPanel::canComposeMode(const QString& mode) const {
+    if (mode == "单通道") {
+        return imageCount() > 0;
+    }
+    QString overlay_channel;
+    if (mode.contains("W")) {
+        overlay_channel = "white";
+    } else if (mode.contains("V")) {
+        overlay_channel = "varnish";
+    } else {
+        overlay_channel = "support";
+    }
+    for (int i = 0; i < images_.size(); ++i) {
+        if (!findImage("rgb", i).isNull() && !findImage(overlay_channel, i).isNull() && !composeForMode(mode, i).isNull()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void PreviewOverlayPanel::updateImage() {
@@ -133,6 +166,23 @@ QString PreviewOverlayPanel::classifyChannel(const QString& path) const {
         return "support";
     }
     return "preview";
+}
+
+QString PreviewOverlayPanel::normalizeChannel(const QString& channel) const {
+    const QString normalized = channel.toLower();
+    if (normalized == "texture_rgb" || normalized == "model_rgb" || normalized == "true_rgb") {
+        return "rgb";
+    }
+    if (normalized == "w") {
+        return "white";
+    }
+    if (normalized == "v") {
+        return "varnish";
+    }
+    if (normalized == "s") {
+        return "support";
+    }
+    return normalized;
 }
 
 int PreviewOverlayPanel::parseLayer(const QString& path) const {
@@ -185,11 +235,13 @@ QImage PreviewOverlayPanel::findImage(const QString& channel, const int index) c
 }
 
 QImage PreviewOverlayPanel::composeCurrent() const {
+    return composeForMode(mode_->currentText(), layer_slider_->value());
+}
+
+QImage PreviewOverlayPanel::composeForMode(const QString& mode, const int index) const {
     if (images_.isEmpty()) {
         return {};
     }
-    const int index = layer_slider_->value();
-    const QString mode = mode_->currentText();
     QImage base = mode == "单通道" ? readImage(images_.at(qBound(0, index, images_.size() - 1)).path) : findImage("rgb", index);
     if (base.isNull()) {
         base = readImage(images_.at(qBound(0, index, images_.size() - 1)).path);

@@ -10,6 +10,8 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QProcess>
 #include <QTextStream>
 
@@ -28,6 +30,9 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     }
     if (options.case_name == "overlay-load") {
         return overlayLoad(options);
+    }
+    if (options.case_name == "overlay-load-real") {
+        return overlayLoadReal(options);
     }
     if (options.case_name == "compare-profiles") {
         return compareProfiles(options);
@@ -104,6 +109,62 @@ int UiSmokeTestRunner::overlayLoad(const UiSmokeTestOptions& options) {
         return pass("overlay-load graceful-empty-preview");
     }
     return fail("overlay-load 未找到 preview 图像或 preview_report。");
+}
+
+int UiSmokeTestRunner::overlayLoadReal(const UiSmokeTestOptions& options) {
+    const QString package_path = absoluteFromRepo(options, options.package_path);
+    const PackageSummary package = PackageLoader().load(package_path);
+    if (package.manifest_path.isEmpty()) {
+        return fail("overlay-load-real 未找到 manifest：" + package_path);
+    }
+
+    PreviewReportIndex index;
+    if (!index.load(package.package_dir)) {
+        return fail("overlay-load-real 无法读取 preview_report：" + index.errorString());
+    }
+    bool has_kind = false;
+    bool has_layer = false;
+    bool has_channel = false;
+    for (const PreviewReportEntry& entry : index.entries()) {
+        has_kind = has_kind || !entry.kind.isEmpty();
+        has_layer = has_layer || entry.layer_index >= 0;
+        has_channel = has_channel || !entry.channel.isEmpty();
+    }
+    if (!has_kind || !has_layer || !has_channel) {
+        return fail("overlay-load-real preview_report 缺少 channel/layerIndex/kind 元数据。");
+    }
+
+    QFile preview_report_file(QDir(package.package_dir).filePath("reports/preview_report.json"));
+    if (!preview_report_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return fail("overlay-load-real 无法打开 preview_report.json。");
+    }
+    const QJsonDocument preview_report = QJsonDocument::fromJson(preview_report_file.readAll());
+    if (preview_report.object().value("schema").toString() != "p0.preview_report.1") {
+        return fail("overlay-load-real preview_report.schema 不是 p0.preview_report.1。");
+    }
+
+    PreviewOverlayPanel panel;
+    panel.loadPackage(package);
+    if (panel.imageCount() <= 0) {
+        return fail("overlay-load-real 没有加载到 preview 图像。");
+    }
+    const QStringList channels = panel.availableChannels();
+    if (!channels.contains("rgb")) {
+        return fail("overlay-load-real 缺少 RGB preview。");
+    }
+    QStringList passed_modes;
+    for (const QString& mode : QStringList{"RGB + W 白墨", "RGB + V 光油", "RGB + S 支撑"}) {
+        if (panel.canComposeMode(mode)) {
+            passed_modes.push_back(mode);
+        }
+    }
+    if (passed_modes.isEmpty()) {
+        return fail("overlay-load-real 未能组合任何真实 overlay 图。");
+    }
+    return pass(QString("overlay-load-real images=%1 channels=%2 modes=%3")
+                    .arg(panel.imageCount())
+                    .arg(channels.join(","))
+                    .arg(passed_modes.join(",")));
 }
 
 int UiSmokeTestRunner::compareProfiles(const UiSmokeTestOptions& options) {

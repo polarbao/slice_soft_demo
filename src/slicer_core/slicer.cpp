@@ -564,6 +564,7 @@ Json::Array write_layer_previews(
             {"layerIndex", layer_index},
             {"channel", image.channel},
             {"type", image.type},
+            {"kind", "single"},
             {"format", preview_config.format},
             {"path", relative_path},
             {"printPixels", image.non_zero_pixels},
