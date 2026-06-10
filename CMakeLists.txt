@@ -15,14 +15,50 @@ add_library(slicer_core
     src/third_party/miniz/miniz_zip.c
     src/slicer_core/config.cpp
     src/slicer_core/config.h
+    src/slicer_core/diagnostics/Diagnostics.cpp
+    src/slicer_core/diagnostics/Diagnostics.h
+    src/slicer_core/importers/mtl/MtlImporter.cpp
+    src/slicer_core/importers/mtl/MtlImporter.h
+    src/slicer_core/importers/obj/ObjImporter.cpp
+    src/slicer_core/importers/obj/ObjImporter.h
+    src/slicer_core/importers/three_mf/ThreeMfImporter.cpp
+    src/slicer_core/importers/three_mf/ThreeMfImporter.h
     src/slicer_core/json_value.cpp
     src/slicer_core/json_value.h
+    src/slicer_core/materials/material_policy/MaterialPolicy.cpp
+    src/slicer_core/materials/material_policy/MaterialPolicy.h
+    src/slicer_core/materials/process_profile/MaterialProcessProfile.cpp
+    src/slicer_core/materials/process_profile/MaterialProcessProfile.h
+    src/slicer_core/materials/role_mapping/MaterialRoleMapping.cpp
+    src/slicer_core/materials/role_mapping/MaterialRoleMapping.h
+    src/slicer_core/materials/texture_application/TextureApplicationPolicy.cpp
+    src/slicer_core/materials/texture_application/TextureApplicationPolicy.h
+    src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.cpp
+    src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp
     src/slicer_core/model.h
+    src/slicer_core/output/rgbwsv/RgbwsvPackage.cpp
+    src/slicer_core/output/rgbwsv/RgbwsvPackage.h
+    src/slicer_core/pipeline/PipelineContext.cpp
+    src/slicer_core/pipeline/PipelineContext.h
+    src/slicer_core/pipeline/PipelineStepResult.cpp
+    src/slicer_core/pipeline/PipelineStepResult.h
+    src/slicer_core/pipeline/SlicePipeline.cpp
+    src/slicer_core/pipeline/SlicePipeline.h
+    src/slicer_core/raster/RasterBoundary.cpp
+    src/slicer_core/raster/RasterBoundary.h
+    src/slicer_core/reports/ReportSchema.cpp
+    src/slicer_core/reports/ReportSchema.h
+    src/slicer_core/reports/ReportWriter.cpp
+    src/slicer_core/reports/ReportWriter.h
     src/slicer_core/rip_reader.cpp
     src/slicer_core/rip_reader.h
+    src/slicer_core/scene/SceneModel.cpp
+    src/slicer_core/scene/SceneModel.h
     src/slicer_core/slicer.cpp
     src/slicer_core/slicer.h
+    src/slicer_core/support/SupportPolicy.cpp
+    src/slicer_core/support/SupportPolicy.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h
     src/slicer_core/tiff_io.cpp

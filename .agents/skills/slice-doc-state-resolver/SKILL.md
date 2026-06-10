@@ -1,0 +1,24 @@
+---
+name: slice-doc-state-resolver
+description: Use for slice_soft_demo questions about whether behavior is implemented, only designed, historical, deprecated, or conflicting across docs, code, reports, and chat logs.
+---
+
+# Slice Doc State Resolver
+
+Use evidence levels:
+
+- A = current code/config/tests; safe for implementation.
+- B = formal target design; direction only.
+- C = historical reference; background only.
+- D = deprecated/conflicting; not implementation basis.
+
+Always prefer current code over historical docs. Report conflicts explicitly.
+
+For each conclusion, state:
+
+```text
+Current State
+Target State
+Historical State
+Pending Confirmation
+```
