@@ -3,6 +3,9 @@
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
 #include "slicer_core/reports/ReportBase.h"
+#include "slicer_core/support/SupportShapeOptimizer.h"
+#include "slicer_core/support/SupportShapePolicy.h"
+#include "slicer_core/support/SupportShapeReport.h"
 #include "slicer_core/texture_image.h"
 #include "slicer_core/tiff_io.h"
 
@@ -955,6 +958,30 @@ void set_support_pixel(
     }
 }
 
+void SynchronizeSupportShapeTypeMaps(
+    const std::vector<std::vector<std::uint8_t>>& originalSupportMasks,
+    const std::vector<std::vector<std::uint8_t>>& optimizedSupportMasks,
+    std::vector<std::vector<SupportType>>& supportTypeMaps)
+{
+    for (std::size_t layerIndex{0}; layerIndex < optimizedSupportMasks.size(); ++layerIndex)
+    {
+        const std::vector<std::uint8_t>& originalMask = originalSupportMasks.at(layerIndex);
+        const std::vector<std::uint8_t>& optimizedMask = optimizedSupportMasks.at(layerIndex);
+        std::vector<SupportType>& typeMap = supportTypeMaps.at(layerIndex);
+        for (std::size_t index{0}; index < optimizedMask.size(); ++index)
+        {
+            if (optimizedMask.at(index) == 0)
+            {
+                typeMap.at(index) = SupportType::None;
+            }
+            else if (originalMask.at(index) == 0 && typeMap.at(index) == SupportType::None)
+            {
+                typeMap.at(index) = SupportType::BottomProjection;
+            }
+        }
+    }
+}
+
 SupportConnectivityDiagnostics analyze_support_connectivity(
     const std::vector<std::uint8_t>& support_mask,
     const GridSpec& grid,
@@ -1303,6 +1330,61 @@ SupportGenerationResult generate_support_masks(
     }
 
     return result;
+}
+
+void RecalculateSupportGenerationStats(
+    SupportGenerationResult& result,
+    std::vector<LayerDiagnostics>& diagnostics,
+    const GridSpec& grid,
+    const SliceConfig& config)
+{
+    result.support_pixels = 0;
+    result.bottom_projection_support_pixels = 0;
+    result.unsupported_island_support_pixels = 0;
+    result.full_vertical_projection_support_pixels = 0;
+    result.layers_with_support = 0;
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index)
+    {
+        bool layer_has_support{false};
+        diagnostics.at(layer_index).bottom_projection_support_pixels = 0;
+        diagnostics.at(layer_index).unsupported_island_support_pixels = 0;
+        diagnostics.at(layer_index).full_vertical_projection_support_pixels = 0;
+        const auto& support_mask = result.support_masks.at(layer_index);
+        const auto& support_type_map = result.support_type_maps.at(layer_index);
+        for (std::size_t index{0}; index < pixel_count; ++index)
+        {
+            if (support_mask.at(index) == 0)
+            {
+                continue;
+            }
+            layer_has_support = true;
+            ++result.support_pixels;
+            switch (support_type_map.at(index))
+            {
+                case SupportType::BottomProjection:
+                    ++result.bottom_projection_support_pixels;
+                    ++diagnostics.at(layer_index).bottom_projection_support_pixels;
+                    break;
+                case SupportType::UnsupportedIsland:
+                    ++result.unsupported_island_support_pixels;
+                    ++diagnostics.at(layer_index).unsupported_island_support_pixels;
+                    break;
+                case SupportType::FullVerticalProjection:
+                    ++result.full_vertical_projection_support_pixels;
+                    ++diagnostics.at(layer_index).full_vertical_projection_support_pixels;
+                    break;
+                case SupportType::None:
+                    break;
+            }
+        }
+        if (layer_has_support)
+        {
+            ++result.layers_with_support;
+        }
+        diagnostics.at(layer_index).support_connectivity =
+            analyze_support_connectivity(support_mask, grid, config.support.connectivity);
+    }
 }
 
 const RuntimeMaterialTexture* find_runtime_material(
@@ -2548,8 +2630,25 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
               return layer > 0;
           }))
         : 0;
-    const SupportGenerationResult support_generation =
+    SupportGenerationResult support_generation =
         generate_support_masks(config, grid, model_masks, support_source_layers, layer_diagnostics);
+    const std::vector<std::vector<std::uint8_t>> original_support_masks = support_generation.support_masks;
+    const SupportShapePolicy support_shape_policy = MakeSupportShapePolicy(config.support);
+    const SupportShapeOptimizationResult support_shape_result = OptimizeSupportShape(
+        support_shape_policy,
+        model_masks,
+        support_generation.support_masks,
+        grid.width_px,
+        grid.height_px,
+        config.support.connectivity);
+    if (support_shape_result.enabled)
+    {
+        SynchronizeSupportShapeTypeMaps(
+            original_support_masks,
+            support_generation.support_masks,
+            support_generation.support_type_maps);
+        RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
+    }
 
     int total_model_pixels{0};
     int total_support_pixels{0};
@@ -2688,6 +2787,18 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"connectivity", config.support.connectivity},
         {"unsupportedProjection", config.support.unsupported_projection},
         {"xyDilationPx", config.support.xy_dilation_px},
+        {"shape",
+         Json::object({
+             {"enabled", support_shape_policy.enabled},
+             {"minComponentAreaPx", support_shape_policy.min_component_area_px},
+             {"xyDilationPx", support_shape_policy.xy_dilation_px},
+             {"closingRadiusPx", support_shape_policy.closing_radius_px},
+             {"bridgeGapPx", support_shape_policy.bridge_gap_px},
+             {"preserveModelPriority", support_shape_policy.preserve_model_priority},
+             {"maxAddedSupportRatio", support_shape_policy.max_added_support_ratio},
+             {"addedSupportPixels", support_shape_result.added_support_pixels},
+             {"removedSupportPixels", support_shape_result.removed_support_pixels},
+         })},
         {"slicingMode", config.slicing_mode},
         {"supportSource",
          config.slicing_mode == "relief_heightfield" ? "relief_lower_surface" : "first_model_layer"},
@@ -2721,6 +2832,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          })},
         {"layers", Json{contour_layers}},
     });
+    const Json support_shape_report = MakeSupportShapeReport(support_shape_policy, support_shape_result);
 
     Json::Array preview_channels;
     for (const std::string& channel : config.preview.channels) {
@@ -2817,6 +2929,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     write_json_file(package_dir / "reports/slice_report.json", slice_report);
     write_json_file(package_dir / "reports/repair_report.json", repair_report);
     write_json_file(package_dir / "reports/support_report.json", support_report);
+    write_json_file(package_dir / "reports/support_shape_report.json", support_shape_report);
     write_json_file(package_dir / "reports/preview_report.json", preview_report);
     write_json_file(package_dir / "reports/texture_report.json", texture_report_to_json(texture_runtime.report));
     write_json_file(
@@ -2895,6 +3008,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"slice", "reports/slice_report.json"},
              {"repair", "reports/repair_report.json"},
              {"support", "reports/support_report.json"},
+             {"supportShape", "reports/support_shape_report.json"},
              {"preview", "reports/preview_report.json"},
              {"texture", "reports/texture_report.json"},
              {"materialPolicy", "reports/material_policy_report.json"},

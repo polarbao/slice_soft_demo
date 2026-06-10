@@ -67,8 +67,16 @@ add_library(slicer_core
     src/slicer_core/scene/SceneModel.h
     src/slicer_core/slicer.cpp
     src/slicer_core/slicer.h
+    src/slicer_core/support/SupportComponentAnalysis.cpp
+    src/slicer_core/support/SupportComponentAnalysis.h
     src/slicer_core/support/SupportPolicy.cpp
     src/slicer_core/support/SupportPolicy.h
+    src/slicer_core/support/SupportShapeOptimizer.cpp
+    src/slicer_core/support/SupportShapeOptimizer.h
+    src/slicer_core/support/SupportShapePolicy.cpp
+    src/slicer_core/support/SupportShapePolicy.h
+    src/slicer_core/support/SupportShapeReport.cpp
+    src/slicer_core/support/SupportShapeReport.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h
     src/slicer_core/tiff_io.cpp

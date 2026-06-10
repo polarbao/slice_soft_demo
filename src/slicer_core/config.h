@@ -160,6 +160,13 @@ struct SupportConfig {
     std::string unsupported_projection{"project_to_build_plate"};
     int xy_dilation_px{0};
     bool write_support_type_debug{true};
+    bool shape_enabled{false};
+    int shape_min_component_area_px{0};
+    int shape_xy_dilation_px{0};
+    int shape_closing_radius_px{0};
+    int shape_bridge_gap_px{0};
+    bool shape_preserve_model_priority{true};
+    double shape_max_added_support_ratio{0.25};
 };
 
 struct PreviewConfig {

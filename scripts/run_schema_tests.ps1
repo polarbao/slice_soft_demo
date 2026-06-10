@@ -60,4 +60,11 @@ Assert-True ($process.rgb.printPixels -gt 0) "material_process_report expected R
 Assert-True ($process.white.printPixels -gt 0) "material_process_report expected W printPixels"
 Assert-True ($process.varnish.printPixels -gt 0) "material_process_report expected V printPixels"
 
+Write-Host "== schema test: support shape report"
+Run-Slicer "samples/configs/support/support_shape_smoke.json"
+$supportShape = Read-Json "output/SupportShapeSmoke/reports/support_shape_report.json"
+Assert-Equal $supportShape.schema "p0.support_shape_report.1" "support_shape_report schema mismatch"
+Assert-Equal $supportShape.enabled $true "support_shape_report enabled mismatch"
+Assert-True ($supportShape.layers.Count -gt 0) "support_shape_report expected layer data"
+
 Write-Host "Schema tests complete."

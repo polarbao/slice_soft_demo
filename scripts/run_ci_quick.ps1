@@ -20,6 +20,10 @@ Run-Step "schema tests" {
   .\scripts\run_schema_tests.ps1
 }
 
+Run-Step "support shape tests" {
+  .\scripts\run_support_shape_tests.ps1
+}
+
 Run-Step "golden tests" {
   .\scripts\run_golden_tests.ps1
 }

@@ -348,6 +348,21 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.support.xy_dilation_px = support.value("xyDilationPx", config.support.xy_dilation_px);
         config.support.write_support_type_debug =
             support.value("writeSupportTypeDebug", config.support.write_support_type_debug);
+        if (support.contains("shape"))
+        {
+            const auto& shape = support.at("shape");
+            config.support.shape_enabled = shape.value("enabled", config.support.shape_enabled);
+            config.support.shape_min_component_area_px =
+                shape.value("minComponentAreaPx", config.support.shape_min_component_area_px);
+            config.support.shape_xy_dilation_px = shape.value("xyDilationPx", config.support.shape_xy_dilation_px);
+            config.support.shape_closing_radius_px =
+                shape.value("closingRadiusPx", config.support.shape_closing_radius_px);
+            config.support.shape_bridge_gap_px = shape.value("bridgeGapPx", config.support.shape_bridge_gap_px);
+            config.support.shape_preserve_model_priority =
+                shape.value("preserveModelPriority", config.support.shape_preserve_model_priority);
+            config.support.shape_max_added_support_ratio =
+                shape.value("maxAddedSupportRatio", config.support.shape_max_added_support_ratio);
+        }
     }
 
     if (root.contains("preview")) {
@@ -562,6 +577,15 @@ void validate_slice_config(const SliceConfig& config) {
                     "materialRoleMapping role=support requires allowInputSupportMaterial=true");
             }
         }
+    }
+    if (config.support.shape_min_component_area_px < 0 || config.support.shape_xy_dilation_px < 0
+        || config.support.shape_closing_radius_px < 0 || config.support.shape_bridge_gap_px < 0)
+    {
+        throw std::runtime_error("support.shape pixel fields must be non-negative");
+    }
+    if (config.support.shape_max_added_support_ratio < 0.0)
+    {
+        throw std::runtime_error("support.shape.maxAddedSupportRatio must be non-negative");
     }
     if (config.relief.fill_mode != "surface_to_base" && config.relief.fill_mode != "intersection_range") {
         throw std::runtime_error("relief.fillMode must be surface_to_base or intersection_range");
