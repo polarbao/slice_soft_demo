@@ -2,6 +2,7 @@
 
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
+#include "slicer_core/reports/ReportBase.h"
 #include "slicer_core/texture_image.h"
 #include "slicer_core/tiff_io.h"
 
@@ -2769,8 +2770,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          })},
         {"bboxMm", bbox_to_json(model_report.bbox_mm)},
     });
+    const Json package_report = MakeReportBase(
+        "p0.report.package.1",
+        Json::object({
+            {"component", "slicer_core"},
+            {"packageDir", package_dir.generic_string()},
+        }),
+        Json::object({
+            {"configPath", config_path.generic_string()},
+            {"modelPath", model_report.model_path.generic_string()},
+            {"schema", "p0.rgbwsv.2"},
+        }));
 
     write_json_file(package_dir / "reports/model_report.json", model_json);
+    write_json_file(package_dir / "reports/package_report.json", package_report);
     write_json_file(package_dir / "reports/slice_report.json", slice_report);
     write_json_file(package_dir / "reports/repair_report.json", repair_report);
     write_json_file(package_dir / "reports/support_report.json", support_report);
@@ -2847,6 +2860,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"layers", Json{layers}},
         {"reports",
          Json::object({
+             {"package", "reports/package_report.json"},
              {"model", "reports/model_report.json"},
              {"slice", "reports/slice_report.json"},
              {"repair", "reports/repair_report.json"},

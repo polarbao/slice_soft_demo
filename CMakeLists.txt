@@ -13,6 +13,12 @@ add_library(slicer_core
     src/third_party/miniz/miniz_tdef.c
     src/third_party/miniz/miniz_tinfl.c
     src/third_party/miniz/miniz_zip.c
+    src/slicer_core/config/ConfigMigration.cpp
+    src/slicer_core/config/ConfigMigration.h
+    src/slicer_core/config/ConfigSchema.cpp
+    src/slicer_core/config/ConfigSchema.h
+    src/slicer_core/config/NormalizedConfig.cpp
+    src/slicer_core/config/NormalizedConfig.h
     src/slicer_core/config.cpp
     src/slicer_core/config.h
     src/slicer_core/diagnostics/Diagnostics.cpp
@@ -47,8 +53,12 @@ add_library(slicer_core
     src/slicer_core/pipeline/SlicePipeline.h
     src/slicer_core/raster/RasterBoundary.cpp
     src/slicer_core/raster/RasterBoundary.h
+    src/slicer_core/reports/ReportBase.cpp
+    src/slicer_core/reports/ReportBase.h
     src/slicer_core/reports/ReportSchema.cpp
     src/slicer_core/reports/ReportSchema.h
+    src/slicer_core/reports/ReportSchemaValidator.cpp
+    src/slicer_core/reports/ReportSchemaValidator.h
     src/slicer_core/reports/ReportWriter.cpp
     src/slicer_core/reports/ReportWriter.h
     src/slicer_core/rip_reader.cpp

@@ -1,5 +1,6 @@
 #include "slicer_core/config.h"
 
+#include "slicer_core/config/ConfigMigration.h"
 #include "slicer_core/json_value.h"
 
 #include <algorithm>
@@ -137,7 +138,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         throw std::runtime_error("failed to open config: " + config_path.string());
     }
 
-    const Json root = Json::parse(input);
+    const Json root = NormalizeConfigJson(Json::parse(input));
     SliceConfig config;
     config.slicing_mode = root.value("slicingMode", config.slicing_mode);
 

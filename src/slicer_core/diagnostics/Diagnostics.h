@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/json_value.h"
+
 #include <string>
 #include <vector>
 
@@ -14,6 +16,7 @@ enum class DiagnosticSeverity
     Info,
     Warning,
     Error,
+    Fatal,
 };
 
 /**
@@ -24,7 +27,11 @@ struct DiagnosticMessage
     DiagnosticSeverity severity{DiagnosticSeverity::Info};
     std::string code;
     std::string message;
+    std::string source;
+    Json context;
 };
+
+using Diagnostic = DiagnosticMessage;
 
 /**
  * @brief Diagnostic message collection for pipeline and wrapper APIs.

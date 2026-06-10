@@ -1,0 +1,98 @@
+{
+  "schema": "slicer.config.1",
+  "input": {
+    "modelPath": "samples/models/sample.stl",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/SchemaV1Basic",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V"
+    ],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "pipeline": {
+    "slicingMode": "closed_mesh_scanline"
+  },
+  "geometry": {
+    "modelTransform": {
+      "unit": "mm",
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotationDeg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "translationMm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "autoOrient": {
+      "enabled": true,
+      "maxHeightMm": 6.0,
+      "strategy": "minimize_height_by_right_angle_rotation"
+    }
+  },
+  "materials": {
+    "modelMaterial": {
+      "materialChannel": "auto",
+      "applyMode": "solid_volume",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "whiteValue": 255,
+      "varnishValue": 0
+    },
+    "textureApplication": {
+      "mode": "full_volume"
+    },
+    "varnishGeometry": {
+      "mode": "in_place_top_layers"
+    }
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 10,
+    "layerRange": [
+      0,
+      29
+    ],
+    "channels": [
+      "rgb",
+      "support",
+      "white",
+      "varnish"
+    ],
+    "onlyNonEmptyLayers": true
+  },
+  "diagnostics": {
+    "enabled": true
+  }
+}
