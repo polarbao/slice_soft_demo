@@ -205,6 +205,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         const auto& texture = root.at("texture");
         config.texture.enabled = texture.value("enabled", config.texture.enabled);
         config.texture.apply_mode = texture.value("applyMode", config.texture.apply_mode);
+        config.texture.top_surface_layers = texture.value("topSurfaceLayers", config.texture.top_surface_layers);
         config.texture.sampler = texture.value("sampler", config.texture.sampler);
         config.texture.uv_address_mode = texture.value("uvAddressMode", config.texture.uv_address_mode);
         config.texture.flip_v = texture.value("flipV", config.texture.flip_v);
@@ -470,8 +471,13 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.texture.enabled) {
         if (config.texture.apply_mode != "solid_volume_from_top_surface"
-            && config.texture.apply_mode != "top_surface_only") {
-            throw std::runtime_error("texture.applyMode must be solid_volume_from_top_surface or top_surface_only");
+            && config.texture.apply_mode != "top_surface_only"
+            && config.texture.apply_mode != "top_surface_band") {
+            throw std::runtime_error(
+                "texture.applyMode must be solid_volume_from_top_surface, top_surface_only, or top_surface_band");
+        }
+        if (config.texture.top_surface_layers <= 0) {
+            throw std::runtime_error("texture.topSurfaceLayers must be positive");
         }
         if (config.texture.sampler != "nearest" && config.texture.sampler != "bilinear") {
             throw std::runtime_error("texture.sampler must be nearest or bilinear");

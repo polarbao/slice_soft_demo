@@ -224,6 +224,71 @@ Regression complete. mode=quick
 
 ---
 
+## 8.1 真实 03.3mf 纹理顶面带修复
+
+2026-06-10 针对真实模型 `samples/models/3mf/03.3mf` 补充修复：
+
+- 新增 `texture.applyMode = top_surface_band`。
+- 新增 `texture.topSurfaceLayers` 配置项。
+- `top_surface_band` 按每个 XY 列自身的真实上表面向下取 N 层写入纹理 RGB。
+- 该模式避免 `solid_volume_from_top_surface` 将顶面纹理贯穿到整个实体体积。
+- 该模式也避免 `top_surface_only` 只写 1 层导致 UI/preview 大面积显示黑色。
+- `samples/configs/3mf/three_mf_real_03.json` 已切换为：
+
+```json
+{
+  "texture": {
+    "applyMode": "top_surface_band",
+    "topSurfaceLayers": 50
+  },
+  "preview": {
+    "interval": 25
+  }
+}
+```
+
+重新切片验证结果：
+
+```text
+packageDir: output/ThreeMfReal03
+grid: 283 x 718 x 798
+modelPixels: 20928026
+supportPixels: 62927008
+texture_report.applyMode = top_surface_band
+texture_report.topSurfaceLayers = 50
+texture_report.source = 3mf_internal
+texture_report.loadedTextures = 3
+texture_report.sampledPixels = 8851501
+texture_report.fallbackPixels = 0
+texture_report.uvOutOfRangePixels = 0
+```
+
+RGB preview 验证：
+
+- 0 层附近不再出现贯穿式顶面花纹。
+- 300 层以后开始出现连续彩色纹理区域。
+- `model_rgb_000300.png` 彩色像素约 21621。
+- `model_rgb_000350.png` 彩色像素约 50716。
+- `model_rgb_000700.png` 彩色像素约 3758。
+
+已通过回归：
+
+```powershell
+cmake --build build --config Debug --target slicer_cli
+.\build\Debug\slicer_cli.exe --config samples\configs\3mf\three_mf_real_03.json
+.\scripts\run_schema_tests.ps1
+.\scripts\run_golden_tests.ps1
+.\scripts\run_ci_quick.ps1
+```
+
+限制说明：
+
+- `top_surface_band` 是当前 heightfield 路线下的轻量顶面颜色带，不是完整三维纹理壳层算法。
+- 侧壁与复杂倒扣表面的纹理仍按当前 relief heightfield 的 top-column 采样近似处理。
+- 如后续需要真实外表面壳层纹理，应单独进入 `surface_shell_texture` 或等价阶段，不在 06B 修复中展开。
+
+---
+
 ## 9. 当前未支持范围
 
 06B 仍不支持：

@@ -43,7 +43,7 @@
         "whiteValue": 255
     },
     "texture": {
-        "applyMode": "top_surface_only",
+        "applyMode": "top_surface_band",
         "enabled": true,
         "fallbackRgb": [
             0,
@@ -53,6 +53,7 @@
         "flipV": true,
         "missingTexturePolicy": "warn_and_fallback",
         "sampler": "bilinear",
+        "topSurfaceLayers": 50,
         "uvAddressMode": "clamp"
     },
     "output": {
@@ -82,7 +83,7 @@
         ],
         "enabled": true,
         "format": "png",
-        "interval": 50,
+        "interval": 25,
         "onlyNonEmptyLayers": true,
         "pseudoColors": {
             "empty": [

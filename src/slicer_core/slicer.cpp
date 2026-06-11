@@ -185,6 +185,7 @@ struct TextureColumnColor {
 struct TextureReportData {
     bool enabled{false};
     std::string apply_mode;
+    int top_surface_layers{1};
     std::string source{"filesystem"};
     int faces_with_uv{0};
     int faces_without_uv{0};
@@ -1583,6 +1584,7 @@ TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelRep
     TextureRuntime runtime;
     runtime.report.enabled = config.texture.enabled;
     runtime.report.apply_mode = config.texture.apply_mode;
+    runtime.report.top_surface_layers = config.texture.top_surface_layers;
     runtime.report.faces_with_uv = static_cast<int>(model_report.faces_with_uv);
     runtime.report.faces_without_uv = static_cast<int>(model_report.faces_without_uv);
     if (!config.texture.enabled) {
@@ -1775,6 +1777,14 @@ bool ShouldApplyTextureToLayer(
     if (config.texture.apply_mode == "top_surface_only")
     {
         return is_top_material_layer(columnRanges, pixelIndex, layerIndex, 1);
+    }
+    if (config.texture.apply_mode == "top_surface_band")
+    {
+        return is_top_material_layer(
+            columnRanges,
+            pixelIndex,
+            layerIndex,
+            config.texture.top_surface_layers);
     }
     return true;
 }
@@ -2136,6 +2146,7 @@ Json texture_report_to_json(const TextureReportData& report) {
     return Json::object({
         {"enabled", report.enabled},
         {"applyMode", report.apply_mode},
+        {"topSurfaceLayers", report.top_surface_layers},
         {"source", report.source},
         {"materials", Json{report.materials}},
         {"textureFiles", Json{report.texture_files}},

@@ -55,6 +55,7 @@ struct MaterialConfig {
 struct TextureConfig {
     bool enabled{false};
     std::string apply_mode{"solid_volume_from_top_surface"};
+    int top_surface_layers{1};
     std::string sampler{"bilinear"};
     std::string uv_address_mode{"clamp"};
     bool flip_v{true};
