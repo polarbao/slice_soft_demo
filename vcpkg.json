@@ -5,5 +5,13 @@
     "nlohmann-json",
     "tiff",
     "assimp"
-  ]
+  ],
+  "features": {
+    "openvdb": {
+      "description": "Optional OpenVDB dependency for experimental geometry kernel smoke builds.",
+      "dependencies": [
+        "openvdb"
+      ]
+    }
+  }
 }

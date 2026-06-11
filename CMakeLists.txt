@@ -106,7 +106,20 @@ if(WIN32)
 endif()
 
 if(USE_OPENVDB)
-    find_package(OpenVDB CONFIG REQUIRED)
+    find_package(OpenVDB CONFIG QUIET)
+    if(NOT OpenVDB_FOUND)
+        message(FATAL_ERROR
+            "USE_OPENVDB=ON but OpenVDB package config was not found.\n"
+            "Use vcpkg manifest mode, for example:\n"
+            "  powershell -ExecutionPolicy Bypass -File scripts/configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb -Triplet x64-windows\n"
+            "The helper script reads VCPKG_ROOT by default. For a custom path, pass:\n"
+            "  -VcpkgRoot \"<vcpkg-root>\"\n"
+            "Or configure manually with:\n"
+            "  -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake\n"
+            "  -DVCPKG_TARGET_TRIPLET=x64-windows\n"
+            "Alternatively set -DOpenVDB_DIR=<directory-containing-OpenVDBConfig.cmake>."
+        )
+    endif()
     target_compile_definitions(slicer_core PRIVATE SLICER_CORE_USE_OPENVDB=1)
     if(TARGET OpenVDB::openvdb)
         target_link_libraries(slicer_core PRIVATE OpenVDB::openvdb)

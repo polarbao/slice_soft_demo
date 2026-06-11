@@ -1,17 +1,17 @@
 # OPENVDB_DEPENDENCY_NOTES
 
-> 文档版本：v0.2  
+> 文档版本：v0.3
 > 文档状态：Dependency Notes  
 > 生成日期：2026-06-11  
-> 适用阶段：09
+> 适用阶段：09A
 
 ---
 
 ## 1. 目标
 
-记录 OpenVDB 在当前项目中的接入方式、依赖风险和验证结果。
+记录 OpenVDB 在当前项目中的依赖接入方式、构建脚本、风险和验证结果。
 
-09 阶段只做采用预研，不把 OpenVDB / SDF 接入生产 `slicer_cli`、RGBWSV TIFF 输出或支撑生成主链路。
+09A 只做 OpenVDB 依赖锁定与真实 smoke 可复现路径，不把 OpenVDB / SDF 接入生产 `slicer_cli`、RGBWSV TIFF 输出或支撑生成主链路。
 
 ---
 
@@ -23,7 +23,8 @@ Compiler: MSVC 19.50.35730.0 / Visual Studio 18 2026
 CMake: 4.3.1
 Build type: Debug
 Default track: USE_OPENVDB=OFF
-OpenVDB track: USE_OPENVDB=ON attempted, dependency package config not found
+OpenVDB track: USE_OPENVDB=ON attempted through vcpkg helper script
+Local VCPKG_ROOT: D:\Program Files Tools\vcpkg
 Branch: spike/09-openvdb-sdf-kernel
 ```
 
@@ -49,12 +50,21 @@ USE_OPENVDB=OFF
 - 不查找 OpenVDB。
 - `OpenVdbAdapter` 返回 stub status。
 - `geometry_kernel_demo --case openvdb-smoke` graceful skip。
-- 主项目仍完整构建。
+- 主项目和 CI quick 不需要 OpenVDB。
 
 ON 轨：
 
 ```cmake
-find_package(OpenVDB CONFIG REQUIRED)
+find_package(OpenVDB CONFIG QUIET)
+```
+
+如果找不到 OpenVDB，CMake 会输出可操作提示：
+
+```text
+USE_OPENVDB=ON but OpenVDB package config was not found.
+Use vcpkg manifest mode...
+Or configure manually with CMAKE_TOOLCHAIN_FILE / VCPKG_TARGET_TRIPLET.
+Alternatively set OpenVDB_DIR.
 ```
 
 目标导入名按优先级尝试：
@@ -66,9 +76,49 @@ OpenVDB::OpenVDB
 
 ---
 
-## 4. 依赖项
+## 4. vcpkg Manifest
 
-基于 OpenVDB 官方依赖文档和包管理器信息，实际生产接入需要关注：
+当前 `vcpkg.json` 已通过 optional feature 声明 OpenVDB：
+
+```json
+{
+  "name": "slice-soft-demo",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "nlohmann-json",
+    "tiff",
+    "assimp"
+  ],
+  "features": {
+    "openvdb": {
+      "description": "Optional OpenVDB dependency for experimental geometry kernel smoke builds.",
+      "dependencies": [
+        "openvdb"
+      ]
+    }
+  }
+}
+```
+
+推荐 triplet：
+
+```text
+x64-windows
+```
+
+说明：
+
+- OpenVDB 依赖链由 vcpkg port 解析。
+- `openvdb` 位于 vcpkg optional feature 中，默认 manifest 构建不会自动拉取 OpenVDB。
+- 09A 配置脚本通过 `-DVCPKG_MANIFEST_FEATURES=openvdb` 显式启用该 feature。
+- 当前没有提交 `vcpkg-configuration.json` baseline，因此 vcpkg registry 版本仍由开发环境所选 vcpkg checkout 决定。
+- 如果后续需要严格复现二进制依赖版本，应在 09B 或独立依赖治理阶段补充 registry baseline / CI cache 策略。
+
+---
+
+## 5. 依赖项
+
+基于 OpenVDB 官方构建文档和 vcpkg port 信息，生产接入需要关注：
 
 ```text
 OpenVDB
@@ -82,177 +132,213 @@ Zlib
 
 说明：
 
-- OpenVDB 官方文档列出多个 required / optional dependencies，并单独说明 Windows / vcpkg 构建建议。
-- vcpkg openvdb port 当前依赖包含 `blosc`、多个 Boost 组件、`imath`、`openexr`、`tbb` 等。
+- OpenVDB 官方文档提供 vcpkg 构建入口，并说明 Windows 下可使用 `x64-windows` triplet。
+- vcpkg `openvdb` port 当前依赖包含 `blosc`、多个 Boost 组件、`imath`、`openexr`、`tbb` 等。
+- ConanCenter 存在 `openvdb` recipe，可作为企业内部二进制缓存路线的备选。
 - OpenVDB 官方 license 为 MPL-2.0。
 
 参考：
 
-- https://www.openvdb.org/documentation/doxygen/dependencies.html
 - https://www.openvdb.org/documentation/doxygen/build.html
 - https://vcpkg.io/en/package/openvdb.html
+- https://conan.io/center/recipes/openvdb
 - https://www.openvdb.org/license/
 
 ---
 
-## 5. 候选接入方式比较
+## 6. 构建脚本
 
-### 5.1 vcpkg
+新增：
 
-建议优先级：高。
-
-优点：
-
-- 与当前项目“vcpkg manifest mode when needed”的方向一致。
-- Windows / MSVC 下对 CMake toolchain 支持直接。
-- 可通过 triplet 控制 x64 / dynamic / static。
-- vcpkg port 明确列出 OpenVDB 依赖链。
-
-风险：
-
-- OpenVDB 依赖链较重，Debug 构建耗时和磁盘占用较高。
-- DLL 部署需要统一处理 TBB / Blosc / Boost / OpenEXR / Imath 等运行时库。
-- triplet 不一致会导致 Debug/Release 或 CRT ABI 问题。
-
-建议命令形态：
-
-```powershell
-vcpkg install openvdb:x64-windows
-cmake -S . -B build-openvdb `
-  -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>\scripts\buildsystems\vcpkg.cmake `
-  -DUSE_OPENVDB=ON `
-  -DENABLE_GEOMETRY_KERNEL_DEMO=ON
+```text
+scripts/configure_openvdb_vcpkg.ps1
+scripts/run_openvdb_smoke.ps1
 ```
 
-### 5.2 Conan
+配置命令：
 
-建议优先级：中。
+```powershell
+$env:VCPKG_ROOT = "D:\Program Files Tools\vcpkg"
+.\scripts\configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb -Triplet x64-windows
+```
 
-优点：
+脚本行为：
 
-- ConanCenter 有 `openvdb` recipe。
-- 对企业内部二进制缓存、profile、锁版本有优势。
-- 可形成独立 profile，不强依赖全局 vcpkg。
+- 检查 `-VcpkgRoot` 或 `VCPKG_ROOT`。
+- 检查 `<vcpkg-root>\scripts\buildsystems\vcpkg.cmake` 是否存在。
+- 使用 vcpkg toolchain 配置 `USE_OPENVDB=ON`。
+- 使用 `-DVCPKG_MANIFEST_FEATURES=openvdb` 显式启用 OpenVDB optional feature。
+- 不修改默认 `build` 目录。
 
-风险：
+Smoke 命令：
 
-- 当前项目没有 Conan 工程化基础。
-- 与现有 CMake/vcpkg 方向并行会增加维护面。
-- Windows/MSVC profile、运行时库和 transitive DLL 部署仍需额外规范。
+```powershell
+.\scripts\run_openvdb_smoke.ps1 -BuildDir build-openvdb
+```
 
-参考：
+脚本行为：
 
-- https://conan.io/center/recipes/openvdb
-
-### 5.3 Source Build
-
-建议优先级：低，仅用于依赖排障或定制。
-
-优点：
-
-- 可完全控制 OpenVDB / TBB / Blosc / Boost / Imath / OpenEXR 版本。
-- 适合后续需要裁剪 feature 或做源码级问题定位时使用。
-
-风险：
-
-- 维护成本最高。
-- Windows 下依赖定位、Debug/Release、DLL 部署风险最大。
-- 不适合作为团队默认接入方式。
+- 构建 `geometry_kernel_demo`。
+- 执行 `--case openvdb-smoke`。
+- 校验 `openvdb.enabled == true`。
+- 校验 `openvdb.available == true`。
+- 校验 `openvdb.activeVoxels > 0`。
+- 如果 `build-openvdb` 是失败配置残留目录，会提示重新配置。
 
 ---
 
-## 6. USE_OPENVDB=OFF 结果
+## 7. USE_OPENVDB=OFF 结果
 
 已执行并通过：
 
 ```powershell
 cmake --build build --config Debug
-cmake --build build --config Debug --target geometry_kernel_demo
-.\build\Debug\geometry_kernel_demo.exe --case heightfield-sdf --output output\GeometryKernelDemo
-.\build\Debug\geometry_kernel_demo.exe --case surface-shell --shell-mm 0.05 --output output\GeometryKernelShell
-.\build\Debug\geometry_kernel_demo.exe --case openvdb-smoke --output output\GeometryKernelOpenVdbStub
 .\scripts\run_geometry_kernel_tests.ps1
 .\scripts\run_ci_quick.ps1
+.\build\Debug\geometry_kernel_demo.exe --case openvdb-smoke --output output\GeometryKernelOpenVdbStub09A
 ```
 
 结果摘要：
 
 ```text
-heightfield-sdf: PASS
-surface-shell: PASS
-openvdb-smoke: graceful skip / stub PASS
-geometry_kernel_report.schema = p0.geometry_kernel_report.1
-preview PNG generated
-run_ci_quick: PASS
+Default build: PASS
+Geometry kernel tests: PASS
+CI quick: PASS
+openvdb-smoke OFF: graceful skip / stub PASS
+```
+
+OFF report 摘要：
+
+```text
+openvdb.enabled = false
+openvdb.available = false
+openvdb.version = ""
+openvdb.activeVoxels = 0
+openvdb.gridName = stub
+openvdb.gridClass = stub
+openvdb.voxelSizeMm = 0
 ```
 
 ---
 
-## 7. USE_OPENVDB=ON 结果
+## 8. USE_OPENVDB=ON 结果
 
 已执行：
 
 ```powershell
-cmake -S . -B build-openvdb -DUSE_OPENVDB=ON -DENABLE_GEOMETRY_KERNEL_DEMO=ON
+.\scripts\configure_openvdb_vcpkg.ps1 -VcpkgRoot C:\vcpkg -BuildDir build-openvdb -Triplet x64-windows
 ```
 
 结果：
 
 ```text
-Configure: FAILED
+Configure through script: FAILED
 Build: not executed
 openvdb-smoke: not executed
 Runtime: not executed
+activeVoxels: not available
+OpenVDB version: not available
 ```
 
-失败摘要：
+失败原因：
 
 ```text
-Could not find a package configuration file provided by "OpenVDB"
-with any of the following names:
+vcpkg toolchain file was not found:
+C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+```
 
-  OpenVDB.cps
-  openvdb.cps
-  OpenVDBConfig.cmake
-  openvdb-config.cmake
+修正说明：
 
-Add the installation prefix of "OpenVDB" to CMAKE_PREFIX_PATH or set
-"OpenVDB_DIR" to a directory containing one of the above files.
+```text
+上述失败来自错误使用硬编码 C:\vcpkg。
+当前本机可用 vcpkg root 应从 VCPKG_ROOT 获取：
+D:\Program Files Tools\vcpkg
+且该目录下 scripts\buildsystems\vcpkg.cmake 已确认存在。
+```
+
+应重新执行：
+
+```powershell
+$env:VCPKG_ROOT = "D:\Program Files Tools\vcpkg"
+.\scripts\configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb -Triplet x64-windows
+```
+
+随后执行：
+
+```powershell
+.\scripts\run_openvdb_smoke.ps1 -BuildDir build-openvdb
+```
+
+结果：
+
+```text
+FAILED
+OpenVDB build directory is incomplete: build-openvdb.
+Re-run scripts/configure_openvdb_vcpkg.ps1 after installing/configuring vcpkg.
 ```
 
 判断：
 
 ```text
-当前机器未配置 OpenVDB 开发包或 CMake package config。
-这是依赖环境缺失，不影响 USE_OPENVDB=OFF 默认构建。
+当前机器并非没有 vcpkg；前次失败是因为命令使用了错误的 `C:\vcpkg` 路径。
+真实 OpenVDB configure/build/smoke 需要基于 `VCPKG_ROOT` 重新执行。
+在重新执行并得到结果前，ON 结果状态应视为 pending。
 ```
 
 ---
 
-## 8. 已知问题
+## 9. CMake 缺包提示验证
 
-1. OpenVDB 依赖链重，Windows/MSVC 下配置成本高。
-2. Debug / Release 运行时库和 DLL 部署必须统一。
-3. `find_package(OpenVDB CONFIG REQUIRED)` 依赖 package config 路径，未通过 toolchain 或 `OpenVDB_DIR` 配置时会失败。
-4. 若使用静态链接，需要重新评估 Boost/TBB/Blosc/OpenEXR/Imath 的链接和许可证分发要求。
-5. OpenVDB 为 MPL-2.0，若修改 OpenVDB 源文件并分发，需要遵守 MPL-2.0 对修改文件的开源义务。
+已执行：
+
+```powershell
+cmake -S . -B build-openvdb-cmake-missing -DUSE_OPENVDB=ON -DENABLE_GEOMETRY_KERNEL_DEMO=ON
+```
+
+结果：
+
+```text
+Configure: FAILED as expected
+```
+
+失败提示已包含：
+
+```text
+USE_OPENVDB=ON but OpenVDB package config was not found.
+Use vcpkg manifest mode...
+-DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake
+-DVCPKG_TARGET_TRIPLET=x64-windows
+-DOpenVDB_DIR=<directory-containing-OpenVDBConfig.cmake>
+```
 
 ---
 
-## 9. 推荐方案
+## 10. Debug / Release 注意事项
+
+1. OpenVDB 依赖链较重，Debug 构建耗时和磁盘占用会明显增加。
+2. `x64-windows` 默认动态链接，运行 `geometry_kernel_demo.exe` 时需要对应 DLL 可被找到。
+3. Debug / Release 不应混用 vcpkg triplet、CRT 或手工拷贝的 DLL。
+4. 如果改用 static triplet，应重新评估 Boost/TBB/Blosc/OpenEXR/Imath 的链接和分发策略。
+5. OpenVDB 为 MPL-2.0；如果修改 OpenVDB 源文件并分发，需要遵守 MPL-2.0 对修改文件的开源义务。
+
+---
+
+## 11. 推荐方案
 
 当前推荐：
 
 ```text
-09 阶段保持 USE_OPENVDB=OFF 默认；
-后续 09A/09B/09C 前，用 vcpkg x64-windows 建立单独 build-openvdb 验证环境；
+09A 保持 USE_OPENVDB=OFF 默认；
+使用 vcpkg manifest mode 作为首选 OpenVDB 接入路径；
+用 build-openvdb 隔离真实 OpenVDB 验证；
 不要把 OpenVDB 放入默认主线构建；
-OpenVDB adapter 保持隔离模块；
-生产 slicer path 只在后续专项阶段通过明确 ADR/PRD 再接入。
+OpenVDB adapter 保持在 src/slicer_core/geometry 内；
+生产 slicer path 只在后续专项阶段通过明确 PRD/DEV 再接入。
 ```
 
-下一步建议：
+下一步：
 
-1. 增加 `vcpkg.json` 或单独 `vcpkg-configuration.json` 前，先确认团队统一 triplet。
-2. 建立 `build-openvdb` 专用 CI 或手工验证流程，不阻塞默认 CI。
-3. 在 09A/09B/09C 中只消费 geometry kernel 的中间 mask/report，不直接改 RGBWSV writer。
+1. 使用本机 `VCPKG_ROOT=D:\Program Files Tools\vcpkg`。
+2. 重新执行 `scripts/configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb -Triplet x64-windows`。
+3. 配置成功后执行 `scripts/run_openvdb_smoke.ps1`。
+4. 若 `openvdb-smoke` 真实通过且 `activeVoxels > 0`，再进入 `09B surface shell texture prototype`。

@@ -39,6 +39,10 @@ Json MakeGeometryKernelReport(
              {"enabled", openVdbStatus.compiled_with_openvdb},
              {"available", openVdbStatus.runtime_available},
              {"version", openVdbStatus.version},
+             {"activeVoxels", openVdbStatus.active_voxels},
+             {"gridName", openVdbStatus.grid_name},
+             {"gridClass", openVdbStatus.grid_class},
+             {"voxelSizeMm", openVdbStatus.voxel_size_mm},
          })},
         {"grid",
          Json::object({

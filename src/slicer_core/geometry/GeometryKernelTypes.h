@@ -66,6 +66,10 @@ struct OpenVdbStatus
     bool compiled_with_openvdb{false};
     bool runtime_available{false};
     std::string version;
+    int active_voxels{0};
+    std::string grid_name;
+    std::string grid_class;
+    double voxel_size_mm{0.0};
     std::vector<std::string> warnings;
 };
 
