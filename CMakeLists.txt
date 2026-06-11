@@ -73,6 +73,8 @@ add_library(slicer_core
     src/slicer_core/support/SupportPolicy.h
     src/slicer_core/support/SupportShapeOptimizer.cpp
     src/slicer_core/support/SupportShapeOptimizer.h
+    src/slicer_core/support/SupportShapePipeline.cpp
+    src/slicer_core/support/SupportShapePipeline.h
     src/slicer_core/support/SupportShapePolicy.cpp
     src/slicer_core/support/SupportShapePolicy.h
     src/slicer_core/support/SupportShapeReport.cpp
@@ -103,6 +105,12 @@ add_executable(rip_reader_test
 )
 
 target_link_libraries(rip_reader_test PRIVATE slicer_core)
+
+add_executable(support_shape_unit_tests
+    tests/unit/support_shape/main.cpp
+)
+
+target_link_libraries(support_shape_unit_tests PRIVATE slicer_core)
 
 if(BUILD_SLICER_DEBUG_UI)
     find_package(Qt5 COMPONENTS Widgets QUIET)

@@ -67,4 +67,11 @@ Assert-Equal $supportShape.schema "p0.support_shape_report.1" "support_shape_rep
 Assert-Equal $supportShape.enabled $true "support_shape_report enabled mismatch"
 Assert-True ($supportShape.layers.Count -gt 0) "support_shape_report expected layer data"
 
+Write-Host "== schema test: support bridge report"
+Run-Slicer "samples/configs/support/support_bridge_gap_smoke.json"
+$bridgeShape = Read-Json "output/SupportBridgeGapSmoke/reports/support_shape_report.json"
+Assert-Equal $bridgeShape.schema "p0.support_shape_report.1" "bridge support_shape_report schema mismatch"
+Assert-Equal $bridgeShape.enabled $true "bridge support_shape_report enabled mismatch"
+Assert-True ($bridgeShape.bridgedGaps.Count -gt 0) "bridge support_shape_report expected bridgedGaps"
+
 Write-Host "Schema tests complete."

@@ -1,0 +1,47 @@
+{
+  "input": {
+    "modelPath": "../../models/support/support_bridge_gap.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/SupportBridgeGapSmoke",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.05,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "minAreaPx": 0,
+    "connectivity": 8,
+    "shape": {
+      "enabled": true,
+      "minComponentAreaPx": 0,
+      "xyDilationPx": 0,
+      "closingRadiusPx": 0,
+      "bridgeGapPx": 2,
+      "preserveModelPriority": true,
+      "maxAddedSupportRatio": 2.0
+    }
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 1,
+    "channels": ["rgb", "support"],
+    "onlyNonEmptyLayers": true
+  }
+}

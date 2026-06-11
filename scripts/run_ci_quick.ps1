@@ -12,6 +12,10 @@ Run-Step "build Debug" {
   cmake --build build --config Debug
 }
 
+Run-Step "support shape unit tests" {
+  .\build\Debug\support_shape_unit_tests.exe
+}
+
 Run-Step "regression quick" {
   .\scripts\run_regression.ps1 -Mode quick
 }

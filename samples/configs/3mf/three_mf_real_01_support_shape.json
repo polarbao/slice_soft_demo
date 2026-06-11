@@ -1,0 +1,74 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "samples/models/3mf/01.3mf",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/ThreeMfReal01SupportShape",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "materialRoleMapping": {
+    "enabled": true,
+    "mode": "rules_then_default",
+    "defaultRole": "rgb",
+    "allowInputSupportMaterial": false,
+    "rules": []
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0,
+    "connectivity": 8,
+    "shape": {
+      "enabled": true,
+      "minComponentAreaPx": 16,
+      "xyDilationPx": 1,
+      "closingRadiusPx": 1,
+      "bridgeGapPx": 2,
+      "preserveModelPriority": true,
+      "maxAddedSupportRatio": 2.0
+    }
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 50,
+    "channels": ["rgb", "support", "white", "varnish"],
+    "onlyNonEmptyLayers": true,
+    "pseudoColors": {
+      "empty": [255, 255, 255],
+      "support": [0, 255, 0],
+      "white": [0, 170, 255],
+      "varnish": [127, 127, 127]
+    }
+  }
+}

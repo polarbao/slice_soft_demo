@@ -1,0 +1,62 @@
+[
+  {
+    "name": "p0_basic",
+    "config": "samples/configs/slice_config.json",
+    "package": "output/SlicePackage",
+    "schema": "p0.rgbwsv.2",
+    "widthPx": 12,
+    "heightPx": 12,
+    "layerCount": 30,
+    "modelPixels": 1440,
+    "supportPixels": 2880
+  },
+  {
+    "name": "material_process_top2",
+    "config": "samples/configs/material_process/nail_rgb_white_varnish_top2.json",
+    "package": "output/NailRgbWhiteVarnishTop2",
+    "schema": "p0.rgbwsv.2",
+    "widthPx": 48,
+    "heightPx": 24,
+    "layerCount": 25,
+    "modelPixels": 22560,
+    "supportPixels": 5640
+  },
+  {
+    "name": "ui_overlay_rgbwv",
+    "config": "samples/configs/ui_smoke/ui_overlay_rgbwv_preview.json",
+    "package": "output/UiSmokeOverlayRgbwv",
+    "schema": "p0.rgbwsv.2",
+    "widthPx": 48,
+    "heightPx": 24,
+    "layerCount": 25,
+    "modelPixels": 22560,
+    "supportPixels": 5640
+  },
+  {
+    "name": "support_shape_smoke",
+    "config": "samples/configs/support/support_shape_smoke.json",
+    "package": "output/SupportShapeSmoke",
+    "schema": "p0.rgbwsv.2",
+    "widthPx": 60,
+    "heightPx": 24,
+    "layerCount": 16,
+    "modelPixels": 5760,
+    "supportPixels": 13488,
+    "supportShapeAddedPixels": 816,
+    "supportShapeRemovedPixels": 0
+  },
+  {
+    "name": "support_bridge_gap_smoke",
+    "config": "samples/configs/support/support_bridge_gap_smoke.json",
+    "package": "output/SupportBridgeGapSmoke",
+    "schema": "p0.rgbwsv.2",
+    "widthPx": 21,
+    "heightPx": 12,
+    "layerCount": 12,
+    "modelPixels": 912,
+    "supportPixels": 2016,
+    "supportShapeAddedPixels": 192,
+    "supportShapeRemovedPixels": 0,
+    "supportShapeBridgedGaps": 96
+  }
+]

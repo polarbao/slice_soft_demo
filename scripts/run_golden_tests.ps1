@@ -36,6 +36,9 @@ function Check-Golden($Case) {
     Assert-Equal $shape.schema "p0.support_shape_report.1" "$($Case.name) support shape schema"
     Assert-Equal $shape.addedSupportPixels $Case.supportShapeAddedPixels "$($Case.name) support shape added pixels"
     Assert-Equal $shape.removedSupportPixels $Case.supportShapeRemovedPixels "$($Case.name) support shape removed pixels"
+    if ($Case.PSObject.Properties.Name -contains "supportShapeBridgedGaps") {
+      Assert-Equal $shape.bridgedGaps.Count $Case.supportShapeBridgedGaps "$($Case.name) support shape bridged gaps"
+    }
   }
 }
 

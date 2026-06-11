@@ -7,3 +7,9 @@ output/
 
 # 切片生成文件
 tests/
+!tests/
+tests/*
+!tests/golden/
+!tests/golden/**
+!tests/unit/
+!tests/unit/**

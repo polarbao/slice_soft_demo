@@ -3,7 +3,7 @@
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
 #include "slicer_core/reports/ReportBase.h"
-#include "slicer_core/support/SupportShapeOptimizer.h"
+#include "slicer_core/support/SupportShapePipeline.h"
 #include "slicer_core/support/SupportShapePolicy.h"
 #include "slicer_core/support/SupportShapeReport.h"
 #include "slicer_core/texture_image.h"
@@ -2645,7 +2645,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         generate_support_masks(config, grid, model_masks, support_source_layers, layer_diagnostics);
     const std::vector<std::vector<std::uint8_t>> original_support_masks = support_generation.support_masks;
     const SupportShapePolicy support_shape_policy = MakeSupportShapePolicy(config.support);
-    const SupportShapeOptimizationResult support_shape_result = OptimizeSupportShape(
+    const SupportShapeOptimizationResult support_shape_result = ApplySupportShapePolicy(
         support_shape_policy,
         model_masks,
         support_generation.support_masks,
