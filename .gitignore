@@ -1,4 +1,5 @@
 build/
+build-*/
 output/
 .dish/workspace-id
 .qodo/

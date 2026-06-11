@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_SLICER_DEBUG_UI "Build Qt slicer debug UI" ON)
+option(ENABLE_GEOMETRY_KERNEL_DEMO "Build experimental geometry kernel demo" ON)
+option(USE_OPENVDB "Enable optional OpenVDB adapter" OFF)
 
 add_library(slicer_core
     src/third_party/miniz/miniz.c
@@ -23,6 +25,15 @@ add_library(slicer_core
     src/slicer_core/config.h
     src/slicer_core/diagnostics/Diagnostics.cpp
     src/slicer_core/diagnostics/Diagnostics.h
+    src/slicer_core/geometry/DistanceField2D.cpp
+    src/slicer_core/geometry/DistanceField2D.h
+    src/slicer_core/geometry/GeometryKernelReport.cpp
+    src/slicer_core/geometry/GeometryKernelReport.h
+    src/slicer_core/geometry/GeometryKernelTypes.h
+    src/slicer_core/geometry/OpenVdbAdapter.cpp
+    src/slicer_core/geometry/OpenVdbAdapter.h
+    src/slicer_core/geometry/ShellMask.cpp
+    src/slicer_core/geometry/ShellMask.h
     src/slicer_core/importers/mtl/MtlImporter.cpp
     src/slicer_core/importers/mtl/MtlImporter.h
     src/slicer_core/importers/obj/ObjImporter.cpp
@@ -94,6 +105,18 @@ if(WIN32)
     target_link_libraries(slicer_core PRIVATE windowscodecs ole32)
 endif()
 
+if(USE_OPENVDB)
+    find_package(OpenVDB CONFIG REQUIRED)
+    target_compile_definitions(slicer_core PRIVATE SLICER_CORE_USE_OPENVDB=1)
+    if(TARGET OpenVDB::openvdb)
+        target_link_libraries(slicer_core PRIVATE OpenVDB::openvdb)
+    elseif(TARGET OpenVDB::OpenVDB)
+        target_link_libraries(slicer_core PRIVATE OpenVDB::OpenVDB)
+    else()
+        message(FATAL_ERROR "OpenVDB package found but no supported imported target is available.")
+    endif()
+endif()
+
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
 )
@@ -111,6 +134,14 @@ add_executable(support_shape_unit_tests
 )
 
 target_link_libraries(support_shape_unit_tests PRIVATE slicer_core)
+
+if(ENABLE_GEOMETRY_KERNEL_DEMO)
+    add_executable(geometry_kernel_demo
+        apps/geometry_kernel_demo/main.cpp
+    )
+
+    target_link_libraries(geometry_kernel_demo PRIVATE slicer_core)
+endif()
 
 if(BUILD_SLICER_DEBUG_UI)
     find_package(Qt5 COMPONENTS Widgets QUIET)
