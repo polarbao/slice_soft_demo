@@ -313,7 +313,96 @@ Use vcpkg manifest mode...
 
 ---
 
-## 10. Debug / Release 注意事项
+## 10. 09A-R1 真实环境复测结果
+
+已执行：
+
+```powershell
+.\scripts\configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb -Triplet x64-windows
+```
+
+结果：
+
+```text
+FAILED
+```
+
+原因：
+
+```text
+build-openvdb 是旧的无 vcpkg toolchain 失败缓存目录。
+脚本已增强为识别该状态并提示使用 clean BuildDir 或移除旧 CMakeCache.txt。
+```
+
+随后使用独立目录执行：
+
+```powershell
+.\scripts\configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb-r1 -Triplet x64-windows
+```
+
+结果：
+
+```text
+Configure: FAILED
+CMakeCache: generated
+Solution: not generated
+Vcpkg manifest mode: entered
+Vcpkg feature: openvdb enabled
+OpenVDB resolved version: openvdb:x64-windows@12.0.1
+Installed packages before failure: 17
+Failure package: hwloc:x64-windows@2.11.2
+```
+
+失败摘要：
+
+```text
+configure: WARNING: Libtool does not cope well with whitespace in `pwd`
+configure: line 21376: D:/Program: No such file or directory
+make[3]: *** No rule to make target '/d/Program', needed by 'hwloc-annotate.exe'. Stop.
+cl: source file "D:\Program" ignored
+c1: fatal error C1083: cannot open source file "Tools\vcpkg\..."
+```
+
+判断：
+
+```text
+当前脚本能正确读取 VCPKG_ROOT，并能进入 vcpkg manifest feature resolution。
+真实失败点不是项目 CMake，也不是 OpenVDB adapter 代码，而是 vcpkg root 路径包含空格。
+OpenVDB 传递依赖 hwloc 使用 autotools/libtool/make，在 Windows/MSVC 下不能可靠处理 `D:\Program Files Tools\vcpkg`。
+```
+
+已执行 smoke：
+
+```powershell
+.\scripts\run_openvdb_smoke.ps1 -BuildDir build-openvdb-r1
+```
+
+结果：
+
+```text
+FAILED
+OpenVDB build directory is incomplete: build-openvdb-r1.
+```
+
+因此：
+
+```text
+ON build: not executed
+openvdb-smoke: not executed
+activeVoxels: not available
+OpenVDB version in report: not available
+```
+
+09A-R1 后建议：
+
+```text
+不要进入 09B。
+需要 09A-R2：将 vcpkg root 移动或重新 bootstrap 到无空格路径，例如 D:\vcpkg 或 D:\Tools\vcpkg，再使用 clean BuildDir 重跑。
+```
+
+---
+
+## 11. Debug / Release 注意事项
 
 1. OpenVDB 依赖链较重，Debug 构建耗时和磁盘占用会明显增加。
 2. `x64-windows` 默认动态链接，运行 `geometry_kernel_demo.exe` 时需要对应 DLL 可被找到。
@@ -323,7 +412,7 @@ Use vcpkg manifest mode...
 
 ---
 
-## 11. 推荐方案
+## 12. 推荐方案
 
 当前推荐：
 
@@ -338,7 +427,9 @@ OpenVDB adapter 保持在 src/slicer_core/geometry 内；
 
 下一步：
 
-1. 使用本机 `VCPKG_ROOT=D:\Program Files Tools\vcpkg`。
-2. 重新执行 `scripts/configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb -Triplet x64-windows`。
-3. 配置成功后执行 `scripts/run_openvdb_smoke.ps1`。
-4. 若 `openvdb-smoke` 真实通过且 `activeVoxels > 0`，再进入 `09B surface shell texture prototype`。
+1. 准备无空格 vcpkg root，例如 `D:\vcpkg` 或 `D:\Tools\vcpkg`。
+2. 设置 `VCPKG_ROOT` 到无空格路径。
+3. 使用 clean BuildDir，例如 `build-openvdb-r2`。
+4. 重新执行 `scripts/configure_openvdb_vcpkg.ps1 -BuildDir build-openvdb-r2 -Triplet x64-windows`。
+5. 配置成功后执行 `scripts/run_openvdb_smoke.ps1 -BuildDir build-openvdb-r2`。
+6. 若 `openvdb-smoke` 真实通过且 `activeVoxels > 0`，再进入 `09B surface shell texture prototype`。

@@ -18,6 +18,24 @@ if (-not (Test-Path -LiteralPath $toolchain))
     throw "vcpkg toolchain file was not found: $toolchain"
 }
 
+if ($VcpkgRoot -match "\s")
+{
+    Write-Warning "VcpkgRoot contains whitespace. Some OpenVDB transitive ports, such as hwloc, may fail in autotools/libtool builds. Prefer a vcpkg root without spaces for OpenVDB verification."
+}
+
+$cachePath = Join-Path $BuildDir "CMakeCache.txt"
+if (Test-Path -LiteralPath $cachePath)
+{
+    $cacheText = Get-Content -Raw -LiteralPath $cachePath
+    $normalizedCache = $cacheText -replace "\\", "/"
+    $normalizedToolchain = $toolchain -replace "\\", "/"
+    if ($normalizedCache -notlike "*CMAKE_TOOLCHAIN_FILE:FILEPATH=$normalizedToolchain*" -or
+        $normalizedCache -notlike "*VCPKG_MANIFEST_MODE:BOOL=ON*")
+    {
+        throw "Existing build directory is not configured with the requested vcpkg toolchain: $BuildDir. Use a clean BuildDir or remove the stale CMakeCache.txt."
+    }
+}
+
 Write-Host "Configuring OpenVDB build"
 Write-Host "  VcpkgRoot: $VcpkgRoot"
 Write-Host "  BuildDir:  $BuildDir"
