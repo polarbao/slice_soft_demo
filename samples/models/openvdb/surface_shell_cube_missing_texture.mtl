@@ -1,0 +1,3 @@
+newmtl shell_texture_missing
+Kd 0.2 0.7 0.3
+map_Kd missing_surface_shell_texture.png

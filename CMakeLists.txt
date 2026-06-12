@@ -36,6 +36,12 @@ add_library(slicer_core
     src/slicer_core/geometry/OpenVdbLevelSetBuilder.h
     src/slicer_core/geometry/OpenVdbSurfaceShell.cpp
     src/slicer_core/geometry/OpenVdbSurfaceShell.h
+    src/slicer_core/geometry/MeshTopologyDiagnostics.cpp
+    src/slicer_core/geometry/MeshTopologyDiagnostics.h
+    src/slicer_core/geometry/NearestTriangleQuery.cpp
+    src/slicer_core/geometry/NearestTriangleQuery.h
+    src/slicer_core/geometry/SceneModelTriangleMeshAdapter.cpp
+    src/slicer_core/geometry/SceneModelTriangleMeshAdapter.h
     src/slicer_core/geometry/ShellMask.cpp
     src/slicer_core/geometry/ShellMask.h
     src/slicer_core/geometry/TriangleMeshData.cpp
@@ -60,6 +66,14 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.h
     src/slicer_core/materials/texture_application/SurfaceShellTextureReport.cpp
     src/slicer_core/materials/texture_application/SurfaceShellTextureReport.h
+    src/slicer_core/materials/texture_application/SurfaceAttributeMap.cpp
+    src/slicer_core/materials/texture_application/SurfaceAttributeMap.h
+    src/slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.cpp
+    src/slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.h
+    src/slicer_core/materials/texture_application/SurfaceShellRealModelReport.cpp
+    src/slicer_core/materials/texture_application/SurfaceShellRealModelReport.h
+    src/slicer_core/materials/texture_application/SurfaceTextureTransfer.cpp
+    src/slicer_core/materials/texture_application/SurfaceTextureTransfer.h
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.cpp
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp
@@ -168,6 +182,12 @@ add_executable(surface_shell_texture_unit_tests
 
 target_link_libraries(surface_shell_texture_unit_tests PRIVATE slicer_core)
 
+add_executable(surface_shell_real_model_unit_tests
+    tests/unit/surface_shell_real_model/main.cpp
+)
+
+target_link_libraries(surface_shell_real_model_unit_tests PRIVATE slicer_core)
+
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
         apps/geometry_kernel_demo/main.cpp
@@ -180,6 +200,12 @@ if(ENABLE_GEOMETRY_KERNEL_DEMO)
     )
 
     target_link_libraries(surface_shell_texture_demo PRIVATE slicer_core)
+
+    add_executable(surface_shell_real_model_demo
+        apps/surface_shell_real_model_demo/main.cpp
+    )
+
+    target_link_libraries(surface_shell_real_model_demo PRIVATE slicer_core)
 endif()
 
 if(BUILD_SLICER_DEBUG_UI)

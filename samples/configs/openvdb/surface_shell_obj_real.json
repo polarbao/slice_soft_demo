@@ -1,0 +1,26 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {"modelPath": "../../models/openvdb/surface_shell_cube.obj", "format": "obj"},
+  "output": {
+    "packageDir": "output/SurfaceShellObjRealCache",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {"enabled": false, "maxHeightMm": 6.0},
+  "texture": {
+    "enabled": true,
+    "applyMode": "solid_volume_from_top_surface",
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [12, 34, 56],
+    "missingTexturePolicy": "warn_and_fallback"
+  },
+  "support": {"enabled": false, "mode": "none", "value": 0, "offsetMm": 0.0, "minAreaPx": 0}
+}

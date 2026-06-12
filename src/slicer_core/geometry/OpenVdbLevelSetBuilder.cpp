@@ -137,4 +137,26 @@ OpenVdbLevelSetResult BuildOpenVdbLevelSet(const TriangleMeshData& mesh, const O
     return result;
 }
 
+Vec3 OpenVdbIndexToWorld(
+    const OpenVdbLevelSetResult& levelSet,
+    const double x,
+    const double y,
+    const double z)
+{
+    if (!levelSet.available || levelSet.grid == nullptr)
+    {
+        throw std::runtime_error("OpenVDB level set unavailable for index-to-world conversion");
+    }
+#ifdef SLICER_CORE_USE_OPENVDB
+    const std::shared_ptr<openvdb::FloatGrid> grid = std::static_pointer_cast<openvdb::FloatGrid>(levelSet.grid);
+    const openvdb::Vec3d world = grid->transform().indexToWorld(openvdb::Vec3d{x, y, z});
+    return {world.x(), world.y(), world.z()};
+#else
+    (void)x;
+    (void)y;
+    (void)z;
+    throw std::runtime_error("USE_OPENVDB=OFF; index-to-world conversion unavailable");
+#endif
+}
+
 }  // namespace slicer_core

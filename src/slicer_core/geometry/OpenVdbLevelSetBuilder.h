@@ -59,4 +59,14 @@ struct OpenVdbLevelSetResult
  */
 OpenVdbLevelSetResult BuildOpenVdbLevelSet(const TriangleMeshData& mesh, const OpenVdbLevelSetOptions& options);
 
+/**
+ * @brief Convert an OpenVDB index coordinate to world millimeters.
+ * @param levelSet Generated level set.
+ * @param x Index-space X coordinate.
+ * @param y Index-space Y coordinate.
+ * @param z Index-space Z coordinate.
+ * @return World-space point in millimeters.
+ */
+Vec3 OpenVdbIndexToWorld(const OpenVdbLevelSetResult& levelSet, double x, double y, double z);
+
 }  // namespace slicer_core
