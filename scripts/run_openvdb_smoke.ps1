@@ -14,6 +14,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $BuildDir "CMakeCache.txt")))
 
 $buildFileCandidates = @(
     (Join-Path $BuildDir "SliceSoftDemo.sln"),
+    (Join-Path $BuildDir "SliceSoftDemo.slnx"),
     (Join-Path $BuildDir "build.ninja"),
     (Join-Path $BuildDir "Makefile")
 )

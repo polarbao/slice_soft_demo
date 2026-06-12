@@ -1,9 +1,9 @@
 # OPENVDB_DEPENDENCY_NOTES
 
-> 文档版本：v0.3
+> 文档版本：v0.4
 > 文档状态：Dependency Notes  
-> 生成日期：2026-06-11  
-> 适用阶段：09A
+> 生成日期：2026-06-12  
+> 适用阶段：09A / 09A-R2
 
 ---
 
@@ -23,8 +23,9 @@ Compiler: MSVC 19.50.35730.0 / Visual Studio 18 2026
 CMake: 4.3.1
 Build type: Debug
 Default track: USE_OPENVDB=OFF
-OpenVDB track: USE_OPENVDB=ON attempted through vcpkg helper script
-Local VCPKG_ROOT: D:\Program Files Tools\vcpkg
+OpenVDB track: USE_OPENVDB=ON verified through vcpkg helper script
+Previous VCPKG_ROOT: D:\Program Files Tools\vcpkg
+OpenVDB VCPKG_ROOT: D:\vcpkg-openvdb
 Branch: spike/09-openvdb-sdf-kernel
 ```
 
@@ -402,7 +403,86 @@ OpenVDB version in report: not available
 
 ---
 
-## 11. Debug / Release 注意事项
+## 11. 09A-R2 无空格 vcpkg root 真实 Smoke 结果
+
+09A-R2 使用无空格 vcpkg root 重新验证：
+
+```text
+VCPKG_ROOT = D:\vcpkg-openvdb
+vcpkg commit = b216ddff25a1f432870e6c340ce79357049ef86e
+vcpkg version = 2026-05-27-d5b6777d666efc1a7f491babfcdab37794c1ae3e
+triplet = x64-windows
+BuildDir = build-openvdb-r2
+Generator = Visual Studio 18 2026
+```
+
+已执行：
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git D:\vcpkg-openvdb
+& "D:\vcpkg-openvdb\bootstrap-vcpkg.bat"
+$env:VCPKG_ROOT = "D:\vcpkg-openvdb"
+.\scripts\configure_openvdb_vcpkg.ps1 -VcpkgRoot $env:VCPKG_ROOT -BuildDir build-openvdb-r2 -Triplet x64-windows
+.\scripts\run_openvdb_smoke.ps1 -BuildDir build-openvdb-r2
+cmake --build build --config Debug
+.\scripts\run_ci_quick.ps1
+```
+
+结果：
+
+```text
+vcpkg clone/bootstrap: PASS
+USE_OPENVDB=ON configure: PASS
+ON build geometry_kernel_demo: PASS
+openvdb-smoke: PASS
+OFF default build: PASS
+OFF run_ci_quick: PASS
+```
+
+OpenVDB 解析结果：
+
+```text
+OpenVDB port/version = openvdb:x64-windows@12.0.1
+OpenVDB report version = 12.0.1
+OpenVDB library = build-openvdb-r2/vcpkg_installed/x64-windows/debug/lib/openvdb.lib
+USE_OPENVDB = ON
+```
+
+`output/GeometryKernelOpenVdb/reports/geometry_kernel_report.json` 摘要：
+
+```text
+schema = p0.geometry_kernel_report.1
+caseName = openvdb-smoke
+openvdb.enabled = true
+openvdb.available = true
+openvdb.version = 12.0.1
+openvdb.activeVoxels = 27
+openvdb.gridName = openvdb_smoke_float_grid
+openvdb.voxelSizeMm = 0.01
+shellPixels = 884
+interiorPixels = 508
+boundaryPixels = 440
+```
+
+脚本修正：
+
+```text
+scripts/run_openvdb_smoke.ps1 现在同时识别 SliceSoftDemo.sln 与 SliceSoftDemo.slnx。
+原因是 Visual Studio 18 2026 生成 .slnx，旧检查只识别 .sln 时会误判 build directory incomplete。
+```
+
+结论：
+
+```text
+09A-R2 已完成 OpenVDB 真实 ON configure/build/smoke 收口。
+含空格 vcpkg root 导致 hwloc 构建失败的问题已通过 D:\vcpkg-openvdb 规避。
+默认 USE_OPENVDB=OFF 主线构建和 CI quick 不受影响。
+可以进入 09B，但 09B 仍必须通过独立 PRD/DEV 明确边界后执行。
+```
+
+---
+
+## 12. Debug / Release 注意事项
 
 1. OpenVDB 依赖链较重，Debug 构建耗时和磁盘占用会明显增加。
 2. `x64-windows` 默认动态链接，运行 `geometry_kernel_demo.exe` 时需要对应 DLL 可被找到。
@@ -412,7 +492,7 @@ OpenVDB version in report: not available
 
 ---
 
-## 12. 推荐方案
+## 13. 推荐方案
 
 当前推荐：
 
