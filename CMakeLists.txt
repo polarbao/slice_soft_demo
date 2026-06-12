@@ -32,8 +32,14 @@ add_library(slicer_core
     src/slicer_core/geometry/GeometryKernelTypes.h
     src/slicer_core/geometry/OpenVdbAdapter.cpp
     src/slicer_core/geometry/OpenVdbAdapter.h
+    src/slicer_core/geometry/OpenVdbLevelSetBuilder.cpp
+    src/slicer_core/geometry/OpenVdbLevelSetBuilder.h
+    src/slicer_core/geometry/OpenVdbSurfaceShell.cpp
+    src/slicer_core/geometry/OpenVdbSurfaceShell.h
     src/slicer_core/geometry/ShellMask.cpp
     src/slicer_core/geometry/ShellMask.h
+    src/slicer_core/geometry/TriangleMeshData.cpp
+    src/slicer_core/geometry/TriangleMeshData.h
     src/slicer_core/importers/mtl/MtlImporter.cpp
     src/slicer_core/importers/mtl/MtlImporter.h
     src/slicer_core/importers/obj/ObjImporter.cpp
@@ -50,6 +56,10 @@ add_library(slicer_core
     src/slicer_core/materials/role_mapping/MaterialRoleMapping.h
     src/slicer_core/materials/texture_application/TextureApplicationPolicy.cpp
     src/slicer_core/materials/texture_application/TextureApplicationPolicy.h
+    src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.cpp
+    src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.h
+    src/slicer_core/materials/texture_application/SurfaceShellTextureReport.cpp
+    src/slicer_core/materials/texture_application/SurfaceShellTextureReport.h
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.cpp
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp
@@ -101,6 +111,10 @@ target_include_directories(slicer_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
 )
 
+if(MSVC)
+    target_compile_options(slicer_core PRIVATE /bigobj)
+endif()
+
 if(WIN32)
     target_link_libraries(slicer_core PRIVATE windowscodecs ole32)
 endif()
@@ -148,12 +162,24 @@ add_executable(support_shape_unit_tests
 
 target_link_libraries(support_shape_unit_tests PRIVATE slicer_core)
 
+add_executable(surface_shell_texture_unit_tests
+    tests/unit/surface_shell_texture/main.cpp
+)
+
+target_link_libraries(surface_shell_texture_unit_tests PRIVATE slicer_core)
+
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
         apps/geometry_kernel_demo/main.cpp
     )
 
     target_link_libraries(geometry_kernel_demo PRIVATE slicer_core)
+
+    add_executable(surface_shell_texture_demo
+        apps/surface_shell_texture_demo/main.cpp
+    )
+
+    target_link_libraries(surface_shell_texture_demo PRIVATE slicer_core)
 endif()
 
 if(BUILD_SLICER_DEBUG_UI)
