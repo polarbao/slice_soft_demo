@@ -36,6 +36,10 @@ add_library(slicer_core
     src/slicer_core/geometry/OpenVdbLevelSetBuilder.h
     src/slicer_core/geometry/OpenVdbSurfaceShell.cpp
     src/slicer_core/geometry/OpenVdbSurfaceShell.h
+    src/slicer_core/geometry/MeshRobustnessDiagnostics.cpp
+    src/slicer_core/geometry/MeshRobustnessDiagnostics.h
+    src/slicer_core/geometry/MeshScaleTolerance.cpp
+    src/slicer_core/geometry/MeshScaleTolerance.h
     src/slicer_core/geometry/MeshTopologyDiagnostics.cpp
     src/slicer_core/geometry/MeshTopologyDiagnostics.h
     src/slicer_core/geometry/NearestTriangleQuery.cpp
@@ -70,6 +74,8 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/SurfaceAttributeMap.h
     src/slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.cpp
     src/slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.h
+    src/slicer_core/materials/texture_application/SurfaceShellBenchmarkReport.cpp
+    src/slicer_core/materials/texture_application/SurfaceShellBenchmarkReport.h
     src/slicer_core/materials/texture_application/SurfaceShellRealModelReport.cpp
     src/slicer_core/materials/texture_application/SurfaceShellRealModelReport.h
     src/slicer_core/materials/texture_application/SurfaceTextureTransfer.cpp
@@ -188,6 +194,12 @@ add_executable(surface_shell_real_model_unit_tests
 
 target_link_libraries(surface_shell_real_model_unit_tests PRIVATE slicer_core)
 
+add_executable(surface_shell_robustness_unit_tests
+    tests/unit/surface_shell_robustness/main.cpp
+)
+
+target_link_libraries(surface_shell_robustness_unit_tests PRIVATE slicer_core)
+
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
         apps/geometry_kernel_demo/main.cpp
@@ -206,6 +218,12 @@ if(ENABLE_GEOMETRY_KERNEL_DEMO)
     )
 
     target_link_libraries(surface_shell_real_model_demo PRIVATE slicer_core)
+
+    add_executable(surface_shell_robustness_demo
+        apps/surface_shell_robustness_demo/main.cpp
+    )
+
+    target_link_libraries(surface_shell_robustness_demo PRIVATE slicer_core)
 endif()
 
 if(BUILD_SLICER_DEBUG_UI)

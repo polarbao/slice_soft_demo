@@ -2,6 +2,8 @@
 
 #include "slicer_core/geometry/OpenVdbLevelSetBuilder.h"
 #include "slicer_core/geometry/OpenVdbSurfaceShell.h"
+#include "slicer_core/geometry/MeshRobustnessDiagnostics.h"
+#include "slicer_core/geometry/MeshScaleTolerance.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/materials/texture_application/SurfaceTextureTransfer.h"
 
@@ -24,6 +26,7 @@ struct SurfaceShellRealModelOptions
     MeshValidationPolicy mesh_policy{MeshValidationPolicy::StrictClosed};
     std::array<std::uint8_t, 3> fallback_rgb{0, 0, 0};
     TextureSampleOptions texture_sample;
+    bool reject_self_intersection{false};
 };
 
 /**
@@ -36,7 +39,19 @@ struct SurfaceShellRealModelPerformance
     double level_set_ms{0.0};
     double bvh_build_ms{0.0};
     double transfer_ms{0.0};
+    double preview_ms{0.0};
+    double total_ms{0.0};
     std::uint64_t peak_estimated_bytes{0};
+    std::uint64_t mesh_bytes{0};
+    std::uint64_t triangle_attribute_bytes{0};
+    std::uint64_t mask_bytes{0};
+    std::uint64_t shell_rgb_bytes{0};
+    std::uint64_t bvh_estimated_bytes{0};
+    std::uint64_t texture_cache_bytes{0};
+    std::uint64_t openvdb_grid_bytes{0};
+    std::uint64_t preview_buffer_bytes{0};
+    bool process_peak_working_set_available{false};
+    std::uint64_t process_peak_working_set_bytes{0};
 };
 
 /**
@@ -49,11 +64,14 @@ struct SurfaceShellRealModelResult
     std::string model_path;
     std::string config_path;
     SurfaceShellRealModelOptions options;
+    MeshScaleTolerance tolerance;
     AdaptedTriangleMesh adapted_mesh;
+    MeshRobustnessReport robustness;
     OpenVdbLevelSetResult level_set;
     OpenVdbSurfaceShellResult shell;
     SurfaceTextureTransferResult transfer;
     SurfaceShellRealModelPerformance performance;
+    bool non_production{false};
     std::vector<std::string> warnings;
     std::vector<std::string> errors;
 };

@@ -1,0 +1,20 @@
+{
+  "schema": "p0.surface_shell_r2_golden.1",
+  "fixtures": {
+    "multimaterial_seam": {
+      "acceptedTriangles": 12,
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "duplicateFaces": 0,
+      "outsideColoredVoxels": 0,
+      "shellPlusInteriorEqualsInside": true,
+      "sampledTextureVoxelsMin": 1,
+      "loadedTextureCountMin": 2
+    },
+    "thin_wall": {
+      "acceptedTriangles": 12,
+      "outsideColoredVoxels": 0,
+      "shellPlusInteriorEqualsInside": true
+    }
+  }
+}

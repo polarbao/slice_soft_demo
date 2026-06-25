@@ -1,5 +1,7 @@
 #include "slicer_core/materials/texture_application/SurfaceShellRealModelReport.h"
 
+#include <map>
+
 namespace slicer_core
 {
 namespace
@@ -27,6 +29,16 @@ Json BoundsToJson(const IndexBounds3D& bounds)
     });
 }
 
+Json StringIntMapToJson(const std::map<std::string, int>& values)
+{
+    Json::Object object;
+    for (const auto& item : values)
+    {
+        object.emplace(item.first, item.second);
+    }
+    return Json{object};
+}
+
 }  // namespace
 
 Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
@@ -50,6 +62,7 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"gridName", result.level_set.status.grid_name},
              {"gridClass", result.level_set.status.grid_class},
              {"activeVoxels", result.level_set.active_voxels},
+             {"memoryBytes", result.level_set.memory_bytes},
          })},
         {"grid",
          Json::object({
@@ -66,7 +79,15 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"shellThicknessMm", result.options.shell_thickness_mm},
              {"meshPolicy", MeshValidationPolicyName(result.options.mesh_policy)},
              {"maxTransferDistanceMm", result.options.max_transfer_distance_mm},
+             {"nonProduction", result.non_production},
              {"fillRole", "base"},
+         })},
+        {"epsilon",
+         Json::object({
+             {"positionEpsilonMm", result.tolerance.position_epsilon_mm},
+             {"areaEpsilonMm2", result.tolerance.area_epsilon_mm2},
+             {"tieEpsilonMm", result.tolerance.tie_epsilon_mm},
+             {"selfIntersectionEpsilonMm", result.tolerance.self_intersection_epsilon_mm},
          })},
         {"meshDiagnostics",
          Json::object({
@@ -78,6 +99,20 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"nonManifoldEdges", static_cast<std::uint64_t>(topology.non_manifold_edges)},
              {"signedVolumeMm3", topology.signed_volume_mm3},
              {"orientationFlipped", topology.orientation_flipped},
+         })},
+        {"robustnessDiagnostics",
+         Json::object({
+             {"connectedComponents", static_cast<std::uint64_t>(result.robustness.connected_components)},
+             {"duplicateFaces", static_cast<std::uint64_t>(result.robustness.duplicate_faces)},
+             {"oppositeDuplicateFaces", static_cast<std::uint64_t>(result.robustness.opposite_duplicate_faces)},
+             {"inconsistentOrientedEdges", static_cast<std::uint64_t>(result.robustness.inconsistent_oriented_edges)},
+             {"selfIntersectionPairs", static_cast<std::uint64_t>(result.robustness.self_intersection_pairs)},
+             {"selfIntersectionSampled", result.robustness.self_intersection_sampled},
+             {"zeroVolumeComponents", static_cast<std::uint64_t>(result.robustness.zero_volume_components)},
+             {"minEdgeLengthMm", result.robustness.min_edge_length_mm},
+             {"maxEdgeLengthMm", result.robustness.max_edge_length_mm},
+             {"minTriangleAreaMm2", result.robustness.min_triangle_area_mm2},
+             {"maxTriangleAspectRatio", result.robustness.max_triangle_aspect_ratio},
          })},
         {"stats",
          Json::object({
@@ -102,6 +137,23 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"queryFailedVoxels", transfer.query_failed_voxels},
              {"maxObservedDistanceMm", transfer.max_observed_distance_mm},
              {"uniqueColorCount", transfer.unique_color_count},
+             {"loadedTextureCount", transfer.loaded_texture_count},
+             {"textureCacheHits", transfer.texture_cache_hits},
+             {"textureCacheMisses", transfer.texture_cache_misses},
+             {"textureCacheBytes", transfer.texture_cache_bytes},
+             {"materialCount", transfer.material_count},
+             {"textureCount", transfer.texture_count},
+             {"perMaterialSampledVoxels", StringIntMapToJson(transfer.per_material_sampled_voxels)},
+             {"perTextureSampledVoxels", StringIntMapToJson(transfer.per_texture_sampled_voxels)},
+             {"nearestQueryStats",
+              Json::object({
+                  {"queryCount", transfer.nearest_query_stats.query_count},
+                  {"visitedNodes", transfer.nearest_query_stats.visited_nodes},
+                  {"testedTriangles", transfer.nearest_query_stats.tested_triangles},
+                  {"maxVisitedNodes", transfer.nearest_query_stats.max_visited_nodes},
+                  {"nodeCount", static_cast<std::uint64_t>(transfer.nearest_query_stats.node_count)},
+                  {"estimatedBytes", static_cast<std::uint64_t>(transfer.nearest_query_stats.estimated_bytes)},
+              })},
          })},
         {"performance",
          Json::object({
@@ -110,7 +162,23 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"levelSetMs", result.performance.level_set_ms},
              {"bvhBuildMs", result.performance.bvh_build_ms},
              {"transferMs", result.performance.transfer_ms},
+             {"previewMs", result.performance.preview_ms},
+             {"totalMs", result.performance.total_ms},
              {"peakEstimatedBytes", result.performance.peak_estimated_bytes},
+         })},
+        {"memory",
+         Json::object({
+             {"peakEstimatedBytes", result.performance.peak_estimated_bytes},
+             {"meshBytes", result.performance.mesh_bytes},
+             {"triangleAttributeBytes", result.performance.triangle_attribute_bytes},
+             {"maskBytes", result.performance.mask_bytes},
+             {"shellRgbBytes", result.performance.shell_rgb_bytes},
+             {"bvhEstimatedBytes", result.performance.bvh_estimated_bytes},
+             {"textureCacheBytes", result.performance.texture_cache_bytes},
+             {"openVdbGridBytes", result.performance.openvdb_grid_bytes},
+             {"previewBufferBytes", result.performance.preview_buffer_bytes},
+             {"processPeakWorkingSetAvailable", result.performance.process_peak_working_set_available},
+             {"processPeakWorkingSetBytes", result.performance.process_peak_working_set_bytes},
          })},
         {"warnings", Json{StringsToJsonArray(result.warnings)}},
         {"errors", Json{StringsToJsonArray(result.errors)}},

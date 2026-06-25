@@ -3,6 +3,7 @@
 #include "slicer_core/geometry/GeometryKernelTypes.h"
 #include "slicer_core/geometry/TriangleMeshData.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -44,6 +45,7 @@ struct OpenVdbLevelSetResult
     OpenVdbStatus status;
     double voxel_size_mm{0.05};
     int active_voxels{0};
+    std::uint64_t memory_bytes{0};
     IndexBounds3D scan_bounds;
     IndexBounds3D active_bounds;
     std::shared_ptr<void> grid;

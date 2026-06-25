@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,7 @@ enum class ShellColorSource
 struct SurfaceTextureTransferOptions
 {
     double max_transfer_distance_mm{0.0};
+    double tie_epsilon_mm{1.0e-7};
     std::array<std::uint8_t, 3> fallback_rgb{0, 0, 0};
     TextureSampleOptions texture_sample;
 };
@@ -48,6 +50,15 @@ struct SurfaceTextureTransferStats
     int transfer_distance_exceeded_voxels{0};
     int query_failed_voxels{0};
     int unique_color_count{0};
+    int loaded_texture_count{0};
+    int texture_cache_hits{0};
+    int texture_cache_misses{0};
+    std::uint64_t texture_cache_bytes{0};
+    int material_count{0};
+    int texture_count{0};
+    NearestTriangleQueryStats nearest_query_stats;
+    std::map<std::string, int> per_material_sampled_voxels;
+    std::map<std::string, int> per_texture_sampled_voxels;
     double max_observed_distance_mm{0.0};
 };
 

@@ -121,6 +121,7 @@ OpenVdbLevelSetResult BuildOpenVdbLevelSet(const TriangleMeshData& mesh, const O
     result.available = true;
     result.generated = true;
     result.active_voxels = static_cast<int>(grid->activeVoxelCount());
+    result.memory_bytes = static_cast<std::uint64_t>(grid->memUsage());
     result.status.active_voxels = result.active_voxels;
     result.status.grid_name = grid->getName();
     result.status.grid_class = "level_set";

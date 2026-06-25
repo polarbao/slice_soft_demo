@@ -37,6 +37,11 @@ std::array<std::uint8_t, 3> SelectNonTextureColor(
     return options.fallback_rgb;
 }
 
+std::uint64_t EstimateTextureBytes(const TextureImage& image)
+{
+    return static_cast<std::uint64_t>(image.width) * static_cast<std::uint64_t>(image.height) * 4ULL;
+}
+
 }  // namespace
 
 TexCoord InterpolateUv(
@@ -79,10 +84,19 @@ SurfaceTextureTransferResult TransferSurfaceTexture(
     SurfaceAttributeMap attributes(adaptedMesh);
     const auto bvhStart = std::chrono::steady_clock::now();
     NearestTriangleQuery nearest(adaptedMesh.mesh);
+    NearestTriangleQueryStats nearestStats = nearest.GetBuildStats();
     result.bvh_build_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - bvhStart).count();
     std::map<std::string, TextureImage> textureCache;
     std::set<std::uint32_t> uniqueColors;
+    result.stats.material_count = static_cast<int>(adaptedMesh.material_infos.size());
+    for (const MaterialInfo& material : adaptedMesh.material_infos)
+    {
+        if (material.has_texture)
+        {
+            ++result.stats.texture_count;
+        }
+    }
 
     const auto transferStart = std::chrono::steady_clock::now();
 
@@ -102,7 +116,9 @@ SurfaceTextureTransferResult TransferSurfaceTexture(
                 const double indexY = static_cast<double>(shell.bounds.min_y + localY);
                 const double indexZ = static_cast<double>(shell.bounds.min_z + localZ);
                 const Vec3 worldPoint = OpenVdbIndexToWorld(levelSet, indexX, indexY, indexZ);
-                const NearestTriangleHit hit = nearest.FindNearest(worldPoint);
+                NearestTriangleQueryOptions queryOptions;
+                queryOptions.tie_epsilon_mm = options.tie_epsilon_mm;
+                const NearestTriangleHit hit = nearest.FindNearestWithStats(worldPoint, queryOptions, nearestStats);
                 if (!hit.found)
                 {
                     ++result.stats.query_failed_voxels;
@@ -143,6 +159,12 @@ SurfaceTextureTransferResult TransferSurfaceTexture(
                         if (found == textureCache.end())
                         {
                             found = textureCache.emplace(textureKey, load_texture_image(material->diffuse_texture_path)).first;
+                            ++result.stats.texture_cache_misses;
+                            result.stats.texture_cache_bytes += EstimateTextureBytes(found->second);
+                        }
+                        else
+                        {
+                            ++result.stats.texture_cache_hits;
                         }
                         const TexCoord uv = InterpolateUv(triangleAttributes.uv, hit.barycentric);
                         bool uvOutOfRange{false};
@@ -157,6 +179,8 @@ SurfaceTextureTransferResult TransferSurfaceTexture(
                             ++result.stats.uv_out_of_range_voxels;
                         }
                         ++result.stats.sampled_texture_voxels;
+                        ++result.stats.per_material_sampled_voxels[triangleAttributes.material_name];
+                        ++result.stats.per_texture_sampled_voxels[textureKey];
                         source = ShellColorSource::Texture;
                     }
                     catch (const std::exception& error)
@@ -175,6 +199,8 @@ SurfaceTextureTransferResult TransferSurfaceTexture(
     }
 
     result.stats.unique_color_count = static_cast<int>(uniqueColors.size());
+    result.stats.loaded_texture_count = static_cast<int>(textureCache.size());
+    result.stats.nearest_query_stats = nearestStats;
     result.outside_colored_voxels = 0;
     result.transfer_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - transferStart).count();

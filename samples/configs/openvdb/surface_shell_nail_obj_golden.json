@@ -1,0 +1,8 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {"modelPath": "../../models/textured/textured_relief.obj", "format": "obj"},
+  "output": {"packageDir": "output/SurfaceShellNailObjGoldenCache", "dpiX": 600, "dpiY": 600, "layerThicknessMm": 0.01, "channelOrder": ["R", "G", "B", "W", "S", "V"], "bitDepth": 8, "planarConfig": "contiguous", "storageMode": "stripped", "rowsPerStrip": 64},
+  "autoOrient": {"enabled": true, "maxHeightMm": 7.0, "strategy": "minimize_height_by_right_angle_rotation"},
+  "texture": {"enabled": true, "applyMode": "solid_volume_from_top_surface", "sampler": "bilinear", "uvAddressMode": "clamp", "flipV": true, "fallbackRgb": [0, 0, 0], "missingTexturePolicy": "warn_and_fallback"},
+  "support": {"enabled": false, "mode": "none", "value": 0, "offsetMm": 0.0, "minAreaPx": 0}
+}
