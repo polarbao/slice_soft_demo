@@ -3,7 +3,7 @@ build-*/
 output/
 .dish/workspace-id
 .qodo/
-# .specstory/
+.specstory/
 
 
 # 切片生成文件
