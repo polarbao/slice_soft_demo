@@ -3,8 +3,8 @@
 > 文档版本：v0.1
 > 文档类型：产品级总 DEV / 技术总体方案
 > 适用项目：Slice Soft / UV 彩色多材料切片软件
-> 当前基线：`spike/09B-R1-real-model-shell-texture`
-> 当前阶段判断：09B-R2 进行中
+> 当前基线：`spike/09B-R3-shell-production-readiness`
+> 当前阶段判断：09B-R3 已完成，下一阶段进入 09P OpenVDB 表面壳层纹理实验生产管线接入
 > 建议提交目录：`docs/slicer/`
 
 ---
@@ -106,6 +106,20 @@ Qt Debug UI
 ---
 
 ## 3. 当前代码能力对应关系
+
+当前最新阶段：
+
+```text
+当前最新阶段：09B-R3 已完成
+当前工作分支基线：spike/09B-R3-shell-production-readiness
+下一阶段：09P OpenVDB 表面壳层纹理实验生产管线接入
+```
+
+09B-R3 已完成 production-readiness pre-admission diagnostics，包括 narrow-phase 自相交、稳定 issue code、repeat/clamp 纹理边界 fixture、Windows process peak working set 和真实模型 topology production admission 策略。
+
+09B-R3 没有接入 production `slicer_cli`，没有写 production RGBWSV TIFF，没有修改 `p0.rgbwsv.2`，没有修改 RGBWSV 通道顺序、uint8 位深和 `black_is_print` 极性。真实 OBJ / 3MF 当前仍不得直接视为 production-safe。
+
+下一阶段 09P-R1 只做 experimental path / feature flag / diagnostic / report，不默认启用 OpenVDB，不替代 legacy production path。
 
 ### 3.1 Application Layer
 
@@ -792,15 +806,15 @@ RIP Reader 摘要
 
 ## 15. Production Pipeline 接入步骤
 
-### 15.1 09P：设计
+### 15.1 09P：Experimental pipeline boundary
 
 产物：
 
 ```text
-PRD_09P
-DEV_09P
-TASKS_09P
-CODEX_PROMPT_09P
+experimental path
+feature flag
+diagnostic/report
+service abstraction
 ```
 
 ### 15.2 09P-R1：experimental implementation
@@ -811,10 +825,10 @@ CODEX_PROMPT_09P
 OpenVdbGeometryKernelService
 SurfaceShellTextureService
 MaterialChannelComposer bridge
-experimental slicer_cli path
+experimental slicer_cli diagnostic/report path
 report output
 preview output
-RGBWSV package output
+不直接写真实 OBJ/3MF 的 production RGBWSV TIFF
 ```
 
 ### 15.3 09P-R2：production hardening
@@ -834,25 +848,28 @@ CI matrix
 
 ## 16. 当前阶段开发建议
 
-当前 09B-R2 应优先实现：
+当前 09B-R3 已完成，下一阶段 09P-R1 应优先实现：
 
 ```text
-1. 真实业务 golden fixtures；
-2. 拓扑鲁棒性诊断；
-3. scale-aware tolerance；
-4. stable tie-break；
-5. seam policy；
-6. BVH/cache instrumentation；
-7. Release benchmark；
-8. memory report；
-9. voxel/thickness matrix。
+1. feature flag / experimental path；
+2. ProductionAdmissionPolicy；
+3. OpenVdbGeometryKernelService；
+4. SurfaceShellTextureService；
+5. MaterialChannelComposer bridge；
+6. slicer_cli experimental diagnostic/report；
+7. 09P 验证脚本；
+8. 保持 production RGBWSV 协议不变。
 ```
 
-不应在 09B-R2 中做：
+不应在 09P-R1 中做：
 
 ```text
-production slicer_cli 接入
-production RGBWSV package 输出
+默认启用 OpenVDB
+替代 legacy slicer_cli production path
+写真实 OBJ/3MF 的 production RGBWSV TIFF
+修改 p0.rgbwsv.2
+修改 RGBWSV 通道顺序、uint8 位深和 black_is_print 极性
+把 warn_and_attempt 输出声明为 production-safe
 compensated varnish
 support clearance
 Qt UI production 改造
@@ -894,11 +911,13 @@ CI 分层
 推荐技术路线：
 
 ```text
-09B-R2：真实模型鲁棒性与性能收口
-→ 09P：production pipeline 接入设计
-→ 09P-R1：experimental production implementation
+09B-R3：生产准入前诊断策略收口，已完成
+→ 09P：OpenVDB 表面壳层纹理实验生产管线接入
+→ 09P-R1：experimental path / feature flag / diagnostic / report
 → 09P-R2：production hardening
 → 09C / 09D：光油补偿与支撑 SDF 继续扩展
 ```
 
-在 09B-R2 完成前，所有 OpenVDB/SDF 输出应保持 experimental/demo/report，不应写入正式 RGBWSV TIFF。
+09B-R3 没有接入 production `slicer_cli`，没有写 production RGBWSV TIFF，没有修改 `p0.rgbwsv.2`，没有修改 RGBWSV 通道顺序、uint8 位深和 `black_is_print` 极性。
+
+真实 OBJ / 3MF 当前仍不得直接视为 production-safe。09P-R1 仍应保持 OpenVDB 默认关闭，并把 OpenVDB 壳层纹理输出限制在 experimental path / diagnostic / report。
