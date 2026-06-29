@@ -1,5 +1,7 @@
 #include "slicer_core/geometry/MeshRobustnessDiagnostics.h"
 
+#include "slicer_core/geometry/TriangleIntersectionQuery.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -125,6 +127,23 @@ bool SharesVertex(const std::array<int, 3>& a, const std::array<int, 3>& b)
         }
     }
     return false;
+}
+
+void AddIssue(
+    MeshRobustnessReport& report,
+    const std::string& code,
+    const ValidationSeverity severity,
+    const std::string& message)
+{
+    report.issues.push_back(MakeValidationIssue(code, severity, message));
+    if (severity == ValidationSeverity::Warning)
+    {
+        report.warnings.push_back(message);
+    }
+    else if (severity == ValidationSeverity::Error)
+    {
+        report.errors.push_back(message);
+    }
 }
 
 struct Aabb
@@ -318,18 +337,43 @@ MeshRobustnessReport AnalyzeMeshRobustness(
             if (++checkedPairs > options.max_triangle_pair_checks)
             {
                 report.self_intersection_sampled = true;
+                report.self_intersection_check_sampled = true;
                 break;
             }
-            if (SharesVertex(mesh.triangles.at(left), mesh.triangles.at(right)))
+            if (TrianglesShareVertexIndex(mesh.triangles.at(left), mesh.triangles.at(right)))
             {
                 continue;
             }
             if (AabbOverlap(bounds.at(left), bounds.at(right)))
             {
-                ++report.self_intersection_pairs;
-                if (report.self_intersection_pairs >= options.max_self_intersection_pairs)
+                ++report.self_intersection_candidates;
+                const TriangleIntersectionResult intersection = TestTriangleIntersection(
+                    mesh,
+                    left,
+                    right,
+                    options.tolerance.self_intersection_epsilon_mm);
+                switch (intersection.kind)
+                {
+                case TriangleIntersectionKind::ConfirmedIntersection:
+                    ++report.confirmed_self_intersections;
+                    break;
+                case TriangleIntersectionKind::CoplanarOverlap:
+                    ++report.coplanar_overlap_pairs;
+                    break;
+                case TriangleIntersectionKind::TouchingOnly:
+                    ++report.touching_only_pairs;
+                    break;
+                case TriangleIntersectionKind::AabbOnly:
+                case TriangleIntersectionKind::None:
+                    ++report.self_intersection_false_positive_candidates;
+                    break;
+                }
+                report.self_intersection_pairs =
+                    report.confirmed_self_intersections + report.coplanar_overlap_pairs;
+                if (report.self_intersection_candidates >= options.max_self_intersection_pairs)
                 {
                     report.self_intersection_sampled = true;
+                    report.self_intersection_check_sampled = true;
                     break;
                 }
             }
@@ -342,15 +386,27 @@ MeshRobustnessReport AnalyzeMeshRobustness(
 
     if (report.min_edge_length_mm <= options.tolerance.position_epsilon_mm * 4.0)
     {
-        report.warnings.push_back("thin feature warning: edge length near tolerance");
+        AddIssue(
+            report,
+            "MESH_THIN_FEATURE_EDGE",
+            ValidationSeverity::Warning,
+            "thin feature warning: edge length near tolerance");
     }
     if (report.min_triangle_area_mm2 <= options.tolerance.area_epsilon_mm2 * 4.0)
     {
-        report.warnings.push_back("thin feature warning: triangle area near tolerance");
+        AddIssue(
+            report,
+            "MESH_THIN_FEATURE_AREA",
+            ValidationSeverity::Warning,
+            "thin feature warning: triangle area near tolerance");
     }
     if (report.max_triangle_aspect_ratio > 1000.0)
     {
-        report.warnings.push_back("thin feature warning: high triangle aspect ratio");
+        AddIssue(
+            report,
+            "MESH_THIN_FEATURE_AREA",
+            ValidationSeverity::Warning,
+            "thin feature warning: high triangle aspect ratio");
     }
     if (report.min_edge_length_mm == std::numeric_limits<double>::max())
     {
@@ -359,6 +415,38 @@ MeshRobustnessReport AnalyzeMeshRobustness(
     if (report.min_triangle_area_mm2 == std::numeric_limits<double>::max())
     {
         report.min_triangle_area_mm2 = 0.0;
+    }
+    if (report.self_intersection_check_sampled)
+    {
+        AddIssue(
+            report,
+            "MESH_SELF_INTERSECTION_SAMPLED",
+            ValidationSeverity::Warning,
+            "self-intersection checks were sampled");
+    }
+    if (report.duplicate_faces > 0)
+    {
+        AddIssue(report, "MESH_DUPLICATE_FACES", ValidationSeverity::Error, "mesh has duplicate faces");
+    }
+    if (report.opposite_duplicate_faces > 0)
+    {
+        AddIssue(report, "MESH_OPPOSITE_DUPLICATE_FACES", ValidationSeverity::Error, "mesh has opposite duplicate faces");
+    }
+    if (report.inconsistent_oriented_edges > 0)
+    {
+        AddIssue(
+            report,
+            "MESH_LOCAL_WINDING_INCONSISTENCY",
+            ValidationSeverity::Error,
+            "mesh has local winding inconsistency");
+    }
+    if (report.self_intersection_pairs > 0)
+    {
+        AddIssue(
+            report,
+            "MESH_SELF_INTERSECTION_CONFIRMED",
+            ValidationSeverity::Error,
+            "mesh has confirmed self-intersections");
     }
     return report;
 }
@@ -375,7 +463,7 @@ std::string ValidateMeshRobustness(const MeshRobustnessReport& report, const boo
     }
     if (rejectSelfIntersection && report.self_intersection_pairs > 0)
     {
-        return "strict_closed rejected mesh with self-intersection candidates";
+        return "strict_closed rejected mesh with confirmed self-intersections";
     }
     return {};
 }

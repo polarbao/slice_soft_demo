@@ -177,6 +177,10 @@ SurfaceTextureTransferResult TransferSurfaceTexture(
                         if (uvOutOfRange)
                         {
                             ++result.stats.uv_out_of_range_voxels;
+                            if (options.texture_sample.uv_address_mode == "repeat")
+                            {
+                                ++result.stats.repeated_sampled_voxels;
+                            }
                         }
                         ++result.stats.sampled_texture_voxels;
                         ++result.stats.per_material_sampled_voxels[triangleAttributes.material_name];

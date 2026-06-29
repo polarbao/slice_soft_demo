@@ -1,5 +1,5 @@
 param(
-    [string]$BuildDir = "build-openvdb-09b-r2-release",
+    [string]$BuildDir = "build-openvdb-09b-r3-release",
     [string]$Config = "Release"
 )
 
@@ -88,7 +88,7 @@ function Write-SubdividedBoxFixture([string]$Name, [int]$Segments) {
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $BuildDir "CMakeCache.txt"))) {
-    throw "OpenVDB 09B-R2 release build directory is not configured: $BuildDir"
+    throw "OpenVDB 09B-R3 release build directory is not configured: $BuildDir"
 }
 
 Write-Host "== build surface shell robustness demo"
@@ -99,7 +99,8 @@ $demoExe = Find-Executable "surface_shell_robustness_demo"
 $fixtures = @(
     @{ Name = "bench_1k"; Segments = 16 },
     @{ Name = "bench_10k"; Segments = 50 },
-    @{ Name = "bench_50k"; Segments = 112 }
+    @{ Name = "bench_50k"; Segments = 112 },
+    @{ Name = "bench_100k"; Segments = 158 }
 )
 
 foreach ($fixture in $fixtures) {
@@ -112,6 +113,8 @@ foreach ($fixture in $fixtures) {
     Assert-True ($report.schema -eq "p0.surface_shell_benchmark_report.1") "benchmark schema mismatch"
     Assert-True ($report.mesh.acceptedTriangles -ge 1000) "benchmark expected 1k+ triangles"
     Assert-True ($report.bvh.queryCount -gt 0) "benchmark expected BVH queries"
+    Assert-True ($report.memory.processPeakWorkingSetAvailable -eq $true) "benchmark expected process memory"
+    Assert-True ($report.memory.processPeakWorkingSetBytes -gt 0) "benchmark expected process peak bytes"
 }
 
 Write-Host "Surface shell benchmarks complete."

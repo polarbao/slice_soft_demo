@@ -25,6 +25,8 @@ add_library(slicer_core
     src/slicer_core/config.h
     src/slicer_core/diagnostics/Diagnostics.cpp
     src/slicer_core/diagnostics/Diagnostics.h
+    src/slicer_core/diagnostics/ValidationIssue.cpp
+    src/slicer_core/diagnostics/ValidationIssue.h
     src/slicer_core/geometry/DistanceField2D.cpp
     src/slicer_core/geometry/DistanceField2D.h
     src/slicer_core/geometry/GeometryKernelReport.cpp
@@ -50,6 +52,8 @@ add_library(slicer_core
     src/slicer_core/geometry/ShellMask.h
     src/slicer_core/geometry/TriangleMeshData.cpp
     src/slicer_core/geometry/TriangleMeshData.h
+    src/slicer_core/geometry/TriangleIntersectionQuery.cpp
+    src/slicer_core/geometry/TriangleIntersectionQuery.h
     src/slicer_core/importers/mtl/MtlImporter.cpp
     src/slicer_core/importers/mtl/MtlImporter.h
     src/slicer_core/importers/obj/ObjImporter.cpp
@@ -120,6 +124,8 @@ add_library(slicer_core
     src/slicer_core/support/SupportShapePolicy.h
     src/slicer_core/support/SupportShapeReport.cpp
     src/slicer_core/support/SupportShapeReport.h
+    src/slicer_core/system/ProcessMemoryStats.cpp
+    src/slicer_core/system/ProcessMemoryStats.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h
     src/slicer_core/tiff_io.cpp
@@ -136,7 +142,7 @@ if(MSVC)
 endif()
 
 if(WIN32)
-    target_link_libraries(slicer_core PRIVATE windowscodecs ole32)
+    target_link_libraries(slicer_core PRIVATE windowscodecs ole32 psapi)
 endif()
 
 if(USE_OPENVDB)

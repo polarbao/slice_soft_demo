@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/diagnostics/ValidationIssue.h"
 #include "slicer_core/geometry/MeshScaleTolerance.h"
 #include "slicer_core/geometry/TriangleMeshData.h"
 
@@ -19,13 +20,20 @@ struct MeshRobustnessReport
     std::size_t duplicate_faces{0};
     std::size_t opposite_duplicate_faces{0};
     std::size_t inconsistent_oriented_edges{0};
+    std::size_t self_intersection_candidates{0};
     std::size_t self_intersection_pairs{0};
+    std::size_t confirmed_self_intersections{0};
+    std::size_t coplanar_overlap_pairs{0};
+    std::size_t touching_only_pairs{0};
+    std::size_t self_intersection_false_positive_candidates{0};
     bool self_intersection_sampled{false};
+    bool self_intersection_check_sampled{false};
     std::size_t zero_volume_components{0};
     double min_edge_length_mm{0.0};
     double max_edge_length_mm{0.0};
     double min_triangle_area_mm2{0.0};
     double max_triangle_aspect_ratio{0.0};
+    std::vector<ValidationIssue> issues;
     std::vector<std::string> warnings;
     std::vector<std::string> errors;
 };

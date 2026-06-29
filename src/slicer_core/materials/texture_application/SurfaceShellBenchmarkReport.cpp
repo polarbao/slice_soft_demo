@@ -50,6 +50,9 @@ Json MakeSurfaceShellBenchmarkReport(
              {"bvhEstimatedBytes", result.performance.bvh_estimated_bytes},
              {"textureCacheBytes", result.performance.texture_cache_bytes},
              {"maskBytes", result.performance.mask_bytes},
+             {"processPeakWorkingSetAvailable", result.performance.process_peak_working_set_available},
+             {"processWorkingSetBytes", result.performance.process_working_set_bytes},
+             {"processPeakWorkingSetBytes", result.performance.process_peak_working_set_bytes},
          })},
         {"bvh",
          Json::object({

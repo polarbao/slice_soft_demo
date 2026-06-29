@@ -51,6 +51,7 @@ struct SurfaceShellRealModelPerformance
     std::uint64_t openvdb_grid_bytes{0};
     std::uint64_t preview_buffer_bytes{0};
     bool process_peak_working_set_available{false};
+    std::uint64_t process_working_set_bytes{0};
     std::uint64_t process_peak_working_set_bytes{0};
 };
 

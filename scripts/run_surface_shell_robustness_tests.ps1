@@ -1,5 +1,5 @@
 param(
-    [string]$BuildDir = "build-openvdb-09b-r2",
+    [string]$BuildDir = "build-openvdb-09b-r3",
     [string]$Config = "Debug",
     [switch]$RunMatrix,
     [switch]$RunRealModels
@@ -17,6 +17,10 @@ function Assert-Equal($Actual, $Expected, [string]$Message) {
 
 function Read-Json([string]$Path) {
     return Get-Content -Raw -LiteralPath $Path | ConvertFrom-Json
+}
+
+function Assert-Contains($Values, [string]$Expected, [string]$Message) {
+    if (@($Values) -notcontains $Expected) { throw "$Message expected to contain $Expected" }
 }
 
 function Find-Executable([string]$Name) {
@@ -68,6 +72,10 @@ function Run-RobustnessCase(
     Assert-True ($report.transferStats.nearestQueryStats.nodeCount -ge 0) "expected nearest query stats"
     Assert-True ($report.memory.peakEstimatedBytes -ge 0) "expected memory fields"
     if ($ExpectSuccess) {
+        Assert-True ($report.memory.processPeakWorkingSetAvailable -eq $true) "expected process peak working set on Windows"
+        Assert-True ($report.memory.processPeakWorkingSetBytes -gt 0) "expected process peak working set bytes"
+    }
+    if ($ExpectSuccess) {
         Assert-True ($report.openvdb.activeVoxels -gt 0) "expected active voxels"
         Assert-True ($report.stats.shellVoxels -gt 0) "expected shell voxels"
         if ($RequireInterior) {
@@ -81,7 +89,7 @@ function Run-RobustnessCase(
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $BuildDir "CMakeCache.txt"))) {
-    throw "OpenVDB 09B-R2 build directory is not configured: $BuildDir"
+    throw "OpenVDB 09B-R3 build directory is not configured: $BuildDir"
 }
 
 Write-Host "== build surface shell robustness targets"
@@ -97,13 +105,15 @@ Write-Host "== surface shell robustness unit tests"
 & $unitExe
 if ($LASTEXITCODE -ne 0) { throw "surface_shell_robustness_unit_tests failed" }
 
-$golden = Read-Json "tests/golden/expected/surface_shell_real_model_r2.json"
+$golden = Read-Json "tests/golden/expected/surface_shell_real_model_r3.json"
 
 $multi = Run-RobustnessCase $demoExe "multimaterial_seam" "samples/configs/openvdb/surface_shell_multimaterial_seam.json" "output/SurfaceShellR2MultiMaterialSeam"
 $thin = Run-RobustnessCase $demoExe "thin_wall" "samples/configs/openvdb/surface_shell_thin_wall.json" "output/SurfaceShellR2ThinWall" $true 0.05 0.10 "strict_closed" $false
 $duplicate = Run-RobustnessCase $demoExe "duplicate_face" "samples/configs/openvdb/surface_shell_duplicate_face.json" "output/SurfaceShellR2DuplicateFace" $false
 $reversed = Run-RobustnessCase $demoExe "local_reversed" "samples/configs/openvdb/surface_shell_local_reversed.json" "output/SurfaceShellR2LocalReversed" $false
 $self = Run-RobustnessCase $demoExe "self_intersect" "samples/configs/openvdb/surface_shell_self_intersect.json" "output/SurfaceShellR2SelfIntersect" $false
+$repeat = Run-RobustnessCase $demoExe "repeat_texture" "samples/configs/openvdb/surface_shell_repeat_texture.json" "output/SurfaceShellR3RepeatTexture"
+$repeatClamp = Run-RobustnessCase $demoExe "repeat_texture_clamp" "samples/configs/openvdb/surface_shell_repeat_texture_clamp.json" "output/SurfaceShellR3RepeatTextureClamp"
 
 Assert-Equal $multi.meshDiagnostics.acceptedTriangles $golden.fixtures.multimaterial_seam.acceptedTriangles "multimaterial triangle count"
 Assert-Equal $multi.robustnessDiagnostics.duplicateFaces $golden.fixtures.multimaterial_seam.duplicateFaces "multimaterial duplicate count"
@@ -111,8 +121,19 @@ Assert-Equal $multi.stats.outsideColoredVoxels $golden.fixtures.multimaterial_se
 Assert-True ($multi.transferStats.sampledTextureVoxels -ge $golden.fixtures.multimaterial_seam.sampledTextureVoxelsMin) "multimaterial sampled texture"
 Assert-True ($multi.transferStats.loadedTextureCount -ge $golden.fixtures.multimaterial_seam.loadedTextureCountMin) "multimaterial texture count"
 Assert-True ($duplicate.robustnessDiagnostics.duplicateFaces -gt 0) "duplicate face expected"
+Assert-Contains $duplicate.errorCodes $golden.fixtures.negativeCodes.duplicateFace "duplicate face error code"
 Assert-True ($reversed.robustnessDiagnostics.inconsistentOrientedEdges -gt 0) "local reversed expected"
-Assert-True ($self.robustnessDiagnostics.selfIntersectionPairs -gt 0) "self-intersection expected"
+Assert-Contains $reversed.errorCodes $golden.fixtures.negativeCodes.localReversed "local reversed error code"
+Assert-True ($self.robustnessDiagnostics.confirmedSelfIntersections -gt 0) "confirmed self-intersection expected"
+Assert-Contains $self.errorCodes $golden.fixtures.negativeCodes.selfIntersect "self-intersection error code"
+Assert-Equal $repeat.transferStats.uvAddressMode $golden.fixtures.repeatTexture.uvAddressMode "repeat uv mode"
+Assert-True ($repeat.transferStats.sampledTextureVoxels -gt 0) "repeat sampled texture"
+Assert-True ($repeat.transferStats.uvOutOfRangeVoxels -gt 0) "repeat uv out-of-range"
+Assert-True ($repeat.transferStats.repeatedSampledVoxels -gt 0) "repeat sampled out-of-range"
+Assert-Contains $repeat.warningCodes $golden.fixtures.repeatTexture.warningCode "repeat uv warning code"
+Assert-Equal $repeatClamp.transferStats.uvAddressMode "clamp" "clamp uv mode"
+Assert-True ($repeatClamp.transferStats.uvOutOfRangeVoxels -gt 0) "clamp uv out-of-range"
+Assert-True ($repeat.transferStats.repeatedSampledVoxels -gt $repeatClamp.transferStats.repeatedSampledVoxels) "repeat and clamp should differ"
 
 if ($RunMatrix) {
     $voxels = @(0.10, 0.05, 0.025)

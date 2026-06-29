@@ -1,5 +1,7 @@
 #include "slicer_core/materials/texture_application/SurfaceShellRealModelReport.h"
 
+#include "slicer_core/diagnostics/ValidationIssue.h"
+
 #include <map>
 
 namespace slicer_core
@@ -39,12 +41,84 @@ Json StringIntMapToJson(const std::map<std::string, int>& values)
     return Json{object};
 }
 
+void AddCountIssue(
+    std::vector<ValidationIssue>& issues,
+    const std::string& code,
+    const ValidationSeverity severity,
+    const std::string& message,
+    const std::uint64_t count)
+{
+    if (count == 0)
+    {
+        return;
+    }
+    ValidationIssue issue = MakeValidationIssue(code, severity, message);
+    issue.context = Json::object({{"count", count}});
+    issues.push_back(issue);
+}
+
+std::vector<ValidationIssue> BuildValidationIssues(const SurfaceShellRealModelResult& result)
+{
+    std::vector<ValidationIssue> issues = result.robustness.issues;
+    const ValidationSeverity meshSeverity =
+        result.options.mesh_policy == MeshValidationPolicy::StrictClosed
+        ? ValidationSeverity::Error
+        : ValidationSeverity::Warning;
+    AddCountIssue(
+        issues,
+        "MESH_BOUNDARY_EDGES",
+        meshSeverity,
+        "mesh has boundary edges",
+        static_cast<std::uint64_t>(result.adapted_mesh.topology.boundary_edges));
+    AddCountIssue(
+        issues,
+        "MESH_NON_MANIFOLD_EDGES",
+        meshSeverity,
+        "mesh has non-manifold edges",
+        static_cast<std::uint64_t>(result.adapted_mesh.topology.non_manifold_edges));
+    AddCountIssue(
+        issues,
+        "TEXTURE_MISSING",
+        ValidationSeverity::Warning,
+        "texture was missing or could not be sampled",
+        static_cast<std::uint64_t>(result.transfer.stats.missing_texture_voxels));
+    AddCountIssue(
+        issues,
+        "TEXTURE_UV_MISSING",
+        ValidationSeverity::Warning,
+        "source triangle UV was missing",
+        static_cast<std::uint64_t>(result.transfer.stats.missing_uv_voxels));
+    AddCountIssue(
+        issues,
+        "TEXTURE_UV_OUT_OF_RANGE",
+        ValidationSeverity::Warning,
+        "texture UV was outside 0..1",
+        static_cast<std::uint64_t>(result.transfer.stats.uv_out_of_range_voxels));
+    if (!result.level_set.error.empty()
+        && (!result.level_set.status.compiled_with_openvdb || !result.level_set.status.runtime_available))
+    {
+        issues.push_back(MakeValidationIssue(
+            "OPENVDB_UNAVAILABLE",
+            ValidationSeverity::Error,
+            "OpenVDB is unavailable"));
+    }
+    if (!result.level_set.error.empty())
+    {
+        issues.push_back(MakeValidationIssue(
+            "OPENVDB_LEVEL_SET_FAILED",
+            ValidationSeverity::Error,
+            result.level_set.error));
+    }
+    return issues;
+}
+
 }  // namespace
 
 Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
 {
     const MeshTopologyReport& topology = result.adapted_mesh.topology;
     const SurfaceTextureTransferStats& transfer = result.transfer.stats;
+    const std::vector<ValidationIssue> issues = BuildValidationIssues(result);
     return Json::object({
         {"schema", "p0.surface_shell_texture_report.2"},
         {"caseName", result.case_name},
@@ -106,8 +180,15 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"duplicateFaces", static_cast<std::uint64_t>(result.robustness.duplicate_faces)},
              {"oppositeDuplicateFaces", static_cast<std::uint64_t>(result.robustness.opposite_duplicate_faces)},
              {"inconsistentOrientedEdges", static_cast<std::uint64_t>(result.robustness.inconsistent_oriented_edges)},
+             {"selfIntersectionCandidates", static_cast<std::uint64_t>(result.robustness.self_intersection_candidates)},
              {"selfIntersectionPairs", static_cast<std::uint64_t>(result.robustness.self_intersection_pairs)},
+             {"confirmedSelfIntersections", static_cast<std::uint64_t>(result.robustness.confirmed_self_intersections)},
+             {"coplanarOverlapPairs", static_cast<std::uint64_t>(result.robustness.coplanar_overlap_pairs)},
+             {"touchingOnlyPairs", static_cast<std::uint64_t>(result.robustness.touching_only_pairs)},
+             {"selfIntersectionFalsePositiveCandidates",
+              static_cast<std::uint64_t>(result.robustness.self_intersection_false_positive_candidates)},
              {"selfIntersectionSampled", result.robustness.self_intersection_sampled},
+             {"selfIntersectionCheckSampled", result.robustness.self_intersection_check_sampled},
              {"zeroVolumeComponents", static_cast<std::uint64_t>(result.robustness.zero_volume_components)},
              {"minEdgeLengthMm", result.robustness.min_edge_length_mm},
              {"maxEdgeLengthMm", result.robustness.max_edge_length_mm},
@@ -133,6 +214,9 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"missingUvVoxels", transfer.missing_uv_voxels},
              {"missingTextureVoxels", transfer.missing_texture_voxels},
              {"uvOutOfRangeVoxels", transfer.uv_out_of_range_voxels},
+             {"repeatedSampledVoxels", transfer.repeated_sampled_voxels},
+             {"sampler", result.options.texture_sample.sampler},
+             {"uvAddressMode", result.options.texture_sample.uv_address_mode},
              {"transferDistanceExceededVoxels", transfer.transfer_distance_exceeded_voxels},
              {"queryFailedVoxels", transfer.query_failed_voxels},
              {"maxObservedDistanceMm", transfer.max_observed_distance_mm},
@@ -178,8 +262,12 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
              {"openVdbGridBytes", result.performance.openvdb_grid_bytes},
              {"previewBufferBytes", result.performance.preview_buffer_bytes},
              {"processPeakWorkingSetAvailable", result.performance.process_peak_working_set_available},
+             {"processWorkingSetBytes", result.performance.process_working_set_bytes},
              {"processPeakWorkingSetBytes", result.performance.process_peak_working_set_bytes},
-         })},
+        })},
+        {"issues", ValidationIssuesToJson(issues)},
+        {"warningCodes", ValidationIssueCodesToJson(issues, ValidationSeverity::Warning)},
+        {"errorCodes", ValidationIssueCodesToJson(issues, ValidationSeverity::Error)},
         {"warnings", Json{StringsToJsonArray(result.warnings)}},
         {"errors", Json{StringsToJsonArray(result.errors)}},
     });

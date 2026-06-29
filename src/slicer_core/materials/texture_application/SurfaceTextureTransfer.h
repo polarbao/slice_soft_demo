@@ -47,6 +47,7 @@ struct SurfaceTextureTransferStats
     int missing_uv_voxels{0};
     int missing_texture_voxels{0};
     int uv_out_of_range_voxels{0};
+    int repeated_sampled_voxels{0};
     int transfer_distance_exceeded_voxels{0};
     int query_failed_voxels{0};
     int unique_color_count{0};

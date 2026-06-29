@@ -1,5 +1,7 @@
 #include "slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.h"
 
+#include "slicer_core/system/ProcessMemoryStats.h"
+
 #include <chrono>
 #include <algorithm>
 
@@ -158,6 +160,10 @@ SurfaceShellRealModelResult RunSurfaceShellRealModelPrototype(
     result.performance.texture_cache_bytes = memory.texture_cache_bytes;
     result.performance.openvdb_grid_bytes = memory.openvdb_grid_bytes;
     result.performance.peak_estimated_bytes = memory.peak_estimated_bytes;
+    const ProcessMemoryStats processMemory = CaptureProcessMemoryStats();
+    result.performance.process_peak_working_set_available = processMemory.available;
+    result.performance.process_working_set_bytes = processMemory.working_set_bytes;
+    result.performance.process_peak_working_set_bytes = processMemory.peak_working_set_bytes;
     result.performance.total_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - totalStart).count();
     (void)config;

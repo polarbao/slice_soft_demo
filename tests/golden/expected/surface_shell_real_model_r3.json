@@ -1,0 +1,29 @@
+{
+  "schema": "p0.surface_shell_r3_golden.1",
+  "fixtures": {
+    "multimaterial_seam": {
+      "acceptedTriangles": 12,
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "duplicateFaces": 0,
+      "outsideColoredVoxels": 0,
+      "shellPlusInteriorEqualsInside": true,
+      "sampledTextureVoxelsMin": 1,
+      "loadedTextureCountMin": 2
+    },
+    "thin_wall": {
+      "acceptedTriangles": 12,
+      "outsideColoredVoxels": 0,
+      "shellPlusInteriorEqualsInside": true
+    },
+    "negativeCodes": {
+      "duplicateFace": "MESH_DUPLICATE_FACES",
+      "localReversed": "MESH_LOCAL_WINDING_INCONSISTENCY",
+      "selfIntersect": "MESH_SELF_INTERSECTION_CONFIRMED"
+    },
+    "repeatTexture": {
+      "uvAddressMode": "repeat",
+      "warningCode": "TEXTURE_UV_OUT_OF_RANGE"
+    }
+  }
+}
