@@ -43,3 +43,54 @@
 - 代码规范：`.agents/docs/code-standards.md`
 - 文档状态：`.agents/docs/doc-state.md`
 - 会话归档：`.agents/docs/chat-save.md`
+
+
+# AGENTS.md
+
+## Project context
+
+This repository is polarbao/slice_soft_demo.
+
+Current baseline branch:
+- spike/09B-R3-shell-production-readiness
+
+Current phase:
+- 09B-R3 has completed production-readiness pre-admission diagnostics.
+- Next phase is 09P: OpenVDB surface shell texture experimental production pipeline integration.
+
+## Hard rules
+
+1. Execute only the task explicitly requested by the user.
+2. Do not execute the next task unless the user explicitly asks.
+3. Before starting each task, verify the working tree is clean:
+   - git status --short
+4. After finishing each minimal task, run the task-specific validation commands.
+5. Before committing, always run:
+   - git status --short
+   - git diff --check
+6. Commit after every completed minimal task.
+7. Each commit must contain only changes for the current task.
+8. Do not mix unrelated documentation, code, test, script, or formatting changes.
+9. If validation fails, fix it before committing. If it cannot be fixed, stop and report the failure.
+10. Do not push unless explicitly instructed.
+
+## Production safety rules
+
+1. Do not enable OpenVDB by default.
+2. Do not make OpenVDB a mandatory dependency for all builds.
+3. Do not replace the legacy slicer_cli production path.
+4. Do not write production RGBWSV TIFF from the experimental OpenVDB path unless a later task explicitly allows it.
+5. Do not modify the p0.rgbwsv.2 production package protocol.
+6. Do not modify RGBWSV channel order.
+7. Do not modify uint8 bit depth.
+8. Do not modify black_is_print polarity.
+9. Do not treat warn_and_attempt output as production-safe.
+10. confirmed self-intersection must fail fast.
+11. non-manifold, duplicate/opposite duplicate, and local winding issues must block strict production admission.
+
+## Expected workflow per task
+
+For every task:
+
+```powershell
+git status --short
