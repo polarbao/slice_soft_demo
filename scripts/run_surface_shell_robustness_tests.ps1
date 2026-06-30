@@ -23,6 +23,10 @@ function Assert-Contains($Values, [string]$Expected, [string]$Message) {
     if (@($Values) -notcontains $Expected) { throw "$Message expected to contain $Expected" }
 }
 
+function Assert-NotEqual($Actual, $Unexpected, [string]$Message) {
+    if ($Actual -eq $Unexpected) { throw "$Message unexpected=$Unexpected" }
+}
+
 function Find-Executable([string]$Name) {
     $candidates = @(
         (Join-Path $BuildDir "$Config/$Name.exe"),
@@ -122,10 +126,21 @@ Assert-True ($multi.transferStats.sampledTextureVoxels -ge $golden.fixtures.mult
 Assert-True ($multi.transferStats.loadedTextureCount -ge $golden.fixtures.multimaterial_seam.loadedTextureCountMin) "multimaterial texture count"
 Assert-True ($duplicate.robustnessDiagnostics.duplicateFaces -gt 0) "duplicate face expected"
 Assert-Contains $duplicate.errorCodes $golden.fixtures.negativeCodes.duplicateFace "duplicate face error code"
+Assert-NotEqual $duplicate.productionAdmission.status "production_allowed" "duplicate face admission status"
+Assert-Equal $duplicate.productionAdmission.status $golden.fixtures.productionAdmission.duplicateStatus "duplicate face admission status"
+Assert-Equal $duplicate.productionAdmission.productionAllowed $golden.fixtures.productionAdmission.productionAllowed "duplicate face productionAllowed"
+Assert-Contains $duplicate.productionAdmission.blockerCodes $golden.fixtures.negativeCodes.duplicateFace "duplicate face admission blocker"
 Assert-True ($reversed.robustnessDiagnostics.inconsistentOrientedEdges -gt 0) "local reversed expected"
 Assert-Contains $reversed.errorCodes $golden.fixtures.negativeCodes.localReversed "local reversed error code"
+Assert-NotEqual $reversed.productionAdmission.status "production_allowed" "local reversed admission status"
+Assert-Equal $reversed.productionAdmission.status $golden.fixtures.productionAdmission.localReversedStatus "local reversed admission status"
+Assert-Equal $reversed.productionAdmission.productionAllowed $golden.fixtures.productionAdmission.productionAllowed "local reversed productionAllowed"
+Assert-Contains $reversed.productionAdmission.blockerCodes $golden.fixtures.negativeCodes.localReversed "local reversed admission blocker"
 Assert-True ($self.robustnessDiagnostics.confirmedSelfIntersections -gt 0) "confirmed self-intersection expected"
 Assert-Contains $self.errorCodes $golden.fixtures.negativeCodes.selfIntersect "self-intersection error code"
+Assert-Equal $self.productionAdmission.status $golden.fixtures.productionAdmission.selfIntersectStatus "self-intersection admission status"
+Assert-Equal $self.productionAdmission.productionAllowed $golden.fixtures.productionAdmission.productionAllowed "self-intersection productionAllowed"
+Assert-Contains $self.productionAdmission.blockerCodes $golden.fixtures.negativeCodes.selfIntersect "self-intersection admission blocker"
 Assert-Equal $repeat.transferStats.uvAddressMode $golden.fixtures.repeatTexture.uvAddressMode "repeat uv mode"
 Assert-True ($repeat.transferStats.sampledTextureVoxels -gt 0) "repeat sampled texture"
 Assert-True ($repeat.transferStats.uvOutOfRangeVoxels -gt 0) "repeat uv out-of-range"
@@ -162,8 +177,21 @@ if ($RunMatrix) {
 }
 
 if ($RunRealModels) {
-    Run-RobustnessCase $demoExe "nail_obj_golden" "samples/configs/openvdb/surface_shell_nail_obj_golden.json" "output/SurfaceShellR2NailObjGolden" $true 0.10 0.10 "warn_and_attempt" | Out-Null
-    Run-RobustnessCase $demoExe "nail_3mf_golden" "samples/configs/openvdb/surface_shell_nail_3mf_golden.json" "output/SurfaceShellR2Nail3MfGolden" $true 0.10 0.10 "warn_and_attempt" | Out-Null
+    $nailObjWarn = Run-RobustnessCase $demoExe "nail_obj_golden" "samples/configs/openvdb/surface_shell_nail_obj_golden.json" "output/SurfaceShellR2NailObjGolden" $true 0.10 0.10 "warn_and_attempt"
+    $nail3MfWarn = Run-RobustnessCase $demoExe "nail_3mf_golden" "samples/configs/openvdb/surface_shell_nail_3mf_golden.json" "output/SurfaceShellR2Nail3MfGolden" $true 0.10 0.10 "warn_and_attempt"
+    Assert-Equal $nailObjWarn.productionAdmission.status $golden.fixtures.productionAdmission.warnAndAttemptStatus "OBJ warn admission status"
+    Assert-Equal $nailObjWarn.productionAdmission.productionAllowed $golden.fixtures.productionAdmission.productionAllowed "OBJ warn productionAllowed"
+    Assert-Equal $nailObjWarn.productionAdmission.nonProduction $golden.fixtures.productionAdmission.nonProduction "OBJ warn nonProduction"
+    Assert-Equal $nail3MfWarn.productionAdmission.status $golden.fixtures.productionAdmission.warnAndAttemptStatus "3MF warn admission status"
+    Assert-Equal $nail3MfWarn.productionAdmission.productionAllowed $golden.fixtures.productionAdmission.productionAllowed "3MF warn productionAllowed"
+    Assert-Equal $nail3MfWarn.productionAdmission.nonProduction $golden.fixtures.productionAdmission.nonProduction "3MF warn nonProduction"
+
+    $nailObjStrict = Run-RobustnessCase $demoExe "nail_obj_golden_strict" "samples/configs/openvdb/surface_shell_nail_obj_golden.json" "output/SurfaceShellR2NailObjGoldenStrict" $false 0.10 0.10 "strict_closed"
+    $nail3MfStrict = Run-RobustnessCase $demoExe "nail_3mf_golden_strict" "samples/configs/openvdb/surface_shell_nail_3mf_golden.json" "output/SurfaceShellR2Nail3MfGoldenStrict" $false 0.10 0.10 "strict_closed"
+    Assert-Equal $nailObjStrict.productionAdmission.productionAllowed $golden.fixtures.productionAdmission.productionAllowed "OBJ strict productionAllowed"
+    Assert-NotEqual $nailObjStrict.productionAdmission.status "production_allowed" "OBJ strict admission status"
+    Assert-Equal $nail3MfStrict.productionAdmission.productionAllowed $golden.fixtures.productionAdmission.productionAllowed "3MF strict productionAllowed"
+    Assert-NotEqual $nail3MfStrict.productionAdmission.status "production_allowed" "3MF strict admission status"
 }
 
 Write-Host "Surface shell robustness tests complete."

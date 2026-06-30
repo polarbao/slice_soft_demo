@@ -61,6 +61,18 @@ bool StrictClosedNonManifoldBlocksProduction()
         && ExpectTrue(decision.nonProduction, "non-manifold nonProduction flag");
 }
 
+bool StrictClosedBoundaryBlocksProduction()
+{
+    const std::vector<slicer_core::ValidationIssue> issues{
+        MakeIssue("MESH_BOUNDARY_EDGES"),
+    };
+    const slicer_core::ProductionAdmissionDecision decision =
+        slicer_core::EvaluateProductionAdmission(issues, slicer_core::AdmissionMode::StrictClosed);
+    return ExpectTrue(decision.status == slicer_core::AdmissionStatus::NonProductionOnly, "boundary nonProduction")
+        && ExpectTrue(!decision.productionAllowed, "boundary not production")
+        && ExpectTrue(decision.nonProduction, "boundary nonProduction flag");
+}
+
 bool StrictClosedDuplicateBlocksProduction()
 {
     const std::vector<slicer_core::ValidationIssue> issues{
@@ -147,6 +159,7 @@ int main()
         {"strict_closed_allows_empty_issues", StrictClosedAllowsEmptyIssues},
         {"strict_closed_self_intersection_fails_fast", StrictClosedSelfIntersectionFailsFast},
         {"strict_closed_non_manifold_blocks_production", StrictClosedNonManifoldBlocksProduction},
+        {"strict_closed_boundary_blocks_production", StrictClosedBoundaryBlocksProduction},
         {"strict_closed_duplicate_blocks_production", StrictClosedDuplicateBlocksProduction},
         {"strict_closed_opposite_duplicate_blocks_production", StrictClosedOppositeDuplicateBlocksProduction},
         {"strict_closed_local_winding_blocks_production", StrictClosedLocalWindingBlocksProduction},

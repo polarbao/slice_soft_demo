@@ -24,7 +24,8 @@ void AppendUnique(std::vector<std::string>& codes, const std::string& code)
 
 bool IsStrictBlockerCode(const std::string& code)
 {
-    return code == "MESH_NON_MANIFOLD_EDGES"
+    return code == "MESH_BOUNDARY_EDGES"
+        || code == "MESH_NON_MANIFOLD_EDGES"
         || code == "MESH_DUPLICATE_FACES"
         || code == "MESH_OPPOSITE_DUPLICATE_FACES"
         || code == "MESH_LOCAL_WINDING_INCONSISTENCY"

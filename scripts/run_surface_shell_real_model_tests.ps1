@@ -94,8 +94,12 @@ Assert-True ($noUvReport.transferStats.fallbackVoxels -gt 0) "no UV expected fal
 Assert-True ($noUvReport.transferStats.missingUvVoxels -gt 0) "no UV expected missing UV count"
 Assert-True ($openMeshReport.meshDiagnostics.boundaryEdges -gt 0) "open mesh expected boundary edges"
 Assert-True ($openMeshReport.errors.Count -gt 0) "open mesh expected report errors"
+Assert-True ($openMeshReport.productionAdmission.productionAllowed -eq $false) "open mesh should not be production allowed"
+Assert-True ($openMeshReport.productionAdmission.status -ne "production_allowed") "open mesh admission should block production"
 Assert-True ($nonManifoldReport.meshDiagnostics.nonManifoldEdges -gt 0) "non-manifold mesh expected non-manifold edges"
 Assert-True ($nonManifoldReport.errors.Count -gt 0) "non-manifold mesh expected report errors"
+Assert-True ($nonManifoldReport.productionAdmission.productionAllowed -eq $false) "non-manifold mesh should not be production allowed"
+Assert-True ($nonManifoldReport.productionAdmission.status -ne "production_allowed") "non-manifold mesh admission should block production"
 
 $shellDifference = [math]::Abs([int]$objReport.stats.shellVoxels - [int]$threeMfReport.stats.shellVoxels)
 $shellTolerance = [math]::Max(1, [math]::Ceiling([int]$objReport.stats.shellVoxels * 0.01))

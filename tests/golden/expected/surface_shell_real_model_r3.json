@@ -21,6 +21,14 @@
       "localReversed": "MESH_LOCAL_WINDING_INCONSISTENCY",
       "selfIntersect": "MESH_SELF_INTERSECTION_CONFIRMED"
     },
+    "productionAdmission": {
+      "duplicateStatus": "non_production_only",
+      "localReversedStatus": "non_production_only",
+      "selfIntersectStatus": "fail_fast",
+      "warnAndAttemptStatus": "non_production_only",
+      "productionAllowed": false,
+      "nonProduction": true
+    },
     "repeatTexture": {
       "uvAddressMode": "repeat",
       "warningCode": "TEXTURE_UV_OUT_OF_RANGE"

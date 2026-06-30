@@ -1,5 +1,6 @@
 #include "slicer_core/materials/texture_application/SurfaceShellRealModelReport.h"
 
+#include "slicer_core/diagnostics/ProductionAdmissionPolicy.h"
 #include "slicer_core/diagnostics/ValidationIssue.h"
 
 #include <map>
@@ -17,6 +18,33 @@ Json::Array StringsToJsonArray(const std::vector<std::string>& values)
         result.push_back(value);
     }
     return result;
+}
+
+AdmissionMode AdmissionModeForMeshPolicy(const MeshValidationPolicy policy)
+{
+    switch (policy)
+    {
+    case MeshValidationPolicy::StrictClosed:
+        return AdmissionMode::StrictClosed;
+    case MeshValidationPolicy::WarnAndAttempt:
+        return AdmissionMode::WarnAndAttempt;
+    }
+    return AdmissionMode::DiagnosticOnly;
+}
+
+Json ProductionAdmissionToJson(
+    const AdmissionMode mode,
+    const ProductionAdmissionDecision& decision)
+{
+    return Json::object({
+        {"mode", AdmissionModeName(mode)},
+        {"status", AdmissionStatusName(decision.status)},
+        {"productionAllowed", decision.productionAllowed},
+        {"nonProduction", decision.nonProduction},
+        {"blockerCodes", Json{StringsToJsonArray(decision.blockerCodes)}},
+        {"warningCodes", Json{StringsToJsonArray(decision.warningCodes)}},
+        {"suggestedActions", Json{StringsToJsonArray(decision.suggestedActions)}},
+    });
 }
 
 Json BoundsToJson(const IndexBounds3D& bounds)
@@ -119,6 +147,8 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
     const MeshTopologyReport& topology = result.adapted_mesh.topology;
     const SurfaceTextureTransferStats& transfer = result.transfer.stats;
     const std::vector<ValidationIssue> issues = BuildValidationIssues(result);
+    const AdmissionMode admissionMode = AdmissionModeForMeshPolicy(result.options.mesh_policy);
+    const ProductionAdmissionDecision admission = EvaluateProductionAdmission(issues, admissionMode);
     return Json::object({
         {"schema", "p0.surface_shell_texture_report.2"},
         {"caseName", result.case_name},
@@ -268,6 +298,7 @@ Json MakeSurfaceShellRealModelReport(const SurfaceShellRealModelResult& result)
         {"issues", ValidationIssuesToJson(issues)},
         {"warningCodes", ValidationIssueCodesToJson(issues, ValidationSeverity::Warning)},
         {"errorCodes", ValidationIssueCodesToJson(issues, ValidationSeverity::Error)},
+        {"productionAdmission", ProductionAdmissionToJson(admissionMode, admission)},
         {"warnings", Json{StringsToJsonArray(result.warnings)}},
         {"errors", Json{StringsToJsonArray(result.errors)}},
     });
