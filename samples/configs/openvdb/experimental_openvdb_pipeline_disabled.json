@@ -1,0 +1,16 @@
+{
+  "input": {
+    "modelPath": "samples/models/openvdb/surface_shell_multimaterial_seam.obj",
+    "format": "obj"
+  },
+  "experimental": {
+    "openvdbPipeline": {
+      "enabled": false,
+      "engine": "legacy",
+      "admissionMode": "strict_closed",
+      "failurePolicy": "fail_fast",
+      "allowNonProductionOutput": false,
+      "writeProductionRgbwsv": false
+    }
+  }
+}

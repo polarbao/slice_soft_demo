@@ -214,8 +214,15 @@ add_executable(production_admission_policy_unit_tests
 
 target_link_libraries(production_admission_policy_unit_tests PRIVATE slicer_core)
 
+add_executable(experimental_config_unit_tests
+    tests/unit/experimental_config/main.cpp
+)
+
+target_link_libraries(experimental_config_unit_tests PRIVATE slicer_core)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
+add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

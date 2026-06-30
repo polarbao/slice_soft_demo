@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/diagnostics/ValidationIssue.h"
+
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -189,6 +191,27 @@ struct ReliefConfig {
     double base_z_mm{0.0};
 };
 
+/**
+ * @brief Feature-gated configuration for the experimental OpenVDB pipeline.
+ */
+struct ExperimentalOpenVdbPipelineConfig
+{
+    bool enabled{false};
+    std::string engine{"legacy"};
+    std::string admission_mode{"strict_closed"};
+    std::string failure_policy{"fail_fast"};
+    bool allow_non_production_output{false};
+    bool write_production_rgbwsv{false};
+};
+
+/**
+ * @brief Experimental configuration namespace; all fields are safe-off by default.
+ */
+struct ExperimentalConfig
+{
+    ExperimentalOpenVdbPipelineConfig openvdb_pipeline;
+};
+
 struct SliceConfig {
     std::string slicing_mode{"closed_mesh_scanline"};
     InputConfig input;
@@ -204,9 +227,17 @@ struct SliceConfig {
     SupportConfig support;
     PreviewConfig preview;
     ReliefConfig relief;
+    ExperimentalConfig experimental;
 };
 
 SliceConfig load_slice_config(const std::filesystem::path& config_path);
 void validate_slice_config(const SliceConfig& config);
+
+/**
+ * @brief Build diagnostics for experimental OpenVDB pipeline configuration.
+ * @param config Slice configuration.
+ * @return Stable validation issues; empty when no experimental diagnostic is required.
+ */
+std::vector<ValidationIssue> BuildExperimentalOpenVdbPipelineDiagnostics(const SliceConfig& config);
 
 }  // namespace slicer_core

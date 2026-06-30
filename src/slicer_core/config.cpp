@@ -1,6 +1,7 @@
 #include "slicer_core/config.h"
 
 #include "slicer_core/config/ConfigMigration.h"
+#include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/json_value.h"
 
 #include <algorithm>
@@ -393,6 +394,31 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.relief.base_z_mm = relief.value("baseZMm", config.relief.base_z_mm);
     }
 
+    if (root.contains("experimental"))
+    {
+        const auto& experimental = root.at("experimental");
+        if (experimental.contains("openvdbPipeline"))
+        {
+            const auto& openvdb = experimental.at("openvdbPipeline");
+            config.experimental.openvdb_pipeline.enabled =
+                openvdb.value("enabled", config.experimental.openvdb_pipeline.enabled);
+            config.experimental.openvdb_pipeline.engine =
+                openvdb.value("engine", config.experimental.openvdb_pipeline.engine);
+            config.experimental.openvdb_pipeline.admission_mode =
+                openvdb.value("admissionMode", config.experimental.openvdb_pipeline.admission_mode);
+            config.experimental.openvdb_pipeline.failure_policy =
+                openvdb.value("failurePolicy", config.experimental.openvdb_pipeline.failure_policy);
+            config.experimental.openvdb_pipeline.allow_non_production_output =
+                openvdb.value(
+                    "allowNonProductionOutput",
+                    config.experimental.openvdb_pipeline.allow_non_production_output);
+            config.experimental.openvdb_pipeline.write_production_rgbwsv =
+                openvdb.value(
+                    "writeProductionRgbwsv",
+                    config.experimental.openvdb_pipeline.write_production_rgbwsv);
+        }
+    }
+
     validate_slice_config(config);
     return config;
 }
@@ -625,6 +651,53 @@ void validate_slice_config(const SliceConfig& config) {
             throw std::runtime_error("P0 channelOrder must be exactly R G B W S V");
         }
     }
+    if (config.experimental.openvdb_pipeline.engine != "legacy"
+        && config.experimental.openvdb_pipeline.engine != "openvdb")
+    {
+        throw std::runtime_error("experimental.openvdbPipeline.engine must be legacy or openvdb");
+    }
+    if (config.experimental.openvdb_pipeline.admission_mode != "strict_closed"
+        && config.experimental.openvdb_pipeline.admission_mode != "warn_and_attempt"
+        && config.experimental.openvdb_pipeline.admission_mode != "diagnostic_only"
+        && config.experimental.openvdb_pipeline.admission_mode != "repair_then_strict")
+    {
+        throw std::runtime_error(
+            "experimental.openvdbPipeline.admissionMode must be strict_closed, warn_and_attempt, diagnostic_only, or repair_then_strict");
+    }
+    if (config.experimental.openvdb_pipeline.failure_policy != "fail_fast"
+        && config.experimental.openvdb_pipeline.failure_policy != "diagnostic_only"
+        && config.experimental.openvdb_pipeline.failure_policy != "non_production_only")
+    {
+        throw std::runtime_error(
+            "experimental.openvdbPipeline.failurePolicy must be fail_fast, diagnostic_only, or non_production_only");
+    }
+}
+
+std::vector<ValidationIssue> BuildExperimentalOpenVdbPipelineDiagnostics(const SliceConfig& config)
+{
+    std::vector<ValidationIssue> issues;
+    const ExperimentalOpenVdbPipelineConfig& openvdb = config.experimental.openvdb_pipeline;
+    if (!openvdb.enabled)
+    {
+        return issues;
+    }
+
+    const OpenVdbStatus status = GetOpenVdbStatus();
+    if (openvdb.engine == "openvdb" && (!status.compiled_with_openvdb || !status.runtime_available))
+    {
+        issues.push_back(MakeValidationIssue(
+            "OPENVDB_UNAVAILABLE",
+            ValidationSeverity::Error,
+            "experimental OpenVDB pipeline is enabled but OpenVDB is unavailable"));
+    }
+    if (openvdb.write_production_rgbwsv)
+    {
+        issues.push_back(MakeValidationIssue(
+            "EXPERIMENTAL_RGBWSV_REQUIRES_ADMISSION",
+            ValidationSeverity::Warning,
+            "writeProductionRgbwsv is requested and must remain gated by production admission policy"));
+    }
+    return issues;
 }
 
 }  // namespace slicer_core
