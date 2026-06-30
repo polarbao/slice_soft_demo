@@ -33,9 +33,12 @@ add_library(slicer_core
     src/slicer_core/geometry/DistanceField2D.h
     src/slicer_core/geometry/GeometryKernelReport.cpp
     src/slicer_core/geometry/GeometryKernelReport.h
+    src/slicer_core/geometry/GeometryKernelService.h
     src/slicer_core/geometry/GeometryKernelTypes.h
     src/slicer_core/geometry/OpenVdbAdapter.cpp
     src/slicer_core/geometry/OpenVdbAdapter.h
+    src/slicer_core/geometry/OpenVdbGeometryKernelService.cpp
+    src/slicer_core/geometry/OpenVdbGeometryKernelService.h
     src/slicer_core/geometry/OpenVdbLevelSetBuilder.cpp
     src/slicer_core/geometry/OpenVdbLevelSetBuilder.h
     src/slicer_core/geometry/OpenVdbSurfaceShell.cpp
@@ -220,9 +223,16 @@ add_executable(experimental_config_unit_tests
 
 target_link_libraries(experimental_config_unit_tests PRIVATE slicer_core)
 
+add_executable(geometry_kernel_service_unit_tests
+    tests/unit/geometry_kernel_service/main.cpp
+)
+
+target_link_libraries(geometry_kernel_service_unit_tests PRIVATE slicer_core)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
+add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
