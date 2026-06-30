@@ -25,6 +25,8 @@ add_library(slicer_core
     src/slicer_core/config.h
     src/slicer_core/diagnostics/Diagnostics.cpp
     src/slicer_core/diagnostics/Diagnostics.h
+    src/slicer_core/diagnostics/ProductionAdmissionPolicy.cpp
+    src/slicer_core/diagnostics/ProductionAdmissionPolicy.h
     src/slicer_core/diagnostics/ValidationIssue.cpp
     src/slicer_core/diagnostics/ValidationIssue.h
     src/slicer_core/geometry/DistanceField2D.cpp
@@ -205,6 +207,15 @@ add_executable(surface_shell_robustness_unit_tests
 )
 
 target_link_libraries(surface_shell_robustness_unit_tests PRIVATE slicer_core)
+
+add_executable(production_admission_policy_unit_tests
+    tests/unit/production_admission_policy/main.cpp
+)
+
+target_link_libraries(production_admission_policy_unit_tests PRIVATE slicer_core)
+
+enable_testing()
+add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
