@@ -29,7 +29,8 @@ if (Test-Path -LiteralPath $cachePath)
     $cacheText = Get-Content -Raw -LiteralPath $cachePath
     $normalizedCache = $cacheText -replace "\\", "/"
     $normalizedToolchain = $toolchain -replace "\\", "/"
-    if ($normalizedCache -notlike "*CMAKE_TOOLCHAIN_FILE:FILEPATH=$normalizedToolchain*" -or
+    $toolchainPattern = "(?m)^CMAKE_TOOLCHAIN_FILE:[^=]+=$([regex]::Escape($normalizedToolchain))"
+    if ($normalizedCache -notmatch $toolchainPattern -or
         $normalizedCache -notlike "*VCPKG_MANIFEST_MODE:BOOL=ON*")
     {
         throw "Existing build directory is not configured with the requested vcpkg toolchain: $BuildDir. Use a clean BuildDir or remove the stale CMakeCache.txt."
