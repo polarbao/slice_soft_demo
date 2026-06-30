@@ -1,17 +1,17 @@
 # Slice Soft Demo AI Collaboration Rules
 
-> Project: `polarbao/slice_soft_demo` / UV 3D print slicing demo and refactor track.  
-> Scope: `.agents` project-level rules for ChatGPT / Codex / Copilot / Cursor / Antigravity-style agents.  
-> Language: Chinese by default.  
+> Project: `polarbao/slice_soft_demo` / UV industrial inkjet 3D printing slicer.
+> Scope: `.agents` project-level rules for ChatGPT / Codex / Copilot / Cursor / Antigravity-style agents.
+> Language: Chinese by default.
 
-## 1. Project identity
+## 1. Project Identity
 
-This project is an industrial UV / inkjet 3D printing slicing Host Software prototype, not a generic Qt demo.
+This project is an industrial UV / inkjet 3D printing slicing Host Software prototype moving from demo to formal product planning. It is not a generic Qt demo.
 
-Current P0/R-track baseline includes:
+Current implementation baseline includes:
 
 ```text
-OBJ / MTL / Texture input
+OBJ / STL / MTL / Texture input
 3MF stored / deflate input
 3MF BaseMaterial / ColorGroup / Texture2DGroup
 MaterialRoleMapping
@@ -22,7 +22,9 @@ RGBWSV TIFF output package
 RIP reader strict validation
 Reports / manifests / preview images
 Qt Debug UI and UI smoke tests
-R0 architecture review / R1 module-boundary refactor planning
+OpenVDB optional experimental surface-shell path
+ProductionAdmissionPolicy / strict geometry diagnostics
+Schema / golden / regression scripts
 ```
 
 Fixed technical anchors:
@@ -34,44 +36,46 @@ CMake target-based
 Windows x64 / MSVC
 vcpkg manifest mode when dependencies are needed
 RGBWSV TIFF, uint8, black_is_print
+OpenVDB optional and disabled by default
 ```
 
-## 2. Mandatory evidence levels
+## 2. Mandatory Evidence Levels
 
 Use the following levels when answering implementation-state questions:
 
 ```text
-A = current code/config/tests; safe implementation basis
-B = formal PRD/DEV/ARCH/ADR target design; direction only
-C = historical chat/demo/archive; background only
+A = current code/config/tests/build scripts; safe implementation basis
+B = formal docs/slice PRD/DEV/ARCH/ADR target design; direction only
+C = historical chat/demo/archive/completed Codex tasks; background only
 D = deprecated/conflicting; do not use as implementation basis
 ```
 
 If docs conflict with code, prefer current code and report the conflict.
 
-## 3. Mandatory read order for project-level work
+## 3. Mandatory Read Order
 
 Before project-wide design, refactor, strategy, or implementation planning, read in this order when present:
 
 ```text
-1. .agents/AGENTS.md
-2. .agents/docs/SLICE_AI_SKILL_MASTER.md
-3. .agents/docs/project-profile.md
-4. .agents/docs/architecture-boundary.md
-5. .agents/docs/build-and-test.md
-6. ai_workspace/CONTEXT_INDEX.md
-7. latest ai_workspace/context_handoff/*.md
-8. ai_workspace/AI_WORKSPACE_TOPIC_INDEX.md
-9. related ai_workspace/integrated_reports/*.md
-10. docs/slicer/REPORT_*.md for current stage
-11. docs/slicer/ARCH_*.md / DOC_DECISION_*.md / PRE_R0_*.md
-12. related docs/slicer/PRD_*.md / DEV_*.md / DEMO_*.md / TASKS_*.md
-13. current source code
+1. AGENTS.md
+2. .agents/AGENTS.md
+3. .agents/docs/SLICE_AI_SKILL_MASTER.md
+4. .agents/docs/project-profile.md
+5. .agents/docs/architecture-boundary.md
+6. .agents/docs/build-and-test.md
+7. .agents/docs/doc-state.md
+8. docs/slice/README.md
+9. docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
+10. related docs/slice/PRD_*.md / DEV_*.md / ROADMAP_*.md / DOC_*.md
+11. docs/codex_task/README.md
+12. related docs/codex_task/current/*.md
+13. related docs/archive/2026-06-30_slicer_legacy/**/*.md as historical evidence
+14. current source code and tests
 ```
 
 If files are missing, state what is missing and continue with the highest available evidence.
 
-## 4. Architecture red lines
+## 4. Architecture Red Lines
 
 ```text
 Qt must stay in apps/slicer_debug_ui and UI/view-layer code.
@@ -81,9 +85,11 @@ Material policy must not read files directly.
 Support generation must not write report files directly.
 UI must not access slicer.cpp temporary internal structures directly.
 Reports must not own business decisions.
+Geometry diagnostics must feed admission policy, not silently downgrade strict failures.
+Experimental OpenVDB pipeline must not replace legacy production path.
 ```
 
-## 5. RGBWSV protocol red lines
+## 5. RGBWSV Protocol Red Lines
 
 Do not change without explicit architecture decision:
 
@@ -99,18 +105,24 @@ Model > Support > Empty
 SupportType only in metadata/report/debug; never encoded as a TIFF channel value
 ```
 
-## 6. Current architecture track
+## 6. Current Architecture Track
 
-After 07B-R1, the project enters:
+Historical R-track:
 
 ```text
-P0 Demo Feature Freeze
 R0: architecture review and formal refactor design
 R1: core module-boundary refactor
 R2: config/report/test/CI engineering consolidation
 ```
 
-R1 must follow:
+Current 09P track:
+
+```text
+09P-R1: OpenVDB experimental production-pipeline access, historical/completed evidence.
+09P-R2: docs governance, formalization readiness, OpenVDB experimental hardening, schema/golden/report checks.
+```
+
+R0/R1/R2 principles still apply to refactors:
 
 ```text
 wrap first
@@ -118,9 +130,9 @@ move later
 rewrite last
 ```
 
-Do not implement `surface_shell_texture`, `compensated_varnish`, OpenVDB, device communication, RIP halftoning, or production task scheduling during R1 unless explicitly re-scoped by the user.
+OpenVDB and surface-shell work is allowed only inside explicitly scoped experimental tasks. It must stay optional, disabled by default, and separated from production RGBWSV output unless a later approved task changes that boundary.
 
-## 7. Required answer format before code changes
+## 7. Required Answer Format Before Code Changes
 
 For project code/design changes, answer in Chinese and include:
 
@@ -131,7 +143,6 @@ For project code/design changes, answer in Chinese and include:
 ### Layer(s) Involved
 ### Official Documents
 ### Historical Documents
-### AI Workspace Evidence
 ### Current Code Reality
 ### Current State
 ### Target State
@@ -144,13 +155,13 @@ For project code/design changes, answer in Chinese and include:
 
 For large changes, stop for user confirmation before implementation.
 
-## 8. Verification gates
+## 8. Verification Gates
 
 At minimum for code refactor:
 
 ```powershell
 cmake --build build --config Debug
-.\scripts\run_regression.ps1 -Mode quick
+.\scripts\run_ci_quick.ps1
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
 ```
 
@@ -160,9 +171,11 @@ If UI/preview/overlay changed:
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case overlay-load-real --package output\UiSmokeOverlayRgbwv
 ```
 
+For OpenVDB experimental work, use the 09P-specific scripts listed in `.agents/docs/build-and-test.md`.
+
 Never claim validation passed unless it was actually run in the current session or explicitly reported by an A-level file.
 
-## 9. Chat saves and handoff
+## 9. Chat Saves And Handoff
 
 Use:
 

@@ -1,6 +1,6 @@
 ---
 name: project-chat-save
-description: Use only when the user explicitly asks to save, archive, checkpoint, persist, or record the current <PROJECT_NAME> AI conversation into the repository knowledge base. Do not use for ordinary planning, code review, debugging, or context handoff unless the user asks to save the chat.
+description: Use only when the user explicitly asks to save, archive, checkpoint, persist, or record the current slice_soft_demo AI conversation into the repository knowledge base. Do not use for ordinary planning, code review, debugging, or context handoff unless the user asks to save the chat.
 ---
 
 # Project Chat Save
@@ -16,9 +16,9 @@ It is different from `$project-context-handoff`:
 
 Before writing a chat save:
 
-1. Confirm the target project is `<PROJECT_NAME>`.
+1. Confirm the target project is `slice_soft_demo`.
 2. Read `.agents/docs/chat-save.md` if it exists.
-3. Prefer the configured `<CHAT_ARCHIVE_DIR>`.
+3. Prefer the configured `ai_workspace/chat_logs` location.
 4. If no archive directory is configured, propose one and ask before creating a new long-term location.
 5. Do not include secrets, tokens, credentials, or unrelated personal data.
 6. Do not claim build/test/runtime validation unless it actually happened in this session.
@@ -28,7 +28,7 @@ Before writing a chat save:
 Default template path:
 
 ```text
-<CHAT_ARCHIVE_DIR>/YYYY/YYYY-MM-DD/YYYYMMDD-HHMM-<topic-slug>.md
+ai_workspace/chat_logs/YYYY/YYYY-MM-DD/YYYYMMDD-HHMM-<topic-slug>.md
 ```
 
 Recommended concrete path after template customization:
@@ -40,7 +40,7 @@ ai_workspace/chat_logs/YYYY/YYYY-MM-DD/YYYYMMDD-HHMM-<topic-slug>.md
 If the project keeps an index, update:
 
 ```text
-<CHAT_ARCHIVE_DIR>/CHAT_INDEX.md
+ai_workspace/chat_logs/CHAT_INDEX.md
 ```
 
 ## Workflow
@@ -64,12 +64,12 @@ Use this Markdown structure:
 ```markdown
 ---
 type: chat-save
-project: <PROJECT_NAME>
+project: slice_soft_demo
 date: YYYY-MM-DD
 time: HH:mm
 source: VS Code + Codex
 topic: <topic>
-branch_or_ref: <CURRENT_BRANCH_OR_REF>
+branch_or_ref: spike/09P-openvdb-experimental-pipeline
 archive_version: 1
 related_paths:
   - <path>

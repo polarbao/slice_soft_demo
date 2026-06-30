@@ -1,6 +1,6 @@
 ---
 name: project-doc-state-resolver
-description: Use for <PROJECT_NAME> questions about whether behavior is implemented, only designed, historical, deprecated, or conflicting across docs, code, and chat logs.
+description: Use for slice_soft_demo questions about whether behavior is implemented, only designed, historical, deprecated, or conflicting across docs, code, and chat logs.
 ---
 
 # Project Doc State Resolver

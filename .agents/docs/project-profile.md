@@ -3,12 +3,15 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: P0 Demo Feature Freeze -> R0/R1 architecture refactor track
+- Current phase: 09P-R2 formalization pre-work, docs governance, and experimental OpenVDB hardening
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC
 - Tools: `slicer_cli`, `rip_reader_test`, `slicer_debug_ui`
-- Scripts: `scripts/run_regression.ps1`, `scripts/run_3mf_negative_tests.ps1`, `scripts/compare_material_profiles.ps1`
+- Formal docs: `docs/slice`
+- Codex tasks: `docs/codex_task`
+- Historical docs: `docs/archive/2026-06-30_slicer_legacy`
+- Scripts: `scripts/run_regression.ps1`, `scripts/run_ci_quick.ps1`, `scripts/run_schema_tests.ps1`, `scripts/run_golden_tests.ps1`, `scripts/run_09p_cli_experimental_tests.ps1`, `scripts/run_09p_experimental_pipeline_tests.ps1`, `scripts/run_openvdb_smoke.ps1`
 
 ## Core capabilities
 
@@ -22,12 +25,15 @@ MaterialRoleMapping
 MaterialPolicy
 MaterialProcessProfile
 Support / SupportType / island diagnostics
+Geometry diagnostics / ProductionAdmissionPolicy
 Relief heightfield
 RGBWSV TIFF writer
 RIP reader strict validation
 Preview report / preview PNG
+Preview/material process reports
 Qt Debug UI
 UI self-test / overlay-load-real smoke test
+OpenVDB optional experimental surface-shell texture path
 quick/full/heavy regression
 ```
 
@@ -35,11 +41,16 @@ quick/full/heavy regression
 
 ```text
 Do not change p0.rgbwsv.2 without explicit decision.
-Do not add large features during R1.
-Do not implement surface_shell_texture or compensated_varnish during R1.
 Do not introduce Qt into slicer_core.
+Do not enable OpenVDB by default.
+Do not make OpenVDB mandatory for all builds.
+Do not replace the legacy slicer_cli production path.
+Do not write production RGBWSV TIFF from the experimental OpenVDB path unless explicitly approved.
+Do not treat warn_and_attempt output as production-safe.
+Confirmed self-intersection must fail fast.
+Non-manifold, duplicate/opposite duplicate, and local winding issues must block strict production admission.
 Keep slicer_cli / rip_reader_test / slicer_debug_ui buildable.
-Run quick regression after each meaningful refactor step.
+Run targeted validation after each meaningful code or doc-governance step.
 ```
 
 ## Current code concentration risk

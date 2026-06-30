@@ -1,6 +1,6 @@
 ---
 name: project-code-review
-description: Use for <PROJECT_NAME> code review, diffs, PRs, uncommitted changes, and pre-merge checks against project architecture, code standards, build, and tests.
+description: Use for slice_soft_demo code review, diffs, PRs, uncommitted changes, and pre-merge checks against project architecture, code standards, build, and tests.
 ---
 
 # Project Code Review

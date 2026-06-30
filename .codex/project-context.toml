@@ -1,0 +1,59 @@
+# Human-readable project metadata for Codex. This is not runtime config.
+
+[project]
+name = "slice_soft_demo"
+repository = "polarbao/slice_soft_demo"
+main_app_path = "src/slicer_core"
+current_branch_or_ref = "spike/09P-openvdb-experimental-pipeline"
+formal_docs = "docs/slice"
+codex_tasks = "docs/codex_task"
+archive_docs = "docs/archive/2026-06-30_slicer_legacy"
+current_task_file = "docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md"
+language = "zh-CN"
+role = "senior C++20 / Qt 5.15 / CMake slicing-software architect"
+
+[workspace]
+primary_paths = [
+  "AGENTS.md",
+  ".agents/AGENTS.md",
+  ".agents/docs",
+  ".agents/skills",
+  "docs/slice",
+  "docs/codex_task/current",
+  "src/slicer_core",
+  "apps/slicer_cli",
+  "apps/slicer_debug_ui",
+  "scripts",
+  "tests",
+]
+historical_reference_paths = [
+  "docs/archive/2026-06-30_slicer_legacy",
+  "docs/codex_task/archive",
+]
+
+[verification]
+build = "cmake --build build --config Debug"
+test = "ctest --test-dir build -C Debug --output-on-failure"
+quick = 'powershell -ExecutionPolicy Bypass -File .\scripts\run_ci_quick.ps1'
+ui_smoke = '.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test'
+openvdb_cli = 'powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_cli_experimental_tests.ps1'
+openvdb_pipeline = 'powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_experimental_pipeline_tests.ps1'
+
+[risk]
+pause_before = [
+  "destructive filesystem operations",
+  "dependency upgrades or new third-party libraries",
+  "deleting files",
+  "rewriting git history",
+  "production data changes",
+  "hardware or device control",
+  "enabling OpenVDB by default",
+  "changing p0.rgbwsv.2 or RGBWSV channel semantics",
+]
+
+[commit_style]
+format = "type(scope): 中文说明"
+examples = [
+  "docs(codex): 更新AI协作规则与任务入口",
+  "fix(slice): 收口实验报告schema校验",
+]

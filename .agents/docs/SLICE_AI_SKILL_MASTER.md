@@ -1,7 +1,7 @@
 # SLICE AI SKILL MASTER
 
-> 定位：`polarbao/slice_soft_demo` / UV 工业喷墨 3D 打印切片 Demo 与正式重构项目的 AI 协作总纲。  
-> 下游细分 Skill：`.agents/skills/slice-*`。  
+> 定位：`polarbao/slice_soft_demo` / UV 工业喷墨 3D 打印切片 Demo 与正式重构项目的 AI 协作总纲。
+> 下游细分 Skill：`.agents/skills/slice-*`。
 > 适用：ChatGPT / Codex / VS Code Copilot / Cursor / Antigravity / 其他支持 Skill 的 AI 工具。
 
 ---
@@ -80,10 +80,12 @@ Pending Confirmation
 7. latest ai_workspace/context_handoff/*.md
 8. ai_workspace/AI_WORKSPACE_TOPIC_INDEX.md
 9. related ai_workspace/integrated_reports/*.md
-10. docs/slicer/REPORT_*.md for current stage
-11. docs/slicer/DOC_DECISION_*.md / ARCH_*.md / PRE_R0_*.md
-12. docs/slicer/PRD_*.md / DEV_*.md / DEMO_*.md / TASKS_*.md
-13. current source code
+10. docs/slice/README.md
+11. related docs/slice/PRD_*.md / DEV_*.md / ROADMAP_*.md / DOC_*.md
+12. docs/codex_task/README.md
+13. related docs/codex_task/current/*.md
+14. related docs/archive/2026-06-30_slicer_legacy/**/*.md as historical evidence
+15. current source code
 ```
 
 ---
@@ -135,7 +137,17 @@ VarnishGeometryPolicy:
   CompensatedShrink
 ```
 
-R1 不实现 `SurfaceShell` 和 `CompensatedShrink`。R1 只建立策略对象、配置占位和 pipeline 插入点。
+历史 R1 阶段不实现 `SurfaceShell` 和 `CompensatedShrink`，只建立策略对象、配置占位和 pipeline 插入点。
+
+当前 09P 阶段允许 OpenVDB / SurfaceShell 相关工作进入明确标注的实验路径，但必须满足：
+
+```text
+OpenVDB optional and disabled by default
+legacy slicer_cli production path is not replaced
+production RGBWSV TIFF is not written by the experimental path unless explicitly approved
+p0.rgbwsv.2 / RGBWSV channel order / uint8 / black_is_print remain unchanged
+strict ProductionAdmissionPolicy blocks unsafe geometry
+```
 
 ---
 

@@ -1,96 +1,92 @@
-# <PROJECT_NAME> Codex Instructions
+# Slice Soft Demo Codex Instructions
 
-## Project identity
+## Project Identity
 
-- Project: `<PROJECT_NAME>`
-- Repository: `<REPOSITORY_URL_OR_NAME>`
-- Main branch/ref: `<CURRENT_BRANCH_OR_REF>`
-- Main application path: `<MAIN_APP_PATH>`
-- Tech stack: `<TECH_STACK>`
-- Build system: `<BUILD_SYSTEM>`
-- Test command: `<TEST_COMMAND>`
+- Project: `slice_soft_demo`
+- Repository: `polarbao/slice_soft_demo`
+- Current branch/ref: `spike/09P-openvdb-experimental-pipeline`
+- Main implementation paths: `src/slicer_core`, `apps/slicer_cli`, `apps/slicer_debug_ui`
+- Formal docs: `docs/slice`
+- Codex task docs: `docs/codex_task`
+- Archived historical docs: `docs/archive/2026-06-30_slicer_legacy`
+- Tech stack: C++20, Qt 5.15 Widgets, CMake, Windows x64/MSVC, optional OpenVDB via vcpkg
+- Default test command: `ctest --test-dir build -C Debug --output-on-failure`
 
-## Always-on rules
+## Current Phase
 
-- 当前实现主线是 `<MAIN_APP_PATH>`，不是 `<DEPRECATED_PATHS>`。
-- 回答使用中文，除非用户明确要求英文。
-- 修改前必须读取相关源码和文档，不得仅根据文件名猜测。
-- 不虚构构建、测试、运行、部署或硬件验证结果。
-- 破坏性操作、依赖变更、架构迁移、生产路径变更前必须先给方案并等待确认。
+- `09P-R1` OpenVDB experimental production-pipeline access has been documented as historical/completed evidence.
+- Current working phase is `09P-R2`: formalization pre-work, docs governance, hardening plan, and experimental OpenVDB pipeline safety checks.
+- The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
-## Evidence classification
+## Always-On Rules
 
-- A：当前代码/配置/测试中已存在，可作为编码依据。
-- B：正式设计/PRD/ADR，可作为目标方向，但不能证明已实现。
-- C：历史文档/旧 Demo/旧方案，仅作背景。
-- D：废弃或冲突资料，不作为实现依据。
+1. Answer in Chinese unless the user explicitly asks for English.
+2. Execute only the task explicitly requested by the user; do not start the next task without explicit instruction.
+3. Before code, build, dependency, or architecture changes, read the relevant source and project docs first.
+4. Do not invent command results, tests, builds, hardware validation, repository state, or implementation status.
+5. Before each task, run `git status --short` and report unrelated dirty state instead of overwriting it.
+6. Do not revert or delete user changes unless the user explicitly requests that operation.
+7. For destructive operations, dependency upgrades, architecture migration, production-path changes, hardware/device control, or git history rewrite, give a plan and wait for confirmation.
+8. After a minimal task, run task-specific validation. Before committing, run `git status --short` and `git diff --check`.
+9. Commit only when the user asks or when the active task explicitly requires it; do not push unless explicitly instructed.
 
-## Skill routing
+## Evidence Classification
 
-- 开发需求、方案设计、任务拆解：`$project-dev-workflow`
-- 代码审查、diff/PR 检查：`$project-code-review`
-- 架构边界、模块职责、ADR：`$project-architecture-guardrails`
-- 构建、依赖、部署：`$project-build`
-- 文档新旧冲突、实现状态判断：`$project-doc-state-resolver`
-- 跨模型/跨 IDE/新会话交接：`$project-context-handoff`
-- 保存/归档当前 AI 会话：`$project-chat-save`
+- A: current code/config/tests/build scripts; safe implementation basis.
+- B: formal `docs/slice` PRD/DEV/ADR/decision docs; target direction, not proof of implementation.
+- C: archived demo docs, historical reports, chat logs, and completed Codex prompts/tasks; background only.
+- D: deprecated or conflicting material; do not use as implementation basis.
 
-## Reference docs
+When answering implementation-state questions, split the answer into `Current State`, `Target State`, `Historical State`, and `Pending Confirmation` when relevant.
 
-- 项目画像：`.agents/docs/project-profile.md`
-- 架构边界：`.agents/docs/architecture-boundary.md`
-- 构建与测试：`.agents/docs/build-and-test.md`
-- 代码规范：`.agents/docs/code-standards.md`
-- 文档状态：`.agents/docs/doc-state.md`
-- 会话归档：`.agents/docs/chat-save.md`
+## Skill Routing
 
+- Slice feature planning and staged execution: `$slice-dev-workflow`
+- Slice architecture boundaries and ADR/DOC_DECISION work: `$slice-architecture-guardrails`
+- Slice build, dependency, CMake, packaging, and CI issues: `$slice-build`
+- Slice code review and pre-merge checks: `$slice-code-review`
+- Slice document-state conflict resolution: `$slice-doc-state-resolver`
+- Slice context handoff: `$slice-context-handoff`
+- Slice chat save/archive: `$slice-chat-save`
+- Generic C++20/Qt/CMake guidance: `$cpp-coding-standards`
+- Generic plan writing or project planning: `$writing-plans` / `$project-planner`
 
-# AGENTS.md
+Project-level slice skills and `.agents/docs` facts override generic templates when they conflict.
 
-## Project context
+## Mandatory Reference Docs
 
-This repository is polarbao/slice_soft_demo.
+- AI collaboration rules: `.agents/AGENTS.md`
+- Skill master: `.agents/docs/SLICE_AI_SKILL_MASTER.md`
+- Project profile: `.agents/docs/project-profile.md`
+- Architecture boundaries: `.agents/docs/architecture-boundary.md`
+- Build and test: `.agents/docs/build-and-test.md`
+- Code standards: `.agents/docs/code-standards.md`
+- Document state: `.agents/docs/doc-state.md`
+- Formal docs index: `docs/slice/README.md`
+- Codex task index: `docs/codex_task/README.md`
+- Current task list: `docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md`
 
-Current baseline branch:
-- spike/09B-R3-shell-production-readiness
-
-Current phase:
-- 09B-R3 has completed production-readiness pre-admission diagnostics.
-- Next phase is 09P: OpenVDB surface shell texture experimental production pipeline integration.
-
-## Hard rules
-
-1. Execute only the task explicitly requested by the user.
-2. Do not execute the next task unless the user explicitly asks.
-3. Before starting each task, verify the working tree is clean:
-   - git status --short
-4. After finishing each minimal task, run the task-specific validation commands.
-5. Before committing, always run:
-   - git status --short
-   - git diff --check
-6. Commit after every completed minimal task.
-7. Each commit must contain only changes for the current task.
-8. Do not mix unrelated documentation, code, test, script, or formatting changes.
-9. If validation fails, fix it before committing. If it cannot be fixed, stop and report the failure.
-10. Do not push unless explicitly instructed.
-
-## Production safety rules
+## Production Safety Rules
 
 1. Do not enable OpenVDB by default.
 2. Do not make OpenVDB a mandatory dependency for all builds.
-3. Do not replace the legacy slicer_cli production path.
+3. Do not replace the legacy `slicer_cli` production path.
 4. Do not write production RGBWSV TIFF from the experimental OpenVDB path unless a later task explicitly allows it.
-5. Do not modify the p0.rgbwsv.2 production package protocol.
+5. Do not modify the `p0.rgbwsv.2` production package protocol.
 6. Do not modify RGBWSV channel order.
 7. Do not modify uint8 bit depth.
-8. Do not modify black_is_print polarity.
-9. Do not treat warn_and_attempt output as production-safe.
-10. confirmed self-intersection must fail fast.
-11. non-manifold, duplicate/opposite duplicate, and local winding issues must block strict production admission.
+8. Do not modify `black_is_print` polarity.
+9. Do not treat `warn_and_attempt` output as production-safe.
+10. Confirmed self-intersection must fail fast.
+11. Non-manifold, duplicate/opposite duplicate, and local winding issues must block strict production admission.
 
-## Expected workflow per task
+## Expected Workflow Per Task
 
 For every task:
 
 ```powershell
 git status --short
+```
+
+For documentation/config-only tasks, validate with targeted text/schema checks and `git diff --check`.
+For C++/Qt/CMake changes, use the task-specific commands from `.agents/docs/build-and-test.md`.

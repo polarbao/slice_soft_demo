@@ -1,0 +1,401 @@
+# ROADMAP_FORMAL_SliceSoft_Demo到正式项目演进路线
+
+> 文档版本：v0.1
+> 文档状态：Formal Roadmap
+> 生成日期：2026-06-30
+> 当前阶段：09P-R1 已完成，09P-R2 hardening 准备阶段
+
+---
+
+## 1. 路线图目标
+
+本路线图回答：
+
+```text
+1. 当前项目如何从 demo 演进为正式项目；
+2. 每个阶段解决什么问题；
+3. 哪些阶段是生产准入前置；
+4. 09P-R2 前后如何安排；
+5. 后续 PRD / DEV / TASKS / REPORT 如何生成。
+```
+
+---
+
+## 2. 总体阶段线
+
+当前项目已经走过：
+
+```text
+P0 / 00A / 00B / 00C
+→ 01 / 02 / 03 / 03B / 03C
+→ 04 / 04A / 05 / 05A / 06 / 06A / 06B
+→ 07 / 07A / 07B / 07B-R1
+→ R0 / R1 / R2
+→ 08 / 08A
+→ 09 / 09A / 09A-R1 / 09A-R2
+→ 09B / 09B-R1 / 09B-R2 / 09B-R3
+→ 09P-R1
+```
+
+当前位置：
+
+```text
+09P-R1 已完成
+下一步：09P-R2 hardening
+```
+
+推荐后续：
+
+```text
+09P-R2
+→ 09P-R3
+→ 09P-R4
+→ mesh repair / admission gate 专项，可按风险插入
+→ 09C
+→ 09D
+→ 10
+```
+
+---
+
+## 3. 从 demo 到正式项目要发生的变化
+
+### 3.1 阶段 1：功能 demo
+
+目标：
+
+```text
+证明最小闭环能跑通。
+```
+
+代表阶段：
+
+```text
+P0 到 06B
+```
+
+产物：
+
+```text
+slicer_cli
+rip_reader_test
+RGBWSV TIFF
+manifest
+OBJ/MTL/3MF/Texture2D/ColorGroup
+MaterialPolicy / Support / Varnish
+```
+
+风险：
+
+```text
+代码集中；
+report 不统一；
+配置缺少 schema；
+真实模型质量问题未准入化。
+```
+
+### 3.2 阶段 2：调试与工程化
+
+目标：
+
+```text
+让工程师能调试、查看、回归。
+```
+
+代表阶段：
+
+```text
+07 / 07A / 07B / R0 / R1 / R2
+```
+
+产物：
+
+```text
+Qt Debug UI
+config editor
+profile visualization
+module boundary wrappers
+ConfigSchema / ConfigMigration
+ReportBase
+schema tests
+golden tests
+run_ci_quick
+```
+
+风险：
+
+```text
+模块边界虽然建立，但 legacy 文件仍有大量职责；
+文档阶段过多，当前入口混乱。
+```
+
+### 3.3 阶段 3：OpenVDB 实验几何能力
+
+目标：
+
+```text
+证明 OpenVDB/SDF 对真实模型的表面壳层纹理路线可行。
+```
+
+代表阶段：
+
+```text
+09 / 09A / 09B / 09B-R1/R2/R3
+```
+
+产物：
+
+```text
+OpenVDB smoke
+surface shell / interior
+nearest triangle / texture transfer
+真实 OBJ/3MF golden
+topology diagnostics
+stable issue code
+process peak memory
+ProductionAdmissionPolicy 前置依据
+```
+
+结论：
+
+```text
+OpenVDB 壳层纹理实验链路可跑通；
+真实 OBJ/3MF 仍不是 production-safe；
+必须通过 strict admission 或 repair_then_strict 才能进入生产输出。
+```
+
+### 3.4 阶段 4：Experimental production pipeline
+
+目标：
+
+```text
+把 OpenVDB 实验能力接入正式 pipeline 边界，但不默认生产输出。
+```
+
+代表阶段：
+
+```text
+09P-R1
+```
+
+已完成：
+
+```text
+feature flag
+experimental CLI diagnostic path
+ProductionAdmissionPolicy
+OpenVdbGeometryKernelService
+SurfaceShellTextureService
+MaterialChannelComposer bridge
+09P validation script
+```
+
+### 3.5 阶段 5：Hardening / production candidate
+
+目标：
+
+```text
+把 experimental path 做成可回归、可 UI 展示、可生产准入判断的候选路径。
+```
+
+代表阶段：
+
+```text
+09P-R2 / 09P-R3 / 09P-R4
+```
+
+---
+
+## 4. 09P-R2 计划
+
+09P-R2 定位：
+
+```text
+OpenVDB experimental production pipeline hardening。
+```
+
+阶段目标：
+
+```text
+1. 固化 experimental report schema；
+2. 扩展 topology admission gate；
+3. 明确 mesh repair 前置判断；
+4. 收敛 OpenVDB / texture / composer 数据契约；
+5. 设计 RGBWSV experimental golden / RIP compatibility；
+6. Qt Debug UI 对接 experimental report；
+7. 建立 OpenVDB OFF / ON CI matrix；
+8. 输出 REPORT_09P_R2。
+```
+
+阶段红线：
+
+```text
+不默认启用 OpenVDB
+不替代 legacy slicer_cli
+不直接写真实 OBJ/3MF production RGBWSV
+不修改 p0.rgbwsv.2
+不把 warn_and_attempt 视为 production-safe
+不做大规模 mesh repair 实现
+```
+
+---
+
+## 5. 09P-R3 计划
+
+09P-R3 定位：
+
+```text
+Qt UI / Profile / Report / CI 工程化。
+```
+
+阶段目标：
+
+```text
+1. Qt UI 读取 experimental report；
+2. 显示 OpenVDB status；
+3. 显示 productionAdmission；
+4. 显示 blockerCodes / warningCodes；
+5. Profile 中展示 surface shell 参数；
+6. CI 增加 OpenVDB ON smoke lane；
+7. report viewer 支持 experimental schema。
+```
+
+---
+
+## 6. 09P-R4 计划
+
+09P-R4 定位：
+
+```text
+Production gate / release candidate。
+```
+
+阶段目标：
+
+```text
+1. 建立真实模型集合验收；
+2. 建立性能与内存门槛；
+3. 建立 productionAllowed 的 release gate；
+4. 明确哪些 profile 可启用 surface_shell；
+5. 判断是否允许 production experimental；
+6. 生成 REPORT_09P_R4。
+```
+
+---
+
+## 7. Mesh Repair / Admission Gate 专项
+
+该阶段可能插入在 09P-R2 后、09P-R3 前，也可能并行调研。
+
+触发条件：
+
+```text
+真实 OBJ/3MF 仍因 non-manifold、duplicate/opposite duplicate、local winding、多组件无法 strict admission。
+```
+
+阶段目标：
+
+```text
+1. duplicate / opposite duplicate face repair 评估；
+2. local winding repair 评估；
+3. multi-component admission policy；
+4. repair report；
+5. repair 前后 hash；
+6. repair_then_strict 是否可落地。
+```
+
+不应做：
+
+```text
+不把自动 repair 作为隐式默认；
+不绕过 stable issue code；
+不把 repair 后未复验模型标记为 production-safe。
+```
+
+---
+
+## 8. 09C / 09D / 10
+
+### 8.1 09C：SDF compensated varnish prototype
+
+目标：
+
+```text
+基于 SDF distance / surface normal 研究光油补偿几何。
+```
+
+边界：
+
+```text
+prototype 隔离；
+不直接写 production V channel；
+不修改 p0.rgbwsv.2。
+```
+
+### 8.2 09D：SDF support clearance / overhang diagnostics
+
+目标：
+
+```text
+基于 SDF distance / normal / overhang angle 研究支撑 clearance 和 overhang 诊断。
+```
+
+边界：
+
+```text
+不替代 SupportShapePipeline；
+不直接修改 production S channel。
+```
+
+### 8.3 10：RIP / 设备 / 工艺联调
+
+进入条件：
+
+```text
+RGBWSV package 稳定；
+RIP Reader 兼容；
+production profile 清楚；
+失败策略清楚；
+设备侧接口边界明确。
+```
+
+---
+
+## 9. 文档产出规则
+
+每个后续阶段必须输出：
+
+```text
+docs/slice/PRD_<stage>
+docs/slice/DEV_<stage>
+docs/slice/DEMO_<stage>
+docs/slice/REPORT_<stage>
+docs/slice/DOC_DECISION_<stage>，如有不可逆决策
+docs/codex_task/current/TASKS_<stage>
+docs/codex_task/current/CODEX_PROMPT_<stage>
+```
+
+09P-R2 开始前建议优先补：
+
+```text
+docs/slice/PRD_09P_R2_OpenVDB实验生产管线Hardening.md
+docs/slice/DEV_09P_R2_ReportSchema_AdmissionGate_CI_UI设计.md
+docs/slice/DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md
+docs/codex_task/current/TASKS_09P_R2_OpenVDB实验生产管线Hardening任务清单.md
+docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening执行指令.md
+```
+
+---
+
+## 10. 总结
+
+当前最稳路线：
+
+```text
+先整理文档真源
+→ 再执行 09P-R2 hardening
+→ 再判断是否进入 09P-R3 或 mesh repair/admission gate
+→ 再推进 09C / 09D / 10
+```
+
+不要把 09P-R1 的 experimental boundary 误解成 production path 已经完成。现在最关键的是把“能跑”变成“可解释、可回归、可准入、可 UI 展示”。

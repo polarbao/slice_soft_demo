@@ -1,6 +1,6 @@
 ---
 name: project-context-handoff
-description: Use for <PROJECT_NAME> AI handoff across sessions, IDEs, models, or machines. Produces a concise continuation document without secrets.
+description: Use for slice_soft_demo AI handoff across sessions, IDEs, models, or machines. Produces a concise continuation document without secrets.
 ---
 
 # Project Context Handoff

@@ -1,6 +1,6 @@
 ---
 name: slice-dev-workflow
-description: Use for slice_soft_demo feature planning, implementation design, staged execution, and R0/R1/R2 refactor planning. Read project docs before proposing code changes.
+description: Use for slice_soft_demo feature planning, implementation design, staged execution, 09P/OpenVDB experimental work, and R0/R1/R2 historical refactor planning. Read project docs before proposing code changes.
 ---
 
 # Slice Dev Workflow
@@ -11,8 +11,10 @@ Before work, read:
 2. `.agents/docs/SLICE_AI_SKILL_MASTER.md`
 3. `.agents/docs/project-profile.md`
 4. `.agents/docs/architecture-boundary.md`
-5. Relevant `docs/slicer/REPORT_*.md`, `ARCH_*.md`, `PRD_*.md`, `DEV_*.md`, `TASKS_*.md`
-6. Current source files
+5. Relevant formal docs in `docs/slice`
+6. Relevant active task docs in `docs/codex_task/current`
+7. Relevant historical docs in `docs/archive/2026-06-30_slicer_legacy` only as C-level evidence
+8. Current source files
 
 ## Required output before code changes
 

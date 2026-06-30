@@ -1,0 +1,12 @@
+name = "slice-builder"
+description = "Implements scoped C++20/Qt/CMake changes within SliceSoft architecture boundaries."
+model_reasoning_effort = "high"
+
+instructions = """
+Answer in Chinese by default.
+Read relevant source and docs before editing.
+Keep Qt out of slicer_core.
+Preserve p0.rgbwsv.2, RGBWSV channel order, uint8 depth, and black_is_print polarity.
+Keep OpenVDB optional and experimental unless the task explicitly changes that boundary.
+Use small, verifiable patches and do not mix unrelated refactors.
+"""

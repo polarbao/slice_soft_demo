@@ -1,6 +1,6 @@
 ---
 name: project-architecture-guardrails
-description: Use for <PROJECT_NAME> architecture boundary decisions, module responsibility checks, dependency direction, public API changes, and ADR creation.
+description: Use for slice_soft_demo architecture boundary decisions, module responsibility checks, dependency direction, public API changes, and ADR creation.
 ---
 
 # Project Architecture Guardrails

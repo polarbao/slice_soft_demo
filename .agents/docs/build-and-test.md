@@ -8,6 +8,7 @@ MSVC
 CMake
 Qt 5.15 Widgets for slicer_debug_ui
 PowerShell scripts
+OpenVDB is optional and must remain disabled by default
 ```
 
 ## Configure
@@ -21,6 +22,8 @@ If vcpkg is used:
 ```powershell
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake
 ```
+
+OpenVDB experimental builds require an explicitly prepared dependency environment. Do not make this path mandatory for normal builds.
 
 ## Build
 
@@ -42,6 +45,19 @@ cmake --build build --config Debug --target slicer_debug_ui
 .\scripts\run_regression.ps1 -Mode heavy
 ```
 
+Quick CI gate:
+
+```powershell
+.\scripts\run_ci_quick.ps1
+```
+
+Schema and golden gates:
+
+```powershell
+.\scripts\run_schema_tests.ps1
+.\scripts\run_golden_tests.ps1
+```
+
 ## UI smoke
 
 ```powershell
@@ -55,14 +71,28 @@ cmake --build build --config Debug --target slicer_debug_ui
 .\build\Debug\rip_reader_test.exe --package <package> --summary
 ```
 
-## R1 refactor gate
+## 09P OpenVDB Experimental Gates
+
+Use these only for explicitly scoped 09P/OpenVDB experimental tasks:
+
+```powershell
+.\scripts\run_openvdb_smoke.ps1
+.\scripts\run_09p_cli_experimental_tests.ps1
+.\scripts\run_09p_experimental_pipeline_tests.ps1
+```
+
+The experimental OpenVDB path must not be treated as production-safe unless the task explicitly verifies and admits that behavior.
+
+## Baseline Gate
 
 Each meaningful refactor step must pass:
 
 ```powershell
 cmake --build build --config Debug
-.\scripts\run_regression.ps1 -Mode quick
+.\scripts\run_ci_quick.ps1
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
 ```
 
 If preview/UI changed, also run `overlay-load-real`.
+
+For documentation/config-only tasks, run targeted text/schema checks and `git diff --check`; do not claim build validation unless it was actually run.

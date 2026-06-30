@@ -1,12 +1,21 @@
 # Slice R0/R1/R2 Roadmap Summary
 
-## Current transition
+## Historical transition
 
 ```text
-P0 Demo Feature Freeze
+Historical P0 demo feature-freeze baseline
 R0: architecture review and formal refactor design
 R1: core module-boundary refactor
 R2: config/report/test/CI consolidation
+```
+
+This R-track is historical C-level planning unless a current `docs/slice` document or current code promotes a decision.
+
+## Current 09P transition
+
+```text
+09P-R1: OpenVDB experimental production-pipeline access, completed historical evidence.
+09P-R2: formalization pre-work, docs governance, experimental OpenVDB hardening, schema/golden/report checks.
 ```
 
 ## R1 scope
@@ -26,5 +35,5 @@ R2: config/report/test/CI consolidation
 ## Later feature tracks
 
 - 08 support shape/process optimization.
-- 09 SDF/OpenVDB geometry kernel exploration.
+- 09P OpenVDB experimental surface-shell pipeline hardening.
 - 10 RIP/device integration.
