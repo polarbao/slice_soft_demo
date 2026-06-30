@@ -1,8 +1,8 @@
 # REPORT_09P_R1_OpenVDB表面壳层纹理实验生产管线接入当前状态
 
-> 生成日期：2026-06-30  
-> 当前分支：`spike/09P-openvdb-experimental-pipeline`  
-> 当前基线：`spike/09B-R3-shell-production-readiness`  
+> 生成日期：2026-06-30
+> 当前分支：`spike/09P-openvdb-experimental-pipeline`
+> 当前基线：`spike/09B-R3-shell-production-readiness`
 > 阶段结论：09P-R1 已建立 experimental OpenVDB pipeline 接入边界，但未替代 legacy production path。
 
 ## 1. 当前分支与基线
