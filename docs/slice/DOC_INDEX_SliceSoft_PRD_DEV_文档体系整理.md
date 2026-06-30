@@ -17,7 +17,7 @@
 ```text
 1. 文档数量多，但没有统一入口。
 2. PRD / DEV / TASKS / REPORT 混在同一目录，读者很难判断哪个是当前真源。
-3. 部分 README、handoff、MASTER 文档仍停留在 09B-R3 或 09P-R1 前。
+3. README、AGENTS、.agents、handoff 和 MASTER 类入口已通过 09P-R2-0 同步到 09P-R1 已完成 / 09P-R2 hardening 口径。
 4. 阶段文档记录了历史决策，但不一定代表当前实现状态。
 5. 09P-R2 之前需要先把 demo -> 正式项目的文档体系和开发路线收束。
 ```
@@ -104,8 +104,8 @@ R0 / R1 / R2：正式项目化架构、模块边界、配置报告测试 CI
 1. 是否接受 09P-R1 为已完成阶段；
 2. 是否将 09P-R2 定义为 hardening，而不是继续 R1 功能开发；
 3. 是否单独拆出 mesh repair / admission gate 阶段；
-4. 是否需要把 README、AGENTS.md、.agents/docs 同步到 09P-R1 后状态；
-5. 目录级重组已经完成：正式文档进入 docs/slice，Codex 任务进入 docs/codex_task，旧阶段资料进入 docs/archive。
+4. 目录级重组已经完成：正式文档进入 docs/slice，Codex 任务进入 docs/codex_task，旧阶段资料进入 docs/archive。
+5. 09P-R2-0 文档入口同步已完成，后续进入 09P-R2-1 阶段文档包。
 ```
 
 ---
@@ -155,21 +155,23 @@ R0 / R1 / R2：正式项目化架构、模块边界、配置报告测试 CI
 
 ---
 
-## 5. 当前必须修订的过时入口
+## 5. 09P-R2-0 已同步入口
 
-以下当前入口仍可能含 09B-R3 / 09P-R1 前状态，应在 09P-R2 前单独修订：
+以下入口已同步到 09P-R1 已完成 / 09P-R2 hardening 口径：
 
 ```text
 README.md
 AGENTS.md
 .agents/docs/project-profile.md
 .agents/docs/build-and-test.md
+.agents/docs/architecture-boundary.md
+.agents/docs/doc-state.md
 docs/slice/README.md
 docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
 docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md
 ```
 
-修订原则：
+同步原则：
 
 ```text
 只更新当前阶段和执行入口；
@@ -246,15 +248,16 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 09P-R2 不应直接开始写更多功能。建议先执行：
 
 ```text
-09P-R2-0：同步文档当前状态和入口
-09P-R2-1：固化 experimental report schema
-09P-R2-2：扩展 topology admission gate
-09P-R2-3：定义 mesh repair 前置判断，但不实现自动 repair
-09P-R2-4：收敛 OpenVDB service / texture service / MaterialChannelComposer 数据契约
-09P-R2-5：建立 RGBWSV experimental golden / RIP compatibility 设计
-09P-R2-6：Qt Debug UI 读取 experimental report
-09P-R2-7：CI matrix：OpenVDB OFF / ON 分层
-09P-R2-8：生成 REPORT_09P_R2
+09P-R2-0：同步文档当前状态和入口（已完成）
+09P-R2-1：新增 09P-R2 PRD / DEV / DEMO / CODEX_PROMPT
+09P-R2-2：固化 experimental report schema
+09P-R2-3：强化 topology admission gate
+09P-R2-4：定义 mesh repair 前置判断，但不实现自动 repair
+09P-R2-5：收敛 OpenVDB service / texture service / MaterialChannelComposer 数据契约
+09P-R2-6：设计 experimental golden / RIP compatibility
+09P-R2-7：Qt Debug UI 读取 experimental report
+09P-R2-8：CI matrix：OpenVDB OFF / ON 分层
+09P-R2-9：生成 REPORT_09P_R2
 ```
 
 ---
