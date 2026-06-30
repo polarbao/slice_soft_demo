@@ -79,6 +79,8 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.h
     src/slicer_core/materials/texture_application/SurfaceShellTextureReport.cpp
     src/slicer_core/materials/texture_application/SurfaceShellTextureReport.h
+    src/slicer_core/materials/texture_application/SurfaceShellTextureService.cpp
+    src/slicer_core/materials/texture_application/SurfaceShellTextureService.h
     src/slicer_core/materials/texture_application/SurfaceAttributeMap.cpp
     src/slicer_core/materials/texture_application/SurfaceAttributeMap.h
     src/slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.cpp
@@ -229,10 +231,17 @@ add_executable(geometry_kernel_service_unit_tests
 
 target_link_libraries(geometry_kernel_service_unit_tests PRIVATE slicer_core)
 
+add_executable(surface_shell_texture_service_unit_tests
+    tests/unit/surface_shell_texture_service/main.cpp
+)
+
+target_link_libraries(surface_shell_texture_service_unit_tests PRIVATE slicer_core)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
+add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_texture_service_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
