@@ -23,3 +23,4 @@
 | `DEV_10_TextureFidelityMetrics.md` | 10 纹理保真指标定义 |
 | `DEV_11_LayerPreview_UIConfig_MultiModel设计.md` | 11 LayerPreview / UI Config / MultiModel |
 | `DEV_11_LayerPreview_DataContract.md` | 11 LayerPreview 数据契约 |
+| `DEV_11_MultiModel_CapabilityDecision.md` | 11 多模型能力评估和数据模型决策 |

@@ -80,3 +80,27 @@ REPORT_11 必须回答：
 是否需要 build volume / nesting / placement 子系统；
 是否需要修改输出 package metadata。
 ```
+
+---
+
+## 6. Task 11-5 收口决策
+
+Task 11-5 已将详细数据模型和能力评估固化到：
+
+```text
+docs/slice/DEV/DEV_11_MultiModel_CapabilityDecision.md
+```
+
+当前正式结论：
+
+```text
+11 阶段只做多模型 capability decision；
+modelId 标识模型资源来源；
+instanceId 标识一次摆放实例；
+transform 使用 translateMm / rotateDeg / scale；
+resourceScope 隔离 OBJ / MTL / texture / 3MF package 内部资源；
+productionEligible 默认 false；
+recommendedPath = sequential_first；
+joint slicing 需要后续 build volume / placement / nesting / package metadata 阶段；
+不默认实现 production 多模型输出。
+```

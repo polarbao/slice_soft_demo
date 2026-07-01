@@ -221,6 +221,8 @@ git diff --check
 
 ## 8. Task 11-5：Multi-model capability decision
 
+状态：本轮完成，提交见 `docs(11): 固化多模型能力边界决策`。
+
 目标：
 
 ```text
@@ -228,6 +230,15 @@ git diff --check
 定义 modelId / instanceId / transform / resource scope；
 输出是否进入实现的决策；
 不默认实现 production 多模型输出。
+```
+
+已完成：
+
+```text
+新增 DEV_11_MultiModel_CapabilityDecision.md；
+明确 MultiModelScene / SceneModelSource / ModelInstance / ResourceScope / CapabilityReport；
+结论为 sequential_first 优先评估，joint slicing 留待后续 build volume / placement / nesting / package metadata 阶段；
+production 多模型输出默认禁用。
 ```
 
 验证：
