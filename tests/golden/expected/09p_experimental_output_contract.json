@@ -1,0 +1,57 @@
+{
+  "schema": "p0.09p.experimental_output_contract_golden.1",
+  "reportSchema": "p0.experimental_openvdb_shell_cli_report.1",
+  "requiredModes": [
+    "strict_closed",
+    "diagnostic_only",
+    "warn_and_attempt"
+  ],
+  "safetyInvariants": {
+    "experimentalOpenvdbShell": true,
+    "legacyPathExecuted": false,
+    "productionPackageWritten": false,
+    "writeProductionRgbwsv": false,
+    "productionAllowed": false,
+    "nonProduction": true,
+    "packageSchema": "p0.rgbwsv.2",
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V"
+    ],
+    "bitDepth": 8,
+    "polarity": "black_is_print",
+    "printValue": 0,
+    "emptyValue": 255
+  },
+  "comparableFields": [
+    "schema",
+    "experimentalOpenvdbShell",
+    "legacyPathExecuted",
+    "productionPackageWritten",
+    "writeProductionRgbwsv",
+    "productionAdmission.mode",
+    "productionAdmission.status",
+    "productionAdmission.productionAllowed",
+    "productionAdmission.nonProduction",
+    "outputContract.packageSchema",
+    "outputContract.channelOrder",
+    "outputContract.bitDepth",
+    "outputContract.polarity",
+    "outputContract.printValue",
+    "outputContract.emptyValue",
+    "outputContract.perLayerStats.available",
+    "outputContract.textureFidelity.available"
+  ],
+  "trendOnlyFields": [
+    "memory.workingSetBytes",
+    "memory.peakWorkingSetBytes",
+    "stats.issueCount",
+    "stats.blockerCount",
+    "stats.warningCount"
+  ],
+  "diagnosticReasonCode": "EXPERIMENTAL_CLI_DIAGNOSTIC_ONLY"
+}

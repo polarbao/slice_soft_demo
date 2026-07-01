@@ -371,6 +371,8 @@ git diff --check
 
 ## 9. Task 09P-R2-6：设计 experimental golden / downstream output contract / texture fidelity compatibility
 
+状态：本轮完成，提交见 `test(09P): 增加 experimental golden 验证契约`。
+
 目标：
 
 不要直接写真实 OBJ/3MF production TIFF，但要定义如何比较 experimental candidate 输出。
@@ -391,6 +393,14 @@ downstream compatibility 不等于 production safe
 ```text
 docs/slice/DEMO/DEMO_09P_R2_experimental_golden_rip_compatibility.md
 scripts/run_09p_golden_tests.ps1
+```
+
+已新增：
+
+```text
+docs/slice/DEMO/DEMO_09P_R2_experimental_golden_rip_compatibility.md
+scripts/run_09p_golden_tests.ps1
+tests/golden/expected/09p_experimental_output_contract.json
 ```
 
 验证：

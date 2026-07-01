@@ -6,5 +6,6 @@
 |---|---|
 | `DEMO_00_08_Demo阶段验证与回归基线.md` | 00-08 历史 demo 验证基线 |
 | `DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md` | 09P-R2 hardening 验证方案 |
+| `DEMO_09P_R2_experimental_golden_rip_compatibility.md` | 09P-R2 experimental golden / downstream output contract / texture fidelity compatibility |
 | `DEMO_10_切片输出契约与纹理保真验证方案.md` | 10 输出契约与纹理保真验证方案 |
 | `DEMO_11_UI切片层预览交互配置验证方案.md` | 11 UI 层预览、伪彩和配置交互验证方案 |
