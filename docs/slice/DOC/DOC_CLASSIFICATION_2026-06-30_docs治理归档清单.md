@@ -56,12 +56,12 @@ docs/codex_task
 | 文件 | 状态 | 用途 |
 |---|---|---|
 | `docs/slice/README.md` | 当前入口 | docs/slice 使用规则 |
-| `docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md` | 当前入口 | 文档体系和证据等级 |
-| `docs/slice/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md` | 当前真源 | 正式产品级需求 |
-| `docs/slice/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md` | 当前真源 | 正式技术总体方案 |
-| `docs/slice/PRD_DEMO_IMPLEMENTED_SliceSoft_当前Demo功能基线.md` | 当前基线 | 已实现 demo 功能 |
-| `docs/slice/DEV_DEMO_IMPLEMENTED_SliceSoft_当前Demo技术基线.md` | 当前基线 | 已实现 demo 技术结构 |
-| `docs/slice/ROADMAP_FORMAL_SliceSoft_Demo到正式项目演进路线.md` | 当前路线 | 后续阶段规划 |
+| `docs/slice/DOC/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md` | 当前入口 | 文档体系和证据等级 |
+| `docs/slice/PRD/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md` | 当前真源 | 正式产品级需求 |
+| `docs/slice/DEV/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md` | 当前真源 | 正式技术总体方案 |
+| `docs/slice/PRD/PRD_DEMO_IMPLEMENTED_SliceSoft_当前Demo功能基线.md` | 当前基线 | 已实现 demo 功能 |
+| `docs/slice/DEV/DEV_DEMO_IMPLEMENTED_SliceSoft_当前Demo技术基线.md` | 当前基线 | 已实现 demo 技术结构 |
+| `docs/slice/ROADMAP/ROADMAP_FORMAL_SliceSoft_Demo到正式项目演进路线.md` | 当前路线 | 后续阶段规划 |
 | `docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md` | 当前执行入口 | 09P-R2 任务拆分 |
 
 ## 5. 判断原则

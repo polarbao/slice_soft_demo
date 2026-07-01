@@ -54,6 +54,7 @@ P0 / 00A / 00B / 00C
 → 09C
 → 09D
 → 10
+→ 11
 ```
 
 ---
@@ -221,7 +222,7 @@ OpenVDB experimental production pipeline hardening。
 2. 扩展 topology admission gate；
 3. 明确 mesh repair 前置判断；
 4. 收敛 OpenVDB / texture / composer 数据契约；
-5. 设计 RGBWSV experimental golden / RIP compatibility；
+5. 设计 RGBWSV experimental golden / downstream output contract / texture fidelity compatibility；
 6. Qt Debug UI 对接 experimental report；
 7. 建立 OpenVDB OFF / ON CI matrix；
 8. 输出 REPORT_09P_R2。
@@ -314,7 +315,7 @@ Production gate / release candidate。
 
 ---
 
-## 8. 09C / 09D / 10
+## 8. 09C / 09D / 10 / 11
 
 ### 8.1 09C：SDF compensated varnish prototype
 
@@ -347,16 +348,59 @@ prototype 隔离；
 不直接修改 production S channel。
 ```
 
-### 8.3 10：RIP / 设备 / 工艺联调
+### 8.3 10：切片输出交付契约 / 纹理保真验收
 
 进入条件：
 
 ```text
 RGBWSV package 稳定；
-RIP Reader 兼容；
+下游消费契约清楚；
+纹理 / UV / 材质映射保真策略清楚；
 production profile 清楚；
 失败策略清楚；
-设备侧接口边界明确。
+输出 package / manifest / report / layer summary 足够下游 RIP 工程师消费。
+```
+
+边界：
+
+```text
+不实现 RIP 半色调；
+不实现设备通信；
+不实现喷头 bitstream；
+不把 RIP 工序并入本项目主线。
+```
+
+### 8.4 11：UI 切片层预览 / 交互配置 / 多模型能力评估
+
+目标：
+
+```text
+让切片完成后的数据能在 UI 软件中按层浏览；
+通过伪彩显示 RGBWSV / mask / support / varnish / texture fidelity 等关键层信息；
+优化当前 UI 布局和显示效果；
+把常用配置从手工编辑配置文件迁移到 UI 控件；
+评估并设计多模型导入、排版、联合切片或顺序切片能力。
+```
+
+推荐拆分：
+
+```text
+11A：Layer Preview Data Contract，定义 UI 可读取的层数据、缩略图、统计和伪彩映射；
+11B：Layer Slider / Pseudo Color Viewer，实现按层滑动、通道切换、缩放和平移；
+11C：UI Layout Refresh，调整作业区、预览区、参数区、报告区布局；
+11D：Interactive Settings Panel，将常用配置做成按钮、下拉、滑块、复选框；
+11E：Multi-Model Capability Decision，判断 11 阶段内的多模型最小范围、数据模型和是否只做评估；
+11F：UI Smoke / Golden Preview，建立层预览与配置面板的自动化验证。
+```
+
+阶段边界：
+
+```text
+UI 不直接访问 slicer.cpp 内部临时结构；
+UI 不直接依赖 OpenVDB 类型；
+UI 通过 package/report/preview data contract 读取切片结果；
+11 阶段不改变 p0.rgbwsv.2；
+11 阶段不默认引入多模型 production 输出，先完成能力评估和数据模型设计。
 ```
 
 ---
@@ -366,11 +410,11 @@ production profile 清楚；
 每个后续阶段必须输出：
 
 ```text
-docs/slice/PRD_<stage>
-docs/slice/DEV_<stage>
-docs/slice/DEMO_<stage>
-docs/slice/REPORT_<stage>
-docs/slice/DOC_DECISION_<stage>，如有不可逆决策
+docs/slice/PRD/PRD_<stage>
+docs/slice/DEV/DEV_<stage>
+docs/slice/DEMO/DEMO_<stage>
+docs/slice/REPORT/REPORT_<stage>
+docs/slice/DOC/DOC_DECISION_<stage>，如有不可逆决策
 docs/codex_task/current/TASKS_<stage>
 docs/codex_task/current/CODEX_PROMPT_<stage>
 ```
@@ -378,11 +422,33 @@ docs/codex_task/current/CODEX_PROMPT_<stage>
 09P-R2 开始前建议优先补：
 
 ```text
-docs/slice/PRD_09P_R2_OpenVDB实验生产管线Hardening.md
-docs/slice/DEV_09P_R2_ReportSchema_AdmissionGate_CI_UI设计.md
-docs/slice/DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md
+docs/slice/PRD/PRD_09P_R2_OpenVDB实验生产管线Hardening.md
+docs/slice/DEV/DEV_09P_R2_ReportSchema_AdmissionGate_CI_UI设计.md
+docs/slice/DEMO/DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md
 docs/codex_task/current/TASKS_09P_R2_OpenVDB实验生产管线Hardening任务清单.md
 docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening执行指令.md
+```
+
+11 阶段建议新增：
+
+```text
+docs/slice/PRD/PRD_11_UI切片层预览交互配置与多模型能力.md
+docs/slice/DEV/DEV_11_LayerPreview_UIConfig_MultiModel设计.md
+docs/slice/DEMO/DEMO_11_UI切片层预览交互配置验证方案.md
+docs/slice/DOC/DOC_DECISION_11_多模型切片处理范围决策.md
+docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
+docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
+```
+
+10 阶段建议新增：
+
+```text
+docs/slice/PRD/PRD_10_切片输出交付契约与纹理保真验收.md
+docs/slice/DEV/DEV_10_OutputContract_TextureFidelity设计.md
+docs/slice/DEMO/DEMO_10_切片输出契约与纹理保真验证方案.md
+docs/slice/DOC/DOC_DECISION_10_RIP边界与切片输出契约.md
+docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收任务清单.md
+docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真验收执行指令.md
 ```
 
 ---
@@ -396,6 +462,7 @@ docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening�
 → 再执行 09P-R2 hardening
 → 再判断是否进入 09P-R3 或 mesh repair/admission gate
 → 再推进 09C / 09D / 10
+→ 再进入 11 做 UI 层预览、交互配置和多模型能力评估
 ```
 
 不要把 09P-R1 的 experimental boundary 误解成 production path 已经完成。现在最关键的是把“能跑”变成“可解释、可回归、可准入、可 UI 展示”。

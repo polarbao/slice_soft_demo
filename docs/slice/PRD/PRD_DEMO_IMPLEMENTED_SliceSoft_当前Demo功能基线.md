@@ -203,7 +203,7 @@ SDF support clearance 正式输出；
 | 报告稳定性 | report schema 版本化，字段兼容，UI 可读 |
 | UI 产品化 | 从 debug UI 演进为作业式工作台 |
 | 输出责任边界 | experimental 与 production 输出强隔离 |
-| 工艺闭环 | 材料、白墨、光油、支撑策略需要与真实设备/RIP 联调 |
+| 下游契约 | 材料、白墨、光油、支撑策略需要形成稳定输出契约，供下游 RIP / 设备工艺团队消费 |
 | 性能与内存 | 建立真实模型集合、耗时、内存、失败率门槛 |
 | 测试矩阵 | OpenVDB OFF / ON、Debug / Release、Windows 环境分层 |
 
@@ -216,7 +216,8 @@ SDF support clearance 正式输出；
 Mesh Repair 专项：仅在准入策略清楚后推进
 09C：SDF compensated varnish prototype
 09D：SDF support clearance diagnostics
-10：RIP / 设备 / 工艺联调
+10：切片输出交付契约 / 纹理保真验收
+11：UI 切片层预览 / 交互配置 / 多模型能力评估
 ```
 
 ## 7. 结论

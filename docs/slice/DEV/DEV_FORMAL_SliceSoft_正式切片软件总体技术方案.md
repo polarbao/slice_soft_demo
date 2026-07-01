@@ -18,7 +18,7 @@
 3. 用 stable issue code 和 production admission 管住真实模型准入；
 4. 用 service boundary 收束 geometry / texture / material / output；
 5. 用 config schema / report schema / golden / CI 支撑长期维护；
-6. 为后续 RIP / 设备 / 工艺联调保留清晰输出边界。
+6. 为下游 RIP 工程团队保留清晰输出契约，但本项目不实现 RIP、设备通信或喷头 bitstream。
 ```
 
 ---
@@ -491,12 +491,12 @@ ValidationIssue block
 2. report schema hardening；
 3. admission gate hardening；
 4. service data contract hardening；
-5. experimental golden / RIP compatibility 设计；
+5. experimental golden / downstream output contract / texture fidelity compatibility 设计；
 6. Qt UI report integration；
 7. CI matrix；
 8. production candidate decision；
 9. mesh repair / admission gate 专项；
-10. 09C / 09D / 10。
+10. 09C / 09D / 10 / 11。
 ```
 
 ---

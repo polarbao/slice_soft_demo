@@ -167,7 +167,7 @@ AGENTS.md
 .agents/docs/architecture-boundary.md
 .agents/docs/doc-state.md
 docs/slice/README.md
-docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
+docs/slice/DOC/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
 docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md
 ```
 
@@ -190,14 +190,37 @@ docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任�
 
 ```text
 docs/slice/README.md
-docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
-docs/slice/DOC_CLASSIFICATION_2026-06-30_docs治理归档清单.md
-docs/slice/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md
-docs/slice/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md
-docs/slice/PRD_DEMO_IMPLEMENTED_SliceSoft_当前Demo功能基线.md
-docs/slice/DEV_DEMO_IMPLEMENTED_SliceSoft_当前Demo技术基线.md
-docs/slice/ROADMAP_FORMAL_SliceSoft_Demo到正式项目演进路线.md
+docs/slice/DOC/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
+docs/slice/DOC/DOC_CLASSIFICATION_2026-06-30_docs治理归档清单.md
+docs/slice/PRD/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md
+docs/slice/DEV/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md
+docs/slice/PRD/PRD_DEMO_IMPLEMENTED_SliceSoft_当前Demo功能基线.md
+docs/slice/DEV/DEV_DEMO_IMPLEMENTED_SliceSoft_当前Demo技术基线.md
+docs/slice/ROADMAP/ROADMAP_FORMAL_SliceSoft_Demo到正式项目演进路线.md
 docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md
+docs/slice/DOC/DOC_AUDIT_00_08_历史阶段文档缺口与补齐清单.md
+docs/slice/PRD/PRD_00_08_Demo阶段功能基线汇总.md
+docs/slice/DEV/DEV_00_08_Demo阶段技术基线汇总.md
+docs/slice/DEMO/DEMO_00_08_Demo阶段验证与回归基线.md
+docs/codex_task/current/TASKS_00_08_历史阶段文档补齐任务清单.md
+docs/codex_task/current/CODEX_PROMPT_00_08_历史阶段文档补齐执行指令.md
+docs/slice/ROADMAP/ROADMAP_SHORT_MID_LONG_SliceSoft_项目运行计划.md
+docs/slice/PRD/PRD_09P_R2_OpenVDB实验生产管线Hardening.md
+docs/slice/DEV/DEV_09P_R2_ReportSchema_AdmissionGate_CI_UI设计.md
+docs/slice/DEMO/DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md
+docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening执行指令.md
+docs/slice/PRD/PRD_10_切片输出交付契约与纹理保真验收.md
+docs/slice/DEV/DEV_10_OutputContract_TextureFidelity设计.md
+docs/slice/DEMO/DEMO_10_切片输出契约与纹理保真验证方案.md
+docs/slice/DOC/DOC_DECISION_10_RIP边界与切片输出契约.md
+docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收任务清单.md
+docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真验收执行指令.md
+docs/slice/PRD/PRD_11_UI切片层预览交互配置与多模型能力.md
+docs/slice/DEV/DEV_11_LayerPreview_UIConfig_MultiModel设计.md
+docs/slice/DEMO/DEMO_11_UI切片层预览交互配置验证方案.md
+docs/slice/DOC/DOC_DECISION_11_多模型切片处理范围决策.md
+docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
+docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
 ```
 
 它们的角色：
@@ -212,6 +235,29 @@ docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任�
 | `DEV_DEMO_IMPLEMENTED_*` | 当前 demo 已实现技术基线 |
 | `ROADMAP_FORMAL_*` | demo 到正式项目转型路线 |
 | `TASKS_09P_R2_*` | 09P-R2 前置治理与 hardening 可执行任务 |
+| `DOC_AUDIT_00_08_*` | 00-08 历史阶段文档缺口审计与补齐说明 |
+| `PRD_00_08_*` | 00-08 demo 阶段功能基线汇总 |
+| `DEV_00_08_*` | 00-08 demo 阶段技术基线汇总 |
+| `DEMO_00_08_*` | 00-08 demo 阶段验证与回归基线 |
+| `TASKS_00_08_*` | 00-08 历史阶段文档补齐任务清单 |
+| `CODEX_PROMPT_00_08_*` | 00-08 历史阶段文档补齐执行提示词 |
+| `ROADMAP_SHORT_MID_LONG_*` | 短期 / 中期 / 长期项目运行计划 |
+| `PRD_09P_R2_*` | 09P-R2 OpenVDB experimental hardening 产品需求 |
+| `DEV_09P_R2_*` | 09P-R2 report schema、admission gate、CI、UI 技术方案 |
+| `DEMO_09P_R2_*` | 09P-R2 hardening 验证方案 |
+| `CODEX_PROMPT_09P_R2_*` | 09P-R2 Codex 执行提示词 |
+| `PRD_10_*` | 10 阶段切片输出契约与纹理保真产品需求 |
+| `DEV_10_*` | 10 阶段 output contract / texture fidelity 技术方案 |
+| `DEMO_10_*` | 10 阶段输出契约验证方案 |
+| `DOC_DECISION_10_*` | 10 阶段 RIP 边界与切片输出契约决策 |
+| `TASKS_10_*` | 10 阶段可执行任务清单 |
+| `CODEX_PROMPT_10_*` | 10 阶段 Codex 执行提示词 |
+| `PRD_11_*` | 11 阶段 UI 层预览、交互配置、多模型能力产品需求 |
+| `DEV_11_*` | 11 阶段 LayerPreview / UI Config / MultiModel 技术方案 |
+| `DEMO_11_*` | 11 阶段 layer preview、伪彩、配置面板验证方案 |
+| `DOC_DECISION_11_*` | 多模型处理范围决策，当前只新增 11 一个阶段 |
+| `TASKS_11_*` | 11 阶段可执行任务清单 |
+| `CODEX_PROMPT_11_*` | 11 阶段 Codex 执行提示词 |
 
 ---
 
@@ -254,7 +300,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 09P-R2-3：强化 topology admission gate
 09P-R2-4：定义 mesh repair 前置判断，但不实现自动 repair
 09P-R2-5：收敛 OpenVDB service / texture service / MaterialChannelComposer 数据契约
-09P-R2-6：设计 experimental golden / RIP compatibility
+09P-R2-6：设计 experimental golden / downstream output contract / texture fidelity compatibility
 09P-R2-7：Qt Debug UI 读取 experimental report
 09P-R2-8：CI matrix：OpenVDB OFF / ON 分层
 09P-R2-9：生成 REPORT_09P_R2

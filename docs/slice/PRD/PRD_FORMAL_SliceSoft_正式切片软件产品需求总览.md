@@ -31,7 +31,7 @@ SliceSoft 的正式产品定位是：
 → 输出 RGBWSV TIFF package、manifest、preview、reports
 → 通过 RIP Reader / golden / CI 验证
 → 支持 Qt Debug UI 调参、预览、报告查看
-→ 最终进入 RIP / 设备 / 工艺联调
+→ 交付稳定切片输出契约给下游 RIP / 设备工艺团队
 ```
 
 正式项目不是一次性替换 demo，而是保留 legacy 稳定生产路径，同时逐步把 OpenVDB/SDF 能力通过 feature flag、诊断、golden 和 production gate 进入候选生产路径。
@@ -238,7 +238,7 @@ warn_and_attempt 不得 production-safe
 3. topology blocker 和 repair 前置判断清楚；
 4. OpenVDB OFF / ON 测试矩阵清楚；
 5. Qt Debug UI 能读取 experimental report；
-6. golden / RIP compatibility 的边界明确；
+6. golden / downstream output contract / texture fidelity compatibility 的边界明确；
 7. 下一阶段是否进入 mesh repair 或 09P-R3 有明确判断。
 ```
 
@@ -249,7 +249,7 @@ warn_and_attempt 不得 production-safe
 2. 真实 OBJ/3MF 直接写 production RGBWSV；
 3. 自动 mesh repair 大实现；
 4. 修改 p0.rgbwsv.2；
-5. 设备/RIP 工艺联调；
+5. RIP 半色调、设备通信、喷头 bitstream 与设备工艺联调；
 6. compensated varnish / support clearance。
 ```
 
@@ -266,7 +266,8 @@ warn_and_attempt 不得 production-safe
 → mesh repair / admission gate 专项阶段，可按风险提前插入
 → 09C：SDF compensated varnish prototype
 → 09D：SDF support clearance / overhang diagnostics
-→ 10：RIP / 设备 / 工艺联调
+→ 10：切片输出交付契约 / 纹理保真验收
+→ 11：UI 切片层预览 / 交互配置 / 多模型能力评估
 ```
 
 ---

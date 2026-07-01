@@ -59,7 +59,7 @@ non-manifold / duplicate / opposite duplicate / local winding 必须阻断 stric
 3. 强化 topology admission gate；
 4. 明确 mesh repair 前置判断；
 5. 收敛 service data contract；
-6. 设计 experimental golden / RIP compatibility；
+6. 设计 experimental golden / downstream output contract / texture fidelity compatibility；
 7. Qt UI 读取 experimental report；
 8. 建立 OpenVDB OFF / ON CI matrix；
 9. 生成 REPORT_09P_R2。
@@ -74,7 +74,7 @@ production RGBWSV 输出真实 OBJ/3MF
 协议升级
 compensated varnish
 support clearance
-设备/RIP 工艺联调
+RIP 半色调、设备通信、喷头 bitstream 与设备工艺联调
 ```
 
 ---
@@ -100,10 +100,10 @@ AGENTS.md
 .agents/docs/project-profile.md
 .agents/docs/build-and-test.md
 docs/slice/README.md
-docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
-docs/slice/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md
-docs/slice/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md
-docs/slice/ROADMAP_FORMAL_SliceSoft_Demo到正式项目演进路线.md
+docs/slice/DOC/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
+docs/slice/PRD/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md
+docs/slice/DEV/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md
+docs/slice/ROADMAP/ROADMAP_FORMAL_SliceSoft_Demo到正式项目演进路线.md
 docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md
 ```
 
@@ -134,14 +134,16 @@ git diff --check
 
 ## 4. Task 09P-R2-1：新增 09P-R2 PRD / DEV / DEMO / CODEX_PROMPT
 
+状态：已完成文档补齐，尚未提交。
+
 目标：
 
 新增阶段文档：
 
 ```text
-docs/slice/PRD_09P_R2_OpenVDB实验生产管线Hardening.md
-docs/slice/DEV_09P_R2_ReportSchema_AdmissionGate_CI_UI设计.md
-docs/slice/DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md
+docs/slice/PRD/PRD_09P_R2_OpenVDB实验生产管线Hardening.md
+docs/slice/DEV/DEV_09P_R2_ReportSchema_AdmissionGate_CI_UI设计.md
+docs/slice/DEMO/DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md
 docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening执行指令.md
 ```
 
@@ -155,7 +157,7 @@ mesh repair pre-check
 service contract
 Qt UI report integration
 CI matrix
-golden / RIP compatibility
+golden / downstream output contract / texture fidelity compatibility
 ```
 
 验证：
@@ -168,6 +170,8 @@ git diff --check
 ---
 
 ## 5. Task 09P-R2-2：固化 experimental report schema
+
+状态：已完成，尚未提交。
 
 目标：
 
@@ -188,7 +192,7 @@ writeProductionRgbwsv
 建议新增：
 
 ```text
-docs/slice/R2_SCHEMA_09P_experimental_openvdb_shell_report.md
+docs/slice/DOC/DOC_SCHEMA_09P_R2_experimental_openvdb_shell_report.md
 tests/golden/expected/09p_experimental_report_schema.json
 scripts/run_09p_schema_tests.ps1
 ```
@@ -200,6 +204,24 @@ cmake --build build --config Debug
 ctest --test-dir build -C Debug --output-on-failure
 powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_cli_experimental_tests.ps1
 git diff --check
+```
+
+本轮已运行验证：
+
+```powershell
+cmake -S . -B build-09p-r2-nmake -G "NMake Makefiles" -DBUILD_SLICER_DEBUG_UI=OFF -DENABLE_GEOMETRY_KERNEL_DEMO=OFF
+cmake --build build-09p-r2-nmake
+ctest --test-dir build-09p-r2-nmake --output-on-failure
+powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_cli_experimental_tests.ps1 -BuildDir build-09p-r2-nmake -Config Debug
+powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_schema_tests.ps1 -BuildDir build-09p-r2-nmake -Config Debug
+```
+
+说明：
+
+```text
+默认 Visual Studio build 目录调用 HostX86\x64 cl.exe 时多次超时。
+本轮改用 VsDevCmd + NMake Makefiles + HostX64 验证目录完成编译与测试。
+build-09p-r2-nmake 为 .gitignore 覆盖的临时验证目录。
 ```
 
 ---
@@ -262,7 +284,7 @@ repair_then_strict 何时允许 productionAllowed？
 建议新增：
 
 ```text
-docs/slice/DOC_DECISION_09P_R2_mesh_repair_admission_gate.md
+docs/slice/DOC/DOC_DECISION_09P_R2_mesh_repair_admission_gate.md
 ```
 
 禁止事项：
@@ -310,7 +332,7 @@ timing/memory/stat 字段
 建议新增：
 
 ```text
-docs/slice/DEV_09P_R2_ServiceDataContract.md
+docs/slice/DEV/DEV_09P_R2_ServiceDataContract.md
 ```
 
 验证：
@@ -323,7 +345,7 @@ git diff --check
 
 ---
 
-## 9. Task 09P-R2-6：设计 experimental golden / RIP compatibility
+## 9. Task 09P-R2-6：设计 experimental golden / downstream output contract / texture fidelity compatibility
 
 目标：
 
@@ -335,7 +357,7 @@ git diff --check
 report golden
 diagnostic golden
 optional in-memory RGBWSV summary golden
-RIP compatibility 不等于 production safe
+downstream compatibility 不等于 production safe
 哪些字段可比较
 哪些字段只作趋势
 ```
@@ -343,7 +365,7 @@ RIP compatibility 不等于 production safe
 建议新增：
 
 ```text
-docs/slice/DEMO_09P_R2_experimental_golden_rip_compatibility.md
+docs/slice/DEMO/DEMO_09P_R2_experimental_golden_rip_compatibility.md
 scripts/run_09p_golden_tests.ps1
 ```
 
@@ -409,7 +431,7 @@ Benchmark：Release optional/manual
 
 ```text
 scripts/run_09p_r2_ci_matrix.ps1
-docs/slice/DEMO_09P_R2_CI_Matrix验证方案.md
+docs/slice/DEMO/DEMO_09P_R2_CI_Matrix验证方案.md
 ```
 
 验证：
@@ -434,7 +456,7 @@ $env:VCPKG_ROOT='D:\vcpkg-openvdb'
 阶段完成后生成：
 
 ```text
-docs/slice/REPORT_09P_R2_OpenVDB实验生产管线Hardening当前状态.md
+docs/slice/REPORT/REPORT_09P_R2_OpenVDB实验生产管线Hardening当前状态.md
 ```
 
 必须包含：
@@ -470,7 +492,7 @@ git diff --check
 09P-R2-3 admission gate
 09P-R2-4 mesh repair 前置判断
 09P-R2-5 service data contract
-09P-R2-6 golden / RIP compatibility
+09P-R2-6 golden / downstream output contract / texture fidelity compatibility
 09P-R2-7 Qt UI report integration
 09P-R2-8 CI matrix
 09P-R2-9 REPORT_09P_R2
@@ -482,9 +504,9 @@ git diff --check
 
 ```text
 请阅读 AGENTS.md、docs/slice/README.md、
-docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md、
-docs/slice/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md、
-docs/slice/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md、
+docs/slice/DOC/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md、
+docs/slice/PRD/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md、
+docs/slice/DEV/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md、
 docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md。
 
 现在只执行 Task 09P-R2-X：<任务标题>。
