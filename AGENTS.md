@@ -61,6 +61,7 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Architecture boundaries: `.agents/docs/architecture-boundary.md`
 - Build and test: `.agents/docs/build-and-test.md`
 - Code standards: `.agents/docs/code-standards.md`
+- Commit style: `.agents/docs/commit-style.md`
 - Document state: `.agents/docs/doc-state.md`
 - Formal docs index: `docs/slice/README.md`
 - Codex task index: `docs/codex_task/README.md`

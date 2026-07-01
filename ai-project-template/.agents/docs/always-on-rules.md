@@ -14,3 +14,4 @@
   - Codex tasks: `{{CODEX_TASK_PATH}}`
   - history/archive: `{{ARCHIVE_DOCS_PATH}}`
 - Follow `.agents/docs/code-standards.md` for language/framework style, comments, ownership, and boundary rules.
+- Follow `.agents/docs/commit-style.md` for commit subject/body format, validation notes, and boundary notes.

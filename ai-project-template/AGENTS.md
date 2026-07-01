@@ -56,6 +56,7 @@ Use A/B/C/D labels for high-risk work.
 - `.agents/docs/architecture-boundary.md`
 - `.agents/docs/build-and-test.md`
 - `.agents/docs/code-standards.md`
+- `.agents/docs/commit-style.md`
 - `.agents/docs/doc-state.md`
 - `.agents/docs/chat-save.md`
 

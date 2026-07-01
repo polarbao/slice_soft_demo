@@ -16,3 +16,4 @@
 - Keep OpenVDB optional, disabled by default, and separated from production RGBWSV output unless explicitly approved.
 - Preserve `p0.rgbwsv.2`, RGBWSV channel order, uint8 depth, and `black_is_print`.
 - Follow `.agents/docs/code-standards.md` for language/framework style, comments, ownership, and boundary rules.
+- Follow `.agents/docs/commit-style.md` for future commit subjects, Chinese body sections, validation notes, and safety-boundary notes.

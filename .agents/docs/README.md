@@ -20,6 +20,7 @@ This directory uses progressive disclosure:
 - `build-and-test.md`: build, dependency, test, packaging, and deployment notes.
 - `verification.md`: verification policy and command selection.
 - `code-standards.md`: language/framework style, comments, ownership, error handling, and external boundaries.
+- `commit-style.md`: commit subject/body format, Chinese `【模块】` sections, validation and boundary notes.
 - `doc-state.md`: how to resolve conflicting current/historical docs.
 - `chat-save.md`: how to save useful AI conversation context when explicitly requested.
 - `context-handoff.md`: how to prepare compact continuation context.

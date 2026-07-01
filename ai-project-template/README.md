@@ -29,6 +29,7 @@ Detailed usage guides:
 - Replace `{{FORMAL_DOCS_PATH}}`, `{{CODEX_TASK_PATH}}`, `{{ARCHIVE_DOCS_PATH}}`, and `{{CURRENT_TASK_FILE}}`.
 - Replace build/test commands in `.agents/docs/build-and-test.md` and `.codex/project-context.toml`.
 - Replace language/framework style placeholders in `.agents/docs/code-standards.md`.
+- Replace commit language, scopes, validation labels, and boundary examples in `.agents/docs/commit-style.md`.
 - Rename Skill folders from `project-*` if the target repository needs project-specific prefixes.
 - Remove irrelevant historical-reference sections.
 - Keep project facts out of global/user skills.

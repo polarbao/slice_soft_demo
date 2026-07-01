@@ -18,5 +18,6 @@ This directory uses progressive disclosure:
 - `architecture-boundary.md`: module boundaries and dependency direction.
 - `build-and-test.md`: build, dependency, test, packaging, and deployment notes.
 - `code-standards.md`: language/framework style, comments, ownership, error handling, and external boundaries.
+- `commit-style.md`: commit subject/body format, validation notes, and boundary notes.
 - `doc-state.md`: how to resolve conflicting current/historical docs.
 - `chat-save.md`: how to save useful AI conversation context when explicitly requested.
