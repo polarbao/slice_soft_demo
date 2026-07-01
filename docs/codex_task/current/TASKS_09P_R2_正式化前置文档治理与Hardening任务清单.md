@@ -414,6 +414,8 @@ git diff --check
 
 ## 10. Task 09P-R2-7：Qt Debug UI 读取 experimental report
 
+状态：本轮完成，提交见 `feat(ui): 展示 experimental OpenVDB report 摘要`。
+
 目标：
 
 让 Qt Debug UI 能读取并展示 experimental OpenVDB report，而不是直接触发 production package。

@@ -34,10 +34,20 @@ int main(int argc, char* argv[]) {
         return UiSmokeTestRunner().run(options);
     }
 
-    MainWindow window(QDir::currentPath());
     if (args.contains("--self-test")) {
-        return 0;
+        UiSmokeTestRunner runner;
+        UiSmokeTestOptions options;
+        options.repo_root = QDir::currentPath();
+        options.case_name = "startup";
+        const int startupResult = runner.run(options);
+        if (startupResult != 0) {
+            return startupResult;
+        }
+        options.case_name = "experimental-report-summary";
+        return runner.run(options);
     }
+
+    MainWindow window(QDir::currentPath());
     window.show();
     return app.exec();
 }

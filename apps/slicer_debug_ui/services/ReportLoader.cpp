@@ -50,13 +50,60 @@ void appendChannel(QStringList& lines, const QJsonObject& object, const QString&
     lines.push_back(line);
 }
 
+QString StringArrayToText(const QJsonValue& value)
+{
+    const QJsonArray array = value.toArray();
+    QStringList values;
+    for (const QJsonValue& item : array)
+    {
+        values.push_back(scalarToString(item));
+    }
+    return values.isEmpty() ? "无" : values.join(", ");
+}
+
+void AppendExperimentalOpenVdbSummary(QStringList& lines, const QJsonObject& object)
+{
+    appendIfPresent(lines, object, "experimentalOpenvdbShell", "Experimental OpenVDB");
+    appendIfPresent(lines, object, "legacyPathExecuted", "legacyPathExecuted");
+    appendIfPresent(lines, object, "productionPackageWritten", "productionPackageWritten");
+    appendIfPresent(lines, object, "writeProductionRgbwsv", "writeProductionRgbwsv");
+
+    const QJsonObject openvdb = object.value("openvdb").toObject();
+    if (!openvdb.isEmpty())
+    {
+        appendIfPresent(lines, openvdb, "enabled", "OpenVDB 编译启用");
+        appendIfPresent(lines, openvdb, "available", "OpenVDB 可用");
+        appendIfPresent(lines, openvdb, "version", "OpenVDB 版本");
+    }
+
+    const QJsonObject admission = object.value("productionAdmission").toObject();
+    if (!admission.isEmpty())
+    {
+        appendIfPresent(lines, admission, "mode", "准入模式");
+        appendIfPresent(lines, admission, "status", "准入状态");
+        appendIfPresent(lines, admission, "productionAllowed", "允许生产");
+        appendIfPresent(lines, admission, "nonProduction", "仅非生产");
+        lines.push_back("阻断码: " + StringArrayToText(admission.value("blockerCodes")));
+        lines.push_back("警告码: " + StringArrayToText(admission.value("warningCodes")));
+    }
+
+    const QJsonObject legacyPath = object.value("legacyPath").toObject();
+    if (!legacyPath.isEmpty())
+    {
+        appendIfPresent(lines, legacyPath, "executed", "Legacy path executed");
+        appendIfPresent(lines, legacyPath, "productionPackageWritten", "Legacy package written");
+    }
+}
+
 void collectNamedArrays(QStringList& lines, const QJsonValue& value, const QString& prefix) {
     if (value.isObject()) {
         const QJsonObject object = value.toObject();
         for (auto it = object.begin(); it != object.end(); ++it) {
             const QString key = it.key();
             const QString next_prefix = prefix.isEmpty() ? key : prefix + "." + key;
-            if ((key == "warnings" || key == "errors" || key == "failures") && it.value().isArray()) {
+            if ((key == "warnings" || key == "errors" || key == "failures" || key == "blockerCodes"
+                 || key == "warningCodes" || key == "reasonCodes")
+                && it.value().isArray()) {
                 const QJsonArray array = it.value().toArray();
                 for (const QJsonValue& item : array) {
                     lines.push_back(next_prefix + ": " + scalarToString(item));
@@ -100,6 +147,9 @@ QString ReportLoader::summarize(const JsonReport& report) {
     QStringList lines;
     lines.push_back(QFileInfo(report.path).fileName());
     appendIfPresent(lines, object, "schema", "协议");
+    if (object.value("schema").toString() == "p0.experimental_openvdb_shell_cli_report.1") {
+        AppendExperimentalOpenVdbSummary(lines, object);
+    }
     appendIfPresent(lines, object, "slicingMode", "切片模式");
     appendIfPresent(lines, object, "profileName", "工艺配置名称");
     appendIfPresent(lines, object, "target", "目标");

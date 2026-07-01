@@ -6,14 +6,77 @@
 #include "ConfigDocument.h"
 #include "PackageLoader.h"
 #include "PreviewReportIndex.h"
+#include "ReportLoader.h"
 #include "ToolPaths.h"
 
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QTemporaryDir>
 #include <QTextStream>
+
+namespace
+{
+
+QJsonArray StringArray(const QStringList& values)
+{
+    QJsonArray array;
+    for (const QString& value : values)
+    {
+        array.append(value);
+    }
+    return array;
+}
+
+QJsonObject BuildExperimentalReportFixture()
+{
+    QJsonObject admission;
+    admission["mode"] = "strict_closed";
+    admission["status"] = "non_production_only";
+    admission["productionAllowed"] = false;
+    admission["nonProduction"] = true;
+    admission["blockerCodes"] = StringArray(QStringList{"OPENVDB_UNAVAILABLE"});
+    admission["warningCodes"] = StringArray(QStringList{"EXPERIMENTAL_CLI_DIAGNOSTIC_ONLY"});
+    admission["reasonCodes"] = StringArray(QStringList{"OPENVDB_UNAVAILABLE", "EXPERIMENTAL_CLI_DIAGNOSTIC_ONLY"});
+
+    QJsonObject openvdb;
+    openvdb["enabled"] = false;
+    openvdb["available"] = false;
+    openvdb["version"] = "";
+
+    QJsonObject legacyPath;
+    legacyPath["executed"] = false;
+    legacyPath["productionPackageWritten"] = false;
+
+    QJsonObject root;
+    root["schema"] = "p0.experimental_openvdb_shell_cli_report.1";
+    root["experimentalOpenvdbShell"] = true;
+    root["legacyPathExecuted"] = false;
+    root["productionPackageWritten"] = false;
+    root["writeProductionRgbwsv"] = false;
+    root["openvdb"] = openvdb;
+    root["productionAdmission"] = admission;
+    root["legacyPath"] = legacyPath;
+    return root;
+}
+
+bool ContainsAll(const QString& text, const QStringList& expected)
+{
+    for (const QString& value : expected)
+    {
+        if (!text.contains(value))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+}  // namespace
 
 int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "startup") {
@@ -36,6 +99,9 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     }
     if (options.case_name == "compare-profiles") {
         return compareProfiles(options);
+    }
+    if (options.case_name == "experimental-report-summary") {
+        return experimentalReportSummary(options);
     }
     return fail("未知 ui smoke test case：" + options.case_name);
 }
@@ -196,6 +262,53 @@ int UiSmokeTestRunner::compareProfiles(const UiSmokeTestOptions& options) {
         return fail("compare-profiles 失败：" + QString::fromLocal8Bit(process.readAllStandardError()));
     }
     return QFileInfo::exists(output) ? pass("compare-profiles " + output) : fail("compare-profiles 未生成输出。");
+}
+
+int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {
+    Q_UNUSED(options);
+    QTemporaryDir tempDir;
+    if (!tempDir.isValid()) {
+        return fail("experimental-report-summary 无法创建临时目录。");
+    }
+    QDir packageDir(tempDir.path());
+    if (!packageDir.mkpath("reports")) {
+        return fail("experimental-report-summary 无法创建 reports 目录。");
+    }
+
+    const QString reportPath = packageDir.filePath("reports/experimental_openvdb_shell_report.json");
+    QFile reportFile(reportPath);
+    if (!reportFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return fail("experimental-report-summary 无法写入 report fixture。");
+    }
+    reportFile.write(QJsonDocument(BuildExperimentalReportFixture()).toJson(QJsonDocument::Indented));
+    reportFile.close();
+
+    const PackageSummary package = PackageLoader().load(packageDir.path());
+    if (!package.report_paths.contains(reportPath)) {
+        return fail("experimental-report-summary PackageLoader 未发现 experimental report。");
+    }
+
+    const JsonReport report = ReportLoader().load(reportPath);
+    const QString summary = ReportLoader::summarize(report);
+    const QString warnings = ReportLoader::collectWarningsAndFailures(report.document.object());
+    const QStringList expectedSummary{
+        "OpenVDB 可用: 否",
+        "准入状态: non_production_only",
+        "允许生产: 否",
+        "仅非生产: 是",
+        "阻断码: OPENVDB_UNAVAILABLE",
+        "警告码: EXPERIMENTAL_CLI_DIAGNOSTIC_ONLY",
+        "legacyPathExecuted: 否",
+        "productionPackageWritten: 否",
+    };
+    if (!ContainsAll(summary, expectedSummary)) {
+        return fail("experimental-report-summary 摘要缺少关键字段：\n" + summary);
+    }
+    if (!warnings.contains("productionAdmission.blockerCodes: OPENVDB_UNAVAILABLE")
+        || !warnings.contains("productionAdmission.warningCodes: EXPERIMENTAL_CLI_DIAGNOSTIC_ONLY")) {
+        return fail("experimental-report-summary 警告视图缺少 blocker/warning codes：\n" + warnings);
+    }
+    return pass("experimental-report-summary");
 }
 
 int UiSmokeTestRunner::fail(const QString& message) const {
