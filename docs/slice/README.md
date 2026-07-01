@@ -39,6 +39,7 @@
 | `DEMO/DEMO_10_切片输出契约与纹理保真验证方案.md` | 当前 10 阶段验证方案 |
 | `DEMO/DEMO_10_RealModelAcceptanceSet.md` | 当前 10 阶段真实模型验收集 |
 | `DOC/DOC_DECISION_10_RIP边界与切片输出契约.md` | 当前 10 阶段 RIP 边界决策 |
+| `DOC/DOC_CHECKLIST_10_DownstreamHandoff.md` | 当前 10 阶段下游交付清单 |
 
 ## 阶段入口
 

@@ -183,11 +183,19 @@ git diff --check
 
 ## 8. Task 10-5：Downstream handoff checklist
 
+状态：本轮完成，提交见 `docs(10): 建立下游交付清单`。
+
 目标：
 
 ```text
 定义交付给下游 RIP 工程师的 package / manifest / report / limitation 清单；
 记录下游反馈入口。
+```
+
+已新增：
+
+```text
+docs/slice/DOC/DOC_CHECKLIST_10_DownstreamHandoff.md
 ```
 
 验证：
