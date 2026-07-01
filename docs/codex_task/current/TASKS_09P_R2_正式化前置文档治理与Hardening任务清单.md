@@ -275,6 +275,8 @@ git diff --check
 
 ## 7. Task 09P-R2-4：定义 mesh repair 前置判断
 
+状态：本轮完成，提交见 `docs(09P): 定义 mesh repair 前置判断`。
+
 目标：
 
 只定义 repair 前置判断，不实现大规模自动 repair。
@@ -290,6 +292,12 @@ repair_then_strict 何时允许 productionAllowed？
 ```
 
 建议新增：
+
+```text
+docs/slice/DOC/DOC_DECISION_09P_R2_mesh_repair_admission_gate.md
+```
+
+已新增：
 
 ```text
 docs/slice/DOC/DOC_DECISION_09P_R2_mesh_repair_admission_gate.md

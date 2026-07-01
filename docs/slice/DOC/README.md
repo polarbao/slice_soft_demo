@@ -16,5 +16,6 @@
 
 | 文件 | 决策 |
 |---|---|
+| `DOC_DECISION_09P_R2_mesh_repair_admission_gate.md` | 09P-R2 mesh repair 前置判断与 `repair_then_strict` 准入边界 |
 | `DOC_DECISION_10_RIP边界与切片输出契约.md` | 10 阶段不实现 RIP，只定义切片输出契约 |
 | `DOC_DECISION_11_多模型切片处理范围决策.md` | 11 阶段只做多模型评估，不默认进入 production |
