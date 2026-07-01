@@ -132,11 +132,19 @@ git diff --check
 
 ## 6. Task 10-3：Texture fidelity 指标
 
+状态：本轮完成，提交见 `docs(10): 定义纹理保真指标契约`。
+
 目标：
 
 ```text
 定义 textureResolvedRate、uvCoverageRate、fallbackPixelRate 等指标；
 明确 OBJ/MTL、3MF ColorGroup、Texture2DGroup 的字段来源。
+```
+
+已新增：
+
+```text
+docs/slice/DEV/DEV_10_TextureFidelityMetrics.md
 ```
 
 验证：
