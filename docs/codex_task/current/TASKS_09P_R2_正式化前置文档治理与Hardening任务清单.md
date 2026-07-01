@@ -322,6 +322,8 @@ git diff --check
 
 ## 8. Task 09P-R2-5：收敛 service data contract
 
+状态：本轮完成，提交见 `docs(09P): 收敛 service data contract`。
+
 目标：
 
 明确以下服务之间的数据契约：
@@ -346,6 +348,12 @@ timing/memory/stat 字段
 ```
 
 建议新增：
+
+```text
+docs/slice/DEV/DEV_09P_R2_ServiceDataContract.md
+```
+
+已新增：
 
 ```text
 docs/slice/DEV/DEV_09P_R2_ServiceDataContract.md
