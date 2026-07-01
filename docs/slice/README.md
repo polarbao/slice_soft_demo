@@ -34,6 +34,7 @@
 | `PRD/PRD_10_切片输出交付契约与纹理保真验收.md` | 当前 10 阶段产品需求 |
 | `DEV/DEV_10_OutputContract_TextureFidelity设计.md` | 当前 10 阶段技术方案 |
 | `DEV/DEV_10_OutputContract_FieldMatrix.md` | 当前 10 阶段输出契约字段矩阵 |
+| `DEV/DEV_10_LayerChannelSummaryContract.md` | 当前 10 阶段 layer/channel summary 统计契约 |
 | `DEMO/DEMO_10_切片输出契约与纹理保真验证方案.md` | 当前 10 阶段验证方案 |
 | `DOC/DOC_DECISION_10_RIP边界与切片输出契约.md` | 当前 10 阶段 RIP 边界决策 |
 

@@ -104,12 +104,20 @@ git diff --check
 
 ## 5. Task 10-2：Layer summary / channel summary
 
+状态：本轮完成，提交见 `docs(10): 固化层与通道统计契约`。
+
 目标：
 
 ```text
 定义每层和每通道统计字段；
 明确 RGB / W / S / V 的统计方式；
 明确哪些统计可作为 golden 比较。
+```
+
+已新增：
+
+```text
+docs/slice/DEV/DEV_10_LayerChannelSummaryContract.md
 ```
 
 验证：

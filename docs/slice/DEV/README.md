@@ -19,4 +19,5 @@
 | `DEV_09P_R2_ServiceDataContract.md` | 09P-R2 OpenVDB / texture / composer / admission / report 服务数据契约 |
 | `DEV_10_OutputContract_TextureFidelity设计.md` | 10 输出契约与纹理保真 |
 | `DEV_10_OutputContract_FieldMatrix.md` | 10 输出契约字段矩阵 |
+| `DEV_10_LayerChannelSummaryContract.md` | 10 Layer summary / Channel summary 统计契约 |
 | `DEV_11_LayerPreview_UIConfig_MultiModel设计.md` | 11 LayerPreview / UI Config / MultiModel |
