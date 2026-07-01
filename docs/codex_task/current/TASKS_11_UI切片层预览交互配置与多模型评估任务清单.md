@@ -114,6 +114,8 @@ git diff --check
 
 ## 5. Task 11-2：Layer slider / pseudo color viewer
 
+状态：本轮完成，提交见 `feat(11): 增加层预览滑动与伪彩视图`。
+
 目标：
 
 ```text
@@ -121,6 +123,15 @@ UI 加载 layer preview；
 滑动显示每层；
 切换 RGB / W / S / V / occupancy / diagnostic 伪彩视图；
 支持基础缩放和平移。
+```
+
+已实现：
+
+```text
+新增 LayerPreviewDataProvider，从 manifest / preview_report / slice_report / preview 文件派生 UI 数据；
+新增 LayerPreviewPanel，按 layerIndex 滑动并切换 RGB / 纹理 RGB / W / S / V / occupancy / diagnostic；
+W / S / V / occupancy / diagnostic 使用 UI 伪彩渲染，preview PNG 不作为生产数据；
+主窗口新增“层预览”页，保留旧预览与叠加预览页。
 ```
 
 验证：

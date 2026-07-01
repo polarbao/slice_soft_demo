@@ -48,11 +48,13 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
 
     QWidget* left = createProjectPanel();
     auto* center_tabs = new QTabWidget(main_splitter);
+    m_layerPreviewPanel = new LayerPreviewPanel(center_tabs);
     preview_panel_ = new PreviewPanel(center_tabs);
     report_panel_ = new ReportPanel(center_tabs);
     config_editor_panel_ = new ConfigEditorPanel(&config_document_, center_tabs);
     channel_chart_panel_ = new ChannelChartPanel(center_tabs);
     preview_overlay_panel_ = new PreviewOverlayPanel(center_tabs);
+    center_tabs->addTab(m_layerPreviewPanel, "层预览");
     center_tabs->addTab(preview_panel_, "预览");
     center_tabs->addTab(report_panel_, "报告");
     center_tabs->addTab(config_editor_panel_, "配置");
@@ -304,6 +306,7 @@ void MainWindow::loadPackage(const QString& package_dir) {
     const PackageSummary package = package_loader_.load(absoluteFromRepo(package_dir));
     package_edit_->setText(package.package_dir);
     report_panel_->loadPackage(package);
+    m_layerPreviewPanel->LoadPackage(package);
     preview_panel_->loadPackage(package);
     material_process_panel_->loadPackage(package);
     channel_chart_panel_->loadPackage(package);

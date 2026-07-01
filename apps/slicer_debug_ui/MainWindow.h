@@ -7,6 +7,7 @@
 #include "services/ToolPaths.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
+#include "widgets/LayerPreviewPanel.h"
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
 #include "widgets/PreviewOverlayPanel.h"
@@ -78,6 +79,7 @@ private:
     QPushButton* compare_button_{nullptr};
 
     PreviewPanel* preview_panel_{nullptr};
+    LayerPreviewPanel* m_layerPreviewPanel{nullptr};
     ReportPanel* report_panel_{nullptr};
     ConfigEditorPanel* config_editor_panel_{nullptr};
     ChannelChartPanel* channel_chart_panel_{nullptr};
