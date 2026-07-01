@@ -1,0 +1,82 @@
+{
+  "schema": "p0.experimental_openvdb_shell_cli_report.1",
+  "requiredTopLevelFields": [
+    "schema",
+    "input",
+    "configSnapshot",
+    "experimentalOpenvdbShell",
+    "legacyPathExecuted",
+    "productionPackageWritten",
+    "noProductionRgbwsv",
+    "writeProductionRgbwsv",
+    "openvdb",
+    "surfaceShell",
+    "diagnostics",
+    "productionAdmission",
+    "textureTransfer",
+    "materialComposer",
+    "outputContract",
+    "legacyPath",
+    "timing",
+    "memory",
+    "stats"
+  ],
+  "productionAdmissionRequiredFields": [
+    "mode",
+    "status",
+    "allowed",
+    "blocked",
+    "warning",
+    "productionAllowed",
+    "nonProduction",
+    "reasonCodes",
+    "blockerCodes",
+    "warningCodes",
+    "suggestedActions"
+  ],
+  "outputContractRequiredFields": [
+    "packageSchema",
+    "channelOrder",
+    "bitDepth",
+    "polarity",
+    "printValue",
+    "emptyValue",
+    "layerCount",
+    "resolution",
+    "perLayerStats",
+    "textureFidelity",
+    "fallbackCodes",
+    "diagnosticSummary"
+  ],
+  "safetyInvariants": {
+    "experimentalOpenvdbShell": true,
+    "legacyPathExecuted": false,
+    "productionPackageWritten": false,
+    "writeProductionRgbwsv": false,
+    "productionAllowed": false,
+    "nonProduction": true,
+    "packageSchema": "p0.rgbwsv.2",
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V"
+    ],
+    "bitDepth": 8,
+    "polarity": "black_is_print"
+  },
+  "allowedAdmissionModes": [
+    "strict_closed",
+    "warn_and_attempt",
+    "diagnostic_only",
+    "repair_then_strict"
+  ],
+  "allowedAdmissionStatuses": [
+    "production_allowed",
+    "non_production_only",
+    "diagnostic_only",
+    "fail_fast"
+  ]
+}

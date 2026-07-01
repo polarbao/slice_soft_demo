@@ -4,6 +4,7 @@
 #include "slicer_core/model.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/slicer.h"
+#include "slicer_core/system/ProcessMemoryStats.h"
 
 #include <algorithm>
 #include <exception>
@@ -127,6 +128,20 @@ slicer_core::Json StringsToJsonArray(const std::vector<std::string>& values)
     return slicer_core::Json{array};
 }
 
+std::vector<std::string> ReasonCodes(const slicer_core::ProductionAdmissionDecision& decision)
+{
+    std::vector<std::string> reasonCodes;
+    for (const std::string& code : decision.blockerCodes)
+    {
+        AppendUnique(reasonCodes, code);
+    }
+    for (const std::string& code : decision.warningCodes)
+    {
+        AppendUnique(reasonCodes, code);
+    }
+    return reasonCodes;
+}
+
 void ForceExperimentalDiagnosticOnly(
     slicer_core::ProductionAdmissionDecision& decision,
     const std::string& reasonCode)
@@ -145,15 +160,106 @@ slicer_core::Json AdmissionDecisionToJson(
     const slicer_core::ProductionAdmissionDecision& decision,
     const slicer_core::AdmissionMode mode)
 {
-    return slicer_core::Json::object({
-        {"mode", slicer_core::AdmissionModeName(mode)},
-        {"status", slicer_core::AdmissionStatusName(decision.status)},
-        {"productionAllowed", decision.productionAllowed},
-        {"nonProduction", decision.nonProduction},
-        {"blockerCodes", StringsToJsonArray(decision.blockerCodes)},
-        {"warningCodes", StringsToJsonArray(decision.warningCodes)},
-        {"suggestedActions", StringsToJsonArray(decision.suggestedActions)},
-    });
+    const bool blocked =
+        !decision.blockerCodes.empty() || decision.status == slicer_core::AdmissionStatus::FailFast;
+    slicer_core::Json::Object json;
+    json["mode"] = slicer_core::AdmissionModeName(mode);
+    json["status"] = slicer_core::AdmissionStatusName(decision.status);
+    json["allowed"] = decision.productionAllowed;
+    json["blocked"] = blocked;
+    json["warning"] = !decision.warningCodes.empty();
+    json["productionAllowed"] = decision.productionAllowed;
+    json["nonProduction"] = decision.nonProduction;
+    json["reasonCodes"] = StringsToJsonArray(ReasonCodes(decision));
+    json["blockerCodes"] = StringsToJsonArray(decision.blockerCodes);
+    json["warningCodes"] = StringsToJsonArray(decision.warningCodes);
+    json["suggestedActions"] = StringsToJsonArray(decision.suggestedActions);
+    return slicer_core::Json{json};
+}
+
+slicer_core::Json ConfigSnapshotToJson(const slicer_core::SliceConfig& config)
+{
+    slicer_core::Json::Object output;
+    output["packageDir"] = config.output.package_dir.string();
+    output["dpiX"] = config.output.dpi_x;
+    output["dpiY"] = config.output.dpi_y;
+    output["layerThicknessMm"] = config.output.layer_thickness_mm;
+    output["channelOrder"] = StringsToJsonArray(config.output.channel_order);
+    output["bitDepth"] = config.output.bit_depth;
+    output["storageMode"] = config.output.storage_mode;
+
+    slicer_core::Json::Object openvdbPipeline;
+    openvdbPipeline["enabled"] = config.experimental.openvdb_pipeline.enabled;
+    openvdbPipeline["engine"] = config.experimental.openvdb_pipeline.engine;
+    openvdbPipeline["admissionMode"] = config.experimental.openvdb_pipeline.admission_mode;
+    openvdbPipeline["failurePolicy"] = config.experimental.openvdb_pipeline.failure_policy;
+    openvdbPipeline["allowNonProductionOutput"] =
+        config.experimental.openvdb_pipeline.allow_non_production_output;
+    openvdbPipeline["writeProductionRgbwsv"] = config.experimental.openvdb_pipeline.write_production_rgbwsv;
+
+    slicer_core::Json::Object experimental;
+    experimental["openvdbPipeline"] = slicer_core::Json{openvdbPipeline};
+
+    slicer_core::Json::Object root;
+    root["slicingMode"] = config.slicing_mode;
+    root["output"] = slicer_core::Json{output};
+    root["experimental"] = slicer_core::Json{experimental};
+    return slicer_core::Json{root};
+}
+
+slicer_core::Json MemoryStatsToJson(const slicer_core::ProcessMemoryStats& memory)
+{
+    slicer_core::Json::Object json;
+    json["available"] = memory.available;
+    json["workingSetBytes"] = memory.working_set_bytes;
+    json["peakWorkingSetBytes"] = memory.peak_working_set_bytes;
+    return slicer_core::Json{json};
+}
+
+slicer_core::Json DiagnosticSummaryToJson(
+    const std::vector<slicer_core::ValidationIssue>& issues,
+    const slicer_core::ProductionAdmissionDecision& decision)
+{
+    slicer_core::Json::Object json;
+    json["issueCount"] = static_cast<int>(issues.size());
+    json["blockerCount"] = static_cast<int>(decision.blockerCodes.size());
+    json["warningCount"] = static_cast<int>(decision.warningCodes.size());
+    return slicer_core::Json{json};
+}
+
+slicer_core::Json OutputContractToJson(
+    const slicer_core::SliceConfig& config,
+    const std::vector<slicer_core::ValidationIssue>& issues,
+    const slicer_core::ProductionAdmissionDecision& decision)
+{
+    slicer_core::Json::Object resolution;
+    resolution["dpiX"] = config.output.dpi_x;
+    resolution["dpiY"] = config.output.dpi_y;
+    resolution["layerThicknessMm"] = config.output.layer_thickness_mm;
+
+    slicer_core::Json::Object perLayerStats;
+    perLayerStats["available"] = false;
+    perLayerStats["reason"] = "production package not written by experimental CLI diagnostic path";
+
+    slicer_core::Json::Object textureFidelity;
+    textureFidelity["available"] = false;
+    textureFidelity["reason"] = "texture transfer is not executed by experimental CLI diagnostic path";
+    textureFidelity["fallbackCodes"] = StringsToJsonArray(std::vector<std::string>{});
+
+    slicer_core::Json::Object root;
+    root["packageSchema"] = "p0.rgbwsv.2";
+    root["channelOrder"] = StringsToJsonArray(config.output.channel_order);
+    root["bitDepth"] = config.output.bit_depth;
+    root["polarity"] = "black_is_print";
+    root["printValue"] = 0;
+    root["emptyValue"] = 255;
+    root["layerCount"] = nullptr;
+    root["resolution"] = slicer_core::Json{resolution};
+    root["perLayerStats"] = slicer_core::Json{perLayerStats};
+    root["textureFidelity"] = slicer_core::Json{textureFidelity};
+    root["fallbackCodes"] = StringsToJsonArray(std::vector<std::string>{});
+    root["diagnosticSummary"] = DiagnosticSummaryToJson(issues, decision);
+    return slicer_core::Json{root};
 }
 
 double HeightMm(const slicer_core::BoundingBox& bbox)
@@ -209,25 +315,68 @@ int RunExperimentalOpenVdbShellDiagnostic(const CliOptions& options)
     ForceExperimentalDiagnosticOnly(decision, "EXPERIMENTAL_CLI_DIAGNOSTIC_ONLY");
 
     const slicer_core::OpenVdbStatus status = slicer_core::GetOpenVdbStatus();
-    const slicer_core::Json report = slicer_core::Json::object({
-        {"schema", "p0.experimental_openvdb_shell_cli_report.1"},
-        {"configPath", options.config_path},
-        {"experimentalOpenvdbShell", true},
-        {"legacyPathExecuted", false},
-        {"productionPackageWritten", false},
-        {"noProductionRgbwsv", options.no_production_rgbwsv},
-        {"writeProductionRgbwsv", false},
-        {"openvdb",
-         slicer_core::Json::object({
-             {"enabled", status.compiled_with_openvdb},
-             {"available", status.runtime_available},
-             {"version", status.version},
-             {"gridName", status.grid_name},
-             {"gridClass", status.grid_class},
-         })},
-        {"diagnostics", slicer_core::ValidationIssuesToJson(issues)},
-        {"productionAdmission", AdmissionDecisionToJson(decision, mode)},
-    });
+    const slicer_core::ProcessMemoryStats memory = slicer_core::CaptureProcessMemoryStats();
+    const slicer_core::Json diagnosticSummary = DiagnosticSummaryToJson(issues, decision);
+
+    slicer_core::Json::Object inputJson;
+    inputJson["configPath"] = options.config_path;
+    inputJson["modelPath"] = config.input.model_path.string();
+    inputJson["format"] = config.input.format;
+    inputJson["outputPackageDir"] = config.output.package_dir.string();
+
+    slicer_core::Json::Object openvdbJson;
+    openvdbJson["enabled"] = status.compiled_with_openvdb;
+    openvdbJson["available"] = status.runtime_available;
+    openvdbJson["version"] = status.version;
+    openvdbJson["gridName"] = status.grid_name;
+    openvdbJson["gridClass"] = status.grid_class;
+
+    slicer_core::Json::Object surfaceShellJson;
+    surfaceShellJson["requested"] = true;
+    surfaceShellJson["generated"] = false;
+    surfaceShellJson["status"] = "not_executed_cli_diagnostic_only";
+    surfaceShellJson["reasonCodes"] =
+        StringsToJsonArray(std::vector<std::string>{"EXPERIMENTAL_CLI_DIAGNOSTIC_ONLY"});
+
+    slicer_core::Json::Object textureTransferJson;
+    textureTransferJson["executed"] = false;
+    textureTransferJson["status"] = "not_executed_cli_diagnostic_only";
+    textureTransferJson["fallbackCodes"] = StringsToJsonArray(std::vector<std::string>{});
+
+    slicer_core::Json::Object materialComposerJson;
+    materialComposerJson["executed"] = false;
+    materialComposerJson["status"] = "not_executed_cli_diagnostic_only";
+
+    slicer_core::Json::Object legacyPathJson;
+    legacyPathJson["executed"] = false;
+    legacyPathJson["productionPackageWritten"] = false;
+
+    slicer_core::Json::Object timingJson;
+    timingJson["available"] = false;
+    timingJson["reason"] = "experimental CLI report schema currently records no wall-clock timings";
+
+    slicer_core::Json::Object reportJson;
+    reportJson["schema"] = "p0.experimental_openvdb_shell_cli_report.1";
+    reportJson["configPath"] = options.config_path;
+    reportJson["input"] = slicer_core::Json{inputJson};
+    reportJson["configSnapshot"] = ConfigSnapshotToJson(config);
+    reportJson["experimentalOpenvdbShell"] = true;
+    reportJson["legacyPathExecuted"] = false;
+    reportJson["productionPackageWritten"] = false;
+    reportJson["noProductionRgbwsv"] = options.no_production_rgbwsv;
+    reportJson["writeProductionRgbwsv"] = false;
+    reportJson["openvdb"] = slicer_core::Json{openvdbJson};
+    reportJson["surfaceShell"] = slicer_core::Json{surfaceShellJson};
+    reportJson["diagnostics"] = slicer_core::ValidationIssuesToJson(issues);
+    reportJson["productionAdmission"] = AdmissionDecisionToJson(decision, mode);
+    reportJson["textureTransfer"] = slicer_core::Json{textureTransferJson};
+    reportJson["materialComposer"] = slicer_core::Json{materialComposerJson};
+    reportJson["outputContract"] = OutputContractToJson(config, issues, decision);
+    reportJson["legacyPath"] = slicer_core::Json{legacyPathJson};
+    reportJson["timing"] = slicer_core::Json{timingJson};
+    reportJson["memory"] = MemoryStatsToJson(memory);
+    reportJson["stats"] = diagnosticSummary;
+    const slicer_core::Json report{reportJson};
 
     const std::filesystem::path reportDirectory = options.experimental_report_path.parent_path();
     if (!reportDirectory.empty())
