@@ -44,6 +44,8 @@ add_executable(slicer_debug_ui
     widgets/PreviewPanel.h
     widgets/PreviewOverlayPanel.cpp
     widgets/PreviewOverlayPanel.h
+    widgets/QuickConfigPanel.cpp
+    widgets/QuickConfigPanel.h
     widgets/ReportPanel.cpp
     widgets/ReportPanel.h
     widgets/SupportEditor.cpp

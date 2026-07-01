@@ -48,6 +48,10 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
     if (!storage_mode.isEmpty() && storage_mode != "stripped" && storage_mode != "tiled") {
         result.errors.push_back("output.storageMode 只能是 stripped 或 tiled。");
     }
+    const QJsonValue layer_thickness = output.value("layerThicknessMm");
+    if (layer_thickness.isDouble() && layer_thickness.toDouble() <= 0.0) {
+        result.errors.push_back("output.layerThicknessMm 必须大于 0。");
+    }
 
     const QSet<QString> roles{"rgb", "white", "varnish", "ignore", "support_candidate", "support"};
     if (hasObject(root, "materialRoleMapping")) {
@@ -101,6 +105,13 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
         const QJsonValue interval = root.value("preview").toObject().value("interval");
         if (interval.isDouble() && interval.toInt() <= 0) {
             result.errors.push_back("preview.interval 必须大于 0。");
+        }
+    }
+
+    if (hasObject(root, "experimental")) {
+        const QJsonObject openvdb = root.value("experimental").toObject().value("openvdbPipeline").toObject();
+        if (openvdb.value("writeProductionRgbwsv").toBool(false)) {
+            result.errors.push_back("experimental.openvdbPipeline.writeProductionRgbwsv 当前 UI 禁止启用。");
         }
     }
 

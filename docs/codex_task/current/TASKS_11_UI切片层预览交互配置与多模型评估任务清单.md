@@ -177,6 +177,8 @@ git diff --check
 
 ## 7. Task 11-4：Interactive settings panel
 
+状态：本轮完成，提交见 `feat(11): 增加常用配置交互面板`。
+
 目标：
 
 ```text
@@ -196,6 +198,15 @@ white / varnish policy；
 OpenVDB experimental enable；
 output directory；
 preview generation。
+```
+
+已实现：
+
+```text
+新增“常用”配置页，覆盖模型路径、输出目录、层高、纹理策略、支撑启用、白墨启用、光油启用、光油顶部层数、预览开关、预览间隔、OpenVDB 实验开关；
+所有字段通过 ConfigDocument::setValue 写入，继续复用 dirty / validation / save / saveAs；
+OpenVDB 实验开关写入 diagnostic_only / writeProductionRgbwsv=false，保持非生产边界；
+新增当前配置 JSON 预览，并补充 layerThicknessMm 与 OpenVDB production 写入的 UI 侧校验。
 ```
 
 验证：

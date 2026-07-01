@@ -4,6 +4,7 @@
 #include "MaterialPolicyEditor.h"
 #include "MaterialProcessProfileEditor.h"
 #include "MaterialRoleMappingEditor.h"
+#include "QuickConfigPanel.h"
 #include "SupportEditor.h"
 
 #include <QFileDialog>
@@ -53,11 +54,13 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     layout->addLayout(actions);
 
     auto* tabs = new QTabWidget(this);
+    quick_config_panel_ = new QuickConfigPanel(document_, tabs);
     profile_editor_ = new MaterialProcessProfileEditor(document_, tabs);
     policy_editor_ = new MaterialPolicyEditor(document_, tabs);
     role_mapping_editor_ = new MaterialRoleMappingEditor(document_, tabs);
     support_editor_ = new SupportEditor(document_, tabs);
     diff_panel_ = new ConfigDiffPanel(document_, tabs);
+    tabs->addTab(quick_config_panel_, "常用");
     tabs->addTab(profile_editor_, "工艺 Profile");
     tabs->addTab(policy_editor_, "材料策略");
     tabs->addTab(role_mapping_editor_, "材料角色");
@@ -166,6 +169,7 @@ void ConfigEditorPanel::updateStorageMode(const QString& value) {
 
 void ConfigEditorPanel::refreshEditors() {
     profile_editor_->loadFromDocument();
+    quick_config_panel_->LoadFromDocument();
     policy_editor_->loadFromDocument();
     role_mapping_editor_->loadFromDocument();
     support_editor_->loadFromDocument();
