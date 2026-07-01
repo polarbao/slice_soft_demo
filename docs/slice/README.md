@@ -2,7 +2,7 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-01
-> 适用阶段：09P-R2 已完成，当前执行 10 阶段切片输出交付契约与纹理保真验收
+> 适用阶段：Stage 10 已完成，当前执行 11 阶段 UI 切片层预览、交互配置与多模型能力评估
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
@@ -31,16 +31,11 @@
 | `ROADMAP/ROADMAP_SHORT_MID_LONG_SliceSoft_项目运行计划.md` | 短期 / 中期 / 长期项目运行计划 |
 | `PRD/PRD_SHORT_MID_LONG_SliceSoft_项目运行计划需求.md` | 项目运行计划对应的产品需求 |
 | `DEV/DEV_SHORT_MID_LONG_SliceSoft_项目运行计划执行方案.md` | 项目运行计划对应的技术执行方案 |
-| `PRD/PRD_10_切片输出交付契约与纹理保真验收.md` | 当前 10 阶段产品需求 |
-| `DEV/DEV_10_OutputContract_TextureFidelity设计.md` | 当前 10 阶段技术方案 |
-| `DEV/DEV_10_OutputContract_FieldMatrix.md` | 当前 10 阶段输出契约字段矩阵 |
-| `DEV/DEV_10_LayerChannelSummaryContract.md` | 当前 10 阶段 layer/channel summary 统计契约 |
-| `DEV/DEV_10_TextureFidelityMetrics.md` | 当前 10 阶段纹理保真指标定义 |
-| `DEMO/DEMO_10_切片输出契约与纹理保真验证方案.md` | 当前 10 阶段验证方案 |
-| `DEMO/DEMO_10_RealModelAcceptanceSet.md` | 当前 10 阶段真实模型验收集 |
-| `DOC/DOC_DECISION_10_RIP边界与切片输出契约.md` | 当前 10 阶段 RIP 边界决策 |
-| `DOC/DOC_CHECKLIST_10_DownstreamHandoff.md` | 当前 10 阶段下游交付清单 |
-| `REPORT/REPORT_10_切片输出交付契约与纹理保真验收当前状态.md` | 当前 10 阶段实现状态报告 |
+| `REPORT/REPORT_10_切片输出交付契约与纹理保真验收当前状态.md` | 最新已完成阶段报告 |
+| `PRD/PRD_11_UI切片层预览交互配置与多模型能力.md` | 当前 11 阶段产品需求 |
+| `DEV/DEV_11_LayerPreview_UIConfig_MultiModel设计.md` | 当前 11 阶段技术方案 |
+| `DEMO/DEMO_11_UI切片层预览交互配置验证方案.md` | 当前 11 阶段验证方案 |
+| `DOC/DOC_DECISION_11_多模型切片处理范围决策.md` | 当前 11 阶段多模型范围决策 |
 
 ## 阶段入口
 

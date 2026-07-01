@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal Roadmap / Project Operating Plan
 > 生成日期：2026-07-01
-> 当前阶段：09P-R2 hardening 已完成，当前执行 10 切片输出交付契约与纹理保真验收
+> 当前阶段：Stage 10 已完成，当前执行 11 UI 切片层预览、交互配置与多模型能力评估
 
 ---
 
@@ -26,6 +26,7 @@
 完成 09P-R2 hardening；
 明确是否需要 mesh repair / admission gate 专项；
 执行 10 输出契约、layer summary、texture fidelity 和下游 handoff；
+执行 11 UI layer preview、interactive settings 和 multi-model capability decision；
 保持 legacy slicer_cli 和 RGBWSV 协议稳定。
 ```
 
@@ -40,7 +41,8 @@
 | S5 | service data contract | OpenVDB / texture / composer DTO 说明 | ValidationIssue、stats、timing、memory 传播规则清楚 |
 | S6 | OpenVDB OFF / ON CI matrix | CI matrix 脚本或方案 | OFF 默认可跑，ON 环境条件清楚 |
 | S7 | 阶段报告 | `REPORT_09P_R2` | 是否进入 09P-R3 或 mesh repair 专项有结论 |
-| S8 | 10 输出契约 | output contract、layer summary、texture fidelity、handoff checklist | 下游 RIP 工程师可消费 package/report，且不实现 RIP |
+| S8 | 10 输出契约 | output contract、layer summary、texture fidelity、handoff checklist | 已完成，见 `REPORT_10` |
+| S9 | 11 UI layer preview | layer preview contract、slider、channel switch、config panel、multi-model decision | UI 可按层查看关键通道，多模型范围有结论 |
 
 短期不做：
 

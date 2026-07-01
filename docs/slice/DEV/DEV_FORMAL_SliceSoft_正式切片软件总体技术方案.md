@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal DEV / Current Architecture Source
 > 生成日期：2026-06-30
-> 当前阶段：09P-R2 hardening 已完成，当前执行 10 切片输出交付契约与纹理保真验收
+> 当前阶段：Stage 10 已完成，当前执行 11 UI 切片层预览、交互配置与多模型能力评估
 > 适用项目：SliceSoft / UV 彩色多材料 3D 打印切片软件
 
 ---

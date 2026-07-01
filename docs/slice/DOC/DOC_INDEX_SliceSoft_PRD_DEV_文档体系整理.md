@@ -4,7 +4,7 @@
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
 > 当前分支：`spike/09P-openvdb-experimental-pipeline`
-> 当前阶段判断：09P-R2 hardening 已完成，当前执行 10 切片输出交付契约与纹理保真验收
+> 当前阶段判断：Stage 10 已完成，当前执行 11 UI 切片层预览、交互配置与多模型能力评估
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -34,8 +34,8 @@
 
 ```text
 当前分支：spike/09P-openvdb-experimental-pipeline
-最新完成阶段：09P-R2 hardening
-当前执行阶段：10 切片输出交付契约与纹理保真验收
+最新完成阶段：10 切片输出交付契约与纹理保真验收
+当前执行阶段：11 UI 切片层预览、交互配置与多模型能力评估
 ```
 
 09P-R1 已完成：
@@ -98,13 +98,13 @@ R0 / R1 / R2：正式项目化架构、模块边界、配置报告测试 CI
 
 ### 2.4 Pending Confirmation
 
-09P-R2 已完成。进入 10 阶段后，建议确认：
+10 阶段已完成。进入 11 阶段后，建议确认：
 
 ```text
-1. 10 阶段只定义切片输出交付契约和纹理保真验收，不实现 RIP 半色调、设备通信或喷头 bitstream；
-2. 10 阶段不修改 p0.rgbwsv.2、RGBWSV channel order、bitDepth 或 black_is_print；
-3. 10 阶段需要按 TASKS_10 逐项推进 output contract、layer summary、texture fidelity、真实模型验收集和 handoff checklist；
-4. 10 阶段完成后生成 REPORT_10，并判断是否进入 11 UI layer preview。
+1. 11 阶段只在 UI / report / preview data contract 层推进，不修改 production RGBWSV 协议；
+2. UI 只能读取 package / manifest / report / preview 契约，不直接访问 slicer.cpp 临时结构；
+3. 多模型能力先做评估、数据模型和决策，不默认开启 production 多模型输出；
+4. 11 阶段完成后生成 REPORT_11，并判断是否需要后续独立多模型或 UI 产品化阶段。
 ```
 
 ---
@@ -319,4 +319,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_09P_R2 = 后续执行入口
 ```
 
-09P-R2 已按 `REPORT_09P_R2_OpenVDB实验生产管线Hardening当前状态.md` 收口。当前应按 `TASKS_10_切片输出交付契约与纹理保真验收任务清单.md` 逐项执行 Stage 10。
+10 阶段已按 `REPORT_10_切片输出交付契约与纹理保真验收当前状态.md` 收口。当前应按 `TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md` 逐项执行 Stage 11。
