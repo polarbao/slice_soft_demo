@@ -15,7 +15,8 @@
 ## Current Phase
 
 - `09P-R1` OpenVDB experimental production-pipeline access has been documented as historical/completed evidence.
-- Current working phase is `09P-R2`: formalization pre-work, docs governance, hardening plan, and experimental OpenVDB pipeline safety checks.
+- `09P-R2` formalization / hardening has been completed and reported.
+- Current working phase is `10`: slicing output delivery contract and texture fidelity acceptance.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules
@@ -65,7 +66,7 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Document state: `.agents/docs/doc-state.md`
 - Formal docs index: `docs/slice/README.md`
 - Codex task index: `docs/codex_task/README.md`
-- Current task list: `docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md`
+- Current task list: `docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收任务清单.md`
 
 ## Production Safety Rules
 

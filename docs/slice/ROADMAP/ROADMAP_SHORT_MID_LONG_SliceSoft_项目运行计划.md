@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal Roadmap / Project Operating Plan
 > 生成日期：2026-07-01
-> 当前阶段：09P-R2 hardening 前置治理与文档补齐
+> 当前阶段：09P-R2 hardening 已完成，当前执行 10 切片输出交付契约与纹理保真验收
 
 ---
 
@@ -25,7 +25,7 @@
 完成文档真源收束；
 完成 09P-R2 hardening；
 明确是否需要 mesh repair / admission gate 专项；
-补齐 10 输出契约文档；
+执行 10 输出契约、layer summary、texture fidelity 和下游 handoff；
 保持 legacy slicer_cli 和 RGBWSV 协议稳定。
 ```
 
@@ -40,6 +40,7 @@
 | S5 | service data contract | OpenVDB / texture / composer DTO 说明 | ValidationIssue、stats、timing、memory 传播规则清楚 |
 | S6 | OpenVDB OFF / ON CI matrix | CI matrix 脚本或方案 | OFF 默认可跑，ON 环境条件清楚 |
 | S7 | 阶段报告 | `REPORT_09P_R2` | 是否进入 09P-R3 或 mesh repair 专项有结论 |
+| S8 | 10 输出契约 | output contract、layer summary、texture fidelity、handoff checklist | 下游 RIP 工程师可消费 package/report，且不实现 RIP |
 
 短期不做：
 

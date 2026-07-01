@@ -4,7 +4,7 @@
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
 > 当前分支：`spike/09P-openvdb-experimental-pipeline`
-> 当前阶段判断：09P-R1 已完成，09P-R2 hardening 前置文档治理
+> 当前阶段判断：09P-R2 hardening 已完成，当前执行 10 切片输出交付契约与纹理保真验收
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -34,8 +34,8 @@
 
 ```text
 当前分支：spike/09P-openvdb-experimental-pipeline
-当前阶段：09P-R1 已完成
-下一阶段建议：09P-R2 hardening
+最新完成阶段：09P-R2 hardening
+当前执行阶段：10 切片输出交付契约与纹理保真验收
 ```
 
 09P-R1 已完成：
@@ -98,14 +98,13 @@ R0 / R1 / R2：正式项目化架构、模块边界、配置报告测试 CI
 
 ### 2.4 Pending Confirmation
 
-进入 09P-R2 前，建议确认：
+09P-R2 已完成。进入 10 阶段后，建议确认：
 
 ```text
-1. 是否接受 09P-R1 为已完成阶段；
-2. 是否将 09P-R2 定义为 hardening，而不是继续 R1 功能开发；
-3. 是否单独拆出 mesh repair / admission gate 阶段；
-4. 目录级重组已经完成：正式文档进入 docs/slice，Codex 任务进入 docs/codex_task，旧阶段资料进入 docs/archive。
-5. 09P-R2-0 文档入口同步已完成，后续进入 09P-R2-1 阶段文档包。
+1. 10 阶段只定义切片输出交付契约和纹理保真验收，不实现 RIP 半色调、设备通信或喷头 bitstream；
+2. 10 阶段不修改 p0.rgbwsv.2、RGBWSV channel order、bitDepth 或 black_is_print；
+3. 10 阶段需要按 TASKS_10 逐项推进 output contract、layer summary、texture fidelity、真实模型验收集和 handoff checklist；
+4. 10 阶段完成后生成 REPORT_10，并判断是否进入 11 UI layer preview。
 ```
 
 ---
@@ -320,4 +319,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_09P_R2 = 后续执行入口
 ```
 
-进入 09P-R2 前，应先接受这个文档层级，随后再按 `TASKS_09P_R2_*` 逐项执行。
+09P-R2 已按 `REPORT_09P_R2_OpenVDB实验生产管线Hardening当前状态.md` 收口。当前应按 `TASKS_10_切片输出交付契约与纹理保真验收任务清单.md` 逐项执行 Stage 10。

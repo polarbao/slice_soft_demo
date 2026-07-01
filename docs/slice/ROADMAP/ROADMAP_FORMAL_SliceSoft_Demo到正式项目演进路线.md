@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal Roadmap
 > 生成日期：2026-06-30
-> 当前阶段：09P-R1 已完成，09P-R2 hardening 准备阶段
+> 当前阶段：09P-R2 hardening 已完成，当前执行 10 切片输出交付契约与纹理保真验收
 
 ---
 
@@ -40,21 +40,16 @@ P0 / 00A / 00B / 00C
 当前位置：
 
 ```text
-09P-R1 已完成
-下一步：09P-R2 hardening
+09P-R2 hardening 已完成
+下一步：10 切片输出交付契约与纹理保真验收
 ```
 
 推荐后续：
 
 ```text
-09P-R2
-→ 09P-R3
-→ 09P-R4
-→ mesh repair / admission gate 专项，可按风险插入
-→ 09C
-→ 09D
-→ 10
+10
 → 11
+→ 09P-R3 / 09P-R4 或 mesh repair / admission gate 专项，可按风险插入
 ```
 
 ---
@@ -419,28 +414,18 @@ docs/codex_task/current/TASKS_<stage>
 docs/codex_task/current/CODEX_PROMPT_<stage>
 ```
 
-09P-R2 开始前建议优先补：
+09P-R2 已补齐并完成：
 
 ```text
 docs/slice/PRD/PRD_09P_R2_OpenVDB实验生产管线Hardening.md
 docs/slice/DEV/DEV_09P_R2_ReportSchema_AdmissionGate_CI_UI设计.md
 docs/slice/DEMO/DEMO_09P_R2_OpenVDB实验生产管线Hardening验证方案.md
-docs/codex_task/current/TASKS_09P_R2_OpenVDB实验生产管线Hardening任务清单.md
+docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md
 docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening执行指令.md
+docs/slice/REPORT/REPORT_09P_R2_OpenVDB实验生产管线Hardening当前状态.md
 ```
 
-11 阶段建议新增：
-
-```text
-docs/slice/PRD/PRD_11_UI切片层预览交互配置与多模型能力.md
-docs/slice/DEV/DEV_11_LayerPreview_UIConfig_MultiModel设计.md
-docs/slice/DEMO/DEMO_11_UI切片层预览交互配置验证方案.md
-docs/slice/DOC/DOC_DECISION_11_多模型切片处理范围决策.md
-docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
-docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
-```
-
-10 阶段建议新增：
+10 阶段当前执行：
 
 ```text
 docs/slice/PRD/PRD_10_切片输出交付契约与纹理保真验收.md
@@ -451,6 +436,17 @@ docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收�
 docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真验收执行指令.md
 ```
 
+11 阶段后续入口：
+
+```text
+docs/slice/PRD/PRD_11_UI切片层预览交互配置与多模型能力.md
+docs/slice/DEV/DEV_11_LayerPreview_UIConfig_MultiModel设计.md
+docs/slice/DEMO/DEMO_11_UI切片层预览交互配置验证方案.md
+docs/slice/DOC/DOC_DECISION_11_多模型切片处理范围决策.md
+docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
+docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
+```
+
 ---
 
 ## 10. 总结
@@ -459,10 +455,10 @@ docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真�
 
 ```text
 先整理文档真源
-→ 再执行 09P-R2 hardening
-→ 再判断是否进入 09P-R3 或 mesh repair/admission gate
-→ 再推进 09C / 09D / 10
+→ 09P-R2 hardening 已完成
+→ 当前推进 10 输出契约与纹理保真验收
+→ 再判断是否进入 09P-R3、09P-R4 或 mesh repair/admission gate
 → 再进入 11 做 UI 层预览、交互配置和多模型能力评估
 ```
 
-不要把 09P-R1 的 experimental boundary 误解成 production path 已经完成。现在最关键的是把“能跑”变成“可解释、可回归、可准入、可 UI 展示”。
+不要把 09P-R1 / 09P-R2 的 experimental boundary 误解成 production path 已经完成。当前最关键的是先把输出包、manifest、report、layer summary 和 texture fidelity 变成下游可消费的稳定契约。

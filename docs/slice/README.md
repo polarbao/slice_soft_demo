@@ -2,7 +2,7 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-01
-> 适用阶段：09P-R1 已完成，当前进入 09P-R2 formalization / hardening 前置治理
+> 适用阶段：09P-R2 已完成，当前执行 10 阶段切片输出交付契约与纹理保真验收
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
@@ -31,8 +31,12 @@
 | `ROADMAP/ROADMAP_SHORT_MID_LONG_SliceSoft_项目运行计划.md` | 短期 / 中期 / 长期项目运行计划 |
 | `PRD/PRD_SHORT_MID_LONG_SliceSoft_项目运行计划需求.md` | 项目运行计划对应的产品需求 |
 | `DEV/DEV_SHORT_MID_LONG_SliceSoft_项目运行计划执行方案.md` | 项目运行计划对应的技术执行方案 |
+| `PRD/PRD_10_切片输出交付契约与纹理保真验收.md` | 当前 10 阶段产品需求 |
+| `DEV/DEV_10_OutputContract_TextureFidelity设计.md` | 当前 10 阶段技术方案 |
+| `DEMO/DEMO_10_切片输出契约与纹理保真验证方案.md` | 当前 10 阶段验证方案 |
+| `DOC/DOC_DECISION_10_RIP边界与切片输出契约.md` | 当前 10 阶段 RIP 边界决策 |
 
-## 后续阶段入口
+## 阶段入口
 
 | 文件 | 用途 |
 |---|---|

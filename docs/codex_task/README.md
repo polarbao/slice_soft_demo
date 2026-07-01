@@ -2,7 +2,7 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 当前阶段：09P-R2 前置文档治理
+> 当前阶段：10 切片输出交付契约与纹理保真验收
 
 本目录用于存放 Codex 相关的操作任务、执行提示词、任务清单与历史任务归档。
 
@@ -25,17 +25,22 @@ docs/codex_task/archive/handoff
 ## 当前任务入口
 
 ```text
+docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收任务清单.md
+docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真验收执行指令.md
+```
+
+已完成 / 保留参考入口：
+
+```text
 docs/codex_task/current/TASKS_00_08_历史阶段文档补齐任务清单.md
 docs/codex_task/current/CODEX_PROMPT_00_08_历史阶段文档补齐执行指令.md
 docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md
 docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening执行指令.md
 ```
 
-后续 10 / 11 阶段任务入口：
+后续 11 阶段任务入口：
 
 ```text
-docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收任务清单.md
-docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真验收执行指令.md
 docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
 docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
 ```
