@@ -48,6 +48,8 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
 
     QWidget* left = createProjectPanel();
     auto* center_tabs = new QTabWidget(main_splitter);
+    center_tabs->setDocumentMode(true);
+    center_tabs->setTabPosition(QTabWidget::North);
     m_layerPreviewPanel = new LayerPreviewPanel(center_tabs);
     preview_panel_ = new PreviewPanel(center_tabs);
     report_panel_ = new ReportPanel(center_tabs);
@@ -55,26 +57,34 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     channel_chart_panel_ = new ChannelChartPanel(center_tabs);
     preview_overlay_panel_ = new PreviewOverlayPanel(center_tabs);
     center_tabs->addTab(m_layerPreviewPanel, "层预览");
-    center_tabs->addTab(preview_panel_, "预览");
     center_tabs->addTab(report_panel_, "报告");
-    center_tabs->addTab(config_editor_panel_, "配置");
     center_tabs->addTab(channel_chart_panel_, "曲线");
+    center_tabs->addTab(config_editor_panel_, "配置");
     center_tabs->addTab(preview_overlay_panel_, "叠加预览");
+    center_tabs->addTab(preview_panel_, "原始预览");
+    center_tabs->setCurrentWidget(m_layerPreviewPanel);
 
     QWidget* right = createRightPanel();
+    left->setMinimumWidth(320);
+    left->setMaximumWidth(520);
+    center_tabs->setMinimumWidth(620);
+    right->setMinimumWidth(320);
     main_splitter->addWidget(left);
     main_splitter->addWidget(center_tabs);
     main_splitter->addWidget(right);
     main_splitter->setStretchFactor(0, 0);
     main_splitter->setStretchFactor(1, 1);
     main_splitter->setStretchFactor(2, 0);
+    main_splitter->setSizes(QList<int>{360, 840, 360});
 
     log_panel_ = new LogPanel(central);
+    log_panel_->setMinimumHeight(140);
     auto* vertical_splitter = new QSplitter(Qt::Vertical, central);
     vertical_splitter->addWidget(main_splitter);
     vertical_splitter->addWidget(log_panel_);
     vertical_splitter->setStretchFactor(0, 3);
     vertical_splitter->setStretchFactor(1, 1);
+    vertical_splitter->setSizes(QList<int>{700, 180});
     root_layout->addWidget(vertical_splitter);
     setCentralWidget(central);
 
@@ -268,13 +278,14 @@ QWidget* MainWindow::createRunPanel() {
 
 QWidget* MainWindow::createRightPanel() {
     auto* tabs = new QTabWidget(this);
+    tabs->setDocumentMode(true);
     material_process_panel_ = new MaterialProcessPanel(tabs);
     warnings_view_ = new QPlainTextEdit(tabs);
     warnings_view_->setReadOnly(true);
     compare_view_ = new QPlainTextEdit(tabs);
     compare_view_->setReadOnly(true);
-    tabs->addTab(material_process_panel_, "材料工艺");
-    tabs->addTab(warnings_view_, "警告/失败");
+    tabs->addTab(material_process_panel_, "参数");
+    tabs->addTab(warnings_view_, "诊断");
     tabs->addTab(compare_view_, "工艺对比");
     tabs->setMinimumWidth(360);
     return tabs;
