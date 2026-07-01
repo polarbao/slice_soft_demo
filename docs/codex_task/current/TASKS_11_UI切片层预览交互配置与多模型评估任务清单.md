@@ -251,12 +251,22 @@ git diff --check
 
 ## 9. Task 11-6：UI smoke / golden preview
 
+状态：本轮完成，提交见 `test(11): 增加层预览 UI smoke`。
+
 目标：
 
 ```text
 建立 layer preview fixture；
 建立 slider / channel switch / config panel smoke；
 必要时增加 golden preview manifest。
+```
+
+已实现：
+
+```text
+新增 samples/configs/ui_smoke/ui_layer_preview.json，用于生成 output/UiSmokeLayerPreview；
+新增 layer-preview-load UI smoke case，真实加载 LayerPreviewPanel，选择首层 / 中间层 / 末层并切换 RGB / S / W / V / occupancy / diagnostic；
+保留 11-1 golden schema，当前不新增 production 输出契约。
 ```
 
 验证：

@@ -2,6 +2,7 @@
 
 #include "../MainWindow.h"
 #include "../widgets/ChannelChartPanel.h"
+#include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/PreviewOverlayPanel.h"
 #include "ConfigDocument.h"
 #include "PackageLoader.h"
@@ -96,6 +97,9 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     }
     if (options.case_name == "overlay-load-real") {
         return overlayLoadReal(options);
+    }
+    if (options.case_name == "layer-preview-load") {
+        return layerPreviewLoad(options);
     }
     if (options.case_name == "compare-profiles") {
         return compareProfiles(options);
@@ -231,6 +235,51 @@ int UiSmokeTestRunner::overlayLoadReal(const UiSmokeTestOptions& options) {
                     .arg(panel.imageCount())
                     .arg(channels.join(","))
                     .arg(passed_modes.join(",")));
+}
+
+int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
+    const QString package_path = absoluteFromRepo(options, options.package_path);
+    const PackageSummary package = PackageLoader().load(package_path);
+    if (package.manifest_path.isEmpty()) {
+        return fail("layer-preview-load 未找到 manifest：" + package_path);
+    }
+    if (package.preview_paths.isEmpty()) {
+        return fail("layer-preview-load 未找到 preview 图像：" + package_path);
+    }
+
+    LayerPreviewPanel panel;
+    panel.LoadPackage(package);
+    if (panel.LayerCount() <= 0) {
+        return fail("layer-preview-load 未读取到 layerCount。");
+    }
+
+    const QStringList channels = panel.AvailableChannels();
+    const QStringList required_channels{"rgb", "support", "white", "varnish", "occupancy", "diagnostic"};
+    for (const QString& channel : required_channels) {
+        if (!channels.contains(channel)) {
+            return fail("layer-preview-load 缺少通道：" + channel + "，实际通道：" + channels.join(","));
+        }
+    }
+
+    const QList<int> layer_indices{0, panel.LayerCount() / 2, panel.LayerCount() - 1};
+    for (const int layer_index : layer_indices) {
+        if (!panel.SelectLayerForTest(layer_index)) {
+            return fail("layer-preview-load 无法选择层：" + QString::number(layer_index));
+        }
+        for (const QString& channel : required_channels) {
+            if (!panel.SelectChannelForTest(channel)) {
+                return fail("layer-preview-load 无法选择通道：" + channel);
+            }
+            const QImage image = panel.CurrentImageForTest();
+            if (image.isNull() || image.width() <= 0 || image.height() <= 0) {
+                return fail(QString("layer-preview-load 渲染为空：layer=%1 channel=%2").arg(layer_index).arg(channel));
+            }
+        }
+    }
+
+    return pass(QString("layer-preview-load layers=%1 channels=%2")
+                    .arg(panel.LayerCount())
+                    .arg(channels.join(",")));
 }
 
 int UiSmokeTestRunner::compareProfiles(const UiSmokeTestOptions& options) {

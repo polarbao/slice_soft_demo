@@ -25,6 +25,7 @@ private:
     int chartLoad(const UiSmokeTestOptions& options);
     int overlayLoad(const UiSmokeTestOptions& options);
     int overlayLoadReal(const UiSmokeTestOptions& options);
+    int layerPreviewLoad(const UiSmokeTestOptions& options);
     int compareProfiles(const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;
