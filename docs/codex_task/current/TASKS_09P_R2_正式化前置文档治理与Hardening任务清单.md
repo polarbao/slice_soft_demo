@@ -134,7 +134,7 @@ git diff --check
 
 ## 4. Task 09P-R2-1：新增 09P-R2 PRD / DEV / DEMO / CODEX_PROMPT
 
-状态：已完成文档补齐，尚未提交。
+状态：已完成并已提交。主要提交：`1670110 docs(slice): 建立09P-R2正式文档与任务入口`，后续修正：`a6c5765 docs(slice): 修正文档治理文件EOF空行`。
 
 目标：
 
@@ -171,7 +171,7 @@ git diff --check
 
 ## 5. Task 09P-R2-2：固化 experimental report schema
 
-状态：已完成，尚未提交。
+状态：已完成并已提交。提交：`aa5b3be feat(09P): 固化 experimental OpenVDB report schema`。
 
 目标：
 
@@ -228,6 +228,8 @@ build-09p-r2-nmake 为 .gitignore 覆盖的临时验证目录。
 
 ## 6. Task 09P-R2-3：强化 topology admission gate
 
+状态：本轮完成，提交见 `feat(09P): 强化 topology admission gate`。
+
 目标：
 
 把 09B-R3 / 09P-R1 的 blocker 规则进一步文档化和测试化。
@@ -252,6 +254,12 @@ strict_closed gate matrix
 warn_and_attempt matrix
 diagnostic_only matrix
 repair_then_strict placeholder matrix
+```
+
+新增正式矩阵文档：
+
+```text
+docs/slice/DOC/DOC_MATRIX_09P_R2_topology_admission_gate.md
 ```
 
 验证：

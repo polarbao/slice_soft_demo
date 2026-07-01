@@ -26,6 +26,41 @@ slicer_core::ValidationIssue MakeIssue(
     return slicer_core::MakeValidationIssue(code, severity, "test issue");
 }
 
+bool ContainsCode(const std::vector<std::string>& codes, const std::string& code)
+{
+    for (const std::string& existingCode : codes)
+    {
+        if (existingCode == code)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ExpectContainsCode(
+    const std::vector<std::string>& codes,
+    const std::string& code,
+    const std::string& message)
+{
+    return ExpectTrue(ContainsCode(codes, code), message + " contains " + code);
+}
+
+const std::vector<std::string>& RequiredGateCodes()
+{
+    static const std::vector<std::string> codes{
+        "MESH_BOUNDARY_EDGES",
+        "MESH_SELF_INTERSECTION_CONFIRMED",
+        "MESH_NON_MANIFOLD_EDGES",
+        "MESH_DUPLICATE_FACES",
+        "MESH_OPPOSITE_DUPLICATE_FACES",
+        "MESH_LOCAL_WINDING_INCONSISTENCY",
+        "OPENVDB_UNAVAILABLE",
+        "OPENVDB_LEVEL_SET_FAILED",
+    };
+    return codes;
+}
+
 bool StrictClosedAllowsEmptyIssues()
 {
     const slicer_core::ProductionAdmissionDecision decision =
@@ -108,6 +143,36 @@ bool StrictClosedLocalWindingBlocksProduction()
         && ExpectTrue(!decision.productionAllowed, "local winding not production");
 }
 
+bool StrictClosedRequiredGateMatrix()
+{
+    bool ok{true};
+    for (const std::string& code : RequiredGateCodes())
+    {
+        const std::vector<slicer_core::ValidationIssue> issues{
+            MakeIssue(code),
+        };
+        const slicer_core::ProductionAdmissionDecision decision =
+            slicer_core::EvaluateProductionAdmission(issues, slicer_core::AdmissionMode::StrictClosed);
+        if (code == "MESH_SELF_INTERSECTION_CONFIRMED")
+        {
+            ok = ExpectTrue(decision.status == slicer_core::AdmissionStatus::FailFast, code + " fail_fast")
+                && ExpectTrue(!decision.productionAllowed, code + " not production")
+                && ExpectTrue(!decision.nonProduction, code + " rejected before nonProduction output")
+                && ExpectContainsCode(decision.blockerCodes, code, code + " blocker")
+                && ok;
+        }
+        else
+        {
+            ok = ExpectTrue(decision.status == slicer_core::AdmissionStatus::NonProductionOnly, code + " blocked")
+                && ExpectTrue(!decision.productionAllowed, code + " not production")
+                && ExpectTrue(decision.nonProduction, code + " nonProduction")
+                && ExpectContainsCode(decision.blockerCodes, code, code + " blocker")
+                && ok;
+        }
+    }
+    return ok;
+}
+
 bool WarnAndAttemptNeverAllowsProduction()
 {
     const std::vector<slicer_core::ValidationIssue> issues{
@@ -118,6 +183,25 @@ bool WarnAndAttemptNeverAllowsProduction()
     return ExpectTrue(decision.status == slicer_core::AdmissionStatus::NonProductionOnly, "warn_and_attempt status")
         && ExpectTrue(!decision.productionAllowed, "warn_and_attempt not production")
         && ExpectTrue(decision.nonProduction, "warn_and_attempt nonProduction");
+}
+
+bool WarnAndAttemptRequiredGateMatrix()
+{
+    bool ok{true};
+    for (const std::string& code : RequiredGateCodes())
+    {
+        const std::vector<slicer_core::ValidationIssue> issues{
+            MakeIssue(code),
+        };
+        const slicer_core::ProductionAdmissionDecision decision =
+            slicer_core::EvaluateProductionAdmission(issues, slicer_core::AdmissionMode::WarnAndAttempt);
+        ok = ExpectTrue(decision.status == slicer_core::AdmissionStatus::NonProductionOnly, code + " warn status")
+            && ExpectTrue(!decision.productionAllowed, code + " warn not production")
+            && ExpectTrue(decision.nonProduction, code + " warn nonProduction")
+            && ExpectContainsCode(decision.blockerCodes, code, code + " warn blocker")
+            && ok;
+    }
+    return ok;
 }
 
 bool DiagnosticOnlyReturnsDiagnosticOnly()
@@ -131,6 +215,25 @@ bool DiagnosticOnlyReturnsDiagnosticOnly()
         && ExpectTrue(!decision.productionAllowed, "diagnostic_only not production");
 }
 
+bool DiagnosticOnlyRequiredGateMatrix()
+{
+    bool ok{true};
+    for (const std::string& code : RequiredGateCodes())
+    {
+        const std::vector<slicer_core::ValidationIssue> issues{
+            MakeIssue(code),
+        };
+        const slicer_core::ProductionAdmissionDecision decision =
+            slicer_core::EvaluateProductionAdmission(issues, slicer_core::AdmissionMode::DiagnosticOnly);
+        ok = ExpectTrue(decision.status == slicer_core::AdmissionStatus::DiagnosticOnly, code + " diagnostic status")
+            && ExpectTrue(!decision.productionAllowed, code + " diagnostic not production")
+            && ExpectTrue(decision.nonProduction, code + " diagnostic nonProduction")
+            && ExpectContainsCode(decision.blockerCodes, code, code + " diagnostic blocker")
+            && ok;
+    }
+    return ok;
+}
+
 bool RepairThenStrictPlaceholderNeverAllowsProduction()
 {
     const slicer_core::ProductionAdmissionDecision decision =
@@ -139,6 +242,27 @@ bool RepairThenStrictPlaceholderNeverAllowsProduction()
                decision.status == slicer_core::AdmissionStatus::NonProductionOnly,
                "repair_then_strict placeholder status")
         && ExpectTrue(!decision.productionAllowed, "repair_then_strict not production");
+}
+
+bool RepairThenStrictRequiredGateMatrix()
+{
+    bool ok{true};
+    for (const std::string& code : RequiredGateCodes())
+    {
+        const std::vector<slicer_core::ValidationIssue> issues{
+            MakeIssue(code),
+        };
+        const slicer_core::ProductionAdmissionDecision decision =
+            slicer_core::EvaluateProductionAdmission(issues, slicer_core::AdmissionMode::RepairThenStrict);
+        ok = ExpectTrue(
+                 decision.status == slicer_core::AdmissionStatus::NonProductionOnly,
+                 code + " repair placeholder status")
+            && ExpectTrue(!decision.productionAllowed, code + " repair placeholder not production")
+            && ExpectTrue(decision.nonProduction, code + " repair placeholder nonProduction")
+            && ExpectContainsCode(decision.blockerCodes, code, code + " repair placeholder blocker")
+            && ok;
+    }
+    return ok;
 }
 
 bool StableNames()
@@ -163,9 +287,13 @@ int main()
         {"strict_closed_duplicate_blocks_production", StrictClosedDuplicateBlocksProduction},
         {"strict_closed_opposite_duplicate_blocks_production", StrictClosedOppositeDuplicateBlocksProduction},
         {"strict_closed_local_winding_blocks_production", StrictClosedLocalWindingBlocksProduction},
+        {"strict_closed_required_gate_matrix", StrictClosedRequiredGateMatrix},
         {"warn_and_attempt_never_allows_production", WarnAndAttemptNeverAllowsProduction},
+        {"warn_and_attempt_required_gate_matrix", WarnAndAttemptRequiredGateMatrix},
         {"diagnostic_only_returns_diagnostic_only", DiagnosticOnlyReturnsDiagnosticOnly},
+        {"diagnostic_only_required_gate_matrix", DiagnosticOnlyRequiredGateMatrix},
         {"repair_then_strict_placeholder_never_allows_production", RepairThenStrictPlaceholderNeverAllowsProduction},
+        {"repair_then_strict_required_gate_matrix", RepairThenStrictRequiredGateMatrix},
         {"stable_names", StableNames},
     };
 

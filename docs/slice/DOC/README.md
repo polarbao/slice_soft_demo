@@ -10,6 +10,7 @@
 | `DOC_CLASSIFICATION_2026-06-30_docs治理归档清单.md` | docs 分类、归档和当前入口清单 |
 | `DOC_AUDIT_00_08_历史阶段文档缺口与补齐清单.md` | 00-08 历史阶段文档缺口审计 |
 | `DOC_SCHEMA_09P_R2_experimental_openvdb_shell_report.md` | 09P-R2 experimental OpenVDB CLI report schema 契约 |
+| `DOC_MATRIX_09P_R2_topology_admission_gate.md` | 09P-R2 topology admission gate 矩阵 |
 
 ## 决策记录
 
