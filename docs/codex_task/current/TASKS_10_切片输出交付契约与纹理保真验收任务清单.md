@@ -74,6 +74,8 @@ git diff --check
 
 ## 4. Task 10-1：Output contract 字段
 
+状态：本轮完成，提交见 `docs(10): 定义输出契约字段矩阵`。
+
 目标：
 
 ```text
@@ -81,6 +83,12 @@ git diff --check
 ```
 
 建议新增：
+
+```text
+docs/slice/DEV/DEV_10_OutputContract_FieldMatrix.md
+```
+
+已新增：
 
 ```text
 docs/slice/DEV/DEV_10_OutputContract_FieldMatrix.md
