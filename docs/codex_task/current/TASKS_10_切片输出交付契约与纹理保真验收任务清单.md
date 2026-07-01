@@ -239,6 +239,8 @@ git diff --check
 
 ## 10. Task 10-7：REPORT_10
 
+状态：本轮完成，提交见 `docs(10): 生成阶段状态报告`。
+
 目标：
 
 ```text
