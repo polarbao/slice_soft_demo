@@ -36,4 +36,5 @@ This R-track is historical C-level planning unless a current `docs/slice` docume
 
 - 08 support shape/process optimization.
 - 09P OpenVDB experimental surface-shell pipeline hardening.
-- 10 RIP/device integration.
+- 10 slicing output contract / texture fidelity handoff.
+- 11 UI layer preview / interactive config / multi-model capability decision.

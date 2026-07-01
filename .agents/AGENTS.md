@@ -65,8 +65,8 @@ Before project-wide design, refactor, strategy, or implementation planning, read
 6. .agents/docs/build-and-test.md
 7. .agents/docs/doc-state.md
 8. docs/slice/README.md
-9. docs/slice/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
-10. related docs/slice/PRD_*.md / DEV_*.md / ROADMAP_*.md / DOC_*.md
+9. docs/slice/DOC/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md
+10. related docs/slice/PRD/PRD_*.md / docs/slice/DEV/DEV_*.md / docs/slice/ROADMAP/ROADMAP_*.md / docs/slice/DOC/DOC_*.md
 11. docs/codex_task/README.md
 12. related docs/codex_task/current/*.md
 13. related docs/archive/2026-06-30_slicer_legacy/**/*.md as historical evidence

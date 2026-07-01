@@ -81,7 +81,7 @@ Pending Confirmation
 8. ai_workspace/AI_WORKSPACE_TOPIC_INDEX.md
 9. related ai_workspace/integrated_reports/*.md
 10. docs/slice/README.md
-11. related docs/slice/PRD_*.md / DEV_*.md / ROADMAP_*.md / DOC_*.md
+11. related docs/slice/PRD/PRD_*.md / docs/slice/DEV/DEV_*.md / docs/slice/ROADMAP/ROADMAP_*.md / docs/slice/DOC/DOC_*.md
 12. docs/codex_task/README.md
 13. related docs/codex_task/current/*.md
 14. related docs/archive/2026-06-30_slicer_legacy/**/*.md as historical evidence
@@ -185,7 +185,7 @@ L2 Golden package tests
 L3 regression quick/full/heavy
 L4 rip_reader_test strict validation
 L5 slicer_debug_ui self-test / ui-smoke-test
-L6 real printer/RIP/device integration, future only
+L6 downstream RIP/device handoff evidence from external team, future only
 ```
 
 `--self-test` 和 `--ui-smoke-test` 不能当作真机打印验证结论。
