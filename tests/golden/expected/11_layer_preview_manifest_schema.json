@@ -1,0 +1,106 @@
+{
+  "schema": "p0.11.layer_preview_manifest_schema.1",
+  "targetSchema": "p0.layer_preview_manifest.1",
+  "sourceReports": [
+    "manifest.json",
+    "reports/preview_report.json",
+    "reports/slice_report.json",
+    "reports/texture_report.json",
+    "reports/support_report.json",
+    "reports/material_policy_report.json"
+  ],
+  "requiredRootFields": [
+    "schema",
+    "packagePath",
+    "manifestPath",
+    "previewReportPath",
+    "sliceReportPath",
+    "layerCount",
+    "widthPx",
+    "heightPx",
+    "layerHeightMm",
+    "zMinMm",
+    "zMaxMm",
+    "pixelSizeXmm",
+    "pixelSizeYmm",
+    "availableChannels",
+    "frames",
+    "pseudoColorMaps",
+    "diagnostics"
+  ],
+  "requiredChannelFields": [
+    "id",
+    "label",
+    "kind",
+    "source",
+    "defaultVisible",
+    "pseudoColorMap"
+  ],
+  "requiredFrameFields": [
+    "layerIndex",
+    "zMm",
+    "channel",
+    "kind",
+    "source",
+    "path",
+    "widthPx",
+    "heightPx",
+    "stats",
+    "available",
+    "unavailableReason"
+  ],
+  "requiredStatsFields": [
+    "printPixels",
+    "displayNonZeroPixels",
+    "nonZeroPixels",
+    "maxValue",
+    "rgbPrintPixels",
+    "whitePrintPixels",
+    "supportPrintPixels",
+    "varnishPrintPixels"
+  ],
+  "supportedChannels": [
+    "rgb",
+    "texture_rgb",
+    "white",
+    "support",
+    "varnish",
+    "occupancy",
+    "diagnostic",
+    "texture_fidelity"
+  ],
+  "supportedFrameSources": [
+    "preview_png",
+    "slice_report",
+    "texture_report",
+    "support_report",
+    "material_policy_report",
+    "experimental_report"
+  ],
+  "pseudoColorDefaults": {
+    "empty": [255, 255, 255],
+    "support": [0, 255, 0],
+    "white": [0, 170, 255],
+    "varnish": [127, 127, 127],
+    "diagnostic_warning": [255, 180, 0],
+    "diagnostic_error": [255, 0, 0],
+    "texture_fallback": [255, 0, 255]
+  },
+  "requiredDiagnosticsFields": [
+    "type",
+    "severity",
+    "sourceReport",
+    "layerIndex",
+    "message",
+    "code"
+  ],
+  "safetyInvariants": {
+    "packageSchema": "p0.rgbwsv.2",
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "polarity": "black_is_print",
+    "previewIsProductionData": false,
+    "openvdbDefaultEnabled": false,
+    "multiModelProductionDefault": false
+  }
+}

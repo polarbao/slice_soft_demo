@@ -22,3 +22,4 @@
 | `DEV_10_LayerChannelSummaryContract.md` | 10 Layer summary / Channel summary 统计契约 |
 | `DEV_10_TextureFidelityMetrics.md` | 10 纹理保真指标定义 |
 | `DEV_11_LayerPreview_UIConfig_MultiModel设计.md` | 11 LayerPreview / UI Config / MultiModel |
+| `DEV_11_LayerPreview_DataContract.md` | 11 LayerPreview 数据契约 |

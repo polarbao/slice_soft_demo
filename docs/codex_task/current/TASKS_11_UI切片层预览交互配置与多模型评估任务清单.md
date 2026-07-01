@@ -75,6 +75,8 @@ git diff --check
 
 ## 4. Task 11-1：LayerPreview data contract
 
+状态：本轮完成，提交见 `docs(11): 固化层预览数据契约`。
+
 目标：
 
 ```text
@@ -87,6 +89,13 @@ git diff --check
 ```
 
 建议输出：
+
+```text
+docs/slice/DEV/DEV_11_LayerPreview_DataContract.md
+tests/golden/expected/11_layer_preview_manifest_schema.json
+```
+
+已新增：
 
 ```text
 docs/slice/DEV/DEV_11_LayerPreview_DataContract.md
