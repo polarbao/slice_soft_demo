@@ -44,6 +44,12 @@ surface-shell experimental candidate；
 large real-world model for memory stats。
 ```
 
+具体模型、配置、期望摘要和不可 production-safe 原因见：
+
+```text
+docs/slice/DEMO/DEMO_10_RealModelAcceptanceSet.md
+```
+
 ---
 
 ## 4. 验证命令

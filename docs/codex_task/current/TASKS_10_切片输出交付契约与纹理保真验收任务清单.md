@@ -157,12 +157,20 @@ git diff --check
 
 ## 7. Task 10-4：真实模型验收集
 
+状态：本轮完成，提交见 `docs(10): 建立真实模型验收集`。
+
 目标：
 
 ```text
 建立真实模型集合清单；
 定义每个模型的期望输出摘要；
 标记不可 production-safe 的原因。
+```
+
+已新增：
+
+```text
+docs/slice/DEMO/DEMO_10_RealModelAcceptanceSet.md
 ```
 
 验证：
