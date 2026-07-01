@@ -47,4 +47,7 @@ foreach ($case in $cases) {
   Check-Golden $case
 }
 
+Write-Host "== golden stage10 output contract"
+.\scripts\run_10_output_contract_tests.ps1
+
 Write-Host "Golden tests complete."

@@ -208,12 +208,22 @@ git diff --check
 
 ## 9. Task 10-6：Output contract golden / schema
 
+状态：本轮完成，提交见 `test(10): 增加输出契约 golden 验证`。
+
 目标：
 
 ```text
 建立 output contract schema；
 建立 golden summary；
 必要时新增 run_10_output_contract_tests.ps1。
+```
+
+已新增：
+
+```text
+tests/golden/expected/10_output_contract_schema.json
+tests/golden/expected/10_output_contract_summary.json
+scripts/run_10_output_contract_tests.ps1
 ```
 
 验证：

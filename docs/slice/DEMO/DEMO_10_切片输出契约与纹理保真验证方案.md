@@ -75,6 +75,14 @@ Golden / schema：
 .\scripts\run_10_output_contract_tests.ps1
 ```
 
+当前已新增并接入 `scripts/run_golden_tests.ps1`：
+
+```text
+tests/golden/expected/10_output_contract_schema.json
+tests/golden/expected/10_output_contract_summary.json
+scripts/run_10_output_contract_tests.ps1
+```
+
 ---
 
 ## 5. 完成判定

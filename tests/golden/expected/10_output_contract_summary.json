@@ -1,0 +1,125 @@
+{
+  "schema": "p0.10.output_contract_summary.1",
+  "description": "Stage 10 quick golden fixtures for output contract, layer/channel summary, texture fidelity, 3MF material resources, and material policy handoff.",
+  "cases": [
+    {
+      "id": "g4_missing_texture",
+      "config": "samples/configs/textured/textured_missing_texture_fallback.json",
+      "package": "output/TexturedMissingTextureFallback",
+      "sourceFormat": "obj",
+      "requiredReports": ["texture_report.json"],
+      "expect": {
+        "rgbPrintPixels": {"min": 1},
+        "supportPrintPixels": {"equals": 0},
+        "whitePrintPixels": {"equals": 0},
+        "varnishPrintPixels": {"equals": 0},
+        "texture": {
+          "enabled": true,
+          "sampledPixels": {"equals": 0},
+          "fallbackPixels": {"min": 1},
+          "missingTextures": {"min": 1},
+          "facesWithUv": {"min": 1},
+          "facesWithoutUv": {"equals": 0},
+          "fallbackPixelRate": {"min": 0.99}
+        }
+      }
+    },
+    {
+      "id": "g4_no_uv",
+      "config": "samples/configs/textured/textured_no_uv_fallback.json",
+      "package": "output/TexturedNoUvFallback",
+      "sourceFormat": "obj",
+      "requiredReports": ["texture_report.json"],
+      "expect": {
+        "rgbPrintPixels": {"min": 1},
+        "supportPrintPixels": {"equals": 0},
+        "whitePrintPixels": {"equals": 0},
+        "varnishPrintPixels": {"equals": 0},
+        "texture": {
+          "enabled": true,
+          "sampledPixels": {"equals": 0},
+          "fallbackPixels": {"min": 1},
+          "missingTextures": {"equals": 0},
+          "facesWithUv": {"equals": 0},
+          "facesWithoutUv": {"min": 1},
+          "fallbackPixelRate": {"min": 0.99},
+          "uvCoverageRate": {"max": 0.01}
+        }
+      }
+    },
+    {
+      "id": "g2_3mf_colorgroup",
+      "config": "samples/configs/3mf/three_mf_color_group_rgb.json",
+      "package": "output/ThreeMfColorGroupRgb",
+      "sourceFormat": "3mf",
+      "requiredReports": ["three_mf_report.json", "texture_report.json"],
+      "expect": {
+        "rgbPrintPixels": {"min": 1},
+        "supportPrintPixels": {"equals": 0},
+        "threeMf": {
+          "invalidReferenceCount": {"equals": 0},
+          "colorGroupCount": {"min": 1},
+          "colorGroupResolvedTriangles": {"min": 1},
+          "texture2dGroupCount": {"equals": 0}
+        },
+        "texture": {
+          "enabled": false,
+          "missingTextures": {"equals": 0}
+        }
+      }
+    },
+    {
+      "id": "g2_3mf_texture2d_checker",
+      "config": "samples/configs/3mf/three_mf_texture2d_checker.json",
+      "package": "output/ThreeMfTexture2dChecker",
+      "sourceFormat": "3mf",
+      "requiredReports": ["three_mf_report.json", "texture_report.json"],
+      "expect": {
+        "rgbPrintPixels": {"min": 1},
+        "supportPrintPixels": {"equals": 0},
+        "threeMf": {
+          "invalidReferenceCount": {"equals": 0},
+          "texture2dGroupCount": {"min": 1},
+          "textureLoadedCount": {"min": 1},
+          "textureMissingCount": {"equals": 0},
+          "textureGroupResolvedTriangles": {"min": 1}
+        },
+        "texture": {
+          "enabled": true,
+          "sampledPixels": {"min": 1},
+          "fallbackPixels": {"equals": 0},
+          "missingTextures": {"equals": 0},
+          "facesWithUv": {"min": 1},
+          "fallbackPixelRate": {"max": 0.01},
+          "textureResolvedRate": {"min": 0.99}
+        }
+      }
+    },
+    {
+      "id": "g3_rgb_white_varnish_support",
+      "config": "samples/configs/material_policy/textured_rgb_white_varnish.json",
+      "package": "output/MaterialPolicyRgbWhiteVarnish",
+      "sourceFormat": "obj",
+      "requiredReports": ["texture_report.json", "material_policy_report.json", "support_report.json"],
+      "expect": {
+        "rgbPrintPixels": {"min": 1},
+        "whitePrintPixels": {"min": 1},
+        "varnishPrintPixels": {"min": 1},
+        "supportPrintPixels": {"min": 1},
+        "texture": {
+          "enabled": true,
+          "sampledPixels": {"min": 1},
+          "fallbackPixels": {"equals": 0},
+          "missingTextures": {"equals": 0},
+          "textureResolvedRate": {"min": 0.99}
+        },
+        "materialPolicy": {
+          "enabled": true,
+          "rgbPrintPixels": {"min": 1},
+          "whitePrintPixels": {"min": 1},
+          "varnishPrintPixels": {"min": 1}
+        }
+      }
+    }
+  ]
+}

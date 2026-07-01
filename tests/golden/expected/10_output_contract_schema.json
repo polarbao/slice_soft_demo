@@ -1,0 +1,102 @@
+{
+  "schema": "p0.10.output_contract_schema.1",
+  "packageSchema": "p0.rgbwsv.2",
+  "protocol": {
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "channelCount": 6,
+    "bitDepth": 8,
+    "sampleFormat": "uint",
+    "planarConfig": "contiguous",
+    "polarity": "black_is_print",
+    "printValue": 0,
+    "emptyValue": 255,
+    "allowedStorageModes": ["stripped", "tiled"]
+  },
+  "requiredReports": [
+    "package_report.json",
+    "slice_report.json",
+    "model_report.json"
+  ],
+  "requiredManifestFields": [
+    "schema",
+    "schemaVersion",
+    "source",
+    "grid",
+    "tiff",
+    "layers"
+  ],
+  "requiredGridFields": [
+    "widthPx",
+    "heightPx",
+    "layerCount",
+    "dpiX",
+    "dpiY",
+    "pixelSizeXmm",
+    "pixelSizeYmm",
+    "layerThicknessMm"
+  ],
+  "requiredTiffFields": [
+    "channelOrder",
+    "channelCount",
+    "bitDepth",
+    "sampleFormat",
+    "planarConfig",
+    "storageMode",
+    "polarity",
+    "printValue",
+    "emptyValue"
+  ],
+  "requiredLayerFields": [
+    "index",
+    "zMm",
+    "path",
+    "widthPx",
+    "heightPx",
+    "modelPixels",
+    "supportPixels"
+  ],
+  "requiredSliceLayerFields": [
+    "layerIndex",
+    "zMm",
+    "modelPrintPixels",
+    "rgbPrintPixels",
+    "whitePrintPixels",
+    "supportPrintPixels",
+    "varnishPrintPixels",
+    "channelStats"
+  ],
+  "requiredChannelStatsFields": [
+    "printPixels",
+    "fullPrintPixels",
+    "partialPrintPixels",
+    "emptyPixels",
+    "minValue",
+    "maxValue"
+  ],
+  "requiredTextureFields": [
+    "enabled",
+    "applyMode",
+    "loadedTextures",
+    "missingTextures",
+    "sampledPixels",
+    "fallbackPixels",
+    "uvOutOfRangePixels",
+    "stats"
+  ],
+  "requiredTextureStatsFields": [
+    "facesWithUv",
+    "facesWithoutUv",
+    "sampledPixels",
+    "fallbackPixels",
+    "uvOutOfRangePixels"
+  ],
+  "requiredThreeMfFields": [
+    "enabled",
+    "triangleCount",
+    "invalidReferenceCount",
+    "validation",
+    "colorGroups",
+    "textures"
+  ],
+  "ratioTolerance": 0.000001
+}
