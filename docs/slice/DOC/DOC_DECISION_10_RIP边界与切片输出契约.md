@@ -57,4 +57,3 @@ RIP 团队定义消费反馈；
 不改变 RGBWSV channel order；
 不把下游验收等同于真实打印验收。
 ```
-

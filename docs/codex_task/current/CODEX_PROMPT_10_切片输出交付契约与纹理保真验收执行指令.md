@@ -31,4 +31,3 @@ docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收�
 10. 不把 RIP SDK 引入 slicer_core。
 11. 不 push。
 ```
-

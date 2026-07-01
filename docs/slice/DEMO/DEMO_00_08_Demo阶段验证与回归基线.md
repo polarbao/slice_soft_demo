@@ -77,4 +77,3 @@ cmake --build build --config Debug --target slicer_debug_ui
 3. 09P、10、11 新增能力不应破坏 00-08 已形成的协议和输入输出能力。
 4. 若历史验证脚本已改名或失效，必须在 REPORT 中说明并补新入口。
 ```
-

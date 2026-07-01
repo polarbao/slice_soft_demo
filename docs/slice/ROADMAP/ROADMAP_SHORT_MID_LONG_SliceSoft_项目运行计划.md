@@ -146,4 +146,3 @@ RIP 半色调实现；
 | 每个阶段开始 | PRD / DEV / DEMO / TASKS / CODEX_PROMPT 齐备 | 阶段入口 |
 | 每个阶段结束 | REPORT + 是否进入下一阶段判断 | 阶段状态 |
 | 每月 | 更新短中长期计划 | ROADMAP 修订 |
-

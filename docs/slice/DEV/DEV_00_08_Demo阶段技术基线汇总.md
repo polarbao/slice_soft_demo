@@ -83,4 +83,3 @@ layer preview 数据契约仍需 11 阶段设计。
 4. docs/archive/2026-06-30_slicer_legacy 对应历史阶段；
 5. docs/codex_task/archive 对应任务记录。
 ```
-

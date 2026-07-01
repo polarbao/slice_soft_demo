@@ -219,4 +219,3 @@ cmake --build build --config Debug --target slicer_debug_ui
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case layer-preview-load --package output\UiSmokeLayerPreview
 git diff --check
 ```
-

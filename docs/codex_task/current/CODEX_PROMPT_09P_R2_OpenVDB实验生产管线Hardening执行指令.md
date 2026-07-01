@@ -31,4 +31,3 @@ docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任�
 11. 不实现 RIP 半色调、设备通信或喷头 bitstream。
 12. 不 push。
 ```
-

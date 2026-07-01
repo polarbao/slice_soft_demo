@@ -139,4 +139,3 @@ docs/slice/DEMO/DEMO_10_切片输出契约与纹理保真验证方案.md
 scripts/run_10_output_contract_tests.ps1
 tests/golden/expected/10_output_contract_summary.json
 ```
-

@@ -200,4 +200,3 @@ git diff --check
 git status --short
 git diff --check
 ```
-
