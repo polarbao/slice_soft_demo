@@ -453,6 +453,8 @@ git diff --check
 
 ## 11. Task 09P-R2-8：建立 CI matrix
 
+状态：本轮完成，提交见 `build(09P): 建立 R2 CI matrix 脚本`。
+
 目标：
 
 整理并实现分层 CI 脚本入口：
@@ -464,6 +466,13 @@ Benchmark：Release optional/manual
 ```
 
 建议新增或更新：
+
+```text
+scripts/run_09p_r2_ci_matrix.ps1
+docs/slice/DEMO/DEMO_09P_R2_CI_Matrix验证方案.md
+```
+
+已新增：
 
 ```text
 scripts/run_09p_r2_ci_matrix.ps1
