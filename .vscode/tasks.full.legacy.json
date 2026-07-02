@@ -1,0 +1,466 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "SliceSoft: Configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S",
+        ".",
+        "-B",
+        "build"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Build Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "build",
+        "--config",
+        "Debug"
+      ],
+      "dependsOn": "SliceSoft: Configure",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "SliceSoft: Build Debug UI",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "build",
+        "--config",
+        "Debug",
+        "--target",
+        "slicer_debug_ui"
+      ],
+      "dependsOn": "SliceSoft: Configure",
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "SliceSoft: Run slicer_cli sample",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test sample",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/SlicePackage"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run slicer_cli sample",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run slicer_cli model 0.3",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_model_0_3.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Inspect model 0.3",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_model_0_3.json",
+        "--inspect-model"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Preview-only model 0.3",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_model_0_3.json",
+        "--preview-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run slicer_cli relief varnish",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_relief_varnish.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Preview-only relief varnish",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/slice_config_relief_varnish.json",
+        "--preview-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test relief varnish",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/SlicePackage_relief_varnish"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run slicer_cli relief varnish",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run support unsupported_only",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/support/support_unsupported_only.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run support bottom_plus_unsupported",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/support/support_bottom_plus_unsupported.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run textured relief RGB",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_relief_rgb.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test textured relief RGB",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/TexturedReliefRgb"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run textured relief RGB",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run textured missing texture fallback",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_missing_texture_fallback.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run textured no UV fallback",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/textured/textured_no_uv_fallback.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF single RGB",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_single_rgb.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test 3MF single RGB",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ThreeMfSingleRgb",
+        "--summary"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run 3MF single RGB",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF multi object transform",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_multi_object_transform.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test 3MF multi object transform",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ThreeMfMultiObjectTransform",
+        "--summary"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run 3MF multi object transform",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF multi material RGBWV",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_multi_material_rgbwv.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test 3MF multi material RGBWV",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ThreeMfMultiMaterialRgbwv",
+        "--summary"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run 3MF multi material RGBWV",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF real 01",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_01.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF real 02",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_02.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 3MF real 03",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/3mf/three_mf_real_03.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run OBJ/MTL material RGBWV",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/material_mapping/obj_mtl_material_mapping_rgbwv.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test OBJ/MTL material RGBWV",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ObjMtlMaterialMappingRgbwv",
+        "--summary"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run OBJ/MTL material RGBWV",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run OBJ/MTL material ignore",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/material_mapping/obj_mtl_material_mapping_ignore.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test OBJ/MTL material ignore",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ObjMtlMaterialMappingIgnore",
+        "--summary"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run OBJ/MTL material ignore",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run OBJ/MTL texture material RGBWV",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "args": [
+        "--config",
+        "samples/configs/material_mapping/obj_mtl_texture_material_mapping_rgbwv.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Debug",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run rip_reader_test OBJ/MTL texture material RGBWV",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "args": [
+        "--package",
+        "output/ObjMtlTextureMaterialMappingRgbwv",
+        "--summary"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Run OBJ/MTL texture material RGBWV",
+      "problemMatcher": []
+    }
+  ]
+}
