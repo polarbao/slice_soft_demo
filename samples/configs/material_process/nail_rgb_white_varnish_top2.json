@@ -1,7 +1,7 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "../../models/textured/fixtures/policy_textured_small.obj",
+    "modelPath": "../../../model/obj/MF_aishen_damuzhi_L_tx02.obj",
     "format": "auto"
   },
   "output": {
@@ -14,6 +14,12 @@
     "planarConfig": "contiguous",
     "storageMode": "stripped",
     "rowsPerStrip": 64
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [0.8, 0.8, 0.8],
+    "rotationDeg": [0.0, 0.0, 0.0],
+    "translationMm": [0.0, 0.0, 0.0]
   },
   "autoOrient": {
     "enabled": true,
@@ -90,7 +96,7 @@
       "requireRgbPixels": true,
       "requireWhitePixels": true,
       "requireVarnishPixels": true,
-      "requireSupportPixels": false,
+      "requireSupportPixels": true,
       "maxUnexpectedOverlapPixels": 0
     }
   },
@@ -106,9 +112,10 @@
     "baseZMm": 0.0
   },
   "preview": {
-    "enabled": false,
+    "enabled": true,
     "format": "png",
-    "interval": 1,
-    "channels": ["texture_rgb", "white", "varnish", "support"]
+    "interval": 10,
+    "channels": ["texture_rgb", "white", "varnish", "support"],
+    "onlyNonEmptyLayers": true
   }
 }

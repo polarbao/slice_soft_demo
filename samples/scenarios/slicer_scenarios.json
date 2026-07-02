@@ -119,7 +119,7 @@
       "category": "材料工艺",
       "configPath": "samples/configs/material_process/nail_rgb_white_varnish_top2.json",
       "packageDir": "output/NailRgbWhiteVarnishTop2",
-      "description": "Qt UI 默认样例，覆盖 RGB、白墨、光油、支撑和材料工艺报告。",
+      "description": "Qt UI 默认样例，使用 model/obj 标准甲片模板，覆盖 RGB、白墨、光油、支撑和材料工艺报告。",
       "enabled": true,
       "ripSummary": true
     },

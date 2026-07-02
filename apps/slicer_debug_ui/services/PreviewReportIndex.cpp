@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSet>
 
 bool PreviewReportIndex::load(const QString& package_dir) {
     entries_.clear();
@@ -31,6 +32,18 @@ bool PreviewReportIndex::load(const QString& package_dir) {
             addEntry(package_dir, value);
         }
     }
+    QSet<QString> seen;
+    QVector<PreviewReportEntry> uniqueEntries;
+    for (const PreviewReportEntry& entry : entries_) {
+        const QString dedupeKey =
+            QString("%1|%2|%3").arg(entry.layer_index).arg(entry.channel, entry.path);
+        if (seen.contains(dedupeKey)) {
+            continue;
+        }
+        seen.insert(dedupeKey);
+        uniqueEntries.push_back(entry);
+    }
+    entries_ = uniqueEntries;
     if (entries_.isEmpty() && error_.isEmpty()) {
         error_ = "preview_report.json 未列出 preview 文件。";
     }

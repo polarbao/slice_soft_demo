@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QScrollArea>
 #include <QSlider>
+#include <QVector>
 #include <QWidget>
 
 class PreviewOverlayPanel final : public QWidget {
@@ -37,12 +38,15 @@ private:
     int parseLayer(const QString& path) const;
     void rebuildLayerSlider();
     QImage readImage(const QString& path) const;
-    QImage findImage(const QString& channel, int index) const;
+    QImage FindImageForLayer(const QString& channel, int layer) const;
+    QImage FindFirstImageForLayer(int layer) const;
+    int CurrentLayer() const;
     QImage composeCurrent() const;
     QImage composeForMode(const QString& mode, int index) const;
     void applyPixmap(const QImage& image);
 
     QVector<PreviewImage> images_;
+    QVector<int> m_layerIndices;
     double zoom_{1.0};
     bool fit_{true};
 

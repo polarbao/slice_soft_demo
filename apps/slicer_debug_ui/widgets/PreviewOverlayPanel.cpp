@@ -18,6 +18,8 @@
 #include <QSizePolicy>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 namespace {
 
 QPushButton* makeButton(const QString& text, QWidget* parent) {
@@ -65,14 +67,32 @@ PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
 
 void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
     images_.clear();
+    m_layerIndices.clear();
+    QSet<QString> seen;
+    const auto append_image = [this, &seen](const PreviewImage& image) {
+        if (image.path.isEmpty() || image.channel.isEmpty() || image.layer < 0) {
+            return;
+        }
+        const QString key = QString("%1|%2|%3").arg(image.layer).arg(image.channel, image.path);
+        if (seen.contains(key)) {
+            return;
+        }
+        seen.insert(key);
+        images_.push_back(image);
+        if (!m_layerIndices.contains(image.layer)) {
+            m_layerIndices.push_back(image.layer);
+        }
+    };
+
     PreviewReportIndex index;
     if (index.load(package.package_dir)) {
         for (const PreviewReportEntry& entry : index.entries()) {
             if (QFileInfo::exists(entry.path)) {
-                images_.push_back(
-                    PreviewImage{entry.path,
-                                 normalizeChannel(entry.channel.isEmpty() ? classifyChannel(entry.path) : entry.channel),
-                                 entry.layer_index});
+                append_image(
+                    PreviewImage{
+                        entry.path,
+                        normalizeChannel(entry.channel.isEmpty() ? classifyChannel(entry.path) : entry.channel),
+                        entry.layer_index});
             }
         }
     }
@@ -82,10 +102,11 @@ void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
         paths.sort();
         for (const QString& path : paths) {
             if (QFileInfo::exists(path)) {
-                images_.push_back(PreviewImage{path, classifyChannel(path), parseLayer(path)});
+                append_image(PreviewImage{path, classifyChannel(path), parseLayer(path)});
             }
         }
     }
+    std::sort(m_layerIndices.begin(), m_layerIndices.end());
     rebuildLayerSlider();
     updateImage();
 }
@@ -116,8 +137,10 @@ bool PreviewOverlayPanel::canComposeMode(const QString& mode) const {
     } else {
         overlay_channel = "support";
     }
-    for (int i = 0; i < images_.size(); ++i) {
-        if (!findImage("rgb", i).isNull() && !findImage(overlay_channel, i).isNull() && !composeForMode(mode, i).isNull()) {
+    for (int i = 0; i < m_layerIndices.size(); ++i) {
+        const int layer = m_layerIndices.at(i);
+        if ((!FindImageForLayer("rgb", layer).isNull() || !FindImageForLayer(overlay_channel, layer).isNull())
+            && !composeForMode(mode, i).isNull()) {
             return true;
         }
     }
@@ -200,9 +223,9 @@ int PreviewOverlayPanel::parseLayer(const QString& path) const {
 void PreviewOverlayPanel::rebuildLayerSlider() {
     layer_slider_->blockSignals(true);
     layer_slider_->setMinimum(0);
-    layer_slider_->setMaximum(images_.isEmpty() ? 0 : images_.size() - 1);
+    layer_slider_->setMaximum(m_layerIndices.isEmpty() ? 0 : m_layerIndices.size() - 1);
     layer_slider_->setValue(0);
-    layer_slider_->setEnabled(!images_.isEmpty());
+    layer_slider_->setEnabled(!m_layerIndices.isEmpty());
     layer_slider_->blockSignals(false);
 }
 
@@ -211,27 +234,33 @@ QImage PreviewOverlayPanel::readImage(const QString& path) const {
     return reader.read();
 }
 
-QImage PreviewOverlayPanel::findImage(const QString& channel, const int index) const {
+QImage PreviewOverlayPanel::FindImageForLayer(const QString& channel, const int layer) const {
     if (images_.isEmpty()) {
         return {};
     }
-    const int target = qBound(0, index, images_.size() - 1);
-    const int layer = images_.at(target).layer;
     for (const PreviewImage& image : images_) {
         if (image.channel == channel && image.layer == layer) {
             return readImage(image.path);
         }
     }
-    int seen = -1;
+    return {};
+}
+
+QImage PreviewOverlayPanel::FindFirstImageForLayer(const int layer) const {
     for (const PreviewImage& image : images_) {
-        if (image.channel == channel) {
-            ++seen;
-            if (seen == target) {
-                return readImage(image.path);
-            }
+        if (image.layer == layer) {
+            return readImage(image.path);
         }
     }
     return {};
+}
+
+int PreviewOverlayPanel::CurrentLayer() const {
+    if (m_layerIndices.isEmpty()) {
+        return -1;
+    }
+    const int position = qBound(0, layer_slider_->value(), m_layerIndices.size() - 1);
+    return m_layerIndices.at(position);
 }
 
 QImage PreviewOverlayPanel::composeCurrent() const {
@@ -239,15 +268,17 @@ QImage PreviewOverlayPanel::composeCurrent() const {
 }
 
 QImage PreviewOverlayPanel::composeForMode(const QString& mode, const int index) const {
-    if (images_.isEmpty()) {
+    if (m_layerIndices.isEmpty()) {
         return {};
     }
-    QImage base = mode == "单通道" ? readImage(images_.at(qBound(0, index, images_.size() - 1)).path) : findImage("rgb", index);
-    if (base.isNull()) {
-        base = readImage(images_.at(qBound(0, index, images_.size() - 1)).path);
+    const int layer = m_layerIndices.at(qBound(0, index, m_layerIndices.size() - 1));
+    if (mode == "单通道") {
+        return FindFirstImageForLayer(layer);
     }
-    if (mode == "单通道" || base.isNull()) {
-        return base;
+
+    QImage base = FindImageForLayer("rgb", layer);
+    if (!base.isNull()) {
+        base = base.convertToFormat(QImage::Format_ARGB32);
     }
 
     QString overlay_channel;
@@ -258,7 +289,14 @@ QImage PreviewOverlayPanel::composeForMode(const QString& mode, const int index)
     } else {
         overlay_channel = "support";
     }
-    const QImage overlay = findImage(overlay_channel, index);
+    const QImage overlay = FindImageForLayer(overlay_channel, layer);
+    if (base.isNull() && overlay.isNull()) {
+        return {};
+    }
+    if (base.isNull()) {
+        base = QImage(overlay.size(), QImage::Format_ARGB32);
+        base.fill(Qt::white);
+    }
     if (overlay.isNull()) {
         return base;
     }
@@ -292,9 +330,10 @@ void PreviewOverlayPanel::applyPixmap(const QImage& image) {
     }
     image_label_->setPixmap(QPixmap::fromImage(image).scaled(target_size, Qt::KeepAspectRatio, Qt::FastTransformation));
     image_label_->resize(target_size);
-    status_->setText(QString("%1/%2  %3  %4x%5")
+    status_->setText(QString("%1/%2  layer=%3  %4  %5x%6")
                          .arg(layer_slider_->value() + 1)
-                         .arg(qMax(1, images_.size()))
+                         .arg(qMax(1, m_layerIndices.size()))
+                         .arg(CurrentLayer())
                          .arg(mode_->currentText())
                          .arg(image.width())
                          .arg(image.height()));
