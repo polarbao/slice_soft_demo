@@ -1,0 +1,256 @@
+﻿# TASKS_11A_OpenVDB_OBJ彩色纹理切片前置任务清单
+
+> 文档版本：v0.1
+> 文档状态：Codex Task List / Stage 11A
+> 生成日期：2026-07-02
+> 阶段定位：Stage 12 前置，OBJ 标准模板与 OpenVDB OBJ 彩色纹理候选切片计划
+
+## 1. 总规则
+
+每个任务开始前：
+
+```powershell
+git status --short
+```
+
+每个任务完成前：
+
+```powershell
+git status --short
+git diff --check
+```
+
+生产安全规则：
+
+```text
+不修改 p0.rgbwsv.2；
+不修改 RGBWSV channelOrder；
+不修改 uint8 / black_is_print；
+不默认启用 OpenVDB；
+不把 diagnostic_only 输出当作 production package；
+不绕过 ProductionAdmissionPolicy；
+不让 UI 直接依赖 OpenVDB 类型。
+```
+
+## 2. 推荐顺序
+
+```text
+11A-0：标准 OBJ 模板登记；
+11A-1：legacy 标准模板功能性配置与场景；
+11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证；
+11A-3：OpenVDB candidate 配置与 admission gate；
+11A-4：OpenVDB surface-shell OBJ texture transfer 原型；
+11A-5：candidate RGBWSV package writer；
+11A-6：标准模板 golden / RIP / UI 验收；
+11A-7：REPORT_11A。
+```
+
+## 3. Task 11A-0：标准 OBJ 模板登记
+
+目标：
+
+```text
+确认 model/obj 为标准 OBJ 彩色纹理功能性测试模板目录；
+记录 OBJ / MTL / PNG 文件关系；
+不移动真实模型文件。
+```
+
+输出：
+
+```text
+model/obj/README.md
+docs/slice/DOC/DOC_DECISION_11A_Stage12前置_OpenVDB_OBJ彩色纹理切片计划.md
+```
+
+验证：
+
+```powershell
+Get-ChildItem model\obj
+Select-String -Path model\obj\MF_aishen_damuzhi_L_tx02.obj -Pattern "mtllib|vt "
+Get-Content model\obj\MF_aishen_damuzhi_L_tx02.mtl
+git diff --check
+```
+
+## 4. Task 11A-1：legacy 标准模板功能性配置与场景
+
+目标：
+
+```text
+新增标准 OBJ 模板 legacy 配置；
+加入 UI 场景索引；
+验证模型路径、MTL、贴图可以被当前 importer 解析。
+```
+
+输出：
+
+```text
+samples/configs/obj_standard/standard_obj_texture_legacy.json
+samples/scenarios/slicer_scenarios.json
+```
+
+验证：
+
+```powershell
+Get-Content -Raw samples\configs\obj_standard\standard_obj_texture_legacy.json | ConvertFrom-Json | Out-Null
+Get-Content -Raw samples\scenarios\slicer_scenarios.json | ConvertFrom-Json | Out-Null
+.\build\Debug\slicer_cli.exe --config samples\configs\obj_standard\standard_obj_texture_legacy.json --inspect-model
+git diff --check
+```
+
+## 5. Task 11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证
+
+目标：
+
+```text
+确认 UI 可通过按钮执行 non-OpenVDB legacy 一键切片；
+确认 UI 可通过按钮执行 OpenVDB diagnostic；
+确认两条路径文案和输出路径不混淆。
+```
+
+输出：
+
+```text
+apps/slicer_debug_ui/MainWindow.*
+docs/user_guides/QT_DEBUG_UI_操作手册.md
+```
+
+验证：
+
+```powershell
+cmake --build build --config Debug --target slicer_debug_ui
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
+.\build\Debug\slicer_cli.exe --config samples\configs\obj_standard\standard_obj_texture_legacy.json --experimental-openvdb-shell --admission-mode diagnostic_only --experimental-report output\ObjStandardTemplateOpenVdbDiagnostic\reports\experimental_openvdb_shell_report.json
+git diff --check
+```
+
+## 6. Task 11A-3：OpenVDB candidate 配置与 admission gate
+
+目标：
+
+```text
+新增 surface_shell_from_sdf 配置枚举；
+新增 writeProductionRgbwsv gate；
+确保 OpenVDB unavailable / diagnostic_only / warn_and_attempt 不写 package；
+补单测。
+```
+
+建议修改：
+
+```text
+src/slicer_core/config.*
+src/slicer_core/diagnostics/ProductionAdmissionPolicy.*
+tests/unit/experimental_config 或新增 11A 单测
+```
+
+验证：
+
+```powershell
+cmake --build build --config Debug
+ctest --test-dir build -C Debug --output-on-failure
+.\build\Debug\slicer_cli.exe --config samples\configs\obj_standard\standard_obj_texture_legacy.json --experimental-openvdb-shell --admission-mode diagnostic_only --experimental-report output\ObjStandardTemplateOpenVdbDiagnostic\reports\experimental_openvdb_shell_report.json
+git diff --check
+```
+
+## 7. Task 11A-4：OpenVDB surface-shell OBJ texture transfer 原型
+
+目标：
+
+```text
+基于 OBJ/MTL/Texture 和 TriangleTextureInfo；
+执行 OpenVDB shell sample -> nearest triangle -> UV -> texture RGB；
+输出稳定 texture transfer stats 和 ValidationIssue。
+```
+
+建议修改：
+
+```text
+src/slicer_core/materials/texture_application/*
+src/slicer_core/geometry/*
+tests/unit/surface_shell_texture*
+```
+
+验证：
+
+```powershell
+cmake --build build --config Debug
+.\scripts\run_surface_shell_texture_tests.ps1
+.\scripts\run_surface_shell_real_model_tests.ps1
+git diff --check
+```
+
+## 8. Task 11A-5：candidate RGBWSV package writer
+
+目标：
+
+```text
+在 strict_closed 且无 blocker 时，将 OpenVDB candidate buffer 写为 p0.rgbwsv.2 package；
+复用 RGBWSV writer / manifest / report 规则；
+不影响 legacy run_slicer。
+```
+
+建议修改：
+
+```text
+src/slicer_core/pipeline/*
+src/slicer_core/output/*
+src/slicer_core/slicer.cpp 或 wrapper API
+apps/slicer_cli/main.cpp
+```
+
+验证：
+
+```powershell
+cmake --build build --config Debug
+.\build\Debug\slicer_cli.exe --config samples\configs\obj_standard\standard_obj_texture_openvdb_candidate.json
+.\build\Debug\rip_reader_test.exe --package output\ObjStandardTemplateOpenVdbCandidate --summary
+ctest --test-dir build -C Debug --output-on-failure
+git diff --check
+```
+
+## 9. Task 11A-6：标准模板 golden / RIP / UI 验收
+
+目标：
+
+```text
+为 model/obj 标准模板建立 legacy 与 OpenVDB candidate 验收脚本；
+补 texture fidelity / package summary / UI smoke。
+```
+
+建议输出：
+
+```text
+scripts/run_11a_obj_standard_tests.ps1
+scripts/run_11a_obj_openvdb_candidate_tests.ps1
+tests/golden/expected/11a_obj_standard_*.json
+```
+
+验证：
+
+```powershell
+.\scripts\run_11a_obj_standard_tests.ps1
+.\scripts\run_11a_obj_openvdb_candidate_tests.ps1
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
+git diff --check
+```
+
+## 10. Task 11A-7：REPORT_11A
+
+目标：
+
+```text
+生成 Stage 11A 状态报告；
+记录已完成能力、未完成风险、验证命令、是否允许进入 Stage 12。
+```
+
+输出：
+
+```text
+docs/slice/REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md
+```
+
+验证：
+
+```powershell
+git status --short
+git diff --check
+```
