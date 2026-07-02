@@ -18,3 +18,5 @@
 | `PRD_09P_R2_OpenVDB实验生产管线Hardening.md` | 09P-R2 formalization / hardening |
 | `PRD_10_切片输出交付契约与纹理保真验收.md` | 10 输出契约与纹理保真 |
 | `PRD_11_UI切片层预览交互配置与多模型能力.md` | 11 UI 层预览、配置、多模型评估 |
+| `PRD_11A_OpenVDB_OBJ彩色纹理切片前置计划.md` | 11A OpenVDB OBJ 彩色纹理切片前置 |
+| `PRD_11A_R1_OpenVDB候选切片写包与Preview收口.md` | 11A-R1 OpenVDB Candidate 写包与 preview 收口 |

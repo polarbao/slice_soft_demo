@@ -11,3 +11,5 @@
 | `DEMO_10_切片输出契约与纹理保真验证方案.md` | 10 输出契约与纹理保真验证方案 |
 | `DEMO_10_RealModelAcceptanceSet.md` | 10 真实模型验收集 |
 | `DEMO_11_UI切片层预览交互配置验证方案.md` | 11 UI 层预览、伪彩和配置交互验证方案 |
+| `DEMO_11A_OpenVDB_OBJ彩色纹理切片验证方案.md` | 11A OpenVDB OBJ 彩色纹理前置验证方案 |
+| `DEMO_11A_R1_OpenVDB候选包与Preview验证方案.md` | 11A-R1 OpenVDB Candidate package 与 preview 验证方案 |

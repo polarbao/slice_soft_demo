@@ -27,6 +27,9 @@ docs/codex_task/archive/handoff
 ```text
 docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
 docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
+docs/codex_task/current/TASKS_11A_OpenVDB_OBJ彩色纹理切片前置任务清单.md
+docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
+docs/codex_task/current/CODEX_PROMPT_11A_R1_OpenVDB候选切片写包执行指令.md
 ```
 
 已完成 / 保留参考入口：
