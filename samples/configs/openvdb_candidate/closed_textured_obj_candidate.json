@@ -1,0 +1,48 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../models/openvdb_candidate/closed_textured_obj.obj",
+    "format": "obj"
+  },
+  "output": {
+    "packageDir": "output/OpenVdbCandidateClosedTexturedObj",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": false,
+    "maxHeightMm": 6.0
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "surface_shell_from_sdf",
+    "sampler": "nearest",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [255, 0, 255],
+    "missingTexturePolicy": "fail_fast"
+  },
+  "support": {
+    "enabled": false,
+    "mode": "none",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "experimental": {
+    "openvdbPipeline": {
+      "enabled": true,
+      "engine": "openvdb",
+      "admissionMode": "strict_closed",
+      "failurePolicy": "fail_fast",
+      "allowNonProductionOutput": false,
+      "writeProductionRgbwsv": true
+    }
+  }
+}

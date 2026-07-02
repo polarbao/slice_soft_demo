@@ -1,0 +1,3 @@
+newmtl closed_checker
+Kd 0.8 0.8 0.8
+map_Kd closed_textured_obj_checker.png

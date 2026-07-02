@@ -87,6 +87,29 @@ tests/unit/experimental_config/main.cpp
 docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
 ```
 
+Task 11A-R1-2 已完成：
+
+```text
+新增 strict_closed PASS 的小型 closed textured OBJ fixture；
+新增 OpenVDB candidate config；
+OpenVDB ON strict_closed probe 通过；
+productionAdmission.productionAllowed=true；
+admissionStatus=production_allowed；
+boundaryEdges=0；
+nonManifoldEdges=0；
+texture sampled voxels > 0；
+fallback voxels = 0。
+```
+
+关键新增文件：
+
+```text
+samples/models/openvdb_candidate/closed_textured_obj.obj
+samples/models/openvdb_candidate/closed_textured_obj.mtl
+samples/models/openvdb_candidate/closed_textured_obj_checker.png
+samples/configs/openvdb_candidate/closed_textured_obj_candidate.json
+```
+
 ---
 
 ## 4. 当前未完成任务
@@ -94,7 +117,6 @@ docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
 11A-R1 后续仍需按任务清单继续：
 
 ```text
-11A-R1-2 strict_closed PASS fixture；
 11A-R1-3 Candidate layer buffer builder；
 11A-R1-4 Candidate package writer；
 11A-R1-5 Candidate RIP / UI smoke；
@@ -125,6 +147,10 @@ cmake --build build --config Debug --target slicer_cli experimental_config_unit_
 ctest --test-dir build -C Debug --output-on-failure
 .\build\Debug\slicer_cli.exe --config samples\configs\obj_standard\standard_obj_texture_legacy.json
 git diff --check
+Get-Content -Raw samples\configs\openvdb_candidate\closed_textured_obj_candidate.json | ConvertFrom-Json | Out-Null
+.\build\Debug\slicer_cli.exe --config samples\configs\openvdb_candidate\closed_textured_obj_candidate.json --inspect-model
+cmake --build build-openvdb-09p --config Debug --target surface_shell_real_model_demo
+.\build-openvdb-09p\Debug\surface_shell_real_model_demo.exe --config samples\configs\openvdb_candidate\closed_textured_obj_candidate.json --mesh-policy strict_closed --output output\OpenVdbCandidateClosedTexturedObjProbe
 ```
 
 结果：
@@ -139,6 +165,20 @@ legacy 输出 grid = 226 x 425 x 573；
 legacy 输出 modelPixels = 7055867；
 legacy 输出 supportPixels = 20911855。
 git diff --check 退出码为 0，仅出现 Windows LF/CRLF 工作区提示。
+candidate fixture JSON 解析通过；
+candidate fixture 模型检查通过，bbox = 3 x 3 x 0.6 mm；
+OpenVDB ON strict_closed probe 退出码为 0；
+probe report schema = p0.surface_shell_texture_report.2；
+productionAllowed = true；
+admissionStatus = production_allowed；
+boundaryEdges = 0；
+nonManifoldEdges = 0；
+activeVoxels = 111099；
+shellVoxels = 19132；
+interiorVoxels = 29241；
+sampledTextureVoxels = 19132；
+fallbackVoxels = 0；
+errors = 0。
 ```
 
 ---
@@ -150,6 +190,7 @@ git diff --check 退出码为 0，仅出现 Windows LF/CRLF 工作区提示。
 ```text
 candidate writer 尚未实现，OpenVDB 不能被 UI 当作正式切片按钮使用；
 真实 OBJ / 3MF 拓扑质量不稳定，strict_closed 可能继续阻断；
+closed_textured_obj 仅作为 writer 正向 fixture，不代表真实甲片模型已经 strict_closed 可生产；
 OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
 后续 writer 必须继续遵守 p0.rgbwsv.2 / RGBWSV / uint8 / black_is_print。
 ```
@@ -157,8 +198,7 @@ OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
 下一步建议：
 
 ```text
-优先执行 11A-R1-2，新增 strict_closed PASS 的小型 textured OBJ fixture；
-再执行 11A-R1-3，完成 candidate per-layer buffer builder；
+优先执行 11A-R1-3，完成 candidate per-layer buffer builder；
 之后才进入 candidate package writer；
 writer 通过 RIP / UI / preview smoke 之前，不允许替换 legacy production path。
 ```

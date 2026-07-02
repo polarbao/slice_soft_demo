@@ -43,7 +43,7 @@ OpenVDB OFF 默认轨道必须继续通过。
 |---|---|---|
 | 11A-R1-0 文档包补齐 | DONE | 已新增 DOC_DECISION / PRD / DEV / DEMO / ROADMAP / TASKS / CODEX_PROMPT |
 | 11A-R1-1 Pipeline 入口与防误用 guard | DONE | 已新增 candidate CLI flag / legacy path guard；writer 未完成时不写 package |
-| 11A-R1-2 strict_closed PASS fixture | TODO | 新增小型 closed OBJ/MTL/PNG fixture 和 candidate config |
+| 11A-R1-2 strict_closed PASS fixture | DONE | 已新增 closed textured OBJ fixture 和 candidate config；OpenVDB ON strict_closed probe 通过 |
 | 11A-R1-3 Candidate layer buffer builder | TODO | shell/interior/support -> RGBWSV per-layer input |
 | 11A-R1-4 Candidate package writer | TODO | 写 manifest / TIFF / reports / preview |
 | 11A-R1-5 Candidate RIP / UI smoke | TODO | rip_reader_test、LayerPreview、OverlayPreview |
