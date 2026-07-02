@@ -9,5 +9,6 @@
 | `REPORT_09P_R2_OpenVDB实验生产管线Hardening当前状态.md` | 09P-R2 OpenVDB experimental production-pipeline hardening |
 | `REPORT_10_切片输出交付契约与纹理保真验收当前状态.md` | 10 切片输出交付契约与纹理保真验收 |
 | `REPORT_11_UI切片层预览交互配置与多模型能力当前状态.md` | 11 UI 切片层预览、交互配置与多模型能力 |
+| `REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | 11A OpenVDB OBJ 彩色纹理切片前置 |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。

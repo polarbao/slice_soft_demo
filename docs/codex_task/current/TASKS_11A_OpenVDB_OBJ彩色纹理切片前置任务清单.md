@@ -54,9 +54,9 @@ git diff --check
 | 11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证 | DONE | `cf7f58f docs(11A): 记录UI一键路径验证` | `cmake --build build --config Debug --target slicer_debug_ui`；`slicer_debug_ui.exe --self-test`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only`；`git diff --check` |
 | 11A-3：OpenVDB candidate 配置与 admission gate | DONE | `d5f3cb9 feat(11A): 增加OpenVDB候选配置门禁` | `cmake --build build --config Debug --target experimental_config_unit_tests`；`experimental_config_unit_tests.exe`；`cmake --build build --config Debug`；`ctest --test-dir build -C Debug --output-on-failure`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only` |
 | 11A-4：OpenVDB surface-shell OBJ texture transfer 原型 | DONE | `b66187d test(11A): 覆盖标准OBJ壳层纹理输入` | `cmake --build build --config Debug --target surface_shell_real_model_unit_tests`；`surface_shell_real_model_unit_tests.exe`；`scripts/run_surface_shell_texture_tests.ps1`；`scripts/run_surface_shell_real_model_tests.ps1` |
-| 11A-5：candidate RGBWSV package writer | BLOCKED_BY_TOPOLOGY | 待本次提交 | `surface_shell_real_model_demo --config samples\configs\obj_standard\standard_obj_texture_legacy.json --mesh-policy strict_closed` |
-| 11A-6：标准模板 golden / RIP / UI 验收 | DONE_LIMITED | 待本次提交 | `scripts/run_11a_obj_standard_tests.ps1`；`scripts/run_11a_obj_openvdb_candidate_tests.ps1` |
-| 11A-7：REPORT_11A | NEXT | - | 待执行 |
+| 11A-5：candidate RGBWSV package writer | BLOCKED_BY_TOPOLOGY | `99f77c4 docs(11A): 记录OpenVDB候选写出阻断` | `surface_shell_real_model_demo --config samples\configs\obj_standard\standard_obj_texture_legacy.json --mesh-policy strict_closed` |
+| 11A-6：标准模板 golden / RIP / UI 验收 | DONE_LIMITED | `a7ba299 test(11A): 增加标准OBJ受限验收脚本` | `scripts/run_11a_obj_standard_tests.ps1`；`scripts/run_11a_obj_openvdb_candidate_tests.ps1` |
+| 11A-7：REPORT_11A | DONE | 本次报告提交 | `git status --short`；`git diff --check` |
 
 11A-2 验证结论：
 
