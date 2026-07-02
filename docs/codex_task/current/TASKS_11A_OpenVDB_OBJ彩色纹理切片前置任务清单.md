@@ -53,8 +53,9 @@ git diff --check
 | 11A-1：legacy 标准模板功能性配置与场景 | DONE | `4a07147 test(11A): 增加标准OBJ模板legacy配置` | `ConvertFrom-Json`；`slicer_cli --inspect-model`；`git diff --cached --check` |
 | 11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证 | DONE | `cf7f58f docs(11A): 记录UI一键路径验证` | `cmake --build build --config Debug --target slicer_debug_ui`；`slicer_debug_ui.exe --self-test`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only`；`git diff --check` |
 | 11A-3：OpenVDB candidate 配置与 admission gate | DONE | `d5f3cb9 feat(11A): 增加OpenVDB候选配置门禁` | `cmake --build build --config Debug --target experimental_config_unit_tests`；`experimental_config_unit_tests.exe`；`cmake --build build --config Debug`；`ctest --test-dir build -C Debug --output-on-failure`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only` |
-| 11A-4：OpenVDB surface-shell OBJ texture transfer 原型 | DONE | 待本次提交 | `cmake --build build --config Debug --target surface_shell_real_model_unit_tests`；`surface_shell_real_model_unit_tests.exe`；`scripts/run_surface_shell_texture_tests.ps1`；`scripts/run_surface_shell_real_model_tests.ps1` |
-| 11A-5：candidate RGBWSV package writer | NEXT | - | 待执行 |
+| 11A-4：OpenVDB surface-shell OBJ texture transfer 原型 | DONE | `b66187d test(11A): 覆盖标准OBJ壳层纹理输入` | `cmake --build build --config Debug --target surface_shell_real_model_unit_tests`；`surface_shell_real_model_unit_tests.exe`；`scripts/run_surface_shell_texture_tests.ps1`；`scripts/run_surface_shell_real_model_tests.ps1` |
+| 11A-5：candidate RGBWSV package writer | BLOCKED_BY_TOPOLOGY | 待本次提交 | `surface_shell_real_model_demo --config samples\configs\obj_standard\standard_obj_texture_legacy.json --mesh-policy strict_closed` |
+| 11A-6：标准模板 golden / RIP / UI 验收 | NEXT_LIMITED | - | 待执行；仅可验收 legacy 与 diagnostic，candidate package 必须等待 mesh repair 或替换闭合标准模板 |
 
 11A-2 验证结论：
 
@@ -86,6 +87,26 @@ OpenVDB OFF 默认轨道下小型 OBJ transfer smoke 会 SKIP 并保持 PASS；
 OpenVDB ON 轨道下 run_surface_shell_texture_tests.ps1 与 run_surface_shell_real_model_tests.ps1 均通过；
 open mesh / non-manifold negative cases 在脚本中按预期被 strict_closed 拒绝；
 CMake OpenVDB ON 轨道存在 Boost CMP0167 dev warning，但未导致验证失败。
+```
+
+11A-5 阻断结论：
+
+```text
+标准 OBJ 模板执行 OpenVDB strict_closed probe 失败；
+命令：.\build-openvdb-09b-r1\Debug\surface_shell_real_model_demo.exe --config samples\configs\obj_standard\standard_obj_texture_legacy.json --voxel-mm 0.10 --shell-mm 0.15 --mesh-policy strict_closed --output output\ObjStandardTemplateOpenVdbProbe
+退出码：1；
+报告：output/ObjStandardTemplateOpenVdbProbe/reports/surface_shell_texture_report.json；
+阻断码：MESH_DUPLICATE_FACES、MESH_OPPOSITE_DUPLICATE_FACES、MESH_BOUNDARY_EDGES、MESH_NON_MANIFOLD_EDGES；
+productionAdmission.productionAllowed=false；
+结论：11A-5 不允许对该标准 OBJ 写 candidate RGBWSV package，否则会违反 strict admission gate。
+```
+
+11A-5 后续前置条件：
+
+```text
+完成 mesh repair / repair_then_strict 正式实现；或
+新增一个 topology strict_closed PASS 的标准 OBJ 彩色纹理模板；或
+将 candidate writer 先限定在已有 closed small fixture，并明确不得代表 model/obj 标准模板通过。
 ```
 
 ## 3. Task 11A-0：标准 OBJ 模板登记
