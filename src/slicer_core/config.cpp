@@ -495,27 +495,43 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.material.apply_mode != "solid_volume") {
         throw std::runtime_error("00C only supports modelMaterial.applyMode == solid_volume");
     }
-    if (config.texture.enabled) {
+    if (config.texture.enabled)
+    {
+        const bool surfaceShellFromSdf = config.texture.apply_mode == "surface_shell_from_sdf";
         if (config.texture.apply_mode != "solid_volume_from_top_surface"
             && config.texture.apply_mode != "top_surface_only"
-            && config.texture.apply_mode != "top_surface_band") {
+            && config.texture.apply_mode != "top_surface_band"
+            && !surfaceShellFromSdf)
+        {
             throw std::runtime_error(
-                "texture.applyMode must be solid_volume_from_top_surface, top_surface_only, or top_surface_band");
+                "texture.applyMode must be solid_volume_from_top_surface, top_surface_only, top_surface_band, or surface_shell_from_sdf");
         }
-        if (config.texture.top_surface_layers <= 0) {
+        if (surfaceShellFromSdf
+            && (!config.experimental.openvdb_pipeline.enabled
+                || config.experimental.openvdb_pipeline.engine != "openvdb"))
+        {
+            throw std::runtime_error(
+                "texture.applyMode surface_shell_from_sdf requires experimental.openvdbPipeline enabled with engine=openvdb");
+        }
+        if (config.texture.top_surface_layers <= 0)
+        {
             throw std::runtime_error("texture.topSurfaceLayers must be positive");
         }
-        if (config.texture.sampler != "nearest" && config.texture.sampler != "bilinear") {
+        if (config.texture.sampler != "nearest" && config.texture.sampler != "bilinear")
+        {
             throw std::runtime_error("texture.sampler must be nearest or bilinear");
         }
-        if (config.texture.uv_address_mode != "clamp" && config.texture.uv_address_mode != "repeat") {
+        if (config.texture.uv_address_mode != "clamp" && config.texture.uv_address_mode != "repeat")
+        {
             throw std::runtime_error("texture.uvAddressMode must be clamp or repeat");
         }
         if (config.texture.missing_texture_policy != "warn_and_fallback"
-            && config.texture.missing_texture_policy != "fail_fast") {
+            && config.texture.missing_texture_policy != "fail_fast")
+        {
             throw std::runtime_error("texture.missingTexturePolicy must be warn_and_fallback or fail_fast");
         }
-        if (config.slicing_mode != "relief_heightfield") {
+        if (!surfaceShellFromSdf && config.slicing_mode != "relief_heightfield")
+        {
             throw std::runtime_error("04 texture.enabled currently requires relief_heightfield");
         }
     }
@@ -671,6 +687,13 @@ void validate_slice_config(const SliceConfig& config) {
         throw std::runtime_error(
             "experimental.openvdbPipeline.failurePolicy must be fail_fast, diagnostic_only, or non_production_only");
     }
+    if (config.experimental.openvdb_pipeline.write_production_rgbwsv
+        && (!config.experimental.openvdb_pipeline.enabled
+            || config.experimental.openvdb_pipeline.engine != "openvdb"))
+    {
+        throw std::runtime_error(
+            "experimental.openvdbPipeline.writeProductionRgbwsv requires enabled=true and engine=openvdb");
+    }
 }
 
 std::vector<ValidationIssue> BuildExperimentalOpenVdbPipelineDiagnostics(const SliceConfig& config)
@@ -696,6 +719,13 @@ std::vector<ValidationIssue> BuildExperimentalOpenVdbPipelineDiagnostics(const S
             "EXPERIMENTAL_RGBWSV_REQUIRES_ADMISSION",
             ValidationSeverity::Warning,
             "writeProductionRgbwsv is requested and must remain gated by production admission policy"));
+        if (openvdb.admission_mode != "strict_closed")
+        {
+            issues.push_back(MakeValidationIssue(
+                "EXPERIMENTAL_RGBWSV_REQUIRES_STRICT_ADMISSION",
+                ValidationSeverity::Error,
+                "writeProductionRgbwsv requires admissionMode=strict_closed and must not run under diagnostic_only, warn_and_attempt, or repair_then_strict"));
+        }
     }
     return issues;
 }

@@ -51,8 +51,9 @@ git diff --check
 |---|---|---|---|
 | 11A-0：标准 OBJ 模板登记 | DONE | `07f50dd docs(11A): 登记标准OBJ彩色纹理模板` | `Get-ChildItem model\obj`；`Select-String mtllib/vt`；`Get-Content MTL`；`git diff --cached --check` |
 | 11A-1：legacy 标准模板功能性配置与场景 | DONE | `4a07147 test(11A): 增加标准OBJ模板legacy配置` | `ConvertFrom-Json`；`slicer_cli --inspect-model`；`git diff --cached --check` |
-| 11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证 | DONE | 待本次提交 | `cmake --build build --config Debug --target slicer_debug_ui`；`slicer_debug_ui.exe --self-test`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only`；`git diff --check` |
-| 11A-3：OpenVDB candidate 配置与 admission gate | NEXT | - | 待执行 |
+| 11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证 | DONE | `cf7f58f docs(11A): 记录UI一键路径验证` | `cmake --build build --config Debug --target slicer_debug_ui`；`slicer_debug_ui.exe --self-test`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only`；`git diff --check` |
+| 11A-3：OpenVDB candidate 配置与 admission gate | DONE | 待本次提交 | `cmake --build build --config Debug --target experimental_config_unit_tests`；`experimental_config_unit_tests.exe`；`cmake --build build --config Debug`；`ctest --test-dir build -C Debug --output-on-failure`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only` |
+| 11A-4：OpenVDB surface-shell OBJ texture transfer 原型 | NEXT | - | 待执行 |
 
 11A-2 验证结论：
 
@@ -62,6 +63,17 @@ UI self-test PASS；
 标准 OBJ 模板的 OpenVDB diagnostic report 可生成；
 diagnostic report 明确 productionPackageWritten=false、productionAllowed=false；
 当前环境 OpenVDB unavailable 时仍只输出诊断，不写 production RGBWSV package。
+```
+
+11A-3 验证结论：
+
+```text
+texture.applyMode=surface_shell_from_sdf 已进入配置校验；
+surface_shell_from_sdf 必须显式启用 experimental.openvdbPipeline 且 engine=openvdb；
+writeProductionRgbwsv=true 必须保持 enabled=true、engine=openvdb；
+writeProductionRgbwsv=true 在 diagnostic_only / warn_and_attempt / repair_then_strict 下会产生 EXPERIMENTAL_RGBWSV_REQUIRES_STRICT_ADMISSION error；
+Debug 全量构建和 CTest 通过；
+标准 OBJ diagnostic 仍明确 productionPackageWritten=false、productionAllowed=false。
 ```
 
 ## 3. Task 11A-0：标准 OBJ 模板登记

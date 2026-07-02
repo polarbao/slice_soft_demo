@@ -23,6 +23,21 @@ bool ExpectTrue(const bool condition, const std::string& message)
     return true;
 }
 
+bool HasIssueCode(
+    const std::vector<slicer_core::ValidationIssue>& issues,
+    const std::string& code,
+    const slicer_core::ValidationSeverity severity)
+{
+    for (const slicer_core::ValidationIssue& issue : issues)
+    {
+        if (issue.code == code && issue.severity == severity)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::filesystem::path WriteConfig(const std::string& name, const std::string& body)
 {
     const std::filesystem::path directory = std::filesystem::path{"output"} / "ExperimentalConfigUnit";
@@ -79,6 +94,51 @@ bool EmptyExperimentalDefaults()
                config.experimental.openvdb_pipeline.admission_mode == "strict_closed",
                "empty experimental admission")
         && ExpectTrue(!config.experimental.openvdb_pipeline.write_production_rgbwsv, "empty experimental write");
+}
+
+bool SurfaceShellFromSdfRequiresOpenVdb()
+{
+    const std::filesystem::path path = WriteConfig(
+        "surface_shell_without_openvdb.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"texture\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"applyMode\": \"surface_shell_from_sdf\"\n"
+            "  }\n"));
+    try
+    {
+        (void)slicer_core::load_slice_config(path);
+    }
+    catch (const std::runtime_error& error)
+    {
+        return ExpectTrue(
+            std::string{error.what()}.find("surface_shell_from_sdf requires") != std::string::npos,
+            "surface_shell_from_sdf without OpenVDB is rejected");
+    }
+    return ExpectTrue(false, "surface_shell_from_sdf without OpenVDB must throw");
+}
+
+bool SurfaceShellFromSdfAcceptedWithOpenVdbGate()
+{
+    const std::filesystem::path path = WriteConfig(
+        "surface_shell_with_openvdb.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"texture\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"applyMode\": \"surface_shell_from_sdf\"\n"
+            "  },\n"
+            "  \"experimental\": {\n"
+            "    \"openvdbPipeline\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"engine\": \"openvdb\"\n"
+            "    }\n"
+            "  }\n"));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(path);
+    return ExpectTrue(config.texture.apply_mode == "surface_shell_from_sdf", "surface shell texture mode accepted")
+        && ExpectTrue(config.experimental.openvdb_pipeline.enabled, "surface shell OpenVDB enabled")
+        && ExpectTrue(config.experimental.openvdb_pipeline.engine == "openvdb", "surface shell OpenVDB engine");
 }
 
 bool EnabledOpenVdbOffReportsUnavailable()
@@ -149,6 +209,43 @@ bool WriteProductionRgbwsvRemainsAdmissionGated()
         && ExpectTrue(!decision.productionAllowed, "admission policy still blocks production output");
 }
 
+bool WriteProductionRgbwsvRequiresStrictAdmission()
+{
+    const std::vector<std::string> nonStrictModes{
+        "diagnostic_only",
+        "warn_and_attempt",
+        "repair_then_strict",
+    };
+    for (const std::string& mode : nonStrictModes)
+    {
+        const std::filesystem::path path = WriteConfig(
+            "write_production_" + mode + ".json",
+            MinimalConfigBody(
+                ",\n"
+                "  \"experimental\": {\n"
+                "    \"openvdbPipeline\": {\n"
+                "      \"enabled\": true,\n"
+                "      \"engine\": \"openvdb\",\n"
+                "      \"admissionMode\": \"" + mode + "\",\n"
+                "      \"writeProductionRgbwsv\": true\n"
+                "    }\n"
+                "  }\n"));
+        const slicer_core::SliceConfig config = slicer_core::load_slice_config(path);
+        const std::vector<slicer_core::ValidationIssue> diagnostics =
+            slicer_core::BuildExperimentalOpenVdbPipelineDiagnostics(config);
+        if (!ExpectTrue(
+                HasIssueCode(
+                    diagnostics,
+                    "EXPERIMENTAL_RGBWSV_REQUIRES_STRICT_ADMISSION",
+                    slicer_core::ValidationSeverity::Error),
+                "writeProductionRgbwsv rejects non-strict admission mode " + mode))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace
 
 int main()
@@ -156,8 +253,11 @@ int main()
     const std::vector<std::pair<std::string, bool (*)()>> tests{
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
+        {"surface_shell_from_sdf_requires_openvdb", SurfaceShellFromSdfRequiresOpenVdb},
+        {"surface_shell_from_sdf_accepted_with_openvdb_gate", SurfaceShellFromSdfAcceptedWithOpenVdbGate},
         {"enabled_openvdb_off_reports_unavailable", EnabledOpenVdbOffReportsUnavailable},
         {"write_production_rgbwsv_remains_admission_gated", WriteProductionRgbwsvRemainsAdmissionGated},
+        {"write_production_rgbwsv_requires_strict_admission", WriteProductionRgbwsvRequiresStrictAdmission},
     };
 
     for (const auto& test : tests)
