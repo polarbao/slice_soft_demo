@@ -52,8 +52,9 @@ git diff --check
 | 11A-0：标准 OBJ 模板登记 | DONE | `07f50dd docs(11A): 登记标准OBJ彩色纹理模板` | `Get-ChildItem model\obj`；`Select-String mtllib/vt`；`Get-Content MTL`；`git diff --cached --check` |
 | 11A-1：legacy 标准模板功能性配置与场景 | DONE | `4a07147 test(11A): 增加标准OBJ模板legacy配置` | `ConvertFrom-Json`；`slicer_cli --inspect-model`；`git diff --cached --check` |
 | 11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证 | DONE | `cf7f58f docs(11A): 记录UI一键路径验证` | `cmake --build build --config Debug --target slicer_debug_ui`；`slicer_debug_ui.exe --self-test`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only`；`git diff --check` |
-| 11A-3：OpenVDB candidate 配置与 admission gate | DONE | 待本次提交 | `cmake --build build --config Debug --target experimental_config_unit_tests`；`experimental_config_unit_tests.exe`；`cmake --build build --config Debug`；`ctest --test-dir build -C Debug --output-on-failure`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only` |
-| 11A-4：OpenVDB surface-shell OBJ texture transfer 原型 | NEXT | - | 待执行 |
+| 11A-3：OpenVDB candidate 配置与 admission gate | DONE | `d5f3cb9 feat(11A): 增加OpenVDB候选配置门禁` | `cmake --build build --config Debug --target experimental_config_unit_tests`；`experimental_config_unit_tests.exe`；`cmake --build build --config Debug`；`ctest --test-dir build -C Debug --output-on-failure`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only` |
+| 11A-4：OpenVDB surface-shell OBJ texture transfer 原型 | DONE | 待本次提交 | `cmake --build build --config Debug --target surface_shell_real_model_unit_tests`；`surface_shell_real_model_unit_tests.exe`；`scripts/run_surface_shell_texture_tests.ps1`；`scripts/run_surface_shell_real_model_tests.ps1` |
+| 11A-5：candidate RGBWSV package writer | NEXT | - | 待执行 |
 
 11A-2 验证结论：
 
@@ -74,6 +75,17 @@ writeProductionRgbwsv=true 必须保持 enabled=true、engine=openvdb；
 writeProductionRgbwsv=true 在 diagnostic_only / warn_and_attempt / repair_then_strict 下会产生 EXPERIMENTAL_RGBWSV_REQUIRES_STRICT_ADMISSION error；
 Debug 全量构建和 CTest 通过；
 标准 OBJ diagnostic 仍明确 productionPackageWritten=false、productionAllowed=false。
+```
+
+11A-4 验证结论：
+
+```text
+标准 OBJ 模板已进入 surface_shell_real_model_unit_tests；
+标准 OBJ 的 texcoord、faces_with_uv、texture material、adapted triangle UV/material attributes 均有测试覆盖；
+OpenVDB OFF 默认轨道下小型 OBJ transfer smoke 会 SKIP 并保持 PASS；
+OpenVDB ON 轨道下 run_surface_shell_texture_tests.ps1 与 run_surface_shell_real_model_tests.ps1 均通过；
+open mesh / non-manifold negative cases 在脚本中按预期被 strict_closed 拒绝；
+CMake OpenVDB ON 轨道存在 Boost CMP0167 dev warning，但未导致验证失败。
 ```
 
 ## 3. Task 11A-0：标准 OBJ 模板登记
