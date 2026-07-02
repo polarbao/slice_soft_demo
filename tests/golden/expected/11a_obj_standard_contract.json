@@ -1,0 +1,22 @@
+{
+  "schema": "slice_soft.11a.obj_standard_contract.1",
+  "legacyPackage": {
+    "schema": "p0.rgbwsv.2",
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "polarity": "black_is_print",
+    "printValue": 0,
+    "emptyValue": 255,
+    "requiresModelPixels": true,
+    "requiresSupportPixels": true,
+    "requiresSampledTexturePixels": true
+  },
+  "openvdbCandidateGate": {
+    "standardObjTemplateStatus": "blocked_by_topology",
+    "mustNotWriteProductionPackage": true,
+    "requiredBlockerCodes": [
+      "MESH_BOUNDARY_EDGES",
+      "MESH_NON_MANIFOLD_EDGES"
+    ]
+  }
+}

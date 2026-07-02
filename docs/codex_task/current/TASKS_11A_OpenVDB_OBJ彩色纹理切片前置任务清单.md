@@ -55,7 +55,8 @@ git diff --check
 | 11A-3：OpenVDB candidate 配置与 admission gate | DONE | `d5f3cb9 feat(11A): 增加OpenVDB候选配置门禁` | `cmake --build build --config Debug --target experimental_config_unit_tests`；`experimental_config_unit_tests.exe`；`cmake --build build --config Debug`；`ctest --test-dir build -C Debug --output-on-failure`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only` |
 | 11A-4：OpenVDB surface-shell OBJ texture transfer 原型 | DONE | `b66187d test(11A): 覆盖标准OBJ壳层纹理输入` | `cmake --build build --config Debug --target surface_shell_real_model_unit_tests`；`surface_shell_real_model_unit_tests.exe`；`scripts/run_surface_shell_texture_tests.ps1`；`scripts/run_surface_shell_real_model_tests.ps1` |
 | 11A-5：candidate RGBWSV package writer | BLOCKED_BY_TOPOLOGY | 待本次提交 | `surface_shell_real_model_demo --config samples\configs\obj_standard\standard_obj_texture_legacy.json --mesh-policy strict_closed` |
-| 11A-6：标准模板 golden / RIP / UI 验收 | NEXT_LIMITED | - | 待执行；仅可验收 legacy 与 diagnostic，candidate package 必须等待 mesh repair 或替换闭合标准模板 |
+| 11A-6：标准模板 golden / RIP / UI 验收 | DONE_LIMITED | 待本次提交 | `scripts/run_11a_obj_standard_tests.ps1`；`scripts/run_11a_obj_openvdb_candidate_tests.ps1` |
+| 11A-7：REPORT_11A | NEXT | - | 待执行 |
 
 11A-2 验证结论：
 
@@ -107,6 +108,20 @@ productionAdmission.productionAllowed=false；
 完成 mesh repair / repair_then_strict 正式实现；或
 新增一个 topology strict_closed PASS 的标准 OBJ 彩色纹理模板；或
 将 candidate writer 先限定在已有 closed small fixture，并明确不得代表 model/obj 标准模板通过。
+```
+
+11A-6 验收结论：
+
+```text
+新增 scripts/run_11a_obj_standard_tests.ps1；
+新增 scripts/run_11a_obj_openvdb_candidate_tests.ps1；
+新增 tests/golden/expected/11a_obj_standard_contract.json；
+标准 OBJ legacy package 通过 RIP summary；
+标准 OBJ texture_report sampledPixels > 0 且 missingTextures=0；
+标准 OBJ slice_report modelPixels/supportPixels 均大于 0；
+UI self-test PASS；
+OpenVDB diagnostic PASS 且不写 production package；
+OpenVDB candidate gate 脚本 PASS，确认该标准 OBJ 被 strict_closed 正确阻断且不写 candidate manifest。
 ```
 
 ## 3. Task 11A-0：标准 OBJ 模板登记
