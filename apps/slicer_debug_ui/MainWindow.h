@@ -4,6 +4,7 @@
 #include "services/PackageLoader.h"
 #include "services/ProcessRunner.h"
 #include "services/ReportLoader.h"
+#include "services/ScenarioRegistry.h"
 #include "services/ToolPaths.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
@@ -19,6 +20,8 @@
 #include <QMainWindow>
 #include <QPlainTextEdit>
 #include <QPushButton>
+
+class QComboBox;
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
@@ -38,6 +41,10 @@ private slots:
     void compareProfiles();
     void openOutputFolder();
     void loadPackageFromEdit();
+    void OnImportModelAndSlice();
+    void OnImportModelOpenVdbDiagnostic();
+    void OnScenarioChanged(int index);
+    void OnReloadScenarios();
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -48,6 +55,12 @@ private:
     QWidget* createRightPanel();
     QString absoluteFromRepo(const QString& path) const;
     QString inferPackageFromConfig(const QString& config_path) const;
+    QString CreateOneClickConfig(const QString& modelPath, QString* packageDir) const;
+    QString CreateOpenVdbReportPath(const QString& modelPath) const;
+    void RunGeneratedConfig(const QString& configPath, const QString& packageDir);
+    void RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath);
+    void LoadScenarios();
+    void ApplyScenario(const ScenarioEntry& scenario);
     void loadPackage(const QString& package_dir);
     void loadCompareResult(const QString& path);
     void runCommand(const QString& action, const QString& program, const QStringList& args);
@@ -57,6 +70,7 @@ private:
     ConfigDocument config_document_;
     PackageLoader package_loader_;
     ReportLoader report_loader_;
+    ScenarioRegistry m_scenarioRegistry;
     ProcessRunner runner_;
     QString current_action_;
     QString pending_package_;
@@ -72,11 +86,15 @@ private:
     QLabel* status_label_{nullptr};
     QPlainTextEdit* warnings_view_{nullptr};
     QPlainTextEdit* compare_view_{nullptr};
+    QComboBox* m_scenarioSelector{nullptr};
+    QLabel* m_scenarioDescriptionLabel{nullptr};
     QPushButton* build_button_{nullptr};
     QPushButton* run_slicer_button_{nullptr};
     QPushButton* run_rip_button_{nullptr};
     QPushButton* regression_button_{nullptr};
     QPushButton* compare_button_{nullptr};
+    QPushButton* m_importSliceButton{nullptr};
+    QPushButton* m_importOpenVdbButton{nullptr};
 
     PreviewPanel* preview_panel_{nullptr};
     LayerPreviewPanel* m_layerPreviewPanel{nullptr};

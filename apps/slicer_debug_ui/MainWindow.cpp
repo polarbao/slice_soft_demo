@@ -1,13 +1,18 @@
 #include "MainWindow.h"
 
 #include <QDesktopServices>
+#include <QComboBox>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMessageBox>
+#include <QRegularExpression>
 #include <QSplitter>
 #include <QTabWidget>
 #include <QUrl>
@@ -33,6 +38,44 @@ void addPathRow(QVBoxLayout* layout, const QString& label, QLineEdit* edit, QPus
     row->addWidget(edit, 1);
     row->addWidget(browse);
     layout->addLayout(row);
+}
+
+QJsonArray MakeNumberArray(const std::initializer_list<double> values)
+{
+    QJsonArray array;
+    for (const double value : values)
+    {
+        array.push_back(value);
+    }
+    return array;
+}
+
+QJsonArray MakeIntArray(const std::initializer_list<int> values)
+{
+    QJsonArray array;
+    for (const int value : values)
+    {
+        array.push_back(value);
+    }
+    return array;
+}
+
+QJsonArray MakeStringArray(const std::initializer_list<QString> values)
+{
+    QJsonArray array;
+    for (const QString& value : values)
+    {
+        array.push_back(value);
+    }
+    return array;
+}
+
+QString SanitizeSessionName(const QString& name)
+{
+    QString normalized = name.trimmed();
+    normalized.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9_.-]+")), QStringLiteral("_"));
+    normalized = normalized.trimmed();
+    return normalized.isEmpty() ? QStringLiteral("model") : normalized;
 }
 
 }  // namespace
@@ -97,6 +140,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(config_editor_panel_, &ConfigEditorPanel::configPathChanged, config_edit_, &QLineEdit::setText);
     connect(config_editor_panel_, &ConfigEditorPanel::statusMessage, status_label_, &QLabel::setText);
 
+    LoadScenarios();
     config_editor_panel_->loadConfig(config_edit_->text());
     loadPackage(package_edit_->text());
 }
@@ -181,6 +225,76 @@ void MainWindow::loadPackageFromEdit() {
     loadPackage(package_edit_->text());
 }
 
+void MainWindow::OnImportModelAndSlice()
+{
+    const QString modelPath =
+        QFileDialog::getOpenFileName(this, "选择要一键切片的模型", paths_.repo_root, "Model (*.obj *.stl *.3mf)");
+    if (modelPath.isEmpty())
+    {
+        return;
+    }
+
+    QString packageDir;
+    const QString configPath = CreateOneClickConfig(modelPath, &packageDir);
+    if (configPath.isEmpty())
+    {
+        return;
+    }
+
+    RunGeneratedConfig(configPath, packageDir);
+}
+
+void MainWindow::OnImportModelOpenVdbDiagnostic()
+{
+    const QString modelPath =
+        QFileDialog::getOpenFileName(this, "选择要执行 OpenVDB 实验诊断的模型", paths_.repo_root, "Model (*.obj *.stl *.3mf)");
+    if (modelPath.isEmpty())
+    {
+        return;
+    }
+
+    QString packageDir;
+    const QString configPath = CreateOneClickConfig(modelPath, &packageDir);
+    if (configPath.isEmpty())
+    {
+        return;
+    }
+
+    Q_UNUSED(packageDir);
+    RunOpenVdbDiagnostic(configPath, CreateOpenVdbReportPath(modelPath));
+}
+
+void MainWindow::OnScenarioChanged(const int index)
+{
+    if (index < 0 || m_scenarioSelector == nullptr)
+    {
+        return;
+    }
+
+    const QString scenarioId = m_scenarioSelector->itemData(index).toString();
+    if (scenarioId.isEmpty())
+    {
+        if (m_scenarioDescriptionLabel != nullptr)
+        {
+            m_scenarioDescriptionLabel->setText("自定义路径：手动选择配置文件和输出包。");
+        }
+        return;
+    }
+
+    const ScenarioEntry* scenario = m_scenarioRegistry.FindById(scenarioId);
+    if (scenario == nullptr)
+    {
+        return;
+    }
+
+    ApplyScenario(*scenario);
+}
+
+void MainWindow::OnReloadScenarios()
+{
+    LoadScenarios();
+}
+
 void MainWindow::handleProcessStarted(const QString& command) {
     setBusy(true);
     status_label_->setText("正在执行：" + current_action_);
@@ -198,6 +312,8 @@ void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed
         package_edit_->setText(pending_package_);
         loadPackage(pending_package_);
     } else if (current_action_ == "对比工艺配置") {
+        loadCompareResult(compare_output_);
+    } else if (current_action_ == "OpenVDB 实验诊断") {
         loadCompareResult(compare_output_);
     }
 }
@@ -221,6 +337,18 @@ QWidget* MainWindow::createProjectPanel() {
     auto* package_browse = makeButton("...", panel);
     auto* profile_a_browse = makeButton("...", panel);
     auto* profile_b_browse = makeButton("...", panel);
+
+    m_scenarioSelector = new QComboBox(panel);
+    auto* scenario_reload = makeButton("刷新", panel);
+    auto* scenario_row = new QHBoxLayout();
+    scenario_row->addWidget(new QLabel("场景/Profile"));
+    scenario_row->addWidget(m_scenarioSelector, 1);
+    scenario_row->addWidget(scenario_reload);
+    layout->addLayout(scenario_row);
+    m_scenarioDescriptionLabel = new QLabel("场景索引用于替代大量 VSCode 专用调试项。", panel);
+    m_scenarioDescriptionLabel->setWordWrap(true);
+    layout->addWidget(m_scenarioDescriptionLabel);
+
     addPathRow(layout, "配置文件", config_edit_, config_browse);
     addPathRow(layout, "输出包", package_edit_, package_browse);
     addPathRow(layout, "对比包 A", profile_a_edit_, profile_a_browse);
@@ -242,6 +370,8 @@ QWidget* MainWindow::createProjectPanel() {
     connect(package_browse, &QPushButton::clicked, this, &MainWindow::browsePackage);
     connect(profile_a_browse, &QPushButton::clicked, this, &MainWindow::browseProfileA);
     connect(profile_b_browse, &QPushButton::clicked, this, &MainWindow::browseProfileB);
+    connect(m_scenarioSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::OnScenarioChanged);
+    connect(scenario_reload, &QPushButton::clicked, this, &MainWindow::OnReloadScenarios);
     return panel;
 }
 
@@ -249,6 +379,8 @@ QWidget* MainWindow::createRunPanel() {
     auto* panel = new QWidget(this);
     auto* layout = new QVBoxLayout(panel);
     build_button_ = makeButton("构建调试版", panel);
+    m_importSliceButton = makeButton("导入模型并切片", panel);
+    m_importOpenVdbButton = makeButton("导入模型并 OpenVDB 诊断", panel);
     run_slicer_button_ = makeButton("运行切片", panel);
     run_rip_button_ = makeButton("运行 RIP 摘要", panel);
     regression_button_ = makeButton("运行快速回归", panel);
@@ -258,6 +390,8 @@ QWidget* MainWindow::createRunPanel() {
     status_label_ = new QLabel("就绪", panel);
     status_label_->setWordWrap(true);
     layout->addWidget(build_button_);
+    layout->addWidget(m_importSliceButton);
+    layout->addWidget(m_importOpenVdbButton);
     layout->addWidget(run_slicer_button_);
     layout->addWidget(run_rip_button_);
     layout->addWidget(regression_button_);
@@ -267,6 +401,8 @@ QWidget* MainWindow::createRunPanel() {
     layout->addWidget(status_label_);
 
     connect(build_button_, &QPushButton::clicked, this, &MainWindow::buildDebug);
+    connect(m_importSliceButton, &QPushButton::clicked, this, &MainWindow::OnImportModelAndSlice);
+    connect(m_importOpenVdbButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbDiagnostic);
     connect(run_slicer_button_, &QPushButton::clicked, this, &MainWindow::runSlicer);
     connect(run_rip_button_, &QPushButton::clicked, this, &MainWindow::runRipSummary);
     connect(regression_button_, &QPushButton::clicked, this, &MainWindow::runQuickRegression);
@@ -313,6 +449,219 @@ QString MainWindow::inferPackageFromConfig(const QString& config_path) const {
     return package.isEmpty() ? QString{} : absoluteFromRepo(package);
 }
 
+QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* packageDir) const
+{
+    const QFileInfo modelInfo(modelPath);
+    if (!modelInfo.exists() || !modelInfo.isFile())
+    {
+        QMessageBox::warning(nullptr, "模型文件不存在", "无法找到模型文件：\n" + modelPath);
+        return {};
+    }
+
+    const QString suffix = modelInfo.suffix().toLower();
+    const bool textureEnabled = suffix == "obj" || suffix == "3mf";
+    const QString sessionName = SanitizeSessionName(modelInfo.completeBaseName())
+        + "_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+    const QString sessionRoot = "output/ui_sessions/" + sessionName;
+    const QString relativePackageDir = sessionRoot + "/package";
+
+    QDir repo(paths_.repo_root);
+    if (!repo.mkpath(sessionRoot))
+    {
+        QMessageBox::warning(nullptr, "无法创建会话目录", "无法创建目录：\n" + repo.filePath(sessionRoot));
+        return {};
+    }
+
+    QJsonObject root;
+    root.insert("slicingMode", "relief_heightfield");
+    root.insert("input",
+                QJsonObject{{"modelPath", QDir::fromNativeSeparators(modelInfo.absoluteFilePath())}, {"format", "auto"}});
+    root.insert("output",
+                QJsonObject{{"packageDir", relativePackageDir},
+                            {"dpiX", 600},
+                            {"dpiY", 600},
+                            {"layerThicknessMm", 0.01},
+                            {"channelOrder", MakeStringArray({"R", "G", "B", "W", "S", "V"})},
+                            {"bitDepth", 8},
+                            {"planarConfig", "contiguous"},
+                            {"storageMode", "stripped"},
+                            {"rowsPerStrip", 64}});
+    root.insert("modelTransform",
+                QJsonObject{{"unit", "mm"},
+                            {"scale", MakeNumberArray({1.0, 1.0, 1.0})},
+                            {"rotationDeg", MakeNumberArray({0.0, 0.0, 0.0})},
+                            {"translationMm", MakeNumberArray({0.0, 0.0, 0.0})}});
+    root.insert("autoOrient",
+                QJsonObject{{"enabled", true},
+                            {"maxHeightMm", 6.0},
+                            {"strategy", "minimize_height_by_right_angle_rotation"}});
+    root.insert("background", QJsonObject{{"value", 255}});
+    root.insert("modelMaterial",
+                QJsonObject{{"materialChannel", "RGB"},
+                            {"applyMode", "solid_volume"},
+                            {"rgb", MakeIntArray({0, 0, 0})},
+                            {"whiteValue", 255},
+                            {"varnishValue", 255}});
+    root.insert("texture",
+                QJsonObject{{"enabled", textureEnabled},
+                            {"applyMode", "solid_volume_from_top_surface"},
+                            {"sampler", "bilinear"},
+                            {"uvAddressMode", "clamp"},
+                            {"flipV", true},
+                            {"fallbackRgb", MakeIntArray({0, 0, 0})},
+                            {"missingTexturePolicy", "warn_and_fallback"}});
+    root.insert("support",
+                QJsonObject{{"enabled", true},
+                            {"mode", "bottom_projection"},
+                            {"value", 0},
+                            {"offsetMm", 0.0},
+                            {"minAreaPx", 0}});
+    root.insert("relief", QJsonObject{{"fillMode", "intersection_range"}, {"baseZMm", 0.0}});
+    root.insert("preview",
+                QJsonObject{{"enabled", true},
+                            {"format", "png"},
+                            {"interval", 10},
+                            {"channels", textureEnabled ? MakeStringArray({"texture_rgb", "support"})
+                                                         : MakeStringArray({"rgb", "support"})},
+                            {"onlyNonEmptyLayers", true}});
+    root.insert("experimental",
+                QJsonObject{{"openvdbPipeline",
+                             QJsonObject{{"enabled", false},
+                                         {"engine", "legacy"},
+                                         {"admissionMode", "strict_closed"},
+                                         {"failurePolicy", "fail_fast"},
+                                         {"allowNonProductionOutput", false},
+                                         {"writeProductionRgbwsv", false}}}});
+
+    const QString configPath = repo.filePath(sessionRoot + "/slice_config.generated.json");
+    QFile file(configPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+    {
+        QMessageBox::warning(nullptr, "无法写入配置", "无法写入配置文件：\n" + configPath);
+        return {};
+    }
+    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+
+    if (packageDir != nullptr)
+    {
+        *packageDir = repo.filePath(relativePackageDir);
+    }
+    return configPath;
+}
+
+QString MainWindow::CreateOpenVdbReportPath(const QString& modelPath) const
+{
+    const QFileInfo modelInfo(modelPath);
+    const QString sessionName = SanitizeSessionName(modelInfo.completeBaseName())
+        + "_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+    const QString reportDir = "output/ui_sessions/" + sessionName + "_openvdb/reports";
+    QDir repo(paths_.repo_root);
+    repo.mkpath(reportDir);
+    return repo.filePath(reportDir + "/experimental_openvdb_shell_report.json");
+}
+
+void MainWindow::RunGeneratedConfig(const QString& configPath, const QString& packageDir)
+{
+    config_edit_->setText(configPath);
+    package_edit_->setText(packageDir);
+    config_editor_panel_->loadConfig(configPath);
+    pending_package_ = packageDir;
+    runCommand("运行切片", paths_.slicer_cli, QStringList{"--config", configPath});
+}
+
+void MainWindow::RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath)
+{
+    config_edit_->setText(configPath);
+    config_editor_panel_->loadConfig(configPath);
+    compare_output_ = reportPath;
+    pending_package_.clear();
+    runCommand("OpenVDB 实验诊断",
+               paths_.slicer_cli,
+               QStringList{"--config",
+                           configPath,
+                           "--experimental-openvdb-shell",
+                           "--admission-mode",
+                           "diagnostic_only",
+                           "--experimental-report",
+                           reportPath});
+}
+
+void MainWindow::LoadScenarios()
+{
+    if (m_scenarioSelector == nullptr)
+    {
+        return;
+    }
+
+    const bool loaded = m_scenarioRegistry.Load(paths_.repo_root);
+    const QString currentId = m_scenarioSelector->currentData().toString();
+    const QString defaultId = loaded ? m_scenarioRegistry.DefaultScenarioId() : QString{};
+
+    m_scenarioSelector->blockSignals(true);
+    m_scenarioSelector->clear();
+    m_scenarioSelector->addItem("自定义路径", QString{});
+
+    for (const ScenarioEntry& scenario : m_scenarioRegistry.Entries())
+    {
+        if (!scenario.enabled)
+        {
+            continue;
+        }
+
+        QString label = scenario.category.isEmpty() ? scenario.name : scenario.category + " / " + scenario.name;
+        if (scenario.experimental || scenario.requiresopenvdb)
+        {
+            label += "（实验）";
+        }
+        m_scenarioSelector->addItem(label, scenario.id);
+    }
+
+    m_scenarioSelector->blockSignals(false);
+
+    QString targetId = !currentId.isEmpty() ? currentId : defaultId;
+    int targetIndex = targetId.isEmpty() ? 0 : m_scenarioSelector->findData(targetId);
+    if (targetIndex < 0)
+    {
+        targetIndex = 0;
+    }
+
+    m_scenarioSelector->setCurrentIndex(targetIndex);
+    OnScenarioChanged(targetIndex);
+
+    for (const QString& warning : m_scenarioRegistry.Warnings())
+    {
+        log_panel_->appendError(warning);
+    }
+}
+
+void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
+{
+    const QString configPath = absoluteFromRepo(scenario.configpath);
+    const QString packageDir = scenario.packagedir.isEmpty() ? inferPackageFromConfig(configPath) : absoluteFromRepo(scenario.packagedir);
+
+    config_edit_->setText(configPath);
+    if (!packageDir.isEmpty())
+    {
+        package_edit_->setText(packageDir);
+    }
+
+    QString description = scenario.description;
+    if (scenario.experimental || scenario.requiresopenvdb)
+    {
+        description += "\n实验场景：不会默认作为生产路径验收。";
+    }
+    if (m_scenarioDescriptionLabel != nullptr)
+    {
+        m_scenarioDescriptionLabel->setText(description);
+    }
+
+    config_editor_panel_->loadConfig(configPath);
+    if (!packageDir.isEmpty())
+    {
+        loadPackage(packageDir);
+    }
+}
+
 void MainWindow::loadPackage(const QString& package_dir) {
     const PackageSummary package = package_loader_.load(absoluteFromRepo(package_dir));
     package_edit_->setText(package.package_dir);
@@ -341,6 +690,8 @@ void MainWindow::runCommand(const QString& action, const QString& program, const
 
 void MainWindow::setBusy(const bool busy) {
     build_button_->setEnabled(!busy);
+    m_importSliceButton->setEnabled(!busy);
+    m_importOpenVdbButton->setEnabled(!busy);
     run_slicer_button_->setEnabled(!busy);
     run_rip_button_->setEnabled(!busy);
     regression_button_->setEnabled(!busy);

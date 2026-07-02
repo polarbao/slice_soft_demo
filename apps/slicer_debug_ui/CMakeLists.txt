@@ -14,6 +14,8 @@ add_executable(slicer_debug_ui
     services/ProcessRunner.h
     services/ReportLoader.cpp
     services/ReportLoader.h
+    services/ScenarioRegistry.cpp
+    services/ScenarioRegistry.h
     services/ToolPaths.cpp
     services/ToolPaths.h
     services/LayerPreviewDataProvider.cpp
