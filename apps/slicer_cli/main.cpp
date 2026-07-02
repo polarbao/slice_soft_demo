@@ -24,6 +24,7 @@ struct CliOptions
     bool preview_only{false};
     bool show_help{false};
     bool experimental_openvdb_shell{false};
+    bool openvdb_candidate_slice{false};
     std::string admission_mode{"strict_closed"};
     bool no_production_rgbwsv{true};
     std::filesystem::path experimental_report_path{
@@ -36,7 +37,8 @@ void PrintUsage()
         << "Usage: slicer_cli --config <path-to-slice_config.json> [--inspect-model] [--preview-only]\n"
         << "       slicer_cli --config <path> --experimental-openvdb-shell "
         << "[--admission-mode strict_closed|warn_and_attempt|diagnostic_only] "
-        << "[--no-production-rgbwsv] [--experimental-report <path>]\n";
+        << "[--no-production-rgbwsv] [--experimental-report <path>]\n"
+        << "       slicer_cli --config <path> --openvdb-candidate-slice\n";
 }
 
 CliOptions ParseOptions(const int argc, char** argv)
@@ -68,6 +70,11 @@ CliOptions ParseOptions(const int argc, char** argv)
         if (arg == "--experimental-openvdb-shell")
         {
             options.experimental_openvdb_shell = true;
+            continue;
+        }
+        if (arg == "--openvdb-candidate-slice")
+        {
+            options.openvdb_candidate_slice = true;
             continue;
         }
         if (arg == "--admission-mode" && i + 1 < argc)
@@ -393,6 +400,33 @@ int RunExperimentalOpenVdbShellDiagnostic(const CliOptions& options)
     return 0;
 }
 
+int RunOpenVdbCandidateSlice(const CliOptions& options)
+{
+    if (options.experimental_openvdb_shell)
+    {
+        throw std::runtime_error(
+            "--openvdb-candidate-slice cannot be combined with --experimental-openvdb-shell");
+    }
+
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(options.config_path);
+    const bool hasCandidateConfig =
+        config.experimental.openvdb_pipeline.enabled
+        && config.experimental.openvdb_pipeline.engine == "openvdb"
+        && config.texture.apply_mode == "surface_shell_from_sdf"
+        && config.experimental.openvdb_pipeline.write_production_rgbwsv;
+    if (!hasCandidateConfig)
+    {
+        throw std::runtime_error(
+            "--openvdb-candidate-slice requires experimental.openvdbPipeline.enabled=true, "
+            "engine=openvdb, texture.applyMode=surface_shell_from_sdf, and writeProductionRgbwsv=true");
+    }
+
+    std::cerr << "slicer_cli error: OpenVDB candidate RGBWSV package writer is not implemented yet\n";
+    std::cerr << "  productionPackageWritten: false\n";
+    std::cerr << "  status: not_implemented\n";
+    return 2;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -408,6 +442,10 @@ int main(int argc, char** argv)
         if (options.inspect_model)
         {
             return InspectModel(options.config_path);
+        }
+        if (options.openvdb_candidate_slice)
+        {
+            return RunOpenVdbCandidateSlice(options);
         }
         if (options.experimental_openvdb_shell)
         {

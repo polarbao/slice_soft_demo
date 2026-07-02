@@ -1,6 +1,7 @@
 #include "slicer_core/config.h"
 #include "slicer_core/diagnostics/ProductionAdmissionPolicy.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
+#include "slicer_core/slicer.h"
 
 #include <exception>
 #include <filesystem>
@@ -141,6 +142,61 @@ bool SurfaceShellFromSdfAcceptedWithOpenVdbGate()
         && ExpectTrue(config.experimental.openvdb_pipeline.engine == "openvdb", "surface shell OpenVDB engine");
 }
 
+bool LegacyRunSlicerRejectsSurfaceShellCandidateConfig()
+{
+    const std::filesystem::path path = WriteConfig(
+        "legacy_rejects_surface_shell_candidate.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"texture\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"applyMode\": \"surface_shell_from_sdf\"\n"
+            "  },\n"
+            "  \"experimental\": {\n"
+            "    \"openvdbPipeline\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"engine\": \"openvdb\"\n"
+            "    }\n"
+            "  }\n"));
+    try
+    {
+        (void)slicer_core::run_slicer(path);
+    }
+    catch (const std::runtime_error& error)
+    {
+        return ExpectTrue(
+            std::string{error.what()}.find("--openvdb-candidate-slice") != std::string::npos,
+            "legacy run_slicer rejects surface_shell_from_sdf candidate config");
+    }
+    return ExpectTrue(false, "legacy run_slicer must reject surface shell candidate config");
+}
+
+bool LegacyRunSlicerRejectsWriteProductionRgbwsvCandidateConfig()
+{
+    const std::filesystem::path path = WriteConfig(
+        "legacy_rejects_write_production_candidate.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"experimental\": {\n"
+            "    \"openvdbPipeline\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"engine\": \"openvdb\",\n"
+            "      \"writeProductionRgbwsv\": true\n"
+            "    }\n"
+            "  }\n"));
+    try
+    {
+        (void)slicer_core::run_slicer(path);
+    }
+    catch (const std::runtime_error& error)
+    {
+        return ExpectTrue(
+            std::string{error.what()}.find("--openvdb-candidate-slice") != std::string::npos,
+            "legacy run_slicer rejects writeProductionRgbwsv candidate config");
+    }
+    return ExpectTrue(false, "legacy run_slicer must reject writeProductionRgbwsv candidate config");
+}
+
 bool EnabledOpenVdbOffReportsUnavailable()
 {
     const std::filesystem::path path = WriteConfig(
@@ -255,6 +311,8 @@ int main()
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
         {"surface_shell_from_sdf_requires_openvdb", SurfaceShellFromSdfRequiresOpenVdb},
         {"surface_shell_from_sdf_accepted_with_openvdb_gate", SurfaceShellFromSdfAcceptedWithOpenVdbGate},
+        {"legacy_run_slicer_rejects_surface_shell_candidate_config", LegacyRunSlicerRejectsSurfaceShellCandidateConfig},
+        {"legacy_run_slicer_rejects_write_production_rgbwsv_candidate_config", LegacyRunSlicerRejectsWriteProductionRgbwsvCandidateConfig},
         {"enabled_openvdb_off_reports_unavailable", EnabledOpenVdbOffReportsUnavailable},
         {"write_production_rgbwsv_remains_admission_gated", WriteProductionRgbwsvRemainsAdmissionGated},
         {"write_production_rgbwsv_requires_strict_admission", WriteProductionRgbwsvRequiresStrictAdmission},

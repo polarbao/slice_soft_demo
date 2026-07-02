@@ -2553,6 +2553,24 @@ Json relief_report_to_json(
     });
 }
 
+bool IsOpenVdbCandidateConfig(const SliceConfig& config)
+{
+    return config.texture.apply_mode == "surface_shell_from_sdf"
+        || config.experimental.openvdb_pipeline.write_production_rgbwsv;
+}
+
+void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config)
+{
+    if (!IsOpenVdbCandidateConfig(config))
+    {
+        return;
+    }
+
+    throw std::runtime_error(
+        "OpenVDB candidate slicing requires the explicit --openvdb-candidate-slice path; "
+        "the legacy production path must not run surface_shell_from_sdf or writeProductionRgbwsv configs");
+}
+
 }  // namespace
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path) {
@@ -2561,6 +2579,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path) {
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceRunOptions& options) {
     const SliceConfig config = load_slice_config(config_path);
+    EnsureLegacyPipelineAcceptsConfig(config);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report = load_model_report(config, config_dir);
