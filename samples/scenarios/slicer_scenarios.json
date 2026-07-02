@@ -1,0 +1,259 @@
+{
+  "schema": "slice_soft.scenarios.1",
+  "defaultScenarioId": "material_process_top2",
+  "description": "SliceSoft Qt 调试 UI 与全量样例脚本共享的场景索引。VSCode 只保留通用入口，具体模型/Profile 从这里选择。",
+  "scenarios": [
+    {
+      "id": "basic_sample",
+      "name": "基础 P0 样例",
+      "category": "基础",
+      "configPath": "samples/configs/slice_config.json",
+      "packageDir": "output/SlicePackage",
+      "description": "最小 RGBWSV 输出包样例，用于快速确认 CLI、manifest 和 RIP reader 基线。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "model_0_3",
+      "name": "0.3 OBJ 指甲模型",
+      "category": "真实 OBJ",
+      "configPath": "samples/configs/slice_config_model_0_3.json",
+      "packageDir": "output/SlicePackage_model_0_3",
+      "description": "历史 0.3.obj 样例，用于观察支撑、光油与真实指甲形态。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "relief_varnish",
+      "name": "浮雕光油",
+      "category": "浮雕",
+      "configPath": "samples/configs/slice_config_relief_varnish.json",
+      "packageDir": "output/SlicePackage_relief_varnish",
+      "description": "单材料浮雕与光油输出基础样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "support_unsupported_only",
+      "name": "仅悬空支撑",
+      "category": "支撑",
+      "configPath": "samples/configs/support/support_unsupported_only.json",
+      "packageDir": "output/SupportUnsupportedOnly",
+      "description": "只生成 unsupported support 的支撑诊断样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "support_bottom_plus_unsupported",
+      "name": "底面 + 悬空支撑",
+      "category": "支撑",
+      "configPath": "samples/configs/support/support_bottom_plus_unsupported.json",
+      "packageDir": "output/SupportBottomPlusUnsupported",
+      "description": "同时验证底面投影和悬空区域支撑。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "support_bridge_gap",
+      "name": "支撑桥接间隙",
+      "category": "支撑",
+      "configPath": "samples/configs/support/support_bridge_gap_smoke.json",
+      "packageDir": "output/SupportBridgeGapSmoke",
+      "description": "08A 支撑桥接 fixture，用于检查桥接策略和支撑割裂风险。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "textured_relief_rgb",
+      "name": "彩色纹理浮雕 RGB",
+      "category": "纹理 OBJ",
+      "configPath": "samples/configs/textured/textured_relief_rgb.json",
+      "packageDir": "output/TexturedReliefRgb",
+      "description": "OBJ/MTL/Texture 彩色纹理浮雕主样例，适合检查所见即贴图 RGB 预览。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "obj_standard_template_legacy",
+      "name": "标准 OBJ 彩色模板 Legacy",
+      "category": "纹理 OBJ",
+      "configPath": "samples/configs/obj_standard/standard_obj_texture_legacy.json",
+      "packageDir": "output/ObjStandardTemplateLegacy",
+      "description": "model/obj 下的标准 OBJ/MTL/PNG 功能性测试模板，当前走 legacy heightfield 生产包路径。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "textured_missing_texture_fallback",
+      "name": "贴图缺失 Fallback",
+      "category": "纹理 OBJ",
+      "configPath": "samples/configs/textured/textured_missing_texture_fallback.json",
+      "packageDir": "output/TexturedMissingTextureFallback",
+      "description": "缺失贴图时的 fallback 和 texture_report 统计样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "textured_no_uv_fallback",
+      "name": "无 UV Fallback",
+      "category": "纹理 OBJ",
+      "configPath": "samples/configs/textured/textured_no_uv_fallback.json",
+      "packageDir": "output/TexturedNoUvFallback",
+      "description": "模型没有 UV 时的 fallback 验证样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "material_process_top1",
+      "name": "RGB + 白墨 + 光油 Top1",
+      "category": "材料工艺",
+      "configPath": "samples/configs/material_process/nail_rgb_white_varnish_top1.json",
+      "packageDir": "output/NailRgbWhiteVarnishTop1",
+      "description": "真实材料工艺参数 Top1 对比样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "material_process_top2",
+      "name": "RGB + 白墨 + 光油 Top2",
+      "category": "材料工艺",
+      "configPath": "samples/configs/material_process/nail_rgb_white_varnish_top2.json",
+      "packageDir": "output/NailRgbWhiteVarnishTop2",
+      "description": "Qt UI 默认样例，覆盖 RGB、白墨、光油、支撑和材料工艺报告。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "material_process_top3",
+      "name": "RGB + 白墨 + 光油 Top3",
+      "category": "材料工艺",
+      "configPath": "samples/configs/material_process/nail_rgb_white_varnish_top3.json",
+      "packageDir": "output/NailRgbWhiteVarnishTop3",
+      "description": "真实材料工艺参数 Top3 对比样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "material_process_3mf_texture",
+      "name": "3MF 纹理 + RGB/W/V",
+      "category": "材料工艺",
+      "configPath": "samples/configs/material_process/three_mf_texture_rgb_white_varnish.json",
+      "packageDir": "output/ThreeMfTextureRgbWhiteVarnish",
+      "description": "3MF Texture2DGroup 进入 RGB、白墨、光油材料工艺链路。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "material_process_obj_texture",
+      "name": "OBJ 纹理 + RGB/W/V",
+      "category": "材料工艺",
+      "configPath": "samples/configs/material_process/obj_mtl_texture_rgb_white_varnish.json",
+      "packageDir": "output/ObjMtlTextureRgbWhiteVarnish",
+      "description": "OBJ/MTL/Texture 进入 RGB、白墨、光油材料工艺链路。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "three_mf_single_rgb",
+      "name": "3MF 单 RGB",
+      "category": "3MF",
+      "configPath": "samples/configs/3mf/three_mf_single_rgb.json",
+      "packageDir": "output/ThreeMfSingleRgb",
+      "description": "3MF 单对象 RGB 基础样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "three_mf_multi_object_transform",
+      "name": "3MF 多对象 Transform",
+      "category": "3MF",
+      "configPath": "samples/configs/3mf/three_mf_multi_object_transform.json",
+      "packageDir": "output/ThreeMfMultiObjectTransform",
+      "description": "3MF component transform 基础样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "three_mf_multi_material_rgbwv",
+      "name": "3MF 多材料 RGBWV",
+      "category": "3MF",
+      "configPath": "samples/configs/3mf/three_mf_multi_material_rgbwv.json",
+      "packageDir": "output/ThreeMfMultiMaterialRgbwv",
+      "description": "3MF BaseMaterial / ColorGroup 到 RGB/W/V 角色映射样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "three_mf_mixed_color_texture",
+      "name": "3MF ColorGroup + Texture2D",
+      "category": "3MF",
+      "configPath": "samples/configs/3mf/three_mf_mixed_color_texture.json",
+      "packageDir": "output/ThreeMfMixedColorTexture",
+      "description": "3MF 颜色组和贴图组混合输入样例。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "three_mf_real_01",
+      "name": "真实 3MF 01",
+      "category": "3MF 真实模型",
+      "configPath": "samples/configs/3mf/three_mf_real_01.json",
+      "packageDir": "output/ThreeMfReal01",
+      "description": "真实 3MF 模型 01，用于 UI 选择和人工预览。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "three_mf_real_02",
+      "name": "真实 3MF 02",
+      "category": "3MF 真实模型",
+      "configPath": "samples/configs/3mf/three_mf_real_02.json",
+      "packageDir": "output/ThreeMfReal02",
+      "description": "真实 3MF 模型 02，用于 UI 选择和人工预览。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "three_mf_real_03",
+      "name": "真实 3MF 03",
+      "category": "3MF 真实模型",
+      "configPath": "samples/configs/3mf/three_mf_real_03.json",
+      "packageDir": "output/ThreeMfReal03",
+      "description": "真实 3MF 模型 03，用于检查纹理、层顺序和 RGB 预览表现。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "ui_layer_preview",
+      "name": "UI 层预览 Smoke",
+      "category": "UI Smoke",
+      "configPath": "samples/configs/ui_smoke/ui_layer_preview.json",
+      "packageDir": "output/UiSmokeLayerPreview",
+      "description": "LayerPreviewPanel slider / channel switch smoke fixture。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "ui_overlay_rgbwv",
+      "name": "UI 叠加预览 Smoke",
+      "category": "UI Smoke",
+      "configPath": "samples/configs/ui_smoke/ui_overlay_rgbwv_preview.json",
+      "packageDir": "output/UiSmokeOverlayRgbwv",
+      "description": "PreviewOverlayPanel RGB/W/S/V 叠加预览 smoke fixture。",
+      "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "openvdb_surface_shell_3mf_real",
+      "name": "OpenVDB 真实 3MF 壳层实验",
+      "category": "OpenVDB 实验",
+      "configPath": "samples/configs/openvdb/surface_shell_3mf_real.json",
+      "packageDir": "output/SurfaceShell3MfRealCache",
+      "description": "OpenVDB/SDF 表面壳层实验路径，只用于显式实验验证，不作为生产 RGBWSV 默认路径。",
+      "enabled": false,
+      "experimental": true,
+      "requiresOpenVdb": true,
+      "ripSummary": false
+    }
+  ]
+}
