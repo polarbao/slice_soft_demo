@@ -45,6 +45,25 @@ git diff --check
 11A-7：REPORT_11A。
 ```
 
+## 2.1 当前执行状态
+
+| 任务 | 状态 | 提交 | 已运行验证 |
+|---|---|---|---|
+| 11A-0：标准 OBJ 模板登记 | DONE | `07f50dd docs(11A): 登记标准OBJ彩色纹理模板` | `Get-ChildItem model\obj`；`Select-String mtllib/vt`；`Get-Content MTL`；`git diff --cached --check` |
+| 11A-1：legacy 标准模板功能性配置与场景 | DONE | `4a07147 test(11A): 增加标准OBJ模板legacy配置` | `ConvertFrom-Json`；`slicer_cli --inspect-model`；`git diff --cached --check` |
+| 11A-2：UI 一键导入与 OpenVDB diagnostic 按钮验证 | DONE | 待本次提交 | `cmake --build build --config Debug --target slicer_debug_ui`；`slicer_debug_ui.exe --self-test`；`slicer_cli --experimental-openvdb-shell --admission-mode diagnostic_only`；`git diff --check` |
+| 11A-3：OpenVDB candidate 配置与 admission gate | NEXT | - | 待执行 |
+
+11A-2 验证结论：
+
+```text
+Qt 调试 UI 可构建；
+UI self-test PASS；
+标准 OBJ 模板的 OpenVDB diagnostic report 可生成；
+diagnostic report 明确 productionPackageWritten=false、productionAllowed=false；
+当前环境 OpenVDB unavailable 时仍只输出诊断，不写 production RGBWSV package。
+```
+
 ## 3. Task 11A-0：标准 OBJ 模板登记
 
 目标：
