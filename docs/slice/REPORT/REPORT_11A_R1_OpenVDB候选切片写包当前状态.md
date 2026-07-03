@@ -1,7 +1,7 @@
 # REPORT_11A_R1_OpenVDB候选切片写包当前状态
 
 > 文档版本：v0.1  
-> 文档状态：Stage Report / 11A-R1 Partial  
+> 文档状态：Stage Report / 11A-R1 Complete
 > 生成日期：2026-07-02  
 > 分支：`main`
 
@@ -9,7 +9,7 @@
 
 ## 1. 结论
 
-OpenVDB 可以进入后续“候选切片”开发，但当前不能直接取代 legacy production path。
+OpenVDB 已完成 11A-R1 “候选切片写包”闭环，但当前仍不能直接取代 legacy production path。
 
 当前 09 / 09P / 11A 阶段已经证明：
 
@@ -20,14 +20,18 @@ surface-shell texture 原型和 topology admission gate 已存在；
 diagnostic/report/prototype 链路可用于后续开发判断。
 ```
 
-但当前仍未完成：
+11A-R1 当前已经完成：
 
 ```text
-candidate package RIP / UI / preview golden；
-真实复杂 OBJ / 3MF 的 strict_closed 通过路径或 repair_then_strict 正式路径。
+显式 CLI candidate 入口；
+strict_closed PASS fixture；
+candidate per-layer RGBWSV buffer builder；
+p0.rgbwsv.2 candidate package writer；
+RIP / LayerPreview / OverlayPreview smoke；
+Qt 调试 UI 显式 OpenVDB Candidate 按钮。
 ```
 
-因此，本阶段采用“OpenVDB Candidate”路线：显式入口、严格门禁、候选写包，不默认替换 legacy。
+但 11A-R1 的完成范围仍是“OpenVDB Candidate”路线：显式入口、严格门禁、候选写包，不默认替换 legacy。
 
 ---
 
@@ -212,15 +216,22 @@ docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
 
 ---
 
-## 4. 当前未完成任务
+## 4. 11A-R1 收口状态
 
-11A-R1 后续仍需按任务清单继续：
+11A-R1 任务清单已全部完成：
 
 ```text
-11A-R1-7 完整阶段报告。
+11A-R1-0 文档包补齐 DONE；
+11A-R1-1 Pipeline 入口与防误用 guard DONE；
+11A-R1-2 strict_closed PASS fixture DONE；
+11A-R1-3 Candidate layer buffer builder DONE；
+11A-R1-4 Candidate package writer DONE；
+11A-R1-5 Candidate RIP / UI smoke DONE；
+11A-R1-6 UI OpenVDB Candidate 按钮 DONE；
+11A-R1-7 REPORT_11A_R1 DONE。
 ```
 
-其中最关键的技术闭环是：
+本阶段完成的关键技术闭环是：
 
 ```text
 OpenVDB shell/interior/support mask
@@ -229,6 +240,16 @@ OpenVDB shell/interior/support mask
 -> p0.rgbwsv.2 manifest/TIFF/reports/preview
 -> rip_reader_test strict validation
 -> Qt LayerPreview / OverlayPreview 可加载。
+```
+
+未纳入 11A-R1 的后续问题：
+
+```text
+真实复杂 OBJ / 3MF 的 strict_closed 稳定通过；
+repair_then_strict 正式修复路径；
+真实甲片模型的支撑策略接入 OpenVDB candidate；
+OpenVDB candidate 性能基线和大模型内存预算；
+OpenVDB candidate 何时具备替换 legacy production path 的准入标准。
 ```
 
 ---
@@ -329,6 +350,6 @@ OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
 下一步建议：
 
 ```text
-优先执行 11A-R1-7，收口完整阶段报告；
+进入下一阶段前，优先明确真实模型 strict_closed / repair_then_strict / support 接入的验收边界；
 真实模型 strict_closed / repair_then_strict 完成前，不允许替换 legacy production path。
 ```

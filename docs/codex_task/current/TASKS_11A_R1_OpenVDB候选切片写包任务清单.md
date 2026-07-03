@@ -48,7 +48,7 @@ OpenVDB OFF 默认轨道必须继续通过。
 | 11A-R1-4 Candidate package writer | DONE | 已新增 OpenVDB candidate package writer；写 p0.rgbwsv.2 manifest / TIFF / reports / preview；staging 发布避免目标半包 |
 | 11A-R1-5 Candidate RIP / UI smoke | DONE | 已新增 on-lane / off-lane 脚本和 golden contract；RIP / LayerPreview / OverlayPreview smoke 通过 |
 | 11A-R1-6 UI OpenVDB Candidate 按钮 | DONE | 已新增“导入模型并 OpenVDB 候选切片”按钮；使用 build-openvdb-09p slicer_cli；成功后加载 package |
-| 11A-R1-7 REPORT_11A_R1 | TODO | 记录完成范围和实际验证 |
+| 11A-R1-7 REPORT_11A_R1 | DONE | 已收口 REPORT_11A_R1；记录完成范围、验证结果、不可替换 legacy 的限制和下一步风险 |
 
 ---
 
@@ -231,4 +231,10 @@ cmake --build build --config Debug --target slicer_debug_ui
 记录实际完成范围；
 记录 OpenVDB 是否具备替换条件；
 记录仍需 repair / 性能 / 真实模型验证的风险。
+```
+
+验证：
+
+```powershell
+git diff --check
 ```
