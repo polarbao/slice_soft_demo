@@ -1,4 +1,5 @@
 #include "slicer_core/material/MaterialChannelComposer.h"
+#include "slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h"
 
 #include <cstdint>
 #include <iostream>
@@ -123,6 +124,75 @@ bool ChannelOrderIsFixedRgbwsv()
         && ExpectTrue(result.channel_order.at(5) == "V", "channel V");
 }
 
+bool CandidateLayerBufferBuilderMapsShellInteriorAndSupport()
+{
+    slicer_core::OpenVdbSurfaceShellResult shell;
+    shell.width = 3;
+    shell.height = 1;
+    shell.depth = 2;
+    const std::size_t voxelCount{6};
+    shell.shell_mask.assign(voxelCount, 0);
+    shell.interior_mask.assign(voxelCount, 0);
+
+    shell.interior_mask.at(slicer_core::MaskIndex3D(shell.width, shell.height, 1, 0, 0)) = 1;
+    shell.shell_mask.at(slicer_core::MaskIndex3D(shell.width, shell.height, 2, 0, 0)) = 1;
+    shell.shell_mask.at(slicer_core::MaskIndex3D(shell.width, shell.height, 1, 0, 1)) = 1;
+
+    slicer_core::SurfaceTextureTransferResult transfer;
+    transfer.shell_rgb.assign(voxelCount, {0, 0, 0});
+    transfer.shell_rgb.at(slicer_core::MaskIndex3D(shell.width, shell.height, 2, 0, 0)) = {200, 10, 20};
+    transfer.shell_rgb.at(slicer_core::MaskIndex3D(shell.width, shell.height, 1, 0, 1)) = {30, 210, 40};
+
+    slicer_core::OpenVdbCandidateLayerBufferOptions options;
+    options.interior_rgb = {12, 34, 56};
+    options.support_mask.assign(voxelCount, 0);
+    options.support_mask.at(slicer_core::MaskIndex3D(shell.width, shell.height, 0, 0, 0)) = 1;
+    options.support_mask.at(slicer_core::MaskIndex3D(shell.width, shell.height, 1, 0, 1)) = 1;
+
+    const slicer_core::OpenVdbCandidateLayerBufferBuildResult buffers =
+        slicer_core::BuildOpenVdbCandidateLayerBuffers(shell, transfer, options);
+    if (!ExpectTrue(buffers.error.empty(), "candidate builder error empty")
+        || !ExpectTrue(buffers.layers.size() == 2U, "candidate builder layer count"))
+    {
+        return false;
+    }
+
+    const slicer_core::OpenVdbCandidateLayerBuffer& layer0 = buffers.layers.at(0);
+    const slicer_core::MaterialChannelComposerResult composed0 =
+        slicer_core::ComposeMaterialChannels(layer0.composer_input);
+    const slicer_core::OpenVdbCandidateLayerBuffer& layer1 = buffers.layers.at(1);
+    const slicer_core::MaterialChannelComposerResult composed1 =
+        slicer_core::ComposeMaterialChannels(layer1.composer_input);
+
+    return ExpectTrue(layer0.stats.support_pixels == 1, "layer0 support stats")
+        && ExpectTrue(layer0.stats.interior_pixels == 1, "layer0 interior stats")
+        && ExpectTrue(layer0.stats.shell_pixels == 1, "layer0 shell stats")
+        && ExpectTrue(ChannelAt(composed0, 0, slicer_core::MaterialChannelOffset::S) == 0U, "layer0 support S")
+        && ExpectTrue(ChannelAt(composed0, 1, slicer_core::MaterialChannelOffset::R) == 12U, "layer0 interior R")
+        && ExpectTrue(ChannelAt(composed0, 1, slicer_core::MaterialChannelOffset::G) == 34U, "layer0 interior G")
+        && ExpectTrue(ChannelAt(composed0, 2, slicer_core::MaterialChannelOffset::R) == 200U, "layer0 shell R")
+        && ExpectTrue(ChannelAt(composed0, 2, slicer_core::MaterialChannelOffset::B) == 20U, "layer0 shell B")
+        && ExpectTrue(layer1.stats.cleared_support_conflict_pixels == 1, "layer1 support conflict cleared")
+        && ExpectTrue(ChannelAt(composed1, 1, slicer_core::MaterialChannelOffset::S) == 255U, "layer1 S empty")
+        && ExpectTrue(ChannelAt(composed1, 1, slicer_core::MaterialChannelOffset::G) == 210U, "layer1 shell G");
+}
+
+bool CandidateLayerBufferBuilderRejectsInvalidMasks()
+{
+    slicer_core::OpenVdbSurfaceShellResult shell;
+    shell.width = 2;
+    shell.height = 1;
+    shell.depth = 1;
+    shell.shell_mask.assign(2, 0);
+    shell.interior_mask.assign(1, 0);
+    slicer_core::SurfaceTextureTransferResult transfer;
+    slicer_core::OpenVdbCandidateLayerBufferOptions options;
+
+    const slicer_core::OpenVdbCandidateLayerBufferBuildResult buffers =
+        slicer_core::BuildOpenVdbCandidateLayerBuffers(shell, transfer, options);
+    return ExpectTrue(!buffers.error.empty(), "candidate builder invalid mask error");
+}
+
 }  // namespace
 
 int main()
@@ -135,6 +205,8 @@ int main()
         {"surface_rgb_does_not_affect_s_v", SurfaceRgbDoesNotAffectSV},
         {"white_and_varnish_write_channels", WhiteAndVarnishWriteChannels},
         {"channel_order_is_fixed_rgbwsv", ChannelOrderIsFixedRgbwsv},
+        {"candidate_layer_buffer_builder_maps_shell_interior_and_support", CandidateLayerBufferBuilderMapsShellInteriorAndSupport},
+        {"candidate_layer_buffer_builder_rejects_invalid_masks", CandidateLayerBufferBuilderRejectsInvalidMasks},
     };
 
     for (const auto& test : tests)

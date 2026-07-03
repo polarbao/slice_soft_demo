@@ -110,6 +110,29 @@ samples/models/openvdb_candidate/closed_textured_obj_checker.png
 samples/configs/openvdb_candidate/closed_textured_obj_candidate.json
 ```
 
+Task 11A-R1-3 已完成：
+
+```text
+新增 OpenVDB candidate layer buffer builder；
+将 shell_mask / interior_mask 展开为 per-layer model_mask / surface_shell_mask；
+将 SurfaceTextureTransfer shell_rgb 映射到 per-layer surface_rgb；
+支持外部 support / white / varnish 3D mask 映射；
+默认保持 Model > Support，support 与 model 冲突时清除 support；
+输出 per-layer stats；
+不写 TIFF；
+不写 manifest；
+不改变 p0.rgbwsv.2 协议。
+```
+
+关键新增/修改文件：
+
+```text
+src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h
+src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.cpp
+tests/unit/material_channel_composer/main.cpp
+CMakeLists.txt
+```
+
 ---
 
 ## 4. 当前未完成任务
@@ -117,7 +140,6 @@ samples/configs/openvdb_candidate/closed_textured_obj_candidate.json
 11A-R1 后续仍需按任务清单继续：
 
 ```text
-11A-R1-3 Candidate layer buffer builder；
 11A-R1-4 Candidate package writer；
 11A-R1-5 Candidate RIP / UI smoke；
 11A-R1-6 UI OpenVDB Candidate 按钮；
@@ -151,6 +173,8 @@ Get-Content -Raw samples\configs\openvdb_candidate\closed_textured_obj_candidate
 .\build\Debug\slicer_cli.exe --config samples\configs\openvdb_candidate\closed_textured_obj_candidate.json --inspect-model
 cmake --build build-openvdb-09p --config Debug --target surface_shell_real_model_demo
 .\build-openvdb-09p\Debug\surface_shell_real_model_demo.exe --config samples\configs\openvdb_candidate\closed_textured_obj_candidate.json --mesh-policy strict_closed --output output\OpenVdbCandidateClosedTexturedObjProbe
+cmake --build build --config Debug --target material_channel_composer_unit_tests
+.\build\Debug\material_channel_composer_unit_tests.exe
 ```
 
 结果：
@@ -179,6 +203,9 @@ interiorVoxels = 29241；
 sampledTextureVoxels = 19132；
 fallbackVoxels = 0；
 errors = 0。
+material_channel_composer_unit_tests 构建通过；
+新增 candidate_layer_buffer_builder_maps_shell_interior_and_support PASS；
+新增 candidate_layer_buffer_builder_rejects_invalid_masks PASS；
 ```
 
 ---
@@ -193,12 +220,12 @@ candidate writer 尚未实现，OpenVDB 不能被 UI 当作正式切片按钮使
 closed_textured_obj 仅作为 writer 正向 fixture，不代表真实甲片模型已经 strict_closed 可生产；
 OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
 后续 writer 必须继续遵守 p0.rgbwsv.2 / RGBWSV / uint8 / black_is_print。
+当前 builder 尚未接入 CLI candidate path，仍需 11A-R1-4 writer 和 pipeline glue。
 ```
 
 下一步建议：
 
 ```text
-优先执行 11A-R1-3，完成 candidate per-layer buffer builder；
-之后才进入 candidate package writer；
+优先执行 11A-R1-4，完成 candidate package writer；
 writer 通过 RIP / UI / preview smoke 之前，不允许替换 legacy production path。
 ```
