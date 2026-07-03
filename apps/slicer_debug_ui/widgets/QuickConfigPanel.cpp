@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QJsonDocument>
 #include <QPushButton>
@@ -32,53 +33,74 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     , m_document(document)
 {
     auto* layout = new QVBoxLayout(this);
-    auto* form = new QFormLayout();
+    auto* basicGroup = new QGroupBox("基础", this);
+    auto* basicForm = new QFormLayout(basicGroup);
 
     m_modelPathEdit = MakePathEdit(this);
     auto* modelBrowseButton = MakeButton("...", this);
     auto* modelPathRow = new QHBoxLayout();
     modelPathRow->addWidget(m_modelPathEdit, 1);
     modelPathRow->addWidget(modelBrowseButton);
-    form->addRow("模型文件", modelPathRow);
+    basicForm->addRow("模型文件", modelPathRow);
 
     m_outputDirEdit = MakePathEdit(this);
     auto* outputBrowseButton = MakeButton("...", this);
     auto* outputDirRow = new QHBoxLayout();
     outputDirRow->addWidget(m_outputDirEdit, 1);
     outputDirRow->addWidget(outputBrowseButton);
-    form->addRow("输出目录", outputDirRow);
+    basicForm->addRow("输出目录", outputDirRow);
 
     m_layerHeightSpin = new QDoubleSpinBox(this);
     m_layerHeightSpin->setRange(0.001, 1.0);
     m_layerHeightSpin->setDecimals(4);
     m_layerHeightSpin->setSingleStep(0.005);
     m_layerHeightSpin->setSuffix(" mm");
-    form->addRow("层高", m_layerHeightSpin);
+    basicForm->addRow("层高", m_layerHeightSpin);
 
+    auto* materialGroup = new QGroupBox("材料", this);
+    auto* materialForm = new QFormLayout(materialGroup);
     m_texturePolicyCombo = new QComboBox(this);
     m_texturePolicyCombo->setEditable(true);
     m_texturePolicyCombo->addItems({"top_surface_band", "solid_volume_from_top_surface", "solid_volume", "surface_shell_from_sdf", "disabled"});
-    form->addRow("纹理策略", m_texturePolicyCombo);
+    materialForm->addRow("纹理策略", m_texturePolicyCombo);
+
+    m_nonSurfaceRgbPolicyCombo = new QComboBox(this);
+    m_nonSurfaceRgbPolicyCombo->setEditable(true);
+    m_nonSurfaceRgbPolicyCombo->addItems({"model_material", "empty", "fallback_rgb", "material_policy"});
+    materialForm->addRow("非表面 RGB", m_nonSurfaceRgbPolicyCombo);
 
     m_supportEnabledCheck = new QCheckBox("启用支撑", this);
     m_whiteEnabledCheck = new QCheckBox("启用白墨", this);
     m_varnishEnabledCheck = new QCheckBox("启用光油", this);
     m_previewEnabledCheck = new QCheckBox("生成预览", this);
     m_openVdbEnabledCheck = new QCheckBox("启用 OpenVDB 实验管线", this);
-    form->addRow(m_supportEnabledCheck);
-    form->addRow(m_whiteEnabledCheck);
-    form->addRow(m_varnishEnabledCheck);
+    materialForm->addRow(m_whiteEnabledCheck);
+    materialForm->addRow(m_varnishEnabledCheck);
 
     m_varnishTopLayersSpin = new QSpinBox(this);
     m_varnishTopLayersSpin->setRange(0, 100000);
-    form->addRow("光油顶部层数", m_varnishTopLayersSpin);
+    materialForm->addRow("光油顶部层数", m_varnishTopLayersSpin);
 
-    form->addRow(m_previewEnabledCheck);
+    auto* supportGroup = new QGroupBox("支撑", this);
+    auto* supportForm = new QFormLayout(supportGroup);
+    supportForm->addRow(m_supportEnabledCheck);
+
+    auto* previewGroup = new QGroupBox("预览", this);
+    auto* previewForm = new QFormLayout(previewGroup);
+    previewForm->addRow(m_previewEnabledCheck);
     m_previewIntervalSpin = new QSpinBox(this);
     m_previewIntervalSpin->setRange(1, 100000);
-    form->addRow("预览间隔", m_previewIntervalSpin);
-    form->addRow(m_openVdbEnabledCheck);
-    layout->addLayout(form);
+    previewForm->addRow("预览间隔", m_previewIntervalSpin);
+
+    auto* experimentalGroup = new QGroupBox("实验", this);
+    auto* experimentalForm = new QFormLayout(experimentalGroup);
+    experimentalForm->addRow(m_openVdbEnabledCheck);
+
+    layout->addWidget(basicGroup);
+    layout->addWidget(materialGroup);
+    layout->addWidget(supportGroup);
+    layout->addWidget(previewGroup);
+    layout->addWidget(experimentalGroup);
 
     m_normalizedView = new QPlainTextEdit(this);
     m_normalizedView->setReadOnly(true);
@@ -91,6 +113,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     connect(m_outputDirEdit, &QLineEdit::editingFinished, this, &QuickConfigPanel::OnOutputDirEdited);
     connect(m_layerHeightSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnLayerHeightChanged);
     connect(m_texturePolicyCombo, &QComboBox::currentTextChanged, this, &QuickConfigPanel::OnTexturePolicyChanged);
+    connect(m_nonSurfaceRgbPolicyCombo, &QComboBox::currentTextChanged, this, &QuickConfigPanel::OnNonSurfaceRgbPolicyChanged);
     connect(m_supportEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnSupportEnabledChanged);
     connect(m_whiteEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnWhiteEnabledChanged);
     connect(m_varnishEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnVarnishEnabledChanged);
@@ -108,6 +131,7 @@ void QuickConfigPanel::LoadFromDocument()
     m_outputDirEdit->setText(StringValue({"output", "packageDir"}));
     m_layerHeightSpin->setValue(DoubleValue({"output", "layerThicknessMm"}, 0.01));
     m_texturePolicyCombo->setCurrentText(StringValue({"texture", "applyMode"}, "top_surface_band"));
+    m_nonSurfaceRgbPolicyCombo->setCurrentText(StringValue({"texture", "nonSurfaceRgbPolicy"}, "model_material"));
     m_supportEnabledCheck->setChecked(BoolValue({"support", "enabled"}, true));
     m_whiteEnabledCheck->setChecked(BoolValue({"materialPolicy", "white", "enabled"}, false));
     m_varnishEnabledCheck->setChecked(BoolValue({"materialPolicy", "varnish", "enabled"}, false));
@@ -174,6 +198,14 @@ void QuickConfigPanel::OnTexturePolicyChanged(const QString& value)
         {
             SetValueIfChanged({"texture", "topSurfaceLayers"}, 50);
         }
+    }
+}
+
+void QuickConfigPanel::OnNonSurfaceRgbPolicyChanged(const QString& value)
+{
+    if (!m_loading)
+    {
+        SetValueIfChanged({"texture", "nonSurfaceRgbPolicy"}, value);
     }
 }
 

@@ -58,7 +58,7 @@ set_target_properties(slicer_debug_ui PROPERTIES
     AUTOMOC ON
 )
 
-target_link_libraries(slicer_debug_ui PRIVATE Qt5::Widgets)
+target_link_libraries(slicer_debug_ui PRIVATE Qt5::Widgets slicer_core)
 
 if(MSVC)
     target_compile_options(slicer_debug_ui PRIVATE /utf-8)

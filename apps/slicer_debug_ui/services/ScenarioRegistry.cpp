@@ -68,9 +68,19 @@ bool ScenarioRegistry::Load(const QString& repoRoot, const QString& relativePath
         entry.id = ReadString(object, QStringLiteral("id"));
         entry.name = ReadString(object, QStringLiteral("name"));
         entry.category = ReadString(object, QStringLiteral("category"));
+        entry.audience = ReadString(object, QStringLiteral("audience"));
+        entry.visibility = ReadString(object, QStringLiteral("visibility"));
         entry.configpath = ReadString(object, QStringLiteral("configPath"));
         entry.packagedir = ReadString(object, QStringLiteral("packageDir"));
         entry.description = ReadString(object, QStringLiteral("description"));
+        if (entry.audience.isEmpty())
+        {
+            entry.audience = QStringLiteral("user");
+        }
+        if (entry.visibility.isEmpty())
+        {
+            entry.visibility = QStringLiteral("default");
+        }
         entry.enabled = ReadBool(object, QStringLiteral("enabled"), true);
         entry.experimental = ReadBool(object, QStringLiteral("experimental"), false);
         entry.requiresopenvdb = ReadBool(object, QStringLiteral("requiresOpenVdb"), false);

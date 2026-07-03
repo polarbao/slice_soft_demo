@@ -9,6 +9,8 @@ struct ScenarioEntry
     QString id;
     QString name;
     QString category;
+    QString audience;
+    QString visibility;
     QString configpath;
     QString packagedir;
     QString description;

@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include <QCheckBox>
 #include <QDesktopServices>
 #include <QComboBox>
 #include <QDateTime>
@@ -342,6 +343,12 @@ void MainWindow::OnReloadScenarios()
     LoadScenarios();
 }
 
+void MainWindow::OnScenarioVisibilityChanged(const bool checked)
+{
+    Q_UNUSED(checked);
+    LoadScenarios();
+}
+
 void MainWindow::handleProcessStarted(const QString& command) {
     setBusy(true);
     status_label_->setText("正在执行：" + current_action_);
@@ -392,10 +399,12 @@ QWidget* MainWindow::createProjectPanel() {
     auto* profile_b_browse = makeButton("...", panel);
 
     m_scenarioSelector = new QComboBox(panel);
+    m_showAdvancedScenariosCheck = new QCheckBox("显示高级/测试", panel);
     auto* scenario_reload = makeButton("刷新", panel);
     auto* scenario_row = new QHBoxLayout();
     scenario_row->addWidget(new QLabel("场景/Profile"));
     scenario_row->addWidget(m_scenarioSelector, 1);
+    scenario_row->addWidget(m_showAdvancedScenariosCheck);
     scenario_row->addWidget(scenario_reload);
     layout->addLayout(scenario_row);
     m_scenarioDescriptionLabel = new QLabel("场景索引用于替代大量 VSCode 专用调试项。", panel);
@@ -427,6 +436,7 @@ QWidget* MainWindow::createProjectPanel() {
     connect(profile_a_browse, &QPushButton::clicked, this, &MainWindow::browseProfileA);
     connect(profile_b_browse, &QPushButton::clicked, this, &MainWindow::browseProfileB);
     connect(m_scenarioSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::OnScenarioChanged);
+    connect(m_showAdvancedScenariosCheck, &QCheckBox::toggled, this, &MainWindow::OnScenarioVisibilityChanged);
     connect(scenario_reload, &QPushButton::clicked, this, &MainWindow::OnReloadScenarios);
     return panel;
 }
@@ -569,7 +579,8 @@ QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* pack
                             {"uvAddressMode", "clamp"},
                             {"flipV", true},
                             {"fallbackRgb", MakeIntArray({0, 0, 0})},
-                            {"missingTexturePolicy", "warn_and_fallback"}});
+                            {"missingTexturePolicy", "warn_and_fallback"},
+                            {"nonSurfaceRgbPolicy", "model_material"}});
     root.insert("support",
                 QJsonObject{{"enabled", true},
                             {"mode", "full_vertical_projection"},
@@ -651,8 +662,13 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                             {"planarConfig", "contiguous"},
                             {"storageMode", "stripped"},
                             {"rowsPerStrip", 64}});
+    root.insert("modelTransform",
+                QJsonObject{{"unit", "mm"},
+                            {"scale", MakeNumberArray({0.8, 0.8, 0.8})},
+                            {"rotationDeg", MakeNumberArray({0.0, 0.0, 0.0})},
+                            {"translationMm", MakeNumberArray({0.0, 0.0, 0.0})}});
     root.insert("autoOrient",
-                QJsonObject{{"enabled", false},
+                QJsonObject{{"enabled", true},
                             {"maxHeightMm", 6.0},
                             {"strategy", "minimize_height_by_right_angle_rotation"}});
     root.insert("background", QJsonObject{{"value", 255}});
@@ -669,7 +685,8 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                             {"uvAddressMode", "clamp"},
                             {"flipV", true},
                             {"fallbackRgb", MakeIntArray({255, 0, 255})},
-                            {"missingTexturePolicy", "fail_fast"}});
+                            {"missingTexturePolicy", "fail_fast"},
+                            {"nonSurfaceRgbPolicy", "model_material"}});
     root.insert("support",
                 QJsonObject{{"enabled", false},
                             {"mode", "none"},
@@ -782,11 +799,23 @@ void MainWindow::LoadScenarios()
         {
             continue;
         }
+        if (!ShouldShowScenario(scenario))
+        {
+            continue;
+        }
 
         QString label = scenario.category.isEmpty() ? scenario.name : scenario.category + " / " + scenario.name;
         if (scenario.experimental || scenario.requiresopenvdb)
         {
             label += "（实验）";
+        }
+        if (scenario.visibility == "fixture")
+        {
+            label += "（测试）";
+        }
+        else if (scenario.visibility == "advanced")
+        {
+            label += "（高级）";
         }
         m_scenarioSelector->addItem(label, scenario.id);
     }
@@ -809,6 +838,15 @@ void MainWindow::LoadScenarios()
     }
 }
 
+bool MainWindow::ShouldShowScenario(const ScenarioEntry& scenario) const
+{
+    if (m_showAdvancedScenariosCheck != nullptr && m_showAdvancedScenariosCheck->isChecked())
+    {
+        return true;
+    }
+    return scenario.visibility != "advanced" && scenario.visibility != "fixture";
+}
+
 void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
 {
     const QString configPath = absoluteFromRepo(scenario.configpath);
@@ -824,6 +862,18 @@ void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
     if (scenario.experimental || scenario.requiresopenvdb)
     {
         description += "\n实验场景：不会默认作为生产路径验收。";
+    }
+    if (scenario.visibility == "fixture")
+    {
+        description += "\n测试夹具：默认隐藏，只用于回归或专项验证。";
+    }
+    else if (scenario.visibility == "advanced")
+    {
+        description += "\n高级场景：默认隐藏，适合专项调试。";
+    }
+    if (!scenario.audience.isEmpty())
+    {
+        description += "\n受众：" + scenario.audience;
     }
     if (m_scenarioDescriptionLabel != nullptr)
     {

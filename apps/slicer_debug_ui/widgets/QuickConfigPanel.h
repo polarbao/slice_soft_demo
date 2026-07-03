@@ -34,6 +34,7 @@ private slots:
     void OnOutputDirEdited();
     void OnLayerHeightChanged(double value);
     void OnTexturePolicyChanged(const QString& value);
+    void OnNonSurfaceRgbPolicyChanged(const QString& value);
     void OnSupportEnabledChanged(bool checked);
     void OnWhiteEnabledChanged(bool checked);
     void OnVarnishEnabledChanged(bool checked);
@@ -57,6 +58,7 @@ private:
     QLineEdit* m_outputDirEdit{nullptr};
     QDoubleSpinBox* m_layerHeightSpin{nullptr};
     QComboBox* m_texturePolicyCombo{nullptr};
+    QComboBox* m_nonSurfaceRgbPolicyCombo{nullptr};
     QCheckBox* m_supportEnabledCheck{nullptr};
     QCheckBox* m_whiteEnabledCheck{nullptr};
     QCheckBox* m_varnishEnabledCheck{nullptr};

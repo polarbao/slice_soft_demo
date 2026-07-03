@@ -8,6 +8,7 @@
 #include "PackageLoader.h"
 #include "PreviewReportIndex.h"
 #include "ReportLoader.h"
+#include "ScenarioRegistry.h"
 #include "ToolPaths.h"
 
 #include <QDir>
@@ -103,6 +104,9 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     }
     if (options.case_name == "compare-profiles") {
         return compareProfiles(options);
+    }
+    if (options.case_name == "scenario-registry") {
+        return scenarioRegistry(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -254,11 +258,23 @@ int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
     }
 
     const QStringList channels = panel.AvailableChannels();
-    const QStringList required_channels{"rgb", "support", "white", "varnish", "occupancy", "diagnostic"};
+    const QStringList required_channels{"occupancy", "diagnostic"};
     for (const QString& channel : required_channels) {
         if (!channels.contains(channel)) {
             return fail("layer-preview-load 缺少通道：" + channel + "，实际通道：" + channels.join(","));
         }
+    }
+    QStringList render_channels;
+    for (const QString& channel : QStringList{"production_rgb", "texture_rgb", "rgb", "support", "white", "varnish", "occupancy", "diagnostic"})
+    {
+        if (channels.contains(channel))
+        {
+            render_channels.push_back(channel);
+        }
+    }
+    if (render_channels.size() <= required_channels.size())
+    {
+        return fail("layer-preview-load 未发现任何材料预览通道，实际通道：" + channels.join(","));
     }
 
     const QList<int> layer_indices{0, panel.LayerCount() / 2, panel.LayerCount() - 1};
@@ -266,7 +282,7 @@ int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
         if (!panel.SelectLayerForTest(layer_index)) {
             return fail("layer-preview-load 无法选择层：" + QString::number(layer_index));
         }
-        for (const QString& channel : required_channels) {
+        for (const QString& channel : render_channels) {
             if (!panel.SelectChannelForTest(channel)) {
                 return fail("layer-preview-load 无法选择通道：" + channel);
             }
@@ -274,6 +290,24 @@ int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
             if (image.isNull() || image.width() <= 0 || image.height() <= 0) {
                 return fail(QString("layer-preview-load 渲染为空：layer=%1 channel=%2").arg(layer_index).arg(channel));
             }
+        }
+    }
+
+    if (channels.contains("production_rgb"))
+    {
+        if (!panel.SelectChannelForTest("production_rgb"))
+        {
+            return fail("layer-preview-load 无法选择生产 RGB 通道。");
+        }
+        const QImage productionImage = panel.CurrentImageForTest();
+        if (productionImage.isNull() || productionImage.width() <= 0 || productionImage.height() <= 0)
+        {
+            return fail("layer-preview-load 生产 RGB 渲染为空。");
+        }
+        const QString probe = panel.PixelProbeForTest(productionImage.width() / 2, productionImage.height() / 2);
+        if (!probe.contains("RGBWSV="))
+        {
+            return fail("layer-preview-load 生产 RGB 像素探针未返回 RGBWSV。");
         }
     }
 
@@ -311,6 +345,52 @@ int UiSmokeTestRunner::compareProfiles(const UiSmokeTestOptions& options) {
         return fail("compare-profiles 失败：" + QString::fromLocal8Bit(process.readAllStandardError()));
     }
     return QFileInfo::exists(output) ? pass("compare-profiles " + output) : fail("compare-profiles 未生成输出。");
+}
+
+int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
+{
+    ScenarioRegistry registry;
+    if (!registry.Load(options.repo_root))
+    {
+        return fail("scenario-registry 无法加载场景索引：" + registry.Warnings().join("; "));
+    }
+    int defaultVisibleCount = 0;
+    int fixtureCount = 0;
+    int advancedCount = 0;
+    for (const ScenarioEntry& scenario : registry.Entries())
+    {
+        if (!scenario.enabled)
+        {
+            continue;
+        }
+        if (scenario.visibility == "fixture")
+        {
+            ++fixtureCount;
+        }
+        else if (scenario.visibility == "advanced")
+        {
+            ++advancedCount;
+        }
+        else
+        {
+            ++defaultVisibleCount;
+        }
+    }
+    if (registry.DefaultScenarioId().isEmpty() || registry.FindById(registry.DefaultScenarioId()) == nullptr)
+    {
+        return fail("scenario-registry defaultScenarioId 无效。");
+    }
+    if (defaultVisibleCount <= 0 || fixtureCount <= 0 || advancedCount <= 0)
+    {
+        return fail(QString("scenario-registry 分层不足 default=%1 fixture=%2 advanced=%3")
+                        .arg(defaultVisibleCount)
+                        .arg(fixtureCount)
+                        .arg(advancedCount));
+    }
+    return pass(QString("scenario-registry default=%1 fixture=%2 advanced=%3")
+                    .arg(defaultVisibleCount)
+                    .arg(fixtureCount)
+                    .arg(advancedCount));
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {

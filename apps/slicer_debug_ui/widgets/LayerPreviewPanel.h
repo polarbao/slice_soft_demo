@@ -59,6 +59,17 @@ public:
      */
     QImage CurrentImageForTest() const;
 
+    /**
+     * @brief Return production RGBWSV probe text for a display pixel in smoke tests.
+     * @param x Display image x coordinate.
+     * @param y Display image y coordinate.
+     * @return Human-readable probe text, or an empty string when no production TIFF exists.
+     */
+    QString PixelProbeForTest(int x, int y) const;
+
+protected:
+    bool eventFilter(QObject* object, QEvent* event) override;
+
 private slots:
     void OnLayerChanged(int value);
     void OnChannelChanged(int index);
@@ -73,6 +84,7 @@ private:
     LayerPreviewFrame FindFrame(int layerIndex, const QString& channel) const;
     QImage ReadFrameImage(const LayerPreviewFrame& frame) const;
     QImage RenderCurrentImage() const;
+    QImage RenderProductionRgb(int layerIndex) const;
     QImage RenderMaskChannel(int layerIndex, const QString& channel) const;
     QImage RenderOccupancy(int layerIndex) const;
     QImage RenderDiagnostic(int layerIndex) const;
@@ -84,10 +96,13 @@ private:
     void ApplyPixmap();
     void UpdateStatus(const QString& note = QString());
     bool IsPrintedPixel(const QColor& color) const;
+    QString BuildPixelProbeText(int displayX, int displayY) const;
+    QString InterpretPixel(int r, int g, int b, int w, int s, int v) const;
 
     LayerPreviewDataProvider m_provider;
     LayerPreviewPackage m_package;
     QImage m_currentImage;
+    QString m_probeText;
     double m_zoom{1.0};
     bool m_fit{true};
 

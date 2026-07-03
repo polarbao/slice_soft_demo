@@ -22,6 +22,7 @@
 #include <QPushButton>
 
 class QComboBox;
+class QCheckBox;
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
@@ -46,6 +47,7 @@ private slots:
     void OnImportModelOpenVdbCandidate();
     void OnScenarioChanged(int index);
     void OnReloadScenarios();
+    void OnScenarioVisibilityChanged(bool checked);
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -63,6 +65,7 @@ private:
     void RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath);
     void RunOpenVdbCandidate(const QString& configPath, const QString& packageDir);
     void LoadScenarios();
+    bool ShouldShowScenario(const ScenarioEntry& scenario) const;
     void ApplyScenario(const ScenarioEntry& scenario);
     void loadPackage(const QString& package_dir);
     void loadCompareResult(const QString& path);
@@ -91,6 +94,7 @@ private:
     QPlainTextEdit* warnings_view_{nullptr};
     QPlainTextEdit* compare_view_{nullptr};
     QComboBox* m_scenarioSelector{nullptr};
+    QCheckBox* m_showAdvancedScenariosCheck{nullptr};
     QLabel* m_scenarioDescriptionLabel{nullptr};
     QPushButton* build_button_{nullptr};
     QPushButton* run_slicer_button_{nullptr};

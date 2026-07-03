@@ -69,6 +69,10 @@ QString LayerPreviewDataProvider::NormalizeChannel(const QString& channel, const
     {
         return "texture_rgb";
     }
+    if (normalized == "production_rgb" || normalizedType == "production_rgb")
+    {
+        return "production_rgb";
+    }
     if (normalized == "rgb" || normalized == "model_rgb" || normalized == "true_rgb" || normalizedType == "model_rgb")
     {
         return "rgb";
@@ -101,6 +105,10 @@ QString LayerPreviewDataProvider::DisplayName(const QString& channel)
     if (channel == "texture_rgb")
     {
         return "纹理 RGB";
+    }
+    if (channel == "production_rgb")
+    {
+        return "生产 RGB";
     }
     if (channel == "rgb")
     {
@@ -173,6 +181,20 @@ void LayerPreviewDataProvider::ReadManifest(const PackageSummary& package, Layer
         if (!preview->layerindices.contains(layerIndex))
         {
             preview->layerindices.push_back(layerIndex);
+        }
+        const QString relativeLayerPath = object.value("path").toString();
+        if (!relativeLayerPath.isEmpty())
+        {
+            LayerPreviewFrame frame;
+            frame.path = QDir(package.package_dir).filePath(relativeLayerPath);
+            frame.channel = "production_rgb";
+            frame.kind = "tiff";
+            frame.layerindex = layerIndex;
+            frame.printpixels = ReadInt(object, "modelPixels");
+            if (QFileInfo::exists(frame.path))
+            {
+                AddFrame(preview, frame);
+            }
         }
         LayerPreviewLayerStats stats = preview->layerstats.value(layerIndex);
         stats.layerindex = layerIndex;
@@ -352,7 +374,7 @@ void LayerPreviewDataProvider::EnsureChannelOrder(LayerPreviewPackage* preview) 
     channels.insert("occupancy");
     channels.insert("diagnostic");
 
-    const QStringList ordered{"texture_rgb", "rgb", "white", "support", "varnish", "occupancy", "diagnostic"};
+    const QStringList ordered{"production_rgb", "texture_rgb", "rgb", "white", "support", "varnish", "occupancy", "diagnostic"};
     preview->channels.clear();
     for (const QString& channel : ordered)
     {
