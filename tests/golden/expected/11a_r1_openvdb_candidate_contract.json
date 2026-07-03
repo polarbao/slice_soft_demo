@@ -1,0 +1,36 @@
+{
+  "schema": "p0.11a_r1.openvdb_candidate_contract.1",
+  "config": "samples/configs/openvdb_candidate/closed_textured_obj_candidate.json",
+  "package": "output/OpenVdbCandidateClosedTexturedObj",
+  "packageSchema": "p0.rgbwsv.2",
+  "channelOrder": ["R", "G", "B", "W", "S", "V"],
+  "bitDepth": 8,
+  "polarity": "black_is_print",
+  "printValue": 0,
+  "emptyValue": 255,
+  "storageMode": "stripped",
+  "grid": {
+    "widthPx": 65,
+    "heightPx": 65,
+    "layerCount": 17
+  },
+  "totals": {
+    "modelPixels": 48373,
+    "supportPixels": 0,
+    "shellPixels": 19132
+  },
+  "preview": {
+    "schema": "p0.preview_report.1",
+    "format": "ppm",
+    "channels": ["texture_rgb", "rgb", "support", "white", "varnish"],
+    "fileCount": 85,
+    "uiLayerPreviewChannels": ["texture_rgb", "rgb", "white", "support", "varnish", "occupancy", "diagnostic"]
+  },
+  "requiredReports": [
+    "reports/openvdb_candidate_report.json",
+    "reports/production_admission_report.json",
+    "reports/surface_shell_texture_report.json",
+    "reports/texture_fidelity_report.json",
+    "reports/preview_report.json"
+  ]
+}

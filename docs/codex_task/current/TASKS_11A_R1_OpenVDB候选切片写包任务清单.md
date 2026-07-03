@@ -46,7 +46,7 @@ OpenVDB OFF 默认轨道必须继续通过。
 | 11A-R1-2 strict_closed PASS fixture | DONE | 已新增 closed textured OBJ fixture 和 candidate config；OpenVDB ON strict_closed probe 通过 |
 | 11A-R1-3 Candidate layer buffer builder | DONE | 已新增 OpenVDB candidate layer buffer builder；shell/interior/support -> per-layer MaterialChannelComposerInput |
 | 11A-R1-4 Candidate package writer | DONE | 已新增 OpenVDB candidate package writer；写 p0.rgbwsv.2 manifest / TIFF / reports / preview；staging 发布避免目标半包 |
-| 11A-R1-5 Candidate RIP / UI smoke | TODO | rip_reader_test、LayerPreview、OverlayPreview |
+| 11A-R1-5 Candidate RIP / UI smoke | DONE | 已新增 on-lane / off-lane 脚本和 golden contract；RIP / LayerPreview / OverlayPreview smoke 通过 |
 | 11A-R1-6 UI OpenVDB Candidate 按钮 | TODO | 新增显式按钮和状态显示 |
 | 11A-R1-7 REPORT_11A_R1 | TODO | 记录完成范围和实际验证 |
 
@@ -192,6 +192,13 @@ ctest --test-dir build -C Debug --output-on-failure
 scripts/run_11a_r1_openvdb_candidate_on_lane.ps1
 scripts/run_11a_r1_openvdb_candidate_off_lane.ps1
 tests/golden/expected/11a_r1_openvdb_candidate_contract.json
+```
+
+验证：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_11a_r1_openvdb_candidate_on_lane.ps1 -OpenVdbBuildDir build-openvdb-09p -UiBuildDir build -Config Debug
+powershell -ExecutionPolicy Bypass -File .\scripts\run_11a_r1_openvdb_candidate_off_lane.ps1 -BuildDir build -Config Debug
 ```
 
 ---

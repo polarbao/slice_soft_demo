@@ -160,6 +160,30 @@ docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
 docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
 ```
 
+Task 11A-R1-5 已完成：
+
+```text
+candidate preview 输出从单一 texture_rgb 扩展为 UI 可消费的多通道展示图；
+每层写出 texture_rgb / model_rgb / support / white / varnish PPM；
+preview_report.channels 记录 texture_rgb / rgb / support / white / varnish；
+preview_report.pseudoColors 记录 empty / support / white / varnish；
+新增 on-lane 脚本验证 OpenVDB ON candidate package；
+新增 off-lane 脚本验证默认 OpenVDB OFF 构建和单测；
+新增 golden contract 固化 candidate manifest / report / preview 的关键字段；
+rip_reader_test、LayerPreview、OverlayPreview smoke 均通过。
+```
+
+关键新增/修改文件：
+
+```text
+src/slicer_core/pipeline/OpenVdbCandidatePipeline.cpp
+scripts/run_11a_r1_openvdb_candidate_on_lane.ps1
+scripts/run_11a_r1_openvdb_candidate_off_lane.ps1
+tests/golden/expected/11a_r1_openvdb_candidate_contract.json
+docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
+docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
+```
+
 ---
 
 ## 4. 当前未完成任务
@@ -167,7 +191,6 @@ docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
 11A-R1 后续仍需按任务清单继续：
 
 ```text
-11A-R1-5 Candidate RIP / UI smoke；
 11A-R1-6 UI OpenVDB Candidate 按钮；
 11A-R1-7 完整阶段报告。
 ```
@@ -248,6 +271,14 @@ rip_reader_test 摘要 channelPrintPixels = R=9661 G=48373 B=19132 W=0 S=0 V=0�
 rip_reader_test 摘要 warnings = 0；
 cmake --build build --config Debug --target slicer_cli rip_reader_test 通过；
 ctest --test-dir build -C Debug --output-on-failure 5/5 PASS。
+powershell -ExecutionPolicy Bypass -File .\scripts\run_11a_r1_openvdb_candidate_on_lane.ps1 -OpenVdbBuildDir build-openvdb-09p -UiBuildDir build -Config Debug 通过；
+on-lane candidate package 输出 packageDir = output/OpenVdbCandidateClosedTexturedObj；
+on-lane RIP summary PASS；
+on-lane LayerPreview smoke PASS，layers=17，channels=texture_rgb,rgb,white,support,varnish,occupancy,diagnostic；
+on-lane OverlayPreview smoke PASS，images=85，channels=rgb,support,varnish,white，modes=RGB + W 白墨 / RGB + V 光油 / RGB + S 支撑；
+powershell -ExecutionPolicy Bypass -File .\scripts\run_11a_r1_openvdb_candidate_off_lane.ps1 -BuildDir build -Config Debug 通过；
+off-lane 默认 OpenVDB-OFF slicer_cli / rip_reader_test / slicer_debug_ui 构建通过；
+off-lane ctest 5/5 PASS。
 ```
 
 ---
@@ -257,18 +288,18 @@ ctest --test-dir build -C Debug --output-on-failure 5/5 PASS。
 风险：
 
 ```text
-candidate writer 已实现，但 Candidate RIP / UI / preview golden 尚未完成；
-OpenVDB 仍不能被 UI 当作正式切片按钮使用；
+candidate writer 和 Candidate RIP / UI / preview golden 已完成；
+OpenVDB 仍不能被 UI 当作正式候选切片按钮使用，需 11A-R1-6 接入显式 UI 按钮；
 真实 OBJ / 3MF 拓扑质量不稳定，strict_closed 可能继续阻断；
 closed_textured_obj 仅作为 writer 正向 fixture，不代表真实甲片模型已经 strict_closed 可生产；
 OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
-后续 writer 必须继续遵守 p0.rgbwsv.2 / RGBWSV / uint8 / black_is_print。
+后续改动必须继续遵守 p0.rgbwsv.2 / RGBWSV / uint8 / black_is_print。
 当前 writer 只覆盖 candidate 显式入口，不替换 legacy production path。
 ```
 
 下一步建议：
 
 ```text
-优先执行 11A-R1-5，补齐 candidate RIP / LayerPreview / OverlayPreview smoke；
-candidate 通过 RIP / UI / preview smoke 之前，不允许替换 legacy production path。
+优先执行 11A-R1-6，新增 UI OpenVDB Candidate 显式按钮和状态显示；
+真实模型 strict_closed / repair_then_strict 完成前，不允许替换 legacy production path。
 ```

@@ -34,10 +34,10 @@ std::string LayerFileName(const int layerIndex)
     return stream.str();
 }
 
-std::string PreviewFileName(const int layerIndex)
+std::string PreviewFileName(const int layerIndex, const std::string& channel)
 {
     std::ostringstream stream;
-    stream << "preview/texture_rgb_" << std::setw(6) << std::setfill('0') << layerIndex << ".ppm";
+    stream << "preview/" << channel << "_" << std::setw(6) << std::setfill('0') << layerIndex << ".ppm";
     return stream.str();
 }
 
@@ -97,6 +97,15 @@ Json StringArrayToJson(const std::array<std::string, 6>& values)
     return Json{array};
 }
 
+Json ColorToJson(const std::array<std::uint8_t, 3>& color)
+{
+    return Json::array({
+        static_cast<int>(color.at(0)),
+        static_cast<int>(color.at(1)),
+        static_cast<int>(color.at(2)),
+    });
+}
+
 Json LayerStatsToJson(const OpenVdbCandidateLayerBufferStats& stats)
 {
     return Json::object({
@@ -142,6 +151,75 @@ void WritePpm(
     }
     output << "P6\n" << width << ' ' << height << "\n255\n";
     output.write(reinterpret_cast<const char*>(pixels.data()), static_cast<std::streamsize>(pixels.size()));
+}
+
+std::size_t ChannelIndex(const std::size_t pixelIndex, const MaterialChannelOffset offset)
+{
+    return pixelIndex * static_cast<std::size_t>(rgbwsv_channel_count) + static_cast<std::size_t>(offset);
+}
+
+std::vector<std::uint8_t> BuildRgbPreviewPixels(
+    const MaterialChannelComposerResult& composed)
+{
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(composed.width) * static_cast<std::size_t>(composed.height);
+    std::vector<std::uint8_t> pixels(pixelCount * 3U, 255);
+    for (std::size_t pixelIndex{0}; pixelIndex < pixelCount; ++pixelIndex)
+    {
+        const std::size_t targetIndex = pixelIndex * 3U;
+        pixels.at(targetIndex + 0U) = composed.channels.at(ChannelIndex(pixelIndex, MaterialChannelOffset::R));
+        pixels.at(targetIndex + 1U) = composed.channels.at(ChannelIndex(pixelIndex, MaterialChannelOffset::G));
+        pixels.at(targetIndex + 2U) = composed.channels.at(ChannelIndex(pixelIndex, MaterialChannelOffset::B));
+    }
+    return pixels;
+}
+
+std::vector<std::uint8_t> BuildMaskPreviewPixels(
+    const MaterialChannelComposerResult& composed,
+    const MaterialChannelOffset offset,
+    const std::uint8_t emptyValue,
+    const std::array<std::uint8_t, 3>& emptyColor,
+    const std::array<std::uint8_t, 3>& printColor)
+{
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(composed.width) * static_cast<std::size_t>(composed.height);
+    std::vector<std::uint8_t> pixels(pixelCount * 3U, 255);
+    for (std::size_t pixelIndex{0}; pixelIndex < pixelCount; ++pixelIndex)
+    {
+        const bool isPrint =
+            composed.channels.at(ChannelIndex(pixelIndex, offset)) != emptyValue;
+        const std::array<std::uint8_t, 3>& color = isPrint ? printColor : emptyColor;
+        const std::size_t targetIndex = pixelIndex * 3U;
+        pixels.at(targetIndex + 0U) = color.at(0);
+        pixels.at(targetIndex + 1U) = color.at(1);
+        pixels.at(targetIndex + 2U) = color.at(2);
+    }
+    return pixels;
+}
+
+void WritePreviewFrame(
+    const std::filesystem::path& packageDir,
+    Json::Array& previewFiles,
+    const int width,
+    const int height,
+    const int layerIndex,
+    const std::string& filePrefix,
+    const std::string& channel,
+    const std::string& type,
+    const std::vector<std::uint8_t>& pixels,
+    const int printPixels)
+{
+    const std::string relativePreviewPath = PreviewFileName(layerIndex, filePrefix);
+    WritePpm(packageDir / relativePreviewPath, width, height, pixels);
+    previewFiles.push_back(Json::object({
+        {"layerIndex", layerIndex},
+        {"channel", channel},
+        {"type", type},
+        {"kind", "single"},
+        {"format", "ppm"},
+        {"path", relativePreviewPath},
+        {"printPixels", printPixels},
+    }));
 }
 
 void EnsureCandidateConfig(const SliceConfig& config)
@@ -277,21 +355,76 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
         summary.support_pixels += composed.stats.support_pixels;
         summary.shell_pixels += layer.stats.shell_pixels;
 
-        const std::string relativePreviewPath = PreviewFileName(layer.layer_index);
-        WritePpm(
-            stagingDir / relativePreviewPath,
+        WritePreviewFrame(
+            stagingDir,
+            previewFiles,
             buffers.width,
             buffers.height,
-            BuildSurfaceShellRealModelPreviewPixels(prototype, layer.layer_index, "composite"));
-        previewFiles.push_back(Json::object({
-            {"layerIndex", layer.layer_index},
-            {"channel", "texture_rgb"},
-            {"type", "texture_rgb"},
-            {"kind", "single"},
-            {"format", "ppm"},
-            {"path", relativePreviewPath},
-            {"printPixels", layer.stats.model_pixels},
-        }));
+            layer.layer_index,
+            "texture_rgb",
+            "texture_rgb",
+            "texture_rgb",
+            BuildSurfaceShellRealModelPreviewPixels(prototype, layer.layer_index, "composite"),
+            layer.stats.shell_pixels);
+        WritePreviewFrame(
+            stagingDir,
+            previewFiles,
+            buffers.width,
+            buffers.height,
+            layer.layer_index,
+            "model_rgb",
+            "rgb",
+            "model_rgb",
+            BuildRgbPreviewPixels(composed),
+            composed.stats.model_pixels);
+        WritePreviewFrame(
+            stagingDir,
+            previewFiles,
+            buffers.width,
+            buffers.height,
+            layer.layer_index,
+            "support",
+            "support",
+            "support_s",
+            BuildMaskPreviewPixels(
+                composed,
+                MaterialChannelOffset::S,
+                protocol.empty_value,
+                config.preview.empty_color,
+                config.preview.support_color),
+            composed.stats.support_pixels);
+        WritePreviewFrame(
+            stagingDir,
+            previewFiles,
+            buffers.width,
+            buffers.height,
+            layer.layer_index,
+            "white",
+            "white",
+            "white_w",
+            BuildMaskPreviewPixels(
+                composed,
+                MaterialChannelOffset::W,
+                protocol.empty_value,
+                config.preview.empty_color,
+                config.preview.white_color),
+            composed.stats.white_pixels);
+        WritePreviewFrame(
+            stagingDir,
+            previewFiles,
+            buffers.width,
+            buffers.height,
+            layer.layer_index,
+            "varnish",
+            "varnish",
+            "varnish_v",
+            BuildMaskPreviewPixels(
+                composed,
+                MaterialChannelOffset::V,
+                protocol.empty_value,
+                config.preview.empty_color,
+                config.preview.varnish_color),
+            composed.stats.varnish_pixels);
     }
 
     Json::Object tiffJson;
@@ -376,7 +509,14 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
             {"schema", "p0.preview_report.1"},
             {"enabled", true},
             {"format", "ppm"},
-            {"channels", Json::array({"texture_rgb"})},
+            {"channels", Json::array({"texture_rgb", "rgb", "support", "white", "varnish"})},
+            {"pseudoColors",
+             Json::object({
+                 {"empty", ColorToJson(config.preview.empty_color)},
+                 {"support", ColorToJson(config.preview.support_color)},
+                 {"white", ColorToJson(config.preview.white_color)},
+                 {"varnish", ColorToJson(config.preview.varnish_color)},
+             })},
             {"files", Json{previewFiles}},
             {"generated", Json{previewFiles}},
         }));
