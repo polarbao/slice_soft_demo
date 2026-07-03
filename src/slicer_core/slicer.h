@@ -17,6 +17,8 @@ struct SliceRunResult {
 
 struct SliceRunOptions {
     bool write_tiff_layers{true};
+    bool write_preview_files{true};
+    bool write_reports{true};
 };
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path);

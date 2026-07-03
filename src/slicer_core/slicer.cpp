@@ -185,6 +185,7 @@ struct TextureColumnColor {
 struct TextureReportData {
     bool enabled{false};
     std::string apply_mode;
+    std::string non_surface_rgb_policy{"model_material"};
     int top_surface_layers{1};
     std::string source{"filesystem"};
     int faces_with_uv{0};
@@ -1598,6 +1599,7 @@ TextureRuntime prepare_texture_runtime(const SliceConfig& config, const ModelRep
     TextureRuntime runtime;
     runtime.report.enabled = config.texture.enabled;
     runtime.report.apply_mode = config.texture.apply_mode;
+    runtime.report.non_surface_rgb_policy = config.texture.non_surface_rgb_policy;
     runtime.report.top_surface_layers = config.texture.top_surface_layers;
     runtime.report.faces_with_uv = static_cast<int>(model_report.faces_with_uv);
     runtime.report.faces_without_uv = static_cast<int>(model_report.faces_without_uv);
@@ -1732,6 +1734,50 @@ void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base
     pixels.at(base + 5U) = config.material.varnish_value;
 }
 
+std::array<std::uint8_t, 3> NonSurfaceRgb(const SliceConfig& config)
+{
+    if (config.texture.non_surface_rgb_policy == "empty")
+    {
+        return {config.background.value, config.background.value, config.background.value};
+    }
+    if (config.texture.non_surface_rgb_policy == "fallback_rgb")
+    {
+        return config.texture.fallback_rgb;
+    }
+    return config.material.rgb;
+}
+
+void write_non_surface_texture_pixel(
+    std::vector<std::uint8_t>& pixels,
+    const std::size_t base,
+    const SliceConfig& config)
+{
+    if (config.texture.non_surface_rgb_policy == "model_material"
+        || config.texture.non_surface_rgb_policy == "material_policy")
+    {
+        write_model_pixel(pixels, base, config);
+        return;
+    }
+
+    const std::array<std::uint8_t, 3> rgb = NonSurfaceRgb(config);
+    pixels.at(base + 0U) = rgb.at(0);
+    pixels.at(base + 1U) = rgb.at(1);
+    pixels.at(base + 2U) = rgb.at(2);
+    if (config.material.material_channel == "W")
+    {
+        pixels.at(base + 3U) = config.material.white_value;
+    }
+    else if (config.material.material_channel == "V")
+    {
+        pixels.at(base + 5U) = config.material.varnish_value;
+    }
+    else if (config.material.material_channel == "auto")
+    {
+        pixels.at(base + 3U) = config.material.white_value;
+        pixels.at(base + 5U) = config.material.varnish_value;
+    }
+}
+
 TextureColumnColor resolve_texture_color(
     const SliceConfig& config,
     const std::vector<TextureColumnColor>* texture_columns,
@@ -1820,9 +1866,13 @@ MaterialPixel compose_material_policy_pixel(
             pixel.b = color.rgb.at(2);
             update_texture_report_for_color(color, texture_report);
         } else {
-            pixel.r = config.material.rgb.at(0);
-            pixel.g = config.material.rgb.at(1);
-            pixel.b = config.material.rgb.at(2);
+            const bool useNonSurfaceTextureRgb =
+                config.material_policy.rgb.source == "texture_or_fallback" && config.texture.enabled;
+            const std::array<std::uint8_t, 3> rgb =
+                useNonSurfaceTextureRgb ? NonSurfaceRgb(config) : config.material.rgb;
+            pixel.r = rgb.at(0);
+            pixel.g = rgb.at(1);
+            pixel.b = rgb.at(2);
         }
     }
 
@@ -1971,7 +2021,7 @@ std::vector<std::uint8_t> compose_layer(
                     bool wrote_model{false};
                     if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
                         && !ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
-                        write_model_pixel(pixels, base, config);
+                        write_non_surface_texture_pixel(pixels, base, config);
                         wrote_model = true;
                     } else {
                         wrote_model = write_material_role_pixel(
@@ -2007,7 +2057,7 @@ std::vector<std::uint8_t> compose_layer(
                     update_texture_report_for_color(color, texture_report);
                     counted_model_pixel = true;
                 } else {
-                    write_model_pixel(pixels, base, config);
+                    write_non_surface_texture_pixel(pixels, base, config);
                     counted_model_pixel = true;
                 }
                 if (counted_model_pixel) {
@@ -2200,6 +2250,7 @@ Json texture_report_to_json(const TextureReportData& report) {
     return Json::object({
         {"enabled", report.enabled},
         {"applyMode", report.apply_mode},
+        {"nonSurfaceRgbPolicy", report.non_surface_rgb_policy},
         {"topSurfaceLayers", report.top_surface_layers},
         {"source", report.source},
         {"materials", Json{report.materials}},
@@ -2640,9 +2691,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
 
     const std::filesystem::path package_dir = config.output.package_dir;
-    std::filesystem::create_directories(package_dir / "layers");
-    std::filesystem::create_directories(package_dir / "reports");
-    if (config.preview.enabled) {
+    if (options.write_tiff_layers || options.write_preview_files || options.write_reports) {
+        std::filesystem::create_directories(package_dir);
+    }
+    if (options.write_tiff_layers) {
+        std::filesystem::create_directories(package_dir / "layers");
+    }
+    if (options.write_reports) {
+        std::filesystem::create_directories(package_dir / "reports");
+    }
+    if (config.preview.enabled && options.write_preview_files) {
         std::filesystem::create_directories(package_dir / "preview");
     }
 
@@ -2778,7 +2836,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         if (options.write_tiff_layers) {
             write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
         }
-        if (should_write_preview(config.preview, layer_index, grid.layer_count)) {
+        if (options.write_preview_files && should_write_preview(config.preview, layer_index, grid.layer_count)) {
             const std::vector<std::uint8_t> texture_preview_mask = build_texture_preview_mask(
                 config,
                 grid,
@@ -3021,32 +3079,6 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"schema", "p0.rgbwsv.2"},
         }));
 
-    write_json_file(package_dir / "reports/model_report.json", model_json);
-    write_json_file(package_dir / "reports/package_report.json", package_report);
-    write_json_file(package_dir / "reports/slice_report.json", slice_report);
-    write_json_file(package_dir / "reports/repair_report.json", repair_report);
-    write_json_file(package_dir / "reports/support_report.json", support_report);
-    write_json_file(package_dir / "reports/support_shape_report.json", support_shape_report);
-    write_json_file(package_dir / "reports/preview_report.json", preview_report);
-    write_json_file(package_dir / "reports/texture_report.json", texture_report_to_json(texture_runtime.report));
-    write_json_file(
-        package_dir / "reports/material_policy_report.json",
-        material_policy_report_to_json(config, material_policy_report));
-    write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
-    write_json_file(
-        package_dir / "reports/material_role_mapping_report.json",
-        material_role_mapping_report_to_json(material_role_mapping_report));
-    write_json_file(
-        package_dir / "reports/obj_mtl_material_report.json",
-        obj_mtl_material_report_to_json(model_report));
-    write_json_file(
-        package_dir / "reports/three_mf_report.json",
-        three_mf_report_to_json(model_report));
-    write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
-    write_json_file(
-        package_dir / "reports/relief_report.json",
-        relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
-
     Json::Object tiff_json{
         {"channelOrder", channel_order_json()},
         {"channelCount", rgbwsv_channel_count},
@@ -3118,7 +3150,34 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          })},
         {"preview", Json::object({{"format", config.preview.format}, {"files", Json{preview_files}}})},
     });
-    write_json_file(package_dir / "manifest.json", manifest);
+    if (options.write_reports) {
+        write_json_file(package_dir / "reports/model_report.json", model_json);
+        write_json_file(package_dir / "reports/package_report.json", package_report);
+        write_json_file(package_dir / "reports/slice_report.json", slice_report);
+        write_json_file(package_dir / "reports/repair_report.json", repair_report);
+        write_json_file(package_dir / "reports/support_report.json", support_report);
+        write_json_file(package_dir / "reports/support_shape_report.json", support_shape_report);
+        write_json_file(package_dir / "reports/preview_report.json", preview_report);
+        write_json_file(package_dir / "reports/texture_report.json", texture_report_to_json(texture_runtime.report));
+        write_json_file(
+            package_dir / "reports/material_policy_report.json",
+            material_policy_report_to_json(config, material_policy_report));
+        write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
+        write_json_file(
+            package_dir / "reports/material_role_mapping_report.json",
+            material_role_mapping_report_to_json(material_role_mapping_report));
+        write_json_file(
+            package_dir / "reports/obj_mtl_material_report.json",
+            obj_mtl_material_report_to_json(model_report));
+        write_json_file(
+            package_dir / "reports/three_mf_report.json",
+            three_mf_report_to_json(model_report));
+        write_json_file(package_dir / "reports/contour_report.json", Json::object({{"layers", Json{contour_layers}}}));
+        write_json_file(
+            package_dir / "reports/relief_report.json",
+            relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
+        write_json_file(package_dir / "manifest.json", manifest);
+    }
 
     return {
         package_dir,

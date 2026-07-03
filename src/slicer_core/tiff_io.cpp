@@ -248,6 +248,12 @@ void update_channel_stats(TiffReadResult& result, const std::uint16_t channel, c
     }
 }
 
+void initialize_read_pixels(TiffReadResult& result) {
+    const std::size_t pixel_count =
+        static_cast<std::size_t>(result.spec.width) * result.spec.height * result.spec.samples_per_pixel;
+    result.pixels.assign(pixel_count, 255);
+}
+
 }  // namespace
 
 std::string tiff_storage_mode_string(const TiffStorageMode mode) {
@@ -485,6 +491,7 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
     result.spec.tile_height = read_u32_array(data, find_required_entry(entries, 323), 323).at(0);
     const auto sample_formats = read_u16_array(data, find_required_entry(entries, 339), 339);
     validate_common_spec(result, bits_per_sample, sample_formats, path);
+    initialize_read_pixels(result);
 
     const auto tile_offsets = read_u32_array(data, find_required_entry(entries, 324), 324);
     const auto tile_byte_counts = read_u32_array(data, find_required_entry(entries, 325), 325);
@@ -528,6 +535,11 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
                             }
                             continue;
                         }
+                        const std::size_t pixel_index =
+                            (static_cast<std::size_t>(image_y) * result.spec.width + image_x)
+                                * result.spec.samples_per_pixel
+                            + c;
+                        result.pixels.at(pixel_index) = value;
                         update_channel_stats(result, c, value);
                     }
                 }
@@ -556,6 +568,7 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path) {
     result.spec.planar_config = read_u16_array(data, find_required_entry(entries, 284), 284).at(0);
     const auto sample_formats = read_u16_array(data, find_required_entry(entries, 339), 339);
     validate_common_spec(result, bits_per_sample, sample_formats, path);
+    initialize_read_pixels(result);
 
     if (result.spec.rows_per_strip == 0) {
         throw std::runtime_error("TIFF rowsPerStrip is invalid: " + path.string());
@@ -586,12 +599,18 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path) {
             throw std::runtime_error("TIFF strip byte count does not match dimensions: " + path.string());
         }
         for (std::uint32_t y{0}; y < rows; ++y) {
+            const std::uint32_t image_y{start_row + y};
             for (std::uint32_t x{0}; x < result.spec.width; ++x) {
                 for (std::uint16_t c{0}; c < result.spec.samples_per_pixel; ++c) {
                     const std::size_t value_offset =
                         strip_offset
                         + ((static_cast<std::size_t>(y) * result.spec.width + x) * result.spec.samples_per_pixel + c);
-                    update_channel_stats(result, c, data.at(value_offset));
+                    const std::uint8_t value = data.at(value_offset);
+                    const std::size_t pixel_index =
+                        (static_cast<std::size_t>(image_y) * result.spec.width + x) * result.spec.samples_per_pixel
+                        + c;
+                    result.pixels.at(pixel_index) = value;
+                    update_channel_stats(result, c, value);
                 }
             }
         }

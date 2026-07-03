@@ -343,6 +343,13 @@ void WriteCandidateFailureReports(
 
 OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem::path& configPath)
 {
+    return RunOpenVdbCandidatePipeline(configPath, OpenVdbCandidatePipelineOptions{});
+}
+
+OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
+    const std::filesystem::path& configPath,
+    const OpenVdbCandidatePipelineOptions& options)
+{
     const SliceConfig config = load_slice_config(configPath);
     EnsureCandidateConfig(config);
 
@@ -353,7 +360,10 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
     if (!prototype.errors.empty())
     {
         strictFailureMessage = prototype.errors.front();
-        WriteCandidateFailureReports(config, prototype, "surface_shell_prototype");
+        if (options.write_reports)
+        {
+            WriteCandidateFailureReports(config, prototype, "surface_shell_prototype");
+        }
         if (!ShouldAttemptNonProductionFallback(config))
         {
             throw std::runtime_error("OpenVDB candidate prototype failed: " + prototype.errors.front());
@@ -365,7 +375,10 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
         prototype.warnings.push_back("non-production OpenVDB candidate fallback was enabled by config");
         if (!prototype.errors.empty())
         {
-            WriteCandidateFailureReports(config, prototype, "surface_shell_non_production_fallback");
+            if (options.write_reports)
+            {
+                WriteCandidateFailureReports(config, prototype, "surface_shell_non_production_fallback");
+            }
             throw std::runtime_error("OpenVDB non-production fallback failed: " + prototype.errors.front());
         }
     }
@@ -381,9 +394,22 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
 
     const std::filesystem::path packageDir = config.output.package_dir;
     const std::filesystem::path stagingDir = MakeSiblingDirectory(packageDir, "staging");
-    std::filesystem::create_directories(stagingDir / "layers");
-    std::filesystem::create_directories(stagingDir / "reports");
-    std::filesystem::create_directories(stagingDir / "preview");
+    if (options.write_tiff_layers || options.write_preview_files || options.write_reports)
+    {
+        std::filesystem::create_directories(stagingDir);
+    }
+    if (options.write_tiff_layers)
+    {
+        std::filesystem::create_directories(stagingDir / "layers");
+    }
+    if (options.write_reports)
+    {
+        std::filesystem::create_directories(stagingDir / "reports");
+    }
+    if (options.write_preview_files)
+    {
+        std::filesystem::create_directories(stagingDir / "preview");
+    }
 
     const RgbwsvProtocol protocol = CurrentRgbwsvProtocol();
     const TiffImageSpec tiffSpec = MakeTiffSpec(config, buffers.width, buffers.height);
@@ -407,7 +433,10 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
         }
 
         const std::string relativeLayerPath = LayerFileName(layer.layer_index);
-        write_rgbwsv_tiff(stagingDir / relativeLayerPath, tiffSpec, composed.channels);
+        if (options.write_tiff_layers)
+        {
+            write_rgbwsv_tiff(stagingDir / relativeLayerPath, tiffSpec, composed.channels);
+        }
         layers.push_back(Json::object({
             {"index", layer.layer_index},
             {"path", relativeLayerPath},
@@ -422,76 +451,79 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
         summary.support_pixels += composed.stats.support_pixels;
         summary.shell_pixels += layer.stats.shell_pixels;
 
-        WritePreviewFrame(
-            stagingDir,
-            previewFiles,
-            buffers.width,
-            buffers.height,
-            layer.layer_index,
-            "texture_rgb",
-            "texture_rgb",
-            "texture_rgb",
-            BuildSurfaceShellRealModelPreviewPixels(prototype, layer.layer_index, "composite"),
-            layer.stats.shell_pixels);
-        WritePreviewFrame(
-            stagingDir,
-            previewFiles,
-            buffers.width,
-            buffers.height,
-            layer.layer_index,
-            "model_rgb",
-            "rgb",
-            "model_rgb",
-            BuildRgbPreviewPixels(composed),
-            composed.stats.model_pixels);
-        WritePreviewFrame(
-            stagingDir,
-            previewFiles,
-            buffers.width,
-            buffers.height,
-            layer.layer_index,
-            "support",
-            "support",
-            "support_s",
-            BuildMaskPreviewPixels(
-                composed,
-                MaterialChannelOffset::S,
-                protocol.empty_value,
-                config.preview.empty_color,
-                config.preview.support_color),
-            composed.stats.support_pixels);
-        WritePreviewFrame(
-            stagingDir,
-            previewFiles,
-            buffers.width,
-            buffers.height,
-            layer.layer_index,
-            "white",
-            "white",
-            "white_w",
-            BuildMaskPreviewPixels(
-                composed,
-                MaterialChannelOffset::W,
-                protocol.empty_value,
-                config.preview.empty_color,
-                config.preview.white_color),
-            composed.stats.white_pixels);
-        WritePreviewFrame(
-            stagingDir,
-            previewFiles,
-            buffers.width,
-            buffers.height,
-            layer.layer_index,
-            "varnish",
-            "varnish",
-            "varnish_v",
-            BuildMaskPreviewPixels(
-                composed,
-                MaterialChannelOffset::V,
-                protocol.empty_value,
-                config.preview.empty_color,
-                config.preview.varnish_color),
-            composed.stats.varnish_pixels);
+        if (options.write_preview_files)
+        {
+            WritePreviewFrame(
+                stagingDir,
+                previewFiles,
+                buffers.width,
+                buffers.height,
+                layer.layer_index,
+                "texture_rgb",
+                "texture_rgb",
+                "texture_rgb",
+                BuildSurfaceShellRealModelPreviewPixels(prototype, layer.layer_index, "composite"),
+                layer.stats.shell_pixels);
+            WritePreviewFrame(
+                stagingDir,
+                previewFiles,
+                buffers.width,
+                buffers.height,
+                layer.layer_index,
+                "model_rgb",
+                "rgb",
+                "model_rgb",
+                BuildRgbPreviewPixels(composed),
+                composed.stats.model_pixels);
+            WritePreviewFrame(
+                stagingDir,
+                previewFiles,
+                buffers.width,
+                buffers.height,
+                layer.layer_index,
+                "support",
+                "support",
+                "support_s",
+                BuildMaskPreviewPixels(
+                    composed,
+                    MaterialChannelOffset::S,
+                    protocol.empty_value,
+                    config.preview.empty_color,
+                    config.preview.support_color),
+                composed.stats.support_pixels);
+            WritePreviewFrame(
+                stagingDir,
+                previewFiles,
+                buffers.width,
+                buffers.height,
+                layer.layer_index,
+                "white",
+                "white",
+                "white_w",
+                BuildMaskPreviewPixels(
+                    composed,
+                    MaterialChannelOffset::W,
+                    protocol.empty_value,
+                    config.preview.empty_color,
+                    config.preview.white_color),
+                composed.stats.white_pixels);
+            WritePreviewFrame(
+                stagingDir,
+                previewFiles,
+                buffers.width,
+                buffers.height,
+                layer.layer_index,
+                "varnish",
+                "varnish",
+                "varnish_v",
+                BuildMaskPreviewPixels(
+                    composed,
+                    MaterialChannelOffset::V,
+                    protocol.empty_value,
+                    config.preview.empty_color,
+                    config.preview.varnish_color),
+                composed.stats.varnish_pixels);
+        }
     }
 
     Json::Object tiffJson;
@@ -551,10 +583,12 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
     });
 
     const Json realModelReport = MakeSurfaceShellRealModelReport(prototype);
-    WriteReportJsonFile(stagingDir / "manifest.json", manifest);
-    WriteReportJsonFile(
-        stagingDir / "reports" / "openvdb_candidate_report.json",
-        Json::object({
+    if (options.write_reports)
+    {
+        WriteReportJsonFile(stagingDir / "manifest.json", manifest);
+        WriteReportJsonFile(
+            stagingDir / "reports" / "openvdb_candidate_report.json",
+            Json::object({
             {"schema", "p0.openvdb_candidate_report.1"},
             {"status", nonProductionPackage ? "non_production_written" : "production_written"},
             {"packageWritten", true},
@@ -572,14 +606,14 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
             {"layerStats", Json{layerStats}},
             {"composerStats", Json{composerStats}},
         }));
-    WriteReportJsonFile(
-        stagingDir / "reports" / "production_admission_report.json",
-        realModelReport.at("productionAdmission"));
-    WriteReportJsonFile(stagingDir / "reports" / "surface_shell_texture_report.json", realModelReport);
-    WriteReportJsonFile(stagingDir / "reports" / "texture_fidelity_report.json", MakeTextureFidelityReport(prototype));
-    WriteReportJsonFile(
-        stagingDir / "reports" / "preview_report.json",
-        Json::object({
+        WriteReportJsonFile(
+            stagingDir / "reports" / "production_admission_report.json",
+            realModelReport.at("productionAdmission"));
+        WriteReportJsonFile(stagingDir / "reports" / "surface_shell_texture_report.json", realModelReport);
+        WriteReportJsonFile(stagingDir / "reports" / "texture_fidelity_report.json", MakeTextureFidelityReport(prototype));
+        WriteReportJsonFile(
+            stagingDir / "reports" / "preview_report.json",
+            Json::object({
             {"schema", "p0.preview_report.1"},
             {"enabled", true},
             {"format", "ppm"},
@@ -594,8 +628,12 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
             {"files", Json{previewFiles}},
             {"generated", Json{previewFiles}},
         }));
+    }
 
-    PublishStagedPackage(stagingDir, packageDir);
+    if (options.publish_package)
+    {
+        PublishStagedPackage(stagingDir, packageDir);
+    }
     summary.non_production = nonProductionPackage;
 
     return summary;

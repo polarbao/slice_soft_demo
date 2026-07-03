@@ -63,6 +63,7 @@ struct TextureConfig {
     bool flip_v{true};
     std::array<std::uint8_t, 3> fallback_rgb{0, 0, 0};
     std::string missing_texture_policy{"warn_and_fallback"};
+    std::string non_surface_rgb_policy{"model_material"};
 };
 
 struct RgbPolicyConfig {

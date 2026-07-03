@@ -8,6 +8,7 @@
 #include "slicer_core/system/ProcessMemoryStats.h"
 
 #include <algorithm>
+#include <chrono>
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -26,6 +27,8 @@ struct CliOptions
     bool show_help{false};
     bool experimental_openvdb_shell{false};
     bool openvdb_candidate_slice{false};
+    bool benchmark_core_only{false};
+    std::string engine{"legacy"};
     std::string admission_mode{"strict_closed"};
     bool no_production_rgbwsv{true};
     std::filesystem::path experimental_report_path{
@@ -39,7 +42,9 @@ void PrintUsage()
         << "       slicer_cli --config <path> --experimental-openvdb-shell "
         << "[--admission-mode strict_closed|warn_and_attempt|diagnostic_only] "
         << "[--no-production-rgbwsv] [--experimental-report <path>]\n"
-        << "       slicer_cli --config <path> --openvdb-candidate-slice\n";
+        << "       slicer_cli --config <path> --openvdb-candidate-slice\n"
+        << "       slicer_cli --config <path> --benchmark-core-only "
+        << "--engine legacy|openvdb-candidate\n";
 }
 
 CliOptions ParseOptions(const int argc, char** argv)
@@ -76,6 +81,16 @@ CliOptions ParseOptions(const int argc, char** argv)
         if (arg == "--openvdb-candidate-slice")
         {
             options.openvdb_candidate_slice = true;
+            continue;
+        }
+        if (arg == "--benchmark-core-only")
+        {
+            options.benchmark_core_only = true;
+            continue;
+        }
+        if (arg == "--engine" && i + 1 < argc)
+        {
+            options.engine = argv[++i];
             continue;
         }
         if (arg == "--admission-mode" && i + 1 < argc)
@@ -301,6 +316,119 @@ int InspectModel(const std::filesystem::path& config_path)
     return 0;
 }
 
+std::string BuildTypeName()
+{
+#ifdef NDEBUG
+    return "Release";
+#else
+    return "Debug";
+#endif
+}
+
+double MillisecondsSince(const std::chrono::steady_clock::time_point& start)
+{
+    return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+}
+
+int RunCoreBenchmark(const CliOptions& options)
+{
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(options.config_path);
+    const auto start = std::chrono::steady_clock::now();
+
+    int widthPx{0};
+    int heightPx{0};
+    int layerCount{0};
+    int modelPixels{0};
+    int supportPixels{0};
+    int shellPixels{0};
+    bool nonProduction{false};
+    bool productionAllowed{true};
+
+    if (options.engine == "legacy")
+    {
+        slicer_core::SliceRunOptions runOptions;
+        runOptions.write_tiff_layers = false;
+        runOptions.write_preview_files = false;
+        runOptions.write_reports = false;
+        const slicer_core::SliceRunResult result = slicer_core::run_slicer(options.config_path, runOptions);
+        widthPx = result.width_px;
+        heightPx = result.height_px;
+        layerCount = result.layer_count;
+        modelPixels = result.model_pixel_count;
+        supportPixels = result.support_pixel_count;
+    }
+    else if (options.engine == "openvdb-candidate")
+    {
+        slicer_core::OpenVdbCandidatePipelineOptions pipelineOptions;
+        pipelineOptions.write_tiff_layers = false;
+        pipelineOptions.write_preview_files = false;
+        pipelineOptions.write_reports = false;
+        pipelineOptions.publish_package = false;
+        const slicer_core::OpenVdbCandidatePipelineResult result =
+            slicer_core::RunOpenVdbCandidatePipeline(options.config_path, pipelineOptions);
+        widthPx = result.width_px;
+        heightPx = result.height_px;
+        layerCount = result.layer_count;
+        modelPixels = result.model_pixels;
+        supportPixels = result.support_pixels;
+        shellPixels = result.shell_pixels;
+        nonProduction = result.non_production;
+        productionAllowed = !result.non_production;
+    }
+    else
+    {
+        throw std::runtime_error("--engine must be legacy or openvdb-candidate");
+    }
+
+    const double elapsedMs = MillisecondsSince(start);
+    const slicer_core::ProcessMemoryStats memory = slicer_core::CaptureProcessMemoryStats();
+    const bool outputSemanticsComparable = options.engine == "legacy" ? true : productionAllowed && supportPixels > 0;
+
+    slicer_core::Json::Object report;
+    report["schema"] = "p0.openvdb_legacy_core_benchmark.1";
+    report["engine"] = options.engine;
+    report["buildType"] = BuildTypeName();
+    report["configPath"] = options.config_path;
+    report["modelPath"] = config.input.model_path.string();
+    report["outputPolicy"] = slicer_core::Json::object({
+        {"writeTiff", false},
+        {"writePreview", false},
+        {"writeReports", "benchmark_stdout_only"},
+        {"publishPackage", false},
+    });
+    report["grid"] = slicer_core::Json::object({
+        {"widthPx", widthPx},
+        {"heightPx", heightPx},
+        {"layerCount", layerCount},
+    });
+    report["stats"] = slicer_core::Json::object({
+        {"modelPixels", modelPixels},
+        {"supportPixels", supportPixels},
+        {"shellPixels", shellPixels},
+    });
+    report["productionAdmission"] = slicer_core::Json::object({
+        {"productionAllowed", productionAllowed},
+        {"nonProduction", nonProduction},
+        {"status", nonProduction ? "non_production_only" : "allowed"},
+    });
+    report["timingsMs"] = slicer_core::Json::object({
+        {"coreCompute", elapsedMs},
+        {"endToEnd", elapsedMs},
+        {"note", "core-only mode disables TIFF, preview, reports, and package publishing"},
+    });
+    report["memory"] = MemoryStatsToJson(memory);
+    report["replacementGate"] = slicer_core::Json::object({
+        {"performanceComparable", false},
+        {"outputSemanticsComparable", outputSemanticsComparable},
+        {"replacementPass", false},
+        {"reason", outputSemanticsComparable ? "single-engine benchmark; compare pair externally"
+                                             : "output semantics are not comparable"},
+    });
+
+    std::cout << slicer_core::Json{report}.dump(2) << '\n';
+    return 0;
+}
+
 int RunExperimentalOpenVdbShellDiagnostic(const CliOptions& options)
 {
     slicer_core::SliceConfig config = slicer_core::load_slice_config(options.config_path);
@@ -439,6 +567,10 @@ int main(int argc, char** argv)
         if (options.inspect_model)
         {
             return InspectModel(options.config_path);
+        }
+        if (options.benchmark_core_only)
+        {
+            return RunCoreBenchmark(options);
         }
         if (options.openvdb_candidate_slice)
         {

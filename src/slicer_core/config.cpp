@@ -213,6 +213,8 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.texture.fallback_rgb = read_rgb_field(texture, "fallbackRgb", config.texture.fallback_rgb);
         config.texture.missing_texture_policy =
             texture.value("missingTexturePolicy", config.texture.missing_texture_policy);
+        config.texture.non_surface_rgb_policy =
+            texture.value("nonSurfaceRgbPolicy", config.texture.non_surface_rgb_policy);
     }
 
     if (root.contains("materialPolicy")) {
@@ -529,6 +531,14 @@ void validate_slice_config(const SliceConfig& config) {
             && config.texture.missing_texture_policy != "fail_fast")
         {
             throw std::runtime_error("texture.missingTexturePolicy must be warn_and_fallback or fail_fast");
+        }
+        if (config.texture.non_surface_rgb_policy != "model_material"
+            && config.texture.non_surface_rgb_policy != "empty"
+            && config.texture.non_surface_rgb_policy != "fallback_rgb"
+            && config.texture.non_surface_rgb_policy != "material_policy")
+        {
+            throw std::runtime_error(
+                "texture.nonSurfaceRgbPolicy must be model_material, empty, fallback_rgb, or material_policy");
         }
         if (!surfaceShellFromSdf && config.slicing_mode != "relief_heightfield")
         {

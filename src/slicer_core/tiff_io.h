@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <string>
 #include <vector>
 
 namespace slicer_core {
@@ -39,6 +40,7 @@ struct TiffChannelStats {
 
 struct TiffReadResult {
     TiffImageSpec spec;
+    std::vector<std::uint8_t> pixels;
     std::array<std::uint64_t, rgbwsv_channel_count> channel_checksums{};
     std::array<TiffChannelStats, rgbwsv_channel_count> channel_stats{};
 };
