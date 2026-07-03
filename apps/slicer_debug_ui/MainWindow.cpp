@@ -13,6 +13,7 @@
 #include <QJsonObject>
 #include <QMessageBox>
 #include <QRegularExpression>
+#include <QSizePolicy>
 #include <QSplitter>
 #include <QTabWidget>
 #include <QUrl>
@@ -20,21 +21,39 @@
 
 namespace {
 
+constexpr int kPathEditMinimumWidth = 140;
+constexpr int kPathLabelMinimumWidth = 62;
+constexpr int kBrowseButtonWidth = 44;
+
 QPushButton* makeButton(const QString& text, QWidget* parent) {
     auto* button = new QPushButton(text, parent);
     button->setMinimumHeight(28);
     return button;
 }
 
-QLineEdit* makePathEdit(const QString& text, QWidget* parent) {
+QLineEdit* makePathEdit(const QString& text, QWidget* parent)
+{
     auto* edit = new QLineEdit(text, parent);
-    edit->setMinimumWidth(320);
+    edit->setMinimumWidth(kPathEditMinimumWidth);
+    edit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    edit->setToolTip(text);
+    QObject::connect(edit, &QLineEdit::textChanged, edit, [edit](const QString& value) {
+        edit->setToolTip(value);
+    });
     return edit;
 }
 
-void addPathRow(QVBoxLayout* layout, const QString& label, QLineEdit* edit, QPushButton* browse) {
+void addPathRow(QVBoxLayout* layout, const QString& label, QLineEdit* edit, QPushButton* browse)
+{
     auto* row = new QHBoxLayout();
-    row->addWidget(new QLabel(label));
+    row->setContentsMargins(0, 0, 0, 0);
+    row->setSpacing(6);
+    auto* labelWidget = new QLabel(label);
+    labelWidget->setMinimumWidth(kPathLabelMinimumWidth);
+    labelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    browse->setFixedWidth(kBrowseButtonWidth);
+    browse->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    row->addWidget(labelWidget);
     row->addWidget(edit, 1);
     row->addWidget(browse);
     layout->addLayout(row);
@@ -334,6 +353,12 @@ void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed
     setBusy(false);
     status_label_->setText(exit_code == 0 ? "通过：" + current_action_ : "失败：" + current_action_);
     if (exit_code != 0) {
+        if (current_action_ == "OpenVDB 候选切片" && !pending_package_.isEmpty())
+        {
+            package_edit_->setText(pending_package_);
+            loadPackage(pending_package_);
+            status_label_->setText("失败：OpenVDB 候选切片（已加载诊断报告）");
+        }
         return;
     }
     if ((current_action_ == "运行切片" || current_action_ == "OpenVDB 候选切片") && !pending_package_.isEmpty()) {

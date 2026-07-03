@@ -106,6 +106,16 @@ Json ColorToJson(const std::array<std::uint8_t, 3>& color)
     });
 }
 
+Json::Array StringsToJsonArray(const std::vector<std::string>& values)
+{
+    Json::Array array;
+    for (const std::string& value : values)
+    {
+        array.push_back(value);
+    }
+    return array;
+}
+
 Json LayerStatsToJson(const OpenVdbCandidateLayerBufferStats& stats)
 {
     return Json::object({
@@ -290,6 +300,38 @@ Json MakeTextureFidelityReport(const SurfaceShellRealModelResult& result)
     });
 }
 
+void WriteCandidateFailureReports(
+    const SliceConfig& config,
+    const SurfaceShellRealModelResult& prototype,
+    const std::string& stage)
+{
+    const std::filesystem::path reportDir = config.output.package_dir / "reports";
+    std::filesystem::create_directories(reportDir);
+
+    const Json realModelReport = MakeSurfaceShellRealModelReport(prototype);
+    WriteReportJsonFile(reportDir / "surface_shell_texture_report.json", realModelReport);
+    WriteReportJsonFile(
+        reportDir / "production_admission_report.json",
+        realModelReport.at("productionAdmission"));
+    WriteReportJsonFile(
+        reportDir / "openvdb_candidate_report.json",
+        Json::object({
+            {"schema", "p0.openvdb_candidate_report.1"},
+            {"productionPackageWritten", false},
+            {"status", "blocked"},
+            {"stage", stage},
+            {"message", prototype.errors.empty() ? "OpenVDB candidate package was blocked" : prototype.errors.front()},
+            {"errors", Json{StringsToJsonArray(prototype.errors)}},
+            {"warnings", Json{StringsToJsonArray(prototype.warnings)}},
+            {"productionAdmission", realModelReport.at("productionAdmission")},
+            {"reports",
+             Json::object({
+                 {"surfaceShellTexture", "reports/surface_shell_texture_report.json"},
+                 {"productionAdmission", "reports/production_admission_report.json"},
+             })},
+        }));
+}
+
 }  // namespace
 
 OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem::path& configPath)
@@ -300,6 +342,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
     SurfaceShellRealModelResult prototype = RunCandidatePrototype(config, configPath);
     if (!prototype.errors.empty())
     {
+        WriteCandidateFailureReports(config, prototype, "surface_shell_prototype");
         throw std::runtime_error("OpenVDB candidate prototype failed: " + prototype.errors.front());
     }
 

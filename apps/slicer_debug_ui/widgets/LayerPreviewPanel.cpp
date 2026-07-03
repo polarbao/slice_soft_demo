@@ -20,6 +20,17 @@ QPushButton* MakeButton(const QString& text, QWidget* parent)
     return button;
 }
 
+QImage ToDisplayCoordinateImage(const QImage& image)
+{
+    if (image.isNull())
+    {
+        return image;
+    }
+
+    // Package pixels are interpreted in slicer coordinates; Qt displays images from the top-left.
+    return image.mirrored(false, true);
+}
+
 }  // namespace
 
 LayerPreviewPanel::LayerPreviewPanel(QWidget* parent)
@@ -181,7 +192,7 @@ QImage LayerPreviewPanel::ReadFrameImage(const LayerPreviewFrame& frame) const
         return {};
     }
     QImageReader reader(frame.path);
-    return reader.read();
+    return ToDisplayCoordinateImage(reader.read());
 }
 
 QImage LayerPreviewPanel::RenderCurrentImage() const
@@ -376,7 +387,7 @@ void LayerPreviewPanel::UpdateStatus(const QString& note)
     const int layerIndex = CurrentLayerIndex();
     const LayerPreviewLayerStats stats = m_package.layerstats.value(layerIndex);
     const LayerPreviewFrame frame = FindFrame(layerIndex, CurrentChannel());
-    QString text = QString("第 %1/%2 层  layer=%3  z=%4 mm  通道=%5  RGB=%6  W=%7  S=%8  V=%9")
+    QString text = QString("第 %1/%2 层  layer=%3  z=%4 mm  通道=%5  RGB=%6  W=%7  S=%8  V=%9  层序=低Z->高Z  显示=切片坐标")
                        .arg(qMax(1, m_layerSlider->value() + 1))
                        .arg(qMax(1, m_package.layerindices.size()))
                        .arg(layerIndex)

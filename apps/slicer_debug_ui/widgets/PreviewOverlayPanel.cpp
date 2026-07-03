@@ -28,6 +28,17 @@ QPushButton* makeButton(const QString& text, QWidget* parent) {
     return button;
 }
 
+QImage ToDisplayCoordinateImage(const QImage& image)
+{
+    if (image.isNull())
+    {
+        return image;
+    }
+
+    // Package pixels are interpreted in slicer coordinates; Qt displays images from the top-left.
+    return image.mirrored(false, true);
+}
+
 }  // namespace
 
 PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
@@ -231,7 +242,7 @@ void PreviewOverlayPanel::rebuildLayerSlider() {
 
 QImage PreviewOverlayPanel::readImage(const QString& path) const {
     QImageReader reader(path);
-    return reader.read();
+    return ToDisplayCoordinateImage(reader.read());
 }
 
 QImage PreviewOverlayPanel::FindImageForLayer(const QString& channel, const int layer) const {
@@ -330,7 +341,7 @@ void PreviewOverlayPanel::applyPixmap(const QImage& image) {
     }
     image_label_->setPixmap(QPixmap::fromImage(image).scaled(target_size, Qt::KeepAspectRatio, Qt::FastTransformation));
     image_label_->resize(target_size);
-    status_->setText(QString("%1/%2  layer=%3  %4  %5x%6")
+    status_->setText(QString("%1/%2  layer=%3  %4  %5x%6  层序=低Z->高Z  显示=切片坐标")
                          .arg(layer_slider_->value() + 1)
                          .arg(qMax(1, m_layerIndices.size()))
                          .arg(CurrentLayer())

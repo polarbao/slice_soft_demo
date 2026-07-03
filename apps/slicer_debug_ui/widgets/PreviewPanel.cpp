@@ -8,6 +8,22 @@
 #include <QSet>
 #include <QVBoxLayout>
 
+namespace
+{
+
+QImage ToDisplayCoordinateImage(const QImage& image)
+{
+    if (image.isNull())
+    {
+        return image;
+    }
+
+    // Package pixels are interpreted in slicer coordinates; Qt displays images from the top-left.
+    return image.mirrored(false, true);
+}
+
+}  // namespace
+
 PreviewPanel::PreviewPanel(QWidget* parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
     auto* controls = new QHBoxLayout();
@@ -155,13 +171,13 @@ void PreviewPanel::showCurrentImage() {
     const int index = layer_slider_->value();
     const QString path = visible_images_.at(index);
     QImageReader reader(path);
-    current_image_ = reader.read();
+    current_image_ = ToDisplayCoordinateImage(reader.read());
     if (current_image_.isNull()) {
         image_label_->clear();
         status_->setText("读取预览图失败：" + path + " (" + reader.errorString() + ")");
         return;
     }
-    status_->setText(QString("%1/%2  %3  %4x%5")
+    status_->setText(QString("%1/%2  %3  %4x%5  显示=切片坐标")
                          .arg(index + 1)
                          .arg(visible_images_.size())
                          .arg(QFileInfo(path).fileName())
