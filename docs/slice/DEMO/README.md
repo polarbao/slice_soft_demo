@@ -13,3 +13,4 @@
 | `DEMO_11_UI切片层预览交互配置验证方案.md` | 11 UI 层预览、伪彩和配置交互验证方案 |
 | `DEMO_11A_OpenVDB_OBJ彩色纹理切片验证方案.md` | 11A OpenVDB OBJ 彩色纹理前置验证方案 |
 | `DEMO_11A_R1_OpenVDB候选包与Preview验证方案.md` | 11A-R1 OpenVDB Candidate package 与 preview 验证方案 |
+| `DEMO_11B_UI配置生产预览与OpenVDB同姿态验证方案.md` | 11B UI 配置、生产预览与 OpenVDB 同姿态验证方案 |

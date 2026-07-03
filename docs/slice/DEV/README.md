@@ -26,3 +26,5 @@
 | `DEV_11_MultiModel_CapabilityDecision.md` | 11 多模型能力评估和数据模型决策 |
 | `DEV_11A_OpenVDB_OBJ彩色纹理切片改造计划.md` | 11A OpenVDB OBJ 彩色纹理切片前置改造计划 |
 | `DEV_11A_R1_OpenVDBCandidatePipeline_RGBWSVWriter设计.md` | 11A-R1 OpenVDB Candidate pipeline 与 RGBWSV writer 设计 |
+| `DEV_11B_UI配置生产预览与OpenVDB姿态收口设计.md` | 11B UI 配置、生产预览与 OpenVDB 姿态收口设计 |
+| `DEV_11B_OpenVDB_LegacyCoreBenchmark设计.md` | 11B OpenVDB 与 legacy 核心切片耗时 benchmark 设计 |
