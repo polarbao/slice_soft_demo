@@ -184,6 +184,32 @@ docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
 docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
 ```
 
+Task 11A-R1-6 已完成：
+
+```text
+Qt 调试 UI 新增“导入模型并 OpenVDB 候选切片”按钮；
+按钮使用 build-openvdb-09p/Debug/slicer_cli.exe，不复用默认 OpenVDB-OFF slicer_cli；
+OpenVDB ON 工具缺失时提示用户先构建 build-openvdb-09p；
+按钮选择 OBJ / 3MF 模型后生成 slice_config.openvdb_candidate.json；
+生成配置显式设置 texture.applyMode=surface_shell_from_sdf；
+生成配置显式设置 experimental.openvdbPipeline.enabled=true；
+生成配置显式设置 experimental.openvdbPipeline.engine=openvdb；
+生成配置显式设置 writeProductionRgbwsv=true；
+运行参数使用 --openvdb-candidate-slice；
+候选切片成功后自动加载输出 package，进入现有 LayerPreview / Report / OverlayPreview 面板。
+```
+
+关键新增/修改文件：
+
+```text
+apps/slicer_debug_ui/MainWindow.h
+apps/slicer_debug_ui/MainWindow.cpp
+apps/slicer_debug_ui/services/ToolPaths.h
+apps/slicer_debug_ui/services/ToolPaths.cpp
+docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
+docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
+```
+
 ---
 
 ## 4. 当前未完成任务
@@ -191,7 +217,6 @@ docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
 11A-R1 后续仍需按任务清单继续：
 
 ```text
-11A-R1-6 UI OpenVDB Candidate 按钮；
 11A-R1-7 完整阶段报告。
 ```
 
@@ -279,6 +304,10 @@ on-lane OverlayPreview smoke PASS，images=85，channels=rgb,support,varnish,whi
 powershell -ExecutionPolicy Bypass -File .\scripts\run_11a_r1_openvdb_candidate_off_lane.ps1 -BuildDir build -Config Debug 通过；
 off-lane 默认 OpenVDB-OFF slicer_cli / rip_reader_test / slicer_debug_ui 构建通过；
 off-lane ctest 5/5 PASS。
+cmake --build build --config Debug --target slicer_debug_ui 通过；
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test 通过；
+UI self-test 输出 PASS startup；
+UI self-test 输出 PASS experimental-report-summary。
 ```
 
 ---
@@ -289,7 +318,7 @@ off-lane ctest 5/5 PASS。
 
 ```text
 candidate writer 和 Candidate RIP / UI / preview golden 已完成；
-OpenVDB 仍不能被 UI 当作正式候选切片按钮使用，需 11A-R1-6 接入显式 UI 按钮；
+OpenVDB candidate 已具备 UI 显式按钮，但仍是实验候选路径；
 真实 OBJ / 3MF 拓扑质量不稳定，strict_closed 可能继续阻断；
 closed_textured_obj 仅作为 writer 正向 fixture，不代表真实甲片模型已经 strict_closed 可生产；
 OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
@@ -300,6 +329,6 @@ OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
 下一步建议：
 
 ```text
-优先执行 11A-R1-6，新增 UI OpenVDB Candidate 显式按钮和状态显示；
+优先执行 11A-R1-7，收口完整阶段报告；
 真实模型 strict_closed / repair_then_strict 完成前，不允许替换 legacy production path。
 ```

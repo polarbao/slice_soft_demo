@@ -264,6 +264,34 @@ void MainWindow::OnImportModelOpenVdbDiagnostic()
     RunOpenVdbDiagnostic(configPath, CreateOpenVdbReportPath(modelPath));
 }
 
+void MainWindow::OnImportModelOpenVdbCandidate()
+{
+    if (!QFileInfo::exists(paths_.openvdb_slicer_cli))
+    {
+        QMessageBox::warning(this,
+                             "OpenVDB 构建不存在",
+                             "未找到 OpenVDB ON 版本 slicer_cli：\n" + paths_.openvdb_slicer_cli
+                                 + "\n\n请先构建 build-openvdb-09p。");
+        return;
+    }
+
+    const QString modelPath =
+        QFileDialog::getOpenFileName(this, "选择要执行 OpenVDB 候选切片的模型", paths_.repo_root, "Model (*.obj *.3mf)");
+    if (modelPath.isEmpty())
+    {
+        return;
+    }
+
+    QString packageDir;
+    const QString configPath = CreateOpenVdbCandidateConfig(modelPath, &packageDir);
+    if (configPath.isEmpty())
+    {
+        return;
+    }
+
+    RunOpenVdbCandidate(configPath, packageDir);
+}
+
 void MainWindow::OnScenarioChanged(const int index)
 {
     if (index < 0 || m_scenarioSelector == nullptr)
@@ -308,7 +336,7 @@ void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed
     if (exit_code != 0) {
         return;
     }
-    if (current_action_ == "运行切片" && !pending_package_.isEmpty()) {
+    if ((current_action_ == "运行切片" || current_action_ == "OpenVDB 候选切片") && !pending_package_.isEmpty()) {
         package_edit_->setText(pending_package_);
         loadPackage(pending_package_);
     } else if (current_action_ == "对比工艺配置") {
@@ -356,12 +384,15 @@ QWidget* MainWindow::createProjectPanel() {
 
     repo_label_ = new QLabel("仓库根目录：" + paths_.repo_root, panel);
     slicer_label_ = new QLabel("切片工具：" + paths_.slicer_cli, panel);
+    m_openVdbSlicerLabel = new QLabel("OpenVDB 候选工具：" + paths_.openvdb_slicer_cli, panel);
     rip_label_ = new QLabel("RIP 校验工具：" + paths_.rip_reader, panel);
     repo_label_->setWordWrap(true);
     slicer_label_->setWordWrap(true);
+    m_openVdbSlicerLabel->setWordWrap(true);
     rip_label_->setWordWrap(true);
     layout->addWidget(repo_label_);
     layout->addWidget(slicer_label_);
+    layout->addWidget(m_openVdbSlicerLabel);
     layout->addWidget(rip_label_);
     layout->addWidget(createRunPanel());
     layout->addStretch(1);
@@ -381,6 +412,7 @@ QWidget* MainWindow::createRunPanel() {
     build_button_ = makeButton("构建调试版", panel);
     m_importSliceButton = makeButton("导入模型并切片", panel);
     m_importOpenVdbButton = makeButton("导入模型并 OpenVDB 诊断", panel);
+    m_importOpenVdbCandidateButton = makeButton("导入模型并 OpenVDB 候选切片", panel);
     run_slicer_button_ = makeButton("运行切片", panel);
     run_rip_button_ = makeButton("运行 RIP 摘要", panel);
     regression_button_ = makeButton("运行快速回归", panel);
@@ -392,6 +424,7 @@ QWidget* MainWindow::createRunPanel() {
     layout->addWidget(build_button_);
     layout->addWidget(m_importSliceButton);
     layout->addWidget(m_importOpenVdbButton);
+    layout->addWidget(m_importOpenVdbCandidateButton);
     layout->addWidget(run_slicer_button_);
     layout->addWidget(run_rip_button_);
     layout->addWidget(regression_button_);
@@ -403,6 +436,7 @@ QWidget* MainWindow::createRunPanel() {
     connect(build_button_, &QPushButton::clicked, this, &MainWindow::buildDebug);
     connect(m_importSliceButton, &QPushButton::clicked, this, &MainWindow::OnImportModelAndSlice);
     connect(m_importOpenVdbButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbDiagnostic);
+    connect(m_importOpenVdbCandidateButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbCandidate);
     connect(run_slicer_button_, &QPushButton::clicked, this, &MainWindow::runSlicer);
     connect(run_rip_button_, &QPushButton::clicked, this, &MainWindow::runRipSummary);
     connect(regression_button_, &QPushButton::clicked, this, &MainWindow::runQuickRegression);
@@ -549,6 +583,110 @@ QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* pack
     return configPath;
 }
 
+QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QString* packageDir) const
+{
+    const QFileInfo modelInfo(modelPath);
+    if (!modelInfo.exists() || !modelInfo.isFile())
+    {
+        QMessageBox::warning(nullptr, "模型文件不存在", "无法找到模型文件：\n" + modelPath);
+        return {};
+    }
+
+    const QString suffix = modelInfo.suffix().toLower();
+    if (suffix != "obj" && suffix != "3mf")
+    {
+        QMessageBox::warning(nullptr, "模型格式不支持", "OpenVDB 候选切片当前只接受 OBJ / 3MF 模型。");
+        return {};
+    }
+
+    const QString sessionName = SanitizeSessionName(modelInfo.completeBaseName())
+        + "_openvdb_candidate_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+    const QString sessionRoot = "output/ui_sessions/" + sessionName;
+    const QString relativePackageDir = sessionRoot + "/package";
+
+    QDir repo(paths_.repo_root);
+    if (!repo.mkpath(sessionRoot))
+    {
+        QMessageBox::warning(nullptr, "无法创建会话目录", "无法创建目录：\n" + repo.filePath(sessionRoot));
+        return {};
+    }
+
+    QJsonObject root;
+    root.insert("slicingMode", "relief_heightfield");
+    root.insert("input",
+                QJsonObject{{"modelPath", QDir::fromNativeSeparators(modelInfo.absoluteFilePath())}, {"format", "auto"}});
+    root.insert("output",
+                QJsonObject{{"packageDir", relativePackageDir},
+                            {"dpiX", 600},
+                            {"dpiY", 600},
+                            {"layerThicknessMm", 0.01},
+                            {"channelOrder", MakeStringArray({"R", "G", "B", "W", "S", "V"})},
+                            {"bitDepth", 8},
+                            {"planarConfig", "contiguous"},
+                            {"storageMode", "stripped"},
+                            {"rowsPerStrip", 64}});
+    root.insert("autoOrient",
+                QJsonObject{{"enabled", false},
+                            {"maxHeightMm", 6.0},
+                            {"strategy", "minimize_height_by_right_angle_rotation"}});
+    root.insert("background", QJsonObject{{"value", 255}});
+    root.insert("modelMaterial",
+                QJsonObject{{"materialChannel", "RGB"},
+                            {"applyMode", "solid_volume"},
+                            {"rgb", MakeIntArray({0, 0, 0})},
+                            {"whiteValue", 255},
+                            {"varnishValue", 255}});
+    root.insert("texture",
+                QJsonObject{{"enabled", true},
+                            {"applyMode", "surface_shell_from_sdf"},
+                            {"sampler", "nearest"},
+                            {"uvAddressMode", "clamp"},
+                            {"flipV", true},
+                            {"fallbackRgb", MakeIntArray({255, 0, 255})},
+                            {"missingTexturePolicy", "fail_fast"}});
+    root.insert("support",
+                QJsonObject{{"enabled", false},
+                            {"mode", "none"},
+                            {"value", 0},
+                            {"offsetMm", 0.0},
+                            {"minAreaPx", 0}});
+    root.insert("relief", QJsonObject{{"fillMode", "intersection_range"}, {"baseZMm", 0.0}});
+    root.insert("preview",
+                QJsonObject{{"enabled", true},
+                            {"format", "ppm"},
+                            {"interval", 1},
+                            {"channels", MakeStringArray({"texture_rgb", "rgb", "support", "white", "varnish"})},
+                            {"onlyNonEmptyLayers", false},
+                            {"pseudoColors",
+                             QJsonObject{{"empty", MakeIntArray({255, 255, 255})},
+                                         {"support", MakeIntArray({0, 255, 0})},
+                                         {"white", MakeIntArray({0, 170, 255})},
+                                         {"varnish", MakeIntArray({127, 127, 127})}}}});
+    root.insert("experimental",
+                QJsonObject{{"openvdbPipeline",
+                             QJsonObject{{"enabled", true},
+                                         {"engine", "openvdb"},
+                                         {"admissionMode", "strict_closed"},
+                                         {"failurePolicy", "fail_fast"},
+                                         {"allowNonProductionOutput", false},
+                                         {"writeProductionRgbwsv", true}}}});
+
+    const QString configPath = repo.filePath(sessionRoot + "/slice_config.openvdb_candidate.json");
+    QFile file(configPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+    {
+        QMessageBox::warning(nullptr, "无法写入配置", "无法写入配置文件：\n" + configPath);
+        return {};
+    }
+    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+
+    if (packageDir != nullptr)
+    {
+        *packageDir = repo.filePath(relativePackageDir);
+    }
+    return configPath;
+}
+
 QString MainWindow::CreateOpenVdbReportPath(const QString& modelPath) const
 {
     const QFileInfo modelInfo(modelPath);
@@ -584,6 +722,17 @@ void MainWindow::RunOpenVdbDiagnostic(const QString& configPath, const QString& 
                            "diagnostic_only",
                            "--experimental-report",
                            reportPath});
+}
+
+void MainWindow::RunOpenVdbCandidate(const QString& configPath, const QString& packageDir)
+{
+    config_edit_->setText(configPath);
+    package_edit_->setText(packageDir);
+    config_editor_panel_->loadConfig(configPath);
+    pending_package_ = packageDir;
+    runCommand("OpenVDB 候选切片",
+               paths_.openvdb_slicer_cli,
+               QStringList{"--config", configPath, "--openvdb-candidate-slice"});
 }
 
 void MainWindow::LoadScenarios()
@@ -692,6 +841,7 @@ void MainWindow::setBusy(const bool busy) {
     build_button_->setEnabled(!busy);
     m_importSliceButton->setEnabled(!busy);
     m_importOpenVdbButton->setEnabled(!busy);
+    m_importOpenVdbCandidateButton->setEnabled(!busy);
     run_slicer_button_->setEnabled(!busy);
     run_rip_button_->setEnabled(!busy);
     regression_button_->setEnabled(!busy);

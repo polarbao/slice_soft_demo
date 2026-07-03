@@ -47,7 +47,7 @@ OpenVDB OFF 默认轨道必须继续通过。
 | 11A-R1-3 Candidate layer buffer builder | DONE | 已新增 OpenVDB candidate layer buffer builder；shell/interior/support -> per-layer MaterialChannelComposerInput |
 | 11A-R1-4 Candidate package writer | DONE | 已新增 OpenVDB candidate package writer；写 p0.rgbwsv.2 manifest / TIFF / reports / preview；staging 发布避免目标半包 |
 | 11A-R1-5 Candidate RIP / UI smoke | DONE | 已新增 on-lane / off-lane 脚本和 golden contract；RIP / LayerPreview / OverlayPreview smoke 通过 |
-| 11A-R1-6 UI OpenVDB Candidate 按钮 | TODO | 新增显式按钮和状态显示 |
+| 11A-R1-6 UI OpenVDB Candidate 按钮 | DONE | 已新增“导入模型并 OpenVDB 候选切片”按钮；使用 build-openvdb-09p slicer_cli；成功后加载 package |
 | 11A-R1-7 REPORT_11A_R1 | TODO | 记录完成范围和实际验证 |
 
 ---

@@ -43,6 +43,7 @@ private slots:
     void loadPackageFromEdit();
     void OnImportModelAndSlice();
     void OnImportModelOpenVdbDiagnostic();
+    void OnImportModelOpenVdbCandidate();
     void OnScenarioChanged(int index);
     void OnReloadScenarios();
     void handleProcessStarted(const QString& command);
@@ -56,9 +57,11 @@ private:
     QString absoluteFromRepo(const QString& path) const;
     QString inferPackageFromConfig(const QString& config_path) const;
     QString CreateOneClickConfig(const QString& modelPath, QString* packageDir) const;
+    QString CreateOpenVdbCandidateConfig(const QString& modelPath, QString* packageDir) const;
     QString CreateOpenVdbReportPath(const QString& modelPath) const;
     void RunGeneratedConfig(const QString& configPath, const QString& packageDir);
     void RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath);
+    void RunOpenVdbCandidate(const QString& configPath, const QString& packageDir);
     void LoadScenarios();
     void ApplyScenario(const ScenarioEntry& scenario);
     void loadPackage(const QString& package_dir);
@@ -82,6 +85,7 @@ private:
     QLineEdit* profile_b_edit_{nullptr};
     QLabel* repo_label_{nullptr};
     QLabel* slicer_label_{nullptr};
+    QLabel* m_openVdbSlicerLabel{nullptr};
     QLabel* rip_label_{nullptr};
     QLabel* status_label_{nullptr};
     QPlainTextEdit* warnings_view_{nullptr};
@@ -95,6 +99,7 @@ private:
     QPushButton* compare_button_{nullptr};
     QPushButton* m_importSliceButton{nullptr};
     QPushButton* m_importOpenVdbButton{nullptr};
+    QPushButton* m_importOpenVdbCandidateButton{nullptr};
 
     PreviewPanel* preview_panel_{nullptr};
     LayerPreviewPanel* m_layerPreviewPanel{nullptr};
