@@ -411,13 +411,16 @@ int RunOpenVdbCandidateSlice(const CliOptions& options)
 
     const slicer_core::OpenVdbCandidatePipelineResult result =
         slicer_core::RunOpenVdbCandidatePipeline(options.config_path);
-    std::cout << "slicer_cli: generated OpenVDB candidate package\n";
+    std::cout << "slicer_cli: generated "
+              << (result.non_production ? "non-production " : "")
+              << "OpenVDB candidate package\n";
     std::cout << "  packageDir: " << result.package_dir.string() << '\n';
     std::cout << "  grid: " << result.width_px << " x " << result.height_px << " x " << result.layer_count
               << '\n';
     std::cout << "  modelPixels: " << result.model_pixels << '\n';
     std::cout << "  supportPixels: " << result.support_pixels << '\n';
     std::cout << "  shellPixels: " << result.shell_pixels << '\n';
+    std::cout << "  nonProduction: " << (result.non_production ? "true" : "false") << '\n';
     return 0;
 }
 

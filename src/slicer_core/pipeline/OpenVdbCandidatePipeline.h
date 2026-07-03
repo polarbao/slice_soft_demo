@@ -17,6 +17,7 @@ struct OpenVdbCandidatePipelineResult
     int model_pixels{0};
     int support_pixels{0};
     int shell_pixels{0};
+    bool non_production{false};
 };
 
 /**

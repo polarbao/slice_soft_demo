@@ -692,8 +692,8 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                              QJsonObject{{"enabled", true},
                                          {"engine", "openvdb"},
                                          {"admissionMode", "strict_closed"},
-                                         {"failurePolicy", "fail_fast"},
-                                         {"allowNonProductionOutput", false},
+                                         {"failurePolicy", "non_production_only"},
+                                         {"allowNonProductionOutput", true},
                                          {"writeProductionRgbwsv", true}}}});
 
     const QString configPath = repo.filePath(sessionRoot + "/slice_config.openvdb_candidate.json");

@@ -95,6 +95,30 @@ void AppendExperimentalOpenVdbSummary(QStringList& lines, const QJsonObject& obj
     }
 }
 
+void AppendProductionAdmissionSummary(QStringList& lines, const QJsonObject& admission)
+{
+    if (admission.isEmpty())
+    {
+        return;
+    }
+
+    appendIfPresent(lines, admission, "mode", "准入模式");
+    appendIfPresent(lines, admission, "status", "准入状态");
+    appendIfPresent(lines, admission, "productionAllowed", "允许生产");
+    appendIfPresent(lines, admission, "nonProduction", "仅非生产");
+    lines.push_back("阻断码: " + StringArrayToText(admission.value("blockerCodes")));
+    lines.push_back("警告码: " + StringArrayToText(admission.value("warningCodes")));
+}
+
+void AppendOpenVdbCandidateSummary(QStringList& lines, const QJsonObject& object)
+{
+    appendIfPresent(lines, object, "stage", "阶段");
+    appendIfPresent(lines, object, "status", "状态");
+    appendIfPresent(lines, object, "productionPackageWritten", "已写生产包");
+    appendIfPresent(lines, object, "message", "说明");
+    AppendProductionAdmissionSummary(lines, object.value("productionAdmission").toObject());
+}
+
 void collectNamedArrays(QStringList& lines, const QJsonValue& value, const QString& prefix) {
     if (value.isObject()) {
         const QJsonObject object = value.toObject();
@@ -149,6 +173,12 @@ QString ReportLoader::summarize(const JsonReport& report) {
     appendIfPresent(lines, object, "schema", "协议");
     if (object.value("schema").toString() == "p0.experimental_openvdb_shell_cli_report.1") {
         AppendExperimentalOpenVdbSummary(lines, object);
+    }
+    if (object.value("schema").toString() == "p0.openvdb_candidate_report.1") {
+        AppendOpenVdbCandidateSummary(lines, object);
+    }
+    if (object.contains("blockerCodes") && object.contains("productionAllowed")) {
+        AppendProductionAdmissionSummary(lines, object);
     }
     appendIfPresent(lines, object, "slicingMode", "切片模式");
     appendIfPresent(lines, object, "profileName", "工艺配置名称");

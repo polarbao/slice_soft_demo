@@ -264,7 +264,8 @@ TiffImageSpec MakeTiffSpec(const SliceConfig& config, const int width, const int
 
 SurfaceShellRealModelResult RunCandidatePrototype(
     const SliceConfig& config,
-    const std::filesystem::path& configPath)
+    const std::filesystem::path& configPath,
+    const MeshValidationPolicy meshPolicy)
 {
     const std::filesystem::path configDir =
         configPath.parent_path().empty() ? std::filesystem::current_path() : configPath.parent_path();
@@ -274,7 +275,7 @@ SurfaceShellRealModelResult RunCandidatePrototype(
     options.voxel_size_mm = 0.05;
     options.shell_thickness_mm = 0.10;
     options.max_transfer_distance_mm = options.shell_thickness_mm + options.voxel_size_mm * 2.0;
-    options.mesh_policy = MeshValidationPolicy::StrictClosed;
+    options.mesh_policy = meshPolicy;
     options.fallback_rgb = config.texture.fallback_rgb;
     options.texture_sample.sampler = config.texture.sampler;
     options.texture_sample.uv_address_mode = config.texture.uv_address_mode;
@@ -283,6 +284,12 @@ SurfaceShellRealModelResult RunCandidatePrototype(
     SurfaceShellRealModelResult result = RunSurfaceShellRealModelPrototype(scene, config, options);
     result.config_path = configPath.generic_string();
     return result;
+}
+
+bool ShouldAttemptNonProductionFallback(const SliceConfig& config)
+{
+    return config.experimental.openvdb_pipeline.allow_non_production_output
+        && config.experimental.openvdb_pipeline.failure_policy == "non_production_only";
 }
 
 Json MakeTextureFidelityReport(const SurfaceShellRealModelResult& result)
@@ -339,11 +346,28 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
     const SliceConfig config = load_slice_config(configPath);
     EnsureCandidateConfig(config);
 
-    SurfaceShellRealModelResult prototype = RunCandidatePrototype(config, configPath);
+    SurfaceShellRealModelResult prototype =
+        RunCandidatePrototype(config, configPath, MeshValidationPolicy::StrictClosed);
+    bool nonProductionPackage{false};
+    std::string strictFailureMessage;
     if (!prototype.errors.empty())
     {
+        strictFailureMessage = prototype.errors.front();
         WriteCandidateFailureReports(config, prototype, "surface_shell_prototype");
-        throw std::runtime_error("OpenVDB candidate prototype failed: " + prototype.errors.front());
+        if (!ShouldAttemptNonProductionFallback(config))
+        {
+            throw std::runtime_error("OpenVDB candidate prototype failed: " + prototype.errors.front());
+        }
+
+        prototype = RunCandidatePrototype(config, configPath, MeshValidationPolicy::WarnAndAttempt);
+        nonProductionPackage = true;
+        prototype.warnings.push_back("strict_closed blocked production output: " + strictFailureMessage);
+        prototype.warnings.push_back("non-production OpenVDB candidate fallback was enabled by config");
+        if (!prototype.errors.empty())
+        {
+            WriteCandidateFailureReports(config, prototype, "surface_shell_non_production_fallback");
+            throw std::runtime_error("OpenVDB non-production fallback failed: " + prototype.errors.front());
+        }
     }
 
     OpenVdbCandidateLayerBufferOptions bufferOptions;
@@ -499,7 +523,9 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
          Json::object({
              {"configPath", configPath.generic_string()},
              {"modelPath", prototype.model_path},
-             {"engine", "openvdb_candidate"},
+             {"engine", nonProductionPackage ? "openvdb_candidate_non_production" : "openvdb_candidate"},
+             {"nonProduction", nonProductionPackage},
+             {"strictClosedFailure", strictFailureMessage},
          })},
         {"grid",
          Json::object({
@@ -530,7 +556,12 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
         stagingDir / "reports" / "openvdb_candidate_report.json",
         Json::object({
             {"schema", "p0.openvdb_candidate_report.1"},
-            {"productionPackageWritten", true},
+            {"status", nonProductionPackage ? "non_production_written" : "production_written"},
+            {"packageWritten", true},
+            {"productionPackageWritten", !nonProductionPackage},
+            {"nonProductionPackageWritten", nonProductionPackage},
+            {"strictClosedFailure", strictFailureMessage},
+            {"productionAdmission", realModelReport.at("productionAdmission")},
             {"grid", Json::object({{"width", buffers.width}, {"height", buffers.height}, {"depth", buffers.depth}})},
             {"totals",
              Json::object({
@@ -565,6 +596,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem
         }));
 
     PublishStagedPackage(stagingDir, packageDir);
+    summary.non_production = nonProductionPackage;
 
     return summary;
 }
