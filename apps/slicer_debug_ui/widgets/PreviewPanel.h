@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QScrollArea>
 #include <QSlider>
+#include <QVector>
 #include <QWidget>
 
 class PreviewPanel final : public QWidget {
@@ -25,14 +26,24 @@ private slots:
     void actualSize();
 
 private:
+    struct PreviewItem
+    {
+        QString path;
+        QString channel;
+        int layer{-1};
+    };
+
+    QString normalizeChannel(const QString& channel, const QString& path) const;
     QString channelFromPath(const QString& path) const;
+    int parseLayer(const QString& path) const;
+    void appendPreviewItem(const PreviewItem& item);
     void rebuildChannelSelector();
     void rebuildVisibleList();
     void showCurrentImage();
     void applyPixmap();
 
-    QStringList all_images_;
-    QStringList visible_images_;
+    QVector<PreviewItem> all_items_;
+    QVector<PreviewItem> visible_items_;
     QImage current_image_;
     double zoom_{1.0};
     bool fit_{true};

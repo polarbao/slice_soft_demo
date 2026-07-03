@@ -547,7 +547,7 @@ QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* pack
                             {"rowsPerStrip", 64}});
     root.insert("modelTransform",
                 QJsonObject{{"unit", "mm"},
-                            {"scale", MakeNumberArray({1.0, 1.0, 1.0})},
+                            {"scale", MakeNumberArray({0.8, 0.8, 0.8})},
                             {"rotationDeg", MakeNumberArray({0.0, 0.0, 0.0})},
                             {"translationMm", MakeNumberArray({0.0, 0.0, 0.0})}});
     root.insert("autoOrient",
@@ -563,7 +563,8 @@ QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* pack
                             {"varnishValue", 255}});
     root.insert("texture",
                 QJsonObject{{"enabled", textureEnabled},
-                            {"applyMode", "solid_volume_from_top_surface"},
+                            {"applyMode", textureEnabled ? "top_surface_band" : "solid_volume_from_top_surface"},
+                            {"topSurfaceLayers", 50},
                             {"sampler", "bilinear"},
                             {"uvAddressMode", "clamp"},
                             {"flipV", true},
@@ -571,7 +572,7 @@ QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* pack
                             {"missingTexturePolicy", "warn_and_fallback"}});
     root.insert("support",
                 QJsonObject{{"enabled", true},
-                            {"mode", "bottom_projection"},
+                            {"mode", "full_vertical_projection"},
                             {"value", 0},
                             {"offsetMm", 0.0},
                             {"minAreaPx", 0}});

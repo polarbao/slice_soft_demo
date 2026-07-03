@@ -1,12 +1,17 @@
 #include "PreviewPanel.h"
 
+#include "../services/PreviewReportIndex.h"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QImageReader>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QSet>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 namespace
 {
@@ -20,6 +25,31 @@ QImage ToDisplayCoordinateImage(const QImage& image)
 
     // Package pixels are interpreted in slicer coordinates; Qt displays images from the top-left.
     return image.mirrored(false, true);
+}
+
+int ChannelOrder(const QString& channel)
+{
+    if (channel == "RGB")
+    {
+        return 0;
+    }
+    if (channel == "纹理RGB")
+    {
+        return 1;
+    }
+    if (channel == "支撑")
+    {
+        return 2;
+    }
+    if (channel == "白墨")
+    {
+        return 3;
+    }
+    if (channel == "光油")
+    {
+        return 4;
+    }
+    return 10;
 }
 
 }  // namespace
@@ -66,8 +96,44 @@ PreviewPanel::PreviewPanel(QWidget* parent) : QWidget(parent) {
 }
 
 void PreviewPanel::loadPackage(const PackageSummary& package) {
-    all_images_ = package.preview_paths;
-    all_images_.sort();
+    all_items_.clear();
+
+    PreviewReportIndex index;
+    if (index.load(package.package_dir))
+    {
+        for (const PreviewReportEntry& entry : index.entries())
+        {
+            if (!QFileInfo::exists(entry.path))
+            {
+                continue;
+            }
+            appendPreviewItem(PreviewItem{entry.path, normalizeChannel(entry.channel, entry.path), entry.layer_index});
+        }
+    }
+
+    if (all_items_.isEmpty())
+    {
+        QStringList paths = package.preview_paths;
+        paths.sort();
+        for (const QString& path : paths)
+        {
+            appendPreviewItem(PreviewItem{path, channelFromPath(path), parseLayer(path)});
+        }
+    }
+
+    std::sort(all_items_.begin(), all_items_.end(), [](const PreviewItem& left, const PreviewItem& right) {
+        if (left.layer != right.layer)
+        {
+            return left.layer < right.layer;
+        }
+        const int leftOrder = ChannelOrder(left.channel);
+        const int rightOrder = ChannelOrder(right.channel);
+        if (leftOrder != rightOrder)
+        {
+            return leftOrder < rightOrder;
+        }
+        return left.path < right.path;
+    });
     rebuildChannelSelector();
     rebuildVisibleList();
 }
@@ -128,13 +194,71 @@ QString PreviewPanel::channelFromPath(const QString& path) const {
     return "预览";
 }
 
+QString PreviewPanel::normalizeChannel(const QString& channel, const QString& path) const
+{
+    const QString normalized = channel.trimmed().toLower();
+    if (normalized == "texture_rgb")
+    {
+        return "纹理RGB";
+    }
+    if (normalized == "rgb" || normalized == "model_rgb" || normalized == "true_rgb")
+    {
+        return "RGB";
+    }
+    if (normalized == "white" || normalized == "w")
+    {
+        return "白墨";
+    }
+    if (normalized == "support" || normalized == "s")
+    {
+        return "支撑";
+    }
+    if (normalized == "varnish" || normalized == "v")
+    {
+        return "光油";
+    }
+    return channelFromPath(path);
+}
+
+int PreviewPanel::parseLayer(const QString& path) const
+{
+    const QString base = QFileInfo(path).completeBaseName();
+    const QRegularExpression expression("(?:layer|z|_)(\\d+)");
+    const QRegularExpressionMatch match = expression.match(base);
+    if (match.hasMatch())
+    {
+        return match.captured(1).toInt();
+    }
+
+    const QRegularExpression digits("(\\d+)");
+    const QRegularExpressionMatch fallback = digits.match(base);
+    return fallback.hasMatch() ? fallback.captured(1).toInt() : -1;
+}
+
+void PreviewPanel::appendPreviewItem(const PreviewItem& item)
+{
+    if (item.path.isEmpty() || item.channel.isEmpty() || item.layer < 0)
+    {
+        return;
+    }
+    all_items_.push_back(item);
+}
+
 void PreviewPanel::rebuildChannelSelector() {
     QSet<QString> channels;
-    for (const QString& path : all_images_) {
-        channels.insert(channelFromPath(path));
+    for (const PreviewItem& item : all_items_) {
+        channels.insert(item.channel);
     }
     QStringList sorted = channels.values();
-    sorted.sort();
+    std::sort(sorted.begin(), sorted.end(), [](const QString& left, const QString& right) {
+        const int leftOrder = ChannelOrder(left);
+        const int rightOrder = ChannelOrder(right);
+        if (leftOrder != rightOrder)
+        {
+            return leftOrder < rightOrder;
+        }
+        return left < right;
+    });
     channel_selector_->blockSignals(true);
     channel_selector_->clear();
     channel_selector_->addItem("全部");
@@ -145,31 +269,32 @@ void PreviewPanel::rebuildChannelSelector() {
 }
 
 void PreviewPanel::rebuildVisibleList() {
-    visible_images_.clear();
+    visible_items_.clear();
     const QString selected = channel_selector_->currentText();
-    for (const QString& path : all_images_) {
-        if (selected == "全部" || channelFromPath(path) == selected) {
-            visible_images_.push_back(path);
+    for (const PreviewItem& item : all_items_) {
+        if (selected == "全部" || item.channel == selected) {
+            visible_items_.push_back(item);
         }
     }
     layer_slider_->blockSignals(true);
     layer_slider_->setMinimum(0);
-    layer_slider_->setMaximum(visible_images_.isEmpty() ? 0 : visible_images_.size() - 1);
-    layer_slider_->setEnabled(!visible_images_.isEmpty());
+    layer_slider_->setMaximum(visible_items_.isEmpty() ? 0 : visible_items_.size() - 1);
+    layer_slider_->setEnabled(!visible_items_.isEmpty());
     layer_slider_->setValue(0);
     layer_slider_->blockSignals(false);
     showCurrentImage();
 }
 
 void PreviewPanel::showCurrentImage() {
-    if (visible_images_.isEmpty()) {
+    if (visible_items_.isEmpty()) {
         current_image_ = QImage();
         image_label_->clear();
         status_->setText("未找到 PNG/PPM 预览图。");
         return;
     }
     const int index = layer_slider_->value();
-    const QString path = visible_images_.at(index);
+    const PreviewItem item = visible_items_.at(index);
+    const QString path = item.path;
     QImageReader reader(path);
     current_image_ = ToDisplayCoordinateImage(reader.read());
     if (current_image_.isNull()) {
@@ -177,9 +302,11 @@ void PreviewPanel::showCurrentImage() {
         status_->setText("读取预览图失败：" + path + " (" + reader.errorString() + ")");
         return;
     }
-    status_->setText(QString("%1/%2  %3  %4x%5  显示=切片坐标")
+    status_->setText(QString("%1/%2  layer=%3  %4  %5  %6x%7  显示=切片坐标")
                          .arg(index + 1)
-                         .arg(visible_images_.size())
+                         .arg(visible_items_.size())
+                         .arg(item.layer)
+                         .arg(item.channel)
                          .arg(QFileInfo(path).fileName())
                          .arg(current_image_.width())
                          .arg(current_image_.height()));

@@ -57,7 +57,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 
     m_texturePolicyCombo = new QComboBox(this);
     m_texturePolicyCombo->setEditable(true);
-    m_texturePolicyCombo->addItems({"solid_volume_from_top_surface", "solid_volume", "surface_shell_from_sdf", "disabled"});
+    m_texturePolicyCombo->addItems({"top_surface_band", "solid_volume_from_top_surface", "solid_volume", "surface_shell_from_sdf", "disabled"});
     form->addRow("纹理策略", m_texturePolicyCombo);
 
     m_supportEnabledCheck = new QCheckBox("启用支撑", this);
@@ -107,7 +107,7 @@ void QuickConfigPanel::LoadFromDocument()
     m_modelPathEdit->setText(StringValue({"input", "modelPath"}));
     m_outputDirEdit->setText(StringValue({"output", "packageDir"}));
     m_layerHeightSpin->setValue(DoubleValue({"output", "layerThicknessMm"}, 0.01));
-    m_texturePolicyCombo->setCurrentText(StringValue({"texture", "applyMode"}, "solid_volume_from_top_surface"));
+    m_texturePolicyCombo->setCurrentText(StringValue({"texture", "applyMode"}, "top_surface_band"));
     m_supportEnabledCheck->setChecked(BoolValue({"support", "enabled"}, true));
     m_whiteEnabledCheck->setChecked(BoolValue({"materialPolicy", "white", "enabled"}, false));
     m_varnishEnabledCheck->setChecked(BoolValue({"materialPolicy", "varnish", "enabled"}, false));
@@ -170,6 +170,10 @@ void QuickConfigPanel::OnTexturePolicyChanged(const QString& value)
     if (!m_loading)
     {
         SetValueIfChanged({"texture", "applyMode"}, value);
+        if (value == "top_surface_band")
+        {
+            SetValueIfChanged({"texture", "topSurfaceLayers"}, 50);
+        }
     }
 }
 

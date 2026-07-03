@@ -3,7 +3,9 @@
 #include "../services/PackageLoader.h"
 
 #include <QComboBox>
+#include <QHash>
 #include <QImage>
+#include <QJsonObject>
 #include <QLabel>
 #include <QScrollArea>
 #include <QSlider>
@@ -36,6 +38,8 @@ private:
     QString classifyChannel(const QString& path) const;
     QString normalizeChannel(const QString& channel) const;
     int parseLayer(const QString& path) const;
+    void LoadLayerMetadata(const PackageSummary& package);
+    void ReadLayerMetadataObject(const QJsonObject& root);
     void rebuildLayerSlider();
     QImage readImage(const QString& path) const;
     QImage FindImageForLayer(const QString& channel, int layer) const;
@@ -47,6 +51,7 @@ private:
 
     QVector<PreviewImage> images_;
     QVector<int> m_layerIndices;
+    QHash<int, double> m_layerZMm;
     double zoom_{1.0};
     bool fit_{true};
 

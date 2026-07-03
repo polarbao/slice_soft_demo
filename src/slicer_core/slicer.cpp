@@ -488,7 +488,8 @@ PreviewImage build_preview_image(
     const std::string& requested_channel,
     const GridSpec& grid,
     const PreviewConfig& preview_config,
-    const std::vector<std::uint8_t>& layer) {
+    const std::vector<std::uint8_t>& layer,
+    const std::vector<std::uint8_t>* texture_preview_mask) {
     const std::string channel = canonical_preview_channel(requested_channel);
     PreviewImage image;
     image.channel = channel;
@@ -526,9 +527,16 @@ PreviewImage build_preview_image(
                 pixel = preview_config.empty_color;
             }
         } else if (channel == "texture_rgb") {
-            pixel = {layer.at(base + 0U), layer.at(base + 1U), layer.at(base + 2U)};
-            display_value =
-                layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U ? 255 : 0;
+            const bool has_texture_preview_pixel =
+                texture_preview_mask == nullptr ? (layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U
+                                                   || layer.at(base + 2U) < 255U)
+                                                : texture_preview_mask->at(i) != 0;
+            if (has_texture_preview_pixel) {
+                pixel = {layer.at(base + 0U), layer.at(base + 1U), layer.at(base + 2U)};
+                display_value = 255;
+            } else {
+                pixel = preview_config.empty_color;
+            }
         } else if (channel == "support" || channel == "white" || channel == "varnish") {
             const std::size_t channel_offset =
                 channel == "support" ? 4U : (channel == "white" ? 3U : 5U);
@@ -559,10 +567,16 @@ Json::Array write_layer_previews(
     const std::filesystem::path& package_dir,
     const GridSpec& grid,
     const int layer_index,
-    const std::vector<std::uint8_t>& layer) {
+    const std::vector<std::uint8_t>& layer,
+    const std::vector<std::uint8_t>* texture_preview_mask) {
     Json::Array result;
     for (const std::string& requested_channel : preview_config.channels) {
-        PreviewImage image = build_preview_image(requested_channel, grid, preview_config, layer);
+        PreviewImage image = build_preview_image(
+            requested_channel,
+            grid,
+            preview_config,
+            layer,
+            texture_preview_mask);
         if (preview_config.only_non_empty_layers && image.non_zero_pixels == 0) {
             continue;
         }
@@ -1887,6 +1901,46 @@ bool write_material_role_pixel(
     return false;
 }
 
+std::vector<std::uint8_t> build_texture_preview_mask(
+    const SliceConfig& config,
+    const GridSpec& grid,
+    const std::vector<std::uint8_t>& model_mask,
+    const std::vector<MaterialRoleColumn>* material_role_columns,
+    const std::vector<ColumnLayerRange>* column_ranges,
+    const int layer_index)
+{
+    std::vector<std::uint8_t> mask(static_cast<std::size_t>(grid.width_px) * grid.height_px, 0);
+    if (!config.texture.enabled)
+    {
+        return mask;
+    }
+
+    for (int y{0}; y < grid.height_px; ++y)
+    {
+        for (int x{0}; x < grid.width_px; ++x)
+        {
+            const std::size_t pixel_index = mask_index(grid, x, y);
+            if (model_mask.at(pixel_index) == 0)
+            {
+                continue;
+            }
+
+            bool rgb_role{true};
+            if (config.material_role_mapping.enabled && material_role_columns != nullptr
+                && pixel_index < material_role_columns->size())
+            {
+                const MaterialRoleColumn& role_column = material_role_columns->at(pixel_index);
+                rgb_role = !role_column.has_role || role_column.role == MaterialRole::Rgb;
+            }
+            if (rgb_role && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index))
+            {
+                mask.at(pixel_index) = 1;
+            }
+        }
+    }
+    return mask;
+}
+
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
@@ -2725,7 +2779,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
         }
         if (should_write_preview(config.preview, layer_index, grid.layer_count)) {
-            Json::Array written = write_layer_previews(config.preview, package_dir, grid, layer_index, layer);
+            const std::vector<std::uint8_t> texture_preview_mask = build_texture_preview_mask(
+                config,
+                grid,
+                model_masks.at(layer_index),
+                config.material_role_mapping.enabled ? &material_role_columns : nullptr,
+                &column_ranges,
+                layer_index);
+            Json::Array written = write_layer_previews(
+                config.preview,
+                package_dir,
+                grid,
+                layer_index,
+                layer,
+                config.texture.enabled ? &texture_preview_mask : nullptr);
             preview_files.insert(preview_files.end(), written.begin(), written.end());
         }
         layers.push_back(Json::object({

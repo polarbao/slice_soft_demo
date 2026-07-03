@@ -79,6 +79,7 @@ PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
 void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
     images_.clear();
     m_layerIndices.clear();
+    m_layerZMm.clear();
     QSet<QString> seen;
     const auto append_image = [this, &seen](const PreviewImage& image) {
         if (image.path.isEmpty() || image.channel.isEmpty() || image.layer < 0) {
@@ -117,6 +118,7 @@ void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
             }
         }
     }
+    LoadLayerMetadata(package);
     std::sort(m_layerIndices.begin(), m_layerIndices.end());
     rebuildLayerSlider();
     updateImage();
@@ -150,7 +152,7 @@ bool PreviewOverlayPanel::canComposeMode(const QString& mode) const {
     }
     for (int i = 0; i < m_layerIndices.size(); ++i) {
         const int layer = m_layerIndices.at(i);
-        if ((!FindImageForLayer("rgb", layer).isNull() || !FindImageForLayer(overlay_channel, layer).isNull())
+        if (!FindImageForLayer(overlay_channel, layer).isNull()
             && !composeForMode(mode, i).isNull()) {
             return true;
         }
@@ -229,6 +231,52 @@ int PreviewOverlayPanel::parseLayer(const QString& path) const {
     const QRegularExpression digits("(\\d+)");
     const QRegularExpressionMatch fallback = digits.match(base);
     return fallback.hasMatch() ? fallback.captured(1).toInt() : -1;
+}
+
+void PreviewOverlayPanel::LoadLayerMetadata(const PackageSummary& package)
+{
+    const QStringList candidates{
+        package.manifest_path,
+        QDir(package.package_dir).filePath("reports/slice_report.json"),
+    };
+    for (const QString& path : candidates)
+    {
+        if (path.isEmpty())
+        {
+            continue;
+        }
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            continue;
+        }
+        QJsonParseError parseError{};
+        const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
+        if (parseError.error != QJsonParseError::NoError || !document.isObject())
+        {
+            continue;
+        }
+        ReadLayerMetadataObject(document.object());
+    }
+}
+
+void PreviewOverlayPanel::ReadLayerMetadataObject(const QJsonObject& root)
+{
+    QJsonArray layers = root.value("layers").toArray();
+    if (layers.isEmpty())
+    {
+        layers = root.value("tiff").toObject().value("layers").toArray();
+    }
+    for (const QJsonValue& value : layers)
+    {
+        const QJsonObject object = value.toObject();
+        const int layer = object.value("layerIndex").toInt(object.value("index").toInt(-1));
+        if (layer < 0 || !object.contains("zMm"))
+        {
+            continue;
+        }
+        m_layerZMm.insert(layer, object.value("zMm").toDouble());
+    }
 }
 
 void PreviewOverlayPanel::rebuildLayerSlider() {
@@ -341,10 +389,16 @@ void PreviewOverlayPanel::applyPixmap(const QImage& image) {
     }
     image_label_->setPixmap(QPixmap::fromImage(image).scaled(target_size, Qt::KeepAspectRatio, Qt::FastTransformation));
     image_label_->resize(target_size);
-    status_->setText(QString("%1/%2  layer=%3  %4  %5x%6  层序=低Z->高Z  显示=切片坐标")
+    const int layer = CurrentLayer();
+    QString layerText = QString("layer=%1").arg(layer);
+    if (m_layerZMm.contains(layer))
+    {
+        layerText += QString(" z=%1mm").arg(m_layerZMm.value(layer), 0, 'f', 3);
+    }
+    status_->setText(QString("%1/%2  %3  %4  %5x%6  层序=低Z->高Z  显示=切片坐标")
                          .arg(layer_slider_->value() + 1)
                          .arg(qMax(1, m_layerIndices.size()))
-                         .arg(CurrentLayer())
+                         .arg(layerText)
                          .arg(mode_->currentText())
                          .arg(image.width())
                          .arg(image.height()));
