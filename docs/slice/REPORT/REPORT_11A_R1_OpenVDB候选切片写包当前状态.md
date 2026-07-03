@@ -23,13 +23,11 @@ diagnostic/report/prototype 链路可用于后续开发判断。
 但当前仍未完成：
 
 ```text
-OpenVDB candidate per-layer RGBWSV buffer builder；
-OpenVDB candidate p0.rgbwsv.2 package writer；
 candidate package RIP / UI / preview golden；
 真实复杂 OBJ / 3MF 的 strict_closed 通过路径或 repair_then_strict 正式路径。
 ```
 
-因此，本阶段采用“OpenVDB Candidate”路线：显式入口、严格门禁、逐步补 writer，不默认替换 legacy。
+因此，本阶段采用“OpenVDB Candidate”路线：显式入口、严格门禁、候选写包，不默认替换 legacy。
 
 ---
 
@@ -133,6 +131,35 @@ tests/unit/material_channel_composer/main.cpp
 CMakeLists.txt
 ```
 
+Task 11A-R1-4 已完成：
+
+```text
+新增 OpenVDB candidate package writer；
+slicer_cli --openvdb-candidate-slice 已从 not_implemented 改为执行候选写包；
+写出 p0.rgbwsv.2 manifest；
+写出 layers/layer_000000.tiff 等 RGBWSV uint8 TIFF；
+写出 reports/openvdb_candidate_report.json；
+写出 reports/production_admission_report.json；
+写出 reports/surface_shell_texture_report.json；
+写出 reports/texture_fidelity_report.json；
+写出 reports/preview_report.json；
+写出 preview/texture_rgb_*.ppm；
+写包先进入 packageDir.staging.*，成功后发布到 packageDir；
+若目标已有旧包，旧包移动为 packageDir.previous.*，避免失败时污染当前可读包；
+OpenVDB OFF 默认构建仍可编译 slicer_cli / rip_reader_test。
+```
+
+关键新增/修改文件：
+
+```text
+src/slicer_core/pipeline/OpenVdbCandidatePipeline.h
+src/slicer_core/pipeline/OpenVdbCandidatePipeline.cpp
+apps/slicer_cli/main.cpp
+CMakeLists.txt
+docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
+docs/slice/REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md
+```
+
 ---
 
 ## 4. 当前未完成任务
@@ -140,7 +167,6 @@ CMakeLists.txt
 11A-R1 后续仍需按任务清单继续：
 
 ```text
-11A-R1-4 Candidate package writer；
 11A-R1-5 Candidate RIP / UI smoke；
 11A-R1-6 UI OpenVDB Candidate 按钮；
 11A-R1-7 完整阶段报告。
@@ -206,6 +232,22 @@ errors = 0。
 material_channel_composer_unit_tests 构建通过；
 新增 candidate_layer_buffer_builder_maps_shell_interior_and_support PASS；
 新增 candidate_layer_buffer_builder_rejects_invalid_masks PASS；
+cmake --build build-openvdb-09p --config Debug --target slicer_cli rip_reader_test 通过；
+.\build-openvdb-09p\Debug\slicer_cli.exe --config samples\configs\openvdb_candidate\closed_textured_obj_candidate.json --openvdb-candidate-slice 通过；
+candidate package 输出 packageDir = output/OpenVdbCandidateClosedTexturedObj；
+candidate package grid = 65 x 65 x 17；
+candidate package modelPixels = 48373；
+candidate package supportPixels = 0；
+candidate package shellPixels = 19132；
+.\build-openvdb-09p\Debug\rip_reader_test.exe --package output\OpenVdbCandidateClosedTexturedObj --summary 通过；
+rip_reader_test 摘要 schema = p0.rgbwsv.2；
+rip_reader_test 摘要 storageMode = stripped；
+rip_reader_test 摘要 bitDepth = 8；
+rip_reader_test 摘要 channelOrder = R G B W S V；
+rip_reader_test 摘要 channelPrintPixels = R=9661 G=48373 B=19132 W=0 S=0 V=0；
+rip_reader_test 摘要 warnings = 0；
+cmake --build build --config Debug --target slicer_cli rip_reader_test 通过；
+ctest --test-dir build -C Debug --output-on-failure 5/5 PASS。
 ```
 
 ---
@@ -215,17 +257,18 @@ material_channel_composer_unit_tests 构建通过；
 风险：
 
 ```text
-candidate writer 尚未实现，OpenVDB 不能被 UI 当作正式切片按钮使用；
+candidate writer 已实现，但 Candidate RIP / UI / preview golden 尚未完成；
+OpenVDB 仍不能被 UI 当作正式切片按钮使用；
 真实 OBJ / 3MF 拓扑质量不稳定，strict_closed 可能继续阻断；
 closed_textured_obj 仅作为 writer 正向 fixture，不代表真实甲片模型已经 strict_closed 可生产；
 OpenVDB ON 轨道和默认 OFF 轨道需要持续分层验证；
 后续 writer 必须继续遵守 p0.rgbwsv.2 / RGBWSV / uint8 / black_is_print。
-当前 builder 尚未接入 CLI candidate path，仍需 11A-R1-4 writer 和 pipeline glue。
+当前 writer 只覆盖 candidate 显式入口，不替换 legacy production path。
 ```
 
 下一步建议：
 
 ```text
-优先执行 11A-R1-4，完成 candidate package writer；
-writer 通过 RIP / UI / preview smoke 之前，不允许替换 legacy production path。
+优先执行 11A-R1-5，补齐 candidate RIP / LayerPreview / OverlayPreview smoke；
+candidate 通过 RIP / UI / preview smoke 之前，不允许替换 legacy production path。
 ```

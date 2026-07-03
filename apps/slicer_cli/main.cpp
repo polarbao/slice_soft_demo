@@ -2,6 +2,7 @@
 #include "slicer_core/diagnostics/ProductionAdmissionPolicy.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/model.h"
+#include "slicer_core/pipeline/OpenVdbCandidatePipeline.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/slicer.h"
 #include "slicer_core/system/ProcessMemoryStats.h"
@@ -408,23 +409,16 @@ int RunOpenVdbCandidateSlice(const CliOptions& options)
             "--openvdb-candidate-slice cannot be combined with --experimental-openvdb-shell");
     }
 
-    const slicer_core::SliceConfig config = slicer_core::load_slice_config(options.config_path);
-    const bool hasCandidateConfig =
-        config.experimental.openvdb_pipeline.enabled
-        && config.experimental.openvdb_pipeline.engine == "openvdb"
-        && config.texture.apply_mode == "surface_shell_from_sdf"
-        && config.experimental.openvdb_pipeline.write_production_rgbwsv;
-    if (!hasCandidateConfig)
-    {
-        throw std::runtime_error(
-            "--openvdb-candidate-slice requires experimental.openvdbPipeline.enabled=true, "
-            "engine=openvdb, texture.applyMode=surface_shell_from_sdf, and writeProductionRgbwsv=true");
-    }
-
-    std::cerr << "slicer_cli error: OpenVDB candidate RGBWSV package writer is not implemented yet\n";
-    std::cerr << "  productionPackageWritten: false\n";
-    std::cerr << "  status: not_implemented\n";
-    return 2;
+    const slicer_core::OpenVdbCandidatePipelineResult result =
+        slicer_core::RunOpenVdbCandidatePipeline(options.config_path);
+    std::cout << "slicer_cli: generated OpenVDB candidate package\n";
+    std::cout << "  packageDir: " << result.package_dir.string() << '\n';
+    std::cout << "  grid: " << result.width_px << " x " << result.height_px << " x " << result.layer_count
+              << '\n';
+    std::cout << "  modelPixels: " << result.model_pixels << '\n';
+    std::cout << "  supportPixels: " << result.support_pixels << '\n';
+    std::cout << "  shellPixels: " << result.shell_pixels << '\n';
+    return 0;
 }
 
 }  // namespace

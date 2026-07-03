@@ -45,7 +45,7 @@ OpenVDB OFF 默认轨道必须继续通过。
 | 11A-R1-1 Pipeline 入口与防误用 guard | DONE | 已新增 candidate CLI flag / legacy path guard；writer 未完成时不写 package |
 | 11A-R1-2 strict_closed PASS fixture | DONE | 已新增 closed textured OBJ fixture 和 candidate config；OpenVDB ON strict_closed probe 通过 |
 | 11A-R1-3 Candidate layer buffer builder | DONE | 已新增 OpenVDB candidate layer buffer builder；shell/interior/support -> per-layer MaterialChannelComposerInput |
-| 11A-R1-4 Candidate package writer | TODO | 写 manifest / TIFF / reports / preview |
+| 11A-R1-4 Candidate package writer | DONE | 已新增 OpenVDB candidate package writer；写 p0.rgbwsv.2 manifest / TIFF / reports / preview；staging 发布避免目标半包 |
 | 11A-R1-5 Candidate RIP / UI smoke | TODO | rip_reader_test、LayerPreview、OverlayPreview |
 | 11A-R1-6 UI OpenVDB Candidate 按钮 | TODO | 新增显式按钮和状态显示 |
 | 11A-R1-7 REPORT_11A_R1 | TODO | 记录完成范围和实际验证 |
@@ -168,8 +168,11 @@ cmake --build build --config Debug --target material_channel_composer_unit_tests
 验证：
 
 ```powershell
+cmake --build build-openvdb-09p --config Debug --target slicer_cli rip_reader_test
 .\build-openvdb-09p\Debug\slicer_cli.exe --config samples\configs\openvdb_candidate\closed_textured_obj_candidate.json --openvdb-candidate-slice
 .\build-openvdb-09p\Debug\rip_reader_test.exe --package output\OpenVdbCandidateClosedTexturedObj --summary
+cmake --build build --config Debug --target slicer_cli rip_reader_test
+ctest --test-dir build -C Debug --output-on-failure
 ```
 
 ---

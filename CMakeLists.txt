@@ -103,6 +103,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/PipelineContext.h
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.cpp
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h
+    src/slicer_core/pipeline/OpenVdbCandidatePipeline.cpp
+    src/slicer_core/pipeline/OpenVdbCandidatePipeline.h
     src/slicer_core/pipeline/PipelineStepResult.cpp
     src/slicer_core/pipeline/PipelineStepResult.h
     src/slicer_core/pipeline/SlicePipeline.cpp
