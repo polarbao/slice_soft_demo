@@ -1,104 +1,130 @@
 {
-  "slicingMode": "relief_heightfield",
-  "input": {
-    "modelPath": "../../models/material_mapping/obj_mtl_texture_rgbwv.obj",
-    "format": "auto"
-  },
-  "output": {
-    "packageDir": "output/ObjMtlTextureRgbWhiteVarnish",
-    "dpiX": 600,
-    "dpiY": 600,
-    "layerThicknessMm": 0.01,
-    "channelOrder": ["R", "G", "B", "W", "S", "V"],
-    "bitDepth": 8,
-    "planarConfig": "contiguous",
-    "storageMode": "stripped",
-    "rowsPerStrip": 64
-  },
-  "autoOrient": {
-    "enabled": true,
-    "maxHeightMm": 6.0,
-    "strategy": "minimize_height_by_right_angle_rotation"
-  },
-  "background": {
-    "value": 255
-  },
-  "modelMaterial": {
-    "materialChannel": "RGB",
-    "applyMode": "solid_volume",
-    "rgb": [0, 0, 0],
-    "whiteValue": 255,
-    "varnishValue": 255
-  },
-  "texture": {
-    "enabled": true,
-    "applyMode": "solid_volume_from_top_surface",
-    "sampler": "bilinear",
-    "uvAddressMode": "clamp",
-    "flipV": true,
-    "fallbackRgb": [0, 0, 0],
-    "missingTexturePolicy": "warn_and_fallback"
-  },
-  "materialRoleMapping": {
-    "enabled": true,
-    "mode": "rules_then_default",
-    "defaultRole": "rgb",
-    "allowInputSupportMaterial": false,
-    "rules": [
-      { "matchNameContains": "white", "role": "white" },
-      { "matchNameContains": "varnish", "role": "varnish" }
-    ]
-  },
-  "materialProcessProfile": {
-    "enabled": true,
-    "name": "obj_mtl_texture_rgb_white_varnish",
-    "target": "uv_relief_obj_mtl_texture",
-    "rgb": {
-      "enabled": true,
-      "source": "texture_or_color"
+    "autoOrient": {
+        "enabled": true,
+        "maxHeightMm": 6,
+        "strategy": "minimize_height_by_right_angle_rotation"
     },
-    "white": {
-      "enabled": true,
-      "mode": "all_model",
-      "coverage": "all_model",
-      "value": 0,
-      "expandPx": 0,
-      "shrinkPx": 0
+    "background": {
+        "value": 255
     },
-    "varnish": {
-      "enabled": true,
-      "mode": "all_model",
-      "topLayers": 1,
-      "value": 0,
-      "coverage": "model_surface"
+    "input": {
+        "format": "auto",
+        "modelPath": "../../models/material_mapping/obj_mtl_texture_rgbwv.obj"
     },
+    "materialProcessProfile": {
+        "enabled": true,
+        "name": "obj_mtl_texture_rgb_white_varnish",
+        "rgb": {
+            "enabled": true,
+            "source": "texture_or_color"
+        },
+        "support": {
+            "expected": true,
+            "mode": "existing_support_pipeline"
+        },
+        "target": "uv_relief_obj_mtl_texture",
+        "validation": {
+            "maxUnexpectedOverlapPixels": 0,
+            "requireRgbPixels": true,
+            "requireSupportPixels": false,
+            "requireVarnishPixels": true,
+            "requireWhitePixels": true
+        },
+        "varnish": {
+            "coverage": "model_surface",
+            "enabled": true,
+            "mode": "all_model",
+            "topLayers": 1,
+            "value": 0
+        },
+        "white": {
+            "coverage": "all_model",
+            "enabled": true,
+            "expandPx": 0,
+            "mode": "all_model",
+            "shrinkPx": 0,
+            "value": 0
+        }
+    },
+    "materialRoleMapping": {
+        "allowInputSupportMaterial": false,
+        "defaultRole": "rgb",
+        "enabled": true,
+        "mode": "rules_then_default",
+        "rules": [
+            {
+                "matchNameContains": "white",
+                "role": "white"
+            },
+            {
+                "matchNameContains": "varnish",
+                "role": "varnish"
+            }
+        ]
+    },
+    "modelMaterial": {
+        "applyMode": "solid_volume",
+        "materialChannel": "RGB",
+        "rgb": [
+            0,
+            0,
+            0
+        ],
+        "varnishValue": 255,
+        "whiteValue": 255
+    },
+    "output": {
+        "bitDepth": 8,
+        "channelOrder": [
+            "R",
+            "G",
+            "B",
+            "W",
+            "S",
+            "V"
+        ],
+        "dpiX": 600,
+        "dpiY": 600,
+        "layerThicknessMm": 0.01,
+        "packageDir": "output/ObjMtlTextureRgbWhiteVarnish",
+        "planarConfig": "contiguous",
+        "rowsPerStrip": 64,
+        "storageMode": "stripped"
+    },
+    "preview": {
+        "channels": [
+            "texture_rgb",
+            "white",
+            "varnish",
+            "support"
+        ],
+        "enabled": true,
+        "format": "png",
+        "interval": 10
+    },
+    "relief": {
+        "baseZMm": 0,
+        "fillMode": "intersection_range"
+    },
+    "slicingMode": "relief_heightfield",
     "support": {
-      "expected": true,
-      "mode": "existing_support_pipeline"
+        "enabled": true,
+        "minAreaPx": 0,
+        "mode": "bottom_projection",
+        "offsetMm": 0,
+        "value": 0
     },
-    "validation": {
-      "requireRgbPixels": true,
-      "requireWhitePixels": true,
-      "requireVarnishPixels": true,
-      "requireSupportPixels": false,
-      "maxUnexpectedOverlapPixels": 0
+    "texture": {
+        "applyMode": "solid_volume_from_top_surface",
+        "enabled": true,
+        "fallbackRgb": [
+            0,
+            0,
+            0
+        ],
+        "flipV": true,
+        "missingTexturePolicy": "warn_and_fallback",
+        "sampler": "bilinear",
+        "uvAddressMode": "clamp"
     }
-  },
-  "support": {
-    "enabled": true,
-    "mode": "bottom_projection",
-    "value": 0,
-    "offsetMm": 0.0,
-    "minAreaPx": 0
-  },
-  "relief": {
-    "fillMode": "intersection_range",
-    "baseZMm": 0.0
-  },
-  "preview": {
-    "enabled": false,
-    "format": "png",
-    "interval": 1,
-    "channels": ["texture_rgb", "white", "varnish", "support"]
-  }
 }
