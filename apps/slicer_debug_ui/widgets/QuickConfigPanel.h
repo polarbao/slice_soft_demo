@@ -33,8 +33,8 @@ private slots:
     void OnModelPathEdited();
     void OnOutputDirEdited();
     void OnLayerHeightChanged(double value);
-    void OnTexturePolicyChanged(const QString& value);
-    void OnNonSurfaceRgbPolicyChanged(const QString& value);
+    void OnTexturePolicyChanged(int index);
+    void OnNonSurfaceRgbPolicyChanged(int index);
     void OnSupportEnabledChanged(bool checked);
     void OnWhiteEnabledChanged(bool checked);
     void OnVarnishEnabledChanged(bool checked);

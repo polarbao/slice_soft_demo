@@ -44,7 +44,9 @@ LayerPreviewPanel::LayerPreviewPanel(QWidget* parent)
     auto* controls = new QHBoxLayout();
 
     m_channelSelector = new QComboBox(this);
+    m_channelSelector->setToolTip("选择生产层视图通道。production RGB 会读取 TIFF RGBWSV 数据，点击图像可查看六通道像素探针。");
     m_layerSlider = new QSlider(Qt::Horizontal, this);
+    m_layerSlider->setToolTip("按真实 layerIndex 从低 Z 到高 Z 浏览层数据。");
     auto* fitButton = MakeButton("适应", this);
     auto* actualButton = MakeButton("1:1", this);
     auto* zoomInButton = MakeButton("+", this);

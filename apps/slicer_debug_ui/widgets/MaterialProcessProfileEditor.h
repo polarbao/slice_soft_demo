@@ -30,7 +30,7 @@ private:
     QLineEdit* target_{nullptr};
     QCheckBox* rgb_enabled_{nullptr};
     QCheckBox* white_enabled_{nullptr};
-    QLineEdit* white_coverage_{nullptr};
+    QComboBox* white_coverage_{nullptr};
     QSpinBox* white_expand_{nullptr};
     QSpinBox* white_shrink_{nullptr};
     QCheckBox* varnish_enabled_{nullptr};

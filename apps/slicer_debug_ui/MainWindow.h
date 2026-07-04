@@ -95,6 +95,7 @@ private:
     QPlainTextEdit* compare_view_{nullptr};
     QComboBox* m_scenarioSelector{nullptr};
     QCheckBox* m_showAdvancedScenariosCheck{nullptr};
+    QLabel* m_scenarioCountLabel{nullptr};
     QLabel* m_scenarioDescriptionLabel{nullptr};
     QPushButton* build_button_{nullptr};
     QPushButton* run_slicer_button_{nullptr};

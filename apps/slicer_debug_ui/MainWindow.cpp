@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QDesktopServices>
 #include <QComboBox>
@@ -8,6 +9,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -58,6 +60,72 @@ void addPathRow(QVBoxLayout* layout, const QString& label, QLineEdit* edit, QPus
     row->addWidget(edit, 1);
     row->addWidget(browse);
     layout->addLayout(row);
+}
+
+QString MakeScenarioDisplayLabel(const ScenarioEntry& scenario)
+{
+    QString label = scenario.category.isEmpty() ? scenario.name : scenario.category + " / " + scenario.name;
+    if (scenario.experimental || scenario.requiresopenvdb)
+    {
+        label += "（实验）";
+    }
+    if (scenario.visibility == "fixture")
+    {
+        label += "（测试）";
+    }
+    else if (scenario.visibility == "advanced")
+    {
+        label += "（高级）";
+    }
+    return label;
+}
+
+QString MakeScenarioToolTip(const ScenarioEntry& scenario)
+{
+    QStringList lines;
+    lines.push_back(MakeScenarioDisplayLabel(scenario));
+    if (!scenario.description.isEmpty())
+    {
+        lines.push_back(scenario.description);
+    }
+    lines.push_back("配置：" + scenario.configpath);
+    if (!scenario.packagedir.isEmpty())
+    {
+        lines.push_back("输出包：" + scenario.packagedir);
+    }
+    lines.push_back("可见性：" + scenario.visibility);
+    if (scenario.experimental || scenario.requiresopenvdb)
+    {
+        lines.push_back("实验场景：用于专项验证，不默认作为生产切片路径。");
+    }
+    return lines.join('\n');
+}
+
+void ConfigureLongTextCombo(QComboBox* combo, const int minimumContentsLength)
+{
+    combo->setMinimumContentsLength(minimumContentsLength);
+    combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    combo->setMaxVisibleItems(24);
+    if (combo->view() != nullptr)
+    {
+        combo->view()->setMinimumWidth(420);
+    }
+}
+
+void UpdateComboPopupWidth(QComboBox* combo)
+{
+    if (combo == nullptr || combo->view() == nullptr)
+    {
+        return;
+    }
+
+    const QFontMetrics metrics(combo->font());
+    int popupWidth = combo->width();
+    for (int index = 0; index < combo->count(); ++index)
+    {
+        popupWidth = qMax(popupWidth, metrics.horizontalAdvance(combo->itemText(index)) + 72);
+    }
+    combo->view()->setMinimumWidth(qMin(popupWidth, 860));
 }
 
 QJsonArray MakeNumberArray(const std::initializer_list<double> values)
@@ -119,12 +187,18 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     config_editor_panel_ = new ConfigEditorPanel(&config_document_, center_tabs);
     channel_chart_panel_ = new ChannelChartPanel(center_tabs);
     preview_overlay_panel_ = new PreviewOverlayPanel(center_tabs);
-    center_tabs->addTab(m_layerPreviewPanel, "层预览");
-    center_tabs->addTab(report_panel_, "报告");
-    center_tabs->addTab(channel_chart_panel_, "曲线");
-    center_tabs->addTab(config_editor_panel_, "配置");
-    center_tabs->addTab(preview_overlay_panel_, "叠加预览");
-    center_tabs->addTab(preview_panel_, "原始预览");
+    const int layerPreviewTab = center_tabs->addTab(m_layerPreviewPanel, "层预览");
+    const int reportTab = center_tabs->addTab(report_panel_, "报告");
+    const int chartTab = center_tabs->addTab(channel_chart_panel_, "曲线");
+    const int configTab = center_tabs->addTab(config_editor_panel_, "配置");
+    const int overlayTab = center_tabs->addTab(preview_overlay_panel_, "叠加预览");
+    const int rawPreviewTab = center_tabs->addTab(preview_panel_, "原始预览");
+    center_tabs->setTabToolTip(layerPreviewTab, "生产层检查：按真实 layerIndex 查看 RGB/W/S/V、生产 RGB 和像素探针。");
+    center_tabs->setTabToolTip(reportTab, "查看 manifest 与 reports JSON 摘要。");
+    center_tabs->setTabToolTip(chartTab, "查看各通道随层变化的统计曲线。");
+    center_tabs->setTabToolTip(configTab, "编辑当前 JSON 配置；常用材料、支撑、预览和实验选项在这里。");
+    center_tabs->setTabToolTip(overlayTab, "同层叠加预览：把 RGB 与支撑/白墨/光油伪彩合成，便于检查材料关系。");
+    center_tabs->setTabToolTip(rawPreviewTab, "原始文件预览：直接浏览 preview 目录生成的 PNG/PPM 调试图。");
     center_tabs->setCurrentWidget(m_layerPreviewPanel);
 
     QWidget* right = createRightPanel();
@@ -320,6 +394,11 @@ void MainWindow::OnScenarioChanged(const int index)
     }
 
     const QString scenarioId = m_scenarioSelector->itemData(index).toString();
+    const QString itemToolTip = m_scenarioSelector->itemData(index, Qt::ToolTipRole).toString();
+    if (!itemToolTip.isEmpty())
+    {
+        m_scenarioSelector->setToolTip(itemToolTip);
+    }
     if (scenarioId.isEmpty())
     {
         if (m_scenarioDescriptionLabel != nullptr)
@@ -399,14 +478,23 @@ QWidget* MainWindow::createProjectPanel() {
     auto* profile_b_browse = makeButton("...", panel);
 
     m_scenarioSelector = new QComboBox(panel);
-    m_showAdvancedScenariosCheck = new QCheckBox("显示高级/测试", panel);
+    ConfigureLongTextCombo(m_scenarioSelector, 22);
+    m_scenarioSelector->setToolTip("选择常用切片场景。默认隐藏高级/测试夹具；勾选“显示全部场景”后可查看完整列表。");
+    m_showAdvancedScenariosCheck = new QCheckBox("显示全部场景", panel);
+    m_showAdvancedScenariosCheck->setToolTip("勾选后显示高级、测试夹具和实验场景；普通切片建议先使用默认列表。");
     auto* scenario_reload = makeButton("刷新", panel);
+    scenario_reload->setToolTip("重新读取 samples/scenarios/slicer_scenarios.json。");
     auto* scenario_row = new QHBoxLayout();
-    scenario_row->addWidget(new QLabel("场景/Profile"));
+    auto* scenarioLabel = new QLabel("场景/Profile", panel);
+    scenarioLabel->setToolTip("Profile 是可复用的切片配置模板，选择后会填充配置文件和输出包路径。");
+    scenario_row->addWidget(scenarioLabel);
     scenario_row->addWidget(m_scenarioSelector, 1);
     scenario_row->addWidget(m_showAdvancedScenariosCheck);
     scenario_row->addWidget(scenario_reload);
     layout->addLayout(scenario_row);
+    m_scenarioCountLabel = new QLabel("场景：尚未加载", panel);
+    m_scenarioCountLabel->setWordWrap(true);
+    layout->addWidget(m_scenarioCountLabel);
     m_scenarioDescriptionLabel = new QLabel("场景索引用于替代大量 VSCode 专用调试项。", panel);
     m_scenarioDescriptionLabel->setWordWrap(true);
     layout->addWidget(m_scenarioDescriptionLabel);
@@ -792,35 +880,45 @@ void MainWindow::LoadScenarios()
     m_scenarioSelector->blockSignals(true);
     m_scenarioSelector->clear();
     m_scenarioSelector->addItem("自定义路径", QString{});
+    m_scenarioSelector->setItemData(
+        0,
+        "自定义路径：手动选择配置文件和输出包，不使用场景索引。",
+        Qt::ToolTipRole);
 
+    int enabledCount = 0;
+    int visibleCount = 0;
+    int hiddenCount = 0;
     for (const ScenarioEntry& scenario : m_scenarioRegistry.Entries())
     {
         if (!scenario.enabled)
         {
             continue;
         }
+        ++enabledCount;
         if (!ShouldShowScenario(scenario))
         {
+            ++hiddenCount;
             continue;
         }
 
-        QString label = scenario.category.isEmpty() ? scenario.name : scenario.category + " / " + scenario.name;
-        if (scenario.experimental || scenario.requiresopenvdb)
-        {
-            label += "（实验）";
-        }
-        if (scenario.visibility == "fixture")
-        {
-            label += "（测试）";
-        }
-        else if (scenario.visibility == "advanced")
-        {
-            label += "（高级）";
-        }
-        m_scenarioSelector->addItem(label, scenario.id);
+        const int itemIndex = m_scenarioSelector->count();
+        m_scenarioSelector->addItem(MakeScenarioDisplayLabel(scenario), scenario.id);
+        m_scenarioSelector->setItemData(itemIndex, MakeScenarioToolTip(scenario), Qt::ToolTipRole);
+        ++visibleCount;
     }
 
     m_scenarioSelector->blockSignals(false);
+    UpdateComboPopupWidth(m_scenarioSelector);
+    if (m_scenarioCountLabel != nullptr)
+    {
+        QString countText = QString("场景：显示 %1 / 可用 %2").arg(visibleCount).arg(enabledCount);
+        if (hiddenCount > 0)
+        {
+            countText += QString("，隐藏高级/测试 %1 个").arg(hiddenCount);
+        }
+        countText += "。完整说明可悬停下拉项查看。";
+        m_scenarioCountLabel->setText(countText);
+    }
 
     QString targetId = !currentId.isEmpty() ? currentId : defaultId;
     int targetIndex = targetId.isEmpty() ? 0 : m_scenarioSelector->findData(targetId);

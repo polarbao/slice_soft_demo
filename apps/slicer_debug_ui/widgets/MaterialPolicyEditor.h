@@ -20,13 +20,14 @@ private:
     void setString(const QStringList& path, QLineEdit* edit);
     void setBool(const QStringList& path, QCheckBox* check);
     void setInt(const QStringList& path, QSpinBox* spin);
+    void setCombo(const QStringList& path, QComboBox* combo, const QString& fallback = QString());
 
     ConfigDocument* document_{nullptr};
     bool loading_{false};
 
     QCheckBox* enabled_{nullptr};
     QCheckBox* rgb_enabled_{nullptr};
-    QLineEdit* rgb_source_{nullptr};
+    QComboBox* rgb_source_{nullptr};
     QCheckBox* white_enabled_{nullptr};
     QComboBox* white_mode_{nullptr};
     QLineEdit* white_layers_{nullptr};
@@ -35,5 +36,5 @@ private:
     QComboBox* varnish_mode_{nullptr};
     QSpinBox* varnish_top_layers_{nullptr};
     QSpinBox* varnish_value_{nullptr};
-    QLineEdit* conflict_policy_{nullptr};
+    QComboBox* conflict_policy_{nullptr};
 };

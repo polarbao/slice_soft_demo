@@ -46,7 +46,9 @@ PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
     auto* controls = new QHBoxLayout();
     mode_ = new QComboBox(this);
     mode_->addItems({"单通道", "RGB + W 白墨", "RGB + V 光油", "RGB + S 支撑"});
+    mode_->setToolTip("选择叠加方式：仅把同一 layerIndex 的 RGB 与 W/S/V 伪彩图合成，用于检查材料相对位置。");
     layer_slider_ = new QSlider(Qt::Horizontal, this);
+    layer_slider_->setToolTip("按真实 layerIndex 从低 Z 到高 Z 浏览叠加结果。");
     controls->addWidget(mode_);
     controls->addWidget(layer_slider_, 1);
     controls->addWidget(makeButton("+", this));

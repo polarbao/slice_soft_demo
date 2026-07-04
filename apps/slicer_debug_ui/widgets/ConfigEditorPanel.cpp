@@ -21,6 +21,19 @@ QPushButton* button(const QString& text, QWidget* parent) {
     return result;
 }
 
+void addComboOption(QComboBox* combo, const QString& label, const QString& value) {
+    combo->addItem(label, value);
+}
+
+void setComboValue(QComboBox* combo, const QString& value) {
+    int index = combo->findData(value);
+    if (index < 0) {
+        index = combo->count();
+        combo->addItem("未知值：" + value, value);
+    }
+    combo->setCurrentIndex(index);
+}
+
 }  // namespace
 
 ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) : QWidget(parent), document_(document) {
@@ -30,14 +43,21 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     path_label_ = new QLabel("配置：未加载", this);
     path_label_->setWordWrap(true);
     dirty_label_ = new QLabel("状态：未修改", this);
+    auto* help_label = new QLabel(
+        "功能设置位置：配置 -> 常用。材料、白墨、光油、支撑、预览和 OpenVDB 实验开关都在该页；高级细项分布在“工艺 Profile / 材料策略 / 材料角色 / 支撑”。详细说明见 docs/user_guides/QT_DEBUG_UI_操作手册.md 与 SliceSoft切片策略与材料层说明.md。",
+        this);
+    help_label->setWordWrap(true);
     auto* storage_row = new QHBoxLayout();
     storage_mode_ = new QComboBox(this);
-    storage_mode_->addItems({"stripped", "tiled"});
+    addComboOption(storage_mode_, "按条带存储", "stripped");
+    addComboOption(storage_mode_, "按瓦片存储", "tiled");
+    storage_mode_->setToolTip("控制输出 TIFF 的存储组织方式；不改变 RGBWSV 通道顺序、位深或黑色打印协议。");
     storage_row->addWidget(new QLabel("TIFF 存储模式", this));
     storage_row->addWidget(storage_mode_);
     storage_row->addStretch(1);
     header->addWidget(path_label_);
     header->addWidget(dirty_label_);
+    header->addWidget(help_label);
     header->addLayout(storage_row);
     layout->addLayout(header);
 
@@ -60,12 +80,18 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     role_mapping_editor_ = new MaterialRoleMappingEditor(document_, tabs);
     support_editor_ = new SupportEditor(document_, tabs);
     diff_panel_ = new ConfigDiffPanel(document_, tabs);
-    tabs->addTab(quick_config_panel_, "常用");
-    tabs->addTab(profile_editor_, "工艺 Profile");
-    tabs->addTab(policy_editor_, "材料策略");
-    tabs->addTab(role_mapping_editor_, "材料角色");
-    tabs->addTab(support_editor_, "支撑");
-    tabs->addTab(diff_panel_, "配置差异");
+    const int quickTab = tabs->addTab(quick_config_panel_, "常用");
+    const int profileTab = tabs->addTab(profile_editor_, "工艺 Profile");
+    const int policyTab = tabs->addTab(policy_editor_, "材料策略");
+    const int roleTab = tabs->addTab(role_mapping_editor_, "材料角色");
+    const int supportTab = tabs->addTab(support_editor_, "支撑");
+    const int diffTab = tabs->addTab(diff_panel_, "配置差异");
+    tabs->setTabToolTip(quickTab, "最常用设置：模型路径、输出目录、层高、纹理策略、白墨、光油、支撑、预览、OpenVDB 实验开关。");
+    tabs->setTabToolTip(profileTab, "工艺验证 Profile：描述本配置期望哪些材料通道存在，以及白墨/光油的工艺参数。");
+    tabs->setTabToolTip(policyTab, "生产材料策略：决定 RGB、白墨、光油如何写入 RGBWSV 通道。");
+    tabs->setTabToolTip(roleTab, "多材料输入映射：把 OBJ/3MF 材料名映射为 RGB、白墨、光油、支撑或忽略。");
+    tabs->setTabToolTip(supportTab, "支撑生成策略：控制 S 通道支撑区域、膨胀和孤岛过滤参数。");
+    tabs->setTabToolTip(diffTab, "查看当前配置与磁盘配置之间的差异。");
     layout->addWidget(tabs, 1);
 
     validation_view_ = new QPlainTextEdit(this);
@@ -79,7 +105,7 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     connect(validate_button, &QPushButton::clicked, this, &ConfigEditorPanel::validate);
     connect(document_, &ConfigDocument::dirtyChanged, this, &ConfigEditorPanel::updateDirty);
     connect(document_, &ConfigDocument::validationChanged, this, &ConfigEditorPanel::updateValidation);
-    connect(storage_mode_, &QComboBox::currentTextChanged, this, &ConfigEditorPanel::updateStorageMode);
+    connect(storage_mode_, qOverload<int>(&QComboBox::currentIndexChanged), this, &ConfigEditorPanel::updateStorageMode);
 }
 
 bool ConfigEditorPanel::loadConfig(const QString& path) {
@@ -88,7 +114,7 @@ bool ConfigEditorPanel::loadConfig(const QString& path) {
         return false;
     }
     path_label_->setText("配置：" + document_->path());
-    storage_mode_->setCurrentText(document_->value({"output", "storageMode"}).toString("stripped"));
+    setComboValue(storage_mode_, document_->value({"output", "storageMode"}).toString("stripped"));
     refreshEditors();
     emit configPathChanged(document_->path());
     emit statusMessage("已加载配置：" + document_->path());
@@ -158,8 +184,12 @@ void ConfigEditorPanel::updateValidation(const QStringList& warnings, const QStr
     validation_view_->setPlainText(lines.join('\n'));
 }
 
-void ConfigEditorPanel::updateStorageMode(const QString& value) {
+void ConfigEditorPanel::updateStorageMode(const int index) {
     if (!document_->document().isObject()) {
+        return;
+    }
+    const QString value = storage_mode_->itemData(index).toString();
+    if (value.isEmpty()) {
         return;
     }
     if (document_->value({"output", "storageMode"}).toString() != value) {

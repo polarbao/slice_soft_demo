@@ -26,6 +26,27 @@ QLineEdit* MakePathEdit(QWidget* parent)
     return edit;
 }
 
+void AddComboOption(QComboBox* combo, const QString& label, const QString& value)
+{
+    combo->addItem(label, value);
+}
+
+void SetComboValue(QComboBox* combo, const QString& value)
+{
+    int index = combo->findData(value);
+    if (index < 0)
+    {
+        index = combo->count();
+        combo->addItem("未知值：" + value, value);
+    }
+    combo->setCurrentIndex(index);
+}
+
+QString ComboValue(const QComboBox* combo, const int index)
+{
+    return combo->itemData(index).toString();
+}
+
 }  // namespace
 
 QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
@@ -34,17 +55,22 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 {
     auto* layout = new QVBoxLayout(this);
     auto* basicGroup = new QGroupBox("基础", this);
+    basicGroup->setToolTip("基础输入输出：选择模型、输出目录和层高。");
     auto* basicForm = new QFormLayout(basicGroup);
 
     m_modelPathEdit = MakePathEdit(this);
+    m_modelPathEdit->setToolTip("待切片模型路径。OBJ 贴图通常放在 OBJ/MTL 同级目录。");
     auto* modelBrowseButton = MakeButton("...", this);
+    modelBrowseButton->setToolTip("选择 OBJ、STL 或 3MF 模型文件。");
     auto* modelPathRow = new QHBoxLayout();
     modelPathRow->addWidget(m_modelPathEdit, 1);
     modelPathRow->addWidget(modelBrowseButton);
     basicForm->addRow("模型文件", modelPathRow);
 
     m_outputDirEdit = MakePathEdit(this);
+    m_outputDirEdit->setToolTip("输出 RGBWSV package 的目录。");
     auto* outputBrowseButton = MakeButton("...", this);
+    outputBrowseButton->setToolTip("选择输出目录。");
     auto* outputDirRow = new QHBoxLayout();
     outputDirRow->addWidget(m_outputDirEdit, 1);
     outputDirRow->addWidget(outputBrowseButton);
@@ -55,18 +81,27 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_layerHeightSpin->setDecimals(4);
     m_layerHeightSpin->setSingleStep(0.005);
     m_layerHeightSpin->setSuffix(" mm");
+    m_layerHeightSpin->setToolTip("切片层厚，直接影响层数、输出文件数量和切片耗时。");
     basicForm->addRow("层高", m_layerHeightSpin);
 
     auto* materialGroup = new QGroupBox("材料", this);
+    materialGroup->setToolTip("常用材料设置：控制 RGB 纹理、非表面 RGB、白墨和光油。");
     auto* materialForm = new QFormLayout(materialGroup);
     m_texturePolicyCombo = new QComboBox(this);
-    m_texturePolicyCombo->setEditable(true);
-    m_texturePolicyCombo->addItems({"top_surface_band", "solid_volume_from_top_surface", "solid_volume", "surface_shell_from_sdf", "disabled"});
+    AddComboOption(m_texturePolicyCombo, "顶面纹理带", "top_surface_band");
+    AddComboOption(m_texturePolicyCombo, "顶面纹理投影到实体", "solid_volume_from_top_surface");
+    AddComboOption(m_texturePolicyCombo, "实体填充", "solid_volume");
+    AddComboOption(m_texturePolicyCombo, "SDF 表面壳层", "surface_shell_from_sdf");
+    AddComboOption(m_texturePolicyCombo, "禁用纹理", "disabled");
+    m_texturePolicyCombo->setToolTip("控制贴图颜色如何写入模型：通常全彩 OBJ 选“顶面纹理带”；OpenVDB 壳层实验选“SDF 表面壳层”。");
     materialForm->addRow("纹理策略", m_texturePolicyCombo);
 
     m_nonSurfaceRgbPolicyCombo = new QComboBox(this);
-    m_nonSurfaceRgbPolicyCombo->setEditable(true);
-    m_nonSurfaceRgbPolicyCombo->addItems({"model_material", "empty", "fallback_rgb", "material_policy"});
+    AddComboOption(m_nonSurfaceRgbPolicyCombo, "使用模型材料", "model_material");
+    AddComboOption(m_nonSurfaceRgbPolicyCombo, "视为空白", "empty");
+    AddComboOption(m_nonSurfaceRgbPolicyCombo, "使用备用 RGB", "fallback_rgb");
+    AddComboOption(m_nonSurfaceRgbPolicyCombo, "交给材料策略", "material_policy");
+    m_nonSurfaceRgbPolicyCombo->setToolTip("控制非表面纹理带的模型实体区域如何写 RGB：可作为模型填充、空白、备用色或交给材料策略处理。");
     materialForm->addRow("非表面 RGB", m_nonSurfaceRgbPolicyCombo);
 
     m_supportEnabledCheck = new QCheckBox("启用支撑", this);
@@ -74,25 +109,35 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_varnishEnabledCheck = new QCheckBox("启用光油", this);
     m_previewEnabledCheck = new QCheckBox("生成预览", this);
     m_openVdbEnabledCheck = new QCheckBox("启用 OpenVDB 实验管线", this);
+    m_supportEnabledCheck->setToolTip("启用后生成 S 通道支撑材料，具体形态在“支撑”页设置。");
+    m_whiteEnabledCheck->setToolTip("启用后按材料策略写入 W 通道白墨。");
+    m_varnishEnabledCheck->setToolTip("启用后按材料策略写入 V 通道光油。");
+    m_previewEnabledCheck->setToolTip("启用后按间隔输出 preview PNG/PPM，便于 UI 预览，但会增加保存耗时。");
+    m_openVdbEnabledCheck->setToolTip("实验开关：当前用于 OpenVDB 诊断/候选流程，不代表默认生产切片路径。");
     materialForm->addRow(m_whiteEnabledCheck);
     materialForm->addRow(m_varnishEnabledCheck);
 
     m_varnishTopLayersSpin = new QSpinBox(this);
     m_varnishTopLayersSpin->setRange(0, 100000);
+    m_varnishTopLayersSpin->setToolTip("光油覆盖顶部 N 层；0 表示不按顶部层数生成光油。");
     materialForm->addRow("光油顶部层数", m_varnishTopLayersSpin);
 
     auto* supportGroup = new QGroupBox("支撑", this);
+    supportGroup->setToolTip("支撑总开关；细节请切换到“支撑”页。");
     auto* supportForm = new QFormLayout(supportGroup);
     supportForm->addRow(m_supportEnabledCheck);
 
     auto* previewGroup = new QGroupBox("预览", this);
+    previewGroup->setToolTip("控制调试预览图片输出。生产 TIFF 输出不依赖 preview。");
     auto* previewForm = new QFormLayout(previewGroup);
     previewForm->addRow(m_previewEnabledCheck);
     m_previewIntervalSpin = new QSpinBox(this);
     m_previewIntervalSpin->setRange(1, 100000);
+    m_previewIntervalSpin->setToolTip("每隔多少层保存一次 preview 图片。值越小图片越多，保存耗时越高。");
     previewForm->addRow("预览间隔", m_previewIntervalSpin);
 
     auto* experimentalGroup = new QGroupBox("实验", this);
+    experimentalGroup->setToolTip("实验能力入口。OpenVDB 仍是候选/诊断路径，正式生产输出以非 OpenVDB 路径为准。");
     auto* experimentalForm = new QFormLayout(experimentalGroup);
     experimentalForm->addRow(m_openVdbEnabledCheck);
 
@@ -112,8 +157,8 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     connect(m_modelPathEdit, &QLineEdit::editingFinished, this, &QuickConfigPanel::OnModelPathEdited);
     connect(m_outputDirEdit, &QLineEdit::editingFinished, this, &QuickConfigPanel::OnOutputDirEdited);
     connect(m_layerHeightSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnLayerHeightChanged);
-    connect(m_texturePolicyCombo, &QComboBox::currentTextChanged, this, &QuickConfigPanel::OnTexturePolicyChanged);
-    connect(m_nonSurfaceRgbPolicyCombo, &QComboBox::currentTextChanged, this, &QuickConfigPanel::OnNonSurfaceRgbPolicyChanged);
+    connect(m_texturePolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnTexturePolicyChanged);
+    connect(m_nonSurfaceRgbPolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnNonSurfaceRgbPolicyChanged);
     connect(m_supportEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnSupportEnabledChanged);
     connect(m_whiteEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnWhiteEnabledChanged);
     connect(m_varnishEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnVarnishEnabledChanged);
@@ -130,8 +175,8 @@ void QuickConfigPanel::LoadFromDocument()
     m_modelPathEdit->setText(StringValue({"input", "modelPath"}));
     m_outputDirEdit->setText(StringValue({"output", "packageDir"}));
     m_layerHeightSpin->setValue(DoubleValue({"output", "layerThicknessMm"}, 0.01));
-    m_texturePolicyCombo->setCurrentText(StringValue({"texture", "applyMode"}, "top_surface_band"));
-    m_nonSurfaceRgbPolicyCombo->setCurrentText(StringValue({"texture", "nonSurfaceRgbPolicy"}, "model_material"));
+    SetComboValue(m_texturePolicyCombo, StringValue({"texture", "applyMode"}, "top_surface_band"));
+    SetComboValue(m_nonSurfaceRgbPolicyCombo, StringValue({"texture", "nonSurfaceRgbPolicy"}, "model_material"));
     m_supportEnabledCheck->setChecked(BoolValue({"support", "enabled"}, true));
     m_whiteEnabledCheck->setChecked(BoolValue({"materialPolicy", "white", "enabled"}, false));
     m_varnishEnabledCheck->setChecked(BoolValue({"materialPolicy", "varnish", "enabled"}, false));
@@ -189,10 +234,15 @@ void QuickConfigPanel::OnLayerHeightChanged(const double value)
     }
 }
 
-void QuickConfigPanel::OnTexturePolicyChanged(const QString& value)
+void QuickConfigPanel::OnTexturePolicyChanged(const int index)
 {
     if (!m_loading)
     {
+        const QString value = ComboValue(m_texturePolicyCombo, index);
+        if (value.isEmpty())
+        {
+            return;
+        }
         SetValueIfChanged({"texture", "applyMode"}, value);
         if (value == "top_surface_band")
         {
@@ -201,10 +251,15 @@ void QuickConfigPanel::OnTexturePolicyChanged(const QString& value)
     }
 }
 
-void QuickConfigPanel::OnNonSurfaceRgbPolicyChanged(const QString& value)
+void QuickConfigPanel::OnNonSurfaceRgbPolicyChanged(const int index)
 {
     if (!m_loading)
     {
+        const QString value = ComboValue(m_nonSurfaceRgbPolicyCombo, index);
+        if (value.isEmpty())
+        {
+            return;
+        }
         SetValueIfChanged({"texture", "nonSurfaceRgbPolicy"}, value);
     }
 }

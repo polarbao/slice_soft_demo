@@ -59,9 +59,11 @@ PreviewPanel::PreviewPanel(QWidget* parent) : QWidget(parent) {
     auto* controls = new QHBoxLayout();
 
     channel_selector_ = new QComboBox(this);
+    channel_selector_->setToolTip("直接浏览输出包 preview 目录中的 PNG/PPM 调试图；它不是生产 TIFF 的六通道探针视图。");
     controls->addWidget(channel_selector_);
 
     layer_slider_ = new QSlider(Qt::Horizontal, this);
+    layer_slider_->setToolTip("按当前通道的原始 preview 文件顺序浏览。生产层检查优先使用“层预览”。");
     controls->addWidget(layer_slider_, 1);
 
     auto* fit_button = new QPushButton("适应", this);

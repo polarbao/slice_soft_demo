@@ -18,26 +18,63 @@ QSpinBox* makeLayerSpin(QWidget* parent) {
     return spin;
 }
 
+void addComboOption(QComboBox* combo, const QString& label, const QString& value) {
+    combo->addItem(label, value);
+}
+
+QString comboValue(const QComboBox* combo, const int index) {
+    return combo->itemData(index).toString();
+}
+
+void setComboValue(QComboBox* combo, const QString& value) {
+    int index = combo->findData(value);
+    if (index < 0) {
+        index = combo->count();
+        combo->addItem("未知值：" + value, value);
+    }
+    combo->setCurrentIndex(index);
+}
+
 }  // namespace
 
 MaterialPolicyEditor::MaterialPolicyEditor(ConfigDocument* document, QWidget* parent)
     : QWidget(parent), document_(document) {
     auto* layout = new QVBoxLayout(this);
     auto* form = new QFormLayout();
-    enabled_ = new QCheckBox("启用 MaterialPolicy", this);
+    enabled_ = new QCheckBox("启用材料策略", this);
     rgb_enabled_ = new QCheckBox("RGB 启用", this);
-    rgb_source_ = new QLineEdit(this);
+    rgb_source_ = new QComboBox(this);
+    addComboOption(rgb_source_, "纹理或备用色", "texture_or_fallback");
+    addComboOption(rgb_source_, "模型材料", "modelMaterial");
     white_enabled_ = new QCheckBox("白墨启用", this);
     white_mode_ = new QComboBox(this);
-    white_mode_->addItems({"underbase", "disabled", "all_model"});
+    addComboOption(white_mode_, "白墨底层", "underbase");
+    addComboOption(white_mode_, "禁用", "disabled");
+    addComboOption(white_mode_, "覆盖整个模型", "all_model");
     white_layers_ = new QLineEdit(this);
     white_value_ = makeByteSpin(this);
     varnish_enabled_ = new QCheckBox("光油启用", this);
     varnish_mode_ = new QComboBox(this);
-    varnish_mode_->addItems({"top_n_layers", "all_model", "disabled"});
+    addComboOption(varnish_mode_, "顶部 N 层", "top_n_layers");
+    addComboOption(varnish_mode_, "覆盖整个模型", "all_model");
+    addComboOption(varnish_mode_, "禁用", "disabled");
     varnish_top_layers_ = makeLayerSpin(this);
     varnish_value_ = makeByteSpin(this);
-    conflict_policy_ = new QLineEdit(this);
+    conflict_policy_ = new QComboBox(this);
+    addComboOption(conflict_policy_, "模型材料优先于支撑", "model_material_over_support");
+
+    enabled_->setToolTip("启用后按本页规则写入 RGB/W/V 材料通道。");
+    rgb_enabled_->setToolTip("控制是否写入 RGB 模型材料或纹理颜色。");
+    rgb_source_->setToolTip("纹理或备用色：优先贴图颜色；模型材料：使用配置中的 modelMaterial.rgb。");
+    white_enabled_->setToolTip("控制是否写入 W 通道白墨。");
+    white_mode_->setToolTip("白墨生成模式：底层、整个模型或禁用。");
+    white_layers_->setToolTip("白墨层范围表达式，留空时由模式和工艺 Profile 决定。");
+    white_value_->setToolTip("W 通道打印值；RGBWSV 协议中 0 表示打印，255 表示不打印。");
+    varnish_enabled_->setToolTip("控制是否写入 V 通道光油。");
+    varnish_mode_->setToolTip("光油生成模式：顶部 N 层、整个模型或禁用。");
+    varnish_top_layers_->setToolTip("光油顶部层数，仅在“顶部 N 层”模式下生效。");
+    varnish_value_->setToolTip("V 通道打印值；RGBWSV 协议中 0 表示打印，255 表示不打印。");
+    conflict_policy_->setToolTip("当模型材料与支撑重叠时的优先级。当前长期策略是模型材料优先于支撑。");
 
     form->addRow(enabled_);
     form->addRow(rgb_enabled_);
@@ -61,16 +98,16 @@ void MaterialPolicyEditor::loadFromDocument() {
     loading_ = true;
     setBool({"materialPolicy", "enabled"}, enabled_);
     setBool({"materialPolicy", "rgb", "enabled"}, rgb_enabled_);
-    setString({"materialPolicy", "rgb", "source"}, rgb_source_);
+    setCombo({"materialPolicy", "rgb", "source"}, rgb_source_, "texture_or_fallback");
     setBool({"materialPolicy", "white", "enabled"}, white_enabled_);
-    white_mode_->setCurrentText(document_->value({"materialPolicy", "white", "mode"}).toString());
+    setCombo({"materialPolicy", "white", "mode"}, white_mode_, "disabled");
     setString({"materialPolicy", "white", "layers"}, white_layers_);
     setInt({"materialPolicy", "white", "value"}, white_value_);
     setBool({"materialPolicy", "varnish", "enabled"}, varnish_enabled_);
-    varnish_mode_->setCurrentText(document_->value({"materialPolicy", "varnish", "mode"}).toString());
+    setCombo({"materialPolicy", "varnish", "mode"}, varnish_mode_, "disabled");
     setInt({"materialPolicy", "varnish", "topLayers"}, varnish_top_layers_);
     setInt({"materialPolicy", "varnish", "value"}, varnish_value_);
-    setString({"materialPolicy", "conflictPolicy"}, conflict_policy_);
+    setCombo({"materialPolicy", "conflictPolicy"}, conflict_policy_, "model_material_over_support");
     loading_ = false;
 }
 
@@ -100,24 +137,36 @@ void MaterialPolicyEditor::bind() {
 
     bind_check(enabled_, {"materialPolicy", "enabled"});
     bind_check(rgb_enabled_, {"materialPolicy", "rgb", "enabled"});
-    bind_edit(rgb_source_, {"materialPolicy", "rgb", "source"});
+    connect(rgb_source_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](const int index) {
+        const QString value = comboValue(rgb_source_, index);
+        if (!loading_ && !value.isEmpty()) {
+            document_->setValue({"materialPolicy", "rgb", "source"}, value);
+        }
+    });
     bind_check(white_enabled_, {"materialPolicy", "white", "enabled"});
-    connect(white_mode_, &QComboBox::currentTextChanged, this, [this](const QString& value) {
-        if (!loading_) {
+    connect(white_mode_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](const int index) {
+        const QString value = comboValue(white_mode_, index);
+        if (!loading_ && !value.isEmpty()) {
             document_->setValue({"materialPolicy", "white", "mode"}, value);
         }
     });
     bind_edit(white_layers_, {"materialPolicy", "white", "layers"});
     bind_spin(white_value_, {"materialPolicy", "white", "value"});
     bind_check(varnish_enabled_, {"materialPolicy", "varnish", "enabled"});
-    connect(varnish_mode_, &QComboBox::currentTextChanged, this, [this](const QString& value) {
-        if (!loading_) {
+    connect(varnish_mode_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](const int index) {
+        const QString value = comboValue(varnish_mode_, index);
+        if (!loading_ && !value.isEmpty()) {
             document_->setValue({"materialPolicy", "varnish", "mode"}, value);
         }
     });
     bind_spin(varnish_top_layers_, {"materialPolicy", "varnish", "topLayers"});
     bind_spin(varnish_value_, {"materialPolicy", "varnish", "value"});
-    bind_edit(conflict_policy_, {"materialPolicy", "conflictPolicy"});
+    connect(conflict_policy_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](const int index) {
+        const QString value = comboValue(conflict_policy_, index);
+        if (!loading_ && !value.isEmpty()) {
+            document_->setValue({"materialPolicy", "conflictPolicy"}, value);
+        }
+    });
 }
 
 void MaterialPolicyEditor::setString(const QStringList& path, QLineEdit* edit) {
@@ -130,4 +179,12 @@ void MaterialPolicyEditor::setBool(const QStringList& path, QCheckBox* check) {
 
 void MaterialPolicyEditor::setInt(const QStringList& path, QSpinBox* spin) {
     spin->setValue(document_->value(path).toInt());
+}
+
+void MaterialPolicyEditor::setCombo(const QStringList& path, QComboBox* combo, const QString& fallback) {
+    QString value = document_->value(path).toString();
+    if (value.isEmpty()) {
+        value = fallback;
+    }
+    setComboValue(combo, value);
 }

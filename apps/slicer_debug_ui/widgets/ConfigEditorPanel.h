@@ -33,7 +33,7 @@ private slots:
     void validate();
     void updateDirty(bool dirty);
     void updateValidation(const QStringList& warnings, const QStringList& errors);
-    void updateStorageMode(const QString& value);
+    void updateStorageMode(int index);
 
 private:
     void refreshEditors();
