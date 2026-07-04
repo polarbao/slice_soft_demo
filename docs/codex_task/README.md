@@ -2,7 +2,7 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 当前阶段：11B UI 配置、生产预览与 OpenVDB 姿态收口规划
+> 当前阶段：12 切片语义、引擎性能与 UI 产品化专项规划
 
 本目录用于存放 Codex 相关的操作任务、执行提示词、任务清单与历史任务归档。
 
@@ -31,6 +31,9 @@ docs/codex_task/current/TASKS_11A_OpenVDB_OBJ彩色纹理切片前置任务清�
 docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
 docs/codex_task/current/CODEX_PROMPT_11A_R1_OpenVDB候选切片写包执行指令.md
 docs/codex_task/current/TASKS_11B_UI配置生产预览与OpenVDB姿态收口任务清单.md
+docs/codex_task/current/TASKS_12A_彩色纹理材料支撑光油任务清单.md
+docs/codex_task/current/TASKS_12B_切片引擎性能与OpenVDB替代任务清单.md
+docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
 ```
 
 已完成 / 保留参考入口：
