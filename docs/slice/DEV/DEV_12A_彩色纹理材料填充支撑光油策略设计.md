@@ -1,8 +1,9 @@
 # DEV_12A_彩色纹理材料填充支撑光油策略设计
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：DEV / Stage 12A
 > 生成日期：2026-07-05
+> 更新日期：2026-07-06
 > 前置文档：PRD_12A_彩色纹理材料填充支撑光油策略.md
 
 ---
@@ -85,7 +86,9 @@ TextureApplicationPolicy::OuterSurfaceShell
 4. legacy production path 先完成语义收敛；
 5. OpenVDB 仅在 12B/后续作为候选引擎接入同一语义；
 6. 配置新增字段必须有默认兼容策略，避免破坏已有 fixture；
-7. report 必须解释每类像素来源。
+7. report 必须解释每类像素来源；
+8. 生产 Profile 中模型内部填充不允许为空；
+9. 外侧光油壳层允许扩张 XY，且优先级高于支撑。
 ```
 
 ---
@@ -103,6 +106,7 @@ TextureApplicationPolicy::OuterSurfaceShell
     "material": "white",
     "scope": "below_texture_surface",
     "value": 0,
+    "emptyAllowedInProduction": false,
     "legacyRgbFallback": false
   }
 }
@@ -112,9 +116,10 @@ TextureApplicationPolicy::OuterSurfaceShell
 
 ```text
 enabled：是否启用模型填充；
-material：white | varnish | rgb | none | profile_default；
+material：white | varnish | rgb | profile_default | material_role；
 scope：solid_volume | below_texture_surface | all_model；
 value：写入通道的 8-bit 打印值，默认 0；
+emptyAllowedInProduction：生产 Profile 固定为 false；
 legacyRgbFallback：兼容旧配置的 RGB 黑色填充。
 ```
 
@@ -122,8 +127,9 @@ legacyRgbFallback：兼容旧配置的 RGB 黑色填充。
 
 ```text
 1. 老配置没有 modelFill 时，保持 texture.nonSurfaceRgbPolicy 的旧行为；
-2. 新 UI 生产 Profile 默认写 modelFill；
-3. regression fixture 可以继续显式使用 legacyRgbFallback。
+2. 新 UI 生产 Profile 默认写 modelFill.material=white；
+3. regression fixture 可以继续显式使用 legacyRgbFallback；
+4. 诊断 fixture 如果需要空填充，必须标记为 non-production，不进入生产 Profile。
 ```
 
 ### 4.2 SupportPlacementConfig
@@ -137,13 +143,14 @@ legacyRgbFallback：兼容旧配置的 RGB 黑色填充。
     "placement": "lower",
     "mode": "bottom_projection",
     "internalVoid": {
-      "enabled": false,
+      "enabled": true,
       "minAreaPx": 16,
-      "fillRule": "enclosed_by_model_envelope"
+      "fillRule": "all_internal_voids"
     },
     "upper": {
       "enabled": false,
-      "reason": "disabled_by_default"
+      "outside": "outer_varnish_shell",
+      "reason": "optional_detachable_surface_support"
     }
   }
 }
@@ -153,10 +160,11 @@ legacyRgbFallback：兼容旧配置的 RGB 黑色填充。
 
 ```text
 placement=lower => bottom_projection 或 unsupported_projection；
-placement=upper => 后续新增 upper_projection；
+placement=upper => 上表面外部可剥离支撑；如启用 outerVarnish，则生成在外侧光油壳层之外；
 placement=both => lower + upper；
 placement=unsupported_only => 当前 unsupported_only；
 placement=full_vertical_projection => 当前 full_vertical_projection，标记为 advanced/debug。
+internalVoid.enabled 默认 true，生产 Profile 中内部镂空一律写 S 支撑。
 ```
 
 ### 4.3 OuterVarnishShellConfig
@@ -167,9 +175,11 @@ placement=full_vertical_projection => 当前 full_vertical_projection，标记�
 {
   "outerVarnish": {
     "enabled": false,
-    "thicknessPx": 1,
+    "thicknessMm": 0.0,
+    "thicknessStepMm": 0.01,
     "pixelPitchUm": 42.3,
-    "conflictPolicy": "support_wins",
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
     "value": 0
   }
 }
@@ -178,8 +188,9 @@ placement=full_vertical_projection => 当前 full_vertical_projection，标记�
 换算：
 
 ```text
-thicknessMm = thicknessPx * pixelPitchUm / 1000.0
 thicknessPx = ceil(thicknessMm * 1000.0 / pixelPitchUm)
+effectiveThicknessMm = thicknessPx * pixelPitchUm / 1000.0
+thicknessMm = 0.0 表示不生成外侧光油壳层
 ```
 
 ---
@@ -194,11 +205,12 @@ thicknessPx = ceil(thicknessMm * 1000.0 / pixelPitchUm)
 3. Build model occupancy / layer masks；
 4. Compute texture surface mask；
 5. Compute model fill mask = model mask - texture surface mask；
-6. Compute support mask；
-7. Compute internal void support mask；
-8. Compute outer varnish shell mask；
-9. Compose RGBWSV by semantic priority；
-10. Write layer summary/report/preview。
+6. Compute outer varnish shell mask；
+7. Compute support mask；
+8. Compute internal void support mask；
+9. For upper support, use model envelope + outer varnish shell as outside boundary；
+10. Compose RGBWSV by semantic priority；
+11. Write layer summary/report/preview。
 ```
 
 ---
@@ -216,12 +228,12 @@ if modelPixel:
     else:
         write ModelFill according to modelFill.material
         semantic = ModelFill
-else if supportPixel:
-    write S
-    semantic = SupportFill
 else if outerVarnishPixel:
     write V
     semantic = OuterVarnishShell
+else if supportPixel:
+    write S
+    semantic = SupportFill
 else:
     write empty
     semantic = Empty
@@ -231,8 +243,11 @@ else:
 
 ```text
 1. 如果模型表面需要白墨底层，属于 MaterialPolicy，不改变 semantic 主分类；
-2. 如果 modelFill.material=varnish，则 V 是模型填充，不是外侧壳层；
-3. 如果 support 与 outerVarnish 重叠，默认 support wins。
+2. 如果 modelFill.material=varnish，则 V 是模型内部填充，不是外侧壳层；
+3. 模型本体与支撑冲突时保持 Model > Support；
+4. outerVarnish 与 support 重叠时 outerVarnish wins；
+5. upper support 应在 outerVarnish shell 之外生成，避免同像素冲突；
+6. internal void support 是 supportPixel，但 reason 必须标记为 internal_void。
 ```
 
 ---
@@ -249,9 +264,13 @@ layer summary 建议新增：
   "supportPixels": 54321,
   "internalVoidSupportPixels": 1200,
   "outerVarnishPixels": 900,
+  "upperSurfaceSupportPixels": 0,
   "emptyPixels": 100000,
   "modelFillMaterial": "white",
   "supportPlacement": "lower",
+  "internalVoidSupportDefault": true,
+  "outerVarnishThicknessMm": 0.0,
+  "outerVarnishThicknessPx": 0,
   "semanticWarnings": []
 }
 ```
@@ -263,6 +282,8 @@ modelSemanticComparable=true/false
 singleMaterialConsistency=true/false
 outerVarnishEnabled=true/false
 internalVoidSupportEnabled=true/false
+semanticPriority="Model>OuterVarnishShell>Support>Empty"
+singleMaterialAndColorConsistency=true/false
 ```
 
 ---
@@ -286,7 +307,7 @@ internalVoidSupportEnabled=true/false
 |---|---|---|
 | 改变默认填充材料导致旧 golden 失败 | 回归波动 | 新字段缺省保持 legacy，UI 新 Profile 才启用新语义 |
 | internal void support 误填模型外部空白 | 材料浪费 | 只填 enclosed-by-envelope，增加面积阈值 |
-| 外侧光油壳层覆盖支撑 | 工艺错误 | 默认 support_wins，并输出冲突统计 |
+| 外侧光油壳层与支撑重叠 | 材料边界不清 | 默认 varnish_shell_wins；上表面支撑生成在光油壳层之外，并输出冲突统计 |
 | 彩色与单材料 pipeline 分叉 | 维护成本高 | 统一 semantic composer |
 
 ---
@@ -298,9 +319,10 @@ internalVoidSupportEnabled=true/false
 12A-2：新增 report semantic 字段；
 12A-3：新增 ModelFillPolicy，legacy 默认兼容；
 12A-4：新增 InternalVoidSupportPolicy；
-12A-5：新增 OuterVarnishShellPolicy；
-12A-6：补 UI 设置入口和 preview 图例；
-12A-7：建立 fixture/golden summary。
+12A-5：新增 OuterVarnishShellPolicy，支持 thicknessMm、0.01mm 精度、42.3um/px 换算和 XY 扩张；
+12A-6：新增 UpperSurfaceSupportPolicy，确保上表面支撑在外侧光油壳层之外；
+12A-7：补 UI 设置入口和 preview 图例；
+12A-8：建立 fixture/golden summary。
 ```
 
 ---
@@ -322,5 +344,6 @@ cmake --build build --config Debug --target slicer_cli rip_reader_test
 2. 检查 LayerPreview 像素探针；
 3. 比较彩色与单材料同模型的 model/support mask；
 4. 检查 internal void fixture；
-5. 检查外侧光油厚度 px/mm。
+5. 检查外侧光油厚度 mm/px 换算；
+6. 检查上表面支撑是否位于外侧光油壳层之外。
 ```

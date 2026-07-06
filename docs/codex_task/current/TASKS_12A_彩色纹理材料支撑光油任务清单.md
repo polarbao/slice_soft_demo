@@ -1,8 +1,9 @@
 # TASKS_12A_彩色纹理材料支撑光油任务清单
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：Task List / Stage 12A
 > 生成日期：2026-07-05
+> 更新日期：2026-07-06
 
 ---
 
@@ -17,12 +18,20 @@
 
 ### Task 12A-01 需求术语确认
 
-状态：PENDING
+状态：DONE
 
 内容：
 
 ```text
 确认 Model Real Data、TextureSurface、ModelFill、SupportFill、InternalVoidSupport、OuterVarnishShell 定义。
+已确认：
+1. 模型内部填充默认 white，不允许生产 Profile 为空；
+2. 模型外部填充只能是 S 支撑；
+3. internalVoidSupport 默认开启且内部镂空一律填支撑；
+4. support.placement 默认 lower；
+5. outerVarnish 默认 thicknessMm=0.0，单位 mm，精度 0.01mm；
+6. 优先级为 Model > OuterVarnishShell > Support > Empty；
+7. 上表面支撑位于外侧光油壳层之外。
 ```
 
 验证：
@@ -39,6 +48,15 @@ git diff --check
 
 ```text
 新增 modelFill / support.internalVoid / outerVarnish 配置字段，默认兼容旧行为。
+生产默认：
+modelFill.material=white
+modelFill.emptyAllowedInProduction=false
+support.internalVoid.enabled=true
+support.placement=lower
+outerVarnish.thicknessMm=0.0
+outerVarnish.thicknessStepMm=0.01
+outerVarnish.pixelPitchUm=42.3
+outerVarnish.conflictPolicy=varnish_shell_wins
 ```
 
 验证：
@@ -70,7 +88,8 @@ cmake --build build --config Debug --target slicer_cli
 内容：
 
 ```text
-实现 white / varnish / rgb / none / legacyRgbFallback。
+实现 white / varnish / rgb / profile_default / material_role / legacyRgbFallback。
+生产 Profile 禁止 none/empty 模型内部填充；诊断 fixture 如需空填充必须标记 non-production。
 ```
 
 验证：
@@ -86,13 +105,13 @@ cmake --build build --config Debug --target slicer_cli
 内容：
 
 ```text
-实现 enclosed_by_model_envelope 内部镂空支撑。
+实现 all_internal_voids 内部镂空支撑，生产默认开启。
 ```
 
 验证：
 
 ```text
-internal void fixture supportPixels 增加，模型外部空白不被填充。
+internal void fixture supportPixels 增加，内部镂空全部填 S，模型外部空白不被填充。
 ```
 
 ### Task 12A-06 SupportPlacementPolicy
@@ -103,6 +122,8 @@ internal void fixture supportPixels 增加，模型外部空白不被填充。
 
 ```text
 梳理 lower / upper / both / unsupported_only / full_vertical_projection，并把 full_vertical_projection 标记为 advanced/debug。
+默认 placement=lower。
+upper 是模型外部可剥离支撑，如果启用 outerVarnish，upper 支撑必须在外侧光油壳层之外。
 ```
 
 验证：
@@ -118,16 +139,36 @@ internal void fixture supportPixels 增加，模型外部空白不被填充。
 内容：
 
 ```text
-实现外侧光油壳层 thicknessPx/thicknessMm/pixelPitchUm。
+实现外侧光油壳层 thicknessMm/thicknessStepMm/pixelPitchUm/thicknessPx 换算和 XY 扩张。
+默认 thicknessMm=0.0，单位 mm，精度 0.01mm，默认 1px=42.3um。
+冲突优先级为 Model > OuterVarnishShell > Support > Empty。
 ```
 
 验证：
 
 ```text
-V 通道壳层宽度等于配置厚度，report 输出 px/mm。
+V 通道壳层宽度等于配置厚度换算后的像素宽度，report 输出 thicknessMm、thicknessPx、effectiveThicknessMm。
 ```
 
-### Task 12A-08 彩色/单材料一致性 fixture
+### Task 12A-08 UpperSurfaceSupportPolicy
+
+状态：PENDING
+
+内容：
+
+```text
+实现上表面支撑生成逻辑。
+如果同时启用 outerVarnish，先生成外侧光油壳层，再在光油壳层之外生成上表面支撑。
+```
+
+验证：
+
+```text
+upper surface fixture 中 outerVarnishPixels > 0 且 upperSurfaceSupportPixels > 0；
+同像素冲突执行 Model > OuterVarnishShell > Support > Empty。
+```
+
+### Task 12A-09 彩色/单材料一致性 fixture
 
 状态：PENDING
 
@@ -135,15 +176,16 @@ V 通道壳层宽度等于配置厚度，report 输出 px/mm。
 
 ```text
 对同一甲片模型建立彩色 Profile 与单材料 Profile 对比。
+除打印材料一个是彩色、一个是单色外，几何轮廓、支撑、通道统计逻辑和层顺序应一致。
 ```
 
 验证：
 
 ```text
-layerCount/model mask/support mask 可比较，差异只来自材料通道。
+layerCount/model mask/support mask/channel-statistics logic 可比较，差异只来自材料通道。
 ```
 
-### Task 12A-09 UI preview 图例与像素探针联动
+### Task 12A-10 UI preview 图例与像素探针联动
 
 状态：PENDING
 

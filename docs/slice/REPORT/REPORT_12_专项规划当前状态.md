@@ -1,8 +1,9 @@
 # REPORT_12_专项规划当前状态
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：REPORT / Stage 12 Planning
 > 生成日期：2026-07-05
+> 更新日期：2026-07-06
 
 ---
 
@@ -92,6 +93,27 @@ docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
 如果颜色层、模型填充层、支撑层、外侧光油层没有语义定稿，后续任何 OpenVDB/legacy 性能比较都不可比，UI 设置也会继续膨胀。
 ```
 
+2026-07-06 已完成 12A 关键需求确认：
+
+```text
+1. 填充层分为模型内部填充和模型外部支撑填充；
+2. 模型内部填充默认白墨，可选择光油或后续扩展材料，生产 Profile 不允许为空；
+3. 模型外部填充只能是 S 通道可剥离支撑；
+4. 内部镂空区域一律填支撑，internalVoidSupport 默认开启；
+5. 支撑 placement 默认 lower；
+6. 上表面支撑是模型外部可剥离支撑；如启用外侧光油，支撑生成在光油壳层之外；
+7. 外侧光油层允许扩张模型 XY 尺寸；
+8. 外侧光油厚度按 mm 配置，默认 0mm，精度 0.01mm，默认按 42.3um/px 换算；
+9. 语义优先级为 Model > OuterVarnishShell > Support > Empty；
+10. 彩色纹理模型与单材料模型除材料颜色外，几何轮廓、支撑和通道统计逻辑应一致。
+```
+
+新增示意图：
+
+```text
+docs/slice/DOC/DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg
+```
+
 ### 4.2 12B 不应默认押注 OpenVDB
 
 原因：
@@ -115,10 +137,10 @@ docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
 推荐执行顺序：
 
 ```text
-1. 先执行 12A-01：确认术语和默认策略；
-2. 执行 12A-02/03：配置占位和 report semantic；
+1. 12A-01 已完成：术语和默认策略已确认；
+2. 下一步执行 12A-02/03：配置占位和 report semantic；
 3. 同步启动 12C-01：ProfileCatalog，把历史配置从普通用户视野中收束；
-4. 12A 语义稳定后，再执行 12B Release core-only benchmark；
+4. 12A 语义实现稳定后，再执行 12B Release core-only benchmark；
 5. 最后根据 12B 结论决定 legacy 优化、heightfield fast path、OpenVDB hybrid 或 GPU/BVH 路线。
 ```
 

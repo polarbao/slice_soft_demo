@@ -1,8 +1,9 @@
 # DOC_AUDIT_12_当前切片策略与需求偏差审查
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：Audit / Stage 12
 > 生成日期：2026-07-05
+> 更新日期：2026-07-06
 
 ---
 
@@ -124,19 +125,33 @@ failurePolicy = non_production_only；
 
 ---
 
-## 5. 关键开放问题
+## 5. 12A 已确认需求基线
 
-12A 开始实现前必须确认：
+2026-07-06 已对 12A 的关键开放问题形成以下确认结论：
+
+| 编号 | 问题 | 确认结论 |
+|---|---|---|
+| 1 | “填充层”含义 | 填充层有两个含义：模型内部填充层指两个颜色层或表面层之间的模型内部材料，如白墨、光油或其他可选材料；模型外部填充层指用 S 通道支撑材料支撑模型打印，防止缺支撑导致塌陷。 |
+| 2 | 默认填充材料 | 模型内部填充材料默认使用白墨，可选择光油或后续扩展的其他模型材料；模型外部填充材料只能是可剥离支撑材料。 |
+| 3 | 内部镂空区域 | 内部镂空区域一律填充支撑材料，生产 Profile 默认开启 internalVoidSupport。示意图见 `DOC/DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg`。 |
+| 4 | 上表面支撑 | 上表面支撑是模型外部的可剥离支撑材料层；如果同时启用外侧光油层，则先生成模型外侧光油壳层，再在光油壳层外添加上表面支撑。 |
+| 5 | 外侧光油扩张 | 外侧光油层允许扩张模型 XY 尺寸。 |
+| 6 | 光油厚度单位 | 外侧光油厚度按 mm 配置，默认厚度为 0mm；配置精度为 0.01mm；像素换算默认使用 1px = 42.3um。 |
+| 7 | 冲突优先级 | 模型本体与支撑冲突时保持 Model > Support；外侧光油壳层与支撑冲突时采用 Model > OuterVarnishShell > Support > Empty，并让上表面支撑生成在外侧光油壳层之外。 |
+| 8 | 彩色/单材料一致性 | 除打印材料一个是彩色、一个是单色外，几何轮廓、支撑逻辑、通道统计逻辑和层顺序应一致。 |
+
+由此可得到 12A 的生产默认值：
 
 ```text
-1. “填充层”是指模型内部实体材料，还是指非模型空洞处的支撑材料；
-2. 填充材料默认应为 RGB、白墨、光油，还是由工艺 Profile 决定；
-3. 内部镂空区域是否一律填支撑，还是只在被模型外轮廓包围时填；
-4. 上表面支撑的业务含义是什么，是临时支撑、可剥离材料，还是只用于工艺过渡；
-5. 外侧光油层是否允许扩张模型 XY 尺寸；
-6. 光油厚度按像素还是按 mm 配置，像素尺寸是否固定 42.3um 或取 output dpi；
-7. 支撑与白墨/光油冲突时，是否仍保持 Model > Support；
-8. 彩色纹理模型与单材料模型“一致”的评价指标是几何轮廓一致、支撑一致、还是通道统计一致。
+modelFill.material.default = white
+modelFill.material.emptyAllowedInProduction = false
+support.internalVoid.enabled.default = true
+support.placement.default = lower
+outerVarnish.thicknessMm.default = 0.0
+outerVarnish.thicknessMm.step = 0.01
+outerVarnish.pixelPitchUm.default = 42.3
+semanticPriority = Model > OuterVarnishShell > Support > Empty
+singleMaterialAndColorConsistency = geometry/support/channel-statistics comparable
 ```
 
 ---

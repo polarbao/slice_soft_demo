@@ -1,8 +1,9 @@
 # PRD_12A_彩色纹理材料填充支撑光油策略
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：PRD / Stage 12A
 > 生成日期：2026-07-05
+> 更新日期：2026-07-06
 > 适用范围：彩色纹理模型、单材料模型、甲片类浮雕模型的模型层、填充层、支撑层、光油层产品语义
 
 ---
@@ -31,9 +32,9 @@ Stage 12A 的目标不是先写代码，而是把“每个像素为什么被打�
 ```text
 1. 每层输出都能区分模型真实数据和支撑数据；
 2. 彩色纹理只表示模型表层颜色，不应被支撑或内部填充混淆；
-3. 模型内部填充材料可以显式选择白墨、光油、RGB 或不填；
+3. 模型内部填充材料默认为白墨，可显式选择光油或后续扩展材料；生产 Profile 不允许内部填充为空；
 4. 支撑材料可以按下表面、上表面、上下表面、悬空岛、内部镂空策略生成；
-5. 外侧光油壳层可按像素或物理尺寸设置厚度；
+5. 外侧光油壳层按 mm 设置厚度，允许扩张模型 XY 尺寸，并按 42.3um/px 换算到像素；
 6. 彩色纹理模型与单材料模型在几何轮廓、支撑生成、层顺序、协议输出上保持一致。
 ```
 
@@ -84,16 +85,26 @@ Empty：空白区域；
 ```text
 1. 填充层属于模型真实数据；
 2. 默认不应再隐式等同为 RGB 黑色，除非 Profile 明确选择 legacyRgbFill；
-3. 彩色纹理生产 Profile 应优先提供 whiteFill / varnishFill / none 三种用户可见选择；
+3. 彩色纹理生产 Profile 默认使用 whiteFill，可选择 varnishFill 或后续扩展材料；
 4. 单材料模型也使用同一套填充策略，只是颜色来源可能是固定材料而非纹理；
-5. report 中应统计 modelFillPixels，并标明 fillMaterial。
+5. 生产 Profile 不允许模型内部填充为空；
+6. report 中应统计 modelFillPixels，并标明 fillMaterial。
 ```
 
 建议枚举：
 
 ```text
-modelFill.material = white | varnish | rgb | none | profile_default
+modelFill.material = white | varnish | rgb | profile_default | material_role
 modelFill.scope = solid_volume | below_texture_surface | all_model
+modelFill.emptyAllowedInProduction = false
+```
+
+说明：
+
+```text
+模型内部填充层与支撑填充层不是同一概念。
+模型内部填充层位于模型真实数据内部，默认写 W 白墨，也可写 V 光油或其他模型材料。
+模型外部填充层只能写 S 支撑材料。
 ```
 
 ### 3.4 Support Fill Layer
@@ -104,10 +115,13 @@ modelFill.scope = solid_volume | below_texture_surface | all_model
 
 ```text
 1. 支撑只写 S 通道；
-2. 默认仍保持 Model > Support，即模型像素不被支撑覆盖；
+2. 模型本体与支撑冲突时保持 Model > Support，即模型像素不被支撑覆盖；
 3. 支撑可按下表面、上表面、上下表面、悬空岛、内部镂空策略生成；
-4. UI 中支撑应以可配置伪彩显示；
-5. report 中应统计 supportPixels、supportPlacement、supportReason。
+4. 支撑材料均为可剥离材料；
+5. 默认支撑 placement = lower，只对下表面生成支撑；
+6. 上表面支撑是模型外部支撑层，如果启用外侧光油，应生成在外侧光油壳层之外；
+7. UI 中支撑应以可配置伪彩显示；
+8. report 中应统计 supportPixels、supportPlacement、supportReason。
 ```
 
 ### 3.5 Internal Void Support
@@ -117,10 +131,12 @@ modelFill.scope = solid_volume | below_texture_surface | all_model
 要求：
 
 ```text
-1. 仅在配置启用 internalVoidSupport 时生成；
+1. internalVoidSupport 生产默认开启；
 2. 不应误填模型外部空白；
 3. 必须能在 report 中解释为 internal_void，而不是 bottom_projection；
-4. 用户示例 output/ui_sessions/dmz_20260705_003745/package/layers/layer_000169.tiff 可作为问题样例来源，但验收应使用可复现 fixture。
+4. 内部镂空区域一律填充 S 支撑材料；
+5. 用户示例 output/ui_sessions/dmz_20260705_003745/package/layers/layer_000169.tiff 可作为问题样例来源，但验收应使用可复现 fixture；
+6. 示意图见 docs/slice/DOC/DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg。
 ```
 
 ### 3.6 Outer Varnish Shell
@@ -130,11 +146,14 @@ modelFill.scope = solid_volume | below_texture_surface | all_model
 要求：
 
 ```text
-1. 厚度可按 pixel 或 mm 设置；
-2. 默认像素物理尺寸为 42.3um，可被 output dpi / pixelPitchUm 覆盖；
-3. 外侧壳层不应改变模型 RGB/W/S 的核心语义；
-4. 默认冲突优先级为 Model > Support > OuterVarnishShell > Empty；
-5. report 中应统计 outerVarnishPixels、varnishThicknessPx、varnishThicknessMm。
+1. 厚度按 mm 设置，默认厚度为 0mm；
+2. 配置精度为 0.01mm；
+3. 默认像素物理尺寸为 42.3um，可被 output dpi / pixelPitchUm 覆盖；
+4. 外侧壳层不应改变模型 RGB/W/S 的核心语义；
+5. 外侧光油层允许扩张模型 XY 尺寸；
+6. 默认冲突优先级为 Model > OuterVarnishShell > Support > Empty；
+7. 如果同时启用上表面支撑，上表面支撑应生成在外侧光油壳层之外；
+8. report 中应统计 outerVarnishPixels、varnishThicknessPx、varnishThicknessMm。
 ```
 
 ---
@@ -149,7 +168,7 @@ modelFill.scope = solid_volume | below_texture_surface | all_model
 
 ```text
 1. 表面纹理区域写 RGB；
-2. 内部填充区域按 modelFill.material 写 W/V/RGB 或空；
+2. 内部填充区域按 modelFill.material 写 W/V/RGB 或其他模型材料，生产 Profile 不允许为空；
 3. 支撑区域只写 S；
 4. LayerPreview 像素探针能显示该像素属于 TextureSurface / ModelFill / Support / Empty。
 ```
@@ -174,10 +193,11 @@ modelFill.scope = solid_volume | below_texture_surface | all_model
 验收：
 
 ```text
-1. 默认 Profile 可选择是否启用 internalVoidSupport；
-2. 启用后中间镂空区域写 S；
-3. 禁用后保持 Empty，并在 report 中标明 internalVoidSupport=disabled；
-4. UI 显示图例明确区分 Empty 与 Support。
+1. 生产 Profile 默认启用 internalVoidSupport；
+2. 中间镂空区域一律写 S；
+3. 诊断/回归 Profile 如需关闭，必须在 report 中标明 internalVoidSupport=disabled；
+4. UI 显示图例明确区分 Empty 与 Support；
+5. 需要与外部空白区分，不能把模型外部空白误填为支撑。
 ```
 
 ### US-12A-04 支撑上下表面策略
@@ -191,20 +211,30 @@ support.placement = lower | upper | both | unsupported_only | full_vertical_proj
 default = lower
 ```
 
-说明：当前 demo UI 一键 legacy 使用 `full_vertical_projection`，12A 产品默认应重新确认。如果保持 demo 默认，需要在 UI 中明确它是“全竖向投影/调试策略”，不是生产默认。
+说明：
+
+```text
+1. 当前 demo UI 一键 legacy 曾使用 full_vertical_projection；
+2. 12A 生产默认改为 lower；
+3. full_vertical_projection 应标记为高级/调试策略；
+4. upper 支撑是模型外部可剥离支撑层；
+5. 若启用 outerVarnish，上表面支撑必须生成在外侧光油壳层之外。
+```
 
 ### US-12A-05 外侧光油壳层
 
-作为工艺人员，我希望在模型外侧覆盖一层光油，并能设置厚度。例如 1 像素约等于 42.3um。
+作为工艺人员，我希望在模型外侧覆盖一层光油，并能按 mm 设置厚度。默认 1 像素约等于 42.3um，实际像素扩张由厚度换算得到。
 
 验收：
 
 ```text
 1. 可配置 outerVarnish.enabled；
-2. 可配置 thicknessPx 或 thicknessMm；
-3. thicknessMm 与 pixelPitchUm 可互算；
+2. 可配置 thicknessMm，默认 0mm，精度 0.01mm；
+3. thicknessMm 与 pixelPitchUm 可互算为 thicknessPx；
 4. 输出 V 通道，RGB/W/S 不被错误覆盖；
-5. preview/report 均能显示外侧光油壳层。
+5. preview/report 均能显示外侧光油壳层；
+6. 支持向模型 XY 外侧扩张；
+7. 与支撑冲突时执行 Model > OuterVarnishShell > Support > Empty。
 ```
 
 ### US-12A-06 彩色和单材料一致性
@@ -215,8 +245,9 @@ default = lower
 
 ```text
 1. 同一模型改成单材料 Profile 后，model mask、support mask、layerCount 保持可比较；
-2. 差异只来自材料通道策略；
-3. slice_report 输出 consistency block。
+2. 几何轮廓、支撑逻辑、层顺序和通道统计逻辑应一致；
+3. 差异只来自打印材料：彩色纹理模型为 RGB 颜色，单材料模型为单色材料；
+4. slice_report 输出 consistency block。
 ```
 
 ---
@@ -244,8 +275,8 @@ emptyValue = 255
 
 ```text
 1. ModelTexture / ModelFill / ModelMaterial
-2. SupportFill
-3. OuterVarnishShell
+2. OuterVarnishShell
+3. SupportFill
 4. Empty
 ```
 
@@ -253,9 +284,10 @@ emptyValue = 255
 
 ```text
 1. 模型像素可以同时写 RGB/W/V，取决于 MaterialPolicy；
-2. SupportFill 只在非模型像素写 S；
-3. OuterVarnishShell 默认不覆盖支撑；
-4. 如果后续需要光油覆盖支撑，必须作为单独 Profile 显式启用。
+2. 模型本体与支撑冲突时保持 Model > Support；
+3. OuterVarnishShell 允许扩张模型 XY 尺寸；
+4. 外侧光油壳层与支撑冲突时 OuterVarnishShell 优先；
+5. 上表面支撑应在外侧光油壳层之外生成，避免覆盖光油壳层。
 ```
 
 ---
@@ -275,17 +307,23 @@ emptyValue = 255
 
 ---
 
-## 8. 开放确认项
+## 8. 已确认默认策略
 
-进入实现前需要确认：
+2026-07-06 已确认：
 
 ```text
-1. 彩色纹理生产 Profile 的默认模型填充材料是 white 还是 profile_default；
-2. internalVoidSupport 默认是否开启；
-3. 支撑 placement 默认是否由当前 full_vertical_projection 改为 lower；
-4. 外侧光油壳层默认厚度是否为 1px；
-5. 光油壳层与支撑冲突时是否永远支撑优先；
-6. 单材料模型是否也默认启用同样的 internalVoidSupport。
+1. 彩色纹理生产 Profile 的默认模型填充材料是 white；
+2. 模型内部填充也可选择 varnish 或后续扩展材料；
+3. 生产 Profile 不允许模型内部填充为空；
+4. internalVoidSupport 默认开启；
+5. 支撑 placement 默认由 full_vertical_projection 改为 lower；
+6. 外侧光油壳层默认厚度为 0mm；
+7. 外侧光油厚度配置单位是 mm，精度 0.01mm；
+8. 默认像素换算为 1px = 42.3um；
+9. 光油壳层与支撑冲突时，采用 Model > OuterVarnishShell > Support > Empty；
+10. 如果启用上表面支撑，上表面支撑应生成在外侧光油壳层之外；
+11. 单材料模型也默认启用同样的 internalVoidSupport；
+12. 彩色纹理模型与单材料模型的一致性评价为几何轮廓、支撑、层顺序和通道统计逻辑一致。
 ```
 
 ---

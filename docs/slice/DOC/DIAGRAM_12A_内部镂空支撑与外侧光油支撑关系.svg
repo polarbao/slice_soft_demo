@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+  <rect width="980" height="560" fill="#ffffff"/>
+  <text x="40" y="44" font-family="Arial, Microsoft YaHei, sans-serif" font-size="24" font-weight="700" fill="#20242a">12A 内部镂空支撑、模型填充、外侧光油与上表面支撑关系</text>
+  <text x="40" y="78" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#4b5563">示意为某一切片层或局部截面：生产优先级为 Model &gt; OuterVarnishShell &gt; Support &gt; Empty。</text>
+
+  <g transform="translate(70 120)">
+    <rect x="0" y="0" width="520" height="340" fill="#f7fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="18" y="28" font-family="Arial, Microsoft YaHei, sans-serif" font-size="16" font-weight="700" fill="#1f2937">切片截面示意</text>
+
+    <!-- support outside lower side -->
+    <path d="M70 280 C80 315 120 330 180 330 L340 330 C400 330 440 315 450 280 L430 280 C420 300 382 308 340 308 L180 308 C138 308 100 300 90 280 Z" fill="#61d86b" stroke="#2f9e44" stroke-width="2"/>
+    <text x="190" y="354" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#166534">下表面支撑 S</text>
+
+    <!-- outer varnish shell -->
+    <path d="M92 80 C70 130 70 240 92 292 C110 326 158 340 250 340 C342 340 390 326 408 292 C430 240 430 130 408 80 C392 44 344 28 250 28 C156 28 108 44 92 80 Z"
+          fill="#d1d5db" stroke="#6b7280" stroke-width="2"/>
+
+    <!-- model body -->
+    <path d="M112 90 C96 136 96 236 112 280 C128 310 168 322 250 322 C332 322 372 310 388 280 C404 236 404 136 388 90 C374 62 332 48 250 48 C168 48 126 62 112 90 Z"
+          fill="#2f80ed" stroke="#1e40af" stroke-width="2"/>
+
+    <!-- internal model fill -->
+    <path d="M140 108 C128 150 128 226 140 264 C152 288 186 298 250 298 C314 298 348 288 360 264 C372 226 372 150 360 108 C350 86 314 76 250 76 C186 76 150 86 140 108 Z"
+          fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+    <text x="198" y="196" font-family="Arial, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#334155">模型内部填充</text>
+    <text x="202" y="220" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#334155">默认白墨 W</text>
+
+    <!-- internal void support -->
+    <ellipse cx="250" cy="210" rx="64" ry="54" fill="#61d86b" stroke="#2f9e44" stroke-width="2"/>
+    <text x="204" y="206" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" font-weight="700" fill="#14532d">内部镂空</text>
+    <text x="198" y="225" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#14532d">一律填支撑 S</text>
+
+    <!-- texture surface -->
+    <path d="M116 92 C130 67 170 54 250 54 C330 54 370 67 384 92" fill="none" stroke="#ef4444" stroke-width="8" stroke-linecap="round"/>
+    <text x="172" y="42" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#991b1b">表层纹理 RGB</text>
+
+    <!-- upper support outside varnish -->
+    <path d="M86 42 C110 10 162 0 250 0 C338 0 390 10 414 42 L394 54 C374 34 326 24 250 24 C174 24 126 34 106 54 Z" fill="#61d86b" stroke="#2f9e44" stroke-width="2"/>
+    <text x="174" y="-12" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#166534">上表面支撑：在外侧光油之外</text>
+
+    <text x="412" y="170" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#4b5563">灰色：外侧光油 V</text>
+    <text x="412" y="194" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#1e40af">蓝色：模型本体/颜色层</text>
+    <text x="412" y="218" font-family="Arial, Microsoft YaHei, sans-serif" font-size="13" fill="#166534">绿色：可剥离支撑 S</text>
+  </g>
+
+  <g transform="translate(650 130)">
+    <rect x="0" y="0" width="280" height="300" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="22" y="34" font-family="Arial, Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#111827">规则摘要</text>
+    <text x="22" y="72" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#111827">1. 模型内填充默认白墨 W</text>
+    <text x="22" y="102" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#111827">2. 模型内填充不允许为空</text>
+    <text x="22" y="132" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#111827">3. 内部镂空一律填支撑 S</text>
+    <text x="22" y="162" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#111827">4. 光油厚度按 mm 配置</text>
+    <text x="22" y="192" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#111827">5. 1px 默认等于 42.3um</text>
+    <text x="22" y="222" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" fill="#111827">6. 上表面支撑在光油外侧</text>
+    <text x="22" y="262" font-family="Arial, Microsoft YaHei, sans-serif" font-size="14" font-weight="700" fill="#111827">优先级：Model &gt; V Shell &gt; S &gt; Empty</text>
+  </g>
+</svg>

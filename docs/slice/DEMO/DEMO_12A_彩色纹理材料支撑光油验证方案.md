@@ -1,8 +1,9 @@
 # DEMO_12A_彩色纹理材料支撑光油验证方案
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：DEMO / Stage 12A
 > 生成日期：2026-07-05
+> 更新日期：2026-07-06
 
 ---
 
@@ -36,6 +37,7 @@
 texture.applyMode = surface/top_surface_band
 modelFill.material = white
 support.placement = lower
+support.internalVoid.enabled = true
 outerVarnish.enabled = false
 ```
 
@@ -47,6 +49,7 @@ ModelFill 写 W；
 Support 写 S；
 非打印区域全 255；
 report 显示 modelFillMaterial=white。
+生产 Profile 不允许 ModelFill 为空。
 ```
 
 ### Case 12A-02 彩色纹理 + 光油填充
@@ -55,6 +58,7 @@ report 显示 modelFillMaterial=white。
 
 ```text
 modelFill.material = varnish
+support.internalVoid.enabled = true
 ```
 
 期望：
@@ -71,7 +75,7 @@ LayerPreview 可区分模型填充光油和外侧光油。
 
 ```text
 support.internalVoid.enabled = true
-support.internalVoid.fillRule = enclosed_by_model_envelope
+support.internalVoid.fillRule = all_internal_voids
 ```
 
 期望：
@@ -79,7 +83,8 @@ support.internalVoid.fillRule = enclosed_by_model_envelope
 ```text
 被模型外轮廓包围的空洞写 S；
 模型外部空白保持 255；
-report 显示 internalVoidSupportPixels > 0。
+report 显示 internalVoidSupportPixels > 0；
+internalVoidSupport 默认开启，生产 Profile 不应关闭。
 ```
 
 ### Case 12A-04 不规则浮雕支撑
@@ -104,19 +109,43 @@ support_report 中出现 unsupported_island / high_z_overhang；
 
 ```text
 outerVarnish.enabled = true
-outerVarnish.thicknessPx = 1
+outerVarnish.thicknessMm = 0.05
+outerVarnish.thicknessStepMm = 0.01
 outerVarnish.pixelPitchUm = 42.3
+outerVarnish.allowXYExpansion = true
+outerVarnish.conflictPolicy = varnish_shell_wins
 ```
 
 期望：
 
 ```text
-模型外轮廓产生 1px V 通道壳层；
-report 显示 thicknessMm=0.0423；
-support 与 outerVarnish 冲突时 support wins。
+模型外轮廓向 XY 外侧扩张并产生 V 通道壳层；
+report 显示 thicknessMm、thicknessPx 和 effectiveThicknessMm；
+thicknessPx = ceil(thicknessMm * 1000 / 42.3)；
+support 与 outerVarnish 冲突时 OuterVarnishShell wins。
 ```
 
-### Case 12A-06 彩色/单材料一致性
+### Case 12A-06 外侧光油 + 上表面支撑
+
+配置：
+
+```text
+outerVarnish.enabled = true
+outerVarnish.thicknessMm = 0.05
+support.placement = upper
+support.upper.enabled = true
+```
+
+期望：
+
+```text
+先生成外侧光油壳层；
+上表面支撑生成在外侧光油壳层之外；
+同像素冲突时执行 Model > OuterVarnishShell > Support > Empty；
+report 显示 upperSurfaceSupportPixels > 0。
+```
+
+### Case 12A-07 彩色/单材料一致性
 
 同一模型分别使用彩色 Profile 和单材料 Profile。
 
@@ -126,7 +155,8 @@ support 与 outerVarnish 冲突时 support wins。
 layerCount 一致；
 model mask 可比较；
 support mask 可比较；
-材料通道差异符合 Profile。
+几何轮廓和通道统计逻辑可比较；
+材料通道差异符合 Profile：彩色模型写 RGB 纹理，单材料模型写单色材料。
 ```
 
 ---
