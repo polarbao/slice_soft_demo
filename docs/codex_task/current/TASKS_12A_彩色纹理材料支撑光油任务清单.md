@@ -146,7 +146,7 @@ git diff --check
 
 ### Task 12A-05 InternalVoidSupportPolicy
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -156,8 +156,38 @@ git diff --check
 
 验证：
 
-```text
-internal void fixture supportPixels 增加，内部镂空全部填 S，模型外部空白不被填充。
+```powershell
+cmake --build build --config Debug --target slicer_cli
+.\build\Debug\slicer_cli.exe --config samples\configs\support\support_internal_void.json
+
+Python 临时 TIFF 探针读取 output\SupportInternalVoid\layers\layer_000002.tiff：
+layer=2 S_printPixels=576
+borderSPrintPixels=0
+
+PowerShell ConvertFrom-Json 检查：
+slice_report.totals.internalVoidSupportPixels = 2304
+support_report.supportTypeStats.internal_void = 2304
+support_report.internalVoid.reason = internal_void
+
+model/obj 多模型验证：
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\nai_you_white.json
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\aishen_varnish.json
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\titian_rgb.json
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\xiao_ma_profile_default.json
+
+结果摘要：
+nai_you_white           internalVoidSupportPixels=646009
+aishen_varnish          internalVoidSupportPixels=419602
+titian_rgb              internalVoidSupportPixels=518095
+xiao_ma_profile_default internalVoidSupportPixels=517676
+
+cmake --build build --config Debug --target rip_reader_test experimental_config_unit_tests
+.\build\Debug\rip_reader_test.exe --package output\SupportInternalVoid --summary
+.\build\Debug\experimental_config_unit_tests.exe
+cmake --build build --config Debug --target support_shape_unit_tests
+.\build\Debug\support_shape_unit_tests.exe
+ctest --test-dir build -C Debug -R "experimental_config_unit_tests|support_shape_unit_tests" --output-on-failure
+git diff --check
 ```
 
 ### Task 12A-06 SupportPlacementPolicy

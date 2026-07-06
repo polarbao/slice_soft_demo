@@ -58,7 +58,8 @@ $supportCases = @(
   @{ Config = "samples/configs/support/support_bottom_projection.json"; Package = "output/SupportBottomProjection" },
   @{ Config = "samples/configs/support/support_unsupported_only.json"; Package = "output/SupportUnsupportedOnly" },
   @{ Config = "samples/configs/support/support_bottom_plus_unsupported.json"; Package = "output/SupportBottomPlusUnsupported" },
-  @{ Config = "samples/configs/support/support_island_filter.json"; Package = "output/SupportIslandFilter" }
+  @{ Config = "samples/configs/support/support_island_filter.json"; Package = "output/SupportIslandFilter" },
+  @{ Config = "samples/configs/support/support_internal_void.json"; Package = "output/SupportInternalVoid" }
 )
 
 $textureSmallCases = @(

@@ -105,6 +105,7 @@ struct LayerDiagnostics {
     int bottom_projection_support_pixels{0};
     int unsupported_island_support_pixels{0};
     int full_vertical_projection_support_pixels{0};
+    int internal_void_support_pixels{0};
     SupportConnectivityDiagnostics support_connectivity;
     LayerSemanticStats semantic;
     std::array<ChannelStats, rgbwsv_channel_count> channel_stats{};
@@ -155,6 +156,7 @@ enum class SupportType : std::uint8_t {
     BottomProjection = 1,
     UnsupportedIsland = 2,
     FullVerticalProjection = 3,
+    InternalVoid = 4,
 };
 
 struct IslandComponent {
@@ -179,6 +181,7 @@ struct SupportGenerationResult {
     int bottom_projection_support_pixels{0};
     int unsupported_island_support_pixels{0};
     int full_vertical_projection_support_pixels{0};
+    int internal_void_support_pixels{0};
     int layers_with_islands{0};
     int layers_with_support{0};
 };
@@ -954,6 +957,8 @@ bool support_mode_includes_unsupported(const std::string& mode) {
 
 int support_type_priority(const SupportType type) {
     switch (type) {
+        case SupportType::InternalVoid:
+            return 4;
         case SupportType::UnsupportedIsland:
             return 3;
         case SupportType::FullVerticalProjection:
@@ -974,6 +979,8 @@ std::string support_type_name(const SupportType type) {
             return "unsupported_island";
         case SupportType::FullVerticalProjection:
             return "full_vertical_projection";
+        case SupportType::InternalVoid:
+            return "internal_void";
         case SupportType::None:
             return "none";
     }
@@ -1011,6 +1018,141 @@ void SynchronizeSupportShapeTypeMaps(
             {
                 typeMap.at(index) = SupportType::BottomProjection;
             }
+        }
+    }
+}
+
+void AddInternalVoidSupportForLayer(
+    const SliceConfig& config,
+    const GridSpec& grid,
+    const std::vector<std::uint8_t>& modelMask,
+    std::vector<std::uint8_t>& supportMask,
+    std::vector<SupportType>& supportTypeMap)
+{
+    if (!config.support.internal_void.enabled)
+    {
+        return;
+    }
+
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::uint8_t> externalEmpty(pixelCount, 0);
+    std::vector<int> stack;
+    stack.reserve(pixelCount);
+
+    const auto pushExternalEmpty = [&](const int x, const int y)
+    {
+        if (x < 0 || x >= grid.width_px || y < 0 || y >= grid.height_px)
+        {
+            return;
+        }
+        const std::size_t index = mask_index(grid, x, y);
+        if (modelMask.at(index) != 0 || externalEmpty.at(index) != 0)
+        {
+            return;
+        }
+        externalEmpty.at(index) = 1;
+        stack.push_back(static_cast<int>(index));
+    };
+
+    for (int x{0}; x < grid.width_px; ++x)
+    {
+        pushExternalEmpty(x, 0);
+        pushExternalEmpty(x, grid.height_px - 1);
+    }
+    for (int y{0}; y < grid.height_px; ++y)
+    {
+        pushExternalEmpty(0, y);
+        pushExternalEmpty(grid.width_px - 1, y);
+    }
+
+    const std::array<std::array<int, 2>, 8> neighbors8{{
+        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
+    }};
+    const std::array<std::array<int, 2>, 4> neighbors4{{
+        {{0, -1}}, {{-1, 0}}, {{1, 0}}, {{0, 1}},
+    }};
+
+    while (!stack.empty())
+    {
+        const int current = stack.back();
+        stack.pop_back();
+        const int x = current % grid.width_px;
+        const int y = current / grid.width_px;
+        if (config.support.connectivity == 8)
+        {
+            for (const auto& neighbor : neighbors8)
+            {
+                pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
+            }
+        }
+        else
+        {
+            for (const auto& neighbor : neighbors4)
+            {
+                pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
+            }
+        }
+    }
+
+    std::vector<std::uint8_t> visited(pixelCount, 0);
+    for (std::size_t start{0}; start < pixelCount; ++start)
+    {
+        if (modelMask.at(start) != 0 || externalEmpty.at(start) != 0 || visited.at(start) != 0)
+        {
+            continue;
+        }
+
+        std::vector<int> component;
+        component.reserve(64);
+        stack.push_back(static_cast<int>(start));
+        visited.at(start) = 1;
+        while (!stack.empty())
+        {
+            const int current = stack.back();
+            stack.pop_back();
+            component.push_back(current);
+            const int x = current % grid.width_px;
+            const int y = current / grid.width_px;
+            const auto pushComponentNeighbor = [&](const int nx, const int ny)
+            {
+                if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px)
+                {
+                    return;
+                }
+                const std::size_t next = mask_index(grid, nx, ny);
+                if (modelMask.at(next) == 0 && externalEmpty.at(next) == 0 && visited.at(next) == 0)
+                {
+                    visited.at(next) = 1;
+                    stack.push_back(static_cast<int>(next));
+                }
+            };
+            if (config.support.connectivity == 8)
+            {
+                for (const auto& neighbor : neighbors8)
+                {
+                    pushComponentNeighbor(x + neighbor.at(0), y + neighbor.at(1));
+                }
+            }
+            else
+            {
+                for (const auto& neighbor : neighbors4)
+                {
+                    pushComponentNeighbor(x + neighbor.at(0), y + neighbor.at(1));
+                }
+            }
+        }
+
+        if (static_cast<int>(component.size()) < config.support.internal_void.min_area_px)
+        {
+            continue;
+        }
+        for (const int pixel : component)
+        {
+            set_support_pixel(
+                supportMask,
+                supportTypeMap,
+                static_cast<std::size_t>(pixel),
+                SupportType::InternalVoid);
         }
     }
 }
@@ -1320,6 +1462,16 @@ SupportGenerationResult generate_support_masks(
         }
     }
 
+    for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index)
+    {
+        AddInternalVoidSupportForLayer(
+            config,
+            grid,
+            model_masks.at(layer_index),
+            result.support_masks.at(layer_index),
+            result.support_type_maps.at(layer_index));
+    }
+
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         bool layer_has_support{false};
         const auto& support_mask = result.support_masks.at(layer_index);
@@ -1342,6 +1494,10 @@ SupportGenerationResult generate_support_masks(
                 case SupportType::FullVerticalProjection:
                     ++result.full_vertical_projection_support_pixels;
                     ++diagnostics.at(layer_index).full_vertical_projection_support_pixels;
+                    break;
+                case SupportType::InternalVoid:
+                    ++result.internal_void_support_pixels;
+                    ++diagnostics.at(layer_index).internal_void_support_pixels;
                     break;
                 case SupportType::None:
                     break;
@@ -1375,6 +1531,7 @@ void RecalculateSupportGenerationStats(
     result.bottom_projection_support_pixels = 0;
     result.unsupported_island_support_pixels = 0;
     result.full_vertical_projection_support_pixels = 0;
+    result.internal_void_support_pixels = 0;
     result.layers_with_support = 0;
     const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index)
@@ -1383,6 +1540,7 @@ void RecalculateSupportGenerationStats(
         diagnostics.at(layer_index).bottom_projection_support_pixels = 0;
         diagnostics.at(layer_index).unsupported_island_support_pixels = 0;
         diagnostics.at(layer_index).full_vertical_projection_support_pixels = 0;
+        diagnostics.at(layer_index).internal_void_support_pixels = 0;
         const auto& support_mask = result.support_masks.at(layer_index);
         const auto& support_type_map = result.support_type_maps.at(layer_index);
         for (std::size_t index{0}; index < pixel_count; ++index)
@@ -1406,6 +1564,10 @@ void RecalculateSupportGenerationStats(
                 case SupportType::FullVerticalProjection:
                     ++result.full_vertical_projection_support_pixels;
                     ++diagnostics.at(layer_index).full_vertical_projection_support_pixels;
+                    break;
+                case SupportType::InternalVoid:
+                    ++result.internal_void_support_pixels;
+                    ++diagnostics.at(layer_index).internal_void_support_pixels;
                     break;
                 case SupportType::None:
                     break;
@@ -2169,6 +2331,7 @@ std::vector<std::uint8_t> compose_layer(
     const GridSpec& grid,
     const std::vector<std::uint8_t>& model_mask,
     const std::vector<std::uint8_t>& support_mask,
+    const std::vector<SupportType>& support_type_map,
     const std::vector<TextureColumnColor>* texture_columns,
     const std::vector<MaterialRoleColumn>* material_role_columns,
     const std::vector<ColumnLayerRange>* column_ranges,
@@ -2298,6 +2461,9 @@ std::vector<std::uint8_t> compose_layer(
                 pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
                 ++semantic_stats.support_pixels;
+                if (support_type_map.at(pixel_index) == SupportType::InternalVoid) {
+                    ++semantic_stats.internal_void_support_pixels;
+                }
             }
         }
     }
@@ -2495,6 +2661,7 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
              {"bottom_projection", diagnostics.bottom_projection_support_pixels},
              {"unsupported_island", diagnostics.unsupported_island_support_pixels},
              {"full_vertical_projection", diagnostics.full_vertical_projection_support_pixels},
+             {"internal_void", diagnostics.internal_void_support_pixels},
         })},
         {"supportConnectivity", support_connectivity_to_json(diagnostics.support_connectivity)},
         {"semantic", semantic_stats_to_json(diagnostics.semantic)},
@@ -3071,6 +3238,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid,
             model_masks.at(layer_index),
             support_generation.support_masks.at(layer_index),
+            support_generation.support_type_maps.at(layer_index),
             config.texture.enabled ? &texture_columns : nullptr,
             config.material_role_mapping.enabled ? &material_role_columns : nullptr,
             &column_ranges,
@@ -3172,6 +3340,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"bottom_projection", support_generation.bottom_projection_support_pixels},
                   {"unsupported_island", support_generation.unsupported_island_support_pixels},
                   {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
+                  {"internal_void", support_generation.internal_void_support_pixels},
               })},
              {"supportConnectivity", support_connectivity_summary_to_json(layer_diagnostics)},
              {"channelStats", channel_stats_array_to_json(total_channel_stats)},
@@ -3241,6 +3410,14 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"connectivity", config.support.connectivity},
         {"unsupportedProjection", config.support.unsupported_projection},
         {"xyDilationPx", config.support.xy_dilation_px},
+        {"internalVoid",
+         Json::object({
+             {"enabled", config.support.internal_void.enabled},
+             {"fillRule", config.support.internal_void.fill_rule},
+             {"minAreaPx", config.support.internal_void.min_area_px},
+             {"reason", "internal_void"},
+             {"printPixels", support_generation.internal_void_support_pixels},
+         })},
         {"shape",
          Json::object({
              {"enabled", support_shape_policy.enabled},
@@ -3283,6 +3460,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"bottom_projection", support_generation.bottom_projection_support_pixels},
              {"unsupported_island", support_generation.unsupported_island_support_pixels},
              {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
+             {"internal_void", support_generation.internal_void_support_pixels},
          })},
         {"layers", Json{contour_layers}},
     });
