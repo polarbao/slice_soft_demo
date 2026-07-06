@@ -186,6 +186,7 @@ struct SupportConfig {
     bool enabled{true};
     std::string mode{"bottom_projection"};
     std::string placement{"lower"};
+    bool placement_explicit{false};
     std::uint8_t value{0};
     double offset_mm{0.0};
     int min_area_px{0};

@@ -1,0 +1,46 @@
+{
+  "input": {
+    "modelPath": "../../models/support/floating_island.stl",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/SupportPlacementUnsupportedOnly",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.05,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelMaterial": {
+    "materialChannel": "V",
+    "applyMode": "solid_volume",
+    "rgb": [255, 255, 255],
+    "whiteValue": 255,
+    "varnishValue": 0
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "unsupported_only",
+    "value": 0,
+    "minOverlapRatio": 0.2,
+    "minIslandAreaPx": 16,
+    "connectivity": 8,
+    "unsupportedProjection": "project_to_build_plate",
+    "internalVoid": {
+      "enabled": false,
+      "minAreaPx": 16,
+      "fillRule": "all_internal_voids"
+    }
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 1,
+    "channels": ["varnish", "support"],
+    "onlyNonEmptyLayers": true
+  }
+}

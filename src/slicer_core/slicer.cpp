@@ -106,6 +106,7 @@ struct LayerDiagnostics {
     int unsupported_island_support_pixels{0};
     int full_vertical_projection_support_pixels{0};
     int internal_void_support_pixels{0};
+    int upper_projection_support_pixels{0};
     SupportConnectivityDiagnostics support_connectivity;
     LayerSemanticStats semantic;
     std::array<ChannelStats, rgbwsv_channel_count> channel_stats{};
@@ -157,6 +158,18 @@ enum class SupportType : std::uint8_t {
     UnsupportedIsland = 2,
     FullVerticalProjection = 3,
     InternalVoid = 4,
+    UpperProjection = 5,
+};
+
+struct SupportPlacementPolicy {
+    std::string requested_placement{"lower"};
+    std::string effective_placement{"lower"};
+    bool placement_explicit{false};
+    bool lower_enabled{true};
+    bool upper_enabled{false};
+    bool unsupported_only_enabled{false};
+    bool full_vertical_projection_enabled{false};
+    bool advanced_debug{false};
 };
 
 struct IslandComponent {
@@ -182,6 +195,7 @@ struct SupportGenerationResult {
     int unsupported_island_support_pixels{0};
     int full_vertical_projection_support_pixels{0};
     int internal_void_support_pixels{0};
+    int upper_projection_support_pixels{0};
     int layers_with_islands{0};
     int layers_with_support{0};
 };
@@ -958,10 +972,12 @@ bool support_mode_includes_unsupported(const std::string& mode) {
 int support_type_priority(const SupportType type) {
     switch (type) {
         case SupportType::InternalVoid:
-            return 4;
+            return 5;
         case SupportType::UnsupportedIsland:
-            return 3;
+            return 4;
         case SupportType::FullVerticalProjection:
+            return 3;
+        case SupportType::UpperProjection:
             return 2;
         case SupportType::BottomProjection:
             return 1;
@@ -981,10 +997,39 @@ std::string support_type_name(const SupportType type) {
             return "full_vertical_projection";
         case SupportType::InternalVoid:
             return "internal_void";
+        case SupportType::UpperProjection:
+            return "upper_projection";
         case SupportType::None:
             return "none";
     }
     return "none";
+}
+
+SupportPlacementPolicy ResolveSupportPlacementPolicy(const SliceConfig& config)
+{
+    SupportPlacementPolicy policy;
+    policy.requested_placement = config.support.placement;
+    policy.effective_placement = config.support.placement;
+    policy.placement_explicit = config.support.placement_explicit;
+
+    if (config.support.placement_explicit)
+    {
+        policy.lower_enabled = config.support.placement == "lower" || config.support.placement == "both";
+        policy.upper_enabled = config.support.placement == "upper" || config.support.placement == "both";
+        policy.unsupported_only_enabled = config.support.placement == "unsupported_only";
+        policy.full_vertical_projection_enabled = config.support.placement == "full_vertical_projection";
+        policy.advanced_debug = policy.full_vertical_projection_enabled;
+        return policy;
+    }
+
+    policy.requested_placement = "legacy_mode";
+    policy.effective_placement = config.support.mode;
+    policy.lower_enabled = support_mode_includes_bottom_projection(config.support.mode);
+    policy.upper_enabled = false;
+    policy.unsupported_only_enabled = support_mode_includes_unsupported(config.support.mode);
+    policy.full_vertical_projection_enabled = config.support.mode == "full_vertical_projection";
+    policy.advanced_debug = policy.full_vertical_projection_enabled;
+    return policy;
 }
 
 void set_support_pixel(
@@ -1153,6 +1198,35 @@ void AddInternalVoidSupportForLayer(
                 supportTypeMap,
                 static_cast<std::size_t>(pixel),
                 SupportType::InternalVoid);
+        }
+    }
+}
+
+void AddUpperProjectionSupport(
+    const GridSpec& grid,
+    const std::vector<std::vector<std::uint8_t>>& modelMasks,
+    const std::vector<ColumnLayerRange>& columnRanges,
+    std::vector<std::vector<std::uint8_t>>& supportMasks,
+    std::vector<std::vector<SupportType>>& supportTypeMaps)
+{
+    for (std::size_t index{0}; index < columnRanges.size(); ++index)
+    {
+        const ColumnLayerRange& range = columnRanges.at(index);
+        if (!range.has_model || range.upper_layer < 0)
+        {
+            continue;
+        }
+        for (int layerIndex{range.upper_layer + 1}; layerIndex < grid.layer_count; ++layerIndex)
+        {
+            if (modelMasks.at(layerIndex).at(index) != 0)
+            {
+                continue;
+            }
+            set_support_pixel(
+                supportMasks.at(layerIndex),
+                supportTypeMaps.at(layerIndex),
+                index,
+                SupportType::UpperProjection);
         }
     }
 }
@@ -1378,8 +1452,10 @@ SupportGenerationResult generate_support_masks(
     const GridSpec& grid,
     const std::vector<std::vector<std::uint8_t>>& model_masks,
     const std::vector<int>& support_source_layers,
+    const std::vector<ColumnLayerRange>& column_ranges,
     std::vector<LayerDiagnostics>& diagnostics) {
     const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    const SupportPlacementPolicy placement_policy = ResolveSupportPlacementPolicy(config);
     SupportGenerationResult result;
     result.support_masks.resize(
         static_cast<std::size_t>(grid.layer_count),
@@ -1392,7 +1468,7 @@ SupportGenerationResult generate_support_masks(
         return result;
     }
 
-    if (support_mode_includes_bottom_projection(config.support.mode)) {
+    if (placement_policy.lower_enabled) {
         for (std::size_t index{0}; index < support_source_layers.size(); ++index) {
             const int lower_layer = support_source_layers.at(index);
             for (int layer_index{0}; layer_index < lower_layer; ++layer_index) {
@@ -1407,7 +1483,7 @@ SupportGenerationResult generate_support_masks(
         }
     }
 
-    if (config.support.mode == "full_vertical_projection") {
+    if (placement_policy.full_vertical_projection_enabled) {
         const std::vector<int> last_model_layers = compute_last_model_layers(model_masks, grid);
         for (std::size_t index{0}; index < last_model_layers.size(); ++index) {
             const int last_layer = last_model_layers.at(index);
@@ -1423,7 +1499,16 @@ SupportGenerationResult generate_support_masks(
         }
     }
 
-    if (support_mode_includes_unsupported(config.support.mode)) {
+    if (placement_policy.upper_enabled) {
+        AddUpperProjectionSupport(
+            grid,
+            model_masks,
+            column_ranges,
+            result.support_masks,
+            result.support_type_maps);
+    }
+
+    if (placement_policy.unsupported_only_enabled) {
         for (int layer_index{1}; layer_index < grid.layer_count; ++layer_index) {
             const std::vector<std::uint8_t> base_mask = make_supported_base_mask(
                 model_masks.at(layer_index - 1),
@@ -1499,6 +1584,10 @@ SupportGenerationResult generate_support_masks(
                     ++result.internal_void_support_pixels;
                     ++diagnostics.at(layer_index).internal_void_support_pixels;
                     break;
+                case SupportType::UpperProjection:
+                    ++result.upper_projection_support_pixels;
+                    ++diagnostics.at(layer_index).upper_projection_support_pixels;
+                    break;
                 case SupportType::None:
                     break;
             }
@@ -1532,6 +1621,7 @@ void RecalculateSupportGenerationStats(
     result.unsupported_island_support_pixels = 0;
     result.full_vertical_projection_support_pixels = 0;
     result.internal_void_support_pixels = 0;
+    result.upper_projection_support_pixels = 0;
     result.layers_with_support = 0;
     const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index)
@@ -1541,6 +1631,7 @@ void RecalculateSupportGenerationStats(
         diagnostics.at(layer_index).unsupported_island_support_pixels = 0;
         diagnostics.at(layer_index).full_vertical_projection_support_pixels = 0;
         diagnostics.at(layer_index).internal_void_support_pixels = 0;
+        diagnostics.at(layer_index).upper_projection_support_pixels = 0;
         const auto& support_mask = result.support_masks.at(layer_index);
         const auto& support_type_map = result.support_type_maps.at(layer_index);
         for (std::size_t index{0}; index < pixel_count; ++index)
@@ -1568,6 +1659,10 @@ void RecalculateSupportGenerationStats(
                 case SupportType::InternalVoid:
                     ++result.internal_void_support_pixels;
                     ++diagnostics.at(layer_index).internal_void_support_pixels;
+                    break;
+                case SupportType::UpperProjection:
+                    ++result.upper_projection_support_pixels;
+                    ++diagnostics.at(layer_index).upper_projection_support_pixels;
                     break;
                 case SupportType::None:
                     break;
@@ -2662,6 +2757,7 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
              {"unsupported_island", diagnostics.unsupported_island_support_pixels},
              {"full_vertical_projection", diagnostics.full_vertical_projection_support_pixels},
              {"internal_void", diagnostics.internal_void_support_pixels},
+             {"upper_projection", diagnostics.upper_projection_support_pixels},
         })},
         {"supportConnectivity", support_connectivity_to_json(diagnostics.support_connectivity)},
         {"semantic", semantic_stats_to_json(diagnostics.semantic)},
@@ -3196,7 +3292,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
           }))
         : 0;
     SupportGenerationResult support_generation =
-        generate_support_masks(config, grid, model_masks, support_source_layers, layer_diagnostics);
+        generate_support_masks(config, grid, model_masks, support_source_layers, column_ranges, layer_diagnostics);
+    const SupportPlacementPolicy support_placement_policy = ResolveSupportPlacementPolicy(config);
     const std::vector<std::vector<std::uint8_t>> original_support_masks = support_generation.support_masks;
     const SupportShapePolicy support_shape_policy = MakeSupportShapePolicy(config.support);
     const SupportShapeOptimizationResult support_shape_result = ApplySupportShapePolicy(
@@ -3341,6 +3438,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"unsupported_island", support_generation.unsupported_island_support_pixels},
                   {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
                   {"internal_void", support_generation.internal_void_support_pixels},
+                  {"upper_projection", support_generation.upper_projection_support_pixels},
               })},
              {"supportConnectivity", support_connectivity_summary_to_json(layer_diagnostics)},
              {"channelStats", channel_stats_array_to_json(total_channel_stats)},
@@ -3374,6 +3472,18 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                         ModelFillMaterialToString(ResolveProfileDefaultModelFillMaterial(config))},
                    })},
                   {"supportPlacement", config.support.placement},
+                  {"supportPlacementPolicy",
+                   Json::object({
+                       {"requested", support_placement_policy.requested_placement},
+                       {"effective", support_placement_policy.effective_placement},
+                       {"placementExplicit", support_placement_policy.placement_explicit},
+                       {"lowerEnabled", support_placement_policy.lower_enabled},
+                       {"upperEnabled", support_placement_policy.upper_enabled},
+                       {"unsupportedOnlyEnabled", support_placement_policy.unsupported_only_enabled},
+                       {"fullVerticalProjectionEnabled",
+                        support_placement_policy.full_vertical_projection_enabled},
+                       {"advancedDebug", support_placement_policy.advanced_debug},
+                   })},
                   {"internalVoidSupport",
                    Json::object({
                        {"enabled", config.support.internal_void.enabled},
@@ -3404,6 +3514,28 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"enabled", config.support.enabled},
         {"mode", config.support.mode},
         {"supportMode", config.support.mode},
+        {"placement", config.support.placement},
+        {"placementPolicy",
+         Json::object({
+             {"requested", support_placement_policy.requested_placement},
+             {"effective", support_placement_policy.effective_placement},
+             {"placementExplicit", support_placement_policy.placement_explicit},
+             {"lowerEnabled", support_placement_policy.lower_enabled},
+             {"upperEnabled", support_placement_policy.upper_enabled},
+             {"unsupportedOnlyEnabled", support_placement_policy.unsupported_only_enabled},
+             {"fullVerticalProjectionEnabled", support_placement_policy.full_vertical_projection_enabled},
+             {"advancedDebug", support_placement_policy.advanced_debug},
+             {"upperOutsideBoundary",
+              config.outer_varnish.enabled ? "outer_varnish_shell" : config.support.upper.outside},
+         })},
+        {"supportReasons",
+         Json::object({
+             {"bottom_projection", "lower_surface_support"},
+             {"unsupported_island", "unsupported_island_projection"},
+             {"full_vertical_projection", "advanced_debug_full_vertical_projection"},
+             {"internal_void", "internal_void"},
+             {"upper_projection", "upper_detachable_surface_support"},
+         })},
         {"value", config.support.value},
         {"minOverlapRatio", config.support.min_overlap_ratio},
         {"minIslandAreaPx", config.support.min_island_area_px},
@@ -3454,6 +3586,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"unsupportedPixels", support_generation.unsupported_pixels},
              {"filteredIslandCount", support_generation.filtered_island_count},
              {"filteredIslandPixels", support_generation.filtered_island_pixels},
+             {"upperProjectionPixels", support_generation.upper_projection_support_pixels},
          })},
         {"supportTypeStats",
          Json::object({
@@ -3461,6 +3594,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"unsupported_island", support_generation.unsupported_island_support_pixels},
              {"full_vertical_projection", support_generation.full_vertical_projection_support_pixels},
              {"internal_void", support_generation.internal_void_support_pixels},
+             {"upper_projection", support_generation.upper_projection_support_pixels},
          })},
         {"layers", Json{contour_layers}},
     });

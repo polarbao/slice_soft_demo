@@ -352,7 +352,10 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         const auto& support = root.at("support");
         config.support.enabled = support.value("enabled", config.support.enabled);
         config.support.mode = support.value("mode", config.support.mode);
-        config.support.placement = support.value("placement", config.support.placement);
+        if (support.contains("placement")) {
+            config.support.placement = support.value("placement", config.support.placement);
+            config.support.placement_explicit = true;
+        }
         config.support.value = read_u8(support, "value", config.support.value);
         config.support.value = read_legacy_u16_as_u8(support, "strength", config.support.value);
         config.support.offset_mm = support.value("offsetMm", config.support.offset_mm);
@@ -593,6 +596,12 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.outer_varnish.conflict_policy != "varnish_shell_wins") {
         throw std::runtime_error("outerVarnish.conflictPolicy must be varnish_shell_wins");
+    }
+    if (config.outer_varnish.enabled
+        && config.outer_varnish.thickness_mm > 0.0
+        && (config.support.placement == "upper" || config.support.placement == "both" || config.support.upper.enabled)) {
+        throw std::runtime_error(
+            "upper support outside outerVarnish shell requires 12A-07 outer varnish shell generation");
     }
     if (config.texture.enabled)
     {

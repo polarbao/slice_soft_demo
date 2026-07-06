@@ -192,7 +192,7 @@ git diff --check
 
 ### Task 12A-06 SupportPlacementPolicy
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -204,8 +204,56 @@ upper 是模型外部可剥离支撑，如果启用 outerVarnish，upper 支撑�
 
 验证：
 
-```text
-不同 placement 的 support_report reason 正确。
+```powershell
+cmake --build build --config Debug --target slicer_cli experimental_config_unit_tests
+cmake --build build --config Debug --target slicer_debug_ui
+
+.\build\Debug\slicer_cli.exe --config samples\configs\support\support_placement_lower.json
+.\build\Debug\slicer_cli.exe --config samples\configs\support\support_placement_upper.json
+.\build\Debug\slicer_cli.exe --config samples\configs\support\support_placement_both.json
+.\build\Debug\slicer_cli.exe --config samples\configs\support\support_placement_unsupported_only.json
+.\build\Debug\slicer_cli.exe --config samples\configs\support\support_placement_full_vertical_projection.json
+
+PowerShell ConvertFrom-Json 检查 support_report：
+SupportPlacementLower                  effective=lower, bottom_projection=16520, upper_projection=0
+SupportPlacementUpper                  effective=upper, bottom_projection=0, upper_projection=24780
+SupportPlacementBoth                   effective=both, bottom_projection=16520, upper_projection=24780
+SupportPlacementUnsupportedOnly        effective=unsupported_only, unsupported_island=12672
+SupportPlacementFullVerticalProjection effective=full_vertical_projection, full_vertical_projection=16520, advancedDebug=true
+
+.\build\Debug\rip_reader_test.exe --package output\SupportPlacementLower --summary
+.\build\Debug\rip_reader_test.exe --package output\SupportPlacementUpper --summary
+.\build\Debug\rip_reader_test.exe --package output\SupportPlacementBoth --summary
+.\build\Debug\rip_reader_test.exe --package output\SupportPlacementUnsupportedOnly --summary
+.\build\Debug\rip_reader_test.exe --package output\SupportPlacementFullVerticalProjection --summary
+
+model/obj 多模型临时配置验证：
+.\build\Debug\slicer_cli.exe --config output\12a06_validation\configs\nai_you_lower.json
+.\build\Debug\slicer_cli.exe --config output\12a06_validation\configs\aishen_upper.json
+.\build\Debug\slicer_cli.exe --config output\12a06_validation\configs\titian_both.json
+.\build\Debug\slicer_cli.exe --config output\12a06_validation\configs\xiao_ma_full_vertical.json
+
+真实模型结果摘要：
+nai_you_lower         effective=lower, bottom_projection=9410802
+aishen_upper          effective=upper, upper_projection=8103398
+titian_both           effective=both, bottom_projection=8764576, upper_projection=5182640
+xiao_ma_full_vertical effective=full_vertical_projection, full_vertical_projection=8761964, advancedDebug=true
+
+.\build\Debug\rip_reader_test.exe --package output\12a06_validation\packages\nai_you_lower --summary
+.\build\Debug\rip_reader_test.exe --package output\12a06_validation\packages\aishen_upper --summary
+.\build\Debug\rip_reader_test.exe --package output\12a06_validation\packages\titian_both --summary
+.\build\Debug\rip_reader_test.exe --package output\12a06_validation\packages\xiao_ma_full_vertical --summary
+
+.\build\Debug\experimental_config_unit_tests.exe
+.\build\Debug\support_shape_unit_tests.exe
+ctest --test-dir build -C Debug -R "experimental_config_unit_tests|support_shape_unit_tests" --output-on-failure
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
+git diff --check
+
+experimental_config_unit_tests 覆盖：
+legacy 配置保持 placement implicit；
+12A 配置解析显式 placement；
+12A-07 前 upper/both + outerVarnish.thicknessMm>0 会被拒绝，避免上表面支撑生成到错误边界。
 ```
 
 ### Task 12A-07 OuterVarnishShellPolicy

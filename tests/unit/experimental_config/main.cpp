@@ -78,6 +78,7 @@ bool OldConfigDefaultsOpenVdbDisabled()
                !config.experimental.openvdb_pipeline.write_production_rgbwsv,
                "legacy config writeProductionRgbwsv default")
         && ExpectTrue(!config.model_fill.enabled, "legacy config keeps modelFill disabled")
+        && ExpectTrue(!config.support.placement_explicit, "legacy config keeps support placement implicit")
         && ExpectTrue(!config.outer_varnish.enabled, "legacy config keeps outerVarnish disabled");
 }
 
@@ -144,6 +145,7 @@ bool Stage12AConfigPlaceholdersParse()
         && ExpectTrue(!config.model_fill.empty_allowed_in_production, "12A modelFill production empty default parses")
         && ExpectTrue(!config.model_fill.legacy_rgb_fallback, "12A modelFill legacy fallback parses")
         && ExpectTrue(config.support.placement == "lower", "12A support placement parses")
+        && ExpectTrue(config.support.placement_explicit, "12A support placement explicit parses")
         && ExpectTrue(config.support.internal_void.enabled, "12A internal void support enabled parses")
         && ExpectTrue(config.support.internal_void.min_area_px == 16, "12A internal void min area parses")
         && ExpectTrue(
@@ -196,6 +198,39 @@ bool Stage12AModelFillRejectsEmptyProductionRgb()
             "12A modelFill rejects production rgb empty fill");
     }
     return ExpectTrue(false, "12A modelFill production rgb empty fill must throw");
+}
+
+bool Stage12AUpperSupportRejectsOuterVarnishBeforeShell()
+{
+    const std::filesystem::path path = WriteConfig(
+        "stage_12a_upper_support_rejects_outer_varnish.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"support\": {\n"
+            "    \"placement\": \"upper\",\n"
+            "    \"upper\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"outside\": \"outer_varnish_shell\"\n"
+            "    }\n"
+            "  },\n"
+            "  \"outerVarnish\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"thicknessMm\": 0.02,\n"
+            "    \"thicknessStepMm\": 0.01,\n"
+            "    \"pixelPitchUm\": 42.3,\n"
+            "    \"conflictPolicy\": \"varnish_shell_wins\"\n"
+            "  }\n"));
+    try
+    {
+        (void)slicer_core::load_slice_config(path);
+    }
+    catch (const std::runtime_error& error)
+    {
+        return ExpectTrue(
+            std::string{error.what()}.find("upper support outside outerVarnish shell") != std::string::npos,
+            "12A upper support rejects outer varnish before shell generation");
+    }
+    return ExpectTrue(false, "12A upper support with outer varnish shell must throw before 12A-07");
 }
 
 bool SurfaceShellFromSdfRequiresOpenVdb()
@@ -412,6 +447,7 @@ int main()
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
         {"stage_12a_config_placeholders_parse", Stage12AConfigPlaceholdersParse},
         {"stage_12a_model_fill_rejects_empty_production_rgb", Stage12AModelFillRejectsEmptyProductionRgb},
+        {"stage_12a_upper_support_rejects_outer_varnish_before_shell", Stage12AUpperSupportRejectsOuterVarnishBeforeShell},
         {"surface_shell_from_sdf_requires_openvdb", SurfaceShellFromSdfRequiresOpenVdb},
         {"surface_shell_from_sdf_accepted_with_openvdb_gate", SurfaceShellFromSdfAcceptedWithOpenVdbGate},
         {"legacy_run_slicer_rejects_surface_shell_candidate_config", LegacyRunSlicerRejectsSurfaceShellCandidateConfig},

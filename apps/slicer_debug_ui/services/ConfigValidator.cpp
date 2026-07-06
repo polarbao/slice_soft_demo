@@ -133,7 +133,8 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
             result.errors.push_back("support.mode 不是当前 UI 认可的基础模式。");
         }
         const QSet<QString> placements{"lower", "upper", "both", "unsupported_only", "full_vertical_projection"};
-        if (!isAllowed(stringAt(support, "placement"), placements)) {
+        const QString placement = support.contains("placement") ? stringAt(support, "placement") : QString{"lower"};
+        if (!isAllowed(placement, placements)) {
             result.errors.push_back("support.placement 不是当前认可的支撑摆放方式。");
         }
         const QJsonObject internalVoid = support.value("internalVoid").toObject();
