@@ -26,6 +26,32 @@ void checkNonNegativeInt(const QJsonObject& object,
     }
 }
 
+void checkNonNegativeDouble(const QJsonObject& object,
+                            const QString& key,
+                            const QString& label,
+                            ConfigValidationResult& result) {
+    if (!object.contains(key)) {
+        return;
+    }
+    const QJsonValue value = object.value(key);
+    if (!value.isDouble() || value.toDouble(-1.0) < 0.0) {
+        result.errors.push_back(label + " 必须是非负数。");
+    }
+}
+
+void checkPositiveDouble(const QJsonObject& object,
+                         const QString& key,
+                         const QString& label,
+                         ConfigValidationResult& result) {
+    if (!object.contains(key)) {
+        return;
+    }
+    const QJsonValue value = object.value(key);
+    if (!value.isDouble() || value.toDouble(0.0) <= 0.0) {
+        result.errors.push_back(label + " 必须大于 0。");
+    }
+}
+
 bool isAllowed(const QString& value, const QSet<QString>& allowed) {
     return value.isEmpty() || allowed.contains(value);
 }
@@ -74,6 +100,18 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
         checkNonNegativeInt(varnish, "topLayers", "materialPolicy.varnish.topLayers", result);
     }
 
+    if (hasObject(root, "modelFill")) {
+        const QJsonObject modelFill = root.value("modelFill").toObject();
+        const QSet<QString> materials{"white", "varnish", "rgb", "profile_default", "material_role"};
+        if (!isAllowed(stringAt(modelFill, "material"), materials)) {
+            result.errors.push_back("modelFill.material 不是当前认可的模型内部填充材料。");
+        }
+        const QSet<QString> scopes{"solid_volume", "below_texture_surface", "all_model"};
+        if (!isAllowed(stringAt(modelFill, "scope"), scopes)) {
+            result.errors.push_back("modelFill.scope 不是当前认可的模型填充范围。");
+        }
+    }
+
     if (hasObject(root, "materialProcessProfile")) {
         const QJsonObject profile = root.value("materialProcessProfile").toObject();
         const QJsonObject varnish = profile.value("varnish").toObject();
@@ -94,11 +132,41 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
         if (!isAllowed(mode, modes)) {
             result.errors.push_back("support.mode 不是当前 UI 认可的基础模式。");
         }
+        const QSet<QString> placements{"lower", "upper", "both", "unsupported_only", "full_vertical_projection"};
+        if (!isAllowed(stringAt(support, "placement"), placements)) {
+            result.errors.push_back("support.placement 不是当前认可的支撑摆放方式。");
+        }
+        const QJsonObject internalVoid = support.value("internalVoid").toObject();
+        if (!internalVoid.isEmpty()) {
+            checkNonNegativeInt(internalVoid, "minAreaPx", "support.internalVoid.minAreaPx", result);
+            const QSet<QString> fillRules{"all_internal_voids"};
+            if (!isAllowed(stringAt(internalVoid, "fillRule"), fillRules)) {
+                result.errors.push_back("support.internalVoid.fillRule 不是当前认可的内部镂空填充规则。");
+            }
+        }
+        const QJsonObject upper = support.value("upper").toObject();
+        if (!upper.isEmpty()) {
+            const QSet<QString> outsideValues{"outer_varnish_shell", "model_envelope"};
+            if (!isAllowed(stringAt(upper, "outside"), outsideValues)) {
+                result.errors.push_back("support.upper.outside 不是当前认可的上表面支撑外侧边界。");
+            }
+        }
         checkNonNegativeInt(support, "minIslandAreaPx", "support.minIslandAreaPx", result);
         checkNonNegativeInt(support, "xyDilationPx", "support.xyDilationPx", result);
         checkNonNegativeInt(support, "connectivity", "support.connectivity", result);
     } else {
         result.warnings.push_back("未找到 support 配置段。");
+    }
+
+    if (hasObject(root, "outerVarnish")) {
+        const QJsonObject outerVarnish = root.value("outerVarnish").toObject();
+        checkNonNegativeDouble(outerVarnish, "thicknessMm", "outerVarnish.thicknessMm", result);
+        checkPositiveDouble(outerVarnish, "thicknessStepMm", "outerVarnish.thicknessStepMm", result);
+        checkPositiveDouble(outerVarnish, "pixelPitchUm", "outerVarnish.pixelPitchUm", result);
+        const QSet<QString> conflictPolicies{"varnish_shell_wins"};
+        if (!isAllowed(stringAt(outerVarnish, "conflictPolicy"), conflictPolicies)) {
+            result.errors.push_back("outerVarnish.conflictPolicy 不是当前认可的外侧光油冲突策略。");
+        }
     }
 
     if (hasObject(root, "preview")) {

@@ -42,7 +42,7 @@ git diff --check
 
 ### Task 12A-02 配置 schema 占位
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -59,10 +59,21 @@ outerVarnish.pixelPitchUm=42.3
 outerVarnish.conflictPolicy=varnish_shell_wins
 ```
 
+完成记录：
+
+```text
+已在 SliceConfig 中新增 modelFill、support.placement、support.internalVoid、support.upper、outerVarnish 占位字段；
+已接入 JSON 解析、核心配置校验、UI 配置校验和代表样例配置；
+当前任务不改变切片输出组合行为，后续 Task 12A-03/04 再接 report 与实际策略。
+```
+
 验证：
 
 ```powershell
 cmake --build build --config Debug --target slicer_cli
+cmake --build build --config Debug --target slicer_cli experimental_config_unit_tests
+.\build\Debug\experimental_config_unit_tests.exe
+.\build\Debug\slicer_cli.exe --config samples\configs\material_process\obj_mtl_texture_rgb_white_varnish.json
 ```
 
 ### Task 12A-03 LayerSemanticReport

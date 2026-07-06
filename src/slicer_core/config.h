@@ -93,6 +93,18 @@ struct MaterialPolicyConfig {
     std::string conflict_policy{"model_material_over_support"};
 };
 
+/**
+ * @brief Explicit model fill semantics for Stage 12A material composition.
+ */
+struct ModelFillConfig {
+    bool enabled{false};
+    std::string material{"white"};
+    std::string scope{"below_texture_surface"};
+    std::uint8_t value{0};
+    bool empty_allowed_in_production{false};
+    bool legacy_rgb_fallback{false};
+};
+
 struct MaterialProcessRgbConfig {
     bool enabled{true};
     std::string source{"texture_or_color"};
@@ -152,9 +164,28 @@ struct MaterialRoleMappingConfig {
     std::vector<MaterialRoleRuleConfig> rules;
 };
 
+/**
+ * @brief Internal void support options for enclosed non-model regions.
+ */
+struct InternalVoidSupportConfig {
+    bool enabled{true};
+    int min_area_px{16};
+    std::string fill_rule{"all_internal_voids"};
+};
+
+/**
+ * @brief Upper detachable support placement options.
+ */
+struct UpperSupportConfig {
+    bool enabled{false};
+    std::string outside{"outer_varnish_shell"};
+    std::string reason{"optional_detachable_surface_support"};
+};
+
 struct SupportConfig {
     bool enabled{true};
     std::string mode{"bottom_projection"};
+    std::string placement{"lower"};
     std::uint8_t value{0};
     double offset_mm{0.0};
     int min_area_px{0};
@@ -171,6 +202,21 @@ struct SupportConfig {
     int shape_bridge_gap_px{0};
     bool shape_preserve_model_priority{true};
     double shape_max_added_support_ratio{0.25};
+    InternalVoidSupportConfig internal_void;
+    UpperSupportConfig upper;
+};
+
+/**
+ * @brief Optional outside varnish shell configuration.
+ */
+struct OuterVarnishShellConfig {
+    bool enabled{false};
+    double thickness_mm{0.0};
+    double thickness_step_mm{0.01};
+    double pixel_pitch_um{42.3};
+    bool allow_xy_expansion{true};
+    std::string conflict_policy{"varnish_shell_wins"};
+    std::uint8_t value{0};
 };
 
 struct PreviewConfig {
@@ -223,9 +269,11 @@ struct SliceConfig {
     MaterialConfig material;
     TextureConfig texture;
     MaterialPolicyConfig material_policy;
+    ModelFillConfig model_fill;
     MaterialProcessProfileConfig material_process_profile;
     MaterialRoleMappingConfig material_role_mapping;
     SupportConfig support;
+    OuterVarnishShellConfig outer_varnish;
     PreviewConfig preview;
     ReliefConfig relief;
     ExperimentalConfig experimental;

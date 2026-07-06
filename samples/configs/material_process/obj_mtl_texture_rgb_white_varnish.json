@@ -73,6 +73,23 @@
         "varnishValue": 255,
         "whiteValue": 255
     },
+    "modelFill": {
+        "enabled": true,
+        "emptyAllowedInProduction": false,
+        "legacyRgbFallback": false,
+        "material": "white",
+        "scope": "below_texture_surface",
+        "value": 0
+    },
+    "outerVarnish": {
+        "allowXYExpansion": true,
+        "conflictPolicy": "varnish_shell_wins",
+        "enabled": false,
+        "pixelPitchUm": 42.3,
+        "thicknessMm": 0,
+        "thicknessStepMm": 0.01,
+        "value": 0
+    },
     "output": {
         "bitDepth": 8,
         "channelOrder": [
@@ -109,9 +126,20 @@
     "slicingMode": "relief_heightfield",
     "support": {
         "enabled": true,
+        "internalVoid": {
+            "enabled": true,
+            "fillRule": "all_internal_voids",
+            "minAreaPx": 16
+        },
         "minAreaPx": 0,
         "mode": "bottom_projection",
         "offsetMm": 0,
+        "placement": "lower",
+        "upper": {
+            "enabled": false,
+            "outside": "outer_varnish_shell",
+            "reason": "optional_detachable_surface_support"
+        },
         "value": 0
     },
     "texture": {

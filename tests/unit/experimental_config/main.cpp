@@ -76,7 +76,9 @@ bool OldConfigDefaultsOpenVdbDisabled()
                "legacy config admission default")
         && ExpectTrue(
                !config.experimental.openvdb_pipeline.write_production_rgbwsv,
-               "legacy config writeProductionRgbwsv default");
+               "legacy config writeProductionRgbwsv default")
+        && ExpectTrue(!config.model_fill.enabled, "legacy config keeps modelFill disabled")
+        && ExpectTrue(!config.outer_varnish.enabled, "legacy config keeps outerVarnish disabled");
 }
 
 bool EmptyExperimentalDefaults()
@@ -95,6 +97,73 @@ bool EmptyExperimentalDefaults()
                config.experimental.openvdb_pipeline.admission_mode == "strict_closed",
                "empty experimental admission")
         && ExpectTrue(!config.experimental.openvdb_pipeline.write_production_rgbwsv, "empty experimental write");
+}
+
+bool Stage12AConfigPlaceholdersParse()
+{
+    const std::filesystem::path path = WriteConfig(
+        "stage_12a_placeholders.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"modelFill\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"material\": \"white\",\n"
+            "    \"scope\": \"below_texture_surface\",\n"
+            "    \"value\": 0,\n"
+            "    \"emptyAllowedInProduction\": false,\n"
+            "    \"legacyRgbFallback\": false\n"
+            "  },\n"
+            "  \"support\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"mode\": \"bottom_projection\",\n"
+            "    \"placement\": \"lower\",\n"
+            "    \"internalVoid\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"minAreaPx\": 16,\n"
+            "      \"fillRule\": \"all_internal_voids\"\n"
+            "    },\n"
+            "    \"upper\": {\n"
+            "      \"enabled\": false,\n"
+            "      \"outside\": \"outer_varnish_shell\",\n"
+            "      \"reason\": \"optional_detachable_surface_support\"\n"
+            "    }\n"
+            "  },\n"
+            "  \"outerVarnish\": {\n"
+            "    \"enabled\": false,\n"
+            "    \"thicknessMm\": 0.0,\n"
+            "    \"thicknessStepMm\": 0.01,\n"
+            "    \"pixelPitchUm\": 42.3,\n"
+            "    \"allowXYExpansion\": true,\n"
+            "    \"conflictPolicy\": \"varnish_shell_wins\",\n"
+            "    \"value\": 0\n"
+            "  }\n"));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(path);
+    return ExpectTrue(config.model_fill.enabled, "12A modelFill enabled parses")
+        && ExpectTrue(config.model_fill.material == "white", "12A modelFill material parses")
+        && ExpectTrue(config.model_fill.scope == "below_texture_surface", "12A modelFill scope parses")
+        && ExpectTrue(!config.model_fill.empty_allowed_in_production, "12A modelFill production empty default parses")
+        && ExpectTrue(!config.model_fill.legacy_rgb_fallback, "12A modelFill legacy fallback parses")
+        && ExpectTrue(config.support.placement == "lower", "12A support placement parses")
+        && ExpectTrue(config.support.internal_void.enabled, "12A internal void support enabled parses")
+        && ExpectTrue(config.support.internal_void.min_area_px == 16, "12A internal void min area parses")
+        && ExpectTrue(
+               config.support.internal_void.fill_rule == "all_internal_voids",
+               "12A internal void fill rule parses")
+        && ExpectTrue(!config.support.upper.enabled, "12A upper support enabled flag parses")
+        && ExpectTrue(
+               config.support.upper.outside == "outer_varnish_shell",
+               "12A upper support outside boundary parses")
+        && ExpectTrue(!config.outer_varnish.enabled, "12A outer varnish disabled parses")
+        && ExpectTrue(config.outer_varnish.thickness_mm >= 0.0 && config.outer_varnish.thickness_mm < 0.001,
+            "12A outer varnish thickness parses")
+        && ExpectTrue(config.outer_varnish.thickness_step_mm > 0.009 && config.outer_varnish.thickness_step_mm < 0.011,
+            "12A outer varnish step parses")
+        && ExpectTrue(config.outer_varnish.pixel_pitch_um > 42.29 && config.outer_varnish.pixel_pitch_um < 42.31,
+            "12A outer varnish pitch parses")
+        && ExpectTrue(config.outer_varnish.allow_xy_expansion, "12A outer varnish expansion parses")
+        && ExpectTrue(
+               config.outer_varnish.conflict_policy == "varnish_shell_wins",
+               "12A outer varnish conflict policy parses");
 }
 
 bool SurfaceShellFromSdfRequiresOpenVdb()
@@ -309,6 +378,7 @@ int main()
     const std::vector<std::pair<std::string, bool (*)()>> tests{
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
+        {"stage_12a_config_placeholders_parse", Stage12AConfigPlaceholdersParse},
         {"surface_shell_from_sdf_requires_openvdb", SurfaceShellFromSdfRequiresOpenVdb},
         {"surface_shell_from_sdf_accepted_with_openvdb_gate", SurfaceShellFromSdfAcceptedWithOpenVdbGate},
         {"legacy_run_slicer_rejects_surface_shell_candidate_config", LegacyRunSlicerRejectsSurfaceShellCandidateConfig},

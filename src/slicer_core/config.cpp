@@ -245,6 +245,18 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         }
     }
 
+    if (root.contains("modelFill")) {
+        const auto& model_fill = root.at("modelFill");
+        config.model_fill.enabled = model_fill.value("enabled", config.model_fill.enabled);
+        config.model_fill.material = model_fill.value("material", config.model_fill.material);
+        config.model_fill.scope = model_fill.value("scope", config.model_fill.scope);
+        config.model_fill.value = read_u8(model_fill, "value", config.model_fill.value);
+        config.model_fill.empty_allowed_in_production =
+            model_fill.value("emptyAllowedInProduction", config.model_fill.empty_allowed_in_production);
+        config.model_fill.legacy_rgb_fallback =
+            model_fill.value("legacyRgbFallback", config.model_fill.legacy_rgb_fallback);
+    }
+
     if (root.contains("materialProcessProfile")) {
         const auto& profile = root.at("materialProcessProfile");
         config.material_process_profile.enabled = profile.value("enabled", config.material_process_profile.enabled);
@@ -340,6 +352,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         const auto& support = root.at("support");
         config.support.enabled = support.value("enabled", config.support.enabled);
         config.support.mode = support.value("mode", config.support.mode);
+        config.support.placement = support.value("placement", config.support.placement);
         config.support.value = read_u8(support, "value", config.support.value);
         config.support.value = read_legacy_u16_as_u8(support, "strength", config.support.value);
         config.support.offset_mm = support.value("offsetMm", config.support.offset_mm);
@@ -367,6 +380,39 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             config.support.shape_max_added_support_ratio =
                 shape.value("maxAddedSupportRatio", config.support.shape_max_added_support_ratio);
         }
+        if (support.contains("internalVoid"))
+        {
+            const auto& internal_void = support.at("internalVoid");
+            config.support.internal_void.enabled =
+                internal_void.value("enabled", config.support.internal_void.enabled);
+            config.support.internal_void.min_area_px =
+                internal_void.value("minAreaPx", config.support.internal_void.min_area_px);
+            config.support.internal_void.fill_rule =
+                internal_void.value("fillRule", config.support.internal_void.fill_rule);
+        }
+        if (support.contains("upper"))
+        {
+            const auto& upper = support.at("upper");
+            config.support.upper.enabled = upper.value("enabled", config.support.upper.enabled);
+            config.support.upper.outside = upper.value("outside", config.support.upper.outside);
+            config.support.upper.reason = upper.value("reason", config.support.upper.reason);
+        }
+    }
+
+    if (root.contains("outerVarnish")) {
+        const auto& outer_varnish = root.at("outerVarnish");
+        config.outer_varnish.enabled = outer_varnish.value("enabled", config.outer_varnish.enabled);
+        config.outer_varnish.thickness_mm =
+            outer_varnish.value("thicknessMm", config.outer_varnish.thickness_mm);
+        config.outer_varnish.thickness_step_mm =
+            outer_varnish.value("thicknessStepMm", config.outer_varnish.thickness_step_mm);
+        config.outer_varnish.pixel_pitch_um =
+            outer_varnish.value("pixelPitchUm", config.outer_varnish.pixel_pitch_um);
+        config.outer_varnish.allow_xy_expansion =
+            outer_varnish.value("allowXYExpansion", config.outer_varnish.allow_xy_expansion);
+        config.outer_varnish.conflict_policy =
+            outer_varnish.value("conflictPolicy", config.outer_varnish.conflict_policy);
+        config.outer_varnish.value = read_u8(outer_varnish, "value", config.outer_varnish.value);
     }
 
     if (root.contains("preview")) {
@@ -490,12 +536,54 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.support.xy_dilation_px < 0) {
         throw std::runtime_error("support.xyDilationPx must be non-negative");
     }
+    if (config.support.placement != "lower"
+        && config.support.placement != "upper"
+        && config.support.placement != "both"
+        && config.support.placement != "unsupported_only"
+        && config.support.placement != "full_vertical_projection") {
+        throw std::runtime_error(
+            "support.placement must be lower, upper, both, unsupported_only, or full_vertical_projection");
+    }
+    if (config.support.internal_void.min_area_px < 0) {
+        throw std::runtime_error("support.internalVoid.minAreaPx must be non-negative");
+    }
+    if (config.support.internal_void.fill_rule != "all_internal_voids") {
+        throw std::runtime_error("support.internalVoid.fillRule must be all_internal_voids");
+    }
+    if (config.support.upper.outside != "outer_varnish_shell"
+        && config.support.upper.outside != "model_envelope") {
+        throw std::runtime_error("support.upper.outside must be outer_varnish_shell or model_envelope");
+    }
     if (config.material.material_channel != "auto" && config.material.material_channel != "RGB"
         && config.material.material_channel != "W" && config.material.material_channel != "V") {
         throw std::runtime_error("modelMaterial.materialChannel must be auto, RGB, W, or V");
     }
     if (config.material.apply_mode != "solid_volume") {
         throw std::runtime_error("00C only supports modelMaterial.applyMode == solid_volume");
+    }
+    if (config.model_fill.material != "white"
+        && config.model_fill.material != "varnish"
+        && config.model_fill.material != "rgb"
+        && config.model_fill.material != "profile_default"
+        && config.model_fill.material != "material_role") {
+        throw std::runtime_error("modelFill.material must be white, varnish, rgb, profile_default, or material_role");
+    }
+    if (config.model_fill.scope != "solid_volume"
+        && config.model_fill.scope != "below_texture_surface"
+        && config.model_fill.scope != "all_model") {
+        throw std::runtime_error("modelFill.scope must be solid_volume, below_texture_surface, or all_model");
+    }
+    if (config.outer_varnish.thickness_mm < 0.0) {
+        throw std::runtime_error("outerVarnish.thicknessMm must be non-negative");
+    }
+    if (config.outer_varnish.thickness_step_mm <= 0.0) {
+        throw std::runtime_error("outerVarnish.thicknessStepMm must be positive");
+    }
+    if (config.outer_varnish.pixel_pitch_um <= 0.0) {
+        throw std::runtime_error("outerVarnish.pixelPitchUm must be positive");
+    }
+    if (config.outer_varnish.conflict_policy != "varnish_shell_wins") {
+        throw std::runtime_error("outerVarnish.conflictPolicy must be varnish_shell_wins");
     }
     if (config.texture.enabled)
     {
