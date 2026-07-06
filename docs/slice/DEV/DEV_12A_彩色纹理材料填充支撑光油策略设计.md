@@ -1,6 +1,6 @@
 # DEV_12A_彩色纹理材料填充支撑光油策略设计
 
-> 文档版本：v0.2
+> 文档版本：v0.3
 > 文档状态：DEV / Stage 12A
 > 生成日期：2026-07-05
 > 更新日期：2026-07-06
@@ -27,6 +27,8 @@ ModelFillPolicy
 SupportPlacementPolicy
 InternalVoidSupportPolicy
 OuterVarnishShellPolicy
+SurfaceVarnishPolicy
+CrossSectionMaterialStackPolicy
 LayerSemanticReport
 ```
 
@@ -193,6 +195,62 @@ effectiveThicknessMm = thicknessPx * pixelPitchUm / 1000.0
 thicknessMm = 0.0 表示不生成外侧光油壳层
 ```
 
+### 4.4 SurfaceVarnishConfig
+
+建议新增或从 MaterialPolicy 派生：
+
+```json
+{
+  "surfaceVarnish": {
+    "enabled": true,
+    "outerSurface": true,
+    "innerSurface": true,
+    "value": 0,
+    "source": "material_policy"
+  }
+}
+```
+
+字段说明：
+
+```text
+outerSurface：模型外表面光油层；
+innerSurface：模型内表面光油层；
+value：V 通道打印值；
+source：material_policy 表示沿用现有光油策略，后续可扩展为 material_role 或 mask。
+```
+
+说明：
+
+```text
+SurfaceVarnishLayer 不等同于 OuterVarnishShell。
+SurfaceVarnishLayer 是模型表面上的 V 通道材料带；
+OuterVarnishShell 是模型轮廓外侧的 XY 扩张壳层。
+```
+
+### 4.5 CrossSectionMaterialStack
+
+真实 RIP 横截面材料栈建议作为 12A composer 的语义检查顺序：
+
+```text
+UpperSurfaceSupportMask
+OuterSurfaceVarnishMask
+OuterSurfaceColorMask
+ModelFillMask
+InnerSurfaceColorMask
+InnerSurfaceVarnishMask
+LowerSurfaceSupportMask
+```
+
+其中：
+
+```text
+OuterSurfaceColorMask 和 InnerSurfaceColorMask 均写 RGB；
+ModelFillMask 默认写 W；
+OuterSurfaceVarnishMask 和 InnerSurfaceVarnishMask 写 V；
+UpperSurfaceSupportMask 和 LowerSurfaceSupportMask 写 S；
+```
+
 ---
 
 ## 5. 切片执行链路
@@ -206,11 +264,13 @@ thicknessMm = 0.0 表示不生成外侧光油壳层
 4. Compute texture surface mask；
 5. Compute model fill mask = model mask - texture surface mask；
 6. Compute outer varnish shell mask；
-7. Compute support mask；
-8. Compute internal void support mask；
-9. For upper support, use model envelope + outer varnish shell as outside boundary；
-10. Compose RGBWSV by semantic priority；
-11. Write layer summary/report/preview。
+7. Compute surface varnish masks；
+8. Compute outer/inner surface color masks；
+9. Compute support mask；
+10. Compute internal void support mask；
+11. For upper support, use model envelope + outer varnish shell as outside boundary；
+12. Compose RGBWSV by semantic priority and material stack；
+13. Write layer summary/report/preview。
 ```
 
 ---
@@ -248,6 +308,7 @@ else:
 4. outerVarnish 与 support 重叠时 outerVarnish wins；
 5. upper support 应在 outerVarnish shell 之外生成，避免同像素冲突；
 6. internal void support 是 supportPixel，但 reason 必须标记为 internal_void。
+7. 表面光油和内表面光油属于模型表面材料带，应在 mask/report 中区别于外侧扩张光油壳层。
 ```
 
 ---
@@ -264,7 +325,12 @@ layer summary 建议新增：
   "supportPixels": 54321,
   "internalVoidSupportPixels": 1200,
   "outerVarnishPixels": 900,
+  "outerSurfaceVarnishPixels": 700,
+  "innerSurfaceVarnishPixels": 650,
+  "outerSurfaceColorPixels": 1000,
+  "innerSurfaceColorPixels": 950,
   "upperSurfaceSupportPixels": 0,
+  "lowerSurfaceSupportPixels": 54321,
   "emptyPixels": 100000,
   "modelFillMaterial": "white",
   "supportPlacement": "lower",
@@ -284,6 +350,7 @@ outerVarnishEnabled=true/false
 internalVoidSupportEnabled=true/false
 semanticPriority="Model>OuterVarnishShell>Support>Empty"
 singleMaterialAndColorConsistency=true/false
+crossSectionMaterialStack="UpperSupport>SurfaceVarnish>SurfaceColor>ModelFill>SurfaceColor>InnerSurfaceVarnish>LowerSupport"
 ```
 
 ---
@@ -320,9 +387,11 @@ singleMaterialAndColorConsistency=true/false
 12A-3：新增 ModelFillPolicy，legacy 默认兼容；
 12A-4：新增 InternalVoidSupportPolicy；
 12A-5：新增 OuterVarnishShellPolicy，支持 thicknessMm、0.01mm 精度、42.3um/px 换算和 XY 扩张；
-12A-6：新增 UpperSurfaceSupportPolicy，确保上表面支撑在外侧光油壳层之外；
-12A-7：补 UI 设置入口和 preview 图例；
-12A-8：建立 fixture/golden summary。
+12A-6：新增 SurfaceVarnishPolicy，区分外表面光油和内表面光油；
+12A-7：新增 UpperSurfaceSupportPolicy，确保上表面支撑在外侧光油壳层之外；
+12A-8：新增 CrossSectionMaterialStack report，用真实 RIP 横截面材料栈校验；
+12A-9：补 UI 设置入口和 preview 图例；
+12A-10：建立 fixture/golden summary。
 ```
 
 ---
@@ -345,5 +414,6 @@ cmake --build build --config Debug --target slicer_cli rip_reader_test
 3. 比较彩色与单材料同模型的 model/support mask；
 4. 检查 internal void fixture；
 5. 检查外侧光油厚度 mm/px 换算；
-6. 检查上表面支撑是否位于外侧光油壳层之外。
+6. 检查上表面支撑是否位于外侧光油壳层之外；
+7. 检查真实 RIP 横截面材料栈是否能被 report/preview 解释。
 ```

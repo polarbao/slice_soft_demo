@@ -1,6 +1,6 @@
 # PRD_12A_彩色纹理材料填充支撑光油策略
 
-> 文档版本：v0.2
+> 文档版本：v0.3
 > 文档状态：PRD / Stage 12A
 > 生成日期：2026-07-05
 > 更新日期：2026-07-06
@@ -76,6 +76,14 @@ Empty：空白区域；
 5. report 中应统计 textureSurfacePixels。
 ```
 
+补充要求：
+
+```text
+1. 色彩层可能出现在模型外表面和模型内表面；
+2. 真实 RIP 横截面中可出现“模型表层色彩层 / 模型表层色彩层”两条带状结构；
+3. 12A 实现不能只按单一顶面纹理带理解颜色层。
+```
+
 ### 3.3 Model Fill Layer
 
 模型填充层指模型实体内部、非表面纹理带的材料填充。
@@ -136,7 +144,8 @@ modelFill.emptyAllowedInProduction = false
 3. 必须能在 report 中解释为 internal_void，而不是 bottom_projection；
 4. 内部镂空区域一律填充 S 支撑材料；
 5. 用户示例 output/ui_sessions/dmz_20260705_003745/package/layers/layer_000169.tiff 可作为问题样例来源，但验收应使用可复现 fixture；
-6. 示意图见 docs/slice/DOC/DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg。
+6. 真实横截面材料栈参考 docs/slice/DOC/DIAGRAM_12A_指甲模型横截面材料示意图.png；
+7. docs/slice/DOC/DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg 仅保留为优先级概念图，不作为几何验收图。
 ```
 
 ### 3.6 Outer Varnish Shell
@@ -154,6 +163,48 @@ modelFill.emptyAllowedInProduction = false
 6. 默认冲突优先级为 Model > OuterVarnishShell > Support > Empty；
 7. 如果同时启用上表面支撑，上表面支撑应生成在外侧光油壳层之外；
 8. report 中应统计 outerVarnishPixels、varnishThicknessPx、varnishThicknessMm。
+```
+
+### 3.7 Surface Varnish Layer
+
+表面光油层指模型表面或内表面上的 V 通道光油材料带。它与 `OuterVarnishShell` 的区别如下：
+
+| 类型 | 位置 | 是否扩张 XY | 主要用途 |
+|---|---|---|---|
+| SurfaceVarnishLayer | 模型外表面或内表面上 | 否 | 表面清漆/透明涂层 |
+| OuterVarnishShell | 模型外轮廓之外 | 是 | 外侧加厚光油壳层 |
+
+要求：
+
+```text
+1. 真实 RIP 横截面中存在“表面层光油”和“模型内表面光油层”两类光油带；
+2. 12A 文档和实现不能把所有 V 通道都简化为外侧扩张壳层；
+3. SurfaceVarnishLayer 可与外/内表面色彩层相邻；
+4. OuterVarnishShell 用于向模型外侧扩张，仍按 thicknessMm 控制。
+```
+
+### 3.8 真实 RIP 横截面材料栈
+
+以 `DIAGRAM_12A_指甲模型横截面材料示意图.png` 和真实 `slice.446.png` 为参考，12A 生产语义需要支持以下材料栈：
+
+```text
+从模型外侧/上表面向内：
+1. 上表面支撑 S
+2. 表面层光油 V
+3. 模型表层色彩层 RGB
+4. 模型内部填充层，默认白墨 W
+5. 模型表层色彩层 RGB
+6. 模型内表面光油层 V
+7. 模型下表面支撑层 S
+```
+
+说明：
+
+```text
+1. 该材料栈描述的是指甲模型横截面上的带状材料关系，不是画布坐标的上下方向；
+2. 上表面支撑和下表面支撑都是模型外部可剥离支撑；
+3. 模型内部填充层位于两个表面色彩层之间，生产默认白墨；
+4. 支撑可在模型内侧空腔或外侧区域形成连续承托，不能被理解为单个椭圆洞。
 ```
 
 ---

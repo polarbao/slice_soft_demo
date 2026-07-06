@@ -1,6 +1,6 @@
 # TASKS_12A_彩色纹理材料支撑光油任务清单
 
-> 文档版本：v0.2
+> 文档版本：v0.3
 > 文档状态：Task List / Stage 12A
 > 生成日期：2026-07-05
 > 更新日期：2026-07-06
@@ -150,7 +150,25 @@ upper 是模型外部可剥离支撑，如果启用 outerVarnish，upper 支撑�
 V 通道壳层宽度等于配置厚度换算后的像素宽度，report 输出 thicknessMm、thicknessPx、effectiveThicknessMm。
 ```
 
-### Task 12A-08 UpperSurfaceSupportPolicy
+### Task 12A-08 SurfaceVarnishPolicy
+
+状态：PENDING
+
+内容：
+
+```text
+实现表面光油策略，区分外表面光油、内表面光油和外侧扩张光油壳层。
+真实 RIP 横截面中“表面层光油”和“模型内表面光油层”都应能被 report/preview 解释。
+```
+
+验证：
+
+```text
+outerSurfaceVarnishPixels 和 innerSurfaceVarnishPixels 可统计；
+它们与 outerVarnishPixels 语义不同。
+```
+
+### Task 12A-09 UpperSurfaceSupportPolicy
 
 状态：PENDING
 
@@ -168,7 +186,27 @@ upper surface fixture 中 outerVarnishPixels > 0 且 upperSurfaceSupportPixels >
 同像素冲突执行 Model > OuterVarnishShell > Support > Empty。
 ```
 
-### Task 12A-09 彩色/单材料一致性 fixture
+### Task 12A-10 真实 RIP 横截面材料栈对齐
+
+状态：PENDING
+
+内容：
+
+```text
+基于 DIAGRAM_12A_指甲模型横截面材料示意图.png 和真实 RIP slice.446.png，
+建立横截面材料栈 golden summary。
+材料栈包括：
+上表面支撑、表面光油、表面色彩、模型内部填充、表面色彩、内表面光油、下表面支撑。
+```
+
+验证：
+
+```text
+report/preview 能解释真实 RIP 横截面材料栈；
+旧概念图不再作为几何验收依据。
+```
+
+### Task 12A-11 彩色/单材料一致性 fixture
 
 状态：PENDING
 
@@ -185,7 +223,7 @@ upper surface fixture 中 outerVarnishPixels > 0 且 upperSurfaceSupportPixels >
 layerCount/model mask/support mask/channel-statistics logic 可比较，差异只来自材料通道。
 ```
 
-### Task 12A-10 UI preview 图例与像素探针联动
+### Task 12A-12 UI preview 图例与像素探针联动
 
 状态：PENDING
 

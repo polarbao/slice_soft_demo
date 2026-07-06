@@ -1,6 +1,6 @@
 # REPORT_12_专项规划当前状态
 
-> 文档版本：v0.2
+> 文档版本：v0.3
 > 文档状态：REPORT / Stage 12 Planning
 > 生成日期：2026-07-05
 > 更新日期：2026-07-06
@@ -112,6 +112,15 @@ docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
 
 ```text
 docs/slice/DOC/DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg
+```
+
+2026-07-06 二次审查结论：
+
+```text
+1. 用户新增的 DIAGRAM_12A_指甲模型横截面材料示意图.png 与真实 RIP layer=446 更一致；
+2. 旧 DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg 仅保留为优先级概念图，不作为几何验收图；
+3. 12A 需要补充 SurfaceVarnishLayer、InnerSurfaceVarnishLayer、真实横截面材料栈和对应 report/preview 验收；
+4. 审查记录见 DOC_REVIEW_12A_真实RIP横截面示意图对齐审查.md。
 ```
 
 ### 4.2 12B 不应默认押注 OpenVDB

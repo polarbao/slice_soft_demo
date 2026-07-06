@@ -1,6 +1,6 @@
 # DEMO_12A_彩色纹理材料支撑光油验证方案
 
-> 文档版本：v0.2
+> 文档版本：v0.3
 > 文档状态：DEMO / Stage 12A
 > 生成日期：2026-07-05
 > 更新日期：2026-07-06
@@ -24,6 +24,8 @@
 | `samples/models/relief/relief.obj` | 单材料浮雕基线 |
 | 内部镂空 fixture | internalVoidSupport 验证 |
 | 外侧光油 fixture | outerVarnishShell 厚度验证 |
+| `docs/slice/DOC/DIAGRAM_12A_指甲模型横截面材料示意图.png` | 真实 RIP 横截面材料栈参考 |
+| `E:\项目资料\自研打印机测试数据\print\slice\0410\0410\layer_629_4_finger\var_01_sup_03\2024-04-10_15-51-32__1712735492954\slice.446.png` | 真实 RIP layer=446 对齐参考 |
 
 ---
 
@@ -157,6 +159,30 @@ model mask 可比较；
 support mask 可比较；
 几何轮廓和通道统计逻辑可比较；
 材料通道差异符合 Profile：彩色模型写 RGB 纹理，单材料模型写单色材料。
+```
+
+### Case 12A-08 真实 RIP 横截面材料栈对齐
+
+参考：
+
+```text
+docs/slice/DOC/DIAGRAM_12A_指甲模型横截面材料示意图.png
+真实 RIP：slice.446.png
+```
+
+期望：
+
+```text
+report/preview 能解释以下材料栈：
+1. 上表面支撑 S
+2. 表面层光油 V
+3. 模型表层色彩层 RGB
+4. 模型内部填充层 W 或配置材料
+5. 模型表层色彩层 RGB
+6. 模型内表面光油层 V
+7. 模型下表面支撑层 S
+
+旧概念图 DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg 不作为该 Case 的几何验收图。
 ```
 
 ---

@@ -1,6 +1,6 @@
 # DOC_AUDIT_12_当前切片策略与需求偏差审查
 
-> 文档版本：v0.2
+> 文档版本：v0.3
 > 文档状态：Audit / Stage 12
 > 生成日期：2026-07-05
 > 更新日期：2026-07-06
@@ -133,7 +133,7 @@ failurePolicy = non_production_only；
 |---|---|---|
 | 1 | “填充层”含义 | 填充层有两个含义：模型内部填充层指两个颜色层或表面层之间的模型内部材料，如白墨、光油或其他可选材料；模型外部填充层指用 S 通道支撑材料支撑模型打印，防止缺支撑导致塌陷。 |
 | 2 | 默认填充材料 | 模型内部填充材料默认使用白墨，可选择光油或后续扩展的其他模型材料；模型外部填充材料只能是可剥离支撑材料。 |
-| 3 | 内部镂空区域 | 内部镂空区域一律填充支撑材料，生产 Profile 默认开启 internalVoidSupport。示意图见 `DOC/DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg`。 |
+| 3 | 内部镂空区域 | 内部镂空区域一律填充支撑材料，生产 Profile 默认开启 internalVoidSupport。真实横截面材料栈参考 `DOC/DIAGRAM_12A_指甲模型横截面材料示意图.png`。 |
 | 4 | 上表面支撑 | 上表面支撑是模型外部的可剥离支撑材料层；如果同时启用外侧光油层，则先生成模型外侧光油壳层，再在光油壳层外添加上表面支撑。 |
 | 5 | 外侧光油扩张 | 外侧光油层允许扩张模型 XY 尺寸。 |
 | 6 | 光油厚度单位 | 外侧光油厚度按 mm 配置，默认厚度为 0mm；配置精度为 0.01mm；像素换算默认使用 1px = 42.3um。 |
@@ -152,6 +152,17 @@ outerVarnish.thicknessMm.step = 0.01
 outerVarnish.pixelPitchUm.default = 42.3
 semanticPriority = Model > OuterVarnishShell > Support > Empty
 singleMaterialAndColorConsistency = geometry/support/channel-statistics comparable
+```
+
+### 5.1 真实 RIP 横截面对齐结论
+
+2026-07-06 根据真实 RIP 输出和用户提供的横截面示意图完成二次审查：
+
+```text
+1. DIAGRAM_12A_指甲模型横截面材料示意图.png 更接近真实 RIP 的横截面材料关系；
+2. DIAGRAM_12A_内部镂空支撑与外侧光油支撑关系.svg 只能作为优先级概念图，不再作为几何形态验收图；
+3. 12A 需要明确表面光油、内表面光油、外/内表面色彩层、模型内部填充层和上下表面支撑层的材料栈；
+4. 详细审查见 DOC_REVIEW_12A_真实RIP横截面示意图对齐审查.md。
 ```
 
 ---
