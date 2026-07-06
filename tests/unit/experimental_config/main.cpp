@@ -137,6 +137,14 @@ bool Stage12AConfigPlaceholdersParse()
             "    \"allowXYExpansion\": true,\n"
             "    \"conflictPolicy\": \"varnish_shell_wins\",\n"
             "    \"value\": 0\n"
+            "  },\n"
+            "  \"surfaceVarnish\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"outerSurface\": true,\n"
+            "    \"innerSurface\": true,\n"
+            "    \"thicknessPx\": 1,\n"
+            "    \"value\": 0,\n"
+            "    \"source\": \"explicit\"\n"
             "  }\n"));
     const slicer_core::SliceConfig config = slicer_core::load_slice_config(path);
     return ExpectTrue(config.model_fill.enabled, "12A modelFill enabled parses")
@@ -165,7 +173,12 @@ bool Stage12AConfigPlaceholdersParse()
         && ExpectTrue(config.outer_varnish.allow_xy_expansion, "12A outer varnish expansion parses")
         && ExpectTrue(
                config.outer_varnish.conflict_policy == "varnish_shell_wins",
-               "12A outer varnish conflict policy parses");
+               "12A outer varnish conflict policy parses")
+        && ExpectTrue(config.surface_varnish.enabled, "12A surface varnish enabled parses")
+        && ExpectTrue(config.surface_varnish.outer_surface, "12A surface varnish outer surface parses")
+        && ExpectTrue(config.surface_varnish.inner_surface, "12A surface varnish inner surface parses")
+        && ExpectTrue(config.surface_varnish.thickness_px == 1, "12A surface varnish thickness parses")
+        && ExpectTrue(config.surface_varnish.source == "explicit", "12A surface varnish source parses");
 }
 
 bool Stage12AModelFillRejectsEmptyProductionRgb()

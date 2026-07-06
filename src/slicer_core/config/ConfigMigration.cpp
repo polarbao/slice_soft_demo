@@ -25,6 +25,7 @@ Json NormalizeSlicerConfig1(const Json& root)
     CopyIfPresent(target, root, "preview", "preview");
     CopyIfPresent(target, root, "texture", "texture");
     CopyIfPresent(target, root, "outerVarnish", "outerVarnish");
+    CopyIfPresent(target, root, "surfaceVarnish", "surfaceVarnish");
 
     if (root.contains("pipeline"))
     {
@@ -46,6 +47,7 @@ Json NormalizeSlicerConfig1(const Json& root)
         CopyIfPresent(target, materials, "texture", "texture");
         CopyIfPresent(target, materials, "modelFill", "modelFill");
         CopyIfPresent(target, materials, "outerVarnish", "outerVarnish");
+        CopyIfPresent(target, materials, "surfaceVarnish", "surfaceVarnish");
         CopyIfPresent(target, materials, "roleMapping", "materialRoleMapping");
         CopyIfPresent(target, materials, "materialPolicy", "materialPolicy");
         CopyIfPresent(target, materials, "materialProcessProfile", "materialProcessProfile");

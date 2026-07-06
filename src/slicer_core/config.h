@@ -220,6 +220,18 @@ struct OuterVarnishShellConfig {
     std::uint8_t value{0};
 };
 
+/**
+ * @brief Optional varnish layer written on model surface pixels.
+ */
+struct SurfaceVarnishConfig {
+    bool enabled{false};
+    bool outer_surface{true};
+    bool inner_surface{true};
+    int thickness_px{1};
+    std::uint8_t value{0};
+    std::string source{"explicit"};
+};
+
 struct PreviewConfig {
     bool enabled{false};
     std::string format{"ppm"};
@@ -275,6 +287,7 @@ struct SliceConfig {
     MaterialRoleMappingConfig material_role_mapping;
     SupportConfig support;
     OuterVarnishShellConfig outer_varnish;
+    SurfaceVarnishConfig surface_varnish;
     PreviewConfig preview;
     ReliefConfig relief;
     ExperimentalConfig experimental;

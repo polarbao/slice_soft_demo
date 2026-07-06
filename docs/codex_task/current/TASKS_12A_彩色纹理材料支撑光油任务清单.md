@@ -310,7 +310,7 @@ output/12a07_validation/aishen_lower_1px/package: PASS, V=153438, S=4123061, thi
 
 ### Task 12A-08 SurfaceVarnishPolicy
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -319,11 +319,47 @@ output/12a07_validation/aishen_lower_1px/package: PASS, V=153438, S=4123061, thi
 真实 RIP 横截面中“表面层光油”和“模型内表面光油层”都应能被 report/preview 解释。
 ```
 
+完成记录：
+
+```text
+已实现：
+1. 新增 surfaceVarnish 配置，默认 disabled，不改变旧配置输出；
+2. surfaceVarnish.outerSurface 在模型像素邻接外部空白时写 V；
+3. surfaceVarnish.innerSurface 在模型像素邻接内部镂空空白时写 V；
+4. surfaceVarnish.thicknessPx 控制模型内表面带像素宽度，默认 1px；
+5. surfaceVarnish.source 支持 explicit / material_policy，默认 explicit；
+6. SurfaceVarnishLayer 写在模型像素自身，不扩张 XY，与 OuterVarnishShell 的外扩 V 壳层保持独立；
+7. slice_report.totals、layer summary 和 semantic block 输出 outerSurfaceVarnishPixels / innerSurfaceVarnishPixels；
+8. materialSemantics.surfaceVarnish 输出 enabled、outerSurface、innerSurface、thicknessPx、source、value、outerSurfacePrintPixels、innerSurfacePrintPixels。
+```
+
 验证：
 
 ```text
 outerSurfaceVarnishPixels 和 innerSurfaceVarnishPixels 可统计；
 它们与 outerVarnishPixels 语义不同。
+```
+
+验证记录：
+
+```text
+cmake --build build --config Debug --target slicer_cli experimental_config_unit_tests rip_reader_test
+build\Debug\experimental_config_unit_tests.exe
+build\Debug\slicer_cli.exe --config samples\configs\support\support_surface_varnish_outer_inner.json
+build\Debug\rip_reader_test.exe --package output\SupportSurfaceVarnishOuterInner --summary
+
+Python validation:
+output\SupportSurfaceVarnishOuterInner:
+outerSurfaceVarnishPixels=1488
+innerSurfaceVarnishPixels=400
+outerVarnishPixels=0
+varnishPrintPixels=1888
+
+model/obj 多模型验证：
+output/12a08_validation/xiao_ma_outer_only/package: PASS, outerSurface=109727, innerSurface=0, outerShell=0, V=109727
+output/12a08_validation/yecan_outer_inner/package: PASS, outerSurface=141229, innerSurface=16358, outerShell=0, V=157587
+output/12a08_validation/nai_you_outer_inner/package: PASS, outerSurface=142762, innerSurface=12336, outerShell=0, V=155098
+output/12a08_validation/aishen_outer_inner/package: PASS, outerSurface=148261, innerSurface=8762, outerShell=0, V=157008
 ```
 
 ### Task 12A-09 UpperSurfaceSupportPolicy

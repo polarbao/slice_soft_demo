@@ -418,6 +418,20 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.outer_varnish.value = read_u8(outer_varnish, "value", config.outer_varnish.value);
     }
 
+    if (root.contains("surfaceVarnish"))
+    {
+        const auto& surface_varnish = root.at("surfaceVarnish");
+        config.surface_varnish.enabled = surface_varnish.value("enabled", config.surface_varnish.enabled);
+        config.surface_varnish.outer_surface =
+            surface_varnish.value("outerSurface", config.surface_varnish.outer_surface);
+        config.surface_varnish.inner_surface =
+            surface_varnish.value("innerSurface", config.surface_varnish.inner_surface);
+        config.surface_varnish.thickness_px =
+            surface_varnish.value("thicknessPx", config.surface_varnish.thickness_px);
+        config.surface_varnish.value = read_u8(surface_varnish, "value", config.surface_varnish.value);
+        config.surface_varnish.source = surface_varnish.value("source", config.surface_varnish.source);
+    }
+
     if (root.contains("preview")) {
         const auto& preview = root.at("preview");
         config.preview.enabled = preview.value("enabled", config.preview.enabled);
@@ -596,6 +610,12 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.outer_varnish.conflict_policy != "varnish_shell_wins") {
         throw std::runtime_error("outerVarnish.conflictPolicy must be varnish_shell_wins");
+    }
+    if (config.surface_varnish.thickness_px <= 0) {
+        throw std::runtime_error("surfaceVarnish.thicknessPx must be positive");
+    }
+    if (config.surface_varnish.source != "explicit" && config.surface_varnish.source != "material_policy") {
+        throw std::runtime_error("surfaceVarnish.source must be explicit or material_policy");
     }
     if (config.texture.enabled)
     {

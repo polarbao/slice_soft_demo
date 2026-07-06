@@ -83,6 +83,8 @@ struct LayerSemanticStats {
     int support_pixels{0};
     int internal_void_support_pixels{0};
     int outer_varnish_pixels{0};
+    int outer_surface_varnish_pixels{0};
+    int inner_surface_varnish_pixels{0};
 };
 
 struct LayerDiagnostics {
@@ -198,6 +200,11 @@ struct SupportGenerationResult {
     int upper_projection_support_pixels{0};
     int layers_with_islands{0};
     int layers_with_support{0};
+};
+
+struct SurfaceVarnishMasks {
+    std::vector<std::vector<std::uint8_t>> outer_surface_masks;
+    std::vector<std::vector<std::uint8_t>> inner_surface_masks;
 };
 
 struct TextureColumnColor {
@@ -806,6 +813,97 @@ std::vector<std::vector<std::uint8_t>> BuildOuterVarnishMasks(
     }
 
     return outerVarnishMasks;
+}
+
+SurfaceVarnishMasks BuildSurfaceVarnishMasks(
+    const SliceConfig& config,
+    const GridSpec& grid,
+    const std::vector<std::vector<std::uint8_t>>& modelMasks)
+{
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    SurfaceVarnishMasks masks;
+    masks.outer_surface_masks.resize(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<std::uint8_t>(pixelCount, 0));
+    masks.inner_surface_masks.resize(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<std::uint8_t>(pixelCount, 0));
+    if (!config.surface_varnish.enabled
+        || (!config.surface_varnish.outer_surface && !config.surface_varnish.inner_surface))
+    {
+        return masks;
+    }
+
+    const int radiusPx = std::max(1, config.surface_varnish.thickness_px);
+    for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
+    {
+        const std::vector<std::uint8_t>& modelMask = modelMasks.at(layerIndex);
+        const bool hasModel = std::any_of(modelMask.begin(), modelMask.end(), [](const std::uint8_t value)
+        {
+            return value != 0;
+        });
+        if (!hasModel)
+        {
+            continue;
+        }
+
+        const std::vector<std::uint8_t> externalEmpty = BuildExternalEmptyMask(grid, modelMask);
+        for (int y{0}; y < grid.height_px; ++y)
+        {
+            for (int x{0}; x < grid.width_px; ++x)
+            {
+                const std::size_t index = mask_index(grid, x, y);
+                if (modelMask.at(index) == 0)
+                {
+                    continue;
+                }
+
+                bool touchesExternalEmpty{false};
+                bool touchesInternalEmpty{false};
+                for (int dy{-radiusPx}; dy <= radiusPx; ++dy)
+                {
+                    for (int dx{-radiusPx}; dx <= radiusPx; ++dx)
+                    {
+                        if (dx == 0 && dy == 0)
+                        {
+                            continue;
+                        }
+                        const int nx{x + dx};
+                        const int ny{y + dy};
+                        if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px)
+                        {
+                            touchesExternalEmpty = true;
+                            continue;
+                        }
+                        const std::size_t neighborIndex = mask_index(grid, nx, ny);
+                        if (modelMask.at(neighborIndex) != 0)
+                        {
+                            continue;
+                        }
+                        if (externalEmpty.at(neighborIndex) != 0)
+                        {
+                            touchesExternalEmpty = true;
+                        }
+                        else
+                        {
+                            touchesInternalEmpty = true;
+                        }
+                    }
+                }
+
+                if (config.surface_varnish.outer_surface && touchesExternalEmpty)
+                {
+                    masks.outer_surface_masks.at(layerIndex).at(index) = 1;
+                }
+                if (config.surface_varnish.inner_surface && touchesInternalEmpty)
+                {
+                    masks.inner_surface_masks.at(layerIndex).at(index) = 1;
+                }
+            }
+        }
+    }
+
+    return masks;
 }
 
 bool ApplyOuterVarnishSupportPriority(
@@ -2391,6 +2489,17 @@ bool WriteModelFillPixel(
     return false;
 }
 
+std::uint8_t ResolveSurfaceVarnishValue(const SliceConfig& config)
+{
+    if (config.surface_varnish.source == "material_policy"
+        && config.material_policy.enabled
+        && config.material_policy.varnish.enabled)
+    {
+        return config.material_policy.varnish.value;
+    }
+    return config.surface_varnish.value;
+}
+
 TextureColumnColor resolve_texture_color(
     const SliceConfig& config,
     const std::vector<TextureColumnColor>* texture_columns,
@@ -2609,6 +2718,8 @@ std::vector<std::uint8_t> compose_layer(
     const GridSpec& grid,
     const std::vector<std::uint8_t>& model_mask,
     const std::vector<std::uint8_t>& outer_varnish_mask,
+    const std::vector<std::uint8_t>& outer_surface_varnish_mask,
+    const std::vector<std::uint8_t>& inner_surface_varnish_mask,
     const std::vector<std::uint8_t>& support_mask,
     const std::vector<SupportType>& support_type_map,
     const std::vector<TextureColumnColor>* texture_columns,
@@ -2728,6 +2839,15 @@ std::vector<std::uint8_t> compose_layer(
                     }
                 }
                 if (counted_model_pixel) {
+                    const std::uint8_t surfaceVarnishValue = ResolveSurfaceVarnishValue(config);
+                    if (outer_surface_varnish_mask.at(pixel_index) != 0) {
+                        pixels.at(base + 5U) = surfaceVarnishValue;
+                        ++semantic_stats.outer_surface_varnish_pixels;
+                    }
+                    if (inner_surface_varnish_mask.at(pixel_index) != 0) {
+                        pixels.at(base + 5U) = surfaceVarnishValue;
+                        ++semantic_stats.inner_surface_varnish_pixels;
+                    }
                     ++model_pixels;
                     if (texture_surface_pixel) {
                         ++semantic_stats.texture_surface_pixels;
@@ -2807,6 +2927,8 @@ void merge_semantic_stats(LayerSemanticStats& totals, const LayerSemanticStats& 
     totals.support_pixels += layer.support_pixels;
     totals.internal_void_support_pixels += layer.internal_void_support_pixels;
     totals.outer_varnish_pixels += layer.outer_varnish_pixels;
+    totals.outer_surface_varnish_pixels += layer.outer_surface_varnish_pixels;
+    totals.inner_surface_varnish_pixels += layer.inner_surface_varnish_pixels;
 }
 
 Json channel_stats_to_json(const ChannelStats& stats) {
@@ -2903,6 +3025,8 @@ Json semantic_stats_to_json(const LayerSemanticStats& stats) {
         {"supportPixels", stats.support_pixels},
         {"internalVoidSupportPixels", stats.internal_void_support_pixels},
         {"outerVarnishPixels", stats.outer_varnish_pixels},
+        {"outerSurfaceVarnishPixels", stats.outer_surface_varnish_pixels},
+        {"innerSurfaceVarnishPixels", stats.inner_surface_varnish_pixels},
     });
 }
 
@@ -3475,6 +3599,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         : compute_mask_column_ranges(model_masks, grid);
     const std::vector<std::vector<std::uint8_t>> outer_varnish_masks =
         BuildOuterVarnishMasks(config, grid, model_masks);
+    const SurfaceVarnishMasks surface_varnish_masks =
+        BuildSurfaceVarnishMasks(config, grid, model_masks);
     const int outerVarnishThicknessPx = ComputeOuterVarnishThicknessPx(config);
     const double outerVarnishEffectiveThicknessMm =
         ComputeOuterVarnishEffectiveThicknessMm(config, outerVarnishThicknessPx);
@@ -3532,6 +3658,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid,
             model_masks.at(layer_index),
             outer_varnish_masks.at(layer_index),
+            surface_varnish_masks.outer_surface_masks.at(layer_index),
+            surface_varnish_masks.inner_surface_masks.at(layer_index),
             support_generation.support_masks.at(layer_index),
             support_generation.support_type_maps.at(layer_index),
             config.texture.enabled ? &texture_columns : nullptr,
@@ -3587,6 +3715,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"modelFillPixels", diagnostics.semantic.model_fill_pixels},
             {"internalVoidSupportPixels", diagnostics.semantic.internal_void_support_pixels},
             {"outerVarnishPixels", diagnostics.semantic.outer_varnish_pixels},
+            {"outerSurfaceVarnishPixels", diagnostics.semantic.outer_surface_varnish_pixels},
+            {"innerSurfaceVarnishPixels", diagnostics.semantic.inner_surface_varnish_pixels},
             {"semantic", semantic_stats_to_json(diagnostics.semantic)},
         }));
         slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
@@ -3622,6 +3752,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"modelFillPixels", total_semantic_stats.model_fill_pixels},
              {"internalVoidSupportPixels", total_semantic_stats.internal_void_support_pixels},
              {"outerVarnishPixels", total_semantic_stats.outer_varnish_pixels},
+             {"outerSurfaceVarnishPixels", total_semantic_stats.outer_surface_varnish_pixels},
+             {"innerSurfaceVarnishPixels", total_semantic_stats.inner_surface_varnish_pixels},
              {"rgbPrintPixels", total_rgb_non_zero_pixels},
              {"whitePrintPixels", total_white_non_zero_pixels},
              {"varnishPrintPixels", total_varnish_non_zero_pixels},
@@ -3700,6 +3832,18 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                        {"conflictPolicy", config.outer_varnish.conflict_policy},
                        {"value", static_cast<int>(config.outer_varnish.value)},
                        {"printPixels", total_semantic_stats.outer_varnish_pixels},
+                   })},
+                  {"surfaceVarnish",
+                   Json::object({
+                       {"enabled", config.surface_varnish.enabled},
+                       {"outerSurface", config.surface_varnish.outer_surface},
+                       {"innerSurface", config.surface_varnish.inner_surface},
+                       {"thicknessPx", config.surface_varnish.thickness_px},
+                       {"source", config.surface_varnish.source},
+                       {"value", static_cast<int>(ResolveSurfaceVarnishValue(config))},
+                       {"outerSurfacePrintPixels", total_semantic_stats.outer_surface_varnish_pixels},
+                       {"innerSurfacePrintPixels", total_semantic_stats.inner_surface_varnish_pixels},
+                       {"note", "SurfaceVarnishLayer writes V on model pixels and is distinct from OuterVarnishShell"},
                    })},
                   {"semanticPriority", "Model>OuterVarnishShell>Support>Empty"},
               })},
