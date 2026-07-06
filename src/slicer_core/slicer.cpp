@@ -320,14 +320,39 @@ std::string preview_file_name(const std::string& prefix, const int layer_index, 
     return stream.str();
 }
 
+int ComputeOuterVarnishThicknessPx(const SliceConfig& config)
+{
+    if (!config.outer_varnish.enabled || config.outer_varnish.thickness_mm <= 0.0)
+    {
+        return 0;
+    }
+    return std::max(
+        1,
+        static_cast<int>(std::ceil(config.outer_varnish.thickness_mm * 1000.0
+                                   / config.outer_varnish.pixel_pitch_um)));
+}
+
+double ComputeOuterVarnishEffectiveThicknessMm(const SliceConfig& config, const int thicknessPx)
+{
+    if (thicknessPx <= 0)
+    {
+        return 0.0;
+    }
+    return static_cast<double>(thicknessPx) * config.outer_varnish.pixel_pitch_um / 1000.0;
+}
+
 GridSpec make_grid_spec(const SliceConfig& config, const BoundingBox& bbox) {
     GridSpec grid;
     grid.pixel_size_x_mm = mm_per_inch / static_cast<double>(config.output.dpi_x);
     grid.pixel_size_y_mm = mm_per_inch / static_cast<double>(config.output.dpi_y);
-    grid.origin_x_mm = bbox.min.x;
-    grid.origin_y_mm = bbox.min.y;
-    const double width_mm{std::max(0.001, bbox.max.x - bbox.min.x)};
-    const double height_mm{std::max(0.001, bbox.max.y - bbox.min.y)};
+    const int outerVarnishPaddingPx =
+        config.outer_varnish.allow_xy_expansion ? ComputeOuterVarnishThicknessPx(config) : 0;
+    grid.origin_x_mm = bbox.min.x - static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_x_mm;
+    grid.origin_y_mm = bbox.min.y - static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_y_mm;
+    const double width_mm{std::max(0.001, bbox.max.x - bbox.min.x)
+                          + 2.0 * static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_x_mm};
+    const double height_mm{std::max(0.001, bbox.max.y - bbox.min.y)
+                           + 2.0 * static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_y_mm};
     const double z_max{std::max(config.output.layer_thickness_mm, bbox.max.z + config.support.offset_mm)};
     grid.width_px = std::max(1, static_cast<int>(std::ceil(width_mm / grid.pixel_size_x_mm)));
     grid.height_px = std::max(1, static_cast<int>(std::ceil(height_mm / grid.pixel_size_y_mm)));
@@ -647,6 +672,164 @@ bool should_write_preview(const PreviewConfig& preview, const int layer_index, c
 
 std::size_t mask_index(const GridSpec& grid, const int x, const int y) {
     return static_cast<std::size_t>(y) * grid.width_px + x;
+}
+
+std::vector<std::uint8_t> BuildExternalEmptyMask(
+    const GridSpec& grid,
+    const std::vector<std::uint8_t>& modelMask)
+{
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::uint8_t> externalEmpty(pixelCount, 0);
+    std::vector<int> stack;
+    stack.reserve(pixelCount);
+
+    const auto pushExternalEmpty = [&](const int x, const int y)
+    {
+        if (x < 0 || x >= grid.width_px || y < 0 || y >= grid.height_px)
+        {
+            return;
+        }
+        const std::size_t index = mask_index(grid, x, y);
+        if (modelMask.at(index) != 0 || externalEmpty.at(index) != 0)
+        {
+            return;
+        }
+        externalEmpty.at(index) = 1;
+        stack.push_back(static_cast<int>(index));
+    };
+
+    for (int x{0}; x < grid.width_px; ++x)
+    {
+        pushExternalEmpty(x, 0);
+        pushExternalEmpty(x, grid.height_px - 1);
+    }
+    for (int y{0}; y < grid.height_px; ++y)
+    {
+        pushExternalEmpty(0, y);
+        pushExternalEmpty(grid.width_px - 1, y);
+    }
+
+    constexpr std::array<std::array<int, 2>, 8> neighbors8{{
+        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
+    }};
+
+    while (!stack.empty())
+    {
+        const int current = stack.back();
+        stack.pop_back();
+        const int x = current % grid.width_px;
+        const int y = current / grid.width_px;
+        for (const auto& neighbor : neighbors8)
+        {
+            pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
+        }
+    }
+
+    return externalEmpty;
+}
+
+std::vector<std::uint8_t> DilateMaskSquare(
+    const GridSpec& grid,
+    const std::vector<std::uint8_t>& sourceMask,
+    const int radiusPx)
+{
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::uint8_t> dilated(pixelCount, 0);
+    if (radiusPx <= 0)
+    {
+        return sourceMask;
+    }
+
+    for (int y{0}; y < grid.height_px; ++y)
+    {
+        for (int x{0}; x < grid.width_px; ++x)
+        {
+            const std::size_t index = mask_index(grid, x, y);
+            if (sourceMask.at(index) == 0)
+            {
+                continue;
+            }
+            const int minX = std::max(0, x - radiusPx);
+            const int maxX = std::min(grid.width_px - 1, x + radiusPx);
+            const int minY = std::max(0, y - radiusPx);
+            const int maxY = std::min(grid.height_px - 1, y + radiusPx);
+            for (int ny{minY}; ny <= maxY; ++ny)
+            {
+                for (int nx{minX}; nx <= maxX; ++nx)
+                {
+                    dilated.at(mask_index(grid, nx, ny)) = 1;
+                }
+            }
+        }
+    }
+
+    return dilated;
+}
+
+std::vector<std::vector<std::uint8_t>> BuildOuterVarnishMasks(
+    const SliceConfig& config,
+    const GridSpec& grid,
+    const std::vector<std::vector<std::uint8_t>>& modelMasks)
+{
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::vector<std::uint8_t>> outerVarnishMasks(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<std::uint8_t>(pixelCount, 0));
+    const int thicknessPx = ComputeOuterVarnishThicknessPx(config);
+    if (thicknessPx <= 0)
+    {
+        return outerVarnishMasks;
+    }
+
+    for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
+    {
+        const std::vector<std::uint8_t>& modelMask = modelMasks.at(layerIndex);
+        const bool hasModel = std::any_of(modelMask.begin(), modelMask.end(), [](const std::uint8_t value)
+        {
+            return value != 0;
+        });
+        if (!hasModel)
+        {
+            continue;
+        }
+
+        const std::vector<std::uint8_t> externalEmpty = BuildExternalEmptyMask(grid, modelMask);
+        const std::vector<std::uint8_t> dilatedModel = DilateMaskSquare(grid, modelMask, thicknessPx);
+        std::vector<std::uint8_t>& varnishMask = outerVarnishMasks.at(layerIndex);
+        for (std::size_t index{0}; index < pixelCount; ++index)
+        {
+            if (modelMask.at(index) == 0 && externalEmpty.at(index) != 0 && dilatedModel.at(index) != 0)
+            {
+                varnishMask.at(index) = 1;
+            }
+        }
+    }
+
+    return outerVarnishMasks;
+}
+
+bool ApplyOuterVarnishSupportPriority(
+    const std::vector<std::vector<std::uint8_t>>& outerVarnishMasks,
+    SupportGenerationResult& supportGeneration)
+{
+    bool clearedAnySupport{false};
+    for (std::size_t layerIndex{0}; layerIndex < supportGeneration.support_masks.size(); ++layerIndex)
+    {
+        std::vector<std::uint8_t>& supportMask = supportGeneration.support_masks.at(layerIndex);
+        std::vector<SupportType>& supportTypeMap = supportGeneration.support_type_maps.at(layerIndex);
+        const std::vector<std::uint8_t>& varnishMask = outerVarnishMasks.at(layerIndex);
+        for (std::size_t index{0}; index < supportMask.size(); ++index)
+        {
+            if (varnishMask.at(index) == 0 || supportMask.at(index) == 0)
+            {
+                continue;
+            }
+            supportMask.at(index) = 0;
+            supportTypeMap.at(index) = SupportType::None;
+            clearedAnySupport = true;
+        }
+    }
+    return clearedAnySupport;
 }
 
 bool edge_intersects_plane(const Vec3& a, const Vec3& b, const double z_mm) {
@@ -2425,6 +2608,7 @@ std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
     const std::vector<std::uint8_t>& model_mask,
+    const std::vector<std::uint8_t>& outer_varnish_mask,
     const std::vector<std::uint8_t>& support_mask,
     const std::vector<SupportType>& support_type_map,
     const std::vector<TextureColumnColor>* texture_columns,
@@ -2552,6 +2736,9 @@ std::vector<std::uint8_t> compose_layer(
                         ++semantic_stats.model_fill_pixels;
                     }
                 }
+            } else if (outer_varnish_mask.at(pixel_index) != 0) {
+                pixels.at(base + 5U) = config.outer_varnish.value;
+                ++semantic_stats.outer_varnish_pixels;
             } else if (config.support.enabled && support_mask.at(pixel_index) != 0) {
                 pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
@@ -3286,6 +3473,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const std::vector<ColumnLayerRange> column_ranges = config.slicing_mode == "relief_heightfield"
         ? compute_relief_column_ranges(relief_columns)
         : compute_mask_column_ranges(model_masks, grid);
+    const std::vector<std::vector<std::uint8_t>> outer_varnish_masks =
+        BuildOuterVarnishMasks(config, grid, model_masks);
+    const int outerVarnishThicknessPx = ComputeOuterVarnishThicknessPx(config);
+    const double outerVarnishEffectiveThicknessMm =
+        ComputeOuterVarnishEffectiveThicknessMm(config, outerVarnishThicknessPx);
     const int columns_with_support = config.support.enabled
         ? static_cast<int>(std::count_if(support_source_layers.begin(), support_source_layers.end(), [](const int layer) {
               return layer > 0;
@@ -3309,6 +3501,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             original_support_masks,
             support_generation.support_masks,
             support_generation.support_type_maps);
+    }
+    const bool cleared_outer_varnish_support =
+        ApplyOuterVarnishSupportPriority(outer_varnish_masks, support_generation);
+    if (support_shape_result.enabled || cleared_outer_varnish_support)
+    {
         RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
     }
 
@@ -3334,6 +3531,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             config,
             grid,
             model_masks.at(layer_index),
+            outer_varnish_masks.at(layer_index),
             support_generation.support_masks.at(layer_index),
             support_generation.support_type_maps.at(layer_index),
             config.texture.enabled ? &texture_columns : nullptr,
@@ -3495,7 +3693,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                    Json::object({
                        {"enabled", config.outer_varnish.enabled},
                        {"thicknessMm", config.outer_varnish.thickness_mm},
+                       {"thicknessPx", outerVarnishThicknessPx},
+                       {"effectiveThicknessMm", outerVarnishEffectiveThicknessMm},
                        {"pixelPitchUm", config.outer_varnish.pixel_pitch_um},
+                       {"allowXYExpansion", config.outer_varnish.allow_xy_expansion},
+                       {"conflictPolicy", config.outer_varnish.conflict_policy},
+                       {"value", static_cast<int>(config.outer_varnish.value)},
                        {"printPixels", total_semantic_stats.outer_varnish_pixels},
                    })},
                   {"semanticPriority", "Model>OuterVarnishShell>Support>Empty"},

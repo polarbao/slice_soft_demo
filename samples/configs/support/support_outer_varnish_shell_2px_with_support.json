@@ -1,0 +1,58 @@
+{
+  "input": {
+    "modelPath": "../../models/support/internal_void_frame.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/SupportOuterVarnishShell2pxWithSupport",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.05,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "both",
+    "offsetMm": 0.1,
+    "value": 0,
+    "minAreaPx": 0,
+    "connectivity": 8,
+    "internalVoid": {
+      "enabled": true,
+      "minAreaPx": 1,
+      "fillRule": "all_internal_voids"
+    },
+    "upper": {
+      "enabled": true,
+      "outside": "outer_varnish_shell"
+    }
+  },
+  "outerVarnish": {
+    "enabled": true,
+    "thicknessMm": 0.05,
+    "thicknessStepMm": 0.01,
+    "pixelPitchUm": 42.3,
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
+    "value": 0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 1,
+    "channels": ["rgb", "support", "varnish"],
+    "onlyNonEmptyLayers": true
+  }
+}

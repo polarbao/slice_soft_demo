@@ -258,7 +258,7 @@ legacy 配置保持 placement implicit；
 
 ### Task 12A-07 OuterVarnishShellPolicy
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -268,10 +268,44 @@ legacy 配置保持 placement implicit；
 冲突优先级为 Model > OuterVarnishShell > Support > Empty。
 ```
 
+完成记录：
+
+```text
+已实现：
+1. outerVarnish.thicknessMm 按 ceil(thicknessMm * 1000 / pixelPitchUm) 换算为 thicknessPx；
+2. allowXYExpansion=true 时，输出 grid XY 边界按 thicknessPx 扩张；
+3. 按每层 model mask 生成外侧 V 壳层，只填充与画布边界连通的模型外部区域，不覆盖内部镂空；
+4. compose_layer 执行 Model > OuterVarnishShell > Support > Empty；
+5. support 与 outerVarnish 同像素冲突时清除 support 像素，保证生产 TIFF 与 support 统计一致；
+6. slice_report.totals.materialSemantics.outerVarnish 输出 thicknessMm、thicknessPx、effectiveThicknessMm、pixelPitchUm、allowXYExpansion、conflictPolicy、value、printPixels；
+7. 12A-06 的 upper/both + outerVarnish 临时拒绝已解除，experimental_config_unit_tests 改为验证该组合可解析。
+```
+
 验证：
 
 ```text
 V 通道壳层宽度等于配置厚度换算后的像素宽度，report 输出 thicknessMm、thicknessPx、effectiveThicknessMm。
+```
+
+验证记录：
+
+```text
+cmake --build build --config Debug --target slicer_cli experimental_config_unit_tests rip_reader_test
+build\Debug\experimental_config_unit_tests.exe
+build\Debug\slicer_cli.exe --config samples\configs\support\support_outer_varnish_shell_1px.json
+build\Debug\slicer_cli.exe --config samples\configs\support\support_outer_varnish_shell_2px_with_support.json
+build\Debug\rip_reader_test.exe --package output\SupportOuterVarnishShell1px --summary
+build\Debug\rip_reader_test.exe --package output\SupportOuterVarnishShell2pxWithSupport --summary
+
+Python validation:
+output\SupportOuterVarnishShell1px: thicknessPx=1, effectiveThicknessMm=0.0423, V=1520, preview layer 2 V-to-model distance=1..1
+output\SupportOuterVarnishShell2pxWithSupport: thicknessPx=2, effectiveThicknessMm=0.0846, V=3072, preview layer 2 V-to-model distance=1..2
+
+model/obj 多模型验证：
+output/12a07_validation/xiao_ma_lower_1px/package: PASS, V=112889, S=4706837, thicknessPx=1, effectiveThicknessMm=0.0423
+output/12a07_validation/yecan_both_2px/package: PASS, V=293205, S=9325887, thicknessPx=2, effectiveThicknessMm=0.0846, upperOutsideBoundary=outer_varnish_shell
+output/12a07_validation/nai_you_lower_2px/package: PASS, V=293199, S=5046873, thicknessPx=2, effectiveThicknessMm=0.0846
+output/12a07_validation/aishen_lower_1px/package: PASS, V=153438, S=4123061, thicknessPx=1, effectiveThicknessMm=0.0423
 ```
 
 ### Task 12A-08 SurfaceVarnishPolicy
