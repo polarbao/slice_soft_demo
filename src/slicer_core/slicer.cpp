@@ -77,6 +77,14 @@ struct SupportConnectivityDiagnostics {
     std::vector<SupportComponentSummary> components;
 };
 
+struct LayerSemanticStats {
+    int texture_surface_pixels{0};
+    int model_fill_pixels{0};
+    int support_pixels{0};
+    int internal_void_support_pixels{0};
+    int outer_varnish_pixels{0};
+};
+
 struct LayerDiagnostics {
     int layer_index{0};
     double z_mm{0.0};
@@ -98,6 +106,7 @@ struct LayerDiagnostics {
     int unsupported_island_support_pixels{0};
     int full_vertical_projection_support_pixels{0};
     SupportConnectivityDiagnostics support_connectivity;
+    LayerSemanticStats semantic;
     std::array<ChannelStats, rgbwsv_channel_count> channel_stats{};
 };
 
@@ -2002,6 +2011,7 @@ std::vector<std::uint8_t> compose_layer(
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
+    LayerSemanticStats& semantic_stats,
     int& model_pixels,
     int& support_pixels) {
     std::vector<std::uint8_t> pixels(
@@ -2015,12 +2025,16 @@ std::vector<std::uint8_t> compose_layer(
                 (static_cast<std::size_t>(y) * grid.width_px + x) * rgbwsv_channel_count;
             if (model_mask.at(pixel_index) != 0) {
                 bool counted_model_pixel{false};
+                bool texture_surface_pixel{false};
+                bool model_fill_pixel{false};
                 if (config.material_role_mapping.enabled && material_role_columns != nullptr
                     && pixel_index < material_role_columns->size()) {
                     const MaterialRoleColumn& role_column = material_role_columns->at(pixel_index);
                     bool wrote_model{false};
+                    const bool apply_texture =
+                        config.texture.enabled && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index);
                     if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
-                        && !ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
+                        && !apply_texture) {
                         write_non_surface_texture_pixel(pixels, base, config);
                         wrote_model = true;
                     } else {
@@ -2031,14 +2045,24 @@ std::vector<std::uint8_t> compose_layer(
                     }
                     if (wrote_model) {
                         counted_model_pixel = true;
-                        if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
-                            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
+                        if (role_column.has_role && role_column.role == MaterialRole::Rgb && apply_texture) {
                             const TextureColumnColor color =
                                 resolve_texture_color(config, texture_columns, pixel_index);
                             update_texture_report_for_color(color, texture_report);
+                            texture_surface_pixel = true;
+                        } else if (config.model_fill.enabled) {
+                            model_fill_pixel = !role_column.has_role
+                                || role_column.role == MaterialRole::Rgb
+                                || (role_column.role == MaterialRole::White && config.model_fill.material == "white")
+                                || (role_column.role == MaterialRole::Varnish && config.model_fill.material == "varnish");
                         }
                     }
                 } else if (config.material_policy.enabled) {
+                    texture_surface_pixel =
+                        config.material_policy.rgb.enabled
+                        && config.material_policy.rgb.source == "texture_or_fallback"
+                        && config.texture.enabled
+                        && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index);
                     const MaterialPixel pixel = compose_material_policy_pixel(
                         config,
                         texture_columns,
@@ -2048,6 +2072,7 @@ std::vector<std::uint8_t> compose_layer(
                         texture_report);
                     write_material_pixel(pixels, base, pixel, material_policy_report);
                     counted_model_pixel = true;
+                    model_fill_pixel = config.model_fill.enabled && !texture_surface_pixel;
                 } else if (config.texture.enabled
                            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
                     const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
@@ -2056,16 +2081,25 @@ std::vector<std::uint8_t> compose_layer(
                     pixels.at(base + 2U) = color.rgb.at(2);
                     update_texture_report_for_color(color, texture_report);
                     counted_model_pixel = true;
+                    texture_surface_pixel = true;
                 } else {
                     write_non_surface_texture_pixel(pixels, base, config);
                     counted_model_pixel = true;
+                    model_fill_pixel = config.model_fill.enabled;
                 }
                 if (counted_model_pixel) {
                     ++model_pixels;
+                    if (texture_surface_pixel) {
+                        ++semantic_stats.texture_surface_pixels;
+                    }
+                    if (model_fill_pixel) {
+                        ++semantic_stats.model_fill_pixels;
+                    }
                 }
             } else if (config.support.enabled && support_mask.at(pixel_index) != 0) {
                 pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
+                ++semantic_stats.support_pixels;
             }
         }
     }
@@ -2119,6 +2153,14 @@ void merge_channel_stats(std::array<ChannelStats, rgbwsv_channel_count>& totals,
         total.min_value = std::min(total.min_value, layer.min_value);
         total.max_value = std::max(total.max_value, layer.max_value);
     }
+}
+
+void merge_semantic_stats(LayerSemanticStats& totals, const LayerSemanticStats& layer) {
+    totals.texture_surface_pixels += layer.texture_surface_pixels;
+    totals.model_fill_pixels += layer.model_fill_pixels;
+    totals.support_pixels += layer.support_pixels;
+    totals.internal_void_support_pixels += layer.internal_void_support_pixels;
+    totals.outer_varnish_pixels += layer.outer_varnish_pixels;
 }
 
 Json channel_stats_to_json(const ChannelStats& stats) {
@@ -2208,6 +2250,16 @@ Json support_connectivity_summary_to_json(const std::vector<LayerDiagnostics>& d
     });
 }
 
+Json semantic_stats_to_json(const LayerSemanticStats& stats) {
+    return Json::object({
+        {"textureSurfacePixels", stats.texture_surface_pixels},
+        {"modelFillPixels", stats.model_fill_pixels},
+        {"supportPixels", stats.support_pixels},
+        {"internalVoidSupportPixels", stats.internal_void_support_pixels},
+        {"outerVarnishPixels", stats.outer_varnish_pixels},
+    });
+}
+
 Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
     Json::Array fill_warnings;
     if (diagnostics.odd_intersection_rows > 0) {
@@ -2222,6 +2274,11 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
         {"fillWarnings", Json{fill_warnings}},
         {"modelNonZeroPixels", diagnostics.model_pixels},
         {"supportNonZeroPixels", diagnostics.support_pixels},
+        {"textureSurfacePixels", diagnostics.semantic.texture_surface_pixels},
+        {"modelFillPixels", diagnostics.semantic.model_fill_pixels},
+        {"supportPixels", diagnostics.semantic.support_pixels},
+        {"internalVoidSupportPixels", diagnostics.semantic.internal_void_support_pixels},
+        {"outerVarnishPixels", diagnostics.semantic.outer_varnish_pixels},
         {"rgbNonZeroPixels", diagnostics.rgb_non_zero_pixels},
         {"whiteNonZeroPixels", diagnostics.white_non_zero_pixels},
         {"modelPrintPixels", diagnostics.model_pixels},
@@ -2240,8 +2297,9 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
              {"bottom_projection", diagnostics.bottom_projection_support_pixels},
              {"unsupported_island", diagnostics.unsupported_island_support_pixels},
              {"full_vertical_projection", diagnostics.full_vertical_projection_support_pixels},
-         })},
+        })},
         {"supportConnectivity", support_connectivity_to_json(diagnostics.support_connectivity)},
+        {"semantic", semantic_stats_to_json(diagnostics.semantic)},
         {"channelStats", channel_stats_array_to_json(diagnostics.channel_stats)},
     });
 }
@@ -2798,6 +2856,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     int total_white_non_zero_pixels{0};
     int total_support_non_zero_pixels{0};
     int total_varnish_non_zero_pixels{0};
+    LayerSemanticStats total_semantic_stats;
     std::array<ChannelStats, rgbwsv_channel_count> total_channel_stats{};
     Json::Array layers;
     Json::Array slice_layers;
@@ -2808,6 +2867,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         int layer_model_pixels{0};
         int layer_support_pixels{0};
+        LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
         const std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
@@ -2819,9 +2879,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,
+            diagnostics.semantic,
             layer_model_pixels,
             layer_support_pixels);
-        LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
         diagnostics.model_pixels = layer_model_pixels;
         diagnostics.support_pixels = layer_support_pixels;
         update_layer_channel_stats(layer, diagnostics);
@@ -2832,6 +2892,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         total_support_non_zero_pixels += diagnostics.support_non_zero_pixels;
         total_varnish_non_zero_pixels += diagnostics.varnish_non_zero_pixels;
         merge_channel_stats(total_channel_stats, diagnostics);
+        merge_semantic_stats(total_semantic_stats, diagnostics.semantic);
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
             write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
@@ -2861,6 +2922,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"heightPx", grid.height_px},
             {"modelPixels", layer_model_pixels},
             {"supportPixels", layer_support_pixels},
+            {"textureSurfacePixels", diagnostics.semantic.texture_surface_pixels},
+            {"modelFillPixels", diagnostics.semantic.model_fill_pixels},
+            {"internalVoidSupportPixels", diagnostics.semantic.internal_void_support_pixels},
+            {"outerVarnishPixels", diagnostics.semantic.outer_varnish_pixels},
+            {"semantic", semantic_stats_to_json(diagnostics.semantic)},
         }));
         slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
         contour_layers.push_back(layer_diagnostics_to_json(diagnostics));
@@ -2891,6 +2957,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"varnishNonZeroPixels", total_varnish_non_zero_pixels},
              {"modelPrintPixels", total_model_pixels},
              {"supportPrintPixels", total_support_non_zero_pixels},
+             {"textureSurfacePixels", total_semantic_stats.texture_surface_pixels},
+             {"modelFillPixels", total_semantic_stats.model_fill_pixels},
+             {"internalVoidSupportPixels", total_semantic_stats.internal_void_support_pixels},
+             {"outerVarnishPixels", total_semantic_stats.outer_varnish_pixels},
              {"rgbPrintPixels", total_rgb_non_zero_pixels},
              {"whitePrintPixels", total_white_non_zero_pixels},
              {"varnishPrintPixels", total_varnish_non_zero_pixels},
@@ -2921,6 +2991,34 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"rgbPrintPixels", material_policy_report.rgb_print_pixels},
                   {"whitePrintPixels", material_policy_report.white_print_pixels},
                   {"varnishPrintPixels", material_policy_report.varnish_print_pixels},
+              })},
+             {"semantic", semantic_stats_to_json(total_semantic_stats)},
+             {"materialSemantics",
+              Json::object({
+                  {"modelFill",
+                   Json::object({
+                       {"enabled", config.model_fill.enabled},
+                       {"material", config.model_fill.material},
+                       {"scope", config.model_fill.scope},
+                       {"emptyAllowedInProduction", config.model_fill.empty_allowed_in_production},
+                       {"legacyRgbFallback", config.model_fill.legacy_rgb_fallback},
+                   })},
+                  {"supportPlacement", config.support.placement},
+                  {"internalVoidSupport",
+                   Json::object({
+                       {"enabled", config.support.internal_void.enabled},
+                       {"fillRule", config.support.internal_void.fill_rule},
+                       {"minAreaPx", config.support.internal_void.min_area_px},
+                       {"printPixels", total_semantic_stats.internal_void_support_pixels},
+                   })},
+                  {"outerVarnish",
+                   Json::object({
+                       {"enabled", config.outer_varnish.enabled},
+                       {"thicknessMm", config.outer_varnish.thickness_mm},
+                       {"pixelPitchUm", config.outer_varnish.pixel_pitch_um},
+                       {"printPixels", total_semantic_stats.outer_varnish_pixels},
+                   })},
+                  {"semanticPriority", "Model>OuterVarnishShell>Support>Empty"},
               })},
          })},
         {"layers", Json{slice_layers}},

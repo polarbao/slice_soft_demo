@@ -78,7 +78,7 @@ cmake --build build --config Debug --target slicer_cli experimental_config_unit_
 
 ### Task 12A-03 LayerSemanticReport
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -86,10 +86,22 @@ cmake --build build --config Debug --target slicer_cli experimental_config_unit_
 在 slice_report 或 layer summary 中统计 textureSurfacePixels、modelFillPixels、supportPixels、internalVoidSupportPixels、outerVarnishPixels。
 ```
 
+完成记录：
+
+```text
+已在 slice_report.totals、slice_report.layers[]、manifest layer summary 中写入 textureSurfacePixels、modelFillPixels、supportPixels、internalVoidSupportPixels、outerVarnishPixels。
+已新增 semantic 节点和 materialSemantics 配置说明，用于解释 12A 当前配置语义。
+当前 internalVoidSupportPixels 和 outerVarnishPixels 仍为 0；实际像素生成留给 Task 12A-05 / 12A-07。
+```
+
 验证：
 
 ```powershell
+cmake --build build --config Debug --target slicer_cli
 .\build\Debug\slicer_cli.exe --config samples\configs\material_process\obj_mtl_texture_rgb_white_varnish.json
+PowerShell ConvertFrom-Json 检查 slice_report.totals 和 slice_report.layers[0] 均包含五个 12A 语义字段
+cmake --build build --config Debug --target rip_reader_test
+.\build\Debug\rip_reader_test.exe --package output\ObjMtlTextureRgbWhiteVarnish
 ```
 
 ### Task 12A-04 ModelFillPolicy
