@@ -223,6 +223,14 @@ struct MaterialPixel {
     std::uint8_t v{255};
 };
 
+enum class ModelFillMaterial
+{
+    Rgb,
+    White,
+    Varnish,
+    None,
+};
+
 struct MaterialPolicyReportData {
     bool enabled{false};
     std::uint64_t rgb_print_pixels{0};
@@ -1787,6 +1795,162 @@ void write_non_surface_texture_pixel(
     }
 }
 
+bool ModelFillUsesExplicitPolicy(const SliceConfig& config)
+{
+    return config.model_fill.enabled && !config.model_fill.legacy_rgb_fallback;
+}
+
+ModelFillMaterial ResolveProfileDefaultModelFillMaterial(const SliceConfig& config)
+{
+    if (config.material_process_profile.enabled)
+    {
+        if (config.material_process_profile.white.enabled
+            && config.material_process_profile.white.mode != "disabled")
+        {
+            return ModelFillMaterial::White;
+        }
+        if (config.material_process_profile.varnish.enabled
+            && config.material_process_profile.varnish.mode != "disabled")
+        {
+            return ModelFillMaterial::Varnish;
+        }
+    }
+
+    if (config.material_policy.enabled)
+    {
+        if (config.material_policy.white.enabled && config.material_policy.white.mode != "disabled")
+        {
+            return ModelFillMaterial::White;
+        }
+        if (config.material_policy.varnish.enabled && config.material_policy.varnish.mode != "disabled")
+        {
+            return ModelFillMaterial::Varnish;
+        }
+    }
+
+    if (config.material.material_channel == "W")
+    {
+        return ModelFillMaterial::White;
+    }
+    if (config.material.material_channel == "V")
+    {
+        return ModelFillMaterial::Varnish;
+    }
+    return ModelFillMaterial::Rgb;
+}
+
+std::string ModelFillMaterialToString(const ModelFillMaterial material)
+{
+    switch (material)
+    {
+        case ModelFillMaterial::Rgb:
+            return "rgb";
+        case ModelFillMaterial::White:
+            return "white";
+        case ModelFillMaterial::Varnish:
+            return "varnish";
+        case ModelFillMaterial::None:
+            return "none";
+    }
+    return "none";
+}
+
+ModelFillMaterial ResolveModelFillMaterial(
+    const SliceConfig& config,
+    const MaterialRoleColumn* roleColumn)
+{
+    if (config.model_fill.material == "white")
+    {
+        return ModelFillMaterial::White;
+    }
+    if (config.model_fill.material == "varnish")
+    {
+        return ModelFillMaterial::Varnish;
+    }
+    if (config.model_fill.material == "rgb")
+    {
+        return ModelFillMaterial::Rgb;
+    }
+    if (config.model_fill.material == "material_role")
+    {
+        if (roleColumn == nullptr || !roleColumn->has_role)
+        {
+            return ResolveProfileDefaultModelFillMaterial(config);
+        }
+        switch (roleColumn->role)
+        {
+            case MaterialRole::Rgb:
+                return ModelFillMaterial::Rgb;
+            case MaterialRole::White:
+                return ModelFillMaterial::White;
+            case MaterialRole::Varnish:
+                return ModelFillMaterial::Varnish;
+            case MaterialRole::Support:
+            case MaterialRole::Ignore:
+            case MaterialRole::SupportCandidate:
+                return ModelFillMaterial::None;
+        }
+    }
+    return ResolveProfileDefaultModelFillMaterial(config);
+}
+
+bool ShouldApplyModelFill(
+    const SliceConfig& config,
+    const bool textureSurfacePixel,
+    const ModelFillMaterial material)
+{
+    if (!ModelFillUsesExplicitPolicy(config) || material == ModelFillMaterial::None)
+    {
+        return false;
+    }
+    if (!textureSurfacePixel)
+    {
+        return true;
+    }
+    if (config.model_fill.scope == "below_texture_surface" || material == ModelFillMaterial::Rgb)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool WriteModelFillPixel(
+    std::vector<std::uint8_t>& pixels,
+    const std::size_t base,
+    const SliceConfig& config,
+    const MaterialRoleColumn* roleColumn)
+{
+    const ModelFillMaterial material = ResolveModelFillMaterial(config, roleColumn);
+    switch (material)
+    {
+        case ModelFillMaterial::Rgb:
+            if (roleColumn != nullptr && roleColumn->has_role && roleColumn->role == MaterialRole::Rgb
+                && config.model_fill.material == "material_role")
+            {
+                pixels.at(base + 0U) = roleColumn->rgb.at(0);
+                pixels.at(base + 1U) = roleColumn->rgb.at(1);
+                pixels.at(base + 2U) = roleColumn->rgb.at(2);
+                return true;
+            }
+            {
+                const std::array<std::uint8_t, 3> rgb = NonSurfaceRgb(config);
+                pixels.at(base + 0U) = rgb.at(0);
+                pixels.at(base + 1U) = rgb.at(1);
+                pixels.at(base + 2U) = rgb.at(2);
+            }
+            return true;
+        case ModelFillMaterial::White:
+            pixels.at(base + 3U) = config.model_fill.value;
+            return true;
+        case ModelFillMaterial::Varnish:
+            pixels.at(base + 5U) = config.model_fill.value;
+            return true;
+        case ModelFillMaterial::None:
+            return false;
+    }
+    return false;
+}
+
 TextureColumnColor resolve_texture_color(
     const SliceConfig& config,
     const std::vector<TextureColumnColor>* texture_columns,
@@ -2035,8 +2199,13 @@ std::vector<std::uint8_t> compose_layer(
                         config.texture.enabled && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index);
                     if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
                         && !apply_texture) {
-                        write_non_surface_texture_pixel(pixels, base, config);
-                        wrote_model = true;
+                        if (ModelFillUsesExplicitPolicy(config)) {
+                            wrote_model = WriteModelFillPixel(pixels, base, config, &role_column);
+                            model_fill_pixel = wrote_model;
+                        } else {
+                            write_non_surface_texture_pixel(pixels, base, config);
+                            wrote_model = true;
+                        }
                     } else {
                         wrote_model = write_material_role_pixel(
                             pixels,
@@ -2056,6 +2225,13 @@ std::vector<std::uint8_t> compose_layer(
                                 || (role_column.role == MaterialRole::White && config.model_fill.material == "white")
                                 || (role_column.role == MaterialRole::Varnish && config.model_fill.material == "varnish");
                         }
+                        if (texture_surface_pixel) {
+                            const ModelFillMaterial fill_material = ResolveModelFillMaterial(config, &role_column);
+                            if (ShouldApplyModelFill(config, texture_surface_pixel, fill_material)
+                                && WriteModelFillPixel(pixels, base, config, &role_column)) {
+                                model_fill_pixel = true;
+                            }
+                        }
                     }
                 } else if (config.material_policy.enabled) {
                     texture_surface_pixel =
@@ -2063,16 +2239,28 @@ std::vector<std::uint8_t> compose_layer(
                         && config.material_policy.rgb.source == "texture_or_fallback"
                         && config.texture.enabled
                         && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index);
-                    const MaterialPixel pixel = compose_material_policy_pixel(
-                        config,
-                        texture_columns,
-                        column_ranges,
-                        pixel_index,
-                        layer_index,
-                        texture_report);
-                    write_material_pixel(pixels, base, pixel, material_policy_report);
-                    counted_model_pixel = true;
-                    model_fill_pixel = config.model_fill.enabled && !texture_surface_pixel;
+                    const ModelFillMaterial fill_material = ResolveModelFillMaterial(config, nullptr);
+                    if (ShouldApplyModelFill(config, texture_surface_pixel, fill_material)
+                        && !texture_surface_pixel) {
+                        counted_model_pixel = WriteModelFillPixel(pixels, base, config, nullptr);
+                        model_fill_pixel = counted_model_pixel;
+                    } else {
+                        const MaterialPixel pixel = compose_material_policy_pixel(
+                            config,
+                            texture_columns,
+                            column_ranges,
+                            pixel_index,
+                            layer_index,
+                            texture_report);
+                        write_material_pixel(pixels, base, pixel, material_policy_report);
+                        counted_model_pixel = true;
+                        if (ShouldApplyModelFill(config, texture_surface_pixel, fill_material)
+                            && WriteModelFillPixel(pixels, base, config, nullptr)) {
+                            model_fill_pixel = true;
+                        } else {
+                            model_fill_pixel = config.model_fill.enabled && !texture_surface_pixel;
+                        }
+                    }
                 } else if (config.texture.enabled
                            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
                     const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
@@ -2082,10 +2270,20 @@ std::vector<std::uint8_t> compose_layer(
                     update_texture_report_for_color(color, texture_report);
                     counted_model_pixel = true;
                     texture_surface_pixel = true;
+                    const ModelFillMaterial fill_material = ResolveModelFillMaterial(config, nullptr);
+                    if (ShouldApplyModelFill(config, texture_surface_pixel, fill_material)
+                        && WriteModelFillPixel(pixels, base, config, nullptr)) {
+                        model_fill_pixel = true;
+                    }
                 } else {
-                    write_non_surface_texture_pixel(pixels, base, config);
-                    counted_model_pixel = true;
-                    model_fill_pixel = config.model_fill.enabled;
+                    if (ModelFillUsesExplicitPolicy(config)) {
+                        counted_model_pixel = WriteModelFillPixel(pixels, base, config, nullptr);
+                        model_fill_pixel = counted_model_pixel;
+                    } else {
+                        write_non_surface_texture_pixel(pixels, base, config);
+                        counted_model_pixel = true;
+                        model_fill_pixel = config.model_fill.enabled;
+                    }
                 }
                 if (counted_model_pixel) {
                     ++model_pixels;
@@ -3000,8 +3198,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                        {"enabled", config.model_fill.enabled},
                        {"material", config.model_fill.material},
                        {"scope", config.model_fill.scope},
+                       {"value", static_cast<int>(config.model_fill.value)},
                        {"emptyAllowedInProduction", config.model_fill.empty_allowed_in_production},
                        {"legacyRgbFallback", config.model_fill.legacy_rgb_fallback},
+                       {"resolvedProfileDefaultMaterial",
+                        ModelFillMaterialToString(ResolveProfileDefaultModelFillMaterial(config))},
                    })},
                   {"supportPlacement", config.support.placement},
                   {"internalVoidSupport",

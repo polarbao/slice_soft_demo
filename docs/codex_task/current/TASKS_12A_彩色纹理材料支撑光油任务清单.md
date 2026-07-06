@@ -106,7 +106,7 @@ cmake --build build --config Debug --target rip_reader_test
 
 ### Task 12A-04 ModelFillPolicy
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -117,8 +117,31 @@ cmake --build build --config Debug --target rip_reader_test
 
 验证：
 
-```text
-检查关键层 TIFF 六通道像素和 report 统计。
+```powershell
+cmake --build build --config Debug --target slicer_cli experimental_config_unit_tests
+.\build\Debug\experimental_config_unit_tests.exe
+ctest --test-dir build -C Debug -R experimental_config_unit_tests --output-on-failure
+
+# model/obj 多模型临时验证配置：
+# output/12a04_validation/configs/nai_you_white.json
+# output/12a04_validation/configs/aishen_varnish.json
+# output/12a04_validation/configs/titian_rgb.json
+# output/12a04_validation/configs/xiao_ma_profile_default.json
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\nai_you_white.json
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\aishen_varnish.json
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\titian_rgb.json
+.\build\Debug\slicer_cli.exe --config output\12a04_validation\configs\xiao_ma_profile_default.json
+
+Python 临时 TIFF 探针读取关键层 RGBWSV，验证：
+nai_you_white layer=0 => W printPixels=8
+aishen_varnish layer=0 => V printPixels=96
+titian_rgb layer=0 => R/G/B printPixels=10/10/10
+xiao_ma_profile_default layer=0 => resolvedProfileDefaultMaterial=white, W printPixels=10
+
+.\build\Debug\slicer_cli.exe --config samples\configs\material_process\obj_mtl_texture_rgb_white_varnish.json
+cmake --build build --config Debug --target rip_reader_test
+.\build\Debug\rip_reader_test.exe --package output\ObjMtlTextureRgbWhiteVarnish
+git diff --check
 ```
 
 ### Task 12A-05 InternalVoidSupportPolicy

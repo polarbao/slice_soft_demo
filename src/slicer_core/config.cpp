@@ -573,6 +573,15 @@ void validate_slice_config(const SliceConfig& config) {
         && config.model_fill.scope != "all_model") {
         throw std::runtime_error("modelFill.scope must be solid_volume, below_texture_surface, or all_model");
     }
+    if (config.model_fill.enabled
+        && !config.model_fill.empty_allowed_in_production
+        && !config.model_fill.legacy_rgb_fallback
+        && config.model_fill.material == "rgb"
+        && config.texture.enabled
+        && config.texture.non_surface_rgb_policy == "empty") {
+        throw std::runtime_error(
+            "modelFill production profile cannot use rgb fill with texture.nonSurfaceRgbPolicy=empty");
+    }
     if (config.outer_varnish.thickness_mm < 0.0) {
         throw std::runtime_error("outerVarnish.thicknessMm must be non-negative");
     }

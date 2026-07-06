@@ -166,6 +166,38 @@ bool Stage12AConfigPlaceholdersParse()
                "12A outer varnish conflict policy parses");
 }
 
+bool Stage12AModelFillRejectsEmptyProductionRgb()
+{
+    const std::filesystem::path path = WriteConfig(
+        "stage_12a_model_fill_rejects_empty_rgb.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"texture\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"applyMode\": \"top_surface_band\",\n"
+            "    \"nonSurfaceRgbPolicy\": \"empty\"\n"
+            "  },\n"
+            "  \"modelFill\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"material\": \"rgb\",\n"
+            "    \"scope\": \"below_texture_surface\",\n"
+            "    \"emptyAllowedInProduction\": false,\n"
+            "    \"legacyRgbFallback\": false\n"
+            "  },\n"
+            "  \"slicingMode\": \"relief_heightfield\"\n"));
+    try
+    {
+        (void)slicer_core::load_slice_config(path);
+    }
+    catch (const std::runtime_error& error)
+    {
+        return ExpectTrue(
+            std::string{error.what()}.find("cannot use rgb fill") != std::string::npos,
+            "12A modelFill rejects production rgb empty fill");
+    }
+    return ExpectTrue(false, "12A modelFill production rgb empty fill must throw");
+}
+
 bool SurfaceShellFromSdfRequiresOpenVdb()
 {
     const std::filesystem::path path = WriteConfig(
@@ -379,6 +411,7 @@ int main()
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
         {"stage_12a_config_placeholders_parse", Stage12AConfigPlaceholdersParse},
+        {"stage_12a_model_fill_rejects_empty_production_rgb", Stage12AModelFillRejectsEmptyProductionRgb},
         {"surface_shell_from_sdf_requires_openvdb", SurfaceShellFromSdfRequiresOpenVdb},
         {"surface_shell_from_sdf_accepted_with_openvdb_gate", SurfaceShellFromSdfAcceptedWithOpenVdbGate},
         {"legacy_run_slicer_rejects_surface_shell_candidate_config", LegacyRunSlicerRejectsSurfaceShellCandidateConfig},
