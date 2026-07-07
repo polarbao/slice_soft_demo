@@ -1,0 +1,44 @@
+{
+  "schema": "p0.12a.single_material_consistency_summary.1",
+  "description": "Stage 12A paired consistency fixture between color texture profile and single-material profile.",
+  "comparisonSchema": "p0.12a.single_material_consistency_report.1",
+  "sliceHintSchema": "p0.single_material_consistency_hint.1",
+  "equalTotals": [
+    "modelPixels",
+    "supportPrintPixels",
+    "outerVarnishPixels",
+    "outerSurfaceVarnishPixels",
+    "innerSurfaceVarnishPixels",
+    "upperSurfaceSupportPixels"
+  ],
+  "equalLayerFields": [
+    "zMm",
+    "modelPixels",
+    "supportPixels",
+    "outerVarnishPixels",
+    "outerSurfaceVarnishPixels",
+    "innerSurfaceVarnishPixels",
+    "upperSurfaceSupportPixels"
+  ],
+  "allowedDifferentTotals": [
+    "textureSurfacePixels",
+    "modelFillPixels",
+    "rgbPrintPixels",
+    "whitePrintPixels",
+    "varnishPrintPixels"
+  ],
+  "cases": [
+    {
+      "id": "nai_you",
+      "modelPath": "model/obj/nai_you_new/MF_nai_you.obj"
+    },
+    {
+      "id": "aishen",
+      "modelPath": "model/obj/aishen_fudiao/MF_aishen_damuzhi_L_tx02.obj"
+    },
+    {
+      "id": "yecan",
+      "modelPath": "model/obj/yecan/3.obj"
+    }
+  ]
+}

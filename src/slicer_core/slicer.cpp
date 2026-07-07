@@ -3271,6 +3271,42 @@ Json BuildCrossSectionMaterialStackReport(
     });
 }
 
+Json BuildSingleMaterialConsistencyHint(const SliceConfig& config)
+{
+    const std::string profileKind = config.texture.enabled ? "color_texture" : "single_material";
+    return Json::object({
+        {"schema", "p0.single_material_consistency_hint.1"},
+        {"profileKind", profileKind},
+        {"pairComparisonRequired", true},
+        {"comparisonStatus", "not_evaluated_in_single_package"},
+        {"modelSemanticComparable", true},
+        {"singleMaterialConsistency", "requires_pair_comparison"},
+        {"geometryComparableFields",
+         Json::array({
+             "grid.widthPx",
+             "grid.heightPx",
+             "grid.layerCount",
+             "layers[].zMm",
+             "layers[].modelPixels",
+             "layers[].supportPixels",
+             "layers[].supportTypeStats",
+             "layers[].outerVarnishPixels",
+             "layers[].outerSurfaceVarnishPixels",
+             "layers[].innerSurfaceVarnishPixels",
+         })},
+        {"allowedMaterialDifferences",
+         Json::array({
+             "textureSurfacePixels",
+             "modelFillPixels",
+             "rgbPrintPixels",
+             "whitePrintPixels",
+             "varnishPrintPixels",
+             "texture_report.*",
+         })},
+        {"note", "Use a paired color/single-material fixture to assert geometry, support and layer-order consistency."},
+    });
+}
+
 Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
     Json::Array fill_warnings;
     if (diagnostics.odd_intersection_rows > 0) {
@@ -4117,6 +4153,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"semanticPriority", "Model>OuterVarnishShell>Support>Empty"},
               })},
              {"crossSectionMaterialStack", cross_section_material_stack_report},
+             {"singleMaterialConsistency", BuildSingleMaterialConsistencyHint(config)},
          })},
         {"layers", Json{slice_layers}},
     });

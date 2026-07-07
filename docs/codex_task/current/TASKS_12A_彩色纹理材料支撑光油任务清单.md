@@ -475,7 +475,7 @@ upper=6045142 outerV=222674 rgb=878709 fill=1249933 innerV=25942 lower=11245167
 
 ### Task 12A-11 彩色/单材料一致性 fixture
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -488,6 +488,42 @@ upper=6045142 outerV=222674 rgb=878709 fill=1249933 innerV=25942 lower=11245167
 
 ```text
 layerCount/model mask/support mask/channel-statistics logic 可比较，差异只来自材料通道。
+```
+
+完成记录：
+
+```text
+已实现：
+1. slice_report.totals.singleMaterialConsistency 输出成对比较 hint；
+2. 新增 tests/golden/expected/12a_single_material_consistency_summary.json；
+3. 新增 scripts/run_12a_single_material_consistency_tests.ps1；
+4. 脚本基于同一 model/obj 模型生成 color_texture 与 single_material 两个 Profile；
+5. 硬一致校验：
+   grid.widthPx / grid.heightPx / layerCount / layerThicknessMm；
+   每层 zMm / modelPixels / supportPixels / supportTypeStats；
+   outerVarnishPixels / outerSurfaceVarnishPixels / innerSurfaceVarnishPixels / upperSurfaceSupportPixels；
+   totals.modelPixels / supportPrintPixels / supportTypeStats；
+6. 允许差异：
+   textureSurfacePixels / modelFillPixels / rgbPrintPixels / whitePrintPixels / varnishPrintPixels / texture_report.*；
+7. 每个 case 输出 output/12a11_validation/<case>/consistency_report.json 和总 summary。
+```
+
+验证记录：
+
+```text
+cmake --build build --config Debug --target slicer_cli rip_reader_test experimental_config_unit_tests
+powershell -ExecutionPolicy Bypass -File .\scripts\run_12a_single_material_consistency_tests.ps1
+build\Debug\experimental_config_unit_tests.exe
+
+model/obj 多模型验证：
+output/12a11_validation/nai_you/summary: PASS
+layer=126 grid=290x573 model=3267148 support=15808697 outerV=457256 surfaceV=223934/18946 upper=5912297 colorRGB=761260 singleW=3267148
+
+output/12a11_validation/aishen/summary: PASS
+layer=145 grid=287x535 model=2756535 support=15429133 outerV=478380 surfaceV=233123/14746 upper=7903050 colorRGB=636654 singleW=2756535
+
+output/12a11_validation/yecan/summary: PASS
+layer=117 grid=287x713 model=2128642 support=18329906 outerV=458289 surfaceV=222674/25942 upper=6045142 colorRGB=747456 singleW=2128642
 ```
 
 ### Task 12A-12 UI preview 图例与像素探针联动
