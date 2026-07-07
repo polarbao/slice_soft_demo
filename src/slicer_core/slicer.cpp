@@ -202,6 +202,12 @@ struct SupportGenerationResult {
     int layers_with_support{0};
 };
 
+struct UpperSupportBoundaryInfo
+{
+    bool includes_outer_varnish_shell{false};
+    std::string source{"model_envelope"};
+};
+
 struct SurfaceVarnishMasks {
     std::vector<std::vector<std::uint8_t>> outer_surface_masks;
     std::vector<std::vector<std::uint8_t>> inner_surface_masks;
@@ -815,6 +821,47 @@ std::vector<std::vector<std::uint8_t>> BuildOuterVarnishMasks(
     return outerVarnishMasks;
 }
 
+UpperSupportBoundaryInfo ResolveUpperSupportBoundaryInfo(const SliceConfig& config)
+{
+    UpperSupportBoundaryInfo info;
+    if (config.support.upper.outside == "outer_varnish_shell"
+        && config.outer_varnish.enabled
+        && ComputeOuterVarnishThicknessPx(config) > 0)
+    {
+        info.includes_outer_varnish_shell = true;
+        info.source = "model_envelope_plus_outer_varnish_shell";
+    }
+    return info;
+}
+
+std::vector<std::vector<std::uint8_t>> BuildUpperSupportBoundaryMasks(
+    const GridSpec& grid,
+    const std::vector<std::vector<std::uint8_t>>& modelMasks,
+    const std::vector<std::vector<std::uint8_t>>& outerVarnishMasks,
+    const UpperSupportBoundaryInfo& boundaryInfo)
+{
+    if (!boundaryInfo.includes_outer_varnish_shell)
+    {
+        return modelMasks;
+    }
+
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::vector<std::uint8_t>> boundaryMasks(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<std::uint8_t>(pixelCount, 0));
+    for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
+    {
+        for (std::size_t index{0}; index < pixelCount; ++index)
+        {
+            if (modelMasks.at(layerIndex).at(index) != 0 || outerVarnishMasks.at(layerIndex).at(index) != 0)
+            {
+                boundaryMasks.at(layerIndex).at(index) = 1;
+            }
+        }
+    }
+    return boundaryMasks;
+}
+
 SurfaceVarnishMasks BuildSurfaceVarnishMasks(
     const SliceConfig& config,
     const GridSpec& grid,
@@ -906,11 +953,11 @@ SurfaceVarnishMasks BuildSurfaceVarnishMasks(
     return masks;
 }
 
-bool ApplyOuterVarnishSupportPriority(
+int ApplyOuterVarnishSupportPriority(
     const std::vector<std::vector<std::uint8_t>>& outerVarnishMasks,
     SupportGenerationResult& supportGeneration)
 {
-    bool clearedAnySupport{false};
+    int clearedSupportPixels{0};
     for (std::size_t layerIndex{0}; layerIndex < supportGeneration.support_masks.size(); ++layerIndex)
     {
         std::vector<std::uint8_t>& supportMask = supportGeneration.support_masks.at(layerIndex);
@@ -924,10 +971,10 @@ bool ApplyOuterVarnishSupportPriority(
             }
             supportMask.at(index) = 0;
             supportTypeMap.at(index) = SupportType::None;
-            clearedAnySupport = true;
+            ++clearedSupportPixels;
         }
     }
-    return clearedAnySupport;
+    return clearedSupportPixels;
 }
 
 bool edge_intersects_plane(const Vec3& a, const Vec3& b, const double z_mm) {
@@ -1732,8 +1779,10 @@ SupportGenerationResult generate_support_masks(
     const SliceConfig& config,
     const GridSpec& grid,
     const std::vector<std::vector<std::uint8_t>>& model_masks,
+    const std::vector<std::vector<std::uint8_t>>& upper_boundary_masks,
     const std::vector<int>& support_source_layers,
     const std::vector<ColumnLayerRange>& column_ranges,
+    const std::vector<ColumnLayerRange>& upper_boundary_column_ranges,
     std::vector<LayerDiagnostics>& diagnostics) {
     const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
     const SupportPlacementPolicy placement_policy = ResolveSupportPlacementPolicy(config);
@@ -1783,8 +1832,8 @@ SupportGenerationResult generate_support_masks(
     if (placement_policy.upper_enabled) {
         AddUpperProjectionSupport(
             grid,
-            model_masks,
-            column_ranges,
+            upper_boundary_masks,
+            upper_boundary_column_ranges,
             result.support_masks,
             result.support_type_maps);
     }
@@ -3048,6 +3097,7 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
         {"modelFillPixels", diagnostics.semantic.model_fill_pixels},
         {"supportPixels", diagnostics.semantic.support_pixels},
         {"internalVoidSupportPixels", diagnostics.semantic.internal_void_support_pixels},
+        {"upperSurfaceSupportPixels", diagnostics.upper_projection_support_pixels},
         {"outerVarnishPixels", diagnostics.semantic.outer_varnish_pixels},
         {"rgbNonZeroPixels", diagnostics.rgb_non_zero_pixels},
         {"whiteNonZeroPixels", diagnostics.white_non_zero_pixels},
@@ -3599,6 +3649,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         : compute_mask_column_ranges(model_masks, grid);
     const std::vector<std::vector<std::uint8_t>> outer_varnish_masks =
         BuildOuterVarnishMasks(config, grid, model_masks);
+    const UpperSupportBoundaryInfo upper_support_boundary_info =
+        ResolveUpperSupportBoundaryInfo(config);
+    const std::vector<std::vector<std::uint8_t>> upper_support_boundary_masks =
+        BuildUpperSupportBoundaryMasks(grid, model_masks, outer_varnish_masks, upper_support_boundary_info);
+    const std::vector<ColumnLayerRange> upper_support_boundary_column_ranges =
+        compute_mask_column_ranges(upper_support_boundary_masks, grid);
     const SurfaceVarnishMasks surface_varnish_masks =
         BuildSurfaceVarnishMasks(config, grid, model_masks);
     const int outerVarnishThicknessPx = ComputeOuterVarnishThicknessPx(config);
@@ -3610,7 +3666,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
           }))
         : 0;
     SupportGenerationResult support_generation =
-        generate_support_masks(config, grid, model_masks, support_source_layers, column_ranges, layer_diagnostics);
+        generate_support_masks(
+            config,
+            grid,
+            model_masks,
+            upper_support_boundary_masks,
+            support_source_layers,
+            column_ranges,
+            upper_support_boundary_column_ranges,
+            layer_diagnostics);
     const SupportPlacementPolicy support_placement_policy = ResolveSupportPlacementPolicy(config);
     const std::vector<std::vector<std::uint8_t>> original_support_masks = support_generation.support_masks;
     const SupportShapePolicy support_shape_policy = MakeSupportShapePolicy(config.support);
@@ -3628,9 +3692,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             support_generation.support_masks,
             support_generation.support_type_maps);
     }
-    const bool cleared_outer_varnish_support =
+    const int cleared_outer_varnish_support_pixels =
         ApplyOuterVarnishSupportPriority(outer_varnish_masks, support_generation);
-    if (support_shape_result.enabled || cleared_outer_varnish_support)
+    if (support_shape_result.enabled || cleared_outer_varnish_support_pixels > 0)
     {
         RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
     }
@@ -3714,6 +3778,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"textureSurfacePixels", diagnostics.semantic.texture_surface_pixels},
             {"modelFillPixels", diagnostics.semantic.model_fill_pixels},
             {"internalVoidSupportPixels", diagnostics.semantic.internal_void_support_pixels},
+            {"upperSurfaceSupportPixels", diagnostics.upper_projection_support_pixels},
             {"outerVarnishPixels", diagnostics.semantic.outer_varnish_pixels},
             {"outerSurfaceVarnishPixels", diagnostics.semantic.outer_surface_varnish_pixels},
             {"innerSurfaceVarnishPixels", diagnostics.semantic.inner_surface_varnish_pixels},
@@ -3751,6 +3816,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"textureSurfacePixels", total_semantic_stats.texture_surface_pixels},
              {"modelFillPixels", total_semantic_stats.model_fill_pixels},
              {"internalVoidSupportPixels", total_semantic_stats.internal_void_support_pixels},
+             {"upperSurfaceSupportPixels", support_generation.upper_projection_support_pixels},
+             {"outerVarnishSupportOverlapPixelsCleared", cleared_outer_varnish_support_pixels},
              {"outerVarnishPixels", total_semantic_stats.outer_varnish_pixels},
              {"outerSurfaceVarnishPixels", total_semantic_stats.outer_surface_varnish_pixels},
              {"innerSurfaceVarnishPixels", total_semantic_stats.inner_surface_varnish_pixels},
@@ -3813,6 +3880,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                        {"fullVerticalProjectionEnabled",
                         support_placement_policy.full_vertical_projection_enabled},
                        {"advancedDebug", support_placement_policy.advanced_debug},
+                       {"upperBoundarySource", upper_support_boundary_info.source},
+                       {"upperBoundaryIncludesOuterVarnishShell",
+                        upper_support_boundary_info.includes_outer_varnish_shell},
+                       {"outerVarnishSupportOverlapPixelsCleared", cleared_outer_varnish_support_pixels},
                    })},
                   {"internalVoidSupport",
                    Json::object({
@@ -3872,6 +3943,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"unsupportedOnlyEnabled", support_placement_policy.unsupported_only_enabled},
              {"fullVerticalProjectionEnabled", support_placement_policy.full_vertical_projection_enabled},
              {"advancedDebug", support_placement_policy.advanced_debug},
+             {"upperBoundarySource", upper_support_boundary_info.source},
+             {"upperBoundaryIncludesOuterVarnishShell",
+              upper_support_boundary_info.includes_outer_varnish_shell},
              {"upperOutsideBoundary",
               config.outer_varnish.enabled ? "outer_varnish_shell" : config.support.upper.outside},
          })},
@@ -3915,6 +3989,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"modelPriority", "Model > Support"},
         {"supportPixels", total_support_pixels},
         {"supportPrintPixels", total_support_non_zero_pixels},
+        {"upperSurfaceSupportPixels", support_generation.upper_projection_support_pixels},
+        {"outerVarnishSupportOverlapPixelsCleared", cleared_outer_varnish_support_pixels},
         {"columnsWithSupport", columns_with_support},
         {"islandCount", support_generation.island_count},
         {"islandPixels", support_generation.island_pixels},
@@ -3933,6 +4009,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"unsupportedPixels", support_generation.unsupported_pixels},
              {"filteredIslandCount", support_generation.filtered_island_count},
              {"filteredIslandPixels", support_generation.filtered_island_pixels},
+             {"upperSurfaceSupportPixels", support_generation.upper_projection_support_pixels},
              {"upperProjectionPixels", support_generation.upper_projection_support_pixels},
          })},
         {"supportTypeStats",

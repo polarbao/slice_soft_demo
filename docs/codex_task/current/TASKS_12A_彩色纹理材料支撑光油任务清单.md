@@ -364,7 +364,7 @@ output/12a08_validation/aishen_outer_inner/package: PASS, outerSurface=148261, i
 
 ### Task 12A-09 UpperSurfaceSupportPolicy
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -373,11 +373,46 @@ output/12a08_validation/aishen_outer_inner/package: PASS, outerSurface=148261, i
 如果同时启用 outerVarnish，先生成外侧光油壳层，再在光油壳层之外生成上表面支撑。
 ```
 
+完成记录：
+
+```text
+已实现：
+1. upper support 仍由 support.placement=upper/both 或 support.upper.enabled 显式启用；
+2. 当 support.upper.outside=outer_varnish_shell 且 outerVarnish.enabled=true/thicknessPx>0 时，upper support 使用 model envelope + outerVarnish shell 作为上表面支撑边界；
+3. upper support 生成仍从边界 column 的 upper_layer+1 开始，避免覆盖模型或光油壳层本体；
+4. 支撑与 outerVarnish 同像素冲突时清除支撑，执行 Model > OuterVarnishShell > Support > Empty；
+5. slice_report / support_report 输出 upperSurfaceSupportPixels、upperBoundarySource、upperBoundaryIncludesOuterVarnishShell、outerVarnishSupportOverlapPixelsCleared；
+6. 新增 support_upper_surface_outer_varnish_shell fixture，验证 upper support 与 outer varnish shell 共存。
+```
+
 验证：
 
 ```text
 upper surface fixture 中 outerVarnishPixels > 0 且 upperSurfaceSupportPixels > 0；
 同像素冲突执行 Model > OuterVarnishShell > Support > Empty。
+```
+
+验证记录：
+
+```text
+cmake --build build --config Debug --target slicer_cli experimental_config_unit_tests rip_reader_test
+build\Debug\experimental_config_unit_tests.exe
+build\Debug\slicer_cli.exe --config samples\configs\support\support_upper_surface_outer_varnish_shell.json
+build\Debug\rip_reader_test.exe --package output\SupportUpperSurfaceOuterVarnishShell --summary
+
+Python validation:
+output\SupportUpperSurfaceOuterVarnishShell:
+outerVarnishPixels=3072
+upperSurfaceSupportPixels=18056
+outerVarnishSupportOverlapPixelsCleared=0
+upperBoundarySource=model_envelope_plus_outer_varnish_shell
+layer 6/7 upper support = 9028px = model footprint 8260px + outer varnish shell footprint 768px
+
+model/obj 多模型验证：
+output/12a09_validation/xiao_ma_upper_1px/package: PASS, outerVarnish=112889, upperSurface=2443480, support=2701181, overlapCleared=0
+output/12a09_validation/yecan_both_2px/package: PASS, outerVarnish=293205, upperSurface=3264721, support=9532444, overlapCleared=112989
+output/12a09_validation/nai_you_upper_2px/package: PASS, outerVarnish=293199, upperSurface=3159579, support=3491455, overlapCleared=0
+output/12a09_validation/aishen_both_1px/package: PASS, outerVarnish=153438, upperSurface=3996421, support=8119482, overlapCleared=58757
 ```
 
 ### Task 12A-10 真实 RIP 横截面材料栈对齐
