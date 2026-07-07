@@ -547,12 +547,12 @@ layer=117 grid=287x713 model=2128642 support=18329906 outerV=458289 surfaceV=222
 output/12a11_validation/local_meigui_fudiao_04/summary: PASS
 layer=139 grid=288x722 model=3690056 support=21697848 outerV=606089 surfaceV=296104/16984 upper=9387446 colorRGB=918463 singleW=3690056
 
-说明：meigui_fudiao 目录当前为未跟踪本地模型数据，不写入 committed golden；脚本已新增 -ExtraModelPath / -SkipGoldenCases 以支持本地真实模型临时验证。
+说明：meigui_fudiao 已作为真实 OBJ 样例提交到 `model/obj/meigui_fudiao`；脚本已新增 -ExtraModelPath / -SkipGoldenCases 以支持额外真实模型临时验证。
 ```
 
 ### Task 12A-12 UI preview 图例与像素探针联动
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -564,6 +564,25 @@ layer=139 grid=288x722 model=3690056 support=21697848 outerV=606089 surfaceV=296
 
 ```text
 UI smoke，手动点击关键像素显示 RGB/W/S/V 与语义。
+```
+
+完成记录：
+
+```text
+已让 LayerPreviewDataProvider 读取 slice_report.totals.materialSemantics 与 layers[].semantic；
+LayerPreview 状态栏显示 semantic/sourcePolicy，生产 RGB 像素探针显示 RGBWSV、semantic、sourcePolicy；
+OverlayPreview 状态栏显示当前 layer 语义摘要与全局 sourcePolicy；
+UI smoke 已校验 layer-preview-load 像素探针包含 semantic/sourcePolicy，overlay-load-real 状态栏包含 semantic/sourcePolicy。
+
+验证命令：
+cmake --build build --config Debug --target slicer_debug_ui
+.\build\Debug\slicer_cli.exe --config samples\configs\ui_smoke\ui_layer_preview.json
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case layer-preview-load --package output\UiSmokeLayerPreview
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case overlay-load-real --package output\UiSmokeLayerPreview
+
+验证结果：
+PASS layer-preview-load layers=25 channels=production_rgb,rgb,white,support,varnish,occupancy,diagnostic
+PASS overlay-load-real images=47 channels=rgb,support,varnish,white modes=RGB + W 白墨,RGB + V 光油,RGB + S 支撑
 ```
 
 ---

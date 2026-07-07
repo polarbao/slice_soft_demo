@@ -222,6 +222,11 @@ int UiSmokeTestRunner::overlayLoadReal(const UiSmokeTestOptions& options) {
     if (panel.imageCount() <= 0) {
         return fail("overlay-load-real 没有加载到 preview 图像。");
     }
+    const QString overlayStatus = panel.StatusForTest();
+    if (!overlayStatus.contains("semantic:") || !overlayStatus.contains("sourcePolicy:"))
+    {
+        return fail("overlay-load-real 状态栏未显示 semantic/sourcePolicy：" + overlayStatus);
+    }
     const QStringList channels = panel.availableChannels();
     if (!channels.contains("rgb")) {
         return fail("overlay-load-real 缺少 RGB preview。");
@@ -308,6 +313,10 @@ int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
         if (!probe.contains("RGBWSV="))
         {
             return fail("layer-preview-load 生产 RGB 像素探针未返回 RGBWSV。");
+        }
+        if (!probe.contains("semantic=") || !probe.contains("sourcePolicy="))
+        {
+            return fail("layer-preview-load 生产 RGB 像素探针未返回 semantic/sourcePolicy：" + probe);
         }
     }
 

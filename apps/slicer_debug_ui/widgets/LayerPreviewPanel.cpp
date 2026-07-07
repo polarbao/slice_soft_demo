@@ -474,6 +474,17 @@ void LayerPreviewPanel::UpdateStatus(const QString& note)
                        .arg(stats.supportprintpixels)
                        .arg(stats.varnishprintpixels);
 
+    const QString semanticText = BuildLayerSemanticText(stats);
+    if (!semanticText.isEmpty())
+    {
+        text += "  " + semanticText;
+    }
+    const QString sourcePolicyText = BuildSourcePolicyText();
+    if (!sourcePolicyText.isEmpty())
+    {
+        text += "  " + sourcePolicyText;
+    }
+
     if (!frame.path.isEmpty())
     {
         text += "  " + QFileInfo(frame.path).fileName();
@@ -550,30 +561,122 @@ QString LayerPreviewPanel::InterpretPixel(const int r, const int g, const int b,
     const bool hasWhite = w < 255;
     const bool hasSupport = s < 255;
     const bool hasVarnish = v < 255;
-    QStringList roles;
+    const LayerPreviewLayerStats stats = m_package.layerstats.value(CurrentLayerIndex());
+    const LayerPreviewSemanticPolicy policy = m_package.semanticpolicy;
+
+    QStringList semantics;
+    QStringList sourcePolicies;
     if (hasRgb)
     {
-        roles.push_back("RGB模型");
+        semantics.push_back("TextureSurface/RGB模型");
+        sourcePolicies.push_back("textureSurfacePixels=" + QString::number(stats.texturesurfacepixels));
     }
     if (hasWhite)
     {
-        roles.push_back("白墨");
+        const QString material = policy.modelfillmaterial.isEmpty() ? "white" : policy.modelfillmaterial;
+        semantics.push_back("ModelFill(" + material + ")");
+        sourcePolicies.push_back("modelFill=" + material + "/" + policy.modelfillscope);
     }
     if (hasSupport)
     {
-        roles.push_back("支撑");
+        semantics.push_back("SupportFill");
+        QString supportPolicy = "supportPlacement=" + (policy.supportplacement.isEmpty() ? QString("unknown") : policy.supportplacement);
+        if (!stats.supporttypesummary.isEmpty())
+        {
+            supportPolicy += "; layerSupportTypes=" + stats.supporttypesummary;
+        }
+        sourcePolicies.push_back(supportPolicy);
     }
     if (hasVarnish)
     {
-        roles.push_back("光油");
+        if (!hasRgb && !hasWhite && policy.modelfillmaterial == "varnish")
+        {
+            semantics.push_back("ModelFill(varnish)");
+        }
+        else
+        {
+            semantics.push_back("Varnish");
+        }
+        QString varnishPolicy;
+        if (policy.outervarnishenabled)
+        {
+            varnishPolicy += QString("outerVarnish=%1px").arg(policy.outervarnishthicknesspx);
+        }
+        if (policy.surfacevarnishenabled)
+        {
+            if (!varnishPolicy.isEmpty())
+            {
+                varnishPolicy += "; ";
+            }
+            varnishPolicy += QString("surfaceVarnish=%1px").arg(policy.surfacevarnishthicknesspx);
+        }
+        sourcePolicies.push_back(varnishPolicy.isEmpty() ? QString("varnishChannel=V") : varnishPolicy);
     }
-    if (roles.isEmpty())
+    if (semantics.isEmpty())
     {
-        return "空白";
+        return "semantic=Empty sourcePolicy=emptyValue=255";
     }
-    if (roles.size() > 1)
+
+    semantics.removeDuplicates();
+    sourcePolicies.removeDuplicates();
+    return "semantic=" + semantics.join("+") + " sourcePolicy=" + sourcePolicies.join(" | ");
+}
+
+QString LayerPreviewPanel::BuildLayerSemanticText(const LayerPreviewLayerStats& stats) const
+{
+    QStringList parts;
+    parts.push_back("TextureSurface=" + QString::number(stats.texturesurfacepixels));
+    parts.push_back("ModelFill=" + QString::number(stats.modelfillpixels));
+    parts.push_back("Support=" + QString::number(stats.supportprintpixels));
+    if (stats.internalvoidsupportpixels > 0)
     {
-        return "混合:" + roles.join("+");
+        parts.push_back("InternalVoidS=" + QString::number(stats.internalvoidsupportpixels));
     }
-    return roles.first();
+    if (stats.uppersurfacesupportpixels > 0)
+    {
+        parts.push_back("UpperS=" + QString::number(stats.uppersurfacesupportpixels));
+    }
+    if (stats.outervarnishpixels > 0)
+    {
+        parts.push_back("OuterV=" + QString::number(stats.outervarnishpixels));
+    }
+    if (stats.outersurfacevarnishpixels > 0 || stats.innersurfacevarnishpixels > 0)
+    {
+        parts.push_back(
+            QString("SurfaceV(out/in)=%1/%2").arg(stats.outersurfacevarnishpixels).arg(stats.innersurfacevarnishpixels));
+    }
+    return "semantic: " + parts.join(", ");
+}
+
+QString LayerPreviewPanel::BuildSourcePolicyText() const
+{
+    const LayerPreviewSemanticPolicy policy = m_package.semanticpolicy;
+    QStringList parts;
+    if (!policy.modelfillmaterial.isEmpty())
+    {
+        parts.push_back("modelFill=" + policy.modelfillmaterial + "/" + policy.modelfillscope);
+    }
+    if (!policy.supportplacement.isEmpty())
+    {
+        QString support = "support=" + policy.supportplacement;
+        if (!policy.supportsource.isEmpty())
+        {
+            support += "(" + policy.supportsource + ")";
+        }
+        parts.push_back(support);
+    }
+    parts.push_back(QString("internalVoid=%1").arg(policy.internalvoidsupportenabled ? "on" : "off"));
+    if (policy.outervarnishenabled)
+    {
+        parts.push_back(QString("outerVarnish=%1px/%2mm").arg(policy.outervarnishthicknesspx).arg(policy.outervarnishthicknessmm, 0, 'f', 3));
+    }
+    if (policy.surfacevarnishenabled)
+    {
+        parts.push_back(QString("surfaceVarnish=%1px").arg(policy.surfacevarnishthicknesspx));
+    }
+    if (!policy.semanticpriority.isEmpty())
+    {
+        parts.push_back("priority=" + policy.semanticpriority);
+    }
+    return parts.isEmpty() ? QString() : "sourcePolicy: " + parts.join(", ");
 }

@@ -98,6 +98,8 @@ private:
     bool IsPrintedPixel(const QColor& color) const;
     QString BuildPixelProbeText(int displayX, int displayY) const;
     QString InterpretPixel(int r, int g, int b, int w, int s, int v) const;
+    QString BuildLayerSemanticText(const LayerPreviewLayerStats& stats) const;
+    QString BuildSourcePolicyText() const;
 
     LayerPreviewDataProvider m_provider;
     LayerPreviewPackage m_package;

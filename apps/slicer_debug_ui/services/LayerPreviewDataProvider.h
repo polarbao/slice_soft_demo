@@ -33,7 +33,30 @@ struct LayerPreviewLayerStats
     int supportcomponentcount{0};
     int smallcomponentcount{0};
     int tinycomponentcount{0};
+    int texturesurfacepixels{0};
+    int modelfillpixels{0};
+    int internalvoidsupportpixels{0};
+    int outervarnishpixels{0};
+    int outersurfacevarnishpixels{0};
+    int innersurfacevarnishpixels{0};
+    int uppersurfacesupportpixels{0};
+    QString supporttypesummary;
     QStringList fillwarnings;
+};
+
+struct LayerPreviewSemanticPolicy
+{
+    QString modelfillmaterial;
+    QString modelfillscope;
+    QString supportplacement;
+    QString supportsource;
+    QString semanticpriority;
+    bool internalvoidsupportenabled{false};
+    bool outervarnishenabled{false};
+    int outervarnishthicknesspx{0};
+    double outervarnishthicknessmm{0.0};
+    bool surfacevarnishenabled{false};
+    int surfacevarnishthicknesspx{0};
 };
 
 struct LayerPreviewPackage
@@ -48,6 +71,7 @@ struct LayerPreviewPackage
     QMap<int, QMap<QString, LayerPreviewFrame>> frames;
     QMap<int, LayerPreviewLayerStats> layerstats;
     QMap<QString, QColor> pseudocolors;
+    LayerPreviewSemanticPolicy semanticpolicy;
 };
 
 class LayerPreviewDataProvider

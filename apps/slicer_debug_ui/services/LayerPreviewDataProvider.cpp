@@ -18,6 +18,15 @@ int ReadInt(const QJsonObject& object, const QString& key)
     return object.value(key).toInt(0);
 }
 
+int ReadIntWithFallback(const QJsonObject& primary, const QJsonObject& fallback, const QString& key)
+{
+    if (primary.contains(key))
+    {
+        return primary.value(key).toInt(0);
+    }
+    return fallback.value(key).toInt(0);
+}
+
 QStringList ReadStringArray(const QJsonArray& array)
 {
     QStringList result;
@@ -26,6 +35,27 @@ QStringList ReadStringArray(const QJsonArray& array)
         result.push_back(value.toString());
     }
     return result;
+}
+
+QString BuildSupportTypeSummary(const QJsonObject& supportTypeStats)
+{
+    QStringList parts;
+    const QStringList keys{
+        "bottom_projection",
+        "upper_projection",
+        "internal_void",
+        "unsupported_island",
+        "full_vertical_projection",
+    };
+    for (const QString& key : keys)
+    {
+        const int value = supportTypeStats.value(key).toInt(0);
+        if (value > 0)
+        {
+            parts.push_back(key + "=" + QString::number(value));
+        }
+    }
+    return parts.join(", ");
 }
 
 }  // namespace
@@ -292,6 +322,26 @@ void LayerPreviewDataProvider::ReadSliceReport(const PackageSummary& package, La
         preview->layerheightmm = grid.value("layerThicknessMm").toDouble(0.0);
     }
 
+    const QJsonObject totals = root.value("totals").toObject();
+    const QJsonObject materialSemantics = totals.value("materialSemantics").toObject();
+    const QJsonObject modelFill = materialSemantics.value("modelFill").toObject();
+    preview->semanticpolicy.modelfillmaterial = modelFill.value("material").toString();
+    preview->semanticpolicy.modelfillscope = modelFill.value("scope").toString();
+    preview->semanticpolicy.supportplacement =
+        materialSemantics.value("supportPlacement").toString(materialSemantics.value("supportPlacementPolicy").toObject().value("effective").toString());
+    const QJsonObject supportPlacementPolicy = materialSemantics.value("supportPlacementPolicy").toObject();
+    preview->semanticpolicy.supportsource = supportPlacementPolicy.value("upperBoundarySource").toString();
+    preview->semanticpolicy.semanticpriority = materialSemantics.value("semanticPriority").toString();
+    const QJsonObject internalVoidSupport = materialSemantics.value("internalVoidSupport").toObject();
+    preview->semanticpolicy.internalvoidsupportenabled = internalVoidSupport.value("enabled").toBool(false);
+    const QJsonObject outerVarnish = materialSemantics.value("outerVarnish").toObject();
+    preview->semanticpolicy.outervarnishenabled = outerVarnish.value("enabled").toBool(false);
+    preview->semanticpolicy.outervarnishthicknesspx = outerVarnish.value("thicknessPx").toInt(0);
+    preview->semanticpolicy.outervarnishthicknessmm = outerVarnish.value("thicknessMm").toDouble(0.0);
+    const QJsonObject surfaceVarnish = materialSemantics.value("surfaceVarnish").toObject();
+    preview->semanticpolicy.surfacevarnishenabled = surfaceVarnish.value("enabled").toBool(false);
+    preview->semanticpolicy.surfacevarnishthicknesspx = surfaceVarnish.value("thicknessPx").toInt(0);
+
     const QJsonArray layers = root.value("layers").toArray();
     for (const QJsonValue& value : layers)
     {
@@ -311,6 +361,15 @@ void LayerPreviewDataProvider::ReadSliceReport(const PackageSummary& package, La
         stats.varnishprintpixels = ReadInt(object, "varnishPrintPixels");
         stats.modelprintpixels = ReadInt(object, "modelPrintPixels");
         stats.fillwarnings = ReadStringArray(object.value("fillWarnings").toArray());
+        const QJsonObject semantic = object.value("semantic").toObject();
+        stats.texturesurfacepixels = ReadIntWithFallback(semantic, object, "textureSurfacePixels");
+        stats.modelfillpixels = ReadIntWithFallback(semantic, object, "modelFillPixels");
+        stats.internalvoidsupportpixels = ReadIntWithFallback(semantic, object, "internalVoidSupportPixels");
+        stats.outervarnishpixels = ReadIntWithFallback(semantic, object, "outerVarnishPixels");
+        stats.outersurfacevarnishpixels = ReadIntWithFallback(semantic, object, "outerSurfaceVarnishPixels");
+        stats.innersurfacevarnishpixels = ReadIntWithFallback(semantic, object, "innerSurfaceVarnishPixels");
+        stats.uppersurfacesupportpixels = ReadInt(object, "upperSurfaceSupportPixels");
+        stats.supporttypesummary = BuildSupportTypeSummary(object.value("supportTypeStats").toObject());
 
         const QJsonObject supportConnectivity = object.value("supportConnectivity").toObject();
         stats.supportcomponentcount = ReadInt(supportConnectivity, "componentCount");

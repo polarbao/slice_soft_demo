@@ -82,6 +82,8 @@ void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
     images_.clear();
     m_layerIndices.clear();
     m_layerZMm.clear();
+    m_layerSemanticSummary.clear();
+    m_sourcePolicySummary.clear();
     QSet<QString> seen;
     const auto append_image = [this, &seen](const PreviewImage& image) {
         if (image.path.isEmpty() || image.channel.isEmpty() || image.layer < 0) {
@@ -160,6 +162,11 @@ bool PreviewOverlayPanel::canComposeMode(const QString& mode) const {
         }
     }
     return false;
+}
+
+QString PreviewOverlayPanel::StatusForTest() const
+{
+    return status_ == nullptr ? QString() : status_->text();
 }
 
 void PreviewOverlayPanel::updateImage() {
@@ -264,6 +271,7 @@ void PreviewOverlayPanel::LoadLayerMetadata(const PackageSummary& package)
 
 void PreviewOverlayPanel::ReadLayerMetadataObject(const QJsonObject& root)
 {
+    ReadSourcePolicyObject(root);
     QJsonArray layers = root.value("layers").toArray();
     if (layers.isEmpty())
     {
@@ -278,7 +286,111 @@ void PreviewOverlayPanel::ReadLayerMetadataObject(const QJsonObject& root)
             continue;
         }
         m_layerZMm.insert(layer, object.value("zMm").toDouble());
+        const QString semanticSummary = BuildLayerSemanticSummary(object);
+        if (!semanticSummary.isEmpty())
+        {
+            m_layerSemanticSummary.insert(layer, semanticSummary);
+        }
     }
+}
+
+QString PreviewOverlayPanel::BuildLayerSemanticSummary(const QJsonObject& object) const
+{
+    const QJsonObject semantic = object.value("semantic").toObject();
+    const auto readCount = [&object, &semantic](const QString& key) -> int
+    {
+        if (semantic.contains(key))
+        {
+            return semantic.value(key).toInt(0);
+        }
+        return object.value(key).toInt(0);
+    };
+
+    QStringList parts;
+    const int textureSurfacePixels = readCount("textureSurfacePixels");
+    const int modelFillPixels = readCount("modelFillPixels");
+    const int supportPixels = readCount("supportPixels");
+    const int internalVoidSupportPixels = readCount("internalVoidSupportPixels");
+    const int outerVarnishPixels = readCount("outerVarnishPixels");
+    const int outerSurfaceVarnishPixels = readCount("outerSurfaceVarnishPixels");
+    const int innerSurfaceVarnishPixels = readCount("innerSurfaceVarnishPixels");
+    const int upperSurfaceSupportPixels = object.value("upperSurfaceSupportPixels").toInt(0);
+
+    parts.push_back("TextureSurface=" + QString::number(textureSurfacePixels));
+    parts.push_back("ModelFill=" + QString::number(modelFillPixels));
+    parts.push_back("Support=" + QString::number(supportPixels));
+    if (internalVoidSupportPixels > 0)
+    {
+        parts.push_back("InternalVoidS=" + QString::number(internalVoidSupportPixels));
+    }
+    if (upperSurfaceSupportPixels > 0)
+    {
+        parts.push_back("UpperS=" + QString::number(upperSurfaceSupportPixels));
+    }
+    if (outerVarnishPixels > 0)
+    {
+        parts.push_back("OuterV=" + QString::number(outerVarnishPixels));
+    }
+    if (outerSurfaceVarnishPixels > 0 || innerSurfaceVarnishPixels > 0)
+    {
+        parts.push_back(QString("SurfaceV(out/in)=%1/%2").arg(outerSurfaceVarnishPixels).arg(innerSurfaceVarnishPixels));
+    }
+    return "semantic: " + parts.join(", ");
+}
+
+void PreviewOverlayPanel::ReadSourcePolicyObject(const QJsonObject& root)
+{
+    if (!m_sourcePolicySummary.isEmpty())
+    {
+        return;
+    }
+
+    const QJsonObject materialSemantics = root.value("totals").toObject().value("materialSemantics").toObject();
+    if (materialSemantics.isEmpty())
+    {
+        return;
+    }
+
+    QStringList parts;
+    const QJsonObject modelFill = materialSemantics.value("modelFill").toObject();
+    if (!modelFill.isEmpty())
+    {
+        parts.push_back(
+            "modelFill=" + modelFill.value("material").toString("unknown") + "/" + modelFill.value("scope").toString("unknown"));
+    }
+    const QJsonObject supportPolicy = materialSemantics.value("supportPlacementPolicy").toObject();
+    const QString supportPlacement = materialSemantics.value("supportPlacement").toString(supportPolicy.value("effective").toString());
+    if (!supportPlacement.isEmpty())
+    {
+        QString supportText = "support=" + supportPlacement;
+        const QString upperSource = supportPolicy.value("upperBoundarySource").toString();
+        if (!upperSource.isEmpty())
+        {
+            supportText += "(" + upperSource + ")";
+        }
+        parts.push_back(supportText);
+    }
+    const QJsonObject internalVoidSupport = materialSemantics.value("internalVoidSupport").toObject();
+    if (!internalVoidSupport.isEmpty())
+    {
+        parts.push_back(QString("internalVoid=%1").arg(internalVoidSupport.value("enabled").toBool(false) ? "on" : "off"));
+    }
+    const QJsonObject outerVarnish = materialSemantics.value("outerVarnish").toObject();
+    if (outerVarnish.value("enabled").toBool(false))
+    {
+        parts.push_back(QString("outerVarnish=%1px").arg(outerVarnish.value("thicknessPx").toInt(0)));
+    }
+    const QJsonObject surfaceVarnish = materialSemantics.value("surfaceVarnish").toObject();
+    if (surfaceVarnish.value("enabled").toBool(false))
+    {
+        parts.push_back(QString("surfaceVarnish=%1px").arg(surfaceVarnish.value("thicknessPx").toInt(0)));
+    }
+    const QString priority = materialSemantics.value("semanticPriority").toString();
+    if (!priority.isEmpty())
+    {
+        parts.push_back("priority=" + priority);
+    }
+    m_sourcePolicySummary = parts.isEmpty() ? QString() : "sourcePolicy: " + parts.join(", ");
 }
 
 void PreviewOverlayPanel::rebuildLayerSlider() {
@@ -403,5 +515,7 @@ void PreviewOverlayPanel::applyPixmap(const QImage& image) {
                          .arg(layerText)
                          .arg(mode_->currentText())
                          .arg(image.width())
-                         .arg(image.height()));
+                         .arg(image.height())
+                     + (m_layerSemanticSummary.contains(layer) ? "  " + m_layerSemanticSummary.value(layer) : QString())
+                     + (m_sourcePolicySummary.isEmpty() ? QString() : "  " + m_sourcePolicySummary));
 }

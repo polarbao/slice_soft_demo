@@ -21,6 +21,11 @@ public:
     int imageCount() const;
     QStringList availableChannels() const;
     bool canComposeMode(const QString& mode) const;
+    /**
+     * @brief Return current status text for UI smoke tests.
+     * @return Human-readable overlay status.
+     */
+    QString StatusForTest() const;
 
 private slots:
     void updateImage();
@@ -40,6 +45,8 @@ private:
     int parseLayer(const QString& path) const;
     void LoadLayerMetadata(const PackageSummary& package);
     void ReadLayerMetadataObject(const QJsonObject& root);
+    QString BuildLayerSemanticSummary(const QJsonObject& object) const;
+    void ReadSourcePolicyObject(const QJsonObject& root);
     void rebuildLayerSlider();
     QImage readImage(const QString& path) const;
     QImage FindImageForLayer(const QString& channel, int layer) const;
@@ -52,6 +59,8 @@ private:
     QVector<PreviewImage> images_;
     QVector<int> m_layerIndices;
     QHash<int, double> m_layerZMm;
+    QHash<int, QString> m_layerSemanticSummary;
+    QString m_sourcePolicySummary;
     double zoom_{1.0};
     bool fit_{true};
 
