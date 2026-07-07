@@ -3079,6 +3079,198 @@ Json semantic_stats_to_json(const LayerSemanticStats& stats) {
     });
 }
 
+Json BuildCrossSectionStackEntry(
+    const int order,
+    const std::string& id,
+    const std::string& label,
+    const std::string& channel,
+    const std::string& semantic,
+    const std::string& reportField,
+    const std::uint64_t printPixels,
+    const bool enabled,
+    const std::string& sourceMask,
+    const std::string& note)
+{
+    return Json::object({
+        {"order", order},
+        {"id", id},
+        {"label", label},
+        {"channel", channel},
+        {"semantic", semantic},
+        {"reportField", reportField},
+        {"printPixels", printPixels},
+        {"present", printPixels > 0U},
+        {"enabled", enabled},
+        {"sourceMask", sourceMask},
+        {"note", note},
+    });
+}
+
+Json BuildCrossSectionMaterialStackReport(
+    const SliceConfig& config,
+    const LayerSemanticStats& semanticStats,
+    const SupportGenerationResult& supportGeneration,
+    const SupportPlacementPolicy& supportPlacementPolicy)
+{
+    const std::uint64_t textureSurfacePixels =
+        static_cast<std::uint64_t>(std::max(0, semanticStats.texture_surface_pixels));
+    const std::uint64_t modelFillPixels =
+        static_cast<std::uint64_t>(std::max(0, semanticStats.model_fill_pixels));
+    const std::uint64_t outerSurfaceVarnishPixels =
+        static_cast<std::uint64_t>(std::max(0, semanticStats.outer_surface_varnish_pixels));
+    const std::uint64_t innerSurfaceVarnishPixels =
+        static_cast<std::uint64_t>(std::max(0, semanticStats.inner_surface_varnish_pixels));
+    const std::uint64_t upperSurfaceSupportPixels =
+        static_cast<std::uint64_t>(std::max(0, supportGeneration.upper_projection_support_pixels));
+    const std::uint64_t lowerSurfaceSupportPixels =
+        static_cast<std::uint64_t>(std::max(0, supportGeneration.bottom_projection_support_pixels));
+    const bool surfaceColorEnabled =
+        config.texture.enabled
+        || (config.material_process_profile.enabled && config.material_process_profile.rgb.enabled)
+        || (config.material_policy.enabled && config.material_policy.rgb.enabled);
+
+    Json::Array stack;
+    stack.push_back(BuildCrossSectionStackEntry(
+        1,
+        "upper_surface_support",
+        "上表面支撑",
+        "S",
+        "UpperSurfaceSupportMask",
+        "upperSurfaceSupportPixels",
+        upperSurfaceSupportPixels,
+        supportPlacementPolicy.upper_enabled,
+        "support_type.upper_projection",
+        "模型外部可剥离支撑；启用 outerVarnish 时应位于外侧光油边界之外"));
+    stack.push_back(BuildCrossSectionStackEntry(
+        2,
+        "outer_surface_varnish",
+        "表面层光油",
+        "V",
+        "OuterSurfaceVarnishMask",
+        "outerSurfaceVarnishPixels",
+        outerSurfaceVarnishPixels,
+        config.surface_varnish.enabled && config.surface_varnish.outer_surface,
+        "surfaceVarnish.outerSurface",
+        "写在模型外表面像素上的 V 通道；不同于扩张模型 XY 的 outerVarnish shell"));
+    stack.push_back(BuildCrossSectionStackEntry(
+        3,
+        "outer_surface_color",
+        "模型表层色彩层",
+        "RGB",
+        "OuterSurfaceColorMask",
+        "textureSurfacePixels",
+        textureSurfacePixels,
+        surfaceColorEnabled,
+        "textureSurfacePixels",
+        "当前 legacy 统计未拆分外/内表面 RGB，使用 textureSurfacePixels 解释表面色彩层"));
+    stack.push_back(BuildCrossSectionStackEntry(
+        4,
+        "model_fill",
+        "模型内部填充层",
+        config.model_fill.material == "varnish" ? "V" : (config.model_fill.material == "rgb" ? "RGB" : "W"),
+        "ModelFillMask",
+        "modelFillPixels",
+        modelFillPixels,
+        config.model_fill.enabled,
+        "modelFill",
+        "生产 Profile 不允许内部填充为空；默认材料为 white"));
+    stack.push_back(BuildCrossSectionStackEntry(
+        5,
+        "inner_surface_color",
+        "模型内表层色彩层",
+        "RGB",
+        "InnerSurfaceColorMask",
+        "textureSurfacePixels",
+        textureSurfacePixels,
+        surfaceColorEnabled,
+        "textureSurfacePixels",
+        "当前 legacy 统计未拆分外/内表面 RGB，使用同一 textureSurfacePixels 解释内表层色彩"));
+    stack.push_back(BuildCrossSectionStackEntry(
+        6,
+        "inner_surface_varnish",
+        "模型内表面光油层",
+        "V",
+        "InnerSurfaceVarnishMask",
+        "innerSurfaceVarnishPixels",
+        innerSurfaceVarnishPixels,
+        config.surface_varnish.enabled && config.surface_varnish.inner_surface,
+        "surfaceVarnish.innerSurface",
+        "写在模型内表面像素上的 V 通道，主要用于解释真实 RIP 横截面内侧清漆带"));
+    stack.push_back(BuildCrossSectionStackEntry(
+        7,
+        "lower_surface_support",
+        "模型下表面支撑层",
+        "S",
+        "LowerSurfaceSupportMask",
+        "supportTypeStats.bottom_projection",
+        lowerSurfaceSupportPixels,
+        supportPlacementPolicy.lower_enabled,
+        "support_type.bottom_projection",
+        "模型外部可剥离下表面支撑"));
+
+    Json::Array missing;
+    if (upperSurfaceSupportPixels == 0U)
+    {
+        missing.push_back("upper_surface_support");
+    }
+    if (outerSurfaceVarnishPixels == 0U)
+    {
+        missing.push_back("outer_surface_varnish");
+    }
+    if (textureSurfacePixels == 0U)
+    {
+        missing.push_back("surface_color");
+    }
+    if (modelFillPixels == 0U)
+    {
+        missing.push_back("model_fill");
+    }
+    if (innerSurfaceVarnishPixels == 0U)
+    {
+        missing.push_back("inner_surface_varnish");
+    }
+    if (lowerSurfaceSupportPixels == 0U)
+    {
+        missing.push_back("lower_surface_support");
+    }
+
+    const bool hasRequiredStack = missing.empty();
+    return Json::object({
+        {"schema", "p0.cross_section_material_stack.1"},
+        {"reference",
+         Json::object({
+             {"diagram", "docs/slice/DOC/DIAGRAM_12A_指甲模型横截面材料示意图.png"},
+             {"realRipLayer", "slice.446.png"},
+             {"review", "docs/slice/DOC/DOC_REVIEW_12A_真实RIP横截面示意图对齐审查.md"},
+             {"oldConceptDiagramGeometryAcceptance", "deprecated"},
+         })},
+        {"stackOrder",
+         "UpperSurfaceSupport>SurfaceVarnish>SurfaceColor>ModelFill>SurfaceColor>InnerSurfaceVarnish>LowerSupport"},
+        {"note", "该材料栈描述模型横截面材料关系，不表示画布坐标上下方向，也不实现 RIP 半色调。"},
+        {"outerInnerColorSplit",
+         Json::object({
+             {"available", false},
+             {"source", "textureSurfacePixels"},
+             {"reason", "当前 legacy pipeline 只统计总 texture surface RGB，尚未拆分 outer/inner surface RGB mask"},
+         })},
+        {"outerVarnishShell",
+         Json::object({
+             {"enabled", config.outer_varnish.enabled},
+             {"printPixels", static_cast<std::uint64_t>(std::max(0, semanticStats.outer_varnish_pixels))},
+             {"note", "outerVarnishShell 是模型外侧扩张光油壳层，不等同于真实横截面中的表面/内表面光油带"},
+         })},
+        {"summary",
+         Json::object({
+             {"canExplainRealRipCrossSection", hasRequiredStack},
+             {"missingElements", Json{missing}},
+             {"modelFillMaterial", config.model_fill.material},
+             {"supportPlacement", supportPlacementPolicy.effective_placement},
+             {"semanticPriority", "Model>OuterVarnishShell>Support>Empty"},
+         })},
+        {"stack", Json{stack}},
+    });
+}
+
 Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
     Json::Array fill_warnings;
     if (diagnostics.odd_intersection_rows > 0) {
@@ -3792,6 +3984,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
 
     const Json material_process_report =
         material_process_report_to_json(config, model_report, grid, layer_diagnostics, total_channel_stats);
+    const Json cross_section_material_stack_report =
+        BuildCrossSectionMaterialStackReport(
+            config,
+            total_semantic_stats,
+            support_generation,
+            support_placement_policy);
 
     const Json slice_report = Json::object({
         {"slicingMode", config.slicing_mode},
@@ -3918,6 +4116,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                    })},
                   {"semanticPriority", "Model>OuterVarnishShell>Support>Empty"},
               })},
+             {"crossSectionMaterialStack", cross_section_material_stack_report},
          })},
         {"layers", Json{slice_layers}},
     });
@@ -4177,6 +4376,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"texture", "reports/texture_report.json"},
              {"materialPolicy", "reports/material_policy_report.json"},
              {"materialProcess", "reports/material_process_report.json"},
+             {"crossSectionMaterialStack", "reports/cross_section_material_stack_report.json"},
              {"materialRoleMapping", "reports/material_role_mapping_report.json"},
              {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
              {"threeMf", "reports/three_mf_report.json"},
@@ -4198,6 +4398,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             package_dir / "reports/material_policy_report.json",
             material_policy_report_to_json(config, material_policy_report));
         write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
+        write_json_file(package_dir / "reports/cross_section_material_stack_report.json", cross_section_material_stack_report);
         write_json_file(
             package_dir / "reports/material_role_mapping_report.json",
             material_role_mapping_report_to_json(material_role_mapping_report));

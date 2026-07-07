@@ -1,0 +1,25 @@
+{
+  "schema": "p0.12a.cross_section_material_stack_summary.1",
+  "reportSchema": "p0.cross_section_material_stack.1",
+  "description": "Stage 12A golden summary for real RIP cross-section material stack explanation.",
+  "expectedOrder": [
+    "upper_surface_support",
+    "outer_surface_varnish",
+    "outer_surface_color",
+    "model_fill",
+    "inner_surface_color",
+    "inner_surface_varnish",
+    "lower_surface_support"
+  ],
+  "expectedStackOrderText": "UpperSurfaceSupport>SurfaceVarnish>SurfaceColor>ModelFill>SurfaceColor>InnerSurfaceVarnish>LowerSupport",
+  "requiredReports": [
+    "cross_section_material_stack_report.json",
+    "slice_report.json",
+    "support_report.json"
+  ],
+  "requiredReference": {
+    "diagram": "docs/slice/DOC/DIAGRAM_12A_指甲模型横截面材料示意图.png",
+    "realRipLayer": "slice.446.png",
+    "oldConceptDiagramGeometryAcceptance": "deprecated"
+  }
+}

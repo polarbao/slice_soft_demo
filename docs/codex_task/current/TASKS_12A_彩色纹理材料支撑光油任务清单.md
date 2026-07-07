@@ -417,7 +417,7 @@ output/12a09_validation/aishen_both_1px/package: PASS, outerVarnish=153438, uppe
 
 ### Task 12A-10 真实 RIP 横截面材料栈对齐
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -428,11 +428,49 @@ output/12a09_validation/aishen_both_1px/package: PASS, outerVarnish=153438, uppe
 上表面支撑、表面光油、表面色彩、模型内部填充、表面色彩、内表面光油、下表面支撑。
 ```
 
+完成记录：
+
+```text
+已实现：
+1. 新增 reports/cross_section_material_stack_report.json；
+2. manifest.reports.crossSectionMaterialStack 指向该报告；
+3. slice_report.totals.crossSectionMaterialStack 内嵌同一份材料栈摘要；
+4. 材料栈顺序固定为：
+   UpperSurfaceSupport > SurfaceVarnish > SurfaceColor > ModelFill > SurfaceColor > InnerSurfaceVarnish > LowerSupport；
+5. 报告显式记录真实参考图、真实 RIP slice.446.png、旧概念图 geometry acceptance=deprecated；
+6. 报告区分 surfaceVarnish 与 outerVarnishShell，避免把模型表面光油和外侧扩张光油壳层混淆；
+7. 报告如实标记当前 legacy pipeline 尚未拆分 outer/inner RGB 独立 mask，当前二者均由 textureSurfacePixels 解释；
+8. 新增 tests/golden/expected/12a_cross_section_material_stack_summary.json；
+9. 新增 scripts/run_12a_cross_section_material_stack_tests.ps1，默认验证主用例，可用 -IncludeRealObjMatrix 验证 model/obj 多模型。
+```
+
 验证：
 
 ```text
 report/preview 能解释真实 RIP 横截面材料栈；
 旧概念图不再作为几何验收依据。
+```
+
+验证记录：
+
+```text
+cmake --build build --config Debug --target slicer_cli rip_reader_test
+powershell -ExecutionPolicy Bypass -File .\scripts\run_12a_cross_section_material_stack_tests.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\run_12a_cross_section_material_stack_tests.ps1 -IncludeRealObjMatrix
+
+默认真实 OBJ fixture：
+output/CrossSectionMaterialStackRealObj: PASS
+upper=5912297 outerV=223934 rgb=761260 fill=2505888 innerV=18946 lower=9250391
+
+model/obj 多模型验证：
+output/12a10_validation/nai_you/package: PASS
+upper=5912297 outerV=223934 rgb=761260 fill=2505888 innerV=18946 lower=9250391
+
+output/12a10_validation/aishen/package: PASS
+upper=7903050 outerV=233123 rgb=636654 fill=2119881 innerV=14746 lower=7106481
+
+output/12a10_validation/yecan/package: PASS
+upper=6045142 outerV=222674 rgb=878709 fill=1249933 innerV=25942 lower=11245167
 ```
 
 ### Task 12A-11 彩色/单材料一致性 fixture

@@ -1,0 +1,99 @@
+{
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "input": {
+    "modelPath": "../../../model/obj/nai_you_new/MF_nai_you.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/CrossSectionMaterialStackRealObj",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.05,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "below_texture_surface",
+    "value": 0,
+    "emptyAllowedInProduction": false,
+    "legacyRgbFallback": false
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "both",
+    "offsetMm": 0.05,
+    "value": 0,
+    "minAreaPx": 0,
+    "connectivity": 8,
+    "internalVoid": {
+      "enabled": true,
+      "minAreaPx": 16,
+      "fillRule": "all_internal_voids"
+    },
+    "upper": {
+      "enabled": true,
+      "outside": "outer_varnish_shell",
+      "reason": "optional_detachable_surface_support"
+    }
+  },
+  "surfaceVarnish": {
+    "enabled": true,
+    "outerSurface": true,
+    "innerSurface": true,
+    "thicknessPx": 1,
+    "value": 0,
+    "source": "explicit"
+  },
+  "outerVarnish": {
+    "enabled": true,
+    "thicknessMm": 0.05,
+    "thicknessStepMm": 0.01,
+    "pixelPitchUm": 42.3,
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
+    "value": 0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 10,
+    "channels": ["texture_rgb", "support", "white", "varnish"],
+    "onlyNonEmptyLayers": true
+  },
+  "relief": {
+    "baseZMm": 0,
+    "fillMode": "intersection_range"
+  },
+  "slicingMode": "relief_heightfield",
+  "texture": {
+    "enabled": true,
+    "applyMode": "top_surface_band",
+    "topSurfaceLayers": 5,
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [0, 0, 0],
+    "missingTexturePolicy": "warn_and_fallback",
+    "nonSurfaceRgbPolicy": "empty"
+  }
+}
