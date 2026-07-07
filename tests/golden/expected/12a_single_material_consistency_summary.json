@@ -37,6 +37,30 @@
       "modelPath": "model/obj/aishen_fudiao/MF_aishen_damuzhi_L_tx02.obj"
     },
     {
+      "id": "titian",
+      "modelPath": "model/obj/titian_fudiao/dmz.obj"
+    },
+    {
+      "id": "xiao_ma_damuzhi",
+      "modelPath": "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj"
+    },
+    {
+      "id": "xiao_ma_shizhi",
+      "modelPath": "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Shizhi_ty03.obj"
+    },
+    {
+      "id": "xiao_ma_wumingzhi",
+      "modelPath": "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Wumingzhi_ty03.obj"
+    },
+    {
+      "id": "xiao_ma_xiaozhi",
+      "modelPath": "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Xiaozhi_ty03.obj"
+    },
+    {
+      "id": "xiao_ma_zhongzhi",
+      "modelPath": "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Zhongzhi_ty03.obj"
+    },
+    {
       "id": "yecan",
       "modelPath": "model/obj/yecan/3.obj"
     }

@@ -1,5 +1,7 @@
 param(
-  [string]$BuildDir = "build"
+  [string]$BuildDir = "build",
+  [string[]]$ExtraModelPath = @(),
+  [switch]$SkipGoldenCases
 )
 
 $ErrorActionPreference = "Stop"
@@ -237,7 +239,24 @@ Assert-True (Test-Path $slicerExe) "missing slicer_cli: $slicerExe"
 Assert-True (Test-Path $ripExe) "missing rip_reader_test: $ripExe"
 
 $summaryReports = @()
-foreach ($case in @($golden.cases)) {
+if ($SkipGoldenCases) {
+  $cases = @()
+} else {
+  $cases = @($golden.cases)
+}
+
+foreach ($modelPath in @($ExtraModelPath)) {
+  Assert-True (Test-Path $modelPath) "extra model path does not exist: $modelPath"
+  $modelName = [System.IO.Path]::GetFileNameWithoutExtension($modelPath)
+  $parentName = Split-Path (Split-Path $modelPath -Parent) -Leaf
+  $caseId = ("local_" + $parentName + "_" + $modelName).ToLowerInvariant() -replace "[^a-z0-9_]+", "_"
+  $cases += [pscustomobject]@{
+    id = $caseId
+    modelPath = $modelPath
+  }
+}
+
+foreach ($case in @($cases)) {
   $caseId = $case.id
   Write-Host "== 12A single-material consistency $caseId"
   $baseDir = "output/12a11_validation/$caseId"

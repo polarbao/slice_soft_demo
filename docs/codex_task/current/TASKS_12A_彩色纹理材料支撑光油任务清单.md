@@ -522,8 +522,32 @@ layer=126 grid=290x573 model=3267148 support=15808697 outerV=457256 surfaceV=223
 output/12a11_validation/aishen/summary: PASS
 layer=145 grid=287x535 model=2756535 support=15429133 outerV=478380 surfaceV=233123/14746 upper=7903050 colorRGB=636654 singleW=2756535
 
+output/12a11_validation/titian/summary: PASS
+layer=118 grid=288x554 model=2002266 support=14244510 outerV=376863 surfaceV=184320/15190 upper=5099630 colorRGB=691264 singleW=2002266
+
+output/12a11_validation/xiao_ma_damuzhi/summary: PASS
+layer=112 grid=288x554 model=1733924 support=13681367 outerV=353341 surfaceV=172071/15088 upper=4539520 colorRGB=691443 singleW=1733924
+
+output/12a11_validation/xiao_ma_shizhi/summary: PASS
+layer=111 grid=288x627 model=1973130 support=15277642 outerV=399938 surfaceV=194821/16754 upper=4957789 colorRGB=781232 singleW=1973130
+
+output/12a11_validation/xiao_ma_wumingzhi/summary: PASS
+layer=111 grid=288x627 model=1973130 support=15277642 outerV=399938 surfaceV=194821/16754 upper=4957789 colorRGB=781452 singleW=1973130
+
+output/12a11_validation/xiao_ma_xiaozhi/summary: PASS
+layer=111 grid=288x627 model=1973130 support=15277642 outerV=399938 surfaceV=194821/16754 upper=4957789 colorRGB=740757 singleW=1973130
+
+output/12a11_validation/xiao_ma_zhongzhi/summary: PASS
+layer=111 grid=288x627 model=1973130 support=15277642 outerV=399938 surfaceV=194821/16754 upper=4957789 colorRGB=781447 singleW=1973130
+
 output/12a11_validation/yecan/summary: PASS
 layer=117 grid=287x713 model=2128642 support=18329906 outerV=458289 surfaceV=222674/25942 upper=6045142 colorRGB=747456 singleW=2128642
+
+本地未跟踪真实模型临时验证：
+output/12a11_validation/local_meigui_fudiao_04/summary: PASS
+layer=139 grid=288x722 model=3690056 support=21697848 outerV=606089 surfaceV=296104/16984 upper=9387446 colorRGB=918463 singleW=3690056
+
+说明：meigui_fudiao 目录当前为未跟踪本地模型数据，不写入 committed golden；脚本已新增 -ExtraModelPath / -SkipGoldenCases 以支持本地真实模型临时验证。
 ```
 
 ### Task 12A-12 UI preview 图例与像素探针联动
