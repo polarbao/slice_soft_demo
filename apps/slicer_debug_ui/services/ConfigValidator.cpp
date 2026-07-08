@@ -170,6 +170,19 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
         }
     }
 
+    if (hasObject(root, "surfaceVarnish")) {
+        const QJsonObject surfaceVarnish = root.value("surfaceVarnish").toObject();
+        checkNonNegativeInt(surfaceVarnish, "thicknessPx", "surfaceVarnish.thicknessPx", result);
+        if (surfaceVarnish.value("enabled").toBool(false)
+            && surfaceVarnish.value("thicknessPx").toInt(0) <= 0) {
+            result.errors.push_back("surfaceVarnish.thicknessPx 在启用表面光油时必须大于 0。");
+        }
+        const QSet<QString> sources{"explicit", "material_policy"};
+        if (!isAllowed(stringAt(surfaceVarnish, "source"), sources)) {
+            result.errors.push_back("surfaceVarnish.source 不是当前认可的表面光油来源。");
+        }
+    }
+
     if (hasObject(root, "preview")) {
         const QJsonValue interval = root.value("preview").toObject().value("interval");
         if (interval.isDouble() && interval.toInt() <= 0) {

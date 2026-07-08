@@ -106,12 +106,12 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 
     m_supportEnabledCheck = new QCheckBox("启用支撑", this);
     m_whiteEnabledCheck = new QCheckBox("启用白墨", this);
-    m_varnishEnabledCheck = new QCheckBox("启用光油", this);
+    m_varnishEnabledCheck = new QCheckBox("启用顶部光油策略", this);
     m_previewEnabledCheck = new QCheckBox("生成预览", this);
     m_openVdbEnabledCheck = new QCheckBox("启用 OpenVDB 实验管线", this);
     m_supportEnabledCheck->setToolTip("启用后生成 S 通道支撑材料，具体形态在“支撑”页设置。");
     m_whiteEnabledCheck->setToolTip("启用后按材料策略写入 W 通道白墨。");
-    m_varnishEnabledCheck->setToolTip("启用后按材料策略写入 V 通道光油。");
+    m_varnishEnabledCheck->setToolTip("旧材料策略光油：按顶部 N 层或材料策略写 V 通道；不等同于外侧光油壳层。");
     m_previewEnabledCheck->setToolTip("启用后按间隔输出 preview PNG/PPM，便于 UI 预览，但会增加保存耗时。");
     m_openVdbEnabledCheck->setToolTip("实验开关：当前用于 OpenVDB 诊断/候选流程，不代表默认生产切片路径。");
     materialForm->addRow(m_whiteEnabledCheck);
@@ -121,6 +121,28 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_varnishTopLayersSpin->setRange(0, 100000);
     m_varnishTopLayersSpin->setToolTip("光油覆盖顶部 N 层；0 表示不按顶部层数生成光油。");
     materialForm->addRow("光油顶部层数", m_varnishTopLayersSpin);
+
+    m_surfaceVarnishEnabledCheck = new QCheckBox("启用表面光油", this);
+    m_surfaceVarnishEnabledCheck->setToolTip("写在模型表面或内表面像素上的 V 通道光油；不会扩张模型 XY 尺寸。");
+    materialForm->addRow(m_surfaceVarnishEnabledCheck);
+
+    m_surfaceVarnishThicknessSpin = new QSpinBox(this);
+    m_surfaceVarnishThicknessSpin->setRange(0, 100);
+    m_surfaceVarnishThicknessSpin->setSuffix(" px");
+    m_surfaceVarnishThicknessSpin->setToolTip("表面光油像素厚度；0 表示关闭表面光油。");
+    materialForm->addRow("表面光油厚度", m_surfaceVarnishThicknessSpin);
+
+    m_outerVarnishEnabledCheck = new QCheckBox("启用外侧光油壳层", this);
+    m_outerVarnishEnabledCheck->setToolTip("在模型外轮廓之外扩张生成 V 通道光油壳层；默认关闭。");
+    materialForm->addRow(m_outerVarnishEnabledCheck);
+
+    m_outerVarnishThicknessSpin = new QDoubleSpinBox(this);
+    m_outerVarnishThicknessSpin->setRange(0.0, 10.0);
+    m_outerVarnishThicknessSpin->setDecimals(2);
+    m_outerVarnishThicknessSpin->setSingleStep(0.01);
+    m_outerVarnishThicknessSpin->setSuffix(" mm");
+    m_outerVarnishThicknessSpin->setToolTip("外侧光油壳层厚度，按 42.3um/px 或配置中的 pixelPitchUm 换算为像素扩张；0 表示不生成。");
+    materialForm->addRow("外侧光油厚度", m_outerVarnishThicknessSpin);
 
     auto* supportGroup = new QGroupBox("支撑", this);
     supportGroup->setToolTip("支撑总开关；细节请切换到“支撑”页。");
@@ -163,6 +185,10 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     connect(m_whiteEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnWhiteEnabledChanged);
     connect(m_varnishEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnVarnishEnabledChanged);
     connect(m_varnishTopLayersSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnVarnishTopLayersChanged);
+    connect(m_surfaceVarnishEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnSurfaceVarnishEnabledChanged);
+    connect(m_surfaceVarnishThicknessSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnSurfaceVarnishThicknessChanged);
+    connect(m_outerVarnishEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnOuterVarnishEnabledChanged);
+    connect(m_outerVarnishThicknessSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnOuterVarnishThicknessChanged);
     connect(m_previewEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnPreviewEnabledChanged);
     connect(m_previewIntervalSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnPreviewIntervalChanged);
     connect(m_openVdbEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnOpenVdbEnabledChanged);
@@ -181,6 +207,10 @@ void QuickConfigPanel::LoadFromDocument()
     m_whiteEnabledCheck->setChecked(BoolValue({"materialPolicy", "white", "enabled"}, false));
     m_varnishEnabledCheck->setChecked(BoolValue({"materialPolicy", "varnish", "enabled"}, false));
     m_varnishTopLayersSpin->setValue(IntValue({"materialPolicy", "varnish", "topLayers"}, 0));
+    m_surfaceVarnishEnabledCheck->setChecked(BoolValue({"surfaceVarnish", "enabled"}, false));
+    m_surfaceVarnishThicknessSpin->setValue(IntValue({"surfaceVarnish", "thicknessPx"}, 0));
+    m_outerVarnishEnabledCheck->setChecked(BoolValue({"outerVarnish", "enabled"}, false));
+    m_outerVarnishThicknessSpin->setValue(DoubleValue({"outerVarnish", "thicknessMm"}, 0.0));
     m_previewEnabledCheck->setChecked(BoolValue({"preview", "enabled"}, false));
     m_previewIntervalSpin->setValue(IntValue({"preview", "interval"}, 1));
     m_openVdbEnabledCheck->setChecked(BoolValue({"experimental", "openvdbPipeline", "enabled"}, false));
@@ -298,6 +328,86 @@ void QuickConfigPanel::OnVarnishTopLayersChanged(const int value)
         SetValueIfChanged({"materialPolicy", "varnish", "topLayers"}, value);
         SetValueIfChanged({"materialProcessProfile", "varnish", "topLayers"}, value);
     }
+}
+
+void QuickConfigPanel::OnSurfaceVarnishEnabledChanged(const bool checked)
+{
+    if (m_loading)
+    {
+        return;
+    }
+
+    SetValueIfChanged({"surfaceVarnish", "enabled"}, checked);
+    SetValueIfChanged({"surfaceVarnish", "outerSurface"}, true);
+    SetValueIfChanged({"surfaceVarnish", "innerSurface"}, true);
+    SetValueIfChanged({"surfaceVarnish", "value"}, 0);
+    SetValueIfChanged({"surfaceVarnish", "source"}, "explicit");
+    if (checked && m_surfaceVarnishThicknessSpin->value() <= 0)
+    {
+        m_surfaceVarnishThicknessSpin->setValue(1);
+        SetValueIfChanged({"surfaceVarnish", "thicknessPx"}, 1);
+    }
+    if (!checked)
+    {
+        m_surfaceVarnishThicknessSpin->setValue(0);
+        SetValueIfChanged({"surfaceVarnish", "thicknessPx"}, 0);
+    }
+}
+
+void QuickConfigPanel::OnSurfaceVarnishThicknessChanged(const int value)
+{
+    if (m_loading)
+    {
+        return;
+    }
+
+    SetValueIfChanged({"surfaceVarnish", "thicknessPx"}, value);
+    SetValueIfChanged({"surfaceVarnish", "enabled"}, value > 0);
+    SetValueIfChanged({"surfaceVarnish", "outerSurface"}, true);
+    SetValueIfChanged({"surfaceVarnish", "innerSurface"}, true);
+    SetValueIfChanged({"surfaceVarnish", "value"}, 0);
+    SetValueIfChanged({"surfaceVarnish", "source"}, "explicit");
+}
+
+void QuickConfigPanel::OnOuterVarnishEnabledChanged(const bool checked)
+{
+    if (m_loading)
+    {
+        return;
+    }
+
+    SetValueIfChanged({"outerVarnish", "enabled"}, checked);
+    SetValueIfChanged({"outerVarnish", "thicknessStepMm"}, 0.01);
+    SetValueIfChanged({"outerVarnish", "pixelPitchUm"}, 42.3);
+    SetValueIfChanged({"outerVarnish", "allowXYExpansion"}, true);
+    SetValueIfChanged({"outerVarnish", "conflictPolicy"}, "varnish_shell_wins");
+    SetValueIfChanged({"outerVarnish", "value"}, 0);
+    if (checked && m_outerVarnishThicknessSpin->value() <= 0.0)
+    {
+        m_outerVarnishThicknessSpin->setValue(0.01);
+        SetValueIfChanged({"outerVarnish", "thicknessMm"}, 0.01);
+    }
+    if (!checked)
+    {
+        m_outerVarnishThicknessSpin->setValue(0.0);
+        SetValueIfChanged({"outerVarnish", "thicknessMm"}, 0.0);
+    }
+}
+
+void QuickConfigPanel::OnOuterVarnishThicknessChanged(const double value)
+{
+    if (m_loading)
+    {
+        return;
+    }
+
+    SetValueIfChanged({"outerVarnish", "thicknessMm"}, value);
+    SetValueIfChanged({"outerVarnish", "enabled"}, value > 0.0);
+    SetValueIfChanged({"outerVarnish", "thicknessStepMm"}, 0.01);
+    SetValueIfChanged({"outerVarnish", "pixelPitchUm"}, 42.3);
+    SetValueIfChanged({"outerVarnish", "allowXYExpansion"}, true);
+    SetValueIfChanged({"outerVarnish", "conflictPolicy"}, "varnish_shell_wins");
+    SetValueIfChanged({"outerVarnish", "value"}, 0);
 }
 
 void QuickConfigPanel::OnPreviewEnabledChanged(const bool checked)

@@ -158,6 +158,65 @@ QJsonArray MakeStringArray(const std::initializer_list<QString> values)
     return array;
 }
 
+QJsonObject MakeDefaultModelFillConfig()
+{
+    return QJsonObject{{"enabled", true},
+                       {"material", "white"},
+                       {"scope", "below_texture_surface"},
+                       {"value", 0},
+                       {"emptyAllowedInProduction", false},
+                       {"legacyRgbFallback", false}};
+}
+
+QJsonObject MakeDefaultSupportConfig()
+{
+    return QJsonObject{{"enabled", true},
+                       {"mode", "bottom_projection"},
+                       {"placement", "lower"},
+                       {"value", 0},
+                       {"offsetMm", 0.0},
+                       {"minAreaPx", 0},
+                       {"connectivity", 8},
+                       {"writeSupportTypeDebug", true},
+                       {"internalVoid",
+                        QJsonObject{{"enabled", true},
+                                    {"minAreaPx", 16},
+                                    {"fillRule", "all_internal_voids"}}},
+                       {"upper",
+                        QJsonObject{{"enabled", false},
+                                    {"outside", "outer_varnish_shell"},
+                                    {"reason", "optional_detachable_surface_support"}}}};
+}
+
+QJsonObject MakeDefaultOuterVarnishConfig()
+{
+    return QJsonObject{{"enabled", false},
+                       {"thicknessMm", 0.0},
+                       {"thicknessStepMm", 0.01},
+                       {"pixelPitchUm", 42.3},
+                       {"allowXYExpansion", true},
+                       {"conflictPolicy", "varnish_shell_wins"},
+                       {"value", 0}};
+}
+
+QJsonObject MakeDefaultSurfaceVarnishConfig()
+{
+    return QJsonObject{{"enabled", false},
+                       {"outerSurface", true},
+                       {"innerSurface", true},
+                       {"thicknessPx", 0},
+                       {"value", 0},
+                       {"source", "explicit"}};
+}
+
+QJsonObject MakeDefaultPreviewPseudoColors()
+{
+    return QJsonObject{{"empty", MakeIntArray({255, 255, 255})},
+                       {"support", MakeIntArray({0, 255, 0})},
+                       {"white", MakeIntArray({0, 170, 255})},
+                       {"varnish", MakeIntArray({127, 127, 127})}};
+}
+
 QString SanitizeSessionName(const QString& name)
 {
     QString normalized = name.trimmed();
@@ -668,21 +727,20 @@ QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* pack
                             {"flipV", true},
                             {"fallbackRgb", MakeIntArray({0, 0, 0})},
                             {"missingTexturePolicy", "warn_and_fallback"},
-                            {"nonSurfaceRgbPolicy", "model_material"}});
-    root.insert("support",
-                QJsonObject{{"enabled", true},
-                            {"mode", "full_vertical_projection"},
-                            {"value", 0},
-                            {"offsetMm", 0.0},
-                            {"minAreaPx", 0}});
+                            {"nonSurfaceRgbPolicy", textureEnabled ? "empty" : "model_material"}});
+    root.insert("modelFill", MakeDefaultModelFillConfig());
+    root.insert("support", MakeDefaultSupportConfig());
+    root.insert("surfaceVarnish", MakeDefaultSurfaceVarnishConfig());
+    root.insert("outerVarnish", MakeDefaultOuterVarnishConfig());
     root.insert("relief", QJsonObject{{"fillMode", "intersection_range"}, {"baseZMm", 0.0}});
     root.insert("preview",
                 QJsonObject{{"enabled", true},
                             {"format", "png"},
                             {"interval", 10},
-                            {"channels", textureEnabled ? MakeStringArray({"texture_rgb", "support"})
-                                                         : MakeStringArray({"rgb", "support"})},
-                            {"onlyNonEmptyLayers", true}});
+                            {"channels", textureEnabled ? MakeStringArray({"texture_rgb", "rgb", "white", "support", "varnish"})
+                                                         : MakeStringArray({"rgb", "white", "support", "varnish"})},
+                            {"onlyNonEmptyLayers", true},
+                            {"pseudoColors", MakeDefaultPreviewPseudoColors()}});
     root.insert("experimental",
                 QJsonObject{{"openvdbPipeline",
                              QJsonObject{{"enabled", false},
@@ -774,13 +832,11 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                             {"flipV", true},
                             {"fallbackRgb", MakeIntArray({255, 0, 255})},
                             {"missingTexturePolicy", "fail_fast"},
-                            {"nonSurfaceRgbPolicy", "model_material"}});
-    root.insert("support",
-                QJsonObject{{"enabled", false},
-                            {"mode", "none"},
-                            {"value", 0},
-                            {"offsetMm", 0.0},
-                            {"minAreaPx", 0}});
+                            {"nonSurfaceRgbPolicy", "empty"}});
+    root.insert("modelFill", MakeDefaultModelFillConfig());
+    root.insert("support", MakeDefaultSupportConfig());
+    root.insert("surfaceVarnish", MakeDefaultSurfaceVarnishConfig());
+    root.insert("outerVarnish", MakeDefaultOuterVarnishConfig());
     root.insert("relief", QJsonObject{{"fillMode", "intersection_range"}, {"baseZMm", 0.0}});
     root.insert("preview",
                 QJsonObject{{"enabled", true},
@@ -788,11 +844,7 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                             {"interval", 1},
                             {"channels", MakeStringArray({"texture_rgb", "rgb", "support", "white", "varnish"})},
                             {"onlyNonEmptyLayers", false},
-                            {"pseudoColors",
-                             QJsonObject{{"empty", MakeIntArray({255, 255, 255})},
-                                         {"support", MakeIntArray({0, 255, 0})},
-                                         {"white", MakeIntArray({0, 170, 255})},
-                                         {"varnish", MakeIntArray({127, 127, 127})}}}});
+                            {"pseudoColors", MakeDefaultPreviewPseudoColors()}});
     root.insert("experimental",
                 QJsonObject{{"openvdbPipeline",
                              QJsonObject{{"enabled", true},

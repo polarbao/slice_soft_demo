@@ -181,6 +181,25 @@ bool Stage12AConfigPlaceholdersParse()
         && ExpectTrue(config.surface_varnish.source == "explicit", "12A surface varnish source parses");
 }
 
+bool Stage12ASurfaceVarnishDisabledAcceptsZeroThickness()
+{
+    const std::filesystem::path path = WriteConfig(
+        "stage_12a_surface_varnish_disabled_zero_thickness.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"surfaceVarnish\": {\n"
+            "    \"enabled\": false,\n"
+            "    \"outerSurface\": true,\n"
+            "    \"innerSurface\": true,\n"
+            "    \"thicknessPx\": 0,\n"
+            "    \"value\": 0,\n"
+            "    \"source\": \"explicit\"\n"
+            "  }\n"));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(path);
+    return ExpectTrue(!config.surface_varnish.enabled, "12A disabled surface varnish parses")
+        && ExpectTrue(config.surface_varnish.thickness_px == 0, "12A disabled surface varnish accepts zero thickness");
+}
+
 bool Stage12AModelFillRejectsEmptyProductionRgb()
 {
     const std::filesystem::path path = WriteConfig(
@@ -461,6 +480,7 @@ int main()
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
         {"stage_12a_config_placeholders_parse", Stage12AConfigPlaceholdersParse},
+        {"stage_12a_surface_varnish_disabled_accepts_zero_thickness", Stage12ASurfaceVarnishDisabledAcceptsZeroThickness},
         {"stage_12a_model_fill_rejects_empty_production_rgb", Stage12AModelFillRejectsEmptyProductionRgb},
         {"stage_12a_upper_support_accepts_outer_varnish_shell", Stage12AUpperSupportAcceptsOuterVarnishShell},
         {"surface_shell_from_sdf_requires_openvdb", SurfaceShellFromSdfRequiresOpenVdb},

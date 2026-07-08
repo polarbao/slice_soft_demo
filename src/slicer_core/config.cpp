@@ -611,8 +611,11 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.outer_varnish.conflict_policy != "varnish_shell_wins") {
         throw std::runtime_error("outerVarnish.conflictPolicy must be varnish_shell_wins");
     }
-    if (config.surface_varnish.thickness_px <= 0) {
-        throw std::runtime_error("surfaceVarnish.thicknessPx must be positive");
+    if (config.surface_varnish.thickness_px < 0) {
+        throw std::runtime_error("surfaceVarnish.thicknessPx must be non-negative");
+    }
+    if (config.surface_varnish.enabled && config.surface_varnish.thickness_px <= 0) {
+        throw std::runtime_error("surfaceVarnish.thicknessPx must be positive when enabled");
     }
     if (config.surface_varnish.source != "explicit" && config.surface_varnish.source != "material_policy") {
         throw std::runtime_error("surfaceVarnish.source must be explicit or material_policy");

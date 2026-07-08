@@ -39,6 +39,10 @@ private slots:
     void OnWhiteEnabledChanged(bool checked);
     void OnVarnishEnabledChanged(bool checked);
     void OnVarnishTopLayersChanged(int value);
+    void OnSurfaceVarnishEnabledChanged(bool checked);
+    void OnSurfaceVarnishThicknessChanged(int value);
+    void OnOuterVarnishEnabledChanged(bool checked);
+    void OnOuterVarnishThicknessChanged(double value);
     void OnPreviewEnabledChanged(bool checked);
     void OnPreviewIntervalChanged(int value);
     void OnOpenVdbEnabledChanged(bool checked);
@@ -63,6 +67,10 @@ private:
     QCheckBox* m_whiteEnabledCheck{nullptr};
     QCheckBox* m_varnishEnabledCheck{nullptr};
     QSpinBox* m_varnishTopLayersSpin{nullptr};
+    QCheckBox* m_surfaceVarnishEnabledCheck{nullptr};
+    QSpinBox* m_surfaceVarnishThicknessSpin{nullptr};
+    QCheckBox* m_outerVarnishEnabledCheck{nullptr};
+    QDoubleSpinBox* m_outerVarnishThicknessSpin{nullptr};
     QCheckBox* m_previewEnabledCheck{nullptr};
     QSpinBox* m_previewIntervalSpin{nullptr};
     QCheckBox* m_openVdbEnabledCheck{nullptr};
