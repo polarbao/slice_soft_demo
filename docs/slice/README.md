@@ -47,8 +47,18 @@
 | `DOC/DOC_REVIEW_12A_真实RIP横截面示意图对齐审查.md` | 12A 真实 RIP 横截面示意图对齐审查 |
 | `PRD/PRD_12B_切片引擎性能与OpenVDB替代评估.md` | 12B 切片引擎性能与 OpenVDB 替代评估需求 |
 | `DEV/DEV_12B_切片引擎性能与OpenVDB替代评估设计.md` | 12B 切片引擎性能与 OpenVDB 替代评估设计 |
+| `DEV/DEV_12B_R1_LegacyHeightfield优化原型设计.md` | 12B-R1 legacy 与 heightfield 优化原型设计 |
+| `DOC/DOC_ANALYSIS_12B_R1_2_5DHeightfieldFastPath可行性评估.md` | 12B-R1 2.5D heightfield fast path 可行性评估 |
+| `DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md` | 12B R0/R1/R2 阶段拆分决策 |
+| `DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md` | 12B core benchmark report schema |
+| `ROADMAP/ROADMAP_12B_切片引擎性能分阶段路线.md` | 12B 切片引擎性能分阶段路线 |
+| `REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md` | 12B-R0 benchmark 契约与真实 Release 对比当前状态 |
+| `REPORT/REPORT_12B_R1_LegacyHeightfield优化当前状态.md` | 12B-R1 legacy 与 heightfield 优化当前状态 |
 | `PRD/PRD_12C_Qt_UI配置预览工作台收口.md` | 12C Qt UI 配置、预览工作台收口需求 |
 | `DEV/DEV_12C_Qt_UI配置预览工作台设计.md` | 12C Qt UI 配置、预览工作台设计 |
+| `DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md` | 12D 横截面材料无缝闭环专项决策 |
+| `PRD/PRD_12D_横截面材料无缝闭环验收与修复.md` | 12D 横截面材料无缝闭环产品需求 |
+| `DEV/DEV_12D_材料闭环诊断与修复设计.md` | 12D 材料闭环诊断与修复技术设计 |
 | `DOC/DOC_ANALYSIS_OpenVDB切片功能当前不可用原因.md` | OpenVDB 已完成测试但尚不可正式切片的原因分析 |
 | `DOC/DOC_ANALYSIS_11B_OpenVDB姿态配置与同姿态性能对比.md` | OpenVDB 姿态配置差异与同姿态性能对比分析 |
 | `DOC/DOC_DECISION_11A_R1_OpenVDB候选切片写包与Preview收口.md` | OpenVDB Candidate 写包与 preview 收口决策 |
@@ -120,10 +130,20 @@
 | `DOC/DOC_REVIEW_12A_真实RIP横截面示意图对齐审查.md` | 12A 真实 RIP 横截面材料栈审查结论 |
 | `PRD/PRD_12B_切片引擎性能与OpenVDB替代评估.md` | 12B legacy/OpenVDB/高效引擎性能评估需求 |
 | `DEV/DEV_12B_切片引擎性能与OpenVDB替代评估设计.md` | 12B benchmark 和引擎替代 gate 技术设计 |
+| `DEV/DEV_12B_R1_LegacyHeightfield优化原型设计.md` | 12B-R1 legacy 与 heightfield 优化原型设计 |
 | `DEMO/DEMO_12B_切片引擎性能验证方案.md` | 12B core-only 性能验证方案 |
+| `DOC/DOC_ANALYSIS_12B_R1_2_5DHeightfieldFastPath可行性评估.md` | 12B-R1 2.5D heightfield fast path 可行性评估 |
+| `DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md` | 12B R0/R1/R2 阶段拆分决策 |
+| `DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md` | 12B core benchmark report schema |
+| `ROADMAP/ROADMAP_12B_切片引擎性能分阶段路线.md` | 12B 切片引擎性能分阶段路线 |
+| `REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md` | 12B-R0 benchmark 契约与真实 Release 对比当前状态 |
+| `REPORT/REPORT_12B_R1_LegacyHeightfield优化当前状态.md` | 12B-R1 legacy 与 heightfield 优化当前状态 |
 | `PRD/PRD_12C_Qt_UI配置预览工作台收口.md` | 12C Qt UI 配置、Profile、预览工作台需求 |
 | `DEV/DEV_12C_Qt_UI配置预览工作台设计.md` | 12C Qt UI 配置和预览工作台技术设计 |
 | `DEMO/DEMO_12C_Qt_UI配置预览验证方案.md` | 12C Qt UI 配置和预览验证方案 |
+| `DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md` | 12D 横截面材料无缝闭环专项决策 |
+| `PRD/PRD_12D_横截面材料无缝闭环验收与修复.md` | 12D 横截面材料无缝闭环产品需求 |
+| `DEV/DEV_12D_材料闭环诊断与修复设计.md` | 12D 材料闭环诊断与修复技术设计 |
 | `REPORT/REPORT_12_专项规划当前状态.md` | 12 阶段专项规划当前状态 |
 
 ## 目录边界

@@ -1,11 +1,22 @@
 # DEV_12B_切片引擎性能与OpenVDB替代评估设计
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：DEV / Stage 12B
 > 生成日期：2026-07-05
+> 更新日期：2026-07-08
 > 前置文档：PRD_12B_切片引擎性能与OpenVDB替代评估.md
 
 ---
+
+## 0. 当前执行入口
+
+12B 已拆分为 R0/R1/R2。R0 已完成，当前执行 R1：
+
+```text
+docs/codex_task/current/TASKS_12B_R1_LegacyHeightfield优化任务清单.md
+```
+
+R0 已固化 benchmark schema 和真实 Release baseline；R1 先做 legacy hotspot profile，再选择低风险优化或 heightfield fast path 原型。
 
 ## 1. 设计目标
 

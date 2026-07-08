@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
@@ -27,6 +28,13 @@ namespace slicer_core {
 namespace {
 
 constexpr double mm_per_inch{25.4};
+
+using SlicerClock = std::chrono::steady_clock;
+
+double ElapsedMsSince(const SlicerClock::time_point& start)
+{
+    return std::chrono::duration<double, std::milli>(SlicerClock::now() - start).count();
+}
 
 struct GridSpec {
     int width_px{0};
@@ -3791,11 +3799,23 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path) {
 }
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceRunOptions& options) {
+    SliceRunProfile profile;
+    profile.available = true;
+    profile.profile_level = "coarse";
+    const auto run_start = SlicerClock::now();
+    auto phase_start = run_start;
+
     const SliceConfig config = load_slice_config(config_path);
+    profile.config_load_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
+
     EnsureLegacyPipelineAcceptsConfig(config);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report = load_model_report(config, config_dir);
+    profile.model_load_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
+
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
 
     const std::filesystem::path package_dir = config.output.package_dir;
@@ -3820,6 +3840,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     tiff_spec.rows_per_strip = static_cast<std::uint32_t>(config.output.rows_per_strip);
     tiff_spec.storage_mode =
         config.output.storage_mode == "tiled" ? TiffStorageMode::Tiled : TiffStorageMode::Stripped;
+    profile.grid_setup_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
 
     std::vector<LayerDiagnostics> layer_diagnostics;
     ReliefReportData relief_report;
@@ -3838,6 +3860,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const std::vector<int> support_source_layers = config.slicing_mode == "relief_heightfield"
         ? compute_relief_lower_layers(relief_columns)
         : compute_first_model_layers(model_masks, grid);
+    profile.mask_sampling_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
+
     TextureRuntime texture_runtime = prepare_texture_runtime(config, model_report);
     if (model_report.format == "3mf") {
         int internal_loaded{0};
@@ -3872,6 +3897,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             relief_columns,
             config.texture.enabled ? &texture_columns : nullptr);
     }
+    profile.texture_prepare_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
+
     const std::vector<ColumnLayerRange> column_ranges = config.slicing_mode == "relief_heightfield"
         ? compute_relief_column_ranges(relief_columns)
         : compute_mask_column_ranges(model_masks, grid);
@@ -3903,29 +3931,35 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             column_ranges,
             upper_support_boundary_column_ranges,
             layer_diagnostics);
-    const SupportPlacementPolicy support_placement_policy = ResolveSupportPlacementPolicy(config);
-    const std::vector<std::vector<std::uint8_t>> original_support_masks = support_generation.support_masks;
     const SupportShapePolicy support_shape_policy = MakeSupportShapePolicy(config.support);
-    const SupportShapeOptimizationResult support_shape_result = ApplySupportShapePolicy(
-        support_shape_policy,
-        model_masks,
-        support_generation.support_masks,
-        grid.width_px,
-        grid.height_px,
-        config.support.connectivity);
-    if (support_shape_result.enabled)
+    SupportShapeOptimizationResult support_shape_result;
+    if (support_shape_policy.enabled)
     {
-        SynchronizeSupportShapeTypeMaps(
-            original_support_masks,
+        const std::vector<std::vector<std::uint8_t>> originalSupportMasks = support_generation.support_masks;
+        support_shape_result = ApplySupportShapePolicy(
+            support_shape_policy,
+            model_masks,
             support_generation.support_masks,
-            support_generation.support_type_maps);
+            grid.width_px,
+            grid.height_px,
+            config.support.connectivity);
+        if (support_shape_result.enabled)
+        {
+            SynchronizeSupportShapeTypeMaps(
+                originalSupportMasks,
+                support_generation.support_masks,
+                support_generation.support_type_maps);
+        }
     }
+    const SupportPlacementPolicy support_placement_policy = ResolveSupportPlacementPolicy(config);
     const int cleared_outer_varnish_support_pixels =
         ApplyOuterVarnishSupportPriority(outer_varnish_masks, support_generation);
     if (support_shape_result.enabled || cleared_outer_varnish_support_pixels > 0)
     {
         RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
     }
+    profile.support_generation_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
 
     int total_model_pixels{0};
     int total_support_pixels{0};
@@ -4015,6 +4049,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
         contour_layers.push_back(layer_diagnostics_to_json(diagnostics));
     }
+    profile.layer_compose_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
 
     model_report.three_mf.texture_sampled_pixels = texture_runtime.report.sampled_pixels;
 
@@ -4422,6 +4458,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          })},
         {"preview", Json::object({{"format", config.preview.format}, {"files", Json{preview_files}}})},
     });
+    profile.report_build_ms = ElapsedMsSince(phase_start);
+    phase_start = SlicerClock::now();
+
     if (options.write_reports) {
         write_json_file(package_dir / "reports/model_report.json", model_json);
         write_json_file(package_dir / "reports/package_report.json", package_report);
@@ -4451,6 +4490,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
         write_json_file(package_dir / "manifest.json", manifest);
     }
+    profile.report_write_ms = ElapsedMsSince(phase_start);
+    profile.total_ms = ElapsedMsSince(run_start);
 
     return {
         package_dir,
@@ -4458,7 +4499,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         grid.height_px,
         grid.layer_count,
         total_model_pixels,
-        total_support_pixels};
+        total_support_pixels,
+        profile};
 }
 
 }  // namespace slicer_core

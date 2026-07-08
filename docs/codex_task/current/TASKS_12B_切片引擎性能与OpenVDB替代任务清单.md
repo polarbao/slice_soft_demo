@@ -11,13 +11,40 @@
 12B 只处理 core-only 性能评估、OpenVDB 替代 gate、引擎路线判断和 benchmark 工程化。
 不修改生产材料语义，不默认启用 OpenVDB，不改变 RGBWSV 协议。
 
+## 当前拆分
+
+12B 已拆分为 R0/R1/R2 三段执行：
+
+```text
+12B-R0：Benchmark 契约、真实模型 Release core-only 对比、OpenVDB replacement gate 结论；
+12B-R1：Legacy 优化和 2.5D heightfield fast path 小型原型；
+12B-R2：OpenVDB hybrid/SDF utility 定位。
+```
+
+当前执行入口：
+
+```text
+R0/R1 已完成；R2 待用户确认后进入 OpenVDB hybrid / SDF utility 定位。
+```
+
+正式拆分决策：
+
+```text
+docs/slice/DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md
+docs/slice/DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md
+docs/slice/ROADMAP/ROADMAP_12B_切片引擎性能分阶段路线.md
+docs/slice/REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md
+docs/slice/DEV/DEV_12B_R1_LegacyHeightfield优化原型设计.md
+docs/slice/REPORT/REPORT_12B_R1_LegacyHeightfield优化当前状态.md
+```
+
 ---
 
 ## 原子任务
 
 ### Task 12B-01 Benchmark 契约确认
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -31,9 +58,16 @@
 git diff --check
 ```
 
+完成记录：
+
+```text
+已通过 R0 固化 slicesoft.benchmark.12b.1；
+见 docs/slice/DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md。
+```
+
 ### Task 12B-02 same-pose benchmark 配置
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -47,9 +81,16 @@ git diff --check
 benchmark JSON 中 samePose=true。
 ```
 
+完成记录：
+
+```text
+R0 使用三组真实模型 legacy/openvdb 对比配置；
+OpenVDB replacement gate 仍为 false。
+```
+
 ### Task 12B-03 Release core-only 脚本
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -63,9 +104,16 @@ benchmark JSON 中 samePose=true。
 .\scripts\run_12b_core_benchmark.ps1 -BuildType Release -Engine legacy -NoImageWrite
 ```
 
+完成记录：
+
+```text
+脚本已落地：scripts/run_12b_core_benchmark.ps1；
+R0/R1 均使用该脚本输出 Release core-only benchmark。
+```
+
 ### Task 12B-04 OpenVDB 语义可比性报告
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -79,9 +127,16 @@ benchmark JSON 中 samePose=true。
 OpenVDB candidate 不可比较时有 failureReason。
 ```
 
+完成记录：
+
+```text
+R0 已输出 outputSemanticsComparable=false；
+结论为 OpenVDB 不能替代 legacy production path。
+```
+
 ### Task 12B-05 Legacy 优化候选实验
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -95,9 +150,16 @@ OpenVDB candidate 不可比较时有 failureReason。
 Release coreComputeMs 对比。
 ```
 
+完成记录：
+
+```text
+R1 已选择 support generation path；
+support.shape.enabled=false fast path 在三组真实模型上完成 before/after。
+```
+
 ### Task 12B-06 Heightfield Fast Path 预研
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -109,6 +171,14 @@ Release coreComputeMs 对比。
 
 ```text
 同模型 mask 与 legacy 差异小于阈值。
+```
+
+完成记录：
+
+```text
+R1 已输出可行性评估；
+结论为当前 relief_heightfield 已经是 column z_min/z_max 路径，maskSamplingMs 不是瓶颈；
+R1 不继续实现独立 2.5D fast path。
 ```
 
 ### Task 12B-07 OpenVDB Hybrid 定位
@@ -134,6 +204,7 @@ Release coreComputeMs 对比。
 ```text
 1. 有 Release core-only benchmark；
 2. 有 OpenVDB replacement gate 结论；
-3. 有至少三条高性能路线比较；
-4. 用户可明确知道下一步优化投向。
+3. 有 legacy 支撑路径优化 before/after；
+4. 有 heightfield fast path 是否继续的判断；
+5. 用户可明确知道下一步优化投向。
 ```

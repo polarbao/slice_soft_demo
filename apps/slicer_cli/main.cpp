@@ -239,6 +239,27 @@ slicer_core::Json MemoryStatsToJson(const slicer_core::ProcessMemoryStats& memor
     return slicer_core::Json{json};
 }
 
+slicer_core::Json SliceRunProfileToJson(const slicer_core::SliceRunProfile& profile)
+{
+    slicer_core::Json::Object json;
+    json["available"] = profile.available;
+    json["profileLevel"] = profile.profile_level;
+    json["configLoadMs"] = profile.config_load_ms;
+    json["modelLoadMs"] = profile.model_load_ms;
+    json["gridSetupMs"] = profile.grid_setup_ms;
+    json["maskSamplingMs"] = profile.mask_sampling_ms;
+    json["texturePrepareMs"] = profile.texture_prepare_ms;
+    json["supportGenerationMs"] = profile.support_generation_ms;
+    json["layerComposeMs"] = profile.layer_compose_ms;
+    json["reportBuildMs"] = profile.report_build_ms;
+    json["reportWriteMs"] = profile.report_write_ms;
+    json["totalMs"] = profile.total_ms;
+    json["notes"] = StringsToJsonArray(std::vector<std::string>{
+        "Diagnostic-only coarse profile; not part of the RGBWSV production package protocol.",
+        "Core-only benchmark disables TIFF, preview, reports, and package publishing, but report JSON objects may still be built in memory."});
+    return slicer_core::Json{json};
+}
+
 slicer_core::Json DiagnosticSummaryToJson(
     const std::vector<slicer_core::ValidationIssue>& issues,
     const slicer_core::ProductionAdmissionDecision& decision)
@@ -343,6 +364,12 @@ int RunCoreBenchmark(const CliOptions& options)
     int shellPixels{0};
     bool nonProduction{false};
     bool productionAllowed{true};
+    slicer_core::Json profileJson = slicer_core::Json::object({
+        {"available", false},
+        {"profileLevel", "unavailable"},
+        {"reason", "legacy SliceRunProfile is only emitted by the legacy engine path"},
+        {"notes", StringsToJsonArray(std::vector<std::string>{})},
+    });
 
     if (options.engine == "legacy")
     {
@@ -356,6 +383,7 @@ int RunCoreBenchmark(const CliOptions& options)
         layerCount = result.layer_count;
         modelPixels = result.model_pixel_count;
         supportPixels = result.support_pixel_count;
+        profileJson = SliceRunProfileToJson(result.profile);
     }
     else if (options.engine == "openvdb-candidate")
     {
@@ -417,6 +445,7 @@ int RunCoreBenchmark(const CliOptions& options)
         {"note", "core-only mode disables TIFF, preview, reports, and package publishing"},
     });
     report["memory"] = MemoryStatsToJson(memory);
+    report["profile"] = profileJson;
     report["replacementGate"] = slicer_core::Json::object({
         {"performanceComparable", false},
         {"outputSemanticsComparable", outputSemanticsComparable},

@@ -1,11 +1,32 @@
 # PRD_12B_切片引擎性能与OpenVDB替代评估
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：PRD / Stage 12B
 > 生成日期：2026-07-05
+> 更新日期：2026-07-08
 > 适用范围：legacy 三角面元切片、OpenVDB SDF candidate、未来高性能切片引擎评估
 
 ---
+
+## 0. 阶段拆分
+
+12B 已拆分为三段执行：
+
+```text
+12B-R0：Benchmark 契约、真实模型 Release core-only 对比、OpenVDB replacement gate 结论；
+12B-R1：Legacy 优化和 2.5D heightfield fast path 小型原型；
+12B-R2：OpenVDB hybrid/SDF utility 定位。
+```
+
+12B-R0 已完成 benchmark 契约和真实 Release baseline。当前优先执行 12B-R1。拆分决策、benchmark schema 和 R1 设计见：
+
+```text
+docs/slice/DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md
+docs/slice/DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md
+docs/slice/ROADMAP/ROADMAP_12B_切片引擎性能分阶段路线.md
+docs/slice/REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md
+docs/slice/DEV/DEV_12B_R1_LegacyHeightfield优化原型设计.md
+```
 
 ## 1. 背景
 
