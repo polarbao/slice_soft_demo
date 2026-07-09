@@ -14,7 +14,15 @@
 12B-R2：OpenVDB hybrid/SDF utility 定位、外侧光油/clearance/诊断类能力接入评估。
 ```
 
-当前优先执行 12B-R0。R1/R2 只有在 R0 形成可复现数据后才进入代码实现。
+当前状态更新：
+
+```text
+12B-R0 已完成；
+12B-R1 已完成；
+12B-R2 已开启，定位为 OpenVDB SDF utility 评估。
+```
+
+R2 不进入 production slicer replacement；R2 只允许在 OpenVDB optional / disabled-by-default 边界内评估外侧光油、clearance、拓扑诊断和材料闭环辅助能力。
 
 ## 2. 拆分原因
 
@@ -95,10 +103,10 @@ OpenVDB 优先作为 SDF utility engine，而不是默认 production slicing eng
 
 ## 6. 当前行动
 
-立即启动：
+当前执行入口：
 
 ```text
-docs/codex_task/current/TASKS_12B_R0_Benchmark契约与真实Release对比任务清单.md
+docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
 ```
 
-12B 总任务清单保留为阶段总览，R0 任务清单作为当前执行入口。
+12B 总任务清单保留为阶段总览；R0/R1 任务清单保留为完成证据；R2 任务清单作为当前执行入口。

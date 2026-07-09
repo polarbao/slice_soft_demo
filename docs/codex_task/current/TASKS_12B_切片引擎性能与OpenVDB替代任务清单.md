@@ -24,7 +24,8 @@
 当前执行入口：
 
 ```text
-R0/R1 已完成；R2 待用户确认后进入 OpenVDB hybrid / SDF utility 定位。
+R0/R1 已完成；R2 已开启，当前入口：
+docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
 ```
 
 正式拆分决策：
@@ -36,6 +37,10 @@ docs/slice/ROADMAP/ROADMAP_12B_切片引擎性能分阶段路线.md
 docs/slice/REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md
 docs/slice/DEV/DEV_12B_R1_LegacyHeightfield优化原型设计.md
 docs/slice/REPORT/REPORT_12B_R1_LegacyHeightfield优化当前状态.md
+docs/slice/PRD/PRD_12B_R2_OpenVDB_SDFUtility定位.md
+docs/slice/DEV/DEV_12B_R2_OpenVDB_SDFUtility评估设计.md
+docs/slice/DEMO/DEMO_12B_R2_OpenVDB_SDFUtility验证方案.md
+docs/slice/REPORT/REPORT_12B_R2_OpenVDB_SDFUtility启动状态.md
 ```
 
 ---
@@ -183,7 +188,7 @@ R1 不继续实现独立 2.5D fast path。
 
 ### Task 12B-07 OpenVDB Hybrid 定位
 
-状态：PENDING
+状态：IN_PROGRESS
 
 内容：
 
@@ -195,6 +200,18 @@ R1 不继续实现独立 2.5D fast path。
 
 ```text
 输出 DOC_DECISION 或更新 REPORT_12。
+```
+
+完成记录：
+
+```text
+R2 文档准入已完成；
+当前执行入口为 TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md；
+R2-01 当前 OpenVDB utility 代码盘点已完成；
+R2-02 Utility Report Schema 已完成；
+R2-03 OpenVDB OFF 默认轨道保护已完成；
+R2-04 OpenVDB ON Smoke 与可用性报告已完成；
+后续需继续执行 R2-05 Utility Capability Matrix。
 ```
 
 ---

@@ -18,7 +18,7 @@
 12B-R2：OpenVDB hybrid/SDF utility 定位。
 ```
 
-12B-R0 已完成 benchmark 契约和真实 Release baseline。当前优先执行 12B-R1。拆分决策、benchmark schema 和 R1 设计见：
+12B-R0 已完成 benchmark 契约和真实 Release baseline；12B-R1 已完成 legacy profile、首个支撑路径优化和 2.5D heightfield fast path 可行性评估。当前进入 12B-R2，定位为 OpenVDB SDF utility 评估，不是 production slicer replacement。拆分决策、benchmark schema、R1 报告和 R2 入口见：
 
 ```text
 docs/slice/DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md
@@ -26,6 +26,9 @@ docs/slice/DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md
 docs/slice/ROADMAP/ROADMAP_12B_切片引擎性能分阶段路线.md
 docs/slice/REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md
 docs/slice/DEV/DEV_12B_R1_LegacyHeightfield优化原型设计.md
+docs/slice/REPORT/REPORT_12B_R1_LegacyHeightfield优化当前状态.md
+docs/slice/PRD/PRD_12B_R2_OpenVDB_SDFUtility定位.md
+docs/slice/DEV/DEV_12B_R2_OpenVDB_SDFUtility评估设计.md
 ```
 
 ## 1. 背景

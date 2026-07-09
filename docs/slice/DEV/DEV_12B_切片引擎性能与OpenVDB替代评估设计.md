@@ -10,13 +10,13 @@
 
 ## 0. 当前执行入口
 
-12B 已拆分为 R0/R1/R2。R0 已完成，当前执行 R1：
+12B 已拆分为 R0/R1/R2。R0/R1 已完成，当前执行 R2：
 
 ```text
-docs/codex_task/current/TASKS_12B_R1_LegacyHeightfield优化任务清单.md
+docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
 ```
 
-R0 已固化 benchmark schema 和真实 Release baseline；R1 先做 legacy hotspot profile，再选择低风险优化或 heightfield fast path 原型。
+R0 已固化 benchmark schema 和真实 Release baseline；R1 已完成 legacy hotspot profile、首个低风险优化和 heightfield fast path 可行性评估；R2 只评估 OpenVDB 是否适合作为 SDF utility，不替代 legacy production path。
 
 ## 1. 设计目标
 

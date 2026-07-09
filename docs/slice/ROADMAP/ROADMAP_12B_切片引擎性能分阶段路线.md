@@ -63,6 +63,12 @@ OpenVDB candidate 可用时有同口径数据；
 
 ## R2：OpenVDB Hybrid / SDF Utility 定位
 
+状态：
+
+```text
+已开启；当前入口为 docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md。
+```
+
 目标：
 
 ```text

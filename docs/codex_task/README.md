@@ -35,6 +35,8 @@ docs/codex_task/current/TASKS_12A_彩色纹理材料支撑光油任务清单.md
 docs/codex_task/current/TASKS_12B_切片引擎性能与OpenVDB替代任务清单.md
 docs/codex_task/current/TASKS_12B_R0_Benchmark契约与真实Release对比任务清单.md
 docs/codex_task/current/TASKS_12B_R1_LegacyHeightfield优化任务清单.md
+docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12B_R2_OpenVDB_SDFUtility执行指令.md
 docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
 docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md
 ```
