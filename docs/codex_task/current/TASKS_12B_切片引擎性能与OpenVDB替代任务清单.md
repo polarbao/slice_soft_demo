@@ -211,7 +211,8 @@ R2-01 当前 OpenVDB utility 代码盘点已完成；
 R2-02 Utility Report Schema 已完成；
 R2-03 OpenVDB OFF 默认轨道保护已完成；
 R2-04 OpenVDB ON Smoke 与可用性报告已完成；
-后续需继续执行 R2-05 Utility Capability Matrix。
+R2-05 Utility Capability Matrix 已完成；
+后续需继续执行 R2-06 最小 Utility Report 原型。
 ```
 
 ---

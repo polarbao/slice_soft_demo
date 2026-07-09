@@ -191,7 +191,7 @@ R2 独立 slicesoft.openvdb_sdf_utility.12b_r2.1 report 原型仍属于 R2-06。
 
 ## Task 12B-R2-05 Utility Capability Matrix
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -207,6 +207,16 @@ R2 独立 slicesoft.openvdb_sdf_utility.12b_r2.1 report 原型仍属于 R2-06。
 
 ```text
 docs/slice/DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md
+```
+
+完成记录：
+
+```text
+已输出 docs/slice/DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md；
+OuterVarnishShellOffset：promote，进入 R2-06 最小 utility report 原型；
+ClearanceDistance：keep_experimental，现有 distanceStats 不足以作为 production-adjacent gate；
+TopologyDiagnostic：promote，作为 report/gate utility 推进；
+MaterialClosureAssist：keep_experimental，12D semantic masks 仍为生产真源。
 ```
 
 ## Task 12B-R2-06 最小 Utility Report 原型

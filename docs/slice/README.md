@@ -53,6 +53,7 @@
 | `DEMO/DEMO_12B_R2_OpenVDB_SDFUtility验证方案.md` | 12B-R2 OpenVDB SDF utility 验证方案 |
 | `DOC/DOC_AUDIT_12B_R2_OpenVDB_SDFUtility代码盘点.md` | 12B-R2 OpenVDB SDF utility 当前代码盘点 |
 | `DOC/DOC_SCHEMA_12B_R2_OpenVDBSdfUtilityReport.md` | 12B-R2 OpenVDB SDF utility report schema |
+| `DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md` | 12B-R2 OpenVDB SDF utility 能力矩阵 |
 | `DOC/DOC_AUDIT_12B_任务覆盖与R2缺口审查.md` | 12B 主任务覆盖与 R2 剩余缺口审查 |
 | `DOC/DOC_ANALYSIS_12B_R1_2_5DHeightfieldFastPath可行性评估.md` | 12B-R1 2.5D heightfield fast path 可行性评估 |
 | `DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md` | 12B R0/R1/R2 阶段拆分决策 |
@@ -144,6 +145,7 @@
 | `DEMO/DEMO_12B_R2_OpenVDB_SDFUtility验证方案.md` | 12B-R2 OpenVDB SDF utility 验证方案 |
 | `DOC/DOC_AUDIT_12B_R2_OpenVDB_SDFUtility代码盘点.md` | 12B-R2 OpenVDB SDF utility 当前代码盘点 |
 | `DOC/DOC_SCHEMA_12B_R2_OpenVDBSdfUtilityReport.md` | 12B-R2 OpenVDB SDF utility report schema |
+| `DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md` | 12B-R2 OpenVDB SDF utility 能力矩阵 |
 | `DOC/DOC_AUDIT_12B_任务覆盖与R2缺口审查.md` | 12B 主任务覆盖与 R2 剩余缺口审查 |
 | `DOC/DOC_ANALYSIS_12B_R1_2_5DHeightfieldFastPath可行性评估.md` | 12B-R1 2.5D heightfield fast path 可行性评估 |
 | `DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md` | 12B R0/R1/R2 阶段拆分决策 |

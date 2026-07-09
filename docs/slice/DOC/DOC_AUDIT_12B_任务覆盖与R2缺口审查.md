@@ -13,7 +13,7 @@
 ```text
 12B-01 到 12B-04：由 R0 覆盖并完成；
 12B-05 到 12B-06：由 R1 覆盖并完成；
-12B-07：由 R2 覆盖，当前进行中，R2-00 到 R2-04 已完成。
+12B-07：由 R2 覆盖，当前进行中，R2-00 到 R2-05 已完成。
 ```
 
 因此：
@@ -21,7 +21,7 @@
 ```text
 覆盖度：已覆盖 7/7；
 完成度：已完成 6/7，12B-07 仍在执行；
-当前阻塞点：R2 尚未完成 capability matrix、最小 utility report 和最终状态报告。
+当前阻塞点：R2 尚未完成最小 utility report 和最终状态报告。
 ```
 
 ## 2. 12B 主任务覆盖矩阵
@@ -98,7 +98,8 @@ R2 覆盖 12B-07 OpenVDB Hybrid 定位。
 3. OpenVDB utility 当前代码盘点；
 4. OpenVDB SDF utility report schema；
 5. USE_OPENVDB=OFF 默认构建、UI self-test、legacy benchmark 和现有 unavailable diagnostic guard；
-6. USE_OPENVDB=ON smoke 与可用性报告。
+6. USE_OPENVDB=ON smoke 与可用性报告；
+7. Utility capability matrix。
 ```
 
 当前定位：
@@ -117,7 +118,7 @@ R2 尚未完成：
 |---|---|---|
 | R2-03 OpenVDB OFF 默认轨道保护 | DONE | 已验证默认 OFF build、UI self-test、legacy benchmark 和现有 unavailable diagnostic |
 | R2-04 OpenVDB ON Smoke 与可用性报告 | DONE | 已验证 `build-openvdb-09p` OpenVDB ON smoke |
-| R2-05 Utility Capability Matrix | PENDING | 需要四类 utility 的 promote / keep_experimental / reject 结论 |
+| R2-05 Utility Capability Matrix | DONE | 已输出四类 utility 的 promote / keep_experimental 结论 |
 | R2-06 最小 Utility Report 原型 | PENDING | 需要 report 原型或 unavailable report，不写 production TIFF |
 | R2-07 R2 当前状态报告 | PENDING | 需要收口 Current/Target/Historical/Pending Confirmation |
 
@@ -141,9 +142,8 @@ R2 需要继续执行 R2-03 到 R2-07。
 推荐顺序：
 
 ```text
-1. R2-05：在真实可用证据基础上完成 utility capability matrix；
-2. R2-06：实现或补齐最小 utility report；
-3. R2-07：输出 R2 当前状态报告并决定后续阶段。
+1. R2-06：实现或补齐最小 utility report；
+2. R2-07：输出 R2 当前状态报告并决定后续阶段。
 ```
 
 理由：

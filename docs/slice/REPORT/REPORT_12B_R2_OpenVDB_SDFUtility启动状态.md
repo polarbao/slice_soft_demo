@@ -97,7 +97,8 @@ docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
 12B-R2-02 Utility Report Schema：DONE
 12B-R2-03 OpenVDB OFF 默认轨道保护：DONE
 12B-R2-04 OpenVDB ON Smoke 与可用性报告：DONE
-12B-R2-05 Utility Capability Matrix：PENDING
+12B-R2-05 Utility Capability Matrix：DONE
+12B-R2-06 最小 Utility Report 原型：PENDING
 ```
 
 ## 5. 下一步建议
@@ -105,7 +106,7 @@ docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
 下一步建议执行：
 
 ```text
-Task 12B-R2-05 Utility Capability Matrix
+Task 12B-R2-06 最小 Utility Report 原型
 ```
 
 原因：
@@ -115,7 +116,8 @@ R2 已确认当前 OpenVDB 代码成熟度；
 并已固化 slicesoft.openvdb_sdf_utility.12b_r2.1；
 并已验证 USE_OPENVDB=OFF 默认构建、UI self-test、legacy benchmark 和现有 unavailable diagnostic 不受 R2 影响；
 并已复测 OpenVDB ON smoke 可用；
-下一步应在 OFF/ON 证据基础上完成 outer varnish、clearance、topology、material closure assist 四类 utility capability matrix。
+并已完成 outer varnish、clearance、topology、material closure assist 四类 utility capability matrix；
+下一步应在不写 production TIFF 的前提下生成最小 slicesoft.openvdb_sdf_utility.12b_r2.1 utility report 原型。
 ```
 
 ## 6. 风险与边界
@@ -221,4 +223,29 @@ distanceStats.maxDistanceMm=0.0781024992465973
 本次验证证明当前机器上 OpenVDB ON lane 可构建、可运行；
 输出的是现有 geometry kernel smoke report；
 R2 独立 slicesoft.openvdb_sdf_utility.12b_r2.1 report 原型仍属于 R2-06。
+```
+
+## 9. R2-05 Capability Matrix 结论
+
+输出文档：
+
+```text
+docs/slice/DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md
+```
+
+矩阵结论：
+
+| Utility | promoteDecision | R2 处理 |
+|---|---|---|
+| OuterVarnishShellOffset | `promote` | 进入 R2-06 最小 utility report 原型，不替换 production V 通道 |
+| ClearanceDistance | `keep_experimental` | 保留实验指标，不作为 production acceptance gate |
+| TopologyDiagnostic | `promote` | 推进为 report/gate utility，不绕过 strict blocker |
+| MaterialClosureAssist | `keep_experimental` | 只做辅助研究，12D semantic masks 仍为生产真源 |
+
+说明：
+
+```text
+promote 只表示推进为辅助 utility；
+promote 不表示 OpenVDB 可以替代 production slicer；
+promote 不允许写 production RGBWSV TIFF。
 ```
