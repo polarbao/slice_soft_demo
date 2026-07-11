@@ -127,7 +127,7 @@ Current Stage 12 track:
 ```text
 12A: material fill, support, and varnish semantics, current P0/P1 scope complete.
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
-12C: current phase; Qt workbench build, Profile/settings, preview, and diagnostics closure.
+12C: current phase; R0 build/smoke/layout baseline complete, now entering R1 Profile/settings closure.
 12D: material closure documents exist but do not block 12C-R0/R1.
 ```
 

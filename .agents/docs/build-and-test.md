@@ -94,6 +94,22 @@ Use the same report validator for both optional build lanes:
 
 The utility probe writes only `slicesoft.openvdb_sdf_utility.12b_r2.1` diagnostic JSON. It must not write a production package, RGBWSV TIFF, or preview output.
 
+## OpenVDB vcpkg Root Selection
+
+Normal non-OpenVDB projects may continue using the shared environment from `VCPKG_ROOT`.
+
+For the OpenVDB feature lane, do not use a vcpkg root whose path contains spaces. A fresh manifest configure on 2026-07-12 with `D:\Program Files Tools\vcpkg` reached `hwloc:x64-windows` and failed because autotools split `D:\Program Files Tools\...` into separate arguments (`No rule to make target '/d/Program'`).
+
+Current rule:
+
+```text
+default/non-OpenVDB lane: VCPKG_ROOT is allowed;
+OpenVDB lane: use the dedicated no-space D:\vcpkg-openvdb root;
+do not copy installed/packages/buildtrees between roots;
+do not repoint an existing CMake build cache to another toolchain root;
+future consolidation requires a no-space shared alias/root and a locked builtin-baseline, followed by a fresh build.
+```
+
 ## 12C Qt UI Fresh Build
 
 Qt 5.15.2 with MSVC 19.50+ uses the project-local compatibility shim in `apps/slicer_debug_ui/compat`.

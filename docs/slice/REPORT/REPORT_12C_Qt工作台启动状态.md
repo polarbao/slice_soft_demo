@@ -12,8 +12,10 @@ Profile/配置/预览基础组件：已存在；
 fresh Qt UI build：PASS；
 12C-R0-01：COMPLETE；
 12C-R0-02：COMPLETE；
-12C-R0-03：PENDING；
-12C-R1/R2：需等待 R0 基线阶段完成。
+12C-R0-03：COMPLETE；
+12C-R0：COMPLETE；
+12C-R1-01：READY TO START；
+12C-R2：需等待 R1 设置管线完成。
 文档与上下文准备：COMPLETE；
 ```
 
@@ -63,14 +65,16 @@ docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 docs/slice/DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md
 ai_workspace/context_handoff/2026-07-12_12C-R0-02_UI_Smoke基线.md
+docs/slice/DOC/DOC_AUDIT_12C_R0_03_现有Qt布局与组件复用基线.md
+ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R0-03 布局与组件复用基线
+12C-R1-01 Profile Metadata 收口
 ```
 
-本报告不表示 12C 功能已实现。当前只表示文档准入、R0-01 fresh build gate 和 R0-02 smoke 基线已完成。
+本报告不表示 12C 功能已全部实现。当前只表示 R0 构建、Smoke、布局与组件复用基线已完成，R1/R2 产品化改造仍待执行。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

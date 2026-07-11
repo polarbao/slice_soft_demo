@@ -18,7 +18,8 @@
 | TASKS | `TASKS_12C_Qt_UI配置预览任务清单.md` | READY |
 | CODEX_PROMPT | `CODEX_PROMPT_12C_Qt工作台收口执行指令.md` | READY |
 | 启动报告 | `REPORT_12C_Qt工作台启动状态.md` | READY |
-| 会话交接 | `ai_workspace/context_handoff/2026-07-12_12C-R0-02_UI_Smoke基线.md` | READY |
+| 布局基线 | `DOC_AUDIT_12C_R0_03_现有Qt布局与组件复用基线.md` | READY |
+| 会话交接 | `ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md` | READY |
 
 ## 2. 上下文入口检查
 
@@ -74,9 +75,11 @@ R0-02 已使用 `build-12c-ui` fresh binary 完成完整 smoke 基线，未回�
 12C 上下文交接：COMPLETE
 12C-R0-01：COMPLETE
 12C-R0-02：COMPLETE
-12C-R0-03：READY TO START
-12C-R1/R2：BLOCKED UNTIL R0 GATE PASSES
+12C-R0-03：COMPLETE
+12C-R0：COMPLETE
+12C-R1-01：READY TO START
+12C-R2：BLOCKED UNTIL R1 SETTINGS PIPELINE PASSES
 12C overall implementation：NOT COMPLETE
 ```
 
-结论：12C-R0-02 已完成，下一步只能执行 `12C-R0-03 布局与组件复用基线`。
+结论：12C-R0 已完成，下一步只能执行 `12C-R1-01 Profile Metadata 收口`。

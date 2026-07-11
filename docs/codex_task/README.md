@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-12
-> 当前阶段：12C-R0 Qt 工作台构建兼容与基线准入
+> 当前阶段：12C-R1 Profile 与 Settings 收口
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 当前原子任务：
 
 ```text
-12C-R0-03 布局与组件复用基线
+12C-R1-01 Profile Metadata 收口
 ```
 
-12C-R0-01 fresh Qt UI build gate 与 R0-02 smoke 基线已通过。12C-R1/R2 必须等待 R0-03 完成。
+12C-R0 fresh build、smoke 与布局基线已完成。当前进入 R1，R2 必须等待 R1 设置管线完成。
 
 ## 保留参考入口
 

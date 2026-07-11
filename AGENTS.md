@@ -16,10 +16,10 @@
 
 - `12A` material fill, support, and varnish semantics have completed the current P0/P1 scope.
 - `12B-R0/R1/R2` performance evaluation and OpenVDB SDF utility positioning are complete.
-- Current working phase is `12C-R0`: Qt workbench build compatibility and baseline admission.
-- `12C-R0-01 Qt/MSVC Fresh Build Lane` and `12C-R0-02 UI Self-Test and Smoke Baseline` are complete.
-- The current executable task is `12C-R0-03 Layout and Component Reuse Baseline`.
-- `12C-R1/R2` must not start before the full R0 baseline is complete.
+- `12C-R0` Qt workbench build compatibility and baseline admission is complete.
+- Current working phase is `12C-R1`: Profile and Settings closure.
+- The current executable task is `12C-R1-01 Profile Metadata Closure`.
+- `12C-R2` must not start before the full R1 settings pipeline is complete.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules

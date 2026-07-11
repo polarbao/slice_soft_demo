@@ -127,11 +127,22 @@ save-as-config：PASS，生成独立 smoke 输出且未修改源配置。
 
 ### Task 12C-R0-03 布局与组件复用基线
 
-状态：PENDING
+状态：DONE
 
 内容：记录现有 MainWindow、三个 preview panel、报告、曲线、日志、配置 panel 的职责和复用点；采集 1440x900、1280x720、1024x768 截图或等价几何检查。
 
 完成标准：明确 R1/R2 不重写哪些组件，并记录现有遮挡/溢出问题。
+
+完成记录：
+
+```text
+已审查 MainWindow 与 LayerPreviewPanel/PreviewOverlayPanel/PreviewPanel 等现有职责；
+已冻结 ScenarioRegistry、ConfigDocument、现有 preview/report/chart/log panel 的复用边界；
+已完成 1440x900、1280x720、1024x768 本地窗口采样和 PrintWindow 视觉检查；
+确认左侧无滚动长表单、三列最小宽度和常驻日志共同抬高窗口最小尺寸；
+当前环境三种目标尺寸均不能完整承载现有三列布局，右侧诊断区在较小宽度下被裁切；
+基线与后续修复边界见 DOC_AUDIT_12C_R0_03_现有Qt布局与组件复用基线.md。
+```
 
 ## 4. Phase 12C-R1 Profile 与 Settings
 

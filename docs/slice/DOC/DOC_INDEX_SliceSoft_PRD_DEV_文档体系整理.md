@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-12
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12B 已完成，12C-R0-01/R0-02 已完成，当前执行 R0-03 布局与组件复用基线
+> 当前阶段判断：12B 与 12C-R0 已完成，当前执行 12C-R1-01 Profile Metadata 收口
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：main，任务开始前通过 git 命令确认
 最新完成阶段：12B-R2 OpenVDB SDF utility 定位
-当前执行阶段：12C-R0 Qt 工作台构建兼容与基线准入
-最新完成任务：12C-R0-02 UI Self-Test 与 Smoke 基线
-当前任务：12C-R0-03 布局与组件复用基线
+当前执行阶段：12C-R1 Profile 与 Settings 收口
+最新完成任务：12C-R0-03 布局与组件复用基线
+当前任务：12C-R1-01 Profile Metadata 收口
 ```
 
 09P-R1 已完成：
@@ -355,4 +355,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12C = 当前执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C 文档和上下文准备已按 `DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` 完成。R0-01 fresh build 与 R0-02 smoke 基线已通过，当前执行入口为 `TASKS_12C_Qt_UI配置预览任务清单.md`，下一任务为 `12C-R0-03 布局与组件复用基线`。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0 的 fresh build、smoke 与布局组件基线已通过，当前执行入口为 `TASKS_12C_Qt_UI配置预览任务清单.md`，下一任务为 `12C-R1-01 Profile Metadata 收口`。
