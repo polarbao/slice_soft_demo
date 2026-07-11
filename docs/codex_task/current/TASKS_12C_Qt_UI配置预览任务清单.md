@@ -2,7 +2,7 @@
 
 > 文档版本：v0.2
 > 文档状态：Current Task Plan / Stage 12C
-> 更新日期：2026-07-10
+> 更新日期：2026-07-12
 
 ## 1. 边界
 
@@ -99,7 +99,7 @@ fresh binary --self-test PASS startup / experimental-report-summary；
 
 ### Task 12C-R0-02 UI Self-Test 与 Smoke 基线
 
-状态：PENDING
+状态：DONE
 
 验证：
 
@@ -112,6 +112,18 @@ fresh binary --self-test PASS startup / experimental-report-summary；
 ```
 
 完成标准：所有 case 使用 R0 fresh binary 通过。
+
+完成记录：
+
+```text
+build-12c-ui fresh lane 构建 slicer_cli：PASS；
+fresh slicer_cli 生成 UiSmokeLayerPreview / UiSmokeOverlayRgbwv：PASS；
+fresh UI --self-test：PASS startup / experimental-report-summary；
+scenario-registry：PASS default=11 fixture=7 advanced=6；
+layer-preview-load：PASS layers=25，包含 production_rgb/rgb/white/support/varnish/occupancy/diagnostic；
+overlay-load-real：PASS images=47，RGB+W / RGB+V / RGB+S 均可组合；
+save-as-config：PASS，生成独立 smoke 输出且未修改源配置。
+```
 
 ### Task 12C-R0-03 布局与组件复用基线
 

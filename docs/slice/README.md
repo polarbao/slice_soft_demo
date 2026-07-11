@@ -1,12 +1,12 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-07-10
+> 更新日期：2026-07-12
 > 适用阶段：Stage 12C-R0 Qt 工作台构建兼容与基线准入
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12B-R2 已完成；12C-R0-01 fresh Qt UI build gate 已通过；当前任务为 `12C-R0-02 UI Self-Test 与 Smoke 基线`。
+当前状态：12B-R2 已完成；12C-R0-01 fresh build 和 R0-02 UI smoke 基线已通过；当前任务为 `12C-R0-03 布局与组件复用基线`。
 
 ## 目录结构
 
