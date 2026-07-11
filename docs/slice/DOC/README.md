@@ -14,6 +14,8 @@
 | `DOC_ANALYSIS_OpenVDB切片功能当前不可用原因.md` | OpenVDB 已完成诊断/原型但尚不可作为正式切片流程的原因分析 |
 | `DOC_ANALYSIS_11B_OpenVDB姿态配置与同姿态性能对比.md` | OpenVDB 姿态配置差异、同姿态性能对比和替代条件分析 |
 | `DOC_CHECKLIST_10_DownstreamHandoff.md` | 10 阶段下游交付清单 |
+| `DOC_AUDIT_12C_现有QtUI能力与收口缺口审查.md` | 12C 当前 Qt UI 能力、增量范围和构建 blocker |
+| `DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` | 12C 文档、上下文、依赖和原子任务准入检查 |
 
 ## 决策记录
 
@@ -25,3 +27,5 @@
 | `DOC_DECISION_11A_Stage12前置_OpenVDB_OBJ彩色纹理切片计划.md` | 11A 阶段在 Stage 12 前先处理 OpenVDB OBJ 彩色纹理前置计划 |
 | `DOC_DECISION_11A_R1_OpenVDB候选切片写包与Preview收口.md` | 11A-R1 阶段新增 OpenVDB Candidate 写包与 preview 收口路径 |
 | `DOC_DECISION_11B_UI配置生产预览与OpenVDB姿态收口.md` | 11B 阶段收口 UI 配置、生产预览和 OpenVDB 同姿态验证 |
+| `DOC_DECISION_12C_R0_R1_R2_Qt工作台阶段拆分.md` | 12C 构建、设置、预览工作区分阶段准入 |
+| `DOC_DECISION_12C_UI产品默认值与交互冻结.md` | 12C Profile、generated config、诊断布局和 12D 接入默认值 |

@@ -1,8 +1,9 @@
 # PRD_12C_Qt_UI配置预览工作台收口
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：PRD / Stage 12C
 > 生成日期：2026-07-05
+> 更新日期：2026-07-10
 > 适用范围：Qt 调试 UI 的配置入口、Profile 管理、层预览、叠加预览、原始预览、报告曲线布局
 
 ---
@@ -135,7 +136,7 @@ UI 文案要求：
 
 ```text
 模型填充材料：
-用于模型内部非表面纹理区域。选择白墨会写 W 通道，选择光油会写 V 通道，选择无则保持空白。
+用于模型内部非表面纹理区域。选择白墨会写 W 通道，选择光油会写 V 通道。生产 Profile 不允许选择空填充。
 影响：W/V/RGB。
 默认：白墨。
 文档：PRD_12A。
@@ -166,4 +167,50 @@ OpenVDB 相关按钮和选项必须明确：
 4. 报告/曲线不遮挡主操作；
 5. 配置说明在 UI 和用户手册中一致；
 6. 仍保留高级/测试入口给开发回归使用。
+```
+
+---
+
+## 9. 当前基线与增量范围
+
+当前已存在 ScenarioRegistry、QuickConfigPanel、LayerPreviewPanel、PreviewOverlayPanel、PreviewPanel、报告、曲线和日志 panel。12C 不从零实现这些能力。
+
+12C 增量重点：
+
+```text
+1. 先恢复 fresh Qt UI build；
+2. 把场景元数据收口为稳定 Profile，而不是继续增加普通场景；
+3. 让 UI 修改通过 generated effective config 直接参与本次切片；
+4. 统一三个预览模式的 layerIndex 和工作区；
+5. 把报告、曲线、日志收进可折叠诊断区域；
+6. 集中管理中文说明和文档链接；
+7. 展示 12B-R2 utility role，但不提升为生产引擎。
+```
+
+## 10. 12C 非目标
+
+```text
+不修改切片算法；
+不修改 RGBWSV 协议；
+不删除 regression fixture；
+不实现 12D material closure 算法；
+不把 OpenVDB 设为默认 production engine；
+不进行与工作台收口无关的全量 Qt 类重命名。
+```
+
+## 11. 阶段准入
+
+12C-R0 必须先解决 Qt 5.15.2 / MSVC 19.51 fresh build blocker。只有 fresh UI build、自测和关键 smoke 可复现后，才允许进入 R1/R2 UI 结构调整。
+
+## 12. 已冻结的产品默认值
+
+以下默认行为以 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 为准：
+
+```text
+普通用户默认显示四类稳定 Profile；
+运行切片时自动生成 session effective config，不覆盖原始 template/fixture；
+生产 Profile 的模型内部填充不得为空，默认白墨；
+DiagnosticsDock 默认位于底部并折叠；
+12D 只允许后续只读展示，不阻断 12C-R0/R1；
+OpenVDB 始终保持 utility/candidate 和默认关闭。
 ```

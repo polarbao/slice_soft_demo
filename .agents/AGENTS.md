@@ -115,11 +115,20 @@ R1: core module-boundary refactor
 R2: config/report/test/CI engineering consolidation
 ```
 
-Current 09P track:
+Historical 09P track:
 
 ```text
 09P-R1: OpenVDB experimental production-pipeline access, historical/completed evidence.
 09P-R2: docs governance, formalization readiness, OpenVDB experimental hardening, schema/golden/report checks.
+```
+
+Current Stage 12 track:
+
+```text
+12A: material fill, support, and varnish semantics, current P0/P1 scope complete.
+12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
+12C: current phase; Qt workbench build, Profile/settings, preview, and diagnostics closure.
+12D: material closure documents exist but do not block 12C-R0/R1.
 ```
 
 R0/R1/R2 principles still apply to refactors:

@@ -2,62 +2,53 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 当前阶段：12 切片语义、引擎性能与 UI 产品化专项规划
+> 更新日期：2026-07-10
+> 当前阶段：12C-R0 Qt 工作台构建兼容与基线准入
 
-本目录用于存放 Codex 相关的操作任务、执行提示词、任务清单与历史任务归档。
+本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
 ## 目录结构
 
 ```text
 docs/codex_task/current
-  当前可执行任务。Codex 每次只应读取并执行用户明确指定的一个任务。
+  当前任务、并行专项和仍需保留的任务文件。
 
 docs/codex_task/archive/completed_tasks
-  已完成或已被新阶段替代的 TASKS / CODEX_TASKS。
+  已完成或被新阶段替代的任务清单。
 
 docs/codex_task/archive/completed_prompts
-  已完成或已被新阶段替代的 CODEX_PROMPT。
+  已完成或被新阶段替代的执行提示词。
 
 docs/codex_task/archive/handoff
-  旧交接文档。保留历史上下文，但不直接代表当前真源。
+  历史交接文档，只作背景。
 ```
 
-## 当前任务入口
+## 当前唯一执行入口
 
 ```text
-docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
-docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
-docs/codex_task/current/TASKS_11A_OpenVDB_OBJ彩色纹理切片前置任务清单.md
-docs/codex_task/current/TASKS_11A_R1_OpenVDB候选切片写包任务清单.md
-docs/codex_task/current/CODEX_PROMPT_11A_R1_OpenVDB候选切片写包执行指令.md
-docs/codex_task/current/TASKS_11B_UI配置生产预览与OpenVDB姿态收口任务清单.md
-docs/codex_task/current/TASKS_12A_彩色纹理材料支撑光油任务清单.md
-docs/codex_task/current/TASKS_12B_切片引擎性能与OpenVDB替代任务清单.md
-docs/codex_task/current/TASKS_12B_R0_Benchmark契约与真实Release对比任务清单.md
-docs/codex_task/current/TASKS_12B_R1_LegacyHeightfield优化任务清单.md
-docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
-docs/codex_task/current/CODEX_PROMPT_12B_R2_OpenVDB_SDFUtility执行指令.md
 docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
-docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 ```
 
-已完成 / 保留参考入口：
+当前原子任务：
 
 ```text
-docs/codex_task/current/TASKS_00_08_历史阶段文档补齐任务清单.md
-docs/codex_task/current/CODEX_PROMPT_00_08_历史阶段文档补齐执行指令.md
-docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md
-docs/codex_task/current/CODEX_PROMPT_09P_R2_OpenVDB实验生产管线Hardening执行指令.md
-docs/codex_task/current/TASKS_10_切片输出交付契约与纹理保真验收任务清单.md
-docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真验收执行指令.md
+12C-R0-01 Qt/MSVC Fresh Build Lane
 ```
+
+12C-R1/R2 必须等待 R0 fresh Qt UI build gate 通过。
+
+## 保留参考入口
+
+`current` 目录中的 11、11A、11B、12A、12B 和 12D 文件继续保留，用于追溯、并行专项或后续用户明确指定的任务，不得覆盖当前 12C-R0 入口。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
 
 ## 使用规则
 
 ```text
-1. 每次只执行用户明确指定的一个任务。
-2. 任务开始前读取 AGENTS.md、docs/slice/README.md 和当前任务文件。
-3. 不从 archive 中恢复旧任务作为当前任务，除非用户明确指定。
-4. 旧 CODEX_PROMPT 只作为历史参考，不作为当前执行入口。
-5. 完成任务后必须输出验证命令及结果；未运行的验证要说明原因。
+1. 每次只执行用户明确指定的一个原子任务；
+2. 任务开始前读取 AGENTS.md、12C 阶段交接和当前任务文件；
+3. 不从 archive 恢复旧任务作为当前任务，除非用户明确指定；
+4. 完成任务后输出实际验证命令及结果；
+5. 验证通过后按任务文件要求提交，并停止；
+6. 未通过 fresh build gate 时，不进入 12C-R1/R2。
 ```

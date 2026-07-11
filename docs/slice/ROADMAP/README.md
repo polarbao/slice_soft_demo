@@ -9,3 +9,4 @@
 | `ROADMAP_11A_Stage12前置OpenVDB_OBJ彩色纹理切片计划.md` | Stage 12 前置 OpenVDB OBJ 彩色纹理切片计划 |
 | `ROADMAP_11A_R1_OpenVDB候选切片开发路线.md` | 11A-R1 OpenVDB Candidate 写包与 preview 开发路线 |
 | `ROADMAP_11B_OpenVDB替代Legacy生产引擎判定路线.md` | 11B OpenVDB 替代 legacy 生产引擎判定路线 |
+| `ROADMAP_12C_Qt工作台分阶段执行路线.md` | 12C Qt 工作台 R0/R1/R2 执行路线 |

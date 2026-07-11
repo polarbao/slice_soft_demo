@@ -1,10 +1,12 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-07-05
-> 适用阶段：Stage 12 切片语义、引擎性能与 UI 产品化专项规划
+> 更新日期：2026-07-10
+> 适用阶段：Stage 12C-R0 Qt 工作台构建兼容与基线准入
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
+
+当前状态：12B-R2 已完成；12C 文档和上下文准备已完成；当前唯一执行起点为 `12C-R0-01 Qt/MSVC Fresh Build Lane`。
 
 ## 目录结构
 
@@ -31,7 +33,8 @@
 | `ROADMAP/ROADMAP_SHORT_MID_LONG_SliceSoft_项目运行计划.md` | 短期 / 中期 / 长期项目运行计划 |
 | `PRD/PRD_SHORT_MID_LONG_SliceSoft_项目运行计划需求.md` | 项目运行计划对应的产品需求 |
 | `DEV/DEV_SHORT_MID_LONG_SliceSoft_项目运行计划执行方案.md` | 项目运行计划对应的技术执行方案 |
-| `REPORT/REPORT_11_UI切片层预览交互配置与多模型能力当前状态.md` | 最新已完成阶段报告 |
+| `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 最新已完成阶段报告，12B-R2 与 12B 收口 |
+| `REPORT/REPORT_12C_Qt工作台启动状态.md` | 当前阶段启动状态，12C-R0 可开始 |
 | `REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | OpenVDB OBJ 彩色纹理前置状态报告 |
 | `REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md` | OpenVDB Candidate 写包当前状态报告 |
 | `REPORT/REPORT_11B_文档规划与OpenVDB替代评估当前状态.md` | 11B 文档规划与 OpenVDB 替代评估当前状态 |
@@ -54,7 +57,7 @@
 | `DOC/DOC_AUDIT_12B_R2_OpenVDB_SDFUtility代码盘点.md` | 12B-R2 OpenVDB SDF utility 当前代码盘点 |
 | `DOC/DOC_SCHEMA_12B_R2_OpenVDBSdfUtilityReport.md` | 12B-R2 OpenVDB SDF utility report schema |
 | `DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md` | 12B-R2 OpenVDB SDF utility 能力矩阵 |
-| `DOC/DOC_AUDIT_12B_任务覆盖与R2缺口审查.md` | 12B 主任务覆盖与 R2 剩余缺口审查 |
+| `DOC/DOC_AUDIT_12B_任务覆盖与R2缺口审查.md` | 12B 主任务覆盖与 R2 收口审查 |
 | `DOC/DOC_ANALYSIS_12B_R1_2_5DHeightfieldFastPath可行性评估.md` | 12B-R1 2.5D heightfield fast path 可行性评估 |
 | `DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md` | 12B R0/R1/R2 阶段拆分决策 |
 | `DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md` | 12B core benchmark report schema |
@@ -62,8 +65,16 @@
 | `REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md` | 12B-R0 benchmark 契约与真实 Release 对比当前状态 |
 | `REPORT/REPORT_12B_R1_LegacyHeightfield优化当前状态.md` | 12B-R1 legacy 与 heightfield 优化当前状态 |
 | `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility启动状态.md` | 12B-R2 OpenVDB SDF utility 启动状态 |
+| `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 最终状态、能力矩阵、OFF/ON report 和 12C 移交结论 |
 | `PRD/PRD_12C_Qt_UI配置预览工作台收口.md` | 12C Qt UI 配置、预览工作台收口需求 |
 | `DEV/DEV_12C_Qt_UI配置预览工作台设计.md` | 12C Qt UI 配置、预览工作台设计 |
+| `DEMO/DEMO_12C_Qt_UI配置预览验证方案.md` | 12C fresh build、effective config、统一预览和布局验证方案 |
+| `DOC/DOC_AUDIT_12C_现有QtUI能力与收口缺口审查.md` | 12C 当前 UI 能力、增量范围和 build blocker 审查 |
+| `DOC/DOC_DECISION_12C_R0_R1_R2_Qt工作台阶段拆分.md` | 12C R0/R1/R2 阶段拆分与准入边界 |
+| `DOC/DOC_DECISION_12C_UI产品默认值与交互冻结.md` | 12C Profile、effective config、诊断布局和 12D 接入默认值 |
+| `DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` | 12C 文档、上下文和原子任务准入检查 |
+| `ROADMAP/ROADMAP_12C_Qt工作台分阶段执行路线.md` | 12C 构建、设置、预览和诊断工作台路线 |
+| `REPORT/REPORT_12C_Qt工作台启动状态.md` | 12C 准入状态、可复用能力和下一任务 |
 | `DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md` | 12D 横截面材料无缝闭环专项决策 |
 | `PRD/PRD_12D_横截面材料无缝闭环验收与修复.md` | 12D 横截面材料无缝闭环产品需求 |
 | `DEV/DEV_12D_材料闭环诊断与修复设计.md` | 12D 材料闭环诊断与修复技术设计 |
@@ -146,7 +157,7 @@
 | `DOC/DOC_AUDIT_12B_R2_OpenVDB_SDFUtility代码盘点.md` | 12B-R2 OpenVDB SDF utility 当前代码盘点 |
 | `DOC/DOC_SCHEMA_12B_R2_OpenVDBSdfUtilityReport.md` | 12B-R2 OpenVDB SDF utility report schema |
 | `DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md` | 12B-R2 OpenVDB SDF utility 能力矩阵 |
-| `DOC/DOC_AUDIT_12B_任务覆盖与R2缺口审查.md` | 12B 主任务覆盖与 R2 剩余缺口审查 |
+| `DOC/DOC_AUDIT_12B_任务覆盖与R2缺口审查.md` | 12B 主任务覆盖与 R2 收口审查 |
 | `DOC/DOC_ANALYSIS_12B_R1_2_5DHeightfieldFastPath可行性评估.md` | 12B-R1 2.5D heightfield fast path 可行性评估 |
 | `DOC/DOC_DECISION_12B_R0_R1_R2_切片引擎性能阶段拆分.md` | 12B R0/R1/R2 阶段拆分决策 |
 | `DOC/DOC_SCHEMA_12B_CoreBenchmarkReport.md` | 12B core benchmark report schema |
@@ -154,9 +165,16 @@
 | `REPORT/REPORT_12B_R0_Benchmark契约与真实Release对比当前状态.md` | 12B-R0 benchmark 契约与真实 Release 对比当前状态 |
 | `REPORT/REPORT_12B_R1_LegacyHeightfield优化当前状态.md` | 12B-R1 legacy 与 heightfield 优化当前状态 |
 | `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility启动状态.md` | 12B-R2 OpenVDB SDF utility 启动状态 |
+| `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 OpenVDB SDF utility 最终状态 |
 | `PRD/PRD_12C_Qt_UI配置预览工作台收口.md` | 12C Qt UI 配置、Profile、预览工作台需求 |
 | `DEV/DEV_12C_Qt_UI配置预览工作台设计.md` | 12C Qt UI 配置和预览工作台技术设计 |
 | `DEMO/DEMO_12C_Qt_UI配置预览验证方案.md` | 12C Qt UI 配置和预览验证方案 |
+| `DOC/DOC_AUDIT_12C_现有QtUI能力与收口缺口审查.md` | 12C 当前代码能力与收口缺口审查 |
+| `DOC/DOC_DECISION_12C_R0_R1_R2_Qt工作台阶段拆分.md` | 12C R0/R1/R2 阶段拆分 |
+| `DOC/DOC_DECISION_12C_UI产品默认值与交互冻结.md` | 12C 产品默认值与交互冻结 |
+| `DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` | 12C 阶段准入与上下文完整性 |
+| `ROADMAP/ROADMAP_12C_Qt工作台分阶段执行路线.md` | 12C 分阶段执行路线 |
+| `REPORT/REPORT_12C_Qt工作台启动状态.md` | 12C 启动状态 |
 | `DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md` | 12D 横截面材料无缝闭环专项决策 |
 | `PRD/PRD_12D_横截面材料无缝闭环验收与修复.md` | 12D 横截面材料无缝闭环产品需求 |
 | `DEV/DEV_12D_材料闭环诊断与修复设计.md` | 12D 材料闭环诊断与修复技术设计 |

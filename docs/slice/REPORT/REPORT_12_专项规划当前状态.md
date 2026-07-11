@@ -1,9 +1,10 @@
 # REPORT_12_专项规划当前状态
 
-> 文档版本：v0.3
+> 文档版本：v0.4
 > 文档状态：REPORT / Stage 12 Planning
 > 生成日期：2026-07-05
 > 更新日期：2026-07-06
+> 最新更新：2026-07-10
 
 ---
 
@@ -178,3 +179,23 @@ git diff --check
 ```
 
 不需要运行 CMake 构建，因为本阶段只做文档和任务规划。
+
+---
+
+## 8. 2026-07-10 阶段推进更新
+
+此前第 5、6 节是 2026-07-06 的规划快照，不再代表当前实现状态。当前最新状态：
+
+```text
+12A：P0/P1 基本完成，见 REPORT_12A_彩色纹理材料支撑光油当前状态.md；
+12B-R0：完成 benchmark 契约和 replacement gate；
+12B-R1：完成 legacy profile 和首个低风险优化；
+12B-R2：完成 OpenVDB SDF utility 定位和 OFF/ON report；
+12B：COMPLETE；
+12C：完成文档准入、产品默认值冻结和上下文交接，可以进入 R0-01；
+12D：已有正式文档和任务入口，但不作为 12C R0/R1 的前置阻断。
+```
+
+12C 当前第一优先级不是继续增加 UI 控件，而是解决 Qt 5.15.2 / MSVC 19.51 fresh build blocker，并在现有 ScenarioRegistry、QuickConfigPanel 和 preview panels 上进行增量收口。
+
+12C 准入真源为 `DOC_CHECKLIST_12C_阶段准入与上下文完整性.md`，会话续接真源为 `ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md`。

@@ -4,7 +4,7 @@
 
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
-- Current branch/ref: `spike/09P-openvdb-experimental-pipeline`
+- Current branch/ref: `main` as of 2026-07-10; verify with `git branch --show-current` before each task
 - Main implementation paths: `src/slicer_core`, `apps/slicer_cli`, `apps/slicer_debug_ui`
 - Formal docs: `docs/slice`
 - Codex task docs: `docs/codex_task`
@@ -14,10 +14,11 @@
 
 ## Current Phase
 
-- `09P-R1` OpenVDB experimental production-pipeline access has been documented as historical/completed evidence.
-- `09P-R2` formalization / hardening has been completed and reported.
-- `10` slicing output delivery contract and texture fidelity acceptance has been completed and reported.
-- Current working phase is `11`: UI layer preview, interactive config, and multi-model capability assessment.
+- `12A` material fill, support, and varnish semantics have completed the current P0/P1 scope.
+- `12B-R0/R1/R2` performance evaluation and OpenVDB SDF utility positioning are complete.
+- Current working phase is `12C-R0`: Qt workbench build compatibility and baseline admission.
+- The first executable task is `12C-R0-01 Qt/MSVC Fresh Build Lane`.
+- `12C-R1/R2` must not start before the fresh Qt UI build gate passes.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules
@@ -67,7 +68,8 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Document state: `.agents/docs/doc-state.md`
 - Formal docs index: `docs/slice/README.md`
 - Codex task index: `docs/codex_task/README.md`
-- Current task list: `docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md`
+- Current task list: `docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md`
+- Current execution prompt: `docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md`
 
 ## Production Safety Rules
 

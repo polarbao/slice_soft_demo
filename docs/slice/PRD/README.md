@@ -21,3 +21,4 @@
 | `PRD_11A_OpenVDB_OBJ彩色纹理切片前置计划.md` | 11A OpenVDB OBJ 彩色纹理切片前置 |
 | `PRD_11A_R1_OpenVDB候选切片写包与Preview收口.md` | 11A-R1 OpenVDB Candidate 写包与 preview 收口 |
 | `PRD_11B_UI配置生产预览与OpenVDB姿态收口.md` | 11B UI 配置、生产预览与 OpenVDB 姿态收口 |
+| `PRD_12C_Qt_UI配置预览工作台收口.md` | 12C Profile、设置、统一预览与诊断工作台收口 |

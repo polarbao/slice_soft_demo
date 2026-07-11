@@ -1,10 +1,11 @@
 # DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 当前分支：`spike/09P-openvdb-experimental-pipeline`
-> 当前阶段判断：Stage 10 已完成，当前执行 11 UI 切片层预览、交互配置与多模型能力评估
+> 更新日期：2026-07-10
+> 当前分支：`main`，每个任务开始前仍需重新确认
+> 当前阶段判断：12B 已完成，当前执行 12C-R0 Qt 工作台构建兼容与基线准入
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -33,9 +34,10 @@
 当前代码和报告显示：
 
 ```text
-当前分支：spike/09P-openvdb-experimental-pipeline
-最新完成阶段：10 切片输出交付契约与纹理保真验收
-当前执行阶段：11 UI 切片层预览、交互配置与多模型能力评估
+当前分支：main，任务开始前通过 git 命令确认
+最新完成阶段：12B-R2 OpenVDB SDF utility 定位
+当前执行阶段：12C-R0 Qt 工作台构建兼容与基线准入
+当前任务：12C-R0-01 Qt/MSVC Fresh Build Lane
 ```
 
 09P-R1 已完成：
@@ -98,14 +100,17 @@ R0 / R1 / R2：正式项目化架构、模块边界、配置报告测试 CI
 
 ### 2.4 Pending Confirmation
 
-10 阶段已完成。进入 11 阶段后，建议确认：
+12C 初始开放项已经通过正式决策冻结：
 
 ```text
-1. 11 阶段只在 UI / report / preview data contract 层推进，不修改 production RGBWSV 协议；
-2. UI 只能读取 package / manifest / report / preview 契约，不直接访问 slicer.cpp 临时结构；
-3. 多模型能力先做评估、数据模型和决策，不默认开启 production 多模型输出；
-4. 11 阶段完成后生成 REPORT_11，并判断是否需要后续独立多模型或 UI 产品化阶段。
+1. 普通用户默认四类稳定 Profile；
+2. UI 运行时自动生成 session effective config；
+3. DiagnosticsDock 默认位于底部并折叠；
+4. 12D 不阻断 12C-R0/R1，12C 不实现其业务算法；
+5. OpenVDB 保持默认关闭的 utility/candidate。
 ```
+
+R0 当前没有产品需求待确认；Qt/MSVC 兼容路线由 `12C-R0-01` 的实际构建证据决定。
 
 ---
 
@@ -154,7 +159,7 @@ R0 / R1 / R2：正式项目化架构、模块边界、配置报告测试 CI
 
 ---
 
-## 5. 09P-R2-0 已同步入口
+## 5. 历史 09P-R2-0 入口同步记录
 
 以下入口已同步到 09P-R1 已完成 / 09P-R2 hardening 口径：
 
@@ -288,7 +293,9 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 
 ---
 
-## 8. 对 09P-R2 的入口建议
+## 8. 历史 09P-R2 入口建议
+
+本节仅保留 2026-06-30 的历史规划，不再是当前执行入口。当前入口见第 9、10 节。
 
 09P-R2 不应直接开始写更多功能。建议先执行：
 
@@ -307,16 +314,43 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 
 ---
 
-## 9. 结论
+## 9. Stage 12 当前入口更新
 
-当前不是缺少文档，而是缺少文档控制层。
-本文件将历史文档从“都可能是入口”收束为：
+截至 2026-07-10：
+
+```text
+12A：材料、支撑、光油语义 P0/P1 基本完成；
+12B：R0/R1/R2 已完成并生成最终状态报告；
+12C：已完成准入审查和 R0/R1/R2 拆分；
+12D：正式文档和任务入口已存在，尚不作为 12C R0/R1 blocker。
+```
+
+12C 当前闭环文档：
+
+```text
+docs/slice/PRD/PRD_12C_Qt_UI配置预览工作台收口.md
+docs/slice/DEV/DEV_12C_Qt_UI配置预览工作台设计.md
+docs/slice/DEMO/DEMO_12C_Qt_UI配置预览验证方案.md
+docs/slice/DOC/DOC_AUDIT_12C_现有QtUI能力与收口缺口审查.md
+docs/slice/DOC/DOC_DECISION_12C_R0_R1_R2_Qt工作台阶段拆分.md
+docs/slice/DOC/DOC_DECISION_12C_UI产品默认值与交互冻结.md
+docs/slice/DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md
+docs/slice/ROADMAP/ROADMAP_12C_Qt工作台分阶段执行路线.md
+docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
+docs/slice/REPORT/REPORT_12C_Qt工作台启动状态.md
+ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md
+```
+
+## 10. 结论
+
+当前文档控制层已将历史材料和当前执行入口分离：
 
 ```text
 历史阶段文档 = 背景与证据
 最新 REPORT = 当前状态
 FORMAL PRD / DEV / ROADMAP = 当前总控
-TASKS_09P_R2 = 后续执行入口
+TASKS_12C = 当前执行入口
 ```
 
-10 阶段已按 `REPORT_10_切片输出交付契约与纹理保真验收当前状态.md` 收口。当前应按 `TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md` 逐项执行 Stage 11。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C 文档和上下文准备已按 `DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` 完成。当前执行入口为 `TASKS_12C_Qt_UI配置预览任务清单.md`，第一任务为 `12C-R0-01 Qt/MSVC Fresh Build Lane`。

@@ -16,7 +16,7 @@
 For Codex task-card based work:
 
 1. Read `AGENTS.md`, `.agents/docs/README.md`, and the current task file.
-2. Use current task entry: `docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md`.
+2. Use current task entry: `docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md`.
 3. Execute only the requested task card.
 4. Use the task card's allowed files, forbidden actions, validation commands, and completion criteria.
 5. Do not execute the next task unless the user explicitly asks.

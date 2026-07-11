@@ -1,8 +1,9 @@
 # DEMO_12C_Qt_UI配置预览验证方案
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：DEMO / Stage 12C
 > 生成日期：2026-07-05
+> 更新日期：2026-07-10
 
 ---
 
@@ -125,3 +126,36 @@ Profile；
 日志退出码；
 手动检查结论。
 ```
+
+---
+
+## 4. R0 Fresh Build Gate
+
+必须从新 build dir 配置和构建，不允许只运行历史 binary：
+
+```text
+fresh configure PASS；
+slicer_debug_ui Debug build PASS；
+--self-test PASS；
+scenario-registry PASS；
+layer-preview-load PASS；
+overlay-load-real PASS。
+```
+
+若 Qt/MSVC 不兼容，记录 compiler、Qt 版本、错误位置和候选路线，R1/R2 保持未准入。
+
+## 5. R1 Effective Config Gate
+
+```text
+选择 Profile 后修改模型填充、支撑 placement、表面/外侧光油；
+不保存原 fixture JSON；
+运行切片生成 session config；
+generated config 包含所有 override；
+原模板文件内容和 git status 不变化。
+```
+
+## 6. R2 Workspace Gate
+
+三种预览模式必须在同一 `layerIndex` 上切换。验证窗口尺寸至少包含 1440x900、1280x720、1024x768；报告、曲线和日志折叠后不得遮挡主预览。
+
+OpenVDB 显示必须包含 `utility/candidate`、`productionReplacementAllowed=false` 和 legacy fallback，不得显示为默认生产成功路径。

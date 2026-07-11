@@ -1,8 +1,9 @@
 # DEV_12C_Qt_UI配置预览工作台设计
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：DEV / Stage 12C
 > 生成日期：2026-07-05
+> 更新日期：2026-07-10
 > 前置文档：PRD_12C_Qt_UI配置预览工作台收口.md
 
 ---
@@ -210,3 +211,52 @@ UI smoke：
 5. 报告/曲线抽屉可展开收起；
 6. OpenVDB candidate 失败显示明确原因。
 ```
+
+---
+
+## 10. 增量实现原则
+
+```text
+ScenarioRegistry：保留并扩展，不平行重写；
+ConfigDocument/QuickConfigPanel：保留编辑能力，新增 SliceSettingsModel/effective config orchestration；
+LayerPreviewPanel/PreviewOverlayPanel/PreviewPanel：保留渲染能力，由 PreviewWorkspace 统一状态；
+ReportPanel/ChannelChartPanel/LogPanel：保留内容，由 DiagnosticsDock 调整承载位置；
+UiSmokeTestRunner：扩展 case，不另建测试程序。
+```
+
+## 11. 分阶段技术顺序
+
+### 11.1 R0 Build Lane
+
+先比较并固化兼容工具链、最小 compatibility shim、Qt patch/LTS 升级三条路线。未经决策不得修改第三方 Qt 头文件或直接升级依赖。
+
+### 11.2 R1 Settings Pipeline
+
+```text
+Profile template -> SliceSettingsModel -> overrides -> generated config -> ConfigValidator -> slicer_cli
+```
+
+运行切片不得再忽略 dirty UI 设置。generated config 必须写入 session 目录并可在 UI 查看 effective summary。
+
+### 11.3 R2 Workspace
+
+PreviewWorkspace 只协调模式、layerIndex、zoom intent 和当前 probe context；各 panel 继续负责各自数据源。DiagnosticsDock 只负责布局，不把业务决策移入 report/view 层。
+
+## 12. 测试边界
+
+R0 使用 fresh build 证明工具链；R1 增加 Profile 和 generated config smoke；R2 增加 shared-layer、diagnostics-collapse 和多尺寸布局 smoke。旧 binary 只可作为历史基线，不能作为 R0 完成证据。
+
+## 13. 冻结实现约束
+
+`DOC_DECISION_12C_UI产品默认值与交互冻结.md` 已关闭初始审查中的产品交互开放项：
+
+```text
+ProfileCatalog 在 ScenarioRegistry 上演进，普通层默认四类稳定 Profile；
+SliceSettingsModel 必须在运行前生成 session effective config；
+生产模型填充不允许 empty；
+DiagnosticsDock 默认底部折叠，右侧保留图例和像素探针；
+12D 业务算法不得进入 UI；
+OpenVDB utility report 只读展示 productionReplacementAllowed=false。
+```
+
+具体模板路径和字段映射可在 R1 原子任务内根据当前代码校正，但不得改变上述语义。

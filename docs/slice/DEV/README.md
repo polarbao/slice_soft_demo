@@ -28,3 +28,4 @@
 | `DEV_11A_R1_OpenVDBCandidatePipeline_RGBWSVWriter设计.md` | 11A-R1 OpenVDB Candidate pipeline 与 RGBWSV writer 设计 |
 | `DEV_11B_UI配置生产预览与OpenVDB姿态收口设计.md` | 11B UI 配置、生产预览与 OpenVDB 姿态收口设计 |
 | `DEV_11B_OpenVDB_LegacyCoreBenchmark设计.md` | 11B OpenVDB 与 legacy 核心切片耗时 benchmark 设计 |
+| `DEV_12C_Qt_UI配置预览工作台设计.md` | 12C Qt 工作台增量架构、generated config 和 PreviewWorkspace |

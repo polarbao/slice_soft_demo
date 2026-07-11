@@ -139,7 +139,7 @@ VarnishGeometryPolicy:
 
 历史 R1 阶段不实现 `SurfaceShell` 和 `CompensatedShrink`，只建立策略对象、配置占位和 pipeline 插入点。
 
-当前 09P 阶段允许 OpenVDB / SurfaceShell 相关工作进入明确标注的实验路径，但必须满足：
+09P/09B 的 OpenVDB / SurfaceShell 工作属于历史实验能力。12B-R2 已将其正式定位为默认关闭的 SDF utility candidate。当前 12C 阶段只允许在 UI 中展示 utility/candidate 状态，且必须满足：
 
 ```text
 OpenVDB optional and disabled by default
