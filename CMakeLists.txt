@@ -41,6 +41,8 @@ add_library(slicer_core
     src/slicer_core/geometry/OpenVdbGeometryKernelService.h
     src/slicer_core/geometry/OpenVdbLevelSetBuilder.cpp
     src/slicer_core/geometry/OpenVdbLevelSetBuilder.h
+    src/slicer_core/geometry/OpenVdbSdfUtilityReport.cpp
+    src/slicer_core/geometry/OpenVdbSdfUtilityReport.h
     src/slicer_core/geometry/OpenVdbSurfaceShell.cpp
     src/slicer_core/geometry/OpenVdbSurfaceShell.h
     src/slicer_core/geometry/MeshRobustnessDiagnostics.cpp
@@ -237,6 +239,12 @@ add_executable(geometry_kernel_service_unit_tests
 
 target_link_libraries(geometry_kernel_service_unit_tests PRIVATE slicer_core)
 
+add_executable(openvdb_sdf_utility_report_unit_tests
+    tests/unit/openvdb_sdf_utility_report/main.cpp
+)
+
+target_link_libraries(openvdb_sdf_utility_report_unit_tests PRIVATE slicer_core)
+
 add_executable(surface_shell_texture_service_unit_tests
     tests/unit/surface_shell_texture_service/main.cpp
 )
@@ -253,6 +261,7 @@ enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
+add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_texture_service_unit_tests)
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 
@@ -262,6 +271,12 @@ if(ENABLE_GEOMETRY_KERNEL_DEMO)
     )
 
     target_link_libraries(geometry_kernel_demo PRIVATE slicer_core)
+
+    add_executable(openvdb_sdf_utility_probe
+        apps/openvdb_sdf_utility_probe/main.cpp
+    )
+
+    target_link_libraries(openvdb_sdf_utility_probe PRIVATE slicer_core)
 
     add_executable(surface_shell_texture_demo
         apps/surface_shell_texture_demo/main.cpp

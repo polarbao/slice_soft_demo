@@ -83,6 +83,17 @@ Use these only for explicitly scoped 09P/OpenVDB experimental tasks:
 
 The experimental OpenVDB path must not be treated as production-safe unless the task explicitly verifies and admits that behavior.
 
+## 12B-R2 OpenVDB SDF Utility Report
+
+Use the same report validator for both optional build lanes:
+
+```powershell
+.\scripts\run_12b_r2_openvdb_sdf_utility.ps1 -BuildDir build -Config Debug -Output output\benchmarks\12b_r2_openvdb_sdf_utility_off.json
+.\scripts\run_12b_r2_openvdb_sdf_utility.ps1 -BuildDir build-openvdb-09p -Config Debug -Output output\benchmarks\12b_r2_openvdb_sdf_utility_on.json
+```
+
+The utility probe writes only `slicesoft.openvdb_sdf_utility.12b_r2.1` diagnostic JSON. It must not write a production package, RGBWSV TIFF, or preview output.
+
 ## Baseline Gate
 
 Each meaningful refactor step must pass:

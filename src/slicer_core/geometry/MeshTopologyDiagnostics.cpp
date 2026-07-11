@@ -11,6 +11,7 @@ namespace slicer_core
 MeshTopologyReport AnalyzeMeshTopology(const TriangleMeshData& mesh)
 {
     MeshTopologyReport report;
+    report.source_triangles = mesh.triangles.size();
     report.accepted_triangles = mesh.triangles.size();
     report.unique_vertices = mesh.vertices.size();
 

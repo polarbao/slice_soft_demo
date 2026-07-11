@@ -188,7 +188,7 @@ R1 不继续实现独立 2.5D fast path。
 
 ### Task 12B-07 OpenVDB Hybrid 定位
 
-状态：IN_PROGRESS
+状态：DONE
 
 内容：
 
@@ -212,7 +212,9 @@ R2-02 Utility Report Schema 已完成；
 R2-03 OpenVDB OFF 默认轨道保护已完成；
 R2-04 OpenVDB ON Smoke 与可用性报告已完成；
 R2-05 Utility Capability Matrix 已完成；
-后续需继续执行 R2-06 最小 Utility Report 原型。
+R2-06 最小 Utility Report 原型已完成；
+R2-07 当前状态报告已完成；
+12B 阶段已收口，后续进入 12C 准备。
 ```
 
 ---

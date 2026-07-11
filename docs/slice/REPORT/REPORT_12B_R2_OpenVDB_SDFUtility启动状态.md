@@ -98,15 +98,16 @@ docs/codex_task/current/TASKS_12B_R2_OpenVDB_SDFUtility定位任务清单.md
 12B-R2-03 OpenVDB OFF 默认轨道保护：DONE
 12B-R2-04 OpenVDB ON Smoke 与可用性报告：DONE
 12B-R2-05 Utility Capability Matrix：DONE
-12B-R2-06 最小 Utility Report 原型：PENDING
+12B-R2-06 最小 Utility Report 原型：DONE
+12B-R2-07 R2 当前状态报告：DONE
 ```
 
 ## 5. 下一步建议
 
-下一步建议执行：
+R2 最终状态报告：
 
 ```text
-Task 12B-R2-06 最小 Utility Report 原型
+docs/slice/REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md
 ```
 
 原因：
@@ -117,7 +118,8 @@ R2 已确认当前 OpenVDB 代码成熟度；
 并已验证 USE_OPENVDB=OFF 默认构建、UI self-test、legacy benchmark 和现有 unavailable diagnostic 不受 R2 影响；
 并已复测 OpenVDB ON smoke 可用；
 并已完成 outer varnish、clearance、topology、material closure assist 四类 utility capability matrix；
-下一步应在不写 production TIFF 的前提下生成最小 slicesoft.openvdb_sdf_utility.12b_r2.1 utility report 原型。
+并已完成最小 slicesoft.openvdb_sdf_utility.12b_r2.1 report 的 OFF/ON 原型验证；
+R2 已完成状态收口；下一步进入 12C readiness 和 Qt UI 工作台收口准备。
 ```
 
 ## 6. 风险与边界
@@ -248,4 +250,63 @@ docs/slice/DOC/DOC_MATRIX_12B_R2_OpenVDBSdfUtilityCapability.md
 promote 只表示推进为辅助 utility；
 promote 不表示 OpenVDB 可以替代 production slicer；
 promote 不允许写 production RGBWSV TIFF。
+```
+
+## 10. R2-06 最小 Utility Report 原型验证记录
+
+实现入口：
+
+```text
+src/slicer_core/geometry/OpenVdbSdfUtilityReport.*
+apps/openvdb_sdf_utility_probe/main.cpp
+tests/unit/openvdb_sdf_utility_report/main.cpp
+scripts/run_12b_r2_openvdb_sdf_utility.ps1
+```
+
+OFF lane：
+
+```text
+report=output/benchmarks/12b_r2_openvdb_sdf_utility_off.json
+schema=slicesoft.openvdb_sdf_utility.12b_r2.1
+build.useOpenVdb=false
+build.openVdbAvailable=false
+utilities.*.status=unavailable
+decision.productionReplacementAllowed=false
+```
+
+ON lane：
+
+```text
+report=output/benchmarks/12b_r2_openvdb_sdf_utility_on.json
+schema=slicesoft.openvdb_sdf_utility.12b_r2.1
+build.useOpenVdb=true
+build.openVdbAvailable=true
+build.openVdbVersion=12.0.1
+outerVarnishShell.status=pass
+outerVarnishShell.metrics.activeVoxels=7214
+outerVarnishShell.metrics.candidateShellVoxels=2524
+topologyDiagnostic.status=pass
+clearanceDistance.status=not_evaluated
+materialClosureAssist.status=not_evaluated
+decision.productionReplacementAllowed=false
+```
+
+输出边界：
+
+```text
+writesProductionPackage=false
+writesProductionTiff=false
+writesPreview=false
+modifiesLegacyOutput=false
+protocolSchemaTouched=false
+```
+
+验证说明：
+
+```text
+OFF/ON unit tests、OFF/ON report script 和既有 OpenVDB smoke 均通过；
+现有 UI binary self-test 通过；
+fresh slicer_cli Debug build 通过；
+fresh Qt UI build 因 Qt 5.15.2 与 MSVC 19.51 的 stdext checked iterator 兼容问题失败；
+该 UI 工具链问题不改变 R2-06 diagnostic report 的 OFF/ON 验证结论，需单独处理构建环境兼容性。
 ```

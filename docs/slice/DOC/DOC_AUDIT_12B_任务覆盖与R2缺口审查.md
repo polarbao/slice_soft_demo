@@ -21,7 +21,7 @@
 ```text
 覆盖度：已覆盖 7/7；
 完成度：已完成 6/7，12B-07 仍在执行；
-当前阻塞点：R2 尚未完成最小 utility report 和最终状态报告。
+当前状态：R2 最小 utility report 和最终状态报告均已完成，12B 已收口。
 ```
 
 ## 2. 12B 主任务覆盖矩阵
@@ -110,17 +110,17 @@ OpenVDB 只作为 optional / disabled-by-default 的 SDF utility 候选；
 R2 评估 outer varnish shell offset、clearance distance、topology diagnostic、material closure assist。
 ```
 
-## 6. R2 剩余缺口
+## 6. R2 完成状态
 
-R2 尚未完成：
+R2 任务状态：
 
 | R2 任务 | 当前状态 | 缺口 |
 |---|---|---|
 | R2-03 OpenVDB OFF 默认轨道保护 | DONE | 已验证默认 OFF build、UI self-test、legacy benchmark 和现有 unavailable diagnostic |
 | R2-04 OpenVDB ON Smoke 与可用性报告 | DONE | 已验证 `build-openvdb-09p` OpenVDB ON smoke |
 | R2-05 Utility Capability Matrix | DONE | 已输出四类 utility 的 promote / keep_experimental 结论 |
-| R2-06 最小 Utility Report 原型 | PENDING | 需要 report 原型或 unavailable report，不写 production TIFF |
-| R2-07 R2 当前状态报告 | PENDING | 需要收口 Current/Target/Historical/Pending Confirmation |
+| R2-06 最小 Utility Report 原型 | DONE | OFF/ON 均可生成独立 report，且不写 production TIFF/package |
+| R2-07 R2 当前状态报告 | DONE | 已生成最终状态报告并明确 12C 移交边界 |
 
 ## 7. 是否存在未覆盖主任务
 
@@ -130,20 +130,21 @@ R2 尚未完成：
 不存在未覆盖的 12B 主任务。
 ```
 
-但存在未完成的 R2 子任务：
+R2 子任务状态：
 
 ```text
-12B-07 尚未完成；
-R2 需要继续执行 R2-03 到 R2-07。
+12B-07 已完成；
+R2-00 至 R2-07 已全部覆盖并完成。
 ```
 
 ## 8. 下一步处理建议
 
-推荐顺序：
+后续推荐顺序：
 
 ```text
-1. R2-06：实现或补齐最小 utility report；
-2. R2-07：输出 R2 当前状态报告并决定后续阶段。
+1. 进入 12C readiness；
+2. 将 Qt/MSVC fresh build 兼容问题作为 12C-R0 blocker；
+3. OpenVDB 后续只在独立 utility follow-up 中推进。
 ```
 
 理由：

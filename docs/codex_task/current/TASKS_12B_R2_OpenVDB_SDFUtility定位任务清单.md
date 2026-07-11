@@ -221,7 +221,7 @@ MaterialClosureAssist：keep_experimental，12D semantic masks 仍为生产真�
 
 ## Task 12B-R2-06 最小 Utility Report 原型
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -240,9 +240,46 @@ decision.productionReplacementAllowed=false；
 legacy package 不变。
 ```
 
+输出：
+
+```text
+src/slicer_core/geometry/OpenVdbSdfUtilityReport.h
+src/slicer_core/geometry/OpenVdbSdfUtilityReport.cpp
+apps/openvdb_sdf_utility_probe/main.cpp
+tests/unit/openvdb_sdf_utility_report/main.cpp
+scripts/run_12b_r2_openvdb_sdf_utility.ps1
+```
+
+完成记录：
+
+```text
+已实现 schema=slicesoft.openvdb_sdf_utility.12b_r2.1 的独立 diagnostic report；
+OFF lane 输出 useOpenVdb=false、openVdbAvailable=false 和四项 unavailable utility；
+ON lane 输出 OpenVDB 12.0.1、activeVoxels=7214、candidateShellVoxels=2524；
+OuterVarnishShellOffset 与 TopologyDiagnostic 按 capability matrix 输出 promote；
+ClearanceDistance 与 MaterialClosureAssist 保持 keep_experimental / not_evaluated；
+outputPolicy 明确禁止 production package、TIFF、preview 和 legacy output 修改；
+decision.productionReplacementAllowed=false；
+未接入 legacy slicer_cli production path。
+```
+
+验证记录：
+
+```text
+OFF unit test：PASS；
+OFF utility report script：PASS；
+ON unit test：PASS；
+ON utility report script：PASS；
+现有 run_openvdb_smoke.ps1：PASS；
+现有 build/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe --self-test：PASS；
+fresh slicer_cli Debug build：PASS；
+fresh Qt UI build：BLOCKED，Qt 5.15.2 使用已被 MSVC 19.51 移除的 stdext checked iterator，属于工具链兼容问题；
+本任务未写 production RGBWSV TIFF/package。
+```
+
 ## Task 12B-R2-07 R2 当前状态报告
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -258,4 +295,20 @@ R2 报告包含 Current State / Target State / Historical State / Pending Confir
 包含 capability matrix；
 包含验证命令和未运行验证原因；
 明确 OpenVDB 是否 promote 为 utility。
+```
+
+输出：
+
+```text
+docs/slice/REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md
+```
+
+完成记录：
+
+```text
+已按 Current State / Target State / Historical State / Pending Confirmation 收口；
+已记录 capability matrix、OFF/ON utility report 和实际验证命令；
+已明确 OpenVDB 只 promote 为 optional SDF utility candidate；
+已明确 legacy production path 保留，production replacement 不允许；
+已将 Qt 5.15.2 / MSVC 19.51 fresh UI build 兼容问题移交 12C-R0。
 ```
