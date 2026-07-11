@@ -94,6 +94,26 @@ Use the same report validator for both optional build lanes:
 
 The utility probe writes only `slicesoft.openvdb_sdf_utility.12b_r2.1` diagnostic JSON. It must not write a production package, RGBWSV TIFF, or preview output.
 
+## 12C Qt UI Fresh Build
+
+Qt 5.15.2 with MSVC 19.50+ uses the project-local compatibility shim in `apps/slicer_debug_ui/compat`.
+
+PowerShell entry:
+
+```powershell
+.\scripts\Configure12CQtUi.ps1 -BuildDir build-12c-ui -Config Debug
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
+```
+
+VS Code entry:
+
+```text
+Task: SliceSoft: Build 12C Fresh Qt UI
+Launch: SliceSoft: Debug 12C Fresh Qt UI
+```
+
+The script keeps `USE_OPENVDB=OFF`. It must not edit the local Qt installation.
+
 ## Baseline Gate
 
 Each meaningful refactor step must pass:

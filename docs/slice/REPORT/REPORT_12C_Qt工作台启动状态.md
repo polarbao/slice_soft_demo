@@ -9,9 +9,10 @@
 12A P0/P1 语义：基本完成；
 12B R0/R1/R2：完成；
 Profile/配置/预览基础组件：已存在；
-fresh Qt UI build：BLOCKED；
-12C-R0：可以启动；
-12C-R1/R2：需等待 R0 build lane 通过。
+fresh Qt UI build：PASS；
+12C-R0-01：COMPLETE；
+12C-R0-02/R0-03：PENDING；
+12C-R1/R2：需等待 R0 基线阶段完成。
 文档与上下文准备：COMPLETE；
 ```
 
@@ -41,9 +42,9 @@ PASS scenario-registry default=11 fixture=7 advanced=6
 
 该结果证明当前 registry 分层可读取，但不能替代 R0 的 fresh UI build gate。
 
-## 3. 当前 Blocker
+## 3. Build Blocker 处理结果
 
-Qt 5.15.2 与 MSVC 19.51 fresh build 不兼容。12C 第一项任务必须输出可复现的构建选择和验证结果，不能只依赖历史 binary。
+Qt 5.15.2 与 MSVC 19.51 的 `stdext` 不兼容已通过项目内 target-scoped shim 解决。未修改 Qt 安装目录，未升级依赖。决策和验证见 `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md`。
 
 ## 4. 执行入口
 
@@ -51,15 +52,15 @@ Qt 5.15.2 与 MSVC 19.51 fresh build 不兼容。12C 第一项任务必须输出
 docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 docs/slice/DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md
-ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md
+ai_workspace/context_handoff/2026-07-12_12C-R0-01_Qt构建准入.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R0-01 Qt/MSVC fresh build lane 决策与修复
+12C-R0-02 UI Self-Test 与 Smoke 基线
 ```
 
-本报告不表示 12C 功能已实现，只表示文档、边界、依赖和原子任务已准备完成。
+本报告不表示 12C 功能已实现。当前只表示文档准入和 R0-01 fresh build gate 已完成。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

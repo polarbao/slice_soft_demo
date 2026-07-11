@@ -64,7 +64,7 @@ ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md
 
 ### Task 12C-R0-01 Qt/MSVC Fresh Build Lane
 
-状态：PENDING
+状态：DONE
 
 内容：
 
@@ -83,6 +83,18 @@ fresh configure PASS；
 fresh slicer_debug_ui Debug build PASS；
 未直接修改本机 Qt 安装目录；
 构建入口可在 VSCode/PowerShell 复现。
+```
+
+完成记录：
+
+```text
+已复现 Qt 5.15.2 / MSVC 19.51 的 stdext C3861/C2065；
+已验证 VS18 生成器不能固定本机 14.44 工具集；
+选择项目内 Qt515MsvcCompatibility shim，不升级或修改 Qt 安装；
+新增 Configure12CQtUi.ps1 和 VS Code task/launch；
+从空 build-12c-ui 完成 fresh configure/build；
+fresh binary --self-test PASS startup / experimental-report-summary；
+决策见 DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md。
 ```
 
 ### Task 12C-R0-02 UI Self-Test 与 Smoke 基线

@@ -48,6 +48,26 @@
       "problemMatcher": "$msCompile"
     },
     {
+      "label": "SliceSoft: Build 12C Fresh Qt UI",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/Configure12CQtUi.ps1",
+        "-BuildDir",
+        "build-12c-ui",
+        "-Config",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": "$msCompile"
+    },
+    {
       "label": "SliceSoft: CTest Debug",
       "type": "shell",
       "command": "ctest",
@@ -138,6 +158,19 @@
         "cwd": "${workspaceFolder}"
       },
       "dependsOn": "SliceSoft: Build Debug UI",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Run 12C Fresh UI self-test",
+      "type": "shell",
+      "command": "${workspaceFolder}/build-12c-ui/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe",
+      "args": [
+        "--self-test"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build 12C Fresh Qt UI",
       "problemMatcher": []
     },
     {

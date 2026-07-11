@@ -61,5 +61,15 @@ set_target_properties(slicer_debug_ui PROPERTIES
 target_link_libraries(slicer_debug_ui PRIVATE Qt5::Widgets slicer_core)
 
 if(MSVC)
-    target_compile_options(slicer_debug_ui PRIVATE /utf-8)
+    target_compile_options(slicer_debug_ui PRIVATE /utf-8 /MP)
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        set(qt515MsvcCompatibilityHeader
+            "${CMAKE_CURRENT_SOURCE_DIR}/compat/Qt515MsvcCompatibility.h"
+        )
+        target_sources(slicer_debug_ui PRIVATE ${qt515MsvcCompatibilityHeader})
+        target_compile_options(slicer_debug_ui PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
 endif()

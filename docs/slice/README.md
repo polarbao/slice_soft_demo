@@ -6,7 +6,7 @@
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12B-R2 已完成；12C 文档和上下文准备已完成；当前唯一执行起点为 `12C-R0-01 Qt/MSVC Fresh Build Lane`。
+当前状态：12B-R2 已完成；12C-R0-01 fresh Qt UI build gate 已通过；当前任务为 `12C-R0-02 UI Self-Test 与 Smoke 基线`。
 
 ## 目录结构
 
@@ -71,6 +71,7 @@
 | `DEMO/DEMO_12C_Qt_UI配置预览验证方案.md` | 12C fresh build、effective config、统一预览和布局验证方案 |
 | `DOC/DOC_AUDIT_12C_现有QtUI能力与收口缺口审查.md` | 12C 当前 UI 能力、增量范围和 build blocker 审查 |
 | `DOC/DOC_DECISION_12C_R0_R1_R2_Qt工作台阶段拆分.md` | 12C R0/R1/R2 阶段拆分与准入边界 |
+| `DOC/DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md` | 12C Qt/MSVC fresh build lane 决策与验证 |
 | `DOC/DOC_DECISION_12C_UI产品默认值与交互冻结.md` | 12C Profile、effective config、诊断布局和 12D 接入默认值 |
 | `DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` | 12C 文档、上下文和原子任务准入检查 |
 | `ROADMAP/ROADMAP_12C_Qt工作台分阶段执行路线.md` | 12C 构建、设置、预览和诊断工作台路线 |

@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-10
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12B 已完成，当前执行 12C-R0 Qt 工作台构建兼容与基线准入
+> 当前阶段判断：12B 已完成，12C-R0-01 已完成，当前执行 R0-02 smoke 基线
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -37,7 +37,8 @@
 当前分支：main，任务开始前通过 git 命令确认
 最新完成阶段：12B-R2 OpenVDB SDF utility 定位
 当前执行阶段：12C-R0 Qt 工作台构建兼容与基线准入
-当前任务：12C-R0-01 Qt/MSVC Fresh Build Lane
+最新完成任务：12C-R0-01 Qt/MSVC Fresh Build Lane
+当前任务：12C-R0-02 UI Self-Test 与 Smoke 基线
 ```
 
 09P-R1 已完成：
@@ -333,6 +334,7 @@ docs/slice/DEV/DEV_12C_Qt_UI配置预览工作台设计.md
 docs/slice/DEMO/DEMO_12C_Qt_UI配置预览验证方案.md
 docs/slice/DOC/DOC_AUDIT_12C_现有QtUI能力与收口缺口审查.md
 docs/slice/DOC/DOC_DECISION_12C_R0_R1_R2_Qt工作台阶段拆分.md
+docs/slice/DOC/DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md
 docs/slice/DOC/DOC_DECISION_12C_UI产品默认值与交互冻结.md
 docs/slice/DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md
 docs/slice/ROADMAP/ROADMAP_12C_Qt工作台分阶段执行路线.md

@@ -5,7 +5,8 @@
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
 - Current phase: Stage 12C-R0 Qt workbench build compatibility and baseline admission
 - Latest completed phase: Stage 12B-R2 OpenVDB SDF utility positioning
-- Current task: `12C-R0-01 Qt/MSVC Fresh Build Lane`
+- Latest completed task: `12C-R0-01 Qt/MSVC Fresh Build Lane`
+- Current task: `12C-R0-02 UI Self-Test and Smoke Baseline`
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

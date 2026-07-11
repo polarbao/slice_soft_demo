@@ -16,6 +16,7 @@
 | `DOC_CHECKLIST_10_DownstreamHandoff.md` | 10 阶段下游交付清单 |
 | `DOC_AUDIT_12C_现有QtUI能力与收口缺口审查.md` | 12C 当前 Qt UI 能力、增量范围和构建 blocker |
 | `DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` | 12C 文档、上下文、依赖和原子任务准入检查 |
+| `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md` | 12C Qt 5.15.2 / MSVC 19.50+ fresh build lane 决策与验证 |
 
 ## 决策记录
 

@@ -20,7 +20,7 @@ docs/slice/PRD/PRD_12C_Qt_UI配置预览工作台收口.md
 docs/slice/DEV/DEV_12C_Qt_UI配置预览工作台设计.md
 docs/slice/DEMO/DEMO_12C_Qt_UI配置预览验证方案.md
 docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md
-ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md
+ai_workspace/context_handoff/2026-07-12_12C-R0-01_Qt构建准入.md
 ```
 
 每次只执行用户明确指定的一个 12C 原子任务。

@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 当前原子任务：
 
 ```text
-12C-R0-01 Qt/MSVC Fresh Build Lane
+12C-R0-02 UI Self-Test 与 Smoke 基线
 ```
 
-12C-R1/R2 必须等待 R0 fresh Qt UI build gate 通过。
+12C-R0-01 fresh Qt UI build gate 已通过。12C-R1/R2 必须等待 R0-02/R0-03 完成。
 
 ## 保留参考入口
 

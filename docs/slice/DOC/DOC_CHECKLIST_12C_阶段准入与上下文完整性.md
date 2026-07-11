@@ -18,7 +18,7 @@
 | TASKS | `TASKS_12C_Qt_UI配置预览任务清单.md` | READY |
 | CODEX_PROMPT | `CODEX_PROMPT_12C_Qt工作台收口执行指令.md` | READY |
 | 启动报告 | `REPORT_12C_Qt工作台启动状态.md` | READY |
-| 会话交接 | `ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md` | READY |
+| 会话交接 | `ai_workspace/context_handoff/2026-07-12_12C-R0-01_Qt构建准入.md` | READY |
 
 ## 2. 上下文入口检查
 
@@ -62,9 +62,9 @@ R2：PreviewWorkspace、图例/探针、DiagnosticsDock、OpenVDB 摘要、最�
 
 ## 5. 已知 Blocker
 
-当前 fresh Qt UI build 因 Qt 5.15.2 与 MSVC 19.51 的 `stdext::make_checked_array_iterator` 兼容问题被阻断。该问题是 `12C-R0-01` 的实施内容，不是文档准备缺口。
+Qt 5.15.2 与 MSVC 19.51 的 `stdext::make_checked_array_iterator` 兼容问题已由 `12C-R0-01` 解决。fresh `build-12c-ui` 和 fresh binary self-test 已通过。
 
-不得使用历史 UI binary 的 smoke 结果替代 fresh build gate。
+R0-02 仍必须使用该 fresh binary 建立完整 smoke 基线，不得回退到历史 binary。
 
 ## 6. 准入判定
 
@@ -72,9 +72,10 @@ R2：PreviewWorkspace、图例/探针、DiagnosticsDock、OpenVDB 摘要、最�
 12B-R2：COMPLETE
 12C 文档准备：COMPLETE
 12C 上下文交接：COMPLETE
-12C-R0-01：READY TO START
+12C-R0-01：COMPLETE
+12C-R0-02：READY TO START
 12C-R1/R2：BLOCKED UNTIL R0 GATE PASSES
 12C overall implementation：NOT COMPLETE
 ```
 
-结论：可以进入 12C，但只能从 `12C-R0-01 Qt/MSVC Fresh Build Lane` 开始。
+结论：12C-R0-01 已完成，下一步只能执行 `12C-R0-02 UI Self-Test 与 Smoke 基线`。
