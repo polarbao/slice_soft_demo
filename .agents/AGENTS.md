@@ -128,7 +128,7 @@ Current Stage 12 track:
 12A: material fill, support, and varnish semantics, current P0/P1 scope complete.
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: current phase; R0 build/smoke/layout baseline complete, now entering R1 Profile/settings closure.
-12D: material closure documents exist but do not block 12C-R0/R1.
+12D: R0 documentation/schema/fixture admission is complete; code implementation waits for 12C-R2-05.
 ```
 
 R0/R1/R2 principles still apply to refactors:

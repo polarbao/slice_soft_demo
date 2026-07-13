@@ -1,13 +1,22 @@
 # TASKS_12D 横截面材料无缝闭环任务清单
 
 > 文档状态：Current Task Plan
-> 日期：2026-07-08
+> 日期：2026-07-13
 > 对应文档：
 > - docs/slice/DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md
+> - docs/slice/DOC/DOC_DECISION_12D_R0_R1_R2_R3_材料闭环阶段拆分.md
+> - docs/slice/ROADMAP/ROADMAP_12D_材料闭环分阶段执行路线.md
 > - docs/slice/PRD/PRD_12D_横截面材料无缝闭环验收与修复.md
 > - docs/slice/DEV/DEV_12D_材料闭环诊断与修复设计.md
+> - docs/slice/DOC/DOC_SCHEMA_12D_MaterialClosureReport.md
+> - docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
+> - docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
+
+执行准入：完成 12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 后，才开始 12D-02 代码任务。
 
 ## 12D-01 文档与验收口径冻结
+
+状态：DONE / 12D-R0
 
 目标：
 
@@ -25,7 +34,19 @@ PRD / DEV / DOC_DECISION 已生成；
 文档内容已完整落位，无未完成标记。
 ```
 
+完成记录：
+
+```text
+开放项已关闭；
+R0/R1/R2/R3 阶段已拆分；
+MaterialClosureReport schema 已冻结；
+DEMO、fixture matrix、CODEX_PROMPT 和准备状态报告已生成；
+12D 代码任务等待 12C-R2-05 完成后开始。
+```
+
 ## 12D-02 MaterialClosureConfig
+
+状态：PENDING / 12D-R1
 
 目标：
 
@@ -43,6 +64,8 @@ cmake --build build --config Debug --target experimental_config_unit_tests
 
 ## 12D-03 MaterialClosureReport
 
+状态：PENDING / 12D-R1
+
 目标：
 
 ```text
@@ -59,6 +82,8 @@ cmake --build build --config Debug --target slicer_cli
 
 ## 12D-04 TIFF 反推候选诊断
 
+状态：PENDING / 12D-R1
+
 目标：
 
 ```text
@@ -71,15 +96,20 @@ cmake --build build --config Debug --target slicer_cli
 ```text
 报告包含 source=rgbwsv_tiff_inferred；
 报告包含 confidence=candidate；
+productionAcceptance=not_evaluated 且 closureStatus 不得为 pass；
+repair.attempted=false；
 能输出 ColorFillGap / ModelSupportGap / ColorSupportGap。
 ```
 
 ## 12D-05 Semantic Mask 精确诊断
 
+状态：PENDING / 12D-R2
+
 目标：
 
 ```text
 从 composer 阶段接入 TextureSurfaceMask / ModelFillMask / SupportFillMask / OuterVarnishShellMask；
+接入 ModelEnvelopeMask / SupportRequiredMask / ExpectedOccupiedDomainMask；
 报告 source=semantic_masks, confidence=exact。
 ```
 
@@ -91,6 +121,8 @@ cmake --build build --config Debug --target slicer_cli
 ```
 
 ## 12D-06 Repair Disabled 验证
+
+状态：PENDING / 12D-R2
 
 目标：
 
@@ -108,6 +140,8 @@ RGBWSV TIFF 与未启用 materialClosure repair 的输出一致。
 
 ## 12D-07 Repair Enabled 一像素闭环修复
 
+状态：PENDING / 12D-R3
+
 目标：
 
 ```text
@@ -121,9 +155,12 @@ ColorFillGap 修复为 ModelFill；
 InternalVoidGap 修复为 SupportFill；
 ModelSupportGap 按上下文修复为 ModelFill 或 SupportFill；
 报告 repairedPixels > 0。
+2px 及以上 gap 输出 REPAIR_GAP_TOO_WIDE 且不自动修复。
 ```
 
 ## 12D-08 外部背景保护
+
+状态：PENDING / 12D-R3
 
 目标：
 
@@ -141,6 +178,8 @@ externalBackgroundProtectedPixels > 0；
 
 ## 12D-09 UI 闭环诊断显示
 
+状态：PENDING / 12D-R3
+
 目标：
 
 ```text
@@ -156,6 +195,8 @@ UI 报告/诊断区显示 closureStatus、worstLayers、gap 类型。
 ```
 
 ## 12D-10 真实模型验证
+
+状态：PENDING / 12D-R3
 
 目标：
 

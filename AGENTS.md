@@ -18,7 +18,8 @@
 - `12B-R0/R1/R2` performance evaluation and OpenVDB SDF utility positioning are complete.
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - Current working phase is `12C-R1`: Profile and Settings closure.
-- The current executable task is `12C-R1-01 Profile Metadata Closure`.
+- The current executable task is `12C-R1-03 Generated Effective Config`.
+- `12D-R0` documentation admission is complete, but 12D code work waits for `12C-R2-05`.
 - `12C-R2` must not start before the full R1 settings pipeline is complete.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 

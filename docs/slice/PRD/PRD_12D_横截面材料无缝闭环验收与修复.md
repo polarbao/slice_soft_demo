@@ -1,7 +1,7 @@
 # PRD_12D 横截面材料无缝闭环验收与修复
 
 > 文档状态：PRD
-> 日期：2026-07-08
+> 日期：2026-07-13
 > 上游文档：PRD_12A_彩色纹理材料填充支撑光油策略.md
 
 ## 1. Goal
@@ -162,22 +162,23 @@ materialClosure.connectivity = 8
 7. UI 可显示闭环状态。
 ```
 
-## 8. Open Questions
+## 8. Closed Decisions
 
-以下问题进入 12D 实施前需通过真实模型验证确认：
+12D-R0 已冻结以下口径：
 
 ```text
-1. 视觉闭环但语义 gap 非 0 时，生产是否允许 warning 还是必须 fail；
-2. maxGapPx 是否只允许 1，还是根据工艺可配置到 2；
-3. 上表面支撑和外侧光油壳层同时启用时，VarnishSupportGap 是否按 fail 处理；
-4. 是否需要单独输出二值 gap preview。
+1. semantic_masks exact 诊断存在 critical gap 时，生产状态为 fail；
+2. rgbwsv_tiff_inferred 只能输出 candidate/warning，不能 production pass；
+3. 第一批自动修复只允许 maxGapPx=1，2px 及以上只诊断；
+4. VarnishSupportGap 只在 SupportRequiredMask 要求接触的位置成立；
+5. gap preview 默认关闭，可用于 fixture/人工诊断，但不是生产真源；
+6. repair.enabled 默认 false，repair disabled 不得改变 TIFF；
+7. 外部背景必须保持 RGBWSV 全 255。
 ```
 
-当前建议：
+详细阶段和报告约束见：
 
 ```text
-1. 默认 fail，但 UI 可显示 warning 解释；
-2. 第一阶段只做 1px；
-3. 外侧光油壳层与支撑之间的闭环 gap 也纳入诊断；
-4. 输出 gap preview 有助于人工复核，应作为第二批 UI 增强。
+docs/slice/DOC/DOC_DECISION_12D_R0_R1_R2_R3_材料闭环阶段拆分.md
+docs/slice/DOC/DOC_SCHEMA_12D_MaterialClosureReport.md
 ```

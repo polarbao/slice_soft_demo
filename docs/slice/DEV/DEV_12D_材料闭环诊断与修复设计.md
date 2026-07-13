@@ -1,7 +1,7 @@
 # DEV_12D 材料闭环诊断与修复设计
 
 > 文档状态：DEV
-> 日期：2026-07-08
+> 日期：2026-07-13
 > 对应 PRD：PRD_12D_横截面材料无缝闭环验收与修复.md
 
 ## 1. Goal
@@ -60,7 +60,7 @@
 enabled：是否启用闭环诊断；
 mode：diagnostic | repair_then_report；
 connectivity：4 或 8，默认 8；
-maxGapPx：需要检测/修复的最大缝隙半径，第一阶段只支持 1；
+maxGapPx：允许自动修复的最大缝隙宽度，第一阶段只支持 1；
 repair.enabled：是否修改生产 mask；
 colorFillGap：颜色与填充之间默认补模型填充；
 modelSupportGap：根据 gap 所在位置决定补模型填充或支撑；
@@ -84,8 +84,21 @@ InternalVoidSupportMask
 SurfaceVarnishMask
 OuterVarnishShellMask
 ModelEnvelopeMask
+SupportRequiredMask
+ExpectedOccupiedDomainMask
 LayerEmptyMask
 ```
+
+其中：
+
+```text
+ModelEnvelopeMask：当前层模型应占据或包围的业务域，不等同于 final RGB/W/V 并集；
+SupportRequiredMask：support generator 在材料冲突裁剪前产生的“应有支撑”意图 mask；
+ExpectedOccupiedDomainMask：由 ModelEnvelopeMask、SupportRequiredMask 和外侧光油意图合成；
+LayerEmptyMask：最终 RGBWSV 全 255 的像素。
+```
+
+`SupportRequiredMask` 不得从最终 S 通道反推，否则已经缺失的支撑区域不会进入 gap 候选。
 
 如果第一阶段无法取得全部语义 mask，可先用 TIFF 六通道反推候选 gap，但 report 必须标记：
 
@@ -103,7 +116,23 @@ confidence = "exact"
 
 ## 5. Gap Detection
 
-### 5.1 基础邻接
+### 5.1 Required Domain
+
+先限定应当由材料占据的区域，避免把正常外部空气识别为 gap：
+
+```text
+ExpectedOccupiedDomain = ModelEnvelopeMask
+                       | SupportRequiredMask
+                       | OuterVarnishShellMask
+ExternalBackground = flood_fill_from_canvas_border(LayerEmptyMask)
+CandidateGap = LayerEmptyMask
+             & ExpectedOccupiedDomain
+             & !ExternalBackground
+```
+
+只有 `CandidateGap` 才进入后续分类。
+
+### 5.2 基础邻接
 
 对每个 layer，计算所有材料 mask 的 8 邻域膨胀：
 
@@ -115,16 +144,19 @@ dilate(Support)
 dilate(OuterVarnishShell)
 ```
 
-Empty 像素若同时满足邻接关系，则归类为 gap：
+CandidateGap 像素若同时满足邻接关系，则归类为 gap：
 
 ```text
-ColorFillGap = Empty & dilate(Color) & dilate(ModelFill)
-ModelSupportGap = Empty & dilate(Model) & dilate(Support)
-ColorSupportGap = Empty & dilate(Color) & dilate(Support)
-VarnishSupportGap = Empty & dilate(OuterVarnishShell) & dilate(Support)
+ColorFillGap = CandidateGap & dilate(Color) & dilate(ModelFill)
+ModelSupportGap = CandidateGap & dilate(Model) & dilate(Support)
+ColorSupportGap = CandidateGap & dilate(Color) & dilate(Support)
+VarnishSupportGap = CandidateGap
+                  & SupportRequiredMask
+                  & dilate(OuterVarnishShell)
+                  & dilate(Support)
 ```
 
-### 5.2 内部镂空
+### 5.3 内部镂空
 
 InternalVoidGap 不应只靠邻接判断。它需要基于 `ModelEnvelopeMask`：
 
@@ -134,7 +166,7 @@ InternalVoidGap = Empty & inside(ModelEnvelopeMask) & !externalBackground
 
 第一阶段可沿用 internalVoidSupport 的 enclosed-area 判断。
 
-### 5.3 外部背景保护
+### 5.4 外部背景保护
 
 任何 gap 检测和修复都必须保护模型外部背景：
 
@@ -159,7 +191,17 @@ ModelSupportGap:
 ColorSupportGap:
   if inside ModelEnvelope -> ModelFill
   else -> SupportFill
-VarnishSupportGap -> SupportFill
+VarnishSupportGap -> SupportFill，仅限 SupportRequiredMask
+```
+
+修复限制：
+
+```text
+source 必须为 semantic_masks；
+confidence 必须为 exact；
+maxGapPx 第一批必须为 1；
+2px 及以上 gap 只报告 REPAIR_GAP_TOO_WIDE；
+任何 ExternalBackground 像素禁止写入修复 mask。
 ```
 
 组合优先级不变：
@@ -176,6 +218,8 @@ Model > OuterVarnishShell > Support > Empty
 reports/material_closure_report.json
 ```
 
+完整字段和不变量以 `docs/slice/DOC/DOC_SCHEMA_12D_MaterialClosureReport.md` 为准。
+
 Package summary：
 
 ```json
@@ -184,7 +228,9 @@ Package summary：
   "enabled": true,
   "mode": "diagnostic",
   "source": "semantic_masks",
+  "confidence": "exact",
   "closureStatus": "fail",
+  "productionAcceptance": "failed",
   "totalGapPixels": 7961,
   "repairedPixels": 0,
   "worstLayers": [
@@ -264,6 +310,16 @@ cmake --build build --config Debug --target slicer_cli rip_reader_test
 4. repair enabled 时 repairedPixels > 0 且 totalGapPixels 降低；
 5. 外部背景保持 Empty；
 6. RGBWSV 协议不变。
+```
+
+Candidate 轨道额外要求：
+
+```text
+source=rgbwsv_tiff_inferred；
+confidence=candidate；
+productionAcceptance=not_evaluated；
+closureStatus 不得为 pass；
+repair.attempted=false。
 ```
 
 ## 10. Rollback

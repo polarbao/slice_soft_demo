@@ -1,7 +1,7 @@
 # DOC_DECISION_12D 横截面材料无缝闭环专项
 
 > 文档状态：Decision
-> 日期：2026-07-08
+> 日期：2026-07-13
 > 前置阶段：12A 彩色纹理材料填充支撑光油策略、12C Qt UI 配置预览工作台
 
 ## 1. 决策结论
@@ -125,4 +125,14 @@ docs/slice/DEV/DEV_12D_材料闭环诊断与修复设计.md
 
 ```text
 docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md
+```
+
+阶段拆分、schema 和验证入口见：
+
+```text
+docs/slice/DOC/DOC_DECISION_12D_R0_R1_R2_R3_材料闭环阶段拆分.md
+docs/slice/DOC/DOC_SCHEMA_12D_MaterialClosureReport.md
+docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
+docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
+docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md
 ```
