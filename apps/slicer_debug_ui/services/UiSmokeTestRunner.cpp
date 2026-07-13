@@ -366,6 +366,7 @@ int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
     int defaultVisibleCount = 0;
     int fixtureCount = 0;
     int advancedCount = 0;
+    QStringList normalIds;
     for (const ScenarioEntry& scenario : registry.Entries())
     {
         if (!scenario.enabled)
@@ -380,6 +381,37 @@ int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
         {
             ++advancedCount;
         }
+        else if (scenario.visibility == "normal")
+        {
+            ++defaultVisibleCount;
+            normalIds.push_back(scenario.id);
+            if (scenario.displayname.isEmpty()
+                || scenario.category.isEmpty()
+                || scenario.inputformats.isEmpty()
+                || scenario.materialcapabilities.isEmpty()
+                || scenario.productionsafety.isEmpty()
+                || scenario.docpath.isEmpty())
+            {
+                return fail("scenario-registry 稳定 Profile 元数据不完整：" + scenario.id);
+            }
+            if (!QFileInfo::exists(QDir(options.repo_root).filePath(scenario.docpath)))
+            {
+                return fail("scenario-registry Profile 文档不存在：" + scenario.docpath);
+            }
+            if (!QFileInfo::exists(QDir(options.repo_root).filePath(scenario.configpath)))
+            {
+                return fail("scenario-registry Profile 模板不存在：" + scenario.configpath);
+            }
+            const QString expectedSafety = scenario.id == "production_rgb_inspection"
+                ? QStringLiteral("diagnostic")
+                : QStringLiteral("production");
+            if (scenario.productionsafety != expectedSafety
+                || scenario.experimental
+                || scenario.requiresopenvdb)
+            {
+                return fail("scenario-registry Profile 生产安全标记不符合冻结决策：" + scenario.id);
+            }
+        }
         else
         {
             ++defaultVisibleCount;
@@ -388,6 +420,35 @@ int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
     if (registry.DefaultScenarioId().isEmpty() || registry.FindById(registry.DefaultScenarioId()) == nullptr)
     {
         return fail("scenario-registry defaultScenarioId 无效。");
+    }
+    QStringList expectedNormalIds{
+        "production_rgb_inspection",
+        "single_material_relief",
+        "textured_nail_rgb_varnish_lower_support",
+        "textured_nail_rgb_white_lower_support",
+    };
+    normalIds.sort();
+    expectedNormalIds.sort();
+    if (normalIds != expectedNormalIds)
+    {
+        return fail(QString("scenario-registry 稳定 Profile 集不符合冻结决策，实际=%1")
+                        .arg(normalIds.join(",")));
+    }
+    const ScenarioEntry* defaultScenario = registry.FindById(registry.DefaultScenarioId());
+    if (defaultScenario == nullptr || defaultScenario->visibility != "normal")
+    {
+        return fail("scenario-registry 默认 Profile 不是稳定 Profile。");
+    }
+    if (!registry.Warnings().isEmpty())
+    {
+        return fail("scenario-registry 存在索引告警：" + registry.Warnings().join("; "));
+    }
+    const ScenarioEntry* openVdbScenario = registry.FindById("openvdb_surface_shell_3mf_real");
+    if (openVdbScenario == nullptr
+        || openVdbScenario->visibility != "advanced"
+        || openVdbScenario->productionsafety != "experimental_only")
+    {
+        return fail("scenario-registry OpenVDB 实验场景边界不正确。");
     }
     if (defaultVisibleCount <= 0 || fixtureCount <= 0 || advancedCount <= 0)
     {

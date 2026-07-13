@@ -4,13 +4,21 @@
 #include <QStringList>
 #include <QVector>
 
+/**
+ * @brief Metadata and execution paths for one UI slicing Profile or test scenario.
+ */
 struct ScenarioEntry
 {
     QString id;
     QString name;
+    QString displayname;
     QString category;
     QString audience;
     QString visibility;
+    QStringList inputformats;
+    QStringList materialcapabilities;
+    QString productionsafety;
+    QString docpath;
     QString configpath;
     QString packagedir;
     QString description;

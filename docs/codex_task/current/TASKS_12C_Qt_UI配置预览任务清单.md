@@ -2,7 +2,7 @@
 
 > 文档版本：v0.2
 > 文档状态：Current Task Plan / Stage 12C
-> 更新日期：2026-07-12
+> 更新日期：2026-07-13
 
 ## 1. 边界
 
@@ -148,11 +148,23 @@ save-as-config：PASS，生成独立 smoke 输出且未修改源配置。
 
 ### Task 12C-R1-01 Profile Metadata 收口
 
-状态：PENDING
+状态：DONE
 
 内容：在 ScenarioRegistry 上增量固化 Profile id/displayName/category/visibility/input formats/material capabilities/production safety/doc path。
 
 完成标准：普通用户默认只看到稳定 Profile；advanced/fixture 仍可显式打开；scenario-registry smoke 更新。
+
+完成记录：
+
+```text
+场景索引升级为 slice_soft.scenarios.2；
+ScenarioRegistry 已支持 displayName、inputFormats、materialCapabilities、productionSafety、docPath；
+普通层冻结为 4 个稳定 Profile，默认 Profile 为彩色纹理甲片 RGB + 白墨填充 + 下表面支撑；
+历史样例转入 advanced，fixture 保持显式测试入口，hidden 不因高级开关而显示；
+UI 下拉项和 tooltip 已展示 Profile 中文名称、输入格式、材料能力、生产安全与说明文档；
+scenario-registry smoke 校验稳定 Profile 精确集合、元数据完整性、文档存在性和默认 Profile 可见性；
+fresh build-12c-ui 验证 PASS：default=4 fixture=7 advanced=17。
+```
 
 ### Task 12C-R1-02 SliceSettingsModel
 

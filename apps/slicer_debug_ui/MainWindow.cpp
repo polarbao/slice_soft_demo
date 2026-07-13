@@ -10,6 +10,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFontMetrics>
+#include <QHash>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -64,7 +65,8 @@ void addPathRow(QVBoxLayout* layout, const QString& label, QLineEdit* edit, QPus
 
 QString MakeScenarioDisplayLabel(const ScenarioEntry& scenario)
 {
-    QString label = scenario.category.isEmpty() ? scenario.name : scenario.category + " / " + scenario.name;
+    const QString displayName = scenario.displayname.isEmpty() ? scenario.name : scenario.displayname;
+    QString label = scenario.category.isEmpty() ? displayName : scenario.category + " / " + displayName;
     if (scenario.experimental || scenario.requiresopenvdb)
     {
         label += "（实验）";
@@ -78,6 +80,35 @@ QString MakeScenarioDisplayLabel(const ScenarioEntry& scenario)
         label += "（高级）";
     }
     return label;
+}
+
+QString ProductionSafetyLabel(const QString& value)
+{
+    static const QHash<QString, QString> labels{
+        {QStringLiteral("production"), QStringLiteral("生产模板")},
+        {QStringLiteral("diagnostic"), QStringLiteral("仅诊断")},
+        {QStringLiteral("development_only"), QStringLiteral("仅开发")},
+        {QStringLiteral("fixture_only"), QStringLiteral("仅测试夹具")},
+        {QStringLiteral("experimental_only"), QStringLiteral("仅实验")},
+    };
+    return labels.value(value, value);
+}
+
+QString MaterialCapabilityLabel(const QString& value)
+{
+    static const QHash<QString, QString> labels{
+        {QStringLiteral("rgb_surface"), QStringLiteral("RGB 表层")},
+        {QStringLiteral("white_model_fill"), QStringLiteral("白墨模型填充")},
+        {QStringLiteral("varnish_model_fill"), QStringLiteral("光油模型填充")},
+        {QStringLiteral("lower_support"), QStringLiteral("下表面支撑")},
+        {QStringLiteral("internal_void_support"), QStringLiteral("内部镂空支撑")},
+        {QStringLiteral("optional_outer_varnish"), QStringLiteral("可选外侧光油")},
+        {QStringLiteral("single_material"), QStringLiteral("单材料")},
+        {QStringLiteral("selectable_white_or_varnish_fill"), QStringLiteral("白墨或光油填充")},
+        {QStringLiteral("production_rgb_preview"), QStringLiteral("生产 RGB 预览")},
+        {QStringLiteral("rgbwsv_pixel_probe"), QStringLiteral("RGBWSV 像素探针")},
+    };
+    return labels.value(value, value);
 }
 
 QString MakeScenarioToolTip(const ScenarioEntry& scenario)
@@ -94,6 +125,27 @@ QString MakeScenarioToolTip(const ScenarioEntry& scenario)
         lines.push_back("输出包：" + scenario.packagedir);
     }
     lines.push_back("可见性：" + scenario.visibility);
+    if (!scenario.inputformats.isEmpty())
+    {
+        lines.push_back("输入格式：" + scenario.inputformats.join(" / ").toUpper());
+    }
+    if (!scenario.materialcapabilities.isEmpty())
+    {
+        QStringList capabilities;
+        for (const QString& capability : scenario.materialcapabilities)
+        {
+            capabilities.push_back(MaterialCapabilityLabel(capability));
+        }
+        lines.push_back("材料能力：" + capabilities.join("、"));
+    }
+    if (!scenario.productionsafety.isEmpty())
+    {
+        lines.push_back("生产安全：" + ProductionSafetyLabel(scenario.productionsafety));
+    }
+    if (!scenario.docpath.isEmpty())
+    {
+        lines.push_back("说明文档：" + scenario.docpath);
+    }
     if (scenario.experimental || scenario.requiresopenvdb)
     {
         lines.push_back("实验场景：用于专项验证，不默认作为生产切片路径。");
@@ -990,6 +1042,10 @@ void MainWindow::LoadScenarios()
 
 bool MainWindow::ShouldShowScenario(const ScenarioEntry& scenario) const
 {
+    if (scenario.visibility == "hidden")
+    {
+        return false;
+    }
     if (m_showAdvancedScenariosCheck != nullptr && m_showAdvancedScenariosCheck->isChecked())
     {
         return true;

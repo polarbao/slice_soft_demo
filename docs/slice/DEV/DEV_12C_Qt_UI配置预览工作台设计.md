@@ -51,7 +51,7 @@ HelpTextProvider
 
 ## 3. Profile 元数据
 
-建议为配置增加轻量 metadata，不直接重命名大量 JSON：
+场景索引从 `slice_soft.scenarios.2` 起提供轻量 metadata，不直接重命名大量模板 JSON：
 
 ```json
 {
@@ -61,9 +61,37 @@ HelpTextProvider
   "visibility": "normal",
   "description": "用于标准 OBJ/MTL/PNG 彩色甲片模型。",
   "configPath": "samples/configs/material_process/obj_mtl_texture_rgb_white_varnish.json",
-  "tags": ["obj", "texture", "rgb", "white", "varnish"]
+  "inputFormats": ["obj"],
+  "materialCapabilities": ["rgb_surface", "white_model_fill", "lower_support"],
+  "productionSafety": "production",
+  "docPath": "docs/slice/PRD/PRD_12C_Qt_UI配置预览工作台收口.md"
 }
 ```
+
+字段约束：
+
+| 字段 | 含义 | 稳定 Profile 要求 |
+|---|---|---|
+| `id` | 不随中文文案变化的唯一标识 | 必填 |
+| `displayName` | UI 中文短名 | 必填 |
+| `category` | UI 分组 | 必填 |
+| `visibility` | 普通/高级/夹具/隐藏分层 | 必填 |
+| `inputFormats` | 可接受的模型格式 | 非空 |
+| `materialCapabilities` | RGB、模型填充、支撑、光油等能力标签 | 非空 |
+| `productionSafety` | 当前用途安全级别 | 必填 |
+| `docPath` | 仓库内说明文档 | 必填且文件存在 |
+
+`productionSafety` 使用以下稳定值：
+
+```text
+production：可作为 legacy 生产设置模板；
+diagnostic：只用于生产数据检查，不代表新的生产算法；
+development_only：高级开发样例；
+fixture_only：自动化或回归夹具；
+experimental_only：实验能力，禁止默认进入生产流程。
+```
+
+旧 `name` 字段只作为 advanced/fixture 的兼容回退；普通稳定 Profile 必须显式提供 `displayName` 和完整元数据。
 
 可见性：
 
