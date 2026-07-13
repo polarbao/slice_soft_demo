@@ -168,11 +168,23 @@ fresh build-12c-ui 验证 PASS：default=4 fixture=7 advanced=17。
 
 ### Task 12C-R1-02 SliceSettingsModel
 
-状态：PENDING
+状态：DONE
 
 内容：建立 UI 设置 DTO，覆盖模型、输出、层高、模型填充、支撑 placement/internal void、表面/外侧光油、preview 和 engine role。
 
 完成标准：设置状态不依赖单个 QWidget，也不暴露到 slicer_core。
+
+完成记录：
+
+```text
+新增 apps/slicer_debug_ui/services/SliceSettingsModel；
+DTO 覆盖 Profile、模型、输出、层高、模型填充、支撑 placement/internal void、表面/外侧光油、preview 和 engine role；
+四个稳定 Profile 已形成不同默认状态，彩色白墨/光油 Profile 的模型填充默认值不再混淆；
+外侧光油默认关闭且厚度为 0 mm，内部镂空支撑默认开启，legacy 为默认生产引擎；
+OpenVDB 只允许标记为 utility/candidate，并产生 productionReplacementAllowed=false 警告；
+新增 slice-settings-model smoke，覆盖合法设置、未知 Profile、非法参数和 OpenVDB 安全边界；
+SliceSettingsModel 不依赖 QWidget/QObject，未暴露到 slicer_core。
+```
 
 ### Task 12C-R1-03 Generated Effective Config
 

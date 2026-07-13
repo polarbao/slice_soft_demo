@@ -9,6 +9,7 @@
 #include "PreviewReportIndex.h"
 #include "ReportLoader.h"
 #include "ScenarioRegistry.h"
+#include "SliceSettingsModel.h"
 #include "ToolPaths.h"
 
 #include <QDir>
@@ -107,6 +108,9 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     }
     if (options.case_name == "scenario-registry") {
         return scenarioRegistry(options);
+    }
+    if (options.case_name == "slice-settings-model") {
+        return sliceSettingsModel(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -461,6 +465,86 @@ int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
                     .arg(defaultVisibleCount)
                     .arg(fixtureCount)
                     .arg(advancedCount));
+}
+
+int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
+{
+    Q_UNUSED(options);
+    struct ProfileExpectation
+    {
+        QString id;
+        ModelFillMaterial fillmaterial;
+        int previewinterval;
+    };
+    const QVector<ProfileExpectation> expectations{
+        {QStringLiteral("textured_nail_rgb_white_lower_support"), ModelFillMaterial::White, 10},
+        {QStringLiteral("textured_nail_rgb_varnish_lower_support"), ModelFillMaterial::Varnish, 10},
+        {QStringLiteral("single_material_relief"), ModelFillMaterial::White, 10},
+        {QStringLiteral("production_rgb_inspection"), ModelFillMaterial::White, 1},
+    };
+
+    SliceSettingsModel model;
+    for (const ProfileExpectation& expectation : expectations)
+    {
+        if (!model.ApplyProfileDefaults(expectation.id))
+        {
+            return fail("slice-settings-model 无法应用稳定 Profile：" + expectation.id);
+        }
+        const SliceSettingsState& defaults = model.State();
+        if (defaults.profileid != expectation.id
+            || defaults.modelfillmaterial != expectation.fillmaterial
+            || defaults.preview.interval != expectation.previewinterval
+            || !defaults.support.enabled
+            || defaults.support.placement != SupportPlacement::Lower
+            || !defaults.support.internalvoidenabled
+            || defaults.surfacevarnish.enabled
+            || defaults.outervarnish.enabled
+            || defaults.outervarnish.thicknessmm != 0.0
+            || defaults.enginerole != SliceEngineRole::LegacyProduction)
+        {
+            return fail("slice-settings-model Profile 默认值错误：" + expectation.id);
+        }
+    }
+
+    const SliceSettingsState previousState = model.State();
+    if (model.ApplyProfileDefaults(QStringLiteral("unknown_profile"))
+        || model.State().profileid != previousState.profileid)
+    {
+        return fail("slice-settings-model 未知 Profile 不应改变状态。");
+    }
+
+    SliceSettingsState validState = model.State();
+    validState.modelpath = QStringLiteral("model/obj/sample.obj");
+    validState.outputdirectory = QStringLiteral("output/ui_sessions/sample/package");
+    model.SetState(validState);
+    if (!model.Validate().IsValid())
+    {
+        return fail("slice-settings-model 安全 legacy 设置未通过校验。");
+    }
+
+    SliceSettingsState candidateState = validState;
+    candidateState.enginerole = SliceEngineRole::OpenVdbUtilityCandidate;
+    model.SetState(candidateState);
+    const SliceSettingsValidationResult candidateValidation = model.Validate();
+    if (!candidateValidation.IsValid()
+        || !candidateValidation.warnings.join(" ").contains("productionReplacementAllowed=false"))
+    {
+        return fail("slice-settings-model OpenVDB candidate 边界未固化。");
+    }
+
+    SliceSettingsState invalidState = validState;
+    invalidState.layerthicknessmm = 0.0;
+    invalidState.support.enabled = false;
+    invalidState.support.internalvoidenabled = true;
+    invalidState.outervarnish.enabled = true;
+    invalidState.outervarnish.thicknessmm = 0.0;
+    model.SetState(invalidState);
+    if (model.Validate().IsValid())
+    {
+        return fail("slice-settings-model 非法设置未被阻断。");
+    }
+
+    return pass("slice-settings-model profiles=4 legacy-default=true openvdb=candidate-only");
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {

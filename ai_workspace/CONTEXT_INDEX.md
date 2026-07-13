@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-13 | 12C-R1-01 Profile 元数据收口 | `context_handoff/2026-07-13_12C-R1-01_Profile元数据收口.md` | Current |
+| 2026-07-13 | 12C-R1-02 SliceSettingsModel | `context_handoff/2026-07-13_12C-R1-02_SliceSettingsModel.md` | Current |
+| 2026-07-13 | 12C-R1-01 Profile 元数据收口 | `context_handoff/2026-07-13_12C-R1-01_Profile元数据收口.md` | Superseded |
 | 2026-07-12 | 12C-R0-03 布局组件基线 | `context_handoff/2026-07-12_12C-R0-03_布局组件基线.md` | Superseded |
 | 2026-07-12 | 12C-R0-02 UI Smoke 基线 | `context_handoff/2026-07-12_12C-R0-02_UI_Smoke基线.md` | Superseded |
 | 2026-07-12 | 12C-R0-01 Qt 构建准入 | `context_handoff/2026-07-12_12C-R0-01_Qt构建准入.md` | Superseded |

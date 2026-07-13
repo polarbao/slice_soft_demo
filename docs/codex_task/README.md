@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 当前原子任务：
 
 ```text
-12C-R1-02 SliceSettingsModel
+12C-R1-03 Generated Effective Config
 ```
 
-12C-R0 与 R1-01 Profile Metadata 已完成。当前继续 R1 设置 DTO，R2 必须等待 R1 设置管线完成。
+12C-R0、R1-01 Profile Metadata 和 R1-02 SliceSettingsModel 已完成。当前进入 generated effective config，R2 必须等待 R1 设置管线完成。
 
 ## 保留参考入口
 

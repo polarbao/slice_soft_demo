@@ -15,7 +15,8 @@ fresh Qt UI build：PASS；
 12C-R0-03：COMPLETE；
 12C-R0：COMPLETE；
 12C-R1-01：COMPLETE；
-12C-R1-02：READY TO START；
+12C-R1-02：COMPLETE；
+12C-R1-03：READY TO START；
 12C-R2：需等待 R1 设置管线完成。
 文档与上下文准备：COMPLETE；
 ```
@@ -67,6 +68,14 @@ PASS scenario-registry default=4 fixture=7 advanced=17
 
 R1-01 只冻结 Profile 目录和元数据。白墨/光油两个彩色 Profile 当前复用同一基础模板，二者的默认模型填充差异将在 R1-02/R1-03 由 `SliceSettingsModel + generated effective config` 落地；在该设置管线完成前，不应把“选择 Profile 后直接运行模板”理解为最终产品行为。
 
+R1-02 增量验证：
+
+```text
+PASS slice-settings-model profiles=4 legacy-default=true openvdb=candidate-only
+```
+
+当前四个稳定 Profile 已在 `SliceSettingsModel` 中形成白墨/光油等不同默认状态，但这些状态尚未写入 session generated config。真正的一键切片生效链路仍依赖 R1-03。
+
 ## 3. Build Blocker 处理结果
 
 Qt 5.15.2 与 MSVC 19.51 的 `stdext` 不兼容已通过项目内 target-scoped shim 解决。未修改 Qt 安装目录，未升级依赖。决策和验证见 `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md`。
@@ -85,7 +94,7 @@ ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md
 ## 5. 下一任务
 
 ```text
-12C-R1-02 SliceSettingsModel
+12C-R1-03 Generated Effective Config
 ```
 
 本报告不表示 12C 功能已全部实现。当前只表示 R0 构建、Smoke、布局与组件复用基线已完成，R1/R2 产品化改造仍待执行。

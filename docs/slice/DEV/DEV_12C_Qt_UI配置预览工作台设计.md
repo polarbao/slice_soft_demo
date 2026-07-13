@@ -47,6 +47,32 @@ HelpTextProvider
   根据 key 提供中文说明、默认值、影响通道、文档链接。
 ```
 
+### 2.1 SliceSettingsModel DTO 边界
+
+`SliceSettingsModel` 位于 `apps/slicer_debug_ui/services`，使用值语义保存以下状态：
+
+```text
+profileid / modelpath / outputdirectory；
+layerthicknessmm；
+modelfillmaterial = White | Varnish；
+support.enabled / placement / internalvoidenabled / internalvoidminareapx；
+surfacevarnish.enabled / thicknesspx；
+outervarnish.enabled / thicknessmm / pixelpitchum；
+preview.enabled / interval；
+enginerole = LegacyProduction | OpenVdbUtilityCandidate。
+```
+
+边界约束：
+
+```text
+不继承 QObject，不持有 QWidget；
+不依赖 slicer_core 内部对象；
+外侧光油默认关闭且 thicknessmm=0；
+生产 Profile 模型填充无 Empty 枚举；
+OpenVDB 只能形成 non-blocking candidate 警告，不能成为默认生产引擎；
+R1-03 负责将 DTO 映射到 generated effective config，本类不直接写文件或运行 CLI。
+```
+
 ---
 
 ## 3. Profile 元数据
