@@ -35,7 +35,11 @@ private slots:
     void OnLayerHeightChanged(double value);
     void OnTexturePolicyChanged(int index);
     void OnNonSurfaceRgbPolicyChanged(int index);
+    void OnModelFillMaterialChanged(int index);
     void OnSupportEnabledChanged(bool checked);
+    void OnSupportPlacementChanged(int index);
+    void OnInternalVoidEnabledChanged(bool checked);
+    void OnInternalVoidMinAreaChanged(int value);
     void OnWhiteEnabledChanged(bool checked);
     void OnVarnishEnabledChanged(bool checked);
     void OnVarnishTopLayersChanged(int value);
@@ -63,7 +67,11 @@ private:
     QDoubleSpinBox* m_layerHeightSpin{nullptr};
     QComboBox* m_texturePolicyCombo{nullptr};
     QComboBox* m_nonSurfaceRgbPolicyCombo{nullptr};
+    QComboBox* m_modelFillMaterialCombo{nullptr};
     QCheckBox* m_supportEnabledCheck{nullptr};
+    QComboBox* m_supportPlacementCombo{nullptr};
+    QCheckBox* m_internalVoidEnabledCheck{nullptr};
+    QSpinBox* m_internalVoidMinAreaSpin{nullptr};
     QCheckBox* m_whiteEnabledCheck{nullptr};
     QCheckBox* m_varnishEnabledCheck{nullptr};
     QSpinBox* m_varnishTopLayersSpin{nullptr};

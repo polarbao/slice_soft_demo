@@ -67,3 +67,12 @@ QVector<ConfigDiffEntry> ConfigDiffModel::diff(const QJsonDocument& original, co
     }
     return entries;
 }
+
+QVector<ConfigDiffEntry> ConfigDiffModel::DiffAll(
+    const QJsonDocument& original,
+    const QJsonDocument& current)
+{
+    QVector<ConfigDiffEntry> entries;
+    appendDiffs(entries, QString{}, original.object(), current.object());
+    return entries;
+}

@@ -5,8 +5,8 @@
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
 - Current phase: Stage 12C-R1 Profile and Settings closure
 - Latest completed phase: Stage 12B-R2 OpenVDB SDF utility positioning
-- Latest completed task: `12C-R1-02 SliceSettingsModel`
-- Current task: `12C-R1-03 Generated Effective Config`
+- Latest completed task: `12C-R1-03 Generated Effective Config`
+- Current task: `12C-R1-04 设置项中文帮助元数据`
 - Prepared next stage: `12D-R0 Material Closure Documentation Admission`; implementation waits for `12C-R2-05`
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only

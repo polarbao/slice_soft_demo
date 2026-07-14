@@ -8,6 +8,8 @@ add_executable(slicer_debug_ui
     services/ConfigDiffModel.h
     services/ConfigValidator.cpp
     services/ConfigValidator.h
+    services/EffectiveConfigGenerator.cpp
+    services/EffectiveConfigGenerator.h
     services/PackageLoader.cpp
     services/PackageLoader.h
     services/ProcessRunner.cpp

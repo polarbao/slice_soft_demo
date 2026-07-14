@@ -104,6 +104,12 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_nonSurfaceRgbPolicyCombo->setToolTip("控制非表面纹理带的模型实体区域如何写 RGB：可作为模型填充、空白、备用色或交给材料策略处理。");
     materialForm->addRow("非表面 RGB", m_nonSurfaceRgbPolicyCombo);
 
+    m_modelFillMaterialCombo = new QComboBox(this);
+    AddComboOption(m_modelFillMaterialCombo, "白墨填充", "white");
+    AddComboOption(m_modelFillMaterialCombo, "光油填充", "varnish");
+    m_modelFillMaterialCombo->setToolTip("模型内部填充材料。生产 Profile 不允许留空；该设置不同于模型外部 S 通道支撑。");
+    materialForm->addRow("模型内部填充", m_modelFillMaterialCombo);
+
     m_supportEnabledCheck = new QCheckBox("启用支撑", this);
     m_whiteEnabledCheck = new QCheckBox("启用白墨", this);
     m_varnishEnabledCheck = new QCheckBox("启用顶部光油策略", this);
@@ -145,9 +151,26 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     materialForm->addRow("外侧光油厚度", m_outerVarnishThicknessSpin);
 
     auto* supportGroup = new QGroupBox("支撑", this);
-    supportGroup->setToolTip("支撑总开关；细节请切换到“支撑”页。");
+    supportGroup->setToolTip("模型外部 S 通道支撑。可设置摆放位置和内部镂空填充。");
     auto* supportForm = new QFormLayout(supportGroup);
     supportForm->addRow(m_supportEnabledCheck);
+    m_supportPlacementCombo = new QComboBox(this);
+    AddComboOption(m_supportPlacementCombo, "下表面", "lower");
+    AddComboOption(m_supportPlacementCombo, "上表面", "upper");
+    AddComboOption(m_supportPlacementCombo, "上、下表面", "both");
+    AddComboOption(m_supportPlacementCombo, "仅悬空区域", "unsupported_only");
+    AddComboOption(m_supportPlacementCombo, "完整垂直投影", "full_vertical_projection");
+    m_supportPlacementCombo->setToolTip("支撑摆放方式。生产 Profile 默认下表面；上表面支撑位于外侧光油壳层之外。");
+    supportForm->addRow("支撑位置", m_supportPlacementCombo);
+
+    m_internalVoidEnabledCheck = new QCheckBox("填充内部镂空", this);
+    m_internalVoidEnabledCheck->setToolTip("将模型横截面内部封闭空洞写入 S 通道，避免内部无材料区域造成塌陷。");
+    supportForm->addRow(m_internalVoidEnabledCheck);
+    m_internalVoidMinAreaSpin = new QSpinBox(this);
+    m_internalVoidMinAreaSpin->setRange(0, 100000000);
+    m_internalVoidMinAreaSpin->setSuffix(" px");
+    m_internalVoidMinAreaSpin->setToolTip("小于该像素面积的内部空洞可忽略；默认 16 px。");
+    supportForm->addRow("镂空最小面积", m_internalVoidMinAreaSpin);
 
     auto* previewGroup = new QGroupBox("预览", this);
     previewGroup->setToolTip("控制调试预览图片输出。生产 TIFF 输出不依赖 preview。");
@@ -181,7 +204,11 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     connect(m_layerHeightSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnLayerHeightChanged);
     connect(m_texturePolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnTexturePolicyChanged);
     connect(m_nonSurfaceRgbPolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnNonSurfaceRgbPolicyChanged);
+    connect(m_modelFillMaterialCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnModelFillMaterialChanged);
     connect(m_supportEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnSupportEnabledChanged);
+    connect(m_supportPlacementCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnSupportPlacementChanged);
+    connect(m_internalVoidEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnInternalVoidEnabledChanged);
+    connect(m_internalVoidMinAreaSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnInternalVoidMinAreaChanged);
     connect(m_whiteEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnWhiteEnabledChanged);
     connect(m_varnishEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnVarnishEnabledChanged);
     connect(m_varnishTopLayersSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnVarnishTopLayersChanged);
@@ -203,7 +230,11 @@ void QuickConfigPanel::LoadFromDocument()
     m_layerHeightSpin->setValue(DoubleValue({"output", "layerThicknessMm"}, 0.01));
     SetComboValue(m_texturePolicyCombo, StringValue({"texture", "applyMode"}, "top_surface_band"));
     SetComboValue(m_nonSurfaceRgbPolicyCombo, StringValue({"texture", "nonSurfaceRgbPolicy"}, "model_material"));
+    SetComboValue(m_modelFillMaterialCombo, StringValue({"modelFill", "material"}, "white"));
     m_supportEnabledCheck->setChecked(BoolValue({"support", "enabled"}, true));
+    SetComboValue(m_supportPlacementCombo, StringValue({"support", "placement"}, "lower"));
+    m_internalVoidEnabledCheck->setChecked(BoolValue({"support", "internalVoid", "enabled"}, true));
+    m_internalVoidMinAreaSpin->setValue(IntValue({"support", "internalVoid", "minAreaPx"}, 16));
     m_whiteEnabledCheck->setChecked(BoolValue({"materialPolicy", "white", "enabled"}, false));
     m_varnishEnabledCheck->setChecked(BoolValue({"materialPolicy", "varnish", "enabled"}, false));
     m_varnishTopLayersSpin->setValue(IntValue({"materialPolicy", "varnish", "topLayers"}, 0));
@@ -294,12 +325,85 @@ void QuickConfigPanel::OnNonSurfaceRgbPolicyChanged(const int index)
     }
 }
 
+void QuickConfigPanel::OnModelFillMaterialChanged(const int index)
+{
+    if (m_loading)
+    {
+        return;
+    }
+    const QString value = ComboValue(m_modelFillMaterialCombo, index);
+    if (value != QStringLiteral("white") && value != QStringLiteral("varnish"))
+    {
+        return;
+    }
+    SetValueIfChanged({"modelFill", "enabled"}, true);
+    SetValueIfChanged({"modelFill", "material"}, value);
+    SetValueIfChanged({"modelFill", "emptyAllowedInProduction"}, false);
+    SetValueIfChanged({"modelFill", "legacyRgbFallback"}, false);
+}
+
 void QuickConfigPanel::OnSupportEnabledChanged(const bool checked)
 {
     if (!m_loading)
     {
         SetValueIfChanged({"support", "enabled"}, checked);
         SetValueIfChanged({"materialProcessProfile", "support", "expected"}, checked);
+        if (!checked)
+        {
+            SetValueIfChanged({"support", "mode"}, "none");
+            SetValueIfChanged({"support", "internalVoid", "enabled"}, false);
+        }
+    }
+}
+
+void QuickConfigPanel::OnSupportPlacementChanged(const int index)
+{
+    if (m_loading)
+    {
+        return;
+    }
+    const QString placement = ComboValue(m_supportPlacementCombo, index);
+    if (placement.isEmpty())
+    {
+        return;
+    }
+    QString mode = QStringLiteral("bottom_projection");
+    if (placement == QStringLiteral("unsupported_only"))
+    {
+        mode = QStringLiteral("unsupported_only");
+    }
+    else if (placement == QStringLiteral("full_vertical_projection"))
+    {
+        mode = QStringLiteral("full_vertical_projection");
+    }
+    SetValueIfChanged({"support", "placement"}, placement);
+    SetValueIfChanged({"support", "mode"}, mode);
+    SetValueIfChanged(
+        {"support", "upper", "enabled"},
+        placement == QStringLiteral("upper") || placement == QStringLiteral("both"));
+    SetValueIfChanged({"support", "upper", "outside"}, "outer_varnish_shell");
+}
+
+void QuickConfigPanel::OnInternalVoidEnabledChanged(const bool checked)
+{
+    if (m_loading)
+    {
+        return;
+    }
+    if (checked && !m_supportEnabledCheck->isChecked())
+    {
+        m_supportEnabledCheck->setChecked(true);
+        SetValueIfChanged({"support", "enabled"}, true);
+    }
+    SetValueIfChanged({"support", "internalVoid", "enabled"}, checked);
+    SetValueIfChanged({"support", "internalVoid", "fillRule"}, "all_internal_voids");
+}
+
+void QuickConfigPanel::OnInternalVoidMinAreaChanged(const int value)
+{
+    if (!m_loading)
+    {
+        SetValueIfChanged({"support", "internalVoid", "minAreaPx"}, value);
     }
 }
 

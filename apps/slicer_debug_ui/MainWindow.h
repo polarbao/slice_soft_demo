@@ -1,6 +1,7 @@
 #pragma once
 
 #include "services/ConfigDocument.h"
+#include "services/EffectiveConfigGenerator.h"
 #include "services/PackageLoader.h"
 #include "services/ProcessRunner.h"
 #include "services/ReportLoader.h"
@@ -58,9 +59,19 @@ private:
     QWidget* createRightPanel();
     QString absoluteFromRepo(const QString& path) const;
     QString inferPackageFromConfig(const QString& config_path) const;
-    QString CreateOneClickConfig(const QString& modelPath, QString* packageDir) const;
+    QString CreateOneClickConfig(const QString& modelPath, QString* packageDir);
     QString CreateOpenVdbCandidateConfig(const QString& modelPath, QString* packageDir) const;
     QString CreateOpenVdbReportPath(const QString& modelPath) const;
+    EffectiveConfigResult GenerateEffectiveConfig(
+        const QString& modelPathOverride,
+        const QString& packageDirOverride,
+        SliceEngineRole engineRole,
+        const QString& sessionTag);
+    SliceSettingsState BuildCurrentSettings(
+        const QString& modelPathOverride,
+        const QString& packageDirOverride,
+        SliceEngineRole engineRole) const;
+    void ApplyProfileDefaultsToDocument(const QString& profileId, const QString& packageDir);
     void RunGeneratedConfig(const QString& configPath, const QString& packageDir);
     void RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath);
     void RunOpenVdbCandidate(const QString& configPath, const QString& packageDir);
@@ -81,6 +92,7 @@ private:
     QString current_action_;
     QString pending_package_;
     QString compare_output_;
+    QString m_currentProfileId;
 
     QLineEdit* config_edit_{nullptr};
     QLineEdit* package_edit_{nullptr};

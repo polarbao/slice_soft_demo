@@ -277,6 +277,38 @@ QString SanitizeSessionName(const QString& name)
     return normalized.isEmpty() ? QStringLiteral("model") : normalized;
 }
 
+SupportPlacement ParseSupportPlacement(const QString& value)
+{
+    if (value == QStringLiteral("upper"))
+    {
+        return SupportPlacement::Upper;
+    }
+    if (value == QStringLiteral("both"))
+    {
+        return SupportPlacement::Both;
+    }
+    if (value == QStringLiteral("unsupported_only"))
+    {
+        return SupportPlacement::UnsupportedOnly;
+    }
+    if (value == QStringLiteral("full_vertical_projection"))
+    {
+        return SupportPlacement::FullVerticalProjection;
+    }
+    return SupportPlacement::Lower;
+}
+
+QString ResolveModelPath(const QString& modelPath, const QString& configPath)
+{
+    const QFileInfo modelInfo(modelPath);
+    if (modelInfo.isAbsolute() || configPath.trimmed().isEmpty())
+    {
+        return QDir::fromNativeSeparators(modelInfo.absoluteFilePath());
+    }
+    const QDir configDir(QFileInfo(configPath).absolutePath());
+    return QDir::fromNativeSeparators(QFileInfo(configDir.filePath(modelPath)).absoluteFilePath());
+}
+
 }  // namespace
 
 MainWindow::MainWindow(QString repo_root, QWidget* parent)
@@ -346,13 +378,21 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(config_editor_panel_, &ConfigEditorPanel::statusMessage, status_label_, &QLabel::setText);
 
     LoadScenarios();
-    config_editor_panel_->loadConfig(config_edit_->text());
+    if (!config_document_.document().isObject())
+    {
+        config_editor_panel_->loadConfig(config_edit_->text());
+    }
     loadPackage(package_edit_->text());
 }
 
 void MainWindow::browseConfig() {
     const QString path = QFileDialog::getOpenFileName(this, "选择配置文件", paths_.repo_root, "JSON (*.json)");
     if (!path.isEmpty()) {
+        m_currentProfileId.clear();
+        if (m_scenarioSelector != nullptr)
+        {
+            m_scenarioSelector->setCurrentIndex(0);
+        }
         config_edit_->setText(path);
         config_editor_panel_->loadConfig(path);
     }
@@ -385,13 +425,21 @@ void MainWindow::buildDebug() {
 }
 
 void MainWindow::runSlicer() {
-    if (config_document_.isDirty()) {
-        log_panel_->appendError("当前配置已修改但尚未保存，运行切片仍使用磁盘上的配置文件。");
+    const EffectiveConfigResult result = GenerateEffectiveConfig(
+        QString{},
+        package_edit_->text(),
+        SliceEngineRole::LegacyProduction,
+        QStringLiteral("legacy"));
+    if (!result.IsValid())
+    {
+        status_label_->setText("生效配置校验失败，已停止切片。");
+        log_panel_->appendError(result.errors.join("\n"));
+        return;
     }
-    const QString config = absoluteFromRepo(config_editor_panel_->configPath().isEmpty() ? config_edit_->text()
-                                                                                        : config_editor_panel_->configPath());
-    pending_package_ = inferPackageFromConfig(config);
-    runCommand("运行切片", paths_.slicer_cli, QStringList{"--config", config});
+
+    pending_package_ = absoluteFromRepo(result.document.object().value("output").toObject().value("packageDir").toString());
+    config_edit_->setText(result.generatedconfigpath);
+    runCommand("运行切片", paths_.slicer_cli, QStringList{"--config", result.generatedconfigpath});
 }
 
 void MainWindow::runRipSummary() {
@@ -458,15 +506,19 @@ void MainWindow::OnImportModelOpenVdbDiagnostic()
         return;
     }
 
-    QString packageDir;
-    const QString configPath = CreateOneClickConfig(modelPath, &packageDir);
-    if (configPath.isEmpty())
+    const EffectiveConfigResult result = GenerateEffectiveConfig(
+        modelPath,
+        QString{},
+        SliceEngineRole::OpenVdbUtilityCandidate,
+        QStringLiteral("openvdb_diagnostic"));
+    if (!result.IsValid())
     {
+        status_label_->setText("OpenVDB 诊断配置校验失败。");
+        log_panel_->appendError(result.errors.join("\n"));
         return;
     }
 
-    Q_UNUSED(packageDir);
-    RunOpenVdbDiagnostic(configPath, CreateOpenVdbReportPath(modelPath));
+    RunOpenVdbDiagnostic(result.generatedconfigpath, CreateOpenVdbReportPath(modelPath));
 }
 
 void MainWindow::OnImportModelOpenVdbCandidate()
@@ -717,105 +769,157 @@ QString MainWindow::inferPackageFromConfig(const QString& config_path) const {
     return package.isEmpty() ? QString{} : absoluteFromRepo(package);
 }
 
-QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* packageDir) const
+SliceSettingsState MainWindow::BuildCurrentSettings(
+    const QString& modelPathOverride,
+    const QString& packageDirOverride,
+    const SliceEngineRole engineRole) const
 {
-    const QFileInfo modelInfo(modelPath);
+    SliceSettingsModel settingsmodel;
+    const QString profileId = m_currentProfileId.trimmed().isEmpty()
+        ? QStringLiteral("custom")
+        : m_currentProfileId;
+    if (!settingsmodel.ApplyProfileDefaults(profileId))
+    {
+        SliceSettingsState customstate;
+        customstate.profileid = profileId;
+        settingsmodel.SetState(customstate);
+    }
+
+    SliceSettingsState settings = settingsmodel.State();
+    const QString configuredModel = config_document_.value({"input", "modelPath"}).toString();
+    const QString selectedModel = modelPathOverride.trimmed().isEmpty()
+        ? configuredModel
+        : modelPathOverride;
+    settings.modelpath = ResolveModelPath(selectedModel, config_document_.path());
+
+    const QString configuredPackage = config_document_.value({"output", "packageDir"}).toString();
+    settings.outputdirectory = packageDirOverride.trimmed().isEmpty()
+        ? configuredPackage
+        : packageDirOverride;
+    settings.layerthicknessmm = config_document_.value({"output", "layerThicknessMm"})
+                                    .toDouble(settings.layerthicknessmm);
+
+    const QString modelFill = config_document_.value({"modelFill", "material"}).toString();
+    if (modelFill == QStringLiteral("varnish"))
+    {
+        settings.modelfillmaterial = ModelFillMaterial::Varnish;
+    }
+    else if (modelFill == QStringLiteral("white"))
+    {
+        settings.modelfillmaterial = ModelFillMaterial::White;
+    }
+
+    settings.support.enabled = config_document_.value({"support", "enabled"})
+                                   .toBool(settings.support.enabled);
+    settings.support.placement = ParseSupportPlacement(
+        config_document_.value({"support", "placement"}).toString(QStringLiteral("lower")));
+    settings.support.internalvoidenabled = config_document_.value({"support", "internalVoid", "enabled"})
+                                               .toBool(settings.support.internalvoidenabled);
+    settings.support.internalvoidminareapx = config_document_.value({"support", "internalVoid", "minAreaPx"})
+                                                .toInt(settings.support.internalvoidminareapx);
+
+    settings.surfacevarnish.enabled = config_document_.value({"surfaceVarnish", "enabled"})
+                                          .toBool(settings.surfacevarnish.enabled);
+    settings.surfacevarnish.thicknesspx = config_document_.value({"surfaceVarnish", "thicknessPx"})
+                                              .toInt(settings.surfacevarnish.thicknesspx);
+    settings.outervarnish.enabled = config_document_.value({"outerVarnish", "enabled"})
+                                        .toBool(settings.outervarnish.enabled);
+    settings.outervarnish.thicknessmm = config_document_.value({"outerVarnish", "thicknessMm"})
+                                            .toDouble(settings.outervarnish.thicknessmm);
+    settings.outervarnish.pixelpitchum = config_document_.value({"outerVarnish", "pixelPitchUm"})
+                                             .toDouble(settings.outervarnish.pixelpitchum);
+    settings.preview.enabled = config_document_.value({"preview", "enabled"})
+                                   .toBool(settings.preview.enabled);
+    settings.preview.interval = config_document_.value({"preview", "interval"})
+                                    .toInt(settings.preview.interval);
+    settings.enginerole = engineRole;
+    return settings;
+}
+
+EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
+    const QString& modelPathOverride,
+    const QString& packageDirOverride,
+    const SliceEngineRole engineRole,
+    const QString& sessionTag)
+{
+    EffectiveConfigResult errorresult;
+    if (!config_document_.document().isObject())
+    {
+        errorresult.errors.push_back(QStringLiteral("当前没有可用的 Profile 模板配置。"));
+        config_editor_panel_->ShowEffectiveConfig(errorresult);
+        return errorresult;
+    }
+
+    const QString configuredModel = modelPathOverride.trimmed().isEmpty()
+        ? config_document_.value({"input", "modelPath"}).toString()
+        : modelPathOverride;
+    const QString resolvedModel = ResolveModelPath(configuredModel, config_document_.path());
+    const QFileInfo modelInfo(resolvedModel);
     if (!modelInfo.exists() || !modelInfo.isFile())
     {
-        QMessageBox::warning(nullptr, "模型文件不存在", "无法找到模型文件：\n" + modelPath);
-        return {};
+        errorresult.errors.push_back(QStringLiteral("模型文件不存在：") + resolvedModel);
+        config_editor_panel_->ShowEffectiveConfig(errorresult);
+        return errorresult;
     }
 
-    const QString suffix = modelInfo.suffix().toLower();
-    const bool textureEnabled = suffix == "obj" || suffix == "3mf";
-    const QString sessionName = SanitizeSessionName(modelInfo.completeBaseName())
-        + "_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-    const QString sessionRoot = "output/ui_sessions/" + sessionName;
-    const QString relativePackageDir = sessionRoot + "/package";
+    const QString profilePart = SanitizeSessionName(
+        m_currentProfileId.isEmpty() ? QStringLiteral("custom") : m_currentProfileId);
+    const QString modelPart = SanitizeSessionName(modelInfo.completeBaseName());
+    const QString sessionName = modelPart + "_" + profilePart + "_" + sessionTag + "_"
+        + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz");
+    const QString relativeSessionRoot = QStringLiteral("output/ui_sessions/") + sessionName;
+    const QString generatedPath = QDir(paths_.repo_root).filePath(
+        relativeSessionRoot + QStringLiteral("/slice_config.generated.json"));
+    const QString effectivePackage = packageDirOverride.trimmed().isEmpty()
+        ? QDir(paths_.repo_root).filePath(relativeSessionRoot + QStringLiteral("/package"))
+        : absoluteFromRepo(packageDirOverride);
 
-    QDir repo(paths_.repo_root);
-    if (!repo.mkpath(sessionRoot))
+    if (config_document_.value({"input", "modelPath"}).toString() != resolvedModel)
     {
-        QMessageBox::warning(nullptr, "无法创建会话目录", "无法创建目录：\n" + repo.filePath(sessionRoot));
-        return {};
+        config_document_.setValue({"input", "modelPath"}, resolvedModel);
     }
-
-    QJsonObject root;
-    root.insert("slicingMode", "relief_heightfield");
-    root.insert("input",
-                QJsonObject{{"modelPath", QDir::fromNativeSeparators(modelInfo.absoluteFilePath())}, {"format", "auto"}});
-    root.insert("output",
-                QJsonObject{{"packageDir", relativePackageDir},
-                            {"dpiX", 600},
-                            {"dpiY", 600},
-                            {"layerThicknessMm", 0.01},
-                            {"channelOrder", MakeStringArray({"R", "G", "B", "W", "S", "V"})},
-                            {"bitDepth", 8},
-                            {"planarConfig", "contiguous"},
-                            {"storageMode", "stripped"},
-                            {"rowsPerStrip", 64}});
-    root.insert("modelTransform",
-                QJsonObject{{"unit", "mm"},
-                            {"scale", MakeNumberArray({0.8, 0.8, 0.8})},
-                            {"rotationDeg", MakeNumberArray({0.0, 0.0, 0.0})},
-                            {"translationMm", MakeNumberArray({0.0, 0.0, 0.0})}});
-    root.insert("autoOrient",
-                QJsonObject{{"enabled", true},
-                            {"maxHeightMm", 6.0},
-                            {"strategy", "minimize_height_by_right_angle_rotation"}});
-    root.insert("background", QJsonObject{{"value", 255}});
-    root.insert("modelMaterial",
-                QJsonObject{{"materialChannel", "RGB"},
-                            {"applyMode", "solid_volume"},
-                            {"rgb", MakeIntArray({0, 0, 0})},
-                            {"whiteValue", 255},
-                            {"varnishValue", 255}});
-    root.insert("texture",
-                QJsonObject{{"enabled", textureEnabled},
-                            {"applyMode", textureEnabled ? "top_surface_band" : "solid_volume_from_top_surface"},
-                            {"topSurfaceLayers", 50},
-                            {"sampler", "bilinear"},
-                            {"uvAddressMode", "clamp"},
-                            {"flipV", true},
-                            {"fallbackRgb", MakeIntArray({0, 0, 0})},
-                            {"missingTexturePolicy", "warn_and_fallback"},
-                            {"nonSurfaceRgbPolicy", textureEnabled ? "empty" : "model_material"}});
-    root.insert("modelFill", MakeDefaultModelFillConfig());
-    root.insert("support", MakeDefaultSupportConfig());
-    root.insert("surfaceVarnish", MakeDefaultSurfaceVarnishConfig());
-    root.insert("outerVarnish", MakeDefaultOuterVarnishConfig());
-    root.insert("relief", QJsonObject{{"fillMode", "intersection_range"}, {"baseZMm", 0.0}});
-    root.insert("preview",
-                QJsonObject{{"enabled", true},
-                            {"format", "png"},
-                            {"interval", 10},
-                            {"channels", textureEnabled ? MakeStringArray({"texture_rgb", "rgb", "white", "support", "varnish"})
-                                                         : MakeStringArray({"rgb", "white", "support", "varnish"})},
-                            {"onlyNonEmptyLayers", true},
-                            {"pseudoColors", MakeDefaultPreviewPseudoColors()}});
-    root.insert("experimental",
-                QJsonObject{{"openvdbPipeline",
-                             QJsonObject{{"enabled", false},
-                                         {"engine", "legacy"},
-                                         {"admissionMode", "strict_closed"},
-                                         {"failurePolicy", "fail_fast"},
-                                         {"allowNonProductionOutput", false},
-                                         {"writeProductionRgbwsv", false}}}});
-
-    const QString configPath = repo.filePath(sessionRoot + "/slice_config.generated.json");
-    QFile file(configPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate))
+    if (config_document_.value({"output", "packageDir"}).toString() != effectivePackage)
     {
-        QMessageBox::warning(nullptr, "无法写入配置", "无法写入配置文件：\n" + configPath);
+        config_document_.setValue({"output", "packageDir"}, effectivePackage);
+    }
+
+    EffectiveConfigRequest request;
+    request.profileid = m_currentProfileId.isEmpty() ? QStringLiteral("custom") : m_currentProfileId;
+    request.templatepath = config_document_.path();
+    request.generatedconfigpath = generatedPath;
+    request.originaldocument = config_document_.originalDocument();
+    request.overridedocument = config_document_.document();
+    request.settings = BuildCurrentSettings(resolvedModel, effectivePackage, engineRole);
+
+    EffectiveConfigResult result = EffectiveConfigGenerator().Generate(request);
+    config_editor_panel_->ShowEffectiveConfig(result);
+    if (result.IsValid())
+    {
+        status_label_->setText(QStringLiteral("已生成并校验生效配置：") + result.generatedconfigpath);
+    }
+    return result;
+}
+
+QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* packageDir)
+{
+    const EffectiveConfigResult result = GenerateEffectiveConfig(
+        modelPath,
+        QString{},
+        SliceEngineRole::LegacyProduction,
+        QStringLiteral("legacy"));
+    if (!result.IsValid())
+    {
+        status_label_->setText("一键切片配置校验失败。");
+        log_panel_->appendError(result.errors.join("\n"));
         return {};
     }
-    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
 
     if (packageDir != nullptr)
     {
-        *packageDir = repo.filePath(relativePackageDir);
+        *packageDir = absoluteFromRepo(
+            result.document.object().value("output").toObject().value("packageDir").toString());
     }
-    return configPath;
+    return result.generatedconfigpath;
 }
 
 QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QString* packageDir) const
@@ -937,7 +1041,6 @@ void MainWindow::RunGeneratedConfig(const QString& configPath, const QString& pa
 {
     config_edit_->setText(configPath);
     package_edit_->setText(packageDir);
-    config_editor_panel_->loadConfig(configPath);
     pending_package_ = packageDir;
     runCommand("运行切片", paths_.slicer_cli, QStringList{"--config", configPath});
 }
@@ -945,7 +1048,6 @@ void MainWindow::RunGeneratedConfig(const QString& configPath, const QString& pa
 void MainWindow::RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath)
 {
     config_edit_->setText(configPath);
-    config_editor_panel_->loadConfig(configPath);
     compare_output_ = reportPath;
     pending_package_.clear();
     runCommand("OpenVDB 实验诊断",
@@ -1053,6 +1155,55 @@ bool MainWindow::ShouldShowScenario(const ScenarioEntry& scenario) const
     return scenario.visibility != "advanced" && scenario.visibility != "fixture";
 }
 
+void MainWindow::ApplyProfileDefaultsToDocument(const QString& profileId, const QString& packageDir)
+{
+    SliceSettingsModel settingsmodel;
+    if (!settingsmodel.ApplyProfileDefaults(profileId))
+    {
+        return;
+    }
+
+    const SliceSettingsState& settings = settingsmodel.State();
+    const auto SetValue = [this](const QStringList& path, const QJsonValue& value)
+    {
+        if (config_document_.value(path) != value)
+        {
+            config_document_.setValue(path, value);
+        }
+    };
+
+    if (!packageDir.trimmed().isEmpty())
+    {
+        SetValue({"output", "packageDir"}, QDir::fromNativeSeparators(packageDir));
+    }
+    SetValue(
+        {"modelFill", "material"},
+        settings.modelfillmaterial == ModelFillMaterial::Varnish ? QStringLiteral("varnish")
+                                                                  : QStringLiteral("white"));
+    SetValue({"modelFill", "enabled"}, true);
+    SetValue({"modelFill", "emptyAllowedInProduction"}, false);
+    SetValue({"modelFill", "legacyRgbFallback"}, false);
+    SetValue({"support", "enabled"}, settings.support.enabled);
+    SetValue({"support", "mode"}, QStringLiteral("bottom_projection"));
+    SetValue({"support", "placement"}, QStringLiteral("lower"));
+    SetValue({"support", "internalVoid", "enabled"}, settings.support.internalvoidenabled);
+    SetValue({"support", "internalVoid", "minAreaPx"}, settings.support.internalvoidminareapx);
+    SetValue({"support", "internalVoid", "fillRule"}, QStringLiteral("all_internal_voids"));
+    SetValue({"surfaceVarnish", "enabled"}, settings.surfacevarnish.enabled);
+    SetValue({"surfaceVarnish", "thicknessPx"}, settings.surfacevarnish.thicknesspx);
+    SetValue({"outerVarnish", "enabled"}, settings.outervarnish.enabled);
+    SetValue({"outerVarnish", "thicknessMm"}, settings.outervarnish.thicknessmm);
+    SetValue({"outerVarnish", "pixelPitchUm"}, settings.outervarnish.pixelpitchum);
+    SetValue({"preview", "enabled"}, settings.preview.enabled);
+    SetValue({"preview", "interval"}, settings.preview.interval);
+    SetValue({"experimental", "openvdbPipeline", "enabled"}, false);
+    SetValue({"experimental", "openvdbPipeline", "engine"}, QStringLiteral("legacy"));
+    SetValue({"experimental", "openvdbPipeline", "admissionMode"}, QStringLiteral("strict_closed"));
+    SetValue({"experimental", "openvdbPipeline", "failurePolicy"}, QStringLiteral("fail_fast"));
+    SetValue({"experimental", "openvdbPipeline", "allowNonProductionOutput"}, false);
+    SetValue({"experimental", "openvdbPipeline", "writeProductionRgbwsv"}, false);
+}
+
 void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
 {
     const QString configPath = absoluteFromRepo(scenario.configpath);
@@ -1086,7 +1237,12 @@ void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
         m_scenarioDescriptionLabel->setText(description);
     }
 
-    config_editor_panel_->loadConfig(configPath);
+    m_currentProfileId = scenario.id;
+    if (!config_editor_panel_->loadConfig(configPath))
+    {
+        return;
+    }
+    ApplyProfileDefaultsToDocument(scenario.id, packageDir);
     if (!packageDir.isEmpty())
     {
         loadPackage(packageDir);

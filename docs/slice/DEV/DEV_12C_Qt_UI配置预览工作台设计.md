@@ -151,6 +151,48 @@ UI override：模型路径、输出目录、材料填充、支撑、光油、引
 6. UI 加载 package/manifest/report/preview。
 ```
 
+### 4.1 R1-03 生效配置映射（已实现）
+
+R1-03 使用 `EffectiveConfigGenerator` 承担生成编排，输入优先级固定为：
+
+```text
+磁盘 Profile template
+< 稳定 Profile 默认 SliceSettingsState
+< 当前内存 ConfigDocument dirty override
+< 本次运行模型/输出目录 override
+```
+
+生成与运行顺序固定为：
+
+```text
+读取只读 template/original document
+-> 将 Profile 默认值应用为内存 override
+-> 合成 SliceSettingsState
+-> 写入 input/output/modelFill/support/surfaceVarnish/outerVarnish/preview/experimental
+-> SliceSettingsModel::Validate
+-> ConfigValidator::validate
+-> QSaveFile 原子写入 output/ui_sessions/<session>/slice_config.generated.json
+-> slicer_cli --config <generated config>
+```
+
+字段映射：
+
+| UI 状态 | generated config |
+|---|---|
+| 模型/输出/层高 | `input.modelPath` / `output.packageDir` / `output.layerThicknessMm` |
+| 模型内部填充 | `modelFill.enabled/material/scope/value/emptyAllowedInProduction/legacyRgbFallback` |
+| 支撑位置 | `support.enabled/mode/placement/upper.enabled` |
+| 内部镂空 | `support.internalVoid.enabled/minAreaPx/fillRule` |
+| 表面光油 | `surfaceVarnish.enabled/thicknessPx/source` |
+| 外侧光油 | `outerVarnish.enabled/thicknessMm/pixelPitchUm/conflictPolicy` |
+| 预览 | `preview.enabled/interval` |
+| legacy | `experimental.openvdbPipeline.enabled=false`、`writeProductionRgbwsv=false` |
+| OpenVDB utility/candidate | 仅诊断配置，`admissionMode=diagnostic_only`、`writeProductionRgbwsv=false` |
+
+相对 `input.modelPath` 在 generated config 移入 session 目录前按原模板目录解析为绝对路径，避免路径基准改变。原模板不写回；校验失败不创建 generated config，也不启动 CLI。UI “生效配置”页显示摘要、告警、错误和 template 到 effective config 的全字段差异。
+
+固定协议校验继续阻断 `bitDepth != 8`、`channelOrder != R G B W S V` 和 `background.value != 255`；本阶段不修改 `p0.rgbwsv.2`、uint8 或 `black_is_print`。
+
 ---
 
 ## 5. 预览整合设计

@@ -78,6 +78,24 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
     if (layer_thickness.isDouble() && layer_thickness.toDouble() <= 0.0) {
         result.errors.push_back("output.layerThicknessMm 必须大于 0。");
     }
+    if (output.contains("bitDepth") && output.value("bitDepth").toInt(-1) != 8)
+    {
+        result.errors.push_back("output.bitDepth 必须保持为 8。");
+    }
+    if (output.contains("channelOrder"))
+    {
+        const QJsonArray expectedOrder{"R", "G", "B", "W", "S", "V"};
+        if (output.value("channelOrder").toArray() != expectedOrder)
+        {
+            result.errors.push_back("output.channelOrder 必须保持为 R G B W S V。");
+        }
+    }
+
+    const QJsonObject background = root.value("background").toObject();
+    if (background.contains("value") && background.value("value").toInt(-1) != 255)
+    {
+        result.errors.push_back("background.value 必须保持为 255（空白不打印）。");
+    }
 
     const QSet<QString> roles{"rgb", "white", "varnish", "ignore", "support_candidate", "support"};
     if (hasObject(root, "materialRoleMapping")) {

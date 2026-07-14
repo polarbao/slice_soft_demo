@@ -16,7 +16,8 @@ fresh Qt UI build：PASS；
 12C-R0：COMPLETE；
 12C-R1-01：COMPLETE；
 12C-R1-02：COMPLETE；
-12C-R1-03：READY TO START；
+12C-R1-03：COMPLETE；
+12C-R1-04：READY TO START；
 12C-R2：需等待 R1 设置管线完成。
 文档与上下文准备：COMPLETE；
 ```
@@ -26,6 +27,7 @@ fresh Qt UI build：PASS；
 ```text
 ScenarioRegistry + visibility；
 ConfigDocument + QuickConfigPanel；
+SliceSettingsModel + EffectiveConfigGenerator；
 LayerPreviewPanel + RGBWSV probe；
 PreviewOverlayPanel；
 PreviewPanel；
@@ -66,7 +68,7 @@ PASS scenario-registry default=4 fixture=7 advanced=17
 历史样例仍保留在 advanced/fixture，不删除回归配置。
 ```
 
-R1-01 只冻结 Profile 目录和元数据。白墨/光油两个彩色 Profile 当前复用同一基础模板，二者的默认模型填充差异将在 R1-02/R1-03 由 `SliceSettingsModel + generated effective config` 落地；在该设置管线完成前，不应把“选择 Profile 后直接运行模板”理解为最终产品行为。
+R1-01 只冻结 Profile 目录和元数据。白墨/光油两个彩色 Profile 继续复用同一只读基础模板，二者的默认模型填充差异现已由 R1-02/R1-03 的 `SliceSettingsModel + generated effective config` 落地。
 
 R1-02 增量验证：
 
@@ -74,7 +76,26 @@ R1-02 增量验证：
 PASS slice-settings-model profiles=4 legacy-default=true openvdb=candidate-only
 ```
 
-当前四个稳定 Profile 已在 `SliceSettingsModel` 中形成白墨/光油等不同默认状态，但这些状态尚未写入 session generated config。真正的一键切片生效链路仍依赖 R1-03。
+当前四个稳定 Profile 已在 `SliceSettingsModel` 中形成白墨/光油等不同默认状态。
+
+R1-03 增量验证：
+
+```text
+PASS generated-effective-config differences=21 template-readonly=true
+```
+
+当前运行链路已变为：
+
+```text
+Profile template + 内存 UI override + SliceSettingsState
+-> session/slice_config.generated.json
+-> SliceSettingsModel/ConfigValidator 校验
+-> slicer_cli
+```
+
+“运行切片”和“一键导入模型并切片”不再忽略未保存 UI 设置，也不覆盖原 template/fixture。配置页“生效配置”可查看实际 CLI 配置摘要、告警、错误和逐字段差异。模型内部填充、支撑 placement、内部镂空、表面/外侧光油及 preview 已进入同一生成链路。
+
+OpenVDB 保持 utility/candidate 边界：普通切片强制 legacy；实验诊断生成 `writeProductionRgbwsv=false` 的诊断配置；既有显式候选入口不被提升为默认生产路径。
 
 ## 3. Build Blocker 处理结果
 
@@ -89,14 +110,15 @@ docs/slice/DOC/DOC_CHECKLIST_12C_阶段准入与上下文完整性.md
 ai_workspace/context_handoff/2026-07-12_12C-R0-02_UI_Smoke基线.md
 docs/slice/DOC/DOC_AUDIT_12C_R0_03_现有Qt布局与组件复用基线.md
 ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md
+ai_workspace/context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R1-03 Generated Effective Config
+12C-R1-04 设置项中文帮助元数据
 ```
 
-本报告不表示 12C 功能已全部实现。当前只表示 R0 构建、Smoke、布局与组件复用基线已完成，R1/R2 产品化改造仍待执行。
+本报告不表示 12C 功能已全部实现。当前表示 R0 与 R1-01/R1-02/R1-03 已完成；R1-04 和 R2 产品化改造仍待执行。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

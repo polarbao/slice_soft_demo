@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../services/ConfigDocument.h"
+#include "../services/EffectiveConfigGenerator.h"
 
 #include <QComboBox>
 #include <QLabel>
@@ -21,6 +22,18 @@ public:
     explicit ConfigEditorPanel(ConfigDocument* document, QWidget* parent = nullptr);
     bool loadConfig(const QString& path);
     QString configPath() const;
+
+    /**
+     * @brief Display the latest generated effective config summary and differences.
+     * @param result Successful or failed effective config generation result.
+     */
+    void ShowEffectiveConfig(const EffectiveConfigResult& result);
+
+    /**
+     * @brief Return the text currently shown in the effective config view.
+     * @return Summary, validation diagnostics, and Profile-to-effective differences.
+     */
+    QString EffectiveConfigText() const;
 
 signals:
     void configPathChanged(const QString& path);
@@ -43,6 +56,7 @@ private:
     QLabel* dirty_label_{nullptr};
     QComboBox* storage_mode_{nullptr};
     QPlainTextEdit* validation_view_{nullptr};
+    QPlainTextEdit* m_effectiveConfigView{nullptr};
     MaterialProcessProfileEditor* profile_editor_{nullptr};
     QuickConfigPanel* quick_config_panel_{nullptr};
     MaterialPolicyEditor* policy_editor_{nullptr};

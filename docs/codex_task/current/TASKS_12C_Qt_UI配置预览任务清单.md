@@ -188,11 +188,26 @@ SliceSettingsModel 不依赖 QWidget/QObject，未暴露到 slicer_core。
 
 ### Task 12C-R1-03 Generated Effective Config
 
-状态：PENDING
+状态：DONE
 
 内容：实现 `Profile template + UI overrides -> session generated config -> validation -> slicer_cli`。
 
 完成标准：运行切片不再忽略 dirty UI 设置；原始 template/fixture 不被修改；UI 可查看 effective config 摘要和差异。
+
+完成记录：
+
+```text
+新增 EffectiveConfigGenerator，按 Profile template + 当前内存 UI override + SliceSettingsState 生成 session/slice_config.generated.json；
+生成前校验 SliceSettingsState，合成后调用 ConfigValidator，任一校验失败均不写 generated config、不启动 slicer_cli；
+运行切片和“一键导入模型并切片”已改用 generated effective config，不再要求覆盖保存原 template/fixture；
+相对 input.modelPath 在移动到 session config 前解析为绝对路径，避免 generated config 改变相对路径基准；
+配置页新增“生效配置”视图，可查看 Profile、模型、输出、模型填充、支撑、光油、preview、engine 摘要及逐字段差异；
+常用设置新增模型内部填充、支撑 placement、内部镂空开关与最小面积，现有 dirty UI 设置会进入本次 generated config；
+稳定 Profile 默认值会以只存在于内存的 override 应用，白墨/光油 Profile 共用模板时仍能生成不同生效配置；
+ConfigValidator 增加 bitDepth=8、channelOrder=R G B W S V、background.value=255 偏差阻断；
+OpenVDB 仍只生成 utility/candidate 诊断配置，writeProductionRgbwsv=false，普通切片保持 legacy；
+generated-effective-config smoke 覆盖模板只读、dirty override、设置映射、固定协议、非法设置写前阻断和 UI 摘要/差异。
+```
 
 ### Task 12C-R1-04 设置项中文帮助元数据
 

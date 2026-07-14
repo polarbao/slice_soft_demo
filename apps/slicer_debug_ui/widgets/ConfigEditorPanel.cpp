@@ -80,18 +80,23 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     role_mapping_editor_ = new MaterialRoleMappingEditor(document_, tabs);
     support_editor_ = new SupportEditor(document_, tabs);
     diff_panel_ = new ConfigDiffPanel(document_, tabs);
+    m_effectiveConfigView = new QPlainTextEdit(tabs);
+    m_effectiveConfigView->setReadOnly(true);
+    m_effectiveConfigView->setPlainText("尚未生成本次会话的生效配置。");
     const int quickTab = tabs->addTab(quick_config_panel_, "常用");
     const int profileTab = tabs->addTab(profile_editor_, "工艺 Profile");
     const int policyTab = tabs->addTab(policy_editor_, "材料策略");
     const int roleTab = tabs->addTab(role_mapping_editor_, "材料角色");
     const int supportTab = tabs->addTab(support_editor_, "支撑");
     const int diffTab = tabs->addTab(diff_panel_, "配置差异");
+    const int effectiveTab = tabs->addTab(m_effectiveConfigView, "生效配置");
     tabs->setTabToolTip(quickTab, "最常用设置：模型路径、输出目录、层高、纹理策略、白墨、光油、支撑、预览、OpenVDB 实验开关。");
     tabs->setTabToolTip(profileTab, "工艺验证 Profile：描述本配置期望哪些材料通道存在，以及白墨/光油的工艺参数。");
     tabs->setTabToolTip(policyTab, "生产材料策略：决定 RGB、白墨、光油如何写入 RGBWSV 通道。");
     tabs->setTabToolTip(roleTab, "多材料输入映射：把 OBJ/3MF 材料名映射为 RGB、白墨、光油、支撑或忽略。");
     tabs->setTabToolTip(supportTab, "支撑生成策略：控制 S 通道支撑区域、膨胀和孤岛过滤参数。");
     tabs->setTabToolTip(diffTab, "查看当前配置与磁盘配置之间的差异。");
+    tabs->setTabToolTip(effectiveTab, "查看本次运行实际交给 slicer_cli 的 generated config 摘要、校验信息和模板差异。");
     layout->addWidget(tabs, 1);
 
     validation_view_ = new QPlainTextEdit(this);
@@ -123,6 +128,50 @@ bool ConfigEditorPanel::loadConfig(const QString& path) {
 
 QString ConfigEditorPanel::configPath() const {
     return document_->path();
+}
+
+void ConfigEditorPanel::ShowEffectiveConfig(const EffectiveConfigResult& result)
+{
+    QStringList lines;
+    if (!result.summary.trimmed().isEmpty())
+    {
+        lines.push_back(result.summary);
+    }
+    if (!result.warnings.isEmpty())
+    {
+        lines.push_back(QStringLiteral("\n警告："));
+        for (const QString& warning : result.warnings)
+        {
+            lines.push_back(QStringLiteral("- ") + warning);
+        }
+    }
+    if (!result.errors.isEmpty())
+    {
+        lines.push_back(QStringLiteral("\n错误："));
+        for (const QString& error : result.errors)
+        {
+            lines.push_back(QStringLiteral("- ") + error);
+        }
+    }
+    if (!result.differences.isEmpty())
+    {
+        lines.push_back(QStringLiteral("\n模板 -> 生效配置差异："));
+        for (const ConfigDiffEntry& entry : result.differences)
+        {
+            lines.push_back(
+                QStringLiteral("- %1: %2 -> %3").arg(entry.path, entry.old_value, entry.new_value));
+        }
+    }
+    if (lines.isEmpty())
+    {
+        lines.push_back(QStringLiteral("生效配置尚未生成。"));
+    }
+    m_effectiveConfigView->setPlainText(lines.join('\n'));
+}
+
+QString ConfigEditorPanel::EffectiveConfigText() const
+{
+    return m_effectiveConfigView == nullptr ? QString{} : m_effectiveConfigView->toPlainText();
 }
 
 void ConfigEditorPanel::save() {
