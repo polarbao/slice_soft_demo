@@ -11,7 +11,7 @@
 12C-R2 产品默认值与组件复用边界：FROZEN；
 12C-R2-01 PreviewWorkspace：COMPLETE；
 12C-R2-02 图例与像素探针：COMPLETE；
-12C-R2-03 DiagnosticsDock：PENDING READINESS REVIEW。
+12C-R2-03 DiagnosticsDock：READY TO IMPLEMENT。
 ```
 
 R2 不需要修改 `slicer_core` 公共 API、Qt 版本、第三方依赖或生产 RGBWSV 协议，可以在现有 `apps/slicer_debug_ui` 边界内实施。
@@ -72,7 +72,7 @@ R2-01 不实现 R2-02 图例/探针收口。
 |---|---|---|
 | R2-01 PreviewWorkspace | COMPLETE | 统一入口、真实层共享、同层缺失，不做诊断 Dock |
 | R2-02 图例/探针 | COMPLETE | 不改变生产像素语义 |
-| R2-03 DiagnosticsDock | REVIEW | 只调整承载位置，不移动业务判断 |
+| R2-03 DiagnosticsDock | READY | 底部 QDockWidget、默认隐藏，只调整承载位置 |
 | R2-04 OpenVDB 摘要 | WAIT R2-03 | 只读 utility report，固定非生产 |
 | R2-05 Smoke/手册/报告 | WAIT R2-04 | 完成多尺寸布局和阶段验收 |
 
@@ -135,4 +135,4 @@ git diff --check
 
 ## 9. 最终判断
 
-12C-R2 的共享层、图例和六通道探针契约均已落实。`12C-R2-02 图例与像素探针收口` 已完成；下一步先审查 `12C-R2-03 DiagnosticsDock` 的现有组件所有权、折叠容器和布局 smoke，再决定是否直接准入开发。
+12C-R2 的共享层、图例和六通道探针契约均已落实。`12C-R2-03 DiagnosticsDock` 的容器、所有权、折叠状态和 smoke 契约也已由专项准入清单冻结，可以进入代码实施。

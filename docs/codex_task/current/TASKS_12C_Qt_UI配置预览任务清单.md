@@ -284,11 +284,22 @@ LayerPreviewPanel 点击生产层图像后输出 R/G/B/W/S/V 六通道值、打�
 
 ### Task 12C-R2-03 DiagnosticsDock
 
-状态：PENDING
+状态：IN_PROGRESS（READINESS COMPLETE）
 
 内容：复用 ReportPanel、ChannelChartPanel、LogPanel，移入可折叠诊断区域。
 
 完成标准：报告、曲线、日志不作为主预览顶级入口；小窗口可折叠且无明显遮挡。
+
+准入记录：
+
+```text
+采用底部 QDockWidget，默认隐藏且只允许底部停靠；
+通过“视图/诊断区域” toggleViewAction 提供可发现入口；
+DiagnosticsDock 唯一拥有 ReportPanel、ChannelChartPanel、LogPanel；
+中央页签保留“预览”“配置”，移除“报告”“曲线”；
+diagnostics-collapse smoke 固定默认隐藏、三页签、唯一实例、展开/收起和共享层不变契约；
+详细准入见 DOC_CHECKLIST_12C_R2_03_DiagnosticsDock准入.md。
+```
 
 ### Task 12C-R2-04 OpenVDB Utility/Candidate 摘要
 
