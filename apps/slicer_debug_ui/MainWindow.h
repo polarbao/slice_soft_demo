@@ -9,11 +9,9 @@
 #include "services/ToolPaths.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
-#include "widgets/LayerPreviewPanel.h"
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
-#include "widgets/PreviewOverlayPanel.h"
-#include "widgets/PreviewPanel.h"
+#include "widgets/PreviewWorkspace.h"
 #include "widgets/ReportPanel.h"
 
 #include <QLabel>
@@ -118,12 +116,10 @@ private:
     QPushButton* m_importOpenVdbButton{nullptr};
     QPushButton* m_importOpenVdbCandidateButton{nullptr};
 
-    PreviewPanel* preview_panel_{nullptr};
-    LayerPreviewPanel* m_layerPreviewPanel{nullptr};
+    PreviewWorkspace* m_previewWorkspace{nullptr};
     ReportPanel* report_panel_{nullptr};
     ConfigEditorPanel* config_editor_panel_{nullptr};
     ChannelChartPanel* channel_chart_panel_{nullptr};
-    PreviewOverlayPanel* preview_overlay_panel_{nullptr};
     MaterialProcessPanel* material_process_panel_{nullptr};
     LogPanel* log_panel_{nullptr};
 };

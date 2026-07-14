@@ -5,8 +5,10 @@
 #include "../widgets/ConfigEditorPanel.h"
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/PreviewOverlayPanel.h"
+#include "../widgets/PreviewPanel.h"
 #include "../widgets/QuickConfigPanel.h"
 #include "../widgets/SettingHelpPanel.h"
+#include "../widgets/PreviewWorkspace.h"
 #include "ConfigDocument.h"
 #include "EffectiveConfigGenerator.h"
 #include "HelpTextProvider.h"
@@ -17,6 +19,7 @@
 #include "SliceSettingsModel.h"
 #include "ToolPaths.h"
 
+#include <QComboBox>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -121,6 +124,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "setting-help-metadata")
     {
         return SettingHelpMetadataCase(options);
+    }
+    if (options.case_name == "preview-workspace-shared-layer")
+    {
+        return PreviewWorkspaceSharedLayer(options);
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
@@ -654,6 +661,128 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
                     .arg(entries.size())
                     .arg(requiredKeys.size())
                     .arg(tooltipBindings.size()));
+}
+
+int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& options)
+{
+    const QString packagePath = absoluteFromRepo(options, options.package_path);
+    const PackageSummary package = PackageLoader().load(packagePath);
+    if (package.manifest_path.isEmpty())
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 未找到 manifest：") + packagePath);
+    }
+
+    PreviewWorkspace workspace;
+    workspace.LoadPackage(package);
+    auto* production = workspace.findChild<LayerPreviewPanel*>(QStringLiteral("productionLayerView"));
+    auto* overlay = workspace.findChild<PreviewOverlayPanel*>(QStringLiteral("materialOverlayView"));
+    auto* raw = workspace.findChild<PreviewPanel*>(QStringLiteral("rawPreviewView"));
+    if (production == nullptr || overlay == nullptr || raw == nullptr)
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 未复用三个既有预览面板。"));
+    }
+    if (workspace.LayerIndices().isEmpty()
+        || workspace.LayerIndices() != production->LayerIndices())
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 未优先使用生产真实层范围。"));
+    }
+
+    const QVector<int> previewLayers = overlay->LayerIndices();
+    if (previewLayers.isEmpty())
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 夹具缺少 overlay preview 层。"));
+    }
+    const int previewLayer = previewLayers.first();
+    if (!workspace.SelectLayer(previewLayer)
+        || production->CurrentLayerIndex() != previewLayer
+        || overlay->CurrentLayerIndex() != previewLayer
+        || raw->CurrentLayerIndex() != previewLayer)
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 有图层未同步到三个模式。"));
+    }
+
+    workspace.SetMode(PreviewWorkspaceMode::MaterialOverlay);
+    workspace.SetMode(PreviewWorkspaceMode::RawPreview);
+    workspace.SetMode(PreviewWorkspaceMode::ProductionLayer);
+    if (workspace.CurrentLayerIndex() != previewLayer
+        || production->CurrentLayerIndex() != previewLayer
+        || overlay->CurrentLayerIndex() != previewLayer
+        || raw->CurrentLayerIndex() != previewLayer)
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 模式切换改变了真实层号。"));
+    }
+
+    QComboBox* rawChannel = raw->findChild<QComboBox*>(QStringLiteral("rawPreviewChannelSelector"));
+    QComboBox* overlayMode = overlay->findChild<QComboBox*>(QStringLiteral("overlayModeSelector"));
+    if (rawChannel == nullptr || overlayMode == nullptr)
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 缺少既有视图模式控件。"));
+    }
+    rawChannel->setCurrentText(QStringLiteral("RGB"));
+    overlayMode->setCurrentText(QStringLiteral("RGB + W 白墨"));
+
+    int sparseLayer = -1;
+    for (const int layerIndex : workspace.LayerIndices())
+    {
+        if (!raw->LayerIndices().contains(layerIndex))
+        {
+            sparseLayer = layerIndex;
+            break;
+        }
+    }
+    if (sparseLayer < 0 || !workspace.SelectLayer(sparseLayer))
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 夹具未覆盖稀疏 preview 缺层。"));
+    }
+    if (production->CurrentLayerIndex() != sparseLayer
+        || overlay->CurrentLayerIndex() != sparseLayer
+        || raw->CurrentLayerIndex() != sparseLayer)
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 缺图层没有保持共享 layerIndex。"));
+    }
+    if (!ContainsAll(
+            raw->StatusForTest(),
+            {QStringLiteral("layer=%1").arg(sparseLayer), QStringLiteral("未跨层兜底")})
+        || !ContainsAll(
+            workspace.StatusForTest(),
+            {QStringLiteral("共享 layer=%1").arg(sparseLayer), QStringLiteral("缺图不跨层兜底")}))
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer 缺图状态未明确禁止跨层兜底。"));
+    }
+
+    int overlaySparseLayer = -1;
+    for (const int layerIndex : workspace.LayerIndices())
+    {
+        workspace.SelectLayer(layerIndex);
+        if (overlay->StatusForTest().contains(QStringLiteral("未跨层兜底")))
+        {
+            overlaySparseLayer = layerIndex;
+            break;
+        }
+    }
+    if (overlaySparseLayer < 0
+        || !ContainsAll(
+            overlay->StatusForTest(),
+            {QStringLiteral("layer=%1").arg(overlaySparseLayer), QStringLiteral("未跨层兜底")}))
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer overlay 未覆盖同层材料缺失。"));
+    }
+
+    const int panelDrivenLayer = previewLayers.last();
+    production->SelectLayer(panelDrivenLayer);
+    if (workspace.CurrentLayerIndex() != panelDrivenLayer
+        || overlay->CurrentLayerIndex() != panelDrivenLayer
+        || raw->CurrentLayerIndex() != panelDrivenLayer)
+    {
+        return fail(QStringLiteral("preview-workspace-shared-layer panel 信号未回写共享状态。"));
+    }
+
+    return pass(
+        QStringLiteral("preview-workspace-shared-layer layers=%1 rawSparse=%2 overlaySparse=%3 preview=%4 modes=3")
+            .arg(workspace.LayerIndices().size())
+            .arg(sparseLayer)
+            .arg(overlaySparseLayer)
+            .arg(previewLayer));
 }
 
 int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& options)

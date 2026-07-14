@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 当前原子任务：
 
 ```text
-12C-R2-01 PreviewWorkspace 与共享层状态
+12C-R2-02 图例与像素探针收口
 ```
 
-12C-R0 与完整 R1 设置管线已完成。当前进入 R2 PreviewWorkspace 与共享层状态；本任务只协调既有预览组件，不重写其底层渲染能力。
+12C-R0、完整 R1 设置管线和 R2-01 PreviewWorkspace 已完成。当前进入 R2-02 图例与像素探针收口；生产值、显示伪彩和六通道语义必须继续分离。
 
 ## 保留参考入口
 

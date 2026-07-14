@@ -246,11 +246,23 @@ R0 fresh build/smoke 与完整 R1 设置管线均已通过；
 
 ### Task 12C-R2-01 PreviewWorkspace 与共享层状态
 
-状态：PENDING
+状态：DONE
 
 内容：复用 LayerPreviewPanel、PreviewOverlayPanel、PreviewPanel，以模式切换整合入口，并共享真实 layerIndex。
 
 完成标准：生产层检查、材料叠加、原始调试预览切换时保持同层；不跨层兜底 RGB/W/S/V。
+
+完成记录：
+
+```text
+新增 PreviewWorkspace，以“生产层检查 / 材料叠加 / 原始调试预览”模式切换复用三个既有 panel；
+MainWindow 原三个预览顶级页签已整合为单一“预览”入口，报告、曲线和配置暂保留，等待 R2-03；
+三个 panel 新增真实 LayerIndices / CurrentLayerIndex / SelectLayer 和 SigLayerIndexChanged 同步契约；
+生产层范围优先作为工作区规范层范围，模式切换和 panel 滑块操作均同步真实 layerIndex；
+PreviewPanel 已从图片序号改为按真实层号组织，同一通道缺图时保持目标层并明确显示“未跨层兜底”；
+PreviewOverlayPanel 同样支持共享层缺图状态，现有同层 RGB/W/S/V 合成逻辑保持不变；
+新增 preview-workspace-shared-layer smoke，覆盖连续生产层、稀疏 RGB/raw preview、材料缺图、模式切换和 panel 信号回写。
+```
 
 ### Task 12C-R2-02 图例与像素探针收口
 

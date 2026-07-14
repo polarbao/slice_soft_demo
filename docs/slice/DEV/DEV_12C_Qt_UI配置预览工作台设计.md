@@ -229,6 +229,41 @@ R1-03 使用 `EffectiveConfigGenerator` 承担生成编排，输入优先级固�
 明确标注“原始调试预览，不代表生产 TIFF 全部通道”。
 ```
 
+### 5.4 R2-01 PreviewWorkspace 与共享层状态（已实现）
+
+`PreviewWorkspace` 位于 `apps/slicer_debug_ui/widgets`，只负责模式承载和真实层号同步，不接管三个既有 panel 的渲染、TIFF 读取、伪彩、缩放或像素探针。
+
+模式映射：
+
+```text
+ProductionLayer -> LayerPreviewPanel；
+MaterialOverlay -> PreviewOverlayPanel；
+RawPreview -> PreviewPanel。
+```
+
+共享契约：
+
+```text
+LayerPreviewPanel::LayerIndices 优先作为规范层范围；
+三个 panel 都提供 CurrentLayerIndex / SelectLayer / SigLayerIndexChanged；
+PreviewWorkspace 使用 m_currentLayerIndex 保存唯一共享状态；
+同步期间使用 m_syncing 防止信号循环；
+模式切换只切换 QStackedWidget，不修改共享层号；
+生产层不存在时才使用 overlay/raw 层号并集作为后备范围。
+```
+
+稀疏 preview 处理：
+
+```text
+PreviewPanel 不再以当前通道的图片序号作为层号；
+当前通道按真实 layerIndex 建立唯一层列表；
+目标层缺图时保留 requested layerIndex 并显示“未跨层兜底”；
+PreviewOverlayPanel 对同层材料缺失使用相同规则；
+禁止最近层、后续层和其他通道层的隐式替代。
+```
+
+`MainWindow` 当前只保留一个顶级“预览”页签。报告、曲线、配置仍是顶级页签，待 R2-03 DiagnosticsDock 再调整；R2-01 不提前改变诊断布局。
+
 ---
 
 ## 6. 布局建议

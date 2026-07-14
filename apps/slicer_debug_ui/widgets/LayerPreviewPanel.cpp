@@ -105,15 +105,30 @@ QStringList LayerPreviewPanel::AvailableChannels() const
     return m_package.channels;
 }
 
-bool LayerPreviewPanel::SelectLayerForTest(const int layerIndex)
+QVector<int> LayerPreviewPanel::LayerIndices() const
+{
+    return m_package.layerindices;
+}
+
+bool LayerPreviewPanel::SelectLayer(const int layerIndex)
 {
     const int position = m_package.layerindices.indexOf(layerIndex);
     if (position < 0)
     {
         return false;
     }
+    if (m_layerSlider->value() == position)
+    {
+        UpdateImage();
+        return true;
+    }
     m_layerSlider->setValue(position);
     return true;
+}
+
+bool LayerPreviewPanel::SelectLayerForTest(const int layerIndex)
+{
+    return SelectLayer(layerIndex);
 }
 
 bool LayerPreviewPanel::SelectChannelForTest(const QString& channel)
@@ -163,6 +178,11 @@ void LayerPreviewPanel::OnLayerChanged(const int value)
     Q_UNUSED(value);
     m_probeText.clear();
     UpdateImage();
+    const int layerIndex = CurrentLayerIndex();
+    if (layerIndex >= 0)
+    {
+        emit SigLayerIndexChanged(layerIndex);
+    }
 }
 
 void LayerPreviewPanel::OnChannelChanged(const int index)

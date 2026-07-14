@@ -21,14 +21,42 @@ public:
     int imageCount() const;
     QStringList availableChannels() const;
     bool canComposeMode(const QString& mode) const;
+
+    /**
+     * @brief Return real layer indices that have at least one overlay preview source.
+     * @return Ascending preview layer indices.
+     */
+    QVector<int> LayerIndices() const;
+
+    /**
+     * @brief Return the exact real layer requested by the shared workspace.
+     * @return Real layer index, or -1 when no layer is selected.
+     */
+    int CurrentLayerIndex() const;
+
+    /**
+     * @brief Select an exact real layer without falling back to another layer.
+     * @param layerIndex Target real layer index.
+     * @return true when overlay data exists at that layer; false when the view keeps the layer but shows a missing state.
+     */
+    bool SelectLayer(int layerIndex);
+
     /**
      * @brief Return current status text for UI smoke tests.
      * @return Human-readable overlay status.
      */
     QString StatusForTest() const;
 
+signals:
+    /**
+     * @brief Emitted when the user selects a different real layer.
+     * @param layerIndex Selected real layer index.
+     */
+    void SigLayerIndexChanged(int layerIndex);
+
 private slots:
     void updateImage();
+    void OnLayerChanged(int value);
     void zoomIn();
     void zoomOut();
     void fitToWindow();
@@ -51,9 +79,9 @@ private:
     QImage readImage(const QString& path) const;
     QImage FindImageForLayer(const QString& channel, int layer) const;
     QImage FindFirstImageForLayer(int layer) const;
-    int CurrentLayer() const;
     QImage composeCurrent() const;
     QImage composeForMode(const QString& mode, int index) const;
+    QImage ComposeForLayer(const QString& mode, int layerIndex) const;
     void applyPixmap(const QImage& image);
 
     QVector<PreviewImage> images_;
@@ -61,6 +89,7 @@ private:
     QHash<int, double> m_layerZMm;
     QHash<int, QString> m_layerSemanticSummary;
     QString m_sourcePolicySummary;
+    int m_requestedLayerIndex{-1};
     double zoom_{1.0};
     bool fit_{true};
 

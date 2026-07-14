@@ -9,7 +9,8 @@
 12C-R0 fresh Qt build / smoke：COMPLETE；
 12C-R1 Profile / Settings / generated config / help metadata：COMPLETE；
 12C-R2 产品默认值与组件复用边界：FROZEN；
-12C-R2-01 PreviewWorkspace：READY TO START。
+12C-R2-01 PreviewWorkspace：COMPLETE；
+12C-R2-02 图例与像素探针：READY TO START。
 ```
 
 R2 不需要修改 `slicer_core` 公共 API、Qt 版本、第三方依赖或生产 RGBWSV 协议，可以在现有 `apps/slicer_debug_ui` 边界内实施。
@@ -68,8 +69,8 @@ R2-01 不实现 R2-02 图例/探针收口。
 
 | 任务 | 准入 | 本阶段约束 |
 |---|---|---|
-| R2-01 PreviewWorkspace | READY | 统一入口、真实层共享、同层缺失，不做诊断 Dock |
-| R2-02 图例/探针 | WAIT R2-01 | 不改变生产像素语义 |
+| R2-01 PreviewWorkspace | COMPLETE | 统一入口、真实层共享、同层缺失，不做诊断 Dock |
+| R2-02 图例/探针 | READY | 不改变生产像素语义 |
 | R2-03 DiagnosticsDock | WAIT R2-02 | 只调整承载位置，不移动业务判断 |
 | R2-04 OpenVDB 摘要 | WAIT R2-03 | 只读 utility report，固定非生产 |
 | R2-05 Smoke/手册/报告 | WAIT R2-04 | 完成多尺寸布局和阶段验收 |
@@ -121,4 +122,4 @@ preview 缺失层仍保留目标 layerIndex；
 
 ## 8. 最终判断
 
-12C-R2 的需求、组件边界、共享层契约、稀疏 preview 行为、文件影响面和验证夹具均已明确。`12C-R2-01 PreviewWorkspace 与共享层状态` 可以开始开发。
+12C-R2 的需求、组件边界、共享层契约、稀疏 preview 行为、文件影响面和验证夹具均已明确。`12C-R2-01 PreviewWorkspace 与共享层状态` 已完成，下一任务为 `12C-R2-02 图例与像素探针收口`。

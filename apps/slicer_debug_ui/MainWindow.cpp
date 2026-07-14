@@ -324,25 +324,19 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     auto* center_tabs = new QTabWidget(main_splitter);
     center_tabs->setDocumentMode(true);
     center_tabs->setTabPosition(QTabWidget::North);
-    m_layerPreviewPanel = new LayerPreviewPanel(center_tabs);
-    preview_panel_ = new PreviewPanel(center_tabs);
+    m_previewWorkspace = new PreviewWorkspace(center_tabs);
     report_panel_ = new ReportPanel(center_tabs);
     config_editor_panel_ = new ConfigEditorPanel(&config_document_, center_tabs);
     channel_chart_panel_ = new ChannelChartPanel(center_tabs);
-    preview_overlay_panel_ = new PreviewOverlayPanel(center_tabs);
-    const int layerPreviewTab = center_tabs->addTab(m_layerPreviewPanel, "层预览");
+    const int previewWorkspaceTab = center_tabs->addTab(m_previewWorkspace, "预览");
     const int reportTab = center_tabs->addTab(report_panel_, "报告");
     const int chartTab = center_tabs->addTab(channel_chart_panel_, "曲线");
     const int configTab = center_tabs->addTab(config_editor_panel_, "配置");
-    const int overlayTab = center_tabs->addTab(preview_overlay_panel_, "叠加预览");
-    const int rawPreviewTab = center_tabs->addTab(preview_panel_, "原始预览");
-    center_tabs->setTabToolTip(layerPreviewTab, "生产层检查：按真实 layerIndex 查看 RGB/W/S/V、生产 RGB 和像素探针。");
+    center_tabs->setTabToolTip(previewWorkspaceTab, "统一预览工作区：在生产层检查、材料叠加和原始调试预览之间切换并保持同一真实 layerIndex。");
     center_tabs->setTabToolTip(reportTab, "查看 manifest 与 reports JSON 摘要。");
     center_tabs->setTabToolTip(chartTab, "查看各通道随层变化的统计曲线。");
     center_tabs->setTabToolTip(configTab, "编辑当前 JSON 配置；常用材料、支撑、预览和实验选项在这里。");
-    center_tabs->setTabToolTip(overlayTab, "同层叠加预览：把 RGB 与支撑/白墨/光油伪彩合成，便于检查材料关系。");
-    center_tabs->setTabToolTip(rawPreviewTab, "原始文件预览：直接浏览 preview 目录生成的 PNG/PPM 调试图。");
-    center_tabs->setCurrentWidget(m_layerPreviewPanel);
+    center_tabs->setCurrentWidget(m_previewWorkspace);
 
     QWidget* right = createRightPanel();
     left->setMinimumWidth(320);
@@ -1253,11 +1247,9 @@ void MainWindow::loadPackage(const QString& package_dir) {
     const PackageSummary package = package_loader_.load(absoluteFromRepo(package_dir));
     package_edit_->setText(package.package_dir);
     report_panel_->loadPackage(package);
-    m_layerPreviewPanel->LoadPackage(package);
-    preview_panel_->loadPackage(package);
+    m_previewWorkspace->LoadPackage(package);
     material_process_panel_->loadPackage(package);
     channel_chart_panel_->loadPackage(package);
-    preview_overlay_panel_->loadPackage(package);
     warnings_view_->setPlainText(package.warnings.join('\n'));
 }
 

@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QScrollArea>
 #include <QSlider>
+#include <QVector>
 #include <QWidget>
 
 class LayerPreviewPanel final : public QWidget
@@ -40,6 +41,25 @@ public:
     QStringList AvailableChannels() const;
 
     /**
+     * @brief Return the real package layer indices available to this view.
+     * @return Ascending package layer indices.
+     */
+    QVector<int> LayerIndices() const;
+
+    /**
+     * @brief Return the real layer index currently displayed.
+     * @return Package layer index, or -1 when no package is loaded.
+     */
+    int CurrentLayerIndex() const;
+
+    /**
+     * @brief Select an exact real package layer.
+     * @param layerIndex Target package layer index.
+     * @return true when the exact layer exists and was selected.
+     */
+    bool SelectLayer(int layerIndex);
+
+    /**
      * @brief Select a layer by package layer index for smoke tests.
      * @param layerindex Target package layer index.
      * @return True when the layer exists and was selected.
@@ -67,6 +87,13 @@ public:
      */
     QString PixelProbeForTest(int x, int y) const;
 
+signals:
+    /**
+     * @brief Emitted when the user selects a different real package layer.
+     * @param layerIndex Selected package layer index.
+     */
+    void SigLayerIndexChanged(int layerIndex);
+
 protected:
     bool eventFilter(QObject* object, QEvent* event) override;
 
@@ -80,7 +107,6 @@ private slots:
 
 private:
     QString CurrentChannel() const;
-    int CurrentLayerIndex() const;
     LayerPreviewFrame FindFrame(int layerIndex, const QString& channel) const;
     QImage ReadFrameImage(const LayerPreviewFrame& frame) const;
     QImage RenderCurrentImage() const;

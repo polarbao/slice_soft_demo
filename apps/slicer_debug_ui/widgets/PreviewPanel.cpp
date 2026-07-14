@@ -59,11 +59,12 @@ PreviewPanel::PreviewPanel(QWidget* parent) : QWidget(parent) {
     auto* controls = new QHBoxLayout();
 
     channel_selector_ = new QComboBox(this);
+    channel_selector_->setObjectName(QStringLiteral("rawPreviewChannelSelector"));
     channel_selector_->setToolTip("直接浏览输出包 preview 目录中的 PNG/PPM 调试图；它不是生产 TIFF 的六通道探针视图。");
     controls->addWidget(channel_selector_);
 
     layer_slider_ = new QSlider(Qt::Horizontal, this);
-    layer_slider_->setToolTip("按当前通道的原始 preview 文件顺序浏览。生产层检查优先使用“层预览”。");
+    layer_slider_->setToolTip("按真实 layerIndex 浏览当前通道的原始 preview；同层缺图时不会跳到其他层。");
     controls->addWidget(layer_slider_, 1);
 
     auto* fit_button = new QPushButton("适应", this);
@@ -99,6 +100,8 @@ PreviewPanel::PreviewPanel(QWidget* parent) : QWidget(parent) {
 
 void PreviewPanel::loadPackage(const PackageSummary& package) {
     all_items_.clear();
+    m_layerIndices.clear();
+    m_requestedLayerIndex = -1;
 
     PreviewReportIndex index;
     if (index.load(package.package_dir))
@@ -140,14 +143,67 @@ void PreviewPanel::loadPackage(const PackageSummary& package) {
     rebuildVisibleList();
 }
 
+QVector<int> PreviewPanel::LayerIndices() const
+{
+    return m_layerIndices;
+}
+
+int PreviewPanel::CurrentLayerIndex() const
+{
+    if (m_requestedLayerIndex >= 0)
+    {
+        return m_requestedLayerIndex;
+    }
+    if (m_layerIndices.isEmpty())
+    {
+        return -1;
+    }
+    const int position = qBound(0, layer_slider_->value(), m_layerIndices.size() - 1);
+    return m_layerIndices.at(position);
+}
+
+bool PreviewPanel::SelectLayer(const int layerIndex)
+{
+    const int position = m_layerIndices.indexOf(layerIndex);
+    m_requestedLayerIndex = position < 0 ? layerIndex : -1;
+    if (position < 0)
+    {
+        showCurrentImage();
+        return false;
+    }
+    if (layer_slider_->value() == position)
+    {
+        showCurrentImage();
+        return true;
+    }
+    layer_slider_->setValue(position);
+    return true;
+}
+
+QString PreviewPanel::StatusForTest() const
+{
+    return status_ == nullptr ? QString{} : status_->text();
+}
+
 void PreviewPanel::selectImage(const int index) {
     Q_UNUSED(index);
+    m_requestedLayerIndex = -1;
     showCurrentImage();
+    const int layerIndex = CurrentLayerIndex();
+    if (layerIndex >= 0)
+    {
+        emit SigLayerIndexChanged(layerIndex);
+    }
 }
 
 void PreviewPanel::selectChannel(const int index) {
     Q_UNUSED(index);
-    rebuildVisibleList();
+    const int requestedLayerIndex = CurrentLayerIndex();
+    rebuildVisibleList(requestedLayerIndex);
+    if (requestedLayerIndex >= 0)
+    {
+        emit SigLayerIndexChanged(requestedLayerIndex);
+    }
 }
 
 void PreviewPanel::zoomIn() {
@@ -270,32 +326,66 @@ void PreviewPanel::rebuildChannelSelector() {
     channel_selector_->blockSignals(false);
 }
 
-void PreviewPanel::rebuildVisibleList() {
+void PreviewPanel::rebuildVisibleList(const int requestedLayerIndex) {
     visible_items_.clear();
+    m_layerIndices.clear();
     const QString selected = channel_selector_->currentText();
     for (const PreviewItem& item : all_items_) {
         if (selected == "全部" || item.channel == selected) {
             visible_items_.push_back(item);
+            if (!m_layerIndices.contains(item.layer))
+            {
+                m_layerIndices.push_back(item.layer);
+            }
         }
     }
+    std::sort(m_layerIndices.begin(), m_layerIndices.end());
+
+    const int requestedPosition = m_layerIndices.indexOf(requestedLayerIndex);
+    m_requestedLayerIndex = requestedLayerIndex >= 0 && requestedPosition < 0
+        ? requestedLayerIndex
+        : -1;
     layer_slider_->blockSignals(true);
     layer_slider_->setMinimum(0);
-    layer_slider_->setMaximum(visible_items_.isEmpty() ? 0 : visible_items_.size() - 1);
-    layer_slider_->setEnabled(!visible_items_.isEmpty());
-    layer_slider_->setValue(0);
+    layer_slider_->setMaximum(m_layerIndices.isEmpty() ? 0 : m_layerIndices.size() - 1);
+    layer_slider_->setEnabled(!m_layerIndices.isEmpty());
+    layer_slider_->setValue(requestedPosition >= 0 ? requestedPosition : 0);
     layer_slider_->blockSignals(false);
     showCurrentImage();
 }
 
+PreviewPanel::PreviewItem PreviewPanel::FindItemForLayer(const int layerIndex) const
+{
+    for (const PreviewItem& item : visible_items_)
+    {
+        if (item.layer == layerIndex)
+        {
+            return item;
+        }
+    }
+    return {};
+}
+
 void PreviewPanel::showCurrentImage() {
-    if (visible_items_.isEmpty()) {
+    const int layerIndex = CurrentLayerIndex();
+    if (visible_items_.isEmpty() || layerIndex < 0) {
         current_image_ = QImage();
         image_label_->clear();
-        status_->setText("未找到 PNG/PPM 预览图。");
+        status_->setText(
+            layerIndex >= 0
+                ? QString("layer=%1 当前通道同层无原始预览；未跨层兜底。").arg(layerIndex)
+                : QString("未找到 PNG/PPM 预览图。"));
         return;
     }
-    const int index = layer_slider_->value();
-    const PreviewItem item = visible_items_.at(index);
+    const PreviewItem item = FindItemForLayer(layerIndex);
+    if (item.path.isEmpty())
+    {
+        current_image_ = QImage();
+        image_label_->clear();
+        status_->setText(
+            QString("layer=%1 当前通道同层无原始预览；未跨层兜底。").arg(layerIndex));
+        return;
+    }
     const QString path = item.path;
     QImageReader reader(path);
     current_image_ = ToDisplayCoordinateImage(reader.read());
@@ -305,8 +395,8 @@ void PreviewPanel::showCurrentImage() {
         return;
     }
     status_->setText(QString("%1/%2  layer=%3  %4  %5  %6x%7  显示=切片坐标")
-                         .arg(index + 1)
-                         .arg(visible_items_.size())
+                         .arg(qMax(1, m_layerIndices.indexOf(layerIndex) + 1))
+                         .arg(m_layerIndices.size())
                          .arg(item.layer)
                          .arg(item.channel)
                          .arg(QFileInfo(path).fileName())

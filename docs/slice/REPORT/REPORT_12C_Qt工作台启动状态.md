@@ -19,7 +19,9 @@ fresh Qt UI build：PASS；
 12C-R1-03：COMPLETE；
 12C-R1-04：COMPLETE；
 12C-R1：COMPLETE；
-12C-R2：READY TO START；
+12C-R2-00：COMPLETE；
+12C-R2-01：COMPLETE；
+12C-R2-02：READY TO START；
 文档与上下文准备：COMPLETE；
 ```
 
@@ -30,6 +32,7 @@ ScenarioRegistry + visibility；
 ConfigDocument + QuickConfigPanel；
 SliceSettingsModel + EffectiveConfigGenerator；
 HelpTextProvider + SettingHelpPanel；
+PreviewWorkspace + shared real layerIndex；
 LayerPreviewPanel + RGBWSV probe；
 PreviewOverlayPanel；
 PreviewPanel；
@@ -107,6 +110,16 @@ PASS setting-help-metadata entries=21 required=10 tooltips=7
 
 配置页已新增“设置说明”页签。21 个设置项通过 `HelpTextProvider` 集中提供中文标题、描述、影响范围、默认值、生产安全和文档路径；常用设置 tooltip 与详细说明面板使用同一数据源。模型填充、支撑、内部镂空、表面/外侧光油、preview、Legacy 和 OpenVDB 候选均已有一致说明。
 
+R2-01 增量验证：
+
+```text
+PASS preview-workspace-shared-layer layers=25 rawSparse=0 overlaySparse=0 preview=0 modes=3
+PASS layer-preview-load layers=25 channels=production_rgb,rgb,white,support,varnish,occupancy,diagnostic
+PASS overlay-load-real images=47 channels=rgb,support,varnish,white modes=RGB + W 白墨,RGB + V 光油,RGB + S 支撑
+```
+
+三个预览入口已由 `PreviewWorkspace` 整合为单一“预览”页签，并保留三个既有 panel 的底层能力。真实 `layerIndex` 成为唯一共享层状态；模式切换和 panel 滑块操作保持同层。原始 RGB preview 或 overlay 材料在目标层缺失时显示同层缺失，不会跳到其他有图层。
+
 ## 3. Build Blocker 处理结果
 
 Qt 5.15.2 与 MSVC 19.51 的 `stdext` 不兼容已通过项目内 target-scoped shim 解决。未修改 Qt 安装目录，未升级依赖。决策和验证见 `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md`。
@@ -122,14 +135,15 @@ docs/slice/DOC/DOC_AUDIT_12C_R0_03_现有Qt布局与组件复用基线.md
 ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md
 ai_workspace/context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md
 ai_workspace/context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md
+ai_workspace/context_handoff/2026-07-14_12C-R2-01_PreviewWorkspace共享层状态.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R2-01 PreviewWorkspace 与共享层状态
+12C-R2-02 图例与像素探针收口
 ```
 
-本报告不表示 12C 功能已全部实现。当前表示 R0 与完整 R1 设置管线已完成；R2 预览与诊断工作区仍待执行。
+本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线和 R2-01 统一预览入口已完成；R2-02 至 R2-05 仍待执行。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

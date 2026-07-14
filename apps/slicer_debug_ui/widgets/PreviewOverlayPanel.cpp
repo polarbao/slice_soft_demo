@@ -45,6 +45,7 @@ PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
     auto* controls = new QHBoxLayout();
     mode_ = new QComboBox(this);
+    mode_->setObjectName(QStringLiteral("overlayModeSelector"));
     mode_->addItems({"单通道", "RGB + W 白墨", "RGB + V 光油", "RGB + S 支撑"});
     mode_->setToolTip("选择叠加方式：仅把同一 layerIndex 的 RGB 与 W/S/V 伪彩图合成，用于检查材料相对位置。");
     layer_slider_ = new QSlider(Qt::Horizontal, this);
@@ -72,7 +73,7 @@ PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
 
     auto* zoom_in = qobject_cast<QPushButton*>(controls->itemAt(2)->widget());
     connect(mode_, qOverload<int>(&QComboBox::currentIndexChanged), this, &PreviewOverlayPanel::updateImage);
-    connect(layer_slider_, &QSlider::valueChanged, this, &PreviewOverlayPanel::updateImage);
+    connect(layer_slider_, &QSlider::valueChanged, this, &PreviewOverlayPanel::OnLayerChanged);
     connect(zoom_in, &QPushButton::clicked, this, &PreviewOverlayPanel::zoomIn);
     connect(zoom_out, &QPushButton::clicked, this, &PreviewOverlayPanel::zoomOut);
     connect(fit, &QPushButton::clicked, this, &PreviewOverlayPanel::fitToWindow);
@@ -84,6 +85,7 @@ void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
     m_layerZMm.clear();
     m_layerSemanticSummary.clear();
     m_sourcePolicySummary.clear();
+    m_requestedLayerIndex = -1;
     QSet<QString> seen;
     const auto append_image = [this, &seen](const PreviewImage& image) {
         if (image.path.isEmpty() || image.channel.isEmpty() || image.layer < 0) {
@@ -169,14 +171,67 @@ QString PreviewOverlayPanel::StatusForTest() const
     return status_ == nullptr ? QString() : status_->text();
 }
 
+QVector<int> PreviewOverlayPanel::LayerIndices() const
+{
+    return m_layerIndices;
+}
+
+int PreviewOverlayPanel::CurrentLayerIndex() const
+{
+    if (m_requestedLayerIndex >= 0)
+    {
+        return m_requestedLayerIndex;
+    }
+    if (m_layerIndices.isEmpty())
+    {
+        return -1;
+    }
+    const int position = qBound(0, layer_slider_->value(), m_layerIndices.size() - 1);
+    return m_layerIndices.at(position);
+}
+
+bool PreviewOverlayPanel::SelectLayer(const int layerIndex)
+{
+    const int position = m_layerIndices.indexOf(layerIndex);
+    m_requestedLayerIndex = position < 0 ? layerIndex : -1;
+    if (position < 0)
+    {
+        updateImage();
+        return false;
+    }
+    if (layer_slider_->value() == position)
+    {
+        updateImage();
+        return true;
+    }
+    layer_slider_->setValue(position);
+    return true;
+}
+
 void PreviewOverlayPanel::updateImage() {
     const QImage image = composeCurrent();
     if (image.isNull()) {
         image_label_->clear();
-        status_->setText(images_.isEmpty() ? "未找到 preview 图像。" : "当前层/模式没有可显示图像。");
+        status_->setText(
+            images_.isEmpty()
+                ? "未找到 preview 图像。"
+                : QString("layer=%1 当前模式同层无图；未跨层兜底。")
+                      .arg(CurrentLayerIndex()));
         return;
     }
     applyPixmap(image);
+}
+
+void PreviewOverlayPanel::OnLayerChanged(const int value)
+{
+    Q_UNUSED(value);
+    m_requestedLayerIndex = -1;
+    updateImage();
+    const int layerIndex = CurrentLayerIndex();
+    if (layerIndex >= 0)
+    {
+        emit SigLayerIndexChanged(layerIndex);
+    }
 }
 
 void PreviewOverlayPanel::zoomIn() {
@@ -428,16 +483,8 @@ QImage PreviewOverlayPanel::FindFirstImageForLayer(const int layer) const {
     return {};
 }
 
-int PreviewOverlayPanel::CurrentLayer() const {
-    if (m_layerIndices.isEmpty()) {
-        return -1;
-    }
-    const int position = qBound(0, layer_slider_->value(), m_layerIndices.size() - 1);
-    return m_layerIndices.at(position);
-}
-
 QImage PreviewOverlayPanel::composeCurrent() const {
-    return composeForMode(mode_->currentText(), layer_slider_->value());
+    return ComposeForLayer(mode_->currentText(), CurrentLayerIndex());
 }
 
 QImage PreviewOverlayPanel::composeForMode(const QString& mode, const int index) const {
@@ -445,6 +492,15 @@ QImage PreviewOverlayPanel::composeForMode(const QString& mode, const int index)
         return {};
     }
     const int layer = m_layerIndices.at(qBound(0, index, m_layerIndices.size() - 1));
+    return ComposeForLayer(mode, layer);
+}
+
+QImage PreviewOverlayPanel::ComposeForLayer(const QString& mode, const int layer) const
+{
+    if (layer < 0)
+    {
+        return {};
+    }
     if (mode == "单通道") {
         return FindFirstImageForLayer(layer);
     }
@@ -503,14 +559,14 @@ void PreviewOverlayPanel::applyPixmap(const QImage& image) {
     }
     image_label_->setPixmap(QPixmap::fromImage(image).scaled(target_size, Qt::KeepAspectRatio, Qt::FastTransformation));
     image_label_->resize(target_size);
-    const int layer = CurrentLayer();
+    const int layer = CurrentLayerIndex();
     QString layerText = QString("layer=%1").arg(layer);
     if (m_layerZMm.contains(layer))
     {
         layerText += QString(" z=%1mm").arg(m_layerZMm.value(layer), 0, 'f', 3);
     }
     status_->setText(QString("%1/%2  %3  %4  %5x%6  层序=低Z->高Z  显示=切片坐标")
-                         .arg(layer_slider_->value() + 1)
+                         .arg(qMax(1, m_layerIndices.indexOf(layer) + 1))
                          .arg(qMax(1, m_layerIndices.size()))
                          .arg(layerText)
                          .arg(mode_->currentText())
