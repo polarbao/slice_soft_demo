@@ -5,6 +5,7 @@
 #include "PreviewPanel.h"
 
 #include <QComboBox>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSet>
@@ -12,6 +13,28 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+
+namespace
+{
+
+QLabel* AddLegendEntry(
+    QHBoxLayout* layout,
+    QWidget* parent,
+    const QString& objectName,
+    const QString& text)
+{
+    auto* swatch = new QLabel(parent);
+    swatch->setObjectName(objectName + QStringLiteral("Swatch"));
+    swatch->setFixedSize(16, 16);
+    layout->addWidget(swatch);
+
+    auto* label = new QLabel(text, parent);
+    label->setObjectName(objectName + QStringLiteral("Label"));
+    layout->addWidget(label);
+    return swatch;
+}
+
+}  // namespace
 
 PreviewWorkspace::PreviewWorkspace(QWidget* parent)
     : QWidget(parent)
@@ -37,6 +60,56 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
     m_status->setWordWrap(true);
     layout->addWidget(m_status);
 
+    auto* legendBar = new QFrame(this);
+    legendBar->setObjectName(QStringLiteral("previewLegendBar"));
+    auto* legendLayout = new QHBoxLayout(legendBar);
+    legendLayout->setContentsMargins(0, 0, 0, 0);
+    legendLayout->setSpacing(6);
+    auto* legendTitle = new QLabel(QStringLiteral("材料图例"), legendBar);
+    legendTitle->setObjectName(QStringLiteral("previewLegendTitle"));
+    legendLayout->addWidget(legendTitle);
+    m_rgbLegendSwatch = AddLegendEntry(
+        legendLayout,
+        legendBar,
+        QStringLiteral("legendRgb"),
+        QStringLiteral("RGB 模型颜色/填充"));
+    m_whiteLegendSwatch = AddLegendEntry(
+        legendLayout,
+        legendBar,
+        QStringLiteral("legendWhite"),
+        QStringLiteral("W 白墨填充"));
+    m_supportLegendSwatch = AddLegendEntry(
+        legendLayout,
+        legendBar,
+        QStringLiteral("legendSupport"),
+        QStringLiteral("S 支撑"));
+    m_varnishLegendSwatch = AddLegendEntry(
+        legendLayout,
+        legendBar,
+        QStringLiteral("legendVarnish"),
+        QStringLiteral("V 光油/填充"));
+    m_emptyLegendSwatch = AddLegendEntry(
+        legendLayout,
+        legendBar,
+        QStringLiteral("legendEmpty"),
+        QStringLiteral("真实空白"));
+    legendLayout->addStretch(1);
+    layout->addWidget(legendBar);
+
+    m_protocolHint = new QLabel(
+        QStringLiteral(
+            "生产值：RGBWSV uint8、black_is_print，0=打印，255=不打印；图例颜色仅用于显示，不等于 TIFF 生产值。"),
+        this);
+    m_protocolHint->setObjectName(QStringLiteral("previewProtocolHint"));
+    m_protocolHint->setWordWrap(true);
+    layout->addWidget(m_protocolHint);
+
+    m_probeContext = new QLabel(DefaultProbeGuidance(), this);
+    m_probeContext->setObjectName(QStringLiteral("previewProbeContext"));
+    m_probeContext->setWordWrap(true);
+    m_probeContext->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(m_probeContext);
+
     m_stack = new QStackedWidget(this);
     m_productionView = new LayerPreviewPanel(m_stack);
     m_productionView->setObjectName(QStringLiteral("productionLayerView"));
@@ -60,6 +133,11 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
         this,
         &PreviewWorkspace::OnPanelLayerIndexChanged);
     connect(
+        m_productionView,
+        &LayerPreviewPanel::SigPixelProbeChanged,
+        this,
+        &PreviewWorkspace::OnPixelProbeChanged);
+    connect(
         m_overlayView,
         &PreviewOverlayPanel::SigLayerIndexChanged,
         this,
@@ -78,6 +156,8 @@ void PreviewWorkspace::LoadPackage(const PackageSummary& package)
     m_rawPreviewView->loadPackage(package);
     RebuildCanonicalLayers();
     m_currentLayerIndex = m_layerIndices.isEmpty() ? -1 : m_layerIndices.first();
+    m_probeContext->setText(DefaultProbeGuidance());
+    UpdateLegend();
     SyncPanels();
     UpdateStatus();
 }
@@ -131,6 +211,18 @@ QString PreviewWorkspace::StatusForTest() const
     return m_status == nullptr ? QString{} : m_status->text();
 }
 
+QString PreviewWorkspace::LegendTextForTest() const
+{
+    return QStringLiteral(
+        "RGB 模型颜色/填充；W 白墨模型填充；S 模型外支撑或内部镂空支撑；V 光油或光油模型填充；真实空白无材料；"
+        "RGBWSV uint8；black_is_print；0=打印；255=不打印；显示颜色不等于生产值");
+}
+
+QString PreviewWorkspace::ProbeContextForTest() const
+{
+    return m_probeContext == nullptr ? QString{} : m_probeContext->text();
+}
+
 void PreviewWorkspace::OnModeChanged(const int index)
 {
     const PreviewWorkspaceMode mode = static_cast<PreviewWorkspaceMode>(
@@ -150,6 +242,11 @@ void PreviewWorkspace::OnPanelLayerIndexChanged(const int layerIndex)
     SyncPanels();
     UpdateStatus();
     emit SigLayerIndexChanged(layerIndex);
+}
+
+void PreviewWorkspace::OnPixelProbeChanged(const QString& context)
+{
+    m_probeContext->setText(context.isEmpty() ? DefaultProbeGuidance() : context);
 }
 
 void PreviewWorkspace::RebuildCanonicalLayers()
@@ -210,6 +307,56 @@ void PreviewWorkspace::UpdateStatus()
             .arg(m_currentLayerIndex)
             .arg(ModeName(CurrentMode()))
             .arg(productionState, overlayState, rawState));
+}
+
+void PreviewWorkspace::UpdateLegend()
+{
+    m_rgbLegendSwatch->setStyleSheet(
+        QStringLiteral(
+            "border: 1px solid #666666; background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+            "stop:0 #e74c3c, stop:0.5 #2ecc71, stop:1 #3498db);"));
+    m_rgbLegendSwatch->setToolTip(QStringLiteral("RGB 为生产真彩色模型数据；色块只是通道提示。"));
+    SetLegendSwatch(
+        m_whiteLegendSwatch,
+        m_productionView->PseudoColor(QStringLiteral("white")),
+        QStringLiteral("W 白墨显示伪彩"));
+    SetLegendSwatch(
+        m_supportLegendSwatch,
+        m_productionView->PseudoColor(QStringLiteral("support")),
+        QStringLiteral("S 支撑显示伪彩"));
+    SetLegendSwatch(
+        m_varnishLegendSwatch,
+        m_productionView->PseudoColor(QStringLiteral("varnish")),
+        QStringLiteral("V 光油显示伪彩"));
+    SetLegendSwatch(
+        m_emptyLegendSwatch,
+        m_productionView->PseudoColor(QStringLiteral("empty")),
+        QStringLiteral("真实空白显示色；所有 RGBWSV 生产值均为 255"));
+}
+
+void PreviewWorkspace::SetLegendSwatch(
+    QLabel* swatch,
+    const QColor& color,
+    const QString& tooltip)
+{
+    swatch->setStyleSheet(
+        QStringLiteral("border: 1px solid #666666; background-color: rgb(%1, %2, %3);")
+            .arg(color.red())
+            .arg(color.green())
+            .arg(color.blue()));
+    swatch->setToolTip(
+        QStringLiteral("%1：rgb(%2,%3,%4)，仅用于 UI 显示。")
+            .arg(tooltip)
+            .arg(color.red())
+            .arg(color.green())
+            .arg(color.blue()));
+}
+
+QString PreviewWorkspace::DefaultProbeGuidance() const
+{
+    return QStringLiteral(
+        "像素探针：切换到“生产层检查”并点击图像，查看当前 layer 的 R/G/B/W/S/V 生产值、打印通道和材料语义。"
+        "未选择像素时不根据预览颜色推断材料。");
 }
 
 QString PreviewWorkspace::ModeName(const PreviewWorkspaceMode mode) const

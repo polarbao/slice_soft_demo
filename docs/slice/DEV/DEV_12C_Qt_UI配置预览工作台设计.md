@@ -264,6 +264,32 @@ PreviewOverlayPanel 对同层材料缺失使用相同规则；
 
 `MainWindow` 当前只保留一个顶级“预览”页签。报告、曲线、配置仍是顶级页签，待 R2-03 DiagnosticsDock 再调整；R2-01 不提前改变诊断布局。
 
+### 5.5 R2-02 图例与像素探针收口（已实现）
+
+`PreviewWorkspace` 在三种预览模式上方常驻显示统一材料图例、生产协议提示和当前像素探针上下文。图例不是新的材料判定源，W/S/V/空白色块读取 `LayerPreviewDataProvider` 已解析的 `pseudoColors`；RGB 使用真彩通道提示。
+
+生产值与显示值契约：
+
+```text
+生产数据：RGBWSV、uint8、black_is_print、0=打印、255=不打印；
+显示数据：RGB 真彩色或 W/S/V configurable pseudo color；
+显示色只用于人工识别，不写回 TIFF，也不能作为材料语义真源；
+真实空白必须由 R=G=B=W=S=V=255 判定，不能仅凭界面白色判定。
+```
+
+探针链路：
+
+```text
+LayerPreviewPanel 继续直接读取当前 layer 的生产 TIFF；
+点击显示坐标后转换为切片原始 y 坐标并读取六通道值；
+InterpretPixel 根据各通道是否小于 255 形成打印通道和中文材料语义；
+SigPixelProbeChanged 将上下文同步到 PreviewWorkspace；
+切换 layer 或 channel 时清空旧探针，避免把上一层结果误认为当前层；
+保留 semantic/sourcePolicy 技术字段供 smoke 与工程诊断使用。
+```
+
+本任务没有修改 TIFF reader、production package、伪彩生成算法或材料冲突策略。
+
 ---
 
 ## 6. 布局建议

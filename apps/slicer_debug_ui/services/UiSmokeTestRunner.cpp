@@ -26,6 +26,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLabel>
 #include <QProcess>
 #include <QSet>
 #include <QTemporaryDir>
@@ -128,6 +129,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "preview-workspace-shared-layer")
     {
         return PreviewWorkspaceSharedLayer(options);
+    }
+    if (options.case_name == "preview-legend-probe-context")
+    {
+        return PreviewLegendProbeContext(options);
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
@@ -783,6 +788,127 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
             .arg(sparseLayer)
             .arg(overlaySparseLayer)
             .arg(previewLayer));
+}
+
+int UiSmokeTestRunner::PreviewLegendProbeContext(const UiSmokeTestOptions& options)
+{
+    const QString packagePath = absoluteFromRepo(options, options.package_path);
+    const PackageSummary package = PackageLoader().load(packagePath);
+    if (package.manifest_path.isEmpty())
+    {
+        return fail(QStringLiteral("preview-legend-probe-context 未找到 manifest：") + packagePath);
+    }
+
+    PreviewWorkspace workspace;
+    workspace.LoadPackage(package);
+    auto* production = workspace.findChild<LayerPreviewPanel*>(QStringLiteral("productionLayerView"));
+    auto* legendBar = workspace.findChild<QWidget*>(QStringLiteral("previewLegendBar"));
+    auto* protocolHint = workspace.findChild<QLabel*>(QStringLiteral("previewProtocolHint"));
+    auto* probeContext = workspace.findChild<QLabel*>(QStringLiteral("previewProbeContext"));
+    if (production == nullptr || legendBar == nullptr || protocolHint == nullptr || probeContext == nullptr)
+    {
+        return fail(QStringLiteral("preview-legend-probe-context 缺少图例或探针上下文控件。"));
+    }
+
+    const QString legend = workspace.LegendTextForTest();
+    if (!ContainsAll(
+            legend,
+            {QStringLiteral("RGB 模型颜色/填充"), QStringLiteral("W 白墨模型填充"),
+             QStringLiteral("S 模型外支撑或内部镂空支撑"), QStringLiteral("V 光油或光油模型填充"),
+             QStringLiteral("真实空白无材料"), QStringLiteral("black_is_print"),
+             QStringLiteral("0=打印"), QStringLiteral("255=不打印"),
+             QStringLiteral("显示颜色不等于生产值")})
+        || !ContainsAll(
+            protocolHint->text(),
+            {QStringLiteral("RGBWSV uint8"), QStringLiteral("black_is_print"),
+             QStringLiteral("0=打印"), QStringLiteral("255=不打印"),
+             QStringLiteral("不等于 TIFF 生产值")}))
+    {
+        return fail(QStringLiteral("preview-legend-probe-context 图例或生产/显示值说明不完整。"));
+    }
+
+    const auto probeSemantic = [production](
+                                   const QString& channel,
+                                   const QString& expectedSemantic) -> QString
+    {
+        for (const int layerIndex : production->LayerIndices())
+        {
+            production->SelectLayer(layerIndex);
+            if (!production->SelectChannelForTest(channel))
+            {
+                return {};
+            }
+            const QImage image = production->CurrentImageForTest();
+            for (int y = 0; y < image.height(); ++y)
+            {
+                for (int x = 0; x < image.width(); ++x)
+                {
+                    const QColor color = image.pixelColor(x, y);
+                    if (color.alpha() == 0
+                        || (color.red() > 245 && color.green() > 245 && color.blue() > 245))
+                    {
+                        continue;
+                    }
+                    const QString context = production->ProbePixelForTest(x, y);
+                    if (context.contains(expectedSemantic))
+                    {
+                        return context;
+                    }
+                }
+            }
+        }
+        return {};
+    };
+
+    const QString rgbProbe = probeSemantic(QStringLiteral("rgb"), QStringLiteral("RGB模型颜色或填充"));
+    const QString whiteProbe = probeSemantic(QStringLiteral("white"), QStringLiteral("白墨模型填充"));
+    const QString supportProbe = probeSemantic(QStringLiteral("support"), QStringLiteral("支撑填充"));
+    const QString varnishProbe = probeSemantic(QStringLiteral("varnish"), QStringLiteral("光油表面或外侧层"));
+    if (rgbProbe.isEmpty() || whiteProbe.isEmpty() || supportProbe.isEmpty() || varnishProbe.isEmpty())
+    {
+        return fail(
+            QStringLiteral("preview-legend-probe-context 未在真实 RGBWSV 夹具中识别完整 RGB/W/S/V 语义。"));
+    }
+
+    QString emptyProbe;
+    production->SelectLayer(production->LayerIndices().first());
+    production->SelectChannelForTest(QStringLiteral("support"));
+    const QImage supportImage = production->CurrentImageForTest();
+    for (int y = 0; y < supportImage.height() && emptyProbe.isEmpty(); ++y)
+    {
+        for (int x = 0; x < supportImage.width(); ++x)
+        {
+            const QColor color = supportImage.pixelColor(x, y);
+            if (color.red() <= 245 || color.green() <= 245 || color.blue() <= 245)
+            {
+                continue;
+            }
+            const QString context = production->ProbePixelForTest(x, y);
+            if (context.contains(QStringLiteral("材料语义=真实空白")))
+            {
+                emptyProbe = context;
+                break;
+            }
+        }
+    }
+    if (emptyProbe.isEmpty())
+    {
+        return fail(QStringLiteral("preview-legend-probe-context 未在真实 RGBWSV 夹具中识别真实空白。"));
+    }
+
+    if (!ContainsAll(
+            workspace.ProbeContextForTest(),
+            {QStringLiteral("生产值 RGBWSV="), QStringLiteral("打印通道=无"),
+             QStringLiteral("材料语义=真实空白"), QStringLiteral("black_is_print"),
+             QStringLiteral("显示颜色=伪彩或真彩预览")})
+        || workspace.ProbeContextForTest() != probeContext->text())
+    {
+        return fail(QStringLiteral("preview-legend-probe-context 六通道探针未同步到统一工作区。"));
+    }
+
+    return pass(
+        QStringLiteral("preview-legend-probe-context legend=RGBWSV probes=RGB,W,S,V,Empty layers=%1")
+            .arg(production->LayerIndices().size()));
 }
 
 int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& options)

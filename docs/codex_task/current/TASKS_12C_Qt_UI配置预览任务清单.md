@@ -266,11 +266,21 @@ PreviewOverlayPanel 同样支持共享层缺图状态，现有同层 RGB/W/S/V �
 
 ### Task 12C-R2-02 图例与像素探针收口
 
-状态：PENDING
+状态：DONE
 
 内容：统一 RGB/W/S/V 图例、生产值/显示值说明和六通道像素探针上下文。
 
 完成标准：用户可区分真实空白、RGB 模型填充、W/V 模型填充和 S 支撑。
+
+完成记录：
+
+```text
+PreviewWorkspace 新增常驻 RGB/W/S/V/真实空白材料图例，并从当前 package 的 pseudoColors 更新 W/S/V/空白显示色；
+统一显示 RGBWSV uint8、black_is_print、0=打印、255=不打印和“显示颜色不等于 TIFF 生产值”协议说明；
+LayerPreviewPanel 点击生产层图像后输出 R/G/B/W/S/V 六通道值、打印通道、中文材料语义、semantic/sourcePolicy 和显示值边界；
+像素探针上下文通过 SigPixelProbeChanged 同步到统一预览工作区，切层或切通道时清除旧探针，避免跨层误读；
+新增 preview-legend-probe-context smoke，使用真实 RGBWSV fixture 验证 RGB、W、S、V 和真实空白五类像素语义。
+```
 
 ### Task 12C-R2-03 DiagnosticsDock
 

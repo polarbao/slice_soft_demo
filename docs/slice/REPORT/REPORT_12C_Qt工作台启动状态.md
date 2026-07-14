@@ -21,7 +21,8 @@ fresh Qt UI build：PASS；
 12C-R1：COMPLETE；
 12C-R2-00：COMPLETE；
 12C-R2-01：COMPLETE；
-12C-R2-02：READY TO START；
+12C-R2-02：COMPLETE；
+12C-R2-03：PENDING READINESS REVIEW；
 文档与上下文准备：COMPLETE；
 ```
 
@@ -33,7 +34,8 @@ ConfigDocument + QuickConfigPanel；
 SliceSettingsModel + EffectiveConfigGenerator；
 HelpTextProvider + SettingHelpPanel；
 PreviewWorkspace + shared real layerIndex；
-LayerPreviewPanel + RGBWSV probe；
+LayerPreviewPanel + RGBWSV probe + 中文材料语义；
+统一 RGB/W/S/V/真实空白图例 + 生产值/显示值边界；
 PreviewOverlayPanel；
 PreviewPanel；
 ReportPanel / ChannelChartPanel / LogPanel；
@@ -120,6 +122,14 @@ PASS overlay-load-real images=47 channels=rgb,support,varnish,white modes=RGB + 
 
 三个预览入口已由 `PreviewWorkspace` 整合为单一“预览”页签，并保留三个既有 panel 的底层能力。真实 `layerIndex` 成为唯一共享层状态；模式切换和 panel 滑块操作保持同层。原始 RGB preview 或 overlay 材料在目标层缺失时显示同层缺失，不会跳到其他有图层。
 
+R2-02 增量验证：
+
+```text
+PASS preview-legend-probe-context legend=RGBWSV probes=RGB,W,S,V,Empty layers=25
+```
+
+统一预览工作区已常驻显示 RGB 模型颜色/填充、W 白墨填充、S 支撑、V 光油/填充和真实空白图例。生产协议说明固定为 RGBWSV uint8、black_is_print、0=打印、255=不打印，并明确伪彩/真彩显示不等于 TIFF 生产值。生产层点击探针后可查看六通道值、打印通道、中文材料语义和 sourcePolicy；切层或切通道会清除旧探针。
+
 ## 3. Build Blocker 处理结果
 
 Qt 5.15.2 与 MSVC 19.51 的 `stdext` 不兼容已通过项目内 target-scoped shim 解决。未修改 Qt 安装目录，未升级依赖。决策和验证见 `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md`。
@@ -136,14 +146,15 @@ ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md
 ai_workspace/context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md
 ai_workspace/context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md
 ai_workspace/context_handoff/2026-07-14_12C-R2-01_PreviewWorkspace共享层状态.md
+ai_workspace/context_handoff/2026-07-14_12C-R2-02_图例与六通道像素探针.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R2-02 图例与像素探针收口
+12C-R2-03 DiagnosticsDock
 ```
 
-本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线和 R2-01 统一预览入口已完成；R2-02 至 R2-05 仍待执行。
+本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线、R2-01 统一预览入口和 R2-02 图例/探针已完成；R2-03 至 R2-05 仍待执行。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

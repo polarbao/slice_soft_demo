@@ -10,7 +10,8 @@
 12C-R1 Profile / Settings / generated config / help metadata：COMPLETE；
 12C-R2 产品默认值与组件复用边界：FROZEN；
 12C-R2-01 PreviewWorkspace：COMPLETE；
-12C-R2-02 图例与像素探针：READY TO START。
+12C-R2-02 图例与像素探针：COMPLETE；
+12C-R2-03 DiagnosticsDock：PENDING READINESS REVIEW。
 ```
 
 R2 不需要修改 `slicer_core` 公共 API、Qt 版本、第三方依赖或生产 RGBWSV 协议，可以在现有 `apps/slicer_debug_ui` 边界内实施。
@@ -21,8 +22,8 @@ R2 不需要修改 `slicer_core` 公共 API、Qt 版本、第三方依赖或生�
 |---|---|---|---|
 | `LayerPreviewPanel` | manifest、reports、生产 TIFF、preview | `LayerPreviewPackage.layerindices` | 继续作为生产层检查视图和共享层主范围 |
 | `PreviewOverlayPanel` | `preview_report` 或 preview 文件 | 自有真实 `m_layerIndices` | 继续同层组合 RGB/W/S/V，不允许跨层查找 |
-| `PreviewPanel` | `preview_report` 或 preview 文件 | 当前按可见图片序号 | 改为真实层号选择，缺图时显示同层缺失 |
-| `MainWindow` | 三个独立顶级页签 | 无共享状态 | 改为单一 `PreviewWorkspace` 顶级入口 |
+| `PreviewPanel` | `preview_report` 或 preview 文件 | 已按真实层号选择 | 保持缺图时显示同层缺失 |
+| `MainWindow` | 单一 `PreviewWorkspace` 顶级入口 | 共享真实 layerIndex | R2-03 仅调整报告/曲线/日志承载位置 |
 
 已确认 `output/UiSmokeOverlayRgbwv` 可作为 R2-01 稀疏层夹具：生产 TIFF 包含 layer 0 起的连续层，preview 从后续层开始。它能够验证“生产层存在但当前 preview 同层缺失”时不得跳到其他层。
 
@@ -70,8 +71,8 @@ R2-01 不实现 R2-02 图例/探针收口。
 | 任务 | 准入 | 本阶段约束 |
 |---|---|---|
 | R2-01 PreviewWorkspace | COMPLETE | 统一入口、真实层共享、同层缺失，不做诊断 Dock |
-| R2-02 图例/探针 | READY | 不改变生产像素语义 |
-| R2-03 DiagnosticsDock | WAIT R2-02 | 只调整承载位置，不移动业务判断 |
+| R2-02 图例/探针 | COMPLETE | 不改变生产像素语义 |
+| R2-03 DiagnosticsDock | REVIEW | 只调整承载位置，不移动业务判断 |
 | R2-04 OpenVDB 摘要 | WAIT R2-03 | 只读 utility report，固定非生产 |
 | R2-05 Smoke/手册/报告 | WAIT R2-04 | 完成多尺寸布局和阶段验收 |
 
@@ -120,6 +121,18 @@ preview 缺失层仍保留目标 layerIndex；
 不提前实现 12D 材料闭环判断。
 ```
 
-## 8. 最终判断
+## 8. R2-02 验证门禁
 
-12C-R2 的需求、组件边界、共享层契约、稀疏 preview 行为、文件影响面和验证夹具均已明确。`12C-R2-01 PreviewWorkspace 与共享层状态` 已完成，下一任务为 `12C-R2-02 图例与像素探针收口`。
+```powershell
+cmake --build build-12c-ui --config Debug --target slicer_debug_ui
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case preview-legend-probe-context --package output\UiSmokeLayerPreview
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case preview-workspace-shared-layer --package output\UiSmokeOverlayRgbwv
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case layer-preview-load --package output\UiSmokeLayerPreview
+ctest --test-dir build-12c-ui -C Debug --output-on-failure
+git diff --check
+```
+
+## 9. 最终判断
+
+12C-R2 的共享层、图例和六通道探针契约均已落实。`12C-R2-02 图例与像素探针收口` 已完成；下一步先审查 `12C-R2-03 DiagnosticsDock` 的现有组件所有权、折叠容器和布局 smoke，再决定是否直接准入开发。

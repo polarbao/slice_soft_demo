@@ -31,6 +31,7 @@ private:
     int sliceSettingsModel(const UiSmokeTestOptions& options);
     int SettingHelpMetadataCase(const UiSmokeTestOptions& options);
     int PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& options);
+    int PreviewLegendProbeContext(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;

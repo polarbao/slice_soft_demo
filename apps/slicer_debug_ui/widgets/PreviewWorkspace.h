@@ -2,6 +2,7 @@
 
 #include "../services/PackageLoader.h"
 
+#include <QColor>
 #include <QVector>
 #include <QWidget>
 
@@ -79,6 +80,18 @@ public:
      */
     QString StatusForTest() const;
 
+    /**
+     * @brief Return the unified material legend description for UI smoke tests.
+     * @return Human-readable RGB/W/S/V and real-empty semantics.
+     */
+    QString LegendTextForTest() const;
+
+    /**
+     * @brief Return the current six-channel pixel probe context for UI smoke tests.
+     * @return Human-readable probe guidance or inspected production values.
+     */
+    QString ProbeContextForTest() const;
+
 signals:
     /**
      * @brief Emitted when the shared real layer changes.
@@ -89,11 +102,15 @@ signals:
 private slots:
     void OnModeChanged(int index);
     void OnPanelLayerIndexChanged(int layerIndex);
+    void OnPixelProbeChanged(const QString& context);
 
 private:
     void RebuildCanonicalLayers();
     void SyncPanels();
     void UpdateStatus();
+    void UpdateLegend();
+    void SetLegendSwatch(QLabel* swatch, const QColor& color, const QString& tooltip);
+    QString DefaultProbeGuidance() const;
     QString ModeName(PreviewWorkspaceMode mode) const;
 
     QVector<int> m_layerIndices;
@@ -102,6 +119,13 @@ private:
 
     QComboBox* m_modeSelector{nullptr};
     QLabel* m_status{nullptr};
+    QLabel* m_rgbLegendSwatch{nullptr};
+    QLabel* m_whiteLegendSwatch{nullptr};
+    QLabel* m_supportLegendSwatch{nullptr};
+    QLabel* m_varnishLegendSwatch{nullptr};
+    QLabel* m_emptyLegendSwatch{nullptr};
+    QLabel* m_protocolHint{nullptr};
+    QLabel* m_probeContext{nullptr};
     QStackedWidget* m_stack{nullptr};
     LayerPreviewPanel* m_productionView{nullptr};
     PreviewOverlayPanel* m_overlayView{nullptr};

@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-14 | 12C-R2-01 PreviewWorkspace 共享层状态 | `context_handoff/2026-07-14_12C-R2-01_PreviewWorkspace共享层状态.md` | Current |
+| 2026-07-14 | 12C-R2-02 图例与六通道像素探针 | `context_handoff/2026-07-14_12C-R2-02_图例与六通道像素探针.md` | Current |
+| 2026-07-14 | 12C-R2-01 PreviewWorkspace 共享层状态 | `context_handoff/2026-07-14_12C-R2-01_PreviewWorkspace共享层状态.md` | Superseded |
 | 2026-07-14 | 12C-R2-00 预览诊断工作区准入 | `context_handoff/2026-07-14_12C-R2-00_预览诊断工作区准入.md` | Superseded |
 | 2026-07-14 | 12C-R1-04 设置项中文帮助元数据 | `context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md` | Superseded |
 | 2026-07-13 | 12D 材料闭环准备准入 | `context_handoff/2026-07-13_12D_材料闭环准备准入.md` | Prepared / waits for 12C |

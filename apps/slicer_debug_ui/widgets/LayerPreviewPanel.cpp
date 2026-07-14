@@ -89,7 +89,7 @@ void LayerPreviewPanel::LoadPackage(const PackageSummary& package)
     m_package = m_provider.Load(package);
     m_zoom = 1.0;
     m_fit = true;
-    m_probeText.clear();
+    ClearPixelProbe();
     RebuildChannelSelector();
     RebuildLayerSlider();
     UpdateImage();
@@ -154,6 +154,16 @@ QString LayerPreviewPanel::PixelProbeForTest(const int x, const int y) const
     return BuildPixelProbeText(x, y);
 }
 
+QString LayerPreviewPanel::ProbePixelForTest(const int x, const int y)
+{
+    return ApplyPixelProbe(x, y);
+}
+
+QColor LayerPreviewPanel::PseudoColor(const QString& channel) const
+{
+    return m_package.pseudocolors.value(channel, QColor(255, 255, 255));
+}
+
 bool LayerPreviewPanel::eventFilter(QObject* object, QEvent* event)
 {
     if (object == m_imageLabel && event->type() == QEvent::MouseButtonPress)
@@ -163,11 +173,7 @@ bool LayerPreviewPanel::eventFilter(QObject* object, QEvent* event)
         {
             const int displayX = qBound(0, mouseEvent->pos().x() * m_currentImage.width() / m_imageLabel->width(), m_currentImage.width() - 1);
             const int displayY = qBound(0, mouseEvent->pos().y() * m_currentImage.height() / m_imageLabel->height(), m_currentImage.height() - 1);
-            m_probeText = BuildPixelProbeText(displayX, displayY);
-            if (!m_probeText.isEmpty())
-            {
-                UpdateStatus(m_probeText);
-            }
+            ApplyPixelProbe(displayX, displayY);
         }
     }
     return QWidget::eventFilter(object, event);
@@ -176,7 +182,7 @@ bool LayerPreviewPanel::eventFilter(QObject* object, QEvent* event)
 void LayerPreviewPanel::OnLayerChanged(const int value)
 {
     Q_UNUSED(value);
-    m_probeText.clear();
+    ClearPixelProbe();
     UpdateImage();
     const int layerIndex = CurrentLayerIndex();
     if (layerIndex >= 0)
@@ -188,7 +194,7 @@ void LayerPreviewPanel::OnLayerChanged(const int value)
 void LayerPreviewPanel::OnChannelChanged(const int index)
 {
     Q_UNUSED(index);
-    m_probeText.clear();
+    ClearPixelProbe();
     UpdateImage();
 }
 
@@ -557,7 +563,7 @@ QString LayerPreviewPanel::BuildPixelProbeText(const int displayX, const int dis
         const int w = static_cast<int>(result.pixels.at(index + 3));
         const int s = static_cast<int>(result.pixels.at(index + 4));
         const int v = static_cast<int>(result.pixels.at(index + 5));
-        return QString("探针 x=%1 y=%2 layer=%3 RGBWSV=(%4,%5,%6,%7,%8,%9) %10")
+        return QString("像素探针 x=%1 y=%2 layer=%3 生产值 RGBWSV=(%4,%5,%6,%7,%8,%9) %10 协议=black_is_print/0打印/255不打印 显示颜色=伪彩或真彩预览")
             .arg(displayX)
             .arg(displayY)
             .arg(layerIndex)
@@ -586,20 +592,24 @@ QString LayerPreviewPanel::InterpretPixel(const int r, const int g, const int b,
 
     QStringList semantics;
     QStringList sourcePolicies;
+    QStringList printedChannels;
     if (hasRgb)
     {
-        semantics.push_back("TextureSurface/RGB模型");
+        printedChannels.push_back("RGB");
+        semantics.push_back("RGB模型颜色或填充");
         sourcePolicies.push_back("textureSurfacePixels=" + QString::number(stats.texturesurfacepixels));
     }
     if (hasWhite)
     {
+        printedChannels.push_back("W");
         const QString material = policy.modelfillmaterial.isEmpty() ? "white" : policy.modelfillmaterial;
-        semantics.push_back("ModelFill(" + material + ")");
+        semantics.push_back(material == "white" ? "白墨模型填充" : "W白墨通道打印");
         sourcePolicies.push_back("modelFill=" + material + "/" + policy.modelfillscope);
     }
     if (hasSupport)
     {
-        semantics.push_back("SupportFill");
+        printedChannels.push_back("S");
+        semantics.push_back("支撑填充");
         QString supportPolicy = "supportPlacement=" + (policy.supportplacement.isEmpty() ? QString("unknown") : policy.supportplacement);
         if (!stats.supporttypesummary.isEmpty())
         {
@@ -609,13 +619,14 @@ QString LayerPreviewPanel::InterpretPixel(const int r, const int g, const int b,
     }
     if (hasVarnish)
     {
+        printedChannels.push_back("V");
         if (!hasRgb && !hasWhite && policy.modelfillmaterial == "varnish")
         {
-            semantics.push_back("ModelFill(varnish)");
+            semantics.push_back("光油模型填充");
         }
         else
         {
-            semantics.push_back("Varnish");
+            semantics.push_back("光油表面或外侧层");
         }
         QString varnishPolicy;
         if (policy.outervarnishenabled)
@@ -634,12 +645,37 @@ QString LayerPreviewPanel::InterpretPixel(const int r, const int g, const int b,
     }
     if (semantics.isEmpty())
     {
-        return "semantic=Empty sourcePolicy=emptyValue=255";
+        return "打印通道=无 材料语义=真实空白 semantic=Empty sourcePolicy=emptyValue=255";
     }
 
+    printedChannels.removeDuplicates();
     semantics.removeDuplicates();
     sourcePolicies.removeDuplicates();
-    return "semantic=" + semantics.join("+") + " sourcePolicy=" + sourcePolicies.join(" | ");
+    return "打印通道=" + printedChannels.join("+")
+        + " 材料语义=" + semantics.join("+")
+        + " semantic=" + semantics.join("+")
+        + " sourcePolicy=" + sourcePolicies.join(" | ");
+}
+
+QString LayerPreviewPanel::ApplyPixelProbe(const int displayX, const int displayY)
+{
+    m_probeText = BuildPixelProbeText(displayX, displayY);
+    if (!m_probeText.isEmpty())
+    {
+        UpdateStatus(m_probeText);
+    }
+    emit SigPixelProbeChanged(m_probeText);
+    return m_probeText;
+}
+
+void LayerPreviewPanel::ClearPixelProbe()
+{
+    if (m_probeText.isEmpty())
+    {
+        return;
+    }
+    m_probeText.clear();
+    emit SigPixelProbeChanged(QString{});
 }
 
 QString LayerPreviewPanel::BuildLayerSemanticText(const LayerPreviewLayerStats& stats) const

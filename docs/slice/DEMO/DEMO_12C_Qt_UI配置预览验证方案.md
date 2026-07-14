@@ -159,3 +159,20 @@ generated config 包含所有 override；
 三种预览模式必须在同一 `layerIndex` 上切换。验证窗口尺寸至少包含 1440x900、1280x720、1024x768；报告、曲线和日志折叠后不得遮挡主预览。
 
 OpenVDB 显示必须包含 `utility/candidate`、`productionReplacementAllowed=false` 和 legacy fallback，不得显示为默认生产成功路径。
+
+### 6.1 R2-02 图例与探针 Gate
+
+```text
+图例常驻显示 RGB 模型、W 白墨填充、S 支撑、V 光油/填充和真实空白；
+协议说明同时包含 RGBWSV uint8、black_is_print、0=打印、255=不打印；
+图例明确声明显示伪彩不等于 TIFF 生产值；
+生产层点击探针显示 R/G/B/W/S/V、打印通道、材料语义和 layerIndex；
+切换层或通道后旧探针被清除；
+使用 output/UiSmokeLayerPreview 覆盖 RGB、W、S、V 和真实空白五类像素。
+```
+
+自动化命令：
+
+```powershell
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case preview-legend-probe-context --package output\UiSmokeLayerPreview
+```

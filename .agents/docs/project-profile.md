@@ -5,8 +5,8 @@
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
 - Current phase: Stage 12C-R2 Preview and Diagnostics workspace
 - Latest completed phase: Stage 12B-R2 OpenVDB SDF utility positioning
-- Latest completed task: `12C-R2-01 PreviewWorkspace 与共享层状态`
-- Current task: `12C-R2-02 图例与像素探针收口`
+- Latest completed task: `12C-R2-02 图例与像素探针收口`
+- Current task: `12C-R2-03 DiagnosticsDock 准入准备`
 - Prepared next stage: `12D-R0 Material Closure Documentation Admission`; implementation waits for `12C-R2-05`
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only

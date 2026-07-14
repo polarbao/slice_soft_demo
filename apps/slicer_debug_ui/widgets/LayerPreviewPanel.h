@@ -4,6 +4,7 @@
 #include "../services/PackageLoader.h"
 
 #include <QComboBox>
+#include <QColor>
 #include <QImage>
 #include <QLabel>
 #include <QScrollArea>
@@ -87,12 +88,33 @@ public:
      */
     QString PixelProbeForTest(int x, int y) const;
 
+    /**
+     * @brief Inspect one display pixel and publish its six-channel context.
+     * @param x Display image x coordinate.
+     * @param y Display image y coordinate.
+     * @return Human-readable production RGBWSV probe text.
+     */
+    QString ProbePixelForTest(int x, int y);
+
+    /**
+     * @brief Return the configured UI pseudo color for one material channel.
+     * @param channel UI channel id such as white, support, varnish, or empty.
+     * @return Configured display-only pseudo color.
+     */
+    QColor PseudoColor(const QString& channel) const;
+
 signals:
     /**
      * @brief Emitted when the user selects a different real package layer.
      * @param layerIndex Selected package layer index.
      */
     void SigLayerIndexChanged(int layerIndex);
+
+    /**
+     * @brief Emitted when the production TIFF pixel probe changes.
+     * @param context Human-readable six-channel production context; empty when cleared.
+     */
+    void SigPixelProbeChanged(const QString& context);
 
 protected:
     bool eventFilter(QObject* object, QEvent* event) override;
@@ -126,6 +148,8 @@ private:
     QString InterpretPixel(int r, int g, int b, int w, int s, int v) const;
     QString BuildLayerSemanticText(const LayerPreviewLayerStats& stats) const;
     QString BuildSourcePolicyText() const;
+    QString ApplyPixelProbe(int displayX, int displayY);
+    void ClearPixelProbe();
 
     LayerPreviewDataProvider m_provider;
     LayerPreviewPackage m_package;
