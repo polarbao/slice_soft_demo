@@ -1,7 +1,7 @@
 # REPORT_12C Qt 工作台启动状态
 
 > 文档状态：Stage Entry Report / 12C
-> 日期：2026-07-13
+> 日期：2026-07-14
 
 ## 1. 准入状态
 
@@ -17,8 +17,9 @@ fresh Qt UI build：PASS；
 12C-R1-01：COMPLETE；
 12C-R1-02：COMPLETE；
 12C-R1-03：COMPLETE；
-12C-R1-04：READY TO START；
-12C-R2：需等待 R1 设置管线完成。
+12C-R1-04：COMPLETE；
+12C-R1：COMPLETE；
+12C-R2：READY TO START；
 文档与上下文准备：COMPLETE；
 ```
 
@@ -28,6 +29,7 @@ fresh Qt UI build：PASS；
 ScenarioRegistry + visibility；
 ConfigDocument + QuickConfigPanel；
 SliceSettingsModel + EffectiveConfigGenerator；
+HelpTextProvider + SettingHelpPanel；
 LayerPreviewPanel + RGBWSV probe；
 PreviewOverlayPanel；
 PreviewPanel；
@@ -97,6 +99,14 @@ Profile template + 内存 UI override + SliceSettingsState
 
 OpenVDB 保持 utility/candidate 边界：普通切片强制 legacy；实验诊断生成 `writeProductionRgbwsv=false` 的诊断配置；既有显式候选入口不被提升为默认生产路径。
 
+R1-04 增量验证：
+
+```text
+PASS setting-help-metadata entries=21 required=10 tooltips=7
+```
+
+配置页已新增“设置说明”页签。21 个设置项通过 `HelpTextProvider` 集中提供中文标题、描述、影响范围、默认值、生产安全和文档路径；常用设置 tooltip 与详细说明面板使用同一数据源。模型填充、支撑、内部镂空、表面/外侧光油、preview、Legacy 和 OpenVDB 候选均已有一致说明。
+
 ## 3. Build Blocker 处理结果
 
 Qt 5.15.2 与 MSVC 19.51 的 `stdext` 不兼容已通过项目内 target-scoped shim 解决。未修改 Qt 安装目录，未升级依赖。决策和验证见 `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md`。
@@ -111,14 +121,15 @@ ai_workspace/context_handoff/2026-07-12_12C-R0-02_UI_Smoke基线.md
 docs/slice/DOC/DOC_AUDIT_12C_R0_03_现有Qt布局与组件复用基线.md
 ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md
 ai_workspace/context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md
+ai_workspace/context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R1-04 设置项中文帮助元数据
+12C-R2-01 PreviewWorkspace 与共享层状态
 ```
 
-本报告不表示 12C 功能已全部实现。当前表示 R0 与 R1-01/R1-02/R1-03 已完成；R1-04 和 R2 产品化改造仍待执行。
+本报告不表示 12C 功能已全部实现。当前表示 R0 与完整 R1 设置管线已完成；R2 预览与诊断工作区仍待执行。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

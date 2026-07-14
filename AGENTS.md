@@ -17,8 +17,9 @@
 - `12A` material fill, support, and varnish semantics have completed the current P0/P1 scope.
 - `12B-R0/R1/R2` performance evaluation and OpenVDB SDF utility positioning are complete.
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
-- Current working phase is `12C-R1`: Profile and Settings closure.
-- The current executable task is `12C-R1-04 设置项中文帮助元数据`.
+- `12C-R1` Profile and Settings closure is complete.
+- Current working phase is `12C-R2`: Preview and Diagnostics workspace.
+- The current executable task is `12C-R2-01 PreviewWorkspace 与共享层状态`.
 - `12D-R0` documentation admission is complete, but 12D code work waits for `12C-R2-05`.
 - `12C-R2` must not start before the full R1 settings pipeline is complete.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.

@@ -5,6 +5,7 @@
 #include "MaterialProcessProfileEditor.h"
 #include "MaterialRoleMappingEditor.h"
 #include "QuickConfigPanel.h"
+#include "SettingHelpPanel.h"
 #include "SupportEditor.h"
 
 #include <QFileDialog>
@@ -75,6 +76,7 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
 
     auto* tabs = new QTabWidget(this);
     quick_config_panel_ = new QuickConfigPanel(document_, tabs);
+    m_settingHelpPanel = new SettingHelpPanel(tabs);
     profile_editor_ = new MaterialProcessProfileEditor(document_, tabs);
     policy_editor_ = new MaterialPolicyEditor(document_, tabs);
     role_mapping_editor_ = new MaterialRoleMappingEditor(document_, tabs);
@@ -84,6 +86,7 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     m_effectiveConfigView->setReadOnly(true);
     m_effectiveConfigView->setPlainText("尚未生成本次会话的生效配置。");
     const int quickTab = tabs->addTab(quick_config_panel_, "常用");
+    const int helpTab = tabs->addTab(m_settingHelpPanel, "设置说明");
     const int profileTab = tabs->addTab(profile_editor_, "工艺 Profile");
     const int policyTab = tabs->addTab(policy_editor_, "材料策略");
     const int roleTab = tabs->addTab(role_mapping_editor_, "材料角色");
@@ -91,6 +94,7 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     const int diffTab = tabs->addTab(diff_panel_, "配置差异");
     const int effectiveTab = tabs->addTab(m_effectiveConfigView, "生效配置");
     tabs->setTabToolTip(quickTab, "最常用设置：模型路径、输出目录、层高、纹理策略、白墨、光油、支撑、预览、OpenVDB 实验开关。");
+    tabs->setTabToolTip(helpTab, "集中查看设置的中文说明、影响范围、默认值、生产安全等级和相关文档路径。");
     tabs->setTabToolTip(profileTab, "工艺验证 Profile：描述本配置期望哪些材料通道存在，以及白墨/光油的工艺参数。");
     tabs->setTabToolTip(policyTab, "生产材料策略：决定 RGB、白墨、光油如何写入 RGBWSV 通道。");
     tabs->setTabToolTip(roleTab, "多材料输入映射：把 OBJ/3MF 材料名映射为 RGB、白墨、光油、支撑或忽略。");

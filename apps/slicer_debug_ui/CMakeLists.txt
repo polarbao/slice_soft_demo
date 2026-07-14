@@ -10,6 +10,8 @@ add_executable(slicer_debug_ui
     services/ConfigValidator.h
     services/EffectiveConfigGenerator.cpp
     services/EffectiveConfigGenerator.h
+    services/HelpTextProvider.cpp
+    services/HelpTextProvider.h
     services/PackageLoader.cpp
     services/PackageLoader.h
     services/ProcessRunner.cpp
@@ -52,6 +54,8 @@ add_executable(slicer_debug_ui
     widgets/PreviewOverlayPanel.h
     widgets/QuickConfigPanel.cpp
     widgets/QuickConfigPanel.h
+    widgets/SettingHelpPanel.cpp
+    widgets/SettingHelpPanel.h
     widgets/ReportPanel.cpp
     widgets/ReportPanel.h
     widgets/SupportEditor.cpp

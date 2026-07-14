@@ -277,6 +277,35 @@ UI 展示：
 文档路径：可复制或打开。
 ```
 
+### 7.1 R1-04 集中帮助元数据（已实现）
+
+`HelpTextProvider` 位于 `apps/slicer_debug_ui/services`，使用只读 C++ 元数据表作为 UI 帮助的单一数据源。当前不增加第二份运行时 JSON，避免帮助文件缺失导致工作台启动失败，也不把 UI 文案引入 `slicer_core`。
+
+每个条目固定提供：
+
+```text
+key；
+title；
+description；
+affects；
+defaultValue；
+productionSafety；
+docPath。
+```
+
+当前登记 21 个条目，覆盖输入输出、层高、纹理、模型内部填充、白墨、顶部/表面/外侧光油、支撑 placement/internal void、preview、Legacy 生产引擎和 OpenVDB 候选/诊断引擎。
+
+复用关系：
+
+```text
+QuickConfigPanel 控件 tooltip <- HelpTextProvider::ToolTip；
+SettingHelpPanel 详细说明 <- SettingHelpMetadata::DetailText；
+ConfigEditorPanel “设置说明”页签承载 SettingHelpPanel；
+UiSmokeTestRunner setting-help-metadata 校验字段、文档和绑定。
+```
+
+OpenVDB 条目必须同时显示：默认关闭、非生产、`productionReplacementAllowed=false`、不写生产 RGBWSV。Legacy 条目明确为当前默认生产路径，但仍需通过配置、几何和输出校验。
+
 ---
 
 ## 8. 风险

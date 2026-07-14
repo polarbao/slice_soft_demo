@@ -1,11 +1,12 @@
 # AI Workspace Context Index
 
-> 更新日期：2026-07-13
+> 更新日期：2026-07-14
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
+| 2026-07-14 | 12C-R1-04 设置项中文帮助元数据 | `context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md` | Current |
 | 2026-07-13 | 12D 材料闭环准备准入 | `context_handoff/2026-07-13_12D_材料闭环准备准入.md` | Prepared / waits for 12C |
-| 2026-07-13 | 12C-R1-03 Generated Effective Config | `context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md` | Current |
+| 2026-07-13 | 12C-R1-03 Generated Effective Config | `context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md` | Superseded |
 | 2026-07-13 | 12C-R1-02 SliceSettingsModel | `context_handoff/2026-07-13_12C-R1-02_SliceSettingsModel.md` | Superseded |
 | 2026-07-13 | 12C-R1-01 Profile 元数据收口 | `context_handoff/2026-07-13_12C-R1-01_Profile元数据收口.md` | Superseded |
 | 2026-07-12 | 12C-R0-03 布局组件基线 | `context_handoff/2026-07-12_12C-R0-03_布局组件基线.md` | Superseded |

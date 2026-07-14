@@ -211,11 +211,21 @@ generated-effective-config smoke 覆盖模板只读、dirty override、设置映
 
 ### Task 12C-R1-04 设置项中文帮助元数据
 
-状态：PENDING
+状态：DONE
 
 内容：集中提供 title/description/affects/default/productionSafety/docPath，并复用到 tooltip 和说明面板。
 
 完成标准：模型填充、支撑、光油、preview、legacy/OpenVDB 均有一致说明。
+
+完成记录：
+
+```text
+新增 HelpTextProvider，集中维护 21 个设置项的 key/title/description/affects/default/productionSafety/docPath；
+模型填充、支撑、内部镂空、表面/外侧光油、preview 与 OpenVDB 候选控件的 tooltip 已改为读取统一元数据；
+配置页新增“设置说明”页签，可按中文标题查看完整说明、设置键、影响范围、默认值、生产安全和文档路径；
+Legacy 生产引擎与 OpenVDB 候选/诊断引擎分别说明，OpenVDB 固定显示默认关闭、非生产和 productionReplacementAllowed=false；
+新增 setting-help-metadata UI smoke，校验元数据完整性、key 唯一性、文档存在、说明面板字段和 tooltip 绑定。
+```
 
 ## 5. Phase 12C-R2 预览与诊断工作区
 

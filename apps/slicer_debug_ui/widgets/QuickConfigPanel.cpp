@@ -1,5 +1,7 @@
 #include "QuickConfigPanel.h"
 
+#include "../services/HelpTextProvider.h"
+
 #include <QDir>
 #include <QFileDialog>
 #include <QFormLayout>
@@ -47,6 +49,11 @@ QString ComboValue(const QComboBox* combo, const int index)
     return combo->itemData(index).toString();
 }
 
+void ApplyHelp(QWidget* widget, const QString& key)
+{
+    widget->setToolTip(HelpTextProvider::ToolTip(key));
+}
+
 }  // namespace
 
 QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
@@ -59,7 +66,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     auto* basicForm = new QFormLayout(basicGroup);
 
     m_modelPathEdit = MakePathEdit(this);
-    m_modelPathEdit->setToolTip("待切片模型路径。OBJ 贴图通常放在 OBJ/MTL 同级目录。");
+    ApplyHelp(m_modelPathEdit, QStringLiteral("input.modelPath"));
     auto* modelBrowseButton = MakeButton("...", this);
     modelBrowseButton->setToolTip("选择 OBJ、STL 或 3MF 模型文件。");
     auto* modelPathRow = new QHBoxLayout();
@@ -68,7 +75,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     basicForm->addRow("模型文件", modelPathRow);
 
     m_outputDirEdit = MakePathEdit(this);
-    m_outputDirEdit->setToolTip("输出 RGBWSV package 的目录。");
+    ApplyHelp(m_outputDirEdit, QStringLiteral("output.packageDir"));
     auto* outputBrowseButton = MakeButton("...", this);
     outputBrowseButton->setToolTip("选择输出目录。");
     auto* outputDirRow = new QHBoxLayout();
@@ -81,7 +88,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_layerHeightSpin->setDecimals(4);
     m_layerHeightSpin->setSingleStep(0.005);
     m_layerHeightSpin->setSuffix(" mm");
-    m_layerHeightSpin->setToolTip("切片层厚，直接影响层数、输出文件数量和切片耗时。");
+    ApplyHelp(m_layerHeightSpin, QStringLiteral("output.layerThicknessMm"));
     basicForm->addRow("层高", m_layerHeightSpin);
 
     auto* materialGroup = new QGroupBox("材料", this);
@@ -93,7 +100,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     AddComboOption(m_texturePolicyCombo, "实体填充", "solid_volume");
     AddComboOption(m_texturePolicyCombo, "SDF 表面壳层", "surface_shell_from_sdf");
     AddComboOption(m_texturePolicyCombo, "禁用纹理", "disabled");
-    m_texturePolicyCombo->setToolTip("控制贴图颜色如何写入模型：通常全彩 OBJ 选“顶面纹理带”；OpenVDB 壳层实验选“SDF 表面壳层”。");
+    ApplyHelp(m_texturePolicyCombo, QStringLiteral("texture.applyMode"));
     materialForm->addRow("纹理策略", m_texturePolicyCombo);
 
     m_nonSurfaceRgbPolicyCombo = new QComboBox(this);
@@ -101,45 +108,49 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     AddComboOption(m_nonSurfaceRgbPolicyCombo, "视为空白", "empty");
     AddComboOption(m_nonSurfaceRgbPolicyCombo, "使用备用 RGB", "fallback_rgb");
     AddComboOption(m_nonSurfaceRgbPolicyCombo, "交给材料策略", "material_policy");
-    m_nonSurfaceRgbPolicyCombo->setToolTip("控制非表面纹理带的模型实体区域如何写 RGB：可作为模型填充、空白、备用色或交给材料策略处理。");
+    ApplyHelp(m_nonSurfaceRgbPolicyCombo, QStringLiteral("texture.nonSurfaceRgbPolicy"));
     materialForm->addRow("非表面 RGB", m_nonSurfaceRgbPolicyCombo);
 
     m_modelFillMaterialCombo = new QComboBox(this);
+    m_modelFillMaterialCombo->setObjectName(QStringLiteral("modelFillMaterialCombo"));
     AddComboOption(m_modelFillMaterialCombo, "白墨填充", "white");
     AddComboOption(m_modelFillMaterialCombo, "光油填充", "varnish");
-    m_modelFillMaterialCombo->setToolTip("模型内部填充材料。生产 Profile 不允许留空；该设置不同于模型外部 S 通道支撑。");
+    ApplyHelp(m_modelFillMaterialCombo, QStringLiteral("modelFill.material"));
     materialForm->addRow("模型内部填充", m_modelFillMaterialCombo);
 
     m_supportEnabledCheck = new QCheckBox("启用支撑", this);
+    m_supportEnabledCheck->setObjectName(QStringLiteral("supportEnabledCheck"));
     m_whiteEnabledCheck = new QCheckBox("启用白墨", this);
     m_varnishEnabledCheck = new QCheckBox("启用顶部光油策略", this);
     m_previewEnabledCheck = new QCheckBox("生成预览", this);
     m_openVdbEnabledCheck = new QCheckBox("启用 OpenVDB 实验管线", this);
-    m_supportEnabledCheck->setToolTip("启用后生成 S 通道支撑材料，具体形态在“支撑”页设置。");
-    m_whiteEnabledCheck->setToolTip("启用后按材料策略写入 W 通道白墨。");
-    m_varnishEnabledCheck->setToolTip("旧材料策略光油：按顶部 N 层或材料策略写 V 通道；不等同于外侧光油壳层。");
-    m_previewEnabledCheck->setToolTip("启用后按间隔输出 preview PNG/PPM，便于 UI 预览，但会增加保存耗时。");
-    m_openVdbEnabledCheck->setToolTip("实验开关：当前用于 OpenVDB 诊断/候选流程，不代表默认生产切片路径。");
+    ApplyHelp(m_supportEnabledCheck, QStringLiteral("support.enabled"));
+    ApplyHelp(m_whiteEnabledCheck, QStringLiteral("materialPolicy.white.enabled"));
+    ApplyHelp(m_varnishEnabledCheck, QStringLiteral("materialPolicy.varnish.enabled"));
+    ApplyHelp(m_previewEnabledCheck, QStringLiteral("preview.enabled"));
+    ApplyHelp(m_openVdbEnabledCheck, QStringLiteral("engine.openvdbCandidate"));
     materialForm->addRow(m_whiteEnabledCheck);
     materialForm->addRow(m_varnishEnabledCheck);
 
     m_varnishTopLayersSpin = new QSpinBox(this);
     m_varnishTopLayersSpin->setRange(0, 100000);
-    m_varnishTopLayersSpin->setToolTip("光油覆盖顶部 N 层；0 表示不按顶部层数生成光油。");
+    ApplyHelp(m_varnishTopLayersSpin, QStringLiteral("materialPolicy.varnish.topLayers"));
     materialForm->addRow("光油顶部层数", m_varnishTopLayersSpin);
 
     m_surfaceVarnishEnabledCheck = new QCheckBox("启用表面光油", this);
-    m_surfaceVarnishEnabledCheck->setToolTip("写在模型表面或内表面像素上的 V 通道光油；不会扩张模型 XY 尺寸。");
+    m_surfaceVarnishEnabledCheck->setObjectName(QStringLiteral("surfaceVarnishEnabledCheck"));
+    ApplyHelp(m_surfaceVarnishEnabledCheck, QStringLiteral("surfaceVarnish.enabled"));
     materialForm->addRow(m_surfaceVarnishEnabledCheck);
 
     m_surfaceVarnishThicknessSpin = new QSpinBox(this);
     m_surfaceVarnishThicknessSpin->setRange(0, 100);
     m_surfaceVarnishThicknessSpin->setSuffix(" px");
-    m_surfaceVarnishThicknessSpin->setToolTip("表面光油像素厚度；0 表示关闭表面光油。");
+    ApplyHelp(m_surfaceVarnishThicknessSpin, QStringLiteral("surfaceVarnish.thicknessPx"));
     materialForm->addRow("表面光油厚度", m_surfaceVarnishThicknessSpin);
 
     m_outerVarnishEnabledCheck = new QCheckBox("启用外侧光油壳层", this);
-    m_outerVarnishEnabledCheck->setToolTip("在模型外轮廓之外扩张生成 V 通道光油壳层；默认关闭。");
+    m_outerVarnishEnabledCheck->setObjectName(QStringLiteral("outerVarnishEnabledCheck"));
+    ApplyHelp(m_outerVarnishEnabledCheck, QStringLiteral("outerVarnish.enabled"));
     materialForm->addRow(m_outerVarnishEnabledCheck);
 
     m_outerVarnishThicknessSpin = new QDoubleSpinBox(this);
@@ -147,7 +158,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_outerVarnishThicknessSpin->setDecimals(2);
     m_outerVarnishThicknessSpin->setSingleStep(0.01);
     m_outerVarnishThicknessSpin->setSuffix(" mm");
-    m_outerVarnishThicknessSpin->setToolTip("外侧光油壳层厚度，按 42.3um/px 或配置中的 pixelPitchUm 换算为像素扩张；0 表示不生成。");
+    ApplyHelp(m_outerVarnishThicknessSpin, QStringLiteral("outerVarnish.thicknessMm"));
     materialForm->addRow("外侧光油厚度", m_outerVarnishThicknessSpin);
 
     auto* supportGroup = new QGroupBox("支撑", this);
@@ -155,21 +166,22 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     auto* supportForm = new QFormLayout(supportGroup);
     supportForm->addRow(m_supportEnabledCheck);
     m_supportPlacementCombo = new QComboBox(this);
+    m_supportPlacementCombo->setObjectName(QStringLiteral("supportPlacementCombo"));
     AddComboOption(m_supportPlacementCombo, "下表面", "lower");
     AddComboOption(m_supportPlacementCombo, "上表面", "upper");
     AddComboOption(m_supportPlacementCombo, "上、下表面", "both");
     AddComboOption(m_supportPlacementCombo, "仅悬空区域", "unsupported_only");
     AddComboOption(m_supportPlacementCombo, "完整垂直投影", "full_vertical_projection");
-    m_supportPlacementCombo->setToolTip("支撑摆放方式。生产 Profile 默认下表面；上表面支撑位于外侧光油壳层之外。");
+    ApplyHelp(m_supportPlacementCombo, QStringLiteral("support.placement"));
     supportForm->addRow("支撑位置", m_supportPlacementCombo);
 
     m_internalVoidEnabledCheck = new QCheckBox("填充内部镂空", this);
-    m_internalVoidEnabledCheck->setToolTip("将模型横截面内部封闭空洞写入 S 通道，避免内部无材料区域造成塌陷。");
+    ApplyHelp(m_internalVoidEnabledCheck, QStringLiteral("support.internalVoid.enabled"));
     supportForm->addRow(m_internalVoidEnabledCheck);
     m_internalVoidMinAreaSpin = new QSpinBox(this);
     m_internalVoidMinAreaSpin->setRange(0, 100000000);
     m_internalVoidMinAreaSpin->setSuffix(" px");
-    m_internalVoidMinAreaSpin->setToolTip("小于该像素面积的内部空洞可忽略；默认 16 px。");
+    ApplyHelp(m_internalVoidMinAreaSpin, QStringLiteral("support.internalVoid.minAreaPx"));
     supportForm->addRow("镂空最小面积", m_internalVoidMinAreaSpin);
 
     auto* previewGroup = new QGroupBox("预览", this);
@@ -177,13 +189,15 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     auto* previewForm = new QFormLayout(previewGroup);
     previewForm->addRow(m_previewEnabledCheck);
     m_previewIntervalSpin = new QSpinBox(this);
+    m_previewIntervalSpin->setObjectName(QStringLiteral("previewIntervalSpin"));
     m_previewIntervalSpin->setRange(1, 100000);
-    m_previewIntervalSpin->setToolTip("每隔多少层保存一次 preview 图片。值越小图片越多，保存耗时越高。");
+    ApplyHelp(m_previewIntervalSpin, QStringLiteral("preview.interval"));
     previewForm->addRow("预览间隔", m_previewIntervalSpin);
 
     auto* experimentalGroup = new QGroupBox("实验", this);
     experimentalGroup->setToolTip("实验能力入口。OpenVDB 仍是候选/诊断路径，正式生产输出以非 OpenVDB 路径为准。");
     auto* experimentalForm = new QFormLayout(experimentalGroup);
+    m_openVdbEnabledCheck->setObjectName(QStringLiteral("openVdbCandidateCheck"));
     experimentalForm->addRow(m_openVdbEnabledCheck);
 
     layout->addWidget(basicGroup);

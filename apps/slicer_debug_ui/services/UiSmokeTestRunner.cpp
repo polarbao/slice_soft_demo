@@ -5,8 +5,11 @@
 #include "../widgets/ConfigEditorPanel.h"
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/PreviewOverlayPanel.h"
+#include "../widgets/QuickConfigPanel.h"
+#include "../widgets/SettingHelpPanel.h"
 #include "ConfigDocument.h"
 #include "EffectiveConfigGenerator.h"
+#include "HelpTextProvider.h"
 #include "PackageLoader.h"
 #include "PreviewReportIndex.h"
 #include "ReportLoader.h"
@@ -21,6 +24,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QSet>
 #include <QTemporaryDir>
 #include <QTextStream>
 
@@ -113,6 +117,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     }
     if (options.case_name == "slice-settings-model") {
         return sliceSettingsModel(options);
+    }
+    if (options.case_name == "setting-help-metadata")
+    {
+        return SettingHelpMetadataCase(options);
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
@@ -550,6 +558,102 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
     }
 
     return pass("slice-settings-model profiles=4 legacy-default=true openvdb=candidate-only");
+}
+
+int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options)
+{
+    const QStringList requiredKeys{
+        QStringLiteral("modelFill.material"),
+        QStringLiteral("support.enabled"),
+        QStringLiteral("support.placement"),
+        QStringLiteral("support.internalVoid.enabled"),
+        QStringLiteral("surfaceVarnish.enabled"),
+        QStringLiteral("outerVarnish.enabled"),
+        QStringLiteral("preview.enabled"),
+        QStringLiteral("preview.interval"),
+        QStringLiteral("engine.legacy"),
+        QStringLiteral("engine.openvdbCandidate"),
+    };
+
+    const QVector<SettingHelpMetadata>& entries = HelpTextProvider::All();
+    QSet<QString> seenKeys;
+    for (const SettingHelpMetadata& entry : entries)
+    {
+        if (!entry.IsComplete())
+        {
+            return fail(QStringLiteral("setting-help-metadata 字段不完整：") + entry.key);
+        }
+        if (seenKeys.contains(entry.key))
+        {
+            return fail(QStringLiteral("setting-help-metadata 重复 key：") + entry.key);
+        }
+        seenKeys.insert(entry.key);
+
+        if (!QFileInfo(QDir(options.repo_root).filePath(entry.docpath)).isFile())
+        {
+            return fail(QStringLiteral("setting-help-metadata 文档不存在：") + entry.docpath);
+        }
+        if (!ContainsAll(
+                entry.ToolTipText(),
+                {entry.title, entry.description, QStringLiteral("影响："),
+                 QStringLiteral("默认："), QStringLiteral("生产安全："), entry.docpath}))
+        {
+            return fail(QStringLiteral("setting-help-metadata tooltip 字段缺失：") + entry.key);
+        }
+    }
+
+    SettingHelpPanel helpPanel;
+    for (const QString& key : requiredKeys)
+    {
+        const SettingHelpMetadata* metadata = HelpTextProvider::Find(key);
+        if (metadata == nullptr || !helpPanel.SelectKey(key))
+        {
+            return fail(QStringLiteral("setting-help-metadata 缺少必需设置：") + key);
+        }
+        if (!ContainsAll(
+                helpPanel.CurrentText(),
+                {metadata->title, metadata->description, metadata->defaultvalue,
+                 metadata->productionsafety, metadata->docpath}))
+        {
+            return fail(QStringLiteral("setting-help-metadata 说明面板字段缺失：") + key);
+        }
+    }
+
+    ConfigDocument document;
+    QuickConfigPanel quickPanel(&document);
+    const QVector<QPair<QString, QString>> tooltipBindings{
+        {QStringLiteral("modelFillMaterialCombo"), QStringLiteral("modelFill.material")},
+        {QStringLiteral("supportEnabledCheck"), QStringLiteral("support.enabled")},
+        {QStringLiteral("supportPlacementCombo"), QStringLiteral("support.placement")},
+        {QStringLiteral("surfaceVarnishEnabledCheck"), QStringLiteral("surfaceVarnish.enabled")},
+        {QStringLiteral("outerVarnishEnabledCheck"), QStringLiteral("outerVarnish.enabled")},
+        {QStringLiteral("previewIntervalSpin"), QStringLiteral("preview.interval")},
+        {QStringLiteral("openVdbCandidateCheck"), QStringLiteral("engine.openvdbCandidate")},
+    };
+    for (const QPair<QString, QString>& binding : tooltipBindings)
+    {
+        QWidget* widget = quickPanel.findChild<QWidget*>(binding.first);
+        if (widget == nullptr || widget->toolTip() != HelpTextProvider::ToolTip(binding.second))
+        {
+            return fail(QStringLiteral("setting-help-metadata tooltip 未复用集中元数据：") + binding.first);
+        }
+    }
+
+    const SettingHelpMetadata* openVdb = HelpTextProvider::Find(
+        QStringLiteral("engine.openvdbCandidate"));
+    if (openVdb == nullptr
+        || !ContainsAll(
+            openVdb->DetailText(),
+            {QStringLiteral("关闭"), QStringLiteral("非生产"),
+             QStringLiteral("productionReplacementAllowed=false")}))
+    {
+        return fail(QStringLiteral("setting-help-metadata OpenVDB 安全边界不完整。"));
+    }
+
+    return pass(QStringLiteral("setting-help-metadata entries=%1 required=%2 tooltips=%3")
+                    .arg(entries.size())
+                    .arg(requiredKeys.size())
+                    .arg(tooltipBindings.size()));
 }
 
 int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& options)

@@ -14,6 +14,7 @@ class MaterialRoleMappingEditor;
 class SupportEditor;
 class ConfigDiffPanel;
 class QuickConfigPanel;
+class SettingHelpPanel;
 
 class ConfigEditorPanel final : public QWidget {
     Q_OBJECT
@@ -57,6 +58,7 @@ private:
     QComboBox* storage_mode_{nullptr};
     QPlainTextEdit* validation_view_{nullptr};
     QPlainTextEdit* m_effectiveConfigView{nullptr};
+    SettingHelpPanel* m_settingHelpPanel{nullptr};
     MaterialProcessProfileEditor* profile_editor_{nullptr};
     QuickConfigPanel* quick_config_panel_{nullptr};
     MaterialPolicyEditor* policy_editor_{nullptr};

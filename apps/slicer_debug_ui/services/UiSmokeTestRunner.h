@@ -29,6 +29,7 @@ private:
     int compareProfiles(const UiSmokeTestOptions& options);
     int scenarioRegistry(const UiSmokeTestOptions& options);
     int sliceSettingsModel(const UiSmokeTestOptions& options);
+    int SettingHelpMetadataCase(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;
