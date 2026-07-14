@@ -4,7 +4,7 @@
 
 ## Stage 12C Qt 工作台
 
-当前上下文：`context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md`
+当前上下文：`context_handoff/2026-07-14_12C-R2-00_预览诊断工作区准入.md`
 
 当前任务入口：`docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md`
 

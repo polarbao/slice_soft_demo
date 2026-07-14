@@ -229,6 +229,21 @@ Legacy 生产引擎与 OpenVDB 候选/诊断引擎分别说明，OpenVDB 固定�
 
 ## 5. Phase 12C-R2 预览与诊断工作区
 
+### Task 12C-R2-00 阶段准入与共享层契约
+
+状态：DONE
+
+完成记录：
+
+```text
+R0 fresh build/smoke 与完整 R1 设置管线均已通过；
+新增 DOC_CHECKLIST_12C_R2_预览诊断工作区准入.md；
+审计三个现有 preview panel 的真实数据源和层状态；
+冻结 layerIndex 为唯一共享标识，禁止图片序号、slider position 和跨层兜底；
+冻结稀疏 preview 缺图时保持目标层并显示缺失状态；
+确认 output/UiSmokeOverlayRgbwv 可覆盖连续生产层与稀疏 preview 的专项验证。
+```
+
 ### Task 12C-R2-01 PreviewWorkspace 与共享层状态
 
 状态：PENDING

@@ -1,7 +1,7 @@
 # DOC_CHECKLIST_12C 阶段准入与上下文完整性
 
 > 文档状态：Readiness Checklist / Stage 12C
-> 日期：2026-07-10
+> 日期：2026-07-14
 
 ## 1. 文档闭环检查
 
@@ -19,11 +19,12 @@
 | CODEX_PROMPT | `CODEX_PROMPT_12C_Qt工作台收口执行指令.md` | READY |
 | 启动报告 | `REPORT_12C_Qt工作台启动状态.md` | READY |
 | 布局基线 | `DOC_AUDIT_12C_R0_03_现有Qt布局与组件复用基线.md` | READY |
-| 会话交接 | `ai_workspace/context_handoff/2026-07-12_12C-R0-03_布局组件基线.md` | READY |
+| 会话交接 | `ai_workspace/context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md` | READY |
+| R2 准入 | `DOC_CHECKLIST_12C_R2_预览诊断工作区准入.md` | READY |
 
 ## 2. 上下文入口检查
 
-以下入口已切换到 12C-R0：
+以下入口已切换到 12C-R2：
 
 ```text
 README.md
@@ -65,7 +66,7 @@ R2：PreviewWorkspace、图例/探针、DiagnosticsDock、OpenVDB 摘要、最�
 
 Qt 5.15.2 与 MSVC 19.51 的 `stdext::make_checked_array_iterator` 兼容问题已由 `12C-R0-01` 解决。fresh `build-12c-ui` 和 fresh binary self-test 已通过。
 
-R0-02 已使用 `build-12c-ui` fresh binary 完成完整 smoke 基线，未回退到历史 binary。
+R0-02 已使用 `build-12c-ui` fresh binary 完成完整 smoke 基线，未回退到历史 binary。R1-01 至 R1-04 已完成 Profile、设置 DTO、会话生效配置和集中中文帮助闭环。
 
 ## 6. 准入判定
 
@@ -77,9 +78,10 @@ R0-02 已使用 `build-12c-ui` fresh binary 完成完整 smoke 基线，未回�
 12C-R0-02：COMPLETE
 12C-R0-03：COMPLETE
 12C-R0：COMPLETE
-12C-R1-01：READY TO START
-12C-R2：BLOCKED UNTIL R1 SETTINGS PIPELINE PASSES
+12C-R1：COMPLETE
+12C-R2-00 准入准备：COMPLETE
+12C-R2-01：READY TO START
 12C overall implementation：NOT COMPLETE
 ```
 
-结论：12C-R0 已完成，下一步只能执行 `12C-R1-01 Profile Metadata 收口`。
+结论：12C-R0/R1 已完成，R2 共享层契约与验证夹具已准备，下一步执行 `12C-R2-01 PreviewWorkspace 与共享层状态`。
