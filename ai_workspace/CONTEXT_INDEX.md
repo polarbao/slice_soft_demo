@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-15 | 12C-R2-05-00 阶段封口准入 | `context_handoff/2026-07-15_12C-R2-05-00_阶段封口准入.md` | Current |
+| 2026-07-15 | 12C 到 12D-R1 阶段交接 | `context_handoff/2026-07-15_12C到12D-R1阶段交接.md` | Current |
+| 2026-07-15 | 12C-R2-05-00 阶段封口准入 | `context_handoff/2026-07-15_12C-R2-05-00_阶段封口准入.md` | Superseded |
 | 2026-07-15 | 12C-R2-04 OpenVDB Utility 摘要 | `context_handoff/2026-07-15_12C-R2-04_OpenVDBUtility摘要.md` | Superseded |
 | 2026-07-15 | 12C-R2-04-00 OpenVDB Utility 摘要准入 | `context_handoff/2026-07-15_12C-R2-04-00_OpenVDBUtility摘要准入.md` | Superseded |
 | 2026-07-14 | 12C-R2-03 DiagnosticsDock | `context_handoff/2026-07-14_12C-R2-03_DiagnosticsDock.md` | Superseded |
@@ -13,7 +14,7 @@
 | 2026-07-14 | 12C-R2-01 PreviewWorkspace 共享层状态 | `context_handoff/2026-07-14_12C-R2-01_PreviewWorkspace共享层状态.md` | Superseded |
 | 2026-07-14 | 12C-R2-00 预览诊断工作区准入 | `context_handoff/2026-07-14_12C-R2-00_预览诊断工作区准入.md` | Superseded |
 | 2026-07-14 | 12C-R1-04 设置项中文帮助元数据 | `context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md` | Superseded |
-| 2026-07-13 | 12D 材料闭环准备准入 | `context_handoff/2026-07-13_12D_材料闭环准备准入.md` | Prepared / waits for 12C |
+| 2026-07-13 | 12D 材料闭环准备准入 | `context_handoff/2026-07-13_12D_材料闭环准备准入.md` | Superseded / gate satisfied |
 | 2026-07-13 | 12C-R1-03 Generated Effective Config | `context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md` | Superseded |
 | 2026-07-13 | 12C-R1-02 SliceSettingsModel | `context_handoff/2026-07-13_12C-R1-02_SliceSettingsModel.md` | Superseded |
 | 2026-07-13 | 12C-R1-01 Profile 元数据收口 | `context_handoff/2026-07-13_12C-R1-01_Profile元数据收口.md` | Superseded |

@@ -12,7 +12,7 @@
 > - docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
 > - docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
 
-执行准入：完成 12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 后，才开始 12D-02 代码任务。
+执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成，12D-R1 已准入；下一原子任务为 12D-02。
 
 ## 12D-01 文档与验收口径冻结
 
@@ -41,12 +41,12 @@ PRD / DEV / DOC_DECISION 已生成；
 R0/R1/R2/R3 阶段已拆分；
 MaterialClosureReport schema 已冻结；
 DEMO、fixture matrix、CODEX_PROMPT 和准备状态报告已生成；
-12D 代码任务等待 12C-R2-05 完成后开始。
+12C-R2-05 已完成，12D-R1 可从 12D-02 开始。
 ```
 
 ## 12D-02 MaterialClosureConfig
 
-状态：PENDING / 12D-R1
+状态：READY TO IMPLEMENT / 12D-R1
 
 目标：
 

@@ -20,6 +20,7 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QRegularExpression>
+#include <QScrollArea>
 #include <QSizePolicy>
 #include <QSplitter>
 #include <QTabWidget>
@@ -322,6 +323,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     auto* central = new QWidget(this);
     auto* root_layout = new QVBoxLayout(central);
     auto* main_splitter = new QSplitter(Qt::Horizontal, central);
+    main_splitter->setObjectName(QStringLiteral("mainSplitter"));
 
     QWidget* left = createProjectPanel();
     auto* center_tabs = new QTabWidget(main_splitter);
@@ -329,25 +331,30 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     center_tabs->setDocumentMode(true);
     center_tabs->setTabPosition(QTabWidget::North);
     m_previewWorkspace = new PreviewWorkspace(center_tabs);
-    config_editor_panel_ = new ConfigEditorPanel(&config_document_, center_tabs);
+    auto* configScrollArea = new QScrollArea(center_tabs);
+    configScrollArea->setObjectName(QStringLiteral("configEditorScrollArea"));
+    configScrollArea->setWidgetResizable(true);
+    config_editor_panel_ = new ConfigEditorPanel(&config_document_, configScrollArea);
+    configScrollArea->setWidget(config_editor_panel_);
     const int previewWorkspaceTab = center_tabs->addTab(m_previewWorkspace, "预览");
-    const int configTab = center_tabs->addTab(config_editor_panel_, "配置");
+    const int configTab = center_tabs->addTab(configScrollArea, "配置");
     center_tabs->setTabToolTip(previewWorkspaceTab, "统一预览工作区：在生产层检查、材料叠加和原始调试预览之间切换并保持同一真实 layerIndex。");
     center_tabs->setTabToolTip(configTab, "编辑当前 JSON 配置；常用材料、支撑、预览和实验选项在这里。");
     center_tabs->setCurrentWidget(m_previewWorkspace);
 
     QWidget* right = createRightPanel();
-    left->setMinimumWidth(320);
-    left->setMaximumWidth(520);
-    center_tabs->setMinimumWidth(620);
-    right->setMinimumWidth(320);
+    left->setMinimumWidth(280);
+    left->setMaximumWidth(440);
+    center_tabs->setMinimumWidth(400);
+    right->setMinimumWidth(240);
+    right->setMaximumWidth(420);
     main_splitter->addWidget(left);
     main_splitter->addWidget(center_tabs);
     main_splitter->addWidget(right);
     main_splitter->setStretchFactor(0, 0);
     main_splitter->setStretchFactor(1, 1);
     main_splitter->setStretchFactor(2, 0);
-    main_splitter->setSizes(QList<int>{360, 840, 360});
+    main_splitter->setSizes(QList<int>{320, 800, 300});
 
     root_layout->addWidget(main_splitter);
     setCentralWidget(central);
@@ -624,8 +631,12 @@ void MainWindow::handleProcessFailed(const QString& message) {
 }
 
 QWidget* MainWindow::createProjectPanel() {
-    auto* panel = new QWidget(this);
-    auto* layout = new QVBoxLayout(panel);
+    auto* panel = new QScrollArea(this);
+    panel->setObjectName(QStringLiteral("projectPanel"));
+    panel->setWidgetResizable(true);
+    auto* content = new QWidget(panel);
+    content->setObjectName(QStringLiteral("projectPanelContent"));
+    auto* layout = new QVBoxLayout(content);
 
     config_edit_ = makePathEdit(QDir(paths_.repo_root).filePath("samples/configs/material_process/nail_rgb_white_varnish_top2.json"), panel);
     package_edit_ = makePathEdit(QDir(paths_.repo_root).filePath("output/NailRgbWhiteVarnishTop2"), panel);
@@ -649,9 +660,12 @@ QWidget* MainWindow::createProjectPanel() {
     scenarioLabel->setToolTip("Profile 是可复用的切片配置模板，选择后会填充配置文件和输出包路径。");
     scenario_row->addWidget(scenarioLabel);
     scenario_row->addWidget(m_scenarioSelector, 1);
-    scenario_row->addWidget(m_showAdvancedScenariosCheck);
-    scenario_row->addWidget(scenario_reload);
     layout->addLayout(scenario_row);
+    auto* scenarioActionsRow = new QHBoxLayout();
+    scenarioActionsRow->addWidget(m_showAdvancedScenariosCheck);
+    scenarioActionsRow->addStretch(1);
+    scenarioActionsRow->addWidget(scenario_reload);
+    layout->addLayout(scenarioActionsRow);
     m_scenarioCountLabel = new QLabel("场景：尚未加载", panel);
     m_scenarioCountLabel->setWordWrap(true);
     layout->addWidget(m_scenarioCountLabel);
@@ -686,6 +700,7 @@ QWidget* MainWindow::createProjectPanel() {
     connect(m_scenarioSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::OnScenarioChanged);
     connect(m_showAdvancedScenariosCheck, &QCheckBox::toggled, this, &MainWindow::OnScenarioVisibilityChanged);
     connect(scenario_reload, &QPushButton::clicked, this, &MainWindow::OnReloadScenarios);
+    panel->setWidget(content);
     return panel;
 }
 
@@ -731,6 +746,7 @@ QWidget* MainWindow::createRunPanel() {
 
 QWidget* MainWindow::createRightPanel() {
     auto* tabs = new QTabWidget(this);
+    tabs->setObjectName(QStringLiteral("rightDiagnosticsPanel"));
     tabs->setDocumentMode(true);
     material_process_panel_ = new MaterialProcessPanel(tabs);
     warnings_view_ = new QPlainTextEdit(tabs);
@@ -740,7 +756,7 @@ QWidget* MainWindow::createRightPanel() {
     tabs->addTab(material_process_panel_, "参数");
     tabs->addTab(warnings_view_, "诊断");
     tabs->addTab(compare_view_, "工艺对比");
-    tabs->setMinimumWidth(360);
+    tabs->setMinimumWidth(240);
     return tabs;
 }
 

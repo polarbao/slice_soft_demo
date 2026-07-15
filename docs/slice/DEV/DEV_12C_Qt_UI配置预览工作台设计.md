@@ -502,3 +502,19 @@ OpenVDB utility report 只读展示 productionReplacementAllowed=false。
 ```
 
 具体模板路径和字段映射可在 R1 原子任务内根据当前代码校正，但不得改变上述语义。
+
+## 14. R2-05 响应式布局实现
+
+主窗口继续使用既有水平 `QSplitter`，没有重写导航或工作台架构。稳定几何边界为：
+
+```text
+projectPanel：280..440 px；
+mainWorkspaceTabs：最小 400 px，最高 stretch factor；
+rightDiagnosticsPanel：240..420 px。
+```
+
+左侧项目长表单由 `QScrollArea` 承载；配置页整体由独立滚动区承载。这样 `QTabWidget` 不再把长表单的 `minimumSizeHint` 传播到主窗口，同时保留全部设置和运行入口。场景选择操作拆为两行，材料图例采用两行网格，减少窄窗口横向压力。
+
+`workspace-layout-sizes` 通过稳定 objectName 查询三列和诊断 Dock 的真实全局几何，断言窗口可缩放到 1440x900、1280x720、1024x768，三列不重叠，Dock 展开不覆盖中央区，且共享真实 `layerIndex` 不变。
+
+最终 `Run12CUiClosure.ps1` 负责构建 CLI、UI 和 CTest 目标，重新生成 UI fixture 并串行执行完整 R1/R2 Smoke。任一原生命令非零退出时立即失败。

@@ -18,11 +18,11 @@
 - `12B-R0/R1/R2` performance evaluation and OpenVDB SDF utility positioning are complete.
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
-- Current working phase is `12C-R2`: Preview and Diagnostics workspace.
-- The latest completed task is `12C-R2-04 OpenVDB Utility/Candidate 摘要`.
-- The current task is `12C-R2-05 Smoke、手册与阶段报告`; its atomic readiness checklist is complete and implementation is next.
-- `12D-R0` documentation admission is complete, but 12D code work waits for `12C-R2-05`.
-- `12C-R2` must not start before the full R1 settings pipeline is complete.
+- `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
+- The latest completed task is `12C-R2-05 Smoke、手册与阶段报告`.
+- Current working phase is `12D-R1`: Material Closure configuration and candidate diagnostics.
+- `12D-R0` documentation admission is complete and the 12C gate is satisfied.
+- The current atomic task is `12D-02 MaterialClosureConfig`; do not start report/detector/repair work early.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules
@@ -72,8 +72,8 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Document state: `.agents/docs/doc-state.md`
 - Formal docs index: `docs/slice/README.md`
 - Codex task index: `docs/codex_task/README.md`
-- Current task list: `docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md`
-- Current execution prompt: `docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md`
+- Current task list: `docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md`
+- Current execution prompt: `docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md`
 
 ## Production Safety Rules
 

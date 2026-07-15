@@ -1,6 +1,6 @@
 # DOC_CHECKLIST_12C-R2 预览与诊断工作区准入
 
-> 文档状态：Readiness Checklist / Stage 12C-R2
+> 文档状态：COMPLETE / Stage 12C-R2
 > 日期：2026-07-14
 
 ## 1. 准入结论
@@ -13,7 +13,7 @@
 12C-R2-02 图例与像素探针：COMPLETE；
 12C-R2-03 DiagnosticsDock：COMPLETE；
 12C-R2-04 OpenVDB Utility/Candidate 摘要：COMPLETE；
-12C-R2-05 Smoke、手册与阶段报告：READY TO IMPLEMENT。
+12C-R2-05 Smoke、手册与阶段报告：COMPLETE。
 ```
 
 R2 不需要修改 `slicer_core` 公共 API、Qt 版本、第三方依赖或生产 RGBWSV 协议，可以在现有 `apps/slicer_debug_ui` 边界内实施。
@@ -76,7 +76,7 @@ R2-01 不实现 R2-02 图例/探针收口。
 | R2-02 图例/探针 | COMPLETE | 不改变生产像素语义 |
 | R2-03 DiagnosticsDock | COMPLETE | 底部 QDockWidget、默认隐藏，只调整承载位置 |
 | R2-04 OpenVDB 摘要 | COMPLETE | 只读 utility report，固定非生产；ON/OFF/负向 smoke 已通过 |
-| R2-05 Smoke/手册/报告 | READY | 多尺寸、最终 Smoke、fresh lane、报告和 12D 交接已冻结 |
+| R2-05 Smoke/手册/报告 | COMPLETE | 三尺寸布局、最终 Smoke、fresh lane、报告和 12D 交接已通过 |
 
 ## 5. R2-01 文件影响面
 
@@ -137,4 +137,4 @@ git diff --check
 
 ## 9. 最终判断
 
-12C-R2 的共享层、图例、六通道探针、可折叠诊断区和 OpenVDB Utility 安全摘要均已落实。`DOC_CHECKLIST_12C_R2_05_阶段封口准入.md` 已冻结多尺寸布局、最终 Smoke、fresh lane、用户手册、阶段报告和 12D 交接条件，可以实施 R2-05。
+12C-R2 的共享层、图例、六通道探针、可折叠诊断区、OpenVDB Utility 安全摘要和多尺寸布局均已落实。最终 fresh lane、完整 Smoke 和 CTest 已通过，12C 阶段完成并移交 12D-R1。

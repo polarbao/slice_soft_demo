@@ -32,7 +32,10 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QProcess>
+#include <QRect>
 #include <QSet>
+#include <QSize>
+#include <QSplitter>
 #include <QTemporaryDir>
 #include <QTabWidget>
 #include <QTextStream>
@@ -249,6 +252,11 @@ bool ContainsAll(const QString& text, const QStringList& expected)
     return true;
 }
 
+QRect GlobalRect(const QWidget* widget)
+{
+    return QRect(widget->mapToGlobal(QPoint(0, 0)), widget->size());
+}
+
 }  // namespace
 
 int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
@@ -301,6 +309,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "openvdb-utility-summary")
     {
         return OpenVdbUtilitySummary(options);
+    }
+    if (options.case_name == "workspace-layout-sizes")
+    {
+        return WorkspaceLayoutSizes(options);
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
@@ -1280,6 +1292,141 @@ int UiSmokeTestRunner::OpenVdbUtilitySummary(const UiSmokeTestOptions& options)
     }
 
     return pass(QStringLiteral("openvdb-utility-summary on=valid off=valid badSchema=blocked replacement=blocked"));
+}
+
+int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
+{
+    const QString packagePath = absoluteFromRepo(options, options.package_path);
+    const PackageSummary package = PackageLoader().load(packagePath);
+    if (package.manifest_path.isEmpty())
+    {
+        return fail(QStringLiteral("workspace-layout-sizes 未找到 manifest：") + packagePath);
+    }
+
+    MainWindow window(options.repo_root);
+    auto* splitter = window.findChild<QSplitter*>(QStringLiteral("mainSplitter"));
+    auto* projectPanel = window.findChild<QWidget*>(QStringLiteral("projectPanel"));
+    auto* workspaceTabs = window.findChild<QTabWidget*>(QStringLiteral("mainWorkspaceTabs"));
+    auto* rightPanel = window.findChild<QTabWidget*>(QStringLiteral("rightDiagnosticsPanel"));
+    auto* preview = window.findChild<PreviewWorkspace*>(QStringLiteral("previewWorkspace"));
+    auto* configPanel = window.findChild<ConfigEditorPanel*>();
+    auto* dock = window.findChild<DiagnosticsDock*>(QStringLiteral("diagnosticsDock"));
+    auto* diagnosticsAction = window.findChild<QAction*>(QStringLiteral("diagnosticsToggleAction"));
+    if (splitter == nullptr || projectPanel == nullptr || workspaceTabs == nullptr || rightPanel == nullptr
+        || preview == nullptr || configPanel == nullptr || dock == nullptr || diagnosticsAction == nullptr)
+    {
+        return fail(QStringLiteral("workspace-layout-sizes 缺少稳定布局对象。"));
+    }
+
+    preview->LoadPackage(package);
+    dock->LoadPackage(package);
+    if (preview->LayerIndices().isEmpty())
+    {
+        return fail(QStringLiteral("workspace-layout-sizes 输出包没有生产层。"));
+    }
+    const int layerIndex = preview->LayerIndices().last();
+    preview->SelectLayer(layerIndex);
+
+    window.show();
+    QApplication::processEvents();
+    const QList<QSize> targetSizes{
+        QSize(1440, 900),
+        QSize(1280, 720),
+        QSize(1024, 768),
+    };
+    QStringList verifiedSizes;
+    for (const QSize& targetSize : targetSizes)
+    {
+        dock->SetExpanded(false);
+        window.resize(targetSize);
+        QApplication::processEvents();
+
+        if (window.width() > targetSize.width() || window.height() > targetSize.height())
+        {
+            return fail(
+                QStringLiteral(
+                    "workspace-layout-sizes 窗口被 minimumSizeHint 强制放大：requested=%1x%2 actual=%3x%4 "
+                    "windowHint=%5x%6 projectHint=%7x%8 workspaceHint=%9x%10 rightHint=%11x%12 "
+                    "previewHint=%13x%14 configHint=%15x%16")
+                    .arg(targetSize.width())
+                    .arg(targetSize.height())
+                    .arg(window.width())
+                    .arg(window.height())
+                    .arg(window.minimumSizeHint().width())
+                    .arg(window.minimumSizeHint().height())
+                    .arg(projectPanel->minimumSizeHint().width())
+                    .arg(projectPanel->minimumSizeHint().height())
+                    .arg(workspaceTabs->minimumSizeHint().width())
+                    .arg(workspaceTabs->minimumSizeHint().height())
+                    .arg(rightPanel->minimumSizeHint().width())
+                    .arg(rightPanel->minimumSizeHint().height())
+                    .arg(preview->minimumSizeHint().width())
+                    .arg(preview->minimumSizeHint().height())
+                    .arg(configPanel->minimumSizeHint().width())
+                    .arg(configPanel->minimumSizeHint().height()));
+        }
+        if (!projectPanel->isVisible() || !workspaceTabs->isVisible() || !rightPanel->isVisible())
+        {
+            return fail(QStringLiteral("workspace-layout-sizes 三列区域存在不可见项。"));
+        }
+
+        const QRect splitterRect = GlobalRect(splitter);
+        const QRect projectRect = GlobalRect(projectPanel);
+        const QRect workspaceRect = GlobalRect(workspaceTabs);
+        const QRect rightRect = GlobalRect(rightPanel);
+        if (projectRect.width() < 280 || workspaceRect.width() < 400 || rightRect.width() < 240)
+        {
+            return fail(
+                QStringLiteral("workspace-layout-sizes 三列宽度低于冻结边界：%1/%2/%3")
+                    .arg(projectRect.width())
+                    .arg(workspaceRect.width())
+                    .arg(rightRect.width()));
+        }
+        if (projectRect.intersects(workspaceRect) || projectRect.intersects(rightRect)
+            || workspaceRect.intersects(rightRect))
+        {
+            return fail(QStringLiteral("workspace-layout-sizes 三列区域发生重叠。"));
+        }
+        if (!splitterRect.contains(projectRect) || !splitterRect.contains(workspaceRect)
+            || !splitterRect.contains(rightRect))
+        {
+            return fail(QStringLiteral("workspace-layout-sizes 三列区域超出 mainSplitter。"));
+        }
+        if (dock->IsExpanded() || diagnosticsAction->isChecked())
+        {
+            return fail(QStringLiteral("workspace-layout-sizes 诊断区域未保持默认隐藏。"));
+        }
+
+        dock->SetExpanded(true);
+        QApplication::processEvents();
+        const QRect expandedWorkspaceRect = GlobalRect(workspaceTabs);
+        const QRect dockRect = GlobalRect(dock);
+        if (!dock->IsExpanded() || !diagnosticsAction->isChecked() || dockRect.height() <= 0
+            || expandedWorkspaceRect.height() < 200 || expandedWorkspaceRect.intersects(dockRect))
+        {
+            return fail(QStringLiteral("workspace-layout-sizes 诊断区域展开后覆盖或压垮中央工作区。"));
+        }
+        dock->SetExpanded(false);
+        QApplication::processEvents();
+        if (preview->CurrentLayerIndex() != layerIndex)
+        {
+            return fail(QStringLiteral("workspace-layout-sizes resize/dock toggle 改变了真实 layerIndex。"));
+        }
+
+        verifiedSizes.push_back(
+            QStringLiteral("%1x%2=%3/%4/%5")
+                .arg(targetSize.width())
+                .arg(targetSize.height())
+                .arg(projectRect.width())
+                .arg(workspaceRect.width())
+                .arg(rightRect.width()));
+    }
+
+    window.hide();
+    return pass(
+        QStringLiteral("workspace-layout-sizes sizes=%1 layer=%2")
+            .arg(verifiedSizes.join(QStringLiteral(",")))
+            .arg(layerIndex));
 }
 
 int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& options)

@@ -1,6 +1,6 @@
 # DOC_CHECKLIST_12C-R2-05 阶段封口准入
 
-> 文档状态：Readiness Complete / Stage 12C-R2-05
+> 文档状态：COMPLETE / Stage 12C-R2-05
 > 日期：2026-07-15
 > 目标：冻结 12C 多尺寸布局、最终 Smoke、用户手册、状态报告和 12D 交接契约
 
@@ -11,12 +11,12 @@
 12C-R1 Profile/Settings/generated config/help：COMPLETE；
 12C-R2-01 至 R2-04：COMPLETE；
 R2-05 多尺寸布局和阶段封口契约：FROZEN；
-R2-05：READY TO IMPLEMENT。
+R2-05：COMPLETE。
 ```
 
 R2-05 只收口 Qt 工作台布局、自动化验证和文档，不修改切片算法、材料策略、OpenVDB 计算、生产 package 或 RGBWSV 协议。
 
-## 2. 当前代码事实
+## 2. 实施前基线事实
 
 `MainWindow` 当前三列最小宽度为：
 
@@ -27,7 +27,7 @@ R2-05 只收口 Qt 工作台布局、自动化验证和文档，不修改切片�
 合计未包含 splitter handle 和 layout margin 已达到 1300 px。
 ```
 
-因此现有代码不能真实满足 1024x768。R2-05 不能只补 Smoke 文案，必须先做最小响应式调整，再由几何 Smoke 证明目标尺寸可用。
+因此实施前代码不能真实满足 1024x768。R2-05 已完成最小响应式调整，并由几何 Smoke 证明目标尺寸可用。
 
 ## 3. 冻结布局方案
 
@@ -215,6 +215,17 @@ docs/slice/REPORT/REPORT_12C_Qt工作台当前状态.md
 12D REPORT/context pointers（仅在 12C 完成后更新准入状态）
 ```
 
-## 11. 最终判断
+## 11. 完成证据
 
-R2-05 的响应式修改边界、三尺寸自动化断言、最终 Smoke 集合、fresh lane、报告结构和 12D 交接条件均已冻结，可以进入代码实施。
+```text
+build-12c-ui-r2-final fresh configure/build：PASS；
+Run12CUiClosure.ps1：12 项 UI self-test/Smoke 全部 PASS；
+workspace-layout-sizes：1440x900=320/786/300，1280x720=320/626/300，1024x768=305/400/285；
+CTest：6/6 PASS；
+REPORT_12C_Qt工作台当前状态.md：已生成；
+12D-R1：READY TO START。
+```
+
+## 12. 最终判断
+
+R2-05 的响应式布局、三尺寸自动化断言、最终 Smoke、fresh lane、用户手册、最终报告和 12D 交接已经闭环。12C 阶段完成，可从 12D-02 开始后续工作。

@@ -34,6 +34,7 @@ private:
     int PreviewLegendProbeContext(const UiSmokeTestOptions& options);
     int DiagnosticsCollapse(const UiSmokeTestOptions& options);
     int OpenVdbUtilitySummary(const UiSmokeTestOptions& options);
+    int WorkspaceLayoutSizes(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;

@@ -222,3 +222,30 @@ Smoke 使用临时 ON/OFF/非法 JSON fixture，不依赖本机 OpenVDB ON 构�
 PASS openvdb-utility-summary on=valid off=valid badSchema=blocked replacement=blocked
 PASS diagnostics-collapse default=collapsed tabs=报告,曲线,日志 workspace=预览,配置 layer=24
 ```
+
+### 6.4 R2-05 阶段封口 Gate
+
+```text
+三列在 1440x900、1280x720、1024x768 下均可见且不重叠；
+中央工作区宽度不低于 400 px；
+左侧项目区和配置长表单通过滚动访问，不强制放大主窗口；
+DiagnosticsDock 默认隐藏，展开后不覆盖中央工作区；
+窗口 resize 和 Dock toggle 不改变共享真实 layerIndex；
+完整 R1/R2 Smoke 必须由同一 fresh build 目录运行。
+```
+
+验证命令：
+
+```powershell
+.\scripts\Configure12CQtUi.ps1 -BuildDir build-12c-ui-r2-final -Config Debug
+.\scripts\Run12CUiClosure.ps1 -BuildDir build-12c-ui-r2-final -Config Debug
+ctest --test-dir build-12c-ui-r2-final -C Debug --output-on-failure
+```
+
+本轮结果：
+
+```text
+PASS workspace-layout-sizes sizes=1440x900=320/786/300,1280x720=320/626/300,1024x768=305/400/285 layer=24
+PASS 12C Qt UI closure（12 项 self-test/Smoke）
+PASS CTest 6/6
+```

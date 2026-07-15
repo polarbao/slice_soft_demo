@@ -6,6 +6,7 @@
 
 #include <QComboBox>
 #include <QFrame>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSet>
@@ -18,19 +19,28 @@ namespace
 {
 
 QLabel* AddLegendEntry(
-    QHBoxLayout* layout,
+    QGridLayout* layout,
     QWidget* parent,
     const QString& objectName,
-    const QString& text)
+    const QString& text,
+    const int row,
+    const int column)
 {
-    auto* swatch = new QLabel(parent);
+    auto* entry = new QWidget(parent);
+    auto* entryLayout = new QHBoxLayout(entry);
+    entryLayout->setContentsMargins(0, 0, 0, 0);
+    entryLayout->setSpacing(4);
+
+    auto* swatch = new QLabel(entry);
     swatch->setObjectName(objectName + QStringLiteral("Swatch"));
     swatch->setFixedSize(16, 16);
-    layout->addWidget(swatch);
+    entryLayout->addWidget(swatch);
 
-    auto* label = new QLabel(text, parent);
+    auto* label = new QLabel(text, entry);
     label->setObjectName(objectName + QStringLiteral("Label"));
-    layout->addWidget(label);
+    entryLayout->addWidget(label);
+    entryLayout->addStretch(1);
+    layout->addWidget(entry, row, column);
     return swatch;
 }
 
@@ -62,38 +72,48 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
 
     auto* legendBar = new QFrame(this);
     legendBar->setObjectName(QStringLiteral("previewLegendBar"));
-    auto* legendLayout = new QHBoxLayout(legendBar);
+    auto* legendLayout = new QGridLayout(legendBar);
     legendLayout->setContentsMargins(0, 0, 0, 0);
     legendLayout->setSpacing(6);
     auto* legendTitle = new QLabel(QStringLiteral("材料图例"), legendBar);
     legendTitle->setObjectName(QStringLiteral("previewLegendTitle"));
-    legendLayout->addWidget(legendTitle);
+    legendLayout->addWidget(legendTitle, 0, 0, 1, 3);
     m_rgbLegendSwatch = AddLegendEntry(
         legendLayout,
         legendBar,
         QStringLiteral("legendRgb"),
-        QStringLiteral("RGB 模型颜色/填充"));
+        QStringLiteral("RGB 模型颜色/填充"),
+        1,
+        0);
     m_whiteLegendSwatch = AddLegendEntry(
         legendLayout,
         legendBar,
         QStringLiteral("legendWhite"),
-        QStringLiteral("W 白墨填充"));
+        QStringLiteral("W 白墨填充"),
+        1,
+        1);
     m_supportLegendSwatch = AddLegendEntry(
         legendLayout,
         legendBar,
         QStringLiteral("legendSupport"),
-        QStringLiteral("S 支撑"));
+        QStringLiteral("S 支撑"),
+        1,
+        2);
     m_varnishLegendSwatch = AddLegendEntry(
         legendLayout,
         legendBar,
         QStringLiteral("legendVarnish"),
-        QStringLiteral("V 光油/填充"));
+        QStringLiteral("V 光油/填充"),
+        2,
+        0);
     m_emptyLegendSwatch = AddLegendEntry(
         legendLayout,
         legendBar,
         QStringLiteral("legendEmpty"),
-        QStringLiteral("真实空白"));
-    legendLayout->addStretch(1);
+        QStringLiteral("真实空白"),
+        2,
+        1);
+    legendLayout->setColumnStretch(2, 1);
     layout->addWidget(legendBar);
 
     m_protocolHint = new QLabel(

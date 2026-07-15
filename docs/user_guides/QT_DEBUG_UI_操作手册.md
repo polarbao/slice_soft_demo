@@ -24,8 +24,8 @@ emptyValue = 255
 PowerShell：
 
 ```powershell
-cmake --build build --config Debug --target slicer_debug_ui
-.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe
+.\scripts\Configure12CQtUi.ps1 -BuildDir build-12c-ui -Config Debug
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe
 ```
 
 VSCode：
@@ -173,7 +173,7 @@ output/ui_sessions/<模型名_时间戳>_openvdb/reports/experimental_openvdb_sh
 工作区模式为：
 
 ```text
-生产层检查 / 材料叠加 / 原始文件
+生产层检查 / 材料叠加 / 原始调试预览
 ```
 
 模式切换共享真实 `layerIndex`。如果原始 preview 或某个叠加材料在该层没有图片，界面会保持当前层并显示同层缺失，不会跳到最近或后续有图层。
@@ -235,6 +235,20 @@ Legacy 默认生产路径和 guard 是否实际运行。
 ```
 
 “Utility 验证通过（非生产）”只说明该辅助能力在本报告中通过，不表示生产切片验收通过。错误 schema、安全输出策略异常或 `productionReplacementAllowed=true` 会显示“报告无效，禁止作为生产证据”。
+
+### 5.5 小窗口与滚动
+
+工作台已验证以下窗口尺寸：
+
+```text
+1440x900
+1280x720
+1024x768
+```
+
+三种尺寸下左侧项目区、中央预览/配置区和右侧参数区均保留，不会相互遮挡。中央区域优先获得伸缩空间；左侧项目区和配置页内容超过可用高度时使用滚动条。长路径可把鼠标停留在输入框上查看完整值。
+
+底部诊断区域默认隐藏。展开后它位于主工作区下方，不覆盖预览；再次关闭会恢复中央空间，并保持当前真实 `layerIndex`。
 
 ## 6. 配置页设置位置
 
@@ -326,3 +340,15 @@ OpenVDB production RGBWSV 输出
 ```
 
 OpenVDB 当前只能通过 UI 触发实验诊断，不应作为正式切片结果交付。
+
+## 10. 阶段封口验证
+
+需要复核完整 12C 工作台时，使用独立 fresh build 目录：
+
+```powershell
+.\scripts\Configure12CQtUi.ps1 -BuildDir build-12c-ui-r2-final -Config Debug
+.\scripts\Run12CUiClosure.ps1 -BuildDir build-12c-ui-r2-final -Config Debug
+ctest --test-dir build-12c-ui-r2-final -C Debug --output-on-failure
+```
+
+`Run12CUiClosure.ps1` 会重新生成 UI Smoke 输出包并执行 Profile、设置、生效配置、共享层、图例/探针、诊断区、OpenVDB 摘要和三种窗口尺寸的自动化检查。任一检查失败时脚本会返回非零退出码。
