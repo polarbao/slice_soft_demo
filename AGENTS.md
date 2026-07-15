@@ -19,9 +19,8 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - Current working phase is `12C-R2`: Preview and Diagnostics workspace.
-- The latest completed task is `12C-R2-02 图例与像素探针收口`.
-- The latest completed task is `12C-R2-03 DiagnosticsDock`.
-- The current task is `12C-R2-04 OpenVDB Utility/Candidate 摘要`; its atomic readiness checklist is complete and code implementation is next.
+- The latest completed task is `12C-R2-04 OpenVDB Utility/Candidate 摘要`.
+- The next task is `12C-R2-05 Smoke、手册与阶段报告`; complete its atomic readiness checklist before final-stage changes.
 - `12D-R0` documentation admission is complete, but 12D code work waits for `12C-R2-05`.
 - `12C-R2` must not start before the full R1 settings pipeline is complete.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.

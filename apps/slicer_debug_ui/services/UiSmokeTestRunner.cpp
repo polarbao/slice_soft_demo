@@ -8,6 +8,7 @@
 #include "../widgets/PreviewOverlayPanel.h"
 #include "../widgets/PreviewPanel.h"
 #include "../widgets/QuickConfigPanel.h"
+#include "../widgets/ReportPanel.h"
 #include "../widgets/SettingHelpPanel.h"
 #include "../widgets/PreviewWorkspace.h"
 #include "ConfigDocument.h"
@@ -81,6 +82,161 @@ QJsonObject BuildExperimentalReportFixture()
     return root;
 }
 
+QJsonObject BuildOpenVdbUtilityItem(
+    const bool available,
+    const bool executed,
+    const QString& status,
+    const QString& source,
+    const QString& promoteDecision,
+    const QStringList& blockers)
+{
+    QJsonObject utility;
+    utility[QStringLiteral("available")] = available;
+    utility[QStringLiteral("executed")] = executed;
+    utility[QStringLiteral("status")] = status;
+    utility[QStringLiteral("source")] = source;
+    utility[QStringLiteral("promoteDecision")] = promoteDecision;
+    utility[QStringLiteral("metrics")] = QJsonObject{};
+    utility[QStringLiteral("timingsMs")] = QJsonObject{};
+    utility[QStringLiteral("blockers")] = StringArray(blockers);
+    utility[QStringLiteral("warnings")] = QJsonArray{};
+    utility[QStringLiteral("notes")] = QJsonArray{};
+    return utility;
+}
+
+QJsonObject BuildOpenVdbUtilityReportFixture(const bool openVdbAvailable)
+{
+    QJsonObject build;
+    build[QStringLiteral("buildType")] = QStringLiteral("Debug");
+    build[QStringLiteral("useOpenVdb")] = openVdbAvailable;
+    build[QStringLiteral("openVdbAvailable")] = openVdbAvailable;
+    build[QStringLiteral("openVdbVersion")] =
+        openVdbAvailable ? QJsonValue{QStringLiteral("12.0.1")} : QJsonValue{QJsonValue::Null};
+    build[QStringLiteral("openVdbUnavailableReason")] =
+        openVdbAvailable ? QJsonValue{QJsonValue::Null} : QJsonValue{QStringLiteral("use_openvdb_off")};
+
+    QJsonObject outputPolicy;
+    outputPolicy[QStringLiteral("writesProductionPackage")] = false;
+    outputPolicy[QStringLiteral("writesProductionTiff")] = false;
+    outputPolicy[QStringLiteral("writesPreview")] = false;
+    outputPolicy[QStringLiteral("writesUtilityReport")] = true;
+    outputPolicy[QStringLiteral("modifiesLegacyOutput")] = false;
+    outputPolicy[QStringLiteral("protocolSchemaTouched")] = false;
+
+    QJsonObject utilities;
+    if (openVdbAvailable)
+    {
+        utilities[QStringLiteral("outerVarnishShell")] = BuildOpenVdbUtilityItem(
+            true,
+            true,
+            QStringLiteral("pass"),
+            QStringLiteral("openvdb_sdf_shell"),
+            QStringLiteral("promote"),
+            {});
+        utilities[QStringLiteral("clearanceDistance")] = BuildOpenVdbUtilityItem(
+            false,
+            false,
+            QStringLiteral("not_evaluated"),
+            QStringLiteral("openvdb_sdf_distance"),
+            QStringLiteral("keep_experimental"),
+            {QStringLiteral("clearance_utility_not_implemented")});
+        utilities[QStringLiteral("topologyDiagnostic")] = BuildOpenVdbUtilityItem(
+            true,
+            true,
+            QStringLiteral("pass"),
+            QStringLiteral("mesh_diagnostics_plus_openvdb_admission"),
+            QStringLiteral("promote"),
+            {});
+        utilities[QStringLiteral("materialClosureAssist")] = BuildOpenVdbUtilityItem(
+            false,
+            false,
+            QStringLiteral("not_evaluated"),
+            QStringLiteral("semantic_mask_plus_sdf_assist"),
+            QStringLiteral("keep_experimental"),
+            {QStringLiteral("material_closure_assist_not_implemented")});
+    }
+    else
+    {
+        const QStringList blocker{QStringLiteral("use_openvdb_off")};
+        utilities[QStringLiteral("outerVarnishShell")] = BuildOpenVdbUtilityItem(
+            false,
+            false,
+            QStringLiteral("unavailable"),
+            QStringLiteral("openvdb_sdf_shell"),
+            QStringLiteral("not_evaluated"),
+            blocker);
+        utilities[QStringLiteral("clearanceDistance")] = BuildOpenVdbUtilityItem(
+            false,
+            false,
+            QStringLiteral("unavailable"),
+            QStringLiteral("openvdb_sdf_distance"),
+            QStringLiteral("not_evaluated"),
+            blocker);
+        utilities[QStringLiteral("topologyDiagnostic")] = BuildOpenVdbUtilityItem(
+            false,
+            false,
+            QStringLiteral("unavailable"),
+            QStringLiteral("mesh_diagnostics_plus_openvdb_admission"),
+            QStringLiteral("not_evaluated"),
+            blocker);
+        utilities[QStringLiteral("materialClosureAssist")] = BuildOpenVdbUtilityItem(
+            false,
+            false,
+            QStringLiteral("unavailable"),
+            QStringLiteral("semantic_mask_plus_sdf_assist"),
+            QStringLiteral("not_evaluated"),
+            blocker);
+    }
+
+    QJsonObject decision;
+    decision[QStringLiteral("openVdbRole")] =
+        openVdbAvailable ? QStringLiteral("sdf_utility_candidate") : QStringLiteral("unavailable");
+    decision[QStringLiteral("productionReplacementAllowed")] = false;
+    decision[QStringLiteral("recommendedNextStep")] = openVdbAvailable
+        ? QStringLiteral("promote_outer_shell_and_topology_utility_design")
+        : QStringLiteral("configure_or_run_openvdb_on_lane");
+    decision[QStringLiteral("capabilitySummary")] = QJsonObject{};
+
+    QJsonObject legacyGuard;
+    legacyGuard[QStringLiteral("ran")] = false;
+    legacyGuard[QStringLiteral("reason")] =
+        QStringLiteral("utility_probe_does_not_run_or_modify_legacy_output");
+    QJsonObject validation;
+    validation[QStringLiteral("schemaValid")] = true;
+    validation[QStringLiteral("legacyGuard")] = legacyGuard;
+
+    QJsonArray issues;
+    if (!openVdbAvailable)
+    {
+        QJsonObject issue;
+        issue[QStringLiteral("severity")] = QStringLiteral("warning");
+        issue[QStringLiteral("code")] = QStringLiteral("use_openvdb_off");
+        issue[QStringLiteral("message")] = QStringLiteral("OpenVDB utility is unavailable.");
+        issues.append(issue);
+    }
+
+    QJsonObject root;
+    root[QStringLiteral("schema")] = QStringLiteral("slicesoft.openvdb_sdf_utility.12b_r2.1");
+    root[QStringLiteral("build")] = build;
+    root[QStringLiteral("outputPolicy")] = outputPolicy;
+    root[QStringLiteral("utilities")] = utilities;
+    root[QStringLiteral("decision")] = decision;
+    root[QStringLiteral("validation")] = validation;
+    root[QStringLiteral("issues")] = issues;
+    return root;
+}
+
+bool WriteJsonFixture(const QString& path, const QJsonObject& object)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        return false;
+    }
+    file.write(QJsonDocument(object).toJson(QJsonDocument::Indented));
+    return true;
+}
+
 bool ContainsAll(const QString& text, const QStringList& expected)
 {
     for (const QString& value : expected)
@@ -141,6 +297,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "diagnostics-collapse")
     {
         return DiagnosticsCollapse(options);
+    }
+    if (options.case_name == "openvdb-utility-summary")
+    {
+        return OpenVdbUtilitySummary(options);
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
@@ -997,6 +1157,129 @@ int UiSmokeTestRunner::DiagnosticsCollapse(const UiSmokeTestOptions& options)
             .arg(dock->TabTitles().join(QStringLiteral(",")))
             .arg(workspaceTitles.join(QStringLiteral(",")))
             .arg(layerIndex));
+}
+
+int UiSmokeTestRunner::OpenVdbUtilitySummary(const UiSmokeTestOptions& options)
+{
+    QTemporaryDir tempDir;
+    if (!tempDir.isValid())
+    {
+        return fail(QStringLiteral("openvdb-utility-summary 无法创建临时目录。"));
+    }
+
+    QDir packageDir(tempDir.filePath(QStringLiteral("package")));
+    if (!packageDir.mkpath(QStringLiteral("reports")))
+    {
+        return fail(QStringLiteral("openvdb-utility-summary 无法创建 reports 目录。"));
+    }
+    const QString offPath = packageDir.filePath(QStringLiteral("reports/openvdb_utility_off.json"));
+    const QString onPath = packageDir.filePath(QStringLiteral("reports/openvdb_utility_on.json"));
+    QJsonObject badSchema = BuildOpenVdbUtilityReportFixture(true);
+    badSchema[QStringLiteral("schema")] = QStringLiteral("slicesoft.openvdb_sdf_utility.99.1");
+    const QString badSchemaPath = tempDir.filePath(QStringLiteral("openvdb_utility_bad_schema.json"));
+    QJsonObject badReplacement = BuildOpenVdbUtilityReportFixture(true);
+    QJsonObject badDecision = badReplacement.value(QStringLiteral("decision")).toObject();
+    badDecision[QStringLiteral("productionReplacementAllowed")] = true;
+    badReplacement[QStringLiteral("decision")] = badDecision;
+    const QString badReplacementPath =
+        tempDir.filePath(QStringLiteral("openvdb_utility_bad_replacement.json"));
+    if (!WriteJsonFixture(offPath, BuildOpenVdbUtilityReportFixture(false))
+        || !WriteJsonFixture(onPath, BuildOpenVdbUtilityReportFixture(true))
+        || !WriteJsonFixture(badSchemaPath, badSchema)
+        || !WriteJsonFixture(badReplacementPath, badReplacement))
+    {
+        return fail(QStringLiteral("openvdb-utility-summary 无法写入报告 fixture。"));
+    }
+
+    const PackageSummary package = PackageLoader().load(packageDir.path());
+    if (!package.report_paths.contains(QFileInfo(offPath).absoluteFilePath())
+        || !package.report_paths.contains(QFileInfo(onPath).absoluteFilePath()))
+    {
+        return fail(QStringLiteral("openvdb-utility-summary PackageLoader 未发现 ON/OFF 报告。"));
+    }
+
+    MainWindow window(options.repo_root);
+    auto* dock = window.findChild<DiagnosticsDock*>(QStringLiteral("diagnosticsDock"));
+    auto* preview = window.findChild<PreviewWorkspace*>(QStringLiteral("previewWorkspace"));
+    if (dock == nullptr || preview == nullptr)
+    {
+        return fail(QStringLiteral("openvdb-utility-summary 缺少诊断区域或预览工作区。"));
+    }
+    ReportPanel* panel = dock->ReportView();
+    panel->loadPackage(package);
+    if (panel->ReportCount() != 2)
+    {
+        return fail(QStringLiteral("openvdb-utility-summary package 报告数量不正确。"));
+    }
+
+    const int layerIndexBefore = preview->CurrentLayerIndex();
+    panel->LoadReportPath(offPath);
+    const QString offSummary = panel->CurrentSummary();
+    const JsonReport offReport = ReportLoader().load(offPath);
+    const QString offWarnings =
+        ReportLoader::collectWarningsAndFailures(offReport.document.object());
+    if (!ContainsAll(
+            offSummary,
+            {QStringLiteral("报告角色: 当前不可用"),
+             QStringLiteral("OpenVDB 编译/运行可用: 否 / 否"),
+             QStringLiteral("生产替代许可: 否 (productionReplacementAllowed=false)"),
+             QStringLiteral("默认生产路径: Legacy"),
+             QStringLiteral("当前构建不可用"),
+             QStringLiteral("use_openvdb_off")}))
+    {
+        return fail(QStringLiteral("openvdb-utility-summary OFF 摘要不完整：\n") + offSummary);
+    }
+    if (!offWarnings.contains(QStringLiteral("utilities.outerVarnishShell.blockers: use_openvdb_off"))
+        || !offWarnings.contains(QStringLiteral("issues.use_openvdb_off")))
+    {
+        return fail(
+            QStringLiteral("openvdb-utility-summary OFF blocker/issues 未进入警告上下文：\n")
+            + offWarnings);
+    }
+
+    panel->LoadReportPath(onPath);
+    const QString onSummary = panel->CurrentSummary();
+    if (!ContainsAll(
+            onSummary,
+            {QStringLiteral("报告角色: OpenVDB SDF 辅助工具候选"),
+             QStringLiteral("Utility 验证通过（非生产）"),
+             QStringLiteral("建议推进为辅助 Utility"),
+             QStringLiteral("保持实验能力"),
+             QStringLiteral("生产结论: 仅 Utility 诊断，不形成生产验收结论"),
+             QStringLiteral("默认生产路径: Legacy")})
+        || onSummary.contains(QStringLiteral("生产验收：通过")))
+    {
+        return fail(QStringLiteral("openvdb-utility-summary ON 摘要越过非生产边界：\n") + onSummary);
+    }
+
+    panel->LoadReportPath(badSchemaPath);
+    const QString badSchemaSummary = panel->CurrentSummary();
+    if (!ContainsAll(
+            badSchemaSummary,
+            {QStringLiteral("报告状态: 无效，禁止作为生产证据"),
+             QStringLiteral("安全要求: productionReplacementAllowed=false"),
+             QStringLiteral("不支持的 OpenVDB Utility schema")}))
+    {
+        return fail(QStringLiteral("openvdb-utility-summary 未阻断错误 schema：\n") + badSchemaSummary);
+    }
+
+    panel->LoadReportPath(badReplacementPath);
+    const QString badReplacementSummary = panel->CurrentSummary();
+    if (!ContainsAll(
+            badReplacementSummary,
+            {QStringLiteral("报告状态: 无效，禁止作为生产证据"),
+             QStringLiteral("decision.productionReplacementAllowed: 必须为 false")}))
+    {
+        return fail(
+            QStringLiteral("openvdb-utility-summary 未阻断非法生产替代标志：\n")
+            + badReplacementSummary);
+    }
+    if (panel->ReportCount() != 4 || preview->CurrentLayerIndex() != layerIndexBefore)
+    {
+        return fail(QStringLiteral("openvdb-utility-summary 独立报告加载破坏报告去重或预览层状态。"));
+    }
+
+    return pass(QStringLiteral("openvdb-utility-summary on=valid off=valid badSchema=blocked replacement=blocked"));
 }
 
 int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& options)

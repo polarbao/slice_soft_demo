@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 当前原子任务：
 
 ```text
-12C-R2-04 OpenVDB Utility/Candidate 摘要实现
+12C-R2-05 Smoke、手册与阶段报告准入准备
 ```
 
-12C-R0、完整 R1 设置管线以及 R2-01 至 R2-03 已完成。OpenVDB utility report 的真实 schema/fixture、独立路径入口、中文安全语义和 smoke 契约已经冻结，R2-04 可以进入代码实施。
+12C-R0、完整 R1 设置管线以及 R2-01 至 R2-04 已完成。下一步冻结多尺寸布局、最终 smoke 集合、用户手册验收点、阶段报告结构和 12D 交接条件，再执行 R2-05 封口。
 
 ## 保留参考入口
 

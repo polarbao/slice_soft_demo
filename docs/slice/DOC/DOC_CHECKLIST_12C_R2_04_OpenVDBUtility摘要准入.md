@@ -170,7 +170,7 @@ Smoke 在 `QTemporaryDir` 中生成四份 fixture：
 ReportPanel 可通过 package/reports 自动发现有效报告；
 ReportPanel::LoadReportPath 可加载独立 JSON；
 摘要始终包含 productionReplacementAllowed=false 的安全要求；
-任何文本均不得包含“生产切片通过”或等价成功结论；
+不得出现不带“非生产/不形成生产验收结论”限定的生产成功结论；
 加载报告不改变 PreviewWorkspace 当前 layerIndex。
 ```
 

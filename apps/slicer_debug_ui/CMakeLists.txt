@@ -12,6 +12,8 @@ add_executable(slicer_debug_ui
     services/EffectiveConfigGenerator.h
     services/HelpTextProvider.cpp
     services/HelpTextProvider.h
+    services/OpenVdbUtilityReportInterpreter.cpp
+    services/OpenVdbUtilityReportInterpreter.h
     services/PackageLoader.cpp
     services/PackageLoader.h
     services/ProcessRunner.cpp

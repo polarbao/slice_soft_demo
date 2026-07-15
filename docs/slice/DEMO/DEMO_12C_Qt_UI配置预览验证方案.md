@@ -215,3 +215,10 @@ replacement=true 或安全 outputPolicy 非 false 时显示报告无效；
 ```
 
 Smoke 使用临时 ON/OFF/非法 JSON fixture，不依赖本机 OpenVDB ON 构建。真实 utility probe 由 `scripts/run_12b_r2_openvdb_sdf_utility.ps1` 单独验证。
+
+本轮结果：
+
+```text
+PASS openvdb-utility-summary on=valid off=valid badSchema=blocked replacement=blocked
+PASS diagnostics-collapse default=collapsed tabs=报告,曲线,日志 workspace=预览,配置 layer=24
+```

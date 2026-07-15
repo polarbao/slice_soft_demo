@@ -314,7 +314,7 @@ ReportPanel、ChannelChartPanel、LogPanel 迁入诊断区且各保留唯一实�
 
 ### Task 12C-R2-04 OpenVDB Utility/Candidate 摘要
 
-状态：IN_PROGRESS（READINESS COMPLETE）
+状态：DONE
 
 内容：读取 `slicesoft.openvdb_sdf_utility.12b_r2.1`，显示 utility role、可用性、promoteDecision、blocker 和 legacy fallback。
 
@@ -332,6 +332,17 @@ valid ON/OFF、bad schema、productionReplacementAllowed=true 由同一 smoke �
 ```
 
 详细准入见 `DOC_CHECKLIST_12C_R2_04_OpenVDBUtility摘要准入.md`。
+
+完成记录：
+
+```text
+新增 OpenVdbUtilityReportInterpreter，识别并严格校验 slicesoft.openvdb_sdf_utility.12b_r2.1；
+有效摘要中文显示 OpenVDB build/运行可用性、四项 utility、推进建议、blockers/issues 和 Legacy 保护；
+所有有效摘要固定显示 productionReplacementAllowed=false 和“仅 Utility 诊断”；
+错误 schema、非法 outputPolicy、replacement=true、不可用却 pass/executed 等状态会阻断为无效报告；
+ReportPanel 新增“加载诊断报告...”入口，独立 JSON 仅加入当前会话，不修改 package 或源文件；
+新增 openvdb-utility-summary smoke，覆盖 ON/OFF、bad schema、bad replacement 和预览 layerIndex 不变。
+```
 
 ### Task 12C-R2-05 Smoke、手册与阶段报告
 

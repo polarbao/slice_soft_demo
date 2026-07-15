@@ -318,7 +318,7 @@ ReportPanel::warningsChanged 继续回写右侧 warnings_view。
 
 R2-03 不读取 OpenVDB utility report，不移动右侧材料工艺/警告区域，也不承担 R2-05 多尺寸最终截图验收。
 
-### 5.7 R2-04 OpenVDB Utility 摘要（准入已冻结）
+### 5.7 R2-04 OpenVDB Utility 摘要（已实现）
 
 R2-04 复用 DiagnosticsDock 中的 ReportPanel。package 内报告继续由 PackageLoader 自动发现；`output/benchmarks` 等独立报告通过“加载诊断报告”显式选择，只加入当前 UI 会话，不复制或修改源文件。
 
@@ -334,6 +334,17 @@ DiagnosticsDock：只负责承载，不承担报告业务判断。
 任何有效摘要都必须显示 `productionReplacementAllowed=false`、仅 Utility 诊断和 Legacy 默认生产路径。`pass` 只能显示为“Utility 验证通过（非生产）”。错误 schema、安全 outputPolicy 或 replacement=true 必须显示报告无效，不得宽松降级为生产证据。
 
 完整字段、状态映射、负向行为与 smoke 契约见 `DOC_CHECKLIST_12C_R2_04_OpenVDBUtility摘要准入.md`。
+
+实现结果：
+
+```text
+OpenVdbUtilityReportInterpreter 负责 schema family 识别、字段校验和中文摘要；
+ReportLoader 对识别到的 utility family 使用严格解释器，不走通用宽松摘要；
+ReportPanel 支持 package/reports 自动发现和独立 JSON 显式加载；
+错误报告显示“禁止作为生产证据”以及字段路径；
+有效 ON 报告中的 pass 固定显示为“Utility 验证通过（非生产）”；
+加载独立报告不改变 PreviewWorkspace 的真实 layerIndex。
+```
 
 ---
 

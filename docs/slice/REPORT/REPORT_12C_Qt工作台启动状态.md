@@ -23,7 +23,8 @@ fresh Qt UI build：PASS；
 12C-R2-01：COMPLETE；
 12C-R2-02：COMPLETE；
 12C-R2-03：COMPLETE；
-12C-R2-04：READINESS COMPLETE / IMPLEMENTATION PENDING；
+12C-R2-04：COMPLETE；
+12C-R2-05：PENDING READINESS REVIEW；
 文档与上下文准备：COMPLETE；
 ```
 
@@ -38,6 +39,7 @@ PreviewWorkspace + shared real layerIndex；
 LayerPreviewPanel + RGBWSV probe + 中文材料语义；
 统一 RGB/W/S/V/真实空白图例 + 生产值/显示值边界；
 DiagnosticsDock + ReportPanel/ChannelChartPanel/LogPanel；
+OpenVdbUtilityReportInterpreter + 独立诊断报告加载；
 PreviewOverlayPanel；
 PreviewPanel；
 ReportPanel / ChannelChartPanel / LogPanel；
@@ -140,6 +142,14 @@ PASS diagnostics-collapse default=collapsed tabs=报告,曲线,日志 workspace=
 
 报告、曲线和日志已迁入底部 `DiagnosticsDock`。该区域默认隐藏，只允许底部停靠，通过“视图/诊断区域”菜单 action 展开；关闭时不销毁 panel 或日志内容。中央顶级页签仅保留“预览”和“配置”，诊断折叠操作不会改变共享真实 `layerIndex`。
 
+R2-04 增量验证：
+
+```text
+PASS openvdb-utility-summary on=valid off=valid badSchema=blocked replacement=blocked
+```
+
+OpenVDB SDF Utility 报告现可从 package/reports 自动发现，也可在诊断区域的报告页显式加载独立 JSON。摘要严格校验 `slicesoft.openvdb_sdf_utility.12b_r2.1` 和非生产 outputPolicy，始终显示 `productionReplacementAllowed=false`；ON 报告的 pass 只显示为“Utility 验证通过（非生产）”。
+
 ## 3. Build Blocker 处理结果
 
 Qt 5.15.2 与 MSVC 19.51 的 `stdext` 不兼容已通过项目内 target-scoped shim 解决。未修改 Qt 安装目录，未升级依赖。决策和验证见 `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md`。
@@ -159,14 +169,15 @@ ai_workspace/context_handoff/2026-07-14_12C-R2-01_PreviewWorkspace共享层状�
 ai_workspace/context_handoff/2026-07-14_12C-R2-02_图例与六通道像素探针.md
 ai_workspace/context_handoff/2026-07-14_12C-R2-03_DiagnosticsDock.md
 ai_workspace/context_handoff/2026-07-15_12C-R2-04-00_OpenVDBUtility摘要准入.md
+ai_workspace/context_handoff/2026-07-15_12C-R2-04_OpenVDBUtility摘要.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R2-04 OpenVDB Utility/Candidate 摘要实现
+12C-R2-05 Smoke、手册与阶段报告准入准备
 ```
 
-本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线以及 R2-01 至 R2-03 已完成；R2-04 准入已完成但代码尚未实施，R2-05 仍待执行。
+本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线以及 R2-01 至 R2-04 已完成；R2-05 阶段封口仍待执行。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

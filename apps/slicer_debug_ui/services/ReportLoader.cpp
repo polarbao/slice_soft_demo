@@ -1,5 +1,7 @@
 #include "ReportLoader.h"
 
+#include "OpenVdbUtilityReportInterpreter.h"
+
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -125,8 +127,19 @@ void collectNamedArrays(QStringList& lines, const QJsonValue& value, const QStri
         for (auto it = object.begin(); it != object.end(); ++it) {
             const QString key = it.key();
             const QString next_prefix = prefix.isEmpty() ? key : prefix + "." + key;
-            if ((key == "warnings" || key == "errors" || key == "failures" || key == "blockerCodes"
-                 || key == "warningCodes" || key == "reasonCodes")
+            if (key == "issues" && it.value().isArray())
+            {
+                const QJsonArray array = it.value().toArray();
+                for (const QJsonValue& item : array)
+                {
+                    const QJsonObject issue = item.toObject();
+                    lines.push_back(
+                        next_prefix + "." + issue.value("code").toString() + ": "
+                        + issue.value("message").toString());
+                }
+            }
+            else if ((key == "warnings" || key == "errors" || key == "failures" || key == "blockers"
+                      || key == "blockerCodes" || key == "warningCodes" || key == "reasonCodes")
                 && it.value().isArray()) {
                 const QJsonArray array = it.value().toArray();
                 for (const QJsonValue& item : array) {
@@ -171,6 +184,13 @@ QString ReportLoader::summarize(const JsonReport& report) {
     QStringList lines;
     lines.push_back(QFileInfo(report.path).fileName());
     appendIfPresent(lines, object, "schema", "协议");
+    const OpenVdbUtilityReportInterpretation utilityInterpretation =
+        OpenVdbUtilityReportInterpreter::Interpret(object);
+    if (utilityInterpretation.recognized)
+    {
+        lines.push_back(utilityInterpretation.summary);
+        return lines.join('\n');
+    }
     if (object.value("schema").toString() == "p0.experimental_openvdb_shell_cli_report.1") {
         AppendExperimentalOpenVdbSummary(lines, object);
     }
