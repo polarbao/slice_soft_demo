@@ -19,10 +19,10 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12D-02 MaterialClosureConfig`.
+- The latest completed task is `12D-03 MaterialClosureReport`.
 - Current working phase is `12D-R1`: Material Closure configuration and candidate diagnostics.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- The current atomic task is `12D-03 MaterialClosureReport`; do not start detector/repair work early.
+- The current atomic task is `12D-04 TIFF inferred candidate detector`; do not start semantic-mask exact diagnosis or repair work early.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules

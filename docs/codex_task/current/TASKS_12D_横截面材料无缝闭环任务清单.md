@@ -12,7 +12,7 @@
 > - docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
 > - docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
 
-执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成，12D-R1 已准入；12D-02 已完成，下一原子任务为 12D-03。
+执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成，12D-R1 已准入；12D-02/03 已完成，下一原子任务为 12D-04。
 
 ## 12D-01 文档与验收口径冻结
 
@@ -75,7 +75,7 @@ experimental_config_unit_tests 已通过。
 
 ## 12D-03 MaterialClosureReport
 
-状态：READY TO IMPLEMENT / 12D-R1
+状态：DONE / 12D-R1
 
 目标：
 
@@ -91,9 +91,21 @@ cmake --build build --config Debug --target slicer_cli
 .\build\Debug\slicer_cli.exe --config <closure_fixture.json>
 ```
 
+完成记录：
+
+```text
+新增 p0.material_closure.1 报告构建模块；
+在 detector 尚未实现时稳定输出 source/confidence=unavailable、closureStatus=not_available；
+报告包含完整 repair、totals、worstLayers、layers 和 diagnostics 骨架；
+报告构建拒绝负 layerCount，保证汇总计数非负；
+slice_report.totals.materialClosure 输出稳定摘要；
+manifest.reports.materialClosure 指向 reports/material_closure_report.json；
+报告单元测试、sample.stl CLI 包生成和 RIP Reader 已通过。
+```
+
 ## 12D-04 TIFF 反推候选诊断
 
-状态：PENDING / 12D-R1
+状态：READY TO IMPLEMENT / 12D-R1
 
 目标：
 

@@ -115,6 +115,8 @@ add_library(slicer_core
     src/slicer_core/raster/RasterBoundary.h
     src/slicer_core/reports/ReportBase.cpp
     src/slicer_core/reports/ReportBase.h
+    src/slicer_core/reports/MaterialClosureReport.cpp
+    src/slicer_core/reports/MaterialClosureReport.h
     src/slicer_core/reports/ReportSchema.cpp
     src/slicer_core/reports/ReportSchema.h
     src/slicer_core/reports/ReportSchemaValidator.cpp
@@ -245,6 +247,12 @@ add_executable(openvdb_sdf_utility_report_unit_tests
 
 target_link_libraries(openvdb_sdf_utility_report_unit_tests PRIVATE slicer_core)
 
+add_executable(material_closure_report_unit_tests
+    tests/unit/material_closure_report/main.cpp
+)
+
+target_link_libraries(material_closure_report_unit_tests PRIVATE slicer_core)
+
 add_executable(surface_shell_texture_service_unit_tests
     tests/unit/surface_shell_texture_service/main.cpp
 )
@@ -262,6 +270,7 @@ add_test(NAME production_admission_policy_unit_tests COMMAND production_admissio
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
+add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
 add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_texture_service_unit_tests)
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 

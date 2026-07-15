@@ -5,7 +5,7 @@
 
 ## 1. 当前结论
 
-12D 文档准备阶段已完成；12C-R2-05、最终状态报告、fresh Qt lane、完整 Smoke 和 CTest 均已完成。12D-R1 已进入实现阶段，12D-02 `MaterialClosureConfig` 已完成；材料闭环报告、候选诊断和修复仍未实现。
+12D 文档准备阶段已完成；12C-R2-05、最终状态报告、fresh Qt lane、完整 Smoke 和 CTest 均已完成。12D-R1 已进入实现阶段，12D-02 `MaterialClosureConfig` 与 12D-03 `MaterialClosureReport` 已完成；TIFF 候选诊断、精确诊断和修复仍未实现。
 
 ## 2. 已准备文档
 
@@ -40,11 +40,11 @@ gap preview 默认关闭且只作诊断；
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | 12D-R0 | 文档/schema/fixture/执行边界 | COMPLETE |
-| 12D-R1 | 配置、报告骨架、TIFF candidate | IN PROGRESS（12D-02 完成） |
+| 12D-R1 | 配置、报告骨架、TIFF candidate | IN PROGRESS（12D-02/03 完成） |
 | 12D-R2 | semantic mask exact、repair-disabled 不变性 | PENDING |
 | 12D-R3 | 1px repair、背景保护、UI、真实模型 | PENDING |
 
-## 5. 12D-02 已实现
+## 5. 12D-02/03 已实现
 
 ```text
 MaterialClosureConfig / MaterialClosureRepairConfig 数据模型；
@@ -52,12 +52,15 @@ materialClosure 默认值、legacy 解析与 slicer.config.1 迁移；
 mode、connectivity、maxGapPx 和 repair rule 校验；
 repair 尚未实现时的显式门禁，避免 repair 配置静默生效失败；
 配置单元测试覆盖默认值、显式配置、迁移与负向用例。
+MaterialClosureReport 独立报告构建模块；
+detector 不可用阶段的 unavailable/not_available 安全报告骨架；
+slice_report.totals.materialClosure 摘要与 manifest 报告路径；
+报告单元测试和 CLI/RIP Reader 集成验证。
 ```
 
 ## 6. 尚未实现
 
 ```text
-material_closure_report.json writer；
 TIFF inferred candidate detector；
 semantic mask exact detector；
 1px repair；
@@ -75,5 +78,6 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D PRD/DEV/DEMO/schema/fixture matrix/TASKS/CODEX_PROMPT：完整；
 未发现待确认开放项；
 12D-02 MaterialClosureConfig：COMPLETE；
-下一任务：12D-03 MaterialClosureReport，不跳过 candidate/exact 边界。
+12D-03 MaterialClosureReport：COMPLETE；
+下一任务：12D-04 TIFF 反推候选诊断，不跳过 candidate/exact 边界。
 ```

@@ -2,6 +2,7 @@
 
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
+#include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
 #include "slicer_core/support/SupportShapePipeline.h"
 #include "slicer_core/support/SupportShapePolicy.h"
@@ -4062,6 +4063,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             total_semantic_stats,
             support_generation,
             support_placement_policy);
+    const Json material_closure_report =
+        BuildMaterialClosureReportSkeleton(config.material_closure, grid.layer_count);
 
     const Json slice_report = Json::object({
         {"slicingMode", config.slicing_mode},
@@ -4189,6 +4192,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                   {"semanticPriority", "Model>OuterVarnishShell>Support>Empty"},
               })},
              {"crossSectionMaterialStack", cross_section_material_stack_report},
+             {"materialClosure", BuildMaterialClosureSliceSummary(material_closure_report)},
              {"singleMaterialConsistency", BuildSingleMaterialConsistencyHint(config)},
          })},
         {"layers", Json{slice_layers}},
@@ -4450,6 +4454,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"materialPolicy", "reports/material_policy_report.json"},
              {"materialProcess", "reports/material_process_report.json"},
              {"crossSectionMaterialStack", "reports/cross_section_material_stack_report.json"},
+             {"materialClosure", "reports/material_closure_report.json"},
              {"materialRoleMapping", "reports/material_role_mapping_report.json"},
              {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
              {"threeMf", "reports/three_mf_report.json"},
@@ -4475,6 +4480,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             material_policy_report_to_json(config, material_policy_report));
         write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
         write_json_file(package_dir / "reports/cross_section_material_stack_report.json", cross_section_material_stack_report);
+        write_json_file(package_dir / "reports/material_closure_report.json", material_closure_report);
         write_json_file(
             package_dir / "reports/material_role_mapping_report.json",
             material_role_mapping_report_to_json(material_role_mapping_report));

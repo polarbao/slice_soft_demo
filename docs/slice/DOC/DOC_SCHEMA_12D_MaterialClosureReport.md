@@ -158,6 +158,8 @@ EXTERNAL_BACKGROUND_PROTECTED
 }
 ```
 
+当尚无 worst layer 时，`worstLayerIndex` 必须为 JSON `null`，不得用第 0 层或其他层作为占位。报告骨架在诊断源尚未接入时使用 `source=unavailable`、`confidence=unavailable`、`closureStatus=not_available` 和 `productionAcceptance=not_evaluated`。
+
 ## 9. 不变性
 
 ```text

@@ -333,6 +333,22 @@ closureStatus 不得为 pass；
 repair.attempted=false。
 ```
 
+### 9.1 12D-03 报告骨架实现记录
+
+截至 2026-07-15，`reports/material_closure_report.json` writer、`slice_report.totals.materialClosure` 摘要和 manifest 路径已经接入 legacy package 流程。12D-04 detector 尚未接入前，报告必须输出：
+
+```text
+source=unavailable；
+confidence=unavailable；
+closureStatus=not_available；
+productionAcceptance=not_evaluated；
+repair.attempted=false；
+所有 gap/repaired 计数为 0；
+MATERIAL_CLOSURE_SOURCE_UNAVAILABLE（仅 enabled=true 时）。
+```
+
+该骨架只表达“证据源尚不可用”，不得解释为闭环通过，也不修改 TIFF。
+
 ## 10. Rollback
 
 如果 12D 修复策略导致生产输出异常：
