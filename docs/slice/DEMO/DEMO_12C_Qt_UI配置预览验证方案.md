@@ -194,3 +194,24 @@ OpenVDB 显示必须包含 `utility/candidate`、`productionReplacementAllowed=f
 ```powershell
 .\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case diagnostics-collapse --package output\UiSmokeLayerPreview
 ```
+
+### 6.3 R2-04 OpenVDB Utility 摘要 Gate
+
+```text
+有效 OFF 报告显示 OpenVDB 当前构建不可用，四项 utility 不得显示 pass；
+有效 ON 报告显示壳层/拓扑 Utility 验证通过（非生产），不显示生产切片通过；
+两类有效报告都显示 productionReplacementAllowed=false 和 Legacy 默认生产路径；
+promote 只能翻译为推进辅助 Utility，不能翻译为替代生产引擎；
+独立 JSON 可通过 ReportPanel 显式加载，源文件和当前 package 不改变；
+未知 utility schema 显示不支持；
+replacement=true 或安全 outputPolicy 非 false 时显示报告无效；
+报告加载不改变 PreviewWorkspace 当前真实 layerIndex。
+```
+
+自动化命令：
+
+```powershell
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case openvdb-utility-summary
+```
+
+Smoke 使用临时 ON/OFF/非法 JSON fixture，不依赖本机 OpenVDB ON 构建。真实 utility probe 由 `scripts/run_12b_r2_openvdb_sdf_utility.ps1` 单独验证。

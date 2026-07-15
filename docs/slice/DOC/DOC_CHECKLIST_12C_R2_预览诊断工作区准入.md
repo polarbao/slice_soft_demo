@@ -12,7 +12,7 @@
 12C-R2-01 PreviewWorkspace：COMPLETE；
 12C-R2-02 图例与像素探针：COMPLETE；
 12C-R2-03 DiagnosticsDock：COMPLETE；
-12C-R2-04 OpenVDB Utility/Candidate 摘要：PENDING READINESS REVIEW。
+12C-R2-04 OpenVDB Utility/Candidate 摘要：READY TO IMPLEMENT。
 ```
 
 R2 不需要修改 `slicer_core` 公共 API、Qt 版本、第三方依赖或生产 RGBWSV 协议，可以在现有 `apps/slicer_debug_ui` 边界内实施。
@@ -74,7 +74,7 @@ R2-01 不实现 R2-02 图例/探针收口。
 | R2-01 PreviewWorkspace | COMPLETE | 统一入口、真实层共享、同层缺失，不做诊断 Dock |
 | R2-02 图例/探针 | COMPLETE | 不改变生产像素语义 |
 | R2-03 DiagnosticsDock | COMPLETE | 底部 QDockWidget、默认隐藏，只调整承载位置 |
-| R2-04 OpenVDB 摘要 | REVIEW | 只读 utility report，固定非生产 |
+| R2-04 OpenVDB 摘要 | READY | 只读 utility report，固定非生产；专项准入已冻结 |
 | R2-05 Smoke/手册/报告 | WAIT R2-04 | 完成多尺寸布局和阶段验收 |
 
 ## 5. R2-01 文件影响面
@@ -136,4 +136,4 @@ git diff --check
 
 ## 9. 最终判断
 
-12C-R2 的共享层、图例、六通道探针和可折叠诊断区均已落实。下一步应先审查 `12C-R2-04` 的真实 utility report schema、输入路径、展示位置和 fallback 语义，再决定是否直接准入代码实施。
+12C-R2 的共享层、图例、六通道探针和可折叠诊断区均已落实。`12C-R2-04` 的真实 utility report schema、输入路径、展示位置、中文安全语义和负向 smoke 已由 `DOC_CHECKLIST_12C_R2_04_OpenVDBUtility摘要准入.md` 冻结，可以进入代码实施。

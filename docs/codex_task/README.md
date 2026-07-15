@@ -2,7 +2,7 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-07-14
+> 更新日期：2026-07-15
 > 当前阶段：12C-R2 预览与诊断工作区
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12C_Qt工作台收口执行指令.md
 当前原子任务：
 
 ```text
-12C-R2-04 OpenVDB Utility/Candidate 摘要准入准备
+12C-R2-04 OpenVDB Utility/Candidate 摘要实现
 ```
 
-12C-R0、完整 R1 设置管线以及 R2-01 至 R2-03 已完成。下一步先冻结 OpenVDB utility report 的真实 schema/fixture、独立路径入口、中文安全语义和 smoke 契约，再实施 R2-04。
+12C-R0、完整 R1 设置管线以及 R2-01 至 R2-03 已完成。OpenVDB utility report 的真实 schema/fixture、独立路径入口、中文安全语义和 smoke 契约已经冻结，R2-04 可以进入代码实施。
 
 ## 保留参考入口
 

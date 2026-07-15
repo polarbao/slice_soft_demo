@@ -262,7 +262,7 @@ PreviewOverlayPanel 对同层材料缺失使用相同规则；
 禁止最近层、后续层和其他通道层的隐式替代。
 ```
 
-`MainWindow` 当前只保留一个顶级“预览”页签。报告、曲线、配置仍是顶级页签，待 R2-03 DiagnosticsDock 再调整；R2-01 不提前改变诊断布局。
+R2-01 完成时 `MainWindow` 已只保留一个顶级“预览”入口；R2-03 后中央顶级页签进一步收口为“预览”和“配置”，报告、曲线和日志迁入底部 DiagnosticsDock。
 
 ### 5.5 R2-02 图例与像素探针收口（已实现）
 
@@ -317,6 +317,23 @@ ReportPanel::warningsChanged 继续回写右侧 warnings_view。
 ```
 
 R2-03 不读取 OpenVDB utility report，不移动右侧材料工艺/警告区域，也不承担 R2-05 多尺寸最终截图验收。
+
+### 5.7 R2-04 OpenVDB Utility 摘要（准入已冻结）
+
+R2-04 复用 DiagnosticsDock 中的 ReportPanel。package 内报告继续由 PackageLoader 自动发现；`output/benchmarks` 等独立报告通过“加载诊断报告”显式选择，只加入当前 UI 会话，不复制或修改源文件。
+
+解析与展示边界：
+
+```text
+OpenVdbUtilityReportInterpreter：识别 schema family、严格校验安全字段、映射中文语义；
+ReportLoader：分派对应 schema 的摘要生成；
+ReportPanel：选择文件并展示摘要/原文；
+DiagnosticsDock：只负责承载，不承担报告业务判断。
+```
+
+任何有效摘要都必须显示 `productionReplacementAllowed=false`、仅 Utility 诊断和 Legacy 默认生产路径。`pass` 只能显示为“Utility 验证通过（非生产）”。错误 schema、安全 outputPolicy 或 replacement=true 必须显示报告无效，不得宽松降级为生产证据。
+
+完整字段、状态映射、负向行为与 smoke 契约见 `DOC_CHECKLIST_12C_R2_04_OpenVDBUtility摘要准入.md`。
 
 ---
 
