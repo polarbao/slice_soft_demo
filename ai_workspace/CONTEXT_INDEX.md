@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-15 | 12C-R2-04 OpenVDB Utility 摘要 | `context_handoff/2026-07-15_12C-R2-04_OpenVDBUtility摘要.md` | Current |
+| 2026-07-15 | 12C-R2-05-00 阶段封口准入 | `context_handoff/2026-07-15_12C-R2-05-00_阶段封口准入.md` | Current |
+| 2026-07-15 | 12C-R2-04 OpenVDB Utility 摘要 | `context_handoff/2026-07-15_12C-R2-04_OpenVDBUtility摘要.md` | Superseded |
 | 2026-07-15 | 12C-R2-04-00 OpenVDB Utility 摘要准入 | `context_handoff/2026-07-15_12C-R2-04-00_OpenVDBUtility摘要准入.md` | Superseded |
 | 2026-07-14 | 12C-R2-03 DiagnosticsDock | `context_handoff/2026-07-14_12C-R2-03_DiagnosticsDock.md` | Superseded |
 | 2026-07-14 | 12C-R2-03-00 DiagnosticsDock 准入 | `context_handoff/2026-07-14_12C-R2-03-00_DiagnosticsDock准入.md` | Superseded |

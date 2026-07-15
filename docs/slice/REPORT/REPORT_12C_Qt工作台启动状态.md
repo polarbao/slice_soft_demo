@@ -24,7 +24,7 @@ fresh Qt UI build：PASS；
 12C-R2-02：COMPLETE；
 12C-R2-03：COMPLETE；
 12C-R2-04：COMPLETE；
-12C-R2-05：PENDING READINESS REVIEW；
+12C-R2-05：READINESS COMPLETE / IMPLEMENTATION PENDING；
 文档与上下文准备：COMPLETE；
 ```
 
@@ -175,7 +175,7 @@ ai_workspace/context_handoff/2026-07-15_12C-R2-04_OpenVDBUtility摘要.md
 ## 5. 下一任务
 
 ```text
-12C-R2-05 Smoke、手册与阶段报告准入准备
+12C-R2-05 Smoke、手册与阶段报告实现
 ```
 
 本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线以及 R2-01 至 R2-04 已完成；R2-05 阶段封口仍待执行。

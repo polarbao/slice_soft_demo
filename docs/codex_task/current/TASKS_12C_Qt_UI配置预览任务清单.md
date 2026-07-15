@@ -346,9 +346,22 @@ ReportPanel 新增“加载诊断报告...”入口，独立 JSON 仅加入当�
 
 ### Task 12C-R2-05 Smoke、手册与阶段报告
 
-状态：PENDING
+状态：IN_PROGRESS（READINESS COMPLETE）
 
 内容：补齐 shared-layer、generated-config、diagnostics-collapse、多尺寸布局 smoke；更新用户手册；生成 `REPORT_12C_Qt工作台当前状态.md`。
+
+原子实施契约：
+
+```text
+最小响应式调整三列宽度、场景选择行和材料图例，不重写 MainWindow 架构；
+新增 workspace-layout-sizes，覆盖 1440x900、1280x720、1024x768；
+新增 Run12CUiClosure.ps1，fresh 生成两个 UI fixture 并运行完整 R1/R2 Smoke；
+使用 build-12c-ui-r2-final 提供最终 fresh lane 证据；
+更新用户手册并生成 REPORT_12C_Qt工作台当前状态.md；
+完成后只解锁 12D-R1，不提前实现 12D 代码。
+```
+
+详细准入见 `DOC_CHECKLIST_12C_R2_05_阶段封口准入.md`。
 
 ## 6. 总完成标准
 
