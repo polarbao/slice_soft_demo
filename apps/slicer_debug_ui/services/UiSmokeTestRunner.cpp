@@ -3,6 +3,7 @@
 #include "../MainWindow.h"
 #include "../widgets/ChannelChartPanel.h"
 #include "../widgets/ConfigEditorPanel.h"
+#include "../widgets/DiagnosticsDock.h"
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/PreviewOverlayPanel.h"
 #include "../widgets/PreviewPanel.h"
@@ -20,6 +21,8 @@
 #include "ToolPaths.h"
 
 #include <QComboBox>
+#include <QAction>
+#include <QApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -30,6 +33,7 @@
 #include <QProcess>
 #include <QSet>
 #include <QTemporaryDir>
+#include <QTabWidget>
 #include <QTextStream>
 
 namespace
@@ -133,6 +137,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "preview-legend-probe-context")
     {
         return PreviewLegendProbeContext(options);
+    }
+    if (options.case_name == "diagnostics-collapse")
+    {
+        return DiagnosticsCollapse(options);
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
@@ -909,6 +917,86 @@ int UiSmokeTestRunner::PreviewLegendProbeContext(const UiSmokeTestOptions& optio
     return pass(
         QStringLiteral("preview-legend-probe-context legend=RGBWSV probes=RGB,W,S,V,Empty layers=%1")
             .arg(production->LayerIndices().size()));
+}
+
+int UiSmokeTestRunner::DiagnosticsCollapse(const UiSmokeTestOptions& options)
+{
+    const QString packagePath = absoluteFromRepo(options, options.package_path);
+    const PackageSummary package = PackageLoader().load(packagePath);
+    if (package.manifest_path.isEmpty())
+    {
+        return fail(QStringLiteral("diagnostics-collapse 未找到 manifest：") + packagePath);
+    }
+
+    MainWindow window(options.repo_root);
+    auto* dock = window.findChild<DiagnosticsDock*>(QStringLiteral("diagnosticsDock"));
+    auto* diagnosticsTabs = window.findChild<QTabWidget*>(QStringLiteral("diagnosticsTabs"));
+    auto* workspaceTabs = window.findChild<QTabWidget*>(QStringLiteral("mainWorkspaceTabs"));
+    auto* diagnosticsAction = window.findChild<QAction*>(QStringLiteral("diagnosticsToggleAction"));
+    auto* preview = window.findChild<PreviewWorkspace*>(QStringLiteral("previewWorkspace"));
+    if (dock == nullptr || diagnosticsTabs == nullptr || workspaceTabs == nullptr
+        || diagnosticsAction == nullptr || preview == nullptr)
+    {
+        return fail(QStringLiteral("diagnostics-collapse 缺少 dock、菜单入口或中央工作区。"));
+    }
+
+    QStringList workspaceTitles;
+    for (int index = 0; index < workspaceTabs->count(); ++index)
+    {
+        workspaceTitles.push_back(workspaceTabs->tabText(index));
+    }
+    if (workspaceTitles != QStringList{QStringLiteral("预览"), QStringLiteral("配置")})
+    {
+        return fail(QStringLiteral("diagnostics-collapse 中央页签仍包含历史报告/曲线入口：")
+                    + workspaceTitles.join(QStringLiteral(",")));
+    }
+    if (dock->TabTitles()
+        != QStringList{QStringLiteral("报告"), QStringLiteral("曲线"), QStringLiteral("日志")})
+    {
+        return fail(QStringLiteral("diagnostics-collapse 诊断页签集合不正确。"));
+    }
+    if (window.findChildren<ReportPanel*>().size() != 1
+        || window.findChildren<ChannelChartPanel*>().size() != 1
+        || window.findChildren<LogPanel*>().size() != 1)
+    {
+        return fail(QStringLiteral("diagnostics-collapse 存在重复诊断 panel 实例。"));
+    }
+    if (dock->IsExpanded() || !dock->isHidden() || diagnosticsAction->isChecked())
+    {
+        return fail(QStringLiteral("diagnostics-collapse 诊断区域未默认折叠。"));
+    }
+
+    dock->LoadPackage(package);
+    preview->LoadPackage(package);
+    if (dock->ChartView()->layerStatCount() <= 0 || preview->LayerIndices().isEmpty())
+    {
+        return fail(QStringLiteral("diagnostics-collapse 输出包未加载到曲线或预览。"));
+    }
+    const int layerIndex = preview->LayerIndices().last();
+    preview->SelectLayer(layerIndex);
+
+    dock->SetExpanded(true);
+    QApplication::processEvents();
+    if (!dock->IsExpanded() || dock->isHidden())
+    {
+        return fail(QStringLiteral("diagnostics-collapse 无法展开诊断区域。"));
+    }
+    dock->SetExpanded(false);
+    QApplication::processEvents();
+    if (dock->IsExpanded() || !dock->isHidden())
+    {
+        return fail(QStringLiteral("diagnostics-collapse 无法收起诊断区域。"));
+    }
+    if (preview->CurrentLayerIndex() != layerIndex)
+    {
+        return fail(QStringLiteral("diagnostics-collapse 折叠操作改变了预览真实 layerIndex。"));
+    }
+
+    return pass(
+        QStringLiteral("diagnostics-collapse default=collapsed tabs=%1 workspace=%2 layer=%3")
+            .arg(dock->TabTitles().join(QStringLiteral(",")))
+            .arg(workspaceTitles.join(QStringLiteral(",")))
+            .arg(layerIndex));
 }
 
 int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& options)

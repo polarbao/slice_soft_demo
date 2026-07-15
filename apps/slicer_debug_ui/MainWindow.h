@@ -9,6 +9,7 @@
 #include "services/ToolPaths.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
+#include "widgets/DiagnosticsDock.h"
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
 #include "widgets/PreviewWorkspace.h"
@@ -117,6 +118,7 @@ private:
     QPushButton* m_importOpenVdbCandidateButton{nullptr};
 
     PreviewWorkspace* m_previewWorkspace{nullptr};
+    DiagnosticsDock* m_diagnosticsDock{nullptr};
     ReportPanel* report_panel_{nullptr};
     ConfigEditorPanel* config_editor_panel_{nullptr};
     ChannelChartPanel* channel_chart_panel_{nullptr};

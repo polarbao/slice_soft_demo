@@ -290,6 +290,34 @@ SigPixelProbeChanged 将上下文同步到 PreviewWorkspace；
 
 本任务没有修改 TIFF reader、production package、伪彩生成算法或材料冲突策略。
 
+### 5.6 R2-03 DiagnosticsDock（已实现）
+
+`DiagnosticsDock` 是 `QDockWidget` 的 UI 封装，只负责报告、曲线和日志的承载与折叠，不引入报告解析或业务判断。
+
+所有权：
+
+```text
+MainWindow
+  DiagnosticsDock (bottom only, default hidden)
+    diagnosticsTabs
+      ReportPanel
+      ChannelChartPanel
+      LogPanel
+```
+
+交互与加载链路：
+
+```text
+MainWindow 中央 mainWorkspaceTabs 只保留 PreviewWorkspace 和 ConfigEditorPanel；
+视图菜单复用 QDockWidget::toggleViewAction 显示“诊断区域”；
+关闭 dock 只隐藏，不销毁 panel 或清空日志；
+DiagnosticsDock::LoadPackage 转发 package 给 ReportPanel 和 ChannelChartPanel；
+ProcessRunner 继续向同一个 LogPanel 写 stdout/stderr/exit result；
+ReportPanel::warningsChanged 继续回写右侧 warnings_view。
+```
+
+R2-03 不读取 OpenVDB utility report，不移动右侧材料工艺/警告区域，也不承担 R2-05 多尺寸最终截图验收。
+
 ---
 
 ## 6. 布局建议

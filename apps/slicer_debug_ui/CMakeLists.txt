@@ -36,6 +36,8 @@ add_executable(slicer_debug_ui
     widgets/ChannelChartPanel.h
     widgets/ConfigEditorPanel.cpp
     widgets/ConfigEditorPanel.h
+    widgets/DiagnosticsDock.cpp
+    widgets/DiagnosticsDock.h
     widgets/ConfigDiffPanel.cpp
     widgets/ConfigDiffPanel.h
     widgets/MaterialProcessPanel.cpp

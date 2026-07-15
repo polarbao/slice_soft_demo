@@ -176,3 +176,21 @@ OpenVDB 显示必须包含 `utility/candidate`、`productionReplacementAllowed=f
 ```powershell
 .\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case preview-legend-probe-context --package output\UiSmokeLayerPreview
 ```
+
+### 6.2 R2-03 DiagnosticsDock Gate
+
+```text
+启动后诊断区域默认隐藏，主预览不被日志永久压缩；
+中央页签只保留“预览”和“配置”；
+“视图/诊断区域”可以展开和收起底部 dock；
+诊断区精确包含“报告”“曲线”“日志”；
+三个既有 panel 各只有一个实例；
+展开/收起不改变 PreviewWorkspace 当前真实 layerIndex；
+输出包加载后曲线仍包含层统计。
+```
+
+自动化命令：
+
+```powershell
+.\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case diagnostics-collapse --package output\UiSmokeLayerPreview
+```

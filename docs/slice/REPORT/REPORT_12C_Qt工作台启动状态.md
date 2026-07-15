@@ -22,7 +22,8 @@ fresh Qt UI build：PASS；
 12C-R2-00：COMPLETE；
 12C-R2-01：COMPLETE；
 12C-R2-02：COMPLETE；
-12C-R2-03：PENDING READINESS REVIEW；
+12C-R2-03：COMPLETE；
+12C-R2-04：PENDING READINESS REVIEW；
 文档与上下文准备：COMPLETE；
 ```
 
@@ -36,6 +37,7 @@ HelpTextProvider + SettingHelpPanel；
 PreviewWorkspace + shared real layerIndex；
 LayerPreviewPanel + RGBWSV probe + 中文材料语义；
 统一 RGB/W/S/V/真实空白图例 + 生产值/显示值边界；
+DiagnosticsDock + ReportPanel/ChannelChartPanel/LogPanel；
 PreviewOverlayPanel；
 PreviewPanel；
 ReportPanel / ChannelChartPanel / LogPanel；
@@ -130,6 +132,14 @@ PASS preview-legend-probe-context legend=RGBWSV probes=RGB,W,S,V,Empty layers=25
 
 统一预览工作区已常驻显示 RGB 模型颜色/填充、W 白墨填充、S 支撑、V 光油/填充和真实空白图例。生产协议说明固定为 RGBWSV uint8、black_is_print、0=打印、255=不打印，并明确伪彩/真彩显示不等于 TIFF 生产值。生产层点击探针后可查看六通道值、打印通道、中文材料语义和 sourcePolicy；切层或切通道会清除旧探针。
 
+R2-03 增量验证：
+
+```text
+PASS diagnostics-collapse default=collapsed tabs=报告,曲线,日志 workspace=预览,配置 layer=24
+```
+
+报告、曲线和日志已迁入底部 `DiagnosticsDock`。该区域默认隐藏，只允许底部停靠，通过“视图/诊断区域”菜单 action 展开；关闭时不销毁 panel 或日志内容。中央顶级页签仅保留“预览”和“配置”，诊断折叠操作不会改变共享真实 `layerIndex`。
+
 ## 3. Build Blocker 处理结果
 
 Qt 5.15.2 与 MSVC 19.51 的 `stdext` 不兼容已通过项目内 target-scoped shim 解决。未修改 Qt 安装目录，未升级依赖。决策和验证见 `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md`。
@@ -147,14 +157,15 @@ ai_workspace/context_handoff/2026-07-13_12C-R1-03_GeneratedEffectiveConfig.md
 ai_workspace/context_handoff/2026-07-14_12C-R1-04_设置项中文帮助元数据.md
 ai_workspace/context_handoff/2026-07-14_12C-R2-01_PreviewWorkspace共享层状态.md
 ai_workspace/context_handoff/2026-07-14_12C-R2-02_图例与六通道像素探针.md
+ai_workspace/context_handoff/2026-07-14_12C-R2-03_DiagnosticsDock.md
 ```
 
 ## 5. 下一任务
 
 ```text
-12C-R2-03 DiagnosticsDock
+12C-R2-04 OpenVDB Utility/Candidate 摘要准入准备
 ```
 
-本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线、R2-01 统一预览入口和 R2-02 图例/探针已完成；R2-03 至 R2-05 仍待执行。
+本报告不表示 12C 功能已全部实现。当前表示 R0、完整 R1 设置管线以及 R2-01 至 R2-03 已完成；R2-04、R2-05 仍待执行。
 
 初始审查中的 Profile 数量、dirty config 行为、诊断区域位置和 12D 接入方式，已由 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 关闭。R0 当前没有未决产品问题。

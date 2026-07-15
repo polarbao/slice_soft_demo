@@ -20,7 +20,8 @@
 - `12C-R1` Profile and Settings closure is complete.
 - Current working phase is `12C-R2`: Preview and Diagnostics workspace.
 - The latest completed task is `12C-R2-02 图例与像素探针收口`.
-- The current executable task is `12C-R2-03 DiagnosticsDock`; its atomic readiness checklist is complete.
+- The latest completed task is `12C-R2-03 DiagnosticsDock`.
+- The next task is `12C-R2-04 OpenVDB Utility/Candidate 摘要`; complete its atomic readiness checklist before code changes.
 - `12D-R0` documentation admission is complete, but 12D code work waits for `12C-R2-05`.
 - `12C-R2` must not start before the full R1 settings pipeline is complete.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.

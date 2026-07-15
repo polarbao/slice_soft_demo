@@ -4,10 +4,10 @@
 
 ## Stage 12C Qt 工作台
 
-当前上下文：`context_handoff/2026-07-14_12C-R2-03-00_DiagnosticsDock准入.md`
+当前上下文：`context_handoff/2026-07-14_12C-R2-03_DiagnosticsDock.md`
 
 当前任务入口：`docs/codex_task/current/TASKS_12C_Qt_UI配置预览任务清单.md`
 
-当前任务：`12C-R2-03 DiagnosticsDock 实施`。
+下一任务：`12C-R2-04 OpenVDB Utility/Candidate 摘要准入准备`。
 
 12D 准备上下文：`context_handoff/2026-07-13_12D_材料闭环准备准入.md`。12D-R0 文档已完成，但代码实施等待 12C-R2-05。

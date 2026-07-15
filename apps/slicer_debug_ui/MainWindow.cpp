@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include <QAction>
 #include <QAbstractItemView>
 #include <QCheckBox>
 #include <QDesktopServices>
@@ -15,6 +16,8 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMenu>
+#include <QMenuBar>
 #include <QMessageBox>
 #include <QRegularExpression>
 #include <QSizePolicy>
@@ -322,19 +325,14 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
 
     QWidget* left = createProjectPanel();
     auto* center_tabs = new QTabWidget(main_splitter);
+    center_tabs->setObjectName(QStringLiteral("mainWorkspaceTabs"));
     center_tabs->setDocumentMode(true);
     center_tabs->setTabPosition(QTabWidget::North);
     m_previewWorkspace = new PreviewWorkspace(center_tabs);
-    report_panel_ = new ReportPanel(center_tabs);
     config_editor_panel_ = new ConfigEditorPanel(&config_document_, center_tabs);
-    channel_chart_panel_ = new ChannelChartPanel(center_tabs);
     const int previewWorkspaceTab = center_tabs->addTab(m_previewWorkspace, "预览");
-    const int reportTab = center_tabs->addTab(report_panel_, "报告");
-    const int chartTab = center_tabs->addTab(channel_chart_panel_, "曲线");
     const int configTab = center_tabs->addTab(config_editor_panel_, "配置");
     center_tabs->setTabToolTip(previewWorkspaceTab, "统一预览工作区：在生产层检查、材料叠加和原始调试预览之间切换并保持同一真实 layerIndex。");
-    center_tabs->setTabToolTip(reportTab, "查看 manifest 与 reports JSON 摘要。");
-    center_tabs->setTabToolTip(chartTab, "查看各通道随层变化的统计曲线。");
     center_tabs->setTabToolTip(configTab, "编辑当前 JSON 配置；常用材料、支撑、预览和实验选项在这里。");
     center_tabs->setCurrentWidget(m_previewWorkspace);
 
@@ -351,16 +349,21 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     main_splitter->setStretchFactor(2, 0);
     main_splitter->setSizes(QList<int>{360, 840, 360});
 
-    log_panel_ = new LogPanel(central);
-    log_panel_->setMinimumHeight(140);
-    auto* vertical_splitter = new QSplitter(Qt::Vertical, central);
-    vertical_splitter->addWidget(main_splitter);
-    vertical_splitter->addWidget(log_panel_);
-    vertical_splitter->setStretchFactor(0, 3);
-    vertical_splitter->setStretchFactor(1, 1);
-    vertical_splitter->setSizes(QList<int>{700, 180});
-    root_layout->addWidget(vertical_splitter);
+    root_layout->addWidget(main_splitter);
     setCentralWidget(central);
+
+    m_diagnosticsDock = new DiagnosticsDock(this);
+    addDockWidget(Qt::BottomDockWidgetArea, m_diagnosticsDock);
+    m_diagnosticsDock->SetExpanded(false);
+    report_panel_ = m_diagnosticsDock->ReportView();
+    channel_chart_panel_ = m_diagnosticsDock->ChartView();
+    log_panel_ = m_diagnosticsDock->LogView();
+
+    auto* viewMenu = menuBar()->addMenu(QStringLiteral("视图"));
+    QAction* diagnosticsAction = m_diagnosticsDock->toggleViewAction();
+    diagnosticsAction->setObjectName(QStringLiteral("diagnosticsToggleAction"));
+    diagnosticsAction->setText(QStringLiteral("诊断区域"));
+    viewMenu->addAction(diagnosticsAction);
 
     connect(&runner_, &ProcessRunner::started, this, &MainWindow::handleProcessStarted);
     connect(&runner_, &ProcessRunner::output, log_panel_, &LogPanel::appendOutput);
@@ -1246,10 +1249,9 @@ void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
 void MainWindow::loadPackage(const QString& package_dir) {
     const PackageSummary package = package_loader_.load(absoluteFromRepo(package_dir));
     package_edit_->setText(package.package_dir);
-    report_panel_->loadPackage(package);
+    m_diagnosticsDock->LoadPackage(package);
     m_previewWorkspace->LoadPackage(package);
     material_process_panel_->loadPackage(package);
-    channel_chart_panel_->loadPackage(package);
     warnings_view_->setPlainText(package.warnings.join('\n'));
 }
 
