@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md
 当前原子任务：
 
 ```text
-12D-02 MaterialClosureConfig
+12D-03 MaterialClosureReport
 ```
 
-12C-R0/R1/R2 已全部完成，最终 fresh lane、完整 UI Smoke 和 CTest 已通过。12D-R0 文档准备和 12C 交接门禁均已满足，下一原子任务为 12D-02；不得提前实现报告、gap detector 或 repair。
+12C-R0/R1/R2 已全部完成，最终 fresh lane、完整 UI Smoke 和 CTest 已通过。12D-R0 文档准备和 12C 交接门禁均已满足，12D-02 配置契约已完成，下一原子任务为 12D-03；不得提前实现 gap detector 或 repair。
 
 ## 保留参考入口
 

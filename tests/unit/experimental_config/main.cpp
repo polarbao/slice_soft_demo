@@ -65,6 +65,25 @@ std::string MinimalConfigBody(const std::string& experimentalBlock)
         + "\n}\n";
 }
 
+bool ConfigRejectedWith(
+    const std::string& name,
+    const std::string& configBlock,
+    const std::string& expectedMessage)
+{
+    const std::filesystem::path configPath = WriteConfig(name, MinimalConfigBody(configBlock));
+    try
+    {
+        (void)slicer_core::load_slice_config(configPath);
+    }
+    catch (const std::runtime_error& error)
+    {
+        return ExpectTrue(
+            std::string{error.what()}.find(expectedMessage) != std::string::npos,
+            name + " reports expected validation message");
+    }
+    return ExpectTrue(false, name + " must be rejected");
+}
+
 bool OldConfigDefaultsOpenVdbDisabled()
 {
     const std::filesystem::path path = WriteConfig("legacy_defaults.json", MinimalConfigBody(""));
@@ -98,6 +117,94 @@ bool EmptyExperimentalDefaults()
                config.experimental.openvdb_pipeline.admission_mode == "strict_closed",
                "empty experimental admission")
         && ExpectTrue(!config.experimental.openvdb_pipeline.write_production_rgbwsv, "empty experimental write");
+}
+
+bool MaterialClosureDefaultsAreDiagnosticOnly()
+{
+    const std::filesystem::path configPath =
+        WriteConfig("material_closure_defaults.json", MinimalConfigBody(""));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    return ExpectTrue(config.material_closure.enabled, "material closure defaults enabled")
+        && ExpectTrue(config.material_closure.mode == "diagnostic", "material closure default mode")
+        && ExpectTrue(config.material_closure.connectivity == 8, "material closure default connectivity")
+        && ExpectTrue(config.material_closure.max_gap_px == 1, "material closure default max gap")
+        && ExpectTrue(!config.material_closure.repair.enabled, "material closure repair defaults disabled")
+        && ExpectTrue(config.material_closure.repair.color_fill_gap == "model_fill", "color fill repair default")
+        && ExpectTrue(config.material_closure.repair.model_support_gap == "contextual", "model support repair default")
+        && ExpectTrue(config.material_closure.repair.internal_void_gap == "support", "internal void repair default")
+        && ExpectTrue(config.material_closure.repair.varnish_support_gap == "support", "varnish support repair default")
+        && ExpectTrue(config.material_closure.fail_on_gap, "material closure failOnGap default")
+        && ExpectTrue(!config.material_closure.write_gap_preview, "material closure preview default disabled");
+}
+
+bool MaterialClosureDiagnosticConfigParses()
+{
+    const std::filesystem::path configPath = WriteConfig(
+        "material_closure_diagnostic.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"materialClosure\": {\n"
+            "    \"enabled\": false,\n"
+            "    \"mode\": \"diagnostic\",\n"
+            "    \"connectivity\": 4,\n"
+            "    \"maxGapPx\": 2,\n"
+            "    \"repair\": {\n"
+            "      \"enabled\": false,\n"
+            "      \"colorFillGap\": \"model_fill\",\n"
+            "      \"modelSupportGap\": \"contextual\",\n"
+            "      \"internalVoidGap\": \"support\",\n"
+            "      \"varnishSupportGap\": \"support\"\n"
+            "    },\n"
+            "    \"failOnGap\": false,\n"
+            "    \"writeGapPreview\": true\n"
+            "  }\n"));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    return ExpectTrue(!config.material_closure.enabled, "material closure explicit enabled parses")
+        && ExpectTrue(config.material_closure.mode == "diagnostic", "material closure explicit mode parses")
+        && ExpectTrue(config.material_closure.connectivity == 4, "material closure explicit connectivity parses")
+        && ExpectTrue(config.material_closure.max_gap_px == 2, "material closure diagnostic max gap parses")
+        && ExpectTrue(!config.material_closure.repair.enabled, "material closure explicit repair parses")
+        && ExpectTrue(!config.material_closure.fail_on_gap, "material closure failOnGap parses")
+        && ExpectTrue(config.material_closure.write_gap_preview, "material closure preview flag parses");
+}
+
+bool MaterialClosureSlicerConfig1Parses()
+{
+    const std::filesystem::path configPath = WriteConfig(
+        "material_closure_schema_v1.json",
+        "{\n"
+        "  \"schema\": \"slicer.config.1\",\n"
+        "  \"input\": {\"modelPath\": \"samples/models/sample.stl\", \"format\": \"auto\"},\n"
+        "  \"materialClosure\": {\"enabled\": false, \"connectivity\": 4, \"failOnGap\": false}\n"
+        "}\n");
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    return ExpectTrue(!config.material_closure.enabled, "schema v1 material closure enabled parses")
+        && ExpectTrue(config.material_closure.connectivity == 4, "schema v1 material closure connectivity parses")
+        && ExpectTrue(!config.material_closure.fail_on_gap, "schema v1 material closure failOnGap parses");
+}
+
+bool MaterialClosureRejectsInvalidConfiguration()
+{
+    return ConfigRejectedWith(
+               "material_closure_invalid_mode.json",
+               ",\n  \"materialClosure\": {\"mode\": \"repair\"}\n",
+               "materialClosure.mode")
+        && ConfigRejectedWith(
+               "material_closure_invalid_connectivity.json",
+               ",\n  \"materialClosure\": {\"connectivity\": 6}\n",
+               "materialClosure.connectivity")
+        && ConfigRejectedWith(
+               "material_closure_invalid_max_gap.json",
+               ",\n  \"materialClosure\": {\"maxGapPx\": 0}\n",
+               "materialClosure.maxGapPx")
+        && ConfigRejectedWith(
+               "material_closure_invalid_color_fill.json",
+               ",\n  \"materialClosure\": {\"repair\": {\"colorFillGap\": \"support\"}}\n",
+               "materialClosure.repair.colorFillGap")
+        && ConfigRejectedWith(
+               "material_closure_repair_not_admitted.json",
+               ",\n  \"materialClosure\": {\"mode\": \"repair_then_report\", \"repair\": {\"enabled\": true}}\n",
+               "materialClosure repair is not implemented in 12D-R1");
 }
 
 bool Stage12AConfigPlaceholdersParse()
@@ -479,6 +586,10 @@ int main()
     const std::vector<std::pair<std::string, bool (*)()>> tests{
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
+        {"material_closure_defaults_are_diagnostic_only", MaterialClosureDefaultsAreDiagnosticOnly},
+        {"material_closure_diagnostic_config_parses", MaterialClosureDiagnosticConfigParses},
+        {"material_closure_slicer_config_1_parses", MaterialClosureSlicerConfig1Parses},
+        {"material_closure_rejects_invalid_configuration", MaterialClosureRejectsInvalidConfiguration},
         {"stage_12a_config_placeholders_parse", Stage12AConfigPlaceholdersParse},
         {"stage_12a_surface_varnish_disabled_accepts_zero_thickness", Stage12ASurfaceVarnishDisabledAcceptsZeroThickness},
         {"stage_12a_model_fill_rejects_empty_production_rgb", Stage12AModelFillRejectsEmptyProductionRgb},

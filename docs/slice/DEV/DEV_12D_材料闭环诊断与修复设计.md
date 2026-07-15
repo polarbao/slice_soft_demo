@@ -70,6 +70,17 @@ failOnGap：未修复 gap 是否使闭环状态 fail；
 writeGapPreview：是否输出调试用 gap preview。
 ```
 
+### 3.1 12D-02 配置实现边界
+
+截至 2026-07-15，配置模型、默认值、解析、校验和 `slicer.config.1` 迁移已经实现。为避免尚未落地的修复功能被静默忽略，R3 之前对以下配置显式报错：
+
+```text
+mode = repair_then_report；
+repair.enabled = true。
+```
+
+诊断模式允许配置 `maxGapPx`，但该字段在 R1/R2 仅参与诊断报告；只有 R3 修复能力完成并解除门禁后，才允许它控制生产 mask 修复。
+
 ## 4. Mask Inputs
 
 闭环诊断应尽量使用 composer 阶段的语义 mask，而不是从 preview 反推。

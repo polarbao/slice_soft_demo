@@ -5,8 +5,8 @@
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
 - Current phase: Stage 12D-R1 Material Closure configuration and candidate diagnostics
 - Latest completed phase: Stage 12C Qt workbench closure
-- Latest completed task: `12C-R2-05 Smoke、手册与阶段报告`
-- Current task: `12D-02 MaterialClosureConfig ready-to-implement`
+- Latest completed task: `12D-02 MaterialClosureConfig`
+- Current task: `12D-03 MaterialClosureReport ready-to-implement`
 - Prepared stage: `12D-R0 Material Closure Documentation Admission` complete; 12C gate satisfied
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only

@@ -232,6 +232,32 @@ struct SurfaceVarnishConfig {
     std::string source{"explicit"};
 };
 
+/**
+ * @brief Material assignment rules reserved for exact one-pixel closure repair.
+ */
+struct MaterialClosureRepairConfig
+{
+    bool enabled{false};
+    std::string color_fill_gap{"model_fill"};
+    std::string model_support_gap{"contextual"};
+    std::string internal_void_gap{"support"};
+    std::string varnish_support_gap{"support"};
+};
+
+/**
+ * @brief Stage 12D material-closure diagnostic configuration.
+ */
+struct MaterialClosureConfig
+{
+    bool enabled{true};
+    std::string mode{"diagnostic"};
+    int connectivity{8};
+    int max_gap_px{1};
+    MaterialClosureRepairConfig repair;
+    bool fail_on_gap{true};
+    bool write_gap_preview{false};
+};
+
 struct PreviewConfig {
     bool enabled{false};
     std::string format{"ppm"};
@@ -288,6 +314,7 @@ struct SliceConfig {
     SupportConfig support;
     OuterVarnishShellConfig outer_varnish;
     SurfaceVarnishConfig surface_varnish;
+    MaterialClosureConfig material_closure;
     PreviewConfig preview;
     ReliefConfig relief;
     ExperimentalConfig experimental;

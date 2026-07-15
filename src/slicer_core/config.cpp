@@ -432,6 +432,36 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.surface_varnish.source = surface_varnish.value("source", config.surface_varnish.source);
     }
 
+    if (root.contains("materialClosure"))
+    {
+        const auto& materialClosure = root.at("materialClosure");
+        config.material_closure.enabled =
+            materialClosure.value("enabled", config.material_closure.enabled);
+        config.material_closure.mode = materialClosure.value("mode", config.material_closure.mode);
+        config.material_closure.connectivity =
+            materialClosure.value("connectivity", config.material_closure.connectivity);
+        config.material_closure.max_gap_px =
+            materialClosure.value("maxGapPx", config.material_closure.max_gap_px);
+        config.material_closure.fail_on_gap =
+            materialClosure.value("failOnGap", config.material_closure.fail_on_gap);
+        config.material_closure.write_gap_preview =
+            materialClosure.value("writeGapPreview", config.material_closure.write_gap_preview);
+        if (materialClosure.contains("repair"))
+        {
+            const auto& repair = materialClosure.at("repair");
+            config.material_closure.repair.enabled =
+                repair.value("enabled", config.material_closure.repair.enabled);
+            config.material_closure.repair.color_fill_gap =
+                repair.value("colorFillGap", config.material_closure.repair.color_fill_gap);
+            config.material_closure.repair.model_support_gap =
+                repair.value("modelSupportGap", config.material_closure.repair.model_support_gap);
+            config.material_closure.repair.internal_void_gap =
+                repair.value("internalVoidGap", config.material_closure.repair.internal_void_gap);
+            config.material_closure.repair.varnish_support_gap =
+                repair.value("varnishSupportGap", config.material_closure.repair.varnish_support_gap);
+        }
+    }
+
     if (root.contains("preview")) {
         const auto& preview = root.at("preview");
         config.preview.enabled = preview.value("enabled", config.preview.enabled);
@@ -619,6 +649,40 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.surface_varnish.source != "explicit" && config.surface_varnish.source != "material_policy") {
         throw std::runtime_error("surfaceVarnish.source must be explicit or material_policy");
+    }
+    if (config.material_closure.mode != "diagnostic"
+        && config.material_closure.mode != "repair_then_report")
+    {
+        throw std::runtime_error("materialClosure.mode must be diagnostic or repair_then_report");
+    }
+    if (config.material_closure.connectivity != 4 && config.material_closure.connectivity != 8)
+    {
+        throw std::runtime_error("materialClosure.connectivity must be 4 or 8");
+    }
+    if (config.material_closure.max_gap_px <= 0)
+    {
+        throw std::runtime_error("materialClosure.maxGapPx must be positive");
+    }
+    if (config.material_closure.repair.color_fill_gap != "model_fill")
+    {
+        throw std::runtime_error("materialClosure.repair.colorFillGap must be model_fill");
+    }
+    if (config.material_closure.repair.model_support_gap != "contextual")
+    {
+        throw std::runtime_error("materialClosure.repair.modelSupportGap must be contextual");
+    }
+    if (config.material_closure.repair.internal_void_gap != "support")
+    {
+        throw std::runtime_error("materialClosure.repair.internalVoidGap must be support");
+    }
+    if (config.material_closure.repair.varnish_support_gap != "support")
+    {
+        throw std::runtime_error("materialClosure.repair.varnishSupportGap must be support");
+    }
+    if (config.material_closure.mode == "repair_then_report" || config.material_closure.repair.enabled)
+    {
+        throw std::runtime_error(
+            "materialClosure repair is not implemented in 12D-R1; use mode=diagnostic and repair.enabled=false");
     }
     if (config.texture.enabled)
     {

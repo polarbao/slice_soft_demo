@@ -12,7 +12,7 @@
 > - docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
 > - docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
 
-执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成，12D-R1 已准入；下一原子任务为 12D-02。
+执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成，12D-R1 已准入；12D-02 已完成，下一原子任务为 12D-03。
 
 ## 12D-01 文档与验收口径冻结
 
@@ -46,7 +46,7 @@ DEMO、fixture matrix、CODEX_PROMPT 和准备状态报告已生成；
 
 ## 12D-02 MaterialClosureConfig
 
-状态：READY TO IMPLEMENT / 12D-R1
+状态：DONE / 12D-R1
 
 目标：
 
@@ -62,9 +62,20 @@ cmake --build build --config Debug --target experimental_config_unit_tests
 .\build\Debug\experimental_config_unit_tests.exe
 ```
 
+完成记录：
+
+```text
+SliceConfig 已新增 MaterialClosureConfig 与 MaterialClosureRepairConfig；
+默认值已冻结为 enabled=true、mode=diagnostic、connectivity=8、maxGapPx=1、repair.enabled=false；
+legacy 配置与 slicer.config.1 迁移路径均可读取 materialClosure；
+非法 mode、connectivity、maxGapPx 和 repair rule 会被拒绝；
+R3 实现前，repair_then_report 或 repair.enabled=true 会显式拒绝，避免配置被静默忽略；
+experimental_config_unit_tests 已通过。
+```
+
 ## 12D-03 MaterialClosureReport
 
-状态：PENDING / 12D-R1
+状态：READY TO IMPLEMENT / 12D-R1
 
 目标：
 

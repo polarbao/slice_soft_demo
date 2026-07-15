@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-15 | 12C 到 12D-R1 阶段交接 | `context_handoff/2026-07-15_12C到12D-R1阶段交接.md` | Current |
+| 2026-07-15 | 12D-R1-02 MaterialClosureConfig | `context_handoff/2026-07-15_12D-R1-02_MaterialClosureConfig.md` | Current |
+| 2026-07-15 | 12C 到 12D-R1 阶段交接 | `context_handoff/2026-07-15_12C到12D-R1阶段交接.md` | Superseded |
 | 2026-07-15 | 12C-R2-05-00 阶段封口准入 | `context_handoff/2026-07-15_12C-R2-05-00_阶段封口准入.md` | Superseded |
 | 2026-07-15 | 12C-R2-04 OpenVDB Utility 摘要 | `context_handoff/2026-07-15_12C-R2-04_OpenVDBUtility摘要.md` | Superseded |
 | 2026-07-15 | 12C-R2-04-00 OpenVDB Utility 摘要准入 | `context_handoff/2026-07-15_12C-R2-04-00_OpenVDBUtility摘要准入.md` | Superseded |
