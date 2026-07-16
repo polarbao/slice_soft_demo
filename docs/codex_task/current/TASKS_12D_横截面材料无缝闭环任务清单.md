@@ -11,6 +11,7 @@
 > - docs/slice/DOC/DOC_SCHEMA_12D_MaterialClosureReport.md
 > - docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
 > - docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
+> - docs/slice/DOC/DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md
 
 执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成；12D-R1 的 12D-02/03/04 已完成。下一原子任务为 12D-05，进入前以 R2 semantic mask 接入准备记录为准。
 
@@ -138,6 +139,16 @@ synthetic detector/report 单测、sample.stl CLI、RIP Reader 和完整 CTest �
 ## 12D-05 Semantic Mask 精确诊断
 
 状态：READY TO IMPLEMENT / 12D-R2
+
+准备记录：
+
+```text
+已冻结 semantic sidecar DTO、mask ownership 和 pipeline 插入顺序；
+SupportRequiredMask 取样点固定为 support shape 后、材料优先级裁剪前；
+SupportFillMask 固定为 composer 最终实际写入 S 的像素；
+exact 状态矩阵、fixture、文件边界和验证命令已写入 DOC_PREP_12D_R2；
+12D-05 只诊断、不修复，12D-06 再执行 TIFF SHA-256 不变性守门。
+```
 
 目标：
 

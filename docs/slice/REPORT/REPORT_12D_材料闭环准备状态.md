@@ -86,3 +86,13 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-04 TIFF 反推候选诊断：COMPLETE；
 下一任务：12D-05 semantic mask 精确诊断，必须继续保持 candidate/exact 边界。
 ```
+
+## 8. 后续任务准备判断
+
+12D-05 此前的输入 mask 列表已存在，但 mask ownership、`SupportRequiredMask` 的准确取样时机、composer sidecar 边界和 exact 报告状态矩阵不够具体。现已通过 `DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md` 补齐，12D-05 状态为 `READY TO IMPLEMENT`。
+
+```text
+12D-05：准备完成，可进入开发；
+12D-06：边界已准备，等待 12D-05 后生成 TIFF hash baseline；
+12D-07 至 12D-10：已有总体设计，但尚未解除 repair/UI/真实模型执行门禁。
+```

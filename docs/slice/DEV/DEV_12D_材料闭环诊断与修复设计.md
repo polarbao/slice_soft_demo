@@ -373,6 +373,16 @@ repair.attempted=false。
 
 候选检测不读取 preview PNG、不改写 TIFF，也不替代 12D-05 semantic mask exact detector。
 
+### 9.3 12D-R2 接入准备
+
+12D-05 的 mask ownership、SupportRequiredMask 取样点、semantic sidecar DTO、exact 状态矩阵与测试入口以以下准备文档为准：
+
+```text
+docs/slice/DOC/DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md
+```
+
+该准备记录只解除 12D-05 的开发准入，不解除 12D-07 repair 门禁。
+
 ## 10. Rollback
 
 如果 12D 修复策略导致生产输出异常：

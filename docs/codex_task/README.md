@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-07-15
-> 当前阶段：12D-R1 材料闭环配置与候选诊断
+> 更新日期：2026-07-16
+> 当前阶段：12D-R2 Semantic Mask 精确诊断
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md
 当前原子任务：
 
 ```text
-12D-04 TIFF 反推候选诊断
+12D-05 Semantic Mask 精确诊断
 ```
 
-12C-R0/R1/R2 已全部完成，最终 fresh lane、完整 UI Smoke 和 CTest 已通过。12D-R0 文档准备和 12C 交接门禁均已满足，12D-02 配置契约和 12D-03 报告骨架已完成，下一原子任务为 12D-04；不得提前实现 semantic mask exact diagnosis 或 repair。
+12C-R0/R1/R2 已全部完成，最终 fresh lane、完整 UI Smoke 和 CTest 已通过。12D-R1 的配置契约、报告骨架和 TIFF candidate 已完成，R2 semantic mask 接入准备已补齐，下一原子任务为 12D-05；不得提前实现 repair。
 
 ## 保留参考入口
 
@@ -51,13 +51,13 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `PLANNED / NOT ACTIVE`。12E-00 只完成文档准入；任何 C++、Qt、CMake、config 或 production output 修改都必须由用户明确指定一个 12E 原子任务后再开始。当前唯一代码执行入口仍是 12D-04。
+12E 当前状态为 `PLANNED / NOT ACTIVE`。12E-00 只完成文档准入；任何 C++、Qt、CMake、config 或 production output 修改都必须由用户明确指定一个 12E 原子任务后再开始。当前唯一代码执行入口仍是 12D-05。
 
 ## 使用规则
 
 ```text
 1. 每次只执行用户明确指定的一个原子任务；
-2. 任务开始前读取 AGENTS.md、12C 到 12D-R1 阶段交接和当前任务文件；
+2. 任务开始前读取 AGENTS.md、12C 到 12D-R2 阶段交接和当前任务文件；
 3. 不从 archive 恢复旧任务作为当前任务，除非用户明确指定；
 4. 完成任务后输出实际验证命令及结果；
 5. 验证通过后按任务文件要求提交，并停止；
