@@ -58,6 +58,14 @@ const QVector<SettingHelpMetadata>& MetadataEntries()
             QStringLiteral("生产可用；必须大于 0"),
             kWorkbenchDoc),
         MakeMetadata(
+            QStringLiteral("modelTransform.scale"),
+            QStringLiteral("模型缩放"),
+            QStringLiteral("分别控制模型 X/Y/Z 物理尺寸倍率；1.0 表示保持模型原始尺寸，不进行缩放。"),
+            {QStringLiteral("模型物理尺寸"), QStringLiteral("输出像素尺寸"), QStringLiteral("切片层数")},
+            QStringLiteral("X/Y/Z 均为 1.0"),
+            QStringLiteral("生产可用；非 1.0 会直接改变成品尺寸，必须由用户明确设置"),
+            kWorkbenchDoc),
+        MakeMetadata(
             QStringLiteral("texture.applyMode"),
             QStringLiteral("纹理应用策略"),
             QStringLiteral("决定贴图 RGB 如何映射到模型表面；SDF 表面壳层仍属于 OpenVDB 实验路径。"),

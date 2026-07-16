@@ -97,6 +97,30 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
         result.errors.push_back("background.value 必须保持为 255（空白不打印）。");
     }
 
+    if (hasObject(root, "modelTransform"))
+    {
+        const QJsonObject transform = root.value("modelTransform").toObject();
+        if (transform.contains("scale"))
+        {
+            const QJsonArray scale = transform.value("scale").toArray();
+            if (scale.size() != 3)
+            {
+                result.errors.push_back("modelTransform.scale 必须包含 X/Y/Z 三个缩放值。");
+            }
+            else
+            {
+                for (int index = 0; index < scale.size(); ++index)
+                {
+                    if (!scale.at(index).isDouble() || scale.at(index).toDouble() <= 0.0)
+                    {
+                        result.errors.push_back(
+                            QString("modelTransform.scale[%1] 必须大于 0。").arg(index));
+                    }
+                }
+            }
+        }
+    }
+
     const QSet<QString> roles{"rgb", "white", "varnish", "ignore", "support_candidate", "support"};
     if (hasObject(root, "materialRoleMapping")) {
         const QJsonObject mapping = root.value("materialRoleMapping").toObject();

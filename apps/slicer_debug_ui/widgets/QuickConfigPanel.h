@@ -32,6 +32,8 @@ private slots:
     void OnBrowseOutput();
     void OnModelPathEdited();
     void OnOutputDirEdited();
+    void OnModelScaleChanged(double value);
+    void OnResetModelScale();
     void OnLayerHeightChanged(double value);
     void OnTexturePolicyChanged(int index);
     void OnNonSurfaceRgbPolicyChanged(int index);
@@ -64,6 +66,9 @@ private:
 
     QLineEdit* m_modelPathEdit{nullptr};
     QLineEdit* m_outputDirEdit{nullptr};
+    QDoubleSpinBox* m_modelScaleXSpin{nullptr};
+    QDoubleSpinBox* m_modelScaleYSpin{nullptr};
+    QDoubleSpinBox* m_modelScaleZSpin{nullptr};
     QDoubleSpinBox* m_layerHeightSpin{nullptr};
     QComboBox* m_texturePolicyCombo{nullptr};
     QComboBox* m_nonSurfaceRgbPolicyCombo{nullptr};

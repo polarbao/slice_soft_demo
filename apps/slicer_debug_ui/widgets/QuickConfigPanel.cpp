@@ -7,7 +7,9 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QJsonArray>
 #include <QJsonDocument>
+#include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -26,6 +28,18 @@ QLineEdit* MakePathEdit(QWidget* parent)
     auto* edit = new QLineEdit(parent);
     edit->setMinimumWidth(360);
     return edit;
+}
+
+QDoubleSpinBox* MakeScaleSpin(const QString& objectName, QWidget* parent)
+{
+    auto* spin = new QDoubleSpinBox(parent);
+    spin->setObjectName(objectName);
+    spin->setRange(0.01, 100.0);
+    spin->setDecimals(4);
+    spin->setSingleStep(0.05);
+    spin->setValue(1.0);
+    spin->setMinimumWidth(92);
+    return spin;
 }
 
 void AddComboOption(QComboBox* combo, const QString& label, const QString& value)
@@ -62,7 +76,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 {
     auto* layout = new QVBoxLayout(this);
     auto* basicGroup = new QGroupBox("基础", this);
-    basicGroup->setToolTip("基础输入输出：选择模型、输出目录和层高。");
+    basicGroup->setToolTip("基础输入输出：选择模型、输出目录、模型缩放和层高。模型缩放为 1.0 时保持原始尺寸。");
     auto* basicForm = new QFormLayout(basicGroup);
 
     m_modelPathEdit = MakePathEdit(this);
@@ -82,6 +96,26 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     outputDirRow->addWidget(m_outputDirEdit, 1);
     outputDirRow->addWidget(outputBrowseButton);
     basicForm->addRow("输出目录", outputDirRow);
+
+    m_modelScaleXSpin = MakeScaleSpin(QStringLiteral("modelScaleXSpin"), this);
+    m_modelScaleYSpin = MakeScaleSpin(QStringLiteral("modelScaleYSpin"), this);
+    m_modelScaleZSpin = MakeScaleSpin(QStringLiteral("modelScaleZSpin"), this);
+    ApplyHelp(m_modelScaleXSpin, QStringLiteral("modelTransform.scale"));
+    ApplyHelp(m_modelScaleYSpin, QStringLiteral("modelTransform.scale"));
+    ApplyHelp(m_modelScaleZSpin, QStringLiteral("modelTransform.scale"));
+    auto* modelScaleRow = new QHBoxLayout();
+    modelScaleRow->addWidget(new QLabel(QStringLiteral("X"), this));
+    modelScaleRow->addWidget(m_modelScaleXSpin);
+    modelScaleRow->addWidget(new QLabel(QStringLiteral("Y"), this));
+    modelScaleRow->addWidget(m_modelScaleYSpin);
+    modelScaleRow->addWidget(new QLabel(QStringLiteral("Z"), this));
+    modelScaleRow->addWidget(m_modelScaleZSpin);
+    auto* resetModelScaleButton = MakeButton(QStringLiteral("重置 1:1"), this);
+    resetModelScaleButton->setObjectName(QStringLiteral("resetModelScaleButton"));
+    resetModelScaleButton->setToolTip(QStringLiteral("将 X/Y/Z 模型缩放恢复为 1.0，不改变模型原始物理尺寸。"));
+    modelScaleRow->addWidget(resetModelScaleButton);
+    modelScaleRow->addStretch(1);
+    basicForm->addRow("模型缩放", modelScaleRow);
 
     m_layerHeightSpin = new QDoubleSpinBox(this);
     m_layerHeightSpin->setRange(0.001, 1.0);
@@ -217,6 +251,10 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     connect(outputBrowseButton, &QPushButton::clicked, this, &QuickConfigPanel::OnBrowseOutput);
     connect(m_modelPathEdit, &QLineEdit::editingFinished, this, &QuickConfigPanel::OnModelPathEdited);
     connect(m_outputDirEdit, &QLineEdit::editingFinished, this, &QuickConfigPanel::OnOutputDirEdited);
+    connect(m_modelScaleXSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnModelScaleChanged);
+    connect(m_modelScaleYSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnModelScaleChanged);
+    connect(m_modelScaleZSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnModelScaleChanged);
+    connect(resetModelScaleButton, &QPushButton::clicked, this, &QuickConfigPanel::OnResetModelScale);
     connect(m_layerHeightSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnLayerHeightChanged);
     connect(m_texturePolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnTexturePolicyChanged);
     connect(m_nonSurfaceRgbPolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnNonSurfaceRgbPolicyChanged);
@@ -243,6 +281,13 @@ void QuickConfigPanel::LoadFromDocument()
     m_loading = true;
     m_modelPathEdit->setText(StringValue({"input", "modelPath"}));
     m_outputDirEdit->setText(StringValue({"output", "packageDir"}));
+    const QJsonArray scale = m_document->value({"modelTransform", "scale"}).toArray();
+    m_modelScaleXSpin->setValue(
+        scale.size() == 3 && scale.at(0).isDouble() ? scale.at(0).toDouble() : 1.0);
+    m_modelScaleYSpin->setValue(
+        scale.size() == 3 && scale.at(1).isDouble() ? scale.at(1).toDouble() : 1.0);
+    m_modelScaleZSpin->setValue(
+        scale.size() == 3 && scale.at(2).isDouble() ? scale.at(2).toDouble() : 1.0);
     m_layerHeightSpin->setValue(DoubleValue({"output", "layerThicknessMm"}, 0.01));
     SetComboValue(m_texturePolicyCombo, StringValue({"texture", "applyMode"}, "top_surface_band"));
     SetComboValue(m_nonSurfaceRgbPolicyCombo, StringValue({"texture", "nonSurfaceRgbPolicy"}, "model_material"));
@@ -308,6 +353,32 @@ void QuickConfigPanel::OnOutputDirEdited()
     {
         SetValueIfChanged({"output", "packageDir"}, m_outputDirEdit->text());
     }
+}
+
+void QuickConfigPanel::OnModelScaleChanged(const double value)
+{
+    Q_UNUSED(value);
+    if (m_loading)
+    {
+        return;
+    }
+
+    SetValueIfChanged(
+        {"modelTransform", "scale"},
+        QJsonArray{
+            m_modelScaleXSpin->value(),
+            m_modelScaleYSpin->value(),
+            m_modelScaleZSpin->value()});
+}
+
+void QuickConfigPanel::OnResetModelScale()
+{
+    m_loading = true;
+    m_modelScaleXSpin->setValue(1.0);
+    m_modelScaleYSpin->setValue(1.0);
+    m_modelScaleZSpin->setValue(1.0);
+    m_loading = false;
+    OnModelScaleChanged(1.0);
 }
 
 void QuickConfigPanel::OnLayerHeightChanged(const double value)

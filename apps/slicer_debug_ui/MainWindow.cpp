@@ -1029,7 +1029,7 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                             {"rowsPerStrip", 64}});
     root.insert("modelTransform",
                 QJsonObject{{"unit", "mm"},
-                            {"scale", MakeNumberArray({0.8, 0.8, 0.8})},
+                            {"scale", MakeNumberArray({1.0, 1.0, 1.0})},
                             {"rotationDeg", MakeNumberArray({0.0, 0.0, 0.0})},
                             {"translationMm", MakeNumberArray({0.0, 0.0, 0.0})}});
     root.insert("autoOrient",

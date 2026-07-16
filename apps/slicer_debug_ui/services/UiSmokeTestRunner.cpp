@@ -28,6 +28,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QDir>
+#include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -36,6 +37,7 @@
 #include <QImage>
 #include <QLabel>
 #include <QProcess>
+#include <QPushButton>
 #include <QRect>
 #include <QSet>
 #include <QSize>
@@ -886,6 +888,7 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
 int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options)
 {
     const QStringList requiredKeys{
+        QStringLiteral("modelTransform.scale"),
         QStringLiteral("modelFill.material"),
         QStringLiteral("support.enabled"),
         QStringLiteral("support.placement"),
@@ -951,6 +954,9 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
     const QJsonObject quickConfigFixture{
         {QStringLiteral("input"), QJsonObject{{QStringLiteral("modelPath"), QStringLiteral("fixture.obj")}}},
         {QStringLiteral("output"), QJsonObject{{QStringLiteral("packageDir"), QStringLiteral("fixture-package")}}},
+        {QStringLiteral("modelTransform"),
+         QJsonObject{
+             {QStringLiteral("scale"), QJsonArray{0.8, 0.8, 0.8}}}},
         {QStringLiteral("materialPolicy"),
          QJsonObject{
              {QStringLiteral("enabled"), false},
@@ -971,7 +977,9 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         return fail(QStringLiteral("setting-help-metadata 无法加载配置测试夹具。"));
     }
     QuickConfigPanel quickPanel(&document);
+    quickPanel.LoadFromDocument();
     const QVector<QPair<QString, QString>> tooltipBindings{
+        {QStringLiteral("modelScaleXSpin"), QStringLiteral("modelTransform.scale")},
         {QStringLiteral("modelFillMaterialCombo"), QStringLiteral("modelFill.material")},
         {QStringLiteral("whitePolicyEnabledCheck"), QStringLiteral("materialPolicy.white.enabled")},
         {QStringLiteral("supportEnabledCheck"), QStringLiteral("support.enabled")},
@@ -988,6 +996,32 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         {
             return fail(QStringLiteral("setting-help-metadata tooltip 未复用集中元数据：") + binding.first);
         }
+    }
+
+    QDoubleSpinBox* modelScaleXSpin = quickPanel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("modelScaleXSpin"));
+    QDoubleSpinBox* modelScaleYSpin = quickPanel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("modelScaleYSpin"));
+    QDoubleSpinBox* modelScaleZSpin = quickPanel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("modelScaleZSpin"));
+    QPushButton* resetModelScaleButton = quickPanel.findChild<QPushButton*>(
+        QStringLiteral("resetModelScaleButton"));
+    if (modelScaleXSpin == nullptr
+        || modelScaleYSpin == nullptr
+        || modelScaleZSpin == nullptr
+        || resetModelScaleButton == nullptr
+        || modelScaleXSpin->value() != 0.8
+        || modelScaleYSpin->value() != 0.8
+        || modelScaleZSpin->value() != 0.8)
+    {
+        return fail(QStringLiteral("setting-help-metadata 模型缩放控件未正确加载配置值。"));
+    }
+    resetModelScaleButton->click();
+    const QJsonArray resetScale = document.value(
+        {QStringLiteral("modelTransform"), QStringLiteral("scale")}).toArray();
+    if (resetScale != QJsonArray{1.0, 1.0, 1.0})
+    {
+        return fail(QStringLiteral("setting-help-metadata 模型缩放未恢复为 1:1。"));
     }
 
     QCheckBox* whitePolicyCheck = quickPanel.findChild<QCheckBox*>(
