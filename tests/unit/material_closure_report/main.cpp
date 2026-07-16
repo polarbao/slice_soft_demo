@@ -157,9 +157,16 @@ bool ExactReportFailsWithStableGapDiagnostics()
     const slicer_core::Json report = slicer_core::BuildMaterialClosureExactReport(config, layers);
     return ExpectTrue(report.at("closureStatus").as_string() == "fail", "exact gaps fail by default")
         && ExpectTrue(report.at("productionAcceptance").as_string() == "failed", "exact gaps reject production")
+        && ExpectTrue(!report.at("repair").at("enabled").as_bool(), "repair remains disabled")
+        && ExpectTrue(!report.at("repair").at("attempted").as_bool(), "repair is not attempted")
+        && ExpectTrue(report.at("repair").at("repairedPixels").as_int() == 0, "no pixels repaired")
         && ExpectTrue(report.at("totals").at("failLayerCount").as_int() == 2, "fail layers counted")
+        && ExpectTrue(report.at("totals").at("repairedPixels").as_int() == 0, "repair total remains zero")
         && ExpectTrue(report.at("totals").at("internalVoidGapPixels").as_int() == 1, "internal gap total")
         && ExpectTrue(report.at("totals").at("varnishSupportGapPixels").as_int() == 1, "varnish gap total")
+        && ExpectTrue(!report.at("layers").at(0).at("repair").at("attempted").as_bool(), "layer repair not attempted")
+        && ExpectTrue(report.at("layers").at(0).at("repair").at("repairedPixels").as_int() == 0, "layer repaired pixels zero")
+        && ExpectTrue(report.at("layers").at(0).at("repair").at("remainingGapPixels").as_int() == 1, "original gap remains")
         && ExpectTrue(report.at("worstLayers").at(0).at("layerIndex").as_int() == 2, "worst layers stably ordered")
         && ExpectTrue(report.at("diagnostics").at(0).at("severity").as_string() == "error", "exact fail diagnostic severity");
 }

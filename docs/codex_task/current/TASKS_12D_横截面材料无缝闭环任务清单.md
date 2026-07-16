@@ -15,7 +15,7 @@
 > - docs/slice/DOC/DOC_PREP_12D_R2_RepairDisabled不变性验证准备.md
 > - docs/slice/DOC/DOC_PREP_12D_R3_一像素修复背景保护UI真实模型准备.md
 
-执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成；12D-R1 的 12D-02/03/04 与 R2 的 12D-05 已完成。下一原子任务为 12D-06，进入前必须完成 repair-disabled TIFF 不变性准备。
+执行准入：12C、12D-R1 与 12D-R2 已完成。12D-R3 的准备文档已补齐；12D-07 已满足技术前置条件，但 repair-enabled 开发仍须用户明确指定后方可开始。
 
 ## 12D-01 文档与验收口径冻结
 
@@ -181,7 +181,7 @@ repair.attempted=false、repairedPixels=0，RGBWSV TIFF 未在本任务中修改
 
 ## 12D-06 Repair Disabled 验证
 
-状态：READY TO IMPLEMENT / 12D-R2
+状态：DONE / 12D-R2
 
 准备记录：
 
@@ -207,9 +207,20 @@ repair.enabled=false 时 repairedPixels=0；
 RGBWSV TIFF 与未启用 materialClosure repair 的输出一致。
 ```
 
+完成记录：
+
+```text
+新增 repair_disabled_baseline/diagnostic 成对配置，除 packageDir 和 materialClosure.enabled 外保持一致；
+新增 run_material_closure_tests.ps1，按 manifest layerIndex 校验 30 层 TIFF SHA-256；
+baseline 与 exact diagnostic 两份 package 均通过 RIP Reader；
+semantic detector 断言输入 evidence 不变且原始 gap 仍可见；
+exact report 断言 repair.attempted=false、repairedPixels=0、remainingGapPixels=gapPixels；
+保持 p0.rgbwsv.2、RGBWSV、uint8、black_is_print，不实现 repair。
+```
+
 ## 12D-07 Repair Enabled 一像素闭环修复
 
-状态：PREPARED / BLOCKED BY 12D-06 / 12D-R3
+状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
 
 目标：
 

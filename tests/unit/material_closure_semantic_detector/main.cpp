@@ -60,6 +60,27 @@ void MarkGapPixel(slicer_core::MaterialClosureSemanticLayerInput& input)
     input.layerEmptyMask.at(center) = 1U;
 }
 
+bool InputsEqual(
+    const slicer_core::MaterialClosureSemanticLayerInput& first,
+    const slicer_core::MaterialClosureSemanticLayerInput& second)
+{
+    return first.layerIndex == second.layerIndex
+        && first.zMm == second.zMm
+        && first.widthPx == second.widthPx
+        && first.heightPx == second.heightPx
+        && first.textureSurfaceMask == second.textureSurfaceMask
+        && first.modelFillMask == second.modelFillMask
+        && first.modelMaterialMask == second.modelMaterialMask
+        && first.supportFillMask == second.supportFillMask
+        && first.internalVoidSupportMask == second.internalVoidSupportMask
+        && first.surfaceVarnishMask == second.surfaceVarnishMask
+        && first.outerVarnishShellMask == second.outerVarnishShellMask
+        && first.modelEnvelopeMask == second.modelEnvelopeMask
+        && first.supportRequiredMask == second.supportRequiredMask
+        && first.expectedOccupiedDomainMask == second.expectedOccupiedDomainMask
+        && first.layerEmptyMask == second.layerEmptyMask;
+}
+
 bool ExactPassHasNoGap()
 {
     const slicer_core::MaterialClosureSemanticLayerResult result =
@@ -142,6 +163,22 @@ bool ProtectsBorderConnectedBackground()
         && ExpectTrue(result.gapPixels == 0, "external background is not a gap");
 }
 
+bool RepairDisabledDetectionPreservesSemanticEvidence()
+{
+    slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
+    MarkGapPixel(input);
+    input.textureSurfaceMask.at(PixelIndex(1, 2)) = 1U;
+    input.modelFillMask.at(PixelIndex(3, 2)) = 1U;
+    const slicer_core::MaterialClosureSemanticLayerInput snapshot = input;
+
+    const slicer_core::MaterialClosureSemanticLayerResult result =
+        slicer_core::DetectMaterialClosureSemanticLayer(input, 8, 1);
+
+    return ExpectTrue(result.gapPixels == 1, "repair-disabled gap remains visible")
+        && ExpectTrue(result.colorFillGapPixels == 1, "repair-disabled gap type remains visible")
+        && ExpectTrue(InputsEqual(input, snapshot), "detector preserves all semantic evidence");
+}
+
 bool RejectsMaskSizeMismatch()
 {
     slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
@@ -168,6 +205,7 @@ int main()
         {"detects_internal_void_gap", DetectsInternalVoidGap},
         {"detects_varnish_support_gap_only_inside_required_support", DetectsVarnishSupportGapOnlyInsideRequiredSupport},
         {"protects_border_connected_background", ProtectsBorderConnectedBackground},
+        {"repair_disabled_detection_preserves_semantic_evidence", RepairDisabledDetectionPreservesSemanticEvidence},
         {"rejects_mask_size_mismatch", RejectsMaskSizeMismatch},
     };
 

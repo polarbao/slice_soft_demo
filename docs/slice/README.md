@@ -2,11 +2,11 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-16
-> 适用阶段：Stage 12D-R2 Material Closure；Stage 12E 全局纹理/填充互补已规划但未开始实现
+> 适用阶段：Stage 12D-R3 PREPARED；Stage 12E 全局纹理/填充互补已规划但未开始实现
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C 已收口；12D-R1 配置、报告骨架和 TIFF candidate 已完成，R2 的 `12D-05 Semantic Mask 精确诊断` 已完成，`12D-06 Repair Disabled` 不变性验证准备已补齐并可进入实现。12D-07 至 12D-10 已完成边界准备但仍受前序门禁阻塞。12E 仅完成文档规划，不是当前代码执行入口。
+当前状态：12C 已收口；12D-R1 与 R2 已完成，包含 exact semantic diagnosis 和 repair-disabled TIFF SHA-256 守门。12D-07 至 12D-10 已完成边界准备但尚未实施。12E 仅完成文档规划，不是当前代码执行入口。
 
 ## 目录结构
 

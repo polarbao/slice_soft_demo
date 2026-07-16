@@ -19,10 +19,10 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12D-05 Semantic Mask exact diagnostics`.
-- Current working phase is `12D-R2`: exact Material Closure diagnostics and repair-disabled invariance.
+- The latest completed task is `12D-06 Repair Disabled TIFF invariance verification`.
+- Current working phase is `12D-R3 PREPARED / NOT STARTED`: explicit 1px repair, background protection, UI, and real-model acceptance.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- The current atomic task is `12D-06 Repair Disabled verification`; do not start repair-enabled or UI work early.
+- No 12D-R3 code task is active. `12D-07 Repair Enabled` requires an explicit user instruction; do not start repair or UI work early.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules

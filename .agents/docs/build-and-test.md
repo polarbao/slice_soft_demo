@@ -143,3 +143,13 @@ cmake --build build --config Debug
 If preview/UI changed, also run `overlay-load-real`.
 
 For documentation/config-only tasks, run targeted text/schema checks and `git diff --check`; do not claim build validation unless it was actually run.
+
+## 12D Material Closure
+
+Repair-disabled TIFF invariance gate：
+
+```powershell
+.\scripts\run_material_closure_tests.ps1 -BuildDir build -Config Debug -Mode RepairDisabled
+```
+
+该脚本生成 baseline/diagnostic 两份 package，按 manifest layerIndex 比较全部生产 TIFF 的 SHA-256，并运行 RIP Reader。它不启用 repair，也不比较预期不同的 report/manifest 整体目录 hash。

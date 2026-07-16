@@ -417,6 +417,24 @@ repairedPixels=0。
 
 12D-05 不读取 preview PNG、不修改 layer/TIFF、不启用 repair。`semantic_exact_no_preview.json` 和真实 `model/obj/nai_you_new` 已分别验证无预览依赖与真实模型 exact report。
 
+### 9.5 12D-06 Repair Disabled 不变性实现记录
+
+12D-06 使用两个仅在 `output.packageDir` 与 `materialClosure.enabled` 上不同的 fixture，分别生成 baseline 与 exact diagnostic package。`run_material_closure_tests.ps1` 按两个 manifest 的 `layerIndex` 对齐生产 TIFF，校验 grid、zMm、尺寸、层数、重复 index、路径边界与逐层 SHA-256。
+
+不变性结果：
+
+```text
+比较层数：30；
+TIFF SHA-256：逐层完全一致；
+baseline/diagnostic RIP Reader：PASS；
+diagnostic source/confidence：semantic_masks/exact；
+repair attempted/repairedPixels：false/0；
+preview.enabled：false；
+协议：p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print。
+```
+
+另外通过 deterministic unit fixture 证明 detector 不改变 semantic evidence，exact report 在 repair disabled 时仍保留原始 gap 和 `remainingGapPixels=gapPixels`。生产 fixture 不引入 gap 注入测试后门。
+
 ## 10. Rollback
 
 如果 12D 修复策略导致生产输出异常：

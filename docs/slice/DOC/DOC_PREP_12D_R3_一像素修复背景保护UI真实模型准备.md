@@ -1,6 +1,6 @@
 # DOC_PREP_12D-R3 一像素修复、背景保护、UI 与真实模型准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY 12D-06
+> 文档状态：PREPARED / 12D-07 READY FOR USER ADMISSION
 > 日期：2026-07-16
 > 覆盖任务：12D-07、12D-08、12D-09、12D-10
 
@@ -158,7 +158,7 @@ rip_reader_test 结果；
 
 | 任务 | 准备状态 | 开发准入条件 |
 |---|---|---|
-| 12D-07 | PREPARED / BLOCKED | 12D-06 COMPLETE + 用户明确开始 |
+| 12D-07 | PREPARED / READY | 用户明确开始 |
 | 12D-08 | PREPARED / BLOCKED | 12D-07 COMPLETE |
 | 12D-09 | PREPARED / BLOCKED | 12D-08 COMPLETE + stable report fixture |
 | 12D-10 | PREPARED / BLOCKED | 12D-09 COMPLETE + 三个模型配置冻结 |

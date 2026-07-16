@@ -1,11 +1,11 @@
 # REPORT_12D 材料闭环准备状态
 
-> 文档状态：12D-R2 IN PROGRESS / 12D-05 COMPLETE
+> 文档状态：12D-R2 COMPLETE / 12D-R3 PREPARED
 > 日期：2026-07-16
 
 ## 1. 当前结论
 
-12D 文档准备阶段已完成；12C-R2-05、最终状态报告、fresh Qt lane、完整 Smoke 和 CTest 均已完成。12D-R1 已完成 12D-02 `MaterialClosureConfig`、12D-03 `MaterialClosureReport` 和 12D-04 TIFF 候选诊断；12D-R2 已完成 12D-05 semantic mask 精确诊断。下一任务为 12D-06 repair-disabled TIFF 不变性验证；修复仍未实现。
+12D 文档准备阶段已完成；12D-R1 已完成配置、报告骨架和 TIFF 候选诊断；12D-R2 已完成 12D-05 semantic mask 精确诊断与 12D-06 repair-disabled TIFF 不变性验证。12D-R3 的 12D-07 至 12D-10 已完成准备，但仍需用户明确指定后按顺序实施；修复仍未实现。
 
 ## 2. 已准备文档
 
@@ -44,10 +44,10 @@ gap preview 默认关闭且只作诊断；
 |---|---|---|
 | 12D-R0 | 文档/schema/fixture/执行边界 | COMPLETE |
 | 12D-R1 | 配置、报告骨架、TIFF candidate | COMPLETE（12D-02/03/04） |
-| 12D-R2 | semantic mask exact、repair-disabled 不变性 | IN PROGRESS（12D-05 完成，下一任务 12D-06） |
-| 12D-R3 | 1px repair、背景保护、UI、真实模型 | PENDING |
+| 12D-R2 | semantic mask exact、repair-disabled 不变性 | COMPLETE（12D-05/06） |
+| 12D-R3 | 1px repair、背景保护、UI、真实模型 | PREPARED / NOT STARTED |
 
-## 5. 12D-02/03/04/05 已实现
+## 5. 12D-02/03/04/05/06 已实现
 
 ```text
 MaterialClosureConfig / MaterialClosureRepairConfig 数据模型；
@@ -70,12 +70,15 @@ SupportRequiredMask 与最终 SupportFillMask 的意图/实际输出分离；
 source=semantic_masks、confidence=exact 的生产可判定报告；
 preview disabled sample fixture 与 nai_you_new 真实 OBJ exact/pass 验证；
 repair.attempted=false、repairedPixels=0，未实现或启用修复。
+repair-disabled baseline/diagnostic 成对配置与自动验证脚本；
+按 manifest layerIndex 比较全部 TIFF SHA-256，不比较预期不同的报告文件；
+30 层 TIFF 字节完全一致，两份 package 均通过 RIP Reader；
+detector evidence 不变与 report 原始 gap 保留单元测试。
 ```
 
 ## 6. 尚未实现
 
 ```text
-repair-disabled TIFF SHA-256 不变性自动守门；
 1px repair；
 gap preview；
 Qt UI closure 展示；
@@ -94,7 +97,8 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-03 MaterialClosureReport：COMPLETE；
 12D-04 TIFF 反推候选诊断：COMPLETE；
 12D-05 semantic mask 精确诊断：COMPLETE；
-下一任务：12D-06 repair-disabled TIFF 不变性验证，必须继续保持只诊断、不改写生产 TIFF。
+12D-06 repair-disabled TIFF 不变性验证：COMPLETE；
+下一代码任务：12D-07 Repair Enabled 一像素闭环修复，尚未开始且必须由用户明确指定。
 ```
 
 ## 8. 后续任务准备判断
@@ -103,6 +107,6 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 
 ```text
 12D-05：COMPLETE；
-12D-06：READY TO IMPLEMENT，尚未实现验证脚本；
-12D-07 至 12D-10：PREPARED，但分别受前序任务门禁阻塞。
+12D-06：COMPLETE，12D-R2 已封口；
+12D-07：PREPARED / READY FOR USER ADMISSION；12D-08 至 12D-10 继续受前序任务门禁阻塞。
 ```

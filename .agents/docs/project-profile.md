@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12D-R2 Material Closure exact diagnostics and invariance verification
+- Current phase: Stage 12D-R3 prepared, implementation not started
 - Latest completed phase: Stage 12C Qt workbench closure
-- Latest completed task: `12D-05 Semantic Mask exact diagnostics`
-- Current task: `12D-06 Repair Disabled verification ready-to-implement`
-- Prepared stage: `12D-R2 Semantic Mask exact diagnostics` complete; repair remains disabled
+- Latest completed task: `12D-06 Repair Disabled TIFF invariance verification`
+- Current task: no active 12D-R3 code task; 12D-07 requires explicit instruction
+- Prepared stage: `12D-R3 repair/background/UI/real-model preparation` complete; repair remains disabled
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC
