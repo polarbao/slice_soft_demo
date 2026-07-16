@@ -128,6 +128,16 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
         if (!isAllowed(stringAt(modelFill, "scope"), scopes)) {
             result.errors.push_back("modelFill.scope 不是当前认可的模型填充范围。");
         }
+        const QJsonObject texture = root.value("texture").toObject();
+        if (modelFill.value("enabled").toBool(false)
+            && stringAt(modelFill, "scope") == "below_texture_surface"
+            && stringAt(modelFill, "material") != "rgb"
+            && texture.value("enabled").toBool(false)
+            && stringAt(texture, "applyMode") == "solid_volume_from_top_surface")
+        {
+            result.warnings.push_back(
+                "纹理投影到整个实体会占满模型内部区域，导致白墨/光油模型填充像素为 0；请改用 top_surface_band。");
+        }
     }
 
     if (hasObject(root, "materialProcessProfile")) {

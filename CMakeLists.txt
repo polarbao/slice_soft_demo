@@ -127,6 +127,7 @@ add_library(slicer_core
     src/slicer_core/rip_reader.h
     src/slicer_core/scene/SceneModel.cpp
     src/slicer_core/scene/SceneModel.h
+    src/slicer_core/SliceRunTelemetry.h
     src/slicer_core/slicer.cpp
     src/slicer_core/slicer.h
     src/slicer_core/support/SupportComponentAnalysis.cpp

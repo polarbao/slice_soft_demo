@@ -36,6 +36,7 @@ private:
     int OpenVdbUtilitySummary(const UiSmokeTestOptions& options);
     int WorkspaceLayoutSizes(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);
+    int SliceProgressTiming(const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;
     int pass(const QString& message) const;

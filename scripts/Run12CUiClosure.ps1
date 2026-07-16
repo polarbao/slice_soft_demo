@@ -98,6 +98,7 @@ try
         @{ Name = "scenario-registry"; Arguments = @("--ui-smoke-test", "--case", "scenario-registry") },
         @{ Name = "slice-settings-model"; Arguments = @("--ui-smoke-test", "--case", "slice-settings-model") },
         @{ Name = "generated-effective-config"; Arguments = @("--ui-smoke-test", "--case", "generated-effective-config") },
+        @{ Name = "slice-progress-timing"; Arguments = @("--ui-smoke-test", "--case", "slice-progress-timing") },
         @{ Name = "setting-help-metadata"; Arguments = @("--ui-smoke-test", "--case", "setting-help-metadata") },
         @{
             Name = "preview-workspace-shared-layer"

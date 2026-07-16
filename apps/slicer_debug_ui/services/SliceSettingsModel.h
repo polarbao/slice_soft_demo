@@ -5,6 +5,7 @@
 
 enum class ModelFillMaterial
 {
+    Rgb,
     White,
     Varnish,
 };

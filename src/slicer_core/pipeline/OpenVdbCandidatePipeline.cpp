@@ -11,6 +11,7 @@
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/tiff_io.h"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -26,6 +27,45 @@ namespace slicer_core
 {
 namespace
 {
+
+using PipelineClock = std::chrono::steady_clock;
+
+double ElapsedMsSince(const PipelineClock::time_point& start)
+{
+    return std::chrono::duration<double, std::milli>(PipelineClock::now() - start).count();
+}
+
+void NotifyProgress(
+    const OpenVdbCandidatePipelineOptions& options,
+    const PipelineClock::time_point& runStart,
+    const std::string& phase,
+    const int current,
+    const int total,
+    const int percent)
+{
+    if (!options.progress_callback)
+    {
+        return;
+    }
+
+    options.progress_callback(SliceRunProgress{
+        phase,
+        current,
+        total,
+        percent,
+        ElapsedMsSince(runStart)});
+}
+
+bool ShouldNotifyLayerProgress(const int completedLayers, const int layerCount)
+{
+    if (completedLayers <= 1 || completedLayers >= layerCount)
+    {
+        return true;
+    }
+
+    const int interval = std::max(1, (layerCount + 99) / 100);
+    return completedLayers % interval == 0;
+}
 
 std::string LayerFileName(const int layerIndex)
 {
@@ -350,8 +390,18 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
     const std::filesystem::path& configPath,
     const OpenVdbCandidatePipelineOptions& options)
 {
+    SliceRunProfile profile;
+    profile.available = true;
+    profile.profile_level = "detailed";
+    const auto runStart = PipelineClock::now();
+    auto phaseStart = runStart;
+
+    NotifyProgress(options, runStart, "config_load", 0, 1, 0);
     const SliceConfig config = load_slice_config(configPath);
     EnsureCandidateConfig(config);
+    profile.config_load_ms = ElapsedMsSince(phaseStart);
+    NotifyProgress(options, runStart, "openvdb_prepare", 0, 1, 3);
+    phaseStart = PipelineClock::now();
 
     SurfaceShellRealModelResult prototype =
         RunCandidatePrototype(config, configPath, MeshValidationPolicy::StrictClosed);
@@ -382,6 +432,9 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
             throw std::runtime_error("OpenVDB non-production fallback failed: " + prototype.errors.front());
         }
     }
+    profile.mask_sampling_ms = ElapsedMsSince(phaseStart);
+    NotifyProgress(options, runStart, "layer_buffer_prepare", 0, 1, 30);
+    phaseStart = PipelineClock::now();
 
     OpenVdbCandidateLayerBufferOptions bufferOptions;
     bufferOptions.interior_rgb = config.texture.fallback_rgb;
@@ -391,6 +444,9 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
     {
         throw std::runtime_error("OpenVDB candidate layer buffers failed: " + buffers.error);
     }
+    profile.grid_setup_ms = ElapsedMsSince(phaseStart);
+    NotifyProgress(options, runStart, "layer_processing", 0, buffers.depth, 36);
+    phaseStart = PipelineClock::now();
 
     const std::filesystem::path packageDir = config.output.package_dir;
     const std::filesystem::path stagingDir = MakeSiblingDirectory(packageDir, "staging");
@@ -426,17 +482,22 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
 
     for (const OpenVdbCandidateLayerBuffer& layer : buffers.layers)
     {
+        const auto layerComputeStart = PipelineClock::now();
         const MaterialChannelComposerResult composed = ComposeMaterialChannels(layer.composer_input);
         if (!composed.error.empty())
         {
             throw std::runtime_error("OpenVDB candidate material composition failed: " + composed.error);
         }
+        profile.layer_compute_ms += ElapsedMsSince(layerComputeStart);
 
         const std::string relativeLayerPath = LayerFileName(layer.layer_index);
         if (options.write_tiff_layers)
         {
+            const auto tiffWriteStart = PipelineClock::now();
             write_rgbwsv_tiff(stagingDir / relativeLayerPath, tiffSpec, composed.channels);
+            profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
         }
+        const auto layerMetadataStart = PipelineClock::now();
         layers.push_back(Json::object({
             {"index", layer.layer_index},
             {"path", relativeLayerPath},
@@ -450,9 +511,11 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
         summary.model_pixels += composed.stats.model_pixels;
         summary.support_pixels += composed.stats.support_pixels;
         summary.shell_pixels += layer.stats.shell_pixels;
+        profile.layer_compute_ms += ElapsedMsSince(layerMetadataStart);
 
         if (options.write_preview_files)
         {
+            const auto previewWriteStart = PipelineClock::now();
             WritePreviewFrame(
                 stagingDir,
                 previewFiles,
@@ -523,8 +586,25 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
                     config.preview.empty_color,
                     config.preview.varnish_color),
                 composed.stats.varnish_pixels);
+            profile.preview_write_ms += ElapsedMsSince(previewWriteStart);
+        }
+
+        const int completedLayers = layer.layer_index + 1;
+        if (ShouldNotifyLayerProgress(completedLayers, buffers.depth))
+        {
+            const int percent = 36 + (completedLayers * 56 / std::max(1, buffers.depth));
+            NotifyProgress(
+                options,
+                runStart,
+                "layer_processing",
+                completedLayers,
+                buffers.depth,
+                percent);
         }
     }
+    profile.layer_compose_ms = ElapsedMsSince(phaseStart);
+    NotifyProgress(options, runStart, "report_build", 0, 1, 92);
+    phaseStart = PipelineClock::now();
 
     Json::Object tiffJson;
     tiffJson["channelOrder"] = StringArrayToJson(protocol.channel_order);
@@ -583,6 +663,9 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
     });
 
     const Json realModelReport = MakeSurfaceShellRealModelReport(prototype);
+    profile.report_build_ms = ElapsedMsSince(phaseStart);
+    NotifyProgress(options, runStart, "report_write", 0, 1, 95);
+    phaseStart = PipelineClock::now();
     if (options.write_reports)
     {
         WriteReportJsonFile(stagingDir / "manifest.json", manifest);
@@ -629,12 +712,30 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
             {"generated", Json{previewFiles}},
         }));
     }
+    profile.report_write_ms = ElapsedMsSince(phaseStart);
 
     if (options.publish_package)
     {
+        NotifyProgress(options, runStart, "package_publish", 0, 1, 98);
+        phaseStart = PipelineClock::now();
         PublishStagedPackage(stagingDir, packageDir);
+        profile.package_publish_ms = ElapsedMsSince(phaseStart);
     }
     summary.non_production = nonProductionPackage;
+    profile.slice_processing_ms =
+        profile.grid_setup_ms
+        + profile.mask_sampling_ms
+        + profile.texture_prepare_ms
+        + profile.support_generation_ms
+        + profile.layer_compute_ms;
+    profile.output_write_ms =
+        profile.tiff_write_ms
+        + profile.preview_write_ms
+        + profile.report_write_ms
+        + profile.package_publish_ms;
+    profile.total_ms = ElapsedMsSince(runStart);
+    summary.profile = profile;
+    NotifyProgress(options, runStart, "completed", 1, 1, 100);
 
     return summary;
 }

@@ -115,6 +115,12 @@ QString MaterialCapabilityLabel(const QString& value)
     return labels.value(value, value);
 }
 
+bool IsSlicingAction(const QString& action)
+{
+    return action == QStringLiteral("运行切片")
+        || action == QStringLiteral("OpenVDB 候选切片");
+}
+
 QString MakeScenarioToolTip(const ScenarioEntry& scenario)
 {
     QStringList lines;
@@ -373,7 +379,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     viewMenu->addAction(diagnosticsAction);
 
     connect(&runner_, &ProcessRunner::started, this, &MainWindow::handleProcessStarted);
-    connect(&runner_, &ProcessRunner::output, log_panel_, &LogPanel::appendOutput);
+    connect(&runner_, &ProcessRunner::output, this, &MainWindow::OnProcessOutput);
     connect(&runner_, &ProcessRunner::errorOutput, log_panel_, &LogPanel::appendError);
     connect(&runner_, &ProcessRunner::finished, this, &MainWindow::handleProcessFinished);
     connect(&runner_, &ProcessRunner::failed, this, &MainWindow::handleProcessFailed);
@@ -595,16 +601,43 @@ void MainWindow::OnScenarioVisibilityChanged(const bool checked)
     LoadScenarios();
 }
 
+void MainWindow::OnProcessOutput(const QString& text)
+{
+    log_panel_->appendOutput(text);
+    const SliceProtocolUpdate update = m_sliceProgressParser.Append(text);
+    if (m_sliceTimingPanel == nullptr)
+    {
+        return;
+    }
+    for (const SliceProgressEvent& event : update.progress)
+    {
+        m_sliceTimingPanel->UpdateProgress(event);
+    }
+    for (const SliceTimingEvent& event : update.timings)
+    {
+        m_sliceTimingPanel->ShowTiming(event);
+    }
+}
+
 void MainWindow::handleProcessStarted(const QString& command) {
     setBusy(true);
     status_label_->setText("正在执行：" + current_action_);
     log_panel_->appendCommand(command);
+    m_sliceProgressParser.Reset();
+    if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
+    {
+        m_sliceTimingPanel->Reset(current_action_);
+    }
 }
 
 void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed_ms) {
     log_panel_->appendResult(exit_code, elapsed_ms);
     setBusy(false);
     status_label_->setText(exit_code == 0 ? "通过：" + current_action_ : "失败：" + current_action_);
+    if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
+    {
+        m_sliceTimingPanel->Finish(exit_code == 0, elapsed_ms);
+    }
     if (exit_code != 0) {
         if (current_action_ == "OpenVDB 候选切片" && !pending_package_.isEmpty())
         {
@@ -628,6 +661,10 @@ void MainWindow::handleProcessFailed(const QString& message) {
     log_panel_->appendError(message);
     setBusy(false);
     status_label_->setText("进程错误：" + message);
+    if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
+    {
+        m_sliceTimingPanel->Finish(false, 0);
+    }
 }
 
 QWidget* MainWindow::createProjectPanel() {
@@ -719,6 +756,7 @@ QWidget* MainWindow::createRunPanel() {
     auto* open_button = makeButton("打开输出目录", panel);
     status_label_ = new QLabel("就绪", panel);
     status_label_->setWordWrap(true);
+    m_sliceTimingPanel = new SliceTimingPanel(panel);
     layout->addWidget(build_button_);
     layout->addWidget(m_importSliceButton);
     layout->addWidget(m_importOpenVdbButton);
@@ -730,6 +768,7 @@ QWidget* MainWindow::createRunPanel() {
     layout->addWidget(load_button);
     layout->addWidget(open_button);
     layout->addWidget(status_label_);
+    layout->addWidget(m_sliceTimingPanel);
 
     connect(build_button_, &QPushButton::clicked, this, &MainWindow::buildDebug);
     connect(m_importSliceButton, &QPushButton::clicked, this, &MainWindow::OnImportModelAndSlice);
@@ -816,6 +855,10 @@ SliceSettingsState MainWindow::BuildCurrentSettings(
     if (modelFill == QStringLiteral("varnish"))
     {
         settings.modelfillmaterial = ModelFillMaterial::Varnish;
+    }
+    else if (modelFill == QStringLiteral("rgb"))
+    {
+        settings.modelfillmaterial = ModelFillMaterial::Rgb;
     }
     else if (modelFill == QStringLiteral("white"))
     {
@@ -1189,13 +1232,45 @@ void MainWindow::ApplyProfileDefaultsToDocument(const QString& profileId, const 
     {
         SetValue({"output", "packageDir"}, QDir::fromNativeSeparators(packageDir));
     }
-    SetValue(
-        {"modelFill", "material"},
-        settings.modelfillmaterial == ModelFillMaterial::Varnish ? QStringLiteral("varnish")
-                                                                  : QStringLiteral("white"));
+    QString modelFillMaterial = QStringLiteral("white");
+    if (settings.modelfillmaterial == ModelFillMaterial::Rgb)
+    {
+        modelFillMaterial = QStringLiteral("rgb");
+    }
+    else if (settings.modelfillmaterial == ModelFillMaterial::Varnish)
+    {
+        modelFillMaterial = QStringLiteral("varnish");
+    }
+    SetValue({"modelFill", "material"}, modelFillMaterial);
     SetValue({"modelFill", "enabled"}, true);
+    SetValue({"modelFill", "scope"}, QStringLiteral("below_texture_surface"));
+    SetValue({"modelFill", "value"}, 0);
     SetValue({"modelFill", "emptyAllowedInProduction"}, false);
     SetValue({"modelFill", "legacyRgbFallback"}, false);
+    const bool texturedFillProfile = profileId == QStringLiteral("textured_nail_rgb_white_lower_support")
+        || profileId == QStringLiteral("textured_nail_rgb_varnish_lower_support");
+    if (texturedFillProfile)
+    {
+        const bool whiteFill = settings.modelfillmaterial == ModelFillMaterial::White;
+        SetValue({"texture", "enabled"}, true);
+        SetValue({"texture", "applyMode"}, QStringLiteral("top_surface_band"));
+        SetValue({"texture", "topSurfaceLayers"}, 1);
+        SetValue({"materialPolicy", "enabled"}, false);
+        SetValue({"materialPolicy", "white", "enabled"}, false);
+        SetValue({"materialPolicy", "white", "mode"}, QStringLiteral("disabled"));
+        SetValue({"materialPolicy", "varnish", "enabled"}, false);
+        SetValue({"materialPolicy", "varnish", "mode"}, QStringLiteral("disabled"));
+        SetValue({"materialProcessProfile", "white", "enabled"}, whiteFill);
+        SetValue(
+            {"materialProcessProfile", "white", "mode"},
+            whiteFill ? QStringLiteral("all_model") : QStringLiteral("disabled"));
+        SetValue({"materialProcessProfile", "varnish", "enabled"}, !whiteFill);
+        SetValue(
+            {"materialProcessProfile", "varnish", "mode"},
+            whiteFill ? QStringLiteral("disabled") : QStringLiteral("all_model"));
+        SetValue({"materialProcessProfile", "validation", "requireWhitePixels"}, whiteFill);
+        SetValue({"materialProcessProfile", "validation", "requireVarnishPixels"}, !whiteFill);
+    }
     SetValue({"support", "enabled"}, settings.support.enabled);
     SetValue({"support", "mode"}, QStringLiteral("bottom_projection"));
     SetValue({"support", "placement"}, QStringLiteral("lower"));

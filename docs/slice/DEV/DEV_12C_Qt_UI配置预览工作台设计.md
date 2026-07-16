@@ -493,7 +493,7 @@ R0 使用 fresh build 证明工具链；R1 增加 Profile 和 generated config s
 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 已关闭初始审查中的产品交互开放项：
 
 ```text
-ProfileCatalog 在 ScenarioRegistry 上演进，普通层默认四类稳定 Profile；
+ProfileCatalog 在 ScenarioRegistry 上演进，普通层默认五类稳定 Profile，其中全实体 RGB 无白墨 Profile 是显式兼容模式；
 SliceSettingsModel 必须在运行前生成 session effective config；
 生产模型填充不允许 empty；
 DiagnosticsDock 默认底部折叠，右侧保留图例和像素探针；

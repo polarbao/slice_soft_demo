@@ -13,9 +13,16 @@ namespace
 
 QString ModelFillMaterialValue(const ModelFillMaterial material)
 {
-    return material == ModelFillMaterial::Varnish
-        ? QStringLiteral("varnish")
-        : QStringLiteral("white");
+    switch (material)
+    {
+    case ModelFillMaterial::Rgb:
+        return QStringLiteral("rgb");
+    case ModelFillMaterial::Varnish:
+        return QStringLiteral("varnish");
+    case ModelFillMaterial::White:
+    default:
+        return QStringLiteral("white");
+    }
 }
 
 QString SupportPlacementValue(const SupportPlacement placement)
@@ -166,6 +173,28 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
     root.insert(QStringLiteral("experimental"), experimental);
 }
 
+bool NormalizeModelFillTextureContract(QJsonObject& root)
+{
+    const QJsonObject modelFill = root.value(QStringLiteral("modelFill")).toObject();
+    QJsonObject texture = root.value(QStringLiteral("texture")).toObject();
+    const QString fillMaterial = modelFill.value(QStringLiteral("material")).toString();
+    const bool requiresSeparateFill = fillMaterial != QStringLiteral("rgb");
+    if (!modelFill.value(QStringLiteral("enabled")).toBool(false)
+        || modelFill.value(QStringLiteral("scope")).toString() != QStringLiteral("below_texture_surface")
+        || !requiresSeparateFill
+        || !texture.value(QStringLiteral("enabled")).toBool(false)
+        || texture.value(QStringLiteral("applyMode")).toString()
+            != QStringLiteral("solid_volume_from_top_surface"))
+    {
+        return false;
+    }
+
+    texture.insert(QStringLiteral("applyMode"), QStringLiteral("top_surface_band"));
+    texture.insert(QStringLiteral("topSurfaceLayers"), 1);
+    root.insert(QStringLiteral("texture"), texture);
+    return true;
+}
+
 QString BuildSummary(
     const EffectiveConfigRequest& request,
     const EffectiveConfigResult& result)
@@ -246,6 +275,12 @@ EffectiveConfigResult EffectiveConfigGenerator::Generate(const EffectiveConfigRe
 
     QJsonObject root = request.overridedocument.object();
     ApplySettings(root, request.settings);
+    if (NormalizeModelFillTextureContract(root))
+    {
+        result.warnings.push_back(
+            QStringLiteral(
+                "纹理投影到整个实体会占满模型内部区域；生效配置已改为 1 层顶面纹理带，以保留白墨/光油模型内部填充。原始 Profile 模板未修改。"));
+    }
     result.document = QJsonDocument(root);
 
     const ConfigValidationResult configvalidation = ConfigValidator::validate(root);

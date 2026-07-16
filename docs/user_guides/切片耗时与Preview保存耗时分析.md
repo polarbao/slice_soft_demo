@@ -275,9 +275,23 @@ preview 密度：低 / 中 / 高
 preview 通道：RGB / S / W / V 可选
 ```
 
-### 9.3 工程优化
+### 9.3 工程耗时遥测
 
-建议后续增加内置性能报告：
+当前 `slicer_core` 已按阶段记录耗时，`slicer_cli` 会输出稳定的 `SLICE_PROGRESS` / `SLICE_TIMING` 行，Qt UI 左侧“切片进度与耗时”区域会显示：
+
+```text
+模型加载
+切片处理
+TIFF 保存
+预览保存
+报告处理
+切片保存合计
+总耗时
+```
+
+其中“切片处理”排除 TIFF、preview 和报告写盘，“切片保存合计”汇总输出写盘耗时。Legacy 与 OpenVDB 候选切片均支持该界面遥测。
+
+后续仍建议增加可持久化性能报告：
 
 ```text
 reports/performance_report.json
@@ -321,7 +335,8 @@ UI 打开某层时按需从 TIFF 生成 preview；
 
 ```text
 P0：在 UI 中增加 preview 密度设置，默认低密度；
-P1：增加 performance_report.json，正式记录各阶段耗时；
+已完成：UI/CLI 实时进度与阶段耗时显示；
+P1：增加 performance_report.json，持久记录各阶段耗时；
 P2：实现按需 preview/cache，减少切片阶段阻塞。
 ```
 

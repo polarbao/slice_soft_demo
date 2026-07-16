@@ -2,6 +2,7 @@
 
 > 文档状态：Decision / Stage 12C
 > 日期：2026-07-10
+> 兼容 Profile 补充：2026-07-16
 > 适用阶段：12C-R1 / 12C-R2
 
 ## 1. 决策目的
@@ -10,10 +11,11 @@
 
 ## 2. Profile 默认集
 
-普通用户默认只显示以下四类稳定 Profile：
+普通用户默认显示以下五类稳定 Profile：
 
 ```text
 textured_nail_rgb_white_lower_support：彩色纹理甲片，RGB 表层、白墨模型填充、下表面支撑；
+textured_nail_rgb_only_lower_support：彩色纹理甲片兼容模式，贴图颜色投影到全实体，只写 RGB，不写 W/V，保留下表面支撑；
 textured_nail_rgb_varnish_lower_support：彩色纹理甲片，RGB 表层、光油模型填充、下表面支撑；
 single_material_relief：单材料浮雕，填充材料由设置面板选择；
 production_rgb_inspection：生产 RGB 检查，作为明确标注的调试 Profile。
@@ -36,12 +38,12 @@ Profile template + 当前 UI overrides
 
 ## 4. 模型填充默认语义
 
-生产 Profile 的模型内部填充不得为空。默认使用白墨，也可显式选择光油或后续正式注册的其他模型填充材料。`none/empty` 只允许测试 fixture 使用，并必须标记为非生产安全。
+生产 Profile 的模型内部填充不得为空。默认使用白墨，也可显式选择光油、RGB 或后续正式注册的其他模型填充材料。RGB 兼容 Profile 必须显式声明 `modelFill.material=rgb` 和全实体纹理投影，不得通过错误配置使白墨像素意外归零。`none/empty` 只允许测试 fixture 使用，并必须标记为非生产安全。
 
 模型填充和模型外支撑是不同语义：
 
 ```text
-模型内部填充：W/V/其他正式材料通道；
+模型内部填充：W/V，或显式兼容 Profile 中的 RGB；
 模型外部支撑和内部镂空支撑：S 通道；
 颜色表层：RGB；
 外侧光油壳层：V 通道，默认厚度 0 mm。

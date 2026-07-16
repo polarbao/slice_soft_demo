@@ -113,6 +113,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 
     m_modelFillMaterialCombo = new QComboBox(this);
     m_modelFillMaterialCombo->setObjectName(QStringLiteral("modelFillMaterialCombo"));
+    AddComboOption(m_modelFillMaterialCombo, "全实体 RGB（无白墨）", "rgb");
     AddComboOption(m_modelFillMaterialCombo, "白墨填充", "white");
     AddComboOption(m_modelFillMaterialCombo, "光油填充", "varnish");
     ApplyHelp(m_modelFillMaterialCombo, QStringLiteral("modelFill.material"));
@@ -120,7 +121,8 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 
     m_supportEnabledCheck = new QCheckBox("启用支撑", this);
     m_supportEnabledCheck->setObjectName(QStringLiteral("supportEnabledCheck"));
-    m_whiteEnabledCheck = new QCheckBox("启用白墨", this);
+    m_whiteEnabledCheck = new QCheckBox("叠加白墨底层", this);
+    m_whiteEnabledCheck->setObjectName(QStringLiteral("whitePolicyEnabledCheck"));
     m_varnishEnabledCheck = new QCheckBox("启用顶部光油策略", this);
     m_previewEnabledCheck = new QCheckBox("生成预览", this);
     m_openVdbEnabledCheck = new QCheckBox("启用 OpenVDB 实验管线", this);
@@ -249,8 +251,15 @@ void QuickConfigPanel::LoadFromDocument()
     SetComboValue(m_supportPlacementCombo, StringValue({"support", "placement"}, "lower"));
     m_internalVoidEnabledCheck->setChecked(BoolValue({"support", "internalVoid", "enabled"}, true));
     m_internalVoidMinAreaSpin->setValue(IntValue({"support", "internalVoid", "minAreaPx"}, 16));
-    m_whiteEnabledCheck->setChecked(BoolValue({"materialPolicy", "white", "enabled"}, false));
-    m_varnishEnabledCheck->setChecked(BoolValue({"materialPolicy", "varnish", "enabled"}, false));
+    const bool materialPolicyEnabled = BoolValue({"materialPolicy", "enabled"}, false);
+    const bool whitePolicyEnabled = materialPolicyEnabled
+        && BoolValue({"materialPolicy", "white", "enabled"}, false)
+        && StringValue({"materialPolicy", "white", "mode"}, "disabled") != QStringLiteral("disabled");
+    const bool varnishPolicyEnabled = materialPolicyEnabled
+        && BoolValue({"materialPolicy", "varnish", "enabled"}, false)
+        && StringValue({"materialPolicy", "varnish", "mode"}, "disabled") != QStringLiteral("disabled");
+    m_whiteEnabledCheck->setChecked(whitePolicyEnabled);
+    m_varnishEnabledCheck->setChecked(varnishPolicyEnabled);
     m_varnishTopLayersSpin->setValue(IntValue({"materialPolicy", "varnish", "topLayers"}, 0));
     m_surfaceVarnishEnabledCheck->setChecked(BoolValue({"surfaceVarnish", "enabled"}, false));
     m_surfaceVarnishThicknessSpin->setValue(IntValue({"surfaceVarnish", "thicknessPx"}, 0));
@@ -346,7 +355,9 @@ void QuickConfigPanel::OnModelFillMaterialChanged(const int index)
         return;
     }
     const QString value = ComboValue(m_modelFillMaterialCombo, index);
-    if (value != QStringLiteral("white") && value != QStringLiteral("varnish"))
+    if (value != QStringLiteral("rgb")
+        && value != QStringLiteral("white")
+        && value != QStringLiteral("varnish"))
     {
         return;
     }
@@ -425,8 +436,22 @@ void QuickConfigPanel::OnWhiteEnabledChanged(const bool checked)
 {
     if (!m_loading)
     {
+        if (checked)
+        {
+            SetValueIfChanged({"materialPolicy", "enabled"}, true);
+        }
         SetValueIfChanged({"materialPolicy", "white", "enabled"}, checked);
+        SetValueIfChanged(
+            {"materialPolicy", "white", "mode"},
+            checked ? QStringLiteral("all_model") : QStringLiteral("disabled"));
+        SetValueIfChanged({"materialPolicy", "white", "value"}, 0);
         SetValueIfChanged({"materialProcessProfile", "white", "enabled"}, checked);
+        SetValueIfChanged(
+            {"materialProcessProfile", "white", "mode"},
+            checked ? QStringLiteral("all_model") : QStringLiteral("disabled"));
+        SetValueIfChanged({"materialProcessProfile", "white", "coverage"}, QStringLiteral("all_model"));
+        SetValueIfChanged({"materialProcessProfile", "white", "value"}, 0);
+        SetValueIfChanged({"materialProcessProfile", "validation", "requireWhitePixels"}, checked);
     }
 }
 
@@ -434,8 +459,21 @@ void QuickConfigPanel::OnVarnishEnabledChanged(const bool checked)
 {
     if (!m_loading)
     {
+        if (checked)
+        {
+            SetValueIfChanged({"materialPolicy", "enabled"}, true);
+        }
         SetValueIfChanged({"materialPolicy", "varnish", "enabled"}, checked);
+        SetValueIfChanged(
+            {"materialPolicy", "varnish", "mode"},
+            checked ? QStringLiteral("top_n_layers") : QStringLiteral("disabled"));
+        SetValueIfChanged({"materialPolicy", "varnish", "value"}, 0);
         SetValueIfChanged({"materialProcessProfile", "varnish", "enabled"}, checked);
+        SetValueIfChanged(
+            {"materialProcessProfile", "varnish", "mode"},
+            checked ? QStringLiteral("top_n_layers") : QStringLiteral("disabled"));
+        SetValueIfChanged({"materialProcessProfile", "varnish", "value"}, 0);
+        SetValueIfChanged({"materialProcessProfile", "validation", "requireVarnishPixels"}, checked);
     }
 }
 

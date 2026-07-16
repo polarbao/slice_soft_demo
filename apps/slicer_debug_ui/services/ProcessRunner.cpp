@@ -18,6 +18,16 @@ ProcessRunner::ProcessRunner(QObject* parent) : QObject(parent) {
     connect(&process_, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
             [this](int exit_code, QProcess::ExitStatus status) {
                 Q_UNUSED(status);
+                const QByteArray standardOutput = process_.readAllStandardOutput();
+                if (!standardOutput.isEmpty())
+                {
+                    emit output(QString::fromLocal8Bit(standardOutput));
+                }
+                const QByteArray standardError = process_.readAllStandardError();
+                if (!standardError.isEmpty())
+                {
+                    emit errorOutput(QString::fromLocal8Bit(standardError));
+                }
                 emit finished(exit_code, timer_.isValid() ? timer_.elapsed() : 0);
             });
 }

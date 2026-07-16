@@ -1,32 +1,12 @@
 #pragma once
 
+#include "slicer_core/SliceRunTelemetry.h"
 #include "slicer_core/config.h"
 
 #include <filesystem>
 #include <string>
 
 namespace slicer_core {
-
-/**
- * @brief Coarse timing profile for one slicer run.
- *
- * The profile is diagnostic-only. It is not part of the RGBWSV package protocol and must not drive
- * material or support decisions.
- */
-struct SliceRunProfile {
-    bool available{false};
-    std::string profile_level{"none"};
-    double config_load_ms{0.0};
-    double model_load_ms{0.0};
-    double grid_setup_ms{0.0};
-    double mask_sampling_ms{0.0};
-    double texture_prepare_ms{0.0};
-    double support_generation_ms{0.0};
-    double layer_compose_ms{0.0};
-    double report_build_ms{0.0};
-    double report_write_ms{0.0};
-    double total_ms{0.0};
-};
 
 /**
  * @brief Summary returned by the production legacy slicer path.
@@ -48,6 +28,7 @@ struct SliceRunOptions {
     bool write_tiff_layers{true};
     bool write_preview_files{true};
     bool write_reports{true};
+    SliceRunProgressCallback progress_callback;
 };
 
 /**

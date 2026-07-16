@@ -249,6 +249,34 @@ UI 预览已按切片坐标显示，避免 Qt 图像坐标导致上下颠倒。
 }
 ```
 
+### 4.4 模型内部填充与纹理的互斥边界
+
+`modelFill` 用于填充颜色表层之间的模型实体区域。选择白墨时写 W 通道，选择光油时写 V 通道：
+
+```json
+"modelFill": {
+  "enabled": true,
+  "material": "white",
+  "scope": "below_texture_surface",
+  "value": 0,
+  "emptyAllowedInProduction": false
+}
+```
+
+生产彩色甲片应配合：
+
+```json
+"texture": {
+  "enabled": true,
+  "applyMode": "top_surface_band",
+  "topSurfaceLayers": 1
+}
+```
+
+不允许把 `below_texture_surface` 与 `solid_volume_from_top_surface` 组合使用。后者把每一层模型像素都标记为纹理区域，模型内部填充因没有剩余区域而得到 `modelFillPixels=0`、`whitePrintPixels=0`。Qt 一键切片会在生成会话生效配置时把该冲突组合纠正为 1 层 `top_surface_band`，CLI 配置仍应显式写对。
+
+UI 中的“叠加白墨底层”属于 `materialPolicy.white`，它不是 `modelFill.material=white` 的替代项。前者是可选的全模型白墨叠加策略，后者才是颜色层之间的模型内部填充。
+
 ---
 
 ## 5. 多材料选择与材料角色映射

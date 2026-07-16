@@ -10,6 +10,7 @@
 #include "../widgets/QuickConfigPanel.h"
 #include "../widgets/ReportPanel.h"
 #include "../widgets/SettingHelpPanel.h"
+#include "../widgets/SliceTimingPanel.h"
 #include "../widgets/PreviewWorkspace.h"
 #include "ConfigDocument.h"
 #include "EffectiveConfigGenerator.h"
@@ -19,6 +20,7 @@
 #include "ReportLoader.h"
 #include "ScenarioRegistry.h"
 #include "SliceSettingsModel.h"
+#include "SliceProgressProtocolParser.h"
 #include "ToolPaths.h"
 
 #include <QComboBox>
@@ -316,6 +318,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
+    }
+    if (options.case_name == "slice-progress-timing")
+    {
+        return SliceProgressTiming(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -633,6 +639,7 @@ int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
     QStringList expectedNormalIds{
         "production_rgb_inspection",
         "single_material_relief",
+        "textured_nail_rgb_only_lower_support",
         "textured_nail_rgb_varnish_lower_support",
         "textured_nail_rgb_white_lower_support",
     };
@@ -682,6 +689,7 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
         int previewinterval;
     };
     const QVector<ProfileExpectation> expectations{
+        {QStringLiteral("textured_nail_rgb_only_lower_support"), ModelFillMaterial::Rgb, 10},
         {QStringLiteral("textured_nail_rgb_white_lower_support"), ModelFillMaterial::White, 10},
         {QStringLiteral("textured_nail_rgb_varnish_lower_support"), ModelFillMaterial::Varnish, 10},
         {QStringLiteral("single_material_relief"), ModelFillMaterial::White, 10},
@@ -749,7 +757,7 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
         return fail("slice-settings-model 非法设置未被阻断。");
     }
 
-    return pass("slice-settings-model profiles=4 legacy-default=true openvdb=candidate-only");
+    return pass("slice-settings-model profiles=5 legacy-default=true openvdb=candidate-only");
 }
 
 int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options)
@@ -811,10 +819,38 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         }
     }
 
+    QTemporaryDir configTempDir;
+    if (!configTempDir.isValid())
+    {
+        return fail(QStringLiteral("setting-help-metadata 无法创建配置测试目录。"));
+    }
+    const QString configPath = configTempDir.filePath(QStringLiteral("quick-config.json"));
+    const QJsonObject quickConfigFixture{
+        {QStringLiteral("input"), QJsonObject{{QStringLiteral("modelPath"), QStringLiteral("fixture.obj")}}},
+        {QStringLiteral("output"), QJsonObject{{QStringLiteral("packageDir"), QStringLiteral("fixture-package")}}},
+        {QStringLiteral("materialPolicy"),
+         QJsonObject{
+             {QStringLiteral("enabled"), false},
+             {QStringLiteral("white"),
+              QJsonObject{
+                  {QStringLiteral("enabled"), false},
+                  {QStringLiteral("mode"), QStringLiteral("disabled")}}}}},
+        {QStringLiteral("materialProcessProfile"), QJsonObject{}},
+    };
+    if (!WriteJsonFixture(configPath, quickConfigFixture))
+    {
+        return fail(QStringLiteral("setting-help-metadata 无法写入配置测试夹具。"));
+    }
+
     ConfigDocument document;
+    if (!document.load(configPath))
+    {
+        return fail(QStringLiteral("setting-help-metadata 无法加载配置测试夹具。"));
+    }
     QuickConfigPanel quickPanel(&document);
     const QVector<QPair<QString, QString>> tooltipBindings{
         {QStringLiteral("modelFillMaterialCombo"), QStringLiteral("modelFill.material")},
+        {QStringLiteral("whitePolicyEnabledCheck"), QStringLiteral("materialPolicy.white.enabled")},
         {QStringLiteral("supportEnabledCheck"), QStringLiteral("support.enabled")},
         {QStringLiteral("supportPlacementCombo"), QStringLiteral("support.placement")},
         {QStringLiteral("surfaceVarnishEnabledCheck"), QStringLiteral("surfaceVarnish.enabled")},
@@ -829,6 +865,33 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         {
             return fail(QStringLiteral("setting-help-metadata tooltip 未复用集中元数据：") + binding.first);
         }
+    }
+
+    QCheckBox* whitePolicyCheck = quickPanel.findChild<QCheckBox*>(
+        QStringLiteral("whitePolicyEnabledCheck"));
+    if (whitePolicyCheck == nullptr)
+    {
+        return fail(QStringLiteral("setting-help-metadata 未找到白墨叠加策略控件。"));
+    }
+    whitePolicyCheck->setChecked(true);
+    if (!document.value({QStringLiteral("materialPolicy"), QStringLiteral("enabled")}).toBool()
+        || !document.value(
+                {QStringLiteral("materialPolicy"), QStringLiteral("white"), QStringLiteral("enabled")})
+                .toBool()
+        || document.value(
+               {QStringLiteral("materialPolicy"), QStringLiteral("white"), QStringLiteral("mode")})
+               .toString()
+            != QStringLiteral("all_model")
+        || document.value(
+               {QStringLiteral("materialProcessProfile"), QStringLiteral("white"), QStringLiteral("mode")})
+               .toString()
+            != QStringLiteral("all_model")
+        || !document.value(
+                {QStringLiteral("materialProcessProfile"), QStringLiteral("validation"),
+                 QStringLiteral("requireWhitePixels")})
+                .toBool())
+    {
+        return fail(QStringLiteral("setting-help-metadata 白墨叠加开关未写入完整材料策略。"));
     }
 
     const SettingHelpMetadata* openVdb = HelpTextProvider::Find(
@@ -1486,7 +1549,11 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
                      {"conflictPolicy", "varnish_shell_wins"},
                      {"value", 0}}},
         {"preview", QJsonObject{{"enabled", true}, {"interval", 10}}},
-        {"texture", QJsonObject{{"nonSurfaceRgbPolicy", "model_material"}}},
+        {"texture",
+         QJsonObject{{"enabled", true},
+                     {"applyMode", "solid_volume_from_top_surface"},
+                     {"topSurfaceLayers", 8},
+                     {"nonSurfaceRgbPolicy", "model_material"}}},
     };
 
     const QString templatepath = tempdir.filePath("profile.template.json");
@@ -1552,6 +1619,7 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     const QJsonObject generated = result.document.object();
     const QJsonObject output = generated.value("output").toObject();
     const QJsonObject support = generated.value("support").toObject();
+    const QJsonObject texture = generated.value("texture").toObject();
     const QJsonObject openvdb = generated.value("experimental").toObject().value("openvdbPipeline").toObject();
     if (generated.value("input").toObject().value("modelPath").toString() != settings.modelpath
         || output.value("packageDir").toString() != settings.outputdirectory
@@ -1567,11 +1635,17 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
         || !generated.value("outerVarnish").toObject().value("enabled").toBool()
         || generated.value("outerVarnish").toObject().value("thicknessMm").toDouble() != 0.05
         || generated.value("preview").toObject().value("interval").toInt() != 3
-        || generated.value("texture").toObject().value("nonSurfaceRgbPolicy").toString() != "empty"
+        || texture.value("applyMode").toString() != "top_surface_band"
+        || texture.value("topSurfaceLayers").toInt() != 1
+        || texture.value("nonSurfaceRgbPolicy").toString() != "empty"
         || openvdb.value("enabled").toBool(true)
         || openvdb.value("writeProductionRgbwsv").toBool(true))
     {
         return fail("generated-effective-config 未完整合成 Profile、dirty UI override 或安全边界。");
+    }
+    if (!result.warnings.join(QStringLiteral(" ")).contains(QStringLiteral("模型内部填充")))
+    {
+        return fail("generated-effective-config 未说明实体纹理投影与模型内部填充的自动纠正。");
     }
     if (!result.summary.contains(settings.profileid)
         || result.differences.isEmpty())
@@ -1589,6 +1663,23 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
         || !configpanel.EffectiveConfigText().contains(QStringLiteral("modelFill.material")))
     {
         return fail("generated-effective-config UI 未显示生效摘要和差异。");
+    }
+
+    EffectiveConfigRequest rgbOnlyRequest = request;
+    rgbOnlyRequest.profileid = QStringLiteral("textured_nail_rgb_only_lower_support");
+    rgbOnlyRequest.generatedconfigpath = tempdir.filePath("rgb-only/slice_config.generated.json");
+    rgbOnlyRequest.settings.profileid = rgbOnlyRequest.profileid;
+    rgbOnlyRequest.settings.outputdirectory = tempdir.filePath("rgb-only/package");
+    rgbOnlyRequest.settings.modelfillmaterial = ModelFillMaterial::Rgb;
+    const EffectiveConfigResult rgbOnlyResult = EffectiveConfigGenerator().Generate(rgbOnlyRequest);
+    const QJsonObject rgbOnlyRoot = rgbOnlyResult.document.object();
+    if (!rgbOnlyResult.IsValid()
+        || rgbOnlyRoot.value("modelFill").toObject().value("material").toString() != "rgb"
+        || rgbOnlyRoot.value("texture").toObject().value("applyMode").toString()
+            != "solid_volume_from_top_surface"
+        || rgbOnlyResult.warnings.join(QStringLiteral(" ")).contains(QStringLiteral("已改为 1 层顶面纹理带")))
+    {
+        return fail("generated-effective-config 全实体 RGB Profile 被错误改写为白墨/光油填充或顶面纹理带。");
     }
 
     EffectiveConfigRequest invalidrequest = request;
@@ -1616,6 +1707,58 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
 
     return pass(QString("generated-effective-config differences=%1 template-readonly=true")
                     .arg(result.differences.size()));
+}
+
+int UiSmokeTestRunner::SliceProgressTiming(const UiSmokeTestOptions& options)
+{
+    Q_UNUSED(options);
+    SliceProgressProtocolParser parser;
+    SliceProtocolUpdate update = parser.Append(
+        QStringLiteral("ordinary log\nSLICE_PROGRESS phase=layer_processing current=7 total=20 percent=55 elap"));
+    if (!update.progress.isEmpty() || !update.timings.isEmpty())
+    {
+        return fail(QStringLiteral("切片进度协议不应解析未完成的行。"));
+    }
+
+    update = parser.Append(QStringLiteral(
+        "sedMs=1234.500\n"
+        "SLICE_TIMING engine=legacy profileLevel=detailed configLoadMs=1.000 modelLoadMs=20.000 "
+        "sliceProcessingMs=800.000 layerComputeMs=500.000 tiffWriteMs=200.000 previewWriteMs=100.000 "
+        "reportBuildMs=30.000 reportWriteMs=40.000 packagePublishMs=0.000 outputWriteMs=340.000 totalMs=1191.000\n"));
+    if (update.progress.size() != 1 || update.timings.size() != 1)
+    {
+        return fail(QStringLiteral("切片进度协议事件数量错误。"));
+    }
+    const SliceProgressEvent progress = update.progress.front();
+    const SliceTimingEvent timing = update.timings.front();
+    if (progress.phase != QStringLiteral("layer_processing")
+        || progress.current != 7
+        || progress.total != 20
+        || progress.percent != 55)
+    {
+        return fail(QStringLiteral("切片进度字段解析错误。"));
+    }
+    if (timing.engine != QStringLiteral("legacy")
+        || qAbs(timing.sliceprocessingms - 800.0) > 0.001
+        || qAbs(timing.outputwritems - 340.0) > 0.001
+        || qAbs(timing.totalms - 1191.0) > 0.001)
+    {
+        return fail(QStringLiteral("切片耗时字段解析错误。"));
+    }
+
+    SliceTimingPanel panel;
+    panel.Reset(QStringLiteral("运行切片"));
+    panel.UpdateProgress(progress);
+    panel.ShowTiming(timing);
+    panel.Finish(true, 1250);
+    const QString summary = panel.SummaryText();
+    if (!summary.contains(QStringLiteral("传统切片引擎"))
+        || !summary.contains(QStringLiteral("800.0 ms"))
+        || !summary.contains(QStringLiteral("340.0 ms")))
+    {
+        return fail(QStringLiteral("切片耗时面板未显示解析后的数据：") + summary);
+    }
+    return pass(QStringLiteral("切片进度协议与耗时面板通过。"));
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {

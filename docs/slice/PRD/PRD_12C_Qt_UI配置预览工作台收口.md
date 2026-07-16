@@ -47,6 +47,7 @@
 
 ```text
 彩色纹理甲片 - RGB + 白墨填充 + 下表面支撑
+彩色纹理甲片 - 全实体 RGB + 下表面支撑（无白墨，兼容模式）
 彩色纹理甲片 - RGB + 光油填充 + 下表面支撑
 单材料浮雕 - 白墨/光油
 调试 - 生产 RGB 检查
@@ -207,7 +208,7 @@ OpenVDB 相关按钮和选项必须明确：
 以下默认行为以 `DOC_DECISION_12C_UI产品默认值与交互冻结.md` 为准：
 
 ```text
-普通用户默认显示四类稳定 Profile；
+普通用户默认显示五类稳定 Profile；
 运行切片时自动生成 session effective config，不覆盖原始 template/fixture；
 生产 Profile 的模型内部填充不得为空，默认白墨；
 DiagnosticsDock 默认位于底部并折叠；

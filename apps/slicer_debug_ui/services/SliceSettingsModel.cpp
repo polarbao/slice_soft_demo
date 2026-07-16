@@ -46,6 +46,10 @@ bool SliceSettingsModel::ApplyProfileDefaults(const QString& profileId)
     {
         state.modelfillmaterial = ModelFillMaterial::White;
     }
+    else if (profileId == QStringLiteral("textured_nail_rgb_only_lower_support"))
+    {
+        state.modelfillmaterial = ModelFillMaterial::Rgb;
+    }
     else if (profileId == QStringLiteral("textured_nail_rgb_varnish_lower_support"))
     {
         state.modelfillmaterial = ModelFillMaterial::Varnish;

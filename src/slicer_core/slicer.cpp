@@ -37,6 +37,38 @@ double ElapsedMsSince(const SlicerClock::time_point& start)
     return std::chrono::duration<double, std::milli>(SlicerClock::now() - start).count();
 }
 
+void NotifyProgress(
+    const SliceRunOptions& options,
+    const SlicerClock::time_point& runStart,
+    const std::string& phase,
+    const int current,
+    const int total,
+    const int percent)
+{
+    if (!options.progress_callback)
+    {
+        return;
+    }
+
+    options.progress_callback(SliceRunProgress{
+        phase,
+        current,
+        total,
+        std::clamp(percent, 0, 100),
+        ElapsedMsSince(runStart)});
+}
+
+bool ShouldNotifyLayerProgress(const int completedLayers, const int layerCount)
+{
+    if (completedLayers <= 1 || completedLayers >= layerCount)
+    {
+        return true;
+    }
+
+    const int interval = std::max(1, (layerCount + 99) / 100);
+    return completedLayers % interval == 0;
+}
+
 struct GridSpec {
     int width_px{0};
     int height_px{0};
@@ -3806,8 +3838,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const auto run_start = SlicerClock::now();
     auto phase_start = run_start;
 
+    NotifyProgress(options, run_start, "config_load", 0, 1, 0);
     const SliceConfig config = load_slice_config(config_path);
     profile.config_load_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "model_load", 0, 1, 3);
     phase_start = SlicerClock::now();
 
     EnsureLegacyPipelineAcceptsConfig(config);
@@ -3815,6 +3849,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report = load_model_report(config, config_dir);
     profile.model_load_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "grid_setup", 0, 1, 10);
     phase_start = SlicerClock::now();
 
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
@@ -3842,6 +3877,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     tiff_spec.storage_mode =
         config.output.storage_mode == "tiled" ? TiffStorageMode::Tiled : TiffStorageMode::Stripped;
     profile.grid_setup_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "mask_sampling", 0, 1, 12);
     phase_start = SlicerClock::now();
 
     std::vector<LayerDiagnostics> layer_diagnostics;
@@ -3862,6 +3898,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         ? compute_relief_lower_layers(relief_columns)
         : compute_first_model_layers(model_masks, grid);
     profile.mask_sampling_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "texture_prepare", 0, 1, 28);
     phase_start = SlicerClock::now();
 
     TextureRuntime texture_runtime = prepare_texture_runtime(config, model_report);
@@ -3899,6 +3936,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             config.texture.enabled ? &texture_columns : nullptr);
     }
     profile.texture_prepare_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "support_generation", 0, 1, 32);
     phase_start = SlicerClock::now();
 
     const std::vector<ColumnLayerRange> column_ranges = config.slicing_mode == "relief_heightfield"
@@ -3960,6 +3998,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
     }
     profile.support_generation_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "layer_processing", 0, grid.layer_count, 36);
     phase_start = SlicerClock::now();
 
     int total_model_pixels{0};
@@ -3977,6 +4016,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     MaterialPolicyReportData material_policy_report;
     material_policy_report.enabled = config.material_policy.enabled;
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
+        const auto layerComputeStart = SlicerClock::now();
         int layer_model_pixels{0};
         int layer_support_pixels{0};
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
@@ -4009,11 +4049,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         total_varnish_non_zero_pixels += diagnostics.varnish_non_zero_pixels;
         merge_channel_stats(total_channel_stats, diagnostics);
         merge_semantic_stats(total_semantic_stats, diagnostics.semantic);
+        profile.layer_compute_ms += ElapsedMsSince(layerComputeStart);
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
+            const auto tiffWriteStart = SlicerClock::now();
             write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
+            profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
         }
         if (options.write_preview_files && should_write_preview(config.preview, layer_index, grid.layer_count)) {
+            const auto previewWriteStart = SlicerClock::now();
             const std::vector<std::uint8_t> texture_preview_mask = build_texture_preview_mask(
                 config,
                 grid,
@@ -4029,7 +4073,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 layer,
                 config.texture.enabled ? &texture_preview_mask : nullptr);
             preview_files.insert(preview_files.end(), written.begin(), written.end());
+            profile.preview_write_ms += ElapsedMsSince(previewWriteStart);
         }
+        const auto layerMetadataStart = SlicerClock::now();
         layers.push_back(Json::object({
             {"index", layer_index},
             {"zMm", diagnostics.z_mm},
@@ -4049,8 +4095,22 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         }));
         slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
         contour_layers.push_back(layer_diagnostics_to_json(diagnostics));
+        profile.layer_compute_ms += ElapsedMsSince(layerMetadataStart);
+        const int completedLayers = layer_index + 1;
+        if (ShouldNotifyLayerProgress(completedLayers, grid.layer_count))
+        {
+            const int percent = 36 + (completedLayers * 56 / std::max(1, grid.layer_count));
+            NotifyProgress(
+                options,
+                run_start,
+                "layer_processing",
+                completedLayers,
+                grid.layer_count,
+                percent);
+        }
     }
     profile.layer_compose_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "report_build", 0, 1, 92);
     phase_start = SlicerClock::now();
 
     model_report.three_mf.texture_sampled_pixels = texture_runtime.report.sampled_pixels;
@@ -4464,6 +4524,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"preview", Json::object({{"format", config.preview.format}, {"files", Json{preview_files}}})},
     });
     profile.report_build_ms = ElapsedMsSince(phase_start);
+    NotifyProgress(options, run_start, "report_write", 0, 1, 95);
     phase_start = SlicerClock::now();
 
     if (options.write_reports) {
@@ -4497,7 +4558,19 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         write_json_file(package_dir / "manifest.json", manifest);
     }
     profile.report_write_ms = ElapsedMsSince(phase_start);
+    profile.slice_processing_ms =
+        profile.grid_setup_ms
+        + profile.mask_sampling_ms
+        + profile.texture_prepare_ms
+        + profile.support_generation_ms
+        + profile.layer_compute_ms;
+    profile.output_write_ms =
+        profile.tiff_write_ms
+        + profile.preview_write_ms
+        + profile.report_write_ms
+        + profile.package_publish_ms;
     profile.total_ms = ElapsedMsSince(run_start);
+    NotifyProgress(options, run_start, "completed", 1, 1, 100);
 
     return {
         package_dir,

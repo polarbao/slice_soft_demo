@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/SliceRunTelemetry.h"
+
 #include <filesystem>
 
 namespace slicer_core
@@ -18,6 +20,7 @@ struct OpenVdbCandidatePipelineResult
     int support_pixels{0};
     int shell_pixels{0};
     bool non_production{false};
+    SliceRunProfile profile;
 };
 
 /**
@@ -29,6 +32,7 @@ struct OpenVdbCandidatePipelineOptions
     bool write_preview_files{true};
     bool write_reports{true};
     bool publish_package{true};
+    SliceRunProgressCallback progress_callback;
 };
 
 /**

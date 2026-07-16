@@ -11,7 +11,9 @@
 #include <chrono>
 #include <exception>
 #include <filesystem>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -250,14 +252,61 @@ slicer_core::Json SliceRunProfileToJson(const slicer_core::SliceRunProfile& prof
     json["maskSamplingMs"] = profile.mask_sampling_ms;
     json["texturePrepareMs"] = profile.texture_prepare_ms;
     json["supportGenerationMs"] = profile.support_generation_ms;
+    json["layerComputeMs"] = profile.layer_compute_ms;
+    json["tiffWriteMs"] = profile.tiff_write_ms;
+    json["previewWriteMs"] = profile.preview_write_ms;
     json["layerComposeMs"] = profile.layer_compose_ms;
     json["reportBuildMs"] = profile.report_build_ms;
     json["reportWriteMs"] = profile.report_write_ms;
+    json["packagePublishMs"] = profile.package_publish_ms;
+    json["sliceProcessingMs"] = profile.slice_processing_ms;
+    json["outputWriteMs"] = profile.output_write_ms;
     json["totalMs"] = profile.total_ms;
     json["notes"] = StringsToJsonArray(std::vector<std::string>{
         "Diagnostic-only coarse profile; not part of the RGBWSV production package protocol.",
         "Core-only benchmark disables TIFF, preview, reports, and package publishing, but report JSON objects may still be built in memory."});
     return slicer_core::Json{json};
+}
+
+std::string FormatMilliseconds(const double value)
+{
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(3) << value;
+    return stream.str();
+}
+
+void PrintSliceProgress(const slicer_core::SliceRunProgress& progress)
+{
+    std::cout
+        << "SLICE_PROGRESS"
+        << " phase=" << progress.phase
+        << " current=" << progress.current
+        << " total=" << progress.total
+        << " percent=" << progress.percent
+        << " elapsedMs=" << FormatMilliseconds(progress.elapsed_ms)
+        << '\n';
+    std::cout.flush();
+}
+
+void PrintSliceTiming(const std::string& engine, const slicer_core::SliceRunProfile& profile)
+{
+    std::cout
+        << "SLICE_TIMING"
+        << " engine=" << engine
+        << " profileLevel=" << profile.profile_level
+        << " configLoadMs=" << FormatMilliseconds(profile.config_load_ms)
+        << " modelLoadMs=" << FormatMilliseconds(profile.model_load_ms)
+        << " sliceProcessingMs=" << FormatMilliseconds(profile.slice_processing_ms)
+        << " layerComputeMs=" << FormatMilliseconds(profile.layer_compute_ms)
+        << " tiffWriteMs=" << FormatMilliseconds(profile.tiff_write_ms)
+        << " previewWriteMs=" << FormatMilliseconds(profile.preview_write_ms)
+        << " reportBuildMs=" << FormatMilliseconds(profile.report_build_ms)
+        << " reportWriteMs=" << FormatMilliseconds(profile.report_write_ms)
+        << " packagePublishMs=" << FormatMilliseconds(profile.package_publish_ms)
+        << " outputWriteMs=" << FormatMilliseconds(profile.output_write_ms)
+        << " totalMs=" << FormatMilliseconds(profile.total_ms)
+        << '\n';
+    std::cout.flush();
 }
 
 slicer_core::Json DiagnosticSummaryToJson(
@@ -566,8 +615,10 @@ int RunOpenVdbCandidateSlice(const CliOptions& options)
             "--openvdb-candidate-slice cannot be combined with --experimental-openvdb-shell");
     }
 
+    slicer_core::OpenVdbCandidatePipelineOptions pipelineOptions;
+    pipelineOptions.progress_callback = PrintSliceProgress;
     const slicer_core::OpenVdbCandidatePipelineResult result =
-        slicer_core::RunOpenVdbCandidatePipeline(options.config_path);
+        slicer_core::RunOpenVdbCandidatePipeline(options.config_path, pipelineOptions);
     std::cout << "slicer_cli: generated "
               << (result.non_production ? "non-production " : "")
               << "OpenVDB candidate package\n";
@@ -578,6 +629,7 @@ int RunOpenVdbCandidateSlice(const CliOptions& options)
     std::cout << "  supportPixels: " << result.support_pixels << '\n';
     std::cout << "  shellPixels: " << result.shell_pixels << '\n';
     std::cout << "  nonProduction: " << (result.non_production ? "true" : "false") << '\n';
+    PrintSliceTiming("openvdb-candidate", result.profile);
     return 0;
 }
 
@@ -612,6 +664,7 @@ int main(int argc, char** argv)
 
         slicer_core::SliceRunOptions run_options;
         run_options.write_tiff_layers = !options.preview_only;
+        run_options.progress_callback = PrintSliceProgress;
         const slicer_core::SliceRunResult result = slicer_core::run_slicer(options.config_path, run_options);
         std::cout << "slicer_cli: generated package\n";
         if (options.preview_only)
@@ -623,6 +676,7 @@ int main(int argc, char** argv)
                   << '\n';
         std::cout << "  modelPixels: " << result.model_pixel_count << '\n';
         std::cout << "  supportPixels: " << result.support_pixel_count << '\n';
+        PrintSliceTiming("legacy", result.profile);
         return 0;
     }
     catch (const std::exception& error)

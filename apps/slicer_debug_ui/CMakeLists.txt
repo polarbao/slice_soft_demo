@@ -24,6 +24,8 @@ add_executable(slicer_debug_ui
     services/ScenarioRegistry.h
     services/SliceSettingsModel.cpp
     services/SliceSettingsModel.h
+    services/SliceProgressProtocolParser.cpp
+    services/SliceProgressProtocolParser.h
     services/ToolPaths.cpp
     services/ToolPaths.h
     services/LayerPreviewDataProvider.cpp
@@ -62,6 +64,8 @@ add_executable(slicer_debug_ui
     widgets/QuickConfigPanel.h
     widgets/SettingHelpPanel.cpp
     widgets/SettingHelpPanel.h
+    widgets/SliceTimingPanel.cpp
+    widgets/SliceTimingPanel.h
     widgets/ReportPanel.cpp
     widgets/ReportPanel.h
     widgets/SupportEditor.cpp

@@ -6,6 +6,7 @@
 #include "services/ProcessRunner.h"
 #include "services/ReportLoader.h"
 #include "services/ScenarioRegistry.h"
+#include "services/SliceProgressProtocolParser.h"
 #include "services/ToolPaths.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
@@ -14,6 +15,7 @@
 #include "widgets/MaterialProcessPanel.h"
 #include "widgets/PreviewWorkspace.h"
 #include "widgets/ReportPanel.h"
+#include "widgets/SliceTimingPanel.h"
 
 #include <QLabel>
 #include <QLineEdit>
@@ -48,6 +50,7 @@ private slots:
     void OnScenarioChanged(int index);
     void OnReloadScenarios();
     void OnScenarioVisibilityChanged(bool checked);
+    void OnProcessOutput(const QString& text);
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -87,6 +90,7 @@ private:
     PackageLoader package_loader_;
     ReportLoader report_loader_;
     ScenarioRegistry m_scenarioRegistry;
+    SliceProgressProtocolParser m_sliceProgressParser;
     ProcessRunner runner_;
     QString current_action_;
     QString pending_package_;
@@ -116,6 +120,7 @@ private:
     QPushButton* m_importSliceButton{nullptr};
     QPushButton* m_importOpenVdbButton{nullptr};
     QPushButton* m_importOpenVdbCandidateButton{nullptr};
+    SliceTimingPanel* m_sliceTimingPanel{nullptr};
 
     PreviewWorkspace* m_previewWorkspace{nullptr};
     DiagnosticsDock* m_diagnosticsDock{nullptr};
