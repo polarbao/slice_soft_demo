@@ -1,7 +1,7 @@
 {
   "slicingMode": "relief_heightfield",
   "input": {
-    "modelPath": "../../../model/obj/MF_aishen_damuzhi_L_tx02.obj",
+    "modelPath": "../../../model/obj/aishen_fudiao/MF_aishen_damuzhi_L_tx02.obj",
     "format": "auto"
   },
   "output": {

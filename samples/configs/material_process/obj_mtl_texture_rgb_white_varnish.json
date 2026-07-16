@@ -19,7 +19,7 @@
     },
     "input": {
         "format": "auto",
-        "modelPath": "E:/项目资料/自研打印机测试数据/print/model/0420_print/meigui/04.obj"
+        "modelPath": "../../../model/obj/meigui_fudiao/04.obj"
     },
     "materialPolicy": {
         "white": {
@@ -118,7 +118,7 @@
         "dpiX": 600,
         "dpiY": 600,
         "layerThicknessMm": 0.028,
-        "packageDir": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/output/ui_sessions/04_textured_nail_rgb_white_lower_support_legacy_20260715_183340_499/package",
+        "packageDir": "output/ProfileTexturedNailRgbWhiteLowerSupport",
         "planarConfig": "contiguous",
         "rowsPerStrip": 64,
         "storageMode": "stripped"
