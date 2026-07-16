@@ -42,6 +42,17 @@ docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md
 
 `current` 目录中的 11、11A、11B、12A、12B 和 12C 文件继续保留，用于追溯或并行专项；当前唯一执行入口为 12D。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
 
+## 已规划但未激活的 12E
+
+用户于 2026-07-16 要求补充 12A 中 Texture Surface Layer 与 Model Fill Layer 的匹配组合，已建立 12E 文档和任务计划：
+
+```text
+docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
+```
+
+12E 当前状态为 `PLANNED / NOT ACTIVE`。12E-00 只完成文档准入；任何 C++、Qt、CMake、config 或 production output 修改都必须由用户明确指定一个 12E 原子任务后再开始。当前唯一代码执行入口仍是 12D-04。
+
 ## 使用规则
 
 ```text

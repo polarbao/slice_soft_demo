@@ -1,9 +1,9 @@
 # DEV_12A_彩色纹理材料填充支撑光油策略设计
 
-> 文档版本：v0.3
+> 文档版本：v0.4
 > 文档状态：DEV / Stage 12A
 > 生成日期：2026-07-05
-> 更新日期：2026-07-06
+> 更新日期：2026-07-16
 > 前置文档：PRD_12A_彩色纹理材料填充支撑光油策略.md
 
 ---
@@ -416,4 +416,37 @@ cmake --build build --config Debug --target slicer_cli rip_reader_test
 5. 检查外侧光油厚度 mm/px 换算；
 6. 检查上表面支撑是否位于外侧光油壳层之外；
 7. 检查真实 RIP 横截面材料栈是否能被 report/preview 解释。
+```
+
+---
+
+## 12. 后续阶段 12E 技术补充
+
+12A 的 pipeline 设计已经提出：
+
+```text
+model fill mask = model mask - texture surface mask
+```
+
+但当前 production 实现中的 `ShouldApplyTextureToLayer` 仍以 column/layer 为主要判断，`TextureConfig` 也没有正式的三维宽度字段。因此，以下工作转入 12E，不能从本文件推断为已实现：
+
+```text
+1. 完整 3D ModelOccupancyMask/TextureSurfaceMask/ModelFillMask；
+2. 基于到 all_closed_surfaces 三维距离的 global_surface_shell；
+3. base minimum 0.10 mm、0.01 mm UI 步长和 resolution-aware effective minimum；
+4. 按模型 maxInteriorDistance 动态计算 allTextureThreshold；
+5. width sweep 单调性、overlap=0、unassigned=0 和 allTexture fill=0；
+6. closest 3D surface texture transfer；
+7. Qt 动态范围、coverage 和 allTexture 状态；
+8. 与 12D semantic_masks exact closure 的联动。
+```
+
+12E 必须建立 engine-neutral service。现有 OpenVDB SDF/shell 只作为 optional conformance/utility candidate；默认 `USE_OPENVDB=OFF`、legacy production path 和 RGBWSV 协议保持不变。
+
+技术入口：
+
+```text
+docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
+docs/slice/DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md
+docs/slice/ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md
 ```

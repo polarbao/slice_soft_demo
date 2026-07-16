@@ -3,9 +3,9 @@
 > 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-12
+> 更新日期：2026-07-16
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12B 与 12C-R0 已完成，当前执行 12C-R1-01 Profile Metadata 收口
+> 当前阶段判断：12C 已完成；当前执行 12D-R1，原子任务为 12D-04；12E 已规划但未开始实现
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -317,13 +317,26 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 
 ## 9. Stage 12 当前入口更新
 
-截至 2026-07-10：
+截至 2026-07-16：
 
 ```text
-12A：材料、支撑、光油语义 P0/P1 基本完成；
+12A：材料、支撑、光油语义 P0/P1 基本完成，后续全局纹理/填充互补需求转入 12E；
 12B：R0/R1/R2 已完成并生成最终状态报告；
-12C：已完成准入审查和 R0/R1/R2 拆分；
-12D：正式文档和任务入口已存在，尚不作为 12C R0/R1 blocker。
+12C：R0/R1/R2 已完成并收口；
+12D：当前执行 R1，原子任务为 12D-04 TIFF 反推候选诊断；
+12E：Decision/PRD/DEV/DEMO/ROADMAP/TASKS/CODEX_PROMPT 已建立，implementation NOT STARTED。
+```
+
+12E 规划入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_12E_全局纹理表面层与模型填充互补策略.md
+docs/slice/PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md
+docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
+docs/slice/DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md
+docs/slice/ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md
+docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
 12C 当前闭环文档：

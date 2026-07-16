@@ -1,9 +1,9 @@
 # PRD_12A_彩色纹理材料填充支撑光油策略
 
-> 文档版本：v0.3
+> 文档版本：v0.4
 > 文档状态：PRD / Stage 12A
 > 生成日期：2026-07-05
-> 更新日期：2026-07-06
+> 更新日期：2026-07-16
 > 适用范围：彩色纹理模型、单材料模型、甲片类浮雕模型的模型层、填充层、支撑层、光油层产品语义
 
 ---
@@ -390,4 +390,30 @@ emptyValue = 255
 4. aishen_fudiao、nai_you_new 至少各有一组可复现验证输出；
 5. reports 能解释每层 RGB/W/S/V 的像素来源；
 6. UI 可以显示并说明这些策略。
+```
+
+---
+
+## 10. 后续阶段 12E 补充关系
+
+12A 已完成范围继续作为当前实现基线；以下新增需求进入 Stage 12E，不回写为 12A 已实现能力：
+
+```text
+1. Texture Surface Layer 按完整三维模型的表面距离定义 widthMm；
+2. Model Fill Layer 是 ModelVolume - TextureSurfaceVolume 的严格补集；
+3. widthMm 从工程最小值连续增加时，纹理区域单调增加、填充区域单调减少；
+4. 达到模型动态全纹理阈值后，允许 modelFillPixels=0；
+5. 合法 fill=0 必须同时证明 texture=model、overlap=0、unassigned=0；
+6. 该能力不能用逐 layer 二维轮廓腐蚀实现；
+7. Qt UI 需要新增宽度、动态阈值、覆盖率和 allTexture 状态。
+```
+
+12A 的“生产 Profile 不允许内部填充为空”仍用于阻止未分配模型区域。12E 只增加一个严格例外：填充补集因全模型已被纹理分区覆盖而自然为空，而不是通过禁用 `modelFill` 产生空材料。
+
+正式入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_12E_全局纹理表面层与模型填充互补策略.md
+docs/slice/PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md
+docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
 ```
