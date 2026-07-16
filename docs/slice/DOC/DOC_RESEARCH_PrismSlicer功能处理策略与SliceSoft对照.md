@@ -1,9 +1,9 @@
 # PrismSlicer 功能、处理策略与 SliceSoft 对照研究
 
-> 文档类型：外部产品研究 / 技术情报 / 非实现真源  
-> 调研对象：Additive Appearance `PrismSlicer`（全彩、多材料、Material Jetting / PolyJet 版本）  
-> 调研日期：2026-07-12  
-> 信息范围：公开官网、产品商店、厂商教程、大学研究页面、开放论文、GitHub、合作伙伴公告、行业媒体、公开视频与公开社区页面  
+> 文档类型：外部产品研究 / 技术情报 / 非实现真源
+> 调研对象：Additive Appearance `PrismSlicer`（全彩、多材料、Material Jetting / PolyJet 版本）
+> 调研日期：2026-07-12
+> 信息范围：公开官网、产品商店、厂商教程、大学研究页面、开放论文、GitHub、合作伙伴公告、行业媒体、公开视频与公开社区页面
 > 证据级别：外部公开资料，不属于本项目 A/B/C/D 内部实现证据；只能用于竞品研究和路线启发，不能证明 PrismSlicer 的闭源实现细节，也不能直接变更 SliceSoft 生产协议
 
 ---
@@ -837,4 +837,3 @@ PrinterMaterialProfile
 23. [VoxelMatters 产品报道](https://www.voxelmatters.com/additive-appearance-launches-prismslicer-for-multi-material-3d-printing/)
 24. [Fabbaloo 产品报道](https://www.fabbaloo.com/news/new-prismslicer-software-targets-visual-precision-in-color-3d-printing)
 25. [Formnext 2024 现场报道](https://www.engineering.com/formnext-2024-first-day-recap/)
-

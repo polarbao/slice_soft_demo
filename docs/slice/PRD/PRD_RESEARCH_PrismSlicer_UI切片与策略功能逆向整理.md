@@ -1,11 +1,11 @@
 # PrismSlicer UI、切片与处理策略功能 PRD（公开信息逆向整理）
 
-> 文档版本：v0.1  
-> 文档状态：Research PRD / External Product Reconstruction / 非官方产品真源  
-> 生成日期：2026-07-12  
-> 调研对象：Additive Appearance PrismSlicer 全彩、多材料版本  
-> 适用范围：UI、模型准备、体积材料设计、切片、切片检查、外观预览、项目与输出交付  
-> 明确排除：RIP 半色调算法、喷头 bitstream、设备运动控制、固化时序、设备通信和 GCVF 内部编码实现  
+> 文档版本：v0.1
+> 文档状态：Research PRD / External Product Reconstruction / 非官方产品真源
+> 生成日期：2026-07-12
+> 调研对象：Additive Appearance PrismSlicer 全彩、多材料版本
+> 适用范围：UI、模型准备、体积材料设计、切片、切片检查、外观预览、项目与输出交付
+> 明确排除：RIP 半色调算法、喷头 bitstream、设备运动控制、固化时序、设备通信和 GCVF 内部编码实现
 > 前置研究：`docs/slice/DOC/DOC_RESEARCH_PrismSlicer功能处理策略与SliceSoft对照.md`
 
 ---
@@ -937,4 +937,3 @@ OpenVDB 只能保持 optional utility/candidate，不能因竞品研究转为默
 12. [Neural Acceleration of Scattering-Aware Color 3D Printing](https://cgg.mff.cuni.cz/publications/neural-acceleration-of-scattering-aware-color-3d-printing/)
 13. [A Gradient-Based Framework for 3D Print Appearance Optimization](https://cgg.mff.cuni.cz/publications/a-gradient-based-framework-for-3d-print-appearance-optimization/)
 14. [Scattering-Aware Color Calibration](https://doi.org/10.1145/3763293)
-
