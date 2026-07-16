@@ -53,6 +53,17 @@ docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行
 
 12E 当前状态为 `PLANNED / NOT ACTIVE`。12E-00 只完成文档准入；任何 C++、Qt、CMake、config 或 production output 修改都必须由用户明确指定一个 12E 原子任务后再开始。
 
+## 12F Release Runtime 与性能优化专项
+
+用户于 2026-07-16 要求统一 Qt Debug 环境、建立 Debug/Release 运行环境，并把后续切片性能建议整理为专项：
+
+```text
+docs/codex_task/current/TASKS_12F_Release运行环境与切片性能优化任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12F_Release运行环境与切片性能优化执行指令.md
+```
+
+12F-R0 Runtime 环境已完成；12F-02 及后续算法任务均为 `PLANNED / NOT ACTIVE`。这是一条独立 build/performance 专项，不自动替代当前 12D 唯一代码执行入口，也不得与未完成的 12D/12E production 语义工作混合实施。
+
 ## 使用规则
 
 ```text

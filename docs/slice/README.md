@@ -88,6 +88,10 @@
 | `DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md` | 12E 完整三维距离、互补 mask、UI 与 report 技术设计 |
 | `DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md` | 12E 单调性、全纹理、薄壁、内腔和 UI 验证方案 |
 | `ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md` | 12E R0-R4 分阶段执行路线 |
+| `DOC/DOC_DECISION_12F_Release运行环境与切片性能优化专项.md` | 统一 Debug/Release Runtime、Qt 调试入口收口和后续性能专项边界 |
+| `PRD/PRD_12F_Release运行环境与切片性能优化.md` | Release 运行环境、性能 KPI 与验收需求 |
+| `DEV/DEV_12F_Release运行环境与切片性能优化设计.md` | NMake x64 Runtime、ToolPaths、支撑/合成/稠密 mask 优化设计 |
+| `ROADMAP/ROADMAP_12F_Release运行环境与切片性能优化路线.md` | 12F R0-R5 分阶段路线；R0 已完成，算法优化未激活 |
 | `DOC/DOC_ANALYSIS_OpenVDB切片功能当前不可用原因.md` | OpenVDB 已完成测试但尚不可正式切片的原因分析 |
 | `DOC/DOC_RESEARCH_PrismSlicer功能处理策略与SliceSoft对照.md` | PrismSlicer 官网、论文、开源、视频与行业信息调研，以及与 SliceSoft 的能力/边界对照 |
 | `DOC/DOC_ANALYSIS_11B_OpenVDB姿态配置与同姿态性能对比.md` | OpenVDB 姿态配置差异与同姿态性能对比分析 |
