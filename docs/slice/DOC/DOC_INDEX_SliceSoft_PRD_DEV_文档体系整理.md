@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-16
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D-R1/R2 已完成；12D-R3 已准备但未开始；12E 已规划但未开始实现
+> 当前阶段判断：12C 与 12D-R1/R2 已完成；12D-R3 已准备但未开始；12E-R0 准备完成、实现未开始；12F-00/01 已完成、性能算法任务未开始
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：main，任务开始前通过 git 命令确认
 最新完成阶段：12B-R2 OpenVDB SDF utility 定位
-当前执行阶段：12C-R1 Profile 与 Settings 收口
-最新完成任务：12C-R0-03 布局与组件复用基线
-当前任务：12C-R1-01 Profile Metadata 收口
+当前执行阶段：无 active code task
+最新完成任务：12D-06 Repair Disabled TIFF 不变性守门
+准备任务：12D-07、12E-01 与 12F-02 均等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -324,7 +324,8 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
 12D：R1/R2 已完成；R3 已准备，12D-07 等待用户明确启动；
-12E：Decision/PRD/DEV/DEMO/ROADMAP/TASKS/CODEX_PROMPT 已建立，implementation NOT STARTED。
+12E：R0 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；12E-01 READY FOR USER ADMISSION，implementation NOT STARTED；
+12F：Release/Debug 统一运行环境与专项文档已建立；12F-02 Release 性能基线刷新等待用户明确启动。
 ```
 
 12E 规划入口：
@@ -335,8 +336,23 @@ docs/slice/PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md
 docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
 docs/slice/DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md
 docs/slice/ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md
+docs/slice/DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md
+docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
+docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md
+docs/slice/REPORT/REPORT_12E_启动准备状态.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
+```
+
+12F 运行环境与切片性能优化专项入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_12F_Release运行环境与切片性能优化专项.md
+docs/slice/PRD/PRD_12F_Release运行环境与切片性能优化.md
+docs/slice/DEV/DEV_12F_Release运行环境与切片性能优化设计.md
+docs/slice/ROADMAP/ROADMAP_12F_Release运行环境与切片性能优化路线.md
+docs/codex_task/current/TASKS_12F_Release运行环境与切片性能优化任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12F_Release运行环境与切片性能优化执行指令.md
 ```
 
 12C 当前闭环文档：
@@ -365,7 +381,7 @@ ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md
 历史阶段文档 = 背景与证据
 最新 REPORT = 当前状态
 FORMAL PRD / DEV / ROADMAP = 当前总控
-TASKS_12C = 当前执行入口
+TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0 的 fresh build、smoke 与布局组件基线已通过，当前执行入口为 `TASKS_12C_Qt_UI配置预览任务清单.md`，下一任务为 `12C-R1-01 Profile Metadata 收口`。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 已完成；12D-R1/R2 已完成且 R3 已准备；12E-R0 启动准备已完成；12F-00/01 已完成。当前没有 active code task，12D-07、12E-01 或 12F-02 均需用户明确启动。

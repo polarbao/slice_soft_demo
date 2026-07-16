@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：PLANNED / NOT ACTIVE
+> 文档状态：R0 PREPARED / NOT ACTIVE
 > 生成日期：2026-07-16
-> 当前项目原子任务：12D-04 TIFF 反推候选诊断
+> 当前项目原子任务：无；12D-07 与 12E-01 均等待用户明确启动
 > 规则：12E 文档已建立，但任何代码任务都不得自动开始
 
 ## 1. 阶段目标
@@ -36,12 +36,13 @@ OpenVDB optional/OFF，不自动写 production TIFF；
 
 ## 3. 12E-00 文档准入
 
-状态：DONE / DOCUMENTATION ONLY（2026-07-16）
+状态：DONE / DOCUMENTATION AND STARTUP PREPARATION ONLY（2026-07-16）
 
 内容：
 
 ```text
 新增 12E Decision/PRD/DEV/DEMO/ROADMAP/TASKS/CODEX_PROMPT；
+新增 Config/DTO 准备、report schema、fixture/验收矩阵和启动状态报告；
 在 12A PRD/DEV 中登记后续补充关系；
 在 docs/slice 和 docs/codex_task 入口登记 planned stage；
 不修改 C++、Qt、CMake、config fixture 或 production output。
@@ -58,14 +59,14 @@ git diff --check 通过。
 
 ## 4. 12E-01 Config 与 DTO 契约
 
-状态：TODO
+状态：PREPARED / READY FOR USER ADMISSION
 
 目标：
 
 ```text
 新增 global_surface_shell 配置 DTO、parser、validator、report DTO 占位；
 新增 complement_of_global_texture_shell scope；
-未实现 backend 时配置明确拒绝；
+未实现 backend 时在切片/写包前以稳定错误明确阻断；
 旧配置默认行为不变。
 ```
 
@@ -90,6 +91,15 @@ schema/docs；
 ```
 
 验证：config unit tests + `git diff --check`。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md；
+docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md；
+docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md；
+docs/slice/REPORT/REPORT_12E_启动准备状态.md。
+```
 
 ## 5. 12E-02 Global Partition Service 骨架
 

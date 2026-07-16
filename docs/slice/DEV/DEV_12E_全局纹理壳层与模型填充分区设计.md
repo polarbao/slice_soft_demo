@@ -185,6 +185,17 @@ modelFill.scope：显式声明 fill 是 global shell 的补集。
 5. modelFill.enabled=false 不能替代 allTexture 条件。
 ```
 
+校验分层：
+
+```text
+config 静态校验：有限数值、widthMm>0、widthStepMm=0.01、枚举和 texture/fill 成对关系；
+model preflight 动态校验：effectiveMinimumWidthMm、拓扑、最终变换、classification resolution 和 backend capability；
+结构正确但 backend 不可用时，保留 DTO，并在切片/写包前输出 E_12E_PARTITION_BACKEND_UNAVAILABLE；
+不得静默 fallback 到 top_surface_band、逐层 morphology 或 surface_shell_from_sdf。
+```
+
+详细契约见 `DOC_PREP_12E_R0_ConfigDTO契约准备.md`。
+
 ## 7. 核心 DTO
 
 建议概念：
@@ -335,6 +346,8 @@ else:
 schema = slicesoft.texture_fill_partition.12e.1
 path = reports/texture_fill_partition_report.json
 ```
+
+完整字段、状态枚举、null 语义和与其他报告的关系见 `DOC_SCHEMA_12E_TextureFillPartitionReport.md`。12E-01 只允许输出 unavailable/blocked/not_evaluated 骨架，不得在没有实际分区结果时输出 pass。
 
 根字段示例（数值仅用于说明结构，不代表已运行结果）：
 

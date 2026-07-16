@@ -2,7 +2,7 @@
 
 > 文档状态：ROADMAP / Stage 12E Planning
 > 日期：2026-07-16
-> 当前项目执行阶段：12D-R1；12E implementation NOT STARTED
+> 当前项目执行阶段：12D-R3 PREPARED；12E-R0 PREPARATION COMPLETE / implementation NOT STARTED
 
 ## 1. Goal
 
@@ -11,11 +11,12 @@
 ## 2. Activation Gate
 
 ```text
-1. 当前 12D-04 仍是仓库唯一原子执行任务；
-2. 本轮只建立 12E 正式文档和计划，不修改 production code；
-3. 只有用户明确指定某个 12E 原子任务后才能执行；
-4. 12E composer/production 接入需要 12D semantic_masks exact contract；
-5. 不要求 12D repair R3 完成后才能做 12E 算法原型，但生产准入需重新确认。
+1. 12D-R1/R2 已完成，12D-07 已准备但未启动；
+2. 12E-R0 的 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；
+3. 当前没有 active code task，只有用户明确指定 12D-07 或 12E-01 后才能执行；
+4. 12E composer/production 接入需要已完成的 12D semantic_masks exact contract；
+5. 不要求 12D repair R3 完成后才能做 12E R1 算法原型，但 production admission 必须重新确认；
+6. 12E-01 只做配置、DTO、稳定错误码和 unavailable report 骨架，不修改 production code。
 ```
 
 ## 3. R0：契约与准入
@@ -27,6 +28,7 @@
 global_surface_shell config schema；
 texture/fill partition DTO；
 slicesoft.texture_fill_partition.12e.1 report schema；
+Config/DTO 准备文档和 fixture/验收矩阵；
 minimum/dynamic maximum/allTexture contract；
 backend role decision。
 ```
@@ -35,7 +37,7 @@ backend role decision。
 
 ```text
 不变量、配置兼容、fail policy、UI 字段和验证矩阵冻结；
-global_surface_shell 在未实现时明确拒绝；
+global_surface_shell 在 backend 未实现时于写包前明确阻断；
 默认 USE_OPENVDB=OFF 不改变。
 ```
 

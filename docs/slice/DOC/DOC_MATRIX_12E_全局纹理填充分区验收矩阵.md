@@ -1,0 +1,139 @@
+# DOC_MATRIX_12E 全局纹理填充分区验收矩阵
+
+> 文档状态：PREPARED / IMPLEMENTATION NOT STARTED
+> 日期：2026-07-16
+
+## 1. 使用方式
+
+本矩阵把 12E-01 至 12E-10 的证据拆成配置、几何、分区、纹理、闭环、UI、协议和性能层。任务只有在对应行具有可复现 fixture、命令和结果后才能标记完成。
+
+## 2. 契约与负向用例
+
+| Case | 阶段 | 断言 | 失败条件 |
+|---|---|---|---|
+| legacy config omitted | 12E-01 | 旧字段默认和输出不变 | 自动迁移到 global shell |
+| valid global config | 12E-01 | DTO 完整；backend unavailable 明确阻断 | 静默 fallback |
+| invalid width | 12E-01 | 非有限/0/负数拒绝 | clamp 后继续写包 |
+| invalid step | 12E-01 | 非 0.01 拒绝 | 接受任意步长 |
+| invalid enum | 12E-01 | geometry/policy/scope 稳定错误码 | 仅自然语言且不可稳定断言 |
+| mismatched pair | 12E-01 | texture/fill scope 必须成对 | 独立启用造成未分配模型 |
+| model fill disabled | 12E-01 | 明确拒绝 | 用 disabled 冒充 allTexture |
+| backend unavailable | 12E-01/02 | blocked/unavailable；不写 package | 输出 pass 或生产 TIFF |
+
+## 3. Generated Geometry
+
+| Fixture | 重点 | 必须断言 |
+|---|---|---|
+| closed box | 基本 inside/distance | union=model、overlap=0、unassigned=0 |
+| sphere/sloped body | 三维距离 | 厚度误差不依赖 layer XY 方向 |
+| thin wall | 双侧壳层相遇 | 局部 fill=0、无重叠 |
+| closed cavity | 内外闭合表面 | `all_closed_surfaces` 一致参与 |
+| concave body | 凹面最近表面 | 不退化为逐层 morphology |
+| multi-surface tie | 中轴 tie | 结果确定、tie 计数可报告 |
+| open mesh | 拓扑门禁 | strict 阻断，不写包 |
+| non-manifold | 拓扑门禁 | strict 阻断，不写包 |
+| self-intersection | 拓扑门禁 | fail fast |
+
+## 4. Width Sweep
+
+对每个可用闭合 fixture：
+
+```text
+w0 = effective minimum；
+w1/w2/w3 = 中间采样；
+w4 = allTexture threshold。
+```
+
+必须满足：
+
+```text
+texture[i+1] >= texture[i]；
+fill[i+1] <= fill[i]；
+model count 不变；
+overlap=0；
+unassigned=0；
+w4: texture=model, fill=0, allTexture=true。
+```
+
+## 5. Backend Matrix
+
+| Lane | 角色 | 必须结果 |
+|---|---|---|
+| `USE_OPENVDB=OFF` | 默认 CPU candidate | 可独立 build/test；不依赖 OpenVDB |
+| `USE_OPENVDB=ON` | conformance candidate | 输出差异报告；不自动 production admitted |
+| backend unavailable | safety | stable error/report；不 fallback |
+
+CPU 与 OpenVDB 比较 occupancy、partition count、threshold、distance error、runtime 和 peak memory，不要求位级一致。
+
+## 6. Texture Transfer
+
+| Input | 断言 |
+|---|---|
+| OBJ/MTL/PNG | closest surface UV 采样、outsideColored=0 |
+| OBJ missing UV | fallback 与 missingUv 统计 |
+| OBJ missing texture | fallback 与 missingTexture 统计 |
+| 3MF Texture2D | 资源解析与传递统计 |
+| multiple surface tie | 稳定 tie rule |
+
+## 7. 12D Closure 联动
+
+| Case | 断言 |
+|---|---|
+| normal width | 12D 读取 exact texture/fill mask；ColorFillGap=0 |
+| all texture | fill=0 合法；ColorFillGap=0 或明确 not_applicable |
+| repair disabled | TIFF SHA-256 不因诊断改变 |
+| support/varnish boundary | 继续由 12D expected domain 判定 |
+
+12E 不修改 12D repair 规则，12D-R3 是否完成不阻塞 12E R0/R1 原型，但 production admission 必须重新评估闭环证据。
+
+## 8. UI 与 Effective Config
+
+| Case | 断言 |
+|---|---|
+| no model | width 控件 pending/disabled，无虚假最大值 |
+| model preflight | min/max/threshold 动态刷新 |
+| slider/spinbox | 双向同步，步长 0.01 mm |
+| model changed | requested 值 clamp 并记录 requested/effective |
+| allTexture | fill material 配置保留，coverage=0 |
+| backend status | 普通用户不选 backend；诊断区显示能力 |
+| preview | Texture Surface / Model Fill / Partition 使用真实 layerIndex |
+
+## 9. 真实模型矩阵
+
+优先仓库内可复现模型：
+
+| 模型 | 重点 |
+|---|---|
+| `model/obj/nai_you_new` | 标准甲片、宽度 sweep、支撑/闭环 |
+| `model/obj/aishen_fudiao` | 高 Z 浮雕、凹面、性能 |
+| `model/obj/meigui_fudiao` | 复杂纹理、最近表面传递 |
+| 仓库内真实 3MF fixture | Texture2D/ColorGroup 兼容 |
+
+每个模型记录 config/model/texture SHA-256、grid、layerCount、partition、closure、RIP、runtime 和 peak memory。
+
+## 10. 协议与回归
+
+```text
+schema = p0.rgbwsv.2；
+channelOrder = R G B W S V；
+bitDepth = 8；
+polarity = black_is_print；
+legacy Profile 默认输出不变；
+RIP strict PASS；
+OpenVDB OFF build PASS；
+未通过 production admission 时只允许 diagnostic result。
+```
+
+## 11. 阶段 Gate
+
+| Gate | 状态条件 |
+|---|---|
+| 12E-01 -> 02 | Config/DTO/negative tests 完成 |
+| 12E-02 -> 03 | backend-neutral invariants 骨架完成 |
+| 12E-03 -> 04 | CPU candidate 正确性与基线完成 |
+| 12E-04 -> 05 | OFF/ON conformance 可复现 |
+| 12E-05 -> 06 | schema 与 monotonic sweep 冻结 |
+| 12E-06 -> 07 | exact masks/texture transfer diagnostic 完成 |
+| 12E-07 -> 08 | 12D closure 联动通过 |
+| 12E-08 | 必须用户再次确认 production path |
+| 12E-09/10 | UI、真实模型、RIP 和报告收口 |

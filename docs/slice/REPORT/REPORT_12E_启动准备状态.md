@@ -1,0 +1,106 @@
+# REPORT_12E 启动准备状态
+
+> 文档状态：12E-R0 PREPARATION COMPLETE / IMPLEMENTATION NOT STARTED
+> 日期：2026-07-16
+
+## 1. 当前结论
+
+12E 已从“只有阶段规划”推进到“R0 启动准备完成”。Decision、PRD、DEV、DEMO、ROADMAP、任务清单之外，现已补齐 Config/DTO 准备、report schema 和 fixture/验收矩阵。
+
+当前没有 12E C++、Qt、CMake、配置 fixture 或生产输出改动。`12E-01 Config 与 DTO 契约` 已具备实施边界，但仍须用户明确启动。
+
+## 2. Current State
+
+```text
+12A：材料填充、支撑、光油语义当前范围完成；
+12B：性能评估与 OpenVDB SDF utility 定位完成；
+12C：Qt 工作台 R0/R1/R2 完成；
+12D：R1/R2 完成，R3 已准备但未开始；
+12E：R0 preparation complete，implementation not started。
+```
+
+当前代码仍使用 legacy texture apply mode 和 modelFill scope；不存在 `global_surface_shell` 正式配置、全局 3D 互补分区服务或 12E production package。
+
+## 3. 已完成准备
+
+```text
+12E 产品语义和阶段边界；
+global_surface_shell 配置结构；
+complement_of_global_texture_shell 成对约束；
+静态校验与运行时 preflight 分层；
+backend unavailable 稳定阻断策略；
+slicesoft.texture_fill_partition.12e.1 schema；
+generated/real model/backend/UI/protocol 验收矩阵；
+12E-01 文件边界、负向用例和验证计划。
+```
+
+## 4. 尚未实现
+
+```text
+TextureSurfaceShellConfig parser/validator；
+GlobalTextureFillPartition DTO/service；
+CPU whole-model 3D distance candidate；
+OpenVDB conformance adapter；
+width sweep validator；
+closest-surface texture transfer；
+12D closure 接入；
+production admission；
+Qt UI 与 preview；
+真实模型回归和 REPORT_12E 完成报告。
+```
+
+## 5. 准入状态
+
+| 任务 | 状态 | 说明 |
+|---|---|---|
+| 12E-00 | COMPLETE | 正式阶段文档与入口 |
+| 12E-R0 preparation | COMPLETE | Config/DTO、schema、matrix、状态报告 |
+| 12E-01 | PREPARED / READY FOR USER ADMISSION | 可开始契约实现，不得自动启动 |
+| 12E-02..07 | BLOCKED BY PREVIOUS TASK | 按原子任务顺序推进 |
+| 12E-08 | REQUIRES EXPLICIT PRODUCTION CONFIRMATION | 涉及 production path |
+| 12E-09..10 | PLANNED | UI、真实模型和收口 |
+
+## 6. 与 12D 的关系
+
+```text
+12D-07：PREPARED / READY FOR USER ADMISSION；
+12E-01：PREPARED / READY FOR USER ADMISSION；
+二者均无 active code task；
+12E R0/R1 原型不要求先完成 repair；
+12E production admission 必须复核 12D exact closure；
+不得把 12E 分区逻辑塞入 12D repair 任务。
+```
+
+## 7. 开放项
+
+以下问题不阻塞 12E-01，但必须在后续 Gate 前用实际证据关闭：
+
+```text
+CPU 3D distance candidate 是否满足正确性、性能和内存预算；
+OpenVDB 是否只保留 conformance，或经新决策获得候选生产角色；
+medial-axis tie 的稳定颜色选择规则；
+真实模型内腔表面的纹理参与范围；
+production Profile 的最终最小宽度是否高于 0.10 mm。
+```
+
+## 8. 下一任务
+
+用户若选择进入 12E，应明确指定：
+
+```text
+开始 12E-01 Config 与 DTO 契约。
+```
+
+该任务只实现配置、DTO、稳定错误码、unavailable report 骨架和单元测试，不实现三维分类、Qt 或生产写包。
+
+## 9. 安全边界
+
+```text
+p0.rgbwsv.2 不变；
+R G B W S V 不变；
+uint8 / black_is_print 不变；
+OpenVDB optional/OFF；
+legacy slicer_cli production path 不替代；
+12D repair 默认关闭；
+没有 production admission 时不写 12E production TIFF。
+```

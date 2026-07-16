@@ -127,8 +127,9 @@ Current Stage 12 track:
 ```text
 12A: material fill, support, and varnish semantics, current P0/P1 scope complete.
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
-12C: current phase; R0 build/smoke/layout baseline complete, now entering R1 Profile/settings closure.
-12D: R0 documentation/schema/fixture admission is complete; code implementation waits for 12C-R2-05.
+12C: R0/R1/R2 Qt workbench closure complete.
+12D: R0/R1/R2 complete; R3 repair/background/UI/real-model work prepared but not started.
+12E: R0 startup preparation complete; 12E-01 Config/DTO contract prepared but not active.
 ```
 
 R0/R1/R2 principles still apply to refactors:

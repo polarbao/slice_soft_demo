@@ -1,6 +1,6 @@
 # CODEX_PROMPT_12E 全局纹理壳层与模型填充执行指令
 
-> 文档状态：PLANNED / NOT ACTIVE
+> 文档状态：R0 PREPARED / NOT ACTIVE
 > 日期：2026-07-16
 > 当前不得自动执行；必须由用户明确指定一个 12E 原子任务
 
@@ -22,6 +22,10 @@ docs/slice/PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md
 docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
 docs/slice/DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md
 docs/slice/ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md
+docs/slice/DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md
+docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
+docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md
+docs/slice/REPORT/REPORT_12E_启动准备状态.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 相关 12A/12B-R2/12C/12D 正式文档
 当前源文件和测试
@@ -39,9 +43,9 @@ git status --short
 ## 4. 执行边界
 
 ```text
-只执行用户明确指定的一个 Task 12E-XX；
+只执行用户明确指定的一个 Task 12E-XX；12E-01 虽已准备，但不得自动启动；
 不要自动执行下一任务；
-不要修改当前 12D 原子任务的范围；
+不要修改 12D-R3 的 repair/UI/真实模型范围；
 不要把 OpenVDB 设为默认或强制依赖；
 不要从 experimental path 写 production TIFF；
 不要修改 p0.rgbwsv.2、RGBWSV 顺序、uint8、black_is_print；

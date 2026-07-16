@@ -205,6 +205,8 @@ Model > OuterVarnishShell > Support > Empty
 5. 性能与内存预算通过 benchmark 后才能确定 production admission。
 ```
 
+这些开放项不阻塞 12E-01 的 Config/DTO 契约实现。12E-01 必须保持 backend-neutral，并在 backend 不可用时显式阻断；它不能提前决定 production backend。
+
 ## 12. 后续入口
 
 ```text
@@ -212,6 +214,10 @@ docs/slice/PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md
 docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
 docs/slice/DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md
 docs/slice/ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md
+docs/slice/DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md
+docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
+docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md
+docs/slice/REPORT/REPORT_12E_启动准备状态.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```

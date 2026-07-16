@@ -21,8 +21,9 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-06 Repair Disabled TIFF invariance verification`.
 - Current working phase is `12D-R3 PREPARED / NOT STARTED`: explicit 1px repair, background protection, UI, and real-model acceptance.
+- `12E-R0` startup preparation is complete. `12E-01 Config/DTO contract` is `PREPARED / READY FOR USER ADMISSION`, but no 12E code task is active.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- No 12D-R3 code task is active. `12D-07 Repair Enabled` requires an explicit user instruction; do not start repair or UI work early.
+- No 12D-R3 or 12E code task is active. `12D-07 Repair Enabled` and `12E-01 Config/DTO contract` each require an explicit user instruction; do not start either track automatically.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules
@@ -74,6 +75,8 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Codex task index: `docs/codex_task/README.md`
 - Current task list: `docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md`
 - Current execution prompt: `docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md`
+- Prepared 12E task list: `docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md`
+- Prepared 12E execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
 
 ## Production Safety Rules
 
