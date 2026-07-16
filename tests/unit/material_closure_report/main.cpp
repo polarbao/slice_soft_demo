@@ -1,4 +1,5 @@
 #include "slicer_core/config.h"
+#include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 
 #include <exception>
@@ -121,6 +122,64 @@ bool CandidateReportCannotProduceProductionPass()
         && ExpectTrue(summary.at("worstLayerIndex").as_int() == 0, "stable worst layer ordering");
 }
 
+bool ExactReportPassesOnlyWithoutGaps()
+{
+    slicer_core::MaterialClosureConfig config;
+    std::vector<slicer_core::MaterialClosureSemanticLayerResult> layers(1);
+    layers.at(0).layerIndex = 4;
+    layers.at(0).zMm = 0.04;
+    layers.at(0).externalBackgroundProtectedPixels = 20;
+
+    const slicer_core::Json report = slicer_core::BuildMaterialClosureExactReport(config, layers);
+    return ExpectTrue(report.at("source").as_string() == "semantic_masks", "exact source")
+        && ExpectTrue(report.at("confidence").as_string() == "exact", "exact confidence")
+        && ExpectTrue(report.at("closureStatus").as_string() == "pass", "gap-free exact report passes")
+        && ExpectTrue(report.at("productionAcceptance").as_string() == "passed", "gap-free production accepted")
+        && ExpectTrue(!report.at("repair").at("attempted").as_bool(), "exact diagnostic does not repair")
+        && ExpectTrue(report.at("totals").at("passLayerCount").as_int() == 1, "pass layer counted")
+        && ExpectTrue(report.at("totals").at("totalGapPixels").as_int() == 0, "no exact gaps")
+        && ExpectTrue(report.at("diagnostics").size() == 0U, "gap-free exact report has no diagnostics");
+}
+
+bool ExactReportFailsWithStableGapDiagnostics()
+{
+    slicer_core::MaterialClosureConfig config;
+    std::vector<slicer_core::MaterialClosureSemanticLayerResult> layers(2);
+    layers.at(0).layerIndex = 2;
+    layers.at(0).zMm = 0.02;
+    layers.at(0).gapPixels = 1;
+    layers.at(0).internalVoidGapPixels = 1;
+    layers.at(1).layerIndex = 3;
+    layers.at(1).zMm = 0.03;
+    layers.at(1).gapPixels = 1;
+    layers.at(1).varnishSupportGapPixels = 1;
+
+    const slicer_core::Json report = slicer_core::BuildMaterialClosureExactReport(config, layers);
+    return ExpectTrue(report.at("closureStatus").as_string() == "fail", "exact gaps fail by default")
+        && ExpectTrue(report.at("productionAcceptance").as_string() == "failed", "exact gaps reject production")
+        && ExpectTrue(report.at("totals").at("failLayerCount").as_int() == 2, "fail layers counted")
+        && ExpectTrue(report.at("totals").at("internalVoidGapPixels").as_int() == 1, "internal gap total")
+        && ExpectTrue(report.at("totals").at("varnishSupportGapPixels").as_int() == 1, "varnish gap total")
+        && ExpectTrue(report.at("worstLayers").at(0).at("layerIndex").as_int() == 2, "worst layers stably ordered")
+        && ExpectTrue(report.at("diagnostics").at(0).at("severity").as_string() == "error", "exact fail diagnostic severity");
+}
+
+bool ExactReportCanWarnWithoutAcceptingGaps()
+{
+    slicer_core::MaterialClosureConfig config;
+    config.fail_on_gap = false;
+    std::vector<slicer_core::MaterialClosureSemanticLayerResult> layers(1);
+    layers.at(0).layerIndex = 1;
+    layers.at(0).gapPixels = 1;
+    layers.at(0).colorFillGapPixels = 1;
+
+    const slicer_core::Json report = slicer_core::BuildMaterialClosureExactReport(config, layers);
+    return ExpectTrue(report.at("closureStatus").as_string() == "warning", "failOnGap false warns")
+        && ExpectTrue(report.at("productionAcceptance").as_string() == "failed", "warning gaps still reject production")
+        && ExpectTrue(report.at("totals").at("warningLayerCount").as_int() == 1, "warning layer counted")
+        && ExpectTrue(report.at("diagnostics").at(0).at("severity").as_string() == "warning", "warning diagnostic severity");
+}
+
 bool NegativeLayerCountIsRejected()
 {
     slicer_core::MaterialClosureConfig config;
@@ -144,6 +203,9 @@ int main()
         {"disabled_skeleton_has_no_false_failure", DisabledSkeletonHasNoFalseFailure},
         {"slice_summary_references_canonical_report", SliceSummaryReferencesCanonicalReport},
         {"candidate_report_cannot_produce_production_pass", CandidateReportCannotProduceProductionPass},
+        {"exact_report_passes_only_without_gaps", ExactReportPassesOnlyWithoutGaps},
+        {"exact_report_fails_with_stable_gap_diagnostics", ExactReportFailsWithStableGapDiagnostics},
+        {"exact_report_can_warn_without_accepting_gaps", ExactReportCanWarnWithoutAcceptingGaps},
         {"negative_layer_count_is_rejected", NegativeLayerCountIsRejected},
     };
 

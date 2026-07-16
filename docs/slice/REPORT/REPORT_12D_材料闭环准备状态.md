@@ -1,11 +1,11 @@
 # REPORT_12D 材料闭环准备状态
 
-> 文档状态：12D-R1 COMPLETE / Stage 12D-R2 READY
+> 文档状态：12D-R2 IN PROGRESS / 12D-05 COMPLETE
 > 日期：2026-07-16
 
 ## 1. 当前结论
 
-12D 文档准备阶段已完成；12C-R2-05、最终状态报告、fresh Qt lane、完整 Smoke 和 CTest 均已完成。12D-R1 已完成 12D-02 `MaterialClosureConfig`、12D-03 `MaterialClosureReport` 和 12D-04 TIFF 候选诊断。下一任务为 12D-05 semantic mask 精确诊断；修复仍未实现。
+12D 文档准备阶段已完成；12C-R2-05、最终状态报告、fresh Qt lane、完整 Smoke 和 CTest 均已完成。12D-R1 已完成 12D-02 `MaterialClosureConfig`、12D-03 `MaterialClosureReport` 和 12D-04 TIFF 候选诊断；12D-R2 已完成 12D-05 semantic mask 精确诊断。下一任务为 12D-06 repair-disabled TIFF 不变性验证；修复仍未实现。
 
 ## 2. 已准备文档
 
@@ -41,10 +41,10 @@ gap preview 默认关闭且只作诊断；
 |---|---|---|
 | 12D-R0 | 文档/schema/fixture/执行边界 | COMPLETE |
 | 12D-R1 | 配置、报告骨架、TIFF candidate | COMPLETE（12D-02/03/04） |
-| 12D-R2 | semantic mask exact、repair-disabled 不变性 | READY（下一任务 12D-05） |
+| 12D-R2 | semantic mask exact、repair-disabled 不变性 | IN PROGRESS（12D-05 完成，下一任务 12D-06） |
 | 12D-R3 | 1px repair、背景保护、UI、真实模型 | PENDING |
 
-## 5. 12D-02/03/04 已实现
+## 5. 12D-02/03/04/05 已实现
 
 ```text
 MaterialClosureConfig / MaterialClosureRepairConfig 数据模型；
@@ -61,12 +61,18 @@ TIFF inferred candidate detector 从最终 RGBWSV buffer 只读反推材料邻�
 source=rgbwsv_tiff_inferred、confidence=candidate、closureStatus=warning；
 productionAcceptance=not_evaluated、repair.attempted=false；
 synthetic detector/report 单测、sample.stl CLI、RIP Reader 和完整 8 项 CTest 通过。
+MaterialClosureSemanticDetector 与逐层只读 composer semantic sidecar；
+SupportRequiredMask 与最终 SupportFillMask 的意图/实际输出分离；
+五类 exact gap、外部背景保护与重叠分类并集去重；
+source=semantic_masks、confidence=exact 的生产可判定报告；
+preview disabled sample fixture 与 nai_you_new 真实 OBJ exact/pass 验证；
+repair.attempted=false、repairedPixels=0，未实现或启用修复。
 ```
 
 ## 6. 尚未实现
 
 ```text
-semantic mask exact detector；
+repair-disabled TIFF SHA-256 不变性自动守门；
 1px repair；
 gap preview；
 Qt UI closure 展示；
@@ -84,15 +90,16 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-02 MaterialClosureConfig：COMPLETE；
 12D-03 MaterialClosureReport：COMPLETE；
 12D-04 TIFF 反推候选诊断：COMPLETE；
-下一任务：12D-05 semantic mask 精确诊断，必须继续保持 candidate/exact 边界。
+12D-05 semantic mask 精确诊断：COMPLETE；
+下一任务：12D-06 repair-disabled TIFF 不变性验证，必须继续保持只诊断、不改写生产 TIFF。
 ```
 
 ## 8. 后续任务准备判断
 
-12D-05 此前的输入 mask 列表已存在，但 mask ownership、`SupportRequiredMask` 的准确取样时机、composer sidecar 边界和 exact 报告状态矩阵不够具体。现已通过 `DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md` 补齐，12D-05 状态为 `READY TO IMPLEMENT`。
+12D-05 已按 `DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md` 完成。当前需要把 12D-06 的双配置、TIFF 哈希范围、manifest 层顺序与失败判定固化为可重复执行的守门流程。
 
 ```text
-12D-05：准备完成，可进入开发；
-12D-06：边界已准备，等待 12D-05 后生成 TIFF hash baseline；
+12D-05：COMPLETE；
+12D-06：进入准备阶段，尚未开始实现验证脚本；
 12D-07 至 12D-10：已有总体设计，但尚未解除 repair/UI/真实模型执行门禁。
 ```

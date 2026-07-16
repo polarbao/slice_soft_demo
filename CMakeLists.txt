@@ -27,6 +27,8 @@ add_library(slicer_core
     src/slicer_core/diagnostics/Diagnostics.h
     src/slicer_core/diagnostics/MaterialClosureCandidateDetector.cpp
     src/slicer_core/diagnostics/MaterialClosureCandidateDetector.h
+    src/slicer_core/diagnostics/MaterialClosureSemanticDetector.cpp
+    src/slicer_core/diagnostics/MaterialClosureSemanticDetector.h
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.cpp
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.h
     src/slicer_core/diagnostics/ValidationIssue.cpp
@@ -262,6 +264,12 @@ add_executable(material_closure_candidate_detector_unit_tests
 
 target_link_libraries(material_closure_candidate_detector_unit_tests PRIVATE slicer_core)
 
+add_executable(material_closure_semantic_detector_unit_tests
+    tests/unit/material_closure_semantic_detector/main.cpp
+)
+
+target_link_libraries(material_closure_semantic_detector_unit_tests PRIVATE slicer_core)
+
 add_executable(surface_shell_texture_service_unit_tests
     tests/unit/surface_shell_texture_service/main.cpp
 )
@@ -281,6 +289,7 @@ add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
 add_test(NAME material_closure_candidate_detector_unit_tests COMMAND material_closure_candidate_detector_unit_tests)
+add_test(NAME material_closure_semantic_detector_unit_tests COMMAND material_closure_semantic_detector_unit_tests)
 add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_texture_service_unit_tests)
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 

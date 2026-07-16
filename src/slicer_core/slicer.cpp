@@ -1,6 +1,7 @@
 #include "slicer_core/slicer.h"
 
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
+#include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
@@ -997,8 +998,14 @@ SurfaceVarnishMasks BuildSurfaceVarnishMasks(
 
 int ApplyOuterVarnishSupportPriority(
     const std::vector<std::vector<std::uint8_t>>& outerVarnishMasks,
-    SupportGenerationResult& supportGeneration)
+    SupportGenerationResult& supportGeneration,
+    std::vector<std::vector<std::size_t>>* clearedSupportIndices)
 {
+    if (clearedSupportIndices != nullptr)
+    {
+        clearedSupportIndices->assign(supportGeneration.support_masks.size(), {});
+    }
+
     int clearedSupportPixels{0};
     for (std::size_t layerIndex{0}; layerIndex < supportGeneration.support_masks.size(); ++layerIndex)
     {
@@ -1013,6 +1020,10 @@ int ApplyOuterVarnishSupportPriority(
             }
             supportMask.at(index) = 0;
             supportTypeMap.at(index) = SupportType::None;
+            if (clearedSupportIndices != nullptr)
+            {
+                clearedSupportIndices->at(layerIndex).push_back(index);
+            }
             ++clearedSupportPixels;
         }
     }
@@ -2804,6 +2815,75 @@ std::vector<std::uint8_t> build_texture_preview_mask(
     return mask;
 }
 
+MaterialClosureSemanticLayerInput InitializeMaterialClosureSemanticInput(
+    const GridSpec& grid,
+    const int layerIndex,
+    const double zMm,
+    const std::vector<std::uint8_t>& modelEnvelopeMask,
+    const std::vector<std::uint8_t>& finalSupportMask,
+    const std::vector<std::size_t>& clearedSupportIndices,
+    const std::vector<std::uint8_t>& outerVarnishShellMask)
+{
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px)
+        * static_cast<std::size_t>(grid.height_px);
+    MaterialClosureSemanticLayerInput input;
+    input.layerIndex = layerIndex;
+    input.zMm = zMm;
+    input.widthPx = grid.width_px;
+    input.heightPx = grid.height_px;
+    input.textureSurfaceMask.assign(pixelCount, 0U);
+    input.modelFillMask.assign(pixelCount, 0U);
+    input.modelMaterialMask.assign(pixelCount, 0U);
+    input.supportFillMask.assign(pixelCount, 0U);
+    input.internalVoidSupportMask.assign(pixelCount, 0U);
+    input.surfaceVarnishMask.assign(pixelCount, 0U);
+    input.outerVarnishShellMask = outerVarnishShellMask;
+    input.modelEnvelopeMask = modelEnvelopeMask;
+    input.supportRequiredMask = finalSupportMask;
+    input.layerEmptyMask.assign(pixelCount, 0U);
+
+    for (const std::size_t index : clearedSupportIndices)
+    {
+        input.supportRequiredMask.at(index) = 1U;
+    }
+
+    input.expectedOccupiedDomainMask.assign(pixelCount, 0U);
+    for (std::size_t index{0U}; index < pixelCount; ++index)
+    {
+        input.expectedOccupiedDomainMask.at(index) =
+            input.modelEnvelopeMask.at(index) != 0U
+                || input.supportRequiredMask.at(index) != 0U
+                || input.outerVarnishShellMask.at(index) != 0U
+            ? 1U
+            : 0U;
+    }
+    return input;
+}
+
+void PopulateMaterialClosureEmptyMask(
+    const std::vector<std::uint8_t>& layer,
+    MaterialClosureSemanticLayerInput& input)
+{
+    constexpr std::size_t channelCount{6U};
+    const std::size_t pixelCount = static_cast<std::size_t>(input.widthPx)
+        * static_cast<std::size_t>(input.heightPx);
+    if (layer.size() != pixelCount * channelCount)
+    {
+        throw std::invalid_argument("material closure semantic RGBWSV layer size mismatch");
+    }
+
+    for (std::size_t index{0U}; index < pixelCount; ++index)
+    {
+        const std::size_t base = index * channelCount;
+        bool empty{true};
+        for (std::size_t channel{0U}; channel < channelCount; ++channel)
+        {
+            empty = empty && layer.at(base + channel) == 255U;
+        }
+        input.layerEmptyMask.at(index) = empty ? 1U : 0U;
+    }
+}
+
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
@@ -2819,6 +2899,7 @@ std::vector<std::uint8_t> compose_layer(
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
+    MaterialClosureSemanticLayerInput* materialClosureInput,
     LayerSemanticStats& semantic_stats,
     int& model_pixels,
     int& support_pixels) {
@@ -2934,17 +3015,37 @@ std::vector<std::uint8_t> compose_layer(
                     if (outer_surface_varnish_mask.at(pixel_index) != 0) {
                         pixels.at(base + 5U) = surfaceVarnishValue;
                         ++semantic_stats.outer_surface_varnish_pixels;
+                        if (materialClosureInput != nullptr)
+                        {
+                            materialClosureInput->surfaceVarnishMask.at(pixel_index) = 1U;
+                        }
                     }
                     if (inner_surface_varnish_mask.at(pixel_index) != 0) {
                         pixels.at(base + 5U) = surfaceVarnishValue;
                         ++semantic_stats.inner_surface_varnish_pixels;
+                        if (materialClosureInput != nullptr)
+                        {
+                            materialClosureInput->surfaceVarnishMask.at(pixel_index) = 1U;
+                        }
                     }
                     ++model_pixels;
+                    if (materialClosureInput != nullptr)
+                    {
+                        materialClosureInput->modelMaterialMask.at(pixel_index) = 1U;
+                    }
                     if (texture_surface_pixel) {
                         ++semantic_stats.texture_surface_pixels;
+                        if (materialClosureInput != nullptr)
+                        {
+                            materialClosureInput->textureSurfaceMask.at(pixel_index) = 1U;
+                        }
                     }
                     if (model_fill_pixel) {
                         ++semantic_stats.model_fill_pixels;
+                        if (materialClosureInput != nullptr)
+                        {
+                            materialClosureInput->modelFillMask.at(pixel_index) = 1U;
+                        }
                     }
                 }
             } else if (outer_varnish_mask.at(pixel_index) != 0) {
@@ -2954,8 +3055,16 @@ std::vector<std::uint8_t> compose_layer(
                 pixels.at(base + 4U) = config.support.value;
                 ++support_pixels;
                 ++semantic_stats.support_pixels;
+                if (materialClosureInput != nullptr)
+                {
+                    materialClosureInput->supportFillMask.at(pixel_index) = 1U;
+                }
                 if (support_type_map.at(pixel_index) == SupportType::InternalVoid) {
                     ++semantic_stats.internal_void_support_pixels;
+                    if (materialClosureInput != nullptr)
+                    {
+                        materialClosureInput->internalVoidSupportMask.at(pixel_index) = 1U;
+                    }
                 }
             }
         }
@@ -3992,8 +4101,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         }
     }
     const SupportPlacementPolicy support_placement_policy = ResolveSupportPlacementPolicy(config);
+    const bool collectMaterialClosureExact = config.material_closure.enabled && options.write_reports;
+    std::vector<std::vector<std::size_t>> clearedOuterVarnishSupportIndices;
     const int cleared_outer_varnish_support_pixels =
-        ApplyOuterVarnishSupportPriority(outer_varnish_masks, support_generation);
+        ApplyOuterVarnishSupportPriority(
+            outer_varnish_masks,
+            support_generation,
+            collectMaterialClosureExact ? &clearedOuterVarnishSupportIndices : nullptr);
     if (support_shape_result.enabled || cleared_outer_varnish_support_pixels > 0)
     {
         RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
@@ -4014,8 +4128,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     Json::Array slice_layers;
     Json::Array contour_layers;
     Json::Array preview_files;
+    std::vector<MaterialClosureSemanticLayerResult> materialClosureExactLayers;
+    if (collectMaterialClosureExact)
+    {
+        materialClosureExactLayers.reserve(static_cast<std::size_t>(grid.layer_count));
+    }
+    const bool collectMaterialClosureCandidate = config.material_closure.enabled
+        && options.write_tiff_layers
+        && !collectMaterialClosureExact;
     std::vector<MaterialClosureCandidateLayer> materialClosureCandidateLayers;
-    if (config.material_closure.enabled && options.write_tiff_layers)
+    if (collectMaterialClosureCandidate)
     {
         materialClosureCandidateLayers.reserve(static_cast<std::size_t>(grid.layer_count));
     }
@@ -4026,6 +4148,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         int layer_model_pixels{0};
         int layer_support_pixels{0};
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
+        MaterialClosureSemanticLayerInput materialClosureInput;
+        MaterialClosureSemanticLayerInput* materialClosureInputPointer{nullptr};
+        if (collectMaterialClosureExact)
+        {
+            materialClosureInput = InitializeMaterialClosureSemanticInput(
+                grid,
+                layer_index,
+                diagnostics.z_mm,
+                model_masks.at(layer_index),
+                support_generation.support_masks.at(layer_index),
+                clearedOuterVarnishSupportIndices.at(layer_index),
+                outer_varnish_masks.at(layer_index));
+            materialClosureInputPointer = &materialClosureInput;
+        }
         const std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
@@ -4041,6 +4177,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,
+            materialClosureInputPointer,
             diagnostics.semantic,
             layer_model_pixels,
             layer_support_pixels);
@@ -4055,13 +4192,21 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         total_varnish_non_zero_pixels += diagnostics.varnish_non_zero_pixels;
         merge_channel_stats(total_channel_stats, diagnostics);
         merge_semantic_stats(total_semantic_stats, diagnostics.semantic);
+        if (collectMaterialClosureExact)
+        {
+            PopulateMaterialClosureEmptyMask(layer, materialClosureInput);
+            materialClosureExactLayers.push_back(DetectMaterialClosureSemanticLayer(
+                materialClosureInput,
+                config.material_closure.connectivity,
+                config.material_closure.max_gap_px));
+        }
         profile.layer_compute_ms += ElapsedMsSince(layerComputeStart);
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
             const auto tiffWriteStart = SlicerClock::now();
             write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
             profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
-            if (config.material_closure.enabled)
+            if (collectMaterialClosureCandidate)
             {
                 const auto candidateDetectionStart = SlicerClock::now();
                 materialClosureCandidateLayers.push_back(DetectMaterialClosureCandidateLayer(
@@ -4142,11 +4287,27 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             total_semantic_stats,
             support_generation,
             support_placement_policy);
-    const Json material_closure_report = config.material_closure.enabled
-            && options.write_tiff_layers
-            && materialClosureCandidateLayers.size() == static_cast<std::size_t>(grid.layer_count)
-        ? BuildMaterialClosureCandidateReport(config.material_closure, materialClosureCandidateLayers)
-        : BuildMaterialClosureReportSkeleton(config.material_closure, grid.layer_count);
+    Json material_closure_report;
+    if (collectMaterialClosureExact
+        && materialClosureExactLayers.size() == static_cast<std::size_t>(grid.layer_count))
+    {
+        material_closure_report = BuildMaterialClosureExactReport(
+            config.material_closure,
+            materialClosureExactLayers);
+    }
+    else if (collectMaterialClosureCandidate
+             && materialClosureCandidateLayers.size() == static_cast<std::size_t>(grid.layer_count))
+    {
+        material_closure_report = BuildMaterialClosureCandidateReport(
+            config.material_closure,
+            materialClosureCandidateLayers);
+    }
+    else
+    {
+        material_closure_report = BuildMaterialClosureReportSkeleton(
+            config.material_closure,
+            grid.layer_count);
+    }
 
     const Json slice_report = Json::object({
         {"slicingMode", config.slicing_mode},

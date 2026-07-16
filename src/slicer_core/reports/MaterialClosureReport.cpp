@@ -12,6 +12,19 @@ namespace slicer_core
 namespace
 {
 
+struct ReportLayerEvidence
+{
+    int layerIndex{0};
+    double zMm{0.0};
+    int gapPixels{0};
+    int colorFillGapPixels{0};
+    int modelSupportGapPixels{0};
+    int colorSupportGapPixels{0};
+    int internalVoidGapPixels{0};
+    int varnishSupportGapPixels{0};
+    int externalBackgroundProtectedPixels{0};
+};
+
 Json BuildUnavailableDiagnostic()
 {
     return Json::object({
@@ -35,13 +48,14 @@ Json BuildCandidateOnlyDiagnostic(const std::uint64_t pixelCount)
 }
 
 Json BuildGapDiagnostic(
+    const std::string& severity,
     const std::string& code,
     const std::string& message,
     const int layerIndex,
     const int pixelCount)
 {
     return Json::object({
-        {"severity", "warning"},
+        {"severity", severity},
         {"code", code},
         {"message", message},
         {"layerIndex", layerIndex},
@@ -49,7 +63,7 @@ Json BuildGapDiagnostic(
     });
 }
 
-Json::Array BuildGapTypes(const MaterialClosureCandidateLayer& layer)
+Json::Array BuildGapTypes(const ReportLayerEvidence& layer)
 {
     Json::Array types;
     if (layer.colorFillGapPixels > 0)
@@ -64,7 +78,245 @@ Json::Array BuildGapTypes(const MaterialClosureCandidateLayer& layer)
     {
         types.emplace_back("COLOR_SUPPORT_GAP");
     }
+    if (layer.internalVoidGapPixels > 0)
+    {
+        types.emplace_back("INTERNAL_VOID_GAP");
+    }
+    if (layer.varnishSupportGapPixels > 0)
+    {
+        types.emplace_back("VARNISH_SUPPORT_GAP");
+    }
     return types;
+}
+
+void ValidateLayerEvidence(const ReportLayerEvidence& layer)
+{
+    if (layer.layerIndex < 0 || layer.gapPixels < 0 || layer.colorFillGapPixels < 0
+        || layer.modelSupportGapPixels < 0 || layer.colorSupportGapPixels < 0
+        || layer.internalVoidGapPixels < 0 || layer.varnishSupportGapPixels < 0
+        || layer.externalBackgroundProtectedPixels < 0)
+    {
+        throw std::invalid_argument("material closure report contains negative values");
+    }
+}
+
+std::string ResolveLayerStatus(
+    const MaterialClosureConfig& config,
+    const ReportLayerEvidence& layer,
+    const bool candidateOnly)
+{
+    if (candidateOnly)
+    {
+        return "warning";
+    }
+    if (layer.gapPixels == 0)
+    {
+        return "pass";
+    }
+    return config.fail_on_gap ? "fail" : "warning";
+}
+
+void AppendLayerDiagnostics(
+    const MaterialClosureConfig& config,
+    const ReportLayerEvidence& layer,
+    const bool candidateOnly,
+    Json::Array& diagnostics)
+{
+    const std::string severity = candidateOnly || !config.fail_on_gap ? "warning" : "error";
+    const std::string evidence = candidateOnly ? "Candidate" : "Exact semantic";
+    if (layer.colorFillGapPixels > 0)
+    {
+        diagnostics.emplace_back(BuildGapDiagnostic(
+            severity,
+            "COLOR_FILL_GAP",
+            evidence + " empty pixels were detected between color and model fill.",
+            layer.layerIndex,
+            layer.colorFillGapPixels));
+    }
+    if (layer.modelSupportGapPixels > 0)
+    {
+        diagnostics.emplace_back(BuildGapDiagnostic(
+            severity,
+            "MODEL_SUPPORT_GAP",
+            evidence + " empty pixels were detected between model material and support.",
+            layer.layerIndex,
+            layer.modelSupportGapPixels));
+    }
+    if (layer.colorSupportGapPixels > 0)
+    {
+        diagnostics.emplace_back(BuildGapDiagnostic(
+            severity,
+            "COLOR_SUPPORT_GAP",
+            evidence + " empty pixels were detected between color and support.",
+            layer.layerIndex,
+            layer.colorSupportGapPixels));
+    }
+    if (layer.internalVoidGapPixels > 0)
+    {
+        diagnostics.emplace_back(BuildGapDiagnostic(
+            severity,
+            "INTERNAL_VOID_GAP",
+            "Exact semantic empty pixels were detected inside the model envelope.",
+            layer.layerIndex,
+            layer.internalVoidGapPixels));
+    }
+    if (layer.varnishSupportGapPixels > 0)
+    {
+        diagnostics.emplace_back(BuildGapDiagnostic(
+            severity,
+            "VARNISH_SUPPORT_GAP",
+            "Exact semantic empty pixels were detected between outer varnish and required support.",
+            layer.layerIndex,
+            layer.varnishSupportGapPixels));
+    }
+}
+
+Json BuildDetectedReport(
+    const MaterialClosureConfig& config,
+    const std::vector<ReportLayerEvidence>& layers,
+    const bool candidateOnly)
+{
+    if (!config.enabled)
+    {
+        return BuildMaterialClosureReportSkeleton(config, static_cast<int>(layers.size()));
+    }
+
+    std::uint64_t totalGapPixels{0U};
+    std::uint64_t colorFillGapPixels{0U};
+    std::uint64_t modelSupportGapPixels{0U};
+    std::uint64_t colorSupportGapPixels{0U};
+    std::uint64_t internalVoidGapPixels{0U};
+    std::uint64_t varnishSupportGapPixels{0U};
+    std::uint64_t externalBackgroundProtectedPixels{0U};
+    std::uint64_t passLayerCount{0U};
+    std::uint64_t warningLayerCount{0U};
+    std::uint64_t failLayerCount{0U};
+    Json::Array layerItems;
+    Json::Array diagnostics;
+    std::vector<ReportLayerEvidence> worstLayers;
+
+    layerItems.reserve(layers.size());
+    for (const ReportLayerEvidence& layer : layers)
+    {
+        ValidateLayerEvidence(layer);
+        totalGapPixels += static_cast<std::uint64_t>(layer.gapPixels);
+        colorFillGapPixels += static_cast<std::uint64_t>(layer.colorFillGapPixels);
+        modelSupportGapPixels += static_cast<std::uint64_t>(layer.modelSupportGapPixels);
+        colorSupportGapPixels += static_cast<std::uint64_t>(layer.colorSupportGapPixels);
+        internalVoidGapPixels += static_cast<std::uint64_t>(layer.internalVoidGapPixels);
+        varnishSupportGapPixels += static_cast<std::uint64_t>(layer.varnishSupportGapPixels);
+        externalBackgroundProtectedPixels +=
+            static_cast<std::uint64_t>(layer.externalBackgroundProtectedPixels);
+
+        const std::string layerStatus = ResolveLayerStatus(config, layer, candidateOnly);
+        passLayerCount += layerStatus == "pass" ? 1U : 0U;
+        warningLayerCount += layerStatus == "warning" ? 1U : 0U;
+        failLayerCount += layerStatus == "fail" ? 1U : 0U;
+
+        layerItems.emplace_back(Json::object({
+            {"layerIndex", layer.layerIndex},
+            {"zMm", layer.zMm},
+            {"closureStatus", layerStatus},
+            {"gapPixels", layer.gapPixels},
+            {"gaps",
+             Json::object({
+                 {"colorFill", layer.colorFillGapPixels},
+                 {"modelSupport", layer.modelSupportGapPixels},
+                 {"colorSupport", layer.colorSupportGapPixels},
+                 {"internalVoid", layer.internalVoidGapPixels},
+                 {"varnishSupport", layer.varnishSupportGapPixels},
+             })},
+            {"repair",
+             Json::object({
+                 {"attempted", false},
+                 {"repairedPixels", 0},
+                 {"remainingGapPixels", layer.gapPixels},
+             })},
+            {"externalBackgroundProtectedPixels", layer.externalBackgroundProtectedPixels},
+            {"gapPreviewPath", ""},
+        }));
+
+        AppendLayerDiagnostics(config, layer, candidateOnly, diagnostics);
+        if (layer.gapPixels > 0)
+        {
+            worstLayers.push_back(layer);
+        }
+    }
+
+    if (candidateOnly)
+    {
+        diagnostics.insert(diagnostics.begin(), BuildCandidateOnlyDiagnostic(totalGapPixels));
+    }
+    std::stable_sort(
+        worstLayers.begin(),
+        worstLayers.end(),
+        [](const ReportLayerEvidence& first, const ReportLayerEvidence& second)
+        {
+            if (first.gapPixels != second.gapPixels)
+            {
+                return first.gapPixels > second.gapPixels;
+            }
+            return first.layerIndex < second.layerIndex;
+        });
+
+    Json::Array worstLayerItems;
+    const std::size_t worstLayerCount = std::min<std::size_t>(20U, worstLayers.size());
+    worstLayerItems.reserve(worstLayerCount);
+    for (std::size_t index{0U}; index < worstLayerCount; ++index)
+    {
+        const ReportLayerEvidence& layer = worstLayers.at(index);
+        worstLayerItems.emplace_back(Json::object({
+            {"layerIndex", layer.layerIndex},
+            {"zMm", layer.zMm},
+            {"gapPixels", layer.gapPixels},
+            {"types", Json{BuildGapTypes(layer)}},
+        }));
+    }
+
+    const bool hasGaps = totalGapPixels > 0U;
+    const std::string closureStatus = candidateOnly
+        ? "warning"
+        : (hasGaps ? (config.fail_on_gap ? "fail" : "warning") : "pass");
+    const std::string productionAcceptance = candidateOnly
+        ? "not_evaluated"
+        : (hasGaps ? "failed" : "passed");
+
+    return Json::object({
+        {"schema", "p0.material_closure.1"},
+        {"packageProtocol", "p0.rgbwsv.2"},
+        {"enabled", true},
+        {"mode", config.mode},
+        {"source", candidateOnly ? "rgbwsv_tiff_inferred" : "semantic_masks"},
+        {"confidence", candidateOnly ? "candidate" : "exact"},
+        {"closureStatus", closureStatus},
+        {"productionAcceptance", productionAcceptance},
+        {"repair",
+         Json::object({
+             {"enabled", config.repair.enabled},
+             {"maxGapPx", config.max_gap_px},
+             {"attempted", false},
+             {"repairedPixels", 0},
+         })},
+        {"totals",
+         Json::object({
+             {"layerCount", static_cast<std::uint64_t>(layers.size())},
+             {"evaluatedLayerCount", static_cast<std::uint64_t>(layers.size())},
+             {"passLayerCount", passLayerCount},
+             {"warningLayerCount", warningLayerCount},
+             {"failLayerCount", failLayerCount},
+             {"totalGapPixels", totalGapPixels},
+             {"colorFillGapPixels", colorFillGapPixels},
+             {"modelSupportGapPixels", modelSupportGapPixels},
+             {"colorSupportGapPixels", colorSupportGapPixels},
+             {"internalVoidGapPixels", internalVoidGapPixels},
+             {"varnishSupportGapPixels", varnishSupportGapPixels},
+             {"repairedPixels", 0},
+             {"externalBackgroundProtectedPixels", externalBackgroundProtectedPixels},
+         })},
+        {"worstLayers", Json{std::move(worstLayerItems)}},
+        {"layers", Json{std::move(layerItems)}},
+        {"diagnostics", Json{std::move(diagnostics)}},
+    });
 }
 
 }  // namespace
@@ -124,153 +376,46 @@ Json BuildMaterialClosureCandidateReport(
     const MaterialClosureConfig& config,
     const std::vector<MaterialClosureCandidateLayer>& layers)
 {
-    if (!config.enabled)
-    {
-        return BuildMaterialClosureReportSkeleton(config, static_cast<int>(layers.size()));
-    }
-
-    std::uint64_t totalGapPixels{0U};
-    std::uint64_t colorFillGapPixels{0U};
-    std::uint64_t modelSupportGapPixels{0U};
-    std::uint64_t colorSupportGapPixels{0U};
-    std::uint64_t externalBackgroundProtectedPixels{0U};
-    Json::Array layerItems;
-    Json::Array diagnostics;
-    std::vector<MaterialClosureCandidateLayer> worstLayers;
-
-    layerItems.reserve(layers.size());
+    std::vector<ReportLayerEvidence> evidence;
+    evidence.reserve(layers.size());
     for (const MaterialClosureCandidateLayer& layer : layers)
     {
-        if (layer.layerIndex < 0 || layer.gapPixels < 0 || layer.colorFillGapPixels < 0
-            || layer.modelSupportGapPixels < 0 || layer.colorSupportGapPixels < 0
-            || layer.externalBackgroundProtectedPixels < 0)
-        {
-            throw std::invalid_argument("material closure candidate report contains negative values");
-        }
-
-        totalGapPixels += static_cast<std::uint64_t>(layer.gapPixels);
-        colorFillGapPixels += static_cast<std::uint64_t>(layer.colorFillGapPixels);
-        modelSupportGapPixels += static_cast<std::uint64_t>(layer.modelSupportGapPixels);
-        colorSupportGapPixels += static_cast<std::uint64_t>(layer.colorSupportGapPixels);
-        externalBackgroundProtectedPixels +=
-            static_cast<std::uint64_t>(layer.externalBackgroundProtectedPixels);
-
-        layerItems.emplace_back(Json::object({
-            {"layerIndex", layer.layerIndex},
-            {"zMm", layer.zMm},
-            {"closureStatus", "warning"},
-            {"gapPixels", layer.gapPixels},
-            {"gaps",
-             Json::object({
-                 {"colorFill", layer.colorFillGapPixels},
-                 {"modelSupport", layer.modelSupportGapPixels},
-                 {"colorSupport", layer.colorSupportGapPixels},
-                 {"internalVoid", 0},
-                 {"varnishSupport", 0},
-             })},
-            {"repair",
-             Json::object({
-                 {"attempted", false},
-                 {"repairedPixels", 0},
-                 {"remainingGapPixels", layer.gapPixels},
-             })},
-            {"externalBackgroundProtectedPixels", layer.externalBackgroundProtectedPixels},
-            {"gapPreviewPath", ""},
-        }));
-
-        if (layer.colorFillGapPixels > 0)
-        {
-            diagnostics.emplace_back(BuildGapDiagnostic(
-                "COLOR_FILL_GAP",
-                "Candidate empty pixels were inferred between RGB color and W/V fill.",
-                layer.layerIndex,
-                layer.colorFillGapPixels));
-        }
-        if (layer.modelSupportGapPixels > 0)
-        {
-            diagnostics.emplace_back(BuildGapDiagnostic(
-                "MODEL_SUPPORT_GAP",
-                "Candidate empty pixels were inferred between model material and support.",
-                layer.layerIndex,
-                layer.modelSupportGapPixels));
-        }
-        if (layer.colorSupportGapPixels > 0)
-        {
-            diagnostics.emplace_back(BuildGapDiagnostic(
-                "COLOR_SUPPORT_GAP",
-                "Candidate empty pixels were inferred between RGB color and support.",
-                layer.layerIndex,
-                layer.colorSupportGapPixels));
-        }
-        if (layer.gapPixels > 0)
-        {
-            worstLayers.push_back(layer);
-        }
-    }
-
-    diagnostics.insert(diagnostics.begin(), BuildCandidateOnlyDiagnostic(totalGapPixels));
-    std::stable_sort(
-        worstLayers.begin(),
-        worstLayers.end(),
-        [](const MaterialClosureCandidateLayer& first, const MaterialClosureCandidateLayer& second)
-        {
-            if (first.gapPixels != second.gapPixels)
-            {
-                return first.gapPixels > second.gapPixels;
-            }
-            return first.layerIndex < second.layerIndex;
+        evidence.push_back(ReportLayerEvidence{
+            layer.layerIndex,
+            layer.zMm,
+            layer.gapPixels,
+            layer.colorFillGapPixels,
+            layer.modelSupportGapPixels,
+            layer.colorSupportGapPixels,
+            0,
+            0,
+            layer.externalBackgroundProtectedPixels,
         });
-
-    Json::Array worstLayerItems;
-    const std::size_t worstLayerCount = std::min<std::size_t>(20U, worstLayers.size());
-    worstLayerItems.reserve(worstLayerCount);
-    for (std::size_t index{0U}; index < worstLayerCount; ++index)
-    {
-        const MaterialClosureCandidateLayer& layer = worstLayers.at(index);
-        worstLayerItems.emplace_back(Json::object({
-            {"layerIndex", layer.layerIndex},
-            {"zMm", layer.zMm},
-            {"gapPixels", layer.gapPixels},
-            {"types", Json{BuildGapTypes(layer)}},
-        }));
     }
+    return BuildDetectedReport(config, evidence, true);
+}
 
-    return Json::object({
-        {"schema", "p0.material_closure.1"},
-        {"packageProtocol", "p0.rgbwsv.2"},
-        {"enabled", true},
-        {"mode", config.mode},
-        {"source", "rgbwsv_tiff_inferred"},
-        {"confidence", "candidate"},
-        {"closureStatus", "warning"},
-        {"productionAcceptance", "not_evaluated"},
-        {"repair",
-         Json::object({
-             {"enabled", config.repair.enabled},
-             {"maxGapPx", config.max_gap_px},
-             {"attempted", false},
-             {"repairedPixels", 0},
-         })},
-        {"totals",
-         Json::object({
-             {"layerCount", static_cast<std::uint64_t>(layers.size())},
-             {"evaluatedLayerCount", static_cast<std::uint64_t>(layers.size())},
-             {"passLayerCount", 0},
-             {"warningLayerCount", static_cast<std::uint64_t>(layers.size())},
-             {"failLayerCount", 0},
-             {"totalGapPixels", totalGapPixels},
-             {"colorFillGapPixels", colorFillGapPixels},
-             {"modelSupportGapPixels", modelSupportGapPixels},
-             {"colorSupportGapPixels", colorSupportGapPixels},
-             {"internalVoidGapPixels", 0},
-             {"varnishSupportGapPixels", 0},
-             {"repairedPixels", 0},
-             {"externalBackgroundProtectedPixels", externalBackgroundProtectedPixels},
-         })},
-        {"worstLayers", Json{std::move(worstLayerItems)}},
-        {"layers", Json{std::move(layerItems)}},
-        {"diagnostics", Json{std::move(diagnostics)}},
-    });
+Json BuildMaterialClosureExactReport(
+    const MaterialClosureConfig& config,
+    const std::vector<MaterialClosureSemanticLayerResult>& layers)
+{
+    std::vector<ReportLayerEvidence> evidence;
+    evidence.reserve(layers.size());
+    for (const MaterialClosureSemanticLayerResult& layer : layers)
+    {
+        evidence.push_back(ReportLayerEvidence{
+            layer.layerIndex,
+            layer.zMm,
+            layer.gapPixels,
+            layer.colorFillGapPixels,
+            layer.modelSupportGapPixels,
+            layer.colorSupportGapPixels,
+            layer.internalVoidGapPixels,
+            layer.varnishSupportGapPixels,
+            layer.externalBackgroundProtectedPixels,
+        });
+    }
+    return BuildDetectedReport(config, evidence, false);
 }
 
 Json BuildMaterialClosureSliceSummary(const Json& report)

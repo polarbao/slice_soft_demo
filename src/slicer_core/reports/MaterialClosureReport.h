@@ -2,6 +2,7 @@
 
 #include "slicer_core/config.h"
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
+#include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/json_value.h"
 
 #include <vector>
@@ -26,6 +27,16 @@ Json BuildMaterialClosureReportSkeleton(const MaterialClosureConfig& config, int
 Json BuildMaterialClosureCandidateReport(
     const MaterialClosureConfig& config,
     const std::vector<MaterialClosureCandidateLayer>& layers);
+
+/**
+ * @brief Builds an exact material-closure report from composer semantic masks.
+ * @param config Material-closure configuration snapshot.
+ * @param layers Exact semantic evidence for every evaluated package layer.
+ * @return Production-evaluable report with repair disabled.
+ */
+Json BuildMaterialClosureExactReport(
+    const MaterialClosureConfig& config,
+    const std::vector<MaterialClosureSemanticLayerResult>& layers);
 
 /**
  * @brief Builds the material-closure summary embedded in slice_report totals.

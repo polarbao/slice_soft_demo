@@ -383,6 +383,40 @@ docs/slice/DOC/DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md
 
 该准备记录只解除 12D-05 的开发准入，不解除 12D-07 repair 门禁。
 
+### 9.4 12D-05 Semantic Mask 精确诊断实现记录
+
+截至 2026-07-16，legacy pipeline 已在 composer 阶段构造逐层只读 semantic sidecar，并在生产 TIFF 写入前完成 exact diagnosis：
+
+```text
+MaterialClosureSemanticLayerInput
+  TextureSurfaceMask
+  ModelFillMask
+  ModelMaterialMask
+  SupportFillMask
+  InternalVoidSupportMask
+  SurfaceVarnishMask
+  OuterVarnishShellMask
+  ModelEnvelopeMask
+  SupportRequiredMask
+  ExpectedOccupiedDomainMask
+  LayerEmptyMask
+```
+
+`SupportRequiredMask` 由最终支撑 mask 加回被 `OuterVarnishSupportPriority` 清除的索引，保留材料冲突裁剪前的支撑意图；`SupportFillMask` 只记录 composer 最终实际写入 S 的像素。Detector 对画布边界连通空白执行保护，只在 expected occupied domain 中分类 ColorFill、ModelSupport、ColorSupport、InternalVoid 和 VarnishSupport gap，重叠分类按像素并集去重。
+
+精确报告满足：
+
+```text
+source=semantic_masks；
+confidence=exact；
+gap=0 -> closureStatus=pass / productionAcceptance=passed；
+gap>0 -> productionAcceptance=failed；
+repair.attempted=false；
+repairedPixels=0。
+```
+
+12D-05 不读取 preview PNG、不修改 layer/TIFF、不启用 repair。`semantic_exact_no_preview.json` 和真实 `model/obj/nai_you_new` 已分别验证无预览依赖与真实模型 exact report。
+
 ## 10. Rollback
 
 如果 12D 修复策略导致生产输出异常：
