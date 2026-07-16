@@ -1,7 +1,10 @@
 #pragma once
 
 #include "slicer_core/config.h"
+#include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/json_value.h"
+
+#include <vector>
 
 namespace slicer_core
 {
@@ -13,6 +16,16 @@ namespace slicer_core
  * @return Report object conforming to p0.material_closure.1.
  */
 Json BuildMaterialClosureReportSkeleton(const MaterialClosureConfig& config, int layerCount);
+
+/**
+ * @brief Builds a candidate-only material-closure report inferred from final RGBWSV layers.
+ * @param config Material-closure configuration snapshot.
+ * @param layers Candidate evidence for every evaluated package layer.
+ * @return Candidate report that is never valid for production acceptance.
+ */
+Json BuildMaterialClosureCandidateReport(
+    const MaterialClosureConfig& config,
+    const std::vector<MaterialClosureCandidateLayer>& layers);
 
 /**
  * @brief Builds the material-closure summary embedded in slice_report totals.

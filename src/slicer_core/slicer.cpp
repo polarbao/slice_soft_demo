@@ -1,5 +1,6 @@
 #include "slicer_core/slicer.h"
 
+#include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
@@ -4013,6 +4014,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     Json::Array slice_layers;
     Json::Array contour_layers;
     Json::Array preview_files;
+    std::vector<MaterialClosureCandidateLayer> materialClosureCandidateLayers;
+    if (config.material_closure.enabled && options.write_tiff_layers)
+    {
+        materialClosureCandidateLayers.reserve(static_cast<std::size_t>(grid.layer_count));
+    }
     MaterialPolicyReportData material_policy_report;
     material_policy_report.enabled = config.material_policy.enabled;
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
@@ -4055,6 +4061,19 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             const auto tiffWriteStart = SlicerClock::now();
             write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
             profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
+            if (config.material_closure.enabled)
+            {
+                const auto candidateDetectionStart = SlicerClock::now();
+                materialClosureCandidateLayers.push_back(DetectMaterialClosureCandidateLayer(
+                    layer,
+                    grid.width_px,
+                    grid.height_px,
+                    layer_index,
+                    diagnostics.z_mm,
+                    config.material_closure.connectivity,
+                    config.material_closure.max_gap_px));
+                profile.layer_compute_ms += ElapsedMsSince(candidateDetectionStart);
+            }
         }
         if (options.write_preview_files && should_write_preview(config.preview, layer_index, grid.layer_count)) {
             const auto previewWriteStart = SlicerClock::now();
@@ -4123,8 +4142,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             total_semantic_stats,
             support_generation,
             support_placement_policy);
-    const Json material_closure_report =
-        BuildMaterialClosureReportSkeleton(config.material_closure, grid.layer_count);
+    const Json material_closure_report = config.material_closure.enabled
+            && options.write_tiff_layers
+            && materialClosureCandidateLayers.size() == static_cast<std::size_t>(grid.layer_count)
+        ? BuildMaterialClosureCandidateReport(config.material_closure, materialClosureCandidateLayers)
+        : BuildMaterialClosureReportSkeleton(config.material_closure, grid.layer_count);
 
     const Json slice_report = Json::object({
         {"slicingMode", config.slicing_mode},

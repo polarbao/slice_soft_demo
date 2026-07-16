@@ -349,6 +349,30 @@ MATERIAL_CLOSURE_SOURCE_UNAVAILABLE（仅 enabled=true 时）。
 
 该骨架只表达“证据源尚不可用”，不得解释为闭环通过，也不修改 TIFF。
 
+### 9.2 12D-04 TIFF 候选诊断实现记录
+
+截至 2026-07-16，legacy package 流程会在 TIFF 成功写入后，使用同一份最终 interleaved RGBWSV uint8 buffer 执行只读候选诊断：
+
+```text
+ColorMask = any(R,G,B) < 255；
+FillMask = W < 255 || V < 255；
+SupportMask = S < 255；
+ModelMask = ColorMask || FillMask；
+LayerEmptyMask = RGBWSV 全 255。
+```
+
+候选 gap 只在空白像素两侧发现方向相对的材料时成立，支持 4/8 connectivity 和 `maxGapPx`。该方法可降低把普通外部空气当成 gap 的概率，但无法恢复 composer 的业务意图，尤其不能区分表面 V 与模型填充 V，也无法发现最终 S 通道已经丢失且没有邻接证据的支撑意图。因此报告必须固定：
+
+```text
+source=rgbwsv_tiff_inferred；
+confidence=candidate；
+closureStatus=warning；
+productionAcceptance=not_evaluated；
+repair.attempted=false。
+```
+
+候选检测不读取 preview PNG、不改写 TIFF，也不替代 12D-05 semantic mask exact detector。
+
 ## 10. Rollback
 
 如果 12D 修复策略导致生产输出异常：

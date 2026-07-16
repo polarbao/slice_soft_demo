@@ -81,6 +81,46 @@ bool SliceSummaryReferencesCanonicalReport()
             "summary report path");
 }
 
+bool CandidateReportCannotProduceProductionPass()
+{
+    slicer_core::MaterialClosureConfig config;
+    std::vector<slicer_core::MaterialClosureCandidateLayer> layers(2);
+    layers.at(0).layerIndex = 0;
+    layers.at(0).zMm = 0.01;
+    layers.at(0).gapPixels = 1;
+    layers.at(0).colorFillGapPixels = 1;
+    layers.at(0).externalBackgroundProtectedPixels = 12;
+    layers.at(1).layerIndex = 1;
+    layers.at(1).zMm = 0.02;
+    layers.at(1).gapPixels = 1;
+    layers.at(1).modelSupportGapPixels = 1;
+    layers.at(1).colorSupportGapPixels = 1;
+    layers.at(1).externalBackgroundProtectedPixels = 10;
+
+    const slicer_core::Json report = slicer_core::BuildMaterialClosureCandidateReport(config, layers);
+    const slicer_core::Json summary = slicer_core::BuildMaterialClosureSliceSummary(report);
+
+    return ExpectTrue(report.at("source").as_string() == "rgbwsv_tiff_inferred", "candidate source")
+        && ExpectTrue(report.at("confidence").as_string() == "candidate", "candidate confidence")
+        && ExpectTrue(report.at("closureStatus").as_string() == "warning", "candidate is never pass")
+        && ExpectTrue(
+            report.at("productionAcceptance").as_string() == "not_evaluated",
+            "candidate production acceptance not evaluated")
+        && ExpectTrue(!report.at("repair").at("attempted").as_bool(), "candidate repair not attempted")
+        && ExpectTrue(report.at("totals").at("evaluatedLayerCount").as_int() == 2, "all layers evaluated")
+        && ExpectTrue(report.at("totals").at("warningLayerCount").as_int() == 2, "all layers warning")
+        && ExpectTrue(report.at("totals").at("totalGapPixels").as_int() == 2, "union totals")
+        && ExpectTrue(report.at("totals").at("colorFillGapPixels").as_int() == 1, "color-fill totals")
+        && ExpectTrue(report.at("totals").at("modelSupportGapPixels").as_int() == 1, "model-support totals")
+        && ExpectTrue(report.at("totals").at("colorSupportGapPixels").as_int() == 1, "color-support totals")
+        && ExpectTrue(report.at("totals").at("externalBackgroundProtectedPixels").as_int() == 22, "background totals")
+        && ExpectTrue(report.at("worstLayers").size() == 2U, "worst layers retained")
+        && ExpectTrue(report.at("diagnostics").at(0).at("code").as_string() == "MATERIAL_CLOSURE_CANDIDATE_ONLY", "candidate diagnostic")
+        && ExpectTrue(summary.at("closureStatus").as_string() == "warning", "summary warning")
+        && ExpectTrue(summary.at("confidence").as_string() == "candidate", "summary candidate")
+        && ExpectTrue(summary.at("worstLayerIndex").as_int() == 0, "stable worst layer ordering");
+}
+
 bool NegativeLayerCountIsRejected()
 {
     slicer_core::MaterialClosureConfig config;
@@ -103,6 +143,7 @@ int main()
         {"enabled_skeleton_reports_unavailable_evidence", EnabledSkeletonReportsUnavailableEvidence},
         {"disabled_skeleton_has_no_false_failure", DisabledSkeletonHasNoFalseFailure},
         {"slice_summary_references_canonical_report", SliceSummaryReferencesCanonicalReport},
+        {"candidate_report_cannot_produce_production_pass", CandidateReportCannotProduceProductionPass},
         {"negative_layer_count_is_rejected", NegativeLayerCountIsRejected},
     };
 

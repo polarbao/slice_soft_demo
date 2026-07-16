@@ -1,7 +1,7 @@
 # TASKS_12D 横截面材料无缝闭环任务清单
 
 > 文档状态：Current Task Plan
-> 日期：2026-07-13
+> 日期：2026-07-16
 > 对应文档：
 > - docs/slice/DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md
 > - docs/slice/DOC/DOC_DECISION_12D_R0_R1_R2_R3_材料闭环阶段拆分.md
@@ -12,7 +12,7 @@
 > - docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
 > - docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
 
-执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成，12D-R1 已准入；12D-02/03 已完成，下一原子任务为 12D-04。
+执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成；12D-R1 的 12D-02/03/04 已完成。下一原子任务为 12D-05，进入前以 R2 semantic mask 接入准备记录为准。
 
 ## 12D-01 文档与验收口径冻结
 
@@ -105,7 +105,7 @@ manifest.reports.materialClosure 指向 reports/material_closure_report.json；
 
 ## 12D-04 TIFF 反推候选诊断
 
-状态：READY TO IMPLEMENT / 12D-R1
+状态：DONE / 12D-R1
 
 目标：
 
@@ -124,9 +124,20 @@ repair.attempted=false；
 能输出 ColorFillGap / ModelSupportGap / ColorSupportGap。
 ```
 
+完成记录：
+
+```text
+新增 MaterialClosureCandidateDetector，从最终 uint8 RGBWSV layer buffer 反推候选材料邻接；
+候选检测支持 connectivity=4/8 与 maxGapPx，输出 ColorFillGap、ModelSupportGap、ColorSupportGap 和去重 gap 并集；
+候选报告固定 source=rgbwsv_tiff_inferred、confidence=candidate、closureStatus=warning；
+productionAcceptance 固定 not_evaluated，repair.attempted=false，不修改 TIFF；
+外部连通空白只统计为 protected evidence，不作为修复输入；
+synthetic detector/report 单测、sample.stl CLI、RIP Reader 和完整 CTest 已通过。
+```
+
 ## 12D-05 Semantic Mask 精确诊断
 
-状态：PENDING / 12D-R2
+状态：READY TO IMPLEMENT / 12D-R2
 
 目标：
 

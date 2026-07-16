@@ -1,11 +1,11 @@
 # REPORT_12D 材料闭环准备状态
 
-> 文档状态：IN PROGRESS / Stage 12D-R1
-> 日期：2026-07-15
+> 文档状态：12D-R1 COMPLETE / Stage 12D-R2 READY
+> 日期：2026-07-16
 
 ## 1. 当前结论
 
-12D 文档准备阶段已完成；12C-R2-05、最终状态报告、fresh Qt lane、完整 Smoke 和 CTest 均已完成。12D-R1 已进入实现阶段，12D-02 `MaterialClosureConfig` 与 12D-03 `MaterialClosureReport` 已完成；TIFF 候选诊断、精确诊断和修复仍未实现。
+12D 文档准备阶段已完成；12C-R2-05、最终状态报告、fresh Qt lane、完整 Smoke 和 CTest 均已完成。12D-R1 已完成 12D-02 `MaterialClosureConfig`、12D-03 `MaterialClosureReport` 和 12D-04 TIFF 候选诊断。下一任务为 12D-05 semantic mask 精确诊断；修复仍未实现。
 
 ## 2. 已准备文档
 
@@ -40,11 +40,11 @@ gap preview 默认关闭且只作诊断；
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | 12D-R0 | 文档/schema/fixture/执行边界 | COMPLETE |
-| 12D-R1 | 配置、报告骨架、TIFF candidate | IN PROGRESS（12D-02/03 完成） |
-| 12D-R2 | semantic mask exact、repair-disabled 不变性 | PENDING |
+| 12D-R1 | 配置、报告骨架、TIFF candidate | COMPLETE（12D-02/03/04） |
+| 12D-R2 | semantic mask exact、repair-disabled 不变性 | READY（下一任务 12D-05） |
 | 12D-R3 | 1px repair、背景保护、UI、真实模型 | PENDING |
 
-## 5. 12D-02/03 已实现
+## 5. 12D-02/03/04 已实现
 
 ```text
 MaterialClosureConfig / MaterialClosureRepairConfig 数据模型；
@@ -56,12 +56,16 @@ MaterialClosureReport 独立报告构建模块；
 detector 不可用阶段的 unavailable/not_available 安全报告骨架；
 slice_report.totals.materialClosure 摘要与 manifest 报告路径；
 报告单元测试和 CLI/RIP Reader 集成验证。
+TIFF inferred candidate detector 从最终 RGBWSV buffer 只读反推材料邻接；
+候选输出 ColorFillGap / ModelSupportGap / ColorSupportGap 和去重 gap 并集；
+source=rgbwsv_tiff_inferred、confidence=candidate、closureStatus=warning；
+productionAcceptance=not_evaluated、repair.attempted=false；
+synthetic detector/report 单测、sample.stl CLI、RIP Reader 和完整 8 项 CTest 通过。
 ```
 
 ## 6. 尚未实现
 
 ```text
-TIFF inferred candidate detector；
 semantic mask exact detector；
 1px repair；
 gap preview；
@@ -79,5 +83,6 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 未发现待确认开放项；
 12D-02 MaterialClosureConfig：COMPLETE；
 12D-03 MaterialClosureReport：COMPLETE；
-下一任务：12D-04 TIFF 反推候选诊断，不跳过 candidate/exact 边界。
+12D-04 TIFF 反推候选诊断：COMPLETE；
+下一任务：12D-05 semantic mask 精确诊断，必须继续保持 candidate/exact 边界。
 ```
