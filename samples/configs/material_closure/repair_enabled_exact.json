@@ -1,0 +1,74 @@
+{
+  "input": {
+    "modelPath": "samples/models/sample.stl",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/MaterialClosureRepairEnabledExact",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.01,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [1.0, 1.0, 1.0],
+    "rotationDeg": [0.0, 0.0, 0.0],
+    "translationMm": [0.0, 0.0, 0.0]
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "rgb": [255, 255, 255],
+    "whiteValue": 255,
+    "varnishValue": 0
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "all_model",
+    "value": 0,
+    "emptyAllowedInProduction": false,
+    "legacyRgbFallback": false
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "materialClosure": {
+    "enabled": true,
+    "mode": "repair_then_report",
+    "connectivity": 8,
+    "maxGapPx": 1,
+    "failOnGap": true,
+    "writeGapPreview": false,
+    "repair": {
+      "enabled": true,
+      "colorFillGap": "model_fill",
+      "modelSupportGap": "contextual",
+      "internalVoidGap": "support",
+      "varnishSupportGap": "support"
+    }
+  },
+  "preview": {
+    "enabled": false,
+    "format": "png",
+    "interval": 10,
+    "layerRange": [0, 29],
+    "channels": ["rgb", "support", "white", "varnish"],
+    "onlyNonEmptyLayers": true
+  }
+}

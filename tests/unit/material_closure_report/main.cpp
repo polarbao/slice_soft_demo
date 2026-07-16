@@ -187,6 +187,60 @@ bool ExactReportCanWarnWithoutAcceptingGaps()
         && ExpectTrue(report.at("diagnostics").at(0).at("severity").as_string() == "warning", "warning diagnostic severity");
 }
 
+bool ExactRepairReportUsesRemainingGapForAcceptance()
+{
+    slicer_core::MaterialClosureConfig config;
+    config.mode = "repair_then_report";
+    config.repair.enabled = true;
+    std::vector<slicer_core::MaterialClosureSemanticLayerResult> layers(1);
+    layers.at(0).layerIndex = 7;
+    layers.at(0).zMm = 0.07;
+    layers.at(0).gapPixels = 1;
+    layers.at(0).colorFillGapPixels = 1;
+    layers.at(0).repairAttempted = true;
+    layers.at(0).repairedPixels = 1;
+    layers.at(0).repairedColorFillPixels = 1;
+    layers.at(0).remainingGapPixels = 0;
+
+    const slicer_core::Json report = slicer_core::BuildMaterialClosureExactReport(config, layers);
+    return ExpectTrue(report.at("closureStatus").as_string() == "pass", "fully repaired layer passes")
+        && ExpectTrue(report.at("productionAcceptance").as_string() == "passed", "fully repaired output accepted")
+        && ExpectTrue(report.at("repair").at("attempted").as_bool(), "report records repair attempt")
+        && ExpectTrue(report.at("repair").at("repairedPixels").as_int() == 1, "report repaired count")
+        && ExpectTrue(report.at("totals").at("totalGapPixels").as_int() == 1, "original gap retained")
+        && ExpectTrue(report.at("totals").at("repairedPixels").as_int() == 1, "total repaired count")
+        && ExpectTrue(report.at("totals").at("remainingGapPixels").as_int() == 0, "remaining gap cleared")
+        && ExpectTrue(report.at("layers").at(0).at("gapPixels").as_int() == 1, "layer original gap retained")
+        && ExpectTrue(report.at("layers").at(0).at("repair").at("remainingGapPixels").as_int() == 0, "layer remaining gap cleared")
+        && ExpectTrue(report.at("diagnostics").size() == 0U, "repaired gap emits no remaining-gap error");
+}
+
+bool ExactRepairReportEmitsTooWideDiagnostic()
+{
+    slicer_core::MaterialClosureConfig config;
+    config.mode = "repair_then_report";
+    config.repair.enabled = true;
+    std::vector<slicer_core::MaterialClosureSemanticLayerResult> layers(1);
+    layers.at(0).layerIndex = 8;
+    layers.at(0).gapPixels = 4;
+    layers.at(0).internalVoidGapPixels = 4;
+    layers.at(0).repairAttempted = true;
+    layers.at(0).remainingGapPixels = 4;
+    layers.at(0).remainingInternalVoidGapPixels = 4;
+    layers.at(0).repairRejectedTooWidePixels = 4;
+
+    const slicer_core::Json report = slicer_core::BuildMaterialClosureExactReport(config, layers);
+    bool foundTooWide{false};
+    for (std::size_t index{0U}; index < report.at("diagnostics").size(); ++index)
+    {
+        foundTooWide = foundTooWide
+            || report.at("diagnostics").at(index).at("code").as_string() == "REPAIR_GAP_TOO_WIDE";
+    }
+    return ExpectTrue(report.at("closureStatus").as_string() == "fail", "wide gap remains failed")
+        && ExpectTrue(report.at("totals").at("remainingGapPixels").as_int() == 4, "wide gap remains")
+        && ExpectTrue(foundTooWide, "stable too-wide diagnostic emitted");
+}
+
 bool NegativeLayerCountIsRejected()
 {
     slicer_core::MaterialClosureConfig config;
@@ -213,6 +267,8 @@ int main()
         {"exact_report_passes_only_without_gaps", ExactReportPassesOnlyWithoutGaps},
         {"exact_report_fails_with_stable_gap_diagnostics", ExactReportFailsWithStableGapDiagnostics},
         {"exact_report_can_warn_without_accepting_gaps", ExactReportCanWarnWithoutAcceptingGaps},
+        {"exact_repair_report_uses_remaining_gap_for_acceptance", ExactRepairReportUsesRemainingGapForAcceptance},
+        {"exact_repair_report_emits_too_wide_diagnostic", ExactRepairReportEmitsTooWideDiagnostic},
         {"negative_layer_count_is_rejected", NegativeLayerCountIsRejected},
     };
 

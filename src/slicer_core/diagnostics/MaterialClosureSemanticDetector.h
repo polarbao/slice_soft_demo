@@ -45,7 +45,50 @@ struct MaterialClosureSemanticLayerResult
     int internalVoidGapPixels{0};
     int varnishSupportGapPixels{0};
     int externalBackgroundProtectedPixels{0};
+    bool repairAttempted{false};
+    int repairedPixels{0};
+    int repairedColorFillPixels{0};
+    int repairedModelSupportPixels{0};
+    int repairedInternalVoidPixels{0};
+    int repairedVarnishSupportPixels{0};
+    int remainingGapPixels{0};
+    int remainingColorFillGapPixels{0};
+    int remainingModelSupportGapPixels{0};
+    int remainingColorSupportGapPixels{0};
+    int remainingInternalVoidGapPixels{0};
+    int remainingVarnishSupportGapPixels{0};
+    int repairRejectedTooWidePixels{0};
 };
+
+/**
+ * @brief Exact semantic masks and summary used to plan closure repair.
+ */
+struct MaterialClosureSemanticLayerAnalysis
+{
+    int widthPx{0};
+    int heightPx{0};
+    MaterialClosureSemanticLayerResult summary;
+    std::vector<std::uint8_t> externalBackgroundMask;
+    std::vector<std::uint8_t> candidateGapMask;
+    std::vector<std::uint8_t> colorFillGapMask;
+    std::vector<std::uint8_t> modelSupportGapMask;
+    std::vector<std::uint8_t> colorSupportGapMask;
+    std::vector<std::uint8_t> internalVoidGapMask;
+    std::vector<std::uint8_t> varnishSupportGapMask;
+};
+
+/**
+ * @brief Analyzes exact material gaps and retains masks for a later repair plan.
+ * @param input Semantic masks and final empty mask for one layer.
+ * @param connectivity Pixel connectivity, either 4 or 8.
+ * @param maxGapPx Maximum neighborhood radius used for gap classification.
+ * @return Exact per-layer gap analysis and immutable repair evidence.
+ * @throws std::invalid_argument When dimensions, connectivity, radius, or mask sizes are invalid.
+ */
+MaterialClosureSemanticLayerAnalysis AnalyzeMaterialClosureSemanticLayer(
+    const MaterialClosureSemanticLayerInput& input,
+    int connectivity,
+    int maxGapPx);
 
 /**
  * @brief Detects exact material gaps from composer semantic masks.

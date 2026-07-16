@@ -220,7 +220,7 @@ exact report 断言 repair.attempted=false、repairedPixels=0、remainingGapPixe
 
 ## 12D-07 Repair Enabled 一像素闭环修复
 
-状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
+状态：DONE / 12D-R3
 
 目标：
 
@@ -238,9 +238,22 @@ ModelSupportGap 按上下文修复为 ModelFill 或 SupportFill；
 2px 及以上 gap 输出 REPAIR_GAP_TOO_WIDE 且不自动修复。
 ```
 
+完成记录：
+
+```text
+新增 exact analysis、保守一像素 repair plan 与 RGBWSV/semantic mask 同步应用模块；
+ColorFill、ModelSupport contextual、InternalVoid 与 VarnishSupport 可按规则修复；
+ColorSupport-only 保持只报告；
+2x2 厚区或无法逐像素确认的组件输出 REPAIR_GAP_TOO_WIDE；
+报告保留 repair 前 totalGapPixels，并以 remainingGapPixels 判定状态；
+repair-enabled sample package 与 RIP Reader 通过；
+Repair Disabled 30 层 TIFF SHA-256 守门继续通过；
+完整 CTest 9/9 通过。
+```
+
 ## 12D-08 外部背景保护
 
-状态：PREPARED / BLOCKED BY 12D-07 / 12D-R3
+状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
 
 目标：
 

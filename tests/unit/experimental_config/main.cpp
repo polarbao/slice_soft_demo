@@ -183,6 +183,27 @@ bool MaterialClosureSlicerConfig1Parses()
         && ExpectTrue(!config.material_closure.fail_on_gap, "schema v1 material closure failOnGap parses");
 }
 
+bool MaterialClosureRepairConfigParses()
+{
+    const std::filesystem::path configPath = WriteConfig(
+        "material_closure_repair.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"modelFill\": {\"enabled\": true, \"material\": \"white\", \"scope\": \"all_model\"},\n"
+            "  \"materialClosure\": {\n"
+            "    \"mode\": \"repair_then_report\",\n"
+            "    \"maxGapPx\": 1,\n"
+            "    \"repair\": {\"enabled\": true}\n"
+            "  }\n"));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    return ExpectTrue(config.material_closure.enabled, "material closure remains enabled")
+        && ExpectTrue(
+            config.material_closure.mode == "repair_then_report",
+            "repair mode parses")
+        && ExpectTrue(config.material_closure.repair.enabled, "repair enabled parses")
+        && ExpectTrue(config.material_closure.max_gap_px == 1, "repair max gap remains one pixel");
+}
+
 bool MaterialClosureRejectsInvalidConfiguration()
 {
     return ConfigRejectedWith(
@@ -202,9 +223,17 @@ bool MaterialClosureRejectsInvalidConfiguration()
                ",\n  \"materialClosure\": {\"repair\": {\"colorFillGap\": \"support\"}}\n",
                "materialClosure.repair.colorFillGap")
         && ConfigRejectedWith(
-               "material_closure_repair_not_admitted.json",
-               ",\n  \"materialClosure\": {\"mode\": \"repair_then_report\", \"repair\": {\"enabled\": true}}\n",
-               "materialClosure repair is not implemented in 12D-R1");
+               "material_closure_repair_mode_without_flag.json",
+               ",\n  \"materialClosure\": {\"mode\": \"repair_then_report\"}\n",
+               "materialClosure repair mode and enabled flag must be configured together")
+        && ConfigRejectedWith(
+               "material_closure_repair_flag_without_mode.json",
+               ",\n  \"materialClosure\": {\"mode\": \"diagnostic\", \"repair\": {\"enabled\": true}}\n",
+               "materialClosure repair mode and enabled flag must be configured together")
+        && ConfigRejectedWith(
+               "material_closure_repair_gap_too_large.json",
+               ",\n  \"materialClosure\": {\"mode\": \"repair_then_report\", \"maxGapPx\": 2, \"repair\": {\"enabled\": true}}\n",
+               "materialClosure repair supports maxGapPx=1 only");
 }
 
 bool Stage12AConfigPlaceholdersParse()
@@ -589,6 +618,7 @@ int main()
         {"material_closure_defaults_are_diagnostic_only", MaterialClosureDefaultsAreDiagnosticOnly},
         {"material_closure_diagnostic_config_parses", MaterialClosureDiagnosticConfigParses},
         {"material_closure_slicer_config_1_parses", MaterialClosureSlicerConfig1Parses},
+        {"material_closure_repair_config_parses", MaterialClosureRepairConfigParses},
         {"material_closure_rejects_invalid_configuration", MaterialClosureRejectsInvalidConfiguration},
         {"stage_12a_config_placeholders_parse", Stage12AConfigPlaceholdersParse},
         {"stage_12a_surface_varnish_disabled_accepts_zero_thickness", Stage12ASurfaceVarnishDisabledAcceptsZeroThickness},

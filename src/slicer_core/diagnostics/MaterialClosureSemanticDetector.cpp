@@ -188,35 +188,44 @@ bool HasMaskNeighbor(
 
 }  // namespace
 
-MaterialClosureSemanticLayerResult DetectMaterialClosureSemanticLayer(
+MaterialClosureSemanticLayerAnalysis AnalyzeMaterialClosureSemanticLayer(
     const MaterialClosureSemanticLayerInput& input,
     const int connectivity,
     const int maxGapPx)
 {
     ValidateInput(input, connectivity, maxGapPx);
 
-    MaterialClosureSemanticLayerResult result;
-    result.layerIndex = input.layerIndex;
-    result.zMm = input.zMm;
+    MaterialClosureSemanticLayerAnalysis analysis;
+    analysis.widthPx = input.widthPx;
+    analysis.heightPx = input.heightPx;
+    analysis.summary.layerIndex = input.layerIndex;
+    analysis.summary.zMm = input.zMm;
+    const std::size_t pixelCount = static_cast<std::size_t>(input.widthPx)
+        * static_cast<std::size_t>(input.heightPx);
+    analysis.candidateGapMask.assign(pixelCount, 0U);
+    analysis.colorFillGapMask.assign(pixelCount, 0U);
+    analysis.modelSupportGapMask.assign(pixelCount, 0U);
+    analysis.colorSupportGapMask.assign(pixelCount, 0U);
+    analysis.internalVoidGapMask.assign(pixelCount, 0U);
+    analysis.varnishSupportGapMask.assign(pixelCount, 0U);
 
-    std::vector<std::uint8_t> externalBackground;
     if (connectivity == 8)
     {
-        externalBackground = BuildExternalBackgroundMask(
+        analysis.externalBackgroundMask = BuildExternalBackgroundMask(
             input.layerEmptyMask,
             input.widthPx,
             input.heightPx,
             directions8,
-            result.externalBackgroundProtectedPixels);
+            analysis.summary.externalBackgroundProtectedPixels);
     }
     else
     {
-        externalBackground = BuildExternalBackgroundMask(
+        analysis.externalBackgroundMask = BuildExternalBackgroundMask(
             input.layerEmptyMask,
             input.widthPx,
             input.heightPx,
             directions4,
-            result.externalBackgroundProtectedPixels);
+            analysis.summary.externalBackgroundProtectedPixels);
     }
 
     for (int y{0}; y < input.heightPx; ++y)
@@ -226,11 +235,12 @@ MaterialClosureSemanticLayerResult DetectMaterialClosureSemanticLayer(
             const std::size_t index = PixelIndex(input.widthPx, x, y);
             const bool candidateGap = input.layerEmptyMask.at(index) != 0U
                 && input.expectedOccupiedDomainMask.at(index) != 0U
-                && externalBackground.at(index) == 0U;
+                && analysis.externalBackgroundMask.at(index) == 0U;
             if (!candidateGap)
             {
                 continue;
             }
+            analysis.candidateGapMask.at(index) = 1U;
 
             const bool nearTexture = HasMaskNeighbor(
                 input.textureSurfaceMask,
@@ -280,12 +290,17 @@ MaterialClosureSemanticLayerResult DetectMaterialClosureSemanticLayer(
             const bool varnishSupportGap = input.supportRequiredMask.at(index) != 0U
                 && nearOuterVarnish && nearSupport;
 
-            result.colorFillGapPixels += colorFillGap ? 1 : 0;
-            result.modelSupportGapPixels += modelSupportGap ? 1 : 0;
-            result.colorSupportGapPixels += colorSupportGap ? 1 : 0;
-            result.internalVoidGapPixels += internalVoidGap ? 1 : 0;
-            result.varnishSupportGapPixels += varnishSupportGap ? 1 : 0;
-            result.gapPixels += (
+            analysis.colorFillGapMask.at(index) = colorFillGap ? 1U : 0U;
+            analysis.modelSupportGapMask.at(index) = modelSupportGap ? 1U : 0U;
+            analysis.colorSupportGapMask.at(index) = colorSupportGap ? 1U : 0U;
+            analysis.internalVoidGapMask.at(index) = internalVoidGap ? 1U : 0U;
+            analysis.varnishSupportGapMask.at(index) = varnishSupportGap ? 1U : 0U;
+            analysis.summary.colorFillGapPixels += colorFillGap ? 1 : 0;
+            analysis.summary.modelSupportGapPixels += modelSupportGap ? 1 : 0;
+            analysis.summary.colorSupportGapPixels += colorSupportGap ? 1 : 0;
+            analysis.summary.internalVoidGapPixels += internalVoidGap ? 1 : 0;
+            analysis.summary.varnishSupportGapPixels += varnishSupportGap ? 1 : 0;
+            analysis.summary.gapPixels += (
                 colorFillGap
                 || modelSupportGap
                 || colorSupportGap
@@ -296,7 +311,21 @@ MaterialClosureSemanticLayerResult DetectMaterialClosureSemanticLayer(
         }
     }
 
-    return result;
+    analysis.summary.remainingGapPixels = analysis.summary.gapPixels;
+    analysis.summary.remainingColorFillGapPixels = analysis.summary.colorFillGapPixels;
+    analysis.summary.remainingModelSupportGapPixels = analysis.summary.modelSupportGapPixels;
+    analysis.summary.remainingColorSupportGapPixels = analysis.summary.colorSupportGapPixels;
+    analysis.summary.remainingInternalVoidGapPixels = analysis.summary.internalVoidGapPixels;
+    analysis.summary.remainingVarnishSupportGapPixels = analysis.summary.varnishSupportGapPixels;
+    return analysis;
+}
+
+MaterialClosureSemanticLayerResult DetectMaterialClosureSemanticLayer(
+    const MaterialClosureSemanticLayerInput& input,
+    const int connectivity,
+    const int maxGapPx)
+{
+    return AnalyzeMaterialClosureSemanticLayer(input, connectivity, maxGapPx).summary;
 }
 
 }  // namespace slicer_core

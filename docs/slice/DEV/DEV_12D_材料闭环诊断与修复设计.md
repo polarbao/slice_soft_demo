@@ -435,6 +435,31 @@ preview.enabled：false；
 
 另外通过 deterministic unit fixture 证明 detector 不改变 semantic evidence，exact report 在 repair disabled 时仍保留原始 gap 和 `remainingGapPixels=gapPixels`。生产 fixture 不引入 gap 注入测试后门。
 
+### 9.6 12D-07 一像素闭环修复实现记录
+
+截至 2026-07-16，repair-enabled exact path 已接入 TIFF writer 前：
+
+```text
+AnalyzeMaterialClosureSemanticLayer；
+BuildMaterialClosureRepairPlan；
+ApplyMaterialClosureRepair；
+repair 后重新执行 exact detector；
+report 保留原始 gap，并以 remainingGapPixels 判定验收。
+```
+
+首版修复规则：
+
+```text
+ColorFillGap -> 当前 modelFill.material；
+ModelSupportGap -> ModelEnvelope 内写 ModelFill，SupportRequired 内写 S；
+InternalVoidGap -> S；
+VarnishSupportGap -> SupportRequired 内写 S；
+ColorSupportGap-only -> 只报告；
+包含 2x2 厚区或无法逐像素确认的组件 -> REPAIR_GAP_TOO_WIDE。
+```
+
+配置只有在 `mode=repair_then_report`、`repair.enabled=true`、`maxGapPx=1`、ModelFill 与 Support 均启用时准入。默认仍为 diagnostic/repair disabled。
+
 ## 10. Rollback
 
 如果 12D 修复策略导致生产输出异常：

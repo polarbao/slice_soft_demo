@@ -32,7 +32,7 @@ Json BuildMaterialClosureCandidateReport(
  * @brief Builds an exact material-closure report from composer semantic masks.
  * @param config Material-closure configuration snapshot.
  * @param layers Exact semantic evidence for every evaluated package layer.
- * @return Production-evaluable report with repair disabled.
+ * @return Production-evaluable report using post-repair remaining gaps when repair was attempted.
  */
 Json BuildMaterialClosureExactReport(
     const MaterialClosureConfig& config,

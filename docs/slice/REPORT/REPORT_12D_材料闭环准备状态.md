@@ -1,11 +1,11 @@
 # REPORT_12D 材料闭环准备状态
 
-> 文档状态：12D-R2 COMPLETE / 12D-R3 PREPARED
+> 文档状态：12D-R2 COMPLETE / 12D-R3 IN PROGRESS
 > 日期：2026-07-16
 
 ## 1. 当前结论
 
-12D 文档准备阶段已完成；12D-R1 已完成配置、报告骨架和 TIFF 候选诊断；12D-R2 已完成 12D-05 semantic mask 精确诊断与 12D-06 repair-disabled TIFF 不变性验证。12D-R3 的 12D-07 至 12D-10 已完成准备，但仍需用户明确指定后按顺序实施；修复仍未实现。
+12D 文档准备阶段已完成；12D-R1/R2 已完成。12D-R3 已完成 12D-07 一像素闭环修复，12D-08 外部背景保护已解除前置阻塞并进入可执行状态；12D-09/10 继续等待前序任务。
 
 ## 2. 已准备文档
 
@@ -45,7 +45,7 @@ gap preview 默认关闭且只作诊断；
 | 12D-R0 | 文档/schema/fixture/执行边界 | COMPLETE |
 | 12D-R1 | 配置、报告骨架、TIFF candidate | COMPLETE（12D-02/03/04） |
 | 12D-R2 | semantic mask exact、repair-disabled 不变性 | COMPLETE（12D-05/06） |
-| 12D-R3 | 1px repair、背景保护、UI、真实模型 | PREPARED / NOT STARTED |
+| 12D-R3 | 1px repair、背景保护、UI、真实模型 | IN PROGRESS（12D-07 COMPLETE） |
 
 ## 5. 12D-02/03/04/05/06 已实现
 
@@ -79,7 +79,6 @@ detector evidence 不变与 report 原始 gap 保留单元测试。
 ## 6. 尚未实现
 
 ```text
-1px repair；
 gap preview；
 Qt UI closure 展示；
 真实模型自动验收脚本。
@@ -98,7 +97,8 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-04 TIFF 反推候选诊断：COMPLETE；
 12D-05 semantic mask 精确诊断：COMPLETE；
 12D-06 repair-disabled TIFF 不变性验证：COMPLETE；
-下一代码任务：12D-07 Repair Enabled 一像素闭环修复，尚未开始且必须由用户明确指定。
+12D-07 Repair Enabled 一像素闭环修复：COMPLETE；
+下一代码任务：12D-08 外部背景保护，已获用户授权。
 ```
 
 ## 8. 后续任务准备判断
@@ -108,5 +108,7 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 ```text
 12D-05：COMPLETE；
 12D-06：COMPLETE，12D-R2 已封口；
-12D-07：PREPARED / READY FOR USER ADMISSION；12D-08 至 12D-10 继续受前序任务门禁阻塞。
+12D-07：COMPLETE；
+12D-08：PREPARED / READY FOR USER ADMISSION；
+12D-09 至 12D-10 继续受前序任务门禁阻塞。
 ```

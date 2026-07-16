@@ -23,6 +23,19 @@ struct ReportLayerEvidence
     int internalVoidGapPixels{0};
     int varnishSupportGapPixels{0};
     int externalBackgroundProtectedPixels{0};
+    bool repairAttempted{false};
+    int repairedPixels{0};
+    int repairedColorFillPixels{0};
+    int repairedModelSupportPixels{0};
+    int repairedInternalVoidPixels{0};
+    int repairedVarnishSupportPixels{0};
+    int remainingGapPixels{0};
+    int remainingColorFillGapPixels{0};
+    int remainingModelSupportGapPixels{0};
+    int remainingColorSupportGapPixels{0};
+    int remainingInternalVoidGapPixels{0};
+    int remainingVarnishSupportGapPixels{0};
+    int repairRejectedTooWidePixels{0};
 };
 
 Json BuildUnavailableDiagnostic()
@@ -94,10 +107,32 @@ void ValidateLayerEvidence(const ReportLayerEvidence& layer)
     if (layer.layerIndex < 0 || layer.gapPixels < 0 || layer.colorFillGapPixels < 0
         || layer.modelSupportGapPixels < 0 || layer.colorSupportGapPixels < 0
         || layer.internalVoidGapPixels < 0 || layer.varnishSupportGapPixels < 0
-        || layer.externalBackgroundProtectedPixels < 0)
+        || layer.externalBackgroundProtectedPixels < 0 || layer.repairedPixels < 0
+        || layer.repairedColorFillPixels < 0 || layer.repairedModelSupportPixels < 0
+        || layer.repairedInternalVoidPixels < 0 || layer.repairedVarnishSupportPixels < 0
+        || layer.remainingGapPixels < 0 || layer.remainingColorFillGapPixels < 0
+        || layer.remainingModelSupportGapPixels < 0 || layer.remainingColorSupportGapPixels < 0
+        || layer.remainingInternalVoidGapPixels < 0 || layer.remainingVarnishSupportGapPixels < 0
+        || layer.repairRejectedTooWidePixels < 0)
     {
         throw std::invalid_argument("material closure report contains negative values");
     }
+}
+
+ReportLayerEvidence ResolveRemainingEvidence(const ReportLayerEvidence& layer)
+{
+    if (!layer.repairAttempted)
+    {
+        return layer;
+    }
+    ReportLayerEvidence remaining = layer;
+    remaining.gapPixels = layer.remainingGapPixels;
+    remaining.colorFillGapPixels = layer.remainingColorFillGapPixels;
+    remaining.modelSupportGapPixels = layer.remainingModelSupportGapPixels;
+    remaining.colorSupportGapPixels = layer.remainingColorSupportGapPixels;
+    remaining.internalVoidGapPixels = layer.remainingInternalVoidGapPixels;
+    remaining.varnishSupportGapPixels = layer.remainingVarnishSupportGapPixels;
+    return remaining;
 }
 
 std::string ResolveLayerStatus(
@@ -188,6 +223,13 @@ Json BuildDetectedReport(
     std::uint64_t internalVoidGapPixels{0U};
     std::uint64_t varnishSupportGapPixels{0U};
     std::uint64_t externalBackgroundProtectedPixels{0U};
+    std::uint64_t repairedPixels{0U};
+    std::uint64_t repairedColorFillPixels{0U};
+    std::uint64_t repairedModelSupportPixels{0U};
+    std::uint64_t repairedInternalVoidPixels{0U};
+    std::uint64_t repairedVarnishSupportPixels{0U};
+    std::uint64_t remainingGapPixels{0U};
+    std::uint64_t repairRejectedTooWidePixels{0U};
     std::uint64_t passLayerCount{0U};
     std::uint64_t warningLayerCount{0U};
     std::uint64_t failLayerCount{0U};
@@ -207,8 +249,17 @@ Json BuildDetectedReport(
         varnishSupportGapPixels += static_cast<std::uint64_t>(layer.varnishSupportGapPixels);
         externalBackgroundProtectedPixels +=
             static_cast<std::uint64_t>(layer.externalBackgroundProtectedPixels);
+        repairedPixels += static_cast<std::uint64_t>(layer.repairedPixels);
+        repairedColorFillPixels += static_cast<std::uint64_t>(layer.repairedColorFillPixels);
+        repairedModelSupportPixels += static_cast<std::uint64_t>(layer.repairedModelSupportPixels);
+        repairedInternalVoidPixels += static_cast<std::uint64_t>(layer.repairedInternalVoidPixels);
+        repairedVarnishSupportPixels += static_cast<std::uint64_t>(layer.repairedVarnishSupportPixels);
+        repairRejectedTooWidePixels +=
+            static_cast<std::uint64_t>(layer.repairRejectedTooWidePixels);
 
-        const std::string layerStatus = ResolveLayerStatus(config, layer, candidateOnly);
+        const ReportLayerEvidence remaining = ResolveRemainingEvidence(layer);
+        remainingGapPixels += static_cast<std::uint64_t>(remaining.gapPixels);
+        const std::string layerStatus = ResolveLayerStatus(config, remaining, candidateOnly);
         passLayerCount += layerStatus == "pass" ? 1U : 0U;
         warningLayerCount += layerStatus == "warning" ? 1U : 0U;
         failLayerCount += layerStatus == "fail" ? 1U : 0U;
@@ -228,18 +279,32 @@ Json BuildDetectedReport(
              })},
             {"repair",
              Json::object({
-                 {"attempted", false},
-                 {"repairedPixels", 0},
-                 {"remainingGapPixels", layer.gapPixels},
+                 {"attempted", !candidateOnly && layer.repairAttempted},
+                 {"repairedPixels", layer.repairedPixels},
+                 {"repairedColorFillPixels", layer.repairedColorFillPixels},
+                 {"repairedModelSupportPixels", layer.repairedModelSupportPixels},
+                 {"repairedInternalVoidPixels", layer.repairedInternalVoidPixels},
+                 {"repairedVarnishSupportPixels", layer.repairedVarnishSupportPixels},
+                 {"remainingGapPixels", remaining.gapPixels},
+                 {"rejectedTooWidePixels", layer.repairRejectedTooWidePixels},
              })},
             {"externalBackgroundProtectedPixels", layer.externalBackgroundProtectedPixels},
             {"gapPreviewPath", ""},
         }));
 
-        AppendLayerDiagnostics(config, layer, candidateOnly, diagnostics);
-        if (layer.gapPixels > 0)
+        AppendLayerDiagnostics(config, remaining, candidateOnly, diagnostics);
+        if (layer.repairRejectedTooWidePixels > 0)
         {
-            worstLayers.push_back(layer);
+            diagnostics.emplace_back(BuildGapDiagnostic(
+                config.fail_on_gap ? "error" : "warning",
+                "REPAIR_GAP_TOO_WIDE",
+                "Material closure repair rejected a component wider than one pixel.",
+                layer.layerIndex,
+                layer.repairRejectedTooWidePixels));
+        }
+        if (remaining.gapPixels > 0)
+        {
+            worstLayers.push_back(remaining);
         }
     }
 
@@ -273,7 +338,10 @@ Json BuildDetectedReport(
         }));
     }
 
-    const bool hasGaps = totalGapPixels > 0U;
+    const bool hasGaps = remainingGapPixels > 0U;
+    const bool repairAttempted = !candidateOnly
+        && config.mode == "repair_then_report"
+        && config.repair.enabled;
     const std::string closureStatus = candidateOnly
         ? "warning"
         : (hasGaps ? (config.fail_on_gap ? "fail" : "warning") : "pass");
@@ -294,8 +362,8 @@ Json BuildDetectedReport(
          Json::object({
              {"enabled", config.repair.enabled},
              {"maxGapPx", config.max_gap_px},
-             {"attempted", false},
-             {"repairedPixels", 0},
+             {"attempted", repairAttempted},
+             {"repairedPixels", repairedPixels},
          })},
         {"totals",
          Json::object({
@@ -310,7 +378,13 @@ Json BuildDetectedReport(
              {"colorSupportGapPixels", colorSupportGapPixels},
              {"internalVoidGapPixels", internalVoidGapPixels},
              {"varnishSupportGapPixels", varnishSupportGapPixels},
-             {"repairedPixels", 0},
+             {"repairedPixels", repairedPixels},
+             {"repairedColorFillPixels", repairedColorFillPixels},
+             {"repairedModelSupportPixels", repairedModelSupportPixels},
+             {"repairedInternalVoidPixels", repairedInternalVoidPixels},
+             {"repairedVarnishSupportPixels", repairedVarnishSupportPixels},
+             {"remainingGapPixels", remainingGapPixels},
+             {"repairRejectedTooWidePixels", repairRejectedTooWidePixels},
              {"externalBackgroundProtectedPixels", externalBackgroundProtectedPixels},
          })},
         {"worstLayers", Json{std::move(worstLayerItems)}},
@@ -364,6 +438,12 @@ Json BuildMaterialClosureReportSkeleton(const MaterialClosureConfig& config, con
              {"internalVoidGapPixels", 0},
              {"varnishSupportGapPixels", 0},
              {"repairedPixels", 0},
+             {"repairedColorFillPixels", 0},
+             {"repairedModelSupportPixels", 0},
+             {"repairedInternalVoidPixels", 0},
+             {"repairedVarnishSupportPixels", 0},
+             {"remainingGapPixels", 0},
+             {"repairRejectedTooWidePixels", 0},
              {"externalBackgroundProtectedPixels", 0},
          })},
         {"worstLayers", Json::array({})},
@@ -390,6 +470,19 @@ Json BuildMaterialClosureCandidateReport(
             0,
             0,
             layer.externalBackgroundProtectedPixels,
+            false,
+            0,
+            0,
+            0,
+            0,
+            0,
+            layer.gapPixels,
+            layer.colorFillGapPixels,
+            layer.modelSupportGapPixels,
+            layer.colorSupportGapPixels,
+            0,
+            0,
+            0,
         });
     }
     return BuildDetectedReport(config, evidence, true);
@@ -413,6 +506,19 @@ Json BuildMaterialClosureExactReport(
             layer.internalVoidGapPixels,
             layer.varnishSupportGapPixels,
             layer.externalBackgroundProtectedPixels,
+            layer.repairAttempted,
+            layer.repairedPixels,
+            layer.repairedColorFillPixels,
+            layer.repairedModelSupportPixels,
+            layer.repairedInternalVoidPixels,
+            layer.repairedVarnishSupportPixels,
+            layer.remainingGapPixels,
+            layer.remainingColorFillGapPixels,
+            layer.remainingModelSupportGapPixels,
+            layer.remainingColorSupportGapPixels,
+            layer.remainingInternalVoidGapPixels,
+            layer.remainingVarnishSupportGapPixels,
+            layer.repairRejectedTooWidePixels,
         });
     }
     return BuildDetectedReport(config, evidence, false);
@@ -432,6 +538,7 @@ Json BuildMaterialClosureSliceSummary(const Json& report)
         {"confidence", report.at("confidence")},
         {"totalGapPixels", totals.at("totalGapPixels")},
         {"repairedPixels", totals.at("repairedPixels")},
+        {"remainingGapPixels", totals.at("remainingGapPixels")},
         {"worstLayerIndex", worstLayerIndex},
         {"reportPath", "reports/material_closure_report.json"},
     });

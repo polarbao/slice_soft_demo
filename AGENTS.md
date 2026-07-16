@@ -19,11 +19,11 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12D-06 Repair Disabled TIFF invariance verification`.
-- Current working phase is `12D-R3 PREPARED / NOT STARTED`: explicit 1px repair, background protection, UI, and real-model acceptance.
+- The latest completed task is `12D-07 Repair Enabled one-pixel closure`.
+- Current working phase is `12D-R3 IN PROGRESS`: 12D-08 external background protection is next.
 - `12E-R0` startup preparation is complete. `12E-01 Config/DTO contract` is `PREPARED / READY FOR USER ADMISSION`, but no 12E code task is active.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- No 12D-R3 or 12E code task is active. `12D-07 Repair Enabled` and `12E-01 Config/DTO contract` each require an explicit user instruction; do not start either track automatically.
+- `12D-08 External Background Protection` is explicitly authorized after 12D-07. 12E remains prepared but inactive.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules

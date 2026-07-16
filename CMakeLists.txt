@@ -75,6 +75,8 @@ add_library(slicer_core
     src/slicer_core/json_value.h
     src/slicer_core/material/MaterialChannelComposer.cpp
     src/slicer_core/material/MaterialChannelComposer.h
+    src/slicer_core/material/MaterialClosureRepair.cpp
+    src/slicer_core/material/MaterialClosureRepair.h
     src/slicer_core/materials/material_policy/MaterialPolicy.cpp
     src/slicer_core/materials/material_policy/MaterialPolicy.h
     src/slicer_core/materials/process_profile/MaterialProcessProfile.cpp

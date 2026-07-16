@@ -679,10 +679,23 @@ void validate_slice_config(const SliceConfig& config) {
     {
         throw std::runtime_error("materialClosure.repair.varnishSupportGap must be support");
     }
-    if (config.material_closure.mode == "repair_then_report" || config.material_closure.repair.enabled)
+    const bool repairMode = config.material_closure.mode == "repair_then_report";
+    if (repairMode != config.material_closure.repair.enabled)
     {
         throw std::runtime_error(
-            "materialClosure repair is not implemented in 12D-R1; use mode=diagnostic and repair.enabled=false");
+            "materialClosure repair mode and enabled flag must be configured together");
+    }
+    if (repairMode && config.material_closure.max_gap_px != 1)
+    {
+        throw std::runtime_error("materialClosure repair supports maxGapPx=1 only");
+    }
+    if (repairMode && !config.model_fill.enabled)
+    {
+        throw std::runtime_error("materialClosure repair requires modelFill.enabled=true");
+    }
+    if (repairMode && !config.support.enabled)
+    {
+        throw std::runtime_error("materialClosure repair requires support.enabled=true");
     }
     if (config.texture.enabled)
     {

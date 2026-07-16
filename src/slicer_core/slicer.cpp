@@ -3,6 +3,7 @@
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/json_value.h"
+#include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/model.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
@@ -2591,6 +2592,30 @@ bool WriteModelFillPixel(
     return false;
 }
 
+MaterialClosureRepairValues ResolveMaterialClosureRepairValues(const SliceConfig& config)
+{
+    MaterialClosureRepairValues values;
+    values.modelFillRgb = NonSurfaceRgb(config);
+    values.modelFillValue = config.model_fill.value;
+    values.supportValue = config.support.value;
+    switch (ResolveModelFillMaterial(config, nullptr))
+    {
+        case ModelFillMaterial::Rgb:
+            values.modelFillMaterial = MaterialClosureModelFillMaterial::Rgb;
+            break;
+        case ModelFillMaterial::White:
+            values.modelFillMaterial = MaterialClosureModelFillMaterial::White;
+            break;
+        case ModelFillMaterial::Varnish:
+            values.modelFillMaterial = MaterialClosureModelFillMaterial::Varnish;
+            break;
+        case ModelFillMaterial::None:
+            values.modelFillMaterial = MaterialClosureModelFillMaterial::None;
+            break;
+    }
+    return values;
+}
+
 std::uint8_t ResolveSurfaceVarnishValue(const SliceConfig& config)
 {
     if (config.surface_varnish.source == "material_policy"
@@ -4101,7 +4126,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         }
     }
     const SupportPlacementPolicy support_placement_policy = ResolveSupportPlacementPolicy(config);
-    const bool collectMaterialClosureExact = config.material_closure.enabled && options.write_reports;
+    const bool repairMaterialClosure = config.material_closure.enabled
+        && config.material_closure.mode == "repair_then_report"
+        && config.material_closure.repair.enabled;
+    const bool collectMaterialClosureExact = config.material_closure.enabled
+        && (options.write_reports || repairMaterialClosure);
     std::vector<std::vector<std::size_t>> clearedOuterVarnishSupportIndices;
     const int cleared_outer_varnish_support_pixels =
         ApplyOuterVarnishSupportPriority(
@@ -4162,7 +4191,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 outer_varnish_masks.at(layer_index));
             materialClosureInputPointer = &materialClosureInput;
         }
-        const std::vector<std::uint8_t> layer = compose_layer(
+        std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
             model_masks.at(layer_index),
@@ -4183,6 +4212,57 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             layer_support_pixels);
         diagnostics.model_pixels = layer_model_pixels;
         diagnostics.support_pixels = layer_support_pixels;
+        if (collectMaterialClosureExact)
+        {
+            PopulateMaterialClosureEmptyMask(layer, materialClosureInput);
+            const MaterialClosureSemanticLayerAnalysis analysis =
+                AnalyzeMaterialClosureSemanticLayer(
+                    materialClosureInput,
+                    config.material_closure.connectivity,
+                    config.material_closure.max_gap_px);
+            MaterialClosureSemanticLayerResult result = analysis.summary;
+            if (repairMaterialClosure)
+            {
+                const MaterialClosureRepairPlan repairPlan = BuildMaterialClosureRepairPlan(
+                    materialClosureInput,
+                    analysis,
+                    config.material_closure.connectivity);
+                const MaterialClosureRepairApplicationResult repairResult =
+                    ApplyMaterialClosureRepair(
+                        repairPlan,
+                        ResolveMaterialClosureRepairValues(config),
+                        layer,
+                        materialClosureInput);
+                const MaterialClosureSemanticLayerResult remaining =
+                    DetectMaterialClosureSemanticLayer(
+                        materialClosureInput,
+                        config.material_closure.connectivity,
+                        config.material_closure.max_gap_px);
+                result.repairAttempted = true;
+                result.repairedPixels = repairResult.repairedPixels;
+                result.repairedColorFillPixels = repairResult.repairedColorFillPixels;
+                result.repairedModelSupportPixels = repairResult.repairedModelSupportPixels;
+                result.repairedInternalVoidPixels = repairResult.repairedInternalVoidPixels;
+                result.repairedVarnishSupportPixels = repairResult.repairedVarnishSupportPixels;
+                result.remainingGapPixels = remaining.gapPixels;
+                result.remainingColorFillGapPixels = remaining.colorFillGapPixels;
+                result.remainingModelSupportGapPixels = remaining.modelSupportGapPixels;
+                result.remainingColorSupportGapPixels = remaining.colorSupportGapPixels;
+                result.remainingInternalVoidGapPixels = remaining.internalVoidGapPixels;
+                result.remainingVarnishSupportGapPixels = remaining.varnishSupportGapPixels;
+                result.repairRejectedTooWidePixels = repairPlan.rejectedTooWidePixels;
+
+                layer_model_pixels += repairResult.repairedModelFillPixels;
+                layer_support_pixels += repairResult.repairedSupportPixels;
+                diagnostics.model_pixels = layer_model_pixels;
+                diagnostics.support_pixels = layer_support_pixels;
+                diagnostics.semantic.model_fill_pixels += repairResult.repairedModelFillPixels;
+                diagnostics.semantic.support_pixels += repairResult.repairedSupportPixels;
+                diagnostics.semantic.internal_void_support_pixels +=
+                    repairResult.repairedInternalVoidPixels;
+            }
+            materialClosureExactLayers.push_back(std::move(result));
+        }
         update_layer_channel_stats(layer, diagnostics);
         total_model_pixels += layer_model_pixels;
         total_support_pixels += layer_support_pixels;
@@ -4192,14 +4272,6 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         total_varnish_non_zero_pixels += diagnostics.varnish_non_zero_pixels;
         merge_channel_stats(total_channel_stats, diagnostics);
         merge_semantic_stats(total_semantic_stats, diagnostics.semantic);
-        if (collectMaterialClosureExact)
-        {
-            PopulateMaterialClosureEmptyMask(layer, materialClosureInput);
-            materialClosureExactLayers.push_back(DetectMaterialClosureSemanticLayer(
-                materialClosureInput,
-                config.material_closure.connectivity,
-                config.material_closure.max_gap_px));
-        }
         profile.layer_compute_ms += ElapsedMsSince(layerComputeStart);
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {

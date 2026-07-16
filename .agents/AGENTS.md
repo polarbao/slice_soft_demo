@@ -128,7 +128,7 @@ Current Stage 12 track:
 12A: material fill, support, and varnish semantics, current P0/P1 scope complete.
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
-12D: R0/R1/R2 complete; R3 repair/background/UI/real-model work prepared but not started.
+12D: R0/R1/R2 complete; R3 in progress with 12D-07 complete and 12D-08 active.
 12E: R0 startup preparation complete; 12E-01 Config/DTO contract prepared but not active.
 ```
 

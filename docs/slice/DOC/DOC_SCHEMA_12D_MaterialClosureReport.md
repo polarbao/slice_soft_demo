@@ -21,10 +21,10 @@
   "closureStatus": "fail",
   "productionAcceptance": "failed",
   "repair": {
-    "enabled": false,
+    "enabled": true,
     "maxGapPx": 1,
-    "attempted": false,
-    "repairedPixels": 0
+    "attempted": true,
+    "repairedPixels": 20
   },
   "totals": {},
   "worstLayers": [],
@@ -50,7 +50,9 @@ confidence=candidate -> productionAcceptance=not_evaluated；
 confidence=candidate -> closureStatus 不得为 pass；
 source=unavailable -> closureStatus=not_available；
 repair.attempted=true -> source 必须为 semantic_masks；
-repair.enabled=false -> repairedPixels=0。
+repair.enabled=false -> repairedPixels=0；
+repair.attempted=true -> mode 必须为 repair_then_report；
+closureStatus / productionAcceptance 必须基于 remainingGapPixels。
 ```
 
 ## 4. Totals
@@ -68,7 +70,13 @@ repair.enabled=false -> repairedPixels=0。
   "colorSupportGapPixels": 0,
   "internalVoidGapPixels": 39,
   "varnishSupportGapPixels": 0,
-  "repairedPixels": 0,
+  "repairedPixels": 20,
+  "repairedColorFillPixels": 20,
+  "repairedModelSupportPixels": 0,
+  "repairedInternalVoidPixels": 0,
+  "repairedVarnishSupportPixels": 0,
+  "remainingGapPixels": 57,
+  "repairRejectedTooWidePixels": 0,
   "externalBackgroundProtectedPixels": 923456
 }
 ```
@@ -91,9 +99,14 @@ repair.enabled=false -> repairedPixels=0。
     "varnishSupport": 0
   },
   "repair": {
-    "attempted": false,
-    "repairedPixels": 0,
-    "remainingGapPixels": 20
+    "attempted": true,
+    "repairedPixels": 20,
+    "repairedColorFillPixels": 20,
+    "repairedModelSupportPixels": 0,
+    "repairedInternalVoidPixels": 0,
+    "repairedVarnishSupportPixels": 0,
+    "remainingGapPixels": 0,
+    "rejectedTooWidePixels": 0
   },
   "externalBackgroundProtectedPixels": 16422,
   "gapPreviewPath": ""
@@ -101,6 +114,8 @@ repair.enabled=false -> repairedPixels=0。
 ```
 
 `layerIndex` 与 manifest layer list 一致，按 Z 从低到高递增；`zMm` 使用实际切片坐标。
+
+`gapPixels` 和 `gaps` 保留 repair 前原始证据；`repair.remainingGapPixels` 表示 repair 后剩余 gap。`closureStatus` 使用后者判定。
 
 ## 6. Worst Layers
 
@@ -152,7 +167,8 @@ EXTERNAL_BACKGROUND_PROTECTED
   "closureStatus": "fail",
   "confidence": "exact",
   "totalGapPixels": 77,
-  "repairedPixels": 0,
+  "repairedPixels": 20,
+  "remainingGapPixels": 57,
   "worstLayerIndex": 169,
   "reportPath": "reports/material_closure_report.json"
 }
