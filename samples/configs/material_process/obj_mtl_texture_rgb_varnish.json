@@ -19,11 +19,17 @@
     },
     "input": {
         "format": "auto",
-        "modelPath": "E:/项目资料/自研打印机测试数据/print/model/0420_print/meigui/04.obj"
+        "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/meigui_fudiao/04.obj"
     },
     "materialPolicy": {
+        "enabled": false,
+        "varnish": {
+            "enabled": false,
+            "mode": "disabled"
+        },
         "white": {
-            "enabled": true
+            "enabled": false,
+            "mode": "disabled"
         }
     },
     "materialProcessProfile": {
@@ -42,19 +48,19 @@
             "maxUnexpectedOverlapPixels": 0,
             "requireRgbPixels": true,
             "requireSupportPixels": false,
-            "requireVarnishPixels": true,
+            "requireVarnishPixels": false,
             "requireWhitePixels": true
         },
         "varnish": {
             "coverage": "model_surface",
-            "enabled": true,
-            "mode": "all_model",
+            "enabled": false,
+            "mode": "disabled",
             "topLayers": 1,
             "value": 0
         },
         "white": {
             "coverage": "all_model",
-            "enabled": true,
+            "enabled": false,
             "expandPx": 0,
             "mode": "all_model",
             "shrinkPx": 0,
@@ -118,7 +124,7 @@
         "dpiX": 600,
         "dpiY": 600,
         "layerThicknessMm": 0.028,
-        "packageDir": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/output/ui_sessions/04_textured_nail_rgb_white_lower_support_legacy_20260715_183340_499/package",
+        "packageDir": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/output/ui_sessions/04_textured_nail_rgb_white_lower_support_legacy_20260716_101351_539/package",
         "planarConfig": "contiguous",
         "rowsPerStrip": 64,
         "storageMode": "stripped"
@@ -132,7 +138,7 @@
         ],
         "enabled": true,
         "format": "png",
-        "interval": 10
+        "interval": 20
     },
     "relief": {
         "baseZMm": 0,
