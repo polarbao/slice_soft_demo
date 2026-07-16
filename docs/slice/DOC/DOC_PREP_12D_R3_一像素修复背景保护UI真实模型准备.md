@@ -1,12 +1,12 @@
 # DOC_PREP_12D-R3 一像素修复、背景保护、UI 与真实模型准备
 
-> 文档状态：12D-07 COMPLETE / 12D-08 READY FOR USER ADMISSION
+> 文档状态：12D-07/08 COMPLETE / 12D-09 READY FOR USER ADMISSION
 > 日期：2026-07-16
 > 覆盖任务：12D-07、12D-08、12D-09、12D-10
 
 ## 1. 准备结论
 
-12D-R3 的任务边界、依赖顺序和验收证据已补齐，可在 12D-06 完成后按 07 -> 08 -> 09 -> 10 顺序执行。当前只完成准备，不解除 repair 门禁，不修改 C++/Qt/TIFF。
+12D-R3 的任务边界、依赖顺序和验收证据已补齐，并按 07 -> 08 -> 09 -> 10 顺序执行。12D-07/08 已完成；repair 仍默认关闭，12D-09 尚未启动。
 
 ## 2. 12D-07 Repair Enabled 准备
 
@@ -113,6 +113,18 @@ narrow_neck_to_border：通过 1px 窄通道连接边界的空白仍视为外部
 
 验证同时比较 external background 像素的 before/after byte snapshot 和计数，不只看 preview。
 
+12D-08 完成证据：
+
+```text
+MaterialClosureRepairPlan 固化 ExternalBackgroundMask 和 ExpectedOccupiedDomainMask；
+Apply 阶段独立执行 !ExternalBackground、ExpectedOccupiedDomain、!RejectedTooWide；
+border_connected_empty 的 externalBackgroundProtectedPixels=25；
+closed_internal_void 可写 S，未被背景守门误拦截；
+narrow_neck_to_border 的 1px 通道保持 border-connected，三个像素均受保护；
+错误置位 repair mask 的 synthetic test 仍保持受保护像素 RGBWSV 全 255；
+repair-enabled/disabled 脚本、RIP Reader 与 CTest 9/9 通过。
+```
+
 ## 4. 12D-09 Qt 诊断显示准备
 
 UI 只读取 `reports/material_closure_report.json`：
@@ -159,8 +171,8 @@ rip_reader_test 结果；
 | 任务 | 准备状态 | 开发准入条件 |
 |---|---|---|
 | 12D-07 | COMPLETE | 已完成一像素 repair、report 与 regression |
-| 12D-08 | PREPARED / READY | 用户已明确授权在 12D-07 后继续 |
-| 12D-09 | PREPARED / BLOCKED | 12D-08 COMPLETE + stable report fixture |
+| 12D-08 | COMPLETE | hard guard、三类 synthetic fixture 与 byte snapshot 已通过 |
+| 12D-09 | PREPARED / READY | 12D-08 已完成；等待用户明确启动 |
 | 12D-10 | PREPARED / BLOCKED | 12D-09 COMPLETE + 三个模型配置冻结 |
 
 ## 7. 共同安全边界

@@ -253,7 +253,7 @@ Repair Disabled 30 层 TIFF SHA-256 守门继续通过；
 
 ## 12D-08 外部背景保护
 
-状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
+状态：DONE / 12D-R3
 
 目标：
 
@@ -269,9 +269,20 @@ externalBackgroundProtectedPixels > 0；
 模型外空白仍为 RGBWSV 全 255。
 ```
 
+完成记录：
+
+```text
+repair plan 固化 border flood-fill ExternalBackgroundMask 与 ExpectedOccupiedDomainMask；
+Apply 阶段再次执行 !ExternalBackground、ExpectedOccupiedDomain、!RejectedTooWide 三重硬守门；
+border_connected_empty、closed_internal_void、narrow_neck_to_border synthetic fixture 通过；
+对受保护像素比较修复前后 RGBWSV byte snapshot，外部背景保持六通道 255；
+防御性测试证明即使 repair mask 被错误置位，外部背景和 expected domain 外像素仍不会写入；
+repair-enabled package、repair-disabled 30 层 TIFF SHA-256、RIP Reader 与完整 CTest 9/9 通过。
+```
+
 ## 12D-09 UI 闭环诊断显示
 
-状态：PREPARED / BLOCKED BY 12D-08 / 12D-R3
+状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
 
 目标：
 

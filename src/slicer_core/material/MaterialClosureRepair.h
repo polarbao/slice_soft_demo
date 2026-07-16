@@ -38,6 +38,8 @@ struct MaterialClosureRepairPlan
 {
     int widthPx{0};
     int heightPx{0};
+    std::vector<std::uint8_t> externalBackgroundMask;
+    std::vector<std::uint8_t> expectedOccupiedDomainMask;
     std::vector<std::uint8_t> modelFillRepairMask;
     std::vector<std::uint8_t> supportRepairMask;
     std::vector<std::uint8_t> internalVoidSupportRepairMask;
@@ -48,6 +50,7 @@ struct MaterialClosureRepairPlan
     int modelFillRepairPixels{0};
     int supportRepairPixels{0};
     int rejectedTooWidePixels{0};
+    int externalBackgroundProtectedPixels{0};
 };
 
 /**
@@ -62,6 +65,9 @@ struct MaterialClosureRepairApplicationResult
     int repairedModelSupportPixels{0};
     int repairedInternalVoidPixels{0};
     int repairedVarnishSupportPixels{0};
+    int blockedExternalBackgroundRepairPixels{0};
+    int blockedOutsideExpectedDomainRepairPixels{0};
+    int blockedRejectedTooWideRepairPixels{0};
 };
 
 /**

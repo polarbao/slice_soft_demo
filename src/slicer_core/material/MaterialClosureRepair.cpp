@@ -324,6 +324,8 @@ MaterialClosureRepairPlan BuildMaterialClosureRepairPlan(
     MaterialClosureRepairPlan plan;
     plan.widthPx = input.widthPx;
     plan.heightPx = input.heightPx;
+    plan.externalBackgroundMask = analysis.externalBackgroundMask;
+    plan.expectedOccupiedDomainMask = input.expectedOccupiedDomainMask;
     plan.modelFillRepairMask.assign(pixelCount, 0U);
     plan.supportRepairMask.assign(pixelCount, 0U);
     plan.internalVoidSupportRepairMask.assign(pixelCount, 0U);
@@ -331,6 +333,8 @@ MaterialClosureRepairPlan BuildMaterialClosureRepairPlan(
     plan.modelSupportRepairMask.assign(pixelCount, 0U);
     plan.varnishSupportRepairMask.assign(pixelCount, 0U);
     plan.rejectedTooWideMask.assign(pixelCount, 0U);
+    plan.externalBackgroundProtectedPixels =
+        analysis.summary.externalBackgroundProtectedPixels;
 
     std::vector<std::uint8_t> visited(pixelCount, 0U);
     std::vector<std::uint8_t> componentMask(pixelCount, 0U);
@@ -401,6 +405,11 @@ MaterialClosureRepairApplicationResult ApplyMaterialClosureRepair(
     }
     ValidateMask(plan.modelFillRepairMask, pixelCount, "modelFillRepairMask");
     ValidateMask(plan.supportRepairMask, pixelCount, "supportRepairMask");
+    ValidateMask(plan.externalBackgroundMask, pixelCount, "externalBackgroundMask");
+    ValidateMask(
+        plan.expectedOccupiedDomainMask,
+        pixelCount,
+        "expectedOccupiedDomainMask");
     ValidateMask(plan.internalVoidSupportRepairMask, pixelCount, "internalVoidSupportRepairMask");
     ValidateMask(plan.colorFillRepairMask, pixelCount, "colorFillRepairMask");
     ValidateMask(plan.modelSupportRepairMask, pixelCount, "modelSupportRepairMask");
@@ -443,6 +452,21 @@ MaterialClosureRepairApplicationResult ApplyMaterialClosureRepair(
         const bool repairSupport = plan.supportRepairMask.at(index) != 0U;
         if (!repairModelFill && !repairSupport)
         {
+            continue;
+        }
+        if (plan.externalBackgroundMask.at(index) != 0U)
+        {
+            ++result.blockedExternalBackgroundRepairPixels;
+            continue;
+        }
+        if (plan.expectedOccupiedDomainMask.at(index) == 0U)
+        {
+            ++result.blockedOutsideExpectedDomainRepairPixels;
+            continue;
+        }
+        if (plan.rejectedTooWideMask.at(index) != 0U)
+        {
+            ++result.blockedRejectedTooWideRepairPixels;
             continue;
         }
 

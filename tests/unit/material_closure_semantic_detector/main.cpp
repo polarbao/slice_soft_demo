@@ -188,6 +188,22 @@ std::vector<std::uint8_t> MakeEmptyRgbwsvLayer()
         255U);
 }
 
+bool IsRgbwsvPixelEmpty(
+    const std::vector<std::uint8_t>& layer,
+    const std::size_t pixelIndex)
+{
+    constexpr std::size_t channelCount{6U};
+    const std::size_t base = pixelIndex * channelCount;
+    for (std::size_t channel{0U}; channel < channelCount; ++channel)
+    {
+        if (layer.at(base + channel) != 255U)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool RepairsOnePixelColorFillGapAsWhite()
 {
     slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
@@ -268,6 +284,141 @@ bool RepairsInternalVoidGapAsSupport()
         && ExpectTrue(layer.at(base + 4U) == 0U, "support channel receives internal void repair")
         && ExpectTrue(input.supportFillMask.at(PixelIndex(2, 2)) == 1U, "support semantic mask updated")
         && ExpectTrue(input.internalVoidSupportMask.at(PixelIndex(2, 2)) == 1U, "internal void semantic mask updated");
+}
+
+bool ProtectsBorderConnectedEmptyBytesAtApplyGuard()
+{
+    slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
+    input.layerEmptyMask.assign(static_cast<std::size_t>(widthPx * heightPx), 1U);
+    input.expectedOccupiedDomainMask.assign(
+        static_cast<std::size_t>(widthPx * heightPx),
+        1U);
+    input.modelEnvelopeMask.assign(static_cast<std::size_t>(widthPx * heightPx), 1U);
+
+    const slicer_core::MaterialClosureSemanticLayerAnalysis analysis =
+        slicer_core::AnalyzeMaterialClosureSemanticLayer(input, 8, 1);
+    slicer_core::MaterialClosureRepairPlan plan =
+        slicer_core::BuildMaterialClosureRepairPlan(input, analysis, 8);
+    const std::size_t center = PixelIndex(2, 2);
+    plan.supportRepairMask.at(center) = 1U;
+    plan.supportRepairPixels = 1;
+
+    slicer_core::MaterialClosureRepairValues values;
+    values.supportValue = 0U;
+    std::vector<std::uint8_t> layer = MakeEmptyRgbwsvLayer();
+    const std::vector<std::uint8_t> snapshot = layer;
+
+    const slicer_core::MaterialClosureRepairApplicationResult result =
+        slicer_core::ApplyMaterialClosureRepair(plan, values, layer, input);
+    return ExpectTrue(
+               plan.externalBackgroundProtectedPixels == widthPx * heightPx,
+               "border-connected empty fixture protects all pixels")
+        && ExpectTrue(result.repairedPixels == 0, "external background is never repaired")
+        && ExpectTrue(
+            result.blockedExternalBackgroundRepairPixels == 1,
+            "apply guard records blocked external background write")
+        && ExpectTrue(layer == snapshot, "external background RGBWSV bytes remain unchanged")
+        && ExpectTrue(
+            IsRgbwsvPixelEmpty(layer, center),
+            "protected external background remains six-channel empty");
+}
+
+bool RepairsClosedInternalVoidWithoutTouchingBackground()
+{
+    slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
+    const std::size_t center = PixelIndex(2, 2);
+    input.layerEmptyMask.at(center) = 1U;
+    input.expectedOccupiedDomainMask.at(center) = 1U;
+    input.modelEnvelopeMask.at(center) = 1U;
+
+    const slicer_core::MaterialClosureSemanticLayerAnalysis analysis =
+        slicer_core::AnalyzeMaterialClosureSemanticLayer(input, 8, 1);
+    const slicer_core::MaterialClosureRepairPlan plan =
+        slicer_core::BuildMaterialClosureRepairPlan(input, analysis, 8);
+    slicer_core::MaterialClosureRepairValues values;
+    values.supportValue = 0U;
+    std::vector<std::uint8_t> layer = MakeEmptyRgbwsvLayer();
+
+    const slicer_core::MaterialClosureRepairApplicationResult result =
+        slicer_core::ApplyMaterialClosureRepair(plan, values, layer, input);
+    const std::size_t base = center * 6U;
+    return ExpectTrue(
+               plan.externalBackgroundProtectedPixels == 0,
+               "closed internal void is not border-connected background")
+        && ExpectTrue(result.repairedInternalVoidPixels == 1, "closed internal void is repaired")
+        && ExpectTrue(layer.at(base + 4U) == 0U, "closed internal void writes support")
+        && ExpectTrue(
+            result.blockedExternalBackgroundRepairPixels == 0,
+            "closed internal void is not blocked by background guard");
+}
+
+bool ProtectsNarrowNeckConnectedToBorder()
+{
+    slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
+    const std::array<std::size_t, 3> emptyNeck{
+        PixelIndex(2, 0),
+        PixelIndex(2, 1),
+        PixelIndex(2, 2),
+    };
+    for (const std::size_t index : emptyNeck)
+    {
+        input.layerEmptyMask.at(index) = 1U;
+    }
+    const std::size_t center = PixelIndex(2, 2);
+    input.expectedOccupiedDomainMask.at(center) = 1U;
+    input.modelEnvelopeMask.at(center) = 1U;
+
+    const slicer_core::MaterialClosureSemanticLayerAnalysis analysis =
+        slicer_core::AnalyzeMaterialClosureSemanticLayer(input, 4, 1);
+    slicer_core::MaterialClosureRepairPlan plan =
+        slicer_core::BuildMaterialClosureRepairPlan(input, analysis, 4);
+    plan.supportRepairMask.at(center) = 1U;
+    plan.supportRepairPixels = 1;
+
+    slicer_core::MaterialClosureRepairValues values;
+    values.supportValue = 0U;
+    std::vector<std::uint8_t> layer = MakeEmptyRgbwsvLayer();
+    const std::vector<std::uint8_t> snapshot = layer;
+
+    const slicer_core::MaterialClosureRepairApplicationResult result =
+        slicer_core::ApplyMaterialClosureRepair(plan, values, layer, input);
+    return ExpectTrue(
+               plan.externalBackgroundProtectedPixels == 3,
+               "one-pixel neck remains connected to border background")
+        && ExpectTrue(analysis.summary.gapPixels == 0, "narrow-neck background is not a gap")
+        && ExpectTrue(result.repairedPixels == 0, "narrow-neck background is not repaired")
+        && ExpectTrue(
+            result.blockedExternalBackgroundRepairPixels == 1,
+            "narrow-neck write is blocked at apply guard")
+        && ExpectTrue(layer == snapshot, "narrow-neck RGBWSV bytes remain unchanged");
+}
+
+bool ProtectsPixelsOutsideExpectedOccupiedDomain()
+{
+    slicer_core::MaterialClosureSemanticLayerInput input = MakeInput();
+    const std::size_t center = PixelIndex(2, 2);
+    input.layerEmptyMask.at(center) = 1U;
+
+    const slicer_core::MaterialClosureSemanticLayerAnalysis analysis =
+        slicer_core::AnalyzeMaterialClosureSemanticLayer(input, 8, 1);
+    slicer_core::MaterialClosureRepairPlan plan =
+        slicer_core::BuildMaterialClosureRepairPlan(input, analysis, 8);
+    plan.externalBackgroundMask.at(center) = 0U;
+    plan.supportRepairMask.at(center) = 1U;
+    plan.supportRepairPixels = 1;
+
+    slicer_core::MaterialClosureRepairValues values;
+    values.supportValue = 0U;
+    std::vector<std::uint8_t> layer = MakeEmptyRgbwsvLayer();
+    const std::vector<std::uint8_t> snapshot = layer;
+
+    const slicer_core::MaterialClosureRepairApplicationResult result =
+        slicer_core::ApplyMaterialClosureRepair(plan, values, layer, input);
+    return ExpectTrue(result.repairedPixels == 0, "outside-domain pixel is not repaired")
+        && ExpectTrue(
+            result.blockedOutsideExpectedDomainRepairPixels == 1,
+            "outside expected domain write is blocked")
+        && ExpectTrue(layer == snapshot, "outside-domain RGBWSV bytes remain unchanged");
 }
 
 bool RejectsTwoPixelWideInternalVoid()
@@ -379,6 +530,10 @@ int main()
         {"repairs_one_pixel_color_fill_gap_as_white", RepairsOnePixelColorFillGapAsWhite},
         {"repairs_model_support_gap_by_envelope_context", RepairsModelSupportGapByEnvelopeContext},
         {"repairs_internal_void_gap_as_support", RepairsInternalVoidGapAsSupport},
+        {"protects_border_connected_empty_bytes_at_apply_guard", ProtectsBorderConnectedEmptyBytesAtApplyGuard},
+        {"repairs_closed_internal_void_without_touching_background", RepairsClosedInternalVoidWithoutTouchingBackground},
+        {"protects_narrow_neck_connected_to_border", ProtectsNarrowNeckConnectedToBorder},
+        {"protects_pixels_outside_expected_occupied_domain", ProtectsPixelsOutsideExpectedOccupiedDomain},
         {"rejects_two_pixel_wide_internal_void", RejectsTwoPixelWideInternalVoid},
         {"rejects_two_pixel_color_fill_thickness", RejectsTwoPixelColorFillThickness},
         {"leaves_color_support_only_gap_unrepaired", LeavesColorSupportOnlyGapUnrepaired},
