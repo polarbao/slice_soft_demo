@@ -42,6 +42,14 @@ public:
     bool SelectLayer(int layerIndex);
 
     /**
+     * @brief Register and display a diagnostic-only material-closure gap preview.
+     * @param layerIndex Real package layer index.
+     * @param path Existing diagnostic preview image path.
+     * @return true when the image exists and is selected without cross-layer fallback.
+     */
+    bool ShowMaterialClosureGapPreview(int layerIndex, const QString& path);
+
+    /**
      * @brief Return current status text for UI smoke tests.
      * @return Human-readable overlay status.
      */

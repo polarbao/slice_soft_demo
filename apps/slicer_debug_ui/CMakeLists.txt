@@ -30,6 +30,8 @@ add_executable(slicer_debug_ui
     services/ToolPaths.h
     services/LayerPreviewDataProvider.cpp
     services/LayerPreviewDataProvider.h
+    services/MaterialClosureReportInterpreter.cpp
+    services/MaterialClosureReportInterpreter.h
     services/PreviewReportIndex.cpp
     services/PreviewReportIndex.h
     services/UiSmokeTestRunner.cpp
@@ -46,6 +48,8 @@ add_executable(slicer_debug_ui
     widgets/ConfigDiffPanel.h
     widgets/MaterialProcessPanel.cpp
     widgets/MaterialProcessPanel.h
+    widgets/MaterialClosurePanel.cpp
+    widgets/MaterialClosurePanel.h
     widgets/MaterialPolicyEditor.cpp
     widgets/MaterialPolicyEditor.h
     widgets/MaterialProcessProfileEditor.cpp

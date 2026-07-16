@@ -33,6 +33,7 @@ private:
     int PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& options);
     int PreviewLegendProbeContext(const UiSmokeTestOptions& options);
     int DiagnosticsCollapse(const UiSmokeTestOptions& options);
+    int MaterialClosureDiagnostics(const UiSmokeTestOptions& options);
     int OpenVdbUtilitySummary(const UiSmokeTestOptions& options);
     int WorkspaceLayoutSizes(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);

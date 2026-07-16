@@ -282,7 +282,7 @@ repair-enabled package、repair-disabled 30 层 TIFF SHA-256、RIP Reader 与完
 
 ## 12D-09 UI 闭环诊断显示
 
-状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
+状态：DONE / 12D-R3
 
 目标：
 
@@ -298,9 +298,21 @@ UI 报告/诊断区显示 closureStatus、worstLayers、gap 类型。
 叠加预览可显示 gap 伪彩层。
 ```
 
+完成记录：
+
+```text
+DiagnosticsDock 新增“材料闭环”页，只读加载 p0.material_closure.1；
+中文显示 closureStatus、confidence、productionAcceptance、repair 和五类 gap；
+candidate 显示“候选诊断，不能作为生产通过依据”，违反候选非生产约束的报告被拒绝；
+worstLayers 表格保留稳定类型码，定位操作使用真实 layerIndex；
+仅当 layer.gapPreviewPath 非空且文件存在时，统一预览切换到“RGB + 闭环 Gap”诊断叠加；
+exact pass、exact fail、repaired-with-remaining、candidate-only、report-missing 五类 Smoke 通过；
+12C fresh Qt lane 全部 Smoke 通过，布局守门与完整 CTest 9/9 通过。
+```
+
 ## 12D-10 真实模型验证
 
-状态：PREPARED / BLOCKED BY 12D-09 / 12D-R3
+状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
 
 目标：
 

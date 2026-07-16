@@ -50,6 +50,7 @@ private slots:
     void OnScenarioChanged(int index);
     void OnReloadScenarios();
     void OnScenarioVisibilityChanged(bool checked);
+    void OnMaterialClosureLayerRequested(int layerIndex, const QString& gapPreviewPath);
     void OnProcessOutput(const QString& text);
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);

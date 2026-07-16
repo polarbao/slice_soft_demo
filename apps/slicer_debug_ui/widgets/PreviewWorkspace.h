@@ -63,6 +63,14 @@ public:
     bool SelectLayer(int layerIndex);
 
     /**
+     * @brief Navigate to one closure worst layer and show its diagnostic preview when available.
+     * @param layerIndex Real package layer index from the closure report.
+     * @param gapPreviewPath Existing diagnostic-only gap preview path, or empty.
+     * @return true when the real layer exists in the unified workspace.
+     */
+    bool ShowMaterialClosureLayer(int layerIndex, const QString& gapPreviewPath);
+
+    /**
      * @brief Select the active preview mode without changing the shared layer.
      * @param mode Target workspace mode.
      */

@@ -1,5 +1,7 @@
 #include "MainWindow.h"
 
+#include "widgets/MaterialClosurePanel.h"
+
 #include <QAction>
 #include <QAbstractItemView>
 #include <QCheckBox>
@@ -384,6 +386,11 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(&runner_, &ProcessRunner::finished, this, &MainWindow::handleProcessFinished);
     connect(&runner_, &ProcessRunner::failed, this, &MainWindow::handleProcessFailed);
     connect(report_panel_, &ReportPanel::warningsChanged, warnings_view_, &QPlainTextEdit::setPlainText);
+    connect(
+        m_diagnosticsDock->MaterialClosureView(),
+        &MaterialClosurePanel::SigLayerRequested,
+        this,
+        &MainWindow::OnMaterialClosureLayerRequested);
     connect(config_editor_panel_, &ConfigEditorPanel::configPathChanged, config_edit_, &QLineEdit::setText);
     connect(config_editor_panel_, &ConfigEditorPanel::statusMessage, status_label_, &QLabel::setText);
 
@@ -1344,6 +1351,24 @@ void MainWindow::loadPackage(const QString& package_dir) {
     m_previewWorkspace->LoadPackage(package);
     material_process_panel_->loadPackage(package);
     warnings_view_->setPlainText(package.warnings.join('\n'));
+}
+
+void MainWindow::OnMaterialClosureLayerRequested(
+    const int layerIndex,
+    const QString& gapPreviewPath)
+{
+    const bool selected =
+        m_previewWorkspace->ShowMaterialClosureLayer(layerIndex, gapPreviewPath);
+    status_label_->setText(
+        selected
+            ? QStringLiteral("已定位材料闭环诊断 layer=%1%2")
+                  .arg(layerIndex)
+                  .arg(
+                      gapPreviewPath.isEmpty()
+                          ? QStringLiteral("；当前报告未提供 Gap 预览。")
+                          : QStringLiteral("；显示诊断 Gap 伪彩图。"))
+            : QStringLiteral("材料闭环报告中的 layer=%1 不在当前输出包层列表中。")
+                  .arg(layerIndex));
 }
 
 void MainWindow::loadCompareResult(const QString& path) {

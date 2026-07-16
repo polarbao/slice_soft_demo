@@ -7,6 +7,7 @@
 
 class ChannelChartPanel;
 class LogPanel;
+class MaterialClosurePanel;
 class ReportPanel;
 class QTabWidget;
 
@@ -35,6 +36,12 @@ public:
      * @return Non-owning report panel pointer.
      */
     ReportPanel* ReportView() const;
+
+    /**
+     * @brief Return the material-closure diagnostics panel owned by the dock.
+     * @return Non-owning material-closure panel pointer.
+     */
+    MaterialClosurePanel* MaterialClosureView() const;
 
     /**
      * @brief Return the channel chart panel owned by the dock.
@@ -69,6 +76,7 @@ public:
 private:
     QTabWidget* m_tabs{nullptr};
     ReportPanel* m_reportView{nullptr};
+    MaterialClosurePanel* m_materialClosureView{nullptr};
     ChannelChartPanel* m_chartView{nullptr};
     LogPanel* m_logView{nullptr};
 };

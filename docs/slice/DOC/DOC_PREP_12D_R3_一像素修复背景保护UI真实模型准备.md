@@ -1,12 +1,12 @@
 # DOC_PREP_12D-R3 一像素修复、背景保护、UI 与真实模型准备
 
-> 文档状态：12D-07/08 COMPLETE / 12D-09 READY FOR USER ADMISSION
+> 文档状态：12D-07/08/09 COMPLETE / 12D-10 READY FOR USER ADMISSION
 > 日期：2026-07-16
 > 覆盖任务：12D-07、12D-08、12D-09、12D-10
 
 ## 1. 准备结论
 
-12D-R3 的任务边界、依赖顺序和验收证据已补齐，并按 07 -> 08 -> 09 -> 10 顺序执行。12D-07/08 已完成；repair 仍默认关闭，12D-09 尚未启动。
+12D-R3 的任务边界、依赖顺序和验收证据已补齐，并按 07 -> 08 -> 09 -> 10 顺序执行。12D-07/08/09 已完成；repair 仍默认关闭，12D-10 尚未启动。
 
 ## 2. 12D-07 Repair Enabled 准备
 
@@ -141,6 +141,17 @@ UI 不重新计算 gap，不直接读取 semantic sidecar。
 
 准备 fixture 至少包含 exact pass、exact fail、repaired-with-remaining、candidate-only、report-missing 五种报告状态。Qt 文本使用中文，JSON 枚举保持英文协议值。
 
+12D-09 完成证据：
+
+```text
+DiagnosticsDock 新增 MaterialClosurePanel，不从 preview 或 semantic sidecar 重算；
+MaterialClosureReportInterpreter 严格识别 p0.material_closure.1 和候选非生产约束；
+中文摘要覆盖状态、置信度、生产验收、修复、五类 gap、背景保护和诊断码；
+worst layer 通过真实 layerIndex 跳转统一预览；
+gapPreviewPath 为空或文件不存在时不显示伪彩图，存在时使用同层“RGB + 闭环 Gap”；
+五类状态 fixture、diagnostics-collapse、workspace-layout-sizes 和 12C fresh UI lane 通过。
+```
+
 ## 5. 12D-10 真实模型验收准备
 
 执行顺序与重点：
@@ -172,8 +183,8 @@ rip_reader_test 结果；
 |---|---|---|
 | 12D-07 | COMPLETE | 已完成一像素 repair、report 与 regression |
 | 12D-08 | COMPLETE | hard guard、三类 synthetic fixture 与 byte snapshot 已通过 |
-| 12D-09 | PREPARED / READY | 12D-08 已完成；等待用户明确启动 |
-| 12D-10 | PREPARED / BLOCKED | 12D-09 COMPLETE + 三个模型配置冻结 |
+| 12D-09 | COMPLETE | 报告展示、候选安全提示、worst layer 跳转和 Gap 预览 Smoke 通过 |
+| 12D-10 | PREPARED / READY | 12D-09 已完成；等待用户明确启动 |
 
 ## 7. 共同安全边界
 

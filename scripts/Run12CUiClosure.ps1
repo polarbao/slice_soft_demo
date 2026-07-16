@@ -121,6 +121,12 @@ try
                 "--package", "output/UiSmokeLayerPreview"
             )
         },
+        @{
+            Name = "material-closure-diagnostics"
+            Arguments = @(
+                "--ui-smoke-test", "--case", "material-closure-diagnostics"
+            )
+        },
         @{ Name = "openvdb-utility-summary"; Arguments = @("--ui-smoke-test", "--case", "openvdb-utility-summary") },
         @{
             Name = "workspace-layout-sizes"

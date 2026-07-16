@@ -212,6 +212,28 @@ bool PreviewWorkspace::SelectLayer(const int layerIndex)
     return true;
 }
 
+bool PreviewWorkspace::ShowMaterialClosureLayer(
+    const int layerIndex,
+    const QString& gapPreviewPath)
+{
+    const bool hasGapPreview =
+        m_overlayView->ShowMaterialClosureGapPreview(layerIndex, gapPreviewPath);
+    if (hasGapPreview && !m_layerIndices.contains(layerIndex))
+    {
+        m_layerIndices.push_back(layerIndex);
+        std::sort(m_layerIndices.begin(), m_layerIndices.end());
+    }
+
+    const bool selected = SelectLayer(layerIndex);
+    if (hasGapPreview)
+    {
+        SetMode(PreviewWorkspaceMode::MaterialOverlay);
+        SyncPanels();
+        UpdateStatus();
+    }
+    return selected;
+}
+
 void PreviewWorkspace::SetMode(const PreviewWorkspaceMode mode)
 {
     const int index = m_modeSelector->findData(static_cast<int>(mode));

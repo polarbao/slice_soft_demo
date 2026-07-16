@@ -5,6 +5,7 @@
 #include "../widgets/ConfigEditorPanel.h"
 #include "../widgets/DiagnosticsDock.h"
 #include "../widgets/LayerPreviewPanel.h"
+#include "../widgets/MaterialClosurePanel.h"
 #include "../widgets/PreviewOverlayPanel.h"
 #include "../widgets/PreviewPanel.h"
 #include "../widgets/QuickConfigPanel.h"
@@ -32,6 +33,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QImage>
 #include <QLabel>
 #include <QProcess>
 #include <QRect>
@@ -231,6 +233,123 @@ QJsonObject BuildOpenVdbUtilityReportFixture(const bool openVdbAvailable)
     return root;
 }
 
+QJsonObject BuildMaterialClosureReportFixture(
+    const QString& confidence,
+    const QString& closureStatus,
+    const QString& productionAcceptance,
+    const int totalGapPixels,
+    const int repairedPixels,
+    const int remainingGapPixels,
+    const QString& gapPreviewPath)
+{
+    const bool candidateOnly = confidence == QStringLiteral("candidate");
+    const bool hasRemainingGap = remainingGapPixels > 0;
+
+    QJsonObject repair;
+    repair[QStringLiteral("enabled")] = repairedPixels > 0;
+    repair[QStringLiteral("maxGapPx")] = 1;
+    repair[QStringLiteral("attempted")] = repairedPixels > 0;
+    repair[QStringLiteral("repairedPixels")] = repairedPixels;
+
+    QJsonObject totals;
+    totals[QStringLiteral("layerCount")] = 10;
+    totals[QStringLiteral("evaluatedLayerCount")] = 10;
+    totals[QStringLiteral("passLayerCount")] = hasRemainingGap ? 9 : 10;
+    totals[QStringLiteral("warningLayerCount")] =
+        closureStatus == QStringLiteral("warning") ? 1 : 0;
+    totals[QStringLiteral("failLayerCount")] =
+        closureStatus == QStringLiteral("fail") ? 1 : 0;
+    totals[QStringLiteral("totalGapPixels")] = totalGapPixels;
+    totals[QStringLiteral("colorFillGapPixels")] = totalGapPixels > 0 ? 1 : 0;
+    totals[QStringLiteral("modelSupportGapPixels")] = totalGapPixels > 1 ? 1 : 0;
+    totals[QStringLiteral("colorSupportGapPixels")] = totalGapPixels > 2 ? 1 : 0;
+    totals[QStringLiteral("internalVoidGapPixels")] = totalGapPixels > 3 ? 1 : 0;
+    totals[QStringLiteral("varnishSupportGapPixels")] = totalGapPixels > 4 ? 1 : 0;
+    totals[QStringLiteral("repairedPixels")] = repairedPixels;
+    totals[QStringLiteral("remainingGapPixels")] = remainingGapPixels;
+    totals[QStringLiteral("repairRejectedTooWidePixels")] = 0;
+    totals[QStringLiteral("externalBackgroundProtectedPixels")] = 128;
+
+    QJsonArray types;
+    if (hasRemainingGap)
+    {
+        types.append(QStringLiteral("COLOR_FILL_GAP"));
+        types.append(QStringLiteral("INTERNAL_VOID_GAP"));
+    }
+
+    QJsonArray worstLayers;
+    if (hasRemainingGap)
+    {
+        worstLayers.append(
+            QJsonObject{
+                {QStringLiteral("layerIndex"), 7},
+                {QStringLiteral("zMm"), 0.07},
+                {QStringLiteral("gapPixels"), remainingGapPixels},
+                {QStringLiteral("types"), types}});
+    }
+
+    QJsonObject layerRepair;
+    layerRepair[QStringLiteral("attempted")] = repairedPixels > 0;
+    layerRepair[QStringLiteral("repairedPixels")] = repairedPixels;
+    layerRepair[QStringLiteral("repairedColorFillPixels")] = repairedPixels;
+    layerRepair[QStringLiteral("repairedModelSupportPixels")] = 0;
+    layerRepair[QStringLiteral("repairedInternalVoidPixels")] = 0;
+    layerRepair[QStringLiteral("repairedVarnishSupportPixels")] = 0;
+    layerRepair[QStringLiteral("remainingGapPixels")] = remainingGapPixels;
+    layerRepair[QStringLiteral("rejectedTooWidePixels")] = 0;
+
+    QJsonArray layers;
+    layers.append(
+        QJsonObject{
+            {QStringLiteral("layerIndex"), 7},
+            {QStringLiteral("zMm"), 0.07},
+            {QStringLiteral("closureStatus"), closureStatus},
+            {QStringLiteral("gapPixels"), totalGapPixels},
+            {QStringLiteral("repair"), layerRepair},
+            {QStringLiteral("externalBackgroundProtectedPixels"), 32},
+            {QStringLiteral("gapPreviewPath"), gapPreviewPath}});
+
+    QJsonArray diagnostics;
+    if (candidateOnly)
+    {
+        diagnostics.append(
+            QJsonObject{
+                {QStringLiteral("severity"), QStringLiteral("warning")},
+                {QStringLiteral("code"), QStringLiteral("MATERIAL_CLOSURE_CANDIDATE_ONLY")}});
+    }
+    if (hasRemainingGap)
+    {
+        diagnostics.append(
+            QJsonObject{
+                {QStringLiteral("severity"), QStringLiteral("error")},
+                {QStringLiteral("code"), QStringLiteral("COLOR_FILL_GAP")},
+                {QStringLiteral("layerIndex"), 7},
+                {QStringLiteral("pixelCount"), remainingGapPixels}});
+    }
+
+    QJsonObject root;
+    root[QStringLiteral("schema")] = QStringLiteral("p0.material_closure.1");
+    root[QStringLiteral("packageProtocol")] = QStringLiteral("p0.rgbwsv.2");
+    root[QStringLiteral("enabled")] = true;
+    root[QStringLiteral("mode")] =
+        repairedPixels > 0
+        ? QStringLiteral("repair_then_report")
+        : QStringLiteral("diagnostic");
+    root[QStringLiteral("source")] =
+        candidateOnly
+        ? QStringLiteral("rgbwsv_tiff_inferred")
+        : QStringLiteral("semantic_masks");
+    root[QStringLiteral("confidence")] = confidence;
+    root[QStringLiteral("closureStatus")] = closureStatus;
+    root[QStringLiteral("productionAcceptance")] = productionAcceptance;
+    root[QStringLiteral("repair")] = repair;
+    root[QStringLiteral("totals")] = totals;
+    root[QStringLiteral("worstLayers")] = worstLayers;
+    root[QStringLiteral("layers")] = layers;
+    root[QStringLiteral("diagnostics")] = diagnostics;
+    return root;
+}
+
 bool WriteJsonFixture(const QString& path, const QJsonObject& object)
 {
     QFile file(path);
@@ -307,6 +426,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "diagnostics-collapse")
     {
         return DiagnosticsCollapse(options);
+    }
+    if (options.case_name == "material-closure-diagnostics")
+    {
+        return MaterialClosureDiagnostics(options);
     }
     if (options.case_name == "openvdb-utility-summary")
     {
@@ -1186,11 +1309,16 @@ int UiSmokeTestRunner::DiagnosticsCollapse(const UiSmokeTestOptions& options)
                     + workspaceTitles.join(QStringLiteral(",")));
     }
     if (dock->TabTitles()
-        != QStringList{QStringLiteral("报告"), QStringLiteral("曲线"), QStringLiteral("日志")})
+        != QStringList{
+            QStringLiteral("报告"),
+            QStringLiteral("材料闭环"),
+            QStringLiteral("曲线"),
+            QStringLiteral("日志")})
     {
         return fail(QStringLiteral("diagnostics-collapse 诊断页签集合不正确。"));
     }
     if (window.findChildren<ReportPanel*>().size() != 1
+        || window.findChildren<MaterialClosurePanel*>().size() != 1
         || window.findChildren<ChannelChartPanel*>().size() != 1
         || window.findChildren<LogPanel*>().size() != 1)
     {
@@ -1232,6 +1360,257 @@ int UiSmokeTestRunner::DiagnosticsCollapse(const UiSmokeTestOptions& options)
             .arg(dock->TabTitles().join(QStringLiteral(",")))
             .arg(workspaceTitles.join(QStringLiteral(",")))
             .arg(layerIndex));
+}
+
+int UiSmokeTestRunner::MaterialClosureDiagnostics(const UiSmokeTestOptions& options)
+{
+    QTemporaryDir tempDir;
+    if (!tempDir.isValid())
+    {
+        return fail(QStringLiteral("material-closure-diagnostics 无法创建临时目录。"));
+    }
+
+    const auto writePackage =
+        [&tempDir](
+            const QString& name,
+            const QJsonObject& report,
+            const bool includeReport,
+            const bool includeGapPreview) -> QString
+    {
+        QDir packageDir(tempDir.filePath(name));
+        if (!packageDir.mkpath(QStringLiteral("reports"))
+            || !packageDir.mkpath(QStringLiteral("preview")))
+        {
+            return {};
+        }
+
+        QJsonArray layers;
+        layers.append(
+            QJsonObject{
+                {QStringLiteral("index"), 0},
+                {QStringLiteral("zMm"), 0.0}});
+        layers.append(
+            QJsonObject{
+                {QStringLiteral("index"), 7},
+                {QStringLiteral("zMm"), 0.07}});
+        QJsonObject manifest;
+        manifest[QStringLiteral("schema")] = QStringLiteral("p0.rgbwsv.2");
+        manifest[QStringLiteral("grid")] =
+            QJsonObject{
+                {QStringLiteral("widthPx"), 12},
+                {QStringLiteral("heightPx"), 12},
+                {QStringLiteral("layerCount"), 8},
+                {QStringLiteral("layerThicknessMm"), 0.01}};
+        manifest[QStringLiteral("layers")] = layers;
+        if (!WriteJsonFixture(
+                packageDir.filePath(QStringLiteral("manifest.json")),
+                manifest))
+        {
+            return {};
+        }
+
+        if (includeReport
+            && !WriteJsonFixture(
+                packageDir.filePath(
+                    QStringLiteral("reports/material_closure_report.json")),
+                report))
+        {
+            return {};
+        }
+
+        if (includeGapPreview)
+        {
+            QImage image(12, 12, QImage::Format_ARGB32);
+            image.fill(Qt::white);
+            for (int coordinate{3}; coordinate <= 8; ++coordinate)
+            {
+                image.setPixelColor(coordinate, coordinate, QColor(255, 0, 255));
+            }
+            if (!image.save(
+                    packageDir.filePath(
+                        QStringLiteral(
+                            "preview/material_closure_gap_000007.png"))))
+            {
+                return {};
+            }
+        }
+        return packageDir.absolutePath();
+    };
+
+    const QString gapPreviewPath =
+        QStringLiteral("preview/material_closure_gap_000007.png");
+    const QString exactPassPackage = writePackage(
+        QStringLiteral("exact_pass"),
+        BuildMaterialClosureReportFixture(
+            QStringLiteral("exact"),
+            QStringLiteral("pass"),
+            QStringLiteral("passed"),
+            0,
+            0,
+            0,
+            {}),
+        true,
+        false);
+    const QString exactFailPackage = writePackage(
+        QStringLiteral("exact_fail"),
+        BuildMaterialClosureReportFixture(
+            QStringLiteral("exact"),
+            QStringLiteral("fail"),
+            QStringLiteral("failed"),
+            5,
+            0,
+            5,
+            gapPreviewPath),
+        true,
+        true);
+    const QString repairedPackage = writePackage(
+        QStringLiteral("repaired_with_remaining"),
+        BuildMaterialClosureReportFixture(
+            QStringLiteral("exact"),
+            QStringLiteral("fail"),
+            QStringLiteral("failed"),
+            5,
+            3,
+            2,
+            {}),
+        true,
+        false);
+    const QString candidatePackage = writePackage(
+        QStringLiteral("candidate_only"),
+        BuildMaterialClosureReportFixture(
+            QStringLiteral("candidate"),
+            QStringLiteral("warning"),
+            QStringLiteral("not_evaluated"),
+            5,
+            0,
+            5,
+            {}),
+        true,
+        false);
+    const QString missingPackage = writePackage(
+        QStringLiteral("report_missing"),
+        {},
+        false,
+        false);
+    if (exactPassPackage.isEmpty()
+        || exactFailPackage.isEmpty()
+        || repairedPackage.isEmpty()
+        || candidatePackage.isEmpty()
+        || missingPackage.isEmpty())
+    {
+        return fail(QStringLiteral("material-closure-diagnostics 无法写入报告夹具。"));
+    }
+
+    MainWindow window(options.repo_root);
+    auto* dock = window.findChild<DiagnosticsDock*>(
+        QStringLiteral("diagnosticsDock"));
+    auto* panel = window.findChild<MaterialClosurePanel*>(
+        QStringLiteral("materialClosurePanel"));
+    auto* workspace = window.findChild<PreviewWorkspace*>(
+        QStringLiteral("previewWorkspace"));
+    auto* overlay = window.findChild<PreviewOverlayPanel*>(
+        QStringLiteral("materialOverlayView"));
+    if (dock == nullptr || panel == nullptr || workspace == nullptr || overlay == nullptr)
+    {
+        return fail(
+            QStringLiteral(
+                "material-closure-diagnostics 缺少闭环面板或统一预览。"));
+    }
+
+    const auto loadFixture =
+        [dock, workspace](const QString& path) -> PackageSummary
+    {
+        const PackageSummary package = PackageLoader().load(path);
+        dock->LoadPackage(package);
+        workspace->LoadPackage(package);
+        return package;
+    };
+
+    loadFixture(exactPassPackage);
+    if (!ContainsAll(
+            panel->SummaryForTest(),
+            {QStringLiteral("闭环状态：通过 (pass)"),
+             QStringLiteral("证据置信度：精确语义证据 (exact)"),
+             QStringLiteral("生产验收：通过 (passed)"),
+             QStringLiteral("Worst Layers：0")})
+        || panel->WorstLayerCountForTest() != 0)
+    {
+        return fail(
+            QStringLiteral("material-closure-diagnostics exact pass 显示不完整：\n")
+            + panel->SummaryForTest());
+    }
+
+    loadFixture(exactFailPackage);
+    if (!ContainsAll(
+            panel->SummaryForTest(),
+            {QStringLiteral("闭环状态：失败 (fail)"),
+             QStringLiteral("生产验收：未通过 (failed)"),
+             QStringLiteral("颜色/填充=1"),
+             QStringLiteral("模型/支撑=1"),
+             QStringLiteral("颜色/支撑=1"),
+             QStringLiteral("内部镂空=1"),
+             QStringLiteral("光油/支撑=1"),
+             QStringLiteral("外部背景保护像素：128"),
+             QStringLiteral("Worst Layers：1")})
+        || panel->WorstLayerCountForTest() != 1
+        || !panel->SelectWorstLayerForTest(0)
+        || !panel->TriggerSelectedLayerForTest())
+    {
+        return fail(
+            QStringLiteral("material-closure-diagnostics exact fail 或定位入口无效：\n")
+            + panel->SummaryForTest());
+    }
+    QApplication::processEvents();
+    if (workspace->CurrentLayerIndex() != 7
+        || workspace->CurrentMode() != PreviewWorkspaceMode::MaterialOverlay
+        || !overlay->StatusForTest().contains(QStringLiteral("RGB + 闭环 Gap")))
+    {
+        return fail(
+            QStringLiteral(
+                "material-closure-diagnostics worst layer 未跳转真实 layerIndex 或未显示 Gap 伪彩图：")
+            + overlay->StatusForTest());
+    }
+
+    loadFixture(repairedPackage);
+    if (!ContainsAll(
+            panel->SummaryForTest(),
+            {QStringLiteral("修复：启用=是"),
+             QStringLiteral("已尝试=是"),
+             QStringLiteral("已修复=3"),
+             QStringLiteral("剩余 Gap=2")}))
+    {
+        return fail(
+            QStringLiteral(
+                "material-closure-diagnostics repaired-with-remaining 显示不完整：\n")
+            + panel->SummaryForTest());
+    }
+
+    loadFixture(candidatePackage);
+    if (!ContainsAll(
+            panel->SummaryForTest(),
+            {QStringLiteral("证据置信度：候选推断 (candidate)"),
+             QStringLiteral("生产验收：未评估 (not_evaluated)"),
+             QStringLiteral("候选诊断，不能作为生产通过依据")}))
+    {
+        return fail(
+            QStringLiteral("material-closure-diagnostics candidate 安全提示缺失：\n")
+            + panel->SummaryForTest());
+    }
+
+    loadFixture(missingPackage);
+    if (!panel->SummaryForTest().contains(
+            QStringLiteral(
+                "当前输出包未生成 reports/material_closure_report.json"))
+        || panel->WorstLayerCountForTest() != 0)
+    {
+        return fail(
+            QStringLiteral("material-closure-diagnostics report-missing 状态不明确：\n")
+            + panel->SummaryForTest());
+    }
+
+    return pass(
+        QStringLiteral(
+            "material-closure-diagnostics exactPass/exactFail/repaired/candidate/missing + layer=7 gapPreview"));
 }
 
 int UiSmokeTestRunner::OpenVdbUtilitySummary(const UiSmokeTestOptions& options)

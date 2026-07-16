@@ -41,12 +41,19 @@ QImage ToDisplayCoordinateImage(const QImage& image)
 
 }  // namespace
 
-PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent) : QWidget(parent) {
+PreviewOverlayPanel::PreviewOverlayPanel(QWidget* parent)
+    : QWidget(parent)
+{
     auto* layout = new QVBoxLayout(this);
     auto* controls = new QHBoxLayout();
     mode_ = new QComboBox(this);
     mode_->setObjectName(QStringLiteral("overlayModeSelector"));
-    mode_->addItems({"单通道", "RGB + W 白墨", "RGB + V 光油", "RGB + S 支撑"});
+    mode_->addItems(
+        {"单通道",
+         "RGB + W 白墨",
+         "RGB + V 光油",
+         "RGB + S 支撑",
+         "RGB + 闭环 Gap"});
     mode_->setToolTip("选择叠加方式：仅把同一 layerIndex 的 RGB 与 W/S/V 伪彩图合成，用于检查材料相对位置。");
     layer_slider_ = new QSlider(Qt::Horizontal, this);
     layer_slider_->setToolTip("按真实 layerIndex 从低 Z 到高 Z 浏览叠加结果。");
@@ -144,22 +151,35 @@ QStringList PreviewOverlayPanel::availableChannels() const {
     return result;
 }
 
-bool PreviewOverlayPanel::canComposeMode(const QString& mode) const {
-    if (mode == "单通道") {
+bool PreviewOverlayPanel::canComposeMode(const QString& mode) const
+{
+    if (mode == "单通道")
+    {
         return imageCount() > 0;
     }
-    QString overlay_channel;
-    if (mode.contains("W")) {
-        overlay_channel = "white";
-    } else if (mode.contains("V")) {
-        overlay_channel = "varnish";
-    } else {
-        overlay_channel = "support";
+    QString overlayChannel;
+    if (mode.contains("闭环 Gap"))
+    {
+        overlayChannel = "closure_gap";
     }
-    for (int i = 0; i < m_layerIndices.size(); ++i) {
-        const int layer = m_layerIndices.at(i);
-        if (!FindImageForLayer(overlay_channel, layer).isNull()
-            && !composeForMode(mode, i).isNull()) {
+    else if (mode.contains("W"))
+    {
+        overlayChannel = "white";
+    }
+    else if (mode.contains("V"))
+    {
+        overlayChannel = "varnish";
+    }
+    else
+    {
+        overlayChannel = "support";
+    }
+    for (int index{0}; index < m_layerIndices.size(); ++index)
+    {
+        const int layer = m_layerIndices.at(index);
+        if (!FindImageForLayer(overlayChannel, layer).isNull()
+            && !composeForMode(mode, index).isNull())
+        {
             return true;
         }
     }
@@ -208,6 +228,50 @@ bool PreviewOverlayPanel::SelectLayer(const int layerIndex)
     return true;
 }
 
+bool PreviewOverlayPanel::ShowMaterialClosureGapPreview(
+    const int layerIndex,
+    const QString& path)
+{
+    if (layerIndex < 0 || path.isEmpty() || !QFileInfo::exists(path))
+    {
+        return false;
+    }
+
+    const QString absolutePath = QFileInfo(path).absoluteFilePath();
+    bool exists = false;
+    for (const PreviewImage& image : images_)
+    {
+        if (image.layer == layerIndex
+            && image.channel == QStringLiteral("closure_gap")
+            && QFileInfo(image.path).absoluteFilePath() == absolutePath)
+        {
+            exists = true;
+            break;
+        }
+    }
+    if (!exists)
+    {
+        images_.push_back(
+            PreviewImage{
+                absolutePath,
+                QStringLiteral("closure_gap"),
+                layerIndex});
+    }
+    if (!m_layerIndices.contains(layerIndex))
+    {
+        m_layerIndices.push_back(layerIndex);
+        std::sort(m_layerIndices.begin(), m_layerIndices.end());
+        rebuildLayerSlider();
+    }
+
+    const int modeIndex = mode_->findText(QStringLiteral("RGB + 闭环 Gap"));
+    if (modeIndex >= 0)
+    {
+        mode_->setCurrentIndex(modeIndex);
+    }
+    return SelectLayer(layerIndex);
+}
+
 void PreviewOverlayPanel::updateImage() {
     const QImage image = composeCurrent();
     if (image.isNull()) {
@@ -251,35 +315,53 @@ void PreviewOverlayPanel::fitToWindow() {
     updateImage();
 }
 
-QString PreviewOverlayPanel::classifyChannel(const QString& path) const {
+QString PreviewOverlayPanel::classifyChannel(const QString& path) const
+{
     const QString base = QFileInfo(path).completeBaseName().toLower();
-    if (base.contains("texture_rgb") || base.contains("rgb")) {
+    if (base.contains("closure") && base.contains("gap"))
+    {
+        return "closure_gap";
+    }
+    if (base.contains("texture_rgb") || base.contains("rgb"))
+    {
         return "rgb";
     }
-    if (base.contains("white") || base.contains("_w") || base.endsWith("w")) {
+    if (base.contains("white") || base.contains("_w") || base.endsWith("w"))
+    {
         return "white";
     }
-    if (base.contains("varnish") || base.contains("_v") || base.endsWith("v")) {
+    if (base.contains("varnish") || base.contains("_v") || base.endsWith("v"))
+    {
         return "varnish";
     }
-    if (base.contains("support") || base.contains("_s") || base.endsWith("s")) {
+    if (base.contains("support") || base.contains("_s") || base.endsWith("s"))
+    {
         return "support";
     }
     return "preview";
 }
 
-QString PreviewOverlayPanel::normalizeChannel(const QString& channel) const {
+QString PreviewOverlayPanel::normalizeChannel(const QString& channel) const
+{
     const QString normalized = channel.toLower();
-    if (normalized == "texture_rgb" || normalized == "model_rgb" || normalized == "true_rgb") {
+    if (normalized == "closure_gap" || normalized == "material_closure_gap")
+    {
+        return "closure_gap";
+    }
+    if (normalized == "texture_rgb" || normalized == "model_rgb" || normalized == "true_rgb")
+    {
         return "rgb";
     }
-    if (normalized == "w") {
+    if (normalized == "w")
+    {
         return "white";
     }
-    if (normalized == "v") {
+    if (normalized == "v")
+    {
         return "varnish";
     }
-    if (normalized == "s") {
+    if (normalized == "s")
+    {
         return "support";
     }
     return normalized;
@@ -501,52 +583,69 @@ QImage PreviewOverlayPanel::ComposeForLayer(const QString& mode, const int layer
     {
         return {};
     }
-    if (mode == "单通道") {
+    if (mode == "单通道")
+    {
         return FindFirstImageForLayer(layer);
     }
 
     QImage base = FindImageForLayer("rgb", layer);
-    if (!base.isNull()) {
+    if (!base.isNull())
+    {
         base = base.convertToFormat(QImage::Format_ARGB32);
     }
 
-    QString overlay_channel;
-    if (mode.contains("W")) {
-        overlay_channel = "white";
-    } else if (mode.contains("V")) {
-        overlay_channel = "varnish";
-    } else {
-        overlay_channel = "support";
+    QString overlayChannel;
+    if (mode.contains("闭环 Gap"))
+    {
+        overlayChannel = "closure_gap";
     }
-    const QImage overlay = FindImageForLayer(overlay_channel, layer);
-    if (base.isNull() && overlay.isNull()) {
+    else if (mode.contains("W"))
+    {
+        overlayChannel = "white";
+    }
+    else if (mode.contains("V"))
+    {
+        overlayChannel = "varnish";
+    }
+    else
+    {
+        overlayChannel = "support";
+    }
+    const QImage overlay = FindImageForLayer(overlayChannel, layer);
+    if (base.isNull() && overlay.isNull())
+    {
         return {};
     }
-    if (base.isNull()) {
+    if (base.isNull())
+    {
         base = QImage(overlay.size(), QImage::Format_ARGB32);
         base.fill(Qt::white);
     }
-    if (overlay.isNull()) {
+    if (overlay.isNull())
+    {
         return base;
     }
 
     QImage result = base.convertToFormat(QImage::Format_ARGB32);
     const QImage mask = overlay.convertToFormat(QImage::Format_ARGB32).scaled(result.size(), Qt::KeepAspectRatio, Qt::FastTransformation);
-    QImage colored_mask(result.size(), QImage::Format_ARGB32);
-    colored_mask.fill(Qt::transparent);
-    for (int y = 0; y < mask.height(); ++y) {
-        for (int x = 0; x < mask.width(); ++x) {
+    QImage coloredMask(result.size(), QImage::Format_ARGB32);
+    coloredMask.fill(Qt::transparent);
+    for (int y{0}; y < mask.height(); ++y)
+    {
+        for (int x{0}; x < mask.width(); ++x)
+        {
             const QColor source = QColor::fromRgba(mask.pixel(x, y));
-            const int max_component = qMax(source.red(), qMax(source.green(), source.blue()));
-            const bool near_white = source.red() > 245 && source.green() > 245 && source.blue() > 245;
-            if (!near_white && max_component >= 32) {
-                colored_mask.setPixelColor(x, y, QColor(source.red(), source.green(), source.blue(), 170));
+            const int maxComponent = qMax(source.red(), qMax(source.green(), source.blue()));
+            const bool nearWhite = source.red() > 245 && source.green() > 245 && source.blue() > 245;
+            if (!nearWhite && maxComponent >= 32)
+            {
+                coloredMask.setPixelColor(x, y, QColor(source.red(), source.green(), source.blue(), 170));
             }
         }
     }
     QPainter painter(&result);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.drawImage(QPoint(0, 0), colored_mask);
+    painter.drawImage(QPoint(0, 0), coloredMask);
     return result;
 }
 

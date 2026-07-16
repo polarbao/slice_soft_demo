@@ -5,7 +5,7 @@
 
 ## 1. 当前结论
 
-12D 文档准备阶段已完成；12D-R1/R2 已完成。12D-R3 已完成 12D-07 一像素闭环修复和 12D-08 外部背景硬保护；12D-09 Qt 闭环诊断已解除前置阻塞并进入可执行状态，12D-10 继续等待 UI 任务。
+12D 文档准备阶段已完成；12D-R1/R2 已完成。12D-R3 已完成 12D-07 一像素闭环修复、12D-08 外部背景硬保护和 12D-09 Qt 闭环诊断；12D-10 真实模型验收已解除前置阻塞并进入可执行状态。
 
 ## 2. 已准备文档
 
@@ -45,7 +45,7 @@ gap preview 默认关闭且只作诊断；
 | 12D-R0 | 文档/schema/fixture/执行边界 | COMPLETE |
 | 12D-R1 | 配置、报告骨架、TIFF candidate | COMPLETE（12D-02/03/04） |
 | 12D-R2 | semantic mask exact、repair-disabled 不变性 | COMPLETE（12D-05/06） |
-| 12D-R3 | 1px repair、背景保护、UI、真实模型 | IN PROGRESS（12D-07/08 COMPLETE） |
+| 12D-R3 | 1px repair、背景保护、UI、真实模型 | IN PROGRESS（12D-07/08/09 COMPLETE） |
 
 ## 5. 12D-02/03/04/05/06 已实现
 
@@ -99,7 +99,8 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-06 repair-disabled TIFF 不变性验证：COMPLETE；
 12D-07 Repair Enabled 一像素闭环修复：COMPLETE；
 12D-08 外部背景保护：COMPLETE；
-下一代码任务：12D-09 Qt 闭环诊断显示，准备完成但尚未启动。
+12D-09 Qt 闭环诊断显示：COMPLETE；
+下一代码任务：12D-10 真实模型验证，准备完成但尚未启动。
 ```
 
 ## 8. 后续任务准备判断
@@ -111,8 +112,8 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-06：COMPLETE，12D-R2 已封口；
 12D-07：COMPLETE；
 12D-08：COMPLETE；
-12D-09：PREPARED / READY FOR USER ADMISSION；
-12D-10 继续受 12D-09 门禁阻塞。
+12D-09：COMPLETE；
+12D-10：PREPARED / READY FOR USER ADMISSION。
 ```
 
 ## 9. 12D-08 完成证据
@@ -125,4 +126,16 @@ border_connected_empty、closed_internal_void、narrow_neck_to_border 合成夹�
 repair-enabled package 与 RIP Reader 通过；
 repair-disabled 30 层 TIFF SHA-256 不变性通过；
 完整 CTest 9/9 通过。
+```
+
+## 10. 12D-09 完成证据
+
+```text
+Qt 诊断区域新增“材料闭环”页，只读取 reports/material_closure_report.json；
+显示 closureStatus、confidence、productionAcceptance、repair、五类 gap 和 worstLayers；
+candidate 明确显示不能作为生产通过依据，并阻断非法候选 pass；
+点击 worst layer 使用真实 layerIndex 跳转统一预览；
+仅在 gapPreviewPath 存在且文件有效时显示“RGB + 闭环 Gap”；
+exact pass/fail、repaired-with-remaining、candidate-only、report-missing Smoke 通过；
+12C fresh Qt lane、诊断折叠、工作区尺寸和完整 CTest 9/9 通过。
 ```

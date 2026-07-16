@@ -15,7 +15,7 @@
 12A：材料填充、支撑、光油语义当前范围完成；
 12B：性能评估与 OpenVDB SDF utility 定位完成；
 12C：Qt 工作台 R0/R1/R2 完成；
-12D：R1/R2 完成，R3 已准备但未开始；
+12D：R1/R2 完成，R3 已完成 12D-07/08/09，12D-10 待启动；
 12E：R0 preparation complete，implementation not started。
 ```
 
@@ -63,9 +63,10 @@ Qt UI 与 preview；
 ## 6. 与 12D 的关系
 
 ```text
-12D-07：PREPARED / READY FOR USER ADMISSION；
+12D-07/08/09：COMPLETE；
+12D-10：PREPARED / READY FOR USER ADMISSION；
 12E-01：PREPARED / READY FOR USER ADMISSION；
-二者均无 active code task；
+12D-10 与 12E-01 均无 active code task；
 12E R0/R1 原型不要求先完成 repair；
 12E production admission 必须复核 12D exact closure；
 不得把 12E 分区逻辑塞入 12D repair 任务。
@@ -85,7 +86,7 @@ production Profile 的最终最小宽度是否高于 0.10 mm。
 
 ## 8. 下一任务
 
-用户若选择进入 12E，应明确指定：
+12E 准备已完成，但按当前阶段顺序继续等待 12D-10。12D 封口后，用户若选择进入 12E，应明确指定：
 
 ```text
 开始 12E-01 Config 与 DTO 契约。
