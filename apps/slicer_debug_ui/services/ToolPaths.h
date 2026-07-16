@@ -2,7 +2,8 @@
 
 #include <QString>
 
-struct ToolPaths {
+struct ToolPaths
+{
     QString repo_root;
     QString build_dir;
     QString slicer_cli;
@@ -10,5 +11,10 @@ struct ToolPaths {
     QString rip_reader;
     QString powershell;
 
-    static ToolPaths fromRepoRoot(const QString& repo_root);
+    /**
+     * @brief Resolve runtime tools for a repository or packaged application root.
+     * @param repoRoot Repository root or packaged runtime root.
+     * @return Resolved tool paths for the current build configuration.
+     */
+    static ToolPaths FromRepoRoot(const QString& repoRoot);
 };

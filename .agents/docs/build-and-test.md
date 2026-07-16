@@ -121,14 +121,38 @@ PowerShell entry:
 .\build-12c-ui\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test
 ```
 
-VS Code entry:
+Historical VS Code entry (removed from the daily launch list after 12F-R0 consolidation):
 
 ```text
 Task: SliceSoft: Build 12C Fresh Qt UI
 Launch: SliceSoft: Debug 12C Fresh Qt UI
 ```
 
-The script keeps `USE_OPENVDB=OFF`. It must not edit the local Qt installation.
+The script keeps `USE_OPENVDB=OFF`. It must not edit the local Qt installation. The 12C entry is retained as a historical fresh regression lane; it is no longer the second daily VS Code Qt launch.
+
+## Unified Debug/Release Runtime
+
+The daily Qt runtime lane imports the Visual Studio x64 developer environment and uses NMake single-config build directories:
+
+```powershell
+.\scripts\PrepareSliceSoftRuntime.ps1 -Config Debug
+.\scripts\PrepareSliceSoftRuntime.ps1 -Config Release
+```
+
+Outputs:
+
+```text
+build-slicesoft/<Config>
+runtime/slicesoft/<Config>
+```
+
+The runtime directory contains `slicer_debug_ui.exe`, `slicer_cli.exe`, `rip_reader_test.exe`, Qt DLLs, platform plugins, the MSVC runtime, `samples/`, `model/`, Profile-referenced documents, and `runtime_manifest.json`. The deployment script validates all scenario config/model/document paths before publishing. OpenVDB remains OFF. Runtime UI resolves its application directory as the packaged resource root and resolves the sibling CLI and RIP reader before any build-directory fallback.
+
+To republish already-built artifacts without rebuilding:
+
+```powershell
+.\scripts\PrepareSliceSoftRuntime.ps1 -Config Release -DeployOnly
+```
 
 ## Baseline Gate
 

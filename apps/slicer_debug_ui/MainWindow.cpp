@@ -324,7 +324,7 @@ QString ResolveModelPath(const QString& modelPath, const QString& configPath)
 }  // namespace
 
 MainWindow::MainWindow(QString repo_root, QWidget* parent)
-    : QMainWindow(parent), paths_(ToolPaths::fromRepoRoot(std::move(repo_root))) {
+    : QMainWindow(parent), paths_(ToolPaths::FromRepoRoot(std::move(repo_root))) {
     setWindowTitle("SliceSoft 切片调试界面");
     resize(1440, 900);
 

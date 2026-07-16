@@ -673,7 +673,7 @@ int UiSmokeTestRunner::compareProfiles(const UiSmokeTestOptions& options) {
         return fail("compare-profiles 需要 --package-a、--package-b 和 --output。");
     }
     QDir().mkpath(QFileInfo(output).absolutePath());
-    const ToolPaths paths = ToolPaths::fromRepoRoot(options.repo_root);
+    const ToolPaths paths = ToolPaths::FromRepoRoot(options.repo_root);
     QProcess process;
     process.setWorkingDirectory(options.repo_root);
     process.start(paths.powershell,

@@ -1,6 +1,7 @@
 build/
 build-*/
 output/
+runtime/
 .dish/workspace-id
 .qodo/
 .specstory/

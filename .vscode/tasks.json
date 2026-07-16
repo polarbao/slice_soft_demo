@@ -34,32 +34,40 @@
     {
       "label": "SliceSoft: Build Debug UI",
       "type": "shell",
-      "command": "cmake",
+      "command": "powershell",
       "args": [
-        "--build",
-        "build",
-        "--config",
-        "Debug",
-        "--target",
-        "slicer_debug_ui"
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/PrepareSliceSoftRuntime.ps1",
+        "-BuildDir",
+        "build-slicesoft",
+        "-RuntimeDir",
+        "runtime/slicesoft",
+        "-Config",
+        "Debug"
       ],
-      "dependsOn": "SliceSoft: Configure",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "group": "build",
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "SliceSoft: Build 12C Fresh Qt UI",
+      "label": "SliceSoft: Prepare Release Runtime",
       "type": "shell",
       "command": "powershell",
       "args": [
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "scripts/Configure12CQtUi.ps1",
+        "scripts/PrepareSliceSoftRuntime.ps1",
         "-BuildDir",
-        "build-12c-ui",
+        "build-slicesoft",
+        "-RuntimeDir",
+        "runtime/slicesoft",
         "-Config",
-        "Debug"
+        "Release"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -150,7 +158,7 @@
     {
       "label": "SliceSoft: Run UI self-test",
       "type": "shell",
-      "command": "${workspaceFolder}/build/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
       "args": [
         "--self-test"
       ],
@@ -161,16 +169,16 @@
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Run 12C Fresh UI self-test",
+      "label": "SliceSoft: Run Release Runtime self-test",
       "type": "shell",
-      "command": "${workspaceFolder}/build-12c-ui/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
       "args": [
         "--self-test"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "SliceSoft: Build 12C Fresh Qt UI",
+      "dependsOn": "SliceSoft: Prepare Release Runtime",
       "problemMatcher": []
     },
     {

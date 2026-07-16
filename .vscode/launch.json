@@ -5,7 +5,7 @@
       "name": "SliceSoft: Debug Qt UI",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
       "args": [],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "SliceSoft: Build Debug UI",
@@ -13,13 +13,14 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Debug 12C Fresh Qt UI",
+      "name": "SliceSoft: Run Release Qt UI",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build-12c-ui/apps/slicer_debug_ui/Debug/slicer_debug_ui.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
       "args": [],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "SliceSoft: Build 12C Fresh Qt UI",
+      "preLaunchTask": "SliceSoft: Prepare Release Runtime",
+      "noDebug": true,
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
