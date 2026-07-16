@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-16
-> 当前阶段：12D-R2 Repair Disabled 不变性验证准备
+> 当前阶段：12D-R2 Repair Disabled 不变性验证
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -33,10 +33,10 @@ docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md
 当前原子任务：
 
 ```text
-12D-06 Repair Disabled 验证准备
+12D-06 Repair Disabled 验证（READY TO IMPLEMENT）
 ```
 
-12C-R0/R1/R2 已全部完成，最终 fresh lane、完整 UI Smoke 和 CTest 已通过。12D-R1 的配置契约、报告骨架和 TIFF candidate，以及 R2 的 semantic mask exact detector 已完成；下一原子任务为 12D-06，仍不得提前实现 repair。
+12C-R0/R1/R2 已全部完成，最终 fresh lane、完整 UI Smoke 和 CTest 已通过。12D-R1 的配置契约、报告骨架和 TIFF candidate，以及 R2 的 semantic mask exact detector 已完成；12D-06 准备已完成，下一原子任务为不变性验证实现，仍不得提前实现 repair。
 
 ## 保留参考入口
 

@@ -18,6 +18,9 @@ DEV_12D_材料闭环诊断与修复设计.md；
 DOC_SCHEMA_12D_MaterialClosureReport.md；
 DEMO_12D_横截面材料无缝闭环验证方案.md；
 DOC_MATRIX_12D_Fixture与验收矩阵.md；
+DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md；
+DOC_PREP_12D_R2_RepairDisabled不变性验证准备.md；
+DOC_PREP_12D_R3_一像素修复背景保护UI真实模型准备.md；
 TASKS_12D_横截面材料无缝闭环任务清单.md；
 CODEX_PROMPT_12D_横截面材料闭环执行指令.md。
 ```
@@ -96,10 +99,10 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 
 ## 8. 后续任务准备判断
 
-12D-05 已按 `DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md` 完成。当前需要把 12D-06 的双配置、TIFF 哈希范围、manifest 层顺序与失败判定固化为可重复执行的守门流程。
+12D-05 已按 `DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md` 完成。12D-06 的双配置、TIFF 哈希范围、manifest 层顺序、gap 保留断言与失败判定已通过 `DOC_PREP_12D_R2_RepairDisabled不变性验证准备.md` 固化。R3 的 repair plan、1px 宽度、背景保护、UI 和真实模型边界已通过独立准备文档补齐。
 
 ```text
 12D-05：COMPLETE；
-12D-06：进入准备阶段，尚未开始实现验证脚本；
-12D-07 至 12D-10：已有总体设计，但尚未解除 repair/UI/真实模型执行门禁。
+12D-06：READY TO IMPLEMENT，尚未实现验证脚本；
+12D-07 至 12D-10：PREPARED，但分别受前序任务门禁阻塞。
 ```

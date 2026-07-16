@@ -12,6 +12,8 @@
 > - docs/slice/DEMO/DEMO_12D_横截面材料无缝闭环验证方案.md
 > - docs/slice/DOC/DOC_MATRIX_12D_Fixture与验收矩阵.md
 > - docs/slice/DOC/DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md
+> - docs/slice/DOC/DOC_PREP_12D_R2_RepairDisabled不变性验证准备.md
+> - docs/slice/DOC/DOC_PREP_12D_R3_一像素修复背景保护UI真实模型准备.md
 
 执行准入：12C-R2-05 和 `REPORT_12C_Qt工作台当前状态.md` 已完成；12D-R1 的 12D-02/03/04 与 R2 的 12D-05 已完成。下一原子任务为 12D-06，进入前必须完成 repair-disabled TIFF 不变性准备。
 
@@ -179,7 +181,17 @@ repair.attempted=false、repairedPixels=0，RGBWSV TIFF 未在本任务中修改
 
 ## 12D-06 Repair Disabled 验证
 
-状态：PREPARATION / 12D-R2
+状态：READY TO IMPLEMENT / 12D-R2
+
+准备记录：
+
+```text
+已冻结 baseline/diagnostic 双配置差异；
+TIFF hash 必须按 manifest layerIndex 一一比较；
+已区分 package TIFF 字节不变性与 synthetic gap 保留断言；
+脚本入口、失败条件、文件边界和验证命令已明确；
+本任务仍只验证 repair disabled，不实现 repair。
+```
 
 目标：
 
@@ -197,7 +209,7 @@ RGBWSV TIFF 与未启用 materialClosure repair 的输出一致。
 
 ## 12D-07 Repair Enabled 一像素闭环修复
 
-状态：PENDING / 12D-R3
+状态：PREPARED / BLOCKED BY 12D-06 / 12D-R3
 
 目标：
 
@@ -217,7 +229,7 @@ ModelSupportGap 按上下文修复为 ModelFill 或 SupportFill；
 
 ## 12D-08 外部背景保护
 
-状态：PENDING / 12D-R3
+状态：PREPARED / BLOCKED BY 12D-07 / 12D-R3
 
 目标：
 
@@ -235,7 +247,7 @@ externalBackgroundProtectedPixels > 0；
 
 ## 12D-09 UI 闭环诊断显示
 
-状态：PENDING / 12D-R3
+状态：PREPARED / BLOCKED BY 12D-08 / 12D-R3
 
 目标：
 
@@ -253,7 +265,7 @@ UI 报告/诊断区显示 closureStatus、worstLayers、gap 类型。
 
 ## 12D-10 真实模型验证
 
-状态：PENDING / 12D-R3
+状态：PREPARED / BLOCKED BY 12D-09 / 12D-R3
 
 目标：
 

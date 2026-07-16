@@ -6,7 +6,7 @@
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C 已收口；12D-R1 配置、报告骨架和 TIFF candidate 已完成，R2 的 `12D-05 Semantic Mask 精确诊断` 已完成，当前进入 `12D-06 Repair Disabled` 不变性验证准备。12E 仅完成文档规划，不是当前代码执行入口。
+当前状态：12C 已收口；12D-R1 配置、报告骨架和 TIFF candidate 已完成，R2 的 `12D-05 Semantic Mask 精确诊断` 已完成，`12D-06 Repair Disabled` 不变性验证准备已补齐并可进入实现。12D-07 至 12D-10 已完成边界准备但仍受前序门禁阻塞。12E 仅完成文档规划，不是当前代码执行入口。
 
 ## 目录结构
 
@@ -81,6 +81,8 @@
 | `PRD/PRD_12D_横截面材料无缝闭环验收与修复.md` | 12D 横截面材料无缝闭环产品需求 |
 | `DEV/DEV_12D_材料闭环诊断与修复设计.md` | 12D 材料闭环诊断与修复技术设计 |
 | `DOC/DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md` | 12D-R2 semantic mask ownership、pipeline 插入点和 exact 验收准备 |
+| `DOC/DOC_PREP_12D_R2_RepairDisabled不变性验证准备.md` | 12D-06 双配置、TIFF SHA-256 和 gap 保留守门准备 |
+| `DOC/DOC_PREP_12D_R3_一像素修复背景保护UI真实模型准备.md` | 12D-07 至 12D-10 repair、背景保护、UI 和真实模型准备 |
 | `DOC/DOC_DECISION_12E_全局纹理表面层与模型填充互补策略.md` | 12E 全局纹理表面层与模型填充互补分区决策 |
 | `PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md` | 12E 纹理宽度、动态最大值和全纹理产品需求 |
 | `DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md` | 12E 完整三维距离、互补 mask、UI 与 report 技术设计 |

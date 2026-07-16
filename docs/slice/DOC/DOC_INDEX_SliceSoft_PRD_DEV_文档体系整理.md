@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-16
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 已完成；12D-R1 与 12D-05 已完成，当前准备 12D-R2 原子任务 12D-06；12E 已规划但未开始实现
+> 当前阶段判断：12C 已完成；12D-R1 与 12D-05 已完成，12D-06 已准备可实施，12D-R3 已准备但未准入；12E 已规划但未开始实现
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -323,7 +323,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12A：材料、支撑、光油语义 P0/P1 基本完成，后续全局纹理/填充互补需求转入 12E；
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
-12D：R1 与 R2 的 12D-05 已完成，当前准备 12D-06 Repair Disabled 不变性验证；
+12D：R1 与 R2 的 12D-05 已完成，12D-06 READY TO IMPLEMENT；R3 已准备但受前序门禁阻塞；
 12E：Decision/PRD/DEV/DEMO/ROADMAP/TASKS/CODEX_PROMPT 已建立，implementation NOT STARTED。
 ```
 

@@ -6,7 +6,7 @@
 - Current phase: Stage 12D-R2 Material Closure exact diagnostics and invariance verification
 - Latest completed phase: Stage 12C Qt workbench closure
 - Latest completed task: `12D-05 Semantic Mask exact diagnostics`
-- Current task: `12D-06 Repair Disabled verification preparation`
+- Current task: `12D-06 Repair Disabled verification ready-to-implement`
 - Prepared stage: `12D-R2 Semantic Mask exact diagnostics` complete; repair remains disabled
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
