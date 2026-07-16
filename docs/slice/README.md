@@ -1,12 +1,12 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-07-12
-> 适用阶段：Stage 12C-R0 Qt 工作台构建兼容与基线准入
+> 更新日期：2026-07-16
+> 适用阶段：Stage 12D-R1 Material Closure；Stage 12E 全局纹理/填充互补已规划但未开始实现
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12B-R2 已完成；12C-R0-01 fresh build 和 R0-02 UI smoke 基线已通过；当前任务为 `12C-R0-03 布局与组件复用基线`。
+当前状态：12C 已收口；12D-R0 文档准入、12D-02 配置契约和 12D-03 报告骨架已完成，当前原子任务为 `12D-04 TIFF 反推候选诊断`。12E 仅完成文档规划，不是当前代码执行入口。
 
 ## 目录结构
 
@@ -26,6 +26,7 @@
 | `DOC/DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理.md` | 文档真源、证据等级、归档策略 |
 | `DOC/DOC_CLASSIFICATION_2026-06-30_docs治理归档清单.md` | 本轮 docs 分类与归档清单 |
 | `PRD/PRD_FORMAL_SliceSoft_正式切片软件产品需求总览.md` | 正式产品级 PRD 总控 |
+| `PRD/PRD_RESEARCH_PrismSlicer_UI切片与策略功能逆向整理.md` | 基于公开信息重建的 PrismSlicer UI、切片功能与切片策略 PRD，不包含 RIP/半色调实现 |
 | `DEV/DEV_FORMAL_SliceSoft_正式切片软件总体技术方案.md` | 正式技术方案总控 |
 | `PRD/PRD_DEMO_IMPLEMENTED_SliceSoft_当前Demo功能基线.md` | 当前 demo 已实现功能基线 |
 | `DEV/DEV_DEMO_IMPLEMENTED_SliceSoft_当前Demo技术基线.md` | 当前 demo 已实现技术基线 |
@@ -79,7 +80,13 @@
 | `DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md` | 12D 横截面材料无缝闭环专项决策 |
 | `PRD/PRD_12D_横截面材料无缝闭环验收与修复.md` | 12D 横截面材料无缝闭环产品需求 |
 | `DEV/DEV_12D_材料闭环诊断与修复设计.md` | 12D 材料闭环诊断与修复技术设计 |
+| `DOC/DOC_DECISION_12E_全局纹理表面层与模型填充互补策略.md` | 12E 全局纹理表面层与模型填充互补分区决策 |
+| `PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md` | 12E 纹理宽度、动态最大值和全纹理产品需求 |
+| `DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md` | 12E 完整三维距离、互补 mask、UI 与 report 技术设计 |
+| `DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md` | 12E 单调性、全纹理、薄壁、内腔和 UI 验证方案 |
+| `ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md` | 12E R0-R4 分阶段执行路线 |
 | `DOC/DOC_ANALYSIS_OpenVDB切片功能当前不可用原因.md` | OpenVDB 已完成测试但尚不可正式切片的原因分析 |
+| `DOC/DOC_RESEARCH_PrismSlicer功能处理策略与SliceSoft对照.md` | PrismSlicer 官网、论文、开源、视频与行业信息调研，以及与 SliceSoft 的能力/边界对照 |
 | `DOC/DOC_ANALYSIS_11B_OpenVDB姿态配置与同姿态性能对比.md` | OpenVDB 姿态配置差异与同姿态性能对比分析 |
 | `DOC/DOC_DECISION_11A_R1_OpenVDB候选切片写包与Preview收口.md` | OpenVDB Candidate 写包与 preview 收口决策 |
 | `DOC/DOC_DECISION_11B_UI配置生产预览与OpenVDB姿态收口.md` | 11B UI 配置、生产预览与 OpenVDB 姿态收口决策 |
