@@ -1,4 +1,4 @@
-﻿# OPENVDB_OBJ彩色纹理切片能力评估与改进方案
+# OPENVDB_OBJ彩色纹理切片能力评估与改进方案
 
 > 日期：2026-07-02
 > 文档类型：User Guide / Engineering Assessment
