@@ -1,14 +1,14 @@
 # DOC_PREP_12E-R0 Config、DTO 与启动准入准备
 
-> 文档状态：PREPARED / 12E-01 READY FOR USER ADMISSION
+> 文档状态：IMPLEMENTED / 12E-01 COMPLETE
 > 日期：2026-07-16
 > 覆盖任务：12E-01 Config 与 DTO 契约
 
 ## 1. 准备结论
 
-12E 的产品语义、配置字段、静态校验、运行时准入、报告骨架和负向用例已经拆分到可执行粒度。`12E-01` 可以在用户明确指定后开始，但当前仍是准备状态，不修改 C++、Qt、CMake、配置 fixture 或生产 TIFF。
+12E 的产品语义、配置字段、静态校验、运行时准入、报告骨架和负向用例已按本准备文档完成实现。`12E-01` 没有生成三维 partition，也没有修改 Qt、composer 或生产 TIFF。
 
-12E-01 只建立契约，不生成三维 mask，不接入 composer，不写 package。12D-R3 与 12E 是两条独立准入轨道：12D-07 已准备但未启动；12E-01 也已准备但未启动，任何一条都不能自动开始。
+12E-01 只建立契约，不生成三维 mask，不接入 composer，不写 package。12D 已封口；12E-02 仍须用户明确启动，不能因 12E-01 完成而自动执行。
 
 ## 2. 当前代码事实
 
@@ -134,6 +134,7 @@ E_12E_SURFACE_SHELL_STEP_UNSUPPORTED
 E_12E_SURFACE_SHELL_GEOMETRY_MODE_UNSUPPORTED
 E_12E_SURFACE_SHELL_MINIMUM_POLICY_UNSUPPORTED
 E_12E_SURFACE_SCOPE_UNSUPPORTED
+E_12E_FULL_TEXTURE_AT_MODEL_LIMIT_REQUIRED
 E_12E_TEXTURE_FILL_SCOPE_MISMATCH
 E_12E_MODEL_FILL_REQUIRED
 E_12E_PARTITION_BACKEND_UNAVAILABLE
@@ -199,8 +200,8 @@ git diff --check
 
 ```text
 12E-R0 preparation：COMPLETE；
-12E-01：PREPARED / READY FOR USER ADMISSION；
-12E-02：BLOCKED BY 12E-01；
+12E-01：COMPLETE；
+12E-02：PREPARED / READY FOR USER ADMISSION；
 12E production：NOT ADMITTED；
 12D-R3：COMPLETE；12D 结果只作为后续 closure gate 输入，不改变 12E-01 契约边界。
 ```

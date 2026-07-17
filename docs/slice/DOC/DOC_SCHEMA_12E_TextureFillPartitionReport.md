@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Texture Fill Partition Report
 
-> 文档状态：SCHEMA PREPARED / IMPLEMENTATION NOT STARTED
+> 文档状态：SKELETON IMPLEMENTED / PARTITION DATA PENDING
 > Schema：`slicesoft.texture_fill_partition.12e.1`
 > 日期：2026-07-16
 

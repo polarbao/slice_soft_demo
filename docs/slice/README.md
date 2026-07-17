@@ -2,11 +2,11 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-17
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-R0 PREPARED / IMPLEMENTATION NOT STARTED
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-01 COMPLETE / 12E-02 PREPARED
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C 已收口；12D-R0/R1/R2/R3 已完成，包含 exact semantic diagnosis、可选一像素修复、外部背景保护、Qt 诊断和三个真实 OBJ 验收。12E-R0 的 Config/DTO、schema 与 matrix 准备已完成，12E-01 等待用户明确启动。
+当前状态：12C 已收口；12D-R0/R1/R2/R3 已完成。12E-01 已完成 Config/DTO、稳定错误码、后端不可用门禁与 report skeleton；12E-02 Global Partition Service 骨架已准备，等待用户明确启动。
 
 ## 目录结构
 
@@ -89,6 +89,11 @@
 | `DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md` | 12E 完整三维距离、互补 mask、UI 与 report 技术设计 |
 | `DEMO/DEMO_12E_全局纹理壳层与模型填充验证方案.md` | 12E 单调性、全纹理、薄壁、内腔和 UI 验证方案 |
 | `ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.md` | 12E R0-R4 分阶段执行路线 |
+| `DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md` | 12E-01 Config、DTO、错误码和安全阻断契约 |
+| `DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md` | 12E-02 Service、3D mask DTO、不变量和测试准备 |
+| `DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md` | 12E partition report schema 与 unavailable skeleton |
+| `DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md` | 12E 配置、几何、分区、UI、协议和真实模型验收矩阵 |
+| `REPORT/REPORT_12E_启动准备状态.md` | 12E-01 实现结果与 12E-02 准入状态 |
 | `DOC/DOC_DECISION_12F_Release运行环境与切片性能优化专项.md` | 统一 Debug/Release Runtime、Qt 调试入口收口和后续性能专项边界 |
 | `PRD/PRD_12F_Release运行环境与切片性能优化.md` | Release 运行环境、性能 KPI 与验收需求 |
 | `DEV/DEV_12F_Release运行环境与切片性能优化设计.md` | NMake x64 Runtime、ToolPaths、支撑/合成/稠密 mask 优化设计 |

@@ -85,6 +85,10 @@ add_library(slicer_core
     src/slicer_core/materials/role_mapping/MaterialRoleMapping.h
     src/slicer_core/materials/texture_application/TextureApplicationPolicy.cpp
     src/slicer_core/materials/texture_application/TextureApplicationPolicy.h
+    src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.cpp
+    src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.h
+    src/slicer_core/materials/texture_application/TextureFillPartitionTypes.cpp
+    src/slicer_core/materials/texture_application/TextureFillPartitionTypes.h
     src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.cpp
     src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.h
     src/slicer_core/materials/texture_application/SurfaceShellTextureReport.cpp
@@ -123,6 +127,8 @@ add_library(slicer_core
     src/slicer_core/reports/ReportBase.h
     src/slicer_core/reports/MaterialClosureReport.cpp
     src/slicer_core/reports/MaterialClosureReport.h
+    src/slicer_core/reports/TextureFillPartitionReport.cpp
+    src/slicer_core/reports/TextureFillPartitionReport.h
     src/slicer_core/reports/ReportSchema.cpp
     src/slicer_core/reports/ReportSchema.h
     src/slicer_core/reports/ReportSchemaValidator.cpp

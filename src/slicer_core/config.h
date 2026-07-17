@@ -54,6 +54,19 @@ struct MaterialConfig {
     std::uint8_t varnish_value{255};
 };
 
+/**
+ * @brief Stage 12E global 3D texture-surface shell configuration.
+ */
+struct TextureSurfaceShellConfig
+{
+    std::string geometry_mode{"global_3d_distance"};
+    double width_mm{0.10};
+    double width_step_mm{0.01};
+    std::string minimum_width_policy{"two_cells_floor_0_10_mm"};
+    std::string surface_scope{"all_closed_surfaces"};
+    bool full_texture_at_model_limit{true};
+};
+
 struct TextureConfig {
     bool enabled{false};
     std::string apply_mode{"solid_volume_from_top_surface"};
@@ -64,6 +77,7 @@ struct TextureConfig {
     std::array<std::uint8_t, 3> fallback_rgb{0, 0, 0};
     std::string missing_texture_policy{"warn_and_fallback"};
     std::string non_surface_rgb_policy{"model_material"};
+    TextureSurfaceShellConfig surface_shell;
 };
 
 struct RgbPolicyConfig {

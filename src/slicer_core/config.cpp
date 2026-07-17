@@ -3,8 +3,10 @@
 #include "slicer_core/config/ConfigMigration.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/json_value.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionTypes.h"
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <stdexcept>
 
@@ -215,6 +217,23 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             texture.value("missingTexturePolicy", config.texture.missing_texture_policy);
         config.texture.non_surface_rgb_policy =
             texture.value("nonSurfaceRgbPolicy", config.texture.non_surface_rgb_policy);
+        if (texture.contains("surfaceShell")) {
+            const auto& surfaceShellJson = texture.at("surfaceShell");
+            config.texture.surface_shell.geometry_mode =
+                surfaceShellJson.value("geometryMode", config.texture.surface_shell.geometry_mode);
+            config.texture.surface_shell.width_mm =
+                surfaceShellJson.value("widthMm", config.texture.surface_shell.width_mm);
+            config.texture.surface_shell.width_step_mm =
+                surfaceShellJson.value("widthStepMm", config.texture.surface_shell.width_step_mm);
+            config.texture.surface_shell.minimum_width_policy = surfaceShellJson.value(
+                "minimumWidthPolicy",
+                config.texture.surface_shell.minimum_width_policy);
+            config.texture.surface_shell.surface_scope =
+                surfaceShellJson.value("surfaceScope", config.texture.surface_shell.surface_scope);
+            config.texture.surface_shell.full_texture_at_model_limit = surfaceShellJson.value(
+                "fullTextureAtModelLimit",
+                config.texture.surface_shell.full_texture_at_model_limit);
+        }
     }
 
     if (root.contains("materialPolicy")) {
@@ -617,8 +636,16 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.model_fill.scope != "solid_volume"
         && config.model_fill.scope != "below_texture_surface"
-        && config.model_fill.scope != "all_model") {
-        throw std::runtime_error("modelFill.scope must be solid_volume, below_texture_surface, or all_model");
+        && config.model_fill.scope != "all_model"
+        && config.model_fill.scope != "complement_of_global_texture_shell") {
+        if (config.texture.enabled && config.texture.apply_mode == "global_surface_shell")
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::TextureFillScopeMismatch,
+                "global_surface_shell requires modelFill.scope=complement_of_global_texture_shell");
+        }
+        throw std::runtime_error(
+            "modelFill.scope must be solid_volume, below_texture_surface, all_model, or complement_of_global_texture_shell");
     }
     if (config.model_fill.enabled
         && !config.model_fill.empty_allowed_in_production
@@ -700,13 +727,15 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.texture.enabled)
     {
         const bool surfaceShellFromSdf = config.texture.apply_mode == "surface_shell_from_sdf";
+        const bool globalSurfaceShell = config.texture.apply_mode == "global_surface_shell";
         if (config.texture.apply_mode != "solid_volume_from_top_surface"
             && config.texture.apply_mode != "top_surface_only"
             && config.texture.apply_mode != "top_surface_band"
-            && !surfaceShellFromSdf)
+            && !surfaceShellFromSdf
+            && !globalSurfaceShell)
         {
             throw std::runtime_error(
-                "texture.applyMode must be solid_volume_from_top_surface, top_surface_only, top_surface_band, or surface_shell_from_sdf");
+                "texture.applyMode must be solid_volume_from_top_surface, top_surface_only, top_surface_band, surface_shell_from_sdf, or global_surface_shell");
         }
         if (surfaceShellFromSdf
             && (!config.experimental.openvdb_pipeline.enabled
@@ -740,9 +769,67 @@ void validate_slice_config(const SliceConfig& config) {
             throw std::runtime_error(
                 "texture.nonSurfaceRgbPolicy must be model_material, empty, fallback_rgb, or material_policy");
         }
-        if (!surfaceShellFromSdf && config.slicing_mode != "relief_heightfield")
+        if (!surfaceShellFromSdf && !globalSurfaceShell && config.slicing_mode != "relief_heightfield")
         {
             throw std::runtime_error("04 texture.enabled currently requires relief_heightfield");
+        }
+    }
+
+    const bool globalSurfaceShell = config.texture.enabled
+        && config.texture.apply_mode == "global_surface_shell";
+    const bool complementFill =
+        config.model_fill.scope == "complement_of_global_texture_shell";
+    if (globalSurfaceShell != complementFill)
+    {
+        throw TextureFillPartitionError(
+            TextureFillPartitionErrorCode::TextureFillScopeMismatch,
+            "global_surface_shell and complement_of_global_texture_shell must be configured together");
+    }
+    if (globalSurfaceShell && !config.model_fill.enabled)
+    {
+        throw TextureFillPartitionError(
+            TextureFillPartitionErrorCode::ModelFillRequired,
+            "global_surface_shell requires modelFill.enabled=true");
+    }
+    if (globalSurfaceShell)
+    {
+        const TextureSurfaceShellConfig& surfaceShell = config.texture.surface_shell;
+        if (!std::isfinite(surfaceShell.width_mm) || surfaceShell.width_mm <= 0.0)
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::SurfaceShellWidthInvalid,
+                "texture.surfaceShell.widthMm must be finite and positive");
+        }
+        if (!std::isfinite(surfaceShell.width_step_mm)
+            || std::abs(surfaceShell.width_step_mm - 0.01) > 1.0e-9)
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::SurfaceShellStepUnsupported,
+                "texture.surfaceShell.widthStepMm must be exactly 0.01 mm");
+        }
+        if (surfaceShell.geometry_mode != "global_3d_distance")
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::SurfaceShellGeometryModeUnsupported,
+                "texture.surfaceShell.geometryMode must be global_3d_distance");
+        }
+        if (surfaceShell.minimum_width_policy != "two_cells_floor_0_10_mm")
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::SurfaceShellMinimumPolicyUnsupported,
+                "texture.surfaceShell.minimumWidthPolicy must be two_cells_floor_0_10_mm");
+        }
+        if (surfaceShell.surface_scope != "all_closed_surfaces")
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::SurfaceScopeUnsupported,
+                "texture.surfaceShell.surfaceScope must be all_closed_surfaces");
+        }
+        if (!surfaceShell.full_texture_at_model_limit)
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::FullTextureAtModelLimitRequired,
+                "texture.surfaceShell.fullTextureAtModelLimit must be true");
         }
     }
     if (config.material_policy.enabled) {

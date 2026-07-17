@@ -1,0 +1,28 @@
+{
+  "input": {
+    "modelPath": "../../models/sample.stl",
+    "format": "stl"
+  },
+  "output": {
+    "packageDir": "output/TextureFillPartitionUnavailable"
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "global_surface_shell",
+    "surfaceShell": {
+      "geometryMode": "global_3d_distance",
+      "widthMm": 0.10,
+      "widthStepMm": 0.01,
+      "minimumWidthPolicy": "two_cells_floor_0_10_mm",
+      "surfaceScope": "all_closed_surfaces",
+      "fullTextureAtModelLimit": true
+    }
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "complement_of_global_texture_shell",
+    "value": 0,
+    "emptyAllowedInProduction": false
+  }
+}

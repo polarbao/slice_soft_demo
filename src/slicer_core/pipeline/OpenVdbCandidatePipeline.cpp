@@ -5,6 +5,7 @@
 #include "slicer_core/material/MaterialChannelComposer.h"
 #include "slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.h"
 #include "slicer_core/materials/texture_application/SurfaceShellRealModelReport.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 #include "slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h"
@@ -398,6 +399,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
 
     NotifyProgress(options, runStart, "config_load", 0, 1, 0);
     const SliceConfig config = load_slice_config(configPath);
+    EnsureGlobalTextureFillPartitionBackendAvailable(config);
     EnsureCandidateConfig(config);
     profile.config_load_ms = ElapsedMsSince(phaseStart);
     NotifyProgress(options, runStart, "openvdb_prepare", 0, 1, 3);

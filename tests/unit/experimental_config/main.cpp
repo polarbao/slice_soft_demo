@@ -1,12 +1,16 @@
 #include "slicer_core/config.h"
 #include "slicer_core/diagnostics/ProductionAdmissionPolicy.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionTypes.h"
+#include "slicer_core/reports/TextureFillPartitionReport.h"
 #include "slicer_core/slicer.h"
 
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -84,6 +88,51 @@ bool ConfigRejectedWith(
     return ExpectTrue(false, name + " must be rejected");
 }
 
+bool ConfigRejectedWith12ECode(
+    const std::string& name,
+    const std::string& configBlock,
+    const slicer_core::TextureFillPartitionErrorCode expectedCode)
+{
+    const std::filesystem::path configPath = WriteConfig(name, MinimalConfigBody(configBlock));
+    try
+    {
+        (void)slicer_core::load_slice_config(configPath);
+    }
+    catch (const slicer_core::TextureFillPartitionError& error)
+    {
+        return ExpectTrue(error.Code() == expectedCode, name + " reports the expected stable 12E code")
+            && ExpectTrue(
+                std::string{error.what()}.find(
+                    slicer_core::TextureFillPartitionErrorCodeName(expectedCode)) != std::string::npos,
+                name + " includes the stable 12E code in the message");
+    }
+    catch (const std::exception& error)
+    {
+        return ExpectTrue(false, name + " reported an untyped error: " + error.what());
+    }
+    return ExpectTrue(false, name + " must be rejected");
+}
+
+std::string GlobalSurfaceShellConfigBlock(const std::string& surfaceShellFields)
+{
+    return std::string{
+        ",\n"
+        "  \"texture\": {\n"
+        "    \"enabled\": true,\n"
+        "    \"applyMode\": \"global_surface_shell\",\n"
+        "    \"surfaceShell\": {"}
+        + surfaceShellFields
+        + "}\n"
+          "  },\n"
+          "  \"modelFill\": {\n"
+          "    \"enabled\": true,\n"
+          "    \"material\": \"white\",\n"
+          "    \"scope\": \"complement_of_global_texture_shell\",\n"
+          "    \"value\": 0,\n"
+          "    \"emptyAllowedInProduction\": false\n"
+          "  }\n";
+}
+
 bool OldConfigDefaultsOpenVdbDisabled()
 {
     const std::filesystem::path path = WriteConfig("legacy_defaults.json", MinimalConfigBody(""));
@@ -97,8 +146,205 @@ bool OldConfigDefaultsOpenVdbDisabled()
                !config.experimental.openvdb_pipeline.write_production_rgbwsv,
                "legacy config writeProductionRgbwsv default")
         && ExpectTrue(!config.model_fill.enabled, "legacy config keeps modelFill disabled")
+        && ExpectTrue(
+               !slicer_core::IsGlobalTextureFillPartitionRequested(config),
+               "legacy config does not request global texture/fill partition")
         && ExpectTrue(!config.support.placement_explicit, "legacy config keeps support placement implicit")
         && ExpectTrue(!config.outer_varnish.enabled, "legacy config keeps outerVarnish disabled");
+}
+
+bool Stage12EGlobalSurfaceShellConfigParses()
+{
+    const std::filesystem::path configPath = WriteConfig(
+        "stage_12e_global_surface_shell.json",
+        MinimalConfigBody(GlobalSurfaceShellConfigBlock(
+            "\n"
+            "      \"geometryMode\": \"global_3d_distance\",\n"
+            "      \"widthMm\": 0.10,\n"
+            "      \"widthStepMm\": 0.01,\n"
+            "      \"minimumWidthPolicy\": \"two_cells_floor_0_10_mm\",\n"
+            "      \"surfaceScope\": \"all_closed_surfaces\",\n"
+            "      \"fullTextureAtModelLimit\": true\n"
+            "    ")));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    return ExpectTrue(
+               slicer_core::IsGlobalTextureFillPartitionRequested(config),
+               "12E global partition request is recognized")
+        && ExpectTrue(
+               config.texture.surface_shell.geometry_mode == "global_3d_distance",
+               "12E geometry mode parses")
+        && ExpectTrue(
+               config.texture.surface_shell.width_mm > 0.099
+                   && config.texture.surface_shell.width_mm < 0.101,
+               "12E width parses")
+        && ExpectTrue(
+               config.texture.surface_shell.width_step_mm > 0.009
+                   && config.texture.surface_shell.width_step_mm < 0.011,
+               "12E width step parses")
+        && ExpectTrue(
+               config.texture.surface_shell.minimum_width_policy == "two_cells_floor_0_10_mm",
+               "12E minimum width policy parses")
+        && ExpectTrue(
+               config.texture.surface_shell.surface_scope == "all_closed_surfaces",
+               "12E surface scope parses")
+        && ExpectTrue(
+               config.texture.surface_shell.full_texture_at_model_limit,
+               "12E full-texture limit flag parses")
+        && ExpectTrue(config.model_fill.enabled, "12E model fill remains enabled")
+        && ExpectTrue(
+               config.model_fill.scope == "complement_of_global_texture_shell",
+               "12E complement model-fill scope parses");
+}
+
+bool Stage12ERejectsInvalidSurfaceShellFields()
+{
+    const std::string validPrefix =
+        "\n"
+        "      \"geometryMode\": \"global_3d_distance\",\n"
+        "      \"widthMm\": 0.10,\n"
+        "      \"widthStepMm\": 0.01,\n"
+        "      \"minimumWidthPolicy\": \"two_cells_floor_0_10_mm\",\n"
+        "      \"surfaceScope\": \"all_closed_surfaces\",\n"
+        "      \"fullTextureAtModelLimit\": true\n"
+        "    ";
+    if (!ConfigRejectedWith12ECode(
+            "stage_12e_zero_width.json",
+            GlobalSurfaceShellConfigBlock(
+                "\n      \"widthMm\": 0.0\n    "),
+            slicer_core::TextureFillPartitionErrorCode::SurfaceShellWidthInvalid)
+        || !ConfigRejectedWith12ECode(
+            "stage_12e_negative_width.json",
+            GlobalSurfaceShellConfigBlock(
+                "\n      \"widthMm\": -0.01\n    "),
+            slicer_core::TextureFillPartitionErrorCode::SurfaceShellWidthInvalid)
+        || !ConfigRejectedWith12ECode(
+            "stage_12e_invalid_step.json",
+            GlobalSurfaceShellConfigBlock(
+                "\n      \"widthStepMm\": 0.02\n    "),
+            slicer_core::TextureFillPartitionErrorCode::SurfaceShellStepUnsupported)
+        || !ConfigRejectedWith12ECode(
+            "stage_12e_invalid_geometry.json",
+            GlobalSurfaceShellConfigBlock(
+                "\n      \"geometryMode\": \"per_layer_distance\"\n    "),
+            slicer_core::TextureFillPartitionErrorCode::SurfaceShellGeometryModeUnsupported)
+        || !ConfigRejectedWith12ECode(
+            "stage_12e_invalid_minimum_policy.json",
+            GlobalSurfaceShellConfigBlock(
+                "\n      \"minimumWidthPolicy\": \"none\"\n    "),
+            slicer_core::TextureFillPartitionErrorCode::SurfaceShellMinimumPolicyUnsupported)
+        || !ConfigRejectedWith12ECode(
+            "stage_12e_invalid_surface_scope.json",
+            GlobalSurfaceShellConfigBlock(
+                "\n      \"surfaceScope\": \"outer_surface_only\"\n    "),
+            slicer_core::TextureFillPartitionErrorCode::SurfaceScopeUnsupported)
+        || !ConfigRejectedWith12ECode(
+            "stage_12e_full_texture_disabled.json",
+            GlobalSurfaceShellConfigBlock(
+                "\n      \"fullTextureAtModelLimit\": false\n    "),
+            slicer_core::TextureFillPartitionErrorCode::FullTextureAtModelLimitRequired))
+    {
+        return false;
+    }
+
+    const std::filesystem::path configPath = WriteConfig(
+        "stage_12e_non_finite_width_base.json",
+        MinimalConfigBody(GlobalSurfaceShellConfigBlock(validPrefix)));
+    slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    config.texture.surface_shell.width_mm = std::numeric_limits<double>::infinity();
+    try
+    {
+        slicer_core::validate_slice_config(config);
+    }
+    catch (const slicer_core::TextureFillPartitionError& error)
+    {
+        return ExpectTrue(
+            error.Code() == slicer_core::TextureFillPartitionErrorCode::SurfaceShellWidthInvalid,
+            "12E non-finite width reports stable error code");
+    }
+    return ExpectTrue(false, "12E non-finite width must be rejected");
+}
+
+bool Stage12ERejectsMismatchedTextureAndFill()
+{
+    return ConfigRejectedWith12ECode(
+               "stage_12e_global_with_legacy_fill.json",
+               ",\n"
+               "  \"texture\": {\"enabled\": true, \"applyMode\": \"global_surface_shell\"},\n"
+               "  \"modelFill\": {\"enabled\": true, \"scope\": \"all_model\"}\n",
+               slicer_core::TextureFillPartitionErrorCode::TextureFillScopeMismatch)
+        && ConfigRejectedWith12ECode(
+               "stage_12e_complement_with_legacy_texture.json",
+               ",\n"
+               "  \"modelFill\": {\"enabled\": true, \"scope\": \"complement_of_global_texture_shell\"}\n",
+               slicer_core::TextureFillPartitionErrorCode::TextureFillScopeMismatch)
+        && ConfigRejectedWith12ECode(
+               "stage_12e_global_with_invalid_fill_scope.json",
+               ",\n"
+               "  \"texture\": {\"enabled\": true, \"applyMode\": \"global_surface_shell\"},\n"
+               "  \"modelFill\": {\"enabled\": true, \"scope\": \"unsupported_scope\"}\n",
+               slicer_core::TextureFillPartitionErrorCode::TextureFillScopeMismatch)
+        && ConfigRejectedWith12ECode(
+               "stage_12e_model_fill_disabled.json",
+               ",\n"
+               "  \"texture\": {\"enabled\": true, \"applyMode\": \"global_surface_shell\"},\n"
+               "  \"modelFill\": {\"enabled\": false, \"scope\": \"complement_of_global_texture_shell\"}\n",
+               slicer_core::TextureFillPartitionErrorCode::ModelFillRequired);
+}
+
+bool Stage12EBackendUnavailableBlocksBeforePackageWrite()
+{
+    const std::filesystem::path packagePath =
+        std::filesystem::path{"output"} / "ExperimentalConfigUnit" / "stage_12e_blocked_package";
+    std::error_code removeError;
+    std::filesystem::remove_all(packagePath, removeError);
+    const std::filesystem::path configPath = WriteConfig(
+        "stage_12e_backend_unavailable.json",
+        "{\n"
+        "  \"input\": {\"modelPath\": \"samples/models/sample.stl\", \"format\": \"auto\"},\n"
+        "  \"output\": {\"packageDir\": \"output/ExperimentalConfigUnit/stage_12e_blocked_package\"},\n"
+        "  \"texture\": {\"enabled\": true, \"applyMode\": \"global_surface_shell\"},\n"
+        "  \"modelFill\": {\"enabled\": true, \"scope\": \"complement_of_global_texture_shell\"}\n"
+        "}\n");
+    try
+    {
+        (void)slicer_core::run_slicer(configPath);
+    }
+    catch (const slicer_core::TextureFillPartitionError& error)
+    {
+        return ExpectTrue(
+                   error.Code()
+                       == slicer_core::TextureFillPartitionErrorCode::PartitionBackendUnavailable,
+                   "12E unavailable backend reports stable error code")
+            && ExpectTrue(
+                   !std::filesystem::exists(packagePath),
+                   "12E unavailable backend does not write a package");
+    }
+    return ExpectTrue(false, "12E unavailable backend must block slicing");
+}
+
+bool Stage12EUnavailableReportSkeletonIsHonest()
+{
+    const std::filesystem::path configPath = WriteConfig(
+        "stage_12e_report_skeleton.json",
+        MinimalConfigBody(GlobalSurfaceShellConfigBlock("")));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReportSkeleton(config);
+    return ExpectTrue(
+               report.at("schema").as_string() == "slicesoft.texture_fill_partition.12e.1",
+               "12E report schema is stable")
+        && ExpectTrue(report.at("availability").as_string() == "unavailable", "12E report is unavailable")
+        && ExpectTrue(report.at("status").as_string() == "blocked", "12E report is blocked")
+        && ExpectTrue(
+               report.at("productionAcceptance").as_string() == "not_evaluated",
+               "12E production acceptance is not evaluated")
+        && ExpectTrue(
+               !report.at("partition").at("partitionPass").as_bool(),
+               "12E unavailable skeleton never reports partition pass")
+        && ExpectTrue(report.at("issues").size() == 1U, "12E unavailable skeleton contains one stable issue")
+        && ExpectTrue(
+               report.at("issues").at(0).at("code").as_string()
+                   == "E_12E_PARTITION_BACKEND_UNAVAILABLE",
+               "12E unavailable report contains stable backend code");
 }
 
 bool EmptyExperimentalDefaults()
@@ -614,6 +860,11 @@ int main()
 {
     const std::vector<std::pair<std::string, bool (*)()>> tests{
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
+        {"stage_12e_global_surface_shell_config_parses", Stage12EGlobalSurfaceShellConfigParses},
+        {"stage_12e_rejects_invalid_surface_shell_fields", Stage12ERejectsInvalidSurfaceShellFields},
+        {"stage_12e_rejects_mismatched_texture_and_fill", Stage12ERejectsMismatchedTextureAndFill},
+        {"stage_12e_backend_unavailable_blocks_before_package_write", Stage12EBackendUnavailableBlocksBeforePackageWrite},
+        {"stage_12e_unavailable_report_skeleton_is_honest", Stage12EUnavailableReportSkeletonIsHonest},
         {"empty_experimental_defaults", EmptyExperimentalDefaults},
         {"material_closure_defaults_are_diagnostic_only", MaterialClosureDefaultsAreDiagnosticOnly},
         {"material_closure_diagnostic_config_parses", MaterialClosureDiagnosticConfigParses},

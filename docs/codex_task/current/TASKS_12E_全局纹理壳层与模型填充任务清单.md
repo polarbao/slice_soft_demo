@@ -1,9 +1,9 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：R0 PREPARED / 12E-01 READY FOR USER ADMISSION
+> 文档状态：12E-01 COMPLETE / 12E-02 READY FOR USER ADMISSION
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12D 已封口，12E-01 等待用户明确启动
-> 规则：12E 文档已建立，但任何代码任务都不得自动开始
+> 当前项目原子任务：无；12E-01 已完成，12E-02 等待用户明确启动
+> 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
 
@@ -59,7 +59,7 @@ git diff --check 通过。
 
 ## 4. 12E-01 Config 与 DTO 契约
 
-状态：PREPARED / READY FOR USER ADMISSION
+状态：COMPLETE（2026-07-17）
 
 目标：
 
@@ -92,6 +92,17 @@ schema/docs；
 
 验证：config unit tests + `git diff --check`。
 
+实际结果：
+
+```text
+global_surface_shell 与 surfaceShell DTO 已实现；
+complement_of_global_texture_shell 成对校验已实现；
+9 个 E_12E_* 稳定错误码已实现；
+传统与 OpenVDB 候选入口均在模型加载/写包前明确阻断；
+unavailable/blocked/not_evaluated report 骨架已实现；
+旧配置、12A、OpenVDB 实验配置单测保持通过。
+```
+
 准备入口：
 
 ```text
@@ -103,7 +114,7 @@ docs/slice/REPORT/REPORT_12E_启动准备状态.md。
 
 ## 5. 12E-02 Global Partition Service 骨架
 
-状态：TODO
+状态：PREPARED / READY FOR USER ADMISSION
 
 目标：
 
@@ -115,6 +126,12 @@ docs/slice/REPORT/REPORT_12E_启动准备状态.md。
 ```
 
 完成标准：generated mask unit tests 证明 XOR/union/count invariants。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md
+```
 
 ## 6. 12E-03 Legacy CPU 3D Distance Candidate
 

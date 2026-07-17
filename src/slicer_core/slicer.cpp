@@ -4,6 +4,7 @@
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/model.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
@@ -3976,6 +3977,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     NotifyProgress(options, run_start, "config_load", 0, 1, 0);
     const SliceConfig config = load_slice_config(config_path);
     profile.config_load_ms = ElapsedMsSince(phase_start);
+    EnsureGlobalTextureFillPartitionBackendAvailable(config);
     NotifyProgress(options, run_start, "model_load", 0, 1, 3);
     phase_start = SlicerClock::now();
 
