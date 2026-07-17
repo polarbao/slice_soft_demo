@@ -139,6 +139,16 @@ The daily Qt runtime lane imports the Visual Studio x64 developer environment an
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release
 ```
 
+VS Code daily entries:
+
+```text
+Build Runtime (Debug)  -> Run UI (Debug) / Debug UI (Debug)
+Build Runtime (Release) -> Run UI (Release)
+Build All Runtimes      -> Debug followed by Release
+```
+
+Legacy `build` / CTest / sample matrix tasks are retained under the `Advanced` prefix and are not the default UI compilation path.
+
 Outputs:
 
 ```text

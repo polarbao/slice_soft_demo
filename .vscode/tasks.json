@@ -2,37 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "SliceSoft: Configure",
-      "type": "shell",
-      "command": "cmake",
-      "args": [
-        "-S",
-        ".",
-        "-B",
-        "build"
-      ],
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
-      "label": "SliceSoft: Build Debug",
-      "type": "shell",
-      "command": "cmake",
-      "args": [
-        "--build",
-        "build",
-        "--config",
-        "Debug"
-      ],
-      "dependsOn": "SliceSoft: Configure",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": "$msCompile"
-    },
-    {
-      "label": "SliceSoft: Build Debug UI",
+      "label": "SliceSoft: Build Runtime (Debug)",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -50,11 +20,27 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "group": "build",
-      "problemMatcher": "$msCompile"
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$msCompile",
+      "detail": "构建并部署 Debug 版 UI、CLI、RIP Reader 和 Qt 运行依赖。"
     },
     {
-      "label": "SliceSoft: Prepare Release Runtime",
+      "label": "SliceSoft: Run UI (Debug)",
+      "type": "shell",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
+      "args": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Runtime (Debug)",
+      "problemMatcher": [],
+      "detail": "编译完成后直接运行 Debug UI，不附加调试器。"
+    },
+    {
+      "label": "SliceSoft: Build Runtime (Release)",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -73,10 +59,89 @@
         "cwd": "${workspaceFolder}"
       },
       "group": "build",
+      "problemMatcher": "$msCompile",
+      "detail": "构建并部署用于实际性能观察的 Release Runtime。"
+    },
+    {
+      "label": "SliceSoft: Run UI (Release)",
+      "type": "shell",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
+      "args": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Runtime (Release)",
+      "problemMatcher": [],
+      "detail": "编译完成后直接运行 Release UI。"
+    },
+    {
+      "label": "SliceSoft: Build All Runtimes",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "SliceSoft: Build Runtime (Debug)",
+        "SliceSoft: Build Runtime (Release)"
+      ],
+      "problemMatcher": [],
+      "detail": "依次构建 Debug 和 Release 两套 Runtime。"
+    },
+    {
+      "label": "SliceSoft: Test Runtime (Debug)",
+      "type": "shell",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
+      "args": [
+        "--self-test"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Runtime (Debug)",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Test Runtime (Release)",
+      "type": "shell",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
+      "args": [
+        "--self-test"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Build Runtime (Release)",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Advanced - Configure Legacy Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S",
+        ".",
+        "-B",
+        "build"
+      ],
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "保留给 CTest、历史脚本和非 Runtime 回归的 build 目录。"
+    },
+    {
+      "label": "SliceSoft: Advanced - Build Legacy Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "build",
+        "--config",
+        "Debug"
+      ],
+      "dependsOn": "SliceSoft: Advanced - Configure Legacy Debug",
+      "group": "build",
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "SliceSoft: CTest Debug",
+      "label": "SliceSoft: Advanced - CTest Legacy Debug",
       "type": "shell",
       "command": "ctest",
       "args": [
@@ -86,14 +151,14 @@
         "Debug",
         "--output-on-failure"
       ],
-      "dependsOn": "SliceSoft: Build Debug",
+      "dependsOn": "SliceSoft: Advanced - Build Legacy Debug",
       "group": "test",
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Run slicer_cli current config",
+      "label": "SliceSoft: Advanced - Run CLI Current Config",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "${input:sliceConfig}"
@@ -101,13 +166,13 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "SliceSoft: Build Debug",
+      "dependsOn": "SliceSoft: Build Runtime (Debug)",
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Run rip_reader current package",
+      "label": "SliceSoft: Advanced - Run RIP Reader",
       "type": "shell",
-      "command": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "${input:packageDir}",
@@ -116,11 +181,11 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "SliceSoft: Build Debug",
+      "dependsOn": "SliceSoft: Build Runtime (Debug)",
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Run sample matrix",
+      "label": "SliceSoft: Advanced - Run Sample Matrix",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -133,11 +198,11 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "SliceSoft: Build Debug",
+      "dependsOn": "SliceSoft: Advanced - Build Legacy Debug",
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Run quick regression",
+      "label": "SliceSoft: Advanced - Run Quick Regression",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -152,37 +217,11 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "SliceSoft: Build Debug",
+      "dependsOn": "SliceSoft: Advanced - Build Legacy Debug",
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Run UI self-test",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
-      "args": [
-        "--self-test"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "SliceSoft: Build Debug UI",
-      "problemMatcher": []
-    },
-    {
-      "label": "SliceSoft: Run Release Runtime self-test",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
-      "args": [
-        "--self-test"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "SliceSoft: Prepare Release Runtime",
-      "problemMatcher": []
-    },
-    {
-      "label": "SliceSoft: Clean build directory",
+      "label": "SliceSoft: Advanced - Clean Build",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -198,7 +237,7 @@
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Clean output directory",
+      "label": "SliceSoft: Advanced - Clean Output",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -214,7 +253,7 @@
       "problemMatcher": []
     },
     {
-      "label": "SliceSoft: Clean build and output",
+      "label": "SliceSoft: Advanced - Clean Build And Output",
       "type": "shell",
       "command": "powershell",
       "args": [

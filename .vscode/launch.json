@@ -2,84 +2,96 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "SliceSoft: Debug Qt UI",
+      "name": "SliceSoft: Debug UI (Debug)",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
       "args": [],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "SliceSoft: Build Debug UI",
+      "preLaunchTask": "SliceSoft: Build Runtime (Debug)",
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Run Release Qt UI",
+      "name": "SliceSoft: Run UI (Debug)",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
       "args": [],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "SliceSoft: Prepare Release Runtime",
+      "preLaunchTask": "SliceSoft: Build Runtime (Debug)",
       "noDebug": true,
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Debug slicer_cli current config",
+      "name": "SliceSoft: Run UI (Release)",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Build Runtime (Release)",
+      "noDebug": true,
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
+      "name": "SliceSoft: Advanced - Debug CLI",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "${input:sliceConfig}"
       ],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "SliceSoft: Build Debug",
+      "preLaunchTask": "SliceSoft: Build Runtime (Debug)",
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Debug slicer_cli inspect current config",
+      "name": "SliceSoft: Advanced - Inspect Model",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "${input:sliceConfig}",
         "--inspect-model"
       ],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "SliceSoft: Build Debug",
+      "preLaunchTask": "SliceSoft: Build Runtime (Debug)",
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Debug slicer_cli preview-only current config",
+      "name": "SliceSoft: Advanced - Preview Only",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/slicer_cli.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_cli.exe",
       "args": [
         "--config",
         "${input:sliceConfig}",
         "--preview-only"
       ],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "SliceSoft: Build Debug",
+      "preLaunchTask": "SliceSoft: Build Runtime (Debug)",
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
-      "name": "SliceSoft: Debug rip_reader current package",
+      "name": "SliceSoft: Advanced - Debug RIP Reader",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/Debug/rip_reader_test.exe",
+      "program": "${workspaceFolder}/runtime/slicesoft/Debug/rip_reader_test.exe",
       "args": [
         "--package",
         "${input:packageDir}",
         "--summary"
       ],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "SliceSoft: Build Debug",
+      "preLaunchTask": "SliceSoft: Build Runtime (Debug)",
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     }

@@ -47,6 +47,16 @@ Release 场景/Profile 资源发布：30 scenarios PASS；
 5 个稳定 Profile、4 份唯一配置 inspect-model：PASS。
 ```
 
+入口收口补充：
+
+```text
+默认 Build Task：Build Runtime (Debug)；
+Debug：Build Runtime / Run UI / Debug UI；
+Release：Build Runtime / Run UI；
+双版本：Build All Runtimes；
+CTest、CLI、RIP、样例矩阵和清理入口统一归入 Advanced。
+```
+
 ## 12F-02 Release Benchmark 刷新
 
 状态：TODO / NOT ACTIVE

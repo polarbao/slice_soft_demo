@@ -35,12 +35,13 @@ Qt 调试 UI 读取该索引，在“场景/Profile”下拉框中选择模型�
 
 | 配置 | 作用 |
 |---|---|
-| `SliceSoft: Debug Qt UI` | 构建并部署统一 Debug Runtime，然后启动 Qt 调试器。 |
-| `SliceSoft: Run Release Qt UI` | 构建并部署 Release Runtime，以非调试方式启动。 |
-| `SliceSoft: Debug slicer_cli current config` | 调试 `slicer_cli --config <输入配置>`。 |
-| `SliceSoft: Debug slicer_cli inspect current config` | 调试模型统计/诊断入口。 |
-| `SliceSoft: Debug slicer_cli preview-only current config` | 调试 preview-only 入口。 |
-| `SliceSoft: Debug rip_reader current package` | 调试 `rip_reader_test --package <输入输出包> --summary`。 |
+| `SliceSoft: Debug UI (Debug)` | 构建 Debug Runtime，并使用 C++ 调试器启动 UI。 |
+| `SliceSoft: Run UI (Debug)` | 构建 Debug Runtime，并以非调试方式运行 UI。 |
+| `SliceSoft: Run UI (Release)` | 构建 Release Runtime，并以非调试方式运行 UI。 |
+| `SliceSoft: Advanced - Debug CLI` | 调试 Debug Runtime 中的 `slicer_cli --config <输入配置>`。 |
+| `SliceSoft: Advanced - Inspect Model` | 调试模型统计/诊断入口。 |
+| `SliceSoft: Advanced - Preview Only` | 调试 preview-only 入口。 |
+| `SliceSoft: Advanced - Debug RIP Reader` | 调试 Debug Runtime 中的 RIP 摘要工具。 |
 
 `current config` 和 `current package` 会通过 VSCode 输入框填写路径，默认值为：
 
@@ -53,20 +54,16 @@ output/NailRgbWhiteVarnishTop2
 
 | Task | 作用 |
 |---|---|
-| `SliceSoft: Configure` | `cmake -S . -B build`。 |
-| `SliceSoft: Build Debug` | 构建 Debug 全部默认 target。 |
-| `SliceSoft: Build Debug UI` | 构建 UI/CLI/RIP reader 并部署 Debug Runtime。 |
-| `SliceSoft: Prepare Release Runtime` | 构建 Release 并部署 Qt/MSVC 运行依赖。 |
-| `SliceSoft: CTest Debug` | 运行 `ctest --test-dir build -C Debug --output-on-failure`。 |
-| `SliceSoft: Run slicer_cli current config` | 用输入配置运行一次切片。 |
-| `SliceSoft: Run rip_reader current package` | 用输入输出包运行 RIP 摘要。 |
-| `SliceSoft: Run sample matrix` | 按场景索引运行全量样例矩阵。 |
-| `SliceSoft: Run quick regression` | 执行 `scripts/run_regression.ps1 -Mode quick`。 |
-| `SliceSoft: Run UI self-test` | 对部署后的 Debug Runtime 执行 UI 非交互自检。 |
-| `SliceSoft: Run Release Runtime self-test` | 对部署后的 Release Runtime 执行 UI 非交互自检。 |
-| `SliceSoft: Clean build directory` | 删除本地 `build` 目录。 |
-| `SliceSoft: Clean output directory` | 删除本地 `output` 目录。 |
-| `SliceSoft: Clean build and output` | 同时删除本地 `build` 与 `output`。 |
+| `SliceSoft: Build Runtime (Debug)` | 构建并部署 Debug Runtime；同时作为默认 Build Task。 |
+| `SliceSoft: Run UI (Debug)` | 先构建 Debug Runtime，再直接运行 Debug UI。 |
+| `SliceSoft: Build Runtime (Release)` | 构建并部署 Release Runtime。 |
+| `SliceSoft: Run UI (Release)` | 先构建 Release Runtime，再直接运行 Release UI。 |
+| `SliceSoft: Build All Runtimes` | 依次构建 Debug、Release 两套 Runtime。 |
+| `SliceSoft: Test Runtime (Debug)` | 构建并执行 Debug UI self-test。 |
+| `SliceSoft: Test Runtime (Release)` | 构建并执行 Release UI self-test。 |
+| `SliceSoft: Advanced - ...` | 保留 CTest、CLI、RIP、样例矩阵、回归和清理等开发诊断入口。 |
+
+日常使用只需要前七个入口。`Advanced` 入口不会参与普通 UI 编译和运行。
 
 清理任务调用：
 
@@ -214,9 +211,11 @@ scripts/run_sample_matrix.ps1
 
 | 需求 | 推荐入口 |
 |---|---|
-| 调试 UI 代码 | VSCode `Debug Qt UI`。 |
-| 验证真实运行性能 | VSCode `Run Release Qt UI` 或 Release Runtime。 |
-| 调试一个任意配置的 CLI | VSCode `Debug slicer_cli current config`。 |
+| 调试 UI 代码 | VSCode `Debug UI (Debug)`。 |
+| 只运行 Debug UI | Task 或 Run and Debug 中的 `Run UI (Debug)`。 |
+| 验证真实运行性能 | `Run UI (Release)` 或 Release Runtime。 |
+| 一次构建两种版本 | Task `Build All Runtimes`。 |
+| 调试一个任意配置的 CLI | `Advanced - Debug CLI`。 |
 | 从任意目录导入模型并切片 | Qt 调试 UI `导入模型并切片`。 |
 | OpenVDB 当前能力检查 | Qt 调试 UI `导入模型并 OpenVDB 诊断`。 |
 | 日常切片、预览、报告查看 | Qt 调试 UI。 |
