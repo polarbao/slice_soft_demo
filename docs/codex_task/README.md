@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-17
-> 当前阶段：12D COMPLETE / 12E-05 COMPLETE / 12E-06 PREPARED
+> 当前阶段：12D COMPLETE / 12E-06 COMPLETE / 12E-07 PREPARED
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -33,14 +33,14 @@ docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行
 当前原子任务：
 
 ```text
-无 active code task；12E-06 Texture Transfer 与 Diagnostic Composer 等待用户明确启动
+无 active code task；12E-07 12D Closure 联动等待用户明确启动
 ```
 
 12C-R0/R1/R2 已全部完成。12D-R0/R1/R2/R3 已封口，包含 candidate/exact 诊断、一像素 repair、外部背景保护、Qt 展示和三个真实 OBJ 验收。repair 仍默认关闭。
 
 ## 保留参考入口
 
-`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；下一候选入口为 12E-06。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
+`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；下一候选入口为 12E-07。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
 
 ## 当前执行阶段 12E
 
@@ -51,7 +51,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-05 COMPLETE / 12E-06 READY FOR USER ADMISSION`。CPU 与 OpenVDB OFF/ON 同 grid conformance、动态 width sweep、单调性和成功报告已可复现；后续 texture transfer、diagnostic composer、Qt 或 production output 修改仍必须由用户明确指定一个 12E 原子任务后再开始。
+12E 当前状态为 `12E-06 COMPLETE / 12E-07 READY FOR USER ADMISSION`。CPU 与 OpenVDB OFF/ON 同 grid conformance、动态 width sweep、纹理传递、内存 Diagnostic Composer 和成功报告已可复现；后续 12D closure 联动、Qt 或 production output 修改仍必须由用户明确指定一个 12E 原子任务后再开始。
 
 ## 12F Release Runtime 与性能优化专项
 

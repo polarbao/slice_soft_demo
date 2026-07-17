@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Texture Fill Partition Report
 
-> 文档状态：SUCCESS SERIALIZATION + WIDTH SWEEP IMPLEMENTED / TEXTURE TRANSFER PENDING
+> 文档状态：TEXTURE TRANSFER + DIAGNOSTIC COMPOSER IMPLEMENTED
 > Schema：`slicesoft.texture_fill_partition.12e.1`
 > 日期：2026-07-16
 
@@ -33,6 +33,7 @@ reports/texture_fill_partition_report.json
   "width": {},
   "partition": {},
   "textureTransfer": {},
+  "diagnosticComposer": {},
   "performance": {},
   "queryStats": {},
   "layers": [],
@@ -134,19 +135,58 @@ textureSurface + modelFill = model。
 
 ```json
 {
-  "status": "not_evaluated",
+  "availability": "available",
+  "status": "diagnostic",
+  "productionAcceptance": "not_evaluated",
+  "textureSurfaceVoxels": 0,
   "sampledTextureCount": 0,
+  "materialDiffuseCount": 0,
   "fallbackCount": 0,
   "missingUvCount": 0,
   "missingTextureCount": 0,
+  "textureSampleFailureCount": 0,
   "uvOutOfRangeCount": 0,
   "outsideColoredCount": 0,
-  "maxTransferDistanceMm": null,
-  "medialAxisTieCount": 0
+  "reusedReferenceCount": 0,
+  "nearestQueryCount": 0,
+  "maxTransferDistanceMm": 0.0,
+  "medialAxisTieCount": 0,
+  "loadedTextureCount": 0,
+  "textureCacheHits": 0,
+  "textureCacheMisses": 0,
+  "textureCacheBytes": 0,
+  "issues": []
 }
 ```
 
-12E-01 尚未执行纹理传递时计数字段为 0、测量字段为 `null`，并通过 status/issue 说明不可用原因。
+未执行纹理传递时 `availability=unavailable`、`status=not_evaluated`，计数字段为 0、
+`maxTransferDistanceMm=null`。12E-06 实际传递必须满足 `nearestQueryCount=0`，证明只复用
+partition 已保存的 closest reference；`outsideColoredCount` 必须为 0。
+
+## 7.1 Diagnostic Composer 对象
+
+```json
+{
+  "availability": "available",
+  "status": "diagnostic",
+  "productionAcceptance": "not_evaluated",
+  "width": 2,
+  "height": 1,
+  "depth": 2,
+  "layerCount": 2,
+  "channelOrder": ["R", "G", "B", "W", "S", "V"],
+  "textureSurfaceVoxels": 1,
+  "modelFillVoxels": 2,
+  "modelFillWhiteVoxels": 2,
+  "modelFillVarnishVoxels": 0,
+  "modelFillRgbVoxels": 0,
+  "supportPrintVoxels": 0,
+  "emptyVoxels": 1,
+  "issues": []
+}
+```
+
+该对象只描述内存诊断合成。`supportPrintVoxels` 必须为 0；它不代表生产 package 已生成。
 
 ## 8. Performance 对象
 
@@ -211,6 +251,19 @@ E_12E_WIDTH_SWEEP_MODEL_CHANGED
 E_12E_WIDTH_SWEEP_TEXTURE_NON_MONOTONIC
 E_12E_WIDTH_SWEEP_FILL_NON_MONOTONIC
 E_12E_WIDTH_SWEEP_ENDPOINT_INVALID
+```
+
+12E-06 新增：
+
+```text
+E_12E_TEXTURE_TRANSFER_INPUT_INVALID
+E_12E_TEXTURE_REFERENCE_MISSING
+E_12E_TEXTURE_TRIANGLE_OUT_OF_RANGE
+E_12E_TEXTURE_MISSING_UV
+E_12E_TEXTURE_MISSING_RESOURCE
+E_12E_TEXTURE_SAMPLE_FAILED
+E_12E_DIAGNOSTIC_COMPOSER_INPUT_INVALID
+E_12E_DIAGNOSTIC_COMPOSER_PARTITION_INVALID
 ```
 
 ## 10. Config Snapshot

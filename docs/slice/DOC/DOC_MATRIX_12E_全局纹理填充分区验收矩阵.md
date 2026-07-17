@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：12E-05 COMPLETE / 12E-06 PREPARED
+> 文档状态：12E-06 COMPLETE / 12E-07 PREPARED
 > 日期：2026-07-17
 
 ## 1. 使用方式
@@ -79,11 +79,13 @@ CPU 与 OpenVDB 比较 occupancy、partition count、threshold、distance error�
 
 | Input | 断言 |
 |---|---|
-| OBJ/MTL/PNG | closest surface UV 采样、outsideColored=0 |
-| OBJ missing UV | fallback 与 missingUv 统计 |
-| OBJ missing texture | fallback 与 missingTexture 统计 |
-| 3MF Texture2D | 资源解析与传递统计 |
-| multiple surface tie | 稳定 tie rule |
+| OBJ/MTL/PNG | 12E-06 PASS：closest surface UV 采样、outsideColored=0、nearestQueryCount=0 |
+| OBJ missing UV | 12E-06 PASS：warn fallback 与 fail-fast 稳定错误 |
+| OBJ missing texture | 12E-06 PASS：fallback、missingTexture 和 sample failure 统计 |
+| 3MF Texture2D | 12E-06 PASS：与 OBJ 共享 AdaptedTriangleMesh service |
+| 3MF ColorGroup | 12E-06 PASS：material diffuse，不误报 missing texture |
+| multiple surface tie | 12E-06 PASS：稳定 triangle 选择与 tie count |
+| diagnostic composer white/varnish/rgb | 12E-06 PASS：fill 仅写 W/V/RGB；S=255 |
 
 ## 7. 12D Closure 联动
 
@@ -92,7 +94,7 @@ CPU 与 OpenVDB 比较 occupancy、partition count、threshold、distance error�
 | normal width | 12D 读取 exact texture/fill mask；ColorFillGap=0 |
 | all texture | fill=0 合法；ColorFillGap=0 或明确 not_applicable |
 | repair disabled | TIFF SHA-256 不因诊断改变 |
-| support/varnish boundary | 继续由 12D expected domain 判定 |
+| support/varnish boundary | 12E-07 diagnostic scope 标记 not_evaluated，不以零 mask 伪造 PASS |
 
 12E 不修改 12D repair 规则，12D-R3 是否完成不阻塞 12E R0/R1 原型，但 production admission 必须重新评估闭环证据。
 
@@ -143,7 +145,7 @@ OpenVDB OFF build PASS；
 | 12E-03 -> 04 | COMPLETE：CPU generated fixture 正确性与 Debug 基线完成 |
 | 12E-04 -> 05 | COMPLETE：OFF/ON conformance、cavity parity、差异 DTO 可复现 |
 | 12E-05 -> 06 | COMPLETE：schema、monotonic sweep、endpoint 与 golden 已冻结 |
-| 12E-06 -> 07 | exact masks/texture transfer diagnostic 完成 |
+| 12E-06 -> 07 | COMPLETE：exact masks/texture transfer/diagnostic composer 与 report golden 完成 |
 | 12E-07 -> 08 | 12D closure 联动通过 |
 | 12E-08 | 必须用户再次确认 production path |
 | 12E-09/10 | UI、真实模型、RIP 和报告收口 |

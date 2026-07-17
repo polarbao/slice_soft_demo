@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-05 COMPLETE / 12E-06 READY FOR USER ADMISSION
+> 文档状态：12E-06 COMPLETE / 12E-07 READY FOR USER ADMISSION
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-05 已完成，12E-06 等待用户明确启动
+> 当前项目原子任务：无；12E-06 已完成，12E-07 等待用户明确启动
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -269,7 +269,7 @@ docs/slice/DOC/DOC_PREP_12E_R2_WidthSweep与ReportSchema准备.md
 
 ## 9. 12E-06 Texture Transfer 与 Diagnostic Composer
 
-状态：PREPARED / READY FOR USER ADMISSION
+状态：COMPLETE（2026-07-17）
 
 目标：
 
@@ -281,6 +281,19 @@ docs/slice/DOC/DOC_PREP_12E_R2_WidthSweep与ReportSchema准备.md
 
 验证：OBJ/3MF/missing texture/missing UV/tie fixtures；outsideColored=0。
 
+实际结果：
+
+```text
+新增 backend-neutral texture transfer，统一复用 OBJ/3MF AdaptedTriangleMesh；
+TextureSurface voxel 只消费已存 closest reference，nearestQueryCount=0；
+missing UV/resource/sample 支持 warn_and_fallback 与 fail_fast；
+确定性 tie、缓存和引用复用均进入统计；
+新增内存 Diagnostic Composer，texture 写 RGB，fill 按 white/varnish/rgb 写 W/V/RGB；
+S 通道保持 255，channelOrder 保持 R G B W S V；
+报告新增 textureTransfer、diagnosticComposer 与 textureTransferMs 证据；
+默认 OFF 与 OpenVDB ON 定向 CTest 均 4/4 PASS；未写 production TIFF/manifest。
+```
+
 准备入口：
 
 ```text
@@ -289,7 +302,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md
 
 ## 10. 12E-07 12D Closure 联动
 
-状态：TODO
+状态：PREPARED / READY FOR USER ADMISSION
 
 前置：12D semantic_masks exact contract 已可用。
 
@@ -303,6 +316,12 @@ repair disabled 不改 TIFF。
 ```
 
 禁止：不提前实现或修改 12D repair 规则。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
+```
 
 ## 11. 12E-08 Production Admission
 

@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R3 Texture Transfer 与 Diagnostic Composer 准备
 
-> 文档状态：PREPARED / 12E-06 READY FOR USER ADMISSION
+> 文档状态：IMPLEMENTED / 12E-06 COMPLETE
 > 日期：2026-07-17
 > 前置任务：12E-01 至 12E-05 COMPLETE
 > 覆盖任务：12E-06 Texture Transfer 与 Diagnostic Composer
@@ -9,7 +9,7 @@
 
 12E-05 已冻结 `slicesoft.texture_fill_partition.12e.1` 成功报告、真实 Z 层 voxel
 统计、代表性 Width Sweep、0.01 mm 量化、单调性守门和 all-texture endpoint。
-12E-06 可以复用 12E 分区结果中的 `TextureSurfaceMask3D` 与
+12E-06 已复用 12E 分区结果中的 `TextureSurfaceMask3D` 与
 `closestSurfaceReferences`，执行一次后端无关的 OBJ/3MF 属性传递，并把 exact
 texture/fill mask 转换为内存诊断 composer 输入。
 
@@ -278,10 +278,34 @@ git diff --check
 ## 13. Gate 结论
 
 ```text
-12E-01..05：COMPLETE；
-12E-06：PREPARED / READY FOR USER ADMISSION；
-12E-07：不得自动启动；
+12E-01..06：COMPLETE；
+12E-07：PREPARED / READY FOR USER ADMISSION；
 12E production：NOT ADMITTED。
 ```
 
-准备完成不自动执行 12E-06，也不代表 diagnostic RGBWSV 内存 buffer 可以写入生产 package。
+12E-06 完成不代表 diagnostic RGBWSV 内存 buffer 可以写入生产 package，也不自动执行
+12E-07。12E-07 准备入口为
+`DOC_PREP_12E_R3_12DClosure联动准备.md`。
+
+## 14. 实际实现与验证
+
+实现：
+
+```text
+TextureFillPartitionTextureTransfer：统一 OBJ/3MF 属性传递；
+closest reference 复用、确定性 tie、纹理缓存和 fallback 统计；
+TextureFillPartitionDiagnosticComposer：真实 Z 层 exact masks 与内存 RGBWSV；
+white/varnish/rgb fill 分别写 W/V/RGB，S 保持 255；
+TextureFillPartitionReport：序列化 transfer/composer/timing/issues；
+12 个 transfer、6 个 composer、5 个 report 单元用例与一个 golden。
+```
+
+实际守门：
+
+```text
+默认 OFF 定向 CTest：4/4 PASS；
+OpenVDB ON 定向 CTest：4/4 PASS；
+OpenVDB ON target build：PASS；
+默认 OFF 全量 build：PASS；全量 CTest：16/16 PASS；
+production TIFF/manifest/package：未写入。
+```

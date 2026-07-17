@@ -1,8 +1,8 @@
 # CODEX_PROMPT_12E 全局纹理壳层与模型填充执行指令
 
-> 文档状态：12E-05 COMPLETE / 12E-06 READY FOR USER ADMISSION
+> 文档状态：12E-06 COMPLETE / 12E-07 READY FOR USER ADMISSION
 > 日期：2026-07-17
-> 当前不得自动执行；下一候选任务为 12E-06，仍须用户明确指定
+> 当前不得自动执行；下一候选任务为 12E-07，仍须用户明确指定
 
 ## 1. 角色
 
@@ -48,7 +48,7 @@ git status --short
 ## 4. 执行边界
 
 ```text
-只执行用户明确指定的一个 Task 12E-XX；12E-05 已完成，不得自动启动 12E-06；
+只执行用户明确指定的一个 Task 12E-XX；12E-06 已完成，不得自动启动 12E-07；
 不要自动执行下一任务；
 不要修改 12D-R3 的 repair/UI/真实模型范围；
 不要把 OpenVDB 设为默认或强制依赖；

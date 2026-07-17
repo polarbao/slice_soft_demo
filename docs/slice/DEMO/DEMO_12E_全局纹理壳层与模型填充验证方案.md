@@ -4,7 +4,7 @@
 > 日期：2026-07-16
 > 对应 PRD：PRD_12E_全局纹理表面层与模型填充连续调节.md
 > 对应 DEV：DEV_12E_全局纹理壳层与模型填充分区设计.md
-> 实现状态：PARTIAL；12E-03 CPU、12E-04 OpenVDB conformance 与 12E-05 width sweep/report fixture 已实现，texture transfer/production/UI 验证待后续任务
+> 实现状态：PARTIAL；12E-03 CPU、12E-04 OpenVDB conformance、12E-05 width sweep/report 和 12E-06 texture transfer/diagnostic composer 已实现，closure/production/UI 验证待后续任务
 
 ## 1. 验证目标
 
