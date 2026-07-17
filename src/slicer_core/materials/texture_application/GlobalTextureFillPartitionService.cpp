@@ -1,7 +1,9 @@
 #include "slicer_core/materials/texture_application/GlobalTextureFillPartitionService.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <limits>
 #include <optional>
@@ -301,6 +303,118 @@ GlobalTextureFillPartitionResult GlobalTextureFillPartitionService::Evaluate(
     AppendPartitionInvariantIssues(result);
     result.partitionPass = !HasErrorIssue(result.issues);
     result.status = result.partitionPass ? "diagnostic" : "fail";
+    return result;
+}
+
+TextureFillPartitionConformanceResult CompareTextureFillPartitionResults(
+    const GlobalTextureFillPartitionResult& cpuResult,
+    const GlobalTextureFillPartitionResult& openVdbResult)
+{
+    TextureFillPartitionConformanceResult result;
+    result.cpuAvailable = cpuResult.available;
+    result.openVdbAvailable = openVdbResult.available;
+    result.cpuPartitionInvariantPass = cpuResult.partitionPass;
+    result.openVdbPartitionInvariantPass = openVdbResult.partitionPass;
+    result.cpuStatus = cpuResult.status;
+    result.openVdbStatus = openVdbResult.status;
+    result.cpuBackendRole = cpuResult.backendRole;
+    result.openVdbBackendRole = openVdbResult.backendRole;
+    result.sameGrid = GridsMatch(cpuResult.grid, openVdbResult.grid);
+
+    if (!cpuResult.available || !openVdbResult.available)
+    {
+        result.issues.insert(
+            result.issues.end(),
+            cpuResult.issues.begin(),
+            cpuResult.issues.end());
+        result.issues.insert(
+            result.issues.end(),
+            openVdbResult.issues.begin(),
+            openVdbResult.issues.end());
+        return result;
+    }
+    if (!result.sameGrid
+        || !cpuResult.partitionPass
+        || !openVdbResult.partitionPass
+        || cpuResult.modelMask.values.size()
+            != openVdbResult.modelMask.values.size()
+        || cpuResult.textureSurfaceMask.values.size()
+            != openVdbResult.textureSurfaceMask.values.size()
+        || cpuResult.modelFillMask.values.size()
+            != openVdbResult.modelFillMask.values.size())
+    {
+        result.conformanceStatus = "fail";
+        result.issues.push_back(MakePartitionIssue(
+            TextureFillPartitionErrorCode::BackendConformanceFailed,
+            "CPU and OpenVDB partition results do not share valid structural invariants"));
+        return result;
+    }
+
+    double totalDistanceDeltaMm{0.0};
+    for (std::size_t index{0U};
+         index < cpuResult.modelMask.values.size();
+         ++index)
+    {
+        const bool cpuModel = cpuResult.modelMask.values.at(index) != 0U;
+        const bool openVdbModel =
+            openVdbResult.modelMask.values.at(index) != 0U;
+        const bool cpuTexture =
+            cpuResult.textureSurfaceMask.values.at(index) != 0U;
+        const bool openVdbTexture =
+            openVdbResult.textureSurfaceMask.values.at(index) != 0U;
+        const bool cpuFill = cpuResult.modelFillMask.values.at(index) != 0U;
+        const bool openVdbFill =
+            openVdbResult.modelFillMask.values.at(index) != 0U;
+        result.modelOnlyCpuVoxels += cpuModel && !openVdbModel ? 1U : 0U;
+        result.modelOnlyOpenVdbVoxels += openVdbModel && !cpuModel ? 1U : 0U;
+        result.textureOnlyCpuVoxels +=
+            cpuTexture && !openVdbTexture ? 1U : 0U;
+        result.textureOnlyOpenVdbVoxels +=
+            openVdbTexture && !cpuTexture ? 1U : 0U;
+        result.fillOnlyCpuVoxels += cpuFill && !openVdbFill ? 1U : 0U;
+        result.fillOnlyOpenVdbVoxels += openVdbFill && !cpuFill ? 1U : 0U;
+
+        if (index < cpuResult.closestSurfaceReferences.size()
+            && index < openVdbResult.closestSurfaceReferences.size())
+        {
+            const TextureFillClosestSurfaceReference& cpuReference =
+                cpuResult.closestSurfaceReferences.at(index);
+            const TextureFillClosestSurfaceReference& openVdbReference =
+                openVdbResult.closestSurfaceReferences.at(index);
+            if (cpuReference.valid && openVdbReference.valid)
+            {
+                const double distanceDeltaMm = std::abs(
+                    cpuReference.distanceMm - openVdbReference.distanceMm);
+                result.maxDistanceDeltaMm = std::max(
+                    result.maxDistanceDeltaMm,
+                    distanceDeltaMm);
+                totalDistanceDeltaMm += distanceDeltaMm;
+                ++result.commonDistanceSamples;
+            }
+        }
+    }
+    if (result.commonDistanceSamples > 0U)
+    {
+        result.meanDistanceDeltaMm = totalDistanceDeltaMm
+            / static_cast<double>(result.commonDistanceSamples);
+    }
+    result.allTextureThresholdDeltaMm = std::abs(
+        cpuResult.widthMetrics.allTextureThresholdMm
+        - openVdbResult.widthMetrics.allTextureThresholdMm);
+    if (cpuResult.performance.totalCoreMs > 0.0)
+    {
+        result.openVdbToCpuCoreTimeRatio =
+            openVdbResult.performance.totalCoreMs
+            / cpuResult.performance.totalCoreMs;
+    }
+    if (cpuResult.performance.processPeakWorkingSetBytes > 0U)
+    {
+        result.openVdbToCpuPeakMemoryRatio = static_cast<double>(
+            openVdbResult.performance.processPeakWorkingSetBytes)
+            / static_cast<double>(
+                cpuResult.performance.processPeakWorkingSetBytes);
+    }
+    result.conformanceStatus = "diagnostic";
     return result;
 }
 

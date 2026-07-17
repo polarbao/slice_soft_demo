@@ -48,4 +48,14 @@ private:
     const IGlobalTextureFillPartitionBackend* m_backend;
 };
 
+/**
+ * @brief Compare validated CPU and OpenVDB partition results without production admission.
+ * @param cpuResult Validated legacy CPU candidate result.
+ * @param openVdbResult Validated OpenVDB conformance candidate result.
+ * @return Structural and quantitative conformance evidence.
+ */
+TextureFillPartitionConformanceResult CompareTextureFillPartitionResults(
+    const GlobalTextureFillPartitionResult& cpuResult,
+    const GlobalTextureFillPartitionResult& openVdbResult);
+
 }  // namespace slicer_core

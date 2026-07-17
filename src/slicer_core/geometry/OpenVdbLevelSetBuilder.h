@@ -20,6 +20,7 @@ struct OpenVdbLevelSetOptions
     double exterior_band_voxels{3.0};
     double interior_band_voxels{3.0};
     int bbox_padding_voxels{2};
+    bool use_parity_interior_test{false};
 };
 
 /**
@@ -54,6 +55,17 @@ struct OpenVdbLevelSetResult
 };
 
 /**
+ * @brief Backend-neutral result of sampling an OpenVDB level set in world space.
+ */
+struct OpenVdbSignedDistanceSample
+{
+    bool available{false};
+    bool active{false};
+    double signedDistanceMm{0.0};
+    std::string error;
+};
+
+/**
  * @brief Build an OpenVDB level set from a triangle mesh when USE_OPENVDB is enabled.
  * @param mesh Input triangle mesh.
  * @param options Level set options.
@@ -70,5 +82,15 @@ OpenVdbLevelSetResult BuildOpenVdbLevelSet(const TriangleMeshData& mesh, const O
  * @return World-space point in millimeters.
  */
 Vec3 OpenVdbIndexToWorld(const OpenVdbLevelSetResult& levelSet, double x, double y, double z);
+
+/**
+ * @brief Sample a generated OpenVDB level set at one world-space point.
+ * @param levelSet Generated level set.
+ * @param pointMm World-space point in millimeters.
+ * @return Signed-distance sample without exposing OpenVDB types.
+ */
+OpenVdbSignedDistanceSample SampleOpenVdbSignedDistanceWorld(
+    const OpenVdbLevelSetResult& levelSet,
+    const Vec3& pointMm);
 
 }  // namespace slicer_core

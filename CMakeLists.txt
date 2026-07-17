@@ -91,6 +91,8 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/GlobalTextureFillPartitionService.h
     src/slicer_core/materials/texture_application/LegacyCpuGlobalDistanceBackend.cpp
     src/slicer_core/materials/texture_application/LegacyCpuGlobalDistanceBackend.h
+    src/slicer_core/materials/texture_application/OpenVdbTextureFillConformanceBackend.cpp
+    src/slicer_core/materials/texture_application/OpenVdbTextureFillConformanceBackend.h
     src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.cpp
     src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.h
     src/slicer_core/materials/texture_application/TextureFillPartitionTypes.cpp
@@ -266,6 +268,12 @@ add_executable(legacy_cpu_global_distance_unit_tests
 
 target_link_libraries(legacy_cpu_global_distance_unit_tests PRIVATE slicer_core)
 
+add_executable(openvdb_texture_fill_conformance_unit_tests
+    tests/unit/openvdb_texture_fill_conformance/main.cpp
+)
+
+target_link_libraries(openvdb_texture_fill_conformance_unit_tests PRIVATE slicer_core)
+
 add_executable(geometry_kernel_service_unit_tests
     tests/unit/geometry_kernel_service/main.cpp
 )
@@ -313,6 +321,7 @@ add_test(NAME production_admission_policy_unit_tests COMMAND production_admissio
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_fill_partition_service_unit_tests COMMAND texture_fill_partition_service_unit_tests)
 add_test(NAME legacy_cpu_global_distance_unit_tests COMMAND legacy_cpu_global_distance_unit_tests)
+add_test(NAME openvdb_texture_fill_conformance_unit_tests COMMAND openvdb_texture_fill_conformance_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)

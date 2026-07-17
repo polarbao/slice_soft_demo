@@ -51,6 +51,18 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_CPU_OCCUPANCY_FAILED";
     case TextureFillPartitionErrorCode::CpuNearestSurfaceFailed:
         return "E_12E_CPU_NEAREST_SURFACE_FAILED";
+    case TextureFillPartitionErrorCode::OpenVdbBackendUnavailable:
+        return "E_12E_OPENVDB_BACKEND_UNAVAILABLE";
+    case TextureFillPartitionErrorCode::OpenVdbTopologyBlocked:
+        return "E_12E_OPENVDB_TOPOLOGY_BLOCKED";
+    case TextureFillPartitionErrorCode::OpenVdbLevelSetFailed:
+        return "E_12E_OPENVDB_LEVEL_SET_FAILED";
+    case TextureFillPartitionErrorCode::OpenVdbGridSampleFailed:
+        return "E_12E_OPENVDB_GRID_SAMPLE_FAILED";
+    case TextureFillPartitionErrorCode::OpenVdbDistanceIncomplete:
+        return "E_12E_OPENVDB_DISTANCE_INCOMPLETE";
+    case TextureFillPartitionErrorCode::BackendConformanceFailed:
+        return "E_12E_BACKEND_CONFORMANCE_FAILED";
     case TextureFillPartitionErrorCode::SurfaceShellWidthBelowEffectiveMinimum:
         return "E_12E_SURFACE_SHELL_WIDTH_BELOW_EFFECTIVE_MINIMUM";
     case TextureFillPartitionErrorCode::AllTextureThresholdUnavailable:

@@ -41,6 +41,12 @@ enum class TextureFillPartitionErrorCode
     CpuTopologyBlocked,
     CpuOccupancyFailed,
     CpuNearestSurfaceFailed,
+    OpenVdbBackendUnavailable,
+    OpenVdbTopologyBlocked,
+    OpenVdbLevelSetFailed,
+    OpenVdbGridSampleFailed,
+    OpenVdbDistanceIncomplete,
+    BackendConformanceFailed,
     SurfaceShellWidthBelowEffectiveMinimum,
     AllTextureThresholdUnavailable,
 };
@@ -161,6 +167,9 @@ struct TextureFillPartitionQueryStats
     std::uint64_t occupancyFallbackRayCount{0U};
     std::uint64_t occupancyAmbiguousRayCount{0U};
     std::uint64_t occupancyBoundaryPointCount{0U};
+    std::uint64_t sdfSampleCount{0U};
+    std::uint64_t sdfActiveSampleCount{0U};
+    std::uint64_t sdfBackgroundSampleCount{0U};
     std::uint64_t nearestQueryCount{0U};
     std::uint64_t nearestVisitedNodes{0U};
     std::uint64_t nearestTestedTriangles{0U};
@@ -172,6 +181,8 @@ struct TextureFillPartitionQueryStats
 struct TextureFillPartitionPerformance
 {
     double topologyMs{0.0};
+    double levelSetMs{0.0};
+    double gridSampleMs{0.0};
     double occupancyBuildMs{0.0};
     double distanceQueryMs{0.0};
     double partitionMs{0.0};
@@ -181,6 +192,7 @@ struct TextureFillPartitionPerformance
     std::uint64_t closestReferenceBytes{0U};
     std::uint64_t occupancyQueryBytes{0U};
     std::uint64_t nearestQueryBytes{0U};
+    std::uint64_t openVdbGridBytes{0U};
     bool processMemoryAvailable{false};
     std::uint64_t processWorkingSetBytes{0U};
     std::uint64_t processPeakWorkingSetBytes{0U};
@@ -236,6 +248,37 @@ struct GlobalTextureFillPartitionResult
     TextureFillPartitionQueryStats queryStats;
     TextureFillPartitionPerformance performance;
     std::vector<TextureFillClosestSurfaceReference> closestSurfaceReferences;
+    std::vector<ValidationIssue> issues;
+};
+
+/**
+ * @brief Backend-neutral diagnostic comparison between CPU and OpenVDB candidates.
+ */
+struct TextureFillPartitionConformanceResult
+{
+    bool cpuAvailable{false};
+    bool openVdbAvailable{false};
+    bool sameGrid{false};
+    bool cpuPartitionInvariantPass{false};
+    bool openVdbPartitionInvariantPass{false};
+    std::string cpuStatus{"blocked"};
+    std::string openVdbStatus{"blocked"};
+    std::string cpuBackendRole{"unavailable"};
+    std::string openVdbBackendRole{"unavailable"};
+    std::string conformanceStatus{"unavailable"};
+    std::string productionAcceptance{"not_evaluated"};
+    std::uint64_t modelOnlyCpuVoxels{0U};
+    std::uint64_t modelOnlyOpenVdbVoxels{0U};
+    std::uint64_t textureOnlyCpuVoxels{0U};
+    std::uint64_t textureOnlyOpenVdbVoxels{0U};
+    std::uint64_t fillOnlyCpuVoxels{0U};
+    std::uint64_t fillOnlyOpenVdbVoxels{0U};
+    std::uint64_t commonDistanceSamples{0U};
+    double maxDistanceDeltaMm{0.0};
+    double meanDistanceDeltaMm{0.0};
+    double allTextureThresholdDeltaMm{0.0};
+    double openVdbToCpuCoreTimeRatio{0.0};
+    double openVdbToCpuPeakMemoryRatio{0.0};
     std::vector<ValidationIssue> issues;
 };
 
