@@ -202,5 +202,5 @@ git diff --check
 12E-01：PREPARED / READY FOR USER ADMISSION；
 12E-02：BLOCKED BY 12E-01；
 12E production：NOT ADMITTED；
-12D-R3：保持独立 PREPARED / NOT STARTED。
+12D-R3：COMPLETE；12D 结果只作为后续 closure gate 输入，不改变 12E-01 契约边界。
 ```

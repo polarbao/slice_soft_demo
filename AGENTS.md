@@ -19,11 +19,11 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12D-09 Qt Material Closure Diagnostics`.
-- Current working phase is `12D-R3 IN PROGRESS`: 12D-10 real-model validation is next.
+- The latest completed task is `12D-10 real-model material closure validation`.
+- `12D-R0/R1/R2/R3` is complete.
 - `12E-R0` startup preparation is complete. `12E-01 Config/DTO contract` is `PREPARED / READY FOR USER ADMISSION`, but no 12E code task is active.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- `12D-09 Qt Material Closure Diagnostics` is complete. 12D-10 is prepared but not yet active; 12E remains prepared but inactive.
+- 12E remains prepared but inactive; it must start from the explicitly admitted `12E-01` task.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules
@@ -73,8 +73,9 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Document state: `.agents/docs/doc-state.md`
 - Formal docs index: `docs/slice/README.md`
 - Codex task index: `docs/codex_task/README.md`
-- Current task list: `docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md`
-- Current execution prompt: `docs/codex_task/current/CODEX_PROMPT_12D_横截面材料闭环执行指令.md`
+- Completed 12D task list: `docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md`
+- Next prepared task list: `docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md`
+- Next prepared execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
 - Prepared 12E task list: `docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md`
 - Prepared 12E execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
 

@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12D-R3 in progress; 12D-10 is next
-- Latest completed phase: Stage 12C Qt workbench closure
-- Latest completed task: `12D-09 Qt Material Closure Diagnostics`
-- Current task: none active; `12D-10 real-model validation` is prepared
-- Prepared stage: `12D-R3 repair/background/UI/real-model preparation` and `12E-R0 Config/DTO/schema/matrix preparation` complete
+- Current phase: Stage 12D complete; Stage 12E-01 prepared but inactive
+- Latest completed phase: Stage 12D material closure
+- Latest completed task: `12D-10 real-model material closure validation`
+- Current task: none active; `12E-01 Config/DTO contract` is prepared
+- Prepared stage: `12E-R0 Config/DTO/schema/matrix preparation` complete
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

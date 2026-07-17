@@ -1,7 +1,7 @@
 # REPORT_12E 启动准备状态
 
 > 文档状态：12E-R0 PREPARATION COMPLETE / IMPLEMENTATION NOT STARTED
-> 日期：2026-07-16
+> 日期：2026-07-17
 
 ## 1. 当前结论
 
@@ -15,7 +15,7 @@
 12A：材料填充、支撑、光油语义当前范围完成；
 12B：性能评估与 OpenVDB SDF utility 定位完成；
 12C：Qt 工作台 R0/R1/R2 完成；
-12D：R1/R2 完成，R3 已完成 12D-07/08/09，12D-10 待启动；
+12D：R0/R1/R2/R3 COMPLETE，12D-10 三个真实 OBJ 验收通过；
 12E：R0 preparation complete，implementation not started。
 ```
 
@@ -64,9 +64,9 @@ Qt UI 与 preview；
 
 ```text
 12D-07/08/09：COMPLETE；
-12D-10：PREPARED / READY FOR USER ADMISSION；
+12D-10：COMPLETE；
 12E-01：PREPARED / READY FOR USER ADMISSION；
-12D-10 与 12E-01 均无 active code task；
+当前没有 active code task；
 12E R0/R1 原型不要求先完成 repair；
 12E production admission 必须复核 12D exact closure；
 不得把 12E 分区逻辑塞入 12D repair 任务。
@@ -86,7 +86,7 @@ production Profile 的最终最小宽度是否高于 0.10 mm。
 
 ## 8. 下一任务
 
-12E 准备已完成，但按当前阶段顺序继续等待 12D-10。12D 封口后，用户若选择进入 12E，应明确指定：
+12E 准备已完成，且 12D 已封口。用户若选择进入 12E，应明确指定：
 
 ```text
 开始 12E-01 Config 与 DTO 契约。
@@ -104,4 +104,17 @@ OpenVDB optional/OFF；
 legacy slicer_cli production path 不替代；
 12D repair 默认关闭；
 没有 production admission 时不写 12E production TIFF。
+```
+
+## 10. 12D 封口后的准备复核
+
+2026-07-17 已完成 12E-01 准入复核：
+
+```text
+12D exact semantic mask 与 material closure contract 已在三个真实 OBJ 上通过；
+12E Config/DTO 字段、默认值、负向错误码和 backend unavailable 行为已冻结；
+12E report skeleton schema 与 fixture matrix 已存在；
+12E-01 允许/禁止文件边界和定向测试命令明确；
+未发现需要在 12E-01 开始前新增的第三方依赖、UI 或 production writer 工作；
+12E-01 可以开启，但仍须用户明确指定，不能由本次准备复核自动进入代码实现。
 ```

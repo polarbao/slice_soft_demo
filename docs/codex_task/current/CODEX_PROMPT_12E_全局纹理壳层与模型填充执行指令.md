@@ -1,7 +1,7 @@
 # CODEX_PROMPT_12E 全局纹理壳层与模型填充执行指令
 
-> 文档状态：R0 PREPARED / NOT ACTIVE
-> 日期：2026-07-16
+> 文档状态：R0 PREPARED / 12E-01 READY FOR USER ADMISSION
+> 日期：2026-07-17
 > 当前不得自动执行；必须由用户明确指定一个 12E 原子任务
 
 ## 1. 角色

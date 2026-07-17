@@ -1,12 +1,12 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-07-16
-> 适用阶段：Stage 12D-R3 PREPARED；Stage 12E 全局纹理/填充互补已规划但未开始实现
+> 更新日期：2026-07-17
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-R0 PREPARED / IMPLEMENTATION NOT STARTED
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C 已收口；12D-R1 与 R2 已完成，包含 exact semantic diagnosis 和 repair-disabled TIFF SHA-256 守门。12D-07 至 12D-10 已完成边界准备但尚未实施。12E 仅完成文档规划，不是当前代码执行入口。
+当前状态：12C 已收口；12D-R0/R1/R2/R3 已完成，包含 exact semantic diagnosis、可选一像素修复、外部背景保护、Qt 诊断和三个真实 OBJ 验收。12E-R0 的 Config/DTO、schema 与 matrix 准备已完成，12E-01 等待用户明确启动。
 
 ## 目录结构
 
@@ -34,7 +34,7 @@
 | `ROADMAP/ROADMAP_SHORT_MID_LONG_SliceSoft_项目运行计划.md` | 短期 / 中期 / 长期项目运行计划 |
 | `PRD/PRD_SHORT_MID_LONG_SliceSoft_项目运行计划需求.md` | 项目运行计划对应的产品需求 |
 | `DEV/DEV_SHORT_MID_LONG_SliceSoft_项目运行计划执行方案.md` | 项目运行计划对应的技术执行方案 |
-| `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 最新已完成阶段报告，12B-R2 与 12B 收口 |
+| `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 与 12B 收口历史报告 |
 | `REPORT/REPORT_12C_Qt工作台启动状态.md` | 当前阶段启动状态，12C-R0 可开始 |
 | `REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | OpenVDB OBJ 彩色纹理前置状态报告 |
 | `REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md` | OpenVDB Candidate 写包当前状态报告 |
@@ -83,6 +83,7 @@
 | `DOC/DOC_PREP_12D_R2_SemanticMask精确诊断接入准备.md` | 12D-R2 semantic mask ownership、pipeline 插入点和 exact 验收准备 |
 | `DOC/DOC_PREP_12D_R2_RepairDisabled不变性验证准备.md` | 12D-06 双配置、TIFF SHA-256 和 gap 保留守门准备 |
 | `DOC/DOC_PREP_12D_R3_一像素修复背景保护UI真实模型准备.md` | 12D-07 至 12D-10 repair、背景保护、UI 和真实模型准备 |
+| `REPORT/REPORT_12D_材料闭环准备状态.md` | 12D 完成状态、真实模型 hash、RIP 与 timing 证据 |
 | `DOC/DOC_DECISION_12E_全局纹理表面层与模型填充互补策略.md` | 12E 全局纹理表面层与模型填充互补分区决策 |
 | `PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md` | 12E 纹理宽度、动态最大值和全纹理产品需求 |
 | `DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md` | 12E 完整三维距离、互补 mask、UI 与 report 技术设计 |

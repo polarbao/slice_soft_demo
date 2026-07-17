@@ -1,11 +1,11 @@
-# REPORT_12D 材料闭环准备状态
+# REPORT_12D 材料闭环当前状态
 
-> 文档状态：12D-R2 COMPLETE / 12D-R3 IN PROGRESS
-> 日期：2026-07-16
+> 文档状态：12D COMPLETE
+> 日期：2026-07-17
 
 ## 1. 当前结论
 
-12D 文档准备阶段已完成；12D-R1/R2 已完成。12D-R3 已完成 12D-07 一像素闭环修复、12D-08 外部背景硬保护和 12D-09 Qt 闭环诊断；12D-10 真实模型验收已解除前置阻塞并进入可执行状态。
+12D-R0/R1/R2/R3 已全部完成。当前实现具备 candidate/exact 闭环诊断、默认关闭的一像素修复、外部背景硬保护、Qt 只读诊断和三个真实 OBJ 自动验收。三个真实模型均在 repair disabled 下得到 `semantic_masks/exact/pass`，无需修改生产 TIFF。
 
 ## 2. 已准备文档
 
@@ -45,9 +45,9 @@ gap preview 默认关闭且只作诊断；
 | 12D-R0 | 文档/schema/fixture/执行边界 | COMPLETE |
 | 12D-R1 | 配置、报告骨架、TIFF candidate | COMPLETE（12D-02/03/04） |
 | 12D-R2 | semantic mask exact、repair-disabled 不变性 | COMPLETE（12D-05/06） |
-| 12D-R3 | 1px repair、背景保护、UI、真实模型 | IN PROGRESS（12D-07/08/09 COMPLETE） |
+| 12D-R3 | 1px repair、背景保护、UI、真实模型 | COMPLETE（12D-07/08/09/10） |
 
-## 5. 12D-02/03/04/05/06 已实现
+## 5. 已实现能力
 
 ```text
 MaterialClosureConfig / MaterialClosureRepairConfig 数据模型；
@@ -74,14 +74,20 @@ repair-disabled baseline/diagnostic 成对配置与自动验证脚本；
 按 manifest layerIndex 比较全部 TIFF SHA-256，不比较预期不同的报告文件；
 30 层 TIFF 字节完全一致，两份 package 均通过 RIP Reader；
 detector evidence 不变与 report 原始 gap 保留单元测试。
+repair-enabled exact 一像素修复、2px 及以上拒绝和 remaining gap 重评估；
+ExternalBackgroundMask、ExpectedOccupiedDomainMask 与 RejectedTooWide 三重守门；
+Qt 材料闭环页、worst layer 定位和可选 gap 伪彩预览；
+真实模型 effective config、输入资产 hash、逐层 TIFF hash、RIP 与 timing 自动验收。
 ```
 
-## 6. 尚未实现
+## 6. 12D-R3 完成能力
 
 ```text
-gap preview；
-Qt UI closure 展示；
-真实模型自动验收脚本。
+一像素 repair plan 和 RGBWSV/semantic mask 同步应用；
+外部背景 byte snapshot 保护；
+已有 gapPreviewPath 时的 Qt 诊断显示（本阶段不新增 gap preview writer）；
+run_12d_real_model_validation.ps1 真实模型验收脚本；
+real_model_diagnostic_template.json 可移植诊断模板。
 ```
 
 ## 7. 准入复核
@@ -100,7 +106,9 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-07 Repair Enabled 一像素闭环修复：COMPLETE；
 12D-08 外部背景保护：COMPLETE；
 12D-09 Qt 闭环诊断显示：COMPLETE；
-下一代码任务：12D-10 真实模型验证，准备完成但尚未启动。
+12D-10 真实模型验证：COMPLETE；
+12D：COMPLETE；
+下一候选任务：12E-01 Config 与 DTO 契约，已准备但未自动启动。
 ```
 
 ## 8. 后续任务准备判断
@@ -113,7 +121,9 @@ REPORT_12C_Qt工作台当前状态.md：已生成；
 12D-07：COMPLETE；
 12D-08：COMPLETE；
 12D-09：COMPLETE；
-12D-10：PREPARED / READY FOR USER ADMISSION。
+12D-10：COMPLETE；
+12D-R3：COMPLETE；
+12E-01：PREPARED / READY FOR USER ADMISSION。
 ```
 
 ## 9. 12D-08 完成证据
@@ -138,4 +148,93 @@ candidate 明确显示不能作为生产通过依据，并阻断非法候选 pas
 仅在 gapPreviewPath 存在且文件有效时显示“RGB + 闭环 Gap”；
 exact pass/fail、repaired-with-remaining、candidate-only、report-missing Smoke 通过；
 12C fresh Qt lane、诊断折叠、工作区尺寸和完整 CTest 9/9 通过。
+```
+
+## 11. 12D-10 真实模型配置
+
+统一模板：
+
+```text
+samples/configs/material_closure/real_model_diagnostic_template.json
+```
+
+冻结条件：
+
+```text
+modelTransform.scale=[1,1,1]；
+texture.applyMode=top_surface_band；
+modelFill.material=white；
+support.placement=lower；
+support.internalVoid.enabled=true；
+surfaceVarnish.enabled=false；
+outerVarnish.enabled=false；
+materialClosure.mode=diagnostic；
+materialClosure.repair.enabled=false；
+preview.enabled=false；
+OpenVDB disabled。
+```
+
+## 12. 真实模型实际结果
+
+命令：
+
+```powershell
+cmake --build build --config Debug --target slicer_cli rip_reader_test
+.\scripts\run_12d_real_model_validation.ps1 -BuildDir build -Config Debug -RunId 20260717_12D10_FINAL
+```
+
+结果：
+
+| 模型 | Grid | closure | total/remaining gap | 背景保护像素 | RIP |
+|---|---|---|---:|---:|---|
+| `nai_you_new` | `286x569x223` | exact/pass | `0/0` | 12,493,184 | PASS |
+| `aishen_fudiao` | `283x531x256` | exact/pass | `0/0` | 19,686,953 | PASS |
+| `meigui_fudiao` | `284x718x247` | exact/pass | `0/0` | 21,432,795 | PASS |
+
+五类 gap 均为 0，`productionAcceptance=passed`，`repairedPixels=0`，`worstLayers=[]`。真实模型均已通过，因此本轮未启用 repair；这不是 repair 缺测，repair enabled 的 synthetic package 已由 12D-07 覆盖。
+
+## 13. 输入与 TIFF Hash 证据
+
+| 模型 | OBJ SHA-256 | MTL SHA-256 | Texture SHA-256 | TIFF hash 清单 SHA-256 |
+|---|---|---|---|---|
+| `nai_you_new` | `675c99fe25958f0140f228e6b55d11333925d89f178da7cb950bdf433bcabd13` | `687aedad99f9570232aec51a5495068a6ea92395d928f26fda97c608f7c3f681` | `b1a4b6dbd7daf5ccb4e5ce8c1a01ccbd0991e7827384a5f597ea4a9512bf69cb` | `15b0fe787984644b9f66701449ff9dbb9db60d2f62c7a9046012b87ceac05d00` |
+| `aishen_fudiao` | `5c3f2741297e687bc3e9ce34a2bf3234ba751dededf09faac0a36e81c8f83088` | `098573098f4d0b2997a7b7e3379157153852d01d5677a0e08eacdff6afad0150` | `c43943f3d11d9d3cd386d7500e6884acb58e243dcdc5260e192660b0ceed5569` | `544fe2f680fa98794d4f9ab5292771c8b360bc9649a83768c429f273316f6c19` |
+| `meigui_fudiao` | `5d8affd74c54a234084cf12ed20049b75d8032e996a306c5e9cb9460cf54d70c` | `ef90304a1f4ae7b1eee389b5c508fa9fcddfae6dcc3bcfc8aa3161b161ed707e` | `2ba235d91847e102f1a8734689838f141fcf75847d63a617c06bcfae4ccd67b6` | `303350c3fee13bf49d4b6598819bcbc7fccaae0189fbbe7f1432e50b3fa041c4` |
+
+逐层 hash 清单和 effective config 位于：
+
+```text
+output/MaterialClosureRealModelValidation/20260717_12D10_FINAL/
+```
+
+## 14. 诊断耗时
+
+单位为毫秒；Debug 构建、preview disabled，仅作为本次可复现诊断数据，不作为 Release 性能 KPI。
+
+| 模型 | modelLoad | sliceProcessing | layerCompute | TIFF write | report write | outputWrite | total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `nai_you_new` | 3,326.350 | 27,879.763 | 12,923.205 | 1,348.980 | 1,026.382 | 2,375.363 | 33,926.376 |
+| `aishen_fudiao` | 3,476.723 | 29,800.941 | 16,181.077 | 1,454.563 | 1,150.438 | 2,605.001 | 36,259.032 |
+| `meigui_fudiao` | 10,626.960 | 36,730.824 | 18,359.190 | 1,626.237 | 988.422 | 2,614.659 | 50,355.868 |
+
+## 15. 协议与后续阶段
+
+```text
+p0.rgbwsv.2：不变；
+R G B W S V：不变；
+uint8 / black_is_print：不变；
+repair 默认 false：不变；
+OpenVDB 默认 false：不变。
+```
+
+12D 已封口。12E-R0 准备材料已完整，12E-01 可以在用户明确指定后进入 Config/DTO 契约实现；不得把 12E 三维互补分区提前塞回 12D repair。
+
+本次最终验证：
+
+```text
+cmake build slicer_cli/rip_reader_test：PASS；
+12D-10 三真实模型脚本：PASS；
+RepairDisabled TIFF SHA-256 不变性：PASS（30 层）；
+RepairEnabled exact synthetic package：PASS；
+CTest Debug：9/9 PASS。
 ```

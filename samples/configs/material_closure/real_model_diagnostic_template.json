@@ -1,0 +1,176 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../../model/obj/nai_you_new/MF_nai_you.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/MaterialClosureRealModelValidation/template",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.028,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [1.0, 1.0, 1.0],
+    "rotationDeg": [0.0, 0.0, 0.0],
+    "translationMm": [0.0, 0.0, 0.0]
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "top_surface_band",
+    "topSurfaceLayers": 1,
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [0, 0, 0],
+    "missingTexturePolicy": "warn_and_fallback",
+    "nonSurfaceRgbPolicy": "empty"
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "below_texture_surface",
+    "value": 0,
+    "emptyAllowedInProduction": false,
+    "legacyRgbFallback": false
+  },
+  "materialPolicy": {
+    "enabled": false,
+    "white": {
+      "enabled": false,
+      "mode": "disabled"
+    },
+    "varnish": {
+      "enabled": false,
+      "mode": "disabled"
+    }
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "material_closure_real_model_diagnostic",
+    "target": "uv_relief_obj_mtl_texture",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "all_model",
+      "coverage": "all_model",
+      "value": 0,
+      "expandPx": 0,
+      "shrinkPx": 0
+    },
+    "varnish": {
+      "enabled": false,
+      "mode": "disabled",
+      "coverage": "model_surface",
+      "topLayers": 1,
+      "value": 0
+    },
+    "support": {
+      "expected": true,
+      "mode": "existing_support_pipeline"
+    },
+    "validation": {
+      "requireRgbPixels": true,
+      "requireWhitePixels": true,
+      "requireVarnishPixels": false,
+      "requireSupportPixels": true,
+      "maxUnexpectedOverlapPixels": 0
+    }
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "lower",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0,
+    "connectivity": 8,
+    "internalVoid": {
+      "enabled": true,
+      "minAreaPx": 16,
+      "fillRule": "all_internal_voids"
+    },
+    "upper": {
+      "enabled": false,
+      "outside": "outer_varnish_shell",
+      "reason": "optional_detachable_surface_support"
+    }
+  },
+  "surfaceVarnish": {
+    "enabled": false,
+    "outerSurface": true,
+    "innerSurface": true,
+    "thicknessPx": 0,
+    "value": 0,
+    "source": "explicit"
+  },
+  "outerVarnish": {
+    "enabled": false,
+    "thicknessMm": 0.0,
+    "thicknessStepMm": 0.01,
+    "pixelPitchUm": 42.3,
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
+    "value": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "materialClosure": {
+    "enabled": true,
+    "mode": "diagnostic",
+    "connectivity": 8,
+    "maxGapPx": 1,
+    "failOnGap": false,
+    "writeGapPreview": false,
+    "repair": {
+      "enabled": false,
+      "colorFillGap": "model_fill",
+      "modelSupportGap": "contextual",
+      "internalVoidGap": "support",
+      "varnishSupportGap": "support"
+    }
+  },
+  "preview": {
+    "enabled": false,
+    "format": "png",
+    "interval": 10,
+    "channels": ["texture_rgb", "white", "varnish", "support"],
+    "onlyNonEmptyLayers": false
+  },
+  "experimental": {
+    "openvdbPipeline": {
+      "enabled": false,
+      "engine": "legacy",
+      "admissionMode": "strict_closed",
+      "failurePolicy": "fail_fast",
+      "allowNonProductionOutput": false,
+      "writeProductionRgbwsv": false
+    }
+  }
+}

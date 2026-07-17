@@ -1,7 +1,7 @@
 # DEMO_12D 横截面材料无缝闭环验证方案
 
-> 文档状态：DEMO / Ready for implementation
-> 日期：2026-07-13
+> 文档状态：DEMO / VERIFIED
+> 日期：2026-07-17
 
 ## 1. 验证目标
 
@@ -119,9 +119,9 @@ RIP reader 结果。
 
 真实模型结果允许 fail，但必须可解释、可定位，不能用人工截图替代报告。
 
-## 5. 计划验证命令
+## 5. 验证命令
 
-以下命令是 12D 实施后的验收入口，不代表当前已经可运行：
+以下命令是当前可运行的 12D 验收入口：
 
 ```powershell
 cmake --build build --config Debug --target slicer_cli rip_reader_test experimental_config_unit_tests
@@ -129,6 +129,7 @@ cmake --build build --config Debug --target slicer_cli rip_reader_test experimen
 .\build\Debug\slicer_cli.exe --config samples\configs\material_closure\closure_exact_pass.json
 .\build\Debug\rip_reader_test.exe --package output\MaterialClosureExactPass --summary
 .\scripts\run_material_closure_tests.ps1 -BuildDir build -Config Debug
+.\scripts\run_12d_real_model_validation.ps1 -BuildDir build -Config Debug -RunId <run-id>
 ```
 
 ## 6. 自动检查
@@ -171,3 +172,13 @@ RIP reader 通过；
 Qt UI 能只读展示报告；
 阶段报告记录通过、失败和残余风险。
 ```
+
+## 9. 2026-07-17 真实模型结果
+
+| 模型 | Grid | source/confidence | closure | gap | RIP |
+|---|---|---|---|---:|---|
+| `nai_you_new` | `286x569x223` | `semantic_masks/exact` | `pass` | 0 | PASS |
+| `aishen_fudiao` | `283x531x256` | `semantic_masks/exact` | `pass` | 0 | PASS |
+| `meigui_fudiao` | `284x718x247` | `semantic_masks/exact` | `pass` | 0 | PASS |
+
+三个模型均在 `repair.enabled=false` 下通过，不需要为获得通过结果而改写 TIFF。逐层 TIFF SHA-256、输入资产 SHA-256 和 timing 见本次 `validation_summary.json` 与 `REPORT_12D_材料闭环准备状态.md`。

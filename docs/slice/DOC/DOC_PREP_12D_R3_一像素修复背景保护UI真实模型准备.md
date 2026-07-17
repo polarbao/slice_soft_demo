@@ -1,12 +1,12 @@
 # DOC_PREP_12D-R3 一像素修复、背景保护、UI 与真实模型准备
 
-> 文档状态：12D-07/08/09 COMPLETE / 12D-10 READY FOR USER ADMISSION
-> 日期：2026-07-16
+> 文档状态：12D-R3 COMPLETE
+> 日期：2026-07-17
 > 覆盖任务：12D-07、12D-08、12D-09、12D-10
 
 ## 1. 准备结论
 
-12D-R3 的任务边界、依赖顺序和验收证据已补齐，并按 07 -> 08 -> 09 -> 10 顺序执行。12D-07/08/09 已完成；repair 仍默认关闭，12D-10 尚未启动。
+12D-R3 已按 07 -> 08 -> 09 -> 10 顺序完成。一像素修复、外部背景保护、Qt 诊断和三个真实 OBJ 验收均有可复现证据；repair 仍默认关闭。
 
 ## 2. 12D-07 Repair Enabled 准备
 
@@ -184,7 +184,19 @@ rip_reader_test 结果；
 | 12D-07 | COMPLETE | 已完成一像素 repair、report 与 regression |
 | 12D-08 | COMPLETE | hard guard、三类 synthetic fixture 与 byte snapshot 已通过 |
 | 12D-09 | COMPLETE | 报告展示、候选安全提示、worst layer 跳转和 Gap 预览 Smoke 通过 |
-| 12D-10 | PREPARED / READY | 12D-09 已完成；等待用户明确启动 |
+| 12D-10 | COMPLETE | 三个真实 OBJ exact/pass、RIP PASS、TIFF SHA-256 与 timing summary |
+
+实际验收入口：
+
+```powershell
+.\scripts\run_12d_real_model_validation.ps1 -BuildDir build -Config Debug -RunId 20260717_12D10_FINAL
+```
+
+实际 summary：
+
+```text
+output/MaterialClosureRealModelValidation/20260717_12D10_FINAL/validation_summary.json
+```
 
 ## 7. 共同安全边界
 

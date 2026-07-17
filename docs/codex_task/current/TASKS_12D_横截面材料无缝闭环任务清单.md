@@ -1,7 +1,7 @@
 # TASKS_12D 横截面材料无缝闭环任务清单
 
 > 文档状态：Current Task Plan
-> 日期：2026-07-16
+> 日期：2026-07-17
 > 对应文档：
 > - docs/slice/DOC/DOC_DECISION_12D_横截面材料无缝闭环专项.md
 > - docs/slice/DOC/DOC_DECISION_12D_R0_R1_R2_R3_材料闭环阶段拆分.md
@@ -15,7 +15,7 @@
 > - docs/slice/DOC/DOC_PREP_12D_R2_RepairDisabled不变性验证准备.md
 > - docs/slice/DOC/DOC_PREP_12D_R3_一像素修复背景保护UI真实模型准备.md
 
-执行准入：12C、12D-R1 与 12D-R2 已完成。12D-R3 的准备文档已补齐；12D-07 已满足技术前置条件，但 repair-enabled 开发仍须用户明确指定后方可开始。
+执行状态：12C 与 12D-R0/R1/R2/R3 已完成。12D-02 至 12D-10 均具备实际实现或验收证据；repair 继续默认关闭。
 
 ## 12D-01 文档与验收口径冻结
 
@@ -312,7 +312,7 @@ exact pass、exact fail、repaired-with-remaining、candidate-only、report-miss
 
 ## 12D-10 真实模型验证
 
-状态：PREPARED / READY FOR USER ADMISSION / 12D-R3
+状态：DONE / 12D-R3
 
 目标：
 
@@ -335,4 +335,19 @@ model/obj/nai_you_new
 每个模型输出 closureStatus；
 若存在 fail，报告 worst layers 和 gap 类型；
 若开启 repair，可证明 gapPixels 降低且未破坏通道协议。
+```
+
+完成记录：
+
+```text
+新增 real_model_diagnostic_template.json，冻结 1:1 模型比例、白墨模型填充、lower 支撑、
+internal void 支撑、无表面/外侧光油、repair disabled 和 OpenVDB disabled；
+新增 run_12d_real_model_validation.ps1，自动生成每个模型 effective config；
+记录 OBJ/MTL/Texture SHA-256、grid、closure、worstLayers、TIFF 逐层 SHA-256、RIP 与耗时；
+nai_you_new：286x569x223，exact/pass，totalGapPixels=0；
+aishen_fudiao：283x531x256，exact/pass，totalGapPixels=0；
+meigui_fudiao：284x718x247，exact/pass，totalGapPixels=0；
+三个模型 productionAcceptance=passed，RIP Reader PASS；
+全部保持 p0.rgbwsv.2、RGBWSV、uint8、black_is_print；
+本轮真实模型无需启用 repair，repairedPixels=0，避免无 gap 时改写生产 TIFF。
 ```
