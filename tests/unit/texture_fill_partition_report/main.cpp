@@ -1,5 +1,7 @@
 #include "slicer_core/config.h"
 #include "slicer_core/json_value.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
+#include "slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h"
 #include "slicer_core/reports/TextureFillPartitionReport.h"
 
 #include <filesystem>
@@ -179,7 +181,17 @@ bool UnavailableMeasurementsRemainNull()
                "unavailable peak working set is null")
         && ExpectTrue(
                !report.at("performance").at("textureTransferMs").is_number(),
-               "unimplemented texture transfer timing is null");
+               "unimplemented texture transfer timing is null")
+        && ExpectTrue(
+               report.at("textureTransfer").at("availability").as_string()
+                   == "unavailable",
+               "missing texture transfer has explicit availability")
+        && ExpectTrue(
+               report.at("diagnosticComposer").at("channelOrder").size() == 6U,
+               "missing diagnostic composer retains fixed channel order")
+        && ExpectTrue(
+               report.at("diagnosticComposer").at("emptyVoxels").as_int() == 0,
+               "missing diagnostic composer retains complete counters");
 }
 
 bool LayerTotalsMatchPartitionTotals()
@@ -201,6 +213,67 @@ bool LayerTotalsMatchPartitionTotals()
         && ExpectTrue(fill == 2U, "layer fill totals match");
 }
 
+bool TransferAndComposerEvidenceIsSerialized()
+{
+    slicer_core::TextureFillPartitionTextureTransferResult transfer;
+    transfer.available = true;
+    transfer.status = "diagnostic";
+    transfer.stats.textureSurfaceVoxels = 1U;
+    transfer.stats.sampledTextureCount = 1U;
+    transfer.stats.reusedReferenceCount = 1U;
+    transfer.stats.maxTransferDistanceMm = 0.05;
+    transfer.stats.loadedTextureCount = 1U;
+    transfer.stats.transferMs = 2.5;
+
+    slicer_core::TextureFillPartitionDiagnosticComposerResult composer;
+    composer.available = true;
+    composer.status = "diagnostic";
+    composer.width = 2;
+    composer.height = 1;
+    composer.depth = 2;
+    composer.layers.resize(2U);
+    composer.stats.textureSurfaceVoxels = 1U;
+    composer.stats.modelFillVoxels = 2U;
+    composer.stats.modelFillWhiteVoxels = 2U;
+
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult(),
+        nullptr,
+        &transfer,
+        &composer);
+    const slicer_core::Json projection = slicer_core::Json::object({
+        {"textureTransfer", report.at("textureTransfer")},
+        {"diagnosticComposer", report.at("diagnosticComposer")},
+        {"textureTransferMs", report.at("performance").at("textureTransferMs")},
+    });
+    const slicer_core::Json expected = LoadGolden(
+        "12e_texture_transfer_diagnostic_composer.json");
+    return ExpectTrue(
+               projection.dump(2) == expected.dump(2),
+               "texture transfer and diagnostic composer match golden")
+        && ExpectTrue(
+               report.at("textureTransfer").at("status").as_string()
+                   == "diagnostic",
+               "texture transfer status is serialized")
+        && ExpectTrue(
+               report.at("textureTransfer").at("reusedReferenceCount").as_int()
+                   == 1,
+               "reference reuse evidence is serialized")
+        && ExpectTrue(
+               report.at("performance").at("textureTransferMs").as_double()
+                   == 2.5,
+               "texture transfer timing is serialized")
+        && ExpectTrue(
+               report.at("diagnosticComposer").at("modelFillWhiteVoxels").as_int()
+                   == 2,
+               "diagnostic composer material count is serialized")
+        && ExpectTrue(
+               report.at("diagnosticComposer").at("supportPrintVoxels").as_int()
+                   == 0,
+               "diagnostic composer keeps support empty");
+}
+
 }  // namespace
 
 int main()
@@ -210,6 +283,7 @@ int main()
         {"conformance_is_optional_and_diagnostic", ConformanceIsOptionalAndDiagnostic},
         {"unavailable_measurements_remain_null", UnavailableMeasurementsRemainNull},
         {"layer_totals_match_partition_totals", LayerTotalsMatchPartitionTotals},
+        {"transfer_and_composer_evidence_is_serialized", TransferAndComposerEvidenceIsSerialized},
     };
     for (const auto& test : tests)
     {

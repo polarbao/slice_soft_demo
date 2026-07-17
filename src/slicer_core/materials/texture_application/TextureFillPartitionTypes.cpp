@@ -75,6 +75,22 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_WIDTH_SWEEP_FILL_NON_MONOTONIC";
     case TextureFillPartitionErrorCode::WidthSweepEndpointInvalid:
         return "E_12E_WIDTH_SWEEP_ENDPOINT_INVALID";
+    case TextureFillPartitionErrorCode::TextureTransferInputInvalid:
+        return "E_12E_TEXTURE_TRANSFER_INPUT_INVALID";
+    case TextureFillPartitionErrorCode::TextureReferenceMissing:
+        return "E_12E_TEXTURE_REFERENCE_MISSING";
+    case TextureFillPartitionErrorCode::TextureTriangleOutOfRange:
+        return "E_12E_TEXTURE_TRIANGLE_OUT_OF_RANGE";
+    case TextureFillPartitionErrorCode::TextureMissingUv:
+        return "E_12E_TEXTURE_MISSING_UV";
+    case TextureFillPartitionErrorCode::TextureMissingResource:
+        return "E_12E_TEXTURE_MISSING_RESOURCE";
+    case TextureFillPartitionErrorCode::TextureSampleFailed:
+        return "E_12E_TEXTURE_SAMPLE_FAILED";
+    case TextureFillPartitionErrorCode::DiagnosticComposerInputInvalid:
+        return "E_12E_DIAGNOSTIC_COMPOSER_INPUT_INVALID";
+    case TextureFillPartitionErrorCode::DiagnosticComposerPartitionInvalid:
+        return "E_12E_DIAGNOSTIC_COMPOSER_PARTITION_INVALID";
     case TextureFillPartitionErrorCode::SurfaceShellWidthBelowEffectiveMinimum:
         return "E_12E_SURFACE_SHELL_WIDTH_BELOW_EFFECTIVE_MINIMUM";
     case TextureFillPartitionErrorCode::AllTextureThresholdUnavailable:

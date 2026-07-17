@@ -20,6 +20,7 @@ struct NearestTriangleHit
     Vec3 closest_point_mm;
     std::array<double, 3> barycentric{0.0, 0.0, 0.0};
     double distance_mm{0.0};
+    std::uint64_t tie_candidate_count{0U};
 };
 
 /**

@@ -97,6 +97,8 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.h
     src/slicer_core/materials/texture_application/TextureFillPartitionTypes.cpp
     src/slicer_core/materials/texture_application/TextureFillPartitionTypes.h
+    src/slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.cpp
+    src/slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h
     src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.cpp
     src/slicer_core/materials/texture_application/SurfaceShellTexturePrototype.h
     src/slicer_core/materials/texture_application/SurfaceShellTextureReport.cpp
@@ -121,6 +123,8 @@ add_library(slicer_core
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/pipeline/PipelineContext.cpp
     src/slicer_core/pipeline/PipelineContext.h
+    src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.cpp
+    src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.cpp
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h
     src/slicer_core/pipeline/OpenVdbCandidatePipeline.cpp
@@ -292,6 +296,21 @@ target_compile_definitions(texture_fill_partition_report_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(texture_fill_partition_texture_transfer_unit_tests
+    tests/unit/texture_fill_partition_texture_transfer/main.cpp
+)
+
+target_link_libraries(texture_fill_partition_texture_transfer_unit_tests PRIVATE slicer_core)
+target_compile_definitions(texture_fill_partition_texture_transfer_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+add_executable(texture_fill_partition_diagnostic_composer_unit_tests
+    tests/unit/texture_fill_partition_diagnostic_composer/main.cpp
+)
+
+target_link_libraries(texture_fill_partition_diagnostic_composer_unit_tests PRIVATE slicer_core)
+
 add_executable(geometry_kernel_service_unit_tests
     tests/unit/geometry_kernel_service/main.cpp
 )
@@ -342,6 +361,8 @@ add_test(NAME legacy_cpu_global_distance_unit_tests COMMAND legacy_cpu_global_di
 add_test(NAME openvdb_texture_fill_conformance_unit_tests COMMAND openvdb_texture_fill_conformance_unit_tests)
 add_test(NAME texture_fill_partition_width_sweep_unit_tests COMMAND texture_fill_partition_width_sweep_unit_tests)
 add_test(NAME texture_fill_partition_report_unit_tests COMMAND texture_fill_partition_report_unit_tests)
+add_test(NAME texture_fill_partition_texture_transfer_unit_tests COMMAND texture_fill_partition_texture_transfer_unit_tests)
+add_test(NAME texture_fill_partition_diagnostic_composer_unit_tests COMMAND texture_fill_partition_diagnostic_composer_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)

@@ -2,6 +2,8 @@
 
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
+#include "slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -17,7 +19,9 @@ using slicer_core::GlobalTextureFillPartitionResult;
 using slicer_core::Json;
 using slicer_core::SliceConfig;
 using slicer_core::TextureFillPartitionConformanceResult;
+using slicer_core::TextureFillPartitionDiagnosticComposerResult;
 using slicer_core::TextureFillPartitionStats;
+using slicer_core::TextureFillPartitionTextureTransferResult;
 using slicer_core::TextureFillPartitionWidthSweepResult;
 using slicer_core::TextureFillPartitionWidthSweepSample;
 
@@ -94,7 +98,9 @@ Json BuildPartition(const GlobalTextureFillPartitionResult& result)
     });
 }
 
-Json BuildPerformance(const GlobalTextureFillPartitionResult& result)
+Json BuildPerformance(
+    const GlobalTextureFillPartitionResult& result,
+    const TextureFillPartitionTextureTransferResult* transfer = nullptr)
 {
     return Json::object({
         {"preflightMs", result.performance.topologyMs},
@@ -104,7 +110,10 @@ Json BuildPerformance(const GlobalTextureFillPartitionResult& result)
         {"occupancyMs", result.performance.occupancyBuildMs},
         {"distanceMs", result.performance.distanceQueryMs},
         {"partitionMs", result.performance.partitionMs},
-        {"textureTransferMs", nullptr},
+        {"textureTransferMs",
+         transfer == nullptr || !transfer->available
+             ? Json{nullptr}
+             : Json{transfer->stats.transferMs}},
         {"totalCoreMs", result.performance.totalCoreMs},
         {"gridVoxelCount", result.performance.gridVoxelCount},
         {"maskBytes", result.performance.maskBytes},
@@ -120,6 +129,112 @@ Json BuildPerformance(const GlobalTextureFillPartitionResult& result)
          NullableDouble(
              result.performance.processMemoryAvailable,
              static_cast<double>(result.performance.processPeakWorkingSetBytes))},
+    });
+}
+
+Json BuildTextureTransfer(
+    const TextureFillPartitionTextureTransferResult* transfer)
+{
+    if (transfer == nullptr)
+    {
+        return Json::object({
+            {"availability", "unavailable"},
+            {"status", "not_evaluated"},
+            {"productionAcceptance", "not_evaluated"},
+            {"textureSurfaceVoxels", 0},
+            {"sampledTextureCount", 0},
+            {"materialDiffuseCount", 0},
+            {"fallbackCount", 0},
+            {"missingUvCount", 0},
+            {"missingTextureCount", 0},
+            {"textureSampleFailureCount", 0},
+            {"uvOutOfRangeCount", 0},
+            {"outsideColoredCount", 0},
+            {"reusedReferenceCount", 0},
+            {"nearestQueryCount", 0},
+            {"maxTransferDistanceMm", nullptr},
+            {"medialAxisTieCount", 0},
+            {"loadedTextureCount", 0},
+            {"textureCacheHits", 0},
+            {"textureCacheMisses", 0},
+            {"textureCacheBytes", 0},
+            {"issues", Json::array({})},
+        });
+    }
+    return Json::object({
+        {"availability", transfer->available ? "available" : "unavailable"},
+        {"status", transfer->status},
+        {"productionAcceptance", transfer->productionAcceptance},
+        {"textureSurfaceVoxels", transfer->stats.textureSurfaceVoxels},
+        {"sampledTextureCount", transfer->stats.sampledTextureCount},
+        {"materialDiffuseCount", transfer->stats.materialDiffuseCount},
+        {"fallbackCount", transfer->stats.fallbackCount},
+        {"missingUvCount", transfer->stats.missingUvCount},
+        {"missingTextureCount", transfer->stats.missingTextureCount},
+        {"textureSampleFailureCount", transfer->stats.textureSampleFailureCount},
+        {"uvOutOfRangeCount", transfer->stats.uvOutOfRangeCount},
+        {"outsideColoredCount", transfer->stats.outsideColoredCount},
+        {"reusedReferenceCount", transfer->stats.reusedReferenceCount},
+        {"nearestQueryCount", transfer->stats.nearestQueryCount},
+        {"maxTransferDistanceMm",
+         NullableDouble(
+             transfer->stats.reusedReferenceCount > 0U,
+             transfer->stats.maxTransferDistanceMm)},
+        {"medialAxisTieCount", transfer->stats.medialAxisTieCount},
+        {"loadedTextureCount", transfer->stats.loadedTextureCount},
+        {"textureCacheHits", transfer->stats.textureCacheHits},
+        {"textureCacheMisses", transfer->stats.textureCacheMisses},
+        {"textureCacheBytes", transfer->stats.textureCacheBytes},
+        {"issues", slicer_core::ValidationIssuesToJson(transfer->issues)},
+    });
+}
+
+Json BuildDiagnosticComposer(
+    const TextureFillPartitionDiagnosticComposerResult* composer)
+{
+    if (composer == nullptr)
+    {
+        return Json::object({
+            {"availability", "unavailable"},
+            {"status", "not_evaluated"},
+            {"productionAcceptance", "not_evaluated"},
+            {"width", 0},
+            {"height", 0},
+            {"depth", 0},
+            {"layerCount", 0},
+            {"channelOrder", Json::array({"R", "G", "B", "W", "S", "V"})},
+            {"textureSurfaceVoxels", 0},
+            {"modelFillVoxels", 0},
+            {"modelFillWhiteVoxels", 0},
+            {"modelFillVarnishVoxels", 0},
+            {"modelFillRgbVoxels", 0},
+            {"supportPrintVoxels", 0},
+            {"emptyVoxels", 0},
+            {"issues", Json::array({})},
+        });
+    }
+    Json::Array channelOrder;
+    for (const std::string& channel : composer->channelOrder)
+    {
+        channelOrder.emplace_back(channel);
+    }
+    return Json::object({
+        {"availability", composer->available ? "available" : "unavailable"},
+        {"status", composer->status},
+        {"productionAcceptance", composer->productionAcceptance},
+        {"width", composer->width},
+        {"height", composer->height},
+        {"depth", composer->depth},
+        {"layerCount", static_cast<std::uint64_t>(composer->layers.size())},
+        {"channelOrder", Json{std::move(channelOrder)}},
+        {"textureSurfaceVoxels", composer->stats.textureSurfaceVoxels},
+        {"modelFillVoxels", composer->stats.modelFillVoxels},
+        {"modelFillWhiteVoxels", composer->stats.modelFillWhiteVoxels},
+        {"modelFillVarnishVoxels", composer->stats.modelFillVarnishVoxels},
+        {"modelFillRgbVoxels", composer->stats.modelFillRgbVoxels},
+        {"supportPrintVoxels", composer->stats.supportPrintVoxels},
+        {"emptyVoxels", composer->stats.emptyVoxels},
+        {"issues", slicer_core::ValidationIssuesToJson(composer->issues)},
     });
 }
 
@@ -372,17 +487,8 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
              {"medialAxisTieCount", 0},
              {"partitionPass", false},
         })},
-        {"textureTransfer", Json::object({
-             {"status", "not_evaluated"},
-             {"sampledTextureCount", 0},
-             {"fallbackCount", 0},
-             {"missingUvCount", 0},
-             {"missingTextureCount", 0},
-             {"uvOutOfRangeCount", 0},
-             {"outsideColoredCount", 0},
-             {"maxTransferDistanceMm", nullptr},
-             {"medialAxisTieCount", 0},
-         })},
+        {"textureTransfer", BuildTextureTransfer(nullptr)},
+        {"diagnosticComposer", BuildDiagnosticComposer(nullptr)},
         {"performance", Json::object({
              {"preflightMs", nullptr},
              {"topologyMs", nullptr},
@@ -445,7 +551,9 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
 Json BuildTextureFillPartitionReport(
     const SliceConfig& config,
     const GlobalTextureFillPartitionResult& result,
-    const TextureFillPartitionConformanceResult* conformance)
+    const TextureFillPartitionConformanceResult* conformance,
+    const TextureFillPartitionTextureTransferResult* transfer,
+    const TextureFillPartitionDiagnosticComposerResult* composer)
 {
     Json::Object report;
     report["schema"] = "slicesoft.texture_fill_partition.12e.1";
@@ -462,18 +570,9 @@ Json BuildTextureFillPartitionReport(
     report["grid"] = BuildGrid(result);
     report["width"] = BuildWidth(result);
     report["partition"] = BuildPartition(result);
-    report["textureTransfer"] = Json::object({
-        {"status", "not_evaluated"},
-        {"sampledTextureCount", 0},
-        {"fallbackCount", 0},
-        {"missingUvCount", 0},
-        {"missingTextureCount", 0},
-        {"uvOutOfRangeCount", 0},
-        {"outsideColoredCount", 0},
-        {"maxTransferDistanceMm", nullptr},
-        {"medialAxisTieCount", 0},
-    });
-    report["performance"] = BuildPerformance(result);
+    report["textureTransfer"] = BuildTextureTransfer(transfer);
+    report["diagnosticComposer"] = BuildDiagnosticComposer(composer);
+    report["performance"] = BuildPerformance(result, transfer);
     report["queryStats"] = BuildQueryStats(result);
     report["layers"] = result.available ? BuildLayers(result) : Json::array({});
     report["issues"] = ValidationIssuesToJson(result.issues);

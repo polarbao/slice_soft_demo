@@ -53,6 +53,14 @@ enum class TextureFillPartitionErrorCode
     WidthSweepTextureNonMonotonic,
     WidthSweepFillNonMonotonic,
     WidthSweepEndpointInvalid,
+    TextureTransferInputInvalid,
+    TextureReferenceMissing,
+    TextureTriangleOutOfRange,
+    TextureMissingUv,
+    TextureMissingResource,
+    TextureSampleFailed,
+    DiagnosticComposerInputInvalid,
+    DiagnosticComposerPartitionInvalid,
     SurfaceShellWidthBelowEffectiveMinimum,
     AllTextureThresholdUnavailable,
 };
@@ -160,6 +168,7 @@ struct TextureFillClosestSurfaceReference
     std::size_t triangleIndex{0U};
     std::array<double, 3> barycentric{0.0, 0.0, 0.0};
     double distanceMm{0.0};
+    std::uint64_t tieCandidateCount{0U};
 };
 
 /**

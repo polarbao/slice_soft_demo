@@ -150,6 +150,36 @@ double BarycentricInteriorMargin(const NearestTriangleHit& hit)
     return std::min({hit.barycentric.at(0), hit.barycentric.at(1), hit.barycentric.at(2)});
 }
 
+void AccumulateNearestHit(
+    const NearestTriangleHit& candidate,
+    const double tieEpsilonMm,
+    NearestTriangleHit& best)
+{
+    if (!candidate.found)
+    {
+        return;
+    }
+    if (!best.found)
+    {
+        best = candidate;
+        return;
+    }
+
+    const bool distanceTie = std::abs(candidate.distance_mm - best.distance_mm)
+        <= tieEpsilonMm;
+    const std::uint64_t tieCandidateCount = best.tie_candidate_count
+        + (distanceTie ? 1U : 0U);
+    if (IsBetterNearestTriangleHit(candidate, best, tieEpsilonMm))
+    {
+        best = candidate;
+        best.tie_candidate_count = distanceTie ? tieCandidateCount : 0U;
+    }
+    else if (distanceTie)
+    {
+        best.tie_candidate_count = tieCandidateCount;
+    }
+}
+
 }  // namespace
 
 struct NearestTriangleQuery::Impl
@@ -280,10 +310,7 @@ struct NearestTriangleQuery::Impl
                     ++stats->tested_triangles;
                 }
                 const NearestTriangleHit hit = QueryTriangle(mesh, triangle_indices.at(node.begin + offset), point);
-                if (IsBetterNearestTriangleHit(hit, best, options.tie_epsilon_mm))
-                {
-                    best = hit;
-                }
+                AccumulateNearestHit(hit, options.tie_epsilon_mm, best);
             }
             return;
         }
@@ -363,10 +390,7 @@ NearestTriangleHit FindNearestTriangleBruteForce(const TriangleMeshData& mesh, c
     for (std::size_t index{0}; index < mesh.triangles.size(); ++index)
     {
         const NearestTriangleHit hit = QueryTriangle(mesh, index, pointMm);
-        if (IsBetterNearestTriangleHit(hit, best, 1.0e-7))
-        {
-            best = hit;
-        }
+        AccumulateNearestHit(hit, 1.0e-7, best);
     }
     return best;
 }

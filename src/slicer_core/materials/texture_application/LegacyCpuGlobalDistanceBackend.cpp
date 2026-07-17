@@ -384,6 +384,7 @@ GlobalTextureFillPartitionCandidate LegacyCpuGlobalDistanceBackend::Evaluate(
                     reference.triangleIndex = hit.triangle_index;
                     reference.barycentric = hit.barycentric;
                     reference.distanceMm = hit.distance_mm;
+                    reference.tieCandidateCount = hit.tie_candidate_count;
                     candidate.widthMetrics.maxInteriorDistanceMm = std::max(
                         candidate.widthMetrics.maxInteriorDistanceMm,
                         hit.distance_mm);
