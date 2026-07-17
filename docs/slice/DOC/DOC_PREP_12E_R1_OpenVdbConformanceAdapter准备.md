@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R1 OpenVDB Conformance Adapter 准备
 
-> 文档状态：PREPARED / 12E-04 READY FOR USER ADMISSION
+> 文档状态：IMPLEMENTED / 12E-04 COMPLETE
 > 日期：2026-07-17
 > 前置任务：12E-01、12E-02、12E-03 COMPLETE
 > 覆盖任务：12E-04 OpenVDB Conformance Adapter
@@ -241,8 +241,24 @@ git diff --check
 12E-01：COMPLETE；
 12E-02：COMPLETE；
 12E-03：COMPLETE；
-12E-04：PREPARED / READY FOR USER ADMISSION；
+12E-04：COMPLETE；
 12E production：NOT ADMITTED。
 ```
 
-12E-04 完成后才可准备 12E-05 Width Sweep 与 Report Schema。准备完成不自动启动 12E-04。
+12E-04 已完成，12E-05 Width Sweep 与 Report Schema 的准备入口为
+`DOC_PREP_12E_R2_WidthSweep与ReportSchema准备.md`。12E-05 不自动启动。
+
+## 13. 实际实现结果
+
+```text
+SampleOpenVdbSignedDistanceWorld：同 request grid cell center 的 world-space SDF sample；
+OpenVdbTextureFillConformanceBackend：OFF unavailable / ON conformance candidate；
+parity interior test：嵌套闭合表面和 closed cavity 语义；
+NearestTriangleQuery：完整 exact distance 与 closest surface reference；
+TextureFillPartitionConformanceResult：mask、distance、threshold、runtime、memory 差异；
+openvdb_texture_fill_conformance_unit_tests：8 个 OFF/ON 用例。
+```
+
+一次 generated closed-box Debug ON 观测中，CPU `totalCoreMs=5.6286`，OpenVDB
+`totalCoreMs=247.445`，OpenVDB grid `2492360` bytes。该单次 Debug 数据只证明字段与
+对照链路实际工作，不是 Release 性能结论，也不构成 OpenVDB production admission。

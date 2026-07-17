@@ -129,7 +129,7 @@ Current Stage 12 track:
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
-12E: R0 startup preparation complete; 12E-01 Config/DTO contract prepared but not active.
+12E: 12E-01/02/03/04 complete; 12E-05 Width Sweep and Report Schema prepared but not active.
 ```
 
 R0/R1/R2 principles still apply to refactors:

@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-03 COMPLETE / 12E-04 READY FOR USER ADMISSION
+> 文档状态：12E-04 COMPLETE / 12E-05 READY FOR USER ADMISSION
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-03 已完成，12E-04 等待用户明确启动
+> 当前项目原子任务：无；12E-04 已完成，12E-05 等待用户明确启动
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -189,13 +189,13 @@ docs/slice/DOC/DOC_PREP_12E_R1_LegacyCpuGlobalDistanceCandidate准备.md
 
 ## 7. 12E-04 OpenVDB Conformance Adapter
 
-状态：PREPARED / READY FOR USER ADMISSION
+状态：COMPLETE（2026-07-17）
 
 目标：
 
 ```text
-复用 OpenVdbSurfaceShell/SurfaceTextureTransfer 生成同一 DTO 的 candidate 结果；
-与 CPU candidate 比较 partition、distance、threshold、transfer stats；
+复用 OpenVDB level set 与 world-space sample 生成同一 DTO 的 candidate 结果；
+与 CPU candidate 比较 partition、distance、threshold、runtime 和 memory；
 OFF 返回 unavailable，不阻断默认 build。
 ```
 
@@ -210,6 +210,21 @@ OFF 返回 unavailable，不阻断默认 build。
 
 验证：OFF/ON 独立 build lane 和 conformance report。
 
+实际结果：
+
+```text
+新增 backend-neutral world-space SDF sample，不暴露 OpenVDB 类型；
+新增 OpenVdbTextureFillConformanceBackend，OFF 返回稳定 unavailable，ON 输出同 request grid candidate；
+OpenVDB 负责 level set 与 signed occupancy，NearestTriangleQuery 提供完整同口径距离和 closest reference；
+对嵌套闭合表面使用 parity interior test，使 closed cavity 保持 outside model；
+新增 CPU/OpenVDB conformance DTO，记录 model/texture/fill 差异、距离差异、阈值和性能比；
+严格 topology blocker 在 level-set 构建前执行；
+新增 8 个 OFF/ON conformance 用例，box/sloped/thin-wall/cavity/topology/threshold/repeat 通过；
+默认 OFF 与 OpenVDB ON 全量 Debug build 均通过，全量 CTest 均为 12/12 PASS，Qt UI self-test PASS；
+quick CI 在既有 OBJ/MTL 输出目录名不一致处返回 E_PACKAGE_NOT_FOUND，不记录为 PASS；
+结果保持 diagnostic/not_evaluated；纹理 transfer 统计不在本任务伪造，继续由 12E-06 负责。
+```
+
 准备入口：
 
 ```text
@@ -218,7 +233,7 @@ docs/slice/DOC/DOC_PREP_12E_R1_OpenVdbConformanceAdapter准备.md
 
 ## 8. 12E-05 Width Sweep 与 Report Schema
 
-状态：TODO
+状态：PREPARED / READY FOR USER ADMISSION
 
 目标：
 
@@ -230,6 +245,12 @@ docs/slice/DOC/DOC_PREP_12E_R1_OpenVdbConformanceAdapter准备.md
 ```
 
 完成标准：min/intermediate/max golden 全部通过，全纹理终点 fill=0。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R2_WidthSweep与ReportSchema准备.md
+```
 
 ## 9. 12E-06 Texture Transfer 与 Diagnostic Composer
 

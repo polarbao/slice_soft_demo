@@ -21,9 +21,9 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-10 real-model material closure validation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-R0` startup preparation is complete. `12E-01 Config/DTO contract` is `PREPARED / READY FOR USER ADMISSION`, but no 12E code task is active.
+- `12E-01/02/03/04` are complete. The next prepared task is `12E-05 Width Sweep and Report Schema`.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- 12E remains prepared but inactive; it must start from the explicitly admitted `12E-01` task.
+- 12E remains diagnostic-only; `12E-05` requires explicit user admission and production output is not admitted.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules

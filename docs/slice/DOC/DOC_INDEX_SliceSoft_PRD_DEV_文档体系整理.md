@@ -3,9 +3,9 @@
 > 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-16
+> 更新日期：2026-07-17
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D 已完成；12E-R0 准备完成、实现未开始；12F-00/01 已完成、性能算法任务未开始
+> 当前阶段判断：12C 与 12D 已完成；12E-01/02/03/04 已完成、12E-05 已准备；12F-00/01 已完成、性能算法任务未开始
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -35,10 +35,10 @@
 
 ```text
 当前分支：main，任务开始前通过 git 命令确认
-最新完成阶段：12D 横截面材料闭环
+最新完成阶段：12E-04 OpenVDB Conformance Adapter
 当前执行阶段：无 active code task
-最新完成任务：12D-10 三真实 OBJ 材料闭环验收
-准备任务：12E-04 与 12F-02 均等待用户明确启动
+最新完成任务：12E-04 OpenVDB OFF/ON 同 grid conformance
+准备任务：12E-05 与 12F-02 均等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -324,7 +324,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
 12D：R0/R1/R2/R3 已完成，12D-10 三个真实 OBJ 验收通过；
-12E：12E-01/02/03 已完成；Legacy CPU 全三维 diagnostic candidate 可用；12E-04 OpenVDB conformance adapter READY FOR USER ADMISSION；
+12E：12E-01/02/03/04 已完成；CPU/OpenVDB OFF/ON conformance 可复现；12E-05 Width Sweep 与 Report Schema READY FOR USER ADMISSION；
 12F：Release/Debug 统一运行环境与专项文档已建立；12F-02 Release 性能基线刷新等待用户明确启动。
 ```
 
@@ -384,4 +384,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-R0 启动准备已完成；12F-00/01 已完成。当前没有 active code task，12E-01 或 12F-02 均需用户明确启动。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01/02/03/04 已完成；12F-00/01 已完成。当前没有 active code task，12E-05 或 12F-02 均需用户明确启动。
