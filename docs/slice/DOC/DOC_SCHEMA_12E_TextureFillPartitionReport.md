@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Texture Fill Partition Report
 
-> 文档状态：TEXTURE TRANSFER + DIAGNOSTIC COMPOSER IMPLEMENTED
+> 文档状态：12D CLOSURE LINKAGE IMPLEMENTED / PRODUCTION NOT ADMITTED
 > Schema：`slicesoft.texture_fill_partition.12e.1`
 > 日期：2026-07-16
 
@@ -34,6 +34,7 @@ reports/texture_fill_partition_report.json
   "partition": {},
   "textureTransfer": {},
   "diagnosticComposer": {},
+  "closureLinkage": {},
   "performance": {},
   "queryStats": {},
   "layers": [],
@@ -188,6 +189,42 @@ partition 已保存的 closest reference；`outsideColoredCount` 必须为 0。
 
 该对象只描述内存诊断合成。`supportPrintVoxels` 必须为 0；它不代表生产 package 已生成。
 
+## 7.2 Closure Linkage 对象
+
+```json
+{
+  "availability": "available",
+  "status": "diagnostic",
+  "scope": "texture_model_fill_only",
+  "source": "semantic_masks",
+  "confidence": "exact",
+  "productionAcceptance": "not_evaluated",
+  "allTexture": false,
+  "colorFillApplicability": "applicable",
+  "allTextureReason": null,
+  "colorFillGapVoxels": 0,
+  "modelDomainGapVoxels": 0,
+  "supportClosureStatus": "not_evaluated",
+  "varnishClosureStatus": "not_evaluated",
+  "repairAttempted": false,
+  "productionOutputWritten": false,
+  "layerCount": 1,
+  "layers": [],
+  "issues": []
+}
+```
+
+普通模式 `colorFillApplicability=applicable` 且 gap 必须为 0。allTexture 模式使用：
+
+```text
+colorFillApplicability=not_applicable；
+allTextureReason=all_texture_partition；
+modelDomainGapVoxels=0。
+```
+
+`supportClosureStatus` 和 `varnishClosureStatus` 在 12E-07 必须为 `not_evaluated`，不得用
+同尺寸零 mask 伪造完整 production closure PASS。
+
 ## 8. Performance 对象
 
 ```json
@@ -264,6 +301,17 @@ E_12E_TEXTURE_MISSING_RESOURCE
 E_12E_TEXTURE_SAMPLE_FAILED
 E_12E_DIAGNOSTIC_COMPOSER_INPUT_INVALID
 E_12E_DIAGNOSTIC_COMPOSER_PARTITION_INVALID
+```
+
+12E-07 新增：
+
+```text
+E_12E_CLOSURE_ADAPTER_INPUT_INVALID
+E_12E_CLOSURE_LAYER_ORDER_INVALID
+E_12E_CLOSURE_MASK_INVALID
+E_12E_CLOSURE_MODEL_DOMAIN_GAP
+E_12E_CLOSURE_COLOR_FILL_GAP
+E_12E_CLOSURE_CHANNEL_ORDER_INVALID
 ```
 
 ## 10. Config Snapshot

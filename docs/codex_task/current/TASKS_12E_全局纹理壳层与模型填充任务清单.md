@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-06 COMPLETE / 12E-07 READY FOR USER ADMISSION
+> 文档状态：12E-07 COMPLETE / 12E-08 PREPARED BUT BLOCKED
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-06 已完成，12E-07 等待用户明确启动
+> 当前项目原子任务：无；12E-07 已完成，12E-08 等待生产证据和用户再次确认
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -302,7 +302,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md
 
 ## 10. 12E-07 12D Closure 联动
 
-状态：PREPARED / READY FOR USER ADMISSION
+状态：COMPLETE（2026-07-17）
 
 前置：12D semantic_masks exact contract 已可用。
 
@@ -317,6 +317,18 @@ repair disabled 不改 TIFF。
 
 禁止：不提前实现或修改 12D repair 规则。
 
+实际结果：
+
+```text
+新增 TextureFillPartitionClosureAdapter；
+12E exact texture/fill masks 直接映射到 12D MaterialClosureSemanticLayerInput；
+普通模式 ColorFillGap=0；allTexture 输出 not_applicable(reason=all_texture_partition)；
+support/varnish 明确保持 not_evaluated，不以零 mask 伪造完整 closure PASS；
+报告新增 closureLinkage、真实 layerIndex/zMm、model-domain gap 和稳定错误码；
+repairAttempted=false、productionOutputWritten=false；
+adapter 10/10、report 6/6 用例通过；Repair Disabled TIFF SHA-256 invariant PASS。
+```
+
 准备入口：
 
 ```text
@@ -325,7 +337,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：TODO / REQUIRES CONFIRMATION
+状态：PREPARED / BLOCKED BY PRODUCTION EVIDENCE / REQUIRES CONFIRMATION
 
 前置：
 
@@ -345,6 +357,15 @@ RIP strict PASS。
 ```
 
 本任务属于 production-path change，执行前必须再次给方案并等待确认。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
+```
+
+当前阻断：classification-to-raster mapping、完整 support/varnish closure、默认 OFF Release
+真实模型预算和 legacy regression 证据均未关闭。
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 

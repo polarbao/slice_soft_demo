@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R3 12D Closure 联动准备
 
-> 文档状态：PREPARED / 12E-07 READY FOR USER ADMISSION
+> 文档状态：IMPLEMENTED / 12E-07 COMPLETE
 > 日期：2026-07-17
 > 前置任务：12E-01 至 12E-06 COMPLETE
 > 覆盖任务：12E-07 12D Closure 联动
@@ -251,9 +251,36 @@ git diff --check
 
 ```text
 12E-06：COMPLETE；
-12E-07：PREPARED / READY FOR USER ADMISSION；
-12E-08：REQUIRES EXPLICIT PRODUCTION CONFIRMATION；
+12E-07：COMPLETE；
+12E-08：PREPARED / BLOCKED BY PRODUCTION EVIDENCE；
 12E production：NOT ADMITTED。
 ```
 
-准备完成不自动执行 12E-07。
+12E-07 完成不自动执行 12E-08。
+
+## 14. 实际实现与验证
+
+实现：
+
+```text
+TextureFillPartitionClosureAdapter 与六个稳定错误码；
+partition/composer grid、二值 mask、真实 layerIndex/zMm 和 RGBWSV 顺序守门；
+12E exact masks 到 MaterialClosureSemanticLayerInput 的只读映射；
+model-domain empty 与 12D ColorFillGap 统计；
+allTexture not_applicable(reason=all_texture_partition)；
+closureLinkage report、per-layer evidence 和 golden；
+support/varnish 保持 not_evaluated；repair 和 production output 保持 false。
+```
+
+实际验证：
+
+```text
+adapter 单测：10/10 PASS；
+report 单测：6/6 PASS；
+默认 OFF 定向 CTest：3/3 PASS；
+OpenVDB ON 定向 CTest：3/3 PASS；
+12D Repair Disabled：RIP strict PASS、30 层 TIFF SHA-256 invariant PASS；
+默认 OFF 全量 build：PASS；全量 CTest：17/17 PASS。
+```
+
+12E-08 准备入口为 `DOC_PREP_12E_R4_ProductionAdmission准备.md`。

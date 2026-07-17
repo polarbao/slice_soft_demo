@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：12E-06 COMPLETE / 12E-07 PREPARED
+> 文档状态：12E-07 COMPLETE / 12E-08 PREPARED BUT BLOCKED
 > 日期：2026-07-17
 
 ## 1. 使用方式
@@ -91,9 +91,9 @@ CPU 与 OpenVDB 比较 occupancy、partition count、threshold、distance error�
 
 | Case | 断言 |
 |---|---|
-| normal width | 12D 读取 exact texture/fill mask；ColorFillGap=0 |
-| all texture | fill=0 合法；ColorFillGap=0 或明确 not_applicable |
-| repair disabled | TIFF SHA-256 不因诊断改变 |
+| normal width | 12E-07 PASS：12D 读取 exact texture/fill mask；ColorFillGap=0 |
+| all texture | 12E-07 PASS：fill=0；not_applicable(reason=all_texture_partition) |
+| repair disabled | 12E-07 PASS：RIP strict；30 层 TIFF SHA-256 invariant |
 | support/varnish boundary | 12E-07 diagnostic scope 标记 not_evaluated，不以零 mask 伪造 PASS |
 
 12E 不修改 12D repair 规则，12D-R3 是否完成不阻塞 12E R0/R1 原型，但 production admission 必须重新评估闭环证据。
@@ -146,6 +146,6 @@ OpenVDB OFF build PASS；
 | 12E-04 -> 05 | COMPLETE：OFF/ON conformance、cavity parity、差异 DTO 可复现 |
 | 12E-05 -> 06 | COMPLETE：schema、monotonic sweep、endpoint 与 golden 已冻结 |
 | 12E-06 -> 07 | COMPLETE：exact masks/texture transfer/diagnostic composer 与 report golden 完成 |
-| 12E-07 -> 08 | 12D closure 联动通过 |
-| 12E-08 | 必须用户再次确认 production path |
+| 12E-07 -> 08 | COMPLETE：texture_model_fill_only exact closure 联动通过 |
+| 12E-08 | PREPARED/BLOCKED：需 raster mapping、full closure、Release/回归证据和用户再次确认 |
 | 12E-09/10 | UI、真实模型、RIP 和报告收口 |
