@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Texture Fill Partition Report
 
-> 文档状态：SKELETON + CPU/OPENVDB CONFORMANCE DTO IMPLEMENTED / SUCCESS SERIALIZATION PENDING
+> 文档状态：SUCCESS SERIALIZATION + WIDTH SWEEP IMPLEMENTED / TEXTURE TRANSFER PENDING
 > Schema：`slicesoft.texture_fill_partition.12e.1`
 > 日期：2026-07-16
 
@@ -29,10 +29,12 @@ reports/texture_fill_partition_report.json
   "surfaceScope": "all_closed_surfaces",
   "backend": "none",
   "backendRole": "unavailable",
+  "grid": {},
   "width": {},
   "partition": {},
   "textureTransfer": {},
   "performance": {},
+  "queryStats": {},
   "layers": [],
   "issues": [],
   "configSnapshot": {}
@@ -86,11 +88,11 @@ productionAcceptance=passed 只能由后续显式 production admission 任务产
   "modelFillVoxels": 0,
   "overlapTextureFillVoxels": 0,
   "unassignedModelVoxels": 0,
-  "modelPixels": 0,
-  "textureSurfacePixels": 0,
-  "modelFillPixels": 0,
-  "overlapTextureFillPixels": 0,
-  "unassignedModelPixels": 0,
+  "modelPixels": null,
+  "textureSurfacePixels": null,
+  "modelFillPixels": null,
+  "overlapTextureFillPixels": null,
+  "unassignedModelPixels": null,
   "textureCoverageRatio": 0.0,
   "modelFillCoverageRatio": 0.0,
   "thinRegionMergedVoxels": 0,
@@ -115,21 +117,24 @@ textureSurface + modelFill = model。
 {
   "layerIndex": 0,
   "zMm": 0.005,
-  "modelPixels": 0,
-  "textureSurfacePixels": 0,
-  "modelFillPixels": 0,
-  "overlapTextureFillPixels": 0,
-  "unassignedModelPixels": 0,
+  "modelVoxels": 0,
+  "textureSurfaceVoxels": 0,
+  "modelFillVoxels": 0,
+  "overlapTextureFillVoxels": 0,
+  "unassignedModelVoxels": 0,
   "partitionPass": false
 }
 ```
 
-`layers` 必须按真实 `layerIndex` 升序排列，不使用 preview 序号代替层号。
+`layers` 必须按真实 `layerIndex` 升序排列，不使用 preview 序号代替层号。12E-05
+仍工作在三维分类 grid，因此字段使用 `Voxels`；尚未进入最终生产 raster 时，`Pixels`
+字段必须为 `null`，不能用 0 冒充实际测量。
 
 ## 7. Texture Transfer 对象
 
 ```json
 {
+  "status": "not_evaluated",
   "sampledTextureCount": 0,
   "fallbackCount": 0,
   "missingUvCount": 0,
@@ -147,17 +152,42 @@ textureSurface + modelFill = model。
 
 ```json
 {
-  "preflightMs": null,
-  "occupancyMs": null,
-  "distanceMs": null,
-  "partitionMs": null,
+  "preflightMs": 1.0,
+  "topologyMs": 1.0,
+  "levelSetMs": 2.0,
+  "gridSampleMs": 3.0,
+  "occupancyMs": 5.0,
+  "distanceMs": 7.0,
+  "partitionMs": 11.0,
   "textureTransferMs": null,
-  "totalCoreMs": null,
-  "peakMemoryBytes": null
+  "totalCoreMs": 24.0,
+  "gridVoxelCount": 4,
+  "maskBytes": 12,
+  "closestReferenceBytes": 96,
+  "occupancyQueryBytes": 0,
+  "nearestQueryBytes": 0,
+  "openVdbGridBytes": 128,
+  "workingSetBytes": null,
+  "peakWorkingSetBytes": null
 }
 ```
 
 性能只统计 12E 核心步骤，不把 TIFF/PNG/JSON 写盘时间混入核心分类耗时。
+
+## 8.1 Width Sweep 摘要
+
+`BuildTextureFillPartitionWidthSweepSummary` 输出后端无关的诊断对象，至少包含：
+
+```text
+backend/backendRole/availability/status/productionAcceptance；
+minimumWidthMm/maximumWidthMm/widthStepMm；
+sampleCount/monotonic/endpoint；
+totalCandidateCoreMs；
+samples[] 中 requested/effective/allTexture/partition counts/core timing；
+issues。
+```
+
+它是本 Schema 的诊断组成对象，不创建第二个生产协议，也不写入 manifest。
 
 ## 9. Issues
 
@@ -171,6 +201,17 @@ textureSurface + modelFill = model。
 ```
 
 首版稳定错误码见 `DOC_PREP_12E_R0_ConfigDTO契约准备.md`。`message` 可演进，`code` 是测试和兼容判断的稳定依据。
+
+12E-05 新增：
+
+```text
+E_12E_WIDTH_SWEEP_EMPTY
+E_12E_WIDTH_SWEEP_SAMPLE_FAILED
+E_12E_WIDTH_SWEEP_MODEL_CHANGED
+E_12E_WIDTH_SWEEP_TEXTURE_NON_MONOTONIC
+E_12E_WIDTH_SWEEP_FILL_NON_MONOTONIC
+E_12E_WIDTH_SWEEP_ENDPOINT_INVALID
+```
 
 ## 10. Config Snapshot
 

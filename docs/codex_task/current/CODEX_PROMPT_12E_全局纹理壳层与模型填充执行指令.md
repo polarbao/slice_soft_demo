@@ -1,8 +1,8 @@
 # CODEX_PROMPT_12E 全局纹理壳层与模型填充执行指令
 
-> 文档状态：12E-04 COMPLETE / 12E-05 READY FOR USER ADMISSION
+> 文档状态：12E-05 COMPLETE / 12E-06 READY FOR USER ADMISSION
 > 日期：2026-07-17
-> 当前不得自动执行；下一候选任务为 12E-05，仍须用户明确指定
+> 当前不得自动执行；下一候选任务为 12E-06，仍须用户明确指定
 
 ## 1. 角色
 
@@ -27,6 +27,7 @@ docs/slice/DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md
 docs/slice/DOC/DOC_PREP_12E_R1_LegacyCpuGlobalDistanceCandidate准备.md
 docs/slice/DOC/DOC_PREP_12E_R1_OpenVdbConformanceAdapter准备.md
 docs/slice/DOC/DOC_PREP_12E_R2_WidthSweep与ReportSchema准备.md
+docs/slice/DOC/DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md
 docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
 docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md
 docs/slice/REPORT/REPORT_12E_启动准备状态.md
@@ -47,7 +48,7 @@ git status --short
 ## 4. 执行边界
 
 ```text
-只执行用户明确指定的一个 Task 12E-XX；12E-04 已完成，不得自动启动 12E-05；
+只执行用户明确指定的一个 Task 12E-XX；12E-05 已完成，不得自动启动 12E-06；
 不要自动执行下一任务；
 不要修改 12D-R3 的 repair/UI/真实模型范围；
 不要把 OpenVDB 设为默认或强制依赖；
@@ -67,7 +68,7 @@ TextureSurfaceMask ∪ ModelFillMask = ModelMask；
 width 增大时 texture 单调增加、fill 单调减少；
 baseMinimumWidthMm = 0.10；
 effectiveMinimumWidthMm = max(0.10, 2 * 最粗分类分辨率)；
-allTextureThresholdMm = max(effectiveMinimumWidthMm, 模型最大内部距离按 0.01 mm 向上取整)；
+allTextureThresholdMm = max(effectiveMinimumWidthMm, 模型最大内部距离) 整体按 0.01 mm 向上取整；
 allTexture 时 texture=model、fill=0、unassigned=0；
 TextureSurface 可叠加 W/V，但不能同时计为 ModelFill；
 Model > OuterVarnishShell > Support > Empty。

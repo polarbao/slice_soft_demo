@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R2 Width Sweep 与 Report Schema 准备
 
-> 文档状态：PREPARED / 12E-05 READY FOR USER ADMISSION
+> 文档状态：IMPLEMENTED / 12E-05 COMPLETE
 > 日期：2026-07-17
 > 前置任务：12E-01、12E-02、12E-03、12E-04 COMPLETE
 > 覆盖任务：12E-05 Width Sweep 与 Report Schema
@@ -8,7 +8,7 @@
 ## 1. 准备结论
 
 12E-04 已提供默认 OFF 的稳定 unavailable 行为、OpenVDB ON 同 request grid candidate、
-CPU/OpenVDB 差异 DTO、严格拓扑门禁和 OFF/ON conformance fixture。12E-05 可以冻结
+CPU/OpenVDB 差异 DTO、严格拓扑门禁和 OFF/ON conformance fixture。12E-05 已冻结
 `slicesoft.texture_fill_partition.12e.1` 的成功结果序列化，并建立宽度扫描与单调性验证。
 
 12E-05 仍为 diagnostic-only。它只能生成内存 JSON 或测试目录中的诊断报告，不得把报告
@@ -290,9 +290,12 @@ git diff --check
 12E-02：COMPLETE；
 12E-03：COMPLETE；
 12E-04：COMPLETE；
-12E-05：PREPARED / READY FOR USER ADMISSION；
+12E-05：COMPLETE；
+12E-06：PREPARED / READY FOR USER ADMISSION；
 12E production：NOT ADMITTED。
 ```
 
-12E-05 完成后才能准备 12E-06 Texture Transfer 与 Diagnostic Composer。准备完成不自动
-启动 12E-05，也不代表 OpenVDB 获得 production role。
+12E-05 的默认 OFF 和 OpenVDB ON targeted CTest 均通过，默认 OFF 全量 CTest 为 14/14 PASS。
+12E-06 Texture Transfer 与 Diagnostic Composer 已在
+`DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md` 中完成准入准备；准备完成不自动
+启动 12E-06，也不代表 OpenVDB 获得 production role。

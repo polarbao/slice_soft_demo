@@ -21,9 +21,9 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-10 real-model material closure validation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04` are complete. The next prepared task is `12E-05 Width Sweep and Report Schema`.
+- `12E-01/02/03/04/05` are complete. The next prepared task is `12E-06 Texture Transfer and Diagnostic Composer`.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- 12E remains diagnostic-only; `12E-05` requires explicit user admission and production output is not admitted.
+- 12E remains diagnostic-only; `12E-06` requires explicit user admission and production output is not admitted.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules

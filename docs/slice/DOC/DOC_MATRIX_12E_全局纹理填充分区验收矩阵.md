@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：12E-04 COMPLETE / 12E-05 PREPARED
+> 文档状态：12E-05 COMPLETE / 12E-06 PREPARED
 > 日期：2026-07-17
 
 ## 1. 使用方式
@@ -69,6 +69,9 @@ w4: texture=model, fill=0, allTexture=true。
 | `USE_OPENVDB=OFF` | 默认 CPU candidate | 可独立 build/test；不依赖 OpenVDB |
 | `USE_OPENVDB=ON` | conformance candidate | 12E-04 PASS：同 request grid、8 个 fixture、差异 DTO；不自动 production admitted |
 | backend unavailable | safety | stable error/report；不 fallback |
+
+12E-05 已补充代表性宽度扫描和可选 full-step scan；默认 OFF 与 OpenVDB ON targeted CTest
+均通过，成功报告只序列化 validated diagnostic result。
 
 CPU 与 OpenVDB 比较 occupancy、partition count、threshold、distance error、runtime 和 peak memory，不要求位级一致。
 
@@ -139,7 +142,7 @@ OpenVDB OFF build PASS；
 | 12E-02 -> 03 | COMPLETE：backend-neutral invariants 骨架完成 |
 | 12E-03 -> 04 | COMPLETE：CPU generated fixture 正确性与 Debug 基线完成 |
 | 12E-04 -> 05 | COMPLETE：OFF/ON conformance、cavity parity、差异 DTO 可复现 |
-| 12E-05 -> 06 | schema 与 monotonic sweep 冻结 |
+| 12E-05 -> 06 | COMPLETE：schema、monotonic sweep、endpoint 与 golden 已冻结 |
 | 12E-06 -> 07 | exact masks/texture transfer diagnostic 完成 |
 | 12E-07 -> 08 | 12D closure 联动通过 |
 | 12E-08 | 必须用户再次确认 production path |

@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-04 complete; Stage 12E-05 prepared but inactive
-- Latest completed phase: Stage 12E OpenVDB conformance adapter
-- Latest completed task: `12E-04 OpenVDB Conformance Adapter`
-- Current task: none active; `12E-05 Width Sweep and Report Schema` is prepared
-- Prepared stage: `12E-05 width sweep/report schema preparation` complete
+- Current phase: Stage 12E-05 complete; Stage 12E-06 prepared but inactive
+- Latest completed phase: Stage 12E width sweep and report schema
+- Latest completed task: `12E-05 Width Sweep and Report Schema`
+- Current task: none active; `12E-06 Texture Transfer and Diagnostic Composer` is prepared
+- Prepared stage: `12E-06 texture transfer/diagnostic composer preparation` complete
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

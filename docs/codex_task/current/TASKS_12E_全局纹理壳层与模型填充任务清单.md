@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-04 COMPLETE / 12E-05 READY FOR USER ADMISSION
+> 文档状态：12E-05 COMPLETE / 12E-06 READY FOR USER ADMISSION
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-04 已完成，12E-05 等待用户明确启动
+> 当前项目原子任务：无；12E-05 已完成，12E-06 等待用户明确启动
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -233,7 +233,7 @@ docs/slice/DOC/DOC_PREP_12E_R1_OpenVdbConformanceAdapter准备.md
 
 ## 8. 12E-05 Width Sweep 与 Report Schema
 
-状态：PREPARED / READY FOR USER ADMISSION
+状态：COMPLETE（2026-07-17）
 
 目标：
 
@@ -246,6 +246,21 @@ docs/slice/DOC/DOC_PREP_12E_R1_OpenVdbConformanceAdapter准备.md
 
 完成标准：min/intermediate/max golden 全部通过，全纹理终点 fill=0。
 
+实际结果：
+
+```text
+新增 TextureFillPartitionWidthSweepOptions/Sample/Result 与 EvaluateWidthSweep；
+默认代表点为 minimum/25%/50%/75%/allTexture threshold，按 0.01 mm 量化并去重；
+显式 full-step scan 受 maxSamples 守门，不运行伪完整 partial sweep；
+新增 model 不变、texture 非递减、fill 非递增、partition 和 endpoint validator；
+新增 6 个稳定 width-sweep 错误码；
+BuildTextureFillPartitionReport 输出成功 grid/width/partition/per-layer/performance/query/conformance；
+BuildTextureFillPartitionWidthSweepSummary 输出后端无关诊断摘要；
+新增两个 golden 与 13 个 width sweep、4 个 report cases；
+默认 OFF 与 OpenVDB ON 定向 CTest 均 3/3 PASS；默认全量 CTest 14/14 PASS；
+结果保持 diagnostic/not_evaluated，未写生产 TIFF/manifest。
+```
+
 准备入口：
 
 ```text
@@ -254,7 +269,7 @@ docs/slice/DOC/DOC_PREP_12E_R2_WidthSweep与ReportSchema准备.md
 
 ## 9. 12E-06 Texture Transfer 与 Diagnostic Composer
 
-状态：TODO
+状态：PREPARED / READY FOR USER ADMISSION
 
 目标：
 
@@ -265,6 +280,12 @@ docs/slice/DOC/DOC_PREP_12E_R2_WidthSweep与ReportSchema准备.md
 ```
 
 验证：OBJ/3MF/missing texture/missing UV/tie fixtures；outsideColored=0。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md
+```
 
 ## 10. 12E-07 12D Closure 联动
 
