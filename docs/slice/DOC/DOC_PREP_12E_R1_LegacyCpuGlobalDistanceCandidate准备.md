@@ -1,17 +1,17 @@
 # DOC_PREP_12E-R1 Legacy CPU 全局三维距离候选准备
 
-> 文档状态：PREPARED / 12E-03 READY FOR USER ADMISSION
+> 文档状态：IMPLEMENTED / 12E-03 COMPLETE
 > 日期：2026-07-17
 > 前置任务：12E-01、12E-02 COMPLETE
 > 覆盖任务：12E-03 Legacy CPU 3D Distance Candidate
 
 ## 1. 准备结论
 
-12E-02 已建立 backend-neutral request/candidate/result、可注入 backend service、3D mask 结构和统一 partition invariant validator。12E-03 可以在用户明确指定后实现默认 OpenVDB OFF 可运行的 CPU whole-model candidate。
+12E-02 已建立 backend-neutral request/candidate/result、可注入 backend service、3D mask 结构和统一 partition invariant validator。12E-03 已按本文边界实现默认 OpenVDB OFF 可运行的 CPU whole-model diagnostic candidate。
 
-12E-03 只产生 diagnostic partition result、距离与性能证据，不接入 composer、TIFF writer、Qt UI 或 production Profile。完成本任务也不代表 production admission。
+12E-03 只产生 diagnostic partition result、距离与性能证据，未接入 composer、TIFF writer、Qt UI 或 production Profile。完成本任务不代表 production admission。
 
-## 2. 当前代码事实
+## 2. 实施前代码事实
 
 可复用能力：
 
@@ -24,7 +24,7 @@ ProcessMemoryStats：Windows working set / peak working set；
 GlobalTextureFillPartitionService：统一校验 3D mask XOR/union/outside/overlap/unassigned。
 ```
 
-当前缺口：
+实施前缺口（本任务现已关闭）：
 
 ```text
 没有 backend-neutral PointInClosedMeshQuery；
@@ -269,4 +269,16 @@ core timing/peak memory 有实际值；
 没有 production package 写入。
 ```
 
-之后才可准备/执行 12E-04 OpenVDB Conformance Adapter。12E-03 完成不自动启动 12E-04，也不解除当前 production admission 门禁。
+上述条件已由 generated fixture、稳定 blocker、动态宽度字段和 core telemetry 单测覆盖。12E-04 OpenVDB Conformance Adapter 已完成准备，但 12E-03 完成不自动启动 12E-04，也不解除当前 production admission 门禁。
+
+## 14. 实际实现摘要
+
+```text
+PointInClosedMeshQuery：AABB BVH + 五组确定性射线 + brute-force oracle；
+LegacyCpuGlobalDistanceBackend：strict topology、whole-grid occupancy、nearest distance、exact complement；
+width metrics：effective minimum、max interior distance、0.01 mm all-texture threshold；
+closest reference：triangleIndex、barycentric、distance；
+telemetry：query counters、core timing、estimated bytes、process working set；
+generated fixtures：closed box、sloped octahedron、thin wall、closed cavity、open/non-manifold/self-intersection、width endpoints、determinism；
+输出仅为 diagnostic/not_evaluated，不接入 production writer。
+```

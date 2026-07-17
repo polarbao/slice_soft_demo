@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-02 COMPLETE / 12E-03 READY FOR USER ADMISSION
+> 文档状态：12E-03 COMPLETE / 12E-04 READY FOR USER ADMISSION
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-02 已完成，12E-03 等待用户明确启动
+> 当前项目原子任务：无；12E-03 已完成，12E-04 等待用户明确启动
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -146,7 +146,7 @@ docs/slice/DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md
 
 ## 6. 12E-03 Legacy CPU 3D Distance Candidate
 
-状态：PREPARED / READY FOR USER ADMISSION
+状态：COMPLETE（2026-07-17）
 
 目标：
 
@@ -167,6 +167,20 @@ docs/slice/DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md
 
 验证：box/sphere/thin-wall/cavity/topology unit/golden + benchmark report。
 
+实际结果：
+
+```text
+新增 PointInClosedMeshQuery AABB BVH、五组确定性射线和 brute-force 测试 oracle；
+新增 LegacyCpuGlobalDistanceBackend，默认 USE_OPENVDB=OFF 可运行；
+对最终 grid 执行完整 3D occupancy、最近三角形欧氏距离和严格补集分区；
+输出 effective minimum、maxInteriorDistance、allTextureThreshold、allTexture；
+保留 triangleIndex、barycentric、distance closest-surface reference；
+记录 topology/occupancy/distance/partition/totalCore、查询量和进程 peak working set；
+strict topology 阻断 open、non-manifold、self-intersection 和不完整 intersection audit；
+generated box/sphere/sloped/thin-wall/cavity/threshold/determinism 测试通过；
+结果保持 diagnostic/not_evaluated，不写 package。
+```
+
 准备入口：
 
 ```text
@@ -175,7 +189,7 @@ docs/slice/DOC/DOC_PREP_12E_R1_LegacyCpuGlobalDistanceCandidate准备.md
 
 ## 7. 12E-04 OpenVDB Conformance Adapter
 
-状态：TODO
+状态：PREPARED / READY FOR USER ADMISSION
 
 目标：
 
@@ -195,6 +209,12 @@ OFF 返回 unavailable，不阻断默认 build。
 ```
 
 验证：OFF/ON 独立 build lane 和 conformance report。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R1_OpenVdbConformanceAdapter准备.md
+```
 
 ## 8. 12E-05 Width Sweep 与 Report Schema
 

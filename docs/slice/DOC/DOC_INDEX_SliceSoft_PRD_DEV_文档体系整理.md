@@ -38,7 +38,7 @@
 最新完成阶段：12D 横截面材料闭环
 当前执行阶段：无 active code task
 最新完成任务：12D-10 三真实 OBJ 材料闭环验收
-准备任务：12E-01 与 12F-02 均等待用户明确启动
+准备任务：12E-04 与 12F-02 均等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -324,7 +324,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
 12D：R0/R1/R2/R3 已完成，12D-10 三个真实 OBJ 验收通过；
-12E：R0 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；12E-01 READY FOR USER ADMISSION，implementation NOT STARTED；
+12E：12E-01/02/03 已完成；Legacy CPU 全三维 diagnostic candidate 可用；12E-04 OpenVDB conformance adapter READY FOR USER ADMISSION；
 12F：Release/Debug 统一运行环境与专项文档已建立；12F-02 Release 性能基线刷新等待用户明确启动。
 ```
 

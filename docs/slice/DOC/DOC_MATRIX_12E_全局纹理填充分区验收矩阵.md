@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：12E-02 COMPLETE / 12E-03 PREPARED
+> 文档状态：12E-03 COMPLETE / 12E-04 PREPARED
 > 日期：2026-07-17
 
 ## 1. 使用方式
@@ -22,20 +22,22 @@
 | backend exception | 12E-02 | stable `E_12E_PARTITION_BACKEND_FAILED`；不越过 diagnostic 边界 | 异常退出或继续写包 |
 | requested/backend grid mismatch | 12E-02 | stable mask-size error | 接受错位 mask |
 | non-binary mask | 12E-02 | stable binary error | 非 0/1 数据参与统计 |
+| missing CPU mesh / invalid grid | 12E-03 | stable CPU blocker | 异常退出或空 mask 伪 PASS |
+| width below effective minimum | 12E-03 | stable width blocker | 静默 clamp 后标记原请求成功 |
 
 ## 3. Generated Geometry
 
 | Fixture | 重点 | 必须断言 |
 |---|---|---|
-| closed box | 基本 inside/distance | union=model、overlap=0、unassigned=0 |
-| sphere/sloped body | 三维距离 | 厚度误差不依赖 layer XY 方向 |
-| thin wall | 双侧壳层相遇 | 局部 fill=0、无重叠 |
-| closed cavity | 内外闭合表面 | `all_closed_surfaces` 一致参与 |
+| closed box | 基本 inside/distance | 12E-03 PASS：union=model、overlap=0、unassigned=0 |
+| sphere/sloped body | 三维距离 | 12E-03 generated sphere 与 octahedron PASS：最近三角形欧氏距离生效 |
+| thin wall | 双侧壳层相遇 | 12E-03 PASS：fill=0、无重叠 |
+| closed cavity | 内外闭合表面 | 12E-03 PASS：中心 cavity outside、壳体 inside |
 | concave body | 凹面最近表面 | 不退化为逐层 morphology |
 | multi-surface tie | 中轴 tie | 结果确定、tie 计数可报告 |
-| open mesh | 拓扑门禁 | strict 阻断，不写包 |
-| non-manifold | 拓扑门禁 | strict 阻断，不写包 |
-| self-intersection | 拓扑门禁 | fail fast |
+| open mesh | 拓扑门禁 | 12E-03 stable strict blocker |
+| non-manifold | 拓扑门禁 | 12E-03 stable strict blocker |
+| self-intersection | 拓扑门禁 | 12E-03 stable strict blocker |
 
 ## 4. Width Sweep
 
@@ -132,8 +134,8 @@ OpenVDB OFF build PASS；
 | Gate | 状态条件 |
 |---|---|
 | 12E-01 -> 02 | Config/DTO/negative tests 完成 |
-| 12E-02 -> 03 | backend-neutral invariants 骨架完成 |
-| 12E-03 -> 04 | CPU candidate 正确性与基线完成 |
+| 12E-02 -> 03 | COMPLETE：backend-neutral invariants 骨架完成 |
+| 12E-03 -> 04 | COMPLETE：CPU generated fixture 正确性与 Debug 基线完成 |
 | 12E-04 -> 05 | OFF/ON conformance 可复现 |
 | 12E-05 -> 06 | schema 与 monotonic sweep 冻结 |
 | 12E-06 -> 07 | exact masks/texture transfer diagnostic 完成 |

@@ -3,7 +3,7 @@
 > 文档状态：Decision / Stage 12E Planning
 > 日期：2026-07-16
 > 上游阶段：12A 彩色纹理材料填充支撑光油策略、12B-R2 OpenVDB SDF Utility、12C Qt 工作台、12D 横截面材料无缝闭环
-> 实现状态：NOT STARTED；本文只冻结后续阶段边界
+> 实现状态：PARTIAL；12E-01/02/03 COMPLETE，12E-04 PREPARED
 
 ## 1. 决策结论
 
@@ -39,7 +39,7 @@ UnassignedModelVolume = Empty
 
 12E 文档可以现在建立；代码实现必须等待用户明确启动某个 12E 原子任务。
 
-## 3. Current State
+## 3. Planning Baseline（建立决策时的 Current State）
 
 当前 A 级代码事实：
 
@@ -53,7 +53,7 @@ UnassignedModelVolume = Empty
 7. Qt QuickConfigPanel 已有纹理策略和模型填充材料控件，但没有全局纹理宽度及动态全纹理上限控件。
 ```
 
-因此，12E 是目标态设计，不是对当前实现的完成声明。
+上述内容是 2026-07-16 建立决策时的基线。当前已完成 Config/DTO、分区 service 和 Legacy CPU diagnostic candidate，但尚未接入 composer、Qt 或 production package；实际状态以 `REPORT_12E_启动准备状态.md` 为准。
 
 ## 4. Target State
 

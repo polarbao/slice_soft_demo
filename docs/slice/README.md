@@ -2,11 +2,11 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-17
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-02 COMPLETE / 12E-03 PREPARED
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-03 COMPLETE / 12E-04 PREPARED
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C、12D 已收口。12E-01 已完成配置契约；12E-02 已完成 backend-neutral 3D mask、service 和分区不变量校验；12E-03 Legacy CPU whole-model distance candidate 已准备，等待用户明确启动。
+当前状态：12C、12D 已收口。12E-01/02 已完成配置与 service 契约；12E-03 已完成 Legacy CPU whole-model occupancy/distance diagnostic candidate；12E-04 OpenVDB conformance adapter 已准备，等待用户明确启动。
 
 ## 目录结构
 
@@ -92,9 +92,10 @@
 | `DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md` | 12E-01 Config、DTO、错误码和安全阻断契约 |
 | `DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md` | 12E-02 Service、3D mask DTO、不变量和测试准备 |
 | `DOC/DOC_PREP_12E_R1_LegacyCpuGlobalDistanceCandidate准备.md` | 12E-03 CPU occupancy、最近面距离、拓扑和性能准备 |
+| `DOC/DOC_PREP_12E_R1_OpenVdbConformanceAdapter准备.md` | 12E-04 OpenVDB OFF/ON adapter、同 grid 对照和安全边界准备 |
 | `DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md` | 12E partition report schema 与 unavailable skeleton |
 | `DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md` | 12E 配置、几何、分区、UI、协议和真实模型验收矩阵 |
-| `REPORT/REPORT_12E_启动准备状态.md` | 12E-01/02 实现结果与 12E-03 准入准备状态 |
+| `REPORT/REPORT_12E_启动准备状态.md` | 12E-01/02/03 实现结果与 12E-04 准入准备状态 |
 | `DOC/DOC_DECISION_12F_Release运行环境与切片性能优化专项.md` | 统一 Debug/Release Runtime、Qt 调试入口收口和后续性能专项边界 |
 | `PRD/PRD_12F_Release运行环境与切片性能优化.md` | Release 运行环境、性能 KPI 与验收需求 |
 | `DEV/DEV_12F_Release运行环境与切片性能优化设计.md` | NMake x64 Runtime、ToolPaths、支撑/合成/稠密 mask 优化设计 |

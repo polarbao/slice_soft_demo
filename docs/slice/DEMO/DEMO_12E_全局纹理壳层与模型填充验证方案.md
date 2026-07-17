@@ -4,7 +4,7 @@
 > 日期：2026-07-16
 > 对应 PRD：PRD_12E_全局纹理表面层与模型填充连续调节.md
 > 对应 DEV：DEV_12E_全局纹理壳层与模型填充分区设计.md
-> 实现状态：NOT STARTED；命令入口需由后续原子任务创建
+> 实现状态：PARTIAL；12E-03 generated CPU fixture 已实现，OpenVDB/width sweep/production/UI 验证待后续任务
 
 ## 1. 验证目标
 
