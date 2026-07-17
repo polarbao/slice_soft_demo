@@ -2,6 +2,8 @@
 
 #include "slicer_core/diagnostics/ValidationIssue.h"
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -34,6 +36,13 @@ enum class TextureFillPartitionErrorCode
     ModelFillOutsideModel,
     TextureFillOverlap,
     ModelVoxelUnassigned,
+    CpuMeshMissing,
+    CpuGridInvalid,
+    CpuTopologyBlocked,
+    CpuOccupancyFailed,
+    CpuNearestSurfaceFailed,
+    SurfaceShellWidthBelowEffectiveMinimum,
+    AllTextureThresholdUnavailable,
 };
 
 /**
@@ -117,6 +126,67 @@ struct TextureFillPartitionStats
 };
 
 /**
+ * @brief Dynamic width values calculated from one model and classification grid.
+ */
+struct TextureFillPartitionWidthMetrics
+{
+    double classificationResolutionMm{0.0};
+    double epsilonMm{0.0};
+    double effectiveMinimumWidthMm{0.0};
+    double effectiveWidthMm{0.0};
+    double maxInteriorDistanceMm{0.0};
+    double allTextureThresholdMm{0.0};
+    bool allTexture{false};
+};
+
+/**
+ * @brief Stable closest-surface evidence for one model voxel.
+ */
+struct TextureFillClosestSurfaceReference
+{
+    bool valid{false};
+    std::size_t triangleIndex{0U};
+    std::array<double, 3> barycentric{0.0, 0.0, 0.0};
+    double distanceMm{0.0};
+};
+
+/**
+ * @brief Backend-neutral query counters for occupancy and nearest-surface work.
+ */
+struct TextureFillPartitionQueryStats
+{
+    std::uint64_t occupancyQueryCount{0U};
+    std::uint64_t occupancyVisitedNodes{0U};
+    std::uint64_t occupancyTestedTriangles{0U};
+    std::uint64_t occupancyFallbackRayCount{0U};
+    std::uint64_t occupancyAmbiguousRayCount{0U};
+    std::uint64_t occupancyBoundaryPointCount{0U};
+    std::uint64_t nearestQueryCount{0U};
+    std::uint64_t nearestVisitedNodes{0U};
+    std::uint64_t nearestTestedTriangles{0U};
+};
+
+/**
+ * @brief Core-only timing and memory evidence for one diagnostic partition run.
+ */
+struct TextureFillPartitionPerformance
+{
+    double topologyMs{0.0};
+    double occupancyBuildMs{0.0};
+    double distanceQueryMs{0.0};
+    double partitionMs{0.0};
+    double totalCoreMs{0.0};
+    std::uint64_t gridVoxelCount{0U};
+    std::uint64_t maskBytes{0U};
+    std::uint64_t closestReferenceBytes{0U};
+    std::uint64_t occupancyQueryBytes{0U};
+    std::uint64_t nearestQueryBytes{0U};
+    bool processMemoryAvailable{false};
+    std::uint64_t processWorkingSetBytes{0U};
+    std::uint64_t processPeakWorkingSetBytes{0U};
+};
+
+/**
  * @brief Request passed to a backend-neutral global texture/fill partition backend.
  */
 struct GlobalTextureFillPartitionRequest
@@ -132,11 +202,16 @@ struct GlobalTextureFillPartitionRequest
 struct GlobalTextureFillPartitionCandidate
 {
     bool available{false};
+    bool blocked{false};
     std::string backend{"none"};
     std::string backendRole{"unavailable"};
     TextureFillPartitionMask3D modelMask;
     TextureFillPartitionMask3D textureSurfaceMask;
     TextureFillPartitionMask3D modelFillMask;
+    TextureFillPartitionWidthMetrics widthMetrics;
+    TextureFillPartitionQueryStats queryStats;
+    TextureFillPartitionPerformance performance;
+    std::vector<TextureFillClosestSurfaceReference> closestSurfaceReferences;
     std::vector<ValidationIssue> issues;
 };
 
@@ -157,6 +232,10 @@ struct GlobalTextureFillPartitionResult
     TextureFillPartitionMask3D textureSurfaceMask;
     TextureFillPartitionMask3D modelFillMask;
     TextureFillPartitionStats stats;
+    TextureFillPartitionWidthMetrics widthMetrics;
+    TextureFillPartitionQueryStats queryStats;
+    TextureFillPartitionPerformance performance;
+    std::vector<TextureFillClosestSurfaceReference> closestSurfaceReferences;
     std::vector<ValidationIssue> issues;
 };
 

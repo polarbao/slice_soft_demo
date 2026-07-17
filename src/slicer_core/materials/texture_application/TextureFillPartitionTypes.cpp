@@ -41,6 +41,20 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_TEXTURE_FILL_OVERLAP";
     case TextureFillPartitionErrorCode::ModelVoxelUnassigned:
         return "E_12E_MODEL_VOXEL_UNASSIGNED";
+    case TextureFillPartitionErrorCode::CpuMeshMissing:
+        return "E_12E_CPU_MESH_MISSING";
+    case TextureFillPartitionErrorCode::CpuGridInvalid:
+        return "E_12E_CPU_GRID_INVALID";
+    case TextureFillPartitionErrorCode::CpuTopologyBlocked:
+        return "E_12E_CPU_TOPOLOGY_BLOCKED";
+    case TextureFillPartitionErrorCode::CpuOccupancyFailed:
+        return "E_12E_CPU_OCCUPANCY_FAILED";
+    case TextureFillPartitionErrorCode::CpuNearestSurfaceFailed:
+        return "E_12E_CPU_NEAREST_SURFACE_FAILED";
+    case TextureFillPartitionErrorCode::SurfaceShellWidthBelowEffectiveMinimum:
+        return "E_12E_SURFACE_SHELL_WIDTH_BELOW_EFFECTIVE_MINIMUM";
+    case TextureFillPartitionErrorCode::AllTextureThresholdUnavailable:
+        return "E_12E_ALL_TEXTURE_THRESHOLD_UNAVAILABLE";
     }
     return "E_12E_UNKNOWN";
 }

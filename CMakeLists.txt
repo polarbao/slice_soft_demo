@@ -57,6 +57,8 @@ add_library(slicer_core
     src/slicer_core/geometry/MeshTopologyDiagnostics.h
     src/slicer_core/geometry/NearestTriangleQuery.cpp
     src/slicer_core/geometry/NearestTriangleQuery.h
+    src/slicer_core/geometry/PointInClosedMeshQuery.cpp
+    src/slicer_core/geometry/PointInClosedMeshQuery.h
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.cpp
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.h
     src/slicer_core/geometry/ShellMask.cpp
@@ -87,6 +89,8 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/TextureApplicationPolicy.h
     src/slicer_core/materials/texture_application/GlobalTextureFillPartitionService.cpp
     src/slicer_core/materials/texture_application/GlobalTextureFillPartitionService.h
+    src/slicer_core/materials/texture_application/LegacyCpuGlobalDistanceBackend.cpp
+    src/slicer_core/materials/texture_application/LegacyCpuGlobalDistanceBackend.h
     src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.cpp
     src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.h
     src/slicer_core/materials/texture_application/TextureFillPartitionTypes.cpp
@@ -256,6 +260,12 @@ add_executable(texture_fill_partition_service_unit_tests
 
 target_link_libraries(texture_fill_partition_service_unit_tests PRIVATE slicer_core)
 
+add_executable(legacy_cpu_global_distance_unit_tests
+    tests/unit/legacy_cpu_global_distance/main.cpp
+)
+
+target_link_libraries(legacy_cpu_global_distance_unit_tests PRIVATE slicer_core)
+
 add_executable(geometry_kernel_service_unit_tests
     tests/unit/geometry_kernel_service/main.cpp
 )
@@ -302,6 +312,7 @@ enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_fill_partition_service_unit_tests COMMAND texture_fill_partition_service_unit_tests)
+add_test(NAME legacy_cpu_global_distance_unit_tests COMMAND legacy_cpu_global_distance_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)

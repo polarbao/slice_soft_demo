@@ -246,6 +246,10 @@ GlobalTextureFillPartitionResult GlobalTextureFillPartitionService::Evaluate(
     result.modelMask = candidate.modelMask;
     result.textureSurfaceMask = candidate.textureSurfaceMask;
     result.modelFillMask = candidate.modelFillMask;
+    result.widthMetrics = candidate.widthMetrics;
+    result.queryStats = candidate.queryStats;
+    result.performance = candidate.performance;
+    result.closestSurfaceReferences = candidate.closestSurfaceReferences;
     result.grid = candidate.modelMask.grid;
     result.issues = candidate.issues;
 
@@ -257,6 +261,12 @@ GlobalTextureFillPartitionResult GlobalTextureFillPartitionService::Evaluate(
                 TextureFillPartitionErrorCode::PartitionBackendUnavailable,
                 "global texture/fill partition backend returned unavailable"));
         }
+        return result;
+    }
+
+    if (candidate.blocked)
+    {
+        result.status = "blocked";
         return result;
     }
 
