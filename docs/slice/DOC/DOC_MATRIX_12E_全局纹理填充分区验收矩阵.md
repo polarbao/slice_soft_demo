@@ -1,7 +1,7 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：PREPARED / IMPLEMENTATION NOT STARTED
-> 日期：2026-07-16
+> 文档状态：12E-02 COMPLETE / 12E-03 PREPARED
+> 日期：2026-07-17
 
 ## 1. 使用方式
 
@@ -19,6 +19,9 @@
 | mismatched pair | 12E-01 | texture/fill scope 必须成对 | 独立启用造成未分配模型 |
 | model fill disabled | 12E-01 | 明确拒绝 | 用 disabled 冒充 allTexture |
 | backend unavailable | 12E-01/02 | blocked/unavailable；不写 package | 输出 pass 或生产 TIFF |
+| backend exception | 12E-02 | stable `E_12E_PARTITION_BACKEND_FAILED`；不越过 diagnostic 边界 | 异常退出或继续写包 |
+| requested/backend grid mismatch | 12E-02 | stable mask-size error | 接受错位 mask |
+| non-binary mask | 12E-02 | stable binary error | 非 0/1 数据参与统计 |
 
 ## 3. Generated Geometry
 

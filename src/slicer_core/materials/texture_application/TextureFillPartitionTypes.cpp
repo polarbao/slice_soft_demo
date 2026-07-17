@@ -25,6 +25,22 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_MODEL_FILL_REQUIRED";
     case TextureFillPartitionErrorCode::PartitionBackendUnavailable:
         return "E_12E_PARTITION_BACKEND_UNAVAILABLE";
+    case TextureFillPartitionErrorCode::PartitionBackendFailed:
+        return "E_12E_PARTITION_BACKEND_FAILED";
+    case TextureFillPartitionErrorCode::PartitionGridInvalid:
+        return "E_12E_PARTITION_GRID_INVALID";
+    case TextureFillPartitionErrorCode::PartitionMaskSizeMismatch:
+        return "E_12E_PARTITION_MASK_SIZE_MISMATCH";
+    case TextureFillPartitionErrorCode::PartitionMaskNonBinary:
+        return "E_12E_PARTITION_MASK_NON_BINARY";
+    case TextureFillPartitionErrorCode::TextureOutsideModel:
+        return "E_12E_TEXTURE_OUTSIDE_MODEL";
+    case TextureFillPartitionErrorCode::ModelFillOutsideModel:
+        return "E_12E_MODEL_FILL_OUTSIDE_MODEL";
+    case TextureFillPartitionErrorCode::TextureFillOverlap:
+        return "E_12E_TEXTURE_FILL_OVERLAP";
+    case TextureFillPartitionErrorCode::ModelVoxelUnassigned:
+        return "E_12E_MODEL_VOXEL_UNASSIGNED";
     }
     return "E_12E_UNKNOWN";
 }

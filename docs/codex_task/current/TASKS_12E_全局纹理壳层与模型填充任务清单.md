@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-01 COMPLETE / 12E-02 READY FOR USER ADMISSION
+> 文档状态：12E-02 COMPLETE / 12E-03 READY FOR USER ADMISSION
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-01 已完成，12E-02 等待用户明确启动
+> 当前项目原子任务：无；12E-02 已完成，12E-03 等待用户明确启动
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -114,7 +114,7 @@ docs/slice/REPORT/REPORT_12E_启动准备状态.md。
 
 ## 5. 12E-02 Global Partition Service 骨架
 
-状态：PREPARED / READY FOR USER ADMISSION
+状态：COMPLETE（2026-07-17）
 
 目标：
 
@@ -127,6 +127,17 @@ docs/slice/REPORT/REPORT_12E_启动准备状态.md。
 
 完成标准：generated mask unit tests 证明 XOR/union/count invariants。
 
+实际结果：
+
+```text
+新增 backend-neutral mesh/grid/options request、candidate 和 validated result；
+新增可注入 IGlobalTextureFillPartitionBackend 的 GlobalTextureFillPartitionService；
+统一重算 model/texture/fill/outside/overlap/unassigned 统计；
+稳定拒绝非法 grid、mask 尺寸、非二值值和四类分区违反；
+有效结果只标记 diagnostic + partitionPass，不产生 productionAcceptance=passed；
+新增 texture_fill_partition_service_unit_tests，覆盖 unavailable、blocked、pass、fail 和 deterministic。
+```
+
 准备入口：
 
 ```text
@@ -135,7 +146,7 @@ docs/slice/DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md
 
 ## 6. 12E-03 Legacy CPU 3D Distance Candidate
 
-状态：TODO
+状态：PREPARED / READY FOR USER ADMISSION
 
 目标：
 
@@ -155,6 +166,12 @@ docs/slice/DOC/DOC_PREP_12E_R1_GlobalPartitionService骨架准备.md
 ```
 
 验证：box/sphere/thin-wall/cavity/topology unit/golden + benchmark report。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R1_LegacyCpuGlobalDistanceCandidate准备.md
+```
 
 ## 7. 12E-04 OpenVDB Conformance Adapter
 
