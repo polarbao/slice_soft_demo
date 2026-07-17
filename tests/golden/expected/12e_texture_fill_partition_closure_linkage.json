@@ -1,0 +1,33 @@
+{
+  "availability": "available",
+  "status": "diagnostic",
+  "scope": "texture_model_fill_only",
+  "source": "semantic_masks",
+  "confidence": "exact",
+  "productionAcceptance": "not_evaluated",
+  "allTexture": false,
+  "colorFillApplicability": "applicable",
+  "allTextureReason": null,
+  "colorFillGapVoxels": 0,
+  "modelDomainGapVoxels": 0,
+  "supportClosureStatus": "not_evaluated",
+  "varnishClosureStatus": "not_evaluated",
+  "repairAttempted": false,
+  "productionOutputWritten": false,
+  "layerCount": 2,
+  "layers": [
+    {
+      "layerIndex": 0,
+      "zMm": 0.005,
+      "colorFillGapVoxels": 0,
+      "modelDomainGapVoxels": 0
+    },
+    {
+      "layerIndex": 1,
+      "zMm": 0.015,
+      "colorFillGapVoxels": 0,
+      "modelDomainGapVoxels": 0
+    }
+  ],
+  "issues": []
+}

@@ -61,6 +61,12 @@ enum class TextureFillPartitionErrorCode
     TextureSampleFailed,
     DiagnosticComposerInputInvalid,
     DiagnosticComposerPartitionInvalid,
+    ClosureAdapterInputInvalid,
+    ClosureLayerOrderInvalid,
+    ClosureMaskInvalid,
+    ClosureModelDomainGap,
+    ClosureColorFillGap,
+    ClosureChannelOrderInvalid,
     SurfaceShellWidthBelowEffectiveMinimum,
     AllTextureThresholdUnavailable,
 };

@@ -8,6 +8,7 @@ namespace slicer_core
 {
 
 struct TextureFillPartitionDiagnosticComposerResult;
+struct TextureFillPartitionClosureAdapterResult;
 struct TextureFillPartitionTextureTransferResult;
 
 /**
@@ -31,6 +32,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config);
  * @param conformance Optional CPU/OpenVDB diagnostic comparison.
  * @param transfer Optional backend-neutral texture-transfer evidence.
  * @param composer Optional in-memory diagnostic-composer evidence.
+ * @param closure Optional exact 12D model-domain closure linkage evidence.
  * @return Report conforming to slicesoft.texture_fill_partition.12e.1.
  */
 Json BuildTextureFillPartitionReport(
@@ -38,7 +40,8 @@ Json BuildTextureFillPartitionReport(
     const GlobalTextureFillPartitionResult& result,
     const TextureFillPartitionConformanceResult* conformance = nullptr,
     const TextureFillPartitionTextureTransferResult* transfer = nullptr,
-    const TextureFillPartitionDiagnosticComposerResult* composer = nullptr);
+    const TextureFillPartitionDiagnosticComposerResult* composer = nullptr,
+    const TextureFillPartitionClosureAdapterResult* closure = nullptr);
 
 /**
  * @brief Serialize deterministic Stage 12E width-sweep evidence.

@@ -1,4 +1,5 @@
 #include "slicer_core/config.h"
+#include "slicer_core/diagnostics/TextureFillPartitionClosureAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
 #include "slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h"
@@ -274,6 +275,48 @@ bool TransferAndComposerEvidenceIsSerialized()
                "diagnostic composer keeps support empty");
 }
 
+bool ClosureLinkageEvidenceIsSerialized()
+{
+    slicer_core::TextureFillPartitionClosureAdapterResult closure;
+    closure.available = true;
+    closure.status = "diagnostic";
+    closure.source = "semantic_masks";
+    closure.confidence = "exact";
+    closure.allTexture = false;
+    closure.colorFillApplicability = "applicable";
+    closure.totalColorFillGapVoxels = 0U;
+    closure.totalModelDomainGapVoxels = 0U;
+    closure.layers.resize(2U);
+    closure.layers.at(0).layerIndex = 0;
+    closure.layers.at(0).zMm = 0.005;
+    closure.layers.at(1).layerIndex = 1;
+    closure.layers.at(1).zMm = 0.015;
+
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult(),
+        nullptr,
+        nullptr,
+        nullptr,
+        &closure);
+    const slicer_core::Json expected = LoadGolden(
+        "12e_texture_fill_partition_closure_linkage.json");
+    return ExpectTrue(
+               report.at("closureLinkage").dump(2) == expected.dump(2),
+               "closure linkage matches golden")
+        && ExpectTrue(
+               report.at("closureLinkage").at("source").as_string()
+                   == "semantic_masks",
+               "closure source is exact semantic masks")
+        && ExpectTrue(
+               report.at("closureLinkage").at("supportClosureStatus").as_string()
+                   == "not_evaluated",
+               "support closure is not fabricated")
+        && ExpectTrue(
+               !report.at("closureLinkage").at("productionOutputWritten").as_bool(),
+               "closure linkage writes no production output");
+}
+
 }  // namespace
 
 int main()
@@ -284,6 +327,7 @@ int main()
         {"unavailable_measurements_remain_null", UnavailableMeasurementsRemainNull},
         {"layer_totals_match_partition_totals", LayerTotalsMatchPartitionTotals},
         {"transfer_and_composer_evidence_is_serialized", TransferAndComposerEvidenceIsSerialized},
+        {"closure_linkage_evidence_is_serialized", ClosureLinkageEvidenceIsSerialized},
     };
     for (const auto& test : tests)
     {

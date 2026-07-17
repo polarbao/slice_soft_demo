@@ -91,6 +91,18 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_DIAGNOSTIC_COMPOSER_INPUT_INVALID";
     case TextureFillPartitionErrorCode::DiagnosticComposerPartitionInvalid:
         return "E_12E_DIAGNOSTIC_COMPOSER_PARTITION_INVALID";
+    case TextureFillPartitionErrorCode::ClosureAdapterInputInvalid:
+        return "E_12E_CLOSURE_ADAPTER_INPUT_INVALID";
+    case TextureFillPartitionErrorCode::ClosureLayerOrderInvalid:
+        return "E_12E_CLOSURE_LAYER_ORDER_INVALID";
+    case TextureFillPartitionErrorCode::ClosureMaskInvalid:
+        return "E_12E_CLOSURE_MASK_INVALID";
+    case TextureFillPartitionErrorCode::ClosureModelDomainGap:
+        return "E_12E_CLOSURE_MODEL_DOMAIN_GAP";
+    case TextureFillPartitionErrorCode::ClosureColorFillGap:
+        return "E_12E_CLOSURE_COLOR_FILL_GAP";
+    case TextureFillPartitionErrorCode::ClosureChannelOrderInvalid:
+        return "E_12E_CLOSURE_CHANNEL_ORDER_INVALID";
     case TextureFillPartitionErrorCode::SurfaceShellWidthBelowEffectiveMinimum:
         return "E_12E_SURFACE_SHELL_WIDTH_BELOW_EFFECTIVE_MINIMUM";
     case TextureFillPartitionErrorCode::AllTextureThresholdUnavailable:

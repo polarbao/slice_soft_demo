@@ -1,5 +1,6 @@
 #include "slicer_core/reports/TextureFillPartitionReport.h"
 
+#include "slicer_core/diagnostics/TextureFillPartitionClosureAdapter.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
@@ -19,6 +20,7 @@ using slicer_core::GlobalTextureFillPartitionResult;
 using slicer_core::Json;
 using slicer_core::SliceConfig;
 using slicer_core::TextureFillPartitionConformanceResult;
+using slicer_core::TextureFillPartitionClosureAdapterResult;
 using slicer_core::TextureFillPartitionDiagnosticComposerResult;
 using slicer_core::TextureFillPartitionStats;
 using slicer_core::TextureFillPartitionTextureTransferResult;
@@ -235,6 +237,70 @@ Json BuildDiagnosticComposer(
         {"supportPrintVoxels", composer->stats.supportPrintVoxels},
         {"emptyVoxels", composer->stats.emptyVoxels},
         {"issues", slicer_core::ValidationIssuesToJson(composer->issues)},
+    });
+}
+
+Json BuildClosureLinkage(
+    const TextureFillPartitionClosureAdapterResult* closure)
+{
+    if (closure == nullptr)
+    {
+        return Json::object({
+            {"availability", "unavailable"},
+            {"status", "not_evaluated"},
+            {"scope", "texture_model_fill_only"},
+            {"source", "unavailable"},
+            {"confidence", "unavailable"},
+            {"productionAcceptance", "not_evaluated"},
+            {"allTexture", false},
+            {"colorFillApplicability", "not_evaluated"},
+            {"allTextureReason", nullptr},
+            {"colorFillGapVoxels", 0},
+            {"modelDomainGapVoxels", 0},
+            {"supportClosureStatus", "not_evaluated"},
+            {"varnishClosureStatus", "not_evaluated"},
+            {"repairAttempted", false},
+            {"productionOutputWritten", false},
+            {"layerCount", 0},
+            {"layers", Json::array({})},
+            {"issues", Json::array({})},
+        });
+    }
+
+    Json::Array layers;
+    layers.reserve(closure->layers.size());
+    for (const slicer_core::TextureFillPartitionClosureLayerResult& layer :
+         closure->layers)
+    {
+        layers.push_back(Json::object({
+            {"layerIndex", layer.layerIndex},
+            {"zMm", layer.zMm},
+            {"colorFillGapVoxels", layer.colorFillGapVoxels},
+            {"modelDomainGapVoxels", layer.modelDomainGapVoxels},
+        }));
+    }
+    return Json::object({
+        {"availability", closure->available ? "available" : "unavailable"},
+        {"status", closure->status},
+        {"scope", closure->scope},
+        {"source", closure->source},
+        {"confidence", closure->confidence},
+        {"productionAcceptance", closure->productionAcceptance},
+        {"allTexture", closure->allTexture},
+        {"colorFillApplicability", closure->colorFillApplicability},
+        {"allTextureReason",
+         closure->allTextureReason.empty()
+             ? Json{nullptr}
+             : Json{closure->allTextureReason}},
+        {"colorFillGapVoxels", closure->totalColorFillGapVoxels},
+        {"modelDomainGapVoxels", closure->totalModelDomainGapVoxels},
+        {"supportClosureStatus", closure->supportClosureStatus},
+        {"varnishClosureStatus", closure->varnishClosureStatus},
+        {"repairAttempted", closure->repairAttempted},
+        {"productionOutputWritten", closure->productionOutputWritten},
+        {"layerCount", static_cast<std::uint64_t>(closure->layers.size())},
+        {"layers", Json{std::move(layers)}},
+        {"issues", slicer_core::ValidationIssuesToJson(closure->issues)},
     });
 }
 
@@ -489,6 +555,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
         })},
         {"textureTransfer", BuildTextureTransfer(nullptr)},
         {"diagnosticComposer", BuildDiagnosticComposer(nullptr)},
+        {"closureLinkage", BuildClosureLinkage(nullptr)},
         {"performance", Json::object({
              {"preflightMs", nullptr},
              {"topologyMs", nullptr},
@@ -553,7 +620,8 @@ Json BuildTextureFillPartitionReport(
     const GlobalTextureFillPartitionResult& result,
     const TextureFillPartitionConformanceResult* conformance,
     const TextureFillPartitionTextureTransferResult* transfer,
-    const TextureFillPartitionDiagnosticComposerResult* composer)
+    const TextureFillPartitionDiagnosticComposerResult* composer,
+    const TextureFillPartitionClosureAdapterResult* closure)
 {
     Json::Object report;
     report["schema"] = "slicesoft.texture_fill_partition.12e.1";
@@ -572,6 +640,7 @@ Json BuildTextureFillPartitionReport(
     report["partition"] = BuildPartition(result);
     report["textureTransfer"] = BuildTextureTransfer(transfer);
     report["diagnosticComposer"] = BuildDiagnosticComposer(composer);
+    report["closureLinkage"] = BuildClosureLinkage(closure);
     report["performance"] = BuildPerformance(result, transfer);
     report["queryStats"] = BuildQueryStats(result);
     report["layers"] = result.available ? BuildLayers(result) : Json::array({});
