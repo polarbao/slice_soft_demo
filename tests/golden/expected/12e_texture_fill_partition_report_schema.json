@@ -1,0 +1,93 @@
+{
+  "schema": "slicesoft.texture_fill_partition.12e.1",
+  "packageProtocol": "p0.rgbwsv.2",
+  "availability": "available",
+  "status": "diagnostic",
+  "productionAcceptance": "not_evaluated",
+  "backend": "report_fixture",
+  "backendRole": "conformance_candidate",
+  "grid": {
+    "width": 2,
+    "height": 1,
+    "depth": 2,
+    "originXMm": 0,
+    "originYMm": 0,
+    "originZMm": 0,
+    "spacingXMm": 0.05,
+    "spacingYMm": 0.05,
+    "spacingZMm": 0.01
+  },
+  "width": {
+    "requestedWidthMm": 0.1,
+    "widthStepMm": 0.01,
+    "baseMinimumWidthMm": 0.1,
+    "classificationResolutionMm": 0.05,
+    "effectiveMinimumWidthMm": 0.1,
+    "effectiveWidthMm": 0.1,
+    "maxInteriorDistanceMm": 0.2,
+    "allTextureThresholdMm": 0.2,
+    "allTexture": false,
+    "quantizationErrorMm": 0,
+    "clamped": false
+  },
+  "partition": {
+    "modelVoxels": 3,
+    "textureSurfaceVoxels": 1,
+    "modelFillVoxels": 2,
+    "overlapTextureFillVoxels": 0,
+    "unassignedModelVoxels": 0,
+    "textureOutsideModelVoxels": 0,
+    "modelFillOutsideModelVoxels": 0,
+    "modelPixels": null,
+    "textureSurfacePixels": null,
+    "modelFillPixels": null,
+    "overlapTextureFillPixels": null,
+    "unassignedModelPixels": null,
+    "textureCoverageRatio": 0.3333333333333333,
+    "modelFillCoverageRatio": 0.6666666666666666,
+    "thinRegionMergedVoxels": 0,
+    "medialAxisTieCount": 0,
+    "partitionPass": true
+  },
+  "performance": {
+    "preflightMs": 1,
+    "topologyMs": 1,
+    "levelSetMs": 2,
+    "gridSampleMs": 3,
+    "occupancyMs": 5,
+    "distanceMs": 7,
+    "partitionMs": 11,
+    "textureTransferMs": null,
+    "totalCoreMs": 24,
+    "gridVoxelCount": 4,
+    "maskBytes": 12,
+    "closestReferenceBytes": 96,
+    "occupancyQueryBytes": 0,
+    "nearestQueryBytes": 0,
+    "openVdbGridBytes": 128,
+    "workingSetBytes": null,
+    "peakWorkingSetBytes": null
+  },
+  "layers": [
+    {
+      "layerIndex": 0,
+      "zMm": 0.005,
+      "modelVoxels": 2,
+      "textureSurfaceVoxels": 1,
+      "modelFillVoxels": 1,
+      "overlapTextureFillVoxels": 0,
+      "unassignedModelVoxels": 0,
+      "partitionPass": true
+    },
+    {
+      "layerIndex": 1,
+      "zMm": 0.015,
+      "modelVoxels": 1,
+      "textureSurfaceVoxels": 0,
+      "modelFillVoxels": 1,
+      "overlapTextureFillVoxels": 0,
+      "unassignedModelVoxels": 0,
+      "partitionPass": true
+    }
+  ]
+}

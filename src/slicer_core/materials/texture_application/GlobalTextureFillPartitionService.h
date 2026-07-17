@@ -44,6 +44,16 @@ public:
     GlobalTextureFillPartitionResult Evaluate(
         const GlobalTextureFillPartitionRequest& request) const;
 
+    /**
+     * @brief Evaluate representative or full-step widths and validate monotonic partition behavior.
+     * @param request Base mesh, grid, and width contract used for discovery.
+     * @param options Width sampling and safety-limit options.
+     * @return Diagnostic sweep evidence without production admission.
+     */
+    TextureFillPartitionWidthSweepResult EvaluateWidthSweep(
+        const GlobalTextureFillPartitionRequest& request,
+        const TextureFillPartitionWidthSweepOptions& options = {}) const;
+
 private:
     const IGlobalTextureFillPartitionBackend* m_backend;
 };

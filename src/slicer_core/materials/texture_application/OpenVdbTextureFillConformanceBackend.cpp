@@ -434,11 +434,11 @@ OpenVdbTextureFillConformanceBackend::Evaluate(
             "OpenVDB conformance candidate could not calculate a complete exact-distance threshold");
         return candidate;
     }
-    candidate.widthMetrics.allTextureThresholdMm = std::max(
-        candidate.widthMetrics.effectiveMinimumWidthMm,
-        CeilToStep(
-            candidate.widthMetrics.maxInteriorDistanceMm,
-            request.options.widthStepMm));
+    candidate.widthMetrics.allTextureThresholdMm = CeilToStep(
+        std::max(
+            candidate.widthMetrics.effectiveMinimumWidthMm,
+            candidate.widthMetrics.maxInteriorDistanceMm),
+        request.options.widthStepMm);
     candidate.widthMetrics.effectiveWidthMm = std::min(
         request.options.requestedWidthMm,
         candidate.widthMetrics.allTextureThresholdMm);

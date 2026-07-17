@@ -21,4 +21,24 @@ TextureFillPartitionReportData BuildTextureFillPartitionUnavailableReportData(co
  */
 Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config);
 
+/**
+ * @brief Build a successful or blocked Stage 12E diagnostic partition report.
+ * @param config Effective slice configuration snapshot.
+ * @param result Validated backend-neutral partition result.
+ * @param conformance Optional CPU/OpenVDB diagnostic comparison.
+ * @return Report conforming to slicesoft.texture_fill_partition.12e.1.
+ */
+Json BuildTextureFillPartitionReport(
+    const SliceConfig& config,
+    const GlobalTextureFillPartitionResult& result,
+    const TextureFillPartitionConformanceResult* conformance = nullptr);
+
+/**
+ * @brief Serialize deterministic Stage 12E width-sweep evidence.
+ * @param sweep Validated width-sweep result.
+ * @return Backend-neutral summary suitable for a diagnostic report section.
+ */
+Json BuildTextureFillPartitionWidthSweepSummary(
+    const TextureFillPartitionWidthSweepResult& sweep);
+
 }  // namespace slicer_core

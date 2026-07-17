@@ -63,6 +63,18 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_OPENVDB_DISTANCE_INCOMPLETE";
     case TextureFillPartitionErrorCode::BackendConformanceFailed:
         return "E_12E_BACKEND_CONFORMANCE_FAILED";
+    case TextureFillPartitionErrorCode::WidthSweepEmpty:
+        return "E_12E_WIDTH_SWEEP_EMPTY";
+    case TextureFillPartitionErrorCode::WidthSweepSampleFailed:
+        return "E_12E_WIDTH_SWEEP_SAMPLE_FAILED";
+    case TextureFillPartitionErrorCode::WidthSweepModelChanged:
+        return "E_12E_WIDTH_SWEEP_MODEL_CHANGED";
+    case TextureFillPartitionErrorCode::WidthSweepTextureNonMonotonic:
+        return "E_12E_WIDTH_SWEEP_TEXTURE_NON_MONOTONIC";
+    case TextureFillPartitionErrorCode::WidthSweepFillNonMonotonic:
+        return "E_12E_WIDTH_SWEEP_FILL_NON_MONOTONIC";
+    case TextureFillPartitionErrorCode::WidthSweepEndpointInvalid:
+        return "E_12E_WIDTH_SWEEP_ENDPOINT_INVALID";
     case TextureFillPartitionErrorCode::SurfaceShellWidthBelowEffectiveMinimum:
         return "E_12E_SURFACE_SHELL_WIDTH_BELOW_EFFECTIVE_MINIMUM";
     case TextureFillPartitionErrorCode::AllTextureThresholdUnavailable:

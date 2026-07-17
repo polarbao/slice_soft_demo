@@ -47,6 +47,12 @@ enum class TextureFillPartitionErrorCode
     OpenVdbGridSampleFailed,
     OpenVdbDistanceIncomplete,
     BackendConformanceFailed,
+    WidthSweepEmpty,
+    WidthSweepSampleFailed,
+    WidthSweepModelChanged,
+    WidthSweepTextureNonMonotonic,
+    WidthSweepFillNonMonotonic,
+    WidthSweepEndpointInvalid,
     SurfaceShellWidthBelowEffectiveMinimum,
     AllTextureThresholdUnavailable,
 };
@@ -279,6 +285,50 @@ struct TextureFillPartitionConformanceResult
     double allTextureThresholdDeltaMm{0.0};
     double openVdbToCpuCoreTimeRatio{0.0};
     double openVdbToCpuPeakMemoryRatio{0.0};
+    std::vector<ValidationIssue> issues;
+};
+
+/**
+ * @brief Controls representative or explicit full-step Stage 12E width scans.
+ */
+struct TextureFillPartitionWidthSweepOptions
+{
+    bool fullStepScan{false};
+    int representativeIntermediateCount{3};
+    std::size_t maxSamples{10000U};
+};
+
+/**
+ * @brief Stable summary of one validated width-sweep candidate.
+ */
+struct TextureFillPartitionWidthSweepSample
+{
+    double requestedWidthMm{0.0};
+    double effectiveWidthMm{0.0};
+    bool allTexture{false};
+    bool partitionPass{false};
+    std::string status{"blocked"};
+    TextureFillPartitionStats stats;
+    TextureFillPartitionPerformance performance;
+};
+
+/**
+ * @brief Backend-neutral monotonic width-sweep evidence.
+ */
+struct TextureFillPartitionWidthSweepResult
+{
+    bool available{false};
+    bool monotonicPass{false};
+    bool endpointPass{false};
+    std::string status{"unavailable"};
+    std::string productionAcceptance{"not_evaluated"};
+    std::string backend{"none"};
+    std::string backendRole{"unavailable"};
+    double minimumWidthMm{0.0};
+    double maximumWidthMm{0.0};
+    double widthStepMm{0.0};
+    double totalCandidateCoreMs{0.0};
+    std::vector<TextureFillPartitionWidthSweepSample> samples;
     std::vector<ValidationIssue> issues;
 };
 

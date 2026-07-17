@@ -1,6 +1,294 @@
 #include "slicer_core/reports/TextureFillPartitionReport.h"
 
+#include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+#include <utility>
+
+namespace
+{
+
+using slicer_core::GlobalTextureFillPartitionResult;
+using slicer_core::Json;
+using slicer_core::SliceConfig;
+using slicer_core::TextureFillPartitionConformanceResult;
+using slicer_core::TextureFillPartitionStats;
+using slicer_core::TextureFillPartitionWidthSweepResult;
+using slicer_core::TextureFillPartitionWidthSweepSample;
+
+Json NullableDouble(const bool available, const double value)
+{
+    return available && std::isfinite(value) ? Json{value} : Json{nullptr};
+}
+
+Json BuildGrid(const GlobalTextureFillPartitionResult& result)
+{
+    return Json::object({
+        {"width", result.grid.width},
+        {"height", result.grid.height},
+        {"depth", result.grid.depth},
+        {"originXMm", result.grid.originXMm},
+        {"originYMm", result.grid.originYMm},
+        {"originZMm", result.grid.originZMm},
+        {"spacingXMm", result.grid.spacingXMm},
+        {"spacingYMm", result.grid.spacingYMm},
+        {"spacingZMm", result.grid.spacingZMm},
+    });
+}
+
+Json BuildWidth(const GlobalTextureFillPartitionResult& result)
+{
+    const double quantizationErrorMm =
+        result.widthMetrics.effectiveWidthMm
+        - result.options.requestedWidthMm;
+    const double epsilon = std::max(
+        result.widthMetrics.epsilonMm,
+        1.0e-12);
+    return Json::object({
+        {"requestedWidthMm", result.options.requestedWidthMm},
+        {"widthStepMm", result.options.widthStepMm},
+        {"baseMinimumWidthMm", result.options.baseMinimumWidthMm},
+        {"classificationResolutionMm", result.widthMetrics.classificationResolutionMm},
+        {"effectiveMinimumWidthMm", result.widthMetrics.effectiveMinimumWidthMm},
+        {"effectiveWidthMm", result.widthMetrics.effectiveWidthMm},
+        {"maxInteriorDistanceMm", result.widthMetrics.maxInteriorDistanceMm},
+        {"allTextureThresholdMm", result.widthMetrics.allTextureThresholdMm},
+        {"allTexture", result.widthMetrics.allTexture},
+        {"quantizationErrorMm", quantizationErrorMm},
+        {"clamped", std::abs(quantizationErrorMm) > epsilon},
+    });
+}
+
+Json BuildPartition(const GlobalTextureFillPartitionResult& result)
+{
+    const double modelVoxels = static_cast<double>(result.stats.modelVoxels);
+    const double textureRatio = result.stats.modelVoxels == 0U
+        ? 0.0
+        : static_cast<double>(result.stats.textureSurfaceVoxels) / modelVoxels;
+    const double fillRatio = result.stats.modelVoxels == 0U
+        ? 0.0
+        : static_cast<double>(result.stats.modelFillVoxels) / modelVoxels;
+    return Json::object({
+        {"modelVoxels", result.stats.modelVoxels},
+        {"textureSurfaceVoxels", result.stats.textureSurfaceVoxels},
+        {"modelFillVoxels", result.stats.modelFillVoxels},
+        {"overlapTextureFillVoxels", result.stats.overlapTextureFillVoxels},
+        {"unassignedModelVoxels", result.stats.unassignedModelVoxels},
+        {"textureOutsideModelVoxels", result.stats.textureOutsideModelVoxels},
+        {"modelFillOutsideModelVoxels", result.stats.modelFillOutsideModelVoxels},
+        {"modelPixels", nullptr},
+        {"textureSurfacePixels", nullptr},
+        {"modelFillPixels", nullptr},
+        {"overlapTextureFillPixels", nullptr},
+        {"unassignedModelPixels", nullptr},
+        {"textureCoverageRatio", textureRatio},
+        {"modelFillCoverageRatio", fillRatio},
+        {"thinRegionMergedVoxels", 0},
+        {"medialAxisTieCount", 0},
+        {"partitionPass", result.partitionPass},
+    });
+}
+
+Json BuildPerformance(const GlobalTextureFillPartitionResult& result)
+{
+    return Json::object({
+        {"preflightMs", result.performance.topologyMs},
+        {"topologyMs", result.performance.topologyMs},
+        {"levelSetMs", result.performance.levelSetMs},
+        {"gridSampleMs", result.performance.gridSampleMs},
+        {"occupancyMs", result.performance.occupancyBuildMs},
+        {"distanceMs", result.performance.distanceQueryMs},
+        {"partitionMs", result.performance.partitionMs},
+        {"textureTransferMs", nullptr},
+        {"totalCoreMs", result.performance.totalCoreMs},
+        {"gridVoxelCount", result.performance.gridVoxelCount},
+        {"maskBytes", result.performance.maskBytes},
+        {"closestReferenceBytes", result.performance.closestReferenceBytes},
+        {"occupancyQueryBytes", result.performance.occupancyQueryBytes},
+        {"nearestQueryBytes", result.performance.nearestQueryBytes},
+        {"openVdbGridBytes", result.performance.openVdbGridBytes},
+        {"workingSetBytes",
+         NullableDouble(
+             result.performance.processMemoryAvailable,
+             static_cast<double>(result.performance.processWorkingSetBytes))},
+        {"peakWorkingSetBytes",
+         NullableDouble(
+             result.performance.processMemoryAvailable,
+             static_cast<double>(result.performance.processPeakWorkingSetBytes))},
+    });
+}
+
+Json BuildQueryStats(const GlobalTextureFillPartitionResult& result)
+{
+    return Json::object({
+        {"occupancyQueryCount", result.queryStats.occupancyQueryCount},
+        {"occupancyVisitedNodes", result.queryStats.occupancyVisitedNodes},
+        {"occupancyTestedTriangles", result.queryStats.occupancyTestedTriangles},
+        {"occupancyFallbackRayCount", result.queryStats.occupancyFallbackRayCount},
+        {"occupancyAmbiguousRayCount", result.queryStats.occupancyAmbiguousRayCount},
+        {"occupancyBoundaryPointCount", result.queryStats.occupancyBoundaryPointCount},
+        {"sdfSampleCount", result.queryStats.sdfSampleCount},
+        {"sdfActiveSampleCount", result.queryStats.sdfActiveSampleCount},
+        {"sdfBackgroundSampleCount", result.queryStats.sdfBackgroundSampleCount},
+        {"nearestQueryCount", result.queryStats.nearestQueryCount},
+        {"nearestVisitedNodes", result.queryStats.nearestVisitedNodes},
+        {"nearestTestedTriangles", result.queryStats.nearestTestedTriangles},
+    });
+}
+
+Json BuildLayers(const GlobalTextureFillPartitionResult& result)
+{
+    if (result.grid.width <= 0 || result.grid.height <= 0 || result.grid.depth <= 0)
+    {
+        throw std::invalid_argument(
+            "texture/fill partition report requires positive grid dimensions");
+    }
+
+    const std::size_t expectedCount = static_cast<std::size_t>(result.grid.width)
+        * static_cast<std::size_t>(result.grid.height)
+        * static_cast<std::size_t>(result.grid.depth);
+    if (result.modelMask.values.size() != expectedCount
+        || result.textureSurfaceMask.values.size() != expectedCount
+        || result.modelFillMask.values.size() != expectedCount)
+    {
+        throw std::invalid_argument(
+            "texture/fill partition report requires validated same-grid masks");
+    }
+
+    const std::size_t layerArea = static_cast<std::size_t>(result.grid.width)
+        * static_cast<std::size_t>(result.grid.height);
+    Json::Array layers;
+    layers.reserve(static_cast<std::size_t>(result.grid.depth));
+    for (int layerIndex{0}; layerIndex < result.grid.depth; ++layerIndex)
+    {
+        TextureFillPartitionStats stats;
+        const std::size_t begin = static_cast<std::size_t>(layerIndex)
+            * layerArea;
+        const std::size_t end = begin + layerArea;
+        for (std::size_t index{begin}; index < end; ++index)
+        {
+            const bool model = result.modelMask.values.at(index) != 0U;
+            const bool texture = result.textureSurfaceMask.values.at(index) != 0U;
+            const bool fill = result.modelFillMask.values.at(index) != 0U;
+            stats.modelVoxels += model ? 1U : 0U;
+            stats.textureSurfaceVoxels += texture ? 1U : 0U;
+            stats.modelFillVoxels += fill ? 1U : 0U;
+            stats.overlapTextureFillVoxels += texture && fill ? 1U : 0U;
+            stats.unassignedModelVoxels += model && !texture && !fill ? 1U : 0U;
+            stats.textureOutsideModelVoxels += texture && !model ? 1U : 0U;
+            stats.modelFillOutsideModelVoxels += fill && !model ? 1U : 0U;
+        }
+        const bool partitionPass = stats.overlapTextureFillVoxels == 0U
+            && stats.unassignedModelVoxels == 0U
+            && stats.textureOutsideModelVoxels == 0U
+            && stats.modelFillOutsideModelVoxels == 0U
+            && stats.textureSurfaceVoxels + stats.modelFillVoxels
+                == stats.modelVoxels;
+        layers.emplace_back(Json::object({
+            {"layerIndex", layerIndex},
+            {"zMm",
+             result.grid.originZMm
+                 + (static_cast<double>(layerIndex) + 0.5)
+                    * result.grid.spacingZMm},
+            {"modelVoxels", stats.modelVoxels},
+            {"textureSurfaceVoxels", stats.textureSurfaceVoxels},
+            {"modelFillVoxels", stats.modelFillVoxels},
+            {"overlapTextureFillVoxels", stats.overlapTextureFillVoxels},
+            {"unassignedModelVoxels", stats.unassignedModelVoxels},
+            {"partitionPass", partitionPass},
+        }));
+    }
+    return Json{std::move(layers)};
+}
+
+Json BuildConformance(const TextureFillPartitionConformanceResult& conformance)
+{
+    return Json::object({
+        {"cpuAvailable", conformance.cpuAvailable},
+        {"openVdbAvailable", conformance.openVdbAvailable},
+        {"sameGrid", conformance.sameGrid},
+        {"cpuPartitionInvariantPass", conformance.cpuPartitionInvariantPass},
+        {"openVdbPartitionInvariantPass", conformance.openVdbPartitionInvariantPass},
+        {"cpuStatus", conformance.cpuStatus},
+        {"openVdbStatus", conformance.openVdbStatus},
+        {"cpuBackendRole", conformance.cpuBackendRole},
+        {"openVdbBackendRole", conformance.openVdbBackendRole},
+        {"status", conformance.conformanceStatus},
+        {"productionAcceptance", conformance.productionAcceptance},
+        {"modelOnlyCpuVoxels", conformance.modelOnlyCpuVoxels},
+        {"modelOnlyOpenVdbVoxels", conformance.modelOnlyOpenVdbVoxels},
+        {"textureOnlyCpuVoxels", conformance.textureOnlyCpuVoxels},
+        {"textureOnlyOpenVdbVoxels", conformance.textureOnlyOpenVdbVoxels},
+        {"fillOnlyCpuVoxels", conformance.fillOnlyCpuVoxels},
+        {"fillOnlyOpenVdbVoxels", conformance.fillOnlyOpenVdbVoxels},
+        {"commonDistanceSamples", conformance.commonDistanceSamples},
+        {"maxDistanceDeltaMm", conformance.maxDistanceDeltaMm},
+        {"meanDistanceDeltaMm", conformance.meanDistanceDeltaMm},
+        {"allTextureThresholdDeltaMm", conformance.allTextureThresholdDeltaMm},
+        {"openVdbToCpuCoreTimeRatio",
+         NullableDouble(
+             conformance.openVdbToCpuCoreTimeRatio > 0.0,
+             conformance.openVdbToCpuCoreTimeRatio)},
+        {"openVdbToCpuPeakMemoryRatio",
+         NullableDouble(
+             conformance.openVdbToCpuPeakMemoryRatio > 0.0,
+             conformance.openVdbToCpuPeakMemoryRatio)},
+        {"issues", slicer_core::ValidationIssuesToJson(conformance.issues)},
+    });
+}
+
+Json BuildConfigSnapshot(
+    const SliceConfig& config,
+    const GlobalTextureFillPartitionResult& result)
+{
+    const slicer_core::OpenVdbStatus openVdb = slicer_core::GetOpenVdbStatus();
+    return Json::object({
+        {"textureEnabled", config.texture.enabled},
+        {"textureApplyMode", config.texture.apply_mode},
+        {"geometryMode", config.texture.surface_shell.geometry_mode},
+        {"widthMm", config.texture.surface_shell.width_mm},
+        {"widthStepMm", config.texture.surface_shell.width_step_mm},
+        {"minimumWidthPolicy", config.texture.surface_shell.minimum_width_policy},
+        {"surfaceScope", config.texture.surface_shell.surface_scope},
+        {"fullTextureAtModelLimit", config.texture.surface_shell.full_texture_at_model_limit},
+        {"modelFillEnabled", config.model_fill.enabled},
+        {"modelFillMaterial", config.model_fill.material},
+        {"modelFillScope", config.model_fill.scope},
+        {"modelFillValue", static_cast<int>(config.model_fill.value)},
+        {"grid", BuildGrid(result)},
+        {"pixelPitchXMm",
+         NullableDouble(config.output.dpi_x > 0, 25.4 / config.output.dpi_x)},
+        {"pixelPitchYMm",
+         NullableDouble(config.output.dpi_y > 0, 25.4 / config.output.dpi_y)},
+        {"layerThicknessMm", config.output.layer_thickness_mm},
+        {"openVdbCompiled", openVdb.compiled_with_openvdb},
+        {"openVdbRuntimeAvailable", openVdb.runtime_available},
+    });
+}
+
+Json BuildSweepSample(const TextureFillPartitionWidthSweepSample& sample)
+{
+    return Json::object({
+        {"requestedWidthMm", sample.requestedWidthMm},
+        {"effectiveWidthMm", sample.effectiveWidthMm},
+        {"allTexture", sample.allTexture},
+        {"status", sample.status},
+        {"partitionPass", sample.partitionPass},
+        {"modelVoxels", sample.stats.modelVoxels},
+        {"textureSurfaceVoxels", sample.stats.textureSurfaceVoxels},
+        {"modelFillVoxels", sample.stats.modelFillVoxels},
+        {"overlapTextureFillVoxels", sample.stats.overlapTextureFillVoxels},
+        {"unassignedModelVoxels", sample.stats.unassignedModelVoxels},
+        {"totalCoreMs", sample.performance.totalCoreMs},
+    });
+}
+
+}  // namespace
 
 namespace slicer_core
 {
@@ -27,6 +315,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
 {
     const TextureFillPartitionReportData report =
         BuildTextureFillPartitionUnavailableReportData(config);
+    const OpenVdbStatus openVdb = GetOpenVdbStatus();
     return Json::object({
         {"schema", "slicesoft.texture_fill_partition.12e.1"},
         {"packageProtocol", "p0.rgbwsv.2"},
@@ -39,6 +328,17 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
         {"surfaceScope", report.options.surfaceScope},
         {"backend", report.backend},
         {"backendRole", report.backendRole},
+        {"grid", Json::object({
+             {"width", nullptr},
+             {"height", nullptr},
+             {"depth", nullptr},
+             {"originXMm", nullptr},
+             {"originYMm", nullptr},
+             {"originZMm", nullptr},
+             {"spacingXMm", nullptr},
+             {"spacingYMm", nullptr},
+             {"spacingZMm", nullptr},
+         })},
         {"width",
          Json::object({
              {"requestedWidthMm", report.options.requestedWidthMm},
@@ -59,18 +359,21 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
              {"modelFillVoxels", 0},
              {"overlapTextureFillVoxels", 0},
              {"unassignedModelVoxels", 0},
-             {"modelPixels", 0},
-             {"textureSurfacePixels", 0},
-             {"modelFillPixels", 0},
-             {"overlapTextureFillPixels", 0},
-             {"unassignedModelPixels", 0},
+             {"textureOutsideModelVoxels", 0},
+             {"modelFillOutsideModelVoxels", 0},
+             {"modelPixels", nullptr},
+             {"textureSurfacePixels", nullptr},
+             {"modelFillPixels", nullptr},
+             {"overlapTextureFillPixels", nullptr},
+             {"unassignedModelPixels", nullptr},
              {"textureCoverageRatio", 0.0},
              {"modelFillCoverageRatio", 0.0},
              {"thinRegionMergedVoxels", 0},
              {"medialAxisTieCount", 0},
              {"partitionPass", false},
-         })},
+        })},
         {"textureTransfer", Json::object({
+             {"status", "not_evaluated"},
              {"sampledTextureCount", 0},
              {"fallbackCount", 0},
              {"missingUvCount", 0},
@@ -82,12 +385,36 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
          })},
         {"performance", Json::object({
              {"preflightMs", nullptr},
+             {"topologyMs", nullptr},
+             {"levelSetMs", nullptr},
+             {"gridSampleMs", nullptr},
              {"occupancyMs", nullptr},
              {"distanceMs", nullptr},
              {"partitionMs", nullptr},
              {"textureTransferMs", nullptr},
              {"totalCoreMs", nullptr},
-             {"peakMemoryBytes", nullptr},
+             {"gridVoxelCount", nullptr},
+             {"maskBytes", nullptr},
+             {"closestReferenceBytes", nullptr},
+             {"occupancyQueryBytes", nullptr},
+             {"nearestQueryBytes", nullptr},
+             {"openVdbGridBytes", nullptr},
+             {"workingSetBytes", nullptr},
+             {"peakWorkingSetBytes", nullptr},
+         })},
+        {"queryStats", Json::object({
+             {"occupancyQueryCount", 0},
+             {"occupancyVisitedNodes", 0},
+             {"occupancyTestedTriangles", 0},
+             {"occupancyFallbackRayCount", 0},
+             {"occupancyAmbiguousRayCount", 0},
+             {"occupancyBoundaryPointCount", 0},
+             {"sdfSampleCount", 0},
+             {"sdfActiveSampleCount", 0},
+             {"sdfBackgroundSampleCount", 0},
+             {"nearestQueryCount", 0},
+             {"nearestVisitedNodes", 0},
+             {"nearestTestedTriangles", 0},
          })},
         {"layers", Json::array({})},
         {"issues", ValidationIssuesToJson(report.issues)},
@@ -104,7 +431,84 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
              {"modelFillMaterial", config.model_fill.material},
              {"modelFillScope", config.model_fill.scope},
              {"modelFillValue", static_cast<int>(config.model_fill.value)},
+             {"pixelPitchXMm",
+              NullableDouble(config.output.dpi_x > 0, 25.4 / config.output.dpi_x)},
+             {"pixelPitchYMm",
+              NullableDouble(config.output.dpi_y > 0, 25.4 / config.output.dpi_y)},
+             {"layerThicknessMm", config.output.layer_thickness_mm},
+             {"openVdbCompiled", openVdb.compiled_with_openvdb},
+             {"openVdbRuntimeAvailable", openVdb.runtime_available},
          })},
+    });
+}
+
+Json BuildTextureFillPartitionReport(
+    const SliceConfig& config,
+    const GlobalTextureFillPartitionResult& result,
+    const TextureFillPartitionConformanceResult* conformance)
+{
+    Json::Object report;
+    report["schema"] = "slicesoft.texture_fill_partition.12e.1";
+    report["packageProtocol"] = "p0.rgbwsv.2";
+    report["enabled"] = IsGlobalTextureFillPartitionRequested(config);
+    report["strategy"] = "global_surface_shell";
+    report["availability"] = result.available ? "available" : "unavailable";
+    report["status"] = result.status;
+    report["productionAcceptance"] = result.productionAcceptance;
+    report["geometryMode"] = config.texture.surface_shell.geometry_mode;
+    report["surfaceScope"] = result.options.surfaceScope;
+    report["backend"] = result.backend;
+    report["backendRole"] = result.backendRole;
+    report["grid"] = BuildGrid(result);
+    report["width"] = BuildWidth(result);
+    report["partition"] = BuildPartition(result);
+    report["textureTransfer"] = Json::object({
+        {"status", "not_evaluated"},
+        {"sampledTextureCount", 0},
+        {"fallbackCount", 0},
+        {"missingUvCount", 0},
+        {"missingTextureCount", 0},
+        {"uvOutOfRangeCount", 0},
+        {"outsideColoredCount", 0},
+        {"maxTransferDistanceMm", nullptr},
+        {"medialAxisTieCount", 0},
+    });
+    report["performance"] = BuildPerformance(result);
+    report["queryStats"] = BuildQueryStats(result);
+    report["layers"] = result.available ? BuildLayers(result) : Json::array({});
+    report["issues"] = ValidationIssuesToJson(result.issues);
+    report["configSnapshot"] = BuildConfigSnapshot(config, result);
+    if (conformance != nullptr)
+    {
+        report["conformance"] = BuildConformance(*conformance);
+    }
+    return Json{std::move(report)};
+}
+
+Json BuildTextureFillPartitionWidthSweepSummary(
+    const TextureFillPartitionWidthSweepResult& sweep)
+{
+    Json::Array samples;
+    samples.reserve(sweep.samples.size());
+    for (const TextureFillPartitionWidthSweepSample& sample : sweep.samples)
+    {
+        samples.push_back(BuildSweepSample(sample));
+    }
+    return Json::object({
+        {"backend", sweep.backend},
+        {"backendRole", sweep.backendRole},
+        {"availability", sweep.available ? "available" : "unavailable"},
+        {"status", sweep.status},
+        {"productionAcceptance", sweep.productionAcceptance},
+        {"minimumWidthMm", sweep.minimumWidthMm},
+        {"maximumWidthMm", sweep.maximumWidthMm},
+        {"widthStepMm", sweep.widthStepMm},
+        {"sampleCount", static_cast<std::uint64_t>(sweep.samples.size())},
+        {"monotonic", sweep.monotonicPass},
+        {"endpoint", sweep.endpointPass},
+        {"totalCandidateCoreMs", sweep.totalCandidateCoreMs},
+        {"samples", Json{std::move(samples)}},
+        {"issues", ValidationIssuesToJson(sweep.issues)},
     });
 }
 

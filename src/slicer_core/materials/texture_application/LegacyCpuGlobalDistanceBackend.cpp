@@ -417,11 +417,11 @@ GlobalTextureFillPartitionCandidate LegacyCpuGlobalDistanceBackend::Evaluate(
             "legacy CPU candidate could not calculate an all-texture threshold");
         return candidate;
     }
-    candidate.widthMetrics.allTextureThresholdMm = std::max(
-        candidate.widthMetrics.effectiveMinimumWidthMm,
-        CeilToStep(
-            candidate.widthMetrics.maxInteriorDistanceMm,
-            request.options.widthStepMm));
+    candidate.widthMetrics.allTextureThresholdMm = CeilToStep(
+        std::max(
+            candidate.widthMetrics.effectiveMinimumWidthMm,
+            candidate.widthMetrics.maxInteriorDistanceMm),
+        request.options.widthStepMm);
     candidate.widthMetrics.effectiveWidthMm = std::min(
         request.options.requestedWidthMm,
         candidate.widthMetrics.allTextureThresholdMm);

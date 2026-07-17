@@ -119,6 +119,193 @@ bool HasErrorIssue(const std::vector<ValidationIssue>& issues)
     return false;
 }
 
+double CeilToStep(const double value, const double step)
+{
+    return std::ceil(value / step - 1.0e-12) * step;
+}
+
+double RoundToStep(const double value, const double step)
+{
+    return std::floor(value / step + 0.5 + 1.0e-12) * step;
+}
+
+void AppendUniqueWidth(
+    std::vector<double>& widths,
+    const double width,
+    const double epsilon)
+{
+    if (widths.empty() || std::abs(widths.back() - width) > epsilon)
+    {
+        widths.push_back(width);
+    }
+}
+
+std::vector<double> BuildWidthSweepValues(
+    const double minimumWidthMm,
+    const double maximumWidthMm,
+    const double widthStepMm,
+    const TextureFillPartitionWidthSweepOptions& options,
+    bool& sampleLimitExceeded)
+{
+    sampleLimitExceeded = false;
+    std::vector<double> widths;
+    if (options.maxSamples == 0U || options.representativeIntermediateCount < 0)
+    {
+        sampleLimitExceeded = true;
+        return widths;
+    }
+
+    const double epsilon = std::max(widthStepMm * 1.0e-8, 1.0e-12);
+    const double minimumRequest = CeilToStep(minimumWidthMm, widthStepMm);
+    if (options.fullStepScan)
+    {
+        const double range = std::max(0.0, maximumWidthMm - minimumRequest);
+        const std::size_t estimatedSamples = static_cast<std::size_t>(
+            std::floor(range / widthStepMm + epsilon))
+            + 1U;
+        const bool needsEndpoint = minimumRequest
+            + static_cast<double>(estimatedSamples - 1U) * widthStepMm
+            < maximumWidthMm - epsilon;
+        const std::size_t requiredSamples = estimatedSamples
+            + (needsEndpoint ? 1U : 0U);
+        if (requiredSamples > options.maxSamples)
+        {
+            sampleLimitExceeded = true;
+            return widths;
+        }
+        for (std::size_t index{0U}; index < estimatedSamples; ++index)
+        {
+            AppendUniqueWidth(
+                widths,
+                minimumRequest + static_cast<double>(index) * widthStepMm,
+                epsilon);
+        }
+        AppendUniqueWidth(widths, maximumWidthMm, epsilon);
+        return widths;
+    }
+
+    const int intervalCount = options.representativeIntermediateCount + 1;
+    for (int index{0}; index <= intervalCount; ++index)
+    {
+        double width{minimumRequest};
+        if (index == intervalCount)
+        {
+            width = maximumWidthMm;
+        }
+        else if (index > 0)
+        {
+            const double ratio = static_cast<double>(index)
+                / static_cast<double>(intervalCount);
+            width = RoundToStep(
+                minimumWidthMm
+                    + (maximumWidthMm - minimumWidthMm) * ratio,
+                widthStepMm);
+            width = std::clamp(width, minimumRequest, maximumWidthMm);
+        }
+        AppendUniqueWidth(widths, width, epsilon);
+    }
+    if (widths.size() > options.maxSamples)
+    {
+        widths.clear();
+        sampleLimitExceeded = true;
+    }
+    return widths;
+}
+
+void AppendSweepIssue(
+    TextureFillPartitionWidthSweepResult& result,
+    const TextureFillPartitionErrorCode code,
+    const std::string& message)
+{
+    result.issues.push_back(MakePartitionIssue(code, message));
+}
+
+void ValidateWidthSweep(TextureFillPartitionWidthSweepResult& result)
+{
+    if (result.samples.empty())
+    {
+        AppendSweepIssue(
+            result,
+            TextureFillPartitionErrorCode::WidthSweepEmpty,
+            "texture/fill width sweep contains no validated samples");
+        return;
+    }
+
+    bool modelStable{true};
+    bool textureMonotonic{true};
+    bool fillMonotonic{true};
+    bool partitionStable{true};
+    const std::uint64_t expectedModel = result.samples.front().stats.modelVoxels;
+    for (std::size_t index{0U}; index < result.samples.size(); ++index)
+    {
+        const TextureFillPartitionWidthSweepSample& sample =
+            result.samples.at(index);
+        modelStable = modelStable
+            && sample.stats.modelVoxels == expectedModel;
+        partitionStable = partitionStable
+            && sample.partitionPass
+            && sample.stats.overlapTextureFillVoxels == 0U
+            && sample.stats.unassignedModelVoxels == 0U
+            && sample.stats.textureSurfaceVoxels
+                    + sample.stats.modelFillVoxels
+                == sample.stats.modelVoxels;
+        if (index > 0U)
+        {
+            const TextureFillPartitionWidthSweepSample& previous =
+                result.samples.at(index - 1U);
+            textureMonotonic = textureMonotonic
+                && sample.stats.textureSurfaceVoxels
+                    >= previous.stats.textureSurfaceVoxels;
+            fillMonotonic = fillMonotonic
+                && sample.stats.modelFillVoxels
+                    <= previous.stats.modelFillVoxels;
+        }
+    }
+
+    if (!modelStable)
+    {
+        AppendSweepIssue(
+            result,
+            TextureFillPartitionErrorCode::WidthSweepModelChanged,
+            "model occupancy changed while scanning texture-shell width");
+    }
+    if (!textureMonotonic)
+    {
+        AppendSweepIssue(
+            result,
+            TextureFillPartitionErrorCode::WidthSweepTextureNonMonotonic,
+            "texture-surface voxel count decreased while width increased");
+    }
+    if (!fillMonotonic)
+    {
+        AppendSweepIssue(
+            result,
+            TextureFillPartitionErrorCode::WidthSweepFillNonMonotonic,
+            "model-fill voxel count increased while width increased");
+    }
+
+    const TextureFillPartitionWidthSweepSample& endpoint =
+        result.samples.back();
+    result.endpointPass = endpoint.allTexture
+        && endpoint.partitionPass
+        && endpoint.stats.textureSurfaceVoxels == endpoint.stats.modelVoxels
+        && endpoint.stats.modelFillVoxels == 0U;
+    if (!result.endpointPass)
+    {
+        AppendSweepIssue(
+            result,
+            TextureFillPartitionErrorCode::WidthSweepEndpointInvalid,
+            "final width-sweep sample is not the all-texture endpoint");
+    }
+    result.monotonicPass = modelStable
+        && textureMonotonic
+        && fillMonotonic
+        && partitionStable;
+    result.status = result.monotonicPass && result.endpointPass
+        ? "diagnostic"
+        : "fail";
+}
+
 bool ValidateMaskShapes(GlobalTextureFillPartitionResult& result)
 {
     const std::optional<std::size_t> expectedVoxelCount = VoxelCount(result.grid);
@@ -304,6 +491,116 @@ GlobalTextureFillPartitionResult GlobalTextureFillPartitionService::Evaluate(
     result.partitionPass = !HasErrorIssue(result.issues);
     result.status = result.partitionPass ? "diagnostic" : "fail";
     return result;
+}
+
+TextureFillPartitionWidthSweepResult
+GlobalTextureFillPartitionService::EvaluateWidthSweep(
+    const GlobalTextureFillPartitionRequest& request,
+    const TextureFillPartitionWidthSweepOptions& options) const
+{
+    TextureFillPartitionWidthSweepResult sweep;
+    const double classificationResolutionMm = std::max({
+        request.grid.spacingXMm,
+        request.grid.spacingYMm,
+        request.grid.spacingZMm});
+    GlobalTextureFillPartitionRequest discoveryRequest = request;
+    discoveryRequest.options.requestedWidthMm = std::max({
+        request.options.requestedWidthMm,
+        request.options.baseMinimumWidthMm,
+        2.0 * classificationResolutionMm});
+    const GlobalTextureFillPartitionResult discovery = Evaluate(
+        discoveryRequest);
+    sweep.available = discovery.available;
+    sweep.backend = discovery.backend;
+    sweep.backendRole = discovery.backendRole;
+    sweep.widthStepMm = request.options.widthStepMm;
+    if (!discovery.available || !discovery.partitionPass)
+    {
+        sweep.status = discovery.available ? "fail" : "unavailable";
+        sweep.issues = discovery.issues;
+        AppendSweepIssue(
+            sweep,
+            TextureFillPartitionErrorCode::WidthSweepSampleFailed,
+            "width-sweep discovery candidate is unavailable or invalid");
+        return sweep;
+    }
+
+    sweep.minimumWidthMm = discovery.widthMetrics.effectiveMinimumWidthMm;
+    sweep.maximumWidthMm = discovery.widthMetrics.allTextureThresholdMm;
+    if (!std::isfinite(sweep.minimumWidthMm)
+        || !std::isfinite(sweep.maximumWidthMm)
+        || !std::isfinite(sweep.widthStepMm)
+        || sweep.minimumWidthMm <= 0.0
+        || sweep.maximumWidthMm < sweep.minimumWidthMm
+        || sweep.widthStepMm <= 0.0)
+    {
+        sweep.status = "fail";
+        AppendSweepIssue(
+            sweep,
+            TextureFillPartitionErrorCode::WidthSweepEndpointInvalid,
+            "width-sweep discovery returned invalid dynamic bounds");
+        return sweep;
+    }
+
+    bool sampleLimitExceeded{false};
+    const std::vector<double> widths = BuildWidthSweepValues(
+        sweep.minimumWidthMm,
+        sweep.maximumWidthMm,
+        sweep.widthStepMm,
+        options,
+        sampleLimitExceeded);
+    if (sampleLimitExceeded)
+    {
+        sweep.status = "fail";
+        AppendSweepIssue(
+            sweep,
+            TextureFillPartitionErrorCode::WidthSweepSampleFailed,
+            "width-sweep sample count exceeds the configured safety limit");
+        return sweep;
+    }
+    if (widths.empty())
+    {
+        sweep.status = "fail";
+        AppendSweepIssue(
+            sweep,
+            TextureFillPartitionErrorCode::WidthSweepEmpty,
+            "width-sweep quantization produced no representative widths");
+        return sweep;
+    }
+
+    sweep.samples.reserve(widths.size());
+    for (const double width : widths)
+    {
+        GlobalTextureFillPartitionRequest sampleRequest = request;
+        sampleRequest.options.requestedWidthMm = width;
+        const GlobalTextureFillPartitionResult sampleResult = Evaluate(
+            sampleRequest);
+        if (!sampleResult.available || !sampleResult.partitionPass)
+        {
+            sweep.status = "fail";
+            sweep.issues.insert(
+                sweep.issues.end(),
+                sampleResult.issues.begin(),
+                sampleResult.issues.end());
+            AppendSweepIssue(
+                sweep,
+                TextureFillPartitionErrorCode::WidthSweepSampleFailed,
+                "one width-sweep sample is unavailable or invalid");
+            return sweep;
+        }
+        TextureFillPartitionWidthSweepSample sample;
+        sample.requestedWidthMm = width;
+        sample.effectiveWidthMm = sampleResult.widthMetrics.effectiveWidthMm;
+        sample.allTexture = sampleResult.widthMetrics.allTexture;
+        sample.partitionPass = sampleResult.partitionPass;
+        sample.status = sampleResult.status;
+        sample.stats = sampleResult.stats;
+        sample.performance = sampleResult.performance;
+        sweep.totalCandidateCoreMs += sample.performance.totalCoreMs;
+        sweep.samples.push_back(sample);
+    }
+    ValidateWidthSweep(sweep);
+    return sweep;
 }
 
 TextureFillPartitionConformanceResult CompareTextureFillPartitionResults(

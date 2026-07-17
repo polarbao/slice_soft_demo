@@ -1,0 +1,77 @@
+{
+  "backend": "deterministic_sweep_fixture",
+  "status": "diagnostic",
+  "minimumWidthMm": 0.1,
+  "maximumWidthMm": 0.4,
+  "widthStepMm": 0.01,
+  "sampleCount": 5,
+  "monotonic": true,
+  "endpoint": true,
+  "samples": [
+    {
+      "requestedWidthMm": 0.1,
+      "effectiveWidthMm": 0.1,
+      "allTexture": false,
+      "status": "diagnostic",
+      "partitionPass": true,
+      "modelVoxels": 4,
+      "textureSurfaceVoxels": 1,
+      "modelFillVoxels": 3,
+      "overlapTextureFillVoxels": 0,
+      "unassignedModelVoxels": 0,
+      "totalCoreMs": 1
+    },
+    {
+      "requestedWidthMm": 0.18,
+      "effectiveWidthMm": 0.18,
+      "allTexture": false,
+      "status": "diagnostic",
+      "partitionPass": true,
+      "modelVoxels": 4,
+      "textureSurfaceVoxels": 2,
+      "modelFillVoxels": 2,
+      "overlapTextureFillVoxels": 0,
+      "unassignedModelVoxels": 0,
+      "totalCoreMs": 1
+    },
+    {
+      "requestedWidthMm": 0.25,
+      "effectiveWidthMm": 0.25,
+      "allTexture": false,
+      "status": "diagnostic",
+      "partitionPass": true,
+      "modelVoxels": 4,
+      "textureSurfaceVoxels": 3,
+      "modelFillVoxels": 1,
+      "overlapTextureFillVoxels": 0,
+      "unassignedModelVoxels": 0,
+      "totalCoreMs": 1
+    },
+    {
+      "requestedWidthMm": 0.33,
+      "effectiveWidthMm": 0.33,
+      "allTexture": false,
+      "status": "diagnostic",
+      "partitionPass": true,
+      "modelVoxels": 4,
+      "textureSurfaceVoxels": 3,
+      "modelFillVoxels": 1,
+      "overlapTextureFillVoxels": 0,
+      "unassignedModelVoxels": 0,
+      "totalCoreMs": 1
+    },
+    {
+      "requestedWidthMm": 0.4,
+      "effectiveWidthMm": 0.4,
+      "allTexture": true,
+      "status": "diagnostic",
+      "partitionPass": true,
+      "modelVoxels": 4,
+      "textureSurfaceVoxels": 4,
+      "modelFillVoxels": 0,
+      "overlapTextureFillVoxels": 0,
+      "unassignedModelVoxels": 0,
+      "totalCoreMs": 1
+    }
+  ]
+}

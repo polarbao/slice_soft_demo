@@ -1,0 +1,225 @@
+#include "slicer_core/config.h"
+#include "slicer_core/json_value.h"
+#include "slicer_core/reports/TextureFillPartitionReport.h"
+
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace
+{
+
+bool ExpectTrue(const bool condition, const std::string& message)
+{
+    if (!condition)
+    {
+        std::cerr << "FAIL " << message << '\n';
+        return false;
+    }
+    return true;
+}
+
+slicer_core::Json LoadGolden(const std::string& fileName)
+{
+    const std::filesystem::path path =
+        std::filesystem::path{SLICESOFT_SOURCE_DIR}
+        / "tests" / "golden" / "expected" / fileName;
+    std::ifstream input(path);
+    if (!input)
+    {
+        throw std::runtime_error("failed to open golden: " + path.string());
+    }
+    return slicer_core::Json::parse(input);
+}
+
+slicer_core::SliceConfig MakeConfig()
+{
+    slicer_core::SliceConfig config;
+    config.texture.enabled = true;
+    config.texture.apply_mode = "global_surface_shell";
+    config.texture.surface_shell.width_mm = 0.10;
+    config.texture.surface_shell.width_step_mm = 0.01;
+    config.model_fill.enabled = true;
+    config.model_fill.material = "white";
+    config.model_fill.scope = "complement_of_global_texture_shell";
+    return config;
+}
+
+slicer_core::GlobalTextureFillPartitionResult MakeResult()
+{
+    slicer_core::GlobalTextureFillPartitionResult result;
+    result.available = true;
+    result.partitionPass = true;
+    result.status = "diagnostic";
+    result.backend = "report_fixture";
+    result.backendRole = "conformance_candidate";
+    result.options.requestedWidthMm = 0.10;
+    result.grid.width = 2;
+    result.grid.height = 1;
+    result.grid.depth = 2;
+    result.grid.originXMm = 0.0;
+    result.grid.originYMm = 0.0;
+    result.grid.originZMm = 0.0;
+    result.grid.spacingXMm = 0.05;
+    result.grid.spacingYMm = 0.05;
+    result.grid.spacingZMm = 0.01;
+    result.modelMask.grid = result.grid;
+    result.textureSurfaceMask.grid = result.grid;
+    result.modelFillMask.grid = result.grid;
+    result.modelMask.values = {1U, 1U, 1U, 0U};
+    result.textureSurfaceMask.values = {1U, 0U, 0U, 0U};
+    result.modelFillMask.values = {0U, 1U, 1U, 0U};
+    result.stats.modelVoxels = 3U;
+    result.stats.textureSurfaceVoxels = 1U;
+    result.stats.modelFillVoxels = 2U;
+    result.widthMetrics.classificationResolutionMm = 0.05;
+    result.widthMetrics.epsilonMm = 1.0e-9;
+    result.widthMetrics.effectiveMinimumWidthMm = 0.10;
+    result.widthMetrics.effectiveWidthMm = 0.10;
+    result.widthMetrics.maxInteriorDistanceMm = 0.20;
+    result.widthMetrics.allTextureThresholdMm = 0.20;
+    result.performance.topologyMs = 1.0;
+    result.performance.levelSetMs = 2.0;
+    result.performance.gridSampleMs = 3.0;
+    result.performance.occupancyBuildMs = 5.0;
+    result.performance.distanceQueryMs = 7.0;
+    result.performance.partitionMs = 11.0;
+    result.performance.totalCoreMs = 24.0;
+    result.performance.gridVoxelCount = 4U;
+    result.performance.maskBytes = 12U;
+    result.performance.closestReferenceBytes = 96U;
+    result.performance.openVdbGridBytes = 128U;
+    result.queryStats.sdfSampleCount = 4U;
+    return result;
+}
+
+slicer_core::Json MakeStableReportProjection(const slicer_core::Json& report)
+{
+    return slicer_core::Json::object({
+        {"schema", report.at("schema")},
+        {"packageProtocol", report.at("packageProtocol")},
+        {"availability", report.at("availability")},
+        {"status", report.at("status")},
+        {"productionAcceptance", report.at("productionAcceptance")},
+        {"backend", report.at("backend")},
+        {"backendRole", report.at("backendRole")},
+        {"grid", report.at("grid")},
+        {"width", report.at("width")},
+        {"partition", report.at("partition")},
+        {"performance", report.at("performance")},
+        {"layers", report.at("layers")},
+    });
+}
+
+bool SuccessReportMatchesGolden()
+{
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult());
+    const slicer_core::Json expected = LoadGolden(
+        "12e_texture_fill_partition_report_schema.json");
+    return ExpectTrue(
+               MakeStableReportProjection(report).dump(2) == expected.dump(2),
+               "success report matches stable golden")
+        && ExpectTrue(report.at("layers").size() == 2U, "report has two real grid layers")
+        && ExpectTrue(
+               report.at("layers").at(0).at("layerIndex").as_int() == 0,
+               "layers use true ascending indices")
+        && ExpectTrue(
+               report.at("layers").at(1).at("zMm").as_double() == 0.015,
+               "layer Z uses grid cell center");
+}
+
+bool ConformanceIsOptionalAndDiagnostic()
+{
+    slicer_core::TextureFillPartitionConformanceResult conformance;
+    conformance.cpuAvailable = true;
+    conformance.openVdbAvailable = true;
+    conformance.sameGrid = true;
+    conformance.cpuPartitionInvariantPass = true;
+    conformance.openVdbPartitionInvariantPass = true;
+    conformance.cpuStatus = "diagnostic";
+    conformance.openVdbStatus = "diagnostic";
+    conformance.cpuBackendRole = "conformance_candidate";
+    conformance.openVdbBackendRole = "conformance_candidate";
+    conformance.conformanceStatus = "diagnostic";
+    conformance.commonDistanceSamples = 3U;
+    conformance.maxDistanceDeltaMm = 0.01;
+    const slicer_core::Json without = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult());
+    const slicer_core::Json with = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult(),
+        &conformance);
+    return ExpectTrue(!without.contains("conformance"), "conformance is omitted when absent")
+        && ExpectTrue(with.contains("conformance"), "conformance is serialized when supplied")
+        && ExpectTrue(
+               with.at("conformance").at("productionAcceptance").as_string()
+                   == "not_evaluated",
+               "conformance never invents production acceptance");
+}
+
+bool UnavailableMeasurementsRemainNull()
+{
+    slicer_core::GlobalTextureFillPartitionResult result = MakeResult();
+    result.performance.processMemoryAvailable = false;
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        result);
+    return ExpectTrue(
+               !report.at("performance").at("workingSetBytes").is_number(),
+               "unavailable working set is null")
+        && ExpectTrue(
+               !report.at("performance").at("peakWorkingSetBytes").is_number(),
+               "unavailable peak working set is null")
+        && ExpectTrue(
+               !report.at("performance").at("textureTransferMs").is_number(),
+               "unimplemented texture transfer timing is null");
+}
+
+bool LayerTotalsMatchPartitionTotals()
+{
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult());
+    std::uint64_t model{0U};
+    std::uint64_t texture{0U};
+    std::uint64_t fill{0U};
+    for (const slicer_core::Json& layer : report.at("layers").as_array())
+    {
+        model += static_cast<std::uint64_t>(layer.at("modelVoxels").as_double());
+        texture += static_cast<std::uint64_t>(layer.at("textureSurfaceVoxels").as_double());
+        fill += static_cast<std::uint64_t>(layer.at("modelFillVoxels").as_double());
+    }
+    return ExpectTrue(model == 3U, "layer model totals match")
+        && ExpectTrue(texture == 1U, "layer texture totals match")
+        && ExpectTrue(fill == 2U, "layer fill totals match");
+}
+
+}  // namespace
+
+int main()
+{
+    const std::vector<std::pair<std::string, bool (*)()>> tests{
+        {"success_report_matches_golden", SuccessReportMatchesGolden},
+        {"conformance_is_optional_and_diagnostic", ConformanceIsOptionalAndDiagnostic},
+        {"unavailable_measurements_remain_null", UnavailableMeasurementsRemainNull},
+        {"layer_totals_match_partition_totals", LayerTotalsMatchPartitionTotals},
+    };
+    for (const auto& test : tests)
+    {
+        std::cout << "RUN " << test.first << std::endl;
+        if (!test.second())
+        {
+            return 1;
+        }
+        std::cout << "PASS " << test.first << '\n';
+    }
+    std::cout << "Texture/fill partition report unit tests complete.\n";
+    return 0;
+}
