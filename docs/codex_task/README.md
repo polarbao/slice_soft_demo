@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-07-17
-> 当前阶段：12D COMPLETE / 12E-08A/08B COMPLETE / 12E-08 IN PROGRESS
+> 更新日期：2026-07-20
+> 当前阶段：12D COMPLETE / 12E-08C COMPLETE-BLOCKED / 12E-08C-R1 PREPARED
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -28,19 +28,21 @@ docs/codex_task/archive/handoff
 ```text
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
+docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 ```
 
 当前原子任务：
 
 ```text
-无 active code task；下一原子任务为 12E-08C 默认 OFF Release 真实模型预算与 legacy regression
+无 active code task；下一原子任务为 12E-08C-R1-01 DTO、错误码、Hash 与 Report Skeleton
 ```
 
 12C-R0/R1/R2 已全部完成。12D-R0/R1/R2/R3 已封口，包含 candidate/exact 诊断、一像素 repair、外部背景保护、Qt 展示和三个真实 OBJ 验收。repair 仍默认关闭。
 
 ## 保留参考入口
 
-`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；12E-08A/08B 已完成 diagnostic raster mapping 与 full-material closure，12E-08D 前仍不能启动 production path。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
+`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；12E-08A/08B/08C 已完成 diagnostic 与 Release 证据，但真实 OBJ 被 topology 阻断。12E-08D 前必须先执行 12E-08C-R1/R2/R3 修复前置专项。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
 
 ## 当前执行阶段 12E
 
@@ -51,7 +53,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08A/08B COMPLETE / 12E-08 IN PROGRESS`。CPU 与 OpenVDB OFF/ON 同 grid conformance、动态 width sweep、纹理传递、内存 Diagnostic Composer、12D 模型域与完整材料域 exact closure、classification-to-raster 和成功报告已可复现；production output 仍缺 Release 预算、legacy regression 和 12E-08D 用户确认。
+12E 当前状态为 `12E-08C COMPLETE / RELEASE BUDGET BLOCKED`。CPU 与 OpenVDB OFF/ON 同 grid conformance、动态 width sweep、纹理传递、内存 Diagnostic Composer、12D 模型域与完整材料域 exact closure、classification-to-raster 和 legacy regression 已可复现；production output 仍缺真实 OBJ repair/post-strict、可冻结 Release 预算和 12E-08D admission。修复专项 R1-01 已准备。
 
 ## 12F Release Runtime 与性能优化专项
 

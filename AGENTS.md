@@ -21,9 +21,10 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-10 real-model material closure validation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07` and `12E-08A/08B/08C` are complete. The 12E-08C Release evidence is blocked for real OBJ topology, so `12E-08D` remains blocked; `12E-09A` diagnostic UI is the next allowed task.
+- `12E-01/02/03/04/05/06/07` and `12E-08A/08B/08C` are complete. The 12E-08C Release evidence is blocked for real OBJ topology. A `12E-08C-R1/R2/R3` explicit mesh-repair prerequisite is prepared before `12E-08D`; the next allowed atomic task is `12E-08C-R1-01`.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - 12E remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. `12E-08D` requires closed production gates and explicit user confirmation.
+- The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules
@@ -78,6 +79,8 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Next prepared execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
 - Prepared 12E task list: `docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md`
 - Prepared 12E execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
+- Prepared 12E repair task list: `docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md`
+- Prepared 12E repair execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md`
 
 ## Production Safety Rules
 

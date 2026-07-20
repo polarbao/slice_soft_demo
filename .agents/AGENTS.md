@@ -130,7 +130,7 @@ Current Stage 12 track:
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
-12E: 12E-01/02/03/04/05/06/07 and 12E-08A/08B/08C complete; Release evidence is blocked by real OBJ topology, 12E-08D production admission remains blocked, and 12E-09A diagnostic UI is next.
+12E: 12E-01/02/03/04/05/06/07 and 12E-08A/08B/08C complete; Release evidence is blocked by real OBJ topology. The prepared next task is 12E-08C-R1-01 in the explicit repair-then-strict prerequisite; 12E-08D remains blocked.
 ```
 
 R0/R1/R2 principles still apply to refactors:

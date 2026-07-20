@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08 evidence complete; 12E-08A/08B/08C complete, Release budget blocked by real OBJ topology, 12E-08D blocked
-- Latest completed phase: Stage 12E full-material diagnostic closure linkage
-- Latest completed task: `12E-08B full material semantic sidecar and closure`
-- Current task: none active; next allowed atomic task is `12E-09A diagnostic UI and Effective Config`
-- Prepared stage: `12E-09A Qt diagnostic UI and Effective Config` ready; `12E-09B production Profile` blocked by 12E-08D
+- Current phase: Stage 12E-08 evidence complete; Release budget blocked by real OBJ topology; 12E-08C-R1/R2/R3 repair prerequisite prepared before 12E-08D
+- Latest completed milestone: Stage 12E-08C default-OFF Release evidence and legacy regression
+- Latest completed task: `12E-08C default-OFF Release evidence and legacy regression`
+- Current task: none active; next allowed atomic task is `12E-08C-R1-01 repair DTO/hash/report contract`
+- Prepared stage: `12E-08C-R1 Contract & Eligibility` ready; `12E-09A diagnostic UI` also prepared; 12E-08D and 12E-09B remain blocked
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

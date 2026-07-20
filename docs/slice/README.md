@@ -6,7 +6,7 @@
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结，12E-08D production admission 继续阻断；12E-09A diagnostic UI 已可启动。
+当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；现已在 12E-08D 前插入 12E-08C-R1/R2/R3 显式拓扑修复前置专项，下一原子任务为 R1-01。12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
 
 ## 目录结构
 
@@ -97,12 +97,22 @@
 | `DOC/DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md` | 12E-06 纹理传递、fallback、确定性 tie 和诊断合成准备 |
 | `DOC/DOC_PREP_12E_R3_12DClosure联动准备.md` | 12E-07 exact mask、allTexture 和 12D closure 联动准备 |
 | `DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md` | 12E-08 raster mapping、完整 closure、性能和生产准入准备 |
+| `DOC/DOC_DECISION_12E_08C_R1_R2_R3_真实模型拓扑修复前置专项.md` | 在 12E-08D 前插入显式 repair-then-strict 专项的正式决策 |
+| `PRD/PRD_12E_08C_真实模型拓扑修复与严格准入.md` | 真实模型自动/人工修复、属性保持和严格准入需求 |
+| `DEV/DEV_12E_08C_MeshRepairThenStrict设计.md` | Mesh Repair 服务、哈希、属性映射和 post-strict 技术设计 |
+| `DEMO/DEMO_12E_08C_真实模型拓扑修复验证方案.md` | generated/真实模型/属性/Release 修复验证方案 |
+| `ROADMAP/ROADMAP_12E_08C_真实模型拓扑修复分阶段路线.md` | 12E-08C-R1/R2/R3 分阶段路线 |
+| `DOC/DOC_SCHEMA_12E_MeshRepairReport.md` | `slicesoft.mesh_repair.12e_08c.1` 报告契约 |
+| `DOC/DOC_MATRIX_12E_真实模型拓扑修复与严格准入.md` | issue、fixture、真实模型、属性和 08D Gate 矩阵 |
+| `DOC/DOC_PREP_12E_08C_R1_拓扑分类与修复契约准备.md` | R1-01 DTO/hash/report 实施准备 |
+| `REPORT/REPORT_12E_08C_真实模型拓扑修复专项启动状态.md` | 修复专项启动状态和下一任务 |
 | `DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md` | 12E-08A world-space classification-to-raster 实现与验证结果 |
 | `DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md` | 12E-08B 支撑、内部空洞与光油 full-material closure 实现及验证结果 |
 | `DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md` | 12E-09 Qt 诊断 UI、Effective Config、异步和 preview 准备 |
+| `DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md` | 12E-10 preview、真实模型矩阵、Release 证据与 REPORT_12E 准备 |
 | `DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md` | 12E partition report schema 与 unavailable skeleton |
 | `DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md` | 12E 配置、几何、分区、UI、协议和真实模型验收矩阵 |
-| `REPORT/REPORT_12E_启动准备状态.md` | 12E-01 至 12E-08B 实现结果与后续生产阻断状态 |
+| `REPORT/REPORT_12E_启动准备状态.md` | 12E-01 至 12E-08C 实现结果、修复专项准备与后续生产阻断状态 |
 | `DOC/DOC_DECISION_12F_Release运行环境与切片性能优化专项.md` | 统一 Debug/Release Runtime、Qt 调试入口收口和后续性能专项边界 |
 | `PRD/PRD_12F_Release运行环境与切片性能优化.md` | Release 运行环境、性能 KPI 与验收需求 |
 | `DEV/DEV_12F_Release运行环境与切片性能优化设计.md` | NMake x64 Runtime、ToolPaths、支撑/合成/稠密 mask 优化设计 |

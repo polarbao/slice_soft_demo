@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-20
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成，真实 OBJ Release budget 被 topology 阻断，12E-08D 继续阻断，12E-09A READY；12F-00/01 已完成、性能算法任务未开始
+> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成，真实 OBJ Release budget 被 topology 阻断；12E-08C-R1/R2/R3 修复前置专项已准备，R1-01 READY，12E-08D 继续阻断；12F-00/01 已完成、性能算法任务未开始
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：main，任务开始前通过 git 命令确认
 最新完成阶段：12E-08C 默认 OFF Release 证据与 Legacy Regression
-当前执行阶段：无 active code task
+当前执行阶段：12E-08C-R1/R2/R3 修复专项已准备，尚未开始代码
 最新完成任务：12E-08C 真实模型诊断矩阵、Release regression 与预算阻断结论
-准备任务：12E-09A Qt diagnostic UI/Effective Config READY；12E-08D 等待 topology budget 与用户再次确认；12F-02 等待用户明确启动
+准备任务：12E-08C-R1-01 DTO/hash/report contract READY；12E-09A diagnostic UI 可并行；12E-08D 等待 repair/strict/Release gate；12F-02 等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -324,7 +324,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
 12D：R0/R1/R2/R3 已完成，12D-10 三个真实 OBJ 验收通过；
-12E：12E-01..07 与 12E-08A/08B/08C 已完成；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release regression 与 Report Schema 可复现；真实 OBJ topology budget 和 12E-08D BLOCKED，12E-09A READY；
+12E：12E-01..07 与 12E-08A/08B/08C 已完成；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release regression 与 Report Schema 可复现；真实 OBJ topology budget BLOCKED；12E-08C-R1/R2/R3 修复专项 PREPARED，R1-01 READY；12E-08D BLOCKED；
 12F：Release/Debug 统一运行环境与专项文档已建立；12F-02 Release 性能基线刷新等待用户明确启动。
 ```
 
@@ -345,12 +345,25 @@ docs/slice/DOC/DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md
 docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 docs/slice/DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md
 docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
+docs/slice/DOC/DOC_DECISION_12E_08C_R1_R2_R3_真实模型拓扑修复前置专项.md
+docs/slice/PRD/PRD_12E_08C_真实模型拓扑修复与严格准入.md
+docs/slice/DEV/DEV_12E_08C_MeshRepairThenStrict设计.md
+docs/slice/DEMO/DEMO_12E_08C_真实模型拓扑修复验证方案.md
+docs/slice/ROADMAP/ROADMAP_12E_08C_真实模型拓扑修复分阶段路线.md
+docs/slice/DOC/DOC_SCHEMA_12E_MeshRepairReport.md
+docs/slice/DOC/DOC_MATRIX_12E_真实模型拓扑修复与严格准入.md
+docs/slice/DOC/DOC_PREP_12E_08C_R1_拓扑分类与修复契约准备.md
+docs/slice/REPORT/REPORT_12E_08C_真实模型拓扑修复专项启动状态.md
+docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
+docs/slice/DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md
 docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
 docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md
 docs/slice/REPORT/REPORT_12E_启动准备状态.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
+ai_workspace/context_handoff/2026-07-20_12E-08C真实模型拓扑修复专项准备.md
 ```
 
 12F 运行环境与切片性能优化专项入口：
@@ -393,4 +406,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07 与 12E-08A/08B/08C 已完成；12F-00/01 已完成。当前没有 active code task；下一允许的 12E 原子任务为 12E-09A，12E-08D 被真实 OBJ topology budget 和用户确认阻断，12F-02 需用户明确启动。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07 与 12E-08A/08B/08C 已完成；12F-00/01 已完成。下一允许的 12E 原子任务为 12E-08C-R1-01；12E-09A 可并行准备，12E-08D 被真实 OBJ repair/strict/Release gate 阻断，12F-02 需用户明确启动。

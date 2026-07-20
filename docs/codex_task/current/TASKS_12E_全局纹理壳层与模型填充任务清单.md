@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-08A/08B COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
-> 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-08C 已完成证据收集但真实 OBJ budget BLOCKED；下一允许任务为 12E-09A diagnostic UI
+> 文档状态：12E-08C COMPLETE-BLOCKED / 12E-08C-R1 PREPARED / PRODUCTION NOT ADMITTED
+> 更新日期：2026-07-20
+> 当前项目原子任务：12E-08C-R1-01 DTO、错误码、Hash 与 Report Skeleton
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -337,7 +337,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：IN PROGRESS；12E-08A/08B/08C COMPLETE，Release budget BLOCKED，12E-08D BLOCKED / REQUIRES CONFIRMATION
+状态：IN PROGRESS；12E-08A/08B/08C COMPLETE，12E-08C-R1/R2/R3 PREPARED，12E-08D BLOCKED
 
 前置：
 
@@ -364,7 +364,7 @@ RIP strict PASS。
 docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 ```
 
-当前阻断：12E-08C 已完成取证，但 3 个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08D 仍需预算和用户明确确认。
+当前阻断：12E-08C 已完成取证，但 3 个真实 OBJ 被 strict topology 阻断，Release 预算未冻结。已插入 12E-08C-R1/R2/R3 显式 repair-then-strict 前置专项；12E-08D 需其 required-case Gate、预算和用户确认全部通过。
 
 12E-08A 实际结果：
 
@@ -400,11 +400,25 @@ docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
 
 12E-08C 实际结果：Release build、21/21 CTest、quick regression、RIP strict 和 Repair Disabled TIFF invariant PASS；3MF fixture 分区 PASS；`nai_you_new`、`aishen_fudiao`、`meigui_fudiao` strict topology BLOCKED。结果入口：`docs/slice/DOC/DOC_EXEC_12E_R4C_默认OFFRelease真实模型与Legacy回归结果.md`。
 
-剩余阻断：真实 OBJ topology admission、可冻结的 Release 时间/内存预算以及 12E-08D 用户明确确认。
+剩余阻断：真实 OBJ repair/post-strict、属性保持、可冻结的 Release 时间/内存预算以及 12E-08D 用户明确确认。
+
+### 11.1 12E-08C-R1/R2/R3 修复前置专项
+
+状态：PREPARED / R1-01 READY。
+
+执行入口：
+
+```text
+docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
+```
+
+阶段顺序：Contract & Eligibility -> Conservative Repair -> Real Model & Release Gate。R3-04 是唯一可把
+12E-08D 从 BLOCKED 变为 READY 的任务；manual required 不计入 production PASS。
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：PREPARED；12E-09A READY，12E-09B BLOCKED BY 12E-08D
+状态：PREPARED；12E-09A 可并行，12E-09B BLOCKED BY 12E-08D
 
 目标：
 
@@ -441,7 +455,7 @@ docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
 
 ## 13. 12E-10 Preview、Real Model Matrix 与收口
 
-状态：TODO
+状态：PREPARED / EXECUTION BLOCKED BY 09A AND 08C-R3
 
 目标：
 
@@ -454,6 +468,18 @@ REPORT_12E。
 ```
 
 完成标准：文档、代码、config、report、preview、UI、RIP 和 regression 一致。
+
+原子任务：
+
+```text
+12E-10A Texture/Fill/Partition 同层 preview；
+12E-10B 真实 OBJ/3MF minimum/intermediate/allTexture matrix；
+12E-10C Release core/repair/peak-memory 汇总；
+12E-10D 用户手册、REPORT_12E 和上下文封口。
+```
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md`。10A 依赖 09A-05，
+10B/10C 依赖 08C-R3，production evidence 依赖 08D。
 
 ## 14. 阶段完成标准
 
