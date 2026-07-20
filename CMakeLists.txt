@@ -29,6 +29,8 @@ add_library(slicer_core
     src/slicer_core/diagnostics/MaterialClosureCandidateDetector.h
     src/slicer_core/diagnostics/MaterialClosureSemanticDetector.cpp
     src/slicer_core/diagnostics/MaterialClosureSemanticDetector.h
+    src/slicer_core/diagnostics/MeshRepairReport.cpp
+    src/slicer_core/diagnostics/MeshRepairReport.h
     src/slicer_core/diagnostics/TextureFillPartitionClosureAdapter.cpp
     src/slicer_core/diagnostics/TextureFillPartitionClosureAdapter.h
     src/slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.cpp
@@ -61,6 +63,10 @@ add_library(slicer_core
     src/slicer_core/geometry/MeshScaleTolerance.h
     src/slicer_core/geometry/MeshTopologyDiagnostics.cpp
     src/slicer_core/geometry/MeshTopologyDiagnostics.h
+    src/slicer_core/geometry/repair/MeshRepairHash.cpp
+    src/slicer_core/geometry/repair/MeshRepairHash.h
+    src/slicer_core/geometry/repair/MeshRepairTypes.cpp
+    src/slicer_core/geometry/repair/MeshRepairTypes.h
     src/slicer_core/geometry/NearestTriangleQuery.cpp
     src/slicer_core/geometry/NearestTriangleQuery.h
     src/slicer_core/geometry/PointInClosedMeshQuery.cpp
@@ -391,6 +397,15 @@ add_executable(material_channel_composer_unit_tests
 
 target_link_libraries(material_channel_composer_unit_tests PRIVATE slicer_core)
 
+add_executable(mesh_repair_contract_unit_tests
+    tests/unit/mesh_repair_contract/main.cpp
+)
+
+target_link_libraries(mesh_repair_contract_unit_tests PRIVATE slicer_core)
+target_compile_definitions(mesh_repair_contract_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
@@ -424,6 +439,7 @@ add_test(NAME material_closure_candidate_detector_unit_tests COMMAND material_cl
 add_test(NAME material_closure_semantic_detector_unit_tests COMMAND material_closure_semantic_detector_unit_tests)
 add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_texture_service_unit_tests)
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
+add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

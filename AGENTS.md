@@ -21,7 +21,7 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-10 real-model material closure validation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07` and `12E-08A/08B/08C` are complete. The 12E-08C Release evidence is blocked for real OBJ topology. A `12E-08C-R1/R2/R3` explicit mesh-repair prerequisite is prepared before `12E-08D`; the next allowed atomic task is `12E-08C-R1-01`.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, and `12E-08C-R1-01` are complete. The 12E-08C Release evidence is blocked for real OBJ topology. R1-01 added only DTO/hash/report contracts; the next allowed atomic task is `12E-08C-R1-02 Eligibility Policy`.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - Current global_surface_shell remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. The approved Target State is explicit `slicePipeline.mode=legacy|global_surface_shell`, with legacy as default and both admitted production modes sharing the existing RGBWSV TIFF writer. This target is not implemented and does not authorize `12E-08D`; closed production gates and explicit user confirmation are still required.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.

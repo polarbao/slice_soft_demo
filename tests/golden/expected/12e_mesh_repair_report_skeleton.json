@@ -1,0 +1,116 @@
+{
+  "admission": {
+    "blockerCodes": [],
+    "mode": "repair_then_strict",
+    "postRepairStrictPass": false,
+    "productionAllowed": false,
+    "status": "non_production_only",
+    "suggestedActions": [],
+    "warningCodes": []
+  },
+  "attributePreservation": {
+    "fallbackTriangles": 0,
+    "issues": [],
+    "materialConflicts": 0,
+    "maxUvDelta": null,
+    "missingTextureResources": 0,
+    "newTriangles": 0,
+    "pass": false,
+    "sourceMappedTriangles": 0,
+    "status": "not_evaluated",
+    "unknownSourceTriangles": 0,
+    "uvConflicts": 0
+  },
+  "eligibility": {
+    "automaticRepairAllowed": false,
+    "decisions": [],
+    "status": "not_evaluated"
+  },
+  "hashContract": {
+    "algorithm": "sha256",
+    "attributeHashLength": 64,
+    "canonicalizationVersion": "mesh_repair_canonical.1",
+    "geometryHashLength": 64,
+    "operationHashLength": 64,
+    "optionsHashLength": 64
+  },
+  "input": {
+    "componentCount": 1,
+    "finalTransform": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "inputFormat": "obj",
+    "materialCount": 1,
+    "sourcePath": "model/obj/fixture/model.obj",
+    "textureResourceCount": 1,
+    "triangleCount": 12,
+    "vertexCount": 8
+  },
+  "issues": [],
+  "mode": "strict_closed",
+  "operations": [],
+  "options": {
+    "allowNewFaces": false,
+    "enabled": false,
+    "maxBoundaryLoopDiameterMm": 0.5,
+    "maxBoundaryLoopEdges": 32,
+    "mode": "strict_closed",
+    "weldToleranceMm": 0.001
+  },
+  "performance": {
+    "attributeValidationMs": null,
+    "diagnosticsMs": null,
+    "eligibilityMs": null,
+    "hashMs": null,
+    "peakWorkingSetBytes": null,
+    "postDiagnosticsMs": null,
+    "repairMs": null,
+    "totalRepairCoreMs": null
+  },
+  "postRepair": {
+    "available": false,
+    "boundaryEdges": 0,
+    "confirmedSelfIntersectionPairs": 0,
+    "connectedComponents": 0,
+    "degenerateTriangles": 0,
+    "duplicateFaces": 0,
+    "issues": [],
+    "localWindingIssues": 0,
+    "nonManifoldEdges": 0,
+    "oppositeDuplicateFaces": 0,
+    "strictPass": false
+  },
+  "preRepair": {
+    "available": false,
+    "boundaryEdges": 0,
+    "confirmedSelfIntersectionPairs": 0,
+    "connectedComponents": 0,
+    "degenerateTriangles": 0,
+    "duplicateFaces": 0,
+    "issues": [],
+    "localWindingIssues": 0,
+    "nonManifoldEdges": 0,
+    "oppositeDuplicateFaces": 0,
+    "strictPass": false
+  },
+  "productionOutputWritten": false,
+  "repairAttempted": false,
+  "repairEnabled": false,
+  "schema": "slicesoft.mesh_repair.12e_08c.1",
+  "status": "not_evaluated"
+}

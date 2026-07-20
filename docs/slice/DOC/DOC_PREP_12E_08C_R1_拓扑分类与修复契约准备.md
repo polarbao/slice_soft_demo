@@ -1,13 +1,14 @@
 # DOC_PREP_12E-08C-R1 拓扑分类与修复契约准备
 
-> 文档状态：PREPARED / R1-01 READY
+> 文档状态：R1-01 COMPLETE / R1-02 READY
 > 日期：2026-07-20
 > 当前范围：只准备 R1；不实现 Mesh Repair，不写 production package
 
 ## 1. 准备结论
 
 R1 的代码所有权、DTO、Schema、错误码、输入模型、测试边界和退出标准已明确。下一原子任务为
-`12E-08C-R1-01 MeshRepair DTO、错误码、canonical hash 与 report skeleton`。
+`12E-08C-R1-01 MeshRepair DTO、错误码、canonical hash 与 report skeleton` 已完成；下一任务为
+`12E-08C-R1-02 Eligibility Policy`。
 
 ## 2. 当前代码事实
 
@@ -107,4 +108,17 @@ git diff --check
 
 ## 9. R1 Gate
 
-R1-01 可开始。R2 仍未获得代码实施准入；必须先完成 R1 全部原子任务并审查真实模型 baseline。
+R1-01 已通过定向测试和默认 Debug CTest。R1-02 可开始。R2 仍未获得代码实施准入；必须先完成 R1 全部
+原子任务并审查真实模型 baseline。
+
+## 10. R1-01 实际文件与验证
+
+```text
+src/slicer_core/geometry/repair/MeshRepairTypes.*；
+src/slicer_core/geometry/repair/MeshRepairHash.*；
+src/slicer_core/diagnostics/MeshRepairReport.*；
+tests/unit/mesh_repair_contract/main.cpp；
+tests/golden/expected/12e_mesh_repair_report_skeleton.json。
+```
+
+实际验证：target build PASS、测试可执行文件 PASS、定向 CTest 1/1 PASS、全量 Debug CTest 22/22 PASS。

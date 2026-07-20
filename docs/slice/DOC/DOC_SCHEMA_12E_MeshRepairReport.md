@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Mesh Repair Report
 
-> 文档状态：PREPARED / NOT IMPLEMENTED
+> 文档状态：PARTIAL / R1-01 CONTRACT IMPLEMENTED
 > Schema：`slicesoft.mesh_repair.12e_08c.1`
 > 日期：2026-07-20
 
@@ -238,3 +238,6 @@ JSON/TIFF/PNG 写盘不计入 `totalRepairCoreMs`。
 legacy Profile 不要求该报告；
 OpenVDB OFF 构建必须可生成 preflight/repair 报告。
 ```
+
+R1-01 已实现内存 DTO、canonical hash 和 report skeleton serializer；尚未实现 eligibility、repair、文件写入、
+post-strict 或 production admission。

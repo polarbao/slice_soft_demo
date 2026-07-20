@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：PREPARED / R1-01 READY
+> 文档状态：IN PROGRESS / R1-01 COMPLETE / R1-02 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：12E-08C-R1-01
+> 当前原子任务：12E-08C-R1-02
 
 ## 1. 总目标
 
@@ -28,7 +28,7 @@ OpenVDB optional/OFF；
 
 ### 12E-08C-R1-01 DTO、错误码、Hash 与 Report Skeleton
 
-状态：READY。
+状态：COMPLETE。
 
 范围：
 
@@ -42,9 +42,13 @@ unit/schema tests。
 
 完成标准：相同输入 hash 稳定；geometry/attribute 修改可区分；不执行 repair；不写 package。
 
+实际结果：DTO、稳定错误码、`mesh_repair_canonical.1` SHA-256、report skeleton、unit/golden 已实现；
+定向测试 1/1、默认 Debug CTest 22/22 PASS。结果见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R1_01_MeshRepairContract结果.md`。
+
 ### 12E-08C-R1-02 Eligibility Policy
 
-状态：BLOCKED BY R1-01。
+状态：READY。
 
 范围：复用现有 topology/robustness diagnostics，分类 eligible/conditional/manual/fail-fast；输出稳定建议。
 
