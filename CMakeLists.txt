@@ -33,6 +33,8 @@ add_library(slicer_core
     src/slicer_core/diagnostics/TextureFillPartitionClosureAdapter.h
     src/slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.cpp
     src/slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h
+    src/slicer_core/diagnostics/TextureFillPartitionReleaseBenchmark.cpp
+    src/slicer_core/diagnostics/TextureFillPartitionReleaseBenchmark.h
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.cpp
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.h
     src/slicer_core/diagnostics/ValidationIssue.cpp
@@ -224,6 +226,12 @@ add_executable(slicer_cli
 
 target_link_libraries(slicer_cli PRIVATE slicer_core)
 
+add_executable(texture_fill_partition_release_benchmark
+    apps/texture_fill_partition_release_benchmark/main.cpp
+)
+
+target_link_libraries(texture_fill_partition_release_benchmark PRIVATE slicer_core)
+
 add_executable(rip_reader_test
     apps/rip_reader_test/main.cpp
 )
@@ -335,6 +343,12 @@ add_executable(texture_fill_partition_full_closure_adapter_unit_tests
 
 target_link_libraries(texture_fill_partition_full_closure_adapter_unit_tests PRIVATE slicer_core)
 
+add_executable(texture_fill_partition_release_benchmark_unit_tests
+    tests/unit/texture_fill_partition_release_benchmark/main.cpp
+)
+
+target_link_libraries(texture_fill_partition_release_benchmark_unit_tests PRIVATE slicer_core)
+
 add_executable(geometry_kernel_service_unit_tests
     tests/unit/geometry_kernel_service/main.cpp
 )
@@ -390,6 +404,19 @@ add_test(NAME texture_fill_partition_diagnostic_composer_unit_tests COMMAND text
 add_test(NAME texture_fill_partition_closure_adapter_unit_tests COMMAND texture_fill_partition_closure_adapter_unit_tests)
 add_test(NAME texture_fill_partition_raster_mapper_unit_tests COMMAND texture_fill_partition_raster_mapper_unit_tests)
 add_test(NAME texture_fill_partition_full_closure_adapter_unit_tests COMMAND texture_fill_partition_full_closure_adapter_unit_tests)
+add_test(NAME texture_fill_partition_release_benchmark_unit_tests COMMAND texture_fill_partition_release_benchmark_unit_tests)
+add_test(
+    NAME texture_fill_partition_release_benchmark_cli_test
+    COMMAND texture_fill_partition_release_benchmark
+        --config samples/configs/texture_fill_partition/global_surface_shell_unavailable.json
+        --output ${CMAKE_CURRENT_BINARY_DIR}/output/12e_08c_cli_test.json
+        --case-name generated_sample
+        --voxel-mm 0.05
+        --width-mm 0.10
+)
+set_tests_properties(texture_fill_partition_release_benchmark_cli_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
