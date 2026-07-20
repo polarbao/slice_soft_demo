@@ -113,6 +113,22 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_RASTER_MAPPING_TRANSFER_INVALID";
     case TextureFillPartitionErrorCode::RasterMappingInvariantFailed:
         return "E_12E_RASTER_MAPPING_INVARIANT_FAILED";
+    case TextureFillPartitionErrorCode::FullClosureInputInvalid:
+        return "E_12E_FULL_CLOSURE_INPUT_INVALID";
+    case TextureFillPartitionErrorCode::FullClosureLayerOrderInvalid:
+        return "E_12E_FULL_CLOSURE_LAYER_ORDER_INVALID";
+    case TextureFillPartitionErrorCode::FullClosureMaskInvalid:
+        return "E_12E_FULL_CLOSURE_MASK_INVALID";
+    case TextureFillPartitionErrorCode::FullClosureChannelOrderInvalid:
+        return "E_12E_FULL_CLOSURE_CHANNEL_ORDER_INVALID";
+    case TextureFillPartitionErrorCode::FullClosurePriorityConflict:
+        return "E_12E_FULL_CLOSURE_PRIORITY_CONFLICT";
+    case TextureFillPartitionErrorCode::FullClosureSemanticMismatch:
+        return "E_12E_FULL_CLOSURE_SEMANTIC_MISMATCH";
+    case TextureFillPartitionErrorCode::FullClosureGapDetected:
+        return "E_12E_FULL_CLOSURE_GAP_DETECTED";
+    case TextureFillPartitionErrorCode::FullClosureUnexpectedMaterial:
+        return "E_12E_FULL_CLOSURE_UNEXPECTED_MATERIAL";
     case TextureFillPartitionErrorCode::SurfaceShellWidthBelowEffectiveMinimum:
         return "E_12E_SURFACE_SHELL_WIDTH_BELOW_EFFECTIVE_MINIMUM";
     case TextureFillPartitionErrorCode::AllTextureThresholdUnavailable:

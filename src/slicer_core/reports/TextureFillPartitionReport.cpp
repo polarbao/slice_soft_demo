@@ -1,6 +1,7 @@
 #include "slicer_core/reports/TextureFillPartitionReport.h"
 
 #include "slicer_core/diagnostics/TextureFillPartitionClosureAdapter.h"
+#include "slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
@@ -23,6 +24,7 @@ using slicer_core::SliceConfig;
 using slicer_core::TextureFillPartitionConformanceResult;
 using slicer_core::TextureFillPartitionClosureAdapterResult;
 using slicer_core::TextureFillPartitionDiagnosticComposerResult;
+using slicer_core::TextureFillPartitionFullClosureAdapterResult;
 using slicer_core::TextureFillPartitionRasterMappingResult;
 using slicer_core::TextureFillPartitionStats;
 using slicer_core::TextureFillPartitionTextureTransferResult;
@@ -105,7 +107,8 @@ Json BuildPartition(const GlobalTextureFillPartitionResult& result)
 Json BuildPerformance(
     const GlobalTextureFillPartitionResult& result,
     const TextureFillPartitionTextureTransferResult* transfer = nullptr,
-    const TextureFillPartitionRasterMappingResult* rasterMapping = nullptr)
+    const TextureFillPartitionRasterMappingResult* rasterMapping = nullptr,
+    const TextureFillPartitionFullClosureAdapterResult* fullClosure = nullptr)
 {
     return Json::object({
         {"preflightMs", result.performance.topologyMs},
@@ -123,6 +126,10 @@ Json BuildPerformance(
          rasterMapping == nullptr || !rasterMapping->available
              ? Json{nullptr}
              : Json{rasterMapping->stats.mappingMs}},
+        {"fullClosureMs",
+         fullClosure == nullptr || !fullClosure->available
+             ? Json{nullptr}
+             : Json{fullClosure->analysisMs}},
         {"totalCoreMs", result.performance.totalCoreMs},
         {"gridVoxelCount", result.performance.gridVoxelCount},
         {"maskBytes", result.performance.maskBytes},
@@ -417,6 +424,112 @@ Json BuildRasterMapping(
     });
 }
 
+Json BuildFullClosureLinkage(
+    const TextureFillPartitionFullClosureAdapterResult* closure)
+{
+    if (closure == nullptr)
+    {
+        return Json::object({
+            {"availability", "unavailable"},
+            {"status", "not_evaluated"},
+            {"scope", "full_material_domain"},
+            {"source", "unavailable"},
+            {"confidence", "unavailable"},
+            {"productionAcceptance", "not_evaluated"},
+            {"allTexture", false},
+            {"colorFillApplicability", "not_evaluated"},
+            {"allTextureReason", nullptr},
+            {"modelClosureStatus", "not_evaluated"},
+            {"supportClosureStatus", "not_evaluated"},
+            {"varnishClosureStatus", "not_evaluated"},
+            {"fullClosurePass", false},
+            {"repairAttempted", false},
+            {"productionOutputWritten", false},
+            {"expectedDomainGapPixels", 0},
+            {"modelDomainGapPixels", 0},
+            {"supportRequiredGapPixels", 0},
+            {"outerVarnishGapPixels", 0},
+            {"unexpectedOccupiedPixels", 0},
+            {"supportChannelMismatchPixels", 0},
+            {"varnishChannelMismatchPixels", 0},
+            {"semanticChannelMismatchPixels", 0},
+            {"colorFillGapPixels", 0},
+            {"modelSupportGapPixels", 0},
+            {"colorSupportGapPixels", 0},
+            {"internalVoidGapPixels", 0},
+            {"varnishSupportGapPixels", 0},
+            {"analysisMs", nullptr},
+            {"layerCount", 0},
+            {"layers", Json::array({})},
+            {"issues", Json::array({})},
+        });
+    }
+
+    Json::Array layers;
+    layers.reserve(closure->layers.size());
+    for (const slicer_core::TextureFillPartitionFullClosureLayerResult& layer :
+         closure->layers)
+    {
+        layers.push_back(Json::object({
+            {"layerIndex", layer.layerIndex},
+            {"zMm", layer.zMm},
+            {"closurePass", layer.closurePass},
+            {"expectedDomainGapPixels", layer.expectedDomainGapPixels},
+            {"modelDomainGapPixels", layer.modelDomainGapPixels},
+            {"supportRequiredGapPixels", layer.supportRequiredGapPixels},
+            {"outerVarnishGapPixels", layer.outerVarnishGapPixels},
+            {"unexpectedOccupiedPixels", layer.unexpectedOccupiedPixels},
+            {"supportChannelMismatchPixels", layer.supportChannelMismatchPixels},
+            {"varnishChannelMismatchPixels", layer.varnishChannelMismatchPixels},
+            {"colorFillGapPixels", layer.semantic.colorFillGapPixels},
+            {"modelSupportGapPixels", layer.semantic.modelSupportGapPixels},
+            {"colorSupportGapPixels", layer.semantic.colorSupportGapPixels},
+            {"internalVoidGapPixels", layer.semantic.internalVoidGapPixels},
+            {"varnishSupportGapPixels", layer.semantic.varnishSupportGapPixels},
+        }));
+    }
+    return Json::object({
+        {"availability", closure->available ? "available" : "unavailable"},
+        {"status", closure->status},
+        {"scope", closure->scope},
+        {"source", closure->source},
+        {"confidence", closure->confidence},
+        {"productionAcceptance", closure->productionAcceptance},
+        {"allTexture", closure->allTexture},
+        {"colorFillApplicability", closure->colorFillApplicability},
+        {"allTextureReason",
+         closure->allTextureReason.empty()
+             ? Json{nullptr}
+             : Json{closure->allTextureReason}},
+        {"modelClosureStatus", closure->modelClosureStatus},
+        {"supportClosureStatus", closure->supportClosureStatus},
+        {"varnishClosureStatus", closure->varnishClosureStatus},
+        {"fullClosurePass", closure->fullClosurePass},
+        {"repairAttempted", closure->repairAttempted},
+        {"productionOutputWritten", closure->productionOutputWritten},
+        {"expectedDomainGapPixels", closure->totalExpectedDomainGapPixels},
+        {"modelDomainGapPixels", closure->totalModelDomainGapPixels},
+        {"supportRequiredGapPixels", closure->totalSupportRequiredGapPixels},
+        {"outerVarnishGapPixels", closure->totalOuterVarnishGapPixels},
+        {"unexpectedOccupiedPixels", closure->totalUnexpectedOccupiedPixels},
+        {"supportChannelMismatchPixels",
+         closure->totalSupportChannelMismatchPixels},
+        {"varnishChannelMismatchPixels",
+         closure->totalVarnishChannelMismatchPixels},
+        {"semanticChannelMismatchPixels",
+         closure->totalSemanticChannelMismatchPixels},
+        {"colorFillGapPixels", closure->totalColorFillGapPixels},
+        {"modelSupportGapPixels", closure->totalModelSupportGapPixels},
+        {"colorSupportGapPixels", closure->totalColorSupportGapPixels},
+        {"internalVoidGapPixels", closure->totalInternalVoidGapPixels},
+        {"varnishSupportGapPixels", closure->totalVarnishSupportGapPixels},
+        {"analysisMs", closure->analysisMs},
+        {"layerCount", static_cast<std::uint64_t>(closure->layers.size())},
+        {"layers", Json{std::move(layers)}},
+        {"issues", slicer_core::ValidationIssuesToJson(closure->issues)},
+    });
+}
+
 Json BuildQueryStats(const GlobalTextureFillPartitionResult& result)
 {
     return Json::object({
@@ -670,6 +783,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
         {"diagnosticComposer", BuildDiagnosticComposer(nullptr)},
         {"closureLinkage", BuildClosureLinkage(nullptr)},
         {"rasterMapping", BuildRasterMapping(nullptr)},
+        {"fullClosureLinkage", BuildFullClosureLinkage(nullptr)},
         {"performance", Json::object({
              {"preflightMs", nullptr},
              {"topologyMs", nullptr},
@@ -680,6 +794,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
              {"partitionMs", nullptr},
              {"textureTransferMs", nullptr},
              {"rasterMappingMs", nullptr},
+             {"fullClosureMs", nullptr},
              {"totalCoreMs", nullptr},
              {"gridVoxelCount", nullptr},
              {"maskBytes", nullptr},
@@ -737,7 +852,8 @@ Json BuildTextureFillPartitionReport(
     const TextureFillPartitionTextureTransferResult* transfer,
     const TextureFillPartitionDiagnosticComposerResult* composer,
     const TextureFillPartitionClosureAdapterResult* closure,
-    const TextureFillPartitionRasterMappingResult* rasterMapping)
+    const TextureFillPartitionRasterMappingResult* rasterMapping,
+    const TextureFillPartitionFullClosureAdapterResult* fullClosure)
 {
     Json::Object report;
     report["schema"] = "slicesoft.texture_fill_partition.12e.1";
@@ -758,7 +874,12 @@ Json BuildTextureFillPartitionReport(
     report["diagnosticComposer"] = BuildDiagnosticComposer(composer);
     report["closureLinkage"] = BuildClosureLinkage(closure);
     report["rasterMapping"] = BuildRasterMapping(rasterMapping);
-    report["performance"] = BuildPerformance(result, transfer, rasterMapping);
+    report["fullClosureLinkage"] = BuildFullClosureLinkage(fullClosure);
+    report["performance"] = BuildPerformance(
+        result,
+        transfer,
+        rasterMapping,
+        fullClosure);
     report["queryStats"] = BuildQueryStats(result);
     report["layers"] = result.available ? BuildLayers(result) : Json::array({});
     report["issues"] = ValidationIssuesToJson(result.issues);

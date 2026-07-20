@@ -1,5 +1,6 @@
 #include "slicer_core/config.h"
 #include "slicer_core/diagnostics/TextureFillPartitionClosureAdapter.h"
+#include "slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
 #include "slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h"
@@ -188,6 +189,9 @@ bool UnavailableMeasurementsRemainNull()
                !report.at("performance").at("rasterMappingMs").is_number(),
                "unimplemented raster mapping timing is null")
         && ExpectTrue(
+               !report.at("performance").at("fullClosureMs").is_number(),
+               "unimplemented full closure timing is null")
+        && ExpectTrue(
                report.at("textureTransfer").at("availability").as_string()
                    == "unavailable",
                "missing texture transfer has explicit availability")
@@ -200,7 +204,11 @@ bool UnavailableMeasurementsRemainNull()
         && ExpectTrue(
                report.at("rasterMapping").at("availability").as_string()
                    == "unavailable",
-               "missing raster mapping has explicit availability");
+               "missing raster mapping has explicit availability")
+        && ExpectTrue(
+               report.at("fullClosureLinkage").at("availability").as_string()
+                   == "unavailable",
+               "missing full closure has explicit availability");
 }
 
 bool LayerTotalsMatchPartitionTotals()
@@ -384,6 +392,52 @@ bool RasterMappingEvidenceIsSerialized()
                "raster mapping writes no production output");
 }
 
+bool FullClosureEvidenceIsSerialized()
+{
+    slicer_core::TextureFillPartitionFullClosureAdapterResult closure;
+    closure.available = true;
+    closure.status = "diagnostic";
+    closure.source = "semantic_masks";
+    closure.confidence = "exact";
+    closure.modelClosureStatus = "pass";
+    closure.supportClosureStatus = "pass";
+    closure.varnishClosureStatus = "pass";
+    closure.fullClosurePass = true;
+    closure.analysisMs = 3.5;
+    closure.layers.resize(1U);
+    closure.layers.at(0).layerIndex = 0;
+    closure.layers.at(0).zMm = 0.005;
+    closure.layers.at(0).closurePass = true;
+    closure.layers.at(0).semantic.layerIndex = 0;
+    closure.layers.at(0).semantic.zMm = 0.005;
+
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult(),
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        &closure);
+    const slicer_core::Json expected = LoadGolden(
+        "12e_texture_fill_partition_full_closure.json");
+    return ExpectTrue(
+               report.at("fullClosureLinkage").dump(2) == expected.dump(2),
+               "full closure linkage matches golden")
+        && ExpectTrue(
+               report.at("performance").at("fullClosureMs").as_double() == 3.5,
+               "full closure timing is serialized")
+        && ExpectTrue(
+               report.at("fullClosureLinkage").at("supportClosureStatus").as_string()
+                   == "pass",
+               "support closure is evaluated")
+        && ExpectTrue(
+               report.at("fullClosureLinkage").at("varnishClosureStatus").as_string()
+                   == "pass",
+               "varnish closure is evaluated");
+}
+
 }  // namespace
 
 int main()
@@ -396,6 +450,7 @@ int main()
         {"transfer_and_composer_evidence_is_serialized", TransferAndComposerEvidenceIsSerialized},
         {"closure_linkage_evidence_is_serialized", ClosureLinkageEvidenceIsSerialized},
         {"raster_mapping_evidence_is_serialized", RasterMappingEvidenceIsSerialized},
+        {"full_closure_evidence_is_serialized", FullClosureEvidenceIsSerialized},
     };
     for (const auto& test : tests)
     {

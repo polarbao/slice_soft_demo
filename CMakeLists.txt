@@ -31,6 +31,8 @@ add_library(slicer_core
     src/slicer_core/diagnostics/MaterialClosureSemanticDetector.h
     src/slicer_core/diagnostics/TextureFillPartitionClosureAdapter.cpp
     src/slicer_core/diagnostics/TextureFillPartitionClosureAdapter.h
+    src/slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.cpp
+    src/slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.cpp
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.h
     src/slicer_core/diagnostics/ValidationIssue.cpp
@@ -327,6 +329,12 @@ add_executable(texture_fill_partition_raster_mapper_unit_tests
 
 target_link_libraries(texture_fill_partition_raster_mapper_unit_tests PRIVATE slicer_core)
 
+add_executable(texture_fill_partition_full_closure_adapter_unit_tests
+    tests/unit/texture_fill_partition_full_closure_adapter/main.cpp
+)
+
+target_link_libraries(texture_fill_partition_full_closure_adapter_unit_tests PRIVATE slicer_core)
+
 add_executable(geometry_kernel_service_unit_tests
     tests/unit/geometry_kernel_service/main.cpp
 )
@@ -381,6 +389,7 @@ add_test(NAME texture_fill_partition_texture_transfer_unit_tests COMMAND texture
 add_test(NAME texture_fill_partition_diagnostic_composer_unit_tests COMMAND texture_fill_partition_diagnostic_composer_unit_tests)
 add_test(NAME texture_fill_partition_closure_adapter_unit_tests COMMAND texture_fill_partition_closure_adapter_unit_tests)
 add_test(NAME texture_fill_partition_raster_mapper_unit_tests COMMAND texture_fill_partition_raster_mapper_unit_tests)
+add_test(NAME texture_fill_partition_full_closure_adapter_unit_tests COMMAND texture_fill_partition_full_closure_adapter_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
