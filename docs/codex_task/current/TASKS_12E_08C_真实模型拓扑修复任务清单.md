@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1-03 COMPLETE / R1-04 READY
+> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：12E-08C-R1-04
+> 当前原子任务：无；下一允许任务为 12E-08C-R2-01
 
 ## 1. 总目标
 
@@ -74,17 +74,22 @@ golden；geometry/attribute hash、status、classification、reasonCode、affect
 
 ### 12E-08C-R1-04 真实模型 Pre-Repair Baseline
 
-状态：READY。
+状态：COMPLETE。
 
 范围：`nai_you_new`、`aishen_fudiao`、`meigui_fudiao` 和闭合 3MF；记录 issue pattern、hash、eligibility。
 
 完成标准：四个 case 均有可审计结果；不要求自动修复；R2 范围据此复核。
 
+实际结果：新增只读 Preflight service/CLI/脚本，四个 case 均执行两次并通过稳定证据比较；三个真实 OBJ
+为 `manual_repair_required`，闭合 Texture2D 3MF 为 `strict_pass_no_repair`。R2-01 范围已复核，且因真实
+OBJ 自相交诊断进入 sampled 模式，新增 R3-01A 完整自相交证据准备。结果见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R1_04_真实模型PreRepairBaseline结果.md`。
+
 ## 4. R2 Conservative Repair
 
 ### 12E-08C-R2-01 Degenerate/Duplicate Cleanup
 
-状态：BLOCKED BY R1。
+状态：READY。
 
 范围：显式退化面清理、同属性 exact duplicate 去重和 source mapping。
 
@@ -128,9 +133,21 @@ golden；geometry/attribute hash、status、classification、reasonCode、affect
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_RealModelReleaseGate准备.md`。
 
+### 12E-08C-R3-01A 完整自相交证据
+
+状态：BLOCKED BY R2 AND R3-01。
+
+范围：用确定性空间索引完整枚举 required real model 自相交候选，复用当前 narrow-phase，替代 sampled
+证据；confirmed intersection 继续 fail-fast。
+
+完成标准：小 fixture 与 O(N^2) 对照一致；真实模型输出 complete 或稳定 budget blocked；不得把 sampled
+计为 post-strict PASS。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_01A_完整自相交证据准备.md`。
+
 ### 12E-08C-R3-02 真实模型 Repair Matrix
 
-状态：BLOCKED BY R3-01。
+状态：BLOCKED BY R3-01A。
 
 范围：四个 required cases 的 no-op/repair/manual 状态、属性保持和 post strict。
 

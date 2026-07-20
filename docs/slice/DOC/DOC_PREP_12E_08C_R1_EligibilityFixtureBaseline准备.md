@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08C-R1 Eligibility、Fixture 与真实模型 Baseline 准备
 
-> 文档状态：PREPARED
+> 文档状态：COMPLETE
 > 日期：2026-07-20
 > 范围：12E-08C-R1-02、R1-03、R1-04
 
@@ -103,6 +103,15 @@ productionOutputWritten=false；
 legacy/Profile/TIFF 不变；
 OpenVDB OFF 可独立构建。
 ```
+
+## 8. 实际完成结果
+
+R1-01 至 R1-04 已完成。R1-04 使用三个真实 OBJ 与闭合 Texture2D 3MF，生成 source/config/geometry/
+attribute hash、拓扑、eligibility 和非生产报告，每个 case 连续两次稳定一致。详细结果见
+`DOC_EXEC_12E_08C_R1_04_真实模型PreRepairBaseline结果.md`。
+
+R1 Gate 已关闭；R2-01 可以在用户明确启动后执行。真实模型 sampled self-intersection 缺口已进入独立
+R3-01A 准备，不在 R2-01 中顺手扩大范围。
 
 遇到需要修改 required-case matrix、放宽 strict 或新增第三方库时停止并另行决策。
 

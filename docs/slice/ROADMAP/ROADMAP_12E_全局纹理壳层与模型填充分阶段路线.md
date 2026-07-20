@@ -13,7 +13,7 @@
 ```text
 1. 12D-R0/R1/R2/R3 已完成；
 2. 12E-R0 的 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；
-3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C 已完成；真实 OBJ topology 阻断 Release budget；12E-08C-R1/R2/R3 修复前置专项已准备，12E-08D 继续阻断，12E-09A diagnostic UI 可并行；
+3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C 已完成；真实 OBJ topology 阻断 Release budget；12E-08C-R1 已完成、R2-01 READY，12E-08D 继续阻断，12E-09A diagnostic UI 可并行；
 4. 12E composer/production 接入需要已完成的 12D semantic_masks exact contract；
 5. 不要求 12D repair R3 完成后才能做 12E R1 算法原型，但 production admission 必须重新确认；
 6. 12E-01 已完成配置、DTO、稳定错误码和 unavailable report 骨架；未接入 production generation。
@@ -183,7 +183,7 @@ production gate 失败时不写生产包。
 
 | 阶段 | 工作 | Gate |
 |---|---|---|
-| 12E-08C-R1/R2/R3 | 真实模型 repair-then-strict、属性保持、Release 预算 | R1-03 COMPLETE，下一任务 R1-04；未完成前 global 不可生产 |
+| 12E-08C-R1/R2/R3 | 真实模型 repair-then-strict、属性保持、完整自相交证据、Release 预算 | R1 COMPLETE，下一任务 R2-01；未完成前 global 不可生产 |
 | 12E-08D-01 | `slicePipeline.mode`、DTO、validator、Router 与 fail-closed | 省略字段兼容 legacy；非法值拒绝；无静默回退 |
 | 12E-08D-02 | global classification 到现有生产层 DTO 的 adapter | 通道和 material closure 语义完整 |
 | 12E-08D-03 | 两模式共享 RGBWSV writer、manifest、preview/report 与 RIP 回归 | 两条生产成功路径都生成一致格式 TIFF |

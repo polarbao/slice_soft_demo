@@ -1,14 +1,14 @@
 # DOC_PREP_12E-08C-R1 拓扑分类与修复契约准备
 
-> 文档状态：R1-03 COMPLETE / R1-04 READY
+> 文档状态：R1 COMPLETE / R2-01 READY
 > 日期：2026-07-20
 > 当前范围：只准备 R1；不实现 Mesh Repair，不写 production package
 
 ## 1. 准备结论
 
-R1 的代码所有权、DTO、Schema、错误码、输入模型、测试边界和退出标准已明确。下一原子任务为
-`12E-08C-R1-01 MeshRepair DTO、错误码、canonical hash 与 report skeleton`、R1-02 Eligibility Policy 与
-R1-03 Generated Fixtures/Golden 已完成；下一任务为 `12E-08C-R1-04 真实模型 Pre-Repair Baseline`。
+R1 的代码所有权、DTO、Schema、错误码、输入模型、测试边界和退出标准已明确并完成。R1-01 contract、
+R1-02 eligibility、R1-03 generated golden 和 R1-04 真实模型 baseline 均已实现；下一允许任务为
+`12E-08C-R2-01 Degenerate/Duplicate Cleanup`。
 
 ## 2. 当前代码事实
 
@@ -108,8 +108,19 @@ git diff --check
 
 ## 9. R1 Gate
 
-R1-01/R1-02/R1-03 已通过定向测试和默认 Debug CTest。R1-04 可开始。R2 仍未获得代码实施准入；必须先完成 R1 全部
-原子任务并审查真实模型 baseline。
+R1-01..04 已通过定向测试和默认 Debug CTest，四个真实模型 baseline 已审查。R1 Gate 关闭，R2-01 准备
+完成；R2-02..04 仍按顺序阻断。
+
+## 11. R1-04 实际结果
+
+```text
+nai_you_new：manual_repair_required，boundary=113，degenerate=1，components=10；
+aishen_fudiao：manual_repair_required，boundary=3，nonManifold=59，oppositeDuplicate=2，components=10；
+meigui_fudiao：manual_repair_required，nonManifold=10940，oppositeDuplicate=7192，components=2；
+Texture2D 3MF：strict_pass_no_repair。
+```
+
+全部 case 双运行 stable projection 一致，且 `repairAttempted=false`、`productionOutputWritten=false`。
 
 ## 10. R1-01 实际文件与验证
 

@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Mesh Repair Report
 
-> 文档状态：PARTIAL / R1-01 CONTRACT + R1-02 ELIGIBILITY + R1-03 GOLDEN IMPLEMENTED
+> 文档状态：PARTIAL / R1 CONTRACT、ELIGIBILITY、GOLDEN、REAL-MODEL PREFLIGHT IMPLEMENTED
 > Schema：`slicesoft.mesh_repair.12e_08c.1`
 > 日期：2026-07-20
 
@@ -240,5 +240,6 @@ OpenVDB OFF 构建必须可生成 preflight/repair 报告。
 ```
 
 R1-01 已实现内存 DTO、canonical hash 和 report skeleton serializer；R1-02 已实现纯 pre-repair eligibility
-policy；R1-03 已用 11 个 generated policy-contract fixtures 冻结 report projection golden。尚未实现真实模型
-baseline、实际 repair、文件写入、post-strict 或 production admission。
+policy；R1-03 已用 11 个 generated policy-contract fixtures 冻结 report projection golden；R1-04 已为三个
+真实 OBJ 和闭合 Texture2D 3MF 生成只读 Preflight report。尚未实现实际 repair、post-strict 或 production
+admission；报告文件仅由诊断 app 写入，repair core 仍不拥有文件系统写入职责。

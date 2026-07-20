@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C 真实模型拓扑修复分阶段路线
 
-> 文档状态：PREPARED
+> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C Release Evidence 与 12E-08D Production Admission 之间
 
@@ -53,6 +53,7 @@ R2-04：post-repair strict、attribute validator、negative/golden tests。
 
 ```text
 R3-01：non-manifold pattern classifier 与条件 fan split feasibility；
+R3-01A：required real model 完整自相交证据与 deterministic pair hash；
 R3-02：nai_you/aishen/meigui/3MF 真实模型 repair matrix；
 R3-03：post-repair 12E core、Release time/memory、legacy regression；
 R3-04：更新 admission matrix，给出 08D GO/NO-GO。

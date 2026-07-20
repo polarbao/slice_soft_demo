@@ -201,3 +201,17 @@ ctest --test-dir build -C Release --output-on-failure
 该脚本只写 `output/benchmarks/12e_08c` 诊断 JSON，不写 12E production package。核心时间排除
 TIFF/PNG/JSON 写盘。真实 OBJ 被 strict topology 阻断时，脚本仍应输出可审计报告并保持
 `productionAdmitted=false`；这类结果是证据完成，不是性能预算或生产准入通过。
+
+## 12E-08C-R1 Pre-Repair Baseline
+
+默认 OpenVDB OFF 的修复前真实模型证据入口：
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_preflight_unit_tests
+ctest --test-dir build -C Debug -R mesh_repair_preflight --output-on-failure
+.\scripts\run_12e_08c_r1_pre_repair_baseline.ps1 -BuildDir build -Config Debug
+```
+
+脚本对 `nai_you_new`、`aishen_fudiao`、`meigui_fudiao` 和闭合 Texture2D 3MF 各执行两次，比较排除
+计时后的稳定 report projection。输出仅位于 `output/benchmarks/12e_08c_r1_pre_repair`，不执行 repair、
+不写 production package/TIFF。

@@ -47,6 +47,8 @@ post-repair strict、attribute、hash 和 12E 全链路证据。
 | 3MF Texture2D fixture | closed | no-op strict，纹理属性与 hash 稳定 |
 
 每个模型记录输入和配置 SHA-256、最终姿态、pre/post diagnostics、operation hash、结果状态、核心时间和峰值内存。
+三个真实 OBJ 的 R1-04 baseline 已出现 sampled self-intersection evidence；R3-01A 必须对 required cases
+输出完整候选枚举或稳定 budget blocked，sampled 不能作为 post-strict PASS。
 
 ## 5. Repeatability
 

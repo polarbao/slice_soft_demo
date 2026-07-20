@@ -119,8 +119,8 @@ fail_fast。
 
 ### FR-06 修复后重新严格验证
 
-修复后必须重新生成 topology diagnostics；只有 blocker 为零且 self-intersection 未确认时，才可进入
-12E partition。
+修复后必须重新生成 topology diagnostics；只有 blocker 为零、自相交证据完整且未确认相交时，才可进入
+12E partition。达到 pair cap 的 sampled 结果属于证据不足，不能计为 strict PASS。
 
 ### FR-07 失败安全
 
@@ -174,7 +174,7 @@ self-intersection 和 hash 不确定。
 3. 修复开启时 pre/post hash、操作和属性映射完整。
 4. repaired PASS 必须再次通过 strict，而不是仅“问题数量减少”。
 5. confirmed self-intersection 始终 fail-fast。
-6. 三个真实 OBJ 均生成可解释报告，不允许崩溃或空 PASS。
+6. 三个真实 OBJ 均生成可解释报告，不允许崩溃、空 PASS 或 sampled self-intersection 冒充完整验证。
 7. Release matrix、legacy regression、RIP strict 可重复运行。
 8. 未满足生产 Gate 时 `productionOutputWritten=false`。
 

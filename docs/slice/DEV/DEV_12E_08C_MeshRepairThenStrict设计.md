@@ -172,6 +172,10 @@ boundary loop 只有同时满足以下条件才允许自动处理：
 修复后没有新 non-manifold/self-intersection。
 ```
 
+真实大网格的自相交证据必须标明 `complete`。现有 `max_triangle_pair_checks` 采样结果只能进入
+`manual_repair_required`；R3-01A 使用确定性 AABB broad-phase 和当前 triangle-intersection narrow-phase
+补齐完整证据，不允许仅提高 cap 后把未完成检查标记为 PASS。
+
 3 条孤立 boundary edge 不自动解释为一个合法三角孔；必须先确认端点连接形成闭环。
 
 ## 8. Non-Manifold Repair

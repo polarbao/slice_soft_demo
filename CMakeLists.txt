@@ -67,6 +67,8 @@ add_library(slicer_core
     src/slicer_core/geometry/repair/MeshRepairHash.h
     src/slicer_core/geometry/repair/MeshRepairEligibilityPolicy.cpp
     src/slicer_core/geometry/repair/MeshRepairEligibilityPolicy.h
+    src/slicer_core/geometry/repair/MeshRepairPreflight.cpp
+    src/slicer_core/geometry/repair/MeshRepairPreflight.h
     src/slicer_core/geometry/repair/MeshRepairTypes.cpp
     src/slicer_core/geometry/repair/MeshRepairTypes.h
     src/slicer_core/geometry/NearestTriangleQuery.cpp
@@ -239,6 +241,12 @@ add_executable(texture_fill_partition_release_benchmark
 )
 
 target_link_libraries(texture_fill_partition_release_benchmark PRIVATE slicer_core)
+
+add_executable(mesh_repair_preflight
+    apps/mesh_repair_preflight/main.cpp
+)
+
+target_link_libraries(mesh_repair_preflight PRIVATE slicer_core)
 
 add_executable(rip_reader_test
     apps/rip_reader_test/main.cpp
@@ -423,6 +431,12 @@ target_compile_definitions(mesh_repair_fixture_golden_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(mesh_repair_preflight_unit_tests
+    tests/unit/mesh_repair_preflight/main.cpp
+)
+
+target_link_libraries(mesh_repair_preflight_unit_tests PRIVATE slicer_core)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
@@ -449,6 +463,18 @@ add_test(
 set_tests_properties(texture_fill_partition_release_benchmark_cli_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_test(
+    NAME mesh_repair_preflight_cli_test
+    COMMAND mesh_repair_preflight
+        --config samples/configs/3mf/three_mf_texture2d_checker.json
+        --output ${CMAKE_CURRENT_BINARY_DIR}/output/12e_08c_r1_preflight_cli_test.json
+        --source-id samples/models/3mf/texture2d_checker_cube.3mf
+        --voxel-mm 0.10
+        --require-openvdb-off
+)
+set_tests_properties(mesh_repair_preflight_cli_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
@@ -459,6 +485,7 @@ add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_comp
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
+add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
