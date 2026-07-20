@@ -1,13 +1,13 @@
 # REPORT_12E 启动准备状态
 
-> 文档状态：12E-08A COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
-> 日期：2026-07-17
+> 文档状态：12E-08A/08B COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
+> 日期：2026-07-20
 
 ## 1. 当前结论
 
-12E 已完成 12E-01 至 12E-07 以及 12E-08A。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer、12D 模型域精确闭环联动和 classification-to-raster 确定性映射也已建立。
+12E 已完成 12E-01 至 12E-07 以及 12E-08A/08B。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer、12D 模型域与完整材料域精确闭环联动和 classification-to-raster 确定性映射也已建立。
 
-当前两个候选仍为 diagnostic-only。12E-08A 已在 world-space raster center 上保持 texture/fill 精确互补和真实 layerIndex/zMm，并保持 production output 关闭。完整支撑/光油 closure、默认 OFF Release 真实模型预算和 legacy regression 证据尚未关闭，12E-08D 也尚未获得用户生产路径确认。
+当前两个候选仍为 diagnostic-only。12E-08A 已在 world-space raster center 上保持 texture/fill 精确互补和真实 layerIndex/zMm；12E-08B 已将支撑、内部空洞、表面/外侧光油和最终 RGBWSV 通道纳入完整闭环。默认 OFF Release 真实模型预算和 legacy regression 证据尚未关闭，12E-08D 也尚未获得用户生产路径确认。
 
 ## 2. Current State
 
@@ -16,7 +16,7 @@
 12B：性能评估与 OpenVDB SDF utility 定位完成；
 12C：Qt 工作台 R0/R1/R2 完成；
 12D：R0/R1/R2/R3 COMPLETE，12D-10 三个真实 OBJ 验收通过；
-12E：R0 complete，12E-01..07 与 12E-08A complete，12E-08 in progress。
+12E：R0 complete，12E-01..07 与 12E-08A/08B complete，12E-08 in progress。
 ```
 
 legacy texture apply mode 和 modelFill scope 保持兼容；CPU backend 只产生 diagnostic result。当前不存在 12E production package，也未改变原有切片生产路径。
@@ -40,6 +40,7 @@ generated/real model/backend/UI/protocol 验收矩阵；
 12E-07 12D Closure 联动；
 12E-08 Production Admission 准备；
 12E-08A classification-to-raster DTO、算法、generated fixture 与 report；
+12E-08B full-material semantic sidecar、12D closure、报告与 generated fixture；
 12E-09 Qt UI 与 Effective Config 准备。
 ```
 
@@ -47,7 +48,6 @@ generated/real model/backend/UI/protocol 验收矩阵；
 
 ```text
 production admission；
-完整 support/varnish semantic sidecar 与 full closure；
 默认 OFF Release 真实模型性能、内存和 legacy regression；
 Qt UI 与 preview；
 真实模型回归和 REPORT_12E 完成报告。
@@ -67,7 +67,8 @@ Qt UI 与 preview；
 | 12E-06 | COMPLETE | Texture Transfer 与 Diagnostic Composer |
 | 12E-07 | COMPLETE | 12D Closure 联动，限 texture/model-fill 诊断范围 |
 | 12E-08A | COMPLETE / DIAGNOSTIC ONLY | classification-to-raster、量化、coverage、报告与 generated fixture |
-| 12E-08B/08C | TODO | 完整 closure、Release 预算和回归证据 |
+| 12E-08B | COMPLETE / DIAGNOSTIC ONLY | 完整材料 semantic sidecar、五类 gap、S/V 通道一致性与报告 |
+| 12E-08C | TODO | 默认 OFF Release 预算和 legacy regression |
 | 12E-08D | BLOCKED / REQUIRES CONFIRMATION | production package、RIP strict 与 admission |
 | 12E-09 | PREPARED / BLOCKED | Qt diagnostic UI 与 Effective Config 已准备 |
 | 12E-10 | PLANNED | 真实模型和收口 |
@@ -85,7 +86,8 @@ Qt UI 与 preview；
 12E-06：COMPLETE；
 12E-07：COMPLETE；
 12E-08A：COMPLETE；
-12E-08B/08C：TODO；
+12E-08B：COMPLETE；
+12E-08C：TODO；
 12E-08D：BLOCKED BY PRODUCTION EVIDENCE AND CONFIRMATION；
 当前没有 active code task；
 12E R0/R1 原型不要求先完成 repair；
@@ -349,10 +351,9 @@ git diff --check：PASS（仅 Git 行尾转换提示）。
 
 ## 15. 下一任务
 
-12E-08A 已完成。12E-08 production admission 仍必须依次关闭：
+12E-08A/08B 已完成。12E-08 production admission 仍必须依次关闭：
 
 ```text
-12E-08B 完整 support/varnish closure；
 12E-08C 默认 OFF Release 真实模型预算与 legacy regression；
 12E-08D 前再次取得用户 production path 明确确认。
 ```
@@ -373,16 +374,17 @@ legacy slicer_cli production path 不替代；
 
 ## 17. 后续准备复核
 
-2026-07-17 已完成 12E-08 准备复核：
+2026-07-20 已完成 12E-08 准备复核：
 
 ```text
 12E-07 已完成 texture_model_fill_only exact closure；
 12E diagnostic grid 不能直接冒充最终打印 raster grid；
-支撑、内部空洞和光油必须在最终 raster semantic sidecar 中形成完整证据；
+12E-08B 已使支撑、内部空洞和光油在最终 raster semantic sidecar 中形成完整诊断证据；
 默认 OFF CPU candidate 仍需真实模型 Release 性能和内存预算；
 新 Profile production package、RIP strict 和旧 Profile 回归仍需实证；
 12E-08A 已完成 classification-to-raster diagnostic mapping；
-12E-08B/08C 继续关闭 production evidence；
+12E-08B 已完成 full-material diagnostic closure；
+12E-08C 继续关闭 production evidence；
 12E-08D 前必须再次取得用户明确确认。
 ```
 
@@ -420,6 +422,44 @@ productionAcceptance=not_evaluated。
 
 ```text
 diagnostic UI、异步 worker、0.01 mm 控件、动态阈值、effective config 和真实 layer preview 合同已准备；
-12E-09A 仍建议等待 12E-08B/08C；
+12E-09A 仍建议等待 12E-08C；
 12E-09B production Profile 被 12E-08D 阻断。
 ```
+
+## 19. 12E-08B 实际实现与验证
+
+实现：
+
+```text
+TextureFillPartitionFullClosureLayerEvidence/Request/Result；
+TextureFillPartitionFullClosureAdapter；
+最终 raster texture/fill 与 support/internal-void/surface-varnish/outer-varnish sidecar；
+Model > OuterVarnishShell > Support > Empty 优先级守门；
+ExpectedOccupiedDomain 和六通道 LayerEmpty 精确对照；
+model/support/varnish 独立 closure status；
+support/varnish mask 与 S/V 通道 mismatch 统计；
+五类 12D gap、域外材料和真实 layerIndex/zMm；
+fullClosureLinkage、performance.fullClosureMs 与 golden；
+八个 E_12E_FULL_CLOSURE_* 稳定错误码。
+```
+
+验证：
+
+```text
+full-closure adapter generated fixture：16/16 PASS；
+report unit cases：8/8 PASS；
+默认 OpenVDB OFF 全量 Debug build：PASS；
+默认 OpenVDB OFF 全量 CTest：19/19 PASS；
+OpenVDB ON adapter/report 定向 build：PASS；
+OpenVDB ON adapter/report 定向 CTest：2/2 PASS；
+12D Repair Disabled：baseline/diagnostic RIP Reader PASS；
+30 层 production TIFF SHA-256 invariant：PASS；
+repairAttempted=false；
+productionOutputWritten=false；
+productionAcceptance=not_evaluated。
+```
+
+详细结果：`docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md`。
+
+下一原子任务为 12E-08C。12E-09 文档准备已完成；09A 建议等待 08C，09B 继续被
+12E-08D production admission 和用户明确确认阻断。

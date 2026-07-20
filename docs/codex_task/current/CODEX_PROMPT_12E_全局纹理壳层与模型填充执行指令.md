@@ -1,6 +1,6 @@
 # CODEX_PROMPT_12E 全局纹理壳层与模型填充执行指令
 
-> 文档状态：12E-08A COMPLETE / 12E-08 IN PROGRESS
+> 文档状态：12E-08A/08B COMPLETE / 12E-08 IN PROGRESS
 > 日期：2026-07-17
 > 当前不得自动执行下一个原子任务；12E-08D 必须先关闭生产证据阻断并再次取得用户明确确认
 
@@ -48,7 +48,7 @@ git status --short
 ## 4. 执行边界
 
 ```text
-只执行用户明确指定的一个 Task 12E-XX；12E-08A 已完成，不得自动启动 12E-08D production path；
+只执行用户明确指定的一个 Task 12E-XX；12E-08A/08B 已完成，不得自动启动 12E-08D production path；
 不要自动执行下一任务；
 不要修改 12D-R3 的 repair/UI/真实模型范围；
 不要把 OpenVDB 设为默认或强制依赖；

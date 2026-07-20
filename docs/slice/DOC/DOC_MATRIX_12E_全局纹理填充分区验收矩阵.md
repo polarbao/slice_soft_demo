@@ -1,7 +1,7 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：12E-08A COMPLETE / 12E-08 IN PROGRESS
-> 日期：2026-07-17
+> 文档状态：12E-08A/08B COMPLETE / 12E-08 IN PROGRESS
+> 日期：2026-07-20
 
 ## 1. 使用方式
 
@@ -94,7 +94,10 @@ CPU 与 OpenVDB 比较 occupancy、partition count、threshold、distance error�
 | normal width | 12E-07 PASS：12D 读取 exact texture/fill mask；ColorFillGap=0 |
 | all texture | 12E-07 PASS：fill=0；not_applicable(reason=all_texture_partition) |
 | repair disabled | 12E-07 PASS：RIP strict；30 层 TIFF SHA-256 invariant |
-| support/varnish boundary | 12E-07 diagnostic scope 标记 not_evaluated，不以零 mask 伪造 PASS |
+| support/varnish boundary | 12E-08B PASS：真实 semantic sidecar、S/V 通道一致性和独立 closure status |
+| internal void support | 12E-08B PASS：位于 model envelope 内、model 外并归属 support-required domain |
+| full expected domain | 12E-08B PASS：model envelope/support required/outer varnish 应占用像素不得为空 |
+| final priority | 12E-08B PASS：Model > OuterVarnishShell > Support > Empty 冲突 fail fast |
 
 12E 不修改 12D repair 规则，12D-R3 是否完成不阻塞 12E R0/R1 原型，但 production admission 必须重新评估闭环证据。
 
@@ -148,7 +151,8 @@ OpenVDB OFF build PASS；
 | 12E-06 -> 07 | COMPLETE：exact masks/texture transfer/diagnostic composer 与 report golden 完成 |
 | 12E-07 -> 08 | COMPLETE：texture_model_fill_only exact closure 联动通过 |
 | 12E-08A | COMPLETE：world-space raster center 映射、互补 mask、RGB、量化与 coverage 证据通过 |
-| 12E-08B/08C | TODO：full closure、默认 OFF Release/回归证据 |
+| 12E-08B | COMPLETE：full-material sidecar、五类 12D gap、support/varnish 状态与通道一致性通过 |
+| 12E-08C | TODO：默认 OFF Release/回归证据 |
 | 12E-08D | BLOCKED：生产准入需前置证据和用户再次确认 |
-| 12E-09 | PREPARED/BLOCKED：Qt diagnostic UI 与 Effective Config 已准备 |
+| 12E-09 | PREPARED：09A 建议等待 08C；09B 被 08D 阻断 |
 | 12E-10 | UI、真实模型、RIP 和报告收口 |

@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-08A COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
+> 文档状态：12E-08A/08B COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；下一原子任务为 12E-08B 完整材料语义 sidecar 与 full closure
+> 当前项目原子任务：无；下一原子任务为 12E-08C 默认 OFF Release 真实模型预算与 legacy regression
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -337,7 +337,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：IN PROGRESS；12E-08A COMPLETE，12E-08B/08C TODO，12E-08D BLOCKED / REQUIRES CONFIRMATION
+状态：IN PROGRESS；12E-08A/08B COMPLETE，12E-08C TODO，12E-08D BLOCKED / REQUIRES CONFIRMATION
 
 前置：
 
@@ -364,8 +364,7 @@ RIP strict PASS。
 docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 ```
 
-当前阻断：完整 support/varnish closure、默认 OFF Release 真实模型预算和 legacy regression
-证据均未关闭。
+当前阻断：默认 OFF Release 真实模型预算和 legacy regression 证据尚未关闭。
 
 12E-08A 实际结果：
 
@@ -379,12 +378,31 @@ docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 productionOutputWritten=false，productionAcceptance=not_evaluated。
 ```
 
-剩余阻断：完整 support/varnish closure、默认 OFF Release 真实模型预算、legacy regression
-证据以及 12E-08D 用户明确确认。
+12E-08B 实际结果：
+
+```text
+新增 TextureFillPartitionFullClosureAdapter；
+消费最终 raster texture/fill、support、internal-void、surface/outer varnish 和 RGBWSV evidence；
+构建完整 12D MaterialClosureSemanticLayerInput sidecar；
+检查 Model > OuterVarnishShell > Support > Empty、真实层序、二值 mask 和固定通道顺序；
+输出 model/support/varnish 独立状态、五类 12D gap、通道 mismatch 和 expected-domain gap；
+报告新增 fullClosureLinkage、fullClosureMs 和 golden；
+generated adapter 16 cases、默认 OFF 全量 19/19、OpenVDB ON 定向 2/2 PASS；
+Repair Disabled RIP strict 与 30 层 TIFF SHA-256 invariant PASS；
+repairAttempted=false、productionOutputWritten=false、productionAcceptance=not_evaluated。
+```
+
+结果入口：
+
+```text
+docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
+```
+
+剩余阻断：默认 OFF Release 真实模型预算、legacy regression 证据以及 12E-08D 用户明确确认。
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：PREPARED / BLOCKED BY 12E-08 ADMISSION STATE
+状态：PREPARED；12E-09A 建议等待 12E-08C，12E-09B BLOCKED BY 12E-08D
 
 目标：
 

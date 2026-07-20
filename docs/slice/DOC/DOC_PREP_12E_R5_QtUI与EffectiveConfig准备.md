@@ -1,9 +1,9 @@
 # DOC_PREP_12E-R5 Qt UI 与 Effective Config 准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY 12E-08 ADMISSION STATE
-> 日期：2026-07-17
+> 文档状态：PREPARED / 12E-09A READY AFTER 12E-08C / 12E-09B BLOCKED BY 12E-08D
+> 日期：2026-07-20
 > 覆盖任务：12E-09 Qt UI 设置与 Effective Config
-> 前置状态：12E-08A COMPLETE；12E-08B/08C/08D 未完成
+> 前置状态：12E-08A/08B COMPLETE；12E-08C/08D 未完成
 
 ## 1. 准备结论
 
@@ -13,7 +13,7 @@
 执行可分为两层：
 
 ```text
-12E-09A diagnostic UI：可在 12E-08B/08C 期间实现，但必须显式显示“诊断候选”；
+12E-09A diagnostic UI：准备已完成，建议在 12E-08C 后实现并显式显示“诊断候选”；
 12E-09B production Profile：必须等待 12E-08D admitted=true 后启用。
 ```
 
@@ -111,7 +111,8 @@ Partition：Texture 与 Fill 互补叠加；
 同层原则：所有 overlay 必须使用同一个 layerIndex。
 ```
 
-在 12E-08B 完成前，Support/Varnish closure 显示 `未评估`，不得用空 mask 显示绿色 PASS。
+12E-08B 已提供 Support/Varnish 真实诊断状态。UI 必须读取 `fullClosureLinkage`，证据缺失时
+仍显示 `未评估`，不得用空 mask 或默认值显示绿色 PASS。
 
 ## 8. 能力状态机
 
@@ -195,7 +196,7 @@ OpenVDB ON 可选 lane PASS。
 | 12E config/partition/width | PASS | 可绑定诊断 UI |
 | texture transfer | PASS | 可显示候选 RGB |
 | classification-to-raster | 12E-08A PASS | 可显示真实 raster layer |
-| full material closure | 12E-08B TODO | Support/Varnish 必须显示未评估 |
+| full material closure | 12E-08B PASS / DIAGNOSTIC | 可显示真实 Support/Varnish 状态 |
 | Release/legacy regression | 12E-08C TODO | 不得宣传生产性能 |
 | production admission | 12E-08D NOT GRANTED | 不得启用生产 Profile |
 
@@ -203,8 +204,7 @@ OpenVDB ON 可选 lane PASS。
 
 ```text
 12E-09 文档准备：COMPLETE；
-12E-09A diagnostic UI：PREPARED，建议在 12E-08B/08C 后执行；
+12E-09A diagnostic UI：PREPARED，建议在 12E-08C 后执行；
 12E-09B production Profile：BLOCKED BY 12E-08D；
 12E production：NOT ADMITTED。
 ```
-

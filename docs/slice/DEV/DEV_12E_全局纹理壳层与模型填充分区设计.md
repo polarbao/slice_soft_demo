@@ -4,7 +4,7 @@
 > 文档状态：DEV / Stage 12E Planning
 > 生成日期：2026-07-16
 > 对应 PRD：PRD_12E_全局纹理表面层与模型填充连续调节.md
-> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain Closure/Raster Mapping/Report 已实现，Full Closure/UI/Production 待后续任务
+> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain/Full-Material Closure/Raster Mapping/Report 已实现，Release Regression/UI/Production 待后续任务
 
 ## 1. 技术目标
 

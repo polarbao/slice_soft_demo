@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Texture Fill Partition Report
 
-> 文档状态：12D CLOSURE LINKAGE + 12E-08A RASTER MAPPING IMPLEMENTED / PRODUCTION NOT ADMITTED
+> 文档状态：12D MODEL/FULL CLOSURE LINKAGE + 12E-08A/08B IMPLEMENTED / PRODUCTION NOT ADMITTED
 > Schema：`slicesoft.texture_fill_partition.12e.1`
 > 日期：2026-07-16
 
@@ -276,6 +276,53 @@ modelDomainGapVoxels=0。
 classification cell 的半开区间内时继承该 cell 的 model/texture/fill ownership；超出 source
 范围时保持 Empty。该对象不得由 preview PNG resize 生成。
 
+## 7.5 Full Closure Linkage 对象
+
+12E-08B 新增 `fullClosureLinkage`，把最终 raster 的模型、支撑、内部空洞和光油证据映射到
+12D 完整材料闭环诊断：
+
+```json
+{
+  "availability": "available",
+  "status": "diagnostic",
+  "scope": "full_material_domain",
+  "source": "semantic_masks",
+  "confidence": "exact",
+  "productionAcceptance": "not_evaluated",
+  "allTexture": false,
+  "colorFillApplicability": "applicable",
+  "allTextureReason": null,
+  "modelClosureStatus": "pass",
+  "supportClosureStatus": "pass",
+  "varnishClosureStatus": "pass",
+  "fullClosurePass": true,
+  "repairAttempted": false,
+  "productionOutputWritten": false,
+  "expectedDomainGapPixels": 0,
+  "modelDomainGapPixels": 0,
+  "supportRequiredGapPixels": 0,
+  "outerVarnishGapPixels": 0,
+  "unexpectedOccupiedPixels": 0,
+  "supportChannelMismatchPixels": 0,
+  "varnishChannelMismatchPixels": 0,
+  "semanticChannelMismatchPixels": 0,
+  "colorFillGapPixels": 0,
+  "modelSupportGapPixels": 0,
+  "colorSupportGapPixels": 0,
+  "internalVoidGapPixels": 0,
+  "varnishSupportGapPixels": 0,
+  "analysisMs": 3.5,
+  "layerCount": 1,
+  "layers": [],
+  "issues": []
+}
+```
+
+`expectedDomainGapPixels` 使用最终 `ModelEnvelope OR SupportRequired OR OuterVarnishShell`
+与 RGBWSV 六通道空白值对照。`supportClosureStatus` 和 `varnishClosureStatus` 必须同时检查
+几何 gap 与 S/V 通道一致性。对象缺失时 `availability=unavailable`、状态为
+`not_evaluated`，`analysisMs=null`，不得生成伪 PASS。
+
 ## 8. Performance 对象
 
 ```json
@@ -289,6 +336,7 @@ classification cell 的半开区间内时继承该 cell 的 model/texture/fill o
   "partitionMs": 11.0,
   "textureTransferMs": null,
   "rasterMappingMs": null,
+  "fullClosureMs": null,
   "totalCoreMs": 24.0,
   "gridVoxelCount": 4,
   "maskBytes": 12,
@@ -374,6 +422,19 @@ E_12E_RASTER_MAPPING_GRID_INVALID
 E_12E_RASTER_MAPPING_PARTITION_INVALID
 E_12E_RASTER_MAPPING_TRANSFER_INVALID
 E_12E_RASTER_MAPPING_INVARIANT_FAILED
+```
+
+12E-08B 新增：
+
+```text
+E_12E_FULL_CLOSURE_INPUT_INVALID
+E_12E_FULL_CLOSURE_LAYER_ORDER_INVALID
+E_12E_FULL_CLOSURE_MASK_INVALID
+E_12E_FULL_CLOSURE_CHANNEL_ORDER_INVALID
+E_12E_FULL_CLOSURE_PRIORITY_CONFLICT
+E_12E_FULL_CLOSURE_SEMANTIC_MISMATCH
+E_12E_FULL_CLOSURE_GAP_DETECTED
+E_12E_FULL_CLOSURE_UNEXPECTED_MATERIAL
 ```
 
 ## 10. Config Snapshot
