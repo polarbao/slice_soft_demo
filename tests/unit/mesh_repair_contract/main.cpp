@@ -190,6 +190,18 @@ bool InvalidInputUsesStableError()
     return ExpectTrue(false, "invalid mesh must throw MeshRepairError");
 }
 
+bool StableErrorNamesMatchFormalContract()
+{
+    return ExpectTrue(
+               slicer_core::MeshRepairErrorCodeName(slicer_core::MeshRepairErrorCode::Ineligible)
+                   == "E_12E_REPAIR_NOT_ELIGIBLE",
+               "ineligible error matches formal contract")
+        && ExpectTrue(
+            slicer_core::MeshRepairErrorCodeName(slicer_core::MeshRepairErrorCode::AttributeMismatch)
+                == "E_12E_REPAIR_ATTRIBUTE_CONFLICT",
+            "attribute error matches formal contract");
+}
+
 bool ReportSkeletonMatchesGolden()
 {
     const slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
@@ -226,6 +238,7 @@ int main()
             && HashesAreStableAndIndependent()
             && OperationHashIsDeterministic()
             && InvalidInputUsesStableError()
+            && StableErrorNamesMatchFormalContract()
             && ReportSkeletonMatchesGolden();
         if (!ok)
         {

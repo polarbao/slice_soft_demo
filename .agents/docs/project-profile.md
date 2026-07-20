@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08C-R1-01 complete; Release budget blocked by real OBJ topology; R1-02 Eligibility is next; dual legacy/global_surface_shell target and unified TIFF contract documented but not implemented
+- Current phase: Stage 12E-08C-R1-01/R1-02 complete; Release budget blocked by real OBJ topology; R1-03 generated fixtures/golden is next; dual legacy/global_surface_shell target and unified TIFF contract documented but not implemented
 - Latest completed milestone: Stage 12E-08C default-OFF Release evidence and legacy regression
-- Latest completed task: `12E-08C-R1-01 repair DTO/hash/report contract`
-- Current task: none active; next allowed atomic task is `12E-08C-R1-02 Eligibility Policy`
-- Prepared stage: R1-02..04 and R2/R3 preparation complete; `12E-09A diagnostic UI` also prepared; 12E-08D dual-mode router/shared-writer work is documented but blocked; 12E-09B remains blocked
+- Latest completed task: `12E-08C-R1-02 pre-repair eligibility policy`
+- Current task: none active; next allowed atomic task is `12E-08C-R1-03 Generated Fixtures 与 Golden`
+- Prepared stage: R1-03..04 and R2/R3 preparation complete; `12E-09A diagnostic UI` also prepared; 12E-08D dual-mode router/shared-writer work is documented but blocked; 12E-09B remains blocked
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

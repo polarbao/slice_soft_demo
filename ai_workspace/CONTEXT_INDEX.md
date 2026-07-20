@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-20 | 12E-08C-R1-01 契约完成与后续准备 | `context_handoff/2026-07-20_12E-08C-R1-01契约完成与后续准备.md` | Current |
+| 2026-07-20 | 12E-08C-R1-02 资格策略完成 | `context_handoff/2026-07-20_12E-08C-R1-02资格策略完成.md` | Current |
+| 2026-07-20 | 12E-08C-R1-01 契约完成与后续准备 | `context_handoff/2026-07-20_12E-08C-R1-01契约完成与后续准备.md` | Superseded |
 | 2026-07-20 | 12E 双切片模式与统一 TIFF 契约 | `context_handoff/2026-07-20_12E双切片模式与统一TIFF契约.md` | Superseded / incorporated |
 | 2026-07-20 | 12E-08C 真实模型拓扑修复专项准备 | `context_handoff/2026-07-20_12E-08C真实模型拓扑修复专项准备.md` | Superseded / incorporated |
 | 2026-07-15 | 12D-R1-03 MaterialClosureReport | `context_handoff/2026-07-15_12D-R1-03_MaterialClosureReport.md` | Superseded |

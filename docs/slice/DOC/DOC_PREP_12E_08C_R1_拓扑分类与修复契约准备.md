@@ -1,14 +1,14 @@
 # DOC_PREP_12E-08C-R1 拓扑分类与修复契约准备
 
-> 文档状态：R1-01 COMPLETE / R1-02 READY
+> 文档状态：R1-02 COMPLETE / R1-03 READY
 > 日期：2026-07-20
 > 当前范围：只准备 R1；不实现 Mesh Repair，不写 production package
 
 ## 1. 准备结论
 
 R1 的代码所有权、DTO、Schema、错误码、输入模型、测试边界和退出标准已明确。下一原子任务为
-`12E-08C-R1-01 MeshRepair DTO、错误码、canonical hash 与 report skeleton` 已完成；下一任务为
-`12E-08C-R1-02 Eligibility Policy`。
+`12E-08C-R1-01 MeshRepair DTO、错误码、canonical hash 与 report skeleton` 与
+`12E-08C-R1-02 Eligibility Policy` 已完成；下一任务为 `12E-08C-R1-03 Generated Fixtures 与 Golden`。
 
 ## 2. 当前代码事实
 
@@ -108,7 +108,7 @@ git diff --check
 
 ## 9. R1 Gate
 
-R1-01 已通过定向测试和默认 Debug CTest。R1-02 可开始。R2 仍未获得代码实施准入；必须先完成 R1 全部
+R1-01/R1-02 已通过定向测试和默认 Debug CTest。R1-03 可开始。R2 仍未获得代码实施准入；必须先完成 R1 全部
 原子任务并审查真实模型 baseline。
 
 ## 10. R1-01 实际文件与验证

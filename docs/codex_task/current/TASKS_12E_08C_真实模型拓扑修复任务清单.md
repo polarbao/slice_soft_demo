@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1-01 COMPLETE / R1-02 READY
+> 文档状态：IN PROGRESS / R1-02 COMPLETE / R1-03 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：12E-08C-R1-02
+> 当前原子任务：12E-08C-R1-03
 
 ## 1. 总目标
 
@@ -48,7 +48,7 @@ unit/schema tests。
 
 ### 12E-08C-R1-02 Eligibility Policy
 
-状态：READY。
+状态：COMPLETE。
 
 范围：复用现有 topology/robustness diagnostics，分类 eligible/conditional/manual/fail-fast；输出稳定建议。
 
@@ -56,9 +56,13 @@ unit/schema tests。
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R1_EligibilityFixtureBaseline准备.md`。
 
+实际结果：新增纯 `MeshRepairEligibilityPolicy`，复用 topology/robustness diagnostics，固定
+`fail_fast > manual_only > conditional > eligible` 优先级；定向测试 2/2、默认 Debug CTest 23/23 PASS。
+结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R1_02_EligibilityPolicy结果.md`。
+
 ### 12E-08C-R1-03 Generated Fixtures 与 Golden
 
-状态：BLOCKED BY R1-02。
+状态：READY。
 
 范围：clean、duplicate、winding、boundary、non-manifold、self-intersection、attribute conflict fixtures。
 

@@ -65,6 +65,8 @@ add_library(slicer_core
     src/slicer_core/geometry/MeshTopologyDiagnostics.h
     src/slicer_core/geometry/repair/MeshRepairHash.cpp
     src/slicer_core/geometry/repair/MeshRepairHash.h
+    src/slicer_core/geometry/repair/MeshRepairEligibilityPolicy.cpp
+    src/slicer_core/geometry/repair/MeshRepairEligibilityPolicy.h
     src/slicer_core/geometry/repair/MeshRepairTypes.cpp
     src/slicer_core/geometry/repair/MeshRepairTypes.h
     src/slicer_core/geometry/NearestTriangleQuery.cpp
@@ -406,6 +408,12 @@ target_compile_definitions(mesh_repair_contract_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(mesh_repair_eligibility_unit_tests
+    tests/unit/mesh_repair_eligibility/main.cpp
+)
+
+target_link_libraries(mesh_repair_eligibility_unit_tests PRIVATE slicer_core)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
@@ -440,6 +448,7 @@ add_test(NAME material_closure_semantic_detector_unit_tests COMMAND material_clo
 add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_texture_service_unit_tests)
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
+add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

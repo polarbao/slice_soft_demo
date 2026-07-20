@@ -103,13 +103,13 @@ std::string MeshRepairErrorCodeName(const MeshRepairErrorCode code)
     case MeshRepairErrorCode::RepairNotEnabled:
         return "E_12E_REPAIR_NOT_ENABLED";
     case MeshRepairErrorCode::Ineligible:
-        return "E_12E_REPAIR_INELIGIBLE";
+        return "E_12E_REPAIR_NOT_ELIGIBLE";
     case MeshRepairErrorCode::AmbiguousTopology:
         return "E_12E_REPAIR_AMBIGUOUS_TOPOLOGY";
     case MeshRepairErrorCode::BudgetExceeded:
         return "E_12E_REPAIR_BUDGET_EXCEEDED";
     case MeshRepairErrorCode::AttributeMismatch:
-        return "E_12E_REPAIR_ATTRIBUTE_MISMATCH";
+        return "E_12E_REPAIR_ATTRIBUTE_CONFLICT";
     case MeshRepairErrorCode::PostStrictFailed:
         return "E_12E_REPAIR_POST_STRICT_FAILED";
     case MeshRepairErrorCode::SelfIntersection:

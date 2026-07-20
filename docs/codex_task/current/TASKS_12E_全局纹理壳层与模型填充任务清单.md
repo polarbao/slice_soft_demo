@@ -404,7 +404,7 @@ docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
 
 ### 11.1 12E-08C-R1/R2/R3 修复前置专项
 
-状态：IN PROGRESS / R1-01 COMPLETE / R1-02 READY。
+状态：IN PROGRESS / R1-02 COMPLETE / R1-03 READY。
 
 执行入口：
 

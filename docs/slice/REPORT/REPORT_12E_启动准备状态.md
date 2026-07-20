@@ -71,7 +71,7 @@ Qt UI 与 preview；
 | 12E-08A | COMPLETE / DIAGNOSTIC ONLY | classification-to-raster、量化、coverage、报告与 generated fixture |
 | 12E-08B | COMPLETE / DIAGNOSTIC ONLY | 完整材料 semantic sidecar、五类 gap、S/V 通道一致性与报告 |
 | 12E-08C | COMPLETE / BUDGET BLOCKED | Release evidence 与 legacy regression 完成；3 个真实 OBJ strict topology 阻断 |
-| 12E-08C-R1/R2/R3 | IN PROGRESS / R1-01 COMPLETE / R1-02 READY | DTO/hash/report 契约已完成；eligibility、实际 repair、post strict 与真实模型 Release Gate 待执行 |
+| 12E-08C-R1/R2/R3 | IN PROGRESS / R1-02 COMPLETE / R1-03 READY | DTO/hash/report 与 eligibility 已完成；generated golden、实际 repair、post strict 与真实模型 Release Gate 待执行 |
 | 12E-08D | BLOCKED / REQUIRES CONFIRMATION | production package、RIP strict 与 admission |
 | 12E-09 | 09A READY / 09B BLOCKED | Qt diagnostic UI 与 Effective Config 已准备；production Profile 等待 08D |
 | 12E-10 | PLANNED | 真实模型和收口 |
@@ -92,9 +92,9 @@ Qt UI 与 preview；
 12E-08A：COMPLETE；
 12E-08B：COMPLETE；
 12E-08C：COMPLETE / RELEASE BUDGET BLOCKED；
-12E-08C-R1/R2/R3：IN PROGRESS，R1-01 COMPLETE，R1-02 READY；
+12E-08C-R1/R2/R3：IN PROGRESS，R1-02 COMPLETE，R1-03 READY；
 12E-08D：BLOCKED BY REAL OBJ TOPOLOGY BUDGET AND CONFIRMATION；
-当前没有 active code task；下一任务为 12E-08C-R1-02；
+当前没有 active code task；下一任务为 12E-08C-R1-03；
 12E R0/R1 原型不要求先完成 repair；
 12E production admission 必须复核 12D exact closure；
 不得把 12E 分区逻辑塞入 12D repair 任务。
@@ -521,4 +521,4 @@ Qt 双模式生产选择器：NOT IMPLEMENTED；
 目标状态中，两种模式只在生产层组合之前分叉，最终共用现有 TIFF writer、manifest、preview/report 和
 RIP Reader。任何模式只有在完整 TIFF 写出并通过协议校验后才能标记 production success；global
 unavailable/blocked 禁止静默回退 legacy。该补充已形成 Decision、Config Schema、08D Prep 和 AI handoff，
-不改变当前下一原子任务 `12E-08C-R1-02`。
+不改变当前下一原子任务 `12E-08C-R1-03`。
