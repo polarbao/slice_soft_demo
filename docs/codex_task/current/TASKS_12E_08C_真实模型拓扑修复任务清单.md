@@ -148,3 +148,9 @@ R3：real model Release + 12E pipeline + legacy/RIP/TIFF invariant；
 ## 7. 12E-08D 关系
 
 12E-08D 当前继续 BLOCKED。R3-04 是唯一可把状态变为 READY 的前置任务；R1/R2 单独完成不构成生产准入。
+
+## 8. 双模式边界
+
+本清单只处理 `global_surface_shell` 流水线的修复与 strict admission。legacy 保持默认生产路径且不自动
+调用 repair；global 失败时不得切换到 legacy。修复任务不写 TIFF，统一生产 writer 接入由后续
+12E-08D-01..04 完成。

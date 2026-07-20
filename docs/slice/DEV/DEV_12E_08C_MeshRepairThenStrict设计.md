@@ -312,3 +312,21 @@ L7：legacy regression、RIP strict、TIFF invariant。
 
 固定安全边界：OpenVDB optional/OFF；legacy production path 不替代；`p0.rgbwsv.2`、RGBWSV、uint8 和
 `black_is_print` 不修改。
+
+## 17. 双模式调用边界
+
+`MeshRepairFacade` 只由 global_surface_shell 的 admission path 调用：
+
+```text
+SlicePipelineRouter(global_surface_shell)
+  -> pre-strict
+  -> optional repair
+  -> post-strict
+  -> global partition/raster/composer
+
+SlicePipelineRouter(legacy)
+  -> existing legacy path
+```
+
+repair 不得成为 Router 之前的无条件导入步骤，也不得修改 legacy 使用的原始 `SceneModel`。修复候选应使用
+独立 mesh/attribute DTO；global 失败后丢弃候选并返回稳定错误，不调用 legacy writer 作为隐式回退。

@@ -279,3 +279,31 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_12e_texture_fill_real_mod
 10. 真实模型性能/内存有实际报告；
 11. REPORT_12E 记录实际命令、结果和残余风险。
 ```
+
+## 14. 双模式与 TIFF 输出验证矩阵
+
+| Case | 预期流水线 | TIFF/Package 预期 | 关键断言 |
+|---|---|---|---|
+| 配置省略 `slicePipeline` | legacy | 生产成功时完整写出 | 与历史配置输出兼容 |
+| `slicePipeline.mode=legacy` | legacy | 生产成功时完整写出 | 当前 preview/report/RIP strict 保持 |
+| `slicePipeline.mode=global_surface_shell`，未准入 | global | 不写生产 TIFF | 明确 `not_admitted`，可写诊断 preview/report |
+| global topology blocked | global | 不写生产 TIFF | 稳定错误码，不得转 legacy |
+| global admitted | global | 生产成功时完整写出 | 与 legacy 共用 writer 和协议校验 |
+| 非法 mode | 无 | 不写任何生产包 | config validation fail-fast |
+
+两条生产流水线都必须验证：
+
+```text
+manifest layer list 与磁盘 TIFF 一一对应；
+schema = p0.rgbwsv.2；
+channelOrder = R G B W S V；
+bitDepth = 8；
+polarity = black_is_print；
+preview/material overlay 对应同层生产语义；
+rip_reader_test strict PASS；
+requestedPipelineMode = effectivePipelineMode；
+不存在 silent fallback。
+```
+
+测试必须分别统计核心计算和 TIFF/PNG/JSON 写盘时间，不能用 writer 时间掩盖两条流水线的算法差异。
+12E-08D 完成前，global 行只允许验证诊断和 fail-closed 合同，不得伪造“生产 TIFF PASS”。

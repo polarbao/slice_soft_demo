@@ -2,11 +2,11 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-20
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-08A/08B COMPLETE / 12E-08 IN PROGRESS
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C COMPLETE-BLOCKED / 双切片模式目标已固化
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；现已在 12E-08D 前插入 12E-08C-R1/R2/R3 显式拓扑修复前置专项，下一原子任务为 R1-01。12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
+当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；现已在 12E-08D 前插入 12E-08C-R1/R2/R3 显式拓扑修复前置专项，下一原子任务为 R1-01。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
 
 ## 目录结构
 
@@ -97,6 +97,9 @@
 | `DOC/DOC_PREP_12E_R3_TextureTransfer与DiagnosticComposer准备.md` | 12E-06 纹理传递、fallback、确定性 tie 和诊断合成准备 |
 | `DOC/DOC_PREP_12E_R3_12DClosure联动准备.md` | 12E-07 exact mask、allTexture 和 12D closure 联动准备 |
 | `DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md` | 12E-08 raster mapping、完整 closure、性能和生产准入准备 |
+| `DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md` | legacy/global_surface_shell 双模式、默认值、准入和禁止静默回退决策 |
+| `DOC/DOC_SCHEMA_12E_DualSlicePipelineConfig.md` | `slicePipeline.mode` 配置、校验、错误码和统一 TIFF 输出契约 |
+| `DOC/DOC_PREP_12E_08D_双模式生产写包准备.md` | 12E-08D Router、global adapter、共享 writer 和验证原子任务准备 |
 | `DOC/DOC_DECISION_12E_08C_R1_R2_R3_真实模型拓扑修复前置专项.md` | 在 12E-08D 前插入显式 repair-then-strict 专项的正式决策 |
 | `PRD/PRD_12E_08C_真实模型拓扑修复与严格准入.md` | 真实模型自动/人工修复、属性保持和严格准入需求 |
 | `DEV/DEV_12E_08C_MeshRepairThenStrict设计.md` | Mesh Repair 服务、哈希、属性映射和 post-strict 技术设计 |

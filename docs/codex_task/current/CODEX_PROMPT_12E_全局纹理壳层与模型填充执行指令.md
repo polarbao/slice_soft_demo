@@ -142,6 +142,25 @@ Release runtime/peak memory。
 5. 风险、blocker 和 rollback；
 6. git status --short；
 7. 明确停止，不自动开始下一任务。
+
+## 10. 双模式与生产 TIFF 固定约束
+
+后续 12E-08D/09B/10 任务必须遵循：
+
+```text
+正式端到端字段为 slicePipeline.mode；
+值域仅 legacy | global_surface_shell；
+不得与 slicingMode、texture.applyMode 或 OpenVDB backend 混用；
+legacy 为兼容默认；
+两条 production success 均使用现有 RGBWSV writer 并生成完整 TIFF；
+p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print 不变；
+保留当前 preview、材料预览、report 和 manifest；
+global 未准入、不可用或 topology blocked 时 fail-closed；
+严禁 silent fallback 到 legacy。
+```
+
+12E-08D 开始前必须读取 `DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md`、
+`DOC_SCHEMA_12E_DualSlicePipelineConfig.md` 和 `DOC_PREP_12E_08D_双模式生产写包准备.md`。
 ```
 
 除非用户明确要求，不 commit、不 push。

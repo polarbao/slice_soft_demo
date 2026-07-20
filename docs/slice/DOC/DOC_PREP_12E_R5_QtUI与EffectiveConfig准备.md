@@ -249,3 +249,29 @@ blocked case 必须保留 topology issue，相关数值未执行时显示“未�
 12E-09B production Profile：BLOCKED BY 12E-08D；
 12E production：NOT ADMITTED。
 ```
+
+## 15. 双模式 UI 与 Effective Config 补充合同
+
+12E-09B 在 12E-08D admission 后新增产品级切片模式选择器：
+
+```text
+传统切片 -> slicePipeline.mode=legacy；
+全局纹理壳层 -> slicePipeline.mode=global_surface_shell。
+```
+
+选择器不得与 OpenVDB 诊断后端混为一项。OpenVDB 仍位于高级/诊断区域，并仅决定 global 内部的可选
+计算后端。12E-09A 继续只展示诊断状态，不提前开放 global 生产按钮。
+
+Effective Config 和 UI 状态至少记录/显示：
+
+```text
+requestedPipelineMode；
+effectivePipelineMode；
+pipelineAdmissionState；
+productionOutputWritten；
+fallbackApplied=false；
+阻断错误码和中文说明。
+```
+
+若 global 不可用或未准入，运行按钮必须 fail-closed，并引导用户主动选择“传统切片”；UI 不得在后台
+修改配置为 legacy。两种模式生产成功后都必须能加载同一结构的 TIFF、材料预览和报告。

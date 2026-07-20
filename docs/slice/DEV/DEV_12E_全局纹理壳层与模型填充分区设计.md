@@ -575,3 +575,57 @@ L7：真实 OBJ/3MF Release 性能和内存报告。
 5. production gate 失败时只保留 diagnostic partition report，不写生产 TIFF；
 6. 不修改 p0.rgbwsv.2，因此不需要协议回滚。
 ```
+
+## 19. 双模式 Pipeline Router 与共享 Writer
+
+新增正式端到端流水线配置：
+
+```json
+{
+  "slicePipeline": {
+    "mode": "legacy"
+  }
+}
+```
+
+`mode` 仅允许 `legacy | global_surface_shell`。它不替代现有 `slicingMode`、`texture.applyMode` 或
+`experimental.openvdbPipeline.engine`：前者选择端到端生产流水线，后三者分别描述几何类别、材料应用方式
+和可选计算后端。
+
+目标调用链为：
+
+```text
+SlicePipelineRouter
+  -> legacy
+     -> existing legacy composition
+  -> global_surface_shell
+     -> strict/repair admission
+     -> global partition
+     -> texture transfer
+     -> classification-to-raster
+     -> full material closure
+     -> production layer adapter
+  -> shared RGBWSV writer
+  -> manifest/report/preview
+```
+
+两条流水线只能在“生产层内存 DTO 生成”之前分叉；TIFF writer、manifest 协议、preview/report 输出和
+RIP Reader 校验必须共享。全局流水线的 adapter 必须把 TextureSurface、ModelFill、Support、White、
+Varnish 等语义转换为现有逐层 RGBWSV DTO，禁止距离后端或 repair service 直接写 TIFF。
+
+生产成功的公共后置条件：
+
+```text
+完整 TIFF layer list 存在且层号连续；
+每层 TIFF 可被现有 Reader 解析；
+p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print 不变；
+preview 和 report 对应同一 layerIndex/zMm；
+manifest 记录 requestedPipelineMode、effectivePipelineMode 和 productionOutputWritten=true。
+```
+
+全局流水线具有 `unavailable / blocked / diagnostic / admitted` 状态。只有 `admitted` 可以进入共享 writer。
+其他状态允许输出诊断 preview/report，但 `productionOutputWritten=false`。Router 禁止隐式切换到 legacy；
+若用户需要回退，必须修改配置或在 UI 中重新选择。
+
+实现顺序固定为：12E-08C-R1/R2/R3 完成 repair/post-strict 与真实模型预算，随后 12E-08D 实现
+配置契约、Router、全局 adapter、共享 writer 验证和生产准入，最后 12E-09B 开放 UI 生产选择器。

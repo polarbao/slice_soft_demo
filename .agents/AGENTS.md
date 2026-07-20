@@ -130,7 +130,7 @@ Current Stage 12 track:
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
-12E: 12E-01/02/03/04/05/06/07 and 12E-08A/08B/08C complete; Release evidence is blocked by real OBJ topology. The prepared next task is 12E-08C-R1-01 in the explicit repair-then-strict prerequisite; 12E-08D remains blocked.
+12E: 12E-01/02/03/04/05/06/07 and 12E-08A/08B/08C complete; Release evidence is blocked by real OBJ topology. The approved Target State is selectable legacy/global_surface_shell pipelines with one RGBWSV TIFF contract, but this is not implemented. The prepared next task is 12E-08C-R1-01 in the explicit repair-then-strict prerequisite; 12E-08D remains blocked.
 ```
 
 R0/R1/R2 principles still apply to refactors:
@@ -141,7 +141,7 @@ move later
 rewrite last
 ```
 
-OpenVDB and surface-shell work is allowed only inside explicitly scoped experimental tasks. It must stay optional, disabled by default, and separated from production RGBWSV output unless a later approved task changes that boundary.
+OpenVDB and surface-shell work is allowed only inside explicitly scoped tasks. OpenVDB must stay optional and disabled by default. The documented 12E-08D target may connect an admitted global_surface_shell pipeline to the shared production RGBWSV writer, but only after repair/strict/Release gates and explicit user authorization; no silent fallback is allowed.
 
 ## 7. Required Answer Format Before Code Changes
 

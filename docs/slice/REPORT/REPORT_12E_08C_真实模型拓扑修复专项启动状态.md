@@ -49,3 +49,9 @@ R1-01 已完成文档准备，可以在用户明确启动后实施。
 ## 7. 阶段判断
 
 修复专项准备 COMPLETE；代码实施尚未开始；12E-08D 继续保持 BLOCKED。
+
+## 8. 双模式目标同步
+
+后续产品目标已明确为 `legacy` 与 `global_surface_shell` 两条用户可选流水线。当前 legacy 生产 TIFF 路径
+继续可用；本专项只为 global 的生产准入提供 repair/post-strict 证据。global 被阻断时不得自动改用 legacy。
+统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R1-01。

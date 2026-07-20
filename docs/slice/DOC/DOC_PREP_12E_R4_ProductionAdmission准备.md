@@ -309,3 +309,19 @@ manual_repair_required 不计入 production PASS；
 ```
 
 本准备完成不授权任何生产写包修改。
+
+## 15. 12E-08D 双模式写包补充准备
+
+12E-08D 的目标不再表述为“用 global 替换 legacy”，而是建立显式双模式：
+
+```text
+slicePipeline.mode = legacy | global_surface_shell；
+legacy 为默认；
+global_surface_shell 仅在 admitted 后可写生产包；
+两者共用现有 RGBWSV writer、manifest、preview/report 和 RIP Reader；
+任一生产成功都必须生成完整 TIFF；
+global blocked/unavailable 不得静默回退 legacy。
+```
+
+详细原子任务和输出适配边界见 `DOC_PREP_12E_08D_双模式生产写包准备.md`。该准备不改变当前 Gate：
+12E-08C-R3-04 未给出 GO 前，12E-08D 仍为 BLOCKED。

@@ -164,3 +164,9 @@ OpenVDB optional/OFF；legacy production path 不替代；
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 ```
+
+## 11. 双模式补充决策
+
+本修复专项只解除 `global_surface_shell` 的生产准入阻断，不替代或重写 legacy。legacy 保持默认可用；
+global 必须显式选择并通过 repair/post-strict、属性保持和 Release Gate。两条模式未来共享生产 TIFF writer，
+但修复专项本身仍不写 TIFF，也不允许失败时静默切换流水线。

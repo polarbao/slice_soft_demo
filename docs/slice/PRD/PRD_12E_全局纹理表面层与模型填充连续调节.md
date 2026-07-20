@@ -323,3 +323,35 @@ Texture + Fill Partition；
 
 真实 OBJ 的生产准入必须先满足 `PRD_12E_08C_真实模型拓扑修复与严格准入.md`。修复专项允许对复杂模型给出
 `manual_repair_required`，但该状态不得计入本 PRD 的真实模型 production PASS。
+
+## 13. 双切片模式与统一生产输出补充需求
+
+12E 最终产品必须允许用户在 UI 或配置文件中显式选择两条端到端切片流水线：
+
+```text
+legacy：现有生产切片流水线，保持默认和兼容行为；
+global_surface_shell：全局三维纹理壳层与互补模型填充流水线。
+```
+
+正式配置入口为 `slicePipeline.mode`，取值仅允许 `legacy` 或 `global_surface_shell`。该字段与
+`slicingMode` 的几何类别、`texture.applyMode` 的材料策略以及 OpenVDB/CPU 距离后端相互独立，
+不得复用旧字段造成语义混淆。缺少该字段的历史配置按 `legacy` 解释。
+
+无论选择哪条流水线，只要运行结果被标记为生产成功，就必须满足同一输出合同：
+
+```text
+生成完整 RGBWSV TIFF layer list；
+schema = p0.rgbwsv.2；
+channelOrder = R G B W S V；
+bitDepth = 8；
+polarity = black_is_print；
+保留当前 preview、材料通道预览、report 和 manifest 能力；
+通过 RIP Reader strict 校验。
+```
+
+`global_surface_shell` 在生产准入前只能生成诊断 mask、preview 和 report；不得把诊断完成宣称为
+生产切片成功，也不得静默回退到 `legacy` 后继续写包。若全局流水线不可用或被拓扑门禁阻断，UI 和 CLI
+必须返回明确状态与稳定错误码，让用户主动改选 `legacy`。
+
+UI 最终必须提供“传统切片”和“全局纹理壳层”两个中文选项，并显示 requested/effective pipeline、
+准入状态和失败原因。`global_surface_shell` 普通用户入口只有在 12E-08D production admission 通过后启用。

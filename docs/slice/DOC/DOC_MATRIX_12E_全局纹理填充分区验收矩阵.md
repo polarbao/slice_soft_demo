@@ -157,3 +157,18 @@ OpenVDB OFF build PASS；
 | 12E-08D | BLOCKED：生产准入需前置证据和用户再次确认 |
 | 12E-09 | PREPARED：09A READY；09B 被 08D 阻断 |
 | 12E-10 | UI、真实模型、RIP 和报告收口 |
+
+## 12. 双切片模式与输出矩阵
+
+| 配置/状态 | Effective Mode | Production TIFF | Preview/Report | 断言 |
+|---|---|---|---|---|
+| `slicePipeline` 缺失 | legacy | 成功时必须完整 | 保留 | 历史兼容 |
+| `mode=legacy` | legacy | 成功时必须完整 | 保留 | 现有结果不变 |
+| `mode=global_surface_shell`，diagnostic | global_surface_shell | 禁止 | 允许诊断输出 | 不宣称生产成功 |
+| global blocked/unavailable | global_surface_shell | 禁止 | 记录错误 | 无 silent fallback |
+| global admitted | global_surface_shell | 成功时必须完整 | 保留 | 与 legacy 共用 writer/RIP |
+| 非法 mode | 无 | 禁止 | config error | fail-fast |
+
+两条 production PASS 行统一要求 `p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print`，并验证 manifest
+layer list、TIFF 文件、同层 preview、通道统计和 RIP strict。12E-08D-01..04 在修复 Gate 通过后执行；
+12E-09B 才开放 UI 双模式生产选择。

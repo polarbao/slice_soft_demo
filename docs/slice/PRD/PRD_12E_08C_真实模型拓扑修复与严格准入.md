@@ -182,3 +182,12 @@ self-intersection 和 hash 不确定。
 
 修复专项完成的最低定义是“所有 required input 都得到真实、稳定、可审计的结果”。它不承诺所有损坏模型
 均自动修复。12E-08D 只有在 required production matrix 全部 strict PASS 且性能预算冻结后才能解锁。
+
+## 11. 与双切片模式的边界
+
+拓扑修复和 strict admission 是 `slicePipeline.mode=global_surface_shell` 的生产前置条件，不是 legacy
+流水线的强制前置条件。选择 legacy 时保持当前模型导入、生产 TIFF 和 Profile 行为，不得为了 global
+准入而自动修改 legacy 输入网格。
+
+修复专项输出只决定 global 的 `blocked / diagnostic / admitted` 状态。即使 global 被阻断，legacy 仍可由
+用户显式选择并独立运行；系统不得自动回退，也不得把 legacy 成功写包记作 global 成功。

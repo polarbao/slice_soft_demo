@@ -502,3 +502,23 @@ R3：Real Model & Release Gate。
 已生成正式 Decision、PRD、DEV、DEMO、ROADMAP、Report Schema、Acceptance Matrix、R1 Prep、任务清单、
 执行指令、启动报告和 AI handoff。当前未实现修复代码；`repair_then_strict` 仍为 placeholder；下一原子任务为
 `12E-08C-R1-01`。12E-08D 继续 BLOCKED。
+
+## 22. 双切片模式与统一 TIFF 目标状态
+
+2026-07-20 已补充产品目标：用户最终可通过 UI 或配置在 `legacy` 与 `global_surface_shell` 两条流水线间
+显式选择，正式字段为 `slicePipeline.mode`，历史配置默认按 legacy 解释。
+
+当前实现状态必须区分：
+
+```text
+legacy：现有生产路径，可生成 p0.rgbwsv.2 RGBWSV TIFF；
+global_surface_shell：分区、纹理传递、raster 与 closure 为 diagnostic-only；
+双模式 Router / global production adapter / 共享 writer 接入：NOT IMPLEMENTED；
+Qt 双模式生产选择器：NOT IMPLEMENTED；
+12E-08D：仍被 08C-R1/R2/R3 与 production confirmation 阻断。
+```
+
+目标状态中，两种模式只在生产层组合之前分叉，最终共用现有 TIFF writer、manifest、preview/report 和
+RIP Reader。任何模式只有在完整 TIFF 写出并通过协议校验后才能标记 production success；global
+unavailable/blocked 禁止静默回退 legacy。该补充已形成 Decision、Config Schema、08D Prep 和 AI handoff，
+不改变当前下一原子任务 `12E-08C-R1-01`。

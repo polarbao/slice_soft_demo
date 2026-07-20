@@ -101,3 +101,22 @@ REPORT_12E 列出实际命令、结果、阻断和后续建议。
 12E-10 production package evidence：BLOCKED BY 12E-08D；
 12E-10D：等待前述证据后执行。
 ```
+
+## 9. 双模式阶段收口补充
+
+12E-10 的真实模型矩阵必须为每个模型分别记录 `legacy` 与 `global_surface_shell`。global 未准入或被拓扑
+阻断时保留明确的 blocked 行，不允许以 legacy 结果代替。
+
+两种生产成功行都必须包含：
+
+```text
+生产 TIFF layer count / hash / RIP strict；
+RGBWSV 通道统计；
+Texture/Fill/Support/White/Varnish 同层 preview；
+requested/effective pipeline；
+core、compose、TIFF、preview/report 写盘分段耗时；
+真实模型 grid/layerCount/peak memory。
+```
+
+Preview 不增加第二套生产文件格式。两种模式都读取现有 package 与 report；差异仅来自 layer composer。
+global 诊断结果可单独显示，但必须标注“诊断，未生成可打印 TIFF”。

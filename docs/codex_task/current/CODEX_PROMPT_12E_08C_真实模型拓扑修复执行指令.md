@@ -126,4 +126,10 @@ git status --short
 修复会丢失 UV/material/texture provenance；
 真实模型只能通过 destructive boolean/voxel remesh 处理；
 需要调整 12E-08D required-case matrix。
+
+## 11. 双模式隔离规则
+
+repair-then-strict 只服务于 `slicePipeline.mode=global_surface_shell` 的准入。不得把 repair 前移为 legacy
+导入的通用强制步骤，不得修改 legacy 原始 SceneModel/TIFF 行为，也不得在 global 失败时调用 legacy
+作为隐式回退。本专项仍禁止写生产 TIFF；共享 writer 接入由 12E-08D 单独实施。
 ```

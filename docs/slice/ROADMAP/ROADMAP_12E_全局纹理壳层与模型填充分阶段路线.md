@@ -176,3 +176,20 @@ UI 新控件可按 capability 隐藏；
 OpenVDB 保持 optional/OFF；
 production gate 失败时不写生产包。
 ```
+
+## 11. 双模式生产化增量路线
+
+为满足 UI/配置可选 `legacy` 与 `global_surface_shell`，原 R3 production admission 进一步拆为：
+
+| 阶段 | 工作 | Gate |
+|---|---|---|
+| 12E-08C-R1/R2/R3 | 真实模型 repair-then-strict、属性保持、Release 预算 | 当前下一任务为 R1-01；未完成前 global 不可生产 |
+| 12E-08D-01 | `slicePipeline.mode`、DTO、validator、Router 与 fail-closed | 省略字段兼容 legacy；非法值拒绝；无静默回退 |
+| 12E-08D-02 | global classification 到现有生产层 DTO 的 adapter | 通道和 material closure 语义完整 |
+| 12E-08D-03 | 两模式共享 RGBWSV writer、manifest、preview/report 与 RIP 回归 | 两条生产成功路径都生成一致格式 TIFF |
+| 12E-08D-04 | 真实模型 Release matrix 与 GO/NO-GO | global 只有 admitted 才开放生产 |
+| 12E-09B | Qt 双模式选择、能力提示和 Effective Config | 中文入口；requested/effective 可追踪 |
+| 12E-10 | 双模式真实模型、preview、RIP、性能与报告收口 | 输出矩阵完整，残余风险明确 |
+
+`legacy` 始终保留为默认生产路径。`global_surface_shell` 的 CPU/OpenVDB 后端选择是内部能力，不能成为
+第三个产品切片模式，也不能因后端不可用而静默改变端到端流水线。

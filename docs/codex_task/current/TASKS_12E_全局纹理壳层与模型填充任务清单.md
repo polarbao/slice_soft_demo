@@ -416,6 +416,37 @@ docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指�
 阶段顺序：Contract & Eligibility -> Conservative Repair -> Real Model & Release Gate。R3-04 是唯一可把
 12E-08D 从 BLOCKED 变为 READY 的任务；manual required 不计入 production PASS。
 
+### 11.2 12E-08D 双模式生产写包原子任务
+
+状态：PREPARED / BLOCKED BY 12E-08C-R3-04 AND USER CONFIRMATION。
+
+固定目标：
+
+```text
+slicePipeline.mode = legacy | global_surface_shell；
+legacy 为兼容默认；
+两种 production success 都生成完整 p0.rgbwsv.2 RGBWSV uint8 TIFF；
+两种模式共用 writer、manifest、preview/report 和 RIP Reader；
+global blocked/unavailable 不得 silent fallback。
+```
+
+原子任务：
+
+```text
+12E-08D-01 Config/DTO/validator、SlicePipelineRouter 与 admission fail-closed；
+12E-08D-02 global partition/full closure 到现有 production layer DTO 的 adapter；
+12E-08D-03 共享 TIFF writer、manifest layer list、preview/report、RIP 和 no-fallback 测试；
+12E-08D-04 显式 Profile、真实模型 Release matrix 与 GO/NO-GO。
+```
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md
+docs/slice/DOC/DOC_SCHEMA_12E_DualSlicePipelineConfig.md
+docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
+```
+
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
 状态：PREPARED；12E-09A 可并行，12E-09B BLOCKED BY 12E-08D
@@ -446,6 +477,9 @@ session effective config；
 ```
 
 09A 只允许 diagnostic；09B production Profile 必须继续等待 12E-08D。
+
+09B 必须新增“传统切片 / 全局纹理壳层”中文选择器，分别写入 `legacy / global_surface_shell`。UI 需展示
+requested/effective mode、admission 和 TIFF 输出状态；不得把 OpenVDB backend 当成第三种产品模式。
 
 准备入口：
 
@@ -490,3 +524,6 @@ production admission 有明确 PASS 或 keep diagnostic 结论；
 全纹理不是通过禁用 modelFill 实现；
 REPORT_12E 记录实际命令、结果和残余风险。
 ```
+
+双模式收口还要求 legacy/global 的真实模型结果分别成行；global blocked 行不得用 legacy 结果代替。两条
+production PASS 行均需 TIFF、manifest、preview、report、RIP strict 和分段耗时证据。

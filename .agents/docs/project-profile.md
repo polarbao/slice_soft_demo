@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08 evidence complete; Release budget blocked by real OBJ topology; 12E-08C-R1/R2/R3 repair prerequisite prepared before 12E-08D
+- Current phase: Stage 12E-08 evidence complete; Release budget blocked by real OBJ topology; 12E-08C-R1/R2/R3 repair prerequisite prepared before 12E-08D; dual legacy/global_surface_shell target and unified TIFF contract documented but not implemented
 - Latest completed milestone: Stage 12E-08C default-OFF Release evidence and legacy regression
 - Latest completed task: `12E-08C default-OFF Release evidence and legacy regression`
 - Current task: none active; next allowed atomic task is `12E-08C-R1-01 repair DTO/hash/report contract`
-- Prepared stage: `12E-08C-R1 Contract & Eligibility` ready; `12E-09A diagnostic UI` also prepared; 12E-08D and 12E-09B remain blocked
+- Prepared stage: `12E-08C-R1 Contract & Eligibility` ready; `12E-09A diagnostic UI` also prepared; 12E-08D dual-mode router/shared-writer work is documented but blocked; 12E-09B remains blocked
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC
@@ -38,6 +38,7 @@ Preview/material process reports
 Qt Debug UI
 UI self-test / overlay-load-real smoke test
 OpenVDB optional experimental surface-shell texture path
+Target-only selectable legacy/global_surface_shell pipeline contract; global production path not implemented
 quick/full/heavy regression
 ```
 
