@@ -1,0 +1,88 @@
+# DOC_PREP_12E-08C-R2 Conservative Repair 准备
+
+> 文档状态：PREPARED / EXECUTION BLOCKED BY R1
+> 日期：2026-07-20
+
+## 1. 准备结论
+
+R2 的保守修复顺序、操作资格、属性边界、回滚和验证矩阵已明确。R2 只有在 R1-04 完成并复核真实模型
+baseline 后才能实施；本准备不授权修复真实模型或写生产包。
+
+## 2. 固定执行链
+
+```text
+original SceneModel
+  -> pre diagnostics/hash
+  -> eligibility
+  -> isolated candidate mesh copy
+  -> one ordered repair operation set
+  -> attribute preservation validation
+  -> post diagnostics/strict
+  -> keep candidate evidence or discard candidate
+```
+
+任何失败都丢弃 candidate，原始 SceneModel 不变。repair 默认关闭；legacy 不调用该链路。
+
+## 3. R2-01 Degenerate 与 Exact Duplicate Cleanup
+
+允许：删除面积/边长低于 scale-aware tolerance 的退化面；删除顶点循环和所有材料/UV/纹理属性完全一致的
+同向 exact duplicate。
+
+禁止：合并属性冲突面；自动处理 opposite duplicate；删除后隐式合并组件。
+
+必须保留 source triangle mapping、删除原因、原/新索引和 operation hash。
+
+## 4. R2-02 Vertex Weld、Winding 与组件守门
+
+Vertex weld 仅允许在显式阈值内、不会产生退化/属性冲突/组件隐式 merge 时执行。阈值来自
+`MeshScaleTolerance` 和配置快照，不允许硬编码绝对值。
+
+Winding 只在单个可定向组件内、传播结果唯一时调整。多解、冲突或跨组件情况输出
+`manual_repair_required`。每次翻转必须同步 per-corner UV 顺序。
+
+## 5. R2-03 Boundary Loop Repair
+
+首版只处理简单、无自交、边唯一、尺寸在预算内的 boundary loop。Hole fill 必须有显式 new-face material/UV
+policy；无法确定纹理属性时不得生成 production candidate。
+
+非平面、大孔、多环相交、边 fan 歧义和 confirmed self-intersection 均不自动修复。
+
+## 6. R2-04 Post-Repair Strict 与 Attribute Guard
+
+候选结果必须重新运行完整 topology/robustness strict diagnostics，并验证：
+
+```text
+boundary/non-manifold/duplicate/opposite duplicate/local winding blocker 为零；
+confirmed self-intersection 为零；
+source-mapped triangle 的 material/UV/texture resource 不变；
+new face 全部有可审计 policy；
+pre/post/operation/options hash 可重复；
+任何失败时 productionOutputWritten=false。
+```
+
+R2 即使 repaired strict PASS，也只生成 12E-08D 输入证据，不写 TIFF/package。
+
+## 7. 预计模块
+
+```text
+src/slicer_core/geometry/repair/MeshRepairService.*；
+src/slicer_core/geometry/repair/RepairOperations.*；
+src/slicer_core/geometry/repair/AttributePreservationValidator.*；
+tests/unit/mesh_repair_*；
+tests/golden/mesh_repair_*。
+```
+
+实施前按当前 CMake 结构确认实际文件和 target，不复制第二套 mesh DTO。
+
+## 8. 原子 Gate
+
+| 原子任务 | 前置 | 退出标准 |
+|---|---|---|
+| R2-01 | R1 complete | generated cleanup fixture post strict PASS |
+| R2-02 | R2-01 | weld/winding 唯一 case PASS，歧义 case manual |
+| R2-03 | R2-02 | 简单 loop PASS，复杂/属性未知 case blocked |
+| R2-04 | R2-03 | post strict、attribute、hash、negative matrix 全通过 |
+
+## 9. 停止条件
+
+需要 destructive boolean、voxel remesh、第三方修复库、UV 重投影或放宽 strict 时立即停止并创建独立 ADR。

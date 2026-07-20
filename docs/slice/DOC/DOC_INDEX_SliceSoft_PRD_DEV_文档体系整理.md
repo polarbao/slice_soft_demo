@@ -356,6 +356,9 @@ docs/slice/ROADMAP/ROADMAP_12E_08C_真实模型拓扑修复分阶段路线.md
 docs/slice/DOC/DOC_SCHEMA_12E_MeshRepairReport.md
 docs/slice/DOC/DOC_MATRIX_12E_真实模型拓扑修复与严格准入.md
 docs/slice/DOC/DOC_PREP_12E_08C_R1_拓扑分类与修复契约准备.md
+docs/slice/DOC/DOC_PREP_12E_08C_R1_EligibilityFixtureBaseline准备.md
+docs/slice/DOC/DOC_PREP_12E_08C_R2_ConservativeRepair准备.md
+docs/slice/DOC/DOC_PREP_12E_08C_R3_RealModelReleaseGate准备.md
 docs/slice/REPORT/REPORT_12E_08C_真实模型拓扑修复专项启动状态.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md

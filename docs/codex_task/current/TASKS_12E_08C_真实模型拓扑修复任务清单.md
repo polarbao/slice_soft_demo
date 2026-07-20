@@ -50,6 +50,8 @@ unit/schema tests。
 
 完成标准：所有已知 issue 有唯一分类；self-intersection fail-fast；无 silent fallback。
 
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R1_EligibilityFixtureBaseline准备.md`。
+
 ### 12E-08C-R1-03 Generated Fixtures 与 Golden
 
 状态：BLOCKED BY R1-02。
@@ -75,6 +77,8 @@ unit/schema tests。
 范围：显式退化面清理、同属性 exact duplicate 去重和 source mapping。
 
 完成标准：generated fixtures post strict PASS；属性冲突稳定 blocked。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_ConservativeRepair准备.md`。
 
 ### 12E-08C-R2-02 Vertex Weld、Winding 与组件守门
 
@@ -109,6 +113,8 @@ unit/schema tests。
 范围：分类 edge fan、重复壳、重叠组件和导出器重复模式；只评估唯一局部 fan split。
 
 完成标准：`meigui_fudiao` 不进行无模式批量修复；所有 pattern 有稳定结果。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_RealModelReleaseGate准备.md`。
 
 ### 12E-08C-R3-02 真实模型 Repair Matrix
 

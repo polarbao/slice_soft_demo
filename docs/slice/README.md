@@ -108,6 +108,9 @@
 | `DOC/DOC_SCHEMA_12E_MeshRepairReport.md` | `slicesoft.mesh_repair.12e_08c.1` 报告契约 |
 | `DOC/DOC_MATRIX_12E_真实模型拓扑修复与严格准入.md` | issue、fixture、真实模型、属性和 08D Gate 矩阵 |
 | `DOC/DOC_PREP_12E_08C_R1_拓扑分类与修复契约准备.md` | R1-01 DTO/hash/report 实施准备 |
+| `DOC/DOC_PREP_12E_08C_R1_EligibilityFixtureBaseline准备.md` | R1-02..04 资格、生成夹具和真实模型 baseline 准备 |
+| `DOC/DOC_PREP_12E_08C_R2_ConservativeRepair准备.md` | R2 保守修复操作、属性、post-strict 和停止条件准备 |
+| `DOC/DOC_PREP_12E_08C_R3_RealModelReleaseGate准备.md` | R3 真实模型、Release 预算和 08D GO/NO-GO 准备 |
 | `REPORT/REPORT_12E_08C_真实模型拓扑修复专项启动状态.md` | 修复专项启动状态和下一任务 |
 | `DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md` | 12E-08A world-space classification-to-raster 实现与验证结果 |
 | `DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md` | 12E-08B 支撑、内部空洞与光油 full-material closure 实现及验证结果 |
