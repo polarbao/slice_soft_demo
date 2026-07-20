@@ -150,6 +150,21 @@ Json BuildOperations(const std::vector<MeshRepairOperation>& operations)
     return Json{std::move(array)};
 }
 
+Json BuildSourceMappings(const std::vector<MeshRepairTriangleMapping>& mappings)
+{
+    Json::Array array;
+    for (const MeshRepairTriangleMapping& mapping : mappings)
+    {
+        array.push_back(Json::object({
+            {"sourceTriangleIndex", mapping.sourceTriangleIndex},
+            {"outputTriangleIndex", OptionalUnsigned(mapping.outputTriangleIndex)},
+            {"disposition", MeshRepairTriangleDispositionName(mapping.disposition)},
+            {"retainedSourceTriangleIndex", OptionalUnsigned(mapping.retainedSourceTriangleIndex)},
+        }));
+    }
+    return Json{std::move(array)};
+}
+
 Json BuildAttributePreservation(const MeshRepairAttributePreservation& attributes)
 {
     return Json::object({
@@ -225,6 +240,7 @@ Json BuildMeshRepairReport(const MeshRepairResult& result)
         {"preRepair", BuildDiagnostics(result.preRepair)},
         {"eligibility", BuildEligibility(result.eligibility)},
         {"operations", BuildOperations(result.operations)},
+        {"sourceMappings", BuildSourceMappings(result.sourceMappings)},
         {"attributePreservation", BuildAttributePreservation(result.attributePreservation)},
         {"postRepair", BuildDiagnostics(result.postRepair)},
         {"admission", BuildAdmission(result.admission)},

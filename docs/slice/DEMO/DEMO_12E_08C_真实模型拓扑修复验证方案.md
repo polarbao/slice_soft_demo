@@ -114,6 +114,17 @@ cmake --build build --config Release --target <mesh-repair-real-model-target>
 
 以上是计划命令，文件/target 未创建前不得记录为已运行。
 
+### 9.1 R2-01 已固化命令
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_cleanup_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(cleanup|preflight)" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r2_cleanup_evidence.ps1 -BuildDir build -Config Debug
+```
+
+证据脚本缺少 R1 effective config 时自动生成 baseline。四个 case 各执行两次，只写诊断 JSON，断言默认
+OpenVDB OFF、operation 范围、source mapping、post diagnostics 和 stable projection，不写 TIFF/package。
+
 ## 10. 退出标准
 
 ```text

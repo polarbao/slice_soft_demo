@@ -94,6 +94,20 @@ std::string MeshRepairAttributeDecisionName(const MeshRepairAttributeDecision de
     return "not_evaluated";
 }
 
+std::string MeshRepairTriangleDispositionName(const MeshRepairTriangleDisposition disposition)
+{
+    switch (disposition)
+    {
+    case MeshRepairTriangleDisposition::Retained:
+        return "retained";
+    case MeshRepairTriangleDisposition::RemovedDegenerate:
+        return "removed_degenerate";
+    case MeshRepairTriangleDisposition::RemovedExactDuplicate:
+        return "removed_exact_duplicate";
+    }
+    return "retained";
+}
+
 std::string MeshRepairErrorCodeName(const MeshRepairErrorCode code)
 {
     switch (code)

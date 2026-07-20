@@ -1,12 +1,12 @@
 # DOC_PREP_12E-08C-R2 Conservative Repair 准备
 
-> 文档状态：BASELINE REVIEWED / R2-01 READY
+> 文档状态：R2-01 COMPLETE / R2-02 READY
 > 日期：2026-07-20
 
 ## 1. 准备结论
 
-R2 的保守修复顺序、操作资格、属性边界、回滚和验证矩阵已明确。R1-04 已完成并复核真实模型 baseline，
-R2-01 可以在用户明确启动后实施；本准备不授权后续 R2 任务或写生产包。
+R2 的保守修复顺序、操作资格、属性边界、回滚和验证矩阵已明确。R2-01 已完成显式 cleanup 和真实模型
+证据；R2-02 已补齐独立准备，可以在用户明确启动后实施。本准备不授权 R2-03/R2-04 或写生产包。
 
 ## 2. 固定执行链
 
@@ -99,6 +99,10 @@ tests/golden/mesh_repair_*。
 
 三个 OBJ 还包含 sampled self-intersection evidence。R2-04 必须保持 sampled 为 strict blocker；完整真实模型
 证据由新增 R3-01A 处理，R2 不以提高 pair cap 的临时方式伪造 PASS。
+
+R2-01 实际结果进一步确认：`nai_you_new`、`aishen_fudiao` 各记录 1 个 adapter-filtered degenerate operation；
+`meigui_fudiao` 和闭合 3MF 为 cleanup no-op。三个 OBJ 均未因本任务变为 strict PASS，所有 opposite duplicate
+保持未删除。R2-02 的详细契约见 `DOC_PREP_12E_08C_R2_02_VertexWeldWindingComponentGuard准备.md`。
 
 ## 10. 停止条件
 

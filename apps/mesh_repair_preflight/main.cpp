@@ -5,6 +5,7 @@
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/geometry/repair/MeshRepairHash.h"
 #include "slicer_core/geometry/repair/MeshRepairPreflight.h"
+#include "slicer_core/geometry/repair/MeshRepairService.h"
 #include "slicer_core/model.h"
 
 #include <algorithm>
@@ -18,6 +19,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace
 {
@@ -33,6 +35,7 @@ struct Options
     std::size_t maxSelfIntersectionPairs{128U};
     std::size_t maxTrianglePairChecks{250000U};
     bool requireOpenVdbOff{false};
+    bool executeCleanup{false};
 };
 
 std::string RequireValue(
@@ -85,13 +88,18 @@ Options ParseOptions(const int argc, char** argv)
         {
             options.requireOpenVdbOff = true;
         }
+        else if (argument == "--execute-cleanup")
+        {
+            options.executeCleanup = true;
+        }
         else if (argument == "--help" || argument == "-h")
         {
             std::cout
                 << "mesh_repair_preflight --config <config.json> --output <report.json> "
                 << "[--source-id <stable-path>] [--voxel-mm <value>] "
                 << "[--max-self-intersection-pairs <count>] "
-                << "[--max-triangle-pair-checks <count>] [--require-openvdb-off]\n";
+                << "[--max-triangle-pair-checks <count>] [--require-openvdb-off] "
+                << "[--execute-cleanup]\n";
             std::exit(0);
         }
         else
@@ -352,35 +360,60 @@ int RunPreflight(const Options& options)
     const slicer_core::AdaptedTriangleMesh adapted =
         slicer_core::AdaptSceneModelToTriangleMesh(scene);
 
-    slicer_core::MeshRepairPreflightRequest request;
-    request.mesh = &adapted;
-    request.input.sourcePath = options.sourceId.empty()
+    slicer_core::MeshRepairInputSummary input;
+    input.sourcePath = options.sourceId.empty()
         ? scene.model_path.generic_string()
         : options.sourceId;
-    request.input.inputFormat = scene.format;
-    request.input.finalTransform = BuildFinalTransform(config, scene);
-    request.options.enabled = false;
-    request.options.mode = "strict_closed";
-    request.sourceHash = slicer_core::ComputeMeshRepairSha256(
+    input.inputFormat = scene.format;
+    input.finalTransform = BuildFinalTransform(config, scene);
+    const std::string sourceHash = slicer_core::ComputeMeshRepairSha256(
         ReadBinaryFile(scene.model_path));
-    request.robustnessOptions.tolerance = slicer_core::MakeMeshScaleTolerance(
+    slicer_core::MeshRobustnessOptions robustnessOptions;
+    robustnessOptions.tolerance = slicer_core::MakeMeshScaleTolerance(
         adapted.mesh.bbox_mm,
         options.voxelMm);
-    request.robustnessOptions.max_self_intersection_pairs =
+    robustnessOptions.max_self_intersection_pairs =
         options.maxSelfIntersectionPairs;
-    request.robustnessOptions.max_triangle_pair_checks =
+    robustnessOptions.max_triangle_pair_checks =
         options.maxTrianglePairChecks;
 
-    const slicer_core::MeshRepairResult result =
-        slicer_core::EvaluateMeshRepairPreflight(request);
+    slicer_core::MeshRepairResult result;
+    std::size_t candidateTriangleCount = adapted.mesh.triangles.size();
+    if (options.executeCleanup)
+    {
+        slicer_core::MeshRepairCleanupRequest request;
+        request.mesh = &adapted;
+        request.input = input;
+        request.options.enabled = true;
+        request.options.mode = "repair_then_strict";
+        request.sourceHash = sourceHash;
+        request.robustnessOptions = robustnessOptions;
+        slicer_core::MeshRepairCleanupResult cleanup =
+            slicer_core::ExecuteMeshRepairCleanup(request);
+        candidateTriangleCount = cleanup.candidate.mesh.triangles.size();
+        result = std::move(cleanup.evidence);
+    }
+    else
+    {
+        slicer_core::MeshRepairPreflightRequest request;
+        request.mesh = &adapted;
+        request.input = input;
+        request.options.enabled = false;
+        request.options.mode = "strict_closed";
+        request.sourceHash = sourceHash;
+        request.robustnessOptions = robustnessOptions;
+        result = slicer_core::EvaluateMeshRepairPreflight(request);
+    }
     WriteReport(options.outputPath, slicer_core::BuildMeshRepairReport(result));
 
     std::cout
         << "mesh_repair_preflight: evidence collected\n"
-        << "  source: " << request.input.sourcePath << '\n'
+        << "  source: " << input.sourcePath << '\n'
+        << "  operationSet: " << (options.executeCleanup ? "r2_cleanup" : "preflight") << '\n'
         << "  status: " << slicer_core::MeshRepairStatusName(result.status) << '\n'
         << "  vertices: " << result.input.vertexCount << '\n'
         << "  triangles: " << result.input.triangleCount << '\n'
+        << "  candidateTriangles: " << candidateTriangleCount << '\n'
         << "  components: " << result.input.componentCount << '\n'
         << "  productionOutputWritten: false\n"
         << "  report: " << options.outputPath.generic_string() << '\n';

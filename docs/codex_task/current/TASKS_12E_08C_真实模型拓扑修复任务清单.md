@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01 READY
+> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01 COMPLETE / R2-02 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R2-01
+> 当前原子任务：无；下一允许任务为 12E-08C-R2-02
 
 ## 1. 总目标
 
@@ -89,7 +89,7 @@ OBJ 自相交诊断进入 sampled 模式，新增 R3-01A 完整自相交证据�
 
 ### 12E-08C-R2-01 Degenerate/Duplicate Cleanup
 
-状态：READY。
+状态：COMPLETE。
 
 范围：显式退化面清理、同属性 exact duplicate 去重和 source mapping。
 
@@ -97,13 +97,19 @@ OBJ 自相交诊断进入 sampled 模式，新增 R3-01A 完整自相交证据�
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_ConservativeRepair准备.md`。
 
+实际结果：新增显式 cleanup service、adapter rejected-degenerate provenance、`sourceMappings[]`、CLI/脚本和
+generated/real-model 验证。同属性同向 exact duplicate 可清理；属性冲突、opposite duplicate 和 confirmed
+self-intersection 保持阻断。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R2_01_保守清理结果.md`。
+
 ### 12E-08C-R2-02 Vertex Weld、Winding 与组件守门
 
-状态：BLOCKED BY R2-01。
+状态：READY。
 
 范围：受约束顶点焊接、唯一 local winding 传播、组件不隐式 merge。
 
 完成标准：阈值和受影响元素可报告；歧义 case manual required。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_02_VertexWeldWindingComponentGuard准备.md`。
 
 ### 12E-08C-R2-03 Boundary Loop Repair
 

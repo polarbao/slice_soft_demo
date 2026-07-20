@@ -65,6 +65,16 @@ enum class MeshRepairAttributeDecision
 };
 
 /**
+ * @brief Stable disposition for one source triangle after a repair operation set.
+ */
+enum class MeshRepairTriangleDisposition
+{
+    Retained,
+    RemovedDegenerate,
+    RemovedExactDuplicate,
+};
+
+/**
  * @brief Stable machine-readable errors for the 12E repair prerequisite.
  */
 enum class MeshRepairErrorCode
@@ -196,6 +206,17 @@ struct MeshRepairOperation
 };
 
 /**
+ * @brief Deterministic source-to-output triangle provenance.
+ */
+struct MeshRepairTriangleMapping
+{
+    std::uint64_t sourceTriangleIndex{0U};
+    std::optional<std::uint64_t> outputTriangleIndex;
+    MeshRepairTriangleDisposition disposition{MeshRepairTriangleDisposition::Retained};
+    std::optional<std::uint64_t> retainedSourceTriangleIndex;
+};
+
+/**
  * @brief Topology facts captured before or after a repair candidate.
  */
 struct MeshRepairDiagnosticsSummary
@@ -276,6 +297,7 @@ struct MeshRepairResult
     MeshRepairDiagnosticsSummary preRepair;
     MeshRepairEligibility eligibility;
     std::vector<MeshRepairOperation> operations;
+    std::vector<MeshRepairTriangleMapping> sourceMappings;
     MeshRepairAttributePreservation attributePreservation;
     MeshRepairDiagnosticsSummary postRepair;
     MeshRepairAdmission admission;
@@ -310,6 +332,13 @@ std::string MeshRepairOperationTypeName(MeshRepairOperationType type);
  * @return Stable attribute decision text.
  */
 std::string MeshRepairAttributeDecisionName(MeshRepairAttributeDecision decision);
+
+/**
+ * @brief Convert a triangle disposition to its stable report name.
+ * @param disposition Triangle provenance disposition.
+ * @return Stable disposition text.
+ */
+std::string MeshRepairTriangleDispositionName(MeshRepairTriangleDisposition disposition);
 
 /**
  * @brief Convert a repair error code to its stable machine-readable name.

@@ -215,3 +215,14 @@ ctest --test-dir build -C Debug -R mesh_repair_preflight --output-on-failure
 脚本对 `nai_you_new`、`aishen_fudiao`、`meigui_fudiao` 和闭合 Texture2D 3MF 各执行两次，比较排除
 计时后的稳定 report projection。输出仅位于 `output/benchmarks/12e_08c_r1_pre_repair`，不执行 repair、
 不写 production package/TIFF。
+
+## 12E-08C-R2 Conservative Cleanup Evidence
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_cleanup_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(cleanup|preflight)" --output-on-failure
+.\scripts\run_12e_08c_r2_cleanup_evidence.ps1 -BuildDir build -Config Debug
+```
+
+输出位于 `output/benchmarks/12e_08c_r2_cleanup`。脚本强制默认 OpenVDB OFF，只执行显式 degenerate/exact
+duplicate cleanup 诊断，不写生产包。

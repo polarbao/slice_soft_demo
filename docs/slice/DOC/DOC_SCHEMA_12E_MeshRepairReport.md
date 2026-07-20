@@ -31,6 +31,7 @@ reports/mesh_repair_report.json
   "preRepair": {},
   "eligibility": {},
   "operations": [],
+  "sourceMappings": [],
   "attributePreservation": {},
   "postRepair": {},
   "admission": {},
@@ -160,7 +161,22 @@ post-repair production candidate 要求所有 strict blocker 为零。
 
 操作顺序稳定，ID 从 1 递增。元素 ID 数量过大时可记录稳定摘要和 hash，但不能完全丢失可追溯性。
 
-## 9. Attribute Preservation
+## 9. Source Mapping
+
+```json
+{
+  "sourceTriangleIndex": 13,
+  "outputTriangleIndex": null,
+  "disposition": "removed_exact_duplicate",
+  "retainedSourceTriangleIndex": 0
+}
+```
+
+`disposition` 固定为 `retained | removed_degenerate | removed_exact_duplicate`。保留面必须有
+`outputTriangleIndex`；exact duplicate 必须记录 `retainedSourceTriangleIndex`；退化面两个可选输出字段为
+`null`。mapping 按 `sourceTriangleIndex` 排序，覆盖 adapter 已过滤退化面和所有 accepted triangle。
+
+## 10. Attribute Preservation
 
 ```json
 {
@@ -180,7 +196,7 @@ post-repair production candidate 要求所有 strict blocker 为零。
 
 production candidate 要求 `unknownSourceTriangles=0`、冲突为零、资源完整，并满足显式 new-face policy。
 
-## 10. Admission
+## 11. Admission
 
 ```json
 {
@@ -197,7 +213,7 @@ production candidate 要求 `unknownSourceTriangles=0`、冲突为零、资源�
 R1/R2/R3 报告即使 post-repair strict PASS，也只能作为 08D 输入证据；在 08D 实现前不得直接把
 `productionAllowed` 写成 true。
 
-## 11. Performance
+## 12. Performance
 
 ```json
 {
@@ -214,7 +230,7 @@ R1/R2/R3 报告即使 post-repair strict PASS，也只能作为 08D 输入证据
 
 JSON/TIFF/PNG 写盘不计入 `totalRepairCoreMs`。
 
-## 12. Issues
+## 13. Issues
 
 ```json
 {
@@ -229,7 +245,7 @@ JSON/TIFF/PNG 写盘不计入 `totalRepairCoreMs`。
 
 测试优先断言稳定 `code` 和结构字段。
 
-## 13. Compatibility
+## 14. Compatibility
 
 ```text
 报告为附加诊断证据；

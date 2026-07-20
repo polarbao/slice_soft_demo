@@ -43,6 +43,10 @@ repair service -> production package publish
 OpenVDB internal type -> public repair API
 ```
 
+R2-01 已实现隔离 candidate、退化面/同属性同向 exact duplicate cleanup 和 `sourceMappings[]`。opposite
+duplicate、属性冲突和 confirmed self-intersection 均不会进入该 operation set；后续 vertex weld/winding、
+boundary 和 non-manifold 仍受各自原子 Gate 阻断。
+
 ## 3. 建议目录
 
 ```text
@@ -200,6 +204,7 @@ UV/material triangle provenance 保持；
 ```text
 outputTriangle -> source mesh/triangle/material；
 outputCorner -> source UV/texture coordinate；
+adapter-rejected degenerate -> source triangle id；
 new triangle -> generating boundary loop + explicit attribute policy；
 split vertex -> original geometry vertex；
 welded vertex -> ordered source vertex set。

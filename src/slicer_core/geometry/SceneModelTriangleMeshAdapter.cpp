@@ -77,6 +77,7 @@ AdaptedTriangleMesh AdaptSceneModelToTriangleMesh(
         if (TriangleAreaSquared(triangle) <= options.degenerate_area_epsilon_mm2)
         {
             ++result.topology.degenerate_triangles;
+            result.rejected_degenerate_source_triangle_indices.push_back(sourceIndex);
             continue;
         }
 
@@ -86,6 +87,7 @@ AdaptedTriangleMesh AdaptSceneModelToTriangleMesh(
         if (a == b || b == c || a == c)
         {
             ++result.topology.degenerate_triangles;
+            result.rejected_degenerate_source_triangle_indices.push_back(sourceIndex);
             continue;
         }
         result.mesh.triangles.push_back({a, b, c});

@@ -29,6 +29,7 @@ struct AdaptedTriangleMesh
 {
     TriangleMeshData mesh;
     std::vector<SurfaceTriangleAttributes> triangle_attributes;
+    std::vector<std::size_t> rejected_degenerate_source_triangle_indices;
     std::vector<MaterialInfo> material_infos;
     MeshTopologyReport topology;
 };

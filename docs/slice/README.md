@@ -6,7 +6,7 @@
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08C-R1-01..04 contract、eligibility、generated golden 与四 case Pre-Repair Baseline 已完成，下一原子任务为 R2-01 Degenerate/Duplicate Cleanup。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
+当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08C-R1-01..04 与 R2-01 保守 cleanup 已完成，下一原子任务为 R2-02 Vertex Weld、Winding 与组件守门。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
 
 ## 目录结构
 
