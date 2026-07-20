@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-07 complete; Stage 12E-08 prepared but blocked
+- Current phase: Stage 12E-08 in progress; 12E-08A complete, 12E-08B/08C pending, 12E-08D blocked
 - Latest completed phase: Stage 12E exact 12D model-domain closure linkage
-- Latest completed task: `12E-07 12D Closure linkage`
-- Current task: none active; `12E-08 Production Admission` is blocked by missing production evidence
-- Prepared stage: `12E-08 Production Admission preparation` complete
+- Latest completed task: `12E-08A classification-to-raster mapping`
+- Current task: none active; next atomic task is `12E-08B full material semantic sidecar and closure`
+- Prepared stage: `12E-09 Qt UI and Effective Config` prepared but blocked by 12E-08 admission state
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

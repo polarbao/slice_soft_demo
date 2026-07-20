@@ -21,9 +21,9 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-10 real-model material closure validation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07` are complete. `12E-08 Production Admission` is documented but blocked by missing production evidence.
+- `12E-01/02/03/04/05/06/07` and `12E-08A classification-to-raster` are complete. `12E-08B/08C` remain evidence tasks; `12E-08D` remains blocked pending explicit production confirmation.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- 12E remains diagnostic-only; `12E-08` requires closed production gates and explicit user confirmation. Production output is not admitted.
+- 12E remains diagnostic-only; raster mapping does not admit production output. `12E-08D` requires closed production gates and explicit user confirmation.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 
 ## Always-On Rules

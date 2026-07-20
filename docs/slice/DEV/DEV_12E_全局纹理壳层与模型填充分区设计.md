@@ -4,7 +4,7 @@
 > 文档状态：DEV / Stage 12E Planning
 > 生成日期：2026-07-16
 > 对应 PRD：PRD_12E_全局纹理表面层与模型填充连续调节.md
-> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain Closure/Report 已实现，Raster Mapping/Full Closure/UI/Production 待后续任务
+> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain Closure/Raster Mapping/Report 已实现，Full Closure/UI/Production 待后续任务
 
 ## 1. 技术目标
 
@@ -90,6 +90,10 @@ SurfaceTextureTransfer
 LayerSemanticComposer
   input: one Z slice of partition + material policies
   output: RGBWSV layer + exact semantic masks
+
+TextureFillPartitionRasterMapper
+  input: validated partition + texture transfer + final raster geometry
+  output: true-Z raster model/texture/fill masks + texture RGB + quantization evidence
 ```
 
 依赖方向：
@@ -291,6 +295,23 @@ effectiveWidthMm = min(requestedWidthMm, allTextureThresholdMm)
 4. 缺 UV/贴图按现有 policy 报告，不得把 fill 误当 fallback；
 5. 全纹理模式中的内部点仍使用最近表面属性，不使用逐列顶面颜色投影。
 ```
+
+### 8.5 Classification-to-Raster 映射
+
+12E-08A 采用 world-space raster center query：
+
+```text
+rasterCenter = origin + (index + 0.5) * rasterSpacing；
+sourceCell = floor((rasterCenter - classificationOrigin) / classificationSpacing)；
+source cell 使用半开区间；
+source 范围外保持 Empty；
+model/texture/fill ownership 原样复制；
+texture RGB 只随 TextureSurface ownership 复制；
+禁止使用 PNG resize 或二维插值替代几何映射。
+```
+
+映射结果必须输出 coverage delta、最大中心量化误差、source cell 复用量、mappingMs 和真实
+layerIndex/zMm。该步骤当前为 diagnostic-only，不直接写 TIFF。
 
 ## 9. Pipeline 插入点
 

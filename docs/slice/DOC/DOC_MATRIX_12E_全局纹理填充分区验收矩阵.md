@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：12E-07 COMPLETE / 12E-08 PREPARED BUT BLOCKED
+> 文档状态：12E-08A COMPLETE / 12E-08 IN PROGRESS
 > 日期：2026-07-17
 
 ## 1. 使用方式
@@ -147,5 +147,8 @@ OpenVDB OFF build PASS；
 | 12E-05 -> 06 | COMPLETE：schema、monotonic sweep、endpoint 与 golden 已冻结 |
 | 12E-06 -> 07 | COMPLETE：exact masks/texture transfer/diagnostic composer 与 report golden 完成 |
 | 12E-07 -> 08 | COMPLETE：texture_model_fill_only exact closure 联动通过 |
-| 12E-08 | PREPARED/BLOCKED：需 raster mapping、full closure、Release/回归证据和用户再次确认 |
-| 12E-09/10 | UI、真实模型、RIP 和报告收口 |
+| 12E-08A | COMPLETE：world-space raster center 映射、互补 mask、RGB、量化与 coverage 证据通过 |
+| 12E-08B/08C | TODO：full closure、默认 OFF Release/回归证据 |
+| 12E-08D | BLOCKED：生产准入需前置证据和用户再次确认 |
+| 12E-09 | PREPARED/BLOCKED：Qt diagnostic UI 与 Effective Config 已准备 |
+| 12E-10 | UI、真实模型、RIP 和报告收口 |

@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Texture Fill Partition Report
 
-> 文档状态：12D CLOSURE LINKAGE IMPLEMENTED / PRODUCTION NOT ADMITTED
+> 文档状态：12D CLOSURE LINKAGE + 12E-08A RASTER MAPPING IMPLEMENTED / PRODUCTION NOT ADMITTED
 > Schema：`slicesoft.texture_fill_partition.12e.1`
 > 日期：2026-07-16
 
@@ -35,6 +35,7 @@ reports/texture_fill_partition_report.json
   "textureTransfer": {},
   "diagnosticComposer": {},
   "closureLinkage": {},
+  "rasterMapping": {},
   "performance": {},
   "queryStats": {},
   "layers": [],
@@ -225,6 +226,56 @@ modelDomainGapVoxels=0。
 `supportClosureStatus` 和 `varnishClosureStatus` 在 12E-07 必须为 `not_evaluated`，不得用
 同尺寸零 mask 伪造完整 production closure PASS。
 
+## 7.4 Raster Mapping 对象
+
+12E-08A 新增 `rasterMapping`，记录 classification grid 到目标 raster grid 的只读诊断映射：
+
+```json
+{
+  "availability": "available",
+  "status": "diagnostic",
+  "productionAcceptance": "not_evaluated",
+  "mappingMethod": "world_space_cell_containment",
+  "allTexture": false,
+  "productionOutputWritten": false,
+  "grid": {
+    "width": 2,
+    "height": 1,
+    "depth": 2,
+    "originXMm": 0.0,
+    "originYMm": 0.0,
+    "originZMm": 0.0,
+    "pixelPitchXMm": 0.05,
+    "pixelPitchYMm": 0.05,
+    "layerThicknessMm": 0.01
+  },
+  "rasterVoxelCount": 4,
+  "mappedSourceGridVoxels": 4,
+  "outsideSourceGridVoxels": 0,
+  "uniqueSourceVoxelCount": 4,
+  "reusedSourceVoxelCount": 0,
+  "modelRasterVoxels": 4,
+  "textureSurfaceRasterVoxels": 2,
+  "modelFillRasterVoxels": 2,
+  "textureRgbRasterVoxels": 2,
+  "overlapRasterVoxels": 0,
+  "unassignedModelRasterVoxels": 0,
+  "sourceModelCoverage": 1.0,
+  "rasterModelCoverage": 1.0,
+  "modelCoverageDelta": 0.0,
+  "maxCenterQuantizationErrorMm": 0.02,
+  "mappingMs": 1.25,
+  "partitionPass": true,
+  "layerCount": 2,
+  "layers": [],
+  "issues": []
+}
+```
+
+`mappingMethod` 首版固定为 `world_space_cell_containment`。目标 raster center 落在 source
+classification cell 的半开区间内时继承该 cell 的 model/texture/fill ownership；超出 source
+范围时保持 Empty。该对象不得由 preview PNG resize 生成。
+
 ## 8. Performance 对象
 
 ```json
@@ -237,6 +288,7 @@ modelDomainGapVoxels=0。
   "distanceMs": 7.0,
   "partitionMs": 11.0,
   "textureTransferMs": null,
+  "rasterMappingMs": null,
   "totalCoreMs": 24.0,
   "gridVoxelCount": 4,
   "maskBytes": 12,
@@ -312,6 +364,16 @@ E_12E_CLOSURE_MASK_INVALID
 E_12E_CLOSURE_MODEL_DOMAIN_GAP
 E_12E_CLOSURE_COLOR_FILL_GAP
 E_12E_CLOSURE_CHANNEL_ORDER_INVALID
+```
+
+12E-08A 新增：
+
+```text
+E_12E_RASTER_MAPPING_INPUT_INVALID
+E_12E_RASTER_MAPPING_GRID_INVALID
+E_12E_RASTER_MAPPING_PARTITION_INVALID
+E_12E_RASTER_MAPPING_TRANSFER_INVALID
+E_12E_RASTER_MAPPING_INVARIANT_FAILED
 ```
 
 ## 10. Config Snapshot

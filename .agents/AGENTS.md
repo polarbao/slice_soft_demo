@@ -130,7 +130,7 @@ Current Stage 12 track:
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
-12E: 12E-01/02/03/04/05/06/07 complete; 12E-08 Production Admission prepared but blocked by production evidence.
+12E: 12E-01/02/03/04/05/06/07 and 12E-08A classification-to-raster complete; 12E-08B/08C pending and 12E-08D production admission blocked.
 ```
 
 R0/R1/R2 principles still apply to refactors:

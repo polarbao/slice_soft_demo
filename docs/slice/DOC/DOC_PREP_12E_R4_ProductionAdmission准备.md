@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R4 Production Admission 准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY PRODUCTION EVIDENCE
+> 文档状态：12E-08A COMPLETE / 12E-08B/08C TODO / 12E-08D BLOCKED
 > 日期：2026-07-17
 > 前置任务：12E-01 至 12E-07 COMPLETE
 > 覆盖任务：12E-08 Production Admission
@@ -12,13 +12,12 @@
 生产代码接入。12E-07 证明的是 `texture_model_fill_only` 的 diagnostic grid 精确闭环，不是
 最终打印 raster 上包含支撑和光油的完整 production closure。
 
-当前至少还有四项生产证据缺口：
+12E-08A 已关闭 classification-to-raster 缺口。当前还有三项生产证据缺口：
 
 ```text
-1. 12E 三维 classification grid 到最终打印 raster grid 的确定性映射未实现；
-2. 支撑、内部空洞支撑、表面光油和外侧光油尚未进入 12E 联动证据；
-3. 默认 OpenVDB OFF 的 CPU candidate 尚无真实模型 Release 性能和内存准入阈值；
-4. 新 Profile 的 production package、RIP strict、旧 Profile TIFF 不变性尚无实际证据。
+1. 支撑、内部空洞支撑、表面光油和外侧光油尚未进入 12E 联动证据；
+2. 默认 OpenVDB OFF 的 CPU candidate 尚无真实模型 Release 性能和内存准入阈值；
+3. 新 Profile 的 production package、RIP strict、旧 Profile TIFF 不变性尚无实际证据。
 ```
 
 因此：准备文档已完成，但执行 Gate 是 `BLOCKED`。不得因为 12E-07 的模型域 gap 为 0 就
@@ -182,7 +181,7 @@ E_12E_PRODUCTION_REGRESSION_EVIDENCE_MISSING
 12E-08 不建议一次性修改生产链路，建议拆成四个守门子任务：
 
 ```text
-12E-08A：classification-to-raster DTO、算法和 generated fixture；
+12E-08A：COMPLETE，classification-to-raster DTO、算法和 generated fixture；
 12E-08B：完整材料 semantic sidecar 与 12D full closure；
 12E-08C：默认 OFF Release 真实模型性能/内存和旧 Profile 回归；
 12E-08D：显式 Profile production package、RIP strict 和 admission decision。
@@ -283,7 +282,7 @@ OpenVDB 默认开关。
 | 12E exact partition | PASS | 保持 |
 | OBJ/3MF texture transfer | PASS | 保持 |
 | 12E model-domain closure | PASS | 保持 |
-| classification-to-raster mapping | MISSING | 必须先完成 12E-08A |
+| classification-to-raster mapping | PASS / DIAGNOSTIC | 12E-08A 已完成，继续保持不写 production |
 | full support/varnish closure | NOT_EVALUATED | 必须先完成 12E-08B |
 | Release real-model budget | MISSING | 必须先完成 12E-08C |
 | legacy regression evidence | MISSING | 必须先完成 12E-08C |
@@ -294,7 +293,7 @@ OpenVDB 默认开关。
 ```text
 12E-07：COMPLETE；
 12E-08 文档准备：COMPLETE；
-12E-08 代码执行：BLOCKED BY PRODUCTION EVIDENCE；
+12E-08 代码执行：IN PROGRESS，12E-08A COMPLETE；
 12E production：NOT ADMITTED。
 ```
 

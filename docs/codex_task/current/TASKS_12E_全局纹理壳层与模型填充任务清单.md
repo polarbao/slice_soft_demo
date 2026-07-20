@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-07 COMPLETE / 12E-08 PREPARED BUT BLOCKED
+> 文档状态：12E-08A COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；12E-07 已完成，12E-08 等待生产证据和用户再次确认
+> 当前项目原子任务：无；下一原子任务为 12E-08B 完整材料语义 sidecar 与 full closure
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -337,7 +337,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：PREPARED / BLOCKED BY PRODUCTION EVIDENCE / REQUIRES CONFIRMATION
+状态：IN PROGRESS；12E-08A COMPLETE，12E-08B/08C TODO，12E-08D BLOCKED / REQUIRES CONFIRMATION
 
 前置：
 
@@ -364,12 +364,27 @@ RIP strict PASS。
 docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 ```
 
-当前阻断：classification-to-raster mapping、完整 support/varnish closure、默认 OFF Release
-真实模型预算和 legacy regression 证据均未关闭。
+当前阻断：完整 support/varnish closure、默认 OFF Release 真实模型预算和 legacy regression
+证据均未关闭。
+
+12E-08A 实际结果：
+
+```text
+新增 world_space_cell_containment classification-to-raster mapper；
+使用真实 raster center world coordinate 与半开 classification cell ownership；
+输出 model/texture/fill 精确 raster mask、texture RGB、真实 layerIndex/zMm；
+输出 coverage delta、quantization error、source reuse 和 mappingMs；
+新增 11 个 generated fixture cases 与 rasterMapping report golden；
+默认 OFF 和 OpenVDB ON 定向验证均 2/2 PASS；
+productionOutputWritten=false，productionAcceptance=not_evaluated。
+```
+
+剩余阻断：完整 support/varnish closure、默认 OFF Release 真实模型预算、legacy regression
+证据以及 12E-08D 用户明确确认。
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：TODO
+状态：PREPARED / BLOCKED BY 12E-08 ADMISSION STATE
 
 目标：
 
@@ -384,6 +399,12 @@ session effective config；
 ```
 
 验证：self-test、UI smoke、三种窗口尺寸、最长文本无重叠。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
+```
 
 ## 13. 12E-10 Preview、Real Model Matrix 与收口
 

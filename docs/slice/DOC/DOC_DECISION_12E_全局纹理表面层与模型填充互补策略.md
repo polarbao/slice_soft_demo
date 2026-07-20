@@ -3,7 +3,7 @@
 > 文档状态：Decision / Stage 12E Planning
 > 日期：2026-07-16
 > 上游阶段：12A 彩色纹理材料填充支撑光油策略、12B-R2 OpenVDB SDF Utility、12C Qt 工作台、12D 横截面材料无缝闭环
-> 实现状态：PARTIAL；12E-01/02/03/04/05/06/07 COMPLETE，12E-08 PREPARED BUT BLOCKED
+> 实现状态：PARTIAL；12E-01..07 与 12E-08A COMPLETE，12E-08B/08C TODO，12E-08D BLOCKED
 
 ## 1. 决策结论
 
@@ -53,7 +53,7 @@ UnassignedModelVolume = Empty
 7. Qt QuickConfigPanel 已有纹理策略和模型填充材料控件，但没有全局纹理宽度及动态全纹理上限控件。
 ```
 
-上述内容是 2026-07-16 建立决策时的基线。当前已完成 Config/DTO、分区 service、Legacy CPU/OpenVDB conformance candidate、Width Sweep 和成功报告，但尚未接入 texture transfer、composer、Qt 或 production package；实际状态以 `REPORT_12E_启动准备状态.md` 为准。
+上述内容是 2026-07-16 建立决策时的基线。当前已完成 Config/DTO、分区 service、Legacy CPU/OpenVDB conformance candidate、Width Sweep、纹理传递、diagnostic composer、模型域 closure 和 raster mapping，但尚未完成 full closure、Qt 或 production package；实际状态以 `REPORT_12E_启动准备状态.md` 为准。
 
 ## 4. Target State
 
@@ -217,6 +217,8 @@ docs/slice/ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.
 docs/slice/DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md
 docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
 docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md
+docs/slice/DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md
+docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
 docs/slice/REPORT/REPORT_12E_启动准备状态.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md

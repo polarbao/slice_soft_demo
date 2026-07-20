@@ -1,13 +1,13 @@
 # REPORT_12E 启动准备状态
 
-> 文档状态：12E-07 COMPLETE / 12E-08 PREPARED BUT BLOCKED
+> 文档状态：12E-08A COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
 > 日期：2026-07-17
 
 ## 1. 当前结论
 
-12E 已完成 12E-01 至 12E-07。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer 和 12D 模型域精确闭环联动也已建立。
+12E 已完成 12E-01 至 12E-07 以及 12E-08A。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer、12D 模型域精确闭环联动和 classification-to-raster 确定性映射也已建立。
 
-当前两个候选仍为 diagnostic-only。12E-07 已证明 `texture_model_fill_only` 范围内 model-domain gap 和 ColorFillGap 为 0，并保持 repair/production output 关闭。12E-08 Production Admission 的准备文档已完成，但 classification-to-raster、完整支撑/光油 closure、默认 OFF Release 真实模型预算和 legacy regression 证据尚未关闭，因此执行 Gate 仍为 blocked。
+当前两个候选仍为 diagnostic-only。12E-08A 已在 world-space raster center 上保持 texture/fill 精确互补和真实 layerIndex/zMm，并保持 production output 关闭。完整支撑/光油 closure、默认 OFF Release 真实模型预算和 legacy regression 证据尚未关闭，12E-08D 也尚未获得用户生产路径确认。
 
 ## 2. Current State
 
@@ -16,7 +16,7 @@
 12B：性能评估与 OpenVDB SDF utility 定位完成；
 12C：Qt 工作台 R0/R1/R2 完成；
 12D：R0/R1/R2/R3 COMPLETE，12D-10 三个真实 OBJ 验收通过；
-12E：R0 complete，12E-01/02/03/04/05/06/07 complete，12E-08 prepared but blocked。
+12E：R0 complete，12E-01..07 与 12E-08A complete，12E-08 in progress。
 ```
 
 legacy texture apply mode 和 modelFill scope 保持兼容；CPU backend 只产生 diagnostic result。当前不存在 12E production package，也未改变原有切片生产路径。
@@ -38,13 +38,17 @@ generated/real model/backend/UI/protocol 验收矩阵；
 12E-05 Width Sweep、成功 Report 与 monotonic validator；
 12E-06 Texture Transfer 与 Diagnostic Composer；
 12E-07 12D Closure 联动；
-12E-08 Production Admission 准备。
+12E-08 Production Admission 准备；
+12E-08A classification-to-raster DTO、算法、generated fixture 与 report；
+12E-09 Qt UI 与 Effective Config 准备。
 ```
 
 ## 4. 尚未实现
 
 ```text
 production admission；
+完整 support/varnish semantic sidecar 与 full closure；
+默认 OFF Release 真实模型性能、内存和 legacy regression；
 Qt UI 与 preview；
 真实模型回归和 REPORT_12E 完成报告。
 ```
@@ -62,8 +66,11 @@ Qt UI 与 preview；
 | 12E-05 | COMPLETE | Width Sweep、成功报告、golden 和 monotonic validator |
 | 12E-06 | COMPLETE | Texture Transfer 与 Diagnostic Composer |
 | 12E-07 | COMPLETE | 12D Closure 联动，限 texture/model-fill 诊断范围 |
-| 12E-08 | PREPARED / BLOCKED / REQUIRES CONFIRMATION | 缺 raster mapping、完整 closure、Release 预算和回归证据 |
-| 12E-09..10 | PLANNED | UI、真实模型和收口 |
+| 12E-08A | COMPLETE / DIAGNOSTIC ONLY | classification-to-raster、量化、coverage、报告与 generated fixture |
+| 12E-08B/08C | TODO | 完整 closure、Release 预算和回归证据 |
+| 12E-08D | BLOCKED / REQUIRES CONFIRMATION | production package、RIP strict 与 admission |
+| 12E-09 | PREPARED / BLOCKED | Qt diagnostic UI 与 Effective Config 已准备 |
+| 12E-10 | PLANNED | 真实模型和收口 |
 
 ## 6. 与 12D 的关系
 
@@ -77,7 +84,9 @@ Qt UI 与 preview；
 12E-05：COMPLETE；
 12E-06：COMPLETE；
 12E-07：COMPLETE；
-12E-08：PREPARED / BLOCKED BY PRODUCTION EVIDENCE；
+12E-08A：COMPLETE；
+12E-08B/08C：TODO；
+12E-08D：BLOCKED BY PRODUCTION EVIDENCE AND CONFIRMATION；
 当前没有 active code task；
 12E R0/R1 原型不要求先完成 repair；
 12E production admission 必须复核 12D exact closure；
@@ -340,10 +349,9 @@ git diff --check：PASS（仅 Git 行尾转换提示）。
 
 ## 15. 下一任务
 
-12E-07 已完成。12E-08 文档准备已完成，但当前不能直接进入代码执行。必须先关闭：
+12E-08A 已完成。12E-08 production admission 仍必须依次关闭：
 
 ```text
-12E-08A classification-to-raster mapping；
 12E-08B 完整 support/varnish closure；
 12E-08C 默认 OFF Release 真实模型预算与 legacy regression；
 12E-08D 前再次取得用户 production path 明确确认。
@@ -373,6 +381,45 @@ legacy slicer_cli production path 不替代；
 支撑、内部空洞和光油必须在最终 raster semantic sidecar 中形成完整证据；
 默认 OFF CPU candidate 仍需真实模型 Release 性能和内存预算；
 新 Profile production package、RIP strict 和旧 Profile 回归仍需实证；
-12E-08 文档准备已完成，但代码执行被 production evidence 阻断；
+12E-08A 已完成 classification-to-raster diagnostic mapping；
+12E-08B/08C 继续关闭 production evidence；
 12E-08D 前必须再次取得用户明确确认。
+```
+
+## 18. 12E-08A 实际实现与验证
+
+实现：
+
+```text
+TextureFillPartitionRasterGridSpec / Layer / Stats / Result；
+MapTextureFillPartitionToRaster；
+world_space_cell_containment 与半开 source cell ownership；
+真实 raster center layerIndex/zMm；
+model/texture/fill 精确 mask 和 texture-only RGB；
+coverage delta、source reuse、quantization error、mappingMs；
+rasterMapping report、performance.rasterMappingMs 与 golden；
+五个 E_12E_RASTER_MAPPING_* 稳定错误码。
+```
+
+验证：
+
+```text
+mapper generated fixture：11/11 PASS；
+默认 OpenVDB OFF mapper/report 定向 CTest：2/2 PASS；
+OpenVDB ON mapper/report 定向 CTest：2/2 PASS；
+默认 OFF 全量 Debug build：PASS；
+默认 OFF 全量 CTest：18/18 PASS；
+12D Repair Disabled：RIP strict PASS，30 层 TIFF SHA-256 invariant PASS；
+productionOutputWritten=false；
+productionAcceptance=not_evaluated。
+```
+
+该结果关闭了 classification-to-raster 的确定性映射缺口，但没有接入生产 composer 或 writer。
+
+12E-09 准备结论：
+
+```text
+diagnostic UI、异步 worker、0.01 mm 控件、动态阈值、effective config 和真实 layer preview 合同已准备；
+12E-09A 仍建议等待 12E-08B/08C；
+12E-09B production Profile 被 12E-08D 阻断。
 ```
