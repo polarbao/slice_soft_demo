@@ -414,6 +414,15 @@ add_executable(mesh_repair_eligibility_unit_tests
 
 target_link_libraries(mesh_repair_eligibility_unit_tests PRIVATE slicer_core)
 
+add_executable(mesh_repair_fixture_golden_unit_tests
+    tests/unit/mesh_repair_fixture_golden/main.cpp
+)
+
+target_link_libraries(mesh_repair_fixture_golden_unit_tests PRIVATE slicer_core)
+target_compile_definitions(mesh_repair_fixture_golden_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
@@ -449,6 +458,7 @@ add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_tex
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
+add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

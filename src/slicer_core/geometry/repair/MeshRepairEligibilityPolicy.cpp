@@ -92,7 +92,11 @@ MeshRepairEligibility EvaluateMeshRepairEligibility(
         : 0U;
     if ((!evidence.duplicateFaceAttributesEvaluated
          && evidence.duplicateFaceAttributeConflicts > 0U)
-        || evidence.duplicateFaceAttributeConflicts > exactDuplicateFaces)
+        || evidence.duplicateFaceAttributeConflicts > exactDuplicateFaces
+        || (topology.boundary_edges == 0U
+            && evidence.boundaryClassification != MeshRepairBoundaryClassification::NotEvaluated)
+        || (topology.non_manifold_edges == 0U
+            && evidence.nonManifoldClassification != MeshRepairNonManifoldClassification::NotEvaluated))
     {
         AddDecision(
             result,
@@ -131,13 +135,27 @@ MeshRepairEligibility EvaluateMeshRepairEligibility(
 
     if (topology.non_manifold_edges > 0U)
     {
-        AddDecision(
-            result,
-            "MESH_NON_MANIFOLD_EDGES",
-            MeshRepairEligibilityClass::ManualOnly,
-            MeshRepairErrorCodeName(MeshRepairErrorCode::AmbiguousTopology),
-            static_cast<std::uint64_t>(topology.non_manifold_edges),
-            "classify edge-fan ownership before selecting a repair operation");
+        if (evidence.nonManifoldClassification
+            == MeshRepairNonManifoldClassification::UniquelySeparable)
+        {
+            AddDecision(
+                result,
+                "MESH_NON_MANIFOLD_EDGES",
+                MeshRepairEligibilityClass::Conditional,
+                MeshRepairErrorCodeName(MeshRepairErrorCode::Ineligible),
+                static_cast<std::uint64_t>(topology.non_manifold_edges),
+                "validate the uniquely separable edge fan against repair budgets");
+        }
+        else
+        {
+            AddDecision(
+                result,
+                "MESH_NON_MANIFOLD_EDGES",
+                MeshRepairEligibilityClass::ManualOnly,
+                MeshRepairErrorCodeName(MeshRepairErrorCode::AmbiguousTopology),
+                static_cast<std::uint64_t>(topology.non_manifold_edges),
+                "classify edge-fan ownership before selecting a repair operation");
+        }
     }
 
     if (robustness.zero_volume_components > 0U)
@@ -175,13 +193,36 @@ MeshRepairEligibility EvaluateMeshRepairEligibility(
 
     if (topology.boundary_edges > 0U)
     {
-        AddDecision(
-            result,
-            "MESH_BOUNDARY_EDGES",
-            MeshRepairEligibilityClass::Conditional,
-            MeshRepairErrorCodeName(MeshRepairErrorCode::Ineligible),
-            static_cast<std::uint64_t>(topology.boundary_edges),
-            "classify boundary loops and validate repair budgets");
+        if (evidence.boundaryClassification == MeshRepairBoundaryClassification::NonPlanar)
+        {
+            AddDecision(
+                result,
+                "MESH_BOUNDARY_EDGES",
+                MeshRepairEligibilityClass::ManualOnly,
+                MeshRepairErrorCodeName(MeshRepairErrorCode::ManualRequired),
+                static_cast<std::uint64_t>(topology.boundary_edges),
+                "repair the non-planar boundary in the source asset");
+        }
+        else if (evidence.boundaryClassification == MeshRepairBoundaryClassification::BudgetExceeded)
+        {
+            AddDecision(
+                result,
+                "MESH_BOUNDARY_EDGES",
+                MeshRepairEligibilityClass::ManualOnly,
+                MeshRepairErrorCodeName(MeshRepairErrorCode::BudgetExceeded),
+                static_cast<std::uint64_t>(topology.boundary_edges),
+                "reduce the boundary repair scope or repair the source asset");
+        }
+        else
+        {
+            AddDecision(
+                result,
+                "MESH_BOUNDARY_EDGES",
+                MeshRepairEligibilityClass::Conditional,
+                MeshRepairErrorCodeName(MeshRepairErrorCode::Ineligible),
+                static_cast<std::uint64_t>(topology.boundary_edges),
+                "classify boundary loops and validate repair budgets");
+        }
     }
 
     if (topology.degenerate_triangles > 0U)

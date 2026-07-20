@@ -10,12 +10,37 @@ namespace slicer_core
 {
 
 /**
+ * @brief Boundary-loop evidence supplied by a dedicated topology classifier.
+ */
+enum class MeshRepairBoundaryClassification
+{
+    NotEvaluated,
+    SimpleWithinBudget,
+    NonPlanar,
+    BudgetExceeded,
+};
+
+/**
+ * @brief Non-manifold edge-fan evidence supplied by a dedicated classifier.
+ */
+enum class MeshRepairNonManifoldClassification
+{
+    NotEvaluated,
+    UniquelySeparable,
+    Ambiguous,
+};
+
+/**
  * @brief Attribute evidence required before geometry issues can become automatic candidates.
  */
 struct MeshRepairEligibilityEvidence
 {
     bool duplicateFaceAttributesEvaluated{false};
     std::uint64_t duplicateFaceAttributeConflicts{0U};
+    MeshRepairBoundaryClassification boundaryClassification{
+        MeshRepairBoundaryClassification::NotEvaluated};
+    MeshRepairNonManifoldClassification nonManifoldClassification{
+        MeshRepairNonManifoldClassification::NotEvaluated};
 };
 
 /**

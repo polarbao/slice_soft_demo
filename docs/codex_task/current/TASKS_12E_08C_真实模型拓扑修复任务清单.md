@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1-02 COMPLETE / R1-03 READY
+> 文档状态：IN PROGRESS / R1-03 COMPLETE / R1-04 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：12E-08C-R1-03
+> 当前原子任务：12E-08C-R1-04
 
 ## 1. 总目标
 
@@ -62,15 +62,19 @@ unit/schema tests。
 
 ### 12E-08C-R1-03 Generated Fixtures 与 Golden
 
-状态：READY。
+状态：COMPLETE。
 
 范围：clean、duplicate、winding、boundary、non-manifold、self-intersection、attribute conflict fixtures。
 
 完成标准：状态、code、hash 和 report golden 可重复。
 
+实际结果：新增 11 个 generated policy-contract fixtures，冻结 `slicesoft.mesh_repair_fixture_golden.12e_08c_r1.1`
+golden；geometry/attribute hash、status、classification、reasonCode、affectedCount 与非生产标志重复稳定。
+结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R1_03_GeneratedFixtureGolden结果.md`。
+
 ### 12E-08C-R1-04 真实模型 Pre-Repair Baseline
 
-状态：BLOCKED BY R1-03。
+状态：READY。
 
 范围：`nai_you_new`、`aishen_fudiao`、`meigui_fudiao` 和闭合 3MF；记录 issue pattern、hash、eligibility。
 

@@ -6,7 +6,7 @@
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08C-R1-01/R1-02 contract 与 eligibility 已完成，下一原子任务为 R1-03 Generated Fixtures 与 Golden。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
+当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08C-R1-01/R1-02/R1-03 contract、eligibility 与 generated golden 已完成，下一原子任务为 R1-04 真实模型 Pre-Repair Baseline。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
 
 ## 目录结构
 
@@ -110,6 +110,7 @@
 | `DOC/DOC_PREP_12E_08C_R1_拓扑分类与修复契约准备.md` | R1-01 DTO/hash/report 实施准备 |
 | `DOC/DOC_EXEC_12E_08C_R1_01_MeshRepairContract结果.md` | R1-01 DTO、稳定错误码、canonical SHA-256、report skeleton 和验证结果 |
 | `DOC/DOC_EXEC_12E_08C_R1_02_EligibilityPolicy结果.md` | R1-02 topology/robustness 资格分类、优先级和验证结果 |
+| `DOC/DOC_EXEC_12E_08C_R1_03_GeneratedFixtureGolden结果.md` | R1-03 生成夹具、确定性 hash 和 report projection golden 结果 |
 | `DOC/DOC_PREP_12E_08C_R1_EligibilityFixtureBaseline准备.md` | R1-02..04 资格、生成夹具和真实模型 baseline 准备 |
 | `DOC/DOC_PREP_12E_08C_R2_ConservativeRepair准备.md` | R2 保守修复操作、属性、post-strict 和停止条件准备 |
 | `DOC/DOC_PREP_12E_08C_R3_RealModelReleaseGate准备.md` | R3 真实模型、Release 预算和 08D GO/NO-GO 准备 |

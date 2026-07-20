@@ -183,7 +183,7 @@ production gate 失败时不写生产包。
 
 | 阶段 | 工作 | Gate |
 |---|---|---|
-| 12E-08C-R1/R2/R3 | 真实模型 repair-then-strict、属性保持、Release 预算 | R1-02 COMPLETE，下一任务 R1-03；未完成前 global 不可生产 |
+| 12E-08C-R1/R2/R3 | 真实模型 repair-then-strict、属性保持、Release 预算 | R1-03 COMPLETE，下一任务 R1-04；未完成前 global 不可生产 |
 | 12E-08D-01 | `slicePipeline.mode`、DTO、validator、Router 与 fail-closed | 省略字段兼容 legacy；非法值拒绝；无静默回退 |
 | 12E-08D-02 | global classification 到现有生产层 DTO 的 adapter | 通道和 material closure 语义完整 |
 | 12E-08D-03 | 两模式共享 RGBWSV writer、manifest、preview/report 与 RIP 回归 | 两条生产成功路径都生成一致格式 TIFF |

@@ -1,0 +1,202 @@
+{
+  "cases": [
+    {
+      "attributeHash": "3eaa37d592744923a33c089c5b8bb966e2164f0c1519d5302b49713d2182e1c0",
+      "automaticRepairAllowed": false,
+      "decisions": [],
+      "geometryHash": "7e0c7b086334e2e0b4b29cd8ee36b876dbffc6e0f2bdfc521d4af62dbf149230",
+      "name": "clean_closed",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "strict_pass_no_repair"
+    },
+    {
+      "attributeHash": "c441135f7e036be497113dbbbc113030bf213bc430cee8edd981d50bddcd2cfb",
+      "automaticRepairAllowed": true,
+      "decisions": [
+        {
+          "affectedCount": 1,
+          "classification": "eligible",
+          "issueCode": "MESH_DEGENERATE_TRIANGLES",
+          "reasonCode": "REPAIR_ELIGIBLE_DEGENERATE_CLEANUP"
+        }
+      ],
+      "geometryHash": "a479f3df0536cda46d13703a709a470362422ce6eacf409539cfdc02171165ec",
+      "name": "degenerate_face",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "repair_candidate"
+    },
+    {
+      "attributeHash": "c441135f7e036be497113dbbbc113030bf213bc430cee8edd981d50bddcd2cfb",
+      "automaticRepairAllowed": true,
+      "decisions": [
+        {
+          "affectedCount": 1,
+          "classification": "eligible",
+          "issueCode": "MESH_DUPLICATE_FACES",
+          "reasonCode": "REPAIR_ELIGIBLE_EXACT_DUPLICATE_REMOVAL"
+        }
+      ],
+      "geometryHash": "80183cff5150b44564eb13b23812948d58b37ecff0ae7e32eca3dc9bba67d823",
+      "name": "duplicate_same_attributes",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "repair_candidate"
+    },
+    {
+      "attributeHash": "2be88871fcb50d2cd40decbe0f959c19eb9c196211e43454d9af06a24bd01ef8",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 1,
+          "classification": "manual_only",
+          "issueCode": "MESH_DUPLICATE_FACE_ATTRIBUTE_CONFLICT",
+          "reasonCode": "E_12E_REPAIR_ATTRIBUTE_CONFLICT"
+        }
+      ],
+      "geometryHash": "80183cff5150b44564eb13b23812948d58b37ecff0ae7e32eca3dc9bba67d823",
+      "name": "duplicate_uv_conflict",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "manual_repair_required"
+    },
+    {
+      "attributeHash": "7d163b5ad1680793ed07da775efb66cbb4295edcf407ba1afd92dbcd421a7534",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 1,
+          "classification": "conditional",
+          "issueCode": "MESH_OPPOSITE_DUPLICATE_FACES",
+          "reasonCode": "E_12E_REPAIR_AMBIGUOUS_TOPOLOGY"
+        }
+      ],
+      "geometryHash": "ea500b28e87193940b74053228a1b2180196f7c07e977f76bff5c5f232857b2b",
+      "name": "opposite_duplicate",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "repair_candidate"
+    },
+    {
+      "attributeHash": "3eaa37d592744923a33c089c5b8bb966e2164f0c1519d5302b49713d2182e1c0",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 3,
+          "classification": "conditional",
+          "issueCode": "MESH_LOCAL_WINDING_INCONSISTENCY",
+          "reasonCode": "E_12E_REPAIR_NOT_ELIGIBLE"
+        }
+      ],
+      "geometryHash": "c592499f4a59393521bdfe397c444af3bc571e963b1529e8d6f0470a66abbc25",
+      "name": "winding_only",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "repair_candidate"
+    },
+    {
+      "attributeHash": "003f76b4e42851a1da4dfdc422e120e6293d328c6d69fb5dcebaff425aea243e",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 3,
+          "classification": "conditional",
+          "issueCode": "MESH_BOUNDARY_EDGES",
+          "reasonCode": "E_12E_REPAIR_NOT_ELIGIBLE"
+        }
+      ],
+      "geometryHash": "d7e48e62f47a7379a45206d2c7b7632f119548cfca238b3eb494451dd6454bcf",
+      "name": "simple_planar_boundary",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "repair_candidate"
+    },
+    {
+      "attributeHash": "003f76b4e42851a1da4dfdc422e120e6293d328c6d69fb5dcebaff425aea243e",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 3,
+          "classification": "manual_only",
+          "issueCode": "MESH_BOUNDARY_EDGES",
+          "reasonCode": "E_12E_REPAIR_MANUAL_REQUIRED"
+        }
+      ],
+      "geometryHash": "32b357b3228d7142147736236fb6486f55643ee46364666fc5d0c579897d55be",
+      "name": "non_planar_boundary",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "manual_repair_required"
+    },
+    {
+      "attributeHash": "c441135f7e036be497113dbbbc113030bf213bc430cee8edd981d50bddcd2cfb",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 1,
+          "classification": "conditional",
+          "issueCode": "MESH_NON_MANIFOLD_EDGES",
+          "reasonCode": "E_12E_REPAIR_NOT_ELIGIBLE"
+        }
+      ],
+      "geometryHash": "c3c6304d4f1cd0599a7873cc75556807d32d3e893568458f2d35fa7efbad4aa6",
+      "name": "separable_edge_fan",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "repair_candidate"
+    },
+    {
+      "attributeHash": "192619224d7a31088cc2862da0bbedc9d559d87a7c6993a3e8a3d7edd81f41d7",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 1,
+          "classification": "manual_only",
+          "issueCode": "MESH_NON_MANIFOLD_EDGES",
+          "reasonCode": "E_12E_REPAIR_AMBIGUOUS_TOPOLOGY"
+        }
+      ],
+      "geometryHash": "3ca45b81aedd060c87d8eb1fd2468b84e2ae2f7b8aa2ba199efa9ddd84c58119",
+      "name": "ambiguous_edge_fan",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "manual_repair_required"
+    },
+    {
+      "attributeHash": "a4856a6631d317b54e662c8503e0895d4949caa6fbf14d805b8c3e2d5df86293",
+      "automaticRepairAllowed": false,
+      "decisions": [
+        {
+          "affectedCount": 1,
+          "classification": "fail_fast",
+          "issueCode": "MESH_SELF_INTERSECTION_CONFIRMED",
+          "reasonCode": "E_12E_REPAIR_SELF_INTERSECTION"
+        },
+        {
+          "affectedCount": 6,
+          "classification": "conditional",
+          "issueCode": "MESH_BOUNDARY_EDGES",
+          "reasonCode": "E_12E_REPAIR_NOT_ELIGIBLE"
+        }
+      ],
+      "geometryHash": "80f413ce3b96eea7f4e0e5120e97cdd7a80cf5ee1319d2fc462b70b888657051",
+      "name": "self_intersection",
+      "productionOutputWritten": false,
+      "repairAttempted": false,
+      "reportSchema": "slicesoft.mesh_repair.12e_08c.1",
+      "status": "rejected_self_intersection"
+    }
+  ],
+  "schema": "slicesoft.mesh_repair_fixture_golden.12e_08c_r1.1"
+}
