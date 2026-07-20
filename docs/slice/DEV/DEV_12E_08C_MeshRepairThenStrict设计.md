@@ -1,7 +1,7 @@
 # DEV_12E-08C MeshRepairThenStrict 设计
 
 > 文档版本：v0.1
-> 文档状态：DEV / PREPARED
+> 文档状态：DEV / R1、R2-01/02 IMPLEMENTED
 > 日期：2026-07-20
 > 对应 PRD：`PRD_12E_08C_真实模型拓扑修复与严格准入.md`
 
@@ -43,9 +43,9 @@ repair service -> production package publish
 OpenVDB internal type -> public repair API
 ```
 
-R2-01 已实现隔离 candidate、退化面/同属性同向 exact duplicate cleanup 和 `sourceMappings[]`。opposite
-duplicate、属性冲突和 confirmed self-intersection 均不会进入该 operation set；后续 vertex weld/winding、
-boundary 和 non-manifold 仍受各自原子 Gate 阻断。
+R2-01 已实现隔离 candidate、退化面/同属性同向 exact duplicate cleanup 和 `sourceMappings[]`。R2-02 已实现
+受约束 vertex weld、唯一 local winding 传播、组件守门与 `vertexMappings[]`。opposite duplicate、属性冲突和
+confirmed self-intersection 均不会被这些 operation set 绕过；boundary 和 non-manifold 仍受后续原子 Gate 阻断。
 
 ## 3. 建议目录
 

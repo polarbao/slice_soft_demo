@@ -36,6 +36,8 @@ struct Options
     std::size_t maxTrianglePairChecks{250000U};
     bool requireOpenVdbOff{false};
     bool executeCleanup{false};
+    bool executeR2Topology{false};
+    double weldToleranceMm{0.0};
 };
 
 std::string RequireValue(
@@ -92,6 +94,14 @@ Options ParseOptions(const int argc, char** argv)
         {
             options.executeCleanup = true;
         }
+        else if (argument == "--execute-r2-02")
+        {
+            options.executeR2Topology = true;
+        }
+        else if (argument == "--weld-tolerance-mm")
+        {
+            options.weldToleranceMm = std::stod(RequireValue(argc, argv, index, argument));
+        }
         else if (argument == "--help" || argument == "-h")
         {
             std::cout
@@ -99,7 +109,7 @@ Options ParseOptions(const int argc, char** argv)
                 << "[--source-id <stable-path>] [--voxel-mm <value>] "
                 << "[--max-self-intersection-pairs <count>] "
                 << "[--max-triangle-pair-checks <count>] [--require-openvdb-off] "
-                << "[--execute-cleanup]\n";
+                << "[--execute-cleanup | --execute-r2-02 --weld-tolerance-mm <value>]\n";
             std::exit(0);
         }
         else
@@ -119,6 +129,15 @@ Options ParseOptions(const int argc, char** argv)
     if (!std::isfinite(options.voxelMm) || options.voxelMm <= 0.0)
     {
         throw std::runtime_error("--voxel-mm must be finite and positive");
+    }
+    if (options.executeCleanup && options.executeR2Topology)
+    {
+        throw std::runtime_error("cleanup and R2-02 operation sets are mutually exclusive");
+    }
+    if (options.executeR2Topology
+        && (!std::isfinite(options.weldToleranceMm) || options.weldToleranceMm <= 0.0))
+    {
+        throw std::runtime_error("--execute-r2-02 requires a finite positive --weld-tolerance-mm");
     }
     return options;
 }
@@ -379,18 +398,25 @@ int RunPreflight(const Options& options)
 
     slicer_core::MeshRepairResult result;
     std::size_t candidateTriangleCount = adapted.mesh.triangles.size();
-    if (options.executeCleanup)
+    std::size_t candidateVertexCount = adapted.mesh.vertices.size();
+    if (options.executeCleanup || options.executeR2Topology)
     {
         slicer_core::MeshRepairCleanupRequest request;
         request.mesh = &adapted;
         request.input = input;
         request.options.enabled = true;
         request.options.mode = "repair_then_strict";
+        request.options.allowVertexWeld = options.executeR2Topology;
+        request.options.weldToleranceMm = options.executeR2Topology
+            ? options.weldToleranceMm
+            : 0.0;
+        request.options.allowWindingRepair = options.executeR2Topology;
         request.sourceHash = sourceHash;
         request.robustnessOptions = robustnessOptions;
         slicer_core::MeshRepairCleanupResult cleanup =
             slicer_core::ExecuteMeshRepairCleanup(request);
         candidateTriangleCount = cleanup.candidate.mesh.triangles.size();
+        candidateVertexCount = cleanup.candidate.mesh.vertices.size();
         result = std::move(cleanup.evidence);
     }
     else
@@ -409,10 +435,15 @@ int RunPreflight(const Options& options)
     std::cout
         << "mesh_repair_preflight: evidence collected\n"
         << "  source: " << input.sourcePath << '\n'
-        << "  operationSet: " << (options.executeCleanup ? "r2_cleanup" : "preflight") << '\n'
+        << "  operationSet: "
+        << (options.executeR2Topology
+                ? "r2_vertex_weld_winding"
+                : (options.executeCleanup ? "r2_cleanup" : "preflight"))
+        << '\n'
         << "  status: " << slicer_core::MeshRepairStatusName(result.status) << '\n'
         << "  vertices: " << result.input.vertexCount << '\n'
         << "  triangles: " << result.input.triangleCount << '\n'
+        << "  candidateVertices: " << candidateVertexCount << '\n'
         << "  candidateTriangles: " << candidateTriangleCount << '\n'
         << "  components: " << result.input.componentCount << '\n'
         << "  productionOutputWritten: false\n"

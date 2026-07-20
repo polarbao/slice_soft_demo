@@ -57,7 +57,9 @@ Json BuildOptions(const MeshRepairOptions& options)
     return Json::object({
         {"enabled", options.enabled},
         {"mode", options.mode},
+        {"allowVertexWeld", options.allowVertexWeld},
         {"weldToleranceMm", options.weldToleranceMm},
+        {"allowWindingRepair", options.allowWindingRepair},
         {"maxBoundaryLoopEdges", options.maxBoundaryLoopEdges},
         {"maxBoundaryLoopDiameterMm", options.maxBoundaryLoopDiameterMm},
         {"allowNewFaces", options.allowNewFaces},
@@ -165,6 +167,24 @@ Json BuildSourceMappings(const std::vector<MeshRepairTriangleMapping>& mappings)
     return Json{std::move(array)};
 }
 
+Json BuildVertexMappings(const std::vector<MeshRepairVertexMapping>& mappings)
+{
+    Json::Array array;
+    for (const MeshRepairVertexMapping& mapping : mappings)
+    {
+        Json::Array sources;
+        for (const std::uint64_t sourceIndex : mapping.sourceVertexIndices)
+        {
+            sources.push_back(sourceIndex);
+        }
+        array.push_back(Json::object({
+            {"outputVertexIndex", mapping.outputVertexIndex},
+            {"sourceVertexIndices", Json{std::move(sources)}},
+        }));
+    }
+    return Json{std::move(array)};
+}
+
 Json BuildAttributePreservation(const MeshRepairAttributePreservation& attributes)
 {
     return Json::object({
@@ -241,6 +261,7 @@ Json BuildMeshRepairReport(const MeshRepairResult& result)
         {"eligibility", BuildEligibility(result.eligibility)},
         {"operations", BuildOperations(result.operations)},
         {"sourceMappings", BuildSourceMappings(result.sourceMappings)},
+        {"vertexMappings", BuildVertexMappings(result.vertexMappings)},
         {"attributePreservation", BuildAttributePreservation(result.attributePreservation)},
         {"postRepair", BuildDiagnostics(result.postRepair)},
         {"admission", BuildAdmission(result.admission)},

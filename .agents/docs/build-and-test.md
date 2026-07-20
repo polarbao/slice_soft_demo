@@ -226,3 +226,14 @@ ctest --test-dir build -C Debug -R "mesh_repair_(cleanup|preflight)" --output-on
 
 输出位于 `output/benchmarks/12e_08c_r2_cleanup`。脚本强制默认 OpenVDB OFF，只执行显式 degenerate/exact
 duplicate cleanup 诊断，不写生产包。
+
+## 12E-08C-R2-02 Guarded Topology Evidence
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_cleanup_unit_tests mesh_repair_contract_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(r2_02|cleanup|contract|preflight)" --output-on-failure
+.\scripts\run_12e_08c_r2_02_topology_evidence.ps1 -BuildDir build -Config Debug
+```
+
+输出位于 `output/benchmarks/12e_08c_r2_02_topology`。脚本对四个 required case 各运行两次，冻结
+vertex mapping、operation hash 和组件数；只生成诊断 JSON，不写生产 package/TIFF。

@@ -71,6 +71,8 @@ add_library(slicer_core
     src/slicer_core/geometry/repair/MeshRepairPreflight.h
     src/slicer_core/geometry/repair/MeshRepairService.cpp
     src/slicer_core/geometry/repair/MeshRepairService.h
+    src/slicer_core/geometry/repair/MeshRepairTopologyOperations.cpp
+    src/slicer_core/geometry/repair/MeshRepairTopologyOperations.h
     src/slicer_core/geometry/repair/MeshRepairTypes.cpp
     src/slicer_core/geometry/repair/MeshRepairTypes.h
     src/slicer_core/geometry/NearestTriangleQuery.cpp
@@ -494,6 +496,20 @@ add_test(
         --execute-cleanup
 )
 set_tests_properties(mesh_repair_cleanup_cli_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+add_test(
+    NAME mesh_repair_r2_02_cli_test
+    COMMAND mesh_repair_preflight
+        --config samples/configs/3mf/three_mf_texture2d_checker.json
+        --output ${CMAKE_CURRENT_BINARY_DIR}/output/12e_08c_r2_02_cli_test.json
+        --source-id samples/models/3mf/texture2d_checker_cube.3mf
+        --voxel-mm 0.10
+        --require-openvdb-off
+        --execute-r2-02
+        --weld-tolerance-mm 0.0001
+)
+set_tests_properties(mesh_repair_r2_02_cli_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)

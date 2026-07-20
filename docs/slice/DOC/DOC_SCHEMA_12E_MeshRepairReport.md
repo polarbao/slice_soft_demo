@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Mesh Repair Report
 
-> 文档状态：PARTIAL / R1 CONTRACT、ELIGIBILITY、GOLDEN、REAL-MODEL PREFLIGHT IMPLEMENTED
+> 文档状态：PARTIAL / R1 CONTRACT、R2-01 CLEANUP、R2-02 GUARDED TOPOLOGY IMPLEMENTED
 > Schema：`slicesoft.mesh_repair.12e_08c.1`
 > 日期：2026-07-20
 
@@ -32,6 +32,7 @@ reports/mesh_repair_report.json
   "eligibility": {},
   "operations": [],
   "sourceMappings": [],
+  "vertexMappings": [],
   "attributePreservation": {},
   "postRepair": {},
   "admission": {},
@@ -96,6 +97,20 @@ manual/rejected/failed 时 productionOutputWritten=false；
 ```
 
 未计算使用 `null`，不得用空字符串或全零冒充有效 hash。
+
+## 5.1 Repair Options
+
+R2-02 新增的显式开关属于 options hash：
+
+```json
+{
+  "allowVertexWeld": false,
+  "weldToleranceMm": 0.0,
+  "allowWindingRepair": false
+}
+```
+
+两个开关默认关闭；`weldToleranceMm=0` 不授权焊接。任何开关或阈值变化都必须改变 `optionsHash`。
 
 ## 6. Diagnostics
 
@@ -175,6 +190,18 @@ post-repair production candidate 要求所有 strict blocker 为零。
 `disposition` 固定为 `retained | removed_degenerate | removed_exact_duplicate`。保留面必须有
 `outputTriangleIndex`；exact duplicate 必须记录 `retainedSourceTriangleIndex`；退化面两个可选输出字段为
 `null`。mapping 按 `sourceTriangleIndex` 排序，覆盖 adapter 已过滤退化面和所有 accepted triangle。
+
+## 9.1 Vertex Mapping
+
+```json
+{
+  "outputVertexIndex": 7,
+  "sourceVertexIndices": [7, 8]
+}
+```
+
+R2-02 执行后，每个 candidate 输出顶点必须有一条 mapping；`sourceVertexIndices` 升序、非空且不重复。
+未发生 weld 时为一对一 identity mapping；实际 weld group 必须同时有 `weld_vertex` operation。
 
 ## 10. Attribute Preservation
 
@@ -257,5 +284,6 @@ OpenVDB OFF 构建必须可生成 preflight/repair 报告。
 
 R1-01 已实现内存 DTO、canonical hash 和 report skeleton serializer；R1-02 已实现纯 pre-repair eligibility
 policy；R1-03 已用 11 个 generated policy-contract fixtures 冻结 report projection golden；R1-04 已为三个
-真实 OBJ 和闭合 Texture2D 3MF 生成只读 Preflight report。尚未实现实际 repair、post-strict 或 production
-admission；报告文件仅由诊断 app 写入，repair core 仍不拥有文件系统写入职责。
+真实 OBJ 和闭合 Texture2D 3MF 生成只读 Preflight report；R2-01 已实现 cleanup/source mapping；R2-02 已实现
+受约束 weld/winding、vertex mapping 和组件守门。尚未实现 boundary/new-face repair、统一 post-strict 或
+production admission；报告文件仅由诊断 app 写入，repair core 仍不拥有文件系统写入职责。

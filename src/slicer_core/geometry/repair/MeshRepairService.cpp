@@ -2,12 +2,14 @@
 
 #include "slicer_core/geometry/repair/MeshRepairHash.h"
 #include "slicer_core/geometry/repair/MeshRepairPreflight.h"
+#include "slicer_core/geometry/repair/MeshRepairTopologyOperations.h"
 
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
@@ -549,12 +551,48 @@ MeshRepairCleanupResult ExecuteMeshRepairCleanup(
     cleanup.evidence = std::move(evidence);
     const Clock::time_point repairStart = Clock::now();
     BuildCandidate(request, plan, cleanup);
+
+    bool topologyBlocked{false};
+    std::string topologyAttributeStatus;
+    std::string topologyBlockerCode;
+    if (request.options.allowVertexWeld || request.options.allowWindingRepair)
+    {
+        MeshRepairTopologyOperationRequest topologyRequest;
+        topologyRequest.mesh = &cleanup.candidate;
+        topologyRequest.options = request.options;
+        topologyRequest.robustnessOptions = request.robustnessOptions;
+        topologyRequest.firstOperationId = cleanup.evidence.operations.size() + 1U;
+        MeshRepairTopologyOperationResult topology =
+            ExecuteMeshRepairTopologyOperations(topologyRequest);
+        cleanup.evidence.vertexMappings = std::move(topology.vertexMappings);
+        topologyBlocked = topology.blocked;
+        topologyAttributeStatus = std::move(topology.attributeStatus);
+        topologyBlockerCode = std::move(topology.blockerCode);
+        if (!topologyBlocked)
+        {
+            cleanup.candidate = std::move(topology.candidate);
+            cleanup.evidence.operations.insert(
+                cleanup.evidence.operations.end(),
+                std::make_move_iterator(topology.operations.begin()),
+                std::make_move_iterator(topology.operations.end()));
+        }
+    }
     cleanup.evidence.performance.repairMs = ElapsedMilliseconds(repairStart);
     cleanup.evidence.repairAttempted = !cleanup.evidence.operations.empty();
 
     const Clock::time_point postStart = Clock::now();
     BuildPostEvidence(request, cleanup);
     cleanup.evidence.performance.postDiagnosticsMs = ElapsedMilliseconds(postStart);
+    if (topologyBlocked)
+    {
+        cleanup.evidence.status = MeshRepairStatus::ManualRepairRequired;
+        cleanup.evidence.attributePreservation.status = topologyAttributeStatus;
+        cleanup.evidence.attributePreservation.pass = false;
+        cleanup.evidence.admission.postRepairStrictPass = false;
+        cleanup.evidence.admission.blockerCodes.push_back(topologyBlockerCode);
+        cleanup.evidence.admission.suggestedActions.push_back(
+            "inspect guarded vertex weld and winding evidence");
+    }
 
     const Clock::time_point hashStart = Clock::now();
     cleanup.evidence.hashes.postRepairGeometryHash =

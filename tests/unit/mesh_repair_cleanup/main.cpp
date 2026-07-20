@@ -5,6 +5,7 @@
 #include "slicer_core/geometry/repair/MeshRepairHash.h"
 #include "slicer_core/geometry/repair/MeshRepairService.h"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 
@@ -61,6 +62,83 @@ slicer_core::MeshRepairCleanupRequest MakeRequest(
         0.10);
     request.robustnessOptions.max_triangle_pair_checks = 100000U;
     return request;
+}
+
+bool HasOperation(
+    const slicer_core::MeshRepairResult& evidence,
+    const slicer_core::MeshRepairOperationType type)
+{
+    return std::any_of(
+        evidence.operations.begin(),
+        evidence.operations.end(),
+        [type](const slicer_core::MeshRepairOperation& operation)
+        {
+            return operation.type == type;
+        });
+}
+
+slicer_core::AdaptedTriangleMesh MakeSplitVertexBox()
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    const std::size_t duplicateIndex = mesh.mesh.vertices.size();
+    slicer_core::Vec3 duplicate = mesh.mesh.vertices.front();
+    duplicate.x += 0.00025;
+    mesh.mesh.vertices.push_back(duplicate);
+    mesh.mesh.triangles.front().at(0U) = static_cast<int>(duplicateIndex);
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    return mesh;
+}
+
+slicer_core::AdaptedTriangleMesh MakeTwoNearbyBoxes()
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    const slicer_core::TriangleMeshData second =
+        slicer_core::MakeGeneratedBoxMesh(1.0, 1.0, 1.0);
+    const std::size_t vertexOffset = mesh.mesh.vertices.size();
+    for (slicer_core::Vec3 vertex : second.vertices)
+    {
+        vertex.x += 1.00025;
+        mesh.mesh.vertices.push_back(vertex);
+    }
+    for (const std::array<int, 3>& triangle : second.triangles)
+    {
+        mesh.mesh.triangles.push_back({
+            triangle.at(0U) + static_cast<int>(vertexOffset),
+            triangle.at(1U) + static_cast<int>(vertexOffset),
+            triangle.at(2U) + static_cast<int>(vertexOffset)});
+        mesh.triangle_attributes.push_back(MakeAttributes(mesh.triangle_attributes.size()));
+    }
+    mesh.mesh.bbox_mm.max.x = 2.00025;
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    return mesh;
+}
+
+slicer_core::AdaptedTriangleMesh MakeNonOrientableStrip()
+{
+    slicer_core::AdaptedTriangleMesh mesh;
+    mesh.mesh.source_name = "generated-non-orientable-strip";
+    mesh.mesh.vertices = {
+        {0.0, 1.0, 0.0},
+        {0.0, 0.0, 0.0},
+        {1.0, 1.0, 0.0},
+        {1.0, 0.0, 0.0},
+        {2.0, 1.0, 0.0},
+        {2.0, 0.0, 0.0}};
+    mesh.mesh.triangles = {
+        {0, 1, 2},
+        {1, 3, 2},
+        {2, 3, 4},
+        {3, 5, 4},
+        {4, 5, 1},
+        {5, 0, 1}};
+    mesh.mesh.bbox_mm.min = {0.0, 0.0, 0.0};
+    mesh.mesh.bbox_mm.max = {2.0, 1.0, 0.001};
+    for (std::size_t index{0U}; index < mesh.mesh.triangles.size(); ++index)
+    {
+        mesh.triangle_attributes.push_back(MakeAttributes(index));
+    }
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    return mesh;
 }
 
 const slicer_core::MeshRepairTriangleMapping* FindMapping(
@@ -299,6 +377,121 @@ bool TestInvalidTriangleIndexUsesStableError()
     return ExpectTrue(false, "invalid triangle index should throw");
 }
 
+bool TestConstrainedVertexWeldClosesSplitVertexBox()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeSplitVertexBox();
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    request.options.allowVertexWeld = true;
+    request.options.weldToleranceMm = 0.001;
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::RepairedStrictPass,
+               "safe vertex weld should pass strict")
+        && ExpectTrue(
+            HasOperation(cleanup.evidence, slicer_core::MeshRepairOperationType::WeldVertex),
+            "safe vertex weld should be recorded")
+        && ExpectTrue(cleanup.candidate.mesh.vertices.size() == 8U, "weld should merge one vertex")
+        && ExpectTrue(cleanup.evidence.postRepair.connectedComponents == 1U, "component count should remain one")
+        && ExpectTrue(cleanup.evidence.vertexMappings.size() == 8U, "every output vertex should be mapped")
+        && ExpectTrue(
+            std::any_of(
+                cleanup.evidence.vertexMappings.begin(),
+                cleanup.evidence.vertexMappings.end(),
+                [](const slicer_core::MeshRepairVertexMapping& mapping)
+                {
+                    return mapping.sourceVertexIndices.size() == 2U;
+                }),
+            "one output vertex should map both welded sources");
+}
+
+bool TestVertexWeldDoesNotMergeConnectedComponents()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeTwoNearbyBoxes();
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    request.options.allowVertexWeld = true;
+    request.options.weldToleranceMm = 0.001;
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               !HasOperation(cleanup.evidence, slicer_core::MeshRepairOperationType::WeldVertex),
+               "cross-component near vertices must not weld")
+        && ExpectTrue(cleanup.evidence.postRepair.connectedComponents == 2U, "two components should remain")
+        && ExpectTrue(cleanup.candidate.mesh.vertices.size() == 16U, "cross-component vertices should remain");
+}
+
+bool TestVertexWeldThatCreatesDegenerateFacesIsBlocked()
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    mesh.mesh.vertices.at(1U).x = 0.00025;
+    mesh.mesh.bbox_mm.max.x = 0.00025;
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    request.options.allowVertexWeld = true;
+    request.options.weldToleranceMm = 0.001;
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::ManualRepairRequired,
+               "unsafe weld should remain manual")
+        && ExpectTrue(
+            cleanup.evidence.attributePreservation.status == "blocked_vertex_weld_guard",
+            "unsafe weld should expose its guard")
+        && ExpectTrue(
+            !HasOperation(cleanup.evidence, slicer_core::MeshRepairOperationType::WeldVertex),
+            "unsafe weld must not be recorded as executed")
+        && ExpectTrue(cleanup.candidate.mesh.vertices.size() == 8U, "unsafe candidate should be discarded");
+}
+
+bool TestUniqueWindingPropagationFlipsTriangleAndUv()
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    std::swap(mesh.mesh.triangles.front().at(1U), mesh.mesh.triangles.front().at(2U));
+    std::swap(mesh.triangle_attributes.front().uv.at(1U), mesh.triangle_attributes.front().uv.at(2U));
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    request.options.allowWindingRepair = true;
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::RepairedStrictPass,
+               "unique winding propagation should pass strict")
+        && ExpectTrue(
+            HasOperation(cleanup.evidence, slicer_core::MeshRepairOperationType::FlipTriangleWinding),
+            "winding flip should be recorded")
+        && ExpectTrue(
+            cleanup.candidate.mesh.triangles.front()
+                == slicer_core::MakeGeneratedBoxMesh(1.0, 1.0, 1.0).triangles.front(),
+            "triangle winding should be restored")
+        && ExpectTrue(
+            cleanup.candidate.triangle_attributes.front().uv.at(1U).u == 1.0,
+            "per-corner UV should follow the flipped corner");
+}
+
+bool TestNonOrientableWindingConflictIsBlocked()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeNonOrientableStrip();
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    request.options.allowWindingRepair = true;
+    request.robustnessOptions.max_triangle_pair_checks = 0U;
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::ManualRepairRequired,
+               "non-orientable conflict should remain manual")
+        && ExpectTrue(
+            cleanup.evidence.attributePreservation.status == "blocked_winding_ambiguity",
+            "winding conflict should expose its guard")
+        && ExpectTrue(
+            !HasOperation(cleanup.evidence, slicer_core::MeshRepairOperationType::FlipTriangleWinding),
+            "ambiguous winding must not mutate triangles");
+}
+
 }  // namespace
 
 int main()
@@ -310,7 +503,12 @@ int main()
         && TestConfirmedSelfIntersectionTakesPriorityOverAttributeConflict()
         && TestCleanupEvidenceIsDeterministic()
         && TestDisabledCleanupUsesStableError()
-        && TestInvalidTriangleIndexUsesStableError();
+        && TestInvalidTriangleIndexUsesStableError()
+        && TestConstrainedVertexWeldClosesSplitVertexBox()
+        && TestVertexWeldDoesNotMergeConnectedComponents()
+        && TestVertexWeldThatCreatesDegenerateFacesIsBlocked()
+        && TestUniqueWindingPropagationFlipsTriangleAndUv()
+        && TestNonOrientableWindingConflictIsBlocked();
     if (!passed)
     {
         return 1;

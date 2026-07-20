@@ -122,7 +122,9 @@ struct MeshRepairOptions
 {
     bool enabled{false};
     std::string mode{"strict_closed"};
+    bool allowVertexWeld{false};
     double weldToleranceMm{0.0};
+    bool allowWindingRepair{false};
     std::uint64_t maxBoundaryLoopEdges{0U};
     double maxBoundaryLoopDiameterMm{0.0};
     bool allowNewFaces{false};
@@ -217,6 +219,15 @@ struct MeshRepairTriangleMapping
 };
 
 /**
+ * @brief Deterministic output vertex provenance after a repair operation set.
+ */
+struct MeshRepairVertexMapping
+{
+    std::uint64_t outputVertexIndex{0U};
+    std::vector<std::uint64_t> sourceVertexIndices;
+};
+
+/**
  * @brief Topology facts captured before or after a repair candidate.
  */
 struct MeshRepairDiagnosticsSummary
@@ -298,6 +309,7 @@ struct MeshRepairResult
     MeshRepairEligibility eligibility;
     std::vector<MeshRepairOperation> operations;
     std::vector<MeshRepairTriangleMapping> sourceMappings;
+    std::vector<MeshRepairVertexMapping> vertexMappings;
     MeshRepairAttributePreservation attributePreservation;
     MeshRepairDiagnosticsSummary postRepair;
     MeshRepairAdmission admission;

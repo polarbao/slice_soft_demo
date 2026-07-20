@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-20
 > 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成，真实 OBJ Release budget 被 topology 阻断；12E-08C-R1-01..04、R2-01 已完成，R2-02 READY，R2/R3 与 R3-01A 准备已补齐；legacy/global_surface_shell 双模式与统一 TIFF 目标已固化但未实现，12E-08D 继续阻断；12F-00/01 已完成、性能算法任务未开始
+> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成，真实 OBJ Release budget 被 topology 阻断；12E-08C-R1-01..04、R2-01/02 已完成，R2-03 READY，R2/R3 与 R3-01A 准备已补齐；legacy/global_surface_shell 双模式与统一 TIFF 目标已固化但未实现，12E-08D 继续阻断；12F-00/01 已完成、性能算法任务未开始
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -38,7 +38,7 @@
 最新完成阶段：12E-08C 默认 OFF Release 证据与 Legacy Regression
 当前执行阶段：12E-08C-R1 完成，R2-01 保守 cleanup READY
 最新完成任务：12E-08C-R1-04 真实模型 Pre-Repair Baseline
-准备任务：12E-08C-R2-02 READY；R3-01A 完整自相交证据已准备；12E-09A diagnostic UI 可并行；12E-08D 等待 repair/strict/Release gate；12F-02 等待用户明确启动
+准备任务：12E-08C-R2-03 READY；R3-01A 完整自相交证据已准备；12E-09A diagnostic UI 可并行；12E-08D 等待 repair/strict/Release gate；12F-02 等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -324,7 +324,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
 12D：R0/R1/R2/R3 已完成，12D-10 三个真实 OBJ 验收通过；
-12E：12E-01..07、12E-08A/08B/08C、12E-08C-R1-01..04 与 R2-01 已完成；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release regression、Mesh Repair DTO/hash/report contract、Eligibility、Generated Golden、真实模型 Baseline、保守 Cleanup 与 Report Schema 可复现；真实 OBJ topology budget BLOCKED；R2-02 READY；12E-08D BLOCKED；
+12E：12E-01..07、12E-08A/08B/08C、12E-08C-R1-01..04 与 R2-01/02 已完成；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release regression、Mesh Repair DTO/hash/report contract、Eligibility、Generated Golden、真实模型 Baseline、保守 Cleanup、Weld/Winding Guard 与 Report Schema 可复现；真实 OBJ topology budget BLOCKED；R2-03 READY；12E-08D BLOCKED；
 12F：Release/Debug 统一运行环境与专项文档已建立；12F-02 Release 性能基线刷新等待用户明确启动。
 ```
 
@@ -418,4 +418,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、12E-08C-R1-01..04 和 R2-01 已完成；12F-00/01 已完成。下一允许的 12E 原子任务为 12E-08C-R2-02；12E-09A 可并行准备，12E-08D 被真实 OBJ repair/strict/Release gate 阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、12E-08C-R1-01..04 和 R2-01/02 已完成；12F-00/01 已完成。下一允许的 12E 原子任务为 12E-08C-R2-03；12E-09A 可并行准备，12E-08D 被真实 OBJ repair/strict/Release gate 阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。

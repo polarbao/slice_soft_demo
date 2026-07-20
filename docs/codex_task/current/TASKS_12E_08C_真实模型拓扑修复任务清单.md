@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01 COMPLETE / R2-02 READY
+> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01/02 COMPLETE / R2-03 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R2-02
+> 当前原子任务：无；下一允许任务为 12E-08C-R2-03
 
 ## 1. 总目标
 
@@ -103,7 +103,7 @@ self-intersection 保持阻断。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R2_0
 
 ### 12E-08C-R2-02 Vertex Weld、Winding 与组件守门
 
-状态：READY。
+状态：COMPLETE。
 
 范围：受约束顶点焊接、唯一 local winding 传播、组件不隐式 merge。
 
@@ -111,13 +111,20 @@ self-intersection 保持阻断。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R2_0
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_02_VertexWeldWindingComponentGuard准备.md`。
 
+实际结果：新增受约束空间桶 weld、共享边 parity winding 传播、组件不隐式 merge、UV corner 同步和
+`vertexMappings[]`。generated safe/blocked fixtures 和四个真实 case 双运行证据稳定；真实 OBJ 未制造模型专用
+操作且继续 manual。结果见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R2_02_VertexWeldWindingComponentGuard结果.md`。
+
 ### 12E-08C-R2-03 Boundary Loop Repair
 
-状态：BLOCKED BY R2-02。
+状态：READY。
 
 范围：简单闭环分类、stitch/hole-fill、new-face attribute/fallback policy。
 
 完成标准：简单 fixture post strict PASS；非平面/超预算/属性未知 case blocked。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_03_BoundaryLoopRepair准备.md`。
 
 ### 12E-08C-R2-04 Post-Repair Strict 与 Attribute Guard
 

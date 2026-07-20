@@ -137,6 +137,10 @@ bool HashesAreStableAndIndependent()
     optionsChanged.weldToleranceMm = 0.002;
     const slicer_core::MeshRepairHashes changedOptionsHashes =
         slicer_core::ComputeMeshRepairPreHashes(original, optionsChanged);
+    slicer_core::MeshRepairOptions windingOptions = options;
+    windingOptions.allowWindingRepair = true;
+    const slicer_core::MeshRepairHashes windingOptionHashes =
+        slicer_core::ComputeMeshRepairPreHashes(original, windingOptions);
 
     return ExpectTrue(first.preRepairGeometryHash == second.preRepairGeometryHash, "geometry hash repeats")
         && ExpectTrue(first.preRepairAttributeHash == second.preRepairAttributeHash, "attribute hash repeats")
@@ -146,7 +150,8 @@ bool HashesAreStableAndIndependent()
         && ExpectTrue(first.preRepairAttributeHash == geometryHashes.preRepairAttributeHash, "geometry change keeps attribute hash")
         && ExpectTrue(first.preRepairGeometryHash == attributeHashes.preRepairGeometryHash, "attribute change keeps geometry hash")
         && ExpectTrue(first.preRepairAttributeHash != attributeHashes.preRepairAttributeHash, "attribute change changes attribute hash")
-        && ExpectTrue(first.optionsHash != changedOptionsHashes.optionsHash, "options change changes options hash");
+        && ExpectTrue(first.optionsHash != changedOptionsHashes.optionsHash, "options change changes options hash")
+        && ExpectTrue(first.optionsHash != windingOptionHashes.optionsHash, "winding option changes options hash");
 }
 
 bool OperationHashIsDeterministic()

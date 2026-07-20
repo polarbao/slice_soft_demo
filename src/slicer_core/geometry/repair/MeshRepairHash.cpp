@@ -355,7 +355,9 @@ std::string ComputeMeshRepairOptionsHash(const MeshRepairOptions& options)
     encoder.AppendString("mesh_repair_canonical.1/options");
     encoder.AppendBoolean(options.enabled);
     encoder.AppendString(options.mode);
+    encoder.AppendBoolean(options.allowVertexWeld);
     encoder.AppendDouble(options.weldToleranceMm);
+    encoder.AppendBoolean(options.allowWindingRepair);
     encoder.AppendUnsigned(options.maxBoundaryLoopEdges);
     encoder.AppendDouble(options.maxBoundaryLoopDiameterMm);
     encoder.AppendBoolean(options.allowNewFaces);

@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08C-R1-01..04 and R2-01 complete; Release budget remains blocked by real OBJ topology; R2-02 vertex weld/winding/component guard is next; dual legacy/global_surface_shell target and unified TIFF contract documented but not implemented
+- Current phase: Stage 12E-08C-R1-01..04 and R2-01/02 complete; Release budget remains blocked by real OBJ topology; R2-03 boundary-loop repair is next; dual legacy/global_surface_shell target and unified TIFF contract documented but not implemented
 - Latest completed milestone: Stage 12E-08C default-OFF Release evidence and legacy regression
-- Latest completed task: `12E-08C-R2-01 conservative degenerate/exact-duplicate cleanup`
-- Current task: none active; next allowed atomic task is `12E-08C-R2-02 Vertex Weld/Winding/Component Guard`
-- Prepared stage: R2-02 and later R2/R3 preparation complete, including R3-01A complete self-intersection evidence; `12E-09A diagnostic UI` also prepared; 12E-08D dual-mode router/shared-writer work is documented but blocked; 12E-09B remains blocked
+- Latest completed task: `12E-08C-R2-02 guarded vertex weld/winding/component preservation`
+- Current task: none active; next allowed atomic task is `12E-08C-R2-03 Boundary Loop Repair`
+- Prepared stage: R2-03 and later R2/R3 preparation complete, including R3-01A complete self-intersection evidence; `12E-09A diagnostic UI` also prepared; 12E-08D dual-mode router/shared-writer work is documented but blocked; 12E-09B remains blocked
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

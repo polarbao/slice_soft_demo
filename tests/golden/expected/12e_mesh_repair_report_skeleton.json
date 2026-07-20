@@ -66,6 +66,8 @@
   "operations": [],
   "options": {
     "allowNewFaces": false,
+    "allowVertexWeld": false,
+    "allowWindingRepair": false,
     "enabled": false,
     "maxBoundaryLoopDiameterMm": 0.5,
     "maxBoundaryLoopEdges": 32,

@@ -7,7 +7,7 @@
 
 12E 已完成 12E-01 至 12E-07 以及 12E-08A/08B/08C。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer、12D 模型域与完整材料域精确闭环联动、classification-to-raster 确定性映射和默认 OFF Release 证据轨道也已建立。
 
-当前两个候选仍为 diagnostic-only。12E-08A 已在 world-space raster center 上保持 texture/fill 精确互补和真实 layerIndex/zMm；12E-08B 已将支撑、内部空洞、表面/外侧光油和最终 RGBWSV 通道纳入完整闭环；12E-08C 的 Release 回归通过，但三个真实 OBJ 被 strict topology 阻断，预算阈值未冻结。12E-08C-R1 与 R2-01 保守 cleanup 已完成；R2-02 READY。12E-08D 继续被后续 repair/post-strict、完整自相交证据、真实模型预算和用户生产路径确认阻断。
+当前两个候选仍为 diagnostic-only。12E-08A 已在 world-space raster center 上保持 texture/fill 精确互补和真实 layerIndex/zMm；12E-08B 已将支撑、内部空洞、表面/外侧光油和最终 RGBWSV 通道纳入完整闭环；12E-08C 的 Release 回归通过，但三个真实 OBJ 被 strict topology 阻断，预算阈值未冻结。12E-08C-R1 与 R2-01/02 已完成；R2-03 READY。12E-08D 继续被后续 repair/post-strict、完整自相交证据、真实模型预算和用户生产路径确认阻断。
 
 ## 2. Current State
 
@@ -71,7 +71,7 @@ Qt UI 与 preview；
 | 12E-08A | COMPLETE / DIAGNOSTIC ONLY | classification-to-raster、量化、coverage、报告与 generated fixture |
 | 12E-08B | COMPLETE / DIAGNOSTIC ONLY | 完整材料 semantic sidecar、五类 gap、S/V 通道一致性与报告 |
 | 12E-08C | COMPLETE / BUDGET BLOCKED | Release evidence 与 legacy regression 完成；3 个真实 OBJ strict topology 阻断 |
-| 12E-08C-R1/R2/R3 | IN PROGRESS / R1 COMPLETE / R2-01 COMPLETE / R2-02 READY | DTO/hash/report、eligibility、generated golden、真实模型 baseline 与保守 cleanup 已完成；后续 repair、完整自相交证据、统一 post strict 与 Release Gate 待执行 |
+| 12E-08C-R1/R2/R3 | IN PROGRESS / R1 COMPLETE / R2-01/02 COMPLETE / R2-03 READY | DTO/hash/report、eligibility、generated golden、真实模型 baseline、cleanup 与 guarded topology 已完成；后续 boundary/non-manifold repair、完整自相交证据、统一 post strict 与 Release Gate 待执行 |
 | 12E-08D | BLOCKED / REQUIRES CONFIRMATION | production package、RIP strict 与 admission |
 | 12E-09 | 09A READY / 09B BLOCKED | Qt diagnostic UI 与 Effective Config 已准备；production Profile 等待 08D |
 | 12E-10 | PLANNED | 真实模型和收口 |
@@ -92,9 +92,9 @@ Qt UI 与 preview；
 12E-08A：COMPLETE；
 12E-08B：COMPLETE；
 12E-08C：COMPLETE / RELEASE BUDGET BLOCKED；
-12E-08C-R1/R2/R3：IN PROGRESS，R1 COMPLETE，R2-01 COMPLETE，R2-02 READY；
+12E-08C-R1/R2/R3：IN PROGRESS，R1 COMPLETE，R2-01/02 COMPLETE，R2-03 READY；
 12E-08D：BLOCKED BY REAL OBJ TOPOLOGY BUDGET AND CONFIRMATION；
-当前没有 active code task；下一任务为 12E-08C-R2-02；
+当前没有 active code task；下一任务为 12E-08C-R2-03；
 12E R0/R1 原型不要求先完成 repair；
 12E production admission 必须复核 12D exact closure；
 不得把 12E 分区逻辑塞入 12D repair 任务。
@@ -500,8 +500,8 @@ R3：Real Model & Release Gate。
 ```
 
 已生成正式 Decision、PRD、DEV、DEMO、ROADMAP、Report Schema、Acceptance Matrix、Prep、任务清单、
-执行指令、启动报告和 AI handoff。R1-01..04 与 R2-01 已完成；`repair_then_strict` 当前仅有保守 cleanup
-诊断候选，尚未生产接入；下一原子任务为 `12E-08C-R2-02`。12E-08D 继续 BLOCKED。
+执行指令、启动报告和 AI handoff。R1-01..04 与 R2-01/02 已完成；`repair_then_strict` 当前已有保守 cleanup
+与 guarded topology 诊断候选，尚未生产接入；下一原子任务为 `12E-08C-R2-03`。12E-08D 继续 BLOCKED。
 
 ## 22. 双切片模式与统一 TIFF 目标状态
 
@@ -521,7 +521,7 @@ Qt 双模式生产选择器：NOT IMPLEMENTED；
 目标状态中，两种模式只在生产层组合之前分叉，最终共用现有 TIFF writer、manifest、preview/report 和
 RIP Reader。任何模式只有在完整 TIFF 写出并通过协议校验后才能标记 production success；global
 unavailable/blocked 禁止静默回退 legacy。该补充已形成 Decision、Config Schema、08D Prep 和 AI handoff，
-不改变当前下一原子任务 `12E-08C-R2-02`。
+不改变当前下一原子任务 `12E-08C-R2-03`。
 
 ## 23. 12E-08C-R1-04 实际结果
 
@@ -537,4 +537,11 @@ duplicate，并保持组件不隐式 merge；完整自相交证据已新增 R3-0
 R2-01 已实现 adapter degenerate provenance、同属性同向 exact duplicate cleanup、source mapping、operation/post
 hash 和真实模型重复性脚本。`nai_you_new`、`aishen_fudiao` 各记录 1 个 adapter-filtered degenerate；
 `meigui_fudiao` 与闭合 3MF 为 no-op。opposite duplicate 和属性冲突均不自动删除，三个 OBJ 继续 manual，
-闭合 3MF 继续 strict PASS。R2-02 准备完成；R2-03..04/R3/08D 仍按 Gate 阻断。
+闭合 3MF 继续 strict PASS。该结果作为 R2-02 的输入基线；后续阶段仍按原子 Gate 推进。
+
+## 25. 12E-08C-R2-02 实际结果
+
+R2-02 已实现受约束 vertex weld、唯一 local winding 传播、组件不隐式 merge、UV corner 同步和
+`vertexMappings[]`。generated safe/negative fixtures 通过；四个 required case 双运行 stable projection 通过。
+三个 OBJ 无新增 weld/flip 并继续 manual，闭合 3MF no-op strict PASS。R2-03 准备完成；R2-04/R3/08D
+继续按 Gate 阻断。

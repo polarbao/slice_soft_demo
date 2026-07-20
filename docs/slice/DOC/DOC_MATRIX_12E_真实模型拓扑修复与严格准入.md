@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 真实模型拓扑修复与严格准入
 
-> 文档状态：PREPARED
+> 文档状态：IN PROGRESS / R2-01/02 EVIDENCE FROZEN
 > 日期：2026-07-20
 
 ## 1. Gate Matrix
@@ -45,12 +45,12 @@
 
 ## 4. Real Models
 
-| Case | Baseline | R2-01 output | R2/R3 acceptance |
-|---|---|---|---|
-| `nai_you_new` | boundary=113, degenerate=1, components=10, self-check sampled | 1 adapter-degenerate operation，manual | strict PASS or manual required |
-| `aishen_fudiao` | boundary=3, nonManifold=59, opposite=2, components=10, self-check sampled | 1 adapter-degenerate operation，manual | strict PASS or manual required |
-| `meigui_fudiao` | nonManifold=10940, opposite=7192, components=2, self-check sampled | no-op，manual | strict PASS or manual required |
-| Texture2D 3MF | closed | no-op `strict_pass_no_repair` | geometry/attribute hash stable |
+| Case | Baseline | R2-01 output | R2-02 output | R2/R3 acceptance |
+|---|---|---|---|---|
+| `nai_you_new` | boundary=113, degenerate=1, components=10, self-check sampled | 1 adapter-degenerate operation，manual | weld=0、flip=0、V/C 不变 | strict PASS or manual required |
+| `aishen_fudiao` | boundary=3, nonManifold=59, opposite=2, components=10, self-check sampled | 1 adapter-degenerate operation，manual | weld=0、flip=0、V/C 不变 | strict PASS or manual required |
+| `meigui_fudiao` | nonManifold=10940, opposite=7192, components=2, self-check sampled | no-op，manual | weld=0、flip=0、V/C 不变 | strict PASS or manual required |
+| Texture2D 3MF | closed | no-op `strict_pass_no_repair` | no-op `strict_pass_no_repair` | geometry/attribute hash stable |
 
 专项验收允许诚实的 manual required；12E-08D required-case Gate 不允许把 manual required 计为 PASS。
 真实 OBJ 的 sampled self-intersection 也不得计为 strict PASS，必须先完成 R3-01A 完整证据。

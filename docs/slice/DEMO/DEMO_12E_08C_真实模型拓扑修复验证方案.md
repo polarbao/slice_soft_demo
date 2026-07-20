@@ -125,6 +125,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r2_clean
 证据脚本缺少 R1 effective config 时自动生成 baseline。四个 case 各执行两次，只写诊断 JSON，断言默认
 OpenVDB OFF、operation 范围、source mapping、post diagnostics 和 stable projection，不写 TIFF/package。
 
+### 9.2 R2-02 已固化命令
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_cleanup_unit_tests mesh_repair_contract_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(r2_02|cleanup|contract|preflight)" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r2_02_topology_evidence.ps1 -BuildDir build -Config Debug
+```
+
+generated fixture 覆盖 safe weld、跨组件近邻、退化阻断、唯一 winding 和 non-orientable 歧义。真实模型
+逐 case 双运行，组件数、vertex mapping 和 stable projection 一致；本任务不要求真实 OBJ 获得 strict PASS。
+
 ## 10. 退出标准
 
 ```text
