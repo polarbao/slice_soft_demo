@@ -5,6 +5,7 @@
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
 #include "slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h"
+#include "slicer_core/raster/TextureFillPartitionRasterMapper.h"
 
 #include <algorithm>
 #include <cmath>
@@ -22,6 +23,7 @@ using slicer_core::SliceConfig;
 using slicer_core::TextureFillPartitionConformanceResult;
 using slicer_core::TextureFillPartitionClosureAdapterResult;
 using slicer_core::TextureFillPartitionDiagnosticComposerResult;
+using slicer_core::TextureFillPartitionRasterMappingResult;
 using slicer_core::TextureFillPartitionStats;
 using slicer_core::TextureFillPartitionTextureTransferResult;
 using slicer_core::TextureFillPartitionWidthSweepResult;
@@ -102,7 +104,8 @@ Json BuildPartition(const GlobalTextureFillPartitionResult& result)
 
 Json BuildPerformance(
     const GlobalTextureFillPartitionResult& result,
-    const TextureFillPartitionTextureTransferResult* transfer = nullptr)
+    const TextureFillPartitionTextureTransferResult* transfer = nullptr,
+    const TextureFillPartitionRasterMappingResult* rasterMapping = nullptr)
 {
     return Json::object({
         {"preflightMs", result.performance.topologyMs},
@@ -116,6 +119,10 @@ Json BuildPerformance(
          transfer == nullptr || !transfer->available
              ? Json{nullptr}
              : Json{transfer->stats.transferMs}},
+        {"rasterMappingMs",
+         rasterMapping == nullptr || !rasterMapping->available
+             ? Json{nullptr}
+             : Json{rasterMapping->stats.mappingMs}},
         {"totalCoreMs", result.performance.totalCoreMs},
         {"gridVoxelCount", result.performance.gridVoxelCount},
         {"maskBytes", result.performance.maskBytes},
@@ -301,6 +308,112 @@ Json BuildClosureLinkage(
         {"layerCount", static_cast<std::uint64_t>(closure->layers.size())},
         {"layers", Json{std::move(layers)}},
         {"issues", slicer_core::ValidationIssuesToJson(closure->issues)},
+    });
+}
+
+Json BuildRasterMapping(
+    const TextureFillPartitionRasterMappingResult* mapping)
+{
+    if (mapping == nullptr)
+    {
+        return Json::object({
+            {"availability", "unavailable"},
+            {"status", "not_evaluated"},
+            {"productionAcceptance", "not_evaluated"},
+            {"mappingMethod", "world_space_cell_containment"},
+            {"allTexture", false},
+            {"productionOutputWritten", false},
+            {"grid", Json::object({
+                 {"width", nullptr},
+                 {"height", nullptr},
+                 {"depth", nullptr},
+                 {"originXMm", nullptr},
+                 {"originYMm", nullptr},
+                 {"originZMm", nullptr},
+                 {"pixelPitchXMm", nullptr},
+                 {"pixelPitchYMm", nullptr},
+                 {"layerThicknessMm", nullptr},
+             })},
+            {"rasterVoxelCount", 0},
+            {"mappedSourceGridVoxels", 0},
+            {"outsideSourceGridVoxels", 0},
+            {"uniqueSourceVoxelCount", 0},
+            {"reusedSourceVoxelCount", 0},
+            {"modelRasterVoxels", 0},
+            {"textureSurfaceRasterVoxels", 0},
+            {"modelFillRasterVoxels", 0},
+            {"textureRgbRasterVoxels", 0},
+            {"overlapRasterVoxels", 0},
+            {"unassignedModelRasterVoxels", 0},
+            {"sourceModelCoverage", nullptr},
+            {"rasterModelCoverage", nullptr},
+            {"modelCoverageDelta", nullptr},
+            {"maxCenterQuantizationErrorMm", nullptr},
+            {"mappingMs", nullptr},
+            {"partitionPass", false},
+            {"layerCount", 0},
+            {"layers", Json::array({})},
+            {"issues", Json::array({})},
+        });
+    }
+
+    Json::Array layers;
+    layers.reserve(mapping->layers.size());
+    for (const slicer_core::TextureFillPartitionRasterLayer& layer : mapping->layers)
+    {
+        const auto countPrinted = [](const std::vector<std::uint8_t>& mask)
+        {
+            return static_cast<std::uint64_t>(std::count(
+                mask.begin(),
+                mask.end(),
+                static_cast<std::uint8_t>(1U)));
+        };
+        layers.push_back(Json::object({
+            {"layerIndex", layer.layerIndex},
+            {"zMm", layer.zMm},
+            {"modelRasterVoxels", countPrinted(layer.modelMask)},
+            {"textureSurfaceRasterVoxels", countPrinted(layer.textureSurfaceMask)},
+            {"modelFillRasterVoxels", countPrinted(layer.modelFillMask)},
+        }));
+    }
+    return Json::object({
+        {"availability", mapping->available ? "available" : "unavailable"},
+        {"status", mapping->status},
+        {"productionAcceptance", mapping->productionAcceptance},
+        {"mappingMethod", mapping->mappingMethod},
+        {"allTexture", mapping->allTexture},
+        {"productionOutputWritten", mapping->productionOutputWritten},
+        {"grid", Json::object({
+             {"width", mapping->grid.width},
+             {"height", mapping->grid.height},
+             {"depth", mapping->grid.depth},
+             {"originXMm", mapping->grid.originXMm},
+             {"originYMm", mapping->grid.originYMm},
+             {"originZMm", mapping->grid.originZMm},
+             {"pixelPitchXMm", mapping->grid.pixelPitchXMm},
+             {"pixelPitchYMm", mapping->grid.pixelPitchYMm},
+             {"layerThicknessMm", mapping->grid.layerThicknessMm},
+         })},
+        {"rasterVoxelCount", mapping->stats.rasterVoxelCount},
+        {"mappedSourceGridVoxels", mapping->stats.mappedSourceGridVoxels},
+        {"outsideSourceGridVoxels", mapping->stats.outsideSourceGridVoxels},
+        {"uniqueSourceVoxelCount", mapping->stats.uniqueSourceVoxelCount},
+        {"reusedSourceVoxelCount", mapping->stats.reusedSourceVoxelCount},
+        {"modelRasterVoxels", mapping->stats.modelRasterVoxels},
+        {"textureSurfaceRasterVoxels", mapping->stats.textureSurfaceRasterVoxels},
+        {"modelFillRasterVoxels", mapping->stats.modelFillRasterVoxels},
+        {"textureRgbRasterVoxels", mapping->stats.textureRgbRasterVoxels},
+        {"overlapRasterVoxels", mapping->stats.overlapRasterVoxels},
+        {"unassignedModelRasterVoxels", mapping->stats.unassignedModelRasterVoxels},
+        {"sourceModelCoverage", mapping->stats.sourceModelCoverage},
+        {"rasterModelCoverage", mapping->stats.rasterModelCoverage},
+        {"modelCoverageDelta", mapping->stats.modelCoverageDelta},
+        {"maxCenterQuantizationErrorMm", mapping->stats.maxCenterQuantizationErrorMm},
+        {"mappingMs", mapping->stats.mappingMs},
+        {"partitionPass", mapping->stats.partitionPass},
+        {"layerCount", static_cast<std::uint64_t>(mapping->layers.size())},
+        {"layers", Json{std::move(layers)}},
+        {"issues", slicer_core::ValidationIssuesToJson(mapping->issues)},
     });
 }
 
@@ -556,6 +669,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
         {"textureTransfer", BuildTextureTransfer(nullptr)},
         {"diagnosticComposer", BuildDiagnosticComposer(nullptr)},
         {"closureLinkage", BuildClosureLinkage(nullptr)},
+        {"rasterMapping", BuildRasterMapping(nullptr)},
         {"performance", Json::object({
              {"preflightMs", nullptr},
              {"topologyMs", nullptr},
@@ -565,6 +679,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
              {"distanceMs", nullptr},
              {"partitionMs", nullptr},
              {"textureTransferMs", nullptr},
+             {"rasterMappingMs", nullptr},
              {"totalCoreMs", nullptr},
              {"gridVoxelCount", nullptr},
              {"maskBytes", nullptr},
@@ -621,7 +736,8 @@ Json BuildTextureFillPartitionReport(
     const TextureFillPartitionConformanceResult* conformance,
     const TextureFillPartitionTextureTransferResult* transfer,
     const TextureFillPartitionDiagnosticComposerResult* composer,
-    const TextureFillPartitionClosureAdapterResult* closure)
+    const TextureFillPartitionClosureAdapterResult* closure,
+    const TextureFillPartitionRasterMappingResult* rasterMapping)
 {
     Json::Object report;
     report["schema"] = "slicesoft.texture_fill_partition.12e.1";
@@ -641,7 +757,8 @@ Json BuildTextureFillPartitionReport(
     report["textureTransfer"] = BuildTextureTransfer(transfer);
     report["diagnosticComposer"] = BuildDiagnosticComposer(composer);
     report["closureLinkage"] = BuildClosureLinkage(closure);
-    report["performance"] = BuildPerformance(result, transfer);
+    report["rasterMapping"] = BuildRasterMapping(rasterMapping);
+    report["performance"] = BuildPerformance(result, transfer, rasterMapping);
     report["queryStats"] = BuildQueryStats(result);
     report["layers"] = result.available ? BuildLayers(result) : Json::array({});
     report["issues"] = ValidationIssuesToJson(result.issues);

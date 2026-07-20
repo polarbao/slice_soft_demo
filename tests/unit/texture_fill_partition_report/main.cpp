@@ -3,6 +3,7 @@
 #include "slicer_core/json_value.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
 #include "slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h"
+#include "slicer_core/raster/TextureFillPartitionRasterMapper.h"
 #include "slicer_core/reports/TextureFillPartitionReport.h"
 
 #include <filesystem>
@@ -184,6 +185,9 @@ bool UnavailableMeasurementsRemainNull()
                !report.at("performance").at("textureTransferMs").is_number(),
                "unimplemented texture transfer timing is null")
         && ExpectTrue(
+               !report.at("performance").at("rasterMappingMs").is_number(),
+               "unimplemented raster mapping timing is null")
+        && ExpectTrue(
                report.at("textureTransfer").at("availability").as_string()
                    == "unavailable",
                "missing texture transfer has explicit availability")
@@ -192,7 +196,11 @@ bool UnavailableMeasurementsRemainNull()
                "missing diagnostic composer retains fixed channel order")
         && ExpectTrue(
                report.at("diagnosticComposer").at("emptyVoxels").as_int() == 0,
-               "missing diagnostic composer retains complete counters");
+               "missing diagnostic composer retains complete counters")
+        && ExpectTrue(
+               report.at("rasterMapping").at("availability").as_string()
+                   == "unavailable",
+               "missing raster mapping has explicit availability");
 }
 
 bool LayerTotalsMatchPartitionTotals()
@@ -317,6 +325,65 @@ bool ClosureLinkageEvidenceIsSerialized()
                "closure linkage writes no production output");
 }
 
+bool RasterMappingEvidenceIsSerialized()
+{
+    slicer_core::TextureFillPartitionRasterMappingResult mapping;
+    mapping.available = true;
+    mapping.status = "diagnostic";
+    mapping.allTexture = false;
+    mapping.grid.width = 2;
+    mapping.grid.height = 1;
+    mapping.grid.depth = 2;
+    mapping.grid.originXMm = 0.0;
+    mapping.grid.originYMm = 0.0;
+    mapping.grid.originZMm = 0.0;
+    mapping.grid.pixelPitchXMm = 0.05;
+    mapping.grid.pixelPitchYMm = 0.05;
+    mapping.grid.layerThicknessMm = 0.01;
+    mapping.layers.resize(2U);
+    mapping.layers.at(0).layerIndex = 0;
+    mapping.layers.at(0).zMm = 0.005;
+    mapping.layers.at(0).modelMask = {1U, 1U};
+    mapping.layers.at(0).textureSurfaceMask = {1U, 0U};
+    mapping.layers.at(0).modelFillMask = {0U, 1U};
+    mapping.layers.at(1) = mapping.layers.at(0);
+    mapping.layers.at(1).layerIndex = 1;
+    mapping.layers.at(1).zMm = 0.015;
+    mapping.stats.rasterVoxelCount = 4U;
+    mapping.stats.mappedSourceGridVoxels = 4U;
+    mapping.stats.uniqueSourceVoxelCount = 4U;
+    mapping.stats.modelRasterVoxels = 4U;
+    mapping.stats.textureSurfaceRasterVoxels = 2U;
+    mapping.stats.modelFillRasterVoxels = 2U;
+    mapping.stats.textureRgbRasterVoxels = 2U;
+    mapping.stats.sourceModelCoverage = 1.0;
+    mapping.stats.rasterModelCoverage = 1.0;
+    mapping.stats.modelCoverageDelta = 0.0;
+    mapping.stats.maxCenterQuantizationErrorMm = 0.02;
+    mapping.stats.mappingMs = 1.25;
+    mapping.stats.partitionPass = true;
+
+    const slicer_core::Json report = slicer_core::BuildTextureFillPartitionReport(
+        MakeConfig(),
+        MakeResult(),
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        &mapping);
+    const slicer_core::Json expected = LoadGolden(
+        "12e_texture_fill_partition_raster_mapping.json");
+    return ExpectTrue(
+               report.at("rasterMapping").dump(2) == expected.dump(2),
+               "raster mapping matches golden")
+        && ExpectTrue(
+               report.at("performance").at("rasterMappingMs").as_double() == 1.25,
+               "raster mapping timing is serialized")
+        && ExpectTrue(
+               !report.at("rasterMapping").at("productionOutputWritten").as_bool(),
+               "raster mapping writes no production output");
+}
+
 }  // namespace
 
 int main()
@@ -328,6 +395,7 @@ int main()
         {"layer_totals_match_partition_totals", LayerTotalsMatchPartitionTotals},
         {"transfer_and_composer_evidence_is_serialized", TransferAndComposerEvidenceIsSerialized},
         {"closure_linkage_evidence_is_serialized", ClosureLinkageEvidenceIsSerialized},
+        {"raster_mapping_evidence_is_serialized", RasterMappingEvidenceIsSerialized},
     };
     for (const auto& test : tests)
     {

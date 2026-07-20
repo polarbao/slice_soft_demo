@@ -137,6 +137,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/SlicePipeline.h
     src/slicer_core/raster/RasterBoundary.cpp
     src/slicer_core/raster/RasterBoundary.h
+    src/slicer_core/raster/TextureFillPartitionRasterMapper.cpp
+    src/slicer_core/raster/TextureFillPartitionRasterMapper.h
     src/slicer_core/reports/ReportBase.cpp
     src/slicer_core/reports/ReportBase.h
     src/slicer_core/reports/MaterialClosureReport.cpp
@@ -319,6 +321,12 @@ add_executable(texture_fill_partition_closure_adapter_unit_tests
 
 target_link_libraries(texture_fill_partition_closure_adapter_unit_tests PRIVATE slicer_core)
 
+add_executable(texture_fill_partition_raster_mapper_unit_tests
+    tests/unit/texture_fill_partition_raster_mapper/main.cpp
+)
+
+target_link_libraries(texture_fill_partition_raster_mapper_unit_tests PRIVATE slicer_core)
+
 add_executable(geometry_kernel_service_unit_tests
     tests/unit/geometry_kernel_service/main.cpp
 )
@@ -372,6 +380,7 @@ add_test(NAME texture_fill_partition_report_unit_tests COMMAND texture_fill_part
 add_test(NAME texture_fill_partition_texture_transfer_unit_tests COMMAND texture_fill_partition_texture_transfer_unit_tests)
 add_test(NAME texture_fill_partition_diagnostic_composer_unit_tests COMMAND texture_fill_partition_diagnostic_composer_unit_tests)
 add_test(NAME texture_fill_partition_closure_adapter_unit_tests COMMAND texture_fill_partition_closure_adapter_unit_tests)
+add_test(NAME texture_fill_partition_raster_mapper_unit_tests COMMAND texture_fill_partition_raster_mapper_unit_tests)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)

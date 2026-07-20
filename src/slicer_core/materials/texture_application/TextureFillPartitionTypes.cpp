@@ -103,6 +103,16 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
         return "E_12E_CLOSURE_COLOR_FILL_GAP";
     case TextureFillPartitionErrorCode::ClosureChannelOrderInvalid:
         return "E_12E_CLOSURE_CHANNEL_ORDER_INVALID";
+    case TextureFillPartitionErrorCode::RasterMappingInputInvalid:
+        return "E_12E_RASTER_MAPPING_INPUT_INVALID";
+    case TextureFillPartitionErrorCode::RasterMappingGridInvalid:
+        return "E_12E_RASTER_MAPPING_GRID_INVALID";
+    case TextureFillPartitionErrorCode::RasterMappingPartitionInvalid:
+        return "E_12E_RASTER_MAPPING_PARTITION_INVALID";
+    case TextureFillPartitionErrorCode::RasterMappingTransferInvalid:
+        return "E_12E_RASTER_MAPPING_TRANSFER_INVALID";
+    case TextureFillPartitionErrorCode::RasterMappingInvariantFailed:
+        return "E_12E_RASTER_MAPPING_INVARIANT_FAILED";
     case TextureFillPartitionErrorCode::SurfaceShellWidthBelowEffectiveMinimum:
         return "E_12E_SURFACE_SHELL_WIDTH_BELOW_EFFECTIVE_MINIMUM";
     case TextureFillPartitionErrorCode::AllTextureThresholdUnavailable:

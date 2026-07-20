@@ -67,6 +67,11 @@ enum class TextureFillPartitionErrorCode
     ClosureModelDomainGap,
     ClosureColorFillGap,
     ClosureChannelOrderInvalid,
+    RasterMappingInputInvalid,
+    RasterMappingGridInvalid,
+    RasterMappingPartitionInvalid,
+    RasterMappingTransferInvalid,
+    RasterMappingInvariantFailed,
     SurfaceShellWidthBelowEffectiveMinimum,
     AllTextureThresholdUnavailable,
 };

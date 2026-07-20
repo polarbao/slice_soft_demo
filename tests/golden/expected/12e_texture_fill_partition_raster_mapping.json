@@ -1,0 +1,54 @@
+{
+  "availability": "available",
+  "status": "diagnostic",
+  "productionAcceptance": "not_evaluated",
+  "mappingMethod": "world_space_cell_containment",
+  "allTexture": false,
+  "productionOutputWritten": false,
+  "grid": {
+    "width": 2,
+    "height": 1,
+    "depth": 2,
+    "originXMm": 0,
+    "originYMm": 0,
+    "originZMm": 0,
+    "pixelPitchXMm": 0.05,
+    "pixelPitchYMm": 0.05,
+    "layerThicknessMm": 0.01
+  },
+  "rasterVoxelCount": 4,
+  "mappedSourceGridVoxels": 4,
+  "outsideSourceGridVoxels": 0,
+  "uniqueSourceVoxelCount": 4,
+  "reusedSourceVoxelCount": 0,
+  "modelRasterVoxels": 4,
+  "textureSurfaceRasterVoxels": 2,
+  "modelFillRasterVoxels": 2,
+  "textureRgbRasterVoxels": 2,
+  "overlapRasterVoxels": 0,
+  "unassignedModelRasterVoxels": 0,
+  "sourceModelCoverage": 1,
+  "rasterModelCoverage": 1,
+  "modelCoverageDelta": 0,
+  "maxCenterQuantizationErrorMm": 0.02,
+  "mappingMs": 1.25,
+  "partitionPass": true,
+  "layerCount": 2,
+  "layers": [
+    {
+      "layerIndex": 0,
+      "zMm": 0.005,
+      "modelRasterVoxels": 2,
+      "textureSurfaceRasterVoxels": 1,
+      "modelFillRasterVoxels": 1
+    },
+    {
+      "layerIndex": 1,
+      "zMm": 0.015,
+      "modelRasterVoxels": 2,
+      "textureSurfaceRasterVoxels": 1,
+      "modelFillRasterVoxels": 1
+    }
+  ],
+  "issues": []
+}

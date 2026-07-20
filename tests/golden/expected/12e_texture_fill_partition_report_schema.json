@@ -58,6 +58,7 @@
     "distanceMs": 7,
     "partitionMs": 11,
     "textureTransferMs": null,
+    "rasterMappingMs": null,
     "totalCoreMs": 24,
     "gridVoxelCount": 4,
     "maskBytes": 12,

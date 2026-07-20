@@ -9,6 +9,7 @@ namespace slicer_core
 
 struct TextureFillPartitionDiagnosticComposerResult;
 struct TextureFillPartitionClosureAdapterResult;
+struct TextureFillPartitionRasterMappingResult;
 struct TextureFillPartitionTextureTransferResult;
 
 /**
@@ -33,6 +34,7 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config);
  * @param transfer Optional backend-neutral texture-transfer evidence.
  * @param composer Optional in-memory diagnostic-composer evidence.
  * @param closure Optional exact 12D model-domain closure linkage evidence.
+ * @param rasterMapping Optional deterministic classification-to-raster evidence.
  * @return Report conforming to slicesoft.texture_fill_partition.12e.1.
  */
 Json BuildTextureFillPartitionReport(
@@ -41,7 +43,8 @@ Json BuildTextureFillPartitionReport(
     const TextureFillPartitionConformanceResult* conformance = nullptr,
     const TextureFillPartitionTextureTransferResult* transfer = nullptr,
     const TextureFillPartitionDiagnosticComposerResult* composer = nullptr,
-    const TextureFillPartitionClosureAdapterResult* closure = nullptr);
+    const TextureFillPartitionClosureAdapterResult* closure = nullptr,
+    const TextureFillPartitionRasterMappingResult* rasterMapping = nullptr);
 
 /**
  * @brief Serialize deterministic Stage 12E width-sweep evidence.
