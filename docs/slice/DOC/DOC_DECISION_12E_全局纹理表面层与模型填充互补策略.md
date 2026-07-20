@@ -3,7 +3,7 @@
 > 文档状态：Decision / Stage 12E Planning
 > 日期：2026-07-16
 > 上游阶段：12A 彩色纹理材料填充支撑光油策略、12B-R2 OpenVDB SDF Utility、12C Qt 工作台、12D 横截面材料无缝闭环
-> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B COMPLETE，12E-08C TODO，12E-08D BLOCKED
+> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B/08C COMPLETE，Release budget BLOCKED，12E-08D BLOCKED
 
 ## 1. 决策结论
 

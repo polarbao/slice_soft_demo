@@ -187,3 +187,17 @@ Repair-disabled TIFF invariance gate：
 ```
 
 该脚本生成 baseline/diagnostic 两份 package，按 manifest layerIndex 比较全部生产 TIFF 的 SHA-256，并运行 RIP Reader。它不启用 repair，也不比较预期不同的 report/manifest 整体目录 hash。
+
+## 12E-08C Release Evidence
+
+默认 OpenVDB OFF 的真实模型诊断与 legacy 回归入口：
+
+```powershell
+cmake --build build --config Release
+.\scripts\run_12e_08c_release_evidence.ps1 -BuildDir build -Config Release
+ctest --test-dir build -C Release --output-on-failure
+```
+
+该脚本只写 `output/benchmarks/12e_08c` 诊断 JSON，不写 12E production package。核心时间排除
+TIFF/PNG/JSON 写盘。真实 OBJ 被 strict topology 阻断时，脚本仍应输出可审计报告并保持
+`productionAdmitted=false`；这类结果是证据完成，不是性能预算或生产准入通过。

@@ -1,9 +1,9 @@
 # DOC_PREP_12E-R5 Qt UI 与 Effective Config 准备
 
-> 文档状态：PREPARED / 12E-09A READY AFTER 12E-08C / 12E-09B BLOCKED BY 12E-08D
+> 文档状态：PREPARED / 12E-09A READY / 12E-09B BLOCKED BY 12E-08D
 > 日期：2026-07-20
 > 覆盖任务：12E-09 Qt UI 设置与 Effective Config
-> 前置状态：12E-08A/08B COMPLETE；12E-08C/08D 未完成
+> 前置状态：12E-08A/08B/08C COMPLETE；Release budget 与 12E-08D BLOCKED
 
 ## 1. 准备结论
 
@@ -13,7 +13,7 @@
 执行可分为两层：
 
 ```text
-12E-09A diagnostic UI：准备已完成，建议在 12E-08C 后实现并显式显示“诊断候选”；
+12E-09A diagnostic UI：准备与 12E-08C 前置证据已完成，可实现并显式显示“诊断候选/拓扑阻断”；
 12E-09B production Profile：必须等待 12E-08D admitted=true 后启用。
 ```
 
@@ -197,14 +197,55 @@ OpenVDB ON 可选 lane PASS。
 | texture transfer | PASS | 可显示候选 RGB |
 | classification-to-raster | 12E-08A PASS | 可显示真实 raster layer |
 | full material closure | 12E-08B PASS / DIAGNOSTIC | 可显示真实 Support/Varnish 状态 |
-| Release/legacy regression | 12E-08C TODO | 不得宣传生产性能 |
+| Release/legacy regression | 12E-08C COMPLETE；real OBJ budget BLOCKED | 09A 可展示诊断状态，不得宣传生产性能 |
 | production admission | 12E-08D NOT GRANTED | 不得启用生产 Profile |
 
-## 12. 最终判断
+## 12. 12E-09A 输出合同
+
+每个 UI session 的诊断结果固定写入：
+
+```text
+output/ui_sessions/<session>/reports/texture_fill_partition_report.json
+output/ui_sessions/<session>/slice_config.effective.json
+```
+
+UI 消费 `slicesoft.texture_fill_partition.12e.1` 的诊断结果，不直接把
+`slicesoft.texture_fill_partition.release_matrix.12e_08c.1` 当成当前模型结果。08C matrix 只作为
+能力基线和阻断证据。当前模型 UI 至少读取：
+
+```text
+status / backend / backendRole；
+issues[].code / severity / message / context；
+widthMetrics；
+partitionStats；
+rasterMapping；
+fullClosureLinkage；
+performance；
+productionAcceptance。
+```
+
+blocked case 必须保留 topology issue，相关数值未执行时显示“未评估”，不能把 `0/null` 显示成
+“0 ms / 0 MB 且通过”。
+
+## 13. 12E-09A 原子任务拆分
+
+| 原子任务 | 范围 | 完成标准 |
+|---|---|---|
+| 12E-09A-01 | 只读 diagnostic facade 与 UI DTO | 能返回 pending/unavailable/blocked/diagnostic；不写 package |
+| 12E-09A-02 | Effective Config 事务 | 保存 width、modelFill.material、来源 Profile 和派生阈值；不覆盖 fixture |
+| 12E-09A-03 | 中文控件与状态区 | 0.01 mm spinbox/slider、tooltip、阻断原因和 backend 可用状态 |
+| 12E-09A-04 | 异步 worker 与取消 | UI 不阻塞；关闭、取消、重复运行不悬挂 QObject 或复用 stale result |
+| 12E-09A-05 | 同层 preview | Texture/Fill/Partition/Support/Varnish 按真实 layerIndex/zMm 对齐 |
+| 12E-09A-06 | Smoke、文档与状态收口 | self-test、分辨率矩阵、最长中文、默认 OFF regression 通过 |
+
+每个原子任务独立提交。09A-01 开始前重新确认工作树与 Qt Runtime；09A-06 之前不得改变
+普通 Profile 的生产按钮语义。
+
+## 14. 最终判断
 
 ```text
 12E-09 文档准备：COMPLETE；
-12E-09A diagnostic UI：PREPARED，建议在 12E-08C 后执行；
+12E-09A diagnostic UI：READY，可进入执行；
 12E-09B production Profile：BLOCKED BY 12E-08D；
 12E production：NOT ADMITTED。
 ```

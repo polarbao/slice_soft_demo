@@ -171,9 +171,9 @@ productionAcceptance=not_evaluated。
 
 ## 12. 下一 Gate
 
-下一原子任务为 12E-08C：在默认 OpenVDB OFF 的 Release 轨道记录真实模型核心耗时、
-峰值内存和 legacy regression 证据。12E-08D 仍属于生产路径变更，必须在 08C 关闭后再次
-取得用户明确确认。
+本文完成时的下一原子任务为 12E-08C。该任务现已完成取证，结果见
+`DOC_EXEC_12E_R4C_默认OFFRelease真实模型与Legacy回归结果.md`；真实 OBJ topology 仍阻断
+Release budget。12E-08D 仍属于生产路径变更，必须先关闭预算阻断并再次取得用户明确确认。
 
-12E-09 准备文档已完整。08B 完成后，Support/Varnish 可在 09A 诊断 UI 中显示真实诊断状态；
-但 09A 仍建议等待 08C，09B production Profile 继续被 08D 阻断。
+12E-09 准备文档已完整。12E-09A diagnostic UI 现已 READY，09B production Profile 继续被
+08D 阻断。

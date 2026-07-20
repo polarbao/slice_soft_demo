@@ -6,7 +6,7 @@
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure 和 classification-to-raster；12E-08C 待执行，12E-08D production admission 仍被证据缺口和用户确认阻断。
+当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结，12E-08D production admission 继续阻断；12E-09A diagnostic UI 已可启动。
 
 ## 目录结构
 

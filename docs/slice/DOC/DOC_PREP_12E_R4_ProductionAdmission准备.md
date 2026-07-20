@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R4 Production Admission 准备
 
-> 文档状态：12E-08A/08B COMPLETE / 12E-08C TODO / 12E-08D BLOCKED
+> 文档状态：12E-08A/08B/08C COMPLETE / RELEASE BUDGET BLOCKED / 12E-08D BLOCKED
 > 日期：2026-07-20
 > 前置任务：12E-01 至 12E-07 COMPLETE
 > 覆盖任务：12E-08 Production Admission
@@ -284,8 +284,8 @@ OpenVDB 默认开关。
 | 12E model-domain closure | PASS | 保持 |
 | classification-to-raster mapping | PASS / DIAGNOSTIC | 12E-08A 已完成，继续保持不写 production |
 | full support/varnish closure | PASS / DIAGNOSTIC | 12E-08B 已完成，不写 production |
-| Release real-model budget | MISSING | 必须先完成 12E-08C |
-| legacy regression evidence | MISSING | 必须先完成 12E-08C |
+| Release real-model budget | BLOCKED | 12E-08C 已取证；3 个真实 OBJ 被 strict topology 阻断，阈值未冻结 |
+| legacy regression evidence | PASS | Release quick regression、RIP strict、Repair Disabled TIFF invariant 已通过 |
 | user production confirmation | NOT_GRANTED | 12E-08D 前再次确认 |
 
 ## 14. 最终判断

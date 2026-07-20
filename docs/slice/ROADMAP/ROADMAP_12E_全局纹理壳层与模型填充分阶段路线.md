@@ -13,7 +13,7 @@
 ```text
 1. 12D-R0/R1/R2/R3 已完成；
 2. 12E-R0 的 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；
-3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B 已完成；12E-08C 继续关闭 production evidence，12E-08D 前再次取得用户确认；
+3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C 已完成；真实 OBJ topology 阻断 Release budget，12E-08D 继续阻断，12E-09A diagnostic UI 可先行；
 4. 12E composer/production 接入需要已完成的 12D semantic_masks exact contract；
 5. 不要求 12D repair R3 完成后才能做 12E R1 算法原型，但 production admission 必须重新确认；
 6. 12E-01 已完成配置、DTO、稳定错误码和 unavailable report 骨架；未接入 production generation。

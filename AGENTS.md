@@ -21,7 +21,7 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-10 real-model material closure validation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07` and `12E-08A/08B` are complete. `12E-08C` remains the next evidence task; `12E-08D` remains blocked pending explicit production confirmation.
+- `12E-01/02/03/04/05/06/07` and `12E-08A/08B/08C` are complete. The 12E-08C Release evidence is blocked for real OBJ topology, so `12E-08D` remains blocked; `12E-09A` diagnostic UI is the next allowed task.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - 12E remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. `12E-08D` requires closed production gates and explicit user confirmation.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.

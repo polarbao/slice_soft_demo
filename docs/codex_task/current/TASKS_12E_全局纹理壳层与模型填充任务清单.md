@@ -2,7 +2,7 @@
 
 > 文档状态：12E-08A/08B COMPLETE / 12E-08 IN PROGRESS / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-17
-> 当前项目原子任务：无；下一原子任务为 12E-08C 默认 OFF Release 真实模型预算与 legacy regression
+> 当前项目原子任务：无；12E-08C 已完成证据收集但真实 OBJ budget BLOCKED；下一允许任务为 12E-09A diagnostic UI
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -337,7 +337,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：IN PROGRESS；12E-08A/08B COMPLETE，12E-08C TODO，12E-08D BLOCKED / REQUIRES CONFIRMATION
+状态：IN PROGRESS；12E-08A/08B/08C COMPLETE，Release budget BLOCKED，12E-08D BLOCKED / REQUIRES CONFIRMATION
 
 前置：
 
@@ -364,7 +364,7 @@ RIP strict PASS。
 docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 ```
 
-当前阻断：默认 OFF Release 真实模型预算和 legacy regression 证据尚未关闭。
+当前阻断：12E-08C 已完成取证，但 3 个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08D 仍需预算和用户明确确认。
 
 12E-08A 实际结果：
 
@@ -398,11 +398,13 @@ repairAttempted=false、productionOutputWritten=false、productionAcceptance=not
 docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
 ```
 
-剩余阻断：默认 OFF Release 真实模型预算、legacy regression 证据以及 12E-08D 用户明确确认。
+12E-08C 实际结果：Release build、21/21 CTest、quick regression、RIP strict 和 Repair Disabled TIFF invariant PASS；3MF fixture 分区 PASS；`nai_you_new`、`aishen_fudiao`、`meigui_fudiao` strict topology BLOCKED。结果入口：`docs/slice/DOC/DOC_EXEC_12E_R4C_默认OFFRelease真实模型与Legacy回归结果.md`。
+
+剩余阻断：真实 OBJ topology admission、可冻结的 Release 时间/内存预算以及 12E-08D 用户明确确认。
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：PREPARED；12E-09A 建议等待 12E-08C，12E-09B BLOCKED BY 12E-08D
+状态：PREPARED；12E-09A READY，12E-09B BLOCKED BY 12E-08D
 
 目标：
 
@@ -417,6 +419,19 @@ session effective config；
 ```
 
 验证：self-test、UI smoke、三种窗口尺寸、最长文本无重叠。
+
+12E-09A 原子任务：
+
+```text
+12E-09A-01 只读 diagnostic facade 与 UI DTO；
+12E-09A-02 Effective Config 事务与派生字段；
+12E-09A-03 中文 width/modelFill/status 控件；
+12E-09A-04 异步 worker、取消与生命周期；
+12E-09A-05 真实 layerIndex/zMm 同层 preview；
+12E-09A-06 self-test、窗口 smoke、用户文档与状态收口。
+```
+
+09A 只允许 diagnostic；09B production Profile 必须继续等待 12E-08D。
 
 准备入口：
 

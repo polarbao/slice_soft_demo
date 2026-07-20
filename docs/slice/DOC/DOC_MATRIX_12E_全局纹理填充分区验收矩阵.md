@@ -152,7 +152,7 @@ OpenVDB OFF build PASS；
 | 12E-07 -> 08 | COMPLETE：texture_model_fill_only exact closure 联动通过 |
 | 12E-08A | COMPLETE：world-space raster center 映射、互补 mask、RGB、量化与 coverage 证据通过 |
 | 12E-08B | COMPLETE：full-material sidecar、五类 12D gap、support/varnish 状态与通道一致性通过 |
-| 12E-08C | TODO：默认 OFF Release/回归证据 |
+| 12E-08C | COMPLETE：默认 OFF Release/回归证据已生成；3 个真实 OBJ topology BLOCKED，预算未冻结 |
 | 12E-08D | BLOCKED：生产准入需前置证据和用户再次确认 |
-| 12E-09 | PREPARED：09A 建议等待 08C；09B 被 08D 阻断 |
+| 12E-09 | PREPARED：09A READY；09B 被 08D 阻断 |
 | 12E-10 | UI、真实模型、RIP 和报告收口 |
