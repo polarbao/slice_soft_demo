@@ -1,0 +1,94 @@
+# DOC_MATRIX_12E 真实模型拓扑修复与严格准入
+
+> 文档状态：PREPARED
+> 日期：2026-07-20
+
+## 1. Gate Matrix
+
+| Gate | R1 | R2 | R3 | 08D 要求 |
+|---|---|---|---|---|
+| pre diagnostics | PASS required | keep | keep | PASS |
+| deterministic hash | PASS required | pre/post | repeat | PASS |
+| eligibility | PASS required | enforce | enforce | no unresolved automatic ambiguity |
+| repair operations | not executed | fixture PASS | real model evidence | operation list complete |
+| attribute preservation | contract | fixture PASS | real model PASS | PASS |
+| post strict | not applicable | generated PASS | required models PASS | PASS |
+| Release budget | not measured | diagnostic only | freeze or BLOCK | PASS |
+| production package | forbidden | forbidden | forbidden | explicit admission only |
+
+## 2. Issue Policy Matrix
+
+| Issue | 默认动作 | 自动修复资格 | 生产条件 |
+|---|---|---|---|
+| degenerate triangle | diagnostic/cleanup candidate | eligible under explicit mode | post strict + attribute PASS |
+| exact duplicate face | diagnostic/cleanup candidate | attributes identical only | post strict + hash stable |
+| opposite duplicate | block | conditional | unique interior/exterior and attributes |
+| local winding | block | conditional | unique orientable propagation |
+| boundary loop | block | conditional | simple/planar/within budget/new-face policy |
+| non-manifold edge | block | conditional/manual | unique local fan decomposition |
+| confirmed self-intersection | fail-fast | never | never auto-admitted |
+| multi-component | explicit policy | no implicit merge | component ownership proven |
+
+## 3. Generated Fixtures
+
+| Fixture | Expected status |
+|---|---|
+| clean closed | strict_pass_no_repair |
+| duplicate same attributes | repaired_strict_pass |
+| duplicate conflicting UV | manual_repair_required |
+| simple planar hole | repaired_strict_pass when enabled |
+| oversized/non-planar hole | manual_repair_required |
+| winding-only | repaired_strict_pass |
+| separable local fan | repaired_strict_pass or documented unsupported in first increment |
+| ambiguous fan | manual_repair_required |
+| self-intersection | rejected_self_intersection |
+
+## 4. Real Models
+
+| Case | Baseline | R1 output | R2/R3 acceptance |
+|---|---|---|---|
+| `nai_you_new` | boundary=113 | loop classification/hash | strict PASS or manual required |
+| `aishen_fudiao` | boundary=3, nonManifold=59 | issue pattern/hash | strict PASS or manual required |
+| `meigui_fudiao` | nonManifold=10940 | source pattern/hash | strict PASS or manual required |
+| Texture2D 3MF | closed | no-op baseline | geometry/attribute hash stable |
+
+专项验收允许诚实的 manual required；12E-08D required-case Gate 不允许把 manual required 计为 PASS。
+
+## 5. Attribute Matrix
+
+| Attribute | No-op | Existing face repair | New face |
+|---|---|---|---|
+| material | exact unchanged | source mapping required | explicit policy required |
+| UV | exact unchanged | per-corner mapping required | generated/fallback policy required |
+| texture resource | valid | valid | valid or production blocked |
+| component | unchanged | change explained | no implicit merge |
+| triangle provenance | stable | mapped | operation-owned |
+
+## 6. Negative Matrix
+
+```text
+repair disabled -> no mutation；
+strict blocker + no eligible repair -> manual/blocked；
+self-intersection -> fail-fast；
+attribute conflict -> blocked；
+post strict fail -> blocked；
+repeat hash differs -> blocked；
+budget exceeded -> blocked；
+any blocked -> productionOutputWritten=false。
+```
+
+## 7. Protocol Matrix
+
+```text
+p0.rgbwsv.2 unchanged；
+R G B W S V unchanged；
+uint8 unchanged；
+black_is_print unchanged；
+OpenVDB optional/OFF；
+legacy Profile output unchanged。
+```
+
+## 8. 08D Readiness
+
+R3-04 只有全部 required case 为 strict PASS、属性 PASS、Release budget PASS、12E full closure PASS 和
+legacy/RIP PASS 时输出 GO；否则输出 NO-GO 并保留具体 blocker。

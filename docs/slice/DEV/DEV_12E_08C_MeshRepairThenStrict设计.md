@@ -1,0 +1,314 @@
+# DEV_12E-08C MeshRepairThenStrict 设计
+
+> 文档版本：v0.1
+> 文档状态：DEV / PREPARED
+> 日期：2026-07-20
+> 对应 PRD：`PRD_12E_08C_真实模型拓扑修复与严格准入.md`
+
+## 1. 技术目标
+
+新增与切片算法解耦的、显式且可审计的 Mesh Repair 服务。服务只接受最终变换后的核心 SceneModel/mesh DTO，
+输出修复候选、属性映射、诊断和 admission evidence，不写 TIFF、不依赖 Qt，也不在内部决定生产发布。
+
+## 2. 架构位置
+
+```text
+SceneModel + final transform
+  -> SceneModelTriangleMeshAdapter
+  -> PreRepairTopologyDiagnostics
+  -> MeshRepairEligibilityPolicy
+  -> MeshRepairService (explicit only)
+  -> PostRepairTopologyDiagnostics
+  -> MeshAttributePreservationValidator
+  -> EvaluateProductionAdmission(strict_closed)
+  -> 12E partition/transfer/raster/closure
+  -> 12E-08D production policy (later)
+```
+
+依赖方向：
+
+```text
+geometry/repair -> scene DTO + geometry diagnostics
+diagnostics/report -> repair result DTO
+pipeline -> repair facade + partition services
+apps -> public facade
+```
+
+禁止：
+
+```text
+geometry/repair -> Qt/TIFF/report writer
+report writer -> repair decision
+repair service -> production package publish
+OpenVDB internal type -> public repair API
+```
+
+## 3. 建议目录
+
+```text
+src/slicer_core/geometry/repair/
+  MeshRepairTypes.*
+  MeshRepairEligibilityPolicy.*
+  MeshRepairService.*
+  MeshRepairHash.*
+  MeshAttributePreservationValidator.*
+
+src/slicer_core/diagnostics/
+  MeshRepairReport.*
+```
+
+最终目录应服从现有 CMake 和模块边界；不为目录美观大范围移动历史代码。
+
+## 4. 核心 DTO
+
+```text
+MeshRepairOptions
+  enabled
+  mode = repair_then_strict
+  positionToleranceMm
+  maxBoundaryLoopEdges
+  maxBoundaryPerimeterMm
+  maxHoleAreaMm2
+  maxAffectedFaceRatio
+  allowVertexWeld
+  allowDuplicateRemoval
+  allowWindingRepair
+  allowBoundaryFill
+  allowNonManifoldSplit
+  newFaceAttributePolicy
+
+MeshRepairEligibility
+  overallStatus
+  issueDecisions[]
+  blockerCodes[]
+  suggestedActions[]
+
+MeshRepairOperation
+  operationId
+  type
+  reasonCode
+  inputElementIds[]
+  outputElementIds[]
+  parameters
+  attributeDecision
+
+MeshRepairResult
+  status
+  repairedMesh
+  sourceToOutputMapping
+  operations[]
+  preDiagnostics
+  postDiagnostics
+  attributeValidation
+  hashes
+  performance
+  issues[]
+```
+
+公共 API 使用 STL 和项目 DTO；Public 接口按项目规范补充 Doxygen。
+
+## 5. 诊断和资格分层
+
+### 5.1 Fail Fast
+
+```text
+MESH_SELF_INTERSECTION_CONFIRMED
+输入索引越界或 NaN/Inf
+无法构建确定性 source mapping
+```
+
+### 5.2 首版保守候选
+
+```text
+degenerate face cleanup；
+同 winding、同几何、同材质和同 UV 的 exact duplicate face；
+可通过邻接传播唯一确定的 local winding inconsistency；
+位置容差内、且不破坏 per-corner attribute 的 geometry vertex weld。
+```
+
+### 5.3 条件候选
+
+```text
+简单、非自交、可定向的 boundary loop；
+局部 edge fan 可唯一分组的 non-manifold edge；
+opposite duplicate face；
+新增面需要 attribute/fallback policy 的 hole-fill。
+```
+
+任一条件存在多解时转为 `manual_repair_required`。
+
+## 6. 修复算法顺序
+
+固定首版顺序：
+
+```text
+1. 输入和属性索引校验；
+2. 记录 pre-repair hash/diagnostics；
+3. 退化面分类与显式移除；
+4. exact duplicate face 去重；
+5. 受约束 vertex weld；
+6. 邻接图 local winding 传播；
+7. 简单 boundary loop stitch/hole-fill；
+8. 条件 non-manifold fan split；
+9. 重建索引和 source mapping；
+10. 属性保持校验；
+11. post-repair diagnostics；
+12. strict_closed admission。
+```
+
+每一步失败必须停止后续操作，保留已计划但未执行和已经执行的操作证据。首版不做回溯搜索或多方案自动择优。
+
+## 7. Boundary Repair
+
+boundary loop 只有同时满足以下条件才允许自动处理：
+
+```text
+形成单一简单闭环；
+无重复顶点和自交；
+平面或平面误差低于显式阈值；
+边数、周长、面积和受影响面比例未超预算；
+法向/组件方向可唯一确定；
+新增面 attribute policy 明确；
+修复后没有新 non-manifold/self-intersection。
+```
+
+3 条孤立 boundary edge 不自动解释为一个合法三角孔；必须先确认端点连接形成闭环。
+
+## 8. Non-Manifold Repair
+
+首版只允许局部、可证明唯一的 edge fan 分解。必须验证：
+
+```text
+每个输出 edge 最多两个 incident faces；
+组件不会静默合并；
+分解后每个候选组件可定向；
+UV/material triangle provenance 保持；
+没有新增开放边界或自相交。
+```
+
+对于 `meigui_fudiao` 的大规模 non-manifold，先做来源分类：重复壳、重叠组件、共享边 fan、导出器重复面或
+其他模式。没有稳定模式前不实现“批量修复”。
+
+## 9. Attribute Preservation
+
+`SceneModelTriangleMeshAdapter` 应提供或扩展 source mapping：
+
+```text
+outputTriangle -> source mesh/triangle/material；
+outputCorner -> source UV/texture coordinate；
+new triangle -> generating boundary loop + explicit attribute policy；
+split vertex -> original geometry vertex；
+welded vertex -> ordered source vertex set。
+```
+
+验证至少包含：
+
+```text
+existing triangle material unchanged；
+existing per-corner UV unchanged within exact/declared tolerance；
+texture resource id remains valid；
+new face fallback is explicit；
+unknownAttributeTriangles=0 for production candidate。
+```
+
+## 10. Hash Contract
+
+使用确定性的 canonical serialization 后计算 SHA-256：
+
+```text
+sourceHash；
+preRepairGeometryHash；
+preRepairAttributeHash；
+postRepairGeometryHash；
+postRepairAttributeHash；
+repairOperationHash；
+optionsHash。
+```
+
+浮点 canonicalization、端序、索引顺序和组件排序必须固定。哈希用于回归与追溯，不宣称安全签名。
+
+## 11. Stable Error Codes
+
+建议冻结：
+
+```text
+E_12E_REPAIR_INPUT_INVALID
+E_12E_REPAIR_NOT_ENABLED
+E_12E_REPAIR_MODE_UNSUPPORTED
+E_12E_REPAIR_SELF_INTERSECTION_REJECTED
+E_12E_REPAIR_NOT_ELIGIBLE
+E_12E_REPAIR_AMBIGUOUS_TOPOLOGY
+E_12E_REPAIR_BUDGET_EXCEEDED
+E_12E_REPAIR_ATTRIBUTE_CONFLICT
+E_12E_REPAIR_ATTRIBUTE_LOST
+E_12E_REPAIR_OPERATION_FAILED
+E_12E_REPAIR_POST_STRICT_FAILED
+E_12E_REPAIR_HASH_NONDETERMINISTIC
+E_12E_REPAIR_MANUAL_REQUIRED
+```
+
+测试断言 code，不依赖完整自然语言。
+
+## 12. Report
+
+Schema 固定为：
+
+```text
+slicesoft.mesh_repair.12e_08c.1
+```
+
+报告是独立证据，可由 12E partition report 引用，但不修改 `p0.rgbwsv.2`。未执行 repair 时仍可输出
+preflight/eligibility 报告，并明确 `repairAttempted=false`。
+
+## 13. Performance
+
+分离统计：
+
+```text
+diagnosticsMs
+eligibilityMs
+repairMs
+attributeValidationMs
+postDiagnosticsMs
+hashMs
+totalRepairCoreMs
+peakWorkingSetBytes
+```
+
+Release budget 在 R3 根据真实模型数据冻结。JSON/TIFF/PNG 写盘不得计入 `totalRepairCoreMs`。
+
+## 14. 依赖策略
+
+R1/R2 首版不引入第三方修复库，先验证项目内保守操作是否足够。OpenVDB 不适合作为 UV/材质保持的
+三角网格修复器。
+
+若需要第三方库，必须单独 ADR，至少比较两个候选，并覆盖：
+
+```text
+CMake target 和 vcpkg manifest；
+Windows/MSVC 支持；
+许可证和商业分发风险；
+triangle/UV/material provenance；
+二进制体积、构建耗时和维护状态；
+与默认 OpenVDB OFF lane 的隔离。
+```
+
+## 15. 测试分层
+
+```text
+L1：hash、eligibility、operation unit tests；
+L2：generated topology fixture golden；
+L3：OBJ/3MF attribute preservation；
+L4：post-repair strict admission；
+L5：12E partition/texture/raster/full closure；
+L6：Release real-model benchmark；
+L7：legacy regression、RIP strict、TIFF invariant。
+```
+
+## 16. 回滚
+
+修复默认关闭，旧 Profile 不读取 repair 配置。任何失败都丢弃候选 mesh，保留原始 SceneModel 和报告，
+不发布 package。代码应允许在不影响 legacy 路径的情况下移除或禁用 repair facade。
+
+固定安全边界：OpenVDB optional/OFF；legacy production path 不替代；`p0.rgbwsv.2`、RGBWSV、uint8 和
+`black_is_print` 不修改。

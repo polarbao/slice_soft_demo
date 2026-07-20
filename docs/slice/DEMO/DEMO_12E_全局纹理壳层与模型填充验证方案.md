@@ -4,7 +4,7 @@
 > 日期：2026-07-16
 > 对应 PRD：PRD_12E_全局纹理表面层与模型填充连续调节.md
 > 对应 DEV：DEV_12E_全局纹理壳层与模型填充分区设计.md
-> 实现状态：PARTIAL；12E-03 CPU、12E-04 OpenVDB conformance、12E-05 width sweep/report、12E-06 texture transfer/composer、12E-07 model-domain closure、12E-08A/08B raster/full-material closure 与 12E-08C Release regression 已实现；真实 OBJ topology budget、production/UI 验证待后续任务
+> 实现状态：PARTIAL；12E-03 CPU、12E-04 OpenVDB conformance、12E-05 width sweep/report、12E-06 texture transfer/composer、12E-07 model-domain closure、12E-08A/08B raster/full-material closure 与 12E-08C Release regression 已实现；12E-08C-R1/R2/R3 修复验证已准备，production/UI 待后续任务
 
 ## 1. 验证目标
 
@@ -51,6 +51,9 @@ preview 截图不能替代 mask/report/TIFF 证据。
 | OpenVDB OFF/ON pair | backend 边界 | OFF 可用；ON 只做 conformance |
 
 真实模型优先从仓库已有可复现样例中选择，不依赖未跟踪本地文件。
+
+被 strict topology 阻断的真实模型必须先执行 `DEMO_12E_08C_真实模型拓扑修复验证方案.md`。只有
+post-repair strict 和属性保持通过的输入才能继续本文件的 real-model production matrix。
 
 ## 4. 宽度 Sweep
 

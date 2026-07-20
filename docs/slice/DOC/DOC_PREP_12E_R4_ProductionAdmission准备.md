@@ -288,12 +288,23 @@ OpenVDB 默认开关。
 | legacy regression evidence | PASS | Release quick regression、RIP strict、Repair Disabled TIFF invariant 已通过 |
 | user production confirmation | NOT_GRANTED | 12E-08D 前再次确认 |
 
+新增前置 Gate：
+
+```text
+12E-08C-R1/R2/R3 repair-then-strict 专项必须完成；
+required real models 必须 post-repair strict PASS；
+attribute preservation 必须 PASS；
+manual_repair_required 不计入 production PASS；
+修复后重新生成 Release budget 和 regression evidence。
+```
+
 ## 14. 最终判断
 
 ```text
 12E-07：COMPLETE；
 12E-08 文档准备：COMPLETE；
-12E-08 代码执行：IN PROGRESS，12E-08A/08B COMPLETE；
+12E-08 代码执行：IN PROGRESS，12E-08A/08B/08C COMPLETE；
+12E-08C-R1/R2/R3 repair prerequisite：PREPARED；
 12E production：NOT ADMITTED。
 ```
 

@@ -7,7 +7,7 @@
 
 12E 已完成 12E-01 至 12E-07 以及 12E-08A/08B/08C。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer、12D 模型域与完整材料域精确闭环联动、classification-to-raster 确定性映射和默认 OFF Release 证据轨道也已建立。
 
-当前两个候选仍为 diagnostic-only。12E-08A 已在 world-space raster center 上保持 texture/fill 精确互补和真实 layerIndex/zMm；12E-08B 已将支撑、内部空洞、表面/外侧光油和最终 RGBWSV 通道纳入完整闭环；12E-08C 的 Release 回归通过，但三个真实 OBJ 被 strict topology 阻断，预算阈值未冻结。12E-08D 继续被真实模型预算和用户生产路径确认阻断。
+当前两个候选仍为 diagnostic-only。12E-08A 已在 world-space raster center 上保持 texture/fill 精确互补和真实 layerIndex/zMm；12E-08B 已将支撑、内部空洞、表面/外侧光油和最终 RGBWSV 通道纳入完整闭环；12E-08C 的 Release 回归通过，但三个真实 OBJ 被 strict topology 阻断，预算阈值未冻结。现已在 12E-08D 前插入 12E-08C-R1/R2/R3 显式修复专项；12E-08D 继续被 repair/post-strict、真实模型预算和用户生产路径确认阻断。
 
 ## 2. Current State
 
@@ -16,7 +16,7 @@
 12B：性能评估与 OpenVDB SDF utility 定位完成；
 12C：Qt 工作台 R0/R1/R2 完成；
 12D：R0/R1/R2/R3 COMPLETE，12D-10 三个真实 OBJ 验收通过；
-12E：R0 complete，12E-01..07 与 12E-08A/08B/08C complete，Release budget blocked，12E-08D blocked。
+12E：R0 complete，12E-01..07 与 12E-08A/08B/08C complete，Release budget blocked；12E-08C-R1/R2/R3 prepared，12E-08D blocked。
 ```
 
 legacy texture apply mode 和 modelFill scope 保持兼容；CPU backend 只产生 diagnostic result。当前不存在 12E production package，也未改变原有切片生产路径。
@@ -42,6 +42,7 @@ generated/real model/backend/UI/protocol 验收矩阵；
 12E-08A classification-to-raster DTO、算法、generated fixture 与 report；
 12E-08B full-material semantic sidecar、12D closure、报告与 generated fixture；
 12E-08C 默认 OFF Release 真实模型证据、legacy regression 与稳定回归 fixture；
+12E-08C-R1/R2/R3 修复专项 Decision、PRD、DEV、DEMO、ROADMAP、Schema、Matrix、Prep 与任务入口；
 12E-09 Qt UI 与 Effective Config 准备。
 ```
 
@@ -70,9 +71,11 @@ Qt UI 与 preview；
 | 12E-08A | COMPLETE / DIAGNOSTIC ONLY | classification-to-raster、量化、coverage、报告与 generated fixture |
 | 12E-08B | COMPLETE / DIAGNOSTIC ONLY | 完整材料 semantic sidecar、五类 gap、S/V 通道一致性与报告 |
 | 12E-08C | COMPLETE / BUDGET BLOCKED | Release evidence 与 legacy regression 完成；3 个真实 OBJ strict topology 阻断 |
+| 12E-08C-R1/R2/R3 | PREPARED / R1-01 READY | 显式 repair-then-strict、属性保持、post strict 与真实模型 Release Gate |
 | 12E-08D | BLOCKED / REQUIRES CONFIRMATION | production package、RIP strict 与 admission |
 | 12E-09 | 09A READY / 09B BLOCKED | Qt diagnostic UI 与 Effective Config 已准备；production Profile 等待 08D |
 | 12E-10 | PLANNED | 真实模型和收口 |
+| 12E-10 Prep | COMPLETE / EXECUTION BLOCKED | Preview、真实模型、Release 和 REPORT 原子任务已拆分 |
 
 ## 6. 与 12D 的关系
 
@@ -89,8 +92,9 @@ Qt UI 与 preview；
 12E-08A：COMPLETE；
 12E-08B：COMPLETE；
 12E-08C：COMPLETE / RELEASE BUDGET BLOCKED；
+12E-08C-R1/R2/R3：PREPARED，R1-01 READY；
 12E-08D：BLOCKED BY REAL OBJ TOPOLOGY BUDGET AND CONFIRMATION；
-当前没有 active code task；
+当前没有 active code task；下一任务为 12E-08C-R1-01；
 12E R0/R1 原型不要求先完成 repair；
 12E production admission 必须复核 12D exact closure；
 不得把 12E 分区逻辑塞入 12D repair 任务。
@@ -464,7 +468,7 @@ productionAcceptance=not_evaluated。
 
 12E-08C 已完成证据收集，详细结果见
 `docs/slice/DOC/DOC_EXEC_12E_R4C_默认OFFRelease真实模型与Legacy回归结果.md`。下一允许原子任务为
-12E-09A diagnostic UI；09B 继续被 12E-08D production admission 和用户明确确认阻断。
+12E-08C-R1-01；12E-09A diagnostic UI 可并行，09B 继续被 12E-08D 阻断。
 
 ## 20. 12E-08C 实际结果
 
@@ -484,3 +488,17 @@ thresholdsFrozen=false。
 
 因此 12E-08C 任务状态为 COMPLETE，但 Release budget 状态为 BLOCKED。不得把证据任务完成
 解释为真实 OBJ 性能准入或 production admission 通过。
+
+## 21. 12E-08C-R1/R2/R3 修复专项准备
+
+2026-07-20 已建立真实模型拓扑修复前置专项：
+
+```text
+R1：Contract & Eligibility；
+R2：Conservative Repair；
+R3：Real Model & Release Gate。
+```
+
+已生成正式 Decision、PRD、DEV、DEMO、ROADMAP、Report Schema、Acceptance Matrix、R1 Prep、任务清单、
+执行指令、启动报告和 AI handoff。当前未实现修复代码；`repair_then_strict` 仍为 placeholder；下一原子任务为
+`12E-08C-R1-01`。12E-08D 继续 BLOCKED。

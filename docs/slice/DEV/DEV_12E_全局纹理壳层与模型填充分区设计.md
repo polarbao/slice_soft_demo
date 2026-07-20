@@ -4,7 +4,7 @@
 > 文档状态：DEV / Stage 12E Planning
 > 生成日期：2026-07-16
 > 对应 PRD：PRD_12E_全局纹理表面层与模型填充连续调节.md
-> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain/Full-Material Closure/Raster Mapping/Report 与 Release Regression 已实现；真实 OBJ topology 阻断预算，UI/Production 待后续任务
+> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain/Full-Material Closure/Raster Mapping/Report 与 Release Regression 已实现；真实 OBJ topology 阻断预算，12E-08C-R1/R2/R3 repair-then-strict 前置专项已准备，UI/Production 待后续任务
 
 ## 1. 技术目标
 
@@ -332,6 +332,10 @@ layerIndex/zMm。该步骤当前为 diagnostic-only，不直接写 TIFF。
 12. Run 12D material closure diagnosis；
 13. Write package/reports/preview。
 ```
+
+对于 strict topology blocker，第 3 步必须按 `DEV_12E_08C_MeshRepairThenStrict设计.md` 拆为显式
+pre-diagnostics、eligibility、repair、attribute validation 和 post-repair strict。修复不得成为 partition backend
+或 `strict_closed` 的隐式副作用。
 
 关键规则：步骤 6/7 只执行一次全模型分类。步骤 10 不允许重新计算二维 texture shell。
 

@@ -4,7 +4,7 @@
 > 文档状态：PRD / Stage 12E Planning
 > 生成日期：2026-07-16
 > 上游文档：PRD_12A_彩色纹理材料填充支撑光油策略.md、PRD_12D_横截面材料无缝闭环验收与修复.md
-> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B/08C COMPLETE，Release budget BLOCKED，12E-08D BLOCKED
+> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B/08C COMPLETE，Release budget BLOCKED；12E-08C-R1/R2/R3 修复前置专项 PREPARED，12E-08D BLOCKED
 
 ## 1. 背景
 
@@ -320,3 +320,6 @@ Texture + Fill Partition；
 8. 真实甲片模型、薄壁、内腔、非流形 blocker 和全纹理用例通过；
 9. 最终生成 REPORT_12E，明确 production admission 结论。
 ```
+
+真实 OBJ 的生产准入必须先满足 `PRD_12E_08C_真实模型拓扑修复与严格准入.md`。修复专项允许对复杂模型给出
+`manual_repair_required`，但该状态不得计入本 PRD 的真实模型 production PASS。
