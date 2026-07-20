@@ -136,6 +136,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r2_02_to
 generated fixture 覆盖 safe weld、跨组件近邻、退化阻断、唯一 winding 和 non-orientable 歧义。真实模型
 逐 case 双运行，组件数、vertex mapping 和 stable projection 一致；本任务不要求真实 OBJ 获得 strict PASS。
 
+### 9.3 R2-03 已固化命令
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_cleanup_unit_tests mesh_repair_contract_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(r2_03|r2_02|cleanup|contract|preflight)" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r2_03_boundary_evidence.ps1 -BuildDir build -Config Debug
+```
+
+generated fixture 必须覆盖 simple hole PASS 与 planarity/budget/UV/branching negative。真实 case 允许诚实的
+manual/no-op，但必须双运行稳定，且始终 `productionOutputWritten=false`。
+
 ## 10. 退出标准
 
 ```text

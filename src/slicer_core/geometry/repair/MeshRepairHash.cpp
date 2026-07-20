@@ -358,9 +358,15 @@ std::string ComputeMeshRepairOptionsHash(const MeshRepairOptions& options)
     encoder.AppendBoolean(options.allowVertexWeld);
     encoder.AppendDouble(options.weldToleranceMm);
     encoder.AppendBoolean(options.allowWindingRepair);
+    encoder.AppendBoolean(options.allowBoundaryFill);
     encoder.AppendUnsigned(options.maxBoundaryLoopEdges);
     encoder.AppendDouble(options.maxBoundaryLoopDiameterMm);
+    encoder.AppendDouble(options.maxBoundaryLoopPerimeterMm);
+    encoder.AppendDouble(options.maxBoundaryPlanarityErrorMm);
+    encoder.AppendDouble(options.maxHoleAreaMm2);
+    encoder.AppendDouble(options.maxAffectedFaceRatio);
     encoder.AppendBoolean(options.allowNewFaces);
+    encoder.AppendString(options.newFaceAttributePolicy);
     return encoder.FinalizeHex();
 }
 

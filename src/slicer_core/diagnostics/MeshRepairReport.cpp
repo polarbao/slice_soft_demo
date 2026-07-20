@@ -60,9 +60,15 @@ Json BuildOptions(const MeshRepairOptions& options)
         {"allowVertexWeld", options.allowVertexWeld},
         {"weldToleranceMm", options.weldToleranceMm},
         {"allowWindingRepair", options.allowWindingRepair},
+        {"allowBoundaryFill", options.allowBoundaryFill},
         {"maxBoundaryLoopEdges", options.maxBoundaryLoopEdges},
         {"maxBoundaryLoopDiameterMm", options.maxBoundaryLoopDiameterMm},
+        {"maxBoundaryLoopPerimeterMm", options.maxBoundaryLoopPerimeterMm},
+        {"maxBoundaryPlanarityErrorMm", options.maxBoundaryPlanarityErrorMm},
+        {"maxHoleAreaMm2", options.maxHoleAreaMm2},
+        {"maxAffectedFaceRatio", options.maxAffectedFaceRatio},
         {"allowNewFaces", options.allowNewFaces},
+        {"newFaceAttributePolicy", options.newFaceAttributePolicy},
     });
 }
 
@@ -185,6 +191,28 @@ Json BuildVertexMappings(const std::vector<MeshRepairVertexMapping>& mappings)
     return Json{std::move(array)};
 }
 
+Json BuildGeneratedTriangleMappings(
+    const std::vector<MeshRepairGeneratedTriangleMapping>& mappings)
+{
+    Json::Array array;
+    for (const MeshRepairGeneratedTriangleMapping& mapping : mappings)
+    {
+        Json::Array vertices;
+        for (const std::uint64_t vertexIndex : mapping.generatingBoundaryVertexIndices)
+        {
+            vertices.push_back(vertexIndex);
+        }
+        array.push_back(Json::object({
+            {"outputTriangleIndex", mapping.outputTriangleIndex},
+            {"generatingBoundaryVertexIndices", Json{std::move(vertices)}},
+            {"attributePolicy", mapping.attributePolicy},
+            {"materialName", mapping.materialName},
+            {"hasUv", mapping.hasUv},
+        }));
+    }
+    return Json{std::move(array)};
+}
+
 Json BuildAttributePreservation(const MeshRepairAttributePreservation& attributes)
 {
     return Json::object({
@@ -262,6 +290,8 @@ Json BuildMeshRepairReport(const MeshRepairResult& result)
         {"operations", BuildOperations(result.operations)},
         {"sourceMappings", BuildSourceMappings(result.sourceMappings)},
         {"vertexMappings", BuildVertexMappings(result.vertexMappings)},
+        {"generatedTriangleMappings", BuildGeneratedTriangleMappings(
+            result.generatedTriangleMappings)},
         {"attributePreservation", BuildAttributePreservation(result.attributePreservation)},
         {"postRepair", BuildDiagnostics(result.postRepair)},
         {"admission", BuildAdmission(result.admission)},

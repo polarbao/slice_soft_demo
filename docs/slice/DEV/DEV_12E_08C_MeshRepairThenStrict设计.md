@@ -1,7 +1,7 @@
 # DEV_12E-08C MeshRepairThenStrict 设计
 
 > 文档版本：v0.1
-> 文档状态：DEV / R1、R2-01/02 IMPLEMENTED
+> 文档状态：DEV / R1、R2-01..03 IMPLEMENTED
 > 日期：2026-07-20
 > 对应 PRD：`PRD_12E_08C_真实模型拓扑修复与严格准入.md`
 
@@ -45,7 +45,11 @@ OpenVDB internal type -> public repair API
 
 R2-01 已实现隔离 candidate、退化面/同属性同向 exact duplicate cleanup 和 `sourceMappings[]`。R2-02 已实现
 受约束 vertex weld、唯一 local winding 传播、组件守门与 `vertexMappings[]`。opposite duplicate、属性冲突和
-confirmed self-intersection 均不会被这些 operation set 绕过；boundary 和 non-manifold 仍受后续原子 Gate 阻断。
+confirmed self-intersection 均不会被这些 operation set 绕过；复杂 boundary 和 non-manifold 仍受后续原子 Gate 阻断。
+
+R2-03 已进一步实现简单、平面、严格凸、显式预算内的 boundary fill，只允许
+`inherit_uniform_material_no_uv`，并通过 `generatedTriangleMappings[]` 将新面与原 source mapping 分离。
+复杂边界、sampled intersection evidence、UV/材质冲突继续 manual；non-manifold 仍不在 R2 范围内修复。
 
 ## 3. 建议目录
 

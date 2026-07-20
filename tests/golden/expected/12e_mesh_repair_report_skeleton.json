@@ -65,13 +65,19 @@
   "mode": "strict_closed",
   "operations": [],
   "options": {
+    "allowBoundaryFill": false,
     "allowNewFaces": false,
     "allowVertexWeld": false,
     "allowWindingRepair": false,
     "enabled": false,
+    "maxAffectedFaceRatio": 0,
     "maxBoundaryLoopDiameterMm": 0.5,
     "maxBoundaryLoopEdges": 32,
+    "maxBoundaryLoopPerimeterMm": 0,
+    "maxBoundaryPlanarityErrorMm": 0,
+    "maxHoleAreaMm2": 0,
     "mode": "strict_closed",
+    "newFaceAttributePolicy": "reject",
     "weldToleranceMm": 0.001
   },
   "performance": {

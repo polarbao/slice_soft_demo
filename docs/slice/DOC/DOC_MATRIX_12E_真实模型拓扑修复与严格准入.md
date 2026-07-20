@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 真实模型拓扑修复与严格准入
 
-> 文档状态：IN PROGRESS / R2-01/02 EVIDENCE FROZEN
+> 文档状态：IN PROGRESS / R2-01..03 EVIDENCE FROZEN
 > 日期：2026-07-20
 
 ## 1. Gate Matrix
@@ -54,6 +54,10 @@
 
 专项验收允许诚实的 manual required；12E-08D required-case Gate 不允许把 manual required 计为 PASS。
 真实 OBJ 的 sampled self-intersection 也不得计为 strict PASS，必须先完成 R3-01A 完整证据。
+
+R2-03 实际结果：`nai_you_new`/`aishen_fudiao` 因 sampled intersection evidence 保持 boundary 不变；
+`meigui_fudiao` 和闭合 3MF 无 boundary，均不生成新面。generated simple planar no-UV hole 可 repaired strict
+PASS；planarity/budget/UV/branching fixture 均稳定 blocked。
 
 ## 5. Attribute Matrix
 

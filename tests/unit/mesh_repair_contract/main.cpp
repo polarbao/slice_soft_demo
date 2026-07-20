@@ -141,6 +141,11 @@ bool HashesAreStableAndIndependent()
     windingOptions.allowWindingRepair = true;
     const slicer_core::MeshRepairHashes windingOptionHashes =
         slicer_core::ComputeMeshRepairPreHashes(original, windingOptions);
+    slicer_core::MeshRepairOptions boundaryOptions = options;
+    boundaryOptions.allowBoundaryFill = true;
+    boundaryOptions.newFaceAttributePolicy = "inherit_uniform_material_no_uv";
+    const slicer_core::MeshRepairHashes boundaryOptionHashes =
+        slicer_core::ComputeMeshRepairPreHashes(original, boundaryOptions);
 
     return ExpectTrue(first.preRepairGeometryHash == second.preRepairGeometryHash, "geometry hash repeats")
         && ExpectTrue(first.preRepairAttributeHash == second.preRepairAttributeHash, "attribute hash repeats")
@@ -151,7 +156,8 @@ bool HashesAreStableAndIndependent()
         && ExpectTrue(first.preRepairGeometryHash == attributeHashes.preRepairGeometryHash, "attribute change keeps geometry hash")
         && ExpectTrue(first.preRepairAttributeHash != attributeHashes.preRepairAttributeHash, "attribute change changes attribute hash")
         && ExpectTrue(first.optionsHash != changedOptionsHashes.optionsHash, "options change changes options hash")
-        && ExpectTrue(first.optionsHash != windingOptionHashes.optionsHash, "winding option changes options hash");
+        && ExpectTrue(first.optionsHash != windingOptionHashes.optionsHash, "winding option changes options hash")
+        && ExpectTrue(first.optionsHash != boundaryOptionHashes.optionsHash, "boundary policy changes options hash");
 }
 
 bool OperationHashIsDeterministic()

@@ -125,9 +125,15 @@ struct MeshRepairOptions
     bool allowVertexWeld{false};
     double weldToleranceMm{0.0};
     bool allowWindingRepair{false};
+    bool allowBoundaryFill{false};
     std::uint64_t maxBoundaryLoopEdges{0U};
     double maxBoundaryLoopDiameterMm{0.0};
+    double maxBoundaryLoopPerimeterMm{0.0};
+    double maxBoundaryPlanarityErrorMm{0.0};
+    double maxHoleAreaMm2{0.0};
+    double maxAffectedFaceRatio{0.0};
     bool allowNewFaces{false};
+    std::string newFaceAttributePolicy{"reject"};
 };
 
 /**
@@ -228,6 +234,18 @@ struct MeshRepairVertexMapping
 };
 
 /**
+ * @brief Provenance and attribute policy for one generated boundary-fill face.
+ */
+struct MeshRepairGeneratedTriangleMapping
+{
+    std::uint64_t outputTriangleIndex{0U};
+    std::vector<std::uint64_t> generatingBoundaryVertexIndices;
+    std::string attributePolicy;
+    std::string materialName;
+    bool hasUv{false};
+};
+
+/**
  * @brief Topology facts captured before or after a repair candidate.
  */
 struct MeshRepairDiagnosticsSummary
@@ -310,6 +328,7 @@ struct MeshRepairResult
     std::vector<MeshRepairOperation> operations;
     std::vector<MeshRepairTriangleMapping> sourceMappings;
     std::vector<MeshRepairVertexMapping> vertexMappings;
+    std::vector<MeshRepairGeneratedTriangleMapping> generatedTriangleMappings;
     MeshRepairAttributePreservation attributePreservation;
     MeshRepairDiagnosticsSummary postRepair;
     MeshRepairAdmission admission;

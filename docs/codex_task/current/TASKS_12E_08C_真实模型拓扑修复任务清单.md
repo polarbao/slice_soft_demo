@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01/02 COMPLETE / R2-03 READY
+> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01..03 COMPLETE / R2-04 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R2-03
+> 当前原子任务：无；下一允许任务为 12E-08C-R2-04
 
 ## 1. 总目标
 
@@ -118,7 +118,7 @@ self-intersection 保持阻断。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R2_0
 
 ### 12E-08C-R2-03 Boundary Loop Repair
 
-状态：READY。
+状态：COMPLETE。
 
 范围：简单闭环分类、stitch/hole-fill、new-face attribute/fallback policy。
 
@@ -126,13 +126,19 @@ self-intersection 保持阻断。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R2_0
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_03_BoundaryLoopRepair准备.md`。
 
+实际结果：新增简单 boundary loop 提取、平面/凸性/预算/完整相交证据/统一无 UV 材质守门，生成面使用独立
+provenance。generated box hole strict PASS；复杂和真实输入保持 blocked/manual。结果见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R2_03_BoundaryLoopRepair结果.md`。
+
 ### 12E-08C-R2-04 Post-Repair Strict 与 Attribute Guard
 
-状态：BLOCKED BY R2-03。
+状态：READY。
 
 范围：统一 post diagnostics、attribute validator、operation/hash repeatability 和 negative gate。
 
 完成标准：任何 repaired PASS 均由重新 strict 得出；修复失败丢弃 candidate mesh。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_04_PostStrictAttributeGuard准备.md`。
 
 ## 5. R3 Real Model & Release Gate
 

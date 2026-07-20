@@ -141,6 +141,53 @@ slicer_core::AdaptedTriangleMesh MakeNonOrientableStrip()
     return mesh;
 }
 
+slicer_core::AdaptedTriangleMesh MakeBoxWithTopHole(const bool hasUv)
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    mesh.mesh.triangles.erase(mesh.mesh.triangles.begin() + 2, mesh.mesh.triangles.begin() + 4);
+    mesh.triangle_attributes.erase(
+        mesh.triangle_attributes.begin() + 2,
+        mesh.triangle_attributes.begin() + 4);
+    for (slicer_core::SurfaceTriangleAttributes& attributes : mesh.triangle_attributes)
+    {
+        attributes.has_uv = hasUv;
+    }
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    return mesh;
+}
+
+slicer_core::AdaptedTriangleMesh MakeBranchingBoundaryBox()
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    mesh.mesh.triangles.erase(mesh.mesh.triangles.begin() + 11);
+    mesh.triangle_attributes.erase(mesh.triangle_attributes.begin() + 11);
+    mesh.mesh.triangles.erase(mesh.mesh.triangles.begin() + 2);
+    mesh.triangle_attributes.erase(mesh.triangle_attributes.begin() + 2);
+    for (slicer_core::SurfaceTriangleAttributes& attributes : mesh.triangle_attributes)
+    {
+        attributes.has_uv = false;
+    }
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    return mesh;
+}
+
+void EnableBoundaryFill(slicer_core::MeshRepairCleanupRequest& request)
+{
+    request.options.allowVertexWeld = true;
+    request.options.weldToleranceMm = 0.0001;
+    request.options.allowWindingRepair = true;
+    request.options.allowNewFaces = true;
+    request.options.allowBoundaryFill = true;
+    request.options.maxBoundaryLoopEdges = 8U;
+    request.options.maxBoundaryLoopDiameterMm = 2.0;
+    request.options.maxBoundaryLoopPerimeterMm = 5.0;
+    request.options.maxBoundaryPlanarityErrorMm = 0.01;
+    request.options.maxHoleAreaMm2 = 2.0;
+    request.options.maxAffectedFaceRatio = 0.25;
+    request.options.newFaceAttributePolicy = "inherit_uniform_material_no_uv";
+    request.robustnessOptions.max_triangle_pair_checks = 1000000U;
+}
+
 const slicer_core::MeshRepairTriangleMapping* FindMapping(
     const slicer_core::MeshRepairResult& evidence,
     const std::uint64_t sourceTriangleIndex)
@@ -492,6 +539,128 @@ bool TestNonOrientableWindingConflictIsBlocked()
             "ambiguous winding must not mutate triangles");
 }
 
+bool TestSimplePlanarBoundaryLoopIsFilled()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeBoxWithTopHole(false);
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    EnableBoundaryFill(request);
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::RepairedStrictPass,
+               "simple planar boundary should pass strict after fill")
+        && ExpectTrue(
+            HasOperation(cleanup.evidence, slicer_core::MeshRepairOperationType::FillBoundaryLoop),
+            "boundary fill should be recorded")
+        && ExpectTrue(cleanup.candidate.mesh.triangles.size() == 12U, "fill should add two triangles")
+        && ExpectTrue(cleanup.evidence.generatedTriangleMappings.size() == 2U, "generated faces should be mapped")
+        && ExpectTrue(cleanup.evidence.attributePreservation.newTriangles == 2U, "new face count should be reported")
+        && ExpectTrue(cleanup.evidence.attributePreservation.sourceMappedTriangles == 10U, "source face count should remain ten")
+        && ExpectTrue(cleanup.evidence.postRepair.boundaryEdges == 0U, "filled box should have no boundary")
+        && ExpectTrue(
+            !cleanup.candidate.triangle_attributes.at(10U).has_uv
+                && cleanup.candidate.triangle_attributes.at(10U).material_name == "fixture-material",
+            "generated attributes should use the explicit uniform no-UV policy");
+}
+
+bool TestNonPlanarBoundaryLoopIsBlocked()
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeBoxWithTopHole(false);
+    mesh.mesh.vertices.at(7U).z = 1.2;
+    mesh.mesh.bbox_mm.max.z = 1.2;
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    EnableBoundaryFill(request);
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::ManualRepairRequired,
+               "non-planar boundary should remain manual")
+        && ExpectTrue(
+            cleanup.evidence.attributePreservation.status == "blocked_boundary_planarity",
+            "non-planar boundary should expose its guard")
+        && ExpectTrue(cleanup.candidate.mesh.triangles.size() == 10U, "blocked fill must discard generated faces");
+}
+
+bool TestBoundaryBudgetExceededIsBlocked()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeBoxWithTopHole(false);
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    EnableBoundaryFill(request);
+    request.options.maxBoundaryLoopEdges = 3U;
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::ManualRepairRequired,
+               "over-budget boundary should remain manual")
+        && ExpectTrue(
+            cleanup.evidence.attributePreservation.status == "blocked_boundary_budget",
+            "over-budget boundary should expose its guard");
+}
+
+bool TestUvBoundaryAttributePolicyIsBlocked()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeBoxWithTopHole(true);
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    EnableBoundaryFill(request);
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::ManualRepairRequired,
+               "UV boundary should require an explicit future policy")
+        && ExpectTrue(
+            cleanup.evidence.attributePreservation.status == "blocked_boundary_attribute_policy",
+            "UV boundary should expose its policy guard");
+}
+
+bool TestBranchingBoundaryTopologyIsBlocked()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeBranchingBoundaryBox();
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    EnableBoundaryFill(request);
+
+    const slicer_core::MeshRepairCleanupResult cleanup =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               cleanup.evidence.status == slicer_core::MeshRepairStatus::ManualRepairRequired,
+               "branching boundary should remain manual")
+        && ExpectTrue(
+            cleanup.evidence.attributePreservation.status == "blocked_boundary_topology",
+            "branching boundary should expose its topology guard");
+}
+
+bool TestBoundaryFillEvidenceIsDeterministic()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeBoxWithTopHole(false);
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    EnableBoundaryFill(request);
+
+    const slicer_core::MeshRepairCleanupResult first =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    const slicer_core::MeshRepairCleanupResult second =
+        slicer_core::ExecuteMeshRepairCleanup(request);
+    return ExpectTrue(
+               first.evidence.hashes.repairOperationHash
+                   == second.evidence.hashes.repairOperationHash,
+               "boundary operation hash should repeat")
+        && ExpectTrue(
+            first.evidence.hashes.postRepairGeometryHash
+                == second.evidence.hashes.postRepairGeometryHash,
+            "boundary geometry hash should repeat")
+        && ExpectTrue(
+            first.evidence.generatedTriangleMappings
+                    .at(0U)
+                    .generatingBoundaryVertexIndices
+                == second.evidence.generatedTriangleMappings
+                    .at(0U)
+                    .generatingBoundaryVertexIndices,
+            "generated face provenance should repeat");
+}
+
 }  // namespace
 
 int main()
@@ -508,7 +677,13 @@ int main()
         && TestVertexWeldDoesNotMergeConnectedComponents()
         && TestVertexWeldThatCreatesDegenerateFacesIsBlocked()
         && TestUniqueWindingPropagationFlipsTriangleAndUv()
-        && TestNonOrientableWindingConflictIsBlocked();
+        && TestNonOrientableWindingConflictIsBlocked()
+        && TestSimplePlanarBoundaryLoopIsFilled()
+        && TestNonPlanarBoundaryLoopIsBlocked()
+        && TestBoundaryBudgetExceededIsBlocked()
+        && TestUvBoundaryAttributePolicyIsBlocked()
+        && TestBranchingBoundaryTopologyIsBlocked()
+        && TestBoundaryFillEvidenceIsDeterministic();
     if (!passed)
     {
         return 1;

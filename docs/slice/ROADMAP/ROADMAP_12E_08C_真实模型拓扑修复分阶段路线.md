@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C 真实模型拓扑修复分阶段路线
 
-> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01/02 COMPLETE / R2-03 READY
+> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01..03 COMPLETE / R2-04 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C Release Evidence 与 12E-08D Production Admission 之间
 
@@ -43,8 +43,8 @@ R2-03：简单 boundary loop stitch/hole-fill 与 attribute policy；
 R2-04：post-repair strict、attribute validator、negative/golden tests。
 ```
 
-当前进度：R2-01/02 已完成，R2-03 READY；R2-04 继续按顺序阻断。R2-02 没有让三个真实 OBJ
-获得 strict PASS，但已证明焊接、绕向和组件守门不会静默改写真实输入。
+当前进度：R2-01..03 已完成，R2-04 READY。R2-03 证明简单、平面、严格凸且属性唯一的闭环可以安全填补；
+required OBJ 因 sampled self-intersection、non-manifold 或无 boundary 仍保持 manual，没有制造伪 PASS。
 
 退出标准：generated repair fixtures strict PASS；冲突 fixture 稳定 blocked；修复默认关闭。
 
