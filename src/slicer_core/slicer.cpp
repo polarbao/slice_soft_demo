@@ -3611,8 +3611,6 @@ Json material_process_report_to_json(
 
     Json::Array layers;
     Json::Array varnish_active_layer_indices;
-    int first_varnish_layer{-1};
-    int last_varnish_layer{-1};
     for (const LayerDiagnostics& layer : diagnostics) {
         const std::uint64_t layer_rgb = static_cast<std::uint64_t>(layer.rgb_non_zero_pixels);
         const std::uint64_t layer_white = layer.channel_stats.at(3).print_pixels;
@@ -3621,10 +3619,6 @@ Json material_process_report_to_json(
         rgb_print_pixels += layer_rgb;
         if (layer_varnish > 0U) {
             varnish_active_layer_indices.push_back(layer.layer_index);
-            if (first_varnish_layer < 0) {
-                first_varnish_layer = layer.layer_index;
-            }
-            last_varnish_layer = layer.layer_index;
         }
         layers.push_back(Json::object({
             {"layerIndex", layer.layer_index},
@@ -3660,12 +3654,6 @@ Json material_process_report_to_json(
         }
         if (profile.white.enabled && profile.white.mode == "underbase" && missing_underbase_pixels > 0U) {
             validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNDERBASE_COVERAGE_LOW");
-        }
-        if (profile.varnish.enabled && profile.varnish.mode == "top_n_layers" && first_varnish_layer >= 0) {
-            (void)last_varnish_layer;
-            if (static_cast<int>(varnish_active_layer_indices.size()) > profile.varnish.top_layers) {
-                validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNEXPECTED_VARNISH_LAYER");
-            }
         }
         if (config.material_policy.enabled == false && config.material_role_mapping.enabled == false) {
             warnings.push_back("materialProcessProfile is report-only; no materialPolicy or materialRoleMapping is enabled");

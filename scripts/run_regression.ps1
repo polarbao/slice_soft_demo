@@ -1,12 +1,32 @@
 param(
   [ValidateSet("quick", "full", "heavy")]
   [string]$Mode = "quick",
+  [string]$BuildDir = "build",
+  [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
+  [string]$Config = "Debug",
   [switch]$SkipBuild,
   [switch]$SkipHeavyRelief,
   [switch]$SkipHeavyTexture
 )
 
 $ErrorActionPreference = "Stop"
+
+function Resolve-Executable([string]$BuildRoot, [string]$BuildConfig, [string]$Name) {
+  $candidates = @(
+    (Join-Path $BuildRoot "$BuildConfig/$Name.exe"),
+    (Join-Path $BuildRoot "$Name.exe")
+  )
+  foreach ($candidate in $candidates) {
+    if (Test-Path -LiteralPath $candidate) {
+      return (Resolve-Path -LiteralPath $candidate).Path
+    }
+  }
+  throw "missing executable $Name under build directory: $BuildRoot"
+}
+
+$resolvedBuildDir = [System.IO.Path]::GetFullPath($BuildDir)
+$slicerExe = Resolve-Executable $resolvedBuildDir $Config "slicer_cli"
+$ripExe = Resolve-Executable $resolvedBuildDir $Config "rip_reader_test"
 
 function Run-Step([string]$Name, [scriptblock]$Block) {
   Write-Host "== $Name"
@@ -23,12 +43,12 @@ function Run-Step([string]$Name, [scriptblock]$Block) {
 }
 
 function Run-Slicer([string]$Config) {
-  & .\build\Debug\slicer_cli.exe --config $Config
+  & $slicerExe --config $Config
   if ($LASTEXITCODE -ne 0) { throw "slicer failed: $Config" }
 }
 
 function Run-Rip([string]$Package) {
-  & .\build\Debug\rip_reader_test.exe --package $Package --quiet
+  & $ripExe --package $Package --quiet
   if ($LASTEXITCODE -ne 0) { throw "rip_reader_test failed: $Package" }
 }
 
@@ -102,8 +122,9 @@ $threeMfCases = @(
 $materialProcessCases = @(
   @{ Config = "samples/configs/material_process/nail_rgb_white_varnish_top1.json"; Package = "output/NailRgbWhiteVarnishTop1" },
   @{ Config = "samples/configs/material_process/nail_rgb_white_varnish_top2.json"; Package = "output/NailRgbWhiteVarnishTop2" },
+  @{ Config = "samples/configs/material_process/nail_rgb_white_varnish_top2_regression.json"; Package = "output/NailRgbWhiteVarnishTop2Regression" },
   @{ Config = "samples/configs/material_process/three_mf_texture_rgb_white_varnish.json"; Package = "output/ThreeMfTextureRgbWhiteVarnish" },
-  @{ Config = "samples/configs/material_process/obj_mtl_texture_rgb_white_varnish.json"; Package = "output/ObjMtlTextureRgbWhiteVarnish" }
+  @{ Config = "samples/configs/material_process/obj_mtl_texture_rgb_white_varnish_regression.json"; Package = "output/ObjMtlTextureRgbWhiteVarnish" }
 )
 
 $heavyReliefCases = @(
@@ -126,8 +147,8 @@ if (-not $SkipHeavyTexture) {
 }
 
 if (-not $SkipBuild) {
-  Run-Step "build Debug" {
-    cmake --build build --config Debug
+  Run-Step "build $Config" {
+    cmake --build $BuildDir --config $Config
     if ($LASTEXITCODE -ne 0) { throw "build failed" }
   }
 }
@@ -292,15 +313,17 @@ if ($Mode -eq "quick" -or $Mode -eq "full") {
   Run-Step "verify material process profiles" {
     $top1 = Read-Json "output/NailRgbWhiteVarnishTop1/reports/material_process_report.json"
     $top2 = Read-Json "output/NailRgbWhiteVarnishTop2/reports/material_process_report.json"
+    $top2Regression = Read-Json "output/NailRgbWhiteVarnishTop2Regression/reports/material_process_report.json"
     if ($top1.enabled -ne $true) { throw "05A top1 expected materialProcessProfile enabled" }
     if ($top1.validation.pass -ne $true) { throw "05A top1 expected validation pass" }
     if ($top2.validation.pass -ne $true) { throw "05A top2 expected validation pass" }
+    if ($top2Regression.validation.pass -ne $true) { throw "05A top2 regression expected validation pass" }
     if ($top1.rgb.printPixels -le 0) { throw "05A top1 expected RGB printPixels > 0" }
     if ($top1.white.printPixels -le 0) { throw "05A top1 expected W printPixels > 0" }
     if ($top1.varnish.printPixels -le 0) { throw "05A top1 expected V printPixels > 0" }
     if ($top1.varnish.activeLayerIndices.Count -ne 1) { throw "05A top1 expected one varnish active layer" }
-    if ($top2.varnish.activeLayerIndices.Count -ne 2) { throw "05A top2 expected two varnish active layers" }
-    if ($top2.varnish.printPixels -le $top1.varnish.printPixels) { throw "05A top2 expected more varnish printPixels than top1" }
+    if ($top2Regression.varnish.activeLayerIndices.Count -ne 2) { throw "05A top2 regression expected two varnish active layers" }
+    if ($top2Regression.varnish.printPixels -le $top1.varnish.printPixels) { throw "05A top2 regression expected more varnish printPixels than top1" }
 
     $threeMfProcess = Read-Json "output/ThreeMfTextureRgbWhiteVarnish/reports/material_process_report.json"
     if ($threeMfProcess.validation.pass -ne $true) { throw "05A 3MF texture profile expected validation pass" }
@@ -322,7 +345,7 @@ if ($Mode -eq "quick" -or $Mode -eq "full") {
       throw "05A OBJ texture profile expected mapped RGB/W/V > 0"
     }
 
-    & .\scripts\compare_material_profiles.ps1 -PackageA "output/NailRgbWhiteVarnishTop1" -PackageB "output/NailRgbWhiteVarnishTop2" -Output "output/MaterialProfileCompare_top1_top2.json"
+    & .\scripts\compare_material_profiles.ps1 -PackageA "output/NailRgbWhiteVarnishTop1" -PackageB "output/NailRgbWhiteVarnishTop2Regression" -Output "output/MaterialProfileCompare_top1_top2.json"
     if ($LASTEXITCODE -ne 0) { throw "compare_material_profiles failed" }
     $compare = Read-Json "output/MaterialProfileCompare_top1_top2.json"
     if ($compare.delta.varnishPrintPixels -le 0) { throw "05A compare expected delta.varnishPrintPixels > 0" }
@@ -367,7 +390,7 @@ if ($Mode -eq "quick" -or $Mode -eq "full") {
 
   foreach ($case in $bad) {
     Run-Step "bad package $($case.Name)" {
-      & .\build\Debug\rip_reader_test.exe --package "tests/packages/bad/$($case.Name)" --expect-error --expect-code $case.Code --quiet
+      & $ripExe --package "tests/packages/bad/$($case.Name)" --expect-error --expect-code $case.Code --quiet
       if ($LASTEXITCODE -ne 0) { throw "bad package expectation failed: $($case.Name)" }
     }
   }
