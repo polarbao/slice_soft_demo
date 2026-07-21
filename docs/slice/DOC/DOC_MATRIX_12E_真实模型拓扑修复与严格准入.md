@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 真实模型拓扑修复与严格准入
 
-> 文档状态：IN PROGRESS / R2、R3-01、R3-01A、R3-02 EVIDENCE FROZEN / R3-03 READY
+> 文档状态：EVIDENCE FROZEN / R3-04 NO-GO
 > 日期：2026-07-21
 
 ## 1. Gate Matrix
@@ -109,3 +109,6 @@ legacy Profile output unchanged。
 
 R3-04 只有全部 required case 为 strict PASS、属性 PASS、Release budget PASS、12E full closure PASS 和
 legacy/RIP PASS 时输出 GO；否则输出 NO-GO 并保留具体 blocker。
+
+实际决策：三个 required OBJ confirmed self-intersection，global core 为 `skipped_due_topology`；闭合 3MF
+full chain PASS；legacy/RIP PASS；Release budget 未冻结。R3-04=`NO-GO`，12E-08D=`BLOCKED`。

@@ -1,6 +1,6 @@
 # REPORT_12E-08C 真实模型拓扑修复专项启动状态
 
-> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A、R3-02 COMPLETE / R3-03 READY
+> 文档状态：COMPLETE / NON-PRODUCTION / R3-04 NO-GO
 > 日期：2026-07-21
 
 ## 1. 启动原因
@@ -31,7 +31,7 @@ repair_then_strict：R2-04 independent evidence validator COMPLETE / non-product
 12E-08C-R3 Real Model & Release Gate。
 ```
 
-R1-01..04、R2-01..04、R3-01、R3-01A 与 R3-02 已完成实现和验证；R3-03 已完成专用准备，等待明确启动。
+R1-01..04、R2-01..04、R3-01、R3-01A、R3-02 与 R3-03 已完成实现和验证；R3-04 已输出 NO-GO。
 
 ## 4. 文档完成度
 
@@ -47,13 +47,12 @@ R1-01..04、R2-01..04、R3-01、R3-01A 与 R3-02 已完成实现和验证；R3-0
 ## 6. 下一任务
 
 ```text
-12E-08C-R3-03 Release Core 与 Legacy Regression。
+无 active code task；等待三个 required OBJ 外部修复和 Gate 重跑。
 ```
 
 ## 7. 阶段判断
 
-修复专项准备 COMPLETE；R1-01..04、R2-01..04、R3-01、R3-01A、R3-02 代码实施 COMPLETE；R3-03 READY；
-12E-08D 继续保持 BLOCKED。
+修复专项非生产证据 COMPLETE；R3-04 决策为 NO-GO；12E-08D 继续保持 BLOCKED。
 
 R3-01A 已把三个真实 OBJ 的 sampled 结论升级为完整 confirmed self-intersection 证据。R3-02 的独立准备
 文档已补齐，并明确任务证据完成不等于 production Gate PASS。
@@ -62,7 +61,7 @@ R3-01A 已把三个真实 OBJ 的 sampled 结论升级为完整 confirmed self-i
 
 后续产品目标已明确为 `legacy` 与 `global_surface_shell` 两条用户可选流水线。当前 legacy 生产 TIFF 路径
 继续可用；本专项只为 global 的生产准入提供 repair/post-strict 证据。global 被阻断时不得自动改用 legacy。
-统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-03。
+统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施；当前 R3-04 NO-GO，不得启动 08D。
 
 ## 9. R1-04 实际基线
 
@@ -149,3 +148,19 @@ Texture2D 3MF：complete_no_intersection，no-op strict PASS，validator/attribu
 四个 case 的任务证据全部完成，production Gate 0/4 通过。该矩阵证明当前 conservative repair 没有绕过
 完整自相交证据制造伪 PASS。R3-03 可以进入非生产 Release core 与 legacy regression，但三个 OBJ 的 global
 core 必须明确 `skipped_due_topology`；12E-08D 继续 BLOCKED。
+
+## 17. R3-03 实际结果
+
+R3-03 在 Release lane 中复跑四 case repair 证据。三个真实 OBJ 均保持
+`rejected_self_intersection/skipped_due_topology`，闭合 Texture2D 3MF 完成 partition、texture transfer、
+raster mapping 与 full closure，`fullClosurePass=true`。global lane 未写 TIFF/package。
+
+Release build PASS、CTest 37/37 PASS；repair-disabled 30 层 TIFF SHA-256 invariant 与 RIP strict 2/2 PASS。
+Quick CI 实际被既有 `material_process_top2 widthPx=48/226` baseline 阻断并被显式记录。Release budget
+继续 blocked，threshold 未冻结。
+
+## 18. R3-04 决策
+
+Gate 结果为 1/4 global core completed、3/4 topology skipped。三个 required OBJ 没有 admitted candidate，
+因此 provenance、post-strict、真实模型性能预算均不完整。R3-04 输出 NO-GO；只有外部修复三个 OBJ、
+四 case strict/global PASS、预算冻结、legacy golden 处置和用户重新确认后，才能再次申请 12E-08D。

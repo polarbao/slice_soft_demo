@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A、R3-02 COMPLETE / R3-03 READY
+> 文档状态：COMPLETE / NON-PRODUCTION / R3-04 NO-GO
 > 日期：2026-07-21
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R3-03
+> 当前原子任务：无；12E-08D 被 R3-04 NO-GO 阻断
 
 ## 1. 总目标
 
@@ -198,7 +198,7 @@ fail-fast，闭合 Texture2D 3MF 保持 no-op strict PASS。production Gate 0/4 
 
 ### 12E-08C-R3-03 Release Core 与 Legacy Regression
 
-状态：READY / NON-PRODUCTION。
+状态：COMPLETE / NON-PRODUCTION。
 
 范围：修复、partition、texture transfer、raster/full closure 的分段计时和 peak memory；旧 Profile/RIP/TIFF 回归。
 
@@ -208,13 +208,22 @@ fail-fast，闭合 Texture2D 3MF 保持 no-op strict PASS。production Gate 0/4 
 OBJ 的 global core 必须 `skipped_due_topology`；闭合 3MF 可执行 global core 证据；legacy/TIFF/RIP 回归
 不得被 global blocker 跳过。
 
+实际结果：三个 OBJ 均为 `skipped_due_topology`，闭合 Texture2D 3MF 完成 partition、texture transfer、
+raster mapping 和 full closure；Release build 与 CTest 37/37 PASS；repair-disabled TIFF invariant 和 RIP
+strict PASS。Quick CI 如实记录既有 `material_process_top2 widthPx=48/226` baseline blocker。结果见
+`DOC_EXEC_12E_08C_R3_03_ReleaseCore与LegacyRegression结果.md`。
+
 ### 12E-08C-R3-04 12E-08D GO/NO-GO
 
-状态：BLOCKED BY R3-03。
+状态：COMPLETE / NO-GO。
 
 范围：更新 admission matrix、正式报告和上下文，给出 08D 决策。
 
 完成标准：只有 required cases 与所有生产 Gate PASS 才输出 GO，否则保留 blocker 和 NO-GO。
+
+实际结果：四 case global core 仅 1/4 完成，三个 required OBJ 未 strict PASS，真实模型预算未冻结，Quick CI
+仍有已知 baseline。决策为 NO-GO，12E-08D 继续 BLOCKED。结果见
+`DOC_DECISION_12E_08C_R3_04_08D_GO_NO_GO.md`。
 
 ## 6. 计划验证层级
 

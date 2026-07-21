@@ -20,8 +20,12 @@
 | `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md` | 12C Qt 5.15.2 / MSVC 19.50+ fresh build lane 决策与验证 |
 | `DOC_SCHEMA_12E_MeshRepairReport.md` | 12E-08C 单 case repair/strict 诊断报告契约 |
 | `DOC_SCHEMA_12E_MeshRepairMatrix.md` | 12E-08C-R3-02 双 lane 真实模型矩阵汇总契约 |
+| `DOC_SCHEMA_12E_MeshRepairReleaseEvidence.md` | R3-03 Release repair/global/legacy 汇总契约 |
 | `DOC_EXEC_12E_08C_R3_02_真实模型RepairMatrix结果.md` | R3-02 四 case 双运行实际证据和生产阻断结论 |
 | `DOC_PREP_12E_08C_R3_03_ReleaseCore与LegacyRegression准备.md` | R3-03 非生产 Release core、legacy/TIFF/RIP 回归准备 |
+| `DOC_EXEC_12E_08C_R3_03_ReleaseCore与LegacyRegression结果.md` | R3-03 Release 分段证据与 legacy 回归结果 |
+| `DOC_PREP_12E_08C_R3_04_08D_GO_NO_GO准备.md` | R3-04 生产准入决策输入与 Gate |
+| `DOC_DECISION_12E_08C_R3_04_08D_GO_NO_GO.md` | 12E-08D 当前 NO-GO 决策与解除条件 |
 
 ## 决策记录
 

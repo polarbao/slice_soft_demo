@@ -337,7 +337,7 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：IN PROGRESS；12E-08A/08B/08C COMPLETE，12E-08C-R1/R2/R3-01/01A/02 COMPLETE，R3-03 READY，12E-08D BLOCKED
+状态：IN PROGRESS；12E-08A/08B/08C COMPLETE，12E-08C-R1/R2/R3 COMPLETE，R3-04 NO-GO，12E-08D BLOCKED
 
 前置：
 
@@ -404,7 +404,7 @@ docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
 
 ### 11.1 12E-08C-R1/R2/R3 修复前置专项
 
-状态：IN PROGRESS / R1、R2、R3-01、R3-01A、R3-02 COMPLETE / R3-03 READY。
+状态：COMPLETE / NON-PRODUCTION / R3-04 NO-GO。
 
 执行入口：
 
@@ -413,12 +413,13 @@ docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 ```
 
-阶段顺序：Contract & Eligibility -> Conservative Repair -> Real Model & Release Gate。R3-04 是唯一可把
-12E-08D 从 BLOCKED 变为 READY 的任务；manual required 不计入 production PASS。
+阶段顺序：Contract & Eligibility -> Conservative Repair -> Real Model & Release Gate。R3-03 已完成
+Release/global/legacy 证据；R3-04 因三个 required OBJ 未 strict PASS、预算未冻结和已知 legacy baseline
+输出 NO-GO。manual required 不计入 production PASS。
 
 ### 11.2 12E-08D 双模式生产写包原子任务
 
-状态：PREPARED / BLOCKED BY 12E-08C-R3-04 AND USER CONFIRMATION。
+状态：PREPARED / BLOCKED BY 12E-08C-R3-04 NO-GO AND USER CONFIRMATION。
 
 固定目标：
 
