@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4-01 COMPLETE / PRODUCTION NOT ADMITTED
+> 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4-01 COMPLETE / R4-02 READY / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-21
-> 当前项目原子任务：12E-08C-R4-01 Model Preflight Contract
+> 当前项目原子任务：12E-08C-R4-02 READY / WAIT USER START
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -450,7 +450,7 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 
 ### 11.3 12E-08C-R4 模型导入预检与修复资产准入
 
-状态：PREPARED；插入于 R3-04 NO-GO 与 08D 之间。
+状态：IN PROGRESS；R4-01 COMPLETE，R4-02 READY；插入于 R3-04 NO-GO 与 08D 之间。
 
 目标：
 
@@ -483,6 +483,7 @@ required 模型解除生产阻断。
 ```text
 docs/slice/DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md
 docs/slice/DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md
+docs/slice/DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
 ```
 

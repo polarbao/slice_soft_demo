@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：PREPARED
+> 文档状态：IN PROGRESS / R4-01 COMPLETE / R4-02 READY
 > 日期：2026-07-21
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
 
@@ -79,4 +79,3 @@ R5 必须另行完成 CMake/vcpkg、许可证、维护、尺寸误差、UV/材�
 10A：可基于 R4B 准备 preview；
 10B/10C production evidence：等待 R4C 与 08D。
 ```
-
