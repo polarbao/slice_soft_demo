@@ -130,7 +130,7 @@ Current Stage 12 track:
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
-12E: 12E-01/02/03/04/05/06/07, 12E-08A/08B/08C, 12E-08C-R1-01..04, and R2-01..04 complete; Release evidence is blocked by real OBJ topology. The approved Target State is selectable legacy/global_surface_shell pipelines with one RGBWSV TIFF contract, but this is not implemented. Four required inputs now have repeatable independent post-strict evidence; R3-01 non-manifold pattern classification is the next task, R3-01A complete self-intersection evidence is prepared, and 12E-08D remains blocked.
+12E: 12E-01/02/03/04/05/06/07, 12E-08A/08B/08C, 12E-08C-R1-01..04, R2-01..04, and R3-01 complete; Release evidence is blocked by real OBJ topology. The approved Target State is selectable legacy/global_surface_shell pipelines with one RGBWSV TIFF contract, but this is not implemented. Non-manifold patterns are repeatably classified without mutation; R3-01A complete self-intersection evidence is the next prepared task, and 12E-08D remains blocked.
 ```
 
 R0/R1/R2 principles still apply to refactors:

@@ -70,6 +70,7 @@ Json BuildOptions(const MeshRepairOptions& options)
         {"allowNewFaces", options.allowNewFaces},
         {"newFaceAttributePolicy", options.newFaceAttributePolicy},
         {"validatePostRepairEvidence", options.validatePostRepairEvidence},
+        {"classifyNonManifoldPatterns", options.classifyNonManifoldPatterns},
     });
 }
 
@@ -255,6 +256,63 @@ Json BuildEvidenceValidation(const MeshRepairEvidenceValidation& validation)
     });
 }
 
+Json BuildNonManifoldAnalysis(const MeshNonManifoldAnalysis& analysis)
+{
+    Json::Array edges;
+    for (const MeshNonManifoldEdgeAnalysis& edge : analysis.edges)
+    {
+        Json::Array edgeVertices;
+        for (const std::uint64_t vertexIndex : edge.edgeVertexIndices)
+        {
+            edgeVertices.push_back(vertexIndex);
+        }
+        Json::Array incidentTriangles;
+        for (const std::uint64_t triangleIndex : edge.incidentTriangleIndices)
+        {
+            incidentTriangles.push_back(triangleIndex);
+        }
+        Json::Array sourceTriangles;
+        for (const std::uint64_t sourceIndex : edge.incidentSourceTriangleIndices)
+        {
+            sourceTriangles.push_back(sourceIndex);
+        }
+        Json::Array residualComponents;
+        for (const std::uint64_t componentId : edge.residualComponentIds)
+        {
+            residualComponents.push_back(componentId);
+        }
+        edges.push_back(Json::object({
+            {"edgeVertexIndices", Json{std::move(edgeVertices)}},
+            {"incidentTriangleIndices", Json{std::move(incidentTriangles)}},
+            {"incidentSourceTriangleIndices", Json{std::move(sourceTriangles)}},
+            {"residualComponentIds", Json{std::move(residualComponents)}},
+            {"forwardUses", edge.forwardUses},
+            {"reverseUses", edge.reverseUses},
+            {"pattern", MeshNonManifoldPatternName(edge.pattern)},
+            {"duplicateGeometry", edge.duplicateGeometry},
+            {"attributeConflict", edge.attributeConflict},
+            {"mixedWinding", edge.mixedWinding},
+            {"uniqueFanSplitFeasible", edge.uniqueFanSplitFeasible},
+            {"reasonCode", edge.reasonCode},
+        }));
+    }
+    return Json::object({
+        {"status", analysis.status},
+        {"complete", analysis.complete},
+        {"allEdgesClassified", analysis.allEdgesClassified},
+        {"allUniqueFanSplitsFeasible", analysis.allUniqueFanSplitsFeasible},
+        {"nonManifoldEdgeCount", analysis.nonManifoldEdgeCount},
+        {"duplicateShellOrExporterDuplicateEdges", analysis.duplicateShellOrExporterDuplicateEdges},
+        {"separableLocalEdgeFanEdges", analysis.separableLocalEdgeFanEdges},
+        {"overlappingComponentEdges", analysis.overlappingComponentEdges},
+        {"mixedWindingFanEdges", analysis.mixedWindingFanEdges},
+        {"attributeConflictingFanEdges", analysis.attributeConflictingFanEdges},
+        {"unclassifiedEdges", analysis.unclassifiedEdges},
+        {"edges", Json{std::move(edges)}},
+        {"issues", ValidationIssuesToJson(analysis.issues)},
+    });
+}
+
 Json BuildAdmission(const MeshRepairAdmission& admission)
 {
     return Json::object({
@@ -319,6 +377,7 @@ Json BuildMeshRepairReport(const MeshRepairResult& result)
             result.generatedTriangleMappings)},
         {"attributePreservation", BuildAttributePreservation(result.attributePreservation)},
         {"evidenceValidation", BuildEvidenceValidation(result.evidenceValidation)},
+        {"nonManifoldAnalysis", BuildNonManifoldAnalysis(result.nonManifoldAnalysis)},
         {"postRepair", BuildDiagnostics(result.postRepair)},
         {"admission", BuildAdmission(result.admission)},
         {"performance", BuildPerformance(result.performance)},

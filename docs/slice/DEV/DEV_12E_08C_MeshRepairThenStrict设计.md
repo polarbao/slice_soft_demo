@@ -206,6 +206,11 @@ UV/material triangle provenance 保持；
 对于 `meigui_fudiao` 的大规模 non-manifold，先做来源分类：重复壳、重叠组件、共享边 fan、导出器重复面或
 其他模式。没有稳定模式前不实现“批量修复”。
 
+R3-01 已实现只读 pattern classifier：先移除全部 non-manifold edge，以 incidence=2 的 manifold edge 建立
+稳定 residual components；再按 duplicate、attribute conflict、mixed winding、separable fan、overlapping
+component、unclassified 的固定优先级分类。只有每个 residual fan group 恰含方向相反的两面，才标记
+`uniqueFanSplitFeasible=true`。该结果只进入 eligibility/report，不创建 `split_edge_fan` operation。
+
 ## 9. Attribute Preservation
 
 `SceneModelTriangleMeshAdapter` 应提供或扩展 source mapping：

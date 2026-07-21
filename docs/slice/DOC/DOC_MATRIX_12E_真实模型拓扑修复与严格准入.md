@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 真实模型拓扑修复与严格准入
 
-> 文档状态：IN PROGRESS / R2 EVIDENCE FROZEN / R3-01 READY
+> 文档状态：IN PROGRESS / R2、R3-01 EVIDENCE FROZEN / R3-01A READY
 > 日期：2026-07-20
 
 ## 1. Gate Matrix
@@ -62,6 +62,10 @@ PASS；planarity/budget/UV/branching fixture 均稳定 blocked。
 R2-04 实际结果：四个 required case 均完成两次稳定投影比较；operation/source/vertex/generated mapping 和属性
 Gate 均通过。三个真实 OBJ 因 self-intersection 检查未完整而在 post-strict Gate 阻断，闭合 3MF 全 Gate
 PASS；所有 case 均保持 `productionOutputWritten=false`。
+
+R3-01 实际结果：`nai_you_new` 与闭合 3MF 无 non-manifold edge；`aishen_fudiao` 的 59 条 edge 分类为
+2 duplicate exporter + 57 attribute conflict；`meigui_fudiao` 的 10940 条分类为 10935 duplicate exporter +
+5 attribute conflict。全部 edge 有稳定 source/component 证据，0 个真实 case 满足 all-unique fan split。
 
 ## 5. Attribute Matrix
 

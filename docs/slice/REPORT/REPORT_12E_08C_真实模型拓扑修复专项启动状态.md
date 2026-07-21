@@ -1,6 +1,6 @@
 # REPORT_12E-08C 真实模型拓扑修复专项启动状态
 
-> 文档状态：IN PROGRESS / R1、R2 COMPLETE / R3-01 READY
+> 文档状态：IN PROGRESS / R1、R2、R3-01 COMPLETE / R3-01A READY
 > 日期：2026-07-20
 
 ## 1. 启动原因
@@ -31,7 +31,7 @@ repair_then_strict：R2-04 independent evidence validator COMPLETE / non-product
 12E-08C-R3 Real Model & Release Gate。
 ```
 
-R1-01..04 与 R2-01..04 已完成实现和验证；R3-01 已完成准备并由用户明确启动。
+R1-01..04、R2-01..04 与 R3-01 已完成实现和验证；R3-01A 已完成准备，等待明确启动。
 
 ## 4. 文档完成度
 
@@ -47,21 +47,21 @@ R1-01..04 与 R2-01..04 已完成实现和验证；R3-01 已完成准备并由�
 ## 6. 下一任务
 
 ```text
-12E-08C-R3-01 Non-Manifold Pattern Classifier。
+12E-08C-R3-01A 完整自相交证据。
 ```
 
 ## 7. 阶段判断
 
-修复专项准备 COMPLETE；R1-01..04、R2-01..04 代码实施 COMPLETE；R3-01 READY；12E-08D 继续保持 BLOCKED。
+修复专项准备 COMPLETE；R1-01..04、R2-01..04、R3-01 代码实施 COMPLETE；R3-01A READY；12E-08D 继续保持 BLOCKED。
 
-R2/R3 的独立准备文档已补齐；R2 已完成，R3-01 解除前置阻断，R3-01A 仍按 Gate 阻断。R1-04
+R2/R3 的独立准备文档已补齐；R2 与 R3-01 已完成，R3-01A 解除前置阻断。R1-04
 发现的 sampled self-intersection 缺口已新增 R3-01A 准备。
 
 ## 8. 双模式目标同步
 
 后续产品目标已明确为 `legacy` 与 `global_surface_shell` 两条用户可选流水线。当前 legacy 生产 TIFF 路径
 继续可用；本专项只为 global 的生产准入提供 repair/post-strict 证据。global 被阻断时不得自动改用 legacy。
-统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-01。
+统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-01A。
 
 ## 9. R1-04 实际基线
 
@@ -103,3 +103,18 @@ material/UV、完整 post-strict、canonical hash 和 non-production safety。ne
 provenance、属性破坏、operation/hash 篡改和 incomplete strict。四个 required case 各运行两次：闭合
 Texture2D 3MF 全 Gate PASS；三个真实 OBJ 均因 sampled self-intersection evidence 返回
 `blocked_incomplete_post_strict` 并丢弃 candidate。四 case stable projection 全部一致，始终未写生产包。
+
+## 14. R3-01 实际结果
+
+R3-01 新增确定性 non-manifold pattern classifier，不修改网格。generated fixture 覆盖全部六种 primary
+pattern、material/UV conflict、错误属性数量和双运行顺序。四个 required case 各执行两次：
+
+```text
+nai_you_new：nonManifold=0，not_present；
+aishen_fudiao：59 = duplicate exporter 2 + attribute conflict 57；
+meigui_fudiao：10940 = duplicate exporter 10935 + attribute conflict 5；
+Texture2D 3MF：nonManifold=0，not_present。
+```
+
+四 case repeatability 全部 PASS，两个真实 non-manifold case 均不满足 all-unique fan split，因此继续 manual，
+不创建 `split_edge_fan` operation。下一任务为 R3-01A 完整自相交证据。

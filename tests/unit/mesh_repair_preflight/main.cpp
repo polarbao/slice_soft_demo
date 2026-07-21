@@ -139,6 +139,37 @@ bool TestDuplicateAttributeConflictIsDetectedWithoutMutation()
         && ExpectTrue(!result.preRepair.strictPass, "conflicting duplicate should not pass strict diagnostics");
 }
 
+bool TestExplicitNonManifoldClassifierFeedsEligibility()
+{
+    slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    mesh.mesh.triangles.push_back(mesh.mesh.triangles.front());
+    slicer_core::SurfaceTriangleAttributes duplicate = mesh.triangle_attributes.front();
+    duplicate.source_triangle_index = mesh.triangle_attributes.size();
+    mesh.triangle_attributes.push_back(duplicate);
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+
+    slicer_core::MeshRepairPreflightRequest request = MakeRequest(mesh);
+    request.options.classifyNonManifoldPatterns = true;
+    const slicer_core::MeshRepairResult result =
+        slicer_core::EvaluateMeshRepairPreflight(request);
+
+    return ExpectTrue(
+               result.nonManifoldAnalysis.status == "classified",
+               "explicit classifier should produce an aggregate status")
+        && ExpectTrue(
+            result.nonManifoldAnalysis.nonManifoldEdgeCount == 3U,
+            "duplicate box face should classify three non-manifold edges")
+        && ExpectTrue(
+            result.nonManifoldAnalysis.duplicateShellOrExporterDuplicateEdges == 3U,
+            "duplicate box face should use duplicate exporter pattern")
+        && ExpectTrue(
+            HasDecision(
+                result.eligibility,
+                "MESH_NON_MANIFOLD_EDGES",
+                "E_12E_REPAIR_AMBIGUOUS_TOPOLOGY"),
+            "classifier should keep non-unique fan evidence manual");
+}
+
 bool TestMissingMeshUsesStableError()
 {
     try
@@ -162,6 +193,7 @@ int main()
 {
     const bool passed = TestClosedMeshProducesAuditableNoRepairResult()
         && TestDuplicateAttributeConflictIsDetectedWithoutMutation()
+        && TestExplicitNonManifoldClassifierFeedsEligibility()
         && TestMissingMeshUsesStableError();
     if (!passed)
     {

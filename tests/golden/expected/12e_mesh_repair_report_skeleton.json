@@ -41,6 +41,21 @@
     "status": "not_evaluated",
     "vertexMappingPass": false
   },
+  "nonManifoldAnalysis": {
+    "allEdgesClassified": false,
+    "allUniqueFanSplitsFeasible": false,
+    "attributeConflictingFanEdges": 0,
+    "complete": false,
+    "duplicateShellOrExporterDuplicateEdges": 0,
+    "edges": [],
+    "issues": [],
+    "mixedWindingFanEdges": 0,
+    "nonManifoldEdgeCount": 0,
+    "overlappingComponentEdges": 0,
+    "separableLocalEdgeFanEdges": 0,
+    "status": "not_evaluated",
+    "unclassifiedEdges": 0
+  },
   "hashContract": {
     "algorithm": "sha256",
     "attributeHashLength": 64,
@@ -84,6 +99,7 @@
     "allowNewFaces": false,
     "allowVertexWeld": false,
     "allowWindingRepair": false,
+    "classifyNonManifoldPatterns": false,
     "enabled": false,
     "maxAffectedFaceRatio": 0,
     "maxBoundaryLoopDiameterMm": 0.5,

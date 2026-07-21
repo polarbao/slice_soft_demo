@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1、R2 COMPLETE / R3-01 READY
+> 文档状态：IN PROGRESS / R1、R2、R3-01 COMPLETE / R3-01A READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R3-01
+> 当前原子任务：无；下一允许任务为 12E-08C-R3-01A
 
 ## 1. 总目标
 
@@ -150,7 +150,7 @@ self-intersection evidence 保持 `blocked_incomplete_post_strict`。结果见
 
 ### 12E-08C-R3-01 Non-Manifold Pattern Classifier
 
-状态：READY。
+状态：COMPLETE。
 
 范围：分类 edge fan、重复壳、重叠组件和导出器重复模式；只评估唯一局部 fan split。
 
@@ -158,9 +158,15 @@ self-intersection evidence 保持 `blocked_incomplete_post_strict`。结果见
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_RealModelReleaseGate准备.md`。
 
+实际结果：新增只读 non-manifold edge classifier，固定分类 duplicate exporter、separable fan、overlapping
+component、mixed winding、attribute conflict 和 unclassified，并输出完整 edge/source/residual-component 证据。
+`aishen_fudiao` 59 条、`meigui_fudiao` 10940 条 edge 均完整分类且双运行稳定，均无全局唯一 fan split，
+不执行批量修复。结果见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R3_01_NonManifoldPatternClassifier结果.md`。
+
 ### 12E-08C-R3-01A 完整自相交证据
 
-状态：BLOCKED BY R2 AND R3-01。
+状态：READY。
 
 范围：用确定性空间索引完整枚举 required real model 自相交候选，复用当前 narrow-phase，替代 sampled
 证据；confirmed intersection 继续 fail-fast。

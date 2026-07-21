@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08C-R3 Real Model 与 Release Gate 准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY R2
+> 文档状态：IN PROGRESS / R3-01 COMPLETE / R3-01A READY
 > 日期：2026-07-20
 
 ## 1. 准备结论
@@ -12,7 +12,13 @@ R1-04 新增事实：三个 required OBJ 的当前自相交诊断均达到 trian
 Repair Matrix 前新增 R3-01A 完整自相交证据，准备入口为
 `DOC_PREP_12E_08C_R3_01A_完整自相交证据准备.md`。
 
+R3-01 已完成只读的 non-manifold pattern classifier，真实模型分类结果与重复性证据见
+`DOC_EXEC_12E_08C_R3_01_NonManifoldPatternClassifier结果.md`。当前下一允许的原子任务为 R3-01A；
+R3-02 及之后任务继续阻断。
+
 ## 2. R3-01 Non-Manifold Pattern Classifier
+
+状态：COMPLETE / NON-PRODUCTION。
 
 分类对象至少包括：
 

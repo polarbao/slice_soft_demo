@@ -21,7 +21,7 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12D-10 real-model material closure validation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, and `12E-08C-R2-01..04` are complete. Independent mapping/attribute/post-strict/hash validation is repeatable; real OBJ topology remains blocked and the next allowed atomic task is `12E-08C-R3-01 Non-Manifold Pattern Classifier`.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01` are complete. Non-manifold patterns are repeatably classified without mutation; real OBJ topology remains blocked and the next allowed atomic task is `12E-08C-R3-01A Complete Self-Intersection Evidence`.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - Current global_surface_shell remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. The approved Target State is explicit `slicePipeline.mode=legacy|global_surface_shell`, with legacy as default and both admitted production modes sharing the existing RGBWSV TIFF writer. This target is not implemented and does not authorize `12E-08D`; closed production gates and explicit user confirmation are still required.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.

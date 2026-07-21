@@ -368,6 +368,7 @@ std::string ComputeMeshRepairOptionsHash(const MeshRepairOptions& options)
     encoder.AppendBoolean(options.allowNewFaces);
     encoder.AppendString(options.newFaceAttributePolicy);
     encoder.AppendBoolean(options.validatePostRepairEvidence);
+    encoder.AppendBoolean(options.classifyNonManifoldPatterns);
     return encoder.FinalizeHex();
 }
 

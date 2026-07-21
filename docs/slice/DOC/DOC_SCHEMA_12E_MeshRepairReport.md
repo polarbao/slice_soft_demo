@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Mesh Repair Report
 
-> 文档状态：PARTIAL / R1 CONTRACT、R2 CONSERVATIVE REPAIR AND EVIDENCE GUARD IMPLEMENTED
+> 文档状态：PARTIAL / R1、R2、R3-01 DIAGNOSTIC CONTRACT IMPLEMENTED
 > Schema：`slicesoft.mesh_repair.12e_08c.1`
 > 日期：2026-07-20
 
@@ -36,6 +36,7 @@ reports/mesh_repair_report.json
   "generatedTriangleMappings": [],
   "attributePreservation": {},
   "evidenceValidation": {},
+  "nonManifoldAnalysis": {},
   "postRepair": {},
   "admission": {},
   "performance": {},
@@ -118,7 +119,8 @@ R2-02/R2-03 新增的显式开关和预算都属于 options hash：
   "maxAffectedFaceRatio": 0.0,
   "allowNewFaces": false,
   "newFaceAttributePolicy": "reject",
-  "validatePostRepairEvidence": false
+  "validatePostRepairEvidence": false,
+  "classifyNonManifoldPatterns": false
 }
 ```
 
@@ -277,6 +279,30 @@ R2-04 按上述字段顺序短路验证。稳定状态包括 `passed`、`blocked
 `blocked_post_strict`、`blocked_hash_consistency` 和 `blocked_non_production_safety`。只有全部 Gate PASS 才允许
 `candidateAccepted=true`；该字段仍不等价于 production admission。
 
+## 10.2 Non-Manifold Analysis
+
+```json
+{
+  "status": "not_evaluated",
+  "complete": false,
+  "allEdgesClassified": false,
+  "allUniqueFanSplitsFeasible": false,
+  "nonManifoldEdgeCount": 0,
+  "duplicateShellOrExporterDuplicateEdges": 0,
+  "separableLocalEdgeFanEdges": 0,
+  "overlappingComponentEdges": 0,
+  "mixedWindingFanEdges": 0,
+  "attributeConflictingFanEdges": 0,
+  "unclassifiedEdges": 0,
+  "edges": [],
+  "issues": []
+}
+```
+
+每条 edge 记录 `edgeVertexIndices`、`incidentTriangleIndices`、`incidentSourceTriangleIndices`、
+`residualComponentIds`、forward/reverse uses、pattern flags、`uniqueFanSplitFeasible` 和稳定 `reasonCode`。
+edge 按顶点 key 排序，triangle/source/component ids 升序；本对象只提供结构证据，不表示 repair 已执行。
+
 ## 11. Admission
 
 ```json
@@ -340,6 +366,6 @@ R1-01 已实现内存 DTO、canonical hash 和 report skeleton serializer；R1-0
 policy；R1-03 已用 11 个 generated policy-contract fixtures 冻结 report projection golden；R1-04 已为三个
 真实 OBJ 和闭合 Texture2D 3MF 生成只读 Preflight report；R2-01 已实现 cleanup/source mapping；R2-02 已实现
 受约束 weld/winding、vertex mapping 和组件守门；R2-03 已实现简单 boundary fill、generated mapping 和显式
-new-face policy；R2-04 已实现统一 evidence validator/post-strict guard、候选丢弃与 negative tests。尚未实现
-R3 non-manifold/完整自相交证据或 production admission；报告文件仅由诊断 app 写入，repair core 仍不拥有
+new-face policy；R2-04 已实现统一 evidence validator/post-strict guard、候选丢弃与 negative tests；R3-01
+已实现 non-manifold pattern classifier。尚未实现 fan split、完整自相交证据或 production admission；报告文件仅由诊断 app 写入，repair core 仍不拥有
 文件系统写入职责。

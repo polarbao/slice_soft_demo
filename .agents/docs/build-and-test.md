@@ -260,3 +260,15 @@ ctest --test-dir build -C Debug -R "mesh_repair_(r2_04|r2_03|r2_02|evidence_vali
 输出位于 `output/benchmarks/12e_08c_r2_04_post_strict`。独立 validator 按固定顺序复核 operation、source/
 vertex/generated mapping、material/UV、完整 post-strict 和 canonical hash；失败候选被丢弃。脚本对四个
 required case 各运行两次，只写诊断 JSON，始终保持 `productionOutputWritten=false`。
+
+## 12E-08C-R3-01 Non-Manifold Pattern Evidence
+
+```powershell
+cmake --build build --config Debug --target mesh_non_manifold_pattern_classifier_unit_tests mesh_repair_contract_unit_tests mesh_repair_preflight_unit_tests mesh_repair_preflight
+ctest --test-dir build -C Debug -R "mesh_(non_manifold_pattern|repair_(contract|preflight|r3_01))" --output-on-failure
+.\scripts\run_12e_08c_r3_01_non_manifold_patterns.ps1 -BuildDir build -Config Debug
+```
+
+输出位于 `output/benchmarks/12e_08c_r3_01_non_manifold`。脚本对四个 required case 各执行两次，冻结每条
+non-manifold edge 的 pattern、incident/source triangle、residual component 和 fan-split feasibility；只做
+诊断分类，不修改网格、不写 production package/TIFF。

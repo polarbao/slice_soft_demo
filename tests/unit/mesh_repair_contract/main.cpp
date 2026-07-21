@@ -100,6 +100,7 @@ slicer_core::Json BuildStableProjection(const slicer_core::Json& report)
         {"operations", report.at("operations")},
         {"attributePreservation", report.at("attributePreservation")},
         {"evidenceValidation", report.at("evidenceValidation")},
+        {"nonManifoldAnalysis", report.at("nonManifoldAnalysis")},
         {"postRepair", report.at("postRepair")},
         {"admission", report.at("admission")},
         {"performance", report.at("performance")},
@@ -151,6 +152,10 @@ bool HashesAreStableAndIndependent()
     validationOptions.validatePostRepairEvidence = true;
     const slicer_core::MeshRepairHashes validationOptionHashes =
         slicer_core::ComputeMeshRepairPreHashes(original, validationOptions);
+    slicer_core::MeshRepairOptions classifierOptions = options;
+    classifierOptions.classifyNonManifoldPatterns = true;
+    const slicer_core::MeshRepairHashes classifierOptionHashes =
+        slicer_core::ComputeMeshRepairPreHashes(original, classifierOptions);
 
     return ExpectTrue(first.preRepairGeometryHash == second.preRepairGeometryHash, "geometry hash repeats")
         && ExpectTrue(first.preRepairAttributeHash == second.preRepairAttributeHash, "attribute hash repeats")
@@ -163,7 +168,8 @@ bool HashesAreStableAndIndependent()
         && ExpectTrue(first.optionsHash != changedOptionsHashes.optionsHash, "options change changes options hash")
         && ExpectTrue(first.optionsHash != windingOptionHashes.optionsHash, "winding option changes options hash")
         && ExpectTrue(first.optionsHash != boundaryOptionHashes.optionsHash, "boundary policy changes options hash")
-        && ExpectTrue(first.optionsHash != validationOptionHashes.optionsHash, "validation gate changes options hash");
+        && ExpectTrue(first.optionsHash != validationOptionHashes.optionsHash, "validation gate changes options hash")
+        && ExpectTrue(first.optionsHash != classifierOptionHashes.optionsHash, "classifier option changes options hash");
 }
 
 bool OperationHashIsDeterministic()

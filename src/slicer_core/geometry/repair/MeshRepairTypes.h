@@ -75,6 +75,19 @@ enum class MeshRepairTriangleDisposition
 };
 
 /**
+ * @brief Stable primary patterns for one non-manifold edge.
+ */
+enum class MeshNonManifoldPattern
+{
+    DuplicateShellOrExporterDuplicate,
+    SeparableLocalEdgeFan,
+    OverlappingComponent,
+    MixedWindingFan,
+    AttributeConflictingFan,
+    Unclassified,
+};
+
+/**
  * @brief Stable machine-readable errors for the 12E repair prerequisite.
  */
 enum class MeshRepairErrorCode
@@ -135,6 +148,7 @@ struct MeshRepairOptions
     bool allowNewFaces{false};
     std::string newFaceAttributePolicy{"reject"};
     bool validatePostRepairEvidence{false};
+    bool classifyNonManifoldPatterns{false};
 };
 
 /**
@@ -303,6 +317,45 @@ struct MeshRepairEvidenceValidation
 };
 
 /**
+ * @brief Deterministic structural evidence for one non-manifold edge.
+ */
+struct MeshNonManifoldEdgeAnalysis
+{
+    std::array<std::uint64_t, 2> edgeVertexIndices{0U, 0U};
+    std::vector<std::uint64_t> incidentTriangleIndices;
+    std::vector<std::uint64_t> incidentSourceTriangleIndices;
+    std::vector<std::uint64_t> residualComponentIds;
+    std::uint64_t forwardUses{0U};
+    std::uint64_t reverseUses{0U};
+    MeshNonManifoldPattern pattern{MeshNonManifoldPattern::Unclassified};
+    bool duplicateGeometry{false};
+    bool attributeConflict{false};
+    bool mixedWinding{false};
+    bool uniqueFanSplitFeasible{false};
+    std::string reasonCode;
+};
+
+/**
+ * @brief Aggregate R3-01 non-manifold pattern classification.
+ */
+struct MeshNonManifoldAnalysis
+{
+    std::string status{"not_evaluated"};
+    bool complete{false};
+    bool allEdgesClassified{false};
+    bool allUniqueFanSplitsFeasible{false};
+    std::uint64_t nonManifoldEdgeCount{0U};
+    std::uint64_t duplicateShellOrExporterDuplicateEdges{0U};
+    std::uint64_t separableLocalEdgeFanEdges{0U};
+    std::uint64_t overlappingComponentEdges{0U};
+    std::uint64_t mixedWindingFanEdges{0U};
+    std::uint64_t attributeConflictingFanEdges{0U};
+    std::uint64_t unclassifiedEdges{0U};
+    std::vector<MeshNonManifoldEdgeAnalysis> edges;
+    std::vector<ValidationIssue> issues;
+};
+
+/**
  * @brief Non-production admission evidence produced by the repair prerequisite.
  */
 struct MeshRepairAdmission
@@ -352,6 +405,7 @@ struct MeshRepairResult
     std::vector<MeshRepairGeneratedTriangleMapping> generatedTriangleMappings;
     MeshRepairAttributePreservation attributePreservation;
     MeshRepairEvidenceValidation evidenceValidation;
+    MeshNonManifoldAnalysis nonManifoldAnalysis;
     MeshRepairDiagnosticsSummary postRepair;
     MeshRepairAdmission admission;
     MeshRepairPerformance performance;
@@ -392,6 +446,13 @@ std::string MeshRepairAttributeDecisionName(MeshRepairAttributeDecision decision
  * @return Stable disposition text.
  */
 std::string MeshRepairTriangleDispositionName(MeshRepairTriangleDisposition disposition);
+
+/**
+ * @brief Convert a non-manifold primary pattern to its stable report name.
+ * @param pattern Pattern value.
+ * @return Stable pattern name.
+ */
+std::string MeshNonManifoldPatternName(MeshNonManifoldPattern pattern);
 
 /**
  * @brief Convert a repair error code to its stable machine-readable name.

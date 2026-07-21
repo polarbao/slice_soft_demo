@@ -108,6 +108,26 @@ std::string MeshRepairTriangleDispositionName(const MeshRepairTriangleDispositio
     return "retained";
 }
 
+std::string MeshNonManifoldPatternName(const MeshNonManifoldPattern pattern)
+{
+    switch (pattern)
+    {
+    case MeshNonManifoldPattern::DuplicateShellOrExporterDuplicate:
+        return "duplicate_shell_or_exporter_duplicate";
+    case MeshNonManifoldPattern::SeparableLocalEdgeFan:
+        return "separable_local_edge_fan";
+    case MeshNonManifoldPattern::OverlappingComponent:
+        return "overlapping_component";
+    case MeshNonManifoldPattern::MixedWindingFan:
+        return "mixed_winding_fan";
+    case MeshNonManifoldPattern::AttributeConflictingFan:
+        return "attribute_conflicting_fan";
+    case MeshNonManifoldPattern::Unclassified:
+        return "unclassified";
+    }
+    return "unclassified";
+}
+
 std::string MeshRepairErrorCodeName(const MeshRepairErrorCode code)
 {
     switch (code)

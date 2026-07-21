@@ -39,6 +39,7 @@ struct Options
     bool executeR2Topology{false};
     bool executeR2Boundary{false};
     bool executeR2EvidenceGuard{false};
+    bool classifyR3NonManifoldPatterns{false};
     double weldToleranceMm{0.0};
     std::size_t maxBoundaryLoopEdges{0U};
     double maxBoundaryLoopDiameterMm{0.0};
@@ -114,6 +115,10 @@ Options ParseOptions(const int argc, char** argv)
         {
             options.executeR2EvidenceGuard = true;
         }
+        else if (argument == "--classify-r3-01")
+        {
+            options.classifyR3NonManifoldPatterns = true;
+        }
         else if (argument == "--weld-tolerance-mm")
         {
             options.weldToleranceMm = std::stod(RequireValue(argc, argv, index, argument));
@@ -161,7 +166,8 @@ Options ParseOptions(const int argc, char** argv)
                 << "--max-boundary-loop-perimeter-mm <value> "
                 << "--max-boundary-planarity-error-mm <value> "
                 << "--max-hole-area-mm2 <value> --max-affected-face-ratio <value> | "
-                << "--execute-r2-04 with the same explicit R2-03 budgets]\n";
+                << "--execute-r2-04 with the same explicit R2-03 budgets | "
+                << "--classify-r3-01]\n";
             std::exit(0);
         }
         else
@@ -185,7 +191,8 @@ Options ParseOptions(const int argc, char** argv)
     const int operationSetCount = (options.executeCleanup ? 1 : 0)
         + (options.executeR2Topology ? 1 : 0)
         + (options.executeR2Boundary ? 1 : 0)
-        + (options.executeR2EvidenceGuard ? 1 : 0);
+        + (options.executeR2EvidenceGuard ? 1 : 0)
+        + (options.classifyR3NonManifoldPatterns ? 1 : 0);
     if (operationSetCount > 1)
     {
         throw std::runtime_error("mesh repair operation sets are mutually exclusive");
@@ -525,6 +532,8 @@ int RunPreflight(const Options& options)
         request.input = input;
         request.options.enabled = false;
         request.options.mode = "strict_closed";
+        request.options.classifyNonManifoldPatterns =
+            options.classifyR3NonManifoldPatterns;
         request.sourceHash = sourceHash;
         request.robustnessOptions = robustnessOptions;
         result = slicer_core::EvaluateMeshRepairPreflight(request);
@@ -535,13 +544,15 @@ int RunPreflight(const Options& options)
         << "mesh_repair_preflight: evidence collected\n"
         << "  source: " << input.sourcePath << '\n'
         << "  operationSet: "
-        << (options.executeR2EvidenceGuard
+        << (options.classifyR3NonManifoldPatterns
+                ? "r3_non_manifold_pattern_classifier"
+                : (options.executeR2EvidenceGuard
                 ? "r2_post_strict_attribute_guard"
                 : (options.executeR2Boundary
                 ? "r2_boundary_loop_repair"
                 : (options.executeR2Topology
                         ? "r2_vertex_weld_winding"
-                        : (options.executeCleanup ? "r2_cleanup" : "preflight"))))
+                        : (options.executeCleanup ? "r2_cleanup" : "preflight")))))
         << '\n'
         << "  status: " << slicer_core::MeshRepairStatusName(result.status) << '\n'
         << "  vertices: " << result.input.vertexCount << '\n'

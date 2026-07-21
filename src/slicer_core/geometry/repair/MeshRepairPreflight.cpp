@@ -3,6 +3,7 @@
 #include "slicer_core/geometry/MeshTopologyDiagnostics.h"
 #include "slicer_core/geometry/repair/MeshRepairEligibilityPolicy.h"
 #include "slicer_core/geometry/repair/MeshRepairHash.h"
+#include "slicer_core/geometry/repair/MeshNonManifoldPatternClassifier.h"
 
 #include <algorithm>
 #include <array>
@@ -252,7 +253,18 @@ MeshRepairResult EvaluateMeshRepairPreflight(
     const MeshRobustnessReport robustness = AnalyzeMeshRobustness(
         request.mesh->mesh,
         request.robustnessOptions);
-    const MeshRepairEligibilityEvidence evidence = BuildEligibilityEvidence(*request.mesh);
+    MeshRepairEligibilityEvidence evidence = BuildEligibilityEvidence(*request.mesh);
+    if (request.options.classifyNonManifoldPatterns)
+    {
+        result.nonManifoldAnalysis = ClassifyMeshNonManifoldPatterns(*request.mesh);
+        if (result.nonManifoldAnalysis.nonManifoldEdgeCount > 0U)
+        {
+            evidence.nonManifoldClassification =
+                result.nonManifoldAnalysis.allUniqueFanSplitsFeasible
+                ? MeshRepairNonManifoldClassification::UniquelySeparable
+                : MeshRepairNonManifoldClassification::Ambiguous;
+        }
+    }
     result.performance.diagnosticsMs = ElapsedMilliseconds(diagnosticsStart);
 
     const Clock::time_point eligibilityStart = Clock::now();

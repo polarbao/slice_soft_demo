@@ -159,6 +159,18 @@ negative fixture 必须分别覆盖 operation、source/vertex/generated mapping�
 incomplete post-strict 和 post-strict blocker。真实 case 双运行冻结 stable projection；validator 失败时
 `candidateAccepted=false` 且返回原始网格，不写生产 package/TIFF。
 
+### 9.5 R3-01 已固化命令
+
+```powershell
+cmake --build build --config Debug --target mesh_non_manifold_pattern_classifier_unit_tests mesh_repair_contract_unit_tests mesh_repair_preflight_unit_tests mesh_repair_preflight
+ctest --test-dir build -C Debug -R "mesh_(non_manifold_pattern|repair_(contract|preflight|r3_01))" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r3_01_non_manifold_patterns.ps1 -BuildDir build -Config Debug
+```
+
+generated fixture 覆盖 no-op、duplicate exporter、separable fan、overlapping component、mixed winding、
+material/UV conflict、unclassified 和错误属性数量。真实模型逐 edge 全覆盖、双运行稳定；本任务不得创建
+repair operation 或写生产输出。
+
 ## 10. 退出标准
 
 ```text
