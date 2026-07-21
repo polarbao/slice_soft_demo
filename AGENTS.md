@@ -21,7 +21,7 @@
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed task is `12E-08C-R3-04 12E-08D GO/NO-GO Decision`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-03 completed the non-production Release evidence: three required OBJ models remain blocked by confirmed self-intersection, while the closed Texture2D 3MF completes the global diagnostic chain. R3-04 therefore records `NO-GO / FROZEN`; no code task is active and 12E-08D remains blocked.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-03 completed the non-production Release evidence: three required OBJ models remain blocked by confirmed self-intersection, while the closed Texture2D 3MF completes the global diagnostic chain. R3-04 therefore records `NO-GO / FROZEN`. `12E-08C-R4 Model Preflight and Repair Asset Admission` is prepared; the `model` inventory has 7 strict-PASS OBJ inputs under `model/obj/xiao_ma_wu_yu_new` and `model/obj/yecan`, and R4-01 is the next allowed atomic task. 12E-08D remains blocked.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - Current global_surface_shell remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. The approved Target State is explicit `slicePipeline.mode=legacy|global_surface_shell`, with legacy as default and both admitted production modes sharing the existing RGBWSV TIFF writer. This target is not implemented and does not authorize `12E-08D`; externally repaired or independently audited required OBJ inputs, four-case strict/global closure, a frozen real-model Release budget, the Quick CI baseline decision, and explicit user confirmation are still required.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
@@ -81,6 +81,8 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Prepared 12E execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
 - Prepared 12E repair task list: `docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md`
 - Prepared 12E repair execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md`
+- Prepared 12E-R4 task list: `docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md`
+- Prepared 12E-R4 execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资产准入执行指令.md`
 - Approved 12E dual-mode decision: `docs/slice/DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md`
 - Prepared 12E-08D dual-mode production task: `docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md`
 
