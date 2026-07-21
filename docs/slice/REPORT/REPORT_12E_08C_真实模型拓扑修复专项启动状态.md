@@ -1,6 +1,6 @@
 # REPORT_12E-08C 真实模型拓扑修复专项启动状态
 
-> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A COMPLETE / R3-02 READY
+> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A、R3-02 COMPLETE / R3-03 READY
 > 日期：2026-07-21
 
 ## 1. 启动原因
@@ -31,7 +31,7 @@ repair_then_strict：R2-04 independent evidence validator COMPLETE / non-product
 12E-08C-R3 Real Model & Release Gate。
 ```
 
-R1-01..04、R2-01..04、R3-01 与 R3-01A 已完成实现和验证；R3-02 已完成专用准备，等待明确启动。
+R1-01..04、R2-01..04、R3-01、R3-01A 与 R3-02 已完成实现和验证；R3-03 已完成专用准备，等待明确启动。
 
 ## 4. 文档完成度
 
@@ -47,12 +47,12 @@ R1-01..04、R2-01..04、R3-01 与 R3-01A 已完成实现和验证；R3-02 已完
 ## 6. 下一任务
 
 ```text
-12E-08C-R3-02 真实模型 Repair Matrix。
+12E-08C-R3-03 Release Core 与 Legacy Regression。
 ```
 
 ## 7. 阶段判断
 
-修复专项准备 COMPLETE；R1-01..04、R2-01..04、R3-01、R3-01A 代码实施 COMPLETE；R3-02 READY；
+修复专项准备 COMPLETE；R1-01..04、R2-01..04、R3-01、R3-01A、R3-02 代码实施 COMPLETE；R3-03 READY；
 12E-08D 继续保持 BLOCKED。
 
 R3-01A 已把三个真实 OBJ 的 sampled 结论升级为完整 confirmed self-intersection 证据。R3-02 的独立准备
@@ -62,7 +62,7 @@ R3-01A 已把三个真实 OBJ 的 sampled 结论升级为完整 confirmed self-i
 
 后续产品目标已明确为 `legacy` 与 `global_surface_shell` 两条用户可选流水线。当前 legacy 生产 TIFF 路径
 继续可用；本专项只为 global 的生产准入提供 repair/post-strict 证据。global 被阻断时不得自动改用 legacy。
-统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-02。
+统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-03。
 
 ## 9. R1-04 实际基线
 
@@ -133,4 +133,19 @@ Texture2D 3MF：8 candidates，0 confirmed/coplanar/touching，strict_pass_no_re
 ```
 
 三个真实 OBJ 因完整 confirmed self-intersection 继续 `rejected_self_intersection`，不允许自动修复或伪
-strict PASS。R3-02 可以开始形成真实模型矩阵，但 12E-08D 继续 BLOCKED。
+strict PASS。R3-02 已据此形成真实模型矩阵，12E-08D 继续 BLOCKED。
+
+## 16. R3-02 实际结果
+
+R3-02 新增 `strict_no_repair` 与 `conservative_repair` 双 lane 真实模型矩阵，每条 lane 双运行：
+
+```text
+nai_you_new：8409 confirmed，rejected，mutation/operation=0；
+aishen_fudiao：19270 confirmed + 20 coplanar，rejected，mutation/operation=0；
+meigui_fudiao：5592 confirmed，rejected，mutation/operation=0；
+Texture2D 3MF：complete_no_intersection，no-op strict PASS，validator/attribute PASS。
+```
+
+四个 case 的任务证据全部完成，production Gate 0/4 通过。该矩阵证明当前 conservative repair 没有绕过
+完整自相交证据制造伪 PASS。R3-03 可以进入非生产 Release core 与 legacy regression，但三个 OBJ 的 global
+core 必须明确 `skipped_due_topology`；12E-08D 继续 BLOCKED。

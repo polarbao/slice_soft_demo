@@ -362,3 +362,19 @@ SlicePipelineRouter(legacy)
 
 repair 不得成为 Router 之前的无条件导入步骤，也不得修改 legacy 使用的原始 `SceneModel`。修复候选应使用
 独立 mesh/attribute DTO；global 失败后丢弃候选并返回稳定错误，不调用 legacy writer 作为隐式回退。
+
+## 18. R3-02 Real Model Repair Matrix 组合入口
+
+R3-02 没有新增 repair 算法，而是在 `mesh_repair_preflight --execute-r3-02` 中显式组合：
+
+```text
+R2 cleanup/weld/winding/simple boundary options；
+R2 evidence validator；
+R3-01 non-manifold classifier；
+R3-01A complete self-intersection analyzer。
+```
+
+执行顺序保持 self-intersection fail-fast 优先。confirmed/coplanar 输入在 mutation 前返回
+`rejected_self_intersection`；无相交 no-op 输入仍执行 attribute/post-strict/hash validator。summary 通过
+独立 `slicesoft.mesh_repair_matrix.12e_08c_r3_02.1` 表达 task evidence 和 production Gate，不改变单 case
+repair report schema，也不把 diagnostic candidate 接入生产 writer。

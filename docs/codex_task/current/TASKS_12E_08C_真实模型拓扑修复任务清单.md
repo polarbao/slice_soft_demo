@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A COMPLETE / R3-02 READY
+> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A、R3-02 COMPLETE / R3-03 READY
 > 日期：2026-07-21
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R3-02
+> 当前原子任务：无；下一允许任务为 12E-08C-R3-03
 
 ## 1. 总目标
 
@@ -182,7 +182,7 @@ no-op strict PASS。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R3_01A_完整自�
 
 ### 12E-08C-R3-02 真实模型 Repair Matrix
 
-状态：READY。
+状态：COMPLETE。
 
 范围：四个 required cases 的 no-op/repair/manual 状态、属性保持和 post strict。
 
@@ -191,13 +191,22 @@ no-op strict PASS。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R3_01A_完整自�
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_02_真实模型RepairMatrix准备.md`。confirmed/coplanar
 case 不执行启发式 repair；R3-02 允许以 rejected/manual 完成任务证据，但不得计为 production PASS。
 
+实际结果：新增显式 `--execute-r3-02` 非生产 preset、CTest、expectation golden 与双 lane/双运行矩阵脚本。
+四个 required case 证据 4/4 完整；三个真实 OBJ 在 mutation 前因 confirmed/coplanar self-intersection
+fail-fast，闭合 Texture2D 3MF 保持 no-op strict PASS。production Gate 0/4 通过，12E-08D 继续 BLOCKED。
+结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R3_02_真实模型RepairMatrix结果.md`。
+
 ### 12E-08C-R3-03 Release Core 与 Legacy Regression
 
-状态：BLOCKED BY R3-02。
+状态：READY / NON-PRODUCTION。
 
 范围：修复、partition、texture transfer、raster/full closure 的分段计时和 peak memory；旧 Profile/RIP/TIFF 回归。
 
 完成标准：写盘时间排除；预算可冻结或明确 BLOCKED；默认 OFF lane PASS。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_03_ReleaseCore与LegacyRegression准备.md`。三个 confirmed
+OBJ 的 global core 必须 `skipped_due_topology`；闭合 3MF 可执行 global core 证据；legacy/TIFF/RIP 回归
+不得被 global blocker 跳过。
 
 ### 12E-08C-R3-04 12E-08D GO/NO-GO
 

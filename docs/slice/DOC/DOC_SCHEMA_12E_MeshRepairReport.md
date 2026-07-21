@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Mesh Repair Report
 
-> 文档状态：PARTIAL / R1、R2、R3-01、R3-01A DIAGNOSTIC CONTRACT IMPLEMENTED
+> 文档状态：PARTIAL / R1、R2、R3-01、R3-01A、R3-02 DIAGNOSTIC CONTRACT IMPLEMENTED
 > Schema：`slicesoft.mesh_repair.12e_08c.1`
 > 日期：2026-07-21
 
@@ -401,6 +401,8 @@ policy；R1-03 已用 11 个 generated policy-contract fixtures 冻结 report pr
 真实 OBJ 和闭合 Texture2D 3MF 生成只读 Preflight report；R2-01 已实现 cleanup/source mapping；R2-02 已实现
 受约束 weld/winding、vertex mapping 和组件守门；R2-03 已实现简单 boundary fill、generated mapping 和显式
 new-face policy；R2-04 已实现统一 evidence validator/post-strict guard、候选丢弃与 negative tests；R3-01
-已实现 non-manifold pattern classifier；R3-01A 已实现完整自相交分析、pair hash、预算阻断和真实模型证据。
+已实现 non-manifold pattern classifier；R3-01A 已实现完整自相交分析、pair hash、预算阻断和真实模型证据；
+R3-02 已用 `strict_no_repair`/`conservative_repair` 双 lane 组合这些字段，并由独立
+`slicesoft.mesh_repair_matrix.12e_08c_r3_02.1` summary 汇总任务与生产 Gate。
 尚未实现 fan split、通用自相交修复或 production admission；报告文件仅由诊断 app 写入，repair core 仍不拥有
 文件系统写入职责。

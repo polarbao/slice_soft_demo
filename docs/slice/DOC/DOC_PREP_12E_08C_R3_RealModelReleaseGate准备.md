@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08C-R3 Real Model 与 Release Gate 准备
 
-> 文档状态：IN PROGRESS / R3-01、R3-01A COMPLETE / R3-02 READY
+> 文档状态：IN PROGRESS / R3-01、R3-01A、R3-02 COMPLETE / R3-03 READY
 > 日期：2026-07-21
 
 ## 1. 准备结论
@@ -59,7 +59,7 @@ partition/texture/raster/full closure；
 
 专项允许 no-op、repaired、manual、rejected；12E-08D Gate 只接受 required case 的 strict PASS。
 
-R3-02 当前 READY。confirmed/coplanar case 只记录 fail-fast 与未修改证据，不新增通用自相交重建；
+R3-02 已完成。confirmed/coplanar case 只记录 fail-fast 与未修改证据，没有新增通用自相交重建；
 任务证据完成和 production Gate PASS 必须分开统计。
 
 ## 5. R3-03 Release Core 与 Legacy Regression

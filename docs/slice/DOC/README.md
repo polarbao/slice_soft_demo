@@ -18,6 +18,10 @@
 | `DOC_CHECKLIST_12C_阶段准入与上下文完整性.md` | 12C 文档、上下文、依赖和原子任务准入检查 |
 | `DOC_CHECKLIST_12C_R2_预览诊断工作区准入.md` | 12C-R2 共享层契约、稀疏 preview 规则和实施门禁 |
 | `DOC_DECISION_12C_R0_01_QtMSVCFreshBuildLane.md` | 12C Qt 5.15.2 / MSVC 19.50+ fresh build lane 决策与验证 |
+| `DOC_SCHEMA_12E_MeshRepairReport.md` | 12E-08C 单 case repair/strict 诊断报告契约 |
+| `DOC_SCHEMA_12E_MeshRepairMatrix.md` | 12E-08C-R3-02 双 lane 真实模型矩阵汇总契约 |
+| `DOC_EXEC_12E_08C_R3_02_真实模型RepairMatrix结果.md` | R3-02 四 case 双运行实际证据和生产阻断结论 |
+| `DOC_PREP_12E_08C_R3_03_ReleaseCore与LegacyRegression准备.md` | R3-03 非生产 Release core、legacy/TIFF/RIP 回归准备 |
 
 ## 决策记录
 

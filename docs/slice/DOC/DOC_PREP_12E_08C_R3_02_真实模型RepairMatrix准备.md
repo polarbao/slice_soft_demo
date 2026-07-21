@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08C-R3-02 真实模型 Repair Matrix 准备
 
-> 文档状态：READY
+> 文档状态：EXECUTED / COMPLETE
 > 日期：2026-07-21
 > 前置任务：R1-01..04、R2-01..04、R3-01、R3-01A COMPLETE
 
@@ -168,3 +168,18 @@ repair 默认关闭；productionOutputWritten=false。
 R3-02 完成后才允许判断 R3-03 是否 READY。即使矩阵证据完成，只要 required OBJ 仍是 confirmed
 self-intersection，R3-03 可以做非生产 Release 诊断和 legacy regression，但 R3-04 必须输出 NO-GO，
 12E-08D 仍不得启动。
+
+## 12. 实际执行摘要
+
+R3-02 已按本准备文档执行。四个 required case 均完成两条 lane、每条两次运行，稳定投影 8/8 通过：
+
+```text
+三个真实 OBJ：rejected_self_intersection，repairAttempted=false，operationCount=0；
+Texture2D 3MF：strict_pass_no_repair，validator/attribute PASS；
+task evidence：4/4 complete；
+production Gate：0/4 pass；
+productionOutputWritten=false。
+```
+
+实现和证据见 `DOC_EXEC_12E_08C_R3_02_真实模型RepairMatrix结果.md`；下一任务准备见
+`DOC_PREP_12E_08C_R3_03_ReleaseCore与LegacyRegression准备.md`。

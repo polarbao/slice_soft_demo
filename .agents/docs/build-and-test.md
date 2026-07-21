@@ -284,3 +284,16 @@ ctest --test-dir build -C Debug -R "mesh_(complete_self_intersection|repair_(con
 输出位于 `output/benchmarks/12e_08c_r3_01a_self_intersection`。脚本对四个 required case 各执行两次，冻结
 完整候选计数、narrow-phase 分类、pair SHA-256 和稳定投影。它不执行 repair，不写 production package/TIFF；
 budget/resource blocked 不能作为完整 strict PASS。
+
+## 12E-08C-R3-02 Real Model Repair Matrix
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_cleanup_unit_tests mesh_repair_contract_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(cleanup|preflight|r3_02)" --output-on-failure
+.\scripts\run_12e_08c_r3_02_repair_matrix.ps1 -BuildDir build -Config Debug
+```
+
+输出位于 `output/benchmarks/12e_08c_r3_02_repair_matrix`。脚本对四个 required case 分别执行
+`strict_no_repair` 与 `conservative_repair`，每条 lane 两次；完整自相交证据、non-manifold 分类、operation、
+attribute/evidence validator 和 stable projection 必须一致。confirmed/coplanar case 在 mutation 前 fail-fast；
+本入口只写诊断 JSON，不写 production package/TIFF。

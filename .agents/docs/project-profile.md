@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08C-R1/R2, R3-01 and R3-01A complete; deterministic evidence confirms self-intersections in the three required OBJ models; R3-02 Real Model Repair Matrix is next; dual legacy/global_surface_shell target and unified TIFF contract documented but not implemented
-- Latest completed milestone: Stage 12E-08C-R3-01A deterministic complete self-intersection evidence
-- Latest completed task: `12E-08C-R3-01A Complete Self-Intersection Evidence`
-- Current task: none active; next allowed atomic task is `12E-08C-R3-02 Real Model Repair Matrix`
-- Prepared stage: R3-02 dedicated preparation complete; `12E-09A diagnostic UI` also prepared; 12E-08D dual-mode router/shared-writer work is documented but blocked; 12E-09B remains blocked
+- Current phase: Stage 12E-08C-R1/R2 and R3-01/01A/02 complete; the real-model repair matrix records three confirmed-self-intersection fail-fast OBJ cases and one no-op strict PASS 3MF case; R3-03 non-production Release Core and Legacy Regression is next; dual legacy/global_surface_shell target and unified TIFF contract documented but not implemented
+- Latest completed milestone: Stage 12E-08C-R3-02 real-model repair matrix
+- Latest completed task: `12E-08C-R3-02 Real Model Repair Matrix`
+- Current task: none active; next allowed atomic task is `12E-08C-R3-03 Release Core and Legacy Regression`
+- Prepared stage: R3-03 dedicated preparation complete; `12E-09A diagnostic UI` also prepared; 12E-08D dual-mode router/shared-writer work is documented but blocked; 12E-09B remains blocked
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
 - Build: CMake target-based, Windows x64 / MSVC

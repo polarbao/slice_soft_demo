@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-20
-> 当前允许任务：12E-08C-R3-02（R1/R2、R3-01、R3-01A 已完成，需用户明确启动下一原子任务）
+> 当前允许任务：12E-08C-R3-03（R1/R2、R3-01、R3-01A、R3-02 已完成，需用户明确启动下一原子任务）
 
 ## 1. 角色
 
@@ -140,4 +140,5 @@ repair-then-strict 只服务于 `slicePipeline.mode=global_surface_shell` 的准
 docs/slice/DOC/DOC_PREP_12E_08C_R1_EligibilityFixtureBaseline准备.md
 docs/slice/DOC/DOC_PREP_12E_08C_R2_ConservativeRepair准备.md
 docs/slice/DOC/DOC_PREP_12E_08C_R3_RealModelReleaseGate准备.md
+docs/slice/DOC/DOC_PREP_12E_08C_R3_03_ReleaseCore与LegacyRegression准备.md
 ```

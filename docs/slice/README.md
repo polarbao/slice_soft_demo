@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-21
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3-01/R3-01A COMPLETE、R3 IN PROGRESS / 双切片模式目标已固化
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3-01/R3-01A/R3-02 COMPLETE、R3-03 READY / 双切片模式目标已固化
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。12E-08C-R1/R2、R3-01 与 R3-01A 已完成；完整确定性证据确认三个真实 OBJ 存在自相交，Release 预算未冻结，下一原子任务为 R3-02 真实模型 Repair Matrix。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
+当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。12E-08C-R1/R2、R3-01、R3-01A 与 R3-02 已完成；真实模型矩阵确认三个 OBJ 在 mutation 前因完整自相交证据 fail-fast，闭合 3MF 保持 no-op strict PASS。下一原子任务为 R3-03 非生产 Release Core 与 Legacy Regression。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
 
 ## 目录结构
 
@@ -120,6 +120,9 @@
 | `DOC/DOC_PREP_12E_08C_R3_01A_完整自相交证据准备.md` | R3-01A 确定性完整自相交 broad-phase 与 strict 证据准备 |
 | `DOC/DOC_EXEC_12E_08C_R3_01A_完整自相交证据结果.md` | R3-01A AABB BVH、完整 pair hash 和四个 required case 实际结果 |
 | `DOC/DOC_PREP_12E_08C_R3_02_真实模型RepairMatrix准备.md` | R3-02 no-op/repair/manual/rejected 矩阵、停止条件与非生产边界 |
+| `DOC/DOC_SCHEMA_12E_MeshRepairMatrix.md` | R3-02 双 lane、双状态与稳定 projection 汇总契约 |
+| `DOC/DOC_EXEC_12E_08C_R3_02_真实模型RepairMatrix结果.md` | R3-02 四个 required case 实际 repair/no-op/rejected 矩阵 |
+| `DOC/DOC_PREP_12E_08C_R3_03_ReleaseCore与LegacyRegression准备.md` | R3-03 非生产 Release 分段计时、global skip 与 legacy/TIFF/RIP 回归准备 |
 | `REPORT/REPORT_12E_08C_真实模型拓扑修复专项启动状态.md` | 修复专项启动状态和下一任务 |
 | `DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md` | 12E-08A world-space classification-to-raster 实现与验证结果 |
 | `DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md` | 12E-08B 支撑、内部空洞与光油 full-material closure 实现及验证结果 |

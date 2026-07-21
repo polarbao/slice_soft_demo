@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 真实模型拓扑修复与严格准入
 
-> 文档状态：IN PROGRESS / R2、R3-01、R3-01A EVIDENCE FROZEN / R3-02 READY
+> 文档状态：IN PROGRESS / R2、R3-01、R3-01A、R3-02 EVIDENCE FROZEN / R3-03 READY
 > 日期：2026-07-21
 
 ## 1. Gate Matrix
@@ -45,16 +45,16 @@
 
 ## 4. Real Models
 
-| Case | Baseline | R2-01/02/03 output | R2-04 evidence guard | R3-01A complete evidence | R3-02 expected matrix |
+| Case | Baseline | R2-01/02/03 output | R2-04 evidence guard | R3-01A complete evidence | R3-02 actual matrix |
 |---|---|---|---|---|---|
-| `nai_you_new` | boundary=113, degenerate=1, components=10, self-check sampled | 1 adapter-degenerate operation；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | 236181 tested；8409 confirmed | rejected/manual；production blocked |
-| `aishen_fudiao` | boundary=3, nonManifold=59, opposite=2, components=10, self-check sampled | 1 adapter-degenerate operation；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | 491365 tested；19270 confirmed；20 coplanar | rejected/manual；production blocked |
-| `meigui_fudiao` | nonManifold=10940, opposite=7192, components=2, self-check sampled | no-op；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | 346104 tested；5592 confirmed | rejected/manual；production blocked |
-| Texture2D 3MF | closed | no-op `strict_pass_no_repair` | all validator Gates PASS；candidate accepted；repeatable | 8 tested；0 confirmed/coplanar/touching | no-op strict PASS；non-production-only |
+| `nai_you_new` | boundary=113, degenerate=1, components=10, self-check sampled | 1 adapter-degenerate operation；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | 236181 tested；8409 confirmed | strict/conservative rejected；mutation=0；production blocked |
+| `aishen_fudiao` | boundary=3, nonManifold=59, opposite=2, components=10, self-check sampled | 1 adapter-degenerate operation；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | 491365 tested；19270 confirmed；20 coplanar | strict/conservative rejected；mutation=0；production blocked |
+| `meigui_fudiao` | nonManifold=10940, opposite=7192, components=2, self-check sampled | no-op；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | 346104 tested；5592 confirmed | strict/conservative rejected；mutation=0；production blocked |
+| Texture2D 3MF | closed | no-op `strict_pass_no_repair` | all validator Gates PASS；candidate accepted；repeatable | 8 tested；0 confirmed/coplanar/touching | 双 lane no-op strict PASS；validator/attribute PASS；non-production-only |
 
 专项验收允许诚实的 manual required；12E-08D required-case Gate 不允许把 manual required 计为 PASS。
 R3-01A 已证明三个真实 OBJ 均存在 confirmed self-intersection，不能计为 strict PASS，也不能进入当前保守
-自动修复；R3-02 只负责冻结 no-op/repair/manual/rejected 矩阵。
+自动修复；R3-02 已冻结 no-op/repair/manual/rejected 矩阵，任务证据 4/4 完整但 production Gate 0/4 通过。
 
 R2-03 实际结果：`nai_you_new`/`aishen_fudiao` 因 sampled intersection evidence 保持 boundary 不变；
 `meigui_fudiao` 和闭合 3MF 无 boundary，均不生成新面。generated simple planar no-UV hole 可 repaired strict

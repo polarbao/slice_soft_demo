@@ -183,6 +183,18 @@ fixture 必须覆盖 confirmed、coplanar、touching、共享顶点邻接排除�
 非法 index。四个 required case 各执行两次；完整结果必须 tested=candidate、pair hash 稳定，阻断结果不得有
 最终 pair hash。任务只写诊断 JSON，不执行 repair，不写生产 package/TIFF。
 
+### 9.7 R3-02 已固化命令
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_cleanup_unit_tests mesh_repair_contract_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(cleanup|preflight|r3_02)" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r3_02_repair_matrix.ps1 -BuildDir build -Config Debug
+```
+
+四个 required case 分别执行 strict/no-repair 和 conservative-repair，每条 lane 各两次。验收同时断言完整
+self-intersection evidence、non-manifold 分类、mutation/operation、attribute/evidence validator、stable hash、
+task evidence 与 production Gate。confirmed/coplanar case 必须 fail-fast；任务只写诊断 JSON。
+
 ## 10. 退出标准
 
 ```text
