@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-20 | 12E-08C-R2-03 边界环修复完成 | `context_handoff/2026-07-20_12E-08C-R2-03边界环修复完成.md` | Current |
+| 2026-07-20 | 12E-08C-R2-04 证据守门完成 | `context_handoff/2026-07-20_12E-08C-R2-04证据守门完成.md` | Current |
+| 2026-07-20 | 12E-08C-R2-03 边界环修复完成 | `context_handoff/2026-07-20_12E-08C-R2-03边界环修复完成.md` | Superseded |
 | 2026-07-20 | 12E-08C-R2-02 拓扑守门完成 | `context_handoff/2026-07-20_12E-08C-R2-02拓扑守门完成.md` | Superseded |
 | 2026-07-20 | 12E-08C-R2-01 保守清理完成 | `context_handoff/2026-07-20_12E-08C-R2-01保守清理完成.md` | Superseded |
 | 2026-07-20 | 12E-08C-R1-04 真实模型 Baseline 完成 | `context_handoff/2026-07-20_12E-08C-R1-04真实模型Baseline完成.md` | Superseded |

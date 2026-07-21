@@ -1,6 +1,6 @@
 # REPORT_12E-08C 真实模型拓扑修复专项启动状态
 
-> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01..03 COMPLETE / R2-04 READY
+> 文档状态：IN PROGRESS / R1、R2 COMPLETE / R3-01 READY
 > 日期：2026-07-20
 
 ## 1. 启动原因
@@ -20,7 +20,7 @@ Eligibility Policy：R1-02 COMPLETE；
 Generated fixture/golden：R1-03 COMPLETE；
 Real-model pre-repair baseline：R1-04 COMPLETE；
 Conservative repair implementation：R2-01 cleanup、R2-02 guarded topology、R2-03 simple boundary COMPLETE；
-repair_then_strict：placeholder / non-production only。
+repair_then_strict：R2-04 independent evidence validator COMPLETE / non-production only。
 ```
 
 ## 3. 新增阶段
@@ -31,7 +31,7 @@ repair_then_strict：placeholder / non-production only。
 12E-08C-R3 Real Model & Release Gate。
 ```
 
-R1-01..04 与 R2-01..03 已完成实现和验证；R2-04 已完成准备，可以在用户明确启动后实施。
+R1-01..04 与 R2-01..04 已完成实现和验证；R3-01 已完成准备并由用户明确启动。
 
 ## 4. 文档完成度
 
@@ -47,21 +47,21 @@ R1-01..04 与 R2-01..03 已完成实现和验证；R2-04 已完成准备，可�
 ## 6. 下一任务
 
 ```text
-12E-08C-R2-04 Post-Repair Strict 与 Attribute Guard。
+12E-08C-R3-01 Non-Manifold Pattern Classifier。
 ```
 
 ## 7. 阶段判断
 
-修复专项准备 COMPLETE；R1-01..04、R2-01..03 代码实施 COMPLETE；R2-04 READY；12E-08D 继续保持 BLOCKED。
+修复专项准备 COMPLETE；R1-01..04、R2-01..04 代码实施 COMPLETE；R3-01 READY；12E-08D 继续保持 BLOCKED。
 
-R2/R3 的独立准备文档已补齐；R2-01..03 已完成，R2-04 解除前置阻断，R3 仍按 Gate 阻断。R1-04
+R2/R3 的独立准备文档已补齐；R2 已完成，R3-01 解除前置阻断，R3-01A 仍按 Gate 阻断。R1-04
 发现的 sampled self-intersection 缺口已新增 R3-01A 准备。
 
 ## 8. 双模式目标同步
 
 后续产品目标已明确为 `legacy` 与 `global_surface_shell` 两条用户可选流水线。当前 legacy 生产 TIFF 路径
 继续可用；本专项只为 global 的生产准入提供 repair/post-strict 证据。global 被阻断时不得自动改用 legacy。
-统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R2-04。
+统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-01。
 
 ## 9. R1-04 实际基线
 
@@ -93,4 +93,13 @@ R2-03 的输入基线，12E-08D 继续 BLOCKED。
 
 R2-03 新增简单 boundary loop 的拓扑、平面、凸性、预算、完整相交证据和统一无 UV 材质守门，并输出
 `generatedTriangleMappings[]`。generated 缺顶 box 可补 2 面后 strict PASS；非平面、超预算、UV 和 branching
-fixture 稳定 blocked。四个真实 case 双运行稳定，未生成新面；R2-04 READY，12E-08D 继续 BLOCKED。
+fixture 稳定 blocked。四个真实 case 双运行稳定，未生成新面；其候选已由 R2-04 独立 validator 复核，
+12E-08D 继续 BLOCKED。
+
+## 13. R2-04 实际结果
+
+R2-04 新增独立只读 evidence validator，并按固定顺序复核 operation、source/vertex/generated mapping、
+material/UV、完整 post-strict、canonical hash 和 non-production safety。negative fixture 覆盖缺失/重复
+provenance、属性破坏、operation/hash 篡改和 incomplete strict。四个 required case 各运行两次：闭合
+Texture2D 3MF 全 Gate PASS；三个真实 OBJ 均因 sampled self-intersection evidence 返回
+`blocked_incomplete_post_strict` 并丢弃 candidate。四 case stable projection 全部一致，始终未写生产包。

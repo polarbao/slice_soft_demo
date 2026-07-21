@@ -147,6 +147,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r2_03_bo
 generated fixture 必须覆盖 simple hole PASS 与 planarity/budget/UV/branching negative。真实 case 允许诚实的
 manual/no-op，但必须双运行稳定，且始终 `productionOutputWritten=false`。
 
+### 9.4 R2-04 已固化命令
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_evidence_validator_unit_tests mesh_repair_cleanup_unit_tests mesh_repair_contract_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(r2_04|r2_03|r2_02|evidence_validator|cleanup|contract|preflight)" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r2_04_post_strict_evidence.ps1 -BuildDir build -Config Debug
+```
+
+negative fixture 必须分别覆盖 operation、source/vertex/generated mapping、generated attribute、hash、
+incomplete post-strict 和 post-strict blocker。真实 case 双运行冻结 stable projection；validator 失败时
+`candidateAccepted=false` 且返回原始网格，不写生产 package/TIFF。
+
 ## 10. 退出标准
 
 ```text

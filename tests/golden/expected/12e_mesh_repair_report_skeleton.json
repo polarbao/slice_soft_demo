@@ -26,6 +26,21 @@
     "decisions": [],
     "status": "not_evaluated"
   },
+  "evidenceValidation": {
+    "attributePass": false,
+    "blockerCodes": [],
+    "candidateAccepted": false,
+    "generatedMappingPass": false,
+    "hashConsistencyPass": false,
+    "issues": [],
+    "operationSequencePass": false,
+    "pass": false,
+    "postStrictComplete": false,
+    "postStrictPass": false,
+    "sourceMappingPass": false,
+    "status": "not_evaluated",
+    "vertexMappingPass": false
+  },
   "hashContract": {
     "algorithm": "sha256",
     "attributeHashLength": 64,
@@ -78,6 +93,7 @@
     "maxHoleAreaMm2": 0,
     "mode": "strict_closed",
     "newFaceAttributePolicy": "reject",
+    "validatePostRepairEvidence": false,
     "weldToleranceMm": 0.001
   },
   "performance": {

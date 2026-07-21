@@ -367,6 +367,7 @@ std::string ComputeMeshRepairOptionsHash(const MeshRepairOptions& options)
     encoder.AppendDouble(options.maxAffectedFaceRatio);
     encoder.AppendBoolean(options.allowNewFaces);
     encoder.AppendString(options.newFaceAttributePolicy);
+    encoder.AppendBoolean(options.validatePostRepairEvidence);
     return encoder.FinalizeHex();
 }
 

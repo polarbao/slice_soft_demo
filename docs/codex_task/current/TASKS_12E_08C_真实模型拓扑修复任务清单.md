@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1 COMPLETE / R2-01..03 COMPLETE / R2-04 READY
+> 文档状态：IN PROGRESS / R1、R2 COMPLETE / R3-01 READY
 > 日期：2026-07-20
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R2-04
+> 当前原子任务：无；下一允许任务为 12E-08C-R3-01
 
 ## 1. 总目标
 
@@ -132,7 +132,7 @@ provenance。generated box hole strict PASS；复杂和真实输入保持 blocke
 
 ### 12E-08C-R2-04 Post-Repair Strict 与 Attribute Guard
 
-状态：READY。
+状态：COMPLETE。
 
 范围：统一 post diagnostics、attribute validator、operation/hash repeatability 和 negative gate。
 
@@ -140,11 +140,17 @@ provenance。generated box hole strict PASS；复杂和真实输入保持 blocke
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R2_04_PostStrictAttributeGuard准备.md`。
 
+实际结果：新增只读 `MeshRepairEvidenceValidator`，按 operation、source/vertex/generated mapping、属性、
+完整 post-strict、canonical hash 和 non-production safety 的固定顺序复核候选；任何失败候选均丢弃。
+四个 required case 双运行稳定，闭合 Texture2D 3MF validator PASS，三个真实 OBJ 因 sampled
+self-intersection evidence 保持 `blocked_incomplete_post_strict`。结果见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R2_04_PostStrictAttributeGuard结果.md`。
+
 ## 5. R3 Real Model & Release Gate
 
 ### 12E-08C-R3-01 Non-Manifold Pattern Classifier
 
-状态：BLOCKED BY R2。
+状态：READY。
 
 范围：分类 edge fan、重复壳、重叠组件和导出器重复模式；只评估唯一局部 fan split。
 

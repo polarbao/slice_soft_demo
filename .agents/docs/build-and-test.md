@@ -248,3 +248,15 @@ ctest --test-dir build -C Debug -R "mesh_repair_(r2_03|r2_02|cleanup|contract|pr
 
 输出位于 `output/benchmarks/12e_08c_r2_03_boundary`。脚本冻结边界预算、generated mapping、属性状态和
 双运行稳定投影；不写生产 package/TIFF。
+
+## 12E-08C-R2-04 Post-Strict Evidence Guard
+
+```powershell
+cmake --build build --config Debug --target mesh_repair_preflight mesh_repair_evidence_validator_unit_tests mesh_repair_cleanup_unit_tests mesh_repair_contract_unit_tests
+ctest --test-dir build -C Debug -R "mesh_repair_(r2_04|r2_03|r2_02|evidence_validator|cleanup|contract|preflight)" --output-on-failure
+.\scripts\run_12e_08c_r2_04_post_strict_evidence.ps1 -BuildDir build -Config Debug
+```
+
+输出位于 `output/benchmarks/12e_08c_r2_04_post_strict`。独立 validator 按固定顺序复核 operation、source/
+vertex/generated mapping、material/UV、完整 post-strict 和 canonical hash；失败候选被丢弃。脚本对四个
+required case 各运行两次，只写诊断 JSON，始终保持 `productionOutputWritten=false`。

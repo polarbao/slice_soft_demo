@@ -1,7 +1,7 @@
 # DEV_12E-08C MeshRepairThenStrict 设计
 
 > 文档版本：v0.1
-> 文档状态：DEV / R1、R2-01..03 IMPLEMENTED
+> 文档状态：DEV / R1、R2 IMPLEMENTED
 > 日期：2026-07-20
 > 对应 PRD：`PRD_12E_08C_真实模型拓扑修复与严格准入.md`
 
@@ -50,6 +50,11 @@ confirmed self-intersection 均不会被这些 operation set 绕过；复杂 bou
 R2-03 已进一步实现简单、平面、严格凸、显式预算内的 boundary fill，只允许
 `inherit_uniform_material_no_uv`，并通过 `generatedTriangleMappings[]` 将新面与原 source mapping 分离。
 复杂边界、sampled intersection evidence、UV/材质冲突继续 manual；non-manifold 仍不在 R2 范围内修复。
+
+R2-04 已实现独立、只读的 `MeshRepairEvidenceValidator`。validator 不复用 repair 阶段的“成功”判断，而是按
+固定顺序重新验证 operation sequence、source/vertex/generated provenance、material/UV、完整 post-strict、
+canonical hash 与 non-production safety；任一 Gate 失败都丢弃 candidate，禁止保留
+`repaired_strict_pass`。该 validator 默认关闭，仅由显式 R2-04 诊断入口启用。
 
 ## 3. 建议目录
 

@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-20
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C COMPLETE-BLOCKED / 双切片模式目标已固化
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2 COMPLETE、R3 IN PROGRESS / 双切片模式目标已固化
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08C-R1-01..04 与 R2-01..03 已完成，下一原子任务为 R2-04 Post-Repair Strict 与 Attribute Guard。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
+当前状态：12C、12D 已收口。12E-01 至 12E-07 以及 12E-08A/08B/08C 已完成配置、service、CPU/OpenVDB conformance、Width Sweep、纹理传递、内存 Diagnostic Composer、成功报告、12D 模型域与完整材料域 exact closure、classification-to-raster 和默认 OFF Release 证据。三个真实 OBJ 被 strict topology 阻断，Release 预算未冻结；12E-08C-R1-01..04 与 R2-01..04 已完成，下一原子任务为 R3-01 Non-Manifold Pattern Classifier。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
 
 ## 目录结构
 

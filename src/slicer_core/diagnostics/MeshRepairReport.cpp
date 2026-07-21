@@ -69,6 +69,7 @@ Json BuildOptions(const MeshRepairOptions& options)
         {"maxAffectedFaceRatio", options.maxAffectedFaceRatio},
         {"allowNewFaces", options.allowNewFaces},
         {"newFaceAttributePolicy", options.newFaceAttributePolicy},
+        {"validatePostRepairEvidence", options.validatePostRepairEvidence},
     });
 }
 
@@ -230,6 +231,30 @@ Json BuildAttributePreservation(const MeshRepairAttributePreservation& attribute
     });
 }
 
+Json BuildEvidenceValidation(const MeshRepairEvidenceValidation& validation)
+{
+    Json::Array blockerCodes;
+    for (const std::string& blockerCode : validation.blockerCodes)
+    {
+        blockerCodes.push_back(blockerCode);
+    }
+    return Json::object({
+        {"status", validation.status},
+        {"pass", validation.pass},
+        {"operationSequencePass", validation.operationSequencePass},
+        {"sourceMappingPass", validation.sourceMappingPass},
+        {"vertexMappingPass", validation.vertexMappingPass},
+        {"generatedMappingPass", validation.generatedMappingPass},
+        {"attributePass", validation.attributePass},
+        {"postStrictComplete", validation.postStrictComplete},
+        {"postStrictPass", validation.postStrictPass},
+        {"hashConsistencyPass", validation.hashConsistencyPass},
+        {"candidateAccepted", validation.candidateAccepted},
+        {"blockerCodes", Json{std::move(blockerCodes)}},
+        {"issues", ValidationIssuesToJson(validation.issues)},
+    });
+}
+
 Json BuildAdmission(const MeshRepairAdmission& admission)
 {
     return Json::object({
@@ -293,6 +318,7 @@ Json BuildMeshRepairReport(const MeshRepairResult& result)
         {"generatedTriangleMappings", BuildGeneratedTriangleMappings(
             result.generatedTriangleMappings)},
         {"attributePreservation", BuildAttributePreservation(result.attributePreservation)},
+        {"evidenceValidation", BuildEvidenceValidation(result.evidenceValidation)},
         {"postRepair", BuildDiagnostics(result.postRepair)},
         {"admission", BuildAdmission(result.admission)},
         {"performance", BuildPerformance(result.performance)},

@@ -99,6 +99,7 @@ slicer_core::Json BuildStableProjection(const slicer_core::Json& report)
         {"eligibility", report.at("eligibility")},
         {"operations", report.at("operations")},
         {"attributePreservation", report.at("attributePreservation")},
+        {"evidenceValidation", report.at("evidenceValidation")},
         {"postRepair", report.at("postRepair")},
         {"admission", report.at("admission")},
         {"performance", report.at("performance")},
@@ -146,6 +147,10 @@ bool HashesAreStableAndIndependent()
     boundaryOptions.newFaceAttributePolicy = "inherit_uniform_material_no_uv";
     const slicer_core::MeshRepairHashes boundaryOptionHashes =
         slicer_core::ComputeMeshRepairPreHashes(original, boundaryOptions);
+    slicer_core::MeshRepairOptions validationOptions = options;
+    validationOptions.validatePostRepairEvidence = true;
+    const slicer_core::MeshRepairHashes validationOptionHashes =
+        slicer_core::ComputeMeshRepairPreHashes(original, validationOptions);
 
     return ExpectTrue(first.preRepairGeometryHash == second.preRepairGeometryHash, "geometry hash repeats")
         && ExpectTrue(first.preRepairAttributeHash == second.preRepairAttributeHash, "attribute hash repeats")
@@ -157,7 +162,8 @@ bool HashesAreStableAndIndependent()
         && ExpectTrue(first.preRepairAttributeHash != attributeHashes.preRepairAttributeHash, "attribute change changes attribute hash")
         && ExpectTrue(first.optionsHash != changedOptionsHashes.optionsHash, "options change changes options hash")
         && ExpectTrue(first.optionsHash != windingOptionHashes.optionsHash, "winding option changes options hash")
-        && ExpectTrue(first.optionsHash != boundaryOptionHashes.optionsHash, "boundary policy changes options hash");
+        && ExpectTrue(first.optionsHash != boundaryOptionHashes.optionsHash, "boundary policy changes options hash")
+        && ExpectTrue(first.optionsHash != validationOptionHashes.optionsHash, "validation gate changes options hash");
 }
 
 bool OperationHashIsDeterministic()

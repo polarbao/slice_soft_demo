@@ -1,6 +1,6 @@
 # DOC_MATRIX_12E 真实模型拓扑修复与严格准入
 
-> 文档状态：IN PROGRESS / R2-01..03 EVIDENCE FROZEN
+> 文档状态：IN PROGRESS / R2 EVIDENCE FROZEN / R3-01 READY
 > 日期：2026-07-20
 
 ## 1. Gate Matrix
@@ -45,12 +45,12 @@
 
 ## 4. Real Models
 
-| Case | Baseline | R2-01 output | R2-02 output | R2/R3 acceptance |
+| Case | Baseline | R2-01/02/03 output | R2-04 evidence guard | R3 acceptance |
 |---|---|---|---|---|
-| `nai_you_new` | boundary=113, degenerate=1, components=10, self-check sampled | 1 adapter-degenerate operation，manual | weld=0、flip=0、V/C 不变 | strict PASS or manual required |
-| `aishen_fudiao` | boundary=3, nonManifold=59, opposite=2, components=10, self-check sampled | 1 adapter-degenerate operation，manual | weld=0、flip=0、V/C 不变 | strict PASS or manual required |
-| `meigui_fudiao` | nonManifold=10940, opposite=7192, components=2, self-check sampled | no-op，manual | weld=0、flip=0、V/C 不变 | strict PASS or manual required |
-| Texture2D 3MF | closed | no-op `strict_pass_no_repair` | no-op `strict_pass_no_repair` | geometry/attribute hash stable |
+| `nai_you_new` | boundary=113, degenerate=1, components=10, self-check sampled | 1 adapter-degenerate operation；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | strict PASS or manual required |
+| `aishen_fudiao` | boundary=3, nonManifold=59, opposite=2, components=10, self-check sampled | 1 adapter-degenerate operation；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | strict PASS or manual required |
+| `meigui_fudiao` | nonManifold=10940, opposite=7192, components=2, self-check sampled | no-op；weld/flip/fill=0 | `blocked_incomplete_post_strict`；candidate rejected；repeatable | strict PASS or manual required |
+| Texture2D 3MF | closed | no-op `strict_pass_no_repair` | all validator Gates PASS；candidate accepted；repeatable | geometry/attribute hash stable |
 
 专项验收允许诚实的 manual required；12E-08D required-case Gate 不允许把 manual required 计为 PASS。
 真实 OBJ 的 sampled self-intersection 也不得计为 strict PASS，必须先完成 R3-01A 完整证据。
@@ -58,6 +58,10 @@
 R2-03 实际结果：`nai_you_new`/`aishen_fudiao` 因 sampled intersection evidence 保持 boundary 不变；
 `meigui_fudiao` 和闭合 3MF 无 boundary，均不生成新面。generated simple planar no-UV hole 可 repaired strict
 PASS；planarity/budget/UV/branching fixture 均稳定 blocked。
+
+R2-04 实际结果：四个 required case 均完成两次稳定投影比较；operation/source/vertex/generated mapping 和属性
+Gate 均通过。三个真实 OBJ 因 self-intersection 检查未完整而在 post-strict Gate 阻断，闭合 3MF 全 Gate
+PASS；所有 case 均保持 `productionOutputWritten=false`。
 
 ## 5. Attribute Matrix
 

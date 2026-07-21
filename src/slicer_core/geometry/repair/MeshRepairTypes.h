@@ -134,6 +134,7 @@ struct MeshRepairOptions
     double maxAffectedFaceRatio{0.0};
     bool allowNewFaces{false};
     std::string newFaceAttributePolicy{"reject"};
+    bool validatePostRepairEvidence{false};
 };
 
 /**
@@ -282,6 +283,26 @@ struct MeshRepairAttributePreservation
 };
 
 /**
+ * @brief Independent R2-04 validation gates for one post-repair candidate.
+ */
+struct MeshRepairEvidenceValidation
+{
+    std::string status{"not_evaluated"};
+    bool pass{false};
+    bool operationSequencePass{false};
+    bool sourceMappingPass{false};
+    bool vertexMappingPass{false};
+    bool generatedMappingPass{false};
+    bool attributePass{false};
+    bool postStrictComplete{false};
+    bool postStrictPass{false};
+    bool hashConsistencyPass{false};
+    bool candidateAccepted{false};
+    std::vector<std::string> blockerCodes;
+    std::vector<ValidationIssue> issues;
+};
+
+/**
  * @brief Non-production admission evidence produced by the repair prerequisite.
  */
 struct MeshRepairAdmission
@@ -330,6 +351,7 @@ struct MeshRepairResult
     std::vector<MeshRepairVertexMapping> vertexMappings;
     std::vector<MeshRepairGeneratedTriangleMapping> generatedTriangleMappings;
     MeshRepairAttributePreservation attributePreservation;
+    MeshRepairEvidenceValidation evidenceValidation;
     MeshRepairDiagnosticsSummary postRepair;
     MeshRepairAdmission admission;
     MeshRepairPerformance performance;

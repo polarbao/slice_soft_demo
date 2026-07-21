@@ -4,14 +4,15 @@
 
 ## Stage 12E 双切片模式与真实模型拓扑修复
 
-当前上下文：`context_handoff/2026-07-20_12E-08C-R2-03边界环修复完成.md`
+当前上下文：`context_handoff/2026-07-20_12E-08C-R2-04证据守门完成.md`
 
 当前任务入口：`docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md`
 
-下一任务：实现 `12E-08C-R2-04 Post-Repair Strict 与 Attribute Guard`。
+下一任务：实现 `12E-08C-R3-01 Non-Manifold Pattern Classifier`。
 
-R2-01..03 已完成 cleanup、受约束 weld/winding、simple boundary fill、source/vertex/generated mapping 和
-四 case 重复性证据；三个真实 OBJ 仍为 `manual_repair_required`，闭合 3MF 保持 no-op strict PASS。R3-01A
+R2-01..04 已完成 cleanup、受约束 weld/winding、simple boundary fill、source/vertex/generated mapping、
+独立 post-strict/attribute/hash validator 和四 case 重复性证据；三个真实 OBJ 仍为
+`manual_repair_required`，闭合 3MF 保持 no-op strict PASS。R3-01A
 完整自相交证据准备已存在。12E-08D
 继续 BLOCKED；修复专项不得绕过 strict 或直接写 production package。Target State 已固化为
 `slicePipeline.mode=legacy|global_surface_shell`，两条 production success 均共用现有 RGBWSV TIFF writer，

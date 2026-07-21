@@ -38,6 +38,7 @@ struct Options
     bool executeCleanup{false};
     bool executeR2Topology{false};
     bool executeR2Boundary{false};
+    bool executeR2EvidenceGuard{false};
     double weldToleranceMm{0.0};
     std::size_t maxBoundaryLoopEdges{0U};
     double maxBoundaryLoopDiameterMm{0.0};
@@ -109,6 +110,10 @@ Options ParseOptions(const int argc, char** argv)
         {
             options.executeR2Boundary = true;
         }
+        else if (argument == "--execute-r2-04")
+        {
+            options.executeR2EvidenceGuard = true;
+        }
         else if (argument == "--weld-tolerance-mm")
         {
             options.weldToleranceMm = std::stod(RequireValue(argc, argv, index, argument));
@@ -155,7 +160,8 @@ Options ParseOptions(const int argc, char** argv)
                 << "--max-boundary-loop-diameter-mm <value> "
                 << "--max-boundary-loop-perimeter-mm <value> "
                 << "--max-boundary-planarity-error-mm <value> "
-                << "--max-hole-area-mm2 <value> --max-affected-face-ratio <value>]\n";
+                << "--max-hole-area-mm2 <value> --max-affected-face-ratio <value> | "
+                << "--execute-r2-04 with the same explicit R2-03 budgets]\n";
             std::exit(0);
         }
         else
@@ -178,17 +184,20 @@ Options ParseOptions(const int argc, char** argv)
     }
     const int operationSetCount = (options.executeCleanup ? 1 : 0)
         + (options.executeR2Topology ? 1 : 0)
-        + (options.executeR2Boundary ? 1 : 0);
+        + (options.executeR2Boundary ? 1 : 0)
+        + (options.executeR2EvidenceGuard ? 1 : 0);
     if (operationSetCount > 1)
     {
         throw std::runtime_error("mesh repair operation sets are mutually exclusive");
     }
-    if ((options.executeR2Topology || options.executeR2Boundary)
+    if ((options.executeR2Topology
+         || options.executeR2Boundary
+         || options.executeR2EvidenceGuard)
         && (!std::isfinite(options.weldToleranceMm) || options.weldToleranceMm <= 0.0))
     {
         throw std::runtime_error("R2-02/R2-03 requires a finite positive --weld-tolerance-mm");
     }
-    if (options.executeR2Boundary)
+    if (options.executeR2Boundary || options.executeR2EvidenceGuard)
     {
         const bool finiteBudgets = std::isfinite(options.maxBoundaryLoopDiameterMm)
             && std::isfinite(options.maxBoundaryLoopPerimeterMm)
@@ -467,7 +476,10 @@ int RunPreflight(const Options& options)
     slicer_core::MeshRepairResult result;
     std::size_t candidateTriangleCount = adapted.mesh.triangles.size();
     std::size_t candidateVertexCount = adapted.mesh.vertices.size();
-    if (options.executeCleanup || options.executeR2Topology || options.executeR2Boundary)
+    if (options.executeCleanup
+        || options.executeR2Topology
+        || options.executeR2Boundary
+        || options.executeR2EvidenceGuard)
     {
         slicer_core::MeshRepairCleanupRequest request;
         request.mesh = &adapted;
@@ -475,13 +487,17 @@ int RunPreflight(const Options& options)
         request.options.enabled = true;
         request.options.mode = "repair_then_strict";
         const bool executeGuardedTopology =
-            options.executeR2Topology || options.executeR2Boundary;
+            options.executeR2Topology
+            || options.executeR2Boundary
+            || options.executeR2EvidenceGuard;
+        const bool executeBoundary =
+            options.executeR2Boundary || options.executeR2EvidenceGuard;
         request.options.allowVertexWeld = executeGuardedTopology;
         request.options.weldToleranceMm = executeGuardedTopology
             ? options.weldToleranceMm
             : 0.0;
         request.options.allowWindingRepair = executeGuardedTopology;
-        request.options.allowBoundaryFill = options.executeR2Boundary;
+        request.options.allowBoundaryFill = executeBoundary;
         request.options.maxBoundaryLoopEdges = options.maxBoundaryLoopEdges;
         request.options.maxBoundaryLoopDiameterMm = options.maxBoundaryLoopDiameterMm;
         request.options.maxBoundaryLoopPerimeterMm = options.maxBoundaryLoopPerimeterMm;
@@ -489,10 +505,11 @@ int RunPreflight(const Options& options)
             options.maxBoundaryPlanarityErrorMm;
         request.options.maxHoleAreaMm2 = options.maxHoleAreaMm2;
         request.options.maxAffectedFaceRatio = options.maxAffectedFaceRatio;
-        request.options.allowNewFaces = options.executeR2Boundary;
-        request.options.newFaceAttributePolicy = options.executeR2Boundary
+        request.options.allowNewFaces = executeBoundary;
+        request.options.newFaceAttributePolicy = executeBoundary
             ? "inherit_uniform_material_no_uv"
             : "reject";
+        request.options.validatePostRepairEvidence = options.executeR2EvidenceGuard;
         request.sourceHash = sourceHash;
         request.robustnessOptions = robustnessOptions;
         slicer_core::MeshRepairCleanupResult cleanup =
@@ -518,11 +535,13 @@ int RunPreflight(const Options& options)
         << "mesh_repair_preflight: evidence collected\n"
         << "  source: " << input.sourcePath << '\n'
         << "  operationSet: "
-        << (options.executeR2Boundary
+        << (options.executeR2EvidenceGuard
+                ? "r2_post_strict_attribute_guard"
+                : (options.executeR2Boundary
                 ? "r2_boundary_loop_repair"
                 : (options.executeR2Topology
                         ? "r2_vertex_weld_winding"
-                        : (options.executeCleanup ? "r2_cleanup" : "preflight")))
+                        : (options.executeCleanup ? "r2_cleanup" : "preflight"))))
         << '\n'
         << "  status: " << slicer_core::MeshRepairStatusName(result.status) << '\n'
         << "  vertices: " << result.input.vertexCount << '\n'

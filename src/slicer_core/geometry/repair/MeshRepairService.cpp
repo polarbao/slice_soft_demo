@@ -2,6 +2,7 @@
 
 #include "slicer_core/geometry/repair/MeshRepairHash.h"
 #include "slicer_core/geometry/repair/MeshRepairBoundaryOperations.h"
+#include "slicer_core/geometry/repair/MeshRepairEvidenceValidator.h"
 #include "slicer_core/geometry/repair/MeshRepairPreflight.h"
 #include "slicer_core/geometry/repair/MeshRepairTopologyOperations.h"
 
@@ -369,6 +370,34 @@ void SortMappings(MeshRepairResult& evidence)
         });
 }
 
+std::vector<MeshRepairVertexMapping> BuildIdentityVertexMappings(
+    const std::size_t vertexCount)
+{
+    std::vector<MeshRepairVertexMapping> mappings;
+    mappings.reserve(vertexCount);
+    for (std::size_t index{0U}; index < vertexCount; ++index)
+    {
+        MeshRepairVertexMapping mapping;
+        mapping.outputVertexIndex = index;
+        mapping.sourceVertexIndices.push_back(index);
+        mappings.push_back(std::move(mapping));
+    }
+    return mappings;
+}
+
+bool IsEvidenceContractFailure(const std::string& status)
+{
+    return status == "blocked_operation_sequence"
+        || status == "blocked_source_mapping"
+        || status == "blocked_vertex_mapping"
+        || status == "blocked_generated_mapping"
+        || status == "blocked_generated_attribute"
+        || status == "blocked_attribute_preservation"
+        || status == "blocked_attribute_resources"
+        || status == "blocked_hash_consistency"
+        || status == "blocked_non_production_safety";
+}
+
 MeshRepairCleanupResult BuildBlockedResult(
     const MeshRepairCleanupRequest& request,
     MeshRepairResult evidence,
@@ -610,20 +639,6 @@ MeshRepairCleanupResult ExecuteMeshRepairCleanup(
     cleanup.evidence.performance.repairMs = ElapsedMilliseconds(repairStart);
     cleanup.evidence.repairAttempted = !cleanup.evidence.operations.empty();
 
-    const Clock::time_point postStart = Clock::now();
-    BuildPostEvidence(request, cleanup);
-    cleanup.evidence.performance.postDiagnosticsMs = ElapsedMilliseconds(postStart);
-    if (repairStageBlocked)
-    {
-        cleanup.evidence.status = MeshRepairStatus::ManualRepairRequired;
-        cleanup.evidence.attributePreservation.status = repairAttributeStatus;
-        cleanup.evidence.attributePreservation.pass = false;
-        cleanup.evidence.admission.postRepairStrictPass = false;
-        cleanup.evidence.admission.blockerCodes.push_back(repairBlockerCode);
-        cleanup.evidence.admission.suggestedActions.push_back(
-            repairSuggestedAction);
-    }
-
     const Clock::time_point hashStart = Clock::now();
     cleanup.evidence.hashes.postRepairGeometryHash =
         ComputeMeshRepairGeometryHash(cleanup.candidate.mesh);
@@ -634,6 +649,95 @@ MeshRepairCleanupResult ExecuteMeshRepairCleanup(
     cleanup.evidence.performance.hashMs =
         cleanup.evidence.performance.hashMs.value_or(0.0)
         + ElapsedMilliseconds(hashStart);
+
+    if (request.options.validatePostRepairEvidence)
+    {
+        if (cleanup.evidence.vertexMappings.empty())
+        {
+            cleanup.evidence.vertexMappings = BuildIdentityVertexMappings(
+                request.mesh->mesh.vertices.size());
+        }
+        cleanup.evidence.attributePreservation.sourceMappedTriangles =
+            static_cast<std::uint64_t>(std::count_if(
+                cleanup.evidence.sourceMappings.begin(),
+                cleanup.evidence.sourceMappings.end(),
+                [](const MeshRepairTriangleMapping& mapping)
+                {
+                    return mapping.disposition == MeshRepairTriangleDisposition::Retained;
+                }));
+        cleanup.evidence.attributePreservation.newTriangles =
+            cleanup.evidence.generatedTriangleMappings.size();
+
+        MeshRepairEvidenceValidationRequest validationRequest;
+        validationRequest.originalMesh = request.mesh;
+        validationRequest.candidateMesh = &cleanup.candidate;
+        validationRequest.evidence = &cleanup.evidence;
+        validationRequest.robustnessOptions = request.robustnessOptions;
+        MeshRepairEvidenceValidationResult validation =
+            ValidateMeshRepairEvidence(validationRequest);
+        cleanup.evidence.evidenceValidation = std::move(validation.validation);
+        cleanup.evidence.attributePreservation =
+            std::move(validation.attributePreservation);
+        cleanup.evidence.postRepair = std::move(validation.postRepair);
+        cleanup.evidence.performance.attributeValidationMs =
+            validation.attributeValidationMs;
+        cleanup.evidence.performance.postDiagnosticsMs =
+            validation.postDiagnosticsMs;
+        cleanup.evidence.admission.mode = "repair_then_strict";
+        cleanup.evidence.admission.status = "non_production_only";
+        cleanup.evidence.admission.productionAllowed = false;
+        cleanup.evidence.admission.postRepairStrictPass =
+            cleanup.evidence.evidenceValidation.pass;
+        cleanup.evidence.admission.blockerCodes =
+            cleanup.evidence.evidenceValidation.blockerCodes;
+        cleanup.evidence.admission.suggestedActions.clear();
+        cleanup.evidence.issues = cleanup.evidence.postRepair.issues;
+        cleanup.evidence.issues.insert(
+            cleanup.evidence.issues.end(),
+            cleanup.evidence.evidenceValidation.issues.begin(),
+            cleanup.evidence.evidenceValidation.issues.end());
+
+        if (repairStageBlocked)
+        {
+            cleanup.evidence.attributePreservation.status = repairAttributeStatus;
+            cleanup.evidence.attributePreservation.pass = false;
+            cleanup.evidence.admission.postRepairStrictPass = false;
+            cleanup.evidence.admission.blockerCodes.push_back(repairBlockerCode);
+            cleanup.evidence.admission.suggestedActions.push_back(
+                repairSuggestedAction);
+        }
+        if (cleanup.evidence.evidenceValidation.pass && !repairStageBlocked)
+        {
+            cleanup.evidence.status = cleanup.evidence.operations.empty()
+                ? MeshRepairStatus::StrictPassNoRepair
+                : MeshRepairStatus::RepairedStrictPass;
+        }
+        else
+        {
+            cleanup.evidence.status = IsEvidenceContractFailure(
+                cleanup.evidence.evidenceValidation.status)
+                ? MeshRepairStatus::RepairFailed
+                : MeshRepairStatus::ManualRepairRequired;
+            cleanup.candidate = *request.mesh;
+        }
+    }
+    else
+    {
+        const Clock::time_point postStart = Clock::now();
+        BuildPostEvidence(request, cleanup);
+        cleanup.evidence.performance.postDiagnosticsMs =
+            ElapsedMilliseconds(postStart);
+        if (repairStageBlocked)
+        {
+            cleanup.evidence.status = MeshRepairStatus::ManualRepairRequired;
+            cleanup.evidence.attributePreservation.status = repairAttributeStatus;
+            cleanup.evidence.attributePreservation.pass = false;
+            cleanup.evidence.admission.postRepairStrictPass = false;
+            cleanup.evidence.admission.blockerCodes.push_back(repairBlockerCode);
+            cleanup.evidence.admission.suggestedActions.push_back(
+                repairSuggestedAction);
+        }
+    }
     cleanup.evidence.performance.totalRepairCoreMs = ElapsedMilliseconds(totalStart);
     cleanup.evidence.productionOutputWritten = false;
     return cleanup;
