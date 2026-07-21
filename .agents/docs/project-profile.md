@@ -3,10 +3,10 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08C-R1/R2/R3 complete through R3-04; R3-04 decision is `NO-GO / FROZEN`; R4 model import preflight, mode admission, clean positive matrix, and repaired-asset admission are prepared; dual legacy/global_surface_shell target and unified TIFF contract are documented but not implemented
-- Latest completed milestone: Stage 12E-08C-R3-04 12E-08D GO/NO-GO decision
-- Latest completed task: `12E-08C-R3-04 12E-08D GO/NO-GO Decision`
-- Current task: none active; next allowed atomic task is `12E-08C-R4-01 Model Preflight Contract`; 12E-08D is blocked
+- Current phase: Stage 12E-08C-R4 in progress; R4-01 Model Preflight Contract is complete and R4-02 Two-stage Preflight Service preparation is current; dual legacy/global_surface_shell target and unified TIFF contract remain target state only
+- Latest completed milestone: Stage 12E-08C-R4-01 Model Preflight Contract
+- Latest completed task: `12E-08C-R4-01 Model Preflight Contract`
+- Current task: `12E-08C-R4-02 preparation`; 12E-08D is blocked
 - Prepared stage: R4-01..05 can establish preflight, mode admission, Qt gate, and clean OBJ/3MF positive evidence; R4-06..08 require repaired required OBJ inputs; `12E-09A diagnostic UI` can continue after the R4 positive path; 12E-08D remains blocked pending R4-08 GO and explicit user authorization; 12E-09B remains blocked
 - Validated R4 model inputs: all 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS after complete self-intersection analysis and may enter later non-production R4 modules without reconstruction. The `model` directory currently has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` for the positive Texture2D 3MF lane.
 - Main language: C++20

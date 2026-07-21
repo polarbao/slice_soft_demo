@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-01
+> 当前原子任务：R4-02 PREPARATION
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -19,7 +19,7 @@ global_surface_shell 继续 diagnostic-only，直到 08D GO；
 
 ## 2. R4-01 Preflight Contract
 
-状态：READY。
+状态：COMPLETE。
 
 范围：ModelPreflight DTO、stable code、mode admission DTO、cache key、report schema 和 generated unit/golden。
 
@@ -27,9 +27,13 @@ global_surface_shell 继续 diagnostic-only，直到 08D GO；
 
 验证：新增定向 unit/schema/golden + `git diff --check`。
 
+结果：新增 ModelPreflight DTO、8 个稳定错误码、双模式 admission DTO、确定性 cache key、
+`slicesoft.model_preflight.12e_08c_r4.1` report/golden；定向测试与 Debug 全量构建通过。Quick CI 停在既有
+`material_process_top2 widthPx expected=48 actual=226` baseline，与本合同任务无关。
+
 ## 3. R4-02 Two-stage Preflight Service
 
-状态：PREPARED / WAIT R4-01。
+状态：PREPARED / DETAIL REVIEW REQUIRED。
 
 范围：fast import check、最终 transform 后 full diagnostics、cache/stale、取消和 deterministic result。
 

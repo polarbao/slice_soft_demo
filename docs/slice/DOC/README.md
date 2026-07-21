@@ -29,6 +29,7 @@
 | `DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md` | R3-04 后新增模型预检、正常模型正向链与修复资产准入决策 |
 | `DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md` | R4-01 实施依赖、停止条件和验证准备 |
 | `DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md` | R4-01 合同代码落点、golden 和定向验证准备 |
+| `DOC_EXEC_12E_08C_R4_01_ModelPreflightContract结果.md` | R4-01 DTO、cache key、report schema、TDD 与验证结果 |
 | `DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后功能可继续、生产仍阻断以及正常/required 模型双轨分析 |
 
 ## 决策记录

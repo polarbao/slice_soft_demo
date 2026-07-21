@@ -29,6 +29,8 @@ add_library(slicer_core
     src/slicer_core/diagnostics/MaterialClosureCandidateDetector.h
     src/slicer_core/diagnostics/MaterialClosureSemanticDetector.cpp
     src/slicer_core/diagnostics/MaterialClosureSemanticDetector.h
+    src/slicer_core/diagnostics/ModelPreflightReport.cpp
+    src/slicer_core/diagnostics/ModelPreflightReport.h
     src/slicer_core/diagnostics/MeshRepairReport.cpp
     src/slicer_core/diagnostics/MeshRepairReport.h
     src/slicer_core/diagnostics/TextureFillPartitionClosureAdapter.cpp
@@ -161,6 +163,10 @@ add_library(slicer_core
     src/slicer_core/pipeline/PipelineStepResult.h
     src/slicer_core/pipeline/SlicePipeline.cpp
     src/slicer_core/pipeline/SlicePipeline.h
+    src/slicer_core/preflight/ModelPreflightCacheIdentity.cpp
+    src/slicer_core/preflight/ModelPreflightCacheIdentity.h
+    src/slicer_core/preflight/ModelPreflightTypes.cpp
+    src/slicer_core/preflight/ModelPreflightTypes.h
     src/slicer_core/raster/RasterBoundary.cpp
     src/slicer_core/raster/RasterBoundary.h
     src/slicer_core/raster/TextureFillPartitionRasterMapper.cpp
@@ -434,6 +440,15 @@ add_executable(mesh_repair_eligibility_unit_tests
 
 target_link_libraries(mesh_repair_eligibility_unit_tests PRIVATE slicer_core)
 
+add_executable(model_preflight_contract_unit_tests
+    tests/unit/model_preflight_contract/main.cpp
+)
+
+target_link_libraries(model_preflight_contract_unit_tests PRIVATE slicer_core)
+target_compile_definitions(model_preflight_contract_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(mesh_repair_fixture_golden_unit_tests
     tests/unit/mesh_repair_fixture_golden/main.cpp
 )
@@ -634,6 +649,7 @@ add_test(NAME material_closure_semantic_detector_unit_tests COMMAND material_clo
 add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_texture_service_unit_tests)
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
+add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
 add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_unit_tests)

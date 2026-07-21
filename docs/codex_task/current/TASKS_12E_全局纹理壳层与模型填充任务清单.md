@@ -1,6 +1,6 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4 PREPARED / PRODUCTION NOT ADMITTED
+> 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4-01 COMPLETE / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-21
 > 当前项目原子任务：12E-08C-R4-01 Model Preflight Contract
 > 规则：每次只执行用户明确指定的一个 12E 原子任务

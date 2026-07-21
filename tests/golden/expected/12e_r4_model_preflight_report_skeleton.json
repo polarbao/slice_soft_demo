@@ -1,0 +1,30 @@
+{
+  "cacheKeyLength": 64,
+  "globalAdmission": {
+    "blockerCodes": [
+      "E_12E_PREFLIGHT_NOT_RUN"
+    ],
+    "mode": "global_surface_shell",
+    "status": "blocked",
+    "warningCodes": []
+  },
+  "identity": {
+    "algorithmVersion": "model_preflight_contract.1",
+    "optionsHash": "options-hash",
+    "resourceHash": "resource-hash",
+    "sourceHash": "source-hash",
+    "transformHash": "transform-hash"
+  },
+  "issues": [],
+  "legacyAdmission": {
+    "blockerCodes": [
+      "E_12E_PREFLIGHT_NOT_RUN"
+    ],
+    "mode": "legacy",
+    "status": "blocked",
+    "warningCodes": []
+  },
+  "productionOutputWritten": false,
+  "schema": "slicesoft.model_preflight.12e_08c_r4.1",
+  "status": "not_run"
+}

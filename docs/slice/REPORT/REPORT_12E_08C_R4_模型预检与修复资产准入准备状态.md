@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：PREPARED / R4-01 READY
+> 文档状态：IN PROGRESS / R4-01 COMPLETE
 > 日期：2026-07-21
 
 ## 1. 阶段结论
@@ -56,7 +56,7 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-01 Model Preflight Contract`。
+`12E-08C-R4-02 Two-stage Preflight Service` 准备收口。
 
 ## 7. 模型资产准备结果
 
@@ -67,3 +67,11 @@ legacy 默认；global fail-closed；无 silent fallback。
 `samples/models/3mf/texture2d_checker_cube.3mf`。该缺口不阻断 R4-01..05，但不得据此解除 R4-06..08。
 
 完整清单见 `REPORT_12E_08C_R4_模型资产预检清单.md`。
+
+## 8. R4-01 实施结果
+
+ModelPreflight DTO、稳定错误码、双模式 admission、cache identity/key、report schema、unit 和 golden 已实现。
+定向测试、相关合同测试、Debug 全量构建及 Qt self-test 通过。Quick CI 仍被既有
+`material_process_top2 widthPx expected=48 actual=226` golden baseline 阻断。
+
+详细证据见 `../DOC/DOC_EXEC_12E_08C_R4_01_ModelPreflightContract结果.md`。
