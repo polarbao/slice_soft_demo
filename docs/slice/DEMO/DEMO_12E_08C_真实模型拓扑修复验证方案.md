@@ -171,6 +171,18 @@ generated fixture 覆盖 no-op、duplicate exporter、separable fan、overlappin
 material/UV conflict、unclassified 和错误属性数量。真实模型逐 edge 全覆盖、双运行稳定；本任务不得创建
 repair operation 或写生产输出。
 
+### 9.6 R3-01A 已固化命令
+
+```powershell
+cmake --build build --config Debug --target mesh_complete_self_intersection_analyzer_unit_tests mesh_repair_contract_unit_tests mesh_repair_preflight_unit_tests mesh_repair_preflight
+ctest --test-dir build -C Debug -R "mesh_(complete_self_intersection|repair_(contract|preflight|r3_01a))" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r3_01a_complete_self_intersection.ps1 -BuildDir build -Config Debug
+```
+
+fixture 必须覆盖 confirmed、coplanar、touching、共享顶点邻接排除、真实 BVH 分裂与 O(N^2) 对照、预算阻断和
+非法 index。四个 required case 各执行两次；完整结果必须 tested=candidate、pair hash 稳定，阻断结果不得有
+最终 pair hash。任务只写诊断 JSON，不执行 repair，不写生产 package/TIFF。
+
 ## 10. 退出标准
 
 ```text

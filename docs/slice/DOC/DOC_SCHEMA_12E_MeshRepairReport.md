@@ -1,8 +1,8 @@
 # DOC_SCHEMA_12E Mesh Repair Report
 
-> 文档状态：PARTIAL / R1、R2、R3-01 DIAGNOSTIC CONTRACT IMPLEMENTED
+> 文档状态：PARTIAL / R1、R2、R3-01、R3-01A DIAGNOSTIC CONTRACT IMPLEMENTED
 > Schema：`slicesoft.mesh_repair.12e_08c.1`
-> 日期：2026-07-20
+> 日期：2026-07-21
 
 ## 1. 目的
 
@@ -37,6 +37,7 @@ reports/mesh_repair_report.json
   "attributePreservation": {},
   "evidenceValidation": {},
   "nonManifoldAnalysis": {},
+  "completeSelfIntersectionAnalysis": {},
   "postRepair": {},
   "admission": {},
   "performance": {},
@@ -120,7 +121,9 @@ R2-02/R2-03 新增的显式开关和预算都属于 options hash：
   "allowNewFaces": false,
   "newFaceAttributePolicy": "reject",
   "validatePostRepairEvidence": false,
-  "classifyNonManifoldPatterns": false
+  "classifyNonManifoldPatterns": false,
+  "analyzeCompleteSelfIntersections": false,
+  "maxCompleteSelfIntersectionCandidatePairs": 5000000
 }
 ```
 
@@ -303,6 +306,37 @@ R2-04 按上述字段顺序短路验证。稳定状态包括 `passed`、`blocked
 `residualComponentIds`、forward/reverse uses、pattern flags、`uniqueFanSplitFeasible` 和稳定 `reasonCode`。
 edge 按顶点 key 排序，triangle/source/component ids 升序；本对象只提供结构证据，不表示 repair 已执行。
 
+## 10.3 Complete Self-Intersection Analysis
+
+```json
+{
+  "status": "not_evaluated",
+  "complete": false,
+  "triangleCount": 0,
+  "bvhNodeCount": 0,
+  "candidatePairCount": 0,
+  "testedPairCount": 0,
+  "confirmedIntersectionPairs": 0,
+  "coplanarOverlapPairs": 0,
+  "touchingOnlyPairs": 0,
+  "aabbOnlyPairs": 0,
+  "candidatePairHash": null,
+  "durationMs": null,
+  "peakWorkingSetBytes": null,
+  "blockerCode": "",
+  "issues": []
+}
+```
+
+`status` 固定为 `not_evaluated | complete_no_intersection | confirmed_intersection | coplanar_overlap |
+touching_only | budget_or_resource_blocked`。完整结果要求 `complete=true`、
+`testedPairCount=candidatePairCount` 且 `candidatePairHash` 为有效 SHA-256；预算或资源阻断时不得对部分候选
+做 narrow-phase PASS，也不得生成最终 pair hash。
+
+候选 pair 是排除共享顶点邻接面后的 AABB overlap 集合，统一按 `(minTriangleId,maxTriangleId)` 排序和去重。
+`durationMs` 与 `peakWorkingSetBytes` 不参与稳定 hash。confirmed 或 coplanar 继续触发 strict blocker；
+touching-only 可作为完整证据，但不等价于其他 topology Gate 自动通过。
+
 ## 11. Admission
 
 ```json
@@ -367,5 +401,6 @@ policy；R1-03 已用 11 个 generated policy-contract fixtures 冻结 report pr
 真实 OBJ 和闭合 Texture2D 3MF 生成只读 Preflight report；R2-01 已实现 cleanup/source mapping；R2-02 已实现
 受约束 weld/winding、vertex mapping 和组件守门；R2-03 已实现简单 boundary fill、generated mapping 和显式
 new-face policy；R2-04 已实现统一 evidence validator/post-strict guard、候选丢弃与 negative tests；R3-01
-已实现 non-manifold pattern classifier。尚未实现 fan split、完整自相交证据或 production admission；报告文件仅由诊断 app 写入，repair core 仍不拥有
+已实现 non-manifold pattern classifier；R3-01A 已实现完整自相交分析、pair hash、预算阻断和真实模型证据。
+尚未实现 fan split、通用自相交修复或 production admission；报告文件仅由诊断 app 写入，repair core 仍不拥有
 文件系统写入职责。

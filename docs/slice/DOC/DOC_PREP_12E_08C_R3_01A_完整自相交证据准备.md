@@ -1,7 +1,7 @@
 # DOC_PREP_12E-08C-R3-01A 完整自相交证据准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY R2 AND R3-01
-> 日期：2026-07-20
+> 文档状态：EXECUTED / COMPLETE
+> 日期：2026-07-21
 > 来源：12E-08C-R1-04 真实模型 baseline
 
 ## 1. 准备原因
@@ -76,3 +76,21 @@ R2-01..04
 ```
 
 该任务只补齐 strict 证据，不放宽 required-case Gate，也不授权 12E-08D。
+
+## 7. 实施结论
+
+R3-01A 已按本准备文档完成：
+
+```text
+确定性 AABB BVH broad-phase；
+现有 TestTriangleIntersection narrow-phase；
+共享顶点邻接 pair 排除；
+候选 pair 排序、去重和 SHA-256；
+完整、确认相交、共面重叠、仅接触和预算/资源阻断状态；
+显式 maxCompleteSelfIntersectionCandidatePairs 预算；
+report、CLI、unit、contract、preflight 和真实模型证据脚本。
+```
+
+四个 required case 均完成两次稳定运行，没有 budget blocked。三个真实 OBJ 均确认存在自相交并保持
+`rejected_self_intersection`；闭合 Texture2D 3MF 为 `complete_no_intersection/strict_pass_no_repair`。
+结果见 `DOC_EXEC_12E_08C_R3_01A_完整自相交证据结果.md`。

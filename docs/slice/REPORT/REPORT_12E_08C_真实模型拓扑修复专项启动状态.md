@@ -1,7 +1,7 @@
 # REPORT_12E-08C 真实模型拓扑修复专项启动状态
 
-> 文档状态：IN PROGRESS / R1、R2、R3-01 COMPLETE / R3-01A READY
-> 日期：2026-07-20
+> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A COMPLETE / R3-02 READY
+> 日期：2026-07-21
 
 ## 1. 启动原因
 
@@ -31,7 +31,7 @@ repair_then_strict：R2-04 independent evidence validator COMPLETE / non-product
 12E-08C-R3 Real Model & Release Gate。
 ```
 
-R1-01..04、R2-01..04 与 R3-01 已完成实现和验证；R3-01A 已完成准备，等待明确启动。
+R1-01..04、R2-01..04、R3-01 与 R3-01A 已完成实现和验证；R3-02 已完成专用准备，等待明确启动。
 
 ## 4. 文档完成度
 
@@ -47,21 +47,22 @@ R1-01..04、R2-01..04 与 R3-01 已完成实现和验证；R3-01A 已完成准�
 ## 6. 下一任务
 
 ```text
-12E-08C-R3-01A 完整自相交证据。
+12E-08C-R3-02 真实模型 Repair Matrix。
 ```
 
 ## 7. 阶段判断
 
-修复专项准备 COMPLETE；R1-01..04、R2-01..04、R3-01 代码实施 COMPLETE；R3-01A READY；12E-08D 继续保持 BLOCKED。
+修复专项准备 COMPLETE；R1-01..04、R2-01..04、R3-01、R3-01A 代码实施 COMPLETE；R3-02 READY；
+12E-08D 继续保持 BLOCKED。
 
-R2/R3 的独立准备文档已补齐；R2 与 R3-01 已完成，R3-01A 解除前置阻断。R1-04
-发现的 sampled self-intersection 缺口已新增 R3-01A 准备。
+R3-01A 已把三个真实 OBJ 的 sampled 结论升级为完整 confirmed self-intersection 证据。R3-02 的独立准备
+文档已补齐，并明确任务证据完成不等于 production Gate PASS。
 
 ## 8. 双模式目标同步
 
 后续产品目标已明确为 `legacy` 与 `global_surface_shell` 两条用户可选流水线。当前 legacy 生产 TIFF 路径
 继续可用；本专项只为 global 的生产准入提供 repair/post-strict 证据。global 被阻断时不得自动改用 legacy。
-统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-01A。
+统一 TIFF writer 和 UI 双模式选择分别在 12E-08D 与 12E-09B 实施，不改变当前下一任务 R3-02。
 
 ## 9. R1-04 实际基线
 
@@ -117,4 +118,19 @@ Texture2D 3MF：nonManifold=0，not_present。
 ```
 
 四 case repeatability 全部 PASS，两个真实 non-manifold case 均不满足 all-unique fan split，因此继续 manual，
-不创建 `split_edge_fan` operation。下一任务为 R3-01A 完整自相交证据。
+不创建 `split_edge_fan` operation。
+
+## 15. R3-01A 实际结果
+
+R3-01A 新增确定性 AABB BVH 完整自相交分析、候选 pair SHA-256、显式预算/资源阻断、CLI/report/unit 与
+真实模型证据脚本。四个 required case 各运行两次，稳定投影 4/4 PASS，budget blocked 为 0：
+
+```text
+nai_you_new：236181 candidates，8409 confirmed；
+aishen_fudiao：491365 candidates，19270 confirmed，20 coplanar；
+meigui_fudiao：346104 candidates，5592 confirmed；
+Texture2D 3MF：8 candidates，0 confirmed/coplanar/touching，strict_pass_no_repair。
+```
+
+三个真实 OBJ 因完整 confirmed self-intersection 继续 `rejected_self_intersection`，不允许自动修复或伪
+strict PASS。R3-02 可以开始形成真实模型矩阵，但 12E-08D 继续 BLOCKED。

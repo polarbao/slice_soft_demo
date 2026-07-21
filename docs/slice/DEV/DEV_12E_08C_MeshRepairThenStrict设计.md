@@ -211,6 +211,15 @@ R3-01 已实现只读 pattern classifier：先移除全部 non-manifold edge，�
 component、unclassified 的固定优先级分类。只有每个 residual fan group 恰含方向相反的两面，才标记
 `uniqueFanSplitFeasible=true`。该结果只进入 eligibility/report，不创建 `split_edge_fan` operation。
 
+R3-01A 已实现只读 `MeshCompleteSelfIntersectionAnalyzer`：按 triangle id 构建确定性 median-split AABB BVH，
+稳定枚举非共享顶点候选 pair，并复用 `TestTriangleIntersection`。候选 pair 排序、去重并计算 SHA-256；完整
+结果要求 tested=candidate。候选预算或内存不足时返回 `budget_or_resource_blocked`，不对部分结果做 PASS
+判断。confirmed/coplanar 证据覆盖旧 sampled 结论并继续 fail-fast，不创建 repair operation。
+
+真实结果证明三个 required OBJ 均存在 confirmed self-intersection。因此 R3-02 只复用当前保守操作形成
+no-op/repair/manual/rejected matrix，不引入通用自相交重建，也不把 OpenVDB 体素化当作 UV/material 保持的
+自动修复手段。
+
 ## 9. Attribute Preservation
 
 `SceneModelTriangleMeshAdapter` 应提供或扩展 source mapping：

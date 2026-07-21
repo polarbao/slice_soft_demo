@@ -1,7 +1,7 @@
 # DOC_PREP_12E-08C-R3 Real Model 与 Release Gate 准备
 
-> 文档状态：IN PROGRESS / R3-01 COMPLETE / R3-01A READY
-> 日期：2026-07-20
+> 文档状态：IN PROGRESS / R3-01、R3-01A COMPLETE / R3-02 READY
+> 日期：2026-07-21
 
 ## 1. 准备结论
 
@@ -13,8 +13,9 @@ Repair Matrix 前新增 R3-01A 完整自相交证据，准备入口为
 `DOC_PREP_12E_08C_R3_01A_完整自相交证据准备.md`。
 
 R3-01 已完成只读的 non-manifold pattern classifier，真实模型分类结果与重复性证据见
-`DOC_EXEC_12E_08C_R3_01_NonManifoldPatternClassifier结果.md`。当前下一允许的原子任务为 R3-01A；
-R3-02 及之后任务继续阻断。
+`DOC_EXEC_12E_08C_R3_01_NonManifoldPatternClassifier结果.md`。R3-01A 也已完成：三个 required OBJ 均
+确认存在自相交，闭合 Texture2D 3MF 无自相交，四 case 均为完整且可重复的证据。当前下一允许原子任务为
+R3-02，专用准备入口为 `DOC_PREP_12E_08C_R3_02_真实模型RepairMatrix准备.md`。
 
 ## 2. R3-01 Non-Manifold Pattern Classifier
 
@@ -39,6 +40,9 @@ Pattern classifier 只描述结构并评估唯一 fan split 可行性。未证�
 使用确定性 broad-phase 完整枚举 required real model 候选 pair，并复用当前 triangle intersection
 narrow-phase。sampled 不得计为 strict PASS；confirmed/coplanar blocker 继续 fail-fast 或 blocked。
 
+状态：COMPLETE / NON-PRODUCTION。四 case 无 budget blocked；三个 OBJ 为 confirmed intersection，3MF 为
+complete no intersection。结果见 `DOC_EXEC_12E_08C_R3_01A_完整自相交证据结果.md`。
+
 ## 4. R3-02 真实模型 Repair Matrix
 
 每个 required case 分别运行 repair disabled/enabled，并记录：
@@ -54,6 +58,9 @@ partition/texture/raster/full closure；
 ```
 
 专项允许 no-op、repaired、manual、rejected；12E-08D Gate 只接受 required case 的 strict PASS。
+
+R3-02 当前 READY。confirmed/coplanar case 只记录 fail-fast 与未修改证据，不新增通用自相交重建；
+任务证据完成和 production Gate PASS 必须分开统计。
 
 ## 5. R3-03 Release Core 与 Legacy Regression
 

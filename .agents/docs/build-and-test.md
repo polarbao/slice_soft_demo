@@ -272,3 +272,15 @@ ctest --test-dir build -C Debug -R "mesh_(non_manifold_pattern|repair_(contract|
 输出位于 `output/benchmarks/12e_08c_r3_01_non_manifold`。脚本对四个 required case 各执行两次，冻结每条
 non-manifold edge 的 pattern、incident/source triangle、residual component 和 fan-split feasibility；只做
 诊断分类，不修改网格、不写 production package/TIFF。
+
+## 12E-08C-R3-01A Complete Self-Intersection Evidence
+
+```powershell
+cmake --build build --config Debug --target mesh_complete_self_intersection_analyzer_unit_tests mesh_repair_contract_unit_tests mesh_repair_preflight_unit_tests mesh_repair_preflight
+ctest --test-dir build -C Debug -R "mesh_(complete_self_intersection|repair_(contract|preflight|r3_01a))" --output-on-failure
+.\scripts\run_12e_08c_r3_01a_complete_self_intersection.ps1 -BuildDir build -Config Debug
+```
+
+输出位于 `output/benchmarks/12e_08c_r3_01a_self_intersection`。脚本对四个 required case 各执行两次，冻结
+完整候选计数、narrow-phase 分类、pair SHA-256 和稳定投影。它不执行 repair，不写 production package/TIFF；
+budget/resource blocked 不能作为完整 strict PASS。

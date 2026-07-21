@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：IN PROGRESS / R1、R2、R3-01 COMPLETE / R3-01A READY
-> 日期：2026-07-20
+> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A COMPLETE / R3-02 READY
+> 日期：2026-07-21
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；下一允许任务为 12E-08C-R3-01A
+> 当前原子任务：无；下一允许任务为 12E-08C-R3-02
 
 ## 1. 总目标
 
@@ -166,7 +166,7 @@ component、mixed winding、attribute conflict 和 unclassified，并输出完�
 
 ### 12E-08C-R3-01A 完整自相交证据
 
-状态：READY。
+状态：COMPLETE。
 
 范围：用确定性空间索引完整枚举 required real model 自相交候选，复用当前 narrow-phase，替代 sampled
 证据；confirmed intersection 继续 fail-fast。
@@ -176,13 +176,20 @@ component、mixed winding、attribute conflict 和 unclassified，并输出完�
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_01A_完整自相交证据准备.md`。
 
+实际结果：新增确定性 AABB BVH 完整候选枚举、pair SHA-256、预算/资源阻断、CLI/report/unit/真实模型证据。
+四个 required case 均 complete 且双运行稳定；三个真实 OBJ 确认自相交并 fail-fast，闭合 3MF 无相交并保持
+no-op strict PASS。结果见 `docs/slice/DOC/DOC_EXEC_12E_08C_R3_01A_完整自相交证据结果.md`。
+
 ### 12E-08C-R3-02 真实模型 Repair Matrix
 
-状态：BLOCKED BY R3-01A。
+状态：READY。
 
 范围：四个 required cases 的 no-op/repair/manual 状态、属性保持和 post strict。
 
 完成标准：不崩溃、不伪 PASS；required-case production PASS 与专项完成状态分开记录。
+
+准备入口：`docs/slice/DOC/DOC_PREP_12E_08C_R3_02_真实模型RepairMatrix准备.md`。confirmed/coplanar
+case 不执行启发式 repair；R3-02 允许以 rejected/manual 完成任务证据，但不得计为 production PASS。
 
 ### 12E-08C-R3-03 Release Core 与 Legacy Regression
 

@@ -1,7 +1,7 @@
 # ROADMAP_12E-08C 真实模型拓扑修复分阶段路线
 
-> 文档状态：IN PROGRESS / R1、R2、R3-01 COMPLETE / R3-01A READY
-> 日期：2026-07-20
+> 文档状态：IN PROGRESS / R1、R2、R3-01、R3-01A COMPLETE / R3-02 READY
+> 日期：2026-07-21
 > 阶段位置：12E-08C Release Evidence 与 12E-08D Production Admission 之间
 
 ## 1. 总体路线
@@ -65,7 +65,9 @@ R3-04：更新 admission matrix，给出 08D GO/NO-GO。
 
 当前进度：R3-01 已完成。`aishen_fudiao` 的 59 条 non-manifold edge 由 2 条 duplicate exporter 和 57 条
 attribute-conflicting fan 构成；`meigui_fudiao` 的 10940 条由 10935 条 duplicate exporter 和 5 条
-attribute-conflicting fan 构成。两者均不存在全局唯一 fan split，保持 manual；R3-01A READY。
+attribute-conflicting fan 构成。两者均不存在全局唯一 fan split，保持 manual。R3-01A 已完成确定性完整
+自相交证据：三个 required OBJ 均为 confirmed intersection，闭合 3MF 为 complete no intersection，四 case
+双运行稳定且无 budget blocked。R3-02 Repair Matrix READY，但 12E-08D 继续 BLOCKED。
 
 退出标准：每个 required case 有真实状态；预算可冻结或明确保持 BLOCKED；不得用 manual required 冒充 PASS。
 

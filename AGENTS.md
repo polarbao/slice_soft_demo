@@ -4,7 +4,7 @@
 
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
-- Current branch/ref: `main` as of 2026-07-10; verify with `git branch --show-current` before each task
+- Current branch/ref: `feature/12e-08c-mesh-repair` as of 2026-07-21; verify with `git branch --show-current` before each task
 - Main implementation paths: `src/slicer_core`, `apps/slicer_cli`, `apps/slicer_debug_ui`
 - Formal docs: `docs/slice`
 - Codex task docs: `docs/codex_task`
@@ -19,9 +19,9 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12D-10 real-model material closure validation`.
+- The latest completed task is `12E-08C-R3-01A Complete Self-Intersection Evidence`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01` are complete. Non-manifold patterns are repeatably classified without mutation; real OBJ topology remains blocked and the next allowed atomic task is `12E-08C-R3-01A Complete Self-Intersection Evidence`.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, `12E-08C-R3-01`, and `12E-08C-R3-01A` are complete. Complete deterministic evidence confirms self-intersections in all three required OBJ models; the closed Texture2D 3MF remains a no-op strict PASS. The next allowed atomic task is `12E-08C-R3-02 Real Model Repair Matrix`; 12E-08D remains blocked.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - Current global_surface_shell remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. The approved Target State is explicit `slicePipeline.mode=legacy|global_surface_shell`, with legacy as default and both admitted production modes sharing the existing RGBWSV TIFF writer. This target is not implemented and does not authorize `12E-08D`; closed production gates and explicit user confirmation are still required.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
