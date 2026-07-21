@@ -5,6 +5,8 @@ $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
+$fixedEntryTime = [DateTimeOffset]::Parse("2026-06-29T16:53:58+08:00")
+
 function Copy-ZipWithCompression([string]$Source, [string]$Destination, [System.IO.Compression.CompressionLevel]$Level) {
   if (Test-Path $Destination) {
     Remove-Item -LiteralPath $Destination -Force
@@ -15,6 +17,7 @@ function Copy-ZipWithCompression([string]$Source, [string]$Destination, [System.
     try {
       foreach ($entry in $sourceArchive.Entries) {
         $newEntry = $destArchive.CreateEntry($entry.FullName, $Level)
+        $newEntry.LastWriteTime = $fixedEntryTime
         $inputStream = $entry.Open()
         try {
           $outputStream = $newEntry.Open()
@@ -43,6 +46,7 @@ function New-ZipPackage([string]$Path, [hashtable]$Entries, [System.IO.Compressi
   try {
     foreach ($name in $Entries.Keys) {
       $entry = $archive.CreateEntry($name, $Level)
+      $entry.LastWriteTime = $fixedEntryTime
       $stream = $entry.Open()
       try {
         if ($Entries[$name] -is [byte[]]) {

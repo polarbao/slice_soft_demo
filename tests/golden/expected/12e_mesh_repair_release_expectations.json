@@ -1,0 +1,30 @@
+{
+  "schema": "slicesoft.mesh_repair_release_expectations.12e_08c_r3_03.1",
+  "repairOptionsHash": "09fdce3aec0aaeb0d9fde466ff231feb64c6b00fb53a558632ec78aec46dd3a8",
+  "cases": [
+    {
+      "caseId": "nai_you_new",
+      "repairStatus": "rejected_self_intersection",
+      "globalCoreStatus": "skipped_due_topology",
+      "requiredBlockerCode": "MESH_SELF_INTERSECTION_CONFIRMED"
+    },
+    {
+      "caseId": "aishen_fudiao",
+      "repairStatus": "rejected_self_intersection",
+      "globalCoreStatus": "skipped_due_topology",
+      "requiredBlockerCode": "MESH_SELF_INTERSECTION_CONFIRMED"
+    },
+    {
+      "caseId": "meigui_fudiao",
+      "repairStatus": "rejected_self_intersection",
+      "globalCoreStatus": "skipped_due_topology",
+      "requiredBlockerCode": "MESH_SELF_INTERSECTION_CONFIRMED"
+    },
+    {
+      "caseId": "three_mf_texture2d_checker",
+      "repairStatus": "strict_pass_no_repair",
+      "globalCoreStatus": "completed",
+      "requiredBlockerCode": null
+    }
+  ]
+}

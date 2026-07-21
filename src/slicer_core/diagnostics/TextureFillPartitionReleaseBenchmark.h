@@ -1,8 +1,13 @@
 #pragma once
 
 #include "slicer_core/json_value.h"
+#include "slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h"
+#include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTypes.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
+#include "slicer_core/raster/TextureFillPartitionRasterMapper.h"
 
+#include <array>
 #include <cstdint>
 #include <string>
 
@@ -18,6 +23,7 @@ struct TriangleMeshData;
 struct TextureFillPartitionReleaseBenchmarkRequest
 {
     const TriangleMeshData* mesh{nullptr};
+    const AdaptedTriangleMesh* adaptedMesh{nullptr};
     std::string caseName{"unnamed"};
     std::string configPath;
     std::string modelPath;
@@ -33,6 +39,9 @@ struct TextureFillPartitionReleaseBenchmarkRequest
     std::uint64_t degenerateTriangles{0U};
     std::uint64_t boundaryEdges{0U};
     std::uint64_t nonManifoldEdges{0U};
+    TextureSampleOptions textureSample;
+    std::array<std::uint8_t, 3> fallbackRgb{0, 0, 0};
+    std::string missingTexturePolicy{"warn_and_fallback"};
 };
 
 /**
@@ -43,6 +52,9 @@ struct TextureFillPartitionReleaseBenchmarkResult
     bool evidenceCollected{false};
     bool productionAdmitted{false};
     GlobalTextureFillPartitionResult partition;
+    TextureFillPartitionTextureTransferResult textureTransfer;
+    TextureFillPartitionRasterMappingResult rasterMapping;
+    TextureFillPartitionFullClosureAdapterResult fullClosure;
     Json report;
 };
 

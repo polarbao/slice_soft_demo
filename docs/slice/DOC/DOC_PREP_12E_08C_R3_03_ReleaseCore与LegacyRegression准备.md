@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08C-R3-03 Release Core 与 Legacy Regression 准备
 
-> 文档状态：READY / NON-PRODUCTION
+> 文档状态：CONSUMED / R3-03 COMPLETE / NON-PRODUCTION
 > 日期：2026-07-21
 > 前置任务：R3-02 COMPLETE
 

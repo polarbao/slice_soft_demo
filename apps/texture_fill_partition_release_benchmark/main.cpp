@@ -153,6 +153,7 @@ int RunBenchmark(const Options& options)
 
     slicer_core::TextureFillPartitionReleaseBenchmarkRequest request;
     request.mesh = &adapted.mesh;
+    request.adaptedMesh = &adapted;
     request.caseName = options.caseName;
     request.configPath = options.configPath.generic_string();
     request.modelPath = scene.model_path.generic_string();
@@ -168,6 +169,11 @@ int RunBenchmark(const Options& options)
     request.degenerateTriangles = adapted.topology.degenerate_triangles;
     request.boundaryEdges = adapted.topology.boundary_edges;
     request.nonManifoldEdges = adapted.topology.non_manifold_edges;
+    request.textureSample.sampler = config.texture.sampler;
+    request.textureSample.uv_address_mode = config.texture.uv_address_mode;
+    request.textureSample.flip_v = config.texture.flip_v;
+    request.fallbackRgb = config.texture.fallback_rgb;
+    request.missingTexturePolicy = config.texture.missing_texture_policy;
 
     const slicer_core::TextureFillPartitionReleaseBenchmarkResult result =
         slicer_core::RunTextureFillPartitionReleaseBenchmark(request);
@@ -178,6 +184,10 @@ int RunBenchmark(const Options& options)
         << "  case: " << options.caseName << '\n'
         << "  status: " << result.partition.status << '\n'
         << "  partitionPass: " << (result.partition.partitionPass ? "true" : "false") << '\n'
+        << "  textureTransfer: " << result.textureTransfer.status << '\n'
+        << "  rasterMapping: " << result.rasterMapping.status << '\n'
+        << "  fullClosurePass: "
+        << (result.fullClosure.fullClosurePass ? "true" : "false") << '\n'
         << "  totalCoreMs: " << result.partition.performance.totalCoreMs << '\n'
         << "  peakWorkingSetBytes: "
         << result.partition.performance.processPeakWorkingSetBytes << '\n'

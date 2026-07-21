@@ -5,11 +5,19 @@
 #include "slicer_core/geometry/TriangleMeshData.h"
 #include "slicer_core/materials/texture_application/GlobalTextureFillPartitionService.h"
 #include "slicer_core/materials/texture_application/LegacyCpuGlobalDistanceBackend.h"
+#include "slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.h"
+#include "slicer_core/raster/TextureFillPartitionRasterMapper.h"
 
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace slicer_core
 {
@@ -17,6 +25,9 @@ namespace
 {
 
 using Clock = std::chrono::steady_clock;
+
+constexpr std::size_t kMaterialChannelCount{6U};
+constexpr std::size_t kWhiteChannel{3U};
 
 int CalculateGridAxis(
     const double minimum,
@@ -56,8 +67,15 @@ Json BuildGridJson(const TextureFillPartitionGridSpec& grid)
 Json BuildPerformanceJson(
     const TextureFillPartitionReleaseBenchmarkRequest& request,
     const TextureFillPartitionPerformance& performance,
+    const TextureFillPartitionTextureTransferResult& transfer,
+    const TextureFillPartitionRasterMappingResult& rasterMapping,
+    const TextureFillPartitionFullClosureAdapterResult& fullClosure,
     const double benchmarkWallMs)
 {
+    const double globalCoreMs = performance.totalCoreMs
+        + (transfer.available ? transfer.stats.transferMs : 0.0)
+        + (rasterMapping.available ? rasterMapping.stats.mappingMs : 0.0)
+        + (fullClosure.available ? fullClosure.analysisMs : 0.0);
     return Json::object({
         {"configLoadMs", request.configLoadMs},
         {"modelLoadMs", request.modelLoadMs},
@@ -67,9 +85,14 @@ Json BuildPerformanceJson(
         {"distanceQueryMs", performance.distanceQueryMs},
         {"partitionMs", performance.partitionMs},
         {"totalCoreMs", performance.totalCoreMs},
+        {"globalCoreMs", globalCoreMs},
         {"benchmarkWallMs", benchmarkWallMs},
-        {"textureTransferMs", Json{nullptr}},
-        {"rasterMappingMs", Json{nullptr}},
+        {"textureTransferMs",
+         transfer.available ? Json{transfer.stats.transferMs} : Json{nullptr}},
+        {"rasterMappingMs",
+         rasterMapping.available ? Json{rasterMapping.stats.mappingMs} : Json{nullptr}},
+        {"fullClosureMs",
+         fullClosure.available ? Json{fullClosure.analysisMs} : Json{nullptr}},
         {"outputWriteMs", 0.0},
     });
 }
@@ -115,6 +138,133 @@ Json BuildPartitionJson(const GlobalTextureFillPartitionResult& result)
     });
 }
 
+Json BuildTextureTransferJson(
+    const TextureFillPartitionTextureTransferResult& result)
+{
+    return Json::object({
+        {"available", result.available},
+        {"status", result.status},
+        {"productionAcceptance", result.productionAcceptance},
+        {"textureSurfaceVoxels", result.stats.textureSurfaceVoxels},
+        {"sampledTextureCount", result.stats.sampledTextureCount},
+        {"materialDiffuseCount", result.stats.materialDiffuseCount},
+        {"fallbackCount", result.stats.fallbackCount},
+        {"missingUvCount", result.stats.missingUvCount},
+        {"missingTextureCount", result.stats.missingTextureCount},
+        {"textureSampleFailureCount", result.stats.textureSampleFailureCount},
+        {"outsideColoredCount", result.stats.outsideColoredCount},
+        {"issues", ValidationIssuesToJson(result.issues)},
+    });
+}
+
+Json BuildRasterMappingJson(
+    const TextureFillPartitionRasterMappingResult& result)
+{
+    return Json::object({
+        {"available", result.available},
+        {"status", result.status},
+        {"productionAcceptance", result.productionAcceptance},
+        {"productionOutputWritten", result.productionOutputWritten},
+        {"mappingMethod", result.mappingMethod},
+        {"layerCount", result.layers.size()},
+        {"modelRasterVoxels", result.stats.modelRasterVoxels},
+        {"textureSurfaceRasterVoxels", result.stats.textureSurfaceRasterVoxels},
+        {"modelFillRasterVoxels", result.stats.modelFillRasterVoxels},
+        {"overlapRasterVoxels", result.stats.overlapRasterVoxels},
+        {"unassignedModelRasterVoxels", result.stats.unassignedModelRasterVoxels},
+        {"partitionPass", result.stats.partitionPass},
+        {"issues", ValidationIssuesToJson(result.issues)},
+    });
+}
+
+Json BuildFullClosureJson(
+    const TextureFillPartitionFullClosureAdapterResult& result)
+{
+    return Json::object({
+        {"available", result.available},
+        {"status", result.status},
+        {"scope", result.scope},
+        {"source", result.source},
+        {"confidence", result.confidence},
+        {"fullClosurePass", result.fullClosurePass},
+        {"repairAttempted", result.repairAttempted},
+        {"productionOutputWritten", result.productionOutputWritten},
+        {"productionAcceptance", result.productionAcceptance},
+        {"layerCount", result.layers.size()},
+        {"totalExpectedDomainGapPixels", result.totalExpectedDomainGapPixels},
+        {"totalModelDomainGapPixels", result.totalModelDomainGapPixels},
+        {"totalSemanticChannelMismatchPixels",
+         result.totalSemanticChannelMismatchPixels},
+        {"issues", ValidationIssuesToJson(result.issues)},
+    });
+}
+
+TextureFillPartitionRasterGridSpec BuildRasterGrid(
+    const TextureFillPartitionGridSpec& grid)
+{
+    TextureFillPartitionRasterGridSpec rasterGrid;
+    rasterGrid.width = grid.width;
+    rasterGrid.height = grid.height;
+    rasterGrid.depth = grid.depth;
+    rasterGrid.originXMm = grid.originXMm;
+    rasterGrid.originYMm = grid.originYMm;
+    rasterGrid.originZMm = grid.originZMm;
+    rasterGrid.pixelPitchXMm = grid.spacingXMm;
+    rasterGrid.pixelPitchYMm = grid.spacingYMm;
+    rasterGrid.layerThicknessMm = grid.spacingZMm;
+    return rasterGrid;
+}
+
+std::vector<TextureFillPartitionFullClosureLayerEvidence>
+BuildDiagnosticClosureEvidence(
+    const TextureFillPartitionRasterMappingResult& rasterMapping)
+{
+    std::vector<TextureFillPartitionFullClosureLayerEvidence> evidenceLayers;
+    evidenceLayers.reserve(rasterMapping.layers.size());
+    const std::size_t pixelCount = static_cast<std::size_t>(rasterMapping.grid.width)
+        * static_cast<std::size_t>(rasterMapping.grid.height);
+
+    for (const TextureFillPartitionRasterLayer& rasterLayer : rasterMapping.layers)
+    {
+        TextureFillPartitionFullClosureLayerEvidence evidence;
+        evidence.layerIndex = rasterLayer.layerIndex;
+        evidence.zMm = rasterLayer.zMm;
+        evidence.widthPx = rasterMapping.grid.width;
+        evidence.heightPx = rasterMapping.grid.height;
+        evidence.supportFillMask.assign(pixelCount, 0U);
+        evidence.internalVoidSupportMask.assign(pixelCount, 0U);
+        evidence.surfaceVarnishMask.assign(pixelCount, 0U);
+        evidence.outerVarnishShellMask.assign(pixelCount, 0U);
+        evidence.modelEnvelopeMask = rasterLayer.modelMask;
+        evidence.supportRequiredMask.assign(pixelCount, 0U);
+        evidence.channels.assign(pixelCount * kMaterialChannelCount, 255U);
+
+        for (std::size_t pixelIndex{0U}; pixelIndex < pixelCount; ++pixelIndex)
+        {
+            if (rasterLayer.textureSurfaceMask.at(pixelIndex) != 0U)
+            {
+                const std::array<std::uint8_t, 3>& rgb =
+                    rasterLayer.textureRgb.at(pixelIndex);
+                evidence.channels.at(pixelIndex * kMaterialChannelCount) = rgb[0];
+                evidence.channels.at(pixelIndex * kMaterialChannelCount + 1U) = rgb[1];
+                evidence.channels.at(pixelIndex * kMaterialChannelCount + 2U) = rgb[2];
+                if (rgb[0] == 255U && rgb[1] == 255U && rgb[2] == 255U)
+                {
+                    evidence.channels.at(
+                        pixelIndex * kMaterialChannelCount + kWhiteChannel) = 0U;
+                }
+            }
+            else if (rasterLayer.modelFillMask.at(pixelIndex) != 0U)
+            {
+                evidence.channels.at(
+                    pixelIndex * kMaterialChannelCount + kWhiteChannel) = 0U;
+            }
+        }
+        evidenceLayers.push_back(std::move(evidence));
+    }
+    return evidenceLayers;
+}
+
 }  // namespace
 
 TextureFillPartitionGridSpec BuildTextureFillPartitionBenchmarkGrid(
@@ -151,6 +301,12 @@ TextureFillPartitionReleaseBenchmarkResult RunTextureFillPartitionReleaseBenchma
     {
         throw std::invalid_argument("benchmark mesh is required");
     }
+    if (request.adaptedMesh != nullptr
+        && &request.adaptedMesh->mesh != request.mesh)
+    {
+        throw std::invalid_argument(
+            "benchmark adapted mesh must own the classification mesh");
+    }
 
     const TextureFillPartitionGridSpec grid =
         BuildTextureFillPartitionBenchmarkGrid(
@@ -168,6 +324,37 @@ TextureFillPartitionReleaseBenchmarkResult RunTextureFillPartitionReleaseBenchma
     const Clock::time_point benchmarkStart = Clock::now();
     TextureFillPartitionReleaseBenchmarkResult benchmark;
     benchmark.partition = service.Evaluate(partitionRequest);
+    if (benchmark.partition.partitionPass && request.adaptedMesh != nullptr)
+    {
+        TextureFillPartitionTextureTransferRequest transferRequest;
+        transferRequest.adaptedMesh = request.adaptedMesh;
+        transferRequest.partition = &benchmark.partition;
+        transferRequest.textureSample = request.textureSample;
+        transferRequest.fallbackRgb = request.fallbackRgb;
+        transferRequest.missingTexturePolicy = request.missingTexturePolicy;
+        benchmark.textureTransfer = TransferTextureFillPartition(transferRequest);
+
+        if (benchmark.textureTransfer.available)
+        {
+            TextureFillPartitionRasterMappingRequest rasterRequest;
+            rasterRequest.partition = &benchmark.partition;
+            rasterRequest.transfer = &benchmark.textureTransfer;
+            rasterRequest.rasterGrid = BuildRasterGrid(grid);
+            benchmark.rasterMapping = MapTextureFillPartitionToRaster(rasterRequest);
+        }
+
+        if (benchmark.rasterMapping.available)
+        {
+            const std::vector<TextureFillPartitionFullClosureLayerEvidence>
+                closureEvidence = BuildDiagnosticClosureEvidence(
+                    benchmark.rasterMapping);
+            TextureFillPartitionFullClosureAdapterRequest closureRequest;
+            closureRequest.rasterMapping = &benchmark.rasterMapping;
+            closureRequest.layers = &closureEvidence;
+            benchmark.fullClosure = AdaptTextureFillPartitionFullClosure(
+                closureRequest);
+        }
+    }
     const double benchmarkWallMs = std::chrono::duration<double, std::milli>(
         Clock::now() - benchmarkStart).count();
     benchmark.evidenceCollected = true;
@@ -208,10 +395,16 @@ TextureFillPartitionReleaseBenchmarkResult RunTextureFillPartitionReleaseBenchma
          })},
         {"grid", BuildGridJson(grid)},
         {"partition", BuildPartitionJson(benchmark.partition)},
+        {"textureTransfer", BuildTextureTransferJson(benchmark.textureTransfer)},
+        {"rasterMapping", BuildRasterMappingJson(benchmark.rasterMapping)},
+        {"fullClosure", BuildFullClosureJson(benchmark.fullClosure)},
         {"timingsMs",
          BuildPerformanceJson(
              request,
              benchmark.partition.performance,
+             benchmark.textureTransfer,
+             benchmark.rasterMapping,
+             benchmark.fullClosure,
              benchmarkWallMs)},
         {"memory", BuildMemoryJson(benchmark.partition.performance)},
         {"queries",
@@ -227,11 +420,14 @@ TextureFillPartitionReleaseBenchmarkResult RunTextureFillPartitionReleaseBenchma
         {"budget",
          Json::object({
              {"evaluated", false},
-             {"status", benchmark.partition.partitionPass ? "measured_not_frozen" : "blocked"},
+             {"status",
+              benchmark.fullClosure.fullClosurePass
+                  ? "measured_not_frozen"
+                  : "blocked"},
              {"reason",
-              benchmark.partition.partitionPass
+              benchmark.fullClosure.fullClosurePass
                   ? "real-model budget must be frozen from the complete 12E-08C matrix"
-                  : "partition candidate was blocked before budget admission"},
+                  : "global diagnostic chain was blocked before budget admission"},
          })},
     });
     return benchmark;
