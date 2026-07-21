@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY 12E-08C-R3
+> 文档状态：PREPARED / EXECUTION BLOCKED BY 12E-08C-R4
 > 日期：2026-07-20
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
 
@@ -51,7 +51,7 @@ SlicePipelineModeRouter
 ## 5. 08D-01 Gate
 
 ```text
-12E-08C-R3-04 GO；
+12E-08C-R4-08 GO；
 required real model strict PASS；
 attribute preservation PASS；
 Release budget frozen；

@@ -1,0 +1,100 @@
+# TASKS_12E-08C-R4 模型导入预检与修复资产准入任务清单
+
+> 文档状态：PREPARED
+> 日期：2026-07-21
+> 当前原子任务：R4-01
+> 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
+
+## 1. 固定边界
+
+```text
+legacy 继续是默认生产模式；
+global_surface_shell 继续 diagnostic-only，直到 08D GO；
+不放宽 strict，不自动 fallback；
+不实现通用复杂自相交重建；
+不引入第三方库；
+不修改 p0.rgbwsv.2/RGBWSV/uint8/black_is_print；
+不提交或覆盖 model/obj 下用户未跟踪资产，除非用户明确要求。
+```
+
+## 2. R4-01 Preflight Contract
+
+状态：READY。
+
+范围：ModelPreflight DTO、stable code、mode admission DTO、cache key、report schema 和 generated unit/golden。
+
+禁止：不接 UI，不启动切片，不修复模型，不写 package。
+
+验证：新增定向 unit/schema/golden + `git diff --check`。
+
+## 3. R4-02 Two-stage Preflight Service
+
+状态：PREPARED / WAIT R4-01。
+
+范围：fast import check、最终 transform 后 full diagnostics、cache/stale、取消和 deterministic result。
+
+完成标准：模型/resource/transform/options 任一变化都使 cache 失效；完整审计不足不返回 PASS。
+
+## 4. R4-03 Mode Admission and Pipeline Gate
+
+状态：PREPARED / WAIT R4-02。
+
+范围：legacy/global admission policy、CLI facade、两个 pipeline 入口的 fail-closed/no-fallback 守门。
+
+完成标准：同一 self-intersection 模型得到 legacy warning/global blocked；global 核心和 writer 均未启动。
+
+## 5. R4-04 Qt Preflight UI
+
+状态：PREPARED / WAIT R4-03。
+
+范围：中文状态/问题列表、重新检测、stale、两个一键按钮、异步生命周期和 UI smoke。
+
+完成标准：任何 UI 路径不能绕过 preflight；最长中文不遮挡；关闭/取消无崩溃。
+
+## 6. R4-05 Clean Positive Matrix
+
+状态：PREPARED / WAIT R4-02。
+
+范围：闭合彩色 OBJ + Texture2D 3MF 的 0.10mm/intermediate/allTexture，Model Fill 材料解析和 report。
+
+输入已冻结为：
+
+```text
+主 OBJ：model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj；
+复核 OBJ：model/obj/yecan/3.obj；
+3MF：samples/models/3mf/texture2d_checker_cube.3mf。
+```
+
+`model` 目录其他 6 个 strict PASS OBJ 可作扩展覆盖；目录内三个 3MF 均存在自相交/非流形问题，不得作
+正向 fixture。模型资产预检证据见 `docs/slice/REPORT/REPORT_12E_08C_R4_模型资产预检清单.md`。
+
+完成标准：互补/单调/终点不变量全部 PASS；正常模型结果不写入 required repair PASS 计数。
+
+## 7. R4-06 Repaired Asset Intake
+
+状态：BLOCKED BY EXTERNAL INPUT。
+
+范围：三个 required OBJ 修复版本的 identity/provenance/attribute/post-strict 审计。
+
+完成标准：每例具有原/新 hash、修复来源、属性 diff、完整自相交和 post-strict 证据。
+
+## 8. R4-07 Four-case Release Gate
+
+状态：PREPARED / WAIT R4-06。
+
+范围：四 case global partition/texture/raster/full closure，Release time/memory，legacy TIFF/RIP/Quick CI。
+
+完成标准：四 case 全部 admitted；预算冻结；production output 仍按 08D 边界处理。
+
+## 9. R4-08 08D GO/NO-GO Refresh
+
+状态：PREPARED / WAIT R4-07。
+
+范围：更新 matrix/report/context；只作决策，不实现 adapter。
+
+完成标准：全部 Gate PASS 才 GO；否则保留 NO-GO 和 blocker。
+
+## 10. 提交要求
+
+每个原子任务按项目中文详细模板独立提交，提交前必须运行定向验证、`git diff --check`、
+`git status --short`，不得把无关模型资产混入提交。

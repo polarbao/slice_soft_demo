@@ -26,6 +26,10 @@
 | `DOC_EXEC_12E_08C_R3_03_ReleaseCore与LegacyRegression结果.md` | R3-03 Release 分段证据与 legacy 回归结果 |
 | `DOC_PREP_12E_08C_R3_04_08D_GO_NO_GO准备.md` | R3-04 生产准入决策输入与 Gate |
 | `DOC_DECISION_12E_08C_R3_04_08D_GO_NO_GO.md` | 12E-08D 当前 NO-GO 决策与解除条件 |
+| `DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md` | R3-04 后新增模型预检、正常模型正向链与修复资产准入决策 |
+| `DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md` | R4-01 实施依赖、停止条件和验证准备 |
+| `DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md` | R4-01 合同代码落点、golden 和定向验证准备 |
+| `DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后功能可继续、生产仍阻断以及正常/required 模型双轨分析 |
 
 ## 决策记录
 

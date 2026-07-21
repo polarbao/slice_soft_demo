@@ -3,9 +3,9 @@
 > 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-20
-> 当前分支：`main`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成；12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；legacy/global_surface_shell 双模式与统一 TIFF 目标已固化但未实现，12E-08D 继续阻断；12F-00/01 已完成、性能算法任务未开始
+> 更新日期：2026-07-21
+> 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
+> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成；12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；R4 模型预检与修复资产准入已准备、R4-01 READY；12E-08D 继续阻断；12F-00/01 已完成、性能算法任务未开始
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -34,11 +34,11 @@
 当前代码和报告显示：
 
 ```text
-当前分支：main，任务开始前通过 git 命令确认
-最新完成阶段：12E-08C 默认 OFF Release 证据与 Legacy Regression
-当前执行阶段：12E-08C-R1 完成，R2-01 保守 cleanup READY
-最新完成任务：12E-08C-R1-04 真实模型 Pre-Repair Baseline
-准备任务：无 active 12E code task；12E-09A diagnostic UI 可并行；12E-08D 被 R3-04 NO-GO 阻断；12F-02 等待用户明确启动
+当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
+最新完成阶段：12E-08C-R3 Release/Legacy 非生产证据与 R3-04 NO-GO 决策
+当前执行阶段：12E-08C-R4 PREPARED
+最新完成任务：12E-08C-R3-04 12E-08D GO/NO-GO
+准备任务：R4-01 Model Preflight Contract READY；12E-09A diagnostic UI 可在 R4B 后继续；12E-08D 被 R4 Gate 阻断；12F-02 等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -324,7 +324,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
 12D：R0/R1/R2/R3 已完成，12D-10 三个真实 OBJ 验收通过；
-12E：12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3 已完成非生产证据；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release repair/global/legacy regression、Mesh Repair DTO/hash/report contract、Eligibility、Generated Golden、真实模型 Baseline、Cleanup、Weld/Winding Guard、Simple Boundary Fill、独立 evidence validator、non-manifold classifier、完整自相交证据和真实模型 repair matrix 可复现；真实 OBJ confirmed self-intersection BLOCKED；R3-04 NO-GO；12E-08D BLOCKED；
+12E：12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3 已完成非生产证据；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release repair/global/legacy regression、Mesh Repair DTO/hash/report contract、Eligibility、Generated Golden、真实模型 Baseline、Cleanup、Weld/Winding Guard、Simple Boundary Fill、独立 evidence validator、non-manifold classifier、完整自相交证据和真实模型 repair matrix 可复现；真实 OBJ confirmed self-intersection BLOCKED；R3-04 NO-GO；R4 模型预检/正向链/修复资产准入 PREPARED；12E-08D BLOCKED；
 12F：Release/Debug 统一运行环境与专项文档已建立；12F-02 Release 性能基线刷新等待用户明确启动。
 ```
 
@@ -367,6 +367,18 @@ docs/slice/DOC/DOC_PREP_12E_08C_R3_01A_完整自相交证据准备.md
 docs/slice/REPORT/REPORT_12E_08C_真实模型拓扑修复专项启动状态.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
+docs/slice/DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md
+docs/slice/DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md
+docs/slice/DOC/DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md
+docs/slice/DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md
+docs/slice/PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md
+docs/slice/DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md
+docs/slice/DEMO/DEMO_12E_08C_R4_模型预检与修复资产准入验证方案.md
+docs/slice/ROADMAP/ROADMAP_12E_08C_R4_模型预检与修复资产准入路线.md
+docs/slice/REPORT/REPORT_12E_08C_R4_模型预检与修复资产准入准备状态.md
+docs/slice/REPORT/REPORT_12E_08C_R4_模型资产预检清单.md
+docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资产准入执行指令.md
 docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
 docs/slice/DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md
 docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
@@ -418,4 +430,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；12F-00/01 已完成。12E-09A 可并行准备，12E-08D 被真实 OBJ repair/strict/Release gate 阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；R4 已准备且 R4-01 READY；12F-00/01 已完成。12E-09A 可在 R4 正向 UI 链后继续，12E-08D 被 required 修复资产/strict/Release gate 阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。

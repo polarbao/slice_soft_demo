@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-21
-> 当前阶段：12D COMPLETE / 12E-08C-R1/R2/R3 COMPLETE / R3-04 NO-GO / 双切片模式目标已固化
+> 当前阶段：12D COMPLETE / 12E-08C-R3 COMPLETE / R3-04 NO-GO / R4 PREPARED
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -30,19 +30,21 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
+docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资产准入执行指令.md
 ```
 
 当前原子任务：
 
 ```text
-无 active code task；12E-08D 被 R3-04 NO-GO 阻断
+12E-08C-R4-01 Model Preflight Contract READY；12E-08D 继续阻断
 ```
 
 12C-R0/R1/R2 已全部完成。12D-R0/R1/R2/R3 已封口，包含 candidate/exact 诊断、一像素 repair、外部背景保护、Qt 展示和三个真实 OBJ 验收。repair 仍默认关闭。
 
 ## 保留参考入口
 
-`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；12E-08A/08B/08C 已完成 diagnostic 与 Release 证据，但真实 OBJ 被 topology 阻断。12E-08D 前必须先执行 12E-08C-R1/R2/R3 修复前置专项。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
+`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；12E-08A/08B/08C 与 R1/R2/R3 已完成 diagnostic、repair 和 Release 证据，但真实 OBJ 被 topology 阻断。12E-08D 前必须先执行 R4 模型预检、正常模型正向链和 required 修复资产准入。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
 
 ## 当前执行阶段 12E
 
@@ -53,7 +55,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / RELEASE BUDGET BLOCKED`。Release repair、分段 global core、legacy TIFF invariant 和 RIP strict 已形成证据；三个 required OBJ 因 confirmed self-intersection 继续 fail-fast，只有闭合 3MF 完成 global full chain。后续 Target State 已固化为 `slicePipeline.mode=legacy|global_surface_shell`，但 Router、global production adapter 和 UI 选择器均尚未实现，global 当前仍是 diagnostic-only。12E-08D 只有在三个 OBJ 外部修复、四 case strict/global PASS、预算冻结和 legacy golden 处置完成后才可重新申请启动。
+12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4 PREPARED / RELEASE BUDGET BLOCKED`。R4-01..05 允许先完成模型预检、模式准入、UI 和正常闭合模型 minimum/intermediate/allTexture 正向矩阵；R4-06..08 仍依赖三个 required OBJ 外部修复资产。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；R4-08 GO 前不得启动 12E-08D。
 
 ## 12F Release Runtime 与性能优化专项
 

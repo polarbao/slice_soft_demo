@@ -3,7 +3,7 @@
 > 文档状态：Decision / Stage 12E Planning
 > 日期：2026-07-16
 > 上游阶段：12A 彩色纹理材料填充支撑光油策略、12B-R2 OpenVDB SDF Utility、12C Qt 工作台、12D 横截面材料无缝闭环
-> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B/08C COMPLETE，Release budget BLOCKED，12E-08D BLOCKED
+> 实现状态：PARTIAL；12E-01..07、12E-08A/08B/08C、R1/R2/R3 COMPLETE；R3-04 NO-GO；R4 PREPARED；12E-08D BLOCKED
 
 ## 1. 决策结论
 
@@ -218,6 +218,8 @@ docs/slice/DOC/DOC_PREP_12E_R0_ConfigDTO契约准备.md
 docs/slice/DOC/DOC_SCHEMA_12E_TextureFillPartitionReport.md
 docs/slice/DOC/DOC_MATRIX_12E_全局纹理填充分区验收矩阵.md
 docs/slice/DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md
+docs/slice/DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md
+docs/slice/DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md
 docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
 docs/slice/REPORT/REPORT_12E_启动准备状态.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md

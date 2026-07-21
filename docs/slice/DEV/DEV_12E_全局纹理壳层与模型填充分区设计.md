@@ -4,7 +4,7 @@
 > 文档状态：DEV / Stage 12E Planning
 > 生成日期：2026-07-16
 > 对应 PRD：PRD_12E_全局纹理表面层与模型填充连续调节.md
-> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain/Full-Material Closure/Raster Mapping/Report 与 Release Regression 已实现；真实 OBJ topology 阻断预算，12E-08C-R1/R2/R3 repair-then-strict 前置专项已准备，UI/Production 待后续任务
+> 实现状态：PARTIAL；Config/Service/CPU/OpenVDB Conformance/Width Sweep/Texture Transfer/Diagnostic Composer/12D Model-Domain/Full-Material Closure/Raster Mapping/Report 与 Release Regression 已实现；R3-04 因真实 OBJ topology 输出 NO-GO；R4 模型预检与修复资产准入已准备，UI/Production 待后续任务
 
 ## 1. 技术目标
 
@@ -627,5 +627,25 @@ manifest 记录 requestedPipelineMode、effectivePipelineMode 和 productionOutp
 其他状态允许输出诊断 preview/report，但 `productionOutputWritten=false`。Router 禁止隐式切换到 legacy；
 若用户需要回退，必须修改配置或在 UI 中重新选择。
 
-实现顺序固定为：12E-08C-R1/R2/R3 完成 repair/post-strict 与真实模型预算，随后 12E-08D 实现
+实现顺序更新为：12E-08C-R1/R2/R3 已完成非生产证据并由 R3-04 输出 NO-GO；先执行
+12E-08C-R4 模型预检、模式准入、正常模型正向矩阵和修复资产审计，R4-08 输出 GO 后，12E-08D 才实现
 配置契约、Router、全局 adapter、共享 writer 验证和生产准入，最后 12E-09B 开放 UI 生产选择器。
+
+## 20. R4 Preflight 与材料角色集成
+
+R4 新增的 `ModelPreflightService` 和 `SliceAdmissionPolicy` 位于 importer/transform 与 pipeline router 之间，
+复用现有 topology、自相交、repair eligibility 和 backend capability，不在 Qt 中复制规则。
+
+```text
+Import -> FastImportCheck -> Transform/AutoOrient -> FullPreflight
+       -> SliceAdmissionPolicy(selected mode)
+       -> admitted/warning: selected pipeline
+       -> blocked: report/UI，pipeline 不启动
+```
+
+预检缓存键至少包含 source/resource/transform/options/algorithm version。模式切换可以复用诊断事实，但必须
+重新计算 admission；模型、MTL、贴图、姿态、缩放或配置变化后结果必须 stale。
+
+`modelFillMask` 仍由 global partition 产生，材料由 MaterialPolicy 解析：white -> W、varnish -> V、
+RGB/custom -> RGB、C/M/Y/K -> `material_role` -> MaterialProcessProfile resolved RGB/W/V。不得新增协议通道，
+不得在 DEV 层硬编码未经工艺标定的 C/M/Y/K 墨量。

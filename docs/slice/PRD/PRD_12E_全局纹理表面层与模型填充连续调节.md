@@ -4,7 +4,7 @@
 > 文档状态：PRD / Stage 12E Planning
 > 生成日期：2026-07-16
 > 上游文档：PRD_12A_彩色纹理材料填充支撑光油策略.md、PRD_12D_横截面材料无缝闭环验收与修复.md
-> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B/08C COMPLETE，Release budget BLOCKED；12E-08C-R1/R2/R3 修复前置专项 PREPARED，12E-08D BLOCKED
+> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B/08C COMPLETE；12E-08C-R1/R2/R3 COMPLETE、R3-04 NO-GO；12E-08C-R4 模型预检与修复资产准入 PREPARED；12E-08D BLOCKED
 
 ## 1. 背景
 
@@ -355,3 +355,28 @@ polarity = black_is_print；
 
 UI 最终必须提供“传统切片”和“全局纹理壳层”两个中文选项，并显示 requested/effective pipeline、
 准入状态和失败原因。`global_surface_shell` 普通用户入口只有在 12E-08D production admission 通过后启用。
+
+## 14. 模型预检、正向开发与材料角色补充
+
+R3-04 NO-GO 不取消 12E 的 Texture Surface/Model Fill 产品目标。12E-08D 前新增 R4 专项：
+
+```text
+正常闭合 OBJ/3MF 用于继续验证 minimum/intermediate/allTexture 和 UI；
+三个 required OBJ 保留为真实准入集，不能被正常 fixture 替换；
+导入后先完成 fast/full preflight，再按当前 pipeline mode 给出准入；
+global 对 self-intersection/open/non-manifold/incomplete audit fail-closed；
+legacy 保持兼容能力，但必须显示风险且不得冒充 global PASS；
+任何一键入口均不得绕过 fresh preflight。
+```
+
+Model Fill 材料补充：
+
+```text
+white、varnish、RGB/custom 继续映射到现有 W/V/RGB；
+C/M/Y/K 作为 MaterialProcessProfile material role，由工艺 Profile 解析到 RGBWSV；
+当前协议没有独立 C/M/Y/K 通道，未配置映射时 UI 不得伪造可用选项；
+allTexture 时保留材料选择配置，但 Model Fill mask 合法为零。
+```
+
+推荐 `baseMinimumWidthMm=0.10`、`step=0.01` 保持不变；实际 UI 下限使用
+`max(0.10mm, 2 * classificationResolutionMm)`，上限来自模型动态 `allTextureThresholdMm`。

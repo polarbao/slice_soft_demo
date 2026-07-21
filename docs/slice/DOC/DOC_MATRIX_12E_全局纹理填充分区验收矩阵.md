@@ -1,7 +1,7 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：12E-08A/08B COMPLETE / 12E-08 IN PROGRESS
-> 日期：2026-07-20
+> 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4 PREPARED
+> 日期：2026-07-21
 
 ## 1. 使用方式
 
@@ -153,7 +153,8 @@ OpenVDB OFF build PASS；
 | 12E-08A | COMPLETE：world-space raster center 映射、互补 mask、RGB、量化与 coverage 证据通过 |
 | 12E-08B | COMPLETE：full-material sidecar、五类 12D gap、support/varnish 状态与通道一致性通过 |
 | 12E-08C | COMPLETE：默认 OFF Release/回归证据已生成；3 个真实 OBJ topology BLOCKED，预算未冻结 |
-| 12E-08C-R1/R2/R3 | PREPARED：显式 repair-then-strict、属性保持、post strict 和真实模型 Release Gate |
+| 12E-08C-R1/R2/R3 | COMPLETE / R3-04 NO-GO：显式 repair-then-strict、属性保持、post strict 和真实模型 Release Gate |
+| 12E-08C-R4 | PREPARED：导入预检、模式准入、正常模型正向链和修复资产接收审计 |
 | 12E-08D | BLOCKED：生产准入需前置证据和用户再次确认 |
 | 12E-09 | PREPARED：09A READY；09B 被 08D 阻断 |
 | 12E-10 | UI、真实模型、RIP 和报告收口 |
@@ -172,3 +173,17 @@ OpenVDB OFF build PASS；
 两条 production PASS 行统一要求 `p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print`，并验证 manifest
 layer list、TIFF 文件、同层 preview、通道统计和 RIP strict。12E-08D-01..04 在修复 Gate 通过后执行；
 12E-09B 才开放 UI 双模式生产选择。
+
+## 13. R4 模型预检与资产准入矩阵
+
+| Case | legacyAdmission | globalAdmission | 切片动作 | 生产影响 |
+|---|---|---|---|---|
+| valid closed textured OBJ/3MF | PASS | PASS | 可进入各自当前能力 | global 08D 前仍诊断 |
+| invalid/empty/non-finite | BLOCK | BLOCK | 停止 | 不写包 |
+| confirmed self-intersection | WARNING | BLOCK | legacy 可兼容；global 停止 | 不解除 global Gate |
+| boundary/non-manifold/winding ambiguity | WARNING/既有 fatal | BLOCK | 按模式 | 不 silent fallback |
+| preflight missing/stale | BLOCK CURRENT ACTION | BLOCK CURRENT ACTION | 先重跑检测 | 不写包 |
+| repaired required asset attribute mismatch | 不覆盖原证据 | BLOCK | 停止 intake | required 仍 FAIL |
+
+正向 width/material 矩阵必须覆盖推荐 0.10mm、中间值和动态 allTextureThreshold。C/M/Y/K 作为
+MaterialProcessProfile role 解析到 RGBWSV，不新增协议通道；正常模型结果不能替代 required OBJ 行。

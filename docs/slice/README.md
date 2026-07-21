@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-21
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3 COMPLETE、R3-04 NO-GO / 双切片模式目标已固化
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3 COMPLETE、R3-04 NO-GO；R4 模型预检与修复资产准入 PREPARED
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产配置、分区、纹理传递、raster/full closure、repair 与 Release/legacy 证据。三个 OBJ 在 mutation 前因完整自相交证据 fail-fast，闭合 3MF 完成 global full chain；R3-04 已输出 NO-GO。产品目标已补充为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出，但 Router、global production adapter 与 UI 选择器尚未实现；12E-08D 继续阻断，12E-09A diagnostic UI 可并行启动。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产配置、分区、纹理传递、raster/full closure、repair 与 Release/legacy 证据。三个 OBJ 在 mutation 前因完整自相交证据 fail-fast，闭合 3MF 完成 global full chain；R3-04 已输出 NO-GO。R4 已准备模型导入预检、模式相关准入、正常模型正向链和修复资产接收审计；R4-01 READY。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出；12E-08D 继续阻断。
 
 ## 目录结构
 
@@ -102,6 +102,16 @@
 | `DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md` | legacy/global_surface_shell 双模式、默认值、准入和禁止静默回退决策 |
 | `DOC/DOC_SCHEMA_12E_DualSlicePipelineConfig.md` | `slicePipeline.mode` 配置、校验、错误码和统一 TIFF 输出契约 |
 | `DOC/DOC_PREP_12E_08D_双模式生产写包准备.md` | 12E-08D Router、global adapter、共享 writer 和验证原子任务准备 |
+| `DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md` | R3-04 NO-GO 后插入预检、正常模型正向链和 required 修复资产准入的决策 |
+| `DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md` | R4-01 启动依赖、停止条件和验证层级 |
+| `DOC/DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md` | R4-01 backend-neutral DTO、cache identity、report golden 和定向验证准备 |
+| `DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后 12E 目标可达性、模型双轨治理和预检必要性分析 |
+| `PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md` | 导入即检测、模式相关阻断、正常模型与 required 模型治理需求 |
+| `DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md` | Preflight service、cache、admission、Qt controller 与修复资产审计设计 |
+| `DEMO/DEMO_12E_08C_R4_模型预检与修复资产准入验证方案.md` | 一键入口、模式差异、width/material 正向矩阵与修复资产验证 |
+| `ROADMAP/ROADMAP_12E_08C_R4_模型预检与修复资产准入路线.md` | R4A/R4B/R4C 与 08D/09/10 依赖路线 |
+| `REPORT/REPORT_12E_08C_R4_模型预检与修复资产准入准备状态.md` | R4 文档完备度、可执行任务、外部输入阻断和下一任务 |
+| `REPORT/REPORT_12E_08C_R4_模型资产预检清单.md` | `model` 目录 15 个 OBJ/3MF 的 strict、完整自相交与无需重建准入结果 |
 | `DOC/DOC_DECISION_12E_08C_R1_R2_R3_真实模型拓扑修复前置专项.md` | 在 12E-08D 前插入显式 repair-then-strict 专项的正式决策 |
 | `PRD/PRD_12E_08C_真实模型拓扑修复与严格准入.md` | 真实模型自动/人工修复、属性保持和严格准入需求 |
 | `DEV/DEV_12E_08C_MeshRepairThenStrict设计.md` | Mesh Repair 服务、哈希、属性映射和 post-strict 技术设计 |

@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-08C COMPLETE-BLOCKED / 12E-08C-R1 PREPARED / PRODUCTION NOT ADMITTED
-> 更新日期：2026-07-20
-> 当前项目原子任务：12E-08C-R1-01 DTO、错误码、Hash 与 Report Skeleton
+> 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4 PREPARED / PRODUCTION NOT ADMITTED
+> 更新日期：2026-07-21
+> 当前项目原子任务：12E-08C-R4-01 Model Preflight Contract
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -446,6 +446,44 @@ global blocked/unavailable 不得 silent fallback。
 docs/slice/DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md
 docs/slice/DOC/DOC_SCHEMA_12E_DualSlicePipelineConfig.md
 docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
+```
+
+### 11.3 12E-08C-R4 模型导入预检与修复资产准入
+
+状态：PREPARED；插入于 R3-04 NO-GO 与 08D 之间。
+
+目标：
+
+```text
+导入模型先执行 fast/full preflight；
+按 legacy/global 能力输出模式相关 admission；
+正常闭合模型继续推进 width/material/UI 正向验证；
+三个 required OBJ 保留身份并接收外部修复资产审计；
+全局 blocker fail-closed，不 silent fallback，不写 production TIFF。
+```
+
+原子任务：
+
+```text
+R4-01 DTO/Schema/Error/Cache Contract；
+R4-02 Two-stage Preflight Service；
+R4-03 Mode Admission and Pipeline Gate；
+R4-04 Qt Preflight UI；
+R4-05 Clean OBJ/3MF Positive Matrix；
+R4-06 Repaired Asset Intake；
+R4-07 Four-case Release Gate；
+R4-08 08D GO/NO-GO Refresh。
+```
+
+R4-01..05 可在现有仓库输入上执行；R4-06..08 依赖三个 required OBJ 的外部修复版本。正常模型不能替代
+required 模型解除生产阻断。
+
+准备入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md
+docs/slice/DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md
+docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
 ```
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config

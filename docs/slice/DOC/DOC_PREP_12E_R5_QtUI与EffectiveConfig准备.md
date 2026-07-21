@@ -1,7 +1,7 @@
 # DOC_PREP_12E-R5 Qt UI 与 Effective Config 准备
 
-> 文档状态：PREPARED / 12E-09A READY / 12E-09B BLOCKED BY 12E-08D
-> 日期：2026-07-20
+> 文档状态：PREPARED / 12E-09A WAIT R4 PREFLIGHT FACADE / 12E-09B BLOCKED BY 12E-08D
+> 日期：2026-07-21
 > 覆盖任务：12E-09 Qt UI 设置与 Effective Config
 > 前置状态：12E-08A/08B/08C COMPLETE；Release budget 与 12E-08D BLOCKED
 
@@ -13,7 +13,8 @@
 执行可分为两层：
 
 ```text
-12E-09A diagnostic UI：准备与 12E-08C 前置证据已完成，可实现并显式显示“诊断候选/拓扑阻断”；
+12E-09A diagnostic UI：文档准备已完成；先由 R4-01..04 固化并接入共享 preflight/admission facade，
+随后实现 width/modelFill 控件，避免 UI 重复拓扑规则；
 12E-09B production Profile：必须等待 12E-08D admitted=true 后启用。
 ```
 
@@ -38,7 +39,7 @@
 ```text
 策略：传统表面纹理 / 全局三维纹理（诊断候选）
 纹理表面层宽度：QDoubleSpinBox + slider
-模型填充材料：白墨 / 光油 / RGB / 已注册其他材料
+模型填充材料：白墨 / 光油 / RGB/自定义 / 已注册 C/M/Y/K 等材料角色
 分析状态：未分析 / 分析中 / 可诊断 / 阻断 / 已准入
 动态范围：最小值、最大值、全纹理阈值
 覆盖统计：TextureSurface、ModelFill、overlap、unassigned
@@ -46,6 +47,9 @@
 ```
 
 所有可见中文必须有短说明 tooltip；不得把整段 PRD 放进界面。
+
+C/M/Y/K 不是新增 TIFF 通道。UI 只显示当前 MaterialProcessProfile 已注册且能解析到 RGBWSV 的角色；
+未注册角色禁用并显示原因，Effective Config 记录 requested role 和 resolved channels。
 
 ## 4. 宽度控件合同
 

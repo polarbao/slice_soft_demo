@@ -163,4 +163,8 @@ global 未准入、不可用或 topology blocked 时 fail-closed；
 `DOC_SCHEMA_12E_DualSlicePipelineConfig.md` 和 `DOC_PREP_12E_08D_双模式生产写包准备.md`。
 ```
 
+R3-04 当前为 NO-GO。后续必须先执行 `TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md`：
+正常闭合模型只用于正向开发，不替代三个 required OBJ；全局一键入口必须经过 fresh preflight；C/M/Y/K
+按 MaterialProcessProfile role 解析，不能扩展 RGBWSV 通道。
+
 除非用户明确要求，不 commit、不 push。

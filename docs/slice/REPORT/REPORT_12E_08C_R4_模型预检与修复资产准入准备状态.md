@@ -1,0 +1,69 @@
+# REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
+
+> 文档状态：PREPARED / R4-01 READY
+> 日期：2026-07-21
+
+## 1. 阶段结论
+
+R4 作为 R3-04 NO-GO 与 12E-08D 之间的正式插入专项，准备文档已经完整。该专项允许正常闭合模型继续
+推进 Texture Surface/Model Fill 功能，但不降低三个 required 真实 OBJ 的生产 Gate。
+
+## 2. 已完成准备
+
+```text
+可达性和模型治理分析；
+插入专项 Decision；
+PRD/DEV/DEMO；
+分阶段 Roadmap；
+R4-01..08 原子任务清单；
+Codex 执行提示；
+启动依赖与停止条件；
+主 PRD/DEV/DEMO/Matrix/Roadmap/Report/Index 同步；
+AI context handoff。
+```
+
+## 3. 当前允许工作
+
+```text
+R4-01 Preflight Contract；
+R4-02 Two-stage Preflight；
+R4-03 Mode Admission/Pipeline Gate；
+R4-04 Qt Preflight UI；
+R4-05 Clean Positive Matrix。
+```
+
+这些任务不要求先取得三个修复模型，但不得写 global production package。
+
+## 4. 当前阻断工作
+
+```text
+R4-06：等待三个 required OBJ 修复资产；
+R4-07：等待 R4-06 全部 admitted；
+R4-08：等待四 case Release/global/legacy 证据；
+12E-08D：等待 R4-08 GO 和用户明确授权。
+```
+
+## 5. 固定产品参数
+
+```text
+Texture Surface base minimum = 0.10mm；
+UI/config step = 0.01mm；
+effective minimum = max(0.10mm, 2 * classificationResolutionMm)；
+maximum = dynamic allTextureThresholdMm；
+C/M/Y/K = MaterialProcessProfile roles，非新增 TIFF channels；
+legacy 默认；global fail-closed；无 silent fallback。
+```
+
+## 6. 下一任务
+
+`12E-08C-R4-01 Model Preflight Contract`。
+
+## 7. 模型资产准备结果
+
+`model` 目录已完成 15 个 OBJ/3MF 的统一 Release 预检。7 个 OBJ strict PASS 且第二次完整审计结果稳定，
+已满足 R4-01..05 的真实 OBJ 输入准备；1 个 OBJ 需人工修复，另外 4 个 OBJ 和 3 个 3MF 需重建。
+
+当前目录没有 strict PASS 3MF，R4 正向 Texture2D 3MF 仍使用既有
+`samples/models/3mf/texture2d_checker_cube.3mf`。该缺口不阻断 R4-01..05，但不得据此解除 R4-06..08。
+
+完整清单见 `REPORT_12E_08C_R4_模型资产预检清单.md`。

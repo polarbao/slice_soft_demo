@@ -307,3 +307,19 @@ requestedPipelineMode = effectivePipelineMode；
 
 测试必须分别统计核心计算和 TIFF/PNG/JSON 写盘时间，不能用 writer 时间掩盖两条流水线的算法差异。
 12E-08D 完成前，global 行只允许验证诊断和 fail-closed 合同，不得伪造“生产 TIFF PASS”。
+
+## 15. R4 模型预检前置矩阵
+
+12E-08D 前必须增加：
+
+```text
+一键 legacy/global 入口均先执行 fresh preflight；
+invalid/non-finite 输入对两种模式 BLOCK；
+self-intersection 对 legacy 显示兼容警告、对 global BLOCK；
+normal closed OBJ/3MF 完成 minimum/intermediate/allTexture；
+正常 fixture 不替代 nai_you/aishen/meigui required 身份；
+修复 required asset 需原/新 hash、属性 diff、完整自相交和 post-strict；
+C/M/Y/K 只验证 material role 解析，不新增 TIFF channel。
+```
+
+详细矩阵见 `DEMO_12E_08C_R4_模型预检与修复资产准入验证方案.md`。

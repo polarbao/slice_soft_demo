@@ -10,6 +10,7 @@
 12E-08C-R1 Contract & Eligibility
   -> 12E-08C-R2 Conservative Repair
   -> 12E-08C-R3 Real Model & Release Gate
+  -> 12E-08C-R4 Model Preflight & Repair Asset Admission
   -> 12E-08D Production Admission
 ```
 
@@ -75,7 +76,7 @@ attribute-conflicting fan 构成。两者均不存在全局唯一 fan split，�
 
 ## 5. 12E-08D Gate
 
-只有 R3-04 输出 GO，且以下证据都通过，才允许开始 08D：
+R3-04 已输出 NO-GO。只有 R4-08 重新输出 GO，且以下证据都通过，才允许开始 08D：
 
 ```text
 required real model strict PASS；
@@ -85,6 +86,9 @@ Release budget PASS；
 legacy/RIP/protocol gate PASS；
 用户确认 production path。
 ```
+
+R4-01..05 建立用户可见预检和正常模型正向链；R4-06..07 接收外部修复 required assets 并复跑四 case。
+正常 fixture 不得替代 required Gate。
 
 ## 6. Parallel Work
 

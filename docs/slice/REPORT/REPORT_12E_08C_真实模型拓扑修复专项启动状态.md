@@ -47,7 +47,9 @@ R1-01..04、R2-01..04、R3-01、R3-01A、R3-02 与 R3-03 已完成实现和验�
 ## 6. 下一任务
 
 ```text
-无 active code task；等待三个 required OBJ 外部修复和 Gate 重跑。
+12E-08C-R4-01 Model Preflight Contract READY；
+R4-01..05 可先建立预检、模式准入、UI 和正常模型正向链；
+R4-06..08 等待三个 required OBJ 外部修复版本。
 ```
 
 ## 7. 阶段判断
@@ -164,3 +166,16 @@ Quick CI 实际被既有 `material_process_top2 widthPx=48/226` baseline 阻断�
 Gate 结果为 1/4 global core completed、3/4 topology skipped。三个 required OBJ 没有 admitted candidate，
 因此 provenance、post-strict、真实模型性能预算均不完整。R3-04 输出 NO-GO；只有外部修复三个 OBJ、
 四 case strict/global PASS、预算冻结、legacy golden 处置和用户重新确认后，才能再次申请 12E-08D。
+
+## 19. R4 插入专项准备
+
+已生成 R4 Decision/PRD/DEV/DEMO/Roadmap/Tasks/Prompt/Prep。专项不立即实现通用复杂自相交重建，而是：
+
+```text
+先补齐导入预检和模式相关 fail-closed；
+用正常闭合 OBJ/3MF 继续 12E Texture Surface/Model Fill 正向验证；
+保留三个真实 OBJ required 身份；
+通过外部修复资产 intake、属性审计和 post-strict 重新申请 Gate。
+```
+
+R4-01 已 READY；12E-08D 继续 BLOCKED。

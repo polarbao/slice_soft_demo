@@ -18,5 +18,7 @@
 | `REPORT_12B_R1_LegacyHeightfield优化当前状态.md` | 12B-R1 legacy profile 和低风险优化 |
 | `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 OpenVDB SDF utility 最终状态 |
 | `REPORT_12C_Qt工作台启动状态.md` | 12C Qt 工作台准入和启动状态 |
+| `REPORT_12E_08C_R4_模型预检与修复资产准入准备状态.md` | 12E-08C-R4 模型预检与修复资产准入准备状态 |
+| `REPORT_12E_08C_R4_模型资产预检清单.md` | `model` 目录 OBJ/3MF strict、自相交和后续模块准入清单 |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。
