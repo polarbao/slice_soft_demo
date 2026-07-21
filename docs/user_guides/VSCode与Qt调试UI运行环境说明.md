@@ -134,6 +134,14 @@ runtime/slicesoft/Release
 
 脚本使用 Visual Studio x64 Developer Environment 和 NMake，构建 `slicer_cli`、`rip_reader_test`、`slicer_debug_ui`，再通过 `windeployqt` 部署 Qt DLL、platform plugin 和 MSVC runtime。
 
+脚本会记录 Runtime 头文件和 CMake 输入的 SHA-256 指纹。首次构建或相关输入发生变化时，会自动执行一次完整重编译，防止 NMake 复用 ABI 已不一致的旧对象文件；没有头文件变化时仍采用增量构建。需要主动清理并重编译时使用：
+
+```powershell
+.\scripts\PrepareSliceSoftRuntime.ps1 -Config Release -ForceClean
+```
+
+完整重编译期间 `slicer.cpp` 等大型源文件可能数分钟没有新终端输出，这属于编译器工作状态，不是软件卡死。
+
 运行包同时包含：
 
 ```text

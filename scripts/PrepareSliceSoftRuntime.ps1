@@ -7,7 +7,8 @@ param(
     [string]$Qt5Dir = $env:Qt5_DIR,
     [switch]$ConfigureOnly,
     [switch]$DeployOnly,
-    [switch]$SkipDeploy
+    [switch]$SkipDeploy,
+    [switch]$ForceClean
 )
 
 Set-StrictMode -Version Latest
@@ -133,6 +134,69 @@ function InvokeNativeStep
     {
         throw "$Name failed with exit code $LASTEXITCODE."
     }
+}
+
+function GetRuntimeBuildInputFingerprint
+{
+    param(
+        [string]$RepoRoot,
+        [string]$Config,
+        [string]$Qt5Dir
+    )
+
+    $inputFiles = @(
+        Get-ChildItem -LiteralPath (Join-Path $RepoRoot "src") -Recurse -File |
+            Where-Object { $_.Extension -in @(".h", ".hh", ".hpp", ".hxx", ".inl") }
+        Get-ChildItem -LiteralPath (Join-Path $RepoRoot "apps") -Recurse -File |
+            Where-Object { $_.Extension -in @(".h", ".hh", ".hpp", ".hxx", ".inl") }
+        Get-ChildItem -LiteralPath (Join-Path $RepoRoot "apps") -Recurse -Filter "CMakeLists.txt" -File
+        Get-Item -LiteralPath (Join-Path $RepoRoot "CMakeLists.txt")
+        Get-Item -LiteralPath $PSCommandPath
+    ) | Sort-Object FullName -Unique
+
+    $manifest = [System.Text.StringBuilder]::new()
+    [void]$manifest.AppendLine("config=$Config")
+    [void]$manifest.AppendLine("qt5Dir=$Qt5Dir")
+    $rootPrefix = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+    foreach ($file in $inputFiles)
+    {
+        $fullPath = [System.IO.Path]::GetFullPath($file.FullName)
+        if (-not $fullPath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase))
+        {
+            throw "Runtime build input must stay under the repository root: $fullPath"
+        }
+        $relativePath = $fullPath.Substring($rootPrefix.Length).Replace('\', '/')
+        $contentHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+        [void]$manifest.AppendLine("$relativePath|$contentHash")
+    }
+
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try
+    {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($manifest.ToString())
+        return ([System.BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace("-", "")
+    }
+    finally
+    {
+        $sha256.Dispose()
+    }
+}
+
+function TestRuntimeCleanBuildRequired
+{
+    param(
+        [string]$StampPath,
+        [string]$CurrentFingerprint,
+        [bool]$ForceClean
+    )
+
+    if ($ForceClean -or -not (Test-Path -LiteralPath $StampPath -PathType Leaf))
+    {
+        return $true
+    }
+
+    $previousFingerprint = (Get-Content -LiteralPath $StampPath -Raw).Trim()
+    return $previousFingerprint -ne $CurrentFingerprint
 }
 
 function ResolveBuiltExecutable
@@ -336,6 +400,16 @@ try
 
     if (-not $DeployOnly)
     {
+        $buildInputFingerprint = GetRuntimeBuildInputFingerprint `
+            -RepoRoot $repoRoot `
+            -Config $Config `
+            -Qt5Dir $resolvedQt5Dir
+        $buildInputStampPath = Join-Path $resolvedConfigBuildDir ".slicesoft_build_input.sha256"
+        $cleanBuildRequired = TestRuntimeCleanBuildRequired `
+            -StampPath $buildInputStampPath `
+            -CurrentFingerprint $buildInputFingerprint `
+            -ForceClean $ForceClean.IsPresent
+
         InvokeNativeStep `
             -Name "configure unified SliceSoft Qt build" `
             -Executable "cmake" `
@@ -355,14 +429,25 @@ try
             exit 0
         }
 
+        $buildArguments = @("--build", $resolvedConfigBuildDir)
+        if ($cleanBuildRequired)
+        {
+            Write-Host "Runtime header/CMake inputs changed; performing one clean rebuild to prevent stale NMake objects."
+            $buildArguments += "--clean-first"
+        }
+        $buildArguments += @(
+            "--target", "slicer_cli", "rip_reader_test", "slicer_debug_ui",
+            "--"
+        )
         InvokeNativeStep `
             -Name "build SliceSoft runtime targets ($Config)" `
             -Executable "cmake" `
-            -Arguments @(
-                "--build", $resolvedConfigBuildDir,
-                "--target", "slicer_cli", "rip_reader_test", "slicer_debug_ui",
-                "--"
-            )
+            -Arguments $buildArguments
+
+        [System.IO.File]::WriteAllText(
+            $buildInputStampPath,
+            "$buildInputFingerprint$([Environment]::NewLine)",
+            [System.Text.UTF8Encoding]::new($false))
 
         if ($SkipDeploy)
         {
