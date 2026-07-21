@@ -101,9 +101,12 @@ Public 接口实现时遵循项目 PascalCase/Doxygen/Allman 规范；以上仅�
 ```text
 模型字节 hash；MTL/贴图/3MF resource hash；
 最终 transform、autoOrient、单位和缩放；
-preflight options；selected pipeline mode；
+preflight options；
 diagnostic algorithm/schema version。
 ```
+
+共享几何诊断 cache key 不包含 selected pipeline mode；模式切换复用 fresh 诊断并重新计算两个 admission。
+若模式实际改变诊断算法或预算，对应差异必须显式进入 `optionsHash`，不得依赖 UI 隐式状态。
 
 执行顺序：
 
@@ -114,6 +117,7 @@ Import -> Fast Check -> transform/autoOrient -> Full Preflight -> Mode Admission
 ```
 
 模式切换可以复用诊断事实，但必须重新计算 `ModeAdmissionResult`。几何或资源变化必须重跑完整诊断。
+`load_model_report` 输出几何已经应用配置 transform 和 autoOrient；后续 adapter/preflight 不得再次变换顶点。
 
 ## 5. 严重级别与错误码
 
@@ -122,6 +126,7 @@ Import -> Fast Check -> transform/autoOrient -> Full Preflight -> Mode Admission
 ```text
 E_12E_PREFLIGHT_NOT_RUN
 E_12E_PREFLIGHT_STALE
+E_12E_PREFLIGHT_CANCELLED
 E_12E_PREFLIGHT_IMPORT_INVALID
 E_12E_PREFLIGHT_RESOURCE_MISSING
 E_12E_PREFLIGHT_NON_FINITE_GEOMETRY
@@ -214,4 +219,3 @@ regression：legacy repair OFF TIFF invariant、RIP strict、no silent fallback�
 | C/M/Y/K 被误当协议通道 | 只作为 material role，经 Profile 解析到 RGBWSV |
 
 回滚时可关闭 UI preflight feature，但 global strict admission 不得回滚；legacy 默认路径和生产 writer 保持不变。
-

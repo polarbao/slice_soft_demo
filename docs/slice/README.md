@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-21
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3 COMPLETE、R3-04 NO-GO；R4 模型预检与修复资产准入 PREPARED
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3 COMPLETE、R3-04 NO-GO；R4-01 COMPLETE、R4-02 READY
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产配置、分区、纹理传递、raster/full closure、repair 与 Release/legacy 证据。三个 OBJ 在 mutation 前因完整自相交证据 fail-fast，闭合 3MF 完成 global full chain；R3-04 已输出 NO-GO。R4-01 ModelPreflight 合同、cache key 和 report golden 已完成；R4-02 准备收口。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出；12E-08D 继续阻断。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产配置、分区、纹理传递、raster/full closure、repair 与 Release/legacy 证据。三个 OBJ 在 mutation 前因完整自相交证据 fail-fast，闭合 3MF 完成 global full chain；R3-04 已输出 NO-GO。R4-01 ModelPreflight 合同、cache key 和 report golden 已完成；R4-02 两阶段预检服务已完成详细准备并等待启动。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出；12E-08D 继续阻断。
 
 ## 目录结构
 
@@ -106,6 +106,7 @@
 | `DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md` | R4-01 启动依赖、停止条件和验证层级 |
 | `DOC/DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md` | R4-01 backend-neutral DTO、cache identity、report golden 和定向验证准备 |
 | `DOC/DOC_EXEC_12E_08C_R4_01_ModelPreflightContract结果.md` | R4-01 ModelPreflight 合同、cache key、schema/golden 与验证结果 |
+| `DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md` | R4-02 importer/transform、fast/full、cache/stale/cancel 和 fixture 准备 |
 | `DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后 12E 目标可达性、模型双轨治理和预检必要性分析 |
 | `PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md` | 导入即检测、模式相关阻断、正常模型与 required 模型治理需求 |
 | `DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md` | Preflight service、cache、admission、Qt controller 与修复资产审计设计 |

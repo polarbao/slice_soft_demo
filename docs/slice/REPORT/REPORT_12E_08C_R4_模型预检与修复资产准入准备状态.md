@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01 COMPLETE
+> 文档状态：IN PROGRESS / R4-01 COMPLETE / R4-02 READY
 > 日期：2026-07-21
 
 ## 1. 阶段结论
@@ -56,7 +56,7 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-02 Two-stage Preflight Service` 准备收口。
+`12E-08C-R4-02 Two-stage Preflight Service` 已完成详细准备，等待用户明确启动代码实现。
 
 ## 7. 模型资产准备结果
 
@@ -75,3 +75,11 @@ ModelPreflight DTO、稳定错误码、双模式 admission、cache identity/key�
 `material_process_top2 widthPx expected=48 actual=226` golden baseline 阻断。
 
 详细证据见 `../DOC/DOC_EXEC_12E_08C_R4_01_ModelPreflightContract结果.md`。
+
+## 9. R4-02 准备结果
+
+已冻结 importer/最终 transform 边界、fast/full 执行链、结果合并优先级、source/resource 双 hash stale
+检测、进程内 cache、阶段边界取消、正向/负向 fixture 和验证命令。明确 `load_model_report` 返回的三角形
+已应用 transform/autoOrient，后续服务不得重复变换；完整审计不足不得 PASS。
+
+详细准备见 `../DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md`。R4-02 尚未修改代码。

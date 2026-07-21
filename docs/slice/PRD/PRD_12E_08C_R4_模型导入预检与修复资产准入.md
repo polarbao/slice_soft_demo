@@ -50,7 +50,9 @@ Full Transformed Preflight：最终 transform/autoOrient 后的 topology、自�
 
 ### FR-02 新鲜度
 
-模型文件、MTL/贴图、变换、缩放、姿态、模式、预检选项或算法版本变化后，旧结果必须标记 stale。
+模型文件、MTL/贴图、变换、缩放、姿态、预检选项或算法版本变化后，旧诊断结果必须标记 stale。切换
+legacy/global 模式时复用 fresh 的共享几何诊断，但必须立即重新计算并展示所选模式的 admission；不得沿用
+上一个模式的准入结论。
 
 ### FR-03 模式准入
 
@@ -122,4 +124,3 @@ Model Fill 材料显示用户名称和 resolved material role。
 不以正常 fixture 替换 required 真实模型；
 不自动从 global 回退 legacy。
 ```
-

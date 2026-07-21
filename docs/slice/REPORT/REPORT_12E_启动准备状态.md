@@ -7,7 +7,7 @@
 
 12E 已完成 12E-01 至 12E-07 以及 12E-08A/08B/08C。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer、12D 模型域与完整材料域精确闭环联动、classification-to-raster 确定性映射和默认 OFF Release 证据轨道也已建立。
 
-当前两个候选仍为 diagnostic-only。12E-08C-R1/R2/R3 已完成非生产 repair、Release global core、legacy TIFF invariant 与 RIP strict 证据；三个真实 OBJ 在 mutation 前因 confirmed self-intersection fail-fast，只有闭合 3MF 完成 global full chain。R3-04 已输出 NO-GO，预算阈值未冻结。R4-01 已完成 ModelPreflight 合同、cache key 和 report golden，R4-02 准备收口。12E-08D 继续被真实模型 topology、预算、known legacy baseline 和用户生产路径确认阻断。
+当前两个候选仍为 diagnostic-only。12E-08C-R1/R2/R3 已完成非生产 repair、Release global core、legacy TIFF invariant 与 RIP strict 证据；三个真实 OBJ 在 mutation 前因 confirmed self-intersection fail-fast，只有闭合 3MF 完成 global full chain。R3-04 已输出 NO-GO，预算阈值未冻结。R4-01 已完成 ModelPreflight 合同、cache key 和 report golden，R4-02 已完成详细准备并等待启动。12E-08D 继续被真实模型 topology、预算、known legacy baseline 和用户生产路径确认阻断。
 
 ## 2. Current State
 
@@ -95,7 +95,7 @@ Qt UI 与 preview；
 12E-08B：COMPLETE；
 12E-08C：COMPLETE / RELEASE BUDGET BLOCKED；
 12E-08C-R1/R2/R3：COMPLETE / NON-PRODUCTION，R3-04 NO-GO；
-12E-08C-R4：IN PROGRESS，R4-01 COMPLETE，R4-02 准备收口；
+12E-08C-R4：IN PROGRESS，R4-01 COMPLETE，R4-02 READY；
 12E-08D：BLOCKED BY REAL OBJ TOPOLOGY BUDGET AND CONFIRMATION；
 当前候选原子任务为 R4-01；R4-06 以后等待外部修复和 Gate 重跑；
 12E R0/R1 原型不要求先完成 repair；
@@ -581,4 +581,4 @@ required OBJ 0/3 strict admitted、预算未冻结而输出 NO-GO。
 R4 已完成 Decision/PRD/DEV/DEMO/Roadmap/Tasks/Prompt/Prep 文档。决策不立即实现通用复杂自相交重建；
 先建立用户可见 preflight 和模式相关 fail-closed，并使用正常闭合模型继续 12E Texture Surface/Model Fill
 正向开发。三个 required OBJ 继续保留 Gate 身份，只有外部修复资产通过 identity、属性、完整自相交和
-post-strict 审计后才能重跑 Release Gate。R4-01 COMPLETE，R4-02 准备收口，12E-08D 继续 BLOCKED。
+post-strict 审计后才能重跑 Release Gate。R4-01 COMPLETE，R4-02 READY，12E-08D 继续 BLOCKED。
