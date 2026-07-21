@@ -41,6 +41,7 @@ struct Options
     bool executeR2EvidenceGuard{false};
     bool classifyR3NonManifoldPatterns{false};
     bool analyzeR3CompleteSelfIntersections{false};
+    bool executeR3RepairMatrix{false};
     std::uint64_t maxCompleteSelfIntersectionCandidatePairs{5000000U};
     double weldToleranceMm{0.0};
     std::size_t maxBoundaryLoopEdges{0U};
@@ -125,6 +126,10 @@ Options ParseOptions(const int argc, char** argv)
         {
             options.analyzeR3CompleteSelfIntersections = true;
         }
+        else if (argument == "--execute-r3-02")
+        {
+            options.executeR3RepairMatrix = true;
+        }
         else if (argument == "--complete-self-intersection-max-candidates")
         {
             options.maxCompleteSelfIntersectionCandidatePairs =
@@ -179,7 +184,8 @@ Options ParseOptions(const int argc, char** argv)
                 << "--max-hole-area-mm2 <value> --max-affected-face-ratio <value> | "
                 << "--execute-r2-04 with the same explicit R2-03 budgets | "
                 << "--classify-r3-01 | --analyze-r3-01a "
-                << "--complete-self-intersection-max-candidates <count>]\n";
+                << "--complete-self-intersection-max-candidates <count> | "
+                << "--execute-r3-02 with complete-intersection and R2-03 budgets]\n";
             std::exit(0);
         }
         else
@@ -205,19 +211,24 @@ Options ParseOptions(const int argc, char** argv)
         + (options.executeR2Boundary ? 1 : 0)
         + (options.executeR2EvidenceGuard ? 1 : 0)
         + (options.classifyR3NonManifoldPatterns ? 1 : 0)
-        + (options.analyzeR3CompleteSelfIntersections ? 1 : 0);
+        + (options.analyzeR3CompleteSelfIntersections ? 1 : 0)
+        + (options.executeR3RepairMatrix ? 1 : 0);
     if (operationSetCount > 1)
     {
         throw std::runtime_error("mesh repair operation sets are mutually exclusive");
     }
     if ((options.executeR2Topology
          || options.executeR2Boundary
-         || options.executeR2EvidenceGuard)
+         || options.executeR2EvidenceGuard
+         || options.executeR3RepairMatrix)
         && (!std::isfinite(options.weldToleranceMm) || options.weldToleranceMm <= 0.0))
     {
-        throw std::runtime_error("R2-02/R2-03 requires a finite positive --weld-tolerance-mm");
+        throw std::runtime_error(
+            "R2-02/R2-03/R3-02 requires a finite positive --weld-tolerance-mm");
     }
-    if (options.executeR2Boundary || options.executeR2EvidenceGuard)
+    if (options.executeR2Boundary
+        || options.executeR2EvidenceGuard
+        || options.executeR3RepairMatrix)
     {
         const bool finiteBudgets = std::isfinite(options.maxBoundaryLoopDiameterMm)
             && std::isfinite(options.maxBoundaryLoopPerimeterMm)
@@ -233,7 +244,8 @@ Options ParseOptions(const int argc, char** argv)
             || options.maxAffectedFaceRatio <= 0.0
             || options.maxAffectedFaceRatio > 1.0)
         {
-            throw std::runtime_error("--execute-r2-03 requires explicit positive boundary budgets");
+            throw std::runtime_error(
+                "--execute-r2-03/--execute-r3-02 requires explicit positive boundary budgets");
         }
     }
     return options;
@@ -499,7 +511,8 @@ int RunPreflight(const Options& options)
     if (options.executeCleanup
         || options.executeR2Topology
         || options.executeR2Boundary
-        || options.executeR2EvidenceGuard)
+        || options.executeR2EvidenceGuard
+        || options.executeR3RepairMatrix)
     {
         slicer_core::MeshRepairCleanupRequest request;
         request.mesh = &adapted;
@@ -509,9 +522,12 @@ int RunPreflight(const Options& options)
         const bool executeGuardedTopology =
             options.executeR2Topology
             || options.executeR2Boundary
-            || options.executeR2EvidenceGuard;
+            || options.executeR2EvidenceGuard
+            || options.executeR3RepairMatrix;
         const bool executeBoundary =
-            options.executeR2Boundary || options.executeR2EvidenceGuard;
+            options.executeR2Boundary
+            || options.executeR2EvidenceGuard
+            || options.executeR3RepairMatrix;
         request.options.allowVertexWeld = executeGuardedTopology;
         request.options.weldToleranceMm = executeGuardedTopology
             ? options.weldToleranceMm
@@ -529,7 +545,13 @@ int RunPreflight(const Options& options)
         request.options.newFaceAttributePolicy = executeBoundary
             ? "inherit_uniform_material_no_uv"
             : "reject";
-        request.options.validatePostRepairEvidence = options.executeR2EvidenceGuard;
+        request.options.validatePostRepairEvidence =
+            options.executeR2EvidenceGuard || options.executeR3RepairMatrix;
+        request.options.classifyNonManifoldPatterns = options.executeR3RepairMatrix;
+        request.options.analyzeCompleteSelfIntersections =
+            options.executeR3RepairMatrix;
+        request.options.maxCompleteSelfIntersectionCandidatePairs =
+            options.maxCompleteSelfIntersectionCandidatePairs;
         request.sourceHash = sourceHash;
         request.robustnessOptions = robustnessOptions;
         slicer_core::MeshRepairCleanupResult cleanup =
@@ -561,7 +583,9 @@ int RunPreflight(const Options& options)
         << "mesh_repair_preflight: evidence collected\n"
         << "  source: " << input.sourcePath << '\n'
         << "  operationSet: "
-        << (options.analyzeR3CompleteSelfIntersections
+        << (options.executeR3RepairMatrix
+                ? "r3_real_model_repair_matrix"
+                : (options.analyzeR3CompleteSelfIntersections
                 ? "r3_complete_self_intersection_analysis"
                 : (options.classifyR3NonManifoldPatterns
                 ? "r3_non_manifold_pattern_classifier"
@@ -571,7 +595,7 @@ int RunPreflight(const Options& options)
                 ? "r2_boundary_loop_repair"
                 : (options.executeR2Topology
                         ? "r2_vertex_weld_winding"
-                        : (options.executeCleanup ? "r2_cleanup" : "preflight"))))))
+                        : (options.executeCleanup ? "r2_cleanup" : "preflight")))))))
         << '\n'
         << "  status: " << slicer_core::MeshRepairStatusName(result.status) << '\n'
         << "  vertices: " << result.input.vertexCount << '\n'

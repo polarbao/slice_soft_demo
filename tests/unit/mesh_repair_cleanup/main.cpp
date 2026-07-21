@@ -350,11 +350,21 @@ bool TestConfirmedSelfIntersectionTakesPriorityOverAttributeConflict()
     mesh.triangle_attributes.back().uv.at(0U).u = 0.25;
     mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
 
+    slicer_core::MeshRepairCleanupRequest request = MakeRequest(mesh);
+    request.robustnessOptions.max_triangle_pair_checks = 0U;
+    request.options.analyzeCompleteSelfIntersections = true;
+    request.options.maxCompleteSelfIntersectionCandidatePairs = 1000U;
     const slicer_core::MeshRepairCleanupResult cleanup =
-        slicer_core::ExecuteMeshRepairCleanup(MakeRequest(mesh));
+        slicer_core::ExecuteMeshRepairCleanup(request);
     return ExpectTrue(
                cleanup.evidence.status == slicer_core::MeshRepairStatus::RejectedSelfIntersection,
                "confirmed self-intersection should retain fail-fast priority")
+        && ExpectTrue(
+            cleanup.evidence.completeSelfIntersectionAnalysis.complete,
+            "complete self-intersection evidence should replace sampled preflight")
+        && ExpectTrue(
+            cleanup.evidence.completeSelfIntersectionAnalysis.confirmedIntersectionPairs > 0U,
+            "complete self-intersection evidence should confirm the fixture")
         && ExpectTrue(!cleanup.evidence.repairAttempted, "fail-fast must not execute cleanup")
         && ExpectTrue(cleanup.evidence.operations.empty(), "fail-fast must not record operations");
 }

@@ -1,0 +1,45 @@
+{
+  "schema": "slicesoft.mesh_repair_matrix_expectations.12e_08c_r3_02.1",
+  "cases": [
+    {
+      "caseId": "nai_you_new",
+      "strictStatus": "rejected_self_intersection",
+      "conservativeStatus": "rejected_self_intersection",
+      "analysisStatus": "confirmed_intersection",
+      "nonManifoldStatus": "not_present",
+      "nonManifoldEdgeCount": 0,
+      "taskEvidenceStatus": "complete_rejected",
+      "productionGateStatus": "blocked_confirmed_self_intersection"
+    },
+    {
+      "caseId": "aishen_fudiao",
+      "strictStatus": "rejected_self_intersection",
+      "conservativeStatus": "rejected_self_intersection",
+      "analysisStatus": "confirmed_intersection",
+      "nonManifoldStatus": "classified",
+      "nonManifoldEdgeCount": 59,
+      "taskEvidenceStatus": "complete_rejected",
+      "productionGateStatus": "blocked_confirmed_self_intersection"
+    },
+    {
+      "caseId": "meigui_fudiao",
+      "strictStatus": "rejected_self_intersection",
+      "conservativeStatus": "rejected_self_intersection",
+      "analysisStatus": "confirmed_intersection",
+      "nonManifoldStatus": "classified",
+      "nonManifoldEdgeCount": 10940,
+      "taskEvidenceStatus": "complete_rejected",
+      "productionGateStatus": "blocked_confirmed_self_intersection"
+    },
+    {
+      "caseId": "three_mf_texture2d_checker",
+      "strictStatus": "strict_pass_no_repair",
+      "conservativeStatus": "strict_pass_no_repair",
+      "analysisStatus": "complete_no_intersection",
+      "nonManifoldStatus": "not_present",
+      "nonManifoldEdgeCount": 0,
+      "taskEvidenceStatus": "complete_no_op_pass",
+      "productionGateStatus": "non_production_only"
+    }
+  ]
+}

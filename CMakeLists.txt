@@ -605,6 +605,27 @@ add_test(
 set_tests_properties(mesh_repair_r3_01a_cli_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_test(
+    NAME mesh_repair_r3_02_cli_test
+    COMMAND mesh_repair_preflight
+        --config samples/configs/3mf/three_mf_texture2d_checker.json
+        --output ${CMAKE_CURRENT_BINARY_DIR}/output/12e_08c_r3_02_cli_test.json
+        --source-id samples/models/3mf/texture2d_checker_cube.3mf
+        --voxel-mm 0.10
+        --require-openvdb-off
+        --execute-r3-02
+        --complete-self-intersection-max-candidates 1000
+        --weld-tolerance-mm 0.0001
+        --max-boundary-loop-edges 16
+        --max-boundary-loop-diameter-mm 2.0
+        --max-boundary-loop-perimeter-mm 8.0
+        --max-boundary-planarity-error-mm 0.01
+        --max-hole-area-mm2 4.0
+        --max-affected-face-ratio 0.5
+)
+set_tests_properties(mesh_repair_r3_02_cli_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
