@@ -170,6 +170,84 @@ bool TestExplicitNonManifoldClassifierFeedsEligibility()
             "classifier should keep non-unique fan evidence manual");
 }
 
+bool TestExplicitCompleteIntersectionAuditReplacesSampledEvidence()
+{
+    const slicer_core::AdaptedTriangleMesh mesh = MakeAttributedBox();
+    slicer_core::MeshRepairPreflightRequest request = MakeRequest(mesh);
+    request.robustnessOptions.max_triangle_pair_checks = 0U;
+    request.options.analyzeCompleteSelfIntersections = true;
+    request.options.maxCompleteSelfIntersectionCandidatePairs = 1000U;
+    const slicer_core::MeshRepairResult result =
+        slicer_core::EvaluateMeshRepairPreflight(request);
+    const slicer_core::Json report = slicer_core::BuildMeshRepairReport(result);
+
+    return ExpectTrue(
+               result.completeSelfIntersectionAnalysis.status
+                   == "complete_no_intersection",
+               "complete audit status")
+        && ExpectTrue(
+            result.completeSelfIntersectionAnalysis.complete,
+            "complete audit must replace sampled evidence")
+        && ExpectTrue(
+            !HasDecision(
+                result.eligibility,
+                "MESH_SELF_INTERSECTION_SAMPLED",
+                "E_12E_REPAIR_MANUAL_REQUIRED"),
+            "sampled decision must be removed")
+        && ExpectTrue(
+            result.status == slicer_core::MeshRepairStatus::StrictPassNoRepair,
+            "closed mesh passes after complete audit")
+        && ExpectTrue(
+            report.at("completeSelfIntersectionAnalysis").at("complete").as_bool(),
+            "report exposes complete audit");
+}
+
+bool TestCompleteIntersectionBudgetRemainsManual()
+{
+    slicer_core::AdaptedTriangleMesh mesh;
+    mesh.mesh.vertices = {
+        {0.0, 0.0, 0.0},
+        {2.0, 0.0, 0.0},
+        {0.0, 2.0, 0.0},
+        {0.5, 0.5, 0.0},
+        {1.5, 0.5, 0.0},
+        {0.5, 1.5, 0.0},
+    };
+    mesh.mesh.triangles = {{0, 1, 2}, {3, 4, 5}};
+    mesh.mesh.bbox_mm.min = {0.0, 0.0, 0.0};
+    mesh.mesh.bbox_mm.max = {2.0, 2.0, 0.1};
+    mesh.topology = slicer_core::AnalyzeMeshTopology(mesh.mesh);
+    mesh.triangle_attributes.resize(2U);
+    for (std::size_t index{0U}; index < mesh.triangle_attributes.size(); ++index)
+    {
+        mesh.triangle_attributes.at(index).source_triangle_index = index;
+        mesh.triangle_attributes.at(index).material_name = "material-a";
+    }
+
+    slicer_core::MeshRepairPreflightRequest request = MakeRequest(mesh);
+    request.options.analyzeCompleteSelfIntersections = true;
+    request.options.maxCompleteSelfIntersectionCandidatePairs = 0U;
+    const slicer_core::MeshRepairResult result =
+        slicer_core::EvaluateMeshRepairPreflight(request);
+
+    return ExpectTrue(
+               result.completeSelfIntersectionAnalysis.status
+                   == "budget_or_resource_blocked",
+               "budget audit status")
+        && ExpectTrue(
+            !result.completeSelfIntersectionAnalysis.complete,
+            "budget audit remains incomplete")
+        && ExpectTrue(
+            HasDecision(
+                result.eligibility,
+                "MESH_SELF_INTERSECTION_BUDGET_BLOCKED",
+                "E_12E_REPAIR_BUDGET_EXCEEDED"),
+            "budget audit remains manual")
+        && ExpectTrue(
+            result.status == slicer_core::MeshRepairStatus::ManualRepairRequired,
+            "budget result cannot pass strict");
+}
+
 bool TestMissingMeshUsesStableError()
 {
     try
@@ -194,6 +272,8 @@ int main()
     const bool passed = TestClosedMeshProducesAuditableNoRepairResult()
         && TestDuplicateAttributeConflictIsDetectedWithoutMutation()
         && TestExplicitNonManifoldClassifierFeedsEligibility()
+        && TestExplicitCompleteIntersectionAuditReplacesSampledEvidence()
+        && TestCompleteIntersectionBudgetRemainsManual()
         && TestMissingMeshUsesStableError();
     if (!passed)
     {

@@ -21,6 +21,23 @@
     "unknownSourceTriangles": 0,
     "uvConflicts": 0
   },
+  "completeSelfIntersectionAnalysis": {
+    "aabbOnlyPairs": 0,
+    "blockerCode": "",
+    "bvhNodeCount": 0,
+    "candidatePairCount": 0,
+    "candidatePairHash": null,
+    "complete": false,
+    "confirmedIntersectionPairs": 0,
+    "coplanarOverlapPairs": 0,
+    "durationMs": null,
+    "issues": [],
+    "peakWorkingSetBytes": null,
+    "status": "not_evaluated",
+    "testedPairCount": 0,
+    "touchingOnlyPairs": 0,
+    "triangleCount": 0
+  },
   "eligibility": {
     "automaticRepairAllowed": false,
     "decisions": [],
@@ -95,6 +112,7 @@
   "mode": "strict_closed",
   "operations": [],
   "options": {
+    "analyzeCompleteSelfIntersections": false,
     "allowBoundaryFill": false,
     "allowNewFaces": false,
     "allowVertexWeld": false,
@@ -106,6 +124,7 @@
     "maxBoundaryLoopEdges": 32,
     "maxBoundaryLoopPerimeterMm": 0,
     "maxBoundaryPlanarityErrorMm": 0,
+    "maxCompleteSelfIntersectionCandidatePairs": 5000000,
     "maxHoleAreaMm2": 0,
     "mode": "strict_closed",
     "newFaceAttributePolicy": "reject",

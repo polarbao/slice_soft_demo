@@ -739,14 +739,15 @@ bool ValidateAttributes(
     return true;
 }
 
-bool HasSampledIntersectionEvidence(const MeshRepairResult& post)
+bool HasIncompleteIntersectionEvidence(const MeshRepairResult& post)
 {
     return std::any_of(
         post.eligibility.decisions.begin(),
         post.eligibility.decisions.end(),
         [](const MeshRepairEligibilityDecision& decision)
         {
-            return decision.issueCode == "MESH_SELF_INTERSECTION_SAMPLED";
+            return decision.issueCode == "MESH_SELF_INTERSECTION_SAMPLED"
+                || decision.issueCode == "MESH_SELF_INTERSECTION_BUDGET_BLOCKED";
         });
 }
 
@@ -764,14 +765,14 @@ bool ValidatePostStrict(
     postRequest.sourceHash = request.evidence->hashes.sourceHash;
     const MeshRepairResult post = EvaluateMeshRepairPreflight(postRequest);
     result.postRepair = post.preRepair;
-    if (HasSampledIntersectionEvidence(post))
+    if (HasIncompleteIntersectionEvidence(post))
     {
         BlockValidation(
             result.validation,
             "blocked_incomplete_post_strict",
             MeshRepairErrorCode::PostStrictFailed,
             "MESH_REPAIR_POST_STRICT_INCOMPLETE",
-            "post-repair self-intersection evidence is sampled rather than complete");
+            "post-repair self-intersection evidence is incomplete");
         return false;
     }
     result.validation.postStrictComplete = true;

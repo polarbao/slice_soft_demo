@@ -5,6 +5,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace slicer_core
@@ -16,6 +17,14 @@ namespace slicer_core
  * @return Lowercase 64-character SHA-256 hex string.
  */
 std::string ComputeMeshRepairSha256(std::string_view canonicalPayload);
+
+/**
+ * @brief Hash a sorted complete self-intersection candidate pair set.
+ * @param pairs Sorted unique triangle index pairs.
+ * @return Stable lowercase SHA-256 hex string.
+ */
+std::string ComputeMeshRepairTrianglePairHash(
+    const std::vector<std::pair<std::uint64_t, std::uint64_t>>& pairs);
 
 /**
  * @brief Hash indexed geometry using mesh_repair_canonical.1 encoding.

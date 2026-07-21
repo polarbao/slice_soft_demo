@@ -101,6 +101,8 @@ slicer_core::Json BuildStableProjection(const slicer_core::Json& report)
         {"attributePreservation", report.at("attributePreservation")},
         {"evidenceValidation", report.at("evidenceValidation")},
         {"nonManifoldAnalysis", report.at("nonManifoldAnalysis")},
+        {"completeSelfIntersectionAnalysis",
+         report.at("completeSelfIntersectionAnalysis")},
         {"postRepair", report.at("postRepair")},
         {"admission", report.at("admission")},
         {"performance", report.at("performance")},
@@ -156,6 +158,11 @@ bool HashesAreStableAndIndependent()
     classifierOptions.classifyNonManifoldPatterns = true;
     const slicer_core::MeshRepairHashes classifierOptionHashes =
         slicer_core::ComputeMeshRepairPreHashes(original, classifierOptions);
+    slicer_core::MeshRepairOptions completeIntersectionOptions = options;
+    completeIntersectionOptions.analyzeCompleteSelfIntersections = true;
+    completeIntersectionOptions.maxCompleteSelfIntersectionCandidatePairs = 1234U;
+    const slicer_core::MeshRepairHashes completeIntersectionOptionHashes =
+        slicer_core::ComputeMeshRepairPreHashes(original, completeIntersectionOptions);
 
     return ExpectTrue(first.preRepairGeometryHash == second.preRepairGeometryHash, "geometry hash repeats")
         && ExpectTrue(first.preRepairAttributeHash == second.preRepairAttributeHash, "attribute hash repeats")
@@ -169,7 +176,10 @@ bool HashesAreStableAndIndependent()
         && ExpectTrue(first.optionsHash != windingOptionHashes.optionsHash, "winding option changes options hash")
         && ExpectTrue(first.optionsHash != boundaryOptionHashes.optionsHash, "boundary policy changes options hash")
         && ExpectTrue(first.optionsHash != validationOptionHashes.optionsHash, "validation gate changes options hash")
-        && ExpectTrue(first.optionsHash != classifierOptionHashes.optionsHash, "classifier option changes options hash");
+        && ExpectTrue(first.optionsHash != classifierOptionHashes.optionsHash, "classifier option changes options hash")
+        && ExpectTrue(
+            first.optionsHash != completeIntersectionOptionHashes.optionsHash,
+            "complete intersection options change options hash");
 }
 
 bool OperationHashIsDeterministic()

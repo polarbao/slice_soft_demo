@@ -149,6 +149,8 @@ struct MeshRepairOptions
     std::string newFaceAttributePolicy{"reject"};
     bool validatePostRepairEvidence{false};
     bool classifyNonManifoldPatterns{false};
+    bool analyzeCompleteSelfIntersections{false};
+    std::uint64_t maxCompleteSelfIntersectionCandidatePairs{5000000U};
 };
 
 /**
@@ -356,6 +358,28 @@ struct MeshNonManifoldAnalysis
 };
 
 /**
+ * @brief Deterministic R3-01A complete self-intersection evidence.
+ */
+struct MeshCompleteSelfIntersectionAnalysis
+{
+    std::string status{"not_evaluated"};
+    bool complete{false};
+    std::uint64_t triangleCount{0U};
+    std::uint64_t bvhNodeCount{0U};
+    std::uint64_t candidatePairCount{0U};
+    std::uint64_t testedPairCount{0U};
+    std::uint64_t confirmedIntersectionPairs{0U};
+    std::uint64_t coplanarOverlapPairs{0U};
+    std::uint64_t touchingOnlyPairs{0U};
+    std::uint64_t aabbOnlyPairs{0U};
+    std::optional<std::string> candidatePairHash;
+    std::optional<double> durationMs;
+    std::optional<std::uint64_t> peakWorkingSetBytes;
+    std::string blockerCode;
+    std::vector<ValidationIssue> issues;
+};
+
+/**
  * @brief Non-production admission evidence produced by the repair prerequisite.
  */
 struct MeshRepairAdmission
@@ -406,6 +430,7 @@ struct MeshRepairResult
     MeshRepairAttributePreservation attributePreservation;
     MeshRepairEvidenceValidation evidenceValidation;
     MeshNonManifoldAnalysis nonManifoldAnalysis;
+    MeshCompleteSelfIntersectionAnalysis completeSelfIntersectionAnalysis;
     MeshRepairDiagnosticsSummary postRepair;
     MeshRepairAdmission admission;
     MeshRepairPerformance performance;

@@ -71,6 +71,9 @@ Json BuildOptions(const MeshRepairOptions& options)
         {"newFaceAttributePolicy", options.newFaceAttributePolicy},
         {"validatePostRepairEvidence", options.validatePostRepairEvidence},
         {"classifyNonManifoldPatterns", options.classifyNonManifoldPatterns},
+        {"analyzeCompleteSelfIntersections", options.analyzeCompleteSelfIntersections},
+        {"maxCompleteSelfIntersectionCandidatePairs",
+         options.maxCompleteSelfIntersectionCandidatePairs},
     });
 }
 
@@ -313,6 +316,28 @@ Json BuildNonManifoldAnalysis(const MeshNonManifoldAnalysis& analysis)
     });
 }
 
+Json BuildCompleteSelfIntersectionAnalysis(
+    const MeshCompleteSelfIntersectionAnalysis& analysis)
+{
+    return Json::object({
+        {"status", analysis.status},
+        {"complete", analysis.complete},
+        {"triangleCount", analysis.triangleCount},
+        {"bvhNodeCount", analysis.bvhNodeCount},
+        {"candidatePairCount", analysis.candidatePairCount},
+        {"testedPairCount", analysis.testedPairCount},
+        {"confirmedIntersectionPairs", analysis.confirmedIntersectionPairs},
+        {"coplanarOverlapPairs", analysis.coplanarOverlapPairs},
+        {"touchingOnlyPairs", analysis.touchingOnlyPairs},
+        {"aabbOnlyPairs", analysis.aabbOnlyPairs},
+        {"candidatePairHash", OptionalString(analysis.candidatePairHash)},
+        {"durationMs", OptionalDouble(analysis.durationMs)},
+        {"peakWorkingSetBytes", OptionalUnsigned(analysis.peakWorkingSetBytes)},
+        {"blockerCode", analysis.blockerCode},
+        {"issues", ValidationIssuesToJson(analysis.issues)},
+    });
+}
+
 Json BuildAdmission(const MeshRepairAdmission& admission)
 {
     return Json::object({
@@ -378,6 +403,8 @@ Json BuildMeshRepairReport(const MeshRepairResult& result)
         {"attributePreservation", BuildAttributePreservation(result.attributePreservation)},
         {"evidenceValidation", BuildEvidenceValidation(result.evidenceValidation)},
         {"nonManifoldAnalysis", BuildNonManifoldAnalysis(result.nonManifoldAnalysis)},
+        {"completeSelfIntersectionAnalysis", BuildCompleteSelfIntersectionAnalysis(
+            result.completeSelfIntersectionAnalysis)},
         {"postRepair", BuildDiagnostics(result.postRepair)},
         {"admission", BuildAdmission(result.admission)},
         {"performance", BuildPerformance(result.performance)},

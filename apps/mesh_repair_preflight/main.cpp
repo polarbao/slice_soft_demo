@@ -40,6 +40,8 @@ struct Options
     bool executeR2Boundary{false};
     bool executeR2EvidenceGuard{false};
     bool classifyR3NonManifoldPatterns{false};
+    bool analyzeR3CompleteSelfIntersections{false};
+    std::uint64_t maxCompleteSelfIntersectionCandidatePairs{5000000U};
     double weldToleranceMm{0.0};
     std::size_t maxBoundaryLoopEdges{0U};
     double maxBoundaryLoopDiameterMm{0.0};
@@ -119,6 +121,15 @@ Options ParseOptions(const int argc, char** argv)
         {
             options.classifyR3NonManifoldPatterns = true;
         }
+        else if (argument == "--analyze-r3-01a")
+        {
+            options.analyzeR3CompleteSelfIntersections = true;
+        }
+        else if (argument == "--complete-self-intersection-max-candidates")
+        {
+            options.maxCompleteSelfIntersectionCandidatePairs =
+                std::stoull(RequireValue(argc, argv, index, argument));
+        }
         else if (argument == "--weld-tolerance-mm")
         {
             options.weldToleranceMm = std::stod(RequireValue(argc, argv, index, argument));
@@ -167,7 +178,8 @@ Options ParseOptions(const int argc, char** argv)
                 << "--max-boundary-planarity-error-mm <value> "
                 << "--max-hole-area-mm2 <value> --max-affected-face-ratio <value> | "
                 << "--execute-r2-04 with the same explicit R2-03 budgets | "
-                << "--classify-r3-01]\n";
+                << "--classify-r3-01 | --analyze-r3-01a "
+                << "--complete-self-intersection-max-candidates <count>]\n";
             std::exit(0);
         }
         else
@@ -192,7 +204,8 @@ Options ParseOptions(const int argc, char** argv)
         + (options.executeR2Topology ? 1 : 0)
         + (options.executeR2Boundary ? 1 : 0)
         + (options.executeR2EvidenceGuard ? 1 : 0)
-        + (options.classifyR3NonManifoldPatterns ? 1 : 0);
+        + (options.classifyR3NonManifoldPatterns ? 1 : 0)
+        + (options.analyzeR3CompleteSelfIntersections ? 1 : 0);
     if (operationSetCount > 1)
     {
         throw std::runtime_error("mesh repair operation sets are mutually exclusive");
@@ -534,6 +547,10 @@ int RunPreflight(const Options& options)
         request.options.mode = "strict_closed";
         request.options.classifyNonManifoldPatterns =
             options.classifyR3NonManifoldPatterns;
+        request.options.analyzeCompleteSelfIntersections =
+            options.analyzeR3CompleteSelfIntersections;
+        request.options.maxCompleteSelfIntersectionCandidatePairs =
+            options.maxCompleteSelfIntersectionCandidatePairs;
         request.sourceHash = sourceHash;
         request.robustnessOptions = robustnessOptions;
         result = slicer_core::EvaluateMeshRepairPreflight(request);
@@ -544,7 +561,9 @@ int RunPreflight(const Options& options)
         << "mesh_repair_preflight: evidence collected\n"
         << "  source: " << input.sourcePath << '\n'
         << "  operationSet: "
-        << (options.classifyR3NonManifoldPatterns
+        << (options.analyzeR3CompleteSelfIntersections
+                ? "r3_complete_self_intersection_analysis"
+                : (options.classifyR3NonManifoldPatterns
                 ? "r3_non_manifold_pattern_classifier"
                 : (options.executeR2EvidenceGuard
                 ? "r2_post_strict_attribute_guard"
@@ -552,7 +571,7 @@ int RunPreflight(const Options& options)
                 ? "r2_boundary_loop_repair"
                 : (options.executeR2Topology
                         ? "r2_vertex_weld_winding"
-                        : (options.executeCleanup ? "r2_cleanup" : "preflight")))))
+                        : (options.executeCleanup ? "r2_cleanup" : "preflight"))))))
         << '\n'
         << "  status: " << slicer_core::MeshRepairStatusName(result.status) << '\n'
         << "  vertices: " << result.input.vertexCount << '\n'

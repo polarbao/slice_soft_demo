@@ -69,6 +69,8 @@ add_library(slicer_core
     src/slicer_core/geometry/repair/MeshRepairEligibilityPolicy.h
     src/slicer_core/geometry/repair/MeshRepairEvidenceValidator.cpp
     src/slicer_core/geometry/repair/MeshRepairEvidenceValidator.h
+    src/slicer_core/geometry/repair/MeshCompleteSelfIntersectionAnalyzer.cpp
+    src/slicer_core/geometry/repair/MeshCompleteSelfIntersectionAnalyzer.h
     src/slicer_core/geometry/repair/MeshNonManifoldPatternClassifier.cpp
     src/slicer_core/geometry/repair/MeshNonManifoldPatternClassifier.h
     src/slicer_core/geometry/repair/MeshRepairPreflight.cpp
@@ -465,6 +467,12 @@ add_executable(mesh_non_manifold_pattern_classifier_unit_tests
 
 target_link_libraries(mesh_non_manifold_pattern_classifier_unit_tests PRIVATE slicer_core)
 
+add_executable(mesh_complete_self_intersection_analyzer_unit_tests
+    tests/unit/mesh_complete_self_intersection_analyzer/main.cpp
+)
+
+target_link_libraries(mesh_complete_self_intersection_analyzer_unit_tests PRIVATE slicer_core)
+
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
@@ -583,6 +591,20 @@ add_test(
 set_tests_properties(mesh_repair_r3_01_cli_test PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_test(
+    NAME mesh_repair_r3_01a_cli_test
+    COMMAND mesh_repair_preflight
+        --config samples/configs/3mf/three_mf_texture2d_checker.json
+        --output ${CMAKE_CURRENT_BINARY_DIR}/output/12e_08c_r3_01a_cli_test.json
+        --source-id samples/models/3mf/texture2d_checker_cube.3mf
+        --voxel-mm 0.10
+        --require-openvdb-off
+        --analyze-r3-01a
+        --complete-self-intersection-max-candidates 1000
+)
+set_tests_properties(mesh_repair_r3_01a_cli_test PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
@@ -597,6 +619,7 @@ add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_uni
 add_test(NAME mesh_repair_cleanup_unit_tests COMMAND mesh_repair_cleanup_unit_tests)
 add_test(NAME mesh_repair_evidence_validator_unit_tests COMMAND mesh_repair_evidence_validator_unit_tests)
 add_test(NAME mesh_non_manifold_pattern_classifier_unit_tests COMMAND mesh_non_manifold_pattern_classifier_unit_tests)
+add_test(NAME mesh_complete_self_intersection_analyzer_unit_tests COMMAND mesh_complete_self_intersection_analyzer_unit_tests)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

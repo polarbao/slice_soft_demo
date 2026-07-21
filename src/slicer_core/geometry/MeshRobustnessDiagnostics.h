@@ -28,6 +28,7 @@ struct MeshRobustnessReport
     std::size_t self_intersection_false_positive_candidates{0};
     bool self_intersection_sampled{false};
     bool self_intersection_check_sampled{false};
+    bool self_intersection_check_budget_blocked{false};
     std::size_t zero_volume_components{0};
     double min_edge_length_mm{0.0};
     double max_edge_length_mm{0.0};

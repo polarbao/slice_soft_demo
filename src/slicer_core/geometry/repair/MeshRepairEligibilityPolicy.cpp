@@ -133,6 +133,18 @@ MeshRepairEligibility EvaluateMeshRepairEligibility(
             "run complete self-intersection diagnostics before automatic repair");
     }
 
+    if (robustness.self_intersection_check_budget_blocked
+        && confirmedIntersectionCount == 0U)
+    {
+        AddDecision(
+            result,
+            "MESH_SELF_INTERSECTION_BUDGET_BLOCKED",
+            MeshRepairEligibilityClass::ManualOnly,
+            MeshRepairErrorCodeName(MeshRepairErrorCode::BudgetExceeded),
+            static_cast<std::uint64_t>(robustness.self_intersection_candidates),
+            "increase the explicit complete self-intersection budget or repair the source asset");
+    }
+
     if (topology.non_manifold_edges > 0U)
     {
         if (evidence.nonManifoldClassification

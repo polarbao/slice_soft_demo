@@ -1,6 +1,7 @@
 #include "slicer_core/geometry/repair/MeshRepairPreflight.h"
 
 #include "slicer_core/geometry/MeshTopologyDiagnostics.h"
+#include "slicer_core/geometry/repair/MeshCompleteSelfIntersectionAnalyzer.h"
 #include "slicer_core/geometry/repair/MeshRepairEligibilityPolicy.h"
 #include "slicer_core/geometry/repair/MeshRepairHash.h"
 #include "slicer_core/geometry/repair/MeshNonManifoldPatternClassifier.h"
@@ -12,6 +13,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 namespace slicer_core
 {
@@ -192,6 +194,78 @@ std::uint64_t CountTextureResources(const AdaptedTriangleMesh& mesh)
     return static_cast<std::uint64_t>(paths.size());
 }
 
+void RemoveSelfIntersectionIssues(MeshRobustnessReport& robustness)
+{
+    robustness.issues.erase(
+        std::remove_if(
+            robustness.issues.begin(),
+            robustness.issues.end(),
+            [](const ValidationIssue& issue)
+            {
+                return issue.code == "MESH_SELF_INTERSECTION_SAMPLED"
+                    || issue.code == "MESH_SELF_INTERSECTION_CONFIRMED"
+                    || issue.code == "MESH_SELF_INTERSECTION_BUDGET_BLOCKED";
+            }),
+        robustness.issues.end());
+    const auto removeMessage = [](std::vector<std::string>& messages)
+    {
+        messages.erase(
+            std::remove_if(
+                messages.begin(),
+                messages.end(),
+                [](const std::string& message)
+                {
+                    return message == "self-intersection checks were sampled"
+                        || message == "mesh has confirmed self-intersections"
+                        || message
+                            == "complete self-intersection analysis was budget blocked";
+                }),
+            messages.end());
+    };
+    removeMessage(robustness.warnings);
+    removeMessage(robustness.errors);
+}
+
+void ApplyCompleteSelfIntersectionAnalysis(
+    const MeshCompleteSelfIntersectionAnalysis& analysis,
+    MeshRobustnessReport& robustness)
+{
+    RemoveSelfIntersectionIssues(robustness);
+    robustness.self_intersection_candidates = static_cast<std::size_t>(
+        analysis.candidatePairCount);
+    robustness.confirmed_self_intersections = static_cast<std::size_t>(
+        analysis.confirmedIntersectionPairs);
+    robustness.coplanar_overlap_pairs = static_cast<std::size_t>(
+        analysis.coplanarOverlapPairs);
+    robustness.touching_only_pairs = static_cast<std::size_t>(
+        analysis.touchingOnlyPairs);
+    robustness.self_intersection_false_positive_candidates =
+        static_cast<std::size_t>(analysis.aabbOnlyPairs);
+    robustness.self_intersection_pairs = static_cast<std::size_t>(
+        analysis.confirmedIntersectionPairs + analysis.coplanarOverlapPairs);
+    robustness.self_intersection_sampled = false;
+    robustness.self_intersection_check_sampled = false;
+    robustness.self_intersection_check_budget_blocked = !analysis.complete;
+
+    if (!analysis.complete)
+    {
+        robustness.issues.push_back(MakeValidationIssue(
+            "MESH_SELF_INTERSECTION_BUDGET_BLOCKED",
+            ValidationSeverity::Warning,
+            "complete self-intersection analysis was budget blocked"));
+        robustness.warnings.push_back(
+            "complete self-intersection analysis was budget blocked");
+    }
+    else if (robustness.self_intersection_pairs > 0U)
+    {
+        robustness.issues.push_back(MakeValidationIssue(
+            "MESH_SELF_INTERSECTION_CONFIRMED",
+            ValidationSeverity::Error,
+            "mesh has confirmed self-intersections"));
+        robustness.errors.push_back("mesh has confirmed self-intersections");
+    }
+}
+
 void BuildAdmissionEvidence(MeshRepairResult& result)
 {
     result.admission.mode = "repair_then_strict";
@@ -250,9 +324,26 @@ MeshRepairResult EvaluateMeshRepairPreflight(
     MeshTopologyReport topology = AnalyzeMeshTopology(request.mesh->mesh);
     topology.source_triangles = request.mesh->topology.source_triangles;
     topology.degenerate_triangles = request.mesh->topology.degenerate_triangles;
-    const MeshRobustnessReport robustness = AnalyzeMeshRobustness(
+    MeshRobustnessReport robustness = AnalyzeMeshRobustness(
         request.mesh->mesh,
         request.robustnessOptions);
+    if (request.options.analyzeCompleteSelfIntersections)
+    {
+        MeshCompleteSelfIntersectionOptions completeOptions;
+        completeOptions.epsilonMm =
+            request.robustnessOptions.tolerance.self_intersection_epsilon_mm;
+        completeOptions.maxCandidatePairs =
+            request.options.maxCompleteSelfIntersectionCandidatePairs;
+        result.completeSelfIntersectionAnalysis =
+            AnalyzeCompleteMeshSelfIntersections(
+                request.mesh->mesh,
+                completeOptions);
+        ApplyCompleteSelfIntersectionAnalysis(
+            result.completeSelfIntersectionAnalysis,
+            robustness);
+        result.performance.peakWorkingSetBytes =
+            result.completeSelfIntersectionAnalysis.peakWorkingSetBytes;
+    }
     MeshRepairEligibilityEvidence evidence = BuildEligibilityEvidence(*request.mesh);
     if (request.options.classifyNonManifoldPatterns)
     {

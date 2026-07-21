@@ -257,6 +257,29 @@ std::string ComputeMeshRepairSha256(const std::string_view canonicalPayload)
     return encoder.FinalizeHex();
 }
 
+std::string ComputeMeshRepairTrianglePairHash(
+    const std::vector<std::pair<std::uint64_t, std::uint64_t>>& pairs)
+{
+    CanonicalEncoder encoder;
+    encoder.AppendString("mesh_repair_canonical.1/triangle_pairs");
+    encoder.AppendUnsigned(static_cast<std::uint64_t>(pairs.size()));
+    std::optional<std::pair<std::uint64_t, std::uint64_t>> previous;
+    for (const auto& [left, right] : pairs)
+    {
+        const std::pair<std::uint64_t, std::uint64_t> current{left, right};
+        if (left >= right || (previous.has_value() && current <= *previous))
+        {
+            throw MeshRepairError(
+                MeshRepairErrorCode::InputInvalid,
+                "triangle pair hash requires sorted unique canonical pairs");
+        }
+        encoder.AppendUnsigned(left);
+        encoder.AppendUnsigned(right);
+        previous = current;
+    }
+    return encoder.FinalizeHex();
+}
+
 std::string ComputeMeshRepairGeometryHash(const TriangleMeshData& mesh)
 {
     CanonicalEncoder encoder;
@@ -369,6 +392,8 @@ std::string ComputeMeshRepairOptionsHash(const MeshRepairOptions& options)
     encoder.AppendString(options.newFaceAttributePolicy);
     encoder.AppendBoolean(options.validatePostRepairEvidence);
     encoder.AppendBoolean(options.classifyNonManifoldPatterns);
+    encoder.AppendBoolean(options.analyzeCompleteSelfIntersections);
+    encoder.AppendUnsigned(options.maxCompleteSelfIntersectionCandidatePairs);
     return encoder.FinalizeHex();
 }
 
