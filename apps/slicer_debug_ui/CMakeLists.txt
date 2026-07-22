@@ -26,12 +26,18 @@ add_executable(slicer_debug_ui
     services/SliceSettingsModel.h
     services/SliceProgressProtocolParser.cpp
     services/SliceProgressProtocolParser.h
+    services/SlicePreflightCoordinator.cpp
+    services/SlicePreflightCoordinator.h
     services/ToolPaths.cpp
     services/ToolPaths.h
     services/LayerPreviewDataProvider.cpp
     services/LayerPreviewDataProvider.h
     services/MaterialClosureReportInterpreter.cpp
     services/MaterialClosureReportInterpreter.h
+    services/ModelPreflightController.cpp
+    services/ModelPreflightController.h
+    services/ModelPreflightPresenter.cpp
+    services/ModelPreflightPresenter.h
     services/PreviewReportIndex.cpp
     services/PreviewReportIndex.h
     services/UiSmokeTestRunner.cpp
@@ -48,6 +54,8 @@ add_executable(slicer_debug_ui
     widgets/ConfigDiffPanel.h
     widgets/MaterialProcessPanel.cpp
     widgets/MaterialProcessPanel.h
+    widgets/ModelPreflightPanel.cpp
+    widgets/ModelPreflightPanel.h
     widgets/MaterialClosurePanel.cpp
     widgets/MaterialClosurePanel.h
     widgets/MaterialPolicyEditor.cpp

@@ -1,7 +1,7 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01..03 COMPLETE / R4-04 READY
-> 日期：2026-07-21
+> 文档状态：IN PROGRESS / R4-01..04 COMPLETE / R4-05 READY
+> 日期：2026-07-22
 
 ## 1. 阶段结论
 
@@ -56,7 +56,8 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-03 Mode Admission and Pipeline Gate` 已完成；R4-04 Qt Preflight UI 已完成准备，等待明确启动。
+`12E-08C-R4-04 Qt Preflight UI` 已完成；下一原子任务为已完成准备的 R4-05 Clean Positive Matrix，等待
+明确启动。
 
 ## 7. 模型资产准备结果
 
@@ -118,6 +119,33 @@ Qt controller/presenter/coordinator/panel 边界、QThreadPool/generation/cancel
 capability probe、三条切片入口统一守门、中文状态机和 UI Smoke 已冻结。R4-04 达到
 `READY FOR DEVELOPMENT`。
 
-R4-05 基础准备完整并等待 R4-04；R4-06 的合同准备完整但仍缺三个 required 外部修复资产；R4-07/08 为
+R4-05 基础准备完整；R4-06 的合同准备完整但仍缺三个 required 外部修复资产；R4-07/08 为
 依赖已准备、不可提前执行。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_04_QtPreflightUI准备.md`。
+
+## 14. R4-04 实施结果
+
+Qt 工作台已接入异步 `ModelPreflightController`、中文 `ModelPreflightPresenter/Panel` 和单 pending action
+`SlicePreflightCoordinator`。导入传统切片、运行切片、OpenVDB 候选切片均在子进程启动前执行 fresh
+preflight；传统拓扑 warning 需要明确确认，global blocker 不提供继续或 legacy fallback。只读 OpenVDB 诊断
+同样先展示共享事实，但不把诊断误写成 global admitted。
+
+新增 `slicer_cli --openvdb-capability-json` 固定 schema。本机默认 OFF executable 返回 unavailable，OpenVDB ON
+candidate 返回 runtime available、version 12.0.1；probe 不加载模型、不写输出。Controller 使用 generation、
+取消 token、受保护回调 bridge 和 120 秒 capability 超时，关闭窗口不等待 worker。
+
+定向 4/4 CTest、Qt self-test、preflight state/gate/lifecycle smoke、布局 smoke 和真实 capability probe 通过。
+Quick CI 在 300 秒窗口内未完成，独立 golden 仍确认既有
+`material_process_top2 widthPx expected=48 actual=226` baseline。
+
+详细证据见 `../DOC/DOC_EXEC_12E_08C_R4_04_QtPreflightUI结果.md`。
+
+## 15. 模型依据同步确认
+
+后续检测依据已同步到 `.agents/docs/project-profile.md`、R4 任务清单、R4 准备文档和模型资产清单：
+`xiao_ma_wu_yu_new` 5 个 OBJ、`yecan/3.obj`、`yecan/4.obj` 为无需重建的 7 个 strict PASS OBJ。主正向模型
+固定为 `MF_Xiao_ma_Damuzhi_ty02.obj`，独立复核固定为 `yecan/3.obj`；`yecan/4.obj` 当前仍是未跟踪用户资产，
+只读使用且不纳入提交。正向 3MF 继续使用 `samples/models/3mf/texture2d_checker_cube.3mf`。
+
+这些正常模型可进入 R4-05，但不能替代 required 修复资产解除 R4-06..08。R4-05 现为
+`READY / WAIT EXPLICIT EXECUTION`；R4-06 以后仍由外部资产依赖阻断。

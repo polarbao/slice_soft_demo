@@ -25,6 +25,7 @@
 #include <QScrollArea>
 #include <QSizePolicy>
 #include <QSplitter>
+#include <QStyle>
 #include <QTabWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -324,7 +325,11 @@ QString ResolveModelPath(const QString& modelPath, const QString& configPath)
 }  // namespace
 
 MainWindow::MainWindow(QString repo_root, QWidget* parent)
-    : QMainWindow(parent), paths_(ToolPaths::FromRepoRoot(std::move(repo_root))) {
+    : QMainWindow(parent),
+      paths_(ToolPaths::FromRepoRoot(std::move(repo_root))),
+      m_modelPreflightController(this),
+      m_slicePreflightCoordinator(&m_modelPreflightController, this)
+{
     setWindowTitle("SliceSoft 切片调试界面");
     resize(1440, 900);
 
@@ -393,6 +398,47 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &MainWindow::OnMaterialClosureLayerRequested);
     connect(config_editor_panel_, &ConfigEditorPanel::configPathChanged, config_edit_, &QLineEdit::setText);
     connect(config_editor_panel_, &ConfigEditorPanel::statusMessage, status_label_, &QLabel::setText);
+    connect(
+        &config_document_,
+        &ConfigDocument::changed,
+        this,
+        [this]()
+        {
+            if (!m_suppressPreflightStale)
+            {
+                m_modelPreflightController.MarkStale();
+            }
+        });
+    connect(
+        &m_modelPreflightController,
+        &ModelPreflightController::SigStateChanged,
+        this,
+        &MainWindow::OnModelPreflightStateChanged);
+    connect(
+        &m_slicePreflightCoordinator,
+        &SlicePreflightCoordinator::SigActionAdmitted,
+        this,
+        &MainWindow::OnPreflightActionAdmitted);
+    connect(
+        &m_slicePreflightCoordinator,
+        &SlicePreflightCoordinator::SigActionBlocked,
+        this,
+        &MainWindow::OnPreflightActionBlocked);
+    connect(
+        &m_slicePreflightCoordinator,
+        &SlicePreflightCoordinator::SigLegacyConfirmationRequired,
+        this,
+        &MainWindow::OnLegacyPreflightConfirmationRequired);
+    connect(
+        m_modelPreflightPanel,
+        &ModelPreflightPanel::SigRecheckRequested,
+        this,
+        &MainWindow::OnRecheckModelPreflight);
+    connect(
+        m_modelPreflightPanel,
+        &ModelPreflightPanel::SigCancelRequested,
+        this,
+        &MainWindow::OnCancelModelPreflight);
 
     LoadScenarios();
     if (!config_document_.document().isObject())
@@ -400,6 +446,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         config_editor_panel_->loadConfig(config_edit_->text());
     }
     loadPackage(package_edit_->text());
+    UpdateModelPreflightUi();
 }
 
 void MainWindow::browseConfig() {
@@ -454,9 +501,13 @@ void MainWindow::runSlicer() {
         return;
     }
 
-    pending_package_ = absoluteFromRepo(result.document.object().value("output").toObject().value("packageDir").toString());
-    config_edit_->setText(result.generatedconfigpath);
-    runCommand("运行切片", paths_.slicer_cli, QStringList{"--config", result.generatedconfigpath});
+    SlicePreflightAction action;
+    action.kind = SlicePreflightActionKind::Legacy;
+    action.configpath = result.generatedconfigpath;
+    action.packagedir = absoluteFromRepo(
+        result.document.object().value("output").toObject().value("packageDir").toString());
+    action.capabilityprogram = paths_.openvdb_slicer_cli;
+    RequestSlicePreflight(action);
 }
 
 void MainWindow::runRipSummary() {
@@ -511,7 +562,12 @@ void MainWindow::OnImportModelAndSlice()
         return;
     }
 
-    RunGeneratedConfig(configPath, packageDir);
+    SlicePreflightAction action;
+    action.kind = SlicePreflightActionKind::Legacy;
+    action.configpath = configPath;
+    action.packagedir = packageDir;
+    action.capabilityprogram = paths_.openvdb_slicer_cli;
+    RequestSlicePreflight(action);
 }
 
 void MainWindow::OnImportModelOpenVdbDiagnostic()
@@ -535,20 +591,16 @@ void MainWindow::OnImportModelOpenVdbDiagnostic()
         return;
     }
 
-    RunOpenVdbDiagnostic(result.generatedconfigpath, CreateOpenVdbReportPath(modelPath));
+    SlicePreflightAction action;
+    action.kind = SlicePreflightActionKind::OpenVdbDiagnostic;
+    action.configpath = result.generatedconfigpath;
+    action.reportpath = CreateOpenVdbReportPath(modelPath);
+    action.capabilityprogram = paths_.openvdb_slicer_cli;
+    RequestSlicePreflight(action);
 }
 
 void MainWindow::OnImportModelOpenVdbCandidate()
 {
-    if (!QFileInfo::exists(paths_.openvdb_slicer_cli))
-    {
-        QMessageBox::warning(this,
-                             "OpenVDB 构建不存在",
-                             "未找到 OpenVDB ON 版本 slicer_cli：\n" + paths_.openvdb_slicer_cli
-                                 + "\n\n请先构建 build-openvdb-09p。");
-        return;
-    }
-
     const QString modelPath =
         QFileDialog::getOpenFileName(this, "选择要执行 OpenVDB 候选切片的模型", paths_.repo_root, "Model (*.obj *.3mf)");
     if (modelPath.isEmpty())
@@ -563,7 +615,12 @@ void MainWindow::OnImportModelOpenVdbCandidate()
         return;
     }
 
-    RunOpenVdbCandidate(configPath, packageDir);
+    SlicePreflightAction action;
+    action.kind = SlicePreflightActionKind::OpenVdbCandidate;
+    action.configpath = configPath;
+    action.packagedir = packageDir;
+    action.capabilityprogram = paths_.openvdb_slicer_cli;
+    RequestSlicePreflight(action);
 }
 
 void MainWindow::OnScenarioChanged(const int index)
@@ -624,6 +681,62 @@ void MainWindow::OnProcessOutput(const QString& text)
     {
         m_sliceTimingPanel->ShowTiming(event);
     }
+}
+
+void MainWindow::OnModelPreflightStateChanged()
+{
+    UpdateModelPreflightUi();
+    UpdateActionAvailability();
+}
+
+void MainWindow::OnPreflightActionAdmitted()
+{
+    const SlicePreflightAction action =
+        m_slicePreflightCoordinator.AdmittedAction();
+    if (action.kind == SlicePreflightActionKind::Legacy)
+    {
+        RunGeneratedConfig(action.configpath, action.packagedir);
+        return;
+    }
+    if (action.kind == SlicePreflightActionKind::OpenVdbDiagnostic)
+    {
+        RunOpenVdbDiagnostic(action.configpath, action.reportpath);
+        return;
+    }
+    RunOpenVdbCandidate(action.configpath, action.packagedir);
+}
+
+void MainWindow::OnPreflightActionBlocked()
+{
+    status_label_->setText(QStringLiteral("模型预检未放行，切片进程未启动。"));
+    UpdateActionAvailability();
+}
+
+void MainWindow::OnLegacyPreflightConfirmationRequired()
+{
+    const QString codes =
+        m_slicePreflightCoordinator.PendingWarningCodes().join(QStringLiteral("、"));
+    const QMessageBox::StandardButton answer = QMessageBox::warning(
+        this,
+        QStringLiteral("传统切片拓扑风险确认"),
+        QStringLiteral(
+            "模型预检发现拓扑警告。传统切片可兼容尝试，但结果不代表全局模式准入。\n\n"
+            "警告码：%1\n\n是否继续传统切片？")
+            .arg(codes),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    m_slicePreflightCoordinator.ConfirmLegacyWarning(
+        answer == QMessageBox::Yes);
+}
+
+void MainWindow::OnRecheckModelPreflight()
+{
+    m_modelPreflightController.Recheck();
+}
+
+void MainWindow::OnCancelModelPreflight()
+{
+    m_slicePreflightCoordinator.CancelPending();
 }
 
 void MainWindow::handleProcessStarted(const QString& command) {
@@ -763,6 +876,33 @@ QWidget* MainWindow::createRunPanel() {
     auto* open_button = makeButton("打开输出目录", panel);
     status_label_ = new QLabel("就绪", panel);
     status_label_->setWordWrap(true);
+    auto* preflightRow = new QHBoxLayout();
+    m_modelPreflightCompactState = new QLabel(QStringLiteral("预检：待检测"), panel);
+    m_modelPreflightCompactState->setObjectName(
+        QStringLiteral("modelPreflightCompactState"));
+    m_modelPreflightCompactState->setWordWrap(true);
+    m_modelPreflightCompactMode = new QLabel(QStringLiteral("传统切片"), panel);
+    m_modelPreflightCompactMode->setObjectName(
+        QStringLiteral("modelPreflightCompactMode"));
+    m_modelPreflightRecheckButton = new QPushButton(panel);
+    m_modelPreflightRecheckButton->setObjectName(
+        QStringLiteral("modelPreflightCompactRecheck"));
+    m_modelPreflightRecheckButton->setIcon(
+        style()->standardIcon(QStyle::SP_BrowserReload));
+    m_modelPreflightRecheckButton->setToolTip(QStringLiteral("重新执行模型预检"));
+    m_modelPreflightRecheckButton->setFixedSize(28, 28);
+    m_modelPreflightCancelButton = new QPushButton(panel);
+    m_modelPreflightCancelButton->setObjectName(
+        QStringLiteral("modelPreflightCompactCancel"));
+    m_modelPreflightCancelButton->setIcon(
+        style()->standardIcon(QStyle::SP_BrowserStop));
+    m_modelPreflightCancelButton->setToolTip(QStringLiteral("取消当前模型预检"));
+    m_modelPreflightCancelButton->setFixedSize(28, 28);
+    m_modelPreflightCancelButton->setEnabled(false);
+    preflightRow->addWidget(m_modelPreflightCompactState, 1);
+    preflightRow->addWidget(m_modelPreflightCompactMode);
+    preflightRow->addWidget(m_modelPreflightRecheckButton);
+    preflightRow->addWidget(m_modelPreflightCancelButton);
     m_sliceTimingPanel = new SliceTimingPanel(panel);
     layout->addWidget(build_button_);
     layout->addWidget(m_importSliceButton);
@@ -775,6 +915,7 @@ QWidget* MainWindow::createRunPanel() {
     layout->addWidget(load_button);
     layout->addWidget(open_button);
     layout->addWidget(status_label_);
+    layout->addLayout(preflightRow);
     layout->addWidget(m_sliceTimingPanel);
 
     connect(build_button_, &QPushButton::clicked, this, &MainWindow::buildDebug);
@@ -787,6 +928,16 @@ QWidget* MainWindow::createRunPanel() {
     connect(compare_button_, &QPushButton::clicked, this, &MainWindow::compareProfiles);
     connect(load_button, &QPushButton::clicked, this, &MainWindow::loadPackageFromEdit);
     connect(open_button, &QPushButton::clicked, this, &MainWindow::openOutputFolder);
+    connect(
+        m_modelPreflightRecheckButton,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::OnRecheckModelPreflight);
+    connect(
+        m_modelPreflightCancelButton,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::OnCancelModelPreflight);
     return panel;
 }
 
@@ -799,7 +950,9 @@ QWidget* MainWindow::createRightPanel() {
     warnings_view_->setReadOnly(true);
     compare_view_ = new QPlainTextEdit(tabs);
     compare_view_->setReadOnly(true);
+    m_modelPreflightPanel = new ModelPreflightPanel(tabs);
     tabs->addTab(material_process_panel_, "参数");
+    tabs->addTab(m_modelPreflightPanel, QStringLiteral("模型预检"));
     tabs->addTab(warnings_view_, "诊断");
     tabs->addTab(compare_view_, "工艺对比");
     tabs->setMinimumWidth(240);
@@ -1128,11 +1281,82 @@ void MainWindow::RunOpenVdbCandidate(const QString& configPath, const QString& p
 {
     config_edit_->setText(configPath);
     package_edit_->setText(packageDir);
+    m_suppressPreflightStale = true;
     config_editor_panel_->loadConfig(configPath);
+    m_suppressPreflightStale = false;
     pending_package_ = packageDir;
     runCommand("OpenVDB 候选切片",
                paths_.openvdb_slicer_cli,
                QStringList{"--config", configPath, "--openvdb-candidate-slice"});
+}
+
+void MainWindow::RequestSlicePreflight(const SlicePreflightAction& action)
+{
+    config_edit_->setText(action.configpath);
+    if (!action.packagedir.isEmpty())
+    {
+        package_edit_->setText(action.packagedir);
+    }
+    pending_package_.clear();
+    status_label_->setText(QStringLiteral("正在执行模型预检，尚未启动切片进程。"));
+    m_slicePreflightCoordinator.RequestAction(action);
+}
+
+void MainWindow::UpdateModelPreflightUi()
+{
+    ModelPreflightPresentation presentation =
+        ModelPreflightPresenter::Present(
+            m_modelPreflightController.CurrentExecution(),
+            m_modelPreflightController.CurrentMode());
+    if (!m_modelPreflightController.LastCapabilityDiagnostic().isEmpty())
+    {
+        presentation.detail += QStringLiteral("；capability=")
+            + m_modelPreflightController.LastCapabilityDiagnostic();
+    }
+    if (m_modelPreflightPanel != nullptr)
+    {
+        m_modelPreflightPanel->ShowPresentation(presentation);
+    }
+    if (m_modelPreflightCompactState != nullptr)
+    {
+        m_modelPreflightCompactState->setText(
+            QStringLiteral("预检：") + presentation.state);
+        m_modelPreflightCompactState->setToolTip(
+            presentation.admission + QStringLiteral("\n") + presentation.detail);
+    }
+    if (m_modelPreflightCompactMode != nullptr)
+    {
+        m_modelPreflightCompactMode->setText(presentation.mode);
+    }
+    if (m_modelPreflightRecheckButton != nullptr)
+    {
+        m_modelPreflightRecheckButton->setEnabled(
+            presentation.canrecheck && !m_processBusy);
+    }
+    if (m_modelPreflightCancelButton != nullptr)
+    {
+        m_modelPreflightCancelButton->setEnabled(presentation.cancancel);
+    }
+}
+
+void MainWindow::UpdateActionAvailability()
+{
+    const bool preflightRunning = m_modelPreflightController.IsRunning();
+    const bool enabled = !m_processBusy && !preflightRunning;
+    build_button_->setEnabled(enabled);
+    m_importSliceButton->setEnabled(enabled);
+    m_importOpenVdbButton->setEnabled(enabled);
+    m_importOpenVdbCandidateButton->setEnabled(enabled);
+    run_slicer_button_->setEnabled(enabled);
+    run_rip_button_->setEnabled(enabled);
+    regression_button_->setEnabled(enabled);
+    compare_button_->setEnabled(enabled);
+    if (m_modelPreflightRecheckButton != nullptr)
+    {
+        m_modelPreflightRecheckButton->setEnabled(
+            enabled && m_modelPreflightController.CurrentExecution().result.status
+                != slicer_core::ModelPreflightStatus::NotRun);
+    }
 }
 
 void MainWindow::LoadScenarios()
@@ -1386,12 +1610,7 @@ void MainWindow::runCommand(const QString& action, const QString& program, const
 }
 
 void MainWindow::setBusy(const bool busy) {
-    build_button_->setEnabled(!busy);
-    m_importSliceButton->setEnabled(!busy);
-    m_importOpenVdbButton->setEnabled(!busy);
-    m_importOpenVdbCandidateButton->setEnabled(!busy);
-    run_slicer_button_->setEnabled(!busy);
-    run_rip_button_->setEnabled(!busy);
-    regression_button_->setEnabled(!busy);
-    compare_button_->setEnabled(!busy);
+    m_processBusy = busy;
+    UpdateActionAvailability();
+    UpdateModelPreflightUi();
 }

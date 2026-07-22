@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：IN PROGRESS / R4-01..03 COMPLETE / R4-04 READY
+> 文档状态：IN PROGRESS / R4-01..04 COMPLETE / R4-05 READY
 > 日期：2026-07-22
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
 

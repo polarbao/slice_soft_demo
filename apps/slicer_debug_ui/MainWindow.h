@@ -3,16 +3,20 @@
 #include "services/ConfigDocument.h"
 #include "services/EffectiveConfigGenerator.h"
 #include "services/PackageLoader.h"
+#include "services/ModelPreflightController.h"
+#include "services/ModelPreflightPresenter.h"
 #include "services/ProcessRunner.h"
 #include "services/ReportLoader.h"
 #include "services/ScenarioRegistry.h"
 #include "services/SliceProgressProtocolParser.h"
+#include "services/SlicePreflightCoordinator.h"
 #include "services/ToolPaths.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
 #include "widgets/DiagnosticsDock.h"
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
+#include "widgets/ModelPreflightPanel.h"
 #include "widgets/PreviewWorkspace.h"
 #include "widgets/ReportPanel.h"
 #include "widgets/SliceTimingPanel.h"
@@ -52,6 +56,12 @@ private slots:
     void OnScenarioVisibilityChanged(bool checked);
     void OnMaterialClosureLayerRequested(int layerIndex, const QString& gapPreviewPath);
     void OnProcessOutput(const QString& text);
+    void OnModelPreflightStateChanged();
+    void OnPreflightActionAdmitted();
+    void OnPreflightActionBlocked();
+    void OnLegacyPreflightConfirmationRequired();
+    void OnRecheckModelPreflight();
+    void OnCancelModelPreflight();
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -78,6 +88,9 @@ private:
     void RunGeneratedConfig(const QString& configPath, const QString& packageDir);
     void RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath);
     void RunOpenVdbCandidate(const QString& configPath, const QString& packageDir);
+    void RequestSlicePreflight(const SlicePreflightAction& action);
+    void UpdateModelPreflightUi();
+    void UpdateActionAvailability();
     void LoadScenarios();
     bool ShouldShowScenario(const ScenarioEntry& scenario) const;
     void ApplyScenario(const ScenarioEntry& scenario);
@@ -93,6 +106,8 @@ private:
     ScenarioRegistry m_scenarioRegistry;
     SliceProgressProtocolParser m_sliceProgressParser;
     ProcessRunner runner_;
+    ModelPreflightController m_modelPreflightController;
+    SlicePreflightCoordinator m_slicePreflightCoordinator;
     QString current_action_;
     QString pending_package_;
     QString compare_output_;
@@ -107,6 +122,8 @@ private:
     QLabel* m_openVdbSlicerLabel{nullptr};
     QLabel* rip_label_{nullptr};
     QLabel* status_label_{nullptr};
+    QLabel* m_modelPreflightCompactState{nullptr};
+    QLabel* m_modelPreflightCompactMode{nullptr};
     QPlainTextEdit* warnings_view_{nullptr};
     QPlainTextEdit* compare_view_{nullptr};
     QComboBox* m_scenarioSelector{nullptr};
@@ -121,6 +138,8 @@ private:
     QPushButton* m_importSliceButton{nullptr};
     QPushButton* m_importOpenVdbButton{nullptr};
     QPushButton* m_importOpenVdbCandidateButton{nullptr};
+    QPushButton* m_modelPreflightRecheckButton{nullptr};
+    QPushButton* m_modelPreflightCancelButton{nullptr};
     SliceTimingPanel* m_sliceTimingPanel{nullptr};
 
     PreviewWorkspace* m_previewWorkspace{nullptr};
@@ -129,5 +148,8 @@ private:
     ConfigEditorPanel* config_editor_panel_{nullptr};
     ChannelChartPanel* channel_chart_panel_{nullptr};
     MaterialProcessPanel* material_process_panel_{nullptr};
+    ModelPreflightPanel* m_modelPreflightPanel{nullptr};
     LogPanel* log_panel_{nullptr};
+    bool m_processBusy{false};
+    bool m_suppressPreflightStale{false};
 };

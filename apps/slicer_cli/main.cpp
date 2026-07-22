@@ -31,6 +31,7 @@ struct CliOptions
     bool experimental_openvdb_shell{false};
     bool openvdb_candidate_slice{false};
     bool benchmark_core_only{false};
+    bool openvdb_capability_json{false};
     std::string engine{"legacy"};
     std::string admission_mode{"strict_closed"};
     bool no_production_rgbwsv{true};
@@ -47,7 +48,8 @@ void PrintUsage()
         << "[--no-production-rgbwsv] [--experimental-report <path>]\n"
         << "       slicer_cli --config <path> --openvdb-candidate-slice\n"
         << "       slicer_cli --config <path> --benchmark-core-only "
-        << "--engine legacy|openvdb-candidate\n";
+        << "--engine legacy|openvdb-candidate\n"
+        << "       slicer_cli --openvdb-capability-json\n";
 }
 
 CliOptions ParseOptions(const int argc, char** argv)
@@ -89,6 +91,11 @@ CliOptions ParseOptions(const int argc, char** argv)
         if (arg == "--benchmark-core-only")
         {
             options.benchmark_core_only = true;
+            continue;
+        }
+        if (arg == "--openvdb-capability-json")
+        {
+            options.openvdb_capability_json = true;
             continue;
         }
         if (arg == "--engine" && i + 1 < argc)
@@ -387,6 +394,49 @@ int InspectModel(const std::filesystem::path& config_path)
     return 0;
 }
 
+int PrintOpenVdbCapabilityJson()
+{
+    slicer_core::OpenVdbStatus status = slicer_core::GetOpenVdbStatus();
+    std::string reason;
+    if (status.compiled_with_openvdb)
+    {
+        try
+        {
+            const slicer_core::OpenVdbSmokeResult smoke =
+                slicer_core::RunOpenVdbSmokeCase();
+            status = smoke.status;
+            status.runtime_available = smoke.executed
+                && smoke.status.runtime_available;
+            if (!status.runtime_available)
+            {
+                reason = smoke.warnings.empty()
+                    ? "OpenVDB runtime smoke did not execute"
+                    : smoke.warnings.front();
+            }
+        }
+        catch (const std::exception& error)
+        {
+            status.runtime_available = false;
+            reason = error.what();
+        }
+    }
+    else
+    {
+        reason = status.warnings.empty()
+            ? "slicer_cli was built with USE_OPENVDB=OFF"
+            : status.warnings.front();
+    }
+
+    slicer_core::Json::Object capability;
+    capability["schema"] = "slicesoft.openvdb_capability.12e_r4.1";
+    capability["compiledWithOpenVdb"] = status.compiled_with_openvdb;
+    capability["runtimeAvailable"] = status.runtime_available;
+    capability["version"] = status.version;
+    capability["reason"] = reason;
+    std::cout << slicer_core::Json{capability}.dump(2) << '\n';
+    return status.runtime_available ? 0 : 2;
+}
+
 std::string BuildTypeName()
 {
 #ifdef NDEBUG
@@ -645,6 +695,10 @@ int main(int argc, char** argv)
         {
             PrintUsage();
             return 0;
+        }
+        if (options.openvdb_capability_json)
+        {
+            return PrintOpenVdbCapabilityJson();
         }
         if (options.inspect_model)
         {
