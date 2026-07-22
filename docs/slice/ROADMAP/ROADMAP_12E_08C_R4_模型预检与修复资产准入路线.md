@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：IN PROGRESS / R4-01..05 COMPLETE / R4-06 EXTERNAL INPUT BLOCKED
+> 文档状态：IN PROGRESS / R4-01..05 COMPLETE / R4-06 DEVELOPMENT AUTHORIZED
 > 日期：2026-07-22
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
 
@@ -17,7 +17,7 @@ R4B Product Interaction & Positive Path
   R4-05 Clean OBJ/3MF Width/Material Matrix
 
 R4C Required Asset Admission
-  R4-06 Repaired Asset Intake and Attribute Audit
+  R4-06 Required Family Candidate Intake and Attribute Audit
   R4-07 Four-case Global/Release/Legacy Regression
   R4-08 08D GO/NO-GO Refresh
 ```
@@ -47,7 +47,7 @@ R4B 完成后，可以继续 12E-09A 的宽度和 Model Fill diagnostic UI；仍
 ## 4. R4C 退出标准
 
 ```text
-三个 required OBJ 均有外部修复或独立审计版本；
+爱神、玫瑰、梯田三个 required family 各至少一个 strict PASS 原始/外部修复/独立重建候选；
 身份、尺寸、姿态、UV、材质、纹理 provenance PASS；
 完整自相交和 post-strict PASS；
 四 case global full chain PASS；
@@ -56,7 +56,7 @@ legacy TIFF/RIP/Quick CI 回归闭环；
 R4-08 输出 GO 且用户明确授权。
 ```
 
-缺少任一修复资产时，R4C 保持 BLOCKED，不用正常 fixture 替代。
+缺少任一 required family 的 admitted 候选时，R4C 保持 BLOCKED，不用跨族正常 fixture 替代。
 
 R4-06 的原子级 intake manifest、provenance、属性差异、完整自相交和 post-strict 准入准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。该文档完成不等于外部资产已到位。

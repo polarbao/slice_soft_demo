@@ -1,6 +1,6 @@
 # DEV_12E-08C-R4 ModelPreflight 与 RepairAssetAdmission 设计
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：DEV / PREPARED
 > 日期：2026-07-21
 > 对应 PRD：PRD_12E_08C_R4_模型导入预检与修复资产准入.md
@@ -27,7 +27,7 @@ ModelPreflightCache
   -> key(source/resource/transform/options/algorithmVersion)
 
 RepairAssetAdmissionService
-  -> required identity registry
+  -> required family registry
   -> provenance/attribute diff
   -> post-strict evidence validator
 
@@ -171,8 +171,9 @@ requested 值越界时 clamp 到 effective 值并记录原因。
 
 ## 8. 修复资产准入
 
-`RepairAssetAdmissionService` 输入：原 case identity、原 source hash、修复模型、修复说明、工具/版本和可选
-人工审计记录。输出必须包括：
+`RepairAssetAdmissionService` 输入：required family identity、candidate kind、原 source hash、候选模型、修复说明、
+工具/版本和可选人工审计记录。`strict_pass_original` 可省略修复工具字段，但仍需来源 hash；
+`external_repaired/independently_rebuilt` 必须提供完整 provenance。输出必须包括：
 
 ```text
 new source/resource/geometry/attribute hash；
@@ -185,6 +186,9 @@ admittedForGlobal。
 ```
 
 任何未知属性映射、尺寸超阈值变化或 strict blocker 都返回 blocked，不覆盖原始模型和历史证据。
+同族任一候选可满足 family Gate，跨族 clean control 只能测试 intake 服务，不能增加
+`requiredFamilyPassCount`。具体替代规则见
+`../DOC/DOC_DECISION_12E_08C_R4_06_真实模型族准入替代规则.md`。
 
 ## 9. UI 集成
 

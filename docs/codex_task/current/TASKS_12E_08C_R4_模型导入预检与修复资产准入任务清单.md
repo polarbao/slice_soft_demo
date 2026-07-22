@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-05 COMPLETE / R4-06 CONTRACT READY / EXTERNAL INPUT BLOCKED
+> 当前原子任务：R4-05 COMPLETE / R4-06 DEVELOPMENT AUTHORIZED / REAL FAMILY MATRIX BLOCKED
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -102,16 +102,16 @@ schema、代码落点、验证命令和停止条件见
 
 ## 7. R4-06 Repaired Asset Intake
 
-状态：CONTRACT READY / EXTERNAL INPUT BLOCKED。
+状态：DEVELOPMENT AUTHORIZED / REAL FAMILY MATRIX BLOCKED。
 
-范围：三个 required OBJ 修复版本的 identity/provenance/attribute/post-strict 审计。
+范围：爱神、玫瑰、梯田三个 required family 候选的 identity/provenance/attribute/post-strict 审计。
 
 完成标准：每例具有原/新 hash、修复来源、属性 diff、完整自相交和 post-strict 证据。
 
 原子级准备已补齐：required 身份、intake manifest、属性/姿态/完整自相交准入、stable blocker、
 generated 合同测试和 R4-07/08 依赖见
 `docs/slice/DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。正常 clean 模型只作控制组，
-不得计入 required repair PASS。
+不得计入 required family PASS。当前三个 family 均为 0 PASS，因此服务实现可以开始，但 R4-07 不可启动。
 
 ## 8. R4-07 Four-case Release Gate
 

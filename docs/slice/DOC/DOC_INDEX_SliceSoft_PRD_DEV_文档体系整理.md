@@ -368,6 +368,7 @@ docs/slice/REPORT/REPORT_12E_08C_真实模型拓扑修复专项启动状态.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/slice/DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md
+docs/slice/DOC/DOC_DECISION_12E_08C_R4_06_真实模型族准入替代规则.md
 docs/slice/DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md
 docs/slice/DOC/DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md
 docs/slice/DOC/DOC_EXEC_12E_08C_R4_01_ModelPreflightContract结果.md

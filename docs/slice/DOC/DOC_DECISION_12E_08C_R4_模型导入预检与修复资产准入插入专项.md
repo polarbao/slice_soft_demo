@@ -4,6 +4,9 @@
 > 日期：2026-07-21
 > 插入位置：12E-08C-R3-04 与 12E-08D 之间
 
+> 2026-07-22 修订：固定文件身份条款已由
+> `DOC_DECISION_12E_08C_R4_06_真实模型族准入替代规则.md` 更新为爱神/玫瑰/梯田三个模型族准入。
+
 ## 1. 背景
 
 12E 的业务目标仍是完整实现 `Texture Surface Layer` 与 `Model Fill Layer` 的互补分区、宽度连续调节、
@@ -28,11 +31,11 @@ legacy 仍可兼容处理部分非闭合或自相交输入；
 
 ```text
 正向开发路线：使用 strict PASS 的闭合 OBJ/3MF fixture 继续验证宽度、全纹理和材料分区；
-真实准入路线：保留 nai_you/aishen/meigui required 身份，接收外部人工修复或独立审计重建后的资产，
-              重新执行 hash、属性、完整自相交、post-strict 和 global full chain。
+真实准入路线：保留 aishen/meigui/titian required family 身份，接收同族 strict PASS 原始资产、外部人工
+              修复或独立审计重建资产，重新执行 hash、属性、完整自相交、post-strict 和 global full chain。
 ```
 
-正常模型可以推进功能开发，但不得替代三个 required 真实模型取得生产 GO。
+跨族正常模型可以推进功能开发，但不得替代三个 required 真实模型族取得生产 GO。
 
 ## 3. 不立即实现通用复杂重建器
 
@@ -83,7 +86,7 @@ p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print 不变。
 
 ```text
 R4-01..05 完成预检、准入和正向 fixture；
-R4-06 完成三个 required 修复资产接收与属性审计；
+R4-06 完成三个 required family 候选接收合同，且每族至少一个真实候选通过时才解除 family blocker；
 R4-07 四 case strict/global/Release 全链通过；
 R4-08 输出 GO；
 Quick CI baseline 已解决或显式批准；
@@ -94,4 +97,3 @@ Quick CI baseline 已解决或显式批准；
 
 正向结果：用户在导入时即可知道模型是否能走当前模式；正常模型可继续推动 12E UI/分区；生产 Gate
 不再依赖口头判断。代价是 12E-08D 继续延后，且三个真实模型仍需外部修复资产或未来独立重建专项。
-

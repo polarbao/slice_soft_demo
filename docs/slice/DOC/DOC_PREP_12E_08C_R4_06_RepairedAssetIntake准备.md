@@ -1,26 +1,30 @@
 # DOC_PREP_12E-08C-R4-06 Repaired Asset Intake 准备
 
-> 文档状态：CONTRACT READY / EXTERNAL INPUT BLOCKED
+> 文档状态：READY FOR DEVELOPMENT / REAL FAMILY INPUT BLOCKED
 > 日期：2026-07-22
 > 前置任务：R4-01..05 COMPLETE
 > 生产边界：只接收和审计修复资产，不直接写生产 TIFF/package
 
 ## 1. 任务目标
 
-R4-06 接收 `nai_you/aishen/meigui` 三个 required OBJ 的外部修复版本，证明修复前后身份、几何、姿态、
-UV、材质和纹理来源可追溯，并执行完整自相交与 post-strict 审计。
+R4-06 接收 `aishen/meigui/titian` 三个 required 真实模型族的候选，证明候选身份、几何、姿态、UV、
+材质和纹理来源可追溯，并执行完整自相交与 post-strict 审计。候选可以是 strict PASS 原始资产、外部修复
+资产或独立审计重建资产。
 
-R4-06 不负责通用复杂自相交重建。没有真实修复输入时保持 blocked，不使用正常模型伪造“修复后 PASS”。
+R4-06 不负责通用复杂自相交重建。没有真实 family PASS 输入时保持 blocked，不使用跨族正常模型伪造
+required family PASS。
 
-## 2. Required 输入身份
+## 2. Required family 身份
 
-| Case ID | 原始资产 | 当前结论 |
+| Family ID | 候选目录 | 当前结论 |
 |---|---|---|
-| `required_nai_you` | `model/obj/nai_you_new/MF_nai_you.obj` | confirmed self-intersection，需重建 |
-| `required_aishen` | `model/obj/aishen_fudiao/MF_aishen_damuzhi_L_tx02.obj` | boundary/non-manifold/self-intersection，需重建 |
-| `required_meigui` | `model/obj/meigui_fudiao/04.obj` | non-manifold/opposite duplicate/self-intersection，需重建 |
+| `required_aishen_family` | `model/obj/aishen_fudiao/*.obj` | 5/5 confirmed self-intersection，0 PASS |
+| `required_meigui_family` | `model/obj/meigui_fudiao/*.obj` | 3/3 confirmed self-intersection，0 PASS |
+| `required_titian_family` | `model/obj/titian_fudiao/*.obj` | 1/1 confirmed self-intersection，0 PASS |
 
-修复资产必须保留对应 Case ID 和原始资产 hash，不允许改用 `xiao_ma/yecan` 等 clean 模型替代。
+候选必须保留对应 Family ID 和来源资产 hash，不允许改用 `xiao_ma/yecan` 等跨族 clean 模型替代。
+`nai_you_new/MF_nai_you.obj` 保留为历史负向回归，但不再计入 required family。替代规则见
+`DOC_DECISION_12E_08C_R4_06_真实模型族准入替代规则.md`。
 
 ## 3. Clean 模型的边界
 
@@ -32,7 +36,8 @@ intake 服务的正向/负向控制；
 R4-05 已完成的 width/material 正向证据。
 ```
 
-它们本身无需修复，因此不得计入 `requiredRepairPassCount`，也不得解除 R4-06..08 blocker。
+它们本身无需修复且不属于 required family，因此不得计入 `requiredFamilyPassCount`，也不得解除
+R4-06..08 blocker。
 `yecan/4.obj` 仍是未跟踪用户资产，不进入 CI 或提交。
 
 ## 4. Intake Manifest 合同
@@ -43,12 +48,12 @@ R4-05 已完成的 width/material 正向证据。
 slicesoft.repaired_asset_intake.12e_08c_r4.1
 ```
 
-每个 required case 必须提供：
+每个 required family candidate 必须提供：
 
 ```text
-caseId；
+familyId/candidateId/candidateKind；
 original.path/sourceHash/resourceHash；
-repaired.path/sourceHash/resourceHash；
+candidate.path/sourceHash/resourceHash；
 provenance.provider/tool/toolVersion/operationSummary/timestamp/operator；
 coordinate.unit/handedness/upAxis/transform；
 geometry.triangleCount/componentCount/bbox/volume；
@@ -65,11 +70,11 @@ admission.status/reasonCodes。
 
 ## 5. 准入规则
 
-单 case 只有同时满足下列条件才能 `admitted=true`：
+单 candidate 只有同时满足下列条件才能 `admitted=true`：
 
 ```text
-原始身份与清单一致；
-修复 provenance 完整；
+family 身份与清单一致；
+`strict_pass_original` 具有来源 hash；修复/重建 candidate 的 provenance 完整；
 文件和所有外部资源可读取；
 最终 transform 后单位、姿态和尺寸在批准容差内；
 材质槽、UV 和纹理引用未丢失，或差异有显式批准；
@@ -106,22 +111,22 @@ intake 逻辑塞回 importer、legacy slicer 或 Qt UI。
 
 | Case | 输入 | 预期 |
 |---|---|---|
-| clean control | 已跟踪 `xiao_ma` 主 OBJ | rejected as repaired-required / clean control PASS |
+| clean control | 已跟踪 `xiao_ma` 主 OBJ | rejected as required-family / clean control PASS |
 | missing provenance | generated manifest | BLOCKED / stable code |
 | original hash mismatch | generated manifest | BLOCKED / stable code |
 | missing texture | generated fixture | BLOCKED / stable code |
 | incomplete audit | generated fixture | BLOCKED / stable code |
-| each repaired required OBJ | 外部输入 | post-strict + attribute + repeatability PASS |
+| each required family candidate | 原始 PASS/外部修复/独立重建 | post-strict + attribute + repeatability PASS |
 
-真实 required case 缺失时，单元合同测试可以运行，但 R4-06 阶段状态必须保持
-`EXTERNAL INPUT BLOCKED`，不得标记 COMPLETE。
+真实 required family PASS 缺失时，单元合同测试和服务开发可以完成，但 R4-06 真实矩阵状态必须保持
+`REAL FAMILY INPUT BLOCKED`，不得把 R4-07 标记为可执行。
 
 ## 8. R4-07 与 R4-08 准备度
 
 | 任务 | 准备度 | 启动条件 |
 |---|---|---|
-| R4-06 | CONTRACT READY / EXTERNAL INPUT BLOCKED | 三个 required 修复资产和 provenance 到位 |
-| R4-07 | DEPENDENCY PREPARED / WAIT R4-06 | 三个 case 全部 admitted，再运行四 case Release/global/legacy 矩阵 |
+| R4-06 | READY FOR DEVELOPMENT / REAL FAMILY INPUT BLOCKED | 实现 intake；三个 family 各至少一个 candidate admitted |
+| R4-07 | DEPENDENCY PREPARED / WAIT R4-06 FAMILY MATRIX | 三个 family 全部 admitted，再运行四 case Release/global/legacy 矩阵 |
 | R4-08 | DEPENDENCY PREPARED / WAIT R4-07 | 四 case、预算、legacy TIFF/RIP 和 Quick CI 证据齐全 |
 
 R4-07 的第四个 case 继续使用闭合 Texture2D 3MF。R4-08 只刷新 12E-08D GO/NO-GO，不在决策任务中
@@ -130,8 +135,8 @@ R4-07 的第四个 case 继续使用闭合 Texture2D 3MF。R4-08 只刷新 12E-0
 ## 9. 当前停止条件
 
 ```text
-三个 required 外部修复资产未到位：不启动真实 intake 开发验收；
-要求用 clean 模型替代 required 身份：停止；
+三个 required family 没有 admitted candidate：不启动 R4-07；
+要求用跨族 clean 模型替代 required family：停止；
 要求放宽 strict 或接受 sampled/incomplete 审计：停止；
 要求覆盖原模型或提交用户未跟踪资产：停止；
 需要改变 TIFF/RIP 协议或写 global production package：停止；

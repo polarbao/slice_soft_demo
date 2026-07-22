@@ -2,7 +2,7 @@
 
 > 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4-01..05 COMPLETE / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-22
-> 当前项目原子任务：12E-08C-R4-05 COMPLETE / R4-06 EXTERNAL INPUT BLOCKED
+> 当前项目原子任务：12E-08C-R4-05 COMPLETE / R4-06 DEVELOPMENT AUTHORIZED / FAMILY MATRIX 0/3
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -450,7 +450,7 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 
 ### 11.3 12E-08C-R4 模型导入预检与修复资产准入
 
-状态：IN PROGRESS；R4-01..05 COMPLETE，R4-06 CONTRACT READY / EXTERNAL INPUT BLOCKED；插入于 R3-04 NO-GO 与 08D 之间。
+状态：IN PROGRESS；R4-01..05 COMPLETE，R4-06 DEVELOPMENT AUTHORIZED / REAL FAMILY MATRIX 0/3；插入于 R3-04 NO-GO 与 08D 之间。
 
 目标：
 
@@ -458,7 +458,7 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 导入模型先执行 fast/full preflight；
 按 legacy/global 能力输出模式相关 admission；
 正常闭合模型继续推进 width/material/UI 正向验证；
-三个 required OBJ 保留身份并接收外部修复资产审计；
+爱神、玫瑰、梯田三个 required family 各接收 strict PASS 原始/外部修复/独立重建候选审计；
 全局 blocker fail-closed，不 silent fallback，不写 production TIFF。
 ```
 
@@ -475,8 +475,8 @@ R4-07 Four-case Release Gate；
 R4-08 08D GO/NO-GO Refresh。
 ```
 
-R4-01..05 可在现有仓库输入上执行；R4-06..08 依赖三个 required OBJ 的外部修复版本。正常模型不能替代
-required 模型解除生产阻断。
+R4-01..05 可在现有仓库输入上执行；R4-06 服务开发可继续。R4-07..08 依赖三个 required family 各至少
+一个 admitted candidate；跨族正常模型不能替代 required family 解除生产阻断。
 
 准备入口：
 

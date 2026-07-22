@@ -1,6 +1,6 @@
 # DEMO_12E-08C-R4 模型预检与修复资产准入验证方案
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：DEMO / PREPARED
 > 日期：2026-07-21
 
@@ -20,10 +20,11 @@
 | self_intersection_obj | 自相交 | WARN | BLOCK | fail-closed |
 | missing_texture_obj | 资源缺失 | 按 fallback 规则 | 按 fallback 规则 | 资源策略 |
 | non_finite_obj | 非有限坐标 | BLOCK | BLOCK | 导入 fatal |
-| nai_you/aishen/meigui original | required 真实 OBJ | WARN | BLOCK | 历史 blocker |
-| repaired required assets | 外部输入 | 待审计 | 必须 strict PASS | R4-06 后输入 |
+| nai_you original | 历史负向 OBJ | WARN | BLOCK | 保留历史 blocker 回归 |
+| aishen/meigui/titian family original | required 真实 OBJ 族 | WARN | BLOCK | 当前 family blocker |
+| admitted required family candidates | 原始 PASS/外部修复/独立重建 | 待审计 | 必须 strict PASS | R4-06 后输入 |
 
-正常 fixture 只增加正向覆盖，不能替代 required case。
+正常 fixture 只增加正向覆盖，不能替代 required family。
 
 ## 3. 一键 UI 流程
 
@@ -90,10 +91,10 @@ C/M/Y/K material role -> active profile resolved RGB/W/V；
 
 ## 6. 修复资产审计
 
-每个 repaired required case 必须验证：
+每个 required family candidate 必须验证：
 
 ```text
-原 caseId 保留；
+familyId 和 candidateKind 保留；
 原/新 source hash 同时存在；
 修复来源和工具版本存在；
 bounds/scale/component 差异在批准阈值；
@@ -118,6 +119,6 @@ Quick CI baseline 必须有明确 PASS 或批准记录。
 
 ## 8. 完成判定
 
-R4-01..05 可在没有 repaired required assets 时完成。R4-06..08 只有在三个修复资产实际可用并通过上述
-验证后完成；否则阶段状态为 `PRECHECK READY / PRODUCTION BLOCKED`，不能输出 08D GO。
-
+R4-01..05 可在没有 admitted required family assets 时完成。R4-06 服务合同可先完成；R4-07..08 只有在
+爱神、玫瑰、梯田三个 family 各至少一个候选通过上述验证后完成。否则阶段状态为
+`INTAKE IMPLEMENTED / REAL FAMILY BLOCKED`，不能输出 08D GO。

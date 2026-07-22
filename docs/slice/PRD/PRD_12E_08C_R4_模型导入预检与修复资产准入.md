@@ -1,6 +1,6 @@
 # PRD_12E-08C-R4 模型导入预检与修复资产准入
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：PRD / PREPARED
 > 日期：2026-07-21
 > 对应决策：DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md
@@ -10,7 +10,8 @@
 1. 模型导入后先完成可解释预检，再允许用户启动当前切片模式。
 2. legacy 与 global 使用同一诊断事实，但按各自能力计算准入结果。
 3. 正常模型可以继续验证 Texture Surface/Model Fill，不用等待损坏模型修复。
-4. 三个 required 真实模型仍需修复后重新审计，不能被其他模型替换。
+4. 爱神、玫瑰、梯田三个 required 真实模型族各至少一个资产必须通过完整 strict 审计；同族文件可替代，
+   跨族 clean fixture 不可替代。
 5. UI、CLI、report 使用同一预检结果，不产生相互矛盾的状态。
 
 ## 2. 用户故事
@@ -64,8 +65,9 @@ legacy/global 模式时复用 fresh 的共享几何诊断，但必须立即重�
 
 ### FR-05 正常模型与 required 模型治理
 
-新增 clean fixture 可以作为正向功能与 UI 验收；三个 required OBJ 的 caseId 不变，修复版本通过新的
-source hash 关联，不能删除原始失败证据。
+新增 clean fixture 可以作为正向功能与 UI 验收。required identity 使用
+`required_aishen_family/required_meigui_family/required_titian_family`；原始 strict PASS、外部修复或独立重建
+资产均可作为同族候选，但必须通过内容 hash、属性和 post-strict 审计，且不能删除原始失败证据。
 
 ### FR-06 复杂重建边界
 
@@ -112,7 +114,7 @@ Model Fill 材料显示用户名称和 resolved material role。
 3. legacy 对同一问题给出兼容警告或 fatal 阻断，并在报告中可追溯。
 4. clean OBJ/3MF 正向矩阵证明最小宽度至全纹理的互补不变量。
 5. C/M/Y/K 选择不改变 RGBWSV 通道数，并能在 effective config 中看到解析结果或不可用原因。
-6. 修复资产未通过属性/post-strict 时不能解除 required-case blocker。
+6. 任一 required family 没有通过属性/post-strict 的获准资产时，不能解除 required-family blocker。
 
 ## 6. 非目标
 
@@ -121,6 +123,6 @@ Model Fill 材料显示用户名称和 resolved material role。
 不自动上传模型到外部服务；
 不引入新 TIFF 通道或改变协议；
 不让普通用户选择 OpenVDB/CPU backend；
-不以正常 fixture 替换 required 真实模型；
+不以跨族正常 fixture 替换 required 真实模型族；
 不自动从 global 回退 legacy。
 ```

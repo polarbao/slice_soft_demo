@@ -103,6 +103,7 @@
 | `DOC/DOC_SCHEMA_12E_DualSlicePipelineConfig.md` | `slicePipeline.mode` 配置、校验、错误码和统一 TIFF 输出契约 |
 | `DOC/DOC_PREP_12E_08D_双模式生产写包准备.md` | 12E-08D Router、global adapter、共享 writer 和验证原子任务准备 |
 | `DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入插入专项.md` | R3-04 NO-GO 后插入预检、正常模型正向链和 required 修复资产准入的决策 |
+| `DOC/DOC_DECISION_12E_08C_R4_06_真实模型族准入替代规则.md` | R4-06 required identity 从固定文件调整为爱神/玫瑰/梯田三个真实模型族的决策 |
 | `DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md` | R4-01 启动依赖、停止条件和验证层级 |
 | `DOC/DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md` | R4-01 backend-neutral DTO、cache identity、report golden 和定向验证准备 |
 | `DOC/DOC_EXEC_12E_08C_R4_01_ModelPreflightContract结果.md` | R4-01 ModelPreflight 合同、cache key、schema/golden 与验证结果 |
@@ -121,7 +122,7 @@
 | `DEMO/DEMO_12E_08C_R4_模型预检与修复资产准入验证方案.md` | 一键入口、模式差异、width/material 正向矩阵与修复资产验证 |
 | `ROADMAP/ROADMAP_12E_08C_R4_模型预检与修复资产准入路线.md` | R4A/R4B/R4C 与 08D/09/10 依赖路线 |
 | `REPORT/REPORT_12E_08C_R4_模型预检与修复资产准入准备状态.md` | R4 文档完备度、可执行任务、外部输入阻断和下一任务 |
-| `REPORT/REPORT_12E_08C_R4_模型资产预检清单.md` | `model` 目录 15 个 OBJ/3MF 的 strict、完整自相交与无需重建准入结果 |
+| `REPORT/REPORT_12E_08C_R4_模型资产预检清单.md` | `model` 目录 21 个 OBJ/3MF 的 strict、完整自相交与无需重建准入结果 |
 | `DOC/DOC_DECISION_12E_08C_R1_R2_R3_真实模型拓扑修复前置专项.md` | 在 12E-08D 前插入显式 repair-then-strict 专项的正式决策 |
 | `PRD/PRD_12E_08C_真实模型拓扑修复与严格准入.md` | 真实模型自动/人工修复、属性保持和严格准入需求 |
 | `DEV/DEV_12E_08C_MeshRepairThenStrict设计.md` | Mesh Repair 服务、哈希、属性映射和 post-strict 技术设计 |
