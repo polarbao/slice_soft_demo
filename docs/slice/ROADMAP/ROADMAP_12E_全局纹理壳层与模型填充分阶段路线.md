@@ -3,7 +3,7 @@
 > 文档状态：ROADMAP / Stage 12E Planning
 > 日期：2026-07-16
 > 更新日期：2026-07-21
-> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3 COMPLETE；R3-04 NO-GO；R4-01..02 COMPLETE；R4-03 PREPARATION
+> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3 COMPLETE；R3-04 NO-GO；R4-01..02 COMPLETE；R4-03 READY
 
 ## 1. Goal
 
@@ -14,7 +14,7 @@
 ```text
 1. 12D-R0/R1/R2/R3 已完成；
 2. 12E-R0 的 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；
-3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3 已完成；R3-04 因真实 OBJ topology 输出 NO-GO；R4-01..02 COMPLETE，R4-03 准备收口，12E-08D 继续阻断；
+3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3 已完成；R3-04 因真实 OBJ topology 输出 NO-GO；R4-01..02 COMPLETE，R4-03 READY，12E-08D 继续阻断；
 4. 12E composer/production 接入需要已完成的 12D semantic_masks exact contract；
 5. 不要求 12D repair R3 完成后才能做 12E R1 算法原型，但 production admission 必须重新确认；
 6. 12E-01 已完成配置、DTO、稳定错误码和 unavailable report 骨架；未接入 production generation。
@@ -186,7 +186,7 @@ production gate 失败时不写生产包。
 | 阶段 | 工作 | Gate |
 |---|---|---|
 | 12E-08C-R1/R2/R3 | 真实模型 repair-then-strict、属性保持、完整自相交证据、Release 预算 | COMPLETE；R3-04 NO-GO |
-| 12E-08C-R4-01..05 | 模型预检、模式准入、Qt 阻断和正常模型正向矩阵 | R4-01..02 COMPLETE；R4-03 准备收口；不解除 required Gate |
+| 12E-08C-R4-01..05 | 模型预检、模式准入、Qt 阻断和正常模型正向矩阵 | R4-01..02 COMPLETE；R4-03 READY；不解除 required Gate |
 | 12E-08C-R4-06..08 | 修复资产 intake、四 case Release 与 GO/NO-GO | 等待外部修复 required OBJ |
 | 12E-08D-01 | `slicePipeline.mode`、DTO、validator、Router 与 fail-closed | 省略字段兼容 legacy；非法值拒绝；无静默回退 |
 | 12E-08D-02 | global classification 到现有生产层 DTO 的 adapter | 通道和 material closure 语义完整 |

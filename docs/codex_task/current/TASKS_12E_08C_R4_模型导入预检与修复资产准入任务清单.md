@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-03 PREPARATION
+> 当前原子任务：R4-03 READY / WAIT EXPLICIT EXECUTION
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -45,11 +45,15 @@ global_surface_shell 继续 diagnostic-only，直到 08D GO；
 
 ## 4. R4-03 Mode Admission and Pipeline Gate
 
-状态：PREPARED / DETAIL REVIEW REQUIRED。
+状态：READY / WAIT EXPLICIT EXECUTION。
 
 范围：legacy/global admission policy、CLI facade、两个 pipeline 入口的 fail-closed/no-fallback 守门。
 
 完成标准：同一 self-intersection 模型得到 legacy warning/global blocked；global 核心和 writer 均未启动。
+
+准备结果：模式准入矩阵、backend capability 语义、pipeline gate/CLI 插入点、no-fallback/no-writer 断言、
+fixture 和验证命令已冻结。详见
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_03_ModeAdmission与PipelineGate准备.md`。
 
 ## 5. R4-04 Qt Preflight UI
 

@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01..02 COMPLETE / R4-03 PREPARATION
+> 文档状态：IN PROGRESS / R4-01..02 COMPLETE / R4-03 READY
 > 日期：2026-07-21
 
 ## 1. 阶段结论
@@ -56,7 +56,7 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-03 Mode Admission and Pipeline Gate` 准备收口。
+`12E-08C-R4-03 Mode Admission and Pipeline Gate` 已完成准备，等待用户明确启动代码实现。
 
 ## 7. 模型资产准备结果
 
@@ -92,3 +92,12 @@ ModelPreflight DTO、稳定错误码、双模式 admission、cache identity/key�
 Debug 全量构建和相关 CTest 通过。Quick CI 仍停在既有
 `material_process_top2 widthPx expected=48 actual=226` golden。详细证据见
 `../DOC/DOC_EXEC_12E_08C_R4_02_TwoStagePreflightService结果.md`。
+
+## 11. R4-03 准备结果
+
+已冻结 shared fatal、legacy warning/global blocked 的拓扑差异、backend unavailable、未知 error fail-closed、
+稳定 code 排序和 `productionOutputWritten=false` 语义；同时明确 CLI/pipeline gate 必须在 global core、staging
+目录和 writer 之前阻断，且任何 global 失败不得自动回退 legacy。
+
+R4-03 达到 `READY FOR DEVELOPMENT`。详细准备见
+`../DOC/DOC_PREP_12E_08C_R4_03_ModeAdmission与PipelineGate准备.md`。
