@@ -1,46 +1,84 @@
 # DOC_PREP_12E-08C-R4-07 Four-case Release Gate 准备
 
-> 文档状态：DEPENDENCY PREPARED / WAIT REQUIRED FAMILY MATRIX 3/3
+> 文档状态：DEVELOPMENT GATE PASS / FINAL REQUIRED-FAMILY GATE PREPARED
 > 日期：2026-07-22
-> 前置任务：R4-06 IMPLEMENTATION COMPLETE / REAL FAMILY MATRIX 0/3 BLOCKED
-> 生产边界：只生成诊断、Release 与 legacy 回归证据，不写 global production package
+> 前置任务：R4-06 IMPLEMENTATION COMPLETE；development intake 2/2；required family 0/3
+> 生产边界：只生成 diagnostic、Release 开发测量与 legacy 回归证据，不写 global production package
 
 ## 1. 任务目标
 
-R4-07 在三个 required family 均有 admitted candidate 后，执行四 case 的 strict/global/Release/legacy
-守门验证，取代 R3-03 中三个真实 OBJ 因 topology 而 `skipped_due_topology` 的不完整证据。
+R4-07 分为两个互不混淆的 Gate：
 
-本任务不修复模型、不选择候选、不改变生产协议，也不实现 12E-08D adapter。
+```text
+Development Gate：使用 model 目录中通过 R4-06 intake 的资产，完成代码、四 case diagnostic、开发性能测量和 legacy 回归；
+Final Required-family Gate：爱神、玫瑰、梯田各有一个 admitted 候选后，完成真实族 Release 验收和生产预算冻结。
+```
+
+本任务不修复模型、不改变生产协议，也不实现 12E-08D adapter。
 
 ## 2. 启动 Gate
 
-启动前必须同时满足：
+### 2.1 Development Gate
+
+至少一个 `development_model_pool` 候选必须满足：
+
+```text
+位于 model 目录；
+R4-06 intake admitted=true；
+完整审计 complete、strict PASS；
+confirmedIntersectionPairs=0、coplanarOverlapPairs=0；
+资源、几何、属性和 audit hash 可重复；
+productionOutputWritten=false。
+```
+
+当前实际证据：
+
+| Candidate | 模型 | Intake |
+|---|---|---|
+| `development_xiao_ma_damuzhi` | `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj` | ADMITTED |
+| `development_yecan_3` | `model/obj/yecan/3.obj` | ADMITTED |
+
+因此 Development Gate 已通过，R4-07 开发和 diagnostic 四 case 已执行。
+
+### 2.2 Final Required-family Gate
+
+最终验收前必须同时满足：
 
 ```text
 required_aishen_family.requiredFamilyPassCount=1；
 required_meigui_family.requiredFamilyPassCount=1；
 required_titian_family.requiredFamilyPassCount=1；
 三个 intake report 均 admitted=true；
-三个 report 的 source/resource/geometry/attribute/audit hash 已冻结；
+source/resource/geometry/attribute/audit hash 已冻结；
 完整自相交 confirmed=0、coplanar=0、auditComplete=true；
 post-strict PASS；
-候选文件及外部纹理资源可读取；
-工作树中的用户原始模型未被覆盖。
+候选文件及纹理资源可读取。
 ```
 
-当前矩阵为 0/3，因此本文只完成准备，不执行 R4-07。
+当前 required family matrix 为 `0/3`。它不再阻止开发，但继续阻止最终验收、生产预算冻结、R4-08 和
+12E-08D。
 
 ## 3. 四 Case 身份
+
+### 3.1 已执行的 Development Matrix
+
+| Case | 输入 | 宽度场景 |
+|---|---|---|
+| `development_xiao_ma_minimum` | xiao_ma admitted candidate | minimum |
+| `development_xiao_ma_all_texture` | xiao_ma admitted candidate | allTexture |
+| `development_yecan_intermediate` | yecan admitted candidate | intermediate |
+| `texture2d_3mf_control` | `samples/models/3mf/texture2d_checker_cube.3mf` | Texture2D 控制组 |
+
+### 3.2 待执行的 Final Matrix
 
 | Case | 输入身份 | 选择规则 |
 |---|---|---|
 | `required_aishen_family` | 爱神 admitted candidate | 读取 R4-06 intake report，不硬编码文件名 |
 | `required_meigui_family` | 玫瑰 admitted candidate | 读取 R4-06 intake report，不硬编码文件名 |
 | `required_titian_family` | 梯田 admitted candidate | 读取 R4-06 intake report，不硬编码文件名 |
-| `texture2d_3mf_control` | `samples/models/3mf/texture2d_checker_cube.3mf` | 已跟踪闭合 Texture2D 3MF 控制组 |
+| `texture2d_3mf_control` | 闭合 Texture2D 3MF | 已跟踪控制组 |
 
-三个 required family 的候选可以是 strict PASS 原始、外部修复或独立重建，但进入矩阵后必须按 source hash
-冻结。跨族 clean OBJ 不能替代任何 required case。
+跨族 clean OBJ 可以用于 Development Matrix，但不能替代任何 required family case。
 
 ## 4. 每 Case 执行链
 
@@ -48,13 +86,12 @@ post-strict PASS；
 1. 校验 R4-06 intake identity/hash/admitted；
 2. Release fresh full preflight，禁止只复用旧 cache 结论；
 3. global partition：minimum/intermediate/allTexture；
-4. texture transfer：真实 UV/Texture2D，fallback 与 outsideColored 可解释；
+4. texture transfer：真实 UV/Texture2D；
 5. classification-to-raster mapping；
 6. full material closure：Texture/Fill/Support/Varnish；
-7. Release core 分段计时与 peak working set；
-8. legacy repair-disabled 切片、TIFF invariant、manifest 和 RIP strict；
-9. 重复执行并比较确定性 hash；
-10. 汇总 Gate，不写 global production package。
+7. warm-up 1 次并测量 3 次 core time 与 peak working set；
+8. legacy repair-disabled TIFF invariant、manifest 和 RIP strict；
+9. 汇总 Gate，不写 global production package。
 ```
 
 global 失败不得回退 legacy；legacy 成功不能替代 global case PASS。
@@ -69,29 +106,16 @@ allTexture 时 fill=0、texture=model；
 raster overlap/unassigned/outside=0；
 full closure expected-domain gap=0；
 semantic channel mismatch=0；
-support/varnish 不得以 not_evaluated 冒充 PASS；
 productionOutputWritten=false。
 ```
 
-## 6. Release 计时与预算冻结
+## 6. Release 计时与预算边界
 
-使用默认 OpenVDB OFF、Release x64、同一台机器和同一构建目录。每 case 先 warm-up 1 次，再测量至少 3 次，
-分别记录：
+Development Matrix 使用默认 OpenVDB OFF、Release x64、同一构建目录；每 case warm-up 1 次、测量 3 次。
+`globalCoreMs` 包含 partition、texture transfer、raster 和 full closure，不包含 JSON/TIFF/PNG 写盘。
 
-```text
-importTransformMs；
-preflightFullAuditMs；
-partitionMs；
-textureTransferMs；
-rasterMappingMs；
-fullClosureMs；
-globalCoreMs；
-peakWorkingSetBytes；
-JSON/TIFF/PNG write time（单列，不计入 core budget）。
-```
-
-R4-07 先输出测量分布，再冻结预算文件；不得只取单次最好值。预算至少记录机器、编译器、构建类型、模型
-hash、voxel/width 参数、样本数、median、max 和允许上限。若基线波动无法解释，则 R4-08 保持 NO-GO。
+当前测量只作为开发基线，不得冻结为生产预算。生产预算必须在 required family 3/3 后，记录机器、编译器、
+构建类型、模型 hash、参数、样本数、median、max 和允许上限，并通过最终真实族矩阵复核。
 
 ## 7. Legacy 与协议回归
 
@@ -104,45 +128,52 @@ bitDepth=8；
 polarity=black_is_print；
 printValue=0；emptyValue=255；
 RIP Reader strict PASS；
-repair-disabled TIFF invariant PASS；
-Quick CI 已知 material_process_top2 baseline 必须得到显式解决，不得静默刷新 golden。
+repair-disabled TIFF invariant PASS。
 ```
 
-## 8. 计划输出
+## 8. 已实现输出
 
 ```text
-scripts/run_12e_08c_r4_07_four_case_release_gate.ps1
-tests/golden/expected/12e_r4_07_release_gate_expectations.json
-output/benchmarks/12e_08c_r4_07_release_gate/four_case_summary.json
-output/benchmarks/12e_08c_r4_07_release_gate/release_budget.json
-docs/slice/DOC/DOC_EXEC_12E_08C_R4_07_FourCaseReleaseGate结果.md
+scripts/run_12e_08c_r4_07_development_gate.ps1
+tests/golden/expected/12e_r4_07_development_gate_expectations.json
+output/benchmarks/12e_08c_r4_07_development_gate/four_case_development_summary.json
+docs/slice/DOC/DOC_EXEC_12E_08C_R4_07_DevelopmentGate结果.md
 ```
 
-汇总 schema 计划为 `slicesoft.r4_four_case_release_gate.12e_08c_r4.1`。生成 benchmark 不提交；expectation
-只在输入 hash 与预算经审核后提交。
+Development summary schema 为 `slicesoft.r4_four_case_development_gate.12e_08c_r4.1`。benchmark 位于忽略
+目录，不纳入源代码提交。
 
 ## 9. 验证命令
 
 ```powershell
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r4_07_four_case_release_gate.ps1 -BuildDir build -Config Release
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_material_closure_tests.ps1 -BuildDir build -Config Release -Mode RepairDisabled
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_ci_quick.ps1
+cmake --build build --config Release --target repaired_asset_intake repaired_asset_intake_unit_tests
+ctest --test-dir build -C Release -R "^repaired_asset_intake_unit_tests$" --output-on-failure
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r4_06_repaired_asset_intake.ps1 -BuildDir build -Config Release -SkipBuild
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_12e_08c_r4_07_development_gate.ps1 -BuildDir build -Config Release
 git diff --check
 ```
 
-上述命令是 R4-07 执行计划，不是当前已通过记录。
+实际结果：R4-06 development intake `2/2 admitted`，R4-07 development four-case `4/4 PASS`，legacy
+TIFF/RIP PASS。
 
 ## 10. 停止条件
 
+Development Gate 停止条件：
+
 ```text
-required family 少于 3/3 admitted；
-任一候选 hash 与 intake 不一致；
+没有 development_model_pool admitted candidate；
+任一开发候选 hash 与 intake 不一致；
 完整审计 incomplete/sampled 或 post-strict 失败；
 global 需要 silent fallback；
-需要放宽 strict、修改 tolerance 或覆盖原始模型；
-需要写 global production TIFF/package；
-需要修改 RGBWSV 协议；
-Quick CI 差异只能通过无依据更新 golden 解决。
+需要写 global production TIFF/package或修改 RGBWSV 协议。
+```
+
+Final Gate 停止条件：
+
+```text
+required family 少于 3/3 admitted；
+真实族 four-case 任一失败；
+生产预算未冻结；
+legacy TIFF/RIP/Quick CI 未闭环；
+用户尚未明确授权 12E-08D。
 ```

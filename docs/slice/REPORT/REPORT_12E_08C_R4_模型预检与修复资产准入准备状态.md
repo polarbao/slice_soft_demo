@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01..06 IMPLEMENTATION COMPLETE / FAMILY MATRIX 0/3 BLOCKED
+> 文档状态：IN PROGRESS / R4-07 DEVELOPMENT COMPLETE / FINAL FAMILY MATRIX 0/3 BLOCKED
 > 日期：2026-07-22
 
 ## 1. 阶段结论
@@ -31,6 +31,7 @@ R4-03 Mode Admission/Pipeline Gate；
 R4-04 Qt Preflight UI；
 R4-05 Clean Positive Matrix。
 R4-06 Required Family Candidate Intake 候选审计（软件实现已完成）。
+R4-07 Development Gate（development intake 与四 case 已完成）。
 ```
 
 这些任务不要求先取得三个 family PASS 模型，但不得写 global production package。
@@ -39,8 +40,8 @@ R4-06 Required Family Candidate Intake 候选审计（软件实现已完成）�
 
 ```text
 R4-06 真实矩阵：等待三个 required family 各一个 admitted candidate；
-R4-07：等待 R4-06 family matrix 3/3；
-R4-08：等待四 case Release/global/legacy 证据；
+R4-07 最终验收：等待 required family matrix 3/3；
+R4-08：等待真实族四 case、生产预算和 Release/global/legacy 最终证据；
 12E-08D：等待 R4-08 GO 和用户明确授权。
 ```
 
@@ -57,17 +58,19 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-06 Repaired Asset Intake` 软件实现已完成。当前 required family matrix 为 0/3，因此真实资产
-Gate 不可放行；下一可执行开发任务不是 R4-07，而是等待三个 family 的修复/重建候选进入 intake。
+`12E-08C-R4-07 Development Gate` 已完成。当前 xiao_ma/yecan development intake 为 `2/2 admitted`，开发
+四 case 为 `4/4 PASS`；required family matrix 仍为 0/3，因此下一最终准入工作是等待三个 family 的修复或
+重建候选进入 intake，而不是启动 R4-08。
 
 ## 7. 模型资产准备结果
 
-`model` 目录已完成 21 个 OBJ/3MF 的统一 Release 预检。7 个 OBJ strict PASS 且第二次完整审计结果稳定，
-已满足 R4-01..05 的真实 OBJ 输入准备；1 个 OBJ 需人工修复，另外 10 个 OBJ 和 3 个 3MF 需重建。
+`model` 目录已完成 22 个 OBJ/3MF 的统一 Release 预检。7 个 OBJ strict PASS 且第二次完整审计结果稳定，
+已满足 R4-01..05 的真实 OBJ 输入准备；1 个 OBJ 需人工修复，另外 11 个 OBJ 和 3 个 3MF 需重建。新增圣诞
+中指 OBJ 的完整审计确认 571 组自相交，因此不能直接进入严格链。
 
 当前目录没有 strict PASS 3MF，R4 正向 Texture2D 3MF 仍使用既有
 `samples/models/3mf/texture2d_checker_cube.3mf`。爱神 5 个、玫瑰 3 个、梯田 1 个候选均未 strict PASS，
-不得据此解除 R4-06..08。
+不得据此解除 required-family 最终 Gate、R4-08 或 12E-08D；但可按开发 Gate 用于 R4-07 diagnostic。
 
 完整清单见 `REPORT_12E_08C_R4_模型资产预检清单.md`。
 
@@ -121,8 +124,8 @@ Qt controller/presenter/coordinator/panel 边界、QThreadPool/generation/cancel
 capability probe、三条切片入口统一守门、中文状态机和 UI Smoke 已冻结。R4-04 达到
 `READY FOR DEVELOPMENT`。
 
-R4-05 已完成；R4-06 的合同与软件实现已完成，但三个 required family 当前均无 admitted candidate；
-R4-07/08 为依赖已准备、不可提前执行。详细准备见
+R4-05 已完成；R4-06 的合同与软件实现已完成，三个 required family 当前均无 admitted candidate；
+R4-07 development 已完成，R4-07 final/R4-08 仍不可提前执行。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_04_QtPreflightUI准备.md`。
 
 ## 14. R4-04 实施结果
@@ -149,8 +152,8 @@ Quick CI 在 300 秒窗口内未完成，独立 golden 仍确认既有
 固定为 `MF_Xiao_ma_Damuzhi_ty02.obj`，独立复核固定为 `yecan/3.obj`；`yecan/4.obj` 当前仍是未跟踪用户资产，
 只读使用且不纳入提交。正向 3MF 继续使用 `samples/models/3mf/texture2d_checker_cube.3mf`。
 
-这些正常模型已用于 R4-05，但不能替代 required family 解除 R4-06..08。R4-05 现为
-`COMPLETE`；R4-06 可接收后续真实候选，R4-07 以后仍由真实 family matrix 阻断。
+这些正常模型已用于 R4-05，并通过 `development_model_pool` 解锁 R4-07 开发；它们不能替代 required
+family 解除最终 Gate。R4-06 可继续接收真实候选，R4-07 final、R4-08 和 08D 仍由真实 family matrix 阻断。
 
 ## 16. R4-05 原子级准备结果
 
@@ -163,8 +166,8 @@ R4-05 汇总 schema、计划代码落点和定向验证命令。
 
 详细准备见 `../DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md`，实际结果见
 `../DOC/DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md`。三个必跑输入全部 PASS，正常模型计数保持
-`requiredRepairPassCount=0`。R4-06 合同现按 `aishen/meigui/titian` 三个 required family 修订；
-R4-07/08 只是依赖准备完成，不能提前执行。
+`requiredRepairPassCount=0`。R4-06 合同现按 `aishen/meigui/titian` 三个 required family 修订；R4-07
+development 已执行，R4-07 final/R4-08 只是依赖准备完成，不能提前放行。
 
 ## 17. R4-06 及后续准备结论
 
@@ -172,24 +175,25 @@ R4-06 已补齐独立准备文档，冻结三个 required family、candidate kin
 材质/UV/纹理属性差异、完整自相交、post-strict 与 repeatability 准入字段。已验证跨族 clean 模型只作 intake
 控制组，不计入 `requiredFamilyPassCount`。
 
-R4-06 当前为 `IMPLEMENTATION COMPLETE / REAL FAMILY MATRIX 0/3 BLOCKED`；R4-07 为
-`DEPENDENCY PREPARED / WAIT R4-06 FAMILY MATRIX`；R4-08 为 `DEPENDENCY PREPARED / WAIT R4-07`。详细准备见
+R4-06 当前为 `IMPLEMENTATION COMPLETE / DEVELOPMENT 2/2 / REAL FAMILY 0/3`；R4-07 为
+`DEVELOPMENT COMPLETE / FINAL WAIT FAMILY 3/3`；R4-08 为 `DEPENDENCY PREPARED / WAIT R4-07 FINAL`。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。
 
 ## 18. R4-06 实施结果
 
-已实现 required family candidate 的 DTO/service/CLI/report、原/新 hash、provenance、尺寸/姿态、材质/纹理/UV
+已实现 required family 和 `development_model_pool` candidate 的 DTO/service/CLI/report、原/新 hash、provenance、尺寸/姿态、材质/纹理/UV
 差异、完整自相交、post-strict 和两次审计 repeatability。`ModelPreflightService` 复用同一次完整审计 evidence，
 稳定 preflight JSON schema 未改变。Generated unit/golden、相关 preflight 回归和 Release 真实 family 基线脚本
-通过；三个现有代表均按预期 BLOCKED，未写 production output。
+通过；三个现有 required 代表均按预期 BLOCKED，xiao_ma/yecan development candidate `2/2 admitted`，未写
+production output。
 
 详细结果见 `../DOC/DOC_EXEC_12E_08C_R4_06_RepairedAssetIntake结果.md`。
 
 ## 19. R4-07/08 原子级准备结果
 
-R4-07 已冻结 required aishen/meigui/titian + Texture2D 3MF 四 case、fresh strict、global
-partition/texture/raster/full closure、Release 三次测量、预算冻结、legacy TIFF/RIP/Quick CI 和 no-production
-边界。当前因 family matrix 0/3 不能执行。
+R4-07 development 已使用 xiao_ma minimum/allTexture、yecan intermediate 和 Texture2D 3MF 完成四 case，
+fresh intake、global partition/texture/raster/full closure、Release 三次测量、legacy TIFF/RIP 与 no-production
+边界全部通过。开发测量不冻结生产预算；required family 0/3 仍阻止最终真实族矩阵。
 
 R4-08 已冻结证据输入、逐项 GO 条件、四种决策状态和上下文同步范围。技术证据通过但没有用户授权时只能
 输出 `CONDITIONAL_TECHNICAL_PASS`，不能启动 08D。准备详见：

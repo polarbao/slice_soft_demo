@@ -180,6 +180,117 @@ $summary = [ordered]@{
 $summaryPath = Join-Path $resolvedOutputRoot "required_family_matrix.json"
 Write-Utf8NoBom -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 10)
 
+$developmentCases = @(
+    [ordered]@{
+        candidateId = "development_xiao_ma_damuzhi"
+        modelPath = "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj"
+    },
+    [ordered]@{
+        candidateId = "development_yecan_3"
+        modelPath = "model/obj/yecan/3.obj"
+    }
+)
+$developmentSummaryCases = @()
+foreach ($case in $developmentCases)
+{
+    $caseDir = Join-Path $resolvedOutputRoot $case.candidateId
+    New-Item -ItemType Directory -Path $caseDir -Force | Out-Null
+    $modelPath = [System.IO.Path]::GetFullPath((Join-Path $repoRoot $case.modelPath))
+    $configPath = Join-Path $caseDir "slice_config.json"
+    $manifestPath = Join-Path $caseDir "intake_manifest.json"
+    $reportPath = Join-Path $caseDir "intake_report.json"
+
+    $configDocument = [ordered]@{
+        input = [ordered]@{
+            modelPath = $modelPath
+            format = "obj"
+        }
+        texture = [ordered]@{
+            missingTexturePolicy = "fail_fast"
+        }
+        autoOrient = [ordered]@{
+            enabled = $true
+            maxHeightMm = 6.0
+            strategy = "minimize_height_by_right_angle_rotation"
+        }
+    }
+    Write-Utf8NoBom -Path $configPath -Content ($configDocument | ConvertTo-Json -Depth 8)
+
+    $sourceHash = (Get-FileHash -LiteralPath $modelPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifestDocument = [ordered]@{
+        schema = "slicesoft.repaired_asset_intake_manifest.12e_08c_r4.1"
+        familyId = "development_model_pool"
+        candidateId = $case.candidateId
+        candidateKind = "strict_pass_original"
+        originalConfig = $configPath
+        candidateConfig = $configPath
+        expectedOriginalSourceHash = $sourceHash
+        expectedCandidateSourceHash = $sourceHash
+        approval = [ordered]@{
+            maxDimensionDeltaMm = 0.10
+            allowAttributeChanges = $false
+            attributeChangeReason = ""
+        }
+        preflight = [ordered]@{
+            voxelMm = 0.10
+            maxCompleteSelfIntersectionCandidatePairs = 5000000
+        }
+    }
+    Write-Utf8NoBom -Path $manifestPath -Content ($manifestDocument | ConvertTo-Json -Depth 8)
+
+    & $executable --manifest $manifestPath --output $reportPath
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0)
+    {
+        throw "$($case.candidateId) expected admitted exit code 0, actual $exitCode"
+    }
+    $report = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    if ($report.status -ne "admitted" `
+        -or -not $report.admitted `
+        -or $report.requiredFamilyPassCount -ne 0)
+    {
+        throw "$($case.candidateId) did not pass the development intake gate"
+    }
+    if (-not $report.repeatability.hashMatch -or $report.productionOutputWritten)
+    {
+        throw "$($case.candidateId) violated repeatability or production boundary"
+    }
+    $developmentSummaryCases += [ordered]@{
+        candidateId = $case.candidateId
+        modelPath = $case.modelPath
+        status = $report.status
+        admitted = $report.admitted
+        sourceHash = $report.candidate.sourceHash
+        resourceHash = $report.candidate.resourceHash
+        geometryHash = $report.candidate.geometryHash
+        attributeHash = $report.candidate.attributeHash
+        auditHash = $report.candidate.auditHash
+        reportPath = $reportPath
+    }
+}
+
+$developmentSummary = [ordered]@{
+    schema = "slicesoft.r4_07_development_gate.12e_08c_r4.1"
+    diagnosticOnly = $true
+    productionOutputWritten = $false
+    developmentCandidateCount = $developmentSummaryCases.Count
+    admittedDevelopmentCandidateCount = @(
+        $developmentSummaryCases | Where-Object { $_.admitted }
+    ).Count
+    r4_07DevelopmentAllowed = @(
+        $developmentSummaryCases | Where-Object { $_.admitted }
+    ).Count -gt 0
+    finalRequiredFamilyGatePass = $false
+    requiredFamilyMatrix = "0/3"
+    cases = $developmentSummaryCases
+}
+$developmentSummaryPath = Join-Path $resolvedOutputRoot "development_gate_matrix.json"
+Write-Utf8NoBom `
+    -Path $developmentSummaryPath `
+    -Content ($developmentSummary | ConvertTo-Json -Depth 10)
+
 Write-Host "R4-06 required-family intake contract: PASS"
 Write-Host "Current real family matrix: 0/3 BLOCKED"
 Write-Host "Summary: $summaryPath"
+Write-Host "R4-07 development gate: ALLOWED"
+Write-Host "Development summary: $developmentSummaryPath"

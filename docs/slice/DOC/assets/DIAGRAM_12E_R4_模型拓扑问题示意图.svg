@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+  <defs>
+    <style>
+      .title { font: 700 34px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #17212b; }
+      .subtitle { font: 400 18px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #52606d; }
+      .cardTitle { font: 700 22px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #17212b; }
+      .body { font: 400 17px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #34414d; }
+      .small { font: 400 15px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #52606d; }
+      .mesh { fill: none; stroke: #1677a8; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+      .meshFill { fill: #d9eef7; stroke: #1677a8; stroke-width: 4; stroke-linejoin: round; }
+      .error { fill: none; stroke: #d64545; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+      .warn { fill: #fff4d6; stroke: #bf7b00; stroke-width: 3; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#52606d"/>
+    </marker>
+  </defs>
+
+  <rect width="1400" height="900" fill="#f7f9fb"/>
+  <text x="56" y="62" class="title">R4 模型预检发现的拓扑问题</text>
+  <text x="56" y="96" class="subtitle">红色表示 strict_closed 阻断点；图形为问题类型示意，不代表当前报告已经定位到具体三角面坐标。</text>
+
+  <g transform="translate(56 130)">
+    <rect width="408" height="280" rx="8" fill="#ffffff" stroke="#c7d0d9" stroke-width="2"/>
+    <text x="24" y="40" class="cardTitle">1. 边界边 / 开口</text>
+    <path d="M72 206 L72 98 L168 70 L280 112 L314 204 L236 238 L126 236" class="mesh"/>
+    <path d="M126 236 L164 238" class="error"/>
+    <path d="M198 238 L236 238" class="error"/>
+    <text x="24" y="262" class="small">网格存在孔洞或未焊接接缝，体积内外无法唯一判定。</text>
+  </g>
+
+  <g transform="translate(496 130)">
+    <rect width="408" height="280" rx="8" fill="#ffffff" stroke="#c7d0d9" stroke-width="2"/>
+    <text x="24" y="40" class="cardTitle">2. 非流形边</text>
+    <path d="M204 92 L88 210 L204 190 Z" class="meshFill"/>
+    <path d="M204 92 L320 210 L204 190 Z" class="meshFill"/>
+    <path d="M204 92 L204 190 L210 242 Z" class="meshFill"/>
+    <path d="M204 92 L204 190" class="error"/>
+    <text x="24" y="262" class="small">同一条边被三张或更多面共享，壳层归属不明确。</text>
+  </g>
+
+  <g transform="translate(936 130)">
+    <rect width="408" height="280" rx="8" fill="#ffffff" stroke="#c7d0d9" stroke-width="2"/>
+    <text x="24" y="40" class="cardTitle">3. 反向重复面</text>
+    <path d="M90 210 L204 82 L318 210 Z" class="meshFill"/>
+    <path d="M96 216 L204 88 L312 216 Z" fill="none" stroke="#d64545" stroke-width="6" stroke-dasharray="12 9"/>
+    <path d="M180 130 L228 130" stroke="#52606d" stroke-width="4" marker-end="url(#arrow)"/>
+    <path d="M228 164 L180 164" stroke="#d64545" stroke-width="4" marker-end="url(#arrow)"/>
+    <text x="24" y="262" class="small">同一位置叠放方向相反的面，常见于重复壳或导出错误。</text>
+  </g>
+
+  <g transform="translate(56 442)">
+    <rect width="408" height="280" rx="8" fill="#ffffff" stroke="#c7d0d9" stroke-width="2"/>
+    <text x="24" y="40" class="cardTitle">4. 自相交 / 共面重叠</text>
+    <path d="M76 92 L330 226" class="mesh"/>
+    <path d="M330 92 L76 226" class="mesh"/>
+    <circle cx="203" cy="159" r="22" fill="#ffe1e1" stroke="#d64545" stroke-width="6"/>
+    <path d="M112 196 L286 196" stroke="#bf7b00" stroke-width="8" stroke-dasharray="14 9"/>
+    <text x="24" y="246" class="small">浮雕、甲片底壳或多个组件互相穿透；共面面片</text>
+    <text x="24" y="268" class="small">大面积重合时，简单删面不能证明几何和 UV 正确。</text>
+  </g>
+
+  <g transform="translate(496 442)">
+    <rect width="408" height="280" rx="8" fill="#ffffff" stroke="#c7d0d9" stroke-width="2"/>
+    <text x="24" y="40" class="cardTitle">5. 退化面 / 绕序不一致</text>
+    <path d="M96 210 L202 94 L308 210 Z" class="meshFill"/>
+    <path d="M202 94 L207 208 L308 210 Z" fill="#ffe1e1" stroke="#d64545" stroke-width="5"/>
+    <path d="M124 188 C154 146 170 130 188 114" fill="none" stroke="#1677a8" stroke-width="4" marker-end="url(#arrow)"/>
+    <path d="M284 188 C252 146 238 130 218 114" fill="none" stroke="#d64545" stroke-width="4" marker-end="url(#arrow)"/>
+    <text x="24" y="246" class="small">三点近乎共线会形成零面积面；局部法向相反会</text>
+    <text x="24" y="268" class="small">破坏内外判定。</text>
+  </g>
+
+  <g transform="translate(936 442)">
+    <rect width="408" height="280" rx="8" fill="#ffffff" stroke="#c7d0d9" stroke-width="2"/>
+    <text x="24" y="40" class="cardTitle">6. MTL / 贴图引用失配</text>
+    <rect x="62" y="82" width="128" height="98" rx="6" fill="#d9eef7" stroke="#1677a8" stroke-width="3"/>
+    <text x="92" y="139" class="body">OBJ</text>
+    <rect x="220" y="82" width="128" height="98" rx="6" class="warn"/>
+    <text x="251" y="139" class="body">MTL</text>
+    <path d="M190 130 L220 130" stroke="#d64545" stroke-width="5" stroke-dasharray="7 7"/>
+    <path d="M112 212 L302 212" stroke="#52606d" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="24" y="246" class="small">文件名或 map_Kd 路径错误会丢失材质/纹理；即使</text>
+    <text x="24" y="268" class="small">资源修好，几何仍需独立通过 strict 审计。</text>
+  </g>
+
+  <g transform="translate(56 754)">
+    <rect width="1288" height="102" rx="8" fill="#edf2f6" stroke="#aab7c4" stroke-width="2"/>
+    <text x="24" y="36" class="body">当前 required family 的共同阻断：爱神、玫瑰、梯田候选均存在完整审计确认的自相交；部分模型还叠加非流形边和反向重复面。</text>
+    <text x="24" y="68" class="body">现有 JSON 报告给出问题类型和数量，不输出 triangleId/XYZ。因此不能把本图当作模型上的精确红点定位；精确定位需新增诊断网格/热区导出。</text>
+  </g>
+</svg>

@@ -277,6 +277,37 @@ bool CrossFamilyControlIsRejected()
             "cross-family control does not count");
 }
 
+bool DevelopmentModelPoolStrictOriginalIsAdmitted()
+{
+    const std::filesystem::path directory = MakeTestDirectory();
+    const std::filesystem::path modelDirectory =
+        directory / "model" / "clean_fixture";
+    const std::string source = ClosedBoxObj();
+    const std::filesystem::path modelPath = modelDirectory / "box.obj";
+    WriteText(modelPath, source);
+    const std::filesystem::path configPath = WriteConfig(
+        directory,
+        "box.json",
+        modelPath);
+
+    slicer_core::RepairedAssetIntakeRequest request =
+        MakeStrictOriginalRequest(configPath, source);
+    request.family_id = "development_model_pool";
+    request.candidate_id = "generated_development_box";
+
+    const slicer_core::RepairedAssetIntakeService service;
+    const slicer_core::RepairedAssetIntakeResult result = service.Run(request);
+    return ExpectTrue(result.manifest_accepted, "development manifest is accepted")
+        && ExpectTrue(result.admitted, "development model is admitted")
+        && ExpectTrue(result.repeatability_pass, "development repeatability passes")
+        && ExpectTrue(
+            result.required_family_pass_count == 0U,
+            "development intake does not count as a required family pass")
+        && ExpectTrue(
+            !result.production_output_written,
+            "development intake writes no production output");
+}
+
 bool ChangedCandidateRequiresProvenance()
 {
     const std::filesystem::path directory = MakeTestDirectory();
@@ -561,6 +592,8 @@ int main()
     const std::vector<TestCase> tests{
         {"strict_original_is_admitted", StrictOriginalIsAdmitted},
         {"cross_family_control_is_rejected", CrossFamilyControlIsRejected},
+        {"development_model_pool_strict_original_is_admitted",
+         DevelopmentModelPoolStrictOriginalIsAdmitted},
         {"changed_candidate_requires_provenance", ChangedCandidateRequiresProvenance},
         {"post_strict_failure_blocks_candidate", PostStrictFailureBlocksCandidate},
         {"hash_mismatch_blocks_candidate", HashMismatchBlocksCandidate},

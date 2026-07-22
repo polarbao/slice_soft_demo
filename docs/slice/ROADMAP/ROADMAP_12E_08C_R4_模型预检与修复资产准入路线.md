@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：IN PROGRESS / R4-01..06 IMPLEMENTATION COMPLETE / REAL FAMILY MATRIX 0/3 BLOCKED
+> 文档状态：IN PROGRESS / R4-07 DEVELOPMENT COMPLETE / FINAL FAMILY MATRIX 0/3 BLOCKED
 > 日期：2026-07-22
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
 
@@ -16,9 +16,9 @@ R4B Product Interaction & Positive Path
   R4-04 Qt Preflight UI and One-click Gate
   R4-05 Clean OBJ/3MF Width/Material Matrix
 
-R4C Required Asset Admission
+R4C Development and Required Asset Admission
   R4-06 Required Family Candidate Intake and Attribute Audit
-  R4-07 Four-case Global/Release/Legacy Regression
+  R4-07 Development Gate + Final Required-family Global/Release/Legacy Regression
   R4-08 08D GO/NO-GO Refresh
 ```
 
@@ -56,7 +56,9 @@ legacy TIFF/RIP/Quick CI 回归闭环；
 R4-08 输出 GO 且用户明确授权。
 ```
 
-缺少任一 required family 的 admitted 候选时，R4C 保持 BLOCKED，不用跨族正常 fixture 替代。
+缺少任一 required family 的 admitted 候选时，R4C 的最终生产准入保持 BLOCKED，不用跨族正常 fixture
+替代。开发阶段采用独立 `development_model_pool` Gate：任意 `model` 目录资产通过 R4-06 intake 即可运行
+R4-07 diagnostic 四 case，但不能计入 required family 或冻结生产预算。
 
 R4-06 的原子级 intake manifest、provenance、属性差异、完整自相交和 post-strict 准入准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。该文档完成不等于外部资产已到位。
@@ -68,7 +70,8 @@ R4-07/08 的四 case Release Gate 与 08D GO/NO-GO 刷新已分别完成原子�
 ../DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md
 ```
 
-准备完成不解除 `requiredFamilyPassCount=0/3` 阻断。
+当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07 development four-case 已完成；这不解除
+`requiredFamilyPassCount=0/3` 对 R4-08、12E-08D 和最终生产准入的阻断。
 
 ## 5. 复杂重建后备路线
 

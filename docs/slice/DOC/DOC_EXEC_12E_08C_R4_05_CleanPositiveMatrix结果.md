@@ -4,6 +4,8 @@
 > 日期：2026-07-22
 > 原子任务：12E-08C-R4-05
 > 下一任务：R4-06 CONTRACT READY / EXTERNAL REPAIRED ASSET BLOCKED
+> 历史说明：本文件的“后续边界”记录 R4-05 完成时状态；R4-07 当前 Gate 以
+> `DOC_DECISION_12E_08C_R4_07_开发准入放宽规则.md` 为准。
 
 ## 1. 结论
 

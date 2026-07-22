@@ -60,6 +60,10 @@ std::string ToLower(std::string value)
 
 std::string RequiredFamilyDirectory(const std::string& familyId)
 {
+    if (familyId == "development_model_pool")
+    {
+        return "model";
+    }
     if (familyId == "required_aishen_family")
     {
         return "aishen_fudiao";
@@ -73,6 +77,13 @@ std::string RequiredFamilyDirectory(const std::string& familyId)
         return "titian_fudiao";
     }
     return {};
+}
+
+bool IsRequiredFamily(const std::string& familyId)
+{
+    return familyId == "required_aishen_family"
+        || familyId == "required_meigui_family"
+        || familyId == "required_titian_family";
 }
 
 bool PathContainsDirectory(
@@ -450,7 +461,7 @@ RepairedAssetIntakeResult RepairedAssetIntakeService::Run(
         request.family_id);
     if (familyDirectory.empty())
     {
-        AddIssue(result, kFamilyUnknown, "required family is not registered");
+        AddIssue(result, kFamilyUnknown, "intake family is not registered");
     }
     if (request.candidate_id.empty()
         || request.original_config_path.empty()
@@ -512,7 +523,7 @@ RepairedAssetIntakeResult RepairedAssetIntakeService::Run(
             AddIssue(
                 result,
                 kFamilyPathMismatch,
-                "original asset does not belong to the required family",
+                "original asset does not belong to the intake family",
                 Json::object({{"expectedDirectory", familyDirectory}}));
         }
         if (result.original.source_hash != request.expected_original_source_hash)
@@ -628,7 +639,10 @@ RepairedAssetIntakeResult RepairedAssetIntakeService::Run(
     result.admitted = result.manifest_accepted
         && result.repeatability_pass
         && result.issues.empty();
-    result.required_family_pass_count = result.admitted ? 1U : 0U;
+    result.required_family_pass_count = result.admitted
+            && IsRequiredFamily(request.family_id)
+        ? 1U
+        : 0U;
     return result;
 }
 

@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-06 IMPLEMENTATION COMPLETE / REAL FAMILY MATRIX 0/3 BLOCKED
+> 当前原子任务：R4-07 DEVELOPMENT COMPLETE / FINAL REQUIRED FAMILY 0/3 BLOCKED
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -108,27 +108,34 @@ schema、代码落点、验证命令和停止条件见
 
 完成标准：每例具有原/新 hash、修复来源、属性 diff、完整自相交和 post-strict 证据。
 
-已实现 intake DTO/service/CLI/report/schema/golden、完整审计 evidence 和 required family 基线脚本。正常 clean
-模型只作控制组，不计入 required family PASS。当前三个 family 均为 0 PASS，因此软件实现已完成，但
-R4-07 不可启动。准备和结果分别见
+已实现 intake DTO/service/CLI/report/schema/golden、完整审计 evidence 和 required family 基线脚本。新增
+`development_model_pool` 后，`model` 目录中任意 strict PASS、完整审计且可重复的资产可以解锁 R4-07
+开发，但不计入 required family PASS。当前 xiao_ma/yecan development intake 为 `2/2 admitted`，三个
+required family 仍为 `0/3`。准备和结果分别见
 `docs/slice/DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md` 与
 `docs/slice/DOC/DOC_EXEC_12E_08C_R4_06_RepairedAssetIntake结果.md`。
 
 ## 8. R4-07 Four-case Release Gate
 
-状态：DEPENDENCY PREPARED / WAIT REQUIRED FAMILY MATRIX 3/3。
+状态：DEVELOPMENT IMPLEMENTATION COMPLETE / FINAL REQUIRED FAMILY 0/3 BLOCKED。
 
 范围：四 case global partition/texture/raster/full closure，Release time/memory，legacy TIFF/RIP/Quick CI。
 
-完成标准：四 case 全部 admitted；预算冻结；production output 仍按 08D 边界处理。
+开发完成标准：至少一个 development candidate admitted；四 case diagnostic 全部 PASS；Release 三次测量与
+legacy TIFF/RIP 回归通过；不写 global production package。
 
-原子级准备已冻结三个 required family + Texture2D 3MF 四 case、每 case strict/global/Release/legacy
-执行链、三次测量、预算冻结、协议回归、输出 schema 和停止条件。详见
-`docs/slice/DOC/DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md`。
+最终完成标准：三个 required family 全部 admitted；真实族四 case PASS；生产预算冻结；production output
+仍按 08D 边界处理。
+
+开发 Gate 已使用 xiao_ma minimum/allTexture、yecan intermediate 与 Texture2D 3MF 控制组完成四 case，
+Release 三次测量、repair-disabled TIFF SHA-256 与 RIP strict 均通过。该结果不冻结生产预算，也不解除
+required family `0/3` 对 R4-08/08D 的阻断。详见
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md` 与
+`docs/slice/DOC/DOC_EXEC_12E_08C_R4_07_DevelopmentGate结果.md`。
 
 ## 9. R4-08 08D GO/NO-GO Refresh
 
-状态：DEPENDENCY PREPARED / WAIT R4-07。
+状态：DEPENDENCY PREPARED / WAIT R4-07 FINAL REQUIRED-FAMILY GATE。
 
 范围：更新 matrix/report/context；只作决策，不实现 adapter。
 

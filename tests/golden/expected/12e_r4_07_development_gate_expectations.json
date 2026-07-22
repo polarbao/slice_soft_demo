@@ -1,0 +1,35 @@
+{
+  "schema": "slicesoft.r4_07_development_gate_expectations.12e_08c_r4.1",
+  "minimumAdmittedDevelopmentCandidates": 1,
+  "finalRequiredFamilyGatePass": false,
+  "cases": [
+    {
+      "caseId": "development_xiao_ma_minimum",
+      "positiveCaseId": "clean_obj_primary",
+      "config": "samples/configs/texture_fill_partition/r4_05_clean_obj_primary.json",
+      "widthSelector": "minimum",
+      "intakeCandidateId": "development_xiao_ma_damuzhi"
+    },
+    {
+      "caseId": "development_xiao_ma_all_texture",
+      "positiveCaseId": "clean_obj_primary",
+      "config": "samples/configs/texture_fill_partition/r4_05_clean_obj_primary.json",
+      "widthSelector": "maximum",
+      "intakeCandidateId": "development_xiao_ma_damuzhi"
+    },
+    {
+      "caseId": "development_yecan_intermediate",
+      "positiveCaseId": "clean_obj_independent",
+      "config": "samples/configs/texture_fill_partition/r4_05_clean_obj_independent.json",
+      "widthSelector": "intermediate",
+      "intakeCandidateId": "development_yecan_3"
+    },
+    {
+      "caseId": "texture2d_3mf_control",
+      "positiveCaseId": "clean_3mf_texture2d",
+      "config": "samples/configs/texture_fill_partition/r4_05_clean_3mf_texture2d.json",
+      "widthSelector": "maximum",
+      "intakeCandidateId": ""
+    }
+  ]
+}

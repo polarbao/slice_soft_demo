@@ -7,7 +7,7 @@
 
 12E 已完成 12E-01 至 12E-07 以及 12E-08A/08B/08C。除 CPU/OpenVDB 同 grid diagnostic candidate 外，成功报告、真实 Z 层 voxel 统计、代表性 Width Sweep、单调性 validator、all-texture endpoint、OBJ/3MF 纹理传递、内存 Diagnostic Composer、12D 模型域与完整材料域精确闭环联动、classification-to-raster 确定性映射和默认 OFF Release 证据轨道也已建立。
 
-当前两个候选仍为 diagnostic-only。12E-08C-R1/R2/R3 已完成非生产 repair、Release global core、legacy TIFF invariant 与 RIP strict 证据；三个真实 OBJ 在 mutation 前因 confirmed self-intersection fail-fast，只有闭合 3MF 完成 global full chain。R3-04 已输出 NO-GO，预算阈值未冻结。R4-01..06 的合同、服务、模式 gate、Qt UI、clean OBJ/3MF 正向矩阵和 required-family intake 软件能力已完成。真实 family matrix 仍为 0/3；12E-08D 继续被真实模型 topology、预算、known legacy baseline 和用户生产路径确认阻断。
+当前两个候选仍为 diagnostic-only。12E-08C-R1/R2/R3 已完成非生产 repair、Release global core、legacy TIFF invariant 与 RIP strict 证据；三个真实 OBJ 在 mutation 前因 confirmed self-intersection fail-fast，只有闭合 3MF 完成 global full chain。R3-04 已输出 NO-GO，预算阈值未冻结。R4-01..06 与 R4-07 Development Gate 已完成；development intake 2/2、开发四 case 4/4 PASS。真实 required family matrix 仍为 0/3；12E-08D 继续被真实模型 topology、生产预算、known legacy baseline 和用户生产路径确认阻断。
 
 ## 2. Current State
 
@@ -16,7 +16,7 @@
 12B：性能评估与 OpenVDB SDF utility 定位完成；
 12C：Qt 工作台 R0/R1/R2 完成；
 12D：R0/R1/R2/R3 COMPLETE，12D-10 三个真实 OBJ 验收通过；
-12E：R0 complete，12E-01..07 与 12E-08A/08B/08C complete；12E-08C-R1/R2/R3 complete，R3-04 NO-GO；R4-01..06 IMPLEMENTATION COMPLETE，real family 0/3 blocked，Release budget blocked，12E-08D blocked。
+12E：R0 complete，12E-01..07 与 12E-08A/08B/08C complete；12E-08C-R1/R2/R3 complete，R3-04 NO-GO；R4-01..06 与 R4-07 Development Gate COMPLETE，development 2/2、four-case 4/4，real family 0/3 blocked，production budget blocked，12E-08D blocked。
 ```
 
 legacy texture apply mode 和 modelFill scope 保持兼容；CPU backend 只产生 diagnostic result。当前不存在 12E production package，也未改变原有切片生产路径。
@@ -73,7 +73,7 @@ Qt UI 与 preview；
 | 12E-08B | COMPLETE / DIAGNOSTIC ONLY | 完整材料 semantic sidecar、五类 gap、S/V 通道一致性与报告 |
 | 12E-08C | COMPLETE / BUDGET BLOCKED | Release evidence 与 legacy regression 完成；3 个真实 OBJ strict topology 阻断 |
 | 12E-08C-R1/R2/R3 | COMPLETE / NON-PRODUCTION / R3-04 NO-GO | Repair、完整相交、真实模型矩阵、Release global core、legacy TIFF/RIP 证据完成；三个 OBJ topology skipped |
-| 12E-08C-R4 | IN PROGRESS / R4-01..06 IMPLEMENTATION COMPLETE / FAMILY 0/3 | 模型预检、模式准入、Qt 一键守门、正常模型正向链和 intake 软件已完成；R4-07 等待三个 admitted family |
+| 12E-08C-R4 | IN PROGRESS / R4-07 DEVELOPMENT COMPLETE / FINAL FAMILY 0/3 | 模型预检、模式准入、Qt 一键守门、development intake 和四 case 已完成；最终验收等待三个 admitted family |
 | 12E-08D | BLOCKED / REQUIRES CONFIRMATION | production package、RIP strict 与 admission |
 | 12E-09 | 09A READY / 09B BLOCKED | Qt diagnostic UI 与 Effective Config 已准备；production Profile 等待 08D |
 | 12E-10 | PLANNED | 真实模型和收口 |
@@ -95,9 +95,9 @@ Qt UI 与 preview；
 12E-08B：COMPLETE；
 12E-08C：COMPLETE / RELEASE BUDGET BLOCKED；
 12E-08C-R1/R2/R3：COMPLETE / NON-PRODUCTION，R3-04 NO-GO；
-12E-08C-R4：IN PROGRESS，R4-01..06 IMPLEMENTATION COMPLETE，REAL FAMILY MATRIX 0/3 BLOCKED；
+12E-08C-R4：IN PROGRESS，R4-07 DEVELOPMENT COMPLETE，DEVELOPMENT 2/2，REAL FAMILY MATRIX 0/3 BLOCKED；
 12E-08D：BLOCKED BY REAL OBJ TOPOLOGY BUDGET AND CONFIRMATION；
-当前阻断原子任务为 R4-07；等待每个 required family 的修复/重建候选通过 R4-06 intake 后再执行 Gate 重跑；
+当前阻断项为 R4-07 final/R4-08；等待每个 required family 的修复/重建候选通过 R4-06 intake 后再执行真实族 Gate；
 12E R0/R1 原型不要求先完成 repair；
 12E production admission 必须复核 12D exact closure；
 不得把 12E 分区逻辑塞入 12D repair 任务。
@@ -359,7 +359,7 @@ git diff --check：PASS（仅 Git 行尾转换提示）。
 
 ## 15. 下一任务
 
-12E-08A/08B/08C 与 R1/R2/R3、R4-01/02/03/04/05/06 软件实现已完成。R4-07 等待三个 required family 各一个 admitted 候选；12E-08
+12E-08A/08B/08C 与 R1/R2/R3、R4-01/02/03/04/05/06 和 R4-07 Development Gate 已完成。R4-07 final/R4-08 等待三个 required family 各一个 admitted 候选；12E-08
 production admission 仍必须依次关闭：
 
 ```text
@@ -582,4 +582,4 @@ required OBJ 0/3 strict admitted、预算未冻结而输出 NO-GO。
 R4 已完成 Decision/PRD/DEV/DEMO/Roadmap/Tasks/Prompt/Prep 文档。决策不立即实现通用复杂自相交重建；
 先建立用户可见 preflight 和模式相关 fail-closed，并使用正常闭合模型继续 12E Texture Surface/Model Fill
 正向开发。三个 required OBJ 继续保留 Gate 身份，只有外部修复资产通过 identity、属性、完整自相交和
-post-strict 审计后才能重跑 Release Gate。R4-01..06 IMPLEMENTATION COMPLETE，REAL FAMILY MATRIX 0/3，12E-08D 继续 BLOCKED。
+post-strict 审计后才能重跑最终真实族 Release Gate。R4-07 DEVELOPMENT COMPLETE，REAL FAMILY MATRIX 0/3，12E-08D 继续 BLOCKED。

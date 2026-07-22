@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="920" viewBox="0 0 1500 920">
+  <defs>
+    <style>
+      .title { font: 700 34px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #17212b; }
+      .subtitle { font: 400 18px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #52606d; }
+      .stepTitle { font: 700 20px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #17212b; }
+      .body { font: 400 16px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #34414d; }
+      .small { font: 400 15px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #52606d; }
+      .arrow { fill: none; stroke: #52606d; stroke-width: 4; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#52606d"/>
+    </marker>
+    <marker id="greenArrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#1f8a5b"/>
+    </marker>
+  </defs>
+
+  <rect width="1500" height="920" fill="#f7f9fb"/>
+  <text x="56" y="62" class="title">R4 真实模型修复与准入流程</text>
+  <text x="56" y="96" class="subtitle">原始资产保持只读；任一 model 资产通过开发准入可启动 R4-07，三个真实族 3/3 才能进入最终生产评审。</text>
+
+  <g transform="translate(54 140)">
+    <rect width="220" height="126" rx="8" fill="#ffffff" stroke="#6e7f8d" stroke-width="3"/>
+    <text x="22" y="38" class="stepTitle">1. 冻结原始资产</text>
+    <text x="22" y="70" class="body">记录 OBJ/3MF、MTL、</text>
+    <text x="22" y="94" class="body">贴图和 source hash</text>
+  </g>
+  <path d="M274 203 L320 203" class="arrow" marker-end="url(#arrow)"/>
+
+  <g transform="translate(330 140)">
+    <rect width="220" height="126" rx="8" fill="#ffffff" stroke="#1677a8" stroke-width="3"/>
+    <text x="22" y="38" class="stepTitle">2. 修正资源引用</text>
+    <text x="22" y="70" class="body">MTL 文件名、map_Kd</text>
+    <text x="22" y="94" class="body">和纹理相对路径可读取</text>
+  </g>
+  <path d="M550 203 L596 203" class="arrow" marker-end="url(#arrow)"/>
+
+  <g transform="translate(606 140)">
+    <rect width="246" height="126" rx="8" fill="#ffffff" stroke="#bf7b00" stroke-width="3"/>
+    <text x="22" y="38" class="stepTitle">3. 拓扑清理</text>
+    <text x="22" y="70" class="body">去除已确认重复壳；修复</text>
+    <text x="22" y="94" class="body">边界、非流形和法向绕序</text>
+  </g>
+  <path d="M852 203 L898 203" class="arrow" marker-end="url(#arrow)"/>
+
+  <g transform="translate(908 140)">
+    <rect width="258" height="126" rx="8" fill="#fff4d6" stroke="#bf7b00" stroke-width="3"/>
+    <text x="22" y="38" class="stepTitle">4. 自相交重建</text>
+    <text x="22" y="70" class="body">浮雕与底壳布尔并集、局部</text>
+    <text x="22" y="94" class="body">重拓扑或整体重网格</text>
+  </g>
+  <path d="M1166 203 L1212 203" class="arrow" marker-end="url(#arrow)"/>
+
+  <g transform="translate(1222 140)">
+    <rect width="224" height="126" rx="8" fill="#ffffff" stroke="#6f5aa8" stroke-width="3"/>
+    <text x="22" y="38" class="stepTitle">5. 恢复属性</text>
+    <text x="22" y="70" class="body">投射/重建 UV、材质 ID</text>
+    <text x="22" y="94" class="body">并检查纹理接缝</text>
+  </g>
+
+  <path d="M1334 266 L1334 330 L1135 330 L1135 374" class="arrow" marker-end="url(#arrow)"/>
+
+  <g transform="translate(992 384)">
+    <rect width="286" height="150" rx="8" fill="#ffffff" stroke="#1677a8" stroke-width="3"/>
+    <text x="22" y="38" class="stepTitle">6. 两次完整 strict 审计</text>
+    <text x="22" y="72" class="body">boundary/non-manifold/duplicate=0</text>
+    <text x="22" y="98" class="body">confirmed/coplanar=0</text>
+    <text x="22" y="124" class="body">geometry/attribute hash 可重复</text>
+  </g>
+
+  <path d="M992 459 L876 459" class="arrow" marker-end="url(#arrow)"/>
+  <g transform="translate(624 384)">
+    <rect width="242" height="150" rx="8" fill="#ffffff" stroke="#6f5aa8" stroke-width="3"/>
+    <text x="22" y="38" class="stepTitle">7. R4-06 Intake</text>
+    <text x="22" y="72" class="body">manifest + provenance</text>
+    <text x="22" y="98" class="body">尺寸/方向/资源差异审查</text>
+    <text x="22" y="124" class="body">冻结 candidate hash</text>
+  </g>
+
+  <path d="M624 459 L508 459" class="arrow" marker-end="url(#arrow)"/>
+  <g transform="translate(210 374)">
+    <rect width="288" height="170" rx="8" fill="#e2f4ea" stroke="#1f8a5b" stroke-width="4"/>
+    <text x="24" y="42" class="stepTitle">8. 双 Gate</text>
+    <text x="24" y="76" class="body">任一 model admitted：</text>
+    <text x="24" y="102" class="body">启动 R4-07 开发</text>
+    <text x="24" y="130" class="body">真实族达到 3/3：</text>
+    <text x="24" y="156" class="body">进入 R4-08 / 08D 评审</text>
+  </g>
+
+  <path d="M1135 534 L1135 634" fill="none" stroke="#d64545" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="1150" y="594" class="body" fill="#d64545">任一项 FAIL</text>
+  <g transform="translate(932 650)">
+    <rect width="406" height="130" rx="8" fill="#ffe7e7" stroke="#d64545" stroke-width="4"/>
+    <text x="24" y="40" class="stepTitle">BLOCKED：返回修复工作副本</text>
+    <text x="24" y="76" class="body">不得放宽 strict、不得 silent fallback、</text>
+    <text x="24" y="102" class="body">不得用 legacy 成功替代 global 准入。</text>
+  </g>
+
+  <g transform="translate(56 650)">
+    <rect width="800" height="190" rx="8" fill="#edf2f6" stroke="#aab7c4" stroke-width="2"/>
+    <text x="24" y="40" class="stepTitle">按问题规模选择修复方式</text>
+    <text x="24" y="78" class="body">局部、可证明：小孔补面、唯一 edge fan 拆分、明确重复壳删除、法向统一。</text>
+    <text x="24" y="112" class="body">复杂自相交：分离浮雕与底壳，布尔并集后重拓扑；必要时体素重建并重新投射 UV。</text>
+    <text x="24" y="146" class="body">当前爱神/玫瑰/梯田的自相交数量为数千至数万，默认按“重建候选”而非一键删面处理。</text>
+    <text x="24" y="174" class="small">任何修复都在副本上进行；原始模型、MTL 和纹理不得覆盖。</text>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08C-R4-06 Repaired Asset Intake 准备
 
-> 文档状态：IMPLEMENTED / REAL FAMILY INPUT 0/3 BLOCKED
+> 文档状态：IMPLEMENTED / DEVELOPMENT 2/2 / REAL FAMILY INPUT 0/3 BLOCKED
 > 日期：2026-07-22
 > 前置任务：R4-01..05 COMPLETE
 > 生产边界：只接收和审计修复资产，不直接写生产 TIFF/package
@@ -11,8 +11,8 @@ R4-06 接收 `aishen/meigui/titian` 三个 required 真实模型族的候选，�
 材质和纹理来源可追溯，并执行完整自相交与 post-strict 审计。候选可以是 strict PASS 原始资产、外部修复
 资产或独立审计重建资产。
 
-R4-06 不负责通用复杂自相交重建。没有真实 family PASS 输入时保持 blocked，不使用跨族正常模型伪造
-required family PASS。
+R4-06 不负责通用复杂自相交重建。没有真实 family PASS 输入时最终 Gate 保持 blocked，不使用跨族正常
+模型伪造 required family PASS。跨族 clean 模型可以按独立 `development_model_pool` 进入开发 Gate。
 
 ## 2. Required family 身份
 
@@ -36,8 +36,8 @@ intake 服务的正向/负向控制；
 R4-05 已完成的 width/material 正向证据。
 ```
 
-它们本身无需修复且不属于 required family，因此不得计入 `requiredFamilyPassCount`，也不得解除
-R4-06..08 blocker。
+它们本身无需修复且不属于 required family，因此不得计入 `requiredFamilyPassCount`，也不得解除最终
+required-family/R4-08/08D blocker；其中通过 development intake 的模型可解锁 R4-07 开发。
 `yecan/4.obj` 仍是未跟踪用户资产，不进入 CI 或提交。
 
 ## 4. Intake Manifest 合同
@@ -118,16 +118,17 @@ intake 逻辑塞回 importer、legacy slicer 或 Qt UI。
 | incomplete audit | generated fixture | BLOCKED / stable code |
 | each required family candidate | 原始 PASS/外部修复/独立重建 | post-strict + attribute + repeatability PASS |
 
-真实 required family PASS 缺失时，单元合同测试和服务开发可以完成，但 R4-06 真实矩阵状态必须保持
-`REAL FAMILY INPUT BLOCKED`，不得把 R4-07 标记为可执行。
+真实 required family PASS 缺失时，单元合同测试、服务开发和 R4-07 Development Gate 可以完成，但
+R4-06 真实矩阵状态必须保持 `REAL FAMILY INPUT BLOCKED`，不得把 R4-07 final 或 R4-08 标记为可执行。
 
 ## 8. R4-07 与 R4-08 准备度
 
 | 任务 | 准备度 | 启动条件 |
 |---|---|---|
-| R4-06 | IMPLEMENTATION COMPLETE / REAL FAMILY INPUT 0/3 BLOCKED | 三个 family 各至少一个 candidate admitted |
-| R4-07 | DEPENDENCY PREPARED / WAIT R4-06 FAMILY MATRIX | 三个 family 全部 admitted，再运行四 case Release/global/legacy 矩阵 |
-| R4-08 | DEPENDENCY PREPARED / WAIT R4-07 | 四 case、预算、legacy TIFF/RIP 和 Quick CI 证据齐全 |
+| R4-06 | IMPLEMENTATION COMPLETE / DEVELOPMENT 2/2 / REAL FAMILY 0/3 | final Gate 仍需三个 family 各一个 candidate admitted |
+| R4-07 development | COMPLETE | 至少一个 development_model_pool candidate admitted |
+| R4-07 final | WAIT REAL FAMILY 3/3 | 三个 family 全部 admitted，再运行真实族 Release/global/legacy 矩阵 |
+| R4-08 | DEPENDENCY PREPARED / WAIT R4-07 FINAL | 真实族四 case、预算、legacy TIFF/RIP 和 Quick CI 证据齐全 |
 
 R4-07 的第四个 case 继续使用闭合 Texture2D 3MF。R4-08 只刷新 12E-08D GO/NO-GO，不在决策任务中
 偷跑 production adapter。
@@ -135,7 +136,8 @@ R4-07 的第四个 case 继续使用闭合 Texture2D 3MF。R4-08 只刷新 12E-0
 ## 9. 当前停止条件
 
 ```text
-三个 required family 没有 admitted candidate：不启动 R4-07；
+没有 development_model_pool admitted candidate：不启动 R4-07 development；
+三个 required family 没有 admitted candidate：不启动 R4-07 final/R4-08；
 要求用跨族 clean 模型替代 required family：停止；
 要求放宽 strict 或接受 sampled/incomplete 审计：停止；
 要求覆盖原模型或提交用户未跟踪资产：停止；

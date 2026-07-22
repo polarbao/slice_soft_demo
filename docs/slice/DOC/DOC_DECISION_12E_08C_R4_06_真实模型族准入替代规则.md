@@ -61,14 +61,23 @@ R4-07 中完成 minimum/intermediate/allTexture、full closure 和 Release 证�
 | `required_meigui_family` | 3 | 0 | BLOCKED |
 | `required_titian_family` | 1 | 0 | BLOCKED |
 
-因此 R4-06 可以完成合同和服务开发，但真实 family matrix 仍为 `0/3`，不得进入 R4-07 Release Gate。
+因此 R4-06 的 required-family 合同和服务开发已经完成，但真实 family matrix 仍为 `0/3`。依据后续
+`DOC_DECISION_12E_08C_R4_07_开发准入放宽规则.md`：
+
+```text
+任意 model 目录资产通过 development_model_pool intake，可解锁 R4-07 开发与 diagnostic 四 case；
+爱神/玫瑰/梯田 3/3 仍是 R4-07 最终真实族验收、生产预算冻结、R4-08 和 12E-08D 的前置条件。
+```
+
+当前 `xiao_ma` 与 `yecan` 各有一个 clean OBJ 通过 development intake，故 R4-07 开发已解锁；真实族最终
+Gate 保持 `0/3 BLOCKED`。
 
 ## 5. 安全边界
 
 ```text
 不放宽 strict；
 不接受 sampled/incomplete 自相交审计；
-不把 xiao_ma/yecan clean control 计入三个 required family；
+不把 xiao_ma/yecan clean control 计入三个 required family，但允许其作为 development_model_pool 解锁开发；
 不自动修改或覆盖 model 资产；
 不实现通用复杂自相交重建；
 不写 production TIFF/package；

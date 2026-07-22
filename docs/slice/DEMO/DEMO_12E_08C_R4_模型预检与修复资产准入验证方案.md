@@ -119,6 +119,7 @@ Quick CI baseline 必须有明确 PASS 或批准记录。
 
 ## 8. 完成判定
 
-R4-01..05 可在没有 admitted required family assets 时完成。R4-06 服务合同可先完成；R4-07..08 只有在
+R4-01..05 可在没有 admitted required family assets 时完成。R4-06 服务合同和 R4-07 Development Gate 可
+由通过 intake 的 `development_model_pool` 资产完成；R4-07 final 与 R4-08 只有在
 爱神、玫瑰、梯田三个 family 各至少一个候选通过上述验证后完成。否则阶段状态为
 `INTAKE IMPLEMENTED / REAL FAMILY BLOCKED`，不能输出 08D GO。

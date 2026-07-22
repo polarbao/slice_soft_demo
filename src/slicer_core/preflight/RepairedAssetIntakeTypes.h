@@ -139,7 +139,7 @@ struct RepairedAssetIntakeIssue
 };
 
 /**
- * @brief Complete R4-06 intake result for one required-family candidate.
+ * @brief Complete R4-06 intake result for one required-family or development candidate.
  */
 struct RepairedAssetIntakeResult
 {

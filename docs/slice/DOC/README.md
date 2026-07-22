@@ -34,7 +34,11 @@
 | `DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md` | R4-05 真实 clean OBJ/3MF width/material 正向矩阵结果 |
 | `DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md` | R4-06 required 修复资产接收、来源、属性与 post-strict 审计准备 |
 | `DOC_EXEC_12E_08C_R4_06_RepairedAssetIntake结果.md` | R4-06 intake 实现、合同测试和 required family 0/3 阻断结果 |
-| `DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md` | R4-07 四 case Release/global/legacy 守门准备 |
+| `DOC_DECISION_12E_08C_R4_07_开发准入放宽规则.md` | R4-07 Development Gate 与最终 required-family Gate 分离决策 |
+| `DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md` | R4-07 开发/最终双 Gate、四 case Release/global/legacy 守门准备 |
+| `DOC_EXEC_12E_08C_R4_07_DevelopmentGate结果.md` | development intake 2/2、四 case 4/4 与 legacy TIFF/RIP 结果 |
+| `assets/DIAGRAM_12E_R4_模型拓扑问题示意图.svg` | R4 strict 阻断问题类型与诊断边界示意 |
+| `assets/DIAGRAM_12E_R4_模型修复与准入流程示意图.svg` | 真实模型修复、属性恢复、重复审计与 R4-06/07 准入流程 |
 | `DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md` | R4-08 12E-08D GO/NO-GO 刷新准备 |
 | `DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后功能可继续、生产仍阻断以及正常/required 模型双轨分析 |
 
