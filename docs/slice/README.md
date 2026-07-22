@@ -8,7 +8,7 @@
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产配置、分区、纹理传递、raster/full closure、repair 与 Release/legacy 证据。R3-04 已输出 NO-GO。R4-01..06 和 R4-07 Development Gate 已完成；xiao_ma/yecan development intake 为 2/2，开发四 case 为 4/4 PASS。真实 required family matrix 仍为 0/3，因此 R4-07 最终验收、R4-08 与 12E-08D 继续阻断。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产证据。R4-01..07 已完成；xiao_ma/yecan development intake 为 2/2，开发四 case 为 4/4 PASS。R4-08 已执行并输出 `DECISION BLOCKED`：真实 required family 0/3、最终矩阵、生产预算、Quick CI 与授权未闭环，12E-08D 不可启动。下一可执行任务为 12E-09A-01 diagnostic facade。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出。
 
 ## 目录结构
 
@@ -121,6 +121,7 @@
 | `DOC/DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md` | R4-07 开发 Gate 与最终 required-family Gate、四 case 和 Release/legacy 边界 |
 | `DOC/DOC_EXEC_12E_08C_R4_07_DevelopmentGate结果.md` | development four-case 4/4、Release 开发测量和 legacy TIFF/RIP 回归结果 |
 | `DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md` | R4-08 证据输入、GO 条件、用户授权与决策状态准备 |
+| `REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md` | R4-08 实际证据矩阵、BLOCKED 决策、Quick CI 失败和后续准备度 |
 | `DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后 12E 目标可达性、模型双轨治理和预检必要性分析 |
 | `PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md` | 导入即检测、模式相关阻断、正常模型与 required 模型治理需求 |
 | `DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md` | Preflight service、cache、admission、Qt controller 与修复资产审计设计 |

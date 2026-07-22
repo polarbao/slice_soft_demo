@@ -1,13 +1,14 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY 12E-08C-R4
+> 文档状态：PREPARED / EXECUTION BLOCKED BY R4-08 DECISION
 > 日期：2026-07-20
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
 
 ## 1. 准备结论
 
 12E-08D 的产品模式、配置合同、pipeline 路由、共享 writer、错误状态和原子任务已明确。当前只能完成准备，
-不能开始生产接入，因为真实模型 repair/post-strict 和 Release budget 尚未通过。
+不能开始生产接入。R4-08 已完成正式刷新并输出 `DECISION BLOCKED`：required family 0/3、最终真实族
+four-case 缺失、Release production budget 未冻结、Quick CI golden 失败，且未取得 production path 授权。
 
 ## 2. 当前代码边界
 
@@ -60,6 +61,9 @@ legacy regression PASS；
 ```
 
 当前 Gate：BLOCKED。
+
+当前决策证据见 `../REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md`。在该报告输出 GO 前，本文的
+四个原子任务均只表示准备完成，不允许开始代码实现。
 
 ## 6. Writer 规则
 

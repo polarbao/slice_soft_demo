@@ -1,23 +1,20 @@
 # AI Workspace Topic Index
 
-> 更新日期：2026-07-21
+> 更新日期：2026-07-22
 
 ## Stage 12E 双切片模式与真实模型拓扑修复
 
-当前上下文：`context_handoff/2026-07-21_12E-08C-R3-02真实模型矩阵完成.md`
+当前上下文：`context_handoff/2026-07-22_12E-08C-R4-08决策刷新完成.md`
 
-当前任务入口：`docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md`
+当前任务入口：`docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md`
 
-下一任务：执行 `12E-08C-R3-03 Release Core 与 Legacy Regression`。
+下一可执行任务：`12E-09A-01 只读 diagnostic facade 与 UI DTO`。
 
-R2-01..04 已完成 cleanup、受约束 weld/winding、simple boundary fill、source/vertex/generated mapping、
-独立 post-strict/attribute/hash validator 和四 case 重复性证据。R3-01 已完成只读 non-manifold pattern
-classifier；R3-01A 已完成确定性 AABB BVH 完整证据；R3-02 已完成双 lane、双运行真实模型矩阵。三个
-required OBJ 均在 mutation 前因 confirmed/coplanar self-intersection fail-fast，闭合 3MF 保持 no-op strict
-PASS；任务证据 4/4 完整，production Gate 0/4 通过。R3-03 非生产 Release/legacy 准备已完成。12E-08D
-继续 BLOCKED；修复专项不得绕过 strict 或直接写 production package。Target State 已固化为
-`slicePipeline.mode=legacy|global_surface_shell`，两条 production success 均共用现有 RGBWSV TIFF writer，
-但 Router、global production adapter 和 Qt 选择器尚未实现。
+R4-01..06 和 R4-07 Development Gate 已完成，development intake 2/2、development four-case 4/4 PASS。
+R4-08 已执行并输出 BLOCKED：required family 0/3、最终真实族矩阵缺失、production budget 未冻结、Quick CI
+在 `material_process_top2 widthPx expected=48 actual=226` 失败，且未取得 production path 授权。12E-08D
+保持 NOT READY / NO-GO；不得绕过 strict 或直接写 production package。12E-09A diagnostic UI 已完成准备，
+09A-01 可执行；09B production Profile 继续等待 08D admission。
 
 ## Stage 12C Qt 工作台（历史）
 

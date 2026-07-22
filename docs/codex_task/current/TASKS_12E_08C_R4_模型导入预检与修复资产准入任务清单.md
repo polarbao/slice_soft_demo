@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-07 DEVELOPMENT COMPLETE / FINAL REQUIRED FAMILY 0/3 BLOCKED
+> 当前原子任务：R4-08 EXECUTION COMPLETE / DECISION BLOCKED
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -135,7 +135,7 @@ required family `0/3` 对 R4-08/08D 的阻断。详见
 
 ## 9. R4-08 08D GO/NO-GO Refresh
 
-状态：DEPENDENCY PREPARED / WAIT R4-07 FINAL REQUIRED-FAMILY GATE。
+状态：EXECUTION COMPLETE / DECISION BLOCKED。
 
 范围：更新 matrix/report/context；只作决策，不实现 adapter。
 
@@ -143,6 +143,10 @@ required family `0/3` 对 R4-08/08D 的阻断。详见
 
 决策输入、GO 条件、`GO/CONDITIONAL_TECHNICAL_PASS/NO-GO/BLOCKED` 状态和上下文同步范围见
 `docs/slice/DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md`。
+
+结果：required family `0/3`、最终真实族 four-case 缺失、生产预算未冻结、Quick CI golden 失败且未取得
+08D production 授权，因此 R4-08 输出 `BLOCKED`，12E-08D 保持 `NOT READY / NO-GO`。详见
+`docs/slice/REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md`。
 
 ## 10. 提交要求
 

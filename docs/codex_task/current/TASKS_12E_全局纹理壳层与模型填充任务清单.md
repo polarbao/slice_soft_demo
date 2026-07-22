@@ -1,6 +1,6 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-08C-R3 COMPLETE / R3-04 NO-GO / R4-01..05 COMPLETE / PRODUCTION NOT ADMITTED
+> 文档状态：12E-08C-R4-08 EXECUTION COMPLETE / DECISION BLOCKED / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-22
 > 当前项目原子任务：12E-08C-R4-06 IMPLEMENTATION COMPLETE / FAMILY MATRIX 0/3 BLOCKED
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
@@ -450,7 +450,7 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 
 ### 11.3 12E-08C-R4 模型导入预检与修复资产准入
 
-状态：IN PROGRESS；R4-01..06 IMPLEMENTATION COMPLETE，REAL FAMILY MATRIX 0/3 BLOCKED；插入于 R3-04 NO-GO 与 08D 之间。
+状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED；REAL FAMILY MATRIX 0/3；插入于 R3-04 NO-GO 与 08D 之间。
 
 目标：
 
@@ -475,8 +475,9 @@ R4-07 Four-case Release Gate；
 R4-08 08D GO/NO-GO Refresh。
 ```
 
-R4-01..06 软件能力已完成。R4-07..08 依赖三个 required family 各至少一个 admitted candidate；跨族正常
-模型不能替代 required family 解除生产阻断。
+R4-01..06 软件能力和 R4-07 Development Gate 已完成。R4-08 已按当前证据执行并输出 BLOCKED；跨族正常
+模型不能替代 required family 解除生产阻断。下一可执行任务为 12E-09A-01 diagnostic facade，12E-08D
+继续等待后续 R4-08 GO。
 
 准备入口：
 
@@ -485,6 +486,7 @@ docs/slice/DOC/DOC_DECISION_12E_08C_R4_模型导入预检与修复资产准入�
 docs/slice/DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md
 docs/slice/DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
+docs/slice/REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md
 ```
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config

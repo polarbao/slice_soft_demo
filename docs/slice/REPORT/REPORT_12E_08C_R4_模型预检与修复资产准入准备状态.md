@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-07 DEVELOPMENT COMPLETE / FINAL FAMILY MATRIX 0/3 BLOCKED
+> 文档状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED / PRODUCTION NOT ADMITTED
 > 日期：2026-07-22
 
 ## 1. 阶段结论
@@ -31,7 +31,8 @@ R4-03 Mode Admission/Pipeline Gate；
 R4-04 Qt Preflight UI；
 R4-05 Clean Positive Matrix。
 R4-06 Required Family Candidate Intake 候选审计（软件实现已完成）。
-R4-07 Development Gate（development intake 与四 case 已完成）。
+R4-07 Development Gate（development intake 与四 case 已完成）；
+R4-08 GO/NO-GO Refresh（已执行，决策为 BLOCKED）。
 ```
 
 这些任务不要求先取得三个 family PASS 模型，但不得写 global production package。
@@ -41,8 +42,8 @@ R4-07 Development Gate（development intake 与四 case 已完成）。
 ```text
 R4-06 真实矩阵：等待三个 required family 各一个 admitted candidate；
 R4-07 最终验收：等待 required family matrix 3/3；
-R4-08：等待真实族四 case、生产预算和 Release/global/legacy 最终证据；
-12E-08D：等待 R4-08 GO 和用户明确授权。
+R4-08 GO：被真实族 four-case、生产预算、Quick CI 和授权阻断；
+12E-08D：等待后续 R4-08 重跑输出 GO 和用户明确授权。
 ```
 
 ## 5. 固定产品参数
@@ -58,9 +59,9 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-07 Development Gate` 已完成。当前 xiao_ma/yecan development intake 为 `2/2 admitted`，开发
-四 case 为 `4/4 PASS`；required family matrix 仍为 0/3，因此下一最终准入工作是等待三个 family 的修复或
-重建候选进入 intake，而不是启动 R4-08。
+`12E-08C-R4-08` 已完成当前证据下的正式刷新，输出 `DECISION BLOCKED`。当前可执行开发任务是
+`12E-09A-01` diagnostic facade；生产准入路线仍需等待三个 family 的修复/重建候选进入 intake，并关闭
+Quick CI、生产预算和授权 blocker。12E-08D 不可启动。
 
 ## 7. 模型资产准备结果
 
@@ -176,7 +177,7 @@ R4-06 已补齐独立准备文档，冻结三个 required family、candidate kin
 控制组，不计入 `requiredFamilyPassCount`。
 
 R4-06 当前为 `IMPLEMENTATION COMPLETE / DEVELOPMENT 2/2 / REAL FAMILY 0/3`；R4-07 为
-`DEVELOPMENT COMPLETE / FINAL WAIT FAMILY 3/3`；R4-08 为 `DEPENDENCY PREPARED / WAIT R4-07 FINAL`。详细准备见
+`DEVELOPMENT COMPLETE / FINAL WAIT FAMILY 3/3`；R4-08 为 `EXECUTION COMPLETE / DECISION BLOCKED`。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。
 
 ## 18. R4-06 实施结果
@@ -195,10 +196,12 @@ R4-07 development 已使用 xiao_ma minimum/allTexture、yecan intermediate 和 
 fresh intake、global partition/texture/raster/full closure、Release 三次测量、legacy TIFF/RIP 与 no-production
 边界全部通过。开发测量不冻结生产预算；required family 0/3 仍阻止最终真实族矩阵。
 
-R4-08 已冻结证据输入、逐项 GO 条件、四种决策状态和上下文同步范围。技术证据通过但没有用户授权时只能
-输出 `CONDITIONAL_TECHNICAL_PASS`，不能启动 08D。准备详见：
+R4-08 已按实际证据执行：required family 0/3、最终真实族 four-case 缺失、生产预算未冻结、Quick CI 在
+`material_process_top2 widthPx expected=48 actual=226` 失败，且没有 production path 授权，因此输出
+`BLOCKED`，不能启动 08D。准备与结果详见：
 
 ```text
 ../DOC/DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md
 ../DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md
+REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md
 ```

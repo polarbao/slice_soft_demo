@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：IN PROGRESS / R4-07 DEVELOPMENT COMPLETE / FINAL FAMILY MATRIX 0/3 BLOCKED
+> 文档状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED / FINAL FAMILY 0/3
 > 日期：2026-07-22
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
 
@@ -70,8 +70,9 @@ R4-07/08 的四 case Release Gate 与 08D GO/NO-GO 刷新已分别完成原子�
 ../DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md
 ```
 
-当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07 development four-case 已完成；这不解除
-`requiredFamilyPassCount=0/3` 对 R4-08、12E-08D 和最终生产准入的阻断。
+当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07 development four-case 已完成。R4-08 已
+执行并输出 `DECISION BLOCKED`；`requiredFamilyPassCount=0/3`、最终矩阵、生产预算、Quick CI 和用户授权
+仍阻断 12E-08D。
 
 ## 5. 复杂重建后备路线
 
@@ -88,7 +89,7 @@ R5 必须另行完成 CMake/vcpkg、许可证、维护、尺寸误差、UV/材�
 ## 6. 与 08D/09/10 的关系
 
 ```text
-08D：等待 R4-08 GO；
+08D：R4-08 当前 BLOCKED，等待后续证据关闭后重跑并输出 GO；
 09A：R4B 后可继续 diagnostic UI；
 09B：等待 08D production admission；
 10A：可基于 R4B 准备 preview；
