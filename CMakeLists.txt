@@ -31,6 +31,8 @@ add_library(slicer_core
     src/slicer_core/diagnostics/MaterialClosureSemanticDetector.h
     src/slicer_core/diagnostics/ModelPreflightReport.cpp
     src/slicer_core/diagnostics/ModelPreflightReport.h
+    src/slicer_core/diagnostics/RepairedAssetIntakeReport.cpp
+    src/slicer_core/diagnostics/RepairedAssetIntakeReport.h
     src/slicer_core/diagnostics/MeshRepairReport.cpp
     src/slicer_core/diagnostics/MeshRepairReport.h
     src/slicer_core/diagnostics/TextureFillPartitionClosureAdapter.cpp
@@ -177,6 +179,10 @@ add_library(slicer_core
     src/slicer_core/preflight/ModelPreflightService.h
     src/slicer_core/preflight/ModelPreflightTypes.cpp
     src/slicer_core/preflight/ModelPreflightTypes.h
+    src/slicer_core/preflight/RepairedAssetIntakeService.cpp
+    src/slicer_core/preflight/RepairedAssetIntakeService.h
+    src/slicer_core/preflight/RepairedAssetIntakeTypes.cpp
+    src/slicer_core/preflight/RepairedAssetIntakeTypes.h
     src/slicer_core/raster/RasterBoundary.cpp
     src/slicer_core/raster/RasterBoundary.h
     src/slicer_core/raster/TextureFillPartitionRasterMapper.cpp
@@ -275,6 +281,12 @@ add_executable(texture_fill_partition_positive_matrix
 )
 
 target_link_libraries(texture_fill_partition_positive_matrix PRIVATE slicer_core)
+
+add_executable(repaired_asset_intake
+    apps/repaired_asset_intake/Main.cpp
+)
+
+target_link_libraries(repaired_asset_intake PRIVATE slicer_core)
 
 add_executable(mesh_repair_preflight
     apps/mesh_repair_preflight/main.cpp
@@ -411,6 +423,15 @@ add_executable(texture_fill_partition_positive_matrix_unit_tests
 
 target_link_libraries(texture_fill_partition_positive_matrix_unit_tests PRIVATE slicer_core)
 target_compile_definitions(texture_fill_partition_positive_matrix_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+add_executable(repaired_asset_intake_unit_tests
+    tests/unit/repaired_asset_intake/Main.cpp
+)
+
+target_link_libraries(repaired_asset_intake_unit_tests PRIVATE slicer_core)
+target_compile_definitions(repaired_asset_intake_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
@@ -556,6 +577,7 @@ add_test(NAME texture_fill_partition_full_closure_adapter_unit_tests COMMAND tex
 add_test(NAME texture_fill_partition_release_benchmark_unit_tests COMMAND texture_fill_partition_release_benchmark_unit_tests)
 add_test(NAME model_fill_material_resolver_unit_tests COMMAND model_fill_material_resolver_unit_tests)
 add_test(NAME texture_fill_partition_positive_matrix_unit_tests COMMAND texture_fill_partition_positive_matrix_unit_tests)
+add_test(NAME repaired_asset_intake_unit_tests COMMAND repaired_asset_intake_unit_tests)
 add_test(
     NAME texture_fill_partition_release_benchmark_cli_test
     COMMAND texture_fill_partition_release_benchmark

@@ -1,0 +1,38 @@
+{
+  "admitted": true,
+  "candidate": {
+    "componentCount": 1,
+    "fullAuditComplete": true,
+    "preflightStatus": "passed",
+    "strictPass": true,
+    "triangleCount": 12,
+    "vertexCount": 8
+  },
+  "candidateKind": "strict_pass_original",
+  "delta": {
+    "attributesChanged": false,
+    "geometryChanged": false,
+    "maxAbsDimensionDeltaMm": 0,
+    "resourcesChanged": false
+  },
+  "diagnosticOnly": true,
+  "familyId": "required_aishen_family",
+  "manifestAccepted": true,
+  "original": {
+    "componentCount": 1,
+    "fullAuditComplete": true,
+    "preflightStatus": "passed",
+    "strictPass": true,
+    "triangleCount": 12,
+    "vertexCount": 8
+  },
+  "productionOutputWritten": false,
+  "reasonCodes": [],
+  "repeatability": {
+    "hashMatch": true,
+    "runCount": 2
+  },
+  "requiredFamilyPassCount": 1,
+  "schema": "slicesoft.repaired_asset_intake.12e_08c_r4.1",
+  "status": "admitted"
+}

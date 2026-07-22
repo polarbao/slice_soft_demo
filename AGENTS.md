@@ -19,9 +19,9 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12E-08C-R4-05 Clean Positive Matrix`.
+- The latest completed task is `12E-08C-R4-06 Repaired Asset Intake Implementation`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-03 completed the non-production Release evidence; R3-04 records `NO-GO / FROZEN`. `12E-08C-R4-01..05` are complete. R4-06 intake development is authorized under the aishen/meigui/titian required-family rule, but the real family matrix is 0/3 because all current candidates have confirmed self-intersection; R4-07 and 12E-08D remain blocked.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-03 completed the non-production Release evidence; R3-04 records `NO-GO / FROZEN`. `12E-08C-R4-01..06` software implementation is complete. R4-06 uses the aishen/meigui/titian required-family intake rule, but the real family matrix is 0/3 because all current candidates have confirmed self-intersection; R4-07 and 12E-08D remain blocked.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - Current global_surface_shell remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. The approved Target State is explicit `slicePipeline.mode=legacy|global_surface_shell`, with legacy as default and both admitted production modes sharing the existing RGBWSV TIFF writer. This target is not implemented and does not authorize `12E-08D`; externally repaired or independently audited required OBJ inputs, four-case strict/global closure, a frozen real-model Release budget, the Quick CI baseline decision, and explicit user confirmation are still required.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.

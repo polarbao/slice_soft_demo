@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08C-R4-06 Repaired Asset Intake 准备
 
-> 文档状态：READY FOR DEVELOPMENT / REAL FAMILY INPUT BLOCKED
+> 文档状态：IMPLEMENTED / REAL FAMILY INPUT 0/3 BLOCKED
 > 日期：2026-07-22
 > 前置任务：R4-01..05 COMPLETE
 > 生产边界：只接收和审计修复资产，不直接写生产 TIFF/package
@@ -125,7 +125,7 @@ intake 逻辑塞回 importer、legacy slicer 或 Qt UI。
 
 | 任务 | 准备度 | 启动条件 |
 |---|---|---|
-| R4-06 | READY FOR DEVELOPMENT / REAL FAMILY INPUT BLOCKED | 实现 intake；三个 family 各至少一个 candidate admitted |
+| R4-06 | IMPLEMENTATION COMPLETE / REAL FAMILY INPUT 0/3 BLOCKED | 三个 family 各至少一个 candidate admitted |
 | R4-07 | DEPENDENCY PREPARED / WAIT R4-06 FAMILY MATRIX | 三个 family 全部 admitted，再运行四 case Release/global/legacy 矩阵 |
 | R4-08 | DEPENDENCY PREPARED / WAIT R4-07 | 四 case、预算、legacy TIFF/RIP 和 Quick CI 证据齐全 |
 

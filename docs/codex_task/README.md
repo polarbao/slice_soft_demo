@@ -55,7 +55,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4-01..03 COMPLETE / R4-04 READY / RELEASE BUDGET BLOCKED`。R4-04..05 允许继续完成 Qt 预检 UI 和正常闭合模型 minimum/intermediate/allTexture 正向矩阵；R4-06..08 仍依赖三个 required OBJ 外部修复资产。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；R4-08 GO 前不得启动 12E-08D。
+12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4-01..06 IMPLEMENTATION COMPLETE / REQUIRED FAMILY MATRIX 0/3`。R4-06 intake 软件能力已完成；R4-07..08 仍依赖爱神、玫瑰、梯田三个 required family 各一个 admitted 候选。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；R4-08 GO 前不得启动 12E-08D。
 
 ## 12F Release Runtime 与性能优化专项
 

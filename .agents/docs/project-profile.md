@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08C-R4 in progress; R4-01..05 are complete and R4-06 required-family intake development is authorized; dual legacy/global_surface_shell production target and unified TIFF contract remain target state only
-- Latest completed milestone: Stage 12E-08C-R4-05 Clean Positive Matrix
-- Latest completed task: `12E-08C-R4-05 Clean Positive Matrix`
-- Current task: `R4-06 DEVELOPMENT AUTHORIZED / REQUIRED FAMILY MATRIX 0/3`; 12E-08D is blocked
-- Prepared stage: R4-06 intake contract uses aishen/meigui/titian required families; service development may proceed, but R4-07 waits until each family has one admitted candidate. R4-07/08 are dependency-prepared; `12E-09A diagnostic UI` can continue after the R4 positive path; 12E-08D remains blocked pending R4-08 GO and explicit user authorization; 12E-09B remains blocked
+- Current phase: Stage 12E-08C-R4 in progress; R4-01..06 software implementation is complete, while required-family admission remains 0/3; dual legacy/global_surface_shell production target and unified TIFF contract remain target state only
+- Latest completed milestone: Stage 12E-08C-R4-06 Repaired Asset Intake software
+- Latest completed task: `12E-08C-R4-06 Repaired Asset Intake Implementation`
+- Current task: `WAIT REQUIRED FAMILY MATRIX 3/3`; current matrix is 0/3 and 12E-08D is blocked
+- Prepared stage: R4-06 intake uses aishen/meigui/titian required families and its service/CLI/report/tests are complete. R4-07 waits until each family has one admitted candidate. R4-07/08 are dependency-prepared; `12E-09A diagnostic UI` can continue after the R4 positive path; 12E-08D remains blocked pending R4-08 GO and explicit user authorization; 12E-09B remains blocked
 - Validated R4 model inputs: 21 OBJ/3MF assets under `model` were audited. All 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS controls. The required aishen/meigui/titian families currently have 0/3 admitted families because all 9 candidates have confirmed self-intersection. The `model` directory has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` for the positive Texture2D 3MF lane.
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only

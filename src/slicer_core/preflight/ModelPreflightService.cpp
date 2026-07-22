@@ -534,7 +534,8 @@ ModelPreflightExecutionResult ModelPreflightService::Run(
         {
             execution.cacheHit = true;
             execution.fullComplete = true;
-            execution.result = found->second;
+            execution.result = found->second.result;
+            execution.full_audit = found->second.full_audit;
             return execution;
         }
     }
@@ -569,6 +570,10 @@ ModelPreflightExecutionResult ModelPreflightService::Run(
         const MeshRepairResult diagnostics = EvaluateMeshRepairPreflight(
             preflightRequest);
         execution.fullComplete = true;
+        execution.full_audit.available = true;
+        execution.full_audit.diagnostics = diagnostics.preRepair;
+        execution.full_audit.self_intersection =
+            diagnostics.completeSelfIntersectionAnalysis;
         for (const ValidationIssue& issue : diagnostics.issues)
         {
             execution.result.issues.push_back(MakeIssue(
@@ -667,7 +672,9 @@ ModelPreflightExecutionResult ModelPreflightService::Run(
         || execution.result.status == ModelPreflightStatus::Warning)
     {
         std::lock_guard<std::mutex> lock{m_cacheMutex};
-        m_cache[execution.result.cacheKey] = execution.result;
+        m_cache[execution.result.cacheKey] = {
+            execution.result,
+            execution.full_audit};
     }
     return execution;
 }

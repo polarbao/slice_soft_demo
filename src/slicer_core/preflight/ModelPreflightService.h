@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/geometry/repair/MeshRepairTypes.h"
 #include "slicer_core/preflight/ModelPreflightTypes.h"
 
 #include <cstddef>
@@ -38,6 +39,20 @@ struct ModelPreflightRequest
 };
 
 /**
+ * @brief Full topology evidence retained with one completed preflight run.
+ *
+ * This execution-only evidence is not part of the stable model-preflight JSON
+ * schema. Downstream diagnostic tools may consume it without re-running the
+ * complete self-intersection audit.
+ */
+struct ModelPreflightFullAuditEvidence
+{
+    bool available{false};
+    MeshRepairDiagnosticsSummary diagnostics;
+    MeshCompleteSelfIntersectionAnalysis self_intersection;
+};
+
+/**
  * @brief Execution metadata and immutable preflight result.
  */
 struct ModelPreflightExecutionResult
@@ -48,6 +63,7 @@ struct ModelPreflightExecutionResult
     bool cacheHit{false};
     bool cancelled{false};
     bool stale{false};
+    ModelPreflightFullAuditEvidence full_audit;
     ModelPreflightResult result;
 };
 
@@ -79,8 +95,14 @@ public:
     std::size_t CacheSize() const;
 
 private:
+    struct CachedPreflightResult
+    {
+        ModelPreflightResult result;
+        ModelPreflightFullAuditEvidence full_audit;
+    };
+
     mutable std::mutex m_cacheMutex;
-    std::map<std::string, ModelPreflightResult> m_cache;
+    std::map<std::string, CachedPreflightResult> m_cache;
 };
 
 }  // namespace slicer_core

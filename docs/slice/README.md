@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-22
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3 COMPLETE、R3-04 NO-GO；R4-01..05 COMPLETE
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3 COMPLETE、R3-04 NO-GO；R4-01..06 IMPLEMENTATION COMPLETE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产配置、分区、纹理传递、raster/full closure、repair 与 Release/legacy 证据。三个 OBJ 在 mutation 前因完整自相交证据 fail-fast，闭合 3MF 完成 global full chain；R3-04 已输出 NO-GO。R4-01..05 已完成 ModelPreflight、模式准入、Qt 一键守门和 clean OBJ/3MF width/material 正向矩阵；R4-06 合同已准备但等待三个外部修复 required OBJ。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出；12E-08D 继续阻断。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产配置、分区、纹理传递、raster/full closure、repair 与 Release/legacy 证据。三个 OBJ 在 mutation 前因完整自相交证据 fail-fast，闭合 3MF 完成 global full chain；R3-04 已输出 NO-GO。R4-01..06 已完成 ModelPreflight、模式准入、Qt 一键守门、clean OBJ/3MF 正向矩阵和 required family intake 软件能力；真实 family matrix 仍为 0/3。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出；R4-07 与 12E-08D 继续阻断。
 
 ## 目录结构
 
@@ -116,6 +116,7 @@
 | `DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md` | R4-05 真实 clean OBJ/3MF、三点 width、Model Fill 解析、汇总 schema 与验证准备 |
 | `DOC/DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md` | R4-05 三个真实输入、width/material 矩阵与非生产边界验证结果 |
 | `DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md` | R4-06 required 修复资产 intake、provenance、属性/post-strict 与 R4-07/08 依赖准备 |
+| `DOC/DOC_EXEC_12E_08C_R4_06_RepairedAssetIntake结果.md` | R4-06 intake service/CLI/report、完整审计、负向测试与真实 family 0/3 结果 |
 | `DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后 12E 目标可达性、模型双轨治理和预检必要性分析 |
 | `PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md` | 导入即检测、模式相关阻断、正常模型与 required 模型治理需求 |
 | `DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md` | Preflight service、cache、admission、Qt controller 与修复资产审计设计 |

@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01..05 COMPLETE / R4-06 DEVELOPMENT AUTHORIZED / FAMILY MATRIX 0/3
+> 文档状态：IN PROGRESS / R4-01..06 IMPLEMENTATION COMPLETE / FAMILY MATRIX 0/3 BLOCKED
 > 日期：2026-07-22
 
 ## 1. 阶段结论
@@ -30,7 +30,7 @@ R4-02 Two-stage Preflight；
 R4-03 Mode Admission/Pipeline Gate；
 R4-04 Qt Preflight UI；
 R4-05 Clean Positive Matrix。
-R4-06 Required Family Candidate Intake 服务开发。
+R4-06 Required Family Candidate Intake 候选审计（软件实现已完成）。
 ```
 
 这些任务不要求先取得三个 family PASS 模型，但不得写 global production package。
@@ -57,8 +57,8 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-05 Clean Positive Matrix` 已完成；下一原子任务为 R4-06 Repaired Asset Intake。其合同准备
-已完成并获准开发，但当前 required family matrix 为 0/3，因此服务可实现，真实资产 Gate 不可放行。
+`12E-08C-R4-06 Repaired Asset Intake` 软件实现已完成。当前 required family matrix 为 0/3，因此真实资产
+Gate 不可放行；下一可执行开发任务不是 R4-07，而是等待三个 family 的修复/重建候选进入 intake。
 
 ## 7. 模型资产准备结果
 
@@ -121,7 +121,7 @@ Qt controller/presenter/coordinator/panel 边界、QThreadPool/generation/cancel
 capability probe、三条切片入口统一守门、中文状态机和 UI Smoke 已冻结。R4-04 达到
 `READY FOR DEVELOPMENT`。
 
-R4-05 基础准备完整；R4-06 的合同准备完整并获准开发，但三个 required family 当前均无 admitted candidate；
+R4-05 已完成；R4-06 的合同与软件实现已完成，但三个 required family 当前均无 admitted candidate；
 R4-07/08 为依赖已准备、不可提前执行。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_04_QtPreflightUI准备.md`。
 
@@ -150,7 +150,7 @@ Quick CI 在 300 秒窗口内未完成，独立 golden 仍确认既有
 只读使用且不纳入提交。正向 3MF 继续使用 `samples/models/3mf/texture2d_checker_cube.3mf`。
 
 这些正常模型已用于 R4-05，但不能替代 required family 解除 R4-06..08。R4-05 现为
-`COMPLETE`；R4-06 服务开发可继续，R4-07 以后仍由真实 family matrix 阻断。
+`COMPLETE`；R4-06 可接收后续真实候选，R4-07 以后仍由真实 family matrix 阻断。
 
 ## 16. R4-05 原子级准备结果
 
@@ -172,6 +172,15 @@ R4-06 已补齐独立准备文档，冻结三个 required family、candidate kin
 材质/UV/纹理属性差异、完整自相交、post-strict 与 repeatability 准入字段。已验证跨族 clean 模型只作 intake
 控制组，不计入 `requiredFamilyPassCount`。
 
-R4-06 当前为 `DEVELOPMENT AUTHORIZED / REAL FAMILY MATRIX 0/3`；R4-07 为
+R4-06 当前为 `IMPLEMENTATION COMPLETE / REAL FAMILY MATRIX 0/3 BLOCKED`；R4-07 为
 `DEPENDENCY PREPARED / WAIT R4-06 FAMILY MATRIX`；R4-08 为 `DEPENDENCY PREPARED / WAIT R4-07`。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。
+
+## 18. R4-06 实施结果
+
+已实现 required family candidate 的 DTO/service/CLI/report、原/新 hash、provenance、尺寸/姿态、材质/纹理/UV
+差异、完整自相交、post-strict 和两次审计 repeatability。`ModelPreflightService` 复用同一次完整审计 evidence，
+稳定 preflight JSON schema 未改变。Generated unit/golden、相关 preflight 回归和 Release 真实 family 基线脚本
+通过；三个现有代表均按预期 BLOCKED，未写 production output。
+
+详细结果见 `../DOC/DOC_EXEC_12E_08C_R4_06_RepairedAssetIntake结果.md`。
