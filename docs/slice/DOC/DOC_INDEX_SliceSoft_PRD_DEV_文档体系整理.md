@@ -3,9 +3,9 @@
 > 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-21
+> 更新日期：2026-07-22
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成；12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；R4-01..02 COMPLETE，R4-03 READY；12E-08D 继续阻断；12F-00/01 已完成、性能算法任务未开始
+> 当前阶段判断：12C 与 12D 已完成；12E-01..07 与 12E-08A/08B/08C 已完成；12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；R4-01..03 COMPLETE，R4-04 PREPARATION；12E-08D 继续阻断；12F-00/01 已完成、性能算法任务未开始
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
 最新完成阶段：12E-08C-R3 Release/Legacy 非生产证据与 R3-04 NO-GO 决策
-当前执行阶段：12E-08C-R4 IN PROGRESS / R4-01..02 COMPLETE
-最新完成任务：12E-08C-R4-02 Two-stage Preflight Service
-准备完成、等待启动：R4-03 Mode Admission and Pipeline Gate；12E-09A diagnostic UI 可在 R4B 后继续；12E-08D 被 R4 Gate 阻断；12F-02 等待用户明确启动
+当前执行阶段：12E-08C-R4 IN PROGRESS / R4-01..03 COMPLETE
+最新完成任务：12E-08C-R4-03 Mode Admission and Pipeline Gate
+当前准备任务：R4-04 Qt Preflight UI；12E-09A diagnostic UI 可在 R4B 后继续；12E-08D 被 R4 Gate 阻断；12F-02 等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -434,4 +434,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；R4-01..02 COMPLETE，R4-03 READY；12F-00/01 已完成。12E-09A 可在 R4 正向 UI 链后继续，12E-08D 被 required 修复资产/strict/Release gate 阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3 已完成非生产证据，R3-04 NO-GO；R4-01..03 COMPLETE，R4-04 PREPARATION；12F-00/01 已完成。12E-09A 可在 R4 正向 UI 链后继续，12E-08D 被 required 修复资产/strict/Release gate 阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。

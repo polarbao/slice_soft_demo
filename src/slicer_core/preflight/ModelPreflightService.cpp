@@ -107,7 +107,14 @@ std::filesystem::path ResolveModelPath(
     {
         return config.input.model_path.lexically_normal();
     }
-    return (configDirectory / config.input.model_path).lexically_normal();
+    const std::filesystem::path fromConfig =
+        (configDirectory / config.input.model_path).lexically_normal();
+    if (std::filesystem::exists(fromConfig))
+    {
+        return fromConfig;
+    }
+    return std::filesystem::absolute(
+        std::filesystem::current_path() / config.input.model_path).lexically_normal();
 }
 
 std::vector<ResourceEntry> CollectResources(const ModelReport& scene)

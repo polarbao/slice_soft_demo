@@ -3,6 +3,7 @@
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/model.h"
 #include "slicer_core/pipeline/OpenVdbCandidatePipeline.h"
+#include "slicer_core/pipeline/SlicePipeline.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/slicer.h"
 #include "slicer_core/system/ProcessMemoryStats.h"
@@ -665,7 +666,8 @@ int main(int argc, char** argv)
         slicer_core::SliceRunOptions run_options;
         run_options.write_tiff_layers = !options.preview_only;
         run_options.progress_callback = PrintSliceProgress;
-        const slicer_core::SliceRunResult result = slicer_core::run_slicer(options.config_path, run_options);
+        const slicer_core::SliceRunResult result =
+            slicer_core::RunSlicePipelineLegacy(options.config_path, run_options);
         std::cout << "slicer_cli: generated package\n";
         if (options.preview_only)
         {

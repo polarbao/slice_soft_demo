@@ -36,14 +36,14 @@ struct OpenVdbCandidatePipelineOptions
 };
 
 /**
- * @brief Run the explicit OpenVDB candidate package writer path.
+ * @brief Run the explicit OpenVDB candidate path after strict model preflight.
  * @param configPath Slice config path.
  * @return Candidate package summary.
  */
 OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem::path& configPath);
 
 /**
- * @brief Run the explicit OpenVDB candidate path with configurable output controls.
+ * @brief Run the preflight-gated OpenVDB candidate path with configurable output controls.
  * @param configPath Slice config path.
  * @param options Output controls. Use disabled outputs only for benchmark/diagnostic paths.
  * @return Candidate package summary.

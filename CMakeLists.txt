@@ -159,12 +159,16 @@ add_library(slicer_core
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h
     src/slicer_core/pipeline/OpenVdbCandidatePipeline.cpp
     src/slicer_core/pipeline/OpenVdbCandidatePipeline.h
+    src/slicer_core/pipeline/ModelPreflightGate.cpp
+    src/slicer_core/pipeline/ModelPreflightGate.h
     src/slicer_core/pipeline/PipelineStepResult.cpp
     src/slicer_core/pipeline/PipelineStepResult.h
     src/slicer_core/pipeline/SlicePipeline.cpp
     src/slicer_core/pipeline/SlicePipeline.h
     src/slicer_core/preflight/ModelPreflightCacheIdentity.cpp
     src/slicer_core/preflight/ModelPreflightCacheIdentity.h
+    src/slicer_core/preflight/ModelPreflightAdmissionPolicy.cpp
+    src/slicer_core/preflight/ModelPreflightAdmissionPolicy.h
     src/slicer_core/preflight/ModelPreflightService.cpp
     src/slicer_core/preflight/ModelPreflightService.h
     src/slicer_core/preflight/ModelPreflightTypes.cpp
@@ -460,6 +464,18 @@ target_compile_definitions(model_preflight_service_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(model_preflight_admission_unit_tests
+    tests/unit/model_preflight_admission/main.cpp
+)
+
+target_link_libraries(model_preflight_admission_unit_tests PRIVATE slicer_core)
+
+add_executable(model_preflight_pipeline_gate_unit_tests
+    tests/unit/model_preflight_pipeline_gate/main.cpp
+)
+
+target_link_libraries(model_preflight_pipeline_gate_unit_tests PRIVATE slicer_core)
+
 add_executable(mesh_repair_fixture_golden_unit_tests
     tests/unit/mesh_repair_fixture_golden/main.cpp
 )
@@ -662,6 +678,8 @@ add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_comp
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
+add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
+add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
 add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_unit_tests)

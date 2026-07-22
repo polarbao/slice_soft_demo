@@ -394,6 +394,27 @@ bool RealCleanInputsPassSharedDiagnostics()
     return passed;
 }
 
+bool ProjectRootRelativeModelPathMatchesImporter()
+{
+    const std::filesystem::path sourceRoot{SLICESOFT_SOURCE_DIR};
+    const std::filesystem::path previousDirectory = std::filesystem::current_path();
+    std::filesystem::current_path(sourceRoot);
+
+    slicer_core::ModelPreflightService service;
+    slicer_core::ModelPreflightRequest request;
+    request.configPath = sourceRoot / "samples/configs/slice_config.json";
+    const auto result = service.Run(request);
+
+    std::filesystem::current_path(previousDirectory);
+    return ExpectTrue(result.fastComplete, "root-relative model path completes fast import")
+        && ExpectTrue(
+            !result.result.identity.sourceHash.empty(),
+            "root-relative model path uses the same resolved source as importer")
+        && ExpectTrue(
+            !HasIssue(result, slicer_core::ModelPreflightErrorCode::ImportInvalid),
+            "root-relative model path does not produce import-invalid");
+}
+
 }  // namespace
 
 int main()
@@ -407,6 +428,7 @@ int main()
         {"cancelled_and_stale_results_are_not_cached", CancelledAndStaleResultsAreNotCached},
         {"cancellation_works_at_stage_boundaries", CancellationWorksAtStageBoundaries},
         {"real_clean_inputs_pass_shared_diagnostics", RealCleanInputsPassSharedDiagnostics},
+        {"project_root_relative_model_path_matches_importer", ProjectRootRelativeModelPathMatchesImporter},
     };
 
     bool passed{true};

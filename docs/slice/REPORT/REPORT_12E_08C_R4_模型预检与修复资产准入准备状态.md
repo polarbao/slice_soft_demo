@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01..02 COMPLETE / R4-03 READY
+> 文档状态：IN PROGRESS / R4-01..03 COMPLETE / R4-04 PREPARATION
 > 日期：2026-07-21
 
 ## 1. 阶段结论
@@ -56,7 +56,7 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-03 Mode Admission and Pipeline Gate` 已完成准备，等待用户明确启动代码实现。
+`12E-08C-R4-03 Mode Admission and Pipeline Gate` 已完成；下一任务为 R4-04 Qt Preflight UI 准备。
 
 ## 7. 模型资产准备结果
 
@@ -101,3 +101,13 @@ Debug 全量构建和相关 CTest 通过。Quick CI 仍停在既有
 
 R4-03 达到 `READY FOR DEVELOPMENT`。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_03_ModeAdmission与PipelineGate准备.md`。
+
+## 12. R4-03 实施结果
+
+独立模式准入策略、backend-neutral pipeline gate、legacy/global facade 和普通 CLI 入口已经接通。shared fatal
+同时阻断两种模式，完整拓扑问题保持 legacy warning/global blocked；blocked 输入不启动核心或 writer，且
+不存在 global -> legacy 自动回退。
+
+定向 4/4 CTest 与 Debug 全量构建通过。Quick CI 的切片/RIP/3MF 正负向/schema/support 已通过，仍在既有
+`material_process_top2 widthPx expected=48 actual=226` golden baseline 失败。详细结果见
+`../DOC/DOC_EXEC_12E_08C_R4_03_ModeAdmission与PipelineGate结果.md`。

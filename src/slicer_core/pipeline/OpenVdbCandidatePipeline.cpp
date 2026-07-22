@@ -1,6 +1,7 @@
 #include "slicer_core/pipeline/OpenVdbCandidatePipeline.h"
 
 #include "slicer_core/config.h"
+#include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialChannelComposer.h"
 #include "slicer_core/materials/texture_application/SurfaceShellRealModelPrototype.h"
@@ -8,6 +9,7 @@
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
+#include "slicer_core/pipeline/ModelPreflightGate.h"
 #include "slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/tiff_io.h"
@@ -19,9 +21,11 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace slicer_core
@@ -380,14 +384,7 @@ void WriteCandidateFailureReports(
         }));
 }
 
-}  // namespace
-
-OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem::path& configPath)
-{
-    return RunOpenVdbCandidatePipeline(configPath, OpenVdbCandidatePipelineOptions{});
-}
-
-OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
+OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
     const std::filesystem::path& configPath,
     const OpenVdbCandidatePipelineOptions& options)
 {
@@ -740,6 +737,40 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
     NotifyProgress(options, runStart, "completed", 1, 1, 100);
 
     return summary;
+}
+
+}  // namespace
+
+OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(const std::filesystem::path& configPath)
+{
+    return RunOpenVdbCandidatePipeline(configPath, OpenVdbCandidatePipelineOptions{});
+}
+
+OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipeline(
+    const std::filesystem::path& configPath,
+    const OpenVdbCandidatePipelineOptions& options)
+{
+    const OpenVdbStatus status = GetOpenVdbStatus();
+    ModelPreflightService service;
+    ModelPreflightGateRequest request;
+    request.preflight_request.configPath = configPath;
+    request.selected_mode = ModelPreflightPipelineMode::GlobalSurfaceShell;
+    request.admission_context.global_backend_available =
+        status.compiled_with_openvdb && status.runtime_available;
+
+    std::optional<OpenVdbCandidatePipelineResult> result;
+    const ModelPreflightGateResult gate = RunModelPreflightPipelineGate(
+        service,
+        request,
+        [&](const ModelPreflightGateResult&)
+        {
+            result = RunOpenVdbCandidatePipelineCore(configPath, options);
+        });
+    if (!result.has_value())
+    {
+        throw std::runtime_error(FormatModelPreflightGateFailure(gate));
+    }
+    return std::move(result.value());
 }
 
 }  // namespace slicer_core

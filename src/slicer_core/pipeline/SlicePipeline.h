@@ -16,7 +16,7 @@ namespace slicer_core
 std::vector<std::string> DefaultSlicePipelineSteps();
 
 /**
- * @brief Run slicing through the legacy pipeline facade.
+ * @brief Run slicing through the fail-closed legacy preflight facade.
  * @param configPath Path to the slice config.
  * @param options Runtime options for slicing.
  * @return Slice run result from the legacy implementation.
