@@ -92,6 +92,10 @@ capability probe 通过。详见
 
 完成标准：互补/单调/终点不变量全部 PASS；正常模型结果不写入 required repair PASS 计数。
 
+原子级准备已补齐：必跑/扩展模型边界、三点 width 计算、Model Fill 解析 DTO、汇总
+schema、代码落点、验证命令和停止条件见
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md`。
+
 ## 7. R4-06 Repaired Asset Intake
 
 状态：BLOCKED BY EXTERNAL INPUT。

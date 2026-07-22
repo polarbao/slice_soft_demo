@@ -149,3 +149,15 @@ Quick CI 在 300 秒窗口内未完成，独立 golden 仍确认既有
 
 这些正常模型可进入 R4-05，但不能替代 required 修复资产解除 R4-06..08。R4-05 现为
 `READY / WAIT EXPLICIT EXECUTION`；R4-06 以后仍由外部资产依赖阻断。
+
+## 16. R4-05 原子级准备结果
+
+R4-05 已补齐独立准备文档，冻结三个必跑输入、本地扩展输入的版本控制边界、
+minimum/intermediate/allTexture 量化规则、互补/单调/终点不变量、Model Fill 材料解析 DTO、
+R4-05 汇总 schema、计划代码落点和定向验证命令。
+
+特别确认：C/M/Y/K 仅作为 MaterialProcessProfile role id，未注册时返回稳定不可用原因，
+不新增 TIFF 通道，不硬编码未标定墨量。R4-05 现为 `READY FOR DEVELOPMENT`。
+
+详细准备见 `../DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md`。R4-06 合同已准备，但仍缺
+`nai_you/aishen/meigui` 三个 required 外部修复资产；R4-07/08 只是依赖准备完成，不能提前执行。
