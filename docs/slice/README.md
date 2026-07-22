@@ -114,6 +114,7 @@
 | `DOC/DOC_EXEC_12E_08C_R4_04_QtPreflightUI结果.md` | R4-04 Qt 异步预检、CLI capability、一键守门、UI Smoke 与模型依据同步结果 |
 | `DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md` | R4-05 真实 clean OBJ/3MF、三点 width、Model Fill 解析、汇总 schema 与验证准备 |
 | `DOC/DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md` | R4-05 三个真实输入、width/material 矩阵与非生产边界验证结果 |
+| `DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md` | R4-06 required 修复资产 intake、provenance、属性/post-strict 与 R4-07/08 依赖准备 |
 | `DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后 12E 目标可达性、模型双轨治理和预检必要性分析 |
 | `PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md` | 导入即检测、模式相关阻断、正常模型与 required 模型治理需求 |
 | `DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md` | Preflight service、cache、admission、Qt controller 与修复资产审计设计 |

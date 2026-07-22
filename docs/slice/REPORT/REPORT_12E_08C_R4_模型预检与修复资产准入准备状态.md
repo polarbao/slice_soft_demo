@@ -163,3 +163,13 @@ R4-05 汇总 schema、计划代码落点和定向验证命令。
 `../DOC/DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md`。三个必跑输入全部 PASS，正常模型计数保持
 `requiredRepairPassCount=0`。R4-06 合同已准备，但仍缺 `nai_you/aishen/meigui` 三个 required 外部修复资产；
 R4-07/08 只是依赖准备完成，不能提前执行。
+
+## 17. R4-06 及后续准备结论
+
+R4-06 已补齐独立准备文档，冻结三个 required 原始身份、修复 provenance、内容 hash、单位/姿态/尺寸、
+材质/UV/纹理属性差异、完整自相交、post-strict 与 repeatability 准入字段。已验证 clean 模型只作 intake
+控制组，不计入 `requiredRepairPassCount`，也不能替代修复后的 `nai_you/aishen/meigui`。
+
+R4-06 当前为 `CONTRACT READY / EXTERNAL INPUT BLOCKED`；R4-07 为
+`DEPENDENCY PREPARED / WAIT R4-06`；R4-08 为 `DEPENDENCY PREPARED / WAIT R4-07`。详细准备见
+`../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。

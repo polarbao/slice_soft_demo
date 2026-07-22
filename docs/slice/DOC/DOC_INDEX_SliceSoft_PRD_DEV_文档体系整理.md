@@ -379,6 +379,7 @@ docs/slice/DOC/DOC_PREP_12E_08C_R4_04_QtPreflightUI准备.md
 docs/slice/DOC/DOC_EXEC_12E_08C_R4_04_QtPreflightUI结果.md
 docs/slice/DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md
 docs/slice/DOC/DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md
+docs/slice/DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md
 docs/slice/DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md
 docs/slice/PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md
 docs/slice/DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md

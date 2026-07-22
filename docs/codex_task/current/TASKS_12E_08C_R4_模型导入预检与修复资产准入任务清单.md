@@ -102,11 +102,16 @@ schema、代码落点、验证命令和停止条件见
 
 ## 7. R4-06 Repaired Asset Intake
 
-状态：BLOCKED BY EXTERNAL INPUT。
+状态：CONTRACT READY / EXTERNAL INPUT BLOCKED。
 
 范围：三个 required OBJ 修复版本的 identity/provenance/attribute/post-strict 审计。
 
 完成标准：每例具有原/新 hash、修复来源、属性 diff、完整自相交和 post-strict 证据。
+
+原子级准备已补齐：required 身份、intake manifest、属性/姿态/完整自相交准入、stable blocker、
+generated 合同测试和 R4-07/08 依赖见
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。正常 clean 模型只作控制组，
+不得计入 required repair PASS。
 
 ## 8. R4-07 Four-case Release Gate
 
