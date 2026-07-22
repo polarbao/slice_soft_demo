@@ -37,7 +37,7 @@ docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资�
 当前原子任务：
 
 ```text
-12E-08C-R4-01..03 COMPLETE；R4-04 PREPARATION；12E-08D 继续阻断
+12E-08C-R4-01..03 COMPLETE；R4-04 READY / WAIT EXPLICIT EXECUTION；12E-08D 继续阻断
 ```
 
 12C-R0/R1/R2 已全部完成。12D-R0/R1/R2/R3 已封口，包含 candidate/exact 诊断、一像素 repair、外部背景保护、Qt 展示和三个真实 OBJ 验收。repair 仍默认关闭。
@@ -55,7 +55,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4-01..03 COMPLETE / R4-04 PREPARATION / RELEASE BUDGET BLOCKED`。R4-04..05 允许继续完成 Qt 预检 UI 和正常闭合模型 minimum/intermediate/allTexture 正向矩阵；R4-06..08 仍依赖三个 required OBJ 外部修复资产。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；R4-08 GO 前不得启动 12E-08D。
+12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4-01..03 COMPLETE / R4-04 READY / RELEASE BUDGET BLOCKED`。R4-04..05 允许继续完成 Qt 预检 UI 和正常闭合模型 minimum/intermediate/allTexture 正向矩阵；R4-06..08 仍依赖三个 required OBJ 外部修复资产。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；R4-08 GO 前不得启动 12E-08D。
 
 ## 12F Release Runtime 与性能优化专项
 

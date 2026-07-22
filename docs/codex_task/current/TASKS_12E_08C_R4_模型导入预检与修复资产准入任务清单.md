@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-04 PREPARATION
+> 当前原子任务：R4-04 READY / WAIT EXPLICIT EXECUTION
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -58,15 +58,19 @@ Quick CI 仍停在既有 `material_process_top2 widthPx expected=48 actual=226` 
 
 ## 5. R4-04 Qt Preflight UI
 
-状态：PREPARATION REQUIRED / R4-03 COMPLETE。
+状态：READY / WAIT EXPLICIT EXECUTION。
 
 范围：中文状态/问题列表、重新检测、stale、两个一键按钮、异步生命周期和 UI smoke。
 
 完成标准：任何 UI 路径不能绕过 preflight；最长中文不遮挡；关闭/取消无崩溃。
 
+准备结果：已冻结 Qt 线程池执行、generation/cancel/QPointer 生命周期、外部 OpenVDB capability probe、三条
+切片入口统一 coordinator、中文 presenter/panel、stale/cache 规则和四组 UI Smoke。详见
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_04_QtPreflightUI准备.md`。
+
 ## 6. R4-05 Clean Positive Matrix
 
-状态：PREPARED / WAIT R4-02。
+状态：PREPARED / WAIT R4-04。
 
 范围：闭合彩色 OBJ + Texture2D 3MF 的 0.10mm/intermediate/allTexture，Model Fill 材料解析和 report。
 

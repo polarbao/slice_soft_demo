@@ -197,6 +197,18 @@ OnImportAndGlobalSlice -> EnsureFreshPreflight(global) -> StartGlobalDiagnostic/
 
 不得维护两套独立检测实现。异步 worker 需要取消、关闭窗口生命周期和 stale result 防护。
 
+R4-04 冻结的具体实现为 `ModelPreflightController + SlicePreflightCoordinator + ModelPreflightPresenter +
+ModelPreflightPanel`。Controller 使用 `QThreadPool/QRunnable` 调用同步 core service，通过 generation、共享取消
+token 和 `QPointer` 丢弃过期/销毁后的回调；不得在 UI 线程执行完整几何预检，也不得持有运行中的成员
+`QThread` 后直接销毁。
+
+由于默认 UI runtime 与 OpenVDB ON candidate 是两个构建产物，global backend capability 由 candidate CLI
+的只读 `--openvdb-capability-json` 探针提供，而不是读取 UI 进程自己的编译宏。探针不加载模型、不写文件，
+最终 candidate 启动后仍由 R4-03 pipeline gate 再次校验。
+
+详细线程、状态机、入口和 Smoke 约束见
+`../DOC/DOC_PREP_12E_08C_R4_04_QtPreflightUI准备.md`。
+
 ## 10. 测试策略
 
 ```text

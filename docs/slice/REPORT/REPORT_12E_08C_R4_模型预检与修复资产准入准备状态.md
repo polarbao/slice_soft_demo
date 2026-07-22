@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01..03 COMPLETE / R4-04 PREPARATION
+> 文档状态：IN PROGRESS / R4-01..03 COMPLETE / R4-04 READY
 > 日期：2026-07-21
 
 ## 1. 阶段结论
@@ -56,7 +56,7 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-03 Mode Admission and Pipeline Gate` 已完成；下一任务为 R4-04 Qt Preflight UI 准备。
+`12E-08C-R4-03 Mode Admission and Pipeline Gate` 已完成；R4-04 Qt Preflight UI 已完成准备，等待明确启动。
 
 ## 7. 模型资产准备结果
 
@@ -111,3 +111,13 @@ R4-03 达到 `READY FOR DEVELOPMENT`。详细准备见
 定向 4/4 CTest 与 Debug 全量构建通过。Quick CI 的切片/RIP/3MF 正负向/schema/support 已通过，仍在既有
 `material_process_top2 widthPx expected=48 actual=226` golden baseline 失败。详细结果见
 `../DOC/DOC_EXEC_12E_08C_R4_03_ModeAdmission与PipelineGate结果.md`。
+
+## 13. R4-04 准备结果
+
+Qt controller/presenter/coordinator/panel 边界、QThreadPool/generation/cancel/QPointer 生命周期、外部 OpenVDB
+capability probe、三条切片入口统一守门、中文状态机和 UI Smoke 已冻结。R4-04 达到
+`READY FOR DEVELOPMENT`。
+
+R4-05 基础准备完整并等待 R4-04；R4-06 的合同准备完整但仍缺三个 required 外部修复资产；R4-07/08 为
+依赖已准备、不可提前执行。详细准备见
+`../DOC/DOC_PREP_12E_08C_R4_04_QtPreflightUI准备.md`。
