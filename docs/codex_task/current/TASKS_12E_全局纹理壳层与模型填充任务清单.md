@@ -529,7 +529,7 @@ docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
 
 ## 13. 12E-10 Preview、Real Model Matrix 与收口
 
-状态：PREPARED / EXECUTION BLOCKED BY 09A AND 08C-R3
+状态：PREPARED / DEPENDENCIES RECORDED / PRODUCTION PART BLOCKED
 
 目标：
 
@@ -552,8 +552,8 @@ REPORT_12E。
 12E-10D 用户手册、REPORT_12E 和上下文封口。
 ```
 
-准备入口：`docs/slice/DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md`。10A 依赖 09A-05，
-10B/10C 依赖 08C-R3，production evidence 依赖 08D。
+准备入口：`docs/slice/DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md`。10A 依赖 09A-05；
+10B/10C 的 required family 最终证据依赖 R4-07/08；production evidence 依赖 08D。
 
 ## 14. 阶段完成标准
 

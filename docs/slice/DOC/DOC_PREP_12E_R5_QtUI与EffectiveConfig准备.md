@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R5 Qt UI 与 Effective Config 准备
 
-> 文档状态：PREPARED / 12E-09A WAIT R4 PREFLIGHT FACADE / 12E-09B BLOCKED BY 12E-08D
+> 文档状态：PREPARED / 12E-09A READY FOR EXECUTION / 12E-09B BLOCKED BY 12E-08D
 > 日期：2026-07-21
 > 覆盖任务：12E-09 Qt UI 设置与 Effective Config
 > 前置状态：12E-08A/08B/08C COMPLETE；Release budget 与 12E-08D BLOCKED
@@ -13,8 +13,8 @@
 执行可分为两层：
 
 ```text
-12E-09A diagnostic UI：文档准备已完成；先由 R4-01..04 固化并接入共享 preflight/admission facade，
-随后实现 width/modelFill 控件，避免 UI 重复拓扑规则；
+12E-09A diagnostic UI：文档准备已完成；R4-01..04 已固化并接入共享 preflight/admission facade，
+可以开始 width/modelFill 控件，且 UI 不得重复拓扑规则；
 12E-09B production Profile：必须等待 12E-08D admitted=true 后启用。
 ```
 
@@ -279,3 +279,15 @@ fallbackApplied=false；
 
 若 global 不可用或未准入，运行按钮必须 fail-closed，并引导用户主动选择“传统切片”；UI 不得在后台
 修改配置为 legacy。两种模式生产成功后都必须能加载同一结构的 TIFF、材料预览和报告。
+
+## 16. 2026-07-22 准备度刷新
+
+```text
+R4-01..04 shared preflight/admission/Qt gate：COMPLETE；
+R4-05 clean width/material matrix：COMPLETE；
+R4-06 intake software：COMPLETE，真实 family 0/3；
+12E-09A-01..06：准备完整，可按原子任务顺序开始；
+12E-09B：仍等待 R4-08 GO、12E-08D production admission 和用户授权。
+```
+
+09A 只允许显示和编辑 diagnostic effective config，不得因 R4-06 软件完成而开放 global production 按钮。

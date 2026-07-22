@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R6 Preview、真实模型与阶段收口准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY 09A AND 08C-R3
+> 文档状态：PREPARED / EXECUTION DEPENDENCIES RECORDED / PRODUCTION PART BLOCKED
 > 日期：2026-07-20
 > 覆盖任务：12E-10 Preview、Real Model Matrix 与 REPORT_12E
 
@@ -10,7 +10,7 @@
 
 ```text
 Preview 依赖 12E-09A 同层 UI/diagnostic facade；
-真实模型生产矩阵依赖 12E-08C-R3 repair/post-strict；
+真实模型最终矩阵依赖 R4-06 family 3/3、R4-07 和 R4-08；
 生产 package 收口依赖 12E-08D；
 最终 REPORT_12E 必须记录 PASS 或 keep diagnostic，而不是默认宣称 production。
 ```
@@ -77,7 +77,7 @@ UI smoke：显示与交互。
 12E-10D：用户手册、REPORT_12E、索引和上下文封口。
 ```
 
-10A 依赖 09A-05；10B/10C 依赖 08C-R3；生产 package/RIP 行依赖 08D。10D 可以输出
+10A 依赖 09A-05；10B/10C 的 required family 最终行依赖 R4-07/08；生产 package/RIP 行依赖 08D。10D 可以输出
 `keep diagnostic`，不强制以 production PASS 结束阶段。
 
 ## 7. 验收
@@ -97,7 +97,7 @@ REPORT_12E 列出实际命令、结果、阻断和后续建议。
 ```text
 文档准备：COMPLETE；
 12E-10A：BLOCKED BY 12E-09A-05；
-12E-10B/10C：BLOCKED BY 12E-08C-R3；
+12E-10B/10C required-family final evidence：BLOCKED BY R4-07/08；
 12E-10 production package evidence：BLOCKED BY 12E-08D；
 12E-10D：等待前述证据后执行。
 ```
@@ -120,3 +120,14 @@ core、compose、TIFF、preview/report 写盘分段耗时；
 
 Preview 不增加第二套生产文件格式。两种模式都读取现有 package 与 report；差异仅来自 layer composer。
 global 诊断结果可单独显示，但必须标注“诊断，未生成可打印 TIFF”。
+
+## 10. 2026-07-22 准备度刷新
+
+```text
+12E-10 文档与任务拆分：COMPLETE；
+12E-10A：等待 12E-09A-05 同层 preview；
+12E-10B：clean diagnostic 行可复用 R4-05，但 required family 最终行等待 R4-07；
+12E-10C：等待 R4-07 Release budget 和 R4-08 decision；
+12E-10D：等待 10A/10B/10C 后收口；
+生产 package/RIP：继续等待 12E-08D。
+```

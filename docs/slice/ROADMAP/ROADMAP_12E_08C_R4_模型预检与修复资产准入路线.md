@@ -61,6 +61,15 @@ R4-08 输出 GO 且用户明确授权。
 R4-06 的原子级 intake manifest、provenance、属性差异、完整自相交和 post-strict 准入准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。该文档完成不等于外部资产已到位。
 
+R4-07/08 的四 case Release Gate 与 08D GO/NO-GO 刷新已分别完成原子级准备：
+
+```text
+../DOC/DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md
+../DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md
+```
+
+准备完成不解除 `requiredFamilyPassCount=0/3` 阻断。
+
 ## 5. 复杂重建后备路线
 
 若 R4C 的外部修复流程无法稳定提供 required 资产，再单独准备 R5：

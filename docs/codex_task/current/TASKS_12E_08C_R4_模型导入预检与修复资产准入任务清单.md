@@ -116,19 +116,26 @@ R4-07 不可启动。准备和结果分别见
 
 ## 8. R4-07 Four-case Release Gate
 
-状态：PREPARED / WAIT R4-06。
+状态：DEPENDENCY PREPARED / WAIT REQUIRED FAMILY MATRIX 3/3。
 
 范围：四 case global partition/texture/raster/full closure，Release time/memory，legacy TIFF/RIP/Quick CI。
 
 完成标准：四 case 全部 admitted；预算冻结；production output 仍按 08D 边界处理。
 
+原子级准备已冻结三个 required family + Texture2D 3MF 四 case、每 case strict/global/Release/legacy
+执行链、三次测量、预算冻结、协议回归、输出 schema 和停止条件。详见
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md`。
+
 ## 9. R4-08 08D GO/NO-GO Refresh
 
-状态：PREPARED / WAIT R4-07。
+状态：DEPENDENCY PREPARED / WAIT R4-07。
 
 范围：更新 matrix/report/context；只作决策，不实现 adapter。
 
 完成标准：全部 Gate PASS 才 GO；否则保留 NO-GO 和 blocker。
+
+决策输入、GO 条件、`GO/CONDITIONAL_TECHNICAL_PASS/NO-GO/BLOCKED` 状态和上下文同步范围见
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md`。
 
 ## 10. 提交要求
 
