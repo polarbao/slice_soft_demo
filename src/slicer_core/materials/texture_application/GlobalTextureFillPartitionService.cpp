@@ -212,6 +212,43 @@ std::vector<double> BuildWidthSweepValues(
     return widths;
 }
 
+std::vector<double> BuildRequestedAnchorWidths(
+    const double minimumWidthMm,
+    const double maximumWidthMm,
+    const double widthStepMm,
+    const TextureFillPartitionWidthSweepOptions& options)
+{
+    std::vector<double> anchors;
+    if (options.fullStepScan || options.representativeIntermediateCount < 0)
+    {
+        return anchors;
+    }
+
+    const double minimumRequest = CeilToStep(minimumWidthMm, widthStepMm);
+    const int intervalCount = options.representativeIntermediateCount + 1;
+    anchors.reserve(static_cast<std::size_t>(intervalCount + 1));
+    for (int index{0}; index <= intervalCount; ++index)
+    {
+        double width{minimumRequest};
+        if (index == intervalCount)
+        {
+            width = maximumWidthMm;
+        }
+        else if (index > 0)
+        {
+            const double ratio = static_cast<double>(index)
+                / static_cast<double>(intervalCount);
+            width = RoundToStep(
+                minimumWidthMm
+                    + (maximumWidthMm - minimumWidthMm) * ratio,
+                widthStepMm);
+            width = std::clamp(width, minimumRequest, maximumWidthMm);
+        }
+        anchors.push_back(width);
+    }
+    return anchors;
+}
+
 void AppendSweepIssue(
     TextureFillPartitionWidthSweepResult& result,
     const TextureFillPartitionErrorCode code,
@@ -543,6 +580,11 @@ GlobalTextureFillPartitionService::EvaluateWidthSweep(
     }
 
     bool sampleLimitExceeded{false};
+    sweep.requestedAnchorWidthsMm = BuildRequestedAnchorWidths(
+        sweep.minimumWidthMm,
+        sweep.maximumWidthMm,
+        sweep.widthStepMm,
+        options);
     const std::vector<double> widths = BuildWidthSweepValues(
         sweep.minimumWidthMm,
         sweep.maximumWidthMm,

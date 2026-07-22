@@ -39,6 +39,8 @@ add_library(slicer_core
     src/slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h
     src/slicer_core/diagnostics/TextureFillPartitionReleaseBenchmark.cpp
     src/slicer_core/diagnostics/TextureFillPartitionReleaseBenchmark.h
+    src/slicer_core/diagnostics/TextureFillPartitionPositiveMatrix.cpp
+    src/slicer_core/diagnostics/TextureFillPartitionPositiveMatrix.h
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.cpp
     src/slicer_core/diagnostics/ProductionAdmissionPolicy.h
     src/slicer_core/diagnostics/ValidationIssue.cpp
@@ -113,6 +115,8 @@ add_library(slicer_core
     src/slicer_core/materials/material_policy/MaterialPolicy.h
     src/slicer_core/materials/process_profile/MaterialProcessProfile.cpp
     src/slicer_core/materials/process_profile/MaterialProcessProfile.h
+    src/slicer_core/materials/process_profile/ModelFillMaterialResolver.cpp
+    src/slicer_core/materials/process_profile/ModelFillMaterialResolver.h
     src/slicer_core/materials/role_mapping/MaterialRoleMapping.cpp
     src/slicer_core/materials/role_mapping/MaterialRoleMapping.h
     src/slicer_core/materials/texture_application/TextureApplicationPolicy.cpp
@@ -266,6 +270,12 @@ add_executable(texture_fill_partition_release_benchmark
 
 target_link_libraries(texture_fill_partition_release_benchmark PRIVATE slicer_core)
 
+add_executable(texture_fill_partition_positive_matrix
+    apps/texture_fill_partition_positive_matrix/Main.cpp
+)
+
+target_link_libraries(texture_fill_partition_positive_matrix PRIVATE slicer_core)
+
 add_executable(mesh_repair_preflight
     apps/mesh_repair_preflight/main.cpp
 )
@@ -388,6 +398,21 @@ add_executable(texture_fill_partition_release_benchmark_unit_tests
 )
 
 target_link_libraries(texture_fill_partition_release_benchmark_unit_tests PRIVATE slicer_core)
+
+add_executable(model_fill_material_resolver_unit_tests
+    tests/unit/model_fill_material_resolver/Main.cpp
+)
+
+target_link_libraries(model_fill_material_resolver_unit_tests PRIVATE slicer_core)
+
+add_executable(texture_fill_partition_positive_matrix_unit_tests
+    tests/unit/texture_fill_partition_positive_matrix/Main.cpp
+)
+
+target_link_libraries(texture_fill_partition_positive_matrix_unit_tests PRIVATE slicer_core)
+target_compile_definitions(texture_fill_partition_positive_matrix_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 add_executable(geometry_kernel_service_unit_tests
     tests/unit/geometry_kernel_service/main.cpp
@@ -529,6 +554,8 @@ add_test(NAME texture_fill_partition_closure_adapter_unit_tests COMMAND texture_
 add_test(NAME texture_fill_partition_raster_mapper_unit_tests COMMAND texture_fill_partition_raster_mapper_unit_tests)
 add_test(NAME texture_fill_partition_full_closure_adapter_unit_tests COMMAND texture_fill_partition_full_closure_adapter_unit_tests)
 add_test(NAME texture_fill_partition_release_benchmark_unit_tests COMMAND texture_fill_partition_release_benchmark_unit_tests)
+add_test(NAME model_fill_material_resolver_unit_tests COMMAND model_fill_material_resolver_unit_tests)
+add_test(NAME texture_fill_partition_positive_matrix_unit_tests COMMAND texture_fill_partition_positive_matrix_unit_tests)
 add_test(
     NAME texture_fill_partition_release_benchmark_cli_test
     COMMAND texture_fill_partition_release_benchmark

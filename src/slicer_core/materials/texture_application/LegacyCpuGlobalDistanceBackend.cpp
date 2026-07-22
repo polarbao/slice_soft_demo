@@ -6,6 +6,7 @@
 #include "slicer_core/geometry/NearestTriangleQuery.h"
 #include "slicer_core/geometry/PointInClosedMeshQuery.h"
 #include "slicer_core/geometry/TriangleMeshData.h"
+#include "slicer_core/geometry/repair/MeshCompleteSelfIntersectionAnalyzer.h"
 #include "slicer_core/system/ProcessMemoryStats.h"
 
 #include <algorithm>
@@ -162,8 +163,22 @@ std::string ValidateStrictMesh(
         robustnessOptions);
     if (robustness.self_intersection_check_sampled)
     {
-        topologyMs = ElapsedMilliseconds(start);
-        return "strict_closed rejected incomplete self-intersection audit";
+        MeshCompleteSelfIntersectionOptions completeOptions;
+        completeOptions.epsilonMm =
+            robustnessOptions.tolerance.self_intersection_epsilon_mm;
+        const MeshCompleteSelfIntersectionAnalysis complete =
+            AnalyzeCompleteMeshSelfIntersections(mesh, completeOptions);
+        if (!complete.complete)
+        {
+            topologyMs = ElapsedMilliseconds(start);
+            return "strict_closed rejected incomplete self-intersection audit";
+        }
+        if (complete.confirmedIntersectionPairs > 0U
+            || complete.coplanarOverlapPairs > 0U)
+        {
+            topologyMs = ElapsedMilliseconds(start);
+            return "strict_closed rejected mesh with confirmed self-intersections";
+        }
     }
     const std::string robustnessError = ValidateMeshRobustness(
         robustness,

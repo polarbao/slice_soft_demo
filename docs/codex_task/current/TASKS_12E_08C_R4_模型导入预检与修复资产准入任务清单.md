@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-04 COMPLETE / R4-05 READY / WAIT EXPLICIT EXECUTION
+> 当前原子任务：R4-05 COMPLETE / R4-06 CONTRACT READY / EXTERNAL INPUT BLOCKED
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -75,7 +75,7 @@ capability probe 通过。详见
 
 ## 6. R4-05 Clean Positive Matrix
 
-状态：READY / WAIT EXPLICIT EXECUTION。
+状态：COMPLETE。
 
 范围：闭合彩色 OBJ + Texture2D 3MF 的 0.10mm/intermediate/allTexture，Model Fill 材料解析和 report。
 
@@ -95,6 +95,10 @@ capability probe 通过。详见
 原子级准备已补齐：必跑/扩展模型边界、三点 width 计算、Model Fill 解析 DTO、汇总
 schema、代码落点、验证命令和停止条件见
 `docs/slice/DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md`。
+
+结果：三个必跑输入 preflight、width 互补/单调/终点和材料通道矩阵全部 PASS；未写生产 package，
+`requiredRepairPassCount=0`。详见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md`。
 
 ## 7. R4-06 Repaired Asset Intake
 

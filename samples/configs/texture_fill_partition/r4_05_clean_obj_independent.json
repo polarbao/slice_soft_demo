@@ -1,0 +1,58 @@
+{
+  "input": {
+    "modelPath": "../../../model/obj/yecan/3.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/unused/r4_05_clean_obj_independent"
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "modelMaterial": {
+    "rgb": [17, 19, 23]
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "global_surface_shell",
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [7, 11, 13],
+    "missingTexturePolicy": "warn_and_fallback",
+    "surfaceShell": {
+      "geometryMode": "global_3d_distance",
+      "widthMm": 0.10,
+      "widthStepMm": 0.01,
+      "minimumWidthPolicy": "two_cells_floor_0_10_mm",
+      "surfaceScope": "all_closed_surfaces",
+      "fullTextureAtModelLimit": true
+    }
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "complement_of_global_texture_shell",
+    "value": 0,
+    "emptyAllowedInProduction": false
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "r4_05_clean_positive_white",
+    "target": "diagnostic_only",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "underbase",
+      "coverage": "all_model",
+      "value": 0,
+      "expandPx": 0,
+      "shrinkPx": 0
+    }
+  }
+}

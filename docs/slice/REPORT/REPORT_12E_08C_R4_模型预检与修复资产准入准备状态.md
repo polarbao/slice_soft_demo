@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01..04 COMPLETE / R4-05 READY
+> 文档状态：IN PROGRESS / R4-01..05 COMPLETE / R4-06 EXTERNAL INPUT BLOCKED
 > 日期：2026-07-22
 
 ## 1. 阶段结论
@@ -56,8 +56,8 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-04 Qt Preflight UI` 已完成；下一原子任务为已完成准备的 R4-05 Clean Positive Matrix，等待
-明确启动。
+`12E-08C-R4-05 Clean Positive Matrix` 已完成；下一原子任务为 R4-06 Repaired Asset Intake。其合同准备
+已完成，但三个 required 外部修复 OBJ 尚未到位，因此当前不可进入真实资产验收。
 
 ## 7. 模型资产准备结果
 
@@ -147,8 +147,8 @@ Quick CI 在 300 秒窗口内未完成，独立 golden 仍确认既有
 固定为 `MF_Xiao_ma_Damuzhi_ty02.obj`，独立复核固定为 `yecan/3.obj`；`yecan/4.obj` 当前仍是未跟踪用户资产，
 只读使用且不纳入提交。正向 3MF 继续使用 `samples/models/3mf/texture2d_checker_cube.3mf`。
 
-这些正常模型可进入 R4-05，但不能替代 required 修复资产解除 R4-06..08。R4-05 现为
-`READY / WAIT EXPLICIT EXECUTION`；R4-06 以后仍由外部资产依赖阻断。
+这些正常模型已用于 R4-05，但不能替代 required 修复资产解除 R4-06..08。R4-05 现为
+`COMPLETE`；R4-06 以后仍由外部资产依赖阻断。
 
 ## 16. R4-05 原子级准备结果
 
@@ -157,7 +157,9 @@ minimum/intermediate/allTexture 量化规则、互补/单调/终点不变量、M
 R4-05 汇总 schema、计划代码落点和定向验证命令。
 
 特别确认：C/M/Y/K 仅作为 MaterialProcessProfile role id，未注册时返回稳定不可用原因，
-不新增 TIFF 通道，不硬编码未标定墨量。R4-05 现为 `READY FOR DEVELOPMENT`。
+不新增 TIFF 通道，不硬编码未标定墨量。R4-05 现为 `COMPLETE`。
 
-详细准备见 `../DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md`。R4-06 合同已准备，但仍缺
-`nai_you/aishen/meigui` 三个 required 外部修复资产；R4-07/08 只是依赖准备完成，不能提前执行。
+详细准备见 `../DOC/DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md`，实际结果见
+`../DOC/DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md`。三个必跑输入全部 PASS，正常模型计数保持
+`requiredRepairPassCount=0`。R4-06 合同已准备，但仍缺 `nai_you/aishen/meigui` 三个 required 外部修复资产；
+R4-07/08 只是依赖准备完成，不能提前执行。

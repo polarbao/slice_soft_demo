@@ -356,6 +356,7 @@ struct TextureFillPartitionWidthSweepResult
     double maximumWidthMm{0.0};
     double widthStepMm{0.0};
     double totalCandidateCoreMs{0.0};
+    std::vector<double> requestedAnchorWidthsMm;
     std::vector<TextureFillPartitionWidthSweepSample> samples;
     std::vector<ValidationIssue> issues;
 };

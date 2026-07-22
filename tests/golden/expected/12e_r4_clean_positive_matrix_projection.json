@@ -1,0 +1,152 @@
+{
+  "diagnosticOnly": true,
+  "input": {
+    "caseId": "generated_closed_box",
+    "preflightStatus": "passed"
+  },
+  "materialCases": [
+    {
+      "available": true,
+      "compositionEvaluated": true,
+      "compositionPass": true,
+      "profileId": "",
+      "reasonCode": "",
+      "requestedMaterial": "white",
+      "requestedRole": "",
+      "resolvedChannels": {
+        "B": 255,
+        "G": 255,
+        "R": 255,
+        "S": 255,
+        "V": 255,
+        "W": 0
+      },
+      "resolvedMaterial": "white"
+    },
+    {
+      "available": true,
+      "compositionEvaluated": true,
+      "compositionPass": true,
+      "profileId": "",
+      "reasonCode": "",
+      "requestedMaterial": "varnish",
+      "requestedRole": "",
+      "resolvedChannels": {
+        "B": 255,
+        "G": 255,
+        "R": 255,
+        "S": 255,
+        "V": 0,
+        "W": 255
+      },
+      "resolvedMaterial": "varnish"
+    },
+    {
+      "available": true,
+      "compositionEvaluated": true,
+      "compositionPass": true,
+      "profileId": "",
+      "reasonCode": "",
+      "requestedMaterial": "rgb",
+      "requestedRole": "",
+      "resolvedChannels": {
+        "B": 23,
+        "G": 19,
+        "R": 17,
+        "S": 255,
+        "V": 255,
+        "W": 255
+      },
+      "resolvedMaterial": "rgb"
+    },
+    {
+      "available": true,
+      "compositionEvaluated": true,
+      "compositionPass": true,
+      "profileId": "fixture-profile",
+      "reasonCode": "",
+      "requestedMaterial": "profile_default",
+      "requestedRole": "",
+      "resolvedChannels": {
+        "B": 255,
+        "G": 255,
+        "R": 255,
+        "S": 255,
+        "V": 255,
+        "W": 0
+      },
+      "resolvedMaterial": "white"
+    },
+    {
+      "available": true,
+      "compositionEvaluated": true,
+      "compositionPass": true,
+      "profileId": "fixture-c-profile",
+      "reasonCode": "",
+      "requestedMaterial": "material_role",
+      "requestedRole": "c",
+      "resolvedChannels": {
+        "B": 37,
+        "G": 31,
+        "R": 29,
+        "S": 255,
+        "V": 255,
+        "W": 255
+      },
+      "resolvedMaterial": "rgb"
+    },
+    {
+      "available": false,
+      "compositionEvaluated": false,
+      "compositionPass": true,
+      "profileId": "",
+      "reasonCode": "E_12E_MODEL_FILL_ROLE_UNREGISTERED",
+      "requestedMaterial": "material_role",
+      "requestedRole": "m",
+      "resolvedChannels": {
+        "B": 255,
+        "G": 255,
+        "R": 255,
+        "S": 255,
+        "V": 255,
+        "W": 255
+      },
+      "resolvedMaterial": "unavailable"
+    }
+  ],
+  "productionOutputWritten": false,
+  "requiredRepairPassCount": 0,
+  "schema": "slicesoft.texture_fill_positive_matrix.12e_08c_r4.1",
+  "summary": {
+    "complementPass": true,
+    "endpointPass": true,
+    "materialResolutionPass": true,
+    "matrixPass": true,
+    "monotonicPass": true
+  },
+  "widthSweep": {
+    "deduplicated": false,
+    "endpointPass": true,
+    "monotonicPass": true,
+    "requestedAnchorCount": 3,
+    "sampleCount": 3,
+    "samples": [
+      {
+        "allTexture": false,
+        "invariantPass": true,
+        "partitionPass": true
+      },
+      {
+        "allTexture": false,
+        "invariantPass": true,
+        "partitionPass": true
+      },
+      {
+        "allTexture": true,
+        "invariantPass": true,
+        "partitionPass": true
+      }
+    ],
+    "status": "diagnostic"
+  }
+}

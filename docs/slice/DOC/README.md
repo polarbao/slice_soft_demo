@@ -31,6 +31,7 @@
 | `DOC_PREP_12E_08C_R4_01_ModelPreflightContract准备.md` | R4-01 合同代码落点、golden 和定向验证准备 |
 | `DOC_EXEC_12E_08C_R4_01_ModelPreflightContract结果.md` | R4-01 DTO、cache key、report schema、TDD 与验证结果 |
 | `DOC_PREP_12E_08C_R4_05_CleanPositiveMatrix准备.md` | R4-05 clean OBJ/3MF width/material 正向矩阵的原子级准备 |
+| `DOC_EXEC_12E_08C_R4_05_CleanPositiveMatrix结果.md` | R4-05 真实 clean OBJ/3MF width/material 正向矩阵结果 |
 | `DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后功能可继续、生产仍阻断以及正常/required 模型双轨分析 |
 
 ## 决策记录
