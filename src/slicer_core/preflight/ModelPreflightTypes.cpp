@@ -21,6 +21,8 @@ std::string ModelPreflightStatusName(const ModelPreflightStatus status)
         return "blocked";
     case ModelPreflightStatus::Stale:
         return "stale";
+    case ModelPreflightStatus::Cancelled:
+        return "cancelled";
     }
     return "not_run";
 }
@@ -74,6 +76,8 @@ std::string ModelPreflightErrorCodeName(const ModelPreflightErrorCode code)
         return "E_12E_PREFLIGHT_NOT_RUN";
     case ModelPreflightErrorCode::Stale:
         return "E_12E_PREFLIGHT_STALE";
+    case ModelPreflightErrorCode::Cancelled:
+        return "E_12E_PREFLIGHT_CANCELLED";
     case ModelPreflightErrorCode::ImportInvalid:
         return "E_12E_PREFLIGHT_IMPORT_INVALID";
     case ModelPreflightErrorCode::ResourceMissing:

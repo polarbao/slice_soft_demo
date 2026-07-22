@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：IN PROGRESS / R4-01 COMPLETE / R4-02 READY
+> 文档状态：IN PROGRESS / R4-01..02 COMPLETE / R4-03 PREPARATION
 > 日期：2026-07-21
 
 ## 1. 阶段结论
@@ -56,7 +56,7 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-02 Two-stage Preflight Service` 已完成详细准备，等待用户明确启动代码实现。
+`12E-08C-R4-03 Mode Admission and Pipeline Gate` 准备收口。
 
 ## 7. 模型资产准备结果
 
@@ -82,4 +82,13 @@ ModelPreflight DTO、稳定错误码、双模式 admission、cache identity/key�
 检测、进程内 cache、阶段边界取消、正向/负向 fixture 和验证命令。明确 `load_model_report` 返回的三角形
 已应用 transform/autoOrient，后续服务不得重复变换；完整审计不足不得 PASS。
 
-详细准备见 `../DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md`。R4-02 尚未修改代码。
+详细准备见 `../DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md`。
+
+## 10. R4-02 实施结果
+
+两阶段预检服务、内容身份、cache/stale/cancel 和完整审计 fail-closed 已实现。generated fixture、真实
+`xiao_ma` OBJ、`yecan/3.obj` 与 Texture2D checker 3MF 均通过定向测试；服务不接 UI/pipeline/writer。
+
+Debug 全量构建和相关 CTest 通过。Quick CI 仍停在既有
+`material_process_top2 widthPx expected=48 actual=226` golden。详细证据见
+`../DOC/DOC_EXEC_12E_08C_R4_02_TwoStagePreflightService结果.md`。

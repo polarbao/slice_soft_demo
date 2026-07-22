@@ -63,10 +63,12 @@ slicer_core::Json BuildStableProjection(const slicer_core::Json& report)
 
 bool StableNamesMatchContract()
 {
-    const std::array<std::pair<slicer_core::ModelPreflightErrorCode, std::string>, 8>
+    const std::array<std::pair<slicer_core::ModelPreflightErrorCode, std::string>, 9>
         errorNames{{
             {slicer_core::ModelPreflightErrorCode::NotRun, "E_12E_PREFLIGHT_NOT_RUN"},
             {slicer_core::ModelPreflightErrorCode::Stale, "E_12E_PREFLIGHT_STALE"},
+            {slicer_core::ModelPreflightErrorCode::Cancelled,
+             "E_12E_PREFLIGHT_CANCELLED"},
             {slicer_core::ModelPreflightErrorCode::ImportInvalid,
              "E_12E_PREFLIGHT_IMPORT_INVALID"},
             {slicer_core::ModelPreflightErrorCode::ResourceMissing,
@@ -90,7 +92,7 @@ bool StableNamesMatchContract()
             && ok;
     }
 
-    const std::array<std::pair<slicer_core::ModelPreflightStatus, std::string>, 7>
+    const std::array<std::pair<slicer_core::ModelPreflightStatus, std::string>, 8>
         statusNames{{
             {slicer_core::ModelPreflightStatus::NotRun, "not_run"},
             {slicer_core::ModelPreflightStatus::Pending, "pending"},
@@ -99,6 +101,7 @@ bool StableNamesMatchContract()
             {slicer_core::ModelPreflightStatus::Warning, "warning"},
             {slicer_core::ModelPreflightStatus::Blocked, "blocked"},
             {slicer_core::ModelPreflightStatus::Stale, "stale"},
+            {slicer_core::ModelPreflightStatus::Cancelled, "cancelled"},
         }};
     for (const auto& [status, expectedName] : statusNames)
     {

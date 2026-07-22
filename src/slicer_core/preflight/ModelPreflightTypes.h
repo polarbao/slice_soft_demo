@@ -21,6 +21,7 @@ enum class ModelPreflightStatus
     Warning,
     Blocked,
     Stale,
+    Cancelled,
 };
 
 /**
@@ -59,6 +60,7 @@ enum class ModelPreflightErrorCode
 {
     NotRun,
     Stale,
+    Cancelled,
     ImportInvalid,
     ResourceMissing,
     NonFiniteGeometry,

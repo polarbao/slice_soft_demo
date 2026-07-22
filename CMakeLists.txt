@@ -165,6 +165,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/SlicePipeline.h
     src/slicer_core/preflight/ModelPreflightCacheIdentity.cpp
     src/slicer_core/preflight/ModelPreflightCacheIdentity.h
+    src/slicer_core/preflight/ModelPreflightService.cpp
+    src/slicer_core/preflight/ModelPreflightService.h
     src/slicer_core/preflight/ModelPreflightTypes.cpp
     src/slicer_core/preflight/ModelPreflightTypes.h
     src/slicer_core/raster/RasterBoundary.cpp
@@ -449,6 +451,15 @@ target_compile_definitions(model_preflight_contract_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(model_preflight_service_unit_tests
+    tests/unit/model_preflight_service/main.cpp
+)
+
+target_link_libraries(model_preflight_service_unit_tests PRIVATE slicer_core)
+target_compile_definitions(model_preflight_service_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(mesh_repair_fixture_golden_unit_tests
     tests/unit/mesh_repair_fixture_golden/main.cpp
 )
@@ -650,6 +661,7 @@ add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_tex
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
+add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
 add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_unit_tests)

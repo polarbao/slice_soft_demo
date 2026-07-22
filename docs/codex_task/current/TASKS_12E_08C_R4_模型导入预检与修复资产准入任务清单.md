@@ -2,7 +2,7 @@
 
 > 文档状态：PREPARED
 > 日期：2026-07-21
-> 当前原子任务：R4-02 READY / WAIT USER START
+> 当前原子任务：R4-03 PREPARATION
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -33,18 +33,19 @@ global_surface_shell 继续 diagnostic-only，直到 08D GO；
 
 ## 3. R4-02 Two-stage Preflight Service
 
-状态：READY FOR DEVELOPMENT。
+状态：COMPLETE。
 
 范围：fast import check、最终 transform 后 full diagnostics、cache/stale、取消和 deterministic result。
 
 完成标准：模型/resource/transform/options 任一变化都使 cache 失效；完整审计不足不返回 PASS。
 
-准备结论：输入/变换边界、fast/full 合并、cache/stale/cancel、真实正向模型和验证命令已冻结在
-`docs/slice/DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md`。尚未开始 R4-02 代码实现。
+结果：已实现两阶段同步服务、source/resource/transform/options identity、进程内 cache、stale/cancel、
+完整审计 fail-closed 和真实 clean OBJ/3MF 正向验证。证据见
+`docs/slice/DOC/DOC_EXEC_12E_08C_R4_02_TwoStagePreflightService结果.md`。
 
 ## 4. R4-03 Mode Admission and Pipeline Gate
 
-状态：PREPARED / WAIT R4-02。
+状态：PREPARED / DETAIL REVIEW REQUIRED。
 
 范围：legacy/global admission policy、CLI facade、两个 pipeline 入口的 fail-closed/no-fallback 守门。
 
