@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-22
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-08C R1/R2/R3 COMPLETE、R3-04 NO-GO；R4-01..06 IMPLEMENTATION COMPLETE
+> 适用阶段：Stage 12D COMPLETE；Stage 12E-09A-01 COMPLETE；12E-08D NOT READY
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产证据。R4-01..07 已完成；xiao_ma/yecan development intake 为 2/2，开发四 case 为 4/4 PASS。R4-08 已执行并输出 `DECISION BLOCKED`：真实 required family 0/3、最终矩阵、生产预算、Quick CI 与授权未闭环，12E-08D 不可启动。下一可执行任务为 12E-09A-01 diagnostic facade。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产证据。R4-01..07 已完成；xiao_ma/yecan development intake 为 2/2，开发四 case 为 4/4 PASS。R4-08 已执行并输出 `DECISION BLOCKED`：真实 required family 0/3、最终矩阵、生产预算、Quick CI 与授权未闭环，12E-08D 不可启动。12E-09A-01 只读 diagnostic facade 与 UI DTO 已完成，下一原子任务为 12E-09A-02。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出。
 
 ## 目录结构
 
@@ -37,6 +37,7 @@
 | `PRD/PRD_SHORT_MID_LONG_SliceSoft_项目运行计划需求.md` | 项目运行计划对应的产品需求 |
 | `DEV/DEV_SHORT_MID_LONG_SliceSoft_项目运行计划执行方案.md` | 项目运行计划对应的技术执行方案 |
 | `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 与 12B 收口历史报告 |
+| `REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.md` | 12E-09A-01 只读诊断 UI 数据边界与验证状态 |
 | `REPORT/REPORT_12C_Qt工作台启动状态.md` | 当前阶段启动状态，12C-R0 可开始 |
 | `REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | OpenVDB OBJ 彩色纹理前置状态报告 |
 | `REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md` | OpenVDB Candidate 写包当前状态报告 |

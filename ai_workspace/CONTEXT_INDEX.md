@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-22 | 12E-08C-R4-08 决策刷新完成 | `context_handoff/2026-07-22_12E-08C-R4-08决策刷新完成.md` | Current |
+| 2026-07-22 | 12E-09A-01 只读诊断 Facade 完成 | `context_handoff/2026-07-22_12E-09A-01只读诊断Facade完成.md` | Current |
+| 2026-07-22 | 12E-08C-R4-08 决策刷新完成 | `context_handoff/2026-07-22_12E-08C-R4-08决策刷新完成.md` | Superseded |
 | 2026-07-21 | 12E-08C-R4 模型预检专项准备 | `context_handoff/2026-07-21_12E-08C-R4模型预检专项准备.md` | Superseded |
 | 2026-07-21 | 12E-08C-R3-02 真实模型矩阵完成 | `context_handoff/2026-07-21_12E-08C-R3-02真实模型矩阵完成.md` | Superseded |
 | 2026-07-21 | 12E-08C-R3-01A 完整自相交证据完成 | `context_handoff/2026-07-21_12E-08C-R3-01A完整自相交证据完成.md` | Superseded |

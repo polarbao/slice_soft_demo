@@ -472,3 +472,31 @@ RIP Reader：验证最终 RGBWSV TIFF 协议和 layer list。
 OpenVDB 默认关闭；
 没有 production admission 时不写 production TIFF。
 ```
+
+## 13. 12E-09A 只读 UI 投影
+
+`TextureFillPartitionDiagnosticFacade` 只接受内存中的当前模型报告，不读取 08C Release Matrix，也不写
+文件、preview、TIFF 或 package。UI 投影固定使用以下状态：
+
+```text
+pending：分析尚未请求；
+unavailable：报告或能力不可用；
+blocked：schema、状态组合、topology 或不变量失败；
+diagnostic：当前模型诊断证据可展示，但仍不可生产写包。
+```
+
+动态 width、partition、raster mapping、full closure 和 performance 数值使用可空 DTO。根状态不是
+`diagnostic` 时，即使旧报告骨架包含占位 0，也必须显示“未评估”。`issues[].code/severity/message/context`
+原样保留，尤其不得丢失 topology blocker。只允许消费
+`slicesoft.texture_fill_partition.12e.1`；release matrix 或未知 schema 必须 fail-closed。
+
+Facade 自身稳定错误码：
+
+```text
+E_12E_DIAGNOSTIC_REPORT_UNAVAILABLE
+E_12E_DIAGNOSTIC_REPORT_INVALID
+E_12E_DIAGNOSTIC_REPORT_PRODUCTION_OUTPUT
+```
+
+若任一诊断 section 声明 `productionOutputWritten=true`，09A DTO 强制转为 `blocked`。这项读保护不构成
+12E-08D 准入，也不改变后续 09B 的生产状态机。

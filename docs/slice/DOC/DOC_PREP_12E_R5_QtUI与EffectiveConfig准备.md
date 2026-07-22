@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R5 Qt UI 与 Effective Config 准备
 
-> 文档状态：PREPARED / 12E-09A READY FOR EXECUTION / 12E-09B BLOCKED BY 12E-08D
+> 文档状态：12E-09A-01 COMPLETE / 12E-09A-02 READY / 12E-09B BLOCKED BY 12E-08D
 > 日期：2026-07-21
 > 覆盖任务：12E-09 Qt UI 设置与 Effective Config
 > 前置状态：12E-08A/08B/08C COMPLETE；Release budget 与 12E-08D BLOCKED
@@ -235,7 +235,7 @@ blocked case 必须保留 topology issue，相关数值未执行时显示“未�
 
 | 原子任务 | 范围 | 完成标准 |
 |---|---|---|
-| 12E-09A-01 | 只读 diagnostic facade 与 UI DTO | 能返回 pending/unavailable/blocked/diagnostic；不写 package |
+| 12E-09A-01 | 只读 diagnostic facade 与 UI DTO | COMPLETE：返回 pending/unavailable/blocked/diagnostic；不写 package |
 | 12E-09A-02 | Effective Config 事务 | 保存 width、modelFill.material、来源 Profile 和派生阈值；不覆盖 fixture |
 | 12E-09A-03 | 中文控件与状态区 | 0.01 mm spinbox/slider、tooltip、阻断原因和 backend 可用状态 |
 | 12E-09A-04 | 异步 worker 与取消 | UI 不阻塞；关闭、取消、重复运行不悬挂 QObject 或复用 stale result |
@@ -286,8 +286,23 @@ fallbackApplied=false；
 R4-01..04 shared preflight/admission/Qt gate：COMPLETE；
 R4-05 clean width/material matrix：COMPLETE；
 R4-06 intake software：COMPLETE，真实 family 0/3；
-12E-09A-01..06：准备完整，可按原子任务顺序开始；
+12E-09A-01：实现与定向验证完成；
+12E-09A-02..06：准备完整，可按原子任务顺序开始；
 12E-09B：仍等待 R4-08 GO、12E-08D production admission 和用户授权。
 ```
 
 09A 只允许显示和编辑 diagnostic effective config，不得因 R4-06 软件完成而开放 global production 按钮。
+
+## 17. 12E-09A-01 实际落点
+
+```text
+src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.h/.cpp；
+tests/unit/texture_fill_partition_diagnostic_facade/Main.cpp；
+TextureFillPartitionDiagnosticUiDto 使用 std::optional 保留“未评估”，不把 null/占位 0 显示成测量结果；
+Facade 只消费内存中的 slicesoft.texture_fill_partition.12e.1，不接收输出目录，也不写文件/package；
+release matrix schema 会 fail-closed，不得冒充当前模型报告；
+报告声明 productionOutputWritten=true 时状态强制为 blocked。
+```
+
+下一任务为 `12E-09A-02 Effective Config 事务与派生字段`。它不得绕过现有 Config Editor 事务边界，
+也不得提前新增 global production 运行入口。

@@ -159,6 +159,8 @@ add_library(slicer_core
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/pipeline/PipelineContext.cpp
     src/slicer_core/pipeline/PipelineContext.h
+    src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.cpp
+    src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.h
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.cpp
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.cpp
@@ -387,6 +389,12 @@ add_executable(texture_fill_partition_diagnostic_composer_unit_tests
 
 target_link_libraries(texture_fill_partition_diagnostic_composer_unit_tests PRIVATE slicer_core)
 
+add_executable(texture_fill_partition_diagnostic_facade_unit_tests
+    tests/unit/texture_fill_partition_diagnostic_facade/Main.cpp
+)
+
+target_link_libraries(texture_fill_partition_diagnostic_facade_unit_tests PRIVATE slicer_core)
+
 add_executable(texture_fill_partition_closure_adapter_unit_tests
     tests/unit/texture_fill_partition_closure_adapter/main.cpp
 )
@@ -571,6 +579,7 @@ add_test(NAME texture_fill_partition_width_sweep_unit_tests COMMAND texture_fill
 add_test(NAME texture_fill_partition_report_unit_tests COMMAND texture_fill_partition_report_unit_tests)
 add_test(NAME texture_fill_partition_texture_transfer_unit_tests COMMAND texture_fill_partition_texture_transfer_unit_tests)
 add_test(NAME texture_fill_partition_diagnostic_composer_unit_tests COMMAND texture_fill_partition_diagnostic_composer_unit_tests)
+add_test(NAME texture_fill_partition_diagnostic_facade_unit_tests COMMAND texture_fill_partition_diagnostic_facade_unit_tests)
 add_test(NAME texture_fill_partition_closure_adapter_unit_tests COMMAND texture_fill_partition_closure_adapter_unit_tests)
 add_test(NAME texture_fill_partition_raster_mapper_unit_tests COMMAND texture_fill_partition_raster_mapper_unit_tests)
 add_test(NAME texture_fill_partition_full_closure_adapter_unit_tests COMMAND texture_fill_partition_full_closure_adapter_unit_tests)

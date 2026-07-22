@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-08C-R4-08 EXECUTION COMPLETE / DECISION BLOCKED / PRODUCTION NOT ADMITTED
+> 文档状态：12E-09A-01 COMPLETE / DIAGNOSTIC UI ONLY / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-22
-> 当前项目原子任务：12E-08C-R4-06 IMPLEMENTATION COMPLETE / FAMILY MATRIX 0/3 BLOCKED
+> 当前项目原子任务：12E-09A-01 COMPLETE；NEXT 12E-09A-02
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -476,8 +476,8 @@ R4-08 08D GO/NO-GO Refresh。
 ```
 
 R4-01..06 软件能力和 R4-07 Development Gate 已完成。R4-08 已按当前证据执行并输出 BLOCKED；跨族正常
-模型不能替代 required family 解除生产阻断。下一可执行任务为 12E-09A-01 diagnostic facade，12E-08D
-继续等待后续 R4-08 GO。
+模型不能替代 required family 解除生产阻断。12E-09A-01 diagnostic facade 已完成，下一可执行任务为
+12E-09A-02；12E-08D 继续等待后续 R4-08 GO。
 
 准备入口：
 
@@ -491,7 +491,7 @@ docs/slice/REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：PREPARED；12E-09A 可并行，12E-09B BLOCKED BY 12E-08D
+状态：12E-09A-01 COMPLETE；12E-09A-02 READY；12E-09B BLOCKED BY 12E-08D
 
 目标：
 
@@ -510,7 +510,7 @@ session effective config；
 12E-09A 原子任务：
 
 ```text
-12E-09A-01 只读 diagnostic facade 与 UI DTO；
+12E-09A-01 只读 diagnostic facade 与 UI DTO（COMPLETE，2026-07-22）；
 12E-09A-02 Effective Config 事务与派生字段；
 12E-09A-03 中文 width/modelFill/status 控件；
 12E-09A-04 异步 worker、取消与生命周期；
@@ -527,6 +527,7 @@ requested/effective mode、admission 和 TIFF 输出状态；不得把 OpenVDB b
 
 ```text
 docs/slice/DOC/DOC_PREP_12E_R5_QtUI与EffectiveConfig准备.md
+docs/slice/REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.md
 ```
 
 ## 13. 12E-10 Preview、Real Model Matrix 与收口
