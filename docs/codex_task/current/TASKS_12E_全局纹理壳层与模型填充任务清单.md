@@ -2,7 +2,7 @@
 
 > 文档状态：R4-08-R2 GO / 12E-08D AUTHORIZED / PRODUCTION NOT YET ADMITTED
 > 更新日期：2026-07-23
-> 当前项目原子任务：12E-08D-04 COMPLETE；下一阶段等待 12E-09B 明确授权
+> 当前项目原子任务：12E-08D-05 COMPLETE；12E-08D-06 READY
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -422,7 +422,8 @@ Release/global/legacy 证据；R3-04 因三个 required OBJ 未 strict PASS、�
 
 ### 11.2 12E-08D 双模式生产写包原子任务
 
-状态：AUTHORIZED / 12E-08D-01/02/03/04 COMPLETE。
+状态：AUTHORIZED / 12E-08D-01/02/03/04/05 COMPLETE /
+08D-06 PREPARED。
 
 固定目标：
 
@@ -441,7 +442,10 @@ global blocked/unavailable 不得 silent fallback。
 12E-08D-02 COMPLETE：global partition/full closure 到现有 production layer DTO 的 adapter；
 12E-08D-03 COMPLETE：共享 TIFF writer、manifest layer list、preview/report、RIP 和 no-fallback 测试；
 12E-08D-04 COMPLETE：显式 Profile、真实模型 Release matrix 与分层 GO/NO-GO；
-受限 Profile GO，普通 Global 全功能等价 NO-GO。
+12E-08D-05 COMPLETE：Global lower support、internal void、surface/outer varnish 的 S/V
+材料等价；
+12E-08D-06 PREPARED：0.01 mm Release 真实模型矩阵与最终分层 GO/NO-GO；
+受限 Profile GO，普通 Global 全功能等价在 08D-05/06 完成前保持 NO-GO。
 ```
 
 准备入口：
@@ -450,6 +454,7 @@ global blocked/unavailable 不得 silent fallback。
 docs/slice/DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md
 docs/slice/DOC/DOC_SCHEMA_12E_DualSlicePipelineConfig.md
 docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
+docs/slice/DOC/DOC_PREP_12E_08D_05_06_Global材料等价与最终Release矩阵准备.md
 ```
 
 ### 11.3 12E-08C-R4 模型导入预检与修复资产准入

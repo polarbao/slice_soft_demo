@@ -169,6 +169,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h
     src/slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.cpp
     src/slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.h
+    src/slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.cpp
+    src/slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.h
     src/slicer_core/pipeline/GlobalSurfaceShellProductionPackage.cpp
     src/slicer_core/pipeline/GlobalSurfaceShellProductionPackage.h
     src/slicer_core/pipeline/GlobalSurfaceShellProductionPipeline.cpp
@@ -566,6 +568,12 @@ add_executable(global_surface_shell_production_pipeline_unit_tests
 
 target_link_libraries(global_surface_shell_production_pipeline_unit_tests PRIVATE slicer_core)
 
+add_executable(global_surface_shell_material_evidence_unit_tests
+    tests/unit/global_surface_shell_material_evidence/Main.cpp
+)
+
+target_link_libraries(global_surface_shell_material_evidence_unit_tests PRIVATE slicer_core)
+
 add_executable(mesh_repair_fixture_golden_unit_tests
     tests/unit/mesh_repair_fixture_golden/main.cpp
 )
@@ -781,6 +789,7 @@ add_test(NAME global_surface_shell_production_pipeline_unit_tests COMMAND global
 set_tests_properties(global_surface_shell_production_pipeline_unit_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_test(NAME global_surface_shell_material_evidence_unit_tests COMMAND global_surface_shell_material_evidence_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
 add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_unit_tests)

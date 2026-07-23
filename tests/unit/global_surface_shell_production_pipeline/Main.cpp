@@ -61,11 +61,14 @@ slicer_core::SliceConfig MakeAdmittedProfile()
 
 std::filesystem::path WriteConfig(
     const std::filesystem::path& directory,
-    const bool supportEnabled)
+    const bool supportEnabled,
+    const bool materialParity = false)
 {
     const std::filesystem::path modelPath =
         std::filesystem::absolute(
-            "samples/models/openvdb_candidate/closed_textured_obj.obj");
+            materialParity
+                ? "samples/models/texture_fill_partition/closed_support_overhang.obj"
+                : "samples/models/openvdb_candidate/closed_textured_obj.obj");
     const std::filesystem::path packageDir = directory / "package";
     const std::filesystem::path configPath = directory / "config.json";
     const slicer_core::Json config = slicer_core::Json::object({
@@ -87,7 +90,7 @@ std::filesystem::path WriteConfig(
          })},
         {"autoOrient",
          slicer_core::Json::object({
-             {"enabled", true},
+             {"enabled", !materialParity},
              {"maxHeightMm", 6.0},
              {"strategy", "minimize_height_by_right_angle_rotation"},
          })},
@@ -118,8 +121,14 @@ std::filesystem::path WriteConfig(
         {"materialProcessProfile",
          slicer_core::Json::object({
              {"enabled", true},
-             {"name", "global_surface_shell_restricted_candidate"},
-             {"target", "global_surface_shell_restricted_candidate"},
+             {"name",
+              materialParity
+                  ? "global_surface_shell_material_parity_candidate"
+                  : "global_surface_shell_restricted_candidate"},
+             {"target",
+              materialParity
+                  ? "global_surface_shell_material_parity_candidate"
+                  : "global_surface_shell_restricted_candidate"},
              {"rgb",
               slicer_core::Json::object({
                   {"enabled", true},
@@ -136,18 +145,49 @@ std::filesystem::path WriteConfig(
               })},
              {"support",
               slicer_core::Json::object({
-                  {"expected", false},
+                  {"expected", materialParity},
                   {"mode", "existing_support_pipeline"},
+              })},
+             {"varnish",
+              slicer_core::Json::object({
+                  {"enabled", materialParity},
+                  {"value", 0},
+                  {"coverage", "model_surface"},
+              })},
+             {"validation",
+              slicer_core::Json::object({
+                  {"requireSupportPixels", materialParity},
+                  {"requireVarnishPixels", materialParity},
               })},
          })},
         {"support",
-         slicer_core::Json::object({{"enabled", supportEnabled}})},
+         slicer_core::Json::object({
+             {"enabled", supportEnabled},
+             {"mode", "bottom_projection"},
+             {"placement", "lower"},
+             {"value", 0},
+             {"internalVoid",
+              slicer_core::Json::object({
+                  {"enabled", true},
+                  {"minAreaPx", 1},
+                  {"fillRule", "all_internal_voids"},
+              })},
+         })},
         {"surfaceVarnish",
-         slicer_core::Json::object({{"enabled", false}})},
+         slicer_core::Json::object({
+             {"enabled", materialParity},
+             {"outerSurface", true},
+             {"innerSurface", true},
+             {"thicknessPx", 1},
+             {"value", 0},
+             {"source", "explicit"},
+         })},
         {"outerVarnish",
          slicer_core::Json::object({
-             {"enabled", false},
-             {"thicknessMm", 0.0},
+             {"enabled", materialParity},
+             {"thicknessMm", materialParity ? 0.05 : 0.0},
+             {"allowXYExpansion", true},
+             {"value", 0},
          })},
         {"preview",
          slicer_core::Json::object({
@@ -255,6 +295,62 @@ bool UnsupportedProfileWritesNothing()
     return ExpectTrue(false, "unsupported Global profile must fail closed");
 }
 
+bool MaterialParityProfileIsAdmitted()
+{
+    auto config = MakeAdmittedProfile();
+    config.material_process_profile.name =
+        "global_surface_shell_material_parity_candidate";
+    config.material_process_profile.target =
+        "global_surface_shell_material_parity_candidate";
+    config.support.enabled = true;
+    config.support.placement = "lower";
+    config.support.placement_explicit = true;
+    config.material_process_profile.support.expected = true;
+    config.material_process_profile.validation.require_support_pixels = true;
+    config.surface_varnish.enabled = true;
+    config.material_process_profile.varnish.enabled = true;
+    config.material_process_profile.validation.require_varnish_pixels = true;
+
+    const auto decision =
+        slicer_core::EvaluateGlobalSurfaceShellProductionProfile(config);
+    return ExpectTrue(
+        decision.allowed,
+        "explicit material parity profile is admitted");
+}
+
+bool MaterialParityProfileWritesSupportAndVarnish()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("material_parity");
+    const std::filesystem::path configPath =
+        WriteConfig(directory, true, true);
+    try
+    {
+        const slicer_core::SliceRunResult result =
+            slicer_core::RunSlicePipeline(
+                configPath,
+                slicer_core::SliceRunOptions{});
+        const slicer_core::RipValidationResult rip =
+            slicer_core::validate_slice_package(result.package_dir);
+        return ExpectTrue(
+                   result.support_pixel_count > 0,
+                   "material parity result reports support pixels")
+            && ExpectTrue(
+                rip.total_channel_stats.at(4U).print_pixels > 0U,
+                "material parity package prints S")
+            && ExpectTrue(
+                rip.total_channel_stats.at(5U).print_pixels > 0U,
+                "material parity package prints V");
+    }
+    catch (const std::exception& error)
+    {
+        return ExpectTrue(
+            false,
+            "material parity package failed: "
+                + std::string{error.what()});
+    }
+}
+
 }  // namespace
 
 int main()
@@ -264,6 +360,8 @@ int main()
         {"support_enabled_profile_is_blocked", SupportEnabledProfileIsBlocked},
         {"explicit_profile_writes_production_package", ExplicitProfileWritesProductionPackage},
         {"unsupported_profile_writes_nothing", UnsupportedProfileWritesNothing},
+        {"material_parity_profile_is_admitted", MaterialParityProfileIsAdmitted},
+        {"material_parity_profile_writes_support_and_varnish", MaterialParityProfileWritesSupportAndVarnish},
     };
 
     bool passed{true};

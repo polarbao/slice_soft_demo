@@ -4,16 +4,14 @@
 #include "slicer_core/diagnostics/TextureFillPartitionReleaseBenchmark.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/model.h"
+#include "slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.h"
 #include "slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.h"
 #include "slicer_core/pipeline/GlobalSurfaceShellProductionPackage.h"
 #include "slicer_core/raster/TextureFillPartitionRasterMapper.h"
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -29,14 +27,13 @@ using Clock = std::chrono::steady_clock;
 
 constexpr const char* kRestrictedProfileTarget =
     "global_surface_shell_restricted_candidate";
+constexpr const char* kMaterialParityProfileTarget =
+    "global_surface_shell_material_parity_candidate";
 #ifdef NDEBUG
 constexpr const char* kBuildType{"Release"};
 #else
 constexpr const char* kBuildType{"Debug"};
 #endif
-constexpr std::size_t kChannelCount{6U};
-constexpr std::size_t kWhiteChannel{3U};
-
 double ElapsedMilliseconds(const Clock::time_point& start)
 {
     return std::chrono::duration<double, std::milli>(
@@ -107,62 +104,83 @@ TextureFillPartitionRasterGridSpec BuildProductionRasterGrid(
         partition.grid.depth,
         partition.grid.spacingZMm,
         grid.layerThicknessMm);
+    if (config.outer_varnish.enabled
+        && config.outer_varnish.thickness_mm > 0.0)
+    {
+        const int paddingX = static_cast<int>(std::ceil(
+            config.outer_varnish.thickness_mm / grid.pixelPitchXMm));
+        const int paddingY = static_cast<int>(std::ceil(
+            config.outer_varnish.thickness_mm / grid.pixelPitchYMm));
+        grid.originXMm -= static_cast<double>(paddingX) * grid.pixelPitchXMm;
+        grid.originYMm -= static_cast<double>(paddingY) * grid.pixelPitchYMm;
+        grid.width += 2 * paddingX;
+        grid.height += 2 * paddingY;
+    }
     return grid;
 }
 
-std::vector<TextureFillPartitionFullClosureLayerEvidence>
-BuildClosureEvidence(
-    const TextureFillPartitionRasterMappingResult& mapping,
-    const std::uint8_t modelFillValue)
+bool HasCommonGlobalMaterialContract(const SliceConfig& config)
 {
-    const std::size_t pixelCount =
-        static_cast<std::size_t>(mapping.grid.width)
-        * static_cast<std::size_t>(mapping.grid.height);
-    std::vector<TextureFillPartitionFullClosureLayerEvidence> evidenceLayers;
-    evidenceLayers.reserve(mapping.layers.size());
+    return config.texture.enabled
+        && config.texture.apply_mode == "global_surface_shell"
+        && config.texture.surface_shell.geometry_mode == "global_3d_distance"
+        && config.texture.surface_shell.surface_scope == "all_closed_surfaces"
+        && config.texture.surface_shell.full_texture_at_model_limit
+        && config.model_fill.enabled
+        && config.model_fill.material == "white"
+        && config.model_fill.scope == "complement_of_global_texture_shell"
+        && config.model_fill.value == 0U
+        && !config.model_fill.empty_allowed_in_production
+        && !config.model_fill.legacy_rgb_fallback
+        && config.material_process_profile.rgb.enabled
+        && config.material_process_profile.rgb.source == "texture_or_color"
+        && config.material_process_profile.white.enabled
+        && config.material_process_profile.white.value == 0U
+        && config.material_process_profile.white.expand_px == 0
+        && config.material_process_profile.white.shrink_px == 0;
+}
 
-    for (const TextureFillPartitionRasterLayer& layer : mapping.layers)
-    {
-        TextureFillPartitionFullClosureLayerEvidence evidence;
-        evidence.layerIndex = layer.layerIndex;
-        evidence.zMm = layer.zMm;
-        evidence.widthPx = mapping.grid.width;
-        evidence.heightPx = mapping.grid.height;
-        evidence.supportFillMask.assign(pixelCount, 0U);
-        evidence.internalVoidSupportMask.assign(pixelCount, 0U);
-        evidence.surfaceVarnishMask.assign(pixelCount, 0U);
-        evidence.outerVarnishShellMask.assign(pixelCount, 0U);
-        evidence.modelEnvelopeMask = layer.modelMask;
-        evidence.supportRequiredMask.assign(pixelCount, 0U);
-        evidence.channels.assign(pixelCount * kChannelCount, 255U);
+bool HasRestrictedMaterialContract(const SliceConfig& config)
+{
+    return !config.support.enabled
+        && !config.material_process_profile.support.expected
+        && !config.material_process_profile.validation.require_support_pixels
+        && !config.surface_varnish.enabled
+        && !config.outer_varnish.enabled
+        && config.outer_varnish.thickness_mm <= 0.0
+        && !config.material_process_profile.varnish.enabled
+        && !config.material_process_profile.validation.require_varnish_pixels;
+}
 
-        for (std::size_t pixelIndex{0U};
-             pixelIndex < pixelCount;
-             ++pixelIndex)
-        {
-            const std::size_t channelOffset = pixelIndex * kChannelCount;
-            if (layer.textureSurfaceMask.at(pixelIndex) != 0U)
-            {
-                const std::array<std::uint8_t, 3>& rgb =
-                    layer.textureRgb.at(pixelIndex);
-                evidence.channels.at(channelOffset) = rgb.at(0);
-                evidence.channels.at(channelOffset + 1U) = rgb.at(1);
-                evidence.channels.at(channelOffset + 2U) = rgb.at(2);
-                if (rgb == std::array<std::uint8_t, 3>{255U, 255U, 255U})
-                {
-                    evidence.channels.at(channelOffset + kWhiteChannel) =
-                        modelFillValue;
-                }
-            }
-            else if (layer.modelFillMask.at(pixelIndex) != 0U)
-            {
-                evidence.channels.at(channelOffset + kWhiteChannel) =
-                    modelFillValue;
-            }
-        }
-        evidenceLayers.push_back(std::move(evidence));
-    }
-    return evidenceLayers;
+bool HasMaterialParityContract(const SliceConfig& config)
+{
+    const bool supportContract = config.support.enabled
+        && config.support.mode == "bottom_projection"
+        && config.support.placement == "lower"
+        && config.support.placement_explicit
+        && config.support.value == 0U
+        && config.support.offset_mm == 0.0
+        && config.support.xy_dilation_px == 0
+        && !config.support.shape_enabled
+        && config.support.internal_void.enabled
+        && !config.support.upper.enabled
+        && config.material_process_profile.support.expected
+        && config.material_process_profile.validation.require_support_pixels;
+    const bool varnishRequested =
+        config.surface_varnish.enabled || config.outer_varnish.enabled;
+    const bool varnishContract = varnishRequested
+        && config.material_process_profile.varnish.enabled
+        && config.material_process_profile.varnish.value == 0U
+        && config.material_process_profile.validation.require_varnish_pixels
+        && (!config.surface_varnish.enabled
+            || (config.surface_varnish.thickness_px > 0
+                && config.surface_varnish.value == 0U
+                && config.surface_varnish.source == "explicit"))
+        && (!config.outer_varnish.enabled
+            || (config.outer_varnish.thickness_mm > 0.0
+                && config.outer_varnish.allow_xy_expansion
+                && config.outer_varnish.value == 0U));
+    return supportContract && varnishContract;
 }
 
 RgbwsvProductionPackageWriteRequest BuildPackageRequest(
@@ -225,52 +243,35 @@ EvaluateGlobalSurfaceShellProductionProfile(const SliceConfig& config)
         return BlockProfile(
             "global_surface_shell production requires an explicit slicePipeline.mode");
     }
-    if (!config.material_process_profile.enabled
-        || config.material_process_profile.target != kRestrictedProfileTarget)
+    if (!config.material_process_profile.enabled)
     {
         return BlockProfile(
-            "global_surface_shell production requires the explicit restricted candidate Profile target");
+            "global_surface_shell production requires an explicit admitted Profile target");
     }
-    if (!config.texture.enabled
-        || config.texture.apply_mode != "global_surface_shell"
-        || config.texture.surface_shell.geometry_mode != "global_3d_distance"
-        || config.texture.surface_shell.surface_scope != "all_closed_surfaces"
-        || !config.texture.surface_shell.full_texture_at_model_limit)
+    if (!HasCommonGlobalMaterialContract(config))
     {
         return BlockProfile(
-            "global_surface_shell restricted production requires the global closed-surface texture contract");
+            "global_surface_shell production requires the closed-surface RGB and non-empty white Model Fill contract");
     }
-    if (!config.model_fill.enabled
-        || config.model_fill.material != "white"
-        || config.model_fill.scope != "complement_of_global_texture_shell"
-        || config.model_fill.value != 0U
-        || config.model_fill.empty_allowed_in_production
-        || config.model_fill.legacy_rgb_fallback
-        || !config.material_process_profile.rgb.enabled
-        || config.material_process_profile.rgb.source != "texture_or_color"
-        || !config.material_process_profile.white.enabled
-        || config.material_process_profile.white.value != 0U
-        || config.material_process_profile.white.expand_px != 0
-        || config.material_process_profile.white.shrink_px != 0)
+
+    const bool restrictedProfile =
+        config.material_process_profile.target == kRestrictedProfileTarget;
+    const bool materialParityProfile =
+        config.material_process_profile.target == kMaterialParityProfileTarget;
+    if (!restrictedProfile && !materialParityProfile)
     {
         return BlockProfile(
-            "global_surface_shell restricted production currently supports non-empty white Model Fill only");
+            "global_surface_shell production Profile target is not admitted");
     }
-    if (config.support.enabled
-        || config.material_process_profile.support.expected
-        || config.material_process_profile.validation.require_support_pixels)
+    if (restrictedProfile && !HasRestrictedMaterialContract(config))
     {
         return BlockProfile(
             "global_surface_shell support generation is not admitted by the restricted production Profile");
     }
-    if (config.surface_varnish.enabled
-        || config.outer_varnish.enabled
-        || config.outer_varnish.thickness_mm > 0.0
-        || config.material_process_profile.varnish.enabled
-        || config.material_process_profile.validation.require_varnish_pixels)
+    if (materialParityProfile && !HasMaterialParityContract(config))
     {
         return BlockProfile(
-            "global_surface_shell varnish generation is not admitted by the restricted production Profile");
+            "global_surface_shell material parity Profile requires lower support and explicit zero-value varnish");
     }
     if (config.material_policy.enabled
         || config.material_role_mapping.enabled)
@@ -377,13 +378,17 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
             "global_surface_shell production raster mapping failed");
     }
 
-    std::vector<TextureFillPartitionFullClosureLayerEvidence>
-        closureEvidence = BuildClosureEvidence(
-            mapping,
-            config.model_fill.value);
+    GlobalSurfaceShellMaterialEvidenceResult materialEvidence =
+        ComposeGlobalSurfaceShellMaterialEvidence(mapping, config);
+    if (!materialEvidence.available)
+    {
+        throw SlicePipelineError(
+            SlicePipelineErrorCode::GlobalAdapterInputInvalid,
+            materialEvidence.detail);
+    }
     TextureFillPartitionFullClosureAdapterRequest closureRequest;
     closureRequest.rasterMapping = &mapping;
-    closureRequest.layers = &closureEvidence;
+    closureRequest.layers = &materialEvidence.layers;
     const TextureFillPartitionFullClosureAdapterResult closure =
         AdaptTextureFillPartitionFullClosure(closureRequest);
     if (!closure.fullClosurePass)
@@ -396,7 +401,7 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
     GlobalSurfaceShellProductionLayerAdapterRequest adapterRequest;
     adapterRequest.rasterMapping = &mapping;
     adapterRequest.fullClosure = &closure;
-    adapterRequest.closureEvidence = &closureEvidence;
+    adapterRequest.closureEvidence = &materialEvidence.layers;
     GlobalSurfaceShellProductionLayerAdapterResult adapter =
         AdaptGlobalSurfaceShellProductionLayers(adapterRequest);
     if (!adapter.available)
@@ -432,7 +437,10 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
     result.model_pixel_count = static_cast<int>(std::min<std::uint64_t>(
         mapping.stats.modelRasterVoxels,
         static_cast<std::uint64_t>(std::numeric_limits<int>::max())));
-    result.support_pixel_count = 0;
+    result.support_pixel_count = static_cast<int>(
+        std::min<std::uint64_t>(
+            materialEvidence.supportPixels,
+            static_cast<std::uint64_t>(std::numeric_limits<int>::max())));
     result.profile.available = true;
     result.profile.profile_level = "coarse";
     result.profile.config_load_ms = configLoadMs;

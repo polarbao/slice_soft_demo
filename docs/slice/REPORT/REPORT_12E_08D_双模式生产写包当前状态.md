@@ -1,6 +1,6 @@
 # REPORT_12E-08D 双模式生产写包当前状态
 
-> 状态：12E-08D-01..04 COMPLETE
+> 状态：12E-08D-01..05 COMPLETE / 08D-06 READY
 > 更新日期：2026-07-23
 > 当前结论：Legacy 默认生产稳定；Global 受限 Profile GO；Global 全功能等价 NO-GO
 
@@ -14,7 +14,10 @@ Global 分区/纹理/光栅/full closure 到 RGBWSV layer DTO；
 Legacy/Global 共享 TIFF/package/preview/report/RIP writer；
 staging 校验和原子发布；
 Global blocker 无 package、无 silent fallback；
-CLI 输出实际 effective pipeline mode。
+CLI 输出实际 effective pipeline mode；
+Global lower/internal-void support 写 S；
+Global surface/outer varnish 写 V；
+Model > OuterVarnishShell > Support > Empty 优先级通过 full closure。
 ```
 
 ## 2. 固定输出合同
@@ -65,12 +68,28 @@ legacy materialPolicy/materialRoleMapping 不得混入；
 OpenVDB 不是 production backend，继续 optional/OFF。
 ```
 
+08D-05 新增材料等价候选：
+
+```text
+global_surface_shell_material_parity_candidate
+```
+
+它支持 `lower` 支撑、内部空洞支撑、surface varnish 和 XY outer varnish。upper/both、
+full_vertical_projection、支撑 shape/offset/dilation 继续阻断。
+
 ## 4. 真实模型证据
 
 | 模型 | Profile | Production TIFF | W Fill | RIP |
 |---|---|---|---|---|
 | xiao_ma 大拇指 | restricted candidate | PASS，30 层 | 5028 pixels | PASS |
 | yecan/3 | restricted candidate | PASS，31 层 | 87546 pixels | PASS |
+
+材料等价候选：
+
+| 模型 | S | V | RIP |
+|---|---:|---:|---|
+| xiao_ma 大拇指 | 2453268 | 317680 | PASS |
+| yecan/3 | 3286174 | 406422 | PASS |
 
 两个模型均记录：
 
@@ -83,9 +102,10 @@ fallbackApplied=false。
 ## 5. 当前决策
 
 ```text
-12E-08D 原子任务：COMPLETE；
+12E-08D-01..05：COMPLETE；
 受限 Global production Profile：GO；
-普通 Global 全功能工艺等价：NO-GO；
+0.2 mm Global material-parity candidate：GO；
+普通 Global 最终全功能工艺等价：等待 08D-06 的 0.01 mm Release 矩阵；
 Legacy：继续作为默认正式生产模式。
 ```
 
@@ -95,12 +115,13 @@ legacy 等价。
 ## 6. 后续建议
 
 1. 12E-09B 只开放受限 Profile UI，禁用并解释支撑、光油和修复选项。
-2. 单列 Global Support/Material Parity 专项，把 S/V 生成接入 full closure。
-3. 完成 0.01 mm 真实模型内存、耗时、TIFF/RIP Release matrix。
+2. 08D-05 已完成 Global Support/Material Parity 候选和 S/V full closure。
+3. 执行 08D-06 的 0.01 mm 真实模型内存、耗时、TIFF/RIP Release matrix。
 4. 继续保持复杂自相交模型 strict fail-fast，不因受限 GO 放宽拓扑门禁。
 
 详细执行证据见：
 
 ```text
 docs/slice/DOC/DOC_EXEC_12E_08D_04_显式Profile与ReleaseMatrix结果.md
+docs/slice/DOC/DOC_EXEC_12E_08D_05_Global材料等价结果.md
 ```

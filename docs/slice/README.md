@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-23
-> 适用阶段：Stage 12D COMPLETE；R4-08-R2 GO；12E-08D-01..04 COMPLETE；12E-09B PREPARED
+> 适用阶段：Stage 12D COMPLETE；R4-08-R2 GO；12E-08D-01..05 COMPLETE；08D-06 READY
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..04 已完成双模式路由、Global writer-ready Adapter、共享 TIFF/package/preview/report/RIP 边界、显式受限 Profile 和真实模型 Release 矩阵。受限 Profile 为 GO，支撑/光油/0.01mm 普通工艺等价仍为 NO-GO；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09B 已具备受限入口准备条件但需明确授权，12E-09A-02 仍可并行执行。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..05 已完成双模式路由、Global writer-ready Adapter、共享 TIFF/package/preview/report/RIP、受限 RGB+W Profile，以及 lower/internal-void S 与 surface/outer V 的 0.2 mm 材料等价候选。08D-06 将执行 0.01 mm 最终 Release 矩阵；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09B 可按已准入能力锁定入口，12E-09A-02 仍可并行执行。
 
 ## 目录结构
 

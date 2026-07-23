@@ -148,3 +148,28 @@ materialPolicy/materialRoleMapping 必须关闭。任何不匹配返回
 
 受限 Profile 已通过 xiao_ma/yecan 两真实模型的 Release TIFF/RIP 矩阵；该结果不代表普通 Global
 已具备支撑、光油和 0.01 mm 最终工艺等价。
+
+## 11. Global Material Parity Candidate
+
+08D-05 新增显式 target：
+
+```text
+global_surface_shell_material_parity_candidate
+```
+
+它在受限 Profile 的 RGB + W 合同上增加：
+
+```text
+support.enabled=true；
+support.mode=bottom_projection；
+support.placement=lower；
+support.internalVoid.enabled=true；
+surfaceVarnish 或 outerVarnish 至少启用一个；
+materialProcessProfile.support.expected=true；
+validation.requireSupportPixels=true；
+materialProcessProfile.varnish.enabled=true；
+validation.requireVarnishPixels=true。
+```
+
+首版仍拒绝 upper/both/full_vertical_projection、支撑 offset/shape/dilation 和 closure repair。
+不匹配时返回 `E_12E_PIPELINE_GLOBAL_NOT_ADMITTED`，不写 package、不回退 legacy。

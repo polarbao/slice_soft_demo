@@ -1,0 +1,129 @@
+{
+  "slicePipeline": {
+    "mode": "global_surface_shell"
+  },
+  "input": {
+    "modelPath": "../../../model/obj/yecan/3.obj",
+    "format": "obj"
+  },
+  "output": {
+    "packageDir": "output/benchmarks/12e_08d_05_global_material_parity/yecan/package",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.2,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "global_surface_shell",
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [255, 0, 255],
+    "missingTexturePolicy": "warn_and_fallback",
+    "surfaceShell": {
+      "geometryMode": "global_3d_distance",
+      "widthMm": 0.41,
+      "widthStepMm": 0.01,
+      "minimumWidthPolicy": "two_cells_floor_0_10_mm",
+      "surfaceScope": "all_closed_surfaces",
+      "fullTextureAtModelLimit": true
+    }
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "complement_of_global_texture_shell",
+    "value": 0,
+    "emptyAllowedInProduction": false
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "global_production_yecan_material_parity",
+    "target": "global_surface_shell_material_parity_candidate",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "underbase",
+      "coverage": "all_model",
+      "value": 0,
+      "expandPx": 0,
+      "shrinkPx": 0
+    },
+    "varnish": {
+      "enabled": true,
+      "value": 0,
+      "coverage": "model_surface"
+    },
+    "support": {
+      "expected": true,
+      "mode": "existing_support_pipeline"
+    },
+    "validation": {
+      "requireRgbPixels": true,
+      "requireWhitePixels": true,
+      "requireVarnishPixels": true,
+      "requireSupportPixels": true
+    }
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "lower",
+    "value": 0,
+    "offsetMm": 0.0,
+    "xyDilationPx": 0,
+    "internalVoid": {
+      "enabled": true,
+      "minAreaPx": 1,
+      "fillRule": "all_internal_voids"
+    },
+    "upper": {
+      "enabled": false
+    }
+  },
+  "surfaceVarnish": {
+    "enabled": true,
+    "outerSurface": true,
+    "innerSurface": true,
+    "thicknessPx": 1,
+    "value": 0,
+    "source": "explicit"
+  },
+  "outerVarnish": {
+    "enabled": true,
+    "thicknessMm": 0.05,
+    "thicknessStepMm": 0.01,
+    "pixelPitchUm": 42.3,
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
+    "value": 0
+  },
+  "materialClosure": {
+    "enabled": false,
+    "mode": "diagnostic",
+    "repair": {
+      "enabled": false
+    }
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 5
+  }
+}

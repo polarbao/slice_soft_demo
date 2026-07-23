@@ -20,9 +20,9 @@ struct GlobalSurfaceShellProductionProfileDecision
 };
 
 /**
- * @brief Evaluate the 08D-04 restricted Global production Profile.
+ * @brief Evaluate an explicitly admitted Global production Profile.
  * @param config Parsed slice configuration.
- * @return Auditable decision. Unsupported material features remain fail-closed.
+ * @return Auditable decision. Unsupported material combinations remain fail-closed.
  */
 GlobalSurfaceShellProductionProfileDecision
 EvaluateGlobalSurfaceShellProductionProfile(const SliceConfig& config);

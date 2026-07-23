@@ -62,7 +62,9 @@ aishen/meigui/titian 仍为 0/3 confirmed self-intersection 覆盖缺口；
 08D-02 COMPLETE：Global partition/full closure -> production layer DTO；
 08D-03 COMPLETE：两模式共用 RGBWSV TIFF/package 边界，并验证 TIFF/manifest/preview/report/RIP；
 08D-04 COMPLETE：显式受限 Global Profile、真实模型 Release matrix 和分层 production
-GO/NO-GO。受限 Profile GO；普通 Global 全功能工艺等价 NO-GO。
+GO/NO-GO；
+08D-05 COMPLETE：lower/internal-void S 支撑与 surface/outer V 光油材料等价候选；
+08D-06 READY：0.01 mm Release/RIP 矩阵与最终分层 GO/NO-GO。
 ```
 
 任何一个 Gate 失败都必须停止后续 production 推进；不得切换成 legacy 后伪装 Global 成功。

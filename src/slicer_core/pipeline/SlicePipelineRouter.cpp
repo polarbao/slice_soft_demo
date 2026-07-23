@@ -34,7 +34,7 @@ SlicePipelineRouteDecision ResolveSlicePipelineRoute(
     {
         decision.error_code = SlicePipelineErrorCode::GlobalNotAdmitted;
         decision.detail =
-            "global_surface_shell production profile is unavailable until 12E-08D-04 admission";
+            "global_surface_shell production profile is unavailable or not admitted";
         return decision;
     }
 

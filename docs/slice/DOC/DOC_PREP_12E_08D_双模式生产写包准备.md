@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：12E-08D-01/02/03/04 COMPLETE
+> 文档状态：12E-08D-01/02/03/04/05 COMPLETE / 08D-06 PREPARED
 > 初始日期：2026-07-20
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
@@ -14,6 +14,8 @@ writer-ready RGBWSV production layer DTO 的 Adapter。2026-07-23 已接受两�
 12E-08D 开发。08D-03 已完成共享 TIFF/package/preview/report/RIP 边界和 fail-closed 验证，
 08D-04 已完成显式受限 Profile、两个真实模型 Release package、RIP strict 和最终分层
 GO/NO-GO。受限 Profile 为 GO，普通 Global 全功能工艺等价仍为 NO-GO。
+用户已授权继续 08D-05/06：05 接入可证明的 S/V 材料等价，06 执行 0.01 mm Release
+矩阵并刷新最终分层结论。
 
 ## 2. 当前代码边界
 
@@ -49,11 +51,13 @@ SlicePipelineModeRouter
 12E-08D-01：SlicePipelineMode Config/DTO/Router 与 admission fail-closed；
 12E-08D-02 COMPLETE：Global in-memory composer 到现有 RGBWSV layer DTO adapter；
 12E-08D-03 COMPLETE：共享 writer、TIFF/package/RIP/golden 和 no-fallback 验证；
-12E-08D-04 COMPLETE：显式 Global production Profile、Release matrix 与 GO/NO-GO 报告。
+12E-08D-04 COMPLETE：显式 Global production Profile、Release matrix 与 GO/NO-GO 报告；
+12E-08D-05 COMPLETE：lower/internal-void support 与 surface/outer varnish 的 S/V 等价；
+12E-08D-06 PREPARED：0.01 mm 真实模型 Release/RIP matrix 与最终分层决策。
 ```
 
-12E-09B 可基于受限 Profile GO 实现带能力锁定的模式选择；不得把支撑、光油和 0.01 mm 最终矩阵
-描述为已达到 legacy 等价。09A 继续只显示 diagnostic 状态。
+12E-09B 可基于受限 Profile GO 实现带能力锁定的模式选择。08D-05/06 完成前，不得把支撑、
+光油和 0.01 mm 最终矩阵描述为已达到 legacy 等价。09A 继续只显示 diagnostic 状态。
 
 ## 5. 08D-01 Gate
 

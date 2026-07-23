@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08D dual production-pipeline implementation complete; restricted Global Profile admitted
-- Latest completed milestone: `12E-08D-04 restricted Global production admission`
-- Latest completed task: `12E-08D-04`
-- Current task: waiting for explicit authorization of 12E-09B or a Global support/varnish parity follow-up
-- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01..03 implement mode routing, writer-ready layers, and the shared TIFF/package/RIP boundary. 08D-04 admits only `global_surface_shell_restricted_candidate`: xiao_ma/yecan Release packages and RIP strict pass with RGB + W Model Fill and support/varnish/repair disabled. Ordinary Global support/varnish/0.01 mm parity remains NO-GO. 12E-09A-02..06 remain prepared; 12E-09B may expose only the restricted Profile with unsupported controls locked.
+- Current phase: Stage 12E-08D material parity and final Release closure
+- Latest completed milestone: `12E-08D-05 Global S/V material parity`
+- Latest completed task: `12E-08D-05`
+- Current task: `12E-08D-06 0.01 mm Release matrix`
+- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01..04 implement mode routing, writer-ready layers, shared TIFF/package/RIP, and restricted RGB + W admission. 08D-05 adds `global_surface_shell_material_parity_candidate`: xiao_ma/yecan 0.2 mm Release packages and RIP strict pass with lower/internal-void S support and surface/outer V varnish. 0.01 mm final parity remains pending 08D-06. 12E-09A-02..06 remain prepared; 12E-09B must lock controls to the admitted Profile capabilities.
 - Validated R4 model inputs: 22 OBJ/3MF assets under `model` were audited. All 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS; xiao_ma Damuzhi and yecan/3 are the two tracked restricted-candidate baseline families. The aishen/meigui/titian families remain a 0/3 complex-relief coverage gap because all 9 candidates have confirmed self-intersection. The `model` directory has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` only as the positive Texture2D control lane.
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
