@@ -19,11 +19,11 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12E-08D-01 Config/DTO/Router and admission fail-closed`; current task is `12E-08D-02`.
+- The latest completed task is `12E-08D-02 Global Production Layer Adapter`; current task is `12E-08D-03`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records the historical `NO-GO / FROZEN`. `12E-08C-R4-01..07`, R4-07-R1, R4-07-R2, Quick-CI-R1, and R4-08-R2 are complete; the two-family candidate matrix, versioned reference-machine candidate budget, and current Quick CI are PASS. R4-08-R2 is `GO` after explicit authorization. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01` and `12E-08D-01` are complete; `12E-08D-02` is next.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records the historical `NO-GO / FROZEN`. `12E-08C-R4-01..07`, R4-07-R1, R4-07-R2, Quick-CI-R1, and R4-08-R2 are complete; the two-family candidate matrix, versioned reference-machine candidate budget, and current Quick CI are PASS. R4-08-R2 is `GO` after explicit authorization. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01` and `12E-08D-01/02` are complete; `12E-08D-03` is next.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- Current global_surface_shell remains diagnostic-only until 08D-02..04 implementation and per-task validation complete. `slicePipeline.mode=legacy|global_surface_shell` and fail-closed routing are implemented by 08D-01; legacy remains the default. User authorization and 08D-01 completion do not themselves set productionAdmission=passed.
+- Current global_surface_shell remains diagnostic-only until 08D-03/04 implementation and per-task validation complete. `slicePipeline.mode=legacy|global_surface_shell`, fail-closed routing, and the writer-ready in-memory layer adapter are implemented by 08D-01/02; legacy remains the default. No Global TIFF/package is written yet.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 

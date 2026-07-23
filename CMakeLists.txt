@@ -165,6 +165,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.h
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.cpp
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h
+    src/slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.cpp
+    src/slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.h
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.cpp
     src/slicer_core/pipeline/OpenVdbCandidateLayerBufferBuilder.h
     src/slicer_core/pipeline/OpenVdbCandidatePipeline.cpp
@@ -540,6 +542,12 @@ add_executable(slice_pipeline_router_unit_tests
 
 target_link_libraries(slice_pipeline_router_unit_tests PRIVATE slicer_core)
 
+add_executable(global_surface_shell_production_layer_adapter_unit_tests
+    tests/unit/global_surface_shell_production_layer_adapter/Main.cpp
+)
+
+target_link_libraries(global_surface_shell_production_layer_adapter_unit_tests PRIVATE slicer_core)
+
 add_executable(mesh_repair_fixture_golden_unit_tests
     tests/unit/mesh_repair_fixture_golden/main.cpp
 )
@@ -749,6 +757,7 @@ add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
 add_test(NAME slice_pipeline_router_unit_tests COMMAND slice_pipeline_router_unit_tests)
+add_test(NAME global_surface_shell_production_layer_adapter_unit_tests COMMAND global_surface_shell_production_layer_adapter_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
 add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_unit_tests)

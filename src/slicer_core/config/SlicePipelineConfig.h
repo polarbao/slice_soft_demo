@@ -36,6 +36,10 @@ enum class SlicePipelineErrorCode
     GlobalTopologyBlocked,
     ProductionTiffRequired,
     SilentFallbackForbidden,
+    GlobalAdapterInputInvalid,
+    GlobalAdapterClosureRequired,
+    GlobalAdapterLayerMismatch,
+    GlobalAdapterProtocolMismatch,
 };
 
 /**

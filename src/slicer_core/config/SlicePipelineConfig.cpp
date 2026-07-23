@@ -61,6 +61,14 @@ std::string SlicePipelineErrorCodeName(const SlicePipelineErrorCode code)
         return "E_12E_PIPELINE_PRODUCTION_TIFF_REQUIRED";
     case SlicePipelineErrorCode::SilentFallbackForbidden:
         return "E_12E_PIPELINE_SILENT_FALLBACK_FORBIDDEN";
+    case SlicePipelineErrorCode::GlobalAdapterInputInvalid:
+        return "E_12E_PIPELINE_GLOBAL_ADAPTER_INPUT_INVALID";
+    case SlicePipelineErrorCode::GlobalAdapterClosureRequired:
+        return "E_12E_PIPELINE_GLOBAL_ADAPTER_CLOSURE_REQUIRED";
+    case SlicePipelineErrorCode::GlobalAdapterLayerMismatch:
+        return "E_12E_PIPELINE_GLOBAL_ADAPTER_LAYER_MISMATCH";
+    case SlicePipelineErrorCode::GlobalAdapterProtocolMismatch:
+        return "E_12E_PIPELINE_GLOBAL_ADAPTER_PROTOCOL_MISMATCH";
     }
     return "E_12E_PIPELINE_MODE_UNSUPPORTED";
 }

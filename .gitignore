@@ -1,6 +1,8 @@
 build/
 build-*/
 output/
+!src/slicer_core/output/
+!src/slicer_core/output/**
 runtime/
 .dish/workspace-id
 .qodo/
