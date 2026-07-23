@@ -1,8 +1,8 @@
 # REPORT_12E-08D 双模式生产写包当前状态
 
-> 状态：12E-08D-01..05 COMPLETE / 08D-06 READY
+> 状态：12E-08D-01..06 COMPLETE
 > 更新日期：2026-07-23
-> 当前结论：Legacy 默认生产稳定；Global 受限 Profile GO；Global 全功能等价 NO-GO
+> 当前结论：Legacy 默认 GO；Global 两个显式候选 GO；Global 默认替换 Legacy 性能 NO-GO
 
 ## 1. 已完成能力
 
@@ -99,29 +99,41 @@ productionAcceptance=admitted；
 fallbackApplied=false。
 ```
 
+0.01 mm 最终 Release 矩阵：
+
+| 路径 | xiao_ma 总耗时 / 峰值内存 | yecan 总耗时 / 峰值内存 | TIFF/RIP |
+|---|---:|---:|---|
+| Legacy | 9.820 s / 684.9 MiB | 14.300 s / 868.8 MiB | PASS |
+| Global restricted | 47.284 s / 5610.9 MiB | 117.839 s / 7470.3 MiB | PASS |
+| Global material parity | 84.392 s / 5715.8 MiB | 73.532 s / 7597.2 MiB | PASS |
+
+Global 相对 Legacy 的总耗时为 4.82x~8.59x，峰值内存为 8.19x~8.74x。此结果不影响
+显式候选的协议/材料正确性 GO，但阻断 Global 成为默认引擎。
+
 ## 5. 当前决策
 
 ```text
-12E-08D-01..05：COMPLETE；
+12E-08D-01..06：COMPLETE；
 受限 Global production Profile：GO；
-0.2 mm Global material-parity candidate：GO；
-普通 Global 最终全功能工艺等价：等待 08D-06 的 0.01 mm Release 矩阵；
+0.01 mm Global material-parity opt-in candidate：GO；
+Global 默认替换 Legacy：NO-GO，原因是当前性能与峰值内存回退；
 Legacy：继续作为默认正式生产模式。
 ```
 
-NO-GO 不否定受限 Profile 的真实 package；它表示支撑、光油和最终 0.01 mm Release matrix 尚未达到
-legacy 等价。
+NO-GO 不否定 Global 两个显式 Profile 的真实 package；它只表示当前 Global 不满足“默认替换
+Legacy”的性能与资源条件。
 
 ## 6. 后续建议
 
-1. 12E-09B 只开放受限 Profile UI，禁用并解释支撑、光油和修复选项。
-2. 08D-05 已完成 Global Support/Material Parity 候选和 S/V full closure。
-3. 执行 08D-06 的 0.01 mm 真实模型内存、耗时、TIFF/RIP Release matrix。
-4. 继续保持复杂自相交模型 strict fail-fast，不因受限 GO 放宽拓扑门禁。
+1. 12E-09B 可开放 Legacy/Global 模式选择；默认 Legacy，Global 必须显式选择并按 Profile 锁定能力。
+2. UI 应显示 Global 候选的高内存/高耗时状态，不得暗示其已替换 Legacy。
+3. 后续独立性能专项优化 Global 全体积 mask/evidence 常驻和重复副本。
+4. 继续保持复杂自相交模型 strict fail-fast，不因候选 GO 放宽拓扑门禁。
 
 详细执行证据见：
 
 ```text
 docs/slice/DOC/DOC_EXEC_12E_08D_04_显式Profile与ReleaseMatrix结果.md
 docs/slice/DOC/DOC_EXEC_12E_08D_05_Global材料等价结果.md
+docs/slice/DOC/DOC_EXEC_12E_08D_06_0.01mmRelease矩阵与最终分层结论.md
 ```

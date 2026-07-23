@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：12E-08D-01/02/03/04/05 COMPLETE / 08D-06 PREPARED
+> 文档状态：12E-08D-01..06 COMPLETE
 > 初始日期：2026-07-20
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
@@ -53,10 +53,11 @@ SlicePipelineModeRouter
 12E-08D-03 COMPLETE：共享 writer、TIFF/package/RIP/golden 和 no-fallback 验证；
 12E-08D-04 COMPLETE：显式 Global production Profile、Release matrix 与 GO/NO-GO 报告；
 12E-08D-05 COMPLETE：lower/internal-void support 与 surface/outer varnish 的 S/V 等价；
-12E-08D-06 PREPARED：0.01 mm 真实模型 Release/RIP matrix 与最终分层决策。
+12E-08D-06 COMPLETE：0.01 mm 六 case Release/RIP、耗时和峰值内存 matrix；Global
+显式候选 GO，默认替换 Legacy 性能 NO-GO。
 ```
 
-12E-09B 可基于受限 Profile GO 实现带能力锁定的模式选择。08D-05/06 完成前，不得把支撑、
+12E-09B 可基于已准入 Profile 实现带能力锁定的模式选择。默认必须保持 Legacy；不得把支撑、
 光油和 0.01 mm 最终矩阵描述为已达到 legacy 等价。09A 继续只显示 diagnostic 状态。
 
 ## 5. 08D-01 Gate

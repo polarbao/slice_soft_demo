@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08D material parity and final Release closure
-- Latest completed milestone: `12E-08D-05 Global S/V material parity`
-- Latest completed task: `12E-08D-05`
-- Current task: `12E-08D-06 0.01 mm Release matrix`
-- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01..04 implement mode routing, writer-ready layers, shared TIFF/package/RIP, and restricted RGB + W admission. 08D-05 adds `global_surface_shell_material_parity_candidate`: xiao_ma/yecan 0.2 mm Release packages and RIP strict pass with lower/internal-void S support and surface/outer V varnish. 0.01 mm final parity remains pending 08D-06. 12E-09A-02..06 remain prepared; 12E-09B must lock controls to the admitted Profile capabilities.
+- Current phase: Stage 12E-08D complete; 12E-09B ready for authorization
+- Latest completed milestone: `12E-08D dual-mode production closure`
+- Latest completed task: `12E-08D-06`
+- Current task: `12E-09B authorization pending`
+- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01..06 implement mode routing, writer-ready layers, shared TIFF/package/RIP, restricted RGB + W, lower/internal-void S support, surface/outer V varnish, and the 0.01 mm six-case Release matrix. Both Global Profiles are explicit opt-in candidates; Legacy remains default because current Global total time is 4.82x-8.59x and peak memory is 8.19x-8.74x higher. 12E-09A-02..06 remain prepared; 12E-09B must lock controls to admitted Profile capabilities and disclose candidate resource cost.
 - Validated R4 model inputs: 22 OBJ/3MF assets under `model` were audited. All 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS; xiao_ma Damuzhi and yecan/3 are the two tracked restricted-candidate baseline families. The aishen/meigui/titian families remain a 0/3 complex-relief coverage gap because all 9 candidates have confirmed self-intersection. The `model` directory has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` only as the positive Texture2D control lane.
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
@@ -16,7 +16,7 @@
 - Formal docs: `docs/slice`
 - Codex tasks: `docs/codex_task`
 - Historical docs: `docs/archive/2026-06-30_slicer_legacy`
-- Scripts: `scripts/run_regression.ps1`, `scripts/run_ci_quick.ps1`, `scripts/run_schema_tests.ps1`, `scripts/run_golden_tests.ps1`, `scripts/run_09p_cli_experimental_tests.ps1`, `scripts/run_09p_experimental_pipeline_tests.ps1`, `scripts/run_openvdb_smoke.ps1`, `scripts/run_12e_08d_04_global_production_matrix.ps1`
+- Scripts: `scripts/run_regression.ps1`, `scripts/run_ci_quick.ps1`, `scripts/run_schema_tests.ps1`, `scripts/run_golden_tests.ps1`, `scripts/run_09p_cli_experimental_tests.ps1`, `scripts/run_09p_experimental_pipeline_tests.ps1`, `scripts/run_openvdb_smoke.ps1`, `scripts/run_12e_08d_04_global_production_matrix.ps1`, `scripts/run_12e_08d_05_global_material_parity.ps1`, `scripts/run_12e_08d_06_release_matrix.ps1`
 
 ## Core capabilities
 

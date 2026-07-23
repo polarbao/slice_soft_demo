@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：R4-08-R2 GO / 12E-08D AUTHORIZED / PRODUCTION NOT YET ADMITTED
+> 文档状态：R4-08-R2 GO / 12E-08D COMPLETE / GLOBAL OPT-IN CANDIDATE ADMITTED
 > 更新日期：2026-07-23
-> 当前项目原子任务：12E-08D-05 COMPLETE；12E-08D-06 READY
+> 当前项目原子任务：12E-08D-01..06 COMPLETE；12E-09B READY FOR AUTHORIZATION
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -337,8 +337,8 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：12E-08A/08B/08C、R1/R2/R3/R4 和 12E-08D-01..04 COMPLETE；受限 Profile GO，
-普通 Global 支撑/光油/0.01mm 等价 NO-GO。
+状态：12E-08A/08B/08C、R1/R2/R3/R4 和 12E-08D-01..06 COMPLETE；Legacy 默认 GO，
+Global restricted/material-parity 显式候选 GO；Global 默认替换 Legacy 因性能与内存 NO-GO。
 
 前置：
 
@@ -422,8 +422,7 @@ Release/global/legacy 证据；R3-04 因三个 required OBJ 未 strict PASS、�
 
 ### 11.2 12E-08D 双模式生产写包原子任务
 
-状态：AUTHORIZED / 12E-08D-01/02/03/04/05 COMPLETE /
-08D-06 PREPARED。
+状态：COMPLETE / 12E-08D-01..06 COMPLETE。
 
 固定目标：
 
@@ -444,8 +443,9 @@ global blocked/unavailable 不得 silent fallback。
 12E-08D-04 COMPLETE：显式 Profile、真实模型 Release matrix 与分层 GO/NO-GO；
 12E-08D-05 COMPLETE：Global lower support、internal void、surface/outer varnish 的 S/V
 材料等价；
-12E-08D-06 PREPARED：0.01 mm Release 真实模型矩阵与最终分层 GO/NO-GO；
-受限 Profile GO，普通 Global 全功能等价在 08D-05/06 完成前保持 NO-GO。
+12E-08D-06 COMPLETE：0.01 mm Release 真实模型六 case、完整 TIFF/RIP、耗时与峰值内存
+矩阵；Legacy 默认 GO，两个 Global 显式候选 GO，Global 默认替换 Legacy 因 4.82x~8.59x
+总耗时和 8.19x~8.74x 峰值内存保持 NO-GO。
 ```
 
 准备入口：
@@ -511,7 +511,7 @@ docs/slice/REPORT/REPORT_12E_08C_R4_08_R2_08D_GO_NO_GO刷新状态.md
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：12E-09A-01 COMPLETE；12E-09A-02 READY；12E-09B BLOCKED BY 12E-08D
+状态：12E-09A-01 COMPLETE；12E-09A-02 READY；12E-09B READY FOR AUTHORIZATION
 
 目标：
 

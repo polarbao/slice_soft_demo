@@ -3,7 +3,7 @@
 > 文档状态：ROADMAP / Stage 12E Planning
 > 日期：2026-07-16
 > 更新日期：2026-07-23
-> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3/R4 COMPLETE；R4-08-R2 GO；12E-08D-01..04 COMPLETE
+> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3/R4 COMPLETE；R4-08-R2 GO；12E-08D-01..06 COMPLETE；12E-09B READY
 
 ## 1. Goal
 
@@ -14,7 +14,7 @@
 ```text
 1. 12D-R0/R1/R2/R3 已完成；
 2. 12E-R0 的 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；
-3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3、R4-01..07/R1/R2、Quick-CI-R1 和 12E-08D-01..04 已完成；受限 Global Profile 已 GO，普通 Global 支撑/光油/0.01mm 等价仍 NO-GO；12E-09A diagnostic 任务可独立执行；
+3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3、R4-01..07/R1/R2、Quick-CI-R1 和 12E-08D-01..06 已完成；两个 Global 显式候选通过 0.01 mm TIFF/RIP，Legacy 仍因性能与内存保持默认；12E-09A diagnostic 任务可独立执行，12E-09B 已具备授权条件；
 4. 12E composer/production 接入需要已完成的 12D semantic_masks exact contract；
 5. 不要求 12D repair R3 完成后才能做 12E R1 算法原型，但 production admission 必须重新确认；
 6. 12E-01 已完成配置、DTO、稳定错误码和 unavailable report 骨架；未接入 production generation。

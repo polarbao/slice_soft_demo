@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08D-05/06 Global 材料等价与最终 Release 矩阵准备
 
-> 文档状态：08D-05 COMPLETE / 08D-06 READY
+> 文档状态：08D-05/06 COMPLETE
 > 日期：2026-07-23
 > 前置：12E-08D-01..04 COMPLETE；受限 RGB + W Profile GO
 
@@ -76,6 +76,15 @@ RIP strict PASS；
 ```
 
 08D-06 只依据实测结果给出分层 GO/NO-GO，不把候选预算宣传为产品 SLA。
+
+执行结果：
+
+```text
+六个 0.01 mm case 的 TIFF layer list 与 RIP strict 全部 PASS；
+Legacy 默认 GO；
+Global restricted/material-parity 显式候选 GO；
+Global 默认替换 Legacy 因 4.82x~8.59x 总耗时和 8.19x~8.74x 峰值内存 NO-GO。
+```
 
 ## 4. 固定协议
 
