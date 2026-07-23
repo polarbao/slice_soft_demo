@@ -6,6 +6,7 @@
 #include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/model.h"
+#include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
 #include "slicer_core/support/SupportShapePipeline.h"
@@ -3993,14 +3994,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         std::filesystem::create_directories(package_dir / "preview");
     }
 
-    TiffImageSpec tiff_spec;
-    tiff_spec.width = static_cast<std::uint32_t>(grid.width_px);
-    tiff_spec.height = static_cast<std::uint32_t>(grid.height_px);
-    tiff_spec.tile_width = static_cast<std::uint32_t>(config.output.tile_size.at(0));
-    tiff_spec.tile_height = static_cast<std::uint32_t>(config.output.tile_size.at(1));
-    tiff_spec.rows_per_strip = static_cast<std::uint32_t>(config.output.rows_per_strip);
-    tiff_spec.storage_mode =
-        config.output.storage_mode == "tiled" ? TiffStorageMode::Tiled : TiffStorageMode::Stripped;
+    RgbwsvProductionStorageSpec productionStorage;
+    productionStorage.storageMode = config.output.storage_mode;
+    productionStorage.tileWidth = config.output.tile_size.at(0);
+    productionStorage.tileHeight = config.output.tile_size.at(1);
+    productionStorage.rowsPerStrip = config.output.rows_per_strip;
     profile.grid_setup_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "mask_sampling", 0, 1, 12);
     phase_start = SlicerClock::now();
@@ -4266,7 +4264,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
             const auto tiffWriteStart = SlicerClock::now();
-            write_rgbwsv_tiff(package_dir / relative_path, tiff_spec, layer);
+            WriteRgbwsvProductionLayerTiff(
+                package_dir / relative_path,
+                productionStorage,
+                RgbwsvProductionLayerView{
+                    grid.width_px,
+                    grid.height_px,
+                    layer});
             profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
             if (collectMaterialClosureCandidate)
             {

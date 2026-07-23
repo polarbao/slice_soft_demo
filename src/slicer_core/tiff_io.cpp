@@ -269,7 +269,7 @@ std::string tiff_storage_mode_string(const TiffStorageMode mode) {
 void write_rgbwsv_tiled_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint8_t>& pixels) {
+    const std::span<const std::uint8_t> pixels) {
     if (spec.width == 0 || spec.height == 0 || spec.tile_width == 0 || spec.tile_height == 0) {
         throw std::runtime_error("invalid TIFF dimensions");
     }
@@ -307,7 +307,7 @@ void write_rgbwsv_tiled_tiff(
                     for (std::uint16_t c{0}; c < spec.samples_per_pixel; ++c) {
                         const std::size_t source_index =
                             (static_cast<std::size_t>(image_y) * spec.width + image_x) * spec.samples_per_pixel + c;
-                        const std::uint8_t value{pixels.at(source_index)};
+                        const std::uint8_t value{pixels[source_index]};
                         const std::size_t target_index =
                             tile_base
                             + ((static_cast<std::size_t>(y) * spec.tile_width + x) * spec.samples_per_pixel + c);
@@ -378,7 +378,7 @@ void write_rgbwsv_tiled_tiff(
 void write_rgbwsv_stripped_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint8_t>& pixels) {
+    const std::span<const std::uint8_t> pixels) {
     if (spec.width == 0 || spec.height == 0 || spec.rows_per_strip == 0) {
         throw std::runtime_error("invalid TIFF dimensions");
     }
@@ -464,7 +464,7 @@ void write_rgbwsv_stripped_tiff(
 void write_rgbwsv_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint8_t>& pixels) {
+    const std::span<const std::uint8_t> pixels) {
     if (spec.storage_mode == TiffStorageMode::Tiled) {
         write_rgbwsv_tiled_tiff(path, spec, pixels);
         return;

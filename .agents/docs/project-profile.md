@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-08D dual production-pipeline implementation; production admission remains not evaluated
-- Latest completed milestone: `12E-08D-02 Global Production Layer Adapter`
-- Latest completed task: `12E-08D-02`
-- Current task: `12E-08D-03 shared writer/package/RIP`
-- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01 implements the explicit mode contract and fail-closed router; 08D-02 converts exact raster/full-closure evidence to writer-ready RGBWSV layer DTOs without writing files. 08D-03/04 remain sequential gates. 12E-09A-02..06 remain prepared; 12E-09B waits for 08D production admission.
+- Current phase: Stage 12E-08D dual production-pipeline implementation; final Global production admission remains not evaluated
+- Latest completed milestone: `12E-08D-03 Shared Writer/Package/RIP`
+- Latest completed task: `12E-08D-03`
+- Current task: `12E-08D-04 explicit Profile/Release matrix/GO-NO-GO`
+- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01 implements the explicit mode contract and fail-closed router; 08D-02 converts exact raster/full-closure evidence to writer-ready RGBWSV layer DTOs; 08D-03 adds the shared TIFF/package/preview/report/RIP boundary, Global Adapter bridge, atomic publish, and no-fallback tests. 08D-04 remains the final sequential production gate. 12E-09A-02..06 remain prepared; 12E-09B waits for 08D production admission.
 - Validated R4 model inputs: 22 OBJ/3MF assets under `model` were audited. All 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS; xiao_ma Damuzhi and yecan/3 are the two tracked restricted-candidate baseline families. The aishen/meigui/titian families remain a 0/3 complex-relief coverage gap because all 9 candidates have confirmed self-intersection. The `model` directory has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` only as the positive Texture2D control lane.
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
@@ -39,7 +39,7 @@ Preview/material process reports
 Qt Debug UI
 UI self-test / overlay-load-real smoke test
 OpenVDB optional experimental surface-shell texture path
-Target-only selectable legacy/global_surface_shell pipeline contract; global production path not implemented
+Target-only selectable legacy/global_surface_shell pipeline contract; shared Global package writer boundary implemented, explicit production Profile not admitted
 quick/full/heavy regression
 ```
 

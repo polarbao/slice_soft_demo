@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：12E-08D-01/02 COMPLETE / 12E-08D-03 READY
+> 文档状态：12E-08D-01/02/03 COMPLETE / 12E-08D-04 READY
 > 初始日期：2026-07-20
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
@@ -11,7 +11,8 @@
 配置、DTO、validator、CLI Router 和 fail-closed 守门；08D-02 已完成 exact raster/full-closure 到
 writer-ready RGBWSV production layer DTO 的 Adapter。2026-07-23 已接受两独立真实模型族的受限生产候选规则；xiao_ma/yecan
 候选验证、Release 候选预算和 Quick CI 已闭环。用户于 2026-07-23 15:15:27 +08:00 明确授权
-12E-08D 开发，当前下一原子任务为 08D-03。
+12E-08D 开发。08D-03 已完成共享 TIFF/package/preview/report/RIP 边界和 fail-closed 验证，
+当前下一原子任务为 08D-04。
 
 ## 2. 当前代码边界
 
@@ -46,7 +47,7 @@ SlicePipelineModeRouter
 ```text
 12E-08D-01：SlicePipelineMode Config/DTO/Router 与 admission fail-closed；
 12E-08D-02 COMPLETE：Global in-memory composer 到现有 RGBWSV layer DTO adapter；
-12E-08D-03：共享 writer、TIFF/package/RIP/golden 和 no-fallback 验证；
+12E-08D-03 COMPLETE：共享 writer、TIFF/package/RIP/golden 和 no-fallback 验证；
 12E-08D-04：显式 Global production Profile、Release matrix 与 GO/NO-GO 报告。
 ```
 
@@ -66,7 +67,7 @@ Quick CI PASS 或有正式批准的隔离结论；
 ```
 
 当前 Gate：R4-07-R1、R4-07-R2、Quick-CI-R1 均 COMPLETE / PASS；R4-08-R2 已转为 `GO`，
-12E-08D-01/02 COMPLETE。爱神/玫瑰/梯田 `0/3` 继续作为复杂浮雕覆盖缺口披露，但按 R4-08-R1 不再是受限
+12E-08D-01/02/03 COMPLETE。爱神/玫瑰/梯田 `0/3` 继续作为复杂浮雕覆盖缺口披露，但按 R4-08-R1 不再是受限
 候选的硬启动条件。
 
 当前决策证据见 `../REPORT/REPORT_12E_08C_R4_08_R2_08D_GO_NO_GO刷新状态.md`。本文四个原子任务必须

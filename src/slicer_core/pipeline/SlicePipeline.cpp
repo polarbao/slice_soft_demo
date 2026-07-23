@@ -74,8 +74,8 @@ SliceRunResult RunSlicePipeline(
         gate,
         ModelPreflightErrorCode::GlobalTopologyBlocked);
 
-    // 08D-01 establishes fail-closed routing. The production adapter is connected
-    // by 08D-02 and must not silently fall back to the legacy implementation.
+    // The shared writer is verified by 08D-03, but an explicit admitted Global
+    // production profile remains gated until 08D-04.
     routeContext.global_production_available = false;
 
     SlicePipelineRouteDecision decision = ResolveSlicePipelineRoute(

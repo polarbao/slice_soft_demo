@@ -4,7 +4,7 @@
 > 版本：v1.0
 > 更新日期：2026-07-23
 > 当前唯一主线：12E-08D
-> 当前下一原子任务：12E-08D-03
+> 当前下一原子任务：12E-08D-04
 
 ## 1. 使用规则
 
@@ -31,8 +31,8 @@ Pending Confirmation：未执行或未通过的任务不得写成完成。
 | 12E-08C-R4 | COMPLETE / GO | preflight、admission、Qt 阻断、两族四 case、预算、Quick CI、R4-08-R2 GO | 不取消 strict topology fail-fast |
 | 12E-08D-01 | COMPLETE | `slicePipeline.mode`、validator、Router、CLI fail-closed、no-fallback | 无 Global production TIFF |
 | 12E-08D-02 | COMPLETE | exact raster/full-closure 转为 writer-ready RGBWSV layer DTO，保留真实层序和 semantic sidecar | 不写 TIFF/package |
-| 12E-08D-03 | READY / NEXT | 08D-02 Adapter 与验证已完成 | 共享 writer/package/RIP/golden |
-| 12E-08D-04 | WAITING FOR 08D-03 | 目标和 Gate 已定义 | 显式 Profile、Release matrix、GO/NO-GO |
+| 12E-08D-03 | COMPLETE | 共享逐层 TIFF 入口、package writer、Global Adapter 桥接、manifest/preview/report、RIP strict、原子发布和 no-fallback 测试 | 无 |
+| 12E-08D-04 | READY / NEXT | 08D-03 共享 Writer/Package/RIP Gate 已通过 | 显式 Profile、真实模型 Release matrix、GO/NO-GO |
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 09A-02..06 可按独立授权推进 |
 | 12E-09B | BLOCKED BY 08D-04 | UI 产品目标已定义 | 双模式普通用户入口与 Effective Config |
 | 12E-10 | PLANNED | 收口目标已定义 | 双模式真实模型、Preview、RIP、性能和报告 |
@@ -60,7 +60,7 @@ aishen/meigui/titian 仍为 0/3 confirmed self-intersection 覆盖缺口；
 ```text
 08D-01 COMPLETE：模式配置、路由、稳定错误码、fail-closed；
 08D-02 COMPLETE：Global partition/full closure -> production layer DTO；
-08D-03：两模式共用现有 RGBWSV writer，并验证 TIFF/manifest/preview/report/RIP；
+08D-03 COMPLETE：两模式共用 RGBWSV TIFF/package 边界，并验证 TIFF/manifest/preview/report/RIP；
 08D-04：显式 Global Profile、真实模型 Release matrix 和最终 production GO/NO-GO。
 ```
 

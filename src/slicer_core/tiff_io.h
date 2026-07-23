@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -48,17 +49,17 @@ struct TiffReadResult {
 void write_rgbwsv_tiled_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint8_t>& pixels);
+    std::span<const std::uint8_t> pixels);
 
 void write_rgbwsv_stripped_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint8_t>& pixels);
+    std::span<const std::uint8_t> pixels);
 
 void write_rgbwsv_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
-    const std::vector<std::uint8_t>& pixels);
+    std::span<const std::uint8_t> pixels);
 
 TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path);
 TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path);
