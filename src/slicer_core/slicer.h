@@ -9,10 +9,11 @@
 namespace slicer_core {
 
 /**
- * @brief Summary returned by the production legacy slicer path.
+ * @brief Summary returned by an admitted production slicing pipeline.
  */
 struct SliceRunResult {
     std::filesystem::path package_dir;
+    std::string effective_pipeline_mode{"legacy"};
     int width_px{0};
     int height_px{0};
     int layer_count{0};

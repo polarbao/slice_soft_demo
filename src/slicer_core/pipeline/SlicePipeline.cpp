@@ -1,6 +1,7 @@
 #include "slicer_core/pipeline/SlicePipeline.h"
 
 #include "slicer_core/pipeline/ModelPreflightGate.h"
+#include "slicer_core/pipeline/GlobalSurfaceShellProductionPipeline.h"
 #include "slicer_core/pipeline/SlicePipelineRouter.h"
 
 #include <algorithm>
@@ -74,9 +75,9 @@ SliceRunResult RunSlicePipeline(
         gate,
         ModelPreflightErrorCode::GlobalTopologyBlocked);
 
-    // The shared writer is verified by 08D-03, but an explicit admitted Global
-    // production profile remains gated until 08D-04.
-    routeContext.global_production_available = false;
+    const GlobalSurfaceShellProductionProfileDecision profileDecision =
+        EvaluateGlobalSurfaceShellProductionProfile(config);
+    routeContext.global_production_available = profileDecision.allowed;
 
     SlicePipelineRouteDecision decision = ResolveSlicePipelineRoute(
         config.slice_pipeline,
@@ -85,11 +86,13 @@ SliceRunResult RunSlicePipeline(
     {
         decision.detail += "; " + FormatModelPreflightGateFailure(gate);
     }
+    else if (!profileDecision.allowed)
+    {
+        decision.detail += "; " + profileDecision.detail;
+    }
     RequireSlicePipelineRoute(decision);
 
-    throw SlicePipelineError(
-        SlicePipelineErrorCode::ProductionTiffRequired,
-        "global_surface_shell route completed without a production TIFF result");
+    return RunGlobalSurfaceShellProductionPipeline(configPath, options);
 }
 
 SliceRunResult RunSlicePipelineLegacy(const std::filesystem::path& configPath, const SliceRunOptions& options)

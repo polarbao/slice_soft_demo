@@ -4,7 +4,7 @@
 > 文档状态：PRD / Stage 12E Planning
 > 生成日期：2026-07-16
 > 上游文档：PRD_12A_彩色纹理材料填充支撑光油策略.md、PRD_12D_横截面材料无缝闭环验收与修复.md
-> 实现状态：PARTIAL；12E-01..07 与 12E-08A/08B/08C COMPLETE；12E-08C-R1/R2/R3 COMPLETE、R3-04 NO-GO；12E-08C-R4 模型预检与修复资产准入 PREPARED；12E-08D BLOCKED
+> 实现状态：PARTIAL；12E-01..07、12E-08A/08B/08C、R1/R2/R3/R4 与 12E-08D-01..04 COMPLETE；restricted Global Profile GO；普通 Global 支撑/光油/0.01mm 等价 NO-GO
 
 ## 1. 背景
 

@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：12E-08D-01/02/03 COMPLETE / 12E-08D-04 READY
+> 文档状态：12E-08D-01/02/03/04 COMPLETE
 > 初始日期：2026-07-20
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
@@ -12,7 +12,8 @@
 writer-ready RGBWSV production layer DTO 的 Adapter。2026-07-23 已接受两独立真实模型族的受限生产候选规则；xiao_ma/yecan
 候选验证、Release 候选预算和 Quick CI 已闭环。用户于 2026-07-23 15:15:27 +08:00 明确授权
 12E-08D 开发。08D-03 已完成共享 TIFF/package/preview/report/RIP 边界和 fail-closed 验证，
-当前下一原子任务为 08D-04。
+08D-04 已完成显式受限 Profile、两个真实模型 Release package、RIP strict 和最终分层
+GO/NO-GO。受限 Profile 为 GO，普通 Global 全功能工艺等价仍为 NO-GO。
 
 ## 2. 当前代码边界
 
@@ -48,10 +49,11 @@ SlicePipelineModeRouter
 12E-08D-01：SlicePipelineMode Config/DTO/Router 与 admission fail-closed；
 12E-08D-02 COMPLETE：Global in-memory composer 到现有 RGBWSV layer DTO adapter；
 12E-08D-03 COMPLETE：共享 writer、TIFF/package/RIP/golden 和 no-fallback 验证；
-12E-08D-04：显式 Global production Profile、Release matrix 与 GO/NO-GO 报告。
+12E-08D-04 COMPLETE：显式 Global production Profile、Release matrix 与 GO/NO-GO 报告。
 ```
 
-12E-09B 在 08D-04 GO 后实现 UI 的普通用户模式选择；09A 只显示 diagnostic 状态。
+12E-09B 可基于受限 Profile GO 实现带能力锁定的模式选择；不得把支撑、光油和 0.01 mm 最终矩阵
+描述为已达到 legacy 等价。09A 继续只显示 diagnostic 状态。
 
 ## 5. 08D-01 Gate
 

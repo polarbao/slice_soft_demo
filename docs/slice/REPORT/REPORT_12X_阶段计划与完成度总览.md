@@ -3,8 +3,8 @@
 > 文档状态：CURRENT MASTER STATUS
 > 版本：v1.0
 > 更新日期：2026-07-23
-> 当前唯一主线：12E-08D
-> 当前下一原子任务：12E-08D-04
+> 当前唯一主线：12E-09B 准备
+> 当前下一原子任务：等待 12E-09B 明确授权
 
 ## 1. 使用规则
 
@@ -32,9 +32,9 @@ Pending Confirmation：未执行或未通过的任务不得写成完成。
 | 12E-08D-01 | COMPLETE | `slicePipeline.mode`、validator、Router、CLI fail-closed、no-fallback | 无 Global production TIFF |
 | 12E-08D-02 | COMPLETE | exact raster/full-closure 转为 writer-ready RGBWSV layer DTO，保留真实层序和 semantic sidecar | 不写 TIFF/package |
 | 12E-08D-03 | COMPLETE | 共享逐层 TIFF 入口、package writer、Global Adapter 桥接、manifest/preview/report、RIP strict、原子发布和 no-fallback 测试 | 无 |
-| 12E-08D-04 | READY / NEXT | 08D-03 共享 Writer/Package/RIP Gate 已通过 | 显式 Profile、真实模型 Release matrix、GO/NO-GO |
+| 12E-08D-04 | COMPLETE | 显式受限 Profile、xiao_ma/yecan Release package、RIP/no-fallback；restricted GO | 支撑、光油、0.01mm 普通工艺等价另行收口 |
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 09A-02..06 可按独立授权推进 |
-| 12E-09B | BLOCKED BY 08D-04 | UI 产品目标已定义 | 双模式普通用户入口与 Effective Config |
+| 12E-09B | PREPARED / AUTHORIZATION REQUIRED | 受限 Global Profile 已 admitted | 双模式入口、能力锁定与 Effective Config |
 | 12E-10 | PLANNED | 收口目标已定义 | 双模式真实模型、Preview、RIP、性能和报告 |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
@@ -61,7 +61,8 @@ aishen/meigui/titian 仍为 0/3 confirmed self-intersection 覆盖缺口；
 08D-01 COMPLETE：模式配置、路由、稳定错误码、fail-closed；
 08D-02 COMPLETE：Global partition/full closure -> production layer DTO；
 08D-03 COMPLETE：两模式共用 RGBWSV TIFF/package 边界，并验证 TIFF/manifest/preview/report/RIP；
-08D-04：显式 Global Profile、真实模型 Release matrix 和最终 production GO/NO-GO。
+08D-04 COMPLETE：显式受限 Global Profile、真实模型 Release matrix 和分层 production
+GO/NO-GO。受限 Profile GO；普通 Global 全功能工艺等价 NO-GO。
 ```
 
 任何一个 Gate 失败都必须停止后续 production 推进；不得切换成 legacy 后伪装 Global 成功。
@@ -88,5 +89,7 @@ docs/slice/ROADMAP/ROADMAP_12E_全局纹理壳层与模型填充分阶段路线.
 docs/slice/DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md
 docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 docs/slice/DOC/DOC_EXEC_12E_08D_01_SlicePipelineModeRouter结果.md
+docs/slice/DOC/DOC_EXEC_12E_08D_04_显式Profile与ReleaseMatrix结果.md
+docs/slice/REPORT/REPORT_12E_08D_双模式生产写包当前状态.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 ```

@@ -2,7 +2,7 @@
 
 > 文档状态：R4-08-R2 GO / 12E-08D AUTHORIZED / PRODUCTION NOT YET ADMITTED
 > 更新日期：2026-07-23
-> 当前项目原子任务：12E-08D-04 Profile/Release Matrix/GO-NO-GO
+> 当前项目原子任务：12E-08D-04 COMPLETE；下一阶段等待 12E-09B 明确授权
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -337,7 +337,8 @@ docs/slice/DOC/DOC_PREP_12E_R3_12DClosure联动准备.md
 
 ## 11. 12E-08 Production Admission
 
-状态：IN PROGRESS；12E-08A/08B/08C COMPLETE，12E-08C-R1/R2/R3 COMPLETE，R3-04 NO-GO，12E-08D BLOCKED
+状态：12E-08A/08B/08C、R1/R2/R3/R4 和 12E-08D-01..04 COMPLETE；受限 Profile GO，
+普通 Global 支撑/光油/0.01mm 等价 NO-GO。
 
 前置：
 
@@ -364,7 +365,9 @@ RIP strict PASS。
 docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 ```
 
-当前阻断：12E-08C 已完成取证，但 3 个真实 OBJ 被 strict topology 阻断，Release 预算未冻结。已插入 12E-08C-R1/R2/R3 显式 repair-then-strict 前置专项；12E-08D 需其 required-case Gate、预算和用户确认全部通过。
+当前结果：xiao_ma/yecan 两独立模型族、Release 候选预算、Quick CI 和独立授权已闭环；
+`global_surface_shell_restricted_candidate` 已写入真实 RGBWSV package 并通过 RIP。复杂浮雕 0/3、
+Global 支撑/光油和 0.01mm 最终矩阵继续作为披露缺口。
 
 12E-08A 实际结果：
 
@@ -419,7 +422,7 @@ Release/global/legacy 证据；R3-04 因三个 required OBJ 未 strict PASS、�
 
 ### 11.2 12E-08D 双模式生产写包原子任务
 
-状态：AUTHORIZED / 12E-08D-01/02/03 COMPLETE / 12E-08D-04 READY。
+状态：AUTHORIZED / 12E-08D-01/02/03/04 COMPLETE。
 
 固定目标：
 
@@ -437,7 +440,8 @@ global blocked/unavailable 不得 silent fallback。
 12E-08D-01 COMPLETE：Config/DTO/validator、SlicePipelineRouter 与 admission fail-closed；
 12E-08D-02 COMPLETE：global partition/full closure 到现有 production layer DTO 的 adapter；
 12E-08D-03 COMPLETE：共享 TIFF writer、manifest layer list、preview/report、RIP 和 no-fallback 测试；
-12E-08D-04 显式 Profile、真实模型 Release matrix 与 GO/NO-GO。
+12E-08D-04 COMPLETE：显式 Profile、真实模型 Release matrix 与分层 GO/NO-GO；
+受限 Profile GO，普通 Global 全功能等价 NO-GO。
 ```
 
 准备入口：

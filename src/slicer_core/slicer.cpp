@@ -4821,14 +4821,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     profile.total_ms = ElapsedMsSince(run_start);
     NotifyProgress(options, run_start, "completed", 1, 1, 100);
 
-    return {
-        package_dir,
-        grid.width_px,
-        grid.height_px,
-        grid.layer_count,
-        total_model_pixels,
-        total_support_pixels,
-        profile};
+    SliceRunResult result;
+    result.package_dir = package_dir;
+    result.effective_pipeline_mode = "legacy";
+    result.width_px = grid.width_px;
+    result.height_px = grid.height_px;
+    result.layer_count = grid.layer_count;
+    result.model_pixel_count = total_model_pixels;
+    result.support_pixel_count = total_support_pixels;
+    result.profile = profile;
+    return result;
 }
 
 }  // namespace slicer_core

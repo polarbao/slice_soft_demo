@@ -1,6 +1,6 @@
 # DOC_PREP_12E-R4 Production Admission 准备
 
-> 文档状态：12E-08A/08B/08C COMPLETE / RELEASE BUDGET BLOCKED / 12E-08D BLOCKED
+> 文档状态：HISTORICAL PREP；后续 R4-07-R2、R4-08-R2 与 12E-08D-01..04 已完成
 > 日期：2026-07-20
 > 前置任务：12E-01 至 12E-07 COMPLETE
 > 覆盖任务：12E-08 Production Admission

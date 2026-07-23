@@ -1,6 +1,6 @@
 # DOC_SCHEMA_12E Dual Slice Pipeline Config
 
-> 文档状态：08D-01/02/03 IMPLEMENTED / PRODUCTION PROFILE PENDING
+> 文档状态：08D-01/02/03/04 IMPLEMENTED / RESTRICTED PROFILE ADMITTED
 > 日期：2026-07-20
 
 ## 1. 配置结构
@@ -133,3 +133,18 @@ global blocker -> no legacy fallback；
 production success without TIFF -> hard failure；
 old config omitted -> legacy unchanged。
 ```
+
+## 10. 受限 Global Production Profile
+
+当前唯一已准入 target：
+
+```text
+global_surface_shell_restricted_candidate
+```
+
+它只允许 RGB 纹理与 W 白墨 Model Fill。支撑、表面/外侧光油、closure repair、legacy
+materialPolicy/materialRoleMapping 必须关闭。任何不匹配返回
+`E_12E_PIPELINE_GLOBAL_NOT_ADMITTED`，不写 package 且不回退 legacy。
+
+受限 Profile 已通过 xiao_ma/yecan 两真实模型的 Release TIFF/RIP 矩阵；该结果不代表普通 Global
+已具备支撑、光油和 0.01 mm 最终工艺等价。

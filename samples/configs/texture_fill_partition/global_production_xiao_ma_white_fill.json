@@ -1,0 +1,100 @@
+{
+  "slicePipeline": {
+    "mode": "global_surface_shell"
+  },
+  "input": {
+    "modelPath": "../../../model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj",
+    "format": "obj"
+  },
+  "output": {
+    "packageDir": "output/benchmarks/12e_08d_04_global_production/xiao_ma/package",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.2,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "global_surface_shell",
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [255, 0, 255],
+    "missingTexturePolicy": "warn_and_fallback",
+    "surfaceShell": {
+      "geometryMode": "global_3d_distance",
+      "widthMm": 0.4,
+      "widthStepMm": 0.01,
+      "minimumWidthPolicy": "two_cells_floor_0_10_mm",
+      "surfaceScope": "all_closed_surfaces",
+      "fullTextureAtModelLimit": true
+    }
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "complement_of_global_texture_shell",
+    "value": 0,
+    "emptyAllowedInProduction": false
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "global_production_xiao_ma_white_fill",
+    "target": "global_surface_shell_restricted_candidate",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "underbase",
+      "coverage": "all_model",
+      "value": 0,
+      "expandPx": 0,
+      "shrinkPx": 0
+    },
+    "varnish": {
+      "enabled": false
+    },
+    "support": {
+      "expected": false,
+      "mode": "existing_support_pipeline"
+    }
+  },
+  "support": {
+    "enabled": false,
+    "mode": "bottom_projection",
+    "value": 0
+  },
+  "surfaceVarnish": {
+    "enabled": false
+  },
+  "outerVarnish": {
+    "enabled": false,
+    "thicknessMm": 0.0
+  },
+  "materialClosure": {
+    "enabled": false,
+    "mode": "diagnostic",
+    "repair": {
+      "enabled": false
+    }
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 5
+  }
+}

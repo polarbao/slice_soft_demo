@@ -732,7 +732,7 @@ int main(int argc, char** argv)
                   << '\n';
         std::cout << "  modelPixels: " << result.model_pixel_count << '\n';
         std::cout << "  supportPixels: " << result.support_pixel_count << '\n';
-        PrintSliceTiming("legacy", result.profile);
+        PrintSliceTiming(result.effective_pipeline_mode, result.profile);
         return 0;
     }
     catch (const std::exception& error)

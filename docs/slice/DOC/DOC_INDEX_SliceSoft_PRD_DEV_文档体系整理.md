@@ -324,7 +324,7 @@ DOC_DECISION_<stage>：如果有方向性决策，单独记录
 12B：R0/R1/R2 已完成并生成最终状态报告；
 12C：R0/R1/R2 已完成并收口；
 12D：R0/R1/R2/R3 已完成，12D-10 三个真实 OBJ 验收通过；
-12E：12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3 已完成非生产证据；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release repair/global/legacy regression、Mesh Repair DTO/hash/report contract、Eligibility、Generated Golden、真实模型 Baseline、Cleanup、Weld/Winding Guard、Simple Boundary Fill、独立 evidence validator、non-manifold classifier、完整自相交证据和真实模型 repair matrix 可复现；真实 OBJ confirmed self-intersection BLOCKED；R3-04 NO-GO；R4 模型预检/正向链/修复资产准入 PREPARED；12E-08D BLOCKED；
+12E：12E-01..07、12E-08A/08B/08C、12E-08C-R1/R2/R3/R4 与 12E-08D-01..04 已完成；CPU/OpenVDB OFF/ON conformance、Width Sweep、Texture Transfer、Diagnostic Composer、12D model/full-material closure、classification-to-raster、Release repair/global/legacy regression、Mesh Repair DTO/hash/report contract、Eligibility、Generated Golden、真实模型 Baseline、Cleanup、Weld/Winding Guard、Simple Boundary Fill、独立 evidence validator、non-manifold classifier、完整自相交证据、真实模型 repair matrix、共享 RGBWSV writer 和受限 Global production package 可复现；真实复杂 OBJ confirmed self-intersection 仍 BLOCKED；restricted Global Profile GO，普通支撑/光油/0.01mm 等价 NO-GO；
 12F：Release/Debug 统一运行环境与专项文档已建立；12F-02 Release 性能基线刷新等待用户明确启动。
 ```
 
