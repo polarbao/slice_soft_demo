@@ -126,6 +126,11 @@
 | `DOC/DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md` | 以两个独立 strict/admitted 真实模型族替代指定 3/3 作为受限生产候选验证启动条件 |
 | `DOC/DOC_PREP_12E_08C_R4_07_R1_受限生产候选验证准备.md` | xiao_ma/yecan Release、闭环、性能、legacy/RIP 候选验证准备 |
 | `DOC/DOC_EXEC_12E_08C_R4_07_R1_受限生产候选验证结果.md` | 两独立模型族、四用例、Release/closure、legacy/RIP 候选证据结果 |
+| `DOC/DOC_DECISION_12E_08C_R4_07_R2_受限生产候选预算冻结规则.md` | 参考机器候选预算口径、阈值依据和非产品 SLA 边界 |
+| `DOC/DOC_PREP_12E_08C_R4_07_R2_受限生产候选预算冻结准备.md` | R4-07-R2 环境、模型、时间/内存 Gate 与负向验证准备 |
+| `DOC/DOC_EXEC_12E_08C_R4_07_R2_受限生产候选预算冻结结果.md` | 四 case 五次 Release 测量和版本化候选预算 PASS 结果 |
+| `DOC/DOC_PREP_12E_08C_R4_Quick_CI_R1_GoldenBaseline收口准备.md` | 真实用户 Profile 与确定性 Golden Fixture 解耦方案 |
+| `DOC/DOC_PREP_12E_08C_R4_08_R2_GO_NO_GORefresh准备.md` | 新 Gate 下预算、Quick CI、授权和 08D 决策状态机准备 |
 | `DOC/DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后 12E 目标可达性、模型双轨治理和预检必要性分析 |
 | `PRD/PRD_12E_08C_R4_模型导入预检与修复资产准入.md` | 导入即检测、模式相关阻断、正常模型与 required 模型治理需求 |
 | `DEV/DEV_12E_08C_R4_ModelPreflight与RepairAssetAdmission设计.md` | Preflight service、cache、admission、Qt controller 与修复资产审计设计 |
