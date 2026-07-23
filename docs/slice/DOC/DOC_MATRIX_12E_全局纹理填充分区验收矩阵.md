@@ -1,7 +1,7 @@
 # DOC_MATRIX_12E 全局纹理填充分区验收矩阵
 
-> 文档状态：R4-07 DEVELOPMENT COMPLETE / R4-08 DECISION BLOCKED / FINAL FAMILY 0/3
-> 日期：2026-07-22
+> 文档状态：R4-08-R2 CONDITIONAL_TECHNICAL_PASS / COMPLEX RELIEF COVERAGE 0/3
+> 日期：2026-07-23
 
 ## 1. 使用方式
 
@@ -154,9 +154,9 @@ OpenVDB OFF build PASS；
 | 12E-08B | COMPLETE：full-material sidecar、五类 12D gap、support/varnish 状态与通道一致性通过 |
 | 12E-08C | COMPLETE：默认 OFF Release/回归证据已生成；3 个真实 OBJ topology BLOCKED，预算未冻结 |
 | 12E-08C-R1/R2/R3 | COMPLETE / R3-04 NO-GO：显式 repair-then-strict、属性保持、post strict 和真实模型 Release Gate |
-| 12E-08C-R4 | PREPARED：导入预检、模式准入、正常模型正向链和修复资产接收审计 |
-| 12E-08D | BLOCKED：生产准入需前置证据和用户再次确认 |
-| 12E-09 | PREPARED：09A READY；09B 被 08D 阻断 |
+| 12E-08C-R4 | COMPLETE：两独立模型族、四用例、候选预算、legacy/RIP、Quick CI PASS；R4-08-R2 条件技术通过 |
+| 12E-08D | BLOCKED：技术 Gate 已通过，只等待用户独立授权并登记 GO |
+| 12E-09 | 09A-01 COMPLETE / 09A-02 READY；09B 被 08D 阻断 |
 | 12E-10 | UI、真实模型、RIP 和报告收口 |
 
 ## 12. 双切片模式与输出矩阵

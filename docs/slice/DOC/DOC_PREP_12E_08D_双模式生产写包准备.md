@@ -1,6 +1,6 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY BUDGET, QUICK CI AND EXPLICIT AUTHORIZATION
+> 文档状态：PREPARED / EXECUTION BLOCKED ONLY BY EXPLICIT AUTHORIZATION
 > 初始日期：2026-07-20
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
@@ -8,8 +8,8 @@
 ## 1. 准备结论
 
 12E-08D 的产品模式、配置合同、pipeline 路由、共享 writer、错误状态和原子任务已明确。当前只能完成准备，
-不能开始生产接入。2026-07-23 已接受两独立真实模型族的受限生产候选规则，xiao_ma/yecan 允许进入
-R4-07-R1 候选验证；Release production budget、Quick CI golden 和 production path 独立授权仍未闭环。
+不能开始生产接入。2026-07-23 已接受两独立真实模型族的受限生产候选规则；xiao_ma/yecan
+候选验证、Release 候选预算和 Quick CI 已闭环。当前唯一剩余启动阻断是 production path 独立授权。
 
 ## 2. 当前代码边界
 
@@ -53,7 +53,7 @@ SlicePipelineModeRouter
 ## 5. 08D-01 Gate
 
 ```text
-R4-08-R2 按受限生产候选规则输出 GO；
+R4-08-R2 技术 Gate 为 CONDITIONAL_TECHNICAL_PASS，并在独立授权登记后转为 GO；
 至少两个独立真实模型族 strict/intake PASS；
 受限候选四用例与完整材料闭环 PASS；
 attribute preservation PASS；
@@ -63,10 +63,12 @@ Quick CI PASS 或有正式批准的隔离结论；
 用户再次确认 production path。
 ```
 
-当前 Gate：R4-07-R1 COMPLETE；候选预算、Quick CI 和独立授权仍 BLOCKED。
+当前 Gate：R4-07-R1、R4-07-R2、Quick-CI-R1 均 COMPLETE / PASS；R4-08-R2 为
+`CONDITIONAL_TECHNICAL_PASS`；只有独立授权仍 BLOCKED。爱神/玫瑰/梯田 `0/3` 继续作为复杂浮雕覆盖
+缺口披露，但按 R4-08-R1 不再是受限候选的硬启动条件。
 
-当前决策证据见 `../REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md`。在该报告输出 GO 前，本文的
-四个原子任务均只表示准备完成，不允许开始代码实现。
+当前决策证据见 `../REPORT/REPORT_12E_08C_R4_08_R2_08D_GO_NO_GO刷新状态.md`。在用户独立授权并把
+该决策登记为 GO 前，本文的四个原子任务均只表示准备完成，不允许开始代码实现。
 
 ## 6. Writer 规则
 

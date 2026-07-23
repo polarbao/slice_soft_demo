@@ -3,7 +3,7 @@
 > 文档状态：12E-09A-01 COMPLETE / 12E-09A-02 READY / 12E-09B BLOCKED BY 12E-08D
 > 日期：2026-07-21
 > 覆盖任务：12E-09 Qt UI 设置与 Effective Config
-> 前置状态：12E-08A/08B/08C COMPLETE；Release budget 与 12E-08D BLOCKED
+> 前置状态：R4-08-R2 CONDITIONAL_TECHNICAL_PASS；12E-08D 只等待独立授权
 
 ## 1. 准备结论
 
@@ -201,7 +201,7 @@ OpenVDB ON 可选 lane PASS。
 | texture transfer | PASS | 可显示候选 RGB |
 | classification-to-raster | 12E-08A PASS | 可显示真实 raster layer |
 | full material closure | 12E-08B PASS / DIAGNOSTIC | 可显示真实 Support/Varnish 状态 |
-| Release/legacy regression | 12E-08C COMPLETE；real OBJ budget BLOCKED | 09A 可展示诊断状态，不得宣传生产性能 |
+| Release/legacy regression | R4-07-R1/R2、Quick-CI-R1 PASS | 09A 可展示候选诊断状态；候选预算不得宣传为产品 SLA |
 | production admission | 12E-08D NOT GRANTED | 不得启用生产 Profile |
 
 ## 12. 12E-09A 输出合同

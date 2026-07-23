@@ -3,9 +3,9 @@
 > 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-22
+> 更新日期：2026-07-23
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D 已完成；12E-01..07、12E-08A/08B/08C 与 R1/R2/R3 已完成；R4-01..07 COMPLETE，R4-08 EXECUTION COMPLETE / DECISION BLOCKED，最终真实 family matrix 0/3；12E-09A-01 COMPLETE；12E-08D 不可启动；下一可执行任务为 12E-09A-02；12F-00/01 已完成、性能算法任务未开始
+> 当前阶段判断：12C 与 12D 已完成；12E-01..07、12E-08A/08B/08C 与 R1/R2/R3 已完成；R4-01..07/R1/R2、Quick-CI-R1 与 R4-08-R2 COMPLETE，R4-08-R2=CONDITIONAL_TECHNICAL_PASS；复杂浮雕覆盖 0/3；12E-09A-01 COMPLETE；12E-08D 等待独立授权；下一可执行任务为 12E-09A-02；12F-00/01 已完成、性能算法任务未开始
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -35,10 +35,10 @@
 
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
-最新完成阶段：12E-08C-R3 Release/Legacy 非生产证据与 R3-04 NO-GO 决策
+最新完成阶段：12E-08C-R4 受限生产候选技术 Gate 收口
 当前执行阶段：12E-09A DIAGNOSTIC UI / 09A-01 COMPLETE
-最新完成任务：12E-09A-01 Read-only Diagnostic Facade and UI DTO
-当前阻断任务：required-family acceptance、生产预算、Quick CI 与授权阻断 12E-08D；12E-09A 下一任务为 09A-02；12F-02 等待用户明确启动
+最新完成任务：R4-08-R2 GO/NO-GO Refresh / CONDITIONAL_TECHNICAL_PASS
+当前阻断任务：独立授权阻断 12E-08D；12E-09A 下一任务为 09A-02；复杂浮雕 0/3 为披露缺口；12F-02 等待用户明确启动
 ```
 
 09P-R1 已完成：
@@ -441,4 +441,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、R1/R2/R3、R4-01..07、R4-07-R1 与 R4-07-R2 已完成，参考机器候选预算已冻结 PASS，R4-08 旧决策仍为 BLOCKED；复杂浮雕覆盖 0/3 继续记录为缺口；12F-00/01 已完成。Quick-CI-R1 已完成根因归档和开发准备，R4-08-R2 已完成结构准备但等待 Quick-CI-R1；12E-09A-01 已完成，09A-02 可继续；12E-08D 仍被 Quick CI、R4-08-R2 与独立授权阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、R1/R2/R3、R4-01..07、R4-07-R1/R2、Quick-CI-R1 与 R4-08-R2 已完成。参考机器候选预算和 Quick CI PASS，R4-08-R2 为 `CONDITIONAL_TECHNICAL_PASS`；复杂浮雕覆盖 0/3 继续记录为缺口；12F-00/01 已完成。12E-09A-01 已完成，09A-02 可继续；12E-08D 只被独立授权阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。

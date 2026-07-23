@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：R4-07-R1 COMPLETE / RESTRICTED PRODUCTION CANDIDATE EVIDENCE PASS
+> 文档状态：R4-08-R2 COMPLETE / CONDITIONAL_TECHNICAL_PASS
 > 初始日期：2026-07-22
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
@@ -78,9 +78,9 @@ R4-07/08 的四 case Release Gate 与 08D GO/NO-GO 刷新已分别完成原子�
 ../DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md
 ```
 
-当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07 development four-case 已完成。2026-07-23
-准入规则已经修订，R4-07-R1 候选验证已完成；两个独立模型族和四用例证据 PASS。生产预算、Quick CI
-和用户对 08D production path 的独立授权仍阻断 12E-08D。
+当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07-R1 候选验证、R4-07-R2 候选预算和
+Quick-CI-R1 均已 PASS。R4-08-R2 已输出 `CONDITIONAL_TECHNICAL_PASS`；用户对 08D production path
+的独立授权是当前唯一启动阻断。
 
 ## 5. 复杂重建后备路线
 
@@ -97,7 +97,7 @@ R5 必须另行完成 CMake/vcpkg、许可证、维护、尺寸误差、UV/材�
 ## 6. 与 08D/09/10 的关系
 
 ```text
-08D：等待 R4-07-R1/R2、Quick-CI-R1 和 R4-08-R2 后重新判断；
+08D：技术 Gate 已通过，等待独立授权并把 R4-08-R2 决策转 GO；
 09A：R4B 后可继续 diagnostic UI；
 09B：等待 08D production admission；
 10A：可基于 R4B 准备 preview；
