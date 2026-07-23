@@ -721,7 +721,7 @@ int main(int argc, char** argv)
         run_options.write_tiff_layers = !options.preview_only;
         run_options.progress_callback = PrintSliceProgress;
         const slicer_core::SliceRunResult result =
-            slicer_core::RunSlicePipelineLegacy(options.config_path, run_options);
+            slicer_core::RunSlicePipeline(options.config_path, run_options);
         std::cout << "slicer_cli: generated package\n";
         if (options.preview_only)
         {

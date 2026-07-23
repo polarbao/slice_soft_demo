@@ -1,9 +1,9 @@
 # TASKS_12E-08C 真实模型拓扑修复任务清单
 
-> 文档状态：COMPLETE / NON-PRODUCTION / R3-04 NO-GO
+> 文档状态：COMPLETE / HISTORICAL R3-04 NO-GO / SUPERSEDED BY R4-08-R2 GO
 > 日期：2026-07-21
 > 阶段位置：12E-08C 与 12E-08D 之间
-> 当前原子任务：无；12E-08D 被 R3-04 NO-GO 阻断
+> 当前原子任务：无；后续 R4 扩展和 R4-08-R2 已完成，12E-08D-01 已完成
 
 ## 1. 总目标
 
@@ -238,7 +238,9 @@ R3：real model Release + 12E pipeline + legacy/RIP/TIFF invariant；
 
 ## 7. 12E-08D 关系
 
-12E-08D 当前继续 BLOCKED。R3-04 是唯一可把状态变为 READY 的前置任务；R1/R2 单独完成不构成生产准入。
+本清单冻结的是 R1/R2/R3 修复专项及 R3-04 当时的 NO-GO 证据。后续正式插入的 R4-01..07、
+R4-07-R1/R2、Quick-CI-R1 和 R4-08-R2 已完成，并在独立授权后把 08D 决策更新为 GO。
+当前 12E-08D-01 已完成；复杂浮雕 0/3 仍作为覆盖缺口披露，不得反向改写本清单的历史测试结果。
 
 ## 8. 双模式边界
 

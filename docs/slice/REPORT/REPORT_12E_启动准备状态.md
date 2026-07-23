@@ -1,7 +1,12 @@
 # REPORT_12E 启动准备状态
 
-> 文档状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED / PRODUCTION NOT ADMITTED
+> 文档状态：HISTORICAL STARTUP SNAPSHOT / SUPERSEDED BY R4-08-R2 GO AND 08D-01
 > 日期：2026-07-22
+
+> 当前状态覆盖（2026-07-23）：本文正文保留 2026-07-22 的启动阶段历史证据，不再作为当前 Gate。
+> 当前真源为 `REPORT_12X_阶段计划与完成度总览.md` 和
+> `REPORT_12E_08C_R4_08_R2_08D_GO_NO_GO刷新状态.md`。R4-08-R2 已 GO，12E-08D-01 已完成，
+> 12E-08D-02 为下一原子任务；Global production admission 仍未通过。
 
 ## 1. 当前结论
 

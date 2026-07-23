@@ -2,7 +2,7 @@
 
 > 文档状态：R4-08-R2 GO / 12E-08D AUTHORIZED / PRODUCTION NOT YET ADMITTED
 > 更新日期：2026-07-23
-> 当前项目原子任务：12E-08D-01 Config/DTO/Router 与 fail-closed
+> 当前项目原子任务：12E-08D-02 Global Production Layer Adapter
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -419,7 +419,7 @@ Release/global/legacy 证据；R3-04 因三个 required OBJ 未 strict PASS、�
 
 ### 11.2 12E-08D 双模式生产写包原子任务
 
-状态：AUTHORIZED / 12E-08D-01 READY FOR DEVELOPMENT。
+状态：AUTHORIZED / 12E-08D-01 COMPLETE / 12E-08D-02 READY。
 
 固定目标：
 
@@ -434,7 +434,7 @@ global blocked/unavailable 不得 silent fallback。
 原子任务：
 
 ```text
-12E-08D-01 Config/DTO/validator、SlicePipelineRouter 与 admission fail-closed；
+12E-08D-01 COMPLETE：Config/DTO/validator、SlicePipelineRouter 与 admission fail-closed；
 12E-08D-02 global partition/full closure 到现有 production layer DTO 的 adapter；
 12E-08D-03 共享 TIFF writer、manifest layer list、preview/report、RIP 和 no-fallback 测试；
 12E-08D-04 显式 Profile、真实模型 Release matrix 与 GO/NO-GO。

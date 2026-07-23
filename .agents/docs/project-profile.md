@@ -4,10 +4,10 @@
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
 - Current phase: Stage 12E-08D dual production-pipeline implementation; production admission remains not evaluated
-- Latest completed milestone: Stage 12E-08C-R4-08-R2 GO/NO-GO Refresh and explicit 08D authorization
-- Latest completed task: `12E-08D explicit authorization registration`
-- Current task: `12E-08D-01 Config/DTO/Router and admission fail-closed`
-- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01 is ready; 08D-02..04 wait for their preceding atomic gates. 12E-09A-02..06 remain prepared; 12E-09B waits for 08D production admission.
+- Latest completed milestone: `12E-08D-01 Config/DTO/Router and admission fail-closed`
+- Latest completed task: `12E-08D-01`
+- Current task: `12E-08D-02 global production layer adapter`
+- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01 implements the explicit mode contract and fail-closed router; 08D-02..04 remain sequential atomic gates. 12E-09A-02..06 remain prepared; 12E-09B waits for 08D production admission.
 - Validated R4 model inputs: 22 OBJ/3MF assets under `model` were audited. All 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS; xiao_ma Damuzhi and yecan/3 are the two tracked restricted-candidate baseline families. The aishen/meigui/titian families remain a 0/3 complex-relief coverage gap because all 9 candidates have confirmed self-intersection. The `model` directory has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` only as the positive Texture2D control lane.
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only

@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-23
-> 适用阶段：Stage 12D COMPLETE；R4-08-R2 GO；12E-08D AUTHORIZED；12E-08D-01 READY
+> 适用阶段：Stage 12D COMPLETE；R4-08-R2 GO；12E-08D-01 COMPLETE；12E-08D-02 NEXT
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产证据。R4-01..07、R4-07-R1、R4-07-R2、Quick-CI-R1 与 R4-08-R2 已完成；xiao_ma/yecan 两个独立模型族、四 case 候选证据、参考机器候选预算和当前 Quick CI 均 PASS。用户已明确授权 12E-08D，R4-08-R2 已转为 `GO`，当前任务是 08D-01。复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-01 已完成，12E-09A-02 仍可并行执行。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01 已完成显式 `legacy | global_surface_shell` 配置、路由和 fail-closed 守门，当前下一原子任务为 08D-02。Global 仍未生产准入，复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-01 已完成，12E-09A-02 仍可并行执行。
 
 ## 目录结构
 
@@ -37,6 +37,7 @@
 | `PRD/PRD_SHORT_MID_LONG_SliceSoft_项目运行计划需求.md` | 项目运行计划对应的产品需求 |
 | `DEV/DEV_SHORT_MID_LONG_SliceSoft_项目运行计划执行方案.md` | 项目运行计划对应的技术执行方案 |
 | `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 与 12B 收口历史报告 |
+| `REPORT/REPORT_12X_阶段计划与完成度总览.md` | Stage 12A 至 12F 当前状态、历史快照、后续依赖和唯一下一任务 |
 | `REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.md` | 12E-09A-01 只读诊断 UI 数据边界与验证状态 |
 | `REPORT/REPORT_12C_Qt工作台启动状态.md` | 当前阶段启动状态，12C-R0 可开始 |
 | `REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | OpenVDB OBJ 彩色纹理前置状态报告 |

@@ -145,6 +145,22 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     SliceConfig config;
     config.slicing_mode = root.value("slicingMode", config.slicing_mode);
 
+    if (root.contains("slicePipeline"))
+    {
+        const Json& slicePipelineJson = root.at("slicePipeline");
+        if (!slicePipelineJson.is_object()
+            || !slicePipelineJson.contains("mode")
+            || !slicePipelineJson.at("mode").is_string())
+        {
+            throw SlicePipelineError(
+                SlicePipelineErrorCode::ModeUnsupported,
+                "slicePipeline must be an object containing a string mode");
+        }
+        config.slice_pipeline.explicitly_configured = true;
+        config.slice_pipeline.mode =
+            ParseSlicePipelineMode(slicePipelineJson.at("mode").as_string());
+    }
+
     if (!root.contains("input") || !root.at("input").contains("modelPath")) {
         throw std::runtime_error("missing required field: input.modelPath");
     }
@@ -543,6 +559,28 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.slicing_mode != "closed_mesh_scanline" && config.slicing_mode != "relief_heightfield") {
         throw std::runtime_error("slicingMode must be closed_mesh_scanline or relief_heightfield");
+    }
+    const bool globalTextureConfigured =
+        config.texture.enabled
+        && config.texture.apply_mode == "global_surface_shell";
+    const bool globalFillConfigured =
+        config.model_fill.scope == "complement_of_global_texture_shell";
+    if (config.slice_pipeline.explicitly_configured
+        && config.slice_pipeline.mode == SlicePipelineMode::Legacy
+        && (globalTextureConfigured || globalFillConfigured))
+    {
+        throw SlicePipelineError(
+            SlicePipelineErrorCode::ConfigMismatch,
+            "explicit legacy mode cannot use global_surface_shell-only material semantics");
+    }
+    if (config.slice_pipeline.mode == SlicePipelineMode::GlobalSurfaceShell
+        && (!globalTextureConfigured
+            || !config.model_fill.enabled
+            || !globalFillConfigured))
+    {
+        throw SlicePipelineError(
+            SlicePipelineErrorCode::ConfigMismatch,
+            "global_surface_shell mode requires matching texture and modelFill configuration");
     }
     if (config.output.dpi_x != 600 || config.output.dpi_y != 600) {
         throw std::runtime_error("P0 requires dpiX == dpiY == 600");

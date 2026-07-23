@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/config/SlicePipelineConfig.h"
 #include "slicer_core/diagnostics/ValidationIssue.h"
 
 #include <array>
@@ -314,6 +315,7 @@ struct ExperimentalConfig
 
 struct SliceConfig {
     std::string slicing_mode{"closed_mesh_scanline"};
+    SlicePipelineConfig slice_pipeline;
     InputConfig input;
     OutputConfig output;
     TransformConfig transform;

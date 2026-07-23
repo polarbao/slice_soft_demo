@@ -21,6 +21,8 @@ add_library(slicer_core
     src/slicer_core/config/ConfigSchema.h
     src/slicer_core/config/NormalizedConfig.cpp
     src/slicer_core/config/NormalizedConfig.h
+    src/slicer_core/config/SlicePipelineConfig.cpp
+    src/slicer_core/config/SlicePipelineConfig.h
     src/slicer_core/config.cpp
     src/slicer_core/config.h
     src/slicer_core/diagnostics/Diagnostics.cpp
@@ -173,6 +175,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/PipelineStepResult.h
     src/slicer_core/pipeline/SlicePipeline.cpp
     src/slicer_core/pipeline/SlicePipeline.h
+    src/slicer_core/pipeline/SlicePipelineRouter.cpp
+    src/slicer_core/pipeline/SlicePipelineRouter.h
     src/slicer_core/preflight/ModelPreflightCacheIdentity.cpp
     src/slicer_core/preflight/ModelPreflightCacheIdentity.h
     src/slicer_core/preflight/ModelPreflightAdmissionPolicy.cpp
@@ -530,6 +534,12 @@ add_executable(model_preflight_pipeline_gate_unit_tests
 
 target_link_libraries(model_preflight_pipeline_gate_unit_tests PRIVATE slicer_core)
 
+add_executable(slice_pipeline_router_unit_tests
+    tests/unit/slice_pipeline_router/Main.cpp
+)
+
+target_link_libraries(slice_pipeline_router_unit_tests PRIVATE slicer_core)
+
 add_executable(mesh_repair_fixture_golden_unit_tests
     tests/unit/mesh_repair_fixture_golden/main.cpp
 )
@@ -738,6 +748,7 @@ add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contra
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
+add_test(NAME slice_pipeline_router_unit_tests COMMAND slice_pipeline_router_unit_tests)
 add_test(NAME mesh_repair_eligibility_unit_tests COMMAND mesh_repair_eligibility_unit_tests)
 add_test(NAME mesh_repair_fixture_golden_unit_tests COMMAND mesh_repair_fixture_golden_unit_tests)
 add_test(NAME mesh_repair_preflight_unit_tests COMMAND mesh_repair_preflight_unit_tests)
