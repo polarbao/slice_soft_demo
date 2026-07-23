@@ -55,7 +55,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4-01..06 IMPLEMENTATION COMPLETE / REQUIRED FAMILY MATRIX 0/3`。R4-06 intake 软件能力已完成；R4-07..08 仍依赖爱神、玫瑰、梯田三个 required family 各一个 admitted 候选。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；R4-08 GO 前不得启动 12E-08D。
+12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4-01..07 COMPLETE / R4-07-R1 READY`。2026-07-23 已接受两个独立 strict/admitted 真实模型族的受限生产候选 Gate；xiao_ma/yecan 满足候选身份，爱神/玫瑰/梯田继续作为 0/3 复杂浮雕覆盖缺口。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；预算、Quick CI、R4-08-R2 和用户独立授权完成前不得启动 12E-08D。
 
 ## 12F Release Runtime 与性能优化专项
 

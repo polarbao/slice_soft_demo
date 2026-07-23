@@ -1,14 +1,15 @@
 # DOC_PREP_12E-08D 双模式生产写包准备
 
-> 文档状态：PREPARED / EXECUTION BLOCKED BY R4-08 DECISION
-> 日期：2026-07-20
+> 文档状态：PREPARED / EXECUTION BLOCKED BY BUDGET, QUICK CI AND EXPLICIT AUTHORIZATION
+> 初始日期：2026-07-20
+> 准入规则修改时间：2026-07-23 11:32 +08:00
 > 目标：Legacy/Global 双模式路由与统一 RGBWSV TIFF 输出
 
 ## 1. 准备结论
 
 12E-08D 的产品模式、配置合同、pipeline 路由、共享 writer、错误状态和原子任务已明确。当前只能完成准备，
-不能开始生产接入。R4-08 已完成正式刷新并输出 `DECISION BLOCKED`：required family 0/3、最终真实族
-four-case 缺失、Release production budget 未冻结、Quick CI golden 失败，且未取得 production path 授权。
+不能开始生产接入。2026-07-23 已接受两独立真实模型族的受限生产候选规则，xiao_ma/yecan 允许进入
+R4-07-R1 候选验证；Release production budget、Quick CI golden 和 production path 独立授权仍未闭环。
 
 ## 2. 当前代码边界
 
@@ -52,15 +53,17 @@ SlicePipelineModeRouter
 ## 5. 08D-01 Gate
 
 ```text
-12E-08C-R4-08 GO；
-required real model strict PASS；
+R4-08-R2 按受限生产候选规则输出 GO；
+至少两个独立真实模型族 strict/intake PASS；
+受限候选四用例与完整材料闭环 PASS；
 attribute preservation PASS；
 Release budget frozen；
 legacy regression PASS；
+Quick CI PASS 或有正式批准的隔离结论；
 用户再次确认 production path。
 ```
 
-当前 Gate：BLOCKED。
+当前 Gate：R4-07-R1 READY；08D 仍 BLOCKED。
 
 当前决策证据见 `../REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md`。在该报告输出 GO 前，本文的
 四个原子任务均只表示准备完成，不允许开始代码实现。

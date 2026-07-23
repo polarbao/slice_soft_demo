@@ -1,12 +1,14 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED / PRODUCTION NOT ADMITTED
-> 日期：2026-07-22
+> 文档状态：R4-07-R1 READY / PRODUCTION NOT ADMITTED
+> 初始日期：2026-07-22
+> 准入规则修改时间：2026-07-23 11:32 +08:00
 
 ## 1. 阶段结论
 
 R4 作为 R3-04 NO-GO 与 12E-08D 之间的正式插入专项，准备文档已经完整。该专项允许正常闭合模型继续
-推进 Texture Surface/Model Fill 功能，但不降低爱神、玫瑰、梯田三个 required 真实模型族的生产 Gate。
+推进 Texture Surface/Model Fill 功能。2026-07-23 已将生产候选验证调整为至少两个独立
+strict/admitted 真实模型族；爱神、玫瑰、梯田继续作为复杂浮雕覆盖缺口。
 
 ## 2. 已完成准备
 
@@ -40,9 +42,9 @@ R4-08 GO/NO-GO Refresh（已执行，决策为 BLOCKED）。
 ## 4. 当前阻断工作
 
 ```text
-R4-06 真实矩阵：等待三个 required family 各一个 admitted candidate；
-R4-07 最终验收：等待 required family matrix 3/3；
-R4-08 GO：被真实族 four-case、生产预算、Quick CI 和授权阻断；
+R4-07-R1：已准备，等待两独立模型族候选验证执行；
+R4-07-R2：等待 R4-07-R1 后冻结受限候选预算；
+R4-08-R2 GO：被生产预算、Quick CI 和授权阻断；
 12E-08D：等待后续 R4-08 重跑输出 GO 和用户明确授权。
 ```
 
@@ -59,9 +61,8 @@ legacy 默认；global fail-closed；无 silent fallback。
 
 ## 6. 下一任务
 
-`12E-08C-R4-08` 已完成当前证据下的正式刷新，输出 `DECISION BLOCKED`。当前可执行开发任务是
-`12E-09A-01` diagnostic facade；生产准入路线仍需等待三个 family 的修复/重建候选进入 intake，并关闭
-Quick CI、生产预算和授权 blocker。12E-08D 不可启动。
+`12E-08C-R4-08` 的 2026-07-22 原始刷新仍记录 `DECISION BLOCKED`。按 2026-07-23 修订，当前 R4
+生产候选路线的下一可执行原子任务为 `R4-07-R1`；完成后仍需预算、Quick CI 和授权。12E-08D 不可启动。
 
 ## 7. 模型资产准备结果
 
@@ -153,8 +154,9 @@ Quick CI 在 300 秒窗口内未完成，独立 golden 仍确认既有
 固定为 `MF_Xiao_ma_Damuzhi_ty02.obj`，独立复核固定为 `yecan/3.obj`；`yecan/4.obj` 当前仍是未跟踪用户资产，
 只读使用且不纳入提交。正向 3MF 继续使用 `samples/models/3mf/texture2d_checker_cube.3mf`。
 
-这些正常模型已用于 R4-05，并通过 `development_model_pool` 解锁 R4-07 开发；它们不能替代 required
-family 解除最终 Gate。R4-06 可继续接收真实候选，R4-07 final、R4-08 和 08D 仍由真实 family matrix 阻断。
+这些正常模型已用于 R4-05，并通过 `development_model_pool` 解锁 R4-07 开发。按新规则，
+xiao_ma/yecan 作为两个独立模型族可继续进入 R4-07-R1 受限生产候选验证；复杂浮雕 0/3、预算、Quick CI
+和 08D 独立授权继续分别记录。
 
 ## 16. R4-05 原子级准备结果
 
@@ -176,8 +178,8 @@ R4-06 已补齐独立准备文档，冻结三个 required family、candidate kin
 材质/UV/纹理属性差异、完整自相交、post-strict 与 repeatability 准入字段。已验证跨族 clean 模型只作 intake
 控制组，不计入 `requiredFamilyPassCount`。
 
-R4-06 当前为 `IMPLEMENTATION COMPLETE / DEVELOPMENT 2/2 / REAL FAMILY 0/3`；R4-07 为
-`DEVELOPMENT COMPLETE / FINAL WAIT FAMILY 3/3`；R4-08 为 `EXECUTION COMPLETE / DECISION BLOCKED`。详细准备见
+R4-06 当前为 `IMPLEMENTATION COMPLETE / DEVELOPMENT 2/2 / COMPLEX RELIEF COVERAGE 0/3`；R4-07 为
+`DEVELOPMENT COMPLETE / R4-07-R1 READY`；R4-08 原始报告为 `BLOCKED`，等待 R4-08-R2 重评。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。
 
 ## 18. R4-06 实施结果
@@ -196,7 +198,7 @@ R4-07 development 已使用 xiao_ma minimum/allTexture、yecan intermediate 和 
 fresh intake、global partition/texture/raster/full closure、Release 三次测量、legacy TIFF/RIP 与 no-production
 边界全部通过。开发测量不冻结生产预算；required family 0/3 仍阻止最终真实族矩阵。
 
-R4-08 已按实际证据执行：required family 0/3、最终真实族 four-case 缺失、生产预算未冻结、Quick CI 在
+R4-08 已按 2026-07-22 实际证据执行：required family 0/3、最终真实族 four-case 缺失、生产预算未冻结、Quick CI 在
 `material_process_top2 widthPx expected=48 actual=226` 失败，且没有 production path 授权，因此输出
 `BLOCKED`，不能启动 08D。准备与结果详见：
 
@@ -204,4 +206,12 @@ R4-08 已按实际证据执行：required family 0/3、最终真实族 four-case
 ../DOC/DOC_PREP_12E_08C_R4_07_FourCaseReleaseGate准备.md
 ../DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md
 REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md
+```
+
+2026-07-23 的新决策已完成 R4-07-R1 原子级准备，允许 xiao_ma/yecan 两个独立模型族进入受限候选验证。
+准备入口：
+
+```text
+../DOC/DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md
+../DOC/DOC_PREP_12E_08C_R4_07_R1_受限生产候选验证准备.md
 ```

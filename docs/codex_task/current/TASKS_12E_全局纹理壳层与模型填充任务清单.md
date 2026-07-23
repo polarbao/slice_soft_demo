@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：12E-09A-01 COMPLETE / DIAGNOSTIC UI ONLY / PRODUCTION NOT ADMITTED
-> 更新日期：2026-07-22
-> 当前项目原子任务：12E-09A-01 COMPLETE；NEXT 12E-09A-02
+> 文档状态：R4-07-R1 READY / 12E-09A-01 COMPLETE / PRODUCTION NOT ADMITTED
+> 更新日期：2026-07-23
+> 当前项目原子任务：R4-07-R1 受限生产候选验证；12E-09A-02 可作为独立 diagnostic UI 后续任务
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -450,7 +450,7 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 
 ### 11.3 12E-08C-R4 模型导入预检与修复资产准入
 
-状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED；REAL FAMILY MATRIX 0/3；插入于 R3-04 NO-GO 与 08D 之间。
+状态：R4-08 原始决策 BLOCKED；R4-08-R1 准入规则修订 COMPLETE；R4-07-R1 READY；插入于 R3-04 NO-GO 与 08D 之间。
 
 目标：
 
@@ -458,7 +458,8 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 导入模型先执行 fast/full preflight；
 按 legacy/global 能力输出模式相关 admission；
 正常闭合模型继续推进 width/material/UI 正向验证；
-爱神、玫瑰、梯田三个 required family 各接收 strict PASS 原始/外部修复/独立重建候选审计；
+至少两个独立真实模型族各有一个 strict/intake PASS 候选；
+爱神、玫瑰、梯田继续作为复杂浮雕覆盖缺口审计；
 全局 blocker fail-closed，不 silent fallback，不写 production TIFF。
 ```
 
@@ -472,12 +473,16 @@ R4-04 Qt Preflight UI；
 R4-05 Clean OBJ/3MF Positive Matrix；
 R4-06 Repaired Asset Intake；
 R4-07 Four-case Release Gate；
-R4-08 08D GO/NO-GO Refresh。
+R4-08 08D GO/NO-GO Refresh；
+R4-08-R1 受限生产候选准入规则修订；
+R4-07-R1 两独立模型族候选验证；
+R4-07-R2 候选预算冻结；
+R4-08-R2 08D GO/NO-GO Refresh。
 ```
 
-R4-01..06 软件能力和 R4-07 Development Gate 已完成。R4-08 已按当前证据执行并输出 BLOCKED；跨族正常
-模型不能替代 required family 解除生产阻断。12E-09A-01 diagnostic facade 已完成，下一可执行任务为
-12E-09A-02；12E-08D 继续等待后续 R4-08 GO。
+R4-01..06 软件能力和 R4-07 Development Gate 已完成。R4-08 的 2026-07-22 原始执行输出 BLOCKED。
+2026-07-23 用户接受至少两个独立 strict/admitted 真实模型族的受限生产候选 Gate，xiao_ma/yecan
+满足候选身份，R4-07-R1 可执行。复杂浮雕覆盖仍为 0/3；预算、Quick CI 和独立授权继续阻断 08D。
 
 准备入口：
 
@@ -487,6 +492,8 @@ docs/slice/DOC/DOC_PREP_12E_08C_R4_模型预检与修复资产准入准备.md
 docs/slice/DOC/DOC_PREP_12E_08C_R4_02_TwoStagePreflightService准备.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
 docs/slice/REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md
+docs/slice/DOC/DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md
+docs/slice/DOC/DOC_PREP_12E_08C_R4_07_R1_受限生产候选验证准备.md
 ```
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config

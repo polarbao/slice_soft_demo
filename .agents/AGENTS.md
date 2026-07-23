@@ -130,7 +130,7 @@ Current Stage 12 track:
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
-12E: 12E-01/02/03/04/05/06/07, 12E-08A/08B/08C, 12E-08C-R1-01..04, R2-01..04, and R3-01..04 complete. R3-04 records `NO-GO / FROZEN`. R4-01..07 are complete; R4-08 was executed and returned `DECISION BLOCKED`. The development_model_pool admitted xiao_ma/yecan 2/2 and the diagnostic four-case matrix passed 4/4. 12E-09A-01 read-only diagnostic facade/UI DTO is complete. Current required-family admission remains 0/3. Final real-family closure, production budget, Quick CI baseline resolution, and explicit production authorization remain blockers, so 12E-08D is not ready. The next executable task is 12E-09A-02 Effective Config transaction and derived fields.
+12E: 12E-01/02/03/04/05/06/07, 12E-08A/08B/08C, 12E-08C-R1-01..04, R2-01..04, and R3-01..04 complete. R3-04 records `NO-GO / FROZEN`. R4-01..07 are complete; the original R4-08 execution returned `DECISION BLOCKED`. On 2026-07-23 the user accepted a restricted production-candidate gate requiring two independent strict/admitted real-model families. xiao_ma/yecan satisfy the identity gate and R4-07-R1 is ready; aishen/meigui/titian remain a 0/3 complex-relief coverage gap. 12E-09A-01 is complete. Production budget, Quick CI baseline resolution, and explicit 08D authorization remain blockers, so 12E-08D is not ready.
 ```
 
 R0/R1/R2 principles still apply to refactors:

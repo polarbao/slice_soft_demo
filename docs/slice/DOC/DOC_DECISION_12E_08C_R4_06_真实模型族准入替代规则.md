@@ -1,7 +1,9 @@
 # DOC_DECISION_12E-08C-R4-06 真实模型族准入替代规则
 
-> 决策状态：ACCEPTED
+> 决策状态：ACCEPTED / FINAL GATE PARTIALLY SUPERSEDED
 > 日期：2026-07-22
+> 部分取代时间：2026-07-23 11:32 +08:00
+> 后续决策：`DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md`
 > 修订对象：R4-06 Repaired Asset Intake、R4-07 Four-case Release Gate
 
 ## 1. 背景
@@ -13,6 +15,10 @@ R4 原方案把 `nai_you/aishen/meigui` 三个具体 OBJ 文件冻结为 require
 2026-07-22 的增量完整审计同时确认：新增的 4 个爱神 OBJ 和 2 个玫瑰 OBJ 均存在 confirmed
 self-intersection；现有梯田 OBJ 也仍存在 confirmed self-intersection。因此替代规则可以解除“固定文件名”
 约束，但不会降低当前 Gate，也不会把失败资产改判为通过。
+
+2026-07-23 修订说明：本文件中的爱神/玫瑰/梯田 `3/3` 继续作为复杂浮雕模型最终覆盖目标，但不再是
+“受限生产候选验证”的唯一启动条件。后续决策允许至少两个独立、strict/admitted 的 `model` 目录真实
+模型族进入候选 Release/closure/performance 验证。strict、逐输入 fail-closed 和 12E-08D 独立授权均未放宽。
 
 ## 2. 决策
 
@@ -66,7 +72,8 @@ R4-07 中完成 minimum/intermediate/allTexture、full closure 和 Release 证�
 
 ```text
 任意 model 目录资产通过 development_model_pool intake，可解锁 R4-07 开发与 diagnostic 四 case；
-爱神/玫瑰/梯田 3/3 仍是 R4-07 最终真实族验收、生产预算冻结、R4-08 和 12E-08D 的前置条件。
+爱神/玫瑰/梯田 3/3 仍是该三类复杂浮雕模型的最终覆盖证据；受限生产候选验证改由后续
+`R4-08-R1` 决策定义的两个独立 strict/admitted 模型族解锁。12E-08D 仍需预算、CI 和用户独立授权。
 ```
 
 当前 `xiao_ma` 与 `yecan` 各有一个 clean OBJ 通过 development intake，故 R4-07 开发已解锁；真实族最终
@@ -87,5 +94,7 @@ global 不 silent fallback 到 legacy。
 
 ## 6. 对原文档的影响
 
-R4 文档中“固定 `nai_you/aishen/meigui` 三文件不可替代”的条款由本决策取代。其他关于属性审计、完整
-自相交、post-strict、Release 预算和 12E-08D 用户明确授权的要求继续有效。
+R4 文档中“固定 `nai_you/aishen/meigui` 三文件不可替代”的条款由本决策取代。本文件中“指定三个模型族
+3/3 是生产候选验证唯一启动条件”的条款，又于 2026-07-23 11:32 +08:00 被
+`DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md` 部分取代。其他关于属性审计、完整自相交、
+post-strict、Release 预算和 12E-08D 用户明确授权的要求继续有效。

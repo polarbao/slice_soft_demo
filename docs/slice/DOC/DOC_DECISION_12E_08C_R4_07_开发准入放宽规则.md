@@ -3,6 +3,8 @@
 > 决策状态：ACCEPTED / 用户明确授权  
 > 日期：2026-07-22  
 > 修订对象：R4-06 Development Intake、R4-07 Four-case Development Gate
+> 后续扩展：2026-07-23 11:32 +08:00，受限生产候选 Gate 由
+> `DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md` 定义
 
 ## 1. 决策
 
@@ -60,4 +62,6 @@ r4_07DevelopmentAllowed=true。
 ## 5. 被替代条款
 
 此前文档中“required family matrix 少于 3/3 时不得开始 R4-07 任何开发”的条款被本决策替代。
-“required family 3/3 才能完成最终 R4C、启动 R4-08/08D”的条款继续有效。
+“required family 3/3 才能完成最终 R4C、启动 R4-08/08D”的条款作为 2026-07-22 历史判断保留。
+2026-07-23 起，至少两个独立 strict/admitted 真实模型族可以进入受限生产候选验证；是否启动 08D
+仍由预算、CI、协议证据和用户独立授权共同决定。

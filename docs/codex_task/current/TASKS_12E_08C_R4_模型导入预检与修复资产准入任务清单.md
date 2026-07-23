@@ -1,8 +1,9 @@
 # TASKS_12E-08C-R4 模型导入预检与修复资产准入任务清单
 
-> 文档状态：PREPARED
-> 日期：2026-07-21
-> 当前原子任务：R4-08 EXECUTION COMPLETE / DECISION BLOCKED
+> 文档状态：R4-07-R1 READY / 受限生产候选规则已接受
+> 初始日期：2026-07-21
+> 本次修改时间：2026-07-23 11:32 +08:00
+> 当前原子任务：R4-07-R1 受限生产候选验证
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -148,7 +149,53 @@ required family `0/3` 对 R4-08/08D 的阻断。详见
 08D production 授权，因此 R4-08 输出 `BLOCKED`，12E-08D 保持 `NOT READY / NO-GO`。详见
 `docs/slice/REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md`。
 
-## 10. 提交要求
+## 10. R4-08-R1 受限生产候选准入规则修订
+
+状态：COMPLETE / USER AUTHORIZED（2026-07-23 11:32 +08:00）。
+
+修订内容：
+
+```text
+指定 aishen/meigui/titian 3/3 不再是生产候选验证的唯一启动条件；
+至少两个独立、strict/admitted 的 model 目录真实模型族可进入受限候选验证；
+xiao_ma_wu_yu_new + yecan 当前满足 2/2；
+失败输入继续逐模型 fail-closed；
+复杂浮雕覆盖 0/3 继续作为覆盖缺口；
+预算、Quick CI 和 08D 独立授权不放宽。
+```
+
+正式决策见
+`docs/slice/DOC/DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md`。
+
+## 11. R4-07-R1 受限生产候选验证
+
+状态：READY FOR DEVELOPMENT。
+
+范围：
+
+```text
+显式记录 xiao_ma/yecan modelFamilyId；
+验证两个独立 admitted 真实模型族；
+刷新 minimum/intermediate/allTexture/3MF control 四用例；
+验证 Release 三次测量、full closure、legacy TIFF/RIP；
+输出 restricted production candidate 摘要；
+不冻结预算，不写 global production package。
+```
+
+准备入口：
+
+`docs/slice/DOC/DOC_PREP_12E_08C_R4_07_R1_受限生产候选验证准备.md`。
+
+## 12. 后续原子任务
+
+```text
+R4-07-R2：冻结受限生产候选时间/内存预算；
+Quick-CI-R1：处理 material_process_top2 golden baseline；
+R4-08-R2：基于新 Gate 刷新 08D GO/NO-GO；
+12E-08D：只有 R4-08-R2 GO 且用户独立授权后才可启动。
+```
+
+## 13. 提交要求
 
 每个原子任务按项目中文详细模板独立提交，提交前必须运行定向验证、`git diff --check`、
 `git status --short`，不得把无关模型资产混入提交。

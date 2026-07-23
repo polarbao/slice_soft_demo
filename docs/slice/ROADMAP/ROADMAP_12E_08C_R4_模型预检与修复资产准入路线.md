@@ -1,7 +1,8 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED / FINAL FAMILY 0/3
-> 日期：2026-07-22
+> 文档状态：R4-07-R1 READY / RESTRICTED PRODUCTION CANDIDATE 2 FAMILIES
+> 初始日期：2026-07-22
+> 准入规则修改时间：2026-07-23 11:32 +08:00
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
 
 ## 1. 路线总览
@@ -20,6 +21,13 @@ R4C Development and Required Asset Admission
   R4-06 Required Family Candidate Intake and Attribute Audit
   R4-07 Development Gate + Final Required-family Global/Release/Legacy Regression
   R4-08 08D GO/NO-GO Refresh
+
+R4C-R1 Restricted Production Candidate Closure
+  R4-08-R1 Admission Rule Amendment
+  R4-07-R1 Two-family Release/Closure/Performance Validation
+  R4-07-R2 Candidate Budget Freeze
+  Quick-CI-R1 Golden Baseline Decision
+  R4-08-R2 08D GO/NO-GO Refresh
 ```
 
 ## 2. R4A 退出标准
@@ -47,7 +55,7 @@ R4B 完成后，可以继续 12E-09A 的宽度和 Model Fill diagnostic UI；仍
 ## 4. R4C 退出标准
 
 ```text
-爱神、玫瑰、梯田三个 required family 各至少一个 strict PASS 原始/外部修复/独立重建候选；
+至少两个独立真实模型族各有一个 strict/intake PASS 候选；
 身份、尺寸、姿态、UV、材质、纹理 provenance PASS；
 完整自相交和 post-strict PASS；
 四 case global full chain PASS；
@@ -56,9 +64,9 @@ legacy TIFF/RIP/Quick CI 回归闭环；
 R4-08 输出 GO 且用户明确授权。
 ```
 
-缺少任一 required family 的 admitted 候选时，R4C 的最终生产准入保持 BLOCKED，不用跨族正常 fixture
-替代。开发阶段采用独立 `development_model_pool` Gate：任意 `model` 目录资产通过 R4-06 intake 即可运行
-R4-07 diagnostic 四 case，但不能计入 required family 或冻结生产预算。
+受限候选 Gate 采用至少两个独立真实模型族，不允许由单一模型或同一模型族的多个文件冒充多族覆盖。
+当前 xiao_ma/yecan 已满足候选身份；aishen/meigui/titian `0/3` 保留为复杂浮雕覆盖缺口。所有输入仍
+逐模型执行 strict/fail-closed，任何失败资产都不能继承候选 PASS。
 
 R4-06 的原子级 intake manifest、provenance、属性差异、完整自相交和 post-strict 准入准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。该文档完成不等于外部资产已到位。
@@ -70,9 +78,9 @@ R4-07/08 的四 case Release Gate 与 08D GO/NO-GO 刷新已分别完成原子�
 ../DOC/DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md
 ```
 
-当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07 development four-case 已完成。R4-08 已
-执行并输出 `DECISION BLOCKED`；`requiredFamilyPassCount=0/3`、最终矩阵、生产预算、Quick CI 和用户授权
-仍阻断 12E-08D。
+当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07 development four-case 已完成。2026-07-23
+准入规则已经修订，R4-07-R1 候选验证可执行；生产预算、Quick CI 和用户对 08D production path 的独立
+授权仍阻断 12E-08D。
 
 ## 5. 复杂重建后备路线
 
@@ -89,7 +97,7 @@ R5 必须另行完成 CMake/vcpkg、许可证、维护、尺寸误差、UV/材�
 ## 6. 与 08D/09/10 的关系
 
 ```text
-08D：R4-08 当前 BLOCKED，等待后续证据关闭后重跑并输出 GO；
+08D：等待 R4-07-R1/R2、Quick-CI-R1 和 R4-08-R2 后重新判断；
 09A：R4B 后可继续 diagnostic UI；
 09B：等待 08D production admission；
 10A：可基于 R4B 准备 preview；

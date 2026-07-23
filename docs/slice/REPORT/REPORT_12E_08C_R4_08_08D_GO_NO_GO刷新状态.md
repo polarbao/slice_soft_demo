@@ -1,7 +1,9 @@
 # REPORT_12E-08C-R4-08 08D GO/NO-GO 刷新状态
 
-> 文档状态：R4-08 EXECUTION COMPLETE / DECISION BLOCKED
-> 日期：2026-07-22
+> 文档状态：R4-08 HISTORICAL EXECUTION COMPLETE / ORIGINAL DECISION BLOCKED / GATE AMENDED
+> 原始日期：2026-07-22
+> 准入规则修改时间：2026-07-23 11:32 +08:00
+> 后续决策：`../DOC/DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md`
 > 基线提交：`c2c7f73`
 > 生产结论：12E-08D NOT READY / NO-GO
 
@@ -13,6 +15,10 @@ R4-08 已按当前可取得证据完成一次正式决策刷新。R4-01..05 软�
 当前不能进入 12E-08D：爱神、玫瑰、梯田 required family 仍为 `0/3`，最终真实族 four-case 尚未执行，
 生产 Release 预算未冻结，Quick CI 在既有 `material_process_top2` golden 上失败，且没有 08D production
 path 明确授权。
+
+2026-07-23 用户接受“两独立 strict/admitted 真实模型族”的受限生产候选规则。该修订使
+xiao_ma/yecan 可以进入 R4-07-R1 候选验证，但不把本报告的原始 `BLOCKED` 追溯改写为 `GO`。新的
+GO/NO-GO 必须由 R4-08-R2 在预算、Quick CI 和独立授权闭环后重新输出。
 
 依据状态定义，本次 R4-08 为 `BLOCKED`，不是 `GO` 或 `CONDITIONAL_TECHNICAL_PASS`。任务执行已完成，
 但生产准入没有完成。
@@ -100,7 +106,23 @@ B-R4-08-05：08D production path 未取得明确授权。
 当前下一项可执行开发任务是 `12E-09A-01 只读 diagnostic facade 与 UI DTO`。若继续 R4 生产准入路线，
 则必须先提供 required family 修复/重建候选，不能通过开发 Gate 结果绕过。
 
-## 7. 安全边界
+## 8. 2026-07-23 准入规则修订
+
+原“必须先完成爱神/玫瑰/梯田 3/3 才能开展生产候选验证”被部分取代：
+
+```text
+受限生产候选验证：至少两个独立 strict/admitted 真实模型族；
+当前候选：xiao_ma_wu_yu_new + yecan；
+复杂浮雕覆盖：aishen/meigui/titian 仍为 0/3；
+production budget：仍未冻结；
+Quick CI：仍未解决；
+08D production path：仍未取得独立授权。
+```
+
+因此当前新状态为 `R4-07-R1 READY / 12E-08D BLOCKED`。本报告保留 2026-07-22 的原始证据和哈希，
+后续不在此文件中伪造新执行结果。
+
+## 9. 安全边界
 
 ```text
 legacy 继续为默认生产模式；

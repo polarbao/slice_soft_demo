@@ -1,7 +1,9 @@
 # REPORT_12E-08C-R4 模型资产预检清单
 
-> 文档状态：VERIFIED / R4 后续输入基线  
-> 日期：2026-07-22
+> 文档状态：VERIFIED / R4 后续输入基线 / 受限生产候选标注完成
+> 首次审计日期：2026-07-22
+> 本次修改时间：2026-07-23 11:32 +08:00
+> 本次修改：逐资产标注是否可进入后续开发，并按两独立模型族规则标注受限生产候选范围
 > 扫描范围：`model/**/*.{obj,3mf}`  
 > 生产边界：本报告只判定模型能否在“不重建”条件下进入后续严格模块，不代表已取得生产 TIFF 准入
 
@@ -31,30 +33,30 @@ AABB BVH 自相交审计：
 
 ## 2. 模型校验表
 
-| 模型 | 三角面 | 材质/纹理 | strict | 自相交（确认/共面） | 结论 | 主要问题 |
-|---|---:|---:|---|---:|---|---|
-| `model/3mf/haiyang_fudiao/01.3mf` | 99,538 | 3/3 | FAIL | 12,196/0 | 需重建 | 边界 6，非流形 10,179，反向重复面 6,623 |
-| `model/3mf/meigui_fudiao/02.3mf` | 28,910 | 2/2 | FAIL | 54/64 | 需重建 | 非流形 9,631，反向重复面 6,255 |
-| `model/3mf/meigui_fudiao/03.3mf` | 75,596 | 3/3 | FAIL | 5,136/0 | 需重建 | 非流形 10,939，反向重复面 7,190 |
-| `model/obj/aishen_fudiao/MF_aishen_damuzhi_L_tx02.obj` | 84,533 | 1/1 | FAIL | 19,270/20 | 需重建 | 边界 3，非流形 59，反向重复面 2，退化面 1 |
-| `model/obj/aishen_fudiao/ai_shen_wumingzhi_L_tx03.obj` | 79,904 | 1/1 | FAIL | 5,908/0 | 需重建 | 非流形 8,914，反向重复面 3,651 |
-| `model/obj/aishen_fudiao/MF_ai_shen_shizhi_L_tx03.obj` | 299,976 | 1/1 | FAIL | 32,481/23 | 需重建 | 非流形 229，反向重复面 102，退化面 4 |
-| `model/obj/aishen_fudiao/MF_aishen_xiaozhi_L.obj` | 109,538 | 1/1 | FAIL | 12,325/0 | 需重建 | 非流形 24，反向重复面 8 |
-| `model/obj/aishen_fudiao/MF_aishen_zhongzhi_L_tx03.obj` | 131,584 | 0/0 | FAIL | 15,280/13 | 需重建 | OBJ 引用的 MTL 文件名与现有文件不一致；同时存在完整审计确认的自相交 |
-| `model/obj/caihong/5mm.obj` | 308 | 7/7 | FAIL | 0/0 | 需人工修复 | 非流形 102，反向重复面 48；策略返回 `manual_repair_required` |
-| `model/obj/meigui_fudiao/02.obj` | 70,262 | 1/1 | FAIL | 3,474/0 | 需重建 | 非流形 299，局部绕序不一致 1,305 |
-| `model/obj/meigui_fudiao/03.obj` | 75,596 | 1/1 | FAIL | 15,730/0 | 需重建 | 完整审计确认自相交 |
-| `model/obj/meigui_fudiao/04.obj` | 76,926 | 1/1 | FAIL | 5,592/0 | 需重建 | 非流形 10,940，反向重复面 7,192 |
-| `model/obj/nai_you_new/MF_nai_you.obj` | 117,705 | 2/1 | FAIL | 8,409/0 | 需重建 | 边界 113，退化面 1 |
-| `model/obj/shengdanjie_fudiao/star/MF_shengdanjie_zhongzhi_R_fy02.obj` | 23,454 | 19/15 | FAIL | 571/0 | 需重建 | 完整审计确认自相交；OBJ 实际使用的中指材质贴图存在，MTL 还声明了未随资产提供的其他纹理 |
-| `model/obj/titian_fudiao/dmz.obj` | 95,590 | 1/1 | FAIL | 48,831/28 | 需重建 | 非流形 27,069，反向重复面 17,247 |
-| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj` | 12,736 | 5/5 | PASS | 0/0 | **可直接进入** | 完整审计通过 |
-| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Shizhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | **可直接进入** | 完整审计通过 |
-| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Wumingzhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | **可直接进入** | 完整审计通过 |
-| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Xiaozhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | **可直接进入** | 完整审计通过 |
-| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Zhongzhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | **可直接进入** | 完整审计通过 |
-| `model/obj/yecan/3.obj` | 14,606 | 1/1 | PASS | 0/0 | **可直接进入** | 完整审计通过 |
-| `model/obj/yecan/4.obj` | 14,606 | 1/1 | PASS | 0/0 | **可直接进入** | 完整审计通过 |
+| 模型 | 三角面 | 材质/纹理 | strict | 自相交（确认/共面） | 修复分类 | 后续开发 | 具体原因 |
+|---|---:|---:|---|---:|---|---|---|
+| `model/3mf/haiyang_fudiao/01.3mf` | 99,538 | 3/3 | FAIL | 12,196/0 | 需重建 | **不可进入** | confirmed 自相交、边界 6、非流形 10,179、反向重复面 6,623，无法建立唯一实体 |
+| `model/3mf/meigui_fudiao/02.3mf` | 28,910 | 2/2 | FAIL | 54/64 | 需重建 | **不可进入** | confirmed 自相交和共面重叠同时存在，另有非流形 9,631、反向重复面 6,255 |
+| `model/3mf/meigui_fudiao/03.3mf` | 75,596 | 3/3 | FAIL | 5,136/0 | 需重建 | **不可进入** | confirmed 自相交 5,136，非流形 10,939、反向重复面 7,190 |
+| `model/obj/aishen_fudiao/MF_aishen_damuzhi_L_tx02.obj` | 84,533 | 1/1 | FAIL | 19,270/20 | 需重建 | **不可进入** | confirmed 自相交/共面重叠，且存在边界、非流形、反向重复面和退化面 |
+| `model/obj/aishen_fudiao/ai_shen_wumingzhi_L_tx03.obj` | 79,904 | 1/1 | FAIL | 5,908/0 | 需重建 | **不可进入** | confirmed 自相交 5,908，非流形 8,914、反向重复面 3,651 |
+| `model/obj/aishen_fudiao/MF_ai_shen_shizhi_L_tx03.obj` | 299,976 | 1/1 | FAIL | 32,481/23 | 需重建 | **不可进入** | 大规模 confirmed 自相交/共面重叠，另有非流形、反向重复面和退化面 |
+| `model/obj/aishen_fudiao/MF_aishen_xiaozhi_L.obj` | 109,538 | 1/1 | FAIL | 12,325/0 | 需重建 | **不可进入** | confirmed 自相交 12,325，另有非流形和反向重复面 |
+| `model/obj/aishen_fudiao/MF_aishen_zhongzhi_L_tx03.obj` | 131,584 | 0/0 | FAIL | 15,280/13 | 需重建 | **不可进入** | OBJ 的 MTL 引用失配，且 confirmed 自相交/共面重叠；资源和几何 Gate 均失败 |
+| `model/obj/caihong/5mm.obj` | 308 | 7/7 | FAIL | 0/0 | 需人工修复 | **不可进入** | 虽无自相交，但非流形 102、反向重复面 48，strict 失败且策略为 `manual_repair_required` |
+| `model/obj/meigui_fudiao/02.obj` | 70,262 | 1/1 | FAIL | 3,474/0 | 需重建 | **不可进入** | confirmed 自相交 3,474，非流形 299、局部绕序不一致 1,305 |
+| `model/obj/meigui_fudiao/03.obj` | 75,596 | 1/1 | FAIL | 15,730/0 | 需重建 | **不可进入** | 拓扑汇总不能抵消完整审计确认的自相交 15,730 |
+| `model/obj/meigui_fudiao/04.obj` | 76,926 | 1/1 | FAIL | 5,592/0 | 需重建 | **不可进入** | confirmed 自相交 5,592，非流形 10,940、反向重复面 7,192 |
+| `model/obj/nai_you_new/MF_nai_you.obj` | 117,705 | 2/1 | FAIL | 8,409/0 | 需重建 | **不可进入** | confirmed 自相交 8,409，边界 113、退化面 1；不能形成 strict 闭合体 |
+| `model/obj/shengdanjie_fudiao/star/MF_shengdanjie_zhongzhi_R_fy02.obj` | 23,454 | 19/15 | FAIL | 571/0 | 需重建 | **不可进入** | confirmed 自相交 571；MTL 还包含未随资产提供的未使用纹理声明 |
+| `model/obj/titian_fudiao/dmz.obj` | 95,590 | 1/1 | FAIL | 48,831/28 | 需重建 | **不可进入** | 当前问题规模最大：confirmed 自相交/共面重叠、非流形 27,069、反向重复面 17,247 |
+| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj` | 12,736 | 5/5 | PASS | 0/0 | 无需重建 | **可进入（基准）** | 完整审计与重复 hash 通过；已通过 R4-06 intake，是 xiao_ma 模型族主候选 |
+| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Shizhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | 无需重建 | **可进入（扩展）** | 完整审计与重复 hash 通过，可扩展同族姿态/尺寸覆盖 |
+| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Wumingzhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | 无需重建 | **可进入（扩展）** | 完整审计与重复 hash 通过，可扩展同族姿态/尺寸覆盖 |
+| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Xiaozhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | 无需重建 | **可进入（扩展）** | 完整审计与重复 hash 通过，可扩展同族姿态/尺寸覆盖 |
+| `model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Zhongzhi_ty03.obj` | 11,680 | 5/5 | PASS | 0/0 | 无需重建 | **可进入（扩展）** | 完整审计与重复 hash 通过，可扩展同族姿态/尺寸覆盖 |
+| `model/obj/yecan/3.obj` | 14,606 | 1/1 | PASS | 0/0 | 无需重建 | **可进入（基准）** | 完整审计与重复 hash 通过；已通过 R4-06 intake，是独立 yecan 模型族主候选 |
+| `model/obj/yecan/4.obj` | 14,606 | 1/1 | PASS | 0/0 | 无需重建 | **可进入（本机扩展）** | 完整审计与重复 hash 通过；当前文件未纳入 Git 跟踪，冻结来源前只作本机扩展证据 |
 
 ## 3. 汇总结论
 
@@ -87,12 +89,12 @@ Texture2D 3MF：model 目录当前无 strict PASS 文件，继续使用
 samples/models/3mf/texture2d_checker_cube.3mf 作为正向 fixture。
 ```
 
-根据 `DOC_DECISION_12E_08C_R4_06_真实模型族准入替代规则.md`，R4-06 required Gate 改为
-`aishen_fudiao/meigui_fudiao/titian_fudiao` 三个真实模型族各至少一个 admitted 资产。上述 clean OBJ
-不属于这三个模型族，不能解除 required-family 最终 Gate 或 12E-08D 的生产阻断；依据 R4-07 开发准入
-放宽决策，它们可以通过 `development_model_pool` intake 解锁开发四 case。
+根据 2026-07-23 11:32 +08:00 生效的
+`DOC_DECISION_12E_08C_R4_08_R1_受限生产候选准入规则.md`，上述 clean OBJ 已满足两个独立真实模型族
+的候选来源条件，可以进入受限生产候选 Release/closure/performance 验证。该结论不等于 12E-08D GO：
+生产预算、Quick CI 和用户对 production writer 的独立授权仍需闭环。
 
-## 5. 三个真实模型族 Gate
+## 5. 复杂浮雕模型覆盖缺口与修订后的候选 Gate
 
 | Required family | 已审计文件 | strict PASS | 可进入 R4-06 family 验收 | 结论 |
 |---|---:|---:|---:|---|
@@ -100,7 +102,18 @@ samples/models/3mf/texture2d_checker_cube.3mf 作为正向 fixture。
 | `required_meigui_family` | 3 | 0 | 0 | 所有候选均需修复或重建 |
 | `required_titian_family` | 1 | 0 | 0 | `dmz.obj` 需修复或重建 |
 
-当前无法保证三个目录各有一个无需重建的模型。R4-06 服务开发已经完成，但真实 family pass 保持 `0/3`。
+当前无法保证三个目录各有一个无需重建的模型，复杂浮雕覆盖仍为 `0/3`。该事实继续保留为产品覆盖缺口，
+但不再阻断 xiao_ma/yecan 两独立模型族进入受限生产候选验证。
+
+修订后 Gate：
+
+```text
+可进入后续开发的资产：7 个 strict PASS OBJ；
+受限生产候选主模型族：xiao_ma_wu_yu_new + yecan，2/2；
+复杂浮雕覆盖：aishen + meigui + titian，0/3，仍 blocked；
+当前 model 目录 strict PASS 3MF：0，继续使用 sample Texture2D 控制组；
+12E-08D：仍等待预算、Quick CI 和独立授权。
+```
 
 ## 6. R4-06 实际进入 Intake 的真实模型
 
@@ -124,9 +137,9 @@ postRepairStrictPass=true；
 资源、几何和属性 hash 已冻结且重复运行一致。
 ```
 
-因此，授权规则“爱神/玫瑰/梯田三个真实模型族各至少一个获准资产”的当前完成度是 `0/3`，不是 `3/3`。
-`xiao_ma_wu_yu_new` 和 `yecan` 的 7 个 strict PASS 模型不能跨族替代 required family，但其中两个已按
-`development_model_pool` 独立准入：
+因此，爱神/玫瑰/梯田复杂浮雕覆盖的当前完成度仍是 `0/3`。按 2026-07-23 的受限生产候选修订，
+`xiao_ma_wu_yu_new` 和 `yecan` 不再被要求“跨族替代”这三个失败族；它们作为两个独立且已通过
+strict/intake 的真实模型族，直接承担受限候选验证：
 
 | Development candidate | Intake | 用途 |
 |---|---|---|
@@ -191,11 +204,18 @@ R4-07 development four-case：4/4 PASS；
 R4-07 final required-family acceptance：NO-GO，等待 required family matrix=3/3。
 ```
 
-R4-07 开发已经按放宽后的 Gate 完成；clean OBJ 只证明开发链路，不代表爱神/玫瑰/梯田最终验收。下一条
-最终准入路径仍是：每个 required family 提供至少一个修复/重建候选，运行 R4-06 intake，三个报告均
-`admitted=true` 后重跑真实族矩阵、冻结生产预算，再评审 R4-08。
+R4-07 开发已经完成。按新 Gate，下一条路径调整为：使用 xiao_ma/yecan 两个独立候选刷新 Release、
+full closure、legacy TIFF/RIP 和性能证据；随后独立冻结候选预算、处理 Quick CI baseline，并重新评审
+R4-08。爱神/玫瑰/梯田修复/重建继续作为复杂浮雕覆盖扩展，不再作为候选验证的唯一启动条件。
 
-## 10. 本地证据
+## 10. 修改记录
+
+| 时间 | 修改内容 | 影响 |
+|---|---|---|
+| 2026-07-23 11:32 +08:00 | 主表新增“后续开发”逐资产结论和具体原因 | 7 个 strict PASS 可进入；15 个 strict FAIL 不可进入 |
+| 2026-07-23 11:32 +08:00 | 按两独立模型族规则标注 xiao_ma/yecan | 解锁受限生产候选验证，不自动解锁 12E-08D |
+
+## 11. 本地证据
 
 ```text
 output/benchmarks/12e_08c_r4_model_inventory/model_inventory_summary.json
