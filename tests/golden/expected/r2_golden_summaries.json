@@ -12,8 +12,8 @@
   },
   {
     "name": "material_process_top2",
-    "config": "samples/configs/material_process/nail_rgb_white_varnish_top2.json",
-    "package": "output/NailRgbWhiteVarnishTop2",
+    "config": "samples/configs/golden/material_process_top2_fixture.json",
+    "package": "output/GoldenMaterialProcessTop2",
     "schema": "p0.rgbwsv.2",
     "widthPx": 48,
     "heightPx": 24,

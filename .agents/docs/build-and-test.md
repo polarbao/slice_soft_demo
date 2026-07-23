@@ -58,6 +58,17 @@ Schema and golden gates:
 .\scripts\run_golden_tests.ps1
 ```
 
+Golden fixtures must be deterministic, repository-tracked test inputs. Do not bind a fixed-size Golden expectation to
+a real user Profile that may legitimately change model identity, scale, support, or preview policy. The
+`material_process_top2` Golden case uses:
+
+```text
+samples/configs/golden/material_process_top2_fixture.json
+samples/models/textured/fixtures/policy_textured_small.obj
+```
+
+The real UI Profile remains under `samples/configs/material_process` and must not be changed merely to satisfy Quick CI.
+
 ## UI smoke
 
 ```powershell

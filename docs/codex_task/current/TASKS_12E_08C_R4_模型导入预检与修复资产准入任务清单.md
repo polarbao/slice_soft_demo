@@ -1,9 +1,9 @@
 # TASKS_12E-08C-R4 模型导入预检与修复资产准入任务清单
 
-> 文档状态：R4-07-R2 COMPLETE / 候选预算 FROZEN PASS
+> 文档状态：Quick-CI-R1 COMPLETE / PASS
 > 初始日期：2026-07-21
 > 本次修改时间：2026-07-23
-> 当前原子任务：Quick-CI-R1 READY FOR DEVELOPMENT
+> 当前原子任务：R4-08-R2 READY FOR DEVELOPMENT
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -226,8 +226,8 @@ productionOutputWritten=false。
 ## 13. 后续原子任务
 
 ```text
-Quick-CI-R1：READY，解耦真实用户 Profile 与确定性 material_process_top2 golden fixture；
-R4-08-R2：PREPARED / WAIT QUICK-CI-R1，基于新 Gate 刷新 08D GO/NO-GO；
+Quick-CI-R1：COMPLETE / PASS，真实用户 Profile 与确定性 material_process_top2 Golden Fixture 已解耦；
+R4-08-R2：READY，基于新 Gate 刷新 08D GO/NO-GO；
 12E-08D：只有 R4-08-R2 GO 且用户独立授权后才可启动。
 ```
 
@@ -235,6 +235,7 @@ R4-08-R2：PREPARED / WAIT QUICK-CI-R1，基于新 Gate 刷新 08D GO/NO-GO；
 
 ```text
 docs/slice/DOC/DOC_PREP_12E_08C_R4_Quick_CI_R1_GoldenBaseline收口准备.md
+docs/slice/DOC/DOC_EXEC_12E_08C_R4_Quick_CI_R1_GoldenBaseline收口结果.md
 docs/slice/DOC/DOC_PREP_12E_08C_R4_08_R2_GO_NO_GORefresh准备.md
 ```
 
