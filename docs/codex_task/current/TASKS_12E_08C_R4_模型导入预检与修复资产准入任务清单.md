@@ -1,9 +1,9 @@
 # TASKS_12E-08C-R4 模型导入预检与修复资产准入任务清单
 
-> 文档状态：R4-08-R2 COMPLETE / CONDITIONAL_TECHNICAL_PASS
+> 文档状态：R4-08-R2 COMPLETE / GO / 12E-08D AUTHORIZED
 > 初始日期：2026-07-21
 > 本次修改时间：2026-07-23
-> 当前原子任务：WAIT EXPLICIT 12E-08D AUTHORIZATION
+> 当前原子任务：12E-08D-01 READY FOR DEVELOPMENT
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -227,8 +227,8 @@ productionOutputWritten=false。
 
 ```text
 Quick-CI-R1：COMPLETE / PASS，真实用户 Profile 与确定性 material_process_top2 Golden Fixture 已解耦；
-R4-08-R2：COMPLETE / CONDITIONAL_TECHNICAL_PASS，全部技术 Gate PASS；
-12E-08D：当前唯一阻断为用户独立授权；登记授权并把 R4-08-R2 决策转 GO 后才可启动；
+R4-08-R2：COMPLETE / GO，全部技术 Gate 与独立授权 PASS；
+12E-08D：AUTHORIZED，当前从 08D-01 Config/DTO/Router/fail-closed 开始；
 12E-09A-02..06：可独立继续 diagnostic UI，不开放生产写包。
 ```
 

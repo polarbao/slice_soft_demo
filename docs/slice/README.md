@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-23
-> 适用阶段：Stage 12D COMPLETE；Stage 12E-09A-01 COMPLETE；R4-08-R2 CONDITIONAL_TECHNICAL_PASS；12E-08D NOT READY
+> 适用阶段：Stage 12D COMPLETE；R4-08-R2 GO；12E-08D AUTHORIZED；12E-08D-01 READY
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产证据。R4-01..07、R4-07-R1、R4-07-R2、Quick-CI-R1 与 R4-08-R2 已完成；xiao_ma/yecan 两个独立模型族、四 case 候选证据、参考机器候选预算和当前 Quick CI 均 PASS。R4-08-R2 为 `CONDITIONAL_TECHNICAL_PASS`，08D 独立授权是唯一启动阻断。复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-01 已完成，12E-09A-02 仍可并行执行。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3 已完成非生产证据。R4-01..07、R4-07-R1、R4-07-R2、Quick-CI-R1 与 R4-08-R2 已完成；xiao_ma/yecan 两个独立模型族、四 case 候选证据、参考机器候选预算和当前 Quick CI 均 PASS。用户已明确授权 12E-08D，R4-08-R2 已转为 `GO`，当前任务是 08D-01。复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-01 已完成，12E-09A-02 仍可并行执行。产品目标仍为 `legacy | global_surface_shell` 双模式和统一 RGBWSV TIFF 输出。
 
 ## 目录结构
 

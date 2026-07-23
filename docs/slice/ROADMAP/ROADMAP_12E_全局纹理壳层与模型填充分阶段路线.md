@@ -3,7 +3,7 @@
 > 文档状态：ROADMAP / Stage 12E Planning
 > 日期：2026-07-16
 > 更新日期：2026-07-23
-> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3 COMPLETE；R4-01..07/R1/R2/Quick-CI-R1 COMPLETE；R4-08-R2 CONDITIONAL_TECHNICAL_PASS
+> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3 COMPLETE；R4-01..07/R1/R2/Quick-CI-R1 COMPLETE；R4-08-R2 GO；12E-08D-01 READY
 
 ## 1. Goal
 
@@ -14,7 +14,7 @@
 ```text
 1. 12D-R0/R1/R2/R3 已完成；
 2. 12E-R0 的 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；
-3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3、R4-01..07/R1/R2 和 Quick-CI-R1 已完成；R4-08-R2 输出 CONDITIONAL_TECHNICAL_PASS，12E-08D 只等待独立授权，12E-09A diagnostic 任务可独立执行；
+3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3、R4-01..07/R1/R2 和 Quick-CI-R1 已完成；R4-08-R2 已在独立授权后转为 GO，当前执行 12E-08D-01，12E-09A diagnostic 任务可独立执行；
 4. 12E composer/production 接入需要已完成的 12D semantic_masks exact contract；
 5. 不要求 12D repair R3 完成后才能做 12E R1 算法原型，但 production admission 必须重新确认；
 6. 12E-01 已完成配置、DTO、稳定错误码和 unavailable report 骨架；未接入 production generation。
@@ -189,7 +189,7 @@ production gate 失败时不写生产包。
 | 12E-08C-R4-01..06 | 模型预检、模式准入、Qt 阻断、正常模型正向矩阵和 required-family intake | 软件实现 COMPLETE；真实 family 0/3，不解除 required Gate |
 | 12E-08C-R4-07/R1/R2 | Development/受限候选/预算 Gate | 两独立模型族、四 case、Release 候选预算、legacy/RIP 全部 PASS |
 | Quick-CI-R1 | Golden Profile/Fixture 解耦 | Golden 连续两轮与完整 Quick CI PASS |
-| 12E-08C-R4-08-R2 | 08D GO/NO-GO | CONDITIONAL_TECHNICAL_PASS；技术 Gate 完成，只等待独立授权 |
+| 12E-08C-R4-08-R2 | 08D GO/NO-GO | GO；技术 Gate 和独立授权完成 |
 | 12E-08D-01 | `slicePipeline.mode`、DTO、validator、Router 与 fail-closed | 省略字段兼容 legacy；非法值拒绝；无静默回退 |
 | 12E-08D-02 | global classification 到现有生产层 DTO 的 adapter | 通道和 material closure 语义完整 |
 | 12E-08D-03 | 两模式共享 RGBWSV writer、manifest、preview/report 与 RIP 回归 | 两条生产成功路径都生成一致格式 TIFF |

@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：R4-08-R2 CONDITIONAL_TECHNICAL_PASS / 12E-09A-01 COMPLETE / PRODUCTION NOT ADMITTED
+> 文档状态：R4-08-R2 GO / 12E-08D AUTHORIZED / PRODUCTION NOT YET ADMITTED
 > 更新日期：2026-07-23
-> 当前项目原子任务：等待 12E-08D 独立授权；12E-09A-02 可作为独立 diagnostic UI 后续任务
+> 当前项目原子任务：12E-08D-01 Config/DTO/Router 与 fail-closed
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -419,7 +419,7 @@ Release/global/legacy 证据；R3-04 因三个 required OBJ 未 strict PASS、�
 
 ### 11.2 12E-08D 双模式生产写包原子任务
 
-状态：PREPARED / BLOCKED BY 12E-08C-R3-04 NO-GO AND USER CONFIRMATION。
+状态：AUTHORIZED / 12E-08D-01 READY FOR DEVELOPMENT。
 
 固定目标：
 
@@ -451,7 +451,7 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 ### 11.3 12E-08C-R4 模型导入预检与修复资产准入
 
 状态：R4-08 原始决策 BLOCKED；R4-08-R1 准入规则、R4-07-R1/R2、Quick-CI-R1 和 R4-08-R2
-均 COMPLETE；R4-08-R2 为 CONDITIONAL_TECHNICAL_PASS。
+均 COMPLETE；R4-08-R2 已在独立授权登记后转为 GO。
 
 目标：
 
@@ -483,7 +483,7 @@ R4-08-R2 08D GO/NO-GO Refresh。
 
 R4-01..07、R4-07-R1/R2、Quick-CI-R1 和 R4-08-R2 已完成。xiao_ma/yecan 两族、四用例、
 Release/closure、legacy/RIP、参考机器候选预算和 Quick CI 均 PASS。复杂浮雕覆盖仍为 0/3 披露缺口；
-独立授权是当前唯一 08D 启动阻断。
+用户已于 2026-07-23 15:15:27 +08:00 明确授权 08D；当前从 08D-01 开始，后续原子任务仍逐项守门。
 
 准备入口：
 

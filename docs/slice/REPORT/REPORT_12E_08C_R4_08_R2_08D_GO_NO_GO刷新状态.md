@@ -1,10 +1,11 @@
 # REPORT_12E-08C-R4-08-R2 08D GO/NO-GO 刷新状态
 
-> 文档状态：COMPLETE / CONDITIONAL_TECHNICAL_PASS
+> 文档状态：COMPLETE / GO / 12E-08D AUTHORIZED
 > 完成时间：2026-07-23
+> 授权时间：2026-07-23 15:15:27 +08:00
 > 基线提交：`a9a52b4`
 > 准入规则：两独立 strict/admitted 真实模型族
-> 生产结论：12E-08D NOT READY / WAIT EXPLICIT AUTHORIZATION
+> 生产结论：12E-08D-01 READY FOR DEVELOPMENT
 
 ## 1. Current State
 
@@ -19,12 +20,12 @@ RIP Reader strict：PASS；
 Quick CI：PASS；
 RGBWSV 协议边界：PASS / unchanged；
 复杂浮雕覆盖：aishen/meigui/titian 仍为 0/3 披露缺口；
-08D 独立用户授权：MISSING。
+08D 独立用户授权：PASS。
 ```
 
-全部技术 Gate 已通过，但本次用户指令是继续 R4 后续开发、验证和准备，不等于授权
-`global_surface_shell` 写生产 TIFF。因此最终状态为 `CONDITIONAL_TECHNICAL_PASS`，12E-08D 仍为
-`NOT READY`。
+全部技术 Gate 已通过。用户于 2026-07-23 15:15:27 +08:00 明确授权开展 12E-08D 开发，原
+`CONDITIONAL_TECHNICAL_PASS` 现转为 `GO`。授权范围是按 08D-01..04 原子任务实施双模式生产写包，
+不等于允许跳过 admission、默认替换 Legacy 或放宽协议红线。
 
 ## 2. Target State
 
@@ -55,17 +56,16 @@ R4-07-R2 和 Quick-CI-R1 已分别闭环。
 
 `REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md`。
 
-## 4. Pending Confirmation
+## 4. Authorization Record
 
-唯一剩余启动阻断：
+用户明确指令：
 
 ```text
-explicit_08d_authorization_missing
+我明确授权给你可以进行12E-08D的开发任务
 ```
 
-用户必须独立确认允许启动 12E-08D 双模式生产写包开发。取得授权后，应先在任务状态与本报告中
-登记授权时间和范围，把本决策转为 `GO`，再执行 12E-08D-01；不能把本轮“继续后续任务”解释为
-生产路径授权。
+授权已登记，`explicitUserAuthorization=true`，当前没有 08D-01 启动确认缺口。08D-01..04 仍必须
+逐任务实现、验证和提交；任一任务出现技术 Gate 失败时必须停止，不能用本授权覆盖失败证据。
 
 ## 5. 证据与 SHA-256
 
@@ -178,24 +178,25 @@ legacy remains default。
 | 协议保持不变 | PASS |
 | global production output 未提前写入 | PASS |
 | 复杂浮雕覆盖 | GAP DISCLOSED / 非硬启动条件 |
-| 08D 独立用户授权 | MISSING |
+| 08D 独立用户授权 | PASS / 2026-07-23 15:15:27 +08:00 |
 
 决策：
 
 ```text
 technicalGatePass=true
-explicitUserAuthorization=false
-decision=CONDITIONAL_TECHNICAL_PASS
+explicitUserAuthorization=true
+decision=GO
 productionAdmission=not_evaluated
-12E-08D=NOT_READY
-remainingBlockers=[explicit_08d_authorization_missing]
+12E-08D-01=READY
+remainingBlockers=[]
 ```
 
 ## 11. 后续准备度
 
 | 后续任务 | 准备度 | 当前是否可执行 |
 |---|---|---|
-| 12E-08D-01..04 | 技术设计、原子任务、回归矩阵完整 | 否，等待独立授权并转 GO |
+| 12E-08D-01 | 技术设计、原子任务、回归矩阵完整 | 是，已明确授权 |
+| 12E-08D-02..04 | 技术设计和依赖完整 | 等待前序原子任务分别 PASS |
 | 12E-09A-02..06 diagnostic UI | 已准备 | 可独立执行，不开放生产 |
 | 12E-09B production Profile | 目标已准备 | 否，等待 08D admission |
 | 12E-10A preview | 基础准备完成 | 等待对应 09A 任务 |
@@ -204,8 +205,8 @@ remainingBlockers=[explicit_08d_authorization_missing]
 ## 12. 安全边界
 
 ```text
-不启动 12E-08D；
-不把 CONDITIONAL_TECHNICAL_PASS 写成 GO；
+仅按 08D-01..04 原子任务顺序实施；
+不把授权本身当成 productionAdmission=passed；
 不把候选预算写成产品 SLA；
 不把复杂浮雕失败资产改判为生产可用；
 不修改 production writer；
