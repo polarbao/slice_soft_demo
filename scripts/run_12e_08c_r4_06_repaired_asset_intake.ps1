@@ -183,10 +183,12 @@ Write-Utf8NoBom -Path $summaryPath -Content ($summary | ConvertTo-Json -Depth 10
 $developmentCases = @(
     [ordered]@{
         candidateId = "development_xiao_ma_damuzhi"
+        modelFamilyId = "xiao_ma_wu_yu_new"
         modelPath = "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj"
     },
     [ordered]@{
         candidateId = "development_yecan_3"
+        modelFamilyId = "yecan"
         modelPath = "model/obj/yecan/3.obj"
     }
 )
@@ -257,6 +259,7 @@ foreach ($case in $developmentCases)
     }
     $developmentSummaryCases += [ordered]@{
         candidateId = $case.candidateId
+        modelFamilyId = $case.modelFamilyId
         modelPath = $case.modelPath
         status = $report.status
         admitted = $report.admitted
@@ -277,9 +280,21 @@ $developmentSummary = [ordered]@{
     admittedDevelopmentCandidateCount = @(
         $developmentSummaryCases | Where-Object { $_.admitted }
     ).Count
+    admittedIndependentModelFamilyCount = @(
+        $developmentSummaryCases |
+            Where-Object { $_.admitted } |
+            ForEach-Object { $_["modelFamilyId"] } |
+            Select-Object -Unique
+    ).Count
     r4_07DevelopmentAllowed = @(
         $developmentSummaryCases | Where-Object { $_.admitted }
     ).Count -gt 0
+    restrictedCandidateIdentityGatePass = @(
+        $developmentSummaryCases |
+            Where-Object { $_.admitted } |
+            ForEach-Object { $_["modelFamilyId"] } |
+            Select-Object -Unique
+    ).Count -ge 2
     finalRequiredFamilyGatePass = $false
     requiredFamilyMatrix = "0/3"
     cases = $developmentSummaryCases
@@ -293,4 +308,5 @@ Write-Host "R4-06 required-family intake contract: PASS"
 Write-Host "Current real family matrix: 0/3 BLOCKED"
 Write-Host "Summary: $summaryPath"
 Write-Host "R4-07 development gate: ALLOWED"
+Write-Host "Restricted candidate identity gate: 2 independent model families"
 Write-Host "Development summary: $developmentSummaryPath"

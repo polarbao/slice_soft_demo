@@ -1,6 +1,6 @@
 # ROADMAP_12E-08C-R4 模型预检与修复资产准入路线
 
-> 文档状态：R4-07-R1 READY / RESTRICTED PRODUCTION CANDIDATE 2 FAMILIES
+> 文档状态：R4-07-R1 COMPLETE / RESTRICTED PRODUCTION CANDIDATE EVIDENCE PASS
 > 初始日期：2026-07-22
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 > 插入位置：R3-04 NO-GO -> R4 -> 08D
@@ -79,8 +79,8 @@ R4-07/08 的四 case Release Gate 与 08D GO/NO-GO 刷新已分别完成原子�
 ```
 
 当前 xiao_ma/yecan development intake 为 `2/2 admitted`，R4-07 development four-case 已完成。2026-07-23
-准入规则已经修订，R4-07-R1 候选验证可执行；生产预算、Quick CI 和用户对 08D production path 的独立
-授权仍阻断 12E-08D。
+准入规则已经修订，R4-07-R1 候选验证已完成；两个独立模型族和四用例证据 PASS。生产预算、Quick CI
+和用户对 08D production path 的独立授权仍阻断 12E-08D。
 
 ## 5. 复杂重建后备路线
 

@@ -208,6 +208,20 @@ ctest --test-dir build -C Release --output-on-failure
 TIFF/PNG/JSON 写盘。真实 OBJ 被 strict topology 阻断时，脚本仍应输出可审计报告并保持
 `productionAdmitted=false`；这类结果是证据完成，不是性能预算或生产准入通过。
 
+## 12E-08C-R4 Restricted Production Candidate
+
+两独立真实模型族的候选验证入口：
+
+```powershell
+cmake --build build --config Release --target repaired_asset_intake repaired_asset_intake_unit_tests texture_fill_partition_positive_matrix texture_fill_partition_positive_matrix_unit_tests texture_fill_partition_release_benchmark texture_fill_partition_release_benchmark_unit_tests
+.\scripts\run_12e_08c_r4_06_repaired_asset_intake.ps1 -BuildDir build -Config Release -SkipBuild
+.\scripts\run_12e_08c_r4_07_development_gate.ps1 -BuildDir build -Config Release -SkipBuild -ReuseIntakeEvidence
+.\scripts\run_12e_08c_r4_07_restricted_candidate_gate.ps1
+```
+
+该入口要求 xiao_ma/yecan 两个独立 strict/admitted 模型族、四用例和 legacy TIFF/RIP 全部通过。输出仍为
+diagnostic candidate evidence，`productionOutputWritten=false`、`productionAdmission=not_evaluated`。
+
 ## 12E-08C-R1 Pre-Repair Baseline
 
 默认 OpenVDB OFF 的修复前真实模型证据入口：

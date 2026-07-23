@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
-> 文档状态：R4-07-R1 READY / 12E-09A-01 COMPLETE / PRODUCTION NOT ADMITTED
+> 文档状态：R4-07-R1 COMPLETE / 12E-09A-01 COMPLETE / PRODUCTION NOT ADMITTED
 > 更新日期：2026-07-23
-> 当前项目原子任务：R4-07-R1 受限生产候选验证；12E-09A-02 可作为独立 diagnostic UI 后续任务
+> 当前项目原子任务：R4-07-R2 预算冻结准备；12E-09A-02 可作为独立 diagnostic UI 后续任务
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -450,7 +450,7 @@ docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
 
 ### 11.3 12E-08C-R4 模型导入预检与修复资产准入
 
-状态：R4-08 原始决策 BLOCKED；R4-08-R1 准入规则修订 COMPLETE；R4-07-R1 READY；插入于 R3-04 NO-GO 与 08D 之间。
+状态：R4-08 原始决策 BLOCKED；R4-08-R1 准入规则修订 COMPLETE；R4-07-R1 COMPLETE；插入于 R3-04 NO-GO 与 08D 之间。
 
 目标：
 
@@ -482,7 +482,8 @@ R4-08-R2 08D GO/NO-GO Refresh。
 
 R4-01..06 软件能力和 R4-07 Development Gate 已完成。R4-08 的 2026-07-22 原始执行输出 BLOCKED。
 2026-07-23 用户接受至少两个独立 strict/admitted 真实模型族的受限生产候选 Gate，xiao_ma/yecan
-满足候选身份，R4-07-R1 可执行。复杂浮雕覆盖仍为 0/3；预算、Quick CI 和独立授权继续阻断 08D。
+满足候选身份，R4-07-R1 已完成并输出两族、四用例、Release/closure、legacy/RIP PASS。复杂浮雕覆盖仍为
+0/3；预算、Quick CI 和独立授权继续阻断 08D。
 
 准备入口：
 

@@ -1,0 +1,36 @@
+{
+  "schema": "slicesoft.r4_restricted_production_candidate_expectations.12e_08c_r4.1",
+  "minimumIndependentModelFamilies": 2,
+  "minimumReleaseMeasurementsPerCase": 3,
+  "requiredLegacyRegression": "passed",
+  "candidates": [
+    {
+      "candidateId": "development_xiao_ma_damuzhi",
+      "modelFamilyId": "xiao_ma_wu_yu_new",
+      "modelPath": "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj"
+    },
+    {
+      "candidateId": "development_yecan_3",
+      "modelFamilyId": "yecan",
+      "modelPath": "model/obj/yecan/3.obj"
+    }
+  ],
+  "fourCases": [
+    {
+      "caseId": "development_xiao_ma_minimum",
+      "candidateId": "development_xiao_ma_damuzhi"
+    },
+    {
+      "caseId": "development_xiao_ma_all_texture",
+      "candidateId": "development_xiao_ma_damuzhi"
+    },
+    {
+      "caseId": "development_yecan_intermediate",
+      "candidateId": "development_yecan_3"
+    },
+    {
+      "caseId": "texture2d_3mf_control",
+      "candidateId": ""
+    }
+  ]
+}

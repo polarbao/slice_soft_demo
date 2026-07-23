@@ -1,6 +1,6 @@
 # REPORT_12E-08C-R4 模型预检与修复资产准入准备状态
 
-> 文档状态：R4-07-R1 READY / PRODUCTION NOT ADMITTED
+> 文档状态：R4-07-R1 COMPLETE / PRODUCTION NOT ADMITTED
 > 初始日期：2026-07-22
 > 准入规则修改时间：2026-07-23 11:32 +08:00
 
@@ -179,7 +179,7 @@ R4-06 已补齐独立准备文档，冻结三个 required family、candidate kin
 控制组，不计入 `requiredFamilyPassCount`。
 
 R4-06 当前为 `IMPLEMENTATION COMPLETE / DEVELOPMENT 2/2 / COMPLEX RELIEF COVERAGE 0/3`；R4-07 为
-`DEVELOPMENT COMPLETE / R4-07-R1 READY`；R4-08 原始报告为 `BLOCKED`，等待 R4-08-R2 重评。详细准备见
+`DEVELOPMENT COMPLETE / R4-07-R1 COMPLETE`；R4-08 原始报告为 `BLOCKED`，等待预算和 R4-08-R2 重评。详细准备见
 `../DOC/DOC_PREP_12E_08C_R4_06_RepairedAssetIntake准备.md`。
 
 ## 18. R4-06 实施结果

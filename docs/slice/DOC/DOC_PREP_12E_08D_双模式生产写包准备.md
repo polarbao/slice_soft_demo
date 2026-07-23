@@ -63,7 +63,7 @@ Quick CI PASS 或有正式批准的隔离结论；
 用户再次确认 production path。
 ```
 
-当前 Gate：R4-07-R1 READY；08D 仍 BLOCKED。
+当前 Gate：R4-07-R1 COMPLETE；候选预算、Quick CI 和独立授权仍 BLOCKED。
 
 当前决策证据见 `../REPORT/REPORT_12E_08C_R4_08_08D_GO_NO_GO刷新状态.md`。在该报告输出 GO 前，本文的
 四个原子任务均只表示准备完成，不允许开始代码实现。

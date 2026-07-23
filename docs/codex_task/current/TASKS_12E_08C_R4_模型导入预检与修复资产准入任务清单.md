@@ -1,9 +1,9 @@
 # TASKS_12E-08C-R4 模型导入预检与修复资产准入任务清单
 
-> 文档状态：R4-07-R1 READY / 受限生产候选规则已接受
+> 文档状态：R4-07-R1 COMPLETE / 受限生产候选证据 PASS
 > 初始日期：2026-07-21
 > 本次修改时间：2026-07-23 11:32 +08:00
-> 当前原子任务：R4-07-R1 受限生产候选验证
+> 当前原子任务：R4-07-R2 预算冻结准备
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -169,7 +169,7 @@ xiao_ma_wu_yu_new + yecan 当前满足 2/2；
 
 ## 11. R4-07-R1 受限生产候选验证
 
-状态：READY FOR DEVELOPMENT。
+状态：COMPLETE / CANDIDATE EVIDENCE PASS / NON-PRODUCTION。
 
 范围：
 
@@ -185,6 +185,22 @@ xiao_ma_wu_yu_new + yecan 当前满足 2/2；
 准备入口：
 
 `docs/slice/DOC/DOC_PREP_12E_08C_R4_07_R1_受限生产候选验证准备.md`。
+
+实际结果：
+
+```text
+两个独立真实模型族：2/2 PASS；
+Release/closure four-case：4/4 PASS；
+legacy TIFF/RIP：PASS；
+观测 globalCoreMax=534.8622 ms；
+观测 peakWorkingSetMax=31,137,792 B；
+productionAdmission=not_evaluated；
+budgetStatus=measured_not_frozen。
+```
+
+结果入口：
+
+`docs/slice/DOC/DOC_EXEC_12E_08C_R4_07_R1_受限生产候选验证结果.md`。
 
 ## 12. 后续原子任务
 

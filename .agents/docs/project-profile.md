@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E R4 restricted production-candidate validation preparation; 09A-01 is complete, the original R4-08 remains historical BLOCKED, and the 2026-07-23 two-independent-family gate makes R4-07-R1 executable
-- Latest completed milestone: Stage 12E-09A-01 Read-only Diagnostic Facade and UI DTO
-- Latest completed task: `12E-09A-01 diagnostic facade and UI DTO`
-- Current task: `12E-08C-R4-07-R1 restricted production-candidate validation` is ready; `12E-09A-02` remains an independent executable diagnostic UI task; 12E-08D remains NOT READY / NO-GO
-- Prepared stage: R4-06 development intake is 2/2 and R4-07 development four-case is 4/4 PASS. The accepted restricted gate requires xiao_ma/yecan as two independent strict/admitted real-model families. R4-07-R1 is prepared; candidate budget freeze, Quick CI baseline resolution, R4-08-R2, and explicit authorization are still required for 08D. 12E-09A-02..06 remain prepared; 12E-09B remains blocked by 08D.
+- Current phase: Stage 12E R4 restricted production-candidate closure; R4-07-R1 is complete and production admission remains not evaluated
+- Latest completed milestone: Stage 12E-08C-R4-07-R1 Restricted Production Candidate Validation
+- Latest completed task: `12E-08C-R4-07-R1 restricted production-candidate validation`
+- Current task: `12E-08C-R4-07-R2 candidate budget freeze preparation`; `12E-09A-02` remains an independent executable diagnostic UI task; 12E-08D remains NOT READY / NO-GO
+- Prepared stage: R4-06 two-family intake is 2/2 and R4-07-R1 four-case Release/closure/legacy/RIP evidence is PASS. Candidate budget freeze, Quick CI baseline resolution, R4-08-R2, and explicit authorization are still required for 08D. 12E-09A-02..06 remain prepared; 12E-09B remains blocked by 08D.
 - Validated R4 model inputs: 22 OBJ/3MF assets under `model` were audited. All 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS; xiao_ma Damuzhi and yecan/3 are the two tracked restricted-candidate baseline families. The aishen/meigui/titian families remain a 0/3 complex-relief coverage gap because all 9 candidates have confirmed self-intersection. The `model` directory has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` only as the positive Texture2D control lane.
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
