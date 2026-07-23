@@ -441,4 +441,4 @@ FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、R1/R2/R3 与 R4-01..07 已完成，R4-08 输出 BLOCKED，真实 family matrix 0/3；12F-00/01 已完成。12E-09A-01 已完成，09A-02 可继续；12E-08D 被 required family/final matrix/预算/Quick CI/授权阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。
+12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、R1/R2/R3、R4-01..07、R4-07-R1 与 R4-07-R2 已完成，参考机器候选预算已冻结 PASS，R4-08 旧决策仍为 BLOCKED；复杂浮雕覆盖 0/3 继续记录为缺口；12F-00/01 已完成。12E-09A-01 已完成，09A-02 可继续；12E-08D 仍被 Quick CI、R4-08-R2 与独立授权阻断。双切片模式文档只固化 Target State，不表示 global 已能生成生产 TIFF；12F-02 需用户明确启动。

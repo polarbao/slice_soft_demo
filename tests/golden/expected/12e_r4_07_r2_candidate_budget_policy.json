@@ -1,0 +1,73 @@
+{
+  "schema": "slicesoft.r4_restricted_candidate_budget_policy.12e_08c_r4.1",
+  "policyVersion": "2026-07-23.r1",
+  "scope": "reference_machine_engineering_candidate",
+  "measurement": {
+    "warmupCount": 1,
+    "minimumSamplesPerCase": 5,
+    "timingField": "globalCoreMs",
+    "memoryField": "peakWorkingSetBytes",
+    "outputWriteExcluded": true
+  },
+  "referenceEnvironment": {
+    "processorName": "Intel(R) Core(TM) Ultra 5 125H",
+    "physicalCoreCount": 14,
+    "logicalProcessorCount": 18,
+    "systemManufacturer": "LENOVO",
+    "systemModel": "21LD",
+    "minimumPhysicalMemoryBytes": 32000000000,
+    "cmakeGenerator": "Visual Studio 18 2026",
+    "compilerId": "MSVC",
+    "compilerVersion": "19.51.36248.0",
+    "compilerArchitecture": "x64",
+    "buildType": "Release",
+    "useOpenVdb": false,
+    "backend": "legacy_cpu_global_distance",
+    "voxelMm": 0.2
+  },
+  "candidates": [
+    {
+      "candidateId": "development_xiao_ma_damuzhi",
+      "modelFamilyId": "xiao_ma_wu_yu_new",
+      "sourceHash": "4f2012e7d584c7d8f4e3a4467d0af112216f93c222046f61a987880af8820ddc",
+      "resourceHash": "d782cbff1fec7e96d4212e5c50cb0fd4112f217a821b767df07d8c38c1f3d127"
+    },
+    {
+      "candidateId": "development_yecan_3",
+      "modelFamilyId": "yecan",
+      "sourceHash": "a3a421005112292a71f49bed5734ce186c2b97a1379aa50e6df8be1a6914363d",
+      "resourceHash": "21e95c89e1aa6c33a46af595b1d96e5682a22284338cd5f1b82ba919e5b26a76"
+    }
+  ],
+  "caseBudgets": [
+    {
+      "caseId": "development_xiao_ma_minimum",
+      "medianCoreMsMax": 600,
+      "singleRunCoreMsMax": 800,
+      "peakWorkingSetBytesMax": 67108864
+    },
+    {
+      "caseId": "development_xiao_ma_all_texture",
+      "medianCoreMsMax": 700,
+      "singleRunCoreMsMax": 1000,
+      "peakWorkingSetBytesMax": 67108864
+    },
+    {
+      "caseId": "development_yecan_intermediate",
+      "medianCoreMsMax": 800,
+      "singleRunCoreMsMax": 1100,
+      "peakWorkingSetBytesMax": 67108864
+    },
+    {
+      "caseId": "texture2d_3mf_control",
+      "medianCoreMsMax": 100,
+      "singleRunCoreMsMax": 100,
+      "peakWorkingSetBytesMax": 33554432
+    }
+  ],
+  "safetyBoundary": {
+    "diagnosticOnly": true,
+    "productionOutputWritten": false,
+    "productionAdmission": "not_evaluated"
+  }
+}

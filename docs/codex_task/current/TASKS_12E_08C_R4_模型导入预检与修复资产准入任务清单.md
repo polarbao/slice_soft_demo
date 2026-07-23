@@ -1,9 +1,9 @@
 # TASKS_12E-08C-R4 模型导入预检与修复资产准入任务清单
 
-> 文档状态：R4-07-R1 COMPLETE / 受限生产候选证据 PASS
+> 文档状态：R4-07-R2 COMPLETE / 候选预算 FROZEN PASS
 > 初始日期：2026-07-21
-> 本次修改时间：2026-07-23 11:32 +08:00
-> 当前原子任务：R4-07-R2 预算冻结准备
+> 本次修改时间：2026-07-23
+> 当前原子任务：Quick-CI-R1 准备
 > 规则：每次只执行用户明确指定的一个原子任务；完成验证后再提交
 
 ## 1. 固定边界
@@ -202,16 +202,36 @@ budgetStatus=measured_not_frozen。
 
 `docs/slice/DOC/DOC_EXEC_12E_08C_R4_07_R1_受限生产候选验证结果.md`。
 
-## 12. 后续原子任务
+## 12. R4-07-R2 受限生产候选预算冻结
+
+状态：COMPLETE / CANDIDATE BUDGET FROZEN PASS / NON-PRODUCTION。
+
+实际结果：
 
 ```text
-R4-07-R2：冻结受限生产候选时间/内存预算；
+policyVersion=2026-07-23.r1；
+reference machine/compiler identity=PASS；
+Release/OpenVDB OFF/backend/voxel identity=PASS；
+每 case 1 次预热 + 5 次正式测量；
+时间/峰值内存预算 4/4 PASS；
+超限负向用例按退出码 1 拒绝；
+productionAdmission=not_evaluated；
+productionOutputWritten=false。
+```
+
+结果入口：
+
+`docs/slice/DOC/DOC_EXEC_12E_08C_R4_07_R2_受限生产候选预算冻结结果.md`。
+
+## 13. 后续原子任务
+
+```text
 Quick-CI-R1：处理 material_process_top2 golden baseline；
 R4-08-R2：基于新 Gate 刷新 08D GO/NO-GO；
 12E-08D：只有 R4-08-R2 GO 且用户独立授权后才可启动。
 ```
 
-## 13. 提交要求
+## 14. 提交要求
 
 每个原子任务按项目中文详细模板独立提交，提交前必须运行定向验证、`git diff --check`、
 `git status --short`，不得把无关模型资产混入提交。

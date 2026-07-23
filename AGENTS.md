@@ -19,11 +19,11 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed task is `12E-08C-R4-07-R1 Restricted Production Candidate Validation`.
+- The latest completed task is `12E-08C-R4-07-R2 Restricted Candidate Budget Freeze`.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records `NO-GO / FROZEN`. `12E-08C-R4-01..07` and R4-07-R1 are complete; the two-family candidate matrix is PASS while production admission remains not evaluated. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01` is complete. Candidate budget, Quick CI, and explicit 08D authorization remain blockers, so 12E-08D is not ready.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records `NO-GO / FROZEN`. `12E-08C-R4-01..07`, R4-07-R1, and R4-07-R2 are complete; the two-family candidate matrix and versioned reference-machine candidate budget are PASS while production admission remains not evaluated. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01` is complete. Quick CI and explicit 08D authorization remain blockers, so 12E-08D is not ready.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
-- Current global_surface_shell remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. The approved Target State is explicit `slicePipeline.mode=legacy|global_surface_shell`, with legacy as default and both admitted production modes sharing the existing RGBWSV TIFF writer. This target is not implemented and does not authorize `12E-08D`; R4-07-R1 two-family candidate evidence, a frozen Release budget, the Quick CI baseline decision, and explicit user confirmation are still required.
+- Current global_surface_shell remains diagnostic-only; raster mapping and full-material closure evidence do not admit production output. The approved Target State is explicit `slicePipeline.mode=legacy|global_surface_shell`, with legacy as default and both admitted production modes sharing the existing RGBWSV TIFF writer. This target is not implemented and does not authorize `12E-08D`; the Quick CI baseline decision, R4-08-R2 refresh, and explicit user confirmation are still required.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
 - The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
 

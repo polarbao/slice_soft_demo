@@ -130,7 +130,7 @@ Current Stage 12 track:
 12B: benchmark, legacy optimization, and OpenVDB SDF utility positioning complete.
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
-12E: 12E-01/02/03/04/05/06/07, 12E-08A/08B/08C, 12E-08C-R1-01..04, R2-01..04, and R3-01..04 complete. R3-04 records `NO-GO / FROZEN`. R4-01..07 and R4-07-R1 are complete; xiao_ma/yecan two-family candidate evidence and four-case Release/closure/legacy/RIP gates pass, while production admission remains not evaluated. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. 12E-09A-01 is complete. Candidate budget, Quick CI baseline resolution, and explicit 08D authorization remain blockers, so 12E-08D is not ready.
+12E: 12E-01/02/03/04/05/06/07, 12E-08A/08B/08C, 12E-08C-R1-01..04, R2-01..04, and R3-01..04 complete. R3-04 records `NO-GO / FROZEN`. R4-01..07, R4-07-R1, and R4-07-R2 are complete; xiao_ma/yecan two-family candidate evidence, four-case Release/closure/legacy/RIP gates, and the versioned reference-machine candidate budget pass, while production admission remains not evaluated. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. 12E-09A-01 is complete. Quick CI baseline resolution, R4-08-R2, and explicit 08D authorization remain blockers, so 12E-08D is not ready.
 ```
 
 R0/R1/R2 principles still apply to refactors:

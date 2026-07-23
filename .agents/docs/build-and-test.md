@@ -222,6 +222,16 @@ cmake --build build --config Release --target repaired_asset_intake repaired_ass
 该入口要求 xiao_ma/yecan 两个独立 strict/admitted 模型族、四用例和 legacy TIFF/RIP 全部通过。输出仍为
 diagnostic candidate evidence，`productionOutputWritten=false`、`productionAdmission=not_evaluated`。
 
+候选预算冻结入口：
+
+```powershell
+cmake --build build --config Release --target repaired_asset_intake texture_fill_partition_positive_matrix texture_fill_partition_release_benchmark
+.\scripts\run_12e_08c_r4_07_r2_candidate_budget.ps1 -BuildDir build -Config Release -SkipBuild
+```
+
+该入口固定参考机器、MSVC/Release、OpenVDB OFF、模型 hash、`voxelMm=0.20` 和每 case 五次正式测量，
+校验版本化时间/峰值内存预算。它不代表任意机器产品 SLA，不写 global production package，也不授予 08D。
+
 ## 12E-08C-R1 Pre-Repair Baseline
 
 默认 OpenVDB OFF 的修复前真实模型证据入口：
