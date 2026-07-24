@@ -1,0 +1,139 @@
+newmtl MI_shengdanjie_damuzhi_R_fy1
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_damuzhi_R_fy01.png
+Ni 1.00
+newmtl MI_shengdanjie_shizhi_L_fy2
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl MI_shengdanjie_shizhi_R_fy2
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_shizhi_R_fy02.png
+Ni 1.00
+newmtl MI_shengdanjie_wumingzhi_L_fy2
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl MI_shengdanjie_wumingzhi_R_fy2
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_wumingzhi_R_fy02.png
+Ni 1.00
+newmtl MI_shengdanjie_xiaozhi_L_fy2
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl MI_shengdanjie_xiaozhi_R_fy2
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_xiaozhi_R_fy02.png
+Ni 1.00
+newmtl MI_shengdanjie_zhongzhi_L_fy2
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl MI_shengdanjie_zhongzhi_R_fy2
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_zhongzhi_R_fy02.png
+Ni 1.00
+newmtl blinn1SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_damuzhi_R.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn2SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_shizhi_R.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn3SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_wumingzhi_R.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn4SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_xiaozhi_R.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn5SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_zhongzhi_R.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn6SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_damuzhi_L.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn7SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_shizhi_L.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn8SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_wumingzhi_L.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn9SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_xiaozhi_L.png
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl blinn10SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd T_shengdanjie_zhongzhi_L.png
+Ni 1.00
+Ks 0.50 0.50 0.50
