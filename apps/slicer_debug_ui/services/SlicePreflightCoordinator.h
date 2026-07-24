@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ModelPreflightController.h"
+#include "slicer_core/config/SlicePipelineConfig.h"
 
 #include <QObject>
 #include <QStringList>
@@ -8,6 +9,7 @@
 enum class SlicePreflightActionKind
 {
     Legacy,
+    GlobalProduction,
     OpenVdbCandidate,
     OpenVdbDiagnostic,
 };
@@ -15,6 +17,10 @@ enum class SlicePreflightActionKind
 struct SlicePreflightAction
 {
     SlicePreflightActionKind kind{SlicePreflightActionKind::Legacy};
+    slicer_core::SlicePipelineMode productionmode{
+        slicer_core::SlicePipelineMode::Legacy};
+    QString productionprofileid;
+    QString sessionid;
     QString configpath;
     QString packagedir;
     QString reportpath;

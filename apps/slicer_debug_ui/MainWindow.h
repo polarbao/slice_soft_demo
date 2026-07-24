@@ -6,6 +6,7 @@
 #include "services/ModelPreflightController.h"
 #include "services/ModelPreflightPresenter.h"
 #include "services/ProcessRunner.h"
+#include "services/ProductionSliceRunSession.h"
 #include "services/ReportLoader.h"
 #include "services/ScenarioRegistry.h"
 #include "services/SliceProgressProtocolParser.h"
@@ -85,7 +86,7 @@ private:
         const QString& packageDirOverride,
         SliceEngineRole engineRole) const;
     void ApplyProfileDefaultsToDocument(const QString& profileId, const QString& packageDir);
-    void RunGeneratedConfig(const QString& configPath, const QString& packageDir);
+    void RunGeneratedConfig(const SlicePreflightAction& action);
     void RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath);
     void RunOpenVdbCandidate(const QString& configPath, const QString& packageDir);
     void RequestSlicePreflight(const SlicePreflightAction& action);
@@ -106,6 +107,7 @@ private:
     ScenarioRegistry m_scenarioRegistry;
     SliceProgressProtocolParser m_sliceProgressParser;
     ProcessRunner runner_;
+    ProductionSliceRunSession m_productionRunSession;
     ModelPreflightController m_modelPreflightController;
     SlicePreflightCoordinator m_slicePreflightCoordinator;
     QString current_action_;

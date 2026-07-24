@@ -1,6 +1,6 @@
 # TASKS 12E-09B Qt 双模式生产入口任务清单
 
-> 状态：09B-03 COMPLETE / 09B-04 READY
+> 状态：09B-04 COMPLETE / 09B-05 READY
 > 日期：2026-07-24
 > 规则：每次只执行用户明确授权的原子任务
 
@@ -134,7 +134,7 @@ production_effective_config_unit_tests PASS。
 
 ## 5. 09B-04 一键切片路由与 no-fallback
 
-状态：READY
+状态：COMPLETE
 
 目标：
 
@@ -148,9 +148,41 @@ Global blocked 不自动执行 Legacy。
 
 完成标准：Legacy、Global、blocked、invalid、retry 进程级测试。
 
+实际落点：
+
+```text
+一键切片和“运行切片”均读取当前 Legacy/Global 模式与 Global Profile；
+Global 从能力目录映射的只读源 Profile 生成 session Effective Config；
+模型、输出、DPI、缩放、姿态和 preview 等允许项投影到 session copy，源 fixture 不修改；
+Legacy/Global production 共用 ModelPreflightController、SlicePreflightCoordinator、ProcessRunner 和 slicer_cli；
+Global production 使用普通 slicer_cli 中已准入的 08D pipeline，不误绑独立 OpenVDB backend 探针；
+ProductionSliceRunSession 固定 session/config/package 身份，失败、阻断、stale 或进程启动失败均清空；
+Global blocked 不启动 writer，不自动切换 Legacy；失败不加载旧 package；
+新增 production_slice_route_process_tests。
+```
+
+验证：
+
+```text
+Debug 全量构建 PASS；
+Debug CTest 53/53 PASS；
+production_slice_route_process_tests：
+  Legacy success/failure/retry PASS；
+  Global success/no-fallback PASS；
+  invalid Profile/旧 package 隔离 PASS；
+model-preflight-one-click-gate：
+  Global production clean admitted；
+  Global topology blocked；
+  process-start-before-admission=0；
+model-preflight-lifecycle PASS；
+production-mode-selector PASS；
+slicer_debug_ui --self-test PASS；
+Quick CI PASS。
+```
+
 ## 6. 09B-05 生产结果与资源提示
 
-状态：PREPARED / WAIT 09B-04
+状态：READY
 
 目标：
 

@@ -75,6 +75,10 @@ bool TestRestrictedProfileCapability()
             capability->displaynamezh == "全局纹理壳层（受限材料）",
             "restricted Profile Chinese display name")
         && ExpectTrue(
+            capability->sourceconfigrelativepath
+                == "samples/configs/texture_fill_partition/global_production_xiao_ma_white_fill.json",
+            "restricted Profile source config")
+        && ExpectTrue(
             capability->mode
                 == slicer_core::SlicePipelineMode::GlobalSurfaceShell,
             "restricted Profile mode")
@@ -107,6 +111,10 @@ bool TestMaterialParityProfileCapability()
         && ExpectTrue(
             capability->displaynamezh == "全局纹理壳层（材料一致）",
             "material parity Profile Chinese display name")
+        && ExpectTrue(
+            capability->sourceconfigrelativepath
+                == "samples/configs/texture_fill_partition/global_production_xiao_ma_material_parity.json",
+            "material parity Profile source config")
         && ExpectTrue(
             capability->rgb == ProductionFeatureState::Enabled,
             "material parity RGB enabled")

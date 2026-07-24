@@ -297,6 +297,17 @@ void ModelPreflightController::TryStartPending()
         StartWorker(m_capabilityOverride.value());
         return;
     }
+    if (m_activeRequest.globalbackendavailabilityoverride.has_value())
+    {
+        m_lastCapabilityDiagnostic =
+            QStringLiteral("request-override=%1")
+                .arg(m_activeRequest.globalbackendavailabilityoverride.value()
+                         ? QStringLiteral("true")
+                         : QStringLiteral("false"));
+        StartWorker(
+            m_activeRequest.globalbackendavailabilityoverride.value());
+        return;
+    }
     if (m_activeRequest.capabilityprogram.isEmpty()
         || !QFileInfo::exists(m_activeRequest.capabilityprogram))
     {

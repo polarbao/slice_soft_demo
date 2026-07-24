@@ -2490,6 +2490,37 @@ int UiSmokeTestRunner::ModelPreflightOneClickGate(
         return fail(QStringLiteral("model-preflight-one-click-gate 无法创建 fixture。"));
     }
 
+    ModelPreflightController productionGlobalController;
+    SlicePreflightCoordinator productionGlobalCoordinator(
+        &productionGlobalController);
+    int productionGlobalAdmittedCount{0};
+    QObject::connect(
+        &productionGlobalCoordinator,
+        &SlicePreflightCoordinator::SigActionAdmitted,
+        &productionGlobalCoordinator,
+        [&productionGlobalAdmittedCount]()
+        {
+            ++productionGlobalAdmittedCount;
+        });
+    SlicePreflightAction cleanGlobalProductionAction;
+    cleanGlobalProductionAction.kind =
+        SlicePreflightActionKind::GlobalProduction;
+    cleanGlobalProductionAction.configpath = cleanConfig;
+    productionGlobalCoordinator.RequestAction(
+        cleanGlobalProductionAction);
+    if (!WaitForCondition(
+            [&productionGlobalAdmittedCount]()
+            {
+                return productionGlobalAdmittedCount == 1;
+            })
+        || !productionGlobalController.LastCapabilityDiagnostic().contains(
+            QStringLiteral("request-override=true")))
+    {
+        return fail(
+            QStringLiteral(
+                "model-preflight-one-click-gate Global production 未通过普通 slicer_cli 能力路径。"));
+    }
+
     ModelPreflightController controller;
     controller.SetCapabilityOverrideForTests(true);
     SlicePreflightCoordinator coordinator(&controller);
@@ -2541,7 +2572,7 @@ int UiSmokeTestRunner::ModelPreflightOneClickGate(
     }
 
     SlicePreflightAction globalAction;
-    globalAction.kind = SlicePreflightActionKind::OpenVdbCandidate;
+    globalAction.kind = SlicePreflightActionKind::GlobalProduction;
     globalAction.configpath = openConfig;
     coordinator.RequestAction(globalAction);
     if (!WaitForCondition([&blockedCount]() { return blockedCount == 2; })
@@ -2620,7 +2651,7 @@ int UiSmokeTestRunner::ModelPreflightOneClickGate(
     return pass(
         QStringLiteral(
             "model-preflight-one-click-gate admitted=2 blocked=2 process-start-before-admission=0 "
-            "real-capability=%1")
+            "global-production=admitted real-capability=%1")
             .arg(realCapabilityVerified ? QStringLiteral("verified")
                                         : QStringLiteral("skipped")));
 }

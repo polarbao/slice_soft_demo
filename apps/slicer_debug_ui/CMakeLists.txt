@@ -20,6 +20,10 @@ add_executable(slicer_debug_ui
     services/ProcessRunner.h
     services/ProductionModeCatalog.cpp
     services/ProductionModeCatalog.h
+    services/ProductionProfileSourceResolver.cpp
+    services/ProductionProfileSourceResolver.h
+    services/ProductionSliceRunSession.cpp
+    services/ProductionSliceRunSession.h
     services/ReportLoader.cpp
     services/ReportLoader.h
     services/ScenarioRegistry.cpp
@@ -126,10 +130,50 @@ add_test(
     COMMAND production_effective_config_unit_tests
 )
 
+add_executable(production_slice_route_process_tests
+    services/ProcessRunner.cpp
+    services/ProcessRunner.h
+    services/ProductionModeCatalog.cpp
+    services/ProductionModeCatalog.h
+    services/ProductionProfileSourceResolver.cpp
+    services/ProductionProfileSourceResolver.h
+    services/ProductionSliceRunSession.cpp
+    services/ProductionSliceRunSession.h
+    ../../tests/unit/production_slice_route/Main.cpp
+)
+
+set_target_properties(production_slice_route_process_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_compile_definitions(production_slice_route_process_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_include_directories(production_slice_route_process_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
+)
+
+target_link_libraries(production_slice_route_process_tests PRIVATE
+    Qt5::Core
+    slicer_core
+)
+
+add_test(
+    NAME production_slice_route_process_tests
+    COMMAND production_slice_route_process_tests
+)
+
 if(MSVC)
     target_compile_options(slicer_debug_ui PRIVATE /utf-8 /MP)
     target_compile_options(
         production_effective_config_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
+        production_slice_route_process_tests
         PRIVATE
         /utf-8
         /MP
@@ -145,11 +189,21 @@ if(MSVC)
             PRIVATE
             ${qt515MsvcCompatibilityHeader}
         )
+        target_sources(
+            production_slice_route_process_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
         target_compile_options(slicer_debug_ui PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )
         target_compile_options(
             production_effective_config_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            production_slice_route_process_tests
             PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )

@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include "services/ProductionProfileSourceResolver.h"
 #include "widgets/MaterialClosurePanel.h"
 
 #include <QAction>
@@ -122,6 +123,19 @@ bool IsSlicingAction(const QString& action)
 {
     return action == QStringLiteral("运行切片")
         || action == QStringLiteral("OpenVDB 候选切片");
+}
+
+QString ProductionModeSessionTag(
+    const slicer_core::SlicePipelineMode mode)
+{
+    return mode == slicer_core::SlicePipelineMode::GlobalSurfaceShell
+        ? QStringLiteral("global_surface_shell")
+        : QStringLiteral("legacy");
+}
+
+QString SessionIdFromConfigPath(const QString& configPath)
+{
+    return QFileInfo(configPath).absoluteDir().dirName();
 }
 
 QString MakeScenarioToolTip(const ScenarioEntry& scenario)
@@ -405,6 +419,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         [this]()
         {
             m_modelPreflightController.MarkStale();
+            m_productionRunSession.Invalidate();
             config_editor_panel_->ShowProductionAdmissionState(
                 ProductionAdmissionState::Stale,
                 QStringLiteral("生产模式或 Profile 已改变，需要重新执行预检。"));
@@ -418,6 +433,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
             if (!m_suppressPreflightStale)
             {
                 m_modelPreflightController.MarkStale();
+                m_productionRunSession.Invalidate();
             }
         });
     connect(
@@ -500,11 +516,13 @@ void MainWindow::buildDebug() {
 }
 
 void MainWindow::runSlicer() {
+    const slicer_core::SlicePipelineMode selectedMode =
+        config_editor_panel_->SelectedProductionMode();
     const EffectiveConfigResult result = GenerateEffectiveConfig(
         QString{},
         package_edit_->text(),
         SliceEngineRole::LegacyProduction,
-        QStringLiteral("legacy"));
+        ProductionModeSessionTag(selectedMode));
     if (!result.IsValid())
     {
         status_label_->setText("生效配置校验失败，已停止切片。");
@@ -513,8 +531,14 @@ void MainWindow::runSlicer() {
     }
 
     SlicePreflightAction action;
-    action.kind = SlicePreflightActionKind::Legacy;
+    action.kind = selectedMode == slicer_core::SlicePipelineMode::Legacy
+        ? SlicePreflightActionKind::Legacy
+        : SlicePreflightActionKind::GlobalProduction;
+    action.productionmode = selectedMode;
+    action.productionprofileid =
+        config_editor_panel_->SelectedProductionProfileId();
     action.configpath = result.generatedconfigpath;
+    action.sessionid = SessionIdFromConfigPath(action.configpath);
     action.packagedir = absoluteFromRepo(
         result.document.object().value("output").toObject().value("packageDir").toString());
     action.capabilityprogram = paths_.openvdb_slicer_cli;
@@ -574,7 +598,15 @@ void MainWindow::OnImportModelAndSlice()
     }
 
     SlicePreflightAction action;
-    action.kind = SlicePreflightActionKind::Legacy;
+    const slicer_core::SlicePipelineMode selectedMode =
+        config_editor_panel_->SelectedProductionMode();
+    action.kind = selectedMode == slicer_core::SlicePipelineMode::Legacy
+        ? SlicePreflightActionKind::Legacy
+        : SlicePreflightActionKind::GlobalProduction;
+    action.productionmode = selectedMode;
+    action.productionprofileid =
+        config_editor_panel_->SelectedProductionProfileId();
+    action.sessionid = SessionIdFromConfigPath(configPath);
     action.configpath = configPath;
     action.packagedir = packageDir;
     action.capabilityprogram = paths_.openvdb_slicer_cli;
@@ -704,9 +736,13 @@ void MainWindow::OnPreflightActionAdmitted()
 {
     const SlicePreflightAction action =
         m_slicePreflightCoordinator.AdmittedAction();
-    if (action.kind == SlicePreflightActionKind::Legacy)
+    if (action.kind == SlicePreflightActionKind::Legacy
+        || action.kind == SlicePreflightActionKind::GlobalProduction)
     {
-        RunGeneratedConfig(action.configpath, action.packagedir);
+        config_editor_panel_->ShowProductionAdmissionState(
+            ProductionAdmissionState::Admitted,
+            QStringLiteral("当前模型与生效配置已通过所选产品模式准入。"));
+        RunGeneratedConfig(action);
         return;
     }
     if (action.kind == SlicePreflightActionKind::OpenVdbDiagnostic)
@@ -719,6 +755,24 @@ void MainWindow::OnPreflightActionAdmitted()
 
 void MainWindow::OnPreflightActionBlocked()
 {
+    m_productionRunSession.Invalidate();
+    QStringList blockers;
+    const slicer_core::ModelPreflightResult& result =
+        m_modelPreflightController.CurrentExecution().result;
+    const slicer_core::ModeAdmissionResult& admission =
+        config_editor_panel_->SelectedProductionMode()
+                == slicer_core::SlicePipelineMode::GlobalSurfaceShell
+            ? result.globalAdmission
+            : result.legacyAdmission;
+    for (const std::string& code : admission.blockerCodes)
+    {
+        blockers.push_back(QString::fromStdString(code));
+    }
+    config_editor_panel_->ShowProductionAdmissionState(
+        ProductionAdmissionState::Blocked,
+        blockers.isEmpty()
+            ? QStringLiteral("模型预检未放行。")
+            : blockers.join(QStringLiteral("、")));
     status_label_->setText(QStringLiteral("模型预检未放行，切片进程未启动。"));
     UpdateActionAvailability();
 }
@@ -769,6 +823,11 @@ void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed
     {
         m_sliceTimingPanel->Finish(exit_code == 0, elapsed_ms);
     }
+    ProductionSliceRunCompletion productionCompletion;
+    if (current_action_ == QStringLiteral("运行切片"))
+    {
+        productionCompletion = m_productionRunSession.Complete(exit_code);
+    }
     if (exit_code != 0) {
         if (current_action_ == "OpenVDB 候选切片" && !pending_package_.isEmpty())
         {
@@ -778,7 +837,13 @@ void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed
         }
         return;
     }
-    if ((current_action_ == "运行切片" || current_action_ == "OpenVDB 候选切片") && !pending_package_.isEmpty()) {
+    if (current_action_ == QStringLiteral("运行切片")
+        && !productionCompletion.packagedirtoload.isEmpty())
+    {
+        package_edit_->setText(productionCompletion.packagedirtoload);
+        loadPackage(productionCompletion.packagedirtoload);
+    }
+    else if (current_action_ == "OpenVDB 候选切片" && !pending_package_.isEmpty()) {
         package_edit_->setText(pending_package_);
         loadPackage(pending_package_);
     } else if (current_action_ == "对比工艺配置") {
@@ -792,6 +857,7 @@ void MainWindow::handleProcessFailed(const QString& message) {
     log_panel_->appendError(message);
     setBusy(false);
     status_label_->setText("进程错误：" + message);
+    m_productionRunSession.Invalidate();
     if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
     {
         m_sliceTimingPanel->Finish(false, 0);
@@ -1089,8 +1155,33 @@ EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
         return errorresult;
     }
 
-    const QString profilePart = SanitizeSessionName(
-        m_currentProfileId.isEmpty() ? QStringLiteral("custom") : m_currentProfileId);
+    const slicer_core::SlicePipelineMode requestedMode =
+        engineRole == SliceEngineRole::LegacyProduction
+        ? config_editor_panel_->SelectedProductionMode()
+        : slicer_core::SlicePipelineMode::Legacy;
+    const QString requestedProfileId =
+        requestedMode == slicer_core::SlicePipelineMode::GlobalSurfaceShell
+        ? config_editor_panel_->SelectedProductionProfileId()
+        : (m_currentProfileId.isEmpty()
+               ? QStringLiteral("custom")
+               : m_currentProfileId);
+    ProductionProfileSourceRequest sourceRequest;
+    sourceRequest.reporoot = paths_.repo_root;
+    sourceRequest.mode = requestedMode;
+    sourceRequest.requestedprofileid = requestedProfileId;
+    sourceRequest.legacytemplatepath = config_document_.path();
+    sourceRequest.legacyoriginaldocument = config_document_.originalDocument();
+    sourceRequest.legacyoverridedocument = config_document_.document();
+    const ProductionProfileSourceResult source =
+        ProductionProfileSourceResolver().Resolve(sourceRequest);
+    if (!source.IsValid())
+    {
+        errorresult.errors = source.errors;
+        config_editor_panel_->ShowEffectiveConfig(errorresult);
+        return errorresult;
+    }
+
+    const QString profilePart = SanitizeSessionName(source.profileid);
     const QString modelPart = SanitizeSessionName(modelInfo.completeBaseName());
     const QString sessionName = modelPart + "_" + profilePart + "_" + sessionTag + "_"
         + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz");
@@ -1101,25 +1192,16 @@ EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
         ? QDir(paths_.repo_root).filePath(relativeSessionRoot + QStringLiteral("/package"))
         : absoluteFromRepo(packageDirOverride);
 
-    if (config_document_.value({"input", "modelPath"}).toString() != resolvedModel)
-    {
-        config_document_.setValue({"input", "modelPath"}, resolvedModel);
-    }
-    if (config_document_.value({"output", "packageDir"}).toString() != effectivePackage)
-    {
-        config_document_.setValue({"output", "packageDir"}, effectivePackage);
-    }
-
     EffectiveConfigRequest request;
-    request.profileid = m_currentProfileId.isEmpty() ? QStringLiteral("custom") : m_currentProfileId;
-    request.templatepath = config_document_.path();
+    request.profileid = source.profileid;
+    request.templatepath = source.templatepath;
     request.generatedconfigpath = generatedPath;
-    request.originaldocument = config_document_.originalDocument();
-    request.overridedocument = config_document_.document();
+    request.originaldocument = source.originaldocument;
+    request.overridedocument = source.overridedocument;
     request.settings = BuildCurrentSettings(resolvedModel, effectivePackage, engineRole);
-    request.production.requestedmode =
-        slicer_core::SlicePipelineMode::Legacy;
-    request.production.sourceprofileid = request.profileid;
+    request.production.requestedmode = requestedMode;
+    request.production.requestedprofileid = requestedProfileId;
+    request.production.sourceprofileid = source.profileid;
     request.production.sessionid = sessionName;
 
     EffectiveConfigResult result = EffectiveConfigGenerator().Generate(request);
@@ -1133,11 +1215,13 @@ EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
 
 QString MainWindow::CreateOneClickConfig(const QString& modelPath, QString* packageDir)
 {
+    const slicer_core::SlicePipelineMode selectedMode =
+        config_editor_panel_->SelectedProductionMode();
     const EffectiveConfigResult result = GenerateEffectiveConfig(
         modelPath,
         QString{},
         SliceEngineRole::LegacyProduction,
-        QStringLiteral("legacy"));
+        ProductionModeSessionTag(selectedMode));
     if (!result.IsValid())
     {
         status_label_->setText("一键切片配置校验失败。");
@@ -1268,12 +1352,29 @@ QString MainWindow::CreateOpenVdbReportPath(const QString& modelPath) const
     return repo.filePath(reportDir + "/experimental_openvdb_shell_report.json");
 }
 
-void MainWindow::RunGeneratedConfig(const QString& configPath, const QString& packageDir)
+void MainWindow::RunGeneratedConfig(const SlicePreflightAction& action)
 {
-    config_edit_->setText(configPath);
-    package_edit_->setText(packageDir);
-    pending_package_ = packageDir;
-    runCommand("运行切片", paths_.slicer_cli, QStringList{"--config", configPath});
+    ProductionSliceRunRequest request;
+    request.mode = action.productionmode;
+    request.profileid = action.productionprofileid;
+    request.sessionid = action.sessionid;
+    request.configpath = action.configpath;
+    request.packagedir = action.packagedir;
+    const QStringList errors = m_productionRunSession.Begin(request);
+    if (!errors.isEmpty())
+    {
+        status_label_->setText(QStringLiteral("生产切片会话身份无效，进程未启动。"));
+        log_panel_->appendError(errors.join(QStringLiteral("\n")));
+        return;
+    }
+
+    config_edit_->setText(action.configpath);
+    package_edit_->setText(action.packagedir);
+    pending_package_.clear();
+    runCommand(
+        "运行切片",
+        paths_.slicer_cli,
+        QStringList{"--config", action.configpath});
 }
 
 void MainWindow::RunOpenVdbDiagnostic(const QString& configPath, const QString& reportPath)
@@ -1313,6 +1414,14 @@ void MainWindow::RequestSlicePreflight(const SlicePreflightAction& action)
         package_edit_->setText(action.packagedir);
     }
     pending_package_.clear();
+    m_productionRunSession.Invalidate();
+    if (action.kind == SlicePreflightActionKind::Legacy
+        || action.kind == SlicePreflightActionKind::GlobalProduction)
+    {
+        config_editor_panel_->ShowProductionAdmissionState(
+            ProductionAdmissionState::Running,
+            QStringLiteral("正在执行当前模型和所选生产模式的预检。"));
+    }
     status_label_->setText(QStringLiteral("正在执行模型预检，尚未启动切片进程。"));
     m_slicePreflightCoordinator.RequestAction(action);
 }

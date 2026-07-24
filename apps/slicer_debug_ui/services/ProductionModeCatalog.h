@@ -83,6 +83,7 @@ struct ProductionProfileCapability
 {
     std::string profileid;
     std::string displaynamezh;
+    std::string sourceconfigrelativepath;
     slicer_core::SlicePipelineMode mode{
         slicer_core::SlicePipelineMode::Legacy};
     ProductionFeatureState rgb{ProductionFeatureState::Disabled};

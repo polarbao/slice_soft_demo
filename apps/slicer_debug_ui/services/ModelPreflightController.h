@@ -14,6 +14,7 @@ struct UiModelPreflightRequest
 {
     QString configpath;
     QString capabilityprogram;
+    std::optional<bool> globalbackendavailabilityoverride;
     slicer_core::ModelPreflightPipelineMode mode{
         slicer_core::ModelPreflightPipelineMode::Legacy};
     slicer_core::ModelPreflightOptions options;

@@ -25,6 +25,15 @@ void SlicePreflightCoordinator::RequestAction(
     request.configpath = action.configpath;
     request.capabilityprogram = action.capabilityprogram;
     request.mode = ActionMode();
+    if (action.kind == SlicePreflightActionKind::Legacy)
+    {
+        request.globalbackendavailabilityoverride = false;
+    }
+    else if (action.kind == SlicePreflightActionKind::GlobalProduction)
+    {
+        // The admitted 08D production pipeline is part of the normal slicer_cli.
+        request.globalbackendavailabilityoverride = true;
+    }
     m_controller->RequestPreflight(request);
 }
 

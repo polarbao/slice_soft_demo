@@ -30,6 +30,7 @@ const std::array<ProductionProfileCapability, 2> kProfiles{{
     {
         "global_surface_shell_restricted_candidate",
         "全局纹理壳层（受限材料）",
+        "samples/configs/texture_fill_partition/global_production_xiao_ma_white_fill.json",
         slicer_core::SlicePipelineMode::GlobalSurfaceShell,
         ProductionFeatureState::Enabled,
         ProductionFeatureState::Enabled,
@@ -41,6 +42,7 @@ const std::array<ProductionProfileCapability, 2> kProfiles{{
     {
         "global_surface_shell_material_parity_candidate",
         "全局纹理壳层（材料一致）",
+        "samples/configs/texture_fill_partition/global_production_xiao_ma_material_parity.json",
         slicer_core::SlicePipelineMode::GlobalSurfaceShell,
         ProductionFeatureState::Enabled,
         ProductionFeatureState::Enabled,

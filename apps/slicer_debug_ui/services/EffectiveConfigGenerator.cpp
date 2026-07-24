@@ -89,10 +89,7 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
 {
     QJsonObject input = root.value(QStringLiteral("input")).toObject();
     input.insert(QStringLiteral("modelPath"), QDir::fromNativeSeparators(settings.modelpath));
-    if (!input.contains(QStringLiteral("format")))
-    {
-        input.insert(QStringLiteral("format"), QStringLiteral("auto"));
-    }
+    input.insert(QStringLiteral("format"), QStringLiteral("auto"));
     root.insert(QStringLiteral("input"), input);
 
     QJsonObject output = root.value(QStringLiteral("output")).toObject();
