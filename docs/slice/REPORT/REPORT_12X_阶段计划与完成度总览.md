@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v1.3
+> 版本：v1.4
 > 更新日期：2026-07-24
-> 当前唯一生产主线：12E-09B 双模式 Qt 入口
-> 当前下一原子任务：12E-09B-05 生产结果与资源提示
+> 当前唯一生产主线：12E-09C X/Y DPI
+> 当前下一原子任务：12E-09C-01 核心配置与协议边界（等待明确授权）
 
 ## 1. 使用规则
 
@@ -49,9 +49,9 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-08D-06 | COMPLETE | 0.01 mm 六 case Release/TIFF/RIP/耗时/峰值内存矩阵 | Global 默认替换 Legacy 因性能与内存 NO-GO |
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 09A-02..06 可按独立授权推进 |
 | 12E-09A | 09A-01 COMPLETE / 09A-02..06 INDEPENDENT | 只读 Diagnostic Facade 与 UI DTO | 诊断 Effective Config、控件、worker、同层 preview 和 smoke |
-| 12E-09B | 09B-04 COMPLETE / 09B-05 READY | 能力目录、Effective Config、中文选择器、能力锁定、双模式一键路由、共享 preflight/process、session 身份和 no-fallback | 结果绑定、资源提示和收口 |
-| 12E-09C | PREPARATION COMPLETE / WAIT 09B-06 | X=635/Y=600 目标、兼容策略、PRD/DEV/DEMO/TASKS 已冻结 | Core/Reader、两引擎、外侧光油、Qt、物理比例 preview 和生产矩阵 |
-| 12E-10 | PREPARED / WAIT DEPENDENCIES | 最终矩阵 schema、模型基线和收口目标已定义 | 10A 等待 09A-05/09B-05/09C；10B/10C 最终汇总等待 09B-06/09C |
+| 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
+| 12E-09C | PREPARATION COMPLETE / 09C-01 READY | X=635/Y=600 目标、兼容策略、PRD/DEV/DEMO/TASKS 已冻结 | Core/Reader、两引擎、外侧光油、Qt、物理比例 preview 和生产矩阵 |
+| 12E-10 | PREPARED / WAIT DEPENDENCIES | 最终矩阵 schema、模型基线和 09B 生产入口已完成 | 10A 等待 09A-05/09C；10B/10C 最终汇总等待 09C |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 
@@ -71,9 +71,9 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 任务组 | 当前状态 | 下一动作 |
 |---|---|---|
 | 09A Diagnostic UI | 09A-01 COMPLETE；09A-02..06 独立待授权 | 09A-02 |
-| 09B Production UI | 09B-01..04 COMPLETE；09B-05 READY；09B-06 PREPARED | 09B-05 |
-| 09C X/Y DPI | PREPARATION COMPLETE / WAIT 09B-06 | 09B-06 后执行 09C-01 |
-| 12E-10 Final Closure | PREPARED / WAIT 09A-05、09B-06、09C | 依赖满足后执行 10A |
+| 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
+| 09C X/Y DPI | PREPARATION COMPLETE / 09C-01 READY | 明确授权后执行 09C-01 |
+| 12E-10 Final Closure | PREPARED / WAIT 09A-05、09C | 依赖满足后执行 10A |
 
 ## 3. 12E-08C 当前结论
 
@@ -100,8 +100,9 @@ aishen/meigui/titian 仍为 0/3 confirmed self-intersection 覆盖缺口；
 08D-04 COMPLETE：显式受限 Global Profile、真实模型 Release matrix 和分层 production
 GO/NO-GO；
 08D-05 COMPLETE：lower/internal-void S 支撑与 surface/outer V 光油材料等价候选；
-08D-06 COMPLETE：0.01 mm 六 case Release/RIP 矩阵；Legacy 默认 GO，Global 两个显式候选
-GO，Global 默认替换 Legacy 因 4.82x~8.59x 总耗时和 8.19x~8.74x 峰值内存 NO-GO。
+08D-06 COMPLETE：0.01 mm 六 case Release/RIP 矩阵；09B-06 于 2026-07-24 复测后，
+Legacy 默认 GO，Global 两个显式候选 GO，Global 默认替换 Legacy因 4.09x~5.92x 总耗时和
+8.19x~8.74x 峰值内存 NO-GO。
 ```
 
 任何一个 Gate 失败都必须停止后续 production 推进；不得切换成 legacy 后伪装 Global 成功。
@@ -135,6 +136,7 @@ docs/slice/DOC/DOC_DECISION_12E_09A_09B_Qt任务顺序与职责边界.md
 docs/slice/DOC/DOC_PREP_12E_09B_Qt双模式生产入口准备.md
 docs/slice/REPORT/REPORT_12E_09B_01_能力目录与UIDTO当前状态.md
 docs/slice/REPORT/REPORT_12E_09B_02_ProductionEffectiveConfig当前状态.md
+docs/slice/REPORT/REPORT_12E_09B_Qt双模式生产入口当前状态.md
 docs/slice/DOC/DOC_PREP_12E_09C_XY_DPI准备.md
 docs/codex_task/current/TASKS_12E_09A_诊断UI任务清单.md
 docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md

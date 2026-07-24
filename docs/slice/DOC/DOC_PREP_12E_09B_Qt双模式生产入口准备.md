@@ -1,12 +1,12 @@
 # DOC_PREP 12E-09B Qt 双模式生产入口准备
 
-> 状态：09B-02 COMPLETE / 09B-03 READY
+> 状态：09B-01..06 COMPLETE / CLOSED
 > 日期：2026-07-24
 
 ## 1. 准备结论
 
 12E-09B 的产品范围、架构边界、能力锁定、原子任务、验证矩阵和回滚条件已补齐。
-`12E-09B-01/02` 已完成，下一原子任务为 `12E-09B-03`。不得跳过原子任务或将 Global 设为默认。
+`12E-09B-01..06` 已全部完成。Legacy 保持默认，Global 保持显式 opt-in；后续不再向本阶段追加功能。
 
 ## 2. 当前代码复用点
 
@@ -70,8 +70,8 @@ apps/slicer_debug_ui/MainWindow.*。
 | 09B TASKS/PROMPT | COMPLETE |
 | 09B-01 开发 | COMPLETE |
 | 09B-02 开发 | COMPLETE |
-| 09B-03 开发 | READY |
-| 09B-04..06 | PREPARED / sequential |
+| 09B-03 开发 | COMPLETE |
+| 09B-04..06 | COMPLETE |
 
 09B-02 已冻结 session Effective Config 审计对象、能力锁定、stale override 清理、fixture 只读和
 原子写入。09B-03 可直接复用 `ProductionModeCatalog` 与
@@ -81,10 +81,10 @@ apps/slicer_debug_ui/MainWindow.*。
 
 | 原子任务 | 输入与合同 | 验证方案 | 准备状态 |
 |---|---|---|---|
-| 09B-03 | Catalog、UI DTO、Effective Config selection、中文文案和能力矩阵 | self-test、最长中文、三窗口尺寸 | READY |
-| 09B-04 | 现有 preflight/coordinator/ProcessRunner、session identity、no-fallback | Legacy/Global/blocked/invalid/retry 进程级测试 | PREPARED / WAIT 09B-03 |
-| 09B-05 | 当前 session package、manifest mode、preview/report/timing | package identity、manifest、preview/report 同源 | PREPARED / WAIT 09B-04 |
-| 09B-06 | Debug/Release、真实模型、RIP strict、Quick CI、状态文档 | 09B DEMO 完整矩阵 | PREPARED / WAIT 09B-05 |
+| 09B-03 | Catalog、UI DTO、Effective Config selection、中文文案和能力矩阵 | self-test、最长中文、三窗口尺寸 | COMPLETE |
+| 09B-04 | 现有 preflight/coordinator/ProcessRunner、session identity、no-fallback | Legacy/Global/blocked/invalid/retry 进程级测试 | COMPLETE |
+| 09B-05 | 当前 session package、manifest mode、preview/report/timing | package identity、manifest、preview/report 同源 | COMPLETE |
+| 09B-06 | Debug/Release、真实模型、RIP strict、Quick CI、状态文档 | 09B DEMO 完整矩阵 | COMPLETE |
 
 上述任务的 PRD、DEV、DEMO、TASKS 和输出报告路径已确定。后续阻断是顺序依赖，不是文档缺失。
 
@@ -105,10 +105,10 @@ Global 高时间/内存成本必须披露；
 12E-10 的旧 R4/08D blocker 已解除。当前剩余依赖：
 
 ```text
-10A 等待 09A-05 和 09B-05；
-10B 等待 09B-06 后执行最终双模式矩阵；
-10C 可复用 08D Release 证据，最终汇总等待 09B-06；
+10A 的 09B-05 依赖已满足，继续等待 09A-05 和 09C；
+10B 的 09B-06 依赖已满足，继续等待 09C；
+10C 可复用 08D/09B Release 证据，继续等待 09C；
 10D 等待 10A/10B/10C。
 ```
 
-09B-06 后插入 12E-09C X/Y DPI 专项，再进入 09A 同层 preview 和 12E-10 最终收口。
+下一生产主线为 12E-09C X/Y DPI；09A 同层 preview 保持独立支线，二者完成后进入 12E-10 最终收口。

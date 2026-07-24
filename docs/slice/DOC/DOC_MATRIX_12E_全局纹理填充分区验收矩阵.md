@@ -157,9 +157,9 @@ OpenVDB OFF build PASS；
 | 12E-08C-R4 | COMPLETE：两独立模型族、四用例、候选预算、legacy/RIP、Quick CI PASS；R4-08-R2 条件技术通过 |
 | 12E-08D | COMPLETE：01..06 完成；Legacy 默认 GO；两个 Global 显式候选 GO；Global 默认替换 NO-GO |
 | 12E-09A | 09A-01 COMPLETE；09A-02..06 为独立 diagnostic UI 支线 |
-| 12E-09B | 09B-01/02 COMPLETE；09B-03 READY；仅开放 admitted Profile 能力 |
-| 12E-09C | PREPARATION COMPLETE / WAIT 09B-06；默认 635/600，显式 600/600 兼容 |
-| 12E-10 | PREPARED；10A 等待 09A-05/09B-05/09C，10B/10C 最终汇总等待 09B-06/09C |
+| 12E-09B | 09B-01..06 COMPLETE；双模式生产入口和六 case Release/TIFF/RIP 收口通过 |
+| 12E-09C | PREPARATION COMPLETE / 09C-01 READY；默认 635/600，显式 600/600 兼容 |
+| 12E-10 | PREPARED；10A 等待 09A-05/09C，10B/10C 最终汇总等待 09C |
 
 ## 12. 双切片模式与输出矩阵
 

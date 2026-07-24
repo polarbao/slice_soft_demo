@@ -3,11 +3,11 @@
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
 - Domain: Industrial UV / inkjet 3D printing slicing Host Software prototype
-- Current phase: Stage 12E-09B production UI implementation
-- Latest completed milestone: `12E-09B-04 one-click production route and no-fallback`
-- Latest completed task: `12E-09B-04`
-- Current task: `12E-09B-05 production result and resource presentation`
-- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01..06 implement mode routing, writer-ready layers, shared TIFF/package/RIP, restricted RGB + W, lower/internal-void S support, surface/outer V varnish, and the 0.01 mm six-case Release matrix. Both Global Profiles are explicit opt-in candidates; Legacy remains default because current Global total time is 4.82x-8.59x and peak memory is 8.19x-8.74x higher. 12E-09B-01 provides the product mode/Profile capability catalog and fail-closed UI DTO. 12E-09B-02 writes mode/Profile/capability lock and requested/effective audit into an atomic session `slice_config.effective.json`, restores unsupported Global stale overrides from the read-only source Profile, and keeps fixtures unchanged. 12E-09B-03 adds the Chinese Legacy/Global selector, admitted Global Profile selector, capability locks, stale/admission/resource hints, hides the ordinary OpenVDB backend switch, and passes three-viewport UI smoke. 12E-09B-04 routes both one-click and generated-config runs through the selected product mode, canonical read-only Global Profile sources, shared model preflight/coordinator/ProcessRunner, and a fail-closed run-session identity that never loads failed/stale packages or applies Legacy fallback. 12E-09A-02..06 remain an independent diagnostic lane. 12E-09C X/Y DPI preparation is complete and audited, but execution waits for 09B-06; new target defaults are X=635 and Y=600 while explicit 600/600 fixtures remain compatible.
+- Current phase: Stage 12E-09B production UI closure complete
+- Latest completed milestone: `12E-09B-06 Qt dual-mode production entry closure`
+- Latest completed task: `12E-09B-06`
+- Current task: `12E-09C-01 READY / awaiting explicit authorization`
+- Prepared stage: R4-06 two-family intake, R4-07-R1 four-case Release/closure/legacy/RIP, R4-07-R2 candidate budget `2026-07-23.r1`, and Quick-CI-R1 all PASS. R4-08-R2 is `GO` after explicit user authorization at 2026-07-23 15:15:27 +08:00. 12E-08D-01..06 implement mode routing, writer-ready layers, shared TIFF/package/RIP, restricted RGB + W, lower/internal-void S support, surface/outer V varnish, and the 0.01 mm six-case Release matrix. 12E-09B-01..06 now provide the production mode/Profile catalog, atomic Effective Config, Chinese selector, capability lock, shared preflight/process route, exact session/package identity, no-fallback, same-source preview/report, and actual timing/peak-memory presentation. The 2026-07-24 closure matrix passes six xiao_ma/yecan Legacy/Global cases; Global is 4.09x-5.92x slower and 8.19x-8.74x higher in peak memory, so Legacy remains default. 12E-09A-02..06 remain an independent diagnostic lane. 12E-09C X/Y DPI preparation is complete and `09C-01` is ready; target defaults are X=635 and Y=600 while explicit 600/600 fixtures remain compatible.
 - Validated R4 model inputs: 22 OBJ/3MF assets under `model` were audited. All 5 OBJ files under `model/obj/xiao_ma_wu_yu_new` plus `model/obj/yecan/3.obj` and `model/obj/yecan/4.obj` are strict PASS; xiao_ma Damuzhi and yecan/3 are the two tracked restricted-candidate baseline families. The aishen/meigui/titian families remain a 0/3 complex-relief coverage gap because all 9 candidates have confirmed self-intersection. The `model` directory has no strict-PASS 3MF; use `samples/models/3mf/texture2d_checker_cube.3mf` only as the positive Texture2D control lane.
 - Main language: C++20
 - UI: Qt 5.15 Widgets, UI layer only
@@ -16,7 +16,7 @@
 - Formal docs: `docs/slice`
 - Codex tasks: `docs/codex_task`
 - Historical docs: `docs/archive/2026-06-30_slicer_legacy`
-- Scripts: `scripts/run_regression.ps1`, `scripts/run_ci_quick.ps1`, `scripts/run_schema_tests.ps1`, `scripts/run_golden_tests.ps1`, `scripts/run_09p_cli_experimental_tests.ps1`, `scripts/run_09p_experimental_pipeline_tests.ps1`, `scripts/run_openvdb_smoke.ps1`, `scripts/run_12e_08d_04_global_production_matrix.ps1`, `scripts/run_12e_08d_05_global_material_parity.ps1`, `scripts/run_12e_08d_06_release_matrix.ps1`
+- Scripts: `scripts/run_regression.ps1`, `scripts/run_ci_quick.ps1`, `scripts/run_schema_tests.ps1`, `scripts/run_golden_tests.ps1`, `scripts/run_09p_cli_experimental_tests.ps1`, `scripts/run_09p_experimental_pipeline_tests.ps1`, `scripts/run_openvdb_smoke.ps1`, `scripts/run_12e_08d_04_global_production_matrix.ps1`, `scripts/run_12e_08d_05_global_material_parity.ps1`, `scripts/run_12e_08d_06_release_matrix.ps1`, `scripts/run_12e_09b_06_production_ui_gate.ps1`
 
 ## Core capabilities
 

@@ -1,8 +1,8 @@
 # QT_DEBUG_UI_软件配置说明
 
-> 日期：2026-06-09  
+> 日期：2026-07-24
 > 适用程序：`slicer_debug_ui`  
-> 所属阶段：07 / Qt 调试 UI 基础版  
+> 所属阶段：12E-09B / Qt 双模式生产入口已收口
 > 目的：说明本地构建、运行、切片任务、输出包和报告查看相关配置文件的作用。
 
 > 更新说明：当前 VSCode 运行环境已精简为通用入口；模型/Profile 场景改由 `samples/scenarios/slicer_scenarios.json` 和 Qt 调试 UI 的“场景/Profile”选择器管理。详见 `docs/user_guides/VSCode与Qt调试UI运行环境说明.md`。
@@ -11,7 +11,7 @@
 
 ## 1. 软件定位
 
-`slicer_debug_ui` 是本地调试工具，不是生产 UI。它不直接修改切片算法，也不改变 RGBWSV 输出协议，而是包装现有命令和本地文件：
+`slicer_debug_ui` 是本地切片调试工作台，并已接通 Legacy / Global Surface Shell 两种受控生产入口。它不改变 RGBWSV 输出协议，而是通过 Effective Config、模型预检和当前 session 身份包装现有命令和本地文件：
 
 ```text
 slicer_cli
@@ -330,9 +330,84 @@ UI 读取逻辑：
 
 ---
 
-## 9. 运行方式
+## 9. Legacy / Global 双模式生产操作
 
-### 9.1 VS Code
+### 9.1 入口位置
+
+打开中央“配置”页，在“生产切片模式”区域选择：
+
+| 选项 | 行为 |
+|---|---|
+| `传统切片` | 默认模式；沿用当前场景/Profile 的 RGB、白墨、支撑和光油设置。 |
+| `全局纹理壳层` | 显式 opt-in；必须再选择一个已准入 Global Profile。 |
+
+Global Profile 当前包括：
+
+| Profile | 能力 |
+|---|---|
+| `全局纹理壳层（受限材料）` | RGB + 白墨；不生成支撑和光油。 |
+| `全局纹理壳层（材料一致）` | RGB + 白墨；lower/internal-void 支撑；surface/outer 光油。 |
+
+Global 下由 Profile 管理的材料、支撑和光油控件会锁定。OpenVDB backend 不是第三种产品模式，
+普通配置页不会把它暴露为产品模式选择。
+
+### 9.2 一键切片
+
+1. 在“配置”页选择 `传统切片` 或 `全局纹理壳层`。
+2. Global 模式下选择目标 Global Profile。
+3. 点击左侧“导入模型并切片”，从任意目录选择 OBJ/STL/3MF。
+4. UI 生成当前 session 的 `slice_config.effective.json`。
+5. 模型预检和生产准入通过后启动 `slicer_cli`。
+6. 完成后仅加载本次 session 的 package。
+
+也可以先选择“场景/Profile”，再点击“运行切片”。两种入口都经过同一 Effective Config、
+preflight、ProcessRunner 和 package identity 校验。
+
+### 9.3 结果校验与显示
+
+“生产切片模式”区域在本次运行后显示：
+
+```text
+requested/effective 模式；
+sessionId；
+production TIFF 是否写入；
+fallback 是否发生；
+当前 package 路径；
+本次总耗时；
+本次峰值工作集。
+```
+
+只有以下条件全部满足时才加载预览和报告：
+
+```text
+schema = p0.rgbwsv.2；
+manifest 与 slice_report 模式一致；
+模式与 UI 本次请求一致；
+productionOutputWritten = true；
+fallbackApplied = false；
+source.configPath 与本次 Effective Config 一致；
+preview/report 位于同一个当前 session package。
+```
+
+校验失败时不会回退到 Legacy，也不会加载上一次成功的旧包。
+
+### 9.4 性能提示
+
+Global 是高资源开销显式候选。2026-07-24 的 xiao_ma/yecan Release 矩阵中：
+
+```text
+Global 总耗时约为 Legacy 的 4.09x-5.92x；
+Global 峰值内存约为 Legacy 的 8.19x-8.74x。
+```
+
+UI 显示的是本次 `slicer_cli` 实际总耗时和峰值工作集；平台不能采集时显示“未提供”，
+不会拿历史倍数代替本次数据。Legacy 因此继续作为默认模式。
+
+---
+
+## 10. 运行方式
+
+### 10.1 VS Code
 
 在“运行与调试”中选择：
 
@@ -340,7 +415,7 @@ UI 读取逻辑：
 SliceSoft: Debug Qt slicer_debug_ui
 ```
 
-### 9.2 PowerShell
+### 10.2 PowerShell
 
 ```powershell
 cmake -S . -B build
@@ -356,9 +431,9 @@ cmake --build build --config Debug --target slicer_debug_ui
 
 ---
 
-## 10. 常见问题
+## 11. 常见问题
 
-### 10.1 UI target 没生成
+### 11.1 UI target 没生成
 
 原因通常是 CMake 没找到 Qt5 Widgets。检查：
 
@@ -374,7 +449,7 @@ Qt5 Widgets not found; slicer_debug_ui target is skipped.
 
 说明 CLI 仍可构建，但 UI 不会生成。
 
-### 10.2 UI 中没有预览图
+### 11.2 UI 中没有预览图
 
 检查配置：
 
@@ -391,7 +466,7 @@ preview/*.png
 preview/*.ppm
 ```
 
-### 10.3 材料工艺面板为空
+### 11.3 材料工艺面板为空
 
 检查输出包是否存在：
 
@@ -401,7 +476,7 @@ reports/material_process_report.json
 
 只有启用 `materialProcessProfile.enabled = true` 的配置才会产生完整材料工艺报告。
 
-### 10.4 运行切片后 UI 没自动加载输出包
+### 11.4 运行切片后 UI 没自动加载输出包
 
 UI 通过配置文件中的：
 
@@ -415,24 +490,19 @@ UI 通过配置文件中的：
 
 ---
 
-## 11. 当前边界
+## 12. 当前边界
 
-当前 UI 不做：
+当前 UI 仍不做：
 
 - 生产任务系统。
 - 设备通信。
 - 喷头 bitstream。
 - RIP 半色调。
 - ICC / CMYK。
-- OpenVDB。
-- 新切片算法。
 - 完整 3D 模型视图。
-- JSON 表单化参数编辑。
+- 自动修复复杂 confirmed self-intersection 模型。
+- 把 OpenVDB 暴露成第三种产品模式。
+- 静默从 Global 回退到 Legacy。
+- 解除 Global Profile 的材料能力锁定。
 
-后续建议进入 `07A` 时再做：
-
-- 配置 JSON 表单编辑。
-- 材料工艺 profile 可视化编辑。
-- 白墨/光油参数面板。
-- per-layer 图表。
-- preview overlay。
+12E-09A diagnostic UI 和 12E-09C X/Y DPI 是后续独立任务，不属于 09B 已完成范围。

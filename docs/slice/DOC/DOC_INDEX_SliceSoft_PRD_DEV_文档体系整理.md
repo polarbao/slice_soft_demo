@@ -346,6 +346,12 @@ docs/slice/DOC/DOC_PREP_12E_R4_ProductionAdmission准备.md
 docs/slice/DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md
 docs/slice/DOC/DOC_SCHEMA_12E_DualSlicePipelineConfig.md
 docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md
+docs/slice/DOC/DOC_PREP_12E_09B_Qt双模式生产入口准备.md
+docs/slice/PRD/PRD_12E_09B_Qt双模式生产入口与能力锁定.md
+docs/slice/DEV/DEV_12E_09B_Qt双模式ProductionProfile设计.md
+docs/slice/DEMO/DEMO_12E_09B_Qt双模式生产入口验证方案.md
+docs/slice/REPORT/REPORT_12E_09B_Qt双模式生产入口当前状态.md
+docs/slice/DOC/DOC_PREP_12E_09C_XY_DPI准备.md
 docs/slice/DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md
 docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
 docs/slice/DOC/DOC_DECISION_12E_08C_R1_R2_R3_真实模型拓扑修复前置专项.md

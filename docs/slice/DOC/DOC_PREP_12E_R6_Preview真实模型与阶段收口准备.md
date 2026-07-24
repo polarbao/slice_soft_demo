@@ -104,9 +104,9 @@ REPORT_12E 列出实际命令、结果、阻断和后续建议。
 
 ```text
 文档准备：COMPLETE；
-12E-10A：WAIT 12E-09A-05 AND 12E-09B-05 AND 12E-09C；
-12E-10B：PREPARED / WAIT 12E-09B-06 AND 12E-09C；
-12E-10C：PREPARED / 08D EVIDENCE AVAILABLE / WAIT 12E-09B-06 AND 12E-09C FINAL SUMMARY；
+12E-10A：WAIT 12E-09A-05 AND 12E-09C；
+12E-10B：PREPARED / 09B EVIDENCE AVAILABLE / WAIT 12E-09C；
+12E-10C：PREPARED / 08D AND 09B EVIDENCE AVAILABLE / WAIT 12E-09C FINAL SUMMARY；
 12E-10D：WAIT 10A/10B/10C。
 ```
 
@@ -133,9 +133,9 @@ global 诊断结果可单独显示，但必须标注“诊断，未生成可打�
 
 ```text
 12E-10 文档、任务拆分和 Final Closure Matrix schema：COMPLETE；
-12E-10A：等待 12E-09A-05 同层 preview、12E-09B-05 生产结果绑定和 12E-09C 物理比例显示；
-12E-10B：xiao_ma/yecan/3MF 控制/复杂浮雕阻断矩阵已冻结，等待 09B-06 后执行；
-12E-10C：可复用 R4-07-R2 和 08D-06 Release 证据，等待 09B-06 后形成最终汇总；
+12E-10A：09B-05 生产结果绑定已完成，等待 12E-09A-05 同层 preview 和 12E-09C 物理比例显示；
+12E-10B：xiao_ma/yecan/3MF 控制/复杂浮雕阻断矩阵已冻结，09B-06 已完成，等待 09C；
+12E-10C：可复用 R4-07-R2、08D-06 和 09B-06 Release 证据，等待 09C 后形成最终汇总；
 12E-10D：等待 10A/10B/10C 后收口；
-生产 package/RIP：08D 前置已完成，09B UI 路径需重新验证。
+生产 package/RIP：08D 前置和 09B UI 路径均已验证。
 ```

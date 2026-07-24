@@ -1,6 +1,6 @@
 # TASKS 12E-09B Qt 双模式生产入口任务清单
 
-> 状态：09B-04 COMPLETE / 09B-05 READY
+> 状态：09B-01..06 COMPLETE
 > 日期：2026-07-24
 > 规则：每次只执行用户明确授权的原子任务
 
@@ -182,7 +182,7 @@ Quick CI PASS。
 
 ## 6. 09B-05 生产结果与资源提示
 
-状态：READY
+状态：COMPLETE
 
 目标：
 
@@ -197,7 +197,7 @@ Quick CI PASS。
 
 ## 7. 09B-06 阶段收口
 
-状态：PREPARED / WAIT 09B-05
+状态：COMPLETE
 
 目标：
 

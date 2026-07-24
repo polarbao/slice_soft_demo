@@ -1,14 +1,14 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-07-23
-> 适用阶段：Stage 12D COMPLETE；R4-08-R2 GO；12E-08D-01..06 COMPLETE
+> 更新日期：2026-07-24
+> 适用阶段：Stage 12D COMPLETE；12E-09B COMPLETE；12E-09C-01 READY
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06 已完成双模式路由、Global writer-ready Adapter、共享 TIFF/package/preview/report/RIP、受限 RGB+W Profile、lower/internal-void S、surface/outer V，以及 0.01 mm 六 case Release 矩阵。Legacy 默认 GO，两个 Global 显式候选 GO；Global 默认替换 Legacy 因性能与峰值内存保持 NO-GO。复杂浮雕覆盖仍为 0/3 披露缺口。12E-09B-01/02 已完成产品能力目录、fail-closed UI DTO 和原子 Production Effective Config，当前下一原子任务为 09B-03；12E-09A-02..06 保持独立 diagnostic UI 支线。12E-09C X/Y DPI 专项准备已审计完成，等待 09B-06。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06 已完成双模式核心和共享生产写包。12E-09B-01..06 已完成 Qt Legacy/Global 中文入口、Production Effective Config、能力锁定、共享 preflight/process、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release/TIFF/RIP 收口。Legacy 默认 GO，两个 Global Profile 显式 opt-in GO；Global 默认替换 Legacy 因本次实测 4.09x-5.92x 总耗时和 8.19x-8.74x 峰值内存保持 NO-GO。复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-02..06 保持独立 diagnostic UI 支线。12E-09C X/Y DPI 专项准备已审计完成，09C-01 等待明确授权。
 
 ## 目录结构
 
@@ -43,6 +43,7 @@
 | `REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.md` | 12E-09A-01 只读诊断 UI 数据边界与验证状态 |
 | `REPORT/REPORT_12E_09B_01_能力目录与UIDTO当前状态.md` | 12E-09B-01 产品模式/Profile 能力目录与 UI DTO |
 | `REPORT/REPORT_12E_09B_02_ProductionEffectiveConfig当前状态.md` | 12E-09B-02 session Effective Config、能力锁定和审计投影 |
+| `REPORT/REPORT_12E_09B_Qt双模式生产入口当前状态.md` | 12E-09B-01..06 Qt 双模式生产入口、结果身份、资源和 Release 矩阵收口 |
 | `DOC/DOC_DECISION_12E_09A_09B_Qt任务顺序与职责边界.md` | 09A diagnostic 支线与 09B production 主线的职责和依赖 |
 | `PRD/PRD_12E_09B_Qt双模式生产入口与能力锁定.md` | 09B Legacy/Global 产品入口、能力锁定和 no-fallback 需求 |
 | `DOC/DOC_PREP_12E_09C_XY_DPI准备.md` | 09C X=635/Y=600 非等方 DPI 兼容专项准备 |
