@@ -9,6 +9,7 @@
 #include "../widgets/ModelPreflightPanel.h"
 #include "../widgets/PreviewOverlayPanel.h"
 #include "../widgets/PreviewPanel.h"
+#include "../widgets/ProductionModePanel.h"
 #include "../widgets/QuickConfigPanel.h"
 #include "../widgets/ReportPanel.h"
 #include "../widgets/SettingHelpPanel.h"
@@ -31,6 +32,7 @@
 #include <QComboBox>
 #include <QAction>
 #include <QApplication>
+#include <QCheckBox>
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QElapsedTimer>
@@ -532,6 +534,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "workspace-layout-sizes")
     {
         return WorkspaceLayoutSizes(options);
+    }
+    if (options.case_name == "production-mode-selector")
+    {
+        return ProductionModeSelector(options);
     }
     if (options.case_name == "generated-effective-config") {
         return GeneratedEffectiveConfig(options);
@@ -2007,6 +2013,124 @@ int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
         QStringLiteral("workspace-layout-sizes sizes=%1 layer=%2")
             .arg(verifiedSizes.join(QStringLiteral(",")))
             .arg(layerIndex));
+}
+
+int UiSmokeTestRunner::ProductionModeSelector(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    auto* workspaceTabs =
+        window.findChild<QTabWidget*>(QStringLiteral("mainWorkspaceTabs"));
+    auto* modePanel =
+        window.findChild<ProductionModePanel*>(QStringLiteral("productionModePanel"));
+    auto* modeCombo =
+        window.findChild<QComboBox*>(QStringLiteral("productionModeCombo"));
+    auto* profileCombo =
+        window.findChild<QComboBox*>(QStringLiteral("productionProfileCombo"));
+    auto* capabilityLabel =
+        window.findChild<QLabel*>(QStringLiteral("productionCapabilityLabel"));
+    auto* admissionLabel =
+        window.findChild<QLabel*>(QStringLiteral("productionAdmissionLabel"));
+    auto* resourceLabel =
+        window.findChild<QLabel*>(QStringLiteral("productionResourceLabel"));
+    auto* supportCheck =
+        window.findChild<QCheckBox*>(QStringLiteral("supportEnabledCheck"));
+    auto* surfaceVarnishCheck =
+        window.findChild<QCheckBox*>(QStringLiteral("surfaceVarnishEnabledCheck"));
+    auto* openVdbCheck =
+        window.findChild<QCheckBox*>(QStringLiteral("openVdbCandidateCheck"));
+    if (workspaceTabs == nullptr || modePanel == nullptr || modeCombo == nullptr
+        || profileCombo == nullptr || capabilityLabel == nullptr
+        || admissionLabel == nullptr || resourceLabel == nullptr
+        || supportCheck == nullptr || surfaceVarnishCheck == nullptr
+        || openVdbCheck == nullptr)
+    {
+        return fail(QStringLiteral("production-mode-selector 缺少稳定 UI 对象。"));
+    }
+
+    if (modeCombo->currentData().toString() != QStringLiteral("legacy")
+        || modeCombo->currentText() != QStringLiteral("传统切片")
+        || profileCombo->isEnabled()
+        || !supportCheck->isEnabled()
+        || !surfaceVarnishCheck->isEnabled())
+    {
+        return fail(QStringLiteral("production-mode-selector 未保持传统切片默认和能力透传。"));
+    }
+    if (!openVdbCheck->isHidden())
+    {
+        return fail(QStringLiteral("production-mode-selector 普通配置页仍暴露 OpenVDB backend 开关。"));
+    }
+
+    const int globalIndex =
+        modeCombo->findData(QStringLiteral("global_surface_shell"));
+    if (globalIndex < 0)
+    {
+        return fail(QStringLiteral("production-mode-selector 缺少全局纹理壳层模式。"));
+    }
+    modeCombo->setCurrentIndex(globalIndex);
+    QApplication::processEvents();
+    if (!profileCombo->isEnabled()
+        || profileCombo->count() != 2
+        || profileCombo->currentData().toString()
+            != QStringLiteral("global_surface_shell_restricted_candidate")
+        || supportCheck->isEnabled()
+        || surfaceVarnishCheck->isEnabled()
+        || !supportCheck->toolTip().contains(QStringLiteral("不支持 S 支撑"))
+        || !surfaceVarnishCheck->toolTip().contains(QStringLiteral("不支持 V 光油"))
+        || !resourceLabel->text().contains(QStringLiteral("高资源开销"))
+        || !admissionLabel->text().contains(QStringLiteral("需要重新执行")))
+    {
+        return fail(QStringLiteral("production-mode-selector restricted Profile 能力锁定或状态提示错误。"));
+    }
+
+    const int parityIndex = profileCombo->findData(
+        QStringLiteral("global_surface_shell_material_parity_candidate"));
+    profileCombo->setCurrentIndex(parityIndex);
+    QApplication::processEvents();
+    if (parityIndex < 0
+        || !capabilityLabel->text().contains(QStringLiteral("内部镂空支撑"))
+        || supportCheck->isEnabled()
+        || surfaceVarnishCheck->isEnabled()
+        || !supportCheck->toolTip().contains(QStringLiteral("Profile 已锁定"))
+        || !surfaceVarnishCheck->toolTip().contains(QStringLiteral("Profile 已锁定")))
+    {
+        return fail(QStringLiteral("production-mode-selector material-parity Profile 能力锁定错误。"));
+    }
+
+    window.show();
+    workspaceTabs->setCurrentIndex(1);
+    QApplication::processEvents();
+    const QList<QSize> targetSizes{
+        QSize(1280, 720),
+        QSize(1440, 900),
+        QSize(1920, 1080),
+    };
+    QStringList verifiedSizes;
+    for (const QSize& targetSize : targetSizes)
+    {
+        window.resize(targetSize);
+        QApplication::processEvents();
+        if (window.width() > targetSize.width()
+            || window.height() > targetSize.height()
+            || !modePanel->isVisible()
+            || modeCombo->width() < modeCombo->minimumSizeHint().width()
+            || profileCombo->width() < profileCombo->minimumSizeHint().width())
+        {
+            return fail(
+                QStringLiteral(
+                    "production-mode-selector 中文文本在 %1x%2 被截断或模式面板不可见。")
+                    .arg(targetSize.width())
+                    .arg(targetSize.height()));
+        }
+        verifiedSizes.push_back(
+            QStringLiteral("%1x%2").arg(targetSize.width()).arg(targetSize.height()));
+    }
+    window.hide();
+
+    return pass(
+        QStringLiteral(
+            "production-mode-selector default=legacy profiles=2 backendHidden=true sizes=%1")
+            .arg(verifiedSizes.join(QStringLiteral(","))));
 }
 
 int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& options)

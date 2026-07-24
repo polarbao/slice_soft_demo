@@ -14,6 +14,7 @@ class MaterialRoleMappingEditor;
 class SupportEditor;
 class ConfigDiffPanel;
 class QuickConfigPanel;
+class ProductionModePanel;
 class SettingHelpPanel;
 
 class ConfigEditorPanel final : public QWidget {
@@ -36,9 +37,35 @@ public:
      */
     QString EffectiveConfigText() const;
 
+    /**
+     * @brief Return the product mode selected on the ordinary configuration page.
+     * @return Legacy by default or explicitly selected Global Surface Shell.
+     */
+    slicer_core::SlicePipelineMode SelectedProductionMode() const;
+
+    /**
+     * @brief Return the explicitly selected Global Production Profile.
+     * @return Empty for Legacy.
+     */
+    QString SelectedProductionProfileId() const;
+
+    /**
+     * @brief Show a fail-closed production admission state.
+     * @param state Current state.
+     * @param detail Chinese state or blocking detail.
+     */
+    void ShowProductionAdmissionState(
+        ProductionAdmissionState state,
+        const QString& detail);
+
 signals:
     void configPathChanged(const QString& path);
     void statusMessage(const QString& message);
+
+    /**
+     * @brief Emitted after product mode or Global Profile selection changes.
+     */
+    void SigProductionSelectionChanged();
 
 private slots:
     void save();
@@ -61,6 +88,7 @@ private:
     SettingHelpPanel* m_settingHelpPanel{nullptr};
     MaterialProcessProfileEditor* profile_editor_{nullptr};
     QuickConfigPanel* quick_config_panel_{nullptr};
+    ProductionModePanel* m_productionModePanel{nullptr};
     MaterialPolicyEditor* policy_editor_{nullptr};
     MaterialRoleMappingEditor* role_mapping_editor_{nullptr};
     SupportEditor* support_editor_{nullptr};

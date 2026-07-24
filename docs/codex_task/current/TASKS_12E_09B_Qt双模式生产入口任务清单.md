@@ -1,6 +1,6 @@
 # TASKS 12E-09B Qt 双模式生产入口任务清单
 
-> 状态：09B-02 COMPLETE / 09B-03 READY
+> 状态：09B-03 COMPLETE / 09B-04 READY
 > 日期：2026-07-24
 > 规则：每次只执行用户明确授权的原子任务
 
@@ -98,7 +98,7 @@ slicer_debug_ui --self-test PASS。
 
 ## 4. 09B-03 中文选择器与状态
 
-状态：READY
+状态：COMPLETE
 
 目标：
 
@@ -111,9 +111,30 @@ slicer_debug_ui --self-test PASS。
 
 完成标准：self-test、最长中文和三窗口尺寸 smoke。
 
+实际落点：
+
+```text
+新增 ProductionModePanel，默认传统切片，Global 必须显式选择；
+Global 仅显示 restricted/material-parity 两个获准 Profile；
+能力范围、准入/过期、阻断和资源开销均使用中文显示；
+Global Profile 锁定普通材料、支撑和光油控件并显示禁用原因；
+普通配置页隐藏 OpenVDB backend 开关，独立诊断按钮不变；
+新增 production-mode-selector UI smoke。
+```
+
+验证：
+
+```text
+slicer_debug_ui Debug build PASS；
+production-mode-selector 1280x720、1440x900、1920x1080 PASS；
+slicer_debug_ui --self-test PASS；
+production_mode_catalog_unit_tests PASS；
+production_effective_config_unit_tests PASS。
+```
+
 ## 5. 09B-04 一键切片路由与 no-fallback
 
-状态：PREPARED / WAIT 09B-03
+状态：READY
 
 目标：
 

@@ -36,6 +36,7 @@ private:
     int MaterialClosureDiagnostics(const UiSmokeTestOptions& options);
     int OpenVdbUtilitySummary(const UiSmokeTestOptions& options);
     int WorkspaceLayoutSizes(const UiSmokeTestOptions& options);
+    int ProductionModeSelector(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);
     int SliceProgressTiming(const UiSmokeTestOptions& options);
     int ModelPreflightStates(const UiSmokeTestOptions& options);

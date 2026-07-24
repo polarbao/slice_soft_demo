@@ -5,6 +5,7 @@
 #include "MaterialProcessProfileEditor.h"
 #include "MaterialRoleMappingEditor.h"
 #include "QuickConfigPanel.h"
+#include "ProductionModePanel.h"
 #include "SettingHelpPanel.h"
 #include "SupportEditor.h"
 
@@ -45,7 +46,7 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     path_label_->setWordWrap(true);
     dirty_label_ = new QLabel("状态：未修改", this);
     auto* help_label = new QLabel(
-        "功能设置位置：配置 -> 常用。模型缩放、材料、白墨、光油、支撑、预览和 OpenVDB 实验开关都在该页；高级细项分布在“工艺 Profile / 材料策略 / 材料角色 / 支撑”。详细说明见 docs/user_guides/QT_DEBUG_UI_操作手册.md 与 SliceSoft切片策略与材料层说明.md。",
+        "功能设置位置：配置 -> 常用。先选择“传统切片”或“全局纹理壳层”，再设置模型、材料、支撑与预览。OpenVDB 诊断保持在独立高级入口，不作为产品模式。详细说明见 docs/user_guides/QT_DEBUG_UI_操作手册.md 与 SliceSoft切片策略与材料层说明.md。",
         this);
     help_label->setWordWrap(true);
     auto* storage_row = new QHBoxLayout();
@@ -74,6 +75,9 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     actions->addStretch(1);
     layout->addLayout(actions);
 
+    m_productionModePanel = new ProductionModePanel(this);
+    layout->addWidget(m_productionModePanel);
+
     auto* tabs = new QTabWidget(this);
     quick_config_panel_ = new QuickConfigPanel(document_, tabs);
     m_settingHelpPanel = new SettingHelpPanel(tabs);
@@ -93,7 +97,7 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     const int supportTab = tabs->addTab(support_editor_, "支撑");
     const int diffTab = tabs->addTab(diff_panel_, "配置差异");
     const int effectiveTab = tabs->addTab(m_effectiveConfigView, "生效配置");
-    tabs->setTabToolTip(quickTab, "最常用设置：模型路径、输出目录、模型缩放、层高、纹理策略、白墨、光油、支撑、预览、OpenVDB 实验开关。");
+    tabs->setTabToolTip(quickTab, "最常用设置：模型路径、输出目录、模型缩放、层高、纹理策略、白墨、光油、支撑和预览。");
     tabs->setTabToolTip(helpTab, "集中查看设置的中文说明、影响范围、默认值、生产安全等级和相关文档路径。");
     tabs->setTabToolTip(profileTab, "工艺验证 Profile：描述本配置期望哪些材料通道存在，以及白墨/光油的工艺参数。");
     tabs->setTabToolTip(policyTab, "生产材料策略：决定 RGB、白墨、光油如何写入 RGBWSV 通道。");
@@ -115,6 +119,19 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     connect(document_, &ConfigDocument::dirtyChanged, this, &ConfigEditorPanel::updateDirty);
     connect(document_, &ConfigDocument::validationChanged, this, &ConfigEditorPanel::updateValidation);
     connect(storage_mode_, qOverload<int>(&QComboBox::currentIndexChanged), this, &ConfigEditorPanel::updateStorageMode);
+    connect(
+        m_productionModePanel,
+        &ProductionModePanel::SigSelectionChanged,
+        this,
+        [this]()
+        {
+            const ProductionProfileCapability* profile =
+                ProductionModeCatalog::FindProfile(
+                    m_productionModePanel->SelectedProfileId().toStdString());
+            quick_config_panel_->ApplyProductionCapability(profile);
+            emit SigProductionSelectionChanged();
+        });
+    quick_config_panel_->ApplyProductionCapability(nullptr);
 }
 
 bool ConfigEditorPanel::loadConfig(const QString& path) {
@@ -176,6 +193,23 @@ void ConfigEditorPanel::ShowEffectiveConfig(const EffectiveConfigResult& result)
 QString ConfigEditorPanel::EffectiveConfigText() const
 {
     return m_effectiveConfigView == nullptr ? QString{} : m_effectiveConfigView->toPlainText();
+}
+
+slicer_core::SlicePipelineMode ConfigEditorPanel::SelectedProductionMode() const
+{
+    return m_productionModePanel->SelectedMode();
+}
+
+QString ConfigEditorPanel::SelectedProductionProfileId() const
+{
+    return m_productionModePanel->SelectedProfileId();
+}
+
+void ConfigEditorPanel::ShowProductionAdmissionState(
+    const ProductionAdmissionState state,
+    const QString& detail)
+{
+    m_productionModePanel->ShowAdmissionState(state, detail);
 }
 
 void ConfigEditorPanel::save() {

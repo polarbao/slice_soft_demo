@@ -10,6 +10,8 @@
 #include <QSpinBox>
 #include <QWidget>
 
+struct ProductionProfileCapability;
+
 class QuickConfigPanel final : public QWidget
 {
     Q_OBJECT
@@ -26,6 +28,12 @@ public:
      * @brief Refresh all controls from the current document.
      */
     void LoadFromDocument();
+
+    /**
+     * @brief Apply product Profile capability locks to ordinary configuration controls.
+     * @param profile Null for Legacy pass-through; admitted Global Profile otherwise.
+     */
+    void ApplyProductionCapability(const ProductionProfileCapability* profile);
 
 private slots:
     void OnBrowseModel();

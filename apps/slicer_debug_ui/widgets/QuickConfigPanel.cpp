@@ -1,6 +1,7 @@
 #include "QuickConfigPanel.h"
 
 #include "../services/HelpTextProvider.h"
+#include "../services/ProductionModeCatalog.h"
 
 #include <QDir>
 #include <QFileDialog>
@@ -230,17 +231,13 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     ApplyHelp(m_previewIntervalSpin, QStringLiteral("preview.interval"));
     previewForm->addRow("预览间隔", m_previewIntervalSpin);
 
-    auto* experimentalGroup = new QGroupBox("实验", this);
-    experimentalGroup->setToolTip("实验能力入口。OpenVDB 仍是候选/诊断路径，正式生产输出以非 OpenVDB 路径为准。");
-    auto* experimentalForm = new QFormLayout(experimentalGroup);
     m_openVdbEnabledCheck->setObjectName(QStringLiteral("openVdbCandidateCheck"));
-    experimentalForm->addRow(m_openVdbEnabledCheck);
+    m_openVdbEnabledCheck->setVisible(false);
 
     layout->addWidget(basicGroup);
     layout->addWidget(materialGroup);
     layout->addWidget(supportGroup);
     layout->addWidget(previewGroup);
-    layout->addWidget(experimentalGroup);
 
     m_normalizedView = new QPlainTextEdit(this);
     m_normalizedView->setReadOnly(true);
@@ -315,6 +312,91 @@ void QuickConfigPanel::LoadFromDocument()
     m_openVdbEnabledCheck->setChecked(BoolValue({"experimental", "openvdbPipeline", "enabled"}, false));
     UpdateNormalizedView();
     m_loading = false;
+}
+
+void QuickConfigPanel::ApplyProductionCapability(
+    const ProductionProfileCapability* profile)
+{
+    const bool isLegacy = profile == nullptr;
+    const bool supportAllowed = isLegacy
+        || profile->supportscope == ProductionSupportScope::LowerAndInternalVoid;
+    const bool varnishAllowed = isLegacy
+        || profile->varnishscope == ProductionVarnishScope::SurfaceAndOuter;
+
+    const QString profileLockReason = isLegacy
+        ? QString{}
+        : QStringLiteral("当前全局 Production Profile 已锁定该设置；切换回传统切片后可编辑。");
+    const QString unsupportedSupportReason =
+        QStringLiteral("当前全局受限材料 Profile 不支持 S 支撑输出。");
+    const QString unsupportedVarnishReason =
+        QStringLiteral("当前全局受限材料 Profile 不支持 V 光油输出。");
+
+    const QList<QWidget*> profileLockedMaterialControls{
+        m_texturePolicyCombo,
+        m_nonSurfaceRgbPolicyCombo,
+        m_modelFillMaterialCombo,
+        m_whiteEnabledCheck,
+    };
+    for (QWidget* control : profileLockedMaterialControls)
+    {
+        control->setEnabled(isLegacy);
+        if (!isLegacy)
+        {
+            control->setToolTip(profileLockReason);
+        }
+    }
+
+    const QList<QWidget*> supportControls{
+        m_supportEnabledCheck,
+        m_supportPlacementCombo,
+        m_internalVoidEnabledCheck,
+        m_internalVoidMinAreaSpin,
+    };
+    for (QWidget* control : supportControls)
+    {
+        control->setEnabled(isLegacy);
+        if (!isLegacy)
+        {
+            control->setToolTip(
+                supportAllowed ? profileLockReason : unsupportedSupportReason);
+        }
+    }
+
+    const QList<QWidget*> varnishControls{
+        m_varnishEnabledCheck,
+        m_varnishTopLayersSpin,
+        m_surfaceVarnishEnabledCheck,
+        m_surfaceVarnishThicknessSpin,
+        m_outerVarnishEnabledCheck,
+        m_outerVarnishThicknessSpin,
+    };
+    for (QWidget* control : varnishControls)
+    {
+        control->setEnabled(isLegacy);
+        if (!isLegacy)
+        {
+            control->setToolTip(
+                varnishAllowed ? profileLockReason : unsupportedVarnishReason);
+        }
+    }
+
+    if (isLegacy)
+    {
+        ApplyHelp(m_texturePolicyCombo, QStringLiteral("texture.applyMode"));
+        ApplyHelp(m_nonSurfaceRgbPolicyCombo, QStringLiteral("texture.nonSurfaceRgbPolicy"));
+        ApplyHelp(m_modelFillMaterialCombo, QStringLiteral("modelFill.material"));
+        ApplyHelp(m_whiteEnabledCheck, QStringLiteral("materialPolicy.white.enabled"));
+        ApplyHelp(m_supportEnabledCheck, QStringLiteral("support.enabled"));
+        ApplyHelp(m_supportPlacementCombo, QStringLiteral("support.placement"));
+        ApplyHelp(m_internalVoidEnabledCheck, QStringLiteral("support.internalVoid.enabled"));
+        ApplyHelp(m_internalVoidMinAreaSpin, QStringLiteral("support.internalVoid.minAreaPx"));
+        ApplyHelp(m_varnishEnabledCheck, QStringLiteral("materialPolicy.varnish.enabled"));
+        ApplyHelp(m_varnishTopLayersSpin, QStringLiteral("materialPolicy.varnish.topLayers"));
+        ApplyHelp(m_surfaceVarnishEnabledCheck, QStringLiteral("surfaceVarnish.enabled"));
+        ApplyHelp(m_surfaceVarnishThicknessSpin, QStringLiteral("surfaceVarnish.thicknessPx"));
+        ApplyHelp(m_outerVarnishEnabledCheck, QStringLiteral("outerVarnish.enabled"));
+        ApplyHelp(m_outerVarnishThicknessSpin, QStringLiteral("outerVarnish.thicknessMm"));
+    }
 }
 
 void QuickConfigPanel::OnBrowseModel()

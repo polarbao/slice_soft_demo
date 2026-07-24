@@ -399,6 +399,17 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(config_editor_panel_, &ConfigEditorPanel::configPathChanged, config_edit_, &QLineEdit::setText);
     connect(config_editor_panel_, &ConfigEditorPanel::statusMessage, status_label_, &QLabel::setText);
     connect(
+        config_editor_panel_,
+        &ConfigEditorPanel::SigProductionSelectionChanged,
+        this,
+        [this]()
+        {
+            m_modelPreflightController.MarkStale();
+            config_editor_panel_->ShowProductionAdmissionState(
+                ProductionAdmissionState::Stale,
+                QStringLiteral("生产模式或 Profile 已改变，需要重新执行预检。"));
+        });
+    connect(
         &config_document_,
         &ConfigDocument::changed,
         this,
