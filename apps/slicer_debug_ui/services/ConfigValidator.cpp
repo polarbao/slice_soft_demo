@@ -148,7 +148,11 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
         if (!isAllowed(stringAt(modelFill, "material"), materials)) {
             result.errors.push_back("modelFill.material 不是当前认可的模型内部填充材料。");
         }
-        const QSet<QString> scopes{"solid_volume", "below_texture_surface", "all_model"};
+        const QSet<QString> scopes{
+            "solid_volume",
+            "below_texture_surface",
+            "all_model",
+            "complement_of_global_texture_shell"};
         if (!isAllowed(stringAt(modelFill, "scope"), scopes)) {
             result.errors.push_back("modelFill.scope 不是当前认可的模型填充范围。");
         }

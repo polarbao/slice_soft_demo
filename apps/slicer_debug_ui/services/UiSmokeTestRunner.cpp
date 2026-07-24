@@ -2107,7 +2107,7 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     settings.outervarnish.thicknessmm = 0.05;
     settings.preview.interval = 3;
 
-    const QString generatedpath = tempdir.filePath("session/slice_config.generated.json");
+    const QString generatedpath = tempdir.filePath("session/slice_config.effective.json");
     EffectiveConfigRequest request;
     request.profileid = settings.profileid;
     request.templatepath = templatepath;
@@ -2184,7 +2184,7 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
 
     EffectiveConfigRequest rgbOnlyRequest = request;
     rgbOnlyRequest.profileid = QStringLiteral("textured_nail_rgb_only_lower_support");
-    rgbOnlyRequest.generatedconfigpath = tempdir.filePath("rgb-only/slice_config.generated.json");
+    rgbOnlyRequest.generatedconfigpath = tempdir.filePath("rgb-only/slice_config.effective.json");
     rgbOnlyRequest.settings.profileid = rgbOnlyRequest.profileid;
     rgbOnlyRequest.settings.outputdirectory = tempdir.filePath("rgb-only/package");
     rgbOnlyRequest.settings.modelfillmaterial = ModelFillMaterial::Rgb;
@@ -2200,7 +2200,7 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     }
 
     EffectiveConfigRequest invalidrequest = request;
-    invalidrequest.generatedconfigpath = tempdir.filePath("invalid/slice_config.generated.json");
+    invalidrequest.generatedconfigpath = tempdir.filePath("invalid/slice_config.effective.json");
     invalidrequest.settings.outervarnish.enabled = true;
     invalidrequest.settings.outervarnish.thicknessmm = 0.0;
     const EffectiveConfigResult invalidresult = EffectiveConfigGenerator().Generate(invalidrequest);
@@ -2210,7 +2210,7 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     }
 
     EffectiveConfigRequest protocolrequest = request;
-    protocolrequest.generatedconfigpath = tempdir.filePath("bad_protocol/slice_config.generated.json");
+    protocolrequest.generatedconfigpath = tempdir.filePath("bad_protocol/slice_config.effective.json");
     QJsonObject badprotocolroot = protocolrequest.overridedocument.object();
     QJsonObject badprotocoloutput = badprotocolroot.value("output").toObject();
     badprotocoloutput.insert("bitDepth", 16);

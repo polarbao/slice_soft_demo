@@ -1,12 +1,26 @@
 #pragma once
 
 #include "ConfigDiffModel.h"
+#include "ProductionModeCatalog.h"
 #include "SliceSettingsModel.h"
 
 #include <QJsonDocument>
 #include <QString>
 #include <QStringList>
 #include <QVector>
+
+/**
+ * @brief Production mode, Profile, and session audit requested by the Qt UI.
+ */
+struct ProductionEffectiveConfigSelection
+{
+    slicer_core::SlicePipelineMode requestedmode{
+        slicer_core::SlicePipelineMode::Legacy};
+    QString requestedprofileid;
+    QString sourceprofileid;
+    QString sessionid;
+    QString generatedatutc;
+};
 
 /**
  * @brief Input required to create one session-scoped effective configuration.
@@ -19,6 +33,7 @@ struct EffectiveConfigRequest
     QJsonDocument originaldocument;
     QJsonDocument overridedocument;
     SliceSettingsState settings;
+    ProductionEffectiveConfigSelection production;
 };
 
 /**

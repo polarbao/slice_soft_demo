@@ -550,6 +550,16 @@ add_executable(slice_pipeline_router_unit_tests
 
 target_link_libraries(slice_pipeline_router_unit_tests PRIVATE slicer_core)
 
+add_executable(production_mode_catalog_unit_tests
+    apps/slicer_debug_ui/services/ProductionModeCatalog.cpp
+    tests/unit/production_mode_catalog/Main.cpp
+)
+
+target_include_directories(production_mode_catalog_unit_tests PRIVATE
+    apps/slicer_debug_ui/services
+)
+target_link_libraries(production_mode_catalog_unit_tests PRIVATE slicer_core)
+
 add_executable(global_surface_shell_production_layer_adapter_unit_tests
     tests/unit/global_surface_shell_production_layer_adapter/Main.cpp
 )
@@ -783,6 +793,7 @@ add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
 add_test(NAME slice_pipeline_router_unit_tests COMMAND slice_pipeline_router_unit_tests)
+add_test(NAME production_mode_catalog_unit_tests COMMAND production_mode_catalog_unit_tests)
 add_test(NAME global_surface_shell_production_layer_adapter_unit_tests COMMAND global_surface_shell_production_layer_adapter_unit_tests)
 add_test(NAME rgbwsv_production_package_writer_unit_tests COMMAND rgbwsv_production_package_writer_unit_tests)
 add_test(NAME global_surface_shell_production_pipeline_unit_tests COMMAND global_surface_shell_production_pipeline_unit_tests)

@@ -2,11 +2,13 @@
 
 #include "ConfigValidator.h"
 
+#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QSaveFile>
+#include <QSet>
 
 namespace
 {
@@ -61,6 +63,17 @@ QString EngineRoleValue(const SliceEngineRole role)
     return role == SliceEngineRole::OpenVdbUtilityCandidate
         ? QStringLiteral("OpenVDB utility/candidate")
         : QStringLiteral("legacy production");
+}
+
+QString PipelineModeValue(const slicer_core::SlicePipelineMode mode)
+{
+    const ProductionModeCapability* capability =
+        ProductionModeCatalog::FindMode(mode);
+    if (capability == nullptr)
+    {
+        return {};
+    }
+    return QString::fromStdString(capability->stablevalue);
 }
 
 QJsonObject ObjectWithValues(QJsonObject object, const std::initializer_list<std::pair<QString, QJsonValue>>& values)
@@ -173,6 +186,272 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
     root.insert(QStringLiteral("experimental"), experimental);
 }
 
+void CollectChangedLeafPaths(
+    const QString& path,
+    const QJsonValue& currentValue,
+    const QJsonValue& lockedValue,
+    QStringList& paths)
+{
+    if (currentValue == lockedValue)
+    {
+        return;
+    }
+    if (currentValue.isObject() || lockedValue.isObject())
+    {
+        const QJsonObject currentObject = currentValue.toObject();
+        const QJsonObject lockedObject = lockedValue.toObject();
+        QSet<QString> keys;
+        for (auto iterator = currentObject.begin();
+             iterator != currentObject.end();
+             ++iterator)
+        {
+            keys.insert(iterator.key());
+        }
+        for (auto iterator = lockedObject.begin();
+             iterator != lockedObject.end();
+             ++iterator)
+        {
+            keys.insert(iterator.key());
+        }
+        QStringList sortedKeys = keys.values();
+        sortedKeys.sort();
+        for (const QString& key : sortedKeys)
+        {
+            CollectChangedLeafPaths(
+                path.isEmpty() ? key : path + QStringLiteral(".") + key,
+                currentObject.value(key),
+                lockedObject.value(key),
+                paths);
+        }
+        return;
+    }
+    paths.push_back(path);
+}
+
+void RestoreLockedSection(
+    QJsonObject& root,
+    const QJsonObject& baseline,
+    const QString& key,
+    QStringList& disabledOverrides)
+{
+    const QJsonValue currentValue = root.value(key);
+    const QJsonValue lockedValue = baseline.value(key);
+    CollectChangedLeafPaths(
+        key,
+        currentValue,
+        lockedValue,
+        disabledOverrides);
+    if (lockedValue.isUndefined())
+    {
+        root.remove(key);
+    }
+    else
+    {
+        root.insert(key, lockedValue);
+    }
+}
+
+bool ApplyProductionCapabilityLock(
+    QJsonObject& root,
+    const QJsonObject& baseline,
+    const EffectiveConfigRequest& request,
+    QStringList& disabledOverrides,
+    QString& effectiveProfileId,
+    QStringList& errors)
+{
+    const ProductionModeCapability* modeCapability =
+        ProductionModeCatalog::FindMode(request.production.requestedmode);
+    if (modeCapability == nullptr)
+    {
+        errors.push_back(
+            QStringLiteral("请求的生产切片模式不在能力目录中。"));
+        return false;
+    }
+
+    const QString requestedMode =
+        QString::fromStdString(modeCapability->stablevalue);
+    if (request.production.requestedmode
+        == slicer_core::SlicePipelineMode::Legacy)
+    {
+        QJsonObject slicePipeline =
+            root.value(QStringLiteral("slicePipeline")).toObject();
+        slicePipeline.insert(QStringLiteral("mode"), requestedMode);
+        root.insert(QStringLiteral("slicePipeline"), slicePipeline);
+
+        QJsonObject processProfile =
+            root.value(QStringLiteral("materialProcessProfile")).toObject();
+        effectiveProfileId =
+            request.production.requestedprofileid.trimmed();
+        if (effectiveProfileId.isEmpty())
+        {
+            effectiveProfileId =
+                processProfile.value(QStringLiteral("target"))
+                    .toString()
+                    .trimmed();
+        }
+        else
+        {
+            processProfile.insert(
+                QStringLiteral("target"),
+                effectiveProfileId);
+            root.insert(
+                QStringLiteral("materialProcessProfile"),
+                processProfile);
+        }
+        return true;
+    }
+
+    const QString requestedProfileId =
+        request.production.requestedprofileid.trimmed();
+    if (requestedProfileId.isEmpty())
+    {
+        errors.push_back(
+            QStringLiteral("全局纹理壳层必须显式选择获准的 Production Profile。"));
+        return false;
+    }
+    const ProductionProfileCapability* profileCapability =
+        ProductionModeCatalog::FindProfile(
+            requestedProfileId.toStdString());
+    if (profileCapability == nullptr)
+    {
+        errors.push_back(
+            QStringLiteral("请求的 Global Production Profile 未获准：")
+            + requestedProfileId);
+        return false;
+    }
+    if (profileCapability->mode != request.production.requestedmode)
+    {
+        errors.push_back(
+            QStringLiteral("生产模式与 Production Profile 能力目录不匹配。"));
+        return false;
+    }
+
+    const QString baselineMode =
+        baseline.value(QStringLiteral("slicePipeline"))
+            .toObject()
+            .value(QStringLiteral("mode"))
+            .toString();
+    const QString baselineProfileId =
+        baseline.value(QStringLiteral("materialProcessProfile"))
+            .toObject()
+            .value(QStringLiteral("target"))
+            .toString();
+    if (baselineMode != requestedMode
+        || baselineProfileId != requestedProfileId)
+    {
+        errors.push_back(
+            QStringLiteral(
+                "原始只读 Profile 与请求的 Global 模式/Profile 不匹配，拒绝生成生效配置。"));
+        return false;
+    }
+
+    const QStringList lockedSections{
+        QStringLiteral("slicePipeline"),
+        QStringLiteral("texture"),
+        QStringLiteral("modelFill"),
+        QStringLiteral("materialProcessProfile"),
+        QStringLiteral("support"),
+        QStringLiteral("surfaceVarnish"),
+        QStringLiteral("outerVarnish"),
+        QStringLiteral("materialPolicy"),
+        QStringLiteral("materialRoleMapping"),
+        QStringLiteral("materialClosure"),
+        QStringLiteral("experimental"),
+    };
+    for (const QString& key : lockedSections)
+    {
+        RestoreLockedSection(
+            root,
+            baseline,
+            key,
+            disabledOverrides);
+    }
+    disabledOverrides.removeDuplicates();
+    disabledOverrides.sort();
+
+    QJsonObject slicePipeline =
+        root.value(QStringLiteral("slicePipeline")).toObject();
+    slicePipeline.insert(QStringLiteral("mode"), requestedMode);
+    root.insert(QStringLiteral("slicePipeline"), slicePipeline);
+    QJsonObject processProfile =
+        root.value(QStringLiteral("materialProcessProfile")).toObject();
+    processProfile.insert(QStringLiteral("target"), requestedProfileId);
+    root.insert(QStringLiteral("materialProcessProfile"), processProfile);
+    effectiveProfileId = requestedProfileId;
+    return true;
+}
+
+QString EffectiveSessionId(const EffectiveConfigRequest& request)
+{
+    const QString configured = request.production.sessionid.trimmed();
+    if (!configured.isEmpty())
+    {
+        return configured;
+    }
+    return QFileInfo(request.generatedconfigpath)
+        .absoluteDir()
+        .dirName();
+}
+
+QString EffectiveGeneratedAtUtc(
+    const ProductionEffectiveConfigSelection& production)
+{
+    const QString configured = production.generatedatutc.trimmed();
+    return configured.isEmpty()
+        ? QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)
+        : configured;
+}
+
+void ApplyProductionAudit(
+    QJsonObject& root,
+    const EffectiveConfigRequest& request,
+    const QString& effectiveProfileId,
+    const QStringList& disabledOverrides)
+{
+    const QString requestedMode =
+        PipelineModeValue(request.production.requestedmode);
+    QString requestedProfileId =
+        request.production.requestedprofileid.trimmed();
+    if (requestedProfileId.isEmpty())
+    {
+        requestedProfileId = effectiveProfileId;
+    }
+
+    QJsonObject productionAudit{
+        {QStringLiteral("schema"),
+         QStringLiteral(
+             "slicesoft.ui.production_effective_config.12e_09b.1")},
+        {QStringLiteral("sourceProfileId"),
+         request.production.sourceprofileid.trimmed().isEmpty()
+             ? request.profileid
+             : request.production.sourceprofileid},
+        {QStringLiteral("requestedPipelineMode"), requestedMode},
+        {QStringLiteral("effectivePipelineMode"), requestedMode},
+        {QStringLiteral("requestedProductionProfileId"),
+         requestedProfileId},
+        {QStringLiteral("effectiveProductionProfileId"),
+         effectiveProfileId},
+        {QStringLiteral("capabilityLockVersion"),
+         QString::fromUtf8(
+             ProductionModeCatalog::CapabilityLockVersion().data(),
+             static_cast<int>(
+                 ProductionModeCatalog::CapabilityLockVersion().size()))},
+        {QStringLiteral("disabledOverrides"),
+         QJsonArray::fromStringList(disabledOverrides)},
+        {QStringLiteral("sourceModelPath"),
+         QDir::fromNativeSeparators(request.settings.modelpath)},
+        {QStringLiteral("sourceTemplatePath"),
+         QDir::fromNativeSeparators(request.templatepath)},
+        {QStringLiteral("sessionId"), EffectiveSessionId(request)},
+        {QStringLiteral("generatedAtUtc"),
+         EffectiveGeneratedAtUtc(request.production)},
+    };
+    QJsonObject uiAudit =
+        root.value(QStringLiteral("uiAudit")).toObject();
+    uiAudit.insert(QStringLiteral("production"), productionAudit);
+    root.insert(QStringLiteral("uiAudit"), uiAudit);
+}
+
 bool NormalizeModelFillTextureContract(QJsonObject& root)
 {
     const QJsonObject modelFill = root.value(QStringLiteral("modelFill")).toObject();
@@ -281,6 +560,31 @@ EffectiveConfigResult EffectiveConfigGenerator::Generate(const EffectiveConfigRe
             QStringLiteral(
                 "纹理投影到整个实体会占满模型内部区域；生效配置已改为 1 层顶面纹理带，以保留白墨/光油模型内部填充。原始 Profile 模板未修改。"));
     }
+
+    QStringList disabledOverrides;
+    QString effectiveProfileId;
+    if (!ApplyProductionCapabilityLock(
+            root,
+            request.originaldocument.object(),
+            request,
+            disabledOverrides,
+            effectiveProfileId,
+            result.errors))
+    {
+        return result;
+    }
+    if (!disabledOverrides.isEmpty())
+    {
+        result.warnings.push_back(
+            QStringLiteral("Production Profile 能力锁定已清除 %1 个不受支持的 stale override：%2")
+                .arg(disabledOverrides.size())
+                .arg(disabledOverrides.join(QStringLiteral(", "))));
+    }
+    ApplyProductionAudit(
+        root,
+        request,
+        effectiveProfileId,
+        disabledOverrides);
     result.document = QJsonDocument(root);
 
     const ConfigValidationResult configvalidation = ConfigValidator::validate(root);

@@ -1085,7 +1085,7 @@ EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
         + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz");
     const QString relativeSessionRoot = QStringLiteral("output/ui_sessions/") + sessionName;
     const QString generatedPath = QDir(paths_.repo_root).filePath(
-        relativeSessionRoot + QStringLiteral("/slice_config.generated.json"));
+        relativeSessionRoot + QStringLiteral("/slice_config.effective.json"));
     const QString effectivePackage = packageDirOverride.trimmed().isEmpty()
         ? QDir(paths_.repo_root).filePath(relativeSessionRoot + QStringLiteral("/package"))
         : absoluteFromRepo(packageDirOverride);
@@ -1106,6 +1106,10 @@ EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
     request.originaldocument = config_document_.originalDocument();
     request.overridedocument = config_document_.document();
     request.settings = BuildCurrentSettings(resolvedModel, effectivePackage, engineRole);
+    request.production.requestedmode =
+        slicer_core::SlicePipelineMode::Legacy;
+    request.production.sourceprofileid = request.profileid;
+    request.production.sessionid = sessionName;
 
     EffectiveConfigResult result = EffectiveConfigGenerator().Generate(request);
     config_editor_panel_->ShowEffectiveConfig(result);
