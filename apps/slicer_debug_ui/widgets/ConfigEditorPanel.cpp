@@ -212,6 +212,17 @@ void ConfigEditorPanel::ShowProductionAdmissionState(
     m_productionModePanel->ShowAdmissionState(state, detail);
 }
 
+void ConfigEditorPanel::ShowProductionResult(
+    const ProductionModeUiDto& result)
+{
+    m_productionModePanel->ShowProductionResult(result);
+}
+
+void ConfigEditorPanel::ClearProductionResult()
+{
+    m_productionModePanel->ClearProductionResult();
+}
+
 void ConfigEditorPanel::save() {
     if (!document_->save(this)) {
         emit statusMessage("保存失败：" + document_->errorString());

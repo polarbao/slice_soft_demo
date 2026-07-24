@@ -722,6 +722,7 @@ void MainWindow::OnProcessOutput(const QString& text)
     }
     for (const SliceTimingEvent& event : update.timings)
     {
+        m_lastSliceTimingEvent = event;
         m_sliceTimingPanel->ShowTiming(event);
     }
 }
@@ -809,6 +810,7 @@ void MainWindow::handleProcessStarted(const QString& command) {
     status_label_->setText("正在执行：" + current_action_);
     log_panel_->appendCommand(command);
     m_sliceProgressParser.Reset();
+    m_lastSliceTimingEvent.reset();
     if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
     {
         m_sliceTimingPanel->Reset(current_action_);
@@ -818,15 +820,59 @@ void MainWindow::handleProcessStarted(const QString& command) {
 void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed_ms) {
     log_panel_->appendResult(exit_code, elapsed_ms);
     setBusy(false);
-    status_label_->setText(exit_code == 0 ? "通过：" + current_action_ : "失败：" + current_action_);
-    if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
-    {
-        m_sliceTimingPanel->Finish(exit_code == 0, elapsed_ms);
-    }
     ProductionSliceRunCompletion productionCompletion;
     if (current_action_ == QStringLiteral("运行切片"))
     {
         productionCompletion = m_productionRunSession.Complete(exit_code);
+    }
+    bool resultAccepted = exit_code == 0;
+    std::optional<PackageSummary> productionPackage;
+    if (resultAccepted
+        && current_action_ == QStringLiteral("运行切片")
+        && !productionCompletion.request.has_value())
+    {
+        resultAccepted = false;
+        log_panel_->appendError(
+            QStringLiteral("生产切片进程缺少当前 session 身份，拒绝加载输出包。"));
+    }
+    if (resultAccepted
+        && current_action_ == QStringLiteral("运行切片")
+        && productionCompletion.request.has_value())
+    {
+        productionPackage =
+            package_loader_.load(productionCompletion.packagedirtoload);
+        ProductionPackageResultRequest validationRequest;
+        validationRequest.runrequest = *productionCompletion.request;
+        validationRequest.package = *productionPackage;
+        validationRequest.measuredtotalms =
+            m_lastSliceTimingEvent.has_value()
+                && m_lastSliceTimingEvent->totalms > 0.0
+            ? std::optional<double>{m_lastSliceTimingEvent->totalms}
+            : std::optional<double>{static_cast<double>(elapsed_ms)};
+        if (m_lastSliceTimingEvent.has_value()
+            && m_lastSliceTimingEvent->memoryavailable)
+        {
+            validationRequest.measuredpeakworkingsetbytes =
+                m_lastSliceTimingEvent->peakworkingsetbytes;
+        }
+        const ProductionPackageResult validation =
+            m_productionPackageResultValidator.Validate(validationRequest);
+        config_editor_panel_->ShowProductionResult(validation.presentation);
+        if (!validation.valid)
+        {
+            resultAccepted = false;
+            log_panel_->appendError(
+                QStringLiteral("生产结果校验失败：\n")
+                + validation.errors.join(QStringLiteral("\n")));
+        }
+    }
+    status_label_->setText(
+        resultAccepted
+            ? QStringLiteral("通过：") + current_action_
+            : QStringLiteral("失败：") + current_action_);
+    if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
+    {
+        m_sliceTimingPanel->Finish(resultAccepted, elapsed_ms);
     }
     if (exit_code != 0) {
         if (current_action_ == "OpenVDB 候选切片" && !pending_package_.isEmpty())
@@ -837,11 +883,17 @@ void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed
         }
         return;
     }
+    if (!resultAccepted)
+    {
+        status_label_->setText(
+            QStringLiteral("失败：生产包身份或协议校验未通过，未加载预览与报告"));
+        return;
+    }
     if (current_action_ == QStringLiteral("运行切片")
-        && !productionCompletion.packagedirtoload.isEmpty())
+        && productionPackage.has_value())
     {
         package_edit_->setText(productionCompletion.packagedirtoload);
-        loadPackage(productionCompletion.packagedirtoload);
+        LoadPackageSummary(*productionPackage);
     }
     else if (current_action_ == "OpenVDB 候选切片" && !pending_package_.isEmpty()) {
         package_edit_->setText(pending_package_);
@@ -1368,6 +1420,7 @@ void MainWindow::RunGeneratedConfig(const SlicePreflightAction& action)
         return;
     }
 
+    config_editor_panel_->ClearProductionResult();
     config_edit_->setText(action.configpath);
     package_edit_->setText(action.packagedir);
     pending_package_.clear();
@@ -1694,6 +1747,11 @@ void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
 
 void MainWindow::loadPackage(const QString& package_dir) {
     const PackageSummary package = package_loader_.load(absoluteFromRepo(package_dir));
+    LoadPackageSummary(package);
+}
+
+void MainWindow::LoadPackageSummary(const PackageSummary& package)
+{
     package_edit_->setText(package.package_dir);
     m_diagnosticsDock->LoadPackage(package);
     m_previewWorkspace->LoadPackage(package);

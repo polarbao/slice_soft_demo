@@ -296,7 +296,10 @@ void PrintSliceProgress(const slicer_core::SliceRunProgress& progress)
     std::cout.flush();
 }
 
-void PrintSliceTiming(const std::string& engine, const slicer_core::SliceRunProfile& profile)
+void PrintSliceTiming(
+    const std::string& engine,
+    const slicer_core::SliceRunProfile& profile,
+    const slicer_core::ProcessMemoryStats& memory)
 {
     std::cout
         << "SLICE_TIMING"
@@ -313,6 +316,9 @@ void PrintSliceTiming(const std::string& engine, const slicer_core::SliceRunProf
         << " packagePublishMs=" << FormatMilliseconds(profile.package_publish_ms)
         << " outputWriteMs=" << FormatMilliseconds(profile.output_write_ms)
         << " totalMs=" << FormatMilliseconds(profile.total_ms)
+        << " memoryAvailable=" << (memory.available ? 1 : 0)
+        << " workingSetBytes=" << memory.working_set_bytes
+        << " peakWorkingSetBytes=" << memory.peak_working_set_bytes
         << '\n';
     std::cout.flush();
 }
@@ -680,7 +686,10 @@ int RunOpenVdbCandidateSlice(const CliOptions& options)
     std::cout << "  supportPixels: " << result.support_pixels << '\n';
     std::cout << "  shellPixels: " << result.shell_pixels << '\n';
     std::cout << "  nonProduction: " << (result.non_production ? "true" : "false") << '\n';
-    PrintSliceTiming("openvdb-candidate", result.profile);
+    PrintSliceTiming(
+        "openvdb-candidate",
+        result.profile,
+        slicer_core::CaptureProcessMemoryStats());
     return 0;
 }
 
@@ -732,7 +741,10 @@ int main(int argc, char** argv)
                   << '\n';
         std::cout << "  modelPixels: " << result.model_pixel_count << '\n';
         std::cout << "  supportPixels: " << result.support_pixel_count << '\n';
-        PrintSliceTiming(result.effective_pipeline_mode, result.profile);
+        PrintSliceTiming(
+            result.effective_pipeline_mode,
+            result.profile,
+            slicer_core::CaptureProcessMemoryStats());
         return 0;
     }
     catch (const std::exception& error)

@@ -6,6 +6,7 @@
 #include "services/ModelPreflightController.h"
 #include "services/ModelPreflightPresenter.h"
 #include "services/ProcessRunner.h"
+#include "services/ProductionPackageResultValidator.h"
 #include "services/ProductionSliceRunSession.h"
 #include "services/ReportLoader.h"
 #include "services/ScenarioRegistry.h"
@@ -27,6 +28,8 @@
 #include <QMainWindow>
 #include <QPlainTextEdit>
 #include <QPushButton>
+
+#include <optional>
 
 class QComboBox;
 class QCheckBox;
@@ -96,6 +99,7 @@ private:
     bool ShouldShowScenario(const ScenarioEntry& scenario) const;
     void ApplyScenario(const ScenarioEntry& scenario);
     void loadPackage(const QString& package_dir);
+    void LoadPackageSummary(const PackageSummary& package);
     void loadCompareResult(const QString& path);
     void runCommand(const QString& action, const QString& program, const QStringList& args);
     void setBusy(bool busy);
@@ -107,6 +111,7 @@ private:
     ScenarioRegistry m_scenarioRegistry;
     SliceProgressProtocolParser m_sliceProgressParser;
     ProcessRunner runner_;
+    ProductionPackageResultValidator m_productionPackageResultValidator;
     ProductionSliceRunSession m_productionRunSession;
     ModelPreflightController m_modelPreflightController;
     SlicePreflightCoordinator m_slicePreflightCoordinator;
@@ -154,4 +159,5 @@ private:
     LogPanel* log_panel_{nullptr};
     bool m_processBusy{false};
     bool m_suppressPreflightStale{false};
+    std::optional<SliceTimingEvent> m_lastSliceTimingEvent;
 };

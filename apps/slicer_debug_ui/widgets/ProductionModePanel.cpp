@@ -38,6 +38,37 @@ QString AdmissionText(const ProductionAdmissionState state)
     }
 }
 
+QString DisplayMode(const slicer_core::SlicePipelineMode mode)
+{
+    const ProductionModeCapability* capability =
+        ProductionModeCatalog::FindMode(mode);
+    return capability == nullptr
+        ? QStringLiteral("未知")
+        : QString::fromStdString(capability->displaynamezh);
+}
+
+QString FormatDuration(const double milliseconds)
+{
+    if (milliseconds < 1000.0)
+    {
+        return QStringLiteral("%1 ms").arg(milliseconds, 0, 'f', 1);
+    }
+    return QStringLiteral("%1 s").arg(milliseconds / 1000.0, 0, 'f', 2);
+}
+
+QString FormatMemory(const std::uint64_t bytes)
+{
+    constexpr double bytesPerMegabyte = 1024.0 * 1024.0;
+    constexpr double bytesPerGigabyte = bytesPerMegabyte * 1024.0;
+    if (static_cast<double>(bytes) >= bytesPerGigabyte)
+    {
+        return QStringLiteral("%1 GiB")
+            .arg(static_cast<double>(bytes) / bytesPerGigabyte, 0, 'f', 2);
+    }
+    return QStringLiteral("%1 MiB")
+        .arg(static_cast<double>(bytes) / bytesPerMegabyte, 0, 'f', 1);
+}
+
 }  // namespace
 
 ProductionModePanel::ProductionModePanel(QWidget* parent)
@@ -100,6 +131,24 @@ ProductionModePanel::ProductionModePanel(QWidget* parent)
     m_resourceLabel->setWordWrap(true);
     form->addRow(QStringLiteral("资源提示"), m_resourceLabel);
 
+    m_resultIdentityLabel = new QLabel(group);
+    m_resultIdentityLabel->setObjectName(
+        QStringLiteral("productionResultIdentityLabel"));
+    m_resultIdentityLabel->setWordWrap(true);
+    form->addRow(QStringLiteral("本次模式"), m_resultIdentityLabel);
+
+    m_resultOutputLabel = new QLabel(group);
+    m_resultOutputLabel->setObjectName(
+        QStringLiteral("productionResultOutputLabel"));
+    m_resultOutputLabel->setWordWrap(true);
+    form->addRow(QStringLiteral("生产结果"), m_resultOutputLabel);
+
+    m_resultResourceLabel = new QLabel(group);
+    m_resultResourceLabel->setObjectName(
+        QStringLiteral("productionResultResourceLabel"));
+    m_resultResourceLabel->setWordWrap(true);
+    form->addRow(QStringLiteral("本次资源"), m_resultResourceLabel);
+
     layout->addWidget(group);
 
     connect(
@@ -150,6 +199,19 @@ void ProductionModePanel::ShowAdmissionState(
 {
     m_admissionState = state;
     m_admissionDetail = detail;
+    RefreshPresentation();
+}
+
+void ProductionModePanel::ShowProductionResult(
+    const ProductionModeUiDto& result)
+{
+    m_result = result;
+    RefreshPresentation();
+}
+
+void ProductionModePanel::ClearProductionResult()
+{
+    m_result.reset();
     RefreshPresentation();
 }
 
@@ -246,4 +308,49 @@ void ProductionModePanel::RefreshPresentation()
         m_admissionDetail.trimmed().isEmpty()
             ? AdmissionText(m_admissionState)
             : AdmissionText(m_admissionState) + QStringLiteral("：") + m_admissionDetail);
+
+    if (!m_result.has_value())
+    {
+        m_resultIdentityLabel->setText(QStringLiteral("尚无当前 session 生产结果"));
+        m_resultOutputLabel->setText(QStringLiteral("尚未校验"));
+        m_resultResourceLabel->setText(QStringLiteral("尚未测量"));
+        return;
+    }
+
+    const ProductionModeUiDto& result = *m_result;
+    const QString requested = DisplayMode(result.requestedmode);
+    const QString effective = result.effectivemode.has_value()
+        ? DisplayMode(*result.effectivemode)
+        : QStringLiteral("未确认");
+    m_resultIdentityLabel->setText(
+        QStringLiteral("requested=%1；effective=%2；session=%3")
+            .arg(
+                requested,
+                effective,
+                QString::fromStdString(result.sessionid)));
+    m_resultOutputLabel->setText(
+        QStringLiteral("TIFF=%1；fallback=%2；包=%3")
+            .arg(
+                result.productionoutputwritten
+                    ? QStringLiteral("已写入")
+                    : QStringLiteral("未写入"),
+                result.fallbackapplied
+                    ? QStringLiteral("是")
+                    : QStringLiteral("否"),
+                QString::fromStdString(result.packagepath)));
+
+    const QString total = result.measuredtotalms.has_value()
+        ? FormatDuration(*result.measuredtotalms)
+        : QStringLiteral("未提供");
+    const QString peakMemory = result.measuredpeakworkingsetbytes.has_value()
+        ? FormatMemory(*result.measuredpeakworkingsetbytes)
+        : QStringLiteral("未提供");
+    QString resourceText =
+        QStringLiteral("总耗时=%1；峰值内存=%2").arg(total, peakMemory);
+    if (result.resourcecost == ProductionResourceCostLevel::High)
+    {
+        resourceText +=
+            QStringLiteral("；全局纹理壳层为高开销模式，请以本次实测值判断。");
+    }
+    m_resultResourceLabel->setText(resourceText);
 }

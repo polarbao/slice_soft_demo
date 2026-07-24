@@ -293,17 +293,14 @@ function Assert-ProductionPackage
         "$($Case.caseId) print value"
     Assert-Equal $manifest.tiff.emptyValue 255 `
         "$($Case.caseId) empty value"
-    if ($Case.pipelineMode -eq "global_surface_shell")
-    {
-        Assert-Equal $manifest.requestedPipelineMode $Case.pipelineMode `
-            "$($Case.caseId) requested mode"
-        Assert-Equal $manifest.effectivePipelineMode $Case.pipelineMode `
-            "$($Case.caseId) effective mode"
-        Assert-Equal $manifest.productionOutputWritten $true `
-            "$($Case.caseId) production output"
-        Assert-Equal $manifest.fallbackApplied $false `
-            "$($Case.caseId) fallback"
-    }
+    Assert-Equal $manifest.requestedPipelineMode $Case.pipelineMode `
+        "$($Case.caseId) requested mode"
+    Assert-Equal $manifest.effectivePipelineMode $Case.pipelineMode `
+        "$($Case.caseId) effective mode"
+    Assert-Equal $manifest.productionOutputWritten $true `
+        "$($Case.caseId) production output"
+    Assert-Equal $manifest.fallbackApplied $false `
+        "$($Case.caseId) fallback"
     Assert-Equal @($manifest.layers).Count $manifest.grid.layerCount `
         "$($Case.caseId) complete layer list"
 
@@ -477,6 +474,8 @@ foreach ($case in $cases)
         caseId = $case.caseId
         modelFamily = $case.modelFamily
         modelPath = $paths.modelPath
+        configPath = $paths.configPath
+        packagePath = $paths.packagePath
         pipelineMode = $case.pipelineMode
         profile = $case.profile
         layerThicknessMm = 0.01

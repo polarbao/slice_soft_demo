@@ -39,6 +39,15 @@ int ReadInt(const QMap<QString, QString>& fields, const QString& key)
     return valid ? value : 0;
 }
 
+std::uint64_t ReadUnsigned(
+    const QMap<QString, QString>& fields,
+    const QString& key)
+{
+    bool valid{false};
+    const qulonglong value = fields.value(key).toULongLong(&valid);
+    return valid ? static_cast<std::uint64_t>(value) : 0U;
+}
+
 void ParseLine(const QString& line, SliceProtocolUpdate* update)
 {
     if (line.startsWith(QLatin1String(kProgressPrefix)))
@@ -77,6 +86,12 @@ void ParseLine(const QString& line, SliceProtocolUpdate* update)
     event.packagepublishms = ReadDouble(fields, QStringLiteral("packagePublishMs"));
     event.outputwritems = ReadDouble(fields, QStringLiteral("outputWriteMs"));
     event.totalms = ReadDouble(fields, QStringLiteral("totalMs"));
+    event.memoryavailable =
+        ReadInt(fields, QStringLiteral("memoryAvailable")) != 0;
+    event.workingsetbytes =
+        ReadUnsigned(fields, QStringLiteral("workingSetBytes"));
+    event.peakworkingsetbytes =
+        ReadUnsigned(fields, QStringLiteral("peakWorkingSetBytes"));
     if (!event.engine.isEmpty())
     {
         update->timings.push_back(event);

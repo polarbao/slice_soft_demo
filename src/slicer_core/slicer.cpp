@@ -4376,6 +4376,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
 
     const Json slice_report = Json::object({
+        {"requestedPipelineMode", "legacy"},
+        {"effectivePipelineMode", "legacy"},
+        {"productionAcceptance", "legacy_production"},
+        {"productionOutputWritten", options.write_tiff_layers},
+        {"fallbackApplied", false},
         {"slicingMode", config.slicing_mode},
         {"grid",
          Json::object({
@@ -4723,11 +4728,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const Json manifest = Json::object({
         {"schema", "p0.rgbwsv.2"},
         {"schemaVersion", "p0.rgbwsv.2"},
+        {"requestedPipelineMode", "legacy"},
+        {"effectivePipelineMode", "legacy"},
+        {"productionAcceptance", "legacy_production"},
+        {"productionOutputWritten", options.write_tiff_layers},
+        {"fallbackApplied", false},
         {"source",
          Json::object({
              {"configPath", config_path.generic_string()},
              {"modelPath", model_report.model_path.generic_string()},
              {"format", model_report.format},
+             {"engine", "legacy"},
          })},
         {"grid",
          Json::object({

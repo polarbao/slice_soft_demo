@@ -76,6 +76,7 @@ SliceTimingPanel::SliceTimingPanel(QWidget* parent)
     m_reportValue = MakeValueLabel(this);
     m_outputWriteValue = MakeValueLabel(this);
     m_totalValue = MakeValueLabel(this);
+    m_peakMemoryValue = MakeValueLabel(this);
     AddTimingRow(timingLayout, 0, QStringLiteral("模型加载"), m_modelLoadValue);
     AddTimingRow(timingLayout, 1, QStringLiteral("切片处理"), m_sliceProcessingValue);
     AddTimingRow(timingLayout, 2, QStringLiteral("TIFF 保存"), m_tiffWriteValue);
@@ -83,6 +84,7 @@ SliceTimingPanel::SliceTimingPanel(QWidget* parent)
     AddTimingRow(timingLayout, 4, QStringLiteral("报告处理"), m_reportValue);
     AddTimingRow(timingLayout, 5, QStringLiteral("切片保存合计"), m_outputWriteValue);
     AddTimingRow(timingLayout, 6, QStringLiteral("总耗时"), m_totalValue);
+    AddTimingRow(timingLayout, 7, QStringLiteral("峰值内存"), m_peakMemoryValue);
     rootLayout->addLayout(timingLayout);
 
     m_sliceProcessingValue->setToolTip(
@@ -93,6 +95,8 @@ SliceTimingPanel::SliceTimingPanel(QWidget* parent)
         QStringLiteral("报告对象生成与 JSON 写盘耗时；其中写盘部分也包含在“切片保存合计”中，各行不能直接全部相加。"));
     m_totalValue->setToolTip(
         QStringLiteral("切片核心返回的整次运行墙钟耗时；若细分数据不可用，则显示界面等待的进程耗时。"));
+    m_peakMemoryValue->setToolTip(
+        QStringLiteral("本次 slicer_cli 进程报告的实际峰值工作集；平台不支持采集时显示“未提供”。"));
 }
 
 void SliceTimingPanel::Reset(const QString& action)
@@ -111,7 +115,8 @@ void SliceTimingPanel::Reset(const QString& action)
         m_previewWriteValue,
         m_reportValue,
         m_outputWriteValue,
-        m_totalValue};
+        m_totalValue,
+        m_peakMemoryValue};
     for (QLabel* value : values)
     {
         value->setText(QStringLiteral("--"));
@@ -138,6 +143,10 @@ void SliceTimingPanel::ShowTiming(const SliceTimingEvent& event)
     SetValue(m_reportValue, event.reportbuildms + event.reportwritems);
     SetValue(m_outputWriteValue, event.outputwritems);
     SetValue(m_totalValue, event.totalms);
+    m_peakMemoryValue->setText(
+        event.memoryavailable
+            ? FormatBytes(event.peakworkingsetbytes)
+            : QStringLiteral("未提供"));
 }
 
 void SliceTimingPanel::Finish(const bool success, const qint64 processelapsedms)
@@ -184,6 +193,19 @@ QString SliceTimingPanel::FormatDuration(const double milliseconds)
     const int minutes = totalSeconds / 60;
     const int seconds = totalSeconds % 60;
     return QStringLiteral("%1 分 %2 秒").arg(minutes).arg(seconds);
+}
+
+QString SliceTimingPanel::FormatBytes(const std::uint64_t bytes)
+{
+    constexpr double bytesPerMegabyte = 1024.0 * 1024.0;
+    constexpr double bytesPerGigabyte = bytesPerMegabyte * 1024.0;
+    if (static_cast<double>(bytes) >= bytesPerGigabyte)
+    {
+        return QStringLiteral("%1 GiB")
+            .arg(static_cast<double>(bytes) / bytesPerGigabyte, 0, 'f', 2);
+    }
+    return QStringLiteral("%1 MiB")
+        .arg(static_cast<double>(bytes) / bytesPerMegabyte, 0, 'f', 1);
 }
 
 QString SliceTimingPanel::PhaseText(const SliceProgressEvent& event)

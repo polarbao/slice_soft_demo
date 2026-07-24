@@ -58,6 +58,17 @@ public:
         ProductionAdmissionState state,
         const QString& detail);
 
+    /**
+     * @brief Show the validated production package result in the mode panel.
+     * @param result Current session production result.
+     */
+    void ShowProductionResult(const ProductionModeUiDto& result);
+
+    /**
+     * @brief Clear the previous production result before starting a new run.
+     */
+    void ClearProductionResult();
+
 signals:
     void configPathChanged(const QString& path);
     void statusMessage(const QString& message);

@@ -27,6 +27,7 @@ struct ProductionSliceRunCompletion
     bool success{false};
     bool fallbackapplied{false};
     QString packagedirtoload;
+    std::optional<ProductionSliceRunRequest> request;
 };
 
 /**

@@ -2,6 +2,7 @@
 
 #include "../services/SliceProgressProtocolParser.h"
 
+#include <cstdint>
 #include <QElapsedTimer>
 #include <QWidget>
 
@@ -50,6 +51,7 @@ public:
 
 private:
     static QString FormatDuration(double milliseconds);
+    static QString FormatBytes(std::uint64_t bytes);
     static QString PhaseText(const SliceProgressEvent& event);
     static QString EngineText(const QString& engine);
     void SetValue(QLabel* label, double milliseconds);
@@ -64,6 +66,7 @@ private:
     QLabel* m_reportValue{nullptr};
     QLabel* m_outputWriteValue{nullptr};
     QLabel* m_totalValue{nullptr};
+    QLabel* m_peakMemoryValue{nullptr};
     QTimer* m_refreshTimer{nullptr};
     QElapsedTimer m_elapsedTimer;
     bool m_hasDetailedTiming{false};

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <QString>
 #include <QVector>
 
@@ -33,6 +34,9 @@ struct SliceTimingEvent
     double packagepublishms{0.0};
     double outputwritems{0.0};
     double totalms{0.0};
+    bool memoryavailable{false};
+    std::uint64_t workingsetbytes{0};
+    std::uint64_t peakworkingsetbytes{0};
 };
 
 /**

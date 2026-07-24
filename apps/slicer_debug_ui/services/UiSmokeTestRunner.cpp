@@ -2033,6 +2033,15 @@ int UiSmokeTestRunner::ProductionModeSelector(
         window.findChild<QLabel*>(QStringLiteral("productionAdmissionLabel"));
     auto* resourceLabel =
         window.findChild<QLabel*>(QStringLiteral("productionResourceLabel"));
+    auto* resultIdentityLabel =
+        window.findChild<QLabel*>(
+            QStringLiteral("productionResultIdentityLabel"));
+    auto* resultOutputLabel =
+        window.findChild<QLabel*>(
+            QStringLiteral("productionResultOutputLabel"));
+    auto* resultResourceLabel =
+        window.findChild<QLabel*>(
+            QStringLiteral("productionResultResourceLabel"));
     auto* supportCheck =
         window.findChild<QCheckBox*>(QStringLiteral("supportEnabledCheck"));
     auto* surfaceVarnishCheck =
@@ -2042,6 +2051,8 @@ int UiSmokeTestRunner::ProductionModeSelector(
     if (workspaceTabs == nullptr || modePanel == nullptr || modeCombo == nullptr
         || profileCombo == nullptr || capabilityLabel == nullptr
         || admissionLabel == nullptr || resourceLabel == nullptr
+        || resultIdentityLabel == nullptr || resultOutputLabel == nullptr
+        || resultResourceLabel == nullptr
         || supportCheck == nullptr || surfaceVarnishCheck == nullptr
         || openVdbCheck == nullptr)
     {
@@ -2095,6 +2106,30 @@ int UiSmokeTestRunner::ProductionModeSelector(
         || !surfaceVarnishCheck->toolTip().contains(QStringLiteral("Profile 已锁定")))
     {
         return fail(QStringLiteral("production-mode-selector material-parity Profile 能力锁定错误。"));
+    }
+
+    ProductionModeUiDto result;
+    result.requestedmode =
+        slicer_core::SlicePipelineMode::GlobalSurfaceShell;
+    result.effectivemode =
+        slicer_core::SlicePipelineMode::GlobalSurfaceShell;
+    result.productionoutputwritten = true;
+    result.fallbackapplied = false;
+    result.resourcecost = ProductionResourceCostLevel::High;
+    result.measuredtotalms = 1525.0;
+    result.measuredpeakworkingsetbytes = 96U * 1024U * 1024U;
+    result.sessionid = "ui-smoke-session";
+    result.packagepath = "output/ui-smoke/package";
+    modePanel->ShowProductionResult(result);
+    if (!resultIdentityLabel->text().contains(QStringLiteral("全局纹理壳层"))
+        || !resultIdentityLabel->text().contains(QStringLiteral("ui-smoke-session"))
+        || !resultOutputLabel->text().contains(QStringLiteral("TIFF=已写入"))
+        || !resultOutputLabel->text().contains(QStringLiteral("fallback=否"))
+        || !resultResourceLabel->text().contains(QStringLiteral("1.52 s"))
+        || !resultResourceLabel->text().contains(QStringLiteral("96.0 MiB"))
+        || !resultResourceLabel->text().contains(QStringLiteral("高开销")))
+    {
+        return fail(QStringLiteral("production-mode-selector 未显示当前生产结果与实际资源。"));
     }
 
     window.show();
@@ -2365,7 +2400,8 @@ int UiSmokeTestRunner::SliceProgressTiming(const UiSmokeTestOptions& options)
         "sedMs=1234.500\n"
         "SLICE_TIMING engine=legacy profileLevel=detailed configLoadMs=1.000 modelLoadMs=20.000 "
         "sliceProcessingMs=800.000 layerComputeMs=500.000 tiffWriteMs=200.000 previewWriteMs=100.000 "
-        "reportBuildMs=30.000 reportWriteMs=40.000 packagePublishMs=0.000 outputWriteMs=340.000 totalMs=1191.000\n"));
+        "reportBuildMs=30.000 reportWriteMs=40.000 packagePublishMs=0.000 outputWriteMs=340.000 totalMs=1191.000 "
+        "memoryAvailable=1 workingSetBytes=50331648 peakWorkingSetBytes=100663296\n"));
     if (update.progress.size() != 1 || update.timings.size() != 1)
     {
         return fail(QStringLiteral("切片进度协议事件数量错误。"));
@@ -2382,7 +2418,9 @@ int UiSmokeTestRunner::SliceProgressTiming(const UiSmokeTestOptions& options)
     if (timing.engine != QStringLiteral("legacy")
         || qAbs(timing.sliceprocessingms - 800.0) > 0.001
         || qAbs(timing.outputwritems - 340.0) > 0.001
-        || qAbs(timing.totalms - 1191.0) > 0.001)
+        || qAbs(timing.totalms - 1191.0) > 0.001
+        || !timing.memoryavailable
+        || timing.peakworkingsetbytes != 100663296U)
     {
         return fail(QStringLiteral("切片耗时字段解析错误。"));
     }

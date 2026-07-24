@@ -2,6 +2,7 @@
 
 #include "../services/ProductionModeCatalog.h"
 
+#include <optional>
 #include <QString>
 #include <QWidget>
 
@@ -47,6 +48,17 @@ public:
      */
     void ShowAdmissionState(ProductionAdmissionState state, const QString& detail);
 
+    /**
+     * @brief Show the validated result of the current production session.
+     * @param result Fail-closed production package and resource presentation.
+     */
+    void ShowProductionResult(const ProductionModeUiDto& result);
+
+    /**
+     * @brief Clear any previous package result before a new run starts.
+     */
+    void ClearProductionResult();
+
 signals:
     /**
      * @brief Emitted after the product mode or Global Profile changes.
@@ -67,7 +79,11 @@ private:
     QLabel* m_admissionLabel{nullptr};
     QLabel* m_blockingLabel{nullptr};
     QLabel* m_resourceLabel{nullptr};
+    QLabel* m_resultIdentityLabel{nullptr};
+    QLabel* m_resultOutputLabel{nullptr};
+    QLabel* m_resultResourceLabel{nullptr};
     ProductionAdmissionState m_admissionState{
         ProductionAdmissionState::Pending};
     QString m_admissionDetail;
+    std::optional<ProductionModeUiDto> m_result;
 };

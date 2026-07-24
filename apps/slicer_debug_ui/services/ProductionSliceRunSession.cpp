@@ -51,6 +51,7 @@ ProductionSliceRunCompletion ProductionSliceRunSession::Complete(
     if (completion.success)
     {
         completion.packagedirtoload = m_activeRequest->packagedir;
+        completion.request = m_activeRequest;
     }
     Invalidate();
     return completion;
