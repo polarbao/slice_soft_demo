@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PackageLoader.h"
+#include "PreviewPhysicalScale.h"
 
 #include <QColor>
 #include <QJsonObject>
@@ -72,6 +73,7 @@ struct LayerPreviewPackage
     QMap<int, LayerPreviewLayerStats> layerstats;
     QMap<QString, QColor> pseudocolors;
     LayerPreviewSemanticPolicy semanticpolicy;
+    PreviewPhysicalScale physicalscale;
 };
 
 class LayerPreviewDataProvider

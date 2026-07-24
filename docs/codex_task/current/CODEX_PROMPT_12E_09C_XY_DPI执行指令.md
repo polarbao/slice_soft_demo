@@ -1,6 +1,6 @@
 # CODEX_PROMPT 12E-09C X/Y DPI 执行指令
 
-> 状态：PREPARATION COMPLETE / 09C-01 READY
+> 状态：09C-01..05 COMPLETE / 09C-06 READY
 
 执行前阅读：
 
@@ -27,3 +27,11 @@ p0.rgbwsv.2、RGBWSV、uint8、black_is_print 不变。
 ```
 
 一次只执行用户明确授权的一个 09C 原子任务。每个任务先写失败测试，再实现最小改动并运行定向验证。
+
+2026-07-24 用户明确授权 09C-03 并允许继续后续任务。09C-03 已完成两引擎 Raster 和外侧
+光油物理离散；提前实现的 09C-04 Qt 控件与一键切片透传通过端到端 Gate；09C-05 已完成
+Layer/Overlay Preview 物理比例显示和缺失元数据降级提示。
+
+2026-07-24 已完成 09C-02：RIP Reader 和共享 RGBWSV writer 接受并严格校验合法非等方
+DPI、独立物理像素字段及可选冗余数组；显式 600/600 保持兼容，bad package 使用稳定
+`E_GRID_INVALID` 失败。当前下一原子任务为 09C-06 生产矩阵与阶段收口。

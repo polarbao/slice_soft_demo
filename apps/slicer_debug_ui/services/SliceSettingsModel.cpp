@@ -97,6 +97,14 @@ SliceSettingsValidationResult SliceSettingsModel::Validate() const
     {
         result.errors.push_back(QStringLiteral("输出目录不能为空。"));
     }
+    if (!slicer_core::IsSupportedOutputDpi(m_state.dpix))
+    {
+        result.errors.push_back(QStringLiteral("X 方向 DPI 必须在 72..2400 范围内。"));
+    }
+    if (!slicer_core::IsSupportedOutputDpi(m_state.dpiy))
+    {
+        result.errors.push_back(QStringLiteral("Y 方向 DPI 必须在 72..2400 范围内。"));
+    }
     if (!std::isfinite(m_state.layerthicknessmm) || m_state.layerthicknessmm <= 0.0)
     {
         result.errors.push_back(QStringLiteral("层高必须是大于 0 的有限数值。"));

@@ -92,6 +92,7 @@ void PreviewOverlayPanel::loadPackage(const PackageSummary& package) {
     m_layerZMm.clear();
     m_layerSemanticSummary.clear();
     m_sourcePolicySummary.clear();
+    m_physicalScale = PreviewPhysicalScale{};
     m_requestedLayerIndex = -1;
     QSet<QString> seen;
     const auto append_image = [this, &seen](const PreviewImage& image) {
@@ -189,6 +190,11 @@ bool PreviewOverlayPanel::canComposeMode(const QString& mode) const
 QString PreviewOverlayPanel::StatusForTest() const
 {
     return status_ == nullptr ? QString() : status_->text();
+}
+
+QSize PreviewOverlayPanel::PhysicalDisplaySizeForTest() const
+{
+    return PhysicalDisplaySize(composeCurrent().size());
 }
 
 QVector<int> PreviewOverlayPanel::LayerIndices() const
@@ -409,6 +415,10 @@ void PreviewOverlayPanel::LoadLayerMetadata(const PackageSummary& package)
 void PreviewOverlayPanel::ReadLayerMetadataObject(const QJsonObject& root)
 {
     ReadSourcePolicyObject(root);
+    m_physicalScale = PreviewPhysicalScaleResolver::Merge(
+        m_physicalScale,
+        PreviewPhysicalScaleResolver::Resolve(
+            root.value(QStringLiteral("grid")).toObject()));
     QJsonArray layers = root.value("layers").toArray();
     if (layers.isEmpty())
     {
@@ -650,13 +660,22 @@ QImage PreviewOverlayPanel::ComposeForLayer(const QString& mode, const int layer
 }
 
 void PreviewOverlayPanel::applyPixmap(const QImage& image) {
-    QSize target_size = image.size();
+    const QSize physicalSize = PhysicalDisplaySize(image.size());
+    QSize target_size = physicalSize;
     if (fit_) {
-        target_size = image.size().scaled(scroll_area_->viewport()->size(), Qt::KeepAspectRatio);
+        target_size = physicalSize.scaled(
+            scroll_area_->viewport()->size(),
+            Qt::KeepAspectRatio);
     } else {
-        target_size = QSize(static_cast<int>(image.width() * zoom_), static_cast<int>(image.height() * zoom_));
+        target_size = QSize(
+            static_cast<int>(physicalSize.width() * zoom_),
+            static_cast<int>(physicalSize.height() * zoom_));
     }
-    image_label_->setPixmap(QPixmap::fromImage(image).scaled(target_size, Qt::KeepAspectRatio, Qt::FastTransformation));
+    image_label_->setPixmap(
+        QPixmap::fromImage(image).scaled(
+            target_size,
+            Qt::IgnoreAspectRatio,
+            Qt::FastTransformation));
     image_label_->resize(target_size);
     const int layer = CurrentLayerIndex();
     QString layerText = QString("layer=%1").arg(layer);
@@ -672,5 +691,14 @@ void PreviewOverlayPanel::applyPixmap(const QImage& image) {
                          .arg(image.width())
                          .arg(image.height())
                      + (m_layerSemanticSummary.contains(layer) ? "  " + m_layerSemanticSummary.value(layer) : QString())
-                     + (m_sourcePolicySummary.isEmpty() ? QString() : "  " + m_sourcePolicySummary));
+                     + (m_sourcePolicySummary.isEmpty() ? QString() : "  " + m_sourcePolicySummary)
+                     + "  " + PreviewPhysicalScaleResolver::Summary(m_physicalScale));
+}
+
+QSize PreviewOverlayPanel::PhysicalDisplaySize(
+    const QSize& rasterSize) const
+{
+    return PreviewPhysicalScaleResolver::DisplaySize(
+        rasterSize,
+        m_physicalScale);
 }

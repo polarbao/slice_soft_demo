@@ -1,9 +1,9 @@
 # DEV 12E-09C X/Y DPI 配置、Reader 与 UI 设计
 
-> 状态：READY FOR IMPLEMENTATION AFTER 09B
-> 日期：2026-07-23
+> 状态：IN PROGRESS / 09C-01..05 COMPLETE / 09C-06 READY
+> 日期：2026-07-24
 
-## 1. 当前实现审计
+## 1. 初始实现审计
 
 | 位置 | 当前状态 | 09C 改造 |
 |---|---|---|

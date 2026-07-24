@@ -190,7 +190,7 @@ build/Debug/slicer_cli.exe --config <config.json>
 | `input.modelPath` | 输入模型路径，相对配置文件目录解析。 |
 | `input.format` | 输入格式，常用 `auto`。 |
 | `output.packageDir` | 输出包目录，UI 运行切片后会自动尝试加载该目录。 |
-| `output.dpiX / dpiY` | X/Y 方向 DPI。 |
+| `output.dpiX / dpiY` | X/Y 方向 DPI。UI 入口为“配置 -> 常用 -> 基础 -> 输出分辨率”；X、Y 可独立设置，范围均为 72..2400。默认值为 X=635、Y=600，显式旧配置仍按文件中的值显示。 |
 | `output.layerThicknessMm` | 层厚，单位 mm。 |
 | `output.channelOrder` | 通道顺序，当前固定 `R G B W S V`。 |
 | `output.bitDepth` | 输出位深，当前固定 8。 |
@@ -203,6 +203,13 @@ build/Debug/slicer_cli.exe --config <config.json>
 | `support` | 支撑生成配置。 |
 | `relief` | 浮雕 heightfield 采样配置。 |
 | `preview` | 预览图输出配置。 |
+
+> “输出分辨率”下方会实时显示 X/Y 物理像素尺寸，计算公式为 `25.4 / DPI`，单位为 `mm/px`。DPI 控制输出栅格密度，不等同于模型缩放。修改后需要重新切片，当前输出包和准入结果会标记为过期。
+>
+> 层预览和叠加预览读取输出包 `manifest.grid` 的两轴物理像素尺寸，并按真实物理宽高显示。
+> 635/600 不再按方形像素直接拉伸；旧包缺失物理元数据时，状态栏会明确提示“按方形像素显示”。
+> 外侧光油厚度仍按 mm 配置，但 X/Y 离散半径分别依据当前 DPI 计算；旧字段
+> `outerVarnish.pixelPitchUm` 只保留配置兼容，不再作为生产物理真源。
 
 ### 5.2 配置目录功能
 
@@ -505,4 +512,5 @@ UI 通过配置文件中的：
 - 静默从 Global 回退到 Legacy。
 - 解除 Global Profile 的材料能力锁定。
 
-12E-09A diagnostic UI 和 12E-09C X/Y DPI 是后续独立任务，不属于 09B 已完成范围。
+12E-09A diagnostic UI 仍是独立待办。12E-09C 已完成 09C-01..05，当前等待 09C-06
+生产矩阵与阶段收口；它不改变 09B 已冻结的双模式产品边界。

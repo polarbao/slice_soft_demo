@@ -1,7 +1,7 @@
 # DEMO 12E-09C X/Y DPI 验证方案
 
-> 状态：PREPARED
-> 日期：2026-07-23
+> 状态：IN PROGRESS / 09C-01..05 PASS / 09C-06 READY
+> 日期：2026-07-24
 
 ## 1. 配置矩阵
 

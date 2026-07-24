@@ -103,6 +103,18 @@ public:
      */
     QColor PseudoColor(const QString& channel) const;
 
+    /**
+     * @brief Return the physical-aspect-corrected base display size.
+     * @return Display size before fit-to-window or zoom scaling.
+     */
+    QSize PhysicalDisplaySizeForTest() const;
+
+    /**
+     * @brief Return current status text for smoke tests.
+     * @return User-visible layer preview status.
+     */
+    QString StatusForTest() const;
+
 signals:
     /**
      * @brief Emitted when the user selects a different real package layer.
@@ -150,6 +162,7 @@ private:
     QString BuildSourcePolicyText() const;
     QString ApplyPixelProbe(int displayX, int displayY);
     void ClearPixelProbe();
+    QSize PhysicalDisplaySize() const;
 
     LayerPreviewDataProvider m_provider;
     LayerPreviewPackage m_package;

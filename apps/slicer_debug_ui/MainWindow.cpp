@@ -2,6 +2,7 @@
 
 #include "services/ProductionProfileSourceResolver.h"
 #include "widgets/MaterialClosurePanel.h"
+#include "slicer_core/config.h"
 
 #include <QAction>
 #include <QAbstractItemView>
@@ -1137,6 +1138,10 @@ SliceSettingsState MainWindow::BuildCurrentSettings(
     settings.outputdirectory = packageDirOverride.trimmed().isEmpty()
         ? configuredPackage
         : packageDirOverride;
+    settings.dpix = config_document_.value({"output", "dpiX"})
+                       .toInt(slicer_core::kDefaultOutputDpiX);
+    settings.dpiy = config_document_.value({"output", "dpiY"})
+                       .toInt(slicer_core::kDefaultOutputDpiY);
     settings.layerthicknessmm = config_document_.value({"output", "layerThicknessMm"})
                                     .toDouble(settings.layerthicknessmm);
 
@@ -1309,6 +1314,10 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
         + "_openvdb_candidate_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
     const QString sessionRoot = "output/ui_sessions/" + sessionName;
     const QString relativePackageDir = sessionRoot + "/package";
+    const int dpiX = config_document_.value({"output", "dpiX"})
+                         .toInt(slicer_core::kDefaultOutputDpiX);
+    const int dpiY = config_document_.value({"output", "dpiY"})
+                         .toInt(slicer_core::kDefaultOutputDpiY);
 
     QDir repo(paths_.repo_root);
     if (!repo.mkpath(sessionRoot))
@@ -1323,8 +1332,8 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                 QJsonObject{{"modelPath", QDir::fromNativeSeparators(modelInfo.absoluteFilePath())}, {"format", "auto"}});
     root.insert("output",
                 QJsonObject{{"packageDir", relativePackageDir},
-                            {"dpiX", 600},
-                            {"dpiY", 600},
+                            {"dpiX", dpiX},
+                            {"dpiY", dpiY},
                             {"layerThicknessMm", 0.01},
                             {"channelOrder", MakeStringArray({"R", "G", "B", "W", "S", "V"})},
                             {"bitDepth", 8},

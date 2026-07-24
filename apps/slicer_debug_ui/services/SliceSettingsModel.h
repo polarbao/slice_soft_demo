@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/config.h"
+
 #include <QString>
 #include <QStringList>
 
@@ -72,6 +74,8 @@ struct SliceSettingsState
     QString profileid;
     QString modelpath;
     QString outputdirectory;
+    int dpix{slicer_core::kDefaultOutputDpiX};
+    int dpiy{slicer_core::kDefaultOutputDpiY};
     double layerthicknessmm{0.01};
     ModelFillMaterial modelfillmaterial{ModelFillMaterial::White};
     SupportSettings support;

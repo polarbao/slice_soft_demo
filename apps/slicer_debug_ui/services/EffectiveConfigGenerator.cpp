@@ -94,6 +94,8 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
 
     QJsonObject output = root.value(QStringLiteral("output")).toObject();
     output.insert(QStringLiteral("packageDir"), QDir::fromNativeSeparators(settings.outputdirectory));
+    output.insert(QStringLiteral("dpiX"), settings.dpix);
+    output.insert(QStringLiteral("dpiY"), settings.dpiy);
     output.insert(QStringLiteral("layerThicknessMm"), settings.layerthicknessmm);
     root.insert(QStringLiteral("output"), output);
 

@@ -48,6 +48,8 @@ add_executable(slicer_debug_ui
     services/ModelPreflightPresenter.h
     services/PreviewReportIndex.cpp
     services/PreviewReportIndex.h
+    services/PreviewPhysicalScale.cpp
+    services/PreviewPhysicalScale.h
     services/UiSmokeTestRunner.cpp
     services/UiSmokeTestRunner.h
     widgets/LogPanel.cpp

@@ -100,10 +100,10 @@ TIFF storage and dimensions match manifest
 | `grid.widthPx` | Stable | int | TIFF 层宽度，必须大于 0 |
 | `grid.heightPx` | Stable | int | TIFF 层高度，必须大于 0 |
 | `grid.layerCount` | Stable | int | 层数，必须等于 layer list 数量 |
-| `grid.dpiX` / `grid.dpiY` | Stable | int | 当前 reader 校验为 600 |
-| `grid.dpi` | Comparable | array<int,2> | 冗余展示字段，建议与 `dpiX/dpiY` 一致 |
-| `grid.pixelSizeXmm` / `grid.pixelSizeYmm` | Stable | number | 像素物理尺寸 |
-| `grid.pixelSizeMm` | Comparable | array<number,2> | 冗余展示字段 |
+| `grid.dpiX` / `grid.dpiY` | Stable | int | 独立必填，Reader 严格校验 72..2400；允许非等方 DPI |
+| `grid.dpi` | Comparable | array<int,2> | 可选冗余字段；存在时必须与 `dpiX/dpiY` 一致 |
+| `grid.pixelSizeXmm` / `grid.pixelSizeYmm` | Stable | number | 独立必填，必须分别与 `25.4 / dpiX`、`25.4 / dpiY` 一致 |
+| `grid.pixelSizeMm` | Comparable | array<number,2> | 可选冗余字段；存在时必须与独立物理像素字段一致 |
 | `grid.layerThicknessMm` | Stable | number | 层厚，必须大于 0 |
 | `grid.originMm` | Comparable | array<number,3> | package 坐标原点，用于诊断和 UI 对齐 |
 

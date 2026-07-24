@@ -1,7 +1,10 @@
 #include "ConfigValidator.h"
+#include "slicer_core/config.h"
 
 #include <QJsonArray>
 #include <QSet>
+
+#include <cmath>
 
 namespace {
 
@@ -56,6 +59,30 @@ bool isAllowed(const QString& value, const QSet<QString>& allowed) {
     return value.isEmpty() || allowed.contains(value);
 }
 
+void CheckOutputDpi(
+    const QJsonObject& output,
+    const QString& key,
+    ConfigValidationResult& result)
+{
+    if (!output.contains(key))
+    {
+        return;
+    }
+    const QJsonValue value = output.value(key);
+    const double numericValue = value.toDouble(-1.0);
+    if (!value.isDouble()
+        || std::floor(numericValue) != numericValue
+        || numericValue < static_cast<double>(slicer_core::kMinimumOutputDpi)
+        || numericValue > static_cast<double>(slicer_core::kMaximumOutputDpi))
+    {
+        result.errors.push_back(
+            QStringLiteral("output.%1 必须是 %2..%3 范围内的整数。").arg(
+                key,
+                QString::number(slicer_core::kMinimumOutputDpi),
+                QString::number(slicer_core::kMaximumOutputDpi)));
+    }
+}
+
 }  // namespace
 
 ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
@@ -70,6 +97,8 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
     if (stringAt(output, "packageDir").isEmpty()) {
         result.errors.push_back("output.packageDir 不能为空。");
     }
+    CheckOutputDpi(output, QStringLiteral("dpiX"), result);
+    CheckOutputDpi(output, QStringLiteral("dpiY"), result);
     const QString storage_mode = stringAt(output, "storageMode");
     if (!storage_mode.isEmpty() && storage_mode != "stripped" && storage_mode != "tiled") {
         result.errors.push_back("output.storageMode 只能是 stripped 或 tiled。");

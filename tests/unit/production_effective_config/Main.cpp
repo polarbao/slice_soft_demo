@@ -58,6 +58,8 @@ SliceSettingsState BuildSettings(
     settings.profileid = QStringLiteral("ui_test_profile");
     settings.modelpath = QStringLiteral("model/test.obj");
     settings.outputdirectory = outputDirectory;
+    settings.dpix = 635;
+    settings.dpiy = 600;
     settings.layerthicknessmm = 0.2;
     settings.modelfillmaterial = ModelFillMaterial::White;
     settings.support.enabled = supportEnabled;
@@ -166,6 +168,7 @@ bool TestRestrictedProfileClearsStaleOverrides()
     }
 
     const QJsonObject root = result.document.object();
+    const QJsonObject output = root.value(QStringLiteral("output")).toObject();
     const QJsonObject productionAudit =
         root.value(QStringLiteral("uiAudit"))
             .toObject()
@@ -186,6 +189,10 @@ bool TestRestrictedProfileClearsStaleOverrides()
                 == QStringLiteral(
                     "global_surface_shell_restricted_candidate"),
             "restricted effective Profile")
+        && ExpectTrue(
+            output.value(QStringLiteral("dpiX")).toInt() == 635
+                && output.value(QStringLiteral("dpiY")).toInt() == 600,
+            "restricted effective config preserves current X/Y DPI")
         && ExpectTrue(
             !root.value(QStringLiteral("support"))
                  .toObject()
@@ -376,6 +383,8 @@ bool TestLegacyPreservesExistingProfile()
         return false;
     }
     const QJsonObject effectiveRoot = result.document.object();
+    const QJsonObject effectiveOutput =
+        effectiveRoot.value(QStringLiteral("output")).toObject();
     const QJsonObject audit = effectiveRoot.value(QStringLiteral("uiAudit"))
                                   .toObject()
                                   .value(QStringLiteral("production"))
@@ -387,6 +396,10 @@ bool TestLegacyPreservesExistingProfile()
                        .toString()
                    == QStringLiteral("legacy"),
                "legacy mode is explicit")
+        && ExpectTrue(
+            effectiveOutput.value(QStringLiteral("dpiX")).toInt() == 635
+                && effectiveOutput.value(QStringLiteral("dpiY")).toInt() == 600,
+            "legacy effective config uses current X/Y DPI")
         && ExpectTrue(
             effectiveRoot.value(QStringLiteral("materialProcessProfile"))
                     .toObject()

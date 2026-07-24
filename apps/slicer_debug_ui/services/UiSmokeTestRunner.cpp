@@ -28,6 +28,7 @@
 #include "SliceProgressProtocolParser.h"
 #include "SlicePreflightCoordinator.h"
 #include "ToolPaths.h"
+#include "slicer_core/config.h"
 
 #include <QComboBox>
 #include <QAction>
@@ -519,6 +520,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return PreviewLegendProbeContext(options);
     }
+    if (options.case_name == "preview-physical-aspect")
+    {
+        return PreviewPhysicalAspect(options);
+    }
     if (options.case_name == "diagnostics-collapse")
     {
         return DiagnosticsCollapse(options);
@@ -942,6 +947,8 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
         if (defaults.profileid != expectation.id
             || defaults.modelfillmaterial != expectation.fillmaterial
             || defaults.preview.interval != expectation.previewinterval
+            || defaults.dpix != slicer_core::kDefaultOutputDpiX
+            || defaults.dpiy != slicer_core::kDefaultOutputDpiY
             || !defaults.support.enabled
             || defaults.support.placement != SupportPlacement::Lower
             || !defaults.support.internalvoidenabled
@@ -968,6 +975,14 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
     if (!model.Validate().IsValid())
     {
         return fail("slice-settings-model 安全 legacy 设置未通过校验。");
+    }
+
+    SliceSettingsState invalidDpiState = validState;
+    invalidDpiState.dpix = slicer_core::kMaximumOutputDpi + 1;
+    model.SetState(invalidDpiState);
+    if (model.Validate().IsValid())
+    {
+        return fail("slice-settings-model 非法 X/Y DPI 未被阻断。");
     }
 
     SliceSettingsState candidateState = validState;
@@ -998,6 +1013,8 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
 int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options)
 {
     const QStringList requiredKeys{
+        QStringLiteral("output.dpiX"),
+        QStringLiteral("output.dpiY"),
         QStringLiteral("modelTransform.scale"),
         QStringLiteral("modelFill.material"),
         QStringLiteral("support.enabled"),
@@ -1090,6 +1107,8 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
     quickPanel.LoadFromDocument();
     const QVector<QPair<QString, QString>> tooltipBindings{
         {QStringLiteral("modelScaleXSpin"), QStringLiteral("modelTransform.scale")},
+        {QStringLiteral("outputDpiXSpin"), QStringLiteral("output.dpiX")},
+        {QStringLiteral("outputDpiYSpin"), QStringLiteral("output.dpiY")},
         {QStringLiteral("modelFillMaterialCombo"), QStringLiteral("modelFill.material")},
         {QStringLiteral("whitePolicyEnabledCheck"), QStringLiteral("materialPolicy.white.enabled")},
         {QStringLiteral("supportEnabledCheck"), QStringLiteral("support.enabled")},
@@ -1116,6 +1135,12 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         QStringLiteral("modelScaleZSpin"));
     QPushButton* resetModelScaleButton = quickPanel.findChild<QPushButton*>(
         QStringLiteral("resetModelScaleButton"));
+    QSpinBox* outputDpiXSpin = quickPanel.findChild<QSpinBox*>(
+        QStringLiteral("outputDpiXSpin"));
+    QSpinBox* outputDpiYSpin = quickPanel.findChild<QSpinBox*>(
+        QStringLiteral("outputDpiYSpin"));
+    QLabel* outputPixelSizeLabel = quickPanel.findChild<QLabel*>(
+        QStringLiteral("outputPixelSizeLabel"));
     if (modelScaleXSpin == nullptr
         || modelScaleYSpin == nullptr
         || modelScaleZSpin == nullptr
@@ -1126,6 +1151,58 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
     {
         return fail(QStringLiteral("setting-help-metadata 模型缩放控件未正确加载配置值。"));
     }
+    if (outputDpiXSpin == nullptr
+        || outputDpiYSpin == nullptr
+        || outputPixelSizeLabel == nullptr
+        || outputDpiXSpin->minimum() != 72
+        || outputDpiXSpin->maximum() != 2400
+        || outputDpiYSpin->minimum() != 72
+        || outputDpiYSpin->maximum() != 2400
+        || outputDpiXSpin->value() != 635
+        || outputDpiYSpin->value() != 600
+        || !ContainsAll(
+            outputPixelSizeLabel->text(),
+            {QStringLiteral("X 0.040000 mm/px"),
+             QStringLiteral("Y 0.042333 mm/px")}))
+    {
+        return fail(QStringLiteral("setting-help-metadata X/Y DPI 默认值或物理像素提示错误。"));
+    }
+    outputDpiXSpin->setValue(600);
+    outputDpiYSpin->setValue(1200);
+    if (document.value({QStringLiteral("output"), QStringLiteral("dpiX")}).toInt() != 600
+        || document.value({QStringLiteral("output"), QStringLiteral("dpiY")}).toInt() != 1200
+        || !ContainsAll(
+            outputPixelSizeLabel->text(),
+            {QStringLiteral("X 0.042333 mm/px"),
+             QStringLiteral("Y 0.021167 mm/px")}))
+    {
+        return fail(QStringLiteral("setting-help-metadata X/Y DPI 修改未写入配置或刷新物理像素。"));
+    }
+    if (!document.save(nullptr, SaveOptions{true}))
+    {
+        return fail(QStringLiteral("setting-help-metadata X/Y DPI 配置保存失败。"));
+    }
+    ConfigDocument reloadedDocument;
+    if (!reloadedDocument.load(configPath)
+        || reloadedDocument.value(
+               {QStringLiteral("output"), QStringLiteral("dpiX")}).toInt()
+            != 600
+        || reloadedDocument.value(
+               {QStringLiteral("output"), QStringLiteral("dpiY")}).toInt()
+            != 1200)
+    {
+        return fail(QStringLiteral("setting-help-metadata X/Y DPI 未能独立保存并重新加载。"));
+    }
+    document.setValue(
+        {QStringLiteral("output"), QStringLiteral("dpiX")},
+        slicer_core::kMaximumOutputDpi + 1);
+    if (document.validate().isValid())
+    {
+        return fail(QStringLiteral("setting-help-metadata 超范围 DPI 未被配置校验阻断。"));
+    }
+    document.setValue(
+        {QStringLiteral("output"), QStringLiteral("dpiX")},
+        600);
     resetModelScaleButton->click();
     const QJsonArray resetScale = document.value(
         {QStringLiteral("modelTransform"), QStringLiteral("scale")}).toArray();
@@ -1298,6 +1375,140 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
             .arg(sparseLayer)
             .arg(overlaySparseLayer)
             .arg(previewLayer));
+}
+
+int UiSmokeTestRunner::PreviewPhysicalAspect(
+    const UiSmokeTestOptions& options)
+{
+    Q_UNUSED(options);
+
+    QTemporaryDir temporaryDirectory;
+    if (!temporaryDirectory.isValid())
+    {
+        return fail(QStringLiteral(
+            "preview-physical-aspect 无法创建临时目录。"));
+    }
+
+    const auto createPackage =
+        [&temporaryDirectory](
+            const QString& name,
+            const bool includePhysicalScale) -> PackageSummary
+    {
+        const QDir root(temporaryDirectory.path());
+        const QString packagePath = root.filePath(name);
+        const QDir packageDirectory(packagePath);
+        if (!QDir().mkpath(packageDirectory.filePath(
+                QStringLiteral("preview"))))
+        {
+            return {};
+        }
+
+        QImage image(QSize(100, 100), QImage::Format_ARGB32);
+        image.fill(QColor(32, 96, 160));
+        if (!image.save(
+                packageDirectory.filePath(
+                    QStringLiteral("preview/rgb_layer_000000.png"))))
+        {
+            return {};
+        }
+
+        QJsonObject grid{
+            {QStringLiteral("widthPx"), 100},
+            {QStringLiteral("heightPx"), 100},
+            {QStringLiteral("layerCount"), 1},
+            {QStringLiteral("layerThicknessMm"), 0.01},
+        };
+        if (includePhysicalScale)
+        {
+            grid.insert(QStringLiteral("dpiX"), 635);
+            grid.insert(QStringLiteral("dpiY"), 600);
+            grid.insert(
+                QStringLiteral("pixelSizeXmm"),
+                25.4 / 635.0);
+            grid.insert(
+                QStringLiteral("pixelSizeYmm"),
+                25.4 / 600.0);
+        }
+
+        const QJsonObject manifest{
+            {QStringLiteral("schema"),
+             QStringLiteral("p0.rgbwsv.2")},
+            {QStringLiteral("grid"), grid},
+            {QStringLiteral("layers"),
+             QJsonArray{
+                 QJsonObject{
+                     {QStringLiteral("index"), 0},
+                     {QStringLiteral("zMm"), 0.0}}}},
+        };
+        if (!WriteJsonFixture(
+                packageDirectory.filePath(
+                    QStringLiteral("manifest.json")),
+                manifest))
+        {
+            return {};
+        }
+        return PackageLoader().load(packagePath);
+    };
+
+    const PackageSummary physicalPackage =
+        createPackage(QStringLiteral("physical"), true);
+    if (physicalPackage.manifest_path.isEmpty())
+    {
+        return fail(QStringLiteral(
+            "preview-physical-aspect 无法创建非等方夹具。"));
+    }
+
+    LayerPreviewPanel layerPanel;
+    layerPanel.LoadPackage(physicalPackage);
+    if (!layerPanel.SelectChannelForTest(QStringLiteral("rgb"))
+        || layerPanel.PhysicalDisplaySizeForTest() != QSize(94, 100)
+        || !ContainsAll(
+            layerPanel.StatusForTest(),
+            {QStringLiteral("DPI=635x600"),
+             QStringLiteral("像素=0.040000x0.042333 mm")}))
+    {
+        return fail(
+            QStringLiteral(
+                "preview-physical-aspect 生产层未按 635/600 校正：")
+            + layerPanel.StatusForTest());
+    }
+
+    PreviewOverlayPanel overlayPanel;
+    overlayPanel.loadPackage(physicalPackage);
+    if (overlayPanel.PhysicalDisplaySizeForTest() != QSize(94, 100)
+        || !ContainsAll(
+            overlayPanel.StatusForTest(),
+            {QStringLiteral("DPI=635x600"),
+             QStringLiteral("像素=0.040000x0.042333 mm")}))
+    {
+        return fail(
+            QStringLiteral(
+                "preview-physical-aspect 叠加层未按 635/600 校正：")
+            + overlayPanel.StatusForTest());
+    }
+
+    const PackageSummary fallbackPackage =
+        createPackage(QStringLiteral("fallback"), false);
+    LayerPreviewPanel fallbackLayerPanel;
+    fallbackLayerPanel.LoadPackage(fallbackPackage);
+    fallbackLayerPanel.SelectChannelForTest(QStringLiteral("rgb"));
+    PreviewOverlayPanel fallbackOverlayPanel;
+    fallbackOverlayPanel.loadPackage(fallbackPackage);
+    const QString fallbackText =
+        QStringLiteral("缺少 grid 物理像素元数据，按方形像素显示");
+    if (fallbackLayerPanel.PhysicalDisplaySizeForTest()
+            != QSize(100, 100)
+        || fallbackOverlayPanel.PhysicalDisplaySizeForTest()
+            != QSize(100, 100)
+        || !fallbackLayerPanel.StatusForTest().contains(fallbackText)
+        || !fallbackOverlayPanel.StatusForTest().contains(fallbackText))
+    {
+        return fail(QStringLiteral(
+            "preview-physical-aspect 缺失元数据时未明确降级。"));
+    }
+
+    return pass(QStringLiteral(
+        "preview-physical-aspect corrected=94x100 fallback=100x100"));
 }
 
 int UiSmokeTestRunner::PreviewLegendProbeContext(const UiSmokeTestOptions& options)
@@ -2257,6 +2468,8 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     SliceSettingsState settings = settingsmodel.State();
     settings.modelpath = QStringLiteral("model/obj/nail.obj");
     settings.outputdirectory = tempdir.filePath("session/package");
+    settings.dpix = 635;
+    settings.dpiy = 600;
     settings.layerthicknessmm = 0.02;
     settings.support.placement = SupportPlacement::Both;
     settings.support.internalvoidminareapx = 24;
@@ -2299,6 +2512,8 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     const QJsonObject openvdb = generated.value("experimental").toObject().value("openvdbPipeline").toObject();
     if (generated.value("input").toObject().value("modelPath").toString() != settings.modelpath
         || output.value("packageDir").toString() != settings.outputdirectory
+        || output.value("dpiX").toInt() != settings.dpix
+        || output.value("dpiY").toInt() != settings.dpiy
         || output.value("layerThicknessMm").toDouble() != settings.layerthicknessmm
         || output.value("channelOrder").toArray() != channelorder
         || output.value("bitDepth").toInt() != 8

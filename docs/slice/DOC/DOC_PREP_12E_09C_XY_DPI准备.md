@@ -1,12 +1,14 @@
 # DOC_PREP 12E-09C X/Y DPI 准备
 
-> 状态：PREPARATION COMPLETE / 09C-01 READY
+> 状态：ACTIVATED / 09C-01..05 COMPLETE / 09C-06 READY
 > 日期：2026-07-24
 
 ## 1. 结论
 
-X/Y DPI 不是单一 UI 控件修改。当前 parser 和两套 raster 已能表达独立 DPI，但核心 validator、RIP
-Reader 和一键切片仍固定 600/600。相关需求、设计、验证和原子任务已补齐。
+X/Y DPI 不是单一 UI 控件修改。初始审计时 parser 和两套 raster 已能表达独立 DPI，但核心
+validator、RIP Reader 和一键切片仍固定 600/600。09C-01..05 已完成核心合同、Reader/writer
+非等方兼容、两引擎 Raster、外侧光油、Qt 配置透传和物理比例 Preview。当前只剩 09C-06
+生产矩阵与阶段收口。
 
 ## 2. 前置
 
@@ -49,7 +51,11 @@ golden/hash。
 | 影响面审计 | COMPLETE |
 | PRD/DEV/DEMO/TASKS | COMPLETE |
 | 09B session/Effective Config | COMPLETE / 09B-06 PASS |
-| 09C-01 开发 | WAIT |
+| 09C-01 开发 | COMPLETE / 2026-07-24 |
+| 09C-02 开发 | COMPLETE / 2026-07-24；Reader/writer 非等方 DPI、物理像素一致性与 bad package PASS |
+| 09C-03 Raster/外侧光油 | COMPLETE / 2026-07-24；两引擎独立 X/Y pitch 与外侧光油离散 PASS |
+| 09C-04 Qt 配置与一键切片 | COMPLETE / 2026-07-24；三窗口尺寸、保存回读和 Effective Config PASS |
+| 09C-05 物理比例 Preview | COMPLETE / 2026-07-24；635/600 校正与方形降级提示 PASS |
 
 ## 6. 准备完整性审计
 
@@ -59,7 +65,12 @@ golden/hash。
 PRD/DEV/DEMO/TASKS/PROMPT：COMPLETE；
 旧 600/600 兼容与禁止批量改 fixture：FROZEN；
 默认 X=635/Y=600：CONFIRMED；
-开发前置：仅剩 09B-06。
+开发前置：COMPLETE；
+09C-01..05：COMPLETE；
+下一原子任务：09C-06 生产矩阵与阶段收口。
 ```
 
-因此 09C 无需再补准备文档，但当前不得提前实现。09B-06 完成后从 09C-01 按顺序启动。
+09C 已进入收口阶段。09C-01/02 完成配置、Reader/writer 与协议严格校验；09C-03 完成
+Legacy/Global 两引擎非等方 Raster 和外侧光油物理离散；09C-04 完成 Qt 配置、一键切片
+透传及端到端 Gate；09C-05 完成 Layer/Overlay Preview 物理比例显示。下一主线原子任务
+为 09C-06，完成生产矩阵、真实模型、Release、RIP strict、schema/golden/Quick CI 和文档收口。

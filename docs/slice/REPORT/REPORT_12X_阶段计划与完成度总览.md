@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v1.4
+> 版本：v1.6
 > 更新日期：2026-07-24
 > 当前唯一生产主线：12E-09C X/Y DPI
-> 当前下一原子任务：12E-09C-01 核心配置与协议边界（等待明确授权）
+> 当前下一原子任务：12E-09C-06 生产矩阵与阶段收口
 
 ## 1. 使用规则
 
@@ -50,7 +50,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 09A-02..06 可按独立授权推进 |
 | 12E-09A | 09A-01 COMPLETE / 09A-02..06 INDEPENDENT | 只读 Diagnostic Facade 与 UI DTO | 诊断 Effective Config、控件、worker、同层 preview 和 smoke |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
-| 12E-09C | PREPARATION COMPLETE / 09C-01 READY | X=635/Y=600 目标、兼容策略、PRD/DEV/DEMO/TASKS 已冻结 | Core/Reader、两引擎、外侧光油、Qt、物理比例 preview 和生产矩阵 |
+| 12E-09C | 09C-01..05 COMPLETE / 09C-06 READY | 默认 X=635/Y=600、72..2400 配置边界、显式 600/600 兼容；Reader/writer 严格校验；Legacy/Global 独立 X/Y Raster 和外侧光油物理离散；Qt 配置与一键切片；Layer/Overlay 物理比例 Preview | 635/600 双引擎生产矩阵、真实模型、Release、RIP strict、回归与文档收口 |
 | 12E-10 | PREPARED / WAIT DEPENDENCIES | 最终矩阵 schema、模型基线和 09B 生产入口已完成 | 10A 等待 09A-05/09C；10B/10C 最终汇总等待 09C |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
@@ -72,7 +72,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 |---|---|---|
 | 09A Diagnostic UI | 09A-01 COMPLETE；09A-02..06 独立待授权 | 09A-02 |
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
-| 09C X/Y DPI | PREPARATION COMPLETE / 09C-01 READY | 明确授权后执行 09C-01 |
+| 09C X/Y DPI | 09C-01..05 COMPLETE / 09C-06 READY | 执行 09C-06 生产矩阵与阶段收口；在矩阵完成前不得宣称 09C 全阶段 COMPLETE |
 | 12E-10 Final Closure | PREPARED / WAIT 09A-05、09C | 依赖满足后执行 10A |
 
 ## 3. 12E-08C 当前结论

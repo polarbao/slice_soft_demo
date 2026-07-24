@@ -194,6 +194,9 @@ void LayerPreviewDataProvider::ReadManifest(const PackageSummary& package, Layer
     }
 
     const QJsonObject grid = root.value("grid").toObject();
+    preview->physicalscale = PreviewPhysicalScaleResolver::Merge(
+        preview->physicalscale,
+        PreviewPhysicalScaleResolver::Resolve(grid));
     preview->layercount = ReadInt(grid, "layerCount");
     preview->widthpx = ReadInt(grid, "widthPx");
     preview->heightpx = ReadInt(grid, "heightPx");
@@ -305,6 +308,9 @@ void LayerPreviewDataProvider::ReadSliceReport(const PackageSummary& package, La
     }
 
     const QJsonObject grid = root.value("grid").toObject();
+    preview->physicalscale = PreviewPhysicalScaleResolver::Merge(
+        preview->physicalscale,
+        PreviewPhysicalScaleResolver::Resolve(grid));
     if (preview->layercount <= 0)
     {
         preview->layercount = ReadInt(grid, "layerCount");

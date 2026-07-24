@@ -9,6 +9,8 @@ const QString kWorkbenchDoc = QStringLiteral(
     "docs/slice/PRD/PRD_12C_Qt_UI配置预览工作台收口.md");
 const QString kOpenVdbDoc = QStringLiteral(
     "docs/slice/PRD/PRD_12B_R2_OpenVDB_SDFUtility定位.md");
+const QString kDpiDoc = QStringLiteral(
+    "docs/slice/PRD/PRD_12E_09C_XY_DPI配置与生产协议兼容.md");
 
 SettingHelpMetadata MakeMetadata(
     const QString& key,
@@ -49,6 +51,22 @@ const QVector<SettingHelpMetadata>& MetadataEntries()
             QStringLiteral("output/ui_sessions/<会话>/package"),
             QStringLiteral("生产可用；不得覆盖只读 Profile 模板"),
             kWorkbenchDoc),
+        MakeMetadata(
+            QStringLiteral("output.dpiX"),
+            QStringLiteral("X 方向 DPI"),
+            QStringLiteral("控制 X 方向栅格密度；它不改变模型物理缩放。物理像素宽度按 25.4 / dpiX 计算。"),
+            {QStringLiteral("TIFF 宽度"), QStringLiteral("X 物理像素尺寸"), QStringLiteral("输出体积")},
+            QStringLiteral("635 dpi（0.040000 mm/px）"),
+            QStringLiteral("配置范围 72..2400；首批设备认证组合为 600/600 与 635/600"),
+            kDpiDoc),
+        MakeMetadata(
+            QStringLiteral("output.dpiY"),
+            QStringLiteral("Y 方向 DPI"),
+            QStringLiteral("控制 Y 方向栅格密度；它不改变模型物理缩放。物理像素高度按 25.4 / dpiY 计算。"),
+            {QStringLiteral("TIFF 高度"), QStringLiteral("Y 物理像素尺寸"), QStringLiteral("输出体积")},
+            QStringLiteral("600 dpi（0.042333 mm/px）"),
+            QStringLiteral("配置范围 72..2400；首批设备认证组合为 600/600 与 635/600"),
+            kDpiDoc),
         MakeMetadata(
             QStringLiteral("output.layerThicknessMm"),
             QStringLiteral("切片层高"),
@@ -172,7 +190,7 @@ const QVector<SettingHelpMetadata>& MetadataEntries()
         MakeMetadata(
             QStringLiteral("outerVarnish.thicknessMm"),
             QStringLiteral("外侧光油厚度"),
-            QStringLiteral("按毫米配置外侧光油壳层厚度，再依据 pixelPitchUm 换算为扩张像素。"),
+            QStringLiteral("按毫米配置外侧光油壳层厚度；X/Y 扩张像素分别依据 output.dpiX/dpiY 换算。pixelPitchUm 仅保留旧配置兼容。"),
             {QStringLiteral("V"), QStringLiteral("XY 外轮廓")},
             QStringLiteral("0.00 mm，步进 0.01 mm"),
             QStringLiteral("生产可用；启用后会扩张模型 XY 尺寸"),

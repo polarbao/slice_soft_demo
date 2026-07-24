@@ -2,6 +2,7 @@
 
 #include "../services/HelpTextProvider.h"
 #include "../services/ProductionModeCatalog.h"
+#include "slicer_core/config.h"
 
 #include <QDir>
 #include <QFileDialog>
@@ -77,7 +78,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 {
     auto* layout = new QVBoxLayout(this);
     auto* basicGroup = new QGroupBox("基础", this);
-    basicGroup->setToolTip("基础输入输出：选择模型、输出目录、模型缩放和层高。模型缩放为 1.0 时保持原始尺寸。");
+    basicGroup->setToolTip("基础输入输出：选择模型、输出目录、模型缩放、X/Y DPI 和层高。模型缩放为 1.0 时保持原始尺寸，DPI 只控制输出栅格密度。");
     auto* basicForm = new QFormLayout(basicGroup);
 
     m_modelPathEdit = MakePathEdit(this);
@@ -125,6 +126,42 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_layerHeightSpin->setSuffix(" mm");
     ApplyHelp(m_layerHeightSpin, QStringLiteral("output.layerThicknessMm"));
     basicForm->addRow("层高", m_layerHeightSpin);
+
+    m_outputDpiXSpin = new QSpinBox(this);
+    m_outputDpiXSpin->setObjectName(QStringLiteral("outputDpiXSpin"));
+    m_outputDpiXSpin->setRange(
+        slicer_core::kMinimumOutputDpi,
+        slicer_core::kMaximumOutputDpi);
+    m_outputDpiXSpin->setSingleStep(1);
+    m_outputDpiXSpin->setSuffix(QStringLiteral(" dpi"));
+    m_outputDpiXSpin->setMinimumWidth(112);
+    ApplyHelp(m_outputDpiXSpin, QStringLiteral("output.dpiX"));
+
+    m_outputDpiYSpin = new QSpinBox(this);
+    m_outputDpiYSpin->setObjectName(QStringLiteral("outputDpiYSpin"));
+    m_outputDpiYSpin->setRange(
+        slicer_core::kMinimumOutputDpi,
+        slicer_core::kMaximumOutputDpi);
+    m_outputDpiYSpin->setSingleStep(1);
+    m_outputDpiYSpin->setSuffix(QStringLiteral(" dpi"));
+    m_outputDpiYSpin->setMinimumWidth(112);
+    ApplyHelp(m_outputDpiYSpin, QStringLiteral("output.dpiY"));
+
+    auto* outputDpiRow = new QHBoxLayout();
+    outputDpiRow->addWidget(new QLabel(QStringLiteral("X"), this));
+    outputDpiRow->addWidget(m_outputDpiXSpin);
+    outputDpiRow->addSpacing(12);
+    outputDpiRow->addWidget(new QLabel(QStringLiteral("Y"), this));
+    outputDpiRow->addWidget(m_outputDpiYSpin);
+    outputDpiRow->addStretch(1);
+    basicForm->addRow(QStringLiteral("输出分辨率"), outputDpiRow);
+
+    m_outputPixelSizeLabel = new QLabel(this);
+    m_outputPixelSizeLabel->setObjectName(QStringLiteral("outputPixelSizeLabel"));
+    m_outputPixelSizeLabel->setWordWrap(true);
+    m_outputPixelSizeLabel->setToolTip(
+        QStringLiteral("由 25.4 / DPI 计算。DPI 控制栅格密度，不等于模型缩放。"));
+    basicForm->addRow(QStringLiteral("物理像素尺寸"), m_outputPixelSizeLabel);
 
     auto* materialGroup = new QGroupBox("材料", this);
     materialGroup->setToolTip("常用材料设置：控制 RGB 纹理、非表面 RGB、白墨和光油。");
@@ -253,6 +290,8 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     connect(m_modelScaleZSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnModelScaleChanged);
     connect(resetModelScaleButton, &QPushButton::clicked, this, &QuickConfigPanel::OnResetModelScale);
     connect(m_layerHeightSpin, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QuickConfigPanel::OnLayerHeightChanged);
+    connect(m_outputDpiXSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnOutputDpiChanged);
+    connect(m_outputDpiYSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnOutputDpiChanged);
     connect(m_texturePolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnTexturePolicyChanged);
     connect(m_nonSurfaceRgbPolicyCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnNonSurfaceRgbPolicyChanged);
     connect(m_modelFillMaterialCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnModelFillMaterialChanged);
@@ -286,6 +325,11 @@ void QuickConfigPanel::LoadFromDocument()
     m_modelScaleZSpin->setValue(
         scale.size() == 3 && scale.at(2).isDouble() ? scale.at(2).toDouble() : 1.0);
     m_layerHeightSpin->setValue(DoubleValue({"output", "layerThicknessMm"}, 0.01));
+    m_outputDpiXSpin->setValue(
+        IntValue({"output", "dpiX"}, slicer_core::kDefaultOutputDpiX));
+    m_outputDpiYSpin->setValue(
+        IntValue({"output", "dpiY"}, slicer_core::kDefaultOutputDpiY));
+    UpdateOutputPixelSizeLabel();
     SetComboValue(m_texturePolicyCombo, StringValue({"texture", "applyMode"}, "top_surface_band"));
     SetComboValue(m_nonSurfaceRgbPolicyCombo, StringValue({"texture", "nonSurfaceRgbPolicy"}, "model_material"));
     SetComboValue(m_modelFillMaterialCombo, StringValue({"modelFill", "material"}, "white"));
@@ -486,6 +530,19 @@ void QuickConfigPanel::OnTexturePolicyChanged(const int index)
             SetValueIfChanged({"texture", "topSurfaceLayers"}, 50);
         }
     }
+}
+
+void QuickConfigPanel::OnOutputDpiChanged(const int value)
+{
+    Q_UNUSED(value);
+    UpdateOutputPixelSizeLabel();
+    if (m_loading)
+    {
+        return;
+    }
+
+    SetValueIfChanged({"output", "dpiX"}, m_outputDpiXSpin->value());
+    SetValueIfChanged({"output", "dpiY"}, m_outputDpiYSpin->value());
 }
 
 void QuickConfigPanel::OnNonSurfaceRgbPolicyChanged(const int index)
@@ -784,6 +841,19 @@ double QuickConfigPanel::DoubleValue(const QStringList& path, const double fallb
 {
     const QJsonValue value = m_document->value(path);
     return value.isDouble() ? value.toDouble() : fallback;
+}
+
+void QuickConfigPanel::UpdateOutputPixelSizeLabel()
+{
+    constexpr double millimetersPerInch{25.4};
+    const double pixelSizeX =
+        millimetersPerInch / static_cast<double>(m_outputDpiXSpin->value());
+    const double pixelSizeY =
+        millimetersPerInch / static_cast<double>(m_outputDpiYSpin->value());
+    m_outputPixelSizeLabel->setText(
+        QStringLiteral("X %1 mm/px；Y %2 mm/px")
+            .arg(pixelSizeX, 0, 'f', 6)
+            .arg(pixelSizeY, 0, 'f', 6));
 }
 
 void QuickConfigPanel::UpdateNormalizedView()

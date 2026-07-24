@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../services/PackageLoader.h"
+#include "../services/PreviewPhysicalScale.h"
 
 #include <QComboBox>
 #include <QHash>
@@ -55,6 +56,12 @@ public:
      */
     QString StatusForTest() const;
 
+    /**
+     * @brief Return the physical-aspect-corrected base display size.
+     * @return Display size before fit-to-window or zoom scaling.
+     */
+    QSize PhysicalDisplaySizeForTest() const;
+
 signals:
     /**
      * @brief Emitted when the user selects a different real layer.
@@ -91,12 +98,14 @@ private:
     QImage composeForMode(const QString& mode, int index) const;
     QImage ComposeForLayer(const QString& mode, int layerIndex) const;
     void applyPixmap(const QImage& image);
+    QSize PhysicalDisplaySize(const QSize& rasterSize) const;
 
     QVector<PreviewImage> images_;
     QVector<int> m_layerIndices;
     QHash<int, double> m_layerZMm;
     QHash<int, QString> m_layerSemanticSummary;
     QString m_sourcePolicySummary;
+    PreviewPhysicalScale m_physicalScale;
     int m_requestedLayerIndex{-1};
     double zoom_{1.0};
     bool fit_{true};

@@ -11,6 +11,7 @@
 #include <QWidget>
 
 struct ProductionProfileCapability;
+class QLabel;
 
 class QuickConfigPanel final : public QWidget
 {
@@ -43,6 +44,7 @@ private slots:
     void OnModelScaleChanged(double value);
     void OnResetModelScale();
     void OnLayerHeightChanged(double value);
+    void OnOutputDpiChanged(int value);
     void OnTexturePolicyChanged(int index);
     void OnNonSurfaceRgbPolicyChanged(int index);
     void OnModelFillMaterialChanged(int index);
@@ -67,6 +69,7 @@ private:
     bool BoolValue(const QStringList& path, bool fallback = false) const;
     int IntValue(const QStringList& path, int fallback = 0) const;
     double DoubleValue(const QStringList& path, double fallback = 0.0) const;
+    void UpdateOutputPixelSizeLabel();
     void UpdateNormalizedView();
 
     ConfigDocument* m_document{nullptr};
@@ -78,6 +81,9 @@ private:
     QDoubleSpinBox* m_modelScaleYSpin{nullptr};
     QDoubleSpinBox* m_modelScaleZSpin{nullptr};
     QDoubleSpinBox* m_layerHeightSpin{nullptr};
+    QSpinBox* m_outputDpiXSpin{nullptr};
+    QSpinBox* m_outputDpiYSpin{nullptr};
+    QLabel* m_outputPixelSizeLabel{nullptr};
     QComboBox* m_texturePolicyCombo{nullptr};
     QComboBox* m_nonSurfaceRgbPolicyCombo{nullptr};
     QComboBox* m_modelFillMaterialCombo{nullptr};

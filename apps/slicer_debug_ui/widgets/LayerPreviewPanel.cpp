@@ -164,6 +164,16 @@ QColor LayerPreviewPanel::PseudoColor(const QString& channel) const
     return m_package.pseudocolors.value(channel, QColor(255, 255, 255));
 }
 
+QSize LayerPreviewPanel::PhysicalDisplaySizeForTest() const
+{
+    return PhysicalDisplaySize();
+}
+
+QString LayerPreviewPanel::StatusForTest() const
+{
+    return m_status == nullptr ? QString{} : m_status->text();
+}
+
 bool LayerPreviewPanel::eventFilter(QObject* object, QEvent* event)
 {
     if (object == m_imageLabel && event->type() == QEvent::MouseButtonPress)
@@ -459,22 +469,32 @@ void LayerPreviewPanel::ApplyPixmap()
         return;
     }
 
-    QSize targetSize = m_currentImage.size();
+    const QSize physicalSize = PhysicalDisplaySize();
+    QSize targetSize = physicalSize;
     if (m_fit)
     {
-        targetSize = m_currentImage.size().scaled(m_scrollArea->viewport()->size(), Qt::KeepAspectRatio);
+        targetSize = physicalSize.scaled(
+            m_scrollArea->viewport()->size(),
+            Qt::KeepAspectRatio);
     }
     else
     {
-        targetSize = QSize(static_cast<int>(m_currentImage.width() * m_zoom), static_cast<int>(m_currentImage.height() * m_zoom));
+        targetSize = QSize(
+            static_cast<int>(physicalSize.width() * m_zoom),
+            static_cast<int>(physicalSize.height() * m_zoom));
     }
 
     if (targetSize.width() <= 0 || targetSize.height() <= 0)
     {
-        targetSize = m_currentImage.size();
+        targetSize = physicalSize;
     }
 
-    m_imageLabel->setPixmap(QPixmap::fromImage(m_currentImage).scaled(targetSize, Qt::KeepAspectRatio, Qt::FastTransformation));
+    m_imageLabel->setPixmap(
+        QPixmap::fromImage(m_currentImage)
+            .scaled(
+                targetSize,
+                Qt::IgnoreAspectRatio,
+                Qt::FastTransformation));
     m_imageLabel->resize(targetSize);
 }
 
@@ -523,7 +543,16 @@ void LayerPreviewPanel::UpdateStatus(const QString& note)
     {
         text += "  " + m_probeText;
     }
+    text += "  "
+        + PreviewPhysicalScaleResolver::Summary(m_package.physicalscale);
     m_status->setText(text);
+}
+
+QSize LayerPreviewPanel::PhysicalDisplaySize() const
+{
+    return PreviewPhysicalScaleResolver::DisplaySize(
+        m_currentImage.size(),
+        m_package.physicalscale);
 }
 
 bool LayerPreviewPanel::IsPrintedPixel(const QColor& color) const
