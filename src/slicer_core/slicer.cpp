@@ -5,6 +5,7 @@
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
+#include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
@@ -32,8 +33,6 @@
 
 namespace slicer_core {
 namespace {
-
-constexpr double mm_per_inch{25.4};
 
 using SlicerClock = std::chrono::steady_clock;
 
@@ -379,39 +378,33 @@ std::string preview_file_name(const std::string& prefix, const int layer_index, 
     return stream.str();
 }
 
-int ComputeOuterVarnishThicknessPx(const SliceConfig& config)
-{
-    if (!config.outer_varnish.enabled || config.outer_varnish.thickness_mm <= 0.0)
-    {
-        return 0;
-    }
-    return std::max(
-        1,
-        static_cast<int>(std::ceil(config.outer_varnish.thickness_mm * 1000.0
-                                   / config.outer_varnish.pixel_pitch_um)));
-}
-
-double ComputeOuterVarnishEffectiveThicknessMm(const SliceConfig& config, const int thicknessPx)
-{
-    if (thicknessPx <= 0)
-    {
-        return 0.0;
-    }
-    return static_cast<double>(thicknessPx) * config.outer_varnish.pixel_pitch_um / 1000.0;
-}
-
 GridSpec make_grid_spec(const SliceConfig& config, const BoundingBox& bbox) {
     GridSpec grid;
-    grid.pixel_size_x_mm = mm_per_inch / static_cast<double>(config.output.dpi_x);
-    grid.pixel_size_y_mm = mm_per_inch / static_cast<double>(config.output.dpi_y);
-    const int outerVarnishPaddingPx =
-        config.outer_varnish.allow_xy_expansion ? ComputeOuterVarnishThicknessPx(config) : 0;
-    grid.origin_x_mm = bbox.min.x - static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_x_mm;
-    grid.origin_y_mm = bbox.min.y - static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_y_mm;
+    grid.pixel_size_x_mm =
+        kMillimetersPerInch / static_cast<double>(config.output.dpi_x);
+    grid.pixel_size_y_mm =
+        kMillimetersPerInch / static_cast<double>(config.output.dpi_y);
+    const OuterVarnishDiscretization outerVarnish =
+        ComputeOuterVarnishDiscretization(
+            config.outer_varnish,
+            grid.pixel_size_x_mm,
+            grid.pixel_size_y_mm);
+    const int outerVarnishPaddingXPx =
+        config.outer_varnish.allow_xy_expansion
+        ? outerVarnish.radius_x_px
+        : 0;
+    const int outerVarnishPaddingYPx =
+        config.outer_varnish.allow_xy_expansion
+        ? outerVarnish.radius_y_px
+        : 0;
+    grid.origin_x_mm = bbox.min.x
+        - static_cast<double>(outerVarnishPaddingXPx) * grid.pixel_size_x_mm;
+    grid.origin_y_mm = bbox.min.y
+        - static_cast<double>(outerVarnishPaddingYPx) * grid.pixel_size_y_mm;
     const double width_mm{std::max(0.001, bbox.max.x - bbox.min.x)
-                          + 2.0 * static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_x_mm};
+                          + 2.0 * static_cast<double>(outerVarnishPaddingXPx) * grid.pixel_size_x_mm};
     const double height_mm{std::max(0.001, bbox.max.y - bbox.min.y)
-                           + 2.0 * static_cast<double>(outerVarnishPaddingPx) * grid.pixel_size_y_mm};
+                           + 2.0 * static_cast<double>(outerVarnishPaddingYPx) * grid.pixel_size_y_mm};
     const double z_max{std::max(config.output.layer_thickness_mm, bbox.max.z + config.support.offset_mm)};
     grid.width_px = std::max(1, static_cast<int>(std::ceil(width_mm / grid.pixel_size_x_mm)));
     grid.height_px = std::max(1, static_cast<int>(std::ceil(height_mm / grid.pixel_size_y_mm)));
@@ -787,14 +780,14 @@ std::vector<std::uint8_t> BuildExternalEmptyMask(
     return externalEmpty;
 }
 
-std::vector<std::uint8_t> DilateMaskSquare(
+std::vector<std::uint8_t> DilateMaskPhysical(
     const GridSpec& grid,
     const std::vector<std::uint8_t>& sourceMask,
-    const int radiusPx)
+    const OuterVarnishDiscretization& discretization)
 {
     const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
     std::vector<std::uint8_t> dilated(pixelCount, 0);
-    if (radiusPx <= 0)
+    if (!discretization.enabled)
     {
         return sourceMask;
     }
@@ -808,14 +801,21 @@ std::vector<std::uint8_t> DilateMaskSquare(
             {
                 continue;
             }
-            const int minX = std::max(0, x - radiusPx);
-            const int maxX = std::min(grid.width_px - 1, x + radiusPx);
-            const int minY = std::max(0, y - radiusPx);
-            const int maxY = std::min(grid.height_px - 1, y + radiusPx);
+            const int minX = std::max(0, x - discretization.radius_x_px);
+            const int maxX = std::min(grid.width_px - 1, x + discretization.radius_x_px);
+            const int minY = std::max(0, y - discretization.radius_y_px);
+            const int maxY = std::min(grid.height_px - 1, y + discretization.radius_y_px);
             for (int ny{minY}; ny <= maxY; ++ny)
             {
                 for (int nx{minX}; nx <= maxX; ++nx)
                 {
+                    if (!IsOuterVarnishOffsetWithinThickness(
+                            discretization,
+                            nx - x,
+                            ny - y))
+                    {
+                        continue;
+                    }
                     dilated.at(mask_index(grid, nx, ny)) = 1;
                 }
             }
@@ -834,8 +834,12 @@ std::vector<std::vector<std::uint8_t>> BuildOuterVarnishMasks(
     std::vector<std::vector<std::uint8_t>> outerVarnishMasks(
         static_cast<std::size_t>(grid.layer_count),
         std::vector<std::uint8_t>(pixelCount, 0));
-    const int thicknessPx = ComputeOuterVarnishThicknessPx(config);
-    if (thicknessPx <= 0)
+    const OuterVarnishDiscretization discretization =
+        ComputeOuterVarnishDiscretization(
+            config.outer_varnish,
+            grid.pixel_size_x_mm,
+            grid.pixel_size_y_mm);
+    if (!discretization.enabled)
     {
         return outerVarnishMasks;
     }
@@ -853,7 +857,8 @@ std::vector<std::vector<std::uint8_t>> BuildOuterVarnishMasks(
         }
 
         const std::vector<std::uint8_t> externalEmpty = BuildExternalEmptyMask(grid, modelMask);
-        const std::vector<std::uint8_t> dilatedModel = DilateMaskSquare(grid, modelMask, thicknessPx);
+        const std::vector<std::uint8_t> dilatedModel =
+            DilateMaskPhysical(grid, modelMask, discretization);
         std::vector<std::uint8_t>& varnishMask = outerVarnishMasks.at(layerIndex);
         for (std::size_t index{0}; index < pixelCount; ++index)
         {
@@ -872,7 +877,7 @@ UpperSupportBoundaryInfo ResolveUpperSupportBoundaryInfo(const SliceConfig& conf
     UpperSupportBoundaryInfo info;
     if (config.support.upper.outside == "outer_varnish_shell"
         && config.outer_varnish.enabled
-        && ComputeOuterVarnishThicknessPx(config) > 0)
+        && config.outer_varnish.thickness_mm > 0.0)
     {
         info.includes_outer_varnish_shell = true;
         info.source = "model_envelope_plus_outer_varnish_shell";
@@ -4075,9 +4080,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         compute_mask_column_ranges(upper_support_boundary_masks, grid);
     const SurfaceVarnishMasks surface_varnish_masks =
         BuildSurfaceVarnishMasks(config, grid, model_masks);
-    const int outerVarnishThicknessPx = ComputeOuterVarnishThicknessPx(config);
-    const double outerVarnishEffectiveThicknessMm =
-        ComputeOuterVarnishEffectiveThicknessMm(config, outerVarnishThicknessPx);
+    const OuterVarnishDiscretization outerVarnishDiscretization =
+        ComputeOuterVarnishDiscretization(
+            config.outer_varnish,
+            grid.pixel_size_x_mm,
+            grid.pixel_size_y_mm);
     const int columns_with_support = config.support.enabled
         ? static_cast<int>(std::count_if(support_source_layers.begin(), support_source_layers.end(), [](const int layer) {
               return layer > 0;
@@ -4483,9 +4490,31 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                    Json::object({
                        {"enabled", config.outer_varnish.enabled},
                        {"thicknessMm", config.outer_varnish.thickness_mm},
-                       {"thicknessPx", outerVarnishThicknessPx},
-                       {"effectiveThicknessMm", outerVarnishEffectiveThicknessMm},
-                       {"pixelPitchUm", config.outer_varnish.pixel_pitch_um},
+                       {"requestedThicknessMm",
+                        config.outer_varnish.thickness_mm},
+                       {"thicknessPx",
+                        std::max(
+                            outerVarnishDiscretization.radius_x_px,
+                            outerVarnishDiscretization.radius_y_px)},
+                       {"radiusXPx", outerVarnishDiscretization.radius_x_px},
+                       {"radiusYPx", outerVarnishDiscretization.radius_y_px},
+                       {"effectiveThicknessXmm",
+                        outerVarnishDiscretization.effective_thickness_x_mm},
+                       {"effectiveThicknessYmm",
+                        outerVarnishDiscretization.effective_thickness_y_mm},
+                       {"effectiveThicknessMm",
+                        std::max(
+                            outerVarnishDiscretization.effective_thickness_x_mm,
+                            outerVarnishDiscretization.effective_thickness_y_mm)},
+                       {"pixelSizeXmm",
+                        outerVarnishDiscretization.pixel_size_x_mm},
+                       {"pixelSizeYmm",
+                        outerVarnishDiscretization.pixel_size_y_mm},
+                       {"pixelPitchSource", "output_dpi"},
+                       {"legacyConfigPixelPitchUm",
+                        config.outer_varnish.pixel_pitch_um},
+                       {"pixelPitchUm",
+                        config.outer_varnish.pixel_pitch_um},
                        {"allowXYExpansion", config.outer_varnish.allow_xy_expansion},
                        {"conflictPolicy", config.outer_varnish.conflict_policy},
                        {"value", static_cast<int>(config.outer_varnish.value)},

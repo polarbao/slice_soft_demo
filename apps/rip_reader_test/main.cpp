@@ -58,6 +58,9 @@ void print_verbose_result(const slicer_core::RipValidationResult& result) {
     std::cout << "  packageDir: " << result.package_dir.string() << '\n';
     std::cout << "  grid: " << result.width_px << " x " << result.height_px << " x " << result.layer_count
               << '\n';
+    std::cout << "  dpi: " << result.dpi_x << " x " << result.dpi_y << '\n';
+    std::cout << "  pixelSizeMm: " << result.pixel_size_x_mm << " x "
+              << result.pixel_size_y_mm << '\n';
     std::cout << "  channelOrder: R G B W S V\n";
     for (const auto& layer : result.layer_checksums) {
         std::cout << "  layer " << layer.index << " checksum:";
@@ -76,6 +79,9 @@ void print_summary_result(const slicer_core::RipValidationResult& result) {
     std::cout << "  storageMode: " << result.storage_mode << '\n';
     std::cout << "  grid: " << result.width_px << " x " << result.height_px << " x " << result.layer_count
               << '\n';
+    std::cout << "  dpi: " << result.dpi_x << " x " << result.dpi_y << '\n';
+    std::cout << "  pixelSizeMm: " << result.pixel_size_x_mm << " x "
+              << result.pixel_size_y_mm << '\n';
     std::cout << "  bitDepth: " << result.bit_depth << '\n';
     std::cout << "  channelOrder: R G B W S V\n";
     std::cout << "  channelPrintPixels:";

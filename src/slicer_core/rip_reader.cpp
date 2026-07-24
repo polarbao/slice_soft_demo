@@ -1,10 +1,13 @@
 #include "slicer_core/rip_reader.h"
 
+#include "slicer_core/config.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/tiff_io.h"
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
+#include <limits>
 #include <sstream>
 
 namespace slicer_core {
@@ -64,6 +67,72 @@ std::string json_type_name(const Json& value) {
 
 std::string int_to_string(const int value) {
     return std::to_string(value);
+}
+
+std::string NumberToString(const double value)
+{
+    std::ostringstream output;
+    output.precision(15);
+    output << value;
+    return output.str();
+}
+
+double RequireNumberValue(
+    const Json& value,
+    const ValidationErrorCode code,
+    const std::string& field)
+{
+    if (!value.is_number())
+    {
+        fail(code, field, "number", json_type_name(value));
+    }
+    const double actual = value.as_double();
+    if (!std::isfinite(actual))
+    {
+        fail(code, field, "finite number", NumberToString(actual));
+    }
+    return actual;
+}
+
+double RequireNumber(
+    const Json& object,
+    const std::string& key,
+    const ValidationErrorCode code,
+    const std::string& field)
+{
+    if (!object.contains(key))
+    {
+        fail(code, field, "number", "missing");
+    }
+    return RequireNumberValue(object.at(key), code, field);
+}
+
+int RequireIntegerValue(
+    const Json& value,
+    const ValidationErrorCode code,
+    const std::string& field)
+{
+    const double actual = RequireNumberValue(value, code, field);
+    if (std::floor(actual) != actual
+        || actual < static_cast<double>(std::numeric_limits<int>::min())
+        || actual > static_cast<double>(std::numeric_limits<int>::max()))
+    {
+        fail(code, field, "integer", NumberToString(actual));
+    }
+    return static_cast<int>(actual);
+}
+
+int RequireInteger(
+    const Json& object,
+    const std::string& key,
+    const ValidationErrorCode code,
+    const std::string& field)
+{
+    if (!object.contains(key))
+    {
+        fail(code, field, "integer", "missing");
+    }
+    return RequireIntegerValue(object.at(key), code, field);
 }
 
 void require_channel_order(const Json& channel_order) {
@@ -187,9 +256,29 @@ std::string actual_storage_mode_string(const TiffReadResult& result) {
 }
 
 void validate_grid(const Json& grid, RipValidationResult& result) {
-    result.width_px = grid.at("widthPx").as_int();
-    result.height_px = grid.at("heightPx").as_int();
-    result.layer_count = grid.at("layerCount").as_int();
+    if (!grid.is_object())
+    {
+        fail(
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid",
+            "object",
+            json_type_name(grid));
+    }
+    result.width_px = RequireInteger(
+        grid,
+        "widthPx",
+        ValidationErrorCode::GridInvalid,
+        "manifest.grid.widthPx");
+    result.height_px = RequireInteger(
+        grid,
+        "heightPx",
+        ValidationErrorCode::GridInvalid,
+        "manifest.grid.heightPx");
+    result.layer_count = RequireInteger(
+        grid,
+        "layerCount",
+        ValidationErrorCode::GridInvalid,
+        "manifest.grid.layerCount");
     if (result.width_px <= 0) {
         fail(ValidationErrorCode::GridInvalid, "manifest.grid.widthPx", "> 0", int_to_string(result.width_px));
     }
@@ -199,13 +288,156 @@ void validate_grid(const Json& grid, RipValidationResult& result) {
     if (result.layer_count <= 0) {
         fail(ValidationErrorCode::GridInvalid, "manifest.grid.layerCount", "> 0", int_to_string(result.layer_count));
     }
-    if (grid.contains("dpiX") && grid.at("dpiX").as_int() != 600) {
-        fail(ValidationErrorCode::GridInvalid, "manifest.grid.dpiX", "600", int_to_string(grid.at("dpiX").as_int()));
+    result.dpi_x = RequireInteger(
+        grid,
+        "dpiX",
+        ValidationErrorCode::GridInvalid,
+        "manifest.grid.dpiX");
+    result.dpi_y = RequireInteger(
+        grid,
+        "dpiY",
+        ValidationErrorCode::GridInvalid,
+        "manifest.grid.dpiY");
+    if (!IsSupportedOutputDpi(result.dpi_x))
+    {
+        fail(
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.dpiX",
+            "integer "
+                + int_to_string(kMinimumOutputDpi)
+                + ".."
+                + int_to_string(kMaximumOutputDpi),
+            int_to_string(result.dpi_x));
     }
-    if (grid.contains("dpiY") && grid.at("dpiY").as_int() != 600) {
-        fail(ValidationErrorCode::GridInvalid, "manifest.grid.dpiY", "600", int_to_string(grid.at("dpiY").as_int()));
+    if (!IsSupportedOutputDpi(result.dpi_y))
+    {
+        fail(
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.dpiY",
+            "integer "
+                + int_to_string(kMinimumOutputDpi)
+                + ".."
+                + int_to_string(kMaximumOutputDpi),
+            int_to_string(result.dpi_y));
     }
-    if (grid.contains("layerThicknessMm") && grid.at("layerThicknessMm").as_double() <= 0.0) {
+    if (grid.contains("dpi"))
+    {
+        const Json& dpi = grid.at("dpi");
+        if (!dpi.is_array() || dpi.size() != 2U)
+        {
+            fail(
+                ValidationErrorCode::GridInvalid,
+                "manifest.grid.dpi",
+                "[dpiX,dpiY]",
+                json_type_name(dpi));
+        }
+        const int redundantDpiX = RequireIntegerValue(
+            dpi.at(0U),
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.dpi[0]");
+        const int redundantDpiY = RequireIntegerValue(
+            dpi.at(1U),
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.dpi[1]");
+        if (redundantDpiX != result.dpi_x
+            || redundantDpiY != result.dpi_y)
+        {
+            fail(
+                ValidationErrorCode::GridInvalid,
+                "manifest.grid.dpi",
+                "["
+                    + int_to_string(result.dpi_x)
+                    + ","
+                    + int_to_string(result.dpi_y)
+                    + "]",
+                "["
+                    + int_to_string(redundantDpiX)
+                    + ","
+                    + int_to_string(redundantDpiY)
+                    + "]");
+        }
+    }
+
+    result.pixel_size_x_mm = RequireNumber(
+        grid,
+        "pixelSizeXmm",
+        ValidationErrorCode::GridInvalid,
+        "manifest.grid.pixelSizeXmm");
+    result.pixel_size_y_mm = RequireNumber(
+        grid,
+        "pixelSizeYmm",
+        ValidationErrorCode::GridInvalid,
+        "manifest.grid.pixelSizeYmm");
+    if (!IsOutputPixelSizeConsistent(
+            result.dpi_x,
+            result.pixel_size_x_mm))
+    {
+        fail(
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.pixelSizeXmm",
+            NumberToString(
+                kMillimetersPerInch
+                / static_cast<double>(result.dpi_x)),
+            NumberToString(result.pixel_size_x_mm));
+    }
+    if (!IsOutputPixelSizeConsistent(
+            result.dpi_y,
+            result.pixel_size_y_mm))
+    {
+        fail(
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.pixelSizeYmm",
+            NumberToString(
+                kMillimetersPerInch
+                / static_cast<double>(result.dpi_y)),
+            NumberToString(result.pixel_size_y_mm));
+    }
+    if (grid.contains("pixelSizeMm"))
+    {
+        const Json& pixelSize = grid.at("pixelSizeMm");
+        if (!pixelSize.is_array() || pixelSize.size() != 2U)
+        {
+            fail(
+                ValidationErrorCode::GridInvalid,
+                "manifest.grid.pixelSizeMm",
+                "[pixelSizeXmm,pixelSizeYmm]",
+                json_type_name(pixelSize));
+        }
+        const double redundantPixelSizeX = RequireNumberValue(
+            pixelSize.at(0U),
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.pixelSizeMm[0]");
+        const double redundantPixelSizeY = RequireNumberValue(
+            pixelSize.at(1U),
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid.pixelSizeMm[1]");
+        if (std::abs(redundantPixelSizeX - result.pixel_size_x_mm)
+                > kOutputPixelSizeToleranceMm
+            || std::abs(redundantPixelSizeY - result.pixel_size_y_mm)
+                > kOutputPixelSizeToleranceMm)
+        {
+            fail(
+                ValidationErrorCode::GridInvalid,
+                "manifest.grid.pixelSizeMm",
+                "["
+                    + NumberToString(result.pixel_size_x_mm)
+                    + ","
+                    + NumberToString(result.pixel_size_y_mm)
+                    + "]",
+                "["
+                    + NumberToString(redundantPixelSizeX)
+                    + ","
+                    + NumberToString(redundantPixelSizeY)
+                    + "]");
+        }
+    }
+    if (grid.contains("layerThicknessMm")
+        && RequireNumber(
+               grid,
+               "layerThicknessMm",
+               ValidationErrorCode::GridInvalid,
+               "manifest.grid.layerThicknessMm")
+            <= 0.0) {
         fail(ValidationErrorCode::GridInvalid, "manifest.grid.layerThicknessMm", "> 0", "non-positive");
     }
 }
@@ -320,6 +552,15 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
             manifest_path);
     }
 
+    if (!manifest.contains("grid"))
+    {
+        fail(
+            ValidationErrorCode::GridInvalid,
+            "manifest.grid",
+            "object",
+            "missing",
+            manifest_path);
+    }
     const auto& grid = manifest.at("grid");
     const auto& tiff = manifest.at("tiff");
     const std::string manifest_storage_mode = read_manifest_storage_mode(tiff, schema);

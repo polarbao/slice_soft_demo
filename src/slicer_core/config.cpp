@@ -135,6 +135,27 @@ std::uint8_t read_legacy_u16_as_u8(const Json& object, const char* key, const st
 
 }  // namespace
 
+bool IsSupportedOutputDpi(const int dpi) noexcept
+{
+    return dpi >= kMinimumOutputDpi && dpi <= kMaximumOutputDpi;
+}
+
+bool IsOutputPixelSizeConsistent(
+    const int dpi,
+    const double pixelSizeMm) noexcept
+{
+    if (!IsSupportedOutputDpi(dpi)
+        || !std::isfinite(pixelSizeMm)
+        || pixelSizeMm <= 0.0)
+    {
+        return false;
+    }
+    const double expectedPixelSizeMm =
+        kMillimetersPerInch / static_cast<double>(dpi);
+    return std::abs(pixelSizeMm - expectedPixelSizeMm)
+        <= kOutputPixelSizeToleranceMm;
+}
+
 SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     std::ifstream input{config_path};
     if (!input) {
@@ -582,8 +603,21 @@ void validate_slice_config(const SliceConfig& config) {
             SlicePipelineErrorCode::ConfigMismatch,
             "global_surface_shell mode requires matching texture and modelFill configuration");
     }
-    if (config.output.dpi_x != 600 || config.output.dpi_y != 600) {
-        throw std::runtime_error("P0 requires dpiX == dpiY == 600");
+    if (!IsSupportedOutputDpi(config.output.dpi_x))
+    {
+        throw std::runtime_error(
+            "output.dpiX must be between "
+            + std::to_string(kMinimumOutputDpi)
+            + " and "
+            + std::to_string(kMaximumOutputDpi));
+    }
+    if (!IsSupportedOutputDpi(config.output.dpi_y))
+    {
+        throw std::runtime_error(
+            "output.dpiY must be between "
+            + std::to_string(kMinimumOutputDpi)
+            + " and "
+            + std::to_string(kMaximumOutputDpi));
     }
     if (config.output.layer_thickness_mm <= 0.0) {
         throw std::runtime_error("output.layerThicknessMm must be positive");

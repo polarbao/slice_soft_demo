@@ -82,7 +82,7 @@ std::filesystem::path WriteConfig(
         {"output",
          slicer_core::Json::object({
              {"packageDir", packageDir.generic_string()},
-             {"dpiX", 600},
+             {"dpiX", 635},
              {"dpiY", 600},
              {"layerThicknessMm", 0.1},
              {"storageMode", "stripped"},
@@ -185,7 +185,7 @@ std::filesystem::path WriteConfig(
         {"outerVarnish",
          slicer_core::Json::object({
              {"enabled", materialParity},
-             {"thicknessMm", materialParity ? 0.05 : 0.0},
+             {"thicknessMm", materialParity ? 0.081 : 0.0},
              {"allowXYExpansion", true},
              {"value", 0},
          })},
@@ -332,15 +332,38 @@ bool MaterialParityProfileWritesSupportAndVarnish()
                 slicer_core::SliceRunOptions{});
         const slicer_core::RipValidationResult rip =
             slicer_core::validate_slice_package(result.package_dir);
+        std::ifstream manifestInput{result.package_dir / "manifest.json"};
+        const slicer_core::Json manifest =
+            slicer_core::Json::parse(manifestInput);
+        std::ifstream reportInput{
+            result.package_dir / "reports" / "slice_report.json"};
+        const slicer_core::Json report =
+            slicer_core::Json::parse(reportInput);
+        const slicer_core::Json& outerVarnish =
+            report.at("materialSemantics").at("outerVarnish");
         return ExpectTrue(
                    result.support_pixel_count > 0,
                    "material parity result reports support pixels")
+            && ExpectTrue(
+                manifest.at("grid").at("dpiX").as_int() == 635
+                    && manifest.at("grid").at("dpiY").as_int() == 600,
+                "Global manifest preserves independent DPI")
             && ExpectTrue(
                 rip.total_channel_stats.at(4U).print_pixels > 0U,
                 "material parity package prints S")
             && ExpectTrue(
                 rip.total_channel_stats.at(5U).print_pixels > 0U,
-                "material parity package prints V");
+                "material parity package prints V")
+            && ExpectTrue(
+                outerVarnish.at("radiusXPx").as_int() == 3
+                    && outerVarnish.at("radiusYPx").as_int() == 2,
+                "Global report records independent varnish radii")
+            && ExpectTrue(
+                outerVarnish.at("effectiveThicknessXmm").as_double()
+                    > outerVarnish.at("requestedThicknessMm").as_double()
+                    && outerVarnish.at("effectiveThicknessYmm").as_double()
+                        > outerVarnish.at("requestedThicknessMm").as_double(),
+                "Global report records both effective physical thicknesses");
     }
     catch (const std::exception& error)
     {

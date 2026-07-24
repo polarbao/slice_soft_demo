@@ -11,6 +11,30 @@
 
 namespace slicer_core {
 
+inline constexpr int kDefaultOutputDpiX{635};
+inline constexpr int kDefaultOutputDpiY{600};
+inline constexpr int kMinimumOutputDpi{72};
+inline constexpr int kMaximumOutputDpi{2400};
+inline constexpr double kMillimetersPerInch{25.4};
+inline constexpr double kOutputPixelSizeToleranceMm{1.0e-9};
+
+/**
+ * @brief Check whether one output-axis DPI value is supported.
+ * @param dpi Output resolution for one raster axis.
+ * @return True when dpi is inside the shared defensive range.
+ */
+bool IsSupportedOutputDpi(int dpi) noexcept;
+
+/**
+ * @brief Check whether a physical pixel size matches one output-axis DPI.
+ * @param dpi Output resolution for one raster axis.
+ * @param pixelSizeMm Physical pixel size in millimeters.
+ * @return True when both values are valid and consistent within protocol tolerance.
+ */
+bool IsOutputPixelSizeConsistent(
+    int dpi,
+    double pixelSizeMm) noexcept;
+
 struct InputConfig {
     std::filesystem::path model_path;
     std::string format{"auto"};
@@ -18,8 +42,8 @@ struct InputConfig {
 
 struct OutputConfig {
     std::filesystem::path package_dir{"output/SlicePackage"};
-    int dpi_x{600};
-    int dpi_y{600};
+    int dpi_x{kDefaultOutputDpiX};
+    int dpi_y{kDefaultOutputDpiY};
     double layer_thickness_mm{0.01};
     std::vector<std::string> channel_order{"R", "G", "B", "W", "S", "V"};
     int bit_depth{8};

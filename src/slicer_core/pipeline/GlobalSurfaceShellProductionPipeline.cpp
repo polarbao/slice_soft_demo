@@ -3,6 +3,7 @@
 #include "slicer_core/diagnostics/TextureFillPartitionFullClosureAdapter.h"
 #include "slicer_core/diagnostics/TextureFillPartitionReleaseBenchmark.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
+#include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/model.h"
 #include "slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.h"
 #include "slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.h"
@@ -104,17 +105,21 @@ TextureFillPartitionRasterGridSpec BuildProductionRasterGrid(
         partition.grid.depth,
         partition.grid.spacingZMm,
         grid.layerThicknessMm);
-    if (config.outer_varnish.enabled
+    if (config.outer_varnish.allow_xy_expansion
+        && config.outer_varnish.enabled
         && config.outer_varnish.thickness_mm > 0.0)
     {
-        const int paddingX = static_cast<int>(std::ceil(
-            config.outer_varnish.thickness_mm / grid.pixelPitchXMm));
-        const int paddingY = static_cast<int>(std::ceil(
-            config.outer_varnish.thickness_mm / grid.pixelPitchYMm));
-        grid.originXMm -= static_cast<double>(paddingX) * grid.pixelPitchXMm;
-        grid.originYMm -= static_cast<double>(paddingY) * grid.pixelPitchYMm;
-        grid.width += 2 * paddingX;
-        grid.height += 2 * paddingY;
+        const OuterVarnishDiscretization discretization =
+            ComputeOuterVarnishDiscretization(
+                config.outer_varnish,
+                grid.pixelPitchXMm,
+                grid.pixelPitchYMm);
+        grid.originXMm -= static_cast<double>(
+            discretization.radius_x_px) * grid.pixelPitchXMm;
+        grid.originYMm -= static_cast<double>(
+            discretization.radius_y_px) * grid.pixelPitchYMm;
+        grid.width += 2 * discretization.radius_x_px;
+        grid.height += 2 * discretization.radius_y_px;
     }
     return grid;
 }
@@ -209,6 +214,10 @@ RgbwsvProductionPackageWriteRequest BuildPackageRequest(
     request.grid.originXmm = mapping.grid.originXMm;
     request.grid.originYmm = mapping.grid.originYMm;
     request.grid.originZmm = mapping.grid.originZMm;
+    request.outerVarnish = ComputeOuterVarnishDiscretization(
+        config.outer_varnish,
+        mapping.grid.pixelPitchXMm,
+        mapping.grid.pixelPitchYMm);
     request.storage.storageMode = config.output.storage_mode;
     request.storage.rowsPerStrip = config.output.rows_per_strip;
     request.storage.tileWidth = config.output.tile_size.at(0);

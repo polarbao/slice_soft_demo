@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/config.h"
+#include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 
 #include <cstdint>
@@ -19,10 +21,12 @@ struct RgbwsvProductionGridSpec
     int widthPx{0};
     int heightPx{0};
     int layerCount{0};
-    int dpiX{600};
-    int dpiY{600};
-    double pixelSizeXmm{25.4 / 600.0};
-    double pixelSizeYmm{25.4 / 600.0};
+    int dpiX{kDefaultOutputDpiX};
+    int dpiY{kDefaultOutputDpiY};
+    double pixelSizeXmm{
+        kMillimetersPerInch / static_cast<double>(kDefaultOutputDpiX)};
+    double pixelSizeYmm{
+        kMillimetersPerInch / static_cast<double>(kDefaultOutputDpiY)};
     double layerThicknessMm{0.01};
     double originXmm{0.0};
     double originYmm{0.0};
@@ -73,6 +77,7 @@ struct RgbwsvProductionPackageWriteRequest
     std::string effectivePipelineMode;
     std::string productionAcceptance{"not_evaluated"};
     RgbwsvProductionGridSpec grid;
+    OuterVarnishDiscretization outerVarnish;
     RgbwsvProductionStorageSpec storage;
     RgbwsvProductionPreviewSpec preview;
     std::vector<RgbwsvProductionLayer> layers;

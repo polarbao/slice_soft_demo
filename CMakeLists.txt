@@ -153,6 +153,8 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/SurfaceShellRealModelReport.h
     src/slicer_core/materials/texture_application/SurfaceTextureTransfer.cpp
     src/slicer_core/materials/texture_application/SurfaceTextureTransfer.h
+    src/slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.cpp
+    src/slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.cpp
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp
@@ -351,6 +353,30 @@ add_executable(experimental_config_unit_tests
 )
 
 target_link_libraries(experimental_config_unit_tests PRIVATE slicer_core)
+
+add_executable(output_resolution_config_unit_tests
+    tests/unit/output_resolution_config/Main.cpp
+)
+
+target_link_libraries(output_resolution_config_unit_tests PRIVATE slicer_core)
+
+add_executable(rip_reader_resolution_unit_tests
+    tests/unit/rip_reader_resolution/Main.cpp
+)
+
+target_link_libraries(rip_reader_resolution_unit_tests PRIVATE slicer_core)
+
+add_executable(outer_varnish_discretization_unit_tests
+    tests/unit/outer_varnish_discretization/Main.cpp
+)
+
+target_link_libraries(outer_varnish_discretization_unit_tests PRIVATE slicer_core)
+
+add_executable(non_square_raster_pipeline_unit_tests
+    tests/unit/non_square_raster_pipeline/Main.cpp
+)
+
+target_link_libraries(non_square_raster_pipeline_unit_tests PRIVATE slicer_core)
 
 add_executable(texture_fill_partition_service_unit_tests
     tests/unit/texture_fill_partition_service/main.cpp
@@ -626,6 +652,14 @@ target_link_libraries(mesh_complete_self_intersection_analyzer_unit_tests PRIVAT
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
+add_test(NAME output_resolution_config_unit_tests COMMAND output_resolution_config_unit_tests)
+add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
+add_test(NAME outer_varnish_discretization_unit_tests COMMAND outer_varnish_discretization_unit_tests)
+add_test(NAME non_square_raster_pipeline_unit_tests COMMAND non_square_raster_pipeline_unit_tests)
+set_tests_properties(
+    non_square_raster_pipeline_unit_tests
+    PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 add_test(NAME texture_fill_partition_service_unit_tests COMMAND texture_fill_partition_service_unit_tests)
 add_test(NAME legacy_cpu_global_distance_unit_tests COMMAND legacy_cpu_global_distance_unit_tests)
 add_test(NAME openvdb_texture_fill_conformance_unit_tests COMMAND openvdb_texture_fill_conformance_unit_tests)

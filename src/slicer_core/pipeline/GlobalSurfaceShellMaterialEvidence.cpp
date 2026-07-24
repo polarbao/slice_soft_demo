@@ -1,5 +1,7 @@
 #include "slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.h"
 
+#include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -316,10 +318,11 @@ std::vector<std::uint8_t> BuildOuterVarnishVolume(
     }
 
     const auto& grid = mapping.grid;
-    const int radiusX = static_cast<int>(std::ceil(
-        config.outer_varnish.thickness_mm / grid.pixelPitchXMm));
-    const int radiusY = static_cast<int>(std::ceil(
-        config.outer_varnish.thickness_mm / grid.pixelPitchYMm));
+    const OuterVarnishDiscretization discretization =
+        ComputeOuterVarnishDiscretization(
+            config.outer_varnish,
+            grid.pixelPitchXMm,
+            grid.pixelPitchYMm);
     for (int z{0}; z < grid.depth; ++z)
     {
         for (int y{0}; y < grid.height; ++y)
@@ -332,15 +335,18 @@ std::vector<std::uint8_t> BuildOuterVarnishVolume(
                 {
                     continue;
                 }
-                for (int dy{-radiusY}; dy <= radiusY; ++dy)
+                for (int dy{-discretization.radius_y_px};
+                     dy <= discretization.radius_y_px;
+                     ++dy)
                 {
-                    for (int dx{-radiusX}; dx <= radiusX; ++dx)
+                    for (int dx{-discretization.radius_x_px};
+                         dx <= discretization.radius_x_px;
+                         ++dx)
                     {
-                        const double distanceMm = std::hypot(
-                            static_cast<double>(dx) * grid.pixelPitchXMm,
-                            static_cast<double>(dy) * grid.pixelPitchYMm);
-                        if (distanceMm
-                            > config.outer_varnish.thickness_mm + 1.0e-9)
+                        if (!IsOuterVarnishOffsetWithinThickness(
+                                discretization,
+                                dx,
+                                dy))
                         {
                             continue;
                         }

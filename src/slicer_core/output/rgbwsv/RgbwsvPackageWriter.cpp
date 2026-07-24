@@ -133,10 +133,14 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
     if (request.grid.widthPx <= 0
         || request.grid.heightPx <= 0
         || request.grid.layerCount <= 0
-        || request.grid.dpiX <= 0
-        || request.grid.dpiY <= 0
-        || request.grid.pixelSizeXmm <= 0.0
-        || request.grid.pixelSizeYmm <= 0.0
+        || !IsSupportedOutputDpi(request.grid.dpiX)
+        || !IsSupportedOutputDpi(request.grid.dpiY)
+        || !IsOutputPixelSizeConsistent(
+            request.grid.dpiX,
+            request.grid.pixelSizeXmm)
+        || !IsOutputPixelSizeConsistent(
+            request.grid.dpiY,
+            request.grid.pixelSizeYmm)
         || request.grid.layerThicknessMm <= 0.0)
     {
         throw std::invalid_argument(
@@ -147,6 +151,32 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
     {
         throw std::invalid_argument(
             "RGBWSV production package layer count does not match grid");
+    }
+    if (request.outerVarnish.enabled
+        && (request.outerVarnish.requested_thickness_mm <= 0.0
+            || request.outerVarnish.radius_x_px <= 0
+            || request.outerVarnish.radius_y_px <= 0
+            || std::abs(
+                   request.outerVarnish.pixel_size_x_mm
+                   - request.grid.pixelSizeXmm) > kOutputPixelSizeToleranceMm
+            || std::abs(
+                   request.outerVarnish.pixel_size_y_mm
+                   - request.grid.pixelSizeYmm) > kOutputPixelSizeToleranceMm
+            || std::abs(
+                   request.outerVarnish.effective_thickness_x_mm
+                   - static_cast<double>(
+                         request.outerVarnish.radius_x_px)
+                       * request.grid.pixelSizeXmm)
+                > kOutputPixelSizeToleranceMm
+            || std::abs(
+                   request.outerVarnish.effective_thickness_y_mm
+                   - static_cast<double>(
+                         request.outerVarnish.radius_y_px)
+                       * request.grid.pixelSizeYmm)
+                > kOutputPixelSizeToleranceMm))
+    {
+        throw std::invalid_argument(
+            "RGBWSV production package outer varnish discretization is invalid");
     }
 
     ValidateStorage(request.storage);
@@ -575,10 +605,30 @@ Json MakeGridJson(const RgbwsvProductionGridSpec& grid)
         {"dpiX", grid.dpiX},
         {"dpiY", grid.dpiY},
         {"dpi", Json::array({grid.dpiX, grid.dpiY})},
+        {"pixelSizeXmm", grid.pixelSizeXmm},
+        {"pixelSizeYmm", grid.pixelSizeYmm},
         {"pixelSizeMm", Json::array({grid.pixelSizeXmm, grid.pixelSizeYmm})},
         {"layerThicknessMm", grid.layerThicknessMm},
         {"originMm",
          Json::array({grid.originXmm, grid.originYmm, grid.originZmm})},
+    });
+}
+
+Json MakeOuterVarnishJson(
+    const OuterVarnishDiscretization& discretization)
+{
+    return Json::object({
+        {"enabled", discretization.enabled},
+        {"requestedThicknessMm", discretization.requested_thickness_mm},
+        {"radiusXPx", discretization.radius_x_px},
+        {"radiusYPx", discretization.radius_y_px},
+        {"effectiveThicknessXmm",
+         discretization.effective_thickness_x_mm},
+        {"effectiveThicknessYmm",
+         discretization.effective_thickness_y_mm},
+        {"pixelSizeXmm", discretization.pixel_size_x_mm},
+        {"pixelSizeYmm", discretization.pixel_size_y_mm},
+        {"pixelPitchSource", "output_dpi"},
     });
 }
 
@@ -721,6 +771,11 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             {"productionOutputWritten", true},
             {"fallbackApplied", false},
             {"productionTiffLayerCount", request.grid.layerCount},
+            {"materialSemantics",
+             Json::object({
+                 {"outerVarnish",
+                  MakeOuterVarnishJson(request.outerVarnish)},
+             })},
             {"layerStats", Json{layerStats}},
             {"totals",
              Json::object({
