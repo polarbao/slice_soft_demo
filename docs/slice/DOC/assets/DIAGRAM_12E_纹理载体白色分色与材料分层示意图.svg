@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980">
+  <defs>
+    <pattern id="rgbPattern" width="24" height="24" patternUnits="userSpaceOnUse">
+      <rect width="24" height="24" fill="#f8fafc"/>
+      <rect x="0" y="0" width="8" height="24" fill="#ef4444"/>
+      <rect x="8" y="0" width="8" height="24" fill="#22c55e"/>
+      <rect x="16" y="0" width="8" height="24" fill="#0ea5e9"/>
+    </pattern>
+    <pattern id="clearPattern" width="14" height="14" patternUnits="userSpaceOnUse">
+      <rect width="14" height="14" fill="#e5e7eb"/>
+      <path d="M-2 14 L14 -2 M5 19 L19 5" stroke="#9ca3af" stroke-width="3"/>
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+    <style>
+      .title { font: 700 28px Arial, "Microsoft YaHei", sans-serif; fill: #111827; }
+      .subtitle { font: 400 15px Arial, "Microsoft YaHei", sans-serif; fill: #475569; }
+      .panel-title { font: 700 20px Arial, "Microsoft YaHei", sans-serif; fill: #111827; }
+      .label { font: 600 15px Arial, "Microsoft YaHei", sans-serif; fill: #1f2937; }
+      .body { font: 400 14px Arial, "Microsoft YaHei", sans-serif; fill: #334155; }
+      .small { font: 400 12px Arial, "Microsoft YaHei", sans-serif; fill: #475569; }
+      .mono { font: 600 13px Consolas, monospace; fill: #1f2937; }
+      .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+      .flow { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <rect width="1500" height="980" fill="#ffffff"/>
+  <text x="40" y="48" class="title">12E 纹理载体、白色分色与材料分层目标态示意</text>
+  <text x="40" y="78" class="subtitle">PROPOSED：几何归属、结构载体、光学白色和表面光油相互独立；本图不表示 RIP 半色调或设备喷射顺序。</text>
+
+  <rect x="30" y="105" width="700" height="405" rx="6" class="panel"/>
+  <text x="54" y="140" class="panel-title">A. 局部纹理壳层：TextureSurface 与 ModelFill 几何互补</text>
+
+  <g transform="translate(65 170)">
+    <text x="118" y="0" class="label">不透明白色主体</text>
+    <rect x="20" y="28" width="270" height="235" rx="112" fill="#ffffff" stroke="#6b7280" stroke-width="2"/>
+    <rect x="38" y="46" width="234" height="199" rx="94" fill="url(#rgbPattern)" stroke="#dc2626" stroke-width="2"/>
+    <rect x="67" y="75" width="176" height="141" rx="66" fill="#ffffff" stroke="#64748b" stroke-width="2"/>
+    <path d="M53 94 A92 72 0 0 1 257 94" fill="none" stroke="#f59e0b" stroke-width="8"/>
+    <text x="83" y="140" class="label">ModelFill W</text>
+    <text x="78" y="164" class="small">Carrier 默认跟随 W</text>
+    <text x="70" y="285" class="small">RGB 壳层中的纯白由 W 表示</text>
+  </g>
+
+  <g transform="translate(385 170)">
+    <text x="112" y="0" class="label">透明光油主体</text>
+    <rect x="20" y="28" width="270" height="235" rx="112" fill="url(#clearPattern)" stroke="#6b7280" stroke-width="2"/>
+    <rect x="38" y="46" width="234" height="199" rx="94" fill="url(#rgbPattern)" stroke="#0f766e" stroke-width="2"/>
+    <rect x="67" y="75" width="176" height="141" rx="66" fill="url(#clearPattern)" stroke="#64748b" stroke-width="2"/>
+    <path d="M53 94 A92 72 0 0 1 257 94" fill="none" stroke="#6b7280" stroke-width="8"/>
+    <path d="M92 64 Q155 37 218 64" fill="none" stroke="#ffffff" stroke-width="13"/>
+    <path d="M92 64 Q155 37 218 64" fill="none" stroke="#111827" stroke-width="2" stroke-dasharray="5 5"/>
+    <text x="85" y="140" class="label">ModelFill V</text>
+    <text x="78" y="164" class="small">Carrier 默认跟随 V</text>
+    <text x="54" y="285" class="small">实际白色图案可局部叠加 W；透明留白不写 W</text>
+  </g>
+
+  <g transform="translate(55 468)">
+    <rect x="0" y="0" width="16" height="16" fill="url(#rgbPattern)" stroke="#64748b"/>
+    <text x="24" y="13" class="small">TextureSurface RGB</text>
+    <rect x="165" y="0" width="16" height="16" fill="#ffffff" stroke="#64748b"/>
+    <text x="189" y="13" class="small">White W</text>
+    <rect x="285" y="0" width="16" height="16" fill="url(#clearPattern)" stroke="#64748b"/>
+    <text x="309" y="13" class="small">Varnish/Clear V</text>
+    <line x1="467" y1="8" x2="500" y2="8" stroke="#f59e0b" stroke-width="7"/>
+    <text x="510" y="13" class="small">Carrier 来源层</text>
+  </g>
+  <text x="54" y="498" class="small">Carrier 线仅表示材料来源；co_voxel / interface band / RIP pass 的空间位置由专项 R0 冻结。</text>
+
+  <rect x="760" y="105" width="710" height="405" rx="6" class="panel"/>
+  <text x="784" y="140" class="panel-title">B. 全纹理模式：ModelFillMask=0，但材料策略仍存在</text>
+
+  <g transform="translate(800 178)">
+    <rect x="0" y="0" width="230" height="205" rx="92" fill="url(#rgbPattern)" stroke="#334155" stroke-width="3"/>
+    <path d="M32 60 Q115 18 198 60" fill="none" stroke="#ffffff" stroke-width="18"/>
+    <path d="M32 60 Q115 18 198 60" fill="none" stroke="#111827" stroke-width="2" stroke-dasharray="5 5"/>
+    <text x="46" y="103" class="label">TextureSurface</text>
+    <text x="72" y="127" class="mono">= ModelMask</text>
+    <text x="65" y="156" class="mono">ModelFill=0</text>
+  </g>
+
+  <line x1="1050" y1="280" x2="1112" y2="280" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <g transform="translate(1130 168)">
+    <rect x="0" y="0" width="300" height="100" rx="6" fill="#ecfeff" stroke="#0891b2" stroke-width="2"/>
+    <text x="18" y="28" class="label">显式通道 explicit_channels</text>
+    <text x="18" y="54" class="body">RGB + V carrier + 可选 W</text>
+    <text x="18" y="78" class="small">encodedMaterialClosure 必须 PASS</text>
+
+    <rect x="0" y="125" width="300" height="126" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+    <text x="18" y="153" class="label">RIP 管理 rip_managed</text>
+    <text x="18" y="179" class="body">TIFF 不写 carrier，RIP 物化 V/W</text>
+    <text x="18" y="203" class="small">必须有逐像素覆盖合同和 RIP 证据</text>
+    <text x="18" y="225" class="small">缺少合同时 production BLOCKED</text>
+  </g>
+
+  <text x="800" y="430" class="body">纯白 RGB=[255,255,255] 在无 W/V 时与背景同字节。</text>
+  <text x="800" y="454" class="body">不得使用 RGB=254 哨兵伪造占用；必须显式载体或可靠 RIP 覆盖。</text>
+  <text x="800" y="478" class="small">全纹理表示 fill coverage 为 0，不表示删除 ModelFill 配置。</text>
+
+  <rect x="30" y="540" width="1440" height="370" rx="6" class="panel"/>
+  <text x="54" y="576" class="panel-title">C. 全模型处理、材料解析与三层验收证据</text>
+
+  <g transform="translate(55 610)">
+    <rect x="0" y="0" width="200" height="74" rx="6" class="flow"/>
+    <text x="20" y="29" class="label">全模型 3D 分区</text>
+    <text x="20" y="53" class="small">Texture XOR Fill = Model</text>
+
+    <line x1="205" y1="37" x2="250" y2="37" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="260" y="0" width="205" height="74" rx="6" class="flow"/>
+    <text x="280" y="29" class="label">Texture Carrier</text>
+    <text x="280" y="53" class="small">material / placement / delivery</text>
+
+    <line x1="470" y1="37" x2="515" y2="37" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="525" y="0" width="205" height="74" rx="6" class="flow"/>
+    <text x="545" y="29" class="label">White Separation</text>
+    <text x="545" y="53" class="small">opaque white / knockout / profile</text>
+
+    <line x1="735" y1="37" x2="780" y2="37" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="790" y="0" width="185" height="74" rx="6" class="flow"/>
+    <text x="810" y="29" class="label">Surface Finish</text>
+    <text x="810" y="53" class="small">surface / outer varnish</text>
+
+    <line x1="980" y1="37" x2="1025" y2="37" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="1035" y="0" width="160" height="74" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+    <text x="1055" y="29" class="label">RGBWSV</text>
+    <text x="1055" y="53" class="small">固定协议 composer</text>
+
+    <line x1="1200" y1="37" x2="1245" y2="37" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="1255" y="0" width="135" height="74" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+    <text x="1286" y="29" class="label">RIP</text>
+    <text x="1273" y="53" class="small">仅按合同消费</text>
+  </g>
+
+  <g transform="translate(55 724)">
+    <rect x="0" y="0" width="420" height="132" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+    <text x="20" y="30" class="label">Geometry Closure</text>
+    <text x="20" y="56" class="body">证明 TextureSurface + ModelFill 精确覆盖模型</text>
+    <text x="20" y="82" class="mono">overlap=0 / unassigned=0</text>
+    <text x="20" y="108" class="small">与 W/V/RGB 最终通道来源无关</text>
+
+    <rect x="465" y="0" width="420" height="132" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+    <text x="485" y="30" class="label">Encoded Material Closure</text>
+    <text x="485" y="56" class="body">检查最终 TIFF expected domain 是否六通道全 255</text>
+    <text x="485" y="82" class="mono">explicit_channels -> PASS required</text>
+    <text x="485" y="108" class="small">纯白与背景区分的切片端硬证据</text>
+
+    <rect x="930" y="0" width="460" height="132" rx="6" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+    <text x="950" y="30" class="label">Effective Process Closure</text>
+    <text x="950" y="56" class="body">检查 TIFF + RIP 物化铺底后的最终材料闭环</text>
+    <text x="950" y="82" class="mono">rip_managed -> independent PASS required</text>
+    <text x="950" y="108" class="small">没有 RIP contract/evidence 时不得生产准入</text>
+  </g>
+
+  <text x="40" y="950" class="subtitle">固定红线：p0.rgbwsv.2、R G B W S V、uint8、black_is_print、legacy 默认路径不变。</text>
+</svg>

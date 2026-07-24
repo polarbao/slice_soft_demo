@@ -1,8 +1,9 @@
 # REPORT 12E-09A-01 只读 Diagnostic Facade 与 UI DTO 当前状态
 
 > 日期：2026-07-22
-> 状态：COMPLETE / DIAGNOSTIC ONLY / PRODUCTION NOT ADMITTED
-> 下一任务：12E-09A-02 Effective Config 事务与派生字段
+> 状态：COMPLETE / DIAGNOSTIC ONLY
+> 诊断支线下一任务：12E-09A-02 Effective Config 事务与派生字段
+> 当前生产主线：12E-09B-02（09B-01 已完成）
 
 ## 1. 任务结论
 
@@ -16,8 +17,8 @@ blocked
 diagnostic
 ```
 
-该能力没有文件输出接口，不会写 preview、TIFF 或 production package。12E-08D 仍为 NO-GO，
-`global_surface_shell` 仍不得作为生产切片模式。
+该能力没有文件输出接口，不会写 preview、TIFF 或 production package。本文完成时 12E-08D 尚未准入；
+后续 12E-08D-01..06 已完成，并通过独立 09B 任务开放已准入 Global 候选，不改变本 Facade 的只读语义。
 
 ## 2. 实现内容
 
@@ -83,5 +84,5 @@ git diff --check
 不开放 global production 按钮；
 不静默 fallback 到 legacy；
 不修改 p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print；
-12E-09B 继续等待 12E-08D admission 与用户明确授权。
+12E-09B 的 08D 前置现已完成；09B 按独立专项文档执行，09A-02 继续只负责诊断 Effective Config 字段。
 ```

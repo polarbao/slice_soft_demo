@@ -41,6 +41,11 @@
 | `assets/DIAGRAM_12E_R4_模型修复与准入流程示意图.svg` | 真实模型修复、属性恢复、重复审计与 R4-06/07 准入流程 |
 | `DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md` | R4-08 12E-08D GO/NO-GO 刷新准备 |
 | `DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后功能可继续、生产仍阻断以及正常/required 模型双轨分析 |
+| `DOC_PREP_12E_纹理载体与白色分色专项准备.md` | 建议在 12E-10 后另立 12G-TCWS 的纹理载体、白色分色、透明/全纹理与 RIP 铺底准备 |
+| `assets/DIAGRAM_12E_纹理载体白色分色与材料分层示意图.svg` | TextureSurface/ModelFill、Carrier、白色分色、全纹理交付与三类闭环目标态示意 |
+| `DOC_PREP_12E_09B_Qt双模式生产入口准备.md` | 09B 双模式 Qt 产品入口的原子任务、依赖与 Gate |
+| `DOC_SCHEMA_12E_09B_EffectiveConfig与能力状态.md` | 09B session Effective Config、能力锁定和 UI 审计合同 |
+| `DOC_PREP_12E_09C_XY_DPI准备.md` | 09C X/Y 非等方 DPI 专项准备完整性与启动 Gate |
 
 ## 决策记录
 

@@ -1,8 +1,9 @@
 # CODEX_PROMPT_12E 全局纹理壳层与模型填充执行指令
 
-> 文档状态：12E-08C COMPLETE-BLOCKED / REPAIR PREREQUISITE PREPARED
+> 文档状态：12E-08D COMPLETE / GENERIC ENTRY / 09B USE DEDICATED PROMPT
 > 日期：2026-07-20
-> 当前不得启动 12E-08D；先执行独立 `CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md`
+> 状态刷新：2026-07-23
+> 当前生产主线使用 `CODEX_PROMPT_12E_09B_Qt双模式生产入口执行指令.md`
 
 ## 1. 角色
 
@@ -48,7 +49,7 @@ git status --short
 ## 4. 执行边界
 
 ```text
-只执行用户明确指定的一个 Task 12E-XX；12E-08A/08B/08C 已完成，不得自动启动 12E-08D production path；
+只执行用户明确指定的一个 Task 12E-XX；12E-08D-01..06 已完成，不得重复执行或重写其生产边界；
 真实模型修复必须使用独立 12E-08C-R1/R2/R3 任务与执行提示词；
 不要自动执行下一任务；
 不要修改 12D-R3 的 repair/UI/真实模型范围；

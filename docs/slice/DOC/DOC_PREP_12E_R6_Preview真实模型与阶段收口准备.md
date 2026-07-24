@@ -1,17 +1,19 @@
 # DOC_PREP_12E-R6 Preview、真实模型与阶段收口准备
 
-> 文档状态：PREPARED / EXECUTION DEPENDENCIES RECORDED / PRODUCTION PART BLOCKED
+> 文档状态：PREPARED / R4 AND 08D DEPENDENCIES CLOSED / WAIT 09A-05 AND 09B
 > 日期：2026-07-20
 > 覆盖任务：12E-10 Preview、Real Model Matrix 与 REPORT_12E
 
 ## 1. 准备结论
 
-12E-10 的输出、依赖、证据所有权、原子任务和验收顺序已明确，准备工作完成。但实现不能提前开始：
+12E-10 的输出、依赖、证据所有权、原子任务、矩阵 schema 和验收顺序已明确。R4/08D 的历史阻断
+已解除，但最终收口仍等待 09A/09B UI 依赖：
 
 ```text
-Preview 依赖 12E-09A 同层 UI/diagnostic facade；
-真实模型最终矩阵依赖 R4-06 family 3/3、R4-07 和 R4-08；
-生产 package 收口依赖 12E-08D；
+Preview 依赖 12E-09A-05 同层 UI、12E-09B-05 生产结果绑定和 12E-09C 物理比例显示；
+真实模型正向矩阵使用已通过的 xiao_ma/yecan 两族；
+复杂浮雕 0/3 作为 BLOCKED_EXPECTED 披露，不再阻断正向矩阵；
+生产 package 可复用 12E-08D 已完成证据，并在 09B UI 路径重新验证；
 最终 REPORT_12E 必须记录 PASS 或 keep diagnostic，而不是默认宣称 production。
 ```
 
@@ -48,10 +50,10 @@ preview 是显示证据，不替代 TIFF/report/RIP。
 固定首版 cases：
 
 ```text
-nai_you_new；
-aishen_fudiao；
-meigui_fudiao；
-Texture2D/ColorGroup 3MF fixture。
+xiao_ma_wu_yu_new 当前 R4/08D baseline；
+yecan/3.obj；
+samples/models/3mf/texture2d_checker_cube.3mf（格式控制）；
+aishen_fudiao / meigui_fudiao / titian_fudiao（阻断披露）。
 ```
 
 每个 case 固定三个宽度点：effective minimum、representative intermediate、allTexture threshold。若模型在
@@ -77,8 +79,14 @@ UI smoke：显示与交互。
 12E-10D：用户手册、REPORT_12E、索引和上下文封口。
 ```
 
-10A 依赖 09A-05；10B/10C 的 required family 最终行依赖 R4-07/08；生产 package/RIP 行依赖 08D。10D 可以输出
-`keep diagnostic`，不强制以 production PASS 结束阶段。
+最终状态报告固定为：
+
+```text
+docs/slice/REPORT/REPORT_12E_全局纹理壳层与模型填充当前状态.md
+```
+
+10A 依赖 09A-05 和 09B-05；10B/10C 的 R4/08D 证据前置已完成，最终 UI 双模式矩阵等待
+09B-06。10D 等待 10A/10B/10C 后执行。
 
 ## 7. 验收
 
@@ -96,10 +104,10 @@ REPORT_12E 列出实际命令、结果、阻断和后续建议。
 
 ```text
 文档准备：COMPLETE；
-12E-10A：BLOCKED BY 12E-09A-05；
-12E-10B/10C required-family final evidence：BLOCKED BY R4-07/08；
-12E-10 production package evidence：BLOCKED BY 12E-08D；
-12E-10D：等待前述证据后执行。
+12E-10A：WAIT 12E-09A-05 AND 12E-09B-05 AND 12E-09C；
+12E-10B：PREPARED / WAIT 12E-09B-06 AND 12E-09C；
+12E-10C：PREPARED / 08D EVIDENCE AVAILABLE / WAIT 12E-09B-06 AND 12E-09C FINAL SUMMARY；
+12E-10D：WAIT 10A/10B/10C。
 ```
 
 ## 9. 双模式阶段收口补充
@@ -124,10 +132,10 @@ global 诊断结果可单独显示，但必须标注“诊断，未生成可打�
 ## 10. 2026-07-22 准备度刷新
 
 ```text
-12E-10 文档与任务拆分：COMPLETE；
-12E-10A：等待 12E-09A-05 同层 preview；
-12E-10B：clean diagnostic 行可复用 R4-05，但 required family 最终行等待 R4-07；
-12E-10C：等待 R4-07 Release budget 和 R4-08 decision；
+12E-10 文档、任务拆分和 Final Closure Matrix schema：COMPLETE；
+12E-10A：等待 12E-09A-05 同层 preview、12E-09B-05 生产结果绑定和 12E-09C 物理比例显示；
+12E-10B：xiao_ma/yecan/3MF 控制/复杂浮雕阻断矩阵已冻结，等待 09B-06 后执行；
+12E-10C：可复用 R4-07-R2 和 08D-06 Release 证据，等待 09B-06 后形成最终汇总；
 12E-10D：等待 10A/10B/10C 后收口；
-生产 package/RIP：继续等待 12E-08D。
+生产 package/RIP：08D 前置已完成，09B UI 路径需重新验证。
 ```

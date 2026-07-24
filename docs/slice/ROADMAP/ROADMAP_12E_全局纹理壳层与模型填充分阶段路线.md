@@ -3,7 +3,7 @@
 > 文档状态：ROADMAP / Stage 12E Planning
 > 日期：2026-07-16
 > 更新日期：2026-07-23
-> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3/R4 COMPLETE；R4-08-R2 GO；12E-08D-01..06 COMPLETE；12E-09B READY
+> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3/R4 COMPLETE；R4-08-R2 GO；12E-08D-01..06 COMPLETE；12E-09B-01/02 COMPLETE；12E-09B-03 READY
 
 ## 1. Goal
 
@@ -14,7 +14,7 @@
 ```text
 1. 12D-R0/R1/R2/R3 已完成；
 2. 12E-R0 的 Config/DTO、report schema、fixture matrix 和启动状态准备已完成；
-3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3、R4-01..07/R1/R2、Quick-CI-R1 和 12E-08D-01..06 已完成；两个 Global 显式候选通过 0.01 mm TIFF/RIP，Legacy 仍因性能与内存保持默认；12E-09A diagnostic 任务可独立执行，12E-09B 已具备授权条件；
+3. 12E-01/02/03/04/05/06/07 与 12E-08A/08B/08C、R1/R2/R3、R4-01..07/R1/R2、Quick-CI-R1 和 12E-08D-01..06 已完成；两个 Global 显式候选通过 0.01 mm TIFF/RIP，Legacy 仍因性能与内存保持默认；12E-09A diagnostic 任务可独立执行；12E-09B-01 已完成，09B-02 为下一任务；12E-09C DPI 专项已准备；
 4. 12E composer/production 接入需要已完成的 12D semantic_masks exact contract；
 5. 不要求 12D repair R3 完成后才能做 12E R1 算法原型，但 production admission 必须重新确认；
 6. 12E-01 已完成配置、DTO、稳定错误码和 unavailable report 骨架；未接入 production generation。
@@ -194,8 +194,10 @@ production gate 失败时不写生产包。
 | 12E-08D-02 | global classification 到现有生产层 DTO 的 adapter | COMPLETE；通道、真实层序和 material closure 语义完整，不写文件 |
 | 12E-08D-03 | COMPLETE：两模式共享 RGBWSV writer、manifest、preview/report 与 RIP 回归 | synthetic Legacy/Global 与 Global Adapter 桥接均生成一致 TIFF；RIP strict PASS |
 | 12E-08D-04 | COMPLETE：真实模型 Release matrix 与 GO/NO-GO | restricted Profile GO；ordinary parity NO-GO |
-| 12E-09B | Qt 双模式选择、能力提示和 Effective Config | 仅对 admitted restricted Profile 开放；中文入口；requested/effective 可追踪 |
-| 12E-10 | 双模式真实模型、preview、RIP、性能与报告收口 | 输出矩阵完整，残余风险明确 |
+| 12E-09B | Qt 双模式选择、能力提示和 Production Effective Config | 09B-01 COMPLETE；仅对 admitted restricted/material-parity Profile 开放；中文入口；requested/effective 可追踪 |
+| 12E-09C | X/Y DPI 非等方配置与协议兼容 | 默认 635/600；显式 600/600 兼容；Core/Reader/两引擎/光油/Qt/preview 同合同 |
+| 12E-09A-02..06 | Diagnostic Effective Config、worker 和同层语义 preview | 独立支线；09A-05 是 10A 前置 |
+| 12E-10 | 双模式真实模型、preview、RIP、性能与报告收口 | 等待 09B、09C 和 09A-05；输出矩阵完整，残余风险明确 |
 
 `legacy` 始终保留为默认生产路径。`global_surface_shell` 的 CPU/OpenVDB 后端选择是内部能力，不能成为
 第三个产品切片模式，也不能因后端不可用而静默改变端到端流水线。

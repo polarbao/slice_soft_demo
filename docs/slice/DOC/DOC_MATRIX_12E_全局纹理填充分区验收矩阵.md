@@ -155,9 +155,11 @@ OpenVDB OFF build PASS；
 | 12E-08C | COMPLETE：默认 OFF Release/回归证据已生成；3 个真实 OBJ topology BLOCKED，预算未冻结 |
 | 12E-08C-R1/R2/R3 | COMPLETE / R3-04 NO-GO：显式 repair-then-strict、属性保持、post strict 和真实模型 Release Gate |
 | 12E-08C-R4 | COMPLETE：两独立模型族、四用例、候选预算、legacy/RIP、Quick CI PASS；R4-08-R2 条件技术通过 |
-| 12E-08D | BLOCKED：技术 Gate 已通过，只等待用户独立授权并登记 GO |
-| 12E-09 | 09A-01 COMPLETE / 09A-02 READY；09B 被 08D 阻断 |
-| 12E-10 | UI、真实模型、RIP 和报告收口 |
+| 12E-08D | COMPLETE：01..06 完成；Legacy 默认 GO；两个 Global 显式候选 GO；Global 默认替换 NO-GO |
+| 12E-09A | 09A-01 COMPLETE；09A-02..06 为独立 diagnostic UI 支线 |
+| 12E-09B | 09B-01/02 COMPLETE；09B-03 READY；仅开放 admitted Profile 能力 |
+| 12E-09C | PREPARATION COMPLETE / WAIT 09B-06；默认 635/600，显式 600/600 兼容 |
+| 12E-10 | PREPARED；10A 等待 09A-05/09B-05/09C，10B/10C 最终汇总等待 09B-06/09C |
 
 ## 12. 双切片模式与输出矩阵
 
@@ -171,8 +173,8 @@ OpenVDB OFF build PASS；
 | 非法 mode | 无 | 禁止 | config error | fail-fast |
 
 两条 production PASS 行统一要求 `p0.rgbwsv.2 / R G B W S V / uint8 / black_is_print`，并验证 manifest
-layer list、TIFF 文件、同层 preview、通道统计和 RIP strict。12E-08D-01..04 在修复 Gate 通过后执行；
-12E-09B 才开放 UI 双模式生产选择。
+layer list、TIFF 文件、同层 preview、通道统计和 RIP strict。12E-08D-01..06 已完成；12E-09B
+按已准入能力开放 UI 双模式生产选择。
 
 ## 13. R4 模型预检与资产准入矩阵
 

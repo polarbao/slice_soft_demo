@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-07-22
-> 当前阶段：12D COMPLETE / 12E-08C-R3 COMPLETE / R3-04 NO-GO / R4-01..03 COMPLETE
+> 更新日期：2026-07-23
+> 当前阶段：12E-09B-02 COMPLETE / 12E-09B-03 READY
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -28,6 +28,11 @@ docs/codex_task/archive/handoff
 ```text
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
+docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_09B_Qt双模式生产入口执行指令.md
+docs/codex_task/current/TASKS_12E_09A_诊断UI任务清单.md
+docs/codex_task/current/TASKS_12E_09C_XY_DPI任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_09C_XY_DPI执行指令.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
@@ -37,14 +42,15 @@ docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资�
 当前原子任务：
 
 ```text
-12E-08C-R4-01..03 COMPLETE；R4-04 READY / WAIT EXPLICIT EXECUTION；12E-08D 继续阻断
+12E-09B-01/02 COMPLETE；12E-09B-03 READY；12E-09A-02..06 保持独立 diagnostic UI 支线；
+12E-09C PREPARED / WAIT 09B-06
 ```
 
 12C-R0/R1/R2 已全部完成。12D-R0/R1/R2/R3 已封口，包含 candidate/exact 诊断、一像素 repair、外部背景保护、Qt 展示和三个真实 OBJ 验收。repair 仍默认关闭。
 
 ## 保留参考入口
 
-`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；12E-08A/08B/08C 与 R1/R2/R3 已完成 diagnostic、repair 和 Release 证据，但真实 OBJ 被 topology 阻断。12E-08D 前必须先执行 R4 模型预检、正常模型正向链和 required 修复资产准入。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
+`current` 目录中的 11、11A、11B、12A、12B、12C 和 12D 文件继续保留，用于追溯或并行专项；12E-08C-R4 和 12E-08D 已完成。当前使用独立 09B TASKS/PROMPT 开发 Qt 双模式生产入口。已完成阶段状态以 `docs/slice/REPORT` 的最新报告为准。
 
 ## 当前执行阶段 12E
 
@@ -55,7 +61,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08C R1/R2/R3 COMPLETE / R3-04 NO-GO / R4-01..07 COMPLETE / R4-07-R1 COMPLETE`。xiao_ma/yecan 两个独立 strict/admitted 真实模型族和四用例候选证据 PASS；爱神/玫瑰/梯田继续作为 0/3 复杂浮雕覆盖缺口。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`，global 当前仍是 diagnostic-only；候选预算、Quick CI、R4-08-R2 和用户独立授权完成前不得启动 12E-08D。
+12E 当前状态为 `12E-08D-01..06 COMPLETE / 12E-09B-01/02 COMPLETE / 12E-09B-03 READY`。xiao_ma/yecan 两个独立 strict/admitted 真实模型族和四用例候选证据 PASS；爱神/玫瑰/梯田继续作为 0/3 复杂浮雕覆盖缺口。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`；Legacy 默认，两个 Global Profile 仅显式 opt-in，且禁止 silent fallback。09B-02 已完成原子 Production Effective Config 和 stale override 审计。09C 已为 X=635/Y=600 与显式 600/600 兼容建立并审计完整准备，等待 09B-06。
 
 ## 12F Release Runtime 与性能优化专项
 

@@ -19,9 +19,9 @@
 - `12C-R0` Qt workbench build compatibility and baseline admission is complete.
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
-- The latest completed milestone is `12E-08D-01..06 dual-mode production closure`; `12E-09B` is the next authorization-required task.
+- The latest completed milestone is `12E-09B-02 Production Effective Config`; `12E-09B-03` is the next production-mainline task.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records the historical `NO-GO / FROZEN`. `12E-08C-R4-01..07`, R4-07-R1, R4-07-R2, Quick-CI-R1, and R4-08-R2 are complete; the two-family candidate matrix, versioned reference-machine candidate budget, and current Quick CI are PASS. R4-08-R2 is `GO` after explicit authorization. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01` and `12E-08D-01..06` are complete.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records the historical `NO-GO / FROZEN`. `12E-08C-R4-01..07`, R4-07-R1, R4-07-R2, Quick-CI-R1, and R4-08-R2 are complete; the two-family candidate matrix, versioned reference-machine candidate budget, and current Quick CI are PASS. R4-08-R2 is `GO` after explicit authorization. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01`, `12E-08D-01..06`, and `12E-09B-01/02` are complete. `12E-09A-02..06` remain an independent diagnostic UI lane; `12E-09B-03` is next. `12E-09C` X/Y DPI preparation is complete but waits for 09B-06.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - `global_surface_shell_restricted_candidate` and `global_surface_shell_material_parity_candidate` are admitted as explicit opt-in Profiles at 0.01 mm. xiao_ma/yecan TIFF and RIP strict pass. Global remains 4.82x-8.59x slower and uses 8.19x-8.74x peak memory versus Legacy in the current matrix, so Legacy remains the default and no silent fallback is permitted.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
@@ -85,6 +85,10 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Prepared 12E-R4 execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资产准入执行指令.md`
 - Approved 12E dual-mode decision: `docs/slice/DOC/DOC_DECISION_12E_Legacy与GlobalSurfaceShell双切片模式.md`
 - Prepared 12E-08D dual-mode production task: `docs/slice/DOC/DOC_PREP_12E_08D_双模式生产写包准备.md`
+- Prepared 12E-09B production UI task: `docs/slice/DOC/DOC_PREP_12E_09B_Qt双模式生产入口准备.md`
+- Current 12E-09B task list: `docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md`
+- Prepared 12E-09C X/Y DPI task: `docs/slice/DOC/DOC_PREP_12E_09C_XY_DPI准备.md`
+- Current 12E-09A diagnostic task list: `docs/codex_task/current/TASKS_12E_09A_诊断UI任务清单.md`
 
 ## Production Safety Rules
 

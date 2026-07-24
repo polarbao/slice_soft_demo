@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v1.0
-> 更新日期：2026-07-23
-> 当前唯一主线：12E-09B 双模式 Qt 入口
-> 当前下一原子任务：等待 12E-09B 明确授权
+> 版本：v1.1
+> 更新日期：2026-07-24
+> 当前唯一生产主线：12E-09B 双模式 Qt 入口
+> 当前下一原子任务：12E-09B-03 中文模式/Profile 选择器与状态
 
 ## 1. 使用规则
 
@@ -16,6 +16,18 @@ Target State：以 PRD/DEV/ROADMAP/Decision 为准；
 Historical State：旧报告中的 READY/BLOCKED/NO-GO 保留当时证据，不自动代表当前状态；
 Pending Confirmation：未执行或未通过的任务不得写成完成。
 ```
+
+本文正式作为 Stage 12 的唯一总览文件：
+
+```text
+本文负责：阶段目的、当前完成度、依赖、唯一下一任务和当前结论；
+PRD/DEV/Decision 负责：目标需求、设计和长期边界；
+TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
+各阶段 REPORT 负责：实际改动、验证证据和剩余风险；
+旧总览或旧报告不得覆盖本文的 Current State。
+```
+
+后续不再创建与本文竞争的第二份 Stage 12 总览；只迭代本文版本。
 
 ## 2. 阶段总表
 
@@ -36,10 +48,32 @@ Pending Confirmation：未执行或未通过的任务不得写成完成。
 | 12E-08D-05 | COMPLETE | Global lower/internal-void S、surface/outer V、完整 closure 与 0.2 mm 两族 RIP | 无 |
 | 12E-08D-06 | COMPLETE | 0.01 mm 六 case Release/TIFF/RIP/耗时/峰值内存矩阵 | Global 默认替换 Legacy 因性能与内存 NO-GO |
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 09A-02..06 可按独立授权推进 |
-| 12E-09B | READY / AUTHORIZATION REQUIRED | 两个 Global 显式候选已 admitted；Legacy 保持默认 | 双模式入口、能力锁定、性能提示与 Effective Config |
-| 12E-10 | PLANNED | 收口目标已定义 | 双模式真实模型、Preview、RIP、性能和报告 |
+| 12E-09A | 09A-01 COMPLETE / 09A-02..06 INDEPENDENT | 只读 Diagnostic Facade 与 UI DTO | 诊断 Effective Config、控件、worker、同层 preview 和 smoke |
+| 12E-09B | 09B-02 COMPLETE / 09B-03 READY | 产品模式/Profile 能力目录、fail-closed UI DTO、Production Effective Config、stale override 清理、原子 session 写入 | 可见入口、一键路由、结果绑定和收口 |
+| 12E-09C | PREPARATION COMPLETE / WAIT 09B-06 | X=635/Y=600 目标、兼容策略、PRD/DEV/DEMO/TASKS 已冻结 | Core/Reader、两引擎、外侧光油、Qt、物理比例 preview 和生产矩阵 |
+| 12E-10 | PREPARED / WAIT DEPENDENCIES | 最终矩阵 schema、模型基线和收口目标已定义 | 10A 等待 09A-05/09B-05/09C；10B/10C 最终汇总等待 09B-06/09C |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
+
+### 2.1 Stage 12 目的图
+
+| 阶段 | 主要目的 |
+|---|---|
+| 12A | 冻结 Texture Surface、Model Fill、Support、Varnish 材料语义 |
+| 12B | 建立可比较性能基线，并限定 Legacy/OpenVDB 各自职责 |
+| 12C | 把配置、Profile、预览、诊断和构建入口收敛进 Qt 调试工作台 |
+| 12D | 建立横截面材料闭环、repair-disabled 不变性和真实模型验证 |
+| 12E | 建立 Global Surface Shell、双模式生产写包、Qt 产品入口和最终生产矩阵 |
+| 12F | 整理 Debug/Release Runtime，并在后续阶段继续性能工程化 |
+
+### 2.2 当前原子任务进度
+
+| 任务组 | 当前状态 | 下一动作 |
+|---|---|---|
+| 09A Diagnostic UI | 09A-01 COMPLETE；09A-02..06 独立待授权 | 09A-02 |
+| 09B Production UI | 09B-01/02 COMPLETE；09B-03 READY；09B-04..06 PREPARED | 09B-03 |
+| 09C X/Y DPI | PREPARATION COMPLETE / WAIT 09B-06 | 09B-06 后执行 09C-01 |
+| 12E-10 Final Closure | PREPARED / WAIT 09A-05、09B-06、09C | 依赖满足后执行 10A |
 
 ## 3. 12E-08C 当前结论
 
@@ -97,5 +131,13 @@ docs/slice/DOC/DOC_EXEC_12E_08D_01_SlicePipelineModeRouter结果.md
 docs/slice/DOC/DOC_EXEC_12E_08D_04_显式Profile与ReleaseMatrix结果.md
 docs/slice/DOC/DOC_EXEC_12E_08D_06_0.01mmRelease矩阵与最终分层结论.md
 docs/slice/REPORT/REPORT_12E_08D_双模式生产写包当前状态.md
+docs/slice/DOC/DOC_DECISION_12E_09A_09B_Qt任务顺序与职责边界.md
+docs/slice/DOC/DOC_PREP_12E_09B_Qt双模式生产入口准备.md
+docs/slice/REPORT/REPORT_12E_09B_01_能力目录与UIDTO当前状态.md
+docs/slice/REPORT/REPORT_12E_09B_02_ProductionEffectiveConfig当前状态.md
+docs/slice/DOC/DOC_PREP_12E_09C_XY_DPI准备.md
+docs/codex_task/current/TASKS_12E_09A_诊断UI任务清单.md
+docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md
+docs/codex_task/current/TASKS_12E_09C_XY_DPI任务清单.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
 ```

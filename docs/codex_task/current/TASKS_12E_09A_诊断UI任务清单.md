@@ -1,0 +1,142 @@
+# TASKS 12E-09A 诊断 UI 任务清单
+
+> 状态：09A-01 COMPLETE / 09A-02..06 PREPARED
+> 日期：2026-07-23
+> 性质：独立 diagnostic UI 支线
+
+## 1. 固定边界
+
+```text
+09A 只处理当前模型的诊断配置、分析状态和同层语义预览；
+09A 不开放 Global 生产写包；
+09A 不替代 09B 的产品模式/Profile/准入和生产 package 绑定；
+诊断失败、未评估和 blocked 不得显示为 production PASS；
+OpenVDB 仍是可选后端能力，不是第三种产品模式。
+```
+
+## 2. 09A-01 只读 Diagnostic Facade 与 UI DTO
+
+状态：COMPLETE
+
+成果：
+
+```text
+只读消费 slicesoft.texture_fill_partition.12e.1；
+支持 pending/unavailable/blocked/diagnostic；
+使用 optional 保留未评估值；
+不接收输出目录，不写 package/TIFF；
+拒绝把 release matrix 冒充当前模型诊断结果。
+```
+
+状态报告：
+
+```text
+docs/slice/REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.md
+```
+
+## 3. 09A-02 Diagnostic Effective Config
+
+状态：PREPARED
+
+目标：
+
+```text
+按 Config Editor 事务保存 texture width、modelFill.material、来源 Profile 和派生阈值；
+生成 output/ui_sessions/<session>/slice_config.effective.json；
+不覆盖 samples/configs fixture；
+requested、derived、effective 字段可审计。
+```
+
+验收：保存、回读、回退、stale override 清理和负向配置单测。
+
+## 4. 09A-03 中文参数控件与状态区
+
+状态：PREPARED / WAIT 09A-02
+
+目标：
+
+```text
+纹理表面层宽度 QDoubleSpinBox + slider；
+单位 mm，步长 0.01 mm，显示 2 位；
+模型填充材料选择；
+显示最小值、最大值、全纹理阈值、阻断原因和 backend 可用状态；
+所有中文控件提供简短 tooltip。
+```
+
+验收：双向同步、最长中文、三窗口尺寸和不可用状态 smoke。
+
+## 5. 09A-04 异步分析 Worker
+
+状态：PREPARED / WAIT 09A-03
+
+目标：
+
+```text
+topology/distance/width sweep/texture transfer/raster mapping 不阻塞 UI；
+支持取消、关闭窗口、重复运行和模型切换；
+结果绑定 session/model/config identity；
+不复用 stale result，不悬挂 QObject。
+```
+
+验收：取消、关闭、重入、失败和成功生命周期测试。
+
+## 6. 09A-05 同层语义 Preview
+
+状态：PREPARED / WAIT 09A-04
+
+目标：
+
+```text
+Texture Surface、Model Fill、Partition、Support、Varnish 使用同一真实 layerIndex/zMm；
+显示 width、coverage、allTexture；
+fullClosureLinkage 缺失时显示未评估；
+不得按 preview 文件序号跨层兜底。
+```
+
+验收：同层 identity、材料分区、空层、缺失证据和真实模型 smoke。
+
+## 7. 09A-06 阶段收口
+
+状态：PREPARED / WAIT 09A-05
+
+目标：
+
+```text
+Qt self-test；
+1280x720、1440x900、1920x1080 smoke；
+最长中文、取消、失败和重复运行；
+默认 OpenVDB OFF regression；
+用户手册、状态报告、索引和上下文更新。
+```
+
+## 8. 开发序列判断
+
+09A 必须保留在正式开发序列中，但不是 09B-01..06 的字母顺序前置。单贡献者推荐顺序：
+
+```text
+12E-09B-01..06
+  -> 12E-09C X/Y DPI 专项
+  -> 12E-09A-02..06
+  -> 12E-10A..D
+```
+
+原因：
+
+```text
+09B 先冻结产品模式、Profile 和生产 session 合同；
+09C 再冻结最终 X/Y raster 尺寸与 Reader 合同；
+09A 同层 preview 在最终生产模式和 DPI 合同上收口，可减少重复验证；
+12E-10A 明确依赖 09A-05 和 09B-05，因此 09A 不能从路线中删除。
+```
+
+若使用独立分支并确保文件所有权不冲突，09A-02..04 可与 09B 后半段并行；当前单工作树不建议交叉实施。
+
+## 9. 每任务验证
+
+```powershell
+git branch --show-current
+git status --short
+git diff --check
+```
+
+C++/Qt 修改按 `.agents/docs/build-and-test.md` 运行定向单测、UI build 和 self-test。

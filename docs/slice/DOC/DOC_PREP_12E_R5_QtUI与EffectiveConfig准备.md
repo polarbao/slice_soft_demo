@@ -1,21 +1,22 @@
 # DOC_PREP_12E-R5 Qt UI 与 Effective Config 准备
 
-> 文档状态：12E-09A-01 COMPLETE / 12E-09A-02 READY / 12E-09B BLOCKED BY 12E-08D
+> 文档状态：12E-09A-01 COMPLETE / 12E-09A-02..06 INDEPENDENT / 12E-09B-01/02 COMPLETE / 12E-09B-03 READY
 > 日期：2026-07-21
+> 状态刷新：2026-07-23
 > 覆盖任务：12E-09 Qt UI 设置与 Effective Config
-> 前置状态：R4-08-R2 CONDITIONAL_TECHNICAL_PASS；12E-08D 只等待独立授权
+> 前置状态：R4-08-R2 GO；12E-08D-01..06 COMPLETE
 
 ## 1. 准备结论
 
 12E-09 的 UI 范围、配置所有权、异步边界、状态显示、preview 合同和 smoke matrix 已准备完成。
-但当前 12E 仍为 diagnostic-only，普通用户不能把 `global_surface_shell` 当作已准入生产策略。
+12E-08D 后，已准入的 Global 候选可由 09B 以显式 opt-in 方式接入普通生产 UI；Legacy 仍为默认。
 
 执行可分为两层：
 
 ```text
 12E-09A diagnostic UI：文档准备已完成；R4-01..04 已固化并接入共享 preflight/admission facade，
 可以开始 width/modelFill 控件，且 UI 不得重复拓扑规则；
-12E-09B production Profile：必须等待 12E-08D admitted=true 后启用。
+12E-09B production Profile：08D 前置已完成；09B-01 已完成，可从 09B-02 继续。
 ```
 
 ## 2. 用户目标
@@ -202,7 +203,7 @@ OpenVDB ON 可选 lane PASS。
 | classification-to-raster | 12E-08A PASS | 可显示真实 raster layer |
 | full material closure | 12E-08B PASS / DIAGNOSTIC | 可显示真实 Support/Varnish 状态 |
 | Release/legacy regression | R4-07-R1/R2、Quick-CI-R1 PASS | 09A 可展示候选诊断状态；候选预算不得宣传为产品 SLA |
-| production admission | 12E-08D NOT GRANTED | 不得启用生产 Profile |
+| production admission | 12E-08D-01..06 COMPLETE | 09B 仅可开放已准入的显式候选；Legacy 保持默认 |
 
 ## 12. 12E-09A 输出合同
 
@@ -249,9 +250,9 @@ blocked case 必须保留 topology issue，相关数值未执行时显示“未�
 
 ```text
 12E-09 文档准备：COMPLETE；
-12E-09A diagnostic UI：READY，可进入执行；
-12E-09B production Profile：BLOCKED BY 12E-08D；
-12E production：NOT ADMITTED。
+12E-09A diagnostic UI：09A-01 COMPLETE，09A-02..06 保持独立支线；
+12E-09B production Profile：09B-01/02 COMPLETE，09B-03 READY；
+12E production：Legacy 默认 GO，两个 Global 显式候选 GO，Global 默认替换 Legacy NO-GO。
 ```
 
 ## 15. 双模式 UI 与 Effective Config 补充合同
@@ -283,12 +284,11 @@ fallbackApplied=false；
 ## 16. 2026-07-22 准备度刷新
 
 ```text
-R4-01..04 shared preflight/admission/Qt gate：COMPLETE；
-R4-05 clean width/material matrix：COMPLETE；
-R4-06 intake software：COMPLETE，真实 family 0/3；
+R4-01..08-R2、Quick-CI-R1：COMPLETE / GO；
+12E-08D-01..06：COMPLETE；
 12E-09A-01：实现与定向验证完成；
-12E-09A-02..06：准备完整，可按原子任务顺序开始；
-12E-09B：仍等待 R4-08 GO、12E-08D production admission 和用户授权。
+12E-09A-02..06：准备完整，作为独立 diagnostic UI 支线；
+12E-09B：专项 PRD/DEV/DEMO/TASKS/PROMPT 已补齐，09B-01/02 COMPLETE，09B-03 READY。
 ```
 
 09A 只允许显示和编辑 diagnostic effective config，不得因 R4-06 软件完成而开放 global production 按钮。
@@ -304,5 +304,7 @@ release matrix schema 会 fail-closed，不得冒充当前模型报告；
 报告声明 productionOutputWritten=true 时状态强制为 blocked。
 ```
 
-下一任务为 `12E-09A-02 Effective Config 事务与派生字段`。它不得绕过现有 Config Editor 事务边界，
-也不得提前新增 global production 运行入口。
+诊断支线下一任务为 `12E-09A-02 Effective Config 事务与派生字段`。生产主线下一任务为
+`12E-09B-02 Production Effective Config`。二者按
+`DOC_DECISION_12E_09A_09B_Qt任务顺序与职责边界.md` 分离字段所有权，均不得绕过现有 Config Editor
+事务边界。
