@@ -21,6 +21,7 @@ struct ModelTopViewLoadRequest
     quint64 transformrevision{0U};
     slicer_core::ModelTransform transform;
     bool locked{false};
+    bool appendtoscene{false};
     slicer_core::SceneViewAdmissionStatus admissionstatus{
         slicer_core::SceneViewAdmissionStatus::Unknown};
 };

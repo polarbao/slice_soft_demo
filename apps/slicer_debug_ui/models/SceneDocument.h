@@ -6,7 +6,10 @@
 #include <QObject>
 #include <QString>
 
+#include <cstddef>
 #include <optional>
+#include <string_view>
+#include <vector>
 
 enum class SceneDocumentState
 {
@@ -27,6 +30,55 @@ enum class SceneTransformedPreflightState
     Cancelled,
     Stale,
 };
+
+enum class SceneDocumentOperationErrorCode
+{
+    None,
+    SceneRevisionStale,
+    InstanceLimitExceeded,
+    InstanceIdDuplicate,
+    InstanceNotFound,
+    InstanceLocked,
+    SceneIdentityMismatch,
+};
+
+struct SceneDocumentOperationError
+{
+    SceneDocumentOperationErrorCode code{
+        SceneDocumentOperationErrorCode::None};
+    QString field;
+    QString message;
+};
+
+struct SceneDocumentOperationResult
+{
+    bool changed{false};
+    std::optional<SceneDocumentOperationError> error;
+
+    /**
+     * @brief Report whether the scene command passed validation.
+     * @return True when no structured error exists.
+     */
+    bool IsValid() const;
+};
+
+struct SceneDocumentItem
+{
+    QString modelpath;
+    QString sourcecachekey;
+    QString sourcehash;
+    QString resourcehash;
+    slicer_core::ModelInstance instance;
+    std::optional<slicer_core::SceneViewGeometry> geometry;
+};
+
+/**
+ * @brief Return the stable name for one scene document command error.
+ * @param code Scene document command error.
+ * @return Stable ASCII error name.
+ */
+std::string_view SceneDocumentOperationErrorCodeName(
+    SceneDocumentOperationErrorCode code);
 
 class SceneDocument final : public QObject
 {
@@ -52,6 +104,13 @@ public:
     void SetLoading(quint64 generation, const QString& modelPath);
 
     /**
+     * @brief Begin appending one model without discarding the current scene.
+     * @param generation Monotonic request generation.
+     * @param modelPath Model path being imported.
+     */
+    void SetAdding(quint64 generation, const QString& modelPath);
+
+    /**
      * @brief Attach immutable source identity and the editable instance.
      * @param generation Current load generation.
      * @param sceneId Stable scene identity.
@@ -63,6 +122,26 @@ public:
      * @return True when the generation was current.
      */
     bool SetSceneContext(
+        quint64 generation,
+        const QString& sceneId,
+        quint64 sceneRevision,
+        const QString& sourceCacheKey,
+        const QString& sourceHash,
+        const QString& resourceHash,
+        slicer_core::ModelInstance instance);
+
+    /**
+     * @brief Append one imported model instance atomically.
+     * @param generation Current append generation.
+     * @param sceneId Existing scene identity.
+     * @param sceneRevision Next scene revision.
+     * @param sourceCacheKey Immutable source repository key.
+     * @param sourceHash Source content identity.
+     * @param resourceHash Adjacent resource identity.
+     * @param instance Imported scene instance.
+     * @return True when the complete append was accepted.
+     */
+    bool AddSceneContext(
         quint64 generation,
         const QString& sceneId,
         quint64 sceneRevision,
@@ -137,6 +216,77 @@ public:
      * @return Instance when a source has been loaded.
      */
     const std::optional<slicer_core::ModelInstance>& Instance() const;
+
+    /**
+     * @brief Return all scene items in stable insertion order.
+     * @return Ordered scene item snapshots.
+     */
+    const std::vector<SceneDocumentItem>& Items() const;
+
+    /**
+     * @brief Return the number of editable model instances.
+     * @return Scene instance count in the range 0..22.
+     */
+    std::size_t InstanceCount() const;
+
+    /**
+     * @brief Return the current instance identity.
+     * @return Empty text when the scene has no current instance.
+     */
+    QString CurrentInstanceId() const;
+
+    /**
+     * @brief Make one existing instance current without changing revision.
+     * @param instanceId Stable instance identity.
+     * @return True when the instance exists.
+     */
+    bool SetCurrentInstance(const QString& instanceId);
+
+    /**
+     * @brief Duplicate one instance while sharing immutable source data.
+     * @param sourceInstanceId Existing source instance identity.
+     * @param newInstanceId New stable instance identity.
+     * @param expectedSceneRevision Caller-observed scene revision.
+     * @return Atomic command result.
+     */
+    SceneDocumentOperationResult DuplicateInstance(
+        const QString& sourceInstanceId,
+        const QString& newInstanceId,
+        quint64 expectedSceneRevision);
+
+    /**
+     * @brief Delete one unlocked scene instance.
+     * @param instanceId Existing instance identity.
+     * @param expectedSceneRevision Caller-observed scene revision.
+     * @return Atomic command result.
+     */
+    SceneDocumentOperationResult DeleteInstance(
+        const QString& instanceId,
+        quint64 expectedSceneRevision);
+
+    /**
+     * @brief Change one instance visibility.
+     * @param instanceId Existing instance identity.
+     * @param visible Requested visibility.
+     * @param expectedSceneRevision Caller-observed scene revision.
+     * @return Atomic command result.
+     */
+    SceneDocumentOperationResult SetInstanceVisible(
+        const QString& instanceId,
+        bool visible,
+        quint64 expectedSceneRevision);
+
+    /**
+     * @brief Change one instance lock state.
+     * @param instanceId Existing instance identity.
+     * @param locked Requested lock state.
+     * @param expectedSceneRevision Caller-observed scene revision.
+     * @return Atomic command result.
+     */
+    SceneDocumentOperationResult SetInstanceLocked(
+        const QString& instanceId,
+        bool locked,
+        quint64 expectedSceneRevision);
 
     /**
      * @brief Return the current scene identity.
@@ -281,11 +431,27 @@ signals:
     void SigChanged();
 
 private:
+    static constexpr std::size_t kMaximumInstanceCount{22U};
+
     void PublishState(SceneDocumentState state);
+    void ClearCurrentInstance();
+    void LoadCurrentItem(std::size_t index);
+    void SyncCurrentItem();
+    void AdvanceSceneRevision();
+    std::optional<std::size_t> FindItemIndex(
+        const QString& instanceId) const;
+    SceneDocumentOperationResult ValidateOperation(
+        const QString& instanceId,
+        quint64 expectedSceneRevision) const;
+    SceneDocumentOperationResult OperationFailure(
+        SceneDocumentOperationErrorCode code,
+        const QString& field,
+        const QString& message) const;
 
     SceneDocumentState m_state{SceneDocumentState::Unloaded};
     quint64 m_generation{0U};
     QString m_modelPath;
+    QString m_pendingModelPath;
     QString m_error;
     std::optional<slicer_core::SceneViewGeometry> m_geometry;
     std::optional<slicer_core::ModelInstance> m_instance;
@@ -299,6 +465,9 @@ private:
     QString m_sceneConfigPath;
     QString m_effectiveConfigPath;
     QString m_effectiveConfigHash;
+    std::vector<SceneDocumentItem> m_items;
+    QString m_currentInstanceId;
+    bool m_additionInProgress{false};
     SceneTransformedPreflightState m_transformedPreflightState{
         SceneTransformedPreflightState::NotRun};
     quint64 m_transformedPreflightGeneration{0U};

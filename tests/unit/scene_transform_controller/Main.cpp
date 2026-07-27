@@ -469,6 +469,90 @@ bool MirrorTransformPersistsThroughSceneReadback()
     return result;
 }
 
+bool MultiInstanceSceneSavesInStableOrder()
+{
+    SceneDocument document;
+    SceneSelectionModel selection;
+    SceneModelRepository repository;
+    InitializeDocument(document, repository);
+
+    SceneModelRepositoryEntry secondEntry = MakeEntry();
+    secondEntry.cachekey = QStringLiteral("cache-2");
+    secondEntry.modelpath = QString::fromStdWString(
+        (std::filesystem::current_path() / "scene-second.obj").wstring());
+    secondEntry.sourcetransformidentity =
+        QStringLiteral("source-transform-2");
+    secondEntry.sourcehash = QStringLiteral("source-hash-2");
+    secondEntry.resourcehash = QStringLiteral("resource-hash-2");
+    auto secondSource =
+        std::make_shared<slicer_core::SceneModel>(*MakeSource());
+    secondSource->model_path =
+        std::filesystem::current_path() / "scene-second.obj";
+    secondEntry.model = secondSource;
+    repository.Store(secondEntry);
+
+    slicer_core::ModelInstance second = MakeInstance();
+    second.instanceid = "instance-2";
+    second.modelid = "model-2";
+    second.sourcetransformidentity = "source-transform-2";
+    document.SetAdding(2U, secondEntry.modelpath);
+    document.AddSceneContext(
+        2U,
+        QStringLiteral("scene-1"),
+        2U,
+        secondEntry.cachekey,
+        secondEntry.sourcehash,
+        secondEntry.resourcehash,
+        second);
+    slicer_core::SceneViewGeometry secondGeometry = MakeGeometry(2U);
+    secondGeometry.modelid = "model-2";
+    secondGeometry.instanceid = "instance-2";
+    document.SetGeometry(2U, std::move(secondGeometry));
+    selection.SetSelectedInstance(QStringLiteral("instance-2"));
+
+    SceneTransformController controller(
+        &document,
+        &selection,
+        &repository);
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path()
+        / "slicesoft_13b02_multi_scene";
+    std::error_code cleanupError;
+    std::filesystem::remove_all(root, cleanupError);
+
+    SceneTransformSaveRequest request;
+    request.sessiondirectory = root;
+    request.sourceprofileid = "profile-a";
+    request.generatedatutc = "2026-07-27T12:00:00.000Z";
+    request.expectedscenerevision = 2U;
+    request.expectedtransformrevision = 0U;
+    const SceneTransformSaveResult saved =
+        controller.SaveSceneEffectiveConfig(request);
+    const auto readback = slicer_core::ReadSceneEffectiveConfig(
+        root / "scene_config.effective.json");
+
+    const bool result =
+        ExpectTrue(saved.IsValid(), "multi-instance scene saves")
+        && ExpectTrue(readback.IsValid(), "multi-instance config reads back")
+        && ExpectTrue(
+            saved.scene.models.size() == 2U
+                && saved.scene.instances.size() == 2U,
+            "multi-instance save retains sources and instances")
+        && ExpectTrue(
+            saved.scene.instances.at(0U).instance.instanceid
+                    == "instance-1"
+                && saved.scene.instances.at(1U).instance.instanceid
+                    == "instance-2",
+            "multi-instance save retains stable order")
+        && ExpectTrue(
+            !slicer_core::IsSceneEffectiveConfigStale(
+                readback.document,
+                saved.scene),
+            "multi-instance readback identity remains current");
+    std::filesystem::remove_all(root, cleanupError);
+    return result;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -484,6 +568,7 @@ int main(int argc, char** argv)
     ok = EffectiveConfigSavesReadsBackAndRejectsStale() && ok;
     ok = FailedSaveRestoresPreviousDraft() && ok;
     ok = MirrorTransformPersistsThroughSceneReadback() && ok;
+    ok = MultiInstanceSceneSavesInStableOrder() && ok;
     if (!ok)
     {
         return 1;

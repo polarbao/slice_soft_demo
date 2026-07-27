@@ -94,6 +94,7 @@ struct ModelTopViewLoader::WorkerResult
     std::optional<slicer_core::ModelInstance> instance;
     QString sceneid;
     quint64 scenerevision{0U};
+    bool appendtoscene{false};
     QString error;
     bool cancelled{false};
 };
@@ -139,7 +140,14 @@ void ModelTopViewLoader::RequestLoad(
     const std::shared_ptr<CallbackState> callbackState = m_callbackState;
     const quint64 generation = m_generation;
     m_running = true;
-    m_document->SetLoading(generation, request.modelpath);
+    if (request.appendtoscene)
+    {
+        m_document->SetAdding(generation, request.modelpath);
+    }
+    else
+    {
+        m_document->SetLoading(generation, request.modelpath);
+    }
     emit SigLoadingStarted();
 
     auto* runnable = new FunctionRunnable(
@@ -264,6 +272,8 @@ void ModelTopViewLoader::RequestLoad(
                             result.sceneid = request.sceneid;
                             result.scenerevision =
                                 request.scenerevision;
+                            result.appendtoscene =
+                                request.appendtoscene;
                             result.geometry =
                                 std::move(coreResult.geometry);
                         }
@@ -445,14 +455,23 @@ void ModelTopViewLoader::OnWorkerCompleted(
         {
             if (!m_repository->Store(result.sourceentry.value())
                 || !result.instance.has_value()
-                || !m_document->SetSceneContext(
-                    generation,
-                    result.sceneid,
-                    result.scenerevision,
-                    result.sourceentry->cachekey,
-                    result.sourceentry->sourcehash,
-                    result.sourceentry->resourcehash,
-                    result.instance.value()))
+                || !(result.appendtoscene
+                         ? m_document->AddSceneContext(
+                               generation,
+                               result.sceneid,
+                               result.scenerevision,
+                               result.sourceentry->cachekey,
+                               result.sourceentry->sourcehash,
+                               result.sourceentry->resourcehash,
+                               result.instance.value())
+                         : m_document->SetSceneContext(
+                               generation,
+                               result.sceneid,
+                               result.scenerevision,
+                               result.sourceentry->cachekey,
+                               result.sourceentry->sourcehash,
+                               result.sourceentry->resourcehash,
+                               result.instance.value())))
             {
                 m_document->SetFailure(
                     generation,

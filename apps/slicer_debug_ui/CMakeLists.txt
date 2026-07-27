@@ -79,6 +79,8 @@ add_executable(slicer_debug_ui
     widgets/MaterialProcessPanel.h
     widgets/ModelPreflightPanel.cpp
     widgets/ModelPreflightPanel.h
+    widgets/ModelListPanel.cpp
+    widgets/ModelListPanel.h
     widgets/ModelTransformPanel.cpp
     widgets/ModelTransformPanel.h
     widgets/ModelTopViewWidget.cpp
@@ -243,6 +245,32 @@ add_test(
     COMMAND scene_transform_controller_unit_tests
 )
 
+add_executable(scene_document_unit_tests
+    models/SceneDocument.cpp
+    models/SceneDocument.h
+    models/SceneSelectionModel.cpp
+    models/SceneSelectionModel.h
+    ../../tests/unit/scene_document/Main.cpp
+)
+
+set_target_properties(scene_document_unit_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(scene_document_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/models
+)
+
+target_link_libraries(scene_document_unit_tests PRIVATE
+    Qt5::Core
+    slicer_core
+)
+
+add_test(
+    NAME scene_document_unit_tests
+    COMMAND scene_document_unit_tests
+)
+
 if(MSVC)
     target_compile_options(slicer_debug_ui PRIVATE /utf-8 /MP)
     target_compile_options(
@@ -265,6 +293,12 @@ if(MSVC)
     )
     target_compile_options(
         scene_transform_controller_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
+        scene_document_unit_tests
         PRIVATE
         /utf-8
         /MP
@@ -295,6 +329,11 @@ if(MSVC)
             PRIVATE
             ${qt515MsvcCompatibilityHeader}
         )
+        target_sources(
+            scene_document_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
         target_compile_options(slicer_debug_ui PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )
@@ -315,6 +354,11 @@ if(MSVC)
         )
         target_compile_options(
             scene_transform_controller_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            scene_document_unit_tests
             PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )

@@ -21,6 +21,7 @@
 #include "widgets/DiagnosticsDock.h"
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
+#include "widgets/ModelListPanel.h"
 #include "widgets/ModelPreflightPanel.h"
 #include "widgets/ModelTopViewWidget.h"
 #include "widgets/ModelTransformPanel.h"
@@ -170,6 +171,7 @@ private:
     QTabWidget* m_mainWorkspaceTabs{nullptr};
     QWidget* m_modelTopViewWorkspace{nullptr};
     ModelTopViewWidget* m_modelTopViewWidget{nullptr};
+    ModelListPanel* m_modelListPanel{nullptr};
     ModelTransformPanel* m_modelTransformPanel{nullptr};
     DiagnosticsDock* m_diagnosticsDock{nullptr};
     ReportPanel* report_panel_{nullptr};

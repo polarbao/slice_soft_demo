@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <optional>
 
 namespace
 {
@@ -84,6 +86,42 @@ bool ContainsPoint(
             > 1.0e-12;
 }
 
+std::optional<slicer_core::SceneViewBounds> VisibleBounds(
+    const SceneDocument& document)
+{
+    slicer_core::SceneViewBounds bounds{
+        {std::numeric_limits<double>::max(),
+         std::numeric_limits<double>::max()},
+        {std::numeric_limits<double>::lowest(),
+         std::numeric_limits<double>::lowest()}};
+    bool found{false};
+    for (const SceneDocumentItem& item : document.Items())
+    {
+        if (!item.instance.visible
+            || !item.geometry.has_value()
+            || item.geometry->triangles.empty())
+        {
+            continue;
+        }
+        found = true;
+        bounds.min.xmm = std::min(
+            bounds.min.xmm,
+            item.geometry->worldboundsmm.min.xmm);
+        bounds.min.ymm = std::min(
+            bounds.min.ymm,
+            item.geometry->worldboundsmm.min.ymm);
+        bounds.max.xmm = std::max(
+            bounds.max.xmm,
+            item.geometry->worldboundsmm.max.xmm);
+        bounds.max.ymm = std::max(
+            bounds.max.ymm,
+            item.geometry->worldboundsmm.max.ymm);
+    }
+    return found
+        ? std::optional<slicer_core::SceneViewBounds>{bounds}
+        : std::nullopt;
+}
+
 }  // namespace
 
 ModelTopViewWidget::ModelTopViewWidget(
@@ -119,8 +157,7 @@ void ModelTopViewWidget::FitToView()
 
 bool ModelTopViewWidget::HasRenderableGeometry() const
 {
-    return m_document->Geometry().has_value()
-        && !m_document->Geometry()->triangles.empty();
+    return VisibleBounds(*m_document).has_value();
 }
 
 void ModelTopViewWidget::paintEvent(QPaintEvent* event)
@@ -148,18 +185,28 @@ void ModelTopViewWidget::mousePressEvent(QMouseEvent* event)
     }
 
     const Camera camera = BuildCamera();
-    const auto& bounds = m_document->Geometry()->worldboundsmm;
-    QRectF screenBounds(
-        WorldToScreen(bounds.min, camera),
-        WorldToScreen(bounds.max, camera));
-    screenBounds = screenBounds.normalized();
-    if (screenBounds.contains(event->pos()))
+    const slicer_core::SceneViewPoint worldPoint =
+        ScreenToWorld(event->pos(), camera);
+    QString selectedInstance;
+    for (auto item = m_document->Items().rbegin();
+         item != m_document->Items().rend();
+         ++item)
     {
-        const slicer_core::SceneViewPoint worldPoint =
-            ScreenToWorld(event->pos(), camera);
+        if (!item->instance.visible || !item->geometry.has_value())
+        {
+            continue;
+        }
+        const auto& bounds = item->geometry->worldboundsmm;
+        QRectF screenBounds(
+            WorldToScreen(bounds.min, camera),
+            WorldToScreen(bounds.max, camera));
+        if (!screenBounds.normalized().contains(event->pos()))
+        {
+            continue;
+        }
         const bool intersectsGeometry = std::any_of(
-            m_document->Geometry()->triangles.begin(),
-            m_document->Geometry()->triangles.end(),
+            item->geometry->triangles.begin(),
+            item->geometry->triangles.end(),
             [&worldPoint](
                 const slicer_core::SceneViewTriangle& triangle)
             {
@@ -167,19 +214,19 @@ void ModelTopViewWidget::mousePressEvent(QMouseEvent* event)
             });
         if (intersectsGeometry)
         {
-            const QString instanceId = Utf8(
-                m_document->Geometry()->instanceid);
-            m_selectionModel->SetSelectedInstance(instanceId);
-            emit SigInstanceSelected(instanceId);
+            selectedInstance = QString::fromStdString(
+                item->instance.instanceid);
+            break;
         }
-        else
-        {
-            m_selectionModel->Clear();
-        }
+    }
+    if (selectedInstance.isEmpty())
+    {
+        m_selectionModel->Clear();
     }
     else
     {
-        m_selectionModel->Clear();
+        m_selectionModel->SetSelectedInstance(selectedInstance);
+        emit SigInstanceSelected(selectedInstance);
     }
     QWidget::mousePressEvent(event);
 }
@@ -214,7 +261,13 @@ ModelTopViewWidget::Camera ModelTopViewWidget::BuildCamera() const
         return camera;
     }
 
-    const auto& bounds = m_document->Geometry()->worldboundsmm;
+    const std::optional<slicer_core::SceneViewBounds> visibleBounds =
+        VisibleBounds(*m_document);
+    if (!visibleBounds.has_value())
+    {
+        return camera;
+    }
+    const auto& bounds = visibleBounds.value();
     const double width = bounds.max.xmm - bounds.min.xmm;
     const double height = bounds.max.ymm - bounds.min.ymm;
     camera.scale = std::max(
@@ -263,7 +316,13 @@ void ModelTopViewWidget::DrawGrid(
         return;
     }
 
-    const auto& bounds = m_document->Geometry()->worldboundsmm;
+    const std::optional<slicer_core::SceneViewBounds> visibleBounds =
+        VisibleBounds(*m_document);
+    if (!visibleBounds.has_value())
+    {
+        return;
+    }
+    const auto& bounds = visibleBounds.value();
     const double width = bounds.max.xmm - bounds.min.xmm;
     const double height = bounds.max.ymm - bounds.min.ymm;
     const double step = NiceGridStep(std::max(width, height));
@@ -329,56 +388,69 @@ void ModelTopViewWidget::DrawGeometry(
         return;
     }
 
-    const slicer_core::SceneViewGeometry& geometry =
-        m_document->Geometry().value();
-    const bool blocked =
-        geometry.admissionstatus
-        == slicer_core::SceneViewAdmissionStatus::Blocked;
-    const bool selected =
-        m_selectionModel->SelectedInstance()
-        == Utf8(geometry.instanceid);
-    const QColor fillColor =
-        blocked ? QColor(222, 168, 166) : QColor(66, 144, 139);
-
     painter.save();
     painter.setClipRect(camera.viewport);
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(fillColor);
-    const std::size_t stride = std::max<std::size_t>(
-        1U,
-        (geometry.triangles.size() + kMaximumPaintedTriangles - 1U)
-            / kMaximumPaintedTriangles);
-    for (std::size_t index = 0U;
-         index < geometry.triangles.size();
-         index += stride)
+    bool hasBlocked{false};
+    for (const SceneDocumentItem& item : m_document->Items())
     {
-        const auto& triangle = geometry.triangles[index];
-        QPolygonF polygon;
-        polygon.reserve(3);
-        polygon << WorldToScreen(triangle.a, camera)
-                << WorldToScreen(triangle.b, camera)
-                << WorldToScreen(triangle.c, camera);
-        painter.drawPolygon(polygon);
-    }
+        if (!item.instance.visible || !item.geometry.has_value())
+        {
+            continue;
+        }
+        const slicer_core::SceneViewGeometry& geometry =
+            item.geometry.value();
+        const bool blocked =
+            geometry.admissionstatus
+            == slicer_core::SceneViewAdmissionStatus::Blocked;
+        const bool selected =
+            m_selectionModel->SelectedInstance()
+            == Utf8(geometry.instanceid);
+        hasBlocked = hasBlocked || blocked;
 
-    const auto& bounds = geometry.worldboundsmm;
-    QRectF screenBounds(
-        WorldToScreen(bounds.min, camera),
-        WorldToScreen(bounds.max, camera));
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setBrush(Qt::NoBrush);
-    painter.setPen(
-        QPen(
-            selected
-                ? QColor(20, 104, 190)
-                : blocked ? QColor(184, 45, 45)
-                          : QColor(31, 83, 80),
-            selected ? 3.0 : 2.0));
-    painter.drawRect(screenBounds.normalized());
+        painter.setRenderHint(QPainter::Antialiasing, false);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(
+            blocked ? QColor(222, 168, 166)
+                    : QColor(66, 144, 139));
+        const std::size_t stride = std::max<std::size_t>(
+            1U,
+            (geometry.triangles.size()
+             + kMaximumPaintedTriangles - 1U)
+                / kMaximumPaintedTriangles);
+        for (std::size_t index = 0U;
+             index < geometry.triangles.size();
+             index += stride)
+        {
+            const auto& triangle = geometry.triangles[index];
+            QPolygonF polygon;
+            polygon.reserve(3);
+            polygon << WorldToScreen(triangle.a, camera)
+                    << WorldToScreen(triangle.b, camera)
+                    << WorldToScreen(triangle.c, camera);
+            painter.drawPolygon(polygon);
+        }
+
+        const auto& bounds = geometry.worldboundsmm;
+        QRectF screenBounds(
+            WorldToScreen(bounds.min, camera),
+            WorldToScreen(bounds.max, camera));
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(
+            QPen(
+                selected
+                    ? QColor(20, 104, 190)
+                    : blocked ? QColor(184, 45, 45)
+                              : QColor(31, 83, 80),
+                selected ? 3.0 : 2.0,
+                item.instance.locked
+                    ? Qt::DashLine
+                    : Qt::SolidLine));
+        painter.drawRect(screenBounds.normalized());
+    }
     painter.restore();
 
-    if (blocked)
+    if (hasBlocked)
     {
         painter.setPen(QColor(156, 35, 35));
         painter.drawText(
@@ -401,12 +473,13 @@ void ModelTopViewWidget::DrawStatus(QPainter& painter) const
     {
         const auto& geometry = m_document->Geometry().value();
         detail = QStringLiteral(
-                     "%1  scene=%2  instance=%3  revision=%4/%5")
+                     "%1  scene=%2  instance=%3  revision=%4/%5  count=%6")
                      .arg(detail)
                      .arg(Utf8(geometry.sceneid))
                      .arg(Utf8(geometry.instanceid))
                      .arg(geometry.scenerevision)
-                     .arg(geometry.transformrevision);
+                     .arg(geometry.transformrevision)
+                     .arg(m_document->InstanceCount());
     }
     else if (m_document->State() == SceneDocumentState::Failed)
     {

@@ -32,6 +32,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 namespace {
 
 constexpr int kPathEditMinimumWidth = 140;
@@ -397,6 +399,10 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &m_sceneDocument,
         &m_sceneSelectionModel,
         m_modelTopViewWorkspace);
+    m_modelListPanel = new ModelListPanel(
+        &m_sceneDocument,
+        &m_sceneSelectionModel,
+        m_modelTopViewWorkspace);
     m_modelTransformPanel = new ModelTransformPanel(
         &m_sceneDocument,
         &m_sceneSelectionModel,
@@ -407,13 +413,20 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         m_modelTopViewWorkspace);
     modelWorkspaceSplitter->setObjectName(
         QStringLiteral("modelTransformWorkspaceSplitter"));
+    auto* modelSideTabs = new QTabWidget(m_modelTopViewWorkspace);
+    modelSideTabs->setObjectName(QStringLiteral("modelSceneSideTabs"));
+    modelSideTabs->setDocumentMode(true);
+    modelSideTabs->setMinimumWidth(250);
+    modelSideTabs->setMaximumWidth(330);
+    modelSideTabs->addTab(m_modelListPanel, QStringLiteral("模型列表"));
+    modelSideTabs->addTab(m_modelTransformPanel, QStringLiteral("变换"));
     modelWorkspaceSplitter->addWidget(m_modelTopViewWidget);
-    modelWorkspaceSplitter->addWidget(m_modelTransformPanel);
+    modelWorkspaceSplitter->addWidget(modelSideTabs);
     modelWorkspaceSplitter->setStretchFactor(0, 1);
     modelWorkspaceSplitter->setStretchFactor(1, 0);
     modelWorkspaceSplitter->setCollapsible(0, false);
     modelWorkspaceSplitter->setCollapsible(1, false);
-    modelWorkspaceSplitter->setSizes(QList<int>{720, 260});
+    modelWorkspaceSplitter->setSizes(QList<int>{720, 280});
     modelTopViewLayout->addWidget(modelWorkspaceSplitter, 1);
     m_previewWorkspace = new PreviewWorkspace(m_mainWorkspaceTabs);
     auto* configScrollArea = new QScrollArea(m_mainWorkspaceTabs);
@@ -525,6 +538,27 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &SceneDocument::SigChanged,
         this,
         &MainWindow::OnSceneDocumentChanged);
+    connect(
+        &m_sceneSelectionModel,
+        &SceneSelectionModel::SigSelectionChanged,
+        this,
+        [this](const QString& instanceId)
+        {
+            if (instanceId.isEmpty()
+                || !m_sceneDocument.SetCurrentInstance(instanceId))
+            {
+                return;
+            }
+            if (m_transformedPreflightLoader.IsRunning())
+            {
+                m_transformedPreflightLoader.Cancel();
+            }
+            if (m_sceneDocument.Geometry().has_value()
+                && !m_sceneDocument.IsGeometryStale())
+            {
+                m_transformedPreflightLoader.RequestCurrent();
+            }
+        });
     m_sceneTransformController.SetProjectionRequester(
         [this](const SceneProjectionRequest& request)
         {
@@ -547,6 +581,19 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         this,
         [this]()
         {
+            const bool selectionWillChange =
+                !m_sceneDocument.CurrentInstanceId().isEmpty()
+                && m_sceneSelectionModel.SelectedInstance()
+                    != m_sceneDocument.CurrentInstanceId();
+            if (!m_sceneDocument.CurrentInstanceId().isEmpty())
+            {
+                m_sceneSelectionModel.SetSelectedInstance(
+                    m_sceneDocument.CurrentInstanceId());
+            }
+            if (selectionWillChange)
+            {
+                return;
+            }
             if ((m_sceneDocument.State()
                      == SceneDocumentState::Ready
                  || m_sceneDocument.State()
@@ -565,6 +612,16 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(
         m_modelTransformPanel,
         &ModelTransformPanel::SigStatusMessage,
+        status_label_,
+        &QLabel::setText);
+    connect(
+        m_modelListPanel,
+        &ModelListPanel::SigAddRequested,
+        this,
+        &MainWindow::OnImportModelPreview);
+    connect(
+        m_modelListPanel,
+        &ModelListPanel::SigStatusMessage,
         status_label_,
         &QLabel::setText);
     connect(
@@ -714,6 +771,13 @@ void MainWindow::loadPackageFromEdit() {
 
 void MainWindow::OnImportModelPreview()
 {
+    if (m_sceneDocument.InstanceCount() >= 22U)
+    {
+        status_label_->setText(
+            QStringLiteral(
+                "SCENE_INSTANCE_LIMIT_EXCEEDED：场景最多允许 22 个模型实例。"));
+        return;
+    }
     const QString modelPath = QFileDialog::getOpenFileName(
         this,
         QStringLiteral("选择要预览的模型"),
@@ -726,14 +790,56 @@ void MainWindow::OnImportModelPreview()
 
     const QString baseName = SanitizeSessionName(
         QFileInfo(modelPath).completeBaseName());
+    const bool appendToScene =
+        m_sceneDocument.InstanceCount() > 0U;
+    int identityNumber =
+        static_cast<int>(m_sceneDocument.InstanceCount()) + 1;
+    auto identityExists =
+        [this, &baseName](const int suffix)
+        {
+            const QString modelId =
+                QStringLiteral("model-") + baseName
+                + QStringLiteral("-") + QString::number(suffix);
+            const QString instanceId =
+                QStringLiteral("instance-") + baseName
+                + QStringLiteral("-") + QString::number(suffix);
+            return std::any_of(
+                m_sceneDocument.Items().begin(),
+                m_sceneDocument.Items().end(),
+                [&modelId, &instanceId](
+                    const SceneDocumentItem& item)
+                {
+                    return QString::fromStdString(
+                               item.instance.modelid)
+                            == modelId
+                        || QString::fromStdString(
+                               item.instance.instanceid)
+                            == instanceId;
+                });
+        };
+    while (identityExists(identityNumber))
+    {
+        ++identityNumber;
+    }
+    const QString identitySuffix =
+        QString::number(identityNumber);
     ModelTopViewLoadRequest request;
     request.configpath = absoluteFromRepo(config_edit_->text());
     request.modelpath = QFileInfo(modelPath).absoluteFilePath();
-    request.sceneid = QStringLiteral("preview-scene-") + baseName;
-    request.modelid = QStringLiteral("model-") + baseName;
-    request.instanceid = QStringLiteral("instance-") + baseName;
-    request.scenerevision = 1U;
+    request.sceneid = appendToScene
+        ? m_sceneDocument.SceneId()
+        : QStringLiteral("preview-scene-") + baseName;
+    request.modelid =
+        QStringLiteral("model-") + baseName
+        + QStringLiteral("-") + identitySuffix;
+    request.instanceid =
+        QStringLiteral("instance-") + baseName
+        + QStringLiteral("-") + identitySuffix;
+    request.scenerevision = appendToScene
+        ? m_sceneDocument.SceneRevision() + 1U
+        : 1U;
     request.transformrevision = 0U;
+    request.appendtoscene = appendToScene;
     request.admissionstatus =
         slicer_core::SceneViewAdmissionStatus::Unknown;
 
@@ -741,7 +847,10 @@ void MainWindow::OnImportModelPreview()
     {
         m_transformedPreflightLoader.Cancel();
     }
-    m_sceneSelectionModel.Clear();
+    if (!appendToScene)
+    {
+        m_sceneSelectionModel.Clear();
+    }
     m_mainWorkspaceTabs->setCurrentWidget(m_modelTopViewWorkspace);
     m_modelTopViewLoader.RequestLoad(request);
 }
@@ -990,7 +1099,10 @@ void MainWindow::OnSceneDocumentChanged()
                     m_sceneDocument.Instance()->instanceid));
         }
         status_label_->setText(
-            m_sceneDocument.IsDirty()
+            !m_sceneDocument.Error().isEmpty()
+                ? QStringLiteral("添加模型失败，原场景保持不变：")
+                    + m_sceneDocument.Error()
+                : m_sceneDocument.IsDirty()
                 ? QStringLiteral(
                       "模型俯视已就绪；变换尚未保存，未启动切片。")
                 : QStringLiteral("模型俯视已就绪；未启动切片。"));

@@ -9,6 +9,7 @@
 #include "../widgets/DiagnosticsDock.h"
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/MaterialClosurePanel.h"
+#include "../widgets/ModelListPanel.h"
 #include "../widgets/ModelPreflightPanel.h"
 #include "../widgets/ModelTransformPanel.h"
 #include "../widgets/ModelTopViewWidget.h"
@@ -53,6 +54,7 @@
 #include <QJsonObject>
 #include <QImage>
 #include <QLabel>
+#include <QListWidget>
 #include <QMouseEvent>
 #include <QProcess>
 #include <QPushButton>
@@ -65,6 +67,7 @@
 #include <QTableWidget>
 #include <QTextStream>
 #include <QThread>
+#include <QToolButton>
 
 #include <cmath>
 #include <functional>
@@ -584,6 +587,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "model-transform-preflight")
     {
         return ModelTransformPreflight(options);
+    }
+    if (options.case_name == "multi-model-list")
+    {
+        return MultiModelList(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -3119,6 +3126,11 @@ int UiSmokeTestRunner::ModelTopView(
 
     slicer_core::SceneViewGeometry blockedGeometry =
         document.Geometry().value();
+    const slicer_core::ModelInstance blockedInstance =
+        document.Instance().value();
+    const QString blockedCacheKey = document.SourceCacheKey();
+    const QString blockedSourceHash = document.SourceHash();
+    const QString blockedResourceHash = document.ResourceHash();
     blockedGeometry.admissionstatus =
         slicer_core::SceneViewAdmissionStatus::Blocked;
     const quint64 blockedGeneration = document.Generation() + 1U;
@@ -3127,6 +3139,14 @@ int UiSmokeTestRunner::ModelTopView(
         QStringLiteral(
             "C:/很长的中文模型路径/用于验证界面不会遮挡/"
             "模型资产_版本_最终候选.obj"));
+    document.SetSceneContext(
+        blockedGeneration,
+        QString::fromStdString(blockedGeometry.sceneid),
+        blockedGeometry.scenerevision,
+        blockedCacheKey,
+        blockedSourceHash,
+        blockedResourceHash,
+        blockedInstance);
     document.SetGeometry(
         blockedGeneration,
         std::move(blockedGeometry));
@@ -3572,6 +3592,227 @@ int UiSmokeTestRunner::ModelTransformPreflight(
     return pass(QStringLiteral(
         "model-transform-preflight mirror-x/y/source/effective/"
         "latest-revision/global-blocked-viewable/three-window-sizes"));
+}
+
+int UiSmokeTestRunner::MultiModelList(
+    const UiSmokeTestOptions& options)
+{
+    QWidget workspace;
+    SceneDocument document;
+    SceneSelectionModel selection;
+    ModelTopViewWidget canvas(&document, &selection, &workspace);
+    ModelListPanel panel(&document, &selection, &workspace);
+
+    slicer_core::ModelInstance first;
+    first.instanceid = "multi-first";
+    first.modelid = "multi-model-first";
+    first.sourcetransformidentity = "first-source";
+    first.sourcebboxmm = {{0.0, 0.0, 0.0}, {8.0, 4.0, 1.0}};
+    first.effectivebboxmm = first.sourcebboxmm;
+    document.SetLoading(1U, QStringLiteral("first.obj"));
+    if (!document.SetSceneContext(
+            1U,
+            QStringLiteral("multi-scene"),
+            1U,
+            QStringLiteral("shared-cache"),
+            QStringLiteral("first-source-hash"),
+            QStringLiteral("first-resource-hash"),
+            first))
+    {
+        return fail(QStringLiteral("multi-model-list first context failed"));
+    }
+    slicer_core::SceneViewGeometry firstGeometry;
+    firstGeometry.sceneid = "multi-scene";
+    firstGeometry.modelid = first.modelid;
+    firstGeometry.instanceid = first.instanceid;
+    firstGeometry.scenerevision = 1U;
+    firstGeometry.worldboundsmm = {{0.0, 0.0}, {8.0, 4.0}};
+    firstGeometry.triangles.push_back(
+        {{0.0, 0.0}, {8.0, 0.0}, {0.0, 4.0}});
+    firstGeometry.admissionstatus =
+        slicer_core::SceneViewAdmissionStatus::Admitted;
+    if (!document.SetGeometry(1U, firstGeometry))
+    {
+        return fail(QStringLiteral("multi-model-list first geometry failed"));
+    }
+    selection.SetSelectedInstance(QStringLiteral("multi-first"));
+
+    const SceneDocumentOperationResult duplicated =
+        document.DuplicateInstance(
+            QStringLiteral("multi-first"),
+            QStringLiteral("multi-copy"),
+            document.SceneRevision());
+    selection.SetSelectedInstance(document.CurrentInstanceId());
+    if (!duplicated.IsValid()
+        || document.InstanceCount() != 2U
+        || document.Items().at(0U).sourcecachekey
+            != document.Items().at(1U).sourcecachekey)
+    {
+        return fail(
+            QStringLiteral("multi-model-list source sharing failed"));
+    }
+
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+    auto* list = panel.findChild<QListWidget*>(
+        QStringLiteral("modelInstanceList"));
+    auto* visibility = panel.findChild<QToolButton*>(
+        QStringLiteral("modelListVisibilityButton"));
+    auto* lock = panel.findChild<QToolButton*>(
+        QStringLiteral("modelListLockButton"));
+    auto* remove = panel.findChild<QToolButton*>(
+        QStringLiteral("modelListDeleteButton"));
+    auto* add = panel.findChild<QToolButton*>(
+        QStringLiteral("modelListAddButton"));
+    if (list == nullptr
+        || visibility == nullptr
+        || lock == nullptr
+        || remove == nullptr
+        || add == nullptr
+        || list->count() != 2)
+    {
+        return fail(
+            QStringLiteral("multi-model-list controls or rows missing"));
+    }
+
+    list->setCurrentRow(1);
+    visibility->click();
+    lock->click();
+    if (document.Items().at(1U).instance.visible
+        || !document.Items().at(1U).instance.locked
+        || remove->isEnabled())
+    {
+        return fail(
+            QStringLiteral("multi-model-list visibility/lock mismatch"));
+    }
+    lock->click();
+    remove->click();
+    if (document.InstanceCount() != 1U
+        || selection.SelectedInstance()
+            != QStringLiteral("multi-first"))
+    {
+        return fail(
+            QStringLiteral("multi-model-list delete/selection mismatch"));
+    }
+
+    bool addRequested{false};
+    QObject::connect(
+        &panel,
+        &ModelListPanel::SigAddRequested,
+        &workspace,
+        [&addRequested]()
+        {
+            addRequested = true;
+        });
+    add->click();
+    if (!addRequested)
+    {
+        return fail(QStringLiteral("multi-model-list add signal missing"));
+    }
+
+    SceneDocument importedDocument;
+    SceneModelRepository repository;
+    ModelTopViewLoader loader(&importedDocument, &repository);
+    ModelTopViewLoadRequest firstRequest;
+    firstRequest.configpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/material_process_top2_fixture.json"));
+    firstRequest.modelpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    firstRequest.sceneid = QStringLiteral("import-scene");
+    firstRequest.modelid = QStringLiteral("import-model-1");
+    firstRequest.instanceid = QStringLiteral("import-instance-1");
+    firstRequest.scenerevision = 1U;
+    loader.RequestLoad(firstRequest);
+    if (!WaitForCondition(
+            [&importedDocument]()
+            {
+                return importedDocument.State()
+                    != SceneDocumentState::Loading;
+            })
+        || importedDocument.State() != SceneDocumentState::Ready)
+    {
+        return fail(
+            QStringLiteral("multi-model-list first async import failed"));
+    }
+    ModelTopViewLoadRequest secondRequest = firstRequest;
+    secondRequest.modelid = QStringLiteral("import-model-2");
+    secondRequest.instanceid = QStringLiteral("import-instance-2");
+    secondRequest.scenerevision = 2U;
+    secondRequest.appendtoscene = true;
+    loader.RequestLoad(secondRequest);
+    if (!WaitForCondition(
+            [&importedDocument]()
+            {
+                return importedDocument.State()
+                    != SceneDocumentState::Loading;
+            })
+        || importedDocument.State() != SceneDocumentState::Ready
+        || importedDocument.InstanceCount() != 2U
+        || repository.Size() != 1U)
+    {
+        return fail(
+            QStringLiteral(
+                "multi-model-list async append/source sharing failed"));
+    }
+
+    MainWindow window(options.repo_root);
+    auto* integratedPanel = window.findChild<ModelListPanel*>(
+        QStringLiteral("modelListPanel"));
+    auto* integratedCanvas = window.findChild<ModelTopViewWidget*>(
+        QStringLiteral("modelTopViewWidget"));
+    auto* transformPanel = window.findChild<ModelTransformPanel*>(
+        QStringLiteral("modelTransformPanel"));
+    auto* sideTabs = window.findChild<QTabWidget*>(
+        QStringLiteral("modelSceneSideTabs"));
+    if (integratedPanel == nullptr
+        || integratedCanvas == nullptr
+        || transformPanel == nullptr
+        || sideTabs == nullptr)
+    {
+        return fail(
+            QStringLiteral("multi-model-list workspace integration missing"));
+    }
+
+    const QList<QSize> sizes{
+        QSize(1280, 720),
+        QSize(1440, 900),
+        QSize(1920, 1080),
+    };
+    for (const QSize& size : sizes)
+    {
+        window.resize(size);
+        window.show();
+        QApplication::processEvents(QEventLoop::AllEvents, 50);
+        const QRect canvasRect =
+            GlobalRect(integratedCanvas).adjusted(1, 1, -1, -1);
+        const QRect sideRect =
+            GlobalRect(sideTabs).adjusted(1, 1, -1, -1);
+        if (canvasRect.intersects(sideRect)
+            || sideTabs->width() < sideTabs->minimumWidth()
+            || integratedCanvas->width() < integratedCanvas->minimumWidth()
+            || sideTabs->count() != 2)
+        {
+            return fail(
+                QStringLiteral(
+                    "multi-model-list overlap at %1x%2 "
+                    "canvas=%3,%4,%5,%6 side=%7,%8,%9,%10")
+                    .arg(size.width())
+                    .arg(size.height())
+                    .arg(canvasRect.x())
+                    .arg(canvasRect.y())
+                    .arg(canvasRect.width())
+                    .arg(canvasRect.height())
+                    .arg(sideRect.x())
+                    .arg(sideRect.y())
+                    .arg(sideRect.width())
+                    .arg(sideRect.height()));
+        }
+    }
+
+    return pass(QStringLiteral(
+        "multi-model-list add/share/duplicate/visibility/lock/delete/"
+        "selection/three-window-sizes"));
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {
