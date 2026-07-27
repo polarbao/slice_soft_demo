@@ -31,6 +31,46 @@ QDoubleSpinBox* CreateSpinBox(
     return spin;
 }
 
+QString PreflightStatusText(
+    const slicer_core::ModelPreflightStatus status)
+{
+    switch (status)
+    {
+    case slicer_core::ModelPreflightStatus::NotRun:
+        return QStringLiteral("未运行");
+    case slicer_core::ModelPreflightStatus::Pending:
+        return QStringLiteral("等待");
+    case slicer_core::ModelPreflightStatus::Running:
+        return QStringLiteral("检测中");
+    case slicer_core::ModelPreflightStatus::Passed:
+        return QStringLiteral("通过");
+    case slicer_core::ModelPreflightStatus::Warning:
+        return QStringLiteral("警告");
+    case slicer_core::ModelPreflightStatus::Blocked:
+        return QStringLiteral("阻断");
+    case slicer_core::ModelPreflightStatus::Stale:
+        return QStringLiteral("过期");
+    case slicer_core::ModelPreflightStatus::Cancelled:
+        return QStringLiteral("已取消");
+    }
+    return QStringLiteral("未知");
+}
+
+QString AdmissionText(
+    const slicer_core::ModelPreflightAdmissionStatus status)
+{
+    switch (status)
+    {
+    case slicer_core::ModelPreflightAdmissionStatus::Passed:
+        return QStringLiteral("通过");
+    case slicer_core::ModelPreflightAdmissionStatus::Warning:
+        return QStringLiteral("警告");
+    case slicer_core::ModelPreflightAdmissionStatus::Blocked:
+        return QStringLiteral("阻断");
+    }
+    return QStringLiteral("未知");
+}
+
 }  // namespace
 
 ModelTransformPanel::ModelTransformPanel(
@@ -136,12 +176,45 @@ ModelTransformPanel::ModelTransformPanel(
     commandRow->addWidget(m_resetButton);
     layout->addLayout(commandRow);
 
+    auto* mirrorRow = new QHBoxLayout();
+    m_mirrorXButton = new QPushButton(QStringLiteral("镜像 X"), this);
+    m_mirrorXButton->setObjectName(
+        QStringLiteral("modelTransformMirrorXButton"));
+    m_mirrorXButton->setCheckable(true);
+    m_mirrorXButton->setToolTip(
+        QStringLiteral("沿模型源包围盒中心镜像 X，不修改源文件"));
+    m_mirrorYButton = new QPushButton(QStringLiteral("镜像 Y"), this);
+    m_mirrorYButton->setObjectName(
+        QStringLiteral("modelTransformMirrorYButton"));
+    m_mirrorYButton->setCheckable(true);
+    m_mirrorYButton->setToolTip(
+        QStringLiteral("沿模型源包围盒中心镜像 Y，不修改源文件"));
+    mirrorRow->addWidget(m_mirrorXButton);
+    mirrorRow->addWidget(m_mirrorYButton);
+    layout->addLayout(mirrorRow);
+
     m_saveButton = new QPushButton(QStringLiteral("保存场景配置"), this);
     m_saveButton->setObjectName(
         QStringLiteral("modelTransformSaveButton"));
     m_saveButton->setToolTip(
         QStringLiteral("保存到 UI session，不覆盖源 Profile 或模型文件"));
     layout->addWidget(m_saveButton);
+
+    m_sourcePreflightLabel = new QLabel(
+        QStringLiteral("源模型预检：未运行"),
+        this);
+    m_sourcePreflightLabel->setObjectName(
+        QStringLiteral("modelTransformSourcePreflight"));
+    m_sourcePreflightLabel->setWordWrap(true);
+    layout->addWidget(m_sourcePreflightLabel);
+
+    m_transformedPreflightLabel = new QLabel(
+        QStringLiteral("变换后预检：未运行"),
+        this);
+    m_transformedPreflightLabel->setObjectName(
+        QStringLiteral("modelTransformEffectivePreflight"));
+    m_transformedPreflightLabel->setWordWrap(true);
+    layout->addWidget(m_transformedPreflightLabel);
 
     m_stateLabel = new QLabel(QStringLiteral("请选择模型。"), this);
     m_stateLabel->setObjectName(
@@ -165,6 +238,16 @@ ModelTransformPanel::ModelTransformPanel(
         &QPushButton::clicked,
         this,
         &ModelTransformPanel::OnReset);
+    connect(
+        m_mirrorXButton,
+        &QPushButton::clicked,
+        this,
+        &ModelTransformPanel::OnMirrorX);
+    connect(
+        m_mirrorYButton,
+        &QPushButton::clicked,
+        this,
+        &ModelTransformPanel::OnMirrorY);
     connect(
         m_saveButton,
         &QPushButton::clicked,
@@ -236,6 +319,42 @@ void ModelTransformPanel::OnReset()
         QStringLiteral("实例变换已重置。"));
 }
 
+void ModelTransformPanel::OnMirrorX()
+{
+    if (!m_document->Instance().has_value())
+    {
+        return;
+    }
+    slicer_core::ModelTransform transform =
+        m_document->Instance()->transform;
+    transform.mirrorx = m_mirrorXButton->isChecked();
+    ShowCommandResult(
+        m_controller->SetTransform(
+            transform,
+            m_document->SceneRevision(),
+            m_document->Instance()->transformrevision),
+        QStringLiteral("X 镜像已提交，正在重新投影和预检。"));
+    SyncFields();
+}
+
+void ModelTransformPanel::OnMirrorY()
+{
+    if (!m_document->Instance().has_value())
+    {
+        return;
+    }
+    slicer_core::ModelTransform transform =
+        m_document->Instance()->transform;
+    transform.mirrory = m_mirrorYButton->isChecked();
+    ShowCommandResult(
+        m_controller->SetTransform(
+            transform,
+            m_document->SceneRevision(),
+            m_document->Instance()->transformrevision),
+        QStringLiteral("Y 镜像已提交，正在重新投影和预检。"));
+    SyncFields();
+}
+
 void ModelTransformPanel::OnDocumentChanged()
 {
     SyncFields();
@@ -263,6 +382,12 @@ void ModelTransformPanel::SyncFields()
     {
         m_identityLabel->setText(QStringLiteral("未加载模型"));
         m_revisionLabel->setText(QStringLiteral("revision --"));
+        m_sourcePreflightLabel->setText(
+            QStringLiteral("源模型预检：未运行"));
+        m_transformedPreflightLabel->setText(
+            QStringLiteral("变换后预检：未运行"));
+        m_mirrorXButton->setChecked(false);
+        m_mirrorYButton->setChecked(false);
         return;
     }
 
@@ -282,17 +407,74 @@ void ModelTransformPanel::SyncFields()
                  ? QStringLiteral("未保存")
                  : QStringLiteral("已同步")));
 
-    if (m_translateXSpin->hasFocus()
-        || m_translateYSpin->hasFocus()
-        || m_rotateZSpin->hasFocus()
-        || m_uniformScaleSpin->hasFocus())
+    if (!m_translateXSpin->hasFocus()
+        && !m_translateYSpin->hasFocus()
+        && !m_rotateZSpin->hasFocus()
+        && !m_uniformScaleSpin->hasFocus())
     {
-        return;
+        m_translateXSpin->setValue(instance.transform.translatexmm);
+        m_translateYSpin->setValue(instance.transform.translateymm);
+        m_rotateZSpin->setValue(instance.transform.rotatezdeg);
+        m_uniformScaleSpin->setValue(instance.transform.uniformscale);
     }
-    m_translateXSpin->setValue(instance.transform.translatexmm);
-    m_translateYSpin->setValue(instance.transform.translateymm);
-    m_rotateZSpin->setValue(instance.transform.rotatezdeg);
-    m_uniformScaleSpin->setValue(instance.transform.uniformscale);
+    m_mirrorXButton->setChecked(instance.transform.mirrorx);
+    m_mirrorYButton->setChecked(instance.transform.mirrory);
+
+    switch (m_document->TransformedPreflightState())
+    {
+    case SceneTransformedPreflightState::NotRun:
+        m_sourcePreflightLabel->setText(
+            QStringLiteral("源模型预检：未运行"));
+        m_transformedPreflightLabel->setText(
+            QStringLiteral("变换后预检：未运行"));
+        break;
+    case SceneTransformedPreflightState::Running:
+        m_sourcePreflightLabel->setText(
+            QStringLiteral("源模型预检：检测中"));
+        m_transformedPreflightLabel->setText(
+            QStringLiteral("变换后预检：检测中"));
+        break;
+    case SceneTransformedPreflightState::Ready:
+        if (m_document->TransformedPreflight().has_value())
+        {
+            const auto& preflight =
+                m_document->TransformedPreflight().value();
+            m_sourcePreflightLabel->setText(
+                QStringLiteral("源模型预检：%1")
+                    .arg(PreflightStatusText(
+                        preflight.source.result.status)));
+            m_transformedPreflightLabel->setText(
+                QStringLiteral(
+                    "变换后预检：%1；Legacy=%2，Global=%3")
+                    .arg(PreflightStatusText(
+                        preflight.transformed.result.status))
+                    .arg(AdmissionText(
+                        preflight.transformed.result
+                            .legacyAdmission.status))
+                    .arg(AdmissionText(
+                        preflight.transformed.result
+                            .globalAdmission.status)));
+        }
+        break;
+    case SceneTransformedPreflightState::Failed:
+        m_sourcePreflightLabel->setText(
+            QStringLiteral("源模型预检：失败"));
+        m_transformedPreflightLabel->setText(
+            QStringLiteral("变换后预检：失败"));
+        break;
+    case SceneTransformedPreflightState::Cancelled:
+        m_sourcePreflightLabel->setText(
+            QStringLiteral("源模型预检：已取消"));
+        m_transformedPreflightLabel->setText(
+            QStringLiteral("变换后预检：已取消"));
+        break;
+    case SceneTransformedPreflightState::Stale:
+        m_sourcePreflightLabel->setText(
+            QStringLiteral("源模型预检：过期"));
+        m_transformedPreflightLabel->setText(
+            QStringLiteral("变换后预检：等待重检"));
+        break;
+    }
 }
 
 void ModelTransformPanel::UpdateAvailability()
@@ -310,6 +492,8 @@ void ModelTransformPanel::UpdateAvailability()
     m_uniformScaleSpin->setEnabled(editable);
     m_applyButton->setEnabled(editable);
     m_resetButton->setEnabled(editable);
+    m_mirrorXButton->setEnabled(editable);
+    m_mirrorYButton->setEnabled(editable);
     m_centerButton->setEnabled(
         editable
         && m_document->Geometry().has_value()

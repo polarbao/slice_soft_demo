@@ -1,6 +1,7 @@
 #pragma once
 
 #include "slicer_core/scene/SceneViewGeometry.h"
+#include "slicer_core/preflight/TransformedModelPreflight.h"
 
 #include <QObject>
 #include <QString>
@@ -15,6 +16,16 @@ enum class SceneDocumentState
     Blocked,
     Failed,
     Cancelled,
+};
+
+enum class SceneTransformedPreflightState
+{
+    NotRun,
+    Running,
+    Ready,
+    Failed,
+    Cancelled,
+    Stale,
 };
 
 class SceneDocument final : public QObject
@@ -146,6 +157,18 @@ public:
     QString SourceCacheKey() const;
 
     /**
+     * @brief Return source content identity.
+     * @return Source SHA-256 identity or empty text.
+     */
+    QString SourceHash() const;
+
+    /**
+     * @brief Return adjacent resource identity.
+     * @return Resource SHA-256 identity or empty text.
+     */
+    QString ResourceHash() const;
+
+    /**
      * @brief Report whether the scene differs from its saved revision.
      * @return True after an effective transform change.
      */
@@ -168,6 +191,65 @@ public:
      * @return Empty text before the first successful save.
      */
     QString EffectiveConfigPath() const;
+
+    /**
+     * @brief Begin transformed preflight for the current revisions.
+     * @param generation Monotonic preflight request generation.
+     * @param sceneRevision Expected current scene revision.
+     * @param transformRevision Expected current transform revision.
+     * @return True when the request identity was accepted.
+     */
+    bool SetTransformedPreflightRunning(
+        quint64 generation,
+        quint64 sceneRevision,
+        quint64 transformRevision);
+
+    /**
+     * @brief Publish transformed preflight for the current revisions.
+     * @param generation Request generation.
+     * @param execution Source/transformed admission evidence.
+     * @return True when identity and revisions were current.
+     */
+    bool SetTransformedPreflightResult(
+        quint64 generation,
+        slicer_core::TransformedModelPreflightExecution execution);
+
+    /**
+     * @brief Publish transformed preflight failure.
+     * @param generation Request generation.
+     * @param error Stable diagnostic detail.
+     * @return True when the generation was current.
+     */
+    bool SetTransformedPreflightFailure(
+        quint64 generation,
+        const QString& error);
+
+    /**
+     * @brief Mark transformed preflight cancelled.
+     * @param generation Request generation.
+     * @return True when the generation was current.
+     */
+    bool SetTransformedPreflightCancelled(quint64 generation);
+
+    /**
+     * @brief Return transformed preflight lifecycle.
+     * @return Current lifecycle state.
+     */
+    SceneTransformedPreflightState TransformedPreflightState() const;
+
+    /**
+     * @brief Return current transformed preflight evidence.
+     * @return Evidence retained for the matching revision.
+     */
+    const std::optional<
+        slicer_core::TransformedModelPreflightExecution>&
+    TransformedPreflight() const;
+
+    /**
+     * @brief Return the transformed preflight error detail.
+     * @return Empty when no failure is active.
+     */
+    QString TransformedPreflightError() const;
 
     /**
      * @brief Commit one validated instance update atomically.
@@ -217,4 +299,13 @@ private:
     QString m_sceneConfigPath;
     QString m_effectiveConfigPath;
     QString m_effectiveConfigHash;
+    SceneTransformedPreflightState m_transformedPreflightState{
+        SceneTransformedPreflightState::NotRun};
+    quint64 m_transformedPreflightGeneration{0U};
+    quint64 m_transformedPreflightSceneRevision{0U};
+    quint64 m_transformedPreflightTransformRevision{0U};
+    std::optional<
+        slicer_core::TransformedModelPreflightExecution>
+        m_transformedPreflight;
+    QString m_transformedPreflightError;
 };

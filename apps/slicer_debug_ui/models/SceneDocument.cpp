@@ -24,6 +24,13 @@ void SceneDocument::Reset()
     m_sceneConfigPath.clear();
     m_effectiveConfigPath.clear();
     m_effectiveConfigHash.clear();
+    m_transformedPreflightState =
+        SceneTransformedPreflightState::NotRun;
+    m_transformedPreflightGeneration = 0U;
+    m_transformedPreflightSceneRevision = 0U;
+    m_transformedPreflightTransformRevision = 0U;
+    m_transformedPreflight.reset();
+    m_transformedPreflightError.clear();
     PublishState(SceneDocumentState::Unloaded);
 }
 
@@ -46,6 +53,13 @@ void SceneDocument::SetLoading(
     m_sceneConfigPath.clear();
     m_effectiveConfigPath.clear();
     m_effectiveConfigHash.clear();
+    m_transformedPreflightState =
+        SceneTransformedPreflightState::NotRun;
+    m_transformedPreflightGeneration = 0U;
+    m_transformedPreflightSceneRevision = 0U;
+    m_transformedPreflightTransformRevision = 0U;
+    m_transformedPreflight.reset();
+    m_transformedPreflightError.clear();
     PublishState(SceneDocumentState::Loading);
 }
 
@@ -191,6 +205,16 @@ QString SceneDocument::SourceCacheKey() const
     return m_sourceCacheKey;
 }
 
+QString SceneDocument::SourceHash() const
+{
+    return m_sourceHash;
+}
+
+QString SceneDocument::ResourceHash() const
+{
+    return m_resourceHash;
+}
+
 bool SceneDocument::IsDirty() const
 {
     return m_dirty;
@@ -211,6 +235,100 @@ QString SceneDocument::EffectiveConfigPath() const
     return m_effectiveConfigPath;
 }
 
+bool SceneDocument::SetTransformedPreflightRunning(
+    const quint64 generation,
+    const quint64 sceneRevision,
+    const quint64 transformRevision)
+{
+    if (!m_instance.has_value()
+        || sceneRevision != m_sceneRevision
+        || transformRevision != m_instance->transformrevision)
+    {
+        return false;
+    }
+    m_transformedPreflightGeneration = generation;
+    m_transformedPreflightSceneRevision = sceneRevision;
+    m_transformedPreflightTransformRevision = transformRevision;
+    m_transformedPreflightState =
+        SceneTransformedPreflightState::Running;
+    m_transformedPreflightError.clear();
+    emit SigChanged();
+    return true;
+}
+
+bool SceneDocument::SetTransformedPreflightResult(
+    const quint64 generation,
+    slicer_core::TransformedModelPreflightExecution execution)
+{
+    if (!m_instance.has_value()
+        || generation != m_transformedPreflightGeneration
+        || execution.sceneid != m_sceneId.toStdString()
+        || execution.instanceid != m_instance->instanceid
+        || execution.scenerevision != m_sceneRevision
+        || execution.transformrevision
+            != m_instance->transformrevision
+        || execution.scenerevision
+            != m_transformedPreflightSceneRevision
+        || execution.transformrevision
+            != m_transformedPreflightTransformRevision)
+    {
+        return false;
+    }
+    m_transformedPreflight = std::move(execution);
+    m_transformedPreflightState =
+        SceneTransformedPreflightState::Ready;
+    m_transformedPreflightError.clear();
+    emit SigChanged();
+    return true;
+}
+
+bool SceneDocument::SetTransformedPreflightFailure(
+    const quint64 generation,
+    const QString& error)
+{
+    if (generation != m_transformedPreflightGeneration)
+    {
+        return false;
+    }
+    m_transformedPreflightState =
+        SceneTransformedPreflightState::Failed;
+    m_transformedPreflightError = error;
+    emit SigChanged();
+    return true;
+}
+
+bool SceneDocument::SetTransformedPreflightCancelled(
+    const quint64 generation)
+{
+    if (generation != m_transformedPreflightGeneration)
+    {
+        return false;
+    }
+    m_transformedPreflightState =
+        SceneTransformedPreflightState::Cancelled;
+    m_transformedPreflightError.clear();
+    emit SigChanged();
+    return true;
+}
+
+SceneTransformedPreflightState
+SceneDocument::TransformedPreflightState() const
+{
+    return m_transformedPreflightState;
+}
+
+const std::optional<
+    slicer_core::TransformedModelPreflightExecution>&
+SceneDocument::TransformedPreflight() const
+{
+    return m_transformedPreflight;
+}
+
+QString SceneDocument::TransformedPreflightError() const
+{
+    return m_transformedPreflightError;
+}
+
 bool SceneDocument::CommitInstance(
     const slicer_core::ModelInstance& instance,
     const quint64 expectedSceneRevision)
@@ -228,6 +346,9 @@ bool SceneDocument::CommitInstance(
     m_geometryStale = true;
     m_effectiveConfigPath.clear();
     m_effectiveConfigHash.clear();
+    m_transformedPreflightState =
+        SceneTransformedPreflightState::Stale;
+    m_transformedPreflightError.clear();
     emit SigChanged();
     return true;
 }

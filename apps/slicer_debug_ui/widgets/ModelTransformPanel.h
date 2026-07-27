@@ -39,6 +39,8 @@ private slots:
     void OnApply();
     void OnCenter();
     void OnReset();
+    void OnMirrorX();
+    void OnMirrorY();
     void OnDocumentChanged();
     void OnSelectionChanged(const QString& instanceId);
     void OnCommandFailed(const QString& code, const QString& message);
@@ -59,9 +61,13 @@ private:
     QDoubleSpinBox* m_uniformScaleSpin{nullptr};
     QLabel* m_identityLabel{nullptr};
     QLabel* m_revisionLabel{nullptr};
+    QLabel* m_sourcePreflightLabel{nullptr};
+    QLabel* m_transformedPreflightLabel{nullptr};
     QLabel* m_stateLabel{nullptr};
     QPushButton* m_applyButton{nullptr};
     QPushButton* m_centerButton{nullptr};
     QPushButton* m_resetButton{nullptr};
+    QPushButton* m_mirrorXButton{nullptr};
+    QPushButton* m_mirrorYButton{nullptr};
     QPushButton* m_saveButton{nullptr};
 };

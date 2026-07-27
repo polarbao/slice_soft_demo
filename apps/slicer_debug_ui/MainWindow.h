@@ -15,6 +15,7 @@
 #include "services/SliceProgressProtocolParser.h"
 #include "services/SlicePreflightCoordinator.h"
 #include "services/ToolPaths.h"
+#include "services/TransformedModelPreflightLoader.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
 #include "widgets/DiagnosticsDock.h"
@@ -129,6 +130,7 @@ private:
     SceneModelRepository m_sceneModelRepository;
     ModelTopViewLoader m_modelTopViewLoader;
     SceneTransformController m_sceneTransformController;
+    TransformedModelPreflightLoader m_transformedPreflightLoader;
     QString current_action_;
     QString pending_package_;
     QString compare_output_;

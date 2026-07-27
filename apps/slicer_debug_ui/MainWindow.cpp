@@ -354,6 +354,10 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
           &m_sceneDocument,
           &m_sceneSelectionModel,
           &m_sceneModelRepository,
+          this),
+      m_transformedPreflightLoader(
+          &m_sceneDocument,
+          &m_sceneModelRepository,
           this)
 {
     setWindowTitle("SliceSoft 切片调试界面");
@@ -485,6 +489,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
             config_editor_panel_->ShowProductionAdmissionState(
                 ProductionAdmissionState::Stale,
                 QStringLiteral("生产模式或 Profile 已改变，需要重新执行预检。"));
+            UpdateActionAvailability();
         });
     connect(
         &config_document_,
@@ -492,6 +497,10 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         this,
         [this]()
         {
+            if (m_transformedPreflightLoader.IsRunning())
+            {
+                m_transformedPreflightLoader.Cancel();
+            }
             if (m_modelTopViewLoader.IsRunning())
             {
                 m_modelTopViewLoader.Cancel();
@@ -520,6 +529,33 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         [this](const SceneProjectionRequest& request)
         {
             m_modelTopViewLoader.RequestProjection(request);
+        });
+    connect(
+        &m_sceneTransformController,
+        &SceneTransformController::SigTransformChanged,
+        this,
+        [this]()
+        {
+            if (m_transformedPreflightLoader.IsRunning())
+            {
+                m_transformedPreflightLoader.Cancel();
+            }
+        });
+    connect(
+        &m_modelTopViewLoader,
+        &ModelTopViewLoader::SigLoadingFinished,
+        this,
+        [this]()
+        {
+            if ((m_sceneDocument.State()
+                     == SceneDocumentState::Ready
+                 || m_sceneDocument.State()
+                     == SceneDocumentState::Blocked)
+                && !m_sceneDocument.IsGeometryStale()
+                && m_sceneDocument.Instance().has_value())
+            {
+                m_transformedPreflightLoader.RequestCurrent();
+            }
         });
     connect(
         m_modelTransformPanel,
@@ -701,6 +737,10 @@ void MainWindow::OnImportModelPreview()
     request.admissionstatus =
         slicer_core::SceneViewAdmissionStatus::Unknown;
 
+    if (m_transformedPreflightLoader.IsRunning())
+    {
+        m_transformedPreflightLoader.Cancel();
+    }
     m_sceneSelectionModel.Clear();
     m_mainWorkspaceTabs->setCurrentWidget(m_modelTopViewWorkspace);
     m_modelTopViewLoader.RequestLoad(request);
@@ -1783,9 +1823,37 @@ void MainWindow::UpdateActionAvailability()
         enabled && !sceneProductionBlocked);
     run_slicer_button_->setToolTip(
         sceneProductionBlocked
-            ? QStringLiteral(
-                  "当前俯视场景包含实例变换；13A-04 完成变换后预检前，"
-                  "禁止使用旧配置启动生产切片。")
+            ? [&]()
+              {
+                  if (m_sceneDocument.TransformedPreflightState()
+                          != SceneTransformedPreflightState::Ready
+                      || !m_sceneDocument.TransformedPreflight()
+                              .has_value())
+                  {
+                      return QStringLiteral(
+                          "变换后预检尚未完成，禁止使用旧配置启动生产切片。");
+                  }
+                  const auto& result =
+                      m_sceneDocument.TransformedPreflight()
+                          ->transformed.result;
+                  const bool global =
+                      config_editor_panel_->SelectedProductionMode()
+                      == slicer_core::SlicePipelineMode::
+                          GlobalSurfaceShell;
+                  const auto admission =
+                      global ? result.globalAdmission.status
+                             : result.legacyAdmission.status;
+                  if (admission
+                      == slicer_core::
+                          ModelPreflightAdmissionStatus::Blocked)
+                  {
+                      return QStringLiteral(
+                          "变换后模型未通过当前模式预检，禁止生产切片。");
+                  }
+                  return QStringLiteral(
+                      "变换后预检已完成；场景生产消费将在 13B "
+                      "联合切片入口接通，当前仍禁止旧配置绕行。");
+              }()
             : QString());
     run_rip_button_->setEnabled(enabled);
     regression_button_->setEnabled(enabled);

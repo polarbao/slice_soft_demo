@@ -201,6 +201,8 @@ add_library(slicer_core
     src/slicer_core/preflight/ModelPreflightService.h
     src/slicer_core/preflight/ModelPreflightTypes.cpp
     src/slicer_core/preflight/ModelPreflightTypes.h
+    src/slicer_core/preflight/TransformedModelPreflight.cpp
+    src/slicer_core/preflight/TransformedModelPreflight.h
     src/slicer_core/preflight/RepairedAssetIntakeService.cpp
     src/slicer_core/preflight/RepairedAssetIntakeService.h
     src/slicer_core/preflight/RepairedAssetIntakeTypes.cpp
@@ -611,6 +613,15 @@ add_executable(model_preflight_admission_unit_tests
 
 target_link_libraries(model_preflight_admission_unit_tests PRIVATE slicer_core)
 
+add_executable(transformed_model_preflight_unit_tests
+    tests/unit/transformed_model_preflight/Main.cpp
+)
+
+target_link_libraries(transformed_model_preflight_unit_tests PRIVATE slicer_core)
+target_compile_definitions(transformed_model_preflight_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(model_preflight_pipeline_gate_unit_tests
     tests/unit/model_preflight_pipeline_gate/main.cpp
 )
@@ -876,6 +887,7 @@ add_test(NAME multimodel_scene_contract_unit_tests COMMAND multimodel_scene_cont
 add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effective_config_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
+add_test(NAME transformed_model_preflight_unit_tests COMMAND transformed_model_preflight_unit_tests)
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
 add_test(NAME slice_pipeline_router_unit_tests COMMAND slice_pipeline_router_unit_tests)
 add_test(NAME production_mode_catalog_unit_tests COMMAND production_mode_catalog_unit_tests)

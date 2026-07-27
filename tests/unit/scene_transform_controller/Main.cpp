@@ -409,6 +409,66 @@ bool FailedSaveRestoresPreviousDraft()
     return result;
 }
 
+bool MirrorTransformPersistsThroughSceneReadback()
+{
+    SceneDocument document;
+    SceneSelectionModel selection;
+    SceneModelRepository repository;
+    InitializeDocument(document, repository);
+    selection.SetSelectedInstance(QStringLiteral("instance-1"));
+    SceneTransformController controller(
+        &document,
+        &selection,
+        &repository);
+    controller.SetProjectionRequester(
+        [](const SceneProjectionRequest&)
+        {
+        });
+
+    slicer_core::ModelTransform transform;
+    transform.mirrorx = true;
+    const SceneTransformCommandResult changed =
+        controller.SetTransform(transform, 1U, 0U);
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path()
+        / "slicesoft_13a04_mirror_scene";
+    std::error_code cleanupError;
+    std::filesystem::remove_all(root, cleanupError);
+
+    SceneTransformSaveRequest request;
+    request.sessiondirectory = root;
+    request.sourceprofileid = "profile-a";
+    request.generatedatutc = "2026-07-27T12:00:00.000Z";
+    request.expectedscenerevision = 2U;
+    request.expectedtransformrevision = 1U;
+    const SceneTransformSaveResult saved =
+        controller.SaveSceneEffectiveConfig(request);
+    const auto readback = slicer_core::ReadSceneEffectiveConfig(
+        root / "scene_config.effective.json");
+
+    const bool result =
+        ExpectTrue(
+            changed.IsValid() && changed.changed,
+            "mirror transform changes instance")
+        && ExpectTrue(
+            saved.IsValid() && readback.IsValid(),
+            "mirrored scene saves and reads back")
+        && ExpectTrue(
+            saved.scene.instances.size() == 1U
+                && saved.scene.instances.front()
+                       .requestedtransform.mirrorx
+                && saved.scene.instances.front()
+                       .effectivetransform.mirrorx,
+            "scene snapshot retains requested and effective mirror")
+        && ExpectTrue(
+            !slicer_core::IsSceneEffectiveConfigStale(
+                readback.document,
+                saved.scene),
+            "mirrored effective config identity remains current");
+    std::filesystem::remove_all(root, cleanupError);
+    return result;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -423,6 +483,7 @@ int main(int argc, char** argv)
     ok = CenterAndResetUseEffectiveGeometry() && ok;
     ok = EffectiveConfigSavesReadsBackAndRejectsStale() && ok;
     ok = FailedSaveRestoresPreviousDraft() && ok;
+    ok = MirrorTransformPersistsThroughSceneReadback() && ok;
     if (!ok)
     {
         return 1;

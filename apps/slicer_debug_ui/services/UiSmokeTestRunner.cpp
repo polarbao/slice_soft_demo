@@ -35,6 +35,7 @@
 #include "SliceProgressProtocolParser.h"
 #include "SlicePreflightCoordinator.h"
 #include "ToolPaths.h"
+#include "TransformedModelPreflightLoader.h"
 #include "slicer_core/config.h"
 
 #include <QComboBox>
@@ -579,6 +580,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "model-top-view-transform")
     {
         return ModelTopViewTransform(options);
+    }
+    if (options.case_name == "model-transform-preflight")
+    {
+        return ModelTransformPreflight(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -3375,6 +3380,166 @@ int UiSmokeTestRunner::ModelTopViewTransform(
     return pass(QStringLiteral(
         "model-top-view-transform x/y/rotate/scale/center/reset/"
         "locked/dirty/latest-generation"));
+}
+
+int UiSmokeTestRunner::ModelTransformPreflight(
+    const UiSmokeTestOptions& options)
+{
+    SceneDocument document;
+    SceneSelectionModel selection;
+    SceneModelRepository repository;
+    ModelTopViewLoader topViewLoader(&document, &repository);
+    TransformedModelPreflightLoader preflightLoader(
+        &document,
+        &repository);
+    SceneTransformController controller(
+        &document,
+        &selection,
+        &repository);
+    controller.SetProjectionRequester(
+        [&topViewLoader](const SceneProjectionRequest& request)
+        {
+            topViewLoader.RequestProjection(request);
+        });
+    QObject::connect(
+        &topViewLoader,
+        &ModelTopViewLoader::SigLoadingFinished,
+        &preflightLoader,
+        [&document, &preflightLoader]()
+        {
+            if (document.State() == SceneDocumentState::Ready
+                && !document.IsGeometryStale())
+            {
+                preflightLoader.RequestCurrent();
+            }
+        });
+
+    ModelTopViewWidget canvas(&document, &selection);
+    ModelTransformPanel panel(
+        &document,
+        &selection,
+        &controller);
+    ModelTopViewLoadRequest request;
+    request.modelpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    request.sceneid = QStringLiteral("preflight-smoke-scene");
+    request.modelid = QStringLiteral("preflight-smoke-model");
+    request.instanceid =
+        QStringLiteral("preflight-smoke-instance");
+    request.scenerevision = 1U;
+    topViewLoader.RequestLoad(request);
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.TransformedPreflightState()
+                    == SceneTransformedPreflightState::Ready;
+            },
+            15000)
+        || !document.TransformedPreflight().has_value())
+    {
+        return fail(QStringLiteral(
+            "initial transformed preflight did not complete"));
+    }
+    selection.SetSelectedInstance(request.instanceid);
+
+    auto* mirrorX = panel.findChild<QPushButton*>(
+        QStringLiteral("modelTransformMirrorXButton"));
+    auto* mirrorY = panel.findChild<QPushButton*>(
+        QStringLiteral("modelTransformMirrorYButton"));
+    auto* sourceStatus = panel.findChild<QLabel*>(
+        QStringLiteral("modelTransformSourcePreflight"));
+    auto* transformedStatus = panel.findChild<QLabel*>(
+        QStringLiteral("modelTransformEffectivePreflight"));
+    if (mirrorX == nullptr
+        || mirrorY == nullptr
+        || sourceStatus == nullptr
+        || transformedStatus == nullptr)
+    {
+        return fail(QStringLiteral(
+            "mirror or transformed preflight controls missing"));
+    }
+
+    mirrorX->click();
+    mirrorY->click();
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.TransformedPreflightState()
+                    == SceneTransformedPreflightState::Ready
+                    && document.TransformedPreflight().has_value()
+                    && document.TransformedPreflight()
+                           ->scenerevision
+                        == document.SceneRevision();
+            },
+            15000)
+        || !document.Instance()->transform.mirrorx
+        || !document.Instance()->transform.mirrory
+        || document.SceneRevision() != 3U
+        || document.TransformedPreflight()
+               ->transformrevision
+            != 2U
+        || document.TransformedPreflight()
+               ->source.result.status
+            != slicer_core::ModelPreflightStatus::Passed
+        || document.TransformedPreflight()
+               ->transformed.result.globalAdmission.status
+            != slicer_core::ModelPreflightAdmissionStatus::Passed
+        || !sourceStatus->text().contains(
+            QStringLiteral("通过"))
+        || !transformedStatus->text().contains(
+            QStringLiteral("Global=通过")))
+    {
+        return fail(QStringLiteral(
+            "latest mirrored transformed preflight mismatch"));
+    }
+
+    QTemporaryDir openMeshDirectory;
+    const QString openMeshPath =
+        openMeshDirectory.filePath(QStringLiteral("open_mesh.obj"));
+    QFile openMesh(openMeshPath);
+    if (!openMesh.open(QIODevice::WriteOnly | QIODevice::Text)
+        || openMesh.write(
+               "v 0 0 0\n"
+               "v 10 0 0\n"
+               "v 0 10 0\n"
+               "f 1 2 3\n")
+            <= 0)
+    {
+        return fail(QStringLiteral(
+            "failed to create open mesh smoke fixture"));
+    }
+    openMesh.close();
+
+    ModelTopViewLoadRequest blockedRequest = request;
+    blockedRequest.modelpath = openMeshPath;
+    blockedRequest.sceneid =
+        QStringLiteral("blocked-preflight-smoke-scene");
+    blockedRequest.modelid =
+        QStringLiteral("blocked-preflight-smoke-model");
+    blockedRequest.instanceid =
+        QStringLiteral("blocked-preflight-smoke-instance");
+    topViewLoader.RequestLoad(blockedRequest);
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.TransformedPreflightState()
+                    == SceneTransformedPreflightState::Ready;
+            },
+            15000)
+        || !document.TransformedPreflight().has_value()
+        || document.TransformedPreflight()
+               ->transformed.result.globalAdmission.status
+            != slicer_core::ModelPreflightAdmissionStatus::Blocked
+        || !canvas.HasRenderableGeometry())
+    {
+        return fail(QStringLiteral(
+            "blocked transformed model was not retained for viewing"));
+    }
+
+    return pass(QStringLiteral(
+        "model-transform-preflight mirror-x/y/source/effective/"
+        "latest-revision/global-blocked-viewable"));
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {
