@@ -23,5 +23,6 @@
 | `REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 总体准备和实现进度 |
 | `REPORT_13A_01_ModelTransform与ModelInstance合同当前状态.md` | 13A-01 实例变换核心合同 |
 | `REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md` | 13B-01 多模型场景与 Scene Effective Config 合同 |
+| `REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 12E-09A-02 single_model/scene Diagnostic Effective Config |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。

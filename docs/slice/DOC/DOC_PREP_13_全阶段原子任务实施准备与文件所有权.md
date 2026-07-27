@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01 COMPLETE
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01、13B-01、09A-02 COMPLETE / 13A-02 READY
 > 版本：v1.1
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -72,7 +72,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 4.2 13A-02 俯视渲染
 
-状态：`READY / SCHEDULE AFTER 13B-01 IDENTITY CONTRACT`
+状态：`READY FOR DEVELOPMENT / CURRENT`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -84,6 +84,8 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | +Z 俯视、+X 右/+Y 上、毫米比例、bbox/轮廓、适应视图、选中隔离、blocked 只读显示 |
 | 非目标 | 3D 相机、gizmo、自动 nesting |
 | 完成输出 | 单模型俯视可见、选择状态稳定、无 Qt 反向依赖 |
+
+详细合同以 `DOC_PREP_13A_02_模型俯视渲染准备.md` 为准。
 
 ### 4.3 13A-03 选择与精确变换
 
@@ -129,7 +131,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.1 13B-01 MultiModelScene 与 Scene Effective Config
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE（2026-07-27）`
 
 | 项目 | 准备内容 |
 |---|---|

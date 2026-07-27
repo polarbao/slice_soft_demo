@@ -1,7 +1,7 @@
 # DEV 12E-09A Scene-aware 诊断 UI 设计
 
 > 文档版本：v1.0
-> 文档状态：Formal DEV / 09A-02 READY
+> 文档状态：Formal DEV / 09A-02 COMPLETE / 09A-03..06 PREPARED
 > 日期：2026-07-27
 
 ## 1. 架构边界

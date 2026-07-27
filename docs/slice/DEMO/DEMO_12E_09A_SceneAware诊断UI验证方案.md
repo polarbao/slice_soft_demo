@@ -1,7 +1,7 @@
 # DEMO 12E-09A Scene-aware 诊断 UI 验证方案
 
 > 文档版本：v1.0
-> 文档状态：Formal DEMO / 09A-02 READY
+> 文档状态：Formal DEMO / 09A-02 COMPLETE / 09A-03..06 PREPARED
 > 日期：2026-07-27
 
 ## 1. 验证目标
@@ -84,8 +84,8 @@ ctest --test-dir build -C Debug -R "^(diagnostic_effective_config_unit_tests|pro
 git diff --check
 ```
 
-09A-03..06 另加 Qt build、`--self-test`、任务专用 `--ui-smoke-test` 和 Quick CI。本文是计划，
-不得在任务执行前把这些命令写成已通过。
+09A-02 已按当前状态报告记录实际验证。09A-03..06 另加 Qt build、`--self-test`、任务专用
+`--ui-smoke-test` 和 Quick CI；后续任务不得在执行前把计划命令写成已通过。
 
 ## 8. 通过标准
 

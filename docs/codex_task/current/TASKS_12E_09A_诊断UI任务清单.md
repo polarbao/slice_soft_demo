@@ -1,6 +1,6 @@
 # TASKS 12E-09A 诊断 UI 任务清单
 
-> 状态：09A-01 COMPLETE / 09A-02 READY / 09A-03..06 PREPARED
+> 状态：09A-01/02 COMPLETE / 09A-03..06 PREPARED
 > 日期：2026-07-27
 > 性质：独立 diagnostic UI 支线
 
@@ -47,30 +47,30 @@ docs/slice/REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.m
 
 ## 3. 09A-02 Diagnostic Effective Config
 
-状态：READY FOR DEVELOPMENT（13B-01 COMPLETE）
+状态：COMPLETE（2026-07-27）
 
 目标：
 
 ```text
 按 Config Editor 事务保存 texture width、modelFill.material、来源 Profile 和派生阈值；
-生成 output/ui_sessions/<session>/slice_config.effective.json；
+生成 output/ui_sessions/<session>/slice_config.diagnostic.effective.json；
 不覆盖 samples/configs fixture；
 requested、derived、effective 字段可审计。
 subjectType 兼容 single_model/scene；
 scene 模式绑定 sceneId/instanceId/sceneRevision/transformRevision。
 ```
 
-验收：保存、回读、回退、stale override 清理和负向配置单测。
+验收：保存、回读、事务回退、stale、取消、完整性和负向配置单测 PASS。
 
-执行提示：
+状态报告：
 
 ```text
-docs/codex_task/current/CODEX_PROMPT_12E_09A_SceneAware诊断UI执行指令.md
+docs/slice/REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md
 ```
 
 ## 4. 09A-03 中文参数控件与状态区
 
-状态：PREPARED / WAIT 09A-02
+状态：PREPARED / FUNCTIONALLY UNBLOCKED / SCHEDULE AFTER 13C-03
 
 目标：
 
@@ -136,7 +136,9 @@ Qt self-test；
 12E-09B-01..06 COMPLETE
   -> 12E-09C COMPLETE
   -> 13A-01 + 13B-01
-  -> scene-aware 12E-09A-02
+  -> scene-aware 12E-09A-02 COMPLETE
+  -> 13A-02..05
+  -> 13B-02..07
   -> 13C-01..03
   -> 12E-09A-03..06
   -> 12E-10A..D
@@ -148,7 +150,7 @@ Qt self-test；
 09B 先冻结产品模式、Profile 和生产 session 合同；
 09C 再冻结最终 X/Y raster 尺寸与 Reader 合同；
 09A 同层 preview 在最终生产模式和 DPI 合同上收口，可减少重复验证；
-13B-01 先冻结 scene identity，避免 09A-02 永久绑定单一 modelPath；
+13B-01 先冻结 scene identity，09A-02 已据此兼容 single_model/scene；
 13C-03 先建立 TIFF 原生底图，避免 09A-05 复制旧 preview PNG 合成路线；
 12E-10A 明确依赖 09A-05 和 09B-05，因此 09A 不能从路线中删除。
 ```

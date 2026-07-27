@@ -2,8 +2,8 @@
 
 > 文档状态：ROADMAP / Stage 12E Planning
 > 日期：2026-07-16
-> 更新日期：2026-07-24
-> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3/R4 COMPLETE；R4-08-R2 GO；12E-08D-01..06 COMPLETE；12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE；下一顺序为 09A-02..06
+> 更新日期：2026-07-27
+> 当前项目执行阶段：12D COMPLETE；12E-01..07、12E-08A/08B/08C、R1/R2/R3/R4 COMPLETE；R4-08-R2 GO；12E-08D-01..06 COMPLETE；12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE；12E-09A-01/02 COMPLETE；下一执行入口为 Stage 13A-02
 
 ## 1. Goal
 
@@ -196,7 +196,8 @@ production gate 失败时不写生产包。
 | 12E-08D-04 | COMPLETE：真实模型 Release matrix 与 GO/NO-GO | restricted Profile GO；ordinary parity NO-GO |
 | 12E-09B | Qt 双模式选择、能力提示和 Production Effective Config | 09B-01 COMPLETE；仅对 admitted restricted/material-parity Profile 开放；中文入口；requested/effective 可追踪 |
 | 12E-09C | X/Y DPI 非等方配置与协议兼容 | 默认 635/600；显式 600/600 兼容；Core/Reader/两引擎/光油/Qt/preview 同合同 |
-| 12E-09A-02..06 | Diagnostic Effective Config、worker 和同层语义 preview | 独立支线；09A-05 是 10A 前置 |
+| 12E-09A-02 | Diagnostic Effective Config | COMPLETE；single_model/scene 身份、事务、hash 和 stale 已冻结 |
+| 12E-09A-03..06 | 中文控件、worker 和同层语义 preview | 独立支线；按 Stage 13 依赖顺序推进，09A-05 是 10A 前置 |
 | 12E-10 | 双模式真实模型、preview、RIP、性能与报告收口 | 09B/09C 已完成；等待 09A-05，并补齐独立执行文档；输出矩阵完整，残余风险明确 |
 | Stage 13 前置 | ModelInstance/scene identity 与 TIFF 原生生产预览 | 13A-01/13B-01 先于 09A-02；13C-03 先于 09A-05；多模型生产由 Stage 13B 独立验收 |
 

@@ -1,7 +1,7 @@
 # PRD 12E-09A Scene-aware 诊断 UI
 
 > 文档版本：v1.0
-> 文档状态：Formal PRD / 09A-02 READY
+> 文档状态：Formal PRD / 09A-02 COMPLETE / 09A-03..06 PREPARED
 > 日期：2026-07-27
 > 前置：09A-01、13A-01、13B-01 COMPLETE
 
@@ -27,7 +27,7 @@ scene 诊断明确选择一个 current instance，不把整个场景误写成单
 ### 3.1 保存诊断配置
 
 用户调整 Texture Surface Layer 宽度和 Model Fill 材料后，可保存到当前 session 的
-`slice_config.effective.json`，重新打开后看到 requested、derived、effective 和来源 Profile。
+`slice_config.diagnostic.effective.json`，重新打开后看到 requested、derived、effective 和来源 Profile。
 
 ### 3.2 诊断单模型
 

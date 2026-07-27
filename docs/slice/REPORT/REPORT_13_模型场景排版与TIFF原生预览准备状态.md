@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v0.5
+> 文档版本：v0.6
 > 日期：2026-07-27
-> 当前状态：P0 DESIGN COMPLETE / 13A-01、13B-01 COMPLETE / NEXT 12E-09A-02 READY
+> 当前状态：P0 DESIGN COMPLETE / 13A-01、13B-01、跨阶段 12E-09A-02 COMPLETE / NEXT 13A-02 READY
 
 ## 1. 本轮完成
 
@@ -51,6 +51,8 @@ transform hash、稳定错误和 optimistic revision 已由单测覆盖；
 13B-01 已实现 MultiModelScene、ModelSource、ResourceScope 和 Scene Effective Config；
 scene/model/instance/revision、requested/derived/effective 和 scene_profile_only 已冻结；
 scene effective config 已支持原子保存、回读、hash、cancel 和 stale；
+12E-09A-02 已实现 single_model/scene Diagnostic Effective Config；
+诊断配置已绑定 current model/instance/transformRevision，并支持原子保存、回读、hash、cancel 和 stale；
 当前核心生产配置仍为单一 input.modelPath；
 当前没有可编辑模型画布；
 当前没有多模型 buildVolume/layout/collision/joint package；
@@ -121,7 +123,9 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 17 个近程原子任务的依赖、建议文件所有权、验证入口和验收输出：COMPLETE；
 13A-01：COMPLETE；
 13B-01：COMPLETE；
-13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在 identity wave 后；
+12E-09A-02：COMPLETE；
+13A-02：READY FOR DEVELOPMENT，已有独立 PREP/PROMPT；
+13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在模型交互和场景排版之后；
 Stage 13 全阶段 production readiness：尚未完成；
 Stage 13 已实现能力：2/17 个近程原子任务完成。
 ```
@@ -162,15 +166,16 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 ## 8. 下一任务
 
 ```text
-12E-09A-02 Scene-aware Diagnostic Effective Config
+13A-02 模型俯视渲染
 ```
 
-13B-01 已完成并解除 scene identity 前置。09A-02 的独立 PRD/DEV/DEMO/PREP/PROMPT 已补齐，
-开始代码前仍需用户明确授权。完成 09A-02 后再进入 13A-02/13B-02，不能直接跳到联合切片。
+13B-01 和跨阶段 09A-02 已完成，模型/场景/当前实例身份链已闭合。13A-02 的独立
+`DOC_PREP_13A_02_模型俯视渲染准备.md` 和执行指令已补齐；下一步先建立 +Z 俯视、模型轮廓、
+包围盒、毫米网格和独立导入预览入口，不能直接跳到联合切片。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 09A-02 |
+| 范围 | 当前结论 | 是否阻断 13A-02 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
@@ -180,5 +185,6 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
 
-当前不再需要为 09A-02 扩写通用设计文档。13B-01 的实际 Public DTO、验证和状态已回填；
-后续应等待用户授权进入 `12E-09A-02`，并在每个原子任务完成后更新跨阶段执行看板和实际验证报告。
+当前不再需要为 13A-02 扩写通用设计文档。13B-01、09A-02 的实际 Public DTO、验证和状态已回填；
+后续按 `CODEX_PROMPT_13A_02_模型俯视渲染执行指令.md` 进入开发，并在每个原子任务完成后更新
+跨阶段执行看板和实际验证报告。

@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01 / 13B-01 COMPLETE / NEXT 12E-09A-02 READY
+> 状态：13-00 / 13A-01 / 13B-01 / 12E-09A-02 COMPLETE / NEXT 13A-02 READY
 > 日期：2026-07-27
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -119,7 +119,7 @@ docs/slice/REPORT/REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md
 
 ## 5. 12E-09A-02 Scene-aware Diagnostic Effective Config
 
-状态：READY FOR DEVELOPMENT
+状态：COMPLETE（2026-07-27）
 
 要求：
 
@@ -131,11 +131,17 @@ subjectType 支持 single_model/scene；
 完成后回到本任务清单继续 13A/13B。
 ```
 
+状态报告：
+
+```text
+docs/slice/REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md
+```
+
 ## 6. 13A-R1 俯视和变换
 
 ### 13A-02 俯视渲染
 
-状态：READY / SCHEDULE AFTER 12E-09A-02
+状态：READY FOR DEVELOPMENT / CURRENT
 
 目标：+Z 俯视、XY 轴、毫米网格、轮廓、包围盒、选择和适应视图。
 
@@ -270,8 +276,9 @@ UI 步长 0.01 mm；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 scene-aware `12E-09A-02`。其独立 PRD/DEV/DEMO/PREP/PROMPT 已补齐。
-`13C-01` 技术上可独立开始，但单贡献者按固定顺序先完成诊断配置身份，再进入 13A-02/13C。
+当前唯一推荐入口为 `13A-02 模型俯视渲染`。其独立 PREP/PROMPT 已补齐。
+`13C-01` 技术上可独立开始，但单贡献者按固定顺序先完成模型俯视和 scene-aware UI，再进入 TIFF
+原生预览。
 
 ## 11. 任务验证规则
 

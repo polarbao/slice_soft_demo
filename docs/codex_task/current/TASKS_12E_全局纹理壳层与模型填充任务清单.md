@@ -2,7 +2,7 @@
 
 > 文档状态：R4-08-R2 GO / 12E-08D COMPLETE / GLOBAL OPT-IN CANDIDATE ADMITTED
 > 更新日期：2026-07-27
-> 当前项目原子任务：12E-09B/09C COMPLETE；下一顺序为 13A-01 -> 13B-01 -> scene-aware 09A-02
+> 当前项目原子任务：12E-09B/09C、09A-01/02 COMPLETE；下一任务为 Stage 13A-02 模型俯视渲染
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -511,7 +511,7 @@ docs/slice/REPORT/REPORT_12E_08C_R4_08_R2_08D_GO_NO_GO刷新状态.md
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：12E-09A-01 COMPLETE；12E-09A-02 READY；09A-03..06 PREPARED；
+状态：12E-09A-01/02 COMPLETE；09A-03..06 PREPARED；
 12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE
 
 目标：
@@ -532,7 +532,7 @@ session effective config；
 
 ```text
 12E-09A-01 只读 diagnostic facade 与 UI DTO（COMPLETE，2026-07-22）；
-12E-09A-02 Effective Config 事务与派生字段；
+12E-09A-02 Effective Config 事务与派生字段（COMPLETE，2026-07-27）；
 12E-09A-03 中文 width/modelFill/status 控件；
 12E-09A-04 异步 worker、取消与生命周期；
 12E-09A-05 真实 layerIndex/zMm 同层 preview；

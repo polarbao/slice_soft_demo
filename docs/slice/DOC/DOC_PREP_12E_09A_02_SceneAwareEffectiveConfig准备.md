@@ -1,9 +1,11 @@
 # DOC_PREP 12E-09A-02 Scene-aware Diagnostic Effective Config 准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：IMPLEMENTED / COMPLETE
 > 日期：2026-07-27
 > 前置：09A-01、13A-01、13B-01 COMPLETE
-> 后续：09A-03 WAIT 09A-02
+> 实现提交：`5d67ea8 feat(12E-09A-02): 建立场景感知诊断生效配置合同`
+> 状态报告：`docs/slice/REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md`
+> 后续：13A-02 READY；09A-03 按 Stage 13 依赖顺序执行
 
 ## 1. 本任务只做什么
 
@@ -99,7 +101,7 @@ ctest --test-dir build -C Debug -R "^(diagnostic_effective_config_unit_tests|pro
 git diff --check
 ```
 
-## 9. Gate
+## 9. Gate 与结果
 
-13B-01 已提供 scene identity，因此 09A-02 没有内部技术阻塞，可以在用户授权后开发。设备
-buildVolume、22 实例性能预算和 13C TIFF Preview 均不阻断本任务。
+13B-01 已提供 scene identity，09A-02 已完成实现和验证。设备 buildVolume、22 实例性能预算和
+13C TIFF Preview 未阻断本任务；后续 UI 控件、Worker 和同层预览仍按各自依赖推进。

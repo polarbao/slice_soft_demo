@@ -50,12 +50,12 @@ docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任�
 ## 当前跨阶段推荐入口
 
 ```text
-12E-09A-02 Scene-aware Diagnostic Effective Config
+13A-02 模型俯视渲染
 ```
 
-`13A-01` 和 `13B-01` 已完成。先按独立
-`CODEX_PROMPT_12E_09A_SceneAware诊断UI执行指令.md` 完成 09A-02，再返回本专项执行 13A-02；
-不得直接跳到 13B 联合切片。
+`13A-01`、`13B-01` 和 scene-aware `12E-09A-02` 已完成。下一步按独立
+`CODEX_PROMPT_13A_02_模型俯视渲染执行指令.md` 执行 13A-02；不得夹带 13A-03 变换编辑，也不得
+直接跳到 13B 联合切片。
 
 ## 代码规范
 

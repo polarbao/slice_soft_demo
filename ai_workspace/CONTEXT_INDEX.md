@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-27 | 13B-01 多模型场景合同完成与 scene-aware 09A-02 准备 | `context_handoff/2026-07-27_13B-01完成与09A-02准备.md` | Current |
+| 2026-07-27 | 09A-02 场景感知诊断配置完成与 13A-02 模型俯视准备 | `context_handoff/2026-07-27_09A-02完成与13A-02准备.md` | Current |
+| 2026-07-27 | 13B-01 多模型场景合同完成与 scene-aware 09A-02 准备 | `context_handoff/2026-07-27_13B-01完成与09A-02准备.md` | Superseded / incorporated |
 | 2026-07-27 | Stage 12/13 后续总览、12G 冻结与 Stage 13 P0 原子准备收口 | `context_handoff/2026-07-27_Stage12剩余优先级与Stage13执行准备审计.md` | Superseded / incorporated |
 | 2026-07-24 | Stage 13 模型场景、排版联合切片与 TIFF 预览准备 | `context_handoff/2026-07-24_Stage13模型场景排版与TIFF预览准备.md` | Superseded / incorporated |
 | 2026-07-24 | 12E-09B-02 完成与 09C 准备审计 | `context_handoff/2026-07-24_12E-09B-02完成与09C准备审计.md` | Superseded / incorporated |

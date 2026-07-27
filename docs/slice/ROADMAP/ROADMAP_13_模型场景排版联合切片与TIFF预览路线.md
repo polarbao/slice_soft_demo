@@ -1,8 +1,8 @@
 # ROADMAP_13 模型场景、排版联合切片与 TIFF 原生预览路线
 
-> 版本：v0.3
+> 版本：v0.4
 > 日期：2026-07-27
-> 状态：P0 DESIGN AND ATOMIC PREPARATION COMPLETE / 13A-01、13B-01 COMPLETE
+> 状态：P0 DESIGN AND ATOMIC PREPARATION COMPLETE / 13A-01、13B-01、跨阶段 09A-02 COMPLETE / NEXT 13A-02
 
 ## 1. 总目标
 
@@ -63,8 +63,8 @@ Scene Effective Config；
 单模型配置兼容迁移。
 ```
 
-13B-R1 的 scene identity 完成后，执行 `12E-09A-02`，避免 Diagnostic Effective Config 继续绑定单一
-modelPath。
+13B-R1 的 scene identity 与后续 `12E-09A-02` 已完成，Diagnostic Effective Config 已同时绑定
+single_model 与 scene/current instance，不再只依赖 modelPath。
 
 ### 13B-R2 规则排版
 
@@ -169,9 +169,11 @@ scene identity 的情况下按旧单模型假设完成 09A-02。
 ```text
 Stage 13 R0 总体文档：COMPLETE；
 Stage 13 P0 需求/设计/验证/原子任务准备：COMPLETE；
-13A-01：READY FOR DEVELOPMENT；
-13B-01：PREPARED / WAIT 13A-01；
-13C-01：READY / SCHEDULE AFTER IDENTITY WAVE；
+13A-01：COMPLETE；
+13B-01：COMPLETE；
+12E-09A-02：COMPLETE；
+13A-02：READY FOR DEVELOPMENT；
+13C-01：READY / SCHEDULE AFTER MODEL/SCENE WAVE；
 完整 Stage 13 production readiness：INCOMPLETE。
 ```
 
