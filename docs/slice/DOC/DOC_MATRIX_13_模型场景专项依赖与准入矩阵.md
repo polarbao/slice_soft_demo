@@ -1,8 +1,8 @@
 # DOC_MATRIX_13 模型场景专项依赖与准入矩阵
 
-> 版本：v0.5
+> 版本：v0.6
 > 日期：2026-07-27
-> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..03、跨阶段 09A-02 COMPLETE / NEXT 13B-04 FIXTURE
+> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..04、跨阶段 09A-02 COMPLETE / NEXT 13B-05 FIXTURE
 
 ## 1. 阶段依赖
 
@@ -38,7 +38,8 @@
 | 13B-01 | COMPLETE（2026-07-27） | MultiModelScene、ResourceScope、scene identity、Scene Effective Config、正负 fixture、单测和回归已落地 |
 | 13B-02 | COMPLETE | 1..22 实例、资源隔离、列表命令、场景草稿、UI Smoke 和 Quick CI 已完成 |
 | 13B-03 | COMPLETE | 11x2、row-major、20/30 mm 净距、锁定、原子恢复、配置回读和 Qt UI 已完成 |
-| 13B-04 | READY FOR FIXTURE DEVELOPMENT | buildVolume、投影碰撞、逐实例准入和 production Gate 的独立执行入口已准备 |
+| 13B-04 | FUNCTIONAL FIXTURE COMPLETE / PRODUCTION INPUT OPEN | SceneCollisionService、稳定错误、两阶段投影碰撞和逐实例准入已通过回归 |
+| 13B-05 | READY FOR FIXTURE DEVELOPMENT | 公共 Raster/Layer 合同、Legacy/Global adapter、共享 grid 和联合合成准备已完成 |
 | 13C-01 | READY / SCHEDULE AFTER IDENTITY WAVE | TIFF source、cache、异步 identity、错误码和测试已冻结 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在
@@ -96,7 +97,7 @@ RGB+S+W+V 可显示并保留六通道像素探针；
 
 | 输入 | 不阻断 | 阻断 |
 |---|---|---|
-| 设备 buildVolume/轴方向 | 13A、13B-01..03、13C、scene draft | 13B-04 production、13B-07 GO |
+| 设备 buildVolume/轴方向 | 13A、13B-01..06 fixture、13C、scene draft | 13B-04 production、13B-07 GO |
 | 多实例材料 Profile 决策 | P0 `scene_profile_only` | mixed-profile 扩展 |
 | 22 实例性能预算 | 功能实现和实测 | 13B-07 production GO |
 | 3D 后端选择 | 13A-R1 Qt 俯视 | 13A-R2/R3 |

@@ -1,7 +1,7 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..03、09A-02 COMPLETE / 13B-04 FIXTURE READY
-> 版本：v1.3
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..04、09A-02 COMPLETE / 13B-05 FIXTURE READY
+> 版本：v1.4
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
 
@@ -186,7 +186,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.4 13B-04 幅面、碰撞和逐实例准入
 
-状态：`READY FOR FIXTURE DEVELOPMENT / PRODUCTION GATE OPEN`
+状态：`COMPLETE（FUNCTIONAL FIXTURE）/ PRODUCTION GATE OPEN`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -200,9 +200,11 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 详细合同以 `DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` 和
 `CODEX_PROMPT_13B_04_幅面碰撞与逐实例准入执行指令.md` 为准。
 
+实际证据：`REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md`。
+
 ### 5.5 13B-05 全局 Raster 与联合层合成
 
-状态：`PREPARED / WAIT 13B-04 FUNCTIONAL GATE`
+状态：`READY FOR FIXTURE DEVELOPMENT`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -213,6 +215,9 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | 全场景 bbox、共享 Z 层序、实例局部到全局映射、无跨实例串写、重叠 fail-closed、Model/OuterVarnish/Support/Empty 优先级 |
 | 非目标 | 永久布尔合并、跨模型联合支撑、混合引擎 |
 | 完成输出 | 每个 layerIndex 一个 writer-ready 全局 RGBWSV buffer |
+
+详细合同以 `DOC_PREP_13B_05_全局Raster与联合层合成准备.md` 和
+`CODEX_PROMPT_13B_05_全局Raster与联合层合成执行指令.md` 为准。
 
 ### 5.6 13B-06 单 package 与 scene report
 
@@ -345,7 +350,7 @@ UI 任务增加对应 `--self-test` 和 `--ui-smoke-test`；联合 package 增�
 
 | 外部输入 | 可继续开发 | 不得完成的结论 |
 |---|---|---|
-| buildVolume/机器轴未知 | 13A、13B-01..03、13C、13B-04 fixture | 13B-04 production、13B-07 GO |
+| buildVolume/机器轴未知 | 13A、13B-01..06 fixture、13C | 13B-04 production、13B-07 GO |
 | mixed Profile 未决 | P0 `scene_profile_only` | mixed-profile 能力 |
 | 22 实例预算未决 | 功能和实测 | 13B-07 production GO |
 | 3D backend 未决 | 13A-R1 Qt 2D | 13A-R2/R3 |
@@ -359,10 +364,10 @@ Stage 13 P0 产品需求：完整；
 Stage 13 P0 总体技术设计：完整；
 Stage 13 P0 验证设计：完整；
 17 个近程原子任务的依赖、文件所有权、测试和验收准备：完整；
-Stage 13 实现：13A-01..05、13B-01..03 和跨阶段 09A-02 已完成；
+Stage 13 实现：13A-01..05、13B-01..04 和跨阶段 09A-02 已完成；
 Stage 13 production readiness：未完成；
 13A-R2/R3、13B-R4 中长期详细设计：有意延后，当前只有 Epic。
 ```
 
-因此，当前无需继续扩写 P0 通用文档，可以等待用户明确授权，从 `13A-01` 开始开发。中长期 3D 和
-自动 nesting 必须在 P0 证据完成后另立 PRD/DEV/DEMO/TASKS，不得夹带进入近程任务。
+因此，当前无需继续扩写 P0 通用文档；13B-05 已具备 fixture 开发所需的独立合同和执行指令。
+中长期 3D 和自动 nesting 必须在 P0 证据完成后另立 PRD/DEV/DEMO/TASKS，不得夹带进入近程任务。

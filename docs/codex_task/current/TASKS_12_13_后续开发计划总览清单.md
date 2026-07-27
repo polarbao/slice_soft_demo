@@ -1,11 +1,11 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v1.4
+> 版本：v1.5
 > 更新日期：2026-07-27
-> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..03 COMPLETE
-> 当前原子任务：13B-04 fixture 幅面、碰撞和逐实例准入 READY
-> 下一 Gate：13B-04 FIXTURE PASS -> 13B-05 全局 Raster 准备审查
+> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..04 COMPLETE
+> 当前原子任务：13B-05 fixture 全局 Raster 与联合层合成 READY
+> 下一 Gate：13B-05 PASS -> 13B-06 单 package 与 scene report
 
 ## 1. 文档职责
 
@@ -53,7 +53,7 @@
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
-| 13B 多模型排版与联合切片 | 13B-01..03 COMPLETE；13B-04 FIXTURE READY；13B-05..07 WAIT | 4 | 执行 13B-04 fixture |
+| 13B 多模型排版与联合切片 | 13B-01..04 COMPLETE；13B-05 FIXTURE READY；13B-06..07 WAIT | 3 | 执行 13B-05 fixture |
 | 13C TIFF 原生统一预览 | P0 设计和原子准备完成；代码未开始 | 5 | 13C-01 READY，按固定顺序排在 13B-07 后 |
 
 计数口径：
@@ -87,8 +87,8 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 7 | 13A-05 13A 阶段收口 | `COMPLETE` | 13A-04 COMPLETE | M13-1 CANDIDATE PASS |
 | 8 | 13B-02 模型列表与实例操作 | `COMPLETE` | 13B-01、13A-05 COMPLETE | 已解锁规则排版 |
 | 9 | 13B-03 11x2 规则排版 | `COMPLETE` | 13B-02 COMPLETE | 已解锁碰撞/幅面准入 |
-| 10 | 13B-04 幅面、碰撞和逐实例准入 | `READY FOR FIXTURE / PROD GATE OPEN` | 13B-03 COMPLETE | fixture 可开发；生产需设备 buildVolume/轴方向 |
-| 11 | 13B-05 全局 Raster 与联合层合成 | `WAIT` | 13B-04 功能 Gate | 解锁联合写包 |
+| 10 | 13B-04 幅面、碰撞和逐实例准入 | `COMPLETE / PROD GATE OPEN` | 13B-03 COMPLETE | fixture PASS；生产需设备 buildVolume/轴方向 |
+| 11 | 13B-05 全局 Raster 与联合层合成 | `READY FOR FIXTURE` | 13B-04 功能 Gate | 解锁联合写包 |
 | 12 | 13B-06 单 package 与 scene report | `WAIT` | 13B-05 | 解锁真实模型矩阵 |
 | 13 | 13B-07 真实模型矩阵与收口 | `WAIT / PROD GATE OPEN` | 13B-06 | 生产 GO 还需 buildVolume 和 22 实例预算 |
 
@@ -148,25 +148,26 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 13A-05 的统一回归、用户说明、状态报告和 M13-1 候选；
 13B-02 的 1..22 实例列表、操作、保存/回读、单测和 UI Smoke；
 13B-03 的代码、单测、Qt 排版页、UI Smoke 和状态报告；
-13B-04 的独立 PREP/PROMPT；
+13B-04 的代码、单测、UI Smoke、Quick CI 和状态报告；
+13B-05 的独立 PREP/PROMPT；
 单贡献者的固定执行顺序；
 与 12E-09A/10、12F、12G-TCWS 的边界。
 ```
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。当前可等待用户授权后执行
-`13B-04` fixture 功能 Gate。
+`13B-05` fixture 全局 Raster 与联合层合成。
 
 ### 尚未完成
 
 ```text
-Stage 13 已完成 13A-01..05、13B-01..03 八个任务；碰撞准入、联合 package 和生产证据未完成；
+Stage 13 已完成 13A-01..05、13B-01..04 九个任务；联合 layer/package 和生产证据未完成；
 设备 buildVolume、原点和机器轴方向仍未提供；
 22 实例生产性能预算仍未提供；
 13A-R2/R3 和 13B-R4 只到 Epic，不具备开发级详细设计；
 13B production GO 仍被外部 Gate 阻断。
 ```
 
-这些未完成项不阻断 `13B-04` fixture 开发，也不等于 Stage 13 已生产就绪。
+这些未完成项不阻断 `13B-05` fixture 开发，也不等于 Stage 13 已生产就绪。
 
 ## 6. 外部 Gate
 
@@ -203,11 +204,11 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：MULTI-MODEL ADMISSION WAVE；
-COMPLETE：13A-01..05、13B-01..03、12E-09A-02；
+CURRENT：MULTI-MODEL RASTER/COMPOSE WAVE；
+COMPLETE：13A-01..05、13B-01..04、12E-09A-02；
 M13-1：CANDIDATE PASS；
-NEXT：13B-04 fixture 幅面、碰撞和逐实例准入；
+NEXT：13B-05 fixture 全局 Raster 与联合层合成；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
-AFTER 13B-04 FIXTURE PASS：进入 13B-05 准备审查；production Gate 继续等待设备输入；
+AFTER 13B-05 PASS：进入 13B-06 单 package 与 scene report；production Gate 继续等待设备输入；
 13C-01：技术准备完成，按单贡献者顺序稍后执行。
 ```

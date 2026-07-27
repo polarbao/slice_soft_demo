@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-27
-> 适用阶段：Stage 12D COMPLETE；12E-09A-02/09B/09C COMPLETE；NEXT 13B-04 FIXTURE
+> 适用阶段：Stage 12D COMPLETE；12E-09A-02/09B/09C COMPLETE；NEXT 13B-05 FIXTURE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01/02、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-03..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 总体文档和 17 个近程任务实施准备已完成，13A-01..05/13B-01..03 代码和证据完成，M13-1 候选 PASS；当前入口为 13B-04 fixture 幅面、碰撞和逐实例准入。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01/02、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-03..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 总体文档和 17 个近程任务实施准备已完成，13A-01..05/13B-01..04 代码和证据完成，M13-1 候选 PASS；当前入口为 13B-05 fixture 全局 Raster 与联合层合成。
 
 ## 目录结构
 
@@ -46,6 +46,7 @@
 | `REPORT/REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md` | 13B-01 scene identity 与 Effective Config 实际实现和验证 |
 | `REPORT/REPORT_13B_02_模型列表与实例操作当前状态.md` | 13B-02 1..22 实例列表、场景操作、保存/回读和实际验证 |
 | `REPORT/REPORT_13B_03_11x2规则排版当前状态.md` | 13B-03 11x2 排版、原子恢复、配置回读和 UI Smoke 证据 |
+| `REPORT/REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md` | 13B-04 fixture 幅面、投影碰撞和逐实例准入证据 |
 | `REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 09A-02 single_model/scene 诊断生效配置实际实现和验证 |
 | `DOC/DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 变换、revision、异步重投影和 session 回读执行准备 |
 | `../codex_task/current/TASKS_12_13_后续开发计划总览清单.md` | Stage 12/13 跨阶段当前任务、固定顺序和状态更新规则 |
@@ -213,6 +214,7 @@
 | `DOC/DOC_PREP_13B_02_模型列表与实例操作准备.md` | 13B-02 1..22 实例列表、资源隔离和场景草稿准备 |
 | `DOC/DOC_PREP_13B_03_11x2规则排版准备.md` | 13B-03 规则排版数学、原子提交、Qt 控件和测试准备 |
 | `DOC/DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` | 13B-04 fixture buildVolume、投影碰撞和逐实例准入准备 |
+| `DOC/DOC_PREP_13B_05_全局Raster与联合层合成准备.md` | 13B-05 公共 layer 合同、共享 grid、引擎 adapter 和联合内存合成准备 |
 | `DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF Source/Cache 执行级准备 |
 | `DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | 13A/13B/13C 17 个近程任务的实施准备和文件所有权 |
 | `DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 外部输入、临时工程规则和任务 Gate |

@@ -1,9 +1,9 @@
 # DOC_PREP 13B-04 幅面、碰撞与逐实例准入准备
 
-> 文档状态：READY FOR FIXTURE DEVELOPMENT / PRODUCTION INPUT OPEN
+> 文档状态：COMPLETE（FUNCTIONAL FIXTURE）/ PRODUCTION INPUT OPEN
 > 日期：2026-07-27
 > 前置：13B-03 COMPLETE
-> 当前任务：13B-04 fixture 级幅面、碰撞和逐实例准入
+> 完成报告：`REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md`
 
 ## 1. 目标
 
@@ -182,6 +182,6 @@ git diff --check
 
 ## 10. 准备结论
 
-13B-03 已提供稳定 effective transform、bbox、scene/transform revision 和 Qt 场景草稿。13B-04 的
-输入、坐标、fixture/production 分界、参与规则、两阶段碰撞、错误、测试和停止条件已明确，可进入
-fixture 功能开发。正式 production acceptance 继续等待设备/Profile 输入。
+13B-04 已按本文合同实现 `SceneCollisionService`、稳定错误、逐实例结果、AABB 快筛和投影三角形
+精确碰撞，并通过定向 CTest、UI Smoke 和 Quick CI。功能 Fixture Gate 已关闭；正式 production
+acceptance 继续等待设备/Profile 输入。下一任务为 13B-05 全局 Raster 与联合层合成。
