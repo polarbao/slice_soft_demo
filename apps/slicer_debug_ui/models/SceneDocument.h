@@ -496,7 +496,8 @@ private:
     void TranslateGeometry(
         SceneDocumentItem& item,
         double translateX,
-        double translateY);
+        double translateY,
+        const std::string& transformHash);
     bool SnapshotMatchesCurrentScene() const;
     std::optional<std::size_t> FindItemIndex(
         const QString& instanceId) const;

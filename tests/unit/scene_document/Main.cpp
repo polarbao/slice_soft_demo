@@ -50,6 +50,7 @@ slicer_core::SceneViewGeometry MakeGeometry(
         {{0.0, 0.0}, {10.0, 0.0}, {0.0, 5.0}});
     geometry.admissionstatus =
         slicer_core::SceneViewAdmissionStatus::Admitted;
+    slicer_core::RefreshSceneViewGeometryHash(geometry);
     return geometry;
 }
 
@@ -258,6 +259,8 @@ void GridLayoutApplyAndRestoreAreAtomic()
     layout.maxrows = 2;
     layout.rowgapmm = 30.0;
     const quint64 revisionBefore = document.SceneRevision();
+    const std::string geometryHashBefore =
+        document.Items().at(1U).geometry->geometryhash;
     const SceneDocumentOperationResult arranged =
         document.ApplyGridLayout(layout, revisionBefore);
     Require(
@@ -284,6 +287,22 @@ void GridLayoutApplyAndRestoreAreAtomic()
             - 35.0)
             < 1.0e-9,
         "grid layout should translate cached top-view geometry");
+    Require(
+        !document.Items().at(1U).geometry->geometryhash.empty()
+            && document.Items().at(1U).geometry->geometryhash
+                != geometryHashBefore,
+        "grid layout should refresh translated geometry identity");
+    const slicer_core::ModelTransformHashResult transformHash =
+        slicer_core::ComputeModelTransformHash(
+            document.Items().at(1U).instance.transform,
+            document.Items().at(1U).instance.sourcetransformidentity,
+            document.Items().at(1U).instance.instanceid,
+            document.Items().at(1U).instance.modelid);
+    Require(
+        transformHash.IsValid()
+            && document.Items().at(1U).geometry->transformhash
+                == transformHash.hash,
+        "grid layout should refresh transformed geometry identity");
     Require(
         document.CanRestoreGridLayout(),
         "successful layout should expose one restore snapshot");
@@ -356,6 +375,41 @@ void GridLayoutFailuresDoNotPartiallyMutateScene()
         "stale layout request should fail closed");
 }
 
+void GridLayoutRejectsUnprojectedTransform()
+{
+    SceneDocument document;
+    AddFirstInstance(document);
+    slicer_core::ModelInstance changed =
+        document.Instance().value();
+    changed.transform.translatexmm = 12.0;
+    changed.transformrevision = 1U;
+    Require(
+        document.CommitInstance(
+            changed,
+            document.SceneRevision()),
+        "transform fixture should enter stale projection state");
+
+    const slicer_core::SceneViewBounds boundsBefore =
+        document.Items().front().geometry->worldboundsmm;
+    const SceneDocumentOperationResult result =
+        document.ApplyGridLayout(
+            slicer_core::SceneLayout{},
+            document.SceneRevision());
+    Require(
+        !result.IsValid()
+            && result.error->code
+                == SceneDocumentOperationErrorCode::LayoutInvalid
+            && result.error->field
+                == QStringLiteral("scene.items.geometry"),
+        "layout must reject geometry from an older transform revision");
+    Require(
+        document.Items().front().geometry->worldboundsmm.min.xmm
+                == boundsBefore.min.xmm
+            && document.Items().front().geometry->transformrevision
+                == 0U,
+        "stale-layout rejection must not relabel or translate geometry");
+}
+
 }  // namespace
 
 int main(int argc, char* argv[])
@@ -366,6 +420,7 @@ int main(int argc, char* argv[])
     SelectionModelTracksCurrentInstance();
     GridLayoutApplyAndRestoreAreAtomic();
     GridLayoutFailuresDoNotPartiallyMutateScene();
+    GridLayoutRejectsUnprojectedTransform();
     std::cout << "scene_document_unit_tests passed\n";
     return 0;
 }

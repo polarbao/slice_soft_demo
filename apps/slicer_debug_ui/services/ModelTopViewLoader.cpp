@@ -67,6 +67,18 @@ std::string BuildResourceHash(const slicer_core::SceneModel& source)
         payload.push_back('|');
         payload.append(material.name);
         payload.push_back('|');
+        payload.append(std::to_string(material.has_diffuse));
+        payload.push_back(',');
+        payload.append(std::to_string(material.has_texture));
+        payload.push_back(',');
+        payload.append(std::to_string(material.texture_exists));
+        payload.push_back('|');
+        payload.append(std::to_string(material.diffuse_rgb.at(0U)));
+        payload.push_back(',');
+        payload.append(std::to_string(material.diffuse_rgb.at(1U)));
+        payload.push_back(',');
+        payload.append(std::to_string(material.diffuse_rgb.at(2U)));
+        payload.push_back('|');
         payload.append(material.diffuse_texture_path.generic_string());
         if (material.texture_exists
             && !material.diffuse_texture_path.empty())
@@ -77,6 +89,14 @@ std::string BuildResourceHash(const slicer_core::SceneModel& source)
         }
     }
     return slicer_core::ComputeSha256(payload);
+}
+
+std::string BuildTextureOptionsIdentity(
+    const slicer_core::TextureSampleOptions& options)
+{
+    return options.sampler
+        + "|" + options.uv_address_mode
+        + "|" + (options.flip_v ? "1" : "0");
 }
 
 }  // namespace
@@ -218,6 +238,11 @@ void ModelTopViewLoader::RequestLoad(
                         coreRequest.expectedtransformrevision =
                             request.transformrevision;
                         coreRequest.instance = std::move(instance);
+                        coreRequest.textureoptions = {
+                            config.texture.sampler,
+                            config.texture.uv_address_mode,
+                            config.texture.flip_v,
+                        };
                         coreRequest.admissionstatus =
                             request.admissionstatus;
                         slicer_core::SceneViewGeometryResult coreResult =
@@ -253,6 +278,8 @@ void ModelTopViewLoader::RequestLoad(
                                 QString::fromStdString(sourceHash);
                             entry.resourcehash =
                                 QString::fromStdString(resourceHash);
+                            entry.textureoptions =
+                                coreRequest.textureoptions;
                             entry.cachekey = QString::fromStdString(
                                 slicer_core::ComputeSha256(
                                     Utf8(entry.modelpath)
@@ -262,7 +289,10 @@ void ModelTopViewLoader::RequestLoad(
                                     + "|"
                                     + sourceHash
                                     + "|"
-                                    + resourceHash));
+                                    + resourceHash
+                                    + "|"
+                                    + BuildTextureOptionsIdentity(
+                                        entry.textureoptions)));
                             entry.model =
                                 std::make_shared<const slicer_core::SceneModel>(
                                     source);
@@ -354,6 +384,8 @@ void ModelTopViewLoader::RequestProjection(
                 coreRequest.expectedtransformrevision =
                     request.instance.transformrevision;
                 coreRequest.instance = request.instance;
+                coreRequest.textureoptions =
+                    sourceEntry->textureoptions;
                 coreRequest.admissionstatus =
                     request.admissionstatus;
                 slicer_core::SceneViewGeometryResult coreResult =
@@ -481,9 +513,38 @@ void ModelTopViewLoader::OnWorkerCompleted(
                 return;
             }
         }
-        m_document->SetGeometry(
+        const bool geometryAccepted = m_document->SetGeometry(
             generation,
             std::move(result.geometry.value()));
+        if (!geometryAccepted)
+        {
+            m_document->SetFailure(
+                generation,
+                QStringLiteral(
+                    "SCENE_VIEW_REVISION_STALE："
+                    "俯视投影结果已过期，请重新加载模型。"));
+            emit SigLoadingFinished();
+            return;
+        }
+        if (geometryAccepted
+            && result.appendtoscene
+            && m_document->InstanceCount() > 1U)
+        {
+            const SceneDocumentOperationResult layoutResult =
+                m_document->ApplyGridLayout(
+                    m_document->Layout(),
+                    m_document->SceneRevision());
+            if (!layoutResult.IsValid())
+            {
+                emit SigAutoLayoutFailed(
+                    QString::fromLatin1(
+                        SceneDocumentOperationErrorCodeName(
+                            layoutResult.error->code)
+                            .data())
+                    + QStringLiteral("：")
+                    + layoutResult.error->message);
+            }
+        }
     }
     emit SigLoadingFinished();
 }

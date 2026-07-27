@@ -3,7 +3,6 @@
 #include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QPainterPath>
 #include <QPolygonF>
 
 #include <algorithm>
@@ -16,7 +15,7 @@ namespace
 
 constexpr int kHeaderHeight{52};
 constexpr int kCanvasPadding{34};
-constexpr std::size_t kMaximumPaintedTriangles{100000U};
+constexpr int kMaximumSurfaceCacheEntries{64};
 
 QString Utf8(const std::string& value)
 {
@@ -237,6 +236,10 @@ void ModelTopViewWidget::OnDocumentChanged()
     {
         m_selectionModel->Clear();
     }
+    if (m_surfaceCache.size() > kMaximumSurfaceCacheEntries)
+    {
+        m_surfaceCache.clear();
+    }
     update();
 }
 
@@ -409,31 +412,42 @@ void ModelTopViewWidget::DrawGeometry(
 
         painter.setRenderHint(QPainter::Antialiasing, false);
         painter.setPen(Qt::NoPen);
-        painter.setBrush(
-            blocked ? QColor(222, 168, 166)
-                    : QColor(66, 144, 139));
-        const std::size_t stride = std::max<std::size_t>(
-            1U,
-            (geometry.triangles.size()
-             + kMaximumPaintedTriangles - 1U)
-                / kMaximumPaintedTriangles);
-        for (std::size_t index = 0U;
-             index < geometry.triangles.size();
-             index += stride)
-        {
-            const auto& triangle = geometry.triangles[index];
-            QPolygonF polygon;
-            polygon.reserve(3);
-            polygon << WorldToScreen(triangle.a, camera)
-                    << WorldToScreen(triangle.b, camera)
-                    << WorldToScreen(triangle.c, camera);
-            painter.drawPolygon(polygon);
-        }
-
         const auto& bounds = geometry.worldboundsmm;
         QRectF screenBounds(
-            WorldToScreen(bounds.min, camera),
-            WorldToScreen(bounds.max, camera));
+            WorldToScreen(
+                {bounds.min.xmm, bounds.max.ymm},
+                camera),
+            WorldToScreen(
+                {bounds.max.xmm, bounds.min.ymm},
+                camera));
+        const QImage surfaceImage =
+            SurfaceImage(geometry.surfacepreview);
+        if (!surfaceImage.isNull())
+        {
+            painter.setRenderHint(
+                QPainter::SmoothPixmapTransform,
+                true);
+            painter.drawImage(
+                screenBounds.normalized(),
+                surfaceImage);
+        }
+        else
+        {
+            painter.setBrush(
+                blocked
+                    ? QColor(222, 168, 166)
+                    : QColor(66, 144, 139));
+            for (const auto& triangle : geometry.triangles)
+            {
+                QPolygonF polygon;
+                polygon.reserve(3);
+                polygon << WorldToScreen(triangle.a, camera)
+                        << WorldToScreen(triangle.b, camera)
+                        << WorldToScreen(triangle.c, camera);
+                painter.drawPolygon(polygon);
+            }
+        }
+
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setBrush(Qt::NoBrush);
         painter.setPen(
@@ -458,6 +472,32 @@ void ModelTopViewWidget::DrawGeometry(
             Qt::AlignLeft | Qt::AlignTop,
             QStringLiteral("BLOCKED：仅可查看，不代表生产准入"));
     }
+}
+
+QImage ModelTopViewWidget::SurfaceImage(
+    const slicer_core::SceneViewSurfacePreview& preview) const
+{
+    if (!preview.IsValid()
+        || preview.contenthash.empty())
+    {
+        return {};
+    }
+    const QString cacheKey =
+        QString::fromStdString(preview.contenthash);
+    const auto cached = m_surfaceCache.constFind(cacheKey);
+    if (cached != m_surfaceCache.constEnd())
+    {
+        return cached.value();
+    }
+    const QImage source(
+        preview.rgba.data(),
+        preview.width,
+        preview.height,
+        preview.width * 4,
+        QImage::Format_RGBA8888);
+    const QImage image = source.copy();
+    m_surfaceCache.insert(cacheKey, image);
+    return image;
 }
 
 void ModelTopViewWidget::DrawStatus(QPainter& painter) const

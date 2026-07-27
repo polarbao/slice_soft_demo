@@ -4,6 +4,8 @@
 #include "../models/SceneSelectionModel.h"
 
 #include <QPointF>
+#include <QImage>
+#include <QHash>
 #include <QWidget>
 
 class ModelTopViewWidget final : public QWidget
@@ -62,8 +64,11 @@ private:
         const Camera& camera) const;
     void DrawGrid(QPainter& painter, const Camera& camera) const;
     void DrawGeometry(QPainter& painter, const Camera& camera) const;
+    QImage SurfaceImage(
+        const slicer_core::SceneViewSurfacePreview& preview) const;
     void DrawStatus(QPainter& painter) const;
 
     SceneDocument* m_document{nullptr};
     SceneSelectionModel* m_selectionModel{nullptr};
+    mutable QHash<QString, QImage> m_surfaceCache;
 };

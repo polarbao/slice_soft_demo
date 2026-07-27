@@ -111,6 +111,17 @@ material/texture display hint；
 revision。
 ```
 
+当前实现进一步冻结：
+
+```text
+SceneViewTriangle 保留变换后 Z、UV 和 materialIndex；
+SceneViewGeometry 保留 display-only material appearance；
+后台投影任务生成最大边长 768 像素的 display-only RGBA SurfacePreview；
+SurfacePreview 使用逐像素 +Z Z-buffer 和配置一致的 UV 采样参数；
+Qt paintEvent 只绘制内存 SurfacePreview，不读取贴图文件；
+显示资源不得反向进入生产材料合成。
+```
+
 Qt 侧首版可使用 `QPainter` 或 `QOpenGLWidget`：
 
 ```text
@@ -202,6 +213,7 @@ R2 Spike 使用同一真实 OBJ/3MF，在三种窗口尺寸测：
 QImage/QPainter 最终 UI 更新回主线程；
 变换拖动期间使用 LOD，释放后重建精确投影；
 缓存 key 至少包含 model hash + transform revision + display mode；
+追加导入后使用当前 SceneLayout 自动排版，画布 camera 使用全部 visible 实例的联合 bounds；
 切换模型或关闭窗口时取消 Worker；
 不得悬挂 QObject 或复用 stale geometry。
 ```

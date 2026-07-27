@@ -3633,8 +3633,46 @@ int UiSmokeTestRunner::MultiModelList(
     firstGeometry.instanceid = first.instanceid;
     firstGeometry.scenerevision = 1U;
     firstGeometry.worldboundsmm = {{0.0, 0.0}, {8.0, 4.0}};
-    firstGeometry.triangles.push_back(
-        {{0.0, 0.0}, {8.0, 0.0}, {0.0, 4.0}});
+    firstGeometry.surfacepreview.width = 8;
+    firstGeometry.surfacepreview.height = 4;
+    firstGeometry.surfacepreview.rgba.assign(
+        8U * 4U * 4U,
+        255U);
+    for (std::size_t index = 0U;
+         index < firstGeometry.surfacepreview.rgba.size();
+         index += 4U)
+    {
+        firstGeometry.surfacepreview.rgba.at(index + 0U) = 24U;
+        firstGeometry.surfacepreview.rgba.at(index + 1U) = 86U;
+        firstGeometry.surfacepreview.rgba.at(index + 2U) = 214U;
+    }
+    firstGeometry.surfacepreview.texturedpixelcount = 8U * 4U;
+    firstGeometry.surfacepreview.contenthash =
+        "multi-model-list-blue-surface";
+    slicer_core::SceneViewTriangle firstTriangle;
+    firstTriangle.a = {0.0, 0.0};
+    firstTriangle.b = {8.0, 0.0};
+    firstTriangle.c = {0.0, 4.0};
+    firstTriangle.uv = {
+        slicer_core::TexCoord{0.0, 0.0},
+        slicer_core::TexCoord{1.0, 0.0},
+        slicer_core::TexCoord{0.0, 1.0},
+    };
+    firstTriangle.hasuv = true;
+    firstTriangle.materialindex = 0;
+    firstGeometry.triangles.push_back(firstTriangle);
+    slicer_core::SceneViewTriangle secondTriangle;
+    secondTriangle.a = {8.0, 0.0};
+    secondTriangle.b = {8.0, 4.0};
+    secondTriangle.c = {0.0, 4.0};
+    secondTriangle.uv = {
+        slicer_core::TexCoord{1.0, 0.0},
+        slicer_core::TexCoord{1.0, 1.0},
+        slicer_core::TexCoord{0.0, 1.0},
+    };
+    secondTriangle.hasuv = true;
+    secondTriangle.materialindex = 0;
+    firstGeometry.triangles.push_back(secondTriangle);
     firstGeometry.admissionstatus =
         slicer_core::SceneViewAdmissionStatus::Admitted;
     if (!document.SetGeometry(1U, firstGeometry))
@@ -3642,6 +3680,33 @@ int UiSmokeTestRunner::MultiModelList(
         return fail(QStringLiteral("multi-model-list first geometry failed"));
     }
     selection.SetSelectedInstance(QStringLiteral("multi-first"));
+    workspace.resize(700, 420);
+    canvas.setGeometry(0, 0, 700, 420);
+    workspace.show();
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+    const QImage appearanceImage = canvas.grab().toImage();
+    bool foundAppearanceColor{false};
+    for (int y = 0;
+         y < appearanceImage.height() && !foundAppearanceColor;
+         ++y)
+    {
+        for (int x = 0; x < appearanceImage.width(); ++x)
+        {
+            const QColor pixel = appearanceImage.pixelColor(x, y);
+            if (pixel.red() == 24
+                && pixel.green() == 86
+                && pixel.blue() == 214)
+            {
+                foundAppearanceColor = true;
+                break;
+            }
+        }
+    }
+    if (!foundAppearanceColor)
+    {
+        return fail(QStringLiteral(
+            "multi-model-list top view ignores material appearance"));
+    }
 
     const SceneDocumentOperationResult duplicated =
         document.DuplicateInstance(
@@ -3724,7 +3789,8 @@ int UiSmokeTestRunner::MultiModelList(
             "samples/configs/golden/material_process_top2_fixture.json"));
     firstRequest.modelpath = QDir(options.repo_root).filePath(
         QStringLiteral(
-            "samples/models/openvdb/surface_shell_cube.obj"));
+            "samples/models/textured/fixtures/"
+            "policy_textured_small.obj"));
     firstRequest.sceneid = QStringLiteral("import-scene");
     firstRequest.modelid = QStringLiteral("import-model-1");
     firstRequest.instanceid = QStringLiteral("import-instance-1");
@@ -3747,6 +3813,7 @@ int UiSmokeTestRunner::MultiModelList(
     secondRequest.scenerevision = 2U;
     secondRequest.appendtoscene = true;
     loader.RequestLoad(secondRequest);
+    QSet<QRgb> importedSurfaceColors;
     if (!WaitForCondition(
             [&importedDocument]()
             {
@@ -3755,11 +3822,54 @@ int UiSmokeTestRunner::MultiModelList(
             })
         || importedDocument.State() != SceneDocumentState::Ready
         || importedDocument.InstanceCount() != 2U
-        || repository.Size() != 1U)
+        || repository.Size() != 1U
+        || importedDocument.Items().at(0U).layoutcolumn != 0
+        || importedDocument.Items().at(1U).layoutcolumn != 1
+        || !importedDocument.Items().at(0U)
+                .geometry->surfacepreview.IsValid()
+        || !importedDocument.Items().at(1U)
+                .geometry->surfacepreview.IsValid()
+        || importedDocument.Items().at(0U)
+                .geometry->surfacepreview.texturedpixelcount
+            == 0U
+        || importedDocument.Items().at(1U)
+                .geometry->surfacepreview.texturedpixelcount
+            == 0U
+        || importedDocument.Items().at(0U)
+                .geometry->worldboundsmm.max.xmm
+            >= importedDocument.Items().at(1U)
+                .geometry->worldboundsmm.min.xmm)
     {
         return fail(
             QStringLiteral(
-                "multi-model-list async append/source sharing failed"));
+                "multi-model-list async append/source sharing/"
+                "auto-layout failed"));
+    }
+    const auto& importedSurface =
+        importedDocument.Items().at(0U).geometry->surfacepreview;
+    for (std::size_t index = 0U;
+         index + 3U < importedSurface.rgba.size();
+         index += 4U)
+    {
+        if (importedSurface.rgba.at(index + 3U) == 0U)
+        {
+            continue;
+        }
+        importedSurfaceColors.insert(
+            qRgb(
+                importedSurface.rgba.at(index + 0U),
+                importedSurface.rgba.at(index + 1U),
+                importedSurface.rgba.at(index + 2U)));
+        if (importedSurfaceColors.size() > 1)
+        {
+            break;
+        }
+    }
+    if (importedSurfaceColors.size() <= 1)
+    {
+        return fail(
+            QStringLiteral(
+                "multi-model-list real UV texture sampling failed"));
     }
 
     MainWindow window(options.repo_root);
@@ -3818,7 +3928,8 @@ int UiSmokeTestRunner::MultiModelList(
 
     return pass(QStringLiteral(
         "multi-model-list add/share/duplicate/visibility/lock/delete/"
-        "selection/three-window-sizes"));
+        "selection/material-appearance/textured-import/auto-layout/"
+        "three-window-sizes"));
 }
 
 int UiSmokeTestRunner::SceneGridLayout(

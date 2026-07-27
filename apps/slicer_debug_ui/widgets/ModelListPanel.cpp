@@ -373,9 +373,15 @@ void ModelListPanel::UpdateButtons()
 {
     const SceneDocumentItem* item = FindItem(SelectedInstanceId());
     const bool hasSelection = item != nullptr;
-    m_addButton->setEnabled(m_document->InstanceCount() < 22U);
+    const bool sceneReady =
+        m_document->State() != SceneDocumentState::Loading
+        && !m_document->IsGeometryStale();
+    m_addButton->setEnabled(
+        m_document->InstanceCount() < 22U && sceneReady);
     m_duplicateButton->setEnabled(
-        hasSelection && m_document->InstanceCount() < 22U);
+        hasSelection
+        && m_document->InstanceCount() < 22U
+        && sceneReady);
     m_deleteButton->setEnabled(
         hasSelection && !item->instance.locked);
     m_visibilityButton->setEnabled(hasSelection);

@@ -17,7 +17,7 @@
 
 ```text
 从 +Z 查看 XY 平面；
-显示毫米网格、X/Y 轴、模型轮廓、包围盒和选择状态；
+显示毫米网格、X/Y 轴、全部可见模型、纹理、包围盒和选择状态；
 支持模型选择；
 支持 translateX/translateY；
 支持 rotateZ；
@@ -136,6 +136,9 @@ UI 必须区分：
 
 ```text
 导入 OBJ/STL/3MF 后俯视图可见且不为空；
+同一场景的全部 visible 实例在统一 +Z 俯视坐标系中可见；
+追加导入默认按当前规则排版，避免同原点重叠造成“只显示一个模型”；
+有效 UV/贴图显示贴图颜色，无贴图时显示材质 diffuse 或稳定回退色；
 俯视包围盒尺寸与核心模型摘要一致；
 X/Y 移动后画布和最终 effective config 一致；
 rotateZ、uniformScale、mirrorX/mirrorY 均可保存、回读和重置；

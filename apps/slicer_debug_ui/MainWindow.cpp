@@ -383,7 +383,9 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     modelTopViewLayout->setContentsMargins(0, 0, 0, 0);
     auto* modelTopViewToolbar = new QHBoxLayout();
     auto* modelTopViewHint = new QLabel(
-        QStringLiteral("+Z 俯视，单位 mm；此视图不会启动切片。"),
+        QStringLiteral(
+            "场景 +Z 俯视，统一显示全部可见模型及其纹理；"
+            "导入后按当前规则自动排版，不会启动切片。"),
         m_modelTopViewWorkspace);
     auto* modelTopViewFitButton = new QPushButton(
         QStringLiteral("适应视图"),
@@ -391,7 +393,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     modelTopViewFitButton->setObjectName(
         QStringLiteral("modelTopViewFitButton"));
     modelTopViewFitButton->setToolTip(
-        QStringLiteral("将当前模型 XY 包围盒完整显示在画布内"));
+        QStringLiteral("将当前场景全部可见模型完整显示在画布内"));
     modelTopViewToolbar->addWidget(modelTopViewHint, 1);
     modelTopViewToolbar->addWidget(modelTopViewFitButton);
     modelTopViewLayout->addLayout(modelTopViewToolbar);
@@ -609,6 +611,18 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
             }
         });
     connect(
+        &m_modelTopViewLoader,
+        &ModelTopViewLoader::SigAutoLayoutFailed,
+        this,
+        [this](const QString& error)
+        {
+            status_label_->setText(
+                QStringLiteral(
+                    "模型已导入，但自动排版失败，可在“排版”页手动处理：")
+                + error);
+            log_panel_->appendError(error);
+        });
+    connect(
         m_modelTransformPanel,
         &ModelTransformPanel::SigSaveRequested,
         this,
@@ -780,6 +794,16 @@ void MainWindow::loadPackageFromEdit() {
 
 void MainWindow::OnImportModelPreview()
 {
+    if (m_modelTopViewLoader.IsRunning()
+        || (m_sceneDocument.InstanceCount() > 0U
+            && m_sceneDocument.IsGeometryStale()))
+    {
+        status_label_->setText(
+            QStringLiteral(
+                "当前场景正在加载或重投影，"
+                "请等待俯视更新完成后再添加模型。"));
+        return;
+    }
     if (m_sceneDocument.InstanceCount() >= 22U)
     {
         status_label_->setText(

@@ -48,7 +48,16 @@ slicer_core::SceneModel MakeScene()
     scene.triangle_count = scene.triangles.size();
     scene.triangle_textures.resize(scene.triangles.size());
     scene.triangle_textures.at(0U).has_uv = true;
+    scene.triangle_textures.at(0U).uv = {
+        slicer_core::TexCoord{0.0, 0.0},
+        slicer_core::TexCoord{1.0, 0.0},
+        slicer_core::TexCoord{0.5, 1.0},
+    };
+    scene.triangle_textures.at(0U).material_name = "paint";
     scene.material_infos.resize(1U);
+    scene.material_infos.at(0U).name = "paint";
+    scene.material_infos.at(0U).diffuse_rgb = {12U, 34U, 56U};
+    scene.material_infos.at(0U).has_diffuse = true;
     return scene;
 }
 
@@ -145,6 +154,23 @@ bool IdentityProjectionPreservesXyAndIdentity()
                 && geometry.materialcount == 1U,
             "material and texture display hints are retained")
         && ExpectTrue(
+            geometry.materialappearances.size() == 1U
+                && geometry.materialappearances.at(0U).name == "paint"
+                && geometry.materialappearances.at(0U).hasdiffuse
+                && geometry.materialappearances.at(0U).diffusergb
+                    == std::array<std::uint8_t, 3>{12U, 34U, 56U},
+            "material appearance is retained for the top view")
+        && ExpectTrue(
+            geometry.triangles.at(0U).hasuv
+                && geometry.triangles.at(0U).materialindex == 0
+                && NearlyEqual(
+                    geometry.triangles.at(0U).zmm.at(2U),
+                    4.0)
+                && NearlyEqual(
+                    geometry.triangles.at(0U).uv.at(1U).u,
+                    1.0),
+            "projected triangle retains depth, UV and material binding")
+        && ExpectTrue(
             geometry.geometryhash.size() == 64U
                 && geometry.transformhash.size() == 64U,
             "geometry and transform hashes use SHA-256")
@@ -176,6 +202,97 @@ bool ExistingTransformIsProjectedReadOnly()
                 && NearlyEqual(result.geometry.worldboundsmm.min.ymm, -1.0)
                 && NearlyEqual(result.geometry.worldboundsmm.max.ymm, 3.0),
             "scale, rotate and translate affect projected bounds");
+}
+
+bool DisplayResourceLocationDoesNotChangeGeometryHash()
+{
+    slicer_core::SceneModel first = MakeScene();
+    first.material_infos.at(0U).has_texture = true;
+    first.material_infos.at(0U).texture_exists = true;
+    first.material_infos.at(0U).diffuse_texture_path =
+        "first-machine/paint.png";
+    slicer_core::SceneModel second = first;
+    second.material_infos.at(0U).diffuse_texture_path =
+        "second-machine/paint.png";
+
+    const auto firstResult =
+        slicer_core::BuildSceneViewGeometry(first, MakeRequest());
+    const auto secondResult =
+        slicer_core::BuildSceneViewGeometry(second, MakeRequest());
+    return ExpectTrue(
+        firstResult.IsValid()
+            && secondResult.IsValid()
+            && firstResult.geometry.geometryhash
+                == secondResult.geometry.geometryhash,
+        "display resource location does not affect geometry identity");
+}
+
+bool TopSurfacePreviewUsesHighestMaterial()
+{
+    slicer_core::SceneModel scene;
+    scene.model_path = "top-surface-preview.obj";
+    scene.bbox_mm = {{0.0, 0.0, 0.0}, {2.0, 2.0, 1.0}};
+    scene.triangles = {
+        {{0.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}},
+        {{2.0, 0.0, 0.0}, {2.0, 2.0, 0.0}, {0.0, 2.0, 0.0}},
+        {{0.0, 0.0, 1.0}, {2.0, 0.0, 1.0}, {0.0, 2.0, 1.0}},
+        {{2.0, 0.0, 1.0}, {2.0, 2.0, 1.0}, {0.0, 2.0, 1.0}},
+    };
+    scene.triangle_count = scene.triangles.size();
+    scene.triangle_textures.resize(scene.triangles.size());
+    scene.triangle_textures.at(0U).material_name = "lower";
+    scene.triangle_textures.at(1U).material_name = "lower";
+    scene.triangle_textures.at(2U).material_name = "upper";
+    scene.triangle_textures.at(3U).material_name = "upper";
+    slicer_core::MaterialInfo lower;
+    lower.name = "lower";
+    lower.has_diffuse = true;
+    lower.diffuse_rgb = {220U, 30U, 30U};
+    slicer_core::MaterialInfo upper;
+    upper.name = "upper";
+    upper.has_diffuse = true;
+    upper.diffuse_rgb = {25U, 70U, 210U};
+    scene.material_infos = {lower, upper};
+
+    slicer_core::SceneViewGeometryRequest request = MakeRequest();
+    request.instance.sourcebboxmm = scene.bbox_mm;
+    request.instance.effectivebboxmm = scene.bbox_mm;
+    const auto result =
+        slicer_core::BuildSceneViewGeometry(scene, request);
+    if (!ExpectTrue(result.IsValid(), "top surface preview succeeds"))
+    {
+        return false;
+    }
+
+    const auto& preview = result.geometry.surfacepreview;
+    const std::size_t centerOffset =
+        (static_cast<std::size_t>(preview.height / 2)
+             * static_cast<std::size_t>(preview.width)
+         + static_cast<std::size_t>(preview.width / 2))
+        * 4U;
+    return ExpectTrue(
+        preview.IsValid()
+            && preview.rgba.at(centerOffset + 0U) == 25U
+            && preview.rgba.at(centerOffset + 1U) == 70U
+            && preview.rgba.at(centerOffset + 2U) == 210U
+            && preview.rgba.at(centerOffset + 3U) == 255U,
+        "software z-buffer keeps the highest material appearance");
+}
+
+bool NonFiniteUvIsRejected()
+{
+    slicer_core::SceneModel scene = MakeScene();
+    scene.triangle_textures.at(0U).uv.at(1U).u =
+        std::numeric_limits<double>::quiet_NaN();
+    const auto result =
+        slicer_core::BuildSceneViewGeometry(scene, MakeRequest());
+    return ExpectTrue(
+        !result.IsValid()
+            && result.error->code
+                == slicer_core::SceneViewGeometryErrorCode::
+                    GeometryNonFinite
+            && result.error->field == "triangle_textures.uv",
+        "non-finite UV is rejected before rendering");
 }
 
 bool StaleRevisionIsRejected()
@@ -282,6 +399,9 @@ int main()
     const bool ok = ErrorNamesAreStable()
         && IdentityProjectionPreservesXyAndIdentity()
         && ExistingTransformIsProjectedReadOnly()
+        && DisplayResourceLocationDoesNotChangeGeometryHash()
+        && TopSurfacePreviewUsesHighestMaterial()
+        && NonFiniteUvIsRejected()
         && StaleRevisionIsRejected()
         && InvalidGeometryIsRejected()
         && BlockedGeometryRemainsVisibleWithoutMutatingInput();

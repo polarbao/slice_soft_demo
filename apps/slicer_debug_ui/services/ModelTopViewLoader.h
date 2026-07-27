@@ -74,6 +74,7 @@ public:
 signals:
     void SigLoadingStarted();
     void SigLoadingFinished();
+    void SigAutoLayoutFailed(const QString& error);
 
 private:
     struct CallbackState;

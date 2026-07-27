@@ -1,9 +1,9 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v1.5
+> 版本：v1.6
 > 更新日期：2026-07-27
-> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..04 COMPLETE
+> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..04、13B-04A COMPLETE
 > 当前原子任务：13B-05 fixture 全局 Raster 与联合层合成 READY
 > 下一 Gate：13B-05 PASS -> 13B-06 单 package 与 scene report
 
@@ -53,7 +53,7 @@
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
-| 13B 多模型排版与联合切片 | 13B-01..04 COMPLETE；13B-05 FIXTURE READY；13B-06..07 WAIT | 3 | 执行 13B-05 fixture |
+| 13B 多模型排版与联合切片 | 13B-01..04、13B-04A COMPLETE；13B-05 FIXTURE READY；13B-06..07 WAIT | 3 | 执行 13B-05 fixture |
 | 13C TIFF 原生统一预览 | P0 设计和原子准备完成；代码未开始 | 5 | 13C-01 READY，按固定顺序排在 13B-07 后 |
 
 计数口径：
@@ -88,6 +88,7 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 8 | 13B-02 模型列表与实例操作 | `COMPLETE` | 13B-01、13A-05 COMPLETE | 已解锁规则排版 |
 | 9 | 13B-03 11x2 规则排版 | `COMPLETE` | 13B-02 COMPLETE | 已解锁碰撞/幅面准入 |
 | 10 | 13B-04 幅面、碰撞和逐实例准入 | `COMPLETE / PROD GATE OPEN` | 13B-03 COMPLETE | fixture PASS；生产需设备 buildVolume/轴方向 |
+| 10A | 13B-04A 多模型纹理俯视统一展示 | `COMPLETE` | 13B-04 COMPLETE / 用户插入需求 | 全部 visible 实例、贴图、追加自动排版闭环 |
 | 11 | 13B-05 全局 Raster 与联合层合成 | `READY FOR FIXTURE` | 13B-04 功能 Gate | 解锁联合写包 |
 | 12 | 13B-06 单 package 与 scene report | `WAIT` | 13B-05 | 解锁真实模型矩阵 |
 | 13 | 13B-07 真实模型矩阵与收口 | `WAIT / PROD GATE OPEN` | 13B-06 | 生产 GO 还需 buildVolume 和 22 实例预算 |
@@ -149,6 +150,7 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 13B-02 的 1..22 实例列表、操作、保存/回读、单测和 UI Smoke；
 13B-03 的代码、单测、Qt 排版页、UI Smoke 和状态报告；
 13B-04 的代码、单测、UI Smoke、Quick CI 和状态报告；
+13B-04A 的多模型统一俯视、贴图显示、自动排版、单测/UI Smoke 和状态报告；
 13B-05 的独立 PREP/PROMPT；
 单贡献者的固定执行顺序；
 与 12E-09A/10、12F、12G-TCWS 的边界。
@@ -205,7 +207,7 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 
 ```text
 CURRENT：MULTI-MODEL RASTER/COMPOSE WAVE；
-COMPLETE：13A-01..05、13B-01..04、12E-09A-02；
+COMPLETE：13A-01..05、13B-01..04、13B-04A、12E-09A-02；
 M13-1：CANDIDATE PASS；
 NEXT：13B-05 fixture 全局 Raster 与联合层合成；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；

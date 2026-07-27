@@ -47,6 +47,7 @@
 | `REPORT/REPORT_13B_02_模型列表与实例操作当前状态.md` | 13B-02 1..22 实例列表、场景操作、保存/回读和实际验证 |
 | `REPORT/REPORT_13B_03_11x2规则排版当前状态.md` | 13B-03 11x2 排版、原子恢复、配置回读和 UI Smoke 证据 |
 | `REPORT/REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md` | 13B-04 fixture 幅面、投影碰撞和逐实例准入证据 |
+| `REPORT/REPORT_13B_04A_多模型纹理俯视统一展示当前状态.md` | 13B-04A 全部可见实例、纹理 SurfacePreview 与自动排版证据 |
 | `REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 09A-02 single_model/scene 诊断生效配置实际实现和验证 |
 | `DOC/DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 变换、revision、异步重投影和 session 回读执行准备 |
 | `../codex_task/current/TASKS_12_13_后续开发计划总览清单.md` | Stage 12/13 跨阶段当前任务、固定顺序和状态更新规则 |
@@ -214,6 +215,7 @@
 | `DOC/DOC_PREP_13B_02_模型列表与实例操作准备.md` | 13B-02 1..22 实例列表、资源隔离和场景草稿准备 |
 | `DOC/DOC_PREP_13B_03_11x2规则排版准备.md` | 13B-03 规则排版数学、原子提交、Qt 控件和测试准备 |
 | `DOC/DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` | 13B-04 fixture buildVolume、投影碰撞和逐实例准入准备 |
+| `DOC/DOC_DECISION_13B_04A_多模型纹理俯视统一展示.md` | 13B-05 前插入的多模型纹理俯视统一展示决策 |
 | `DOC/DOC_PREP_13B_05_全局Raster与联合层合成准备.md` | 13B-05 公共 layer 合同、共享 grid、引擎 adapter 和联合内存合成准备 |
 | `DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF Source/Cache 执行级准备 |
 | `DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | 13A/13B/13C 17 个近程任务的实施准备和文件所有权 |

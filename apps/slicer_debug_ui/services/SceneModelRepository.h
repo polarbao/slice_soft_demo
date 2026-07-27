@@ -1,6 +1,7 @@
 #pragma once
 
 #include "slicer_core/scene/SceneModel.h"
+#include "slicer_core/texture_image.h"
 
 #include <QString>
 
@@ -19,6 +20,7 @@ struct SceneModelRepositoryEntry
     QString sourcetransformidentity;
     QString sourcehash;
     QString resourcehash;
+    slicer_core::TextureSampleOptions textureoptions;
     std::shared_ptr<const slicer_core::SceneModel> model;
 };
 

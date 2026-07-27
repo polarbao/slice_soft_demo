@@ -2,9 +2,12 @@
 
 #include "slicer_core/scene/ModelInstance.h"
 #include "slicer_core/scene/SceneModel.h"
+#include "slicer_core/texture_image.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -55,6 +58,23 @@ struct SceneViewTriangle
     SceneViewPoint a;
     SceneViewPoint b;
     SceneViewPoint c;
+    std::array<double, 3> zmm{};
+    std::array<TexCoord, 3> uv{};
+    int materialindex{-1};
+    bool hasuv{false};
+};
+
+/**
+ * @brief Display-only material resource retained by the +Z scene view.
+ */
+struct SceneViewMaterialAppearance
+{
+    std::string name;
+    std::array<std::uint8_t, 3> diffusergb{66U, 144U, 139U};
+    std::filesystem::path texturepath;
+    bool hasdiffuse{false};
+    bool hastexture{false};
+    bool textureexists{false};
 };
 
 /**
@@ -64,6 +84,25 @@ struct SceneViewBounds
 {
     SceneViewPoint min;
     SceneViewPoint max;
+};
+
+/**
+ * @brief Display-only +Z surface raster generated off the UI thread.
+ */
+struct SceneViewSurfacePreview
+{
+    int width{0};
+    int height{0};
+    std::vector<std::uint8_t> rgba;
+    std::size_t texturedpixelcount{0U};
+    std::size_t materialpixelcount{0U};
+    std::string contenthash;
+
+    /**
+     * @brief Report whether the raster dimensions and bytes are usable.
+     * @return True when RGBA storage exactly matches width and height.
+     */
+    bool IsValid() const;
 };
 
 /**
@@ -77,6 +116,8 @@ struct SceneViewGeometry
     std::uint64_t scenerevision{0U};
     std::uint64_t transformrevision{0U};
     std::vector<SceneViewTriangle> triangles;
+    std::vector<SceneViewMaterialAppearance> materialappearances;
+    SceneViewSurfacePreview surfacepreview;
     BoundingBox sourcebboxmm;
     BoundingBox effectivebboxmm;
     SceneViewBounds worldboundsmm;
@@ -102,6 +143,7 @@ struct SceneViewGeometryRequest
     std::optional<std::uint64_t> expectedscenerevision;
     std::optional<std::uint64_t> expectedtransformrevision;
     ModelInstance instance;
+    TextureSampleOptions textureoptions;
     SceneViewAdmissionStatus admissionstatus{
         SceneViewAdmissionStatus::Unknown};
 };
@@ -141,6 +183,12 @@ struct SceneViewGeometryResult
  */
 std::string_view SceneViewGeometryErrorCodeName(
     SceneViewGeometryErrorCode code);
+
+/**
+ * @brief Recompute the stable hash after an approved geometry mutation.
+ * @param geometry Scene-view geometry whose identity must be refreshed.
+ */
+void RefreshSceneViewGeometryHash(SceneViewGeometry& geometry);
 
 /**
  * @brief Build immutable +Z projected geometry for one transformed instance.

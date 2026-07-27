@@ -202,6 +202,15 @@ bool SceneDocument::AddSceneContext(
     }
 
     m_sceneRevision = sceneRevision;
+    for (SceneDocumentItem& existing : m_items)
+    {
+        if (existing.geometry.has_value())
+        {
+            existing.geometry->scenerevision = m_sceneRevision;
+            slicer_core::RefreshSceneViewGeometryHash(
+                existing.geometry.value());
+        }
+    }
     SceneDocumentItem item;
     item.modelpath = m_pendingModelPath;
     item.sourcecachekey = sourceCacheKey;
@@ -568,6 +577,21 @@ SceneDocumentOperationResult SceneDocument::ApplyGridLayout(
             QStringLiteral("sceneRevision"),
             QStringLiteral("场景 revision 已变化，请刷新后重试。"));
     }
+    for (const SceneDocumentItem& item : m_items)
+    {
+        if (!item.geometry.has_value()
+            || item.geometry->scenerevision != m_sceneRevision
+            || item.geometry->transformrevision
+                != item.instance.transformrevision)
+        {
+            return OperationFailure(
+                SceneDocumentOperationErrorCode::LayoutInvalid,
+                QStringLiteral("scene.items.geometry"),
+                QStringLiteral(
+                    "场景包含尚未完成重投影的模型，"
+                    "请等待俯视更新后再排版。"));
+        }
+    }
 
     slicer_core::GridLayoutRequest request;
     request.layout = layout;
@@ -619,6 +643,28 @@ SceneDocumentOperationResult SceneDocument::ApplyGridLayout(
         snapshot.items.push_back(std::move(snapshotItem));
     }
 
+    std::vector<std::string> transformHashes;
+    transformHashes.reserve(layoutResult.placements.size());
+    for (std::size_t index = 0U;
+         index < layoutResult.placements.size();
+         ++index)
+    {
+        const slicer_core::ModelTransformHashResult transformHash =
+            slicer_core::ComputeModelTransformHash(
+                layoutResult.placements[index].effectivetransform,
+                m_items[index].instance.sourcetransformidentity,
+                m_items[index].instance.instanceid,
+                m_items[index].instance.modelid);
+        if (!transformHash.IsValid())
+        {
+            return OperationFailure(
+                SceneDocumentOperationErrorCode::LayoutInvalid,
+                QString::fromStdString(transformHash.error->field),
+                QString::fromStdString(transformHash.error->message));
+        }
+        transformHashes.push_back(transformHash.hash);
+    }
+
     for (std::size_t index = 0U;
          index < m_items.size();
          ++index)
@@ -649,7 +695,11 @@ SceneDocumentOperationResult SceneDocument::ApplyGridLayout(
         {
             ++item.instance.transformrevision;
         }
-        TranslateGeometry(item, translateX, translateY);
+        TranslateGeometry(
+            item,
+            translateX,
+            translateY,
+            transformHashes[index]);
     }
     m_layout = layout;
     m_layoutSnapshot = std::move(snapshot);
@@ -690,6 +740,28 @@ SceneDocumentOperationResult SceneDocument::RestoreGridLayout(
 
     const SceneLayoutSnapshot snapshot =
         m_layoutSnapshot.value();
+    std::vector<std::string> transformHashes;
+    transformHashes.reserve(snapshot.items.size());
+    for (std::size_t index = 0U;
+         index < snapshot.items.size();
+         ++index)
+    {
+        const slicer_core::ModelTransformHashResult transformHash =
+            slicer_core::ComputeModelTransformHash(
+                snapshot.items[index].effectivetransform,
+                m_items[index].instance.sourcetransformidentity,
+                m_items[index].instance.instanceid,
+                m_items[index].instance.modelid);
+        if (!transformHash.IsValid())
+        {
+            return OperationFailure(
+                SceneDocumentOperationErrorCode::LayoutInvalid,
+                QString::fromStdString(transformHash.error->field),
+                QString::fromStdString(transformHash.error->message));
+        }
+        transformHashes.push_back(transformHash.hash);
+    }
+
     for (std::size_t index = 0U;
          index < m_items.size();
          ++index)
@@ -722,7 +794,11 @@ SceneDocumentOperationResult SceneDocument::RestoreGridLayout(
         {
             ++item.instance.transformrevision;
         }
-        TranslateGeometry(item, translateX, translateY);
+        TranslateGeometry(
+            item,
+            translateX,
+            translateY,
+            transformHashes[index]);
     }
     m_layout = snapshot.layout;
     m_layoutSnapshot.reset();
@@ -903,11 +979,15 @@ bool SceneDocument::CommitInstance(
         if (item.geometry.has_value())
         {
             item.geometry->scenerevision = m_sceneRevision;
+            slicer_core::RefreshSceneViewGeometryHash(
+                item.geometry.value());
         }
     }
     if (m_geometry.has_value())
     {
         m_geometry->scenerevision = m_sceneRevision;
+        slicer_core::RefreshSceneViewGeometryHash(
+            m_geometry.value());
     }
     m_dirty = true;
     m_geometryStale = true;
@@ -1004,11 +1084,15 @@ void SceneDocument::AdvanceSceneRevision()
         if (item.geometry.has_value())
         {
             item.geometry->scenerevision = m_sceneRevision;
+            slicer_core::RefreshSceneViewGeometryHash(
+                item.geometry.value());
         }
     }
     if (m_geometry.has_value())
     {
         m_geometry->scenerevision = m_sceneRevision;
+        slicer_core::RefreshSceneViewGeometryHash(
+            m_geometry.value());
     }
     m_dirty = true;
     m_sceneConfigPath.clear();
@@ -1027,7 +1111,8 @@ void SceneDocument::InvalidateLayoutRestore()
 void SceneDocument::TranslateGeometry(
     SceneDocumentItem& item,
     const double translateX,
-    const double translateY)
+    const double translateY,
+    const std::string& transformHash)
 {
     if (!item.geometry.has_value())
     {
@@ -1052,6 +1137,7 @@ void SceneDocument::TranslateGeometry(
     geometry.effectivebboxmm = item.instance.effectivebboxmm;
     geometry.transformrevision =
         item.instance.transformrevision;
+    geometry.transformhash = transformHash;
 }
 
 bool SceneDocument::SnapshotMatchesCurrentScene() const
