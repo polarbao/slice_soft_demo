@@ -509,6 +509,13 @@ bool MultiInstanceSceneSavesInStableOrder()
     secondGeometry.instanceid = "instance-2";
     document.SetGeometry(2U, std::move(secondGeometry));
     selection.SetSelectedInstance(QStringLiteral("instance-2"));
+    slicer_core::SceneLayout layout;
+    layout.maxcolumns = 1;
+    layout.maxrows = 2;
+    layout.columngapmm = 21.25;
+    layout.rowgapmm = 31.5;
+    const SceneDocumentOperationResult arranged =
+        document.ApplyGridLayout(layout, document.SceneRevision());
 
     SceneTransformController controller(
         &document,
@@ -524,15 +531,19 @@ bool MultiInstanceSceneSavesInStableOrder()
     request.sessiondirectory = root;
     request.sourceprofileid = "profile-a";
     request.generatedatutc = "2026-07-27T12:00:00.000Z";
-    request.expectedscenerevision = 2U;
-    request.expectedtransformrevision = 0U;
+    request.expectedscenerevision = document.SceneRevision();
+    request.expectedtransformrevision =
+        document.Instance()->transformrevision;
     const SceneTransformSaveResult saved =
         controller.SaveSceneEffectiveConfig(request);
     const auto readback = slicer_core::ReadSceneEffectiveConfig(
         root / "scene_config.effective.json");
 
     const bool result =
-        ExpectTrue(saved.IsValid(), "multi-instance scene saves")
+        ExpectTrue(
+            arranged.IsValid() && arranged.changed,
+            "multi-instance scene layout succeeds")
+        && ExpectTrue(saved.IsValid(), "multi-instance scene saves")
         && ExpectTrue(readback.IsValid(), "multi-instance config reads back")
         && ExpectTrue(
             saved.scene.models.size() == 2U
@@ -544,6 +555,29 @@ bool MultiInstanceSceneSavesInStableOrder()
                 && saved.scene.instances.at(1U).instance.instanceid
                     == "instance-2",
             "multi-instance save retains stable order")
+        && ExpectTrue(
+            saved.scene.layout.maxcolumns == 1
+                && NearlyEqual(
+                    saved.scene.layout.columngapmm,
+                    21.25)
+                && NearlyEqual(
+                    saved.scene.layout.rowgapmm,
+                    31.5),
+            "multi-instance save retains layout settings")
+        && ExpectTrue(
+            NearlyEqual(
+                saved.scene.instances.at(1U)
+                    .requestedtransform.translateymm,
+                0.0)
+                && NearlyEqual(
+                    saved.scene.instances.at(1U)
+                        .derivedlayouttransform.translateymm,
+                    35.5)
+                && NearlyEqual(
+                    saved.scene.instances.at(1U)
+                        .effectivetransform.translateymm,
+                    35.5),
+            "multi-instance save separates requested, derived, and effective transforms")
         && ExpectTrue(
             !slicer_core::IsSceneEffectiveConfigStale(
                 readback.document,

@@ -1,7 +1,30 @@
 #include "SceneDocument.h"
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
+
+namespace
+{
+
+constexpr double kLayoutTolerance{1.0e-9};
+
+bool LayoutsEquivalent(
+    const slicer_core::SceneLayout& left,
+    const slicer_core::SceneLayout& right)
+{
+    return left.policy == right.policy
+        && left.maxcolumns == right.maxcolumns
+        && left.maxrows == right.maxrows
+        && std::abs(left.columngapmm - right.columngapmm)
+            <= kLayoutTolerance
+        && std::abs(left.rowgapmm - right.rowgapmm)
+            <= kLayoutTolerance
+        && left.spacingmode == right.spacingmode
+        && left.order == right.order;
+}
+
+}  // namespace
 
 bool SceneDocumentOperationResult::IsValid() const
 {
@@ -27,6 +50,10 @@ std::string_view SceneDocumentOperationErrorCodeName(
         return "SCENE_INSTANCE_LOCKED";
     case SceneDocumentOperationErrorCode::SceneIdentityMismatch:
         return "SCENE_IDENTITY_MISMATCH";
+    case SceneDocumentOperationErrorCode::LayoutInvalid:
+        return "SCENE_LAYOUT_INVALID";
+    case SceneDocumentOperationErrorCode::LayoutRestoreUnavailable:
+        return "SCENE_LAYOUT_RESTORE_UNAVAILABLE";
     }
     return "SCENE_DOCUMENT_UNKNOWN";
 }
@@ -56,6 +83,8 @@ void SceneDocument::Reset()
     m_effectiveConfigHash.clear();
     m_items.clear();
     m_currentInstanceId.clear();
+    m_layout = {};
+    m_layoutSnapshot.reset();
     m_additionInProgress = false;
     m_transformedPreflightState =
         SceneTransformedPreflightState::NotRun;
@@ -89,6 +118,8 @@ void SceneDocument::SetLoading(
     m_effectiveConfigHash.clear();
     m_items.clear();
     m_currentInstanceId.clear();
+    m_layout = {};
+    m_layoutSnapshot.reset();
     m_additionInProgress = false;
     m_transformedPreflightState =
         SceneTransformedPreflightState::NotRun;
@@ -138,6 +169,7 @@ bool SceneDocument::SetSceneContext(
     item.sourcehash = sourceHash;
     item.resourcehash = resourceHash;
     item.instance = m_instance.value();
+    item.requestedtransform = item.instance.transform;
     m_items.push_back(std::move(item));
     m_currentInstanceId =
         QString::fromStdString(m_instance->instanceid);
@@ -176,6 +208,7 @@ bool SceneDocument::AddSceneContext(
     item.sourcehash = sourceHash;
     item.resourcehash = resourceHash;
     item.instance = std::move(instance);
+    item.requestedtransform = item.instance.transform;
     m_items.push_back(std::move(item));
     LoadCurrentItem(m_items.size() - 1U);
     m_additionInProgress = false;
@@ -185,6 +218,7 @@ bool SceneDocument::AddSceneContext(
     m_sceneConfigPath.clear();
     m_effectiveConfigPath.clear();
     m_effectiveConfigHash.clear();
+    InvalidateLayoutRestore();
     return true;
 }
 
@@ -395,6 +429,8 @@ SceneDocumentOperationResult SceneDocument::DuplicateInstance(
         newInstanceId.toStdString();
     duplicate.instance.transformrevision = 0U;
     duplicate.instance.locked = false;
+    duplicate.layoutrow = -1;
+    duplicate.layoutcolumn = -1;
     if (duplicate.geometry.has_value())
     {
         duplicate.geometry->instanceid =
@@ -404,6 +440,7 @@ SceneDocumentOperationResult SceneDocument::DuplicateInstance(
         duplicate.geometry->locked = false;
     }
     m_items.push_back(std::move(duplicate));
+    InvalidateLayoutRestore();
     AdvanceSceneRevision();
     LoadCurrentItem(m_items.size() - 1U);
     emit SigChanged();
@@ -431,6 +468,7 @@ SceneDocumentOperationResult SceneDocument::DeleteInstance(
     }
 
     m_items.erase(m_items.begin() + static_cast<std::ptrdiff_t>(index));
+    InvalidateLayoutRestore();
     AdvanceSceneRevision();
     if (m_items.empty())
     {
@@ -472,6 +510,7 @@ SceneDocumentOperationResult SceneDocument::SetInstanceVisible(
     {
         item.geometry->visible = visible;
     }
+    InvalidateLayoutRestore();
     AdvanceSceneRevision();
     if (instanceId == m_currentInstanceId)
     {
@@ -503,10 +542,195 @@ SceneDocumentOperationResult SceneDocument::SetInstanceLocked(
     {
         item.geometry->locked = locked;
     }
+    InvalidateLayoutRestore();
     AdvanceSceneRevision();
     if (instanceId == m_currentInstanceId)
     {
         LoadCurrentItem(FindItemIndex(instanceId).value());
+    }
+    emit SigChanged();
+    return {true, std::nullopt};
+}
+
+const slicer_core::SceneLayout& SceneDocument::Layout() const
+{
+    return m_layout;
+}
+
+SceneDocumentOperationResult SceneDocument::ApplyGridLayout(
+    const slicer_core::SceneLayout& layout,
+    const quint64 expectedSceneRevision)
+{
+    if (expectedSceneRevision != m_sceneRevision)
+    {
+        return OperationFailure(
+            SceneDocumentOperationErrorCode::SceneRevisionStale,
+            QStringLiteral("sceneRevision"),
+            QStringLiteral("场景 revision 已变化，请刷新后重试。"));
+    }
+
+    slicer_core::GridLayoutRequest request;
+    request.layout = layout;
+    request.currentscenerevision = m_sceneRevision;
+    request.expectedscenerevision = expectedSceneRevision;
+    request.items.reserve(m_items.size());
+    for (const SceneDocumentItem& item : m_items)
+    {
+        slicer_core::GridLayoutItem layoutItem;
+        layoutItem.instance = item.instance;
+        layoutItem.requestedtransform = item.requestedtransform;
+        layoutItem.currentderivedlayouttransform =
+            item.derivedlayouttransform;
+        request.items.push_back(std::move(layoutItem));
+    }
+
+    const slicer_core::GridLayoutResult layoutResult =
+        slicer_core::ComputeGridLayout(request);
+    if (!layoutResult.IsValid())
+    {
+        return OperationFailure(
+            SceneDocumentOperationErrorCode::LayoutInvalid,
+            QString::fromStdString(layoutResult.error->field),
+            QString::fromStdString(layoutResult.error->message));
+    }
+
+    const bool layoutChanged = !LayoutsEquivalent(m_layout, layout);
+    if (!layoutResult.changed && !layoutChanged)
+    {
+        return {false, std::nullopt};
+    }
+
+    SceneLayoutSnapshot snapshot;
+    snapshot.layout = m_layout;
+    snapshot.items.reserve(m_items.size());
+    for (const SceneDocumentItem& item : m_items)
+    {
+        SceneLayoutSnapshotItem snapshotItem;
+        snapshotItem.instanceid =
+            QString::fromStdString(item.instance.instanceid);
+        snapshotItem.requestedtransform = item.requestedtransform;
+        snapshotItem.derivedlayouttransform =
+            item.derivedlayouttransform;
+        snapshotItem.effectivetransform = item.instance.transform;
+        snapshotItem.effectivebboxmm =
+            item.instance.effectivebboxmm;
+        snapshotItem.layoutrow = item.layoutrow;
+        snapshotItem.layoutcolumn = item.layoutcolumn;
+        snapshot.items.push_back(std::move(snapshotItem));
+    }
+
+    for (std::size_t index = 0U;
+         index < m_items.size();
+         ++index)
+    {
+        SceneDocumentItem& item = m_items[index];
+        const slicer_core::GridLayoutPlacement& placement =
+            layoutResult.placements[index];
+        const double translateX =
+            placement.effectivebboxmm.min.x
+            - item.instance.effectivebboxmm.min.x;
+        const double translateY =
+            placement.effectivebboxmm.min.y
+            - item.instance.effectivebboxmm.min.y;
+        const bool transformChanged =
+            !slicer_core::ModelTransformsEquivalent(
+                item.instance.transform,
+                placement.effectivetransform);
+
+        item.requestedtransform = placement.requestedtransform;
+        item.derivedlayouttransform =
+            placement.derivedlayouttransform;
+        item.instance.transform = placement.effectivetransform;
+        item.instance.effectivebboxmm =
+            placement.effectivebboxmm;
+        item.layoutrow = placement.row;
+        item.layoutcolumn = placement.column;
+        if (transformChanged)
+        {
+            ++item.instance.transformrevision;
+        }
+        TranslateGeometry(item, translateX, translateY);
+    }
+    m_layout = layout;
+    m_layoutSnapshot = std::move(snapshot);
+    AdvanceSceneRevision();
+    if (!m_currentInstanceId.isEmpty())
+    {
+        LoadCurrentItem(
+            FindItemIndex(m_currentInstanceId).value());
+    }
+    emit SigChanged();
+    return {true, std::nullopt};
+}
+
+bool SceneDocument::CanRestoreGridLayout() const
+{
+    return m_layoutSnapshot.has_value()
+        && SnapshotMatchesCurrentScene();
+}
+
+SceneDocumentOperationResult SceneDocument::RestoreGridLayout(
+    const quint64 expectedSceneRevision)
+{
+    if (expectedSceneRevision != m_sceneRevision)
+    {
+        return OperationFailure(
+            SceneDocumentOperationErrorCode::SceneRevisionStale,
+            QStringLiteral("sceneRevision"),
+            QStringLiteral("场景 revision 已变化，请刷新后重试。"));
+    }
+    if (!CanRestoreGridLayout())
+    {
+        return OperationFailure(
+            SceneDocumentOperationErrorCode::
+                LayoutRestoreUnavailable,
+            QStringLiteral("layout"),
+            QStringLiteral("没有可恢复的排版快照。"));
+    }
+
+    const SceneLayoutSnapshot snapshot =
+        m_layoutSnapshot.value();
+    for (std::size_t index = 0U;
+         index < m_items.size();
+         ++index)
+    {
+        SceneDocumentItem& item = m_items[index];
+        const SceneLayoutSnapshotItem& snapshotItem =
+            snapshot.items[index];
+        const double translateX =
+            snapshotItem.effectivebboxmm.min.x
+            - item.instance.effectivebboxmm.min.x;
+        const double translateY =
+            snapshotItem.effectivebboxmm.min.y
+            - item.instance.effectivebboxmm.min.y;
+        const bool transformChanged =
+            !slicer_core::ModelTransformsEquivalent(
+                item.instance.transform,
+                snapshotItem.effectivetransform);
+
+        item.requestedtransform =
+            snapshotItem.requestedtransform;
+        item.derivedlayouttransform =
+            snapshotItem.derivedlayouttransform;
+        item.instance.transform =
+            snapshotItem.effectivetransform;
+        item.instance.effectivebboxmm =
+            snapshotItem.effectivebboxmm;
+        item.layoutrow = snapshotItem.layoutrow;
+        item.layoutcolumn = snapshotItem.layoutcolumn;
+        if (transformChanged)
+        {
+            ++item.instance.transformrevision;
+        }
+        TranslateGeometry(item, translateX, translateY);
+    }
+    m_layout = snapshot.layout;
+    m_layoutSnapshot.reset();
+    AdvanceSceneRevision();
+    if (!m_currentInstanceId.isEmpty())
+    {
+        LoadCurrentItem(
+            FindItemIndex(m_currentInstanceId).value());
     }
     emit SigChanged();
     return {true, std::nullopt};
@@ -663,7 +887,16 @@ bool SceneDocument::CommitInstance(
         return false;
     }
     m_instance = instance;
-    SyncCurrentItem();
+    const std::size_t currentIndex =
+        FindItemIndex(m_currentInstanceId).value();
+    SceneDocumentItem& currentItem = m_items[currentIndex];
+    currentItem.instance = instance;
+    currentItem.requestedtransform = instance.transform;
+    currentItem.derivedlayouttransform = {};
+    currentItem.layoutrow = -1;
+    currentItem.layoutcolumn = -1;
+    m_geometry = currentItem.geometry;
+    InvalidateLayoutRestore();
     ++m_sceneRevision;
     for (SceneDocumentItem& item : m_items)
     {
@@ -784,6 +1017,62 @@ void SceneDocument::AdvanceSceneRevision()
     m_transformedPreflightState =
         SceneTransformedPreflightState::Stale;
     m_transformedPreflightError.clear();
+}
+
+void SceneDocument::InvalidateLayoutRestore()
+{
+    m_layoutSnapshot.reset();
+}
+
+void SceneDocument::TranslateGeometry(
+    SceneDocumentItem& item,
+    const double translateX,
+    const double translateY)
+{
+    if (!item.geometry.has_value())
+    {
+        return;
+    }
+    slicer_core::SceneViewGeometry& geometry =
+        item.geometry.value();
+    for (slicer_core::SceneViewTriangle& triangle :
+         geometry.triangles)
+    {
+        triangle.a.xmm += translateX;
+        triangle.a.ymm += translateY;
+        triangle.b.xmm += translateX;
+        triangle.b.ymm += translateY;
+        triangle.c.xmm += translateX;
+        triangle.c.ymm += translateY;
+    }
+    geometry.worldboundsmm.min.xmm += translateX;
+    geometry.worldboundsmm.min.ymm += translateY;
+    geometry.worldboundsmm.max.xmm += translateX;
+    geometry.worldboundsmm.max.ymm += translateY;
+    geometry.effectivebboxmm = item.instance.effectivebboxmm;
+    geometry.transformrevision =
+        item.instance.transformrevision;
+}
+
+bool SceneDocument::SnapshotMatchesCurrentScene() const
+{
+    if (!m_layoutSnapshot.has_value()
+        || m_layoutSnapshot->items.size() != m_items.size())
+    {
+        return false;
+    }
+    for (std::size_t index = 0U;
+         index < m_items.size();
+         ++index)
+    {
+        if (m_layoutSnapshot->items[index].instanceid
+            != QString::fromStdString(
+                m_items[index].instance.instanceid))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 std::optional<std::size_t> SceneDocument::FindItemIndex(

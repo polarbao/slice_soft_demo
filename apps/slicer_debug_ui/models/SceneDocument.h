@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/layout/GridLayoutPolicy.h"
 #include "slicer_core/scene/SceneViewGeometry.h"
 #include "slicer_core/preflight/TransformedModelPreflight.h"
 
@@ -40,6 +41,8 @@ enum class SceneDocumentOperationErrorCode
     InstanceNotFound,
     InstanceLocked,
     SceneIdentityMismatch,
+    LayoutInvalid,
+    LayoutRestoreUnavailable,
 };
 
 struct SceneDocumentOperationError
@@ -69,6 +72,10 @@ struct SceneDocumentItem
     QString sourcehash;
     QString resourcehash;
     slicer_core::ModelInstance instance;
+    slicer_core::ModelTransform requestedtransform;
+    slicer_core::ModelTransform derivedlayouttransform;
+    int layoutrow{-1};
+    int layoutcolumn{-1};
     std::optional<slicer_core::SceneViewGeometry> geometry;
 };
 
@@ -289,6 +296,36 @@ public:
         quint64 expectedSceneRevision);
 
     /**
+     * @brief Return current deterministic scene layout settings.
+     * @return Grid-layout settings persisted with the scene.
+     */
+    const slicer_core::SceneLayout& Layout() const;
+
+    /**
+     * @brief Apply one atomic deterministic row-major layout.
+     * @param layout Requested 11x2 grid settings.
+     * @param expectedSceneRevision Caller-observed scene revision.
+     * @return Atomic command result; failures leave every item unchanged.
+     */
+    SceneDocumentOperationResult ApplyGridLayout(
+        const slicer_core::SceneLayout& layout,
+        quint64 expectedSceneRevision);
+
+    /**
+     * @brief Report whether the latest successful layout can be restored.
+     * @return True when an unmodified pre-layout snapshot exists.
+     */
+    bool CanRestoreGridLayout() const;
+
+    /**
+     * @brief Restore transforms captured before the latest successful layout.
+     * @param expectedSceneRevision Caller-observed scene revision.
+     * @return Atomic restore result.
+     */
+    SceneDocumentOperationResult RestoreGridLayout(
+        quint64 expectedSceneRevision);
+
+    /**
      * @brief Return the current scene identity.
      * @return Stable scene id.
      */
@@ -433,11 +470,34 @@ signals:
 private:
     static constexpr std::size_t kMaximumInstanceCount{22U};
 
+    struct SceneLayoutSnapshotItem
+    {
+        QString instanceid;
+        slicer_core::ModelTransform requestedtransform;
+        slicer_core::ModelTransform derivedlayouttransform;
+        slicer_core::ModelTransform effectivetransform;
+        slicer_core::BoundingBox effectivebboxmm;
+        int layoutrow{-1};
+        int layoutcolumn{-1};
+    };
+
+    struct SceneLayoutSnapshot
+    {
+        slicer_core::SceneLayout layout;
+        std::vector<SceneLayoutSnapshotItem> items;
+    };
+
     void PublishState(SceneDocumentState state);
     void ClearCurrentInstance();
     void LoadCurrentItem(std::size_t index);
     void SyncCurrentItem();
     void AdvanceSceneRevision();
+    void InvalidateLayoutRestore();
+    void TranslateGeometry(
+        SceneDocumentItem& item,
+        double translateX,
+        double translateY);
+    bool SnapshotMatchesCurrentScene() const;
     std::optional<std::size_t> FindItemIndex(
         const QString& instanceId) const;
     SceneDocumentOperationResult ValidateOperation(
@@ -467,6 +527,8 @@ private:
     QString m_effectiveConfigHash;
     std::vector<SceneDocumentItem> m_items;
     QString m_currentInstanceId;
+    slicer_core::SceneLayout m_layout;
+    std::optional<SceneLayoutSnapshot> m_layoutSnapshot;
     bool m_additionInProgress{false};
     SceneTransformedPreflightState m_transformedPreflightState{
         SceneTransformedPreflightState::NotRun};

@@ -81,6 +81,8 @@ add_executable(slicer_debug_ui
     widgets/ModelPreflightPanel.h
     widgets/ModelListPanel.cpp
     widgets/ModelListPanel.h
+    widgets/SceneLayoutPanel.cpp
+    widgets/SceneLayoutPanel.h
     widgets/ModelTransformPanel.cpp
     widgets/ModelTransformPanel.h
     widgets/ModelTopViewWidget.cpp

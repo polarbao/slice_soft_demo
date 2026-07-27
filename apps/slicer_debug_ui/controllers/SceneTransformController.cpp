@@ -248,6 +248,7 @@ SceneTransformController::SaveSceneEffectiveConfig(
     result.scene.sceneid = m_document->SceneId().toStdString();
     result.scene.scenerevision = m_document->SceneRevision();
     result.scene.resolvedprofileid = request.sourceprofileid;
+    result.scene.layout = m_document->Layout();
     std::map<std::string, QString> sourceCacheKeys;
     for (const SceneDocumentItem& item : m_document->Items())
     {
@@ -325,7 +326,10 @@ SceneTransformController::SaveSceneEffectiveConfig(
 
         slicer_core::SceneModelInstance sceneInstance;
         sceneInstance.instance = item.instance;
-        sceneInstance.requestedtransform = item.instance.transform;
+        sceneInstance.requestedtransform =
+            item.requestedtransform;
+        sceneInstance.derivedlayouttransform =
+            item.derivedlayouttransform;
         sceneInstance.effectivetransform = item.instance.transform;
         sceneInstance.resolvedprofileid = request.sourceprofileid;
         if (item.geometry.has_value())

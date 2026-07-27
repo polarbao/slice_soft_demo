@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -42,6 +43,8 @@ slicer_core::SceneViewGeometry MakeGeometry(
     geometry.instanceid = instanceId;
     geometry.scenerevision = sceneRevision;
     geometry.transformrevision = 0U;
+    geometry.sourcebboxmm = {{0.0, 0.0, 0.0}, {10.0, 5.0, 1.0}};
+    geometry.effectivebboxmm = geometry.sourcebboxmm;
     geometry.worldboundsmm = {{0.0, 0.0}, {10.0, 5.0}};
     geometry.triangles.push_back(
         {{0.0, 0.0}, {10.0, 0.0}, {0.0, 5.0}});
@@ -238,6 +241,121 @@ void SelectionModelTracksCurrentInstance()
         "document should expose selected instance identity");
 }
 
+void GridLayoutApplyAndRestoreAreAtomic()
+{
+    SceneDocument document;
+    AddFirstInstance(document);
+    Require(
+        document.DuplicateInstance(
+            QStringLiteral("instance-first"),
+            QStringLiteral("instance-copy"),
+            document.SceneRevision())
+            .IsValid(),
+        "layout fixture duplicate should pass");
+
+    slicer_core::SceneLayout layout;
+    layout.maxcolumns = 1;
+    layout.maxrows = 2;
+    layout.rowgapmm = 30.0;
+    const quint64 revisionBefore = document.SceneRevision();
+    const SceneDocumentOperationResult arranged =
+        document.ApplyGridLayout(layout, revisionBefore);
+    Require(
+        arranged.IsValid() && arranged.changed,
+        "grid layout should pass atomically");
+    Require(
+        document.SceneRevision() == revisionBefore + 1U,
+        "grid layout should advance scene revision once");
+    Require(
+        document.Items().at(0U).layoutrow == 0
+            && document.Items().at(1U).layoutrow == 1,
+        "grid layout should record stable row-major cells");
+    Require(
+        std::abs(
+            document.Items()
+                .at(1U)
+                .derivedlayouttransform.translateymm
+            - 35.0)
+            < 1.0e-9,
+        "grid layout should use edge-to-edge row clearance");
+    Require(
+        std::abs(
+            document.Items().at(1U).geometry->triangles.front().a.ymm
+            - 35.0)
+            < 1.0e-9,
+        "grid layout should translate cached top-view geometry");
+    Require(
+        document.CanRestoreGridLayout(),
+        "successful layout should expose one restore snapshot");
+
+    const quint64 arrangedRevision = document.SceneRevision();
+    const SceneDocumentOperationResult restored =
+        document.RestoreGridLayout(arrangedRevision);
+    Require(
+        restored.IsValid() && restored.changed,
+        "grid layout restore should pass atomically");
+    Require(
+        document.SceneRevision() == arrangedRevision + 1U,
+        "restore should advance scene revision once");
+    Require(
+        std::abs(
+            document.Items().at(1U).instance.effectivebboxmm.min.y)
+            < 1.0e-9
+            && document.Items().at(1U).layoutrow == -1,
+        "restore should recover the exact pre-layout placement");
+    Require(
+        !document.CanRestoreGridLayout(),
+        "restore snapshot should be consumed");
+}
+
+void GridLayoutFailuresDoNotPartiallyMutateScene()
+{
+    SceneDocument document;
+    AddFirstInstance(document);
+    Require(
+        document.DuplicateInstance(
+            QStringLiteral("instance-first"),
+            QStringLiteral("instance-copy"),
+            document.SceneRevision())
+            .IsValid(),
+        "locked layout fixture duplicate should pass");
+    Require(
+        document.SetInstanceLocked(
+            QStringLiteral("instance-copy"),
+            true,
+            document.SceneRevision())
+            .IsValid(),
+        "locked layout fixture should lock the copy");
+
+    const quint64 revisionBefore = document.SceneRevision();
+    const slicer_core::BoundingBox boundsBefore =
+        document.Items().at(0U).instance.effectivebboxmm;
+    const SceneDocumentOperationResult locked =
+        document.ApplyGridLayout(
+            slicer_core::SceneLayout{},
+            revisionBefore);
+    Require(
+        !locked.IsValid()
+            && locked.error->code
+                == SceneDocumentOperationErrorCode::LayoutInvalid,
+        "locked overlap should be surfaced as layout failure");
+    Require(
+        document.SceneRevision() == revisionBefore
+            && document.Items().at(0U).instance.effectivebboxmm.min.x
+                == boundsBefore.min.x,
+        "layout failure must leave revision and placement unchanged");
+
+    const SceneDocumentOperationResult stale =
+        document.ApplyGridLayout(
+            slicer_core::SceneLayout{},
+            revisionBefore - 1U);
+    Require(
+        !stale.IsValid()
+            && stale.error->code
+                == SceneDocumentOperationErrorCode::SceneRevisionStale,
+        "stale layout request should fail closed");
+}
+
 }  // namespace
 
 int main(int argc, char* argv[])
@@ -246,6 +364,8 @@ int main(int argc, char* argv[])
     AddTwentyTwoAndRejectTwentyThird();
     DuplicateVisibilityLockAndDeleteAreAtomic();
     SelectionModelTracksCurrentInstance();
+    GridLayoutApplyAndRestoreAreAtomic();
+    GridLayoutFailuresDoNotPartiallyMutateScene();
     std::cout << "scene_document_unit_tests passed\n";
     return 0;
 }

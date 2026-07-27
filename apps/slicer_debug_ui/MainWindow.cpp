@@ -403,6 +403,9 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &m_sceneDocument,
         &m_sceneSelectionModel,
         m_modelTopViewWorkspace);
+    m_sceneLayoutPanel = new SceneLayoutPanel(
+        &m_sceneDocument,
+        m_modelTopViewWorkspace);
     m_modelTransformPanel = new ModelTransformPanel(
         &m_sceneDocument,
         &m_sceneSelectionModel,
@@ -420,6 +423,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     modelSideTabs->setMaximumWidth(330);
     modelSideTabs->addTab(m_modelListPanel, QStringLiteral("模型列表"));
     modelSideTabs->addTab(m_modelTransformPanel, QStringLiteral("变换"));
+    modelSideTabs->addTab(m_sceneLayoutPanel, QStringLiteral("排版"));
     modelWorkspaceSplitter->addWidget(m_modelTopViewWidget);
     modelWorkspaceSplitter->addWidget(modelSideTabs);
     modelWorkspaceSplitter->setStretchFactor(0, 1);
@@ -622,6 +626,11 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(
         m_modelListPanel,
         &ModelListPanel::SigStatusMessage,
+        status_label_,
+        &QLabel::setText);
+    connect(
+        m_sceneLayoutPanel,
+        &SceneLayoutPanel::SigStatusMessage,
         status_label_,
         &QLabel::setText);
     connect(
