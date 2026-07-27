@@ -91,6 +91,8 @@ add_library(slicer_core
     src/slicer_core/geometry/repair/MeshRepairTopologyOperations.h
     src/slicer_core/layout/GridLayoutPolicy.cpp
     src/slicer_core/layout/GridLayoutPolicy.h
+    src/slicer_core/layout/SceneCollisionService.cpp
+    src/slicer_core/layout/SceneCollisionService.h
     src/slicer_core/geometry/repair/MeshRepairTypes.cpp
     src/slicer_core/geometry/repair/MeshRepairTypes.h
     src/slicer_core/geometry/NearestTriangleQuery.cpp
@@ -597,6 +599,12 @@ add_executable(grid_layout_policy_unit_tests
 
 target_link_libraries(grid_layout_policy_unit_tests PRIVATE slicer_core)
 
+add_executable(scene_collision_admission_unit_tests
+    tests/unit/scene_collision_admission/Main.cpp
+)
+
+target_link_libraries(scene_collision_admission_unit_tests PRIVATE slicer_core)
+
 add_executable(diagnostic_effective_config_unit_tests
     tests/unit/diagnostic_effective_config/Main.cpp
 )
@@ -893,6 +901,7 @@ add_test(NAME model_transform_unit_tests COMMAND model_transform_unit_tests)
 add_test(NAME scene_view_geometry_unit_tests COMMAND scene_view_geometry_unit_tests)
 add_test(NAME multimodel_scene_contract_unit_tests COMMAND multimodel_scene_contract_unit_tests)
 add_test(NAME grid_layout_policy_unit_tests COMMAND grid_layout_policy_unit_tests)
+add_test(NAME scene_collision_admission_unit_tests COMMAND scene_collision_admission_unit_tests)
 add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effective_config_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
