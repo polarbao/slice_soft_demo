@@ -343,7 +343,10 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     : QMainWindow(parent),
       paths_(ToolPaths::FromRepoRoot(std::move(repo_root))),
       m_modelPreflightController(this),
-      m_slicePreflightCoordinator(&m_modelPreflightController, this)
+      m_slicePreflightCoordinator(&m_modelPreflightController, this),
+      m_sceneDocument(this),
+      m_sceneSelectionModel(this),
+      m_modelTopViewLoader(&m_sceneDocument, this)
 {
     setWindowTitle("SliceSoft 切片调试界面");
     resize(1440, 900);
@@ -354,30 +357,63 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     main_splitter->setObjectName(QStringLiteral("mainSplitter"));
 
     QWidget* left = createProjectPanel();
-    auto* center_tabs = new QTabWidget(main_splitter);
-    center_tabs->setObjectName(QStringLiteral("mainWorkspaceTabs"));
-    center_tabs->setDocumentMode(true);
-    center_tabs->setTabPosition(QTabWidget::North);
-    m_previewWorkspace = new PreviewWorkspace(center_tabs);
-    auto* configScrollArea = new QScrollArea(center_tabs);
+    m_mainWorkspaceTabs = new QTabWidget(main_splitter);
+    m_mainWorkspaceTabs->setObjectName(QStringLiteral("mainWorkspaceTabs"));
+    m_mainWorkspaceTabs->setDocumentMode(true);
+    m_mainWorkspaceTabs->setTabPosition(QTabWidget::North);
+    m_modelTopViewWorkspace = new QWidget(m_mainWorkspaceTabs);
+    m_modelTopViewWorkspace->setObjectName(
+        QStringLiteral("modelTopViewWorkspace"));
+    auto* modelTopViewLayout =
+        new QVBoxLayout(m_modelTopViewWorkspace);
+    modelTopViewLayout->setContentsMargins(0, 0, 0, 0);
+    auto* modelTopViewToolbar = new QHBoxLayout();
+    auto* modelTopViewHint = new QLabel(
+        QStringLiteral("+Z 俯视，单位 mm；此视图不会启动切片。"),
+        m_modelTopViewWorkspace);
+    auto* modelTopViewFitButton = new QPushButton(
+        QStringLiteral("适应视图"),
+        m_modelTopViewWorkspace);
+    modelTopViewFitButton->setObjectName(
+        QStringLiteral("modelTopViewFitButton"));
+    modelTopViewFitButton->setToolTip(
+        QStringLiteral("将当前模型 XY 包围盒完整显示在画布内"));
+    modelTopViewToolbar->addWidget(modelTopViewHint, 1);
+    modelTopViewToolbar->addWidget(modelTopViewFitButton);
+    modelTopViewLayout->addLayout(modelTopViewToolbar);
+    m_modelTopViewWidget = new ModelTopViewWidget(
+        &m_sceneDocument,
+        &m_sceneSelectionModel,
+        m_modelTopViewWorkspace);
+    modelTopViewLayout->addWidget(m_modelTopViewWidget, 1);
+    m_previewWorkspace = new PreviewWorkspace(m_mainWorkspaceTabs);
+    auto* configScrollArea = new QScrollArea(m_mainWorkspaceTabs);
     configScrollArea->setObjectName(QStringLiteral("configEditorScrollArea"));
     configScrollArea->setWidgetResizable(true);
     config_editor_panel_ = new ConfigEditorPanel(&config_document_, configScrollArea);
     configScrollArea->setWidget(config_editor_panel_);
-    const int previewWorkspaceTab = center_tabs->addTab(m_previewWorkspace, "预览");
-    const int configTab = center_tabs->addTab(configScrollArea, "配置");
-    center_tabs->setTabToolTip(previewWorkspaceTab, "统一预览工作区：在生产层检查、材料叠加和原始调试预览之间切换并保持同一真实 layerIndex。");
-    center_tabs->setTabToolTip(configTab, "编辑当前 JSON 配置；常用材料、支撑、预览和实验选项在这里。");
-    center_tabs->setCurrentWidget(m_previewWorkspace);
+    const int modelTopViewTab = m_mainWorkspaceTabs->addTab(
+        m_modelTopViewWorkspace,
+        QStringLiteral("模型"));
+    const int previewWorkspaceTab =
+        m_mainWorkspaceTabs->addTab(m_previewWorkspace, "预览");
+    const int configTab =
+        m_mainWorkspaceTabs->addTab(configScrollArea, "配置");
+    m_mainWorkspaceTabs->setTabToolTip(
+        modelTopViewTab,
+        QStringLiteral("切片前 +Z 俯视工作区：显示模型 XY 占地、坐标和准入状态。"));
+    m_mainWorkspaceTabs->setTabToolTip(previewWorkspaceTab, "统一预览工作区：在生产层检查、材料叠加和原始调试预览之间切换并保持同一真实 layerIndex。");
+    m_mainWorkspaceTabs->setTabToolTip(configTab, "编辑当前 JSON 配置；常用材料、支撑、预览和实验选项在这里。");
+    m_mainWorkspaceTabs->setCurrentWidget(m_modelTopViewWorkspace);
 
     QWidget* right = createRightPanel();
     left->setMinimumWidth(280);
     left->setMaximumWidth(440);
-    center_tabs->setMinimumWidth(400);
+    m_mainWorkspaceTabs->setMinimumWidth(400);
     right->setMinimumWidth(240);
     right->setMaximumWidth(420);
     main_splitter->addWidget(left);
-    main_splitter->addWidget(center_tabs);
+    main_splitter->addWidget(m_mainWorkspaceTabs);
     main_splitter->addWidget(right);
     main_splitter->setStretchFactor(0, 0);
     main_splitter->setStretchFactor(1, 1);
@@ -431,6 +467,14 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         this,
         [this]()
         {
+            if (m_modelTopViewLoader.IsRunning())
+            {
+                m_modelTopViewLoader.Cancel();
+            }
+            else if (m_sceneDocument.Geometry().has_value())
+            {
+                m_sceneDocument.Reset();
+            }
             if (!m_suppressPreflightStale)
             {
                 m_modelPreflightController.MarkStale();
@@ -442,6 +486,16 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &ModelPreflightController::SigStateChanged,
         this,
         &MainWindow::OnModelPreflightStateChanged);
+    connect(
+        &m_sceneDocument,
+        &SceneDocument::SigChanged,
+        this,
+        &MainWindow::OnSceneDocumentChanged);
+    connect(
+        modelTopViewFitButton,
+        &QPushButton::clicked,
+        m_modelTopViewWidget,
+        &ModelTopViewWidget::FitToView);
     connect(
         &m_slicePreflightCoordinator,
         &SlicePreflightCoordinator::SigActionAdmitted,
@@ -580,6 +634,36 @@ void MainWindow::openOutputFolder() {
 
 void MainWindow::loadPackageFromEdit() {
     loadPackage(package_edit_->text());
+}
+
+void MainWindow::OnImportModelPreview()
+{
+    const QString modelPath = QFileDialog::getOpenFileName(
+        this,
+        QStringLiteral("选择要预览的模型"),
+        paths_.repo_root,
+        QStringLiteral("Model (*.obj *.stl *.3mf)"));
+    if (modelPath.isEmpty())
+    {
+        return;
+    }
+
+    const QString baseName = SanitizeSessionName(
+        QFileInfo(modelPath).completeBaseName());
+    ModelTopViewLoadRequest request;
+    request.configpath = absoluteFromRepo(config_edit_->text());
+    request.modelpath = QFileInfo(modelPath).absoluteFilePath();
+    request.sceneid = QStringLiteral("preview-scene-") + baseName;
+    request.modelid = QStringLiteral("model-") + baseName;
+    request.instanceid = QStringLiteral("instance-") + baseName;
+    request.scenerevision = 1U;
+    request.transformrevision = 0U;
+    request.admissionstatus =
+        slicer_core::SceneViewAdmissionStatus::Unknown;
+
+    m_sceneSelectionModel.Clear();
+    m_mainWorkspaceTabs->setCurrentWidget(m_modelTopViewWorkspace);
+    m_modelTopViewLoader.RequestLoad(request);
 }
 
 void MainWindow::OnImportModelAndSlice()
@@ -806,6 +890,37 @@ void MainWindow::OnCancelModelPreflight()
     m_slicePreflightCoordinator.CancelPending();
 }
 
+void MainWindow::OnSceneDocumentChanged()
+{
+    switch (m_sceneDocument.State())
+    {
+    case SceneDocumentState::Unloaded:
+        status_label_->setText(QStringLiteral("模型俯视尚未加载。"));
+        break;
+    case SceneDocumentState::Loading:
+        status_label_->setText(QStringLiteral("正在异步加载模型俯视：")
+                               + m_sceneDocument.ModelPath());
+        break;
+    case SceneDocumentState::Ready:
+        status_label_->setText(
+            QStringLiteral("模型俯视已就绪；未启动切片。"));
+        break;
+    case SceneDocumentState::Blocked:
+        status_label_->setText(
+            QStringLiteral("模型可查看，但预检状态为 blocked。"));
+        break;
+    case SceneDocumentState::Failed:
+        status_label_->setText(
+            QStringLiteral("模型俯视加载失败：")
+            + m_sceneDocument.Error());
+        log_panel_->appendError(m_sceneDocument.Error());
+        break;
+    case SceneDocumentState::Cancelled:
+        status_label_->setText(QStringLiteral("模型俯视加载已取消。"));
+        break;
+    }
+}
+
 void MainWindow::handleProcessStarted(const QString& command) {
     setBusy(true);
     status_label_->setText("正在执行：" + current_action_);
@@ -995,6 +1110,11 @@ QWidget* MainWindow::createRunPanel() {
     auto* panel = new QWidget(this);
     auto* layout = new QVBoxLayout(panel);
     build_button_ = makeButton("构建调试版", panel);
+    m_importModelPreviewButton = makeButton("导入模型预览", panel);
+    m_importModelPreviewButton->setObjectName(
+        QStringLiteral("importModelPreviewButton"));
+    m_importModelPreviewButton->setToolTip(
+        QStringLiteral("仅异步加载模型并显示 +Z 俯视图，不创建切片包、不启动 slicer_cli"));
     m_importSliceButton = makeButton("导入模型并切片", panel);
     m_importOpenVdbButton = makeButton("导入模型并 OpenVDB 诊断", panel);
     m_importOpenVdbCandidateButton = makeButton("导入模型并 OpenVDB 候选切片", panel);
@@ -1035,6 +1155,7 @@ QWidget* MainWindow::createRunPanel() {
     preflightRow->addWidget(m_modelPreflightCancelButton);
     m_sliceTimingPanel = new SliceTimingPanel(panel);
     layout->addWidget(build_button_);
+    layout->addWidget(m_importModelPreviewButton);
     layout->addWidget(m_importSliceButton);
     layout->addWidget(m_importOpenVdbButton);
     layout->addWidget(m_importOpenVdbCandidateButton);
@@ -1049,6 +1170,11 @@ QWidget* MainWindow::createRunPanel() {
     layout->addWidget(m_sliceTimingPanel);
 
     connect(build_button_, &QPushButton::clicked, this, &MainWindow::buildDebug);
+    connect(
+        m_importModelPreviewButton,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::OnImportModelPreview);
     connect(m_importSliceButton, &QPushButton::clicked, this, &MainWindow::OnImportModelAndSlice);
     connect(m_importOpenVdbButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbDiagnostic);
     connect(m_importOpenVdbCandidateButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbCandidate);
@@ -1530,6 +1656,7 @@ void MainWindow::UpdateActionAvailability()
     const bool preflightRunning = m_modelPreflightController.IsRunning();
     const bool enabled = !m_processBusy && !preflightRunning;
     build_button_->setEnabled(enabled);
+    m_importModelPreviewButton->setEnabled(enabled);
     m_importSliceButton->setEnabled(enabled);
     m_importOpenVdbButton->setEnabled(enabled);
     m_importOpenVdbCandidateButton->setEnabled(enabled);

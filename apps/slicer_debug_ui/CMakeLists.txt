@@ -2,6 +2,10 @@ add_executable(slicer_debug_ui
     main.cpp
     MainWindow.cpp
     MainWindow.h
+    models/SceneDocument.cpp
+    models/SceneDocument.h
+    models/SceneSelectionModel.cpp
+    models/SceneSelectionModel.h
     services/ConfigDocument.cpp
     services/ConfigDocument.h
     services/ConfigDiffModel.cpp
@@ -46,6 +50,8 @@ add_executable(slicer_debug_ui
     services/ModelPreflightController.h
     services/ModelPreflightPresenter.cpp
     services/ModelPreflightPresenter.h
+    services/ModelTopViewLoader.cpp
+    services/ModelTopViewLoader.h
     services/PreviewReportIndex.cpp
     services/PreviewReportIndex.h
     services/PreviewPhysicalScale.cpp
@@ -66,6 +72,8 @@ add_executable(slicer_debug_ui
     widgets/MaterialProcessPanel.h
     widgets/ModelPreflightPanel.cpp
     widgets/ModelPreflightPanel.h
+    widgets/ModelTopViewWidget.cpp
+    widgets/ModelTopViewWidget.h
     widgets/MaterialClosurePanel.cpp
     widgets/MaterialClosurePanel.h
     widgets/MaterialPolicyEditor.cpp

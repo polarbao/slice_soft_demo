@@ -5,6 +5,7 @@
 #include "services/PackageLoader.h"
 #include "services/ModelPreflightController.h"
 #include "services/ModelPreflightPresenter.h"
+#include "services/ModelTopViewLoader.h"
 #include "services/ProcessRunner.h"
 #include "services/ProductionPackageResultValidator.h"
 #include "services/ProductionSliceRunSession.h"
@@ -19,6 +20,7 @@
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
 #include "widgets/ModelPreflightPanel.h"
+#include "widgets/ModelTopViewWidget.h"
 #include "widgets/PreviewWorkspace.h"
 #include "widgets/ReportPanel.h"
 #include "widgets/SliceTimingPanel.h"
@@ -33,8 +35,10 @@
 
 class QComboBox;
 class QCheckBox;
+class QTabWidget;
 
-class MainWindow final : public QMainWindow {
+class MainWindow final : public QMainWindow
+{
     Q_OBJECT
 
 public:
@@ -52,6 +56,7 @@ private slots:
     void compareProfiles();
     void openOutputFolder();
     void loadPackageFromEdit();
+    void OnImportModelPreview();
     void OnImportModelAndSlice();
     void OnImportModelOpenVdbDiagnostic();
     void OnImportModelOpenVdbCandidate();
@@ -66,6 +71,7 @@ private slots:
     void OnLegacyPreflightConfirmationRequired();
     void OnRecheckModelPreflight();
     void OnCancelModelPreflight();
+    void OnSceneDocumentChanged();
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -115,6 +121,9 @@ private:
     ProductionSliceRunSession m_productionRunSession;
     ModelPreflightController m_modelPreflightController;
     SlicePreflightCoordinator m_slicePreflightCoordinator;
+    SceneDocument m_sceneDocument;
+    SceneSelectionModel m_sceneSelectionModel;
+    ModelTopViewLoader m_modelTopViewLoader;
     QString current_action_;
     QString pending_package_;
     QString compare_output_;
@@ -142,6 +151,7 @@ private:
     QPushButton* run_rip_button_{nullptr};
     QPushButton* regression_button_{nullptr};
     QPushButton* compare_button_{nullptr};
+    QPushButton* m_importModelPreviewButton{nullptr};
     QPushButton* m_importSliceButton{nullptr};
     QPushButton* m_importOpenVdbButton{nullptr};
     QPushButton* m_importOpenVdbCandidateButton{nullptr};
@@ -150,6 +160,9 @@ private:
     SliceTimingPanel* m_sliceTimingPanel{nullptr};
 
     PreviewWorkspace* m_previewWorkspace{nullptr};
+    QTabWidget* m_mainWorkspaceTabs{nullptr};
+    QWidget* m_modelTopViewWorkspace{nullptr};
+    ModelTopViewWidget* m_modelTopViewWidget{nullptr};
     DiagnosticsDock* m_diagnosticsDock{nullptr};
     ReportPanel* report_panel_{nullptr};
     ConfigEditorPanel* config_editor_panel_{nullptr};

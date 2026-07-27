@@ -1,12 +1,15 @@
 #include "UiSmokeTestRunner.h"
 
 #include "../MainWindow.h"
+#include "../models/SceneDocument.h"
+#include "../models/SceneSelectionModel.h"
 #include "../widgets/ChannelChartPanel.h"
 #include "../widgets/ConfigEditorPanel.h"
 #include "../widgets/DiagnosticsDock.h"
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/MaterialClosurePanel.h"
 #include "../widgets/ModelPreflightPanel.h"
+#include "../widgets/ModelTopViewWidget.h"
 #include "../widgets/PreviewOverlayPanel.h"
 #include "../widgets/PreviewPanel.h"
 #include "../widgets/ProductionModePanel.h"
@@ -20,6 +23,7 @@
 #include "HelpTextProvider.h"
 #include "ModelPreflightController.h"
 #include "ModelPreflightPresenter.h"
+#include "ModelTopViewLoader.h"
 #include "PackageLoader.h"
 #include "PreviewReportIndex.h"
 #include "ReportLoader.h"
@@ -45,6 +49,7 @@
 #include <QJsonObject>
 #include <QImage>
 #include <QLabel>
+#include <QMouseEvent>
 #include <QProcess>
 #include <QPushButton>
 #include <QRect>
@@ -562,6 +567,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "model-preflight-lifecycle")
     {
         return ModelPreflightLifecycle(options);
+    }
+    if (options.case_name == "model-top-view")
+    {
+        return ModelTopView(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -2973,6 +2982,185 @@ int UiSmokeTestRunner::ModelPreflightLifecycle(
     QApplication::processEvents(QEventLoop::AllEvents, 50);
     return pass(QStringLiteral(
         "model-preflight-lifecycle latest-generation=3 cancel=stable close=no-crash"));
+}
+
+int UiSmokeTestRunner::ModelTopView(
+    const UiSmokeTestOptions& options)
+{
+    SceneDocument document;
+    SceneSelectionModel selection;
+    ModelTopViewLoader loader(&document);
+    ModelTopViewWidget widget(&document, &selection);
+
+    if (document.State() != SceneDocumentState::Unloaded
+        || widget.HasRenderableGeometry())
+    {
+        return fail(QStringLiteral("model top view initial state mismatch"));
+    }
+
+    ModelTopViewLoadRequest request;
+    request.configpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/material_process_top2_fixture.json"));
+    request.modelpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    request.sceneid = QStringLiteral("smoke-scene");
+    request.modelid = QStringLiteral("smoke-model");
+    request.instanceid = QStringLiteral("smoke-instance");
+    request.scenerevision = 3U;
+    request.transformrevision = 0U;
+    loader.RequestLoad(request);
+    if (document.State() != SceneDocumentState::Loading)
+    {
+        return fail(QStringLiteral("model top view did not enter loading"));
+    }
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.State() != SceneDocumentState::Loading;
+            }))
+    {
+        return fail(QStringLiteral("model top view load timed out"));
+    }
+    if (document.State() != SceneDocumentState::Ready
+        || !widget.HasRenderableGeometry()
+        || !document.Geometry().has_value()
+        || document.Geometry()->sceneid != "smoke-scene"
+        || document.Geometry()->instanceid != "smoke-instance"
+        || document.Geometry()->scenerevision != 3U)
+    {
+        return fail(QStringLiteral("model top view ready geometry mismatch"));
+    }
+
+    const QList<QSize> sizes{
+        QSize(1280, 720),
+        QSize(1440, 900),
+        QSize(1920, 1080),
+    };
+    for (const QSize& size : sizes)
+    {
+        widget.resize(size);
+        QImage image(size, QImage::Format_ARGB32);
+        image.fill(Qt::transparent);
+        widget.render(&image);
+        bool foundGeometryPixel = false;
+        for (int y = 0; y < image.height() && !foundGeometryPixel; y += 2)
+        {
+            for (int x = 0; x < image.width(); x += 2)
+            {
+                const QColor pixel = image.pixelColor(x, y);
+                if (pixel.green() > 110
+                    && pixel.blue() > 100
+                    && pixel.red() < 120)
+                {
+                    foundGeometryPixel = true;
+                    break;
+                }
+            }
+        }
+        if (!foundGeometryPixel)
+        {
+            return fail(
+                QStringLiteral("model top view rendered blank at %1x%2")
+                    .arg(size.width())
+                    .arg(size.height()));
+        }
+    }
+
+    selection.Clear();
+    QMouseEvent selectEvent(
+        QEvent::MouseButtonPress,
+        QPointF(
+            widget.width() * 0.5,
+            (52.0 + widget.height() - 34.0) * 0.5),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QApplication::sendEvent(&widget, &selectEvent);
+    if (selection.SelectedInstance() != QStringLiteral("smoke-instance"))
+    {
+        return fail(QStringLiteral("model top view selection mismatch"));
+    }
+
+    ModelTopViewLoadRequest staleRequest = request;
+    staleRequest.modelpath = QDir(options.repo_root).filePath(
+        QStringLiteral("samples/models/missing-stale.obj"));
+    staleRequest.sceneid = QStringLiteral("stale-scene");
+    ModelTopViewLoadRequest latestRequest = request;
+    latestRequest.sceneid = QStringLiteral("latest-scene");
+    loader.RequestLoad(staleRequest);
+    loader.RequestLoad(latestRequest);
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.State() != SceneDocumentState::Loading;
+            })
+        || document.State() != SceneDocumentState::Ready
+        || !document.Geometry().has_value()
+        || document.Geometry()->sceneid != "latest-scene")
+    {
+        return fail(QStringLiteral("stale model top view result was published"));
+    }
+
+    slicer_core::SceneViewGeometry blockedGeometry =
+        document.Geometry().value();
+    blockedGeometry.admissionstatus =
+        slicer_core::SceneViewAdmissionStatus::Blocked;
+    const quint64 blockedGeneration = document.Generation() + 1U;
+    document.SetLoading(
+        blockedGeneration,
+        QStringLiteral(
+            "C:/很长的中文模型路径/用于验证界面不会遮挡/"
+            "模型资产_版本_最终候选.obj"));
+    document.SetGeometry(
+        blockedGeneration,
+        std::move(blockedGeometry));
+    if (document.State() != SceneDocumentState::Blocked
+        || !widget.HasRenderableGeometry())
+    {
+        return fail(QStringLiteral("blocked model was not viewable"));
+    }
+
+    const quint64 failedGeneration = document.Generation() + 1U;
+    document.SetLoading(failedGeneration, QStringLiteral("missing.obj"));
+    document.SetFailure(
+        failedGeneration,
+        QStringLiteral("fixture failure"));
+    if (document.State() != SceneDocumentState::Failed
+        || widget.HasRenderableGeometry())
+    {
+        return fail(QStringLiteral("model top view failure state mismatch"));
+    }
+
+    loader.RequestLoad(request);
+    loader.Cancel();
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+    QThread::msleep(20);
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+    if (document.State() != SceneDocumentState::Cancelled
+        || loader.IsRunning())
+    {
+        return fail(QStringLiteral("model top view cancellation mismatch"));
+    }
+
+    MainWindow window(options.repo_root);
+    auto* importButton = window.findChild<QPushButton*>(
+        QStringLiteral("importModelPreviewButton"));
+    auto* workspace = window.findChild<QWidget*>(
+        QStringLiteral("modelTopViewWorkspace"));
+    auto* canvas = window.findChild<ModelTopViewWidget*>(
+        QStringLiteral("modelTopViewWidget"));
+    if (importButton == nullptr
+        || workspace == nullptr
+        || canvas == nullptr
+        || importButton->text() != QStringLiteral("导入模型预览"))
+    {
+        return fail(QStringLiteral("model top view workspace integration missing"));
+    }
+
+    return pass(QStringLiteral(
+        "model-top-view async/+Z/grid/identity/selection/blocked/cancel"));
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {
