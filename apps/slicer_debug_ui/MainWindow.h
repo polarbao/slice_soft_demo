@@ -6,6 +6,7 @@
 #include "services/ModelPreflightController.h"
 #include "services/ModelPreflightPresenter.h"
 #include "services/ModelTopViewLoader.h"
+#include "services/SceneModelRepository.h"
 #include "services/ProcessRunner.h"
 #include "services/ProductionPackageResultValidator.h"
 #include "services/ProductionSliceRunSession.h"
@@ -21,6 +22,7 @@
 #include "widgets/MaterialProcessPanel.h"
 #include "widgets/ModelPreflightPanel.h"
 #include "widgets/ModelTopViewWidget.h"
+#include "widgets/ModelTransformPanel.h"
 #include "widgets/PreviewWorkspace.h"
 #include "widgets/ReportPanel.h"
 #include "widgets/SliceTimingPanel.h"
@@ -72,6 +74,7 @@ private slots:
     void OnRecheckModelPreflight();
     void OnCancelModelPreflight();
     void OnSceneDocumentChanged();
+    void OnSaveSceneTransform();
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -123,7 +126,9 @@ private:
     SlicePreflightCoordinator m_slicePreflightCoordinator;
     SceneDocument m_sceneDocument;
     SceneSelectionModel m_sceneSelectionModel;
+    SceneModelRepository m_sceneModelRepository;
     ModelTopViewLoader m_modelTopViewLoader;
+    SceneTransformController m_sceneTransformController;
     QString current_action_;
     QString pending_package_;
     QString compare_output_;
@@ -163,6 +168,7 @@ private:
     QTabWidget* m_mainWorkspaceTabs{nullptr};
     QWidget* m_modelTopViewWorkspace{nullptr};
     ModelTopViewWidget* m_modelTopViewWidget{nullptr};
+    ModelTransformPanel* m_modelTransformPanel{nullptr};
     DiagnosticsDock* m_diagnosticsDock{nullptr};
     ReportPanel* report_panel_{nullptr};
     ConfigEditorPanel* config_editor_panel_{nullptr};

@@ -1,6 +1,7 @@
 #include "UiSmokeTestRunner.h"
 
 #include "../MainWindow.h"
+#include "../controllers/SceneTransformController.h"
 #include "../models/SceneDocument.h"
 #include "../models/SceneSelectionModel.h"
 #include "../widgets/ChannelChartPanel.h"
@@ -9,6 +10,7 @@
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/MaterialClosurePanel.h"
 #include "../widgets/ModelPreflightPanel.h"
+#include "../widgets/ModelTransformPanel.h"
 #include "../widgets/ModelTopViewWidget.h"
 #include "../widgets/PreviewOverlayPanel.h"
 #include "../widgets/PreviewPanel.h"
@@ -28,6 +30,7 @@
 #include "PreviewReportIndex.h"
 #include "ReportLoader.h"
 #include "ScenarioRegistry.h"
+#include "SceneModelRepository.h"
 #include "SliceSettingsModel.h"
 #include "SliceProgressProtocolParser.h"
 #include "SlicePreflightCoordinator.h"
@@ -62,6 +65,7 @@
 #include <QTextStream>
 #include <QThread>
 
+#include <cmath>
 #include <functional>
 
 namespace
@@ -571,6 +575,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "model-top-view")
     {
         return ModelTopView(options);
+    }
+    if (options.case_name == "model-top-view-transform")
+    {
+        return ModelTopViewTransform(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -2989,7 +2997,8 @@ int UiSmokeTestRunner::ModelTopView(
 {
     SceneDocument document;
     SceneSelectionModel selection;
-    ModelTopViewLoader loader(&document);
+    SceneModelRepository repository;
+    ModelTopViewLoader loader(&document, &repository);
     ModelTopViewWidget widget(&document, &selection);
 
     if (document.State() != SceneDocumentState::Unloaded
@@ -3161,6 +3170,211 @@ int UiSmokeTestRunner::ModelTopView(
 
     return pass(QStringLiteral(
         "model-top-view async/+Z/grid/identity/selection/blocked/cancel"));
+}
+
+int UiSmokeTestRunner::ModelTopViewTransform(
+    const UiSmokeTestOptions& options)
+{
+    SceneDocument document;
+    SceneSelectionModel selection;
+    SceneModelRepository repository;
+    ModelTopViewLoader loader(&document, &repository);
+    SceneTransformController controller(
+        &document,
+        &selection,
+        &repository);
+    controller.SetProjectionRequester(
+        [&loader](const SceneProjectionRequest& request)
+        {
+            loader.RequestProjection(request);
+        });
+
+    QWidget workspace;
+    workspace.setObjectName(
+        QStringLiteral("modelTransformSmokeWorkspace"));
+    ModelTopViewWidget canvas(&document, &selection, &workspace);
+    ModelTransformPanel panel(
+        &document,
+        &selection,
+        &controller,
+        &workspace);
+
+    ModelTopViewLoadRequest request;
+    request.configpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/material_process_top2_fixture.json"));
+    request.modelpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    request.sceneid = QStringLiteral("transform-smoke-scene");
+    request.modelid = QStringLiteral("transform-smoke-model");
+    request.instanceid = QStringLiteral("transform-smoke-instance");
+    request.scenerevision = 1U;
+    loader.RequestLoad(request);
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.State() != SceneDocumentState::Loading;
+            })
+        || document.State() != SceneDocumentState::Ready)
+    {
+        return fail(QStringLiteral(
+            "model transform fixture did not become ready"));
+    }
+    selection.SetSelectedInstance(request.instanceid);
+
+    auto* translateX = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("modelTransformTranslateX"));
+    auto* translateY = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("modelTransformTranslateY"));
+    auto* rotateZ = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("modelTransformRotateZ"));
+    auto* uniformScale = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("modelTransformUniformScale"));
+    auto* applyButton = panel.findChild<QPushButton*>(
+        QStringLiteral("modelTransformApplyButton"));
+    auto* centerButton = panel.findChild<QPushButton*>(
+        QStringLiteral("modelTransformCenterButton"));
+    auto* resetButton = panel.findChild<QPushButton*>(
+        QStringLiteral("modelTransformResetButton"));
+    auto* saveButton = panel.findChild<QPushButton*>(
+        QStringLiteral("modelTransformSaveButton"));
+    if (translateX == nullptr
+        || translateY == nullptr
+        || rotateZ == nullptr
+        || uniformScale == nullptr
+        || applyButton == nullptr
+        || centerButton == nullptr
+        || resetButton == nullptr
+        || saveButton == nullptr)
+    {
+        return fail(QStringLiteral(
+            "model transform controls are incomplete"));
+    }
+
+    translateX->setValue(12.34);
+    translateY->setValue(-5.67);
+    rotateZ->setValue(45.0);
+    uniformScale->setValue(1.25);
+    applyButton->click();
+    translateX->setValue(13.34);
+    applyButton->click();
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.State() != SceneDocumentState::Loading;
+            })
+        || document.State() != SceneDocumentState::Ready
+        || !document.Instance().has_value()
+        || document.SceneRevision() != 3U
+        || document.Instance()->transformrevision != 2U
+        || std::abs(
+               document.Instance()->transform.translatexmm - 13.34)
+            > 1.0e-9
+        || std::abs(
+               document.Instance()->transform.translateymm + 5.67)
+            > 1.0e-9
+        || !document.IsDirty()
+        || document.IsGeometryStale())
+    {
+        return fail(QStringLiteral(
+            "precise transform did not publish latest geometry"));
+    }
+
+    centerButton->click();
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.State() != SceneDocumentState::Loading;
+            })
+        || document.State() != SceneDocumentState::Ready
+        || document.SceneRevision() != 4U)
+    {
+        return fail(QStringLiteral(
+            "scene-origin center command failed"));
+    }
+    resetButton->click();
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.State() != SceneDocumentState::Loading;
+            })
+        || document.State() != SceneDocumentState::Ready
+        || document.SceneRevision() != 5U
+        || !slicer_core::ModelTransformsEquivalent(
+            document.Instance()->transform,
+            slicer_core::ModelTransform{}))
+    {
+        return fail(QStringLiteral("transform reset failed"));
+    }
+
+    const QList<QSize> sizes{
+        QSize(1280, 720),
+        QSize(1440, 900),
+        QSize(1920, 1080),
+    };
+    for (const QSize& size : sizes)
+    {
+        workspace.resize(size);
+        panel.setGeometry(
+            size.width() - 300,
+            0,
+            300,
+            size.height());
+        canvas.setGeometry(
+            0,
+            0,
+            size.width() - 300,
+            size.height());
+        if (panel.geometry().right() >= size.width()
+            || canvas.geometry().right() >= panel.geometry().left())
+        {
+            return fail(QStringLiteral(
+                "model transform panel overlaps canvas at %1x%2")
+                    .arg(size.width())
+                    .arg(size.height()));
+        }
+    }
+
+    ModelTopViewLoadRequest lockedRequest = request;
+    lockedRequest.sceneid = QStringLiteral("locked-transform-scene");
+    lockedRequest.locked = true;
+    loader.RequestLoad(lockedRequest);
+    if (!WaitForCondition(
+            [&document]()
+            {
+                return document.State() != SceneDocumentState::Loading;
+            })
+        || document.State() != SceneDocumentState::Ready)
+    {
+        return fail(QStringLiteral(
+            "locked transform fixture did not load"));
+    }
+    selection.SetSelectedInstance(lockedRequest.instanceid);
+    if (applyButton->isEnabled()
+        || centerButton->isEnabled()
+        || resetButton->isEnabled()
+        || saveButton->isEnabled())
+    {
+        return fail(QStringLiteral(
+            "locked instance transform controls remain enabled"));
+    }
+
+    MainWindow window(options.repo_root);
+    if (window.findChild<ModelTransformPanel*>(
+            QStringLiteral("modelTransformPanel"))
+            == nullptr
+        || window.findChild<QSplitter*>(
+            QStringLiteral("modelTransformWorkspaceSplitter"))
+            == nullptr)
+    {
+        return fail(QStringLiteral(
+            "model transform workspace integration missing"));
+    }
+
+    return pass(QStringLiteral(
+        "model-top-view-transform x/y/rotate/scale/center/reset/"
+        "locked/dirty/latest-generation"));
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {

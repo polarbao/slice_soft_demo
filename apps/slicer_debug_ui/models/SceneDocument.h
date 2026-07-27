@@ -41,6 +41,32 @@ public:
     void SetLoading(quint64 generation, const QString& modelPath);
 
     /**
+     * @brief Attach immutable source identity and the editable instance.
+     * @param generation Current load generation.
+     * @param sceneId Stable scene identity.
+     * @param sceneRevision Current scene revision.
+     * @param sourceCacheKey Immutable source repository key.
+     * @param sourceHash Source content identity.
+     * @param resourceHash Adjacent resource identity.
+     * @param instance Editable instance initialized by the importer.
+     * @return True when the generation was current.
+     */
+    bool SetSceneContext(
+        quint64 generation,
+        const QString& sceneId,
+        quint64 sceneRevision,
+        const QString& sourceCacheKey,
+        const QString& sourceHash,
+        const QString& resourceHash,
+        slicer_core::ModelInstance instance);
+
+    /**
+     * @brief Begin a transform reprojection without discarding last geometry.
+     * @param generation Current projection generation.
+     */
+    void SetProjectionLoading(quint64 generation);
+
+    /**
      * @brief Publish geometry for the current generation.
      * @param generation Generation that produced the geometry.
      * @param geometry Immutable projected scene geometry.
@@ -95,6 +121,80 @@ public:
      */
     const std::optional<slicer_core::SceneViewGeometry>& Geometry() const;
 
+    /**
+     * @brief Return the current editable instance.
+     * @return Instance when a source has been loaded.
+     */
+    const std::optional<slicer_core::ModelInstance>& Instance() const;
+
+    /**
+     * @brief Return the current scene identity.
+     * @return Stable scene id.
+     */
+    QString SceneId() const;
+
+    /**
+     * @brief Return the current scene revision.
+     * @return Monotonic scene revision.
+     */
+    quint64 SceneRevision() const;
+
+    /**
+     * @brief Return the immutable source repository key.
+     * @return Empty text when no source is loaded.
+     */
+    QString SourceCacheKey() const;
+
+    /**
+     * @brief Report whether the scene differs from its saved revision.
+     * @return True after an effective transform change.
+     */
+    bool IsDirty() const;
+
+    /**
+     * @brief Report whether projected geometry trails the instance revision.
+     * @return True while reprojection is pending or failed.
+     */
+    bool IsGeometryStale() const;
+
+    /**
+     * @brief Return the saved scene draft path.
+     * @return Empty text before the first successful save.
+     */
+    QString SceneConfigPath() const;
+
+    /**
+     * @brief Return the saved effective config path.
+     * @return Empty text before the first successful save.
+     */
+    QString EffectiveConfigPath() const;
+
+    /**
+     * @brief Commit one validated instance update atomically.
+     * @param instance Updated instance with incremented transform revision.
+     * @param expectedSceneRevision Caller-observed scene revision.
+     * @return True when committed.
+     */
+    bool CommitInstance(
+        const slicer_core::ModelInstance& instance,
+        quint64 expectedSceneRevision);
+
+    /**
+     * @brief Mark the current revisions saved after effective-config readback.
+     * @param sceneConfigPath Saved scene draft.
+     * @param effectiveConfigPath Saved effective config.
+     * @param configHash Effective config hash.
+     * @param sceneRevision Saved scene revision.
+     * @param transformRevision Saved transform revision.
+     * @return True when revisions still match.
+     */
+    bool MarkSaved(
+        const QString& sceneConfigPath,
+        const QString& effectiveConfigPath,
+        const QString& configHash,
+        quint64 sceneRevision,
+        quint64 transformRevision);
+
 signals:
     void SigChanged();
 
@@ -106,4 +206,15 @@ private:
     QString m_modelPath;
     QString m_error;
     std::optional<slicer_core::SceneViewGeometry> m_geometry;
+    std::optional<slicer_core::ModelInstance> m_instance;
+    QString m_sceneId;
+    quint64 m_sceneRevision{0U};
+    QString m_sourceCacheKey;
+    QString m_sourceHash;
+    QString m_resourceHash;
+    bool m_dirty{false};
+    bool m_geometryStale{false};
+    QString m_sceneConfigPath;
+    QString m_effectiveConfigPath;
+    QString m_effectiveConfigHash;
 };

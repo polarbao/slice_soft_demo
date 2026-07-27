@@ -4,6 +4,7 @@ add_executable(slicer_debug_ui
     MainWindow.h
     models/SceneDocument.cpp
     models/SceneDocument.h
+    models/SceneProjectionRequest.h
     models/SceneSelectionModel.cpp
     models/SceneSelectionModel.h
     services/ConfigDocument.cpp
@@ -52,6 +53,10 @@ add_executable(slicer_debug_ui
     services/ModelPreflightPresenter.h
     services/ModelTopViewLoader.cpp
     services/ModelTopViewLoader.h
+    services/SceneModelRepository.cpp
+    services/SceneModelRepository.h
+    controllers/SceneTransformController.cpp
+    controllers/SceneTransformController.h
     services/PreviewReportIndex.cpp
     services/PreviewReportIndex.h
     services/PreviewPhysicalScale.cpp
@@ -72,6 +77,8 @@ add_executable(slicer_debug_ui
     widgets/MaterialProcessPanel.h
     widgets/ModelPreflightPanel.cpp
     widgets/ModelPreflightPanel.h
+    widgets/ModelTransformPanel.cpp
+    widgets/ModelTransformPanel.h
     widgets/ModelTopViewWidget.cpp
     widgets/ModelTopViewWidget.h
     widgets/MaterialClosurePanel.cpp
@@ -202,6 +209,38 @@ add_test(
     COMMAND production_package_result_unit_tests
 )
 
+add_executable(scene_transform_controller_unit_tests
+    models/SceneDocument.cpp
+    models/SceneDocument.h
+    models/SceneSelectionModel.cpp
+    models/SceneSelectionModel.h
+    services/SceneModelRepository.cpp
+    services/SceneModelRepository.h
+    controllers/SceneTransformController.cpp
+    controllers/SceneTransformController.h
+    ../../tests/unit/scene_transform_controller/Main.cpp
+)
+
+set_target_properties(scene_transform_controller_unit_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(scene_transform_controller_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/controllers
+)
+
+target_link_libraries(scene_transform_controller_unit_tests PRIVATE
+    Qt5::Core
+    slicer_core
+)
+
+add_test(
+    NAME scene_transform_controller_unit_tests
+    COMMAND scene_transform_controller_unit_tests
+)
+
 if(MSVC)
     target_compile_options(slicer_debug_ui PRIVATE /utf-8 /MP)
     target_compile_options(
@@ -218,6 +257,12 @@ if(MSVC)
     )
     target_compile_options(
         production_package_result_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
+        scene_transform_controller_unit_tests
         PRIVATE
         /utf-8
         /MP
@@ -243,6 +288,11 @@ if(MSVC)
             PRIVATE
             ${qt515MsvcCompatibilityHeader}
         )
+        target_sources(
+            scene_transform_controller_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
         target_compile_options(slicer_debug_ui PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )
@@ -258,6 +308,11 @@ if(MSVC)
         )
         target_compile_options(
             production_package_result_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            scene_transform_controller_unit_tests
             PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )

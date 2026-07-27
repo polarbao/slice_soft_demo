@@ -44,6 +44,7 @@ private:
     int ModelPreflightOneClickGate(const UiSmokeTestOptions& options);
     int ModelPreflightLifecycle(const UiSmokeTestOptions& options);
     int ModelTopView(const UiSmokeTestOptions& options);
+    int ModelTopViewTransform(const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;
     int pass(const QString& message) const;

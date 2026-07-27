@@ -346,7 +346,15 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
       m_slicePreflightCoordinator(&m_modelPreflightController, this),
       m_sceneDocument(this),
       m_sceneSelectionModel(this),
-      m_modelTopViewLoader(&m_sceneDocument, this)
+      m_modelTopViewLoader(
+          &m_sceneDocument,
+          &m_sceneModelRepository,
+          this),
+      m_sceneTransformController(
+          &m_sceneDocument,
+          &m_sceneSelectionModel,
+          &m_sceneModelRepository,
+          this)
 {
     setWindowTitle("SliceSoft 切片调试界面");
     resize(1440, 900);
@@ -385,7 +393,24 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &m_sceneDocument,
         &m_sceneSelectionModel,
         m_modelTopViewWorkspace);
-    modelTopViewLayout->addWidget(m_modelTopViewWidget, 1);
+    m_modelTransformPanel = new ModelTransformPanel(
+        &m_sceneDocument,
+        &m_sceneSelectionModel,
+        &m_sceneTransformController,
+        m_modelTopViewWorkspace);
+    auto* modelWorkspaceSplitter = new QSplitter(
+        Qt::Horizontal,
+        m_modelTopViewWorkspace);
+    modelWorkspaceSplitter->setObjectName(
+        QStringLiteral("modelTransformWorkspaceSplitter"));
+    modelWorkspaceSplitter->addWidget(m_modelTopViewWidget);
+    modelWorkspaceSplitter->addWidget(m_modelTransformPanel);
+    modelWorkspaceSplitter->setStretchFactor(0, 1);
+    modelWorkspaceSplitter->setStretchFactor(1, 0);
+    modelWorkspaceSplitter->setCollapsible(0, false);
+    modelWorkspaceSplitter->setCollapsible(1, false);
+    modelWorkspaceSplitter->setSizes(QList<int>{720, 260});
+    modelTopViewLayout->addWidget(modelWorkspaceSplitter, 1);
     m_previewWorkspace = new PreviewWorkspace(m_mainWorkspaceTabs);
     auto* configScrollArea = new QScrollArea(m_mainWorkspaceTabs);
     configScrollArea->setObjectName(QStringLiteral("configEditorScrollArea"));
@@ -491,6 +516,21 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &SceneDocument::SigChanged,
         this,
         &MainWindow::OnSceneDocumentChanged);
+    m_sceneTransformController.SetProjectionRequester(
+        [this](const SceneProjectionRequest& request)
+        {
+            m_modelTopViewLoader.RequestProjection(request);
+        });
+    connect(
+        m_modelTransformPanel,
+        &ModelTransformPanel::SigSaveRequested,
+        this,
+        &MainWindow::OnSaveSceneTransform);
+    connect(
+        m_modelTransformPanel,
+        &ModelTransformPanel::SigStatusMessage,
+        status_label_,
+        &QLabel::setText);
     connect(
         modelTopViewFitButton,
         &QPushButton::clicked,
@@ -902,10 +942,27 @@ void MainWindow::OnSceneDocumentChanged()
                                + m_sceneDocument.ModelPath());
         break;
     case SceneDocumentState::Ready:
+        if (m_sceneSelectionModel.SelectedInstance().isEmpty()
+            && m_sceneDocument.Instance().has_value())
+        {
+            m_sceneSelectionModel.SetSelectedInstance(
+                QString::fromStdString(
+                    m_sceneDocument.Instance()->instanceid));
+        }
         status_label_->setText(
-            QStringLiteral("模型俯视已就绪；未启动切片。"));
+            m_sceneDocument.IsDirty()
+                ? QStringLiteral(
+                      "模型俯视已就绪；变换尚未保存，未启动切片。")
+                : QStringLiteral("模型俯视已就绪；未启动切片。"));
         break;
     case SceneDocumentState::Blocked:
+        if (m_sceneSelectionModel.SelectedInstance().isEmpty()
+            && m_sceneDocument.Instance().has_value())
+        {
+            m_sceneSelectionModel.SetSelectedInstance(
+                QString::fromStdString(
+                    m_sceneDocument.Instance()->instanceid));
+        }
         status_label_->setText(
             QStringLiteral("模型可查看，但预检状态为 blocked。"));
         break;
@@ -919,6 +976,66 @@ void MainWindow::OnSceneDocumentChanged()
         status_label_->setText(QStringLiteral("模型俯视加载已取消。"));
         break;
     }
+    UpdateActionAvailability();
+}
+
+void MainWindow::OnSaveSceneTransform()
+{
+    if (!m_sceneDocument.Instance().has_value())
+    {
+        status_label_->setText(QStringLiteral("没有可保存的模型场景。"));
+        return;
+    }
+
+    const SliceSettingsState settings = BuildCurrentSettings(
+        m_sceneDocument.ModelPath(),
+        {},
+        SliceEngineRole::LegacyProduction);
+    const QString sessionName =
+        QStringLiteral("model_scene_%1")
+            .arg(QDateTime::currentDateTime().toString(
+                QStringLiteral("yyyyMMdd_HHmmss_zzz")));
+    SceneTransformSaveRequest request;
+    request.sessiondirectory =
+        std::filesystem::path(
+            QDir(paths_.repo_root)
+                .filePath(QStringLiteral("output/ui_sessions/")
+                          + sessionName)
+                .toStdWString());
+    request.sourceprofileid =
+        settings.profileid.trimmed().isEmpty()
+        ? std::string("custom")
+        : settings.profileid.toStdString();
+    request.generatedatutc =
+        QDateTime::currentDateTimeUtc()
+            .toString(Qt::ISODateWithMs)
+            .toStdString();
+    request.dpix = settings.dpix;
+    request.dpiy = settings.dpiy;
+    request.layerheightmm = settings.layerthicknessmm;
+    request.slicepipelinemode =
+        slicer_core::SlicePipelineModeName(
+            config_editor_panel_->SelectedProductionMode());
+    request.expectedscenerevision =
+        m_sceneDocument.SceneRevision();
+    request.expectedtransformrevision =
+        m_sceneDocument.Instance()->transformrevision;
+
+    const SceneTransformSaveResult saved =
+        m_sceneTransformController.SaveSceneEffectiveConfig(request);
+    if (!saved.IsValid())
+    {
+        status_label_->setText(
+            QString::fromLatin1(
+                SceneTransformErrorCodeName(saved.error->code).data())
+            + QStringLiteral("：")
+            + saved.error->message);
+        return;
+    }
+    status_label_->setText(
+        QStringLiteral("场景配置已保存并回读：")
+        + QString::fromStdWString(
+            saved.effectiveconfigpath.wstring()));
 }
 
 void MainWindow::handleProcessStarted(const QString& command) {
@@ -1660,7 +1777,16 @@ void MainWindow::UpdateActionAvailability()
     m_importSliceButton->setEnabled(enabled);
     m_importOpenVdbButton->setEnabled(enabled);
     m_importOpenVdbCandidateButton->setEnabled(enabled);
-    run_slicer_button_->setEnabled(enabled);
+    const bool sceneProductionBlocked =
+        m_sceneDocument.Instance().has_value();
+    run_slicer_button_->setEnabled(
+        enabled && !sceneProductionBlocked);
+    run_slicer_button_->setToolTip(
+        sceneProductionBlocked
+            ? QStringLiteral(
+                  "当前俯视场景包含实例变换；13A-04 完成变换后预检前，"
+                  "禁止使用旧配置启动生产切片。")
+            : QString());
     run_rip_button_->setEnabled(enabled);
     regression_button_->setEnabled(enabled);
     compare_button_->setEnabled(enabled);
