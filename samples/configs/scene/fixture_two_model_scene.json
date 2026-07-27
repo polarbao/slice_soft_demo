@@ -1,0 +1,148 @@
+{
+  "schema": "slicesoft.multimodel_scene.13b.1",
+  "subjectType": "scene",
+  "sceneId": "fixture_two_model_scene",
+  "sceneRevision": 1,
+  "buildVolume": {
+    "source": "unresolved",
+    "widthMm": null,
+    "heightMm": null,
+    "origin": "unresolved",
+    "xDirection": "unresolved",
+    "yDirection": "unresolved",
+    "isFixture": false
+  },
+  "layout": {
+    "policy": "grid",
+    "maxColumns": 11,
+    "maxRows": 2,
+    "columnGapMm": 20.0,
+    "rowGapMm": 30.0,
+    "spacingMode": "edge_clearance",
+    "order": "row_major"
+  },
+  "materialBindingMode": "scene_profile_only",
+  "resolvedProfileId": "fixture_profile",
+  "resourceScopes": [
+    {
+      "resourceScopeId": "scope_a",
+      "kind": "obj_directory",
+      "rootPath": "model/obj/xiao_ma_wu_yu_new",
+      "packagePath": "",
+      "partIdentity": ""
+    },
+    {
+      "resourceScopeId": "scope_b",
+      "kind": "obj_directory",
+      "rootPath": "model/obj/yecan",
+      "packagePath": "",
+      "partIdentity": ""
+    }
+  ],
+  "models": [
+    {
+      "modelId": "model_a",
+      "sourcePath": "model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj",
+      "format": "obj",
+      "resourceScopeId": "scope_a",
+      "sourceHash": "fixture_source_a",
+      "resourceHash": "fixture_resource_a",
+      "displayName": "小马"
+    },
+    {
+      "modelId": "model_b",
+      "sourcePath": "model/obj/yecan/3.obj",
+      "format": "obj",
+      "resourceScopeId": "scope_b",
+      "sourceHash": "fixture_source_b",
+      "resourceHash": "fixture_resource_b",
+      "displayName": "椰餐"
+    }
+  ],
+  "instances": [
+    {
+      "instanceId": "instance_a",
+      "modelId": "model_a",
+      "sourceTransformIdentity": "fixture_transform_a",
+      "requestedTransform": {
+        "translateXMm": 0.0,
+        "translateYMm": 0.0,
+        "rotateZDeg": 0.0,
+        "uniformScale": 1.0,
+        "mirrorX": false,
+        "mirrorY": false
+      },
+      "derivedLayoutTransform": {
+        "translateXMm": 0.0,
+        "translateYMm": 0.0,
+        "rotateZDeg": 0.0,
+        "uniformScale": 1.0,
+        "mirrorX": false,
+        "mirrorY": false
+      },
+      "effectiveTransform": {
+        "translateXMm": 0.0,
+        "translateYMm": 0.0,
+        "rotateZDeg": 0.0,
+        "uniformScale": 1.0,
+        "mirrorX": false,
+        "mirrorY": false
+      },
+      "visible": true,
+      "locked": false,
+      "transformRevision": 0,
+      "sourceBboxMm": {
+        "min": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "max": {"x": 10.0, "y": 20.0, "z": 2.0}
+      },
+      "effectiveBboxMm": {
+        "min": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "max": {"x": 10.0, "y": 20.0, "z": 2.0}
+      },
+      "admissionStatus": "unknown",
+      "resolvedProfileId": "fixture_profile"
+    },
+    {
+      "instanceId": "instance_b",
+      "modelId": "model_b",
+      "sourceTransformIdentity": "fixture_transform_b",
+      "requestedTransform": {
+        "translateXMm": 0.0,
+        "translateYMm": 0.0,
+        "rotateZDeg": 0.0,
+        "uniformScale": 1.0,
+        "mirrorX": false,
+        "mirrorY": false
+      },
+      "derivedLayoutTransform": {
+        "translateXMm": 30.0,
+        "translateYMm": 0.0,
+        "rotateZDeg": 0.0,
+        "uniformScale": 1.0,
+        "mirrorX": false,
+        "mirrorY": false
+      },
+      "effectiveTransform": {
+        "translateXMm": 30.0,
+        "translateYMm": 0.0,
+        "rotateZDeg": 0.0,
+        "uniformScale": 1.0,
+        "mirrorX": false,
+        "mirrorY": false
+      },
+      "visible": true,
+      "locked": false,
+      "transformRevision": 0,
+      "sourceBboxMm": {
+        "min": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "max": {"x": 10.0, "y": 20.0, "z": 2.0}
+      },
+      "effectiveBboxMm": {
+        "min": {"x": 30.0, "y": 0.0, "z": 0.0},
+        "max": {"x": 40.0, "y": 20.0, "z": 2.0}
+      },
+      "admissionStatus": "unknown",
+      "resolvedProfileId": "fixture_profile"
+    }
+  ]
+}

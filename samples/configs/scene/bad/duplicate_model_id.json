@@ -1,0 +1,56 @@
+{
+  "schema": "slicesoft.multimodel_scene.13b.1",
+  "subjectType": "scene",
+  "sceneId": "bad_duplicate_model",
+  "sceneRevision": 1,
+  "buildVolume": {
+    "source": "unresolved",
+    "widthMm": null,
+    "heightMm": null,
+    "origin": "unresolved",
+    "xDirection": "unresolved",
+    "yDirection": "unresolved",
+    "isFixture": false
+  },
+  "layout": {
+    "policy": "grid",
+    "maxColumns": 11,
+    "maxRows": 2,
+    "columnGapMm": 20.0,
+    "rowGapMm": 30.0,
+    "spacingMode": "edge_clearance",
+    "order": "row_major"
+  },
+  "materialBindingMode": "scene_profile_only",
+  "resolvedProfileId": "fixture_profile",
+  "resourceScopes": [
+    {
+      "resourceScopeId": "scope_a",
+      "kind": "obj_directory",
+      "rootPath": "model/obj/yecan",
+      "packagePath": "",
+      "partIdentity": ""
+    }
+  ],
+  "models": [
+    {
+      "modelId": "duplicate",
+      "sourcePath": "model/obj/yecan/3.obj",
+      "format": "obj",
+      "resourceScopeId": "scope_a",
+      "sourceHash": "source_a",
+      "resourceHash": "resource_a",
+      "displayName": "A"
+    },
+    {
+      "modelId": "duplicate",
+      "sourcePath": "model/obj/yecan/3.obj",
+      "format": "obj",
+      "resourceScopeId": "scope_a",
+      "sourceHash": "source_b",
+      "resourceHash": "resource_b",
+      "displayName": "B"
+    }
+  ],
+  "instances": []
+}

@@ -356,6 +356,11 @@ bool Json::is_number() const {
     return std::holds_alternative<double>(storage_);
 }
 
+bool Json::is_null() const
+{
+    return std::holds_alternative<std::nullptr_t>(storage_);
+}
+
 bool Json::contains(const std::string& key) const {
     if (!is_object()) {
         return false;

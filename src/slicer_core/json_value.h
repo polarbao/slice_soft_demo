@@ -37,6 +37,12 @@ public:
     bool is_string() const;
     bool is_bool() const;
     bool is_number() const;
+
+    /**
+     * @brief Report whether this JSON value is null.
+     * @return True when the stored value is JSON null.
+     */
+    bool is_null() const;
     bool contains(const std::string& key) const;
     std::size_t size() const;
 

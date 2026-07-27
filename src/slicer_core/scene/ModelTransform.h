@@ -112,6 +112,16 @@ bool ModelTransformsEquivalent(
     const ModelTransform& right);
 
 /**
+ * @brief Compose two instance transforms using outer * inner order.
+ * @param outer Transform applied after the inner transform.
+ * @param inner Transform applied first around the same source pivot.
+ * @return Canonical transform equivalent to the composition.
+ */
+ModelTransform ComposeModelTransforms(
+    const ModelTransform& outer,
+    const ModelTransform& inner);
+
+/**
  * @brief Compute the stable transform identity hash.
  * @param transform Instance transform.
  * @param sourceTransformIdentity Identity of the preceding source transform.

@@ -2,10 +2,12 @@
 
 #include "slicer_core/system/Sha256.h"
 
+#include <array>
 #include <cmath>
 #include <iomanip>
 #include <limits>
 #include <locale>
+#include <numbers>
 #include <sstream>
 
 namespace slicer_core
@@ -151,6 +153,79 @@ bool ModelTransformsEquivalent(
         && normalizedLeft.uniformscale == normalizedRight.uniformscale
         && normalizedLeft.mirrorx == normalizedRight.mirrorx
         && normalizedLeft.mirrory == normalizedRight.mirrory;
+}
+
+ModelTransform ComposeModelTransforms(
+    const ModelTransform& outer,
+    const ModelTransform& inner)
+{
+    const ModelTransform normalizedOuter =
+        NormalizeModelTransform(outer);
+    const ModelTransform normalizedInner =
+        NormalizeModelTransform(inner);
+
+    const auto buildLinear =
+        [](const ModelTransform& transform)
+    {
+        const double radians =
+            transform.rotatezdeg
+            * std::numbers::pi_v<double> / 180.0;
+        const double cosine = std::cos(radians);
+        const double sine = std::sin(radians);
+        const double mirrorX = transform.mirrorx ? -1.0 : 1.0;
+        const double mirrorY = transform.mirrory ? -1.0 : 1.0;
+        const double scale = transform.uniformscale;
+        return std::array<double, 4>{
+            cosine * mirrorX * scale,
+            -sine * mirrorY * scale,
+            sine * mirrorX * scale,
+            cosine * mirrorY * scale,
+        };
+    };
+
+    const std::array<double, 4> outerLinear =
+        buildLinear(normalizedOuter);
+    const std::array<double, 4> innerLinear =
+        buildLinear(normalizedInner);
+    const std::array<double, 4> combined{
+        outerLinear.at(0U) * innerLinear.at(0U)
+            + outerLinear.at(1U) * innerLinear.at(2U),
+        outerLinear.at(0U) * innerLinear.at(1U)
+            + outerLinear.at(1U) * innerLinear.at(3U),
+        outerLinear.at(2U) * innerLinear.at(0U)
+            + outerLinear.at(3U) * innerLinear.at(2U),
+        outerLinear.at(2U) * innerLinear.at(1U)
+            + outerLinear.at(3U) * innerLinear.at(3U),
+    };
+
+    ModelTransform result;
+    result.uniformscale =
+        normalizedOuter.uniformscale
+        * normalizedInner.uniformscale;
+    const double determinant =
+        combined.at(0U) * combined.at(3U)
+        - combined.at(1U) * combined.at(2U);
+    result.mirrorx = determinant < 0.0;
+    result.mirrory = false;
+    const double inverseScale = 1.0 / result.uniformscale;
+    const double radians = result.mirrorx
+        ? std::atan2(
+              -combined.at(2U) * inverseScale,
+              -combined.at(0U) * inverseScale)
+        : std::atan2(
+              combined.at(2U) * inverseScale,
+              combined.at(0U) * inverseScale);
+    result.rotatezdeg =
+        radians * 180.0 / std::numbers::pi_v<double>;
+    result.translatexmm =
+        outerLinear.at(0U) * normalizedInner.translatexmm
+        + outerLinear.at(1U) * normalizedInner.translateymm
+        + normalizedOuter.translatexmm;
+    result.translateymm =
+        outerLinear.at(2U) * normalizedInner.translatexmm
+        + outerLinear.at(3U) * normalizedInner.translateymm
+        + normalizedOuter.translateymm;
+    return NormalizeModelTransform(result);
 }
 
 ModelTransformHashResult ComputeModelTransformHash(
