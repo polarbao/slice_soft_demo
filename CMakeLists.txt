@@ -167,6 +167,8 @@ add_library(slicer_core
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.h
     src/slicer_core/pipeline/PipelineContext.cpp
     src/slicer_core/pipeline/PipelineContext.h
+    src/slicer_core/pipeline/DiagnosticEffectiveConfig.cpp
+    src/slicer_core/pipeline/DiagnosticEffectiveConfig.h
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.cpp
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.h
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.cpp
@@ -577,6 +579,15 @@ target_compile_definitions(multimodel_scene_contract_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(diagnostic_effective_config_unit_tests
+    tests/unit/diagnostic_effective_config/Main.cpp
+)
+
+target_link_libraries(diagnostic_effective_config_unit_tests PRIVATE slicer_core)
+target_compile_definitions(diagnostic_effective_config_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(model_preflight_service_unit_tests
     tests/unit/model_preflight_service/main.cpp
 )
@@ -853,6 +864,7 @@ add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
 add_test(NAME model_transform_unit_tests COMMAND model_transform_unit_tests)
 add_test(NAME multimodel_scene_contract_unit_tests COMMAND multimodel_scene_contract_unit_tests)
+add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effective_config_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)

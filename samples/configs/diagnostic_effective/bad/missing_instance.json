@@ -1,0 +1,8 @@
+{
+  "subjectType": "scene",
+  "sessionId": "fixture-scene-bad",
+  "sourceProfileId": "profile-a",
+  "sourceScenePath": "samples/configs/scene/fixture_two_model_scene.json",
+  "currentModelId": "model-a",
+  "currentInstanceId": "missing"
+}

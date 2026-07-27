@@ -1,0 +1,16 @@
+{
+  "subjectType": "single_model",
+  "sessionId": "fixture-single-model",
+  "sourceProfileId": "profile-a",
+  "sourceConfigPath": "samples/configs/source.json",
+  "identity": {
+    "modelPath": "samples/models/textured/fixtures/policy_textured_small.obj",
+    "modelHash": "fixture-model-hash",
+    "sourceConfigHash": "fixture-source-config-hash"
+  },
+  "requested": {
+    "textureSurfaceWidthMm": 0.1,
+    "modelFillMaterial": "white",
+    "diagnosticBackendRequest": "legacy_cpu"
+  }
+}
