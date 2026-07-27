@@ -2,6 +2,7 @@
 
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
+#include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
@@ -3955,6 +3956,41 @@ void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config)
         "the legacy production path must not run surface_shell_from_sdf or writeProductionRgbwsv configs");
 }
 
+bool MatchesSourceIdentity(
+    const std::filesystem::path& loadedModelPath,
+    const std::string& sourceIdentity)
+{
+    if (loadedModelPath.empty() || sourceIdentity.empty())
+    {
+        return false;
+    }
+    const std::filesystem::path identityPath(sourceIdentity);
+    std::error_code error;
+    const bool equivalent = std::filesystem::equivalent(
+        loadedModelPath,
+        identityPath,
+        error);
+    if (!error)
+    {
+        return equivalent;
+    }
+
+    error.clear();
+    const std::filesystem::path loadedCanonical =
+        std::filesystem::weakly_canonical(
+            std::filesystem::absolute(loadedModelPath),
+            error);
+    if (error)
+    {
+        return false;
+    }
+    const std::filesystem::path identityCanonical =
+        std::filesystem::weakly_canonical(
+            std::filesystem::absolute(identityPath),
+            error);
+    return !error && loadedCanonical == identityCanonical;
+}
+
 }  // namespace
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path) {
@@ -3979,11 +4015,50 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report = load_model_report(config, config_dir);
+    if (options.instanceoverride.has_value())
+    {
+        if (!MatchesSourceIdentity(
+                model_report.model_path,
+                options.instanceoverride->sourcetransformidentity))
+        {
+            throw std::runtime_error(
+                "Legacy instance source identity does not match the configured model");
+        }
+        TransformedModelResult transformed =
+            AdaptTransformedModel(
+                model_report,
+                *options.instanceoverride);
+        if (!transformed.IsValid())
+        {
+            throw std::runtime_error(
+                "Legacy instance transform failed: "
+                + transformed.error->message);
+        }
+        model_report.triangles =
+            std::move(transformed.geometry.triangles);
+        model_report.triangle_textures =
+            std::move(transformed.geometry.triangletextures);
+        model_report.bbox_mm = transformed.geometry.bboxmm;
+    }
     profile.model_load_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "grid_setup", 0, 1, 10);
     phase_start = SlicerClock::now();
 
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
+    if (options.gridcallback)
+    {
+        options.gridcallback(
+            SliceRunRasterGrid{
+                grid.width_px,
+                grid.height_px,
+                grid.layer_count,
+                grid.pixel_size_x_mm,
+                grid.pixel_size_y_mm,
+                config.output.layer_thickness_mm,
+                grid.origin_x_mm,
+                grid.origin_y_mm,
+                0.0});
+    }
 
     const std::filesystem::path package_dir = config.output.package_dir;
     if (options.write_tiff_layers || options.write_preview_files || options.write_reports) {
@@ -4126,12 +4201,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         && config.material_closure.repair.enabled;
     const bool collectMaterialClosureExact = config.material_closure.enabled
         && (options.write_reports || repairMaterialClosure);
+    const bool collectMaterialClosureSemantic =
+        collectMaterialClosureExact
+        || static_cast<bool>(options.layercallback);
     std::vector<std::vector<std::size_t>> clearedOuterVarnishSupportIndices;
     const int cleared_outer_varnish_support_pixels =
         ApplyOuterVarnishSupportPriority(
             outer_varnish_masks,
             support_generation,
-            collectMaterialClosureExact ? &clearedOuterVarnishSupportIndices : nullptr);
+            collectMaterialClosureSemantic
+                ? &clearedOuterVarnishSupportIndices
+                : nullptr);
     if (support_shape_result.enabled || cleared_outer_varnish_support_pixels > 0)
     {
         RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
@@ -4174,7 +4254,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
         MaterialClosureSemanticLayerInput materialClosureInput;
         MaterialClosureSemanticLayerInput* materialClosureInputPointer{nullptr};
-        if (collectMaterialClosureExact)
+        if (collectMaterialClosureSemantic)
         {
             materialClosureInput = InitializeMaterialClosureSemanticInput(
                 grid,
@@ -4207,9 +4287,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             layer_support_pixels);
         diagnostics.model_pixels = layer_model_pixels;
         diagnostics.support_pixels = layer_support_pixels;
-        if (collectMaterialClosureExact)
+        if (collectMaterialClosureSemantic)
         {
             PopulateMaterialClosureEmptyMask(layer, materialClosureInput);
+        }
+        if (collectMaterialClosureExact)
+        {
             const MaterialClosureSemanticLayerAnalysis analysis =
                 AnalyzeMaterialClosureSemanticLayer(
                     materialClosureInput,
@@ -4257,6 +4340,18 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                     repairResult.repairedInternalVoidPixels;
             }
             materialClosureExactLayers.push_back(std::move(result));
+        }
+        if (options.layercallback)
+        {
+            RgbwsvProductionLayer outputLayer;
+            outputLayer.layerIndex = layer_index;
+            outputLayer.zMm = diagnostics.z_mm;
+            outputLayer.widthPx = grid.width_px;
+            outputLayer.heightPx = grid.height_px;
+            outputLayer.channels = layer;
+            options.layercallback(
+                outputLayer,
+                materialClosureInput);
         }
         update_layer_channel_stats(layer, diagnostics);
         total_model_pixels += layer_model_pixels;

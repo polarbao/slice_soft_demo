@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..04、09A-02 COMPLETE / 13B-05 FIXTURE READY
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..05、09A-02 COMPLETE / 13B-06 PREPARATION
 > 版本：v1.4
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -364,10 +364,10 @@ Stage 13 P0 产品需求：完整；
 Stage 13 P0 总体技术设计：完整；
 Stage 13 P0 验证设计：完整；
 17 个近程原子任务的依赖、文件所有权、测试和验收准备：完整；
-Stage 13 实现：13A-01..05、13B-01..04 和跨阶段 09A-02 已完成；
+Stage 13 实现：13A-01..05、13B-01..05 和跨阶段 09A-02 已完成；
 Stage 13 production readiness：未完成；
 13A-R2/R3、13B-R4 中长期详细设计：有意延后，当前只有 Epic。
 ```
 
-因此，当前无需继续扩写 P0 通用文档；13B-05 已具备 fixture 开发所需的独立合同和执行指令。
+因此，当前无需继续扩写 P0 通用文档；下一步需要把 13B-06 的通用准备细化为独立合同和执行指令。
 中长期 3D 和自动 nesting 必须在 P0 证据完成后另立 PRD/DEV/DEMO/TASKS，不得夹带进入近程任务。

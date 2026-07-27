@@ -4,7 +4,7 @@
 > 版本：v2.9
 > 更新日期：2026-07-27
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：13B-05 fixture 全局 Raster 与联合层合成 READY；13B-04A 多模型纹理俯视增强已完成
+> 当前下一任务：13B-06 单一 package 与 scene report PREPARATION；13B-05 fixture 联合内存层已完成
 
 ## 1. 使用规则
 
@@ -56,7 +56,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | P0 ATOMIC PREP COMPLETE / 13A-01..05、13B-01..04、13B-04A、跨阶段 09A-02 COMPLETE | 实例变换、场景配置、诊断身份、多模型纹理 +Z 俯视、精确变换、镜像、独立准入、1..22 实例列表、11x2规则排版、fixture 幅面碰撞和 M13-1 候选闭环 | 执行 13B-05 fixture 全局 Raster 与联合层合成；外部输入继续阻断 production |
+| Stage 13 | P0 ATOMIC PREP COMPLETE / 13A-01..05、13B-01..05、13B-04A、跨阶段 09A-02 COMPLETE | 实例变换、场景配置、诊断身份、多模型纹理 +Z 俯视、精确变换、镜像、独立准入、1..22 实例列表、11x2规则排版、fixture 幅面碰撞、共享 Raster/联合内存层和 M13-1 候选闭环 | 补齐并执行 13B-06 fixture 单 package 与 scene report；外部输入继续阻断 production |
 
 ### 2.1 Stage 12 目的图
 
@@ -80,7 +80,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 13A-01..05、13B-01..04、13B-04A COMPLETE | 当前执行 13B-05 fixture；13C-03 必须先于 09A-05 |
+| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 13A-01..05、13B-01..05、13B-04A COMPLETE | 当前准备 13B-06 fixture；13C-03 必须先于 09A-05 |
 
 ### 2.3 剩余任务数量
 
@@ -96,7 +96,7 @@ Stage 13 近程：
 13A-01..05 共 5 个；
 13B-01..07 共 7 个；
 13C-01..05 共 5 个；
-合计 17 个，当前代码完成数为 9；跨阶段前置 12E-09A-02 已另行完成。
+合计 17 个，当前代码完成数为 10；跨阶段前置 12E-09A-02 已另行完成。
 ```
 
 ## 3. 12E-08C 当前结论
@@ -203,7 +203,7 @@ RGBWSV TIFF 派生单通道和全材料叠加预览。
 12E-10 仍是单模型双引擎基线收口；
 Stage 13B 负责多模型生产矩阵；
 Stage 13C 在 09A-05 前统一生产 TIFF 底图；
-Stage 13 已完成 13A-01..05/13B-01..04，并插入完成 13B-04A 多模型纹理俯视增强；精确变换、
+Stage 13 已完成 13A-01..05/13B-01..05，并插入完成 13B-04A 多模型纹理俯视增强；精确变换、
 镜像、变换后准入、模型列表、自动/手动 11x2 规则排版和 fixture 幅面碰撞准入已实现；
 联合切片和 TIFF 原生预览仍未实现。
 ```
@@ -223,7 +223,8 @@ Stage 13 已完成 13A-01..05/13B-01..04，并插入完成 13B-04A 多模型纹�
 13B-03：COMPLETE，11x2 确定性规则排版、配置回读和 Qt UI 已闭环；
 13B-04：FUNCTIONAL FIXTURE COMPLETE，production 输入仍 OPEN；
 13B-04A：COMPLETE，全部 visible 实例统一 +Z 俯视、贴图显示和追加后自动排版已闭环；
-13B-05：READY FOR FIXTURE DEVELOPMENT；
+13B-05：FIXTURE COMPLETE；
+13B-06：PREPARATION；
 13C-03：09A-05 与 12E-10A 的前置；
 12E-10：保持单模型双引擎最终收口，不吸收多模型生产验收；
 12F：先完成 12F-02 基线，再根据实测逐项授权优化。

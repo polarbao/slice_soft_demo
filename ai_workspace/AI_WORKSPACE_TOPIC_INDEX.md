@@ -4,7 +4,7 @@
 
 ## Stage 13 模型场景、排版联合切片与 TIFF 原生预览
 
-当前上下文：`context_handoff/2026-07-27_13B-04完成与13B-05准备.md`
+当前上下文：`context_handoff/2026-07-27_13B-05完成与13B-06准备.md`
 
 当前任务入口：`docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md`
 

@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-27
-> 当前阶段：13A-01..05、13B-01..04 COMPLETE / 12G-TCWS FROZEN / NEXT 13B-05 FIXTURE READY
+> 当前阶段：13A-01..05、13B-01..05 COMPLETE / 12G-TCWS FROZEN / NEXT 13B-06 PREPARATION
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -55,12 +55,13 @@ docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资�
 ```text
 12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE；
 Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
-13A-01..05、13B-01..04、scene-aware 12E-09A-02 代码、单测和回归 COMPLETE；
+13A-01..05、13B-01..05、scene-aware 12E-09A-02 代码、单测和回归 COMPLETE；
 13A-05 已完成统一回归和 M13-1 候选收口；
 13B-02 的 1..22 实例列表、场景操作和 UI Smoke 已完成；
 13B-03 的代码、测试、Qt 排版页和状态报告已完成；
 13B-04 fixture 功能 Gate 已完成，production Gate 仍等待正式设备幅面；
-13B-05 的独立 PREP/PROMPT 已按 Legacy/Global 当前 API 补齐，当前 fixture READY；
+13B-05 的 Legacy/Global adapter、共享 Grid、联合内存层和状态报告已完成；
+13B-06 通用准备已存在，下一步补齐独立 PREP/PROMPT 后才能进入开发；
 12G-TCWS 纹理载体/白色分色候选专项 FROZEN，不得实现。
 ```
 

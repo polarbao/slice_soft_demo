@@ -2,7 +2,7 @@
 
 > 版本：v0.6
 > 日期：2026-07-27
-> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..04、跨阶段 09A-02 COMPLETE / NEXT 13B-05 FIXTURE
+> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..05、跨阶段 09A-02 COMPLETE / NEXT 13B-06 PREPARATION
 
 ## 1. 阶段依赖
 
@@ -39,7 +39,8 @@
 | 13B-02 | COMPLETE | 1..22 实例、资源隔离、列表命令、场景草稿、UI Smoke 和 Quick CI 已完成 |
 | 13B-03 | COMPLETE | 11x2、row-major、20/30 mm 净距、锁定、原子恢复、配置回读和 Qt UI 已完成 |
 | 13B-04 | FUNCTIONAL FIXTURE COMPLETE / PRODUCTION INPUT OPEN | SceneCollisionService、稳定错误、两阶段投影碰撞和逐实例准入已通过回归 |
-| 13B-05 | READY FOR FIXTURE DEVELOPMENT | 公共 Raster/Layer 合同、Legacy/Global adapter、共享 grid 和联合合成准备已完成 |
+| 13B-05 | FIXTURE COMPLETE | 公共 Raster/Layer、Legacy/Global adapter、共享 Grid、联合合成和回归证据已完成 |
+| 13B-06 | PREPARATION | 通用目标已准备，独立 PREP/PROMPT 待补齐 |
 | 13C-01 | READY / SCHEDULE AFTER IDENTITY WAVE | TIFF source、cache、异步 identity、错误码和测试已冻结 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在

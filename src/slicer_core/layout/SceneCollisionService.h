@@ -85,6 +85,8 @@ struct SceneCollisionInstanceResult
 {
     std::string modelid;
     std::string instanceid;
+    std::uint64_t transformrevision{0U};
+    std::string transformhash;
     bool visible{true};
     bool skippedhidden{false};
     SceneInstanceAdmissionStatus admissionstatus{

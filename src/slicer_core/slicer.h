@@ -2,8 +2,13 @@
 
 #include "slicer_core/SliceRunTelemetry.h"
 #include "slicer_core/config.h"
+#include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
+#include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
+#include "slicer_core/scene/ModelInstance.h"
 
 #include <filesystem>
+#include <functional>
+#include <optional>
 #include <string>
 
 namespace slicer_core {
@@ -23,6 +28,35 @@ struct SliceRunResult {
 };
 
 /**
+ * @brief Legacy producer raster geometry exposed before any file output.
+ */
+struct SliceRunRasterGrid
+{
+    int widthpx{0};
+    int heightpx{0};
+    int layercount{0};
+    double pixelsizexmm{0.0};
+    double pixelsizeymm{0.0};
+    double layerthicknessmm{0.0};
+    double originxmm{0.0};
+    double originymm{0.0};
+    double originzmm{0.0};
+};
+
+/**
+ * @brief Callback receiving immutable Legacy raster geometry.
+ */
+using SliceRunGridCallback =
+    std::function<void(const SliceRunRasterGrid&)>;
+
+/**
+ * @brief Callback receiving one final Legacy RGBWSV layer and ownership.
+ */
+using SliceRunLayerCallback = std::function<void(
+    const RgbwsvProductionLayer&,
+    const MaterialClosureSemanticLayerInput&)>;
+
+/**
  * @brief Output switches for a slicer run.
  */
 struct SliceRunOptions {
@@ -30,6 +64,9 @@ struct SliceRunOptions {
     bool write_preview_files{true};
     bool write_reports{true};
     SliceRunProgressCallback progress_callback;
+    SliceRunGridCallback gridcallback;
+    SliceRunLayerCallback layercallback;
+    std::optional<ModelInstance> instanceoverride;
 };
 
 /**

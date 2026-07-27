@@ -179,6 +179,16 @@ add_library(slicer_core
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticComposer.h
     src/slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.cpp
     src/slicer_core/pipeline/GlobalSurfaceShellProductionLayerAdapter.h
+    src/slicer_core/pipeline/GlobalSceneLayerAdapter.cpp
+    src/slicer_core/pipeline/GlobalSceneLayerAdapter.h
+    src/slicer_core/pipeline/LegacySceneLayerAdapter.cpp
+    src/slicer_core/pipeline/LegacySceneLayerAdapter.h
+    src/slicer_core/pipeline/MultiModelSliceOrchestrator.cpp
+    src/slicer_core/pipeline/MultiModelSliceOrchestrator.h
+    src/slicer_core/pipeline/SceneLayerComposer.cpp
+    src/slicer_core/pipeline/SceneLayerComposer.h
+    src/slicer_core/pipeline/SceneRasterTypes.cpp
+    src/slicer_core/pipeline/SceneRasterTypes.h
     src/slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.cpp
     src/slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.h
     src/slicer_core/pipeline/GlobalSurfaceShellProductionPackage.cpp
@@ -605,6 +615,21 @@ add_executable(scene_collision_admission_unit_tests
 
 target_link_libraries(scene_collision_admission_unit_tests PRIVATE slicer_core)
 
+add_executable(multi_model_layer_composer_unit_tests
+    tests/unit/multi_model_layer_composer/Main.cpp
+)
+
+target_link_libraries(multi_model_layer_composer_unit_tests PRIVATE slicer_core)
+
+add_executable(scene_layer_adapters_unit_tests
+    tests/unit/scene_layer_adapters/Main.cpp
+)
+
+target_link_libraries(scene_layer_adapters_unit_tests PRIVATE slicer_core)
+target_compile_definitions(scene_layer_adapters_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(diagnostic_effective_config_unit_tests
     tests/unit/diagnostic_effective_config/Main.cpp
 )
@@ -902,6 +927,11 @@ add_test(NAME scene_view_geometry_unit_tests COMMAND scene_view_geometry_unit_te
 add_test(NAME multimodel_scene_contract_unit_tests COMMAND multimodel_scene_contract_unit_tests)
 add_test(NAME grid_layout_policy_unit_tests COMMAND grid_layout_policy_unit_tests)
 add_test(NAME scene_collision_admission_unit_tests COMMAND scene_collision_admission_unit_tests)
+add_test(NAME multi_model_layer_composer_unit_tests COMMAND multi_model_layer_composer_unit_tests)
+add_test(NAME scene_layer_adapters_unit_tests COMMAND scene_layer_adapters_unit_tests)
+set_tests_properties(scene_layer_adapters_unit_tests PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effective_config_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)

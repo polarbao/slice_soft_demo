@@ -64,6 +64,14 @@ slicer_core::SceneCollisionItem MakeItem(
     geometry.visible = true;
     geometry.admissionstatus =
         slicer_core::SceneViewAdmissionStatus::Admitted;
+    const slicer_core::ModelTransformHashResult transformHash =
+        slicer_core::ComputeModelTransformHash(
+            item.instance.transform,
+            item.instance.sourcetransformidentity,
+            item.instance.instanceid,
+            item.instance.modelid);
+    Require(transformHash.IsValid(), "fixture transform hash should be valid");
+    geometry.transformhash = transformHash.hash;
     item.geometry = std::move(geometry);
     return item;
 }
@@ -126,7 +134,11 @@ void AcceptsExplicitLowerLeftAndCenterFixtures()
         "fixture pass must not become a production pass");
     Require(
         lowerLeftResult.instances.size() == 1U
-            && lowerLeftResult.instances.front().inbounds,
+            && lowerLeftResult.instances.front().inbounds
+            && lowerLeftResult.instances.front().transformrevision
+                == lowerLeft.items.front().instance.transformrevision
+            && lowerLeftResult.instances.front().transformhash
+                == lowerLeft.items.front().geometry->transformhash,
         "in-volume instance should be reported in bounds");
 
     slicer_core::SceneCollisionRequest center = MakeRequest();
@@ -396,6 +408,20 @@ void RejectsAdmissionGeometryAndRevisionFailures()
             slicer_core::SceneCollisionErrorCode::SceneRevisionStale,
             "instance-0"),
         "stale transform revision must fail closed");
+
+    slicer_core::SceneCollisionRequest staleTransformHash = MakeRequest();
+    slicer_core::SceneCollisionItem staleTransformHashItem = blockedItem;
+    staleTransformHashItem.admissionstatus =
+        slicer_core::SceneInstanceAdmissionStatus::Admitted;
+    staleTransformHashItem.geometry->transformhash = "stale-transform";
+    staleTransformHash.items.push_back(staleTransformHashItem);
+    Require(
+        HasError(
+            slicer_core::EvaluateSceneCollisionAdmission(
+                staleTransformHash),
+            slicer_core::SceneCollisionErrorCode::SceneRevisionStale,
+            "instance-0"),
+        "stale transform hash must fail closed");
 
     slicer_core::SceneCollisionRequest wrongIdentity = MakeRequest();
     slicer_core::SceneCollisionItem wrongIdentityItem = blockedItem;

@@ -2,7 +2,7 @@
 
 > 文档版本：v1.1
 > 日期：2026-07-27
-> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..04、跨阶段 12E-09A-02 COMPLETE / NEXT 13B-05 FIXTURE READY
+> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..05、跨阶段 12E-09A-02 COMPLETE / NEXT 13B-06 PREPARATION
 
 ## 1. 本轮完成
 
@@ -79,7 +79,8 @@ scene effective config 已支持原子保存、回读、hash、cancel 和 stale�
 当前已有 11x2 row-major 排版、20/30 mm 边到边净距、原子恢复和 Qt 排版页；
 当前已有显式 fixture buildVolume、逐实例越界/admission/revision 和投影碰撞检查；
 加载可编辑场景后生产切片保持阻断，scene effective config 尚未接入 slicer_cli；
-当前没有多模型全局 Raster、联合层合成和 joint package；
+当前已有 fixture 多模型全局 Raster 和联合内存层合成；
+当前没有 joint package 和 scene report；
 当前 PreviewWorkspace 已统一 UI 容器和 layerIndex；
 当前生产 RGB/像素探针已能读取 TIFF；
 当前 W/S/V/overlay 仍主要依赖 preview PNG；
@@ -155,7 +156,8 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13B-02：COMPLETE，1..22 实例列表、场景操作、多实例保存/回读、UI Smoke 和 Quick CI PASS；
 13B-03：COMPLETE，11x2 row-major、原子恢复、Scene Effective Config 和 Qt 排版页已通过回归；
 13B-04：FUNCTIONAL FIXTURE COMPLETE，production buildVolume 输入仍 OPEN；
-13B-05：READY FOR FIXTURE DEVELOPMENT；
+13B-05：FIXTURE COMPLETE；
+13B-06：PREPARATION；
 13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在模型交互和场景排版之后；
 Stage 13 全阶段 production readiness：尚未完成；
 Stage 13 已实现能力：9/17 个近程原子任务完成。
@@ -190,35 +192,35 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 9；
+合计：17 个近程原子任务，当前完成 10；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13B-05 全局 Raster 与联合层合成
+13B-06 单一 package 与 scene report
 ```
 
-13B-04 已完成 fixture 级幅面、投影碰撞和逐实例准入。下一步按
-`DOC_PREP_13B_05_全局Raster与联合层合成准备.md` 和
-`CODEX_PROMPT_13B_05_全局Raster与联合层合成执行指令.md` 建立公共 scene raster/layer 合同、
-Legacy/Global adapter 和纯内存 SceneLayerComposer；本任务不提前写生产 package。
+13B-05 已完成公共 scene raster/layer 合同、Legacy/Global adapter 和纯内存
+SceneLayerComposer。下一步先补齐 13B-06 独立 PREP/PROMPT，再接入共享 writer、scene report、
+单 package 原子发布和 RIP strict；fixture 写包不得冒充 production GO。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13B-05 fixture |
+| 范围 | 当前结论 | 是否阻断 13B-06 fixture |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
 | 17 个近程任务实施准备 | 完整 | 否 |
-| 13B-05 独立 PREP/PROMPT | 完整 | 否 |
+| 13B-05 联合内存层 | FIXTURE COMPLETE | 否 |
+| 13B-06 独立 PREP/PROMPT | 待补齐 | 是 |
 | 设备 buildVolume/机器轴 | 外部输入未关闭 | 否；阻断 13B production |
 | 22 实例正式性能预算 | 外部输入未关闭 | 否；阻断 13B-07 GO |
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
 
-13A-01..05 和 13B-02/03 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
+13A-01..05 和 13B-02..05 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
 13B-03 已冻结并实现 row-major、11x2、20/30 mm 边到边净距、锁定和原子提交规则。13B-04
-已关闭功能 Fixture Gate。13B-05 fixture 开发可继续；正式 buildVolume/原点/机器轴输入未关闭，
-因此 production acceptance 仍阻断。
+已关闭 13B-05 功能 Fixture Gate。13B-06 需先完成独立执行准备；正式 buildVolume/原点/
+机器轴输入未关闭，因此 production acceptance 仍阻断。

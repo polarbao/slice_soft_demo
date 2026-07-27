@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01..05 / 13B-01..04 / 12E-09A-02 COMPLETE / NEXT 13B-05 FIXTURE READY
+> 状态：13-00 / 13A-01..05 / 13B-01..05 / 12E-09A-02 COMPLETE / NEXT 13B-06 PREPARATION
 > 日期：2026-07-27
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -44,7 +44,7 @@ Stage 12/13 跨阶段执行看板。
 13A-03/04 已实现，13A-05 已完成 M13-1 候选收口，13B-02 已实现 1..22 实例列表与场景草稿；
 13B-03 已完成 11x2 规则排版、SceneDocument 原子恢复、配置回读和 Qt 排版页；
 13B-04 已完成 SceneCollisionService、稳定错误和 fixture 功能 Gate；
-13B-05 已按现有 Legacy/Global layer 接口补齐独立 PREP/PROMPT；
+13B-05 已完成 Legacy/Global scene adapter、共享 Grid、联合内存层、测试和状态报告；
 Stage 13 未决产品输入：DOC_CHECKLIST_13，按具体 Gate 阻断，不虚构设备值。
 ```
 
@@ -266,16 +266,18 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 
 ### 13B-05 全局 Raster 与联合层合成
 
-状态：READY FOR FIXTURE DEVELOPMENT
+状态：FIXTURE COMPLETE
 
 目标：共享 Z 层序、全局 XY grid、逐实例局部层映射、场景 closure、无重叠合成。
 
 专项准备：`DOC_PREP_13B_05_全局Raster与联合层合成准备.md` 和
 `CODEX_PROMPT_13B_05_全局Raster与联合层合成执行指令.md`。
 
+实际证据：`REPORT_13B_05_全局Raster与联合层合成当前状态.md`。
+
 ### 13B-06 单一 package 与 scene report
 
-状态：PREPARED / WAIT 13B-05
+状态：PREPARATION / 13B-05 PASS
 
 目标：共享 writer、每层一个 TIFF、manifest 可选 scene 摘要、per-instance report、原子发布、RIP strict。
 
@@ -345,13 +347,13 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-合计：17 个近程原子任务，当前完成 9；
+合计：17 个近程原子任务，当前完成 10；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13B-05 fixture 全局 Raster 与联合层合成`。其独立 PREP/PROMPT 已按
-13B-04 的准入结果、现有 Legacy 私有层对象和 Global writer-ready adapter 补齐。`13C-01`
-技术上可独立开始，但单贡献者按固定顺序先完成多模型场景链，再进入 TIFF 原生预览。
+当前唯一推荐入口为 `13B-06 单一 package 与 scene report` 的独立准备。13B-05 已输出
+writer-ready 联合内存层。`13C-01` 技术上可独立开始，但单贡献者按固定顺序先完成多模型
+场景链，再进入 TIFF 原生预览。
 
 ## 11. 任务验证规则
 

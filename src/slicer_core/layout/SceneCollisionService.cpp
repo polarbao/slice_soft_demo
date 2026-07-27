@@ -280,6 +280,26 @@ bool ValidateGeometry(
             "projected geometry revision is stale");
         return false;
     }
+    const ModelTransformHashResult transformHash =
+        ComputeModelTransformHash(
+            item.instance.transform,
+            item.instance.sourcetransformidentity,
+            item.instance.instanceid,
+            item.instance.modelid);
+    if (!transformHash.IsValid()
+        || geometry.transformhash.empty()
+        || geometry.transformhash != transformHash.hash)
+    {
+        error = MakeError(
+            SceneCollisionErrorCode::SceneRevisionStale,
+            request,
+            item.instance.modelid,
+            item.instance.instanceid,
+            {},
+            "geometry.transformhash",
+            "projected geometry transform hash is stale");
+        return false;
+    }
     if (!IsFiniteBounds(geometry.worldboundsmm)
         || !BoundsMatch(
             geometry.worldboundsmm,
@@ -581,6 +601,13 @@ SceneCollisionResult EvaluateSceneCollisionAdmission(
         SceneCollisionInstanceResult instanceResult;
         instanceResult.modelid = item.instance.modelid;
         instanceResult.instanceid = item.instance.instanceid;
+        instanceResult.transformrevision =
+            item.instance.transformrevision;
+        if (item.geometry.has_value())
+        {
+            instanceResult.transformhash =
+                item.geometry->transformhash;
+        }
         instanceResult.visible = item.instance.visible;
         instanceResult.skippedhidden = !item.instance.visible;
         instanceResult.admissionstatus = item.admissionstatus;
