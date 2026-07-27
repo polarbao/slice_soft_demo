@@ -15,3 +15,6 @@
 | `DEMO_11A_R1_OpenVDB候选包与Preview验证方案.md` | 11A-R1 OpenVDB Candidate package 与 preview 验证方案 |
 | `DEMO_11B_UI配置生产预览与OpenVDB同姿态验证方案.md` | 11B UI 配置、生产预览与 OpenVDB 同姿态验证方案 |
 | `DEMO_12C_Qt_UI配置预览验证方案.md` | 12C fresh build、effective config、统一预览和布局验证 |
+| `DEMO_13A_模型俯视与变换验证方案.md` | 13A 俯视坐标、变换、镜像和准入验证 |
+| `DEMO_13B_多模型排版联合切片验证方案.md` | 13B 1/11/12/22 实例排版、联合 package 和 RIP 验证 |
+| `DEMO_13C_TIFF原生统一预览验证方案.md` | 13C 无 preview PNG、全材料叠加和 TIFF 缓存验证 |

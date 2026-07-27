@@ -1,8 +1,9 @@
 # DEV_10_OutputContract_FieldMatrix
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 文档状态：Formal DEV / Stage 10-1
 > 生成日期：2026-07-01
+> 更新日期：2026-07-24
 > 任务：Task 10-1 Output contract 字段
 
 ---
@@ -106,6 +107,16 @@ TIFF storage and dimensions match manifest
 | `grid.pixelSizeMm` | Comparable | array<number,2> | 可选冗余字段；存在时必须与独立物理像素字段一致 |
 | `grid.layerThicknessMm` | Stable | number | 层厚，必须大于 0 |
 | `grid.originMm` | Comparable | array<number,3> | package 坐标原点，用于诊断和 UI 对齐 |
+
+12E-09C 软件生产认证补充：
+
+```text
+首批通过组合：600/600、635/600；
+两种组合均要求独立 dpiX/dpiY 与 pixelSizeXmm/pixelSizeYmm；
+635/600 已通过 Legacy、Global restricted、Global material parity 真实模型 package 和 RIP strict；
+认证结论只覆盖软件 package/RIP 合同，不代表打印机硬件标定；
+TIFF 单文件当前不携带 XResolution/YResolution，物理尺寸必须从 manifest.grid 读取。
+```
 
 ### 5.3 TIFF
 

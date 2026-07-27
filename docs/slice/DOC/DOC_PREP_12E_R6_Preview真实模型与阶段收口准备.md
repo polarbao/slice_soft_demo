@@ -1,13 +1,15 @@
 # DOC_PREP_12E-R6 Preview、真实模型与阶段收口准备
 
-> 文档状态：PREPARED / R4 AND 08D DEPENDENCIES CLOSED / WAIT 09A-05 AND 09B
+> 文档状态：CONCEPT PREPARED / 09B、09C CLOSED / WAIT 13C-03 AND 09A-05 / EXECUTION DOCS INCOMPLETE
 > 日期：2026-07-20
+> 最近审计：2026-07-27
 > 覆盖任务：12E-10 Preview、Real Model Matrix 与 REPORT_12E
 
 ## 1. 准备结论
 
-12E-10 的输出、依赖、证据所有权、原子任务、矩阵 schema 和验收顺序已明确。R4/08D 的历史阻断
-已解除，但最终收口仍等待 09A/09B UI 依赖：
+12E-10 的输出、依赖、证据所有权、原子任务、矩阵 schema 和验收顺序已在概念层明确。R4/08D、
+09B、09C 依赖已解除，但最终收口仍等待 09A-05；独立 PRD/DEV/DEMO/TASKS/CODEX_PROMPT
+尚未建立，不能把本文单独视为完整执行包：
 
 ```text
 Preview 依赖 12E-09A-05 同层 UI、12E-09B-05 生产结果绑定和 12E-09C 物理比例显示；
@@ -85,8 +87,8 @@ UI smoke：显示与交互。
 docs/slice/REPORT/REPORT_12E_全局纹理壳层与模型填充当前状态.md
 ```
 
-10A 依赖 09A-05 和 09B-05；10B/10C 的 R4/08D 证据前置已完成，最终 UI 双模式矩阵等待
-09B-06。10D 等待 10A/10B/10C 后执行。
+10A 依赖 09A-05、09B-05 和 Stage 13C-03 TIFF 原生生产预览；10B/10C 的 R4/08D、09B、09C
+证据前置已完成。10D 等待 10A/10B/10C 后执行。
 
 ## 7. 验收
 
@@ -103,10 +105,10 @@ REPORT_12E 列出实际命令、结果、阻断和后续建议。
 ## 8. 当前 Gate
 
 ```text
-文档准备：COMPLETE；
-12E-10A：WAIT 12E-09A-05 AND 12E-09C；
-12E-10B：PREPARED / 09B EVIDENCE AVAILABLE / WAIT 12E-09C；
-12E-10C：PREPARED / 08D AND 09B EVIDENCE AVAILABLE / WAIT 12E-09C FINAL SUMMARY；
+概念与 schema 准备：COMPLETE；独立执行文档：INCOMPLETE；
+12E-10A：WAIT Stage 13C-03 + 12E-09A-05；12E-09C 已完成；
+12E-10B：PREPARED / 09B、09C EVIDENCE AVAILABLE；
+12E-10C：PREPARED / 08D、09B、09C EVIDENCE AVAILABLE；
 12E-10D：WAIT 10A/10B/10C。
 ```
 
@@ -132,10 +134,42 @@ global 诊断结果可单独显示，但必须标注“诊断，未生成可打�
 ## 10. 2026-07-22 准备度刷新
 
 ```text
-12E-10 文档、任务拆分和 Final Closure Matrix schema：COMPLETE；
-12E-10A：09B-05 生产结果绑定已完成，等待 12E-09A-05 同层 preview 和 12E-09C 物理比例显示；
-12E-10B：xiao_ma/yecan/3MF 控制/复杂浮雕阻断矩阵已冻结，09B-06 已完成，等待 09C；
-12E-10C：可复用 R4-07-R2、08D-06 和 09B-06 Release 证据，等待 09C 后形成最终汇总；
+12E-10 概念任务拆分和 Final Closure Matrix schema：COMPLETE；独立执行文档：INCOMPLETE；
+12E-10A：09B-05 和 09C 物理比例显示已完成，等待 13C-03 TIFF 原生生产预览和 12E-09A-05 同层语义 preview；
+12E-10B：xiao_ma/yecan/3MF 控制/复杂浮雕阻断矩阵已冻结，09B-06、09C 已完成；
+12E-10C：可复用 R4-07-R2、08D-06、09B-06 和 09C-06 Release 证据；
 12E-10D：等待 10A/10B/10C 后收口；
 生产 package/RIP：08D 前置和 09B UI 路径均已验证。
+```
+
+## 11. 2026-07-24 09C 后准备度审计
+
+```text
+09C：COMPLETE；
+10A：仍被 13C-03 和 09A-05 阻断；
+10B/10C：技术证据前置已满足，可进入执行文档准备；
+10D：等待 10A/10B/10C；
+缺口：独立 PRD、DEV、DEMO、TASKS、CODEX_PROMPT；
+结论：12E-10 尚未达到可直接开发状态。
+```
+
+## 12. 2026-07-24 Stage 13 依赖补充
+
+Stage 13 新需求不改变 12E-10 的单模型双引擎收口范围，但会替换生产预览的数据来源：
+
+```text
+13C-03 负责从 RGBWSV TIFF 派生 RGB/W/S/V 和 RGB+S+W+V；
+09A-05 在同一真实 layerIndex 上叠加 Texture/Fill/Partition 诊断语义；
+10A 验证两者的同层一致性；
+不再要求 10A 为生产材料重复生成逐通道 preview PNG。
+```
+
+## 13. 2026-07-27 优先级与冻结补充
+
+```text
+13A-01/13B-01 先冻结 scene identity；
+随后执行 scene-aware 09A-02；
+13C-03 和 09A-05 完成后才启动 10A；
+10B/10C 可提前补齐执行文档，但不得把局部证据写成 12E-10 COMPLETE；
+12G-TCWS 纹理载体/白色分色/RIP 铺底专项已冻结，不属于 12E-10。
 ```

@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal PRD / Current Product Source
 > 生成日期：2026-06-30
-> 当前阶段：Stage 10 已完成，当前执行 11 UI 切片层预览、交互配置与多模型能力评估
+> 当前阶段：Stage 12E-09C 已完成；Stage 13 P0 需求和原子任务准备完成，代码未开始
 > 适用项目：SliceSoft / UV 彩色多材料 3D 打印切片软件
 
 ---
@@ -268,7 +268,29 @@ warn_and_attempt 不得 production-safe
 → 09D：SDF support clearance / overhang diagnostics
 → 10：切片输出交付契约 / 纹理保真验收
 → 11：UI 切片层预览 / 交互配置 / 多模型能力评估
+→ 12：材料语义、性能、Qt、材料闭环和 Global 双模式生产化
+→ 13：模型俯视与变换 / 多模型规则排版联合切片 / TIFF 原生统一预览
 ```
+
+---
+
+### 9.1 Stage 13 新产品能力
+
+Stage 11 只完成多模型能力评估。Stage 13 正式承接生产需求：
+
+```text
+切片前从 +Z 查看模型 XY 俯视图；
+选中模型后移动 XY、rotateZ、uniformScale、mirrorX/mirrorY；
+Z 落台保持当前生产逻辑；
+最多 11 列 x 2 行，列间净距默认 20 mm、行间净距默认 30 mm；
+多个模型联合切片并输出一个 RGBWSV package；
+直接从生产 TIFF 显示 R/G/B/W/S/V 与 RGB+S+W+V；
+常规生产流程不再依赖重复的逐材料 preview PNG；
+中期评估真实 3D viewport，长期增加完整打印软件场景交互。
+```
+
+Stage 13 的详细需求以 `PRD_13A/13B/13C` 为准。当前已完成 P0 需求、设计、验证和原子任务准备，
+但代码、测试和生产证据尚未开始，不能作为已实现能力宣传。
 
 ---
 

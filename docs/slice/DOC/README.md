@@ -41,11 +41,17 @@
 | `assets/DIAGRAM_12E_R4_模型修复与准入流程示意图.svg` | 真实模型修复、属性恢复、重复审计与 R4-06/07 准入流程 |
 | `DOC_PREP_12E_08C_R4_08_GO_NO_GORefresh准备.md` | R4-08 12E-08D GO/NO-GO 刷新准备 |
 | `DOC_ANALYSIS_12E_R3_04后续可达性与模型治理.md` | R3-04 后功能可继续、生产仍阻断以及正常/required 模型双轨分析 |
-| `DOC_PREP_12E_纹理载体与白色分色专项准备.md` | 建议在 12E-10 后另立 12G-TCWS 的纹理载体、白色分色、透明/全纹理与 RIP 铺底准备 |
+| `DOC_PREP_12E_纹理载体与白色分色专项准备.md` | 12G-TCWS 纹理载体、白色分色与 RIP 铺底候选；2026-07-27 冻结，禁止实现 |
 | `assets/DIAGRAM_12E_纹理载体白色分色与材料分层示意图.svg` | TextureSurface/ModelFill、Carrier、白色分色、全纹理交付与三类闭环目标态示意 |
 | `DOC_PREP_12E_09B_Qt双模式生产入口准备.md` | 09B 双模式 Qt 产品入口的原子任务、依赖与 Gate |
 | `DOC_SCHEMA_12E_09B_EffectiveConfig与能力状态.md` | 09B session Effective Config、能力锁定和 UI 审计合同 |
 | `DOC_PREP_12E_09C_XY_DPI准备.md` | 09C X/Y 非等方 DPI 专项准备完整性与启动 Gate |
+| `DOC_DECISION_12X_剩余任务优先级与专项冻结.md` | 12E-09A/10、12F、Stage 13 优先级和 12G-TCWS 冻结决策 |
+| `DOC_PREP_13A_01_ModelTransform与ModelInstance合同准备.md` | 13A-01 Source/Instance 变换、pivot、Z、revision 和测试合同 |
+| `DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md` | 13B-01 scene identity、资源作用域、unknown buildVolume 和事务合同 |
+| `DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF source、LRU、异步 stale 和错误合同 |
+| `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | Stage 13 的 17 个近程原子任务依赖、建议文件所有权、测试和验收准备 |
+| `DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 设备/Profile/性能/3D 后端未决输入及阻断范围 |
 
 ## 决策记录
 

@@ -1,14 +1,14 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-07-24
-> 适用阶段：Stage 12D COMPLETE；12E-09B COMPLETE；12E-09C-01 READY
+> 更新日期：2026-07-27
+> 适用阶段：Stage 12D COMPLETE；12E-09B/09C COMPLETE；Stage 13 P0 原子任务准备完成
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06 已完成双模式核心和共享生产写包。12E-09B-01..06 已完成 Qt Legacy/Global 中文入口、Production Effective Config、能力锁定、共享 preflight/process、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release/TIFF/RIP 收口。Legacy 默认 GO，两个 Global Profile 显式 opt-in GO；Global 默认替换 Legacy 因本次实测 4.09x-5.92x 总耗时和 8.19x-8.74x 峰值内存保持 NO-GO。复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-02..06 保持独立 diagnostic UI 支线。12E-09C X/Y DPI 专项准备已审计完成，09C-01 等待明确授权。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-02..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 总体文档、17 个近程任务实施准备和 13A-01/13B-01/13C-01 执行级合同已完成，代码尚未开始；当前入口为 13A-01。
 
 ## 目录结构
 
@@ -38,12 +38,18 @@
 | `DEV/DEV_SHORT_MID_LONG_SliceSoft_项目运行计划执行方案.md` | 项目运行计划对应的技术执行方案 |
 | `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 与 12B 收口历史报告 |
 | `REPORT/REPORT_12X_阶段计划与完成度总览.md` | Stage 12A 至 12F 当前状态、历史快照、后续依赖和唯一下一任务 |
+| `REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 文档准备、当前实现事实、优先级和下一任务 |
+| `../codex_task/current/TASKS_12_13_后续开发计划总览清单.md` | Stage 12/13 跨阶段当前任务、固定顺序和状态更新规则 |
+| `DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md` | 13A/13B/13C 边界、产品决策及与 12E 的顺序 |
+| `DOC/DOC_DECISION_12X_剩余任务优先级与专项冻结.md` | Stage 12 剩余数量、Stage 13 顺序和 12G-TCWS 冻结 |
+| `ROADMAP/ROADMAP_13_模型场景排版联合切片与TIFF预览路线.md` | 模型俯视、多模型联合切片、TIFF 原生预览和中长期 3D 路线 |
 | `DOC/DOC_EXEC_12E_08D_02_GlobalProductionLayerAdapter结果.md` | 08D-02 Global raster/full-closure 到 writer-ready RGBWSV layer DTO 的结果与验证 |
 | `DOC/DOC_EXEC_12E_08D_03_共享WriterPackageRIP结果.md` | 08D-03 两模式共享 TIFF/package/preview/report/RIP 边界与 fail-closed 验证 |
 | `REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.md` | 12E-09A-01 只读诊断 UI 数据边界与验证状态 |
 | `REPORT/REPORT_12E_09B_01_能力目录与UIDTO当前状态.md` | 12E-09B-01 产品模式/Profile 能力目录与 UI DTO |
 | `REPORT/REPORT_12E_09B_02_ProductionEffectiveConfig当前状态.md` | 12E-09B-02 session Effective Config、能力锁定和审计投影 |
 | `REPORT/REPORT_12E_09B_Qt双模式生产入口当前状态.md` | 12E-09B-01..06 Qt 双模式生产入口、结果身份、资源和 Release 矩阵收口 |
+| `REPORT/REPORT_12E_09C_XY_DPI当前状态.md` | 12E-09C-01..06 非等方 DPI、真实模型 Release/RIP 矩阵与回归收口 |
 | `DOC/DOC_DECISION_12E_09A_09B_Qt任务顺序与职责边界.md` | 09A diagnostic 支线与 09B production 主线的职责和依赖 |
 | `PRD/PRD_12E_09B_Qt双模式生产入口与能力锁定.md` | 09B Legacy/Global 产品入口、能力锁定和 no-fallback 需求 |
 | `DOC/DOC_PREP_12E_09C_XY_DPI准备.md` | 09C X=635/Y=600 非等方 DPI 兼容专项准备 |
@@ -187,6 +193,21 @@
 | `PRD/PRD_12F_Release运行环境与切片性能优化.md` | Release 运行环境、性能 KPI 与验收需求 |
 | `DEV/DEV_12F_Release运行环境与切片性能优化设计.md` | NMake x64 Runtime、ToolPaths、支撑/合成/稠密 mask 优化设计 |
 | `ROADMAP/ROADMAP_12F_Release运行环境与切片性能优化路线.md` | 12F R0-R5 分阶段路线；R0 已完成，算法优化未激活 |
+| `DOC/DOC_MATRIX_13_模型场景专项依赖与准入矩阵.md` | Stage 13 原子任务依赖、优先级、生产和预览 Gate |
+| `DOC/DOC_PREP_13A_01_ModelTransform与ModelInstance合同准备.md` | 13A-01 变换与实例执行级准备 |
+| `DOC/DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md` | 13B-01 场景与 Effective Config 执行级准备 |
+| `DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF Source/Cache 执行级准备 |
+| `DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | 13A/13B/13C 17 个近程任务的实施准备和文件所有权 |
+| `DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 外部输入、临时工程规则和任务 Gate |
+| `PRD/PRD_13A_模型俯视工作区与实例变换.md` | 短期俯视、选中变换和中长期 3D 交互需求 |
+| `DEV/DEV_13A_模型俯视渲染与变换架构设计.md` | ModelTransform/ModelInstance、Qt 俯视和 3D 后端比较 |
+| `DEMO/DEMO_13A_模型俯视与变换验证方案.md` | 坐标、移动、旋转、缩放、镜像和准入验证 |
+| `PRD/PRD_13B_多模型规则排版与联合切片.md` | 最多 11x2、20/30 mm 间距、多模型单 package 需求 |
+| `DEV/DEV_13B_MultiModelScene规则排版与联合切片设计.md` | Scene schema、排版、碰撞、全局 raster 和联合写包 |
+| `DEMO/DEMO_13B_多模型排版联合切片验证方案.md` | 1/11/12/22 实例、负向 Gate、RIP 和性能矩阵 |
+| `PRD/PRD_13C_RGBWSV_TIFF原生统一预览.md` | TIFF 单通道、RGB+S+W+V 和重复预览 IO 收口需求 |
+| `DEV/DEV_13C_TIFFLayerSource与统一材料合成设计.md` | 异步 TIFF Layer Source、LRU 和材料显示合成器 |
+| `DEMO/DEMO_13C_TIFF原生统一预览验证方案.md` | 无 preview PNG、stripped/tiled、物理比例和缓存验证 |
 | `DOC/DOC_ANALYSIS_OpenVDB切片功能当前不可用原因.md` | OpenVDB 已完成测试但尚不可正式切片的原因分析 |
 | `DOC/DOC_RESEARCH_PrismSlicer功能处理策略与SliceSoft对照.md` | PrismSlicer 官网、论文、开源、视频与行业信息调研，以及与 SliceSoft 的能力/边界对照 |
 | `DOC/DOC_ANALYSIS_11B_OpenVDB姿态配置与同姿态性能对比.md` | OpenVDB 姿态配置差异与同姿态性能对比分析 |

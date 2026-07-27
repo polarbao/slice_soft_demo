@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal DEV / Current Architecture Source
 > 生成日期：2026-06-30
-> 当前阶段：Stage 10 已完成，当前执行 11 UI 切片层预览、交互配置与多模型能力评估
+> 当前阶段：Stage 12E-09C 已完成；Stage 13 P0 设计和原子任务准备完成，代码未开始
 > 适用项目：SliceSoft / UV 彩色多材料 3D 打印切片软件
 
 ---
@@ -535,3 +535,45 @@ OpenVDB experimental pipeline hardening 阶段。
 5. 是否需要先做 mesh repair/admission gate 专项；
 6. 是否可以进入 09P-R3。
 ```
+
+---
+
+## 14. Stage 13 模型场景技术方向
+
+Stage 13 增加正式 scene 边界：
+
+```text
+ModelSource -> modelId/resourceScope；
+ModelInstance -> instanceId/transform/admission；
+MultiModelScene -> buildVolume/layout/revision；
+GridLayoutPolicy -> 11x2/edge clearance；
+MultiModelSliceOrchestrator -> 逐实例生产层到全局 raster；
+SceneLayerComposer -> 单层 RGBWSV 合成；
+TiffLayerSource/MaterialPreviewComposer -> TIFF 原生 UI 预览。
+```
+
+依赖方向：
+
+```text
+Qt scene editor -> core public DTO；
+layout -> scene/bounds；
+pipeline -> transformed instances/material/support/raster/output；
+preview UI -> TIFF reader/domain DTO；
+core 不依赖 Qt；
+UI 不访问 slicer.cpp 临时结构。
+```
+
+Stage 13 保持：
+
+```text
+p0.rgbwsv.2；
+R G B W S V；
+uint8；
+black_is_print；
+Legacy 默认；
+Global 显式 opt-in；
+strict geometry admission；
+联合切片失败不 silent fallback。
+```
+
+中期 3D 显示后端必须通过 VTK/Qt3D/QOpenGLWidget 技术 Spike 后决策，不直接把大型依赖加入默认构建。

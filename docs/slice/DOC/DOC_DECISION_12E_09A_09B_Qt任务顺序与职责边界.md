@@ -1,6 +1,6 @@
 # DOC_DECISION 12E-09A/09B Qt 任务顺序与职责边界
 
-> 状态：APPROVED FOR PREPARATION
+> 状态：APPROVED / 09B、09C COMPLETE / NEXT 09A-02
 > 日期：2026-07-23
 > 决策范围：12E-09A diagnostic UI、12E-09B production UI、12E-09C DPI、12E-10 阶段收口
 
@@ -18,9 +18,10 @@
 因此：
 
 ```text
-12E-09B-01：COMPLETE；
-当前下一原子任务：12E-09B-03；
-12E-09A-02..06：保持未完成，可独立执行，不阻断 09B；
+12E-09B-01..06：COMPLETE；
+12E-09C-01..06：COMPLETE；
+当前下一准备任务：补齐 09A 执行级文档；随后执行 12E-09A-02；
+12E-09A-02..06：保持未完成，按顺序执行；
 12E-09A-05：仍是 12E-10A 的明确前置；
 09A 与 09B 不得重复拥有同一配置字段或同一控件。
 ```
@@ -108,3 +109,17 @@ repair 保持默认关闭；
 不写入 fallbackApplied=true；
 不改变生产 TIFF 协议。
 ```
+
+## 7. 2026-07-24 Stage 13 新依赖
+
+新增模型俯视、多模型场景和 TIFF 原生预览需求后，职责保持不变，但执行顺序增加两个前置：
+
+```text
+13A-01/13B-01 先冻结 ModelInstance/scene identity；
+09A-02 随后兼容 single_model/scene；
+13C-03 在 09A-05 前提供 TIFF 原生生产底图；
+09A-05 只叠加 Texture/Fill/Partition 等诊断语义；
+12E-10A 最后验证同层一致性。
+```
+
+Stage 13B 的多模型联合切片不纳入 09A，也不修改 09B 的 Legacy/Global 产品模式所有权。

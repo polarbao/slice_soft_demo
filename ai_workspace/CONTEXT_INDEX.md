@@ -4,7 +4,9 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-24 | 12E-09B-02 完成与 09C 准备审计 | `context_handoff/2026-07-24_12E-09B-02完成与09C准备审计.md` | Current |
+| 2026-07-27 | Stage 12/13 后续总览、12G 冻结与 Stage 13 P0 原子准备收口 | `context_handoff/2026-07-27_Stage12剩余优先级与Stage13执行准备审计.md` | Current |
+| 2026-07-24 | Stage 13 模型场景、排版联合切片与 TIFF 预览准备 | `context_handoff/2026-07-24_Stage13模型场景排版与TIFF预览准备.md` | Superseded / incorporated |
+| 2026-07-24 | 12E-09B-02 完成与 09C 准备审计 | `context_handoff/2026-07-24_12E-09B-02完成与09C准备审计.md` | Superseded / incorporated |
 | 2026-07-23 | 12E-09B-01 完成与 09C 准备 | `context_handoff/2026-07-23_12E-09B-01完成与09C准备.md` | Superseded / incorporated |
 | 2026-07-23 | 12E-09B 准备完成 | `context_handoff/2026-07-23_12E-09B准备完成.md` | Superseded / incorporated |
 | 2026-07-22 | 12E-09A-01 只读诊断 Facade 完成 | `context_handoff/2026-07-22_12E-09A-01只读诊断Facade完成.md` | Superseded / incorporated |

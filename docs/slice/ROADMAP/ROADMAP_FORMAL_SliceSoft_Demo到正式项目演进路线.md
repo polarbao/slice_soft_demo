@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal Roadmap
 > 生成日期：2026-06-30
-> 当前阶段：Stage 10 已完成，当前执行 11 UI 切片层预览、交互配置与多模型能力评估
+> 当前阶段：Stage 12E-09C 已完成；Stage 13 P0 设计和原子任务准备完成，代码未开始
 
 ---
 
@@ -42,7 +42,7 @@ P0 / 00A / 00B / 00C
 ```text
 09P-R2 hardening 已完成
 10 切片输出交付契约与纹理保真验收已完成
-当前：11 UI 切片层预览 / 交互配置 / 多模型能力评估
+当前：Stage 13 P0 需求/设计/验证及 17 个近程原子任务准备完成 / 实现未开始 / 13A-01 READY
 ```
 
 推荐后续：
@@ -401,6 +401,33 @@ UI 通过 package/report/preview data contract 读取切片结果；
 
 ---
 
+### 8.5 13：模型场景、排版联合切片与 TIFF 原生预览
+
+Stage 11 只完成多模型能力决策。2026-07-24 用户已提出正式生产需求，因此新增独立 Stage 13：
+
+```text
+13A：切片前模型俯视、选择、XY/rotateZ/uniformScale/mirror 变换；
+13B：最多 11 列 x 2 行、20/30 mm 可配置净距和多模型联合切片；
+13C：直接从 RGBWSV TIFF 显示单通道、伪彩和 RGB+S+W+V，减少重复 preview IO。
+```
+
+执行关系：
+
+```text
+13A-01 + 13B-01
+  -> scene-aware 12E-09A-02
+  -> 13A/13B P0
+  -> 13C
+  -> 12E-09A-03..06
+  -> 12E-10。
+```
+
+Stage 13 不修改 RGBWSV 协议；自动 nesting、跨模型联合支撑和完整 3D gizmo 属于后续阶段。
+12G-TCWS 纹理载体/白色分色/RIP 铺底候选专项于 2026-07-27 冻结，不属于 Stage 13 或当前执行
+序列。
+
+---
+
 ## 9. 文档产出规则
 
 每个后续阶段必须输出：
@@ -438,7 +465,7 @@ docs/codex_task/current/CODEX_PROMPT_10_切片输出交付契约与纹理保真�
 docs/slice/REPORT/REPORT_10_切片输出交付契约与纹理保真验收当前状态.md
 ```
 
-11 阶段当前入口：
+11 阶段历史入口：
 
 ```text
 docs/slice/PRD/PRD_11_UI切片层预览交互配置与多模型能力.md
@@ -447,6 +474,16 @@ docs/slice/DEMO/DEMO_11_UI切片层预览交互配置验证方案.md
 docs/slice/DOC/DOC_DECISION_11_多模型切片处理范围决策.md
 docs/codex_task/current/TASKS_11_UI切片层预览交互配置与多模型评估任务清单.md
 docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模型评估执行指令.md
+```
+
+Stage 13 当前入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md
+docs/slice/ROADMAP/ROADMAP_13_模型场景排版联合切片与TIFF预览路线.md
+docs/slice/REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md
+docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md
+docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预览执行指令.md
 ```
 
 ---
@@ -459,8 +496,11 @@ docs/codex_task/current/CODEX_PROMPT_11_UI切片层预览交互配置与多模�
 先整理文档真源
 → 09P-R2 hardening 已完成
 → 10 输出契约与纹理保真验收已完成
-→ 当前推进 11 UI 层预览、交互配置和多模型能力评估
-→ 再判断是否需要独立多模型阶段、UI 产品化阶段或 mesh repair/admission gate 专项
+→ 11 已完成 UI/多模型能力评估
+→ 12A..12D 已收口，12E-09C 已完成
+→ Stage 13 P0 总体文档、17 个近程原子任务准备与首批合同完成
+→ 下一任务 13A-01 READY，再进入 13B-01 和 scene-aware 12E-09A-02
 ```
 
-不要把 09P-R1 / 09P-R2 的 experimental boundary 误解成 production path 已经完成。当前最关键的是让 UI 基于 Stage 10 output contract/report 做层预览、配置交互和多模型能力评估，而不是绕过协议直接读取内部结构。
+不要把 Stage 11 的 capability decision 误解成多模型 production 已实现。Stage 13 必须通过 scene identity、
+实例准入、幅面/碰撞、联合 package 和 TIFF 原生预览逐项建立证据。

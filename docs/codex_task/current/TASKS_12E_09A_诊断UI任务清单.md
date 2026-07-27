@@ -1,8 +1,15 @@
 # TASKS 12E-09A 诊断 UI 任务清单
 
-> 状态：09A-01 COMPLETE / 09A-02..06 PREPARED
-> 日期：2026-07-23
+> 状态：09A-01 COMPLETE / 09A-02 WAIT 13B-01 / 09A-03..06 PREPARED
+> 日期：2026-07-27
 > 性质：独立 diagnostic UI 支线
+
+前置执行合同：
+
+```text
+docs/slice/DOC/DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md；
+docs/slice/DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md。
+```
 
 ## 1. 固定边界
 
@@ -36,7 +43,7 @@ docs/slice/REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.m
 
 ## 3. 09A-02 Diagnostic Effective Config
 
-状态：PREPARED
+状态：PREPARED / WAIT 13B-01 SCENE IDENTITY
 
 目标：
 
@@ -45,6 +52,8 @@ docs/slice/REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.m
 生成 output/ui_sessions/<session>/slice_config.effective.json；
 不覆盖 samples/configs fixture；
 requested、derived、effective 字段可审计。
+subjectType 兼容 single_model/scene；
+scene 模式绑定 sceneId/instanceId/sceneRevision/transformRevision。
 ```
 
 验收：保存、回读、回退、stale override 清理和负向配置单测。
@@ -82,7 +91,7 @@ topology/distance/width sweep/texture transfer/raster mapping 不阻塞 UI；
 
 ## 6. 09A-05 同层语义 Preview
 
-状态：PREPARED / WAIT 09A-04
+状态：PREPARED / WAIT 09A-04、13C-03
 
 目标：
 
@@ -114,9 +123,12 @@ Qt self-test；
 09A 必须保留在正式开发序列中，但不是 09B-01..06 的字母顺序前置。单贡献者推荐顺序：
 
 ```text
-12E-09B-01..06
-  -> 12E-09C X/Y DPI 专项
-  -> 12E-09A-02..06
+12E-09B-01..06 COMPLETE
+  -> 12E-09C COMPLETE
+  -> 13A-01 + 13B-01
+  -> scene-aware 12E-09A-02
+  -> 13C-01..03
+  -> 12E-09A-03..06
   -> 12E-10A..D
 ```
 
@@ -126,6 +138,8 @@ Qt self-test；
 09B 先冻结产品模式、Profile 和生产 session 合同；
 09C 再冻结最终 X/Y raster 尺寸与 Reader 合同；
 09A 同层 preview 在最终生产模式和 DPI 合同上收口，可减少重复验证；
+13B-01 先冻结 scene identity，避免 09A-02 永久绑定单一 modelPath；
+13C-03 先建立 TIFF 原生底图，避免 09A-05 复制旧 preview PNG 合成路线；
 12E-10A 明确依赖 09A-05 和 09B-05，因此 09A 不能从路线中删除。
 ```
 

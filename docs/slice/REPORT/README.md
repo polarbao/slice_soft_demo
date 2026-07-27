@@ -20,5 +20,7 @@
 | `REPORT_12C_Qt工作台启动状态.md` | 12C Qt 工作台准入和启动状态 |
 | `REPORT_12E_08C_R4_模型预检与修复资产准入准备状态.md` | 12E-08C-R4 模型预检与修复资产准入准备状态 |
 | `REPORT_12E_08C_R4_模型资产预检清单.md` | `model` 目录 OBJ/3MF strict、自相交和后续模块准入清单 |
+| `REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 总体准备和实现进度 |
+| `REPORT_13A_01_ModelTransform与ModelInstance合同当前状态.md` | 13A-01 实例变换核心合同 |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。

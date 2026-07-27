@@ -1,11 +1,29 @@
 # DOC_PREP_12E 纹理载体、白色分色与 RIP 铺底专项准备
 
-> 文档状态：DEFERRED CANDIDATE / RECOMMENDED AFTER 12E-10 / NO IMPLEMENTATION AUTHORIZATION
+> 文档状态：FROZEN / PENDING PRODUCT AND RIP DECISIONS / NO IMPLEMENTATION AUTHORIZATION
 > 暂定专题代号：`12G-TCWS`，正式阶段编号待用户成立专项时确认
 > 日期：2026-07-23
+> 冻结日期：2026-07-27
 > 上游：12A 材料语义、12D 材料闭环、12E 全局纹理壳层与模型填充
 > 前置基线：12E-08D 双模式生产写包、12E-09A/09B UI、12E-10 阶段收口
 > 同步示意图：`assets/DIAGRAM_12E_纹理载体白色分色与材料分层示意图.svg`
+
+## 0. 冻结记录
+
+2026-07-27 用户确认本专项的部分策略尚未讨论清楚，当前先冻结，不进入实现。
+
+冻结范围：
+
+```text
+本文件 R0..R6 仅保留为候选路线，不是已激活任务；
+不生成正式 TASKS/CODEX_PROMPT；
+不新增配置字段、Qt 控件、resolver、composer 或 RIP contract；
+不把本专项计入 12E/12F 当前未完成原子任务数量；
+不影响普通 RGB、当前 W/S/V、Legacy/Global、12E-09A/10 和 Stage 13。
+```
+
+解冻条件仍以第 13 节阻断问题和第 15 节 G1..G8 为准。解冻时必须重新审查当前代码、RIP
+版本、设备能力和 Stage 13 多模型/预览边界，不能直接把本准备文档中的候选 JSON 当作正式 schema。
 
 ## 1. 准备结论
 

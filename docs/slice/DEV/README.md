@@ -29,3 +29,6 @@
 | `DEV_11B_UI配置生产预览与OpenVDB姿态收口设计.md` | 11B UI 配置、生产预览与 OpenVDB 姿态收口设计 |
 | `DEV_11B_OpenVDB_LegacyCoreBenchmark设计.md` | 11B OpenVDB 与 legacy 核心切片耗时 benchmark 设计 |
 | `DEV_12C_Qt_UI配置预览工作台设计.md` | 12C Qt 工作台增量架构、generated config 和 PreviewWorkspace |
+| `DEV_13A_模型俯视渲染与变换架构设计.md` | 13A 无 Qt 变换合同、俯视渲染和 3D 后端 Spike |
+| `DEV_13B_MultiModelScene规则排版与联合切片设计.md` | 13B MultiModelScene、规则排版、全局 raster 和联合写包 |
+| `DEV_13C_TIFFLayerSource与统一材料合成设计.md` | 13C TIFF Layer Source、LRU 和 RGBWSV 材料合成 |

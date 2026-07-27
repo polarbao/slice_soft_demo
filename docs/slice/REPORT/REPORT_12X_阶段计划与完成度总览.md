@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v1.6
-> 更新日期：2026-07-24
-> 当前唯一生产主线：12E-09C X/Y DPI
-> 当前下一原子任务：12E-09C-06 生产矩阵与阶段收口
+> 版本：v2.0
+> 更新日期：2026-07-27
+> 当前生产主线：12E-09C COMPLETE
+> 当前下一任务：13A-01 READY；随后 13B-01 冻结 scene identity，再执行 scene-aware 12E-09A-02
 
 ## 1. 使用规则
 
@@ -35,7 +35,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 |---|---|---|---|
 | 12A | COMPLETE（当前 P0/P1 范围） | Texture Surface、Model Fill、Support、Varnish 语义和真实横截面口径 | 后续新材料/工艺另立需求 |
 | 12B | COMPLETE | R0 benchmark 契约、R1 legacy/heightfield 优化、R2 OpenVDB SDF utility 定位 | 不把 OpenVDB 直接设为默认引擎 |
-| 12C | COMPLETE | R0/R1/R2 Qt 配置、Profile、预览、诊断和 fresh/runtime build 收口 | 新生产模式 UI 等待 12E-09B |
+| 12C | COMPLETE | R0/R1/R2 Qt 配置、Profile、预览、诊断和 fresh/runtime build 收口 | 无；后续产品模式 UI 已由 12E-09B 完成 |
 | 12D | COMPLETE | R0/R1/R2/R3 材料闭环、repair-disabled 不变性、真实模型验证 | 作为 12E production closure 依赖保持回归 |
 | 12E-01..07 | COMPLETE / DIAGNOSTIC | Config/DTO、全局分区、CPU/OpenVDB 对照、width、纹理传递、closure | 已作为 08D adapter 输入能力 |
 | 12E-08A/08B/08C | COMPLETE / NON-PRODUCTION | raster/full closure、Release/legacy 证据和拓扑问题暴露 | 历史结果不等于 production admission |
@@ -50,10 +50,12 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 09A-02..06 可按独立授权推进 |
 | 12E-09A | 09A-01 COMPLETE / 09A-02..06 INDEPENDENT | 只读 Diagnostic Facade 与 UI DTO | 诊断 Effective Config、控件、worker、同层 preview 和 smoke |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
-| 12E-09C | 09C-01..05 COMPLETE / 09C-06 READY | 默认 X=635/Y=600、72..2400 配置边界、显式 600/600 兼容；Reader/writer 严格校验；Legacy/Global 独立 X/Y Raster 和外侧光油物理离散；Qt 配置与一键切片；Layer/Overlay 物理比例 Preview | 635/600 双引擎生产矩阵、真实模型、Release、RIP strict、回归与文档收口 |
-| 12E-10 | PREPARED / WAIT DEPENDENCIES | 最终矩阵 schema、模型基线和 09B 生产入口已完成 | 10A 等待 09A-05/09C；10B/10C 最终汇总等待 09C |
+| 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
+| 12E-10 | PREPARED AT CONCEPT LEVEL / WAIT 09A-05 | 最终矩阵 schema、模型基线、09B 生产入口和 09C DPI 合同已完成 | 10A 等待 09A-05；10B/10C 可准备执行；启动前补齐独立 PRD/DEV/DEMO/TASKS/PROMPT |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
+| 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
+| Stage 13 | P0 ATOMIC PREP COMPLETE / CODE NOT STARTED | 总体 PRD/DEV/DEMO/TASKS/PROMPT、17 个近程任务实施准备，以及 13A-01/13B-01/13C-01 执行级合同 | 13A-01 READY；13B-01 等待 13A-01；外部输入按 Gate 阻断 production |
 
 ### 2.1 Stage 12 目的图
 
@@ -65,15 +67,36 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12D | 建立横截面材料闭环、repair-disabled 不变性和真实模型验证 |
 | 12E | 建立 Global Surface Shell、双模式生产写包、Qt 产品入口和最终生产矩阵 |
 | 12F | 整理 Debug/Release Runtime，并在后续阶段继续性能工程化 |
+| 13 | 建立模型场景、实例变换、多模型排版联合切片和 TIFF 原生生产预览 |
 
 ### 2.2 当前原子任务进度
 
 | 任务组 | 当前状态 | 下一动作 |
 |---|---|---|
-| 09A Diagnostic UI | 09A-01 COMPLETE；09A-02..06 独立待授权 | 09A-02 |
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
-| 09C X/Y DPI | 09C-01..05 COMPLETE / 09C-06 READY | 执行 09C-06 生产矩阵与阶段收口；在矩阵完成前不得宣称 09C 全阶段 COMPLETE |
-| 12E-10 Final Closure | PREPARED / WAIT 09A-05、09C | 依赖满足后执行 10A |
+| 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
+| 09A Diagnostic UI | 09A-01 COMPLETE；09A-02..06 任务级 PREPARED | 先补齐独立 PRD/DEV/DEMO/PROMPT 与 09A-02 schema/fixture，再执行 09A-02 |
+| 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
+| 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
+| 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
+| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 实现 NOT STARTED | 13A-01 -> 13B-01 -> scene-aware 09A-02；13C 必须先于 09A-05 |
+
+### 2.3 剩余任务数量
+
+```text
+12E-09A-02..06：5 个；
+12E-10A..D：4 个；
+12F-02..09：8 个；
+Stage 12 若含性能专项，合计剩余 17 个原子任务；
+只计算 12E 语义/诊断/收口，剩余 9 个原子任务；
+12G-TCWS 候选 R0..R6 已冻结，当前激活任务数为 0。
+
+Stage 13 近程：
+13A-01..05 共 5 个；
+13B-01..07 共 7 个；
+13C-01..05 共 5 个；
+合计 17 个，当前代码完成数为 0。
+```
 
 ## 3. 12E-08C 当前结论
 
@@ -138,8 +161,64 @@ docs/slice/REPORT/REPORT_12E_09B_01_能力目录与UIDTO当前状态.md
 docs/slice/REPORT/REPORT_12E_09B_02_ProductionEffectiveConfig当前状态.md
 docs/slice/REPORT/REPORT_12E_09B_Qt双模式生产入口当前状态.md
 docs/slice/DOC/DOC_PREP_12E_09C_XY_DPI准备.md
+docs/slice/REPORT/REPORT_12E_09C_XY_DPI当前状态.md
 docs/codex_task/current/TASKS_12E_09A_诊断UI任务清单.md
 docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md
 docs/codex_task/current/TASKS_12E_09C_XY_DPI任务清单.md
 docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md
+docs/slice/DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md
+docs/slice/DOC/DOC_DECISION_12X_剩余任务优先级与专项冻结.md
+docs/slice/DOC/DOC_PREP_13A_01_ModelTransform与ModelInstance合同准备.md
+docs/slice/DOC/DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md
+docs/slice/DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md
+docs/slice/DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md
+docs/slice/DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md
+docs/slice/ROADMAP/ROADMAP_13_模型场景排版联合切片与TIFF预览路线.md
+docs/slice/REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md
+docs/codex_task/current/TASKS_12_13_后续开发计划总览清单.md
+docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md
 ```
+
+## 7. Stage 13 对 12E 后续顺序的影响
+
+2026-07-24 新增产品需求要求切片前模型俯视和变换、多模型同版排布与联合切片，以及直接从
+RGBWSV TIFF 派生单通道和全材料叠加预览。
+
+正式顺序调整为：
+
+```text
+13A-01 ModelTransform/ModelInstance；
+13B-01 MultiModelScene/Scene Effective Config；
+12E-09A-02 改为兼容 single_model/scene；
+13A/13B P0；
+13C TIFF 原生预览；
+12E-09A-03..06；
+12E-10A..D。
+```
+
+边界：
+
+```text
+12E-10 仍是单模型双引擎基线收口；
+Stage 13B 负责多模型生产矩阵；
+Stage 13C 在 09A-05 前统一生产 TIFF 底图；
+Stage 13 当前只有文档，不得宣称已实现。
+```
+
+## 8. 2026-07-27 优先级与冻结结论
+
+```text
+12G-TCWS：冻结，不实现；
+13A-01：READY，当前下一任务；
+13B-01：执行文档完整，等待 13A-01；
+12E-09A-02：优先于完整 12E-10，但等待 13B-01；
+13C-03：09A-05 与 12E-10A 的前置；
+12E-10：保持单模型双引擎最终收口，不吸收多模型生产验收；
+12F：先完成 12F-02 基线，再根据实测逐项授权优化。
+```
+
+详细依据以 `DOC_DECISION_12X_剩余任务优先级与专项冻结.md` 为准。
+
+Stage 12/13 的逐项执行状态、34 个近程/已规划原子任务顺序和每任务更新规则，以
+`TASKS_12_13_后续开发计划总览清单.md` 为跨阶段执行看板。本文仍是 Stage 12 唯一状态总览，
+两者职责不冲突。

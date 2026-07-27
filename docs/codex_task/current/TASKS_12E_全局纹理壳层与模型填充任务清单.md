@@ -1,8 +1,8 @@
 # TASKS_12E 全局纹理壳层与模型填充任务清单
 
 > 文档状态：R4-08-R2 GO / 12E-08D COMPLETE / GLOBAL OPT-IN CANDIDATE ADMITTED
-> 更新日期：2026-07-24
-> 当前项目原子任务：12E-09B-01..06 COMPLETE；12E-09C-01 READY / WAIT AUTHORIZATION
+> 更新日期：2026-07-27
+> 当前项目原子任务：12E-09B/09C COMPLETE；下一顺序为 13A-01 -> 13B-01 -> scene-aware 09A-02
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -511,7 +511,8 @@ docs/slice/REPORT/REPORT_12E_08C_R4_08_R2_08D_GO_NO_GO刷新状态.md
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：12E-09A-01 COMPLETE；12E-09A-02..06 INDEPENDENT；12E-09B-01..06 COMPLETE；12E-09C-01 READY
+状态：12E-09A-01 COMPLETE；12E-09A-02 WAIT 13B-01；09A-03..06 PREPARED；
+12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE
 
 目标：
 
@@ -555,7 +556,7 @@ docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md
 
 ## 13. 12E-10 Preview、Real Model Matrix 与收口
 
-状态：PREPARED / WAIT 09A-05 AND 09C
+状态：CONCEPT PREPARED / WAIT 09A-05 / EXECUTION DOCS INCOMPLETE
 
 目标：
 
@@ -579,8 +580,13 @@ REPORT_12E。
 ```
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md`。09B-01..06
-已完成；10A 依赖 09A-05 和 09C，10B/10C 的 R4/08D/09B 证据前置已完成，最终收口等待 09C。复杂浮雕 `0/3`
-继续作为阻断披露，不再阻断正向模型矩阵。
+与 09C-01..06 已完成；10A 仍依赖 Stage 13C-03 和 09A-05，10B/10C 的 R4/08D/09B/09C
+证据前置已完成。
+正式启动前仍需补齐独立 PRD/DEV/DEMO/TASKS/CODEX_PROMPT。复杂浮雕 `0/3` 继续作为阻断披露，
+不再阻断正向模型矩阵。
+
+纹理载体、白色分色与 RIP 铺底候选专项 `12G-TCWS` 已于 2026-07-27 冻结；其 R0..R6 不属于
+12E-10，不得夹带实现。
 
 ## 14. 阶段完成标准
 

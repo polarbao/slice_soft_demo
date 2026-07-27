@@ -3,9 +3,9 @@
 > 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-23
+> 更新日期：2026-07-27
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12C 与 12D 已完成；12E-01..07、12E-08A/08B/08C 与 R1/R2/R3 已完成；R4-01..07/R1/R2、Quick-CI-R1 与 R4-08-R2 COMPLETE，R4-08-R2=GO；复杂浮雕覆盖 0/3；12E-08D 已授权，当前任务 08D-01；12E-09A-01 COMPLETE；12F-00/01 已完成、性能算法任务未开始
+> 当前阶段判断：12E-08D/09B/09C 完成；12G-TCWS 冻结；Stage 13 P0 原子任务准备完成、实现未开始；13A-01 READY
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
 最新完成阶段：12E-08C-R4 受限生产候选技术 Gate 收口
-当前执行阶段：12E-09A DIAGNOSTIC UI / 09A-01 COMPLETE
+当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / IMPLEMENTATION NOT STARTED
 最新完成任务：R4-08-R2 GO/NO-GO Refresh / GO / 12E-08D 授权登记
-当前执行任务：12E-08D-01 Config/DTO/Router 与 admission fail-closed；12E-09A 下一任务为 09A-02；复杂浮雕 0/3 为披露缺口；12F-02 等待用户明确启动
+当前执行任务：下一候选为 13A-01 ModelTransform/ModelInstance；随后 13B-01 和 scene-aware 12E-09A-02；复杂浮雕 0/3 仍为披露缺口；12F 性能算法未激活
 ```
 
 09P-R1 已完成：
@@ -352,6 +352,10 @@ docs/slice/DEV/DEV_12E_09B_Qt双模式ProductionProfile设计.md
 docs/slice/DEMO/DEMO_12E_09B_Qt双模式生产入口验证方案.md
 docs/slice/REPORT/REPORT_12E_09B_Qt双模式生产入口当前状态.md
 docs/slice/DOC/DOC_PREP_12E_09C_XY_DPI准备.md
+docs/slice/PRD/PRD_12E_09C_XY_DPI配置与生产协议兼容.md
+docs/slice/DEV/DEV_12E_09C_XY_DPI配置Reader与UI设计.md
+docs/slice/DEMO/DEMO_12E_09C_XY_DPI验证方案.md
+docs/slice/REPORT/REPORT_12E_09C_XY_DPI当前状态.md
 docs/slice/DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md
 docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
 docs/slice/DOC/DOC_DECISION_12E_08C_R1_R2_R3_真实模型拓扑修复前置专项.md
@@ -418,6 +422,32 @@ docs/codex_task/current/TASKS_12F_Release运行环境与切片性能优化任务
 docs/codex_task/current/CODEX_PROMPT_12F_Release运行环境与切片性能优化执行指令.md
 ```
 
+Stage 13 模型场景、排版联合切片与 TIFF 原生预览入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md
+docs/slice/DOC/DOC_MATRIX_13_模型场景专项依赖与准入矩阵.md
+docs/slice/DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md
+docs/slice/DOC/DOC_PREP_13A_01_ModelTransform与ModelInstance合同准备.md
+docs/slice/DOC/DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md
+docs/slice/DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md
+docs/slice/DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md
+docs/slice/ROADMAP/ROADMAP_13_模型场景排版联合切片与TIFF预览路线.md
+docs/slice/PRD/PRD_13A_模型俯视工作区与实例变换.md
+docs/slice/DEV/DEV_13A_模型俯视渲染与变换架构设计.md
+docs/slice/DEMO/DEMO_13A_模型俯视与变换验证方案.md
+docs/slice/PRD/PRD_13B_多模型规则排版与联合切片.md
+docs/slice/DEV/DEV_13B_MultiModelScene规则排版与联合切片设计.md
+docs/slice/DEMO/DEMO_13B_多模型排版联合切片验证方案.md
+docs/slice/PRD/PRD_13C_RGBWSV_TIFF原生统一预览.md
+docs/slice/DEV/DEV_13C_TIFFLayerSource与统一材料合成设计.md
+docs/slice/DEMO/DEMO_13C_TIFF原生统一预览验证方案.md
+docs/slice/REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md
+docs/codex_task/current/TASKS_12_13_后续开发计划总览清单.md
+docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md
+docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预览执行指令.md
+```
+
 12C 当前闭环文档：
 
 ```text
@@ -444,7 +474,12 @@ ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md
 历史阶段文档 = 背景与证据
 最新 REPORT = 当前状态
 FORMAL PRD / DEV / ROADMAP = 当前总控
-TASKS_12D / TASKS_12E / TASKS_12F = 当前候选执行入口
+TASKS_12D / TASKS_12E / TASKS_12F = 保留候选和历史执行入口
+TASKS_13 = 当前新增产品专项执行入口
 ```
 
-12B 已按 `REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` 收口。12C-R0/R1/R2 与 12D-R0/R1/R2/R3 已完成；12E-01..07、12E-08A/08B/08C、R1/R2/R3、R4-01..07、R4-07-R1/R2、Quick-CI-R1 与 R4-08-R2 已完成。参考机器候选预算和 Quick CI PASS，R4-08-R2 已在独立授权后转为 `GO`；复杂浮雕覆盖 0/3 继续记录为缺口；12F-00/01 已完成。当前执行 12E-08D-01；12E-09A-01 已完成，09A-02 可并行继续。授权不表示 global 已经能生成生产 TIFF，仍需 08D-01..04 逐项完成；12F-02 需用户明确启动。
+12B、12C、12D 已收口；12E-08D、09B、09C 已完成，Legacy 仍为默认，Global 仅显式候选。12G-TCWS
+纹理载体/白色分色候选专项已冻结。Stage 13 已完成 P0 总体文档、17 个近程原子任务实施准备和
+13A-01/13B-01/13C-01 执行级合同，
+但未开始实现。推荐顺序是 `13A-01 -> 13B-01 -> scene-aware 12E-09A-02`；13C-03 必须在
+09A-05 前完成。12F 性能算法仍需单独授权。
