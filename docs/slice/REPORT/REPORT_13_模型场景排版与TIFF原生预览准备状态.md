@@ -2,7 +2,7 @@
 
 > 文档版本：v1.0
 > 日期：2026-07-27
-> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01/02、跨阶段 12E-09A-02 COMPLETE / NEXT 13B-03 READY
+> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..03、跨阶段 12E-09A-02 COMPLETE / NEXT 13B-04 FIXTURE READY
 
 ## 1. 本轮完成
 
@@ -151,10 +151,11 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13A-04：COMPLETE，镜像、transformed preflight 和独立双模式准入 PASS；
 13A-05：COMPLETE，统一回归、真实资产、三窗口 UI Smoke、用户说明和 M13-1 候选 PASS；
 13B-02：COMPLETE，1..22 实例列表、场景操作、多实例保存/回读、UI Smoke 和 Quick CI PASS；
-13B-03：READY FOR DEVELOPMENT，专项 PREP/PROMPT 已按 13B-02 实际 API 校正；
+13B-03：COMPLETE，11x2 row-major、原子恢复、Scene Effective Config 和 Qt 排版页已通过回归；
+13B-04：READY FOR FIXTURE DEVELOPMENT，production buildVolume 输入仍 OPEN；
 13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在模型交互和场景排版之后；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：7/17 个近程原子任务完成。
+Stage 13 已实现能力：8/17 个近程原子任务完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -186,24 +187,24 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 7；
+合计：17 个近程原子任务，当前完成 8；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13B-03 11x2 规则排版
+13B-04 幅面、碰撞和逐实例准入
 ```
 
-13B-02 已完成 1..22 实例场景草稿、列表操作和多实例保存/回读。下一步按
-`DOC_PREP_13B_03_11x2规则排版准备.md` 和
-`CODEX_PROMPT_13B_03_11x2规则排版执行指令.md` 实现确定性排版；不能提前实现精确碰撞、联合切片
-或生产 package。
+13B-03 已完成确定性排版。下一步按
+`DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` 和
+`CODEX_PROMPT_13B_04_幅面碰撞与逐实例准入执行指令.md` 完成 fixture 级幅面、投影碰撞和逐实例
+准入；不能把 fixture PASS 写成 production PASS，也不能提前实现联合切片或生产 package。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13B-03 |
+| 范围 | 当前结论 | 是否阻断 13B-04 fixture |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
@@ -213,6 +214,6 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
 
-13A-01..05 和 13B-02 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
-13B-03 已冻结 row-major、11x2、20/30 mm 边到边净距、锁定和原子提交规则。后续按
-`CODEX_PROMPT_13B_03_11x2规则排版执行指令.md` 开发，不提前实现 13B-04。
+13A-01..05 和 13B-02/03 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
+13B-03 已冻结并实现 row-major、11x2、20/30 mm 边到边净距、锁定和原子提交规则。13B-04
+fixture 开发可继续；正式 buildVolume/原点/机器轴输入未关闭，因此 production acceptance 仍阻断。

@@ -1,9 +1,10 @@
 # DOC_PREP 13B-03 11x2 规则排版准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：COMPLETE
 > 日期：2026-07-27
 > 前置：13B-02 COMPLETE
-> 当前任务：13B-03 11x2 确定性规则排版
+> 完成提交：`aef10c1 feat(13B-03): 建立11x2规则排版与Qt操作闭环`
+> 下一任务：13B-04 幅面、碰撞和逐实例准入
 
 ## 1. 任务目标
 
@@ -236,5 +237,5 @@ mixed-profile；
 ## 10. 准备结论
 
 13B-02 已提供稳定实例顺序、1..22 上限、锁定/显隐、current instance、俯视多实例显示和多实例
-Scene Effective Config。13B-03 的输入、数学、原子提交、UI、错误和验证边界已明确，状态为
-`READY FOR DEVELOPMENT`。
+Scene Effective Config。13B-03 已按本文合同完成并通过定向 CTest、三窗口 UI Smoke 和 Quick CI。
+实际证据见 `REPORT_13B_03_11x2规则排版当前状态.md`。

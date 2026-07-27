@@ -28,6 +28,7 @@
 | `REPORT_13A_模型俯视工作区与实例变换当前状态.md` | 13A-01..05 阶段收口和 M13-1 候选 |
 | `REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md` | 13B-01 多模型场景与 Scene Effective Config 合同 |
 | `REPORT_13B_02_模型列表与实例操作当前状态.md` | 13B-02 1..22 实例列表、场景操作和多实例草稿 |
+| `REPORT_13B_03_11x2规则排版当前状态.md` | 13B-03 确定性 11x2 排版、Qt 操作和回归证据 |
 | `REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 12E-09A-02 single_model/scene Diagnostic Effective Config |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。

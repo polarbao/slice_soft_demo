@@ -3,7 +3,7 @@
 > 文档版本：v0.1
 > 文档状态：Formal Roadmap
 > 生成日期：2026-06-30
-> 当前阶段：Stage 12E-09C、09A-01/02 已完成；Stage 13 P0 设计和原子任务准备完成，13A-01..05/13B-01 已实现
+> 当前阶段：Stage 12E-09C、09A-01/02 已完成；Stage 13 P0 设计和原子任务准备完成，13A-01..05/13B-01..03 已实现
 
 ---
 
@@ -42,7 +42,7 @@ P0 / 00A / 00B / 00C
 ```text
 09P-R2 hardening 已完成
 10 切片输出交付契约与纹理保真验收已完成
-当前：Stage 13 P0 需求/设计/验证及 17 个近程原子任务准备完成 / 13A-01..05、13B-01/02、跨阶段 09A-02 COMPLETE / 13B-03 READY
+当前：Stage 13 P0 需求/设计/验证及 17 个近程原子任务准备完成 / 13A-01..05、13B-01..03、跨阶段 09A-02 COMPLETE / 13B-04 FIXTURE READY
 ```
 
 推荐后续：
@@ -499,8 +499,8 @@ docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预
 → 11 已完成 UI/多模型能力评估
 → 12A..12D 已收口，12E-09C 已完成
 → Stage 13 P0 总体文档、17 个近程原子任务准备与首批合同完成
-→ 13A-01、13A-02、13B-01、scene-aware 12E-09A-02 COMPLETE
-→ 下一任务 13B-03 11x2 规则排版 READY
+→ 13A-01..05、13B-01..03、scene-aware 12E-09A-02 COMPLETE
+→ 下一任务 13B-04 幅面、碰撞和逐实例准入 FIXTURE READY
 ```
 
 不要把 Stage 11 的 capability decision 误解成多模型 production 已实现。Stage 13 必须通过 scene identity、

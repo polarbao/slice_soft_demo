@@ -2,7 +2,7 @@
 
 > 版本：v0.5
 > 日期：2026-07-27
-> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01/02、跨阶段 09A-02 COMPLETE / NEXT 13B-03
+> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..03、跨阶段 09A-02 COMPLETE / NEXT 13B-04 FIXTURE
 
 ## 1. 阶段依赖
 
@@ -37,7 +37,8 @@
 | 13A-05 | COMPLETE（2026-07-27） | 统一回归、用户说明、REPORT_13A 和 M13-1 候选 PASS |
 | 13B-01 | COMPLETE（2026-07-27） | MultiModelScene、ResourceScope、scene identity、Scene Effective Config、正负 fixture、单测和回归已落地 |
 | 13B-02 | COMPLETE | 1..22 实例、资源隔离、列表命令、场景草稿、UI Smoke 和 Quick CI 已完成 |
-| 13B-03 | READY FOR DEVELOPMENT | 11x2、row-major、20/30 mm 净距、锁定和原子提交的独立执行入口已准备 |
+| 13B-03 | COMPLETE | 11x2、row-major、20/30 mm 净距、锁定、原子恢复、配置回读和 Qt UI 已完成 |
+| 13B-04 | READY FOR FIXTURE DEVELOPMENT | buildVolume、投影碰撞、逐实例准入和 production Gate 的独立执行入口已准备 |
 | 13C-01 | READY / SCHEDULE AFTER IDENTITY WAVE | TIFF source、cache、异步 identity、错误码和测试已冻结 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在

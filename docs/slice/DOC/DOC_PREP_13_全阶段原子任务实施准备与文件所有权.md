@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01/02、09A-02 COMPLETE / 13B-03 READY
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..03、09A-02 COMPLETE / 13B-04 FIXTURE READY
 > 版本：v1.3
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -167,7 +167,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.3 13B-03 11x2 规则排版
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -182,9 +182,11 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 详细合同以 `DOC_PREP_13B_03_11x2规则排版准备.md` 和
 `CODEX_PROMPT_13B_03_11x2规则排版执行指令.md` 为准。
 
+实际证据：`REPORT_13B_03_11x2规则排版当前状态.md`。
+
 ### 5.4 13B-04 幅面、碰撞和逐实例准入
 
-状态：`PREPARED / WAIT 13B-03 / PRODUCTION GATE OPEN`
+状态：`READY FOR FIXTURE DEVELOPMENT / PRODUCTION GATE OPEN`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -194,6 +196,9 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | AABB 快筛、精确投影/mask、边界 epsilon、重叠、越界、buildVolume undefined、逐实例错误身份 |
 | 外部 Gate | 正式设备 width/height/origin/axes 阻断 production acceptance |
 | 完成输出 | fixture 级准入能力；外部输入关闭后才能完成 production Gate |
+
+详细合同以 `DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` 和
+`CODEX_PROMPT_13B_04_幅面碰撞与逐实例准入执行指令.md` 为准。
 
 ### 5.5 13B-05 全局 Raster 与联合层合成
 
@@ -354,7 +359,7 @@ Stage 13 P0 产品需求：完整；
 Stage 13 P0 总体技术设计：完整；
 Stage 13 P0 验证设计：完整；
 17 个近程原子任务的依赖、文件所有权、测试和验收准备：完整；
-Stage 13 实现：未开始；
+Stage 13 实现：13A-01..05、13B-01..03 和跨阶段 09A-02 已完成；
 Stage 13 production readiness：未完成；
 13A-R2/R3、13B-R4 中长期详细设计：有意延后，当前只有 Epic。
 ```

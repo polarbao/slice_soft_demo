@@ -22,10 +22,11 @@
 
 ```text
 Stage 13 P0 需求/设计/验证和 17 个近程原子任务准备：COMPLETE；
-13A-01：READY；
+13A-01..05：COMPLETE；
+13B-01..03：COMPLETE；
+13B-04：READY FOR FIXTURE DEVELOPMENT；
 13C-01：READY，但按单贡献者顺序排在 identity wave 后；
-13B-01：COMPLETE，MultiModelScene 与 Scene Effective Config 已落地；
-12E-09A-02：等待 13B-01 scene identity。
+12E-09A-02：COMPLETE。
 ```
 
 “准备完整”不关闭本表的外部输入，也不代表任何 Stage 13 代码或生产证据已经存在。

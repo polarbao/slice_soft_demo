@@ -55,6 +55,7 @@
 | `DOC_PREP_13A_04_镜像与变换后预检准备.md` | 13A-04 镜像、有效几何预检和双模式生产阻断准备；等待 13A-03 |
 | `DOC_PREP_13B_02_模型列表与实例操作准备.md` | 13B-02 1..22 实例列表、资源隔离、异步状态和场景草稿准备 |
 | `DOC_PREP_13B_03_11x2规则排版准备.md` | 13B-03 row-major 11x2、20/30 mm 净距、锁定和原子排版准备 |
+| `DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` | 13B-04 fixture 幅面、投影碰撞、逐实例准入和 production Gate |
 | `DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF source、LRU、异步 stale 和错误合同 |
 | `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | Stage 13 的 17 个近程原子任务依赖、建议文件所有权、测试和验收准备 |
 | `DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 设备/Profile/性能/3D 后端未决输入及阻断范围 |
