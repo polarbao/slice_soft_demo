@@ -1,7 +1,7 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..05、09A-02 COMPLETE / 13B-06 PREPARATION
-> 版本：v1.4
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..05、09A-02 COMPLETE / 13B-06 READY
+> 版本：v1.5
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
 
@@ -221,7 +221,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.6 13B-06 单 package 与 scene report
 
-状态：`PREPARED / WAIT 13B-05`
+状态：`READY FOR FIXTURE DEVELOPMENT / 13B-05 PASS`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -231,6 +231,9 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | 单 package、单层单 TIFF、manifest layer list、modelId/instanceId、原子发布、失败无伪成功 package、RIP strict |
 | 协议边界 | 不修改 `p0.rgbwsv.2` 固定字段和六通道语义 |
 | 完成输出 | 可审计的联合 package 候选 |
+
+详细合同以 `DOC_PREP_13B_06_单Package与SceneReport准备.md` 和
+`CODEX_PROMPT_13B_06_单Package与SceneReport执行指令.md` 为准。
 
 ### 5.7 13B-07 真实模型矩阵与收口
 
@@ -369,5 +372,5 @@ Stage 13 production readiness：未完成；
 13A-R2/R3、13B-R4 中长期详细设计：有意延后，当前只有 Epic。
 ```
 
-因此，当前无需继续扩写 P0 通用文档；下一步需要把 13B-06 的通用准备细化为独立合同和执行指令。
+因此，当前无需继续扩写 P0 通用文档；13B-06 已具备独立合同和执行指令，可以进入 fixture 开发。
 中长期 3D 和自动 nesting 必须在 P0 证据完成后另立 PRD/DEV/DEMO/TASKS，不得夹带进入近程任务。

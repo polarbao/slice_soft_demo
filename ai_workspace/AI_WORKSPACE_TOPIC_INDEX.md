@@ -26,11 +26,12 @@
 13B-02=COMPLETE，1..22 实例列表、场景操作和 UI Smoke PASS；
 13B-03=COMPLETE，11x2 排版、原子恢复、配置回读和 UI Smoke PASS；
 13B-04=FUNCTIONAL FIXTURE COMPLETE，production buildVolume 输入 OPEN；
-13B-05=READY FOR FIXTURE DEVELOPMENT；
+13B-05=FIXTURE COMPLETE；
+13B-06=READY FOR FIXTURE DEVELOPMENT；
 13C-01=READY / 按固定顺序排在 13B-07 后；
 跨阶段执行看板=docs/codex_task/current/TASKS_12_13_后续开发计划总览清单.md；
 12G-TCWS=FROZEN；
-下一任务=13B-05 fixture 全局 Raster 与联合层合成。
+下一任务=13B-06 fixture 单 package 与 scene report。
 ```
 
 ## Stage 12E 双切片模式与真实模型拓扑修复

@@ -44,6 +44,7 @@ docs/codex_task/current/CODEX_PROMPT_13B_02_模型列表与实例操作执行指
 docs/codex_task/current/CODEX_PROMPT_13B_03_11x2规则排版执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13B_04_幅面碰撞与逐实例准入执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13B_05_全局Raster与联合层合成执行指令.md
+docs/codex_task/current/CODEX_PROMPT_13B_06_单Package与SceneReport执行指令.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
@@ -61,7 +62,7 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 13B-03 的代码、测试、Qt 排版页和状态报告已完成；
 13B-04 fixture 功能 Gate 已完成，production Gate 仍等待正式设备幅面；
 13B-05 的 Legacy/Global adapter、共享 Grid、联合内存层和状态报告已完成；
-13B-06 通用准备已存在，下一步补齐独立 PREP/PROMPT 后才能进入开发；
+13B-06 独立 PREP/PROMPT 已完成，可以进入单 package 与 scene report fixture 开发；
 12G-TCWS 纹理载体/白色分色候选专项 FROZEN，不得实现。
 ```
 

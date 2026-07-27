@@ -53,7 +53,7 @@
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
-| 13B 多模型排版与联合切片 | 13B-01..05、13B-04A COMPLETE；13B-06 PREPARATION；13B-07 WAIT | 2 | 补齐并执行 13B-06 fixture |
+| 13B 多模型排版与联合切片 | 13B-01..05、13B-04A COMPLETE；13B-06 READY；13B-07 WAIT | 2 | 执行 13B-06 fixture |
 | 13C TIFF 原生统一预览 | P0 设计和原子准备完成；代码未开始 | 5 | 13C-01 READY，按固定顺序排在 13B-07 后 |
 
 计数口径：
