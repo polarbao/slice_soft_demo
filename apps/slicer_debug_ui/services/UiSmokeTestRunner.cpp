@@ -3414,11 +3414,13 @@ int UiSmokeTestRunner::ModelTransformPreflight(
             }
         });
 
-    ModelTopViewWidget canvas(&document, &selection);
+    QWidget workspace;
+    ModelTopViewWidget canvas(&document, &selection, &workspace);
     ModelTransformPanel panel(
         &document,
         &selection,
-        &controller);
+        &controller,
+        &workspace);
     ModelTopViewLoadRequest request;
     request.modelpath = QDir(options.repo_root).filePath(
         QStringLiteral(
@@ -3537,9 +3539,39 @@ int UiSmokeTestRunner::ModelTransformPreflight(
             "blocked transformed model was not retained for viewing"));
     }
 
+    const QList<QSize> sizes{
+        QSize(1280, 720),
+        QSize(1440, 900),
+        QSize(1920, 1080),
+    };
+    for (const QSize& size : sizes)
+    {
+        workspace.resize(size);
+        panel.setGeometry(
+            size.width() - 300,
+            0,
+            300,
+            size.height());
+        canvas.setGeometry(
+            0,
+            0,
+            size.width() - 300,
+            size.height());
+        if (panel.geometry().right() >= size.width()
+            || canvas.geometry().right() >= panel.geometry().left()
+            || !canvas.HasRenderableGeometry())
+        {
+            return fail(QStringLiteral(
+                "preflight panel overlaps view or hides blocked model "
+                "at %1x%2")
+                    .arg(size.width())
+                    .arg(size.height()));
+        }
+    }
+
     return pass(QStringLiteral(
         "model-transform-preflight mirror-x/y/source/effective/"
-        "latest-revision/global-blocked-viewable"));
+        "latest-revision/global-blocked-viewable/three-window-sizes"));
 }
 
 int UiSmokeTestRunner::experimentalReportSummary(const UiSmokeTestOptions& options) {

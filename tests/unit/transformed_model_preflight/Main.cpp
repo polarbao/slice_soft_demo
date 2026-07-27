@@ -203,6 +203,68 @@ bool MissingTextureResourceBlocksBothModes()
             "missing texture blocks global");
 }
 
+bool RealAdmittedAssetsPassMirroredPreflight()
+{
+    const std::filesystem::path sourceRoot{SLICESOFT_SOURCE_DIR};
+    const std::vector<std::pair<std::filesystem::path, std::string>> inputs{
+        {
+            sourceRoot
+                / "model/obj/xiao_ma_wu_yu_new/"
+                  "MF_Xiao_ma_Damuzhi_ty02.obj",
+            "obj",
+        },
+        {sourceRoot / "model/obj/yecan/3.obj", "obj"},
+        {
+            sourceRoot
+                / "samples/models/3mf/texture2d_checker_cube.3mf",
+            "3mf",
+        },
+    };
+
+    slicer_core::TransformedModelPreflightService service;
+    bool passed{true};
+    for (std::size_t index{0U}; index < inputs.size(); ++index)
+    {
+        slicer_core::SliceConfig config;
+        config.input.model_path = inputs.at(index).first;
+        config.input.format = inputs.at(index).second;
+        config.auto_orient.enabled = false;
+        const slicer_core::SceneModel source =
+            slicer_core::load_model_report(config, sourceRoot);
+        slicer_core::ModelInstance instance = MakeInstance(source);
+        instance.instanceid =
+            "real-instance-" + std::to_string(index);
+        instance.transform.mirrorx = index != 1U;
+        instance.transform.mirrory = index != 0U;
+        instance.transformrevision = 1U;
+
+        auto request = MakeRequest(source, instance);
+        request.sourcehash =
+            "real-source-" + std::to_string(index);
+        request.resourcehash =
+            "real-resource-" + std::to_string(index);
+        const auto result = service.Run(request);
+
+        passed = ExpectTrue(
+                     result.IsValid(),
+                     "real admitted asset preflight completes")
+            && ExpectTrue(
+                result.source.result.status
+                    == slicer_core::ModelPreflightStatus::Passed,
+                "real admitted source remains passed")
+            && ExpectTrue(
+                result.transformed.result.status
+                    == slicer_core::ModelPreflightStatus::Passed,
+                "real admitted mirror remains passed")
+            && ExpectTrue(
+                result.transformed.result.globalAdmission.status
+                    == slicer_core::ModelPreflightAdmissionStatus::Passed,
+                "real admitted mirror passes global admission")
+            && passed;
+    }
+    return passed;
+}
+
 }  // namespace
 
 int main()
@@ -212,6 +274,7 @@ int main()
     ok = TopologyAdmissionRemainsModeSpecific() && ok;
     ok = CancelAndStaleFailClosed() && ok;
     ok = MissingTextureResourceBlocksBothModes() && ok;
+    ok = RealAdmittedAssetsPassMirroredPreflight() && ok;
     if (!ok)
     {
         return 1;
