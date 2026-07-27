@@ -97,6 +97,8 @@ add_library(slicer_core
     src/slicer_core/geometry/PointInClosedMeshQuery.h
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.cpp
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.h
+    src/slicer_core/geometry/TransformedModelAdapter.cpp
+    src/slicer_core/geometry/TransformedModelAdapter.h
     src/slicer_core/geometry/ShellMask.cpp
     src/slicer_core/geometry/ShellMask.h
     src/slicer_core/geometry/TriangleMeshData.cpp
@@ -221,6 +223,10 @@ add_library(slicer_core
     src/slicer_core/rip_reader.h
     src/slicer_core/scene/SceneModel.cpp
     src/slicer_core/scene/SceneModel.h
+    src/slicer_core/scene/ModelInstance.cpp
+    src/slicer_core/scene/ModelInstance.h
+    src/slicer_core/scene/ModelTransform.cpp
+    src/slicer_core/scene/ModelTransform.h
     src/slicer_core/SliceRunTelemetry.h
     src/slicer_core/slicer.cpp
     src/slicer_core/slicer.h
@@ -238,6 +244,9 @@ add_library(slicer_core
     src/slicer_core/support/SupportShapeReport.h
     src/slicer_core/system/ProcessMemoryStats.cpp
     src/slicer_core/system/ProcessMemoryStats.h
+    src/slicer_core/system/Sha256.cpp
+    src/slicer_core/system/Sha256.h
+    src/slicer_core/system/Sha256Internal.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h
     src/slicer_core/tiff_io.cpp
@@ -549,6 +558,12 @@ target_compile_definitions(model_preflight_contract_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(model_transform_unit_tests
+    tests/unit/model_transform/Main.cpp
+)
+
+target_link_libraries(model_transform_unit_tests PRIVATE slicer_core)
+
 add_executable(model_preflight_service_unit_tests
     tests/unit/model_preflight_service/main.cpp
 )
@@ -823,6 +838,7 @@ add_test(NAME surface_shell_texture_service_unit_tests COMMAND surface_shell_tex
 add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_composer_unit_tests)
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
+add_test(NAME model_transform_unit_tests COMMAND model_transform_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
