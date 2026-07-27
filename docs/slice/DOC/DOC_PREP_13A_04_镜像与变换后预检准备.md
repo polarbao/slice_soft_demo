@@ -1,8 +1,8 @@
 # DOC_PREP 13A-04 镜像与变换后预检准备
 
-> 文档状态：PREPARED / WAIT 13A-03
+> 文档状态：READY FOR DEVELOPMENT
 > 日期：2026-07-27
-> 前置：13A-03 COMPLETE
+> 前置：13A-03 COMPLETE（`22f4a46`）
 > 后续：13A-05 WAIT 13A-04
 
 ## 1. 任务目标
@@ -26,7 +26,19 @@ blocked 允许只读查看，不允许生产写包；
 ## 3. 当前能力与必须补齐项
 
 13A-01 的 `TransformedModelAdapter` 已实现 mirror winding/UV 调换和 determinant metadata；
-13A-02 已能显示 blocked；13A-03 将提供 command/revision/session config。
+13A-02 已能显示 blocked；13A-03 已提供 repository、command/revision、异步重投影和 session config。
+
+13A-04 应直接复用以下实际 API：
+
+```text
+SceneModelRepository::Find -> shared_ptr<const SceneModel>；
+SceneDocument::Instance/SceneRevision/SourceCacheKey/CommitInstance；
+SceneTransformController::SetTransform；
+ModelTopViewLoader::RequestProjection；
+SceneProjectionRequest；
+ModelTransformPanel；
+SceneTransformSaveRequest/SaveSceneEffectiveConfig。
+```
 
 当前 `ModelPreflightService` 主要从单模型 SliceConfig 重新导入模型，不能直接保证使用
 `ModelInstance::effectiveTransform`。13A-04 必须新增或抽取一个无 Qt 的 transformed preflight 入口：
@@ -111,5 +123,5 @@ UI Smoke：
 
 ## 7. 准备结论
 
-需求、服务边界和测试口径已准备，但必须等待 13A-03 的 SceneDocument/Controller/session transaction
-实现。13A-04 开发前应确认 13A-03 实际 Public API，再据此生成独立执行指令；当前不得并行提前编码。
+需求、服务边界、实际 13A-03 Public API、执行指令和测试口径均已准备。13A-04 可在用户授权后开发；
+仍不得并行实现 13A-05、多模型排版、自动修复或生产 TIFF 改造。
