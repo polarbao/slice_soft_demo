@@ -1,6 +1,6 @@
 # TASKS 12E-09C X/Y DPI 任务清单
 
-> 状态：09C-01..05 COMPLETE / 09C-06 READY
+> 状态：09C-01..06 COMPLETE
 > 日期：2026-07-24
 
 ## 1. 09C-01 核心配置与协议边界
@@ -189,7 +189,7 @@ Quick CI PASS。
 
 ## 6. 09C-06 生产矩阵与收口
 
-状态：READY
+状态：COMPLETE / 2026-07-24
 
 目标：
 
@@ -208,6 +208,18 @@ Debug/Release、schema/golden/Quick CI；
 
 ```text
 docs/slice/REPORT/REPORT_12E_09C_XY_DPI当前状态.md
+```
+
+完成证据：
+
+```text
+Release 同一真实模型四 case：Legacy 600/600、Legacy 635/600、
+Global restricted 635/600、Global material parity 635/600 全部 PASS；
+manifest/preview/report/TIFF/RIP strict 同源且无 fallback；
+Legacy 600/600 与 635/600 物理范围差在 0.05 mm 内；
+Legacy 与 Global restricted 635/600 物理范围差在 0.25 mm 内；
+外侧光油分别使用 X/Y 物理像素离散；
+Debug/Release CTest 58/58，schema、golden、Quick CI PASS。
 ```
 
 ## 7. 执行规则

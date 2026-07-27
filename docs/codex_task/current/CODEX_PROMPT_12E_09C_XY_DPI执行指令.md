@@ -1,6 +1,6 @@
 # CODEX_PROMPT 12E-09C X/Y DPI 执行指令
 
-> 状态：09C-01..05 COMPLETE / 09C-06 READY
+> 状态：09C-01..06 COMPLETE
 
 执行前阅读：
 
@@ -34,4 +34,5 @@ Layer/Overlay Preview 物理比例显示和缺失元数据降级提示。
 
 2026-07-24 已完成 09C-02：RIP Reader 和共享 RGBWSV writer 接受并严格校验合法非等方
 DPI、独立物理像素字段及可选冗余数组；显式 600/600 保持兼容，bad package 使用稳定
-`E_GRID_INVALID` 失败。当前下一原子任务为 09C-06 生产矩阵与阶段收口。
+`E_GRID_INVALID` 失败。09C-06 已通过真实模型 Release 四 case、RIP strict、Debug/Release、
+schema/golden/Quick CI 并完成阶段收口。后续正式顺序为 09A-02..06，再进入 12E-10A..D。

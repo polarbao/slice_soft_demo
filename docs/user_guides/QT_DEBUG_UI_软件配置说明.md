@@ -512,5 +512,19 @@ UI 通过配置文件中的：
 - 静默从 Global 回退到 Legacy。
 - 解除 Global Profile 的材料能力锁定。
 
-12E-09A diagnostic UI 仍是独立待办。12E-09C 已完成 09C-01..05，当前等待 09C-06
-生产矩阵与阶段收口；它不改变 09B 已冻结的双模式产品边界。
+12E-09A diagnostic UI 仍是独立待办。12E-09C 已完成 09C-01..06；首批通过的软件生产组合为
+600/600 与 635/600，635/600 已覆盖 Legacy、Global restricted 和 Global material parity
+真实模型 package 与 RIP strict。该结论不等于打印机硬件标定，也不改变 09B 已冻结的双模式
+产品边界：Legacy 仍为默认，Global 仍需显式选择且禁止静默回退。
+
+开发/验收人员可运行：
+
+```powershell
+.\scripts\run_12e_09c_06_dpi_matrix.ps1 -BuildDir build -Config Release
+```
+
+机器可读结果位于：
+
+```text
+output/benchmarks/12e_09c_06_dpi_matrix/dpi_matrix_summary.json
+```
