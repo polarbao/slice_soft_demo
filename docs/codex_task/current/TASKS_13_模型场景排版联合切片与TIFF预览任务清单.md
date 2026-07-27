@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01..05 / 13B-01 / 12E-09A-02 COMPLETE / NEXT 13B-02 READY
+> 状态：13-00 / 13A-01..05 / 13B-01/02 / 12E-09A-02 COMPLETE / NEXT 13B-03 READY
 > 日期：2026-07-27
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -41,7 +41,8 @@ Stage 12/13 跨阶段执行看板。
 13B-01：COMPLETE，MultiModelScene、ResourceScope、Scene Effective Config 和单测已落地；
 13C-01：DOC_PREP_13C_01，READY，但按单贡献者顺序排在 identity wave 后；
 13A-01..05、13B-01..07、13C-01..05：DOC_PREP_13 全阶段实施准备已覆盖；
-13A-03/04 已实现，13A-05 已完成 M13-1 候选收口，13B-02 已补齐独立 PREP/PROMPT；
+13A-03/04 已实现，13A-05 已完成 M13-1 候选收口，13B-02 已实现 1..22 实例列表与场景草稿；
+13B-03 已按实际 SceneDocument/ModelListPanel API 补齐独立 PREP/PROMPT；
 Stage 13 未决产品输入：DOC_CHECKLIST_13，按具体 Gate 阻断，不虚构设备值。
 ```
 
@@ -190,16 +191,27 @@ REPORT_13A_02_模型俯视渲染当前状态.md。
 
 ### 13B-02 模型列表与实例操作
 
-状态：READY FOR DEVELOPMENT / CURRENT
+状态：COMPLETE（2026-07-27）
 
 目标：添加、复制、删除、选择、隐藏、锁定，显示 modelId/instanceId/transform/admission。
 
 专项准备：`DOC_PREP_13B_02_模型列表与实例操作准备.md` 和
 `CODEX_PROMPT_13B_02_模型列表与实例操作执行指令.md`。
 
+实际证据：
+
+```text
+SceneDocument 1..22 有序实例和原子命令；
+ModelListPanel 与多实例 ModelTopViewWidget；
+同源只读资源身份共享和多源 ResourceScope；
+多实例 Scene Effective Config 保存/回读；
+scene_document_unit_tests、multi-model-list UI Smoke、Quick CI PASS；
+REPORT_13B_02_模型列表与实例操作当前状态.md。
+```
+
 ### 13B-03 11x2 规则排版
 
-状态：PREPARED / WAIT 13B-02
+状态：READY FOR DEVELOPMENT / CURRENT
 
 目标：
 
@@ -213,6 +225,9 @@ row_major；
 UI 步长 0.01 mm；
 稳定 derived transform。
 ```
+
+专项准备：`DOC_PREP_13B_03_11x2规则排版准备.md` 和
+`CODEX_PROMPT_13B_03_11x2规则排版执行指令.md`。
 
 ### 13B-04 幅面、碰撞和逐实例准入
 
@@ -298,13 +313,13 @@ UI 步长 0.01 mm；
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-合计：17 个近程原子任务，当前完成 6；
+合计：17 个近程原子任务，当前完成 7；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13B-02 模型列表与实例操作`。其独立 PREP/PROMPT 已按 13A 实际 API 补齐。
-`13C-01` 技术上可独立开始，但单贡献者按固定顺序先完成模型俯视和 scene-aware UI，再进入 TIFF
-原生预览。
+当前唯一推荐入口为 `13B-03 11x2 规则排版`。其独立 PREP/PROMPT 已按 13B-02 实际
+`SceneDocument`、`ModelListPanel` 和 Scene Effective Config API 补齐。`13C-01` 技术上可独立
+开始，但单贡献者按固定顺序先完成模型场景与排版链，再进入 TIFF 原生预览。
 
 ## 11. 任务验证规则
 

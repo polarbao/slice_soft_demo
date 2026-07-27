@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01、09A-02 COMPLETE / 13B-02 READY
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01/02、09A-02 COMPLETE / 13B-03 READY
 > 版本：v1.3
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -151,7 +151,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.2 13B-02 模型列表与实例操作
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE（2026-07-27）`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -167,17 +167,20 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.3 13B-03 11x2 规则排版
 
-状态：`PREPARED / WAIT 13B-02`
+状态：`READY FOR DEVELOPMENT`
 
 | 项目 | 准备内容 |
 |---|---|
-| 前置 | 13B-02 |
+| 前置 | 13B-02 COMPLETE |
 | 核心文件 | 新增 `layout/BuildVolume.*`、`layout/GridLayoutPolicy.*` |
 | UI 文件 | 新增 `widgets/SceneLayoutPanel.*` |
 | 计划测试 | `grid_layout_policy_unit_tests`、layout UI smoke |
 | 必测 | 1/11/12/22 实例、row_major、边到边 20/30 mm、不同尺寸 bbox、确定性、手工 override、超过 22 拒绝 |
 | 外部 Gate | buildVolume 未知允许 fixture/draft，不允许 production ready |
 | 完成输出 | 可序列化 requested/derived/effective layout |
+
+详细合同以 `DOC_PREP_13B_03_11x2规则排版准备.md` 和
+`CODEX_PROMPT_13B_03_11x2规则排版执行指令.md` 为准。
 
 ### 5.4 13B-04 幅面、碰撞和逐实例准入
 

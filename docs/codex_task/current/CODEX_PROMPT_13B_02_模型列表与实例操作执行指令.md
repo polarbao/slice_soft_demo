@@ -1,8 +1,9 @@
 # CODEX_PROMPT 13B-02 模型列表与实例操作执行指令
 
-> 状态：READY FOR DEVELOPMENT
+> 状态：COMPLETE
 > 日期：2026-07-27
 > 前置：13A-05 COMPLETE / M13-1 CANDIDATE PASS，13B-01 COMPLETE
+> 完成提交：`2f29425 feat(13B-02): 建立多模型列表与实例操作闭环`
 
 ## 1. 必读
 

@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-27
-> 当前阶段：13A-01..05 COMPLETE / 12G-TCWS FROZEN / NEXT 13B-02 READY
+> 当前阶段：13A-01..05、13B-01/02 COMPLETE / 12G-TCWS FROZEN / NEXT 13B-03 READY
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -41,6 +41,7 @@ docs/codex_task/current/CODEX_PROMPT_13A_03_选择与精确变换执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13A_04_镜像与变换后预检执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13A_05_模型俯视与变换阶段收口执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13B_02_模型列表与实例操作执行指令.md
+docs/codex_task/current/CODEX_PROMPT_13B_03_11x2规则排版执行指令.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
@@ -52,9 +53,10 @@ docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资�
 ```text
 12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE；
 Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
-13A-01..05、13B-01、scene-aware 12E-09A-02 代码、单测和回归 COMPLETE；
+13A-01..05、13B-01/02、scene-aware 12E-09A-02 代码、单测和回归 COMPLETE；
 13A-05 已完成统一回归和 M13-1 候选收口；
-13B-02 的独立 PREP/PROMPT 已按 13A 实际 API 补齐，当前 READY；
+13B-02 的 1..22 实例列表、场景操作和 UI Smoke 已完成；
+13B-03 的独立 PREP/PROMPT 已按 13B-02 实际 API 补齐，当前 READY；
 12G-TCWS 纹理载体/白色分色候选专项 FROZEN，不得实现。
 ```
 
@@ -96,7 +98,7 @@ docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预
 ```
 
 当前已完成 P0 需求/设计/验证、全阶段原子任务准备、13A-01..05/13B-01 核心能力和 scene-aware
-`12E-09A-02`。下一步执行 `13B-02` 模型列表与实例操作。13C 必须在
+`12E-09A-02`。下一步执行 `13B-03` 11x2 规则排版。13C 必须在
 `12E-09A-05` 前完成生产 TIFF 数据源收口。Stage 13 不改变 RGBWSV 协议，也不把多模型失败静默
 降级成多个单模型成功。
 

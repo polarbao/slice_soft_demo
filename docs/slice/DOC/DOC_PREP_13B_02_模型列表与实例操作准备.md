@@ -1,9 +1,10 @@
 # DOC_PREP 13B-02 模型列表与实例操作准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：COMPLETE
 > 日期：2026-07-27
 > 前置：13A-05 COMPLETE / M13-1 CANDIDATE PASS，13B-01 COMPLETE
-> 当前任务：13B-02 模型列表与实例操作
+> 完成提交：`2f29425 feat(13B-02): 建立多模型列表与实例操作闭环`
+> 下一任务：13B-03 11x2 规则排版
 
 ## 1. 任务目标
 
@@ -174,7 +175,7 @@ UI Smoke：
 ## 10. 准入结论
 
 13A-05 已完成统一回归并形成 M13-1 候选，13B-01 已冻结 `MultiModelScene`、`ModelSource`、
-`ResourceScope` 和 Scene Effective Config 合同。13B-02 当前具备开发准入：
+`ResourceScope` 和 Scene Effective Config 合同。13B-02 已按以下边界完成：
 
 ```text
 复用 SceneDocument / SceneSelectionModel，不新建平行 UI scene store；
@@ -185,6 +186,6 @@ UI Smoke：
 沿用 13B-01 scene identity 和 scene_profile_only 配置边界。
 ```
 
-独立执行入口为
-`docs/codex_task/current/CODEX_PROMPT_13B_02_模型列表与实例操作执行指令.md`。本任务完成后只解锁
-13B-03，不得提前实现规则排版、碰撞或联合切片。
+实际状态报告为
+`docs/slice/REPORT/REPORT_13B_02_模型列表与实例操作当前状态.md`。本任务已解锁 13B-03；下一步
+使用 `DOC_PREP_13B_03_11x2规则排版准备.md`，不得提前实现碰撞或联合切片。

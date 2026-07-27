@@ -4,7 +4,7 @@
 
 ## Stage 13 模型场景、排版联合切片与 TIFF 原生预览
 
-当前上下文：`context_handoff/2026-07-27_13A完成与13B-02准备.md`
+当前上下文：`context_handoff/2026-07-27_13B-02完成与13B-03准备.md`
 
 当前任务入口：`docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md`
 
@@ -12,7 +12,7 @@
 
 ```text
 13-R0、P0 需求/设计/验证和 17 个近程原子任务准备完成；
-实现代码已开始，Stage 13 近程任务完成 6/17，跨阶段前置 09A-02 已完成；
+实现代码已开始，Stage 13 近程任务完成 7/17，跨阶段前置 09A-02 已完成；
 13A=模型俯视和实例变换；
 13B=最多 11x2 规则排版和联合切片；
 13C=TIFF 原生 RGBWSV 单通道与 RGB+S+W+V；
@@ -23,11 +23,12 @@
 13B-01=COMPLETE；
 12E-09A-02=COMPLETE；
 13A-05=COMPLETE，M13-1 CANDIDATE PASS；
-13B-02=READY，独立 PREP/PROMPT 已补齐；
+13B-02=COMPLETE，1..22 实例列表、场景操作和 UI Smoke PASS；
+13B-03=READY，独立 PREP/PROMPT 已补齐；
 13C-01=READY / 按固定顺序排在 13B-07 后；
 跨阶段执行看板=docs/codex_task/current/TASKS_12_13_后续开发计划总览清单.md；
 12G-TCWS=FROZEN；
-下一任务=13B-02 模型列表与实例操作。
+下一任务=13B-03 11x2 规则排版。
 ```
 
 ## Stage 12E 双切片模式与真实模型拓扑修复
