@@ -501,6 +501,10 @@ bool EffectiveConfigWriteReadbackAndStale()
         slicer_core::WriteSceneEffectiveConfig(request);
     const auto readback =
         slicer_core::ReadSceneEffectiveConfig(generatedPath);
+    const auto revertedScene = readback.IsValid()
+        ? slicer_core::DeserializeMultiModelScene(
+              readback.document.at("sceneConfig"))
+        : slicer_core::MultiModelSceneDecodeResult{};
 
     slicer_core::MultiModelScene changed = request.scene;
     ++changed.scenerevision;
@@ -526,6 +530,16 @@ bool EffectiveConfigWriteReadbackAndStale()
             readback.IsValid()
                 && readback.document.dump(0) == written.document.dump(0),
             "effective config readback matches generated document")
+        && ExpectTrue(
+            revertedScene.IsValid()
+                && revertedScene.scene.sceneid
+                    == request.scene.sceneid
+                && revertedScene.scene.scenerevision
+                    == request.scene.scenerevision
+                && slicer_core::ComputeMultiModelSceneHash(
+                       revertedScene.scene)
+                    == sourceSceneHash,
+            "effective config scene snapshot supports identity-preserving revert")
         && ExpectTrue(
             slicer_core::ComputeMultiModelSceneHash(request.scene)
                 == sourceSceneHash,
