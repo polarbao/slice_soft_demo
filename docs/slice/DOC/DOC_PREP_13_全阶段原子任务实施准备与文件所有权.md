@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01、13A-02、13B-01、09A-02 COMPLETE / 13A-03 READY
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..04、13B-01、09A-02 COMPLETE / 13A-05 READY
 > 版本：v1.2
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -89,7 +89,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 4.3 13A-03 选择与精确变换
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE（2026-07-27）`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -105,7 +105,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 4.4 13A-04 镜像与 post-transform preflight
 
-状态：`PREPARED / WAIT 13A-03`
+状态：`COMPLETE（2026-07-27）`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -121,11 +121,11 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 4.5 13A-05 阶段收口
 
-状态：`PREPARED / WAIT 13A-04`
+状态：`READY FOR DEVELOPMENT`
 
 | 项目 | 准备内容 |
 |---|---|
-| 前置 | 13A-04 |
+| 前置 | 13A-04 COMPLETE |
 | 主要修改 | UI self-test/smoke、用户手册、Stage 13A report、索引和上下文 |
 | 计划验证 | Debug build、CTest、self-test、三窗口尺寸 smoke、Quick CI |
 | 必测资产 | xiao_ma、yecan、Texture2D 3MF 正向；复杂浮雕 blocked 反向 |

@@ -2,7 +2,7 @@
 
 > 版本：v0.4
 > 日期：2026-07-27
-> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01、13A-02、13B-01、跨阶段 09A-02 COMPLETE / NEXT 13A-03
+> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..04、13B-01、跨阶段 09A-02 COMPLETE / NEXT 13A-05
 
 ## 1. 阶段依赖
 
@@ -32,8 +32,9 @@
 |---|---|---|
 | 13A-01 | COMPLETE（2026-07-27） | Public DTO、数学、pivot、Z、revision、错误码、adapter 和单测已落地 |
 | 13A-02 | COMPLETE（2026-07-27） | +Z 俯视 core DTO、异步导入、毫米网格、选择、blocked 显示和 UI Smoke 已落地 |
-| 13A-03 | READY FOR DEVELOPMENT | 精确 X/Y、绕 Z、统一缩放、revision、异步重投影和 session 回读合同已冻结 |
-| 13A-04 | PREPARED / WAIT 13A-03 | mirror 与 transformed preflight 边界已准备，执行指令等待 13A-03 实际 Public API |
+| 13A-03 | COMPLETE | 精确 X/Y、绕 Z、统一缩放、revision、异步重投影和 session 回读已实现 |
+| 13A-04 | COMPLETE | mirror 与 transformed preflight、Legacy/Global 独立准入已实现 |
+| 13A-05 | READY FOR DEVELOPMENT | 统一回归、用户说明、REPORT_13A 和 M13-1 收口合同已冻结 |
 | 13B-01 | COMPLETE（2026-07-27） | MultiModelScene、ResourceScope、scene identity、Scene Effective Config、正负 fixture、单测和回归已落地 |
 | 13B-02 | READY BY DEPENDENCY / SCHEDULE AFTER 13A-05 | 1..22 实例、资源隔离、列表命令和场景草稿边界已准备 |
 | 13C-01 | READY / SCHEDULE AFTER IDENTITY WAVE | TIFF source、cache、异步 identity、错误码和测试已冻结 |

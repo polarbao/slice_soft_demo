@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-27
-> 适用阶段：Stage 12D COMPLETE；12E-09A-02/09B/09C COMPLETE；NEXT 13A-03
+> 适用阶段：Stage 12D COMPLETE；12E-09A-02/09B/09C COMPLETE；NEXT 13A-05
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01/02、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-03..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 总体文档和 17 个近程任务实施准备已完成，13A-01/13A-02/13B-01 代码完成；当前入口为 13A-03。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01/02、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-03..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 总体文档和 17 个近程任务实施准备已完成，13A-01..04/13B-01 代码完成；当前入口为 13A-05 阶段收口。
 
 ## 目录结构
 
@@ -40,9 +40,11 @@
 | `REPORT/REPORT_12X_阶段计划与完成度总览.md` | Stage 12A 至 12F 当前状态、历史快照、后续依赖和唯一下一任务 |
 | `REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 文档准备、当前实现事实、优先级和下一任务 |
 | `REPORT/REPORT_13A_02_模型俯视渲染当前状态.md` | 13A-02 +Z 俯视几何、Qt 异步加载、选择和实际验证 |
+| `REPORT/REPORT_13A_03_选择与精确变换当前状态.md` | 13A-03 精确变换、异步重投影和 session config |
+| `REPORT/REPORT_13A_04_镜像与变换后预检当前状态.md` | 13A-04 镜像、变换后预检和双模式独立准入 |
 | `REPORT/REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md` | 13B-01 scene identity 与 Effective Config 实际实现和验证 |
 | `REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 09A-02 single_model/scene 诊断生效配置实际实现和验证 |
-| `DOC/DOC_PREP_13A_03_选择与精确变换准备.md` | 当前 13A-03 变换、revision、异步重投影和 session 回读执行准备 |
+| `DOC/DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 变换、revision、异步重投影和 session 回读执行准备 |
 | `../codex_task/current/TASKS_12_13_后续开发计划总览清单.md` | Stage 12/13 跨阶段当前任务、固定顺序和状态更新规则 |
 | `DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md` | 13A/13B/13C 边界、产品决策及与 12E 的顺序 |
 | `DOC/DOC_DECISION_12X_剩余任务优先级与专项冻结.md` | Stage 12 剩余数量、Stage 13 顺序和 12G-TCWS 冻结 |
@@ -203,7 +205,8 @@
 | `DOC/DOC_PREP_12E_09A_02_SceneAwareEffectiveConfig准备.md` | 09A-02 single_model/scene Diagnostic Effective Config 准备 |
 | `DOC/DOC_PREP_13A_02_模型俯视渲染准备.md` | 13A-02 +Z 俯视 DTO、Qt 画布、坐标和 smoke 执行准备 |
 | `DOC/DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 X/Y、绕 Z、统一缩放、revision 和 session 回读执行准备 |
-| `DOC/DOC_PREP_13A_04_镜像与变换后预检准备.md` | 13A-04 mirror 和 transformed preflight 准备；等待 13A-03 |
+| `DOC/DOC_PREP_13A_04_镜像与变换后预检准备.md` | 13A-04 mirror 和 transformed preflight 执行准备 |
+| `DOC/DOC_PREP_13A_05_模型俯视与变换阶段收口准备.md` | 13A-05 统一回归、用户说明和 M13-1 收口准备 |
 | `DOC/DOC_PREP_13B_02_模型列表与实例操作准备.md` | 13B-02 1..22 实例列表、资源隔离和场景草稿准备 |
 | `DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF Source/Cache 执行级准备 |
 | `DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | 13A/13B/13C 17 个近程任务的实施准备和文件所有权 |

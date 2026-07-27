@@ -2,7 +2,7 @@
 
 > 文档状态：READY FOR DEVELOPMENT
 > 日期：2026-07-27
-> 前置：13A-03 COMPLETE（`22f4a46`）
+> 前置：13A-03 COMPLETE（`84bc2f7`）
 > 后续：13A-05 WAIT 13A-04
 
 ## 1. 任务目标
