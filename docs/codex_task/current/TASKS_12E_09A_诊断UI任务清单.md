@@ -1,12 +1,16 @@
 # TASKS 12E-09A 诊断 UI 任务清单
 
-> 状态：09A-01 COMPLETE / 09A-02 WAIT 13B-01 / 09A-03..06 PREPARED
+> 状态：09A-01 COMPLETE / 09A-02 READY / 09A-03..06 PREPARED
 > 日期：2026-07-27
 > 性质：独立 diagnostic UI 支线
 
 前置执行合同：
 
 ```text
+docs/slice/PRD/PRD_12E_09A_SceneAware诊断UI.md；
+docs/slice/DEV/DEV_12E_09A_SceneAware诊断UI设计.md；
+docs/slice/DEMO/DEMO_12E_09A_SceneAware诊断UI验证方案.md；
+docs/slice/DOC/DOC_PREP_12E_09A_02_SceneAwareEffectiveConfig准备.md；
 docs/slice/DOC/DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md；
 docs/slice/DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md。
 ```
@@ -43,7 +47,7 @@ docs/slice/REPORT/REPORT_12E_09A_01_只读DiagnosticFacade与UIDTO当前状态.m
 
 ## 3. 09A-02 Diagnostic Effective Config
 
-状态：PREPARED / WAIT 13B-01 SCENE IDENTITY
+状态：READY FOR DEVELOPMENT（13B-01 COMPLETE）
 
 目标：
 
@@ -57,6 +61,12 @@ scene 模式绑定 sceneId/instanceId/sceneRevision/transformRevision。
 ```
 
 验收：保存、回读、回退、stale override 清理和负向配置单测。
+
+执行提示：
+
+```text
+docs/codex_task/current/CODEX_PROMPT_12E_09A_SceneAware诊断UI执行指令.md
+```
 
 ## 4. 09A-03 中文参数控件与状态区
 

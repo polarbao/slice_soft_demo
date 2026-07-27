@@ -1,6 +1,6 @@
 # DOC_DECISION_12X 剩余任务优先级与专项冻结
 
-> 文档状态：ACCEPTED EXECUTION ORDER / IMPLEMENTATION NOT STARTED
+> 文档状态：ACCEPTED EXECUTION ORDER / 13A-01、13B-01 COMPLETE
 > 版本：v1.0
 > 日期：2026-07-27
 > 决策范围：12E-09A、12E-10、12F、纹理载体与白色分色专项、Stage 13
@@ -197,4 +197,3 @@ preview PNG 合成路线。
 Stage 13B 的生产 Gate 仍需要设备幅面和性能预算；
 12F 算法优化延后到场景/Raster 边界更稳定后。
 ```
-

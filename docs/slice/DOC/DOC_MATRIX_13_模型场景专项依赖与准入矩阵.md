@@ -2,7 +2,7 @@
 
 > 版本：v0.3
 > 日期：2026-07-27
-> 状态：P0 ATOMIC PREPARATION COMPLETE / IMPLEMENTATION NOT STARTED
+> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01、13B-01 COMPLETE
 
 ## 1. 阶段依赖
 
@@ -31,7 +31,7 @@
 | 任务 | 准备状态 | 说明 |
 |---|---|---|
 | 13A-01 | COMPLETE（2026-07-27） | Public DTO、数学、pivot、Z、revision、错误码、adapter 和单测已落地 |
-| 13B-01 | READY FOR DEVELOPMENT | 13A-01 Public DTO 已落地；scene schema、未知 buildVolume、单 Profile P0 和事务已冻结 |
+| 13B-01 | COMPLETE（2026-07-27） | MultiModelScene、ResourceScope、scene identity、Scene Effective Config、正负 fixture、单测和回归已落地 |
 | 13C-01 | READY / SCHEDULE AFTER IDENTITY WAVE | TIFF source、cache、异步 identity、错误码和测试已冻结 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在

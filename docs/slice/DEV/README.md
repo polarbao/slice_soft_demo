@@ -32,3 +32,4 @@
 | `DEV_13A_模型俯视渲染与变换架构设计.md` | 13A 无 Qt 变换合同、俯视渲染和 3D 后端 Spike |
 | `DEV_13B_MultiModelScene规则排版与联合切片设计.md` | 13B MultiModelScene、规则排版、全局 raster 和联合写包 |
 | `DEV_13C_TIFFLayerSource与统一材料合成设计.md` | 13C TIFF Layer Source、LRU 和 RGBWSV 材料合成 |
+| `DEV_12E_09A_SceneAware诊断UI设计.md` | 09A Scene-aware Diagnostic Effective Config、Worker 和预览边界 |

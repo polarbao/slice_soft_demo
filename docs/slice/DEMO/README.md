@@ -18,3 +18,4 @@
 | `DEMO_13A_模型俯视与变换验证方案.md` | 13A 俯视坐标、变换、镜像和准入验证 |
 | `DEMO_13B_多模型排版联合切片验证方案.md` | 13B 1/11/12/22 实例排版、联合 package 和 RIP 验证 |
 | `DEMO_13C_TIFF原生统一预览验证方案.md` | 13C 无 preview PNG、全材料叠加和 TIFF 缓存验证 |
+| `DEMO_12E_09A_SceneAware诊断UI验证方案.md` | 09A 单模型/场景身份、事务、Worker 和同层预览验证 |

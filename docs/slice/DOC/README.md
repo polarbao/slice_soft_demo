@@ -49,6 +49,7 @@
 | `DOC_DECISION_12X_剩余任务优先级与专项冻结.md` | 12E-09A/10、12F、Stage 13 优先级和 12G-TCWS 冻结决策 |
 | `DOC_PREP_13A_01_ModelTransform与ModelInstance合同准备.md` | 13A-01 Source/Instance 变换、pivot、Z、revision 和测试合同 |
 | `DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md` | 13B-01 scene identity、资源作用域、unknown buildVolume 和事务合同 |
+| `DOC_PREP_12E_09A_02_SceneAwareEffectiveConfig准备.md` | 09A-02 single_model/scene Diagnostic Effective Config 执行准备 |
 | `DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF source、LRU、异步 stale 和错误合同 |
 | `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | Stage 13 的 17 个近程原子任务依赖、建议文件所有权、测试和验收准备 |
 | `DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 设备/Profile/性能/3D 后端未决输入及阻断范围 |

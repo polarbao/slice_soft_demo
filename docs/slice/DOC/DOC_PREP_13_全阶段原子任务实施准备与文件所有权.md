@@ -145,7 +145,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.2 13B-02 模型列表与实例操作
 
-状态：`PREPARED / WAIT 13B-01 AND 13A-02`
+状态：`PREPARED / WAIT 13A-02`（13B-01 COMPLETE）
 
 | 项目 | 准备内容 |
 |---|---|

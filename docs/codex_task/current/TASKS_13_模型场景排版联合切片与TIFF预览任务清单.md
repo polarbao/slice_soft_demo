@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 COMPLETE / 13A-01 COMPLETE / NEXT 13B-01 READY
+> 状态：13-00 / 13A-01 / 13B-01 COMPLETE / NEXT 12E-09A-02 READY
 > 日期：2026-07-27
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -38,7 +38,7 @@ Stage 12/13 跨阶段执行看板。
 
 ```text
 13A-01：COMPLETE，Public DTO、变换数学、adapter 和单测已落地；
-13B-01：DOC_PREP_13B_01，READY FOR DEVELOPMENT；
+13B-01：COMPLETE，MultiModelScene、ResourceScope、Scene Effective Config 和单测已落地；
 13C-01：DOC_PREP_13C_01，READY，但按单贡献者顺序排在 identity wave 后；
 13A-01..05、13B-01..07、13C-01..05：DOC_PREP_13 全阶段实施准备已覆盖；
 Stage 13 未决产品输入：DOC_CHECKLIST_13，按具体 Gate 阻断，不虚构设备值。
@@ -83,7 +83,7 @@ model_preflight_service_unit_tests / slice_pipeline_router_unit_tests PASS。
 
 ## 4. 13B-01 MultiModelScene 与 Scene Effective Config
 
-状态：READY FOR DEVELOPMENT
+状态：COMPLETE（2026-07-27）
 
 目标：
 
@@ -97,13 +97,29 @@ requested/derived/effective transaction；
 不覆盖 fixture。
 ```
 
-验收：schema、save/readback/revert/stale、路径资源隔离和负向配置测试。
+实际验收：
+
+```text
+schema round-trip 与稳定 hash；
+save/readback/cancel/stale 与源文件保护；
+路径资源隔离、duplicate/missing reference 和 mixed Profile 负向测试；
+unresolved draft / fixture functional / device production buildVolume Gate；
+等价浮点和镜像变换组合；
+revision JSON 精确范围；
+Debug 全量构建、CTest 60/60、Qt self-test、Quick CI PASS。
+```
+
+状态报告：
+
+```text
+docs/slice/REPORT/REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md
+```
 
 完成后 Gate：允许执行 scene-aware `12E-09A-02`。
 
 ## 5. 12E-09A-02 Scene-aware Diagnostic Effective Config
 
-状态：WAIT 13B-01
+状态：READY FOR DEVELOPMENT
 
 要求：
 
@@ -119,7 +135,7 @@ subjectType 支持 single_model/scene；
 
 ### 13A-02 俯视渲染
 
-状态：READY / SCHEDULE AFTER 13B-01 IDENTITY CONTRACT
+状态：READY / SCHEDULE AFTER 12E-09A-02
 
 目标：+Z 俯视、XY 轴、毫米网格、轮廓、包围盒、选择和适应视图。
 
@@ -145,7 +161,7 @@ subjectType 支持 single_model/scene；
 
 ### 13B-02 模型列表与实例操作
 
-状态：PREPARED / WAIT 13B-01、13A-02
+状态：PREPARED / WAIT 13A-02
 
 目标：添加、复制、删除、选择、隐藏、锁定，显示 modelId/instanceId/transform/admission。
 
@@ -250,12 +266,12 @@ UI 步长 0.01 mm；
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-合计：17 个近程原子任务，当前完成 0；
+合计：17 个近程原子任务，当前完成 2；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口仍为 `13A-01`。`13C-01` 技术上可独立开始，但单贡献者不应在 13A-01
-执行中交叉修改 CMake/Qt 预览文件。
+当前唯一推荐入口为 scene-aware `12E-09A-02`。其独立 PRD/DEV/DEMO/PREP/PROMPT 已补齐。
+`13C-01` 技术上可独立开始，但单贡献者按固定顺序先完成诊断配置身份，再进入 13A-02/13C。
 
 ## 11. 任务验证规则
 

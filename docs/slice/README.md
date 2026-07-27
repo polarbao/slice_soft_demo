@@ -39,6 +39,7 @@
 | `REPORT/REPORT_12B_R2_OpenVDB_SDFUtility当前状态.md` | 12B-R2 与 12B 收口历史报告 |
 | `REPORT/REPORT_12X_阶段计划与完成度总览.md` | Stage 12A 至 12F 当前状态、历史快照、后续依赖和唯一下一任务 |
 | `REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 文档准备、当前实现事实、优先级和下一任务 |
+| `REPORT/REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md` | 13B-01 scene identity 与 Effective Config 实际实现和验证 |
 | `../codex_task/current/TASKS_12_13_后续开发计划总览清单.md` | Stage 12/13 跨阶段当前任务、固定顺序和状态更新规则 |
 | `DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md` | 13A/13B/13C 边界、产品决策及与 12E 的顺序 |
 | `DOC/DOC_DECISION_12X_剩余任务优先级与专项冻结.md` | Stage 12 剩余数量、Stage 13 顺序和 12G-TCWS 冻结 |
@@ -196,6 +197,7 @@
 | `DOC/DOC_MATRIX_13_模型场景专项依赖与准入矩阵.md` | Stage 13 原子任务依赖、优先级、生产和预览 Gate |
 | `DOC/DOC_PREP_13A_01_ModelTransform与ModelInstance合同准备.md` | 13A-01 变换与实例执行级准备 |
 | `DOC/DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md` | 13B-01 场景与 Effective Config 执行级准备 |
+| `DOC/DOC_PREP_12E_09A_02_SceneAwareEffectiveConfig准备.md` | 09A-02 single_model/scene Diagnostic Effective Config 准备 |
 | `DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF Source/Cache 执行级准备 |
 | `DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | 13A/13B/13C 17 个近程任务的实施准备和文件所有权 |
 | `DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 外部输入、临时工程规则和任务 Gate |
@@ -208,6 +210,9 @@
 | `PRD/PRD_13C_RGBWSV_TIFF原生统一预览.md` | TIFF 单通道、RGB+S+W+V 和重复预览 IO 收口需求 |
 | `DEV/DEV_13C_TIFFLayerSource与统一材料合成设计.md` | 异步 TIFF Layer Source、LRU 和材料显示合成器 |
 | `DEMO/DEMO_13C_TIFF原生统一预览验证方案.md` | 无 preview PNG、stripped/tiled、物理比例和缓存验证 |
+| `PRD/PRD_12E_09A_SceneAware诊断UI.md` | Scene-aware 诊断配置、异步分析和同层语义预览需求 |
+| `DEV/DEV_12E_09A_SceneAware诊断UI设计.md` | Diagnostic Effective Config 身份、事务、Worker 和预览架构 |
+| `DEMO/DEMO_12E_09A_SceneAware诊断UI验证方案.md` | single_model/scene、stale、异步和同层预览验证 |
 | `DOC/DOC_ANALYSIS_OpenVDB切片功能当前不可用原因.md` | OpenVDB 已完成测试但尚不可正式切片的原因分析 |
 | `DOC/DOC_RESEARCH_PrismSlicer功能处理策略与SliceSoft对照.md` | PrismSlicer 官网、论文、开源、视频与行业信息调研，以及与 SliceSoft 的能力/边界对照 |
 | `DOC/DOC_ANALYSIS_11B_OpenVDB姿态配置与同姿态性能对比.md` | OpenVDB 姿态配置差异与同姿态性能对比分析 |

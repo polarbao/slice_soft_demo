@@ -24,7 +24,7 @@
 Stage 13 P0 需求/设计/验证和 17 个近程原子任务准备：COMPLETE；
 13A-01：READY；
 13C-01：READY，但按单贡献者顺序排在 identity wave 后；
-13B-01：准备完整，等待 13A-01 Public DTO；
+13B-01：COMPLETE，MultiModelScene 与 Scene Effective Config 已落地；
 12E-09A-02：等待 13B-01 scene identity。
 ```
 

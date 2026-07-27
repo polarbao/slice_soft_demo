@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v2.0
+> 版本：v2.1
 > 更新日期：2026-07-27
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：13A-01 READY；随后 13B-01 冻结 scene identity，再执行 scene-aware 12E-09A-02
+> 当前下一任务：scene-aware 12E-09A-02 READY；13A-01、13B-01 身份合同已完成
 
 ## 1. 使用规则
 
@@ -55,7 +55,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | P0 ATOMIC PREP COMPLETE / CODE NOT STARTED | 总体 PRD/DEV/DEMO/TASKS/PROMPT、17 个近程任务实施准备，以及 13A-01/13B-01/13C-01 执行级合同 | 13A-01 READY；13B-01 等待 13A-01；外部输入按 Gate 阻断 production |
+| Stage 13 | P0 ATOMIC PREP COMPLETE / 13A-01、13B-01 COMPLETE | 总体 PRD/DEV/DEMO/TASKS/PROMPT、17 个近程任务准备，以及 ModelTransform/ModelInstance、MultiModelScene/Scene Effective Config | 先执行 scene-aware 09A-02；外部输入按 Gate 阻断 production |
 
 ### 2.1 Stage 12 目的图
 
@@ -75,11 +75,11 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 |---|---|---|
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
-| 09A Diagnostic UI | 09A-01 COMPLETE；09A-02..06 任务级 PREPARED | 先补齐独立 PRD/DEV/DEMO/PROMPT 与 09A-02 schema/fixture，再执行 09A-02 |
+| 09A Diagnostic UI | 09A-01 COMPLETE；09A-02 READY；09A-03..06 PREPARED | 独立 PRD/DEV/DEMO/PREP/PROMPT 已补齐，执行 09A-02 |
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 实现 NOT STARTED | 13A-01 -> 13B-01 -> scene-aware 09A-02；13C 必须先于 09A-05 |
+| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 13A-01、13B-01 COMPLETE | 当前 scene-aware 09A-02；13C 必须先于 09A-05 |
 
 ### 2.3 剩余任务数量
 
@@ -95,7 +95,7 @@ Stage 13 近程：
 13A-01..05 共 5 个；
 13B-01..07 共 7 个；
 13C-01..05 共 5 个；
-合计 17 个，当前代码完成数为 0。
+合计 17 个，当前代码完成数为 2。
 ```
 
 ## 3. 12E-08C 当前结论
@@ -202,16 +202,16 @@ RGBWSV TIFF 派生单通道和全材料叠加预览。
 12E-10 仍是单模型双引擎基线收口；
 Stage 13B 负责多模型生产矩阵；
 Stage 13C 在 09A-05 前统一生产 TIFF 底图；
-Stage 13 当前只有文档，不得宣称已实现。
+Stage 13 已完成 13A-01/13B-01 核心身份合同，但模型显示、排版、联合切片和 TIFF 原生预览仍未实现。
 ```
 
 ## 8. 2026-07-27 优先级与冻结结论
 
 ```text
 12G-TCWS：冻结，不实现；
-13A-01：READY，当前下一任务；
-13B-01：执行文档完整，等待 13A-01；
-12E-09A-02：优先于完整 12E-10，但等待 13B-01；
+13A-01：COMPLETE；
+13B-01：COMPLETE；
+12E-09A-02：READY，当前下一任务，优先于完整 12E-10；
 13C-03：09A-05 与 12E-10A 的前置；
 12E-10：保持单模型双引擎最终收口，不吸收多模型生产验收；
 12F：先完成 12F-02 基线，再根据实测逐项授权优化。

@@ -2,8 +2,8 @@
 
 > 日期：2026-07-22
 > 状态：COMPLETE / DIAGNOSTIC ONLY
-> 诊断支线下一任务：12E-09A-02 Effective Config 事务与派生字段
-> 当前生产主线：12E-09B-02（09B-01 已完成）
+> 诊断支线下一任务：12E-09A-02 Effective Config READY
+> 后续生产主线：12E-09B、09C 已完成；13A-01、13B-01 已完成
 
 ## 1. 任务结论
 
@@ -77,7 +77,8 @@ git diff --check
 
 ## 5. 后续边界
 
-`12E-09A-02` 可以开始实现 session Effective Config 事务和派生字段，但必须继续满足：
+`12E-09A-02` 的 scene-aware PRD/DEV/DEMO/PREP/PROMPT 已补齐，可以开始实现 session
+Diagnostic Effective Config 事务和派生字段，但必须继续满足：
 
 ```text
 不覆盖 samples/configs fixture；

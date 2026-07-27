@@ -25,3 +25,4 @@
 | `PRD_13A_模型俯视工作区与实例变换.md` | 13A 模型俯视、选择、移动、旋转、缩放与镜像 |
 | `PRD_13B_多模型规则排版与联合切片.md` | 13B 11x2 规则排版、多模型联合切片和单 package |
 | `PRD_13C_RGBWSV_TIFF原生统一预览.md` | 13C TIFF 原生单通道、全材料叠加和预览 IO 收口 |
+| `PRD_12E_09A_SceneAware诊断UI.md` | 09A single_model/scene 诊断配置、异步分析和同层语义预览 |

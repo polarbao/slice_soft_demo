@@ -1,6 +1,6 @@
 # DOC_PREP_13B-01 MultiModelScene 与 Scene Effective Config 准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：IMPLEMENTED / VERIFIED
 > 版本：v1.1
 > 日期：2026-07-27
 > 对应任务：13B-01
@@ -185,6 +185,7 @@ identity instance 不改变当前输出；
 SCENE_SCHEMA_UNSUPPORTED；
 SCENE_ID_EMPTY；
 SCENE_REVISION_STALE；
+SCENE_REVISION_INVALID；
 MODEL_ID_DUPLICATE；
 INSTANCE_ID_DUPLICATE；
 INSTANCE_MODEL_REFERENCE_MISSING；
@@ -236,7 +237,9 @@ ctest --test-dir build -C Debug -R production_effective_config_unit_tests --outp
 git diff --check
 ```
 
-本准备任务只生成文档，未运行上述未来代码验证。
+实现任务已于 2026-07-27 完成。实际验证包括定向三 target/CTest、Debug 全量构建、CTest 60/60、
+Qt self-test、Quick CI 和 `git diff --check`，详见
+`REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md`。
 
 ## 12. Gate
 
@@ -254,7 +257,8 @@ TransformedModelAdapter 的 pivot、winding、UV 和 bbox 语义。
 场景扩展采用组合对象：`ModelInstance` 保留最终实例合同，scene 层另行保存 requested/derived，
 并在生成 effective config 时计算 effective transform。
 
-因此 13B-01 已解除前置阻塞，可以直接开发。以下事项不阻断合同实现，但会阻断后续生产任务：
+因此 13B-01 已完成并解除 scene-aware 12E-09A-02。以下事项不阻断 09A-02 或后续功能开发，
+但会阻断多模型生产任务：
 
 ```text
 设备 width/height/origin/axis：阻断 13B-04 生产准入；

@@ -1,7 +1,7 @@
 # DOC_DECISION_13 模型场景、排版联合切片与 TIFF 原生预览专项拆分
 
 > 文档版本：v0.2
-> 文档状态：APPROVED TARGET DESIGN / IMPLEMENTATION NOT STARTED
+> 文档状态：APPROVED TARGET DESIGN / 13A-01、13B-01 IMPLEMENTED
 > 生成日期：2026-07-24
 > 更新日期：2026-07-27
 > 决策范围：模型显示与变换、多模型排版与联合切片、TIFF 原生统一预览

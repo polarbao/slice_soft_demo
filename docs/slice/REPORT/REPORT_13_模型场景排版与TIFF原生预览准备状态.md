@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v0.4
+> 文档版本：v0.5
 > 日期：2026-07-27
-> 当前状态：P0 DESIGN COMPLETE / 13A-01 COMPLETE / NEXT 13B-01 READY
+> 当前状态：P0 DESIGN COMPLETE / 13A-01、13B-01 COMPLETE / NEXT 12E-09A-02 READY
 
 ## 1. 本轮完成
 
@@ -48,6 +48,9 @@ TASKS_12_13_后续开发计划总览清单。
 pivot 固定为 source bbox XY 中心和 minZ，实例变换不二次落台；
 TransformedModelAdapter 已输出 transformed triangles/bbox/UV/winding/revision；
 transform hash、稳定错误和 optimistic revision 已由单测覆盖；
+13B-01 已实现 MultiModelScene、ModelSource、ResourceScope 和 Scene Effective Config；
+scene/model/instance/revision、requested/derived/effective 和 scene_profile_only 已冻结；
+scene effective config 已支持原子保存、回读、hash、cancel 和 stale；
 当前核心生产配置仍为单一 input.modelPath；
 当前没有可编辑模型画布；
 当前没有多模型 buildVolume/layout/collision/joint package；
@@ -57,7 +60,8 @@ transform hash、稳定错误和 optimistic revision 已由单测覆盖；
 当前没有 RGB+S+W+V 预设。
 ```
 
-因此，13A-01 核心合同已经实现，但不能宣称模型显示、多模型排版或 TIFF 原生统一预览已经实现。
+因此，13A-01/13B-01 身份合同已经实现，但不能宣称模型显示、多模型排版、联合切片或 TIFF 原生统一
+预览已经实现。
 
 ## 3. 关键产品决策
 
@@ -116,10 +120,10 @@ TIFF cache 的内存上限、stale generation 和稳定错误码；
 Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 17 个近程原子任务的依赖、建议文件所有权、验证入口和验收输出：COMPLETE；
 13A-01：COMPLETE；
-13B-01：READY FOR DEVELOPMENT；
+13B-01：COMPLETE；
 13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在 identity wave 后；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：1/17 个近程原子任务完成。
+Stage 13 已实现能力：2/17 个近程原子任务完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -151,22 +155,22 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 1；
+合计：17 个近程原子任务，当前完成 2；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13B-01 MultiModelScene 与 Scene Effective Config
+12E-09A-02 Scene-aware Diagnostic Effective Config
 ```
 
-该任务的执行准备已补足并解除 13A-01 前置阻塞。开始代码前仍需用户明确授权；完成 13B-01 后
-进入 scene-aware `12E-09A-02`，不能直接跳到联合切片。
+13B-01 已完成并解除 scene identity 前置。09A-02 的独立 PRD/DEV/DEMO/PREP/PROMPT 已补齐，
+开始代码前仍需用户明确授权。完成 09A-02 后再进入 13A-02/13B-02，不能直接跳到联合切片。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13A-01 |
+| 范围 | 当前结论 | 是否阻断 09A-02 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
@@ -176,6 +180,5 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
 
-当前不再需要为 P0 继续扩写通用设计文档。13B-01 的实际 Public DTO 依赖和组合边界已回填到准备
-文档；后续应等待用户授权进入 `13B-01`，并在每个原子任务完成后更新跨阶段执行看板和实际验证
-报告。
+当前不再需要为 09A-02 扩写通用设计文档。13B-01 的实际 Public DTO、验证和状态已回填；
+后续应等待用户授权进入 `12E-09A-02`，并在每个原子任务完成后更新跨阶段执行看板和实际验证报告。

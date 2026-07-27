@@ -3,9 +3,9 @@
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
 > 版本：v1.0
 > 更新日期：2026-07-27
-> 当前代码阶段：12E-09C COMPLETE / Stage 13 13A-01 COMPLETE
-> 当前原子任务：13B-01 READY FOR DEVELOPMENT
-> 下一 Gate：13B-01 PASS -> scene-aware 12E-09A-02
+> 当前代码阶段：12E-09C COMPLETE / Stage 13 13A-01、13B-01 COMPLETE
+> 当前原子任务：scene-aware 12E-09A-02 READY FOR DEVELOPMENT
+> 下一 Gate：12E-09A-02 PASS -> 13A-02 / 13B-02 identity-aware UI
 
 ## 1. 文档职责
 
@@ -48,12 +48,12 @@
 
 | 工作流 | 当前状态 | 剩余数量 | 当前动作 |
 |---|---|---:|---|
-| 12E-09A Diagnostic UI | 09A-01 COMPLETE；09A-02..06 WAIT/PREPARED | 5 | 等 13B-01 后执行 scene-aware 09A-02 |
+| 12E-09A Diagnostic UI | 09A-01 COMPLETE；09A-02 READY；09A-03..06 PREPARED | 5 | 执行 scene-aware 09A-02 |
 | 12E-10 最终收口 | 概念级准备；执行文档不完整 | 4 | 等 13C-03、09A-05 后补齐并执行 |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
-| 13A 模型俯视与变换 | 13A-01 COMPLETE；13A-02..05 READY/WAIT | 4 | 13A-02 已解锁，按 identity wave 排在 13B-01 后 |
-| 13B 多模型排版与联合切片 | P0 设计和原子准备完成；13B-01 已解锁 | 7 | 13B-01 READY |
+| 13A 模型俯视与变换 | 13A-01 COMPLETE；13A-02..05 READY/WAIT | 4 | 13A-02 已解锁，按顺序排在 09A-02 后 |
+| 13B 多模型排版与联合切片 | 13B-01 COMPLETE；13B-02..07 PREPARED/WAIT | 6 | 09A-02 后进入 13A-02/13B-02 |
 | 13C TIFF 原生统一预览 | P0 设计和原子准备完成；代码未开始 | 5 | 13C-01 READY，排在 identity wave 后 |
 
 计数口径：
@@ -74,8 +74,8 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入 34 个
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
 | 1 | 13A-01 ModelTransform/ModelInstance | `COMPLETE` | 文档准入完成 | 已解锁 13A-02、13B-01 |
-| 2 | 13B-01 MultiModelScene/Scene Effective Config | `READY` | 13A-01 COMPLETE | 解锁 scene-aware 09A-02、13B-02 |
-| 3 | 12E-09A-02 Diagnostic Effective Config | `WAIT` | 13B-01 | 诊断身份兼容 single_model/scene |
+| 2 | 13B-01 MultiModelScene/Scene Effective Config | `COMPLETE` | 13A-01 COMPLETE | 已解锁 scene-aware 09A-02、13B-02 |
+| 3 | 12E-09A-02 Diagnostic Effective Config | `READY` | 13B-01 COMPLETE | 诊断身份兼容 single_model/scene |
 
 ### Wave 2：俯视、规则排版与联合写包
 
@@ -142,6 +142,8 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入 34 个
 Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 17 个近程任务的依赖、建议文件所有权、验证入口和验收输出；
 13A-01、13B-01、13C-01 的执行级合同；
+13A-01、13B-01 的代码、单测和实际状态报告；
+scene-aware 12E-09A-02 的独立 PRD/DEV/DEMO/PREP/PROMPT；
 单贡献者的固定执行顺序；
 与 12E-09A/10、12F、12G-TCWS 的边界。
 ```
@@ -152,14 +154,14 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 ### 尚未完成
 
 ```text
-Stage 13 代码、测试、UI、真实模型 package 和生产证据均为 0；
+Stage 13 已完成 13A-01、13B-01 两个核心身份合同；其余 UI、排版、联合 package 和生产证据未完成；
 设备 buildVolume、原点和机器轴方向仍未提供；
 22 实例生产性能预算仍未提供；
 13A-R2/R3 和 13B-R4 只到 Epic，不具备开发级详细设计；
 13B production GO 仍被外部 Gate 阻断。
 ```
 
-这些未完成项不阻断 `13A-01`，也不等于 Stage 13 已生产就绪。
+这些未完成项不阻断 `12E-09A-02`，也不等于 Stage 13 已生产就绪。
 
 ## 6. 外部 Gate
 
@@ -196,10 +198,10 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：Stage 13 IDENTITY WAVE；
-COMPLETE：13A-01 ModelTransform 与 ModelInstance 合同；
-NEXT：13B-01 MultiModelScene 与 Scene Effective Config；
-AUTHORIZATION：等待用户明确授权 13B-01 代码开发；
-AFTER 13B-01 PASS：scene-aware 12E-09A-02；
-13A-02：功能依赖已解除，按单贡献者顺序在 identity wave 后执行。
+CURRENT：scene-aware DIAGNOSTIC CONFIG WAVE；
+COMPLETE：13A-01 ModelTransform/ModelInstance、13B-01 MultiModelScene/Scene Effective Config；
+NEXT：12E-09A-02 Diagnostic Effective Config；
+AUTHORIZATION：等待用户明确授权 09A-02 代码开发；
+AFTER 09A-02 PASS：13A-02 俯视渲染，并为 13B-02 模型列表提供 scene-aware identity；
+13C-01：技术准备完成，按单贡献者顺序稍后执行。
 ```

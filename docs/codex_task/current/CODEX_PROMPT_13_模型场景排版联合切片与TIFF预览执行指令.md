@@ -47,13 +47,15 @@ docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任�
 12. 未经用户要求不提交、不 push。
 ```
 
-## 当前唯一推荐入口
+## 当前跨阶段推荐入口
 
 ```text
-13A-01 ModelTransform 与 ModelInstance 合同
+12E-09A-02 Scene-aware Diagnostic Effective Config
 ```
 
-`13B-01` 必须等待 `13A-01`。完成 `13B-01` 后，先返回并执行 scene-aware `12E-09A-02`。
+`13A-01` 和 `13B-01` 已完成。先按独立
+`CODEX_PROMPT_12E_09A_SceneAware诊断UI执行指令.md` 完成 09A-02，再返回本专项执行 13A-02；
+不得直接跳到 13B 联合切片。
 
 ## 代码规范
 
