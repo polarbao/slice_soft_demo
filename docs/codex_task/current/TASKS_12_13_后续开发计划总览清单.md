@@ -3,9 +3,9 @@
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
 > 版本：v1.0
 > 更新日期：2026-07-27
-> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01、13B-01 COMPLETE
-> 当前原子任务：13A-02 模型俯视渲染 READY FOR DEVELOPMENT
-> 下一 Gate：13A-02 PASS -> 13A-03 / 13B-02 identity-aware UI
+> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01/02、13B-01 COMPLETE
+> 当前原子任务：13A-03 选择与精确变换 READY FOR DEVELOPMENT
+> 下一 Gate：13A-03 PASS -> 13A-04 镜像与变换后预检
 
 ## 1. 文档职责
 
@@ -52,8 +52,8 @@
 | 12E-10 最终收口 | 概念级准备；执行文档不完整 | 4 | 等 13C-03、09A-05 后补齐并执行 |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
-| 13A 模型俯视与变换 | 13A-01 COMPLETE；13A-02 READY；13A-03..05 PREPARED/WAIT | 4 | 执行 13A-02 |
-| 13B 多模型排版与联合切片 | 13B-01 COMPLETE；13B-02..07 PREPARED/WAIT | 6 | 13B-02 等待 13A-02 |
+| 13A 模型俯视与变换 | 13A-01/02 COMPLETE；13A-03 READY；13A-04/05 PREPARED/WAIT | 3 | 执行 13A-03 |
+| 13B 多模型排版与联合切片 | 13B-01 COMPLETE；13B-02 依赖已满足但排在 13A-05 后；13B-03..07 WAIT | 6 | 继续深化 13B-02 准备，暂不编码 |
 | 13C TIFF 原生统一预览 | P0 设计和原子准备完成；代码未开始 | 5 | 13C-01 READY，按固定顺序排在 13B-07 后 |
 
 计数口径：
@@ -81,11 +81,11 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
-| 4 | 13A-02 俯视渲染 | `READY` | 13A-01、09A-02 COMPLETE | 解锁精确变换和模型列表 |
-| 5 | 13A-03 选择与精确变换 | `WAIT` | 13A-02、09A-02 identity | 解锁镜像/preflight |
+| 4 | 13A-02 俯视渲染 | `COMPLETE` | 13A-01、09A-02 COMPLETE | 已解锁精确变换和模型列表 |
+| 5 | 13A-03 选择与精确变换 | `READY` | 13A-02、09A-02 identity | 解锁镜像/preflight |
 | 6 | 13A-04 镜像与 post-transform preflight | `WAIT` | 13A-03 | 解锁 13A 收口 |
 | 7 | 13A-05 13A 阶段收口 | `WAIT` | 13A-04 | M13-1 |
-| 8 | 13B-02 模型列表与实例操作 | `WAIT` | 13B-01、13A-02 | 解锁规则排版 |
+| 8 | 13B-02 模型列表与实例操作 | `READY BY DEPENDENCY / SCHEDULED` | 13B-01、13A-02 COMPLETE；固定顺序在 13A-05 后 | 解锁规则排版 |
 | 9 | 13B-03 11x2 规则排版 | `WAIT` | 13B-02 | 解锁碰撞/幅面准入 |
 | 10 | 13B-04 幅面、碰撞和逐实例准入 | `WAIT / PROD GATE OPEN` | 13B-03 | fixture 可开发；生产需设备 buildVolume/轴方向 |
 | 11 | 13B-05 全局 Raster 与联合层合成 | `WAIT` | 13B-04 功能 Gate | 解锁联合写包 |
@@ -143,25 +143,27 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 17 个近程任务的依赖、建议文件所有权、验证入口和验收输出；
 13A-01、13B-01、13C-01 的执行级合同；
 13A-01、13B-01、scene-aware 12E-09A-02 的代码、单测和实际状态报告；
-13A-02 的独立 PREP/PROMPT；
+13A-02 的代码、单测、UI Smoke 和状态报告；
+13A-03 的独立 PREP/PROMPT；
+13A-04、13B-02 的专项 PREP；
 单贡献者的固定执行顺序；
 与 12E-09A/10、12F、12G-TCWS 的边界。
 ```
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。当前可等待用户授权后执行
-`13A-02`。
+`13A-03`。
 
 ### 尚未完成
 
 ```text
-Stage 13 已完成 13A-01、13B-01 两个核心身份合同；其余 UI、排版、联合 package 和生产证据未完成；
+Stage 13 已完成 13A-01/02、13B-01 三个任务；变换编辑、排版、联合 package 和生产证据未完成；
 设备 buildVolume、原点和机器轴方向仍未提供；
 22 实例生产性能预算仍未提供；
 13A-R2/R3 和 13B-R4 只到 Epic，不具备开发级详细设计；
 13B production GO 仍被外部 Gate 阻断。
 ```
 
-这些未完成项不阻断 `13A-02`，也不等于 Stage 13 已生产就绪。
+这些未完成项不阻断 `13A-03`，也不等于 Stage 13 已生产就绪。
 
 ## 6. 外部 Gate
 
@@ -198,10 +200,11 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：MODEL TOP-VIEW WAVE；
-COMPLETE：13A-01、13B-01、12E-09A-02；
-NEXT：13A-02 模型俯视渲染；
-AUTHORIZATION：等待用户明确授权 13A-02 代码开发；
-AFTER 13A-02 PASS：13A-03 精确变换；13B-02 模型列表同时解除依赖；
+CURRENT：MODEL TRANSFORM WAVE；
+COMPLETE：13A-01/02、13B-01、12E-09A-02；
+NEXT：13A-03 选择与精确变换；
+AUTHORIZATION：等待用户明确授权 13A-03 代码开发；
+AFTER 13A-03 PASS：13A-04 镜像与变换后预检；
+13B-02：依赖已解除，但按单贡献者顺序排在 13A-05 后；
 13C-01：技术准备完成，按单贡献者顺序稍后执行。
 ```

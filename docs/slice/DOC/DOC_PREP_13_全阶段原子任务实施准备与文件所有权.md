@@ -1,7 +1,7 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01、13B-01、09A-02 COMPLETE / 13A-02 READY
-> 版本：v1.1
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01、13A-02、13B-01、09A-02 COMPLETE / 13A-03 READY
+> 版本：v1.2
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
 
@@ -72,7 +72,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 4.2 13A-02 俯视渲染
 
-状态：`READY FOR DEVELOPMENT / CURRENT`
+状态：`COMPLETE（2026-07-27）`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -89,7 +89,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 4.3 13A-03 选择与精确变换
 
-状态：`PREPARED / WAIT 13A-02 AND SCENE IDENTITY`
+状态：`READY FOR DEVELOPMENT`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -100,6 +100,8 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | X/Y、rotateZ、uniformScale、重置、保存/回读、locked、stale revision、非法数值 fail-closed |
 | 非目标 | Z 编辑、非均匀缩放、完整 undo/redo |
 | 完成输出 | UI、session config 和几何 adapter 使用同一 effective transform |
+
+详细合同以 `DOC_PREP_13A_03_选择与精确变换准备.md` 为准。
 
 ### 4.4 13A-04 镜像与 post-transform preflight
 
@@ -114,6 +116,8 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | mirrorX/mirrorY/双镜像、winding、normal、UV、source/transformed admission、confirmed self-intersection 阻断 |
 | 非目标 | 自动修复、绕过 strict admission |
 | 完成输出 | 每次变换后的几何准入可追踪，blocked 状态不允许生产 |
+
+详细合同以 `DOC_PREP_13A_04_镜像与变换后预检准备.md` 为准。
 
 ### 4.5 13A-05 阶段收口
 
@@ -147,7 +151,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.2 13B-02 模型列表与实例操作
 
-状态：`PREPARED / WAIT 13A-02`（13B-01 COMPLETE）
+状态：`READY BY DEPENDENCY / SCHEDULE AFTER 13A-05`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -157,6 +161,8 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | 导入、复制、删除、显示、锁定、选择同步、稳定列表顺序、资源作用域隔离 |
 | 非目标 | 自动排版和切片 |
 | 完成输出 | 1..22 实例的可编辑场景草稿 |
+
+详细合同以 `DOC_PREP_13B_02_模型列表与实例操作准备.md` 为准。
 
 ### 5.3 13B-03 11x2 规则排版
 

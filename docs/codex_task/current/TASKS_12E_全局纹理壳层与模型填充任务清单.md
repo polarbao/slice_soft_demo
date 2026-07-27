@@ -2,7 +2,7 @@
 
 > 文档状态：R4-08-R2 GO / 12E-08D COMPLETE / GLOBAL OPT-IN CANDIDATE ADMITTED
 > 更新日期：2026-07-27
-> 当前项目原子任务：12E-09B/09C、09A-01/02 COMPLETE；下一任务为 Stage 13A-02 模型俯视渲染
+> 当前项目原子任务：12E-09B/09C、09A-01/02、Stage 13A-01/02、13B-01 COMPLETE；下一任务为 Stage 13A-03 选择与精确变换
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标

@@ -51,6 +51,9 @@
 | `DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md` | 13B-01 scene identity、资源作用域、unknown buildVolume 和事务合同 |
 | `DOC_PREP_12E_09A_02_SceneAwareEffectiveConfig准备.md` | 09A-02 single_model/scene Diagnostic Effective Config 执行准备 |
 | `DOC_PREP_13A_02_模型俯视渲染准备.md` | 13A-02 +Z 俯视几何、Qt 画布、线程和 smoke 执行准备 |
+| `DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 单模型 X/Y、绕 Z、统一缩放、revision 和 session 回读执行准备 |
+| `DOC_PREP_13A_04_镜像与变换后预检准备.md` | 13A-04 镜像、有效几何预检和双模式生产阻断准备；等待 13A-03 |
+| `DOC_PREP_13B_02_模型列表与实例操作准备.md` | 13B-02 1..22 实例列表、资源隔离、异步状态和场景草稿准备 |
 | `DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF source、LRU、异步 stale 和错误合同 |
 | `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | Stage 13 的 17 个近程原子任务依赖、建议文件所有权、测试和验收准备 |
 | `DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 设备/Profile/性能/3D 后端未决输入及阻断范围 |

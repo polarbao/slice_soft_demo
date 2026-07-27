@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v0.6
+> 文档版本：v0.7
 > 日期：2026-07-27
-> 当前状态：P0 DESIGN COMPLETE / 13A-01、13B-01、跨阶段 12E-09A-02 COMPLETE / NEXT 13A-02 READY
+> 当前状态：P0 DESIGN COMPLETE / 13A-01/02、13B-01、跨阶段 12E-09A-02 COMPLETE / NEXT 13A-03 READY
 
 ## 1. 本轮完成
 
@@ -40,10 +40,23 @@ DOC_DECISION_12X_剩余任务优先级与专项冻结；
 TASKS_12_13_后续开发计划总览清单。
 ```
 
+13A-02 完成后继续补充：
+
+```text
+REPORT_13A_02_模型俯视渲染当前状态；
+DOC_PREP_13A_03_选择与精确变换准备；
+CODEX_PROMPT_13A_03_选择与精确变换执行指令；
+DOC_PREP_13A_04_镜像与变换后预检准备；
+DOC_PREP_13B_02_模型列表与实例操作准备。
+```
+
 ## 2. 当前实现事实
 
 ```text
 13A-01 已实现无 Qt 的 ModelTransform/ModelInstance Public DTO；
+13A-02 已实现无 Qt SceneViewGeometry、异步模型导入和 +Z 俯视 Qt 工作区；
+模型页已显示毫米网格、+X/+Y、bbox、身份、选择和 blocked 只读状态；
+独立“导入模型预览”不启动 slicer_cli、不创建生产 package；
 实例变换已冻结 XY translate、rotateZ、uniformScale、mirrorX/mirrorY；
 pivot 固定为 source bbox XY 中心和 minZ，实例变换不二次落台；
 TransformedModelAdapter 已输出 transformed triangles/bbox/UV/winding/revision；
@@ -54,7 +67,7 @@ scene effective config 已支持原子保存、回读、hash、cancel 和 stale�
 12E-09A-02 已实现 single_model/scene Diagnostic Effective Config；
 诊断配置已绑定 current model/instance/transformRevision，并支持原子保存、回读、hash、cancel 和 stale；
 当前核心生产配置仍为单一 input.modelPath；
-当前没有可编辑模型画布；
+当前已有只读单模型画布，但还没有 X/Y/rotateZ/scale 编辑；
 当前没有多模型 buildVolume/layout/collision/joint package；
 当前 PreviewWorkspace 已统一 UI 容器和 layerIndex；
 当前生产 RGB/像素探针已能读取 TIFF；
@@ -124,10 +137,12 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13A-01：COMPLETE；
 13B-01：COMPLETE；
 12E-09A-02：COMPLETE；
-13A-02：READY FOR DEVELOPMENT，已有独立 PREP/PROMPT；
+13A-02：COMPLETE，核心单测和 model-top-view UI Smoke PASS；
+13A-03：READY FOR DEVELOPMENT，已有独立 PREP/PROMPT；
+13A-04、13B-02：专项 PREP 已深化，按前置顺序等待；
 13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在模型交互和场景排版之后；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：2/17 个近程原子任务完成。
+Stage 13 已实现能力：3/17 个近程原子任务完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -159,23 +174,23 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 2；
+合计：17 个近程原子任务，当前完成 3；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13A-02 模型俯视渲染
+13A-03 选择与精确变换
 ```
 
-13B-01 和跨阶段 09A-02 已完成，模型/场景/当前实例身份链已闭合。13A-02 的独立
-`DOC_PREP_13A_02_模型俯视渲染准备.md` 和执行指令已补齐；下一步先建立 +Z 俯视、模型轮廓、
-包围盒、毫米网格和独立导入预览入口，不能直接跳到联合切片。
+13A-02 已关闭只读俯视、异步加载、最新 generation 和独立预览入口。下一步按
+`DOC_PREP_13A_03_选择与精确变换准备.md` 建立单模型 X/Y、rotateZ、uniformScale、居中、重置、
+revision 和 session scene/effective config 闭环；不能提前实现镜像、多模型列表或联合切片。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13A-02 |
+| 范围 | 当前结论 | 是否阻断 13A-03 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
@@ -185,6 +200,6 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
 
-当前不再需要为 13A-02 扩写通用设计文档。13B-01、09A-02 的实际 Public DTO、验证和状态已回填；
-后续按 `CODEX_PROMPT_13A_02_模型俯视渲染执行指令.md` 进入开发，并在每个原子任务完成后更新
-跨阶段执行看板和实际验证报告。
+13A-03 独立执行合同已补齐；13A-04 已冻结 transformed preflight 边界，13B-02 已冻结多实例
+identity/resource/list 状态。后续按 `CODEX_PROMPT_13A_03_选择与精确变换执行指令.md` 开发，并在
+完成后依据实际 Public API 生成 13A-04 执行指令。

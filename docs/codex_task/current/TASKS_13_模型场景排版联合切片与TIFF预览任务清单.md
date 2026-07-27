@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01 / 13B-01 / 12E-09A-02 COMPLETE / NEXT 13A-02 READY
+> 状态：13-00 / 13A-01/02 / 13B-01 / 12E-09A-02 COMPLETE / NEXT 13A-03 READY
 > 日期：2026-07-27
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -41,6 +41,7 @@ Stage 12/13 跨阶段执行看板。
 13B-01：COMPLETE，MultiModelScene、ResourceScope、Scene Effective Config 和单测已落地；
 13C-01：DOC_PREP_13C_01，READY，但按单贡献者顺序排在 identity wave 后；
 13A-01..05、13B-01..07、13C-01..05：DOC_PREP_13 全阶段实施准备已覆盖；
+13A-03 已补齐独立 PREP/PROMPT，13A-04 与 13B-02 已补齐专项 PREP；
 Stage 13 未决产品输入：DOC_CHECKLIST_13，按具体 Gate 阻断，不虚构设备值。
 ```
 
@@ -141,21 +142,36 @@ docs/slice/REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状
 
 ### 13A-02 俯视渲染
 
-状态：READY FOR DEVELOPMENT / CURRENT
+状态：COMPLETE（2026-07-27）
 
 目标：+Z 俯视、XY 轴、毫米网格、轮廓、包围盒、选择和适应视图。
 
+实际证据：
+
+```text
+SceneViewGeometry、SceneDocument、SceneSelectionModel；
+generation-aware ModelTopViewLoader；
+QPainter ModelTopViewWidget 和独立导入模型预览入口；
+scene_view_geometry_unit_tests、model-top-view UI Smoke；
+REPORT_13A_02_模型俯视渲染当前状态.md。
+```
+
 ### 13A-03 选择与精确变换
 
-状态：PREPARED / WAIT 13A-02、scene-aware 12E-09A-02
+状态：READY FOR DEVELOPMENT / CURRENT
 
 目标：X/Y、rotateZ、uniformScale、居中、重置、session config 同步。
+
+独立准备：`DOC_PREP_13A_03_选择与精确变换准备.md` 和
+`CODEX_PROMPT_13A_03_选择与精确变换执行指令.md`。
 
 ### 13A-04 镜像与 post-transform preflight
 
 状态：PREPARED / WAIT 13A-03
 
 目标：mirrorX/mirrorY、winding/normal/UV 修正、重新准入、blocked UI。
+
+专项准备：`DOC_PREP_13A_04_镜像与变换后预检准备.md`；执行指令等待 13A-03 实际 API 后生成。
 
 ### 13A-05 阶段收口
 
@@ -167,9 +183,11 @@ docs/slice/REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状
 
 ### 13B-02 模型列表与实例操作
 
-状态：PREPARED / WAIT 13A-02
+状态：READY BY DEPENDENCY / SCHEDULE AFTER 13A-05
 
 目标：添加、复制、删除、选择、隐藏、锁定，显示 modelId/instanceId/transform/admission。
+
+专项准备：`DOC_PREP_13B_02_模型列表与实例操作准备.md`；按单贡献者顺序在 13A-05 后执行。
 
 ### 13B-03 11x2 规则排版
 
@@ -272,11 +290,11 @@ UI 步长 0.01 mm；
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-合计：17 个近程原子任务，当前完成 2；
+合计：17 个近程原子任务，当前完成 3；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13A-02 模型俯视渲染`。其独立 PREP/PROMPT 已补齐。
+当前唯一推荐入口为 `13A-03 选择与精确变换`。其独立 PREP/PROMPT 已补齐。
 `13C-01` 技术上可独立开始，但单贡献者按固定顺序先完成模型俯视和 scene-aware UI，再进入 TIFF
 原生预览。
 
