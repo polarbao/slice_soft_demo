@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v2.4
+> 版本：v2.5
 > 更新日期：2026-07-27
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：13A-05 阶段收口 READY；13A-01..04、13B-01、scene-aware 12E-09A-02 已完成
+> 当前下一任务：13B-02 模型列表与实例操作 READY；13A-01..05、13B-01、scene-aware 12E-09A-02 已完成
 
 ## 1. 使用规则
 
@@ -56,7 +56,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | P0 ATOMIC PREP COMPLETE / 13A-01..04、13B-01、跨阶段 09A-02 COMPLETE | 实例变换、场景配置、诊断身份、+Z 俯视、精确变换、镜像和变换后独立准入闭环 | 执行 13A-05 阶段收口；外部输入按 Gate 阻断 production |
+| Stage 13 | P0 ATOMIC PREP COMPLETE / 13A-01..05、13B-01、跨阶段 09A-02 COMPLETE | 实例变换、场景配置、诊断身份、+Z 俯视、精确变换、镜像、独立准入和 M13-1 候选闭环 | 执行 13B-02 模型列表与实例操作；外部输入按 Gate 阻断 production |
 
 ### 2.1 Stage 12 目的图
 
@@ -80,7 +80,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 13A-01..04、13B-01 COMPLETE | 当前执行 13A-05；13C-03 必须先于 09A-05 |
+| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 13A-01..05、13B-01 COMPLETE | 当前执行 13B-02；13C-03 必须先于 09A-05 |
 
 ### 2.3 剩余任务数量
 
@@ -203,8 +203,8 @@ RGBWSV TIFF 派生单通道和全材料叠加预览。
 12E-10 仍是单模型双引擎基线收口；
 Stage 13B 负责多模型生产矩阵；
 Stage 13C 在 09A-05 前统一生产 TIFF 底图；
-Stage 13 已完成 13A-01..04/13B-01，单模型显示、精确变换、镜像和变换后准入已实现；阶段收口、
-排版、联合切片和 TIFF 原生预览仍未实现。
+Stage 13 已完成 13A-01..05/13B-01，单模型显示、精确变换、镜像、变换后准入和 M13-1 收口已实现；
+模型列表、排版、联合切片和 TIFF 原生预览仍未实现。
 ```
 
 ## 8. 2026-07-27 优先级与冻结结论
@@ -217,7 +217,8 @@ Stage 13 已完成 13A-01..04/13B-01，单模型显示、精确变换、镜像�
 13A-02：COMPLETE，+Z 俯视 core/Qt/异步/选择/UI Smoke 已闭环；
 13A-03：COMPLETE，精确变换、异步重投影和 session 配置闭环；
 13A-04：COMPLETE，镜像、source/transformed 双诊断和 Legacy/Global 独立准入已闭环；
-13A-05：READY，当前下一任务，只做阶段证据和回归收口；
+13A-05：COMPLETE，统一回归、真实资产、三窗口 UI Smoke、用户说明和 M13-1 候选 PASS；
+13B-02：READY，当前下一任务，只做 1..22 实例列表与场景草稿操作；
 13C-03：09A-05 与 12E-10A 的前置；
 12E-10：保持单模型双引擎最终收口，不吸收多模型生产验收；
 12F：先完成 12F-02 基线，再根据实测逐项授权优化。

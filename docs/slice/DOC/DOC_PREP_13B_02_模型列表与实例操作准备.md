@@ -1,9 +1,9 @@
 # DOC_PREP 13B-02 模型列表与实例操作准备
 
-> 文档状态：READY BY DEPENDENCY / SCHEDULE AFTER 13A-05
+> 文档状态：READY FOR DEVELOPMENT
 > 日期：2026-07-27
-> 前置：13B-01、13A-02 COMPLETE
-> 推荐顺序：先完成 13A-03..05，再开始 13B-02
+> 前置：13A-05 COMPLETE / M13-1 CANDIDATE PASS，13B-01 COMPLETE
+> 当前任务：13B-02 模型列表与实例操作
 
 ## 1. 任务目标
 
@@ -27,13 +27,17 @@ ModelInstance 表示一次摆放；
 
 ## 3. 状态架构
 
-扩展：
+基于现有实现扩展，禁止新建第二套平行场景模型：
 
 ```text
+MultiModelScene：无 Qt 的模型源、资源域、实例顺序和 sceneRevision 真源；
 SceneDocument：MultiModelScene、model repository、view snapshots、dirty/stale；
 SceneSelectionModel：单选 instanceId，删除后确定性选择相邻项或清空；
+SceneModelRepository：按 modelId/source/resource identity 共享只读 SceneModel；
 ModelTopViewLoader：按 modelId 缓存导入，按 instanceId/revision 构建投影；
 ModelTopViewWidget：绘制多个实例并按 instanceId 命中；
+SceneTransformController：继续作为 current instance 精确变换入口；
+ModelTransformPanel：继续复用 13A 数值变换、镜像和状态展示；
 ModelListPanel：只通过 SceneDocument command API 修改场景。
 ```
 
@@ -169,6 +173,18 @@ UI Smoke：
 
 ## 10. 准入结论
 
-13A-02 和 13B-01 已关闭技术依赖，因此 13B-02 在依赖上可开发。单贡献者固定顺序仍建议先完成
-13A-03/04/05，使模型列表复用稳定的变换 Panel、Controller 和 post-transform admission，避免两套
-SceneDocument 同时演进。开始 13B-02 前再生成独立 CODEX_PROMPT，并以 13A-05 实际 API 校正文档。
+13A-05 已完成统一回归并形成 M13-1 候选，13B-01 已冻结 `MultiModelScene`、`ModelSource`、
+`ResourceScope` 和 Scene Effective Config 合同。13B-02 当前具备开发准入：
+
+```text
+复用 SceneDocument / SceneSelectionModel，不新建平行 UI scene store；
+复用 SceneModelRepository，不按实例复制三角网格或纹理资源；
+复用 ModelTopViewLoader / TransformedModelPreflightLoader 的 generation/revision 丢弃规则；
+复用 SceneTransformController / ModelTransformPanel 操作 current instance；
+沿用 13A blocked 可见、production fail-closed；
+沿用 13B-01 scene identity 和 scene_profile_only 配置边界。
+```
+
+独立执行入口为
+`docs/codex_task/current/CODEX_PROMPT_13B_02_模型列表与实例操作执行指令.md`。本任务完成后只解锁
+13B-03，不得提前实现规则排版、碰撞或联合切片。

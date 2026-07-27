@@ -1,7 +1,7 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..04、13B-01、09A-02 COMPLETE / 13A-05 READY
-> 版本：v1.2
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01、09A-02 COMPLETE / 13B-02 READY
+> 版本：v1.3
 > 日期：2026-07-27
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
 
@@ -121,7 +121,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 4.5 13A-05 阶段收口
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE（2026-07-27）`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -151,18 +151,19 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.2 13B-02 模型列表与实例操作
 
-状态：`READY BY DEPENDENCY / SCHEDULE AFTER 13A-05`
+状态：`READY FOR DEVELOPMENT`
 
 | 项目 | 准备内容 |
 |---|---|
-| 前置 | 13B-01、13A-02 |
+| 前置 | 13B-01、13A-05 COMPLETE |
 | UI 文件 | 新增 `widgets/ModelListPanel.*`，扩展 `SceneDocument`、`SceneSelectionModel` |
 | 计划测试 | `scene_document_unit_tests`、`--ui-smoke-test --case multi-model-list` |
 | 必测 | 导入、复制、删除、显示、锁定、选择同步、稳定列表顺序、资源作用域隔离 |
 | 非目标 | 自动排版和切片 |
 | 完成输出 | 1..22 实例的可编辑场景草稿 |
 
-详细合同以 `DOC_PREP_13B_02_模型列表与实例操作准备.md` 为准。
+详细合同以 `DOC_PREP_13B_02_模型列表与实例操作准备.md` 和
+`CODEX_PROMPT_13B_02_模型列表与实例操作执行指令.md` 为准。
 
 ### 5.3 13B-03 11x2 规则排版
 

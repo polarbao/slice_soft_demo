@@ -4,7 +4,8 @@
 
 | 日期 | 主题 | 文件 | 状态 |
 |---|---|---|---|
-| 2026-07-27 | 13A-04 镜像预检完成与 13A-05 阶段收口准备 | `context_handoff/2026-07-27_13A-04完成与13A-05准备.md` | Current |
+| 2026-07-27 | 13A 完成与 13B-02 模型列表准备 | `context_handoff/2026-07-27_13A完成与13B-02准备.md` | Current |
+| 2026-07-27 | 13A-04 镜像预检完成与 13A-05 阶段收口准备 | `context_handoff/2026-07-27_13A-04完成与13A-05准备.md` | Historical |
 | 2026-07-27 | 13A-02 模型俯视完成与 13A-03 精确变换准备 | `context_handoff/2026-07-27_13A-02完成与13A-03准备.md` | Superseded / incorporated |
 | 2026-07-27 | 09A-02 场景感知诊断配置完成与 13A-02 模型俯视准备 | `context_handoff/2026-07-27_09A-02完成与13A-02准备.md` | Superseded / incorporated |
 | 2026-07-27 | 13B-01 多模型场景合同完成与 scene-aware 09A-02 准备 | `context_handoff/2026-07-27_13B-01完成与09A-02准备.md` | Superseded / incorporated |

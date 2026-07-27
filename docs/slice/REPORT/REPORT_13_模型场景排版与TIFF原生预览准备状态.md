@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v0.8
+> 文档版本：v0.9
 > 日期：2026-07-27
-> 当前状态：P0 DESIGN COMPLETE / 13A-01..04、13B-01、跨阶段 12E-09A-02 COMPLETE / NEXT 13A-05 READY
+> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01、跨阶段 12E-09A-02 COMPLETE / NEXT 13B-02 READY
 
 ## 1. 本轮完成
 
@@ -147,11 +147,11 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13A-02：COMPLETE，核心单测和 model-top-view UI Smoke PASS；
 13A-03：COMPLETE，精确变换、异步重投影和 session config PASS；
 13A-04：COMPLETE，镜像、transformed preflight 和独立双模式准入 PASS；
-13A-05：READY FOR DEVELOPMENT，已有独立 PREP/PROMPT；
-13B-02：专项 PREP 已深化，按固定顺序等待 13A-05；
+13A-05：COMPLETE，统一回归、真实资产、三窗口 UI Smoke、用户说明和 M13-1 候选 PASS；
+13B-02：READY FOR DEVELOPMENT，专项 PREP/PROMPT 已按 13A 实际 API 校正；
 13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在模型交互和场景排版之后；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：5/17 个近程原子任务完成。
+Stage 13 已实现能力：6/17 个近程原子任务完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -183,23 +183,24 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 5；
+合计：17 个近程原子任务，当前完成 6；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13A-05 模型俯视与变换阶段收口
+13B-02 模型列表与实例操作
 ```
 
-13A-04 已关闭 mirror、source/transformed 双诊断、Legacy/Global 独立 admission 和最新
-generation/revision 发布。下一步按 `DOC_PREP_13A_05_模型俯视与变换阶段收口准备.md` 统一回归
-13A-01..04 并生成 M13-1；不能提前实现多模型列表、排版或联合切片。
+13A-05 已统一回归 13A-01..04，并形成 M13-1 候选。下一步按
+`DOC_PREP_13B_02_模型列表与实例操作准备.md` 和
+`CODEX_PROMPT_13B_02_模型列表与实例操作执行指令.md` 扩展 1..22 实例的场景草稿；不能提前实现
+11x2 规则排版、碰撞、联合切片或生产 package。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13A-05 |
+| 范围 | 当前结论 | 是否阻断 13B-02 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
@@ -209,6 +210,6 @@ generation/revision 发布。下一步按 `DOC_PREP_13A_05_模型俯视与变换
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
 
-13A-01..04 的实际 API、单测、UI Smoke 和状态报告已形成 A 级证据；13A-05 收口合同已补齐，
-13B-02 已冻结多实例 identity/resource/list 状态。后续按
-`CODEX_PROMPT_13A_05_模型俯视与变换阶段收口执行指令.md` 验证并收口，不提前实现 13B。
+13A-01..05 的实际 API、单测、UI Smoke、用户手册和状态报告已形成 A 级证据；13B-02 已冻结
+多实例 identity/resource/list 状态，并以 13A 实际 API 完成执行级准备。后续按
+`CODEX_PROMPT_13B_02_模型列表与实例操作执行指令.md` 开发，不提前实现 13B-03。

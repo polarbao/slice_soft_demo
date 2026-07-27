@@ -25,6 +25,7 @@
 | `REPORT_13A_02_模型俯视渲染当前状态.md` | 13A-02 +Z 俯视几何、Qt 异步加载、选择和 UI Smoke |
 | `REPORT_13A_03_选择与精确变换当前状态.md` | 13A-03 精确变换、异步重投影和 session config |
 | `REPORT_13A_04_镜像与变换后预检当前状态.md` | 13A-04 镜像、变换后预检和双模式独立准入 |
+| `REPORT_13A_模型俯视工作区与实例变换当前状态.md` | 13A-01..05 阶段收口和 M13-1 候选 |
 | `REPORT_13B_01_MultiModelScene与EffectiveConfig当前状态.md` | 13B-01 多模型场景与 Scene Effective Config 合同 |
 | `REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 12E-09A-02 single_model/scene Diagnostic Effective Config |
 
