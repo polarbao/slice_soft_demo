@@ -122,6 +122,12 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
     options.write_preview_files = false;
     options.write_reports = false;
     options.instanceoverride = request.instance;
+    if (!request.modelpathoverride.empty())
+    {
+        options.inputoverride = SliceRunInputOverride{
+            request.modelpathoverride,
+            request.modelformatoverride};
+    }
     bool gridReceived{false};
     options.gridcallback =
         [&result, &gridReceived](const SliceRunRasterGrid& grid)

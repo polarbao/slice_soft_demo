@@ -18,6 +18,8 @@ struct SceneEffectiveConfigRequest
     std::filesystem::path sourcescenepath;
     std::filesystem::path generatedconfigpath;
     std::string sourceprofileid;
+    std::filesystem::path sourceprofileconfigpath;
+    std::filesystem::path outputpackagedir;
     std::string generatedatutc;
     int dpix{635};
     int dpiy{600};

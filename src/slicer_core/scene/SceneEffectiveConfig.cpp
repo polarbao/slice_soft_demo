@@ -200,6 +200,10 @@ SceneEffectiveConfigResult GenerateSceneEffectiveConfig(
         {"production", request.production},
         {"sliceContract",
          Json::object({
+             {"profileConfigPath",
+              request.sourceprofileconfigpath.generic_string()},
+             {"outputPackageDir",
+              request.outputpackagedir.generic_string()},
              {"dpiX", request.dpix},
              {"dpiY", request.dpiy},
              {"layerHeightMm", request.layerheightmm},

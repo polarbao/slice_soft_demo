@@ -1,9 +1,9 @@
 # TASKS 13B-08 场景作业流收口任务清单
 
 > 文档状态：APPROVED / IN PROGRESS
-> 版本：v1.2
+> 版本：v1.3
 > 日期：2026-07-28
-> 当前入口：13B-08-02 READY
+> 当前入口：13B-08-03 READY
 
 ## 1. 目标
 
@@ -36,7 +36,7 @@ QFileDialog 多文件选择；
 
 ### 13B-08-02 场景生产服务与 CLI
 
-状态：`READY / PREP COMPLETE`
+状态：`COMPLETE / GATE PASS（2026-07-28）`
 
 范围：
 
@@ -51,7 +51,7 @@ effective config 回读、identity/revision/buildVolume/mode Gate；
 
 ### 13B-08-03 Qt 当前场景主切片动作
 
-状态：`PREPARED / SEQUENCE WAIT 13B-08-02`
+状态：`READY / PREP COMPLETE`
 
 范围：
 

@@ -14,6 +14,8 @@ namespace slicer_core
 struct LegacySceneLayerAdapterRequest
 {
     std::filesystem::path configpath;
+    std::filesystem::path modelpathoverride;
+    std::string modelformatoverride{"auto"};
     SceneRasterIdentity identity;
     ModelInstance instance;
 };

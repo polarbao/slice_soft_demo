@@ -2,6 +2,7 @@
 #include "slicer_core/diagnostics/ProductionAdmissionPolicy.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/model.h"
+#include "slicer_core/pipeline/MultiModelProductionService.h"
 #include "slicer_core/pipeline/OpenVdbCandidatePipeline.h"
 #include "slicer_core/pipeline/SlicePipeline.h"
 #include "slicer_core/reports/ReportWriter.h"
@@ -25,6 +26,8 @@ namespace
 struct CliOptions
 {
     std::string config_path{"samples/configs/slice_config.json"};
+    std::filesystem::path scene_config_path;
+    bool config_path_explicit{false};
     bool inspect_model{false};
     bool preview_only{false};
     bool show_help{false};
@@ -43,6 +46,7 @@ void PrintUsage()
 {
     std::cout
         << "Usage: slicer_cli --config <path-to-slice_config.json> [--inspect-model] [--preview-only]\n"
+        << "       slicer_cli --scene-config <scene_config.effective.json>\n"
         << "       slicer_cli --config <path> --experimental-openvdb-shell "
         << "[--admission-mode strict_closed|warn_and_attempt|diagnostic_only] "
         << "[--no-production-rgbwsv] [--experimental-report <path>]\n"
@@ -66,6 +70,17 @@ CliOptions ParseOptions(const int argc, char** argv)
         if (arg == "--config" && i + 1 < argc)
         {
             options.config_path = argv[++i];
+            options.config_path_explicit = true;
+            continue;
+        }
+        if (arg == "--scene-config")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::invalid_argument(
+                    "--scene-config requires a path");
+            }
+            options.scene_config_path = argv[++i];
             continue;
         }
         if (arg == "--inspect-model")
@@ -693,6 +708,59 @@ int RunOpenVdbCandidateSlice(const CliOptions& options)
     return 0;
 }
 
+int RunMultiModelSceneProduction(const CliOptions& options)
+{
+    if (options.config_path_explicit
+        || options.inspect_model
+        || options.preview_only
+        || options.experimental_openvdb_shell
+        || options.openvdb_candidate_slice
+        || options.benchmark_core_only
+        || options.openvdb_capability_json)
+    {
+        std::cerr
+            << "slicer_cli scene error: "
+            << "SCENE_EFFECTIVE_CONFIG_INVALID: "
+            << "--scene-config cannot be combined with a single-model or experimental route\n";
+        return 2;
+    }
+
+    slicer_core::MultiModelProductionRequest request;
+    request.effectiveconfigpath =
+        options.scene_config_path;
+    const slicer_core::MultiModelProductionResult result =
+        slicer_core::RunMultiModelProductionService(request);
+    if (!result.IsValid())
+    {
+        const slicer_core::MultiModelProductionErrorCode code =
+            result.error.has_value()
+            ? result.error->code
+            : slicer_core::MultiModelProductionErrorCode::
+                ProductionPackageInvalid;
+        std::cerr
+            << "slicer_cli scene error: "
+            << slicer_core::MultiModelProductionErrorCodeName(code)
+            << ": "
+            << (result.error.has_value()
+                    ? result.error->message
+                    : "scene production failed")
+            << '\n';
+        return 2;
+    }
+
+    std::cout << "slicer_cli: generated scene package\n";
+    std::cout << "  packageDir: "
+              << result.packagedir.generic_string() << '\n';
+    std::cout << "  sceneId: " << result.sceneid << '\n';
+    std::cout << "  sceneRevision: "
+              << result.scenerevision << '\n';
+    std::cout << "  visibleInstances: "
+              << result.visibleinstancecount << '\n';
+    std::cout << "  layerCount: "
+              << result.layercount << '\n';
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -704,6 +772,10 @@ int main(int argc, char** argv)
         {
             PrintUsage();
             return 0;
+        }
+        if (!options.scene_config_path.empty())
+        {
+            return RunMultiModelSceneProduction(options);
         }
         if (options.openvdb_capability_json)
         {

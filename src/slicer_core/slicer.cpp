@@ -4005,7 +4005,22 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     auto phase_start = run_start;
 
     NotifyProgress(options, run_start, "config_load", 0, 1, 0);
-    const SliceConfig config = load_slice_config(config_path);
+    SliceConfig config = load_slice_config(config_path);
+    if (options.inputoverride.has_value())
+    {
+        if (options.inputoverride->modelpath.empty())
+        {
+            throw std::runtime_error(
+                "slice input override model path must not be empty");
+        }
+        config.input.model_path =
+            options.inputoverride->modelpath;
+        config.input.format =
+            options.inputoverride->format.empty()
+            ? "auto"
+            : options.inputoverride->format;
+        validate_slice_config(config);
+    }
     profile.config_load_ms = ElapsedMsSince(phase_start);
     EnsureGlobalTextureFillPartitionBackendAvailable(config);
     NotifyProgress(options, run_start, "model_load", 0, 1, 3);

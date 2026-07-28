@@ -187,6 +187,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/LegacySceneLayerAdapter.h
     src/slicer_core/pipeline/MultiModelScenePackageWriter.cpp
     src/slicer_core/pipeline/MultiModelScenePackageWriter.h
+    src/slicer_core/pipeline/MultiModelProductionService.cpp
+    src/slicer_core/pipeline/MultiModelProductionService.h
     src/slicer_core/pipeline/MultiModelSliceOrchestrator.cpp
     src/slicer_core/pipeline/MultiModelSliceOrchestrator.h
     src/slicer_core/pipeline/SceneLayerComposer.cpp
@@ -684,6 +686,15 @@ add_executable(multi_model_package_writer_unit_tests
 
 target_link_libraries(multi_model_package_writer_unit_tests PRIVATE slicer_core)
 
+add_executable(multi_model_production_service_unit_tests
+    tests/unit/multi_model_production_service/Main.cpp
+)
+
+target_link_libraries(multi_model_production_service_unit_tests PRIVATE slicer_core)
+target_compile_definitions(multi_model_production_service_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(translated_scene_raster_reuse_unit_tests
     tests/unit/translated_scene_raster_reuse/Main.cpp
 )
@@ -1002,6 +1013,37 @@ set_tests_properties(scene_layer_adapters_unit_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_test(NAME multi_model_package_writer_unit_tests COMMAND multi_model_package_writer_unit_tests)
+add_test(NAME multi_model_production_service_unit_tests COMMAND multi_model_production_service_unit_tests)
+add_test(
+    NAME scene_slice_route_fixture_setup
+    COMMAND multi_model_production_service_unit_tests
+        --emit-fixture
+        "${CMAKE_CURRENT_BINARY_DIR}/scene_slice_route_fixture"
+)
+set_tests_properties(
+    scene_slice_route_fixture_setup
+    PROPERTIES FIXTURES_SETUP scene_slice_route_fixture
+)
+add_test(
+    NAME scene_slice_route_positive
+    COMMAND slicer_cli
+        --scene-config
+        "${CMAKE_CURRENT_BINARY_DIR}/scene_slice_route_fixture/scene_config.effective.json"
+)
+set_tests_properties(
+    scene_slice_route_positive
+    PROPERTIES
+        FIXTURES_REQUIRED scene_slice_route_fixture
+        PASS_REGULAR_EXPRESSION "slicer_cli: generated scene package"
+)
+add_test(
+    NAME scene_slice_route_negative
+    COMMAND ${CMAKE_COMMAND}
+        "-DSLICER_CLI=$<TARGET_FILE:slicer_cli>"
+        "-DMISSING_SCENE_CONFIG=${CMAKE_CURRENT_BINARY_DIR}/scene_slice_route_missing.json"
+        -P
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/SceneSliceRouteNegative.cmake"
+)
 add_test(NAME translated_scene_raster_reuse_unit_tests COMMAND translated_scene_raster_reuse_unit_tests)
 add_test(NAME multi_model_scene_matrix_report_unit_tests COMMAND multi_model_scene_matrix_report_unit_tests)
 add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effective_config_unit_tests)

@@ -57,6 +57,15 @@ using SliceRunLayerCallback = std::function<void(
     const MaterialClosureSemanticLayerInput&)>;
 
 /**
+ * @brief Explicit model source override used by scene production adapters.
+ */
+struct SliceRunInputOverride
+{
+    std::filesystem::path modelpath;
+    std::string format{"auto"};
+};
+
+/**
  * @brief Output switches for a slicer run.
  */
 struct SliceRunOptions {
@@ -67,6 +76,7 @@ struct SliceRunOptions {
     SliceRunGridCallback gridcallback;
     SliceRunLayerCallback layercallback;
     std::optional<ModelInstance> instanceoverride;
+    std::optional<SliceRunInputOverride> inputoverride;
 };
 
 /**
