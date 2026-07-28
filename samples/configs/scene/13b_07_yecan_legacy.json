@@ -1,0 +1,123 @@
+{
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../../model/obj/yecan/3.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/unused/13b_07_yecan",
+    "dpiX": 127,
+    "dpiY": 127,
+    "layerThicknessMm": 0.2,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 6.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "relief": {
+    "baseZMm": 0.0,
+    "fillMode": "intersection_range"
+  },
+  "modelMaterial": {
+    "applyMode": "solid_volume",
+    "materialChannel": "RGB",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "top_surface_band",
+    "topSurfaceLayers": 1,
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [0, 0, 0],
+    "missingTexturePolicy": "warn_and_fallback"
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "white",
+    "scope": "below_texture_surface",
+    "value": 0,
+    "legacyRgbFallback": false,
+    "emptyAllowedInProduction": false
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "lower",
+    "offsetMm": 0.0,
+    "minAreaPx": 0,
+    "value": 0,
+    "internalVoid": {
+      "enabled": true,
+      "fillRule": "all_internal_voids",
+      "minAreaPx": 1
+    },
+    "upper": {
+      "enabled": false,
+      "outside": "outer_varnish_shell",
+      "reason": "13b_07_functional_fixture"
+    }
+  },
+  "surfaceVarnish": {
+    "enabled": false,
+    "thicknessPx": 0
+  },
+  "outerVarnish": {
+    "enabled": false,
+    "thicknessMm": 0.0,
+    "thicknessStepMm": 0.01,
+    "pixelPitchUm": 200.0,
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
+    "value": 0
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "13b_07_functional_127dpi",
+    "target": "multimodel_functional_fixture",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "all_model",
+      "coverage": "all_model",
+      "value": 0,
+      "expandPx": 0,
+      "shrinkPx": 0
+    },
+    "varnish": {
+      "enabled": false,
+      "mode": "all_model",
+      "coverage": "model_surface",
+      "topLayers": 1,
+      "value": 0
+    },
+    "support": {
+      "expected": true,
+      "mode": "existing_support_pipeline"
+    },
+    "validation": {
+      "requireRgbPixels": true,
+      "requireWhitePixels": true,
+      "requireVarnishPixels": false,
+      "requireSupportPixels": false,
+      "maxUnexpectedOverlapPixels": 0
+    }
+  },
+  "preview": {
+    "enabled": false,
+    "format": "png",
+    "interval": 10,
+    "channels": ["texture_rgb", "white", "varnish", "support"]
+  }
+}
