@@ -237,7 +237,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.7 13B-07 真实模型矩阵与收口
 
-状态：`PREPARATION / 13B-06 PASS / PRODUCTION GO INPUTS OPEN`
+状态：`READY FOR FUNCTIONAL MATRIX DEVELOPMENT / PRODUCTION GO INPUTS OPEN`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -247,6 +247,9 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 记录指标 | import/layout/preflight/slice/compose/TIFF/report、总时长、峰值内存、package 大小 |
 | 外部 Gate | 设备幅面/轴方向和 22 实例正式预算未关闭时，只能输出工程实测，不能宣称 production GO |
 | 完成输出 | M13-2/M13-3 的 GO/NO-GO 证据 |
+
+详细合同以 `DOC_PREP_13B_07_真实模型矩阵与阶段收口准备.md` 和
+`CODEX_PROMPT_13B_07_真实模型矩阵与阶段收口执行指令.md` 为准。
 
 ## 6. 13C 原子任务准备
 

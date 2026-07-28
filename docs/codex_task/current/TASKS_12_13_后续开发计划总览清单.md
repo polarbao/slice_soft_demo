@@ -4,7 +4,7 @@
 > 版本：v1.6
 > 更新日期：2026-07-28
 > 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..06、13B-04A COMPLETE
-> 当前原子任务：13B-07 真实模型矩阵与收口 PREPARATION
+> 当前原子任务：13B-07 真实模型矩阵与收口 READY FOR FUNCTIONAL MATRIX DEVELOPMENT
 > 下一 Gate：13B-07 FUNCTIONAL MATRIX -> 13B production GO/NO-GO
 
 ## 1. 文档职责
@@ -53,7 +53,7 @@
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
-| 13B 多模型排版与联合切片 | 13B-01..06、13B-04A COMPLETE；13B-07 PREPARATION | 1 | 补齐并执行 13B-07 功能矩阵 |
+| 13B 多模型排版与联合切片 | 13B-01..06、13B-04A COMPLETE；13B-07 READY | 1 | 执行 13B-07 功能矩阵 |
 | 13C TIFF 原生统一预览 | P0 设计和原子准备完成；代码未开始 | 5 | 13C-01 READY，按固定顺序排在 13B-07 后 |
 
 计数口径：
@@ -91,7 +91,7 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 10A | 13B-04A 多模型纹理俯视统一展示 | `COMPLETE` | 13B-04 COMPLETE / 用户插入需求 | 全部 visible 实例、贴图、追加自动排版闭环 |
 | 11 | 13B-05 全局 Raster 与联合层合成 | `FIXTURE COMPLETE` | 13B-04 功能 Gate | 已解锁联合写包 |
 | 12 | 13B-06 单 package 与 scene report | `FIXTURE COMPLETE` | 13B-05 | 已解锁真实模型矩阵 |
-| 13 | 13B-07 真实模型矩阵与收口 | `PREPARATION / PROD GATE OPEN` | 13B-06 COMPLETE | 生产 GO 还需 buildVolume 和 22 实例预算 |
+| 13 | 13B-07 真实模型矩阵与收口 | `READY FOR FUNCTIONAL MATRIX / PROD GATE OPEN` | 13B-06 COMPLETE | 生产 GO 还需 buildVolume 和 22 实例预算 |
 
 ### Wave 3：TIFF 原生预览与 Diagnostic UI
 
@@ -209,7 +209,7 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 CURRENT：MULTI-MODEL RASTER/COMPOSE WAVE；
 COMPLETE：13A-01..05、13B-01..06、13B-04A、12E-09A-02；
 M13-1：CANDIDATE PASS；
-NEXT：补齐 13B-07 真实模型矩阵与收口独立 PREP/PROMPT；
+NEXT：执行 13B-07 真实模型矩阵与收口功能开发；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；
 13B-07：功能矩阵可继续；production Gate 继续等待设备输入和 22 实例预算；

@@ -288,9 +288,12 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 
 ### 13B-07 真实模型矩阵与收口
 
-状态：PREPARATION / FUNCTIONAL DEVELOPMENT UNBLOCKED / PRODUCTION INPUT OPEN
+状态：READY FOR FUNCTIONAL MATRIX DEVELOPMENT / PRODUCTION INPUT OPEN
 
 目标：1/11/12/22 实例、OBJ/3MF、资源隔离、碰撞/越界、性能和 REPORT_13B。
+
+专项准备：`DOC_PREP_13B_07_真实模型矩阵与阶段收口准备.md` 和
+`CODEX_PROMPT_13B_07_真实模型矩阵与阶段收口执行指令.md`。
 
 ## 8. 13C TIFF 原生统一预览
 
@@ -356,7 +359,7 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13B-07 真实模型矩阵与收口` 的独立准备。13B-06 已完成单 package、
+当前唯一推荐入口为 `13B-07 真实模型矩阵与收口` 的功能矩阵开发。13B-06 已完成单 package、
 typed scene report、原子发布和 RIP strict fixture 闭环。`13C-01` 技术上可独立开始，但单贡献者按
 固定顺序先完成多模型场景链，再进入 TIFF 原生预览。设备 buildVolume/轴向和 22 实例预算仍阻断
 13B-07 production GO，不阻断功能矩阵准备与开发。

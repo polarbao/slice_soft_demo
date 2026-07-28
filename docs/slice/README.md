@@ -220,6 +220,7 @@
 | `REPORT/REPORT_13B_05_全局Raster与联合层合成当前状态.md` | 13B-05 实际实现、验证、边界和后续状态 |
 | `DOC/DOC_PREP_13B_06_单Package与SceneReport准备.md` | 13B-06 单 package、scene report、typed writer 扩展和原子发布准备 |
 | `REPORT/REPORT_13B_06_单Package与SceneReport当前状态.md` | 13B-06 实现、协议、原子发布、测试证据和后续 Gate |
+| `DOC/DOC_PREP_13B_07_真实模型矩阵与阶段收口准备.md` | 13B-07 真实 OBJ/3MF、1/11/12/22、资源复用、性能口径和功能/生产 Gate 准备 |
 | `DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF Source/Cache 执行级准备 |
 | `DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | 13A/13B/13C 17 个近程任务的实施准备和文件所有权 |
 | `DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 外部输入、临时工程规则和任务 Gate |
