@@ -1,8 +1,8 @@
 # ROADMAP_13 模型场景、排版联合切片与 TIFF 原生预览路线
 
-> 版本：v0.9
+> 版本：v1.0
 > 日期：2026-07-28
-> 状态：P0 DESIGN AND ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01/02、跨阶段 09A-02 COMPLETE / NEXT 13C-03 READY
+> 状态：原 P0 范围 14/17 COMPLETE / 13B-08 APPROVED IN PROGRESS / NEXT 13B-08-01
 
 ## 1. 总目标
 
@@ -89,6 +89,19 @@ scene report 和 per-instance stats；
 RIP strict 与真实模型矩阵。
 ```
 
+### 13B-R3.5 场景作业流收口
+
+```text
+一次选择多个 OBJ/STL/3MF；
+串行批量导入、容量和部分失败汇总；
+显式场景生产服务与 --scene-config CLI；
+始终可见的“切片当前场景”主动作；
+场景快照、预检、联合切片和单 Package 回载；
+1/3/11/12/22 实例功能矩阵。
+```
+
+该阶段插入 13C-03 前，先关闭“场景可排版但 UI 不能切片”的产品主流程断点。
+
 ### 13C-R1 TIFF 原生统一预览
 
 ```text
@@ -101,6 +114,19 @@ RGB、RGB+W、RGB+S、RGB+V、RGB+S+W+V；
 ```
 
 13C-R1 在 `12E-09A-05` 前完成，使诊断语义预览复用同一层状态和 TIFF 生产底图。
+
+### 13D Qt 工作台布局收口
+
+```text
+顶部作业栏；
+模型/预览/配置中央工作区；
+单一 Context Inspector；
+可折叠项目与高级工具；
+统一报告/材料闭环/曲线/工艺对比/日志 Dock；
+1280x720 和 150% 缩放交互收口。
+```
+
+13D 等待 13C-05 冻结预览一级入口后实施，避免重复修改 MainWindow 导航。
 
 ### 13A-R2 中期 3D Viewport
 
@@ -132,7 +158,9 @@ VTK 与 QOpenGLWidget 技术 Spike；
   -> 12E-09A-02
   -> 13A-R1
   -> 13B-R2/R3
+  -> 13B-R3.5
   -> 13C-R1
+  -> 13D
   -> 12E-09A-03..06
   -> 12E-10A..D
   -> 13A-R2/R3、13B-R4
@@ -146,8 +174,9 @@ scene identity 的情况下按旧单模型假设完成 09A-02。
 ```text
 13A-01 -> 13B-01 -> 12E-09A-02
 -> 13A-02..05 -> 13B-02..07
--> 13C-01..03 -> 12E-09A-03..06
--> 13C-04..05 -> 12E-10A..D。
+-> 13C-01..02 -> 13B-08-01..04
+-> 13C-03..05 -> 13D-01..04
+-> 12E-09A-03..06 -> 12E-10A..D。
 ```
 
 若产品决定优先关闭 Stage 12，可在 09A-02 后调整为
@@ -160,7 +189,9 @@ scene identity 的情况下按旧单模型假设完成 09A-02。
 | M13-1 | 单模型俯视、选择和 XY 变换 | 可进入现有单模型切片 |
 | M13-2 | 多模型列表与 11x2 规则排版 | 仅场景准备，不代表可打印 |
 | M13-3 | 联合切片与单一 RGBWSV package | 通过 Gate 后可作为候选 |
+| M13-3A | Qt 当前场景作业流 | 批量导入后可从同一场景产生单 Package |
 | M13-4 | TIFF 原生统一预览 | 生产检查不依赖 preview PNG |
+| M13-4A | Qt 工作台布局收口 | 主动作、检查器和诊断层级稳定 |
 | M13-5 | 中期真实 3D viewport | 交互增强，不改变切片协议 |
 | M13-6 | 自动 nesting 与高级交互 | 长期规划 |
 
@@ -182,9 +213,11 @@ Stage 13 P0 需求/设计/验证/原子任务准备：COMPLETE；
 13B-05：FIXTURE COMPLETE；
 13B-06：FIXTURE COMPLETE / PRODUCTION INPUT OPEN；
 13B-07：FUNCTIONAL MATRIX COMPLETE，production GO 等待设备输入和预算；
+13B-08：APPROVED / IN PROGRESS，当前 13B-08-01；
 13C-01：COMPLETE；
 13C-02：COMPLETE；
-13C-03：READY；
+13C-03：READY / SEQUENCE WAIT 13B-08；
+13D：PREPARED / WAIT 13C-05；
 完整 Stage 13 production readiness：INCOMPLETE。
 ```
 

@@ -2,7 +2,7 @@
 
 > 版本：v1.0
 > 日期：2026-07-28
-> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01/02、跨阶段 09A-02 COMPLETE / NEXT 13C-03 READY
+> 状态：原 P0 14/17 COMPLETE / 13B-08 APPROVED IN PROGRESS / NEXT 13B-08-01
 
 ## 1. 阶段依赖
 
@@ -19,12 +19,20 @@
 | 13B-04 | 13B-03、ProductionAdmissionPolicy | 幅面、碰撞和逐实例准入 | 13B-05 |
 | 13B-05 | 13B-04 | 全局 raster 与逐实例层合成 | 13B-06 |
 | 13B-06 | 13B-05、共享 RGBWSV writer | 单 package、scene report、RIP strict | 13B-07 |
-| 13B-07 | 13B-06 | 真实模型矩阵与阶段报告 | Stage 13B GO/NO-GO |
+| 13B-07 | 13B-06 | 真实模型矩阵与阶段报告 | 13B-08 |
+| 13B-08-01 | 13B-07、SceneDocument/ModelTopViewLoader | 批量导入队列和主动作占位 | 13B-08-02 |
+| 13B-08-02 | 13B-08-01、13B-05..07 | 场景生产服务和显式 scene CLI | 13B-08-03 |
+| 13B-08-03 | 13B-08-02 | Qt 当前场景切片、预检和 Package 回载 | 13B-08-04 |
+| 13B-08-04 | 13B-08-03 | 真实模型作业流矩阵与阶段报告 | 13C-03 |
 | 13C-01 | 当前 TIFF reader | 异步 TIFF layer source + LRU cache | 13C-02 |
 | 13C-02 | 13C-01 | RGB/W/S/V 单通道与组合合成器 | 13C-03 |
 | 13C-03 | 13C-02 | 统一生产预览，含 RGB+S+W+V | 12E-09A-05、13C-04 |
 | 13C-04 | 13C-03 | 默认关闭重复生产 preview PNG | 13C-05 |
 | 13C-05 | 13C-04 | UI/IO/协议回归与阶段报告 | 12E-09A-05 |
+| 13D-01 | 13B-08、13C-05 | 顶部作业栏 | 13D-02 |
+| 13D-02 | 13D-01 | 单一 Context Inspector | 13D-03 |
+| 13D-03 | 13D-02 | 项目区与 DiagnosticsDock 收口 | 13D-04 |
+| 13D-04 | 13D-03 | 响应式/UI Smoke/用户说明和报告 | 12E-09A-03 |
 
 首批执行准备状态：
 
@@ -42,9 +50,12 @@
 | 13B-05 | FIXTURE COMPLETE | 公共 Raster/Layer、Legacy/Global adapter、共享 Grid、联合合成和回归证据已完成 |
 | 13B-06 | FIXTURE COMPLETE / PRODUCTION INPUT OPEN | 单 package、typed scene extension、scene report、原子发布和 RIP strict 已通过 fixture 回归 |
 | 13B-07 | FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN | Debug/Release 功能矩阵 PASS；production GO 等待设备输入和 22 实例预算 |
+| 13B-08-01 | READY / AUTHORIZED | PRD/DEV/DEMO/TASKS/PREP/PROMPT 已批准，尚未实现 |
+| 13B-08-02..04 | PREPARED / SEQUENCE WAIT | 每任务 PREP/PROMPT 已生成，按前序 Gate 等待 |
 | 13C-01 | COMPLETE（2026-07-28） | TIFF source、5 层/256 MiB LRU、Qt 异步 generation、稳定错误和定向测试已落地 |
 | 13C-02 | COMPLETE（2026-07-28） | 同层 RGBWSV 的单通道、组合、全材料、统计、六通道探针和稳定错误已落地 |
-| 13C-03 | READY | 13C-02 前置及任务级 UI 接线、并发、坐标和 smoke 合同已完成 |
+| 13C-03 | READY / SEQUENCE WAIT 13B-08 | 13C-02 前置及任务级 UI 接线、并发、坐标和 smoke 合同已完成 |
+| 13D-01..04 | PREPARED / WAIT 13C-05 | PRD/DEV/DEMO/TASKS 和总体 PREP 已完成，尚未实现 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在
 `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md`。该登记不代表建议代码文件已经存在。
@@ -56,7 +67,9 @@ P0：13A-01、13B-01，先冻结 scene/instance/config identity；
 P0：12E-09A-02，改为兼容 single_model/scene；
 P0：13A-R1 单模型俯视与变换；
 P0：13B-R1/R2 规则排版和联合切片；
+P0：13B-08 Qt 场景作业流，优先关闭批量导入和主切片入口断点；
 P0：13C-R1 TIFF 原生生产预览；
+P0/P1：13D 工作台布局，在 13C-05 后收口；
 P1：12E-09A-03..06 与 12E-10；
 P1：13A 中期 3D viewport；
 P2：自动 nesting、跨模型联合支撑和完整 3D gizmo。

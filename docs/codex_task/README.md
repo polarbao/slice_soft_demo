@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-28
-> 当前阶段：13A-01..05、13B-01..07、13C-01/02 COMPLETE / 12G-TCWS FROZEN / NEXT 13C-03 READY
+> 当前阶段：Stage 13 原 P0 14/17 COMPLETE / 13B-08 APPROVED IN PROGRESS / NEXT 13B-08-01
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -46,6 +46,10 @@ docs/codex_task/current/CODEX_PROMPT_13B_04_幅面碰撞与逐实例准入执行
 docs/codex_task/current/CODEX_PROMPT_13B_05_全局Raster与联合层合成执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13B_06_单Package与SceneReport执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13C_03_UnifiedProductionPreview执行指令.md
+docs/codex_task/current/TASKS_13B_08_场景作业流收口任务清单.md
+docs/codex_task/current/CODEX_PROMPT_13B_08_01_批量导入与主切片入口执行指令.md
+docs/codex_task/current/TASKS_13D_Qt工作台布局收口任务清单.md
+docs/codex_task/current/CODEX_PROMPT_13D_01_顶部作业栏执行指令.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
@@ -65,6 +69,8 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 13B-05 的 Legacy/Global adapter、共享 Grid、联合内存层和状态报告已完成；
 13B-06 的单 package、typed scene report、原子发布和 RIP strict fixture 已完成；
 13B-07 Debug/Release 真实模型功能矩阵、单 package 和 RIP strict 已完成，production GO 继续等待外部输入；
+13B-08 批量导入与当前场景一键切片专项已获用户批准，01..04 执行级 PREP/PROMPT 完整；
+13D 工作台布局专项已完成总体准备，代码等待 13C-05；
 12G-TCWS 纹理载体/白色分色候选专项 FROZEN，不得实现。
 ```
 
@@ -107,7 +113,8 @@ docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预
 
 当前已完成 P0 需求/设计/验证、全阶段原子任务准备、13A-01..05/13B-01..07 和 scene-aware
 `12E-09A-02`。13C-01 TIFF 原生数据源和 13C-02 材料合成器已完成，13C-03 的任务级
-PREP/PROMPT 也已补齐。下一步执行 `13C-03` 统一生产预览。13C 必须在
+PREP/PROMPT 也已补齐。真实 UI 截图审计后新增 `13B-08` 和 `13D`：13B-08 已获批准，当前执行
+`13B-08-01`，13C-03 保持 READY 但顺序等待 13B-08；13D 等待 13C-05。13C 必须在
 `12E-09A-05` 前完成生产 TIFF 数据源收口。Stage 13 不改变 RGBWSV 协议，也不把多模型失败静默
 降级成多个单模型成功。
 

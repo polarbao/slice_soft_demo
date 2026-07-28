@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v1.4
+> 文档版本：v1.5
 > 日期：2026-07-28
-> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..07、13C-01/02、跨阶段 12E-09A-02 COMPLETE / NEXT 13C-03 READY
+> 当前状态：原 P0 14/17 COMPLETE / 13B-08 APPROVED IN PROGRESS / NEXT 13B-08-01
 
 ## 1. 本轮完成
 
@@ -160,9 +160,11 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13B-05：FIXTURE COMPLETE；
 13B-06：FIXTURE COMPLETE / PRODUCTION INPUT OPEN；
 13B-07：FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN；
+13B-08：批量导入与当前场景一键切片专项 APPROVED / IN PROGRESS；
 13C-01：COMPLETE，manifest/TIFF layer source、LRU、异步 generation 和稳定错误已落地；
 13C-02：COMPLETE，无 Qt 材料合成、生产统计、六通道探针和稳定错误已落地；
-13C-03：代码前置和任务级 PREP/PROMPT 完整，READY；
+13C-03：代码前置和任务级 PREP/PROMPT 完整，READY / SEQUENCE WAIT 13B-08；
+13D：工作台布局 PRD/DEV/DEMO/TASKS 完整，PREPARED / WAIT 13C-05；
 Stage 13 全阶段 production readiness：尚未完成；
 Stage 13 已实现能力：14/17 个近程原子任务完成。
 ```
@@ -196,19 +198,21 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 14；
+原 P0 合计：17 个近程原子任务，当前完成 14；
+插入专项：13B-08 四个任务、13D 四个任务；13B-08 已获批准，原 P0 完成率仍单独统计；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13C-03 Unified Production Preview
+实现并验证 13B-08-01 批量导入与主切片入口
 ```
 
 13B-07 已完成真实 OBJ/3MF 的 1/11/12/22 Debug/Release 功能矩阵、复用、单 package 和 RIP strict，
 并保持 production INPUT_OPEN；13C-01 TIFF 原生层数据源和 13C-02 同层材料显示合成已完成。
-任务级 UI 接线、并发、坐标和 smoke 合同已补齐，下一步进入开发；
+13C-03 的 UI 接线、并发、坐标和 smoke 合同已补齐，但当前 Qt 多模型场景尚不能直接切片，推荐先完成
+13B-08 的批量导入、显式 scene route 和主动作闭环，再恢复 13C-03；
 设备输入未关闭前不得给出
 13B production GO。
 
@@ -225,9 +229,32 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 | 22 实例正式性能预算 | 外部输入未关闭 | 否；阻断 13B production GO |
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
+| 13B-08 场景作业流 | PRD/DEV/DEMO/TASKS 及 01..04 PREP/PROMPT 已批准 | 是；当前产品主流程 |
+| 13D 工作台布局 | 总体准备完成，等待 13C-05 | 否；不得提前重排 |
 
 13A-01..05 和 13B-02..07 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
 13B-03 已冻结并实现 row-major、11x2、20/30 mm 边到边净距、锁定和原子提交规则。13B-04
 已关闭 13B-05 功能 Fixture Gate，13B-06 已完成单 package/scene report fixture 闭环，13B-07
 真实模型功能矩阵已通过；正式 buildVolume/原点/机器轴和 22 实例预算未关闭，因此
 production acceptance 仍阻断。
+
+## 10. 2026-07-28 UI 作业流插入结论
+
+用户截图暴露的“无明显切片按钮、只能单文件导入、两个右侧栏挤压画布”已形成独立证据。代码审计确认：
+
+```text
+场景存在实例时旧 run_slicer_button_ 被主动禁用；
+旧 OnImportModelAndSlice 不消费当前 SceneDocument；
+OnImportModelPreview 使用单文件对话框；
+13B 联合切片核心存在，但缺少 Qt 产品场景入口；
+模型上下文右栏与全局参数/诊断右栏职责重叠，诊断还与底部 Dock 重复。
+```
+
+因此正式拆为：
+
+```text
+13B-08：功能优先，解决批量导入和当前场景一键切片；
+13D：13C-05 后执行，解决顶部主动作、单一检查器和诊断 Dock 布局。
+```
+
+本次只完成文档和计划准备，未宣称上述代码已经实现。

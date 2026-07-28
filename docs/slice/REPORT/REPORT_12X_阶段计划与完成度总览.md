@@ -56,7 +56,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | P0 ATOMIC PREP COMPLETE / 13A-01..05、13B-01..07、13B-04A、13C-01/02、跨阶段 09A-02 COMPLETE | 实例变换、场景配置、多模型纹理 +Z 俯视、联合切片、真实模型矩阵，以及 manifest/TIFF 权威层源、LRU、异步 generation 和 RGBWSV 材料合成 | 13C-03 READY；外部输入继续阻断 13B production |
+| Stage 13 | 原 P0 14/17 COMPLETE；13B-08/13D PROPOSED | 已有实例变换、场景配置、联合切片核心、真实模型矩阵和 TIFF 数据源；待补 Qt 场景作业流与布局收口 | NEXT 13B-08-01 REVIEW；13C-03 READY / SEQUENCE WAIT |
 
 ### 2.1 Stage 12 目的图
 
@@ -80,7 +80,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | P0 需求/设计/验证/原子准备 COMPLETE / 13A-01..05、13B-01..07、13B-04A、13C-01/02 COMPLETE | 13C-03 READY；13C-03 必须先于 09A-05 |
+| Stage 13 | 原 P0 14/17 COMPLETE；13B-08/13D 插入专项文档已准备 | 先 13B-08，再 13C-03..05、13D；13C-03 必须先于 09A-05 |
 
 ### 2.3 剩余任务数量
 

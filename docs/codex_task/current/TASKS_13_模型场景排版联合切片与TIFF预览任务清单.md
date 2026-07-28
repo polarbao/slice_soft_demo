@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01..05 / 13B-01..07 / 13C-01/02 / 12E-09A-02 COMPLETE / NEXT 13C-03 READY
+> 状态：原始 17 任务中 14 COMPLETE；13B-08 APPROVED / IN PROGRESS；NEXT 13B-08-01
 > 日期：2026-07-28
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -311,7 +311,26 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 生产 Gate 继续等待正式设备 buildVolume、原点/X/Y 轴向和 22 实例预算。
 
-## 8. 13C TIFF 原生统一预览
+## 8. 13B-08 场景作业流收口插入专项
+
+状态：`APPROVED / IN PROGRESS`
+
+触发原因：Stage 13B 核心已经能完成多模型联合内存层和单 Package 功能矩阵，但 Qt 工作台尚未把
+当前 `SceneDocument` 接入产品场景切片入口；批量导入也仍是单文件对话框。因此三模型排版后旧
+`运行切片` 被主动禁用，属于主流程功能断点。
+
+任务：
+
+```text
+13B-08-01：批量导入队列、容量、部分失败和单次自动排版；
+13B-08-02：无 Qt 场景生产服务和显式 --scene-config CLI；
+13B-08-03：Qt“切片当前场景”主动作、预检、进程和结果回载；
+13B-08-04：1/3/11/12/22、OBJ/3MF、RIP strict 和阶段收口。
+```
+
+正式入口：`TASKS_13B_08_场景作业流收口任务清单.md`。13B-08 完成后再恢复 13C-03 开发。
+
+## 9. 13C TIFF 原生统一预览
 
 ### 13C-01 TiffLayerSource 与 LRU
 
@@ -329,7 +348,7 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 ### 13C-03 统一生产预览
 
-状态：READY / 13C-01/02 COMPLETE
+状态：READY / SEQUENCE WAIT 13B-08
 
 目标：合并生产层和材料叠加控制，诊断入口独立，真实 layerIndex/zMm/dpiX/dpiY。
 
@@ -350,7 +369,16 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 目标：无 preview 目录 smoke、stripped/tiled、RGB+S+W+V、RIP/协议回归、REPORT_13C。
 
-## 9. 中长期任务
+## 10. 中长期任务
+
+### 13D Qt 工作台信息架构与布局收口
+
+状态：`PREPARED / WAIT 13C-05`
+
+目标：建立顶部作业栏、单一 Context Inspector、可折叠项目区和统一 DiagnosticsDock，解决两个右侧
+常驻区域挤压画布及诊断入口重复。该阶段等待 13C 最终预览导航冻结后实施，避免重复重排。
+
+任务：`13D-01..04`，详见 `TASKS_13D_Qt工作台布局收口任务清单.md`。
 
 ### 13A-R2 3D Viewport Spike
 
@@ -370,24 +398,27 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 真正 nesting、自动朝向、跨模型支撑和增量重切片另立 PRD/DEV。
 
-## 10. 数量与当前入口
+## 11. 数量与当前入口
 
 ```text
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-合计：17 个近程原子任务，当前完成 14；
+原始合计：17 个近程原子任务，当前完成 14；
+本轮插入：13B-08 四个任务和 13D 四个任务，共 8 个；
+13B-08 已获用户批准；13D 仍等待 13C-05 Gate；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13C-03 Unified Production Preview` 开发。任务级 PREP/PROMPT 已补齐；
+当前推荐入口调整为执行 `13B-08-01`，关闭批量导入和当前场景切片主流程断点；
+`13C-03 Unified Production Preview` 的任务级 PREP/PROMPT 继续保持 READY，但顺序等待 13B-08；
 13C-01 已完成
 TIFF-native source、LRU、异步 generation 和稳定错误；13C-02 已完成确定性材料显示合成、
 统计和六通道探针；13B-07 已完成真实模型功能矩阵，
 多模型场景链的功能开发闭环；设备 buildVolume/轴向和 22 实例预算继续阻断 13B production GO，
 但不阻断 13C TIFF 原生预览开发。
 
-## 11. 任务验证规则
+## 12. 任务验证规则
 
 每个任务开始：
 
@@ -412,12 +443,14 @@ ctest --test-dir build -C Debug --output-on-failure
 
 UI 任务增加对应 `--self-test` 和 `--ui-smoke-test`。联合 package 必须运行 `rip_reader_test --summary`。
 
-## 12. 停止条件
+## 13. 停止条件
 
 ```text
 设备 buildVolume 未冻结时，不得把 fixture 幅面标记生产通过；
 scene identity 未完成时，不得实现多模型生产路由；
 碰撞/越界/admission 失败时停止写包；
 13C 未完成时，09A-05 不复制新的 preview PNG 合成路线；
+13B-08 未完成时，不得强制启用旧单模型按钮冒充当前场景切片；
+13C-05 未完成时，不得开始 13D MainWindow 全局重排；
 每个原子任务完成后停止，等待用户明确授权下一任务。
 ```

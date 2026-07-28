@@ -42,7 +42,7 @@ P0 / 00A / 00B / 00C
 ```text
 09P-R2 hardening 已完成
 10 切片输出交付契约与纹理保真验收已完成
-当前：Stage 13 P0 需求/设计/验证及 17 个近程原子任务准备完成 / 13A-01..05、13B-01..07、13C-01/02、跨阶段 09A-02 COMPLETE / NEXT 13C-03 READY
+当前：Stage 13 原 P0 14/17 COMPLETE；13B-08/13D 插入专项 PROPOSED；NEXT 13B-08-01 REVIEW，13C-03 READY / SEQUENCE WAIT
 ```
 
 推荐后续：

@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-28
-> 适用阶段：Stage 12D COMPLETE；12E-09A-02/09B/09C COMPLETE；13B-07 FUNCTIONAL MATRIX COMPLETE；13C-01/02 COMPLETE；13C-03 READY
+> 适用阶段：Stage 12D COMPLETE；12E-09A-02/09B/09C COMPLETE；Stage 13 原 P0 14/17 COMPLETE；13B-08 APPROVED IN PROGRESS
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01/02、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-03..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 总体文档和 17 个近程任务实施准备已完成，13A-01..05、13B-01..07、13C-01/02 代码和功能证据完成；13B-07 的 1/11/12/22、OBJ/3MF、单 package 与 RIP strict Debug/Release 矩阵 PASS。13C-03 的任务级 UI 接线、并发、坐标和 smoke 合同已补齐，可以进入开发。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01/02、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-03..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 原始 17 个任务中 13A-01..05、13B-01..07、13C-01/02 已完成。2026-07-28 根据真实 UI 作业流新增 13B-08 批量导入/当前场景切片和 13D 工作台布局；13B-08 已获用户批准，当前执行 13B-08-01，02..04 的执行级 PREP/PROMPT 已完整。13C-03 保持 READY 但顺序等待 13B-08，13D 等待 13C-05。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
 
 ## 目录结构
 
@@ -49,6 +49,10 @@
 | `REPORT/REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md` | 13B-04 fixture 幅面、投影碰撞和逐实例准入证据 |
 | `REPORT/REPORT_13B_04A_多模型纹理俯视统一展示当前状态.md` | 13B-04A 全部可见实例、纹理 SurfacePreview 与自动排版证据 |
 | `REPORT/REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md` | 13B-07 真实模型 Debug/Release 功能矩阵、复用、单 package 和 RIP strict |
+| `REPORT/REPORT_13B_08_13D_UI作业流与布局专项准备状态.md` | 批量导入、场景主切片动作和工作台布局专项的准备状态 |
+| `DOC/DOC_DECISION_13B_08_场景作业流与13D工作台收口优先级.md` | 本轮 UI 问题拆分、优先级和实施 Gate |
+| `PRD/PRD_13B_08_批量导入与当前场景一键切片.md` | 多文件导入、当前场景主动作和单 Package 需求 |
+| `PRD/PRD_13D_Qt工作台信息架构与布局收口.md` | 顶部作业栏、单一检查器、诊断 Dock 和响应式布局需求 |
 | `REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 09A-02 single_model/scene 诊断生效配置实际实现和验证 |
 | `DOC/DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 变换、revision、异步重投影和 session 回读执行准备 |
 | `../codex_task/current/TASKS_12_13_后续开发计划总览清单.md` | Stage 12/13 跨阶段当前任务、固定顺序和状态更新规则 |
@@ -226,6 +230,11 @@
 | `DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF Source/Cache 执行级准备 |
 | `DOC/DOC_PREP_13C_02_MaterialPreviewComposer准备.md` | 13C-02 材料显示合成器执行级准备 |
 | `DOC/DOC_PREP_13C_03_UnifiedProductionPreview准备.md` | 13C-03 统一生产预览执行级准备 |
+| `DOC/DOC_PREP_13B_08_01_批量导入与主切片入口准备.md` | 13B-08-01 批量队列和主动作执行级准备 |
+| `DOC/DOC_PREP_13B_08_02_场景生产服务与CLI准备.md` | 13B-08-02 无 Qt 场景生产服务和显式 CLI 准备 |
+| `DOC/DOC_PREP_13B_08_03_Qt当前场景切片准备.md` | 13B-08-03 Qt 当前场景切片状态机准备 |
+| `DOC/DOC_PREP_13B_08_04_真实模型作业流矩阵与收口准备.md` | 13B-08-04 真实模型矩阵和阶段收口准备 |
+| `DOC/DOC_PREP_13D_工作台布局收口准备.md` | 13D 布局迁移前置、迁移清单和验证矩阵 |
 | `DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | 13A/13B/13C 17 个近程任务的实施准备和文件所有权 |
 | `DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 外部输入、临时工程规则和任务 Gate |
 | `PRD/PRD_13A_模型俯视工作区与实例变换.md` | 短期俯视、选中变换和中长期 3D 交互需求 |
