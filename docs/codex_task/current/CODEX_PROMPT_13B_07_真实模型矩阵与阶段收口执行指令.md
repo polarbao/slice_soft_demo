@@ -42,6 +42,7 @@ OBJ：
   Legacy；
   127x127 DPI；
   0.20 mm layerHeight；
+  white model fill / all_model；
   preview OFF；
   fixture buildVolume 显式标记；
   20/30 mm edge clearance；
@@ -110,4 +111,3 @@ productionStatus=INPUT_OPEN。
 需要虚构设备输入或性能阈值；
 真实正向资产与预检清单冲突。
 ```
-

@@ -98,12 +98,15 @@ layerHeight=0.20 mm；
 preview.enabled=false；
 storageMode=stripped；
 rowsPerStrip=64；
+modelFill.material=white；
+modelFill.scope=all_model；
 support/model-fill/material 继续输出 RGBWSV 生产语义；
 fixture buildVolume 从排版结果加显式边界得到，并标记 isFixture=true。
 ```
 
 采用 127 DPI 是为了让 20/30 mm 净距精确落在整数像素，并控制 22 实例功能矩阵的内存和 TIFF
-规模。该 Profile 只证明功能合同，不代表设备生产分辨率或正式性能。
+规模。`all_model` 保证纯白纹理像素仍由 W 通道承载模型材料，不把 RGB=(255,255,255) 误当成
+可打印实体。该 Profile 只证明功能合同，不代表设备生产分辨率或正式性能。
 
 ## 5. 正向矩阵
 
@@ -231,8 +234,8 @@ Global/OpenVDB：仅在独立依赖环境可用且资产通过 strict admission 
 ## 11. 验证命令
 
 ```powershell
-cmake --build build --config Debug --target multi_model_scene_matrix multi_model_scene_matrix_unit_tests rip_reader_test
-ctest --test-dir build -C Debug -R "^(multi_model_scene_matrix_unit_tests|grid_layout_policy_unit_tests|scene_collision_admission_unit_tests|scene_layer_adapters_unit_tests|multi_model_layer_composer_unit_tests|multi_model_package_writer_unit_tests)$" --output-on-failure
+cmake --build build --config Debug --target multi_model_scene_matrix multi_model_scene_matrix_report_unit_tests translated_scene_raster_reuse_unit_tests rip_reader_test
+ctest --test-dir build -C Debug -R "^(multi_model_scene_matrix_report_unit_tests|translated_scene_raster_reuse_unit_tests|grid_layout_policy_unit_tests|scene_collision_admission_unit_tests|scene_layer_adapters_unit_tests|multi_model_layer_composer_unit_tests|multi_model_package_writer_unit_tests)$" --output-on-failure
 .\scripts\run_13b_07_real_model_matrix.ps1 -BuildDir build -Config Debug
 cmake --build build --config Release --target multi_model_scene_matrix rip_reader_test
 .\scripts\run_13b_07_real_model_matrix.ps1 -BuildDir build -Config Release -SkipBuild
@@ -272,4 +275,3 @@ RIP strict 失败；
 13B-07 的功能输入、资产、低成本 Profile、正负矩阵、资源复用、计时口径、报告 schema、引擎边界和
 停止条件已经冻结，可进入功能矩阵开发。正式 production GO 仍等待设备 buildVolume、原点/X/Y 轴向
 和 22 实例性能预算，不阻断本阶段工程功能矩阵。
-

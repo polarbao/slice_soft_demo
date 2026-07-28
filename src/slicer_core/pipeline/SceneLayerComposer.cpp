@@ -463,12 +463,40 @@ bool ValidateLayer(
                 ResolveOwnership(layer, pixelIndex),
                 request.protocol))
         {
+            const std::size_t base = pixelIndex * kChannelCount;
+            std::string message{
+                "instance RGBWSV bytes do not close against material ownership; pixel="};
+            message += std::to_string(pixelIndex);
+            message += " values=";
+            for (std::size_t channel{0U};
+                 channel < kChannelCount;
+                 ++channel)
+            {
+                if (channel != 0U)
+                {
+                    message.push_back(',');
+                }
+                message += std::to_string(
+                    layer.output.channels.at(base + channel));
+            }
+            message += " ownership=";
+            message += std::to_string(
+                layer.modelownership.at(pixelIndex));
+            message.push_back(',');
+            message += std::to_string(
+                layer.modelvarnishownership.at(pixelIndex));
+            message.push_back(',');
+            message += std::to_string(
+                layer.outervarnishownership.at(pixelIndex));
+            message.push_back(',');
+            message += std::to_string(
+                layer.supportownership.at(pixelIndex));
             Block(
                 result,
                 SceneRasterErrorCode::ClosureFailed,
                 request,
                 "layers.ownership",
-                "instance RGBWSV bytes do not close against material ownership",
+                message,
                 &instance,
                 nullptr,
                 expectedLayerIndex);

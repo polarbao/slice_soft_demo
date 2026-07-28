@@ -349,6 +349,19 @@ add_executable(repaired_asset_intake
 
 target_link_libraries(repaired_asset_intake PRIVATE slicer_core)
 
+add_executable(multi_model_scene_matrix
+    apps/multi_model_scene_matrix/Main.cpp
+)
+
+target_link_libraries(multi_model_scene_matrix PRIVATE slicer_core)
+target_compile_definitions(multi_model_scene_matrix PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    SLICESOFT_BUILD_CONFIG="$<CONFIG>"
+)
+if(WIN32)
+    target_link_libraries(multi_model_scene_matrix PRIVATE Psapi)
+endif()
+
 add_executable(mesh_repair_preflight
     apps/mesh_repair_preflight/main.cpp
 )
