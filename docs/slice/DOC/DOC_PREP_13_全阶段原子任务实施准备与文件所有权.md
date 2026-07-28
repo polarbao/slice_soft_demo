@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..06、09A-02 COMPLETE / 13B-07 PREPARATION
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、09A-02 COMPLETE / NEXT 13C-01
 > 版本：v1.6
 > 日期：2026-07-28
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -370,7 +370,7 @@ Stage 13 P0 产品需求：完整；
 Stage 13 P0 总体技术设计：完整；
 Stage 13 P0 验证设计：完整；
 17 个近程原子任务的依赖、文件所有权、测试和验收准备：完整；
-Stage 13 实现：13A-01..05、13B-01..05 和跨阶段 09A-02 已完成；
+Stage 13 实现：13A-01..05、13B-01..07 和跨阶段 09A-02 已完成；
 Stage 13 production readiness：未完成；
 13A-R2/R3、13B-R4 中长期详细设计：有意延后，当前只有 Epic。
 ```

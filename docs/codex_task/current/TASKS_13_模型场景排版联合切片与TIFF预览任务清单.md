@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01..05 / 13B-01..06 / 12E-09A-02 COMPLETE / 13B-07 PREPARATION
+> 状态：13-00 / 13A-01..05 / 13B-01..07 / 12E-09A-02 COMPLETE / NEXT 13C-01
 > 日期：2026-07-28
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -45,6 +45,8 @@ Stage 12/13 跨阶段执行看板。
 13B-03 已完成 11x2 规则排版、SceneDocument 原子恢复、配置回读和 Qt 排版页；
 13B-04 已完成 SceneCollisionService、稳定错误和 fixture 功能 Gate；
 13B-05 已完成 Legacy/Global scene adapter、共享 Grid、联合内存层、测试和状态报告；
+13B-06 已完成单 package、typed scene report、原子发布和 RIP strict；
+13B-07 已完成真实 OBJ/3MF 的 1/11/12/22 Debug/Release 功能矩阵；
 Stage 13 未决产品输入：DOC_CHECKLIST_13，按具体 Gate 阻断，不虚构设备值。
 ```
 
@@ -288,12 +290,26 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 
 ### 13B-07 真实模型矩阵与收口
 
-状态：READY FOR FUNCTIONAL MATRIX DEVELOPMENT / PRODUCTION INPUT OPEN
+状态：FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN
 
 目标：1/11/12/22 实例、OBJ/3MF、资源隔离、碰撞/越界、性能和 REPORT_13B。
 
 专项准备：`DOC_PREP_13B_07_真实模型矩阵与阶段收口准备.md` 和
 `CODEX_PROMPT_13B_07_真实模型矩阵与阶段收口执行指令.md`。
+
+实际证据：
+
+```text
+multi_model_scene_matrix 与 run_13b_07_real_model_matrix.ps1；
+1/11/12/22 实例和 OBJ+Texture2D 3MF 正向矩阵；
+纯 XY 平移实例本地层复用，22 实例仅调用两个唯一模型生产器；
+每 case 一个 package、每全局 layerIndex 一个 TIFF、RIP strict PASS；
+23/overlap/out-of-bounds/missing-volume/stale-revision 按预期阻断；
+Debug/Release 矩阵和 Quick CI PASS；
+REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
+```
+
+生产 Gate 继续等待正式设备 buildVolume、原点/X/Y 轴向和 22 实例预算。
 
 ## 8. 13C TIFF 原生统一预览
 
@@ -355,14 +371,13 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-合计：17 个近程原子任务，当前完成 11；
+合计：17 个近程原子任务，当前完成 12；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13B-07 真实模型矩阵与收口` 的功能矩阵开发。13B-06 已完成单 package、
-typed scene report、原子发布和 RIP strict fixture 闭环。`13C-01` 技术上可独立开始，但单贡献者按
-固定顺序先完成多模型场景链，再进入 TIFF 原生预览。设备 buildVolume/轴向和 22 实例预算仍阻断
-13B-07 production GO，不阻断功能矩阵准备与开发。
+当前唯一推荐入口为 `13C-01 TiffLayerSource 与 LRU`。13B-07 已完成真实模型功能矩阵，
+多模型场景链的功能开发闭环；设备 buildVolume/轴向和 22 实例预算继续阻断 13B production GO，
+但不阻断 13C TIFF 原生预览开发。
 
 ## 11. 任务验证规则
 

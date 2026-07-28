@@ -32,6 +32,8 @@
 | `REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md` | 13B-04 fixture 幅面、投影碰撞和逐实例准入状态 |
 | `REPORT_13B_04A_多模型纹理俯视统一展示当前状态.md` | 13B-04A 多实例纹理 SurfacePreview、自动排版和 UI Smoke |
 | `REPORT_13B_05_全局Raster与联合层合成当前状态.md` | 13B-05 Legacy/Global scene Raster adapter、共享 Grid 与联合内存层合成 |
+| `REPORT_13B_06_单Package与SceneReport当前状态.md` | 13B-06 单 package、typed scene report、原子发布和 RIP strict fixture |
+| `REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md` | 13B-07 真实模型 1/11/12/22、OBJ/3MF、复用、单 package 和 RIP strict 功能矩阵 |
 | `REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 12E-09A-02 single_model/scene Diagnostic Effective Config |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。

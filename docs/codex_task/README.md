@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-28
-> 当前阶段：13A-01..05、13B-01..06 COMPLETE / 12G-TCWS FROZEN / NEXT 13B-07 PREPARATION
+> 当前阶段：13A-01..05、13B-01..07 COMPLETE / 12G-TCWS FROZEN / NEXT 13C-01
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -56,14 +56,14 @@ docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资�
 ```text
 12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE；
 Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
-13A-01..05、13B-01..05、scene-aware 12E-09A-02 代码、单测和回归 COMPLETE；
+13A-01..05、13B-01..07、scene-aware 12E-09A-02 代码、单测和回归 COMPLETE；
 13A-05 已完成统一回归和 M13-1 候选收口；
 13B-02 的 1..22 实例列表、场景操作和 UI Smoke 已完成；
 13B-03 的代码、测试、Qt 排版页和状态报告已完成；
 13B-04 fixture 功能 Gate 已完成，production Gate 仍等待正式设备幅面；
 13B-05 的 Legacy/Global adapter、共享 Grid、联合内存层和状态报告已完成；
 13B-06 的单 package、typed scene report、原子发布和 RIP strict fixture 已完成；
-13B-07 独立 PREP/PROMPT 已补齐，可进入功能矩阵，production GO 继续等待外部输入；
+13B-07 Debug/Release 真实模型功能矩阵、单 package 和 RIP strict 已完成，production GO 继续等待外部输入；
 12G-TCWS 纹理载体/白色分色候选专项 FROZEN，不得实现。
 ```
 
@@ -104,8 +104,8 @@ docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任�
 docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预览执行指令.md
 ```
 
-当前已完成 P0 需求/设计/验证、全阶段原子任务准备、13A-01..05/13B-01 核心能力和 scene-aware
-`12E-09A-02`。下一步执行 `13B-04` fixture 幅面、碰撞和逐实例准入。13C 必须在
+当前已完成 P0 需求/设计/验证、全阶段原子任务准备、13A-01..05/13B-01..07 和 scene-aware
+`12E-09A-02`。下一步执行 `13C-01` TIFF 原生数据源。13C 必须在
 `12E-09A-05` 前完成生产 TIFF 数据源收口。Stage 13 不改变 RGBWSV 协议，也不把多模型失败静默
 降级成多个单模型成功。
 

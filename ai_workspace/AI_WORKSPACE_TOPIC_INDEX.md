@@ -1,10 +1,10 @@
 # AI Workspace Topic Index
 
-> 更新日期：2026-07-27
+> 更新日期：2026-07-28
 
 ## Stage 13 模型场景、排版联合切片与 TIFF 原生预览
 
-当前上下文：`context_handoff/2026-07-27_13B-05完成与13B-06准备.md`
+当前上下文：`context_handoff/2026-07-28_13B-07功能矩阵完成与13C-01准备.md`
 
 当前任务入口：`docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md`
 
@@ -12,7 +12,7 @@
 
 ```text
 13-R0、P0 需求/设计/验证和 17 个近程原子任务准备完成；
-实现代码已开始，Stage 13 近程任务完成 9/17，跨阶段前置 09A-02 已完成；
+Stage 13 近程任务完成 12/17，跨阶段前置 09A-02 已完成；
 13A=模型俯视和实例变换；
 13B=最多 11x2 规则排版和联合切片；
 13C=TIFF 原生 RGBWSV 单通道与 RGB+S+W+V；
@@ -28,11 +28,11 @@
 13B-04=FUNCTIONAL FIXTURE COMPLETE，production buildVolume 输入 OPEN；
 13B-05=FIXTURE COMPLETE；
 13B-06=FIXTURE COMPLETE，单 package、typed scene report、原子发布和 RIP strict PASS；
-13B-07=PREPARATION，功能矩阵可继续，production GO 输入 OPEN；
-13C-01=READY / 按固定顺序排在 13B-07 后；
+13B-07=FUNCTIONAL MATRIX COMPLETE，Debug/Release 真实模型矩阵 PASS，production GO 输入 OPEN；
+13C-01=READY / NEXT；
 跨阶段执行看板=docs/codex_task/current/TASKS_12_13_后续开发计划总览清单.md；
 12G-TCWS=FROZEN；
-下一任务=13B-07 真实模型矩阵与收口独立准备。
+下一任务=13C-01 TiffLayerSource 与 LRU。
 ```
 
 ## Stage 12E 双切片模式与真实模型拓扑修复

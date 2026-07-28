@@ -2,7 +2,7 @@
 
 > 文档版本：v1.2
 > 日期：2026-07-28
-> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..06、跨阶段 12E-09A-02 COMPLETE / 13B-07 PREPARATION
+> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..07、跨阶段 12E-09A-02 COMPLETE / NEXT 13C-01
 
 ## 1. 本轮完成
 
@@ -80,7 +80,7 @@ scene effective config 已支持原子保存、回读、hash、cancel 和 stale�
 当前已有显式 fixture buildVolume、逐实例越界/admission/revision 和投影碰撞检查；
 加载可编辑场景后生产切片保持阻断，scene effective config 尚未接入 slicer_cli；
 当前已有 fixture 多模型全局 Raster 和联合内存层合成；
-当前没有 joint package 和 scene report；
+当前已有 joint package、typed scene report 和 Debug/Release 真实模型功能矩阵；
 当前 PreviewWorkspace 已统一 UI 容器和 layerIndex；
 当前生产 RGB/像素探针已能读取 TIFF；
 当前 W/S/V/overlay 仍主要依赖 preview PNG；
@@ -158,9 +158,10 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13B-04：FUNCTIONAL FIXTURE COMPLETE，production buildVolume 输入仍 OPEN；
 13B-05：FIXTURE COMPLETE；
 13B-06：FIXTURE COMPLETE / PRODUCTION INPUT OPEN；
+13B-07：FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN；
 13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在模型交互和场景排版之后；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：11/17 个近程原子任务完成。
+Stage 13 已实现能力：12/17 个近程原子任务完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -192,23 +193,23 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 10；
+合计：17 个近程原子任务，当前完成 12；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13B-07 真实模型矩阵与收口
+13C-01 TiffLayerSource 与 LRU
 ```
 
-13B-06 已完成共享 writer、typed scene extension、scene report、单 package 原子发布和 RIP strict，
-并以 `functional_fixture_admitted` 明确区分 fixture 与 production。下一步补齐并执行 13B-07
-真实模型功能矩阵；设备输入未关闭前不得给出 production GO。
+13B-07 已完成真实 OBJ/3MF 的 1/11/12/22 Debug/Release 功能矩阵、复用、单 package 和 RIP strict，
+并保持 production INPUT_OPEN。下一步进入 13C TIFF 原生层数据源；设备输入未关闭前不得给出
+13B production GO。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13B-07 功能矩阵 |
+| 范围 | 当前结论 | 是否阻断 13C-01 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
@@ -216,12 +217,12 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 | 13B-05 联合内存层 | FIXTURE COMPLETE | 否 |
 | 13B-06 单 package/scene report | FIXTURE COMPLETE | 否 |
 | 设备 buildVolume/机器轴 | 外部输入未关闭 | 否；阻断 13B production |
-| 22 实例正式性能预算 | 外部输入未关闭 | 否；阻断 13B-07 GO |
+| 22 实例正式性能预算 | 外部输入未关闭 | 否；阻断 13B production GO |
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
 
-13A-01..05 和 13B-02..06 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
+13A-01..05 和 13B-02..07 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
 13B-03 已冻结并实现 row-major、11x2、20/30 mm 边到边净距、锁定和原子提交规则。13B-04
-已关闭 13B-05 功能 Fixture Gate，13B-06 已完成单 package/scene report fixture 闭环。13B-07
-功能矩阵可继续准备；正式 buildVolume/原点/机器轴和 22 实例预算未关闭，因此
+已关闭 13B-05 功能 Fixture Gate，13B-06 已完成单 package/scene report fixture 闭环，13B-07
+真实模型功能矩阵已通过；正式 buildVolume/原点/机器轴和 22 实例预算未关闭，因此
 production acceptance 仍阻断。
