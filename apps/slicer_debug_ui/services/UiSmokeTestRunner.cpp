@@ -1,6 +1,7 @@
 #include "UiSmokeTestRunner.h"
 
 #include "../MainWindow.h"
+#include "../controllers/SceneBatchImportController.h"
 #include "../controllers/SceneTransformController.h"
 #include "../models/SceneDocument.h"
 #include "../models/SceneSelectionModel.h"
@@ -601,6 +602,15 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "scene-grid-layout")
     {
         return SceneGridLayout(options);
+    }
+    if (options.case_name == "scene-batch-import-three")
+    {
+        return SceneBatchImportThree(options);
+    }
+    if (options.case_name
+        == "scene-batch-import-partial-failure")
+    {
+        return SceneBatchImportPartialFailure(options);
     }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
@@ -3481,20 +3491,33 @@ int UiSmokeTestRunner::ModelTopView(
     MainWindow window(options.repo_root);
     auto* importButton = window.findChild<QPushButton*>(
         QStringLiteral("importModelPreviewButton"));
+    auto* cancelImportButton = window.findChild<QPushButton*>(
+        QStringLiteral("cancelModelImportButton"));
+    auto* sliceCurrentSceneButton =
+        window.findChild<QPushButton*>(
+            QStringLiteral("sliceCurrentSceneButton"));
     auto* workspace = window.findChild<QWidget*>(
         QStringLiteral("modelTopViewWorkspace"));
     auto* canvas = window.findChild<ModelTopViewWidget*>(
         QStringLiteral("modelTopViewWidget"));
     if (importButton == nullptr
+        || cancelImportButton == nullptr
+        || sliceCurrentSceneButton == nullptr
         || workspace == nullptr
         || canvas == nullptr
-        || importButton->text() != QStringLiteral("导入模型预览"))
+        || importButton->text()
+            != QStringLiteral("导入模型（可多选）")
+        || sliceCurrentSceneButton->text()
+            != QStringLiteral("切片当前场景")
+        || sliceCurrentSceneButton->isEnabled())
     {
-        return fail(QStringLiteral("model top view workspace integration missing"));
+        return fail(QStringLiteral(
+            "model top view batch import/current-scene action integration missing"));
     }
 
     return pass(QStringLiteral(
-        "model-top-view async/+Z/grid/identity/selection/blocked/cancel"));
+        "model-top-view async/+Z/grid/identity/selection/blocked/"
+        "cancel/batch-action"));
 }
 
 int UiSmokeTestRunner::ModelTopViewTransform(
@@ -3700,6 +3723,149 @@ int UiSmokeTestRunner::ModelTopViewTransform(
     return pass(QStringLiteral(
         "model-top-view-transform x/y/rotate/scale/center/reset/"
         "locked/dirty/latest-generation"));
+}
+
+int UiSmokeTestRunner::SceneBatchImportThree(
+    const UiSmokeTestOptions& options)
+{
+    SceneDocument document;
+    SceneModelRepository repository;
+    ModelTopViewLoader loader(&document, &repository);
+    SceneBatchImportController controller(&document);
+    controller.SetLoadHandlers(
+        [&loader](const ModelTopViewLoadRequest& request)
+        {
+            loader.RequestLoad(request);
+            return loader.Generation();
+        },
+        [&loader]()
+        {
+            loader.Cancel();
+        });
+    QObject::connect(
+        &loader,
+        &ModelTopViewLoader::SigLoadingFinished,
+        &controller,
+        [&controller, &loader]()
+        {
+            controller.OnLoadFinished(loader.Generation());
+        });
+
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    SceneBatchImportRequest request;
+    request.batchid = QStringLiteral("smoke-three");
+    request.configpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    request.files = QStringList{
+        modelPath,
+        modelPath,
+        modelPath,
+    };
+    request.autolayout = true;
+    if (!controller.Start(request).IsValid()
+        || !WaitForCondition(
+            [&controller]()
+            {
+                return !controller.IsRunning();
+            }))
+    {
+        return fail(QStringLiteral(
+            "scene batch three-item import did not complete"));
+    }
+
+    const SceneBatchImportSummary& summary =
+        controller.Summary();
+    if (summary.selected != 3
+        || summary.imported != 3
+        || summary.failed != 0
+        || summary.cancelled != 0
+        || !summary.autolayoutapplied
+        || document.InstanceCount() != 3U
+        || document.Items().at(0U).layoutcolumn != 0
+        || document.Items().at(1U).layoutcolumn != 1
+        || document.Items().at(2U).layoutcolumn != 2)
+    {
+        return fail(QStringLiteral(
+            "scene batch three-item summary/layout mismatch"));
+    }
+    return pass(QStringLiteral(
+        "scene-batch-import-three ordered/one-layout"));
+}
+
+int UiSmokeTestRunner::SceneBatchImportPartialFailure(
+    const UiSmokeTestOptions& options)
+{
+    SceneDocument document;
+    SceneModelRepository repository;
+    ModelTopViewLoader loader(&document, &repository);
+    SceneBatchImportController controller(&document);
+    controller.SetLoadHandlers(
+        [&loader](const ModelTopViewLoadRequest& request)
+        {
+            loader.RequestLoad(request);
+            return loader.Generation();
+        },
+        [&loader]()
+        {
+            loader.Cancel();
+        });
+    QObject::connect(
+        &loader,
+        &ModelTopViewLoader::SigLoadingFinished,
+        &controller,
+        [&controller, &loader]()
+        {
+            controller.OnLoadFinished(loader.Generation());
+        });
+
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    SceneBatchImportRequest request;
+    request.batchid = QStringLiteral("smoke-partial");
+    request.configpath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    request.files = QStringList{
+        modelPath,
+        QDir(options.repo_root).filePath(
+            QStringLiteral(
+                "samples/models/missing-model.obj")),
+        modelPath,
+    };
+    request.autolayout = true;
+    if (!controller.Start(request).IsValid()
+        || !WaitForCondition(
+            [&controller]()
+            {
+                return !controller.IsRunning();
+            }))
+    {
+        return fail(QStringLiteral(
+            "scene batch partial-failure import did not complete"));
+    }
+
+    const SceneBatchImportSummary& summary =
+        controller.Summary();
+    if (summary.imported != 2
+        || summary.failed != 1
+        || summary.items.size() != 3U
+        || summary.items.at(1U).errorcode
+            != QStringLiteral(
+                "SCENE_BATCH_IMPORT_ITEM_FAILED")
+        || document.InstanceCount() != 2U
+        || !summary.autolayoutapplied)
+    {
+        return fail(QStringLiteral(
+            "scene batch partial-failure contract mismatch"));
+    }
+    return pass(QStringLiteral(
+        "scene-batch-import-partial-failure continue/summary"));
 }
 
 int UiSmokeTestRunner::ModelTransformPreflight(

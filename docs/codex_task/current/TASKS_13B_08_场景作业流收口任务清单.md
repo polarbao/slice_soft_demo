@@ -1,9 +1,9 @@
 # TASKS 13B-08 场景作业流收口任务清单
 
 > 文档状态：APPROVED / IN PROGRESS
-> 版本：v1.1
+> 版本：v1.2
 > 日期：2026-07-28
-> 当前入口：13B-08-01 READY / AUTHORIZED
+> 当前入口：13B-08-02 READY
 
 ## 1. 目标
 
@@ -18,7 +18,7 @@
 
 ### 13B-08-01 批量导入队列
 
-状态：`READY / AUTHORIZED`
+状态：`COMPLETE / GATE PASS（2026-07-28）`
 
 范围：
 
@@ -36,7 +36,7 @@ QFileDialog 多文件选择；
 
 ### 13B-08-02 场景生产服务与 CLI
 
-状态：`PREPARED / SEQUENCE WAIT 13B-08-01`
+状态：`READY / PREP COMPLETE`
 
 范围：
 

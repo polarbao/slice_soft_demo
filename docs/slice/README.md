@@ -49,6 +49,7 @@
 | `REPORT/REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md` | 13B-04 fixture 幅面、投影碰撞和逐实例准入证据 |
 | `REPORT/REPORT_13B_04A_多模型纹理俯视统一展示当前状态.md` | 13B-04A 全部可见实例、纹理 SurfacePreview 与自动排版证据 |
 | `REPORT/REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md` | 13B-07 真实模型 Debug/Release 功能矩阵、复用、单 package 和 RIP strict |
+| `REPORT/REPORT_13B_08_01_批量导入与主切片入口当前状态.md` | 13B-08-01 串行批量导入、容量/取消/部分失败和主动作占位证据 |
 | `REPORT/REPORT_13B_08_13D_UI作业流与布局专项准备状态.md` | 批量导入、场景主切片动作和工作台布局专项的准备状态 |
 | `DOC/DOC_DECISION_13B_08_场景作业流与13D工作台收口优先级.md` | 本轮 UI 问题拆分、优先级和实施 Gate |
 | `PRD/PRD_13B_08_批量导入与当前场景一键切片.md` | 多文件导入、当前场景主动作和单 Package 需求 |

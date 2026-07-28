@@ -352,6 +352,9 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
           &m_sceneDocument,
           &m_sceneModelRepository,
           this),
+      m_sceneBatchImportController(
+          &m_sceneDocument,
+          this),
       m_sceneTransformController(
           &m_sceneDocument,
           &m_sceneSelectionModel,
@@ -581,6 +584,65 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
                 m_transformedPreflightLoader.Cancel();
             }
         });
+    m_sceneBatchImportController.SetLoadHandlers(
+        [this](const ModelTopViewLoadRequest& request)
+        {
+            m_modelTopViewLoader.RequestLoad(request);
+            return m_modelTopViewLoader.Generation();
+        },
+        [this]()
+        {
+            m_modelTopViewLoader.Cancel();
+        });
+    connect(
+        &m_modelTopViewLoader,
+        &ModelTopViewLoader::SigLoadingFinished,
+        &m_sceneBatchImportController,
+        [this]()
+        {
+            m_sceneBatchImportController.OnLoadFinished(
+                m_modelTopViewLoader.Generation());
+        });
+    connect(
+        &m_sceneBatchImportController,
+        &SceneBatchImportController::SigStateChanged,
+        this,
+        [this]()
+        {
+            status_label_->setText(
+                m_sceneBatchImportController.StatusText());
+            UpdateActionAvailability();
+        });
+    connect(
+        &m_sceneBatchImportController,
+        &SceneBatchImportController::SigFinished,
+        this,
+        [this]()
+        {
+            const SceneBatchImportSummary& summary =
+                m_sceneBatchImportController.Summary();
+            for (const SceneBatchImportItemResult& item :
+                 summary.items)
+            {
+                if (item.status
+                    == SceneBatchImportItemStatus::Failed)
+                {
+                    log_panel_->appendError(
+                        item.errorcode
+                        + QStringLiteral("：")
+                        + item.path
+                        + QStringLiteral("：")
+                        + item.message);
+                }
+            }
+            if (!summary.layouterror.isEmpty())
+            {
+                log_panel_->appendError(
+                    summary.layouterrorcode
+                    + QStringLiteral("：")
+                    + summary.layouterror);
+            }
+        });
     connect(
         &m_modelTopViewLoader,
         &ModelTopViewLoader::SigLoadingFinished,
@@ -794,7 +856,8 @@ void MainWindow::loadPackageFromEdit() {
 
 void MainWindow::OnImportModelPreview()
 {
-    if (m_modelTopViewLoader.IsRunning()
+    if (m_sceneBatchImportController.IsRunning()
+        || m_modelTopViewLoader.IsRunning()
         || (m_sceneDocument.InstanceCount() > 0U
             && m_sceneDocument.IsGeometryStale()))
     {
@@ -811,81 +874,47 @@ void MainWindow::OnImportModelPreview()
                 "SCENE_INSTANCE_LIMIT_EXCEEDED：场景最多允许 22 个模型实例。"));
         return;
     }
-    const QString modelPath = QFileDialog::getOpenFileName(
+    const QStringList modelPaths = QFileDialog::getOpenFileNames(
         this,
-        QStringLiteral("选择要预览的模型"),
+        QStringLiteral("选择一个或多个模型"),
         paths_.repo_root,
         QStringLiteral("Model (*.obj *.stl *.3mf)"));
-    if (modelPath.isEmpty())
+    if (modelPaths.isEmpty())
     {
         return;
     }
-
-    const QString baseName = SanitizeSessionName(
-        QFileInfo(modelPath).completeBaseName());
-    const bool appendToScene =
-        m_sceneDocument.InstanceCount() > 0U;
-    int identityNumber =
-        static_cast<int>(m_sceneDocument.InstanceCount()) + 1;
-    auto identityExists =
-        [this, &baseName](const int suffix)
-        {
-            const QString modelId =
-                QStringLiteral("model-") + baseName
-                + QStringLiteral("-") + QString::number(suffix);
-            const QString instanceId =
-                QStringLiteral("instance-") + baseName
-                + QStringLiteral("-") + QString::number(suffix);
-            return std::any_of(
-                m_sceneDocument.Items().begin(),
-                m_sceneDocument.Items().end(),
-                [&modelId, &instanceId](
-                    const SceneDocumentItem& item)
-                {
-                    return QString::fromStdString(
-                               item.instance.modelid)
-                            == modelId
-                        || QString::fromStdString(
-                               item.instance.instanceid)
-                            == instanceId;
-                });
-        };
-    while (identityExists(identityNumber))
-    {
-        ++identityNumber;
-    }
-    const QString identitySuffix =
-        QString::number(identityNumber);
-    ModelTopViewLoadRequest request;
-    request.configpath = absoluteFromRepo(config_edit_->text());
-    request.modelpath = QFileInfo(modelPath).absoluteFilePath();
-    request.sceneid = appendToScene
-        ? m_sceneDocument.SceneId()
-        : QStringLiteral("preview-scene-") + baseName;
-    request.modelid =
-        QStringLiteral("model-") + baseName
-        + QStringLiteral("-") + identitySuffix;
-    request.instanceid =
-        QStringLiteral("instance-") + baseName
-        + QStringLiteral("-") + identitySuffix;
-    request.scenerevision = appendToScene
-        ? m_sceneDocument.SceneRevision() + 1U
-        : 1U;
-    request.transformrevision = 0U;
-    request.appendtoscene = appendToScene;
-    request.admissionstatus =
-        slicer_core::SceneViewAdmissionStatus::Unknown;
 
     if (m_transformedPreflightLoader.IsRunning())
     {
         m_transformedPreflightLoader.Cancel();
     }
-    if (!appendToScene)
+    if (m_sceneDocument.InstanceCount() == 0U)
     {
         m_sceneSelectionModel.Clear();
     }
     m_mainWorkspaceTabs->setCurrentWidget(m_modelTopViewWorkspace);
-    m_modelTopViewLoader.RequestLoad(request);
+
+    SceneBatchImportRequest request;
+    request.batchid =
+        QStringLiteral("ui-")
+        + QDateTime::currentDateTimeUtc().toString(
+            QStringLiteral("yyyyMMdd-HHmmss-zzz"));
+    request.configpath =
+        absoluteFromRepo(config_edit_->text());
+    request.files = modelPaths;
+    request.autolayout = true;
+    const SceneBatchImportStartResult result =
+        m_sceneBatchImportController.Start(request);
+    if (!result.IsValid())
+    {
+        status_label_->setText(
+            QString::fromLatin1(
+                SceneBatchImportStartErrorCodeName(
+                    result.error->code)
+                    .data())
+            + QStringLiteral("：")
+            + result.error->message);
+    }
 }
 
 void MainWindow::OnImportModelAndSlice()
@@ -1408,15 +1437,38 @@ QWidget* MainWindow::createProjectPanel() {
     return panel;
 }
 
-QWidget* MainWindow::createRunPanel() {
+QWidget* MainWindow::createRunPanel()
+{
     auto* panel = new QWidget(this);
     auto* layout = new QVBoxLayout(panel);
     build_button_ = makeButton("构建调试版", panel);
-    m_importModelPreviewButton = makeButton("导入模型预览", panel);
+    m_importModelPreviewButton =
+        makeButton("导入模型（可多选）", panel);
     m_importModelPreviewButton->setObjectName(
         QStringLiteral("importModelPreviewButton"));
     m_importModelPreviewButton->setToolTip(
-        QStringLiteral("仅异步加载模型并显示 +Z 俯视图，不创建切片包、不启动 slicer_cli"));
+        QStringLiteral(
+            "一次选择一个或多个 OBJ、STL、3MF；"
+            "串行加载并在批次完成后统一排版"));
+    m_cancelModelImportButton =
+        makeButton("取消模型导入", panel);
+    m_cancelModelImportButton->setObjectName(
+        QStringLiteral("cancelModelImportButton"));
+    m_cancelModelImportButton->setToolTip(
+        QStringLiteral(
+            "取消当前和尚未开始的导入项；"
+            "已成功导入的模型保留"));
+    m_cancelModelImportButton->setEnabled(false);
+    m_sliceCurrentSceneButton =
+        makeButton("切片当前场景", panel);
+    m_sliceCurrentSceneButton->setObjectName(
+        QStringLiteral("sliceCurrentSceneButton"));
+    m_sliceCurrentSceneButton->setMinimumHeight(36);
+    m_sliceCurrentSceneButton->setEnabled(false);
+    m_sliceCurrentSceneButton->setToolTip(
+        QStringLiteral(
+            "13B-08-02/03 将接通场景生产服务；"
+            "当前禁止使用旧单模型配置绕过 SceneDocument"));
     m_importSliceButton = makeButton("导入模型并切片", panel);
     m_importOpenVdbButton = makeButton("导入模型并 OpenVDB 诊断", panel);
     m_importOpenVdbCandidateButton = makeButton("导入模型并 OpenVDB 候选切片", panel);
@@ -1458,6 +1510,8 @@ QWidget* MainWindow::createRunPanel() {
     m_sliceTimingPanel = new SliceTimingPanel(panel);
     layout->addWidget(build_button_);
     layout->addWidget(m_importModelPreviewButton);
+    layout->addWidget(m_cancelModelImportButton);
+    layout->addWidget(m_sliceCurrentSceneButton);
     layout->addWidget(m_importSliceButton);
     layout->addWidget(m_importOpenVdbButton);
     layout->addWidget(m_importOpenVdbCandidateButton);
@@ -1477,6 +1531,11 @@ QWidget* MainWindow::createRunPanel() {
         &QPushButton::clicked,
         this,
         &MainWindow::OnImportModelPreview);
+    connect(
+        m_cancelModelImportButton,
+        &QPushButton::clicked,
+        &m_sceneBatchImportController,
+        &SceneBatchImportController::Cancel);
     connect(m_importSliceButton, &QPushButton::clicked, this, &MainWindow::OnImportModelAndSlice);
     connect(m_importOpenVdbButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbDiagnostic);
     connect(m_importOpenVdbCandidateButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbCandidate);
@@ -1956,9 +2015,24 @@ void MainWindow::UpdateModelPreflightUi()
 void MainWindow::UpdateActionAvailability()
 {
     const bool preflightRunning = m_modelPreflightController.IsRunning();
-    const bool enabled = !m_processBusy && !preflightRunning;
+    const bool batchImportRunning =
+        m_sceneBatchImportController.IsRunning();
+    const bool enabled =
+        !m_processBusy
+        && !preflightRunning
+        && !batchImportRunning;
     build_button_->setEnabled(enabled);
     m_importModelPreviewButton->setEnabled(enabled);
+    m_cancelModelImportButton->setEnabled(batchImportRunning);
+    m_sliceCurrentSceneButton->setEnabled(false);
+    m_sliceCurrentSceneButton->setToolTip(
+        batchImportRunning
+            ? QStringLiteral("批量导入完成后才能切片当前场景。")
+            : m_sceneDocument.InstanceCount() == 0U
+            ? QStringLiteral("请先导入模型。")
+            : QStringLiteral(
+                  "场景生产服务将在 13B-08-02/03 接通；"
+                  "当前禁止旧单模型配置绕行。"));
     m_importSliceButton->setEnabled(enabled);
     m_importOpenVdbButton->setEnabled(enabled);
     m_importOpenVdbCandidateButton->setEnabled(enabled);

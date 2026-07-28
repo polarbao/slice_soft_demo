@@ -1,6 +1,6 @@
 # REPORT 13B-08 / 13D UI 作业流与布局专项准备状态
 
-> 状态：13B-08 APPROVED / 13B-08-01 READY；13D PREPARED / SEQUENCE WAIT
+> 状态：13B-08-01 COMPLETE / 13B-08-02 READY；13D PREPARED / SEQUENCE WAIT
 > 日期：2026-07-28
 > 证据范围：当前代码、Stage 13 文档、本轮 UI 截图
 
@@ -48,8 +48,9 @@ DOC_PREP_13D。
 ## 5. 准备度
 
 ```text
-13B-08-01：执行级准备完成并获用户授权，可进入开发；
-13B-08-02..04：执行级 PREP/PROMPT 已补齐，按前序 Gate 等待；
+13B-08-01：实现、定向测试、Debug full、UI Smoke 和 Quick CI 完成；
+13B-08-02：执行级 PREP/PROMPT 完整，前序 Gate 已通过；
+13B-08-03..04：执行级 PREP/PROMPT 已补齐，按前序 Gate 等待；
 13D-01..04：总体准备完成，代码开发必须等待 13C-05；
 13C-03：既有 PREP/PROMPT 保持 READY，但推荐顺序暂后移；
 生产设备 buildVolume/轴向/22 实例预算：仍未关闭，不得宣称 production GO。

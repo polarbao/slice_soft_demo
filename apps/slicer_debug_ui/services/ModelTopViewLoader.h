@@ -22,6 +22,7 @@ struct ModelTopViewLoadRequest
     slicer_core::ModelTransform transform;
     bool locked{false};
     bool appendtoscene{false};
+    bool autolayoutoncompletion{true};
     slicer_core::SceneViewAdmissionStatus admissionstatus{
         slicer_core::SceneViewAdmissionStatus::Unknown};
 };

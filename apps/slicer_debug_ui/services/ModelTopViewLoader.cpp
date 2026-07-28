@@ -115,6 +115,7 @@ struct ModelTopViewLoader::WorkerResult
     QString sceneid;
     quint64 scenerevision{0U};
     bool appendtoscene{false};
+    bool autolayoutoncompletion{true};
     QString error;
     bool cancelled{false};
 };
@@ -304,6 +305,8 @@ void ModelTopViewLoader::RequestLoad(
                                 request.scenerevision;
                             result.appendtoscene =
                                 request.appendtoscene;
+                            result.autolayoutoncompletion =
+                                request.autolayoutoncompletion;
                             result.geometry =
                                 std::move(coreResult.geometry);
                         }
@@ -528,6 +531,7 @@ void ModelTopViewLoader::OnWorkerCompleted(
         }
         if (geometryAccepted
             && result.appendtoscene
+            && result.autolayoutoncompletion
             && m_document->InstanceCount() > 1U)
         {
             const SceneDocumentOperationResult layoutResult =

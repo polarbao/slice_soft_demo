@@ -1,5 +1,6 @@
 #pragma once
 
+#include "controllers/SceneBatchImportController.h"
 #include "services/ConfigDocument.h"
 #include "services/EffectiveConfigGenerator.h"
 #include "services/PackageLoader.h"
@@ -131,6 +132,7 @@ private:
     SceneSelectionModel m_sceneSelectionModel;
     SceneModelRepository m_sceneModelRepository;
     ModelTopViewLoader m_modelTopViewLoader;
+    SceneBatchImportController m_sceneBatchImportController;
     SceneTransformController m_sceneTransformController;
     TransformedModelPreflightLoader m_transformedPreflightLoader;
     QString current_action_;
@@ -161,6 +163,8 @@ private:
     QPushButton* regression_button_{nullptr};
     QPushButton* compare_button_{nullptr};
     QPushButton* m_importModelPreviewButton{nullptr};
+    QPushButton* m_cancelModelImportButton{nullptr};
+    QPushButton* m_sliceCurrentSceneButton{nullptr};
     QPushButton* m_importSliceButton{nullptr};
     QPushButton* m_importOpenVdbButton{nullptr};
     QPushButton* m_importOpenVdbCandidateButton{nullptr};

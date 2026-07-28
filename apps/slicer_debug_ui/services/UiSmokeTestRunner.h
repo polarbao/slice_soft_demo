@@ -49,6 +49,10 @@ private:
     int ModelTransformPreflight(const UiSmokeTestOptions& options);
     int MultiModelList(const UiSmokeTestOptions& options);
     int SceneGridLayout(const UiSmokeTestOptions& options);
+    int SceneBatchImportThree(
+        const UiSmokeTestOptions& options);
+    int SceneBatchImportPartialFailure(
+        const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;
     int pass(const QString& message) const;

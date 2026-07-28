@@ -370,3 +370,63 @@ if(MSVC)
         )
     endif()
 endif()
+
+target_sources(slicer_debug_ui PRIVATE
+    controllers/SceneBatchImportController.cpp
+    controllers/SceneBatchImportController.h
+)
+
+add_executable(scene_batch_import_controller_unit_tests
+    models/SceneDocument.cpp
+    models/SceneDocument.h
+    controllers/SceneBatchImportController.cpp
+    controllers/SceneBatchImportController.h
+    ../../tests/unit/scene_batch_import_controller/Main.cpp
+)
+
+set_target_properties(
+    scene_batch_import_controller_unit_tests
+    PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(
+    scene_batch_import_controller_unit_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/controllers
+)
+
+target_link_libraries(
+    scene_batch_import_controller_unit_tests
+    PRIVATE
+    Qt5::Core
+    slicer_core
+)
+
+if(MSVC)
+    target_compile_options(
+        scene_batch_import_controller_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(
+            scene_batch_import_controller_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(
+            scene_batch_import_controller_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME scene_batch_import_controller_unit_tests
+    COMMAND scene_batch_import_controller_unit_tests
+)
