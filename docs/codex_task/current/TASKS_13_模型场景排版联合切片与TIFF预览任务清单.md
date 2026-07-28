@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：原始 17 任务中 14 COMPLETE；13B-08 APPROVED / IN PROGRESS；NEXT 13B-08-01
+> 状态：原始 17 任务中 15 COMPLETE；13B-08 COMPLETE；NEXT 13C-04
 > 日期：2026-07-28
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -313,7 +313,7 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 ## 8. 13B-08 场景作业流收口插入专项
 
-状态：`APPROVED / IN PROGRESS`
+状态：`COMPLETE / PRODUCTION INPUT OPEN`
 
 触发原因：Stage 13B 核心已经能完成多模型联合内存层和单 Package 功能矩阵，但 Qt 工作台尚未把
 当前 `SceneDocument` 接入产品场景切片入口；批量导入也仍是单文件对话框。因此三模型排版后旧
@@ -328,7 +328,8 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 13B-08-04：1/3/11/12/22、OBJ/3MF、RIP strict 和阶段收口。
 ```
 
-正式入口：`TASKS_13B_08_场景作业流收口任务清单.md`。13B-08 完成后再恢复 13C-03 开发。
+正式入口：`TASKS_13B_08_场景作业流收口任务清单.md`。13B-08 已完成，阶段报告和
+Debug/Release 真实作业流证据已落地。
 
 ## 9. 13C TIFF 原生统一预览
 
@@ -348,7 +349,7 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 ### 13C-03 统一生产预览
 
-状态：READY / SEQUENCE WAIT 13B-08
+状态：COMPLETE（2026-07-28）
 
 目标：合并生产层和材料叠加控制，诊断入口独立，真实 layerIndex/zMm/dpiX/dpiY。
 
@@ -359,7 +360,7 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 ### 13C-04 Preview IO 收口
 
-状态：PREPARED / WAIT 13C-03
+状态：READY FOR DEVELOPMENT
 
 目标：常规生产不写重复通道 PNG，诊断 preview 按需，兼容旧配置，记录 before/after IO。
 
@@ -404,17 +405,17 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-原始合计：17 个近程原子任务，当前完成 14；
+原始合计：17 个近程原子任务，当前完成 15；
 本轮插入：13B-08 四个任务和 13D 四个任务，共 8 个；
-13B-08 已获用户批准；13D 仍等待 13C-05 Gate；
+13B-08-01..04 已完成；13D 仍等待 13C-05 Gate；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前推荐入口调整为执行 `13B-08-01`，关闭批量导入和当前场景切片主流程断点；
-`13C-03 Unified Production Preview` 的任务级 PREP/PROMPT 继续保持 READY，但顺序等待 13B-08；
+当前推荐入口为执行 `13C-04 Preview IO 收口`，默认关闭重复生产 preview PNG；
+`13C-03 Unified Production Preview` 和 `13B-08` 已完成；
 13C-01 已完成
 TIFF-native source、LRU、异步 generation 和稳定错误；13C-02 已完成确定性材料显示合成、
-统计和六通道探针；13B-07 已完成真实模型功能矩阵，
+统计和六通道探针；13B-08 已完成真实 Qt 作业流、OBJ/3MF 和 RIP strict 矩阵，
 多模型场景链的功能开发闭环；设备 buildVolume/轴向和 22 实例预算继续阻断 13B production GO，
 但不阻断 13C TIFF 原生预览开发。
 

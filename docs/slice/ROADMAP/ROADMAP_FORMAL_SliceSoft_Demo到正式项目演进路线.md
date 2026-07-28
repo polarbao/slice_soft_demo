@@ -42,7 +42,7 @@ P0 / 00A / 00B / 00C
 ```text
 09P-R2 hardening 已完成
 10 切片输出交付契约与纹理保真验收已完成
-当前：Stage 13 原 P0 14/17 COMPLETE；13B-08/13D 插入专项 PROPOSED；NEXT 13B-08-01 REVIEW，13C-03 READY / SEQUENCE WAIT
+当前：Stage 13 原 P0 15/17 COMPLETE；13B-08 插入专项 COMPLETE；13D PREPARED；NEXT 13C-04
 ```
 
 推荐后续：
@@ -500,7 +500,8 @@ docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预
 → 12A..12D 已收口，12E-09C 已完成
 → Stage 13 P0 总体文档、17 个近程原子任务准备与首批合同完成
 → 13A-01..05、13B-01..07、scene-aware 12E-09A-02 COMPLETE
-→ 下一任务 13C-03 Unified Production Preview
+→ 13B-08-01..04、13C-03 COMPLETE
+→ 下一任务 13C-04 Preview IO 收口
 ```
 
 不要把 Stage 11 的 capability decision 误解成多模型 production 已实现。Stage 13 必须通过 scene identity、

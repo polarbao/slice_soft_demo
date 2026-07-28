@@ -4,6 +4,7 @@
 #include "slicer_core/rip_reader.h"
 #include "slicer_core/scene/SceneEffectiveConfig.h"
 #include "slicer_core/scene/SceneModel.h"
+#include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/system/Sha256.h"
 
 #include <cmath>
@@ -27,6 +28,67 @@ bool ExpectTrue(const bool condition, const std::string& message)
     return true;
 }
 
+bool StableThreeMfResourceIdentityIgnoresExtractionRoot()
+{
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path()
+        / "slicesoft_scene_resource_identity_test";
+    std::error_code cleanupError;
+    std::filesystem::remove_all(root, cleanupError);
+    const std::filesystem::path firstTexture =
+        root / "first/cache/3mf_textures/5_checker.png";
+    const std::filesystem::path secondTexture =
+        root / "second/cache/3mf_textures/5_checker.png";
+    std::filesystem::create_directories(
+        firstTexture.parent_path());
+    std::filesystem::create_directories(
+        secondTexture.parent_path());
+    {
+        std::ofstream first(firstTexture, std::ios::binary);
+        std::ofstream second(secondTexture, std::ios::binary);
+        first << "same-texture-content";
+        second << "same-texture-content";
+    }
+
+    slicer_core::SceneModel first;
+    first.model_path = root / "fixture.3mf";
+    first.format = "3mf";
+    first.three_mf.texture_resource_count = 1;
+    first.three_mf.texture_loaded_count = 1;
+    slicer_core::MaterialInfo firstMaterial;
+    firstMaterial.name = "3mf_texture2dgroup_7";
+    firstMaterial.has_diffuse = true;
+    firstMaterial.has_texture = true;
+    firstMaterial.texture_exists = true;
+    firstMaterial.texture_source = "3mf_internal";
+    firstMaterial.diffuse_texture_path = firstTexture;
+    first.material_infos.push_back(firstMaterial);
+
+    slicer_core::SceneModel second = first;
+    second.material_infos.front().diffuse_texture_path =
+        secondTexture;
+    const std::string firstHash =
+        slicer_core::ComputeSceneResourceHash(first);
+    const std::string secondHash =
+        slicer_core::ComputeSceneResourceHash(second);
+
+    {
+        std::ofstream changed(
+            secondTexture,
+            std::ios::binary | std::ios::trunc);
+        changed << "changed-texture-content";
+    }
+    const std::string changedHash =
+        slicer_core::ComputeSceneResourceHash(second);
+    std::filesystem::remove_all(root, cleanupError);
+    return ExpectTrue(
+               firstHash == secondHash,
+               "3MF resource identity ignores extraction root")
+        && ExpectTrue(
+            firstHash != changedHash,
+            "3MF resource identity preserves texture content");
+}
+
 std::string ReadFile(const std::filesystem::path& path)
 {
     std::ifstream input(path, std::ios::binary);
@@ -38,46 +100,6 @@ std::string ReadFile(const std::filesystem::path& path)
     return {
         std::istreambuf_iterator<char>(input),
         std::istreambuf_iterator<char>()};
-}
-
-std::string BuildResourceHash(
-    const slicer_core::SceneModel& source)
-{
-    std::string payload;
-    payload.reserve(source.material_infos.size() * 96U + 64U);
-    payload.append(source.model_path.generic_string());
-    for (const slicer_core::MaterialInfo& material :
-         source.material_infos)
-    {
-        payload.push_back('|');
-        payload.append(material.name);
-        payload.push_back('|');
-        payload.append(std::to_string(material.has_diffuse));
-        payload.push_back(',');
-        payload.append(std::to_string(material.has_texture));
-        payload.push_back(',');
-        payload.append(std::to_string(material.texture_exists));
-        payload.push_back('|');
-        payload.append(
-            std::to_string(material.diffuse_rgb.at(0U)));
-        payload.push_back(',');
-        payload.append(
-            std::to_string(material.diffuse_rgb.at(1U)));
-        payload.push_back(',');
-        payload.append(
-            std::to_string(material.diffuse_rgb.at(2U)));
-        payload.push_back('|');
-        payload.append(
-            material.diffuse_texture_path.generic_string());
-        if (material.texture_exists
-            && !material.diffuse_texture_path.empty())
-        {
-            payload.push_back('|');
-            payload.append(slicer_core::ComputeSha256(
-                ReadFile(material.diffuse_texture_path)));
-        }
-    }
-    return slicer_core::ComputeSha256(payload);
 }
 
 slicer_core::MultiModelScene MakeThreeInstanceScene(
@@ -131,7 +153,8 @@ slicer_core::MultiModelScene MakeThreeInstanceScene(
     source.resourcescopeid = scope.resourcescopeid;
     source.sourcehash =
         slicer_core::ComputeSha256(ReadFile(modelPath));
-    source.resourcehash = BuildResourceHash(model);
+    source.resourcehash =
+        slicer_core::ComputeSceneResourceHash(model);
     source.displayname = "policy_textured_small";
     scene.models.push_back(source);
 
@@ -536,7 +559,9 @@ int main(const int argc, char** argv)
         return 0;
     }
 
-    const bool ok = StableErrorNames()
+    const bool ok =
+        StableThreeMfResourceIdentityIgnoresExtractionRoot()
+        && StableErrorNames()
         && ThreeInstanceSceneWritesOneStrictPackage()
         && HiddenInstanceIsReportedAndNotProduced()
         && MissingProfileAndGlobalModeFailClosed()

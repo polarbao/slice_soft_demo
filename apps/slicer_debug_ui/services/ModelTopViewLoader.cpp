@@ -3,6 +3,7 @@
 #include "slicer_core/config.h"
 #include "slicer_core/model.h"
 #include "slicer_core/scene/ModelInstance.h"
+#include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/system/Sha256.h"
 
 #include <QFileInfo>
@@ -55,40 +56,6 @@ std::string ReadFile(const std::filesystem::path& path)
     return {
         std::istreambuf_iterator<char>(input),
         std::istreambuf_iterator<char>()};
-}
-
-std::string BuildResourceHash(const slicer_core::SceneModel& source)
-{
-    std::string payload;
-    payload.reserve(source.material_infos.size() * 96U + 64U);
-    payload.append(source.model_path.generic_string());
-    for (const slicer_core::MaterialInfo& material : source.material_infos)
-    {
-        payload.push_back('|');
-        payload.append(material.name);
-        payload.push_back('|');
-        payload.append(std::to_string(material.has_diffuse));
-        payload.push_back(',');
-        payload.append(std::to_string(material.has_texture));
-        payload.push_back(',');
-        payload.append(std::to_string(material.texture_exists));
-        payload.push_back('|');
-        payload.append(std::to_string(material.diffuse_rgb.at(0U)));
-        payload.push_back(',');
-        payload.append(std::to_string(material.diffuse_rgb.at(1U)));
-        payload.push_back(',');
-        payload.append(std::to_string(material.diffuse_rgb.at(2U)));
-        payload.push_back('|');
-        payload.append(material.diffuse_texture_path.generic_string());
-        if (material.texture_exists
-            && !material.diffuse_texture_path.empty())
-        {
-            payload.push_back('|');
-            payload.append(slicer_core::ComputeSha256(
-                ReadFile(material.diffuse_texture_path)));
-        }
-    }
-    return slicer_core::ComputeSha256(payload);
 }
 
 std::string BuildTextureOptionsIdentity(
@@ -269,7 +236,8 @@ void ModelTopViewLoader::RequestLoad(
                                 slicer_core::ComputeSha256(
                                     ReadFile(source.model_path));
                             const std::string resourceHash =
-                                BuildResourceHash(source);
+                                slicer_core::ComputeSceneResourceHash(
+                                    source);
                             SceneModelRepositoryEntry entry;
                             entry.modelpath =
                                 modelInfo.absoluteFilePath();

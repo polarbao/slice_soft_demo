@@ -9,6 +9,7 @@
 #include "slicer_core/reports/MultiModelSceneMatrixReport.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/rip_reader.h"
+#include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/scene/SceneViewGeometry.h"
 #include "slicer_core/system/Sha256.h"
 
@@ -102,46 +103,6 @@ std::string ReadFile(const std::filesystem::path& path)
     return {
         std::istreambuf_iterator<char>(input),
         std::istreambuf_iterator<char>()};
-}
-
-std::string BuildResourceHash(
-    const slicer_core::SceneModel& model)
-{
-    std::string payload;
-    payload.append(model.model_path.generic_string());
-    payload.push_back('|');
-    payload.append(model.format);
-    payload.push_back('|');
-    payload.append(std::to_string(model.material_infos.size()));
-    for (const slicer_core::MaterialInfo& material :
-         model.material_infos)
-    {
-        payload.push_back('|');
-        payload.append(material.name);
-        payload.push_back('|');
-        payload.append(std::to_string(material.has_diffuse));
-        payload.push_back(',');
-        payload.append(std::to_string(material.has_texture));
-        payload.push_back(',');
-        payload.append(std::to_string(material.texture_exists));
-        payload.push_back('|');
-        payload.append(
-            material.diffuse_texture_path.generic_string());
-        if (material.texture_exists
-            && !material.diffuse_texture_path.empty())
-        {
-            payload.push_back('|');
-            payload.append(slicer_core::ComputeSha256(
-                ReadFile(material.diffuse_texture_path)));
-        }
-    }
-    payload.push_back('|');
-    payload.append(std::to_string(
-        model.three_mf.texture_resource_count));
-    payload.push_back(',');
-    payload.append(std::to_string(
-        model.three_mf.texture_loaded_count));
-    return slicer_core::ComputeSha256(payload);
 }
 
 std::uint64_t PeakWorkingSetBytes()
@@ -295,7 +256,8 @@ LoadedAsset LoadAsset(
     }
     asset.sourcehash = slicer_core::ComputeSha256(
         ReadFile(asset.model.model_path));
-    asset.resourcehash = BuildResourceHash(asset.model);
+    asset.resourcehash =
+        slicer_core::ComputeSceneResourceHash(asset.model);
     return asset;
 }
 

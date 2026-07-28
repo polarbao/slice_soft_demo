@@ -392,6 +392,29 @@ bool WriteJsonFixture(const QString& path, const QJsonObject& object)
     return true;
 }
 
+bool ReadJsonObject(const QString& path, QJsonObject* object)
+{
+    if (object == nullptr)
+    {
+        return false;
+    }
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        return false;
+    }
+    QJsonParseError error;
+    const QJsonDocument document =
+        QJsonDocument::fromJson(file.readAll(), &error);
+    if (error.error != QJsonParseError::NoError
+        || !document.isObject())
+    {
+        return false;
+    }
+    *object = document.object();
+    return true;
+}
+
 bool ContainsAll(const QString& text, const QStringList& expected)
 {
     for (const QString& value : expected)
@@ -615,6 +638,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "scene-slice-current")
     {
         return SceneSliceCurrent(options);
+    }
+    if (options.case_name == "scene-slice-real-assets")
+    {
+        return SceneSliceRealAssets(options);
     }
     if (options.case_name == "scene-slice-stale")
     {
@@ -3964,6 +3991,237 @@ int UiSmokeTestRunner::SceneSliceCurrent(
     }
     return pass(QStringLiteral(
         "scene-slice-current three-model/one-package/tiff-load"));
+}
+
+int UiSmokeTestRunner::SceneSliceRealAssets(
+    const UiSmokeTestOptions& options)
+{
+    const QString evidencePath = absoluteFromRepo(
+        options,
+        options.output_path.isEmpty()
+            ? QStringLiteral(
+                  "output/benchmarks/13b_08/"
+                  "qt_real_assets_workflow.json")
+            : options.output_path);
+    const QString evidenceDirectory =
+        QFileInfo(evidencePath).absolutePath();
+    if (!QDir().mkpath(evidenceDirectory))
+    {
+        return fail(QStringLiteral(
+            "scene real-assets evidence directory creation failed"));
+    }
+
+    const QString templatePath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    QJsonObject profileRoot;
+    if (!ReadJsonObject(templatePath, &profileRoot))
+    {
+        return fail(QStringLiteral(
+            "scene real-assets Profile fixture did not load"));
+    }
+    QJsonObject output =
+        profileRoot.value(QStringLiteral("output")).toObject();
+    output[QStringLiteral("dpiX")] = 127;
+    output[QStringLiteral("dpiY")] = 127;
+    output[QStringLiteral("layerThicknessMm")] = 0.20;
+    output[QStringLiteral("packageDir")] =
+        QDir::fromNativeSeparators(
+            QDir(evidenceDirectory).filePath(
+                QStringLiteral("qt_real_assets_package")));
+    profileRoot[QStringLiteral("output")] = output;
+    QJsonObject preview =
+        profileRoot.value(QStringLiteral("preview")).toObject();
+    preview[QStringLiteral("enabled")] = false;
+    profileRoot[QStringLiteral("preview")] = preview;
+
+    const QString profilePath =
+        QDir(evidenceDirectory).filePath(
+            QStringLiteral("qt_real_assets_profile.json"));
+    if (!WriteJsonFixture(profilePath, profileRoot))
+    {
+        return fail(QStringLiteral(
+            "scene real-assets Profile fixture write failed"));
+    }
+
+    const QStringList modelPaths{
+        QDir(options.repo_root).filePath(
+            QStringLiteral(
+                "model/obj/xiao_ma_wu_yu_new/"
+                "MF_Xiao_ma_Damuzhi_ty02.obj")),
+        QDir(options.repo_root).filePath(
+            QStringLiteral("model/obj/yecan/3.obj")),
+        QDir(options.repo_root).filePath(
+            QStringLiteral(
+                "samples/models/3mf/"
+                "texture2d_checker_cube.3mf")),
+    };
+    for (const QString& modelPath : modelPaths)
+    {
+        if (!QFileInfo::exists(modelPath))
+        {
+            return fail(
+                QStringLiteral(
+                    "scene real-assets model is missing: ")
+                + modelPath);
+        }
+    }
+
+    MainWindow window(options.repo_root);
+    window.m_currentProfileId.clear();
+    window.config_edit_->setText(profilePath);
+    if (!window.config_editor_panel_->loadConfig(profilePath))
+    {
+        return fail(QStringLiteral(
+            "scene real-assets effective Profile did not load"));
+    }
+
+    SceneBatchImportRequest importRequest;
+    importRequest.batchid =
+        QStringLiteral("scene-slice-real-assets-smoke");
+    importRequest.configpath = profilePath;
+    importRequest.files = modelPaths;
+    importRequest.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(importRequest)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            },
+            120000)
+        || window.m_sceneDocument.InstanceCount() != 3U)
+    {
+        return fail(QStringLiteral(
+            "scene real-assets batch import failed"));
+    }
+
+    window.UpdateActionAvailability();
+    auto* sliceButton = window.findChild<QPushButton*>(
+        QStringLiteral("sliceCurrentSceneButton"));
+    if (sliceButton == nullptr || !sliceButton->isEnabled())
+    {
+        return fail(QStringLiteral(
+            "scene real-assets slice action unavailable"));
+    }
+    sliceButton->click();
+    if (!WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneSliceActionController
+                            .IsRunning()
+                    && !window.runner_.isRunning();
+            },
+            180000)
+        || window.m_sceneSliceActionController.State()
+            != SceneSliceActionState::Completed
+        || window.m_previewWorkspace->LayerIndices().isEmpty())
+    {
+        return fail(
+            QStringLiteral(
+                "scene real-assets workflow did not complete: ")
+            + window.m_sceneSliceActionController.Message());
+    }
+
+    const QString packageDir = window.package_edit_->text();
+    const QString manifestPath =
+        QDir(packageDir).filePath(QStringLiteral("manifest.json"));
+    const QString sceneReportPath =
+        QDir(packageDir).filePath(
+            QStringLiteral(
+                "reports/multimodel_scene_report.json"));
+    QJsonObject manifest;
+    QJsonObject sceneReport;
+    if (!ReadJsonObject(manifestPath, &manifest)
+        || !ReadJsonObject(sceneReportPath, &sceneReport)
+        || sceneReport.value(QStringLiteral("instanceCount"))
+               .toInt()
+            != 3
+        || sceneReport.value(QStringLiteral("package"))
+               .toObject()
+               .value(QStringLiteral("path"))
+               .toString()
+            != QDir::fromNativeSeparators(packageDir))
+    {
+        return fail(QStringLiteral(
+            "scene real-assets package identity mismatch"));
+    }
+
+    QJsonArray assets;
+    for (const QString& modelPath : modelPaths)
+    {
+        assets.append(
+            QJsonObject{
+                {QStringLiteral("path"),
+                 QDir::fromNativeSeparators(modelPath)},
+                {QStringLiteral("format"),
+                 QFileInfo(modelPath).suffix().toLower()}});
+    }
+    const QJsonObject tiff =
+        manifest.value(QStringLiteral("tiff")).toObject();
+    const QJsonObject grid =
+        manifest.value(QStringLiteral("grid")).toObject();
+    const QJsonObject protocol{
+        {QStringLiteral("schema"),
+         manifest.value(QStringLiteral("schema"))},
+        {QStringLiteral("channelOrder"),
+         tiff.value(QStringLiteral("channelOrder"))},
+        {QStringLiteral("bitDepth"),
+         tiff.value(QStringLiteral("bitDepth"))},
+        {QStringLiteral("polarity"),
+         tiff.value(QStringLiteral("polarity"))},
+        {QStringLiteral("printValue"),
+         tiff.value(QStringLiteral("printValue"))},
+        {QStringLiteral("emptyValue"),
+         tiff.value(QStringLiteral("emptyValue"))},
+    };
+    const QJsonObject evidence{
+        {QStringLiteral("schema"),
+         QStringLiteral(
+             "slicesoft.scene_workflow_ui_smoke.13b08.1")},
+        {QStringLiteral("caseId"),
+         QStringLiteral("13B-08-UI-REAL-3")},
+        {QStringLiteral("status"), QStringLiteral("passed")},
+        {QStringLiteral("route"),
+         QStringLiteral("slicer_cli --scene-config")},
+        {QStringLiteral("profilePath"),
+         QDir::fromNativeSeparators(profilePath)},
+        {QStringLiteral("packageDir"),
+         QDir::fromNativeSeparators(packageDir)},
+        {QStringLiteral("manifestPath"),
+         QDir::fromNativeSeparators(manifestPath)},
+        {QStringLiteral("sceneReportPath"),
+         QDir::fromNativeSeparators(sceneReportPath)},
+        {QStringLiteral("sceneId"),
+         sceneReport.value(QStringLiteral("sceneId"))},
+        {QStringLiteral("sceneRevision"),
+         sceneReport.value(QStringLiteral("sceneRevision"))},
+        {QStringLiteral("sceneHash"),
+         sceneReport.value(QStringLiteral("sceneHash"))},
+        {QStringLiteral("instanceCount"), 3},
+        {QStringLiteral("loadedLayerCount"),
+         static_cast<int>(
+             window.m_previewWorkspace->LayerIndices().size())},
+        {QStringLiteral("assets"), assets},
+        {QStringLiteral("protocol"), protocol},
+        {QStringLiteral("grid"), grid},
+        {QStringLiteral("singlePackage"), true},
+        {QStringLiteral("productionGo"), false},
+        {QStringLiteral("productionStatus"),
+         QStringLiteral("INPUT_OPEN")},
+    };
+    if (!WriteJsonFixture(evidencePath, evidence))
+    {
+        return fail(QStringLiteral(
+            "scene real-assets evidence write failed"));
+    }
+
+    return pass(QStringLiteral(
+        "scene-slice-real-assets OBJ/texture/3MF/"
+        "one-package/tiff-load"));
 }
 
 int UiSmokeTestRunner::SceneSliceStale(

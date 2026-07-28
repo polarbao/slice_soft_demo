@@ -1,9 +1,9 @@
 # TASKS 13B-08 场景作业流收口任务清单
 
-> 文档状态：APPROVED / IN PROGRESS
-> 版本：v1.4
+> 文档状态：COMPLETE / FUNCTIONAL PASS
+> 版本：v1.5
 > 日期：2026-07-28
-> 当前入口：13B-08-04 READY
+> 当前入口：13C-04 READY
 
 ## 1. 目标
 
@@ -66,7 +66,7 @@ stale/cancel/no-fallback UI Smoke。
 
 ### 13B-08-04 真实模型矩阵与阶段收口
 
-状态：`READY / PREP COMPLETE`
+状态：`COMPLETE / FUNCTIONAL PASS（2026-07-28）`
 
 范围：
 
@@ -76,6 +76,18 @@ OBJ/3MF、纹理、部分导入失败、碰撞/越界和容量负向；
 Debug/Release、RIP strict、Quick CI；
 用户操作说明和 REPORT_13B_08；
 设备输入未关闭时只宣称 functional PASS，不宣称 production GO。
+```
+
+实际完成：
+
+```text
+run_13b_08_scene_workflow.ps1；
+1/3/11/12/22 与 OBJ/OBJ-MTL/Texture2D 3MF；
+部分失败、容量、碰撞、越界、stale、cancel、Global no-fallback；
+Qt 真实三资产 -> --scene-config -> 一个 Package -> TIFF 自动回载；
+3MF 内部贴图资源 hash 去除临时解压根依赖；
+Debug/Release 定向 CTest、真实矩阵和 RIP strict；
+REPORT_13B_08_批量导入与当前场景切片当前状态.md。
 ```
 
 ## 3. 固定边界
@@ -111,5 +123,5 @@ Qt 任务增加对应 `--ui-smoke-test`；写包任务增加 `rip_reader_test --
 13B-08-01 PASS -> 13B-08-02 READY；
 13B-08-02 PASS -> 13B-08-03 READY；
 13B-08-03 PASS -> 13B-08-04 READY；
-13B-08-04 functional PASS -> 13C-03 恢复为唯一推荐入口。
+13B-08-04 functional PASS -> 已完成的 13C-03 保持有效，13C-04 READY。
 ```

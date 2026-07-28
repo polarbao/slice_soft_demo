@@ -9,6 +9,7 @@
 #include "slicer_core/pipeline/MultiModelSliceOrchestrator.h"
 #include "slicer_core/rip_reader.h"
 #include "slicer_core/scene/SceneEffectiveConfig.h"
+#include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/scene/SceneViewGeometry.h"
 #include "slicer_core/system/Sha256.h"
 
@@ -104,44 +105,6 @@ std::string ReadFile(const std::filesystem::path& path)
     return {
         std::istreambuf_iterator<char>(input),
         std::istreambuf_iterator<char>()};
-}
-
-std::string BuildResourceHash(const SceneModel& source)
-{
-    std::string payload;
-    payload.reserve(source.material_infos.size() * 96U + 64U);
-    payload.append(source.model_path.generic_string());
-    for (const MaterialInfo& material : source.material_infos)
-    {
-        payload.push_back('|');
-        payload.append(material.name);
-        payload.push_back('|');
-        payload.append(std::to_string(material.has_diffuse));
-        payload.push_back(',');
-        payload.append(std::to_string(material.has_texture));
-        payload.push_back(',');
-        payload.append(std::to_string(material.texture_exists));
-        payload.push_back('|');
-        payload.append(
-            std::to_string(material.diffuse_rgb.at(0U)));
-        payload.push_back(',');
-        payload.append(
-            std::to_string(material.diffuse_rgb.at(1U)));
-        payload.push_back(',');
-        payload.append(
-            std::to_string(material.diffuse_rgb.at(2U)));
-        payload.push_back('|');
-        payload.append(
-            material.diffuse_texture_path.generic_string());
-        if (material.texture_exists
-            && !material.diffuse_texture_path.empty())
-        {
-            payload.push_back('|');
-            payload.append(ComputeSha256(
-                ReadFile(material.diffuse_texture_path)));
-        }
-    }
-    return ComputeSha256(payload);
 }
 
 std::optional<MultiModelProductionErrorCode>
@@ -300,13 +263,20 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
             throw std::runtime_error(
                 "scene model importer returned no triangles");
         }
-        if (ComputeSha256(ReadFile(sourcePath))
-                != source.sourcehash
-            || BuildResourceHash(model)
-                != source.resourcehash)
+        const std::string sourceHash =
+            ComputeSha256(ReadFile(sourcePath));
+        const std::string resourceHash =
+            ComputeSceneResourceHash(model);
+        if (sourceHash != source.sourcehash
+            || resourceHash != source.resourcehash)
         {
             throw std::runtime_error(
-                "scene model or adjacent resource hash mismatch");
+                "scene model or adjacent resource hash mismatch: modelId="
+                + source.modelid
+                + " sourceHashMatch="
+                + (sourceHash == source.sourcehash ? "true" : "false")
+                + " resourceHashExpected=" + source.resourcehash
+                + " resourceHashActual=" + resourceHash);
         }
 
         LoadedSceneModel item;

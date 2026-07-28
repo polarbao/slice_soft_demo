@@ -1,6 +1,6 @@
 # QT_DEBUG_UI_操作手册
 
-> 日期：2026-07-27
+> 日期：2026-07-28
 > 适用程序：`slicer_debug_ui`
 > 适用对象：切片 Demo 调试、样例验证、模型导入、层预览、报告查看。
 
@@ -96,7 +96,7 @@ map_Kd texture.png
 
 贴图文件可以放在 OBJ / MTL 同级目录或 MTL 内相对路径指向的位置。当前 importer 会按 OBJ/MTL 路径解析贴图。
 
-### 3.3 切片前模型俯视与精确变换
+### 3.3 多模型俯视、排版与当前场景切片
 
 点击左侧：
 
@@ -104,8 +104,10 @@ map_Kd texture.png
 导入模型预览
 ```
 
-选择 OBJ、STL 或 3MF 后，UI 切换到“模型”页并异步加载 +Z 俯视图。此操作只建立场景草稿，不启动
-`slicer_cli`，也不会创建生产 TIFF/package。
+一次可选择一个或多个 OBJ、STL、3MF。UI 会按选择顺序串行导入，切换到“模型”页并在同一 +Z
+俯视画布显示全部可见实例。批次完成后只执行一次规则排版；单批坏文件不会删除同批已成功模型。
+
+场景总实例数上限为 22。若本次选择会超过剩余容量，整批在导入前阻断，不静默截断。
 
 “模型”页当前支持：
 
@@ -119,6 +121,10 @@ map_Kd texture.png
 | 重置 | 恢复 identity transform。 |
 | 镜像 X / 镜像 Y | 沿源模型包围盒中心镜像实例，不修改源文件。 |
 | 保存场景配置 | 写入并回读当前 session 的 scene draft/effective config。 |
+| 模型列表 | 切换当前实例、追加、复制、删除以及控制 visible/locked。 |
+| 排版 | 设置 11 x 2 规则排版和 20/30 mm 默认净距。 |
+| 切片当前场景 | 冻结当前全部可见实例并产生一个联合 RGBWSV Package。 |
+| 停止切片 | 终止当前场景进程，不接受或回载取消后的 Package。 |
 
 画布坐标固定为：
 
@@ -130,11 +136,36 @@ Z 落台与 autoOrient 沿用现有生产逻辑，界面不开放 Z 平移。
 ```
 
 状态区会分别显示源模型、变换后模型、Legacy 和 Global 准入。`PENDING`、`FAILED`、`BLOCKED`、
-`stale` 或取消结果均不会放行生产。即使显示“预检通过”，当前单模型场景配置也尚未接入生产
-`slicer_cli`，因此“运行切片”仍保持禁用；应继续使用既有一键切片/配置流程生成生产 package。
+`stale` 或取消结果均不会放行场景切片。所有可见实例和场景准入通过后，点击：
+
+```text
+切片当前场景
+```
+
+UI 会自动冻结：
+
+```text
+sceneId / sceneRevision / sceneHash；
+每个 modelId / instanceId / transformRevision；
+当前 scene-wide Profile；
+DPI、层厚、buildVolume 和显式 pipeline mode。
+```
+
+随后执行：
+
+```powershell
+slicer_cli --scene-config <scene_config.effective.json>
+```
+
+成功后只接受与冻结身份一致的一个 Package，并自动打开 TIFF 生产预览。场景在运行期间被修改、用户取消、
+Package 身份不匹配或进程失败时均不会回载旧结果。
+
+当前多模型场景生产只准入 Legacy。选择未准入 Global 时按钮明确阻断，禁止静默回退 Legacy。设备
+buildVolume、原点/轴向和 22 实例预算尚未关闭，因此当前场景输出属于功能 fixture，
+`productionReady=false`，不能作为设备 production GO。
 
 复杂或开放拓扑模型被阻断后仍可查看，用于调整和诊断，但不能把 Legacy 的通过或警告自动视为 Global
-通过。当前不提供自动修复、鼠标 gizmo、非均匀缩放、完整 3D 相机或多模型列表。
+通过。当前不提供自动修复、鼠标 gizmo、非均匀缩放或完整 3D 相机。
 
 ### 3.4 OpenVDB 实验诊断
 
@@ -168,8 +199,10 @@ output/ui_sessions/<模型名_时间戳>_openvdb/reports/experimental_openvdb_sh
 | 对比包 A/B | 用于材料工艺 Profile 对比。 |
 | 构建调试版 | 执行 `cmake --build build --config Debug`。 |
 | 导入模型并切片 | 选择任意模型，生成临时配置，并执行 legacy production 切片。 |
+| 导入模型预览 | 一次选择 1..N 个模型，导入当前 SceneDocument 并进行单次规则排版。 |
+| 切片当前场景 | 消费当前可见实例，通过显式 `--scene-config` 写一个联合 Package。 |
 | 导入模型并 OpenVDB 诊断 | 选择任意模型，生成临时配置，并执行 OpenVDB experimental diagnostic。 |
-| 运行切片 | 运行当前配置文件。 |
+| 运行切片 | 运行当前单模型配置；SceneDocument 已加载时禁用，避免绕过当前场景。 |
 | 运行 RIP 摘要 | 对当前输出包执行 RIP reader summary。 |
 | 运行快速回归 | 执行 `scripts/run_regression.ps1 -Mode quick`。 |
 | 对比工艺配置 | 对比两个输出包的材料工艺报告。 |
@@ -196,7 +229,8 @@ output/ui_sessions/<模型名_时间戳>_openvdb/reports/experimental_openvdb_sh
 
 ### 4.2 切片进度与耗时
 
-执行“导入模型并切片”“运行切片”或“导入模型并 OpenVDB 候选切片”后，左侧按钮区下方会显示：
+执行“导入模型并切片”“切片当前场景”“运行切片”或“导入模型并 OpenVDB 候选切片”后，左侧按钮区
+下方会显示：
 
 | 字段 | 含义 |
 |---|---|

@@ -55,6 +55,8 @@ private:
         const UiSmokeTestOptions& options);
     int SceneSliceCurrent(
         const UiSmokeTestOptions& options);
+    int SceneSliceRealAssets(
+        const UiSmokeTestOptions& options);
     int SceneSliceStale(
         const UiSmokeTestOptions& options);
     int SceneSliceCancel(

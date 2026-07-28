@@ -2,7 +2,7 @@
 
 > 文档状态：R4-08-R2 GO / 12E-08D COMPLETE / GLOBAL OPT-IN CANDIDATE ADMITTED
 > 更新日期：2026-07-28
-> 当前项目原子任务：12E-09B/09C、09A-01/02、Stage 13 原 P0 14/17 COMPLETE；13B-08/13D PROPOSED；13C-03 READY / SEQUENCE WAIT
+> 当前项目原子任务：12E-09B/09C、09A-01/02、Stage 13 原 P0 15/17 COMPLETE；13B-08 COMPLETE；13C-04 NEXT；13D PREPARED
 > 规则：每次只执行用户明确指定的一个 12E 原子任务
 
 ## 1. 阶段目标
@@ -580,7 +580,7 @@ REPORT_12E。
 ```
 
 准备入口：`docs/slice/DOC/DOC_PREP_12E_R6_Preview真实模型与阶段收口准备.md`。09B-01..06
-与 09C-01..06 已完成；10A 仍依赖 Stage 13C-03 和 09A-05，10B/10C 的 R4/08D/09B/09C
+与 09C-01..06 已完成；13C-03 已完成，10A 仍依赖 09A-05，10B/10C 的 R4/08D/09B/09C
 证据前置已完成。
 正式启动前仍需补齐独立 PRD/DEV/DEMO/TASKS/CODEX_PROMPT。复杂浮雕 `0/3` 继续作为阻断披露，
 不再阻断正向模型矩阵。

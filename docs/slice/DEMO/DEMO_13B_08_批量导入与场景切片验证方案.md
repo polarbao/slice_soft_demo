@@ -1,7 +1,7 @@
 # DEMO 13B-08 批量导入与场景切片验证方案
 
-> 文档版本：v1.1
-> 文档状态：APPROVED
+> 文档版本：v1.2
+> 文档状态：VERIFIED
 > 日期：2026-07-28
 > 批准记录：2026-07-28，验证合同随 13B-08 原子任务执行
 
@@ -94,7 +94,7 @@ RIP strict PASS。
 
 ## 4. 自动化入口
 
-计划新增：
+实际入口：
 
 ```powershell
 ctest --test-dir build -C Debug -R "scene_batch_import|multi_model_production_service|scene_slice_route" --output-on-failure
@@ -104,7 +104,14 @@ ctest --test-dir build -C Debug -R "scene_batch_import|multi_model_production_se
 .\scripts\run_ci_quick.ps1
 ```
 
-命令在实现前仅为计划入口，不宣称当前可运行。
+统一矩阵入口：
+
+```powershell
+.\scripts\run_13b_08_scene_workflow.ps1 -BuildDir build -Config Debug
+.\scripts\run_13b_08_scene_workflow.ps1 -BuildDir build -Config Release
+```
+
+2026-07-28 已在 Debug/Release 实际通过；设备输入未关闭，结论为 FUNCTIONAL PASS。
 
 ## 5. 通过标准
 

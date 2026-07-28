@@ -34,6 +34,7 @@
 | `REPORT_13B_05_全局Raster与联合层合成当前状态.md` | 13B-05 Legacy/Global scene Raster adapter、共享 Grid 与联合内存层合成 |
 | `REPORT_13B_06_单Package与SceneReport当前状态.md` | 13B-06 单 package、typed scene report、原子发布和 RIP strict fixture |
 | `REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md` | 13B-07 真实模型 1/11/12/22、OBJ/3MF、复用、单 package 和 RIP strict 功能矩阵 |
+| `REPORT_13B_08_批量导入与当前场景切片当前状态.md` | 13B-08 批量导入、当前场景切片、真实 OBJ/3MF 作业流矩阵和 RIP strict |
 | `REPORT_13C_01_TIFFLayerSource与Cache当前状态.md` | 13C-01 manifest/TIFF 权威层源、LRU、异步 generation 和稳定错误 |
 | `REPORT_13C_02_MaterialPreviewComposer当前状态.md` | 13C-02 RGBWSV 材料显示合成、生产统计、六通道探针和稳定错误 |
 | `REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 12E-09A-02 single_model/scene Diagnostic Effective Config |

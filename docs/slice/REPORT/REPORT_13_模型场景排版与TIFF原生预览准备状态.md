@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v1.5
+> 文档版本：v1.6
 > 日期：2026-07-28
-> 当前状态：原 P0 14/17 COMPLETE / 13B-08 APPROVED IN PROGRESS / NEXT 13B-08-01
+> 当前状态：原 P0 15/17 COMPLETE / 13B-08 COMPLETE / NEXT 13C-04
 
 ## 1. 本轮完成
 
@@ -160,13 +160,14 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13B-05：FIXTURE COMPLETE；
 13B-06：FIXTURE COMPLETE / PRODUCTION INPUT OPEN；
 13B-07：FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN；
-13B-08：批量导入与当前场景一键切片专项 APPROVED / IN PROGRESS；
+13B-08：批量导入、当前场景一键切片、真实 OBJ/3MF 作业流矩阵和 RIP strict COMPLETE；
 13C-01：COMPLETE，manifest/TIFF layer source、LRU、异步 generation 和稳定错误已落地；
 13C-02：COMPLETE，无 Qt 材料合成、生产统计、六通道探针和稳定错误已落地；
-13C-03：代码前置和任务级 PREP/PROMPT 完整，READY / SEQUENCE WAIT 13B-08；
+13C-03：COMPLETE，TIFF 原生统一生产预览和全部材料组合已落地；
+13C-04：READY FOR DEVELOPMENT，进入 Preview IO 收口；
 13D：工作台布局 PRD/DEV/DEMO/TASKS 完整，PREPARED / WAIT 13C-05；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：14/17 个近程原子任务完成。
+Stage 13 已实现能力：15/17 个近程原子任务完成，另有插入专项 13B-08 四项全部完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -198,27 +199,26 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-原 P0 合计：17 个近程原子任务，当前完成 14；
-插入专项：13B-08 四个任务、13D 四个任务；13B-08 已获批准，原 P0 完成率仍单独统计；
+原 P0 合计：17 个近程原子任务，当前完成 15；
+插入专项：13B-08 四个任务、13D 四个任务；13B-08 已完成，原 P0 完成率仍单独统计；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-实现并验证 13B-08-01 批量导入与主切片入口
+实现并验证 13C-04 Preview IO 收口
 ```
 
-13B-07 已完成真实 OBJ/3MF 的 1/11/12/22 Debug/Release 功能矩阵、复用、单 package 和 RIP strict，
-并保持 production INPUT_OPEN；13C-01 TIFF 原生层数据源和 13C-02 同层材料显示合成已完成。
-13C-03 的 UI 接线、并发、坐标和 smoke 合同已补齐，但当前 Qt 多模型场景尚不能直接切片，推荐先完成
-13B-08 的批量导入、显式 scene route 和主动作闭环，再恢复 13C-03；
+13B-08 已完成批量导入、显式 scene route、当前场景主动作、真实 OBJ/3MF 作业流矩阵和 RIP strict；
+13C-01..03 已完成 TIFF 原生层数据源、同层材料显示合成及统一生产预览。当前进入 13C-04，
+默认关闭重复生产 preview PNG，并保留显式诊断输出。
 设备输入未关闭前不得给出
 13B production GO。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13C-03 |
+| 范围 | 当前结论 | 是否阻断当前任务 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
@@ -229,7 +229,7 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 | 22 实例正式性能预算 | 外部输入未关闭 | 否；阻断 13B production GO |
 | 13A-R2/R3 真实 3D | 只有 Epic，等待技术 Spike | 否 |
 | 13B-R4 自动 nesting | 只有 Epic，等待 13B-R3 证据 | 否 |
-| 13B-08 场景作业流 | PRD/DEV/DEMO/TASKS 及 01..04 PREP/PROMPT 已批准 | 是；当前产品主流程 |
+| 13B-08 场景作业流 | 01..04 COMPLETE，真实矩阵和阶段报告已落地 | 否 |
 | 13D 工作台布局 | 总体准备完成，等待 13C-05 | 否；不得提前重排 |
 
 13A-01..05 和 13B-02..07 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
@@ -257,4 +257,4 @@ OnImportModelPreview 使用单文件对话框；
 13D：13C-05 后执行，解决顶部主动作、单一检查器和诊断 Dock 布局。
 ```
 
-本次只完成文档和计划准备，未宣称上述代码已经实现。
+13B-08 代码与证据链现已完成；13D 仍只完成文档和计划准备，等待 13C-05 后实施。

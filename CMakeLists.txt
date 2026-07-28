@@ -262,6 +262,8 @@ add_library(slicer_core
     src/slicer_core/scene/SceneModel.h
     src/slicer_core/scene/SceneViewGeometry.cpp
     src/slicer_core/scene/SceneViewGeometry.h
+    src/slicer_core/scene/SceneResourceIdentity.cpp
+    src/slicer_core/scene/SceneResourceIdentity.h
     src/slicer_core/scene/ModelInstance.cpp
     src/slicer_core/scene/ModelInstance.h
     src/slicer_core/scene/ModelTransform.cpp

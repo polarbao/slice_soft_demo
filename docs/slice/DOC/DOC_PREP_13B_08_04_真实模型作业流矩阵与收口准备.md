@@ -1,7 +1,7 @@
 # DOC PREP 13B-08-04 真实模型作业流矩阵与收口准备
 
-> 文档状态：PREPARED / SEQUENCE WAIT 13B-08-03
-> 版本：v1.0
+> 文档状态：IMPLEMENTED / GATE PASS
+> 版本：v1.1
 > 日期：2026-07-28
 > 对应任务：13B-08-04
 
@@ -79,4 +79,23 @@ RIP strict 通过；
 Qt 当前场景按钮产生的 Package 与 CLI route 一致；
 旧单模型路径和 13C 预览基线不回归；
 functional 与 production 声明边界清楚。
+```
+
+## 7. 实施结果
+
+2026-07-28 已完成：
+
+```text
+Debug/Release 脚本矩阵 PASS；
+1/3/11/12/22 和 OBJ/OBJ-MTL/Texture2D 3MF PASS；
+所有正向 Package RIP strict PASS；
+部分失败、容量、碰撞、越界、stale、cancel 和 Global no-fallback PASS；
+Qt 真实三资产通过同一 --scene-config 产品路由写出一个 Package 并回载 TIFF；
+设备输入继续标记 INPUT_OPEN，没有宣称 PRODUCTION GO。
+```
+
+实际报告：
+
+```text
+docs/slice/REPORT/REPORT_13B_08_批量导入与当前场景切片当前状态.md
 ```

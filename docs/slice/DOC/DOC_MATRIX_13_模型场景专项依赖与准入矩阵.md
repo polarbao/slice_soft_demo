@@ -1,8 +1,8 @@
 # DOC_MATRIX_13 模型场景专项依赖与准入矩阵
 
-> 版本：v1.0
+> 版本：v1.1
 > 日期：2026-07-28
-> 状态：原 P0 14/17 COMPLETE / 13B-08 APPROVED IN PROGRESS / NEXT 13B-08-01
+> 状态：原 P0 15/17 COMPLETE / 13B-08 COMPLETE / NEXT 13C-04
 
 ## 1. 阶段依赖
 
@@ -23,7 +23,7 @@
 | 13B-08-01 | 13B-07、SceneDocument/ModelTopViewLoader | 批量导入队列和主动作占位 | 13B-08-02 |
 | 13B-08-02 | 13B-08-01、13B-05..07 | 场景生产服务和显式 scene CLI | 13B-08-03 |
 | 13B-08-03 | 13B-08-02 | Qt 当前场景切片、预检和 Package 回载 | 13B-08-04 |
-| 13B-08-04 | 13B-08-03 | 真实模型作业流矩阵与阶段报告 | 13C-03 |
+| 13B-08-04 | 13B-08-03 | 真实模型作业流矩阵与阶段报告 | 13C-04 |
 | 13C-01 | 当前 TIFF reader | 异步 TIFF layer source + LRU cache | 13C-02 |
 | 13C-02 | 13C-01 | RGB/W/S/V 单通道与组合合成器 | 13C-03 |
 | 13C-03 | 13C-02 | 统一生产预览，含 RGB+S+W+V | 12E-09A-05、13C-04 |
@@ -50,11 +50,12 @@
 | 13B-05 | FIXTURE COMPLETE | 公共 Raster/Layer、Legacy/Global adapter、共享 Grid、联合合成和回归证据已完成 |
 | 13B-06 | FIXTURE COMPLETE / PRODUCTION INPUT OPEN | 单 package、typed scene extension、scene report、原子发布和 RIP strict 已通过 fixture 回归 |
 | 13B-07 | FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN | Debug/Release 功能矩阵 PASS；production GO 等待设备输入和 22 实例预算 |
-| 13B-08-01 | READY / AUTHORIZED | PRD/DEV/DEMO/TASKS/PREP/PROMPT 已批准，尚未实现 |
-| 13B-08-02..04 | PREPARED / SEQUENCE WAIT | 每任务 PREP/PROMPT 已生成，按前序 Gate 等待 |
+| 13B-08-01..04 | COMPLETE（2026-07-28） | 批量导入、场景生产 CLI、Qt 当前场景动作、真实 OBJ/3MF 矩阵和 RIP strict 已闭环 |
 | 13C-01 | COMPLETE（2026-07-28） | TIFF source、5 层/256 MiB LRU、Qt 异步 generation、稳定错误和定向测试已落地 |
 | 13C-02 | COMPLETE（2026-07-28） | 同层 RGBWSV 的单通道、组合、全材料、统计、六通道探针和稳定错误已落地 |
-| 13C-03 | READY / SEQUENCE WAIT 13B-08 | 13C-02 前置及任务级 UI 接线、并发、坐标和 smoke 合同已完成 |
+| 13C-03 | COMPLETE（2026-07-28） | TIFF 原生统一生产预览、同层材料组合和 UI 接线已完成 |
+| 13C-04 | READY FOR DEVELOPMENT | Preview IO 输出策略、兼容迁移、UI 和验证合同已准备 |
+| 13C-05 | PREPARED / WAIT 13C-04 | 阶段回归、报告和 Gate 已准备 |
 | 13D-01..04 | PREPARED / WAIT 13C-05 | PRD/DEV/DEMO/TASKS 和总体 PREP 已完成，尚未实现 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在

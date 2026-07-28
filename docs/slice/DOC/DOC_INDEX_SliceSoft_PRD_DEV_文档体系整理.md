@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-28
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12E-08D/09B/09C、09A-01/02 完成；Stage 13 原 P0 14/17 COMPLETE；13B-08/13D PROPOSED；NEXT 13B-08-01 REVIEW
+> 当前阶段判断：12E-08D/09B/09C、09A-01/02 完成；Stage 13 原 P0 15/17 COMPLETE；13B-08 COMPLETE；NEXT 13C-04
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
 最新完成阶段：12E-08C-R4 受限生产候选技术 Gate 收口
-当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01/02 COMPLETE
-最新完成任务：13C-02 MaterialPreviewComposer、生产统计、六通道探针和稳定错误
-当前推荐任务：评审并执行 13B-08-01 批量导入队列；13C-03 READY / SEQUENCE WAIT；复杂浮雕 0/3 仍为披露缺口
+当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01..03 COMPLETE
+最新完成任务：13B-08-01..04 批量导入、当前场景单 Package、真实 OBJ/3MF 作业流和 RIP strict
+当前推荐任务：执行 13C-04 Preview IO 收口；复杂浮雕 0/3 仍为披露缺口
 ```
 
 09P-R1 已完成：
@@ -493,7 +493,7 @@ TASKS_13 = 当前新增产品专项执行入口
 
 12B、12C、12D 已收口；12E-08D、09B、09C 已完成，Legacy 仍为默认，Global 仅显式候选。12G-TCWS
 纹理载体/白色分色候选专项已冻结。Stage 13 已完成 P0 总体文档、17 个近程原子任务实施准备，
-13A-01..05、13B-01..07 和 scene-aware 12E-09A-02 已实现。13B-07 已形成真实模型功能矩阵、单 package 与
-scene report 闭环。根据 2026-07-28 UI 审计，先插入 13B-08 关闭批量导入和当前场景切片断点，随后
-完成 13C-03..05，再执行 13D 工作台布局；13C-03 仍必须在 09A-05 前完成。
+13A-01..05、13B-01..07、13C-01..03 和 scene-aware 12E-09A-02 已实现。13B-08 已关闭批量导入和
+当前场景切片断点，并形成真实 OBJ/3MF 作业流、单 Package 与 RIP strict 证据。随后完成
+13C-04/05，再执行 13D 工作台布局；13C-03 已满足 09A-05 的 TIFF 数据源前置。
 12F 性能算法仍需单独授权。
