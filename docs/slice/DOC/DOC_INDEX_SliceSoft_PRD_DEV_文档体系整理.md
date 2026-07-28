@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-28
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12E-08D/09B/09C、09A-01/02 完成；12G-TCWS 冻结；Stage 13 P0 原子任务准备完成；13A-01..05/13B-01..07/13C-01 COMPLETE；NEXT 13C-02
+> 当前阶段判断：12E-08D/09B/09C、09A-01/02 完成；12G-TCWS 冻结；Stage 13 P0 原子任务准备完成；13A-01..05/13B-01..07/13C-01/02 COMPLETE；NEXT 13C-03 PREPARATION AUDIT
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
 最新完成阶段：12E-08C-R4 受限生产候选技术 Gate 收口
-当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01 COMPLETE
-最新完成任务：13C-01 TiffLayerSource、LRU、异步 generation 和稳定错误
-当前执行任务：13C-02 MaterialPreviewComposer；复杂浮雕 0/3 仍为披露缺口；12F 性能算法未激活
+当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01/02 COMPLETE
+最新完成任务：13C-02 MaterialPreviewComposer、生产统计、六通道探针和稳定错误
+当前执行任务：13C-03 Unified Production Preview 准备审计；复杂浮雕 0/3 仍为披露缺口；12F 性能算法未激活
 ```
 
 09P-R1 已完成：

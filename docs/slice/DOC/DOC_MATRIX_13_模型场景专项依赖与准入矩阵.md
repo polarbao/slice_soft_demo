@@ -1,8 +1,8 @@
 # DOC_MATRIX_13 模型场景专项依赖与准入矩阵
 
-> 版本：v0.8
+> 版本：v0.9
 > 日期：2026-07-28
-> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01、跨阶段 09A-02 COMPLETE / NEXT 13C-02
+> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01/02、跨阶段 09A-02 COMPLETE / NEXT 13C-03 PREPARATION AUDIT
 
 ## 1. 阶段依赖
 
@@ -43,7 +43,8 @@
 | 13B-06 | FIXTURE COMPLETE / PRODUCTION INPUT OPEN | 单 package、typed scene extension、scene report、原子发布和 RIP strict 已通过 fixture 回归 |
 | 13B-07 | FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN | Debug/Release 功能矩阵 PASS；production GO 等待设备输入和 22 实例预算 |
 | 13C-01 | COMPLETE（2026-07-28） | TIFF source、5 层/256 MiB LRU、Qt 异步 generation、稳定错误和定向测试已落地 |
-| 13C-02 | READY | 13C-01 前置完成；进入同一 RGBWSV buffer 的材料显示合成 |
+| 13C-02 | COMPLETE（2026-07-28） | 同层 RGBWSV 的单通道、组合、全材料、统计、六通道探针和稳定错误已落地 |
+| 13C-03 | DEPENDENCY READY / PREPARATION AUDIT NEXT | 13C-02 前置完成；先补齐任务级 UI 接线、并发和 smoke 合同 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在
 `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md`。该登记不代表建议代码文件已经存在。

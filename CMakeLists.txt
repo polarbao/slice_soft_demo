@@ -214,6 +214,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/SlicePipelineRouter.cpp
     src/slicer_core/pipeline/SlicePipelineRouter.h
     src/slicer_core/preview/ProductionLayerRef.h
+    src/slicer_core/preview/MaterialPreviewComposer.cpp
+    src/slicer_core/preview/MaterialPreviewComposer.h
     src/slicer_core/preview/TiffLayerCache.cpp
     src/slicer_core/preview/TiffLayerCache.h
     src/slicer_core/preview/TiffLayerSource.cpp
@@ -438,6 +440,12 @@ add_executable(tiff_layer_cache_unit_tests
 )
 
 target_link_libraries(tiff_layer_cache_unit_tests PRIVATE slicer_core)
+
+add_executable(material_preview_composer_unit_tests
+    tests/unit/material_preview_composer/Main.cpp
+)
+
+target_link_libraries(material_preview_composer_unit_tests PRIVATE slicer_core)
 
 add_executable(outer_varnish_discretization_unit_tests
     tests/unit/outer_varnish_discretization/Main.cpp
@@ -813,6 +821,7 @@ add_test(NAME output_resolution_config_unit_tests COMMAND output_resolution_conf
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
 add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
 add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)
+add_test(NAME material_preview_composer_unit_tests COMMAND material_preview_composer_unit_tests)
 add_test(NAME outer_varnish_discretization_unit_tests COMMAND outer_varnish_discretization_unit_tests)
 add_test(NAME non_square_raster_pipeline_unit_tests COMMAND non_square_raster_pipeline_unit_tests)
 set_tests_properties(
