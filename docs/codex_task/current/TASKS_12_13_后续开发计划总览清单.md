@@ -4,8 +4,8 @@
 > 版本：v1.9
 > 更新日期：2026-07-28
 > 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..07、13B-04A、13C-01/02 COMPLETE
-> 当前原子任务：13C-03 Unified Production Preview PREPARATION AUDIT
-> 下一 Gate：13C-03 TASK-SPECIFIC PREP -> DEVELOPMENT
+> 当前原子任务：13C-03 Unified Production Preview READY
+> 下一 Gate：13C-03 DEVELOPMENT -> 12E-09A-05 / 13C-04
 
 ## 1. 文档职责
 
@@ -54,7 +54,7 @@
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
 | 13B 多模型排版与联合切片 | 13B-01..07、13B-04A FUNCTIONAL COMPLETE；production INPUT OPEN | 0 个功能任务 | 等待设备 buildVolume/轴向和 22 实例预算 |
-| 13C TIFF 原生统一预览 | 13C-01/02 COMPLETE；其余原子准备完成 | 3 | 13C-03 任务级准备审计 |
+| 13C TIFF 原生统一预览 | 13C-01/02 COMPLETE；13C-03 TASK-SPECIFIC PREP COMPLETE | 3 | 13C-03 READY |
 
 计数口径：
 
@@ -99,7 +99,7 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 |---:|---|---|---|---|
 | 14 | 13C-01 TiffLayerSource 与 LRU | `COMPLETE` | identity wave 结束 | 已解锁合成器 |
 | 15 | 13C-02 MaterialPreviewComposer | `COMPLETE` | 13C-01 COMPLETE | 已解锁统一生产预览 |
-| 16 | 13C-03 Unified Production Preview | `DEPENDENCY READY / PREP AUDIT` | 13C-02 COMPLETE | 解锁 09A-05、12E-10A |
+| 16 | 13C-03 Unified Production Preview | `READY` | 13C-02 COMPLETE / TASK PREP COMPLETE | 解锁 09A-05、12E-10A |
 | 17 | 12E-09A-03 中文参数控件与状态区 | `WAIT` | 09A-02 | 解锁异步分析 |
 | 18 | 12E-09A-04 异步分析 Worker | `WAIT` | 09A-03 | 解锁同层语义预览 |
 | 19 | 12E-09A-05 同层语义 Preview | `WAIT` | 09A-04、13C-03 | 解锁 09A 收口和 12E-10A |
@@ -157,7 +157,7 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 ```
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
-当前先执行 `13C-03` Unified Production Preview 的任务级准备审计。
+当前可执行 `13C-03` Unified Production Preview 开发。
 
 ### 尚未完成
 
@@ -169,7 +169,7 @@ Stage 13 已完成 13A-01..05、13B-01..07、13C-01/02 共十四个任务；13B 
 13B production GO 仍被外部 Gate 阻断。
 ```
 
-这些未完成项不阻断 `13C-03` 任务级准备审计，也不等于 Stage 13 已生产就绪。
+这些未完成项不阻断 `13C-03` 开发，也不等于 Stage 13 已生产就绪。
 
 ## 6. 外部 Gate
 
@@ -209,11 +209,11 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 CURRENT：TIFF-NATIVE PREVIEW WAVE；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-02；
 M13-1：CANDIDATE PASS；
-NEXT：复核并补齐 13C-03 Unified Production Preview 执行级合同；
+NEXT：执行 13C-03 Unified Production Preview；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；
 13B-07：Debug/Release 功能矩阵完成；production Gate 继续等待设备输入和 22 实例预算；
 13C-01：代码、定向测试、Debug 构建、UI self-test 和 Quick CI 完成；
 13C-02：代码、定向测试、Debug 构建、UI self-test 和 Quick CI 完成；
-13C-03：代码前置已满足，进入任务级准备审计。
+13C-03：代码前置和任务级 PREP/PROMPT 已满足，进入开发。
 ```

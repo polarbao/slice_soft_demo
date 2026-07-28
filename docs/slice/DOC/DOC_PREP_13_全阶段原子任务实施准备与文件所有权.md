@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01/02、09A-02 COMPLETE / NEXT 13C-03 PREPARATION AUDIT
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01/02、09A-02 COMPLETE / NEXT 13C-03 READY
 > 版本：v1.6
 > 日期：2026-07-28
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -285,7 +285,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 6.3 13C-03 统一生产预览
 
-状态：`DEPENDENCY READY / TASK-SPECIFIC PREPARATION AUDIT NEXT`
+状态：`READY / 13C-01/02 COMPLETE`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -295,6 +295,9 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 必测 | 真实 layerIndex/zMm/dpiX/dpiY、单层同源、快速滑层、RGB+S+W+V、探针、错误不跨层兜底 |
 | 迁移规则 | wrap first、move later、rewrite last；诊断入口保持独立 |
 | 完成输出 | 生产 Preview 单一入口；解锁 09A-05 和 12E-10A |
+
+详细合同以 `DOC_PREP_13C_03_UnifiedProductionPreview准备.md` 和
+`CODEX_PROMPT_13C_03_UnifiedProductionPreview执行指令.md` 为准。
 
 ### 6.4 13C-04 Preview IO 收口
 

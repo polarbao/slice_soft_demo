@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01..05 / 13B-01..07 / 13C-01/02 / 12E-09A-02 COMPLETE / NEXT 13C-03 PREPARATION AUDIT
+> 状态：13-00 / 13A-01..05 / 13B-01..07 / 13C-01/02 / 12E-09A-02 COMPLETE / NEXT 13C-03 READY
 > 日期：2026-07-28
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -329,11 +329,14 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 ### 13C-03 统一生产预览
 
-状态：DEPENDENCY READY / TASK-SPECIFIC PREPARATION AUDIT NEXT
+状态：READY / 13C-01/02 COMPLETE
 
 目标：合并生产层和材料叠加控制，诊断入口独立，真实 layerIndex/zMm/dpiX/dpiY。
 
 完成后 Gate：允许执行 `12E-09A-05` 的同层语义 Preview。
+
+执行合同：`DOC_PREP_13C_03_UnifiedProductionPreview准备.md` 和
+`CODEX_PROMPT_13C_03_UnifiedProductionPreview执行指令.md`。
 
 ### 13C-04 Preview IO 收口
 
@@ -377,7 +380,8 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13C-03 Unified Production Preview` 的任务级准备审计。13C-01 已完成
+当前唯一推荐入口为 `13C-03 Unified Production Preview` 开发。任务级 PREP/PROMPT 已补齐；
+13C-01 已完成
 TIFF-native source、LRU、异步 generation 和稳定错误；13C-02 已完成确定性材料显示合成、
 统计和六通道探针；13B-07 已完成真实模型功能矩阵，
 多模型场景链的功能开发闭环；设备 buildVolume/轴向和 22 实例预算继续阻断 13B production GO，

@@ -2,7 +2,7 @@
 
 > 文档版本：v1.4
 > 日期：2026-07-28
-> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..07、13C-01/02、跨阶段 12E-09A-02 COMPLETE / NEXT 13C-03 PREPARATION AUDIT
+> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..07、13C-01/02、跨阶段 12E-09A-02 COMPLETE / NEXT 13C-03 READY
 
 ## 1. 本轮完成
 
@@ -162,7 +162,7 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13B-07：FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN；
 13C-01：COMPLETE，manifest/TIFF layer source、LRU、异步 generation 和稳定错误已落地；
 13C-02：COMPLETE，无 Qt 材料合成、生产统计、六通道探针和稳定错误已落地；
-13C-03：代码前置满足，任务级准备审计待完成；
+13C-03：代码前置和任务级 PREP/PROMPT 完整，READY；
 Stage 13 全阶段 production readiness：尚未完成；
 Stage 13 已实现能力：14/17 个近程原子任务完成。
 ```
@@ -203,18 +203,18 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 ## 8. 下一任务
 
 ```text
-13C-03 Unified Production Preview 准备审计
+13C-03 Unified Production Preview
 ```
 
 13B-07 已完成真实 OBJ/3MF 的 1/11/12/22 Debug/Release 功能矩阵、复用、单 package 和 RIP strict，
 并保持 production INPUT_OPEN；13C-01 TIFF 原生层数据源和 13C-02 同层材料显示合成已完成。
-下一步补齐并复核统一生产预览的任务级 UI 接线、并发和 smoke 合同；
+任务级 UI 接线、并发、坐标和 smoke 合同已补齐，下一步进入开发；
 设备输入未关闭前不得给出
 13B production GO。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13C-03 准备 |
+| 范围 | 当前结论 | 是否阻断 13C-03 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |

@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-28
-> 当前阶段：13A-01..05、13B-01..07、13C-01/02 COMPLETE / 12G-TCWS FROZEN / NEXT 13C-03 PREPARATION AUDIT
+> 当前阶段：13A-01..05、13B-01..07、13C-01/02 COMPLETE / 12G-TCWS FROZEN / NEXT 13C-03 READY
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -45,6 +45,7 @@ docs/codex_task/current/CODEX_PROMPT_13B_03_11x2规则排版执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13B_04_幅面碰撞与逐实例准入执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13B_05_全局Raster与联合层合成执行指令.md
 docs/codex_task/current/CODEX_PROMPT_13B_06_单Package与SceneReport执行指令.md
+docs/codex_task/current/CODEX_PROMPT_13C_03_UnifiedProductionPreview执行指令.md
 docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
@@ -105,8 +106,8 @@ docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预
 ```
 
 当前已完成 P0 需求/设计/验证、全阶段原子任务准备、13A-01..05/13B-01..07 和 scene-aware
-`12E-09A-02`。13C-01 TIFF 原生数据源和 13C-02 材料合成器已完成，下一步复核并补齐
-`13C-03` 统一生产预览的执行级合同。13C 必须在
+`12E-09A-02`。13C-01 TIFF 原生数据源和 13C-02 材料合成器已完成，13C-03 的任务级
+PREP/PROMPT 也已补齐。下一步执行 `13C-03` 统一生产预览。13C 必须在
 `12E-09A-05` 前完成生产 TIFF 数据源收口。Stage 13 不改变 RGBWSV 协议，也不把多模型失败静默
 降级成多个单模型成功。
 

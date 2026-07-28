@@ -1,7 +1,7 @@
 # DOC_CHECKLIST_13 未决产品输入与阶段 Gate
 
 > 文档状态：CURRENT OPEN-INPUT REGISTER
-> 版本：v1.3
+> 版本：v1.4
 > 日期：2026-07-28
 
 ## 1. 使用方式
@@ -29,7 +29,7 @@ Stage 13 P0 需求/设计/验证和 17 个近程原子任务准备：COMPLETE；
 13B-07：FUNCTIONAL MATRIX COMPLETE，production GO 继续等待外部输入；
 13C-01：COMPLETE；
 13C-02：COMPLETE；
-13C-03：代码前置满足，任务级准备审计成为下一原子任务；
+13C-03：代码前置和任务级 PREP/PROMPT 完整，READY；
 12E-09A-02：COMPLETE。
 ```
 

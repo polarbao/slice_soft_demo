@@ -1,9 +1,9 @@
 # REPORT 13C-02 MaterialPreviewComposer 当前状态
 
-> 文档状态：COMPLETE / 13C-03 PREPARATION AUDIT NEXT
+> 文档状态：COMPLETE / 13C-03 READY
 > 日期：2026-07-28
 > 前置：13C-01 COMPLETE
-> 下一任务：补齐并复核 13C-03 Unified Production Preview 执行级合同
+> 下一任务：13C-03 Unified Production Preview
 
 ## 1. 阶段结论
 
@@ -127,5 +127,5 @@ RGB+S+W+V 的 UI 选项和六通道像素探针交互；
 无 preview 目录 UI smoke。
 ```
 
-`13C-02` 已满足 `13C-03` 的代码前置。下一原子步骤先复核并补齐 13C-03 的任务级
-PREP/PROMPT，再进入 Unified Production Preview 开发。
+`13C-02` 已满足 `13C-03` 的代码前置。13C-03 的任务级 PREP/PROMPT 已补齐，可以进入
+Unified Production Preview 开发。
