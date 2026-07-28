@@ -1,6 +1,6 @@
 # DOC_PREP 13C-04 Preview IO 收口准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：COMPLETE
 > 版本：v1.0
 > 日期：2026-07-28
 > 对应任务：13C-04
@@ -270,3 +270,17 @@ ProductionPackageResultValidator 强制要求 preview 文件非空；
 ```
 
 `13C-04 PASS -> 13C-05 READY`。
+
+## 10. 2026-07-28 执行结论
+
+```text
+preview.outputPolicy 已实现 tiff_native / tiff_native_with_diagnostics；
+新配置与 Qt Profile 默认 tiff_native，旧 enabled 配置保持迁移兼容；
+Legacy、Global Surface Shell 和多模型共享 writer 均输出一致报告字段；
+tiff_native 不创建 preview 目录，生产 TIFF 与诊断策略逐层 SHA-256 一致；
+Qt 配置改为“自动生成诊断图”，默认关闭；
+tiff-native-preview-no-png 在真实无 preview 目录 package 上通过；
+Debug 全量构建、82/82 CTest、Qt self-test、Quick CI 和 RIP strict 通过。
+```
+
+状态：`13C-04 COMPLETE / 13C-05 READY`。

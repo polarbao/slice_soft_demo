@@ -106,6 +106,7 @@ slicer_core::RgbwsvProductionPackageWriteRequest MakeRequest(
     request.storage.rowsPerStrip = 2;
     request.storage.tileWidth = 16;
     request.storage.tileHeight = 16;
+    request.preview.outputpolicy = "tiff_native_with_diagnostics";
     request.preview.enabled = true;
     request.preview.format = "ppm";
     request.preview.interval = 1;
@@ -168,6 +169,13 @@ bool AdmittedGlobalPackagePassesRipAndReports()
         && ExpectTrue(
             previewReport.at("generated").size() == 8U,
             "preview report contains four views per layer")
+        && ExpectTrue(
+            previewReport.at("outputPolicy").as_string()
+                == "tiff_native_with_diagnostics",
+            "preview report records explicit diagnostic policy")
+        && ExpectTrue(
+            previewReport.at("automaticDiagnosticImages").as_bool(),
+            "preview report records automatic diagnostic images")
         && ExpectTrue(
             std::filesystem::exists(packageDir / "preview" / "rgb_000000.ppm"),
             "RGB preview exists")
@@ -342,6 +350,49 @@ bool PngPreviewUsesConfiguredFormat()
         && ExpectTrue(signature == expected, "PNG signature is valid");
 }
 
+bool TiffNativeWritesNoDiagnosticImages()
+{
+    const std::filesystem::path directory = MakeTestDirectory("tiff_native");
+    const std::filesystem::path packageDir = directory / "package";
+    auto request = MakeRequest(packageDir);
+    request.preview.outputpolicy = "tiff_native";
+    request.preview.enabled = false;
+
+    const auto result =
+        slicer_core::WriteRgbwsvProductionPackage(request);
+    const slicer_core::RipValidationResult rip =
+        slicer_core::validate_slice_package(packageDir);
+    const slicer_core::Json manifest =
+        ReadJson(packageDir / "manifest.json");
+    const slicer_core::Json previewReport =
+        ReadJson(packageDir / "reports" / "preview_report.json");
+
+    return ExpectTrue(result.productionOutputWritten, "TIFF-native package is written")
+        && ExpectTrue(rip.layer_count == kLayerCount, "TIFF-native package passes RIP")
+        && ExpectTrue(
+            !std::filesystem::exists(packageDir / "preview"),
+            "TIFF-native package creates no preview directory")
+        && ExpectTrue(
+            previewReport.at("outputPolicy").as_string() == "tiff_native",
+            "preview report records TIFF-native output policy")
+        && ExpectTrue(
+            previewReport.at("productionSource").as_string() == "rgbwsv_tiff",
+            "preview report records production TIFF source")
+        && ExpectTrue(
+            !previewReport.at("automaticDiagnosticImages").as_bool(),
+            "preview report disables automatic diagnostic images")
+        && ExpectTrue(
+            previewReport.at("generated").size() == 0U,
+            "preview report contains no generated diagnostic images")
+        && ExpectTrue(
+            manifest.at("preview").at("outputPolicy").as_string()
+                == "tiff_native",
+            "manifest records TIFF-native output policy")
+        && ExpectTrue(
+            manifest.at("preview").at("files").size() == 0U,
+            "manifest contains no preview image files");
+}
+
 bool NonAdmittedRequestWritesNothing()
 {
     const std::filesystem::path directory = MakeTestDirectory("not_admitted");
@@ -433,6 +484,7 @@ int main()
         {"blocked_global_adapter_writes_nothing", BlockedGlobalAdapterWritesNothing},
         {"protocol_mismatch_adapter_writes_nothing", ProtocolMismatchAdapterWritesNothing},
         {"png_preview_uses_configured_format", PngPreviewUsesConfiguredFormat},
+        {"tiff_native_writes_no_diagnostic_images", TiffNativeWritesNoDiagnosticImages},
         {"non_admitted_request_writes_nothing", NonAdmittedRequestWritesNothing},
         {"mode_mismatch_writes_nothing", ModeMismatchWritesNothing},
         {"broken_layer_sequence_writes_nothing", BrokenLayerSequenceWritesNothing},

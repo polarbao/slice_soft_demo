@@ -297,7 +297,11 @@ struct MaterialClosureConfig
     bool write_gap_preview{false};
 };
 
+/**
+ * @brief Diagnostic image output policy and display-only rendering settings.
+ */
 struct PreviewConfig {
+    std::string output_policy{"tiff_native"};
     bool enabled{false};
     std::string format{"ppm"};
     int interval{10};

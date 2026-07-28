@@ -32,6 +32,7 @@ private:
     int SettingHelpMetadataCase(const UiSmokeTestOptions& options);
     int PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& options);
     int TiffNativePreviewAllMaterials(const UiSmokeTestOptions& options);
+    int TiffNativePreviewNoPng(const UiSmokeTestOptions& options);
     int PreviewLegendProbeContext(const UiSmokeTestOptions& options);
     int PreviewPhysicalAspect(const UiSmokeTestOptions& options);
     int DiagnosticsCollapse(const UiSmokeTestOptions& options);

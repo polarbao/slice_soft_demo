@@ -4076,6 +4076,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
 
     const std::filesystem::path package_dir = config.output.package_dir;
+    const bool automatic_diagnostic_images =
+        config.preview.enabled && options.write_preview_files;
+    const std::string effective_preview_output_policy =
+        automatic_diagnostic_images
+            ? "tiff_native_with_diagnostics"
+            : "tiff_native";
     if (options.write_tiff_layers || options.write_preview_files || options.write_reports) {
         std::filesystem::create_directories(package_dir);
     }
@@ -4085,7 +4091,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     if (options.write_reports) {
         std::filesystem::create_directories(package_dir / "reports");
     }
-    if (config.preview.enabled && options.write_preview_files) {
+    if (automatic_diagnostic_images) {
         std::filesystem::create_directories(package_dir / "preview");
     }
 
@@ -4763,7 +4769,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
 
     const Json preview_report = Json::object({
         {"schema", "p0.preview_report.1"},
-        {"enabled", config.preview.enabled},
+        {"outputPolicy", effective_preview_output_policy},
+        {"productionSource", "rgbwsv_tiff"},
+        {"automaticDiagnosticImages", automatic_diagnostic_images},
+        {"enabled", automatic_diagnostic_images},
         {"format", config.preview.format},
         {"interval", config.preview.interval},
         {"channels", Json{preview_channels}},
@@ -4920,7 +4929,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"contour", "reports/contour_report.json"},
              {"relief", "reports/relief_report.json"},
          })},
-        {"preview", Json::object({{"format", config.preview.format}, {"files", Json{preview_files}}})},
+        {"preview",
+         Json::object({
+             {"outputPolicy", effective_preview_output_policy},
+             {"productionSource", "rgbwsv_tiff"},
+             {"automaticDiagnosticImages", automatic_diagnostic_images},
+             {"enabled", automatic_diagnostic_images},
+             {"format", config.preview.format},
+             {"files", Json{preview_files}},
+         })},
     });
     profile.report_build_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "report_write", 0, 1, 95);

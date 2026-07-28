@@ -51,7 +51,8 @@ struct RgbwsvProductionStorageSpec
  */
 struct RgbwsvProductionPreviewSpec
 {
-    bool enabled{true};
+    std::string outputpolicy{"tiff_native"};
+    bool enabled{false};
     std::string format{"ppm"};
     int interval{10};
 };

@@ -164,7 +164,13 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
     root.insert(QStringLiteral("outerVarnish"), outervarnish);
 
     QJsonObject preview = root.value(QStringLiteral("preview")).toObject();
-    preview.insert(QStringLiteral("enabled"), settings.preview.enabled);
+    preview.insert(
+        QStringLiteral("outputPolicy"),
+        settings.preview.outputpolicy);
+    preview.insert(
+        QStringLiteral("enabled"),
+        settings.preview.outputpolicy
+            == QStringLiteral("tiff_native_with_diagnostics"));
     preview.insert(QStringLiteral("interval"), settings.preview.interval);
     root.insert(QStringLiteral("preview"), preview);
 
@@ -481,7 +487,7 @@ QString BuildSummary(
     return QStringLiteral(
                "Profile：%1\n模板：%2\n生效配置：%3\n模型：%4\n输出：%5\n层高：%6 mm\n"
                "模型填充：%7\n支撑：%8，内部镂空=%9\n表面光油：%10 / %11 px\n"
-               "外侧光油：%12 / %13 mm\n预览：%14 / 间隔 %15\n引擎：%16\n差异：%17 项")
+               "外侧光油：%12 / %13 mm\n自动诊断图：%14 / 间隔 %15\n引擎：%16\n差异：%17 项")
         .arg(request.profileid,
              request.templatepath,
              request.generatedconfigpath,

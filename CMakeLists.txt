@@ -427,6 +427,12 @@ add_executable(output_resolution_config_unit_tests
 
 target_link_libraries(output_resolution_config_unit_tests PRIVATE slicer_core)
 
+add_executable(preview_output_policy_unit_tests
+    tests/unit/preview_output_policy/Main.cpp
+)
+
+target_link_libraries(preview_output_policy_unit_tests PRIVATE slicer_core)
+
 add_executable(rip_reader_resolution_unit_tests
     tests/unit/rip_reader_resolution/Main.cpp
 )
@@ -831,6 +837,7 @@ enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME output_resolution_config_unit_tests COMMAND output_resolution_config_unit_tests)
+add_test(NAME preview_output_policy_unit_tests COMMAND preview_output_policy_unit_tests)
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
 add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
 add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)

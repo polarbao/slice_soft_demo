@@ -224,6 +224,10 @@ RgbwsvProductionPackageWriteRequest BuildPackageRequest(
     request.storage.tileHeight = config.output.tile_size.at(1);
     request.preview.enabled =
         config.preview.enabled && options.write_preview_files;
+    request.preview.outputpolicy =
+        request.preview.enabled
+            ? "tiff_native_with_diagnostics"
+            : "tiff_native";
     request.preview.format = config.preview.format;
     request.preview.interval = config.preview.interval;
     return request;

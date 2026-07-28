@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v3.3
+> 版本：v3.4
 > 更新日期：2026-07-28
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：13C-04 Preview IO 收口 READY
+> 当前下一任务：13C-05 TIFF 原生统一预览阶段收口 READY
 
 ## 1. 使用规则
 
@@ -56,7 +56,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | 原 P0 15/17 COMPLETE；13B-08-01..04 COMPLETE；13D PREPARED | 已有实例变换、批量导入、当前场景单 Package、联合切片核心、真实模型矩阵和 TIFF 原生预览 | NEXT 13C-04；13C-05 与 13D 按 Gate 等待 |
+| Stage 13 | 原 P0 16/17 COMPLETE；13B-08-01..04 COMPLETE；13D PREPARED | 已有实例变换、批量导入、当前场景单 Package、联合切片核心、真实模型矩阵、TIFF 原生预览和 Preview IO 收口 | NEXT 13C-05；13D 按 Gate 等待 |
 
 ### 2.1 Stage 12 目的图
 
@@ -80,7 +80,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | 原 P0 15/17 COMPLETE；13B-08-01..04 COMPLETE；13C-04 READY | 执行 13C-04/05 后进入 13D；13C-03 已满足 09A-05 数据源前置 |
+| Stage 13 | 原 P0 16/17 COMPLETE；13B-08-01..04 COMPLETE；13C-05 READY | 执行 13C-05 后进入 13D；13C-04 已完成默认无重复诊断图 |
 
 ### 2.3 剩余任务数量
 
@@ -96,7 +96,7 @@ Stage 13 近程：
 13A-01..05 共 5 个；
 13B-01..07 共 7 个；
 13C-01..05 共 5 个；
-合计 17 个，当前代码完成数为 15；跨阶段前置 12E-09A-02 已另行完成。
+合计 17 个，当前代码完成数为 16；跨阶段前置 12E-09A-02 已另行完成。
 另有插入专项 13B-08 共 4 个任务，当前 01..04 全部完成。
 ```
 
@@ -228,7 +228,8 @@ TIFF 原生统一预览已实现；13B-08 真实作业流矩阵与阶段收口�
 13B-05：FIXTURE COMPLETE；
 13B-06：FIXTURE COMPLETE / PRODUCTION INPUT OPEN；
 13B-08-01..04：COMPLETE，批量导入、显式场景 CLI、Qt 当前场景动作、真实模型作业流矩阵和 RIP strict 已闭环；
-13C-04：READY，进入 Preview IO 收口；
+13C-04：COMPLETE，默认 tiff_native、显式诊断图、无 preview 目录和 IO 对比证据已闭环；
+13C-05：READY，进入 TIFF 原生统一预览阶段总收口；
 13C-03：COMPLETE，已提供 09A-05 与 12E-10A 所需 TIFF 原生预览底座；
 12E-10：保持单模型双引擎最终收口，不吸收多模型生产验收；
 12F：先完成 12F-02 基线，再根据实测逐项授权优化。

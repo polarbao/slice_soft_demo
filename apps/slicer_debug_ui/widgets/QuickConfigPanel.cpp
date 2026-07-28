@@ -196,7 +196,9 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_whiteEnabledCheck = new QCheckBox("叠加白墨底层", this);
     m_whiteEnabledCheck->setObjectName(QStringLiteral("whitePolicyEnabledCheck"));
     m_varnishEnabledCheck = new QCheckBox("启用顶部光油策略", this);
-    m_previewEnabledCheck = new QCheckBox("生成预览", this);
+    m_previewEnabledCheck = new QCheckBox("自动生成诊断图", this);
+    m_previewEnabledCheck->setObjectName(
+        QStringLiteral("previewDiagnosticImagesCheck"));
     m_openVdbEnabledCheck = new QCheckBox("启用 OpenVDB 实验管线", this);
     ApplyHelp(m_supportEnabledCheck, QStringLiteral("support.enabled"));
     ApplyHelp(m_whiteEnabledCheck, QStringLiteral("materialPolicy.white.enabled"));
@@ -258,15 +260,16 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     ApplyHelp(m_internalVoidMinAreaSpin, QStringLiteral("support.internalVoid.minAreaPx"));
     supportForm->addRow("镂空最小面积", m_internalVoidMinAreaSpin);
 
-    auto* previewGroup = new QGroupBox("预览", this);
-    previewGroup->setToolTip("控制调试预览图片输出。生产 TIFF 输出不依赖 preview。");
+    auto* previewGroup = new QGroupBox("诊断图输出", this);
+    previewGroup->setToolTip(
+        "默认关闭重复图片写出。UI 始终可直接读取生产 RGBWSV TIFF 进行预览。");
     auto* previewForm = new QFormLayout(previewGroup);
     previewForm->addRow(m_previewEnabledCheck);
     m_previewIntervalSpin = new QSpinBox(this);
     m_previewIntervalSpin->setObjectName(QStringLiteral("previewIntervalSpin"));
     m_previewIntervalSpin->setRange(1, 100000);
     ApplyHelp(m_previewIntervalSpin, QStringLiteral("preview.interval"));
-    previewForm->addRow("预览间隔", m_previewIntervalSpin);
+    previewForm->addRow("诊断图间隔", m_previewIntervalSpin);
 
     m_openVdbEnabledCheck->setObjectName(QStringLiteral("openVdbCandidateCheck"));
     m_openVdbEnabledCheck->setVisible(false);
@@ -351,7 +354,14 @@ void QuickConfigPanel::LoadFromDocument()
     m_surfaceVarnishThicknessSpin->setValue(IntValue({"surfaceVarnish", "thicknessPx"}, 0));
     m_outerVarnishEnabledCheck->setChecked(BoolValue({"outerVarnish", "enabled"}, false));
     m_outerVarnishThicknessSpin->setValue(DoubleValue({"outerVarnish", "thicknessMm"}, 0.0));
-    m_previewEnabledCheck->setChecked(BoolValue({"preview", "enabled"}, false));
+    const QString previewOutputPolicy =
+        StringValue({"preview", "outputPolicy"}, QString{});
+    const bool automaticDiagnosticImages =
+        previewOutputPolicy.isEmpty()
+            ? BoolValue({"preview", "enabled"}, false)
+            : previewOutputPolicy
+                == QStringLiteral("tiff_native_with_diagnostics");
+    m_previewEnabledCheck->setChecked(automaticDiagnosticImages);
     m_previewIntervalSpin->setValue(IntValue({"preview", "interval"}, 1));
     m_openVdbEnabledCheck->setChecked(BoolValue({"experimental", "openvdbPipeline", "enabled"}, false));
     UpdateNormalizedView();
@@ -780,6 +790,11 @@ void QuickConfigPanel::OnPreviewEnabledChanged(const bool checked)
 {
     if (!m_loading)
     {
+        SetValueIfChanged(
+            {"preview", "outputPolicy"},
+            checked
+                ? QStringLiteral("tiff_native_with_diagnostics")
+                : QStringLiteral("tiff_native"));
         SetValueIfChanged({"preview", "enabled"}, checked);
     }
 }

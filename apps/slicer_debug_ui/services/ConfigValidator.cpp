@@ -269,9 +269,29 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
     }
 
     if (hasObject(root, "preview")) {
-        const QJsonValue interval = root.value("preview").toObject().value("interval");
+        const QJsonObject preview = root.value("preview").toObject();
+        const QJsonValue interval = preview.value("interval");
         if (interval.isDouble() && interval.toInt() <= 0) {
             result.errors.push_back("preview.interval 必须大于 0。");
+        }
+        const QString outputPolicy =
+            preview.value("outputPolicy").toString();
+        if (!outputPolicy.isEmpty()
+            && outputPolicy != QStringLiteral("tiff_native")
+            && outputPolicy
+                != QStringLiteral("tiff_native_with_diagnostics"))
+        {
+            result.errors.push_back(
+                "preview.outputPolicy 必须是 tiff_native 或 tiff_native_with_diagnostics。");
+        }
+        if (!outputPolicy.isEmpty()
+            && preview.contains("enabled")
+            && preview.value("enabled").toBool()
+                != (outputPolicy
+                    == QStringLiteral("tiff_native_with_diagnostics")))
+        {
+            result.warnings.push_back(
+                "preview.outputPolicy 与旧 enabled 冲突，将以 outputPolicy 为准。");
         }
     }
 

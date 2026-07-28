@@ -520,7 +520,22 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
 
     if (root.contains("preview")) {
         const auto& preview = root.at("preview");
-        config.preview.enabled = preview.value("enabled", config.preview.enabled);
+        if (preview.contains("outputPolicy"))
+        {
+            config.preview.output_policy =
+                preview.value("outputPolicy", config.preview.output_policy);
+            config.preview.enabled =
+                config.preview.output_policy == "tiff_native_with_diagnostics";
+        }
+        else
+        {
+            config.preview.enabled =
+                preview.value("enabled", config.preview.enabled);
+            config.preview.output_policy =
+                config.preview.enabled
+                    ? "tiff_native_with_diagnostics"
+                    : "tiff_native";
+        }
         config.preview.format = preview.value("format", config.preview.format);
         config.preview.interval = preview.value("interval", config.preview.interval);
         if (has_int2(preview, "layerRange")) {
@@ -1012,6 +1027,12 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.preview.format != "ppm" && config.preview.format != "png") {
         throw std::runtime_error("preview.format must be ppm or png");
+    }
+    if (config.preview.output_policy != "tiff_native"
+        && config.preview.output_policy != "tiff_native_with_diagnostics")
+    {
+        throw std::runtime_error(
+            "preview.outputPolicy must be tiff_native or tiff_native_with_diagnostics");
     }
     if (config.preview.interval <= 0) {
         throw std::runtime_error("preview.interval must be positive");

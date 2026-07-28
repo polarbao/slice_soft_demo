@@ -62,7 +62,8 @@ struct OuterVarnishSettings
  */
 struct PreviewSettings
 {
-    bool enabled{true};
+    QString outputpolicy{QStringLiteral("tiff_native")};
+    bool enabled{false};
     int interval{10};
 };
 

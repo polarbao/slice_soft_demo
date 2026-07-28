@@ -94,6 +94,19 @@ void ValidateStorage(const RgbwsvProductionStorageSpec& storage)
 
 void ValidatePreview(const RgbwsvProductionPreviewSpec& preview)
 {
+    if (preview.outputpolicy != "tiff_native"
+        && preview.outputpolicy != "tiff_native_with_diagnostics")
+    {
+        throw std::invalid_argument(
+            "RGBWSV package preview outputPolicy must be tiff_native or tiff_native_with_diagnostics");
+    }
+    const bool expectedEnabled =
+        preview.outputpolicy == "tiff_native_with_diagnostics";
+    if (preview.enabled != expectedEnabled)
+    {
+        throw std::invalid_argument(
+            "RGBWSV package preview enabled must match outputPolicy");
+    }
     if (preview.interval <= 0)
     {
         throw std::invalid_argument(
@@ -842,6 +855,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
 
         const Json previewReport = Json::object({
             {"schema", "p0.preview_report.1"},
+            {"outputPolicy", request.preview.outputpolicy},
+            {"productionSource", "rgbwsv_tiff"},
+            {"automaticDiagnosticImages", request.preview.enabled},
             {"enabled", request.preview.enabled},
             {"format", request.preview.format},
             {"interval", request.preview.interval},
@@ -908,6 +924,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             {"reports", Json{std::move(reportLinks)}},
             {"preview",
              Json::object({
+                 {"outputPolicy", request.preview.outputpolicy},
+                 {"productionSource", "rgbwsv_tiff"},
+                 {"automaticDiagnosticImages", request.preview.enabled},
                  {"enabled", request.preview.enabled},
                  {"format", request.preview.format},
                  {"files", Json{generatedPreviews}},

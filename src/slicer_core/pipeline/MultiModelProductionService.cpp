@@ -858,6 +858,8 @@ MultiModelProductionResult RunMultiModelProductionService(
         profile.output.tile_size.at(1U);
     writeRequest.preview.enabled =
         profile.preview.enabled;
+    writeRequest.preview.outputpolicy =
+        profile.preview.output_policy;
     writeRequest.preview.format =
         profile.preview.format;
     writeRequest.preview.interval =

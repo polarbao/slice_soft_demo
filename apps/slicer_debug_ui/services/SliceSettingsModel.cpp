@@ -19,7 +19,8 @@ SliceSettingsState MakeCommonDefaults()
     state.outervarnish.enabled = false;
     state.outervarnish.thicknessmm = 0.0;
     state.outervarnish.pixelpitchum = 42.3;
-    state.preview.enabled = true;
+    state.preview.outputpolicy = QStringLiteral("tiff_native");
+    state.preview.enabled = false;
     state.preview.interval = 10;
     state.enginerole = SliceEngineRole::LegacyProduction;
     return state;
@@ -61,6 +62,9 @@ bool SliceSettingsModel::ApplyProfileDefaults(const QString& profileId)
     else if (profileId == QStringLiteral("production_rgb_inspection"))
     {
         state.modelfillmaterial = ModelFillMaterial::White;
+        state.preview.outputpolicy =
+            QStringLiteral("tiff_native_with_diagnostics");
+        state.preview.enabled = true;
         state.preview.interval = 1;
     }
     else
@@ -132,9 +136,24 @@ SliceSettingsValidationResult SliceSettingsModel::Validate() const
     {
         result.errors.push_back(QStringLiteral("像素物理尺寸必须大于 0 um。"));
     }
+    if (m_state.preview.outputpolicy != QStringLiteral("tiff_native")
+        && m_state.preview.outputpolicy
+            != QStringLiteral("tiff_native_with_diagnostics"))
+    {
+        result.errors.push_back(
+            QStringLiteral("诊断图输出策略必须是 TIFF 原生或 TIFF 原生并生成诊断图。"));
+    }
+    const bool expectedPreviewEnabled =
+        m_state.preview.outputpolicy
+        == QStringLiteral("tiff_native_with_diagnostics");
+    if (m_state.preview.enabled != expectedPreviewEnabled)
+    {
+        result.errors.push_back(
+            QStringLiteral("自动诊断图开关与输出策略不一致。"));
+    }
     if (m_state.preview.enabled && m_state.preview.interval <= 0)
     {
-        result.errors.push_back(QStringLiteral("启用预览时预览间隔必须大于 0。"));
+        result.errors.push_back(QStringLiteral("启用自动诊断图时保存间隔必须大于 0。"));
     }
     if (m_state.enginerole == SliceEngineRole::OpenVdbUtilityCandidate)
     {

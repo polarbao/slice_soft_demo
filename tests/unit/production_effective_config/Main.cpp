@@ -70,6 +70,8 @@ SliceSettingsState BuildSettings(
     settings.surfacevarnish.thicknesspx = varnishEnabled ? 3 : 0;
     settings.outervarnish.enabled = varnishEnabled;
     settings.outervarnish.thicknessmm = varnishEnabled ? 0.12 : 0.0;
+    settings.preview.outputpolicy =
+        QStringLiteral("tiff_native_with_diagnostics");
     settings.preview.enabled = true;
     settings.preview.interval = 5;
     return settings;
@@ -169,6 +171,8 @@ bool TestRestrictedProfileClearsStaleOverrides()
 
     const QJsonObject root = result.document.object();
     const QJsonObject output = root.value(QStringLiteral("output")).toObject();
+    const QJsonObject preview =
+        root.value(QStringLiteral("preview")).toObject();
     const QJsonObject productionAudit =
         root.value(QStringLiteral("uiAudit"))
             .toObject()
@@ -238,6 +242,11 @@ bool TestRestrictedProfileClearsStaleOverrides()
         && ExpectTrue(
             ReadJson(generatedPath) == result.document,
             "restricted atomic output is complete JSON")
+        && ExpectTrue(
+            preview.value(QStringLiteral("outputPolicy")).toString()
+                == QStringLiteral("tiff_native_with_diagnostics")
+                && preview.value(QStringLiteral("enabled")).toBool(),
+            "effective config writes consistent preview policy")
         && ExpectTrue(
             ReadFile(templatePath) == templateBefore,
             "restricted source fixture remains read-only")

@@ -559,6 +559,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return TiffNativePreviewAllMaterials(options);
     }
+    if (options.case_name == "tiff-native-preview-no-png")
+    {
+        return TiffNativePreviewNoPng(options);
+    }
     if (options.case_name == "preview-legend-probe-context")
     {
         return PreviewLegendProbeContext(options);
@@ -1112,7 +1116,8 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
         return fail("slice-settings-model 非法设置未被阻断。");
     }
 
-    return pass("slice-settings-model profiles=5 legacy-default=true openvdb=candidate-only");
+    return pass(
+        "slice-settings-model profiles=5 diagnostics-default=false openvdb=candidate-only");
 }
 
 int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options)
@@ -1128,6 +1133,7 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         QStringLiteral("surfaceVarnish.enabled"),
         QStringLiteral("outerVarnish.enabled"),
         QStringLiteral("preview.enabled"),
+        QStringLiteral("preview.outputPolicy"),
         QStringLiteral("preview.interval"),
         QStringLiteral("engine.legacy"),
         QStringLiteral("engine.openvdbCandidate"),
@@ -1220,6 +1226,7 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         {QStringLiteral("supportPlacementCombo"), QStringLiteral("support.placement")},
         {QStringLiteral("surfaceVarnishEnabledCheck"), QStringLiteral("surfaceVarnish.enabled")},
         {QStringLiteral("outerVarnishEnabledCheck"), QStringLiteral("outerVarnish.enabled")},
+        {QStringLiteral("previewDiagnosticImagesCheck"), QStringLiteral("preview.enabled")},
         {QStringLiteral("previewIntervalSpin"), QStringLiteral("preview.interval")},
         {QStringLiteral("openVdbCandidateCheck"), QStringLiteral("engine.openvdbCandidate")},
     };
@@ -1731,6 +1738,52 @@ int UiSmokeTestRunner::TiffNativePreviewAllMaterials(
             .arg(
                 production
                     ->LayerRequestCountForTest()));
+}
+
+int UiSmokeTestRunner::TiffNativePreviewNoPng(
+    const UiSmokeTestOptions& options)
+{
+    const QString packagePath =
+        absoluteFromRepo(options, options.package_path);
+    const QDir packageDirectory(packagePath);
+    QFile manifestFile(packageDirectory.filePath(QStringLiteral("manifest.json")));
+    if (!manifestFile.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        return fail(
+            QStringLiteral("tiff-native-preview-no-png 未找到 manifest：")
+            + packagePath);
+    }
+
+    QJsonParseError parseError;
+    const QJsonDocument manifestDocument =
+        QJsonDocument::fromJson(manifestFile.readAll(), &parseError);
+    const QJsonObject preview =
+        manifestDocument.object().value(QStringLiteral("preview")).toObject();
+    if (parseError.error != QJsonParseError::NoError
+        || preview.value(QStringLiteral("outputPolicy")).toString()
+            != QStringLiteral("tiff_native")
+        || preview.value(QStringLiteral("productionSource")).toString()
+            != QStringLiteral("rgbwsv_tiff")
+        || preview.value(QStringLiteral("automaticDiagnosticImages")).toBool(true)
+        || !preview.value(QStringLiteral("files")).toArray().isEmpty())
+    {
+        return fail(
+            QStringLiteral("tiff-native-preview-no-png manifest 预览合同不完整。"));
+    }
+    if (packageDirectory.exists(QStringLiteral("preview")))
+    {
+        return fail(
+            QStringLiteral("tiff-native-preview-no-png 不应生成 preview 目录。"));
+    }
+
+    const int previewResult = TiffNativePreviewAllMaterials(options);
+    if (previewResult != 0)
+    {
+        return previewResult;
+    }
+    return pass(
+        QStringLiteral(
+            "tiff-native-preview-no-png policy=tiff_native previewDir=absent source=RGBWSV_TIFF"));
 }
 
 int UiSmokeTestRunner::PreviewPhysicalAspect(

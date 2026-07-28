@@ -1769,8 +1769,25 @@ SliceSettingsState MainWindow::BuildCurrentSettings(
                                             .toDouble(settings.outervarnish.thicknessmm);
     settings.outervarnish.pixelpitchum = config_document_.value({"outerVarnish", "pixelPitchUm"})
                                              .toDouble(settings.outervarnish.pixelpitchum);
-    settings.preview.enabled = config_document_.value({"preview", "enabled"})
-                                   .toBool(settings.preview.enabled);
+    const QString previewOutputPolicy =
+        config_document_.value({"preview", "outputPolicy"}).toString();
+    if (!previewOutputPolicy.isEmpty())
+    {
+        settings.preview.outputpolicy = previewOutputPolicy;
+        settings.preview.enabled =
+            previewOutputPolicy
+            == QStringLiteral("tiff_native_with_diagnostics");
+    }
+    else
+    {
+        settings.preview.enabled =
+            config_document_.value({"preview", "enabled"})
+                .toBool(settings.preview.enabled);
+        settings.preview.outputpolicy =
+            settings.preview.enabled
+                ? QStringLiteral("tiff_native_with_diagnostics")
+                : QStringLiteral("tiff_native");
+    }
     settings.preview.interval = config_document_.value({"preview", "interval"})
                                     .toInt(settings.preview.interval);
     settings.enginerole = engineRole;
@@ -2626,7 +2643,11 @@ void MainWindow::ApplyProfileDefaultsToDocument(const QString& profileId, const 
     SetValue({"outerVarnish", "enabled"}, settings.outervarnish.enabled);
     SetValue({"outerVarnish", "thicknessMm"}, settings.outervarnish.thicknessmm);
     SetValue({"outerVarnish", "pixelPitchUm"}, settings.outervarnish.pixelpitchum);
-    SetValue({"preview", "enabled"}, settings.preview.enabled);
+    SetValue({"preview", "outputPolicy"}, settings.preview.outputpolicy);
+    SetValue(
+        {"preview", "enabled"},
+        settings.preview.outputpolicy
+            == QStringLiteral("tiff_native_with_diagnostics"));
     SetValue({"preview", "interval"}, settings.preview.interval);
     SetValue({"experimental", "openvdbPipeline", "enabled"}, false);
     SetValue({"experimental", "openvdbPipeline", "engine"}, QStringLiteral("legacy"));

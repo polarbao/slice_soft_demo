@@ -1,8 +1,8 @@
 # ROADMAP_13 模型场景、排版联合切片与 TIFF 原生预览路线
 
-> 版本：v1.1
+> 版本：v1.2
 > 日期：2026-07-28
-> 状态：原 P0 范围 15/17 COMPLETE / 13B-08 COMPLETE / NEXT 13C-04
+> 状态：原 P0 范围 16/17 COMPLETE / 13B-08 COMPLETE / NEXT 13C-05
 
 ## 1. 总目标
 
@@ -217,7 +217,8 @@ Stage 13 P0 需求/设计/验证/原子任务准备：COMPLETE；
 13C-01：COMPLETE；
 13C-02：COMPLETE；
 13C-03：COMPLETE；
-13C-04：READY FOR DEVELOPMENT；
+13C-04：COMPLETE，默认 TIFF 原生输出、显式诊断图兼容和 IO 对比证据已落地；
+13C-05：READY FOR DEVELOPMENT；
 13D：PREPARED / WAIT 13C-05；
 完整 Stage 13 production readiness：INCOMPLETE。
 ```
