@@ -885,6 +885,8 @@ SceneLayerComposeResult ComposeSceneLayers(
 {
     const auto start = std::chrono::steady_clock::now();
     SceneLayerComposeResult result;
+    result.sceneid = request.sceneid;
+    result.scenerevision = request.currentscenerevision;
     result.grid = request.globalgrid;
     result.protocol = request.protocol;
     result.effectivepipelinemode =

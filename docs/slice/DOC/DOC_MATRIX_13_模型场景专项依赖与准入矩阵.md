@@ -1,8 +1,8 @@
 # DOC_MATRIX_13 模型场景专项依赖与准入矩阵
 
-> 版本：v0.6
-> 日期：2026-07-27
-> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..05、跨阶段 09A-02 COMPLETE / 13B-06 READY
+> 版本：v0.7
+> 日期：2026-07-28
+> 状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..06、跨阶段 09A-02 COMPLETE / 13B-07 PREPARATION
 
 ## 1. 阶段依赖
 
@@ -40,7 +40,8 @@
 | 13B-03 | COMPLETE | 11x2、row-major、20/30 mm 净距、锁定、原子恢复、配置回读和 Qt UI 已完成 |
 | 13B-04 | FUNCTIONAL FIXTURE COMPLETE / PRODUCTION INPUT OPEN | SceneCollisionService、稳定错误、两阶段投影碰撞和逐实例准入已通过回归 |
 | 13B-05 | FIXTURE COMPLETE | 公共 Raster/Layer、Legacy/Global adapter、共享 Grid、联合合成和回归证据已完成 |
-| 13B-06 | READY FOR FIXTURE DEVELOPMENT | 单 package、typed scene extension、scene report、原子发布和 RIP strict 合同已冻结 |
+| 13B-06 | FIXTURE COMPLETE / PRODUCTION INPUT OPEN | 单 package、typed scene extension、scene report、原子发布和 RIP strict 已通过 fixture 回归 |
+| 13B-07 | PREPARATION / PRODUCTION INPUT OPEN | 功能矩阵可继续；production GO 等待设备输入和 22 实例预算 |
 | 13C-01 | READY / SCHEDULE AFTER IDENTITY WAVE | TIFF source、cache、异步 identity、错误码和测试已冻结 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在

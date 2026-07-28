@@ -189,6 +189,8 @@ struct SceneLayerComposeResult
 {
     bool available{false};
     std::string status{"blocked"};
+    std::string sceneid;
+    std::uint64_t scenerevision{0U};
     SceneRasterGrid grid;
     RgbwsvProtocol protocol;
     SlicePipelineMode effectivepipelinemode{

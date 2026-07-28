@@ -169,6 +169,8 @@ add_library(slicer_core
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.h
+    src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.cpp
+    src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.h
     src/slicer_core/pipeline/PipelineContext.cpp
     src/slicer_core/pipeline/PipelineContext.h
     src/slicer_core/pipeline/DiagnosticEffectiveConfig.cpp
@@ -183,6 +185,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/GlobalSceneLayerAdapter.h
     src/slicer_core/pipeline/LegacySceneLayerAdapter.cpp
     src/slicer_core/pipeline/LegacySceneLayerAdapter.h
+    src/slicer_core/pipeline/MultiModelScenePackageWriter.cpp
+    src/slicer_core/pipeline/MultiModelScenePackageWriter.h
     src/slicer_core/pipeline/MultiModelSliceOrchestrator.cpp
     src/slicer_core/pipeline/MultiModelSliceOrchestrator.h
     src/slicer_core/pipeline/SceneLayerComposer.cpp
@@ -227,6 +231,8 @@ add_library(slicer_core
     src/slicer_core/raster/TextureFillPartitionRasterMapper.h
     src/slicer_core/reports/ReportBase.cpp
     src/slicer_core/reports/ReportBase.h
+    src/slicer_core/reports/MultiModelSceneReport.cpp
+    src/slicer_core/reports/MultiModelSceneReport.h
     src/slicer_core/reports/MaterialClosureReport.cpp
     src/slicer_core/reports/MaterialClosureReport.h
     src/slicer_core/reports/TextureFillPartitionReport.cpp
@@ -630,6 +636,12 @@ target_compile_definitions(scene_layer_adapters_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(multi_model_package_writer_unit_tests
+    tests/unit/multi_model_package_writer/Main.cpp
+)
+
+target_link_libraries(multi_model_package_writer_unit_tests PRIVATE slicer_core)
+
 add_executable(diagnostic_effective_config_unit_tests
     tests/unit/diagnostic_effective_config/Main.cpp
 )
@@ -932,6 +944,7 @@ add_test(NAME scene_layer_adapters_unit_tests COMMAND scene_layer_adapters_unit_
 set_tests_properties(scene_layer_adapters_unit_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_test(NAME multi_model_package_writer_unit_tests COMMAND multi_model_package_writer_unit_tests)
 add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effective_config_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)

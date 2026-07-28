@@ -106,6 +106,18 @@ void ValidatePreview(const RgbwsvProductionPreviewSpec& preview)
     }
 }
 
+std::string ExpectedProductionAcceptance(
+    const RgbwsvProductionPackageWriteRequest& request)
+{
+    if (!request.scene.has_value())
+    {
+        return "admitted";
+    }
+    return request.scene->manifestsummary.at("productionReady").as_bool()
+        ? "admitted"
+        : "functional_fixture_admitted";
+}
+
 void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
 {
     if (request.packageDir.empty())
@@ -113,10 +125,31 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
         throw std::invalid_argument(
             "RGBWSV production package directory is required");
     }
-    if (request.productionAcceptance != "admitted")
+    if (request.scene.has_value())
+    {
+        const std::string expectedPackagePath =
+            std::filesystem::absolute(request.packageDir)
+                .lexically_normal()
+                .generic_string();
+        const MultiModelSceneReportDocument& scene =
+            *request.scene;
+        if (!scene.IsValid()
+            || scene.report.at("requestedPipelineMode").as_string()
+                != request.requestedPipelineMode
+            || scene.report.at("effectivePipelineMode").as_string()
+                != request.effectivePipelineMode
+            || scene.report.at("package").at("path").as_string()
+                != expectedPackagePath)
+        {
+            throw std::invalid_argument(
+                "RGBWSV production package scene extension is invalid");
+        }
+    }
+    if (request.productionAcceptance
+        != ExpectedProductionAcceptance(request))
     {
         throw std::runtime_error(
-            "RGBWSV production package is blocked: production is not admitted");
+            "RGBWSV production package is blocked: acceptance does not match scene readiness");
     }
     if (request.requestedPipelineMode.empty()
         || request.requestedPipelineMode != request.effectivePipelineMode)
@@ -632,6 +665,46 @@ Json MakeOuterVarnishJson(
     });
 }
 
+Json ReadPersistedJson(const std::filesystem::path& path)
+{
+    std::ifstream input{path, std::ios::binary};
+    if (!input)
+    {
+        throw std::runtime_error(
+            "failed to reopen staged JSON: " + path.string());
+    }
+    return Json::parse(input);
+}
+
+void ValidatePersistedSceneExtension(
+    const std::filesystem::path& stagingDir,
+    const RgbwsvProductionPackageWriteRequest& request)
+{
+    if (!request.scene.has_value())
+    {
+        return;
+    }
+
+    const Json manifest =
+        ReadPersistedJson(stagingDir / "manifest.json");
+    const Json report = ReadPersistedJson(
+        stagingDir / MultiModelSceneReportRelativePath());
+    MultiModelSceneReportDocument persisted;
+    persisted.manifestsummary = manifest.at("scene");
+    persisted.report = report;
+    if (!persisted.IsValid()
+        || persisted.manifestsummary.dump(0)
+            != request.scene->manifestsummary.dump(0)
+        || persisted.report.dump(0)
+            != request.scene->report.dump(0)
+        || manifest.at("reports").at("scene").as_string()
+            != MultiModelSceneReportRelativePath().generic_string())
+    {
+        throw std::runtime_error(
+            "staged RGBWSV scene report failed persistence validation");
+    }
+}
+
 void PublishStagedPackage(
     const std::filesystem::path& stagingDir,
     const std::filesystem::path& packageDir,
@@ -646,20 +719,36 @@ void PublishStagedPackage(
     try
     {
         std::filesystem::rename(stagingDir, packageDir);
-        if (!backupDir.empty())
-        {
-            std::filesystem::remove_all(backupDir);
-        }
     }
     catch (...)
     {
-        std::error_code cleanupError;
-        std::filesystem::remove_all(packageDir, cleanupError);
-        if (!backupDir.empty() && std::filesystem::exists(backupDir))
+        if (!backupDir.empty()
+            && !std::filesystem::exists(packageDir)
+            && std::filesystem::exists(backupDir))
         {
-            std::filesystem::rename(backupDir, packageDir);
+            std::error_code restoreError;
+            std::filesystem::rename(
+                backupDir,
+                packageDir,
+                restoreError);
+            if (restoreError)
+            {
+                throw std::runtime_error(
+                    "failed to publish staged RGBWSV package and restore the previous package: "
+                    + restoreError.message());
+            }
         }
         throw;
+    }
+
+    if (!backupDir.empty())
+    {
+        std::error_code cleanupError;
+        std::filesystem::remove_all(backupDir, cleanupError);
+        if (!cleanupError)
+        {
+            backupDir.clear();
+        }
     }
 }
 
@@ -764,7 +853,13 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
         });
         const Json sliceReport = Json::object({
             {"schema", "p0.slice_report.1"},
-            {"status", "production_written"},
+            {"status",
+             request.scene.has_value()
+                     && !request.scene->manifestsummary
+                             .at("productionReady")
+                             .as_bool()
+                 ? "functional_fixture_written"
+                 : "production_written"},
             {"requestedPipelineMode", request.requestedPipelineMode},
             {"effectivePipelineMode", request.effectivePipelineMode},
             {"productionAcceptance", request.productionAcceptance},
@@ -783,7 +878,16 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                  {"emptyPixels", ChannelCountsToJson(totalEmptyPixels)},
              })},
         });
-        const Json manifest = Json::object({
+        Json::Object reportLinks{
+            {"slice", "reports/slice_report.json"},
+            {"preview", "reports/preview_report.json"},
+        };
+        if (request.scene.has_value())
+        {
+            reportLinks["scene"] =
+                MultiModelSceneReportRelativePath().generic_string();
+        }
+        Json::Object manifestObject{
             {"schema", protocol.schema},
             {"schemaVersion", protocol.schema},
             {"requestedPipelineMode", request.requestedPipelineMode},
@@ -801,18 +905,20 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             {"grid", MakeGridJson(request.grid)},
             {"tiff", MakeTiffJson(protocol, request.storage, layers)},
             {"layers", Json{layers}},
-            {"reports",
-             Json::object({
-                 {"slice", "reports/slice_report.json"},
-                 {"preview", "reports/preview_report.json"},
-             })},
+            {"reports", Json{std::move(reportLinks)}},
             {"preview",
              Json::object({
                  {"enabled", request.preview.enabled},
                  {"format", request.preview.format},
                  {"files", Json{generatedPreviews}},
              })},
-        });
+        };
+        if (request.scene.has_value())
+        {
+            manifestObject["scene"] =
+                request.scene->manifestsummary;
+        }
+        const Json manifest{std::move(manifestObject)};
 
         WriteReportJsonFile(stagingDir / "manifest.json", manifest);
         WriteReportJsonFile(
@@ -821,7 +927,14 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
         WriteReportJsonFile(
             stagingDir / "reports" / "preview_report.json",
             previewReport);
+        if (request.scene.has_value())
+        {
+            WriteReportJsonFile(
+                stagingDir / MultiModelSceneReportRelativePath(),
+                request.scene->report);
+        }
 
+        ValidatePersistedSceneExtension(stagingDir, request);
         (void)validate_slice_package(stagingDir);
         PublishStagedPackage(stagingDir, packageDir, backupDir);
 

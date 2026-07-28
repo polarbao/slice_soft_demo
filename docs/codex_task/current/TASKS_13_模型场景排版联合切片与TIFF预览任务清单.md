@@ -1,7 +1,7 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01..05 / 13B-01..05 / 12E-09A-02 COMPLETE / 13B-06 READY FOR FIXTURE DEVELOPMENT
-> 日期：2026-07-27
+> 状态：13-00 / 13A-01..05 / 13B-01..06 / 12E-09A-02 COMPLETE / 13B-07 PREPARATION
+> 日期：2026-07-28
 > 执行原则：每次只执行用户明确授权的原子任务
 
 ## 1. 固定边界
@@ -277,16 +277,18 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 
 ### 13B-06 单一 package 与 scene report
 
-状态：READY FOR FIXTURE DEVELOPMENT / 13B-05 PASS
+状态：FIXTURE COMPLETE / PRODUCTION INPUT OPEN
 
 目标：共享 writer、每层一个 TIFF、manifest 可选 scene 摘要、per-instance report、原子发布、RIP strict。
 
 专项准备：`DOC_PREP_13B_06_单Package与SceneReport准备.md` 和
 `CODEX_PROMPT_13B_06_单Package与SceneReport执行指令.md`。
 
+实际证据：`REPORT_13B_06_单Package与SceneReport当前状态.md`。
+
 ### 13B-07 真实模型矩阵与收口
 
-状态：PREPARED / WAIT 13B-06
+状态：PREPARATION / FUNCTIONAL DEVELOPMENT UNBLOCKED / PRODUCTION INPUT OPEN
 
 目标：1/11/12/22 实例、OBJ/3MF、资源隔离、碰撞/越界、性能和 REPORT_13B。
 
@@ -350,13 +352,14 @@ REPORT_13B_04_幅面碰撞与逐实例准入当前状态.md。
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-合计：17 个近程原子任务，当前完成 10；
+合计：17 个近程原子任务，当前完成 11；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13B-06 单一 package 与 scene report` 的 fixture 开发。其独立合同和执行
-指令已完成，13B-05 已输出 writer-ready 联合内存层。`13C-01` 技术上可独立开始，但单贡献者按
-固定顺序先完成多模型场景链，再进入 TIFF 原生预览。
+当前唯一推荐入口为 `13B-07 真实模型矩阵与收口` 的独立准备。13B-06 已完成单 package、
+typed scene report、原子发布和 RIP strict fixture 闭环。`13C-01` 技术上可独立开始，但单贡献者按
+固定顺序先完成多模型场景链，再进入 TIFF 原生预览。设备 buildVolume/轴向和 22 实例预算仍阻断
+13B-07 production GO，不阻断功能矩阵准备与开发。
 
 ## 11. 任务验证规则
 

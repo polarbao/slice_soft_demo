@@ -3,9 +3,11 @@
 #include "slicer_core/config.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
+#include "slicer_core/output/rgbwsv/RgbwsvSceneExtension.h"
 
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -81,6 +83,7 @@ struct RgbwsvProductionPackageWriteRequest
     RgbwsvProductionStorageSpec storage;
     RgbwsvProductionPreviewSpec preview;
     std::vector<RgbwsvProductionLayer> layers;
+    std::optional<MultiModelSceneReportDocument> scene;
 };
 
 /**

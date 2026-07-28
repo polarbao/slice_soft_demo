@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace slicer_core
 {
@@ -59,6 +60,20 @@ bool CheckedPixelCount(
             / kChannelCount;
 }
 
+bool CheckedAdd(
+    const std::size_t first,
+    const std::size_t second,
+    std::size_t& output)
+{
+    if (second
+        > std::numeric_limits<std::size_t>::max() - first)
+    {
+        return false;
+    }
+    output = first + second;
+    return true;
+}
+
 bool HasValidLayerSequence(const SceneInstanceRaster& raster)
 {
     std::size_t pixelCount{0U};
@@ -112,6 +127,151 @@ bool HasValidLayerSequence(const SceneInstanceRaster& raster)
     return true;
 }
 
+bool HasValidComposedLayers(
+    const SceneLayerComposeResult& result,
+    std::size_t& occupiedPixels,
+    std::size_t& emptyPixels)
+{
+    std::size_t pixelCount{0U};
+    if (!SameProtocol(result.protocol, FixedSceneRasterProtocol())
+        || !CheckedPixelCount(
+            result.grid.widthpx,
+            result.grid.heightpx,
+            pixelCount)
+        || result.layers.size()
+            != static_cast<std::size_t>(result.grid.layercount))
+    {
+        return false;
+    }
+
+    const double zTolerance =
+        std::max(1.0e-9, result.grid.layerthicknessmm * 1.0e-9);
+    for (int layerIndex{0};
+         layerIndex < result.grid.layercount;
+         ++layerIndex)
+    {
+        const RgbwsvProductionLayer& layer =
+            result.layers.at(static_cast<std::size_t>(layerIndex));
+        const double expectedZ = result.grid.originzmm
+            + (static_cast<double>(layerIndex) + 0.5)
+                * result.grid.layerthicknessmm;
+        if (layer.layerIndex != layerIndex
+            || layer.widthPx != result.grid.widthpx
+            || layer.heightPx != result.grid.heightpx
+            || layer.channelOrder != result.protocol.channel_order
+            || !std::isfinite(layer.zMm)
+            || std::abs(layer.zMm - expectedZ) > zTolerance
+            || layer.channels.size() != pixelCount * kChannelCount)
+        {
+            return false;
+        }
+
+        for (std::size_t pixelIndex{0U};
+             pixelIndex < pixelCount;
+             ++pixelIndex)
+        {
+            const std::size_t base = pixelIndex * kChannelCount;
+            const bool occupied = std::any_of(
+                layer.channels.begin()
+                    + static_cast<std::ptrdiff_t>(base),
+                layer.channels.begin()
+                    + static_cast<std::ptrdiff_t>(
+                        base + kChannelCount),
+                [&result](const std::uint8_t value)
+                {
+                    return value != result.protocol.empty_value;
+                });
+            std::size_t next{0U};
+            if (!CheckedAdd(
+                    occupied ? occupiedPixels : emptyPixels,
+                    1U,
+                    next))
+            {
+                return false;
+            }
+            if (occupied)
+            {
+                occupiedPixels = next;
+            }
+            else
+            {
+                emptyPixels = next;
+            }
+        }
+    }
+    return true;
+}
+
+bool HasClosedComposeStatistics(
+    const SceneLayerComposeResult& result,
+    const std::size_t occupiedPixels,
+    const std::size_t emptyPixels)
+{
+    const SceneLayerComposeStatistics& statistics =
+        result.statistics;
+    if (statistics.outputlayercount != result.layers.size()
+        || statistics.visibleinstancecount
+            != statistics.instances.size())
+    {
+        return false;
+    }
+
+    std::size_t totalInstances{0U};
+    if (!CheckedAdd(
+            statistics.visibleinstancecount,
+            statistics.hiddeninstancecount,
+            totalInstances)
+        || totalInstances != statistics.totalinstancecount)
+    {
+        return false;
+    }
+
+    std::size_t ownedPixels{0U};
+    if (!CheckedAdd(
+            statistics.modelpixels,
+            statistics.outervarnishpixels,
+            ownedPixels)
+        || !CheckedAdd(
+            ownedPixels,
+            statistics.supportpixels,
+            ownedPixels)
+        || ownedPixels != occupiedPixels
+        || statistics.emptypixels != emptyPixels)
+    {
+        return false;
+    }
+
+    std::unordered_set<std::string> instanceIds;
+    std::size_t instanceModelPixels{0U};
+    std::size_t instanceOuterVarnishPixels{0U};
+    std::size_t instanceSupportPixels{0U};
+    for (const SceneInstanceComposeStatistics& instance :
+         statistics.instances)
+    {
+        if (instance.instanceid.empty()
+            || !instanceIds.insert(instance.instanceid).second
+            || !CheckedAdd(
+                instanceModelPixels,
+                instance.modelpixels,
+                instanceModelPixels)
+            || !CheckedAdd(
+                instanceOuterVarnishPixels,
+                instance.outervarnishpixels,
+                instanceOuterVarnishPixels)
+            || !CheckedAdd(
+                instanceSupportPixels,
+                instance.supportpixels,
+                instanceSupportPixels))
+        {
+            return false;
+        }
+    }
+    return instanceModelPixels == statistics.modelpixels
+        && instanceOuterVarnishPixels
+            == statistics.outervarnishpixels
+        && instanceSupportPixels == statistics.supportpixels;
+}
+
 }  // namespace
 
 bool SceneRasterGrid::IsValid() const
@@ -132,11 +292,27 @@ bool SceneRasterGrid::IsValid() const
 
 bool SceneLayerComposeResult::IsValid() const
 {
-    return available
-        && status == "ready_for_writer"
-        && !error.has_value()
-        && grid.IsValid()
-        && layers.size() == static_cast<std::size_t>(grid.layercount);
+    if (!available
+        || status != "ready_for_writer"
+        || error.has_value()
+        || sceneid.empty()
+        || !grid.IsValid()
+        || !std::isfinite(composems)
+        || composems < 0.0)
+    {
+        return false;
+    }
+
+    std::size_t occupiedPixels{0U};
+    std::size_t emptyPixels{0U};
+    return HasValidComposedLayers(
+               *this,
+               occupiedPixels,
+               emptyPixels)
+        && HasClosedComposeStatistics(
+            *this,
+            occupiedPixels,
+            emptyPixels);
 }
 
 bool SceneRasterAdapterResult::IsValid() const

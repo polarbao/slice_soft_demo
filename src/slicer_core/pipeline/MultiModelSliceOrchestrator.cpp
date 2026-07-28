@@ -20,6 +20,8 @@ SceneLayerComposeResult BlockOrchestrator(
     const SceneInstanceRaster* instance = nullptr)
 {
     SceneLayerComposeResult result;
+    result.sceneid = request.admission.sceneid;
+    result.scenerevision = request.currentscenerevision;
     result.protocol = FixedSceneRasterProtocol();
     result.effectivepipelinemode =
         request.effectivepipelinemode;

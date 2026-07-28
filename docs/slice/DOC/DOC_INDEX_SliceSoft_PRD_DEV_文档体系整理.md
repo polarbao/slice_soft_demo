@@ -3,9 +3,9 @@
 > 文档版本：v0.2
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-27
+> 更新日期：2026-07-28
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12E-08D/09B/09C、09A-01/02 完成；12G-TCWS 冻结；Stage 13 P0 原子任务准备完成；13A-01..05/13B-01..05 COMPLETE；13B-06 READY
+> 当前阶段判断：12E-08D/09B/09C、09A-01/02 完成；12G-TCWS 冻结；Stage 13 P0 原子任务准备完成；13A-01..05/13B-01..06 COMPLETE；13B-07 PREPARATION
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
 最新完成阶段：12E-08C-R4 受限生产候选技术 Gate 收口
-当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..05 COMPLETE
-最新完成任务：13B-05 全局 Raster、双引擎 adapter 和联合内存层合成
-当前执行任务：13B-06 单 package 与 scene report FIXTURE DEVELOPMENT；复杂浮雕 0/3 仍为披露缺口；12F 性能算法未激活
+当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..06 COMPLETE
+最新完成任务：13B-06 单 package、typed scene report、原子发布和 RIP strict fixture
+当前执行任务：13B-07 真实模型矩阵与收口 PREPARATION；复杂浮雕 0/3 仍为披露缺口；12F 性能算法未激活
 ```
 
 09P-R1 已完成：
@@ -431,6 +431,7 @@ docs/slice/DOC/DOC_CHECKLIST_13_未决产品输入与阶段Gate.md
 docs/slice/DOC/DOC_PREP_13A_01_ModelTransform与ModelInstance合同准备.md
 docs/slice/DOC/DOC_PREP_13B_01_MultiModelScene与EffectiveConfig准备.md
 docs/slice/DOC/DOC_PREP_13B_06_单Package与SceneReport准备.md
+docs/slice/REPORT/REPORT_13B_06_单Package与SceneReport当前状态.md
 docs/slice/DOC/DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md
 docs/slice/DOC/DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md
 docs/slice/ROADMAP/ROADMAP_13_模型场景排版联合切片与TIFF预览路线.md
@@ -482,6 +483,6 @@ TASKS_13 = 当前新增产品专项执行入口
 
 12B、12C、12D 已收口；12E-08D、09B、09C 已完成，Legacy 仍为默认，Global 仅显式候选。12G-TCWS
 纹理载体/白色分色候选专项已冻结。Stage 13 已完成 P0 总体文档、17 个近程原子任务实施准备，
-13A-01..05、13B-01..05 和 scene-aware 12E-09A-02 已实现。13B-06 已补齐独立 PREP/PROMPT，
-当前按固定顺序进入单 package 与 scene report fixture 开发；13C-03 必须在 09A-05 前完成。
+13A-01..05、13B-01..06 和 scene-aware 12E-09A-02 已实现。13B-06 已形成单 package 与
+scene report fixture 闭环，当前按固定顺序进入 13B-07 独立准备；13C-03 必须在 09A-05 前完成。
 12F 性能算法仍需单独授权。

@@ -1,8 +1,8 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..05、09A-02 COMPLETE / 13B-06 READY
-> 版本：v1.5
-> 日期：2026-07-27
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..06、09A-02 COMPLETE / 13B-07 PREPARATION
+> 版本：v1.6
+> 日期：2026-07-28
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
 
 ## 1. 目的
@@ -221,7 +221,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.6 13B-06 单 package 与 scene report
 
-状态：`READY FOR FIXTURE DEVELOPMENT / 13B-05 PASS`
+状态：`FIXTURE COMPLETE / PRODUCTION INPUT OPEN`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -237,7 +237,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 5.7 13B-07 真实模型矩阵与收口
 
-状态：`PREPARED / WAIT 13B-06 / PRODUCTION GO INPUTS OPEN`
+状态：`PREPARATION / 13B-06 PASS / PRODUCTION GO INPUTS OPEN`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -372,5 +372,6 @@ Stage 13 production readiness：未完成；
 13A-R2/R3、13B-R4 中长期详细设计：有意延后，当前只有 Epic。
 ```
 
-因此，当前无需继续扩写 P0 通用文档；13B-06 已具备独立合同和执行指令，可以进入 fixture 开发。
+因此，当前无需继续扩写 P0 通用文档；13B-06 已完成 fixture 开发和状态报告。13B-07 需要补齐
+独立的真实模型矩阵执行合同后再进入功能开发，且必须把功能 PASS 与 production GO 分开。
 中长期 3D 和自动 nesting 必须在 P0 证据完成后另立 PRD/DEV/DEMO/TASKS，不得夹带进入近程任务。
