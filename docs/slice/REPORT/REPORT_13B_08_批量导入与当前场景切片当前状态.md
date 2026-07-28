@@ -3,7 +3,7 @@
 > 文档状态：FUNCTIONAL COMPLETE / PRODUCTION INPUT OPEN
 > 日期：2026-07-28
 > 完成范围：13B-08-01..04
-> 下一任务：13C-04 Preview IO 收口
+> 下一任务：13D-01 顶部作业栏
 
 ## 1. 阶段结论
 
@@ -90,6 +90,18 @@ samples/models/3mf/texture2d_checker_cube.3mf。
 `slicer_cli --scene-config`，产生一个 336 x 150 x 29 Package，并自动加载 29 个 TIFF 层。
 
 该 Smoke 使用 127 x 127 DPI、0.20 mm 层厚的功能 Profile，避免把 UI 自动化冒充设备 SLA。
+
+新增 `scene-batch-import-real-meigui`：
+
+```text
+model/obj/meigui_fudiao/02.obj；
+model/obj/meigui_fudiao/03.obj；
+model/obj/meigui_fudiao/04.obj。
+```
+
+该用例按 UI 同一串行批量导入控制器加载三个真实大 OBJ，要求 selected/imported=3、
+failed/cancelled=0、场景实例数为 3，并在批次结束后完成一次自动排版。它验证真实资产导入稳定性，
+不代表三个复杂浮雕已通过 Global strict 或设备生产准入。
 
 ### 3.3 3MF 稳定资源身份修复
 
@@ -223,6 +235,38 @@ output/benchmarks/13b_08/<config>/qt_real_assets_workflow.json
 
 `output/` 为本机复测证据，不纳入 Git。
 
+### 8.1 2026-07-28 Release 批量导入崩溃复测
+
+本轮复现到部署版执行 `scene-batch-import-three` 时以 `0xc0000005` 退出。Windows dump 显示异常发生
+在 `load_slice_config` 相关 `std::string` / `std::vector<std::string>` 生命周期代码；旧
+`config.cpp.obj` 时间为 17:11，源文件时间为 17:17，而运行包在 17:20 发布，证明一次长时间
+Release 构建期间源文件继续变化，旧 ABI 对象被链接并部署。
+
+修正：
+
+```text
+PrepareSliceSoftRuntime.ps1 的指纹覆盖 C/C++ 源文件、头文件和 CMakeLists；
+构建完成后重新计算输入指纹；
+构建期间输入发生变化时拒绝写 stamp 和部署 runtime；
+新增真实 meigui 02/03/04 批量导入 Smoke。
+```
+
+实际复测：
+
+```text
+Release -ForceClean 构建与部署：PASS；
+Release startup：PASS；
+Release scene-batch-import-three：PASS；
+Release scene-batch-import-real-meigui：PASS；
+Debug scene-batch-import-three：PASS；
+Debug scene-batch-import-real-meigui：PASS；
+Debug CTest：82/82 PASS；
+Quick CI：PASS。
+```
+
+因此，批量导入功能缺口已关闭；原崩溃不是 `meigui` 几何本身触发，而是运行包混入了构建期间产生
+的 ABI 不一致对象。
+
 ## 9. 生产 Gate
 
 仍未关闭：
@@ -241,12 +285,11 @@ aishen/meigui/titian 复杂浮雕 strict 正向覆盖；
 
 ## 10. 下一步
 
-13B-08 的功能和证据链已经收口。固定顺序进入：
+13B-08、13C-04 和 13C-05 的功能与证据链已经收口。当前固定入口为：
 
 ```text
-13C-04 Preview IO 收口
--> 13C-05 TIFF 原生统一预览阶段收口
+13D-01 顶部作业栏
 -> 13D Qt 工作台布局收口。
 ```
 
-13C-04 的 PREP 和执行指令已经完整，当前状态为 `READY FOR DEVELOPMENT`。
+13D-01 的 PREP 和执行指令已经完整，当前状态为 `READY FOR DEVELOPMENT`。

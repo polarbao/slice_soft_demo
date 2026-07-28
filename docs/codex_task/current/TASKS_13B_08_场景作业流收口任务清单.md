@@ -3,7 +3,7 @@
 > 文档状态：COMPLETE / FUNCTIONAL PASS
 > 版本：v1.5
 > 日期：2026-07-28
-> 当前入口：13C-04 READY
+> 当前入口：13D-01 READY
 
 ## 1. 目标
 
@@ -85,6 +85,7 @@ run_13b_08_scene_workflow.ps1；
 1/3/11/12/22 与 OBJ/OBJ-MTL/Texture2D 3MF；
 部分失败、容量、碰撞、越界、stale、cancel、Global no-fallback；
 Qt 真实三资产 -> --scene-config -> 一个 Package -> TIFF 自动回载；
+真实 `meigui_fudiao` 02/03/04 OBJ 批量导入 Smoke；
 3MF 内部贴图资源 hash 去除临时解压根依赖；
 Debug/Release 定向 CTest、真实矩阵和 RIP strict；
 REPORT_13B_08_批量导入与当前场景切片当前状态.md。

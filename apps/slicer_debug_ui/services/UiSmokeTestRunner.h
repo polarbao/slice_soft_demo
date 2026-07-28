@@ -52,6 +52,8 @@ private:
     int SceneGridLayout(const UiSmokeTestOptions& options);
     int SceneBatchImportThree(
         const UiSmokeTestOptions& options);
+    int SceneBatchImportRealMeigui(
+        const UiSmokeTestOptions& options);
     int SceneBatchImportPartialFailure(
         const UiSmokeTestOptions& options);
     int SceneSliceCurrent(

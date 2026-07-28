@@ -146,10 +146,22 @@ function GetRuntimeBuildInputFingerprint
 
     $inputFiles = @(
         Get-ChildItem -LiteralPath (Join-Path $RepoRoot "src") -Recurse -File |
-            Where-Object { $_.Extension -in @(".h", ".hh", ".hpp", ".hxx", ".inl") }
+            Where-Object {
+                $_.Extension -in @(
+                    ".c", ".cc", ".cpp", ".cxx",
+                    ".h", ".hh", ".hpp", ".hxx", ".inl")
+            }
         Get-ChildItem -LiteralPath (Join-Path $RepoRoot "apps") -Recurse -File |
-            Where-Object { $_.Extension -in @(".h", ".hh", ".hpp", ".hxx", ".inl") }
-        Get-ChildItem -LiteralPath (Join-Path $RepoRoot "apps") -Recurse -Filter "CMakeLists.txt" -File
+            Where-Object {
+                $_.Extension -in @(
+                    ".c", ".cc", ".cpp", ".cxx",
+                    ".h", ".hh", ".hpp", ".hxx", ".inl")
+            }
+        Get-ChildItem -LiteralPath $RepoRoot -Recurse -Filter "CMakeLists.txt" -File |
+            Where-Object {
+                $_.FullName -notmatch
+                    '[\\/](build|runtime|output)(-[^\\/]*)?[\\/]'
+            }
         Get-Item -LiteralPath (Join-Path $RepoRoot "CMakeLists.txt")
         Get-Item -LiteralPath $PSCommandPath
     ) | Sort-Object FullName -Unique
@@ -443,6 +455,16 @@ try
             -Name "build SliceSoft runtime targets ($Config)" `
             -Executable "cmake" `
             -Arguments $buildArguments
+
+        $postBuildInputFingerprint =
+            GetRuntimeBuildInputFingerprint `
+                -RepoRoot $repoRoot `
+                -Config $Config `
+                -Qt5Dir $resolvedQt5Dir
+        if ($postBuildInputFingerprint -ne $buildInputFingerprint)
+        {
+            throw "Runtime build inputs changed while the build was running. The runtime was not deployed; rerun PrepareSliceSoftRuntime.ps1 after source edits have stopped."
+        }
 
         [System.IO.File]::WriteAllText(
             $buildInputStampPath,

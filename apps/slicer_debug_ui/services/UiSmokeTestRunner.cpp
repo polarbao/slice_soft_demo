@@ -634,6 +634,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return SceneBatchImportThree(options);
     }
+    if (options.case_name == "scene-batch-import-real-meigui")
+    {
+        return SceneBatchImportRealMeigui(options);
+    }
     if (options.case_name
         == "scene-batch-import-partial-failure")
     {
@@ -3890,6 +3894,94 @@ int UiSmokeTestRunner::SceneBatchImportThree(
     }
     return pass(QStringLiteral(
         "scene-batch-import-three ordered/one-layout"));
+}
+
+int UiSmokeTestRunner::SceneBatchImportRealMeigui(
+    const UiSmokeTestOptions& options)
+{
+    SceneDocument document;
+    SceneModelRepository repository;
+    ModelTopViewLoader loader(&document, &repository);
+    SceneBatchImportController controller(&document);
+    controller.SetLoadHandlers(
+        [&loader](const ModelTopViewLoadRequest& request)
+        {
+            loader.RequestLoad(request);
+            return loader.Generation();
+        },
+        [&loader]()
+        {
+            loader.Cancel();
+        });
+    QObject::connect(
+        &loader,
+        &ModelTopViewLoader::SigLoadingFinished,
+        &controller,
+        [&controller, &loader]()
+        {
+            controller.OnLoadFinished(loader.Generation());
+        });
+
+    const QDir root(options.repo_root);
+    const QString modelRoot =
+        root.filePath(QStringLiteral("model/obj/meigui_fudiao"));
+    SceneBatchImportRequest request;
+    request.batchid = QStringLiteral("smoke-real-meigui");
+    request.configpath = root.filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    request.files = QStringList{
+        QDir(modelRoot).filePath(QStringLiteral("02.obj")),
+        QDir(modelRoot).filePath(QStringLiteral("03.obj")),
+        QDir(modelRoot).filePath(QStringLiteral("04.obj")),
+    };
+    request.autolayout = true;
+    for (const QString& modelPath : request.files)
+    {
+        if (!QFileInfo::exists(modelPath))
+        {
+            return fail(
+                QStringLiteral(
+                    "scene batch real meigui asset missing: ")
+                + modelPath);
+        }
+    }
+    if (!controller.Start(request).IsValid()
+        || !WaitForCondition(
+            [&controller]()
+            {
+                return !controller.IsRunning();
+            },
+            120000))
+    {
+        return fail(QStringLiteral(
+            "scene batch real meigui import did not complete"));
+    }
+
+    const SceneBatchImportSummary& summary =
+        controller.Summary();
+    if (summary.selected != 3
+        || summary.imported != 3
+        || summary.failed != 0
+        || summary.cancelled != 0
+        || !summary.autolayoutapplied
+        || document.InstanceCount() != 3U)
+    {
+        return fail(
+            QStringLiteral(
+                "scene batch real meigui summary mismatch: "
+                "selected=%1 imported=%2 failed=%3 cancelled=%4 "
+                "instances=%5 layout=%6")
+                .arg(summary.selected)
+                .arg(summary.imported)
+                .arg(summary.failed)
+                .arg(summary.cancelled)
+                .arg(document.InstanceCount())
+                .arg(summary.autolayoutapplied));
+    }
+    return pass(QStringLiteral(
+        "scene-batch-import-real-meigui 02/03/04"));
 }
 
 int UiSmokeTestRunner::SceneBatchImportPartialFailure(

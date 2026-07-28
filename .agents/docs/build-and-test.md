@@ -169,7 +169,7 @@ runtime/slicesoft/<Config>
 
 The runtime directory contains `slicer_debug_ui.exe`, `slicer_cli.exe`, `rip_reader_test.exe`, Qt DLLs, platform plugins, the MSVC runtime, `samples/`, `model/`, Profile-referenced documents, and `runtime_manifest.json`. The deployment script validates all scenario config/model/document paths before publishing. OpenVDB remains OFF. Runtime UI resolves its application directory as the packaged resource root and resolves the sibling CLI and RIP reader before any build-directory fallback.
 
-The NMake runtime lane records a SHA-256 fingerprint of runtime headers and CMake inputs in each configuration build directory. A missing or changed fingerprint triggers one clean rebuild before deployment. This guard is required because the current CMake 4.3/MSVC 14.51 NMake combination can emit empty `.obj.d` files and otherwise reuse ABI-incompatible objects after header changes. Use `-ForceClean` to request the same guard manually:
+The NMake runtime lane records a SHA-256 fingerprint of runtime C/C++ sources, headers and CMake inputs in each configuration build directory. A missing or changed fingerprint triggers one clean rebuild before deployment. The script computes the fingerprint again after compilation and refuses deployment when inputs changed while the build was running. This guard is required because the current CMake 4.3/MSVC 14.51 NMake combination can emit empty `.obj.d` files and otherwise reuse ABI-incompatible objects after header changes or a concurrent source update. Use `-ForceClean` to request the same guard manually:
 
 ```powershell
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release -ForceClean
