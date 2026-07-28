@@ -243,7 +243,8 @@ build/Debug/slicer_cli.exe --config <config.json>
 
 ```json
 "preview": {
-  "enabled": true,
+  "outputPolicy": "tiff_native",
+  "enabled": false,
   "format": "png",
   "interval": 10,
   "channels": ["texture_rgb", "white", "varnish", "support"],
@@ -255,13 +256,20 @@ build/Debug/slicer_cli.exe --config <config.json>
 
 | 字段 | 功能 |
 |---|---|
-| `enabled` | 是否生成预览图。若为 `false`，UI 仍可查看 reports，但 preview 面板无图。 |
-| `format` | 预览格式，UI 支持 PNG / PPM。 |
-| `interval` | 每隔多少层输出一组预览。 |
-| `channels` | 需要输出的预览通道。 |
+| `outputPolicy` | `tiff_native` 只写生产 TIFF；`tiff_native_with_diagnostics` 额外写诊断图。新配置默认前者。 |
+| `enabled` | 旧兼容字段。新配置与 `outputPolicy` 一致写出；冲突时以 `outputPolicy` 为准。 |
+| `format` | 自动诊断图格式，支持 PNG / PPM。 |
+| `interval` | 开启自动诊断图后，每隔多少层输出一组。 |
+| `channels` | 需要输出的诊断图通道。 |
 | `onlyNonEmptyLayers` | 是否只输出非空层。 |
 
-UI 会扫描：
+生产预览直接读取：
+
+```text
+manifest.json -> layers[] -> layers/*.tiff
+```
+
+只有显式选择 `tiff_native_with_diagnostics` 时，诊断入口才会扫描：
 
 ```text
 <package>/preview/*.png
@@ -308,7 +316,8 @@ UI 读取逻辑：
 | `manifest.json` | 报告页 raw JSON，确认 schema、通道、极性、layer list。 |
 | `reports/*.json` | 报告页 raw JSON 和摘要视图。 |
 | `reports/material_process_report.json` | 右侧“材料工艺”面板摘要。 |
-| `preview/*.png / *.ppm` | 中央“预览”页图像显示。 |
+| `layers/*.tiff` | 中央“生产预览”的唯一权威像素源，支持完整 RGBWSV 材料模式和探针。 |
+| `preview/*.png / *.ppm` | 可选诊断图，只供“诊断预览”使用。 |
 
 ---
 
@@ -456,21 +465,24 @@ Qt5 Widgets not found; slicer_debug_ui target is skipped.
 
 说明 CLI 仍可构建，但 UI 不会生成。
 
-### 11.2 UI 中没有预览图
+### 11.2 UI 中没有生产预览
 
-检查配置：
+生产预览不依赖 `preview.enabled`。应检查：
+
+```text
+manifest.json 存在；
+manifest.layers 列表完整；
+layers/*.tiff 存在并符合 RGBWSV 协议；
+RIP strict 校验通过。
+```
+
+若只是没有 PNG/PPM 诊断图，这是默认行为。需要显式诊断图时配置：
 
 ```json
 "preview": {
+  "outputPolicy": "tiff_native_with_diagnostics",
   "enabled": true
 }
-```
-
-以及输出包中是否存在：
-
-```text
-preview/*.png
-preview/*.ppm
 ```
 
 ### 11.3 材料工艺面板为空

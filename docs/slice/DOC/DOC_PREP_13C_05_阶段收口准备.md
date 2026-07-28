@@ -1,6 +1,6 @@
 # DOC_PREP 13C-05 阶段收口准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：COMPLETE
 > 版本：v1.0
 > 日期：2026-07-28
 > 对应任务：13C-05
@@ -105,3 +105,7 @@ Qt 工作台整体布局重排；
 
 2026-07-28 Gate 更新：13C-04 已完成配置、Writer、Qt、无 PNG Smoke、RIP 和 IO 对比证据，
 本任务顺序前置已关闭，可进入阶段总收口。
+
+2026-07-28 执行结果：Debug 全量构建、82/82 CTest、Qt self-test、Quick CI、共享 writer
+stripped/tiled、无 preview 目录 UI Smoke、635/600 非等方 DPI、全材料合成、缓存/异步/
+fail-closed 和 RIP strict 均通过。`M13-4 PASS / 13D-01 READY`。

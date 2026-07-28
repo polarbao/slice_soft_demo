@@ -1,6 +1,6 @@
 # DOC PREP 13D 工作台布局收口准备
 
-> 文档状态：PREPARED / WAIT 13C-05
+> 文档状态：PREPARED / 13D-01 READY
 > 版本：v1.0
 > 日期：2026-07-28
 
@@ -55,5 +55,6 @@ MainWindow 当前工作树无跨任务未提交 UI 修改；
 
 ## 5. 准备结论
 
-13D 已具备总体准备，不缺 PRD/DEV/DEMO/TASKS。但因为 13C-03..05 尚会修改预览导航，当前只能保持
-`PREPARED / WAIT 13C-05`，不应抢先修改 MainWindow 布局。
+13D 已具备总体准备，不缺 PRD/DEV/DEMO/TASKS。13C-05 已于 2026-07-28 完成并冻结
+“生产预览/诊断预览”一级入口，因此 `13D-01 READY FOR DEVELOPMENT`。13D-02..04 继续按前一任务
+通过后逐项解锁，不得跨任务抢先修改 MainWindow 布局。

@@ -1,8 +1,8 @@
 # DOC_MATRIX_13 模型场景专项依赖与准入矩阵
 
-> 版本：v1.1
+> 版本：v1.2
 > 日期：2026-07-28
-> 状态：原 P0 15/17 COMPLETE / 13B-08 COMPLETE / NEXT 13C-04
+> 状态：原 P0 17/17 COMPLETE / 13B-08 COMPLETE / NEXT 13D-01
 
 ## 1. 阶段依赖
 
@@ -54,9 +54,10 @@
 | 13C-01 | COMPLETE（2026-07-28） | TIFF source、5 层/256 MiB LRU、Qt 异步 generation、稳定错误和定向测试已落地 |
 | 13C-02 | COMPLETE（2026-07-28） | 同层 RGBWSV 的单通道、组合、全材料、统计、六通道探针和稳定错误已落地 |
 | 13C-03 | COMPLETE（2026-07-28） | TIFF 原生统一生产预览、同层材料组合和 UI 接线已完成 |
-| 13C-04 | READY FOR DEVELOPMENT | Preview IO 输出策略、兼容迁移、UI 和验证合同已准备 |
-| 13C-05 | PREPARED / WAIT 13C-04 | 阶段回归、报告和 Gate 已准备 |
-| 13D-01..04 | PREPARED / WAIT 13C-05 | PRD/DEV/DEMO/TASKS 和总体 PREP 已完成，尚未实现 |
+| 13C-04 | COMPLETE（2026-07-28） | TIFF 原生默认、显式诊断、兼容迁移、UI 和 IO 证据已闭环 |
+| 13C-05 | COMPLETE（2026-07-28） | stripped/tiled、DPI、全材料、错误矩阵、RIP 和报告已收口 |
+| 13D-01 | READY FOR DEVELOPMENT | PRD/DEV/DEMO/TASKS 和总体 PREP 已完成，13C-05 Gate 已解除 |
+| 13D-02..04 | PREPARED / WAIT PREVIOUS | 按 13D 原子顺序执行 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在
 `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md`。该登记不代表建议代码文件已经存在。

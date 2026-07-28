@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v1.7
+> 文档版本：v1.8
 > 日期：2026-07-28
-> 当前状态：原 P0 16/17 COMPLETE / 13B-08 COMPLETE / NEXT 13C-05
+> 当前状态：原 P0 17/17 COMPLETE / M13-4 PASS / NEXT 13D-01
 
 ## 1. 本轮完成
 
@@ -165,10 +165,10 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13C-02：COMPLETE，无 Qt 材料合成、生产统计、六通道探针和稳定错误已落地；
 13C-03：COMPLETE，TIFF 原生统一生产预览和全部材料组合已落地；
 13C-04：COMPLETE，默认无重复诊断图、旧 enabled 迁移、Qt 开关和 IO 证据已闭环；
-13C-05：READY FOR DEVELOPMENT；
-13D：工作台布局 PRD/DEV/DEMO/TASKS 完整，PREPARED / WAIT 13C-05；
+13C-05：COMPLETE / M13-4 PASS；
+13D-01：READY FOR DEVELOPMENT；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：16/17 个近程原子任务完成，另有插入专项 13B-08 四项全部完成。
+Stage 13 已实现能力：17/17 个近程原子任务完成，另有插入专项 13B-08 四项全部完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -208,12 +208,13 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 ## 8. 下一任务
 
 ```text
-执行 13C-05 TIFF 原生统一预览阶段总收口
+执行 13D-01 顶部作业栏
 ```
 
 13B-08 已完成批量导入、显式 scene route、当前场景主动作、真实 OBJ/3MF 作业流矩阵和 RIP strict；
 13C-01..04 已完成 TIFF 原生层数据源、同层材料显示合成、统一生产预览和 Preview IO 收口。
-当前进入 13C-05，汇总 stripped/tiled、非等方 DPI、无 preview 目录、显式诊断图和错误用例证据。
+13C-05 已汇总 stripped/tiled、非等方 DPI、无 preview 目录、显式诊断图和错误用例证据。
+当前进入 13D-01，开始 Qt 工作台信息架构收口。
 设备输入未关闭前不得给出
 13B production GO。
 

@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：原始 17 任务中 15 COMPLETE；13B-08 COMPLETE；NEXT 13C-04
+> 状态：原始 17 任务全部 COMPLETE；13B-08 COMPLETE；NEXT 13D-01
 > 日期：2026-07-28
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -360,24 +360,26 @@ Debug/Release 真实作业流证据已落地。
 
 ### 13C-04 Preview IO 收口
 
-状态：READY FOR DEVELOPMENT
+状态：COMPLETE（2026-07-28）
 
-目标：常规生产不写重复通道 PNG，诊断 preview 按需，兼容旧配置，记录 before/after IO。
+完成：`tiff_native` 默认无 preview 目录、显式诊断图、旧 enabled 迁移、Qt 开关、逐层 TIFF
+hash 一致和 IO 耗时对比。
 
 ### 13C-05 阶段收口
 
-状态：PREPARED / WAIT 13C-04
+状态：COMPLETE（2026-07-28）
 
-目标：无 preview 目录 smoke、stripped/tiled、RGB+S+W+V、RIP/协议回归、REPORT_13C。
+完成：无 preview 目录共享 writer package、stripped/tiled、635/600、RGB+S+W+V、探针、
+异步/cache/fail-closed、RIP strict 和阶段报告已闭环。
 
 ## 10. 中长期任务
 
 ### 13D Qt 工作台信息架构与布局收口
 
-状态：`PREPARED / WAIT 13C-05`
+状态：`13D-01 READY / 13D-02..04 WAIT PREVIOUS`
 
 目标：建立顶部作业栏、单一 Context Inspector、可折叠项目区和统一 DiagnosticsDock，解决两个右侧
-常驻区域挤压画布及诊断入口重复。该阶段等待 13C 最终预览导航冻结后实施，避免重复重排。
+常驻区域挤压画布及诊断入口重复。13C 最终预览导航已经冻结，当前按 13D 原子顺序实施。
 
 任务：`13D-01..04`，详见 `TASKS_13D_Qt工作台布局收口任务清单.md`。
 
@@ -405,14 +407,13 @@ Debug/Release 真实作业流证据已落地。
 13A-01..05：5 个近程原子任务；
 13B-01..07：7 个近程原子任务；
 13C-01..05：5 个近程原子任务；
-原始合计：17 个近程原子任务，当前完成 15；
+原始合计：17 个近程原子任务，当前完成 17；
 本轮插入：13B-08 四个任务和 13D 四个任务，共 8 个；
-13B-08-01..04 已完成；13D 仍等待 13C-05 Gate；
+13B-08-01..04 已完成；13C-05 Gate 已解除，13D-01 可进入开发；
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前推荐入口为执行 `13C-04 Preview IO 收口`，默认关闭重复生产 preview PNG；
-`13C-03 Unified Production Preview` 和 `13B-08` 已完成；
+当前推荐入口为执行 `13D-01 顶部作业栏`；`13C-01..05` 和 `13B-08` 已完成；
 13C-01 已完成
 TIFF-native source、LRU、异步 generation 和稳定错误；13C-02 已完成确定性材料显示合成、
 统计和六通道探针；13B-08 已完成真实 Qt 作业流、OBJ/3MF 和 RIP strict 矩阵，

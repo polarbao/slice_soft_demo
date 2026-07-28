@@ -10,3 +10,4 @@
 | `ROADMAP_11A_R1_OpenVDB候选切片开发路线.md` | 11A-R1 OpenVDB Candidate 写包与 preview 开发路线 |
 | `ROADMAP_11B_OpenVDB替代Legacy生产引擎判定路线.md` | 11B OpenVDB 替代 legacy 生产引擎判定路线 |
 | `ROADMAP_12C_Qt工作台分阶段执行路线.md` | 12C Qt 工作台 R0/R1/R2 执行路线 |
+| `ROADMAP_13_模型场景排版联合切片与TIFF预览路线.md` | Stage 13 模型场景、联合切片、TIFF 原生预览与 Qt 工作台路线 |

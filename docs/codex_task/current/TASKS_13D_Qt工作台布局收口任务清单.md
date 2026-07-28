@@ -1,6 +1,6 @@
 # TASKS 13D Qt 工作台布局收口任务清单
 
-> 文档状态：PREPARED / WAIT 13C-05
+> 文档状态：PREPARED / 13D-01 READY
 > 版本：v1.0
 > 日期：2026-07-28
 
@@ -8,7 +8,7 @@
 
 ### 13D-01 顶部作业栏
 
-状态：`PREPARED / WAIT 13C-05`
+状态：`READY FOR DEVELOPMENT`
 
 复用 13B-08 主动作，建立导入、保存、模式/Profile、切片当前场景、取消和状态摘要的固定顶部作业栏。
 

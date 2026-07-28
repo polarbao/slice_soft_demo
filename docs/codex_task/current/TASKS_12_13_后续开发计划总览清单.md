@@ -1,11 +1,11 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v2.2
+> 版本：v2.3
 > 更新日期：2026-07-28
-> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..03 COMPLETE
-> 当前推荐任务：13C-04 READY FOR DEVELOPMENT
-> 下一 Gate：13C-04 Preview IO -> 13C-05 阶段收口 -> 13D 工作台布局
+> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..05 COMPLETE
+> 当前推荐任务：13D-01 READY FOR DEVELOPMENT
+> 下一 Gate：13D 工作台布局 -> 12E-09A-03..06 -> 12E-10
 
 ## 1. 文档职责
 
@@ -54,8 +54,8 @@
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
 | 13B 多模型排版与联合切片 | 13B-01..08、13B-04A FUNCTIONAL COMPLETE；production INPUT OPEN | 0 | 保持回归并等待设备输入 |
-| 13C TIFF 原生统一预览 | 13C-01..03 COMPLETE；13C-04 READY | 2 | 执行 13C-04 |
-| 13D Qt 工作台布局 | PRD/DEV/DEMO/TASKS PREPARED | 4 个拟插入任务 | WAIT 13C-05 |
+| 13C TIFF 原生统一预览 | 13C-01..05 COMPLETE / M13-4 PASS | 0 | 保持回归 |
+| 13D Qt 工作台布局 | PRD/DEV/DEMO/TASKS PREPARED | 4 个拟插入任务 | 执行 13D-01 |
 
 计数口径：
 
@@ -117,14 +117,14 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 18 | 12E-09A-04 异步分析 Worker | `WAIT` | 09A-03 | 解锁同层语义预览 |
 | 19 | 12E-09A-05 同层语义 Preview | `WAIT` | 09A-04、13C-03 | 解锁 09A 收口和 12E-10A |
 | 20 | 12E-09A-06 Diagnostic UI 收口 | `WAIT` | 09A-05 | 09A COMPLETE |
-| 21 | 13C-04 Preview IO 收口 | `READY / AUTHORIZED BY SEQUENCE` | 13C-03、13B-08 COMPLETE | 允许默认关闭重复生产 PNG |
-| 22 | 13C-05 13C 阶段收口 | `WAIT` | 13C-04 | M13-4 |
+| 21 | 13C-04 Preview IO 收口 | `COMPLETE` | 13C-03、13B-08 COMPLETE | 默认无重复诊断图 |
+| 22 | 13C-05 13C 阶段收口 | `COMPLETE / M13-4 PASS` | 13C-04 | 已解锁 13D-01 |
 
 ### Wave 3.5：Qt 工作台布局收口
 
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
-| 22A | 13D-01 顶部作业栏 | `PREPARED / WAIT` | 13B-08、13C-05 | 主动作层级冻结 |
+| 22A | 13D-01 顶部作业栏 | `READY FOR DEVELOPMENT` | 13B-08、13C-05 | 主动作层级冻结 |
 | 22B | 13D-02 单一 Context Inspector | `PREPARED / WAIT` | 13D-01 | 双右栏收口 |
 | 22C | 13D-03 项目区与诊断 Dock | `PREPARED / WAIT` | 13D-02 | 高级工具和诊断入口收口 |
 | 22D | 13D-04 响应式与阶段收口 | `PREPARED / WAIT` | 13D-03 | 解锁 12E-09A-03 |
@@ -180,13 +180,13 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
-当前唯一推荐入口为 `13C-04` Preview IO 收口。
+13C 已完成，当前唯一推荐入口为 `13D-01` 顶部作业栏。
 
 ### 尚未完成
 
 ```text
-Stage 13 原始范围已完成 13A-01..05、13B-01..07、13C-01..03；13B-08-01..04 已完成，
-13C-04/05 和 13D 尚未完成；13B 正式设备生产证据仍为 INPUT_OPEN；
+Stage 13 原始范围 13A-01..05、13B-01..07、13C-01..05 已完成；13B-08-01..04 已完成，
+13D 尚未完成；13B 正式设备生产证据仍为 INPUT_OPEN；
 设备 buildVolume、原点和机器轴方向仍未提供；
 22 实例生产性能预算仍未提供；
 13A-R2/R3 和 13B-R4 只到 Epic，不具备开发级详细设计；
@@ -230,10 +230,10 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：13C-04 PREVIEW IO CLOSURE；
+CURRENT：13C-05 COMPLETE / M13-4 PASS；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-02；
 M13-1：CANDIDATE PASS；
-NEXT：执行 preview.outputPolicy、默认无重复诊断图、兼容迁移和 IO 对比；
+NEXT：执行 13D-01 顶部作业栏；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；
 13B-07：Debug/Release 功能矩阵完成；production Gate 继续等待设备输入和 22 实例预算；
@@ -241,6 +241,7 @@ AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13C-02：代码、定向测试、Debug 构建、UI self-test 和 Quick CI 完成；
 13B-08-01..04：批量导入、显式场景生产服务、Qt 当前场景动作和真实作业流矩阵均已完成；
 13C-03：TIFF 原生统一生产预览已完成；
+13C-04/05：Preview IO 与阶段证据链已完成；
 13B-08：FUNCTIONAL COMPLETE / PRODUCTION INPUT OPEN；
-13D：PRD/DEV/DEMO/TASKS 已准备，代码等待 13C-05。
+13D：PRD/DEV/DEMO/TASKS 已准备，13D-01 顺序 Gate 已解除。
 ```
