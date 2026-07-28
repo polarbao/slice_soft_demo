@@ -50,12 +50,12 @@ docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任�
 ## 当前跨阶段推荐入口
 
 ```text
-13A-03 选择与精确变换
+13C-02 MaterialPreviewComposer
 ```
 
-`13A-01`、`13A-02`、`13B-01` 和 scene-aware `12E-09A-02` 已完成。下一步按独立
-`CODEX_PROMPT_13A_03_选择与精确变换执行指令.md` 执行 13A-03；不得夹带 13A-04 镜像和
-post-transform preflight，也不得直接跳到 13B 联合切片。
+`13A-01..05`、`13B-01..07`、`13C-01` 和 scene-aware `12E-09A-02` 已完成。下一步按独立
+`CODEX_PROMPT_13C_02_MaterialPreviewComposer执行指令.md` 执行 13C-02；不得夹带 13C-03
+Widget 接线、13C-04 Preview IO 收口或 12E-09A Diagnostic UI。
 
 ## 代码规范
 

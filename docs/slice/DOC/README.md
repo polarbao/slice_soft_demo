@@ -58,6 +58,7 @@
 | `DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` | 13B-04 fixture 幅面、投影碰撞、逐实例准入和 production Gate |
 | `DOC_PREP_13B_05_全局Raster与联合层合成准备.md` | 13B-05 scene raster/layer、Legacy/Global adapter 和联合合成 Gate |
 | `DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF source、LRU、异步 stale 和错误合同 |
+| `DOC_PREP_13C_02_MaterialPreviewComposer准备.md` | 13C-02 同层 RGBWSV 材料显示合成、统计和探针合同 |
 | `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | Stage 13 的 17 个近程原子任务依赖、建议文件所有权、测试和验收准备 |
 | `DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 设备/Profile/性能/3D 后端未决输入及阻断范围 |
 
