@@ -193,6 +193,8 @@ add_library(slicer_core
     src/slicer_core/pipeline/SceneLayerComposer.h
     src/slicer_core/pipeline/SceneRasterTypes.cpp
     src/slicer_core/pipeline/SceneRasterTypes.h
+    src/slicer_core/pipeline/TranslatedSceneRasterReuse.cpp
+    src/slicer_core/pipeline/TranslatedSceneRasterReuse.h
     src/slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.cpp
     src/slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.h
     src/slicer_core/pipeline/GlobalSurfaceShellProductionPackage.cpp
@@ -642,6 +644,12 @@ add_executable(multi_model_package_writer_unit_tests
 
 target_link_libraries(multi_model_package_writer_unit_tests PRIVATE slicer_core)
 
+add_executable(translated_scene_raster_reuse_unit_tests
+    tests/unit/translated_scene_raster_reuse/Main.cpp
+)
+
+target_link_libraries(translated_scene_raster_reuse_unit_tests PRIVATE slicer_core)
+
 add_executable(diagnostic_effective_config_unit_tests
     tests/unit/diagnostic_effective_config/Main.cpp
 )
@@ -945,6 +953,7 @@ set_tests_properties(scene_layer_adapters_unit_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_test(NAME multi_model_package_writer_unit_tests COMMAND multi_model_package_writer_unit_tests)
+add_test(NAME translated_scene_raster_reuse_unit_tests COMMAND translated_scene_raster_reuse_unit_tests)
 add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effective_config_unit_tests)
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
