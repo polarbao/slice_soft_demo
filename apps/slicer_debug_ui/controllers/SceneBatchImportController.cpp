@@ -386,7 +386,7 @@ void SceneBatchImportController::StartNext()
     loadRequest.appendtoscene = m_currentCountBefore > 0U;
     loadRequest.autolayoutoncompletion = false;
     loadRequest.admissionstatus =
-        slicer_core::SceneViewAdmissionStatus::Unknown;
+        slicer_core::SceneViewAdmissionStatus::Admitted;
 
     try
     {

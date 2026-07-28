@@ -1,10 +1,10 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v2.0
+> 版本：v2.1
 > 更新日期：2026-07-28
-> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..07、13B-04A、13C-01/02 COMPLETE
-> 当前推荐任务：13B-08-01 READY / AUTHORIZED
+> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..07、13B-04A、13B-08-01..03、13C-01..03 COMPLETE
+> 当前推荐任务：13B-08-04 READY / AUTHORIZED
 > 下一 Gate：13B-08 场景作业流 -> 13C-03..05 -> 13D 工作台布局
 
 ## 1. 文档职责
@@ -53,8 +53,8 @@
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
-| 13B 多模型排版与联合切片 | 13B-01..07、13B-04A FUNCTIONAL COMPLETE；13B-08 APPROVED / IN PROGRESS；production INPUT OPEN | 4 个插入任务 | 执行 13B-08-01 |
-| 13C TIFF 原生统一预览 | 13C-01/02 COMPLETE；13C-03 TASK-SPECIFIC PREP COMPLETE | 3 | READY / SEQUENCE WAIT 13B-08 |
+| 13B 多模型排版与联合切片 | 13B-01..07、13B-04A、13B-08-01..03 FUNCTIONAL COMPLETE；13B-08-04 READY；production INPUT OPEN | 1 个插入任务 | 执行 13B-08-04 |
+| 13C TIFF 原生统一预览 | 13C-01..03 COMPLETE | 2 | 13C-04/05 WAIT 13B-08 |
 | 13D Qt 工作台布局 | PRD/DEV/DEMO/TASKS PREPARED | 4 个拟插入任务 | WAIT 13C-05 |
 
 计数口径：
@@ -99,10 +99,10 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
-| 13A | 13B-08-01 批量导入队列 | `READY / AUTHORIZED` | 13B-07 功能链 | 解锁场景生产服务 |
-| 13B | 13B-08-02 场景生产服务与显式 CLI | `PREPARED / SEQUENCE WAIT 13B-08-01` | 13B-08-01 | 解锁 Qt 主动作 |
-| 13C | 13B-08-03 Qt 切片当前场景 | `PREPARED / SEQUENCE WAIT 13B-08-02` | 13B-08-02 | 当前场景可产生一个 Package |
-| 13D | 13B-08-04 真实模型矩阵与收口 | `PREPARED / SEQUENCE WAIT 13B-08-03` | 13B-08-03 | 13C-03 恢复推荐入口 |
+| 13A | 13B-08-01 批量导入队列 | `COMPLETE` | 13B-07 功能链 | 已解锁场景生产服务 |
+| 13B | 13B-08-02 场景生产服务与显式 CLI | `COMPLETE` | 13B-08-01 | 已解锁 Qt 主动作 |
+| 13C | 13B-08-03 Qt 切片当前场景 | `COMPLETE` | 13B-08-02 | 当前场景已可产生一个 Package 并回载 TIFF |
+| 13D | 13B-08-04 真实模型矩阵与收口 | `READY / AUTHORIZED` | 13B-08-03 | 13C-03 恢复推荐入口 |
 
 `13B-08` 不改变设备 production Gate；正式设备输入未关闭时只形成 functional PASS。
 
@@ -179,14 +179,14 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 ```
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
-当前因多模型 Qt 作业流存在功能断点，用户已批准执行 `13B-08-01`；`13C-03` 仍具备开发准备，
-但按顺序等待 13B-08 收口。
+当前批量导入、显式场景 CLI 和 Qt 当前场景主动作已完成，用户已授权继续执行
+`13B-08-04` 真实模型作业流矩阵；`13C-03` 已实现，13C-04/05 继续等待 13B-08 收口。
 
 ### 尚未完成
 
 ```text
-Stage 13 原始范围已完成 13A-01..05、13B-01..07、13C-01/02 共十四个任务；13B-08 已批准并开始，
-13D 按 Gate 等待；13B 正式设备生产证据和 13C-03..05 尚未完成；
+Stage 13 原始范围已完成 13A-01..05、13B-01..07、13C-01..03；13B-08-01..03 已完成，
+13B-08-04 READY，13D 按 Gate 等待；13B 正式设备生产证据和 13C-04/05 尚未完成；
 设备 buildVolume、原点和机器轴方向仍未提供；
 22 实例生产性能预算仍未提供；
 13A-R2/R3 和 13B-R4 只到 Epic，不具备开发级详细设计；
@@ -230,15 +230,16 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：13B-08-01 SCENE BATCH IMPORT；
+CURRENT：13B-08-04 REAL-MODEL SCENE WORKFLOW CLOSURE；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-02；
 M13-1：CANDIDATE PASS；
-NEXT：实现并验证 13B-08-01 批量导入队列；
+NEXT：执行 13B-08-04 的 1/3/11/12/22、真实资产、负向、Release 和 RIP strict 矩阵；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；
 13B-07：Debug/Release 功能矩阵完成；production Gate 继续等待设备输入和 22 实例预算；
 13C-01：代码、定向测试、Debug 构建、UI self-test 和 Quick CI 完成；
 13C-02：代码、定向测试、Debug 构建、UI self-test 和 Quick CI 完成；
-13C-03：代码前置和任务级 PREP/PROMPT 已满足，顺序等待 13B-08；
+13B-08-01/02/03：批量导入、显式场景生产服务和 Qt 当前场景动作均已完成；
+13C-03：TIFF 原生统一生产预览已完成；
 13D：PRD/DEV/DEMO/TASKS 已准备，代码等待 13C-05。
 ```

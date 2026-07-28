@@ -229,6 +229,19 @@ ProductionPackageResult ProductionPackageResultValidator::Validate(
         previewReportPath,
         QStringLiteral("preview report"),
         &result.errors);
+    QJsonObject sceneReport;
+    if (!request.expectedsceneid.isEmpty())
+    {
+        const QString sceneReportPath =
+            QDir(request.package.package_dir)
+                .filePath(
+                    QStringLiteral(
+                        "reports/multimodel_scene_report.json"));
+        sceneReport = ReadObject(
+            sceneReportPath,
+            QStringLiteral("multi-model scene report"),
+            &result.errors);
+    }
     if (!result.errors.isEmpty())
     {
         result.presentation.admissionstate = ProductionAdmissionState::Blocked;
@@ -328,6 +341,46 @@ ProductionPackageResult ProductionPackageResultValidator::Validate(
     {
         result.errors.push_back(
             QStringLiteral("manifest source.configPath 与本次生效配置不同源。"));
+    }
+
+    if (!request.expectedsceneid.isEmpty())
+    {
+        const QJsonObject manifestScene =
+            manifest.value(QStringLiteral("scene")).toObject();
+        const QString manifestSceneId =
+            manifestScene.value(QStringLiteral("sceneId")).toString();
+        const std::uint64_t manifestSceneRevision =
+            static_cast<std::uint64_t>(
+                manifestScene
+                    .value(QStringLiteral("sceneRevision"))
+                    .toDouble());
+        const QString manifestSceneHash =
+            manifestScene.value(QStringLiteral("sceneHash")).toString();
+        const std::uint64_t reportSceneRevision =
+            static_cast<std::uint64_t>(
+                sceneReport
+                    .value(QStringLiteral("sceneRevision"))
+                    .toDouble());
+        if (manifestSceneId != request.expectedsceneid
+            || sceneReport.value(QStringLiteral("sceneId")).toString()
+                != request.expectedsceneid
+            || (request.expectedscenerevision.has_value()
+                && (manifestSceneRevision
+                        != *request.expectedscenerevision
+                    || reportSceneRevision
+                        != *request.expectedscenerevision))
+            || (!request.expectedscenehash.isEmpty()
+                && (manifestSceneHash
+                        != request.expectedscenehash
+                    || sceneReport
+                            .value(QStringLiteral("sceneHash"))
+                            .toString()
+                        != request.expectedscenehash)))
+        {
+            result.errors.push_back(
+                QStringLiteral(
+                    "manifest、scene report 与冻结场景身份不一致。"));
+        }
     }
 
     if (!result.errors.isEmpty())

@@ -1,9 +1,9 @@
 # TASKS 13B-08 场景作业流收口任务清单
 
 > 文档状态：APPROVED / IN PROGRESS
-> 版本：v1.3
+> 版本：v1.4
 > 日期：2026-07-28
-> 当前入口：13B-08-03 READY
+> 当前入口：13B-08-04 READY
 
 ## 1. 目标
 
@@ -51,7 +51,7 @@ effective config 回读、identity/revision/buildVolume/mode Gate；
 
 ### 13B-08-03 Qt 当前场景主切片动作
 
-状态：`READY / PREP COMPLETE`
+状态：`COMPLETE / GATE PASS（2026-07-28）`
 
 范围：
 
@@ -66,7 +66,7 @@ stale/cancel/no-fallback UI Smoke。
 
 ### 13B-08-04 真实模型矩阵与阶段收口
 
-状态：`PREPARED / SEQUENCE WAIT 13B-08-03`
+状态：`READY / PREP COMPLETE`
 
 范围：
 

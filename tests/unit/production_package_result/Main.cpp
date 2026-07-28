@@ -93,6 +93,11 @@ bool CreatePackage(
     manifest.insert(
         QStringLiteral("preview"),
         QJsonObject{{QStringLiteral("files"), previewFiles}});
+    const QJsonObject sceneIdentity{
+        {QStringLiteral("sceneId"), QStringLiteral("scene-result-fixture")},
+        {QStringLiteral("sceneRevision"), 9},
+        {QStringLiteral("sceneHash"), QStringLiteral("scene-result-hash")}};
+    manifest.insert(QStringLiteral("scene"), sceneIdentity);
 
     QFile preview(
         QDir(fixture->packagedir)
@@ -111,6 +116,12 @@ bool CreatePackage(
             QJsonObject{
                 {QStringLiteral("schema"), QStringLiteral("p0.preview_report.1")},
                 {QStringLiteral("files"), previewFiles}})
+        && WriteJson(
+            QDir(fixture->packagedir)
+                .filePath(
+                    QStringLiteral(
+                        "reports/multimodel_scene_report.json")),
+            sceneIdentity)
         && preview.open(QIODevice::WriteOnly)
         && preview.write("fixture") > 0;
 }
@@ -255,6 +266,46 @@ bool TestCompletionPreservesExactRequest()
             "completion package identity");
 }
 
+bool TestFrozenSceneIdentity()
+{
+    packagefixture fixture;
+    if (!CreatePackage(
+            &fixture,
+            QStringLiteral("legacy"),
+            QStringLiteral("legacy"),
+            false))
+    {
+        return ExpectTrue(false, "scene identity fixture created");
+    }
+
+    ProductionPackageResultRequest request;
+    request.runrequest.mode =
+        slicer_core::SlicePipelineMode::Legacy;
+    request.runrequest.sessionid =
+        QStringLiteral("scene-session");
+    request.runrequest.configpath = fixture.configpath;
+    request.runrequest.packagedir = fixture.packagedir;
+    request.package = PackageLoader().load(fixture.packagedir);
+    request.expectedsceneid =
+        QStringLiteral("scene-result-fixture");
+    request.expectedscenerevision = 9U;
+    request.expectedscenehash =
+        QStringLiteral("scene-result-hash");
+    const ProductionPackageResult accepted =
+        ProductionPackageResultValidator().Validate(request);
+
+    request.expectedscenehash =
+        QStringLiteral("stale-scene-hash");
+    const ProductionPackageResult stale =
+        ProductionPackageResultValidator().Validate(request);
+    return ExpectTrue(
+               accepted.valid,
+               "matching frozen scene identity accepted")
+        && ExpectTrue(
+            !stale.valid,
+            "stale scene identity blocked");
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -264,7 +315,8 @@ int main(int argc, char** argv)
     const bool passed = TestValidCurrentSessionPackage()
         && TestModeMismatchAndFallbackBlocked()
         && TestPreviewAndReportMustSharePackage()
-        && TestCompletionPreservesExactRequest();
+        && TestCompletionPreservesExactRequest()
+        && TestFrozenSceneIdentity();
     if (!passed)
     {
         return 1;

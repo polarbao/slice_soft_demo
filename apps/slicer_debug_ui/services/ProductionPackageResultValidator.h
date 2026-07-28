@@ -17,6 +17,9 @@ struct ProductionPackageResultRequest
     PackageSummary package;
     std::optional<double> measuredtotalms;
     std::optional<std::uint64_t> measuredpeakworkingsetbytes;
+    QString expectedsceneid;
+    std::optional<std::uint64_t> expectedscenerevision;
+    QString expectedscenehash;
 };
 
 /**

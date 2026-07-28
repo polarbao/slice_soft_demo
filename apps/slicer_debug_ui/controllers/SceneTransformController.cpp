@@ -248,6 +248,7 @@ SceneTransformController::SaveSceneEffectiveConfig(
     result.scene.sceneid = m_document->SceneId().toStdString();
     result.scene.scenerevision = m_document->SceneRevision();
     result.scene.resolvedprofileid = request.sourceprofileid;
+    result.scene.buildvolume = request.buildvolume;
     result.scene.layout = m_document->Layout();
     std::map<std::string, QString> sourceCacheKeys;
     for (const SceneDocumentItem& item : m_document->Items())
@@ -395,11 +396,15 @@ SceneTransformController::SaveSceneEffectiveConfig(
     coreRequest.sourcescenepath = result.scenepath;
     coreRequest.generatedconfigpath = result.effectiveconfigpath;
     coreRequest.sourceprofileid = request.sourceprofileid;
+    coreRequest.sourceprofileconfigpath =
+        request.sourceprofileconfigpath;
+    coreRequest.outputpackagedir = request.outputpackagedir;
     coreRequest.generatedatutc = request.generatedatutc;
     coreRequest.dpix = request.dpix;
     coreRequest.dpiy = request.dpiy;
     coreRequest.layerheightmm = request.layerheightmm;
     coreRequest.slicepipelinemode = request.slicepipelinemode;
+    coreRequest.production = request.production;
 
     const slicer_core::SceneEffectiveConfigResult written =
         slicer_core::WriteSceneEffectiveConfig(coreRequest);

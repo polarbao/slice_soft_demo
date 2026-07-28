@@ -33,6 +33,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <cmath>
 
 namespace {
 
@@ -125,7 +126,8 @@ QString MaterialCapabilityLabel(const QString& value)
 bool IsSlicingAction(const QString& action)
 {
     return action == QStringLiteral("运行切片")
-        || action == QStringLiteral("OpenVDB 候选切片");
+        || action == QStringLiteral("OpenVDB 候选切片")
+        || action == QStringLiteral("切片当前场景");
 }
 
 QString ProductionModeSessionTag(
@@ -360,6 +362,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
           &m_sceneSelectionModel,
           &m_sceneModelRepository,
           this),
+      m_sceneSliceActionController(this),
       m_transformedPreflightLoader(
           &m_sceneDocument,
           &m_sceneModelRepository,
@@ -642,6 +645,73 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
                     + QStringLiteral("：")
                     + summary.layouterror);
             }
+        });
+    m_sceneSliceActionController.Configure(
+        [this]()
+        {
+            return BuildSceneSliceState();
+        },
+        [this](const SceneSliceActionRequest& request)
+        {
+            return WriteCurrentSceneSnapshot(request);
+        },
+        [this](const SceneSliceActionSnapshot& snapshot)
+        {
+            if (paths_.slicer_cli.trimmed().isEmpty()
+                || runner_.isRunning())
+            {
+                return false;
+            }
+            runCommand(
+                QStringLiteral("切片当前场景"),
+                paths_.slicer_cli,
+                QStringList{
+                    QStringLiteral("--scene-config"),
+                    snapshot.effectiveconfigpath});
+            return runner_.isRunning();
+        },
+        [this]()
+        {
+            runner_.stop();
+        },
+        [this](
+            const SceneSliceActionSnapshot& snapshot,
+            const qint64 elapsedMs)
+        {
+            return ValidateCurrentScenePackage(
+                snapshot,
+                elapsedMs);
+        });
+    connect(
+        &m_sceneSliceActionController,
+        &SceneSliceActionController::SigStateChanged,
+        this,
+        [this](
+            const SceneSliceActionState,
+            const QString& message)
+        {
+            status_label_->setText(message);
+            UpdateActionAvailability();
+        });
+    connect(
+        &m_sceneSliceActionController,
+        &SceneSliceActionController::SigFailed,
+        this,
+        [this](const QString& code, const QString& message)
+        {
+            log_panel_->appendError(
+                code + QStringLiteral("：") + message);
+        });
+    connect(
+        &m_sceneSliceActionController,
+        &SceneSliceActionController::SigPackageReady,
+        this,
+        [this](const QString& packageDir)
+        {
+            package_edit_->setText(packageDir);
+            loadPackage(packageDir);
+            m_mainWorkspaceTabs->setCurrentWidget(
+                m_previewWorkspace);
         });
     connect(
         &m_modelTopViewLoader,
@@ -1252,6 +1322,14 @@ void MainWindow::OnSaveSceneTransform()
             saved.effectiveconfigpath.wstring()));
 }
 
+void MainWindow::OnSliceCurrentScene()
+{
+    SceneSliceActionRequest request;
+    request.mode =
+        config_editor_panel_->SelectedProductionMode();
+    m_sceneSliceActionController.Start(request);
+}
+
 void MainWindow::handleProcessStarted(const QString& command) {
     setBusy(true);
     status_label_->setText("正在执行：" + current_action_);
@@ -1267,6 +1345,20 @@ void MainWindow::handleProcessStarted(const QString& command) {
 void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed_ms) {
     log_panel_->appendResult(exit_code, elapsed_ms);
     setBusy(false);
+    if (current_action_ == QStringLiteral("切片当前场景"))
+    {
+        m_sceneSliceActionController.OnProcessFinished(
+            exit_code,
+            elapsed_ms);
+        if (m_sliceTimingPanel != nullptr)
+        {
+            m_sliceTimingPanel->Finish(
+                m_sceneSliceActionController.State()
+                    == SceneSliceActionState::Completed,
+                elapsed_ms);
+        }
+        return;
+    }
     ProductionSliceRunCompletion productionCompletion;
     if (current_action_ == QStringLiteral("运行切片"))
     {
@@ -1355,6 +1447,15 @@ void MainWindow::handleProcessFinished(const int exit_code, const qint64 elapsed
 void MainWindow::handleProcessFailed(const QString& message) {
     log_panel_->appendError(message);
     setBusy(false);
+    if (current_action_ == QStringLiteral("切片当前场景"))
+    {
+        m_sceneSliceActionController.OnProcessFailed(message);
+        if (m_sliceTimingPanel != nullptr)
+        {
+            m_sliceTimingPanel->Finish(false, 0);
+        }
+        return;
+    }
     status_label_->setText("进程错误：" + message);
     m_productionRunSession.Invalidate();
     if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
@@ -1459,16 +1560,9 @@ QWidget* MainWindow::createRunPanel()
             "取消当前和尚未开始的导入项；"
             "已成功导入的模型保留"));
     m_cancelModelImportButton->setEnabled(false);
+    m_sceneActionBar = new SceneActionBar(panel);
     m_sliceCurrentSceneButton =
-        makeButton("切片当前场景", panel);
-    m_sliceCurrentSceneButton->setObjectName(
-        QStringLiteral("sliceCurrentSceneButton"));
-    m_sliceCurrentSceneButton->setMinimumHeight(36);
-    m_sliceCurrentSceneButton->setEnabled(false);
-    m_sliceCurrentSceneButton->setToolTip(
-        QStringLiteral(
-            "13B-08-02/03 将接通场景生产服务；"
-            "当前禁止使用旧单模型配置绕过 SceneDocument"));
+        m_sceneActionBar->SliceButton();
     m_importSliceButton = makeButton("导入模型并切片", panel);
     m_importOpenVdbButton = makeButton("导入模型并 OpenVDB 诊断", panel);
     m_importOpenVdbCandidateButton = makeButton("导入模型并 OpenVDB 候选切片", panel);
@@ -1511,7 +1605,7 @@ QWidget* MainWindow::createRunPanel()
     layout->addWidget(build_button_);
     layout->addWidget(m_importModelPreviewButton);
     layout->addWidget(m_cancelModelImportButton);
-    layout->addWidget(m_sliceCurrentSceneButton);
+    layout->addWidget(m_sceneActionBar);
     layout->addWidget(m_importSliceButton);
     layout->addWidget(m_importOpenVdbButton);
     layout->addWidget(m_importOpenVdbCandidateButton);
@@ -1536,6 +1630,16 @@ QWidget* MainWindow::createRunPanel()
         &QPushButton::clicked,
         &m_sceneBatchImportController,
         &SceneBatchImportController::Cancel);
+    connect(
+        m_sceneActionBar,
+        &SceneActionBar::SigSliceRequested,
+        this,
+        &MainWindow::OnSliceCurrentScene);
+    connect(
+        m_sceneActionBar,
+        &SceneActionBar::SigCancelRequested,
+        &m_sceneSliceActionController,
+        &SceneSliceActionController::Cancel);
     connect(m_importSliceButton, &QPushButton::clicked, this, &MainWindow::OnImportModelAndSlice);
     connect(m_importOpenVdbButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbDiagnostic);
     connect(m_importOpenVdbCandidateButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbCandidate);
@@ -2012,6 +2116,265 @@ void MainWindow::UpdateModelPreflightUi()
     }
 }
 
+SceneSliceActionSceneState MainWindow::BuildSceneSliceState() const
+{
+    SceneSliceActionSceneState state;
+    state.sceneid = m_sceneDocument.SceneId();
+    state.scenerevision = m_sceneDocument.SceneRevision();
+    state.importinprogress =
+        m_sceneBatchImportController.IsRunning()
+        || m_sceneDocument.State() == SceneDocumentState::Loading;
+    state.allvisibleinstancesadmitted = true;
+    for (const SceneDocumentItem& item : m_sceneDocument.Items())
+    {
+        if (!item.instance.visible)
+        {
+            continue;
+        }
+        ++state.visibleinstancecount;
+        if (!item.geometry.has_value()
+            || item.geometry->admissionstatus
+                != slicer_core::SceneViewAdmissionStatus::Admitted)
+        {
+            state.allvisibleinstancesadmitted = false;
+        }
+    }
+    if (state.visibleinstancecount == 0U)
+    {
+        state.allvisibleinstancesadmitted = false;
+    }
+    return state;
+}
+
+slicer_core::SceneBuildVolume
+MainWindow::BuildFunctionalSceneVolume() const
+{
+    double maximumAbsX{0.0};
+    double maximumAbsY{0.0};
+    for (const SceneDocumentItem& item : m_sceneDocument.Items())
+    {
+        if (!item.instance.visible)
+        {
+            continue;
+        }
+        const slicer_core::BoundingBox& bounds =
+            item.instance.effectivebboxmm;
+        maximumAbsX = std::max(
+            maximumAbsX,
+            std::max(
+                std::abs(bounds.min.x),
+                std::abs(bounds.max.x)));
+        maximumAbsY = std::max(
+            maximumAbsY,
+            std::max(
+                std::abs(bounds.min.y),
+                std::abs(bounds.max.y)));
+    }
+
+    constexpr double kFixtureMarginMm{1.0};
+    slicer_core::SceneBuildVolume volume;
+    volume.source = slicer_core::BuildVolumeSource::Fixture;
+    volume.widthmm = std::max(
+        1.0,
+        2.0 * (maximumAbsX + kFixtureMarginMm));
+    volume.heightmm = std::max(
+        1.0,
+        2.0 * (maximumAbsY + kFixtureMarginMm));
+    volume.origin = slicer_core::BuildVolumeOrigin::Center;
+    volume.xdirection =
+        slicer_core::BuildVolumeAxisDirection::Positive;
+    volume.ydirection =
+        slicer_core::BuildVolumeAxisDirection::Positive;
+    volume.isfixture = true;
+    return volume;
+}
+
+SceneSliceSnapshotResult MainWindow::WriteCurrentSceneSnapshot(
+    const SceneSliceActionRequest& request)
+{
+    SceneSliceSnapshotResult result;
+    if (!m_sceneDocument.Instance().has_value())
+    {
+        result.errorcode =
+            QStringLiteral("SCENE_SLICE_SCENE_UNAVAILABLE");
+        result.message =
+            QStringLiteral("当前场景没有可保存的模型实例。");
+        return result;
+    }
+    if (request.mode
+        != slicer_core::SlicePipelineMode::Legacy)
+    {
+        result.errorcode =
+            QStringLiteral(
+                "SCENE_SLICE_PIPELINE_MODE_NOT_ADMITTED");
+        result.message =
+            QStringLiteral(
+                "Global 多模型生产尚未准入，且禁止回退到 Legacy。");
+        return result;
+    }
+
+    const EffectiveConfigResult profile =
+        GenerateEffectiveConfig(
+            m_sceneDocument.ModelPath(),
+            {},
+            SliceEngineRole::LegacyProduction,
+            QStringLiteral("scene_legacy"));
+    if (!profile.IsValid())
+    {
+        result.errorcode =
+            QStringLiteral("SCENE_SLICE_SNAPSHOT_FAILED");
+        result.message =
+            profile.errors.isEmpty()
+            ? QStringLiteral("场景 Profile 生效配置生成失败。")
+            : profile.errors.join(QStringLiteral("\n"));
+        return result;
+    }
+
+    const QJsonObject profileRoot = profile.document.object();
+    const QString profileId =
+        profileRoot
+            .value(QStringLiteral("materialProcessProfile"))
+            .toObject()
+            .value(QStringLiteral("name"))
+            .toString();
+    const QString packageDir = absoluteFromRepo(
+        profileRoot
+            .value(QStringLiteral("output"))
+            .toObject()
+            .value(QStringLiteral("packageDir"))
+            .toString());
+    if (profileId.trimmed().isEmpty()
+        || packageDir.trimmed().isEmpty())
+    {
+        result.errorcode =
+            QStringLiteral("SCENE_SLICE_SNAPSHOT_FAILED");
+        result.message =
+            QStringLiteral(
+                "场景 Profile 缺少材料工艺身份或输出 Package。");
+        return result;
+    }
+
+    const QFileInfo profileInfo(profile.generatedconfigpath);
+    SceneTransformSaveRequest saveRequest;
+    saveRequest.sessiondirectory =
+        std::filesystem::path(
+            profileInfo.absolutePath().toStdWString());
+    saveRequest.sourceprofileconfigpath =
+        std::filesystem::path(
+            profileInfo.absoluteFilePath().toStdWString());
+    saveRequest.outputpackagedir =
+        std::filesystem::path(packageDir.toStdWString());
+    saveRequest.sourceprofileid = profileId.toStdString();
+    saveRequest.generatedatutc =
+        QDateTime::currentDateTimeUtc()
+            .toString(Qt::ISODateWithMs)
+            .toStdString();
+    saveRequest.buildvolume =
+        BuildFunctionalSceneVolume();
+    saveRequest.dpix =
+        profileRoot.value(QStringLiteral("output"))
+            .toObject()
+            .value(QStringLiteral("dpiX"))
+            .toInt(slicer_core::kDefaultOutputDpiX);
+    saveRequest.dpiy =
+        profileRoot.value(QStringLiteral("output"))
+            .toObject()
+            .value(QStringLiteral("dpiY"))
+            .toInt(slicer_core::kDefaultOutputDpiY);
+    saveRequest.layerheightmm =
+        profileRoot.value(QStringLiteral("output"))
+            .toObject()
+            .value(QStringLiteral("layerThicknessMm"))
+            .toDouble(0.01);
+    saveRequest.slicepipelinemode =
+        slicer_core::SlicePipelineModeName(request.mode);
+    saveRequest.expectedscenerevision =
+        m_sceneDocument.SceneRevision();
+    saveRequest.expectedtransformrevision =
+        m_sceneDocument.Instance()->transformrevision;
+    saveRequest.production = false;
+
+    const SceneTransformSaveResult saved =
+        m_sceneTransformController.SaveSceneEffectiveConfig(
+            saveRequest);
+    if (!saved.IsValid())
+    {
+        result.errorcode =
+            QString::fromLatin1(
+                SceneTransformErrorCodeName(
+                    saved.error->code)
+                    .data());
+        result.message = saved.error->message;
+        return result;
+    }
+
+    SceneSliceActionSnapshot snapshot;
+    snapshot.sceneid =
+        QString::fromStdString(saved.scene.sceneid);
+    snapshot.scenerevision = saved.scene.scenerevision;
+    snapshot.scenehash =
+        QString::fromStdString(
+            slicer_core::ComputeMultiModelSceneHash(
+                saved.scene));
+    snapshot.effectiveconfighash =
+        QString::fromStdString(saved.confighash);
+    snapshot.effectiveconfigpath =
+        QString::fromStdWString(
+            saved.effectiveconfigpath.wstring());
+    snapshot.profileid = profileId;
+    snapshot.sessionid =
+        QFileInfo(snapshot.effectiveconfigpath)
+            .absoluteDir()
+            .dirName();
+    snapshot.packagedir = packageDir;
+    snapshot.mode = request.mode;
+    result.snapshot = std::move(snapshot);
+    return result;
+}
+
+SceneSlicePackageValidationResult
+MainWindow::ValidateCurrentScenePackage(
+    const SceneSliceActionSnapshot& snapshot,
+    const qint64 elapsedMs)
+{
+    SceneSlicePackageValidationResult result;
+    const PackageSummary package =
+        package_loader_.load(snapshot.packagedir);
+    ProductionPackageResultRequest request;
+    request.runrequest.mode = snapshot.mode;
+    request.runrequest.profileid = snapshot.profileid;
+    request.runrequest.sessionid = snapshot.sessionid;
+    request.runrequest.configpath =
+        snapshot.effectiveconfigpath;
+    request.runrequest.packagedir = snapshot.packagedir;
+    request.package = package;
+    request.measuredtotalms =
+        m_lastSliceTimingEvent.has_value()
+            && m_lastSliceTimingEvent->totalms > 0.0
+        ? std::optional<double>{
+              m_lastSliceTimingEvent->totalms}
+        : std::optional<double>{
+              static_cast<double>(elapsedMs)};
+    if (m_lastSliceTimingEvent.has_value()
+        && m_lastSliceTimingEvent->memoryavailable)
+    {
+        request.measuredpeakworkingsetbytes =
+            m_lastSliceTimingEvent->peakworkingsetbytes;
+    }
+    request.expectedsceneid = snapshot.sceneid;
+    request.expectedscenerevision =
+        snapshot.scenerevision;
+    request.expectedscenehash = snapshot.scenehash;
+    const ProductionPackageResult validation =
+        m_productionPackageResultValidator.Validate(request);
+    config_editor_panel_->ShowProductionResult(
+        validation.presentation);
+    result.valid = validation.valid;
+    result.packagedir = snapshot.packagedir;
+    result.errors = validation.errors;
+    return result;
+}
+
 void MainWindow::UpdateActionAvailability()
 {
     const bool preflightRunning = m_modelPreflightController.IsRunning();
@@ -2024,15 +2387,39 @@ void MainWindow::UpdateActionAvailability()
     build_button_->setEnabled(enabled);
     m_importModelPreviewButton->setEnabled(enabled);
     m_cancelModelImportButton->setEnabled(batchImportRunning);
-    m_sliceCurrentSceneButton->setEnabled(false);
-    m_sliceCurrentSceneButton->setToolTip(
+    const SceneSliceActionSceneState sceneSliceState =
+        BuildSceneSliceState();
+    const bool sceneModeAdmitted =
+        config_editor_panel_->SelectedProductionMode()
+        == slicer_core::SlicePipelineMode::Legacy;
+    const bool canSliceScene =
+        enabled
+        && sceneSliceState.visibleinstancecount > 0U
+        && sceneSliceState.allvisibleinstancesadmitted
+        && sceneModeAdmitted;
+    const QString sceneSliceReason =
         batchImportRunning
-            ? QStringLiteral("批量导入完成后才能切片当前场景。")
-            : m_sceneDocument.InstanceCount() == 0U
-            ? QStringLiteral("请先导入模型。")
-            : QStringLiteral(
-                  "场景生产服务将在 13B-08-02/03 接通；"
-                  "当前禁止旧单模型配置绕行。"));
+        ? QStringLiteral("批量导入完成后才能切片当前场景。")
+        : sceneSliceState.visibleinstancecount == 0U
+        ? QStringLiteral("请先导入至少一个可见模型。")
+        : !sceneSliceState.allvisibleinstancesadmitted
+        ? QStringLiteral(
+              "当前场景存在未通过预检的可见模型。")
+        : !sceneModeAdmitted
+        ? QStringLiteral(
+              "Global 多模型生产尚未准入，禁止回退到 Legacy。")
+        : QStringLiteral(
+              "冻结当前 SceneDocument，并通过显式 "
+              "--scene-config 生成一个 RGBWSV Package。");
+    m_sceneActionBar->SetPresentation(
+        canSliceScene,
+        m_sceneSliceActionController.IsRunning(),
+        m_sceneSliceActionController.IsRunning()
+            ? m_sceneSliceActionController.Message()
+            : QStringLiteral("场景 %1 / 可见 %2")
+                  .arg(m_sceneDocument.SceneRevision())
+                  .arg(sceneSliceState.visibleinstancecount),
+        sceneSliceReason);
     m_importSliceButton->setEnabled(enabled);
     m_importOpenVdbButton->setEnabled(enabled);
     m_importOpenVdbCandidateButton->setEnabled(enabled);

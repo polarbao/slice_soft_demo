@@ -63,6 +63,8 @@ add_executable(slicer_debug_ui
     services/SceneModelRepository.h
     controllers/SceneTransformController.cpp
     controllers/SceneTransformController.h
+    controllers/SceneSliceActionController.cpp
+    controllers/SceneSliceActionController.h
     services/PreviewReportIndex.cpp
     services/PreviewReportIndex.h
     services/PreviewPhysicalScale.cpp
@@ -87,6 +89,8 @@ add_executable(slicer_debug_ui
     widgets/ModelListPanel.h
     widgets/SceneLayoutPanel.cpp
     widgets/SceneLayoutPanel.h
+    widgets/SceneActionBar.cpp
+    widgets/SceneActionBar.h
     widgets/ModelTransformPanel.cpp
     widgets/ModelTransformPanel.h
     widgets/ModelTopViewWidget.cpp
@@ -429,4 +433,55 @@ endif()
 add_test(
     NAME scene_batch_import_controller_unit_tests
     COMMAND scene_batch_import_controller_unit_tests
+)
+
+add_executable(scene_slice_action_controller_unit_tests
+    controllers/SceneSliceActionController.cpp
+    controllers/SceneSliceActionController.h
+    ../../tests/unit/scene_slice_action_controller/Main.cpp
+)
+
+set_target_properties(
+    scene_slice_action_controller_unit_tests
+    PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(
+    scene_slice_action_controller_unit_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/controllers
+)
+
+target_link_libraries(
+    scene_slice_action_controller_unit_tests
+    PRIVATE
+    Qt5::Core
+    slicer_core
+)
+
+if(MSVC)
+    target_compile_options(
+        scene_slice_action_controller_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(
+            scene_slice_action_controller_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(
+            scene_slice_action_controller_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME scene_slice_action_controller_unit_tests
+    COMMAND scene_slice_action_controller_unit_tests
 )

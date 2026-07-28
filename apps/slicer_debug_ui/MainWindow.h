@@ -1,6 +1,7 @@
 #pragma once
 
 #include "controllers/SceneBatchImportController.h"
+#include "controllers/SceneSliceActionController.h"
 #include "services/ConfigDocument.h"
 #include "services/EffectiveConfigGenerator.h"
 #include "services/PackageLoader.h"
@@ -24,6 +25,7 @@
 #include "widgets/MaterialProcessPanel.h"
 #include "widgets/ModelListPanel.h"
 #include "widgets/SceneLayoutPanel.h"
+#include "widgets/SceneActionBar.h"
 #include "widgets/ModelPreflightPanel.h"
 #include "widgets/ModelTopViewWidget.h"
 #include "widgets/ModelTransformPanel.h"
@@ -49,6 +51,8 @@ class MainWindow final : public QMainWindow
 
 public:
     explicit MainWindow(QString repo_root, QWidget* parent = nullptr);
+
+    friend class UiSmokeTestRunner;
 
 private slots:
     void browseConfig();
@@ -79,6 +83,7 @@ private slots:
     void OnCancelModelPreflight();
     void OnSceneDocumentChanged();
     void OnSaveSceneTransform();
+    void OnSliceCurrentScene();
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -108,6 +113,14 @@ private:
     void RequestSlicePreflight(const SlicePreflightAction& action);
     void UpdateModelPreflightUi();
     void UpdateActionAvailability();
+    SceneSliceActionSceneState BuildSceneSliceState() const;
+    SceneSliceSnapshotResult WriteCurrentSceneSnapshot(
+        const SceneSliceActionRequest& request);
+    SceneSlicePackageValidationResult ValidateCurrentScenePackage(
+        const SceneSliceActionSnapshot& snapshot,
+        qint64 elapsedMs);
+    slicer_core::SceneBuildVolume
+        BuildFunctionalSceneVolume() const;
     void LoadScenarios();
     bool ShouldShowScenario(const ScenarioEntry& scenario) const;
     void ApplyScenario(const ScenarioEntry& scenario);
@@ -134,6 +147,7 @@ private:
     ModelTopViewLoader m_modelTopViewLoader;
     SceneBatchImportController m_sceneBatchImportController;
     SceneTransformController m_sceneTransformController;
+    SceneSliceActionController m_sceneSliceActionController;
     TransformedModelPreflightLoader m_transformedPreflightLoader;
     QString current_action_;
     QString pending_package_;
@@ -171,6 +185,7 @@ private:
     QPushButton* m_modelPreflightRecheckButton{nullptr};
     QPushButton* m_modelPreflightCancelButton{nullptr};
     SliceTimingPanel* m_sliceTimingPanel{nullptr};
+    SceneActionBar* m_sceneActionBar{nullptr};
 
     PreviewWorkspace* m_previewWorkspace{nullptr};
     QTabWidget* m_mainWorkspaceTabs{nullptr};

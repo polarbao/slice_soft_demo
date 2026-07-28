@@ -67,14 +67,18 @@ struct SceneTransformCommandResult
 struct SceneTransformSaveRequest
 {
     std::filesystem::path sessiondirectory;
+    std::filesystem::path sourceprofileconfigpath;
+    std::filesystem::path outputpackagedir;
     std::string sourceprofileid;
     std::string generatedatutc;
+    slicer_core::SceneBuildVolume buildvolume;
     int dpix{635};
     int dpiy{600};
     double layerheightmm{0.01};
     std::string slicepipelinemode{"legacy"};
     std::uint64_t expectedscenerevision{0U};
     std::uint64_t expectedtransformrevision{0U};
+    bool production{false};
     bool cancelled{false};
 };
 
@@ -105,7 +109,7 @@ std::string_view SceneTransformErrorCodeName(
     SceneTransformErrorCode code);
 
 /**
- * @brief Apply precise single-instance transforms and save scene state.
+ * @brief Apply precise instance transforms and save current scene state.
  */
 class SceneTransformController final : public QObject
 {
@@ -167,7 +171,7 @@ public:
         std::uint64_t expectedTransformRevision);
 
     /**
-     * @brief Save and read back a single-instance scene effective config.
+     * @brief Save and read back a current-scene effective config.
      * @param request Session path, Profile, slice contract, and revisions.
      * @return Saved scene and structured error.
      */

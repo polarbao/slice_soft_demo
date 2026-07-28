@@ -1,6 +1,6 @@
 # REPORT 13B-08 / 13D UI 作业流与布局专项准备状态
 
-> 状态：13B-08-01/02 COMPLETE / 13B-08-03 READY；13D PREPARED / SEQUENCE WAIT
+> 状态：13B-08-01/02/03 COMPLETE / 13B-08-04 READY；13D PREPARED / SEQUENCE WAIT
 > 日期：2026-07-28
 > 证据范围：当前代码、Stage 13 文档、本轮 UI 截图
 
@@ -50,8 +50,8 @@ DOC_PREP_13D。
 ```text
 13B-08-01：实现、定向测试、Debug full、UI Smoke 和 Quick CI 完成；
 13B-08-02：无 Qt 场景生产服务、显式 `--scene-config`、严格写包和负向 Gate 已完成；
-13B-08-03：执行级 PREP/PROMPT 完整，13B-08-02 Gate 已通过；
-13B-08-04：执行级 PREP/PROMPT 已补齐，等待 13B-08-03；
+13B-08-03：Qt 当前场景状态机、显式 CLI、严格结果回载和失败 UI Smoke 已完成；
+13B-08-04：执行级 PREP/PROMPT 已补齐，13B-08-03 Gate 已通过；
 13D-01..04：总体准备完成，代码开发必须等待 13C-05；
 13C-03：既有 PREP/PROMPT 保持 READY，但推荐顺序暂后移；
 生产设备 buildVolume/轴向/22 实例预算：仍未关闭，不得宣称 production GO。
@@ -59,5 +59,6 @@ DOC_PREP_13D。
 
 ## 6. 未实施声明
 
-批量导入和无 Qt 场景生产服务已经实现；Qt 当前场景主切片动作和工作台重排仍未实现。
+批量导入、无 Qt 场景生产服务和 Qt 当前场景主切片动作已经实现；真实模型作业流矩阵与
+工作台重排仍未实现。
 `DOC_DECISION_13B_08` 已获用户确认，后续按每个原子任务独立实现、验证和提交。

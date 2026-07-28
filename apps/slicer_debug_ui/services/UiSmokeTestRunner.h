@@ -53,6 +53,14 @@ private:
         const UiSmokeTestOptions& options);
     int SceneBatchImportPartialFailure(
         const UiSmokeTestOptions& options);
+    int SceneSliceCurrent(
+        const UiSmokeTestOptions& options);
+    int SceneSliceStale(
+        const UiSmokeTestOptions& options);
+    int SceneSliceCancel(
+        const UiSmokeTestOptions& options);
+    int SceneSliceNoFallback(
+        const UiSmokeTestOptions& options);
     int experimentalReportSummary(const UiSmokeTestOptions& options);
     int fail(const QString& message) const;
     int pass(const QString& message) const;

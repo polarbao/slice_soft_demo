@@ -612,6 +612,22 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return SceneBatchImportPartialFailure(options);
     }
+    if (options.case_name == "scene-slice-current")
+    {
+        return SceneSliceCurrent(options);
+    }
+    if (options.case_name == "scene-slice-stale")
+    {
+        return SceneSliceStale(options);
+    }
+    if (options.case_name == "scene-slice-cancel")
+    {
+        return SceneSliceCancel(options);
+    }
+    if (options.case_name == "scene-slice-no-fallback")
+    {
+        return SceneSliceNoFallback(options);
+    }
     if (options.case_name == "experimental-report-summary") {
         return experimentalReportSummary(options);
     }
@@ -3866,6 +3882,337 @@ int UiSmokeTestRunner::SceneBatchImportPartialFailure(
     }
     return pass(QStringLiteral(
         "scene-batch-import-partial-failure continue/summary"));
+}
+
+int UiSmokeTestRunner::SceneSliceCurrent(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    const QString configPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    window.m_currentProfileId.clear();
+    window.config_edit_->setText(configPath);
+    if (!window.config_editor_panel_->loadConfig(configPath))
+    {
+        return fail(QStringLiteral(
+            "scene slice Profile fixture did not load"));
+    }
+
+    SceneBatchImportRequest importRequest;
+    importRequest.batchid =
+        QStringLiteral("scene-slice-current-smoke");
+    importRequest.configpath = configPath;
+    importRequest.files =
+        QStringList{modelPath, modelPath, modelPath};
+    importRequest.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(importRequest)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            })
+        || window.m_sceneDocument.InstanceCount() != 3U)
+    {
+        return fail(QStringLiteral(
+            "scene slice smoke batch import failed"));
+    }
+
+    window.UpdateActionAvailability();
+    auto* sliceButton = window.findChild<QPushButton*>(
+        QStringLiteral("sliceCurrentSceneButton"));
+    auto* cancelButton = window.findChild<QPushButton*>(
+        QStringLiteral("cancelCurrentSceneSliceButton"));
+    if (sliceButton == nullptr
+        || cancelButton == nullptr
+        || !sliceButton->isEnabled()
+        || cancelButton->isEnabled())
+    {
+        return fail(QStringLiteral(
+            "scene slice action availability mismatch"));
+    }
+
+    sliceButton->click();
+    if (!WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneSliceActionController
+                            .IsRunning()
+                    && !window.runner_.isRunning();
+            },
+            30000)
+        || window.m_sceneSliceActionController.State()
+            != SceneSliceActionState::Completed
+        || !QFileInfo::exists(
+            QDir(window.package_edit_->text())
+                .filePath(QStringLiteral("manifest.json")))
+        || window.m_previewWorkspace->LayerIndices().isEmpty()
+        || window.m_mainWorkspaceTabs->currentWidget()
+            != window.m_previewWorkspace)
+    {
+        return fail(
+            QStringLiteral(
+                "scene slice did not publish/load one TIFF package: ")
+            + window.m_sceneSliceActionController.Message());
+    }
+    return pass(QStringLiteral(
+        "scene-slice-current three-model/one-package/tiff-load"));
+}
+
+int UiSmokeTestRunner::SceneSliceStale(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    const QString configPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    window.m_currentProfileId.clear();
+    window.config_edit_->setText(configPath);
+    if (!window.config_editor_panel_->loadConfig(configPath))
+    {
+        return fail(QStringLiteral(
+            "stale scene slice Profile fixture did not load"));
+    }
+
+    SceneBatchImportRequest importRequest;
+    importRequest.batchid =
+        QStringLiteral("scene-slice-stale-smoke");
+    importRequest.configpath = configPath;
+    importRequest.files = QStringList{modelPath};
+    importRequest.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(importRequest)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            }))
+    {
+        return fail(QStringLiteral(
+            "stale scene slice import failed"));
+    }
+
+    window.UpdateActionAvailability();
+    auto* sliceButton = window.findChild<QPushButton*>(
+        QStringLiteral("sliceCurrentSceneButton"));
+    if (sliceButton == nullptr || !sliceButton->isEnabled())
+    {
+        return fail(QStringLiteral(
+            "stale scene slice action unavailable"));
+    }
+    sliceButton->click();
+    if (!WaitForCondition(
+            [&window]()
+            {
+                return window.m_sceneSliceActionController.State()
+                    == SceneSliceActionState::Slicing;
+            }))
+    {
+        return fail(QStringLiteral(
+            "stale scene slice process did not start"));
+    }
+
+    const QString sourceInstance =
+        window.m_sceneDocument.CurrentInstanceId();
+    const SceneDocumentOperationResult changed =
+        window.m_sceneDocument.DuplicateInstance(
+            sourceInstance,
+            QStringLiteral("stale-extra-instance"),
+            window.m_sceneDocument.SceneRevision());
+    if (!changed.IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.runner_.isRunning();
+            },
+            30000)
+        || window.m_sceneSliceActionController.State()
+            != SceneSliceActionState::Blocked
+        || window.m_sceneSliceActionController.ErrorCode()
+            != SceneSliceActionErrorCode::SceneStale)
+    {
+        return fail(QStringLiteral(
+            "stale scene output was not rejected"));
+    }
+    return pass(QStringLiteral(
+        "scene-slice-stale revision/no-old-package-load"));
+}
+
+int UiSmokeTestRunner::SceneSliceCancel(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    const QString configPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    window.m_currentProfileId.clear();
+    window.config_edit_->setText(configPath);
+    if (!window.config_editor_panel_->loadConfig(configPath))
+    {
+        return fail(QStringLiteral(
+            "cancel scene slice Profile fixture did not load"));
+    }
+
+    SceneBatchImportRequest importRequest;
+    importRequest.batchid =
+        QStringLiteral("scene-slice-cancel-smoke");
+    importRequest.configpath = configPath;
+    importRequest.files = QStringList{modelPath};
+    importRequest.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(importRequest)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            }))
+    {
+        return fail(QStringLiteral(
+            "cancel scene slice import failed"));
+    }
+
+    window.UpdateActionAvailability();
+    auto* sliceButton = window.findChild<QPushButton*>(
+        QStringLiteral("sliceCurrentSceneButton"));
+    auto* cancelButton = window.findChild<QPushButton*>(
+        QStringLiteral("cancelCurrentSceneSliceButton"));
+    const QString packageMarker =
+        QStringLiteral("scene-slice-cancel-marker");
+    window.package_edit_->setText(packageMarker);
+    if (sliceButton == nullptr
+        || cancelButton == nullptr
+        || !sliceButton->isEnabled())
+    {
+        return fail(QStringLiteral(
+            "cancel scene slice action unavailable"));
+    }
+    sliceButton->click();
+    if (!WaitForCondition(
+            [&window, cancelButton]()
+            {
+                return window.m_sceneSliceActionController.State()
+                        == SceneSliceActionState::Slicing
+                    && cancelButton->isEnabled();
+            }))
+    {
+        return fail(QStringLiteral(
+            "cancel scene slice did not enter slicing"));
+    }
+    cancelButton->click();
+    if (!WaitForCondition(
+            [&window]()
+            {
+                return !window.runner_.isRunning();
+            },
+            30000)
+        || window.m_sceneSliceActionController.State()
+            != SceneSliceActionState::Cancelled
+        || window.m_sceneSliceActionController.ErrorCode()
+            != SceneSliceActionErrorCode::Cancelled
+        || window.package_edit_->text() != packageMarker)
+    {
+        return fail(QStringLiteral(
+            "cancelled scene slice loaded or accepted output"));
+    }
+    return pass(QStringLiteral(
+        "scene-slice-cancel terminate/no-package-load"));
+}
+
+int UiSmokeTestRunner::SceneSliceNoFallback(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    const QString configPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    window.m_currentProfileId.clear();
+    window.config_edit_->setText(configPath);
+    if (!window.config_editor_panel_->loadConfig(configPath))
+    {
+        return fail(QStringLiteral(
+            "no-fallback scene slice Profile fixture did not load"));
+    }
+
+    SceneBatchImportRequest importRequest;
+    importRequest.batchid =
+        QStringLiteral("scene-slice-no-fallback-smoke");
+    importRequest.configpath = configPath;
+    importRequest.files = QStringList{modelPath};
+    importRequest.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(importRequest)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            }))
+    {
+        return fail(QStringLiteral(
+            "no-fallback scene slice import failed"));
+    }
+
+    auto* modeCombo = window.findChild<QComboBox*>(
+        QStringLiteral("productionModeCombo"));
+    if (modeCombo == nullptr)
+    {
+        return fail(QStringLiteral(
+            "no-fallback production mode selector missing"));
+    }
+    const int globalIndex = modeCombo->findData(
+        QStringLiteral("global_surface_shell"));
+    if (globalIndex < 0)
+    {
+        return fail(QStringLiteral(
+            "no-fallback Global mode option missing"));
+    }
+    modeCombo->setCurrentIndex(globalIndex);
+    window.UpdateActionAvailability();
+
+    auto* sliceButton = window.findChild<QPushButton*>(
+        QStringLiteral("sliceCurrentSceneButton"));
+    if (sliceButton == nullptr || sliceButton->isEnabled())
+    {
+        return fail(QStringLiteral(
+            "Global scene slice was not disabled"));
+    }
+    window.OnSliceCurrentScene();
+    if (window.runner_.isRunning()
+        || window.m_sceneSliceActionController.State()
+            != SceneSliceActionState::Blocked
+        || window.m_sceneSliceActionController.ErrorCode()
+            != SceneSliceActionErrorCode::
+                PipelineModeNotAdmitted)
+    {
+        return fail(QStringLiteral(
+            "Global scene slice launched or fell back to Legacy"));
+    }
+    return pass(QStringLiteral(
+        "scene-slice-no-fallback Global/Legacy-isolation"));
 }
 
 int UiSmokeTestRunner::ModelTransformPreflight(

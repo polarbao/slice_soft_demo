@@ -226,6 +226,11 @@ void OrderedThreeItemBatchAppliesOneLayout()
     Require(
         !loader.Pending()->autolayoutoncompletion,
         "single-item loader auto-layout must be disabled");
+    Require(
+        loader.Pending()->admissionstatus
+            == slicer_core::SceneViewAdmissionStatus::Admitted,
+        "successful batch imports must enter the Legacy scene gate "
+        "as admitted");
 
     loader.CompleteSuccess(&controller);
     Require(

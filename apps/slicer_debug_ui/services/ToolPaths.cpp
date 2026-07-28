@@ -38,13 +38,13 @@ ToolPaths ToolPaths::FromRepoRoot(const QString& repoRoot)
     const QString legacyBuildDir = root.filePath(QStringLiteral("build/%1").arg(config));
     paths.slicer_cli = FirstExistingPath({
         applicationDir.filePath("slicer_cli.exe"),
-        QDir(unifiedBuildDir).filePath("slicer_cli.exe"),
         QDir(legacyBuildDir).filePath("slicer_cli.exe"),
+        QDir(unifiedBuildDir).filePath("slicer_cli.exe"),
     });
     paths.rip_reader = FirstExistingPath({
         applicationDir.filePath("rip_reader_test.exe"),
-        QDir(unifiedBuildDir).filePath("rip_reader_test.exe"),
         QDir(legacyBuildDir).filePath("rip_reader_test.exe"),
+        QDir(unifiedBuildDir).filePath("rip_reader_test.exe"),
     });
     paths.openvdb_slicer_cli = root.filePath(
         QStringLiteral("build-openvdb-09p/%1/slicer_cli.exe").arg(config));
