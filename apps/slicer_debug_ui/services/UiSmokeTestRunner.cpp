@@ -531,6 +531,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return PreviewWorkspaceSharedLayer(options);
     }
+    if (options.case_name == "tiff-native-preview-all-materials")
+    {
+        return TiffNativePreviewAllMaterials(options);
+    }
     if (options.case_name == "preview-legend-probe-context")
     {
         return PreviewLegendProbeContext(options);
@@ -742,10 +746,6 @@ int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
     if (package.manifest_path.isEmpty()) {
         return fail("layer-preview-load 未找到 manifest：" + package_path);
     }
-    if (package.preview_paths.isEmpty()) {
-        return fail("layer-preview-load 未找到 preview 图像：" + package_path);
-    }
-
     LayerPreviewPanel panel;
     panel.LoadPackage(package);
     if (panel.LayerCount() <= 0) {
@@ -753,31 +753,48 @@ int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
     }
 
     const QStringList channels = panel.AvailableChannels();
-    const QStringList required_channels{"occupancy", "diagnostic"};
+    const QStringList required_channels{
+        QStringLiteral("rgb"),
+        QStringLiteral("red"),
+        QStringLiteral("green"),
+        QStringLiteral("blue"),
+        QStringLiteral("white"),
+        QStringLiteral("support"),
+        QStringLiteral("varnish"),
+        QStringLiteral("rgb_support_white_varnish"),
+        QStringLiteral("occupancy"),
+        QStringLiteral("empty"),
+    };
     for (const QString& channel : required_channels) {
         if (!channels.contains(channel)) {
             return fail("layer-preview-load 缺少通道：" + channel + "，实际通道：" + channels.join(","));
         }
     }
-    QStringList render_channels;
-    for (const QString& channel : QStringList{"production_rgb", "texture_rgb", "rgb", "support", "white", "varnish", "occupancy", "diagnostic"})
-    {
-        if (channels.contains(channel))
-        {
-            render_channels.push_back(channel);
-        }
-    }
-    if (render_channels.size() <= required_channels.size())
-    {
-        return fail("layer-preview-load 未发现任何材料预览通道，实际通道：" + channels.join(","));
-    }
-
-    const QList<int> layer_indices{0, panel.LayerCount() / 2, panel.LayerCount() - 1};
+    const QVector<int> layerIndices = panel.LayerIndices();
+    const QList<int> layer_indices{
+        layerIndices.first(),
+        layerIndices.at(layerIndices.size() / 2),
+        layerIndices.last(),
+    };
     for (const int layer_index : layer_indices) {
         if (!panel.SelectLayerForTest(layer_index)) {
             return fail("layer-preview-load 无法选择层：" + QString::number(layer_index));
         }
-        for (const QString& channel : render_channels) {
+        if (!WaitForCondition(
+                [&panel, layer_index]()
+                {
+                    return panel.IsLayerReadyForTest()
+                        && panel.LoadedLayerIndexForTest()
+                            == layer_index;
+                }))
+        {
+            return fail(
+                QStringLiteral(
+                    "layer-preview-load TIFF 异步读取超时：layer=%1 status=%2")
+                    .arg(layer_index)
+                    .arg(panel.StatusForTest()));
+        }
+        for (const QString& channel : required_channels) {
             if (!panel.SelectChannelForTest(channel)) {
                 return fail("layer-preview-load 无法选择通道：" + channel);
             }
@@ -788,9 +805,9 @@ int UiSmokeTestRunner::layerPreviewLoad(const UiSmokeTestOptions& options) {
         }
     }
 
-    if (channels.contains("production_rgb"))
+    if (channels.contains(QStringLiteral("rgb")))
     {
-        if (!panel.SelectChannelForTest("production_rgb"))
+        if (!panel.SelectChannelForTest(QStringLiteral("rgb")))
         {
             return fail("layer-preview-load 无法选择生产 RGB 通道。");
         }
@@ -1328,9 +1345,12 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
         return fail(QStringLiteral("preview-workspace-shared-layer 有图层未同步到三个模式。"));
     }
 
-    workspace.SetMode(PreviewWorkspaceMode::MaterialOverlay);
-    workspace.SetMode(PreviewWorkspaceMode::RawPreview);
-    workspace.SetMode(PreviewWorkspaceMode::ProductionLayer);
+    workspace.SetMode(PreviewWorkspaceMode::Diagnostic);
+    workspace.SetDiagnosticMode(
+        DiagnosticPreviewMode::MaterialOverlay);
+    workspace.SetDiagnosticMode(
+        DiagnosticPreviewMode::RawPreview);
+    workspace.SetMode(PreviewWorkspaceMode::Production);
     if (workspace.CurrentLayerIndex() != previewLayer
         || production->CurrentLayerIndex() != previewLayer
         || overlay->CurrentLayerIndex() != previewLayer
@@ -1341,9 +1361,24 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
 
     QComboBox* rawChannel = raw->findChild<QComboBox*>(QStringLiteral("rawPreviewChannelSelector"));
     QComboBox* overlayMode = overlay->findChild<QComboBox*>(QStringLiteral("overlayModeSelector"));
-    if (rawChannel == nullptr || overlayMode == nullptr)
+    QComboBox* workspaceMode =
+        workspace.findChild<QComboBox*>(
+            QStringLiteral(
+                "previewWorkspaceModeSelector"));
+    QComboBox* diagnosticMode =
+        workspace.findChild<QComboBox*>(
+            QStringLiteral(
+                "diagnosticPreviewModeSelector"));
+    if (rawChannel == nullptr
+        || overlayMode == nullptr
+        || workspaceMode == nullptr
+        || diagnosticMode == nullptr
+        || workspaceMode->count() != 2
+        || diagnosticMode->count() != 2)
     {
-        return fail(QStringLiteral("preview-workspace-shared-layer 缺少既有视图模式控件。"));
+        return fail(
+            QStringLiteral(
+                "preview-workspace-shared-layer 未收敛为生产/诊断两个一级入口，或缺少诊断子入口。"));
     }
     rawChannel->setCurrentText(QStringLiteral("RGB"));
     overlayMode->setCurrentText(QStringLiteral("RGB + W 白墨"));
@@ -1405,11 +1440,244 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
     }
 
     return pass(
-        QStringLiteral("preview-workspace-shared-layer layers=%1 rawSparse=%2 overlaySparse=%3 preview=%4 modes=3")
+        QStringLiteral("preview-workspace-shared-layer layers=%1 rawSparse=%2 overlaySparse=%3 preview=%4 primaryModes=2 diagnosticModes=2")
             .arg(workspace.LayerIndices().size())
             .arg(sparseLayer)
             .arg(overlaySparseLayer)
             .arg(previewLayer));
+}
+
+int UiSmokeTestRunner::TiffNativePreviewAllMaterials(
+    const UiSmokeTestOptions& options)
+{
+    const QString packagePath =
+        absoluteFromRepo(
+            options,
+            options.package_path);
+    PackageSummary package =
+        PackageLoader().load(packagePath);
+    if (package.manifest_path.isEmpty())
+    {
+        return fail(
+            QStringLiteral(
+                "tiff-native-preview-all-materials 未找到 manifest：")
+            + packagePath);
+    }
+
+    // Production preview must remain usable even when its package summary
+    // does not expose any preview PNG paths.
+    package.preview_paths.clear();
+
+    PreviewWorkspace workspace;
+    workspace.LoadPackage(package);
+    auto* production =
+        workspace.findChild<LayerPreviewPanel*>(
+            QStringLiteral("productionLayerView"));
+    auto* workspaceMode =
+        workspace.findChild<QComboBox*>(
+            QStringLiteral(
+                "previewWorkspaceModeSelector"));
+    auto* diagnosticMode =
+        workspace.findChild<QComboBox*>(
+            QStringLiteral(
+                "diagnosticPreviewModeSelector"));
+    auto* overlay =
+        workspace.findChild<PreviewOverlayPanel*>(
+            QStringLiteral("materialOverlayView"));
+    auto* raw =
+        workspace.findChild<PreviewPanel*>(
+            QStringLiteral("rawPreviewView"));
+    if (production == nullptr
+        || workspaceMode == nullptr
+        || diagnosticMode == nullptr
+        || overlay == nullptr
+        || raw == nullptr
+        || workspaceMode->count() != 2
+        || diagnosticMode->count() != 2)
+    {
+        return fail(
+            QStringLiteral(
+                "tiff-native-preview-all-materials 统一生产/诊断入口不完整。"));
+    }
+
+    const QVector<int> layerIndices =
+        production->LayerIndices();
+    if (layerIndices.size() < 3
+        || production->DataSourceForTest()
+            != QStringLiteral(
+                "manifest/layers RGBWSV TIFF"))
+    {
+        return fail(
+            QStringLiteral(
+                "tiff-native-preview-all-materials 未使用 manifest 权威 TIFF 层源。"));
+    }
+
+    const QStringList requiredModes{
+        QStringLiteral("rgb"),
+        QStringLiteral("red"),
+        QStringLiteral("green"),
+        QStringLiteral("blue"),
+        QStringLiteral("white"),
+        QStringLiteral("support"),
+        QStringLiteral("varnish"),
+        QStringLiteral("rgb_white"),
+        QStringLiteral("rgb_support"),
+        QStringLiteral("rgb_varnish"),
+        QStringLiteral(
+            "rgb_support_white_varnish"),
+        QStringLiteral("occupancy"),
+        QStringLiteral("empty"),
+    };
+    for (const QString& mode : requiredModes)
+    {
+        if (!production->AvailableChannels().contains(
+                mode))
+        {
+            return fail(
+                QStringLiteral(
+                    "tiff-native-preview-all-materials 缺少模式：")
+                + mode);
+        }
+    }
+
+    const QList<int> requestedLayers{
+        layerIndices.first(),
+        layerIndices.at(layerIndices.size() / 2),
+        layerIndices.last(),
+    };
+    for (const int layerIndex : requestedLayers)
+    {
+        if (!workspace.SelectLayer(layerIndex)
+            || !WaitForCondition(
+                [production, layerIndex]()
+                {
+                    return production
+                               ->IsLayerReadyForTest()
+                        && production
+                               ->LoadedLayerIndexForTest()
+                            == layerIndex;
+                }))
+        {
+            return fail(
+                QStringLiteral(
+                    "tiff-native-preview-all-materials 异步切层失败：layer=%1 status=%2")
+                    .arg(layerIndex)
+                    .arg(production->StatusForTest()));
+        }
+        if (!ContainsAll(
+                production->StatusForTest(),
+                {
+                    QStringLiteral("layer=%1")
+                        .arg(layerIndex),
+                    QStringLiteral("z="),
+                    QStringLiteral("DPI="),
+                    QStringLiteral(
+                        "层序=低Z->高Z"),
+                    QStringLiteral(
+                        "数据源=manifest/layers TIFF"),
+                    QStringLiteral("cache="),
+                }))
+        {
+            return fail(
+                QStringLiteral(
+                    "tiff-native-preview-all-materials 层元数据状态不完整：")
+                + production->StatusForTest());
+        }
+    }
+
+    const quint64 requestsBeforeModes =
+        production->LayerRequestCountForTest();
+    for (const QString& mode : requiredModes)
+    {
+        if (!production->SelectChannelForTest(mode)
+            || production->CurrentImageForTest().isNull())
+        {
+            return fail(
+                QStringLiteral(
+                    "tiff-native-preview-all-materials 合成失败：mode=")
+                + mode);
+        }
+    }
+    if (production->LayerRequestCountForTest()
+        != requestsBeforeModes)
+    {
+        return fail(
+            QStringLiteral(
+                "tiff-native-preview-all-materials 模式切换重复读取了 TIFF。"));
+    }
+
+    const QImage image =
+        production->CurrentImageForTest();
+    const QString probe =
+        production->ProbePixelForTest(
+            image.width() / 2,
+            image.height() / 2);
+    if (!ContainsAll(
+            probe,
+            {
+                QStringLiteral("display=("),
+                QStringLiteral("raw=("),
+                QStringLiteral("生产值 RGBWSV=("),
+                QStringLiteral(
+                    "black_is_print/0打印/255不打印"),
+            }))
+    {
+        return fail(
+            QStringLiteral(
+                "tiff-native-preview-all-materials 六通道探针不完整：")
+            + probe);
+    }
+
+    const int rapidFirst = layerIndices.at(1);
+    const int rapidMiddle =
+        layerIndices.at(layerIndices.size() / 3);
+    const int rapidLast =
+        layerIndices.at(layerIndices.size() - 2);
+    production->SelectLayer(rapidFirst);
+    production->SelectLayer(rapidMiddle);
+    production->SelectLayer(rapidLast);
+    if (!WaitForCondition(
+            [production, rapidLast]()
+            {
+                return production->IsLayerReadyForTest()
+                    && production
+                           ->LoadedLayerIndexForTest()
+                        == rapidLast;
+            })
+        || production->CurrentLayerIndex()
+            != rapidLast)
+    {
+        return fail(
+            QStringLiteral(
+                "tiff-native-preview-all-materials stale generation 覆盖了最新层：")
+            + production->StatusForTest());
+    }
+
+    workspace.SetMode(
+        PreviewWorkspaceMode::Diagnostic);
+    workspace.SetDiagnosticMode(
+        DiagnosticPreviewMode::MaterialOverlay);
+    workspace.SetDiagnosticMode(
+        DiagnosticPreviewMode::RawPreview);
+    workspace.SetMode(
+        PreviewWorkspaceMode::Production);
+    if (workspace.CurrentLayerIndex() != rapidLast
+        || workspace.CurrentMode()
+            != PreviewWorkspaceMode::Production)
+    {
+        return fail(
+            QStringLiteral(
+                "tiff-native-preview-all-materials 模式切换改变了真实层。"));
+    }
+
+    return pass(
+        QStringLiteral(
+            "tiff-native-preview-all-materials layers=%1 modes=%2 requests=%3 source=TIFF primaryModes=2 diagnosticModes=2")
+            .arg(layerIndices.size())
+            .arg(requiredModes.size())
+            .arg(
+                production
+                    ->LayerRequestCountForTest()));
 }
 
 int UiSmokeTestRunner::PreviewPhysicalAspect(
@@ -1590,6 +1858,17 @@ int UiSmokeTestRunner::PreviewLegendProbeContext(const UiSmokeTestOptions& optio
         for (const int layerIndex : production->LayerIndices())
         {
             production->SelectLayer(layerIndex);
+            if (!WaitForCondition(
+                    [production, layerIndex]()
+                    {
+                        return production->IsLayerReadyForTest()
+                            && production
+                                   ->LoadedLayerIndexForTest()
+                                == layerIndex;
+                    }))
+            {
+                return {};
+            }
             if (!production->SelectChannelForTest(channel))
             {
                 return {};
@@ -1628,6 +1907,18 @@ int UiSmokeTestRunner::PreviewLegendProbeContext(const UiSmokeTestOptions& optio
 
     QString emptyProbe;
     production->SelectLayer(production->LayerIndices().first());
+    if (!WaitForCondition(
+            [production]()
+            {
+                return production->IsLayerReadyForTest()
+                    && production->LoadedLayerIndexForTest()
+                        == production->LayerIndices().first();
+            }))
+    {
+        return fail(
+            QStringLiteral(
+                "preview-legend-probe-context 首层 TIFF 异步读取超时。"));
+    }
     production->SelectChannelForTest(QStringLiteral("support"));
     const QImage supportImage = production->CurrentImageForTest();
     for (int y = 0; y < supportImage.height() && emptyProbe.isEmpty(); ++y)
@@ -1952,7 +2243,10 @@ int UiSmokeTestRunner::MaterialClosureDiagnostics(const UiSmokeTestOptions& opti
     }
     QApplication::processEvents();
     if (workspace->CurrentLayerIndex() != 7
-        || workspace->CurrentMode() != PreviewWorkspaceMode::MaterialOverlay
+        || workspace->CurrentMode()
+            != PreviewWorkspaceMode::Diagnostic
+        || workspace->CurrentDiagnosticMode()
+            != DiagnosticPreviewMode::MaterialOverlay
         || !overlay->StatusForTest().contains(QStringLiteral("RGB + 闭环 Gap")))
     {
         return fail(

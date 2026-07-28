@@ -18,9 +18,17 @@ class QStackedWidget;
  */
 enum class PreviewWorkspaceMode
 {
-    ProductionLayer = 0,
-    MaterialOverlay = 1,
-    RawPreview = 2,
+    Production = 0,
+    Diagnostic = 1,
+};
+
+/**
+ * @brief Diagnostic-only preview sources retained during migration.
+ */
+enum class DiagnosticPreviewMode
+{
+    MaterialOverlay = 0,
+    RawPreview = 1,
 };
 
 /**
@@ -83,6 +91,18 @@ public:
     PreviewWorkspaceMode CurrentMode() const;
 
     /**
+     * @brief Select the diagnostic sub-view without changing the shared layer.
+     * @param mode Overlay or raw diagnostic source.
+     */
+    void SetDiagnosticMode(DiagnosticPreviewMode mode);
+
+    /**
+     * @brief Return the selected diagnostic sub-view.
+     * @return Current diagnostic source.
+     */
+    DiagnosticPreviewMode CurrentDiagnosticMode() const;
+
+    /**
      * @brief Return the workspace synchronization status for UI smoke tests.
      * @return Human-readable shared-layer status.
      */
@@ -109,6 +129,7 @@ signals:
 
 private slots:
     void OnModeChanged(int index);
+    void OnDiagnosticModeChanged(int index);
     void OnPanelLayerIndexChanged(int layerIndex);
     void OnPixelProbeChanged(const QString& context);
 
@@ -126,6 +147,7 @@ private:
     bool m_syncing{false};
 
     QComboBox* m_modeSelector{nullptr};
+    QComboBox* m_diagnosticModeSelector{nullptr};
     QLabel* m_status{nullptr};
     QLabel* m_rgbLegendSwatch{nullptr};
     QLabel* m_whiteLegendSwatch{nullptr};
@@ -135,6 +157,8 @@ private:
     QLabel* m_protocolHint{nullptr};
     QLabel* m_probeContext{nullptr};
     QStackedWidget* m_stack{nullptr};
+    QStackedWidget* m_diagnosticStack{nullptr};
+    QWidget* m_diagnosticContainer{nullptr};
     LayerPreviewPanel* m_productionView{nullptr};
     PreviewOverlayPanel* m_overlayView{nullptr};
     PreviewPanel* m_rawPreviewView{nullptr};

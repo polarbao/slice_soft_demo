@@ -64,14 +64,8 @@ LayerPreviewPackage LayerPreviewDataProvider::Load(const PackageSummary& package
 {
     m_error.clear();
 
-    LayerPreviewPackage preview;
-    preview.packagedir = package.package_dir;
-    preview.pseudocolors.insert("empty", QColor(255, 255, 255));
-    preview.pseudocolors.insert("support", QColor(0, 255, 0));
-    preview.pseudocolors.insert("white", QColor(0, 170, 255));
-    preview.pseudocolors.insert("varnish", QColor(127, 127, 127));
-    preview.pseudocolors.insert("occupancy", QColor(80, 80, 80));
-    preview.pseudocolors.insert("diagnostic", QColor(255, 180, 0));
+    LayerPreviewPackage preview =
+        CreateBasePackage(package);
 
     ReadManifest(package, &preview);
     ReadSliceReport(package, &preview);
@@ -83,6 +77,19 @@ LayerPreviewPackage LayerPreviewDataProvider::Load(const PackageSummary& package
 
     EnsureLayerIndices(&preview);
     EnsureChannelOrder(&preview);
+    return preview;
+}
+
+LayerPreviewPackage
+LayerPreviewDataProvider::LoadProductionMetadata(
+    const PackageSummary& package)
+{
+    m_error.clear();
+
+    LayerPreviewPackage preview =
+        CreateBasePackage(package);
+    ReadManifest(package, &preview);
+    ReadSliceReport(package, &preview);
     return preview;
 }
 
@@ -461,6 +468,33 @@ void LayerPreviewDataProvider::AddFrame(LayerPreviewPackage* preview, const Laye
     {
         preview->layerindices.push_back(frame.layerindex);
     }
+}
+
+LayerPreviewPackage
+LayerPreviewDataProvider::CreateBasePackage(
+    const PackageSummary& package) const
+{
+    LayerPreviewPackage preview;
+    preview.packagedir = package.package_dir;
+    preview.pseudocolors.insert(
+        QStringLiteral("empty"),
+        QColor(255, 255, 255));
+    preview.pseudocolors.insert(
+        QStringLiteral("support"),
+        QColor(0, 255, 0));
+    preview.pseudocolors.insert(
+        QStringLiteral("white"),
+        QColor(0, 170, 255));
+    preview.pseudocolors.insert(
+        QStringLiteral("varnish"),
+        QColor(127, 127, 127));
+    preview.pseudocolors.insert(
+        QStringLiteral("occupancy"),
+        QColor(80, 80, 80));
+    preview.pseudocolors.insert(
+        QStringLiteral("diagnostic"),
+        QColor(255, 180, 0));
+    return preview;
 }
 
 QColor LayerPreviewDataProvider::ColorFromArray(const QJsonObject& object, const QString& key, const QColor& fallback)

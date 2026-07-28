@@ -72,10 +72,11 @@ bool TiffLayerLoadWorker::IndexPackage(
     const QString& manifestPath)
 {
     Cancel();
+    m_packageIndex.reset();
     try
     {
-        static_cast<void>(m_source->IndexPackage(
-            manifestPath.toStdWString()));
+        m_packageIndex = m_source->IndexPackage(
+            manifestPath.toStdWString());
         return true;
     }
     catch (const slicer_core::TiffLayerError& error)
@@ -275,6 +276,12 @@ void TiffLayerLoadWorker::Cancel()
 quint64 TiffLayerLoadWorker::Generation() const
 {
     return m_generation;
+}
+
+std::optional<slicer_core::ProductionPackageIndex>
+TiffLayerLoadWorker::PackageIndexSnapshot() const
+{
+    return m_packageIndex;
 }
 
 void TiffLayerLoadWorker::EmitFailure(

@@ -87,6 +87,14 @@ public:
     LayerPreviewPackage Load(const PackageSummary& package);
 
     /**
+     * @brief Load only manifest, report, palette, and semantic metadata.
+     * @param package Package summary produced by PackageLoader.
+     * @return UI metadata without reading preview reports or preview images.
+     */
+    LayerPreviewPackage LoadProductionMetadata(
+        const PackageSummary& package);
+
+    /**
      * @brief Return the last non-fatal loading error or warning.
      * @return Human-readable error text. Empty when no issue was detected.
      */
@@ -116,6 +124,8 @@ private:
     void EnsureLayerIndices(LayerPreviewPackage* preview) const;
     void EnsureChannelOrder(LayerPreviewPackage* preview) const;
     void AddFrame(LayerPreviewPackage* preview, const LayerPreviewFrame& frame) const;
+    LayerPreviewPackage CreateBasePackage(
+        const PackageSummary& package) const;
 
     static QColor ColorFromArray(const QJsonObject& object, const QString& key, const QColor& fallback);
     static QString ClassifyPath(const QString& path);

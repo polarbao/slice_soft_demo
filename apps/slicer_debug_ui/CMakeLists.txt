@@ -21,6 +21,8 @@ add_executable(slicer_debug_ui
     services/OpenVdbUtilityReportInterpreter.h
     services/PackageLoader.cpp
     services/PackageLoader.h
+    services/MaterialPreviewImageAdapter.cpp
+    services/MaterialPreviewImageAdapter.h
     services/ProcessRunner.cpp
     services/ProcessRunner.h
     services/ProductionPackageResultValidator.cpp

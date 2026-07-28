@@ -55,11 +55,15 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
     auto* modeRow = new QHBoxLayout();
     m_modeSelector = new QComboBox(this);
     m_modeSelector->setObjectName(QStringLiteral("previewWorkspaceModeSelector"));
-    m_modeSelector->addItem(QStringLiteral("生产层检查"), static_cast<int>(PreviewWorkspaceMode::ProductionLayer));
-    m_modeSelector->addItem(QStringLiteral("材料叠加"), static_cast<int>(PreviewWorkspaceMode::MaterialOverlay));
-    m_modeSelector->addItem(QStringLiteral("原始调试预览"), static_cast<int>(PreviewWorkspaceMode::RawPreview));
+    m_modeSelector->addItem(
+        QStringLiteral("生产预览"),
+        static_cast<int>(PreviewWorkspaceMode::Production));
+    m_modeSelector->addItem(
+        QStringLiteral("诊断预览"),
+        static_cast<int>(PreviewWorkspaceMode::Diagnostic));
     m_modeSelector->setToolTip(
-        QStringLiteral("切换预览数据源时保持同一真实 layerIndex；当前层缺图时不会跨层寻找替代图。"));
+        QStringLiteral(
+            "生产预览只读取 manifest 同层 RGBWSV TIFF；诊断预览保留 Overlay 与原始调试图，缺图不跨层兜底。"));
     modeRow->addWidget(new QLabel(QStringLiteral("预览模式"), this));
     modeRow->addWidget(m_modeSelector);
     modeRow->addStretch(1);
@@ -133,13 +137,49 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
     m_stack = new QStackedWidget(this);
     m_productionView = new LayerPreviewPanel(m_stack);
     m_productionView->setObjectName(QStringLiteral("productionLayerView"));
-    m_overlayView = new PreviewOverlayPanel(m_stack);
+
+    m_diagnosticContainer = new QWidget(m_stack);
+    m_diagnosticContainer->setObjectName(
+        QStringLiteral("diagnosticPreviewContainer"));
+    auto* diagnosticLayout =
+        new QVBoxLayout(m_diagnosticContainer);
+    diagnosticLayout->setContentsMargins(0, 0, 0, 0);
+    auto* diagnosticControls = new QHBoxLayout();
+    m_diagnosticModeSelector =
+        new QComboBox(m_diagnosticContainer);
+    m_diagnosticModeSelector->setObjectName(
+        QStringLiteral("diagnosticPreviewModeSelector"));
+    m_diagnosticModeSelector->addItem(
+        QStringLiteral("材料与闭环诊断"),
+        static_cast<int>(
+            DiagnosticPreviewMode::MaterialOverlay));
+    m_diagnosticModeSelector->addItem(
+        QStringLiteral("原始调试图"),
+        static_cast<int>(
+            DiagnosticPreviewMode::RawPreview));
+    m_diagnosticModeSelector->setToolTip(
+        QStringLiteral(
+            "诊断图来自 preview/report；缺失时显示未提供，不从生产 TIFF 推断语义。"));
+    diagnosticControls->addWidget(
+        new QLabel(QStringLiteral("诊断来源"), m_diagnosticContainer));
+    diagnosticControls->addWidget(m_diagnosticModeSelector);
+    diagnosticControls->addStretch(1);
+    diagnosticLayout->addLayout(diagnosticControls);
+
+    m_diagnosticStack =
+        new QStackedWidget(m_diagnosticContainer);
+    m_overlayView =
+        new PreviewOverlayPanel(m_diagnosticStack);
     m_overlayView->setObjectName(QStringLiteral("materialOverlayView"));
-    m_rawPreviewView = new PreviewPanel(m_stack);
+    m_rawPreviewView =
+        new PreviewPanel(m_diagnosticStack);
     m_rawPreviewView->setObjectName(QStringLiteral("rawPreviewView"));
+    m_diagnosticStack->addWidget(m_overlayView);
+    m_diagnosticStack->addWidget(m_rawPreviewView);
+    diagnosticLayout->addWidget(m_diagnosticStack, 1);
+
     m_stack->addWidget(m_productionView);
-    m_stack->addWidget(m_overlayView);
-    m_stack->addWidget(m_rawPreviewView);
+    m_stack->addWidget(m_diagnosticContainer);
     layout->addWidget(m_stack, 1);
 
     connect(
@@ -147,6 +187,11 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
         qOverload<int>(&QComboBox::currentIndexChanged),
         this,
         &PreviewWorkspace::OnModeChanged);
+    connect(
+        m_diagnosticModeSelector,
+        qOverload<int>(&QComboBox::currentIndexChanged),
+        this,
+        &PreviewWorkspace::OnDiagnosticModeChanged);
     connect(
         m_productionView,
         &LayerPreviewPanel::SigLayerIndexChanged,
@@ -227,7 +272,9 @@ bool PreviewWorkspace::ShowMaterialClosureLayer(
     const bool selected = SelectLayer(layerIndex);
     if (hasGapPreview)
     {
-        SetMode(PreviewWorkspaceMode::MaterialOverlay);
+        SetDiagnosticMode(
+            DiagnosticPreviewMode::MaterialOverlay);
+        SetMode(PreviewWorkspaceMode::Diagnostic);
         SyncPanels();
         UpdateStatus();
     }
@@ -246,6 +293,25 @@ void PreviewWorkspace::SetMode(const PreviewWorkspaceMode mode)
 PreviewWorkspaceMode PreviewWorkspace::CurrentMode() const
 {
     return static_cast<PreviewWorkspaceMode>(m_modeSelector->currentData().toInt());
+}
+
+void PreviewWorkspace::SetDiagnosticMode(
+    const DiagnosticPreviewMode mode)
+{
+    const int index =
+        m_diagnosticModeSelector->findData(
+            static_cast<int>(mode));
+    if (index >= 0)
+    {
+        m_diagnosticModeSelector->setCurrentIndex(index);
+    }
+}
+
+DiagnosticPreviewMode
+PreviewWorkspace::CurrentDiagnosticMode() const
+{
+    return static_cast<DiagnosticPreviewMode>(
+        m_diagnosticModeSelector->currentData().toInt());
 }
 
 QString PreviewWorkspace::StatusForTest() const
@@ -270,6 +336,20 @@ void PreviewWorkspace::OnModeChanged(const int index)
     const PreviewWorkspaceMode mode = static_cast<PreviewWorkspaceMode>(
         m_modeSelector->itemData(index).toInt());
     m_stack->setCurrentIndex(static_cast<int>(mode));
+    SyncPanels();
+    UpdateStatus();
+}
+
+void PreviewWorkspace::OnDiagnosticModeChanged(
+    const int index)
+{
+    const DiagnosticPreviewMode mode =
+        static_cast<DiagnosticPreviewMode>(
+            m_diagnosticModeSelector
+                ->itemData(index)
+                .toInt());
+    m_diagnosticStack->setCurrentIndex(
+        static_cast<int>(mode));
     SyncPanels();
     UpdateStatus();
 }
@@ -345,7 +425,7 @@ void PreviewWorkspace::UpdateStatus()
         : QStringLiteral("同层无图");
     m_status->setText(
         QStringLiteral(
-            "共享 layer=%1  模式=%2  生产=%3  叠加=%4  原始=%5  缺图不跨层兜底")
+            "共享 layer=%1  一级模式=%2  生产=%3  诊断Overlay=%4  诊断Raw=%5  缺图不跨层兜底")
             .arg(m_currentLayerIndex)
             .arg(ModeName(CurrentMode()))
             .arg(productionState, overlayState, rawState));
@@ -397,7 +477,7 @@ void PreviewWorkspace::SetLegendSwatch(
 QString PreviewWorkspace::DefaultProbeGuidance() const
 {
     return QStringLiteral(
-        "像素探针：切换到“生产层检查”并点击图像，查看当前 layer 的 R/G/B/W/S/V 生产值、打印通道和材料语义。"
+        "像素探针：切换到“生产预览”并点击图像，查看当前 layer 的 R/G/B/W/S/V 生产值、打印通道和材料语义。"
         "未选择像素时不根据预览颜色推断材料。");
 }
 
@@ -405,12 +485,10 @@ QString PreviewWorkspace::ModeName(const PreviewWorkspaceMode mode) const
 {
     switch (mode)
     {
-    case PreviewWorkspaceMode::MaterialOverlay:
-        return QStringLiteral("材料叠加");
-    case PreviewWorkspaceMode::RawPreview:
-        return QStringLiteral("原始调试预览");
-    case PreviewWorkspaceMode::ProductionLayer:
+    case PreviewWorkspaceMode::Diagnostic:
+        return QStringLiteral("诊断预览");
+    case PreviewWorkspaceMode::Production:
     default:
-        return QStringLiteral("生产层检查");
+        return QStringLiteral("生产预览");
     }
 }

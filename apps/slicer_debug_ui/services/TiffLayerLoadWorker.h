@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <memory>
+#include <optional>
 
 using TiffLayerBufferPtr =
     std::shared_ptr<const slicer_core::RgbwsvLayerBuffer>;
@@ -59,6 +60,13 @@ public:
      */
     quint64 Generation() const;
 
+    /**
+     * @brief Return the manifest-authoritative package index snapshot.
+     * @return Current immutable package metadata, or empty after index failure.
+     */
+    std::optional<slicer_core::ProductionPackageIndex>
+    PackageIndexSnapshot() const;
+
 signals:
     void SigLayerLoaded(
         quint64 generation,
@@ -86,5 +94,6 @@ private:
     std::shared_ptr<slicer_core::TiffLayerSource> m_source;
     std::shared_ptr<CallbackState> m_callbackState;
     std::shared_ptr<std::atomic_bool> m_activeCancellation;
+    std::optional<slicer_core::ProductionPackageIndex> m_packageIndex;
     quint64 m_generation{0U};
 };

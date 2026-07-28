@@ -2,8 +2,10 @@
 
 #include "../services/LayerPreviewDataProvider.h"
 #include "../services/PackageLoader.h"
+#include "../services/TiffLayerLoadWorker.h"
 
-#include <QComboBox>
+#include "slicer_core/preview/MaterialPreviewComposer.h"
+
 #include <QColor>
 #include <QImage>
 #include <QLabel>
@@ -12,119 +14,157 @@
 #include <QVector>
 #include <QWidget>
 
+#include <memory>
+
+class QComboBox;
+
+/**
+ * @brief TIFF-native RGBWSV production layer preview.
+ */
 class LayerPreviewPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Create the layer preview panel.
+     * @brief Create the production layer preview panel.
      * @param parent Qt parent widget.
      */
     explicit LayerPreviewPanel(QWidget* parent = nullptr);
+    ~LayerPreviewPanel() override;
 
     /**
-     * @brief Load preview frames from an output package.
+     * @brief Load a manifest-authoritative production package.
      * @param package Package summary produced by PackageLoader.
      */
     void LoadPackage(const PackageSummary& package);
 
     /**
-     * @brief Return loaded layer count for smoke tests.
-     * @return Number of layers known to the panel.
+     * @brief Return the number of manifest-listed production layers.
+     * @return Production layer count.
      */
     int LayerCount() const;
 
     /**
-     * @brief Return loaded UI channel ids for smoke tests.
-     * @return Available channel ids.
+     * @brief Return the available TIFF-native material preview mode ids.
+     * @return Stable preview mode ids.
      */
     QStringList AvailableChannels() const;
 
     /**
-     * @brief Return the real package layer indices available to this view.
-     * @return Ascending package layer indices.
+     * @brief Return manifest layer indices in ascending low-Z order.
+     * @return Manifest-authoritative layer indices.
      */
     QVector<int> LayerIndices() const;
 
     /**
-     * @brief Return the real layer index currently displayed.
-     * @return Package layer index, or -1 when no package is loaded.
+     * @brief Return the selected real manifest layer index.
+     * @return Real layer index, or -1 when no package is indexed.
      */
     int CurrentLayerIndex() const;
 
     /**
-     * @brief Select an exact real package layer.
-     * @param layerIndex Target package layer index.
-     * @return true when the exact layer exists and was selected.
+     * @brief Select an exact manifest layer.
+     * @param layerIndex Target real layer index.
+     * @return True when the exact layer exists.
      */
     bool SelectLayer(int layerIndex);
 
     /**
-     * @brief Select a layer by package layer index for smoke tests.
-     * @param layerindex Target package layer index.
-     * @return True when the layer exists and was selected.
+     * @brief Select an exact layer for smoke tests.
+     * @param layerIndex Target real layer index.
+     * @return True when the exact layer exists.
      */
     bool SelectLayerForTest(int layerIndex);
 
     /**
-     * @brief Select a channel by UI channel id for smoke tests.
-     * @param channel Target UI channel id.
-     * @return True when the channel exists and was selected.
+     * @brief Select a TIFF-native preview mode for smoke tests.
+     * @param channel Stable mode id.
+     * @return True when the mode exists.
      */
     bool SelectChannelForTest(const QString& channel);
 
     /**
-     * @brief Return the currently rendered image for smoke tests.
-     * @return Current display image.
+     * @brief Return the current display image.
+     * @return Current physical-source preview image.
      */
     QImage CurrentImageForTest() const;
 
     /**
-     * @brief Return production RGBWSV probe text for a display pixel in smoke tests.
-     * @param x Display image x coordinate.
-     * @param y Display image y coordinate.
-     * @return Human-readable probe text, or an empty string when no production TIFF exists.
+     * @brief Return the exact six-channel probe text without publishing it.
+     * @param x Display image X coordinate.
+     * @param y Display image Y coordinate.
+     * @return Production probe text, or empty when the layer is not ready.
      */
     QString PixelProbeForTest(int x, int y) const;
 
     /**
-     * @brief Inspect one display pixel and publish its six-channel context.
-     * @param x Display image x coordinate.
-     * @param y Display image y coordinate.
-     * @return Human-readable production RGBWSV probe text.
+     * @brief Probe and publish one display pixel.
+     * @param x Display image X coordinate.
+     * @param y Display image Y coordinate.
+     * @return Production probe text.
      */
     QString ProbePixelForTest(int x, int y);
 
     /**
-     * @brief Return the configured UI pseudo color for one material channel.
-     * @param channel UI channel id such as white, support, varnish, or empty.
-     * @return Configured display-only pseudo color.
+     * @brief Return a configured display-only pseudo color.
+     * @param channel white, support, varnish, occupancy, or empty.
+     * @return Configured pseudo color.
      */
     QColor PseudoColor(const QString& channel) const;
 
     /**
      * @brief Return the physical-aspect-corrected base display size.
-     * @return Display size before fit-to-window or zoom scaling.
+     * @return Physical display size before fit or zoom.
      */
     QSize PhysicalDisplaySizeForTest() const;
 
     /**
-     * @brief Return current status text for smoke tests.
-     * @return User-visible layer preview status.
+     * @brief Return current user-visible production preview status.
+     * @return Status text.
      */
     QString StatusForTest() const;
 
+    /**
+     * @brief Return whether the selected layer buffer is ready.
+     * @return True only for an exact current-layer TIFF buffer.
+     */
+    bool IsLayerReadyForTest() const;
+
+    /**
+     * @brief Return the loaded TIFF buffer layer index.
+     * @return Loaded real layer index, or -1.
+     */
+    int LoadedLayerIndexForTest() const;
+
+    /**
+     * @brief Return the number of asynchronous layer requests.
+     * @return Layer request count since construction.
+     */
+    quint64 LayerRequestCountForTest() const;
+
+    /**
+     * @brief Return the authoritative production preview source description.
+     * @return Stable source description.
+     */
+    QString DataSourceForTest() const;
+
+    /**
+     * @brief Return whether the newest accepted layer came from cache.
+     * @return True for a cache hit.
+     */
+    bool LastLoadWasCacheHitForTest() const;
+
 signals:
     /**
-     * @brief Emitted when the user selects a different real package layer.
-     * @param layerIndex Selected package layer index.
+     * @brief Emitted when the selected real package layer changes.
+     * @param layerIndex Selected manifest layer index.
      */
     void SigLayerIndexChanged(int layerIndex);
 
     /**
-     * @brief Emitted when the production TIFF pixel probe changes.
-     * @param context Human-readable six-channel production context; empty when cleared.
+     * @brief Emitted when the six-channel pixel probe changes.
+     * @param context Exact production channel context, or empty.
      */
     void SigPixelProbeChanged(const QString& context);
 
@@ -138,38 +178,58 @@ private slots:
     void OnZoomOut();
     void OnFitToWindow();
     void OnActualSize();
+    void OnLayerLoaded(
+        quint64 generation,
+        const QString& consumerId,
+        int layerIndex,
+        TiffLayerBufferPtr buffer,
+        bool cacheHit);
+    void OnLayerLoadFailed(
+        quint64 generation,
+        const QString& consumerId,
+        int layerIndex,
+        const QString& errorCode,
+        const QString& message);
 
 private:
     QString CurrentChannel() const;
-    LayerPreviewFrame FindFrame(int layerIndex, const QString& channel) const;
-    QImage ReadFrameImage(const LayerPreviewFrame& frame) const;
-    QImage RenderCurrentImage() const;
-    QImage RenderProductionRgb(int layerIndex) const;
-    QImage RenderMaskChannel(int layerIndex, const QString& channel) const;
-    QImage RenderOccupancy(int layerIndex) const;
-    QImage RenderDiagnostic(int layerIndex) const;
-    QImage BlankCanvas() const;
-    QImage ApplyPseudoColor(const QImage& source, const QColor& color) const;
+    double CurrentLayerZMm() const;
+    void ApplyPackageIndex(
+        const slicer_core::ProductionPackageIndex& index);
     void RebuildChannelSelector();
     void RebuildLayerSlider();
-    void UpdateImage();
+    void RequestCurrentLayer();
+    void ComposeCurrentImage();
     void ApplyPixmap();
     void UpdateStatus(const QString& note = QString());
-    bool IsPrintedPixel(const QColor& color) const;
     QString BuildPixelProbeText(int displayX, int displayY) const;
-    QString InterpretPixel(int r, int g, int b, int w, int s, int v) const;
-    QString BuildLayerSemanticText(const LayerPreviewLayerStats& stats) const;
+    QString InterpretPixel(
+        const slicer_core::MaterialPixelProbe& probe) const;
+    QString BuildLayerSemanticText(
+        const LayerPreviewLayerStats& stats) const;
     QString BuildSourcePolicyText() const;
     QString ApplyPixelProbe(int displayX, int displayY);
     void ClearPixelProbe();
+    void ClearCurrentLayer();
     QSize PhysicalDisplaySize() const;
 
     LayerPreviewDataProvider m_provider;
     LayerPreviewPackage m_package;
+    std::shared_ptr<slicer_core::TiffLayerSource> m_layerSource;
+    TiffLayerLoadWorker* m_layerWorker{nullptr};
+    TiffLayerBufferPtr m_currentBuffer;
+    slicer_core::MaterialPreviewResult m_currentPreview;
     QImage m_currentImage;
     QString m_probeText;
+    QString m_errorCode;
+    QString m_errorMessage;
+    quint64 m_expectedGeneration{0U};
+    quint64 m_layerRequestCount{0U};
+    int m_requestedLayerIndex{-1};
     double m_zoom{1.0};
     bool m_fit{true};
+    bool m_loading{false};
+    bool m_lastCacheHit{false};
 
     QComboBox* m_channelSelector{nullptr};
     QSlider* m_layerSlider{nullptr};
