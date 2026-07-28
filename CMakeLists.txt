@@ -213,6 +213,11 @@ add_library(slicer_core
     src/slicer_core/pipeline/SlicePipeline.h
     src/slicer_core/pipeline/SlicePipelineRouter.cpp
     src/slicer_core/pipeline/SlicePipelineRouter.h
+    src/slicer_core/preview/ProductionLayerRef.h
+    src/slicer_core/preview/TiffLayerCache.cpp
+    src/slicer_core/preview/TiffLayerCache.h
+    src/slicer_core/preview/TiffLayerSource.cpp
+    src/slicer_core/preview/TiffLayerSource.h
     src/slicer_core/preflight/ModelPreflightCacheIdentity.cpp
     src/slicer_core/preflight/ModelPreflightCacheIdentity.h
     src/slicer_core/preflight/ModelPreflightAdmissionPolicy.cpp
@@ -421,6 +426,18 @@ add_executable(rip_reader_resolution_unit_tests
 )
 
 target_link_libraries(rip_reader_resolution_unit_tests PRIVATE slicer_core)
+
+add_executable(tiff_layer_source_unit_tests
+    tests/unit/tiff_layer_source/Main.cpp
+)
+
+target_link_libraries(tiff_layer_source_unit_tests PRIVATE slicer_core)
+
+add_executable(tiff_layer_cache_unit_tests
+    tests/unit/tiff_layer_cache/Main.cpp
+)
+
+target_link_libraries(tiff_layer_cache_unit_tests PRIVATE slicer_core)
 
 add_executable(outer_varnish_discretization_unit_tests
     tests/unit/outer_varnish_discretization/Main.cpp
@@ -794,6 +811,8 @@ add_test(NAME production_admission_policy_unit_tests COMMAND production_admissio
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME output_resolution_config_unit_tests COMMAND output_resolution_config_unit_tests)
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
+add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
+add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)
 add_test(NAME outer_varnish_discretization_unit_tests COMMAND outer_varnish_discretization_unit_tests)
 add_test(NAME non_square_raster_pipeline_unit_tests COMMAND non_square_raster_pipeline_unit_tests)
 set_tests_properties(

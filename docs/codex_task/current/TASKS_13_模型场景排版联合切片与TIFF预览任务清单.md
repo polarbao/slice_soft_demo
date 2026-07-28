@@ -1,6 +1,6 @@
 # TASKS 13 模型场景、排版联合切片与 TIFF 原生预览任务清单
 
-> 状态：13-00 / 13A-01..05 / 13B-01..07 / 12E-09A-02 COMPLETE / NEXT 13C-01
+> 状态：13-00 / 13A-01..05 / 13B-01..07 / 13C-01 / 12E-09A-02 COMPLETE / NEXT 13C-02
 > 日期：2026-07-28
 > 执行原则：每次只执行用户明确授权的原子任务
 
@@ -315,13 +315,14 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 
 ### 13C-01 TiffLayerSource 与 LRU
 
-状态：READY FOR DEVELOPMENT / SCHEDULE AFTER IDENTITY WAVE
+状态：COMPLETE（2026-07-28）
 
-目标：manifest layer index、异步解码、5 层默认 LRU、取消/stale、防跨层。
+完成：manifest layer index、stripped/tiled 解码、5 层/256 MiB 默认 LRU、Qt 异步 Worker、
+取消/stale、防跨层、稳定错误和定向单测。
 
 ### 13C-02 MaterialPreviewComposer
 
-状态：PREPARED / WAIT 13C-01
+状态：READY / 13C-01 COMPLETE
 
 目标：R/G/B/W/S/V、RGB、RGB+W/S/V、RGB+S+W+V、Empty 和像素探针。
 
@@ -375,7 +376,8 @@ REPORT_13B_07_真实模型矩阵与阶段收口当前状态.md。
 13A-R2、13A-R3、13B-R4 是未拆分的中长期 Epic。
 ```
 
-当前唯一推荐入口为 `13C-01 TiffLayerSource 与 LRU`。13B-07 已完成真实模型功能矩阵，
+当前唯一推荐入口为 `13C-02 MaterialPreviewComposer`。13C-01 已完成 TIFF-native source、LRU、
+异步 generation 和稳定错误；13B-07 已完成真实模型功能矩阵，
 多模型场景链的功能开发闭环；设备 buildVolume/轴向和 22 实例预算继续阻断 13B production GO，
 但不阻断 13C TIFF 原生预览开发。
 

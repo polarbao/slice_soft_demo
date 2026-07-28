@@ -43,6 +43,8 @@ add_executable(slicer_debug_ui
     services/SlicePreflightCoordinator.h
     services/ToolPaths.cpp
     services/ToolPaths.h
+    services/TiffLayerLoadWorker.cpp
+    services/TiffLayerLoadWorker.h
     services/TransformedModelPreflightLoader.cpp
     services/TransformedModelPreflightLoader.h
     services/LayerPreviewDataProvider.cpp

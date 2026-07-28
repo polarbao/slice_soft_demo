@@ -1,6 +1,6 @@
 # DOC_PREP_13 全阶段原子任务实施准备与文件所有权
 
-> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、09A-02 COMPLETE / NEXT 13C-01
+> 文档状态：P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01、09A-02 COMPLETE / NEXT 13C-02
 > 版本：v1.6
 > 日期：2026-07-28
 > 适用范围：13A-01..05、13B-01..07、13C-01..05
@@ -255,7 +255,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 6.1 13C-01 TiffLayerSource 与 LRU
 
-状态：`READY FOR DEVELOPMENT / SCHEDULE AFTER IDENTITY WAVE`
+状态：`COMPLETE（2026-07-28）`
 
 | 项目 | 准备内容 |
 |---|---|
@@ -271,7 +271,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 
 ### 6.2 13C-02 MaterialPreviewComposer
 
-状态：`PREPARED / WAIT 13C-01`
+状态：`READY / 13C-01 COMPLETE`
 
 | 项目 | 准备内容 |
 |---|---|

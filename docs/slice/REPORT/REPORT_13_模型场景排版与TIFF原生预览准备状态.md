@@ -1,8 +1,8 @@
 # REPORT_13 模型场景、排版联合切片与 TIFF 原生预览准备状态
 
-> 文档版本：v1.2
+> 文档版本：v1.3
 > 日期：2026-07-28
-> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..07、跨阶段 12E-09A-02 COMPLETE / NEXT 13C-01
+> 当前状态：P0 DESIGN COMPLETE / 13A-01..05、13B-01..07、13C-01、跨阶段 12E-09A-02 COMPLETE / NEXT 13C-02
 
 ## 1. 本轮完成
 
@@ -83,6 +83,7 @@ scene effective config 已支持原子保存、回读、hash、cancel 和 stale�
 当前已有 joint package、typed scene report 和 Debug/Release 真实模型功能矩阵；
 当前 PreviewWorkspace 已统一 UI 容器和 layerIndex；
 当前生产 RGB/像素探针已能读取 TIFF；
+当前已有 manifest 权威 TiffLayerSource、5 层/256 MiB LRU、稳定错误和 Qt 异步 Worker；
 当前 W/S/V/overlay 仍主要依赖 preview PNG；
 当前没有 RGB+S+W+V 预设。
 ```
@@ -159,9 +160,10 @@ Stage 13 P0 PRD/DEV/DEMO：COMPLETE；
 13B-05：FIXTURE COMPLETE；
 13B-06：FIXTURE COMPLETE / PRODUCTION INPUT OPEN；
 13B-07：FUNCTIONAL MATRIX COMPLETE / PRODUCTION INPUT OPEN；
-13C-01：READY FOR DEVELOPMENT，但按单贡献者计划排在模型交互和场景排版之后；
+13C-01：COMPLETE，manifest/TIFF layer source、LRU、异步 generation 和稳定错误已落地；
+13C-02：READY；
 Stage 13 全阶段 production readiness：尚未完成；
-Stage 13 已实现能力：12/17 个近程原子任务完成。
+Stage 13 已实现能力：13/17 个近程原子任务完成。
 ```
 
 因此，“Stage 13 P0 开发准备完成”适用于 13A-01..05、13B-01..07、13C-01..05 的任务计划；
@@ -193,23 +195,24 @@ buildVolume/轴方向不阻断 13A-01、13B-01 schema 和 13C，但阻断 13B-04
 13A 近程：5；
 13B 近程：7；
 13C 近程：5；
-合计：17 个近程原子任务，当前完成 12；
+合计：17 个近程原子任务，当前完成 13；
 中长期另有 13A-R2、13A-R3、13B-R4 三个未拆分 Epic。
 ```
 
 ## 8. 下一任务
 
 ```text
-13C-01 TiffLayerSource 与 LRU
+13C-02 MaterialPreviewComposer
 ```
 
 13B-07 已完成真实 OBJ/3MF 的 1/11/12/22 Debug/Release 功能矩阵、复用、单 package 和 RIP strict，
-并保持 production INPUT_OPEN。下一步进入 13C TIFF 原生层数据源；设备输入未关闭前不得给出
+并保持 production INPUT_OPEN；13C-01 TIFF 原生层数据源已完成。下一步进入同层材料显示合成；
+设备输入未关闭前不得给出
 13B production GO。
 
 ## 9. 详细设计完整性
 
-| 范围 | 当前结论 | 是否阻断 13C-01 |
+| 范围 | 当前结论 | 是否阻断 13C-02 |
 |---|---|---|
 | 13A/13B/13C P0 需求 | 完整 | 否 |
 | P0 架构、DTO、依赖和协议边界 | 完整 | 否 |
