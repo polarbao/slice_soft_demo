@@ -1,7 +1,7 @@
 {
     "autoOrient": {
         "enabled": true,
-        "maxHeightMm": 6,
+        "maxHeightMm": 9,
         "strategy": "minimize_height_by_right_angle_rotation"
     },
     "background": {

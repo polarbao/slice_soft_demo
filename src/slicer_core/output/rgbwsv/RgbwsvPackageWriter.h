@@ -51,7 +51,7 @@ struct RgbwsvProductionGridSpec
         kMillimetersPerInch / static_cast<double>(kDefaultOutputDpiX)};
     double pixelSizeYmm{
         kMillimetersPerInch / static_cast<double>(kDefaultOutputDpiY)};
-    double layerThicknessMm{0.01};
+    double layerThicknessMm{kDefaultLayerThicknessMm};
     double originXmm{0.0};
     double originYmm{0.0};
     double originZmm{0.0};

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/config.h"
 #include "slicer_core/scene/MultiModelScene.h"
 
 #include <filesystem>
@@ -21,9 +22,9 @@ struct SceneEffectiveConfigRequest
     std::filesystem::path sourceprofileconfigpath;
     std::filesystem::path outputpackagedir;
     std::string generatedatutc;
-    int dpix{635};
-    int dpiy{600};
-    double layerheightmm{0.01};
+    int dpix{kDefaultOutputDpiX};
+    int dpiy{kDefaultOutputDpiY};
+    double layerheightmm{kDefaultLayerThicknessMm};
     std::string slicepipelinemode{"legacy"};
     bool production{false};
     bool cancelled{false};

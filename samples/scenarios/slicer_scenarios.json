@@ -1,6 +1,6 @@
 {
   "schema": "slice_soft.scenarios.2",
-  "defaultScenarioId": "textured_nail_rgb_white_lower_support",
+  "defaultScenarioId": "textured_nail_rgb_only_lower_support",
   "description": "SliceSoft Qt 调试 UI 与全量样例脚本共享的场景索引。VSCode 只保留通用入口，具体模型/Profile 从这里选择。",
   "scenarios": [
     {

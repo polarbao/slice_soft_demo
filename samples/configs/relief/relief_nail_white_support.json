@@ -6,9 +6,9 @@
   },
   "output": {
     "packageDir": "output/ReliefNailWhiteSupport",
-    "dpiX": 600,
+    "dpiX": 635,
     "dpiY": 600,
-    "layerThicknessMm": 0.01,
+    "layerThicknessMm": 0.038,
     "channelOrder": ["R", "G", "B", "W", "S", "V"],
     "bitDepth": 8,
     "planarConfig": "contiguous",
@@ -23,7 +23,7 @@
   },
   "autoOrient": {
     "enabled": true,
-    "maxHeightMm": 6.0,
+    "maxHeightMm": 9.0,
     "strategy": "minimize_height_by_right_angle_rotation"
   },
   "background": {
@@ -35,6 +35,41 @@
     "rgb": [255, 255, 255],
     "whiteValue": 0,
     "varnishValue": 255
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "single_material_relief",
+    "target": "single_material_relief",
+    "rgb": {
+      "enabled": false,
+      "source": "modelMaterial"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "all_model",
+      "coverage": "all_model",
+      "value": 0,
+      "expandPx": 0,
+      "shrinkPx": 0
+    },
+    "varnish": {
+      "enabled": false,
+      "mode": "disabled",
+      "topLayers": 1,
+      "value": 0,
+      "coverage": "model_surface"
+    },
+    "support": {
+      "expected": true,
+      "mode": "existing_support_pipeline"
+    },
+    "validation": {
+      "requireRgbPixels": false,
+      "requireWhitePixels": true,
+      "requireVarnishPixels": false,
+      "requireSupportPixels": true,
+      "maxUnexpectedOverlapPixels": 0
+    }
   },
   "support": {
     "enabled": true,

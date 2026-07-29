@@ -58,7 +58,7 @@ struct TriangleTextureInfo {
 struct AutoOrientReport {
     bool enabled{true};
     bool applied{false};
-    double max_height_mm{6.0};
+    double max_height_mm{9.0};
     std::string selected_orientation{"identity"};
     BoundingBox original_bbox_mm;
 };

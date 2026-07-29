@@ -6,9 +6,9 @@
   },
   "output": {
     "packageDir": "output/ProfileTexturedNailRgbOnlyLowerSupport",
-    "dpiX": 600,
+    "dpiX": 635,
     "dpiY": 600,
-    "layerThicknessMm": 0.01,
+    "layerThicknessMm": 0.038,
     "channelOrder": ["R", "G", "B", "W", "S", "V"],
     "bitDepth": 8,
     "planarConfig": "contiguous",
@@ -23,7 +23,7 @@
   },
   "autoOrient": {
     "enabled": true,
-    "maxHeightMm": 6.0,
+    "maxHeightMm": 9.0,
     "strategy": "minimize_height_by_right_angle_rotation"
   },
   "background": {

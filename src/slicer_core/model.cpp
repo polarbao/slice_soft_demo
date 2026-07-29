@@ -266,9 +266,15 @@ OrientationCandidate make_orientation_candidate(
 OrientationCandidate choose_auto_orientation(
     const std::vector<Vec3>& vertices,
     const BoundingBox& original_bbox,
-    const AutoOrientConfig& config) {
+    const AutoOrientConfig& config)
+{
+    constexpr double kHeightToleranceMm{1.0e-9};
+    constexpr double kFootprintToleranceSquareMm{1.0e-9};
     const OrientationCandidate identity{"identity", {0.0, 0.0, 0.0}, vertices, original_bbox};
-    if (!config.enabled || bbox_height(original_bbox) <= config.max_height_mm) {
+    if (!config.enabled
+        || bbox_height(original_bbox)
+            <= config.max_height_mm + kHeightToleranceMm)
+    {
         return identity;
     }
 
@@ -279,21 +285,89 @@ OrientationCandidate choose_auto_orientation(
     candidates.push_back(make_orientation_candidate("rotate_y_90", {0.0, 90.0, 0.0}, vertices));
     candidates.push_back(make_orientation_candidate("rotate_y_minus_90", {0.0, -90.0, 0.0}, vertices));
 
-    const auto better = [&](const OrientationCandidate& lhs, const OrientationCandidate& rhs) {
-        const bool lhs_fits = bbox_height(lhs.bbox) <= config.max_height_mm;
-        const bool rhs_fits = bbox_height(rhs.bbox) <= config.max_height_mm;
-        if (lhs_fits != rhs_fits) {
-            return lhs_fits;
+    const auto isSignificantlyLess =
+        [](const double left,
+           const double right,
+           const double tolerance)
+    {
+        return left < right - tolerance;
+    };
+    const auto isBetter =
+        [&](const OrientationCandidate& candidate,
+            const OrientationCandidate& selected)
+    {
+        const double candidateHeight =
+            bbox_height(candidate.bbox);
+        const double selectedHeight =
+            bbox_height(selected.bbox);
+        const double candidateFootprint =
+            bbox_footprint_area(candidate.bbox);
+        const double selectedFootprint =
+            bbox_footprint_area(selected.bbox);
+        const bool candidateFits =
+            candidateHeight
+            <= config.max_height_mm + kHeightToleranceMm;
+        const bool selectedFits =
+            selectedHeight
+            <= config.max_height_mm + kHeightToleranceMm;
+        if (candidateFits != selectedFits)
+        {
+            return candidateFits;
         }
-        if (lhs_fits && rhs_fits) {
-            return bbox_footprint_area(lhs.bbox) < bbox_footprint_area(rhs.bbox);
+        if (candidateFits)
+        {
+            if (isSignificantlyLess(
+                    candidateFootprint,
+                    selectedFootprint,
+                    kFootprintToleranceSquareMm))
+            {
+                return true;
+            }
+            if (isSignificantlyLess(
+                    selectedFootprint,
+                    candidateFootprint,
+                    kFootprintToleranceSquareMm))
+            {
+                return false;
+            }
+            return isSignificantlyLess(
+                candidateHeight,
+                selectedHeight,
+                kHeightToleranceMm);
         }
-        return bbox_height(lhs.bbox) < bbox_height(rhs.bbox);
+        if (isSignificantlyLess(
+                candidateHeight,
+                selectedHeight,
+                kHeightToleranceMm))
+        {
+            return true;
+        }
+        if (isSignificantlyLess(
+                selectedHeight,
+                candidateHeight,
+                kHeightToleranceMm))
+        {
+            return false;
+        }
+        return isSignificantlyLess(
+            candidateFootprint,
+            selectedFootprint,
+            kFootprintToleranceSquareMm);
     };
 
-    return *std::min_element(candidates.begin(), candidates.end(), [&](const auto& lhs, const auto& rhs) {
-        return better(lhs, rhs);
-    });
+    std::size_t selectedIndex{0};
+    for (std::size_t index{1};
+         index < candidates.size();
+         ++index)
+    {
+        if (isBetter(
+                candidates.at(index),
+                candidates.at(selectedIndex)))
+        {
+            selectedIndex = index;
+        }
+    }
+    return candidates.at(selectedIndex);
 }
 
 std::filesystem::path resolve_path(const std::filesystem::path& path, const std::filesystem::path& config_dir) {

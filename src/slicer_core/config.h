@@ -13,6 +13,7 @@ namespace slicer_core {
 
 inline constexpr int kDefaultOutputDpiX{635};
 inline constexpr int kDefaultOutputDpiY{600};
+inline constexpr double kDefaultLayerThicknessMm{0.038};
 inline constexpr int kMinimumOutputDpi{72};
 inline constexpr int kMaximumOutputDpi{2400};
 inline constexpr double kMillimetersPerInch{25.4};
@@ -44,7 +45,7 @@ struct OutputConfig {
     std::filesystem::path package_dir{"output/SlicePackage"};
     int dpi_x{kDefaultOutputDpiX};
     int dpi_y{kDefaultOutputDpiY};
-    double layer_thickness_mm{0.01};
+    double layer_thickness_mm{kDefaultLayerThicknessMm};
     std::vector<std::string> channel_order{"R", "G", "B", "W", "S", "V"};
     int bit_depth{8};
     std::string planar_config{"contiguous"};
@@ -63,7 +64,7 @@ struct TransformConfig {
 
 struct AutoOrientConfig {
     bool enabled{true};
-    double max_height_mm{6.0};
+    double max_height_mm{9.0};
     std::string strategy{"minimize_height_by_right_angle_rotation"};
 };
 
