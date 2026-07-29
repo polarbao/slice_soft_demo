@@ -1,8 +1,8 @@
 # DEV 12E-09A Scene-aware 诊断 UI 设计
 
 > 文档版本：v1.0
-> 文档状态：Formal DEV / 09A-02 COMPLETE / 09A-03..06 PREPARED
-> 日期：2026-07-27
+> 文档状态：Formal DEV / 09A-03 COMPLETE / 09A-04..06 PREPARED
+> 日期：2026-07-29
 
 ## 1. 架构边界
 
@@ -210,3 +210,15 @@ CMakeLists.txt
 ```
 
 Qt 接线留到 09A-03，不在 09A-02 夹带控件或 Worker。
+
+## 10. 09A-03 实际 UI 落点
+
+```text
+DiagnosticSettingsPanel：拥有中文宽度、材料和只读诊断状态；
+ContextInspector：在“切片设置”页托管面板并转发自定义信号；
+MainWindow：绑定当前 scene/instance/revision、候选工具可用状态和 UI 会话 requested 值；
+UiSmokeTestRunner：验证 0.01 mm、双向同步、最长中文、不可用状态和三窗口尺寸。
+```
+
+09A-03 不直接更新 `ConfigDocument`，避免 diagnostic 编辑污染生产 Profile。09A-04 启动分析前必须
+调用 09A-02 的专用事务生成 `slice_config.diagnostic.effective.json`。

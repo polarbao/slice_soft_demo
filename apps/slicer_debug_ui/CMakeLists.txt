@@ -83,6 +83,8 @@ add_executable(slicer_debug_ui
     widgets/ContextInspector.h
     widgets/DiagnosticsDock.cpp
     widgets/DiagnosticsDock.h
+    widgets/DiagnosticSettingsPanel.cpp
+    widgets/DiagnosticSettingsPanel.h
     widgets/ConfigDiffPanel.cpp
     widgets/ConfigDiffPanel.h
     widgets/MaterialProcessPanel.cpp

@@ -52,7 +52,12 @@ ContextInspector::ContextInspector(
     sliceSettingsLayout->addWidget(m_profileLabel);
     sliceSettingsLayout->addWidget(m_availabilityLabel);
     sliceSettingsLayout->addWidget(m_openConfigButton);
-    sliceSettingsLayout->addStretch(1);
+    m_diagnosticSettingsPanel =
+        new DiagnosticSettingsPanel(
+            sliceSettingsPage);
+    sliceSettingsLayout->addWidget(
+        m_diagnosticSettingsPanel,
+        1);
 
     m_tabs->addTab(scenePage, QStringLiteral("场景"));
     m_tabs->addTab(transformPage, QStringLiteral("变换"));
@@ -68,6 +73,20 @@ ContextInspector::ContextInspector(
         &QPushButton::clicked,
         this,
         &ContextInspector::SigOpenConfigRequested);
+    connect(
+        m_diagnosticSettingsPanel,
+        &DiagnosticSettingsPanel::
+            SigTextureSurfaceWidthChanged,
+        this,
+        &ContextInspector::
+            SigDiagnosticTextureSurfaceWidthChanged);
+    connect(
+        m_diagnosticSettingsPanel,
+        &DiagnosticSettingsPanel::
+            SigModelFillMaterialChanged,
+        this,
+        &ContextInspector::
+            SigDiagnosticModelFillMaterialChanged);
     SetSliceSettingsSummary(
         QStringLiteral("传统切片"),
         QStringLiteral("自定义"),
@@ -85,6 +104,22 @@ void ContextInspector::SetSliceSettingsSummary(
         QStringLiteral("Profile：") + profileLabel);
     m_availabilityLabel->setText(
         QStringLiteral("当前状态：") + availability);
+}
+
+void ContextInspector::SetDiagnosticRequestedSettings(
+    const double widthMm,
+    const QString& modelFillMaterial)
+{
+    m_diagnosticSettingsPanel->SetRequestedSettings(
+        widthMm,
+        modelFillMaterial);
+}
+
+void ContextInspector::SetDiagnosticPresentation(
+    const DiagnosticSettingsPresentation& presentation)
+{
+    m_diagnosticSettingsPanel->SetPresentation(
+        presentation);
 }
 
 void ContextInspector::ShowScenePage()

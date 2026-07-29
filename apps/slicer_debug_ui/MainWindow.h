@@ -144,6 +144,8 @@ private:
     void loadCompareResult(const QString& path);
     void runCommand(const QString& action, const QString& program, const QStringList& args);
     void setBusy(bool busy);
+    void SyncDiagnosticRequestedSettingsFromConfig();
+    void UpdateDiagnosticSettingsPresentation();
 
     ToolPaths paths_;
     ConfigDocument config_document_;
@@ -168,6 +170,9 @@ private:
     QString pending_package_;
     QString compare_output_;
     QString m_currentProfileId;
+    double m_diagnosticTextureSurfaceWidthMm{0.10};
+    QString m_diagnosticModelFillMaterial{
+        QStringLiteral("white")};
 
     QLineEdit* config_edit_{nullptr};
     QLineEdit* package_edit_{nullptr};

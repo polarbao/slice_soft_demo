@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DiagnosticSettingsPanel.h"
+
 #include <QStringList>
 #include <QWidget>
 
@@ -42,6 +44,22 @@ public:
         const QString& availability);
 
     /**
+     * @brief Replace the editable diagnostic request values.
+     * @param widthMm Requested texture-surface width in millimetres.
+     * @param modelFillMaterial Stable model-fill material id.
+     */
+    void SetDiagnosticRequestedSettings(
+        double widthMm,
+        const QString& modelFillMaterial);
+
+    /**
+     * @brief Update the diagnostic subject, bounds, backend, and status.
+     * @param presentation Read-only diagnostic context.
+     */
+    void SetDiagnosticPresentation(
+        const DiagnosticSettingsPresentation& presentation);
+
+    /**
      * @brief Select the scene page after an import request.
      */
     void ShowScenePage();
@@ -77,6 +95,20 @@ signals:
      */
     void SigOpenConfigRequested();
 
+    /**
+     * @brief Forward a diagnostic texture-width edit.
+     * @param widthMm Requested width in millimetres.
+     */
+    void SigDiagnosticTextureSurfaceWidthChanged(
+        double widthMm);
+
+    /**
+     * @brief Forward a diagnostic model-fill material edit.
+     * @param material Stable material id.
+     */
+    void SigDiagnosticModelFillMaterialChanged(
+        const QString& material);
+
 private:
     QTabWidget* m_tabs{nullptr};
     QWidget* m_scenePage{nullptr};
@@ -84,4 +116,6 @@ private:
     QLabel* m_profileLabel{nullptr};
     QLabel* m_availabilityLabel{nullptr};
     QPushButton* m_openConfigButton{nullptr};
+    DiagnosticSettingsPanel* m_diagnosticSettingsPanel{
+        nullptr};
 };

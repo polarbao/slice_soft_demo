@@ -1,7 +1,7 @@
 # TASKS 12E-09A 诊断 UI 任务清单
 
-> 状态：09A-01/02 COMPLETE / 09A-03..06 PREPARED
-> 日期：2026-07-27
+> 状态：09A-01..03 COMPLETE / 09A-04 READY / 09A-05..06 PREPARED
+> 日期：2026-07-29
 > 性质：独立 diagnostic UI 支线
 
 前置执行合同：
@@ -70,7 +70,7 @@ docs/slice/REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状
 
 ## 4. 09A-03 中文参数控件与状态区
 
-状态：PREPARED / FUNCTIONALLY UNBLOCKED / SCHEDULE AFTER 13C-03
+状态：COMPLETE（2026-07-29）
 
 目标：
 
@@ -84,9 +84,15 @@ docs/slice/REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状
 
 验收：双向同步、最长中文、三窗口尺寸和不可用状态 smoke。
 
+状态报告：
+
+```text
+docs/slice/REPORT/REPORT_12E_09A_03_中文参数控件与状态区当前状态.md
+```
+
 ## 5. 09A-04 异步分析 Worker
 
-状态：PREPARED / WAIT 09A-03
+状态：READY / 09A-03 COMPLETE
 
 目标：
 

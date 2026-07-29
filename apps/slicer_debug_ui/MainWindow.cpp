@@ -532,6 +532,15 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         this,
         &MainWindow::OnMaterialClosureLayerRequested);
     connect(config_editor_panel_, &ConfigEditorPanel::configPathChanged, config_edit_, &QLineEdit::setText);
+    connect(
+        config_editor_panel_,
+        &ConfigEditorPanel::configPathChanged,
+        this,
+        [this](const QString&)
+        {
+            SyncDiagnosticRequestedSettingsFromConfig();
+            UpdateDiagnosticSettingsPresentation();
+        });
     connect(config_editor_panel_, &ConfigEditorPanel::statusMessage, status_label_, &QLabel::setText);
     connect(
         config_editor_panel_,
@@ -816,6 +825,35 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
                 m_configWorkspace);
         });
     connect(
+        m_contextInspector,
+        &ContextInspector::
+            SigDiagnosticTextureSurfaceWidthChanged,
+        this,
+        [this](const double widthMm)
+        {
+            m_diagnosticTextureSurfaceWidthMm =
+                widthMm;
+            status_label_->setText(
+                QStringLiteral(
+                    "诊断纹理表面层宽度已设为 %1 mm；"
+                    "尚未启动分析，不会修改生产 Profile。")
+                    .arg(widthMm, 0, 'f', 2));
+        });
+    connect(
+        m_contextInspector,
+        &ContextInspector::
+            SigDiagnosticModelFillMaterialChanged,
+        this,
+        [this](const QString& material)
+        {
+            m_diagnosticModelFillMaterial =
+                material;
+            status_label_->setText(
+                QStringLiteral(
+                    "诊断模型填充材料已更新；"
+                    "尚未启动分析，不会修改生产 Profile。"));
+        });
+    connect(
         m_modelTransformPanel,
         &ModelTransformPanel::SigStatusMessage,
         status_label_,
@@ -871,6 +909,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     {
         config_editor_panel_->loadConfig(config_edit_->text());
     }
+    SyncDiagnosticRequestedSettingsFromConfig();
     loadPackage(package_edit_->text());
     UpdateModelPreflightUi();
     UpdateActionAvailability();
@@ -2565,6 +2604,7 @@ void MainWindow::UpdateActionAvailability()
         actionPresentation.modelabel,
         actionPresentation.profilelabel,
         sceneSliceReason);
+    UpdateDiagnosticSettingsPresentation();
     m_importSliceButton->setEnabled(enabled);
     m_importOpenVdbButton->setEnabled(enabled);
     m_importOpenVdbCandidateButton->setEnabled(enabled);
@@ -2851,6 +2891,7 @@ void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
         return;
     }
     ApplyProfileDefaultsToDocument(scenario.id, packageDir);
+    SyncDiagnosticRequestedSettingsFromConfig();
     if (!packageDir.isEmpty())
     {
         loadPackage(packageDir);
@@ -2907,4 +2948,174 @@ void MainWindow::setBusy(const bool busy) {
     m_processBusy = busy;
     UpdateActionAvailability();
     UpdateModelPreflightUi();
+}
+
+void MainWindow::SyncDiagnosticRequestedSettingsFromConfig()
+{
+    const double configuredWidth =
+        config_document_
+            .value(
+                {"texture",
+                 "surfaceShell",
+                 "widthMm"})
+            .toDouble(0.10);
+    m_diagnosticTextureSurfaceWidthMm =
+        std::clamp(configuredWidth, 0.10, 6.00);
+    const QString configuredMaterial =
+        config_document_
+            .value({"modelFill", "material"})
+            .toString(QStringLiteral("white"));
+    m_diagnosticModelFillMaterial =
+        configuredMaterial
+                == QStringLiteral("varnish")
+            || configuredMaterial
+                == QStringLiteral("rgb")
+        ? configuredMaterial
+        : QStringLiteral("white");
+    if (m_contextInspector != nullptr)
+    {
+        m_contextInspector
+            ->SetDiagnosticRequestedSettings(
+                m_diagnosticTextureSurfaceWidthMm,
+                m_diagnosticModelFillMaterial);
+    }
+}
+
+void MainWindow::UpdateDiagnosticSettingsPresentation()
+{
+    if (m_contextInspector == nullptr)
+    {
+        return;
+    }
+
+    DiagnosticSettingsPresentation presentation;
+    const int dpiX =
+        config_document_
+            .value({"output", "dpiX"})
+            .toInt(slicer_core::kDefaultOutputDpiX);
+    const int dpiY =
+        config_document_
+            .value({"output", "dpiY"})
+            .toInt(slicer_core::kDefaultOutputDpiY);
+    const double layerThicknessMm =
+        config_document_
+            .value(
+                {"output", "layerThicknessMm"})
+            .toDouble(0.01);
+    const double classificationResolutionMm =
+        std::max({
+            25.4 / static_cast<double>(
+                       std::max(1, dpiX)),
+            25.4 / static_cast<double>(
+                       std::max(1, dpiY)),
+            layerThicknessMm,
+        });
+    const double minimumWidthMm =
+        std::max(
+            0.10,
+            2.0 * classificationResolutionMm);
+    presentation.minimumwidthmm = minimumWidthMm;
+    if (m_diagnosticTextureSurfaceWidthMm
+        < minimumWidthMm)
+    {
+        m_diagnosticTextureSurfaceWidthMm =
+            minimumWidthMm;
+        m_contextInspector
+            ->SetDiagnosticRequestedSettings(
+                m_diagnosticTextureSurfaceWidthMm,
+                m_diagnosticModelFillMaterial);
+    }
+    const bool hasCurrentInstance =
+        !m_sceneDocument.CurrentInstanceId().isEmpty();
+    const bool importRunning =
+        m_sceneBatchImportController.IsRunning()
+        || m_sceneDocument.State()
+            == SceneDocumentState::Loading;
+    presentation.controlsenabled =
+        hasCurrentInstance && !importRunning;
+
+    if (hasCurrentInstance)
+    {
+        presentation.subjectsummary =
+            QStringLiteral(
+                "场景 %1 / revision %2 / 当前实例 %3")
+                .arg(
+                    m_sceneDocument.SceneId().isEmpty()
+                        ? QStringLiteral("未保存")
+                        : m_sceneDocument.SceneId())
+                .arg(m_sceneDocument.SceneRevision())
+                .arg(
+                    m_sceneDocument.CurrentInstanceId());
+    }
+    else
+    {
+        presentation.subjectsummary =
+            QStringLiteral("未选择模型。");
+    }
+
+    const bool openVdbAvailable =
+        QFileInfo::exists(
+            paths_.openvdb_slicer_cli);
+    presentation.backendavailability =
+        QStringLiteral(
+            "Legacy CPU 可用；OpenVDB 候选工具%1，能力尚未探测")
+            .arg(
+                openVdbAvailable
+                    ? QStringLiteral("已发现")
+                    : QStringLiteral("未发现"));
+
+    if (importRunning)
+    {
+        presentation.status =
+            QStringLiteral(
+                "等待（pending）：模型导入中，"
+                "诊断参数暂不可编辑。");
+    }
+    else if (!hasCurrentInstance)
+    {
+        presentation.status =
+            QStringLiteral(
+                "不可用（unavailable）："
+                "等待导入或选择模型。");
+        presentation.blockingreasons.push_back(
+            QStringLiteral("当前没有诊断对象。"));
+    }
+    else if (m_sceneDocument.State()
+             == SceneDocumentState::Blocked)
+    {
+        presentation.status =
+            QStringLiteral(
+                "已阻断（blocked）：模型预检未通过；"
+                "参数可编辑，"
+                "但诊断结论不得冒充生产准入。");
+        presentation.blockingreasons.push_back(
+            m_sceneDocument.Error().isEmpty()
+                ? QStringLiteral(
+                      "当前模型未通过几何预检。")
+                : m_sceneDocument.Error());
+    }
+    else if (m_sceneDocument.State()
+             == SceneDocumentState::Failed)
+    {
+        presentation.status =
+            QStringLiteral(
+                "不可用（unavailable）：模型加载失败。");
+        presentation.blockingreasons.push_back(
+            m_sceneDocument.Error().isEmpty()
+                ? QStringLiteral(
+                      "模型加载失败，未提供详细原因。")
+                : m_sceneDocument.Error());
+        presentation.controlsenabled = false;
+    }
+    else
+    {
+        presentation.status =
+            QStringLiteral(
+                "等待（pending）：参数已就绪；"
+                "异步分析将在 "
+                "12E-09A-04 接入。");
+    }
+
+    m_contextInspector->SetDiagnosticPresentation(
+        presentation);
 }

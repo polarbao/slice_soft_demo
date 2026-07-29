@@ -511,7 +511,7 @@ docs/slice/REPORT/REPORT_12E_08C_R4_08_R2_08D_GO_NO_GO刷新状态.md
 
 ## 12. 12E-09 Qt UI 设置与 Effective Config
 
-状态：12E-09A-01/02 COMPLETE；09A-03..06 PREPARED；
+状态：12E-09A-01..03 COMPLETE；09A-04 READY；09A-05..06 PREPARED；
 12E-09B-01..06 COMPLETE；12E-09C-01..06 COMPLETE
 
 目标：
@@ -533,7 +533,7 @@ session effective config；
 ```text
 12E-09A-01 只读 diagnostic facade 与 UI DTO（COMPLETE，2026-07-22）；
 12E-09A-02 Effective Config 事务与派生字段（COMPLETE，2026-07-27）；
-12E-09A-03 中文 width/modelFill/status 控件；
+12E-09A-03 中文 width/modelFill/status 控件（COMPLETE，2026-07-29）；
 12E-09A-04 异步 worker、取消与生命周期；
 12E-09A-05 真实 layerIndex/zMm 同层 preview；
 12E-09A-06 self-test、窗口 smoke、用户文档与状态收口。

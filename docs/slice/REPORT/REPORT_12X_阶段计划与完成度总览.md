@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v3.5
+> 版本：v3.6
 > 更新日期：2026-07-29
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：12E-09A-03 中文参数控件与状态区
+> 当前下一任务：12E-09A-04 异步分析 Worker
 
 ## 1. 使用规则
 
@@ -49,7 +49,8 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-08D-06 | COMPLETE | 0.01 mm 六 case Release/TIFF/RIP/耗时/峰值内存矩阵 | Global 默认替换 Legacy 因性能与内存 NO-GO |
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 无 |
 | 12E-09A-02 | COMPLETE | single_model/scene Diagnostic Effective Config、原子事务、hash 与 stale 合同 | 09A-03..06 按 Stage 13 依赖顺序推进 |
-| 12E-09A | 09A-01/02 COMPLETE / 09A-03..06 INDEPENDENT | 只读 Diagnostic Facade、UI DTO 和场景感知 Diagnostic Effective Config | 中文控件、worker、TIFF 同层 preview 和 smoke |
+| 12E-09A-03 | COMPLETE | 中文 width/modelFill 控件、场景身份、后端与阻断状态 | 09A-04 异步分析 Worker |
+| 12E-09A | 09A-01..03 COMPLETE / 09A-04 READY / 09A-05..06 PREPARED | 只读 Diagnostic Facade、场景感知 Effective Config 和中文参数状态区 | worker、TIFF 同层 preview 和阶段 smoke |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
 | 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
 | 12E-10 | PREPARED AT CONCEPT LEVEL / WAIT 09A-05 | 最终矩阵 schema、模型基线、09B 生产入口和 09C DPI 合同已完成 | 10A 等待 09A-05；10B/10C 可准备执行；启动前补齐独立 PRD/DEV/DEMO/TASKS/PROMPT |
@@ -76,7 +77,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 |---|---|---|
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
-| 09A Diagnostic UI | 09A-01/02 COMPLETE；09A-03..06 PREPARED | 09A-03 等待 13A-02/03 的模型选择交互；09A-05 等待 13C-03 TIFF 数据源 |
+| 09A Diagnostic UI | 09A-01..03 COMPLETE；09A-04 READY；09A-05..06 PREPARED | 执行 09A-04；09A-05 的 13C-03 TIFF 数据源前置已完成 |
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
@@ -85,11 +86,11 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 ### 2.3 剩余任务数量
 
 ```text
-12E-09A-03..06：4 个；
+12E-09A-04..06：3 个；
 12E-10A..D：4 个；
 12F-02..09：8 个；
 Stage 12 若含性能专项，合计剩余 16 个原子任务；
-只计算 12E 语义/诊断/收口，剩余 8 个原子任务；
+只计算 12E 语义/诊断/收口，剩余 7 个原子任务；
 12G-TCWS 候选 R0..R6 已冻结，当前激活任务数为 0。
 
 Stage 13 近程：
