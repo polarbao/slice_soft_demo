@@ -72,7 +72,7 @@ const QVector<SettingHelpMetadata>& MetadataEntries()
             QStringLiteral("切片层高"),
             QStringLiteral("控制 Z 方向每层厚度，直接影响层数、几何采样量、输出体积与耗时。"),
             {QStringLiteral("全部材料通道"), QStringLiteral("层数")},
-            QStringLiteral("0.01 mm"),
+            QStringLiteral("0.038 mm"),
             QStringLiteral("生产可用；必须大于 0"),
             kWorkbenchDoc),
         MakeMetadata(

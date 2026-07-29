@@ -98,6 +98,50 @@ QString MakeScenarioDisplayLabel(const ScenarioEntry& scenario)
     return label;
 }
 
+QString ResolveEffectiveProfileId(
+    const QJsonObject& profileRoot,
+    const QString& requestedProfileId)
+{
+    const QJsonObject processProfile =
+        profileRoot
+            .value(QStringLiteral("materialProcessProfile"))
+            .toObject();
+    const QString configuredName =
+        processProfile
+            .value(QStringLiteral("name"))
+            .toString()
+            .trimmed();
+    if (!configuredName.isEmpty())
+    {
+        return configuredName;
+    }
+
+    const QString auditedProfileId =
+        profileRoot
+            .value(QStringLiteral("uiAudit"))
+            .toObject()
+            .value(QStringLiteral("production"))
+            .toObject()
+            .value(
+                QStringLiteral(
+                    "effectiveProductionProfileId"))
+            .toString()
+            .trimmed();
+    if (!auditedProfileId.isEmpty())
+    {
+        return auditedProfileId;
+    }
+
+    const QString configuredTarget =
+        processProfile
+            .value(QStringLiteral("target"))
+            .toString()
+            .trimmed();
+    return configuredTarget.isEmpty()
+        ? requestedProfileId.trimmed()
+        : configuredTarget;
+}
+
 QString ProductionSafetyLabel(const QString& value)
 {
     static const QHash<QString, QString> labels{
@@ -249,7 +293,7 @@ QJsonArray MakeStringArray(const std::initializer_list<QString> values)
 QJsonObject MakeDefaultModelFillConfig()
 {
     return QJsonObject{{"enabled", true},
-                       {"material", "white"},
+                       {"material", "rgb"},
                        {"scope", "below_texture_surface"},
                        {"value", 0},
                        {"emptyAllowedInProduction", false},
@@ -480,11 +524,11 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         material_process_panel_,
         QStringLiteral("材料参数"));
     m_diagnosticsDock->AddView(
-        warnings_view_,
-        QStringLiteral("诊断"));
-    m_diagnosticsDock->AddView(
         compare_view_,
         QStringLiteral("工艺对比"));
+    m_diagnosticsDock->AddView(
+        m_sliceTimingPanel,
+        QStringLiteral("切片耗时"));
     m_diagnosticsDock->SetExpanded(false);
     report_panel_ = m_diagnosticsDock->ReportView();
     channel_chart_panel_ = m_diagnosticsDock->ChartView();
@@ -517,7 +561,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &QWidget::setVisible);
     QAction* diagnosticsAction = m_diagnosticsDock->toggleViewAction();
     diagnosticsAction->setObjectName(QStringLiteral("diagnosticsToggleAction"));
-    diagnosticsAction->setText(QStringLiteral("诊断区域"));
+    diagnosticsAction->setText(QStringLiteral("任务详情"));
     diagnosticsAction->setShortcut(
         QKeySequence(QStringLiteral("Ctrl+Alt+D")));
     viewMenu->addAction(diagnosticsAction);
@@ -817,6 +861,11 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &SceneActionBar::SigCancelRequested,
         &m_sceneSliceActionController,
         &SceneSliceActionController::Cancel);
+    connect(
+        m_sceneActionBar,
+        &SceneActionBar::SigProfileRequested,
+        this,
+        &MainWindow::OnQuickProfileRequested);
     connect(
         m_contextInspector,
         &ContextInspector::SigOpenConfigRequested,
@@ -1281,6 +1330,11 @@ void MainWindow::OnScenarioChanged(const int index)
     }
 
     const QString scenarioId = m_scenarioSelector->itemData(index).toString();
+    if (m_sceneActionBar != nullptr)
+    {
+        m_sceneActionBar->SetSelectedProfileId(
+            scenarioId);
+    }
     const QString itemToolTip = m_scenarioSelector->itemData(index, Qt::ToolTipRole).toString();
     if (!itemToolTip.isEmpty())
     {
@@ -1302,6 +1356,31 @@ void MainWindow::OnScenarioChanged(const int index)
     }
 
     ApplyScenario(*scenario);
+}
+
+void MainWindow::OnQuickProfileRequested(
+    const QString& profileId)
+{
+    if (profileId.trimmed().isEmpty()
+        || m_scenarioSelector == nullptr)
+    {
+        return;
+    }
+    const int index =
+        m_scenarioSelector->findData(profileId);
+    if (index < 0)
+    {
+        status_label_->setText(
+            QStringLiteral("未找到生产 Profile：")
+            + profileId);
+        return;
+    }
+    if (m_scenarioSelector->currentIndex() == index)
+    {
+        OnScenarioChanged(index);
+        return;
+    }
+    m_scenarioSelector->setCurrentIndex(index);
 }
 
 void MainWindow::OnReloadScenarios()
@@ -1568,6 +1647,12 @@ void MainWindow::handleProcessStarted(const QString& command) {
     if (m_sliceTimingPanel != nullptr && IsSlicingAction(current_action_))
     {
         m_sliceTimingPanel->Reset(current_action_);
+        if (m_diagnosticsDock != nullptr)
+        {
+            m_diagnosticsDock->ShowView(
+                m_sliceTimingPanel,
+                false);
+        }
     }
 }
 
@@ -1893,6 +1978,7 @@ QWidget* MainWindow::createRightPanel() {
         m_modelTransformPanel,
         m_sceneLayoutPanel,
         m_modelPreflightPanel,
+        warnings_view_,
         this);
     return m_contextInspector;
 }
@@ -2159,7 +2245,8 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                 QJsonObject{{"packageDir", relativePackageDir},
                             {"dpiX", dpiX},
                             {"dpiY", dpiY},
-                            {"layerThicknessMm", 0.01},
+                            {"layerThicknessMm",
+                             slicer_core::kDefaultLayerThicknessMm},
                             {"channelOrder", MakeStringArray({"R", "G", "B", "W", "S", "V"})},
                             {"bitDepth", 8},
                             {"planarConfig", "contiguous"},
@@ -2172,7 +2259,7 @@ QString MainWindow::CreateOpenVdbCandidateConfig(const QString& modelPath, QStri
                             {"translationMm", MakeNumberArray({0.0, 0.0, 0.0})}});
     root.insert("autoOrient",
                 QJsonObject{{"enabled", true},
-                            {"maxHeightMm", 6.0},
+                            {"maxHeightMm", 9.0},
                             {"strategy", "minimize_height_by_right_angle_rotation"}});
     root.insert("background", QJsonObject{{"value", 255}});
     root.insert("modelMaterial",
@@ -2466,11 +2553,9 @@ SceneSliceSnapshotResult MainWindow::WriteCurrentSceneSnapshot(
 
     const QJsonObject profileRoot = profile.document.object();
     const QString profileId =
-        profileRoot
-            .value(QStringLiteral("materialProcessProfile"))
-            .toObject()
-            .value(QStringLiteral("name"))
-            .toString();
+        ResolveEffectiveProfileId(
+            profileRoot,
+            m_currentProfileId);
     const QString packageDir = absoluteFromRepo(
         profileRoot
             .value(QStringLiteral("output"))
@@ -2519,7 +2604,8 @@ SceneSliceSnapshotResult MainWindow::WriteCurrentSceneSnapshot(
         profileRoot.value(QStringLiteral("output"))
             .toObject()
             .value(QStringLiteral("layerThicknessMm"))
-            .toDouble(0.01);
+            .toDouble(
+                slicer_core::kDefaultLayerThicknessMm);
     saveRequest.slicepipelinemode =
         slicer_core::SlicePipelineModeName(request.mode);
     saveRequest.expectedscenerevision =
@@ -2652,6 +2738,7 @@ void MainWindow::UpdateActionAvailability()
     actionPresentation.canslice = canSliceScene;
     actionPresentation.cancancel =
         m_sceneSliceActionController.IsRunning();
+    actionPresentation.canselectprofile = enabled;
     actionPresentation.modelabel =
         config_editor_panel_->SelectedProductionMode()
             == slicer_core::SlicePipelineMode::Legacy
@@ -2804,6 +2891,31 @@ void MainWindow::LoadScenarios()
 
     m_scenarioSelector->blockSignals(false);
     UpdateComboPopupWidth(m_scenarioSelector);
+    if (m_sceneActionBar != nullptr)
+    {
+        QList<SceneActionBarProfileOption> profileOptions;
+        for (const ScenarioEntry& scenario :
+             m_scenarioRegistry.Entries())
+        {
+            if (!scenario.enabled
+                || !ShouldShowScenario(scenario))
+            {
+                continue;
+            }
+            SceneActionBarProfileOption option;
+            option.id = scenario.id;
+            option.label =
+                MakeScenarioDisplayLabel(scenario);
+            option.tooltip =
+                MakeScenarioToolTip(scenario);
+            profileOptions.push_back(option);
+        }
+        m_sceneActionBar->SetProfileOptions(
+            profileOptions,
+            currentId.isEmpty()
+                ? defaultId
+                : currentId);
+    }
     if (m_scenarioCountLabel != nullptr)
     {
         QString countText = QString("场景：显示 %1 / 可用 %2").arg(visibleCount).arg(enabledCount);
@@ -3116,7 +3228,8 @@ MainWindow::BuildDiagnosticAnalysisRequest(
         .toInt(slicer_core::kDefaultOutputDpiY);
     const double layerThicknessMm = config_document_
         .value({"output", "layerThicknessMm"})
-        .toDouble(0.01);
+        .toDouble(
+            slicer_core::kDefaultLayerThicknessMm);
     const double classificationResolutionMm =
         std::max({
             25.4 / static_cast<double>(
@@ -3303,7 +3416,8 @@ void MainWindow::UpdateDiagnosticSettingsPresentation()
         config_document_
             .value(
                 {"output", "layerThicknessMm"})
-            .toDouble(0.01);
+            .toDouble(
+                slicer_core::kDefaultLayerThicknessMm);
     const double classificationResolutionMm =
         std::max({
             25.4 / static_cast<double>(

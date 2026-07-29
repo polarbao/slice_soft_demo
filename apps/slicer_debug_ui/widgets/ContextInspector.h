@@ -23,6 +23,7 @@ public:
      * @param transformPage Existing transform panel.
      * @param layoutPage Existing scene-layout panel.
      * @param preflightPage Existing model-preflight panel.
+     * @param diagnosticPage Existing actionable diagnostic panel.
      * @param parent QWidget owner.
      */
     explicit ContextInspector(
@@ -30,6 +31,7 @@ public:
         QWidget* transformPage,
         QWidget* layoutPage,
         QWidget* preflightPage,
+        QWidget* diagnosticPage,
         QWidget* parent = nullptr);
 
     /**

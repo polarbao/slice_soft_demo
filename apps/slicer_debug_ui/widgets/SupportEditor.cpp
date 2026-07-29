@@ -8,6 +8,7 @@ namespace {
 QSpinBox* makeSpin(QWidget* parent, const int max_value = 100000) {
     auto* spin = new QSpinBox(parent);
     spin->setRange(0, max_value);
+    spin->setKeyboardTracking(false);
     return spin;
 }
 

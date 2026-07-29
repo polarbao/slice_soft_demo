@@ -8,8 +8,9 @@ namespace
 SliceSettingsState MakeCommonDefaults()
 {
     SliceSettingsState state;
-    state.layerthicknessmm = 0.01;
-    state.modelfillmaterial = ModelFillMaterial::White;
+    state.layerthicknessmm =
+        slicer_core::kDefaultLayerThicknessMm;
+    state.modelfillmaterial = ModelFillMaterial::Rgb;
     state.support.enabled = true;
     state.support.placement = SupportPlacement::Lower;
     state.support.internalvoidenabled = true;

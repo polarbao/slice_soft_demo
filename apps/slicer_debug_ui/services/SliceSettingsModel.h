@@ -77,8 +77,8 @@ struct SliceSettingsState
     QString outputdirectory;
     int dpix{slicer_core::kDefaultOutputDpiX};
     int dpiy{slicer_core::kDefaultOutputDpiY};
-    double layerthicknessmm{0.01};
-    ModelFillMaterial modelfillmaterial{ModelFillMaterial::White};
+    double layerthicknessmm{slicer_core::kDefaultLayerThicknessMm};
+    ModelFillMaterial modelfillmaterial{ModelFillMaterial::Rgb};
     SupportSettings support;
     SurfaceVarnishSettings surfacevarnish;
     OuterVarnishSettings outervarnish;

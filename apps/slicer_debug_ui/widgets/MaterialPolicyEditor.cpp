@@ -9,12 +9,14 @@ namespace {
 QSpinBox* makeByteSpin(QWidget* parent) {
     auto* spin = new QSpinBox(parent);
     spin->setRange(0, 255);
+    spin->setKeyboardTracking(false);
     return spin;
 }
 
 QSpinBox* makeLayerSpin(QWidget* parent) {
     auto* spin = new QSpinBox(parent);
     spin->setRange(0, 100000);
+    spin->setKeyboardTracking(false);
     return spin;
 }
 

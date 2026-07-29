@@ -72,6 +72,8 @@ private:
         const UiSmokeTestOptions& options);
     int SceneSliceCurrent(
         const UiSmokeTestOptions& options);
+    int SceneSliceSingleMaterialProfile(
+        const UiSmokeTestOptions& options);
     int SceneSliceRealAssets(
         const UiSmokeTestOptions& options);
     int SceneSliceStale(

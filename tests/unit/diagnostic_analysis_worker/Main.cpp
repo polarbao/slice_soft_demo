@@ -390,6 +390,85 @@ bool TestRealDiagnosticExecutor()
         && !observed->evidence->productionAdmitted;
 }
 
+bool TestRejectedTopologyDoesNotPublishWidthBounds()
+{
+    slicer_core::SliceConfig config;
+    config.input.model_path =
+        std::filesystem::path(SLICESOFT_SOURCE_DIR)
+        / "samples/models/openvdb/surface_shell_non_manifold.obj";
+    config.input.format = "obj";
+    config.auto_orient.enabled = false;
+    auto source = std::make_shared<
+        slicer_core::SceneModel>(
+        slicer_core::load_model_report(
+            config,
+            std::filesystem::path(
+                SLICESOFT_SOURCE_DIR)));
+
+    DiagnosticAnalysisRequest request =
+        MakeRequest(
+            QStringLiteral("instance-non-manifold"),
+            QStringLiteral("hash-non-manifold"));
+    request.sourcemodel = source;
+    request.instance.instanceid =
+        request.identity.instanceid.toStdString();
+    request.instance.modelid =
+        request.identity.modelid.toStdString();
+    request.instance.sourcetransformidentity =
+        "source-transform-non-manifold";
+    request.instance.sourcebboxmm = source->bbox_mm;
+    request.instance.effectivebboxmm = source->bbox_mm;
+    request.modelpath =
+        QString::fromStdWString(
+            source->model_path.wstring());
+    request.classificationresolutionmm = 0.50;
+    request.texturesurfacewidthmm = 1.00;
+
+    DiagnosticAnalysisWorker worker;
+    std::optional<DiagnosticAnalysisResult> observed;
+    QObject::connect(
+        &worker,
+        &DiagnosticAnalysisWorker::SigFinished,
+        &worker,
+        [&](const DiagnosticAnalysisResult& result)
+        {
+            observed = result;
+        });
+    const bool passed = worker.Start(request)
+        && WaitUntil(
+            [&]()
+            {
+                return observed.has_value();
+            },
+            10000)
+        && observed->state
+            == DiagnosticAnalysisState::Failed
+        && !observed->maximumwidthmm.has_value()
+        && !observed->alltexturethresholdmm.has_value()
+        && observed->message.contains(
+            QStringLiteral("rejected mesh"));
+    if (!passed)
+    {
+        std::cerr
+            << "rejected topology state="
+            << (observed.has_value()
+                    ? static_cast<int>(observed->state)
+                    : -1)
+            << " max="
+            << (observed.has_value()
+                    && observed->maximumwidthmm.has_value())
+            << " threshold="
+            << (observed.has_value()
+                    && observed->alltexturethresholdmm.has_value())
+            << " message="
+            << (observed.has_value()
+                    ? observed->message.toStdString()
+                    : std::string("missing"))
+            << "\n";
+    }
+    return passed;
+}
+
 }  // namespace
 
 int main(int argc, char* argv[])
@@ -402,7 +481,8 @@ int main(int argc, char* argv[])
         && TestCancel()
         && TestReentryDropsStale()
         && TestDestroyWhileRunning()
-        && TestRealDiagnosticExecutor();
+        && TestRealDiagnosticExecutor()
+        && TestRejectedTopologyDoesNotPublishWidthBounds();
     if (!success)
     {
         std::cerr

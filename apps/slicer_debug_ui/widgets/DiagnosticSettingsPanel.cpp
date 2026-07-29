@@ -46,12 +46,28 @@ DiagnosticSettingsPanel::DiagnosticSettingsPanel(
     layout->setSpacing(6);
 
     auto* title = new QLabel(
-        QStringLiteral("纹理与填充诊断"),
+        QStringLiteral(
+            "纹理与填充诊断试算"),
         this);
     title->setToolTip(
         QStringLiteral(
             "这些参数只用于诊断请求，不会直接修改生产 Profile 或 TIFF。"));
     layout->addWidget(title);
+
+    auto* diagnosticOnlyNotice = new QLabel(
+        QStringLiteral(
+            "仅用于分析当前模型的宽度上限与分区结果，"
+            "不会修改生产 Profile、模型填充材料或 TIFF。"
+            "生产设置请使用顶部“工艺 Profile”或中央“配置”页。"),
+        this);
+    diagnosticOnlyNotice->setObjectName(
+        QStringLiteral("diagnosticOnlyNoticeLabel"));
+    diagnosticOnlyNotice->setWordWrap(true);
+    diagnosticOnlyNotice->setToolTip(
+        QStringLiteral(
+            "诊断参数保存到 session 专用 diagnostic effective config，"
+            "与生产 Effective Config 相互隔离。"));
+    layout->addWidget(diagnosticOnlyNotice);
 
     m_subjectLabel = new QLabel(this);
     m_subjectLabel->setObjectName(
@@ -73,6 +89,7 @@ DiagnosticSettingsPanel::DiagnosticSettingsPanel(
         kMinimumWidthMm,
         kMaximumWidthMm);
     m_widthSpin->setSuffix(QStringLiteral(" mm"));
+    m_widthSpin->setKeyboardTracking(false);
     m_widthSpin->setToolTip(
         QStringLiteral(
             "设置 Texture Surface Layer 的诊断宽度；步长 0.01 mm。"
@@ -100,7 +117,7 @@ DiagnosticSettingsPanel::DiagnosticSettingsPanel(
     widthLayout->addWidget(m_widthSpin);
     widthLayout->addWidget(m_widthSlider);
     form->addRow(
-        QStringLiteral("纹理表面层宽度"),
+        QStringLiteral("诊断纹理宽度"),
         widthContainer);
 
     m_modelFillMaterial = new QComboBox(this);
@@ -118,10 +135,11 @@ DiagnosticSettingsPanel::DiagnosticSettingsPanel(
         QStringLiteral("rgb"));
     m_modelFillMaterial->setToolTip(
         QStringLiteral(
-            "选择诊断中的 Model Fill Layer 材料。"
-            "当前仅提供切片核心已经支持的白墨、光油和 RGB。"));
+            "选择诊断试算中的 Model Fill Layer 材料。"
+            "该选择不会修改生产 Profile 或生产 TIFF；"
+            "生产材料请使用顶部工艺 Profile 或中央配置页。"));
     form->addRow(
-        QStringLiteral("模型填充材料"),
+        QStringLiteral("诊断填充材料"),
         m_modelFillMaterial);
     layout->addLayout(form);
 
@@ -175,7 +193,8 @@ DiagnosticSettingsPanel::DiagnosticSettingsPanel(
     m_startButton->setToolTip(
         QStringLiteral(
             "在后台执行拓扑、距离、纹理分区和栅格映射诊断；"
-            "不会写生产 TIFF 或 Package。"));
+            "不会写生产 TIFF 或 Package。"
+            "严格拓扑失败时宽度上限保持“未评估”。"));
     m_cancelButton = new QPushButton(
         QStringLiteral("取消诊断"),
         this);

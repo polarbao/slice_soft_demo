@@ -33,6 +33,7 @@ SceneLayoutPanel::SceneLayoutPanel(
     m_columnCountSpin->setObjectName(
         QStringLiteral("sceneLayoutColumnCountSpin"));
     m_columnCountSpin->setRange(1, 11);
+    m_columnCountSpin->setKeyboardTracking(false);
     m_columnCountSpin->setToolTip(
         QStringLiteral("每行最多放置 1 至 11 个模型"));
     formLayout->addRow(
@@ -43,6 +44,7 @@ SceneLayoutPanel::SceneLayoutPanel(
     m_rowCountSpin->setObjectName(
         QStringLiteral("sceneLayoutRowCountSpin"));
     m_rowCountSpin->setRange(1, 2);
+    m_rowCountSpin->setKeyboardTracking(false);
     m_rowCountSpin->setToolTip(
         QStringLiteral("场景最多排布 1 至 2 行"));
     formLayout->addRow(
@@ -56,6 +58,7 @@ SceneLayoutPanel::SceneLayoutPanel(
     m_columnGapSpin->setDecimals(2);
     m_columnGapSpin->setSingleStep(0.01);
     m_columnGapSpin->setSuffix(QStringLiteral(" mm"));
+    m_columnGapSpin->setKeyboardTracking(false);
     m_columnGapSpin->setToolTip(
         QStringLiteral("相邻模型 XY 包围盒边缘之间的水平净距"));
     formLayout->addRow(
@@ -69,6 +72,7 @@ SceneLayoutPanel::SceneLayoutPanel(
     m_rowGapSpin->setDecimals(2);
     m_rowGapSpin->setSingleStep(0.01);
     m_rowGapSpin->setSuffix(QStringLiteral(" mm"));
+    m_rowGapSpin->setKeyboardTracking(false);
     m_rowGapSpin->setToolTip(
         QStringLiteral("相邻模型 XY 包围盒边缘之间的垂直净距"));
     formLayout->addRow(

@@ -1,9 +1,11 @@
 #include "SceneActionBar.h"
 
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QKeySequence>
 #include <QLabel>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QStyle>
 
@@ -71,14 +73,21 @@ SceneActionBar::SceneActionBar(QWidget* parent)
         QSizePolicy::Minimum,
         QSizePolicy::Fixed);
 
-    m_profileLabel = new QLabel(this);
-    m_profileLabel->setObjectName(
-        QStringLiteral("jobProfileSummaryLabel"));
-    m_profileLabel->setMinimumWidth(150);
-    m_profileLabel->setMaximumWidth(280);
-    m_profileLabel->setSizePolicy(
+    m_profileCombo = new QComboBox(this);
+    m_profileCombo->setObjectName(
+        QStringLiteral("jobProfileSelector"));
+    m_profileCombo->setMinimumWidth(180);
+    m_profileCombo->setMaximumWidth(300);
+    m_profileCombo->setSizeAdjustPolicy(
+        QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    m_profileCombo->setMinimumContentsLength(20);
+    m_profileCombo->setSizePolicy(
         QSizePolicy::Preferred,
         QSizePolicy::Fixed);
+    m_profileCombo->setToolTip(
+        QStringLiteral(
+            "快速切换生产工艺 Profile。该控件会更新生产配置；"
+            "右侧“诊断试算”中的材料和宽度不会修改生产切片。"));
 
     m_sliceButton = new QPushButton(
         QStringLiteral("切片当前场景"),
@@ -121,7 +130,7 @@ SceneActionBar::SceneActionBar(QWidget* parent)
     layout->addWidget(m_saveButton);
     layout->addSpacing(8);
     layout->addWidget(m_modeLabel);
-    layout->addWidget(m_profileLabel, 1);
+    layout->addWidget(m_profileCombo, 1);
     layout->addWidget(m_sliceButton);
     layout->addWidget(m_cancelButton);
     layout->addWidget(m_statusLabel);
@@ -146,6 +155,15 @@ SceneActionBar::SceneActionBar(QWidget* parent)
         &QPushButton::clicked,
         this,
         &SceneActionBar::SigCancelRequested);
+    connect(
+        m_profileCombo,
+        qOverload<int>(&QComboBox::activated),
+        this,
+        [this](const int index)
+        {
+            emit SigProfileRequested(
+                m_profileCombo->itemData(index).toString());
+        });
     SceneActionBarPresentation presentation;
     presentation.modelabel = QStringLiteral("传统切片");
     presentation.profilelabel = QStringLiteral("自定义");
@@ -164,13 +182,13 @@ void SceneActionBar::SetPresentation(
     m_sliceButton->setEnabled(presentation.canslice);
     m_sliceButton->setToolTip(presentation.slicereason);
     m_cancelButton->setEnabled(presentation.cancancel);
+    m_profileCombo->setEnabled(
+        presentation.canselectprofile);
     SetElidedLabelText(
         m_modeLabel,
         QStringLiteral("模式："),
         presentation.modelabel);
-    SetElidedLabelText(
-        m_profileLabel,
-        QStringLiteral("Profile："),
+    SetSelectedProfileId(
         presentation.profilelabel);
     SetElidedLabelText(
         m_statusLabel,
@@ -180,6 +198,78 @@ void SceneActionBar::SetPresentation(
         presentation.statustext
         + QStringLiteral("\n")
         + presentation.slicereason);
+}
+
+void SceneActionBar::SetProfileOptions(
+    const QList<SceneActionBarProfileOption>& options,
+    const QString& selectedProfileId)
+{
+    const QSignalBlocker blocker(m_profileCombo);
+    m_profileCombo->clear();
+    m_profileCombo->addItem(
+        QStringLiteral("自定义配置"),
+        QString{});
+    m_profileCombo->setItemData(
+        0,
+        QStringLiteral(
+            "保留当前手动配置；完整路径和高级场景位于“视图 -> 项目与高级工具”。"),
+        Qt::ToolTipRole);
+    for (const SceneActionBarProfileOption& option : options)
+    {
+        const int index = m_profileCombo->count();
+        m_profileCombo->addItem(
+            option.label,
+            option.id);
+        m_profileCombo->setItemData(
+            index,
+            option.tooltip,
+            Qt::ToolTipRole);
+    }
+    SetSelectedProfileId(selectedProfileId);
+}
+
+void SceneActionBar::SetSelectedProfileId(
+    const QString& profileId)
+{
+    const QSignalBlocker blocker(m_profileCombo);
+    const QString normalizedProfileId =
+        profileId == QStringLiteral("自定义")
+        ? QString{}
+        : profileId;
+    int index =
+        m_profileCombo->findData(normalizedProfileId);
+    if (index < 0
+        && !normalizedProfileId.trimmed().isEmpty())
+    {
+        m_profileCombo->insertItem(
+            0,
+            normalizedProfileId,
+            normalizedProfileId);
+        m_profileCombo->setItemData(
+            0,
+            QStringLiteral("当前生产 Profile：")
+                + normalizedProfileId,
+            Qt::ToolTipRole);
+        index = 0;
+    }
+    if (index < 0)
+    {
+        index = 0;
+    }
+    m_profileCombo->setCurrentIndex(index);
+    const QString tooltip =
+        m_profileCombo->itemData(
+            index,
+            Qt::ToolTipRole).toString();
+    if (!tooltip.isEmpty())
+    {
+        m_profileCombo->setToolTip(tooltip);
+    }
+}
+
+QString SceneActionBar::SelectedProfileId() const
+{
+    return m_profileCombo->currentData().toString();
 }
 
 QPushButton* SceneActionBar::SliceButton() const

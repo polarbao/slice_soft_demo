@@ -86,6 +86,7 @@ private slots:
     void OnImportModelOpenVdbDiagnostic();
     void OnImportModelOpenVdbCandidate();
     void OnScenarioChanged(int index);
+    void OnQuickProfileRequested(const QString& profileId);
     void OnReloadScenarios();
     void OnScenarioVisibilityChanged(bool checked);
     void OnMaterialClosureLayerRequested(int layerIndex, const QString& gapPreviewPath);

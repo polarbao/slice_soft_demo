@@ -365,6 +365,14 @@ DiagnosticAnalysisWorker::ExecuteDefault(
         benchmark->partition.stats.modelFillVoxels;
     result.totalcorems =
         benchmark->partition.performance.totalCoreMs;
+    if (!benchmark->partition.partitionPass)
+    {
+        result.state = DiagnosticAnalysisState::Failed;
+        result.error = FirstPartitionIssue(*benchmark);
+        result.message =
+            QStringLiteral("诊断失败：") + result.error;
+        return result;
+    }
     if (benchmark->partition.available)
     {
         result.maximumwidthmm =
@@ -376,14 +384,6 @@ DiagnosticAnalysisWorker::ExecuteDefault(
         result.alltexture =
             benchmark->partition.widthMetrics
                 .allTexture;
-    }
-    if (!benchmark->partition.partitionPass)
-    {
-        result.state = DiagnosticAnalysisState::Failed;
-        result.error = FirstPartitionIssue(*benchmark);
-        result.message =
-            QStringLiteral("诊断失败：") + result.error;
-        return result;
     }
     result.state = DiagnosticAnalysisState::Succeeded;
     result.message =

@@ -10,6 +10,7 @@ ContextInspector::ContextInspector(
     QWidget* transformPage,
     QWidget* layoutPage,
     QWidget* preflightPage,
+    QWidget* diagnosticPage,
     QWidget* parent)
     : QWidget(parent),
       m_scenePage(scenePage)
@@ -65,7 +66,33 @@ ContextInspector::ContextInspector(
     m_tabs->addTab(
         sliceSettingsPage,
         QStringLiteral("切片设置"));
-    m_tabs->addTab(preflightPage, QStringLiteral("预检"));
+    auto* preflightDiagnosticsPage = new QWidget(m_tabs);
+    preflightDiagnosticsPage->setObjectName(
+        QStringLiteral(
+            "contextPreflightDiagnosticsPage"));
+    auto* preflightDiagnosticsLayout =
+        new QVBoxLayout(preflightDiagnosticsPage);
+    preflightDiagnosticsLayout->setContentsMargins(
+        0,
+        0,
+        0,
+        0);
+    auto* preflightDiagnosticsTabs =
+        new QTabWidget(preflightDiagnosticsPage);
+    preflightDiagnosticsTabs->setObjectName(
+        QStringLiteral("preflightDiagnosticsTabs"));
+    preflightDiagnosticsTabs->setDocumentMode(true);
+    preflightDiagnosticsTabs->addTab(
+        preflightPage,
+        QStringLiteral("准入"));
+    preflightDiagnosticsTabs->addTab(
+        diagnosticPage,
+        QStringLiteral("问题"));
+    preflightDiagnosticsLayout->addWidget(
+        preflightDiagnosticsTabs);
+    m_tabs->addTab(
+        preflightDiagnosticsPage,
+        QStringLiteral("预检与诊断"));
     layout->addWidget(m_tabs);
 
     connect(

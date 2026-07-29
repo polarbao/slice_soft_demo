@@ -8,7 +8,7 @@
 #include <QTabWidget>
 
 DiagnosticsDock::DiagnosticsDock(QWidget* parent)
-    : QDockWidget(QStringLiteral("诊断区域"), parent)
+    : QDockWidget(QStringLiteral("任务详情"), parent)
 {
     setObjectName(QStringLiteral("diagnosticsDock"));
     setAllowedAreas(Qt::BottomDockWidgetArea);
@@ -43,6 +43,23 @@ void DiagnosticsDock::AddView(
         logIndex < 0 ? m_tabs->count() : logIndex,
         view,
         title);
+}
+
+bool DiagnosticsDock::ShowView(
+    QWidget* view,
+    const bool expand)
+{
+    const int index = m_tabs->indexOf(view);
+    if (index < 0)
+    {
+        return false;
+    }
+    m_tabs->setCurrentIndex(index);
+    if (expand)
+    {
+        SetExpanded(true);
+    }
+    return true;
 }
 
 void DiagnosticsDock::LoadPackage(const PackageSummary& package)

@@ -72,9 +72,10 @@ struct SceneTransformSaveRequest
     std::string sourceprofileid;
     std::string generatedatutc;
     slicer_core::SceneBuildVolume buildvolume;
-    int dpix{635};
-    int dpiy{600};
-    double layerheightmm{0.01};
+    int dpix{slicer_core::kDefaultOutputDpiX};
+    int dpiy{slicer_core::kDefaultOutputDpiY};
+    double layerheightmm{
+        slicer_core::kDefaultLayerThicknessMm};
     std::string slicepipelinemode{"legacy"};
     std::uint64_t expectedscenerevision{0U};
     std::uint64_t expectedtransformrevision{0U};

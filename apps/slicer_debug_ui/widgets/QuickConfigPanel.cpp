@@ -41,6 +41,7 @@ QDoubleSpinBox* MakeScaleSpin(const QString& objectName, QWidget* parent)
     spin->setSingleStep(0.05);
     spin->setValue(1.0);
     spin->setMinimumWidth(92);
+    spin->setKeyboardTracking(false);
     return spin;
 }
 
@@ -120,10 +121,13 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     basicForm->addRow("模型缩放", modelScaleRow);
 
     m_layerHeightSpin = new QDoubleSpinBox(this);
+    m_layerHeightSpin->setObjectName(
+        QStringLiteral("layerHeightSpin"));
     m_layerHeightSpin->setRange(0.001, 1.0);
     m_layerHeightSpin->setDecimals(4);
     m_layerHeightSpin->setSingleStep(0.005);
     m_layerHeightSpin->setSuffix(" mm");
+    m_layerHeightSpin->setKeyboardTracking(false);
     ApplyHelp(m_layerHeightSpin, QStringLiteral("output.layerThicknessMm"));
     basicForm->addRow("层高", m_layerHeightSpin);
 
@@ -135,6 +139,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_outputDpiXSpin->setSingleStep(1);
     m_outputDpiXSpin->setSuffix(QStringLiteral(" dpi"));
     m_outputDpiXSpin->setMinimumWidth(112);
+    m_outputDpiXSpin->setKeyboardTracking(false);
     ApplyHelp(m_outputDpiXSpin, QStringLiteral("output.dpiX"));
 
     m_outputDpiYSpin = new QSpinBox(this);
@@ -145,6 +150,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_outputDpiYSpin->setSingleStep(1);
     m_outputDpiYSpin->setSuffix(QStringLiteral(" dpi"));
     m_outputDpiYSpin->setMinimumWidth(112);
+    m_outputDpiYSpin->setKeyboardTracking(false);
     ApplyHelp(m_outputDpiYSpin, QStringLiteral("output.dpiY"));
 
     auto* outputDpiRow = new QHBoxLayout();
@@ -210,6 +216,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 
     m_varnishTopLayersSpin = new QSpinBox(this);
     m_varnishTopLayersSpin->setRange(0, 100000);
+    m_varnishTopLayersSpin->setKeyboardTracking(false);
     ApplyHelp(m_varnishTopLayersSpin, QStringLiteral("materialPolicy.varnish.topLayers"));
     materialForm->addRow("光油顶部层数", m_varnishTopLayersSpin);
 
@@ -221,6 +228,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_surfaceVarnishThicknessSpin = new QSpinBox(this);
     m_surfaceVarnishThicknessSpin->setRange(0, 100);
     m_surfaceVarnishThicknessSpin->setSuffix(" px");
+    m_surfaceVarnishThicknessSpin->setKeyboardTracking(false);
     ApplyHelp(m_surfaceVarnishThicknessSpin, QStringLiteral("surfaceVarnish.thicknessPx"));
     materialForm->addRow("表面光油厚度", m_surfaceVarnishThicknessSpin);
 
@@ -234,6 +242,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_outerVarnishThicknessSpin->setDecimals(2);
     m_outerVarnishThicknessSpin->setSingleStep(0.01);
     m_outerVarnishThicknessSpin->setSuffix(" mm");
+    m_outerVarnishThicknessSpin->setKeyboardTracking(false);
     ApplyHelp(m_outerVarnishThicknessSpin, QStringLiteral("outerVarnish.thicknessMm"));
     materialForm->addRow("外侧光油厚度", m_outerVarnishThicknessSpin);
 
@@ -257,6 +266,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_internalVoidMinAreaSpin = new QSpinBox(this);
     m_internalVoidMinAreaSpin->setRange(0, 100000000);
     m_internalVoidMinAreaSpin->setSuffix(" px");
+    m_internalVoidMinAreaSpin->setKeyboardTracking(false);
     ApplyHelp(m_internalVoidMinAreaSpin, QStringLiteral("support.internalVoid.minAreaPx"));
     supportForm->addRow("镂空最小面积", m_internalVoidMinAreaSpin);
 
@@ -268,6 +278,7 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     m_previewIntervalSpin = new QSpinBox(this);
     m_previewIntervalSpin->setObjectName(QStringLiteral("previewIntervalSpin"));
     m_previewIntervalSpin->setRange(1, 100000);
+    m_previewIntervalSpin->setKeyboardTracking(false);
     ApplyHelp(m_previewIntervalSpin, QStringLiteral("preview.interval"));
     previewForm->addRow("诊断图间隔", m_previewIntervalSpin);
 
@@ -327,7 +338,10 @@ void QuickConfigPanel::LoadFromDocument()
         scale.size() == 3 && scale.at(1).isDouble() ? scale.at(1).toDouble() : 1.0);
     m_modelScaleZSpin->setValue(
         scale.size() == 3 && scale.at(2).isDouble() ? scale.at(2).toDouble() : 1.0);
-    m_layerHeightSpin->setValue(DoubleValue({"output", "layerThicknessMm"}, 0.01));
+    m_layerHeightSpin->setValue(
+        DoubleValue(
+            {"output", "layerThicknessMm"},
+            slicer_core::kDefaultLayerThicknessMm));
     m_outputDpiXSpin->setValue(
         IntValue({"output", "dpiX"}, slicer_core::kDefaultOutputDpiX));
     m_outputDpiYSpin->setValue(
@@ -335,7 +349,9 @@ void QuickConfigPanel::LoadFromDocument()
     UpdateOutputPixelSizeLabel();
     SetComboValue(m_texturePolicyCombo, StringValue({"texture", "applyMode"}, "top_surface_band"));
     SetComboValue(m_nonSurfaceRgbPolicyCombo, StringValue({"texture", "nonSurfaceRgbPolicy"}, "model_material"));
-    SetComboValue(m_modelFillMaterialCombo, StringValue({"modelFill", "material"}, "white"));
+    SetComboValue(
+        m_modelFillMaterialCombo,
+        StringValue({"modelFill", "material"}, "rgb"));
     m_supportEnabledCheck->setChecked(BoolValue({"support", "enabled"}, true));
     SetComboValue(m_supportPlacementCombo, StringValue({"support", "placement"}, "lower"));
     m_internalVoidEnabledCheck->setChecked(BoolValue({"support", "internalVoid", "enabled"}, true));

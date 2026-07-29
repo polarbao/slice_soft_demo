@@ -9,6 +9,7 @@ namespace {
 QSpinBox* makePxSpin(QWidget* parent) {
     auto* spin = new QSpinBox(parent);
     spin->setRange(0, 100000);
+    spin->setKeyboardTracking(false);
     return spin;
 }
 

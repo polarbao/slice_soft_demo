@@ -45,6 +45,7 @@
 #include "WorkspaceLayoutState.h"
 #include "slicer_core/config.h"
 
+#include <QAbstractSpinBox>
 #include <QComboBox>
 #include <QAction>
 #include <QApplication>
@@ -684,6 +685,11 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return SceneSliceCurrent(options);
     }
+    if (options.case_name
+        == "scene-slice-single-material-profile")
+    {
+        return SceneSliceSingleMaterialProfile(options);
+    }
     if (options.case_name == "scene-slice-real-assets")
     {
         return SceneSliceRealAssets(options);
@@ -750,8 +756,9 @@ int UiSmokeTestRunner::WorkbenchJobActionBar(
             QStringLiteral("cancelCurrentSceneSliceButton"));
     QLabel* modeLabel = window.findChild<QLabel*>(
         QStringLiteral("jobModeSummaryLabel"));
-    QLabel* profileLabel = window.findChild<QLabel*>(
-        QStringLiteral("jobProfileSummaryLabel"));
+    QComboBox* profileSelector =
+        window.findChild<QComboBox*>(
+            QStringLiteral("jobProfileSelector"));
     QLabel* statusLabel = window.findChild<QLabel*>(
         QStringLiteral("sceneSliceActionStateLabel"));
     if (actionBar == nullptr
@@ -762,7 +769,7 @@ int UiSmokeTestRunner::WorkbenchJobActionBar(
         || sliceButton == nullptr
         || cancelButton == nullptr
         || modeLabel == nullptr
-        || profileLabel == nullptr
+        || profileSelector == nullptr
         || statusLabel == nullptr)
     {
         return fail(QStringLiteral(
@@ -783,11 +790,54 @@ int UiSmokeTestRunner::WorkbenchJobActionBar(
         || cancelButton->isEnabled()
         || !modeLabel->text().contains(
             QStringLiteral("传统切片"))
-        || profileLabel->text().trimmed().isEmpty()
+        || profileSelector->findData(
+               QStringLiteral(
+                   "textured_nail_rgb_white_lower_support"))
+               < 0
+        || profileSelector->findData(
+               QStringLiteral(
+                   "textured_nail_rgb_only_lower_support"))
+               < 0
+        || profileSelector->currentData().toString()
+            != QStringLiteral(
+                "textured_nail_rgb_only_lower_support")
         || statusLabel->text().trimmed().isEmpty())
     {
         return fail(QStringLiteral(
             "13D-01 empty-scene action state mismatch"));
+    }
+
+    const int rgbOnlyIndex =
+        profileSelector->findData(
+            QStringLiteral(
+                "textured_nail_rgb_only_lower_support"));
+    profileSelector->setCurrentIndex(rgbOnlyIndex);
+    QMetaObject::invokeMethod(
+        profileSelector,
+        "activated",
+        Qt::DirectConnection,
+        Q_ARG(int, rgbOnlyIndex));
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (window.m_currentProfileId
+            != QStringLiteral(
+                "textured_nail_rgb_only_lower_support")
+        || window.config_document_
+               .value(
+                   {QStringLiteral("modelFill"),
+                    QStringLiteral("material")})
+               .toString()
+            != QStringLiteral("rgb")
+        || window.config_document_
+               .value(
+                   {QStringLiteral("materialProcessProfile"),
+                    QStringLiteral("white"),
+                    QStringLiteral("enabled")})
+               .toBool(true))
+    {
+        return fail(QStringLiteral(
+            "13D-R1 top Profile selector did not apply RGB-only production settings"));
     }
 
     for (int index = 0;
@@ -887,7 +937,7 @@ int UiSmokeTestRunner::WorkbenchContextInspector(
         QStringLiteral("变换"),
         QStringLiteral("排版"),
         QStringLiteral("切片设置"),
-        QStringLiteral("预检"),
+        QStringLiteral("预检与诊断"),
     };
     if (inspector->PageTitles() != expectedPages
         || !inspector->isAncestorOf(
@@ -1022,15 +1072,15 @@ int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
         QStringLiteral("变换"),
         QStringLiteral("排版"),
         QStringLiteral("切片设置"),
-        QStringLiteral("预检"),
+        QStringLiteral("预检与诊断"),
     };
     const QStringList expectedDiagnosticPages{
         QStringLiteral("报告"),
         QStringLiteral("材料闭环"),
         QStringLiteral("曲线"),
         QStringLiteral("材料参数"),
-        QStringLiteral("诊断"),
         QStringLiteral("工艺对比"),
+        QStringLiteral("切片耗时"),
         QStringLiteral("日志"),
     };
     if (mainSplitter->count() != 2
@@ -1044,10 +1094,12 @@ int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
         || !projectDock->isAncestorOf(projectPanel)
         || !diagnosticsDock->isAncestorOf(
             window.material_process_panel_)
-        || !diagnosticsDock->isAncestorOf(
+        || !inspector->isAncestorOf(
             window.warnings_view_)
         || !diagnosticsDock->isAncestorOf(
-            window.compare_view_))
+            window.compare_view_)
+        || !diagnosticsDock->isAncestorOf(
+            window.m_sliceTimingPanel))
     {
         return fail(QStringLiteral(
             "13D-03 capability migration mismatch"));
@@ -1431,6 +1483,10 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
         window.findChild<QLabel*>(
             QStringLiteral(
                 "diagnosticStatusLabel"));
+    QLabel* diagnosticOnlyNotice =
+        window.findChild<QLabel*>(
+            QStringLiteral(
+                "diagnosticOnlyNoticeLabel"));
     QPushButton* startAnalysis =
         window.findChild<QPushButton*>(
             QStringLiteral(
@@ -1447,6 +1503,7 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
         || bounds == nullptr
         || backend == nullptr
         || status == nullptr
+        || diagnosticOnlyNotice == nullptr
         || startAnalysis == nullptr
         || cancelAnalysis == nullptr)
     {
@@ -1487,7 +1544,9 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
         || subject->text().isEmpty()
         || bounds->text().isEmpty()
         || backend->text().isEmpty()
-        || status->text().isEmpty())
+        || status->text().isEmpty()
+        || !diagnosticOnlyNotice->text().contains(
+            QStringLiteral("不会修改生产")))
     {
         return fail(QStringLiteral(
             "12E-09A-03 Chinese status or tooltip missing"));
@@ -1600,6 +1659,23 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
     }
     presentation.analysisrunning = false;
     inspector->SetDiagnosticPresentation(presentation);
+
+    presentation.maximumwidthmm.reset();
+    presentation.alltexturethresholdmm.reset();
+    presentation.status =
+        QStringLiteral(
+            "诊断失败：strict_closed rejected mesh with non-manifold edges");
+    inspector->SetDiagnosticPresentation(presentation);
+    if (!bounds->text().contains(
+            QStringLiteral("最大 未评估"))
+        || !bounds->text().contains(
+            QStringLiteral("全纹理阈值 未评估"))
+        || bounds->text().contains(
+            QStringLiteral("最大 0.00 mm")))
+    {
+        return fail(QStringLiteral(
+            "12E-09A diagnostic failure published a false zero width bound"));
+    }
 
     window.show();
     const QList<QSize> sizes{
@@ -1941,9 +2017,12 @@ int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
             ++defaultVisibleCount;
         }
     }
-    if (registry.DefaultScenarioId().isEmpty() || registry.FindById(registry.DefaultScenarioId()) == nullptr)
+    if (registry.DefaultScenarioId()
+            != QStringLiteral("textured_nail_rgb_only_lower_support")
+        || registry.FindById(registry.DefaultScenarioId()) == nullptr)
     {
-        return fail("scenario-registry defaultScenarioId 无效。");
+        return fail(
+            "scenario-registry 默认 Profile 必须是全实体 RGB、无白墨。");
     }
     QStringList expectedNormalIds{
         "production_rgb_inspection",
@@ -1963,6 +2042,35 @@ int UiSmokeTestRunner::scenarioRegistry(const UiSmokeTestOptions& options)
     if (defaultScenario == nullptr || defaultScenario->visibility != "normal")
     {
         return fail("scenario-registry 默认 Profile 不是稳定 Profile。");
+    }
+    QJsonObject defaultProfile;
+    if (!ReadJsonObject(
+            QDir(options.repo_root).filePath(defaultScenario->configpath),
+            &defaultProfile))
+    {
+        return fail("scenario-registry 无法读取默认 Profile 配置。");
+    }
+    const QJsonObject defaultOutput =
+        defaultProfile.value(QStringLiteral("output")).toObject();
+    if (defaultOutput.value(QStringLiteral("dpiX")).toInt()
+            != slicer_core::kDefaultOutputDpiX
+        || defaultOutput.value(QStringLiteral("dpiY")).toInt()
+            != slicer_core::kDefaultOutputDpiY
+        || std::abs(
+               defaultOutput.value(
+                   QStringLiteral("layerThicknessMm")).toDouble()
+               - slicer_core::kDefaultLayerThicknessMm)
+            > 1.0e-9
+        || defaultProfile
+               .value(QStringLiteral("modelFill"))
+               .toObject()
+               .value(QStringLiteral("material"))
+               .toString()
+            != QStringLiteral("rgb"))
+    {
+        return fail(
+            "scenario-registry 默认 Profile 的 635x600 DPI、0.038 mm "
+            "层高或全 RGB 材料不正确。");
     }
     if (!registry.Warnings().isEmpty())
     {
@@ -2006,6 +2114,18 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
     };
 
     SliceSettingsModel model;
+    if (model.State().dpix != slicer_core::kDefaultOutputDpiX
+        || model.State().dpiy != slicer_core::kDefaultOutputDpiY
+        || std::abs(
+               model.State().layerthicknessmm
+               - slicer_core::kDefaultLayerThicknessMm)
+            > 1.0e-9
+        || model.State().modelfillmaterial != ModelFillMaterial::Rgb)
+    {
+        return fail(
+            "slice-settings-model 系统默认值不是 "
+            "635x600 DPI、0.038 mm 层高和全 RGB。");
+    }
     for (const ProfileExpectation& expectation : expectations)
     {
         if (!model.ApplyProfileDefaults(expectation.id))
@@ -2018,6 +2138,10 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
             || defaults.preview.interval != expectation.previewinterval
             || defaults.dpix != slicer_core::kDefaultOutputDpiX
             || defaults.dpiy != slicer_core::kDefaultOutputDpiY
+            || std::abs(
+                   defaults.layerthicknessmm
+                   - slicer_core::kDefaultLayerThicknessMm)
+                > 1.0e-9
             || !defaults.support.enabled
             || defaults.support.placement != SupportPlacement::Lower
             || !defaults.support.internalvoidenabled
@@ -2211,6 +2335,9 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         QStringLiteral("outputDpiXSpin"));
     QSpinBox* outputDpiYSpin = quickPanel.findChild<QSpinBox*>(
         QStringLiteral("outputDpiYSpin"));
+    QDoubleSpinBox* layerHeightSpin =
+        quickPanel.findChild<QDoubleSpinBox*>(
+            QStringLiteral("layerHeightSpin"));
     QLabel* outputPixelSizeLabel = quickPanel.findChild<QLabel*>(
         QStringLiteral("outputPixelSizeLabel"));
     if (modelScaleXSpin == nullptr
@@ -2225,6 +2352,7 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
     }
     if (outputDpiXSpin == nullptr
         || outputDpiYSpin == nullptr
+        || layerHeightSpin == nullptr
         || outputPixelSizeLabel == nullptr
         || outputDpiXSpin->minimum() != 72
         || outputDpiXSpin->maximum() != 2400
@@ -2232,12 +2360,34 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         || outputDpiYSpin->maximum() != 2400
         || outputDpiXSpin->value() != 635
         || outputDpiYSpin->value() != 600
+        || std::abs(
+               layerHeightSpin->value()
+               - slicer_core::kDefaultLayerThicknessMm)
+            > 1.0e-9
         || !ContainsAll(
             outputPixelSizeLabel->text(),
             {QStringLiteral("X 0.040000 mm/px"),
              QStringLiteral("Y 0.042333 mm/px")}))
     {
         return fail(QStringLiteral("setting-help-metadata X/Y DPI 默认值或物理像素提示错误。"));
+    }
+    const QList<QAbstractSpinBox*> numericInputs =
+        quickPanel.findChildren<QAbstractSpinBox*>();
+    if (numericInputs.isEmpty())
+    {
+        return fail(
+            QStringLiteral(
+                "setting-help-metadata 未找到可编辑数值输入框。"));
+    }
+    for (const QAbstractSpinBox* input : numericInputs)
+    {
+        if (input->keyboardTracking())
+        {
+            return fail(
+                QStringLiteral(
+                    "setting-help-metadata 数值输入仍会逐字符提交：")
+                + input->objectName());
+        }
     }
     outputDpiXSpin->setValue(600);
     outputDpiYSpin->setValue(1200);
@@ -3222,8 +3372,8 @@ int UiSmokeTestRunner::DiagnosticsCollapse(const UiSmokeTestOptions& options)
             QStringLiteral("材料闭环"),
             QStringLiteral("曲线"),
             QStringLiteral("材料参数"),
-            QStringLiteral("诊断"),
             QStringLiteral("工艺对比"),
+            QStringLiteral("切片耗时"),
             QStringLiteral("日志")})
     {
         return fail(QStringLiteral("diagnostics-collapse 诊断页签集合不正确。"));
@@ -3802,6 +3952,8 @@ int UiSmokeTestRunner::ProductionModeSelector(
     MainWindow window(options.repo_root);
     auto* workspaceTabs =
         window.findChild<QTabWidget*>(QStringLiteral("mainWorkspaceTabs"));
+    auto* configWorkspace =
+        window.findChild<QWidget*>(QStringLiteral("configEditorScrollArea"));
     auto* modePanel =
         window.findChild<ProductionModePanel*>(QStringLiteral("productionModePanel"));
     auto* modeCombo =
@@ -3829,7 +3981,8 @@ int UiSmokeTestRunner::ProductionModeSelector(
         window.findChild<QCheckBox*>(QStringLiteral("surfaceVarnishEnabledCheck"));
     auto* openVdbCheck =
         window.findChild<QCheckBox*>(QStringLiteral("openVdbCandidateCheck"));
-    if (workspaceTabs == nullptr || modePanel == nullptr || modeCombo == nullptr
+    if (workspaceTabs == nullptr || configWorkspace == nullptr
+        || modePanel == nullptr || modeCombo == nullptr
         || profileCombo == nullptr || capabilityLabel == nullptr
         || admissionLabel == nullptr || resourceLabel == nullptr
         || resultIdentityLabel == nullptr || resultOutputLabel == nullptr
@@ -3914,7 +4067,7 @@ int UiSmokeTestRunner::ProductionModeSelector(
     }
 
     window.show();
-    workspaceTabs->setCurrentIndex(1);
+    workspaceTabs->setCurrentWidget(configWorkspace);
     QApplication::processEvents();
     const QList<QSize> targetSizes{
         QSize(1280, 720),
@@ -3934,9 +4087,17 @@ int UiSmokeTestRunner::ProductionModeSelector(
         {
             return fail(
                 QStringLiteral(
-                    "production-mode-selector 中文文本在 %1x%2 被截断或模式面板不可见。")
+                    "production-mode-selector 中文文本在 %1x%2 被截断或模式面板不可见："
+                    "window=%3x%4 panelVisible=%5 mode=%6/%7 profile=%8/%9。")
                     .arg(targetSize.width())
-                    .arg(targetSize.height()));
+                    .arg(targetSize.height())
+                    .arg(window.width())
+                    .arg(window.height())
+                    .arg(modePanel->isVisible())
+                    .arg(modeCombo->width())
+                    .arg(modeCombo->minimumSizeHint().width())
+                    .arg(profileCombo->width())
+                    .arg(profileCombo->minimumSizeHint().width()));
         }
         verifiedSizes.push_back(
             QStringLiteral("%1x%2").arg(targetSize.width()).arg(targetSize.height()));
@@ -5362,6 +5523,84 @@ int UiSmokeTestRunner::SceneSliceCurrent(
     return pass(QStringLiteral(
         "scene-slice-current three-model/one-package/"
         "tiff-load/progress-timing"));
+}
+
+int UiSmokeTestRunner::SceneSliceSingleMaterialProfile(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    const ScenarioEntry* scenario =
+        window.m_scenarioRegistry.FindById(
+            QStringLiteral("single_material_relief"));
+    if (scenario == nullptr)
+    {
+        return fail(
+            QStringLiteral(
+                "single-material scene Profile is missing"));
+    }
+    window.ApplyScenario(*scenario);
+    window.config_document_.setValue(
+        {QStringLiteral("output"), QStringLiteral("dpiX")},
+        127);
+    window.config_document_.setValue(
+        {QStringLiteral("output"), QStringLiteral("dpiY")},
+        127);
+    window.config_document_.setValue(
+        {QStringLiteral("output"),
+         QStringLiteral("layerThicknessMm")},
+        0.50);
+
+    const QString configPath =
+        QDir(options.repo_root).filePath(
+            scenario->configpath);
+    const QString modelPath = QDir(
+        QFileInfo(configPath).absolutePath())
+                                  .filePath(
+                                      QStringLiteral(
+                                          "../../models/relief/"
+                                          "relief_nail_arched.obj"));
+    SceneBatchImportRequest importRequest;
+    importRequest.batchid =
+        QStringLiteral(
+            "scene-slice-single-material-profile-smoke");
+    importRequest.configpath = configPath;
+    importRequest.files = QStringList{modelPath};
+    importRequest.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(importRequest)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            })
+        || window.m_sceneDocument.InstanceCount() != 1U)
+    {
+        return fail(
+            QStringLiteral(
+                "single-material scene import failed"));
+    }
+
+    SceneSliceActionRequest request;
+    request.mode =
+        slicer_core::SlicePipelineMode::Legacy;
+    const SceneSliceSnapshotResult snapshot =
+        window.WriteCurrentSceneSnapshot(request);
+    if (!snapshot.IsValid()
+        || snapshot.snapshot->profileid
+            != QStringLiteral("single_material_relief"))
+    {
+        return fail(
+            QStringLiteral(
+                "single-material scene snapshot rejected: ")
+            + snapshot.message);
+    }
+
+    return pass(
+        QStringLiteral(
+            "scene-slice-single-material-profile "
+            "identity/snapshot"));
 }
 
 int UiSmokeTestRunner::SceneSliceRealAssets(
