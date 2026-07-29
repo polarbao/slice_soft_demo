@@ -1,6 +1,6 @@
 # TASKS 12E-09A 诊断 UI 任务清单
 
-> 状态：09A-01..05 COMPLETE / 09A-06 READY
+> 状态：09A-01..06 COMPLETE / PASS
 > 日期：2026-07-29
 > 性质：独立 diagnostic UI 支线
 
@@ -148,7 +148,7 @@ docs/slice/REPORT/REPORT_12E_09A_05_同层语义Preview当前状态.md
 
 ## 7. 09A-06 阶段收口
 
-状态：READY / 09A-05 COMPLETE
+状态：COMPLETE（2026-07-29）
 
 原子准备与执行指令：
 
@@ -165,6 +165,13 @@ Qt self-test；
 最长中文、取消、失败和重复运行；
 默认 OpenVDB OFF regression；
 用户手册、状态报告、索引和上下文更新。
+```
+
+状态报告与用户说明：
+
+```text
+docs/slice/REPORT/REPORT_12E_09A_诊断UI阶段收口.md
+docs/user_guides/SLICE_12E_09A_纹理填充诊断使用说明.md
 ```
 
 ## 8. 开发序列判断
@@ -191,7 +198,7 @@ Qt self-test；
 09A 同层 preview 在最终生产模式和 DPI 合同上收口，可减少重复验证；
 13B-01 先冻结 scene identity，09A-02 已据此兼容 single_model/scene；
 13C-03 先建立 TIFF 原生底图，避免 09A-05 复制旧 preview PNG 合成路线；
-12E-10A 明确依赖 09A-05 和 09B-05，因此 09A 不能从路线中删除。
+12E-10A 明确依赖 09A-05/06 和 09B-05；上述前置现已完成，10A 转为 READY。
 ```
 
 若使用独立分支并确保文件所有权不冲突，09A-02..04 可与 09B 后半段并行；当前单工作树不建议交叉实施。
