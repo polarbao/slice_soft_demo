@@ -1,7 +1,7 @@
 # DEMO 13D Qt 工作台交互验证方案
 
 > 文档版本：v1.1
-> 文档状态：APPROVED / 13D-01..03 COMPLETE / 13D-04 READY
+> 文档状态：COMPLETE / 13D-01..04 PASS
 > 日期：2026-07-29
 
 ## 1. 目标
@@ -42,6 +42,9 @@ DiagnosticsDock 七类页签可达、右侧只保留五页 Context Inspector。
 
 分别折叠项目区、检查器和诊断 Dock，重启应用后恢复。注入旧/非法布局状态时回退安全默认值。
 
+实现结果：`workbench-layout-restore` 覆盖合法状态恢复、旧 schema 与损坏 geometry 的安全回退；
+布局状态仅写入用户级 QSettings，不进入切片 JSON。
+
 ### Case 13D-05 分辨率与缩放
 
 在 1280x720、1440x900、1920x1080 和 150% 缩放运行截图检查：
@@ -53,6 +56,9 @@ DiagnosticsDock 七类页签可达、右侧只保留五页 Context Inspector。
 没有重叠和不可达控件；
 滚动条只出现在需要的检查页。
 ```
+
+实现结果：`workbench-1280x720` 使用 100% 与 150% 字体尺度验证顶部主动作、中央工作区和检查器
+无重叠；现有 `workspace-layout-sizes` 继续覆盖 1440x900、1280x720 和 1024x768。
 
 ## 3. 自动化计划
 

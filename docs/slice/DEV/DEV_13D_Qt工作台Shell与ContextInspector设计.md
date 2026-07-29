@@ -1,7 +1,7 @@
 # DEV 13D Qt 工作台 Shell 与 ContextInspector 设计
 
 > 文档版本：v1.1
-> 文档状态：APPROVED / 13D-01..03 COMPLETE / 13D-04 READY
+> 文档状态：COMPLETE / 13D-01..04 PASS
 > 日期：2026-07-29
 
 ## 1. 设计原则
@@ -103,6 +103,10 @@ availability/blockedReason；
 ### Phase 4 尺寸与可访问性
 
 冻结最小尺寸、滚动策略、中文文本、tab order、快捷键和布局恢复。
+
+实现结果：`WorkspaceLayoutState` 以 `ui.layout.version=13d.1` 保存 geometry、dock state、主 splitter
+尺寸、检查器页和显式可见性；Smoke/self-test 进程禁用真实用户设置读写。旧版本、损坏状态和屏幕外
+窗口回退 1440x900 安全默认布局。
 
 ## 5. 信号连接
 

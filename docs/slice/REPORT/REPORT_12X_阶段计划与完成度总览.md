@@ -4,7 +4,7 @@
 > 版本：v3.5
 > 更新日期：2026-07-29
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：13D-04 响应式与阶段收口 READY
+> 当前下一任务：12E-09A-03 中文参数控件与状态区
 
 ## 1. 使用规则
 
@@ -56,7 +56,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | 原 P0 17/17 COMPLETE；13B-08-01..04 COMPLETE；M13-4 PASS；13D-01..03 COMPLETE | 已有多模型场景、TIFF 原生统一预览、固定顶部作业栏、单一 Context Inspector 和统一诊断 Dock | NEXT 13D-04 |
+| Stage 13 | 原 P0 17/17 COMPLETE；13B-08-01..04 COMPLETE；M13-4 PASS；13D-01..04 COMPLETE | 多模型场景、TIFF 原生统一预览和 Qt 工作台布局均已收口 | 保持回归 |
 
 ### 2.1 Stage 12 目的图
 
@@ -80,7 +80,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | 原 P0 17/17 COMPLETE；13B-08-01..04 COMPLETE；13C-05、13D-01..03 COMPLETE | 执行 13D-04；M13-4 已通过 |
+| Stage 13 | 原 P0 17/17 COMPLETE；13B-08-01..04 COMPLETE；13C-05、13D-01..04 COMPLETE | 保持回归；M13-4 和 13D 均已通过 |
 
 ### 2.3 剩余任务数量
 
@@ -230,7 +230,7 @@ TIFF 原生统一预览已实现；13B-08 真实作业流矩阵与阶段收口�
 13B-08-01..04：COMPLETE，批量导入、显式场景 CLI、Qt 当前场景动作、真实模型作业流矩阵和 RIP strict 已闭环；
 13C-04：COMPLETE，默认 tiff_native、显式诊断图、无 preview 目录和 IO 对比证据已闭环；
 13C-05：COMPLETE / M13-4 PASS；
-13D-01..03：COMPLETE；13D-04：READY，进入响应式、布局恢复和阶段收口；
+13D-01..04：COMPLETE，版本化布局、响应式、快捷键和用户说明已收口；
 13C-03：COMPLETE，已提供 09A-05 与 12E-10A 所需 TIFF 原生预览底座；
 12E-10：保持单模型双引擎最终收口，不吸收多模型生产验收；
 12F：先完成 12F-02 基线，再根据实测逐项授权优化。

@@ -1,6 +1,6 @@
 # DOC PREP 13D-04 响应式与阶段收口准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：COMPLETE
 > 版本：v1.0
 > 日期：2026-07-29
 
@@ -37,3 +37,17 @@ idle / blocked / slicing / completed / failed；
 
 13D-03 已于 2026-07-29 通过编译、`workbench-project-diagnostics`、布局尺寸、诊断折叠、场景批量
 导入和场景切片 Smoke。13D-04 可进入开发。
+
+## 6. 实现结果
+
+```text
+ui.layout.version=13d.1 的 QSettings 保存/恢复已实现；
+合法 geometry/dock/splitter/检查器状态可恢复；
+旧 schema、损坏状态和屏幕外窗口回退安全默认布局；
+项目区、上下文检查器和诊断区均有视图菜单入口与快捷键；
+顶部主动作定义 Ctrl+O、Ctrl+S、Ctrl+Return、Esc 和稳定 tab order；
+1280x720 的 100%/150% 字体尺度 Smoke 通过；
+用户手册与 Stage 13/12X 总览已同步。
+```
+
+13D-01..04 已完成，阶段 Gate 关闭。

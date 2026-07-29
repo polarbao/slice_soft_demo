@@ -52,6 +52,25 @@ public:
      */
     QStringList PageTitles() const;
 
+    /**
+     * @brief Return the number of context pages.
+     * @return Current page count.
+     */
+    int PageCount() const;
+
+    /**
+     * @brief Return the selected context page index.
+     * @return Current page index.
+     */
+    int CurrentPageIndex() const;
+
+    /**
+     * @brief Select a context page when the index is valid.
+     * @param index Zero-based context page index.
+     * @return true when the page was selected.
+     */
+    bool SetCurrentPageIndex(int index);
+
 signals:
     /**
      * @brief Request opening the complete central configuration workspace.

@@ -7,6 +7,7 @@
 #include <QAction>
 #include <QAbstractItemView>
 #include <QCheckBox>
+#include <QCloseEvent>
 #include <QDesktopServices>
 #include <QComboBox>
 #include <QDateTime>
@@ -20,11 +21,13 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeySequence>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QRegularExpression>
 #include <QScrollArea>
+#include <QSettings>
 #include <QSizePolicy>
 #include <QSplitter>
 #include <QStyle>
@@ -377,11 +380,14 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     m_sliceCurrentSceneButton =
         m_sceneActionBar->SliceButton();
     root_layout->addWidget(m_sceneActionBar);
-    auto* main_splitter = new QSplitter(Qt::Horizontal, central);
-    main_splitter->setObjectName(QStringLiteral("mainSplitter"));
+    m_mainSplitter = new QSplitter(
+        Qt::Horizontal,
+        central);
+    m_mainSplitter->setObjectName(
+        QStringLiteral("mainSplitter"));
 
     QWidget* projectTools = createProjectPanel();
-    m_mainWorkspaceTabs = new QTabWidget(main_splitter);
+    m_mainWorkspaceTabs = new QTabWidget(m_mainSplitter);
     m_mainWorkspaceTabs->setObjectName(QStringLiteral("mainWorkspaceTabs"));
     m_mainWorkspaceTabs->setDocumentMode(true);
     m_mainWorkspaceTabs->setTabPosition(QTabWidget::North);
@@ -449,13 +455,13 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     m_mainWorkspaceTabs->setMinimumWidth(400);
     right->setMinimumWidth(240);
     right->setMaximumWidth(420);
-    main_splitter->addWidget(m_mainWorkspaceTabs);
-    main_splitter->addWidget(right);
-    main_splitter->setStretchFactor(0, 1);
-    main_splitter->setStretchFactor(1, 0);
-    main_splitter->setSizes(QList<int>{1040, 320});
+    m_mainSplitter->addWidget(m_mainWorkspaceTabs);
+    m_mainSplitter->addWidget(right);
+    m_mainSplitter->setStretchFactor(0, 1);
+    m_mainSplitter->setStretchFactor(1, 0);
+    m_mainSplitter->setSizes(QList<int>{1040, 320});
 
-    root_layout->addWidget(main_splitter);
+    root_layout->addWidget(m_mainSplitter);
     setCentralWidget(central);
 
     m_projectToolsDock = new ProjectToolsDock(
@@ -490,9 +496,28 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     projectToolsAction->setText(
         QStringLiteral("项目与高级工具"));
     viewMenu->addAction(projectToolsAction);
+    projectToolsAction->setShortcut(
+        QKeySequence(QStringLiteral("Ctrl+Alt+P")));
+    m_contextInspectorToggleAction =
+        viewMenu->addAction(
+            QStringLiteral("上下文检查器"));
+    m_contextInspectorToggleAction->setObjectName(
+        QStringLiteral(
+            "contextInspectorToggleAction"));
+    m_contextInspectorToggleAction->setCheckable(true);
+    m_contextInspectorToggleAction->setChecked(true);
+    m_contextInspectorToggleAction->setShortcut(
+        QKeySequence(QStringLiteral("Ctrl+Alt+I")));
+    connect(
+        m_contextInspectorToggleAction,
+        &QAction::toggled,
+        m_contextInspector,
+        &QWidget::setVisible);
     QAction* diagnosticsAction = m_diagnosticsDock->toggleViewAction();
     diagnosticsAction->setObjectName(QStringLiteral("diagnosticsToggleAction"));
     diagnosticsAction->setText(QStringLiteral("诊断区域"));
+    diagnosticsAction->setShortcut(
+        QKeySequence(QStringLiteral("Ctrl+Alt+D")));
     viewMenu->addAction(diagnosticsAction);
 
     connect(&runner_, &ProcessRunner::started, this, &MainWindow::handleProcessStarted);
@@ -849,6 +874,61 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     loadPackage(package_edit_->text());
     UpdateModelPreflightUi();
     UpdateActionAvailability();
+    QPushButton* jobImportButton =
+        m_sceneActionBar->findChild<QPushButton*>(
+            QStringLiteral("jobImportModelsButton"));
+    QPushButton* jobSaveButton =
+        m_sceneActionBar->findChild<QPushButton*>(
+            QStringLiteral("jobSaveSceneButton"));
+    QPushButton* jobCancelButton =
+        m_sceneActionBar->findChild<QPushButton*>(
+            QStringLiteral(
+                "cancelCurrentSceneSliceButton"));
+    if (jobImportButton != nullptr
+        && jobSaveButton != nullptr
+        && m_sliceCurrentSceneButton != nullptr
+        && jobCancelButton != nullptr)
+    {
+        QWidget::setTabOrder(
+            jobImportButton,
+            jobSaveButton);
+        QWidget::setTabOrder(
+            jobSaveButton,
+            m_sliceCurrentSceneButton);
+        QWidget::setTabOrder(
+            m_sliceCurrentSceneButton,
+            jobCancelButton);
+        QWidget::setTabOrder(
+            jobCancelButton,
+            m_mainWorkspaceTabs);
+    }
+    if (WorkspaceLayoutState::PersistenceEnabled())
+    {
+        QSettings settings(
+            WorkspaceLayoutState::OrganizationName(),
+            WorkspaceLayoutState::ApplicationName());
+        WorkspaceLayoutState::Restore(
+            settings,
+            this,
+            m_mainSplitter,
+            m_contextInspector);
+    }
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    if (WorkspaceLayoutState::PersistenceEnabled())
+    {
+        QSettings settings(
+            WorkspaceLayoutState::OrganizationName(),
+            WorkspaceLayoutState::ApplicationName());
+        WorkspaceLayoutState::Save(
+            settings,
+            this,
+            m_mainSplitter,
+            m_contextInspector);
+    }
+    QMainWindow::closeEvent(event);
 }
 
 void MainWindow::browseConfig() {

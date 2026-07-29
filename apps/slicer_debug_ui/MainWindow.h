@@ -18,6 +18,7 @@
 #include "services/SlicePreflightCoordinator.h"
 #include "services/ToolPaths.h"
 #include "services/TransformedModelPreflightLoader.h"
+#include "services/WorkspaceLayoutState.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
 #include "widgets/ContextInspector.h"
@@ -46,7 +47,10 @@
 
 class QComboBox;
 class QCheckBox;
+class QCloseEvent;
+class QSplitter;
 class QTabWidget;
+class QAction;
 
 class MainWindow final : public QMainWindow
 {
@@ -56,6 +60,13 @@ public:
     explicit MainWindow(QString repo_root, QWidget* parent = nullptr);
 
     friend class UiSmokeTestRunner;
+
+protected:
+    /**
+     * @brief Persist the versioned workbench layout before closing.
+     * @param event Qt close event.
+     */
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void browseConfig();
@@ -200,6 +211,8 @@ private:
     SceneLayoutPanel* m_sceneLayoutPanel{nullptr};
     ModelTransformPanel* m_modelTransformPanel{nullptr};
     ContextInspector* m_contextInspector{nullptr};
+    QSplitter* m_mainSplitter{nullptr};
+    QAction* m_contextInspectorToggleAction{nullptr};
     ProjectToolsDock* m_projectToolsDock{nullptr};
     DiagnosticsDock* m_diagnosticsDock{nullptr};
     ReportPanel* report_panel_{nullptr};

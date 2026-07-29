@@ -2,7 +2,7 @@
 
 > 版本：v1.2
 > 日期：2026-07-28
-> 状态：原 P0 17/17 COMPLETE / 13B-08 COMPLETE / 13D-01..03 COMPLETE / NEXT 13D-04
+> 状态：原 P0 17/17 COMPLETE / 13B-08 COMPLETE / 13D-01..04 COMPLETE
 
 ## 1. 阶段依赖
 
@@ -59,7 +59,7 @@
 | 13D-01 | COMPLETE（2026-07-29） | 顶部导入、保存、模式/Profile、切片、取消和状态摘要已实现并通过 Smoke |
 | 13D-02 | COMPLETE（2026-07-29） | 单一 Context Inspector、identity 稳定和配置跳转 Smoke 通过 |
 | 13D-03 | COMPLETE（2026-07-29） | 项目工具 Dock、统一 DiagnosticsDock 和五页 Context Inspector 已通过 Smoke |
-| 13D-04 | READY FOR DEVELOPMENT | 原子 PREP 完成且 13D-03 Gate 已关闭 |
+| 13D-04 | COMPLETE（2026-07-29） | 版本化布局恢复、响应式、快捷键、用户说明和阶段证据已收口 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在
 `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md`。该登记不代表建议代码文件已经存在。

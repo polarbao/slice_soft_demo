@@ -101,3 +101,24 @@ QStringList ContextInspector::PageTitles() const
     }
     return titles;
 }
+
+int ContextInspector::PageCount() const
+{
+    return m_tabs->count();
+}
+
+int ContextInspector::CurrentPageIndex() const
+{
+    return m_tabs->currentIndex();
+}
+
+bool ContextInspector::SetCurrentPageIndex(
+    const int index)
+{
+    if (index < 0 || index >= m_tabs->count())
+    {
+        return false;
+    }
+    m_tabs->setCurrentIndex(index);
+    return true;
+}

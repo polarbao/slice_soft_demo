@@ -1,6 +1,7 @@
 #include "SceneActionBar.h"
 
 #include <QHBoxLayout>
+#include <QKeySequence>
 #include <QLabel>
 #include <QPushButton>
 #include <QSizePolicy>
@@ -48,6 +49,8 @@ SceneActionBar::SceneActionBar(QWidget* parent)
     m_importButton->setMinimumSize(110, 36);
     m_importButton->setToolTip(
         QStringLiteral("导入一个或多个 OBJ、STL、3MF 模型"));
+    m_importButton->setShortcut(
+        QKeySequence(QStringLiteral("Ctrl+O")));
 
     m_saveButton = new QPushButton(
         QStringLiteral("保存场景"),
@@ -57,6 +60,8 @@ SceneActionBar::SceneActionBar(QWidget* parent)
     m_saveButton->setIcon(
         style()->standardIcon(QStyle::SP_DialogSaveButton));
     m_saveButton->setMinimumSize(104, 36);
+    m_saveButton->setShortcut(
+        QKeySequence(QStringLiteral("Ctrl+S")));
 
     m_modeLabel = new QLabel(this);
     m_modeLabel->setObjectName(
@@ -87,6 +92,8 @@ SceneActionBar::SceneActionBar(QWidget* parent)
     m_sliceButton->setSizePolicy(
         QSizePolicy::Minimum,
         QSizePolicy::Fixed);
+    m_sliceButton->setShortcut(
+        QKeySequence(QStringLiteral("Ctrl+Return")));
 
     m_cancelButton = new QPushButton(this);
     m_cancelButton->setObjectName(
@@ -96,6 +103,8 @@ SceneActionBar::SceneActionBar(QWidget* parent)
     m_cancelButton->setToolTip(
         QStringLiteral("取消当前场景切片"));
     m_cancelButton->setFixedSize(36, 36);
+    m_cancelButton->setShortcut(
+        QKeySequence(Qt::Key_Escape));
 
     m_statusLabel = new QLabel(
         QStringLiteral("待切片"),

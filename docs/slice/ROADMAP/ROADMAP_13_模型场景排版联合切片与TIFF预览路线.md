@@ -2,7 +2,7 @@
 
 > 版本：v1.3
 > 日期：2026-07-28
-> 状态：原 P0 范围 17/17 COMPLETE / M13-4 PASS / 13D-01..03 COMPLETE / NEXT 13D-04
+> 状态：原 P0 范围 17/17 COMPLETE / M13-4 PASS / 13D-01..04 COMPLETE
 
 ## 1. 总目标
 
@@ -219,8 +219,8 @@ Stage 13 P0 需求/设计/验证/原子任务准备：COMPLETE；
 13C-03：COMPLETE；
 13C-04：COMPLETE，默认 TIFF 原生输出、显式诊断图兼容和 IO 对比证据已落地；
 13C-05：COMPLETE / M13-4 PASS；
-13D-01..03：COMPLETE；
-13D-04：READY FOR DEVELOPMENT；
+13D-01..04：COMPLETE；
+13D 工作台布局收口：PASS；
 完整 Stage 13 production readiness：INCOMPLETE。
 ```
 

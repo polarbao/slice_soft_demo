@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "services/UiSmokeTestRunner.h"
+#include "services/WorkspaceLayoutState.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -37,6 +38,10 @@ QString ResolveApplicationRoot()
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    QCoreApplication::setOrganizationName(
+        WorkspaceLayoutState::OrganizationName());
+    QCoreApplication::setApplicationName(
+        WorkspaceLayoutState::ApplicationName());
     const QStringList args = QCoreApplication::arguments();
     const QString applicationRoot = ResolveApplicationRoot();
     if (args.contains("--ui-smoke-test"))

@@ -49,6 +49,8 @@ add_executable(slicer_debug_ui
     services/TiffLayerLoadWorker.h
     services/TransformedModelPreflightLoader.cpp
     services/TransformedModelPreflightLoader.h
+    services/WorkspaceLayoutState.cpp
+    services/WorkspaceLayoutState.h
     services/LayerPreviewDataProvider.cpp
     services/LayerPreviewDataProvider.h
     services/MaterialClosureReportInterpreter.cpp

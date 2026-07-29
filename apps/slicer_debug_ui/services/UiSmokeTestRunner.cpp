@@ -41,6 +41,7 @@
 #include "SlicePreflightCoordinator.h"
 #include "ToolPaths.h"
 #include "TransformedModelPreflightLoader.h"
+#include "WorkspaceLayoutState.h"
 #include "slicer_core/config.h"
 
 #include <QComboBox>
@@ -53,6 +54,7 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
+#include <QFont>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -63,6 +65,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QRect>
+#include <QSettings>
 #include <QSet>
 #include <QSize>
 #include <QSplitter>
@@ -601,6 +604,14 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return WorkbenchProjectDiagnostics(options);
     }
+    if (options.case_name == "workbench-layout-restore")
+    {
+        return WorkbenchLayoutRestore(options);
+    }
+    if (options.case_name == "workbench-1280x720")
+    {
+        return Workbench1280x720(options);
+    }
     if (options.case_name == "production-mode-selector")
     {
         return ProductionModeSelector(options);
@@ -1088,6 +1099,289 @@ int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
     return pass(QStringLiteral(
         "workbench-project-diagnostics project=collapsed/"
         "advanced-actions diagnostics=unified contexts=five"));
+}
+
+int UiSmokeTestRunner::WorkbenchLayoutRestore(
+    const UiSmokeTestOptions& options)
+{
+    QTemporaryDir settingsDir;
+    if (!settingsDir.isValid())
+    {
+        return fail(QStringLiteral(
+            "13D-04 temporary settings directory unavailable"));
+    }
+    const QString settingsPath =
+        QDir(settingsDir.path()).filePath(
+            QStringLiteral("layout.ini"));
+    QSettings settings(
+        settingsPath,
+        QSettings::IniFormat);
+
+    MainWindow source(options.repo_root);
+    source.resize(1280, 720);
+    source.show();
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    source.m_projectToolsDock->SetExpanded(true);
+    source.m_diagnosticsDock->SetExpanded(true);
+    source.m_contextInspector->SetCurrentPageIndex(3);
+    source.m_contextInspectorToggleAction->setChecked(
+        false);
+    source.m_mainSplitter->setSizes(
+        QList<int>{760, 300});
+    WorkspaceLayoutState::Save(
+        settings,
+        &source,
+        source.m_mainSplitter,
+        source.m_contextInspector);
+
+    MainWindow restored(options.repo_root);
+    const bool restoredSavedState =
+        WorkspaceLayoutState::Restore(
+            settings,
+            &restored,
+            restored.m_mainSplitter,
+            restored.m_contextInspector);
+    restored.show();
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (!restoredSavedState
+        || !restored.m_projectToolsDock->IsExpanded()
+        || !restored.m_diagnosticsDock->IsExpanded()
+        || !restored.m_contextInspector->isHidden()
+        || restored.m_contextInspectorToggleAction
+               ->isChecked()
+        || restored.m_contextInspector
+               ->CurrentPageIndex()
+            != 3)
+    {
+        return fail(
+            QStringLiteral(
+                "13D-04 valid layout state was not restored: "
+                "restored=%1 project=%2 diagnostics=%3 "
+                "inspectorHidden=%4 action=%5 page=%6")
+                .arg(restoredSavedState)
+                .arg(
+                    restored.m_projectToolsDock
+                        ->IsExpanded())
+                .arg(
+                    restored.m_diagnosticsDock
+                        ->IsExpanded())
+                .arg(
+                    restored.m_contextInspector
+                        ->isHidden())
+                .arg(
+                    restored
+                        .m_contextInspectorToggleAction
+                        ->isChecked())
+                .arg(
+                    restored.m_contextInspector
+                        ->CurrentPageIndex()));
+    }
+
+    settings.beginGroup(
+        QStringLiteral("ui/layout"));
+    settings.setValue(
+        QStringLiteral("version"),
+        0);
+    settings.setValue(
+        QStringLiteral("geometry"),
+        QByteArray("corrupt"));
+    settings.endGroup();
+    settings.sync();
+
+    MainWindow fallback(options.repo_root);
+    const bool restoredCorruptState =
+        WorkspaceLayoutState::Restore(
+            settings,
+            &fallback,
+            fallback.m_mainSplitter,
+            fallback.m_contextInspector);
+    fallback.show();
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (restoredCorruptState
+        || fallback.m_projectToolsDock->IsExpanded()
+        || fallback.m_diagnosticsDock->IsExpanded()
+        || fallback.m_contextInspector->isHidden()
+        || !fallback.m_contextInspectorToggleAction
+                ->isChecked()
+        || fallback.m_contextInspector
+               ->CurrentPageIndex()
+            != 0)
+    {
+        return fail(QStringLiteral(
+            "13D-04 invalid layout did not fall back safely"));
+    }
+
+    return pass(QStringLiteral(
+        "workbench-layout-restore schema=13d.1/"
+        "valid-state/corrupt-state-safe-default"));
+}
+
+int UiSmokeTestRunner::Workbench1280x720(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    QWidget* actionBar =
+        window.findChild<QWidget*>(
+            QStringLiteral("sceneActionBar"));
+    QWidget* workspace =
+        window.findChild<QWidget*>(
+            QStringLiteral("mainWorkspaceTabs"));
+    ContextInspector* inspector =
+        window.findChild<ContextInspector*>(
+            QStringLiteral("contextInspector"));
+    const QList<QPushButton*> jobButtons{
+        window.findChild<QPushButton*>(
+            QStringLiteral("jobImportModelsButton")),
+        window.findChild<QPushButton*>(
+            QStringLiteral("jobSaveSceneButton")),
+        window.findChild<QPushButton*>(
+            QStringLiteral("sliceCurrentSceneButton")),
+        window.findChild<QPushButton*>(
+            QStringLiteral(
+                "cancelCurrentSceneSliceButton")),
+    };
+    if (actionBar == nullptr
+        || workspace == nullptr
+        || inspector == nullptr
+        || jobButtons.contains(nullptr))
+    {
+        return fail(QStringLiteral(
+            "13D-04 responsive workbench controls missing"));
+    }
+    for (QPushButton* button : jobButtons)
+    {
+        button->setEnabled(true);
+    }
+    const auto nextTabFocus =
+        [](QWidget* current)
+        {
+            QWidget* candidate =
+                current->nextInFocusChain();
+            while (candidate != current)
+            {
+                if ((candidate->focusPolicy()
+                        & Qt::TabFocus)
+                    && candidate->isEnabled()
+                    && !candidate->isHidden())
+                {
+                    return candidate;
+                }
+                candidate =
+                    candidate->nextInFocusChain();
+            }
+            return current;
+        };
+    if (nextTabFocus(jobButtons.at(0))
+            != jobButtons.at(1)
+        || nextTabFocus(jobButtons.at(1))
+            != jobButtons.at(2)
+        || nextTabFocus(jobButtons.at(2))
+            != jobButtons.at(3))
+    {
+        return fail(QStringLiteral(
+            "13D-04 primary action keyboard order mismatch"));
+    }
+
+    const auto verifyLayout =
+        [&window,
+         actionBar,
+         workspace,
+         inspector,
+         &jobButtons](const QString& scaleLabel)
+        {
+            window.resize(1280, 720);
+            QApplication::processEvents(
+                QEventLoop::AllEvents,
+                50);
+            if (window.width() > 1280
+                || window.height() > 720
+                || window.m_projectToolsDock->IsExpanded()
+                || window.m_diagnosticsDock->IsExpanded())
+            {
+                return QStringLiteral(
+                    "%1 default size or dock state mismatch")
+                    .arg(scaleLabel);
+            }
+
+            const QRect actionRect =
+                GlobalRect(actionBar);
+            const QRect workspaceRect =
+                GlobalRect(workspace);
+            const QRect inspectorRect =
+                GlobalRect(inspector);
+            if (!actionBar->isVisibleTo(&window)
+                || !workspace->isVisibleTo(&window)
+                || !inspector->isVisibleTo(&window)
+                || workspaceRect.intersects(inspectorRect)
+                || actionRect.intersects(workspaceRect)
+                || actionRect.intersects(inspectorRect)
+                || workspaceRect.width() < 400
+                || inspectorRect.width() < 240)
+            {
+                return QStringLiteral(
+                    "%1 workbench regions overlap or collapse")
+                    .arg(scaleLabel);
+            }
+
+            QList<QRect> buttonRects;
+            for (QPushButton* button : jobButtons)
+            {
+                const QRect buttonRect =
+                    GlobalRect(button);
+                if (!button->isVisibleTo(&window)
+                    || !actionRect.contains(buttonRect)
+                    || (button->text().isEmpty()
+                        && button->toolTip().isEmpty()))
+                {
+                    return QStringLiteral(
+                        "%1 primary action is clipped")
+                        .arg(scaleLabel);
+                }
+                for (const QRect& priorRect : buttonRects)
+                {
+                    if (priorRect.intersects(buttonRect))
+                    {
+                        return QStringLiteral(
+                            "%1 primary actions overlap")
+                            .arg(scaleLabel);
+                    }
+                }
+                buttonRects.push_back(buttonRect);
+            }
+            return QString{};
+        };
+
+    window.show();
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    QString layoutError =
+        verifyLayout(QStringLiteral("100%"));
+    if (!layoutError.isEmpty())
+    {
+        return fail(layoutError);
+    }
+
+    QFont highDpiFont = window.font();
+    highDpiFont.setPointSizeF(
+        highDpiFont.pointSizeF() * 1.5);
+    window.setFont(highDpiFont);
+    layoutError =
+        verifyLayout(QStringLiteral("150%"));
+    if (!layoutError.isEmpty())
+    {
+        return fail(layoutError);
+    }
+
+    return pass(QStringLiteral(
+        "workbench-1280x720 100%-150%/"
+        "actions-visible/no-overlap/docks-collapsed"));
 }
 
 int UiSmokeTestRunner::loadPackage(const UiSmokeTestOptions& options) {

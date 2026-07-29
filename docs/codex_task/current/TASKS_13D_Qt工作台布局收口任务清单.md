@@ -1,8 +1,8 @@
 # TASKS 13D Qt 工作台布局收口任务清单
 
-> 文档状态：13D-01..02 COMPLETE / 13D-03 READY
+> 文档状态：13D-01..04 COMPLETE
 > 版本：v1.0
-> 日期：2026-07-28
+> 日期：2026-07-29
 
 ## 1. 任务
 
@@ -27,7 +27,7 @@ controller。
 
 ### 13D-03 项目区和诊断 Dock 收口
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE`
 
 左侧路径/兼容工具移入可折叠项目区；右侧诊断/工艺对比迁入底部 DiagnosticsDock；迁移后删除重复
 壳层，不删除能力。
@@ -37,7 +37,7 @@ controller。
 
 ### 13D-04 响应式与阶段收口
 
-状态：`PREPARED / WAIT 13D-03`
+状态：`COMPLETE`
 
 完成布局状态版本化、1280x720/150% 缩放、中文长文本、tab order、截图/UI Smoke、用户手册和
 `REPORT_13D_Qt工作台布局收口当前状态.md`。

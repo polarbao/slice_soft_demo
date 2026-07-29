@@ -1,11 +1,11 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v2.3
-> 更新日期：2026-07-28
-> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..05 COMPLETE
-> 当前推荐任务：13D-03 READY FOR DEVELOPMENT
-> 下一 Gate：13D 工作台布局 -> 12E-09A-03..06 -> 12E-10
+> 版本：v2.4
+> 更新日期：2026-07-29
+> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..05、13D-01..04 COMPLETE
+> 当前推荐任务：12E-09A-03 中文参数控件与状态区
+> 下一 Gate：12E-09A-03..06 -> 12E-10
 
 ## 1. 文档职责
 
@@ -55,7 +55,7 @@
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
 | 13B 多模型排版与联合切片 | 13B-01..08、13B-04A FUNCTIONAL COMPLETE；production INPUT OPEN | 0 | 保持回归并等待设备输入 |
 | 13C TIFF 原生统一预览 | 13C-01..05 COMPLETE / M13-4 PASS | 0 | 保持回归 |
-| 13D Qt 工作台布局 | 13D-01..02 COMPLETE / 13D-03 READY | 2 个待实现任务 | 执行 13D-03 |
+| 13D Qt 工作台布局 | 13D-01..04 COMPLETE | 0 | 保持回归 |
 
 计数口径：
 
@@ -126,8 +126,8 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 |---:|---|---|---|---|
 | 22A | 13D-01 顶部作业栏 | `COMPLETE` | 13B-08、13C-05 | 固定顶部主动作与状态摘要已实现 |
 | 22B | 13D-02 单一 Context Inspector | `COMPLETE` | 13D-01 | 双右栏已收为唯一检查器 |
-| 22C | 13D-03 项目区与诊断 Dock | `READY FOR DEVELOPMENT` | 13D-02 | 高级工具和诊断入口收口 |
-| 22D | 13D-04 响应式与阶段收口 | `PREPARED / WAIT` | 13D-03 | 解锁 12E-09A-03 |
+| 22C | 13D-03 项目区与诊断 Dock | `COMPLETE` | 13D-02 | 高级工具和诊断入口已收口 |
+| 22D | 13D-04 响应式与阶段收口 | `COMPLETE` | 13D-03 | 已解锁 12E-09A-03 |
 
 ### Wave 4：Stage 12 最终收口
 
@@ -180,13 +180,13 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
-13C 与 13D-01..02 已完成，当前唯一推荐入口为 `13D-03` 项目区与诊断 Dock。
+13C 与 13D-01..04 已完成，当前唯一推荐入口为 `12E-09A-03` 中文参数控件与状态区。
 
 ### 尚未完成
 
 ```text
 Stage 13 原始范围 13A-01..05、13B-01..07、13C-01..05 已完成；13B-08-01..04 已完成，
-13D 尚未完成；13B 正式设备生产证据仍为 INPUT_OPEN；
+13D 已完成；13B 正式设备生产证据仍为 INPUT_OPEN；
 设备 buildVolume、原点和机器轴方向仍未提供；
 22 实例生产性能预算仍未提供；
 13A-R2/R3 和 13B-R4 只到 Epic，不具备开发级详细设计；
@@ -233,7 +233,7 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 CURRENT：13C-05 COMPLETE / M13-4 PASS；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-02；
 M13-1：CANDIDATE PASS；
-NEXT：执行 13D-03 项目区与诊断 Dock；
+NEXT：执行 12E-09A-03 中文参数控件与状态区；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；
 13B-07：Debug/Release 功能矩阵完成；production Gate 继续等待设备输入和 22 实例预算；
@@ -243,5 +243,5 @@ AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13C-03：TIFF 原生统一生产预览已完成；
 13C-04/05：Preview IO 与阶段证据链已完成；
 13B-08：FUNCTIONAL COMPLETE / PRODUCTION INPUT OPEN；
-13D：13D-01..02 COMPLETE，13D-03 原子准备和顺序 Gate 已解除。
+13D：13D-01..04 COMPLETE，工作台布局、持久化与响应式 Gate 已关闭。
 ```
