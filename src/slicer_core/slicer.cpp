@@ -4029,7 +4029,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     EnsureLegacyPipelineAcceptsConfig(config);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
-    ModelReport model_report = load_model_report(config, config_dir);
+    ModelReport model_report;
+    if (options.modelreportoverride != nullptr)
+    {
+        if (options.modelreportoverride->triangles.empty())
+        {
+            throw std::runtime_error(
+                "slice model report override must contain triangles");
+        }
+        model_report = *options.modelreportoverride;
+    }
+    else
+    {
+        model_report = load_model_report(config, config_dir);
+    }
     if (options.instanceoverride.has_value())
     {
         if (!MatchesSourceIdentity(

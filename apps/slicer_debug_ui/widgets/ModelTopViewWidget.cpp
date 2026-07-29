@@ -86,7 +86,8 @@ bool ContainsPoint(
 }
 
 std::optional<slicer_core::SceneViewBounds> VisibleBounds(
-    const SceneDocument& document)
+    const SceneDocument& document,
+    const std::size_t itemCount)
 {
     slicer_core::SceneViewBounds bounds{
         {std::numeric_limits<double>::max(),
@@ -94,8 +95,14 @@ std::optional<slicer_core::SceneViewBounds> VisibleBounds(
         {std::numeric_limits<double>::lowest(),
          std::numeric_limits<double>::lowest()}};
     bool found{false};
-    for (const SceneDocumentItem& item : document.Items())
+    const std::vector<SceneDocumentItem>& items = document.Items();
+    const std::size_t visibleItemCount =
+        std::min(itemCount, items.size());
+    for (std::size_t index = 0U;
+         index < visibleItemCount;
+         ++index)
     {
+        const SceneDocumentItem& item = items[index];
         if (!item.instance.visible
             || !item.geometry.has_value()
             || item.geometry->triangles.empty())
@@ -156,7 +163,28 @@ void ModelTopViewWidget::FitToView()
 
 bool ModelTopViewWidget::HasRenderableGeometry() const
 {
-    return VisibleBounds(*m_document).has_value();
+    return VisibleBounds(
+        *m_document,
+        PresentationItemCount()).has_value();
+}
+
+void ModelTopViewWidget::SetPresentationItemLimit(
+    const std::optional<std::size_t> itemLimit)
+{
+    if (m_presentationItemLimit == itemLimit)
+    {
+        return;
+    }
+    m_presentationItemLimit = itemLimit;
+    update();
+}
+
+std::size_t ModelTopViewWidget::PresentationItemCount() const
+{
+    return std::min(
+        m_document->Items().size(),
+        m_presentationItemLimit.value_or(
+            m_document->Items().size()));
 }
 
 void ModelTopViewWidget::paintEvent(QPaintEvent* event)
@@ -187,15 +215,18 @@ void ModelTopViewWidget::mousePressEvent(QMouseEvent* event)
     const slicer_core::SceneViewPoint worldPoint =
         ScreenToWorld(event->pos(), camera);
     QString selectedInstance;
-    for (auto item = m_document->Items().rbegin();
-         item != m_document->Items().rend();
-         ++item)
+    const std::vector<SceneDocumentItem>& items =
+        m_document->Items();
+    for (std::size_t index = PresentationItemCount();
+         index > 0U;
+         --index)
     {
-        if (!item->instance.visible || !item->geometry.has_value())
+        const SceneDocumentItem& item = items[index - 1U];
+        if (!item.instance.visible || !item.geometry.has_value())
         {
             continue;
         }
-        const auto& bounds = item->geometry->worldboundsmm;
+        const auto& bounds = item.geometry->worldboundsmm;
         QRectF screenBounds(
             WorldToScreen(bounds.min, camera),
             WorldToScreen(bounds.max, camera));
@@ -204,8 +235,8 @@ void ModelTopViewWidget::mousePressEvent(QMouseEvent* event)
             continue;
         }
         const bool intersectsGeometry = std::any_of(
-            item->geometry->triangles.begin(),
-            item->geometry->triangles.end(),
+            item.geometry->triangles.begin(),
+            item.geometry->triangles.end(),
             [&worldPoint](
                 const slicer_core::SceneViewTriangle& triangle)
             {
@@ -214,7 +245,7 @@ void ModelTopViewWidget::mousePressEvent(QMouseEvent* event)
         if (intersectsGeometry)
         {
             selectedInstance = QString::fromStdString(
-                item->instance.instanceid);
+                item.instance.instanceid);
             break;
         }
     }
@@ -265,7 +296,7 @@ ModelTopViewWidget::Camera ModelTopViewWidget::BuildCamera() const
     }
 
     const std::optional<slicer_core::SceneViewBounds> visibleBounds =
-        VisibleBounds(*m_document);
+        VisibleBounds(*m_document, PresentationItemCount());
     if (!visibleBounds.has_value())
     {
         return camera;
@@ -320,7 +351,7 @@ void ModelTopViewWidget::DrawGrid(
     }
 
     const std::optional<slicer_core::SceneViewBounds> visibleBounds =
-        VisibleBounds(*m_document);
+        VisibleBounds(*m_document, PresentationItemCount());
     if (!visibleBounds.has_value())
     {
         return;
@@ -394,8 +425,13 @@ void ModelTopViewWidget::DrawGeometry(
     painter.save();
     painter.setClipRect(camera.viewport);
     bool hasBlocked{false};
-    for (const SceneDocumentItem& item : m_document->Items())
+    const std::vector<SceneDocumentItem>& items =
+        m_document->Items();
+    for (std::size_t index = 0U;
+         index < PresentationItemCount();
+         ++index)
     {
+        const SceneDocumentItem& item = items[index];
         if (!item.instance.visible || !item.geometry.has_value())
         {
             continue;
@@ -520,6 +556,14 @@ void ModelTopViewWidget::DrawStatus(QPainter& painter) const
                      .arg(geometry.scenerevision)
                      .arg(geometry.transformrevision)
                      .arg(m_document->InstanceCount());
+    }
+    if (PresentationItemCount() < m_document->InstanceCount())
+    {
+        detail += QStringLiteral(
+                      "  批量导入中：暂存 %1 个模型，完成后统一排版")
+                      .arg(
+                          m_document->InstanceCount()
+                          - PresentationItemCount());
     }
     else if (m_document->State() == SceneDocumentState::Failed)
     {

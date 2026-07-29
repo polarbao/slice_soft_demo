@@ -70,7 +70,10 @@ SliceTimingPanel::SliceTimingPanel(QWidget* parent)
     timingLayout->setHorizontalSpacing(8);
     timingLayout->setVerticalSpacing(2);
     m_modelLoadValue = MakeValueLabel(this);
+    m_gridSetupValue = MakeValueLabel(this);
     m_sliceProcessingValue = MakeValueLabel(this);
+    m_layerComputeValue = MakeValueLabel(this);
+    m_layerComposeValue = MakeValueLabel(this);
     m_tiffWriteValue = MakeValueLabel(this);
     m_previewWriteValue = MakeValueLabel(this);
     m_reportValue = MakeValueLabel(this);
@@ -78,17 +81,26 @@ SliceTimingPanel::SliceTimingPanel(QWidget* parent)
     m_totalValue = MakeValueLabel(this);
     m_peakMemoryValue = MakeValueLabel(this);
     AddTimingRow(timingLayout, 0, QStringLiteral("模型加载"), m_modelLoadValue);
-    AddTimingRow(timingLayout, 1, QStringLiteral("切片处理"), m_sliceProcessingValue);
-    AddTimingRow(timingLayout, 2, QStringLiteral("TIFF 保存"), m_tiffWriteValue);
-    AddTimingRow(timingLayout, 3, QStringLiteral("预览保存"), m_previewWriteValue);
-    AddTimingRow(timingLayout, 4, QStringLiteral("报告处理"), m_reportValue);
-    AddTimingRow(timingLayout, 5, QStringLiteral("切片保存合计"), m_outputWriteValue);
-    AddTimingRow(timingLayout, 6, QStringLiteral("总耗时"), m_totalValue);
-    AddTimingRow(timingLayout, 7, QStringLiteral("峰值内存"), m_peakMemoryValue);
+    AddTimingRow(timingLayout, 1, QStringLiteral("网格/场景准入"), m_gridSetupValue);
+    AddTimingRow(timingLayout, 2, QStringLiteral("切片处理"), m_sliceProcessingValue);
+    AddTimingRow(timingLayout, 3, QStringLiteral("逐层计算"), m_layerComputeValue);
+    AddTimingRow(timingLayout, 4, QStringLiteral("场景图层合成"), m_layerComposeValue);
+    AddTimingRow(timingLayout, 5, QStringLiteral("TIFF 保存"), m_tiffWriteValue);
+    AddTimingRow(timingLayout, 6, QStringLiteral("预览保存"), m_previewWriteValue);
+    AddTimingRow(timingLayout, 7, QStringLiteral("报告处理"), m_reportValue);
+    AddTimingRow(timingLayout, 8, QStringLiteral("切片保存合计"), m_outputWriteValue);
+    AddTimingRow(timingLayout, 9, QStringLiteral("总耗时"), m_totalValue);
+    AddTimingRow(timingLayout, 10, QStringLiteral("峰值内存"), m_peakMemoryValue);
     rootLayout->addLayout(timingLayout);
 
     m_sliceProcessingValue->setToolTip(
         QStringLiteral("网格、几何采样、纹理准备、支撑生成和逐层材料计算耗时；不包含 TIFF、预览和报告写盘。"));
+    m_gridSetupValue->setToolTip(
+        QStringLiteral("单模型表示切片网格建立耗时；当前场景表示排版、碰撞与打印范围准入耗时。"));
+    m_layerComputeValue->setToolTip(
+        QStringLiteral("逐模型、逐层生成 RGBWSV 内存图层的耗时。"));
+    m_layerComposeValue->setToolTip(
+        QStringLiteral("将多个模型的局部图层合成为全场景图层的耗时；单模型旧入口通常接近零。"));
     m_outputWriteValue->setToolTip(
         QStringLiteral("TIFF、预览、报告写盘和输出包发布耗时之和。"));
     m_reportValue->setToolTip(
@@ -110,7 +122,10 @@ void SliceTimingPanel::Reset(const QString& action)
     m_refreshTimer->start();
     const QList<QLabel*> values{
         m_modelLoadValue,
+        m_gridSetupValue,
         m_sliceProcessingValue,
+        m_layerComputeValue,
+        m_layerComposeValue,
         m_tiffWriteValue,
         m_previewWriteValue,
         m_reportValue,
@@ -137,7 +152,10 @@ void SliceTimingPanel::ShowTiming(const SliceTimingEvent& event)
     m_hasDetailedTiming = true;
     m_engineLabel->setText(QStringLiteral("引擎：") + EngineText(event.engine));
     SetValue(m_modelLoadValue, event.modelloadms);
+    SetValue(m_gridSetupValue, event.gridsetupms);
     SetValue(m_sliceProcessingValue, event.sliceprocessingms);
+    SetValue(m_layerComputeValue, event.layercomputems);
+    SetValue(m_layerComposeValue, event.layercomposems);
     SetValue(m_tiffWriteValue, event.tiffwritems);
     SetValue(m_previewWriteValue, event.previewwritems);
     SetValue(m_reportValue, event.reportbuildms + event.reportwritems);
@@ -171,12 +189,15 @@ void SliceTimingPanel::Finish(const bool success, const qint64 processelapsedms)
 
 QString SliceTimingPanel::SummaryText() const
 {
-    return QStringLiteral("%1 | %2 | 切片=%3 | 保存=%4 | 总计=%5")
+    return QStringLiteral(
+               "%1 | %2 | 切片=%3 | 保存=%4 | 总计=%5 | 准入=%6 | 合成=%7")
         .arg(m_phaseLabel->text())
         .arg(m_engineLabel->text())
         .arg(m_sliceProcessingValue->text())
         .arg(m_outputWriteValue->text())
-        .arg(m_totalValue->text());
+        .arg(m_totalValue->text())
+        .arg(m_gridSetupValue->text())
+        .arg(m_layerComposeValue->text());
 }
 
 QString SliceTimingPanel::FormatDuration(const double milliseconds)
@@ -262,6 +283,49 @@ QString SliceTimingPanel::PhaseText(const SliceProgressEvent& event)
     {
         return QStringLiteral("正在发布输出包");
     }
+    if (event.phase == QStringLiteral("scene_config_load"))
+    {
+        return QStringLiteral("正在冻结并校验当前场景配置");
+    }
+    if (event.phase == QStringLiteral("scene_model_load"))
+    {
+        return QStringLiteral("正在加载场景模型与资源");
+    }
+    if (event.phase == QStringLiteral("scene_admission"))
+    {
+        return QStringLiteral("正在校验排版、碰撞与打印范围");
+    }
+    if (event.phase == QStringLiteral("scene_instance_slice"))
+    {
+        if (event.current <= 0)
+        {
+            return QStringLiteral("准备切片 %1 个场景模型")
+                .arg(event.total);
+        }
+        return QStringLiteral("正在切片场景模型 %1 / %2")
+            .arg(event.current)
+            .arg(event.total);
+    }
+    if (event.phase == QStringLiteral("scene_composition"))
+    {
+        return QStringLiteral("正在合成全场景 RGBWSV 图层");
+    }
+    if (event.phase == QStringLiteral("scene_package_write"))
+    {
+        if (event.current <= 0)
+        {
+            return QStringLiteral("准备保存 %1 个场景图层")
+                .arg(event.total);
+        }
+        return QStringLiteral("正在保存场景图层 %1 / %2")
+            .arg(event.current)
+            .arg(event.total);
+    }
+    if (event.phase
+        == QStringLiteral("scene_package_validation"))
+    {
+        return QStringLiteral("正在校验场景输出包与 TIFF 协议");
+    }
     if (event.phase == QStringLiteral("completed"))
     {
         return QStringLiteral("切片核心处理完成");
@@ -278,6 +342,10 @@ QString SliceTimingPanel::EngineText(const QString& engine)
     if (engine == QStringLiteral("openvdb-candidate"))
     {
         return QStringLiteral("OpenVDB 候选引擎");
+    }
+    if (engine == QStringLiteral("legacy-scene"))
+    {
+        return QStringLiteral("传统场景切片引擎");
     }
     return engine;
 }

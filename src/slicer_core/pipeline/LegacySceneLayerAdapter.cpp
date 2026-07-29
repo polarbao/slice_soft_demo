@@ -122,6 +122,8 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
     options.write_preview_files = false;
     options.write_reports = false;
     options.instanceoverride = request.instance;
+    options.modelreportoverride = request.modelreportoverride;
+    options.progress_callback = request.progresscallback;
     if (!request.modelpathoverride.empty())
     {
         options.inputoverride = SliceRunInputOverride{

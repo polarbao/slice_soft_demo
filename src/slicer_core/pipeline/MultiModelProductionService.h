@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/SliceRunTelemetry.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -45,6 +47,7 @@ struct MultiModelProductionError
 struct MultiModelProductionRequest
 {
     std::filesystem::path effectiveconfigpath;
+    SliceRunProgressCallback progresscallback;
 };
 
 /**
@@ -60,6 +63,7 @@ struct MultiModelProductionResult
     std::string effectiveconfighash;
     std::size_t visibleinstancecount{0U};
     int layercount{0};
+    SliceRunProfile profile;
     std::optional<MultiModelProductionError> error;
 
     /**

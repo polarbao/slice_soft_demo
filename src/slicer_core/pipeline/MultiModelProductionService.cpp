@@ -7,14 +7,13 @@
 #include "slicer_core/pipeline/LegacySceneLayerAdapter.h"
 #include "slicer_core/pipeline/MultiModelScenePackageWriter.h"
 #include "slicer_core/pipeline/MultiModelSliceOrchestrator.h"
-#include "slicer_core/rip_reader.h"
 #include "slicer_core/scene/SceneEffectiveConfig.h"
 #include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/scene/SceneViewGeometry.h"
 #include "slicer_core/system/Sha256.h"
 
 #include <algorithm>
-#include <array>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -34,6 +33,36 @@ namespace
 
 constexpr double kNumericTolerance{1.0e-9};
 constexpr double kRasterQuantizationTolerance{0.500001};
+using ProductionClock = std::chrono::steady_clock;
+
+double ElapsedMilliseconds(
+    const ProductionClock::time_point& start)
+{
+    return std::chrono::duration<double, std::milli>(
+               ProductionClock::now() - start)
+        .count();
+}
+
+void ReportProgress(
+    const MultiModelProductionRequest& request,
+    const ProductionClock::time_point& runStart,
+    const std::string& phase,
+    const int current,
+    const int total,
+    const int percent)
+{
+    if (!request.progresscallback)
+    {
+        return;
+    }
+    request.progresscallback(
+        SliceRunProgress{
+            phase,
+            current,
+            total,
+            std::clamp(percent, 0, 100),
+            ElapsedMilliseconds(runStart)});
+}
 
 struct SceneProductionContract
 {
@@ -369,6 +398,7 @@ SceneCollisionResult AdmitScene(
         };
         geometryRequest.admissionstatus =
             SceneViewAdmissionStatus::Admitted;
+        geometryRequest.buildsurfacepreview = false;
         SceneViewGeometryResult geometry =
             BuildSceneViewGeometry(
                 model->second.model,
@@ -472,6 +502,20 @@ std::string_view MultiModelProductionErrorCodeName(
 MultiModelProductionResult RunMultiModelProductionService(
     const MultiModelProductionRequest& request)
 {
+    const ProductionClock::time_point runStart =
+        ProductionClock::now();
+    ProductionClock::time_point phaseStart = runStart;
+    SliceRunProfile runProfile;
+    runProfile.available = true;
+    runProfile.profile_level = "scene_detailed";
+    ReportProgress(
+        request,
+        runStart,
+        "scene_config_load",
+        0,
+        1,
+        0);
+
     if (request.effectiveconfigpath.empty())
     {
         return Block(
@@ -653,6 +697,16 @@ MultiModelProductionResult RunMultiModelProductionService(
             scene.sceneid);
     }
 
+    runProfile.config_load_ms =
+        ElapsedMilliseconds(phaseStart);
+    ReportProgress(
+        request,
+        runStart,
+        "scene_model_load",
+        0,
+        static_cast<int>(visibleInstanceCount),
+        10);
+    phaseStart = ProductionClock::now();
     std::map<std::string, LoadedSceneModel> models;
     try
     {
@@ -672,6 +726,16 @@ MultiModelProductionResult RunMultiModelProductionService(
             scene.sceneid);
     }
 
+    runProfile.model_load_ms =
+        ElapsedMilliseconds(phaseStart);
+    ReportProgress(
+        request,
+        runStart,
+        "scene_admission",
+        0,
+        static_cast<int>(visibleInstanceCount),
+        18);
+    phaseStart = ProductionClock::now();
     SceneCollisionResult admission;
     try
     {
@@ -720,8 +784,20 @@ MultiModelProductionResult RunMultiModelProductionService(
                 : error->instanceid);
     }
 
+    runProfile.grid_setup_ms =
+        ElapsedMilliseconds(phaseStart);
+    ReportProgress(
+        request,
+        runStart,
+        "scene_instance_slice",
+        0,
+        static_cast<int>(visibleInstanceCount),
+        22);
+    phaseStart = ProductionClock::now();
     std::vector<SceneInstanceRaster> rasters;
     rasters.reserve(scene.instances.size());
+    std::size_t visibleInstanceOrdinal{0U};
+    int lastInstanceProgressPercent{22};
     for (const SceneModelInstance& item : scene.instances)
     {
         if (!item.instance.visible)
@@ -773,6 +849,50 @@ MultiModelProductionResult RunMultiModelProductionService(
             item,
             admission);
         adapterRequest.instance = item.instance;
+        adapterRequest.modelreportoverride =
+            &model->second.model;
+        const std::size_t completedBefore =
+            visibleInstanceOrdinal;
+        adapterRequest.progresscallback =
+            [&request,
+             runStart,
+             completedBefore,
+             visibleInstanceCount,
+             &lastInstanceProgressPercent](
+                const SliceRunProgress& instanceProgress)
+            {
+                const double instanceFraction =
+                    static_cast<double>(
+                        std::clamp(
+                            instanceProgress.percent,
+                            0,
+                            100))
+                    / 100.0;
+                const double sceneFraction =
+                    (static_cast<double>(completedBefore)
+                     + instanceFraction)
+                    / static_cast<double>(
+                        visibleInstanceCount);
+                const int percent =
+                    22
+                    + static_cast<int>(
+                        std::lround(
+                            sceneFraction * 50.0));
+                if (percent <= lastInstanceProgressPercent)
+                {
+                    return;
+                }
+                lastInstanceProgressPercent = percent;
+                ReportProgress(
+                    request,
+                    runStart,
+                    "scene_instance_slice",
+                    static_cast<int>(
+                        completedBefore + 1U),
+                    static_cast<int>(
+                        visibleInstanceCount),
+                    percent);
+            };
         SceneRasterAdapterResult adapted =
             AdaptLegacySceneLayers(adapterRequest);
         if (!adapted.IsValid())
@@ -792,8 +912,19 @@ MultiModelProductionResult RunMultiModelProductionService(
                 item.instance.instanceid);
         }
         rasters.push_back(std::move(adapted.raster));
+        ++visibleInstanceOrdinal;
     }
 
+    runProfile.layer_compute_ms =
+        ElapsedMilliseconds(phaseStart);
+    ReportProgress(
+        request,
+        runStart,
+        "scene_composition",
+        0,
+        1,
+        72);
+    phaseStart = ProductionClock::now();
     MultiModelLayerComposeRequest composeRequest;
     composeRequest.admission = admission;
     composeRequest.currentscenerevision =
@@ -820,6 +951,15 @@ MultiModelProductionResult RunMultiModelProductionService(
             scene.sceneid);
     }
 
+    runProfile.layer_compose_ms =
+        ElapsedMilliseconds(phaseStart);
+    ReportProgress(
+        request,
+        runStart,
+        "scene_package_write",
+        0,
+        composition.grid.layercount,
+        78);
     RgbwsvProductionPackageWriteRequest writeRequest;
     writeRequest.packageDir = contract.outputpackagedir;
     writeRequest.sourceConfigPath =
@@ -864,6 +1004,36 @@ MultiModelProductionResult RunMultiModelProductionService(
         profile.preview.format;
     writeRequest.preview.interval =
         profile.preview.interval;
+    int lastPackageProgressPercent{78};
+    writeRequest.layerwritecallback =
+        [&request,
+         runStart,
+         &lastPackageProgressPercent](
+            const int current,
+            const int total)
+        {
+            const double fraction = total <= 0
+                ? 1.0
+                : static_cast<double>(current)
+                    / static_cast<double>(total);
+            const int percent =
+                78
+                + static_cast<int>(
+                    std::lround(fraction * 17.0));
+            if (percent <= lastPackageProgressPercent
+                && current < total)
+            {
+                return;
+            }
+            lastPackageProgressPercent = percent;
+            ReportProgress(
+                request,
+                runStart,
+                "scene_package_write",
+                current,
+                total,
+                percent);
+        };
 
     RgbwsvProductionPackageWriteResult written;
     try
@@ -873,17 +1043,26 @@ MultiModelProductionResult RunMultiModelProductionService(
             std::move(composition),
             scene,
             admission);
-        const RipValidationResult rip =
-            validate_slice_package(
-                contract.outputpackagedir);
+        runProfile.tiff_write_ms =
+            written.profile.tiffwritems;
+        runProfile.preview_write_ms =
+            written.profile.previewwritems;
+        runProfile.report_build_ms =
+            written.profile.reportbuildms;
+        runProfile.report_write_ms =
+            written.profile.reportwritems;
+        runProfile.package_publish_ms =
+            written.profile.packagepublishms;
+        ReportProgress(
+            request,
+            runStart,
+            "scene_package_validation",
+            0,
+            1,
+            96);
+        phaseStart = ProductionClock::now();
         if (!written.productionOutputWritten
-            || rip.schema != "p0.rgbwsv.2"
-            || rip.bit_depth != 8
-            || rip.channel_order
-                != std::array<std::string, 6>{
-                    "R", "G", "B", "W", "S", "V"}
-            || rip.layer_count != written.layerCount
-            || rip.warnings_count != 0
+            || !written.strictProtocolValidated
             || !PackageIdentityMatches(
                 contract.outputpackagedir,
                 scene))
@@ -896,6 +1075,8 @@ MultiModelProductionResult RunMultiModelProductionService(
                 "scene package failed strict protocol or identity validation",
                 scene.sceneid);
         }
+        runProfile.package_publish_ms +=
+            ElapsedMilliseconds(phaseStart);
     }
     catch (const std::exception& exception)
     {
@@ -917,6 +1098,28 @@ MultiModelProductionResult RunMultiModelProductionService(
     result.effectiveconfighash = effective.confighash;
     result.visibleinstancecount = visibleInstanceCount;
     result.layercount = written.layerCount;
+    runProfile.slice_processing_ms =
+        runProfile.grid_setup_ms
+        + runProfile.mask_sampling_ms
+        + runProfile.texture_prepare_ms
+        + runProfile.support_generation_ms
+        + runProfile.layer_compute_ms
+        + runProfile.layer_compose_ms;
+    runProfile.output_write_ms =
+        runProfile.tiff_write_ms
+        + runProfile.preview_write_ms
+        + runProfile.report_write_ms
+        + runProfile.package_publish_ms;
+    runProfile.total_ms =
+        ElapsedMilliseconds(runStart);
+    result.profile = runProfile;
+    ReportProgress(
+        request,
+        runStart,
+        "completed",
+        1,
+        1,
+        100);
     return result;
 }
 

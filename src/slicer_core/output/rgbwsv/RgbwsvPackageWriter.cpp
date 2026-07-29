@@ -31,6 +31,14 @@ constexpr std::array<std::uint8_t, 3> kEmptyPreviewColor{255U, 255U, 255U};
 constexpr std::array<std::uint8_t, 3> kWhitePreviewColor{0U, 174U, 239U};
 constexpr std::array<std::uint8_t, 3> kSupportPreviewColor{64U, 240U, 80U};
 constexpr std::array<std::uint8_t, 3> kVarnishPreviewColor{127U, 127U, 127U};
+using WriterClock = std::chrono::steady_clock;
+
+double ElapsedMilliseconds(const WriterClock::time_point& start)
+{
+    return std::chrono::duration<double, std::milli>(
+               WriterClock::now() - start)
+        .count();
+}
 
 struct LayerChannelStats
 {
@@ -796,6 +804,8 @@ void WriteRgbwsvProductionLayerTiff(
 RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
     const RgbwsvProductionPackageWriteRequest& request)
 {
+    const WriterClock::time_point totalStart = WriterClock::now();
+    RgbwsvProductionPackageWriteProfile profile;
     ValidateRequest(request);
 
     const std::filesystem::path packageDir =
@@ -820,10 +830,13 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
         std::array<std::uint64_t, kChannelCount> totalPrintPixels{};
         std::array<std::uint64_t, kChannelCount> totalEmptyPixels{};
 
+        int writtenLayerCount{0};
         for (const RgbwsvProductionLayer& layer : request.layers)
         {
             const std::string relativePath =
                 "layers/layer_" + LayerNumber(layer.layerIndex) + ".tiff";
+            const WriterClock::time_point tiffStart =
+                WriterClock::now();
             WriteRgbwsvProductionLayerTiff(
                 stagingDir / relativePath,
                 request.storage,
@@ -831,7 +844,11 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                     layer.widthPx,
                     layer.heightPx,
                     layer.channels});
+            profile.tiffwritems +=
+                ElapsedMilliseconds(tiffStart);
 
+            const WriterClock::time_point layerReportStart =
+                WriterClock::now();
             const LayerChannelStats stats =
                 CalculateLayerStats(layer.channels);
             for (std::size_t channel{0U};
@@ -846,13 +863,29 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             const Json entry = MakeLayerEntry(layer, stats, relativePath);
             layers.push_back(entry);
             layerStats.push_back(entry);
+            profile.reportbuildms +=
+                ElapsedMilliseconds(layerReportStart);
+
+            const WriterClock::time_point previewStart =
+                WriterClock::now();
             WriteLayerPreviews(
                 stagingDir,
                 request,
                 layer,
                 generatedPreviews);
+            profile.previewwritems +=
+                ElapsedMilliseconds(previewStart);
+            ++writtenLayerCount;
+            if (request.layerwritecallback)
+            {
+                request.layerwritecallback(
+                    writtenLayerCount,
+                    static_cast<int>(request.layers.size()));
+            }
         }
 
+        const WriterClock::time_point reportBuildStart =
+            WriterClock::now();
         const Json previewReport = Json::object({
             {"schema", "p0.preview_report.1"},
             {"outputPolicy", request.preview.outputpolicy},
@@ -938,7 +971,11 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                 request.scene->manifestsummary;
         }
         const Json manifest{std::move(manifestObject)};
+        profile.reportbuildms +=
+            ElapsedMilliseconds(reportBuildStart);
 
+        const WriterClock::time_point reportWriteStart =
+            WriterClock::now();
         WriteReportJsonFile(stagingDir / "manifest.json", manifest);
         WriteReportJsonFile(
             stagingDir / "reports" / "slice_report.json",
@@ -952,17 +989,26 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                 stagingDir / MultiModelSceneReportRelativePath(),
                 request.scene->report);
         }
+        profile.reportwritems =
+            ElapsedMilliseconds(reportWriteStart);
 
+        const WriterClock::time_point publishStart =
+            WriterClock::now();
         ValidatePersistedSceneExtension(stagingDir, request);
         (void)validate_slice_package(stagingDir);
         PublishStagedPackage(stagingDir, packageDir, backupDir);
+        profile.packagepublishms =
+            ElapsedMilliseconds(publishStart);
+        profile.totalms = ElapsedMilliseconds(totalStart);
 
         RgbwsvProductionPackageWriteResult result;
         result.productionOutputWritten = true;
         result.fallbackApplied = false;
+        result.strictProtocolValidated = true;
         result.layerCount = request.grid.layerCount;
         result.packageDir = packageDir;
         result.replacedPackageBackupDir = backupDir;
+        result.profile = profile;
         return result;
     }
     catch (...)

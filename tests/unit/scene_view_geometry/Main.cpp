@@ -392,6 +392,37 @@ bool BlockedGeometryRemainsVisibleWithoutMutatingInput()
             "source geometry is not mutated");
 }
 
+bool ProductionProjectionCanSkipDisplayRaster()
+{
+    const slicer_core::SceneModel source = MakeScene();
+    slicer_core::SceneViewGeometryRequest displayRequest =
+        MakeRequest();
+    const slicer_core::SceneViewGeometryResult display =
+        slicer_core::BuildSceneViewGeometry(
+            source,
+            displayRequest);
+
+    slicer_core::SceneViewGeometryRequest productionRequest =
+        displayRequest;
+    productionRequest.buildsurfacepreview = false;
+    const slicer_core::SceneViewGeometryResult production =
+        slicer_core::BuildSceneViewGeometry(
+            source,
+            productionRequest);
+    return ExpectTrue(
+               display.IsValid() && production.IsValid(),
+               "display and production projections succeed")
+        && ExpectTrue(
+            display.geometry.surfacepreview.IsValid()
+                && !production.geometry.surfacepreview.IsValid()
+                && production.geometry.surfacepreview.rgba.empty(),
+            "production projection skips display-only surface raster")
+        && ExpectTrue(
+            display.geometry.geometryhash
+                == production.geometry.geometryhash,
+            "display raster does not change production geometry identity");
+}
+
 }  // namespace
 
 int main()
@@ -404,7 +435,8 @@ int main()
         && NonFiniteUvIsRejected()
         && StaleRevisionIsRejected()
         && InvalidGeometryIsRejected()
-        && BlockedGeometryRemainsVisibleWithoutMutatingInput();
+        && BlockedGeometryRemainsVisibleWithoutMutatingInput()
+        && ProductionProjectionCanSkipDisplayRaster();
     if (!ok)
     {
         return 1;

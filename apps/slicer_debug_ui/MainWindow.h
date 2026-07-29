@@ -39,6 +39,7 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 
+#include <cstddef>
 #include <optional>
 
 class QComboBox;
@@ -113,6 +114,7 @@ private:
     void RequestSlicePreflight(const SlicePreflightAction& action);
     void UpdateModelPreflightUi();
     void UpdateActionAvailability();
+    void UpdateBatchImportPresentation();
     SceneSliceActionSceneState BuildSceneSliceState() const;
     SceneSliceSnapshotResult WriteCurrentSceneSnapshot(
         const SceneSliceActionRequest& request);
@@ -203,5 +205,6 @@ private:
     LogPanel* log_panel_{nullptr};
     bool m_processBusy{false};
     bool m_suppressPreflightStale{false};
+    std::optional<std::size_t> m_batchPresentationItemLimit;
     std::optional<SliceTimingEvent> m_lastSliceTimingEvent;
 };

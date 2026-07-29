@@ -304,6 +304,9 @@ bool ScenePackageContainsOneGlobalTiffPerLayer()
                result.productionOutputWritten,
                "scene package reports production-format output")
         && ExpectTrue(
+            result.strictProtocolValidated,
+            "scene package reports staged strict RGBWSV validation")
+        && ExpectTrue(
             tiffCount == kLayerCount,
             "scene package contains one global TIFF per layer")
         && ExpectTrue(

@@ -146,6 +146,7 @@ struct SceneViewGeometryRequest
     TextureSampleOptions textureoptions;
     SceneViewAdmissionStatus admissionstatus{
         SceneViewAdmissionStatus::Unknown};
+    bool buildsurfacepreview{true};
 };
 
 /**

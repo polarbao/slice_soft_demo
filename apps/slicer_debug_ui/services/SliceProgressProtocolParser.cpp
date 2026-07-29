@@ -77,8 +77,10 @@ void ParseLine(const QString& line, SliceProtocolUpdate* update)
     event.profilelevel = fields.value(QStringLiteral("profileLevel"));
     event.configloadms = ReadDouble(fields, QStringLiteral("configLoadMs"));
     event.modelloadms = ReadDouble(fields, QStringLiteral("modelLoadMs"));
+    event.gridsetupms = ReadDouble(fields, QStringLiteral("gridSetupMs"));
     event.sliceprocessingms = ReadDouble(fields, QStringLiteral("sliceProcessingMs"));
     event.layercomputems = ReadDouble(fields, QStringLiteral("layerComputeMs"));
+    event.layercomposems = ReadDouble(fields, QStringLiteral("layerComposeMs"));
     event.tiffwritems = ReadDouble(fields, QStringLiteral("tiffWriteMs"));
     event.previewwritems = ReadDouble(fields, QStringLiteral("previewWriteMs"));
     event.reportbuildms = ReadDouble(fields, QStringLiteral("reportBuildMs"));

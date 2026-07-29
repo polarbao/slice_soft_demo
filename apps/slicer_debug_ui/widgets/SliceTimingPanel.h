@@ -60,7 +60,10 @@ private:
     QLabel* m_engineLabel{nullptr};
     QProgressBar* m_progressBar{nullptr};
     QLabel* m_modelLoadValue{nullptr};
+    QLabel* m_gridSetupValue{nullptr};
     QLabel* m_sliceProcessingValue{nullptr};
+    QLabel* m_layerComputeValue{nullptr};
+    QLabel* m_layerComposeValue{nullptr};
     QLabel* m_tiffWriteValue{nullptr};
     QLabel* m_previewWriteValue{nullptr};
     QLabel* m_reportValue{nullptr};

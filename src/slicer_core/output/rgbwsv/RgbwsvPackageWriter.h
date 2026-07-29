@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <optional>
 #include <span>
 #include <string>
@@ -14,6 +15,27 @@
 
 namespace slicer_core
 {
+
+/**
+ * @brief Observer invoked after one production layer is persisted.
+ *
+ * The callback runs synchronously on the writer thread and must return quickly.
+ */
+using RgbwsvProductionLayerWriteCallback =
+    std::function<void(int, int)>;
+
+/**
+ * @brief Diagnostic-only timing profile for one RGBWSV package publication.
+ */
+struct RgbwsvProductionPackageWriteProfile
+{
+    double tiffwritems{0.0};
+    double previewwritems{0.0};
+    double reportbuildms{0.0};
+    double reportwritems{0.0};
+    double packagepublishms{0.0};
+    double totalms{0.0};
+};
 
 /**
  * @brief Grid metadata written into an RGBWSV production package.
@@ -85,6 +107,7 @@ struct RgbwsvProductionPackageWriteRequest
     RgbwsvProductionPreviewSpec preview;
     std::vector<RgbwsvProductionLayer> layers;
     std::optional<MultiModelSceneReportDocument> scene;
+    RgbwsvProductionLayerWriteCallback layerwritecallback;
 };
 
 /**
@@ -94,9 +117,11 @@ struct RgbwsvProductionPackageWriteResult
 {
     bool productionOutputWritten{false};
     bool fallbackApplied{false};
+    bool strictProtocolValidated{false};
     int layerCount{0};
     std::filesystem::path packageDir;
     std::filesystem::path replacedPackageBackupDir;
+    RgbwsvProductionPackageWriteProfile profile;
 };
 
 /**

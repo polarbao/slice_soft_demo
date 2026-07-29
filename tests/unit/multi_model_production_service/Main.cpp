@@ -7,6 +7,7 @@
 #include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/system/Sha256.h"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -270,6 +271,13 @@ bool ThreeInstanceSceneWritesOneStrictPackage()
     slicer_core::MultiModelProductionRequest request;
     request.effectiveconfigpath =
         effectiveRequest.generatedconfigpath;
+    std::vector<slicer_core::SliceRunProgress> progressEvents;
+    request.progresscallback =
+        [&progressEvents](
+            const slicer_core::SliceRunProgress& progress)
+        {
+            progressEvents.push_back(progress);
+        };
     const slicer_core::MultiModelProductionResult result =
         slicer_core::RunMultiModelProductionService(request);
     if (!ExpectTrue(
@@ -290,10 +298,57 @@ bool ThreeInstanceSceneWritesOneStrictPackage()
         std::ios::binary);
     const slicer_core::Json manifest =
         slicer_core::Json::parse(manifestInput);
+    const auto hasProgressPhase =
+        [&progressEvents](const std::string& phase)
+        {
+            return std::any_of(
+                progressEvents.begin(),
+                progressEvents.end(),
+                [&phase](
+                    const slicer_core::SliceRunProgress& progress)
+                {
+                    return progress.phase == phase;
+                });
+        };
+    const bool progressIsMonotonic =
+        std::adjacent_find(
+            progressEvents.begin(),
+            progressEvents.end(),
+            [](
+                const slicer_core::SliceRunProgress& left,
+                const slicer_core::SliceRunProgress& right)
+            {
+                return left.percent > right.percent;
+            })
+        == progressEvents.end();
     const bool ok =
         ExpectTrue(
             result.visibleinstancecount == 3U,
             "all three visible instances are produced")
+        && ExpectTrue(
+            !progressEvents.empty()
+                && progressEvents.back().phase == "completed"
+                && progressEvents.back().percent == 100
+                && progressIsMonotonic,
+            "scene production emits monotonic progress through completion")
+        && ExpectTrue(
+            hasProgressPhase("scene_config_load")
+                && hasProgressPhase("scene_model_load")
+                && hasProgressPhase("scene_admission")
+                && hasProgressPhase("scene_instance_slice")
+                && hasProgressPhase("scene_composition")
+                && hasProgressPhase("scene_package_write")
+                && hasProgressPhase("scene_package_validation"),
+            "scene production reports every user-visible phase")
+        && ExpectTrue(
+            result.profile.available
+                && result.profile.profile_level
+                    == "scene_detailed"
+                && result.profile.total_ms > 0.0
+                && result.profile.model_load_ms > 0.0
+                && result.profile.layer_compute_ms > 0.0
+                && result.profile.output_write_ms > 0.0,
+            "scene production returns detailed timing telemetry")
         && ExpectTrue(
             rip.schema == "p0.rgbwsv.2"
                 && rip.bit_depth == 8

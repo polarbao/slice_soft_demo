@@ -530,10 +530,6 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
             {
                 m_modelTopViewLoader.Cancel();
             }
-            else if (m_sceneDocument.Geometry().has_value())
-            {
-                m_sceneDocument.Reset();
-            }
             if (!m_suppressPreflightStale)
             {
                 m_modelPreflightController.MarkStale();
@@ -612,6 +608,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         this,
         [this]()
         {
+            UpdateBatchImportPresentation();
             status_label_->setText(
                 m_sceneBatchImportController.StatusText());
             UpdateActionAvailability();
@@ -2487,6 +2484,33 @@ void MainWindow::UpdateActionAvailability()
             enabled && m_modelPreflightController.CurrentExecution().result.status
                 != slicer_core::ModelPreflightStatus::NotRun);
     }
+}
+
+void MainWindow::UpdateBatchImportPresentation()
+{
+    if (m_modelTopViewWidget == nullptr)
+    {
+        return;
+    }
+
+    if (m_sceneBatchImportController.IsRunning())
+    {
+        if (!m_batchPresentationItemLimit.has_value())
+        {
+            const std::size_t existingItemCount =
+                m_sceneDocument.InstanceCount();
+            m_batchPresentationItemLimit =
+                existingItemCount == 0U
+                ? 1U
+                : existingItemCount;
+        }
+        m_modelTopViewWidget->SetPresentationItemLimit(
+            m_batchPresentationItemLimit);
+        return;
+    }
+
+    m_batchPresentationItemLimit.reset();
+    m_modelTopViewWidget->SetPresentationItemLimit(std::nullopt);
 }
 
 void MainWindow::LoadScenarios()

@@ -8,6 +8,9 @@
 #include <QHash>
 #include <QWidget>
 
+#include <cstddef>
+#include <optional>
+
 class ModelTopViewWidget final : public QWidget
 {
     Q_OBJECT
@@ -34,6 +37,19 @@ public:
      * @return True for ready or blocked scene geometry.
      */
     bool HasRenderableGeometry() const;
+
+    /**
+     * @brief Limit the scene prefix shown while a batch awaits final layout.
+     * @param itemLimit Maximum item count, or no value to show the full scene.
+     */
+    void SetPresentationItemLimit(
+        std::optional<std::size_t> itemLimit);
+
+    /**
+     * @brief Return the number of scene items exposed to presentation.
+     * @return Full scene count or the active presentation prefix count.
+     */
+    std::size_t PresentationItemCount() const;
 
 signals:
     void SigInstanceSelected(const QString& instanceId);
@@ -70,5 +86,6 @@ private:
 
     SceneDocument* m_document{nullptr};
     SceneSelectionModel* m_selectionModel{nullptr};
+    std::optional<std::size_t> m_presentationItemLimit;
     mutable QHash<QString, QImage> m_surfaceCache;
 };

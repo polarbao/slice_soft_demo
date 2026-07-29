@@ -267,6 +267,83 @@ Quick CI：PASS。
 因此，批量导入功能缺口已关闭；原崩溃不是 `meigui` 几何本身触发，而是运行包混入了构建期间产生
 的 ABI 不一致对象。
 
+### 8.2 2026-07-28 批量导入显示与配置页生命周期修正
+
+真实 `meigui_fudiao` 复测确认，第二个模型加载完成后会在批次尚未结束时短暂与第一个模型重合，
+第三个模型完成后又恢复正常。根因不是最终排版错误，而是 13B-08 按设计只在批次完成后执行一次
+正式 Grid Layout；前两个加载结果在最终排版前均保留源坐标，Qt 画布却提前显示了尚未排版的实例。
+
+修正保持“每批次只执行一次正式排版”和单一 scene revision 合同：
+
+```text
+批量导入开始时冻结俯视图可展示的稳定实例前缀；
+首个空场景导入允许显示第一个模型；
+后续尚未排版实例仅暂存，不提前叠加到画布；
+批次结束并完成正式 Grid Layout 后一次性显示全部模型；
+状态文本明确提示暂存数量和“完成后统一排版”。
+```
+
+同时移除 `ConfigDocument::changed` 对 `SceneDocument::Reset()` 的错误耦合。配置变化现在只使预检和
+生产会话失效，不销毁已导入模型；切换到“配置”页、编辑配置再返回“模型”页时，场景实例、俯视
+几何和选择上下文继续保留。
+
+新增/增强验证：
+
+```text
+scene-batch-import-three：
+  第二项完成时 document=2、presentation=1；
+  批次结束后 document=3、presentation=3；
+  配置页打开、配置变化和返回模型页后场景仍为 3 个实例。
+
+scene-batch-import-real-meigui：
+  真实 02/03/04 OBJ 仍为 selected=3/imported=3/failed=0。
+```
+
+本轮实际验证：
+
+```text
+Debug 全量构建：PASS；
+scene_batch_import_controller_unit_tests：PASS；
+scene-batch-import-three：PASS；
+scene-batch-import-real-meigui：PASS；
+UI self-test：PASS；
+Quick CI：PASS；
+git diff --check：PASS。
+```
+
+### 8.3 2026-07-28 当前场景切片进度与单实例性能修正
+
+单模型旧入口和当前场景入口共享 Legacy 几何、纹理、材料、支撑和 RGBWSV TIFF 协议，但当前场景
+入口还必须执行场景冻结、资源身份校验、排版/碰撞准入、实例局部图层合成、原子 Package 发布和
+严格协议校验。因此它不是对 `--config` 的简单改名，即使只有一个实例也存在固定场景成本。
+
+本轮确认 UI 进度缺失的直接原因是 `slicer_cli --scene-config` 未向标准输出发送
+`SLICE_PROGRESS` / `SLICE_TIMING`，并非 Qt 使用了另一套进程或丢失了标准输出。现已完成：
+
+```text
+MultiModelProductionService 输出单调递增的场景阶段进度；
+CLI 继续沿用稳定 SLICE_PROGRESS / SLICE_TIMING 文本协议；
+UI 显示场景配置、模型加载、场景准入、实例切片、图层合成、Package 保存和校验；
+耗时面板新增“网格/场景准入”“逐层计算”“场景图层合成”；
+RGBWSV writer 提供 TIFF、预览、报告和发布阶段计时；
+场景适配器复用已经导入的 SceneModel，不再二次解析同一 OBJ/3MF；
+生产碰撞准入跳过 768 px 俯视显示光栅，只保留碰撞所需投影几何；
+writer 已完成 staged strict RGBWSV 校验后，服务不再重复读取全部 TIFF。
+```
+
+同一 `surface_shell_cube.obj`、600 x 600 DPI、0.01 mm 层厚、Debug 实测：
+
+```text
+旧单模型入口：total=439.310 ms；
+修正前当前场景入口：total=2032.370 ms，sceneAdmission 在诊断样例中约 0.8 至 1.2 s；
+修正后当前场景入口：total=1073.010 ms，gridSetup/sceneAdmission=0.846 ms；
+场景入口本轮墙钟耗时下降约 47%。
+```
+
+修正后场景入口仍慢于旧单模型入口，剩余成本主要来自全场景图层合成、staged strict 校验、原子
+发布和场景身份报告。这些属于“一场景一 Package”的生产合同，不能直接删除；后续性能优化应在
+保持相同输出和校验边界的前提下继续进行。
+
 ## 9. 生产 Gate
 
 仍未关闭：

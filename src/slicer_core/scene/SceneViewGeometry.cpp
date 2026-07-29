@@ -611,9 +611,12 @@ SceneViewGeometryResult BuildSceneViewGeometry(
                 + right.zmm.at(2U);
             return leftDepth < rightDepth;
         });
-    geometry.surfacepreview = BuildSurfacePreview(
-        geometry,
-        request.textureoptions);
+    if (request.buildsurfacepreview)
+    {
+        geometry.surfacepreview = BuildSurfacePreview(
+            geometry,
+            request.textureoptions);
+    }
     RefreshSceneViewGeometryHash(geometry);
     return {std::move(geometry), std::nullopt};
 }

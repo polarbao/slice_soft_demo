@@ -322,8 +322,10 @@ void PrintSliceTiming(
         << " profileLevel=" << profile.profile_level
         << " configLoadMs=" << FormatMilliseconds(profile.config_load_ms)
         << " modelLoadMs=" << FormatMilliseconds(profile.model_load_ms)
+        << " gridSetupMs=" << FormatMilliseconds(profile.grid_setup_ms)
         << " sliceProcessingMs=" << FormatMilliseconds(profile.slice_processing_ms)
         << " layerComputeMs=" << FormatMilliseconds(profile.layer_compute_ms)
+        << " layerComposeMs=" << FormatMilliseconds(profile.layer_compose_ms)
         << " tiffWriteMs=" << FormatMilliseconds(profile.tiff_write_ms)
         << " previewWriteMs=" << FormatMilliseconds(profile.preview_write_ms)
         << " reportBuildMs=" << FormatMilliseconds(profile.report_build_ms)
@@ -728,6 +730,7 @@ int RunMultiModelSceneProduction(const CliOptions& options)
     slicer_core::MultiModelProductionRequest request;
     request.effectiveconfigpath =
         options.scene_config_path;
+    request.progresscallback = PrintSliceProgress;
     const slicer_core::MultiModelProductionResult result =
         slicer_core::RunMultiModelProductionService(request);
     if (!result.IsValid())
@@ -758,6 +761,10 @@ int RunMultiModelSceneProduction(const CliOptions& options)
               << result.visibleinstancecount << '\n';
     std::cout << "  layerCount: "
               << result.layercount << '\n';
+    PrintSliceTiming(
+        "legacy-scene",
+        result.profile,
+        slicer_core::CaptureProcessMemoryStats());
     return 0;
 }
 

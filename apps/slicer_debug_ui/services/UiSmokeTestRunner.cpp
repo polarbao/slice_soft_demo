@@ -3053,7 +3053,8 @@ int UiSmokeTestRunner::SliceProgressTiming(const UiSmokeTestOptions& options)
     update = parser.Append(QStringLiteral(
         "sedMs=1234.500\n"
         "SLICE_TIMING engine=legacy profileLevel=detailed configLoadMs=1.000 modelLoadMs=20.000 "
-        "sliceProcessingMs=800.000 layerComputeMs=500.000 tiffWriteMs=200.000 previewWriteMs=100.000 "
+        "gridSetupMs=90.000 sliceProcessingMs=800.000 layerComputeMs=500.000 layerComposeMs=75.000 "
+        "tiffWriteMs=200.000 previewWriteMs=100.000 "
         "reportBuildMs=30.000 reportWriteMs=40.000 packagePublishMs=0.000 outputWriteMs=340.000 totalMs=1191.000 "
         "memoryAvailable=1 workingSetBytes=50331648 peakWorkingSetBytes=100663296\n"));
     if (update.progress.size() != 1 || update.timings.size() != 1)
@@ -3070,7 +3071,9 @@ int UiSmokeTestRunner::SliceProgressTiming(const UiSmokeTestOptions& options)
         return fail(QStringLiteral("切片进度字段解析错误。"));
     }
     if (timing.engine != QStringLiteral("legacy")
+        || qAbs(timing.gridsetupms - 90.0) > 0.001
         || qAbs(timing.sliceprocessingms - 800.0) > 0.001
+        || qAbs(timing.layercomposems - 75.0) > 0.001
         || qAbs(timing.outputwritems - 340.0) > 0.001
         || qAbs(timing.totalms - 1191.0) > 0.001
         || !timing.memoryavailable
@@ -3087,9 +3090,34 @@ int UiSmokeTestRunner::SliceProgressTiming(const UiSmokeTestOptions& options)
     const QString summary = panel.SummaryText();
     if (!summary.contains(QStringLiteral("传统切片引擎"))
         || !summary.contains(QStringLiteral("800.0 ms"))
-        || !summary.contains(QStringLiteral("340.0 ms")))
+        || !summary.contains(QStringLiteral("340.0 ms"))
+        || !summary.contains(QStringLiteral("准入=90.0 ms"))
+        || !summary.contains(QStringLiteral("合成=75.0 ms")))
     {
         return fail(QStringLiteral("切片耗时面板未显示解析后的数据：") + summary);
+    }
+
+    SliceProgressEvent sceneProgress;
+    sceneProgress.phase =
+        QStringLiteral("scene_package_write");
+    sceneProgress.current = 12;
+    sceneProgress.total = 50;
+    sceneProgress.percent = 84;
+    sceneProgress.elapsedms = 2100.0;
+    SliceTimingEvent sceneTiming = timing;
+    sceneTiming.engine = QStringLiteral("legacy-scene");
+    panel.Reset(QStringLiteral("切片当前场景"));
+    panel.UpdateProgress(sceneProgress);
+    panel.ShowTiming(sceneTiming);
+    const QString sceneSummary = panel.SummaryText();
+    if (!sceneSummary.contains(
+            QStringLiteral("正在保存场景图层 12 / 50"))
+        || !sceneSummary.contains(
+            QStringLiteral("传统场景切片引擎")))
+    {
+        return fail(
+            QStringLiteral("场景切片阶段与引擎中文显示错误：")
+            + sceneSummary);
     }
     return pass(QStringLiteral("切片进度协议与耗时面板通过。"));
 }
@@ -3828,27 +3856,40 @@ int UiSmokeTestRunner::ModelTopViewTransform(
 int UiSmokeTestRunner::SceneBatchImportThree(
     const UiSmokeTestOptions& options)
 {
-    SceneDocument document;
-    SceneModelRepository repository;
-    ModelTopViewLoader loader(&document, &repository);
-    SceneBatchImportController controller(&document);
-    controller.SetLoadHandlers(
-        [&loader](const ModelTopViewLoadRequest& request)
-        {
-            loader.RequestLoad(request);
-            return loader.Generation();
-        },
-        [&loader]()
-        {
-            loader.Cancel();
-        });
+    MainWindow window(options.repo_root);
+    SceneDocument& document = window.m_sceneDocument;
+    SceneBatchImportController& controller =
+        window.m_sceneBatchImportController;
+    ModelTopViewWidget* topView = window.m_modelTopViewWidget;
+
+    const QString configPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    if (topView == nullptr
+        || !window.config_editor_panel_->loadConfig(configPath))
+    {
+        return fail(QStringLiteral(
+            "scene batch three-item MainWindow fixture unavailable"));
+    }
+
+    bool secondItemWasPresentationSuppressed{false};
     QObject::connect(
-        &loader,
-        &ModelTopViewLoader::SigLoadingFinished,
         &controller,
-        [&controller, &loader]()
+        &SceneBatchImportController::SigStateChanged,
+        &window,
+        [&controller,
+         &document,
+         topView,
+         &secondItemWasPresentationSuppressed]()
         {
-            controller.OnLoadFinished(loader.Generation());
+            if (controller.IsRunning()
+                && controller.Summary().imported == 2)
+            {
+                secondItemWasPresentationSuppressed =
+                    document.InstanceCount() == 2U
+                    && topView->PresentationItemCount() == 1U;
+            }
         });
 
     const QString modelPath = QDir(options.repo_root).filePath(
@@ -3856,10 +3897,7 @@ int UiSmokeTestRunner::SceneBatchImportThree(
             "samples/models/openvdb/surface_shell_cube.obj"));
     SceneBatchImportRequest request;
     request.batchid = QStringLiteral("smoke-three");
-    request.configpath = QDir(options.repo_root).filePath(
-        QStringLiteral(
-            "samples/configs/golden/"
-            "material_process_top2_fixture.json"));
+    request.configpath = configPath;
     request.files = QStringList{
         modelPath,
         modelPath,
@@ -3885,6 +3923,8 @@ int UiSmokeTestRunner::SceneBatchImportThree(
         || summary.cancelled != 0
         || !summary.autolayoutapplied
         || document.InstanceCount() != 3U
+        || !secondItemWasPresentationSuppressed
+        || topView->PresentationItemCount() != 3U
         || document.Items().at(0U).layoutcolumn != 0
         || document.Items().at(1U).layoutcolumn != 1
         || document.Items().at(2U).layoutcolumn != 2)
@@ -3892,8 +3932,55 @@ int UiSmokeTestRunner::SceneBatchImportThree(
         return fail(QStringLiteral(
             "scene batch three-item summary/layout mismatch"));
     }
+
+    int configTabIndex{-1};
+    for (int index = 0;
+         index < window.m_mainWorkspaceTabs->count();
+         ++index)
+    {
+        if (window.m_mainWorkspaceTabs->tabText(index)
+            == QStringLiteral("配置"))
+        {
+            configTabIndex = index;
+            break;
+        }
+    }
+    if (configTabIndex < 0)
+    {
+        return fail(QStringLiteral(
+            "scene batch configuration workspace missing"));
+    }
+
+    window.m_mainWorkspaceTabs->setCurrentIndex(configTabIndex);
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+    if (document.InstanceCount() != 3U
+        || !topView->HasRenderableGeometry())
+    {
+        return fail(QStringLiteral(
+            "scene disappeared when configuration workspace opened"));
+    }
+    const int previewInterval =
+        window.config_document_
+            .value({QStringLiteral("preview"),
+                    QStringLiteral("interval")})
+            .toInt(1);
+    window.config_document_.setValue(
+        {QStringLiteral("preview"), QStringLiteral("interval")},
+        previewInterval + 1);
+    window.m_mainWorkspaceTabs->setCurrentWidget(
+        window.m_modelTopViewWorkspace);
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+    if (document.InstanceCount() != 3U
+        || !document.Geometry().has_value()
+        || !topView->HasRenderableGeometry())
+    {
+        return fail(QStringLiteral(
+            "scene disappeared after configuration workspace round-trip"));
+    }
+
     return pass(QStringLiteral(
-        "scene-batch-import-three ordered/one-layout"));
+        "scene-batch-import-three ordered/one-layout/"
+        "stable-presentation/config-round-trip"));
 }
 
 int UiSmokeTestRunner::SceneBatchImportRealMeigui(
@@ -4127,7 +4214,14 @@ int UiSmokeTestRunner::SceneSliceCurrent(
                 .filePath(QStringLiteral("manifest.json")))
         || window.m_previewWorkspace->LayerIndices().isEmpty()
         || window.m_mainWorkspaceTabs->currentWidget()
-            != window.m_previewWorkspace)
+            != window.m_previewWorkspace
+        || !window.m_lastSliceTimingEvent.has_value()
+        || window.m_lastSliceTimingEvent->engine
+            != QStringLiteral("legacy-scene")
+        || !window.m_sliceTimingPanel->SummaryText().contains(
+            QStringLiteral("传统场景切片引擎"))
+        || !window.m_sliceTimingPanel->SummaryText().contains(
+            QStringLiteral("准入=")))
     {
         return fail(
             QStringLiteral(
@@ -4135,7 +4229,8 @@ int UiSmokeTestRunner::SceneSliceCurrent(
             + window.m_sceneSliceActionController.Message());
     }
     return pass(QStringLiteral(
-        "scene-slice-current three-model/one-package/tiff-load"));
+        "scene-slice-current three-model/one-package/"
+        "tiff-load/progress-timing"));
 }
 
 int UiSmokeTestRunner::SceneSliceRealAssets(

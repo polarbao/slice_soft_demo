@@ -25,8 +25,10 @@ struct SliceTimingEvent
     QString profilelevel;
     double configloadms{0.0};
     double modelloadms{0.0};
+    double gridsetupms{0.0};
     double sliceprocessingms{0.0};
     double layercomputems{0.0};
+    double layercomposems{0.0};
     double tiffwritems{0.0};
     double previewwritems{0.0};
     double reportbuildms{0.0};

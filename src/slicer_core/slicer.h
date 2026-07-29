@@ -3,6 +3,7 @@
 #include "slicer_core/SliceRunTelemetry.h"
 #include "slicer_core/config.h"
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
+#include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 #include "slicer_core/scene/ModelInstance.h"
 
@@ -77,6 +78,14 @@ struct SliceRunOptions {
     SliceRunLayerCallback layercallback;
     std::optional<ModelInstance> instanceoverride;
     std::optional<SliceRunInputOverride> inputoverride;
+
+    /**
+     * @brief Optional already-imported model used by scene orchestration.
+     *
+     * The pointed model is copied before transforms are applied and must
+     * remain alive for the synchronous run.
+     */
+    const ModelReport* modelreportoverride{nullptr};
 };
 
 /**

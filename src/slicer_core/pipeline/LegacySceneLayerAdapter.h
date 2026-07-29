@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/SliceRunTelemetry.h"
+#include "slicer_core/model.h"
 #include "slicer_core/pipeline/SceneRasterTypes.h"
 #include "slicer_core/scene/ModelInstance.h"
 
@@ -18,6 +20,8 @@ struct LegacySceneLayerAdapterRequest
     std::string modelformatoverride{"auto"};
     SceneRasterIdentity identity;
     ModelInstance instance;
+    const ModelReport* modelreportoverride{nullptr};
+    SliceRunProgressCallback progresscallback;
 };
 
 /**
