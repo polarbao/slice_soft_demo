@@ -1,7 +1,7 @@
 # PRD 13D Qt 工作台信息架构与布局收口
 
 > 文档版本：v1.1
-> 文档状态：APPROVED / 13D-01 READY
+> 文档状态：APPROVED / 13D-01 COMPLETE / 13D-02 READY
 > 日期：2026-07-28
 > 前置：13B-08 COMPLETE、13C-05 COMPLETE
 

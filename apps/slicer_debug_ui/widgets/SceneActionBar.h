@@ -1,12 +1,29 @@
 #pragma once
 
+#include <QString>
 #include <QWidget>
 
 class QLabel;
 class QPushButton;
 
 /**
- * @brief Compact current-scene primary action without changing the workbench layout.
+ * @brief Presentation state for the fixed job action bar.
+ */
+struct SceneActionBarPresentation
+{
+    bool canimport{true};
+    bool cansave{false};
+    bool canslice{false};
+    bool cancancel{false};
+    QString modelabel;
+    QString profilelabel;
+    QString statustext;
+    QString savereason;
+    QString slicereason;
+};
+
+/**
+ * @brief Fixed workbench actions for model import, scene save, and slicing.
  */
 class SceneActionBar final : public QWidget
 {
@@ -21,16 +38,10 @@ public:
 
     /**
      * @brief Update action availability and explanatory status.
-     * @param canSlice Whether a new scene process may start.
-     * @param canCancel Whether the active scene process may be cancelled.
-     * @param status Short Chinese status.
-     * @param reason Tooltip explanation for the primary action.
+     * @param presentation Current workbench action presentation.
      */
     void SetPresentation(
-        bool canSlice,
-        bool canCancel,
-        const QString& status,
-        const QString& reason);
+        const SceneActionBarPresentation& presentation);
 
     /**
      * @brief Return the primary scene slice button.
@@ -39,11 +50,32 @@ public:
     QPushButton* SliceButton() const;
 
 signals:
+    /**
+     * @brief Request importing one or more models into the scene.
+     */
+    void SigImportRequested();
+
+    /**
+     * @brief Request saving the current scene and transforms.
+     */
+    void SigSaveRequested();
+
+    /**
+     * @brief Request slicing the current admitted scene.
+     */
     void SigSliceRequested();
+
+    /**
+     * @brief Request cancelling the active scene slice.
+     */
     void SigCancelRequested();
 
 private:
+    QPushButton* m_importButton{nullptr};
+    QPushButton* m_saveButton{nullptr};
     QPushButton* m_sliceButton{nullptr};
     QPushButton* m_cancelButton{nullptr};
+    QLabel* m_modeLabel{nullptr};
+    QLabel* m_profileLabel{nullptr};
     QLabel* m_statusLabel{nullptr};
 };

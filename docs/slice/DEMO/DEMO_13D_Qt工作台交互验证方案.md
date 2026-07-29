@@ -1,7 +1,7 @@
 # DEMO 13D Qt 工作台交互验证方案
 
 > 文档版本：v1.1
-> 文档状态：APPROVED / 13D-01 READY
+> 文档状态：APPROVED / 13D-01 COMPLETE / 13D-02 READY
 > 日期：2026-07-28
 
 ## 1. 目标

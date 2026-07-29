@@ -1,6 +1,6 @@
 # DOC PREP 13D-02 单一 Context Inspector 准备
 
-> 文档状态：PREPARED / WAIT 13D-01 PASS
+> 文档状态：READY FOR DEVELOPMENT
 > 版本：v1.0
 > 日期：2026-07-29
 

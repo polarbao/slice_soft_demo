@@ -2,7 +2,7 @@
 
 > 版本：v1.2
 > 日期：2026-07-28
-> 状态：原 P0 17/17 COMPLETE / 13B-08 COMPLETE / NEXT 13D-01
+> 状态：原 P0 17/17 COMPLETE / 13B-08 COMPLETE / 13D-01 COMPLETE / NEXT 13D-02
 
 ## 1. 阶段依赖
 
@@ -56,8 +56,9 @@
 | 13C-03 | COMPLETE（2026-07-28） | TIFF 原生统一生产预览、同层材料组合和 UI 接线已完成 |
 | 13C-04 | COMPLETE（2026-07-28） | TIFF 原生默认、显式诊断、兼容迁移、UI 和 IO 证据已闭环 |
 | 13C-05 | COMPLETE（2026-07-28） | stripped/tiled、DPI、全材料、错误矩阵、RIP 和报告已收口 |
-| 13D-01 | READY FOR DEVELOPMENT | PRD/DEV/DEMO/TASKS 和总体 PREP 已完成，13C-05 Gate 已解除 |
-| 13D-02..04 | PREPARED / WAIT PREVIOUS | 按 13D 原子顺序执行 |
+| 13D-01 | COMPLETE（2026-07-29） | 顶部导入、保存、模式/Profile、切片、取消和状态摘要已实现并通过 Smoke |
+| 13D-02 | READY FOR DEVELOPMENT | 原子 PREP 完成且 13D-01 Gate 已关闭 |
+| 13D-03..04 | PREPARED / WAIT PREVIOUS | 按 13D 原子顺序执行 |
 
 17 个近程任务的建议文件所有权、计划测试 target、任务输出和停止条件统一登记在
 `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md`。该登记不代表建议代码文件已经存在。

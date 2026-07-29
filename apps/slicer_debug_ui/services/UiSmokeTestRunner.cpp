@@ -587,6 +587,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return WorkspaceLayoutSizes(options);
     }
+    if (options.case_name == "workbench-job-action-bar")
+    {
+        return WorkbenchJobActionBar(options);
+    }
     if (options.case_name == "production-mode-selector")
     {
         return ProductionModeSelector(options);
@@ -684,6 +688,134 @@ int UiSmokeTestRunner::startup(const UiSmokeTestOptions& options) {
     MainWindow window(options.repo_root);
     Q_UNUSED(window);
     return pass("startup");
+}
+
+int UiSmokeTestRunner::WorkbenchJobActionBar(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    window.show();
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+
+    QWidget* actionBar = window.findChild<QWidget*>(
+        QStringLiteral("sceneActionBar"));
+    QWidget* projectPanel = window.findChild<QWidget*>(
+        QStringLiteral("projectPanel"));
+    QSplitter* mainSplitter = window.findChild<QSplitter*>(
+        QStringLiteral("mainSplitter"));
+    QPushButton* importButton =
+        window.findChild<QPushButton*>(
+            QStringLiteral("jobImportModelsButton"));
+    QPushButton* saveButton =
+        window.findChild<QPushButton*>(
+            QStringLiteral("jobSaveSceneButton"));
+    QPushButton* sliceButton =
+        window.findChild<QPushButton*>(
+            QStringLiteral("sliceCurrentSceneButton"));
+    QPushButton* cancelButton =
+        window.findChild<QPushButton*>(
+            QStringLiteral("cancelCurrentSceneSliceButton"));
+    QLabel* modeLabel = window.findChild<QLabel*>(
+        QStringLiteral("jobModeSummaryLabel"));
+    QLabel* profileLabel = window.findChild<QLabel*>(
+        QStringLiteral("jobProfileSummaryLabel"));
+    QLabel* statusLabel = window.findChild<QLabel*>(
+        QStringLiteral("sceneSliceActionStateLabel"));
+    if (actionBar == nullptr
+        || projectPanel == nullptr
+        || mainSplitter == nullptr
+        || importButton == nullptr
+        || saveButton == nullptr
+        || sliceButton == nullptr
+        || cancelButton == nullptr
+        || modeLabel == nullptr
+        || profileLabel == nullptr
+        || statusLabel == nullptr)
+    {
+        return fail(QStringLiteral(
+            "13D-01 top job action controls missing"));
+    }
+    if (actionBar->parentWidget() != window.centralWidget()
+        || projectPanel->isAncestorOf(actionBar)
+        || actionBar->geometry().bottom()
+            > mainSplitter->geometry().top()
+        || !actionBar->isVisibleTo(&window))
+    {
+        return fail(QStringLiteral(
+            "13D-01 action bar is not fixed above main workspace"));
+    }
+    if (!importButton->isEnabled()
+        || saveButton->isEnabled()
+        || sliceButton->isEnabled()
+        || cancelButton->isEnabled()
+        || !modeLabel->text().contains(
+            QStringLiteral("传统切片"))
+        || profileLabel->text().trimmed().isEmpty()
+        || statusLabel->text().trimmed().isEmpty())
+    {
+        return fail(QStringLiteral(
+            "13D-01 empty-scene action state mismatch"));
+    }
+
+    for (int index = 0;
+         index < window.m_mainWorkspaceTabs->count();
+         ++index)
+    {
+        window.m_mainWorkspaceTabs->setCurrentIndex(index);
+        QApplication::processEvents(
+            QEventLoop::AllEvents,
+            20);
+        if (!actionBar->isVisibleTo(&window))
+        {
+            return fail(QStringLiteral(
+                "13D-01 action bar disappeared after workspace switch"));
+        }
+    }
+
+    const QString configPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    if (!window.config_editor_panel_->loadConfig(configPath))
+    {
+        return fail(QStringLiteral(
+            "13D-01 fixture configuration unavailable"));
+    }
+    SceneBatchImportRequest request;
+    request.batchid = QStringLiteral("13d-job-action-bar");
+    request.configpath = configPath;
+    request.files = QStringList{modelPath};
+    request.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(request)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            }))
+    {
+        return fail(QStringLiteral(
+            "13D-01 one-model scene import did not complete"));
+    }
+    window.UpdateActionAvailability();
+    if (!saveButton->isEnabled()
+        || !sliceButton->isEnabled()
+        || cancelButton->isEnabled()
+        || !statusLabel->text().contains(
+            QStringLiteral("可见 1")))
+    {
+        return fail(QStringLiteral(
+            "13D-01 admitted-scene action state mismatch"));
+    }
+
+    return pass(QStringLiteral(
+        "workbench-job-action-bar fixed/import/save/"
+        "mode-profile/slice/cancel/state"));
 }
 
 int UiSmokeTestRunner::loadPackage(const UiSmokeTestOptions& options) {

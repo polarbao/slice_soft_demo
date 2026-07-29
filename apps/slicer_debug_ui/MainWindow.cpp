@@ -373,6 +373,10 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
 
     auto* central = new QWidget(this);
     auto* root_layout = new QVBoxLayout(central);
+    m_sceneActionBar = new SceneActionBar(central);
+    m_sliceCurrentSceneButton =
+        m_sceneActionBar->SliceButton();
+    root_layout->addWidget(m_sceneActionBar);
     auto* main_splitter = new QSplitter(Qt::Horizontal, central);
     main_splitter->setObjectName(QStringLiteral("mainSplitter"));
 
@@ -757,6 +761,26 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         this,
         &MainWindow::OnSaveSceneTransform);
     connect(
+        m_sceneActionBar,
+        &SceneActionBar::SigImportRequested,
+        this,
+        &MainWindow::OnImportModelPreview);
+    connect(
+        m_sceneActionBar,
+        &SceneActionBar::SigSaveRequested,
+        this,
+        &MainWindow::OnSaveSceneTransform);
+    connect(
+        m_sceneActionBar,
+        &SceneActionBar::SigSliceRequested,
+        this,
+        &MainWindow::OnSliceCurrentScene);
+    connect(
+        m_sceneActionBar,
+        &SceneActionBar::SigCancelRequested,
+        &m_sceneSliceActionController,
+        &SceneSliceActionController::Cancel);
+    connect(
         m_modelTransformPanel,
         &ModelTransformPanel::SigStatusMessage,
         status_label_,
@@ -814,6 +838,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     }
     loadPackage(package_edit_->text());
     UpdateModelPreflightUi();
+    UpdateActionAvailability();
 }
 
 void MainWindow::browseConfig() {
@@ -1557,9 +1582,6 @@ QWidget* MainWindow::createRunPanel()
             "取消当前和尚未开始的导入项；"
             "已成功导入的模型保留"));
     m_cancelModelImportButton->setEnabled(false);
-    m_sceneActionBar = new SceneActionBar(panel);
-    m_sliceCurrentSceneButton =
-        m_sceneActionBar->SliceButton();
     m_importSliceButton = makeButton("导入模型并切片", panel);
     m_importOpenVdbButton = makeButton("导入模型并 OpenVDB 诊断", panel);
     m_importOpenVdbCandidateButton = makeButton("导入模型并 OpenVDB 候选切片", panel);
@@ -1602,7 +1624,6 @@ QWidget* MainWindow::createRunPanel()
     layout->addWidget(build_button_);
     layout->addWidget(m_importModelPreviewButton);
     layout->addWidget(m_cancelModelImportButton);
-    layout->addWidget(m_sceneActionBar);
     layout->addWidget(m_importSliceButton);
     layout->addWidget(m_importOpenVdbButton);
     layout->addWidget(m_importOpenVdbCandidateButton);
@@ -1627,16 +1648,6 @@ QWidget* MainWindow::createRunPanel()
         &QPushButton::clicked,
         &m_sceneBatchImportController,
         &SceneBatchImportController::Cancel);
-    connect(
-        m_sceneActionBar,
-        &SceneActionBar::SigSliceRequested,
-        this,
-        &MainWindow::OnSliceCurrentScene);
-    connect(
-        m_sceneActionBar,
-        &SceneActionBar::SigCancelRequested,
-        &m_sceneSliceActionController,
-        &SceneSliceActionController::Cancel);
     connect(m_importSliceButton, &QPushButton::clicked, this, &MainWindow::OnImportModelAndSlice);
     connect(m_importOpenVdbButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbDiagnostic);
     connect(m_importOpenVdbCandidateButton, &QPushButton::clicked, this, &MainWindow::OnImportModelOpenVdbCandidate);
@@ -2425,15 +2436,38 @@ void MainWindow::UpdateActionAvailability()
         : QStringLiteral(
               "冻结当前 SceneDocument，并通过显式 "
               "--scene-config 生成一个 RGBWSV Package。");
-    m_sceneActionBar->SetPresentation(
-        canSliceScene,
-        m_sceneSliceActionController.IsRunning(),
+    SceneActionBarPresentation actionPresentation;
+    actionPresentation.canimport = enabled;
+    actionPresentation.cansave =
+        enabled && m_sceneDocument.InstanceCount() > 0U;
+    actionPresentation.canslice = canSliceScene;
+    actionPresentation.cancancel =
+        m_sceneSliceActionController.IsRunning();
+    actionPresentation.modelabel =
+        config_editor_panel_->SelectedProductionMode()
+            == slicer_core::SlicePipelineMode::Legacy
+        ? QStringLiteral("传统切片")
+        : QStringLiteral("Global Surface Shell");
+    const QString selectedProductionProfile =
+        config_editor_panel_->SelectedProductionProfileId();
+    actionPresentation.profilelabel =
+        !selectedProductionProfile.trimmed().isEmpty()
+        ? selectedProductionProfile
+        : m_currentProfileId.trimmed().isEmpty()
+        ? QStringLiteral("自定义")
+        : m_currentProfileId;
+    actionPresentation.statustext =
         m_sceneSliceActionController.IsRunning()
-            ? m_sceneSliceActionController.Message()
-            : QStringLiteral("场景 %1 / 可见 %2")
-                  .arg(m_sceneDocument.SceneRevision())
-                  .arg(sceneSliceState.visibleinstancecount),
-        sceneSliceReason);
+        ? m_sceneSliceActionController.Message()
+        : QStringLiteral("场景 %1 / 可见 %2")
+              .arg(m_sceneDocument.SceneRevision())
+              .arg(sceneSliceState.visibleinstancecount);
+    actionPresentation.savereason =
+        actionPresentation.cansave
+        ? QStringLiteral("保存当前 SceneDocument 的场景和变换配置。")
+        : QStringLiteral("请先导入至少一个模型。");
+    actionPresentation.slicereason = sceneSliceReason;
+    m_sceneActionBar->SetPresentation(actionPresentation);
     m_importSliceButton->setEnabled(enabled);
     m_importOpenVdbButton->setEnabled(enabled);
     m_importOpenVdbCandidateButton->setEnabled(enabled);

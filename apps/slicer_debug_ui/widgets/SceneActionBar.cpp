@@ -6,22 +6,86 @@
 #include <QSizePolicy>
 #include <QStyle>
 
+namespace
+{
+
+void SetElidedLabelText(
+    QLabel* label,
+    const QString& prefix,
+    const QString& value)
+{
+    const QString fullText = prefix + value;
+    const int textWidth =
+        label->maximumWidth() > 0
+        ? label->maximumWidth()
+        : label->width();
+    label->setText(
+        label->fontMetrics().elidedText(
+            fullText,
+            Qt::ElideRight,
+            textWidth));
+    label->setToolTip(fullText);
+}
+
+}  // namespace
+
 SceneActionBar::SceneActionBar(QWidget* parent)
     : QWidget(parent)
 {
     setObjectName(QStringLiteral("sceneActionBar"));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(6);
+    layout->setContentsMargins(6, 4, 6, 4);
+    layout->setSpacing(8);
+
+    m_importButton = new QPushButton(
+        QStringLiteral("导入模型"),
+        this);
+    m_importButton->setObjectName(
+        QStringLiteral("jobImportModelsButton"));
+    m_importButton->setIcon(
+        style()->standardIcon(QStyle::SP_DialogOpenButton));
+    m_importButton->setMinimumSize(110, 36);
+    m_importButton->setToolTip(
+        QStringLiteral("导入一个或多个 OBJ、STL、3MF 模型"));
+
+    m_saveButton = new QPushButton(
+        QStringLiteral("保存场景"),
+        this);
+    m_saveButton->setObjectName(
+        QStringLiteral("jobSaveSceneButton"));
+    m_saveButton->setIcon(
+        style()->standardIcon(QStyle::SP_DialogSaveButton));
+    m_saveButton->setMinimumSize(104, 36);
+
+    m_modeLabel = new QLabel(this);
+    m_modeLabel->setObjectName(
+        QStringLiteral("jobModeSummaryLabel"));
+    m_modeLabel->setMinimumWidth(128);
+    m_modeLabel->setSizePolicy(
+        QSizePolicy::Minimum,
+        QSizePolicy::Fixed);
+
+    m_profileLabel = new QLabel(this);
+    m_profileLabel->setObjectName(
+        QStringLiteral("jobProfileSummaryLabel"));
+    m_profileLabel->setMinimumWidth(150);
+    m_profileLabel->setMaximumWidth(280);
+    m_profileLabel->setSizePolicy(
+        QSizePolicy::Preferred,
+        QSizePolicy::Fixed);
 
     m_sliceButton = new QPushButton(
         QStringLiteral("切片当前场景"),
         this);
     m_sliceButton->setObjectName(
         QStringLiteral("sliceCurrentSceneButton"));
+    m_sliceButton->setIcon(
+        style()->standardIcon(QStyle::SP_MediaPlay));
     m_sliceButton->setMinimumHeight(36);
+    m_sliceButton->setMinimumWidth(148);
     m_sliceButton->setSizePolicy(
-        QSizePolicy::Expanding,
+        QSizePolicy::Minimum,
         QSizePolicy::Fixed);
 
     m_cancelButton = new QPushButton(this);
@@ -38,12 +102,31 @@ SceneActionBar::SceneActionBar(QWidget* parent)
         this);
     m_statusLabel->setObjectName(
         QStringLiteral("sceneSliceActionStateLabel"));
-    m_statusLabel->setWordWrap(true);
+    m_statusLabel->setMinimumWidth(150);
+    m_statusLabel->setMaximumWidth(300);
+    m_statusLabel->setSizePolicy(
+        QSizePolicy::Preferred,
+        QSizePolicy::Fixed);
 
-    layout->addWidget(m_sliceButton, 1);
+    layout->addWidget(m_importButton);
+    layout->addWidget(m_saveButton);
+    layout->addSpacing(8);
+    layout->addWidget(m_modeLabel);
+    layout->addWidget(m_profileLabel, 1);
+    layout->addWidget(m_sliceButton);
     layout->addWidget(m_cancelButton);
     layout->addWidget(m_statusLabel);
 
+    connect(
+        m_importButton,
+        &QPushButton::clicked,
+        this,
+        &SceneActionBar::SigImportRequested);
+    connect(
+        m_saveButton,
+        &QPushButton::clicked,
+        this,
+        &SceneActionBar::SigSaveRequested);
     connect(
         m_sliceButton,
         &QPushButton::clicked,
@@ -54,24 +137,40 @@ SceneActionBar::SceneActionBar(QWidget* parent)
         &QPushButton::clicked,
         this,
         &SceneActionBar::SigCancelRequested);
-    SetPresentation(
-        false,
-        false,
-        QStringLiteral("待导入"),
-        QStringLiteral("请先导入模型。"));
+    SceneActionBarPresentation presentation;
+    presentation.modelabel = QStringLiteral("传统切片");
+    presentation.profilelabel = QStringLiteral("自定义");
+    presentation.statustext = QStringLiteral("待导入");
+    presentation.savereason = QStringLiteral("请先导入模型。");
+    presentation.slicereason = QStringLiteral("请先导入模型。");
+    SetPresentation(presentation);
 }
 
 void SceneActionBar::SetPresentation(
-    const bool canSlice,
-    const bool canCancel,
-    const QString& status,
-    const QString& reason)
+    const SceneActionBarPresentation& presentation)
 {
-    m_sliceButton->setEnabled(canSlice);
-    m_sliceButton->setToolTip(reason);
-    m_cancelButton->setEnabled(canCancel);
-    m_statusLabel->setText(status);
-    m_statusLabel->setToolTip(reason);
+    m_importButton->setEnabled(presentation.canimport);
+    m_saveButton->setEnabled(presentation.cansave);
+    m_saveButton->setToolTip(presentation.savereason);
+    m_sliceButton->setEnabled(presentation.canslice);
+    m_sliceButton->setToolTip(presentation.slicereason);
+    m_cancelButton->setEnabled(presentation.cancancel);
+    SetElidedLabelText(
+        m_modeLabel,
+        QStringLiteral("模式："),
+        presentation.modelabel);
+    SetElidedLabelText(
+        m_profileLabel,
+        QStringLiteral("Profile："),
+        presentation.profilelabel);
+    SetElidedLabelText(
+        m_statusLabel,
+        QString{},
+        presentation.statustext);
+    m_statusLabel->setToolTip(
+        presentation.statustext
+        + QStringLiteral("\n")
+        + presentation.slicereason);
 }
 
 QPushButton* SceneActionBar::SliceButton() const

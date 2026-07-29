@@ -1,6 +1,6 @@
 # TASKS 13D Qt 工作台布局收口任务清单
 
-> 文档状态：PREPARED / 13D-01 READY
+> 文档状态：13D-01 COMPLETE / 13D-02 READY
 > 版本：v1.0
 > 日期：2026-07-28
 
@@ -8,7 +8,7 @@
 
 ### 13D-01 顶部作业栏
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE`
 
 复用 13B-08 主动作，建立导入、保存、模式/Profile、切片当前场景、取消和状态摘要的固定顶部作业栏。
 
@@ -17,7 +17,7 @@
 
 ### 13D-02 单一 Context Inspector
 
-状态：`PREPARED / WAIT 13D-01`
+状态：`READY FOR DEVELOPMENT`
 
 把模型列表、变换、排版、切片设置和预检重组为单一右侧检查器；保持实例 identity 和现有业务
 controller。

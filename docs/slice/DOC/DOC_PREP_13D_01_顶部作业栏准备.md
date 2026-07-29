@@ -1,6 +1,6 @@
 # DOC PREP 13D-01 顶部作业栏准备
 
-> 文档状态：READY FOR DEVELOPMENT
+> 文档状态：COMPLETE
 > 版本：v1.0
 > 日期：2026-07-29
 
@@ -92,4 +92,18 @@ src/slicer_core；
 RGBWSV writer/reader；
 PreviewWorkspace 数据源；
 ContextInspector 和 DiagnosticsDock 布局。
+```
+
+## 7. 实施结果
+
+2026-07-29 已完成：
+
+```text
+唯一 SceneActionBar 迁移到 mainSplitter 上方；
+导入、保存、模式/Profile、切片、取消和状态全部接通既有业务；
+左侧不再承载 SceneActionBar，兼容和高级入口保持；
+workbench-job-action-bar PASS；
+scene-batch-import-three PASS；
+scene-slice-current PASS；
+UI self-test PASS。
 ```
