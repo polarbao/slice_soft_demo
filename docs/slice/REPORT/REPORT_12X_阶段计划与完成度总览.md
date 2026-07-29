@@ -77,7 +77,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 |---|---|---|
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
-| 09A Diagnostic UI | 09A-01..03 COMPLETE；09A-04 READY；09A-05..06 PREPARED | 执行 09A-04；09A-05 的 13C-03 TIFF 数据源前置已完成 |
+| 09A Diagnostic UI | 09A-01..04 COMPLETE；09A-05 READY；09A-06 PREPARED | 执行 09A-05；13C-03 TIFF 数据源与 09A-04 Worker 前置均已完成 |
 | 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
@@ -86,11 +86,11 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 ### 2.3 剩余任务数量
 
 ```text
-12E-09A-04..06：3 个；
+12E-09A-05..06：2 个；
 12E-10A..D：4 个；
 12F-02..09：8 个；
 Stage 12 若含性能专项，合计剩余 16 个原子任务；
-只计算 12E 语义/诊断/收口，剩余 7 个原子任务；
+只计算 12E 语义/诊断/收口，剩余 6 个原子任务；
 12G-TCWS 候选 R0..R6 已冻结，当前激活任务数为 0。
 
 Stage 13 近程：

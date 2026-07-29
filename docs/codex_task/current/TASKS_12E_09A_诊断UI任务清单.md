@@ -122,6 +122,13 @@ docs/slice/REPORT/REPORT_12E_09A_04_异步分析Worker当前状态.md
 
 状态：READY / 09A-04、13C-03 COMPLETE
 
+原子准备与执行指令：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_09A_05_同层语义Preview准备.md
+docs/codex_task/current/CODEX_PROMPT_12E_09A_05_同层语义Preview执行指令.md
+```
+
 目标：
 
 ```text
@@ -131,7 +138,7 @@ fullClosureLinkage 缺失时显示未评估；
 不得按 preview 文件序号跨层兜底。
 ```
 
-验收：同层 identity、材料分区、空层、缺失证据和真实模型 smoke。
+验收：同层 identity、物理坐标映射、材料分区、空层、缺失证据和真实模型 smoke。
 
 ## 7. 09A-06 阶段收口
 
