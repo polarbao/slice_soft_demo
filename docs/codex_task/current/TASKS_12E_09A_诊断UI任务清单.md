@@ -1,6 +1,6 @@
 # TASKS 12E-09A 诊断 UI 任务清单
 
-> 状态：09A-01..03 COMPLETE / 09A-04 READY / 09A-05..06 PREPARED
+> 状态：09A-01..04 COMPLETE / 09A-05 READY / 09A-06 PREPARED
 > 日期：2026-07-29
 > 性质：独立 diagnostic UI 支线
 
@@ -92,7 +92,7 @@ docs/slice/REPORT/REPORT_12E_09A_03_中文参数控件与状态区当前状态.m
 
 ## 5. 09A-04 异步分析 Worker
 
-状态：READY / 09A-03 COMPLETE
+状态：COMPLETE（2026-07-29）
 
 原子准备与执行指令：
 
@@ -112,9 +112,15 @@ topology/distance/width sweep/texture transfer/raster mapping 不阻塞 UI；
 
 验收：取消、关闭、重入、失败和成功生命周期测试。
 
+状态报告：
+
+```text
+docs/slice/REPORT/REPORT_12E_09A_04_异步分析Worker当前状态.md
+```
+
 ## 6. 09A-05 同层语义 Preview
 
-状态：PREPARED / WAIT 09A-04、13C-03
+状态：READY / 09A-04、13C-03 COMPLETE
 
 目标：
 

@@ -19,6 +19,7 @@
 #include "services/ToolPaths.h"
 #include "services/TransformedModelPreflightLoader.h"
 #include "services/WorkspaceLayoutState.h"
+#include "workers/DiagnosticAnalysisWorker.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
 #include "widgets/ContextInspector.h"
@@ -98,6 +99,10 @@ private slots:
     void OnSceneDocumentChanged();
     void OnSaveSceneTransform();
     void OnSliceCurrentScene();
+    void OnStartDiagnosticAnalysis();
+    void OnCancelDiagnosticAnalysis();
+    void OnDiagnosticAnalysisFinished(
+        const DiagnosticAnalysisResult& result);
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -146,6 +151,9 @@ private:
     void setBusy(bool busy);
     void SyncDiagnosticRequestedSettingsFromConfig();
     void UpdateDiagnosticSettingsPresentation();
+    std::optional<DiagnosticAnalysisRequest>
+        BuildDiagnosticAnalysisRequest(
+            QString* errorMessage);
 
     ToolPaths paths_;
     ConfigDocument config_document_;
@@ -166,6 +174,7 @@ private:
     SceneTransformController m_sceneTransformController;
     SceneSliceActionController m_sceneSliceActionController;
     TransformedModelPreflightLoader m_transformedPreflightLoader;
+    DiagnosticAnalysisWorker m_diagnosticAnalysisWorker;
     QString current_action_;
     QString pending_package_;
     QString compare_output_;
@@ -173,6 +182,11 @@ private:
     double m_diagnosticTextureSurfaceWidthMm{0.10};
     QString m_diagnosticModelFillMaterial{
         QStringLiteral("white")};
+    std::optional<DiagnosticAnalysisResult>
+        m_lastDiagnosticAnalysisResult;
+    std::optional<DiagnosticAnalysisIdentity>
+        m_activeDiagnosticAnalysisIdentity;
+    QString m_diagnosticAnalysisMessage;
 
     QLineEdit* config_edit_{nullptr};
     QLineEdit* package_edit_{nullptr};

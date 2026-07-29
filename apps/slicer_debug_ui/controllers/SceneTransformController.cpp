@@ -105,6 +105,11 @@ bool SceneTransformSaveResult::IsValid() const
     return !error.has_value();
 }
 
+bool SceneTransformSnapshotResult::IsValid() const
+{
+    return !error.has_value();
+}
+
 std::string_view SceneTransformErrorCodeName(
     const SceneTransformErrorCode code)
 {
@@ -213,6 +218,168 @@ SceneTransformCommandResult SceneTransformController::ResetTransform(
         expectedTransformRevision);
 }
 
+SceneTransformSnapshotResult
+SceneTransformController::BuildCurrentScene(
+    const std::string& sourceProfileId,
+    const slicer_core::SceneBuildVolume& buildVolume) const
+{
+    SceneTransformSnapshotResult result;
+    if (sourceProfileId.empty()
+        || m_document->Items().empty())
+    {
+        result.error = MakeError(
+            SceneTransformErrorCode::SaveFailed,
+            QStringLiteral("scene"),
+            QStringLiteral("场景快照缺少模型实例或 Profile。"));
+        return result;
+    }
+
+    result.scene.sceneid =
+        m_document->SceneId().toStdString();
+    result.scene.scenerevision =
+        m_document->SceneRevision();
+    result.scene.resolvedprofileid = sourceProfileId;
+    result.scene.buildvolume = buildVolume;
+    result.scene.layout = m_document->Layout();
+    std::map<std::string, QString> sourceCacheKeys;
+    for (const SceneDocumentItem& item :
+         m_document->Items())
+    {
+        const auto sourceEntry =
+            m_repository->Find(item.sourcecachekey);
+        if (!sourceEntry.has_value()
+            || sourceEntry->model == nullptr)
+        {
+            result.error = MakeError(
+                SceneTransformErrorCode::SourceCacheMissing,
+                QStringLiteral("sourceCacheKey"),
+                QStringLiteral(
+                    "源模型缓存不存在，无法生成场景快照。"));
+            return result;
+        }
+
+        const std::string modelId =
+            item.instance.modelid;
+        const auto existing =
+            sourceCacheKeys.find(modelId);
+        if (existing == sourceCacheKeys.end())
+        {
+            sourceCacheKeys.emplace(
+                modelId,
+                item.sourcecachekey);
+            const QString extension =
+                ExtensionLower(sourceEntry->modelpath);
+            const std::filesystem::path sourcePath =
+                sourceEntry->model->model_path.empty()
+                ? std::filesystem::path(
+                      sourceEntry->modelpath.toStdWString())
+                : sourceEntry->model->model_path;
+
+            slicer_core::ResourceScope scope;
+            scope.resourcescopeid = modelId + "-scope";
+            if (extension == QStringLiteral("3mf"))
+            {
+                scope.kind =
+                    slicer_core::ResourceScopeKind::
+                        ThreeMfPackage;
+                scope.rootpath = sourcePath;
+                scope.packagepath = sourcePath;
+                scope.partidentity = "root-model";
+            }
+            else if (extension
+                     == QStringLiteral("stl"))
+            {
+                scope.kind =
+                    slicer_core::ResourceScopeKind::StlFile;
+                scope.rootpath = sourcePath;
+            }
+            else
+            {
+                scope.kind =
+                    slicer_core::ResourceScopeKind::
+                        ObjDirectory;
+                scope.rootpath = sourcePath.parent_path();
+            }
+            result.scene.resourcescopes.push_back(
+                scope);
+
+            slicer_core::ModelSource source;
+            source.modelid = modelId;
+            source.sourcepath = sourcePath;
+            source.format = extension.toStdString();
+            source.resourcescopeid =
+                scope.resourcescopeid;
+            source.sourcehash =
+                sourceEntry->sourcehash.toStdString();
+            source.resourcehash =
+                sourceEntry->resourcehash.toStdString();
+            source.displayname =
+                QFileInfo(sourceEntry->modelpath)
+                    .completeBaseName()
+                    .toStdString();
+            result.scene.models.push_back(
+                std::move(source));
+        }
+        else if (existing->second
+                 != item.sourcecachekey)
+        {
+            result.error = MakeError(
+                SceneTransformErrorCode::SaveFailed,
+                QStringLiteral("modelId"),
+                QStringLiteral(
+                    "同一 modelId 绑定了不同源模型缓存，"
+                    "拒绝生成场景快照。"));
+            return result;
+        }
+
+        slicer_core::SceneModelInstance sceneInstance;
+        sceneInstance.instance = item.instance;
+        sceneInstance.requestedtransform =
+            item.requestedtransform;
+        sceneInstance.derivedlayouttransform =
+            item.derivedlayouttransform;
+        sceneInstance.effectivetransform =
+            item.instance.transform;
+        sceneInstance.resolvedprofileid =
+            sourceProfileId;
+        if (item.geometry.has_value())
+        {
+            sceneInstance.admissionstatus =
+                item.geometry->admissionstatus
+                        == slicer_core::
+                            SceneViewAdmissionStatus::Blocked
+                    ? slicer_core::
+                          SceneInstanceAdmissionStatus::Blocked
+                    : item.geometry->admissionstatus
+                              == slicer_core::
+                                  SceneViewAdmissionStatus::
+                                      Admitted
+                        ? slicer_core::
+                              SceneInstanceAdmissionStatus::
+                                  Admitted
+                        : slicer_core::
+                              SceneInstanceAdmissionStatus::
+                                  Unknown;
+        }
+        result.scene.instances.push_back(
+            std::move(sceneInstance));
+    }
+
+    const slicer_core::SceneValidationResult validation =
+        slicer_core::ValidateMultiModelScene(
+            result.scene,
+            slicer_core::SceneValidationPurpose::Draft);
+    if (!validation.IsValid())
+    {
+        result.error = MakeError(
+            SceneTransformErrorCode::SaveFailed,
+            QStringLiteral("scene"),
+            QString::fromStdString(
+                validation.errors.front().message));
+    }
+    return result;
+}
+
 SceneTransformSaveResult
 SceneTransformController::SaveSceneEffectiveConfig(
     const SceneTransformSaveRequest& request)
@@ -245,124 +412,16 @@ SceneTransformController::SaveSceneEffectiveConfig(
         return result;
     }
 
-    result.scene.sceneid = m_document->SceneId().toStdString();
-    result.scene.scenerevision = m_document->SceneRevision();
-    result.scene.resolvedprofileid = request.sourceprofileid;
-    result.scene.buildvolume = request.buildvolume;
-    result.scene.layout = m_document->Layout();
-    std::map<std::string, QString> sourceCacheKeys;
-    for (const SceneDocumentItem& item : m_document->Items())
+    const SceneTransformSnapshotResult snapshot =
+        BuildCurrentScene(
+            request.sourceprofileid,
+            request.buildvolume);
+    if (!snapshot.IsValid())
     {
-        const auto sourceEntry =
-            m_repository->Find(item.sourcecachekey);
-        if (!sourceEntry.has_value() || sourceEntry->model == nullptr)
-        {
-            result.error = MakeError(
-                SceneTransformErrorCode::SourceCacheMissing,
-                QStringLiteral("sourceCacheKey"),
-                QStringLiteral("源模型缓存不存在，无法保存场景。"));
-            return result;
-        }
-
-        const std::string modelId = item.instance.modelid;
-        const auto existing = sourceCacheKeys.find(modelId);
-        if (existing == sourceCacheKeys.end())
-        {
-            sourceCacheKeys.emplace(modelId, item.sourcecachekey);
-            const QString extension =
-                ExtensionLower(sourceEntry->modelpath);
-            const std::filesystem::path sourcePath =
-                sourceEntry->model->model_path.empty()
-                ? std::filesystem::path(
-                      sourceEntry->modelpath.toStdWString())
-                : sourceEntry->model->model_path;
-
-            slicer_core::ResourceScope scope;
-            scope.resourcescopeid = modelId + "-scope";
-            if (extension == QStringLiteral("3mf"))
-            {
-                scope.kind =
-                    slicer_core::ResourceScopeKind::ThreeMfPackage;
-                scope.rootpath = sourcePath;
-                scope.packagepath = sourcePath;
-                scope.partidentity = "root-model";
-            }
-            else if (extension == QStringLiteral("stl"))
-            {
-                scope.kind = slicer_core::ResourceScopeKind::StlFile;
-                scope.rootpath = sourcePath;
-            }
-            else
-            {
-                scope.kind =
-                    slicer_core::ResourceScopeKind::ObjDirectory;
-                scope.rootpath = sourcePath.parent_path();
-            }
-            result.scene.resourcescopes.push_back(scope);
-
-            slicer_core::ModelSource source;
-            source.modelid = modelId;
-            source.sourcepath = sourcePath;
-            source.format = extension.toStdString();
-            source.resourcescopeid = scope.resourcescopeid;
-            source.sourcehash =
-                sourceEntry->sourcehash.toStdString();
-            source.resourcehash =
-                sourceEntry->resourcehash.toStdString();
-            source.displayname =
-                QFileInfo(sourceEntry->modelpath)
-                    .completeBaseName()
-                    .toStdString();
-            result.scene.models.push_back(std::move(source));
-        }
-        else if (existing->second != item.sourcecachekey)
-        {
-            result.error = MakeError(
-                SceneTransformErrorCode::SaveFailed,
-                QStringLiteral("modelId"),
-                QStringLiteral(
-                    "同一 modelId 绑定了不同源模型缓存，拒绝保存。"));
-            return result;
-        }
-
-        slicer_core::SceneModelInstance sceneInstance;
-        sceneInstance.instance = item.instance;
-        sceneInstance.requestedtransform =
-            item.requestedtransform;
-        sceneInstance.derivedlayouttransform =
-            item.derivedlayouttransform;
-        sceneInstance.effectivetransform = item.instance.transform;
-        sceneInstance.resolvedprofileid = request.sourceprofileid;
-        if (item.geometry.has_value())
-        {
-            sceneInstance.admissionstatus =
-                item.geometry->admissionstatus
-                        == slicer_core::SceneViewAdmissionStatus::Blocked
-                    ? slicer_core::SceneInstanceAdmissionStatus::Blocked
-                    : item.geometry->admissionstatus
-                              == slicer_core::
-                                  SceneViewAdmissionStatus::Admitted
-                        ? slicer_core::
-                              SceneInstanceAdmissionStatus::Admitted
-                        : slicer_core::
-                              SceneInstanceAdmissionStatus::Unknown;
-        }
-        result.scene.instances.push_back(
-            std::move(sceneInstance));
-    }
-    const slicer_core::SceneValidationResult sceneValidation =
-        slicer_core::ValidateMultiModelScene(
-            result.scene,
-            slicer_core::SceneValidationPurpose::Draft);
-    if (!sceneValidation.IsValid())
-    {
-        result.error = MakeError(
-            SceneTransformErrorCode::SaveFailed,
-            QStringLiteral("scene"),
-            QString::fromStdString(
-                sceneValidation.errors.front().message));
+        result.error = snapshot.error;
         return result;
     }
+    result.scene = snapshot.scene;
     result.scenepath =
         request.sessiondirectory / "scene_config.draft.json";
     result.effectiveconfigpath =

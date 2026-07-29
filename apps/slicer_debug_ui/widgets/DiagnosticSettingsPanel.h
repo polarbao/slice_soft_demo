@@ -9,6 +9,7 @@
 class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
+class QPushButton;
 class QSlider;
 
 /**
@@ -24,6 +25,7 @@ struct DiagnosticSettingsPresentation
     QString status{QStringLiteral("等待导入模型。")};
     QStringList blockingreasons;
     bool controlsenabled{false};
+    bool analysisrunning{false};
 };
 
 /**
@@ -81,6 +83,16 @@ signals:
      */
     void SigModelFillMaterialChanged(const QString& material);
 
+    /**
+     * @brief Request starting one immutable background diagnostic run.
+     */
+    void SigStartAnalysisRequested();
+
+    /**
+     * @brief Request logical cancellation of the active diagnostic run.
+     */
+    void SigCancelAnalysisRequested();
+
 private:
     QString FormatWidth(
         const std::optional<double>& width,
@@ -94,4 +106,6 @@ private:
     QLabel* m_backendLabel{nullptr};
     QLabel* m_statusLabel{nullptr};
     QLabel* m_blockingReasonsLabel{nullptr};
+    QPushButton* m_startButton{nullptr};
+    QPushButton* m_cancelButton{nullptr};
 };

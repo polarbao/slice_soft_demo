@@ -87,6 +87,20 @@ ContextInspector::ContextInspector(
         this,
         &ContextInspector::
             SigDiagnosticModelFillMaterialChanged);
+    connect(
+        m_diagnosticSettingsPanel,
+        &DiagnosticSettingsPanel::
+            SigStartAnalysisRequested,
+        this,
+        &ContextInspector::
+            SigDiagnosticStartRequested);
+    connect(
+        m_diagnosticSettingsPanel,
+        &DiagnosticSettingsPanel::
+            SigCancelAnalysisRequested,
+        this,
+        &ContextInspector::
+            SigDiagnosticCancelRequested);
     SetSliceSettingsSummary(
         QStringLiteral("传统切片"),
         QStringLiteral("自定义"),

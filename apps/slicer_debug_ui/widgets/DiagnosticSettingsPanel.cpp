@@ -4,6 +4,8 @@
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QLabel>
+#include <QHBoxLayout>
+#include <QPushButton>
 #include <QSignalBlocker>
 #include <QSlider>
 #include <QVBoxLayout>
@@ -163,6 +165,28 @@ DiagnosticSettingsPanel::DiagnosticSettingsPanel(
         QStringLiteral(
             "显示阻止诊断执行或导致结果不可复用的原因。"));
     layout->addWidget(m_blockingReasonsLabel);
+
+    auto* actionLayout = new QHBoxLayout();
+    m_startButton = new QPushButton(
+        QStringLiteral("开始诊断"),
+        this);
+    m_startButton->setObjectName(
+        QStringLiteral("diagnosticStartAnalysisButton"));
+    m_startButton->setToolTip(
+        QStringLiteral(
+            "在后台执行拓扑、距离、纹理分区和栅格映射诊断；"
+            "不会写生产 TIFF 或 Package。"));
+    m_cancelButton = new QPushButton(
+        QStringLiteral("取消诊断"),
+        this);
+    m_cancelButton->setObjectName(
+        QStringLiteral("diagnosticCancelAnalysisButton"));
+    m_cancelButton->setToolTip(
+        QStringLiteral(
+            "逻辑取消当前诊断；同步核心阶段返回后会丢弃旧结果。"));
+    actionLayout->addWidget(m_startButton);
+    actionLayout->addWidget(m_cancelButton);
+    layout->addLayout(actionLayout);
     layout->addStretch(1);
 
     connect(
@@ -204,6 +228,18 @@ DiagnosticSettingsPanel::DiagnosticSettingsPanel(
                     ->itemData(index)
                     .toString());
         });
+    connect(
+        m_startButton,
+        &QPushButton::clicked,
+        this,
+        &DiagnosticSettingsPanel::
+            SigStartAnalysisRequested);
+    connect(
+        m_cancelButton,
+        &QPushButton::clicked,
+        this,
+        &DiagnosticSettingsPanel::
+            SigCancelAnalysisRequested);
 
     SetRequestedSettings(
         kMinimumWidthMm,
@@ -286,12 +322,15 @@ void DiagnosticSettingsPanel::SetPresentation(
             : QStringLiteral("阻断原因：")
                 + presentation.blockingreasons.join(
                     QStringLiteral("；")));
-    m_widthSpin->setEnabled(
-        presentation.controlsenabled);
-    m_widthSlider->setEnabled(
-        presentation.controlsenabled);
-    m_modelFillMaterial->setEnabled(
-        presentation.controlsenabled);
+    const bool canEdit =
+        presentation.controlsenabled
+        && !presentation.analysisrunning;
+    m_widthSpin->setEnabled(canEdit);
+    m_widthSlider->setEnabled(canEdit);
+    m_modelFillMaterial->setEnabled(canEdit);
+    m_startButton->setEnabled(canEdit);
+    m_cancelButton->setEnabled(
+        presentation.analysisrunning);
 }
 
 double DiagnosticSettingsPanel::

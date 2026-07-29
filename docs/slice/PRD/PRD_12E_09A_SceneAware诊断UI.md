@@ -1,7 +1,7 @@
 # PRD 12E-09A Scene-aware 诊断 UI
 
 > 文档版本：v1.0
-> 文档状态：Formal PRD / 09A-03 COMPLETE / 09A-04..06 PREPARED
+> 文档状态：Formal PRD / 09A-04 COMPLETE / 09A-05 READY / 09A-06 PREPARED
 > 日期：2026-07-29
 > 前置：09A-01、13A-01、13B-01 COMPLETE
 

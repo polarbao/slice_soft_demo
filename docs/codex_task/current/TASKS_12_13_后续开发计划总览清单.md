@@ -4,7 +4,7 @@
 > 版本：v2.5
 > 更新日期：2026-07-29
 > 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..05、13D-01..04 COMPLETE
-> 当前推荐任务：12E-09A-04 异步分析 Worker
+> 当前推荐任务：12E-09A-05 同层语义 Preview
 > 下一 Gate：12E-09A-04..06 -> 12E-10
 
 ## 1. 文档职责
@@ -48,7 +48,7 @@
 
 | 工作流 | 当前状态 | 剩余数量 | 当前动作 |
 |---|---|---:|---|
-| 12E-09A Diagnostic UI | 09A-01..03 COMPLETE；09A-04 READY；09A-05..06 PREPARED | 3 | 执行 09A-04 |
+| 12E-09A Diagnostic UI | 09A-01..04 COMPLETE；09A-05 READY；09A-06 PREPARED | 2 | 执行 09A-05 |
 | 12E-10 最终收口 | 概念级准备；执行文档不完整 | 4 | 等 13C-03、09A-05 后补齐并执行 |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
@@ -114,8 +114,8 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 15 | 13C-02 MaterialPreviewComposer | `COMPLETE` | 13C-01 COMPLETE | 已解锁统一生产预览 |
 | 16 | 13C-03 Unified Production Preview | `COMPLETE` | 13C-02 COMPLETE | 已解锁 Preview IO 收口 |
 | 17 | 12E-09A-03 中文参数控件与状态区 | `COMPLETE` | 09A-02、13D-04 | 已解锁异步分析 |
-| 18 | 12E-09A-04 异步分析 Worker | `READY` | 09A-03 COMPLETE | 解锁同层语义预览 |
-| 19 | 12E-09A-05 同层语义 Preview | `WAIT` | 09A-04、13C-03 | 解锁 09A 收口和 12E-10A |
+| 18 | 12E-09A-04 异步分析 Worker | `COMPLETE` | 09A-03 COMPLETE | 已解锁同层语义预览 |
+| 19 | 12E-09A-05 同层语义 Preview | `READY` | 09A-04、13C-03 COMPLETE | 解锁 09A 收口和 12E-10A |
 | 20 | 12E-09A-06 Diagnostic UI 收口 | `WAIT` | 09A-05 | 09A COMPLETE |
 | 21 | 13C-04 Preview IO 收口 | `COMPLETE` | 13C-03、13B-08 COMPLETE | 默认无重复诊断图 |
 | 22 | 13C-05 13C 阶段收口 | `COMPLETE / M13-4 PASS` | 13C-04 | 已解锁 13D-01 |

@@ -1424,6 +1424,14 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
         window.findChild<QLabel*>(
             QStringLiteral(
                 "diagnosticStatusLabel"));
+    QPushButton* startAnalysis =
+        window.findChild<QPushButton*>(
+            QStringLiteral(
+                "diagnosticStartAnalysisButton"));
+    QPushButton* cancelAnalysis =
+        window.findChild<QPushButton*>(
+            QStringLiteral(
+                "diagnosticCancelAnalysisButton"));
     if (inspector == nullptr
         || widthSpin == nullptr
         || widthSlider == nullptr
@@ -1431,7 +1439,9 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
         || subject == nullptr
         || bounds == nullptr
         || backend == nullptr
-        || status == nullptr)
+        || status == nullptr
+        || startAnalysis == nullptr
+        || cancelAnalysis == nullptr)
     {
         return fail(QStringLiteral(
             "12E-09A-03 diagnostic controls missing"));
@@ -1465,6 +1475,8 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
     if (widthSpin->toolTip().isEmpty()
         || widthSlider->toolTip().isEmpty()
         || fillMaterial->toolTip().isEmpty()
+        || startAnalysis->toolTip().isEmpty()
+        || cancelAnalysis->toolTip().isEmpty()
         || subject->text().isEmpty()
         || bounds->text().isEmpty()
         || backend->text().isEmpty()
@@ -1492,6 +1504,12 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
     {
         return fail(QStringLiteral(
             "12E-09A-03 controls must be disabled without a model"));
+    }
+    if (startAnalysis->isEnabled()
+        || cancelAnalysis->isEnabled())
+    {
+        return fail(QStringLiteral(
+            "12E-09A-04 actions must be disabled without a model"));
     }
 
     DiagnosticSettingsPresentation presentation;
@@ -1526,6 +1544,8 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
     if (!widthSpin->isEnabled()
         || !widthSlider->isEnabled()
         || !fillMaterial->isEnabled()
+        || !startAnalysis->isEnabled()
+        || cancelAnalysis->isEnabled()
         || std::abs(
                window
                    .m_diagnosticTextureSurfaceWidthMm
@@ -1553,6 +1573,26 @@ int UiSmokeTestRunner::DiagnosticSettingsControls(
         return fail(QStringLiteral(
             "12E-09A-03 derived width bounds not applied"));
     }
+
+    presentation.analysisrunning = true;
+    presentation.status =
+        QStringLiteral(
+            "运行中（running）：后台正在执行拓扑、距离、"
+            "纹理分区和栅格映射。");
+    inspector->SetDiagnosticPresentation(presentation);
+    if (widthSpin->isEnabled()
+        || widthSlider->isEnabled()
+        || fillMaterial->isEnabled()
+        || startAnalysis->isEnabled()
+        || !cancelAnalysis->isEnabled()
+        || !status->text().contains(
+            QStringLiteral("运行中")))
+    {
+        return fail(QStringLiteral(
+            "12E-09A-04 running action state mismatch"));
+    }
+    presentation.analysisrunning = false;
+    inspector->SetDiagnosticPresentation(presentation);
 
     window.show();
     const QList<QSize> sizes{

@@ -51,6 +51,8 @@ add_executable(slicer_debug_ui
     services/TransformedModelPreflightLoader.h
     services/WorkspaceLayoutState.cpp
     services/WorkspaceLayoutState.h
+    workers/DiagnosticAnalysisWorker.cpp
+    workers/DiagnosticAnalysisWorker.h
     services/LayerPreviewDataProvider.cpp
     services/LayerPreviewDataProvider.h
     services/MaterialClosureReportInterpreter.cpp
@@ -289,6 +291,42 @@ add_test(
     COMMAND scene_document_unit_tests
 )
 
+add_executable(diagnostic_analysis_worker_unit_tests
+    workers/DiagnosticAnalysisWorker.cpp
+    workers/DiagnosticAnalysisWorker.h
+    ../../tests/unit/diagnostic_analysis_worker/Main.cpp
+)
+
+set_target_properties(
+    diagnostic_analysis_worker_unit_tests
+    PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(
+    diagnostic_analysis_worker_unit_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/workers
+)
+
+target_compile_definitions(
+    diagnostic_analysis_worker_unit_tests
+    PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_link_libraries(
+    diagnostic_analysis_worker_unit_tests
+    PRIVATE
+    Qt5::Core
+    slicer_core
+)
+
+add_test(
+    NAME diagnostic_analysis_worker_unit_tests
+    COMMAND diagnostic_analysis_worker_unit_tests
+)
+
 if(MSVC)
     target_compile_options(slicer_debug_ui PRIVATE /utf-8 /MP)
     target_compile_options(
@@ -317,6 +355,12 @@ if(MSVC)
     )
     target_compile_options(
         scene_document_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
+        diagnostic_analysis_worker_unit_tests
         PRIVATE
         /utf-8
         /MP
@@ -352,6 +396,11 @@ if(MSVC)
             PRIVATE
             ${qt515MsvcCompatibilityHeader}
         )
+        target_sources(
+            diagnostic_analysis_worker_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
         target_compile_options(slicer_debug_ui PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )
@@ -377,6 +426,11 @@ if(MSVC)
         )
         target_compile_options(
             scene_document_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            diagnostic_analysis_worker_unit_tests
             PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )

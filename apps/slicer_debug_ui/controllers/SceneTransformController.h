@@ -101,6 +101,21 @@ struct SceneTransformSaveResult
 };
 
 /**
+ * @brief Immutable in-memory scene snapshot used by diagnostic and save flows.
+ */
+struct SceneTransformSnapshotResult
+{
+    slicer_core::MultiModelScene scene;
+    std::optional<SceneTransformError> error;
+
+    /**
+     * @brief Report whether the current scene was assembled successfully.
+     * @return True when no source, identity, or validation error exists.
+     */
+    bool IsValid() const;
+};
+
+/**
  * @brief Convert a transform command error to stable ASCII.
  * @param code Error code.
  * @return Stable machine-readable name.
@@ -177,6 +192,16 @@ public:
      */
     SceneTransformSaveResult SaveSceneEffectiveConfig(
         const SceneTransformSaveRequest& request);
+
+    /**
+     * @brief Assemble the current scene without writing files or marking it saved.
+     * @param sourceProfileId Scene-wide material process Profile identity.
+     * @param buildVolume Explicit diagnostic or production build volume.
+     * @return Immutable scene snapshot or a structured failure.
+     */
+    SceneTransformSnapshotResult BuildCurrentScene(
+        const std::string& sourceProfileId,
+        const slicer_core::SceneBuildVolume& buildVolume) const;
 
 signals:
     void SigCommandFailed(const QString& code, const QString& message);

@@ -109,6 +109,16 @@ signals:
     void SigDiagnosticModelFillMaterialChanged(
         const QString& material);
 
+    /**
+     * @brief Forward a request to start background diagnostics.
+     */
+    void SigDiagnosticStartRequested();
+
+    /**
+     * @brief Forward a request to cancel background diagnostics.
+     */
+    void SigDiagnosticCancelRequested();
+
 private:
     QTabWidget* m_tabs{nullptr};
     QWidget* m_scenePage{nullptr};
