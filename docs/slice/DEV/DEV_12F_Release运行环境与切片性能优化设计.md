@@ -1,7 +1,7 @@
 # DEV_12F Release 运行环境与切片性能优化设计
 
-> 文档状态：DEV / R0 Implemented / R1-R5 Planned
-> 日期：2026-07-16
+> 文档状态：DEV / R0 Implemented / R0-R1 Build Revision Implemented / R1-R5 Planned
+> 日期：2026-07-16；构建轨道修订：2026-07-29
 
 ## 1. R0 Runtime 架构
 
@@ -9,8 +9,8 @@
 PrepareSliceSoftRuntime.ps1
   -> Resolve Qt5_DIR
   -> Import VsDevCmd x64 environment
-  -> CMake NMake single-config configure
-  -> build slicer_cli/rip_reader_test/slicer_debug_ui
+  -> CMake Visual Studio multi-config configure
+  -> MSBuild 8-job incremental build of slicer_cli/rip_reader_test/slicer_debug_ui
   -> copy samples/model/Profile documents
   -> validate portable scenario/config/model paths
   -> windeployqt into staging
@@ -22,8 +22,9 @@ PrepareSliceSoftRuntime.ps1
 
 ```text
 build-slicesoft/
-  Debug/
-  Release/
+  main/
+    Debug/
+    Release/
 
 runtime/slicesoft/
   Debug/
@@ -54,9 +55,10 @@ Windows 按以下优先级解析：
 
 ```text
 1. applicationDir/slicer_cli.exe；
-2. build-slicesoft/<Debug|Release>/slicer_cli.exe；
-3. build/<Debug|Release>/slicer_cli.exe；
-4. 若均不存在，返回统一 build 预期路径用于错误提示。
+2. build-slicesoft/main/<Debug|Release>/slicer_cli.exe；
+3. build-slicesoft/<Debug|Release>/slicer_cli.exe（历史 NMake 兼容）；
+4. build/<Debug|Release>/slicer_cli.exe；
+5. 若均不存在，返回统一 build 预期路径用于错误提示。
 ```
 
 构建类型通过 `_DEBUG` 决定，禁止 Release UI 自动回退到 Debug CLI。
@@ -69,20 +71,25 @@ build-openvdb-09p/<Config>/slicer_cli.exe
 
 默认 Runtime 不部署 OpenVDB DLL 或 candidate CLI。
 
-## 3. 为什么使用 NMake x64 Lane
+## 3. Visual Studio 主轨道与 NMake 兜底
 
-本轮实际观察：Visual Studio generator 多次停留在 `HostX86/x64 cl.exe`，CMake/MSBuild 不退出。导入 `VsDevCmd -arch=x64 -host_arch=x64` 后，NMake lane 使用：
+2026-07-16 的 NMake 选择是对当时 `HostX86/x64 cl.exe` 构建超时的稳定性规避，
+不是用 NMake 替代 CMake。CMake 始终负责配置和生成，NMake/MSBuild 只是不同的
+底层构建工具。
 
-```text
-Hostx64/x64/cl.exe
-```
-
-Debug/Release fresh build 均完成。因此新 Runtime lane 与历史 VS generator build 共存：
+2026-07-29 默认轨道改为：
 
 ```text
-build / build-12c-ui：既有测试、历史证据；
-build-slicesoft：统一开发运行和 Release Runtime。
+CMakePresets.json
+  -> Visual Studio 18 2026 / x64
+  -> build-slicesoft/main
+  -> Debug / Release / RelWithDebInfo
+  -> jobs = 8
 ```
+
+`slicer_core` 使用 target-based `/MP`，MSBuild 同时提供 project-level 和
+translation-unit-level 并行。NMake 保留在 `build-slicesoft-nmake`，仅当 Visual
+Studio 主轨道不可用时手动运行；两个生成器绝不复用同一个 CMake cache。
 
 ## 4. R1 Benchmark 刷新设计
 

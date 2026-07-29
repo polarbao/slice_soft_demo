@@ -1,6 +1,6 @@
 # VSCode 与 Qt 调试 UI 运行环境说明
 
-> 日期：2026-07-16
+> 日期：2026-07-16；构建入口修订：2026-07-29
 > 目的：说明统一后的 Debug/Release 构建与运行环境、VS Code 入口、Qt 调试 UI 场景选择器和本地环境清理任务。
 
 ## 1. 整理原则
@@ -38,6 +38,8 @@ Qt 调试 UI 读取该索引，在“场景/Profile”下拉框中选择模型�
 | `SliceSoft: Debug UI (Debug)` | 构建 Debug Runtime，并使用 C++ 调试器启动 UI。 |
 | `SliceSoft: Run UI (Debug)` | 构建 Debug Runtime，并以非调试方式运行 UI。 |
 | `SliceSoft: Run UI (Release)` | 构建 Release Runtime，并以非调试方式运行 UI。 |
+| `SliceSoft: Quick Run UI (Debug, No Build)` | 直接运行已部署 Debug UI，不触发编译。 |
+| `SliceSoft: Quick Run UI (Release, No Build)` | 直接运行已部署 Release UI，不触发编译。 |
 | `SliceSoft: Advanced - Debug CLI` | 调试 Debug Runtime 中的 `slicer_cli --config <输入配置>`。 |
 | `SliceSoft: Advanced - Inspect Model` | 调试模型统计/诊断入口。 |
 | `SliceSoft: Advanced - Preview Only` | 调试 preview-only 入口。 |
@@ -55,15 +57,21 @@ output/NailRgbWhiteVarnishTop2
 | Task | 作用 |
 |---|---|
 | `SliceSoft: Build Runtime (Debug)` | 构建并部署 Debug Runtime；同时作为默认 Build Task。 |
+| `SliceSoft: Configure Main Build` | 配置 Visual Studio x64 多配置主构建目录。 |
+| `SliceSoft: Fast Build (Debug)` | 只做 Debug 增量编译，不部署资源。 |
 | `SliceSoft: Run UI (Debug)` | 先构建 Debug Runtime，再直接运行 Debug UI。 |
 | `SliceSoft: Build Runtime (Release)` | 构建并部署 Release Runtime。 |
+| `SliceSoft: Fast Build (Release)` | 只做 Release 增量编译，不部署资源。 |
 | `SliceSoft: Run UI (Release)` | 先构建 Release Runtime，再直接运行 Release UI。 |
+| `SliceSoft: Quick Run UI (Debug, No Build)` | 直接运行现有 Debug Runtime。 |
+| `SliceSoft: Quick Run UI (Release, No Build)` | 直接运行现有 Release Runtime。 |
+| `SliceSoft: Deploy Runtime (Release, No Build)` | 仅重新部署已有 Release 产物和资源。 |
 | `SliceSoft: Build All Runtimes` | 依次构建 Debug、Release 两套 Runtime。 |
 | `SliceSoft: Test Runtime (Debug)` | 构建并执行 Debug UI self-test。 |
 | `SliceSoft: Test Runtime (Release)` | 构建并执行 Release UI self-test。 |
 | `SliceSoft: Advanced - ...` | 保留 CTest、CLI、RIP、样例矩阵、回归和清理等开发诊断入口。 |
 
-日常使用只需要前七个入口。`Advanced` 入口不会参与普通 UI 编译和运行。
+日常使用只需要非 `Advanced` 入口。`Advanced` 入口不会参与普通 UI 编译和运行。
 
 清理任务调用：
 
@@ -114,8 +122,8 @@ output/ui_sessions/<模型名_时间戳>/package
 构建目录：
 
 ```text
-build-slicesoft/Debug
-build-slicesoft/Release
+build-slicesoft/main/Debug
+build-slicesoft/main/Release
 ```
 
 运行目录：
@@ -132,15 +140,32 @@ runtime/slicesoft/Release
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release
 ```
 
-脚本使用 Visual Studio x64 Developer Environment 和 NMake，构建 `slicer_cli`、`rip_reader_test`、`slicer_debug_ui`，再通过 `windeployqt` 部署 Qt DLL、platform plugin 和 MSVC runtime。
+脚本使用 Visual Studio x64 Developer Environment、Visual Studio 18 2026 multi-config generator
+和 8-job MSBuild，构建 `slicer_cli`、`rip_reader_test`、`slicer_debug_ui`，再通过
+`windeployqt` 部署 Qt DLL、platform plugin 和 MSVC runtime。该结构参考
+`ry_print_demo/PrintSolution/CMakePresets.json`，但不强制默认 Runtime 接入 vcpkg。
 
-脚本会记录 Runtime 头文件和 CMake 输入的 SHA-256 指纹。首次构建或相关输入发生变化时，会自动执行一次完整重编译，防止 NMake 复用 ABI 已不一致的旧对象文件；没有头文件变化时仍采用增量构建。需要主动清理并重编译时使用：
+Visual Studio/MSBuild 主轨道依赖正常的头文件追踪，普通 `.cpp` 修改只增量编译。
+脚本仍在编译前后检查快速输入快照，若编译过程中源文件继续变化则拒绝发布。
+NMake 兜底则继续使用完整内容 SHA-256 作为 clean guard。
+需要主动清理并重编译时使用：
 
 ```powershell
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release -ForceClean
 ```
 
 完整重编译期间 `slicer.cpp` 等大型源文件可能数分钟没有新终端输出，这属于编译器工作状态，不是软件卡死。
+
+仅当 Visual Studio/MSBuild 主轨道不可用时使用 NMake 兜底：
+
+```powershell
+.\scripts\PrepareSliceSoftRuntime.ps1 `
+  -BuildDir build-slicesoft-nmake `
+  -Config Release `
+  -BuildSystem NMake
+```
+
+NMake 兜底使用独立 cache，并继续保留输入变化触发 `clean-first` 的安全规则。
 
 运行包同时包含：
 
@@ -222,6 +247,8 @@ scripts/run_sample_matrix.ps1
 | 调试 UI 代码 | VSCode `Debug UI (Debug)`。 |
 | 只运行 Debug UI | Task 或 Run and Debug 中的 `Run UI (Debug)`。 |
 | 验证真实运行性能 | `Run UI (Release)` 或 Release Runtime。 |
+| 已有 Runtime，只想立即打开 | `Quick Run UI (Release, No Build)`。 |
+| 只更新配置、模型或部署资源 | `Deploy Runtime (Release, No Build)`。 |
 | 一次构建两种版本 | Task `Build All Runtimes`。 |
 | 调试一个任意配置的 CLI | `Advanced - Debug CLI`。 |
 | 从任意目录导入模型并切片 | Qt 调试 UI `导入模型并切片`。 |

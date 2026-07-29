@@ -1,7 +1,7 @@
 # TASKS_12F Release 运行环境与切片性能优化任务清单
 
-> 文档状态：R0 COMPLETE / R1-R5 PLANNED / NOT ACTIVE
-> 日期：2026-07-16
+> 文档状态：R0 COMPLETE / R0-R1 BUILD REVISION COMPLETE / R1-R5 PLANNED / NOT ACTIVE
+> 日期：2026-07-16；构建轨道修订：2026-07-29
 > 规则：当前唯一主线仍由 docs/codex_task/README 指定；不得自动开始算法优化
 
 ## 12F-00 文档准入
@@ -47,6 +47,26 @@ Release 场景/Profile 资源发布：30 scenarios PASS；
 5 个稳定 Profile、4 份唯一配置 inspect-model：PASS。
 ```
 
+2026-07-29 增量构建修订：
+
+```text
+CMakePresets.json：Visual Studio 18 2026 x64 multi-config；
+build-slicesoft/main：Debug/Release 共享生成目录；
+MSBuild jobs=8，slicer_core 启用 /MP；
+VS Code 增加免构建快速运行和 Release deploy-only；
+NMake 移至 build-slicesoft-nmake 手动兜底；
+普通 .cpp 修改不再触发 Runtime clean-first。
+```
+
+本机修订验证（2026-07-29，非产品 SLA）：
+
+```text
+新 build-slicesoft/main 首次 Release Runtime targets：148.67 s；
+无源码变化的 cmake --build --preset slicesoft-release：1.85 s；
+Release deploy-only：2.58 s；
+部署后 Release UI --self-test：PASS。
+```
+
 入口收口补充：
 
 ```text
@@ -61,7 +81,7 @@ CTest、CLI、RIP、样例矩阵和清理入口统一归入 Advanced。
 
 状态：TODO / NOT ACTIVE
 
-目标：使用当前代码和 `build-slicesoft/Release` 刷新三真实模型 5 次中位数，输出新的 12F benchmark report。
+目标：使用当前代码和 `build-slicesoft/main/Release` 刷新三真实模型 5 次中位数，输出新的 12F benchmark report。
 
 禁止：不修改算法，不把历史 12B 数字冒充当前结果。
 
