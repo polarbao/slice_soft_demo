@@ -24,6 +24,7 @@
 #include "../widgets/SettingHelpPanel.h"
 #include "../widgets/SliceTimingPanel.h"
 #include "../widgets/PreviewWorkspace.h"
+#include "../widgets/ProjectToolsDock.h"
 #include "ConfigDocument.h"
 #include "EffectiveConfigGenerator.h"
 #include "HelpTextProvider.h"
@@ -596,6 +597,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return WorkbenchContextInspector(options);
     }
+    if (options.case_name == "workbench-project-diagnostics")
+    {
+        return WorkbenchProjectDiagnostics(options);
+    }
     if (options.case_name == "production-mode-selector")
     {
         return ProductionModeSelector(options);
@@ -848,8 +853,8 @@ int UiSmokeTestRunner::WorkbenchContextInspector(
         || mainSplitter == nullptr
         || openConfigButton == nullptr
         || oldModelSideTabs != nullptr
-        || mainSplitter->count() != 3
-        || mainSplitter->widget(2) != inspector)
+        || mainSplitter->count() != 2
+        || mainSplitter->widget(1) != inspector)
     {
         return fail(QStringLiteral(
             "13D-02 single context inspector shell mismatch"));
@@ -860,7 +865,6 @@ int UiSmokeTestRunner::WorkbenchContextInspector(
         QStringLiteral("排版"),
         QStringLiteral("切片设置"),
         QStringLiteral("预检"),
-        QStringLiteral("高级诊断"),
     };
     if (inspector->PageTitles() != expectedPages
         || !inspector->isAncestorOf(
@@ -947,6 +951,143 @@ int UiSmokeTestRunner::WorkbenchContextInspector(
     return pass(QStringLiteral(
         "workbench-context-inspector single-shell/"
         "five-contexts/identity/config-navigation"));
+}
+
+int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    ProjectToolsDock* projectDock =
+        window.findChild<ProjectToolsDock*>(
+            QStringLiteral("projectToolsDock"));
+    DiagnosticsDock* diagnosticsDock =
+        window.findChild<DiagnosticsDock*>(
+            QStringLiteral("diagnosticsDock"));
+    QWidget* projectPanel =
+        window.findChild<QWidget*>(
+            QStringLiteral("projectPanel"));
+    QSplitter* mainSplitter =
+        window.findChild<QSplitter*>(
+            QStringLiteral("mainSplitter"));
+    ContextInspector* inspector =
+        window.findChild<ContextInspector*>(
+            QStringLiteral("contextInspector"));
+    QAction* projectAction =
+        window.findChild<QAction*>(
+            QStringLiteral("projectToolsToggleAction"));
+    QAction* diagnosticsAction =
+        window.findChild<QAction*>(
+            QStringLiteral("diagnosticsToggleAction"));
+    QWidget* legacyRightTools =
+        window.findChild<QWidget*>(
+            QStringLiteral("legacyRightToolsTabs"));
+    if (projectDock == nullptr
+        || diagnosticsDock == nullptr
+        || projectPanel == nullptr
+        || mainSplitter == nullptr
+        || inspector == nullptr
+        || projectAction == nullptr
+        || diagnosticsAction == nullptr
+        || legacyRightTools != nullptr)
+    {
+        return fail(QStringLiteral(
+            "13D-03 project or diagnostics shell missing"));
+    }
+
+    const QStringList expectedInspectorPages{
+        QStringLiteral("场景"),
+        QStringLiteral("变换"),
+        QStringLiteral("排版"),
+        QStringLiteral("切片设置"),
+        QStringLiteral("预检"),
+    };
+    const QStringList expectedDiagnosticPages{
+        QStringLiteral("报告"),
+        QStringLiteral("材料闭环"),
+        QStringLiteral("曲线"),
+        QStringLiteral("材料参数"),
+        QStringLiteral("诊断"),
+        QStringLiteral("工艺对比"),
+        QStringLiteral("日志"),
+    };
+    if (mainSplitter->count() != 2
+        || mainSplitter->widget(0)
+            != window.m_mainWorkspaceTabs
+        || mainSplitter->widget(1) != inspector
+        || inspector->PageTitles()
+            != expectedInspectorPages
+        || diagnosticsDock->TabTitles()
+            != expectedDiagnosticPages
+        || !projectDock->isAncestorOf(projectPanel)
+        || !diagnosticsDock->isAncestorOf(
+            window.material_process_panel_)
+        || !diagnosticsDock->isAncestorOf(
+            window.warnings_view_)
+        || !diagnosticsDock->isAncestorOf(
+            window.compare_view_))
+    {
+        return fail(QStringLiteral(
+            "13D-03 capability migration mismatch"));
+    }
+    if (!projectDock->isAncestorOf(window.build_button_)
+        || !projectDock->isAncestorOf(
+            window.m_importSliceButton)
+        || !projectDock->isAncestorOf(
+            window.m_importOpenVdbButton)
+        || !projectDock->isAncestorOf(
+            window.regression_button_)
+        || !projectDock->isAncestorOf(
+            window.run_rip_button_))
+    {
+        return fail(QStringLiteral(
+            "13D-03 compatibility actions are unreachable"));
+    }
+
+    window.show();
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (projectDock->IsExpanded()
+        || diagnosticsDock->IsExpanded()
+        || projectAction->isChecked()
+        || diagnosticsAction->isChecked())
+    {
+        return fail(QStringLiteral(
+            "13D-03 auxiliary regions are not hidden by default"));
+    }
+
+    const quint64 sceneRevision =
+        window.m_sceneDocument.SceneRevision();
+    projectDock->SetExpanded(true);
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (!projectDock->IsExpanded()
+        || !projectAction->isChecked()
+        || !projectPanel->isVisibleTo(projectDock))
+    {
+        return fail(QStringLiteral(
+            "13D-03 project tools cannot be expanded"));
+    }
+    projectDock->SetExpanded(false);
+    diagnosticsDock->SetExpanded(true);
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (projectDock->IsExpanded()
+        || !diagnosticsDock->IsExpanded()
+        || !diagnosticsAction->isChecked()
+        || window.m_sceneDocument.SceneRevision()
+            != sceneRevision)
+    {
+        return fail(QStringLiteral(
+            "13D-03 dock switching changed scene state"));
+    }
+    diagnosticsDock->SetExpanded(false);
+
+    return pass(QStringLiteral(
+        "workbench-project-diagnostics project=collapsed/"
+        "advanced-actions diagnostics=unified contexts=five"));
 }
 
 int UiSmokeTestRunner::loadPackage(const UiSmokeTestOptions& options) {
@@ -2357,7 +2498,11 @@ int UiSmokeTestRunner::DiagnosticsCollapse(const UiSmokeTestOptions& options)
     {
         workspaceTitles.push_back(workspaceTabs->tabText(index));
     }
-    if (workspaceTitles != QStringList{QStringLiteral("预览"), QStringLiteral("配置")})
+    if (workspaceTitles
+        != QStringList{
+            QStringLiteral("模型"),
+            QStringLiteral("预览"),
+            QStringLiteral("配置")})
     {
         return fail(QStringLiteral("diagnostics-collapse 中央页签仍包含历史报告/曲线入口：")
                     + workspaceTitles.join(QStringLiteral(",")));
@@ -2367,6 +2512,9 @@ int UiSmokeTestRunner::DiagnosticsCollapse(const UiSmokeTestOptions& options)
             QStringLiteral("报告"),
             QStringLiteral("材料闭环"),
             QStringLiteral("曲线"),
+            QStringLiteral("材料参数"),
+            QStringLiteral("诊断"),
+            QStringLiteral("工艺对比"),
             QStringLiteral("日志")})
     {
         return fail(QStringLiteral("diagnostics-collapse 诊断页签集合不正确。"));
@@ -2804,6 +2952,8 @@ int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
 
     MainWindow window(options.repo_root);
     auto* splitter = window.findChild<QSplitter*>(QStringLiteral("mainSplitter"));
+    auto* projectDock = window.findChild<ProjectToolsDock*>(
+        QStringLiteral("projectToolsDock"));
     auto* projectPanel = window.findChild<QWidget*>(QStringLiteral("projectPanel"));
     auto* workspaceTabs = window.findChild<QTabWidget*>(QStringLiteral("mainWorkspaceTabs"));
     auto* rightPanel = window.findChild<ContextInspector*>(
@@ -2811,9 +2961,13 @@ int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
     auto* preview = window.findChild<PreviewWorkspace*>(QStringLiteral("previewWorkspace"));
     auto* configPanel = window.findChild<ConfigEditorPanel*>();
     auto* dock = window.findChild<DiagnosticsDock*>(QStringLiteral("diagnosticsDock"));
+    auto* projectAction = window.findChild<QAction*>(
+        QStringLiteral("projectToolsToggleAction"));
     auto* diagnosticsAction = window.findChild<QAction*>(QStringLiteral("diagnosticsToggleAction"));
-    if (splitter == nullptr || projectPanel == nullptr || workspaceTabs == nullptr || rightPanel == nullptr
-        || preview == nullptr || configPanel == nullptr || dock == nullptr || diagnosticsAction == nullptr)
+    if (splitter == nullptr || projectDock == nullptr || projectPanel == nullptr
+        || workspaceTabs == nullptr || rightPanel == nullptr
+        || preview == nullptr || configPanel == nullptr || dock == nullptr
+        || projectAction == nullptr || diagnosticsAction == nullptr)
     {
         return fail(QStringLiteral("workspace-layout-sizes 缺少稳定布局对象。"));
     }
@@ -2846,7 +3000,7 @@ int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
             return fail(
                 QStringLiteral(
                     "workspace-layout-sizes 窗口被 minimumSizeHint 强制放大：requested=%1x%2 actual=%3x%4 "
-                    "windowHint=%5x%6 projectHint=%7x%8 workspaceHint=%9x%10 rightHint=%11x%12 "
+                    "windowHint=%5x%6 projectDockHint=%7x%8 workspaceHint=%9x%10 rightHint=%11x%12 "
                     "previewHint=%13x%14 configHint=%15x%16")
                     .arg(targetSize.width())
                     .arg(targetSize.height())
@@ -2865,32 +3019,37 @@ int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
                     .arg(configPanel->minimumSizeHint().width())
                     .arg(configPanel->minimumSizeHint().height()));
         }
-        if (!projectPanel->isVisible() || !workspaceTabs->isVisible() || !rightPanel->isVisible())
+        if (projectDock->IsExpanded()
+            || projectAction->isChecked()
+            || !workspaceTabs->isVisible()
+            || !rightPanel->isVisible())
         {
-            return fail(QStringLiteral("workspace-layout-sizes 三列区域存在不可见项。"));
+            return fail(QStringLiteral(
+                "workspace-layout-sizes 默认工作区可见性不正确。"));
         }
 
         const QRect splitterRect = GlobalRect(splitter);
-        const QRect projectRect = GlobalRect(projectPanel);
         const QRect workspaceRect = GlobalRect(workspaceTabs);
         const QRect rightRect = GlobalRect(rightPanel);
-        if (projectRect.width() < 280 || workspaceRect.width() < 400 || rightRect.width() < 240)
+        if (workspaceRect.width() < 400
+            || rightRect.width() < 240)
         {
             return fail(
-                QStringLiteral("workspace-layout-sizes 三列宽度低于冻结边界：%1/%2/%3")
-                    .arg(projectRect.width())
+                QStringLiteral(
+                    "workspace-layout-sizes 主工作区宽度低于冻结边界：%1/%2")
                     .arg(workspaceRect.width())
                     .arg(rightRect.width()));
         }
-        if (projectRect.intersects(workspaceRect) || projectRect.intersects(rightRect)
-            || workspaceRect.intersects(rightRect))
+        if (workspaceRect.intersects(rightRect))
         {
-            return fail(QStringLiteral("workspace-layout-sizes 三列区域发生重叠。"));
+            return fail(QStringLiteral(
+                "workspace-layout-sizes 主工作区发生重叠。"));
         }
-        if (!splitterRect.contains(projectRect) || !splitterRect.contains(workspaceRect)
+        if (!splitterRect.contains(workspaceRect)
             || !splitterRect.contains(rightRect))
         {
-            return fail(QStringLiteral("workspace-layout-sizes 三列区域超出 mainSplitter。"));
+            return fail(QStringLiteral(
+                "workspace-layout-sizes 主工作区超出 mainSplitter。"));
         }
         if (dock->IsExpanded() || diagnosticsAction->isChecked())
         {
@@ -2914,10 +3073,9 @@ int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
         }
 
         verifiedSizes.push_back(
-            QStringLiteral("%1x%2=%3/%4/%5")
+            QStringLiteral("%1x%2=%3/%4")
                 .arg(targetSize.width())
                 .arg(targetSize.height())
-                .arg(projectRect.width())
                 .arg(workspaceRect.width())
                 .arg(rightRect.width()));
     }

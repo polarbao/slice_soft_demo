@@ -21,7 +21,6 @@ public:
      * @param transformPage Existing transform panel.
      * @param layoutPage Existing scene-layout panel.
      * @param preflightPage Existing model-preflight panel.
-     * @param legacyToolsPage Temporary legacy diagnostics page for 13D-03.
      * @param parent QWidget owner.
      */
     explicit ContextInspector(
@@ -29,7 +28,6 @@ public:
         QWidget* transformPage,
         QWidget* layoutPage,
         QWidget* preflightPage,
-        QWidget* legacyToolsPage,
         QWidget* parent = nullptr);
 
     /**

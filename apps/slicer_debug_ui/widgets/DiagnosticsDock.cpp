@@ -30,6 +30,21 @@ DiagnosticsDock::DiagnosticsDock(QWidget* parent)
     hide();
 }
 
+void DiagnosticsDock::AddView(
+    QWidget* view,
+    const QString& title)
+{
+    if (view == nullptr)
+    {
+        return;
+    }
+    const int logIndex = m_tabs->indexOf(m_logView);
+    m_tabs->insertTab(
+        logIndex < 0 ? m_tabs->count() : logIndex,
+        view,
+        title);
+}
+
 void DiagnosticsDock::LoadPackage(const PackageSummary& package)
 {
     m_reportView->loadPackage(package);

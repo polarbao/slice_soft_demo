@@ -26,6 +26,13 @@ public:
     explicit DiagnosticsDock(QWidget* parent = nullptr);
 
     /**
+     * @brief Add an existing diagnostic view before the process log.
+     * @param view Existing diagnostic widget; ownership moves to the dock.
+     * @param title Chinese tab title.
+     */
+    void AddView(QWidget* view, const QString& title);
+
+    /**
      * @brief Load one output package into report and chart views.
      * @param package Package summary produced by PackageLoader.
      */

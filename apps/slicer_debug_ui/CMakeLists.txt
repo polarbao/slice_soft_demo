@@ -113,6 +113,8 @@ add_executable(slicer_debug_ui
     widgets/PreviewOverlayPanel.h
     widgets/PreviewWorkspace.cpp
     widgets/PreviewWorkspace.h
+    widgets/ProjectToolsDock.cpp
+    widgets/ProjectToolsDock.h
     widgets/ProductionModePanel.cpp
     widgets/ProductionModePanel.h
     widgets/QuickConfigPanel.cpp

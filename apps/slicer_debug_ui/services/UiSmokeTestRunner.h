@@ -43,6 +43,8 @@ private:
         const UiSmokeTestOptions& options);
     int WorkbenchContextInspector(
         const UiSmokeTestOptions& options);
+    int WorkbenchProjectDiagnostics(
+        const UiSmokeTestOptions& options);
     int ProductionModeSelector(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);
     int SliceProgressTiming(const UiSmokeTestOptions& options);

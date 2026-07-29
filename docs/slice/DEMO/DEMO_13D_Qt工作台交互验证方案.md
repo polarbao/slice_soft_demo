@@ -1,8 +1,8 @@
 # DEMO 13D Qt 工作台交互验证方案
 
 > 文档版本：v1.1
-> 文档状态：APPROVED / 13D-01..02 COMPLETE / 13D-03 READY
-> 日期：2026-07-28
+> 文档状态：APPROVED / 13D-01..03 COMPLETE / 13D-04 READY
+> 日期：2026-07-29
 
 ## 1. 目标
 
@@ -27,13 +27,16 @@
 批量导入三个带纹理模型，选择不同实例，在场景/变换/排版/预检页间切换，确认画布不跳动、当前
 instance identity 不串、中文标签完整显示。
 
-实现结果：单一 `ContextInspector` 已接入场景、变换、排版、切片设置和预检；13D-03 前保留的
-参数/诊断/工艺对比收在同一检查器的“高级诊断”临时页，不再形成第二个右侧栏。
+实现结果：单一 `ContextInspector` 已接入场景、变换、排版、切片设置和预检；参数、诊断和工艺
+对比已在 13D-03 迁入底部 `DiagnosticsDock`。
 
 ### Case 13D-03 切片与结果检查
 
 点击顶部主动作，查看进度摘要；成功后进入生产预览。报告、材料闭环、曲线、工艺对比和日志都可从
 底部 Dock 打开，右侧不出现第二套诊断栏。
+
+实现结果：`workbench-project-diagnostics` 已验证项目与高级工具默认收起、旧兼容入口可达、
+DiagnosticsDock 七类页签可达、右侧只保留五页 Context Inspector。
 
 ### Case 13D-04 折叠与恢复
 
@@ -56,6 +59,7 @@ instance identity 不串、中文标签完整显示。
 ```powershell
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case workbench-default-layout
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case workbench-context-inspector
+.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case workbench-project-diagnostics
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case workbench-layout-restore
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --ui-smoke-test --case workbench-1280x720
 .\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test

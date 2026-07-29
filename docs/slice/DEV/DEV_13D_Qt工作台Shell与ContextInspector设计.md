@@ -1,8 +1,8 @@
 # DEV 13D Qt 工作台 Shell 与 ContextInspector 设计
 
 > 文档版本：v1.1
-> 文档状态：APPROVED / 13D-01..02 COMPLETE / 13D-03 READY
-> 日期：2026-07-28
+> 文档状态：APPROVED / 13D-01..03 COMPLETE / 13D-04 READY
+> 日期：2026-07-29
 
 ## 1. 设计原则
 
@@ -29,6 +29,8 @@ MainWindow
       -> Report
       -> MaterialClosure
       -> Curves
+      -> MaterialProcess
+      -> Warnings
       -> ProcessCompare
       -> Log
 ```
@@ -94,6 +96,9 @@ availability/blockedReason；
 ### Phase 3 Dock 收口
 
 把右侧诊断/工艺对比页移入现有 `DiagnosticsDock`，确保报告、材料闭环、曲线和日志顺序稳定。
+
+实现结果：`ProjectToolsDock` 默认收起并保留项目路径、构建、旧单模型、OpenVDB、RIP 和回归入口；
+参数、诊断和工艺对比已迁入唯一 `DiagnosticsDock`，`ContextInspector` 最终只保留五个业务上下文页。
 
 ### Phase 4 尺寸与可访问性
 

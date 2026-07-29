@@ -10,7 +10,6 @@ ContextInspector::ContextInspector(
     QWidget* transformPage,
     QWidget* layoutPage,
     QWidget* preflightPage,
-    QWidget* legacyToolsPage,
     QWidget* parent)
     : QWidget(parent),
       m_scenePage(scenePage)
@@ -62,16 +61,6 @@ ContextInspector::ContextInspector(
         sliceSettingsPage,
         QStringLiteral("切片设置"));
     m_tabs->addTab(preflightPage, QStringLiteral("预检"));
-    if (legacyToolsPage != nullptr)
-    {
-        m_tabs->addTab(
-            legacyToolsPage,
-            QStringLiteral("高级诊断"));
-        m_tabs->setTabToolTip(
-            m_tabs->indexOf(legacyToolsPage),
-            QStringLiteral(
-                "13D-03 前保留的参数、诊断和工艺对比入口"));
-    }
     layout->addWidget(m_tabs);
 
     connect(

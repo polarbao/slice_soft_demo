@@ -31,6 +31,7 @@
 #include "widgets/ModelTopViewWidget.h"
 #include "widgets/ModelTransformPanel.h"
 #include "widgets/PreviewWorkspace.h"
+#include "widgets/ProjectToolsDock.h"
 #include "widgets/ReportPanel.h"
 #include "widgets/SliceTimingPanel.h"
 
@@ -199,6 +200,7 @@ private:
     SceneLayoutPanel* m_sceneLayoutPanel{nullptr};
     ModelTransformPanel* m_modelTransformPanel{nullptr};
     ContextInspector* m_contextInspector{nullptr};
+    ProjectToolsDock* m_projectToolsDock{nullptr};
     DiagnosticsDock* m_diagnosticsDock{nullptr};
     ReportPanel* report_panel_{nullptr};
     ConfigEditorPanel* config_editor_panel_{nullptr};

@@ -380,7 +380,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     auto* main_splitter = new QSplitter(Qt::Horizontal, central);
     main_splitter->setObjectName(QStringLiteral("mainSplitter"));
 
-    QWidget* left = createProjectPanel();
+    QWidget* projectTools = createProjectPanel();
     m_mainWorkspaceTabs = new QTabWidget(main_splitter);
     m_mainWorkspaceTabs->setObjectName(QStringLiteral("mainWorkspaceTabs"));
     m_mainWorkspaceTabs->setDocumentMode(true);
@@ -446,30 +446,50 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     m_mainWorkspaceTabs->setCurrentWidget(m_modelTopViewWorkspace);
 
     QWidget* right = createRightPanel();
-    left->setMinimumWidth(280);
-    left->setMaximumWidth(440);
     m_mainWorkspaceTabs->setMinimumWidth(400);
     right->setMinimumWidth(240);
     right->setMaximumWidth(420);
-    main_splitter->addWidget(left);
     main_splitter->addWidget(m_mainWorkspaceTabs);
     main_splitter->addWidget(right);
-    main_splitter->setStretchFactor(0, 0);
-    main_splitter->setStretchFactor(1, 1);
-    main_splitter->setStretchFactor(2, 0);
-    main_splitter->setSizes(QList<int>{320, 800, 300});
+    main_splitter->setStretchFactor(0, 1);
+    main_splitter->setStretchFactor(1, 0);
+    main_splitter->setSizes(QList<int>{1040, 320});
 
     root_layout->addWidget(main_splitter);
     setCentralWidget(central);
 
+    m_projectToolsDock = new ProjectToolsDock(
+        projectTools,
+        this);
+    addDockWidget(
+        Qt::LeftDockWidgetArea,
+        m_projectToolsDock);
+    m_projectToolsDock->SetExpanded(false);
+
     m_diagnosticsDock = new DiagnosticsDock(this);
     addDockWidget(Qt::BottomDockWidgetArea, m_diagnosticsDock);
+    m_diagnosticsDock->AddView(
+        material_process_panel_,
+        QStringLiteral("材料参数"));
+    m_diagnosticsDock->AddView(
+        warnings_view_,
+        QStringLiteral("诊断"));
+    m_diagnosticsDock->AddView(
+        compare_view_,
+        QStringLiteral("工艺对比"));
     m_diagnosticsDock->SetExpanded(false);
     report_panel_ = m_diagnosticsDock->ReportView();
     channel_chart_panel_ = m_diagnosticsDock->ChartView();
     log_panel_ = m_diagnosticsDock->LogView();
 
     auto* viewMenu = menuBar()->addMenu(QStringLiteral("视图"));
+    QAction* projectToolsAction =
+        m_projectToolsDock->toggleViewAction();
+    projectToolsAction->setObjectName(
+        QStringLiteral("projectToolsToggleAction"));
+    projectToolsAction->setText(
+        QStringLiteral("项目与高级工具"));
+    viewMenu->addAction(projectToolsAction);
     QAction* diagnosticsAction = m_diagnosticsDock->toggleViewAction();
     diagnosticsAction->setObjectName(QStringLiteral("diagnosticsToggleAction"));
     diagnosticsAction->setText(QStringLiteral("诊断区域"));
@@ -1662,25 +1682,21 @@ QWidget* MainWindow::createRunPanel()
 }
 
 QWidget* MainWindow::createRightPanel() {
-    auto* legacyTabs = new QTabWidget(this);
-    legacyTabs->setObjectName(
-        QStringLiteral("legacyRightToolsTabs"));
-    legacyTabs->setDocumentMode(true);
-    material_process_panel_ = new MaterialProcessPanel(legacyTabs);
-    warnings_view_ = new QPlainTextEdit(legacyTabs);
+    material_process_panel_ = new MaterialProcessPanel(this);
+    warnings_view_ = new QPlainTextEdit(this);
+    warnings_view_->setObjectName(
+        QStringLiteral("warningsDiagnosticView"));
     warnings_view_->setReadOnly(true);
-    compare_view_ = new QPlainTextEdit(legacyTabs);
+    compare_view_ = new QPlainTextEdit(this);
+    compare_view_->setObjectName(
+        QStringLiteral("processComparisonView"));
     compare_view_->setReadOnly(true);
     m_modelPreflightPanel = new ModelPreflightPanel(this);
-    legacyTabs->addTab(material_process_panel_, "参数");
-    legacyTabs->addTab(warnings_view_, "诊断");
-    legacyTabs->addTab(compare_view_, "工艺对比");
     m_contextInspector = new ContextInspector(
         m_modelListPanel,
         m_modelTransformPanel,
         m_sceneLayoutPanel,
         m_modelPreflightPanel,
-        legacyTabs,
         this);
     return m_contextInspector;
 }
