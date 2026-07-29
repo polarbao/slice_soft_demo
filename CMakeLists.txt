@@ -306,7 +306,7 @@ target_include_directories(slicer_core PUBLIC
 )
 
 if(MSVC)
-    target_compile_options(slicer_core PRIVATE /bigobj)
+    target_compile_options(slicer_core PRIVATE /bigobj /MP)
 endif()
 
 if(WIN32)
@@ -653,6 +653,12 @@ add_executable(model_transform_unit_tests
 )
 
 target_link_libraries(model_transform_unit_tests PRIVATE slicer_core)
+
+add_executable(auto_orient_unit_tests
+    tests/unit/auto_orient/Main.cpp
+)
+
+target_link_libraries(auto_orient_unit_tests PRIVATE slicer_core)
 
 add_executable(scene_view_geometry_unit_tests
     tests/unit/scene_view_geometry/Main.cpp
@@ -1021,6 +1027,7 @@ add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_comp
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
 add_test(NAME model_transform_unit_tests COMMAND model_transform_unit_tests)
+add_test(NAME auto_orient_unit_tests COMMAND auto_orient_unit_tests)
 add_test(NAME scene_view_geometry_unit_tests COMMAND scene_view_geometry_unit_tests)
 add_test(NAME multimodel_scene_contract_unit_tests COMMAND multimodel_scene_contract_unit_tests)
 add_test(NAME grid_layout_policy_unit_tests COMMAND grid_layout_policy_unit_tests)
@@ -1125,4 +1132,13 @@ if(BUILD_SLICER_DEBUG_UI)
     else()
         message(STATUS "Qt5 Widgets not found; slicer_debug_ui target is skipped.")
     endif()
+endif()
+
+if(TARGET slicer_debug_ui)
+    add_custom_target(slicesoft_runtime
+        DEPENDS
+            slicer_cli
+            rip_reader_test
+            slicer_debug_ui
+    )
 endif()

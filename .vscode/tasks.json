@@ -2,7 +2,39 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "SliceSoft: Build Runtime (Debug)",
+      "label": "SliceSoft: Configure Main Build",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "slicesoft-main"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "配置 Visual Studio x64 多配置主构建目录；已有 cache 时通常只需约 1-2 秒。"
+    },
+    {
+      "label": "SliceSoft: Fast Build (Debug)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "slicesoft-debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Configure Main Build",
+      "group": "build",
+      "problemMatcher": "$msCompile",
+      "detail": "仅执行 Debug 增量编译，不复制资源、不运行 windeployqt。"
+    },
+    {
+      "label": "SliceSoft: Deploy Runtime (Debug, No Build)",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -11,21 +43,35 @@
         "-File",
         "scripts/PrepareSliceSoftRuntime.ps1",
         "-BuildDir",
-        "build-slicesoft",
+        "build-slicesoft/main",
         "-RuntimeDir",
         "runtime/slicesoft",
         "-Config",
-        "Debug"
+        "Debug",
+        "-BuildSystem",
+        "VisualStudio",
+        "-DeployOnly"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "仅重新部署现有 Debug 产物和资源，不进行编译。"
+    },
+    {
+      "label": "SliceSoft: Build Runtime (Debug)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "SliceSoft: Fast Build (Debug)",
+        "SliceSoft: Deploy Runtime (Debug, No Build)"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": "$msCompile",
-      "detail": "构建并部署 Debug 版 UI、CLI、RIP Reader 和 Qt 运行依赖。"
+      "problemMatcher": [],
+      "detail": "先执行 Debug 快速增量编译，再部署完整 Debug Runtime。"
     },
     {
       "label": "SliceSoft: Run UI (Debug)",
@@ -40,27 +86,32 @@
       "detail": "编译完成后直接运行 Debug UI，不附加调试器。"
     },
     {
-      "label": "SliceSoft: Build Runtime (Release)",
+      "label": "SliceSoft: Fast Build (Release)",
       "type": "shell",
-      "command": "powershell",
+      "command": "cmake",
       "args": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/PrepareSliceSoftRuntime.ps1",
-        "-BuildDir",
-        "build-slicesoft",
-        "-RuntimeDir",
-        "runtime/slicesoft",
-        "-Config",
-        "Release"
+        "--build",
+        "--preset",
+        "slicesoft-release"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
+      "dependsOn": "SliceSoft: Configure Main Build",
       "group": "build",
       "problemMatcher": "$msCompile",
-      "detail": "构建并部署用于实际性能观察的 Release Runtime。"
+      "detail": "仅执行 Release 增量编译，不复制资源、不运行 windeployqt。"
+    },
+    {
+      "label": "SliceSoft: Build Runtime (Release)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "SliceSoft: Fast Build (Release)",
+        "SliceSoft: Deploy Runtime (Release, No Build)"
+      ],
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "先执行 Release 快速增量编译，再部署完整 Release Runtime。"
     },
     {
       "label": "SliceSoft: Run UI (Release)",
@@ -73,6 +124,54 @@
       "dependsOn": "SliceSoft: Build Runtime (Release)",
       "problemMatcher": [],
       "detail": "编译完成后直接运行 Release UI。"
+    },
+    {
+      "label": "SliceSoft: Quick Run UI (Debug, No Build)",
+      "type": "shell",
+      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
+      "args": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "直接运行已部署的 Debug UI，不触发编译或部署。"
+    },
+    {
+      "label": "SliceSoft: Quick Run UI (Release, No Build)",
+      "type": "shell",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
+      "args": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "直接运行已部署的 Release UI，不触发编译或部署。"
+    },
+    {
+      "label": "SliceSoft: Deploy Runtime (Release, No Build)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/PrepareSliceSoftRuntime.ps1",
+        "-BuildDir",
+        "build-slicesoft/main",
+        "-RuntimeDir",
+        "runtime/slicesoft",
+        "-Config",
+        "Release",
+        "-BuildSystem",
+        "VisualStudio",
+        "-DeployOnly"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "仅重新部署现有 Release 产物和资源，不进行编译。"
     },
     {
       "label": "SliceSoft: Build All Runtimes",
@@ -111,6 +210,31 @@
       "dependsOn": "SliceSoft: Build Runtime (Release)",
       "group": "test",
       "problemMatcher": []
+    },
+    {
+      "label": "SliceSoft: Advanced - Build Runtime Release (NMake Fallback)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/PrepareSliceSoftRuntime.ps1",
+        "-BuildDir",
+        "build-slicesoft-nmake",
+        "-RuntimeDir",
+        "runtime/slicesoft",
+        "-Config",
+        "Release",
+        "-BuildSystem",
+        "NMake"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": "$msCompile",
+      "detail": "仅在 Visual Studio/MSBuild 主轨道不可用时使用的 NMake Release 兜底入口。"
     },
     {
       "label": "SliceSoft: Advanced - Configure Legacy Debug",

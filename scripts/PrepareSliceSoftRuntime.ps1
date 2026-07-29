@@ -1,9 +1,13 @@
 [CmdletBinding()]
 param(
-    [string]$BuildDir = "build-slicesoft",
+    [string]$BuildDir = "build-slicesoft/main",
     [string]$RuntimeDir = "runtime/slicesoft",
     [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$Config = "Release",
+    [ValidateSet("VisualStudio", "NMake")]
+    [string]$BuildSystem = "VisualStudio",
+    [ValidateRange(1, 64)]
+    [int]$Jobs = 8,
     [string]$Qt5Dir = $env:Qt5_DIR,
     [switch]$ConfigureOnly,
     [switch]$DeployOnly,
@@ -120,6 +124,27 @@ function ImportVisualStudioX64Environment
     }
 }
 
+function SetVisualStudioRuntimeDiscoveryEnvironment
+{
+    if (-not [string]::IsNullOrWhiteSpace($env:VCINSTALLDIR))
+    {
+        return
+    }
+
+    $vsDevCmd = ResolveVsDevCmd
+    $toolsDir = Split-Path -Parent $vsDevCmd
+    $common7Dir = Split-Path -Parent $toolsDir
+    $installDir = Split-Path -Parent $common7Dir
+    $vcInstallDir = Join-Path $installDir "VC"
+    if (-not (Test-Path -LiteralPath $vcInstallDir -PathType Container))
+    {
+        throw "Visual Studio VC directory was not found: $vcInstallDir"
+    }
+
+    $env:VSINSTALLDIR = "$installDir$([System.IO.Path]::DirectorySeparatorChar)"
+    $env:VCINSTALLDIR = "$vcInstallDir$([System.IO.Path]::DirectorySeparatorChar)"
+}
+
 function InvokeNativeStep
 {
     param(
@@ -141,7 +166,9 @@ function GetRuntimeBuildInputFingerprint
     param(
         [string]$RepoRoot,
         [string]$Config,
-        [string]$Qt5Dir
+        [string]$BuildSystem,
+        [string]$Qt5Dir,
+        [bool]$HashFileContents
     )
 
     $inputFiles = @(
@@ -168,6 +195,7 @@ function GetRuntimeBuildInputFingerprint
 
     $manifest = [System.Text.StringBuilder]::new()
     [void]$manifest.AppendLine("config=$Config")
+    [void]$manifest.AppendLine("buildSystem=$BuildSystem")
     [void]$manifest.AppendLine("qt5Dir=$Qt5Dir")
     $rootPrefix = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
     foreach ($file in $inputFiles)
@@ -178,8 +206,16 @@ function GetRuntimeBuildInputFingerprint
             throw "Runtime build input must stay under the repository root: $fullPath"
         }
         $relativePath = $fullPath.Substring($rootPrefix.Length).Replace('\', '/')
-        $contentHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
-        [void]$manifest.AppendLine("$relativePath|$contentHash")
+        if ($HashFileContents)
+        {
+            $contentHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+            [void]$manifest.AppendLine("$relativePath|$contentHash")
+        }
+        else
+        {
+            [void]$manifest.AppendLine(
+                "$relativePath|$($file.Length)|$($file.LastWriteTimeUtc.Ticks)")
+        }
     }
 
     $sha256 = [System.Security.Cryptography.SHA256]::Create()
@@ -227,6 +263,40 @@ function ResolveBuiltExecutable
         }
     }
     throw "Executable was not found under $BuildRoot. Candidates: $($Candidates -join ', ')"
+}
+
+function AssertRuntimeDirectoryNotInUse
+{
+    param([string]$RuntimeDir)
+
+    if (-not (Test-Path -LiteralPath $RuntimeDir -PathType Container))
+    {
+        return
+    }
+
+    $runtimePrefix =
+        [System.IO.Path]::GetFullPath($RuntimeDir).TrimEnd('\', '/') +
+        [System.IO.Path]::DirectorySeparatorChar
+    foreach ($processName in @("slicer_debug_ui", "slicer_cli", "rip_reader_test"))
+    {
+        foreach ($process in @(Get-Process -Name $processName -ErrorAction SilentlyContinue))
+        {
+            try
+            {
+                $processPath = [System.IO.Path]::GetFullPath($process.Path)
+                if ($processPath.StartsWith(
+                    $runtimePrefix,
+                    [System.StringComparison]::OrdinalIgnoreCase))
+                {
+                    throw "Runtime process is still running: $processPath (PID $($process.Id)). Close it before deploying '$RuntimeDir'."
+                }
+            }
+            catch [System.ComponentModel.Win32Exception]
+            {
+                continue
+            }
+        }
+    }
 }
 
 function ReadOptionalStringProperty
@@ -392,7 +462,16 @@ function TestPortableProfileResources
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $resolvedQt5Dir = ResolveQt5CMakeDir -Candidate $Qt5Dir
 $resolvedBuildDir = ResolveRepoPath -RepoRoot $repoRoot -Path $BuildDir
-$resolvedConfigBuildDir = Join-Path $resolvedBuildDir $Config
+$isNMakeBuild = $BuildSystem -eq "NMake"
+$resolvedConfigBuildDir =
+    if ($isNMakeBuild)
+    {
+        Join-Path $resolvedBuildDir $Config
+    }
+    else
+    {
+        $resolvedBuildDir
+    }
 $resolvedRuntimeRoot = ResolveRepoPath -RepoRoot $repoRoot -Path $RuntimeDir
 $resolvedRuntimeDir = Join-Path $resolvedRuntimeRoot $Config
 
@@ -400,7 +479,10 @@ AssertPathUnderRepo -RepoRoot $repoRoot -Path $resolvedBuildDir -Purpose "BuildD
 AssertPathUnderRepo -RepoRoot $repoRoot -Path $resolvedConfigBuildDir -Purpose "Config build directory"
 AssertPathUnderRepo -RepoRoot $repoRoot -Path $resolvedRuntimeDir -Purpose "RuntimeDir"
 
-ImportVisualStudioX64Environment
+if ($isNMakeBuild)
+{
+    ImportVisualStudioX64Environment
+}
 
 Push-Location $repoRoot
 try
@@ -415,25 +497,52 @@ try
         $buildInputFingerprint = GetRuntimeBuildInputFingerprint `
             -RepoRoot $repoRoot `
             -Config $Config `
-            -Qt5Dir $resolvedQt5Dir
-        $buildInputStampPath = Join-Path $resolvedConfigBuildDir ".slicesoft_build_input.sha256"
-        $cleanBuildRequired = TestRuntimeCleanBuildRequired `
-            -StampPath $buildInputStampPath `
-            -CurrentFingerprint $buildInputFingerprint `
-            -ForceClean $ForceClean.IsPresent
+            -BuildSystem $BuildSystem `
+            -Qt5Dir $resolvedQt5Dir `
+            -HashFileContents $isNMakeBuild
+        $buildInputStampPath =
+            Join-Path $resolvedConfigBuildDir ".slicesoft_build_input.$Config.sha256"
+        $cleanBuildRequired =
+            if ($isNMakeBuild)
+            {
+                TestRuntimeCleanBuildRequired `
+                    -StampPath $buildInputStampPath `
+                    -CurrentFingerprint $buildInputFingerprint `
+                    -ForceClean $ForceClean.IsPresent
+            }
+            else
+            {
+                $ForceClean.IsPresent
+            }
+
+        $configureArguments = @(
+            "-S", $repoRoot,
+            "-B", $resolvedConfigBuildDir
+        )
+        if ($isNMakeBuild)
+        {
+            $configureArguments += @(
+                "-G", "NMake Makefiles",
+                "-DCMAKE_BUILD_TYPE=$Config"
+            )
+        }
+        else
+        {
+            $configureArguments += @(
+                "-G", "Visual Studio 18 2026",
+                "-A", "x64"
+            )
+        }
+        $configureArguments += @(
+            "-DQt5_DIR=$resolvedQt5Dir",
+            "-DBUILD_SLICER_DEBUG_UI=ON",
+            "-DUSE_OPENVDB=OFF"
+        )
 
         InvokeNativeStep `
-            -Name "configure unified SliceSoft Qt build" `
+            -Name "configure unified SliceSoft Qt build ($BuildSystem)" `
             -Executable "cmake" `
-            -Arguments @(
-                "-S", $repoRoot,
-                "-B", $resolvedConfigBuildDir,
-                "-G", "NMake Makefiles",
-                "-DCMAKE_BUILD_TYPE=$Config",
-                "-DQt5_DIR=$resolvedQt5Dir",
-                "-DBUILD_SLICER_DEBUG_UI=ON",
-                "-DUSE_OPENVDB=OFF"
-            )
+            -Arguments $configureArguments
 
         if ($ConfigureOnly)
         {
@@ -442,14 +551,25 @@ try
         }
 
         $buildArguments = @("--build", $resolvedConfigBuildDir)
+        if (-not $isNMakeBuild)
+        {
+            $buildArguments += @("--config", $Config)
+        }
         if ($cleanBuildRequired)
         {
-            Write-Host "Runtime header/CMake inputs changed; performing one clean rebuild to prevent stale NMake objects."
+            if ($isNMakeBuild -and -not $ForceClean)
+            {
+                Write-Host "Runtime inputs changed; performing one clean NMake rebuild to prevent stale objects."
+            }
+            else
+            {
+                Write-Host "ForceClean requested; performing one clean rebuild."
+            }
             $buildArguments += "--clean-first"
         }
         $buildArguments += @(
-            "--target", "slicer_cli", "rip_reader_test", "slicer_debug_ui",
-            "--"
+            "--parallel", [string]$Jobs,
+            "--target", "slicesoft_runtime"
         )
         InvokeNativeStep `
             -Name "build SliceSoft runtime targets ($Config)" `
@@ -460,7 +580,9 @@ try
             GetRuntimeBuildInputFingerprint `
                 -RepoRoot $repoRoot `
                 -Config $Config `
-                -Qt5Dir $resolvedQt5Dir
+                -BuildSystem $BuildSystem `
+                -Qt5Dir $resolvedQt5Dir `
+                -HashFileContents $isNMakeBuild
         if ($postBuildInputFingerprint -ne $buildInputFingerprint)
         {
             throw "Runtime build inputs changed while the build was running. The runtime was not deployed; rerun PrepareSliceSoftRuntime.ps1 after source edits have stopped."
@@ -482,11 +604,18 @@ try
         Write-Host "Deploying existing SliceSoft build artifacts: $resolvedConfigBuildDir"
     }
 
-    $slicerCli = ResolveBuiltExecutable -BuildRoot $resolvedConfigBuildDir -Candidates @("slicer_cli.exe")
-    $ripReader = ResolveBuiltExecutable -BuildRoot $resolvedConfigBuildDir -Candidates @("rip_reader_test.exe")
+    $slicerCli = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @("$Config/slicer_cli.exe", "slicer_cli.exe")
+    $ripReader = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @("$Config/rip_reader_test.exe", "rip_reader_test.exe")
     $uiExecutable = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
-        -Candidates @("apps/slicer_debug_ui/slicer_debug_ui.exe")
+        -Candidates @(
+            "apps/slicer_debug_ui/$Config/slicer_debug_ui.exe",
+            "apps/slicer_debug_ui/slicer_debug_ui.exe"
+        )
 
     $qtRoot = [System.IO.Path]::GetFullPath((Join-Path $resolvedQt5Dir "../../.."))
     $winDeployQt = Join-Path $qtRoot "bin/windeployqt.exe"
@@ -494,6 +623,8 @@ try
     {
         throw "windeployqt.exe was not found: $winDeployQt"
     }
+    SetVisualStudioRuntimeDiscoveryEnvironment
+    AssertRuntimeDirectoryNotInUse -RuntimeDir $resolvedRuntimeDir
 
     $runtimeParent = Split-Path -Parent $resolvedRuntimeDir
     New-Item -ItemType Directory -Path $runtimeParent -Force | Out-Null
@@ -532,6 +663,8 @@ try
             schema = "slicesoft.runtime.1"
             generatedAt = [DateTimeOffset]::Now.ToString("o")
             config = $Config
+            buildSystem = $BuildSystem
+            parallelJobs = $Jobs
             buildDir = $resolvedConfigBuildDir
             qt5Dir = $resolvedQt5Dir
             useOpenVdb = $false
@@ -558,7 +691,14 @@ try
         {
             $backupDir = "$resolvedRuntimeDir.previous.$([DateTime]::UtcNow.Ticks)"
             AssertPathUnderRepo -RepoRoot $repoRoot -Path $backupDir -Purpose "Runtime backup directory"
-            Move-Item -LiteralPath $resolvedRuntimeDir -Destination $backupDir
+            try
+            {
+                Move-Item -LiteralPath $resolvedRuntimeDir -Destination $backupDir
+            }
+            catch
+            {
+                throw "Runtime directory cannot be replaced. Close any running SliceSoft UI/CLI from '$resolvedRuntimeDir' and retry. Original error: $($_.Exception.Message)"
+            }
         }
 
         try
@@ -593,6 +733,8 @@ try
     Write-Host "  buildDir: $resolvedConfigBuildDir"
     Write-Host "  runtimeDir: $resolvedRuntimeDir"
     Write-Host "  config: $Config"
+    Write-Host "  buildSystem: $BuildSystem"
+    Write-Host "  parallelJobs: $Jobs"
     Write-Host "  scenarios: $($profileResourceValidation.scenarioCount)"
 }
 finally

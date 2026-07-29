@@ -1,0 +1,84 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "slicesoft-base",
+      "hidden": true,
+      "generator": "Visual Studio 18 2026",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "binaryDir": "${sourceDir}/build-slicesoft/main",
+      "cacheVariables": {
+        "BUILD_SLICER_DEBUG_UI": "ON",
+        "CMAKE_PREFIX_PATH": "$env{QTDIR}",
+        "USE_OPENVDB": "OFF"
+      }
+    },
+    {
+      "name": "slicesoft-main",
+      "displayName": "SliceSoft 主构建（Debug + Release）",
+      "description": "Visual Studio 多配置增量构建；OpenVDB 默认关闭。",
+      "inherits": "slicesoft-base"
+    },
+    {
+      "name": "slicesoft-nmake-release-fallback",
+      "displayName": "SliceSoft Release（NMake 兜底）",
+      "description": "仅在 Visual Studio/MSBuild 轨道不可用时手动选择。",
+      "generator": "NMake Makefiles",
+      "binaryDir": "${sourceDir}/build-slicesoft-nmake/Release",
+      "cacheVariables": {
+        "BUILD_SLICER_DEBUG_UI": "ON",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_PREFIX_PATH": "$env{QTDIR}",
+        "USE_OPENVDB": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "slicesoft-debug",
+      "displayName": "SliceSoft Debug 增量构建",
+      "configurePreset": "slicesoft-main",
+      "configuration": "Debug",
+      "targets": [
+        "slicesoft_runtime"
+      ],
+      "jobs": 8
+    },
+    {
+      "name": "slicesoft-release",
+      "displayName": "SliceSoft Release 增量构建",
+      "configurePreset": "slicesoft-main",
+      "configuration": "Release",
+      "targets": [
+        "slicesoft_runtime"
+      ],
+      "jobs": 8
+    },
+    {
+      "name": "slicesoft-relwithdebinfo",
+      "displayName": "SliceSoft RelWithDebInfo 增量构建",
+      "configurePreset": "slicesoft-main",
+      "configuration": "RelWithDebInfo",
+      "targets": [
+        "slicesoft_runtime"
+      ],
+      "jobs": 8
+    },
+    {
+      "name": "slicesoft-nmake-release-fallback",
+      "displayName": "SliceSoft Release（NMake 兜底）",
+      "configurePreset": "slicesoft-nmake-release-fallback",
+      "targets": [
+        "slicesoft_runtime"
+      ]
+    }
+  ]
+}
