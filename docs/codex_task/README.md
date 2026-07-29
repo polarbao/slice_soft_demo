@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-07-28
-> 当前阶段：Stage 13 原 P0 17/17 COMPLETE / 13B-08 COMPLETE / 13C COMPLETE / 13D-01..02 COMPLETE / NEXT 13D-03
+> 更新日期：2026-07-29
+> 当前阶段：Stage 13 原 P0 17/17 COMPLETE / 13B-08、13C、13D、13E COMPLETE / 12E-09A COMPLETE / NEXT 12E-10A READY
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -32,8 +32,12 @@ docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_09B_Qt双模式生产入口执行指令.md
 docs/codex_task/current/TASKS_12E_09A_诊断UI任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_09A_SceneAware诊断UI执行指令.md
+docs/codex_task/current/CODEX_PROMPT_12E_09A_05_同层语义Preview执行指令.md
+docs/codex_task/current/CODEX_PROMPT_12E_09A_06_诊断UI阶段收口执行指令.md
 docs/codex_task/current/TASKS_12E_09C_XY_DPI任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_09C_XY_DPI执行指令.md
+docs/codex_task/current/TASKS_12E_10_双模式最终闭环任务清单.md
+docs/codex_task/current/CODEX_PROMPT_12E_10_双模式最终闭环执行指令.md
 docs/codex_task/current/TASKS_12_13_后续开发计划总览清单.md
 docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md
 docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预览执行指令.md
@@ -70,7 +74,8 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 13B-06 的单 package、typed scene report、原子发布和 RIP strict fixture 已完成；
 13B-07 Debug/Release 真实模型功能矩阵、单 package 和 RIP strict 已完成，production GO 继续等待外部输入；
 13B-08 批量导入与当前场景一键切片专项 01..04 已完成，真实 OBJ/3MF 作业流和 RIP strict PASS；
-13D 工作台布局专项已完成总体和原子任务准备，13D-01 顶部作业栏和 13D-02 单一检查器已完成，当前入口为 13D-03；
+13D 工作台布局专项 13D-01..04 已完成；12E-09A-01..06 已完成，下一入口为 12E-10A；
+13E 甲片自动定向与诊断工作流 01..05 已完成，正面 +Z、9 mm 默认和右侧诊断 PASS；
 12G-TCWS 纹理载体/白色分色候选专项 FROZEN，不得实现。
 ```
 
@@ -89,7 +94,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08D-01..06 COMPLETE / 12E-09A-01/02 COMPLETE / 12E-09B-01..06 COMPLETE / 12E-09C-01..06 COMPLETE`。xiao_ma/yecan 两个独立 strict/admitted 真实模型族和四用例候选证据 PASS；爱神/玫瑰/梯田继续作为 0/3 复杂浮雕覆盖缺口。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`；Legacy 默认，两个 Global Profile 仅显式 opt-in，且禁止 silent fallback。09C 已完成 X=635/Y=600、显式 600/600、两引擎 package、RIP strict、物理比例 Preview 和回归收口。09A-02 已冻结 single_model/scene 诊断配置；09A-03..06 按固定路线等待 13C-03。
+12E 当前状态为 `12E-08D-01..06 COMPLETE / 12E-09A-01..06 COMPLETE / 12E-09B-01..06 COMPLETE / 12E-09C-01..06 COMPLETE`。xiao_ma/yecan 两个独立 strict/admitted 真实模型族和四用例候选证据 PASS；爱神/玫瑰/梯田继续作为 0/3 复杂浮雕覆盖缺口。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`；Legacy 默认，两个 Global Profile 仅显式 opt-in，且禁止 silent fallback。09C 已完成 X=635/Y=600、显式 600/600、两引擎 package、RIP strict、物理比例 Preview 和回归收口。09A 已完成 TIFF 同层语义 Preview、异步诊断和阶段回归；12E-10A..D 已补齐独立 PRD/DEV/DEMO/TASKS/PROMPT，10A 等待用户明确授权。
 
 ## 12F Release Runtime 与性能优化专项
 
@@ -114,7 +119,7 @@ docs/codex_task/current/CODEX_PROMPT_13_模型场景排版联合切片与TIFF预
 当前已完成 P0 需求/设计/验证、全阶段原子任务准备、13A-01..05/13B-01..07 和 scene-aware
 `12E-09A-02`。13C-01 TIFF 原生数据源、13C-02 材料合成器和 13C-03 统一生产预览已完成。
 真实 UI 截图审计后新增 `13B-08` 和 `13D`：13B-08-01..04 与 13C-01..05
-均已完成，13D-01..02 已完成，当前执行 13D-03。13C 已在 `12E-09A-05` 前完成生产 TIFF 数据源收口。
+均已完成，13D-01..04 已完成。13C 已在 `12E-09A-05` 前完成生产 TIFF 数据源收口。
 Stage 13 不改变 RGBWSV 协议，也不把多模型失败静默
 降级成多个单模型成功。
 

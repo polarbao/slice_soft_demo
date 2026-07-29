@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v3.6
+> 版本：v3.8
 > 更新日期：2026-07-29
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：12E-09A-05 同层语义 Preview
+> 当前下一任务：12E-10A READY / WAIT USER AUTHORIZATION
 
 ## 1. 使用规则
 
@@ -48,16 +48,17 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-08D-05 | COMPLETE | Global lower/internal-void S、surface/outer V、完整 closure 与 0.2 mm 两族 RIP | 无 |
 | 12E-08D-06 | COMPLETE | 0.01 mm 六 case Release/TIFF/RIP/耗时/峰值内存矩阵 | Global 默认替换 Legacy 因性能与内存 NO-GO |
 | 12E-09A-01 | COMPLETE | 只读 Diagnostic Facade 与 UI DTO | 无 |
-| 12E-09A-02 | COMPLETE | single_model/scene Diagnostic Effective Config、原子事务、hash 与 stale 合同 | 09A-03..06 按 Stage 13 依赖顺序推进 |
-| 12E-09A-03 | COMPLETE | 中文 width/modelFill 控件、场景身份、后端与阻断状态 | 09A-04 异步分析 Worker |
-| 12E-09A | 09A-01..04 COMPLETE / 09A-05 READY / 09A-06 PREPARED | 只读 Diagnostic Facade、场景感知 Effective Config、中文参数状态区和可取消 Worker | TIFF 同层 preview 和阶段 smoke |
+| 12E-09A-02 | COMPLETE | single_model/scene Diagnostic Effective Config、原子事务、hash 与 stale 合同 | 无 |
+| 12E-09A-03 | COMPLETE | 中文 width/modelFill 控件、场景身份、后端与阻断状态 | 无 |
+| 12E-09A-04 | COMPLETE | 可取消异步 Worker、generation、identity 和关闭安全 | 无 |
+| 12E-09A | 09A-01..06 COMPLETE / PASS | 只读 Diagnostic Facade、场景感知 Effective Config、中文参数状态区、可取消 Worker、TIFF 同层语义 Preview 和阶段回归 | 保持回归 |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
 | 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
-| 12E-10 | PREPARED AT CONCEPT LEVEL / WAIT 09A-05 | 最终矩阵 schema、模型基线、09B 生产入口和 09C DPI 合同已完成 | 10A 等待 09A-05；10B/10C 可准备执行；启动前补齐独立 PRD/DEV/DEMO/TASKS/PROMPT |
+| 12E-10 | FULL EXECUTION PACKAGE PREPARED / 10A READY | PRD/DEV/DEMO/PREP/TASKS/PROMPT、最终矩阵 schema、模型基线、09B 生产入口、09C DPI 合同和 09A 阶段收口已完成 | 10A 等待用户授权；10B/10C 技术前置已具备；10D 等待 10A..C |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | 原 P0 17/17 COMPLETE；13B-08-01..04 COMPLETE；M13-4 PASS；13D-01..04 COMPLETE | 多模型场景、TIFF 原生统一预览和 Qt 工作台布局均已收口 | 保持回归 |
+| Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E COMPLETE | 多模型场景、TIFF 原生统一预览、Qt 工作台、确定性自动定向和诊断信息架构均已收口 | 保持回归 |
 
 ### 2.1 Stage 12 目的图
 
@@ -77,19 +78,19 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 |---|---|---|
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
-| 09A Diagnostic UI | 09A-01..04 COMPLETE；09A-05 READY；09A-06 PREPARED | 执行 09A-05；13C-03 TIFF 数据源与 09A-04 Worker 前置均已完成 |
-| 12E-10 Final Closure | 概念级 PREPARED / WAIT 09A-05 | 刷新旧依赖状态并补齐独立执行文档；09A-05 后执行 10A |
+| 09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 保持回归 |
+| 12E-10 Final Closure | 完整执行包 PREPARED / 10A READY | 用户授权后执行 10A，再按 10B -> 10C -> 10D |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | 原 P0 17/17 COMPLETE；13B-08-01..04 COMPLETE；13C-05、13D-01..04 COMPLETE | 保持回归；M13-4 和 13D 均已通过 |
+| Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13C、13D、13E COMPLETE | 保持回归；M13-4、13D 和 13E 均已通过 |
 
 ### 2.3 剩余任务数量
 
 ```text
-12E-09A-05..06：2 个；
+12E-09A-06：0 个；
 12E-10A..D：4 个；
 12F-02..09：8 个；
-Stage 12 若含性能专项，合计剩余 16 个原子任务；
+Stage 12 若含性能专项，合计剩余 14 个原子任务；
 只计算 12E 语义/诊断/收口，剩余 6 个原子任务；
 12G-TCWS 候选 R0..R6 已冻结，当前激活任务数为 0。
 

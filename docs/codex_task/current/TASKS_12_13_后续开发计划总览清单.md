@@ -1,11 +1,11 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v2.5
+> 版本：v2.6
 > 更新日期：2026-07-29
-> 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..05、13D-01..04 COMPLETE
-> 当前推荐任务：12E-09A-05 同层语义 Preview
-> 下一 Gate：12E-09A-04..06 -> 12E-10
+> 当前代码阶段：12E-09C、09A-01..06 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..05、13D-01..04、13E-01..05 COMPLETE
+> 当前推荐任务：12E-10A READY / WAIT USER AUTHORIZATION
+> 下一 Gate：12E-10A -> 10B -> 10C -> 10D
 
 ## 1. 文档职责
 
@@ -48,14 +48,15 @@
 
 | 工作流 | 当前状态 | 剩余数量 | 当前动作 |
 |---|---|---:|---|
-| 12E-09A Diagnostic UI | 09A-01..04 COMPLETE；09A-05 READY；09A-06 PREPARED | 2 | 执行 09A-05 |
-| 12E-10 最终收口 | 概念级准备；执行文档不完整 | 4 | 等 13C-03、09A-05 后补齐并执行 |
+| 12E-09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 0 | 保持回归 |
+| 12E-10 最终收口 | PRD/DEV/DEMO/PREP/TASKS/PROMPT 完整；10A READY | 4 | 用户授权后按 10A -> 10B -> 10C -> 10D |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
 | 13B 多模型排版与联合切片 | 13B-01..08、13B-04A FUNCTIONAL COMPLETE；production INPUT OPEN | 0 | 保持回归并等待设备输入 |
 | 13C TIFF 原生统一预览 | 13C-01..05 COMPLETE / M13-4 PASS | 0 | 保持回归 |
 | 13D Qt 工作台布局 | 13D-01..04 COMPLETE | 0 | 保持回归 |
+| 13E 自动定向与诊断工作流 | 13E-01..05 COMPLETE / FUNCTIONAL PASS | 0 | 保持甲片 +Z 正面、9 mm 默认和右侧诊断回归 |
 
 计数口径：
 
@@ -63,8 +64,8 @@
 Stage 12 仅 12E 收口：8 个；
 Stage 12 包含 12F 性能：16 个；
 Stage 13 近程 P0：17 个；
-当前已接受的跨阶段近程/已规划原子任务合计：33 个；
-本轮新增 13B-08/13D 共 8 个插入任务；13B-08 已获批准，13D 仍按 Gate 等待；
+当前已接受的跨阶段近程/已规划原子任务合计：38 个；
+13B-08/13D 共 8 个插入任务均已完成；13E 新增 5 个插入任务并已完成；
 Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 33 个；
 12G-TCWS 已冻结，不计入激活任务。
 ```
@@ -115,8 +116,8 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 16 | 13C-03 Unified Production Preview | `COMPLETE` | 13C-02 COMPLETE | 已解锁 Preview IO 收口 |
 | 17 | 12E-09A-03 中文参数控件与状态区 | `COMPLETE` | 09A-02、13D-04 | 已解锁异步分析 |
 | 18 | 12E-09A-04 异步分析 Worker | `COMPLETE` | 09A-03 COMPLETE | 已解锁同层语义预览 |
-| 19 | 12E-09A-05 同层语义 Preview | `READY` | 09A-04、13C-03 COMPLETE | 解锁 09A 收口和 12E-10A |
-| 20 | 12E-09A-06 Diagnostic UI 收口 | `WAIT` | 09A-05 | 09A COMPLETE |
+| 19 | 12E-09A-05 同层语义 Preview | `COMPLETE` | 09A-04、13C-03 COMPLETE | 已解锁 09A 收口 |
+| 20 | 12E-09A-06 Diagnostic UI 收口 | `COMPLETE / PASS` | 09A-05 | 09A COMPLETE |
 | 21 | 13C-04 Preview IO 收口 | `COMPLETE` | 13C-03、13B-08 COMPLETE | 默认无重复诊断图 |
 | 22 | 13C-05 13C 阶段收口 | `COMPLETE / M13-4 PASS` | 13C-04 | 已解锁 13D-01 |
 
@@ -129,17 +130,27 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 22C | 13D-03 项目区与诊断 Dock | `COMPLETE` | 13D-02 | 高级工具和诊断入口已收口 |
 | 22D | 13D-04 响应式与阶段收口 | `COMPLETE` | 13D-03 | 已解锁 12E-09A-03 |
 
+### Wave 3.6：甲片自动定向与诊断工作流插入专项
+
+| 序号 | 任务 | 状态 | 前置 | 完成 Gate |
+|---:|---|---|---|---|
+| 22E | 13E-01 专项准备与证据冻结 | `COMPLETE` | 13D COMPLETE | 根因与阶段边界冻结 |
+| 22F | 13E-02 AutoOrient 确定性修复 | `COMPLETE` | 13E-01 | 等价候选稳定选择 `rotate_x_90` |
+| 22G | 13E-03 产品默认高度 9 mm | `COMPLETE` | 13E-02 | core、Qt 和产品 Profile 同步 |
+| 22H | 13E-04 诊断信息架构调整 | `COMPLETE` | 13E-01 | 右侧预检与诊断、底部任务详情 |
+| 22I | 13E-05 回归与阶段收口 | `COMPLETE / FUNCTIONAL PASS` | 13E-02..04 | Quick CI、UI Smoke 和三模型方向证据 PASS |
+
 ### Wave 4：Stage 12 最终收口
 
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
-| 23 | 12E-10A Texture/Fill/Partition 同层预览 | `PLANNED` | 13C-03、09A-05 | 生产/诊断同层口径 |
-| 24 | 12E-10B 真实 OBJ/3MF 模式矩阵 | `PLANNED` | 10A | 真实模型证据 |
-| 25 | 12E-10C Release/repair/peak-memory 汇总 | `PLANNED` | 10B | 最终工程矩阵 |
-| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `PLANNED` | 10C | 12E COMPLETE |
+| 23 | 12E-10A Texture/Fill/Partition 同层预览 | `READY / WAIT USER AUTHORIZATION` | 13C-03、09A-05/06 | 生产/诊断同层口径 |
+| 24 | 12E-10B 真实 OBJ/3MF 模式矩阵 | `PREPARED / WAIT 10A` | 10A | 真实模型证据 |
+| 25 | 12E-10C Release/repair/peak-memory 汇总 | `PREPARED / WAIT 10B` | 10B | 最终工程矩阵 |
+| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `PREPARED / WAIT 10A..C` | 10C | 12E COMPLETE |
 
-`12E-10A..D` 开发前必须补齐独立 PRD/DEV/DEMO/TASKS/CODEX_PROMPT；当前“概念级准备”不等于
-可直接开发。
+`12E-10A..D` 的独立 PRD/DEV/DEMO/PREP/TASKS/CODEX_PROMPT 已于 2026-07-29 补齐；准备完成
+不等于代码完成；09A-06 已完成，10A 当前等待用户明确授权。
 
 ### Wave 5：性能工程化
 
@@ -180,7 +191,8 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
-13C 与 13D-01..04 已完成，当前唯一推荐入口为 `12E-09A-03` 中文参数控件与状态区。
+13C、13D-01..04、13E-01..05 与 12E-09A-01..06 已完成，当前下一入口为
+`12E-10A`，等待用户明确授权。
 
 ### 尚未完成
 
@@ -231,9 +243,9 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 
 ```text
 CURRENT：13C-05 COMPLETE / M13-4 PASS；
-COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-02；
+COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-01..06；
 M13-1：CANDIDATE PASS；
-NEXT：执行 12E-09A-03 中文参数控件与状态区；
+NEXT：12E-10A READY，等待用户明确授权；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；
 13B-07：Debug/Release 功能矩阵完成；production Gate 继续等待设备输入和 22 实例预算；

@@ -143,9 +143,14 @@ The script keeps `USE_OPENVDB=OFF`. It must not edit the local Qt installation. 
 
 ## Unified Debug/Release Runtime
 
-The daily Qt runtime lane imports the Visual Studio x64 developer environment and uses NMake single-config build directories:
+The daily Qt runtime lane follows the same structure as `ry_print_demo`: CMake presets select the
+Visual Studio x64 multi-config generator, while MSBuild performs an 8-job incremental build:
 
 ```powershell
+cmake --preset slicesoft-main
+cmake --build --preset slicesoft-debug
+cmake --build --preset slicesoft-release
+
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Debug
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release
 ```
@@ -153,8 +158,12 @@ The daily Qt runtime lane imports the Visual Studio x64 developer environment an
 VS Code daily entries:
 
 ```text
+Configure Main Build
+Fast Build (Debug/Release)
 Build Runtime (Debug)  -> Run UI (Debug) / Debug UI (Debug)
 Build Runtime (Release) -> Run UI (Release)
+Quick Run UI (Debug/Release, No Build)
+Deploy Runtime (Release, No Build)
 Build All Runtimes      -> Debug followed by Release
 ```
 
@@ -163,16 +172,29 @@ Legacy `build` / CTest / sample matrix tasks are retained under the `Advanced` p
 Outputs:
 
 ```text
-build-slicesoft/<Config>
+build-slicesoft/main/<Config>
 runtime/slicesoft/<Config>
 ```
 
 The runtime directory contains `slicer_debug_ui.exe`, `slicer_cli.exe`, `rip_reader_test.exe`, Qt DLLs, platform plugins, the MSVC runtime, `samples/`, `model/`, Profile-referenced documents, and `runtime_manifest.json`. The deployment script validates all scenario config/model/document paths before publishing. OpenVDB remains OFF. Runtime UI resolves its application directory as the packaged resource root and resolves the sibling CLI and RIP reader before any build-directory fallback.
 
-The NMake runtime lane records a SHA-256 fingerprint of runtime C/C++ sources, headers and CMake inputs in each configuration build directory. A missing or changed fingerprint triggers one clean rebuild before deployment. The script computes the fingerprint again after compilation and refuses deployment when inputs changed while the build was running. This guard is required because the current CMake 4.3/MSVC 14.51 NMake combination can emit empty `.obj.d` files and otherwise reuse ABI-incompatible objects after header changes or a concurrent source update. Use `-ForceClean` to request the same guard manually:
+The Visual Studio/MSBuild lane relies on normal compiler dependency tracking and does not turn an
+ordinary `.cpp` edit into a clean rebuild. The script still computes the input fingerprint before and
+after compilation and refuses deployment if sources changed during the build. Use `-ForceClean` for
+an explicit clean build:
 
 ```powershell
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release -ForceClean
+```
+
+NMake is retained only as a manual fallback. Its separate build root and stricter clean fingerprint
+guard prevent stale `.obj.d` reuse:
+
+```powershell
+.\scripts\PrepareSliceSoftRuntime.ps1 `
+  -BuildDir build-slicesoft-nmake `
+  -Config Release `
+  -BuildSystem NMake
 ```
 
 To republish already-built artifacts without rebuilding:

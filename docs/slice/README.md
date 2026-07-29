@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-29
-> 适用阶段：Stage 12D COMPLETE；12E-09A-01..04/09B/09C COMPLETE；Stage 13 原 P0 17/17 COMPLETE；13B-08-01..04 COMPLETE；13D-01..04 COMPLETE
+> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C COMPLETE；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E COMPLETE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..04、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-09A-05..06 和 12E-10 尚未完成；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 原始 17 个任务 13A-01..05、13B-01..07、13C-01..05 已全部完成，M13-4 TIFF 原生统一预览通过；插入的 13B-08-01..04 已完成批量导入、当前场景切片、真实 OBJ/3MF 矩阵和 RIP strict。13D-01..04 已完成顶部作业栏、单一 Context Inspector、项目/诊断 Dock、响应式与布局恢复收口。下一主线为 12E-09A-05。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。12E-10A..D 执行文档均已补齐，10A 技术前置已解除并等待用户授权；12F-02..09 未激活。12G-TCWS 纹理载体/白色分色专项于 2026-07-27 冻结，不进入实现。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E 均已完成；13E 已冻结甲片正面朝 +Z、默认 9 mm 和右侧“预检与诊断”。下一主线为 12E-10A。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
 
 ## 目录结构
 
@@ -58,11 +58,19 @@
 | `REPORT/REPORT_13D_02_单一ContextInspector当前状态.md` | 13D-02 单一上下文检查器和 identity 稳定证据 |
 | `REPORT/REPORT_13D_03_项目区与诊断Dock当前状态.md` | 13D-03 项目工具 Dock、统一 DiagnosticsDock 和兼容入口迁移证据 |
 | `REPORT/REPORT_13D_Qt工作台布局收口当前状态.md` | 13D-01..04 工作台布局、持久化、响应式与最终验证证据 |
+| `REPORT/REPORT_13E_甲片自动定向与诊断工作流当前状态.md` | 13E 确定性自动定向、9 mm 默认、右侧诊断与 Quick CI 证据 |
+| `DOC/DOC_DECISION_13E_甲片自动定向与诊断工作流插入专项.md` | 13E 插入顺序、甲片 +Z 正面合同和 UI 信息架构决策 |
 | `DOC/DOC_DECISION_13B_08_场景作业流与13D工作台收口优先级.md` | 本轮 UI 问题拆分、优先级和实施 Gate |
 | `PRD/PRD_13B_08_批量导入与当前场景一键切片.md` | 多文件导入、当前场景主动作和单 Package 需求 |
 | `PRD/PRD_13D_Qt工作台信息架构与布局收口.md` | 顶部作业栏、单一检查器、诊断 Dock 和响应式布局需求 |
 | `REPORT/REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 09A-02 single_model/scene 诊断生效配置实际实现和验证 |
 | `REPORT/REPORT_12E_09A_03_中文参数控件与状态区当前状态.md` | 09A-03 中文宽度、模型填充材料、后端和阻断状态控件 |
+| `REPORT/REPORT_12E_09A_04_异步分析Worker当前状态.md` | 09A-04 可取消异步诊断、身份防陈旧和关闭安全 |
+| `DOC/DOC_PREP_12E_09A_05_同层语义Preview准备.md` | 09A-05 TIFF 真源与 Texture/Fill/Partition 同层诊断准备 |
+| `REPORT/REPORT_12E_09A_05_同层语义Preview当前状态.md` | 09A-05 同层物理映射、生产 S/V 和诊断 Texture/Fill 实现证据 |
+| `DOC/DOC_PREP_12E_09A_06_诊断UI阶段收口准备.md` | 09A-06 统一回归、用户说明和阶段收口准备 |
+| `REPORT/REPORT_12E_09A_诊断UI阶段收口.md` | 09A-01..06 完成状态、验证证据和剩余边界 |
+| `../user_guides/SLICE_12E_09A_纹理填充诊断使用说明.md` | 诊断控件、状态、同层预览和生产隔离使用说明 |
 | `DOC/DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 变换、revision、异步重投影和 session 回读执行准备 |
 | `../codex_task/current/TASKS_12_13_后续开发计划总览清单.md` | Stage 12/13 跨阶段当前任务、固定顺序和状态更新规则 |
 | `DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md` | 13A/13B/13C 边界、产品决策及与 12E 的顺序 |
@@ -83,6 +91,10 @@
 | `DOC/DOC_PREP_12E_09B_Qt双模式生产入口准备.md` | 09B 原子任务、依赖、风险和启动 Gate |
 | `DOC/DOC_SCHEMA_12E_09B_EffectiveConfig与能力状态.md` | 09B UI/Effective Config/manifest 能力状态合同 |
 | `DOC/DOC_SCHEMA_12E_FinalClosureMatrix.md` | 12E-10 最终双模式闭环矩阵合同 |
+| `PRD/PRD_12E_10_双模式最终闭环.md` | 12E-10 单模型双引擎最终验收需求 |
+| `DEV/DEV_12E_10_双模式最终闭环设计.md` | 12E-10 矩阵编排、同层预览和性能口径设计 |
+| `DEMO/DEMO_12E_10_双模式最终闭环验证方案.md` | 12E-10 真实模型、RIP、Preview 和 Release 验证 |
+| `DOC/DOC_PREP_12E_10_双模式最终闭环准备.md` | 12E-10A..D 前置、顺序、风险和启动 Gate |
 | `REPORT/REPORT_12C_Qt工作台启动状态.md` | 当前阶段启动状态，12C-R0 可开始 |
 | `REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | OpenVDB OBJ 彩色纹理前置状态报告 |
 | `REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md` | OpenVDB Candidate 写包当前状态报告 |

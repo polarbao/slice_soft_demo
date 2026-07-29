@@ -3,6 +3,7 @@
 > 文档状态：Decision / Stage 12C
 > 日期：2026-07-10
 > 兼容 Profile 补充：2026-07-16
+> 产品默认值修订：2026-07-29
 > 适用阶段：12C-R1 / 12C-R2
 
 ## 1. 决策目的
@@ -22,6 +23,21 @@ production_rgb_inspection：生产 RGB 检查，作为明确标注的调试 Prof
 ```
 
 `advanced`、`fixture` 和 `hidden` 配置继续保留，但默认不进入普通用户下拉列表。R1 可以校正具体模板路径，不得改变上述分类语义，除非新增决策记录。
+
+### 2.1 2026-07-29 默认值修订
+
+Qt UI 启动时默认选中
+`textured_nail_rgb_only_lower_support`，即全实体 RGB、无白墨的兼容生产
+Profile。普通用户稳定 Profile 的默认输出参数统一为：
+
+```text
+X DPI = 635
+Y DPI = 600
+Z 层高 = 0.038 mm
+```
+
+白墨填充、光油填充和单材料 Profile 继续保留为显式可选项；测试 fixture
+中明确写出的分辨率和层高属于回归输入，不随产品默认值批量改写。
 
 ## 3. UI 修改与运行行为
 

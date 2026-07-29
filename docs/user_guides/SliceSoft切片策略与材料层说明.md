@@ -62,19 +62,23 @@ RGB 白色且全通道 255：才是空白。
 
 ```json
 "output": {
-  "layerThicknessMm": 0.01
+  "dpiX": 635,
+  "dpiY": 600,
+  "layerThicknessMm": 0.038
 }
 ```
 
 含义：
 
 ```text
-layerIndex = 0      => zMm = 0.005 附近的底部第一层
+layerIndex = 0      => zMm = 0.019 附近的底部第一层
 layerIndex = N      => zMm 约为 (N + 0.5) * layerThicknessMm
 总层数               => 由模型高度 / layerThicknessMm 推导
 ```
 
-当前默认 `layerThicknessMm=0.01mm`，也就是每层 10 微米。
+当前产品默认使用 X/Y `635/600 dpi`，并采用
+`layerThicknessMm=0.038mm`，也就是每层 38 微米。测试 fixture
+可以显式使用其他数值，且不会被编译过程改写。
 
 ### 2.2 RGB/W/S/V 是否有独立厚度
 

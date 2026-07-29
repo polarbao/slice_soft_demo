@@ -20,10 +20,10 @@
 - `12C-R1` Profile and Settings closure is complete.
 - `12C-R0/R1/R2` Qt workbench is complete; final fresh build, UI Smoke, and CTest passed.
 - The latest completed production-mainline task is `12E-09C-06 production matrix and closure`. `12E-09C-01..06` cover defaults/range, strict Reader/writer metadata, Legacy/Global non-square Raster and outer-varnish discretization, Qt configuration/one-click propagation, physical-aspect Layer/Overlay Preview, and the 600/600 plus 635/600 Release package/RIP matrix.
-- Stage 13 original P0 PRD/DEV/DEMO and all 17 near-term tasks are complete. `13A-01..05`, `13B-01..07`, `13C-01..05`, scene-aware `12E-09A-02`, and the inserted `13B-08-01..04` are implemented and verified. The 2026-07-28 `13B-08` specialty closed multi-file import, explicit current-scene production slicing, the real OBJ/3MF workflow matrix, strict RIP readback, and stable 3MF resource identity. `13C` closed TIFF-native production preview, full RGBWSV composition, probes, fail-closed lifecycle, and default no-duplicate-diagnostic-image output; `M13-4 PASS`. The current task is `13D-01` (top job action bar), whose 13C-05 gate is now cleared. 13B production remains `INPUT_OPEN` because device buildVolume/origin/axes and the 22-instance production budget are unresolved.
+- Stage 13 original P0 PRD/DEV/DEMO and all 17 near-term tasks are complete. `13A-01..05`, `13B-01..07`, `13C-01..05`, scene-aware `12E-09A-02`, and the inserted `13B-08-01..04`, `13D-01..04`, `13E-01..05` are implemented and verified. `13E` freezes deterministic standard-nail auto orientation (`rotate_x_90`, front toward scene `+Z`), the product default `maxHeightMm=9`, right-side “预检与诊断”, and bottom “任务详情”. `12E-09A-01..06` diagnostic UI is complete and PASS; the next prepared task is `12E-10A`, waiting for explicit user authorization. 13B production remains `INPUT_OPEN` because device buildVolume/origin/axes and the 22-instance production budget are unresolved.
 - The candidate texture-carrier/white-separation/RIP-underbase specialty (`12G-TCWS`) is frozen as of 2026-07-27. Do not implement its config, resolver, composer, UI, or RIP contract until its product/RIP questions and G1-G8 are explicitly closed.
 - `12D-R0/R1/R2/R3` is complete.
-- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records the historical `NO-GO / FROZEN`. `12E-08C-R4-01..07`, R4-07-R1, R4-07-R2, Quick-CI-R1, and R4-08-R2 are complete; the two-family candidate matrix, versioned reference-machine candidate budget, and current Quick CI are PASS. R4-08-R2 is `GO` after explicit authorization. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01/02`, `12E-08D-01..06`, `12E-09B-01..06`, and `12E-09C-01..06` are complete. `12E-09A-03..06` remain an independent diagnostic UI lane and follow 13C-03 in the formal sequence.
+- `12E-01/02/03/04/05/06/07`, `12E-08A/08B/08C`, `12E-08C-R1-01..04`, `12E-08C-R2-01..04`, and `12E-08C-R3-01..04` are complete. R3-04 records the historical `NO-GO / FROZEN`. `12E-08C-R4-01..07`, R4-07-R1, R4-07-R2, Quick-CI-R1, and R4-08-R2 are complete; the two-family candidate matrix, versioned reference-machine candidate budget, and current Quick CI are PASS. R4-08-R2 is `GO` after explicit authorization. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. `12E-09A-01..06`, `12E-08D-01..06`, `12E-09B-01..06`, and `12E-09C-01..06` are complete. `12E-10A..D` now have complete PRD/DEV/DEMO/TASKS/PROMPT preparation but remain unimplemented; 10A is READY and waits for explicit authorization.
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - `global_surface_shell_restricted_candidate` and `global_surface_shell_material_parity_candidate` are admitted as explicit opt-in Profiles at 0.01 mm. xiao_ma/yecan TIFF and RIP strict pass. In the 2026-07-24 09B closure matrix, Global remains 4.09x-5.92x slower and uses 8.19x-8.74x peak memory versus Legacy, so Legacy remains the default and no silent fallback is permitted.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
@@ -92,6 +92,11 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Current 12E-09B task list: `docs/codex_task/current/TASKS_12E_09B_Qt双模式生产入口任务清单.md`
 - Prepared 12E-09C X/Y DPI task: `docs/slice/DOC/DOC_PREP_12E_09C_XY_DPI准备.md`
 - Current 12E-09A diagnostic task list: `docs/codex_task/current/TASKS_12E_09A_诊断UI任务清单.md`
+- Prepared 12E-09A-05 task: `docs/slice/DOC/DOC_PREP_12E_09A_05_同层语义Preview准备.md`
+- Completed 12E-09A closure report: `docs/slice/REPORT/REPORT_12E_09A_诊断UI阶段收口.md`
+- 12E-09A user guide: `docs/user_guides/SLICE_12E_09A_纹理填充诊断使用说明.md`
+- Prepared 12E-10 task list: `docs/codex_task/current/TASKS_12E_10_双模式最终闭环任务清单.md`
+- Prepared 12E-10 execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_10_双模式最终闭环执行指令.md`
 - Stage 13 decision: `docs/slice/DOC/DOC_DECISION_13_模型场景排版与TIFF原生预览专项拆分.md`
 - Stage 12/13 priority and freeze decision: `docs/slice/DOC/DOC_DECISION_12X_剩余任务优先级与专项冻结.md`
 - Stage 13 task list: `docs/codex_task/current/TASKS_13_模型场景排版联合切片与TIFF预览任务清单.md`
@@ -112,6 +117,8 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - 13B-08-02 implementation status: `docs/slice/REPORT/REPORT_13B_08_02_场景生产服务与CLI当前状态.md`
 - 13B-08-03 implementation status: `docs/slice/REPORT/REPORT_13B_08_03_Qt当前场景切片当前状态.md`
 - Prepared 13D task list: `docs/codex_task/current/TASKS_13D_Qt工作台布局收口任务清单.md`
+- Completed 13E task list: `docs/codex_task/current/TASKS_13E_甲片自动定向与诊断工作流任务清单.md`
+- Completed 13E status: `docs/slice/REPORT/REPORT_13E_甲片自动定向与诊断工作流当前状态.md`
 - Prepared 13C-03 unified production preview: `docs/slice/DOC/DOC_PREP_13C_03_UnifiedProductionPreview准备.md`
 - Completed 13C report: `docs/slice/REPORT/REPORT_13C_TIFF原生统一预览阶段收口.md`
 
