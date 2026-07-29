@@ -838,6 +838,9 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
                 m_diagnosticAnalysisWorker.Cancel();
             }
             m_lastDiagnosticAnalysisResult.reset();
+            m_previewWorkspace->ClearDiagnosticAnalysis(
+                QStringLiteral(
+                    "纹理表面层宽度已变化。"));
             m_diagnosticTextureSurfaceWidthMm =
                 widthMm;
             status_label_->setText(
@@ -858,6 +861,9 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
                 m_diagnosticAnalysisWorker.Cancel();
             }
             m_lastDiagnosticAnalysisResult.reset();
+            m_previewWorkspace->ClearDiagnosticAnalysis(
+                QStringLiteral(
+                    "模型填充材料已变化。"));
             m_diagnosticModelFillMaterial =
                 material;
             status_label_->setText(
@@ -1427,6 +1433,9 @@ void MainWindow::OnSceneDocumentChanged()
         {
             m_diagnosticAnalysisWorker.Cancel();
             m_lastDiagnosticAnalysisResult.reset();
+            m_previewWorkspace->ClearDiagnosticAnalysis(
+                QStringLiteral(
+                    "当前场景、实例或变换已变化。"));
             m_diagnosticAnalysisMessage =
                 QStringLiteral(
                     "当前场景、实例或变换已变化；"
@@ -3244,6 +3253,9 @@ void MainWindow::OnStartDiagnosticAnalysis()
         return;
     }
     m_lastDiagnosticAnalysisResult.reset();
+    m_previewWorkspace->ClearDiagnosticAnalysis(
+        QStringLiteral(
+            "新的诊断分析正在运行。"));
     m_activeDiagnosticAnalysisIdentity =
         request->identity;
     if (!m_diagnosticAnalysisWorker.Start(*request))
@@ -3267,6 +3279,7 @@ void MainWindow::OnDiagnosticAnalysisFinished(
     m_activeDiagnosticAnalysisIdentity.reset();
     m_diagnosticAnalysisMessage = result.message;
     status_label_->setText(result.message);
+    m_previewWorkspace->SetDiagnosticAnalysis(result);
     UpdateDiagnosticSettingsPresentation();
 }
 

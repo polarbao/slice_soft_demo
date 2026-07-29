@@ -28,6 +28,9 @@ struct FixtureOptions
     int dpiY{600};
     bool missingMiddleLayer{false};
     bool escapingMiddleLayer{false};
+    bool includeOrigin{true};
+    bool includePixelSize{true};
+    bool includeSceneIdentity{true};
 };
 
 bool ExpectTrue(const bool condition, const std::string& message)
@@ -120,22 +123,47 @@ slicer_core::Json MakeManifest(
         tiff["rowsPerStrip"] = 2;
     }
 
-    return slicer_core::Json::object({
+    slicer_core::Json::Object grid{
+        {"widthPx", options.widthPx},
+        {"heightPx", kHeight},
+        {"layerCount", static_cast<int>(layerIndices.size())},
+        {"dpiX", options.dpiX},
+        {"dpiY", options.dpiY},
+        {"pixelSizeXmm", 25.4 / static_cast<double>(options.dpiX)},
+        {"pixelSizeYmm", 25.4 / static_cast<double>(options.dpiY)},
+        {"layerThicknessMm", 0.01},
+    };
+    if (options.includeOrigin)
+    {
+        grid.emplace(
+            "originMm",
+            slicer_core::Json::array({1.0, 2.0, 3.0}));
+    }
+    if (options.includePixelSize)
+    {
+        grid.emplace(
+            "pixelSizeMm",
+            slicer_core::Json::array({
+                25.4 / static_cast<double>(options.dpiX),
+                25.4 / static_cast<double>(options.dpiY)}));
+    }
+
+    slicer_core::Json::Object manifest{
         {"schema", options.schema},
-        {"grid",
-         slicer_core::Json::object({
-             {"widthPx", options.widthPx},
-             {"heightPx", kHeight},
-             {"layerCount", static_cast<int>(layerIndices.size())},
-             {"dpiX", options.dpiX},
-             {"dpiY", options.dpiY},
-             {"pixelSizeXmm", 25.4 / static_cast<double>(options.dpiX)},
-             {"pixelSizeYmm", 25.4 / static_cast<double>(options.dpiY)},
-             {"layerThicknessMm", 0.01},
-         })},
+        {"grid", slicer_core::Json{std::move(grid)}},
         {"tiff", slicer_core::Json{std::move(tiff)}},
         {"layers", slicer_core::Json{layers}},
-    });
+    };
+    if (options.includeSceneIdentity)
+    {
+        manifest.emplace(
+            "scene",
+            slicer_core::Json::object({
+                {"sceneId", "scene-tiff-source"},
+                {"sceneRevision", 17},
+            }));
+    }
+    return slicer_core::Json{std::move(manifest)};
 }
 
 std::filesystem::path MakePackage(
@@ -215,11 +243,24 @@ bool StrippedPackageIndexesAndLoadsByRealLayerIndex()
 
     return ExpectTrue(package.layers.size() == 3U, "all manifest layers are indexed")
         && ExpectTrue(package.dpiX == 635 && package.dpiY == 600, "independent DPI is preserved")
+        && ExpectTrue(package.originxmm == 1.0 && package.originymm == 2.0 && package.originzmm == 3.0, "physical origin is preserved")
+        && ExpectTrue(package.pixelsizexmm != package.pixelsizeymm, "independent pixel pitch is preserved")
+        && ExpectTrue(package.layerthicknessmm == 0.01, "layer thickness is preserved")
+        && ExpectTrue(package.sceneidentityavailable, "scene identity is indexed")
+        && ExpectTrue(package.sceneid == "scene-tiff-source", "scene id is preserved")
+        && ExpectTrue(package.scenerevision == 17U, "scene revision is preserved")
         && ExpectTrue(layer->layerIndex == 20, "manifest layer index is authoritative")
         && ExpectTrue(layer->zMm == 0.2, "manifest zMm is preserved")
         && ExpectTrue(first.buffer != nullptr, "layer buffer is decoded")
         && ExpectTrue(first.buffer->width == kWidth, "decoded width matches")
         && ExpectTrue(first.buffer->height == kHeight, "decoded height matches")
+        && ExpectTrue(first.buffer->originxmm == package.originxmm, "buffer receives physical origin")
+        && ExpectTrue(first.buffer->pixelsizexmm == package.pixelsizexmm, "buffer receives X pixel pitch")
+        && ExpectTrue(first.buffer->pixelsizeymm == package.pixelsizeymm, "buffer receives Y pixel pitch")
+        && ExpectTrue(first.buffer->layerthicknessmm == package.layerthicknessmm, "buffer receives layer thickness")
+        && ExpectTrue(first.buffer->sceneidentityavailable, "buffer receives scene identity")
+        && ExpectTrue(first.buffer->sceneid == package.sceneid, "buffer receives scene id")
+        && ExpectTrue(first.buffer->scenerevision == package.scenerevision, "buffer receives scene revision")
         && ExpectTrue(first.buffer->pixels == MakePixels(20), "all RGBWSV bytes are preserved")
         && ExpectTrue(!first.cacheHit, "first load decodes TIFF")
         && ExpectTrue(second.cacheHit, "second load uses cache")
@@ -275,6 +316,16 @@ bool ProtocolAndPathFailuresAreStable()
     const std::filesystem::path dimensionPackage =
         MakePackage("wrong_dimension", wrongDimension);
 
+    FixtureOptions missingOrigin;
+    missingOrigin.includeOrigin = false;
+    const std::filesystem::path missingOriginPackage =
+        MakePackage("missing_origin", missingOrigin);
+
+    FixtureOptions missingPixelSize;
+    missingPixelSize.includePixelSize = false;
+    const std::filesystem::path missingPixelSizePackage =
+        MakePackage("missing_pixel_size", missingPixelSize);
+
     return ErrorCodeMatches(
                [&]()
                {
@@ -323,7 +374,23 @@ bool ProtocolAndPathFailuresAreStable()
                     dimensionPackage / "manifest.json");
                 static_cast<void>(source.LoadLayer(package.layers.front()));
             },
-            slicer_core::TiffLayerErrorCode::DimensionMismatch);
+            slicer_core::TiffLayerErrorCode::DimensionMismatch)
+        && ErrorCodeMatches(
+            [&]()
+            {
+                slicer_core::TiffLayerSource source;
+                static_cast<void>(source.IndexPackage(
+                    missingOriginPackage / "manifest.json"));
+            },
+            slicer_core::TiffLayerErrorCode::ManifestInvalid)
+        && ErrorCodeMatches(
+            [&]()
+            {
+                slicer_core::TiffLayerSource source;
+                static_cast<void>(source.IndexPackage(
+                    missingPixelSizePackage / "manifest.json"));
+            },
+            slicer_core::TiffLayerErrorCode::ManifestInvalid);
 }
 
 bool CancellationAndStaleGenerationDoNotPopulateCache()

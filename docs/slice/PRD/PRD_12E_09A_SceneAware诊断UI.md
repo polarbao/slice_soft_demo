@@ -1,7 +1,7 @@
 # PRD 12E-09A Scene-aware 诊断 UI
 
 > 文档版本：v1.0
-> 文档状态：Formal PRD / 09A-04 COMPLETE / 09A-05 READY / 09A-06 PREPARED
+> 文档状态：Formal PRD / 09A-05 COMPLETE / 09A-06 READY
 > 日期：2026-07-29
 > 前置：09A-01、13A-01、13B-01 COMPLETE
 
@@ -99,4 +99,12 @@ uint8 不变；
 black_is_print 不变；
 Legacy 默认；
 OpenVDB 默认关闭。
+```
+
+## 9. 当前执行入口
+
+```text
+09A-01..05：COMPLETE；
+09A-05 状态：REPORT_12E_09A_05_同层语义Preview当前状态.md；
+09A-06：READY，见 DOC_PREP_12E_09A_06_诊断UI阶段收口准备.md。
 ```

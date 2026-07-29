@@ -459,6 +459,7 @@ void LayerPreviewPanel::OnLayerLoaded(
     m_errorCode.clear();
     m_errorMessage.clear();
     ComposeCurrentImage();
+    emit SigLayerBufferReady(m_currentBuffer);
 }
 
 void LayerPreviewPanel::OnLayerLoadFailed(
@@ -1146,6 +1147,7 @@ void LayerPreviewPanel::ClearCurrentLayer()
     m_lastCacheHit = false;
     m_requestedLayerIndex = -1;
     m_imageLabel->clear();
+    emit SigLayerBufferReady(TiffLayerBufferPtr{});
 }
 
 QSize LayerPreviewPanel::PhysicalDisplaySize() const

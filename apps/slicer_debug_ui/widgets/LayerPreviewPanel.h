@@ -168,6 +168,12 @@ signals:
      */
     void SigPixelProbeChanged(const QString& context);
 
+    /**
+     * @brief Emitted after the exact selected TIFF layer buffer is accepted.
+     * @param buffer Immutable production RGBWSV layer shared with diagnostic views.
+     */
+    void SigLayerBufferReady(TiffLayerBufferPtr buffer);
+
 protected:
     bool eventFilter(QObject* object, QEvent* event) override;
 

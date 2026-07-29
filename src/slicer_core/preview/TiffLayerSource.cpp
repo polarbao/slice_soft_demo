@@ -231,6 +231,79 @@ double RequireFiniteNumber(
     }
 }
 
+double RequirePositiveFiniteNumber(
+    const Json& object,
+    const std::string& key,
+    const std::filesystem::path& path)
+{
+    const double value = RequireFiniteNumber(object, key, -1, path);
+    if (value <= 0.0)
+    {
+        Fail(
+            TiffLayerErrorCode::ManifestInvalid,
+            "manifest field must be finite and positive: " + key,
+            {},
+            -1,
+            path);
+    }
+    return value;
+}
+
+std::vector<double> RequireFiniteNumberArray(
+    const Json& object,
+    const std::string& key,
+    const std::size_t expectedSize,
+    const bool requirePositive,
+    const std::filesystem::path& path)
+{
+    const Json& values = RequireArray(object, key, path);
+    if (values.size() != expectedSize)
+    {
+        Fail(
+            TiffLayerErrorCode::ManifestInvalid,
+            "manifest array has an invalid size: " + key,
+            {},
+            -1,
+            path);
+    }
+
+    std::vector<double> result;
+    result.reserve(expectedSize);
+    try
+    {
+        for (const Json& item : values.as_array())
+        {
+            const double value = item.as_double();
+            if (!std::isfinite(value)
+                || (requirePositive && value <= 0.0))
+            {
+                Fail(
+                    TiffLayerErrorCode::ManifestInvalid,
+                    "manifest array contains an invalid number: " + key,
+                    {},
+                    -1,
+                    path);
+            }
+            result.push_back(value);
+        }
+    }
+    catch (const TiffLayerError&)
+    {
+        throw;
+    }
+    catch (const std::exception& error)
+    {
+        Fail(
+            TiffLayerErrorCode::ManifestInvalid,
+            "manifest array must contain finite numbers: " + key,
+            {},
+            -1,
+            path,
+            error.what());
+    }
+    return result;
+}
+
 std::string RequireString(
     const Json& object,
     const std::string& key,
@@ -665,6 +738,65 @@ ProductionPackageIndex TiffLayerSource::IndexPackage(
         RequirePositiveInt(grid, "layerCount", absoluteManifest);
     package.dpiX = RequirePositiveInt(grid, "dpiX", absoluteManifest);
     package.dpiY = RequirePositiveInt(grid, "dpiY", absoluteManifest);
+    const std::vector<double> origin = RequireFiniteNumberArray(
+        grid,
+        "originMm",
+        3U,
+        false,
+        absoluteManifest);
+    const std::vector<double> pixelSize = RequireFiniteNumberArray(
+        grid,
+        "pixelSizeMm",
+        2U,
+        true,
+        absoluteManifest);
+    package.originxmm = origin.at(0U);
+    package.originymm = origin.at(1U);
+    package.originzmm = origin.at(2U);
+    package.pixelsizexmm = pixelSize.at(0U);
+    package.pixelsizeymm = pixelSize.at(1U);
+    package.layerthicknessmm = RequirePositiveFiniteNumber(
+        grid,
+        "layerThicknessMm",
+        absoluteManifest);
+    if (manifest.contains("scene"))
+    {
+        const Json& scene =
+            RequireObject(manifest, "scene", absoluteManifest);
+        package.sceneid =
+            RequireString(scene, "sceneId", absoluteManifest);
+        try
+        {
+            const int sceneRevision =
+                scene.at("sceneRevision").as_int();
+            if (package.sceneid.empty() || sceneRevision < 0)
+            {
+                Fail(
+                    TiffLayerErrorCode::ManifestInvalid,
+                    "manifest scene identity is invalid",
+                    package.packageIdentity,
+                    -1,
+                    absoluteManifest);
+            }
+            package.scenerevision =
+                static_cast<std::uint64_t>(sceneRevision);
+            package.sceneidentityavailable = true;
+        }
+        catch (const TiffLayerError&)
+        {
+            throw;
+        }
+        catch (const std::exception& error)
+        {
+            Fail(
+                TiffLayerErrorCode::ManifestInvalid,
+                "manifest scene revision is missing or invalid",
+                package.packageIdentity,
+                -1,
+                absoluteManifest,
+                error.what());
+        }
+    }
     package.storage = ParseStorage(tiff, absoluteManifest);
 
     const Json& layers =
@@ -763,6 +895,16 @@ ProductionPackageIndex TiffLayerSource::IndexPackage(
         layer.checksum = ComputeFileMetadataIdentity(layer.path);
         layer.dpiX = package.dpiX;
         layer.dpiY = package.dpiY;
+        layer.originxmm = package.originxmm;
+        layer.originymm = package.originymm;
+        layer.originzmm = package.originzmm;
+        layer.pixelsizexmm = package.pixelsizexmm;
+        layer.pixelsizeymm = package.pixelsizeymm;
+        layer.layerthicknessmm = package.layerthicknessmm;
+        layer.sceneidentityavailable =
+            package.sceneidentityavailable;
+        layer.sceneid = package.sceneid;
+        layer.scenerevision = package.scenerevision;
         layer.sourceIdentity = ComputeSha256(
             layer.packageIdentity + "|" + layer.manifestHash + "|"
             + std::to_string(layer.layerIndex) + "|" + layer.checksum);
@@ -984,6 +1126,18 @@ TiffLayerLoadResult TiffLayerSource::LoadLayer(
     buffer->height = indexedLayer.height;
     buffer->dpiX = indexedLayer.dpiX;
     buffer->dpiY = indexedLayer.dpiY;
+    buffer->originxmm = indexedLayer.originxmm;
+    buffer->originymm = indexedLayer.originymm;
+    buffer->originzmm = indexedLayer.originzmm;
+    buffer->pixelsizexmm = indexedLayer.pixelsizexmm;
+    buffer->pixelsizeymm = indexedLayer.pixelsizeymm;
+    buffer->layerthicknessmm =
+        indexedLayer.layerthicknessmm;
+    buffer->sceneidentityavailable =
+        indexedLayer.sceneidentityavailable;
+    buffer->sceneid = indexedLayer.sceneid;
+    buffer->scenerevision =
+        indexedLayer.scenerevision;
     buffer->pixels = std::move(decoded.pixels);
     buffer->channelStats = decoded.channel_stats;
     buffer->channelChecksums = decoded.channel_checksums;

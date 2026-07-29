@@ -1,7 +1,7 @@
 # DEV 12E-09A Scene-aware 诊断 UI 设计
 
 > 文档版本：v1.0
-> 文档状态：Formal DEV / 09A-04 COMPLETE / 09A-05 READY / 09A-06 PREPARED
+> 文档状态：Formal DEV / 09A-05 COMPLETE / 09A-06 READY
 > 日期：2026-07-29
 
 ## 1. 架构边界
@@ -222,3 +222,14 @@ UiSmokeTestRunner：验证 0.01 mm、双向同步、最长中文、不可用状�
 
 09A-03 不直接更新 `ConfigDocument`，避免 diagnostic 编辑污染生产 Profile。09A-04 启动分析前必须
 调用 09A-02 的专用事务生成 `slice_config.diagnostic.effective.json`。
+
+## 11. 09A-05/06 实施入口
+
+```text
+docs/slice/DOC/DOC_PREP_12E_09A_05_同层语义Preview准备.md
+docs/slice/DOC/DOC_PREP_12E_09A_06_诊断UI阶段收口准备.md
+docs/codex_task/current/CODEX_PROMPT_12E_09A_05_同层语义Preview执行指令.md
+docs/codex_task/current/CODEX_PROMPT_12E_09A_06_诊断UI阶段收口执行指令.md
+```
+
+09A-05 只新增只读同层适配和 UI buffer；09A-06 只收口回归与文档。

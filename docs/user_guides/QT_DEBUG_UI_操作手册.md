@@ -271,12 +271,17 @@ output/ui_sessions/<模型名_时间戳>_openvdb/reports/experimental_openvdb_sh
 生产预览：直接读取 manifest/layers RGBWSV TIFF，提供 RGB、R/G/B、W/S/V、
 RGB+W/S/V、RGB+S+W+V、Occupancy 和 Empty。
 
-诊断预览：包含“材料叠加/闭环诊断”和“原始调试预览”两个次级入口，
-用于查看显式生成的诊断图或报告跳转。
+诊断预览：包含“纹理/填充同层语义”“材料叠加/闭环诊断”和
+“原始调试预览”三个次级入口。
 ```
 
 所有模式共享真实 `layerIndex`。生产预览不依赖 `preview/*.png`；如果诊断图未启用，诊断入口
 会明确显示未提供，但生产 TIFF 的首层、中间层和末层仍可正常浏览。任何模式都不会跨层寻找图片。
+
+“纹理/填充同层语义”使用当前层生产 TIFF 的 S/V，并按物理坐标叠加异步诊断得到的 Texture
+Surface 与 Model Fill。可切换“分区 + S + V”“Texture Surface”“Model Fill”。诊断证据缺失、
+失败、取消、场景身份不匹配或参数变化时显示“未评估”，不会沿用旧结果。该视图是
+diagnostic-only，不代表生产准入，也不会生成额外 TIFF/PNG。
 
 ### 5.2 材料图例与像素探针
 
@@ -384,7 +389,8 @@ Legacy 默认生产路径和 guard 是否实际运行。
 “模型填充材料”当前提供白墨、光油和 RGB 三种切片核心已支持材料。该区域属于
 diagnostic-only：修改只保留在当前 UI 诊断请求中，不会直接覆盖生产 Profile、Package 或 TIFF。
 无模型或模型导入过程中控件会禁用；模型预检 blocked 时仍可编辑用于诊断，但状态区会明确提示
-该结果不等于生产准入。12E-09A-04 完成前，面板不会启动耗时分析。
+该结果不等于生产准入。分析成功后可在“预览 -> 诊断预览 -> 纹理/填充同层语义”查看当前真实
+`layerIndex/zMm` 的分区；材料闭环报告未绑定时会明确显示“材料闭环联动未评估”。
 
 ## 6. 配置页设置位置
 

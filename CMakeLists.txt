@@ -222,6 +222,8 @@ add_library(slicer_core
     src/slicer_core/preview/TiffLayerCache.h
     src/slicer_core/preview/TiffLayerSource.cpp
     src/slicer_core/preview/TiffLayerSource.h
+    src/slicer_core/preview/TextureFillPartitionSemanticPreview.cpp
+    src/slicer_core/preview/TextureFillPartitionSemanticPreview.h
     src/slicer_core/preflight/ModelPreflightCacheIdentity.cpp
     src/slicer_core/preflight/ModelPreflightCacheIdentity.h
     src/slicer_core/preflight/ModelPreflightAdmissionPolicy.cpp
@@ -450,6 +452,12 @@ add_executable(tiff_layer_cache_unit_tests
 )
 
 target_link_libraries(tiff_layer_cache_unit_tests PRIVATE slicer_core)
+
+add_executable(texture_fill_partition_semantic_preview_unit_tests
+    tests/unit/texture_fill_partition_semantic_preview/Main.cpp
+)
+
+target_link_libraries(texture_fill_partition_semantic_preview_unit_tests PRIVATE slicer_core)
 
 add_executable(material_preview_composer_unit_tests
     tests/unit/material_preview_composer/Main.cpp
@@ -841,6 +849,7 @@ add_test(NAME preview_output_policy_unit_tests COMMAND preview_output_policy_uni
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
 add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
 add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)
+add_test(NAME texture_fill_partition_semantic_preview_unit_tests COMMAND texture_fill_partition_semantic_preview_unit_tests)
 add_test(NAME material_preview_composer_unit_tests COMMAND material_preview_composer_unit_tests)
 add_test(NAME outer_varnish_discretization_unit_tests COMMAND outer_varnish_discretization_unit_tests)
 add_test(NAME non_square_raster_pipeline_unit_tests COMMAND non_square_raster_pipeline_unit_tests)

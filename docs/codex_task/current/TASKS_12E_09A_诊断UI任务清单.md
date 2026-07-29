@@ -1,6 +1,6 @@
 # TASKS 12E-09A 诊断 UI 任务清单
 
-> 状态：09A-01..04 COMPLETE / 09A-05 READY / 09A-06 PREPARED
+> 状态：09A-01..05 COMPLETE / 09A-06 READY
 > 日期：2026-07-29
 > 性质：独立 diagnostic UI 支线
 
@@ -120,7 +120,7 @@ docs/slice/REPORT/REPORT_12E_09A_04_异步分析Worker当前状态.md
 
 ## 6. 09A-05 同层语义 Preview
 
-状态：READY / 09A-04、13C-03 COMPLETE
+状态：COMPLETE（2026-07-29）
 
 原子准备与执行指令：
 
@@ -140,9 +140,22 @@ fullClosureLinkage 缺失时显示未评估；
 
 验收：同层 identity、物理坐标映射、材料分区、空层、缺失证据和真实模型 smoke。
 
+状态报告：
+
+```text
+docs/slice/REPORT/REPORT_12E_09A_05_同层语义Preview当前状态.md
+```
+
 ## 7. 09A-06 阶段收口
 
-状态：PREPARED / WAIT 09A-05
+状态：READY / 09A-05 COMPLETE
+
+原子准备与执行指令：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_09A_06_诊断UI阶段收口准备.md
+docs/codex_task/current/CODEX_PROMPT_12E_09A_06_诊断UI阶段收口执行指令.md
+```
 
 目标：
 

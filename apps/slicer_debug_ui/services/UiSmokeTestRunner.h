@@ -35,6 +35,8 @@ private:
     int TiffNativePreviewNoPng(const UiSmokeTestOptions& options);
     int PreviewLegendProbeContext(const UiSmokeTestOptions& options);
     int PreviewPhysicalAspect(const UiSmokeTestOptions& options);
+    int DiagnosticSemanticPreview(
+        const UiSmokeTestOptions& options);
     int DiagnosticsCollapse(const UiSmokeTestOptions& options);
     int MaterialClosureDiagnostics(const UiSmokeTestOptions& options);
     int OpenVdbUtilitySummary(const UiSmokeTestOptions& options);

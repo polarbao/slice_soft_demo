@@ -29,6 +29,15 @@ struct ProductionLayerRef
     std::string checksum;
     int dpiX{0};
     int dpiY{0};
+    double originxmm{0.0};
+    double originymm{0.0};
+    double originzmm{0.0};
+    double pixelsizexmm{0.0};
+    double pixelsizeymm{0.0};
+    double layerthicknessmm{0.0};
+    bool sceneidentityavailable{false};
+    std::string sceneid;
+    std::uint64_t scenerevision{0U};
 };
 
 /**
@@ -44,6 +53,15 @@ struct ProductionPackageIndex
     std::uint32_t height{0U};
     int dpiX{0};
     int dpiY{0};
+    double originxmm{0.0};
+    double originymm{0.0};
+    double originzmm{0.0};
+    double pixelsizexmm{0.0};
+    double pixelsizeymm{0.0};
+    double layerthicknessmm{0.0};
+    bool sceneidentityavailable{false};
+    std::string sceneid;
+    std::uint64_t scenerevision{0U};
     TiffStorageMode storage{TiffStorageMode::Stripped};
     std::vector<ProductionLayerRef> layers;
 };
@@ -60,6 +78,15 @@ struct RgbwsvLayerBuffer
     std::uint32_t height{0U};
     int dpiX{0};
     int dpiY{0};
+    double originxmm{0.0};
+    double originymm{0.0};
+    double originzmm{0.0};
+    double pixelsizexmm{0.0};
+    double pixelsizeymm{0.0};
+    double layerthicknessmm{0.0};
+    bool sceneidentityavailable{false};
+    std::string sceneid;
+    std::uint64_t scenerevision{0U};
     std::vector<std::uint8_t> pixels;
     std::array<TiffChannelStats, rgbwsv_channel_count> channelStats{};
     std::array<std::uint64_t, rgbwsv_channel_count> channelChecksums{};

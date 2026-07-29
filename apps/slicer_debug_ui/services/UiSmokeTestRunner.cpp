@@ -9,6 +9,7 @@
 #include "../widgets/ConfigEditorPanel.h"
 #include "../widgets/ContextInspector.h"
 #include "../widgets/DiagnosticsDock.h"
+#include "../widgets/DiagnosticSemanticPreviewPanel.h"
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/MaterialClosurePanel.h"
 #include "../widgets/ModelListPanel.h"
@@ -79,7 +80,9 @@
 #include <QToolButton>
 
 #include <cmath>
+#include <cstddef>
 #include <functional>
+#include <memory>
 
 namespace
 {
@@ -576,6 +579,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     if (options.case_name == "preview-physical-aspect")
     {
         return PreviewPhysicalAspect(options);
+    }
+    if (options.case_name == "diagnostic-semantic-preview")
+    {
+        return DiagnosticSemanticPreview(options);
     }
     if (options.case_name == "diagnostics-collapse")
     {
@@ -2332,11 +2339,13 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
     PreviewWorkspace workspace;
     workspace.LoadPackage(package);
     auto* production = workspace.findChild<LayerPreviewPanel*>(QStringLiteral("productionLayerView"));
+    auto* semantic = workspace.findChild<DiagnosticSemanticPreviewPanel*>(
+        QStringLiteral("diagnosticSemanticPreviewPanel"));
     auto* overlay = workspace.findChild<PreviewOverlayPanel*>(QStringLiteral("materialOverlayView"));
     auto* raw = workspace.findChild<PreviewPanel*>(QStringLiteral("rawPreviewView"));
-    if (production == nullptr || overlay == nullptr || raw == nullptr)
+    if (production == nullptr || semantic == nullptr || overlay == nullptr || raw == nullptr)
     {
-        return fail(QStringLiteral("preview-workspace-shared-layer 未复用三个既有预览面板。"));
+        return fail(QStringLiteral("preview-workspace-shared-layer 缺少生产或诊断预览面板。"));
     }
     if (workspace.LayerIndices().isEmpty()
         || workspace.LayerIndices() != production->LayerIndices())
@@ -2387,7 +2396,10 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
         || workspaceMode == nullptr
         || diagnosticMode == nullptr
         || workspaceMode->count() != 2
-        || diagnosticMode->count() != 2)
+        || diagnosticMode->count() != 3
+        || diagnosticMode->findData(
+               static_cast<int>(DiagnosticPreviewMode::TextureFillSemantics))
+            < 0)
     {
         return fail(
             QStringLiteral(
@@ -2453,7 +2465,7 @@ int UiSmokeTestRunner::PreviewWorkspaceSharedLayer(const UiSmokeTestOptions& opt
     }
 
     return pass(
-        QStringLiteral("preview-workspace-shared-layer layers=%1 rawSparse=%2 overlaySparse=%3 preview=%4 primaryModes=2 diagnosticModes=2")
+        QStringLiteral("preview-workspace-shared-layer layers=%1 rawSparse=%2 overlaySparse=%3 preview=%4 primaryModes=2 diagnosticModes=3")
             .arg(workspace.LayerIndices().size())
             .arg(sparseLayer)
             .arg(overlaySparseLayer)
@@ -2497,6 +2509,9 @@ int UiSmokeTestRunner::TiffNativePreviewAllMaterials(
     auto* overlay =
         workspace.findChild<PreviewOverlayPanel*>(
             QStringLiteral("materialOverlayView"));
+    auto* semantic =
+        workspace.findChild<DiagnosticSemanticPreviewPanel*>(
+            QStringLiteral("diagnosticSemanticPreviewPanel"));
     auto* raw =
         workspace.findChild<PreviewPanel*>(
             QStringLiteral("rawPreviewView"));
@@ -2504,9 +2519,10 @@ int UiSmokeTestRunner::TiffNativePreviewAllMaterials(
         || workspaceMode == nullptr
         || diagnosticMode == nullptr
         || overlay == nullptr
+        || semantic == nullptr
         || raw == nullptr
         || workspaceMode->count() != 2
-        || diagnosticMode->count() != 2)
+        || diagnosticMode->count() != 3)
     {
         return fail(
             QStringLiteral(
@@ -2685,7 +2701,7 @@ int UiSmokeTestRunner::TiffNativePreviewAllMaterials(
 
     return pass(
         QStringLiteral(
-            "tiff-native-preview-all-materials layers=%1 modes=%2 requests=%3 source=TIFF primaryModes=2 diagnosticModes=2")
+            "tiff-native-preview-all-materials layers=%1 modes=%2 requests=%3 source=TIFF primaryModes=2 diagnosticModes=3")
             .arg(layerIndices.size())
             .arg(requiredModes.size())
             .arg(
@@ -2871,6 +2887,154 @@ int UiSmokeTestRunner::PreviewPhysicalAspect(
 
     return pass(QStringLiteral(
         "preview-physical-aspect corrected=94x100 fallback=100x100"));
+}
+
+int UiSmokeTestRunner::DiagnosticSemanticPreview(
+    const UiSmokeTestOptions& options)
+{
+    Q_UNUSED(options);
+
+    constexpr std::size_t channelCount{6U};
+    auto evidence = std::make_shared<
+        slicer_core::
+            TextureFillPartitionReleaseBenchmarkResult>();
+    auto& partition = evidence->partition;
+    partition.available = true;
+    partition.partitionPass = true;
+    partition.status = "diagnostic";
+    partition.grid.width = 4;
+    partition.grid.height = 3;
+    partition.grid.depth = 1;
+    partition.grid.originXMm = 1.0;
+    partition.grid.originYMm = 2.0;
+    partition.grid.originZMm = 3.0;
+    partition.grid.spacingXMm = 0.04;
+    partition.grid.spacingYMm = 0.05;
+    partition.grid.spacingZMm = 0.10;
+    partition.widthMetrics.effectiveWidthMm = 0.20;
+    partition.widthMetrics.allTexture = false;
+    partition.modelMask.grid = partition.grid;
+    partition.textureSurfaceMask.grid = partition.grid;
+    partition.modelFillMask.grid = partition.grid;
+    partition.modelMask.values.assign(12U, 0U);
+    partition.textureSurfaceMask.values.assign(12U, 0U);
+    partition.modelFillMask.values.assign(12U, 0U);
+    partition.modelMask.values.at(5U) = 1U;
+    partition.textureSurfaceMask.values.at(5U) = 1U;
+    partition.modelMask.values.at(6U) = 1U;
+    partition.modelFillMask.values.at(6U) = 1U;
+
+    DiagnosticAnalysisResult analysis;
+    analysis.state = DiagnosticAnalysisState::Succeeded;
+    analysis.identity.sessionid =
+        QStringLiteral("diagnostic-session");
+    analysis.identity.sceneid =
+        QStringLiteral("scene-semantic-smoke");
+    analysis.identity.modelid =
+        QStringLiteral("model-a");
+    analysis.identity.instanceid =
+        QStringLiteral("instance-a");
+    analysis.identity.confighash =
+        QStringLiteral("0123456789abcdef");
+    analysis.identity.scenerevision = 7U;
+    analysis.identity.transformrevision = 2U;
+    analysis.evidence = evidence;
+
+    auto layer =
+        std::make_shared<slicer_core::RgbwsvLayerBuffer>();
+    layer->sourceIdentity = "semantic-smoke-layer";
+    layer->layerIndex = 37;
+    layer->zMm = 3.05;
+    layer->width = 4U;
+    layer->height = 3U;
+    layer->dpiX = 635;
+    layer->dpiY = 508;
+    layer->originxmm = 1.0;
+    layer->originymm = 2.0;
+    layer->originzmm = 3.0;
+    layer->pixelsizexmm = 0.04;
+    layer->pixelsizeymm = 0.05;
+    layer->layerthicknessmm = 0.10;
+    layer->sceneidentityavailable = true;
+    layer->sceneid = "scene-semantic-smoke";
+    layer->scenerevision = 7U;
+    layer->pixels.assign(
+        4U * 3U * channelCount,
+        255U);
+    layer->pixels.at(4U) = 0U;
+    layer->pixels.at(11U * channelCount + 5U) =
+        127U;
+
+    DiagnosticSemanticPreviewPanel panel;
+    panel.resize(640, 480);
+    panel.SetDiagnosticAnalysis(analysis);
+    panel.SetProductionLayer(layer);
+    QApplication::processEvents();
+
+    if (panel.CurrentImageForTest().isNull()
+        || panel.LayerIndexForTest() != 37
+        || !ContainsAll(
+            panel.StatusForTest(),
+            {QStringLiteral("同层 layer=37"),
+             QStringLiteral("z=3.050 mm"),
+             QStringLiteral("Texture=1"),
+             QStringLiteral("Fill=1"),
+             QStringLiteral("S=1"),
+             QStringLiteral("V=1"),
+             QStringLiteral("width=0.20 mm"),
+             QStringLiteral("scene 身份已匹配"),
+             QStringLiteral("材料闭环联动未评估")}))
+    {
+        return fail(
+            QStringLiteral(
+                "diagnostic-semantic-preview 同层状态或图像不完整：")
+            + panel.StatusForTest());
+    }
+
+    if (!panel.SetDisplayModeForTest(
+            DiagnosticSemanticDisplayMode::
+                TextureSurface)
+        || panel.CurrentImageForTest().pixelColor(1, 1)
+            != QColor(0, 151, 167)
+        || !panel.SetDisplayModeForTest(
+            DiagnosticSemanticDisplayMode::ModelFill)
+        || panel.CurrentImageForTest().pixelColor(2, 1)
+            != QColor(230, 126, 34))
+    {
+        return fail(
+            QStringLiteral(
+                "diagnostic-semantic-preview Texture/Fill 伪彩分区不正确。"));
+    }
+
+    auto staleLayer =
+        std::make_shared<slicer_core::RgbwsvLayerBuffer>(
+            *layer);
+    staleLayer->scenerevision = 8U;
+    panel.SetProductionLayer(staleLayer);
+    if (!panel.CurrentImageForTest().isNull()
+        || !panel.StatusForTest().contains(
+            QStringLiteral("sceneId/revision 与当前诊断身份不一致")))
+    {
+        return fail(
+            QStringLiteral(
+                "diagnostic-semantic-preview 未拒绝 stale scene 身份。"));
+    }
+
+    DiagnosticAnalysisResult missing;
+    missing.state = DiagnosticAnalysisState::Failed;
+    panel.SetDiagnosticAnalysis(missing);
+    if (!panel.CurrentImageForTest().isNull()
+        || !panel.StatusForTest().contains(
+            QStringLiteral("未评估")))
+    {
+        return fail(
+            QStringLiteral(
+                "diagnostic-semantic-preview 缺证据状态不明确。"));
+    }
+
+    return pass(
+        QStringLiteral(
+            "diagnostic-semantic-preview layer=37 Texture=1 Fill=1 S=1 V=1 stale=blocked"));
 }
 
 int UiSmokeTestRunner::PreviewLegendProbeContext(const UiSmokeTestOptions& options)

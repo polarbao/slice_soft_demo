@@ -1,5 +1,6 @@
 #include "PreviewWorkspace.h"
 
+#include "DiagnosticSemanticPreviewPanel.h"
 #include "LayerPreviewPanel.h"
 #include "PreviewOverlayPanel.h"
 #include "PreviewPanel.h"
@@ -150,6 +151,11 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
     m_diagnosticModeSelector->setObjectName(
         QStringLiteral("diagnosticPreviewModeSelector"));
     m_diagnosticModeSelector->addItem(
+        QStringLiteral("纹理/填充同层语义"),
+        static_cast<int>(
+            DiagnosticPreviewMode::
+                TextureFillSemantics));
+    m_diagnosticModeSelector->addItem(
         QStringLiteral("材料与闭环诊断"),
         static_cast<int>(
             DiagnosticPreviewMode::MaterialOverlay));
@@ -159,7 +165,8 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
             DiagnosticPreviewMode::RawPreview));
     m_diagnosticModeSelector->setToolTip(
         QStringLiteral(
-            "诊断图来自 preview/report；缺失时显示未提供，不从生产 TIFF 推断语义。"));
+            "纹理/填充语义使用当前分析证据和同层生产 TIFF；"
+            "旧诊断图来自 preview/report，缺失时不跨层兜底。"));
     diagnosticControls->addWidget(
         new QLabel(QStringLiteral("诊断来源"), m_diagnosticContainer));
     diagnosticControls->addWidget(m_diagnosticModeSelector);
@@ -168,12 +175,16 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
 
     m_diagnosticStack =
         new QStackedWidget(m_diagnosticContainer);
+    m_semanticView =
+        new DiagnosticSemanticPreviewPanel(
+            m_diagnosticStack);
     m_overlayView =
         new PreviewOverlayPanel(m_diagnosticStack);
     m_overlayView->setObjectName(QStringLiteral("materialOverlayView"));
     m_rawPreviewView =
         new PreviewPanel(m_diagnosticStack);
     m_rawPreviewView->setObjectName(QStringLiteral("rawPreviewView"));
+    m_diagnosticStack->addWidget(m_semanticView);
     m_diagnosticStack->addWidget(m_overlayView);
     m_diagnosticStack->addWidget(m_rawPreviewView);
     diagnosticLayout->addWidget(m_diagnosticStack, 1);
@@ -203,6 +214,12 @@ PreviewWorkspace::PreviewWorkspace(QWidget* parent)
         this,
         &PreviewWorkspace::OnPixelProbeChanged);
     connect(
+        m_productionView,
+        &LayerPreviewPanel::SigLayerBufferReady,
+        m_semanticView,
+        &DiagnosticSemanticPreviewPanel::
+            SetProductionLayer);
+    connect(
         m_overlayView,
         &PreviewOverlayPanel::SigLayerIndexChanged,
         this,
@@ -224,6 +241,20 @@ void PreviewWorkspace::LoadPackage(const PackageSummary& package)
     m_probeContext->setText(DefaultProbeGuidance());
     UpdateLegend();
     SyncPanels();
+    UpdateStatus();
+}
+
+void PreviewWorkspace::SetDiagnosticAnalysis(
+    const DiagnosticAnalysisResult& result)
+{
+    m_semanticView->SetDiagnosticAnalysis(result);
+    UpdateStatus();
+}
+
+void PreviewWorkspace::ClearDiagnosticAnalysis(
+    const QString& reason)
+{
+    m_semanticView->ClearDiagnosticAnalysis(reason);
     UpdateStatus();
 }
 
@@ -425,10 +456,18 @@ void PreviewWorkspace::UpdateStatus()
         : QStringLiteral("同层无图");
     m_status->setText(
         QStringLiteral(
-            "共享 layer=%1  一级模式=%2  生产=%3  诊断Overlay=%4  诊断Raw=%5  缺图不跨层兜底")
+            "共享 layer=%1  一级模式=%2  生产=%3  语义=%4  "
+            "诊断Overlay=%5  诊断Raw=%6  缺图不跨层兜底")
             .arg(m_currentLayerIndex)
             .arg(ModeName(CurrentMode()))
-            .arg(productionState, overlayState, rawState));
+            .arg(productionState)
+            .arg(
+                m_semanticView->LayerIndexForTest()
+                        == m_currentLayerIndex
+                    ? QStringLiteral("同层")
+                    : QStringLiteral("未评估"))
+            .arg(overlayState)
+            .arg(rawState));
 }
 
 void PreviewWorkspace::UpdateLegend()

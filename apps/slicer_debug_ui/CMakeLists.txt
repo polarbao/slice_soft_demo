@@ -113,6 +113,8 @@ add_executable(slicer_debug_ui
     widgets/MaterialRoleMappingEditor.h
     widgets/LayerPreviewPanel.cpp
     widgets/LayerPreviewPanel.h
+    widgets/DiagnosticSemanticPreviewPanel.cpp
+    widgets/DiagnosticSemanticPreviewPanel.h
     widgets/PreviewPanel.cpp
     widgets/PreviewPanel.h
     widgets/PreviewOverlayPanel.cpp

@@ -7,11 +7,13 @@
 #include <QWidget>
 
 class LayerPreviewPanel;
+class DiagnosticSemanticPreviewPanel;
 class PreviewOverlayPanel;
 class PreviewPanel;
 class QComboBox;
 class QLabel;
 class QStackedWidget;
+struct DiagnosticAnalysisResult;
 
 /**
  * @brief Available views in the unified preview workspace.
@@ -27,8 +29,9 @@ enum class PreviewWorkspaceMode
  */
 enum class DiagnosticPreviewMode
 {
-    MaterialOverlay = 0,
-    RawPreview = 1,
+    TextureFillSemantics = 0,
+    MaterialOverlay = 1,
+    RawPreview = 2,
 };
 
 /**
@@ -50,6 +53,20 @@ public:
      * @param package Package summary produced by PackageLoader.
      */
     void LoadPackage(const PackageSummary& package);
+
+    /**
+     * @brief Publish the newest scene-aware diagnostic result to the semantic view.
+     * @param result Immutable analysis result and partition evidence.
+     */
+    void SetDiagnosticAnalysis(
+        const DiagnosticAnalysisResult& result);
+
+    /**
+     * @brief Clear stale semantic diagnostic evidence.
+     * @param reason User-visible invalidation reason.
+     */
+    void ClearDiagnosticAnalysis(
+        const QString& reason = QString());
 
     /**
      * @brief Return the canonical real layer range used by the workspace.
@@ -160,6 +177,7 @@ private:
     QStackedWidget* m_diagnosticStack{nullptr};
     QWidget* m_diagnosticContainer{nullptr};
     LayerPreviewPanel* m_productionView{nullptr};
+    DiagnosticSemanticPreviewPanel* m_semanticView{nullptr};
     PreviewOverlayPanel* m_overlayView{nullptr};
     PreviewPanel* m_rawPreviewView{nullptr};
 };

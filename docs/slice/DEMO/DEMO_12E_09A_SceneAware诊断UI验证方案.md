@@ -1,7 +1,7 @@
 # DEMO 12E-09A Scene-aware 诊断 UI 验证方案
 
 > 文档版本：v1.0
-> 文档状态：Formal DEMO / 09A-04 COMPLETE / 09A-05 READY / 09A-06 PREPARED
+> 文档状态：Formal DEMO / 09A-05 COMPLETE / 09A-06 READY
 > 日期：2026-07-29
 
 ## 1. 验证目标
@@ -96,4 +96,11 @@ stale/cancel/失败不污染成功文件；
 UI/Worker 不阻塞且不跨身份复用；
 同层预览不跨 layer；
 生产 Profile、package 和 RGBWSV 协议保持不变。
+```
+
+## 9. 原子验证入口
+
+```text
+09A-05：DOC_PREP_12E_09A_05_同层语义Preview准备.md；
+09A-06：DOC_PREP_12E_09A_06_诊断UI阶段收口准备.md。
 ```
