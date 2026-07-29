@@ -94,6 +94,13 @@ docs/slice/REPORT/REPORT_12E_09A_03_中文参数控件与状态区当前状态.m
 
 状态：READY / 09A-03 COMPLETE
 
+原子准备与执行指令：
+
+```text
+docs/slice/DOC/DOC_PREP_12E_09A_04_异步分析Worker准备.md
+docs/codex_task/current/CODEX_PROMPT_12E_09A_04_异步分析Worker执行指令.md
+```
+
 目标：
 
 ```text
