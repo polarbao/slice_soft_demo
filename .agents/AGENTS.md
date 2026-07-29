@@ -198,3 +198,15 @@ ai_workspace/integrated_reports/
 ```
 
 Do not save secrets, tokens, credentials, cookies, or private host-specific paths.
+
+## 10. Commit Message Contract
+
+New commits must use:
+
+```text
+type(scope): 【功能分类】中文摘要
+```
+
+The body must use Chinese audit items such as `【模块】`, `【验证】`, and
+`【边界】`. Follow `.agents/docs/commit-style.md`. Do not rewrite published
+remote history solely to restyle old commit messages.

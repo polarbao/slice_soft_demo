@@ -40,6 +40,7 @@
 7. For destructive operations, dependency upgrades, architecture migration, production-path changes, hardware/device control, or git history rewrite, give a plan and wait for confirmation.
 8. After a minimal task, run task-specific validation. Before committing, run `git status --short` and `git diff --check`.
 9. Commit only when the user asks or when the active task explicitly requires it; do not push unless explicitly instructed.
+10. New commits must use `type(scope): 【功能分类】中文摘要`; use Chinese body items such as `【模块】`, `【验证】`, and `【边界】`. Do not rewrite published remote history solely to restyle old messages.
 
 ## Evidence Classification
 

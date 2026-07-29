@@ -2,15 +2,19 @@
 
 ## Purpose
 
-提交信息需要同时服务于 Git 历史审计、阶段回溯和 AI 接续阅读。后续提交默认使用中文正文，并用 `【模块】` 标明变更类别。
+提交信息需要同时服务于 Git 历史审计、阶段回溯和 AI 接续阅读。后续提交必须使用中文摘要和正文，并在主题中用 `【功能分类】` 标明变更类别。
 
 ## Subject
 
-推荐格式：
+强制格式：
 
 ```text
-type(scope): 中文摘要
+type(scope): 【功能分类】中文摘要
 ```
+
+`【功能分类】` 应使用能够表达本次提交主业务的短语，例如
+`【批量导入】`、`【场景状态】`、`【预览IO】`、`【阶段收口】`。
+同一提交只保留一个主功能分类；无关改动应拆分提交。
 
 常用 `type`：
 
@@ -72,7 +76,7 @@ warn_and_attempt 不视为 production-safe
 ## Examples
 
 ```text
-feat(09P): 固化 experimental OpenVDB report schema
+feat(09P): 【诊断协议】固化 experimental OpenVDB report schema
 
 - 【cli】扩展 slicer_cli experimental diagnostic report，补充 input、configSnapshot、outputContract 和 legacyPath 字段
 - 【schema】新增机器可读 golden contract，并通过脚本验证 strict_closed、diagnostic_only、warn_and_attempt 三种模式
@@ -81,11 +85,17 @@ feat(09P): 固化 experimental OpenVDB report schema
 ```
 
 ```text
-docs(slice): 建立 09P-R2 正式文档与任务入口
+docs(slice): 【文档治理】建立 09P-R2 正式文档与任务入口
 
 - 【docs/slice】新增 PRD、DEV、DEMO、ROADMAP 和 REPORT 分类入口
 - 【codex_task】新增当前任务清单与执行提示词入口
 - 【治理】明确 docs/slice 是正式产品文档，docs/codex_task/current 是当前 AI 执行任务，docs/archive 是历史证据
 - 【验证】运行 git diff --check，通过
 ```
+
+## History Policy
+
+- 该格式适用于后续新提交和尚未发布的本地提交。
+- 不仅为了统一样式而改写已经发布到远端的历史。
+- 如需修订未发布本地提交，必须先确认提交范围和远端关系，再执行历史改写。
 
