@@ -4,7 +4,7 @@
 > 版本：v2.3
 > 更新日期：2026-07-28
 > 当前代码阶段：12E-09C、09A-01/02 COMPLETE / Stage 13 13A-01..05、13B-01..08、13B-04A、13C-01..05 COMPLETE
-> 当前推荐任务：13D-02 READY FOR DEVELOPMENT
+> 当前推荐任务：13D-03 READY FOR DEVELOPMENT
 > 下一 Gate：13D 工作台布局 -> 12E-09A-03..06 -> 12E-10
 
 ## 1. 文档职责
@@ -55,7 +55,7 @@
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
 | 13B 多模型排版与联合切片 | 13B-01..08、13B-04A FUNCTIONAL COMPLETE；production INPUT OPEN | 0 | 保持回归并等待设备输入 |
 | 13C TIFF 原生统一预览 | 13C-01..05 COMPLETE / M13-4 PASS | 0 | 保持回归 |
-| 13D Qt 工作台布局 | 13D-01 COMPLETE / 13D-02 READY | 3 个待实现任务 | 执行 13D-02 |
+| 13D Qt 工作台布局 | 13D-01..02 COMPLETE / 13D-03 READY | 2 个待实现任务 | 执行 13D-03 |
 
 计数口径：
 
@@ -125,8 +125,8 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入上述 
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
 | 22A | 13D-01 顶部作业栏 | `COMPLETE` | 13B-08、13C-05 | 固定顶部主动作与状态摘要已实现 |
-| 22B | 13D-02 单一 Context Inspector | `READY FOR DEVELOPMENT` | 13D-01 | 双右栏收口 |
-| 22C | 13D-03 项目区与诊断 Dock | `PREPARED / WAIT` | 13D-02 | 高级工具和诊断入口收口 |
+| 22B | 13D-02 单一 Context Inspector | `COMPLETE` | 13D-01 | 双右栏已收为唯一检查器 |
+| 22C | 13D-03 项目区与诊断 Dock | `READY FOR DEVELOPMENT` | 13D-02 | 高级工具和诊断入口收口 |
 | 22D | 13D-04 响应式与阶段收口 | `PREPARED / WAIT` | 13D-03 | 解锁 12E-09A-03 |
 
 ### Wave 4：Stage 12 最终收口
@@ -180,7 +180,7 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
-13C 与 13D-01 已完成，当前唯一推荐入口为 `13D-02` 单一 Context Inspector。
+13C 与 13D-01..02 已完成，当前唯一推荐入口为 `13D-03` 项目区与诊断 Dock。
 
 ### 尚未完成
 
@@ -233,7 +233,7 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 CURRENT：13C-05 COMPLETE / M13-4 PASS；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-02；
 M13-1：CANDIDATE PASS；
-NEXT：执行 13D-02 单一 Context Inspector；
+NEXT：执行 13D-03 项目区与诊断 Dock；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；
 13B-07：Debug/Release 功能矩阵完成；production Gate 继续等待设备输入和 22 实例预算；
@@ -243,5 +243,5 @@ AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13C-03：TIFF 原生统一生产预览已完成；
 13C-04/05：Preview IO 与阶段证据链已完成；
 13B-08：FUNCTIONAL COMPLETE / PRODUCTION INPUT OPEN；
-13D：13D-01 COMPLETE，13D-02 原子准备和顺序 Gate 已解除。
+13D：13D-01..02 COMPLETE，13D-03 原子准备和顺序 Gate 已解除。
 ```

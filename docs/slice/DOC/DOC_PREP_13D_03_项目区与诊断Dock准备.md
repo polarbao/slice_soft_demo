@@ -1,6 +1,6 @@
 # DOC PREP 13D-03 项目区与诊断 Dock 准备
 
-> 文档状态：PREPARED / WAIT 13D-02 PASS
+> 文档状态：READY FOR DEVELOPMENT
 > 版本：v1.0
 > 日期：2026-07-29
 

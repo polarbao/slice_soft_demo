@@ -20,6 +20,7 @@
 #include "services/TransformedModelPreflightLoader.h"
 #include "widgets/ChannelChartPanel.h"
 #include "widgets/ConfigEditorPanel.h"
+#include "widgets/ContextInspector.h"
 #include "widgets/DiagnosticsDock.h"
 #include "widgets/LogPanel.h"
 #include "widgets/MaterialProcessPanel.h"
@@ -191,11 +192,13 @@ private:
 
     PreviewWorkspace* m_previewWorkspace{nullptr};
     QTabWidget* m_mainWorkspaceTabs{nullptr};
+    QWidget* m_configWorkspace{nullptr};
     QWidget* m_modelTopViewWorkspace{nullptr};
     ModelTopViewWidget* m_modelTopViewWidget{nullptr};
     ModelListPanel* m_modelListPanel{nullptr};
     SceneLayoutPanel* m_sceneLayoutPanel{nullptr};
     ModelTransformPanel* m_modelTransformPanel{nullptr};
+    ContextInspector* m_contextInspector{nullptr};
     DiagnosticsDock* m_diagnosticsDock{nullptr};
     ReportPanel* report_panel_{nullptr};
     ConfigEditorPanel* config_editor_panel_{nullptr};

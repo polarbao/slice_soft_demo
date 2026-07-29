@@ -1,7 +1,7 @@
 # DEV 13D Qt 工作台 Shell 与 ContextInspector 设计
 
 > 文档版本：v1.1
-> 文档状态：APPROVED / 13D-01 COMPLETE / 13D-02 READY
+> 文档状态：APPROVED / 13D-01..02 COMPLETE / 13D-03 READY
 > 日期：2026-07-28
 
 ## 1. 设计原则

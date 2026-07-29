@@ -7,6 +7,7 @@
 #include "../models/SceneSelectionModel.h"
 #include "../widgets/ChannelChartPanel.h"
 #include "../widgets/ConfigEditorPanel.h"
+#include "../widgets/ContextInspector.h"
 #include "../widgets/DiagnosticsDock.h"
 #include "../widgets/LayerPreviewPanel.h"
 #include "../widgets/MaterialClosurePanel.h"
@@ -591,6 +592,10 @@ int UiSmokeTestRunner::run(const UiSmokeTestOptions& options) {
     {
         return WorkbenchJobActionBar(options);
     }
+    if (options.case_name == "workbench-context-inspector")
+    {
+        return WorkbenchContextInspector(options);
+    }
     if (options.case_name == "production-mode-selector")
     {
         return ProductionModeSelector(options);
@@ -816,6 +821,132 @@ int UiSmokeTestRunner::WorkbenchJobActionBar(
     return pass(QStringLiteral(
         "workbench-job-action-bar fixed/import/save/"
         "mode-profile/slice/cancel/state"));
+}
+
+int UiSmokeTestRunner::WorkbenchContextInspector(
+    const UiSmokeTestOptions& options)
+{
+    MainWindow window(options.repo_root);
+    ContextInspector* inspector =
+        window.findChild<ContextInspector*>(
+            QStringLiteral("contextInspector"));
+    QTabWidget* inspectorTabs =
+        window.findChild<QTabWidget*>(
+            QStringLiteral("contextInspectorTabs"));
+    QSplitter* mainSplitter =
+        window.findChild<QSplitter*>(
+            QStringLiteral("mainSplitter"));
+    QPushButton* openConfigButton =
+        window.findChild<QPushButton*>(
+            QStringLiteral(
+                "contextInspectorOpenConfigButton"));
+    QWidget* oldModelSideTabs =
+        window.findChild<QWidget*>(
+            QStringLiteral("modelSceneSideTabs"));
+    if (inspector == nullptr
+        || inspectorTabs == nullptr
+        || mainSplitter == nullptr
+        || openConfigButton == nullptr
+        || oldModelSideTabs != nullptr
+        || mainSplitter->count() != 3
+        || mainSplitter->widget(2) != inspector)
+    {
+        return fail(QStringLiteral(
+            "13D-02 single context inspector shell mismatch"));
+    }
+    const QStringList expectedPages{
+        QStringLiteral("场景"),
+        QStringLiteral("变换"),
+        QStringLiteral("排版"),
+        QStringLiteral("切片设置"),
+        QStringLiteral("预检"),
+        QStringLiteral("高级诊断"),
+    };
+    if (inspector->PageTitles() != expectedPages
+        || !inspector->isAncestorOf(
+            window.m_modelListPanel)
+        || !inspector->isAncestorOf(
+            window.m_modelTransformPanel)
+        || !inspector->isAncestorOf(
+            window.m_sceneLayoutPanel)
+        || !inspector->isAncestorOf(
+            window.m_modelPreflightPanel)
+        || window.m_modelTopViewWorkspace
+               ->isAncestorOf(window.m_modelListPanel))
+    {
+        return fail(QStringLiteral(
+            "13D-02 context pages were duplicated or misplaced"));
+    }
+
+    const QString configPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/configs/golden/"
+            "material_process_top2_fixture.json"));
+    const QString modelPath = QDir(options.repo_root).filePath(
+        QStringLiteral(
+            "samples/models/openvdb/surface_shell_cube.obj"));
+    if (!window.config_editor_panel_->loadConfig(configPath))
+    {
+        return fail(QStringLiteral(
+            "13D-02 fixture configuration unavailable"));
+    }
+    SceneBatchImportRequest request;
+    request.batchid =
+        QStringLiteral("13d-context-inspector");
+    request.configpath = configPath;
+    request.files = QStringList{modelPath};
+    request.autolayout = true;
+    if (!window.m_sceneBatchImportController
+             .Start(request)
+             .IsValid()
+        || !WaitForCondition(
+            [&window]()
+            {
+                return !window.m_sceneBatchImportController
+                            .IsRunning();
+            }))
+    {
+        return fail(QStringLiteral(
+            "13D-02 fixture model import did not complete"));
+    }
+    const quint64 sceneRevision =
+        window.m_sceneDocument.SceneRevision();
+    const QString selectedInstance =
+        window.m_sceneSelectionModel.SelectedInstance();
+    if (selectedInstance.isEmpty())
+    {
+        return fail(QStringLiteral(
+            "13D-02 imported instance was not selected"));
+    }
+    for (int index = 0;
+         index < inspectorTabs->count();
+         ++index)
+    {
+        inspectorTabs->setCurrentIndex(index);
+        QApplication::processEvents(
+            QEventLoop::AllEvents,
+            20);
+        if (window.m_sceneDocument.SceneRevision()
+                != sceneRevision
+            || window.m_sceneSelectionModel
+                   .SelectedInstance()
+                != selectedInstance)
+        {
+            return fail(QStringLiteral(
+                "13D-02 page switch changed scene identity"));
+        }
+    }
+
+    openConfigButton->click();
+    if (window.m_mainWorkspaceTabs->currentWidget()
+        != window.m_configWorkspace)
+    {
+        return fail(QStringLiteral(
+            "13D-02 slice settings did not open central config"));
+    }
+    return pass(QStringLiteral(
+        "workbench-context-inspector single-shell/"
+        "five-contexts/identity/config-navigation"));
 }
 
 int UiSmokeTestRunner::loadPackage(const UiSmokeTestOptions& options) {
@@ -2675,7 +2806,8 @@ int UiSmokeTestRunner::WorkspaceLayoutSizes(const UiSmokeTestOptions& options)
     auto* splitter = window.findChild<QSplitter*>(QStringLiteral("mainSplitter"));
     auto* projectPanel = window.findChild<QWidget*>(QStringLiteral("projectPanel"));
     auto* workspaceTabs = window.findChild<QTabWidget*>(QStringLiteral("mainWorkspaceTabs"));
-    auto* rightPanel = window.findChild<QTabWidget*>(QStringLiteral("rightDiagnosticsPanel"));
+    auto* rightPanel = window.findChild<ContextInspector*>(
+        QStringLiteral("contextInspector"));
     auto* preview = window.findChild<PreviewWorkspace*>(QStringLiteral("previewWorkspace"));
     auto* configPanel = window.findChild<ConfigEditorPanel*>();
     auto* dock = window.findChild<DiagnosticsDock*>(QStringLiteral("diagnosticsDock"));
@@ -5316,12 +5448,12 @@ int UiSmokeTestRunner::MultiModelList(
         QStringLiteral("modelTopViewWidget"));
     auto* transformPanel = window.findChild<ModelTransformPanel*>(
         QStringLiteral("modelTransformPanel"));
-    auto* sideTabs = window.findChild<QTabWidget*>(
-        QStringLiteral("modelSceneSideTabs"));
+    auto* inspector = window.findChild<ContextInspector*>(
+        QStringLiteral("contextInspector"));
     if (integratedPanel == nullptr
         || integratedCanvas == nullptr
         || transformPanel == nullptr
-        || sideTabs == nullptr)
+        || inspector == nullptr)
     {
         return fail(
             QStringLiteral("multi-model-list workspace integration missing"));
@@ -5340,11 +5472,12 @@ int UiSmokeTestRunner::MultiModelList(
         const QRect canvasRect =
             GlobalRect(integratedCanvas).adjusted(1, 1, -1, -1);
         const QRect sideRect =
-            GlobalRect(sideTabs).adjusted(1, 1, -1, -1);
+            GlobalRect(inspector).adjusted(1, 1, -1, -1);
         if (canvasRect.intersects(sideRect)
-            || sideTabs->width() < sideTabs->minimumWidth()
+            || inspector->width() < inspector->minimumWidth()
             || integratedCanvas->width() < integratedCanvas->minimumWidth()
-            || sideTabs->count() != 3)
+            || !inspector->PageTitles().contains(
+                QStringLiteral("场景")))
         {
             return fail(
                 QStringLiteral(
@@ -5506,11 +5639,15 @@ int UiSmokeTestRunner::SceneGridLayout(
     MainWindow window(options.repo_root);
     auto* integratedPanel = window.findChild<SceneLayoutPanel*>(
         QStringLiteral("sceneLayoutPanel"));
-    auto* sideTabs = window.findChild<QTabWidget*>(
-        QStringLiteral("modelSceneSideTabs"));
+    auto* inspector = window.findChild<ContextInspector*>(
+        QStringLiteral("contextInspector"));
+    auto* inspectorTabs = window.findChild<QTabWidget*>(
+        QStringLiteral("contextInspectorTabs"));
     if (integratedPanel == nullptr
-        || sideTabs == nullptr
-        || sideTabs->count() != 3)
+        || inspector == nullptr
+        || inspectorTabs == nullptr
+        || !inspector->PageTitles().contains(
+            QStringLiteral("排版")))
     {
         return fail(
             QStringLiteral(
@@ -5526,11 +5663,11 @@ int UiSmokeTestRunner::SceneGridLayout(
     {
         window.resize(size);
         window.show();
-        sideTabs->setCurrentWidget(integratedPanel);
+        inspectorTabs->setCurrentWidget(integratedPanel);
         QApplication::processEvents(QEventLoop::AllEvents, 50);
         if (!integratedPanel->isVisible()
             || integratedPanel->width() < 200
-            || sideTabs->geometry().right()
+            || inspector->geometry().right()
                 >= window.centralWidget()->width())
         {
             return fail(

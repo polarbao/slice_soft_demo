@@ -1,6 +1,6 @@
 # TASKS 13D Qt 工作台布局收口任务清单
 
-> 文档状态：13D-01 COMPLETE / 13D-02 READY
+> 文档状态：13D-01..02 COMPLETE / 13D-03 READY
 > 版本：v1.0
 > 日期：2026-07-28
 
@@ -17,7 +17,7 @@
 
 ### 13D-02 单一 Context Inspector
 
-状态：`READY FOR DEVELOPMENT`
+状态：`COMPLETE`
 
 把模型列表、变换、排版、切片设置和预检重组为单一右侧检查器；保持实例 identity 和现有业务
 controller。
@@ -27,7 +27,7 @@ controller。
 
 ### 13D-03 项目区和诊断 Dock 收口
 
-状态：`PREPARED / WAIT 13D-02`
+状态：`READY FOR DEVELOPMENT`
 
 左侧路径/兼容工具移入可折叠项目区；右侧诊断/工艺对比迁入底部 DiagnosticsDock；迁移后删除重复
 壳层，不删除能力。

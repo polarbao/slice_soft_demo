@@ -423,33 +423,14 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &m_sceneSelectionModel,
         &m_sceneTransformController,
         m_modelTopViewWorkspace);
-    auto* modelWorkspaceSplitter = new QSplitter(
-        Qt::Horizontal,
-        m_modelTopViewWorkspace);
-    modelWorkspaceSplitter->setObjectName(
-        QStringLiteral("modelTransformWorkspaceSplitter"));
-    auto* modelSideTabs = new QTabWidget(m_modelTopViewWorkspace);
-    modelSideTabs->setObjectName(QStringLiteral("modelSceneSideTabs"));
-    modelSideTabs->setDocumentMode(true);
-    modelSideTabs->setMinimumWidth(250);
-    modelSideTabs->setMaximumWidth(330);
-    modelSideTabs->addTab(m_modelListPanel, QStringLiteral("模型列表"));
-    modelSideTabs->addTab(m_modelTransformPanel, QStringLiteral("变换"));
-    modelSideTabs->addTab(m_sceneLayoutPanel, QStringLiteral("排版"));
-    modelWorkspaceSplitter->addWidget(m_modelTopViewWidget);
-    modelWorkspaceSplitter->addWidget(modelSideTabs);
-    modelWorkspaceSplitter->setStretchFactor(0, 1);
-    modelWorkspaceSplitter->setStretchFactor(1, 0);
-    modelWorkspaceSplitter->setCollapsible(0, false);
-    modelWorkspaceSplitter->setCollapsible(1, false);
-    modelWorkspaceSplitter->setSizes(QList<int>{720, 280});
-    modelTopViewLayout->addWidget(modelWorkspaceSplitter, 1);
+    modelTopViewLayout->addWidget(m_modelTopViewWidget, 1);
     m_previewWorkspace = new PreviewWorkspace(m_mainWorkspaceTabs);
     auto* configScrollArea = new QScrollArea(m_mainWorkspaceTabs);
     configScrollArea->setObjectName(QStringLiteral("configEditorScrollArea"));
     configScrollArea->setWidgetResizable(true);
     config_editor_panel_ = new ConfigEditorPanel(&config_document_, configScrollArea);
     configScrollArea->setWidget(config_editor_panel_);
+    m_configWorkspace = configScrollArea;
     const int modelTopViewTab = m_mainWorkspaceTabs->addTab(
         m_modelTopViewWorkspace,
         QStringLiteral("模型"));
@@ -781,6 +762,15 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &m_sceneSliceActionController,
         &SceneSliceActionController::Cancel);
     connect(
+        m_contextInspector,
+        &ContextInspector::SigOpenConfigRequested,
+        this,
+        [this]()
+        {
+            m_mainWorkspaceTabs->setCurrentWidget(
+                m_configWorkspace);
+        });
+    connect(
         m_modelTransformPanel,
         &ModelTransformPanel::SigStatusMessage,
         status_label_,
@@ -985,6 +975,7 @@ void MainWindow::OnImportModelPreview()
         m_sceneSelectionModel.Clear();
     }
     m_mainWorkspaceTabs->setCurrentWidget(m_modelTopViewWorkspace);
+    m_contextInspector->ShowScenePage();
 
     SceneBatchImportRequest request;
     request.batchid =
@@ -1671,21 +1662,27 @@ QWidget* MainWindow::createRunPanel()
 }
 
 QWidget* MainWindow::createRightPanel() {
-    auto* tabs = new QTabWidget(this);
-    tabs->setObjectName(QStringLiteral("rightDiagnosticsPanel"));
-    tabs->setDocumentMode(true);
-    material_process_panel_ = new MaterialProcessPanel(tabs);
-    warnings_view_ = new QPlainTextEdit(tabs);
+    auto* legacyTabs = new QTabWidget(this);
+    legacyTabs->setObjectName(
+        QStringLiteral("legacyRightToolsTabs"));
+    legacyTabs->setDocumentMode(true);
+    material_process_panel_ = new MaterialProcessPanel(legacyTabs);
+    warnings_view_ = new QPlainTextEdit(legacyTabs);
     warnings_view_->setReadOnly(true);
-    compare_view_ = new QPlainTextEdit(tabs);
+    compare_view_ = new QPlainTextEdit(legacyTabs);
     compare_view_->setReadOnly(true);
-    m_modelPreflightPanel = new ModelPreflightPanel(tabs);
-    tabs->addTab(material_process_panel_, "参数");
-    tabs->addTab(m_modelPreflightPanel, QStringLiteral("模型预检"));
-    tabs->addTab(warnings_view_, "诊断");
-    tabs->addTab(compare_view_, "工艺对比");
-    tabs->setMinimumWidth(240);
-    return tabs;
+    m_modelPreflightPanel = new ModelPreflightPanel(this);
+    legacyTabs->addTab(material_process_panel_, "参数");
+    legacyTabs->addTab(warnings_view_, "诊断");
+    legacyTabs->addTab(compare_view_, "工艺对比");
+    m_contextInspector = new ContextInspector(
+        m_modelListPanel,
+        m_modelTransformPanel,
+        m_sceneLayoutPanel,
+        m_modelPreflightPanel,
+        legacyTabs,
+        this);
+    return m_contextInspector;
 }
 
 QString MainWindow::absoluteFromRepo(const QString& path) const {
@@ -2468,6 +2465,10 @@ void MainWindow::UpdateActionAvailability()
         : QStringLiteral("请先导入至少一个模型。");
     actionPresentation.slicereason = sceneSliceReason;
     m_sceneActionBar->SetPresentation(actionPresentation);
+    m_contextInspector->SetSliceSettingsSummary(
+        actionPresentation.modelabel,
+        actionPresentation.profilelabel,
+        sceneSliceReason);
     m_importSliceButton->setEnabled(enabled);
     m_importOpenVdbButton->setEnabled(enabled);
     m_importOpenVdbCandidateButton->setEnabled(enabled);
