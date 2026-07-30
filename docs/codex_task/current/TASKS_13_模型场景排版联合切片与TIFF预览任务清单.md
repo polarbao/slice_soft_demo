@@ -222,8 +222,8 @@ REPORT_13B_02_模型列表与实例操作当前状态.md。
 ```text
 maxColumns=11；
 maxRows=2；
-columnGapMm=20.00；
-rowGapMm=30.00；
+columnGapMm=10.00；
+rowGapMm=10.00；
 edge_clearance；
 row_major；
 UI 步长 0.01 mm；

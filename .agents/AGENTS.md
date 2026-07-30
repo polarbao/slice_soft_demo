@@ -131,7 +131,7 @@ Current Stage 12 track:
 12C: R0/R1/R2 Qt workbench closure complete.
 12D: R0/R1/R2/R3 complete; 12D-10 real-model validation passed on three OBJ fixtures.
 12E: 12E-01/02/03/04/05/06/07, 12E-08A/08B/08C, 12E-08C-R1-01..04, R2-01..04, and R3-01..04 complete. R3-04 records the historical `NO-GO / FROZEN`. R4-01..07, R4-07-R1, R4-07-R2, Quick-CI-R1, and R4-08-R2 are complete; xiao_ma/yecan two-family candidate evidence, four-case Release/closure/legacy/RIP gates, the versioned reference-machine candidate budget, and current Quick CI pass. R4-08-R2 is `GO` after explicit authorization. aishen/meigui/titian remain a 0/3 complex-relief coverage gap. 12E-09A-01..06 and 12E-08D-01..06 are complete. Restricted RGB+W and lower-S/internal-void-S/surface-outer-V material-parity Profiles pass the 0.01 mm TIFF/RIP gate as explicit candidates. Legacy remains default because Global total time is 4.82x-8.59x and peak memory is 8.19x-8.74x higher in the current matrix. 12E-10A is prepared and waits for explicit user authorization.
-13: 13A/13B/13C and inserted 13B-08/13D/13E are complete. 13E freezes deterministic standard-nail front-up orientation (`rotate_x_90`, scene `+Z`), product `maxHeightMm=9`, right-side preflight/diagnostics, and bottom task details.
+13: 13A/13B/13C and inserted 13B-08/13D/13E are complete. 13E freezes deterministic standard-nail front-up orientation (`rotate_x_90`, scene `+Z`), product `maxHeightMm=9`, right-side preflight/diagnostics, and mutually exclusive right-side task details.
 ```
 
 R0/R1/R2 principles still apply to refactors:

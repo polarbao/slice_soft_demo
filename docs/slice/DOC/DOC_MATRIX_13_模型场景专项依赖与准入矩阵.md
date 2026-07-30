@@ -15,7 +15,7 @@
 | 13A-05 | 13A-04 | UI smoke、用户说明、13A 报告 | 13B UI |
 | 13B-01 | 13A-01 | MultiModelScene 与 Scene Effective Config schema | 12E-09A-02、13B-02 |
 | 13B-02 | 13B-01、13A-02 | 模型列表、导入/复制/删除/锁定 | 13B-03 |
-| 13B-03 | 13B-02 | 11x2 规则排版、20/30 mm UI 参数 | 13B-04 |
+| 13B-03 | 13B-02 | 11x2 规则排版、默认 10/10 mm UI 参数 | 13B-04 |
 | 13B-04 | 13B-03、ProductionAdmissionPolicy | 幅面、碰撞和逐实例准入 | 13B-05 |
 | 13B-05 | 13B-04 | 全局 raster 与逐实例层合成 | 13B-06 |
 | 13B-06 | 13B-05、共享 RGBWSV writer | 单 package、scene report、RIP strict | 13B-07 |
@@ -45,7 +45,7 @@
 | 13A-05 | COMPLETE（2026-07-27） | 统一回归、用户说明、REPORT_13A 和 M13-1 候选 PASS |
 | 13B-01 | COMPLETE（2026-07-27） | MultiModelScene、ResourceScope、scene identity、Scene Effective Config、正负 fixture、单测和回归已落地 |
 | 13B-02 | COMPLETE | 1..22 实例、资源隔离、列表命令、场景草稿、UI Smoke 和 Quick CI 已完成 |
-| 13B-03 | COMPLETE | 11x2、row-major、20/30 mm 净距、锁定、原子恢复、配置回读和 Qt UI 已完成 |
+| 13B-03 | COMPLETE | 11x2、row-major、默认 10/10 mm 净距、锁定、原子恢复、配置回读和 Qt UI 已完成 |
 | 13B-04 | FUNCTIONAL FIXTURE COMPLETE / PRODUCTION INPUT OPEN | SceneCollisionService、稳定错误、两阶段投影碰撞和逐实例准入已通过回归 |
 | 13B-05 | FIXTURE COMPLETE | 公共 Raster/Layer、Legacy/Global adapter、共享 Grid、联合合成和回归证据已完成 |
 | 13B-06 | FIXTURE COMPLETE / PRODUCTION INPUT OPEN | 单 package、typed scene extension、scene report、原子发布和 RIP strict 已通过 fixture 回归 |

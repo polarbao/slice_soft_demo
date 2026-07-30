@@ -76,7 +76,7 @@ scene effective config 已支持原子保存、回读、hash、cancel 和 stale�
 当前已有 source/transformed 双预检和 Legacy/Global 独立 admission；
 当前已有 1..22 有序实例、添加/复制/删除/显隐/锁定、列表/画布选择同步；
 当前已有多源多实例 Scene Effective Config 保存、校验、原子写入和回读；
-当前已有 11x2 row-major 排版、20/30 mm 边到边净距、原子恢复和 Qt 排版页；
+当前已有 11x2 row-major 排版、默认 10/10 mm 边到边净距、原子恢复和 Qt 排版页；
 当前已有显式 fixture buildVolume、逐实例越界/admission/revision 和投影碰撞检查；
 加载可编辑场景后生产切片保持阻断，scene effective config 尚未接入 slicer_cli；
 当前已有 fixture 多模型全局 Raster 和联合内存层合成；
@@ -98,7 +98,7 @@ fixture 碰撞准入已经实现；联合切片和 TIFF 原生统一预览尚未
 短期变换：XY、rotateZ、uniformScale、mirrorX/mirrorY；
 Z 落台沿用当前流程；
 规则排版：最多 11x2=22；
-间距：列 20.00 mm、行 30.00 mm，均为边到边净距且 UI 可配置；
+间距：列 10.00 mm、行 10.00 mm，均为边到边净距且 UI 可配置；
 多模型：一个场景、一个 package、每层一个 TIFF；
 生产预览：TIFF 为唯一权威像素源；
 诊断语义：report/mask 可选，不从 TIFF 猜测；
@@ -238,7 +238,7 @@ Stage 13 近程保持回归；
 | 13D 工作台布局 | 13D-01..04 COMPLETE / PASS | 否 |
 
 13A-01..05 和 13B-02..07 的实际 API、单测、UI Smoke、用户手册及状态报告已形成 A 级证据；
-13B-03 已冻结并实现 row-major、11x2、20/30 mm 边到边净距、锁定和原子提交规则。13B-04
+13B-03 已冻结并实现 row-major、11x2、默认 10/10 mm 边到边净距、锁定和原子提交规则。13B-04
 已关闭 13B-05 功能 Fixture Gate，13B-06 已完成单 package/scene report fixture 闭环，13B-07
 真实模型功能矩阵已通过；正式 buildVolume/原点/机器轴和 22 实例预算未关闭，因此
 production acceptance 仍阻断。

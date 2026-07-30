@@ -14,7 +14,7 @@ slicer_core/config.h
   -> 产品默认 maxHeightMm
 
 apps/slicer_debug_ui
-  -> 右侧预检与诊断、底部任务详情和生成配置
+  -> 右侧预检与诊断、右侧互斥任务详情和生成配置
 
 tests
   -> 生成式 AutoOrient fixture、Qt UI Smoke、真实模型只读回归
@@ -126,7 +126,8 @@ TaskDetailsDock（保留 DiagnosticsDock 类名以减少迁移风险）
 保留 diagnosticsDock / diagnosticsTabs objectName，避免破坏布局状态和自动化查找；
 菜单 action objectName 保持 diagnosticsToggleAction；
 用户可见标题改为“任务详情”；
-布局版本仅在几何状态不兼容时升级，本次容器页调整不改变 Dock 几何。
+只允许右侧停靠，并与 ContextInspector 互斥显示；
+Dock 从底部迁移到右侧后，将布局 schema 升级为 2，旧几何状态回退安全默认布局。
 ```
 
 ## 5. 测试设计
@@ -155,6 +156,7 @@ Context Inspector 页为：场景/变换/排版/切片设置/预检与诊断；
 warningsDiagnosticView 是 Context Inspector 后代；
 任务详情页不包含“诊断”；
 任务详情默认折叠，展开/收起不改变真实 layerIndex；
+任务详情展开时隐藏 Context Inspector，关闭后恢复；
 1280x720、1440x900、1920x1080 不重叠。
 ```
 

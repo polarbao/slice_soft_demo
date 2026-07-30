@@ -104,7 +104,7 @@ sequenceDiagram
   "layout": {
     "mode": "grid",
     "columns": 11, "rows": 2,
-    "columnGapMm": 20.0, "rowGapMm": 30.0,
+    "columnGapMm": 10.0, "rowGapMm": 10.0,
     "keepManualAdjustments": true
   },
   "expectedSceneRevision": 42

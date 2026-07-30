@@ -18,7 +18,7 @@
 ```text
 俯视画布始终显示 SceneDocument 中全部 visible 实例；
 追加模型成功后，自动应用当前 11x2 row-major 排版规则；
-默认列/行净距继续使用 20/30 mm，用户仍可在“排版”页修改或恢复；
+默认列/行净距均为 10 mm，用户仍可在“排版”页修改或恢复；
 SceneViewGeometry 保留每个三角形的变换后 Z、UV 和材质索引；
 SceneViewGeometry 保留材质 diffuse RGB、贴图路径和资源可用性；
 后台投影任务生成最大 768 像素边长的 RGBA 俯视 SurfacePreview；

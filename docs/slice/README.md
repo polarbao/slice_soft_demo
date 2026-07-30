@@ -263,7 +263,7 @@
 | `PRD/PRD_13A_模型俯视工作区与实例变换.md` | 短期俯视、选中变换和中长期 3D 交互需求 |
 | `DEV/DEV_13A_模型俯视渲染与变换架构设计.md` | ModelTransform/ModelInstance、Qt 俯视和 3D 后端比较 |
 | `DEMO/DEMO_13A_模型俯视与变换验证方案.md` | 坐标、移动、旋转、缩放、镜像和准入验证 |
-| `PRD/PRD_13B_多模型规则排版与联合切片.md` | 最多 11x2、20/30 mm 间距、多模型单 package 需求 |
+| `PRD/PRD_13B_多模型规则排版与联合切片.md` | 最多 11x2、默认 10/10 mm 间距、多模型单 package 需求 |
 | `DEV/DEV_13B_MultiModelScene规则排版与联合切片设计.md` | Scene schema、排版、碰撞、全局 raster 和联合写包 |
 | `DEMO/DEMO_13B_多模型排版联合切片验证方案.md` | 1/11/12/22 实例、负向 Gate、RIP 和性能矩阵 |
 | `PRD/PRD_13C_RGBWSV_TIFF原生统一预览.md` | TIFF 单通道、RGB+S+W+V 和重复预览 IO 收口需求 |

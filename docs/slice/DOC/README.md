@@ -54,7 +54,7 @@
 | `DOC_PREP_13A_03_选择与精确变换准备.md` | 13A-03 单模型 X/Y、绕 Z、统一缩放、revision 和 session 回读执行准备 |
 | `DOC_PREP_13A_04_镜像与变换后预检准备.md` | 13A-04 镜像、有效几何预检和双模式生产阻断准备；等待 13A-03 |
 | `DOC_PREP_13B_02_模型列表与实例操作准备.md` | 13B-02 1..22 实例列表、资源隔离、异步状态和场景草稿准备 |
-| `DOC_PREP_13B_03_11x2规则排版准备.md` | 13B-03 row-major 11x2、20/30 mm 净距、锁定和原子排版准备 |
+| `DOC_PREP_13B_03_11x2规则排版准备.md` | 13B-03 row-major 11x2、默认 10/10 mm 净距、锁定和原子排版准备 |
 | `DOC_PREP_13B_04_幅面碰撞与逐实例准入准备.md` | 13B-04 fixture 幅面、投影碰撞、逐实例准入和 production Gate |
 | `DOC_PREP_13B_05_全局Raster与联合层合成准备.md` | 13B-05 scene raster/layer、Legacy/Global adapter 和联合合成 Gate |
 | `DOC_PREP_13C_01_TIFFLayerSource与Cache准备.md` | 13C-01 TIFF source、LRU、异步 stale 和错误合同 |

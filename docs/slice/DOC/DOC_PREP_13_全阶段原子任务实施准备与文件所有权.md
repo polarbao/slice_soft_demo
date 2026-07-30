@@ -175,7 +175,7 @@ OpenVDB optional/OFF，不因 Stage 13 变成强制依赖。
 | 核心文件 | 新增 `layout/BuildVolume.*`、`layout/GridLayoutPolicy.*` |
 | UI 文件 | 新增 `widgets/SceneLayoutPanel.*` |
 | 计划测试 | `grid_layout_policy_unit_tests`、layout UI smoke |
-| 必测 | 1/11/12/22 实例、row_major、边到边 20/30 mm、不同尺寸 bbox、确定性、手工 override、超过 22 拒绝 |
+| 必测 | 1/11/12/22 实例、row_major、默认边到边 10/10 mm、不同尺寸 bbox、确定性、手工 override、超过 22 拒绝 |
 | 外部 Gate | buildVolume 未知允许 fixture/draft，不允许 production ready |
 | 完成输出 | 可序列化 requested/derived/effective layout |
 

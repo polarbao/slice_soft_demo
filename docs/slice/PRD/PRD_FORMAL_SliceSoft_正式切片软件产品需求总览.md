@@ -282,7 +282,7 @@ Stage 11 只完成多模型能力评估。Stage 13 正式承接生产需求：
 切片前从 +Z 查看模型 XY 俯视图；
 选中模型后移动 XY、rotateZ、uniformScale、mirrorX/mirrorY；
 Z 落台保持当前生产逻辑；
-最多 11 列 x 2 行，列间净距默认 20 mm、行间净距默认 30 mm；
+最多 11 列 x 2 行，列间净距默认均为 10 mm；
 多个模型联合切片并输出一个 RGBWSV package；
 直接从生产 TIFF 显示 R/G/B/W/S/V 与 RGB+S+W+V；
 常规生产流程不再依赖重复的逐材料 preview PNG；

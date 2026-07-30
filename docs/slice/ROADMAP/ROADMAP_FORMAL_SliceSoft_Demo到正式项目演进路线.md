@@ -407,7 +407,7 @@ Stage 11 只完成多模型能力决策。2026-07-24 用户已提出正式生产
 
 ```text
 13A：切片前模型俯视、选择、XY/rotateZ/uniformScale/mirror 变换；
-13B：最多 11 列 x 2 行、20/30 mm 可配置净距和多模型联合切片；
+13B：最多 11 列 x 2 行、默认 10/10 mm 可配置净距和多模型联合切片；
 13C：直接从 RGBWSV TIFF 显示单通道、伪彩和 RGB+S+W+V，减少重复 preview IO。
 ```
 

@@ -14,7 +14,7 @@ Stage 13E 已完成准备、实现和功能回归：
 标准甲片等价姿态稳定选择 rotate_x_90，正面朝场景 +Z；
 产品默认 autoOrient.maxHeightMm 已由 6 mm 调整为 9 mm；
 右侧 Context Inspector 已提供“预检与诊断”；
-底部区域已改名“任务详情”，不再重复承载“诊断”页；
+任务详情已迁移到右侧并与上下文检查器互斥，不再重复承载“诊断”页；
 RGBWSV TIFF 协议、Legacy/Global 路由和 OpenVDB 默认状态均未改变。
 ```
 
@@ -70,16 +70,17 @@ RGBWSV TIFF 协议、Legacy/Global 路由和 OpenVDB 默认状态均未改变。
 `warningsDiagnosticView` 只迁移父容器，仍由原有
 `ReportPanel::warningsChanged` 信号更新，没有复制第二个诊断实例。
 
-### 4.2 底部任务详情
+### 4.2 右侧任务详情
 
-底部保留兼容 objectName `diagnosticsDock` 和 `diagnosticsTabs`，用户可见名称改为
+任务详情保留兼容 objectName `diagnosticsDock` 和 `diagnosticsTabs`，用户可见名称为
 “任务详情”，页签为：
 
 ```text
 报告、材料闭环、曲线、材料参数、工艺对比、切片耗时、日志。
 ```
 
-底部默认折叠。切片开始时只预选“切片耗时”，不再自动展开并压缩中央工作区。
+任务详情默认折叠，只允许右侧停靠。打开时替换上下文检查器，关闭后恢复上下文检查器；
+切片开始时只预选“切片耗时”，不再自动展开并压缩中央工作区。
 
 ## 5. 配置更新
 

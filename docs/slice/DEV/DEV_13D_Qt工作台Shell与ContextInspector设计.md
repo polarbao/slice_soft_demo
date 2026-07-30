@@ -1,6 +1,6 @@
 # DEV 13D Qt 工作台 Shell 与 ContextInspector 设计
 
-> 文档版本：v1.1
+> 文档版本：v1.2
 > 文档状态：COMPLETE / 13D-01..04 PASS
 > 日期：2026-07-29
 
@@ -25,7 +25,7 @@ MainWindow
       -> LayoutPage
       -> SliceSettingsPage
       -> PreflightPage
-  -> DiagnosticsDock
+  -> DiagnosticsDock（右侧任务详情，与 ContextInspector 互斥）
       -> Report
       -> MaterialClosure
       -> Curves
@@ -77,10 +77,14 @@ availability/blockedReason；
 
 ```text
 保存 geometry、dock state、splitter sizes、last inspector page；
-状态 schema 带版本，如 ui.layout.version=13d.1；
+状态 schema 带版本，当前为 `2`；
 旧版本或非法尺寸回退到安全默认布局；
 不得把绝对屏幕坐标作为业务配置写入 slice config。
 ```
+
+`DiagnosticsDock` 只允许停靠在右侧。打开任务详情时隐藏 `ContextInspector`，关闭任务详情时恢复
+`ContextInspector`；用户主动显示上下文检查器时关闭任务详情。该互斥关系由 `MainWindow` 顶层导航
+维护，不向场景、切片或报告业务层渗透。
 
 ## 4. 迁移策略
 
@@ -95,16 +99,18 @@ availability/blockedReason；
 
 ### Phase 3 Dock 收口
 
-把右侧诊断/工艺对比页移入现有 `DiagnosticsDock`，确保报告、材料闭环、曲线和日志顺序稳定。
+把诊断/工艺对比页移入现有 `DiagnosticsDock`，确保报告、材料闭环、曲线和日志顺序稳定；
+随后将 Dock 从底部迁移到右侧，与 `ContextInspector` 互斥显示。
 
 实现结果：`ProjectToolsDock` 默认收起并保留项目路径、构建、旧单模型、OpenVDB、RIP 和回归入口；
 参数、诊断和工艺对比已迁入唯一 `DiagnosticsDock`，`ContextInspector` 最终只保留五个业务上下文页。
+日常属性编辑显示上下文检查器，查看报告、耗时、曲线或日志时切换到任务详情。
 
 ### Phase 4 尺寸与可访问性
 
 冻结最小尺寸、滚动策略、中文文本、tab order、快捷键和布局恢复。
 
-实现结果：`WorkspaceLayoutState` 以 `ui.layout.version=13d.1` 保存 geometry、dock state、主 splitter
+实现结果：`WorkspaceLayoutState` 以内部 schema `2` 保存 geometry、dock state、主 splitter
 尺寸、检查器页和显式可见性；Smoke/self-test 进程禁用真实用户设置读写。旧版本、损坏状态和屏幕外
 窗口回退 1440x900 安全默认布局。
 
@@ -162,6 +168,7 @@ layout-1280x720；
 layout-150-percent-scale；
 context-inspector-selection；
 diagnostics-dock-all-tabs；
+diagnostics-right-side-exclusive；
 layout-save-restore-invalid-state；
 13B-08 scene workflow；
 13C TIFF native preview；

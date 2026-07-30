@@ -70,8 +70,8 @@ single_model 与 scene/current instance，不再只依赖 modelPath。
 
 ```text
 11 列 x 2 行；
-列间净距默认 20 mm；
-行间净距默认 30 mm；
+列间净距默认 10 mm；
+行间净距默认 10 mm；
 UI 可配置；
 规则排版后允许手动调整；
 buildVolume 越界与碰撞 fail-closed。

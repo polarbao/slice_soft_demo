@@ -173,8 +173,8 @@ buildVolume、碰撞和越界准入；
 row_major；
 maxColumns=11；
 maxRows=2；
-columnGapMm=20.00；
-rowGapMm=30.00；
+columnGapMm=10.00；
+rowGapMm=10.00；
 edge_clearance；
 UI 步长 0.01 mm；
 requested/derived/effective layout 可序列化；

@@ -14,13 +14,13 @@
 |---|---|---|
 | 13D-01 | COMPLETE | 固定顶部导入、保存、模式/Profile、切片、取消和状态摘要 |
 | 13D-02 | COMPLETE | 右侧收敛为场景、变换、排版、切片设置和预检五页 Context Inspector |
-| 13D-03 | COMPLETE | 项目/兼容工具移入默认收起左 Dock；所有报告和诊断统一到底部 Dock |
+| 13D-03 | COMPLETE | 项目/兼容工具移入默认收起左 Dock；所有报告和诊断统一到右侧互斥任务详情 |
 | 13D-04 | COMPLETE | 版本化布局恢复、安全默认值、响应式、快捷键、用户说明和阶段证据收口 |
 
 ## 3. 布局状态
 
 ```text
-QSettings schema = ui.layout.version=13d.1；
+QSettings layout schema = 2；
 保存 geometry、QMainWindow dock state、main splitter sizes、检查器页和检查器可见性；
 旧 schema、损坏数据或屏幕外 geometry 自动删除并回退 1440x900 安全默认布局；
 UI Smoke 和 self-test 禁用真实用户设置读写；
@@ -32,10 +32,10 @@ UI Smoke 和 self-test 禁用真实用户设置读写；
 ```text
 顶部：SceneActionBar；
 中央：模型 / 预览 / 配置；
-右侧：唯一 ContextInspector；
+右侧：ContextInspector / DiagnosticsDock 任务详情互斥显示；
 左侧：默认收起的 ProjectToolsDock；
-底部：默认收起的 DiagnosticsDock；
-视图菜单：项目与高级工具 / 上下文检查器 / 诊断区域。
+底部：不再停靠任务详情；
+视图菜单：项目与高级工具 / 上下文检查器 / 任务详情。
 ```
 
 ## 5. 验证结果
