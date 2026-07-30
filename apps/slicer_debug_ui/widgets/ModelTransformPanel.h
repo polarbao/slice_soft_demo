@@ -61,6 +61,7 @@ private:
     QDoubleSpinBox* m_uniformScaleSpin{nullptr};
     QLabel* m_identityLabel{nullptr};
     QLabel* m_revisionLabel{nullptr};
+    QLabel* m_axisPolicyLabel{nullptr};
     QLabel* m_sourcePreflightLabel{nullptr};
     QLabel* m_transformedPreflightLabel{nullptr};
     QLabel* m_stateLabel{nullptr};

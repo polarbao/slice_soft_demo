@@ -93,7 +93,11 @@ ModelTransformPanel::ModelTransformPanel(
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 4, 8, 4);
 
-    auto* title = new QLabel(QStringLiteral("精确变换"), this);
+    auto* title = new QLabel(
+        QStringLiteral("选中模型变换"),
+        this);
+    title->setObjectName(
+        QStringLiteral("modelTransformTitle"));
     QFont titleFont = title->font();
     titleFont.setBold(true);
     title->setFont(titleFont);
@@ -110,6 +114,21 @@ ModelTransformPanel::ModelTransformPanel(
         QStringLiteral("modelTransformRevision"));
     m_revisionLabel->setWordWrap(true);
     layout->addWidget(m_revisionLabel);
+
+    m_axisPolicyLabel = new QLabel(
+        QStringLiteral(
+            "X/Y 控制工作台平面位置，旋转仅绕 Z 轴。"
+            "Z 高度由自动定向与落台固定为 0；"
+            "X/Y 轴翻转由自动定向负责。"),
+        this);
+    m_axisPolicyLabel->setObjectName(
+        QStringLiteral("modelTransformAxisPolicy"));
+    m_axisPolicyLabel->setWordWrap(true);
+    m_axisPolicyLabel->setToolTip(
+        QStringLiteral(
+            "俯视排版阶段不开放 Z 平移或 X/Y 倾斜，"
+            "避免模型悬空、埋入工作台或绕过预检。"));
+    layout->addWidget(m_axisPolicyLabel);
 
     auto* form = new QFormLayout();
     m_translateXSpin = CreateSpinBox(
@@ -148,9 +167,9 @@ ModelTransformPanel::ModelTransformPanel(
         0.01,
         {},
         QStringLiteral("统一缩放，不改变源模型文件。"));
-    form->addRow(QStringLiteral("X"), m_translateXSpin);
-    form->addRow(QStringLiteral("Y"), m_translateYSpin);
-    form->addRow(QStringLiteral("绕 Z"), m_rotateZSpin);
+    form->addRow(QStringLiteral("X 位置"), m_translateXSpin);
+    form->addRow(QStringLiteral("Y 位置"), m_translateYSpin);
+    form->addRow(QStringLiteral("平面旋转 Z"), m_rotateZSpin);
     form->addRow(QStringLiteral("统一缩放"), m_uniformScaleSpin);
     layout->addLayout(form);
 

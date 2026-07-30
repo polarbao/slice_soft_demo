@@ -71,17 +71,18 @@ scene_config.effective.json。
 
 ### 2.5 Qt 精确变换面板
 
-“模型”工作区右侧新增 `ModelTransformPanel`：
+右侧上下文检查器“变换”页提供 `ModelTransformPanel`：
 
 ```text
-X/Y：-10000.00..10000.00 mm，步长 0.10 mm，可键入 0.01 mm；
-绕 Z：-180.00..180.00 度，步长 1 度；
+X/Y 位置：-10000.00..10000.00 mm，步长 0.10 mm，可键入 0.01 mm；
+平面旋转 Z：-180.00..180.00 度，步长 1 度；
 统一缩放：0.0100..100.0000；
 应用、原点居中、重置、保存场景配置；
 scene/transform revision、locked、未保存和 stale 状态。
 ```
 
-画布与面板由水平 splitter 分隔。单模型加载完成后通过共享 `SceneSelectionModel` 选择实例；面板不维护
+面板明确说明 Z 高度由自动定向与落台固定，X/Y 倾斜由自动定向负责；短期俯视排版只开放
+X/Y 平移和绕 Z 旋转。模型加载完成后通过共享 `SceneSelectionModel` 选择实例，面板不维护
 第二份选择状态。
 
 ## 3. 验证结果
