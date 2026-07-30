@@ -5,6 +5,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -26,7 +27,7 @@ bool ExpectTrue(const bool condition, const std::string& message)
 class TemporaryObjFixture
 {
 public:
-    TemporaryObjFixture()
+    explicit TemporaryObjFixture(const double zOffsetMm = 0.0)
     {
         const auto suffix =
             std::chrono::steady_clock::now()
@@ -39,17 +40,18 @@ public:
         m_path = m_root / "nail_orientation_tie.obj";
 
         std::ofstream output{m_path};
+        output << std::fixed << std::setprecision(6);
         output
-            << "v -5.973302 -3.000000 0\n"
-            << "v 5.973671 -3.000000 0\n"
-            << "v 5.973671 3.000000 0\n"
-            << "v -5.973302 3.000000 0\n"
-            << "v -5.973302 -3.000000 30.371832\n"
-            << "v 5.973671 -3.000000 30.371832\n"
-            << "v 5.973671 3.000000 30.371832\n"
-            << "v -5.973302 3.000000 30.371832\n"
-            << "v 5.968403 -3.799789 6.351915\n"
-            << "v -0.240944 4.183847 8.715206\n"
+            << "v -5.973302 -3.000000 " << zOffsetMm << '\n'
+            << "v 5.973671 -3.000000 " << zOffsetMm << '\n'
+            << "v 5.973671 3.000000 " << zOffsetMm << '\n'
+            << "v -5.973302 3.000000 " << zOffsetMm << '\n'
+            << "v -5.973302 -3.000000 " << 30.371832 + zOffsetMm << '\n'
+            << "v 5.973671 -3.000000 " << 30.371832 + zOffsetMm << '\n'
+            << "v 5.973671 3.000000 " << 30.371832 + zOffsetMm << '\n'
+            << "v -5.973302 3.000000 " << 30.371832 + zOffsetMm << '\n'
+            << "v 5.968403 -3.799789 " << 6.351915 + zOffsetMm << '\n'
+            << "v -0.240944 4.183847 " << 8.715206 + zOffsetMm << '\n'
             << "f 1 3 2\n"
             << "f 1 4 3\n"
             << "f 5 6 7\n"
@@ -178,6 +180,36 @@ bool WithinHeightLimitPreservesSourcePose()
             "fitting source height remains unchanged");
 }
 
+bool WithinHeightLimitGroundsEnabledSource()
+{
+    constexpr double kSourceOffsetMm{303.731};
+    const TemporaryObjFixture fixture(kSourceOffsetMm);
+    const slicer_core::ModelReport report =
+        LoadFixture(fixture.Path(), true, 31.0);
+
+    return ExpectTrue(
+               report.auto_orient.selected_orientation
+                   == "identity",
+               "fitting offset source keeps identity orientation")
+        && ExpectTrue(
+            std::abs(
+                report.auto_orient.original_bbox_mm.min.z
+                - kSourceOffsetMm)
+                <= kTolerance,
+            "inspection preserves original source Z offset")
+        && ExpectTrue(
+            std::abs(report.bbox_mm.min.z)
+                <= kTolerance,
+            "enabled auto-orient grounds fitting source to build plate")
+        && ExpectTrue(
+            std::abs(
+                (report.bbox_mm.max.z
+                 - report.bbox_mm.min.z)
+                - 30.371832)
+                <= kTolerance,
+            "grounding preserves physical source height");
+}
+
 }  // namespace
 
 int main()
@@ -187,6 +219,7 @@ int main()
     passed = EquivalentCandidatesPreferFrontUp() && passed;
     passed = ExplicitDisablePreservesSourcePose() && passed;
     passed = WithinHeightLimitPreservesSourcePose() && passed;
+    passed = WithinHeightLimitGroundsEnabledSource() && passed;
     if (!passed)
     {
         return 1;

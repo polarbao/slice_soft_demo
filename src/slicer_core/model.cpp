@@ -270,16 +270,29 @@ OrientationCandidate choose_auto_orientation(
 {
     constexpr double kHeightToleranceMm{1.0e-9};
     constexpr double kFootprintToleranceSquareMm{1.0e-9};
-    const OrientationCandidate identity{"identity", {0.0, 0.0, 0.0}, vertices, original_bbox};
-    if (!config.enabled
-        || bbox_height(original_bbox)
-            <= config.max_height_mm + kHeightToleranceMm)
+    const OrientationCandidate sourceIdentity{
+        "identity",
+        {0.0, 0.0, 0.0},
+        vertices,
+        original_bbox};
+    if (!config.enabled)
     {
-        return identity;
+        return sourceIdentity;
+    }
+
+    const OrientationCandidate groundedIdentity =
+        make_orientation_candidate(
+            "identity",
+            {0.0, 0.0, 0.0},
+            vertices);
+    if (bbox_height(original_bbox)
+        <= config.max_height_mm + kHeightToleranceMm)
+    {
+        return groundedIdentity;
     }
 
     std::vector<OrientationCandidate> candidates;
-    candidates.push_back(identity);
+    candidates.push_back(groundedIdentity);
     candidates.push_back(make_orientation_candidate("rotate_x_90", {90.0, 0.0, 0.0}, vertices));
     candidates.push_back(make_orientation_candidate("rotate_x_minus_90", {-90.0, 0.0, 0.0}, vertices));
     candidates.push_back(make_orientation_candidate("rotate_y_90", {0.0, 90.0, 0.0}, vertices));
