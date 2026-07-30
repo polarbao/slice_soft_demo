@@ -1,8 +1,8 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v3.8
-> 更新日期：2026-07-29
+> 版本：v3.9
+> 更新日期：2026-07-30
 > 当前生产主线：12E-09C COMPLETE
 > 当前下一任务：12E-10A READY / WAIT USER AUTHORIZATION
 
@@ -58,7 +58,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
-| Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E COMPLETE | 多模型场景、TIFF 原生统一预览、Qt 工作台、确定性自动定向和诊断信息架构均已收口 | 保持回归 |
+| Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E、13F-R0 COMPLETE；13F-R1 IN PROGRESS | 多模型场景、TIFF 原生统一预览、Qt 工作台、确定性自动定向、交互取消稳定化和 Reality Z 基准修复 | 13F-R1-01..05 性能可观测性与受控优化 |
 
 ### 2.1 Stage 12 目的图
 
@@ -82,7 +82,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-10 Final Closure | 完整执行包 PREPARED / 10A READY | 用户授权后执行 10A，再按 10B -> 10C -> 10D |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
-| Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13C、13D、13E COMPLETE | 保持回归；M13-4、13D 和 13E 均已通过 |
+| Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13C、13D、13E、13F-R0 COMPLETE；13F-R1-06 COMPLETE | 继续 13F-R1-01..05；M13-4、13D 和 13E 均保持回归 |
 
 ### 2.3 剩余任务数量
 

@@ -1,7 +1,7 @@
-# REPORT 13F-R0 多模型交互、取消与切片性能稳定化当前状态
+# REPORT 13F-R0/R1 多模型交互、取消与切片性能稳定化当前状态
 
-> 报告日期：2026-07-29
-> 当前结论：R0 代码和自动化验证完成，R1 性能可观测性待实施
+> 报告日期：2026-07-30
+> 当前结论：R0 完成；R1-06 Reality 单模型异常耗时已修正并验证；R1-01..05 待实施
 
 ## 1. 已完成
 
@@ -11,7 +11,9 @@
 移除 SetCurrentInstance 前的冗余几何深拷贝；
 ProcessRunner 支持 terminate + 1 秒后 kill；
 控制器增加 Cancelling，真实进程退出前保持任务占用；
-取消后禁止自动加载 package，进程结束后恢复 UI 操作。
+取消后禁止自动加载 package，进程结束后恢复 UI 操作；
+自动定向启用时，即使无需旋转也把有效模型归一化到构建平台；
+Reality 单模型 Release 核心基准、完整写包和 RIP 严格校验完成。
 ```
 
 ## 2. 根因结论
@@ -35,12 +37,39 @@ ProcessRunner 支持 terminate + 1 秒后 kill；
 
 ### Reality 耗时
 
-仓库内 `model/obj/reality` 当前为空，未执行该组真实切片。截图中的外部模型只有约
-1.3 万至 1.5 万面，排除“高面数直接导致一分钟”的解释。联合切片当前逐实例串行
-执行完整核心计算，日志显示每个实例约增加 30 秒。下一步必须在相同有效 Profile
-和 Grid 下记录单实例核心计时后再决定 raster 复用或有限并行。
+仓库内五个 Reality OBJ 已纳入可追溯测试资产。首个模型仅 `8150` 个顶点、
+`14774` 个三角面，物理尺寸约为 `25.977 x 12.105 x 6.975 mm`，因此高面数不是
+一分钟耗时的原因。
 
-## 3. 验证结果
+根因是源 OBJ 已经趴放，但整体悬在 `Z=303.731..310.706 mm`。旧逻辑认为高度
+`6.9752 mm` 已满足 `maxHeightMm=9`，直接保留源 `identity`，而切片器使用
+`ceil(maxZ/layerThickness)` 计算层数，按 `0.038 mm` 层厚会得到约 `8177` 层。
+修正前单模型核心诊断运行超过 `184 s` 仍未结束，进程工作集约 `6.49 GB`，随后按
+测试边界终止，没有生成可用基准结果。
+
+修正方式不是旋转模型，而是在自动定向启用时将最终 `identity` 候选也下移到
+`minZ=0`。显式关闭自动定向时仍保留源坐标，避免改变该模式的既有合同。
+
+## 3. Reality Release 复测
+
+| 项目 | 修正后结果 |
+|---|---:|
+| 有效包围盒 | `Z=0..6.9752 mm` |
+| Grid | `650 x 286 x 184` |
+| 核心计算 | `1348.5702 ms` |
+| 峰值工作集 | `285294592 bytes` |
+| 完整写包总耗时 | `3719.056 ms` |
+| TIFF 保存 | `820.021 ms` |
+| Preview 保存 | `564.010 ms` |
+| TIFF 数量 | `184` |
+| Preview 数量 | `38` |
+| RIP Reader | `PASS` |
+
+相同核心基准下，爱神参考模型为 `1544.8859 ms`。Reality 修正后没有表现出异常慢；
+本次问题与 XY 排版位置无关，也不是最终图片保存主导。完整写包中输出保存约
+`1574.365 ms`，其余为模型加载、支撑、层计算、合成和报告构建。
+
+## 4. 验证结果
 
 ```text
 production_slice_route_process_tests：PASS；
@@ -50,15 +79,22 @@ scene_slice_action_controller_unit_tests：PASS；
 UI Smoke scene-batch-import-three：PASS；
 UI Smoke multi-model-list：PASS；
 UI Smoke scene-slice-cancel：PASS；
+auto_orient_unit_tests：PASS；
+model_preflight_service_unit_tests：PASS；
+Reality Release 完整写包：PASS；
+Reality package RIP Reader strict：PASS；
 git diff --check：无空白错误，仅存在仓库既有 LF/CRLF 提示。
 ```
 
-## 4. 剩余风险
+## 5. 当前完成度与剩余风险
 
 ```text
+13F-R0：4/4 COMPLETE；
+13F-R1：1/6 COMPLETE，13F 整体尚未完成；
 尚未手工完成五个爱神真实模型的整批导入验收；
-尚未对 Reality 模型执行切片，遵守每次最多一个的限制；
 第三个爱神模型 MTL 引用 RGB.png，但目录实际贴图名不同，属于独立资源告警；
 高面数 OBJ 的 parse/texture/preview/hash 分项耗时尚未上报；
-联合切片仍按实例串行执行，尚未做缓存或受控并行。
+联合切片仍按实例串行执行，尚未做缓存或受控并行；
+Reality 其余四个模型未运行切片，继续遵守每次最多一个的限制；
+本次未验证硬件打印，只验证 Release 包、TIFF 协议和 RIP Reader。
 ```
