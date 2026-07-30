@@ -1,4 +1,5 @@
 #include "slicer_core/support/SupportComponentAnalysis.h"
+#include "slicer_core/support/SupportBaseProjection.h"
 #include "slicer_core/support/SupportShapePipeline.h"
 
 #include <cstdint>
@@ -176,6 +177,70 @@ bool MaxAddedRatioRollback()
         && ExpectTrue(!result.warnings.empty(), "rollback warning");
 }
 
+bool BaseProjectionUsesMaximumSupportFootprint()
+{
+    std::vector<std::vector<std::uint8_t>> modelMasks{
+        std::vector<std::uint8_t>(4U, 0U),
+        std::vector<std::uint8_t>(4U, 0U),
+        std::vector<std::uint8_t>(4U, 0U),
+    };
+    std::vector<std::vector<std::uint8_t>> supportMasks{
+        std::vector<std::uint8_t>(4U, 0U),
+        std::vector<std::uint8_t>(4U, 0U),
+        std::vector<std::uint8_t>(4U, 0U),
+    };
+    modelMasks.at(0U).at(2U) = 1U;
+    supportMasks.at(1U).at(1U) = 1U;
+    supportMasks.at(2U).at(2U) = 1U;
+
+    slicer_core::SupportBaseProjectionConfig config;
+    config.enabled = true;
+    config.layer_count = 2;
+    const slicer_core::SupportBaseProjectionResult result =
+        slicer_core::ApplySupportBaseProjection(
+            config,
+            modelMasks,
+            supportMasks);
+
+    return ExpectEqual(result.effective_layer_count, 2, "base effective layer count")
+        && ExpectEqual(result.footprint_pixels, 2, "base footprint union")
+        && ExpectEqual(result.added_support_pixels, 2, "base added support pixels")
+        && ExpectEqual(supportMasks.at(0U).at(1U), 1, "base fills first layer")
+        && ExpectEqual(supportMasks.at(0U).at(2U), 0, "base preserves model priority")
+        && ExpectEqual(supportMasks.at(1U).at(2U), 1, "base fills second layer")
+        && ExpectEqual(supportMasks.at(2U).at(1U), 0, "base stops before layer count");
+}
+
+bool DisabledBaseProjectionDoesNotChangeSupport()
+{
+    const std::vector<std::vector<std::uint8_t>> modelMasks{
+        std::vector<std::uint8_t>(3U, 0U),
+        std::vector<std::uint8_t>(3U, 0U),
+    };
+    std::vector<std::vector<std::uint8_t>> supportMasks{
+        std::vector<std::uint8_t>(3U, 0U),
+        std::vector<std::uint8_t>(3U, 0U),
+    };
+    supportMasks.at(1U).at(2U) = 1U;
+    const std::vector<std::vector<std::uint8_t>> originalSupportMasks =
+        supportMasks;
+
+    slicer_core::SupportBaseProjectionConfig config;
+    config.enabled = false;
+    config.layer_count = 30;
+    const slicer_core::SupportBaseProjectionResult result =
+        slicer_core::ApplySupportBaseProjection(
+            config,
+            modelMasks,
+            supportMasks);
+
+    return ExpectEqual(result.effective_layer_count, 0, "disabled base layer count")
+        && ExpectEqual(result.added_support_pixels, 0, "disabled base added pixels")
+        && ExpectTrue(
+            supportMasks == originalSupportMasks,
+            "disabled base preserves all support masks");
+}
+
 }  // namespace
 
 int main()
@@ -188,6 +253,10 @@ int main()
         {"bridge_horizontal_gap", BridgeHorizontalGap},
         {"bridge_vertical_gap", BridgeVerticalGap},
         {"max_added_ratio_rollback", MaxAddedRatioRollback},
+        {"base_projection_uses_maximum_support_footprint",
+         BaseProjectionUsesMaximumSupportFootprint},
+        {"disabled_base_projection_does_not_change_support",
+         DisabledBaseProjectionDoesNotChangeSupport},
     };
 
     for (const auto& test : tests)

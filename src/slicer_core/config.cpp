@@ -456,6 +456,23 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             config.support.upper.outside = upper.value("outside", config.support.upper.outside);
             config.support.upper.reason = upper.value("reason", config.support.upper.reason);
         }
+        if (support.contains("baseProjection"))
+        {
+            const auto& baseProjection =
+                support.at("baseProjection");
+            config.support.base_projection.enabled =
+                baseProjection.value(
+                    "enabled",
+                    config.support.base_projection.enabled);
+            config.support.base_projection.layer_count =
+                baseProjection.value(
+                    "layerCount",
+                    config.support.base_projection.layer_count);
+            config.support.base_projection.source =
+                baseProjection.value(
+                    "source",
+                    config.support.base_projection.source);
+        }
     }
 
     if (root.contains("outerVarnish")) {
@@ -706,6 +723,22 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.support.upper.outside != "outer_varnish_shell"
         && config.support.upper.outside != "model_envelope") {
         throw std::runtime_error("support.upper.outside must be outer_varnish_shell or model_envelope");
+    }
+    if (config.support.base_projection.layer_count < 0)
+    {
+        throw std::runtime_error(
+            "support.baseProjection.layerCount must be non-negative");
+    }
+    if (config.support.base_projection.layer_count > 1000)
+    {
+        throw std::runtime_error(
+            "support.baseProjection.layerCount must not exceed 1000");
+    }
+    if (config.support.base_projection.source
+        != "max_support_footprint")
+    {
+        throw std::runtime_error(
+            "support.baseProjection.source must be max_support_footprint");
     }
     if (config.material.material_channel != "auto" && config.material.material_channel != "RGB"
         && config.material.material_channel != "W" && config.material.material_channel != "V") {

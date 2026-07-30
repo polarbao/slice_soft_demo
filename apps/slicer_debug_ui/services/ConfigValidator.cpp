@@ -237,6 +237,30 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
                 result.errors.push_back("support.upper.outside 不是当前认可的上表面支撑外侧边界。");
             }
         }
+        const QJsonObject baseProjection =
+            support.value("baseProjection").toObject();
+        if (!baseProjection.isEmpty())
+        {
+            checkNonNegativeInt(
+                baseProjection,
+                "layerCount",
+                "support.baseProjection.layerCount",
+                result);
+            if (baseProjection.value("layerCount").toInt(30) > 1000)
+            {
+                result.errors.push_back(
+                    "support.baseProjection.layerCount 不能超过 1000。");
+            }
+            const QSet<QString> sourceValues{
+                "max_support_footprint"};
+            if (!isAllowed(
+                    stringAt(baseProjection, "source"),
+                    sourceValues))
+            {
+                result.errors.push_back(
+                    "support.baseProjection.source 不是当前认可的铺底投影来源。");
+            }
+        }
         checkNonNegativeInt(support, "minIslandAreaPx", "support.minIslandAreaPx", result);
         checkNonNegativeInt(support, "xyDilationPx", "support.xyDilationPx", result);
         checkNonNegativeInt(support, "connectivity", "support.connectivity", result);

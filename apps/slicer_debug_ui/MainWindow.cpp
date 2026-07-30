@@ -314,6 +314,10 @@ QJsonObject MakeDefaultSupportConfig()
                         QJsonObject{{"enabled", true},
                                     {"minAreaPx", 16},
                                     {"fillRule", "all_internal_voids"}}},
+                       {"baseProjection",
+                        QJsonObject{{"enabled", true},
+                                    {"layerCount", 30},
+                                    {"source", "max_support_footprint"}}},
                        {"upper",
                         QJsonObject{{"enabled", false},
                                     {"outside", "outer_varnish_shell"},
@@ -2105,6 +2109,12 @@ SliceSettingsState MainWindow::BuildCurrentSettings(
                                                .toBool(settings.support.internalvoidenabled);
     settings.support.internalvoidminareapx = config_document_.value({"support", "internalVoid", "minAreaPx"})
                                                 .toInt(settings.support.internalvoidminareapx);
+    settings.support.baseprojectionenabled =
+        config_document_.value({"support", "baseProjection", "enabled"})
+            .toBool(settings.support.baseprojectionenabled);
+    settings.support.baseprojectionlayercount =
+        config_document_.value({"support", "baseProjection", "layerCount"})
+            .toInt(settings.support.baseprojectionlayercount);
 
     settings.surfacevarnish.enabled = config_document_.value({"surfaceVarnish", "enabled"})
                                           .toBool(settings.surfacevarnish.enabled);
@@ -3059,6 +3069,11 @@ void MainWindow::ApplyProfileDefaultsToDocument(const QString& profileId, const 
     SetValue({"support", "internalVoid", "enabled"}, settings.support.internalvoidenabled);
     SetValue({"support", "internalVoid", "minAreaPx"}, settings.support.internalvoidminareapx);
     SetValue({"support", "internalVoid", "fillRule"}, QStringLiteral("all_internal_voids"));
+    SetValue({"support", "baseProjection", "enabled"}, settings.support.baseprojectionenabled);
+    SetValue({"support", "baseProjection", "layerCount"}, settings.support.baseprojectionlayercount);
+    SetValue(
+        {"support", "baseProjection", "source"},
+        QStringLiteral("max_support_footprint"));
     SetValue({"surfaceVarnish", "enabled"}, settings.surfacevarnish.enabled);
     SetValue({"surfaceVarnish", "thicknessPx"}, settings.surfacevarnish.thicknesspx);
     SetValue({"outerVarnish", "enabled"}, settings.outervarnish.enabled);

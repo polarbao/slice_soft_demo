@@ -150,6 +150,8 @@ bool OldConfigDefaultsOpenVdbDisabled()
                !slicer_core::IsGlobalTextureFillPartitionRequested(config),
                "legacy config does not request global texture/fill partition")
         && ExpectTrue(!config.support.placement_explicit, "legacy config keeps support placement implicit")
+        && ExpectTrue(!config.support.base_projection.enabled, "legacy config keeps support base projection disabled")
+        && ExpectTrue(config.support.base_projection.layer_count == 30, "legacy base projection layer count default")
         && ExpectTrue(!config.outer_varnish.enabled, "legacy config keeps outerVarnish disabled");
 }
 
@@ -563,6 +565,71 @@ bool Stage12AConfigPlaceholdersParse()
         && ExpectTrue(config.surface_varnish.source == "explicit", "12A surface varnish source parses");
 }
 
+bool Stage13GBaseProjectionConfigParses()
+{
+    const std::filesystem::path path = WriteConfig(
+        "stage_13g_base_projection.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"support\": {\n"
+            "    \"enabled\": true,\n"
+            "    \"baseProjection\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"layerCount\": 30,\n"
+            "      \"source\": \"max_support_footprint\"\n"
+            "    }\n"
+            "  }\n"));
+    const slicer_core::SliceConfig config =
+        slicer_core::load_slice_config(path);
+    return ExpectTrue(
+               config.support.base_projection.enabled,
+               "13G base projection enabled parses")
+        && ExpectTrue(
+            config.support.base_projection.layer_count == 30,
+            "13G base projection layer count parses")
+        && ExpectTrue(
+            config.support.base_projection.source
+                == "max_support_footprint",
+            "13G base projection source parses");
+}
+
+bool Stage13GRejectsInvalidBaseProjection()
+{
+    return ConfigRejectedWith(
+               "stage_13g_negative_layer_count.json",
+               ",\n"
+               "  \"support\": {\n"
+               "    \"baseProjection\": {\n"
+               "      \"enabled\": true,\n"
+               "      \"layerCount\": -1,\n"
+               "      \"source\": \"max_support_footprint\"\n"
+               "    }\n"
+               "  }\n",
+        "support.baseProjection.layerCount must be non-negative")
+        && ConfigRejectedWith(
+            "stage_13g_base_projection_layer_count_too_large.json",
+            ",\n"
+            "  \"support\": {\n"
+            "    \"baseProjection\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"layerCount\": 1001,\n"
+            "      \"source\": \"max_support_footprint\"\n"
+            "    }\n"
+            "  }",
+            "support.baseProjection.layerCount must not exceed 1000")
+        && ConfigRejectedWith(
+            "stage_13g_invalid_source.json",
+            ",\n"
+            "  \"support\": {\n"
+            "    \"baseProjection\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"layerCount\": 30,\n"
+            "      \"source\": \"model_footprint\"\n"
+            "    }\n"
+            "  }\n",
+            "support.baseProjection.source must be max_support_footprint");
+}
+
 bool Stage12ASurfaceVarnishDisabledAcceptsZeroThickness()
 {
     const std::filesystem::path path = WriteConfig(
@@ -872,6 +939,8 @@ int main()
         {"material_closure_repair_config_parses", MaterialClosureRepairConfigParses},
         {"material_closure_rejects_invalid_configuration", MaterialClosureRejectsInvalidConfiguration},
         {"stage_12a_config_placeholders_parse", Stage12AConfigPlaceholdersParse},
+        {"stage_13g_base_projection_config_parses", Stage13GBaseProjectionConfigParses},
+        {"stage_13g_rejects_invalid_base_projection", Stage13GRejectsInvalidBaseProjection},
         {"stage_12a_surface_varnish_disabled_accepts_zero_thickness", Stage12ASurfaceVarnishDisabledAcceptsZeroThickness},
         {"stage_12a_model_fill_rejects_empty_production_rgb", Stage12AModelFillRejectsEmptyProductionRgb},
         {"stage_12a_upper_support_accepts_outer_varnish_shell", Stage12AUpperSupportAcceptsOuterVarnishShell},

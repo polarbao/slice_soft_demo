@@ -40,17 +40,31 @@ SupportEditor::SupportEditor(ConfigDocument* document, QWidget* parent) : QWidge
     min_island_area_ = makeSpin(this);
     xy_dilation_ = makeSpin(this);
     connectivity_ = makeSpin(this, 8);
+    m_baseProjectionEnabledCheck =
+        new QCheckBox("启用支撑投影铺底", this);
+    m_baseProjectionEnabledCheck->setObjectName(
+        QStringLiteral("supportEditorBaseProjectionEnabledCheck"));
+    m_baseProjectionLayerCountSpin = makeSpin(this, 1000);
+    m_baseProjectionLayerCountSpin->setObjectName(
+        QStringLiteral("supportEditorBaseProjectionLayerCountSpin"));
+    m_baseProjectionLayerCountSpin->setSuffix(" 层");
     enabled_->setToolTip("启用后生成 S 通道支撑材料。");
     mode_->setToolTip("支撑形态策略：甲片类模型通常使用全高度垂直填充或底面/悬空组合策略。");
     min_island_area_->setToolTip("小于该面积的支撑孤岛会被过滤；0 表示不过滤。");
     xy_dilation_->setToolTip("支撑区域 XY 方向膨胀像素数，用于补偿边缘支撑宽度。");
     connectivity_->setToolTip("孤岛检测连通性，通常使用 4 或 8。");
+    m_baseProjectionEnabledCheck->setToolTip(
+        "将普通支撑跨层最大投影写入前 N 层 S 通道；不会覆盖模型或外侧光油。");
+    m_baseProjectionLayerCountSpin->setToolTip(
+        "铺底层数是数量：30 表示 layerIndex 0..29。");
 
     form->addRow(enabled_);
     form->addRow("模式", mode_);
     form->addRow("最小孤岛面积 px", min_island_area_);
     form->addRow("XY 膨胀 px", xy_dilation_);
     form->addRow("连通性", connectivity_);
+    form->addRow(m_baseProjectionEnabledCheck);
+    form->addRow("铺底层数", m_baseProjectionLayerCountSpin);
     layout->addLayout(form);
     layout->addStretch(1);
 
@@ -81,6 +95,35 @@ SupportEditor::SupportEditor(ConfigDocument* document, QWidget* parent) : QWidge
             document_->setValue({"support", "connectivity"}, value);
         }
     });
+    connect(
+        m_baseProjectionEnabledCheck,
+        &QCheckBox::toggled,
+        this,
+        [this](const bool checked)
+        {
+            if (!loading_)
+            {
+                document_->setValue(
+                    {"support", "baseProjection", "enabled"},
+                    checked);
+                document_->setValue(
+                    {"support", "baseProjection", "source"},
+                    "max_support_footprint");
+            }
+        });
+    connect(
+        m_baseProjectionLayerCountSpin,
+        qOverload<int>(&QSpinBox::valueChanged),
+        this,
+        [this](const int value)
+        {
+            if (!loading_)
+            {
+                document_->setValue(
+                    {"support", "baseProjection", "layerCount"},
+                    value);
+            }
+        });
 }
 
 void SupportEditor::loadFromDocument() {
@@ -91,5 +134,11 @@ void SupportEditor::loadFromDocument() {
     min_island_area_->setValue(min_island.isDouble() ? min_island.toInt() : document_->value({"support", "minAreaPx"}).toInt());
     xy_dilation_->setValue(document_->value({"support", "xyDilationPx"}).toInt());
     connectivity_->setValue(document_->value({"support", "connectivity"}).toInt(4));
+    m_baseProjectionEnabledCheck->setChecked(
+        document_->value({"support", "baseProjection", "enabled"})
+            .toBool(true));
+    m_baseProjectionLayerCountSpin->setValue(
+        document_->value({"support", "baseProjection", "layerCount"})
+            .toInt(30));
     loading_ = false;
 }

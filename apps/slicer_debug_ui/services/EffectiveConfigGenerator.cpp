@@ -125,6 +125,19 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
     internalvoid.insert(QStringLiteral("minAreaPx"), settings.support.internalvoidminareapx);
     internalvoid.insert(QStringLiteral("fillRule"), QStringLiteral("all_internal_voids"));
     support.insert(QStringLiteral("internalVoid"), internalvoid);
+    QJsonObject baseprojection =
+        support.value(QStringLiteral("baseProjection")).toObject();
+    baseprojection.insert(
+        QStringLiteral("enabled"),
+        settings.support.enabled
+            && settings.support.baseprojectionenabled);
+    baseprojection.insert(
+        QStringLiteral("layerCount"),
+        settings.support.baseprojectionlayercount);
+    baseprojection.insert(
+        QStringLiteral("source"),
+        QStringLiteral("max_support_footprint"));
+    support.insert(QStringLiteral("baseProjection"), baseprojection);
     QJsonObject upper = support.value(QStringLiteral("upper")).toObject();
     upper.insert(
         QStringLiteral("enabled"),

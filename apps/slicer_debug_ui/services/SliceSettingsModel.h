@@ -36,6 +36,8 @@ struct SupportSettings
     SupportPlacement placement{SupportPlacement::Lower};
     bool internalvoidenabled{true};
     int internalvoidminareapx{16};
+    bool baseprojectionenabled{true};
+    int baseprojectionlayercount{30};
 };
 
 /**

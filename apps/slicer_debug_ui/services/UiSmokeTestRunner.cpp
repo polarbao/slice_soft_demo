@@ -80,9 +80,11 @@
 #include <QThread>
 #include <QToolButton>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <memory>
 
 namespace
@@ -2323,6 +2325,8 @@ int UiSmokeTestRunner::SettingHelpMetadataCase(const UiSmokeTestOptions& options
         {QStringLiteral("whitePolicyEnabledCheck"), QStringLiteral("materialPolicy.white.enabled")},
         {QStringLiteral("supportEnabledCheck"), QStringLiteral("support.enabled")},
         {QStringLiteral("supportPlacementCombo"), QStringLiteral("support.placement")},
+        {QStringLiteral("baseProjectionEnabledCheck"), QStringLiteral("support.baseProjection.enabled")},
+        {QStringLiteral("baseProjectionLayerCountSpin"), QStringLiteral("support.baseProjection.layerCount")},
         {QStringLiteral("surfaceVarnishEnabledCheck"), QStringLiteral("surfaceVarnish.enabled")},
         {QStringLiteral("outerVarnishEnabledCheck"), QStringLiteral("outerVarnish.enabled")},
         {QStringLiteral("previewDiagnosticImagesCheck"), QStringLiteral("preview.enabled")},
@@ -4254,6 +4258,8 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     const QJsonObject generated = result.document.object();
     const QJsonObject output = generated.value("output").toObject();
     const QJsonObject support = generated.value("support").toObject();
+    const QJsonObject baseProjection =
+        support.value("baseProjection").toObject();
     const QJsonObject texture = generated.value("texture").toObject();
     const QJsonObject openvdb = generated.value("experimental").toObject().value("openvdbPipeline").toObject();
     if (generated.value("input").toObject().value("modelPath").toString() != settings.modelpath
@@ -4267,6 +4273,10 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
         || generated.value("modelFill").toObject().value("material").toString() != "varnish"
         || support.value("placement").toString() != "both"
         || support.value("internalVoid").toObject().value("minAreaPx").toInt() != 24
+        || !baseProjection.value("enabled").toBool()
+        || baseProjection.value("layerCount").toInt() != 30
+        || baseProjection.value("source").toString()
+            != "max_support_footprint"
         || !generated.value("surfaceVarnish").toObject().value("enabled").toBool()
         || generated.value("surfaceVarnish").toObject().value("thicknessPx").toInt() != 2
         || !generated.value("outerVarnish").toObject().value("enabled").toBool()
@@ -5022,6 +5032,8 @@ int UiSmokeTestRunner::ModelTopViewTransform(
         QStringLiteral("modelTransformResetButton"));
     auto* saveButton = panel.findChild<QPushButton*>(
         QStringLiteral("modelTransformSaveButton"));
+    auto* axisPolicy = panel.findChild<QLabel*>(
+        QStringLiteral("modelTransformAxisPolicy"));
     if (translateX == nullptr
         || translateY == nullptr
         || rotateZ == nullptr
@@ -5029,7 +5041,10 @@ int UiSmokeTestRunner::ModelTopViewTransform(
         || applyButton == nullptr
         || centerButton == nullptr
         || resetButton == nullptr
-        || saveButton == nullptr)
+        || saveButton == nullptr
+        || axisPolicy == nullptr
+        || !axisPolicy->text().contains(
+            QStringLiteral("Z 高度由自动定向")))
     {
         return fail(QStringLiteral(
             "model transform controls are incomplete"));
@@ -5147,12 +5162,12 @@ int UiSmokeTestRunner::ModelTopViewTransform(
     if (window.findChild<ModelTransformPanel*>(
             QStringLiteral("modelTransformPanel"))
             == nullptr
-        || window.findChild<QSplitter*>(
-            QStringLiteral("modelTransformWorkspaceSplitter"))
+        || window.findChild<ContextInspector*>(
+            QStringLiteral("contextInspector"))
             == nullptr)
     {
         return fail(QStringLiteral(
-            "model transform workspace integration missing"));
+            "model transform context-inspector integration missing"));
     }
 
     return pass(QStringLiteral(
@@ -5329,6 +5344,8 @@ int UiSmokeTestRunner::SceneBatchImportRealMeigui(
         QDir(modelRoot).filePath(QStringLiteral("02.obj")),
         QDir(modelRoot).filePath(QStringLiteral("03.obj")),
         QDir(modelRoot).filePath(QStringLiteral("04.obj")),
+        QDir(modelRoot).filePath(
+            QStringLiteral("MF_Mei_gui_wumingzhi_fx04.obj")),
     };
     request.autolayout = true;
     for (const QString& modelPath : request.files)
@@ -5355,12 +5372,12 @@ int UiSmokeTestRunner::SceneBatchImportRealMeigui(
 
     const SceneBatchImportSummary& summary =
         controller.Summary();
-    if (summary.selected != 3
-        || summary.imported != 3
+    if (summary.selected != 4
+        || summary.imported != 4
         || summary.failed != 0
         || summary.cancelled != 0
         || !summary.autolayoutapplied
-        || document.InstanceCount() != 3U)
+        || document.InstanceCount() != 4U)
     {
         return fail(
             QStringLiteral(
@@ -5374,8 +5391,80 @@ int UiSmokeTestRunner::SceneBatchImportRealMeigui(
                 .arg(document.InstanceCount())
                 .arg(summary.autolayoutapplied));
     }
+
+    const auto TipFacesPositiveY =
+        [](const slicer_core::SceneModel& model)
+    {
+        constexpr double kEndBandFraction{0.12};
+        constexpr double kMinimumDifferenceMm{0.05};
+        const double width =
+            model.bbox_mm.max.x - model.bbox_mm.min.x;
+        const double depth =
+            model.bbox_mm.max.y - model.bbox_mm.min.y;
+        if (depth <= width)
+        {
+            return false;
+        }
+        const double lowBoundary =
+            model.bbox_mm.min.y
+            + depth * kEndBandFraction;
+        const double highBoundary =
+            model.bbox_mm.max.y
+            - depth * kEndBandFraction;
+        double lowMinimumX{
+            std::numeric_limits<double>::max()};
+        double lowMaximumX{
+            std::numeric_limits<double>::lowest()};
+        double highMinimumX{
+            std::numeric_limits<double>::max()};
+        double highMaximumX{
+            std::numeric_limits<double>::lowest()};
+        for (const slicer_core::Triangle& triangle : model.triangles)
+        {
+            for (const slicer_core::Vec3* point :
+                 {&triangle.a, &triangle.b, &triangle.c})
+            {
+                if (point->y <= lowBoundary)
+                {
+                    lowMinimumX = std::min(
+                        lowMinimumX,
+                        point->x);
+                    lowMaximumX = std::max(
+                        lowMaximumX,
+                        point->x);
+                }
+                if (point->y >= highBoundary)
+                {
+                    highMinimumX = std::min(
+                        highMinimumX,
+                        point->x);
+                    highMaximumX = std::max(
+                        highMaximumX,
+                        point->x);
+                }
+            }
+        }
+        const double lowSpan = lowMaximumX - lowMinimumX;
+        const double highSpan = highMaximumX - highMinimumX;
+        return std::isfinite(lowSpan)
+            && std::isfinite(highSpan)
+            && highSpan + kMinimumDifferenceMm < lowSpan;
+    };
+    for (const SceneDocumentItem& item : document.Items())
+    {
+        const auto source = repository.Find(item.sourcecachekey);
+        if (!source.has_value()
+            || source->model == nullptr
+            || !TipFacesPositiveY(*source->model))
+        {
+            return fail(
+                QStringLiteral(
+                    "scene batch real meigui tip is not facing +Y: ")
+                + item.modelpath);
+        }
+    }
     return pass(QStringLiteral(
-        "scene-batch-import-real-meigui 02/03/04"));
+        "scene-batch-import-real-meigui 02/03/04/MF +Y-tip"));
 }
 
 int UiSmokeTestRunner::SceneBatchImportPartialFailure(

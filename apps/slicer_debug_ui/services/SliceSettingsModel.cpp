@@ -15,6 +15,8 @@ SliceSettingsState MakeCommonDefaults()
     state.support.placement = SupportPlacement::Lower;
     state.support.internalvoidenabled = true;
     state.support.internalvoidminareapx = 16;
+    state.support.baseprojectionenabled = true;
+    state.support.baseprojectionlayercount = 30;
     state.surfacevarnish.enabled = false;
     state.surfacevarnish.thicknesspx = 0;
     state.outervarnish.enabled = false;
@@ -121,6 +123,10 @@ SliceSettingsValidationResult SliceSettingsModel::Validate() const
     if (m_state.support.internalvoidminareapx < 0)
     {
         result.errors.push_back(QStringLiteral("内部镂空最小面积不能为负数。"));
+    }
+    if (m_state.support.baseprojectionlayercount < 0)
+    {
+        result.errors.push_back(QStringLiteral("支撑投影铺底层数不能为负数。"));
     }
     if (m_state.surfacevarnish.thicknesspx < 0
         || (m_state.surfacevarnish.enabled && m_state.surfacevarnish.thicknesspx <= 0))

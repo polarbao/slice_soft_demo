@@ -279,6 +279,8 @@ add_library(slicer_core
     src/slicer_core/slicer.h
     src/slicer_core/support/SupportComponentAnalysis.cpp
     src/slicer_core/support/SupportComponentAnalysis.h
+    src/slicer_core/support/SupportBaseProjection.cpp
+    src/slicer_core/support/SupportBaseProjection.h
     src/slicer_core/support/SupportPolicy.cpp
     src/slicer_core/support/SupportPolicy.h
     src/slicer_core/support/SupportShapeOptimizer.cpp

@@ -168,6 +168,33 @@ bool MaterialPriorityRemovesSupportOverlap()
     return true;
 }
 
+bool BaseProjectionFillsConfiguredLowLayers()
+{
+    auto mapping = MakeMapping();
+    const std::size_t lowColumn = PixelIndex(7, 1, 1);
+    mapping.layers.at(1U).modelMask.at(lowColumn) = 1U;
+    mapping.layers.at(1U).modelFillMask.at(lowColumn) = 1U;
+
+    auto config = MakeMaterialParityConfig();
+    config.surface_varnish.enabled = false;
+    config.outer_varnish.enabled = false;
+    config.support.base_projection.enabled = true;
+    config.support.base_projection.layer_count = 3;
+    const auto result =
+        slicer_core::ComposeGlobalSurfaceShellMaterialEvidence(
+            mapping,
+            config);
+
+    return ExpectTrue(result.available, "base projection evidence is available")
+        && ExpectTrue(
+            result.layers.at(2U).supportFillMask.at(lowColumn) == 1U,
+            "base projection fills an empty low layer from the maximum footprint")
+        && ExpectTrue(
+            result.layers.at(2U).channels.at(
+                lowColumn * kChannelCount + kSupportChannel) == 0U,
+            "base projection remains an S-channel material");
+}
+
 }  // namespace
 
 int main()
@@ -179,6 +206,8 @@ int main()
          SurfaceAndOuterVarnishAreWrittenToV},
         {"material_priority_removes_support_overlap",
          MaterialPriorityRemovesSupportOverlap},
+        {"base_projection_fills_configured_low_layers",
+         BaseProjectionFillsConfiguredLowLayers},
     };
 
     bool passed{true};

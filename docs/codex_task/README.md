@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-07-29
-> 当前阶段：Stage 13 原 P0 17/17 COMPLETE / 13B-08、13C、13D、13E COMPLETE / 12E-09A COMPLETE / NEXT 12E-10A READY
+> 更新日期：2026-07-30
+> 当前阶段：13G-00..07 COMPLETE；12E-10A 保持独立 READY
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -58,6 +58,8 @@ docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_真实模型拓扑修复执行指令.md
 docs/codex_task/current/TASKS_12E_08C_R4_模型导入预检与修复资产准入任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_08C_R4_模型导入预检与修复资产准入执行指令.md
+docs/codex_task/current/TASKS_13G_支撑投影铺底与层间连续性任务清单.md
+docs/codex_task/current/CODEX_PROMPT_13G_支撑投影铺底与层间连续性执行指令.md
 ```
 
 当前原子任务：
@@ -76,6 +78,7 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 13B-08 批量导入与当前场景一键切片专项 01..04 已完成，真实 OBJ/3MF 作业流和 RIP strict PASS；
 13D 工作台布局专项 13D-01..04 已完成；12E-09A-01..06 已完成，下一入口为 12E-10A；
 13E 甲片自动定向与诊断工作流 01..05 已完成，正面 +Z、9 mm 默认和右侧诊断 PASS；
+13G-00..07 已完成，Reality 5/5 正反面修正、最大投影铺底、Qt/Effective Config、segment_105 Release/RIP 均 PASS；
 12G-TCWS 纹理载体/白色分色候选专项 FROZEN，不得实现。
 ```
 

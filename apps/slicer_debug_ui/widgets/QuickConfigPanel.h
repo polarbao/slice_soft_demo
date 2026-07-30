@@ -52,6 +52,8 @@ private slots:
     void OnSupportPlacementChanged(int index);
     void OnInternalVoidEnabledChanged(bool checked);
     void OnInternalVoidMinAreaChanged(int value);
+    void OnBaseProjectionEnabledChanged(bool checked);
+    void OnBaseProjectionLayerCountChanged(int value);
     void OnWhiteEnabledChanged(bool checked);
     void OnVarnishEnabledChanged(bool checked);
     void OnVarnishTopLayersChanged(int value);
@@ -91,6 +93,8 @@ private:
     QComboBox* m_supportPlacementCombo{nullptr};
     QCheckBox* m_internalVoidEnabledCheck{nullptr};
     QSpinBox* m_internalVoidMinAreaSpin{nullptr};
+    QCheckBox* m_baseProjectionEnabledCheck{nullptr};
+    QSpinBox* m_baseProjectionLayerCountSpin{nullptr};
     QCheckBox* m_whiteEnabledCheck{nullptr};
     QCheckBox* m_varnishEnabledCheck{nullptr};
     QSpinBox* m_varnishTopLayersSpin{nullptr};

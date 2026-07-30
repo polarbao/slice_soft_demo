@@ -222,6 +222,16 @@ struct UpperSupportConfig {
     std::string reason{"optional_detachable_surface_support"};
 };
 
+/**
+ * @brief Optional maximum support-footprint base applied to the first layers.
+ */
+struct SupportBaseProjectionConfig
+{
+    bool enabled{false};
+    int layer_count{30};
+    std::string source{"max_support_footprint"};
+};
+
 struct SupportConfig {
     bool enabled{true};
     std::string mode{"bottom_projection"};
@@ -245,6 +255,7 @@ struct SupportConfig {
     double shape_max_added_support_ratio{0.25};
     InternalVoidSupportConfig internal_void;
     UpperSupportConfig upper;
+    SupportBaseProjectionConfig base_projection;
 };
 
 /**

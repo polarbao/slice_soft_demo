@@ -22,4 +22,6 @@ private:
     QSpinBox* min_island_area_{nullptr};
     QSpinBox* xy_dilation_{nullptr};
     QSpinBox* connectivity_{nullptr};
+    QCheckBox* m_baseProjectionEnabledCheck{nullptr};
+    QSpinBox* m_baseProjectionLayerCountSpin{nullptr};
 };

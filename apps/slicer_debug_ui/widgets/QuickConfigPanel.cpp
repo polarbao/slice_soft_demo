@@ -270,6 +270,27 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     ApplyHelp(m_internalVoidMinAreaSpin, QStringLiteral("support.internalVoid.minAreaPx"));
     supportForm->addRow("镂空最小面积", m_internalVoidMinAreaSpin);
 
+    m_baseProjectionEnabledCheck =
+        new QCheckBox("启用支撑投影铺底", this);
+    m_baseProjectionEnabledCheck->setObjectName(
+        QStringLiteral("baseProjectionEnabledCheck"));
+    ApplyHelp(
+        m_baseProjectionEnabledCheck,
+        QStringLiteral("support.baseProjection.enabled"));
+    supportForm->addRow(m_baseProjectionEnabledCheck);
+    m_baseProjectionLayerCountSpin = new QSpinBox(this);
+    m_baseProjectionLayerCountSpin->setObjectName(
+        QStringLiteral("baseProjectionLayerCountSpin"));
+    m_baseProjectionLayerCountSpin->setRange(0, 1000);
+    m_baseProjectionLayerCountSpin->setSuffix(" 层");
+    m_baseProjectionLayerCountSpin->setKeyboardTracking(false);
+    ApplyHelp(
+        m_baseProjectionLayerCountSpin,
+        QStringLiteral("support.baseProjection.layerCount"));
+    supportForm->addRow(
+        "铺底层数",
+        m_baseProjectionLayerCountSpin);
+
     auto* previewGroup = new QGroupBox("诊断图输出", this);
     previewGroup->setToolTip(
         "默认关闭重复图片写出。UI 始终可直接读取生产 RGBWSV TIFF 进行预览。");
@@ -313,6 +334,16 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
     connect(m_supportPlacementCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &QuickConfigPanel::OnSupportPlacementChanged);
     connect(m_internalVoidEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnInternalVoidEnabledChanged);
     connect(m_internalVoidMinAreaSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnInternalVoidMinAreaChanged);
+    connect(
+        m_baseProjectionEnabledCheck,
+        &QCheckBox::toggled,
+        this,
+        &QuickConfigPanel::OnBaseProjectionEnabledChanged);
+    connect(
+        m_baseProjectionLayerCountSpin,
+        qOverload<int>(&QSpinBox::valueChanged),
+        this,
+        &QuickConfigPanel::OnBaseProjectionLayerCountChanged);
     connect(m_whiteEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnWhiteEnabledChanged);
     connect(m_varnishEnabledCheck, &QCheckBox::toggled, this, &QuickConfigPanel::OnVarnishEnabledChanged);
     connect(m_varnishTopLayersSpin, qOverload<int>(&QSpinBox::valueChanged), this, &QuickConfigPanel::OnVarnishTopLayersChanged);
@@ -356,6 +387,10 @@ void QuickConfigPanel::LoadFromDocument()
     SetComboValue(m_supportPlacementCombo, StringValue({"support", "placement"}, "lower"));
     m_internalVoidEnabledCheck->setChecked(BoolValue({"support", "internalVoid", "enabled"}, true));
     m_internalVoidMinAreaSpin->setValue(IntValue({"support", "internalVoid", "minAreaPx"}, 16));
+    m_baseProjectionEnabledCheck->setChecked(
+        BoolValue({"support", "baseProjection", "enabled"}, true));
+    m_baseProjectionLayerCountSpin->setValue(
+        IntValue({"support", "baseProjection", "layerCount"}, 30));
     const bool materialPolicyEnabled = BoolValue({"materialPolicy", "enabled"}, false);
     const bool whitePolicyEnabled = materialPolicyEnabled
         && BoolValue({"materialPolicy", "white", "enabled"}, false)
@@ -421,6 +456,8 @@ void QuickConfigPanel::ApplyProductionCapability(
         m_supportPlacementCombo,
         m_internalVoidEnabledCheck,
         m_internalVoidMinAreaSpin,
+        m_baseProjectionEnabledCheck,
+        m_baseProjectionLayerCountSpin,
     };
     for (QWidget* control : supportControls)
     {
@@ -665,6 +702,36 @@ void QuickConfigPanel::OnInternalVoidMinAreaChanged(const int value)
     if (!m_loading)
     {
         SetValueIfChanged({"support", "internalVoid", "minAreaPx"}, value);
+    }
+}
+
+void QuickConfigPanel::OnBaseProjectionEnabledChanged(const bool checked)
+{
+    if (m_loading)
+    {
+        return;
+    }
+    if (checked && !m_supportEnabledCheck->isChecked())
+    {
+        m_supportEnabledCheck->setChecked(true);
+        SetValueIfChanged({"support", "enabled"}, true);
+    }
+    SetValueIfChanged(
+        {"support", "baseProjection", "enabled"},
+        checked);
+    SetValueIfChanged(
+        {"support", "baseProjection", "source"},
+        "max_support_footprint");
+}
+
+void QuickConfigPanel::OnBaseProjectionLayerCountChanged(
+    const int value)
+{
+    if (!m_loading)
+    {
+        SetValueIfChanged(
+            {"support", "baseProjection", "layerCount"},
+            value);
     }
 }
 

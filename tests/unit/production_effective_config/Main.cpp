@@ -394,6 +394,11 @@ bool TestLegacyPreservesExistingProfile()
     const QJsonObject effectiveRoot = result.document.object();
     const QJsonObject effectiveOutput =
         effectiveRoot.value(QStringLiteral("output")).toObject();
+    const QJsonObject effectiveBaseProjection =
+        effectiveRoot.value(QStringLiteral("support"))
+            .toObject()
+            .value(QStringLiteral("baseProjection"))
+            .toObject();
     const QJsonObject audit = effectiveRoot.value(QStringLiteral("uiAudit"))
                                   .toObject()
                                   .value(QStringLiteral("production"))
@@ -409,6 +414,18 @@ bool TestLegacyPreservesExistingProfile()
             effectiveOutput.value(QStringLiteral("dpiX")).toInt() == 635
                 && effectiveOutput.value(QStringLiteral("dpiY")).toInt() == 600,
             "legacy effective config uses current X/Y DPI")
+        && ExpectTrue(
+            effectiveBaseProjection.value(QStringLiteral("enabled"))
+                    .toBool(false)
+                && effectiveBaseProjection
+                       .value(QStringLiteral("layerCount"))
+                       .toInt()
+                    == 30
+                && effectiveBaseProjection
+                       .value(QStringLiteral("source"))
+                       .toString()
+                    == QStringLiteral("max_support_footprint"),
+            "legacy production settings enable the 30-layer support base")
         && ExpectTrue(
             effectiveRoot.value(QStringLiteral("materialProcessProfile"))
                     .toObject()

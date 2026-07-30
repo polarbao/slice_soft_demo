@@ -1,6 +1,7 @@
 #include "slicer_core/pipeline/GlobalSurfaceShellMaterialEvidence.h"
 
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
+#include "slicer_core/support/SupportBaseProjection.h"
 
 #include <algorithm>
 #include <array>
@@ -425,6 +426,24 @@ void BuildSupportVolumes(
                     internalVoid.at(index) = 1U;
                 }
             }
+        }
+    }
+
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(grid.width)
+        * static_cast<std::size_t>(grid.height);
+    (void)ApplySupportBaseProjectionVolume(
+        config.support.base_projection,
+        model,
+        support,
+        grid.depth,
+        pixelCount);
+    for (std::size_t index{0U}; index < support.size(); ++index)
+    {
+        if (outerVarnish.at(index) != 0U)
+        {
+            support.at(index) = 0U;
+            internalVoid.at(index) = 0U;
         }
     }
 }
