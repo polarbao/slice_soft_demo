@@ -14,6 +14,16 @@ namespace slicer_core
 {
 
 /**
+ * @brief Default edge clearance between adjacent scene columns in millimetres.
+ */
+inline constexpr double kDefaultSceneColumnGapMm{10.0};
+
+/**
+ * @brief Default edge clearance between adjacent scene rows in millimetres.
+ */
+inline constexpr double kDefaultSceneRowGapMm{10.0};
+
+/**
  * @brief Storage scope used to resolve one model's adjacent resources.
  */
 enum class ResourceScopeKind
@@ -157,8 +167,8 @@ struct SceneLayout
     std::string policy{"grid"};
     int maxcolumns{11};
     int maxrows{2};
-    double columngapmm{20.0};
-    double rowgapmm{30.0};
+    double columngapmm{kDefaultSceneColumnGapMm};
+    double rowgapmm{kDefaultSceneRowGapMm};
     std::string spacingmode{"edge_clearance"};
     std::string order{"row_major"};
 };

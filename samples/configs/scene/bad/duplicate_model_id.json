@@ -16,8 +16,8 @@
     "policy": "grid",
     "maxColumns": 11,
     "maxRows": 2,
-    "columnGapMm": 20.0,
-    "rowGapMm": 30.0,
+    "columnGapMm": 10.0,
+    "rowGapMm": 10.0,
     "spacingMode": "edge_clearance",
     "order": "row_major"
   },

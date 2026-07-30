@@ -594,7 +594,29 @@ bool RepositoryFixturesAreUsable()
     const auto bad = slicer_core::DeserializeMultiModelScene(
         slicer_core::Json::parse(badInput));
     return ExpectTrue(
+               std::abs(
+                   slicer_core::MultiModelScene{}
+                       .layout.columngapmm
+                   - 10.0)
+                       < 1.0e-9
+                   && std::abs(
+                          slicer_core::MultiModelScene{}
+                              .layout.rowgapmm
+                          - 10.0)
+                       < 1.0e-9,
+               "new scenes default to 10 mm row and column gaps")
+        && ExpectTrue(
                positive.IsValid()
+                   && std::abs(
+                          positive.scene.layout
+                              .columngapmm
+                          - 10.0)
+                       < 1.0e-9
+                   && std::abs(
+                          positive.scene.layout
+                              .rowgapmm
+                          - 10.0)
+                       < 1.0e-9
                    && slicer_core::ValidateMultiModelScene(
                        positive.scene,
                        slicer_core::SceneValidationPurpose::Draft)
