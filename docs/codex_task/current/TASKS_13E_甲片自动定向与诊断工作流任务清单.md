@@ -1,8 +1,8 @@
 # TASKS 13E 甲片自动定向与诊断工作流任务清单
 
 > 文档状态：COMPLETE
-> 版本：v1.0
-> 日期：2026-07-29
+> 版本：v1.1
+> 日期：2026-07-30
 > 顺序：13D COMPLETE -> 13E -> 12E-10A
 
 ## 1. 原子任务
@@ -62,6 +62,21 @@
 更新 REPORT、总览和上下文。
 ```
 
+### 13E-R1-01 俯视长轴朝向归一化
+
+状态：`COMPLETE`
+
+```text
+已平放且 X 占地大于 Y 的甲片自动执行 Z 轴四分之一转；
+窄端通过两端 12% 带区横向跨度识别并统一朝 +Y；
+已沿 Y 但窄端位于 -Y 的甲片自动执行 Z 轴 180 度旋转；
+薄型长轴甲片通过中心/两侧下包络判断 Z 正反面；
+AutoOrientReport 输出结构化 rotationDeg；
+预检工具消费结构化组合旋转，不再硬编码姿态名称；
+Reality 五模型只读检查均为 identity_rotate_z_minus_90；
+02/03/04/MF 真实模型批量导入后均满足尖端朝 +Y。
+```
+
 ## 2. 固定边界
 
 ```text
@@ -88,7 +103,8 @@ workbench-project-diagnostics：PASS；
 diagnostics-collapse：PASS；
 workspace-layout-sizes：1024x768、1280x720、1440x900 PASS；
 Quick CI：PASS；
-03.obj、04.obj、MF_Mei_gui_wumingzhi_fx04.obj：rotate_x_90。
+02.obj、03.obj、04.obj、MF_Mei_gui_wumingzhi_fx04.obj：
+批量导入与真实几何 +Y 尖端断言 PASS。
 ```
 
 状态真源：

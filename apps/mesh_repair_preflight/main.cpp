@@ -355,31 +355,6 @@ Matrix4 RotationFromDegrees(const std::array<double, 3>& rotationDegrees)
     return Multiply(z, Multiply(y, x));
 }
 
-std::array<double, 3> AutoOrientationDegrees(const std::string& name)
-{
-    if (name == "identity")
-    {
-        return {0.0, 0.0, 0.0};
-    }
-    if (name == "rotate_x_90")
-    {
-        return {90.0, 0.0, 0.0};
-    }
-    if (name == "rotate_x_minus_90")
-    {
-        return {-90.0, 0.0, 0.0};
-    }
-    if (name == "rotate_y_90")
-    {
-        return {0.0, 90.0, 0.0};
-    }
-    if (name == "rotate_y_minus_90")
-    {
-        return {0.0, -90.0, 0.0};
-    }
-    throw std::runtime_error("unsupported auto orientation: " + name);
-}
-
 slicer_core::Vec3 TransformPoint(const Matrix4& matrix, const slicer_core::Vec3& point)
 {
     return {
@@ -430,8 +405,8 @@ Matrix4 BuildFinalTransform(
         Multiply(configuredRotation, configuredScale));
 
     const Matrix4 autoRotation = RotationFromDegrees(
-        AutoOrientationDegrees(scene.auto_orient.selected_orientation));
-    if (!scene.auto_orient.applied)
+        scene.auto_orient.rotation_deg);
+    if (!scene.auto_orient.enabled)
     {
         return configured;
     }

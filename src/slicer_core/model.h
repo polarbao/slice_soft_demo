@@ -60,6 +60,7 @@ struct AutoOrientReport {
     bool applied{false};
     double max_height_mm{9.0};
     std::string selected_orientation{"identity"};
+    std::array<double, 3> rotation_deg{0.0, 0.0, 0.0};
     BoundingBox original_bbox_mm;
 };
 

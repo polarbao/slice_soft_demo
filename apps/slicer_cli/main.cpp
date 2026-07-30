@@ -412,6 +412,10 @@ int InspectModel(const std::filesystem::path& config_path)
     std::cout << "  autoOrient.applied: " << (report.auto_orient.applied ? "true" : "false") << '\n';
     std::cout << "  autoOrient.maxHeightMm: " << report.auto_orient.max_height_mm << '\n';
     std::cout << "  autoOrient.selectedOrientation: " << report.auto_orient.selected_orientation << '\n';
+    std::cout << "  autoOrient.rotationDeg: ["
+              << report.auto_orient.rotation_deg.at(0U) << ", "
+              << report.auto_orient.rotation_deg.at(1U) << ", "
+              << report.auto_orient.rotation_deg.at(2U) << "]\n";
     PrintBbox("originalBboxMm", report.auto_orient.original_bbox_mm);
     PrintBbox("orientedBboxMm", report.bbox_mm);
     return 0;

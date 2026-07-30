@@ -21,7 +21,7 @@
 | 13F-R1-03 | 自适应 surface preview 精度 | PENDING | 显示质量不回归，峰值等待降低 |
 | 13F-R1-04 | 平移重复实例 raster 复用原型 | PENDING | 与基线逐像素一致 |
 | 13F-R1-05 | 有内存预算的有限并行评估 | PENDING | 不超过显式内存上限 |
-| 13F-R1-06 | Reality 单模型 Z 基准修正与同配置 Release 基准 | COMPLETE | `650x286x184`、核心 `1348.5702 ms`、完整写包 `3719.056 ms`、RIP PASS |
+| 13F-R1-06 | Reality 单模型 Z 基准修正与同配置 Release 基准 | COMPLETE | 当前纵向 `303x614x184`、核心 `2366.3419 ms`、完整写包 `6516.322 ms`、RIP PASS |
 
 ## 固定约束
 

@@ -263,6 +263,218 @@ OrientationCandidate make_orientation_candidate(
     return {name, rotation_deg, std::move(rotated), rotated_bbox};
 }
 
+double TransverseSpanInEndBand(
+    const OrientationCandidate& candidate,
+    const bool longAxisIsX,
+    const bool lowEnd)
+{
+    constexpr double kEndBandFraction{0.12};
+    const double longitudinalMinimum =
+        longAxisIsX ? candidate.bbox.min.x : candidate.bbox.min.y;
+    const double longitudinalMaximum =
+        longAxisIsX ? candidate.bbox.max.x : candidate.bbox.max.y;
+    const double longitudinalSpan =
+        longitudinalMaximum - longitudinalMinimum;
+    const double bandBoundary = lowEnd
+        ? longitudinalMinimum
+            + longitudinalSpan * kEndBandFraction
+        : longitudinalMaximum
+            - longitudinalSpan * kEndBandFraction;
+    double transverseMinimum{
+        std::numeric_limits<double>::max()};
+    double transverseMaximum{
+        std::numeric_limits<double>::lowest()};
+    std::size_t count{0U};
+    for (const Vec3& point : candidate.vertices)
+    {
+        const double longitudinalCoordinate =
+            longAxisIsX ? point.x : point.y;
+        const double transverseCoordinate =
+            longAxisIsX ? point.y : point.x;
+        const bool inBand = lowEnd
+            ? longitudinalCoordinate <= bandBoundary
+            : longitudinalCoordinate >= bandBoundary;
+        if (!inBand)
+        {
+            continue;
+        }
+        transverseMinimum =
+            std::min(transverseMinimum, transverseCoordinate);
+        transverseMaximum =
+            std::max(transverseMaximum, transverseCoordinate);
+        ++count;
+    }
+    if (count < 2U)
+    {
+        return longAxisIsX
+            ? bbox_depth(candidate.bbox)
+            : bbox_width(candidate.bbox);
+    }
+    return transverseMaximum - transverseMinimum;
+}
+
+OrientationCandidate AlignPlanarHeading(
+    const OrientationCandidate& candidate,
+    const std::vector<Vec3>& sourceVertices)
+{
+    constexpr double kPlanarToleranceMm{1.0e-9};
+    const double width = bbox_width(candidate.bbox);
+    const double depth = bbox_depth(candidate.bbox);
+    const double height = bbox_height(candidate.bbox);
+    if (height
+        >= std::min(width, depth) - kPlanarToleranceMm)
+    {
+        return candidate;
+    }
+
+    const bool longAxisIsX =
+        width > depth + kPlanarToleranceMm;
+    const double lowEndSpan =
+        TransverseSpanInEndBand(
+            candidate,
+            longAxisIsX,
+            true);
+    const double highEndSpan =
+        TransverseSpanInEndBand(
+            candidate,
+            longAxisIsX,
+            false);
+    const bool lowEndIsTip =
+        lowEndSpan <= highEndSpan + kPlanarToleranceMm;
+    const double rotationZ = longAxisIsX
+        ? (lowEndIsTip ? -90.0 : 90.0)
+        : (lowEndIsTip ? 180.0 : 0.0);
+    if (std::abs(rotationZ) <= kPlanarToleranceMm)
+    {
+        return candidate;
+    }
+
+    std::array<double, 3> rotation = candidate.rotation_deg;
+    rotation.at(2U) += rotationZ;
+    std::string suffix;
+    if (rotationZ == -90.0)
+    {
+        suffix = "_rotate_z_minus_90";
+    }
+    else if (rotationZ == 90.0)
+    {
+        suffix = "_rotate_z_90";
+    }
+    else
+    {
+        suffix = "_rotate_z_180";
+    }
+    return make_orientation_candidate(
+        candidate.name + suffix,
+        rotation,
+        sourceVertices);
+}
+
+bool IsPlanarNailCandidate(
+    const OrientationCandidate& candidate)
+{
+    constexpr double kMinimumAspectRatio{1.5};
+    constexpr double kMaximumThicknessRatio{0.75};
+    constexpr double kSpanToleranceMm{1.0e-9};
+    const double width = bbox_width(candidate.bbox);
+    const double depth = bbox_depth(candidate.bbox);
+    const double height = bbox_height(candidate.bbox);
+    const double longSpan = std::max(width, depth);
+    const double shortSpan = std::min(width, depth);
+    if (shortSpan <= kSpanToleranceMm)
+    {
+        return false;
+    }
+    return longSpan / shortSpan >= kMinimumAspectRatio
+        && height / shortSpan <= kMaximumThicknessRatio;
+}
+
+OrientationCandidate AlignNailFrontUp(
+    const OrientationCandidate& candidate,
+    const std::vector<Vec3>& sourceVertices)
+{
+    constexpr double kSideBandFraction{0.125};
+    constexpr double kCenterHalfBandFraction{0.125};
+    constexpr double kMinimumEnvelopeDeltaMm{0.05};
+    constexpr double kRelativeEnvelopeDelta{0.05};
+    if (!IsPlanarNailCandidate(candidate))
+    {
+        return candidate;
+    }
+
+    const double width = bbox_width(candidate.bbox);
+    const double depth = bbox_depth(candidate.bbox);
+    const bool longAxisIsX = width >= depth;
+    const double transverseMinimum =
+        longAxisIsX ? candidate.bbox.min.y : candidate.bbox.min.x;
+    const double transverseMaximum =
+        longAxisIsX ? candidate.bbox.max.y : candidate.bbox.max.x;
+    const double transverseSpan =
+        transverseMaximum - transverseMinimum;
+    const double transverseCenter =
+        0.5 * (transverseMinimum + transverseMaximum);
+    const double sideBandWidth =
+        transverseSpan * kSideBandFraction;
+    const double centerHalfBandWidth =
+        transverseSpan * kCenterHalfBandFraction;
+    double centerLowerEnvelope{
+        std::numeric_limits<double>::max()};
+    double sideLowerEnvelope{
+        std::numeric_limits<double>::max()};
+    std::size_t centerSampleCount{0U};
+    std::size_t sideSampleCount{0U};
+    for (const Vec3& point : candidate.vertices)
+    {
+        const double transverseCoordinate =
+            longAxisIsX ? point.y : point.x;
+        if (std::abs(
+                transverseCoordinate - transverseCenter)
+            <= centerHalfBandWidth)
+        {
+            centerLowerEnvelope =
+                std::min(centerLowerEnvelope, point.z);
+            ++centerSampleCount;
+        }
+        if (transverseCoordinate
+                <= transverseMinimum + sideBandWidth
+            || transverseCoordinate
+                >= transverseMaximum - sideBandWidth)
+        {
+            sideLowerEnvelope =
+                std::min(sideLowerEnvelope, point.z);
+            ++sideSampleCount;
+        }
+    }
+    if (centerSampleCount == 0U || sideSampleCount == 0U)
+    {
+        return candidate;
+    }
+
+    const double requiredEnvelopeDelta =
+        std::max(
+            kMinimumEnvelopeDeltaMm,
+            bbox_height(candidate.bbox)
+                * kRelativeEnvelopeDelta);
+    if (centerLowerEnvelope + requiredEnvelopeDelta
+        >= sideLowerEnvelope)
+    {
+        return candidate;
+    }
+
+    std::array<double, 3> rotation =
+        candidate.rotation_deg;
+    const std::size_t longAxisRotationIndex =
+        longAxisIsX ? 0U : 1U;
+    rotation.at(longAxisRotationIndex) += 180.0;
+    return make_orientation_candidate(
+        candidate.name
+            + (longAxisIsX
+                   ? "_rotate_x_180"
+                   : "_rotate_y_180"),
+        rotation,
+        sourceVertices);
+}
+
 OrientationCandidate choose_auto_orientation(
     const std::vector<Vec3>& vertices,
     const BoundingBox& original_bbox,
@@ -288,7 +500,11 @@ OrientationCandidate choose_auto_orientation(
     if (bbox_height(original_bbox)
         <= config.max_height_mm + kHeightToleranceMm)
     {
-        return groundedIdentity;
+        return AlignPlanarHeading(
+            AlignNailFrontUp(
+                groundedIdentity,
+                vertices),
+            vertices);
     }
 
     std::vector<OrientationCandidate> candidates;
@@ -380,7 +596,11 @@ OrientationCandidate choose_auto_orientation(
             selectedIndex = index;
         }
     }
-    return candidates.at(selectedIndex);
+    return AlignPlanarHeading(
+        AlignNailFrontUp(
+            candidates.at(selectedIndex),
+            vertices),
+        vertices);
 }
 
 std::filesystem::path resolve_path(const std::filesystem::path& path, const std::filesystem::path& config_dir) {
@@ -1739,6 +1959,7 @@ ModelReport load_model_report(const SliceConfig& config, const std::filesystem::
     report.auto_orient.max_height_mm = config.auto_orient.max_height_mm;
     report.auto_orient.selected_orientation = orientation.name;
     report.auto_orient.applied = orientation.name != "identity";
+    report.auto_orient.rotation_deg = orientation.rotation_deg;
     report.auto_orient.original_bbox_mm = original_bbox;
     report.bbox_mm = orientation.bbox;
     report.triangles = build_triangles(orientation.vertices, mesh.faces);

@@ -1,8 +1,8 @@
 # DEV 13E AutoOrient 与 Qt 诊断信息架构设计
 
-> 文档版本：v1.0
+> 文档版本：v1.1
 > 文档状态：READY
-> 日期：2026-07-29
+> 日期：2026-07-30
 
 ## 1. 模块边界
 
@@ -70,6 +70,47 @@ rotate_y_minus_90。
 
 `maxHeightMm=9.0` 只参与姿态评分。不得修改模型 scale。后续可单独增加
 `heightLimitSatisfied` 报告字段，但本专项不改变现有报告 schema 的强制字段集合。
+
+### 2.4 平面朝向归一化
+
+基础 X/Y 候选确定并落台后，core 使用最终包围盒进行平面朝向判断：
+
+```text
+flat = height < min(width, depth)；
+longAxis = width > depth ? X : Y；
+endBand = 长轴两端各 12%；
+lowEndSpan / highEndSpan = 带区内横轴跨度；
+X 长轴且 lowEnd 为窄端 -> rotate_z_minus_90；
+X 长轴且 highEnd 为窄端 -> rotate_z_90；
+Y 长轴且 lowEnd 为窄端 -> rotate_z_180；
+Y 长轴且 highEnd 为窄端 -> 保持当前姿态。
+```
+
+因此“长轴已经沿 Y”不等于“方向已经正确”。算法还必须判断窄端位于
+`-Y` 还是 `+Y`，并统一将甲片尖端指向场景 `+Y`。
+
+### 2.5 Z 正反面几何语义
+
+正反面判断限定于薄型长轴甲片候选，不扩展到任意通用网格：
+
+```text
+长短轴比 >= 1.5；
+厚度 / 短轴 <= 0.75；
+比较横轴中心带与两侧带的下包络；
+中心下包络显著低于两侧时，判定凹面朝 +Z、外表面朝 -Z；
+绕当前长轴翻转 180 度，使凸起外表面朝场景 +Z；
+随后再次落台并执行尖端 +Y 归一化。
+```
+
+该判断同时作用于“源模型已经平放”和“先经 X/Y 直角候选平放”两条路径。
+无法满足甲片候选条件时保持确定性候选结果，不按文件名猜测正反面。
+
+旋转结果写入 `AutoOrientReport::rotation_deg`，`selected_orientation` 继续提供稳定可读
+名称，例如 `identity_rotate_z_minus_90`。预检工具直接消费结构化 `rotation_deg`，
+不再通过字符串枚举重建自动旋转，从而允许组合 X/Y/Z SourceTransform。
+
+纹理 UV 与三角形索引不变；旋转只作用于顶点坐标。实例级 `rotateZ` 仍在
+SourceTransform 之后执行。
 
 ## 3. 配置迁移
 
@@ -144,6 +185,15 @@ Dock 从底部迁移到右侧后，将布局 schema 升级为 2，旧几何状�
 断言 selectedOrientation == rotate_x_90；
 断言 bbox Z 高度约 7.983636 mm；
 重复加载结果完全一致。
+```
+
+增加一个已平放、长轴沿 X 的非对称封闭甲片 fixture：
+
+```text
+窄端在 -X -> identity_rotate_z_minus_90；
+窄端在 +X -> identity_rotate_z_90；
+旋转后 Y 占地大于 X；
+autoOrient=false 仍为 identity。
 ```
 
 再以 `maxHeightMm` 大于原始 Z 高度验证 identity 不被破坏，并验证
