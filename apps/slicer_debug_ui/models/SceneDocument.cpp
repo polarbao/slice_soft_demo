@@ -390,7 +390,6 @@ bool SceneDocument::SetCurrentInstance(const QString& instanceId)
     {
         return true;
     }
-    SyncCurrentItem();
     LoadCurrentItem(index.value());
     m_transformedPreflightState =
         SceneTransformedPreflightState::NotRun;

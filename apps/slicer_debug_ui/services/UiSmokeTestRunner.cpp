@@ -1125,10 +1125,13 @@ int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
     if (projectDock->IsExpanded()
         || diagnosticsDock->IsExpanded()
         || projectAction->isChecked()
-        || diagnosticsAction->isChecked())
+        || diagnosticsAction->isChecked()
+        || window.dockWidgetArea(diagnosticsDock)
+            != Qt::RightDockWidgetArea)
     {
         return fail(QStringLiteral(
-            "13D-03 auxiliary regions are not hidden by default"));
+            "13D-03 auxiliary regions are not hidden by default "
+            "or task details are not docked on the right"));
     }
 
     const quint64 sceneRevision =
@@ -1152,17 +1155,29 @@ int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
     if (projectDock->IsExpanded()
         || !diagnosticsDock->IsExpanded()
         || !diagnosticsAction->isChecked()
+        || !inspector->isHidden()
         || window.m_sceneDocument.SceneRevision()
             != sceneRevision)
     {
         return fail(QStringLiteral(
-            "13D-03 dock switching changed scene state"));
+            "13D-03 right-side task details did not replace "
+            "the context inspector safely"));
     }
     diagnosticsDock->SetExpanded(false);
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (inspector->isHidden())
+    {
+        return fail(QStringLiteral(
+            "13D-03 closing task details did not restore "
+            "the context inspector"));
+    }
 
     return pass(QStringLiteral(
         "workbench-project-diagnostics project=collapsed/"
-        "advanced-actions diagnostics=unified contexts=five"));
+        "advanced-actions diagnostics=right-side-alternate "
+        "contexts=five"));
 }
 
 int UiSmokeTestRunner::WorkbenchLayoutRestore(
@@ -1282,7 +1297,7 @@ int UiSmokeTestRunner::WorkbenchLayoutRestore(
     }
 
     return pass(QStringLiteral(
-        "workbench-layout-restore schema=13d.1/"
+        "workbench-layout-restore schema=2/"
         "valid-state/corrupt-state-safe-default"));
 }
 
@@ -5165,7 +5180,7 @@ int UiSmokeTestRunner::SceneBatchImportThree(
             "scene batch three-item MainWindow fixture unavailable"));
     }
 
-    bool secondItemWasPresentationSuppressed{false};
+    bool secondItemWasPresented{false};
     QObject::connect(
         &controller,
         &SceneBatchImportController::SigStateChanged,
@@ -5173,16 +5188,16 @@ int UiSmokeTestRunner::SceneBatchImportThree(
         [&controller,
          &document,
          topView,
-         &secondItemWasPresentationSuppressed]()
-        {
-            if (controller.IsRunning()
-                && controller.Summary().imported == 2)
-            {
-                secondItemWasPresentationSuppressed =
-                    document.InstanceCount() == 2U
-                    && topView->PresentationItemCount() == 1U;
-            }
-        });
+         &secondItemWasPresented]()
+         {
+             if (controller.IsRunning()
+                 && controller.Summary().imported == 2)
+             {
+                 secondItemWasPresented =
+                     document.InstanceCount() == 2U
+                     && topView->PresentationItemCount() == 2U;
+             }
+         });
 
     const QString modelPath = QDir(options.repo_root).filePath(
         QStringLiteral(
@@ -5215,7 +5230,7 @@ int UiSmokeTestRunner::SceneBatchImportThree(
         || summary.cancelled != 0
         || !summary.autolayoutapplied
         || document.InstanceCount() != 3U
-        || !secondItemWasPresentationSuppressed
+        || !secondItemWasPresented
         || topView->PresentationItemCount() != 3U
         || document.Items().at(0U).layoutcolumn != 0
         || document.Items().at(1U).layoutcolumn != 1
@@ -5272,7 +5287,7 @@ int UiSmokeTestRunner::SceneBatchImportThree(
 
     return pass(QStringLiteral(
         "scene-batch-import-three ordered/one-layout/"
-        "stable-presentation/config-round-trip"));
+        "incremental-presentation/config-round-trip"));
 }
 
 int UiSmokeTestRunner::SceneBatchImportRealMeigui(
@@ -5496,7 +5511,7 @@ int UiSmokeTestRunner::SceneSliceCurrent(
             {
                 return !window.m_sceneSliceActionController
                             .IsRunning()
-                    && !window.runner_.isRunning();
+                    && !window.runner_.IsRunning();
             },
             30000)
         || window.m_sceneSliceActionController.State()
@@ -5723,7 +5738,7 @@ int UiSmokeTestRunner::SceneSliceRealAssets(
             {
                 return !window.m_sceneSliceActionController
                             .IsRunning()
-                    && !window.runner_.isRunning();
+                    && !window.runner_.IsRunning();
             },
             180000)
         || window.m_sceneSliceActionController.State()
@@ -5904,7 +5919,7 @@ int UiSmokeTestRunner::SceneSliceStale(
         || !WaitForCondition(
             [&window]()
             {
-                return !window.runner_.isRunning();
+                return !window.runner_.IsRunning();
             },
             30000)
         || window.m_sceneSliceActionController.State()
@@ -5989,7 +6004,7 @@ int UiSmokeTestRunner::SceneSliceCancel(
     if (!WaitForCondition(
             [&window]()
             {
-                return !window.runner_.isRunning();
+                return !window.runner_.IsRunning();
             },
             30000)
         || window.m_sceneSliceActionController.State()
@@ -6069,7 +6084,7 @@ int UiSmokeTestRunner::SceneSliceNoFallback(
             "Global scene slice was not disabled"));
     }
     window.OnSliceCurrentScene();
-    if (window.runner_.isRunning()
+    if (window.runner_.IsRunning()
         || window.m_sceneSliceActionController.State()
             != SceneSliceActionState::Blocked
         || window.m_sceneSliceActionController.ErrorCode()
@@ -6324,30 +6339,6 @@ int UiSmokeTestRunner::MultiModelList(
     firstGeometry.surfacepreview.texturedpixelcount = 8U * 4U;
     firstGeometry.surfacepreview.contenthash =
         "multi-model-list-blue-surface";
-    slicer_core::SceneViewTriangle firstTriangle;
-    firstTriangle.a = {0.0, 0.0};
-    firstTriangle.b = {8.0, 0.0};
-    firstTriangle.c = {0.0, 4.0};
-    firstTriangle.uv = {
-        slicer_core::TexCoord{0.0, 0.0},
-        slicer_core::TexCoord{1.0, 0.0},
-        slicer_core::TexCoord{0.0, 1.0},
-    };
-    firstTriangle.hasuv = true;
-    firstTriangle.materialindex = 0;
-    firstGeometry.triangles.push_back(firstTriangle);
-    slicer_core::SceneViewTriangle secondTriangle;
-    secondTriangle.a = {8.0, 0.0};
-    secondTriangle.b = {8.0, 4.0};
-    secondTriangle.c = {0.0, 4.0};
-    secondTriangle.uv = {
-        slicer_core::TexCoord{1.0, 0.0},
-        slicer_core::TexCoord{1.0, 1.0},
-        slicer_core::TexCoord{0.0, 1.0},
-    };
-    secondTriangle.hasuv = true;
-    secondTriangle.materialindex = 0;
-    firstGeometry.triangles.push_back(secondTriangle);
     firstGeometry.admissionstatus =
         slicer_core::SceneViewAdmissionStatus::Admitted;
     if (!document.SetGeometry(1U, firstGeometry))
@@ -6361,6 +6352,7 @@ int UiSmokeTestRunner::MultiModelList(
     QApplication::processEvents(QEventLoop::AllEvents, 50);
     const QImage appearanceImage = canvas.grab().toImage();
     bool foundAppearanceColor{false};
+    QPoint appearancePoint;
     for (int y = 0;
          y < appearanceImage.height() && !foundAppearanceColor;
          ++y)
@@ -6373,6 +6365,7 @@ int UiSmokeTestRunner::MultiModelList(
                 && pixel.blue() == 214)
             {
                 foundAppearanceColor = true;
+                appearancePoint = QPoint(x, y);
                 break;
             }
         }
@@ -6381,6 +6374,20 @@ int UiSmokeTestRunner::MultiModelList(
     {
         return fail(QStringLiteral(
             "multi-model-list top view ignores material appearance"));
+    }
+    selection.Clear();
+    QMouseEvent selectSurface(
+        QEvent::MouseButtonPress,
+        QPointF(appearancePoint),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QApplication::sendEvent(&canvas, &selectSurface);
+    if (selection.SelectedInstance()
+        != QStringLiteral("multi-first"))
+    {
+        return fail(QStringLiteral(
+            "multi-model-list surface preview hit-test failed"));
     }
 
     const SceneDocumentOperationResult duplicated =

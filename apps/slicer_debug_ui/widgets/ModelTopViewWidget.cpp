@@ -85,6 +85,60 @@ bool ContainsPoint(
             > 1.0e-12;
 }
 
+bool SurfacePreviewContainsPoint(
+    const slicer_core::SceneViewGeometry& geometry,
+    const slicer_core::SceneViewPoint& point)
+{
+    const auto& preview = geometry.surfacepreview;
+    if (!preview.IsValid())
+    {
+        return false;
+    }
+    const double widthMm =
+        geometry.worldboundsmm.max.xmm
+        - geometry.worldboundsmm.min.xmm;
+    const double heightMm =
+        geometry.worldboundsmm.max.ymm
+        - geometry.worldboundsmm.min.ymm;
+    if (!(widthMm > 0.0) || !(heightMm > 0.0))
+    {
+        return false;
+    }
+
+    const double normalizedX =
+        (point.xmm - geometry.worldboundsmm.min.xmm)
+        / widthMm;
+    const double normalizedY =
+        (geometry.worldboundsmm.max.ymm - point.ymm)
+        / heightMm;
+    if (normalizedX < 0.0
+        || normalizedX > 1.0
+        || normalizedY < 0.0
+        || normalizedY > 1.0)
+    {
+        return false;
+    }
+
+    const int pixelX = std::clamp(
+        static_cast<int>(
+            normalizedX * static_cast<double>(preview.width)),
+        0,
+        preview.width - 1);
+    const int pixelY = std::clamp(
+        static_cast<int>(
+            normalizedY * static_cast<double>(preview.height)),
+        0,
+        preview.height - 1);
+    const std::size_t alphaIndex =
+        (static_cast<std::size_t>(pixelY)
+             * static_cast<std::size_t>(preview.width)
+         + static_cast<std::size_t>(pixelX))
+            * 4U
+        + 3U;
+    return alphaIndex < preview.rgba.size()
+        && preview.rgba[alphaIndex] != 0U;
+}
+
 std::optional<slicer_core::SceneViewBounds> VisibleBounds(
     const SceneDocument& document,
     const std::size_t itemCount)
@@ -105,7 +159,8 @@ std::optional<slicer_core::SceneViewBounds> VisibleBounds(
         const SceneDocumentItem& item = items[index];
         if (!item.instance.visible
             || !item.geometry.has_value()
-            || item.geometry->triangles.empty())
+            || (item.geometry->triangles.empty()
+                && !item.geometry->surfacepreview.IsValid()))
         {
             continue;
         }
@@ -234,14 +289,19 @@ void ModelTopViewWidget::mousePressEvent(QMouseEvent* event)
         {
             continue;
         }
-        const bool intersectsGeometry = std::any_of(
-            item.geometry->triangles.begin(),
-            item.geometry->triangles.end(),
-            [&worldPoint](
-                const slicer_core::SceneViewTriangle& triangle)
-            {
-                return ContainsPoint(triangle, worldPoint);
-            });
+        const bool intersectsGeometry =
+            item.geometry->surfacepreview.IsValid()
+            ? SurfacePreviewContainsPoint(
+                  item.geometry.value(),
+                  worldPoint)
+            : std::any_of(
+                  item.geometry->triangles.begin(),
+                  item.geometry->triangles.end(),
+                  [&worldPoint](
+                      const slicer_core::SceneViewTriangle& triangle)
+                  {
+                      return ContainsPoint(triangle, worldPoint);
+                  });
         if (intersectsGeometry)
         {
             selectedInstance = QString::fromStdString(

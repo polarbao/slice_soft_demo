@@ -159,13 +159,20 @@ bool StaleAndCancelNeverPublish()
         return false;
     }
     controller.Cancel();
+    const bool cancellationPending =
+        cancelled
+        && controller.IsRunning()
+        && controller.State()
+            == SceneSliceActionState::Cancelling;
     controller.OnProcessFinished(0, 50);
     return ExpectTrue(
                staleBlocked,
                "stale revision never loads package")
         && ExpectTrue(
-            cancelled
-                && controller.State()
+            cancellationPending,
+            "cancellation remains active until process exit")
+        && ExpectTrue(
+            controller.State()
                     == SceneSliceActionState::Cancelled
                 && packageCount == 0,
             "cancelled process never loads package");

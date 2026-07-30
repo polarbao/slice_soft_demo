@@ -22,6 +22,8 @@ std::string_view SceneSliceActionStateName(
         return "preflighting";
     case SceneSliceActionState::Slicing:
         return "slicing";
+    case SceneSliceActionState::Cancelling:
+        return "cancelling";
     case SceneSliceActionState::Validating:
         return "validating";
     case SceneSliceActionState::LoadingResult:
@@ -195,22 +197,31 @@ bool SceneSliceActionController::Start(
 
 void SceneSliceActionController::Cancel()
 {
-    if (!IsRunning())
+    if (!IsRunning()
+        || m_state == SceneSliceActionState::Cancelling)
     {
         return;
     }
+    m_errorcode = SceneSliceActionErrorCode::Cancelled;
+    Publish(
+        SceneSliceActionState::Cancelling,
+        QStringLiteral("正在取消当前场景切片，请等待进程退出。"));
     m_processCanceller();
-    m_snapshot.reset();
-    Fail(
-        SceneSliceActionState::Cancelled,
-        SceneSliceActionErrorCode::Cancelled,
-        QStringLiteral("当前场景切片已取消，已有输出不会自动加载。"));
 }
 
 void SceneSliceActionController::OnProcessFinished(
     const int exitCode,
     const qint64 elapsedMs)
 {
+    if (m_state == SceneSliceActionState::Cancelling)
+    {
+        m_snapshot.reset();
+        Publish(
+            SceneSliceActionState::Cancelled,
+            QStringLiteral(
+                "当前场景切片已取消，已有输出不会自动加载。"));
+        return;
+    }
     if (m_state == SceneSliceActionState::Cancelled
         || !m_snapshot.has_value())
     {
@@ -274,7 +285,8 @@ void SceneSliceActionController::OnProcessFinished(
 void SceneSliceActionController::OnProcessFailed(
     const QString& message)
 {
-    if (m_state == SceneSliceActionState::Cancelled)
+    if (m_state == SceneSliceActionState::Cancelled
+        || m_state == SceneSliceActionState::Cancelling)
     {
         return;
     }
@@ -299,6 +311,7 @@ bool SceneSliceActionController::IsRunning() const
     return m_state == SceneSliceActionState::Snapshotting
         || m_state == SceneSliceActionState::Preflighting
         || m_state == SceneSliceActionState::Slicing
+        || m_state == SceneSliceActionState::Cancelling
         || m_state == SceneSliceActionState::Validating
         || m_state == SceneSliceActionState::LoadingResult;
 }

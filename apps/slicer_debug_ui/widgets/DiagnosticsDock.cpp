@@ -11,8 +11,9 @@ DiagnosticsDock::DiagnosticsDock(QWidget* parent)
     : QDockWidget(QStringLiteral("任务详情"), parent)
 {
     setObjectName(QStringLiteral("diagnosticsDock"));
-    setAllowedAreas(Qt::BottomDockWidgetArea);
+    setAllowedAreas(Qt::RightDockWidgetArea);
     setFeatures(QDockWidget::DockWidgetClosable);
+    setMinimumWidth(320);
 
     m_tabs = new QTabWidget(this);
     m_tabs->setObjectName(QStringLiteral("diagnosticsTabs"));

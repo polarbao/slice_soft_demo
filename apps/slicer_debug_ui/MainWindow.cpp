@@ -519,7 +519,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     m_projectToolsDock->SetExpanded(false);
 
     m_diagnosticsDock = new DiagnosticsDock(this);
-    addDockWidget(Qt::BottomDockWidgetArea, m_diagnosticsDock);
+    addDockWidget(Qt::RightDockWidgetArea, m_diagnosticsDock);
     m_diagnosticsDock->AddView(
         material_process_panel_,
         QStringLiteral("材料参数"));
@@ -557,20 +557,64 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(
         m_contextInspectorToggleAction,
         &QAction::toggled,
-        m_contextInspector,
-        &QWidget::setVisible);
+        this,
+        [this](const bool visible)
+        {
+            if (visible
+                && m_diagnosticsDock != nullptr
+                && m_diagnosticsDock->IsExpanded())
+            {
+                m_diagnosticsDock->SetExpanded(false);
+            }
+            m_contextInspector->setVisible(visible);
+        });
     QAction* diagnosticsAction = m_diagnosticsDock->toggleViewAction();
     diagnosticsAction->setObjectName(QStringLiteral("diagnosticsToggleAction"));
     diagnosticsAction->setText(QStringLiteral("任务详情"));
     diagnosticsAction->setShortcut(
         QKeySequence(QStringLiteral("Ctrl+Alt+D")));
     viewMenu->addAction(diagnosticsAction);
+    connect(
+        m_diagnosticsDock,
+        &QDockWidget::visibilityChanged,
+        this,
+        [this](const bool visible)
+        {
+            if (visible)
+            {
+                m_contextInspectorToggleAction->setChecked(false);
+            }
+            else if (!m_contextInspectorToggleAction->isChecked())
+            {
+                m_contextInspectorToggleAction->setChecked(true);
+            }
+        });
 
-    connect(&runner_, &ProcessRunner::started, this, &MainWindow::handleProcessStarted);
-    connect(&runner_, &ProcessRunner::output, this, &MainWindow::OnProcessOutput);
-    connect(&runner_, &ProcessRunner::errorOutput, log_panel_, &LogPanel::appendError);
-    connect(&runner_, &ProcessRunner::finished, this, &MainWindow::handleProcessFinished);
-    connect(&runner_, &ProcessRunner::failed, this, &MainWindow::handleProcessFailed);
+    connect(
+        &runner_,
+        &ProcessRunner::SigStarted,
+        this,
+        &MainWindow::handleProcessStarted);
+    connect(
+        &runner_,
+        &ProcessRunner::SigOutput,
+        this,
+        &MainWindow::OnProcessOutput);
+    connect(
+        &runner_,
+        &ProcessRunner::SigErrorOutput,
+        log_panel_,
+        &LogPanel::appendError);
+    connect(
+        &runner_,
+        &ProcessRunner::SigFinished,
+        this,
+        &MainWindow::handleProcessFinished);
+    connect(
+        &runner_,
+        &ProcessRunner::SigFailed,
+        this,
+        &MainWindow::handleProcessFailed);
     connect(report_panel_, &ReportPanel::warningsChanged, warnings_view_, &QPlainTextEdit::setPlainText);
     connect(
         m_diagnosticsDock->MaterialClosureView(),
@@ -740,7 +784,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         [this](const SceneSliceActionSnapshot& snapshot)
         {
             if (paths_.slicer_cli.trimmed().isEmpty()
-                || runner_.isRunning())
+                || runner_.IsRunning())
             {
                 return false;
             }
@@ -750,11 +794,11 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
                 QStringList{
                     QStringLiteral("--scene-config"),
                     snapshot.effectiveconfigpath});
-            return runner_.isRunning();
+            return runner_.IsRunning();
         },
         [this]()
         {
-            runner_.stop();
+            runner_.Stop();
         },
         [this](
             const SceneSliceActionSnapshot& snapshot,
@@ -2830,15 +2874,8 @@ void MainWindow::UpdateBatchImportPresentation()
 
     if (m_sceneBatchImportController.IsRunning())
     {
-        if (!m_batchPresentationItemLimit.has_value())
-        {
-            const std::size_t existingItemCount =
-                m_sceneDocument.InstanceCount();
-            m_batchPresentationItemLimit =
-                existingItemCount == 0U
-                ? 1U
-                : existingItemCount;
-        }
+        m_batchPresentationItemLimit =
+            m_sceneDocument.InstanceCount();
         m_modelTopViewWidget->SetPresentationItemLimit(
             m_batchPresentationItemLimit);
         return;
@@ -3130,7 +3167,7 @@ void MainWindow::loadCompareResult(const QString& path) {
 
 void MainWindow::runCommand(const QString& action, const QString& program, const QStringList& args) {
     current_action_ = action;
-    runner_.run(program, args, paths_.repo_root);
+    runner_.Run(program, args, paths_.repo_root);
 }
 
 void MainWindow::setBusy(const bool busy) {

@@ -43,7 +43,7 @@ processresult RunExitProcess(const int exitCode)
     processresult result;
     QObject::connect(
         &runner,
-        &ProcessRunner::started,
+        &ProcessRunner::SigStarted,
         &loop,
         [&result](const QString&)
         {
@@ -51,7 +51,7 @@ processresult RunExitProcess(const int exitCode)
         });
     QObject::connect(
         &runner,
-        &ProcessRunner::finished,
+        &ProcessRunner::SigFinished,
         &loop,
         [&result, &loop](const int processExitCode, const qint64)
         {
@@ -61,7 +61,7 @@ processresult RunExitProcess(const int exitCode)
         });
     QObject::connect(
         &runner,
-        &ProcessRunner::failed,
+        &ProcessRunner::SigFailed,
         &loop,
         [&result, &loop](const QString&)
         {
@@ -70,7 +70,7 @@ processresult RunExitProcess(const int exitCode)
         });
     QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
     timeout.start();
-    runner.run(
+    runner.Run(
         QStringLiteral("cmd.exe"),
         QStringList{
             QStringLiteral("/d"),
@@ -81,6 +81,74 @@ processresult RunExitProcess(const int exitCode)
         QDir::currentPath());
     loop.exec();
     return result;
+}
+
+bool TestStopTerminatesConsoleProcess()
+{
+    ProcessRunner runner;
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+    timeout.setInterval(5000);
+    bool finished{false};
+    bool failed{false};
+    qint64 elapsedMs{0};
+    QObject::connect(
+        &runner,
+        &ProcessRunner::SigStarted,
+        &loop,
+        [&runner](const QString&)
+        {
+            QTimer::singleShot(
+                100,
+                &runner,
+                [&runner]()
+                {
+                    runner.Stop();
+                });
+        });
+    QObject::connect(
+        &runner,
+        &ProcessRunner::SigFinished,
+        &loop,
+        [&finished, &elapsedMs, &loop](
+            const int,
+            const qint64 measuredElapsedMs)
+        {
+            finished = true;
+            elapsedMs = measuredElapsedMs;
+            loop.quit();
+        });
+    QObject::connect(
+        &runner,
+        &ProcessRunner::SigFailed,
+        &loop,
+        [&failed](const QString&)
+        {
+            failed = true;
+        });
+    QObject::connect(
+        &timeout,
+        &QTimer::timeout,
+        &loop,
+        &QEventLoop::quit);
+
+    timeout.start();
+    runner.Run(
+        QStringLiteral("powershell.exe"),
+        QStringList{
+            QStringLiteral("-NoProfile"),
+            QStringLiteral("-Command"),
+            QStringLiteral("Start-Sleep -Seconds 30")},
+        QDir::currentPath());
+    loop.exec();
+
+    return ExpectTrue(finished, "cancelled console process exits")
+        && ExpectTrue(!failed, "intentional stop is not a process failure")
+        && ExpectTrue(
+            elapsedMs < timeout.interval(),
+            "cancelled console process exits before timeout")
+        && ExpectTrue(!runner.IsRunning(), "runner is reusable after stop");
 }
 
 QJsonDocument LegacyDocument()
@@ -250,7 +318,8 @@ int main(int argc, char** argv)
     const bool passed = TestProfileSourceResolution()
         && TestInvalidProfileDoesNotStartSession()
         && TestLegacyFailureThenRetry()
-        && TestGlobalProcessHasNoLegacyFallback();
+        && TestGlobalProcessHasNoLegacyFallback()
+        && TestStopTerminatesConsoleProcess();
     if (!passed)
     {
         return 1;

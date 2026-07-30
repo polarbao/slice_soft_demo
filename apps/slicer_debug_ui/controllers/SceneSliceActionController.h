@@ -21,6 +21,7 @@ enum class SceneSliceActionState
     Snapshotting,
     Preflighting,
     Slicing,
+    Cancelling,
     Validating,
     LoadingResult,
     Completed,
@@ -203,7 +204,7 @@ public:
 
     /**
      * @brief Return whether the controller owns an active process.
-     * @return True while slicing or validating.
+     * @return True while slicing, cancelling, or validating.
      */
     bool IsRunning() const;
 
