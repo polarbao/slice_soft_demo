@@ -27,6 +27,13 @@ QString ModelFillMaterialValue(const ModelFillMaterial material)
     }
 }
 
+QString ModelFillScopeValue(const ModelFillMaterial material)
+{
+    return material == ModelFillMaterial::Rgb
+        ? QStringLiteral("below_texture_surface")
+        : QStringLiteral("all_model");
+}
+
 QString SupportPlacementValue(const SupportPlacement placement)
 {
     switch (placement)
@@ -105,7 +112,7 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
         {
             {QStringLiteral("enabled"), true},
             {QStringLiteral("material"), ModelFillMaterialValue(settings.modelfillmaterial)},
-            {QStringLiteral("scope"), modelfill.value(QStringLiteral("scope")).toString(QStringLiteral("below_texture_surface"))},
+            {QStringLiteral("scope"), ModelFillScopeValue(settings.modelfillmaterial)},
             {QStringLiteral("value"), 0},
             {QStringLiteral("emptyAllowedInProduction"), false},
             {QStringLiteral("legacyRgbFallback"), false},
@@ -477,7 +484,6 @@ bool NormalizeModelFillTextureContract(QJsonObject& root)
     const QString fillMaterial = modelFill.value(QStringLiteral("material")).toString();
     const bool requiresSeparateFill = fillMaterial != QStringLiteral("rgb");
     if (!modelFill.value(QStringLiteral("enabled")).toBool(false)
-        || modelFill.value(QStringLiteral("scope")).toString() != QStringLiteral("below_texture_surface")
         || !requiresSeparateFill
         || !texture.value(QStringLiteral("enabled")).toBool(false)
         || texture.value(QStringLiteral("applyMode")).toString()

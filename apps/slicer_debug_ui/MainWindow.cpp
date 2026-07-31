@@ -3035,7 +3035,11 @@ void MainWindow::ApplyProfileDefaultsToDocument(const QString& profileId, const 
     }
     SetValue({"modelFill", "material"}, modelFillMaterial);
     SetValue({"modelFill", "enabled"}, true);
-    SetValue({"modelFill", "scope"}, QStringLiteral("below_texture_surface"));
+    SetValue(
+        {"modelFill", "scope"},
+        settings.modelfillmaterial == ModelFillMaterial::Rgb
+            ? QStringLiteral("below_texture_surface")
+            : QStringLiteral("all_model"));
     SetValue({"modelFill", "value"}, 0);
     SetValue({"modelFill", "emptyAllowedInProduction"}, false);
     SetValue({"modelFill", "legacyRgbFallback"}, false);

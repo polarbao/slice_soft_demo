@@ -709,6 +709,32 @@ bool ClosureFailureIsAtomicAndInputIsImmutable()
             "failure does not mutate source bytes");
 }
 
+bool OpaqueWhiteRgbOnlyModelPixelHasActionableFailure()
+{
+    slicer_core::SceneLayerComposeRequest request = MakeRequest();
+    request.globalgrid = MakeGrid(1, 1, 1);
+    slicer_core::SceneInstanceRaster instance =
+        MakeInstance("opaque-white-rgb-only", request.globalgrid);
+    AddModel(instance, 0, 0, 0, {255U, 255U, 255U, 255U});
+    request.instances = {instance};
+
+    const slicer_core::SceneLayerComposeResult result =
+        slicer_core::ComposeSceneLayers(request);
+    return ExpectTrue(
+               HasError(
+                   result,
+                   slicer_core::SceneRasterErrorCode::ClosureFailed),
+               "opaque white RGB-only model pixel fails closed")
+        && ExpectTrue(
+            result.error->message.find("RGB-only")
+                != std::string::npos,
+            "failure identifies the RGB-only protocol limitation")
+        && ExpectTrue(
+            result.error->message.find("white or varnish model fill")
+                != std::string::npos,
+            "failure recommends a printable model-fill profile");
+}
+
 bool DeterministicCompositionProducesIdenticalBytes()
 {
     slicer_core::SceneLayerComposeRequest request = MakeRequest();
@@ -813,6 +839,7 @@ int main()
         {"layer_sequence_and_byte_failures_are_stable", LayerSequenceAndByteFailuresAreStable},
         {"revision_stale_failures_are_stable", RevisionStaleFailuresAreStable},
         {"closure_failure_is_atomic_and_input_is_immutable", ClosureFailureIsAtomicAndInputIsImmutable},
+        {"opaque_white_rgb_only_model_pixel_has_actionable_failure", OpaqueWhiteRgbOnlyModelPixelHasActionableFailure},
         {"deterministic_composition_produces_identical_bytes", DeterministicCompositionProducesIdenticalBytes},
         {"grid_and_instance_protocol_failures_are_stable", GridAndInstanceProtocolFailuresAreStable},
     };

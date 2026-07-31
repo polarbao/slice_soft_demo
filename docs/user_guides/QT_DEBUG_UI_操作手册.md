@@ -453,9 +453,12 @@ docs/user_guides/SliceSoft切片策略与材料层说明.md
 全彩 OBJ、全实体 RGB、无白墨：
 
 ```text
-场景/Profile: 彩色纹理甲片 - 全实体 RGB + 下表面支撑（无白墨）
+场景/Profile: 彩色纹理甲片 - 全实体 RGB + 下表面支撑（兼容；纯白受限）
 模板: samples/configs/material_process/obj_mtl_texture_rgb_only.json
 说明: 贴图颜色沿模型实体列投影；W/V 保持不打印，S 支撑仍按下表面和内部镂空策略生成。
+限制: RGBWSV 使用 black_is_print，RGB=255 表示不打印。该兼容模式不能表达需要打印的纯白
+模型像素；爱神等包含白色高光或白色装饰的贴图必须选择“RGB + 白墨填充”或“RGB + 光油
+填充”，否则生产闭环校验会阻断输出，不能通过伪造 RGB=254 绕过。
 ```
 
 OBJ 全彩 + 白墨 + 光油：

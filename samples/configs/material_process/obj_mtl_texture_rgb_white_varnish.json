@@ -82,7 +82,7 @@
         "enabled": true,
         "legacyRgbFallback": false,
         "material": "white",
-        "scope": "below_texture_surface",
+        "scope": "all_model",
         "value": 0
     },
     "modelMaterial": {

@@ -191,7 +191,10 @@ QuickConfigPanel::QuickConfigPanel(ConfigDocument* document, QWidget* parent)
 
     m_modelFillMaterialCombo = new QComboBox(this);
     m_modelFillMaterialCombo->setObjectName(QStringLiteral("modelFillMaterialCombo"));
-    AddComboOption(m_modelFillMaterialCombo, "全实体 RGB（无白墨）", "rgb");
+    AddComboOption(
+        m_modelFillMaterialCombo,
+        "全实体 RGB（兼容；纯白会被阻断）",
+        "rgb");
     AddComboOption(m_modelFillMaterialCombo, "白墨填充", "white");
     AddComboOption(m_modelFillMaterialCombo, "光油填充", "varnish");
     ApplyHelp(m_modelFillMaterialCombo, QStringLiteral("modelFill.material"));
@@ -636,6 +639,11 @@ void QuickConfigPanel::OnModelFillMaterialChanged(const int index)
     }
     SetValueIfChanged({"modelFill", "enabled"}, true);
     SetValueIfChanged({"modelFill", "material"}, value);
+    SetValueIfChanged(
+        {"modelFill", "scope"},
+        value == QStringLiteral("rgb")
+            ? QStringLiteral("below_texture_surface")
+            : QStringLiteral("all_model"));
     SetValueIfChanged({"modelFill", "emptyAllowedInProduction"}, false);
     SetValueIfChanged({"modelFill", "legacyRgbFallback"}, false);
 }

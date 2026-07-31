@@ -457,10 +457,12 @@ bool ValidateLayer(
     }
     for (std::size_t pixelIndex{0U}; pixelIndex < pixelCount; ++pixelIndex)
     {
+        const SceneRasterOwnership ownership =
+            ResolveOwnership(layer, pixelIndex);
         if (!SourcePixelHasClosure(
                 layer,
                 pixelIndex,
-                ResolveOwnership(layer, pixelIndex),
+                ownership,
                 request.protocol))
         {
             const std::size_t base = pixelIndex * kChannelCount;
@@ -491,6 +493,17 @@ bool ValidateLayer(
             message.push_back(',');
             message += std::to_string(
                 layer.supportownership.at(pixelIndex));
+            if (ownership == SceneRasterOwnership::Model
+                && IsEmptySourcePixel(
+                    layer,
+                    pixelIndex,
+                    request.protocol.empty_value))
+            {
+                message +=
+                    "; RGB-only cannot encode an opaque pure-white model "
+                    "pixel under black_is_print because RGB=255 is Empty. "
+                    "Select a white or varnish model fill profile.";
+            }
             Block(
                 result,
                 SceneRasterErrorCode::ClosureFailed,

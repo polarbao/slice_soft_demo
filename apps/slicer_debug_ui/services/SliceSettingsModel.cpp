@@ -162,6 +162,15 @@ SliceSettingsValidationResult SliceSettingsModel::Validate() const
     {
         result.errors.push_back(QStringLiteral("启用自动诊断图时保存间隔必须大于 0。"));
     }
+    if (m_state.modelfillmaterial == ModelFillMaterial::Rgb)
+    {
+        result.warnings.push_back(
+            QStringLiteral(
+                "全实体 RGB（无白墨）是兼容模式：在 black_is_print 协议中，"
+                "RGB=255 表示不打印，不能表达需要打印的纯白模型像素。"
+                "包含白色纹理的模型请改用“RGB + 白墨填充”或"
+                "“RGB + 光油填充”Profile。"));
+    }
     if (m_state.enginerole == SliceEngineRole::OpenVdbUtilityCandidate)
     {
         result.warnings.push_back(

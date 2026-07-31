@@ -21,7 +21,7 @@
     },
     {
       "id": "textured_nail_rgb_only_lower_support",
-      "displayName": "彩色纹理甲片 - 全实体 RGB + 下表面支撑（无白墨）",
+      "displayName": "彩色纹理甲片 - 全实体 RGB + 下表面支撑（兼容；纯白受限）",
       "category": "生产 / 彩色纹理兼容",
       "visibility": "normal",
       "audience": "user",
@@ -37,7 +37,7 @@
       "docPath": "docs/slice/PRD/PRD_12A_彩色纹理材料填充支撑光油策略.md",
       "configPath": "samples/configs/material_process/obj_mtl_texture_rgb_only.json",
       "packageDir": "output/ProfileTexturedNailRgbOnlyLowerSupport",
-      "description": "兼容旧版全彩输出：顶面贴图颜色沿模型实体列投影，模型只写 RGB，不写 W/V；保留下表面与内部镂空 S 支撑。",
+      "description": "兼容旧版全彩输出：顶面贴图颜色沿模型实体列投影，模型只写 RGB，不写 W/V；black_is_print 下无法表达需要打印的纯白像素，含白色纹理请改用白墨或光油填充 Profile。",
       "enabled": true,
       "ripSummary": true
     },

@@ -2182,10 +2182,25 @@ int UiSmokeTestRunner::sliceSettingsModel(const UiSmokeTestOptions& options)
     validState.modelpath = QStringLiteral("model/obj/sample.obj");
     validState.outputdirectory = QStringLiteral("output/ui_sessions/sample/package");
     model.SetState(validState);
-    if (!model.Validate().IsValid())
+    const SliceSettingsValidationResult validValidation =
+        model.Validate();
+    if (!validValidation.IsValid())
     {
         return fail("slice-settings-model 安全 legacy 设置未通过校验。");
     }
+    SliceSettingsState rgbOnlyState = validState;
+    rgbOnlyState.modelfillmaterial = ModelFillMaterial::Rgb;
+    model.SetState(rgbOnlyState);
+    const SliceSettingsValidationResult rgbOnlyValidation =
+        model.Validate();
+    if (!rgbOnlyValidation.IsValid()
+        || !rgbOnlyValidation.warnings.join(QStringLiteral(" ")).contains(
+            QStringLiteral("纯白")))
+    {
+        return fail(
+            "slice-settings-model 全实体 RGB 兼容模式未提示纯白像素的 RGBWSV 协议限制。");
+    }
+    model.SetState(validState);
 
     SliceSettingsState invalidDpiState = validState;
     invalidDpiState.dpix = slicer_core::kMaximumOutputDpi + 1;
@@ -4271,6 +4286,7 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
         || output.value("bitDepth").toInt() != 8
         || generated.value("background").toObject().value("value").toInt() != 255
         || generated.value("modelFill").toObject().value("material").toString() != "varnish"
+        || generated.value("modelFill").toObject().value("scope").toString() != "all_model"
         || support.value("placement").toString() != "both"
         || support.value("internalVoid").toObject().value("minAreaPx").toInt() != 24
         || !baseProjection.value("enabled").toBool()
@@ -4322,6 +4338,8 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
     const QJsonObject rgbOnlyRoot = rgbOnlyResult.document.object();
     if (!rgbOnlyResult.IsValid()
         || rgbOnlyRoot.value("modelFill").toObject().value("material").toString() != "rgb"
+        || rgbOnlyRoot.value("modelFill").toObject().value("scope").toString()
+            != "below_texture_surface"
         || rgbOnlyRoot.value("texture").toObject().value("applyMode").toString()
             != "solid_volume_from_top_surface"
         || rgbOnlyResult.warnings.join(QStringLiteral(" ")).contains(QStringLiteral("已改为 1 层顶面纹理带")))
