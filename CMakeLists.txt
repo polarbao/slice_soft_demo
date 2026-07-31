@@ -319,6 +319,8 @@ add_library(slicer_core
     src/slicer_core/output/tiff/TiffBackendBuildInfo.h
     src/slicer_core/output/tiff/TiffWriterFactory.cpp
     src/slicer_core/output/tiff/TiffWriterFactory.h
+    src/slicer_core/output/tiff/TiffWriterError.cpp
+    src/slicer_core/output/tiff/TiffWriterError.h
     src/slicer_core/output/tiff/TiffWriterImplementations.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h

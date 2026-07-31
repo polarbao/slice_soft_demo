@@ -25,11 +25,11 @@ std::string TiffWriterBackendString(TiffWriterBackend backend);
 TiffWriterBackend GetConfiguredTiffWriterBackend();
 
 /**
- * @brief Resolves the effective backend for a storage mode.
- * @param storageMode Requested TIFF storage mode.
- * @return Effective backend. In 03D-03 tiled output retains handwritten fallback.
+ * @brief Resolves the effective backend for an image specification.
+ * @param spec Requested TIFF image and storage contract.
+ * @return Effective backend. Nonstandard tile sizes retain handwritten compatibility.
  */
-TiffWriterBackend ResolveTiffWriterBackend(TiffStorageMode storageMode);
+TiffWriterBackend ResolveTiffWriterBackend(const TiffImageSpec& spec);
 
 /**
  * @brief Creates a writer for an explicitly selected backend.

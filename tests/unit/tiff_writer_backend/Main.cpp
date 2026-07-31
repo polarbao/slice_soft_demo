@@ -1,11 +1,14 @@
 #include "slicer_core/output/tiff/TiffBackendBuildInfo.h"
+#include "slicer_core/output/tiff/TiffWriterError.h"
 #include "slicer_core/output/tiff/TiffWriterFactory.h"
 #include "slicer_core/tiff_io.h"
 
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -51,10 +54,139 @@ bool WriteAndDecode(
     writer->Write(path, spec, pixels);
     const slicer_core::TiffReadResult decoded =
         slicer_core::read_rgbwsv_tiff(path);
-    return decoded.pixels == pixels
-        && decoded.spec.storage_mode
-            == slicer_core::TiffStorageMode::Stripped
-        && decoded.spec.rows_per_strip == spec.rows_per_strip;
+    if (decoded.pixels != pixels
+        || decoded.spec.storage_mode != spec.storage_mode)
+    {
+        return false;
+    }
+    if (spec.storage_mode == slicer_core::TiffStorageMode::Tiled)
+    {
+        return decoded.spec.tile_width == spec.tile_width
+            && decoded.spec.tile_height == spec.tile_height;
+    }
+    return decoded.spec.rows_per_strip == spec.rows_per_strip;
+}
+
+std::size_t CountTemporarySiblings(
+    const std::filesystem::path& path)
+{
+    const std::string prefix = path.filename().string() + ".tmp.";
+    std::size_t count{0U};
+    for (const std::filesystem::directory_entry& entry :
+         std::filesystem::directory_iterator(path.parent_path()))
+    {
+        if (entry.path().filename().string().starts_with(prefix))
+        {
+            ++count;
+        }
+    }
+    return count;
+}
+
+std::uint16_t ReadU16(
+    const std::vector<std::uint8_t>& bytes,
+    const std::size_t offset)
+{
+    return static_cast<std::uint16_t>(
+        bytes.at(offset)
+        | (static_cast<std::uint16_t>(bytes.at(offset + 1U)) << 8U));
+}
+
+std::uint32_t ReadU32(
+    const std::vector<std::uint8_t>& bytes,
+    const std::size_t offset)
+{
+    return static_cast<std::uint32_t>(bytes.at(offset))
+        | (static_cast<std::uint32_t>(bytes.at(offset + 1U)) << 8U)
+        | (static_cast<std::uint32_t>(bytes.at(offset + 2U)) << 16U)
+        | (static_cast<std::uint32_t>(bytes.at(offset + 3U)) << 24U);
+}
+
+std::vector<std::uint8_t> ReadSingleTileBytes(
+    const std::filesystem::path& path)
+{
+    std::ifstream input(path, std::ios::binary);
+    const std::vector<std::uint8_t> bytes{
+        std::istreambuf_iterator<char>{input},
+        std::istreambuf_iterator<char>{}};
+    if (bytes.size() < 8U
+        || bytes.at(0) != 'I'
+        || bytes.at(1) != 'I'
+        || ReadU16(bytes, 2U) != 42U)
+    {
+        throw std::runtime_error("unexpected LibTIFF tiled header");
+    }
+
+    const std::size_t ifdOffset = ReadU32(bytes, 4U);
+    const std::uint16_t entryCount = ReadU16(bytes, ifdOffset);
+    std::uint32_t tileOffset{0U};
+    std::uint32_t tileByteCount{0U};
+    for (std::uint16_t index{0U}; index < entryCount; ++index)
+    {
+        const std::size_t entryOffset =
+            ifdOffset + 2U + static_cast<std::size_t>(index) * 12U;
+        const std::uint16_t tag = ReadU16(bytes, entryOffset);
+        const std::uint32_t count = ReadU32(bytes, entryOffset + 4U);
+        if (count != 1U)
+        {
+            continue;
+        }
+        if (tag == 324U)
+        {
+            tileOffset = ReadU32(bytes, entryOffset + 8U);
+        }
+        else if (tag == 325U)
+        {
+            tileByteCount = ReadU32(bytes, entryOffset + 8U);
+        }
+    }
+    if (tileOffset == 0U
+        || tileByteCount == 0U
+        || static_cast<std::size_t>(tileOffset) + tileByteCount
+            > bytes.size())
+    {
+        throw std::runtime_error("invalid single-tile offset or byte count");
+    }
+    return {
+        bytes.begin() + static_cast<std::ptrdiff_t>(tileOffset),
+        bytes.begin()
+            + static_cast<std::ptrdiff_t>(tileOffset + tileByteCount)};
+}
+
+bool TilePaddingIsWhite(
+    const std::vector<std::uint8_t>& tile,
+    const slicer_core::TiffImageSpec& spec,
+    const std::vector<std::uint8_t>& pixels)
+{
+    for (std::uint32_t row{0U}; row < spec.tile_height; ++row)
+    {
+        for (std::uint32_t column{0U}; column < spec.tile_width; ++column)
+        {
+            for (std::uint16_t channel{0U};
+                 channel < spec.samples_per_pixel;
+                 ++channel)
+            {
+                const std::size_t tileOffset =
+                    (static_cast<std::size_t>(row) * spec.tile_width
+                     + column)
+                    * spec.samples_per_pixel
+                    + channel;
+                const std::uint8_t expected =
+                    row < spec.height && column < spec.width
+                    ? pixels.at(
+                          (static_cast<std::size_t>(row) * spec.width
+                           + column)
+                              * spec.samples_per_pixel
+                          + channel)
+                    : 255U;
+                if (tile.at(tileOffset) != expected)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 }  // namespace
@@ -102,7 +234,7 @@ int main()
             return Fail("configured backend does not match build capability");
         }
         if (slicer_core::ResolveTiffWriterBackend(
-                slicer_core::TiffStorageMode::Stripped)
+                spec)
             != configured)
         {
             return Fail("stripped storage did not select configured backend");
@@ -117,11 +249,101 @@ int main()
             {
                 return Fail("LibTIFF stripped writer did not preserve pixels");
             }
-            if (slicer_core::ResolveTiffWriterBackend(
-                    slicer_core::TiffStorageMode::Tiled)
+            slicer_core::TiffImageSpec tiledSpec = spec;
+            tiledSpec.storage_mode = slicer_core::TiffStorageMode::Tiled;
+            tiledSpec.tile_width = 16U;
+            tiledSpec.tile_height = 16U;
+            if (slicer_core::ResolveTiffWriterBackend(tiledSpec)
+                != slicer_core::TiffWriterBackend::LibTiff)
+            {
+                return Fail("aligned tiled storage did not select LibTIFF");
+            }
+            if (!WriteAndDecode(
+                    slicer_core::TiffWriterBackend::LibTiff,
+                    directory / "libtiff_tiled.tiff",
+                    tiledSpec,
+                    pixels))
+            {
+                return Fail("LibTIFF tiled writer did not preserve pixels");
+            }
+            const std::vector<std::uint8_t> rawTile =
+                ReadSingleTileBytes(directory / "libtiff_tiled.tiff");
+            if (!TilePaddingIsWhite(rawTile, tiledSpec, pixels))
+            {
+                return Fail("LibTIFF tiled padding was not initialized to 255");
+            }
+
+            slicer_core::TiffImageSpec compatibilitySpec = tiledSpec;
+            compatibilitySpec.tile_width = 8U;
+            compatibilitySpec.tile_height = 4U;
+            if (slicer_core::ResolveTiffWriterBackend(compatibilitySpec)
                 != slicer_core::TiffWriterBackend::Handwritten)
             {
-                return Fail("03D-03 tiled storage must retain handwritten fallback");
+                return Fail(
+                    "nonstandard tiled storage did not retain compatibility fallback");
+            }
+
+            const std::filesystem::path atomicPath =
+                directory / "atomic_failure.tiff";
+            const std::string sentinel{"existing-output"};
+            {
+                std::ofstream output(atomicPath, std::ios::binary);
+                output << sentinel;
+            }
+            slicer_core::TiffImageSpec invalidSpec = tiledSpec;
+            invalidSpec.tile_width = 0U;
+            try
+            {
+                const std::unique_ptr<slicer_core::ITiffWriter> writer =
+                    slicer_core::CreateTiffWriter(
+                        slicer_core::TiffWriterBackend::LibTiff);
+                writer->Write(atomicPath, invalidSpec, pixels);
+                return Fail("invalid LibTIFF tile dimensions were accepted");
+            }
+            catch (const slicer_core::TiffWriterException& error)
+            {
+                if (error.Code()
+                    != slicer_core::TiffWriterErrorCode::InvalidInput)
+                {
+                    return Fail("invalid tiled input returned the wrong error code");
+                }
+            }
+            std::ifstream atomicInput(atomicPath, std::ios::binary);
+            const std::string preserved{
+                std::istreambuf_iterator<char>{atomicInput},
+                std::istreambuf_iterator<char>{}};
+            if (preserved != sentinel)
+            {
+                return Fail("failed LibTIFF write replaced the existing output");
+            }
+            if (CountTemporarySiblings(atomicPath) != 0U)
+            {
+                return Fail("failed LibTIFF write left a temporary sibling");
+            }
+
+            const std::filesystem::path publishTarget =
+                directory / "publish_target.tiff";
+            std::filesystem::create_directory(publishTarget);
+            try
+            {
+                const std::unique_ptr<slicer_core::ITiffWriter> writer =
+                    slicer_core::CreateTiffWriter(
+                        slicer_core::TiffWriterBackend::LibTiff);
+                writer->Write(publishTarget, tiledSpec, pixels);
+                return Fail("LibTIFF publish to a directory was accepted");
+            }
+            catch (const slicer_core::TiffWriterException& error)
+            {
+                if (error.Code()
+                    != slicer_core::TiffWriterErrorCode::PublishFailed)
+                {
+                    return Fail("publish failure returned the wrong error code");
+                }
+            }
+            if (!std::filesystem::is_directory(publishTarget)
+                || CountTemporarySiblings(publishTarget) != 0U)
+            {
+                return Fail("publish failure did not preserve and clean outputs");
             }
         }
         else

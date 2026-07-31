@@ -1,3 +1,4 @@
+#include "slicer_core/output/tiff/TiffWriterFactory.h"
 #include "slicer_core/tiff_io.h"
 
 #include <algorithm>
@@ -584,6 +585,9 @@ bool ExpectThrowsExact(
 bool CurrentErrorsAreFrozen(
     const std::filesystem::path& directory)
 {
+    const std::unique_ptr<slicer_core::ITiffWriter> writer =
+        slicer_core::CreateTiffWriter(
+            slicer_core::TiffWriterBackend::Handwritten);
     slicer_core::TiffImageSpec stripped;
     stripped.width = 2U;
     stripped.height = 2U;
@@ -609,7 +613,7 @@ bool CurrentErrorsAreFrozen(
     return ExpectThrowsExact(
                [&]
                {
-                   slicer_core::write_rgbwsv_tiff(
+                   writer->Write(
                        directory / "invalid_dimensions.tiff",
                        invalidDimensions,
                        validPixels);
@@ -619,7 +623,7 @@ bool CurrentErrorsAreFrozen(
         && ExpectThrowsExact(
             [&]
             {
-                slicer_core::write_rgbwsv_tiff(
+                writer->Write(
                     directory / "invalid_channels.tiff",
                     invalidChannels,
                     validPixels);
@@ -629,7 +633,7 @@ bool CurrentErrorsAreFrozen(
         && ExpectThrowsExact(
             [&]
             {
-                slicer_core::write_rgbwsv_tiff(
+                writer->Write(
                     directory / "invalid_buffer.tiff",
                     stripped,
                     shortPixels);
@@ -639,7 +643,7 @@ bool CurrentErrorsAreFrozen(
         && ExpectThrowsExact(
             [&]
             {
-                slicer_core::write_rgbwsv_tiff(
+                writer->Write(
                     directory / "invalid_tile.tiff",
                     tiled,
                     validPixels);
@@ -649,7 +653,7 @@ bool CurrentErrorsAreFrozen(
         && ExpectThrowsExact(
             [&]
             {
-                slicer_core::write_rgbwsv_tiff(
+                writer->Write(
                     directory / "invalid_tiled_channels.tiff",
                     invalidTiledChannels,
                     validPixels);

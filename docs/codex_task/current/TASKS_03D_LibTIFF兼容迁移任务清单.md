@@ -1,6 +1,6 @@
 # TASKS_03D LibTIFF 兼容迁移任务清单
 
-> 文档状态：03D-01/02/03 COMPLETE / 03D-04 READY / PRIORITY P0
+> 文档状态：03D-01/02/03/04 COMPLETE / 03D-05 READY / PRIORITY P0
 > 日期：2026-07-31
 > 规则：每个原子任务完成后单独验证和提交；不得一次性切换默认后端
 
@@ -81,7 +81,7 @@ Runtime 能力元数据为 stripped=true、tiled=false；
 
 ## 03D-04 LibTIFF tiled 与错误模型
 
-状态：READY / 03D-03 GATE PASSED
+状态：COMPLETE / 2026-07-31
 
 ```text
 单 tile scratch；
@@ -90,9 +90,21 @@ Runtime 能力元数据为 stripped=true、tiled=false；
 临时文件和失败清理。
 ```
 
+实际证据：
+
+```text
+LibTIFF standard tiled Writer 使用单 tile scratch 并将边界 padding 初始化为 255；
+LibTIFF 4.7.1 要求 tile 宽高为 16 的倍数，生产 256 x 256 走 LibTIFF；
+历史 8 x 4 非标准 fixture 明确保留 handwritten compatibility route；
+稳定 TiffWriterErrorCode、re-entrant per-handle handler、sibling temp 和原子替换已实现；
+无效输入与发布失败不会覆盖已有输出，不残留 sibling temp；
+handwritten Release、LibTIFF Debug/Release 定向 CTest PASS；
+LibTIFF tiled package 与 RIP strict PASS；默认 Writer 仍为 handwritten。
+```
+
 ## 03D-05 等价、坏包与共享 Package Gate
 
-状态：PREPARED / WAIT 03D-04
+状态：READY / 03D-04 GATE PASSED
 
 ```text
 decoded pixel exact；

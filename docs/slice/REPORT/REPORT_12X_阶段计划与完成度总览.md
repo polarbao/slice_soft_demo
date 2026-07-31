@@ -4,7 +4,7 @@
 > 版本：v4.2
 > 更新日期：2026-07-31
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：03D-04 READY
+> 当前下一任务：03D-05 READY
 
 ## 1. 使用规则
 
@@ -54,7 +54,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-09A | 09A-01..06 COMPLETE / PASS | 只读 Diagnostic Facade、场景感知 Effective Config、中文参数状态区、可取消 Worker、TIFF 同层语义 Preview 和阶段回归 | 保持回归 |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
 | 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
-| 03D-LIBTIFF | 03D-01..03 COMPLETE / 03D-04 READY | 手写基线、可选 LibTIFF 依赖/Runtime、Writer 接口和 stripped 输出已闭环 | 03D-04..07 未实现；默认 Writer 未切换 |
+| 03D-LIBTIFF | 03D-01..04 COMPLETE / 03D-05 READY | 手写基线、可选 LibTIFF 依赖/Runtime、stripped/tiled、稳定错误与失败清理已闭环 | 03D-05..07 未实现；默认 Writer 未切换 |
 | 12E-09D | FULL EXECUTION PACKAGE PREPARED | 诊断宽度与生产纹理设置分离、Legacy 层数/Global 物理宽度、单材料 Relief W/V 选择文档 | 09D-01..06 未实现；等待 03D |
 | 12E-10 | FULL EXECUTION PACKAGE PREPARED / 10A READY | PRD/DEV/DEMO/PREP/TASKS/PROMPT、最终矩阵 schema、模型基线、09B 生产入口、09C DPI 合同和 09A 阶段收口已完成 | 10A 等待用户授权；10B/10C 技术前置已具备；10D 等待 10A..C |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
@@ -82,7 +82,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
 | 09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 保持回归 |
-| 03D-LIBTIFF | 03D-01..03 COMPLETE / 03D-04 READY | 执行 LibTIFF tiled 与错误模型 |
+| 03D-LIBTIFF | 03D-01..04 COMPLETE / 03D-05 READY | 执行正负向等价与共享 Package Gate |
 | 09D Production Texture/Single Material | 09D-01..06 PREPARED | 03D 当前范围完成后执行 |
 | 12E-10 Final Closure | 完整执行包 PREPARED / 10A READY | 用户授权后执行 10A，再按 10B -> 10C -> 10D |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
@@ -92,7 +92,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 ### 2.3 剩余任务数量
 
 ```text
-03D-04..07：4 个；
+03D-05..07：3 个；
 12E-09D-01..06：6 个；
 12E-10A..D：4 个；
 12F-02..09：8 个；
@@ -255,7 +255,7 @@ Stage 12/13 的逐项执行状态、34 个近程/已规划原子任务顺序和�
 本次修订不改变既有阶段的完成证据，只调整后续执行入口：
 
 ```text
-1. 03D-01..03 已完成；03D-04..07 为第一优先级，03D-04 已准备；
+1. 03D-01..04 已完成；03D-05..07 为第一优先级，03D-05 已准备；
 2. 03D-07 只有在兼容和性能 Gate 为 GO 且用户明确授权后，才能切换默认 Writer；
 3. 12E-09D-01..06：在 03D 当前范围完成后执行，收口生产纹理厚度和单材料 W/V；
 4. 12E-10A..D：继续作为双模式最终闭环，排在 09D 之后；

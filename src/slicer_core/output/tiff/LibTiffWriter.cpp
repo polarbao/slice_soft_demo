@@ -1,13 +1,29 @@
 #include "slicer_core/output/tiff/TiffWriterImplementations.h"
 
+#include "slicer_core/output/tiff/TiffWriterError.h"
+
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstdarg>
+#include <cstdio>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <memory>
-#include <stdexcept>
+#include <span>
 #include <string>
+#include <system_error>
+#include <utility>
+#include <vector>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
 
 #ifdef SLICER_CORE_HAS_LIBTIFF
 #include <tiffio.h>
@@ -31,63 +47,226 @@ struct TiffHandleDeleter
     }
 };
 
-using TiffHandle = std::unique_ptr<TIFF, TiffHandleDeleter>;
+struct TiffOpenOptionsDeleter
+{
+    void operator()(TIFFOpenOptions* options) const noexcept
+    {
+        if (options != nullptr)
+        {
+            TIFFOpenOptionsFree(options);
+        }
+    }
+};
 
-void ValidateStrippedInput(
+class TemporaryFileGuard
+{
+public:
+    explicit TemporaryFileGuard(std::filesystem::path path)
+        : m_path(std::move(path))
+    {
+    }
+
+    ~TemporaryFileGuard()
+    {
+        if (!m_path.empty())
+        {
+            std::error_code error;
+            std::filesystem::remove(m_path, error);
+        }
+    }
+
+    TemporaryFileGuard(const TemporaryFileGuard&) = delete;
+    TemporaryFileGuard& operator=(const TemporaryFileGuard&) = delete;
+
+    void Release() noexcept
+    {
+        m_path.clear();
+    }
+
+private:
+    std::filesystem::path m_path;
+};
+
+struct ErrorContext
+{
+    std::string message;
+};
+
+using TiffHandle = std::unique_ptr<TIFF, TiffHandleDeleter>;
+using TiffOpenOptionsHandle =
+    std::unique_ptr<TIFFOpenOptions, TiffOpenOptionsDeleter>;
+
+int CaptureTiffMessage(
+    TIFF*,
+    void* userData,
+    const char* module,
+    const char* format,
+    va_list arguments)
+{
+    auto* context = static_cast<ErrorContext*>(userData);
+    if (context == nullptr)
+    {
+        return 1;
+    }
+
+    char buffer[1024]{};
+    std::vsnprintf(buffer, sizeof(buffer), format, arguments);
+    context->message.clear();
+    if (module != nullptr && module[0] != '\0')
+    {
+        context->message.append(module).append(": ");
+    }
+    context->message.append(buffer);
+    return 1;
+}
+
+[[noreturn]] void ThrowWriterError(
+    const TiffWriterErrorCode code,
+    const std::string& detail)
+{
+    throw TiffWriterException(code, detail);
+}
+
+std::size_t CheckedPixelByteCount(const TiffImageSpec& spec)
+{
+    const std::size_t width = spec.width;
+    const std::size_t height = spec.height;
+    const std::size_t channels = spec.samples_per_pixel;
+    const std::size_t maximum =
+        std::numeric_limits<std::size_t>::max();
+    if (height != 0U && width > maximum / height)
+    {
+        ThrowWriterError(
+            TiffWriterErrorCode::InvalidInput,
+            "image dimensions overflow the address space");
+    }
+    const std::size_t pixelCount = width * height;
+    if (channels != 0U && pixelCount > maximum / channels)
+    {
+        ThrowWriterError(
+            TiffWriterErrorCode::InvalidInput,
+            "image byte count overflows the address space");
+    }
+    return pixelCount * channels;
+}
+
+void ValidateInput(
     const TiffImageSpec& spec,
     const std::span<const std::uint8_t> pixels)
 {
-    if (spec.width == 0U
-        || spec.height == 0U
-        || spec.rows_per_strip == 0U)
+    if (spec.width == 0U || spec.height == 0U)
     {
-        throw std::runtime_error("invalid TIFF dimensions");
+        ThrowWriterError(
+            TiffWriterErrorCode::InvalidInput,
+            "image width and height must be positive");
     }
     if (spec.samples_per_pixel != rgbwsv_channel_count
         || spec.bits_per_sample != 8U
         || spec.planar_config != PLANARCONFIG_CONTIG)
     {
-        throw std::runtime_error(
-            "P0 03B TIFF writer only supports RGBWSV uint8 contiguous pixels");
+        ThrowWriterError(
+            TiffWriterErrorCode::InvalidInput,
+            "only RGBWSV uint8 contiguous pixels are supported");
     }
-    const std::size_t expectedPixels =
-        static_cast<std::size_t>(spec.width)
-        * spec.height
-        * spec.samples_per_pixel;
-    if (pixels.size() != expectedPixels)
+    if (spec.storage_mode == TiffStorageMode::Stripped
+        && spec.rows_per_strip == 0U)
     {
-        throw std::runtime_error(
+        ThrowWriterError(
+            TiffWriterErrorCode::InvalidInput,
+            "rows per strip must be positive");
+    }
+    if (spec.storage_mode == TiffStorageMode::Tiled
+        && (spec.tile_width < 16U
+            || spec.tile_height < 16U
+            || spec.tile_width % 16U != 0U
+            || spec.tile_height % 16U != 0U))
+    {
+        ThrowWriterError(
+            TiffWriterErrorCode::InvalidInput,
+            "LibTIFF tile width and height must be positive multiples of 16");
+    }
+    if (pixels.size() != CheckedPixelByteCount(spec))
+    {
+        ThrowWriterError(
+            TiffWriterErrorCode::InvalidInput,
             "pixel buffer size does not match TIFF dimensions");
     }
 }
 
-TiffHandle OpenTiff(const std::filesystem::path& path)
+std::filesystem::path MakeTemporaryPath(
+    const std::filesystem::path& path)
 {
-    if (!path.parent_path().empty())
+    static std::atomic_uint64_t sequence{0U};
+    std::filesystem::path temporaryName = path.filename();
+    temporaryName += ".tmp.";
+    temporaryName += std::to_string(
+        std::chrono::steady_clock::now()
+            .time_since_epoch()
+            .count());
+    temporaryName += ".";
+    temporaryName += std::to_string(++sequence);
+    return path.parent_path() / temporaryName;
+}
+
+TiffHandle OpenTiff(
+    const std::filesystem::path& path,
+    ErrorContext& errorContext)
+{
+    try
     {
-        std::filesystem::create_directories(path.parent_path());
+        if (!path.parent_path().empty())
+        {
+            std::filesystem::create_directories(path.parent_path());
+        }
+    }
+    catch (const std::filesystem::filesystem_error& error)
+    {
+        ThrowWriterError(TiffWriterErrorCode::OpenFailed, error.what());
     }
 
+    TiffOpenOptionsHandle options{TIFFOpenOptionsAlloc()};
+    if (!options)
+    {
+        ThrowWriterError(
+            TiffWriterErrorCode::OpenFailed,
+            "failed to allocate LibTIFF open options");
+    }
+    TIFFOpenOptionsSetErrorHandlerExtR(
+        options.get(),
+        CaptureTiffMessage,
+        &errorContext);
+    TIFFOpenOptionsSetWarningHandlerExtR(
+        options.get(),
+        CaptureTiffMessage,
+        &errorContext);
+
 #ifdef _WIN32
-    TiffHandle handle{TIFFOpenW(path.c_str(), "w")};
+    TiffHandle handle{TIFFOpenWExt(path.c_str(), "w", options.get())};
 #else
-    TiffHandle handle{TIFFOpen(path.string().c_str(), "w")};
+    TiffHandle handle{
+        TIFFOpenExt(path.string().c_str(), "w", options.get())};
 #endif
     if (!handle)
     {
-        throw std::runtime_error(
-            "failed to open TIFF for writing: " + path.string());
+        ThrowWriterError(
+            TiffWriterErrorCode::OpenFailed,
+            errorContext.message.empty()
+                ? "LibTIFF could not open the temporary output"
+                : errorContext.message);
     }
     return handle;
 }
 
-void SetFixedTags(TIFF* handle, const TiffImageSpec& spec)
+void SetFixedTags(
+    TIFF* handle,
+    const TiffImageSpec& spec,
+    const ErrorContext& errorContext)
 {
     std::uint16_t extraSamples[3]{
         EXTRASAMPLE_UNSPECIFIED,
         EXTRASAMPLE_UNSPECIFIED,
         EXTRASAMPLE_UNSPECIFIED};
-    const bool configured =
+    bool configured =
         TIFFSetField(handle, TIFFTAG_IMAGEWIDTH, spec.width) == 1
         && TIFFSetField(handle, TIFFTAG_IMAGELENGTH, spec.height) == 1
         && TIFFSetField(
@@ -102,43 +281,46 @@ void SetFixedTags(TIFF* handle, const TiffImageSpec& spec)
             == 1
         && TIFFSetField(handle, TIFFTAG_COMPRESSION, COMPRESSION_NONE) == 1
         && TIFFSetField(handle, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB) == 1
-        && TIFFSetField(
-               handle,
-               TIFFTAG_PLANARCONFIG,
-               PLANARCONFIG_CONTIG)
-            == 1
-        && TIFFSetField(
-               handle,
-               TIFFTAG_SAMPLEFORMAT,
-               SAMPLEFORMAT_UINT)
-            == 1
+        && TIFFSetField(handle, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG) == 1
+        && TIFFSetField(handle, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT) == 1
         && TIFFSetField(
                handle,
                TIFFTAG_EXTRASAMPLES,
                static_cast<std::uint16_t>(3U),
                extraSamples)
             == 1
-        && TIFFSetField(
-               handle,
-               TIFFTAG_ROWSPERSTRIP,
-               spec.rows_per_strip)
-            == 1
         && TIFFSetField(handle, TIFFTAG_IMAGEDESCRIPTION, "RGBWSV") == 1
-        && TIFFSetField(
-               handle,
-               TIFFTAG_SOFTWARE,
-               "slice_soft_demo p0")
-            == 1;
+        && TIFFSetField(handle, TIFFTAG_SOFTWARE, "slice_soft_demo p0") == 1;
+
+    if (spec.storage_mode == TiffStorageMode::Tiled)
+    {
+        configured = configured
+            && TIFFSetField(handle, TIFFTAG_TILEWIDTH, spec.tile_width) == 1
+            && TIFFSetField(handle, TIFFTAG_TILELENGTH, spec.tile_height) == 1;
+    }
+    else
+    {
+        configured = configured
+            && TIFFSetField(
+                   handle,
+                   TIFFTAG_ROWSPERSTRIP,
+                   spec.rows_per_strip)
+                == 1;
+    }
+
     if (!configured)
     {
-        throw std::runtime_error("tiff_tag_setup_failed");
+        ThrowWriterError(
+            TiffWriterErrorCode::TagSetupFailed,
+            errorContext.message);
     }
 }
 
 void WriteStrips(
     TIFF* handle,
     const TiffImageSpec& spec,
-    const std::span<const std::uint8_t> pixels)
+    const std::span<const std::uint8_t> pixels,
+    const ErrorContext& errorContext)
 {
     const std::uint32_t stripCount =
         (spec.height + spec.rows_per_strip - 1U)
@@ -164,7 +346,9 @@ void WriteStrips(
             > static_cast<std::size_t>(
                 std::numeric_limits<tmsize_t>::max()))
         {
-            throw std::runtime_error("tiff_strip_write_failed");
+            ThrowWriterError(
+                TiffWriterErrorCode::StripWriteFailed,
+                "strip byte count exceeds LibTIFF limits");
         }
         const tmsize_t requestedBytes =
             static_cast<tmsize_t>(byteCount);
@@ -175,9 +359,108 @@ void WriteStrips(
             requestedBytes);
         if (writtenBytes != requestedBytes)
         {
-            throw std::runtime_error("tiff_strip_write_failed");
+            ThrowWriterError(
+                TiffWriterErrorCode::StripWriteFailed,
+                errorContext.message);
         }
     }
+}
+
+void WriteTiles(
+    TIFF* handle,
+    const TiffImageSpec& spec,
+    const std::span<const std::uint8_t> pixels,
+    const ErrorContext& errorContext)
+{
+    const std::size_t tileByteCount =
+        static_cast<std::size_t>(spec.tile_width)
+        * spec.tile_height
+        * spec.samples_per_pixel;
+    if (tileByteCount
+        > static_cast<std::size_t>(
+            std::numeric_limits<tmsize_t>::max()))
+    {
+        ThrowWriterError(
+            TiffWriterErrorCode::TileWriteFailed,
+            "tile byte count exceeds LibTIFF limits");
+    }
+
+    std::vector<std::uint8_t> tile(tileByteCount, 255U);
+    const tmsize_t requestedBytes =
+        static_cast<tmsize_t>(tileByteCount);
+    for (std::uint32_t tileY{0U};
+         tileY < spec.height;
+         tileY += spec.tile_height)
+    {
+        for (std::uint32_t tileX{0U};
+             tileX < spec.width;
+             tileX += spec.tile_width)
+        {
+            std::fill(tile.begin(), tile.end(), 255U);
+            const std::uint32_t copyWidth =
+                std::min(spec.tile_width, spec.width - tileX);
+            const std::uint32_t copyHeight =
+                std::min(spec.tile_height, spec.height - tileY);
+            const std::size_t copyBytes =
+                static_cast<std::size_t>(copyWidth)
+                * spec.samples_per_pixel;
+            for (std::uint32_t row{0U}; row < copyHeight; ++row)
+            {
+                const std::size_t sourceOffset =
+                    (static_cast<std::size_t>(tileY + row) * spec.width
+                     + tileX)
+                    * spec.samples_per_pixel;
+                const std::size_t destinationOffset =
+                    static_cast<std::size_t>(row)
+                    * spec.tile_width
+                    * spec.samples_per_pixel;
+                std::copy_n(
+                    pixels.data() + sourceOffset,
+                    copyBytes,
+                    tile.data() + destinationOffset);
+            }
+
+            const ttile_t tileIndex =
+                TIFFComputeTile(handle, tileX, tileY, 0U, 0U);
+            const tmsize_t writtenBytes = TIFFWriteEncodedTile(
+                handle,
+                tileIndex,
+                tile.data(),
+                requestedBytes);
+            if (writtenBytes != requestedBytes)
+            {
+                ThrowWriterError(
+                    TiffWriterErrorCode::TileWriteFailed,
+                    errorContext.message);
+            }
+        }
+    }
+}
+
+void PublishTemporaryFile(
+    const std::filesystem::path& temporaryPath,
+    const std::filesystem::path& destinationPath)
+{
+#ifdef _WIN32
+    if (MoveFileExW(
+            temporaryPath.c_str(),
+            destinationPath.c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)
+        == 0)
+    {
+        ThrowWriterError(
+            TiffWriterErrorCode::PublishFailed,
+            "MoveFileExW failed with error "
+                + std::to_string(GetLastError()));
+    }
+#else
+    std::error_code error;
+    std::filesystem::rename(temporaryPath, destinationPath, error);
+    if (error)
+    {
+        ThrowWriterError(TiffWriterErrorCode::PublishFailed, error.message());
+    }
+#endif
 }
 
 class LibTiffWriter final : public ITiffWriter
@@ -193,20 +476,32 @@ public:
         const TiffImageSpec& spec,
         const std::span<const std::uint8_t> pixels) const override
     {
-        if (spec.storage_mode != TiffStorageMode::Stripped)
-        {
-            throw std::runtime_error(
-                "LibTIFF tiled writer is not implemented in 03D-03");
-        }
+        ValidateInput(spec, pixels);
 
-        ValidateStrippedInput(spec, pixels);
-        TiffHandle handle = OpenTiff(path);
-        SetFixedTags(handle.get(), spec);
-        WriteStrips(handle.get(), spec, pixels);
+        const std::filesystem::path temporaryPath =
+            MakeTemporaryPath(path);
+        TemporaryFileGuard temporaryGuard(temporaryPath);
+        ErrorContext errorContext;
+        TiffHandle handle = OpenTiff(temporaryPath, errorContext);
+        SetFixedTags(handle.get(), spec, errorContext);
+        if (spec.storage_mode == TiffStorageMode::Tiled)
+        {
+            WriteTiles(handle.get(), spec, pixels, errorContext);
+        }
+        else
+        {
+            WriteStrips(handle.get(), spec, pixels, errorContext);
+        }
         if (TIFFFlush(handle.get()) != 1)
         {
-            throw std::runtime_error("tiff_close_failed");
+            ThrowWriterError(
+                TiffWriterErrorCode::CloseFailed,
+                errorContext.message);
         }
+        handle.reset();
+
+        PublishTemporaryFile(temporaryPath, path);
+        temporaryGuard.Release();
     }
 };
 

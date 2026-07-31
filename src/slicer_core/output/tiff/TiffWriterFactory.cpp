@@ -37,12 +37,18 @@ TiffWriterBackend GetConfiguredTiffWriterBackend()
 }
 
 TiffWriterBackend ResolveTiffWriterBackend(
-    const TiffStorageMode storageMode)
+    const TiffImageSpec& spec)
 {
     const TiffWriterBackend configured =
         GetConfiguredTiffWriterBackend();
     if (configured == TiffWriterBackend::LibTiff
-        && storageMode == TiffStorageMode::Tiled)
+        && spec.storage_mode == TiffStorageMode::Tiled
+        && spec.tile_width > 0U
+        && spec.tile_height > 0U
+        && (spec.tile_width < 16U
+            || spec.tile_height < 16U
+            || spec.tile_width % 16U != 0U
+            || spec.tile_height % 16U != 0U))
     {
         return TiffWriterBackend::Handwritten;
     }
@@ -68,7 +74,7 @@ void WriteRgbwsvTiffWithConfiguredBackend(
     const std::span<const std::uint8_t> pixels)
 {
     const TiffWriterBackend backend =
-        ResolveTiffWriterBackend(spec.storage_mode);
+        ResolveTiffWriterBackend(spec);
     const std::unique_ptr<ITiffWriter> writer =
         CreateTiffWriter(backend);
     writer->Write(path, spec, pixels);

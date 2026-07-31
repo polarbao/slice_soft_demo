@@ -218,7 +218,7 @@ The benchmark measures only `write_rgbwsv_tiff` with a pre-generated buffer. It 
 backend, exact RGBWSV decode, stripped/tiled tags, 255 tile padding, current errors, and RIP strict PASS.
 Do not compare these numbers with full-package elapsed time.
 
-`03D-03` adds the optional LibTIFF stripped lane while the default remains handwritten. Use the same
+`03D-04` completes the optional LibTIFF stripped/tiled lane while the default remains handwritten. Use the same
 targeted contract suite in both build directories:
 
 ```powershell
@@ -241,8 +241,8 @@ ctest --test-dir build-slicesoft/03d-libtiff -C Release `
   --output-on-failure
 ```
 
-The LibTIFF lane must report `stripped=true` and `tiled=false`; tiled remains a handwritten fallback until
-`03D-04`. The strict Reader accepts legal TIFF `SHORT` or `LONG` encodings for unsigned dimension/count tags
+The LibTIFF lane must report `stripped=true` and `tiled=true`. Standard tile dimensions divisible by 16 use
+LibTIFF; historical nonstandard tile fixtures retain the handwritten compatibility route. The strict Reader accepts legal TIFF `SHORT` or `LONG` encodings for unsigned dimension/count tags
 and still requires exact numeric values and RGBWSV pixels.
 
 ## Baseline Gate

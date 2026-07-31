@@ -47,9 +47,9 @@ int main()
     {
         return Fail("LibTIFF stripped implementation state mismatch");
     }
-    if (info.libtifftiledwriterimplemented)
+    if (info.libtifftiledwriterimplemented != expectsLibTiff)
     {
-        return Fail("LibTIFF tiled writer must remain unavailable in 03D-03");
+        return Fail("LibTIFF tiled implementation state mismatch");
     }
 
     std::cout << "tiff_backend_build_info_unit_tests: PASS\n";

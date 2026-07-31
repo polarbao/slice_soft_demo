@@ -16,6 +16,7 @@ TiffBackendBuildInfo GetTiffBackendBuildInfo()
     info.libtiffdependencyavailable = true;
     info.libtiffwriterimplemented = true;
     info.libtiffstrippedwriterimplemented = true;
+    info.libtifftiledwriterimplemented = true;
     const char* version = TIFFGetVersion();
     if (version != nullptr)
     {

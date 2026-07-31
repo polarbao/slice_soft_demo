@@ -106,6 +106,11 @@ diagnosticCode；
 
 不再构造全部 tile 的整层缓冲。
 
+LibTIFF 4.7.1 写入接口要求 `tileWidth/tileHeight` 为 16 的正整数倍。当前生产 Profile
+使用 `256 x 256`，直接走 LibTIFF；历史合同 fixture 的 `8 x 4` 等非标准 tile 不得静默
+改写配置，迁移期由 Factory 显式路由到 handwritten compatibility backend。零尺寸仍交由
+LibTIFF Writer 校验并返回稳定输入错误，不得被兼容路由掩盖。
+
 ## 5. 错误和日志
 
 LibTIFF 错误必须转换为项目稳定错误：
@@ -118,6 +123,10 @@ tiff_tile_write_failed；
 tiff_close_failed；
 tiff_output_validation_failed。
 ```
+
+Writer 公共错误模型另外包含 `tiff_invalid_input` 和 `tiff_publish_failed`，分别覆盖进入
+LibTIFF 前的合同校验，以及 sibling 临时文件完成后原子替换失败。错误 handler 必须通过
+`TIFFOpenOptionsSetErrorHandlerExtR` 绑定到单个 handle，禁止安装进程级可变 handler。
 
 不得把全局错误 handler 的可变状态暴露给多线程。优先使用带 client data 的 re-entrant
 错误接口；若目标版本接口不足，必须在 Writer 层串行化 handler 安装并补并发测试。

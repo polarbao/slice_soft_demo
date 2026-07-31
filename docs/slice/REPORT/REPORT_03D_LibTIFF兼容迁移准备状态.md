@@ -1,19 +1,19 @@
 # REPORT_03D LibTIFF 兼容迁移当前状态
 
-> 状态：03D-01/02/03 COMPLETE / 03D-04 READY
+> 状态：03D-01/02/03/04 COMPLETE / 03D-05 READY
 > 日期：2026-07-31
 > 当前优先级：P0
 
 ## 1. 当前事实
 
 ```text
-生产 Writer：统一 Writer 接口；默认 handwritten，显式 libtiff 轨道支持 stripped；
+生产 Writer：统一 Writer 接口；默认 handwritten，显式 libtiff 轨道支持 stripped 和标准 tiled；
 支持：stripped/tiled、contiguous、uint8、RGBWSV、无压缩；
 Reader：仍由项目严格解析并服务 RIP/UI；
 vcpkg.json：已锁定 baseline，tiff 4.7.1 且 default-features=false；
 CMake：handwritten 默认轨道不查找 LibTIFF，libtiff 轨道链接 TIFF::TIFF；
 Runtime：libtiff 轨道部署 DLL、许可证、版本和 SHA-256；
-生产 Writer：默认仍使用手写实现；LibTIFF tiled 尚未实现并回退手写后端。
+生产 Writer：默认仍使用手写实现；LibTIFF tiled 已实现，非 16 对齐旧 fixture 回退手写后端。
 ```
 
 本机 `VCPKG_ROOT` 指向 `D:\Program Files Tools\vcpkg`。2026-07-31 只读检查显示本机
@@ -133,10 +133,11 @@ RGBWSV、uint8、`black_is_print` 或无压缩协议。
 | 03D-02 vcpkg/CMake/Runtime | COMPLETE |
 | 03D-03 Writer 接口与 stripped | COMPLETE |
 | LibTIFF stripped 代码实现 | COMPLETE |
-| 03D-04 tiled 与错误模型准备 | READY |
+| 03D-04 tiled 与错误模型 | COMPLETE |
+| 03D-05 等价、坏包与共享 Package Gate | READY |
 
 ## 7. 下一步
 
-下一原子任务为 `03D-04 LibTIFF tiled 与错误模型`。保持 handwritten 默认，实现单 tile
-scratch、边界 255 padding、稳定错误码、临时文件和失败清理；不得提前执行完整性能 Gate、
-压缩或默认切换。
+下一原子任务为 `03D-05 等价、坏包与共享 Package Gate`。保持 handwritten 默认，建立
+decoded pixel/tag、RIP strict/bad package、Legacy/Global/scene package 和原子发布完整矩阵；
+不得提前执行性能 Gate、压缩或默认切换。
