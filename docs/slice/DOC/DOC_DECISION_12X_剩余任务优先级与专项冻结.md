@@ -1,8 +1,8 @@
 # DOC_DECISION_12X 剩余任务优先级与专项冻结
 
-> 文档状态：ACCEPTED EXECUTION ORDER / 13A-01、13B-01 COMPLETE
-> 版本：v1.0
-> 日期：2026-07-27
+> 文档状态：ACCEPTED EXECUTION ORDER / 2026-07-31 AMENDED
+> 版本：v1.1
+> 日期：2026-07-27；修订日期：2026-07-31
 > 决策范围：12E-09A、12E-10、12F、纹理载体与白色分色专项、Stage 13
 
 ## 1. 背景
@@ -196,4 +196,57 @@ preview PNG 合成路线。
 12E-10 不再是编号上的立即下一任务；
 Stage 13B 的生产 Gate 仍需要设备幅面和性能预算；
 12F 算法优化延后到场景/Raster 边界更稳定后。
+```
+
+## 8. 2026-07-31 执行顺序修订
+
+### 8.1 新事实
+
+当前代码继续使用 `src/slicer_core/tiff_io.cpp` 中的手写 Classic TIFF Writer。仓库
+`vcpkg.json` 虽已声明 `tiff`，生产 CMake 尚未 `find_package(TIFF)` 或链接 `TIFF::TIFF`。
+用户要求把 LibTIFF 兼容迁移列为第一优先级，同时补齐生产纹理厚度和单材料浮雕 W/V 选择。
+
+12G-TCWS 也新增了部分 RIP 事实：
+
+```text
+同一份全 RGB 六通道 package 可由 RIP 生成透明或不透明白色两种结果；
+现有 RIP 把正常 RGB 纹理区域作为纹理，把白色区域 W/S/V=0/0/0 作为私有识别信号；
+在 black_is_print 生产协议中，W/S/V=0/0/0 的物理含义是三个通道同时打印，
+因此该信号不能直接视为自包含 p0.rgbwsv.2 材料语义。
+```
+
+这些事实不足以解冻 12G。纹理铺底明确排除在当前 12G 评审范围外，TIFF 继续保持六通道。
+
+### 8.2 新优先级
+
+从本节生效起，第 5 节旧顺序保留为历史决策，当前顺序改为：
+
+```text
+P0：03D-LIBTIFF Writer 兼容迁移与性能 Gate；
+P1：12E-09D 生产纹理厚度与单材料材质收口；
+P1：12E-10A..D 双模式最终闭环；
+P2：12F-02..09 按实测证据逐项授权；
+FROZEN：12G-TCWS，继续等待正式 RIP 合同决策。
+```
+
+### 8.3 强制 Gate
+
+```text
+03D 不得改变 p0.rgbwsv.2、RGBWSV 顺序、uint8、black_is_print 或不压缩生产口径；
+03D 必须先建立 Writer-only Release 基线，再接入 LibTIFF；
+LibTIFF 与手写后端按解码像素、必要 TIFF 标签、Reader/RIP 结果比较，不按文件 SHA 比较；
+03D-07 默认后端切换需要兼容 Gate、性能 Gate 和用户单独授权；
+09D 不得把诊断纹理宽度直接写入生产 Profile；
+Legacy 生产控制使用顶面纹理层数及等效 Z 厚度，Global 使用真实三维壳层宽度；
+12G 未解冻前，不得实现 WSV=000 sentinel、RIP 合同或白区 remap；
+不得在本轮新增纹理铺底层、TIFF 第七通道、压缩、BigTIFF 或多 IFD。
+```
+
+本修订的执行真源为：
+
+```text
+docs/codex_task/current/TASKS_03D_LibTIFF兼容迁移任务清单.md
+docs/codex_task/current/TASKS_12E_09D_生产纹理厚度与单材料材质任务清单.md
+docs/slice/DOC/DOC_REVIEW_12G_TCWS_现有RIP白区合同与六通道策略比对.md
+docs/codex_task/current/TASKS_12_13_后续开发计划总览清单.md
 ```

@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v4.0
-> 更新日期：2026-07-30
+> 版本：v4.1
+> 更新日期：2026-07-31
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：12E-10A READY / WAIT USER AUTHORIZATION
+> 当前下一任务：03D-01 READY / WAIT IMPLEMENTATION AUTHORIZATION
 
 ## 1. 使用规则
 
@@ -54,10 +54,12 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-09A | 09A-01..06 COMPLETE / PASS | 只读 Diagnostic Facade、场景感知 Effective Config、中文参数状态区、可取消 Worker、TIFF 同层语义 Preview 和阶段回归 | 保持回归 |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
 | 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
+| 03D-LIBTIFF | FULL EXECUTION PACKAGE PREPARED / 03D-01 READY | 手写 TIFF 现状审计、LibTIFF 双后端、stripped/tiled 兼容、Runtime、负向测试和 Release 性能 Gate 文档 | 03D-01..07 未实现；默认 Writer 未切换 |
+| 12E-09D | FULL EXECUTION PACKAGE PREPARED | 诊断宽度与生产纹理设置分离、Legacy 层数/Global 物理宽度、单材料 Relief W/V 选择文档 | 09D-01..06 未实现；等待 03D |
 | 12E-10 | FULL EXECUTION PACKAGE PREPARED / 10A READY | PRD/DEV/DEMO/PREP/TASKS/PROMPT、最终矩阵 schema、模型基线、09B 生产入口、09C DPI 合同和 09A 阶段收口已完成 | 10A 等待用户授权；10B/10C 技术前置已具备；10D 等待 10A..C |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
-| 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 纹理载体、白色分色和 RIP 铺底候选路线保留 | 等待产品/RIP 问题和 G1..G8；不进入实现 |
+| 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 已记录同一全 RGB package 由 RIP 生成透明/白色，以及白区 `WSV=000` 私有信号；完成三种策略比对 | `WSV=000` 与 black_is_print 物理语义冲突；等待 RIP 合同决策，不做纹理铺底 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E、13E-R1-01、13F-R0、13G COMPLETE | 多模型场景、TIFF 原生统一预览、Qt 工作台、甲片平面/Z 正反面、Reality 支撑连续性和 30 层最大投影铺底 | 13F-R1-01..05 性能可观测性 |
 
 ### 2.1 Stage 12 目的图
@@ -69,6 +71,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12C | 把配置、Profile、预览、诊断和构建入口收敛进 Qt 调试工作台 |
 | 12D | 建立横截面材料闭环、repair-disabled 不变性和真实模型验证 |
 | 12E | 建立 Global Surface Shell、双模式生产写包、Qt 产品入口和最终生产矩阵 |
+| 03D | 在不改变 RGBWSV 生产协议的前提下，以 LibTIFF 双后端和性能 Gate 收口 TIFF Writer |
 | 12F | 整理 Debug/Release Runtime，并在后续阶段继续性能工程化 |
 | 13 | 建立模型场景、实例变换、多模型排版联合切片和 TIFF 原生生产预览 |
 
@@ -79,6 +82,8 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
 | 09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 保持回归 |
+| 03D-LIBTIFF | 03D-01..07 PREPARED / 03D-01 READY | 第一优先级；先做 Writer-only Release 基线 |
+| 09D Production Texture/Single Material | 09D-01..06 PREPARED | 03D 当前范围完成后执行 |
 | 12E-10 Final Closure | 完整执行包 PREPARED / 10A READY | 用户授权后执行 10A，再按 10B -> 10C -> 10D |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
@@ -87,11 +92,12 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 ### 2.3 剩余任务数量
 
 ```text
-12E-09A-06：0 个；
+03D-01..07：7 个；
+12E-09D-01..06：6 个；
 12E-10A..D：4 个；
 12F-02..09：8 个；
-Stage 12 若含性能专项，合计剩余 14 个原子任务；
-只计算 12E 语义/诊断/收口，剩余 6 个原子任务；
+03D、09D 和 12E-10 合计待执行 17 个原子任务；
+若另计 12F 性能专项，增加 8 个；
 12G-TCWS 候选 R0..R6 已冻结，当前激活任务数为 0。
 
 Stage 13 近程：
@@ -243,3 +249,19 @@ TIFF 原生统一预览已实现；13B-08 真实作业流矩阵与阶段收口�
 Stage 12/13 的逐项执行状态、34 个近程/已规划原子任务顺序和每任务更新规则，以
 `TASKS_12_13_后续开发计划总览清单.md` 为跨阶段执行看板。本文仍是 Stage 12 唯一状态总览，
 两者职责不冲突。
+
+## 9. 2026-07-31 优先级修订
+
+本次修订不改变既有阶段的完成证据，只调整后续执行入口：
+
+```text
+1. 03D-01..07：第一优先级，先冻结 Writer-only Release 基线，再接入 LibTIFF 双后端；
+2. 03D-07 只有在兼容和性能 Gate 为 GO 且用户明确授权后，才能切换默认 Writer；
+3. 12E-09D-01..06：在 03D 当前范围完成后执行，收口生产纹理厚度和单材料 W/V；
+4. 12E-10A..D：继续作为双模式最终闭环，排在 09D 之后；
+5. 12F-02..09：保持按性能证据逐项授权；
+6. 12G-TCWS：继续冻结，只保留 RIP 白区合同评审，不新增纹理铺底或协议通道。
+```
+
+03D 和 09D 的“准备完成”只表示 PRD/DEV/DEMO/Decision/TASKS/PROMPT 齐备，不是代码完成，
+也不构成第三方依赖安装、默认后端切换或生产发布授权。
