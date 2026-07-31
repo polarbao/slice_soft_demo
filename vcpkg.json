@@ -1,9 +1,13 @@
 {
   "name": "slice-soft-demo",
   "version-string": "0.1.0",
+  "builtin-baseline": "d13fa75214c258099923cf25a5e6311e58c07f3b",
   "dependencies": [
     "nlohmann-json",
-    "tiff",
+    {
+      "name": "tiff",
+      "default-features": false
+    },
     "assimp"
   ],
   "features": {

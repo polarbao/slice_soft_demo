@@ -9,6 +9,9 @@ param(
     [ValidateRange(1, 64)]
     [int]$Jobs = 8,
     [string]$Qt5Dir = $env:Qt5_DIR,
+    [ValidateSet("handwritten", "libtiff")]
+    [string]$TiffBackend = "handwritten",
+    [string]$VcpkgRoot = $env:VCPKG_ROOT,
     [switch]$ConfigureOnly,
     [switch]$DeployOnly,
     [switch]$SkipDeploy,
@@ -124,6 +127,24 @@ function ImportVisualStudioX64Environment
     }
 }
 
+function ResolveVcpkgRoot
+{
+    param([string]$Candidate)
+
+    if ([string]::IsNullOrWhiteSpace($Candidate))
+    {
+        throw "VCPKG_ROOT or -VcpkgRoot is required for the libtiff lane."
+    }
+
+    $resolved = [System.IO.Path]::GetFullPath($Candidate)
+    $toolchain = Join-Path $resolved "scripts/buildsystems/vcpkg.cmake"
+    if (-not (Test-Path -LiteralPath $toolchain -PathType Leaf))
+    {
+        throw "vcpkg toolchain was not found: $toolchain"
+    }
+    return $resolved
+}
+
 function SetVisualStudioRuntimeDiscoveryEnvironment
 {
     if (-not [string]::IsNullOrWhiteSpace($env:VCINSTALLDIR))
@@ -168,6 +189,8 @@ function GetRuntimeBuildInputFingerprint
         [string]$Config,
         [string]$BuildSystem,
         [string]$Qt5Dir,
+        [string]$TiffBackend,
+        [string]$VcpkgRoot,
         [bool]$HashFileContents
     )
 
@@ -190,6 +213,7 @@ function GetRuntimeBuildInputFingerprint
                     '[\\/](build|runtime|output)(-[^\\/]*)?[\\/]'
             }
         Get-Item -LiteralPath (Join-Path $RepoRoot "CMakeLists.txt")
+        Get-Item -LiteralPath (Join-Path $RepoRoot "vcpkg.json")
         Get-Item -LiteralPath $PSCommandPath
     ) | Sort-Object FullName -Unique
 
@@ -197,6 +221,8 @@ function GetRuntimeBuildInputFingerprint
     [void]$manifest.AppendLine("config=$Config")
     [void]$manifest.AppendLine("buildSystem=$BuildSystem")
     [void]$manifest.AppendLine("qt5Dir=$Qt5Dir")
+    [void]$manifest.AppendLine("tiffBackend=$TiffBackend")
+    [void]$manifest.AppendLine("vcpkgRoot=$VcpkgRoot")
     $rootPrefix = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
     foreach ($file in $inputFiles)
     {
@@ -263,6 +289,44 @@ function ResolveBuiltExecutable
         }
     }
     throw "Executable was not found under $BuildRoot. Candidates: $($Candidates -join ', ')"
+}
+
+function ReadTiffRuntimeMetadata
+{
+    param(
+        [string]$BuildRoot,
+        [string]$Config
+    )
+
+    $metadataPath = Join-Path $BuildRoot "slicesoft_tiff_runtime_$Config.txt"
+    if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf))
+    {
+        throw "TIFF runtime metadata was not generated: $metadataPath"
+    }
+
+    $values = @{}
+    foreach ($line in Get-Content -LiteralPath $metadataPath)
+    {
+        if ($line -match '^([^=]+)=(.*)$')
+        {
+            $values[$Matches[1]] = $Matches[2]
+        }
+    }
+
+    foreach ($requiredKey in @("backend", "runtime", "license"))
+    {
+        if (-not $values.ContainsKey($requiredKey))
+        {
+            throw "TIFF runtime metadata is missing '$requiredKey': $metadataPath"
+        }
+    }
+
+    return [pscustomobject]@{
+        backend = [string]$values["backend"]
+        runtime = [string]$values["runtime"]
+        license = [string]$values["license"]
+        source = $metadataPath
+    }
 }
 
 function AssertRuntimeDirectoryNotInUse
@@ -461,6 +525,15 @@ function TestPortableProfileResources
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $resolvedQt5Dir = ResolveQt5CMakeDir -Candidate $Qt5Dir
+$resolvedVcpkgRoot =
+    if ($TiffBackend -eq "libtiff")
+    {
+        ResolveVcpkgRoot -Candidate $VcpkgRoot
+    }
+    else
+    {
+        ""
+    }
 $resolvedBuildDir = ResolveRepoPath -RepoRoot $repoRoot -Path $BuildDir
 $isNMakeBuild = $BuildSystem -eq "NMake"
 $resolvedConfigBuildDir =
@@ -499,6 +572,8 @@ try
             -Config $Config `
             -BuildSystem $BuildSystem `
             -Qt5Dir $resolvedQt5Dir `
+            -TiffBackend $TiffBackend `
+            -VcpkgRoot $resolvedVcpkgRoot `
             -HashFileContents $isNMakeBuild
         $buildInputStampPath =
             Join-Path $resolvedConfigBuildDir ".slicesoft_build_input.$Config.sha256"
@@ -536,8 +611,16 @@ try
         $configureArguments += @(
             "-DQt5_DIR=$resolvedQt5Dir",
             "-DBUILD_SLICER_DEBUG_UI=ON",
-            "-DUSE_OPENVDB=OFF"
+            "-DUSE_OPENVDB=OFF",
+            "-DSLICESOFT_TIFF_BACKEND=$TiffBackend"
         )
+        if ($TiffBackend -eq "libtiff")
+        {
+            $configureArguments += @(
+                "-DCMAKE_TOOLCHAIN_FILE=$(Join-Path $resolvedVcpkgRoot 'scripts/buildsystems/vcpkg.cmake')",
+                "-DVCPKG_TARGET_TRIPLET=x64-windows"
+            )
+        }
 
         InvokeNativeStep `
             -Name "configure unified SliceSoft Qt build ($BuildSystem)" `
@@ -582,6 +665,8 @@ try
                 -Config $Config `
                 -BuildSystem $BuildSystem `
                 -Qt5Dir $resolvedQt5Dir `
+                -TiffBackend $TiffBackend `
+                -VcpkgRoot $resolvedVcpkgRoot `
                 -HashFileContents $isNMakeBuild
         if ($postBuildInputFingerprint -ne $buildInputFingerprint)
         {
@@ -616,6 +701,14 @@ try
             "apps/slicer_debug_ui/$Config/slicer_debug_ui.exe",
             "apps/slicer_debug_ui/slicer_debug_ui.exe"
         )
+    $tiffRuntimeMetadata =
+        ReadTiffRuntimeMetadata -BuildRoot $resolvedConfigBuildDir -Config $Config
+    if ($tiffRuntimeMetadata.backend -ne $TiffBackend)
+    {
+        throw (
+            "Requested TIFF backend '$TiffBackend' does not match the build " +
+            "metadata backend '$($tiffRuntimeMetadata.backend)'.")
+    }
 
     $qtRoot = [System.IO.Path]::GetFullPath((Join-Path $resolvedQt5Dir "../../.."))
     $winDeployQt = Join-Path $qtRoot "bin/windeployqt.exe"
@@ -637,6 +730,57 @@ try
         Copy-Item -LiteralPath $slicerCli -Destination (Join-Path $stagingDir "slicer_cli.exe")
         Copy-Item -LiteralPath $ripReader -Destination (Join-Path $stagingDir "rip_reader_test.exe")
         Copy-Item -LiteralPath $uiExecutable -Destination (Join-Path $stagingDir "slicer_debug_ui.exe")
+        $tiffRuntimeLibraries = @()
+        $tiffLicenseRelativePath = $null
+        if ($TiffBackend -eq "libtiff")
+        {
+            if (-not (Test-Path -LiteralPath $tiffRuntimeMetadata.runtime -PathType Leaf))
+            {
+                throw "LibTIFF runtime file was not found: $($tiffRuntimeMetadata.runtime)"
+            }
+            if ([System.IO.Path]::GetExtension($tiffRuntimeMetadata.runtime) -ne ".dll")
+            {
+                throw (
+                    "The 03D dynamic runtime lane expected a LibTIFF DLL but got: " +
+                    $tiffRuntimeMetadata.runtime)
+            }
+            $runtimeFileName =
+                [System.IO.Path]::GetFileName($tiffRuntimeMetadata.runtime)
+            $runtimeDestination = Join-Path $stagingDir $runtimeFileName
+            Copy-Item `
+                -LiteralPath $tiffRuntimeMetadata.runtime `
+                -Destination $runtimeDestination
+            $tiffRuntimeLibraries += [ordered]@{
+                file = $runtimeFileName
+                sha256 = (Get-FileHash `
+                    -LiteralPath $runtimeDestination `
+                    -Algorithm SHA256).Hash.ToLowerInvariant()
+            }
+
+            if (-not (Test-Path -LiteralPath $tiffRuntimeMetadata.license -PathType Leaf))
+            {
+                throw "LibTIFF license file was not found: $($tiffRuntimeMetadata.license)"
+            }
+            $licenseDirectory = Join-Path $stagingDir "licenses"
+            New-Item -ItemType Directory -Path $licenseDirectory -Force | Out-Null
+            $tiffLicenseRelativePath = "licenses/libtiff.txt"
+            Copy-Item `
+                -LiteralPath $tiffRuntimeMetadata.license `
+                -Destination (Join-Path $stagingDir $tiffLicenseRelativePath)
+        }
+
+        $backendInfoOutput =
+            & (Join-Path $stagingDir "slicer_cli.exe") --tiff-backend-info-json
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw "slicer_cli --tiff-backend-info-json failed with exit code $LASTEXITCODE."
+        }
+        $tiffBackendInfo = ($backendInfoOutput -join [Environment]::NewLine) |
+            ConvertFrom-Json
+        if ([string]$tiffBackendInfo.configuredBackend -ne $TiffBackend)
+        {
+            throw "Deployed slicer_cli TIFF backend metadata does not match '$TiffBackend'."
+        }
         $profileResourceCopy = CopyProfileRuntimeResources `
             -RepoRoot $repoRoot `
             -StagingDir $stagingDir
@@ -668,6 +812,15 @@ try
             buildDir = $resolvedConfigBuildDir
             qt5Dir = $resolvedQt5Dir
             useOpenVdb = $false
+            tiffWriter = [ordered]@{
+                configuredBackend = [string]$tiffBackendInfo.configuredBackend
+                handwrittenAvailable = [bool]$tiffBackendInfo.handwrittenAvailable
+                libtiffDependencyAvailable = [bool]$tiffBackendInfo.libtiffDependencyAvailable
+                libtiffWriterImplemented = [bool]$tiffBackendInfo.libtiffWriterImplemented
+                libtiffVersion = [string]$tiffBackendInfo.libtiffVersion
+                runtimeLibraries = $tiffRuntimeLibraries
+                license = $tiffLicenseRelativePath
+            }
             tools = [ordered]@{
                 ui = "slicer_debug_ui.exe"
                 slicerCli = "slicer_cli.exe"
@@ -767,6 +920,7 @@ try
     Write-Host "  runtimeDir: $resolvedRuntimeDir"
     Write-Host "  config: $Config"
     Write-Host "  buildSystem: $BuildSystem"
+    Write-Host "  tiffBackend: $TiffBackend"
     Write-Host "  parallelJobs: $Jobs"
     Write-Host "  scenarios: $($profileResourceValidation.scenarioCount)"
 }

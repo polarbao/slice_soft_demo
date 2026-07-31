@@ -9,6 +9,22 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(BUILD_SLICER_DEBUG_UI "Build Qt slicer debug UI" ON)
 option(ENABLE_GEOMETRY_KERNEL_DEMO "Build experimental geometry kernel demo" ON)
 option(USE_OPENVDB "Enable optional OpenVDB adapter" OFF)
+set(
+    SLICESOFT_TIFF_BACKEND
+    "handwritten"
+    CACHE STRING
+    "TIFF dependency lane: handwritten or libtiff"
+)
+set_property(
+    CACHE SLICESOFT_TIFF_BACKEND
+    PROPERTY STRINGS handwritten libtiff
+)
+if(NOT SLICESOFT_TIFF_BACKEND STREQUAL "handwritten"
+   AND NOT SLICESOFT_TIFF_BACKEND STREQUAL "libtiff")
+    message(FATAL_ERROR
+        "Unsupported SLICESOFT_TIFF_BACKEND='${SLICESOFT_TIFF_BACKEND}'. "
+        "Expected handwritten or libtiff.")
+endif()
 
 add_library(slicer_core
     src/third_party/miniz/miniz.c
@@ -296,6 +312,8 @@ add_library(slicer_core
     src/slicer_core/system/Sha256.cpp
     src/slicer_core/system/Sha256.h
     src/slicer_core/system/Sha256Internal.h
+    src/slicer_core/output/tiff/TiffBackendBuildInfo.cpp
+    src/slicer_core/output/tiff/TiffBackendBuildInfo.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h
     src/slicer_core/tiff_io.cpp
@@ -306,6 +324,11 @@ target_include_directories(slicer_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
 )
+target_compile_definitions(
+    slicer_core
+    PRIVATE
+        SLICESOFT_CONFIGURED_TIFF_BACKEND="${SLICESOFT_TIFF_BACKEND}"
+)
 
 if(MSVC)
     target_compile_options(slicer_core PRIVATE /bigobj /MP)
@@ -314,6 +337,56 @@ endif()
 if(WIN32)
     target_link_libraries(slicer_core PRIVATE windowscodecs ole32 psapi)
 endif()
+
+set(_slicesoft_tiff_runtime_file "")
+set(_slicesoft_tiff_license_file "")
+if(SLICESOFT_TIFF_BACKEND STREQUAL "libtiff")
+    find_package(TIFF REQUIRED)
+    if(NOT TARGET TIFF::TIFF)
+        message(FATAL_ERROR
+            "LibTIFF was found but the TIFF::TIFF imported target is unavailable.")
+    endif()
+    target_compile_definitions(slicer_core PRIVATE SLICER_CORE_HAS_LIBTIFF=1)
+    target_link_libraries(slicer_core PRIVATE TIFF::TIFF)
+    if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+        if(WIN32)
+            find_file(
+                _slicesoft_tiff_release_runtime
+                NAMES tiff.dll libtiff.dll
+                PATHS
+                    "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin"
+                NO_DEFAULT_PATH
+                REQUIRED
+            )
+            find_file(
+                _slicesoft_tiff_debug_runtime
+                NAMES tiffd.dll libtiffd.dll tiff.dll libtiff.dll
+                PATHS
+                    "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/debug/bin"
+                NO_DEFAULT_PATH
+                REQUIRED
+            )
+            set(
+                _slicesoft_tiff_runtime_file
+                "$<IF:$<CONFIG:Debug>,${_slicesoft_tiff_debug_runtime},${_slicesoft_tiff_release_runtime}>"
+            )
+        else()
+            set(_slicesoft_tiff_runtime_file "$<TARGET_FILE:TIFF::TIFF>")
+        endif()
+        set(
+            _slicesoft_tiff_license_file
+            "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/tiff/copyright"
+        )
+    else()
+        set(_slicesoft_tiff_runtime_file "$<TARGET_FILE:TIFF::TIFF>")
+    endif()
+endif()
+
+file(
+    GENERATE
+    OUTPUT "${CMAKE_BINARY_DIR}/slicesoft_tiff_runtime_$<CONFIG>.txt"
+    CONTENT "backend=${SLICESOFT_TIFF_BACKEND}\nruntime=${_slicesoft_tiff_runtime_file}\nlicense=${_slicesoft_tiff_license_file}\n"
+)
 
 if(USE_OPENVDB)
     find_package(OpenVDB CONFIG QUIET)
@@ -460,6 +533,17 @@ add_executable(tiff_writer_contract_unit_tests
 )
 
 target_link_libraries(tiff_writer_contract_unit_tests PRIVATE slicer_core)
+
+add_executable(tiff_backend_build_info_unit_tests
+    tests/unit/tiff_backend_build_info/Main.cpp
+)
+
+target_link_libraries(tiff_backend_build_info_unit_tests PRIVATE slicer_core)
+target_compile_definitions(
+    tiff_backend_build_info_unit_tests
+    PRIVATE
+        SLICESOFT_TEST_EXPECTED_TIFF_BACKEND="${SLICESOFT_TIFF_BACKEND}"
+)
 
 add_executable(tiff_layer_cache_unit_tests
     tests/unit/tiff_layer_cache/Main.cpp
@@ -869,6 +953,7 @@ add_test(NAME preview_output_policy_unit_tests COMMAND preview_output_policy_uni
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
 add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
 add_test(NAME tiff_writer_contract_unit_tests COMMAND tiff_writer_contract_unit_tests)
+add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)
 add_test(NAME texture_fill_partition_semantic_preview_unit_tests COMMAND texture_fill_partition_semantic_preview_unit_tests)
 add_test(NAME material_preview_composer_unit_tests COMMAND material_preview_composer_unit_tests)

@@ -1,6 +1,6 @@
 # REPORT_03D LibTIFF 兼容迁移当前状态
 
-> 状态：03D-01 COMPLETE / 03D-02 READY
+> 状态：03D-01 COMPLETE / 03D-02 COMPLETE / 03D-03 READY
 > 日期：2026-07-31
 > 当前优先级：P0
 
@@ -10,15 +10,15 @@
 生产 Writer：src/slicer_core/tiff_io.cpp 手写实现；
 支持：stripped/tiled、contiguous、uint8、RGBWSV、无压缩；
 Reader：仍由项目严格解析并服务 RIP/UI；
-vcpkg.json：已声明 tiff；
-CMake：没有 find_package(TIFF)，没有链接 TIFF::TIFF；
-默认 Runtime：没有部署 LibTIFF Writer DLL；
-因此当前没有使用 LibTIFF 生成生产 TIFF。
+vcpkg.json：已锁定 baseline，tiff 4.7.1 且 default-features=false；
+CMake：handwritten 默认轨道不查找 LibTIFF，libtiff 轨道链接 TIFF::TIFF；
+Runtime：libtiff 轨道部署 DLL、许可证、版本和 SHA-256；
+生产 Writer：仍只使用手写实现，LibTIFF Writer 尚未实现。
 ```
 
 本机 `VCPKG_ROOT` 指向 `D:\Program Files Tools\vcpkg`。2026-07-31 只读检查显示本机
-port metadata 为 `tiff 4.7.1`，默认 feature 包含 JPEG/LZMA/ZIP；专项设计要求关闭这些
-当前不需要的 feature。该检查不等于项目已安装或链接依赖。
+port metadata 为 `tiff 4.7.1`。03D-02 已在独立 manifest 构建目录完成安装和链接，
+关闭 JPEG/LZMA/ZIP 默认 feature，没有修改共享 vcpkg 根的 classic 安装状态。
 
 ## 2. 准备产物
 
@@ -86,7 +86,22 @@ scope=writer_only
 这些 package 数字与 03D-01 的 Writer-only 数字口径不同，不能直接互相替代。后续 03D-06
 必须在同 buffer、同机器、同磁盘上重新比较 handwritten 与 LibTIFF。
 
-## 4. 准备度
+## 4. 03D-02 依赖与 Runtime 证据
+
+```text
+SLICESOFT_TIFF_BACKEND=handwritten|libtiff；
+默认 handwritten；
+LibTIFF Debug/Release build-info CTest PASS；
+handwritten/LibTIFF Runtime 部署 PASS；
+LibTIFF version=4.7.1；
+tiff.dll 与 licenses/libtiff.txt 已进入隔离 Runtime；
+runtime_manifest.json 已记录后端、实现状态、版本、SHA-256 和许可证。
+```
+
+03D-02 没有实现或路由 LibTIFF Writer；能力自检明确输出
+`libtiffWriterImplemented=false`。
+
+## 5. 准备度
 
 | 项目 | 状态 |
 |---|---|
@@ -97,14 +112,15 @@ scope=writer_only
 | Runtime/许可证方案 | READY |
 | 功能/负向矩阵 | READY |
 | 性能 Gate | READY |
-| 依赖修改授权 | NOT GRANTED |
+| 依赖修改授权 | GRANTED / COMPLETE |
 | 03D-01 合同 fixture | COMPLETE |
 | 03D-01 Writer-only Release 基线 | COMPLETE |
-| 03D-02 依赖修改授权 | NOT GRANTED |
+| 03D-02 vcpkg/CMake/Runtime | COMPLETE |
+| 03D-03 Writer 接口与 stripped 准备 | READY |
 | LibTIFF 代码实现 | NOT STARTED |
 
-## 5. 下一步
+## 6. 下一步
 
-`03D-01 当前合同与 Writer-only 基线` 已完成。下一候选任务为 `03D-02
-vcpkg/CMake/Runtime 依赖接入`，必须等待用户明确授权；在此之前不得安装、链接或部署
-LibTIFF，也不得切换默认 Writer。
+下一原子任务为 `03D-03 Writer 接口与 LibTIFF stripped`。保持 handwritten 默认，
+先实现抽象和 stripped 后端，再用当前严格 Reader 验证 tag 与 decoded pixel；不得提前
+实现 tiled、压缩或默认切换。

@@ -29,4 +29,5 @@ docs/codex_task/current/TASKS_03D_LibTIFF兼容迁移任务清单.md
 9. 03D-07 必须再次获得用户明确授权。
 ```
 
-当前只允许从 `03D-01` 开始。
+当前 `03D-01/02` 已完成；下一原子任务从 `03D-03` 开始。R1-R4 仍必须保持
+handwritten 为默认生产 Writer。

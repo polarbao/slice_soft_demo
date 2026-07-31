@@ -1,6 +1,6 @@
 # TASKS_03D LibTIFF 兼容迁移任务清单
 
-> 文档状态：03D-01 COMPLETE / PRIORITY P0
+> 文档状态：03D-01/02 COMPLETE / 03D-03 READY / PRIORITY P0
 > 日期：2026-07-31
 > 规则：每个原子任务完成后单独验证和提交；不得一次性切换默认后端
 
@@ -36,7 +36,7 @@ LibTIFF/CMake link/Runtime DLL：未接入。
 
 ## 03D-02 vcpkg/CMake/Runtime 依赖接入
 
-状态：READY / WAIT EXPLICIT AUTHORIZATION
+状态：COMPLETE / 2026-07-31
 
 ```text
 锁定 builtin-baseline；
@@ -46,9 +46,20 @@ tiff default-features=false；
 保持 handwritten 默认。
 ```
 
+实际证据：
+
+```text
+builtin-baseline 已锁定；
+tiff 4.7.1 default-features=false；
+handwritten/LibTIFF Debug/Release 能力自检 PASS；
+Runtime 已部署 DLL、许可证、版本和 SHA-256；
+libtiffWriterImplemented=false；
+默认 Writer 仍为 handwritten。
+```
+
 ## 03D-03 Writer 接口与 LibTIFF stripped
 
-状态：PREPARED / WAIT 03D-02
+状态：READY / 03D-02 GATE PASSED
 
 ```text
 提取 Writer 接口；

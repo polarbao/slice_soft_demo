@@ -2,6 +2,7 @@
 #include "slicer_core/diagnostics/ProductionAdmissionPolicy.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/model.h"
+#include "slicer_core/output/tiff/TiffBackendBuildInfo.h"
 #include "slicer_core/pipeline/MultiModelProductionService.h"
 #include "slicer_core/pipeline/OpenVdbCandidatePipeline.h"
 #include "slicer_core/pipeline/SlicePipeline.h"
@@ -35,6 +36,7 @@ struct CliOptions
     bool openvdb_candidate_slice{false};
     bool benchmark_core_only{false};
     bool openvdb_capability_json{false};
+    bool tiff_backend_info_json{false};
     std::string engine{"legacy"};
     std::string admission_mode{"strict_closed"};
     bool no_production_rgbwsv{true};
@@ -53,7 +55,8 @@ void PrintUsage()
         << "       slicer_cli --config <path> --openvdb-candidate-slice\n"
         << "       slicer_cli --config <path> --benchmark-core-only "
         << "--engine legacy|openvdb-candidate\n"
-        << "       slicer_cli --openvdb-capability-json\n";
+        << "       slicer_cli --openvdb-capability-json\n"
+        << "       slicer_cli --tiff-backend-info-json\n";
 }
 
 CliOptions ParseOptions(const int argc, char** argv)
@@ -111,6 +114,11 @@ CliOptions ParseOptions(const int argc, char** argv)
         if (arg == "--openvdb-capability-json")
         {
             options.openvdb_capability_json = true;
+            continue;
+        }
+        if (arg == "--tiff-backend-info-json")
+        {
+            options.tiff_backend_info_json = true;
             continue;
         }
         if (arg == "--engine" && i + 1 < argc)
@@ -772,6 +780,23 @@ int RunMultiModelSceneProduction(const CliOptions& options)
     return 0;
 }
 
+int PrintTiffBackendInfoJson()
+{
+    const slicer_core::TiffBackendBuildInfo info =
+        slicer_core::GetTiffBackendBuildInfo();
+    slicer_core::Json::Object capability;
+    capability["schema"] = "slicesoft.tiff_backend_build.03d.1";
+    capability["configuredBackend"] = info.configuredbackend;
+    capability["handwrittenAvailable"] = info.handwrittenavailable;
+    capability["libtiffDependencyAvailable"] =
+        info.libtiffdependencyavailable;
+    capability["libtiffWriterImplemented"] =
+        info.libtiffwriterimplemented;
+    capability["libtiffVersion"] = info.libtiffversion;
+    std::cout << slicer_core::Json{capability}.dump(2) << '\n';
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -784,13 +809,17 @@ int main(int argc, char** argv)
             PrintUsage();
             return 0;
         }
-        if (!options.scene_config_path.empty())
-        {
-            return RunMultiModelSceneProduction(options);
-        }
         if (options.openvdb_capability_json)
         {
             return PrintOpenVdbCapabilityJson();
+        }
+        if (options.tiff_backend_info_json)
+        {
+            return PrintTiffBackendInfoJson();
+        }
+        if (!options.scene_config_path.empty())
+        {
+            return RunMultiModelSceneProduction(options);
         }
         if (options.inspect_model)
         {
