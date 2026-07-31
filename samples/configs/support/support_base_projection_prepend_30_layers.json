@@ -1,0 +1,52 @@
+{
+  "input": {
+    "modelPath": "../../models/support/base_projection_steps.obj",
+    "format": "auto"
+  },
+  "autoOrient": {
+    "enabled": false,
+    "maxHeightMm": 9.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "output": {
+    "packageDir": "output/SupportBaseProjectionPrepend30Layers",
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.05,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelMaterial": {
+    "materialChannel": "V",
+    "applyMode": "solid_volume",
+    "rgb": [255, 255, 255],
+    "whiteValue": 255,
+    "varnishValue": 0
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "lower",
+    "value": 0,
+    "minOverlapRatio": 0.2,
+    "minIslandAreaPx": 16,
+    "connectivity": 8,
+    "unsupportedProjection": "project_to_build_plate",
+    "baseProjection": {
+      "enabled": true,
+      "layerCount": 30,
+      "layerPlacement": "prepend_below_model",
+      "source": "max_support_footprint"
+    }
+  },
+  "preview": {
+    "enabled": false,
+    "format": "png",
+    "interval": 1,
+    "channels": ["varnish", "support"],
+    "onlyNonEmptyLayers": true
+  }
+}

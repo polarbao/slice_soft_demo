@@ -16,9 +16,32 @@ struct SupportBaseProjectionResult
     bool enabled{false};
     int configured_layer_count{0};
     int effective_layer_count{0};
+    int added_layer_count{0};
+    double model_lift_mm{0.0};
+    std::string layer_placement{"overlay_existing"};
     int footprint_pixels{0};
     int added_support_pixels{0};
 };
+
+/**
+ * @brief Physical layer reservation required before support projection.
+ */
+struct SupportBaseProjectionPreparation
+{
+    int prepended_layer_count{0};
+    double model_lift_mm{0.0};
+};
+
+/**
+ * @brief Resolve whether base projection adds physical layers below the model.
+ * @param config Support base projection configuration.
+ * @param layerThicknessMm Physical thickness of one output layer in millimeters.
+ * @return Layer count and model Z lift required before raster sampling.
+ * @throws std::invalid_argument When layerThicknessMm is not finite and positive.
+ */
+SupportBaseProjectionPreparation ResolveSupportBaseProjectionPreparation(
+    const SupportBaseProjectionConfig& config,
+    double layerThicknessMm);
 
 /**
  * @brief Fill the first configured layers from the maximum ordinary support footprint.

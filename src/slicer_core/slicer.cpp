@@ -417,6 +417,25 @@ GridSpec make_grid_spec(const SliceConfig& config, const BoundingBox& bbox) {
     return grid;
 }
 
+void LiftModelForSupportBase(
+    ModelReport& modelReport,
+    const double modelLiftMm)
+{
+    if (modelLiftMm <= 0.0)
+    {
+        return;
+    }
+
+    for (Triangle& triangle : modelReport.triangles)
+    {
+        triangle.a.z += modelLiftMm;
+        triangle.b.z += modelLiftMm;
+        triangle.c.z += modelLiftMm;
+    }
+    modelReport.bbox_mm.min.z += modelLiftMm;
+    modelReport.bbox_mm.max.z += modelLiftMm;
+}
+
 Json bbox_to_json(const BoundingBox& bbox) {
     return Json::object({
         {"min", Json::array({bbox.min.x, bbox.min.y, bbox.min.z})},
@@ -3327,6 +3346,9 @@ Json BuildSupportBaseProjectionReport(
         {"configuredLayerCount", result.configured_layer_count},
         {"effectiveLayerCount", result.effective_layer_count},
         {"effectiveLayerRange", Json{effectiveLayerRange}},
+        {"layerPlacement", result.layer_placement},
+        {"addedLayerCount", result.added_layer_count},
+        {"modelLiftMm", result.model_lift_mm},
         {"source", "max_support_footprint"},
         {"footprintPixels", result.footprint_pixels},
         {"addedSupportPixelsBeforeMaterialPriority",
@@ -4120,6 +4142,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     NotifyProgress(options, run_start, "grid_setup", 0, 1, 10);
     phase_start = SlicerClock::now();
 
+    SupportBaseProjectionPreparation supportBaseProjectionPreparation;
+    if (config.support.enabled)
+    {
+        supportBaseProjectionPreparation =
+            ResolveSupportBaseProjectionPreparation(
+                config.support.base_projection,
+                config.output.layer_thickness_mm);
+        LiftModelForSupportBase(
+            model_report,
+            supportBaseProjectionPreparation.model_lift_mm);
+    }
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
     if (options.gridcallback)
     {
@@ -4284,6 +4317,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             config.support.base_projection,
             model_masks,
             support_generation.support_masks);
+        supportBaseProjectionResult.added_layer_count =
+            supportBaseProjectionPreparation.prepended_layer_count;
+        supportBaseProjectionResult.model_lift_mm =
+            supportBaseProjectionPreparation.model_lift_mm;
         for (int layerIndex{0};
              layerIndex < supportBaseProjectionResult.effective_layer_count;
              ++layerIndex)
@@ -4299,7 +4336,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                  ++index)
             {
                 if (supportMask.at(index) != 0U
-                    && supportTypeMap.at(index) == SupportType::None)
+                    && (supportBaseProjectionResult.layer_placement
+                            == "prepend_below_model"
+                        || supportTypeMap.at(index)
+                            == SupportType::None))
                 {
                     supportTypeMap.at(index) = SupportType::ProjectionBase;
                 }
@@ -4323,8 +4363,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             collectMaterialClosureSemantic
                 ? &clearedOuterVarnishSupportIndices
                 : nullptr);
+    const bool supportBaseProjectionTypesChanged =
+        supportBaseProjectionResult.layer_placement == "prepend_below_model"
+        && supportBaseProjectionResult.effective_layer_count > 0;
     if (support_shape_result.enabled
         || supportBaseProjectionResult.added_support_pixels > 0
+        || supportBaseProjectionTypesChanged
         || cleared_outer_varnish_support_pixels > 0)
     {
         RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);

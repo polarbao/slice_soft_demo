@@ -260,6 +260,17 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
                 result.errors.push_back(
                     "support.baseProjection.source 不是当前认可的铺底投影来源。");
             }
+            const QSet<QString> placementValues{
+                "overlay_existing",
+                "prepend_below_model"};
+            const QString layerPlacement =
+                stringAt(baseProjection, "layerPlacement");
+            if (!layerPlacement.isEmpty()
+                && !isAllowed(layerPlacement, placementValues))
+            {
+                result.errors.push_back(
+                    "support.baseProjection.layerPlacement 不是当前认可的铺底层放置方式。");
+            }
         }
         checkNonNegativeInt(support, "minIslandAreaPx", "support.minIslandAreaPx", result);
         checkNonNegativeInt(support, "xyDilationPx", "support.xyDilationPx", result);

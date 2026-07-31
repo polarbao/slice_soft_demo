@@ -166,7 +166,7 @@ const QVector<SettingHelpMetadata>& MetadataEntries()
         MakeMetadata(
             QStringLiteral("support.baseProjection.enabled"),
             QStringLiteral("支撑投影铺底"),
-            QStringLiteral("将普通支撑跨层最大投影写入最前面的若干层 S 通道，形成连续铺底；不会覆盖模型材料或外侧光油。"),
+            QStringLiteral("在模型下方新增若干物理层，并将普通支撑跨层最大投影写入这些层的 S 通道；不会覆盖模型材料或外侧光油。"),
             {QStringLiteral("S"), QStringLiteral("低层支撑连续性")},
             QStringLiteral("生产 UI 默认启用"),
             QStringLiteral("生产可用；必须先保证模型正面朝上并落在 Z=0，不能用于掩盖错误摆放"),
@@ -174,7 +174,7 @@ const QVector<SettingHelpMetadata>& MetadataEntries()
         MakeMetadata(
             QStringLiteral("support.baseProjection.layerCount"),
             QStringLiteral("支撑铺底层数"),
-            QStringLiteral("按层数控制最大支撑投影的铺底范围；30 表示 layerIndex 0..29，即人类可见第 1..30 层。"),
+            QStringLiteral("控制模型下方新增的支撑铺底物理层数；30 表示新增 layerIndex 0..29，模型整体上移 30 层，因此 TIFF 总层数增加 30。"),
             {QStringLiteral("S"), QStringLiteral("铺底厚度")},
             QStringLiteral("30 层"),
             QStringLiteral("生产可用；范围 0..1000，0 表示不产生铺底层"),

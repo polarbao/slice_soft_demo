@@ -1,7 +1,7 @@
 # REPORT_13G 支撑投影铺底与层间连续性当前状态
 
-> 状态：13G-00..07 COMPLETE / FUNCTIONAL PASS
-> 版本：v1.1
+> 状态：13G-00..07、13G-R1 COMPLETE / FUNCTIONAL PASS
+> 版本：v1.2
 > 日期：2026-07-30
 
 ## 1. 已完成
@@ -20,6 +20,8 @@ Legacy 与 Global 材料证据链均消费同一配置；
 Qt 常用配置和支撑编辑器提供启停及层数控件；
 新增生成式 fixture、自动化脚本和 RIP strict 验证；
 完成 segment_105 生产参数 Release 单模型复测。
+完成 13G-R1 语义修正：生产 UI 铺底改为 prepend_below_model，实际新增 N 个
+模型下方物理 TIFF 层；历史 overlay_existing 继续兼容。
 ```
 
 ## 2. 当前结论
@@ -29,7 +31,8 @@ Reality 五模型源姿态均为中心低、两侧高，低层先出现中间区
 正确姿态下 S 支撑从 layerIndex 0 连续到 93，原第 21 层中断已消失；
 当前 internalVoid 只实现 layer_enclosed_2d，不是三维空腔或跨层承托体；
 支撑最大投影铺底是独立工艺能力，不能用于掩盖错误摆放；
-layerCount=30 精确覆盖 layerIndex 0..29，不包含 layerIndex 30；
+prepend_below_model 的 layerCount=30 精确新增 layerIndex 0..29，原模型整体后移 30 层；
+overlay_existing 的 layerCount=30 仍只覆盖既有 layerIndex 0..29，不增加 TIFF；
 材料优先级仍为 Model > OuterVarnishShell > Support > Empty；
 协议仍为 p0.rgbwsv.2、RGBWSV、uint8、black_is_print。
 ```
@@ -48,7 +51,7 @@ scripts/run_13g_support_base_projection_tests.ps1：协议、边界和 RIP 自�
 
 ## 4. 真实模型结果
 
-Release Package：
+以下 Release Package 是 13G v1.1 的 `overlay_existing` 历史验证证据：
 
 ```text
 output/13g_segment105_base_projection_release_20260730/package
@@ -65,6 +68,22 @@ output/13g_segment105_base_projection_release_20260730/package
 | 总 S | 3529089 px |
 | S 连续层 | 0..93 |
 | Release totalMs | 986.358 |
+| RIP strict | PASS |
+
+13G-R1 新增物理层 fixture：
+
+```text
+output/SupportBaseProjectionPrepend30Layers
+```
+
+| 指标 | 结果 |
+|---|---:|
+| 原模型层数 | 16 |
+| 新增铺底层数 | 30 |
+| 输出总层数 | 46 |
+| layerPlacement | `prepend_below_model` |
+| modelLiftMm | 1.5 mm（fixture 层高 0.05 mm） |
+| projection_base | 34560 px |
 | RIP strict | PASS |
 
 关键层：
@@ -88,6 +107,7 @@ Debug production_effective_config_unit_tests: PASS
 Qt setting-help-metadata smoke: PASS
 Qt generated-effective-config smoke: PASS
 scripts/run_13g_support_base_projection_tests.ps1: PASS
+prepend fixture: 16 + 30 = 46 TIFF，projection_base > 0，RIP strict PASS
 Reality --inspect-model: 5/5 rotate_x_180_rotate_z_minus_90
 segment_105 Release/RIP: PASS
 git diff --check: PASS
@@ -97,7 +117,8 @@ git diff --check: PASS
 
 ```text
 internalVoid 仍是逐层二维闭合空洞，不是三维腔体追踪；
-baseProjection 只负责低层最大投影铺底，不能修复错误摆放；
+baseProjection 只负责模型下方最大投影铺底，不能修复错误摆放；
+Global 生产能力锁尚未单独准入 prepend_below_model，当前新增物理铺底以 Legacy 为正式入口；
 Legacy 仍为默认生产引擎，OpenVDB 仍为显式候选；
 未进行真实打印机、墨路、剥离力或 30 层工艺参数的物理认证；
 若正确姿态下仍出现非铺底区支撑断层，应另立跨层 cavity/support continuity Gate。

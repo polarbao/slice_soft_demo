@@ -1,7 +1,7 @@
 # DEV_13G 支撑投影铺底与层间连续性设计
 
 > 文档状态：DEV / IMPLEMENTED
-> 版本：v1.1
+> 版本：v1.2
 > 日期：2026-07-30
 
 ## 1. 模块边界
@@ -14,13 +14,16 @@ material composer：继续按既有优先级写 RGBWSV；
 report/UI：解释配置、有效范围和支撑来源。
 ```
 
-13G 不允许 support 模块自行旋转模型。
+13G 不允许 support 模块自行判断或旋转模型；物理铺底只对已经完成自动定向的模型做确定性的
+Z 向抬高。
 
 ## 2. 执行链路
 
 ```text
 Load model
 -> AutoOrient + FrontUp Gate + GroundToZ0
+-> Resolve base-projection layer placement
+-> prepend_below_model: lift model by N * layerThickness
 -> Build model masks
 -> Generate ordinary support masks
 -> Apply support shape policy
@@ -40,7 +43,8 @@ Load model
 struct SupportBaseProjectionConfig
 {
     bool enabled{false};
-    int layercount{30};
+    int layer_count{30};
+    std::string layer_placement{"overlay_existing"};
     std::string source{"max_support_footprint"};
 };
 ```
@@ -72,7 +76,7 @@ InternalVoid > UnsupportedIsland > FullVerticalProjection
 baseFootprint[p] = OR ordinarySupport[layer][p]
 ```
 
-应用：
+`overlay_existing` 历史兼容应用：
 
 ```text
 effectiveLayerCount = min(configuredLayerCount, grid.layerCount)
@@ -85,23 +89,41 @@ for layer in [0, effectiveLayerCount):
 
 随后既有 OuterVarnish priority 可清除与光油壳层冲突的 S。
 
-### 4.2 内存策略
+### 4.2 新增物理铺底层
+
+生产 UI 使用 `prepend_below_model`：
+
+```text
+prependedLayerCount = configuredLayerCount
+modelLiftMm = prependedLayerCount * layerThicknessMm
+model.z += modelLiftMm
+grid.layerCount = originalModelLayerCount + prependedLayerCount
+base projection range = [0, prependedLayerCount)
+```
+
+模型抬高发生在 grid 和 model mask 建立前。因此新增层具有真实 Z 坐标，进入 TIFF、manifest、
+preview、report 和 RIP Reader；不是只修改报告层数。旧配置缺少 `layerPlacement` 时仍走
+`overlay_existing`，避免历史 fixture 的 TIFF 数量变化。
+
+### 4.3 内存策略
 
 只保留一张 `pixelCount` 大小的 base footprint，不建立第二套三维体：
 
 ```text
 额外内存约 widthPx * heightPx bytes；
 时间复杂度 O(layerCount * pixelCount)；
-不增加 TIFF 数量。
+overlay_existing 不增加 TIFF 数量；
+prepend_below_model 增加 N 张生产 TIFF，新增内存和输出耗时与 N 线性相关。
 ```
 
-### 4.3 层号语义
+### 4.4 层号语义
 
 配置层数是数量，不是最大索引：
 
 ```text
 layerCount=30 -> layerIndex 0..29
 human layer number -> 1..30
+prepend_below_model -> 原模型 layerIndex 整体后移 30
 ```
 
 所有 UI、report 和测试统一使用该定义。
@@ -138,6 +160,9 @@ Reality 问题必须在 support base 之前关闭。建议 engine-neutral 甲片
     "effectiveEnabled": true,
     "configuredLayerCount": 30,
     "effectiveLayerRange": [0, 29],
+    "layerPlacement": "prepend_below_model",
+    "addedLayerCount": 30,
+    "modelLiftMm": 1.14,
     "source": "max_support_footprint",
     "footprintPixels": 12345,
     "printPixels": 234567
@@ -169,8 +194,10 @@ frontOrientationEvidence.sideLowerEnvelopeMm
 铺底层数 [30] 层
 ```
 
-控件修改写入 session Effective Config；一键场景切片和 Legacy/Global 显式入口必须消费同一
-配置。UI 不直接修改 support mask。
+控件修改写入 session Effective Config，并固定写入
+`layerPlacement=prepend_below_model`。一键场景切片的 Legacy 生产入口消费该配置。Global
+能力锁仍按其基线执行，未单独准入前不得声称支持新增物理铺底层。UI 不直接修改 support
+mask。
 
 ## 8. 测试
 
@@ -191,8 +218,9 @@ face-up synthetic nail 保持。
 
 ```text
 历史 fixture 缺省 TIFF hash 不变；
-显式 30 层 fixture 的 0..29 层有 projection base；
-第 30 层不含仅由 baseProjection 产生的 S；
+overlay_existing fixture 保持原 TIFF 层数；
+prepend_below_model fixture 总层数增加 30，0..29 层均为 projection base；
+原模型首层后移到 layerIndex 30；
 single material / texture profile 支撑 mask 一致；
 RIP strict PASS。
 ```
@@ -208,7 +236,8 @@ Release Package 验证，最后才扩展到五模型矩阵。
 |---|---|
 | 正反面启发式误翻转通用模型 | 仅薄壳甲片生效；输出置信度；无法判断 fail-visible |
 | 铺底材料量增加 | 默认 30 层可配置；报告 footprint/printPixels |
-| 旧 fixture 变化 | 字段缺省兼容关闭；生产 Profile 显式开启 |
+| 旧 fixture 变化 | 字段缺省兼容关闭；显式旧配置缺省 overlay_existing |
+| 新增 TIFF 增加 I/O | 报告 addedLayerCount/modelLiftMm；层数由 UI 显式配置 |
 | S 与 V 冲突 | 继续执行 Model > OuterVarnishShell > Support > Empty |
 | 把二维洞误当三维腔体 | report 明确 `layer_enclosed_2d`，跨层策略单独 Gate |
 

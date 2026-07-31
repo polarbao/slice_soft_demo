@@ -229,6 +229,7 @@ struct SupportBaseProjectionConfig
 {
     bool enabled{false};
     int layer_count{30};
+    std::string layer_placement{"overlay_existing"};
     std::string source{"max_support_footprint"};
 };
 

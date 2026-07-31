@@ -26,6 +26,8 @@ $slicerCli = Join-Path $BuildDir "$Configuration/slicer_cli.exe"
 $ripReader = Join-Path $BuildDir "$Configuration/rip_reader_test.exe"
 $configPath = "samples/configs/support/support_base_projection_30_layers.json"
 $packagePath = "output/SupportBaseProjection30Layers"
+$prependConfigPath = "samples/configs/support/support_base_projection_prepend_30_layers.json"
+$prependPackagePath = "output/SupportBaseProjectionPrepend30Layers"
 
 Assert-True (Test-Path -LiteralPath $slicerCli) "未找到 slicer_cli：$slicerCli"
 Assert-True (Test-Path -LiteralPath $ripReader) "未找到 rip_reader_test：$ripReader"
@@ -66,5 +68,39 @@ Assert-Equal `
   "projection_base report totals mismatch"
 Assert-True ($sliceReport.totals.supportPixels -gt 0) `
   "slice report expected support pixels"
+
+Write-Host "== 13G support base projection prepended physical layers"
+& $slicerCli --config $prependConfigPath
+if ($LASTEXITCODE -ne 0) {
+  throw "slicer_cli failed: support_base_projection_prepend_30_layers"
+}
+
+& $ripReader --package $prependPackagePath --quiet
+if ($LASTEXITCODE -ne 0) {
+  throw "rip_reader_test failed: SupportBaseProjectionPrepend30Layers"
+}
+
+$prependManifest = Read-Json "$prependPackagePath/manifest.json"
+$prependSupportReport = Read-Json "$prependPackagePath/reports/support_report.json"
+$prependBaseProjection = $prependSupportReport.baseProjection
+
+Assert-Equal $prependManifest.grid.layerCount 46 `
+  "prepend base projection must add 30 physical layers"
+Assert-Equal $prependBaseProjection.configuredLayerCount 30 `
+  "prepend configured layer count mismatch"
+Assert-Equal $prependBaseProjection.effectiveLayerCount 30 `
+  "prepend effective layer count mismatch"
+Assert-Equal $prependBaseProjection.effectiveLayerRange[0] 0 `
+  "prepend effective range start mismatch"
+Assert-Equal $prependBaseProjection.effectiveLayerRange[1] 29 `
+  "prepend effective range end mismatch"
+Assert-Equal $prependBaseProjection.layerPlacement "prepend_below_model" `
+  "prepend layer placement mismatch"
+Assert-Equal $prependBaseProjection.addedLayerCount 30 `
+  "prepend added layer count mismatch"
+Assert-Equal $prependBaseProjection.modelLiftMm 1.5 `
+  "prepend model lift mismatch"
+Assert-True ($prependBaseProjection.printPixels -gt 0) `
+  "prepend base projection expected S print pixels"
 
 Write-Host "13G support base projection tests complete."

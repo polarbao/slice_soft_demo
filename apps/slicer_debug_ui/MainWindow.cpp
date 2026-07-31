@@ -317,6 +317,7 @@ QJsonObject MakeDefaultSupportConfig()
                        {"baseProjection",
                         QJsonObject{{"enabled", true},
                                     {"layerCount", 30},
+                                    {"layerPlacement", "prepend_below_model"},
                                     {"source", "max_support_footprint"}}},
                        {"upper",
                         QJsonObject{{"enabled", false},
@@ -3075,6 +3076,9 @@ void MainWindow::ApplyProfileDefaultsToDocument(const QString& profileId, const 
     SetValue({"support", "internalVoid", "fillRule"}, QStringLiteral("all_internal_voids"));
     SetValue({"support", "baseProjection", "enabled"}, settings.support.baseprojectionenabled);
     SetValue({"support", "baseProjection", "layerCount"}, settings.support.baseprojectionlayercount);
+    SetValue(
+        {"support", "baseProjection", "layerPlacement"},
+        QStringLiteral("prepend_below_model"));
     SetValue(
         {"support", "baseProjection", "source"},
         QStringLiteral("max_support_footprint"));

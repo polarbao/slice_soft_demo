@@ -1,6 +1,7 @@
 #include "slicer_core/support/SupportBaseProjection.h"
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 namespace slicer_core
@@ -39,6 +40,30 @@ std::size_t ValidateMasks(
 
 }  // namespace
 
+SupportBaseProjectionPreparation ResolveSupportBaseProjectionPreparation(
+    const SupportBaseProjectionConfig& config,
+    const double layerThicknessMm)
+{
+    if (!std::isfinite(layerThicknessMm) || layerThicknessMm <= 0.0)
+    {
+        throw std::invalid_argument(
+            "support base projection layer thickness must be finite and positive");
+    }
+
+    SupportBaseProjectionPreparation preparation;
+    if (!config.enabled
+        || config.layer_count <= 0
+        || config.layer_placement != "prepend_below_model")
+    {
+        return preparation;
+    }
+
+    preparation.prepended_layer_count = config.layer_count;
+    preparation.model_lift_mm =
+        static_cast<double>(config.layer_count) * layerThicknessMm;
+    return preparation;
+}
+
 SupportBaseProjectionResult ApplySupportBaseProjection(
     const SupportBaseProjectionConfig& config,
     const std::vector<std::vector<std::uint8_t>>& modelMasks,
@@ -47,6 +72,7 @@ SupportBaseProjectionResult ApplySupportBaseProjection(
     SupportBaseProjectionResult result;
     result.enabled = config.enabled;
     result.configured_layer_count = config.layer_count;
+    result.layer_placement = config.layer_placement;
     const std::size_t pixelCount = ValidateMasks(modelMasks, supportMasks);
     if (!config.enabled
         || config.layer_count <= 0
@@ -117,6 +143,7 @@ SupportBaseProjectionResult ApplySupportBaseProjectionVolume(
     SupportBaseProjectionResult result;
     result.enabled = config.enabled;
     result.configured_layer_count = config.layer_count;
+    result.layer_placement = config.layer_placement;
     if (!config.enabled
         || config.layer_count <= 0
         || layerCount == 0

@@ -576,6 +576,7 @@ bool Stage13GBaseProjectionConfigParses()
             "    \"baseProjection\": {\n"
             "      \"enabled\": true,\n"
             "      \"layerCount\": 30,\n"
+            "      \"layerPlacement\": \"prepend_below_model\",\n"
             "      \"source\": \"max_support_footprint\"\n"
             "    }\n"
             "  }\n"));
@@ -590,7 +591,11 @@ bool Stage13GBaseProjectionConfigParses()
         && ExpectTrue(
             config.support.base_projection.source
                 == "max_support_footprint",
-            "13G base projection source parses");
+            "13G base projection source parses")
+        && ExpectTrue(
+            config.support.base_projection.layer_placement
+                == "prepend_below_model",
+            "13G base projection layer placement parses");
 }
 
 bool Stage13GRejectsInvalidBaseProjection()
@@ -627,7 +632,19 @@ bool Stage13GRejectsInvalidBaseProjection()
             "      \"source\": \"model_footprint\"\n"
             "    }\n"
             "  }\n",
-            "support.baseProjection.source must be max_support_footprint");
+            "support.baseProjection.source must be max_support_footprint")
+        && ConfigRejectedWith(
+            "stage_13g_invalid_layer_placement.json",
+            ",\n"
+            "  \"support\": {\n"
+            "    \"baseProjection\": {\n"
+            "      \"enabled\": true,\n"
+            "      \"layerCount\": 30,\n"
+            "      \"layerPlacement\": \"replace_model_layers\",\n"
+            "      \"source\": \"max_support_footprint\"\n"
+            "    }\n"
+            "  }\n",
+            "support.baseProjection.layerPlacement must be overlay_existing or prepend_below_model");
 }
 
 bool Stage12ASurfaceVarnishDisabledAcceptsZeroThickness()

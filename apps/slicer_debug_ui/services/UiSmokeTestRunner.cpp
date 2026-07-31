@@ -4291,6 +4291,8 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
         || support.value("internalVoid").toObject().value("minAreaPx").toInt() != 24
         || !baseProjection.value("enabled").toBool()
         || baseProjection.value("layerCount").toInt() != 30
+        || baseProjection.value("layerPlacement").toString()
+            != "prepend_below_model"
         || baseProjection.value("source").toString()
             != "max_support_footprint"
         || !generated.value("surfaceVarnish").toObject().value("enabled").toBool()

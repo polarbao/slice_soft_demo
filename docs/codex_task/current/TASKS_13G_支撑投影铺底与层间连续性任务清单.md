@@ -1,7 +1,7 @@
 # TASKS 13G 支撑投影铺底与层间连续性任务清单
 
-> 状态：13G-00..07 COMPLETE
-> 版本：v1.1
+> 状态：13G-00..07、13G-R1 COMPLETE
+> 版本：v1.2
 > 日期：2026-07-30
 
 ## 1. 固定顺序
@@ -31,6 +31,7 @@
 | 13G-05 | 单元、兼容、材料一致性和 RIP | COMPLETE | 旧配置缺省关闭，新 fixture/RIP PASS |
 | 13G-06 | segment_105 Release 单模型验证 | COMPLETE | TIFF/RIP/report PASS |
 | 13G-07 | Reality 五模型轻量矩阵与收口 | COMPLETE | 5/5 只读定向矩阵、单模型 Release 和报告完成 |
+| 13G-R1 | 生产铺底改为新增模型下方物理层 | COMPLETE | UI 写入 prepend_below_model；总 TIFF 层数 +N；旧 overlay fixture 兼容；RIP PASS |
 
 ## 3. 停止条件
 

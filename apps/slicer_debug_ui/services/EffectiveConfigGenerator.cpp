@@ -142,6 +142,9 @@ void ApplySettings(QJsonObject& root, const SliceSettingsState& settings)
         QStringLiteral("layerCount"),
         settings.support.baseprojectionlayercount);
     baseprojection.insert(
+        QStringLiteral("layerPlacement"),
+        QStringLiteral("prepend_below_model"));
+    baseprojection.insert(
         QStringLiteral("source"),
         QStringLiteral("max_support_footprint"));
     support.insert(QStringLiteral("baseProjection"), baseprojection);

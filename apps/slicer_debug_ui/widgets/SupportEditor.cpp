@@ -54,9 +54,9 @@ SupportEditor::SupportEditor(ConfigDocument* document, QWidget* parent) : QWidge
     xy_dilation_->setToolTip("支撑区域 XY 方向膨胀像素数，用于补偿边缘支撑宽度。");
     connectivity_->setToolTip("孤岛检测连通性，通常使用 4 或 8。");
     m_baseProjectionEnabledCheck->setToolTip(
-        "将普通支撑跨层最大投影写入前 N 层 S 通道；不会覆盖模型或外侧光油。");
+        "在模型下方新增 N 个物理层，并将普通支撑跨层最大投影写入这些层的 S 通道；不会覆盖模型或外侧光油。");
     m_baseProjectionLayerCountSpin->setToolTip(
-        "铺底层数是数量：30 表示 layerIndex 0..29。");
+        "铺底层数是新增物理层数量：30 表示新增 layerIndex 0..29，模型整体上移 30 层。");
 
     form->addRow(enabled_);
     form->addRow("模式", mode_);
@@ -109,6 +109,9 @@ SupportEditor::SupportEditor(ConfigDocument* document, QWidget* parent) : QWidge
                 document_->setValue(
                     {"support", "baseProjection", "source"},
                     "max_support_footprint");
+                document_->setValue(
+                    {"support", "baseProjection", "layerPlacement"},
+                    "prepend_below_model");
             }
         });
     connect(
@@ -122,6 +125,9 @@ SupportEditor::SupportEditor(ConfigDocument* document, QWidget* parent) : QWidge
                 document_->setValue(
                     {"support", "baseProjection", "layerCount"},
                     value);
+                document_->setValue(
+                    {"support", "baseProjection", "layerPlacement"},
+                    "prepend_below_model");
             }
         });
 }

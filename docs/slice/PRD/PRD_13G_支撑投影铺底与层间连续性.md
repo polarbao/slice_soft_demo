@@ -1,7 +1,7 @@
 # PRD_13G 支撑投影铺底与层间连续性
 
 > 文档状态：PRD / IMPLEMENTED
-> 版本：v1.1
+> 版本：v1.2
 > 日期：2026-07-30
 
 ## 1. 背景
@@ -14,7 +14,7 @@
 
 ```text
 1. 所有甲片在支撑计算前必须通过正面朝 +Z Gate；
-2. 支撑底部可按最大支撑投影铺设固定层数的 S 材料；
+2. 支撑底部可按最大支撑投影新增固定层数的 S 材料物理铺底；
 3. 默认铺底 30 层，用户可在 UI 和配置中调整；
 4. 内部支撑在正确姿态下保持可解释、连续，不出现无原因断层；
 5. 每层可区分 lower、internal_void 和 projection_base 支撑来源；
@@ -45,8 +45,9 @@ frontUp 无法确定时预检告警，不静默声称通过。
 
 ```text
 默认 layerCount=30；
-layerIndex 0..29 应用铺底；
-layerIndex 30 不再由铺底规则自动写入；
+新增 layerIndex 0..29 作为模型下方的独立铺底层；
+原模型整体上移 30 层，输出 TIFF 总层数增加 30；
+历史配置可继续选择只覆盖既有层、不增加总层数的兼容语义；
 铺底只写 S；
 Model > OuterVarnishShell > Support > Empty 保持不变。
 ```
@@ -86,6 +87,7 @@ Model > OuterVarnishShell > Support > Empty 保持不变。
     "baseProjection": {
       "enabled": true,
       "layerCount": 30,
+      "layerPlacement": "prepend_below_model",
       "source": "max_support_footprint"
     }
   }
@@ -98,9 +100,10 @@ Model > OuterVarnishShell > Support > Empty 保持不变。
 enabled 必须为 bool；
 layerCount 必须为 0..1000 整数；
 source 当前只接受 max_support_footprint；
+layerPlacement 接受 prepend_below_model 或 overlay_existing；
 enabled=true 且 layerCount=0 时 effectiveEnabled=false，并输出提示；
-生产 Profile 默认 true/30；
-历史 fixture 缺省保持兼容关闭。
+生产 UI 默认 true/30/prepend_below_model；
+历史 fixture 缺省保持兼容关闭，已显式启用但未写 layerPlacement 时保持 overlay_existing。
 ```
 
 ## 5. 业务规则
@@ -109,10 +112,12 @@ enabled=true 且 layerCount=0 时 effectiveEnabled=false，并输出提示；
 1. 先完成模型定向和落台，再采样 model mask；
 2. 先生成普通支撑并完成支撑形态策略；
 3. 对最终普通支撑求跨层最大投影；
-4. 将最大投影写入前 N 层；
-5. 不覆盖模型和优先级更高的光油壳层；
-6. 铺底结束不等于内部支撑结束；
-7. internalVoid 仍只解释逐层二维闭合空洞，直到后续 Gate 明确扩展。
+4. prepend_below_model 在模型下方预留 N 个物理层并把模型整体抬高 N * layerThickness；
+5. 将最大投影写入新增的前 N 层；
+6. overlay_existing 仅作为历史兼容模式，在既有前 N 层叠加且不增加层数；
+7. 不覆盖模型和优先级更高的光油壳层；
+8. 铺底结束不等于内部支撑结束；
+9. internalVoid 仍只解释逐层二维闭合空洞，直到后续 Gate 明确扩展。
 ```
 
 ## 6. 非目标
@@ -132,6 +137,7 @@ enabled=true 且 layerCount=0 时 effectiveEnabled=false，并输出提示；
 Reality 五模型 front-up Gate 有确定证据；
 配置、core、report、UI、fixture 和真实模型矩阵通过；
 默认生产场景使用 30 层铺底；
+启用 prepend_below_model 后输出总层数精确增加 N；
 旧 fixture 未显式启用时 TIFF 不变；
 RIP strict PASS；
 阶段报告披露 internalVoid 仍为二维规则的边界。

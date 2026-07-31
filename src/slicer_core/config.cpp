@@ -468,6 +468,10 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
                 baseProjection.value(
                     "layerCount",
                     config.support.base_projection.layer_count);
+            config.support.base_projection.layer_placement =
+                baseProjection.value(
+                    "layerPlacement",
+                    config.support.base_projection.layer_placement);
             config.support.base_projection.source =
                 baseProjection.value(
                     "source",
@@ -739,6 +743,14 @@ void validate_slice_config(const SliceConfig& config) {
     {
         throw std::runtime_error(
             "support.baseProjection.source must be max_support_footprint");
+    }
+    if (config.support.base_projection.layer_placement
+            != "overlay_existing"
+        && config.support.base_projection.layer_placement
+            != "prepend_below_model")
+    {
+        throw std::runtime_error(
+            "support.baseProjection.layerPlacement must be overlay_existing or prepend_below_model");
     }
     if (config.material.material_channel != "auto" && config.material.material_channel != "RGB"
         && config.material.material_channel != "W" && config.material.material_channel != "V") {

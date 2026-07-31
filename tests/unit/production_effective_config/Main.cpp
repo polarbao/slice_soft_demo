@@ -424,8 +424,12 @@ bool TestLegacyPreservesExistingProfile()
                 && effectiveBaseProjection
                        .value(QStringLiteral("source"))
                        .toString()
-                    == QStringLiteral("max_support_footprint"),
-            "legacy production settings enable the 30-layer support base")
+                    == QStringLiteral("max_support_footprint")
+                && effectiveBaseProjection
+                       .value(QStringLiteral("layerPlacement"))
+                       .toString()
+                    == QStringLiteral("prepend_below_model"),
+            "legacy production settings prepend the 30-layer support base")
         && ExpectTrue(
             effectiveRoot.value(QStringLiteral("materialProcessProfile"))
                     .toObject()

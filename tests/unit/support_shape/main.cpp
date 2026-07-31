@@ -241,6 +241,49 @@ bool DisabledBaseProjectionDoesNotChangeSupport()
             "disabled base preserves all support masks");
 }
 
+bool PrependBaseProjectionReservesPhysicalLayers()
+{
+    slicer_core::SupportBaseProjectionConfig config;
+    config.enabled = true;
+    config.layer_count = 30;
+    config.layer_placement = "prepend_below_model";
+
+    const slicer_core::SupportBaseProjectionPreparation preparation =
+        slicer_core::ResolveSupportBaseProjectionPreparation(
+            config,
+            0.038);
+
+    return ExpectEqual(
+               preparation.prepended_layer_count,
+               30,
+               "prepend base reserves configured layers")
+        && ExpectTrue(
+            preparation.model_lift_mm > 1.139999
+                && preparation.model_lift_mm < 1.140001,
+            "prepend base lifts the model by layer count times layer height");
+}
+
+bool OverlayBaseProjectionDoesNotReservePhysicalLayers()
+{
+    slicer_core::SupportBaseProjectionConfig config;
+    config.enabled = true;
+    config.layer_count = 30;
+    config.layer_placement = "overlay_existing";
+
+    const slicer_core::SupportBaseProjectionPreparation preparation =
+        slicer_core::ResolveSupportBaseProjectionPreparation(
+            config,
+            0.038);
+
+    return ExpectEqual(
+               preparation.prepended_layer_count,
+               0,
+               "overlay base does not reserve layers")
+        && ExpectTrue(
+            preparation.model_lift_mm == 0.0,
+            "overlay base does not lift the model");
+}
+
 }  // namespace
 
 int main()
@@ -257,6 +300,10 @@ int main()
          BaseProjectionUsesMaximumSupportFootprint},
         {"disabled_base_projection_does_not_change_support",
          DisabledBaseProjectionDoesNotChangeSupport},
+        {"prepend_base_projection_reserves_physical_layers",
+         PrependBaseProjectionReservesPhysicalLayers},
+        {"overlay_base_projection_does_not_reserve_physical_layers",
+         OverlayBaseProjectionDoesNotReservePhysicalLayers},
     };
 
     for (const auto& test : tests)
