@@ -687,29 +687,62 @@ try
             -Encoding UTF8
 
         $backupDir = $null
+        $deployInPlace = $false
         if (Test-Path -LiteralPath $resolvedRuntimeDir)
         {
             $backupDir = "$resolvedRuntimeDir.previous.$([DateTime]::UtcNow.Ticks)"
             AssertPathUnderRepo -RepoRoot $repoRoot -Path $backupDir -Purpose "Runtime backup directory"
             try
             {
-                Move-Item -LiteralPath $resolvedRuntimeDir -Destination $backupDir
+                [System.IO.Directory]::Move($resolvedRuntimeDir, $backupDir)
             }
             catch
             {
-                throw "Runtime directory cannot be replaced. Close any running SliceSoft UI/CLI from '$resolvedRuntimeDir' and retry. Original error: $($_.Exception.Message)"
+                Write-Warning (
+                    "Runtime directory cannot be atomically replaced; " +
+                    "deploying the immutable payload in place while preserving output. " +
+                    "Original error: $($_.Exception.Message)")
+                $backupDir = $null
+                $deployInPlace = $true
             }
         }
 
         try
         {
-            Move-Item -LiteralPath $stagingDir -Destination $resolvedRuntimeDir
+            if ($deployInPlace)
+            {
+                Get-ChildItem -LiteralPath $stagingDir -Force |
+                    Copy-Item `
+                        -Destination $resolvedRuntimeDir `
+                        -Recurse `
+                        -Force
+            }
+            else
+            {
+                [System.IO.Directory]::Move($stagingDir, $resolvedRuntimeDir)
+
+                if ($null -ne $backupDir)
+                {
+                    $previousOutputDir = Join-Path $backupDir "output"
+                    if (Test-Path -LiteralPath $previousOutputDir -PathType Container)
+                    {
+                        $runtimeOutputDir = Join-Path $resolvedRuntimeDir "output"
+                        if (Test-Path -LiteralPath $runtimeOutputDir)
+                        {
+                            throw "Fresh runtime unexpectedly contains an output directory: $runtimeOutputDir"
+                        }
+                        [System.IO.Directory]::Move(
+                            $previousOutputDir,
+                            $runtimeOutputDir)
+                    }
+                }
+            }
         }
         catch
         {
             if ($null -ne $backupDir -and -not (Test-Path -LiteralPath $resolvedRuntimeDir))
             {
-                Move-Item -LiteralPath $backupDir -Destination $resolvedRuntimeDir
+                [System.IO.Directory]::Move($backupDir, $resolvedRuntimeDir)
             }
             throw
         }
