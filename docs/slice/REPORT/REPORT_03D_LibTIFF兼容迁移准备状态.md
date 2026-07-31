@@ -1,6 +1,6 @@
-# REPORT_03D LibTIFF 兼容迁移准备状态
+# REPORT_03D LibTIFF 兼容迁移当前状态
 
-> 状态：PREPARATION COMPLETE / IMPLEMENTATION NOT STARTED
+> 状态：03D-01 COMPLETE / 03D-02 READY
 > 日期：2026-07-31
 > 当前优先级：P0
 
@@ -45,7 +45,36 @@ R5 前不切换默认；
 LibTIFF 为选定目标，OpenImageIO 不采用。
 ```
 
-## 3. 现有性能证据
+## 3. 03D-01 实现与性能证据
+
+03D-01 已新增：
+
+```text
+tiff_writer_contract_unit_tests：冻结 required tags、stripped/tiled 布局、边界 tile 255 padding、
+decoded RGBWSV 像素和当前错误文本；
+tiff_writer_benchmark：只计 write_rgbwsv_tiff 调用，不包含像素生成、Reader 校验和 package/preview；
+Run03DTiffWriterBaseline.ps1：Release >=5 次、合同测试、benchmark JSON 和 RIP strict Gate；
+CTest/CMake target：均已接入。
+```
+
+2026-07-31 本机 Release 5 次基线：
+
+| 后端 | 存储 | 输入 | p50 | p95 | 文件字节 | 写后工作集 | Writer staging 估算 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| handwritten | stripped | 1024 x 2048 x 6 | 9.574 ms | 11.217 ms | 12,583,406 | 16,982,016 B | 12,582,912 B |
+| handwritten | tiled | 1024 x 2048 x 6 | 24.057 ms | 43.504 ms | 12,583,418 | 17,043,456 B | 12,582,912 B |
+
+原始 JSON 写入被忽略的运行输出：
+
+```text
+output/benchmarks/03d_01/tiff_writer_handwritten_baseline.json
+schema=slicesoft.tiff_writer_benchmark.03d.1
+scope=writer_only
+```
+
+工作集采样发生在测量写入完成、Reader 校验开始之前；JSON 中的
+`peakWorkingSetBytes` 是整个 benchmark 进程累计峰值，只作诊断，不作为每个 case 的独立峰值。
+03D-06 若比较后端峰值，必须让各后端/存储 case 运行在独立进程中。
 
 当前报告中的 TIFF 保存不是主要切片计算，但在真实 package 中不可忽略：
 
@@ -54,8 +83,8 @@ LibTIFF 为选定目标，OpenImageIO 不采用。
 13F Reality Release：约 820-1310 ms；
 ```
 
-这些数字来自不同模型、构建和矩阵，不能直接用来承诺 LibTIFF 改善比例。03D-01 必须重新
-建立同 buffer、同机器、同磁盘的 Writer-only 基线。
+这些 package 数字与 03D-01 的 Writer-only 数字口径不同，不能直接互相替代。后续 03D-06
+必须在同 buffer、同机器、同磁盘上重新比较 handwritten 与 LibTIFF。
 
 ## 4. 准备度
 
@@ -69,9 +98,13 @@ LibTIFF 为选定目标，OpenImageIO 不采用。
 | 功能/负向矩阵 | READY |
 | 性能 Gate | READY |
 | 依赖修改授权 | NOT GRANTED |
-| 代码实现 | NOT STARTED |
+| 03D-01 合同 fixture | COMPLETE |
+| 03D-01 Writer-only Release 基线 | COMPLETE |
+| 03D-02 依赖修改授权 | NOT GRANTED |
+| LibTIFF 代码实现 | NOT STARTED |
 
 ## 5. 下一步
 
-唯一下一任务为 `03D-01 当前合同与 Writer-only 基线`。它不改依赖、不改默认 Writer，
-完成后再由用户决定是否进入 03D-02。
+`03D-01 当前合同与 Writer-only 基线` 已完成。下一候选任务为 `03D-02
+vcpkg/CMake/Runtime 依赖接入`，必须等待用户明确授权；在此之前不得安装、链接或部署
+LibTIFF，也不得切换默认 Writer。

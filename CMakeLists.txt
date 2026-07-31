@@ -352,6 +352,12 @@ add_executable(texture_fill_partition_release_benchmark
 
 target_link_libraries(texture_fill_partition_release_benchmark PRIVATE slicer_core)
 
+add_executable(tiff_writer_benchmark
+    apps/tiff_writer_benchmark/Main.cpp
+)
+
+target_link_libraries(tiff_writer_benchmark PRIVATE slicer_core)
+
 add_executable(texture_fill_partition_positive_matrix
     apps/texture_fill_partition_positive_matrix/Main.cpp
 )
@@ -448,6 +454,12 @@ add_executable(tiff_layer_source_unit_tests
 )
 
 target_link_libraries(tiff_layer_source_unit_tests PRIVATE slicer_core)
+
+add_executable(tiff_writer_contract_unit_tests
+    tests/unit/tiff_writer_contract/Main.cpp
+)
+
+target_link_libraries(tiff_writer_contract_unit_tests PRIVATE slicer_core)
 
 add_executable(tiff_layer_cache_unit_tests
     tests/unit/tiff_layer_cache/Main.cpp
@@ -856,6 +868,7 @@ add_test(NAME output_resolution_config_unit_tests COMMAND output_resolution_conf
 add_test(NAME preview_output_policy_unit_tests COMMAND preview_output_policy_unit_tests)
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
 add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
+add_test(NAME tiff_writer_contract_unit_tests COMMAND tiff_writer_contract_unit_tests)
 add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)
 add_test(NAME texture_fill_partition_semantic_preview_unit_tests COMMAND texture_fill_partition_semantic_preview_unit_tests)
 add_test(NAME material_preview_composer_unit_tests COMMAND material_preview_composer_unit_tests)

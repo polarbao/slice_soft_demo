@@ -203,6 +203,21 @@ To republish already-built artifacts without rebuilding:
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release -DeployOnly
 ```
 
+## 03D TIFF Writer Baseline
+
+Use this Release-only gate to freeze the handwritten Writer before any LibTIFF dependency or backend work:
+
+```powershell
+.\scripts\Run03DTiffWriterBaseline.ps1 `
+  -BuildDir build-slicesoft/main `
+  -Config Release `
+  -Iterations 5
+```
+
+The benchmark measures only `write_rgbwsv_tiff` with a pre-generated buffer. It must keep the handwritten
+backend, exact RGBWSV decode, stripped/tiled tags, 255 tile padding, current errors, and RIP strict PASS.
+Do not compare these numbers with full-package elapsed time.
+
 ## Baseline Gate
 
 Each meaningful refactor step must pass:

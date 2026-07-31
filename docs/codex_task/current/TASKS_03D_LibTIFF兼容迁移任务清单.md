@@ -1,12 +1,12 @@
 # TASKS_03D LibTIFF 兼容迁移任务清单
 
-> 文档状态：READY / PRIORITY P0 / IMPLEMENTATION NOT STARTED
+> 文档状态：03D-01 COMPLETE / PRIORITY P0
 > 日期：2026-07-31
 > 规则：每个原子任务完成后单独验证和提交；不得一次性切换默认后端
 
 ## 03D-01 当前合同与 Writer-only 基线
 
-状态：READY / NEXT
+状态：COMPLETE / 2026-07-31
 
 ```text
 增加 tag contract fixture；
@@ -24,9 +24,19 @@ rip_reader_test；
 git diff --check。
 ```
 
+实际证据：
+
+```text
+tiff_writer_contract_unit_tests：Release PASS；
+Writer-only benchmark：Release、5 次、stripped/tiled 均 decodedPixelsExact=true；
+rip_reader_test：GoldenMaterialProcessTop2 PASS；
+默认 Writer：仍为 handwritten；
+LibTIFF/CMake link/Runtime DLL：未接入。
+```
+
 ## 03D-02 vcpkg/CMake/Runtime 依赖接入
 
-状态：PREPARED / WAIT 03D-01
+状态：READY / WAIT EXPLICIT AUTHORIZATION
 
 ```text
 锁定 builtin-baseline；
