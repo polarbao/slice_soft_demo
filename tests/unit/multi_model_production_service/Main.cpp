@@ -129,10 +129,18 @@ slicer_core::MultiModelScene MakeThreeInstanceScene(
     scene.scenerevision = 1U;
     scene.resolvedprofileid =
         profile.material_process_profile.name;
+    const double modelWidth =
+        model.bbox_mm.max.x - model.bbox_mm.min.x;
+    const double modelHeight =
+        model.bbox_mm.max.y - model.bbox_mm.min.y;
+    constexpr double marginMm{2.0};
+    constexpr double gapMm{2.0};
     scene.buildvolume.source =
         slicer_core::BuildVolumeSource::Fixture;
-    scene.buildvolume.widthmm = 80.0;
-    scene.buildvolume.heightmm = 40.0;
+    scene.buildvolume.widthmm =
+        marginMm * 2.0 + modelWidth * 3.0 + gapMm * 2.0;
+    scene.buildvolume.heightmm =
+        marginMm * 2.0 + modelHeight;
     scene.buildvolume.origin =
         slicer_core::BuildVolumeOrigin::LowerLeft;
     scene.buildvolume.xdirection =
@@ -169,12 +177,20 @@ slicer_core::MultiModelScene MakeThreeInstanceScene(
             modelPath.generic_string();
         item.instance.sourcebboxmm = model.bbox_mm;
         item.instance.transform.translatexmm =
-            static_cast<double>(index) * 5.0;
+            marginMm
+            - model.bbox_mm.min.x
+            + static_cast<double>(index) * (modelWidth + gapMm);
+        item.instance.transform.translateymm =
+            marginMm - model.bbox_mm.min.y;
         item.instance.effectivebboxmm = model.bbox_mm;
         item.instance.effectivebboxmm.min.x +=
             item.instance.transform.translatexmm;
         item.instance.effectivebboxmm.max.x +=
             item.instance.transform.translatexmm;
+        item.instance.effectivebboxmm.min.y +=
+            item.instance.transform.translateymm;
+        item.instance.effectivebboxmm.max.y +=
+            item.instance.transform.translateymm;
         item.requestedtransform = item.instance.transform;
         item.effectivetransform = item.instance.transform;
         item.admissionstatus =

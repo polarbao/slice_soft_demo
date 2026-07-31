@@ -1,6 +1,6 @@
 # TASKS_03D LibTIFF 兼容迁移任务清单
 
-> 文档状态：03D-01/02/03/04 COMPLETE / 03D-05 READY / PRIORITY P0
+> 文档状态：03D-01/02/03/04/05 COMPLETE / 03D-06 READY / PRIORITY P0
 > 日期：2026-07-31
 > 规则：每个原子任务完成后单独验证和提交；不得一次性切换默认后端
 
@@ -104,7 +104,7 @@ LibTIFF tiled package 与 RIP strict PASS；默认 Writer 仍为 handwritten。
 
 ## 03D-05 等价、坏包与共享 Package Gate
 
-状态：READY / 03D-04 GATE PASSED
+状态：COMPLETE / 2026-07-31
 
 ```text
 decoded pixel exact；
@@ -114,9 +114,21 @@ Legacy/Global/scene package；
 原子发布。
 ```
 
+实际证据：
+
+```text
+stripped/tiled 六类 RGBWSV buffer 的 decoded pixels、checksum、stats 和 required tags 等价；
+Reader 支持 TIFF 合法的双 SHORT 内联数组，不放宽数值与协议校验；
+handwritten 与 LibTIFF 的 Writer/Legacy/Global/scene 共享 Package CTest 各 8/8 PASS；
+两后端 Legacy stripped/tiled 实际 package 与 RIP strict PASS；
+18/18 bad package 稳定错误码 PASS；
+03D-04 原子发布和失败清理继续纳入 Gate；
+默认 Writer 仍为 handwritten。
+```
+
 ## 03D-06 Release 性能矩阵
 
-状态：PREPARED / WAIT 03D-05
+状态：READY / 03D-05 GATE PASSED
 
 ```text
 同 buffer、同机器、同磁盘；
@@ -125,6 +137,10 @@ stripped/tiled；
 p50/p95/peak memory；
 形成 GO DEFAULT / GO OPTIONAL / NO-GO。
 ```
+
+准备依据：`docs/slice/DOC/DOC_PREP_03D_06_LibTIFF性能矩阵准备.md`。现有 benchmark 的
+backend 硬编码、独立进程、冷暖目录和矩阵汇总均已列为 03D-06 实现项；不得用 03D-05
+完整 package 日志替代 Writer-only 性能证据。
 
 ## 03D-07 默认切换与阶段收口
 

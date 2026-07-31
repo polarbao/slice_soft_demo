@@ -133,12 +133,15 @@ std::vector<std::uint16_t> read_u16_array(
     }
     std::vector<std::uint16_t> result;
     result.reserve(entry.count);
-    if (entry.count == 1) {
-        result.push_back(read_inline_u16(entry));
+    const std::size_t byteCount = static_cast<std::size_t>(entry.count) * type_size(entry.type);
+    if (byteCount <= 4U) {
+        for (std::uint32_t i{0}; i < entry.count; ++i) {
+            result.push_back(static_cast<std::uint16_t>(
+                (entry.value_or_offset >> (i * 16U)) & 0xffffU));
+        }
         return result;
     }
-    const std::size_t byte_count = static_cast<std::size_t>(entry.count) * type_size(entry.type);
-    if (static_cast<std::size_t>(entry.value_or_offset) + byte_count > data.size()) {
+    if (static_cast<std::size_t>(entry.value_or_offset) + byteCount > data.size()) {
         throw std::runtime_error("TIFF tag data outside file: " + std::to_string(tag));
     }
     for (std::uint32_t i{0}; i < entry.count; ++i) {
@@ -157,15 +160,18 @@ std::vector<std::uint32_t> read_u32_array(
     }
     std::vector<std::uint32_t> result;
     result.reserve(entry.count);
-    if (entry.count == 1) {
-        result.push_back(
-            entry.type == TiffType::short_value
-                ? read_inline_u16(entry)
-                : entry.value_or_offset);
+    const std::size_t byteCount = static_cast<std::size_t>(entry.count) * type_size(entry.type);
+    if (byteCount <= 4U) {
+        for (std::uint32_t i{0}; i < entry.count; ++i) {
+            result.push_back(
+                entry.type == TiffType::short_value
+                    ? static_cast<std::uint16_t>(
+                          (entry.value_or_offset >> (i * 16U)) & 0xffffU)
+                    : entry.value_or_offset);
+        }
         return result;
     }
-    const std::size_t byte_count = static_cast<std::size_t>(entry.count) * type_size(entry.type);
-    if (static_cast<std::size_t>(entry.value_or_offset) + byte_count > data.size()) {
+    if (static_cast<std::size_t>(entry.value_or_offset) + byteCount > data.size()) {
         throw std::runtime_error("TIFF tag data outside file: " + std::to_string(tag));
     }
     for (std::uint32_t i{0}; i < entry.count; ++i) {

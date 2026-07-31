@@ -1,6 +1,6 @@
 # REPORT_03D LibTIFF 兼容迁移当前状态
 
-> 状态：03D-01/02/03/04 COMPLETE / 03D-05 READY
+> 状态：03D-01/02/03/04/05 COMPLETE / 03D-06 READY
 > 日期：2026-07-31
 > 当前优先级：P0
 
@@ -116,7 +116,21 @@ LibTIFF 对部分小整数 tag 选择合法 `SHORT`，手写后端固定为 `LON
 按 TIFF 合同接受 `SHORT/LONG` 并继续校验相同数值、必需 tag 和逐字节像素，不改变
 RGBWSV、uint8、`black_is_print` 或无压缩协议。
 
-## 6. 准备度
+## 6. 03D-05 兼容矩阵证据
+
+```text
+handwritten 与 LibTIFF 的 stripped/tiled 六类确定性 RGBWSV buffer 等价；
+decoded pixels、channel checksum、stats、required tags、Classic TIFF 和单 IFD PASS；
+Reader 已正确解包总负载不超过 4 字节的 TIFF 内联 SHORT 数组；
+两后端 Writer/Legacy/Global/scene 共享 Package CTest 各 8/8 PASS；
+两后端 Legacy stripped/tiled package 与 RIP strict PASS；
+18/18 bad package 稳定错误码 PASS；
+默认 Writer 仍为 handwritten。
+```
+
+详细证据见 `REPORT_03D_05_兼容矩阵与共享PackageGate.md`。
+
+## 7. 准备度
 
 | 项目 | 状态 |
 |---|---|
@@ -134,10 +148,11 @@ RGBWSV、uint8、`black_is_print` 或无压缩协议。
 | 03D-03 Writer 接口与 stripped | COMPLETE |
 | LibTIFF stripped 代码实现 | COMPLETE |
 | 03D-04 tiled 与错误模型 | COMPLETE |
-| 03D-05 等价、坏包与共享 Package Gate | READY |
+| 03D-05 等价、坏包与共享 Package Gate | COMPLETE / PASS |
+| 03D-06 Release 性能矩阵 | READY |
 
-## 7. 下一步
+## 8. 下一步
 
-下一原子任务为 `03D-05 等价、坏包与共享 Package Gate`。保持 handwritten 默认，建立
-decoded pixel/tag、RIP strict/bad package、Legacy/Global/scene package 和原子发布完整矩阵；
-不得提前执行性能 Gate、压缩或默认切换。
+下一原子任务为 `03D-06 Release 性能矩阵`。03D-05 已完成 decoded pixel/tag、
+RIP strict/bad package、Legacy/Global/scene package 和原子发布完整矩阵。03D-06 必须使用
+同 buffer、同机器、同磁盘和独立进程比较两后端；不得实现压缩或提前默认切换。

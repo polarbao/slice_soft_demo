@@ -245,6 +245,17 @@ The LibTIFF lane must report `stripped=true` and `tiled=true`. Standard tile dim
 LibTIFF; historical nonstandard tile fixtures retain the handwritten compatibility route. The strict Reader accepts legal TIFF `SHORT` or `LONG` encodings for unsigned dimension/count tags
 and still requires exact numeric values and RGBWSV pixels.
 
+`03D-05` closes the functional compatibility gate for both configured build lanes:
+
+```powershell
+.\scripts\Run03DTiffCompatibilityGate.ps1 -Config Release
+```
+
+The gate builds and runs the Writer equivalence tests, shared Legacy/Global/scene package tests, actual
+stripped/tiled packages, RIP strict checks, and the fixed bad-package error-code matrix. Its output under
+`output/benchmarks/03d_05` is local evidence and remains ignored. A PASS authorizes only `03D-06`
+performance measurement; it does not authorize changing the default Writer.
+
 ## Baseline Gate
 
 Each meaningful refactor step must pass:

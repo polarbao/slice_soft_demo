@@ -559,6 +559,12 @@ add_executable(tiff_writer_backend_unit_tests
 
 target_link_libraries(tiff_writer_backend_unit_tests PRIVATE slicer_core)
 
+add_executable(tiff_writer_equivalence_unit_tests
+    tests/unit/tiff_writer_equivalence/Main.cpp
+)
+
+target_link_libraries(tiff_writer_equivalence_unit_tests PRIVATE slicer_core)
+
 add_executable(tiff_layer_cache_unit_tests
     tests/unit/tiff_layer_cache/Main.cpp
 )
@@ -969,6 +975,7 @@ add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
 add_test(NAME tiff_writer_contract_unit_tests COMMAND tiff_writer_contract_unit_tests)
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)
+add_test(NAME tiff_writer_equivalence_unit_tests COMMAND tiff_writer_equivalence_unit_tests)
 add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)
 add_test(NAME texture_fill_partition_semantic_preview_unit_tests COMMAND texture_fill_partition_semantic_preview_unit_tests)
 add_test(NAME material_preview_composer_unit_tests COMMAND material_preview_composer_unit_tests)

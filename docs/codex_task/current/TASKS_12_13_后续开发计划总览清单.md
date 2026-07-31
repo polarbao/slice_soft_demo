@@ -1,10 +1,10 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v3.0
+> 版本：v3.1
 > 更新日期：2026-07-31
 > 当前代码阶段：13G-00..07 COMPLETE；Stage 12/13 既有完成项保持不变
-> 当前推荐任务：03D-05 READY
+> 当前推荐任务：03D-06 READY
 > 后续顺序：03D -> 12E-09D -> 12E-10A..D；13F-R1-01..05 保持独立准备
 
 ## 1. 文档职责
@@ -49,7 +49,7 @@
 | 工作流 | 当前状态 | 剩余数量 | 当前动作 |
 |---|---|---:|---|
 | 12E-09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 0 | 保持回归 |
-| 03D-LIBTIFF Writer 兼容迁移 | 03D-01..04 COMPLETE / 03D-05 READY | 3 | 执行完整兼容矩阵；默认 Writer 暂不切换 |
+| 03D-LIBTIFF Writer 兼容迁移 | 03D-01..05 COMPLETE / 03D-06 READY | 2 | 执行 Release 性能矩阵；默认 Writer 暂不切换 |
 | 12E-09D 生产纹理与单材料控制 | 09D-01..06 PREPARED | 6 | 等待 03D 当前范围完成后执行 |
 | 12E-10 最终收口 | PRD/DEV/DEMO/PREP/TASKS/PROMPT 完整；10A READY | 4 | 用户授权后按 10A -> 10B -> 10C -> 10D |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
@@ -64,8 +64,8 @@
 计数口径：
 
 ```text
-当前剩余任务：03D 4 个、12E-09D 6 个；
-03D/09D/12E-10 合计待执行：14 个；
+当前剩余任务：03D 2 个、12E-09D 6 个；
+03D/09D/12E-10 合计待执行：12 个；
 另含 12F 性能：8 个；
 Stage 13 近程 P0：17 个；
 13B-08/13D 共 8 个插入任务均已完成；13E 新增 5 个插入任务并已完成；
@@ -221,7 +221,7 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
 13C、13D-01..04、13E-01..05、13G-00..07 与 12E-09A-01..06 已完成。当前没有未完成的
-13G 原子任务；`03D-01..04` 已完成，`03D-05` 是下一候选原子任务，
+13G 原子任务；`03D-01..05` 已完成，`03D-06` 是下一候选原子任务，
 12E-09D 和 12E-10A 按顺序等待。
 
 ### 尚未完成
@@ -272,10 +272,10 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：03D-01..04 COMPLETE / 03D-05 READY / 既有 Stage 12/13 回归保持；
+CURRENT：03D-01..05 COMPLETE / 03D-06 READY / 既有 Stage 12/13 回归保持；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-01..06；
 M13-1：CANDIDATE PASS；
-NEXT：03D-05 READY，正负向等价与共享 Package Gate；
+NEXT：03D-06 READY，Release Writer-only 性能矩阵与 GO/NO-GO 判定；
 AFTER：03D -> 12E-09D-01..06 -> 12E-10A..D；
 FROZEN：12G-TCWS 仅保留 RIP 白区合同评审，不实现；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
