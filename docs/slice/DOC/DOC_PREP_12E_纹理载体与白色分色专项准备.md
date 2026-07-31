@@ -1,12 +1,14 @@
 # DOC_PREP_12E 纹理载体、白色分色与 RIP 铺底专项准备
 
-> 文档状态：FROZEN / PENDING PRODUCT AND RIP DECISIONS / NO IMPLEMENTATION AUTHORIZATION
+> 文档状态：FROZEN / PARTIAL RIP FACTS CONFIRMED / NO IMPLEMENTATION AUTHORIZATION
 > 暂定专题代号：`12G-TCWS`，正式阶段编号待用户成立专项时确认
 > 日期：2026-07-23
 > 冻结日期：2026-07-27
+> 最近复审：2026-07-31
 > 上游：12A 材料语义、12D 材料闭环、12E 全局纹理壳层与模型填充
 > 前置基线：12E-08D 双模式生产写包、12E-09A/09B UI、12E-10 阶段收口
 > 同步示意图：`assets/DIAGRAM_12E_纹理载体白色分色与材料分层示意图.svg`
+> 本轮策略比对：`DOC_REVIEW_12G_TCWS_现有RIP白区合同与六通道策略比对.md`
 
 ## 0. 冻结记录
 
@@ -24,6 +26,22 @@
 
 解冻条件仍以第 13 节阻断问题和第 15 节 G1..G8 为准。解冻时必须重新审查当前代码、RIP
 版本、设备能力和 Stage 13 多模型/预览边界，不能直接把本准备文档中的候选 JSON 当作正式 schema。
+
+### 0.1 2026-07-31 部分事实更新
+
+本轮用户确认：
+
+```text
+同一组全 RGB 切片数据可由 RIP Profile 生成透明或白色/不透明两种模型；
+当前 RIP 使用正常 RGB 纹理区，并以 W/S/V=0/0/0 区域区分白色；
+专项继续保持 RGBWSV 六通道；
+本专项暂不新增纹理铺底层，也不讨论额外 underbase 层数。
+```
+
+这些事实关闭了“是否需要同包透明/白色切换”和“是否保持六通道”两个方向问题，但没有关闭
+`WSV=000` 与 `black_is_print` 的协议冲突。按当前协议，W/S/V=0 表示三种材料都打印；
+若 RIP 把它当私有 mask，输入包必须被明确归类为 RIP-bound intermediate，并绑定可审计合同。
+因此专项仍保持冻结。
 
 ## 1. 准备结论
 
@@ -407,6 +425,24 @@ UI 不允许普通用户在未准入 Profile 中自由切换；
 
 该方案兼顾自包含输出与现有 RIP 工艺，但实现和验收成本最高。
 
+### 6.4 现有 `WSV=000` RIP 私有白区策略
+
+当前 RIP 事实和完整优缺点见：
+
+```text
+DOC_REVIEW_12G_TCWS_现有RIP白区合同与六通道策略比对.md
+```
+
+本准备文档只冻结以下边界：
+
+```text
+不得把 W/S/V=0 自动解释成协议外“空操作”；
+不得继续让 S 同时承担真实支撑和白区 mask 而没有版本合同；
+同包透明/白色切换是明确产品意图；
+候选优先比较 Hybrid V mask 与切片显式 W/V；
+最终方案仍需真实 RIP 输入/输出证据。
+```
+
 ## 7. 材料场景矩阵
 
 | 场景 | ModelFill | Carrier | 白色意图 | 推荐通道 |
@@ -635,6 +671,8 @@ background remains empty。
 ```text
 确认 RIP 铺底覆盖来源、空间位置、pass 顺序和 W/V/RGB 组合；
 确认“透明模型白色纹理”的默认产品意图；
+确认 WSV=000 是物理材料值还是 RIP 私有选择码；
+比较当前 WSV=000、显式 W/V 和 Hybrid V mask；
 冻结术语、策略轴和 production acceptance；
 选择 explicit、RIP-managed 或 hybrid。
 ```
@@ -864,6 +902,17 @@ legacy/global、partial/allTexture、white/varnish、explicit/RIP-managed 矩阵
 
 ## 13. 待用户/RIP 团队回答的疑虑
 
+2026-07-31 已确认：
+
+```text
+透明/白色由 RIP Profile 选择；
+希望复用同一组切片数据；
+保持 TIFF 六通道；
+本专项不新增纹理铺底层。
+```
+
+以下问题仍未关闭。
+
 ### 13.1 RIP 与物理材料
 
 1. RIP 自动光油铺底根据什么生成覆盖范围：模型 mask、Alpha、RGB 非空、图像包围盒，还是整张画布？
@@ -896,8 +945,13 @@ legacy/global、partial/allTexture、white/varnish、explicit/RIP-managed 矩阵
 19. 是否已有透明度、白度、暖白色差和最大总材料量的验收阈值？
 20. UI 面向工艺人员时，更易理解的术语是“纹理载体”“纹理基底”还是现有 RIP 术语？
 21. 普通用户是否可以修改 delivery，还是只能通过受控 Profile 选择？
+22. 当前 WSV=000 是否在进入喷印数据前被 RIP 完全拦截并重映射？
+23. WSV=000 中的 S=0 是否会生成真实支撑喷印数据？
+24. 透明和不透明两个 RIP Profile 的逐像素 W/S/V 输出分别是什么？
+25. 能否使用 V 作为受控白色意图 mask，同时区分 SurfaceVarnish/OuterVarnish 来源？
 
-在第 1、3、4、5、6、7、11、13、15、17 项没有明确答案前，不建议开始 R2/R3/R4 实现。
+在第 1、3、4、5、6、11、13、15、17、22、23、24、25 项没有明确答案前，不建议开始
+R2/R3/R4 实现。
 
 ## 14. 文档和示意图治理
 
@@ -926,7 +980,7 @@ explicit 与 RIP-managed 两种交付；
 ## 15. 建议的专项成立 Gate
 
 ```text
-G1：第 13 节阻断问题有书面答案；
+G1：第 13 节剩余阻断问题有书面答案；
 G2：选择 A/B/C 生产方案；
 G3：RIP contract owner 和验证产物明确；
 G4：同步分层示意图评审通过；
@@ -938,3 +992,11 @@ G8：用户明确授权建立正式任务清单。
 
 只有 G1-G8 全部满足后，才将本 PREP 文档转换为正式 DOC_DECISION、DEV、DEMO、ROADMAP 和
 Codex 原子任务。
+
+本轮状态：
+
+```text
+G5：方向已确认（保持六通道和现有 schema）；
+G1/G2/G3/G4/G6/G7/G8：仍未全部关闭；
+专项状态：FROZEN。
+```
