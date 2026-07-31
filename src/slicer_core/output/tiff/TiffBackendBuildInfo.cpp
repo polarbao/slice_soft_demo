@@ -14,6 +14,8 @@ TiffBackendBuildInfo GetTiffBackendBuildInfo()
 
 #ifdef SLICER_CORE_HAS_LIBTIFF
     info.libtiffdependencyavailable = true;
+    info.libtiffwriterimplemented = true;
+    info.libtiffstrippedwriterimplemented = true;
     const char* version = TIFFGetVersion();
     if (version != nullptr)
     {

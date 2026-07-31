@@ -39,9 +39,17 @@ int main()
     {
         return Fail("LibTIFF build must expose a version string");
     }
-    if (info.libtiffwriterimplemented)
+    if (info.libtiffwriterimplemented != expectsLibTiff)
     {
-        return Fail("03D-02 must not claim the LibTIFF writer is implemented");
+        return Fail("LibTIFF writer implementation state mismatch");
+    }
+    if (info.libtiffstrippedwriterimplemented != expectsLibTiff)
+    {
+        return Fail("LibTIFF stripped implementation state mismatch");
+    }
+    if (info.libtifftiledwriterimplemented)
+    {
+        return Fail("LibTIFF tiled writer must remain unavailable in 03D-03");
     }
 
     std::cout << "tiff_backend_build_info_unit_tests: PASS\n";

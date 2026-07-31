@@ -792,6 +792,10 @@ int PrintTiffBackendInfoJson()
         info.libtiffdependencyavailable;
     capability["libtiffWriterImplemented"] =
         info.libtiffwriterimplemented;
+    capability["libtiffStrippedWriterImplemented"] =
+        info.libtiffstrippedwriterimplemented;
+    capability["libtiffTiledWriterImplemented"] =
+        info.libtifftiledwriterimplemented;
     capability["libtiffVersion"] = info.libtiffversion;
     std::cout << slicer_core::Json{capability}.dump(2) << '\n';
     return 0;

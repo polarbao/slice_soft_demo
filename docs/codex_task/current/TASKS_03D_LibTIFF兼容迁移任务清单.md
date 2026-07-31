@@ -1,6 +1,6 @@
 # TASKS_03D LibTIFF 兼容迁移任务清单
 
-> 文档状态：03D-01/02 COMPLETE / 03D-03 READY / PRIORITY P0
+> 文档状态：03D-01/02/03 COMPLETE / 03D-04 READY / PRIORITY P0
 > 日期：2026-07-31
 > 规则：每个原子任务完成后单独验证和提交；不得一次性切换默认后端
 
@@ -59,7 +59,7 @@ libtiffWriterImplemented=false；
 
 ## 03D-03 Writer 接口与 LibTIFF stripped
 
-状态：READY / 03D-02 GATE PASSED
+状态：COMPLETE / 2026-07-31
 
 ```text
 提取 Writer 接口；
@@ -68,9 +68,20 @@ libtiffWriterImplemented=false；
 逐 strip 写入，不复制整层 strip_data。
 ```
 
+实际证据：
+
+```text
+handwritten adapter 与 LibTIFF stripped Writer 已实现；
+handwritten Release、LibTIFF Debug/Release 定向 CTest PASS；
+LibTIFF 20 层 GoldenMaterialProcessTop2 package 与 RIP strict PASS；
+合法 SHORT/LONG 数值 tag 均由严格 Reader 按值校验；
+Runtime 能力元数据为 stripped=true、tiled=false；
+默认 Writer 仍为 handwritten。
+```
+
 ## 03D-04 LibTIFF tiled 与错误模型
 
-状态：PREPARED / WAIT 03D-03
+状态：READY / 03D-03 GATE PASSED
 
 ```text
 单 tile scratch；

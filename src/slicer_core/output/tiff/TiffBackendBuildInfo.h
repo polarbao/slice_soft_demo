@@ -14,6 +14,8 @@ struct TiffBackendBuildInfo
     bool handwrittenavailable{true};
     bool libtiffdependencyavailable{false};
     bool libtiffwriterimplemented{false};
+    bool libtiffstrippedwriterimplemented{false};
+    bool libtifftiledwriterimplemented{false};
     std::string libtiffversion;
 };
 

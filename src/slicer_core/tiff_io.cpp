@@ -1,5 +1,7 @@
 #include "slicer_core/tiff_io.h"
 
+#include "slicer_core/output/tiff/TiffWriterFactory.h"
+
 #include <algorithm>
 #include <fstream>
 #include <iterator>
@@ -149,13 +151,17 @@ std::vector<std::uint32_t> read_u32_array(
     const std::vector<std::uint8_t>& data,
     const ParsedEntry& entry,
     const std::uint16_t tag) {
-    if (entry.type != TiffType::long_value) {
+    if (entry.type != TiffType::short_value
+        && entry.type != TiffType::long_value) {
         throw std::runtime_error("TIFF tag has unexpected type: " + std::to_string(tag));
     }
     std::vector<std::uint32_t> result;
     result.reserve(entry.count);
     if (entry.count == 1) {
-        result.push_back(entry.value_or_offset);
+        result.push_back(
+            entry.type == TiffType::short_value
+                ? read_inline_u16(entry)
+                : entry.value_or_offset);
         return result;
     }
     const std::size_t byte_count = static_cast<std::size_t>(entry.count) * type_size(entry.type);
@@ -163,7 +169,13 @@ std::vector<std::uint32_t> read_u32_array(
         throw std::runtime_error("TIFF tag data outside file: " + std::to_string(tag));
     }
     for (std::uint32_t i{0}; i < entry.count; ++i) {
-        result.push_back(read_u32(data, static_cast<std::size_t>(entry.value_or_offset) + i * 4U));
+        const std::size_t value_offset =
+            static_cast<std::size_t>(entry.value_or_offset)
+            + static_cast<std::size_t>(i) * type_size(entry.type);
+        result.push_back(
+            entry.type == TiffType::short_value
+                ? read_u16(data, value_offset)
+                : read_u32(data, value_offset));
     }
     return result;
 }
@@ -465,11 +477,7 @@ void write_rgbwsv_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
     const std::span<const std::uint8_t> pixels) {
-    if (spec.storage_mode == TiffStorageMode::Tiled) {
-        write_rgbwsv_tiled_tiff(path, spec, pixels);
-        return;
-    }
-    write_rgbwsv_stripped_tiff(path, spec, pixels);
+    WriteRgbwsvTiffWithConfiguredBackend(path, spec, pixels);
 }
 
 TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {

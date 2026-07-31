@@ -1,19 +1,19 @@
 # REPORT_03D LibTIFF 兼容迁移当前状态
 
-> 状态：03D-01 COMPLETE / 03D-02 COMPLETE / 03D-03 READY
+> 状态：03D-01/02/03 COMPLETE / 03D-04 READY
 > 日期：2026-07-31
 > 当前优先级：P0
 
 ## 1. 当前事实
 
 ```text
-生产 Writer：src/slicer_core/tiff_io.cpp 手写实现；
+生产 Writer：统一 Writer 接口；默认 handwritten，显式 libtiff 轨道支持 stripped；
 支持：stripped/tiled、contiguous、uint8、RGBWSV、无压缩；
 Reader：仍由项目严格解析并服务 RIP/UI；
 vcpkg.json：已锁定 baseline，tiff 4.7.1 且 default-features=false；
 CMake：handwritten 默认轨道不查找 LibTIFF，libtiff 轨道链接 TIFF::TIFF；
 Runtime：libtiff 轨道部署 DLL、许可证、版本和 SHA-256；
-生产 Writer：仍只使用手写实现，LibTIFF Writer 尚未实现。
+生产 Writer：默认仍使用手写实现；LibTIFF tiled 尚未实现并回退手写后端。
 ```
 
 本机 `VCPKG_ROOT` 指向 `D:\Program Files Tools\vcpkg`。2026-07-31 只读检查显示本机
@@ -101,7 +101,22 @@ runtime_manifest.json 已记录后端、实现状态、版本、SHA-256 和许�
 03D-02 没有实现或路由 LibTIFF Writer；能力自检明确输出
 `libtiffWriterImplemented=false`。
 
-## 5. 准备度
+## 5. 03D-03 Writer 与 stripped 证据
+
+```text
+ITiffWriter、Factory 和 handwritten adapter 已实现；
+LibTIFF stripped 逐 strip 直接写入，不构造整层 strip_data 副本；
+handwritten Release、LibTIFF Debug/Release 定向 CTest PASS；
+LibTIFF GoldenMaterialProcessTop2 package 与 RIP strict PASS；
+Runtime manifest：writer=true、stripped=true、tiled=false；
+默认 handwritten 未改变。
+```
+
+LibTIFF 对部分小整数 tag 选择合法 `SHORT`，手写后端固定为 `LONG`。当前严格 Reader
+按 TIFF 合同接受 `SHORT/LONG` 并继续校验相同数值、必需 tag 和逐字节像素，不改变
+RGBWSV、uint8、`black_is_print` 或无压缩协议。
+
+## 6. 准备度
 
 | 项目 | 状态 |
 |---|---|
@@ -116,11 +131,12 @@ runtime_manifest.json 已记录后端、实现状态、版本、SHA-256 和许�
 | 03D-01 合同 fixture | COMPLETE |
 | 03D-01 Writer-only Release 基线 | COMPLETE |
 | 03D-02 vcpkg/CMake/Runtime | COMPLETE |
-| 03D-03 Writer 接口与 stripped 准备 | READY |
-| LibTIFF 代码实现 | NOT STARTED |
+| 03D-03 Writer 接口与 stripped | COMPLETE |
+| LibTIFF stripped 代码实现 | COMPLETE |
+| 03D-04 tiled 与错误模型准备 | READY |
 
-## 6. 下一步
+## 7. 下一步
 
-下一原子任务为 `03D-03 Writer 接口与 LibTIFF stripped`。保持 handwritten 默认，
-先实现抽象和 stripped 后端，再用当前严格 Reader 验证 tag 与 decoded pixel；不得提前
-实现 tiled、压缩或默认切换。
+下一原子任务为 `03D-04 LibTIFF tiled 与错误模型`。保持 handwritten 默认，实现单 tile
+scratch、边界 255 padding、稳定错误码、临时文件和失败清理；不得提前执行完整性能 Gate、
+压缩或默认切换。

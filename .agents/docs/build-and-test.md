@@ -203,7 +203,7 @@ To republish already-built artifacts without rebuilding:
 .\scripts\PrepareSliceSoftRuntime.ps1 -Config Release -DeployOnly
 ```
 
-## 03D TIFF Writer Baseline
+## 03D TIFF Writer
 
 Use this Release-only gate to freeze the handwritten Writer before any LibTIFF dependency or backend work:
 
@@ -217,6 +217,33 @@ Use this Release-only gate to freeze the handwritten Writer before any LibTIFF d
 The benchmark measures only `write_rgbwsv_tiff` with a pre-generated buffer. It must keep the handwritten
 backend, exact RGBWSV decode, stripped/tiled tags, 255 tile padding, current errors, and RIP strict PASS.
 Do not compare these numbers with full-package elapsed time.
+
+`03D-03` adds the optional LibTIFF stripped lane while the default remains handwritten. Use the same
+targeted contract suite in both build directories:
+
+```powershell
+cmake --build build-slicesoft/main --config Release --target `
+  tiff_writer_contract_unit_tests `
+  tiff_backend_build_info_unit_tests `
+  tiff_writer_backend_unit_tests
+ctest --test-dir build-slicesoft/main -C Release `
+  -R "^(tiff_writer_contract_unit_tests|tiff_backend_build_info_unit_tests|tiff_writer_backend_unit_tests)$" `
+  --output-on-failure
+
+cmake --build build-slicesoft/03d-libtiff --config Release --target `
+  tiff_writer_contract_unit_tests `
+  tiff_backend_build_info_unit_tests `
+  tiff_writer_backend_unit_tests `
+  slicer_cli `
+  rip_reader_test
+ctest --test-dir build-slicesoft/03d-libtiff -C Release `
+  -R "^(tiff_writer_contract_unit_tests|tiff_backend_build_info_unit_tests|tiff_writer_backend_unit_tests)$" `
+  --output-on-failure
+```
+
+The LibTIFF lane must report `stripped=true` and `tiled=false`; tiled remains a handwritten fallback until
+`03D-04`. The strict Reader accepts legal TIFF `SHORT` or `LONG` encodings for unsigned dimension/count tags
+and still requires exact numeric values and RGBWSV pixels.
 
 ## Baseline Gate
 

@@ -312,8 +312,14 @@ add_library(slicer_core
     src/slicer_core/system/Sha256.cpp
     src/slicer_core/system/Sha256.h
     src/slicer_core/system/Sha256Internal.h
+    src/slicer_core/output/tiff/HandwrittenTiffWriter.cpp
+    src/slicer_core/output/tiff/ITiffWriter.h
+    src/slicer_core/output/tiff/LibTiffWriter.cpp
     src/slicer_core/output/tiff/TiffBackendBuildInfo.cpp
     src/slicer_core/output/tiff/TiffBackendBuildInfo.h
+    src/slicer_core/output/tiff/TiffWriterFactory.cpp
+    src/slicer_core/output/tiff/TiffWriterFactory.h
+    src/slicer_core/output/tiff/TiffWriterImplementations.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h
     src/slicer_core/tiff_io.cpp
@@ -544,6 +550,12 @@ target_compile_definitions(
     PRIVATE
         SLICESOFT_TEST_EXPECTED_TIFF_BACKEND="${SLICESOFT_TIFF_BACKEND}"
 )
+
+add_executable(tiff_writer_backend_unit_tests
+    tests/unit/tiff_writer_backend/Main.cpp
+)
+
+target_link_libraries(tiff_writer_backend_unit_tests PRIVATE slicer_core)
 
 add_executable(tiff_layer_cache_unit_tests
     tests/unit/tiff_layer_cache/Main.cpp
@@ -954,6 +966,7 @@ add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_uni
 add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
 add_test(NAME tiff_writer_contract_unit_tests COMMAND tiff_writer_contract_unit_tests)
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
+add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)
 add_test(NAME tiff_layer_cache_unit_tests COMMAND tiff_layer_cache_unit_tests)
 add_test(NAME texture_fill_partition_semantic_preview_unit_tests COMMAND texture_fill_partition_semantic_preview_unit_tests)
 add_test(NAME material_preview_composer_unit_tests COMMAND material_preview_composer_unit_tests)

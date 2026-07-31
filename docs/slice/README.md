@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-07-31
-> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C COMPLETE；03D-01 COMPLETE；03D-02、12E-09D PREPARED；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE
+> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C COMPLETE；03D-01..03 COMPLETE；03D-04、12E-09D READY/PREPARED；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。2026-07-31 新增的 `03D-LIBTIFF` 已完成执行文档准备，`03D-01` 又完成手写 Writer tag/像素/错误合同与 Writer-only Release 基线；当前仍未链接 LibTIFF 或切换默认 Writer。`03D-02` 等待明确依赖修改授权；`12E-09D` 排在 03D 之后、12E-10A 之前。12E-10A..D 执行文档均已补齐；12F-02..09 未激活。12G-TCWS 已补入现有 RIP 白区 `WSV=000` 事实和策略对比，但因其与 `black_is_print` 物理语义存在冲突，继续冻结，且不包含纹理铺底。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成；13G 已完成 Reality 正反面修正、30 层最大投影铺底、Qt 配置和 segment_105 Release/RIP 收口。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。2026-07-31 新增的 `03D-LIBTIFF` 已完成 `03D-01..03`：手写 Writer 合同/Release 基线、可选 LibTIFF 4.7.1 构建与 Runtime、Writer 接口和 LibTIFF stripped 输出均已通过定向 CTest 与 RIP strict；默认 Writer 仍为 handwritten，tiled 仍回退手写后端。`03D-04` 已准备；`12E-09D` 排在 03D 之后、12E-10A 之前。12E-10A..D 执行文档均已补齐；12F-02..09 未激活。12G-TCWS 已补入现有 RIP 白区 `WSV=000` 事实和策略对比，但因其与 `black_is_print` 物理语义存在冲突，继续冻结，且不包含纹理铺底。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成；13G 已完成 Reality 正反面修正、30 层最大投影铺底、Qt 配置和 segment_105 Release/RIP 收口。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
 
 ## 目录结构
 

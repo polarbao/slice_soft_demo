@@ -227,15 +227,16 @@ std::vector<std::uint16_t> ReadTagShorts(
     return values;
 }
 
-std::vector<std::uint32_t> ReadTagLongs(
+std::vector<std::uint32_t> ReadTagUnsignedIntegers(
     const ParsedTiff& parsed,
     const std::uint16_t tag)
 {
     const TagEntry& entry = RequireTag(parsed, tag);
-    if (entry.type != 4U)
+    if (entry.type != 3U && entry.type != 4U)
     {
         throw std::runtime_error(
-            "test TIFF tag is not LONG: " + std::to_string(tag));
+            "test TIFF tag is not SHORT or LONG: "
+            + std::to_string(tag));
     }
     const std::vector<std::uint8_t> bytes =
         ReadTagBytes(parsed, tag);
@@ -243,8 +244,13 @@ std::vector<std::uint32_t> ReadTagLongs(
     values.reserve(entry.count);
     for (std::uint32_t index{0}; index < entry.count; ++index)
     {
+        const std::size_t valueOffset =
+            static_cast<std::size_t>(index)
+            * TiffTypeSize(entry.type);
         values.push_back(
-            ReadU32(bytes, static_cast<std::size_t>(index) * 4U));
+            entry.type == 3U
+                ? ReadU16(bytes, valueOffset)
+                : ReadU32(bytes, valueOffset));
     }
     return values;
 }
@@ -315,11 +321,11 @@ bool ValidateCommonTags(
     const std::vector<std::uint16_t> extraSamples =
         ReadTagShorts(parsed, 338U);
     return ExpectEqual(
-               ReadTagLongs(parsed, 256U).at(0),
+               ReadTagUnsignedIntegers(parsed, 256U).at(0),
                width,
                "ImageWidth tag")
         && ExpectEqual(
-            ReadTagLongs(parsed, 257U).at(0),
+            ReadTagUnsignedIntegers(parsed, 257U).at(0),
             height,
             "ImageLength tag")
         && ExpectTrue(
@@ -370,9 +376,9 @@ bool ValidateTilePadding(
     const std::uint32_t tileHeight)
 {
     const std::vector<std::uint32_t> tileOffsets =
-        ReadTagLongs(parsed, 324U);
+        ReadTagUnsignedIntegers(parsed, 324U);
     const std::vector<std::uint32_t> tileByteCounts =
-        ReadTagLongs(parsed, 325U);
+        ReadTagUnsignedIntegers(parsed, 325U);
     const std::uint32_t tilesX =
         (width + tileWidth - 1U) / tileWidth;
     const std::uint32_t tilesY =
@@ -472,7 +478,7 @@ bool StrippedContractAndPixelsAreFrozen(
         slicer_core::read_rgbwsv_tiff(path);
     const ParsedTiff parsed = ParseTiff(path);
     const std::vector<std::uint32_t> stripBytes =
-        ReadTagLongs(parsed, 279U);
+        ReadTagUnsignedIntegers(parsed, 279U);
     return ExpectTrue(
                decoded.spec.storage_mode
                    == slicer_core::TiffStorageMode::Stripped,
@@ -482,7 +488,7 @@ bool StrippedContractAndPixelsAreFrozen(
             "stripped decoded pixels are exact")
         && ValidateCommonTags(parsed, width, height)
         && ExpectEqual(
-            ReadTagLongs(parsed, 278U).at(0),
+            ReadTagUnsignedIntegers(parsed, 278U).at(0),
             static_cast<std::uint32_t>(3U),
             "RowsPerStrip contract")
         && ExpectTrue(
@@ -521,7 +527,7 @@ bool TiledContractAndPixelsAreFrozen(
         slicer_core::read_rgbwsv_tiff(path);
     const ParsedTiff parsed = ParseTiff(path);
     const std::vector<std::uint32_t> tileBytes =
-        ReadTagLongs(parsed, 325U);
+        ReadTagUnsignedIntegers(parsed, 325U);
     return ExpectTrue(
                decoded.spec.storage_mode
                    == slicer_core::TiffStorageMode::Tiled,
@@ -537,11 +543,11 @@ bool TiledContractAndPixelsAreFrozen(
             spec.tile_width,
             spec.tile_height)
         && ExpectEqual(
-            ReadTagLongs(parsed, 322U).at(0),
+            ReadTagUnsignedIntegers(parsed, 322U).at(0),
             static_cast<std::uint32_t>(8U),
             "TileWidth contract")
         && ExpectEqual(
-            ReadTagLongs(parsed, 323U).at(0),
+            ReadTagUnsignedIntegers(parsed, 323U).at(0),
             static_cast<std::uint32_t>(4U),
             "TileLength contract")
         && ExpectTrue(

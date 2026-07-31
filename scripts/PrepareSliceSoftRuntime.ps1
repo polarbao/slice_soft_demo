@@ -817,6 +817,8 @@ try
                 handwrittenAvailable = [bool]$tiffBackendInfo.handwrittenAvailable
                 libtiffDependencyAvailable = [bool]$tiffBackendInfo.libtiffDependencyAvailable
                 libtiffWriterImplemented = [bool]$tiffBackendInfo.libtiffWriterImplemented
+                libtiffStrippedWriterImplemented = [bool]$tiffBackendInfo.libtiffStrippedWriterImplemented
+                libtiffTiledWriterImplemented = [bool]$tiffBackendInfo.libtiffTiledWriterImplemented
                 libtiffVersion = [string]$tiffBackendInfo.libtiffVersion
                 runtimeLibraries = $tiffRuntimeLibraries
                 license = $tiffLicenseRelativePath

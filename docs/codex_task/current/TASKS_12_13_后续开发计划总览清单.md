@@ -4,7 +4,7 @@
 > 版本：v3.0
 > 更新日期：2026-07-31
 > 当前代码阶段：13G-00..07 COMPLETE；Stage 12/13 既有完成项保持不变
-> 当前推荐任务：03D-02 READY / WAIT EXPLICIT AUTHORIZATION
+> 当前推荐任务：03D-04 READY
 > 后续顺序：03D -> 12E-09D -> 12E-10A..D；13F-R1-01..05 保持独立准备
 
 ## 1. 文档职责
@@ -49,7 +49,7 @@
 | 工作流 | 当前状态 | 剩余数量 | 当前动作 |
 |---|---|---:|---|
 | 12E-09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 0 | 保持回归 |
-| 03D-LIBTIFF Writer 兼容迁移 | 03D-01 COMPLETE / 03D-02 READY | 6 | 等待明确授权后接入 vcpkg/CMake/Runtime；默认 Writer 暂不切换 |
+| 03D-LIBTIFF Writer 兼容迁移 | 03D-01..03 COMPLETE / 03D-04 READY | 4 | 实现 tiled 与错误收口；默认 Writer 暂不切换 |
 | 12E-09D 生产纹理与单材料控制 | 09D-01..06 PREPARED | 6 | 等待 03D 当前范围完成后执行 |
 | 12E-10 最终收口 | PRD/DEV/DEMO/PREP/TASKS/PROMPT 完整；10A READY | 4 | 用户授权后按 10A -> 10B -> 10C -> 10D |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
@@ -64,8 +64,8 @@
 计数口径：
 
 ```text
-当前剩余任务：03D 6 个、12E-09D 6 个；
-03D/09D/12E-10 合计待执行：16 个；
+当前剩余任务：03D 4 个、12E-09D 6 个；
+03D/09D/12E-10 合计待执行：14 个；
 另含 12F 性能：8 个；
 Stage 13 近程 P0：17 个；
 13B-08/13D 共 8 个插入任务均已完成；13E 新增 5 个插入任务并已完成；
@@ -148,9 +148,9 @@ Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入待执�
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
 | 22J | 03D-01 当前合同与 Writer-only Release 基线 | `COMPLETE` | 03D 文档包完整 | 已冻结手写 Writer 标签、像素、strip/tile、错误和耗时/内存基线 |
-| 22K | 03D-02 vcpkg/CMake/Runtime 接入 | `READY / WAIT EXPLICIT AUTHORIZATION` | 03D-01 COMPLETE | `TIFF::TIFF` 可选依赖和运行时部署闭环 |
-| 22L | 03D-03 LibTIFF stripped Writer | `PREPARED / WAIT 03D-02` | 03D-02 | stripped 解码像素、标签与 RIP 等价 |
-| 22M | 03D-04 LibTIFF tiled Writer 与错误收口 | `PREPARED / WAIT 03D-03` | 03D-03 | tiled 等价、错误码和清理路径闭环 |
+| 22K | 03D-02 vcpkg/CMake/Runtime 接入 | `COMPLETE` | 03D-01 COMPLETE | `TIFF::TIFF` 可选依赖和运行时部署闭环 |
+| 22L | 03D-03 LibTIFF stripped Writer | `COMPLETE` | 03D-02 | stripped 解码像素、标签与 RIP 等价 |
+| 22M | 03D-04 LibTIFF tiled Writer 与错误收口 | `READY` | 03D-03 COMPLETE | tiled 等价、错误码和清理路径闭环 |
 | 22N | 03D-05 正负向兼容矩阵 | `PREPARED / WAIT 03D-04` | 03D-04 | handwritten/libtiff package、Reader、bad-package 矩阵 PASS |
 | 22O | 03D-06 Release 性能 Gate | `PREPARED / WAIT 03D-05` | 03D-05 | p50/峰值内存满足文档 Gate，或明确 NO-GO |
 | 22P | 03D-07 默认后端决策与收口 | `PREPARED / SEPARATE AUTHORIZATION` | 03D-06 | 只有 GO 且用户明确授权才切换默认 Writer |
@@ -221,7 +221,7 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
 13C、13D-01..04、13E-01..05、13G-00..07 与 12E-09A-01..06 已完成。当前没有未完成的
-13G 原子任务；`03D-01` 已完成，`03D-02` 是下一候选原子任务但等待明确依赖修改授权，
+13G 原子任务；`03D-01..03` 已完成，`03D-04` 是下一候选原子任务，
 12E-09D 和 12E-10A 按顺序等待。
 
 ### 尚未完成
@@ -272,10 +272,10 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：03D-01 COMPLETE / 既有 Stage 12/13 回归保持；
+CURRENT：03D-01..03 COMPLETE / 03D-04 READY / 既有 Stage 12/13 回归保持；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-01..06；
 M13-1：CANDIDATE PASS；
-NEXT：03D-02 READY，等待明确依赖修改授权；
+NEXT：03D-04 READY，LibTIFF tiled 与错误模型；
 AFTER：03D -> 12E-09D-01..06 -> 12E-10A..D；
 FROZEN：12G-TCWS 仅保留 RIP 白区合同评审，不实现；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
