@@ -272,6 +272,179 @@ void initialize_read_pixels(TiffReadResult& result) {
     result.pixels.assign(pixel_count, 255);
 }
 
+constexpr std::uint16_t TiffCompressionTagValue(
+    const TiffCompressionMode mode)
+{
+    switch (mode)
+    {
+        case TiffCompressionMode::None:
+            return 1U;
+        case TiffCompressionMode::PackBits:
+            return 32773U;
+    }
+    throw std::runtime_error("unsupported TIFF compression mode");
+}
+
+TiffCompressionMode ReadTiffCompressionMode(
+    const std::vector<std::uint8_t>& data,
+    const ParsedEntries& entries,
+    const std::filesystem::path& path)
+{
+    const std::uint16_t value = read_u16_array(
+        data,
+        find_required_entry(entries, 259U),
+        259U)
+                                    .at(0);
+    if (value == 1U)
+    {
+        return TiffCompressionMode::None;
+    }
+    if (value == 32773U)
+    {
+        return TiffCompressionMode::PackBits;
+    }
+    throw std::runtime_error(
+        "unsupported TIFF compression: " + std::to_string(value)
+        + ": " + path.string());
+}
+
+void EncodePackBitsRow(
+    const std::span<const std::uint8_t> row,
+    std::vector<std::uint8_t>& encoded)
+{
+    std::size_t index{0U};
+    while (index < row.size())
+    {
+        std::size_t runLength{1U};
+        while (index + runLength < row.size()
+               && runLength < 128U
+               && row[index + runLength] == row[index])
+        {
+            ++runLength;
+        }
+
+        if (runLength >= 3U)
+        {
+            encoded.push_back(
+                static_cast<std::uint8_t>(257U - runLength));
+            encoded.push_back(row[index]);
+            index += runLength;
+            continue;
+        }
+
+        const std::size_t literalStart = index;
+        index += runLength;
+        while (index < row.size()
+               && index - literalStart < 128U)
+        {
+            runLength = 1U;
+            while (index + runLength < row.size()
+                   && runLength < 128U
+                   && row[index + runLength] == row[index])
+            {
+                ++runLength;
+            }
+            if (runLength >= 3U)
+            {
+                break;
+            }
+            if (index - literalStart + runLength > 128U)
+            {
+                break;
+            }
+            index += runLength;
+        }
+
+        const std::size_t literalCount = index - literalStart;
+        encoded.push_back(
+            static_cast<std::uint8_t>(literalCount - 1U));
+        encoded.insert(
+            encoded.end(),
+            row.begin() + static_cast<std::ptrdiff_t>(literalStart),
+            row.begin() + static_cast<std::ptrdiff_t>(index));
+    }
+}
+
+std::vector<std::uint8_t> EncodePackBitsBlock(
+    const std::span<const std::uint8_t> bytes,
+    const std::size_t rowByteCount,
+    const std::uint32_t rowCount)
+{
+    if (rowByteCount == 0U
+        || rowByteCount * static_cast<std::size_t>(rowCount) != bytes.size())
+    {
+        throw std::runtime_error("invalid TIFF PackBits block dimensions");
+    }
+
+    std::vector<std::uint8_t> encoded;
+    encoded.reserve(bytes.size() + bytes.size() / 128U + rowCount);
+    for (std::uint32_t row{0U}; row < rowCount; ++row)
+    {
+        const std::size_t offset =
+            static_cast<std::size_t>(row) * rowByteCount;
+        EncodePackBitsRow(bytes.subspan(offset, rowByteCount), encoded);
+    }
+    return encoded;
+}
+
+std::vector<std::uint8_t> DecodePackBitsBlock(
+    const std::span<const std::uint8_t> encoded,
+    const std::size_t expectedByteCount,
+    const std::filesystem::path& path)
+{
+    std::vector<std::uint8_t> decoded;
+    decoded.reserve(expectedByteCount);
+    std::size_t index{0U};
+    while (index < encoded.size())
+    {
+        const std::uint8_t control = encoded[index++];
+        if (control <= 127U)
+        {
+            const std::size_t literalCount =
+                static_cast<std::size_t>(control) + 1U;
+            if (index + literalCount > encoded.size()
+                || decoded.size() + literalCount > expectedByteCount)
+            {
+                throw std::runtime_error(
+                    "malformed TIFF PackBits literal packet: "
+                    + path.string());
+            }
+            decoded.insert(
+                decoded.end(),
+                encoded.begin() + static_cast<std::ptrdiff_t>(index),
+                encoded.begin()
+                    + static_cast<std::ptrdiff_t>(index + literalCount));
+            index += literalCount;
+            continue;
+        }
+        if (control == 128U)
+        {
+            continue;
+        }
+        if (index >= encoded.size())
+        {
+            throw std::runtime_error(
+                "malformed TIFF PackBits repeat packet: "
+                + path.string());
+        }
+        const std::size_t repeatCount = 257U - control;
+        if (decoded.size() + repeatCount > expectedByteCount)
+        {
+            throw std::runtime_error(
+                "TIFF PackBits output exceeds expected dimensions: "
+                + path.string());
+        }
+        decoded.insert(decoded.end(), repeatCount, encoded[index++]);
+    }
+    if (decoded.size() != expectedByteCount)
+    {
+        throw std::runtime_error(
+            "TIFF PackBits output does not match dimensions: "
+            + path.string());
+    }
+    return decoded;
+}
+
 }  // namespace
 
 std::string tiff_storage_mode_string(const TiffStorageMode mode) {
@@ -280,6 +453,18 @@ std::string tiff_storage_mode_string(const TiffStorageMode mode) {
             return "stripped";
         case TiffStorageMode::Tiled:
             return "tiled";
+    }
+    return "unknown";
+}
+
+std::string TiffCompressionModeString(const TiffCompressionMode mode)
+{
+    switch (mode)
+    {
+        case TiffCompressionMode::None:
+            return "none";
+        case TiffCompressionMode::PackBits:
+            return "packbits";
     }
     return "unknown";
 }
@@ -307,11 +492,15 @@ void write_rgbwsv_tiled_tiff(
         spec.tile_width * spec.tile_height * spec.samples_per_pixel};
 
     std::vector<std::uint8_t> tile_data;
-    tile_data.resize(static_cast<std::size_t>(tile_count) * tile_byte_count, 255);
+    std::vector<std::uint8_t> tile_scratch(tile_byte_count, 255U);
+    std::vector<std::uint32_t> tile_offsets;
+    std::vector<std::uint32_t> tile_byte_counts;
+    tile_offsets.reserve(tile_count);
+    tile_byte_counts.reserve(tile_count);
+    constexpr std::uint32_t header_size{8};
     for (std::uint32_t tile_y{0}; tile_y < tiles_y; ++tile_y) {
         for (std::uint32_t tile_x{0}; tile_x < tiles_x; ++tile_x) {
-            const std::uint32_t tile_index{tile_y * tiles_x + tile_x};
-            const std::size_t tile_base{static_cast<std::size_t>(tile_index) * tile_byte_count};
+            std::fill(tile_scratch.begin(), tile_scratch.end(), 255U);
             for (std::uint32_t y{0}; y < spec.tile_height; ++y) {
                 const std::uint32_t image_y{tile_y * spec.tile_height + y};
                 if (image_y >= spec.height) {
@@ -327,23 +516,40 @@ void write_rgbwsv_tiled_tiff(
                             (static_cast<std::size_t>(image_y) * spec.width + image_x) * spec.samples_per_pixel + c;
                         const std::uint8_t value{pixels[source_index]};
                         const std::size_t target_index =
-                            tile_base
-                            + ((static_cast<std::size_t>(y) * spec.tile_width + x) * spec.samples_per_pixel + c);
-                        tile_data.at(target_index) = value;
+                            (static_cast<std::size_t>(y) * spec.tile_width + x)
+                                * spec.samples_per_pixel
+                            + c;
+                        tile_scratch.at(target_index) = value;
                     }
                 }
             }
-        }
-    }
 
-    std::vector<std::uint32_t> tile_offsets;
-    std::vector<std::uint32_t> tile_byte_counts;
-    tile_offsets.reserve(tile_count);
-    tile_byte_counts.reserve(tile_count);
-    constexpr std::uint32_t header_size{8};
-    for (std::uint32_t i{0}; i < tile_count; ++i) {
-        tile_offsets.push_back(header_size + i * tile_byte_count);
-        tile_byte_counts.push_back(tile_byte_count);
+            tile_offsets.push_back(
+                header_size + static_cast<std::uint32_t>(tile_data.size()));
+            if (spec.compression_mode == TiffCompressionMode::PackBits)
+            {
+                const std::vector<std::uint8_t> encoded =
+                    EncodePackBitsBlock(
+                        tile_scratch,
+                        static_cast<std::size_t>(spec.tile_width)
+                            * spec.samples_per_pixel,
+                        spec.tile_height);
+                tile_byte_counts.push_back(
+                    static_cast<std::uint32_t>(encoded.size()));
+                tile_data.insert(
+                    tile_data.end(),
+                    encoded.begin(),
+                    encoded.end());
+            }
+            else
+            {
+                tile_byte_counts.push_back(tile_byte_count);
+                tile_data.insert(
+                    tile_data.end(),
+                    tile_scratch.begin(),
+                    tile_scratch.end());
+            }
+        }
     }
 
     const std::uint32_t ifd_offset = header_size + static_cast<std::uint32_t>(tile_data.size());
@@ -351,7 +557,10 @@ void write_rgbwsv_tiled_tiff(
         {256, TiffType::long_value, 1, longs({spec.width})},
         {257, TiffType::long_value, 1, longs({spec.height})},
         {258, TiffType::short_value, spec.samples_per_pixel, shorts({8, 8, 8, 8, 8, 8})},
-        {259, TiffType::short_value, 1, shorts({1})},
+        {259,
+         TiffType::short_value,
+         1,
+         shorts({TiffCompressionTagValue(spec.compression_mode)})},
         {262, TiffType::short_value, 1, shorts({2})},
         {270, TiffType::ascii, 7, ascii("RGBWSV")},
         {277, TiffType::short_value, 1, shorts({spec.samples_per_pixel})},
@@ -424,13 +633,32 @@ void write_rgbwsv_stripped_tiff(
             std::min(spec.rows_per_strip, static_cast<std::uint32_t>(spec.height - start_row))};
         const std::uint32_t byte_count{rows * spec.width * spec.samples_per_pixel};
         strip_offsets.push_back(header_size + static_cast<std::uint32_t>(strip_data.size()));
-        strip_byte_counts.push_back(byte_count);
         const std::size_t source_offset =
             static_cast<std::size_t>(start_row) * spec.width * spec.samples_per_pixel;
-        strip_data.insert(
-            strip_data.end(),
-            pixels.begin() + static_cast<std::ptrdiff_t>(source_offset),
-            pixels.begin() + static_cast<std::ptrdiff_t>(source_offset + byte_count));
+        if (spec.compression_mode == TiffCompressionMode::PackBits)
+        {
+            const std::vector<std::uint8_t> encoded =
+                EncodePackBitsBlock(
+                    pixels.subspan(source_offset, byte_count),
+                    static_cast<std::size_t>(spec.width)
+                        * spec.samples_per_pixel,
+                    rows);
+            strip_byte_counts.push_back(
+                static_cast<std::uint32_t>(encoded.size()));
+            strip_data.insert(
+                strip_data.end(),
+                encoded.begin(),
+                encoded.end());
+        }
+        else
+        {
+            strip_byte_counts.push_back(byte_count);
+            strip_data.insert(
+                strip_data.end(),
+                pixels.begin() + static_cast<std::ptrdiff_t>(source_offset),
+                pixels.begin()
+                    + static_cast<std::ptrdiff_t>(source_offset + byte_count));
+        }
     }
 
     const std::uint32_t ifd_offset = header_size + static_cast<std::uint32_t>(strip_data.size());
@@ -438,7 +666,10 @@ void write_rgbwsv_stripped_tiff(
         {256, TiffType::long_value, 1, longs({spec.width})},
         {257, TiffType::long_value, 1, longs({spec.height})},
         {258, TiffType::short_value, spec.samples_per_pixel, shorts({8, 8, 8, 8, 8, 8})},
-        {259, TiffType::short_value, 1, shorts({1})},
+        {259,
+         TiffType::short_value,
+         1,
+         shorts({TiffCompressionTagValue(spec.compression_mode)})},
         {262, TiffType::short_value, 1, shorts({2})},
         {270, TiffType::ascii, 7, ascii("RGBWSV")},
         {273, TiffType::long_value, strip_count, longs(strip_offsets)},
@@ -498,6 +729,8 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
     result.spec.storage_mode = TiffStorageMode::Tiled;
     result.spec.width = read_u32_array(data, find_required_entry(entries, 256), 256).at(0);
     result.spec.height = read_u32_array(data, find_required_entry(entries, 257), 257).at(0);
+    result.spec.compression_mode =
+        ReadTiffCompressionMode(data, entries, path);
     const auto bits_per_sample = read_u16_array(data, find_required_entry(entries, 258), 258);
     result.spec.samples_per_pixel = read_u16_array(data, find_required_entry(entries, 277), 277).at(0);
     result.spec.planar_config = read_u16_array(data, find_required_entry(entries, 284), 284).at(0);
@@ -529,8 +762,21 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
             const std::size_t expected_tile_bytes =
                 static_cast<std::size_t>(result.spec.tile_width) * result.spec.tile_height
                 * result.spec.samples_per_pixel;
-            if (tile_bytes != expected_tile_bytes) {
+            if (result.spec.compression_mode == TiffCompressionMode::None
+                && tile_bytes != expected_tile_bytes) {
                 throw std::runtime_error("TIFF tile byte count does not match tile dimensions: " + path.string());
+            }
+            std::vector<std::uint8_t> decoded_tile;
+            std::span<const std::uint8_t> tile_payload{
+                data.data() + tile_offset,
+                tile_bytes};
+            if (result.spec.compression_mode == TiffCompressionMode::PackBits)
+            {
+                decoded_tile = DecodePackBitsBlock(
+                    tile_payload,
+                    expected_tile_bytes,
+                    path);
+                tile_payload = decoded_tile;
             }
             for (std::uint32_t y{0}; y < result.spec.tile_height; ++y) {
                 const std::uint32_t image_y{tile_y * result.spec.tile_height + y};
@@ -538,11 +784,10 @@ TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path) {
                     const std::uint32_t image_x{tile_x * result.spec.tile_width + x};
                     for (std::uint16_t c{0}; c < result.spec.samples_per_pixel; ++c) {
                         const std::size_t value_offset =
-                            tile_offset
-                            + ((static_cast<std::size_t>(y) * result.spec.tile_width + x)
-                               * result.spec.samples_per_pixel
-                               + c);
-                        const std::uint8_t value = data.at(value_offset);
+                            (static_cast<std::size_t>(y) * result.spec.tile_width + x)
+                                * result.spec.samples_per_pixel
+                            + c;
+                        const std::uint8_t value = tile_payload[value_offset];
                         if (image_y >= result.spec.height || image_x >= result.spec.width) {
                             if (value != 255U) {
                                 throw std::runtime_error("TIFF tile padding is not 255: " + path.string());
@@ -576,6 +821,8 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path) {
     result.spec.storage_mode = TiffStorageMode::Stripped;
     result.spec.width = read_u32_array(data, find_required_entry(entries, 256), 256).at(0);
     result.spec.height = read_u32_array(data, find_required_entry(entries, 257), 257).at(0);
+    result.spec.compression_mode =
+        ReadTiffCompressionMode(data, entries, path);
     const auto bits_per_sample = read_u16_array(data, find_required_entry(entries, 258), 258);
     result.spec.samples_per_pixel = read_u16_array(data, find_required_entry(entries, 277), 277).at(0);
     result.spec.rows_per_strip = read_u32_array(data, find_required_entry(entries, 278), 278).at(0);
@@ -609,17 +856,31 @@ TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path) {
         if (strip_offset + strip_bytes > data.size()) {
             throw std::runtime_error("TIFF strip data outside file: " + path.string());
         }
-        if (strip_bytes != expected_strip_bytes) {
+        if (result.spec.compression_mode == TiffCompressionMode::None
+            && strip_bytes != expected_strip_bytes) {
             throw std::runtime_error("TIFF strip byte count does not match dimensions: " + path.string());
+        }
+        std::vector<std::uint8_t> decoded_strip;
+        std::span<const std::uint8_t> strip_payload{
+            data.data() + strip_offset,
+            strip_bytes};
+        if (result.spec.compression_mode == TiffCompressionMode::PackBits)
+        {
+            decoded_strip = DecodePackBitsBlock(
+                strip_payload,
+                expected_strip_bytes,
+                path);
+            strip_payload = decoded_strip;
         }
         for (std::uint32_t y{0}; y < rows; ++y) {
             const std::uint32_t image_y{start_row + y};
             for (std::uint32_t x{0}; x < result.spec.width; ++x) {
                 for (std::uint16_t c{0}; c < result.spec.samples_per_pixel; ++c) {
                     const std::size_t value_offset =
-                        strip_offset
-                        + ((static_cast<std::size_t>(y) * result.spec.width + x) * result.spec.samples_per_pixel + c);
-                    const std::uint8_t value = data.at(value_offset);
+                        (static_cast<std::size_t>(y) * result.spec.width + x)
+                            * result.spec.samples_per_pixel
+                        + c;
+                    const std::uint8_t value = strip_payload[value_offset];
                     const std::size_t pixel_index =
                         (static_cast<std::size_t>(image_y) * result.spec.width + x) * result.spec.samples_per_pixel
                         + c;

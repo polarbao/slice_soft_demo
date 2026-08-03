@@ -30,6 +30,12 @@ enum class StorageSelection
     Tiled
 };
 
+enum class PixelPattern
+{
+    Synthetic,
+    ProductionSparse
+};
+
 struct Options
 {
     std::filesystem::path outputpath;
@@ -43,6 +49,10 @@ struct Options
     int warmupiterations{1};
     int measurementiterations{5};
     StorageSelection storage{StorageSelection::Both};
+    slicer_core::TiffCompressionMode compressionmode{
+        slicer_core::TiffCompressionMode::None};
+    PixelPattern pixelpattern{PixelPattern::Synthetic};
+    bool measureread{false};
     std::string casename{"baseline"};
     std::string cachecondition{"warm"};
     std::string stage{"03D-01"};
@@ -55,17 +65,28 @@ struct Measurement
     std::uint64_t byteswritten{0U};
 };
 
+struct TimingMeasurement
+{
+    double milliseconds{0.0};
+    double cpumilliseconds{0.0};
+};
+
 struct CaseResult
 {
     std::string backend;
     std::string storagemode;
     std::vector<Measurement> measurements;
+    std::vector<TimingMeasurement> readmeasurements;
     double p50milliseconds{0.0};
     double p95milliseconds{0.0};
     double minimummilliseconds{0.0};
     double maximummilliseconds{0.0};
     double p50cpumilliseconds{0.0};
     double p95cpumilliseconds{0.0};
+    double readp50milliseconds{0.0};
+    double readp95milliseconds{0.0};
+    double readp50cpumilliseconds{0.0};
+    double readp95cpumilliseconds{0.0};
     std::uint64_t byteswritten{0U};
     std::uint64_t writerstagingbytesestimate{0U};
     int failurecount{0};
@@ -118,6 +139,47 @@ StorageSelection ParseStorageSelection(const std::string& text)
     }
     throw std::runtime_error(
         "--storage must be both, stripped, or tiled");
+}
+
+slicer_core::TiffCompressionMode ParseCompressionMode(
+    const std::string& text)
+{
+    if (text == "none")
+    {
+        return slicer_core::TiffCompressionMode::None;
+    }
+    if (text == "packbits")
+    {
+        return slicer_core::TiffCompressionMode::PackBits;
+    }
+    throw std::runtime_error(
+        "--compression must be none or packbits");
+}
+
+PixelPattern ParsePixelPattern(const std::string& text)
+{
+    if (text == "synthetic")
+    {
+        return PixelPattern::Synthetic;
+    }
+    if (text == "production_sparse")
+    {
+        return PixelPattern::ProductionSparse;
+    }
+    throw std::runtime_error(
+        "--pixel-pattern must be synthetic or production_sparse");
+}
+
+std::string PixelPatternString(const PixelPattern pattern)
+{
+    switch (pattern)
+    {
+        case PixelPattern::Synthetic:
+            return "synthetic";
+        case PixelPattern::ProductionSparse:
+            return "production_sparse";
+    }
+    return "unknown";
 }
 
 Options ParseOptions(const int argc, char** argv)
@@ -181,6 +243,20 @@ Options ParseOptions(const int argc, char** argv)
             parsed.storage = ParseStorageSelection(
                 RequireValue(argc, argv, index, argument));
         }
+        else if (argument == "--compression")
+        {
+            parsed.compressionmode = ParseCompressionMode(
+                RequireValue(argc, argv, index, argument));
+        }
+        else if (argument == "--pixel-pattern")
+        {
+            parsed.pixelpattern = ParsePixelPattern(
+                RequireValue(argc, argv, index, argument));
+        }
+        else if (argument == "--measure-read")
+        {
+            parsed.measureread = true;
+        }
         else if (argument == "--case-name")
         {
             parsed.casename =
@@ -205,6 +281,9 @@ Options ParseOptions(const int argc, char** argv)
                 << "[--tile-width <pixels>] [--tile-height <pixels>] "
                 << "[--warmup <count>] [--iterations <count>] "
                 << "[--storage both|stripped|tiled] "
+                << "[--compression none|packbits] "
+                << "[--pixel-pattern synthetic|production_sparse] "
+                << "[--measure-read] "
                 << "[--case-name <name>] "
                 << "[--cache-condition <name>] "
                 << "[--stage <name>]\n";
@@ -270,13 +349,57 @@ std::string CompilerName()
 
 std::vector<std::uint8_t> MakePixels(
     const std::uint32_t width,
-    const std::uint32_t height)
+    const std::uint32_t height,
+    const PixelPattern pattern)
 {
     std::vector<std::uint8_t> pixels(
         static_cast<std::size_t>(width)
             * height
             * slicer_core::rgbwsv_channel_count,
         255U);
+    if (pattern == PixelPattern::ProductionSparse)
+    {
+        const double centerX = static_cast<double>(width - 1U) * 0.5;
+        const double centerY = static_cast<double>(height - 1U) * 0.5;
+        const double radiusX = std::max(1.0, static_cast<double>(width) * 0.32);
+        const double radiusY = std::max(1.0, static_cast<double>(height) * 0.44);
+        for (std::uint32_t y{0U}; y < height; ++y)
+        {
+            for (std::uint32_t x{0U}; x < width; ++x)
+            {
+                const double normalizedX =
+                    (static_cast<double>(x) - centerX) / radiusX;
+                const double normalizedY =
+                    (static_cast<double>(y) - centerY) / radiusY;
+                const double radiusSquared =
+                    normalizedX * normalizedX
+                    + normalizedY * normalizedY;
+                if (radiusSquared > 1.0)
+                {
+                    continue;
+                }
+
+                const std::size_t base =
+                    (static_cast<std::size_t>(y) * width + x)
+                    * slicer_core::rgbwsv_channel_count;
+                if (radiusSquared > 0.72)
+                {
+                    pixels.at(base + 4U) = 0U;
+                    continue;
+                }
+
+                pixels.at(base) = static_cast<std::uint8_t>(
+                    32U + ((x / 8U) * 29U + (y / 8U) * 7U) % 192U);
+                pixels.at(base + 1U) = static_cast<std::uint8_t>(
+                    24U + ((x / 8U) * 11U + (y / 8U) * 31U) % 208U);
+                pixels.at(base + 2U) = static_cast<std::uint8_t>(
+                    16U + ((x / 8U) * 23U + (y / 8U) * 13U) % 224U);
+                pixels.at(base + 3U) = 0U;
+            }
+        }
+        return pixels;
+    }
+
     for (std::uint32_t y{0}; y < height; ++y)
     {
         for (std::uint32_t x{0}; x < width; ++x)
@@ -312,6 +435,7 @@ slicer_core::TiffImageSpec MakeSpec(
     spec.tile_width = parsed.tilewidth;
     spec.tile_height = parsed.tileheight;
     spec.storage_mode = storageMode;
+    spec.compression_mode = parsed.compressionmode;
     return spec;
 }
 
@@ -421,10 +545,16 @@ CaseResult RunCase(
         CurrentWriterStagingBytesEstimate(spec, effectiveBackend);
     std::vector<double> durations;
     std::vector<double> cpuDurations;
+    std::vector<double> readDurations;
+    std::vector<double> readCpuDurations;
     std::vector<std::filesystem::path> measurementPaths;
     durations.reserve(
         static_cast<std::size_t>(parsed.measurementiterations));
     cpuDurations.reserve(
+        static_cast<std::size_t>(parsed.measurementiterations));
+    readDurations.reserve(
+        static_cast<std::size_t>(parsed.measurementiterations));
+    readCpuDurations.reserve(
         static_cast<std::size_t>(parsed.measurementiterations));
     measurementPaths.reserve(
         static_cast<std::size_t>(parsed.measurementiterations));
@@ -448,14 +578,33 @@ CaseResult RunCase(
     result.memory = slicer_core::CaptureProcessMemoryStats();
     for (const std::filesystem::path& path : measurementPaths)
     {
+        const std::clock_t readCpuStarted = std::clock();
+        const BenchmarkClock::time_point readStarted =
+            BenchmarkClock::now();
         const slicer_core::TiffReadResult decoded =
             slicer_core::read_rgbwsv_tiff(path);
+        const double readMilliseconds =
+            std::chrono::duration<double, std::milli>(
+                BenchmarkClock::now() - readStarted)
+                .count();
+        const double readCpuMilliseconds =
+            1000.0
+            * static_cast<double>(std::clock() - readCpuStarted)
+            / static_cast<double>(CLOCKS_PER_SEC);
         if (decoded.spec.storage_mode != storageMode
+            || decoded.spec.compression_mode != parsed.compressionmode
             || decoded.pixels != pixels)
         {
             throw std::runtime_error(
                 storageName
                 + " benchmark output failed exact decode validation");
+        }
+        if (parsed.measureread)
+        {
+            result.readmeasurements.push_back(
+                {readMilliseconds, readCpuMilliseconds});
+            readDurations.push_back(readMilliseconds);
+            readCpuDurations.push_back(readCpuMilliseconds);
         }
         std::filesystem::remove(path);
     }
@@ -464,6 +613,15 @@ CaseResult RunCase(
     result.p95milliseconds = Percentile(durations, 0.95);
     result.p50cpumilliseconds = Percentile(cpuDurations, 0.50);
     result.p95cpumilliseconds = Percentile(cpuDurations, 0.95);
+    if (parsed.measureread)
+    {
+        result.readp50milliseconds = Percentile(readDurations, 0.50);
+        result.readp95milliseconds = Percentile(readDurations, 0.95);
+        result.readp50cpumilliseconds =
+            Percentile(readCpuDurations, 0.50);
+        result.readp95cpumilliseconds =
+            Percentile(readCpuDurations, 0.95);
+    }
     const auto bounds =
         std::minmax_element(durations.begin(), durations.end());
     result.minimummilliseconds = *bounds.first;
@@ -484,9 +642,23 @@ slicer_core::Json BuildCaseJson(
             {"cpuMilliseconds", item.cpumilliseconds},
             {"bytesWritten", item.byteswritten}}));
     }
+    slicer_core::Json::Array readSamples;
+    readSamples.reserve(result.readmeasurements.size());
+    for (const TimingMeasurement& item : result.readmeasurements)
+    {
+        readSamples.push_back(slicer_core::Json::object({
+            {"milliseconds", item.milliseconds},
+            {"cpuMilliseconds", item.cpumilliseconds}}));
+    }
+    const std::uint64_t rawPixelBytes =
+        static_cast<std::uint64_t>(parsed.width)
+        * parsed.height
+        * slicer_core::rgbwsv_channel_count;
     return slicer_core::Json::object({
         {"backend", result.backend},
         {"storageMode", result.storagemode},
+        {"compression",
+         slicer_core::TiffCompressionModeString(parsed.compressionmode)},
         {"rowsPerStrip",
          static_cast<std::uint64_t>(parsed.rowsperstrip)},
         {"tileWidth",
@@ -503,11 +675,25 @@ slicer_core::Json BuildCaseJson(
         {"p50CpuMs", result.p50cpumilliseconds},
         {"p95CpuMs", result.p95cpumilliseconds},
         {"bytesWritten", result.byteswritten},
+        {"rawPixelBytes", rawPixelBytes},
+        {"fileToRawRatio",
+         rawPixelBytes == 0U
+             ? 0.0
+             : static_cast<double>(result.byteswritten)
+                 / static_cast<double>(rawPixelBytes)},
         {"failureCount", result.failurecount},
         {"decodedPixelsExact", result.decodedpixelsexact},
         {"writerStagingBytesEstimate",
          result.writerstagingbytesestimate},
         {"writerStagingEstimateScope", "project_owned_known_buffer"},
+        {"readTiming", slicer_core::Json::object({
+            {"available", parsed.measureread},
+            {"reader", "project_strict_reader"},
+            {"samples", slicer_core::Json{std::move(readSamples)}},
+            {"p50Ms", result.readp50milliseconds},
+            {"p95Ms", result.readp95milliseconds},
+            {"p50CpuMs", result.readp50cpumilliseconds},
+            {"p95CpuMs", result.readp95cpumilliseconds}})},
         {"phaseTiming", slicer_core::Json::object({
             {"availability", "not_available"},
             {"openMs", "not_available"},
@@ -537,8 +723,14 @@ slicer_core::Json BuildReport(
     {
         cases.push_back(BuildCaseJson(result, parsed));
     }
+    const bool compressionStudy =
+        parsed.measureread
+        || parsed.compressionmode != slicer_core::TiffCompressionMode::None;
     return slicer_core::Json::object({
-        {"schema", "slicesoft.tiff_writer_benchmark.03d.1"},
+        {"schema",
+         compressionStudy
+             ? "slicesoft.tiff_compression_benchmark.03e.1"
+             : "slicesoft.tiff_writer_benchmark.03d.1"},
         {"stage", parsed.stage},
         {"caseName", parsed.casename},
         {"cacheCondition", parsed.cachecondition},
@@ -546,7 +738,10 @@ slicer_core::Json BuildReport(
         {"configuredBackend", buildInfo.configuredbackend},
         {"buildType", BuildTypeName()},
         {"compiler", CompilerName()},
-        {"scope", "writer_only"},
+        {"scope",
+         parsed.measureread
+             ? "writer_and_project_reader"
+             : "writer_only"},
         {"capabilities", slicer_core::Json::object({
             {"handwrittenAvailable", buildInfo.handwrittenavailable},
             {"libtiffDependencyAvailable",
@@ -565,12 +760,15 @@ slicer_core::Json BuildReport(
             {"bitsPerSample", 8},
             {"pixelBytes",
              static_cast<std::uint64_t>(pixels.size())},
-            {"bufferGeneratedBeforeTiming", true}})},
+            {"bufferGeneratedBeforeTiming", true},
+            {"pixelPattern", PixelPatternString(parsed.pixelpattern)}})},
         {"contract", slicer_core::Json::object({
             {"channelOrder", slicer_core::Json::array({
                 "R", "G", "B", "W", "S", "V"})},
             {"planarConfig", "contiguous"},
-            {"compression", "none"},
+            {"compression",
+             slicer_core::TiffCompressionModeString(
+                 parsed.compressionmode)},
             {"polarity", "black_is_print"},
             {"printValue", 0},
             {"emptyValue", 255},
@@ -606,7 +804,7 @@ int RunBenchmark(const Options& parsed)
     std::filesystem::create_directories(
         parsed.workdirectory);
     const std::vector<std::uint8_t> pixels =
-        MakePixels(parsed.width, parsed.height);
+        MakePixels(parsed.width, parsed.height, parsed.pixelpattern);
     std::vector<CaseResult> results;
     if (parsed.storage == StorageSelection::Both
         || parsed.storage == StorageSelection::Stripped)
@@ -635,6 +833,10 @@ int RunBenchmark(const Options& parsed)
         << "tiff_writer_benchmark: measurements collected\n"
         << "  backend: " << buildInfo.configuredbackend << '\n'
         << "  buildType: " << BuildTypeName() << '\n'
+        << "  compression: "
+        << slicer_core::TiffCompressionModeString(
+               parsed.compressionmode)
+        << '\n'
         << "  iterations: "
         << parsed.measurementiterations << '\n';
     for (const CaseResult& result : results)

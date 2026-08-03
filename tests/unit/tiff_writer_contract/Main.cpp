@@ -313,7 +313,8 @@ std::vector<std::uint8_t> MakePixels(
 bool ValidateCommonTags(
     const ParsedTiff& parsed,
     const std::uint32_t width,
-    const std::uint32_t height)
+    const std::uint32_t height,
+    const std::uint16_t compression = 1U)
 {
     const std::vector<std::uint16_t> bits =
         ReadTagShorts(parsed, 258U);
@@ -334,8 +335,8 @@ bool ValidateCommonTags(
             "BitsPerSample is 8 x 6")
         && ExpectEqual(
             ReadTagShorts(parsed, 259U).at(0),
-            static_cast<std::uint16_t>(1U),
-            "Compression is none")
+            compression,
+            "Compression tag")
         && ExpectEqual(
             ReadTagShorts(parsed, 262U).at(0),
             static_cast<std::uint16_t>(2U),
@@ -563,6 +564,66 @@ bool TiledContractAndPixelsAreFrozen(
             "tiled storage tags are exclusive");
 }
 
+bool PackBitsCompressionRoundTrips(
+    const std::filesystem::path& directory)
+{
+    constexpr std::uint32_t width{19U};
+    constexpr std::uint32_t height{7U};
+    const std::vector<std::uint8_t> pixels =
+        MakePixels(width, height);
+
+    slicer_core::TiffImageSpec stripped;
+    stripped.width = width;
+    stripped.height = height;
+    stripped.rows_per_strip = 3U;
+    stripped.storage_mode = slicer_core::TiffStorageMode::Stripped;
+    stripped.compression_mode =
+        slicer_core::TiffCompressionMode::PackBits;
+    const std::filesystem::path strippedPath =
+        directory / "packbits_stripped.tiff";
+    slicer_core::write_rgbwsv_tiff(strippedPath, stripped, pixels);
+    const slicer_core::TiffReadResult strippedDecoded =
+        slicer_core::read_rgbwsv_tiff(strippedPath);
+    const ParsedTiff strippedParsed = ParseTiff(strippedPath);
+
+    slicer_core::TiffImageSpec tiled = stripped;
+    tiled.storage_mode = slicer_core::TiffStorageMode::Tiled;
+    tiled.tile_width = 8U;
+    tiled.tile_height = 4U;
+    const std::filesystem::path tiledPath =
+        directory / "packbits_tiled.tiff";
+    slicer_core::write_rgbwsv_tiff(tiledPath, tiled, pixels);
+    const slicer_core::TiffReadResult tiledDecoded =
+        slicer_core::read_rgbwsv_tiff(tiledPath);
+    const ParsedTiff tiledParsed = ParseTiff(tiledPath);
+
+    constexpr std::uint16_t packBitsCompression{32773U};
+    return ExpectTrue(
+               strippedDecoded.pixels == pixels,
+               "PackBits stripped decoded pixels are exact")
+        && ExpectTrue(
+            strippedDecoded.spec.compression_mode
+                == slicer_core::TiffCompressionMode::PackBits,
+            "PackBits stripped compression is reported")
+        && ValidateCommonTags(
+            strippedParsed,
+            width,
+            height,
+            packBitsCompression)
+        && ExpectTrue(
+            tiledDecoded.pixels == pixels,
+            "PackBits tiled decoded pixels are exact")
+        && ExpectTrue(
+            tiledDecoded.spec.compression_mode
+                == slicer_core::TiffCompressionMode::PackBits,
+            "PackBits tiled compression is reported")
+        && ValidateCommonTags(
+            tiledParsed,
+            width,
+            height,
+            packBitsCompression);
+}
+
 bool ExpectThrowsExact(
     const std::function<void()>& action,
     const std::string& expected,
@@ -685,6 +746,7 @@ int main()
         const bool passed =
             StrippedContractAndPixelsAreFrozen(directory)
             && TiledContractAndPixelsAreFrozen(directory)
+            && PackBitsCompressionRoundTrips(directory)
             && CurrentErrorsAreFrozen(directory);
         std::filesystem::remove_all(directory);
         if (!passed)

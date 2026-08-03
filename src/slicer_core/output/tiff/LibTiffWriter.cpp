@@ -257,6 +257,21 @@ TiffHandle OpenTiff(
     return handle;
 }
 
+std::uint16_t LibTiffCompressionTag(
+    const TiffCompressionMode mode)
+{
+    switch (mode)
+    {
+        case TiffCompressionMode::None:
+            return COMPRESSION_NONE;
+        case TiffCompressionMode::PackBits:
+            return COMPRESSION_PACKBITS;
+    }
+    ThrowWriterError(
+        TiffWriterErrorCode::TagSetupFailed,
+        "unsupported TIFF compression mode");
+}
+
 void SetFixedTags(
     TIFF* handle,
     const TiffImageSpec& spec,
@@ -279,7 +294,11 @@ void SetFixedTags(
                TIFFTAG_BITSPERSAMPLE,
                spec.bits_per_sample)
             == 1
-        && TIFFSetField(handle, TIFFTAG_COMPRESSION, COMPRESSION_NONE) == 1
+        && TIFFSetField(
+               handle,
+               TIFFTAG_COMPRESSION,
+               LibTiffCompressionTag(spec.compression_mode))
+            == 1
         && TIFFSetField(handle, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB) == 1
         && TIFFSetField(handle, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG) == 1
         && TIFFSetField(handle, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT) == 1
@@ -357,7 +376,7 @@ void WriteStrips(
             stripIndex,
             const_cast<std::uint8_t*>(pixels.data() + sourceOffset),
             requestedBytes);
-        if (writtenBytes != requestedBytes)
+        if (writtenBytes < 0)
         {
             ThrowWriterError(
                 TiffWriterErrorCode::StripWriteFailed,
@@ -427,7 +446,7 @@ void WriteTiles(
                 tileIndex,
                 tile.data(),
                 requestedBytes);
-            if (writtenBytes != requestedBytes)
+            if (writtenBytes < 0)
             {
                 ThrowWriterError(
                     TiffWriterErrorCode::TileWriteFailed,

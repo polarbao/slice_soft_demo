@@ -18,6 +18,22 @@ enum class TiffStorageMode {
 
 std::string tiff_storage_mode_string(TiffStorageMode mode);
 
+/**
+ * @brief Identifies the TIFF payload compression used by each strip or tile.
+ */
+enum class TiffCompressionMode
+{
+    None,
+    PackBits
+};
+
+/**
+ * @brief Converts a TIFF compression mode to its stable configuration name.
+ * @param mode Compression mode.
+ * @return `none` or `packbits`.
+ */
+std::string TiffCompressionModeString(TiffCompressionMode mode);
+
 struct TiffImageSpec {
     std::uint32_t width{0};
     std::uint32_t height{0};
@@ -28,6 +44,7 @@ struct TiffImageSpec {
     std::uint16_t bits_per_sample{8};
     std::uint16_t planar_config{1};
     TiffStorageMode storage_mode{TiffStorageMode::Stripped};
+    TiffCompressionMode compression_mode{TiffCompressionMode::None};
 };
 
 struct TiffChannelStats {

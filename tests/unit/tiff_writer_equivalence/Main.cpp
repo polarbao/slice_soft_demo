@@ -217,9 +217,13 @@ bool ResultsAreEquivalent(
         || handwritten.spec.width != expectedSpec.width
         || handwritten.spec.height != expectedSpec.height
         || handwritten.spec.storage_mode != expectedSpec.storage_mode
+        || handwritten.spec.compression_mode
+            != expectedSpec.compression_mode
         || libTiff.spec.width != expectedSpec.width
         || libTiff.spec.height != expectedSpec.height
         || libTiff.spec.storage_mode != expectedSpec.storage_mode
+        || libTiff.spec.compression_mode
+            != expectedSpec.compression_mode
         || handwritten.channel_checksums != libTiff.channel_checksums)
     {
         return false;
@@ -255,7 +259,8 @@ bool ResultsAreEquivalent(
 
 bool RunStorageMatrix(
     const std::filesystem::path& directory,
-    const slicer_core::TiffStorageMode storageMode)
+    const slicer_core::TiffStorageMode storageMode,
+    const slicer_core::TiffCompressionMode compressionMode)
 {
     slicer_core::TiffImageSpec spec;
     spec.width = storageMode == slicer_core::TiffStorageMode::Tiled
@@ -266,6 +271,7 @@ bool RunStorageMatrix(
     spec.tile_width = 16U;
     spec.tile_height = 16U;
     spec.storage_mode = storageMode;
+    spec.compression_mode = compressionMode;
 
     const std::unique_ptr<slicer_core::ITiffWriter> handwrittenWriter =
         slicer_core::CreateTiffWriter(
@@ -275,6 +281,8 @@ bool RunStorageMatrix(
             slicer_core::TiffWriterBackend::LibTiff);
     const std::string storageName =
         slicer_core::tiff_storage_mode_string(storageMode);
+    const std::string compressionName =
+        slicer_core::TiffCompressionModeString(compressionMode);
 
     for (std::size_t caseIndex{0U}; caseIndex < 6U; ++caseIndex)
     {
@@ -282,11 +290,11 @@ bool RunStorageMatrix(
             MakePixels(spec, caseIndex);
         const std::filesystem::path handwrittenPath =
             directory
-            / (storageName + "_handwritten_"
+            / (storageName + "_" + compressionName + "_handwritten_"
                + std::to_string(caseIndex) + ".tiff");
         const std::filesystem::path libTiffPath =
             directory
-            / (storageName + "_libtiff_"
+            / (storageName + "_" + compressionName + "_libtiff_"
                + std::to_string(caseIndex) + ".tiff");
         handwrittenWriter->Write(handwrittenPath, spec, pixels);
         libTiffWriter->Write(libTiffPath, spec, pixels);
@@ -349,10 +357,20 @@ int main()
         const bool passed =
             RunStorageMatrix(
                 directory,
-                slicer_core::TiffStorageMode::Stripped)
+                slicer_core::TiffStorageMode::Stripped,
+                slicer_core::TiffCompressionMode::None)
             && RunStorageMatrix(
                 directory,
-                slicer_core::TiffStorageMode::Tiled);
+                slicer_core::TiffStorageMode::Tiled,
+                slicer_core::TiffCompressionMode::None)
+            && RunStorageMatrix(
+                directory,
+                slicer_core::TiffStorageMode::Stripped,
+                slicer_core::TiffCompressionMode::PackBits)
+            && RunStorageMatrix(
+                directory,
+                slicer_core::TiffStorageMode::Tiled,
+                slicer_core::TiffCompressionMode::PackBits);
         std::filesystem::remove_all(directory);
         if (!passed)
         {
