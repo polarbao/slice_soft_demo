@@ -1,6 +1,6 @@
 # TASKS_03D LibTIFF 兼容迁移任务清单
 
-> 文档状态：03D-01..06 COMPLETE / 03D-07 READY FOR OPTIONAL CLOSURE / PRIORITY P0
+> 文档状态：03D-01..07 COMPLETE / GO_OPTIONAL / DEFAULT HANDWRITTEN
 > 日期：2026-08-03
 > 规则：每个原子任务完成后单独验证和提交；不得一次性切换默认后端
 
@@ -145,7 +145,7 @@ p50 改善为 -58.937%，未达到 15%，因此只保留显式可选 LibTIFF 后
 
 ## 03D-07 默认切换与阶段收口
 
-状态：READY FOR OPTIONAL CLOSURE / DEFAULT SWITCH BLOCKED
+状态：COMPLETE / GO_OPTIONAL / DEFAULT SWITCH BLOCKED（2026-08-03）
 
 ```text
 03D-06=GO_OPTIONAL，不切换默认 Writer；
@@ -156,6 +156,12 @@ Full regression。
 
 准备依据：`docs/slice/DOC/DOC_PREP_03D_07_LibTIFF阶段收口准备.md`。若未来重新申请默认
 切换，必须先重跑固定参考机性能 Gate 并再次获得用户明确授权。
+
+实现证据：`scripts/Run03DTiffOptionalClosure.ps1`、
+`docs/slice/REPORT/REPORT_03D_07_LibTIFF可选后端阶段收口.md` 和
+`docs/user_guides/SLICE_03D_LibTIFF可选后端构建与验证说明.md`。隔离 LibTIFF Runtime、
+DLL/许可证/manifest、Package/RIP strict 和默认 handwritten full regression 均已验证；
+默认 Writer 未切换。
 
 ## 固定停止条件
 

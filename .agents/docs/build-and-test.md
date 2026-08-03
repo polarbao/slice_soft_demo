@@ -270,6 +270,17 @@ LibTIFF version, wall/CPU p50/p95, exact decode, output bytes and independent-pr
 uses one untimed warmup; `cold_output_directory` uses a fresh directory without warmup but does not flush
 the OS disk cache. The 2026-08-03 reference run concluded `GO_OPTIONAL`; handwritten remains default.
 
+`03D-07` closes the optional lane without changing the default:
+
+```powershell
+.\scripts\Run03DTiffOptionalClosure.ps1 -Config Release
+```
+
+This command verifies the default/optional Preset policy, re-runs compatibility and Writer performance,
+deploys an isolated LibTIFF Runtime with `tiff.dll` and its license, runs Package/RIP strict smoke, and
+runs the default handwritten full regression. The generated `output/benchmarks/03d_07` evidence is local
+and ignored. There is no LibTIFF Reader backend; read compatibility uses the same project strict Reader.
+
 ## Baseline Gate
 
 Each meaningful refactor step must pass:

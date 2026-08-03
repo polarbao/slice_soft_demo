@@ -34,7 +34,7 @@ CODEX_PROMPT；
 | 单材料 W/V 映射 | READY |
 | UI/服务设计 | READY |
 | 验证矩阵 | READY |
-| 03D 优先级 Gate | WAIT |
+| 03D 优先级 Gate | PASS / 03D-07 GO_OPTIONAL COMPLETE |
 | 代码实现 | NOT STARTED |
 
 ## 4. 执行顺序

@@ -44,7 +44,7 @@
     {
       "name": "slicesoft-libtiff",
       "displayName": "SliceSoft 03D LibTIFF 依赖轨道",
-      "description": "独立构建目录，仅验证 LibTIFF 依赖与运行时；Writer 默认路由仍未切换。",
+      "description": "显式可选 LibTIFF 4.7.1 Writer/Runtime 轨道；默认生产轨道保持 handwritten。",
       "inherits": "slicesoft-base",
       "binaryDir": "${sourceDir}/build-slicesoft/03d-libtiff",
       "cacheVariables": {

@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v4.4
+> 版本：v4.5
 > 更新日期：2026-08-03
 > 当前生产主线：12E-09C COMPLETE
-> 当前下一任务：03D-07 OPTIONAL CLOSURE READY
+> 当前下一任务：12E-09D-01 READY
 
 ## 1. 使用规则
 
@@ -54,8 +54,8 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-09A | 09A-01..06 COMPLETE / PASS | 只读 Diagnostic Facade、场景感知 Effective Config、中文参数状态区、可取消 Worker、TIFF 同层语义 Preview 和阶段回归 | 保持回归 |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
 | 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
-| 03D-LIBTIFF | 03D-01..06 COMPLETE / GO_OPTIONAL | 手写基线、可选 LibTIFF 依赖/Runtime、stripped/tiled、稳定错误、兼容 Gate 和 Release 性能矩阵已闭环 | 03D-07 可选后端收口未实现；默认 Writer 不切换 |
-| 12E-09D | FULL EXECUTION PACKAGE PREPARED | 诊断宽度与生产纹理设置分离、Legacy 层数/Global 物理宽度、单材料 Relief W/V 选择文档 | 09D-01..06 未实现；等待 03D |
+| 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 手写基线、可选 LibTIFF 依赖/Runtime、stripped/tiled、兼容/性能 Gate、隔离 Runtime/RIP 和 full regression 已闭环 | 默认 Writer 保持 handwritten；未来切换需新 Gate 与独立授权 |
+| 12E-09D | FULL EXECUTION PACKAGE PREPARED / READY | 诊断宽度与生产纹理设置分离、Legacy 层数/Global 物理宽度、单材料 Relief W/V 选择文档 | 09D-01..06 未实现；03D 前置已关闭 |
 | 12E-10 | FULL EXECUTION PACKAGE PREPARED / 10A READY | PRD/DEV/DEMO/PREP/TASKS/PROMPT、最终矩阵 schema、模型基线、09B 生产入口、09C DPI 合同和 09A 阶段收口已完成 | 10A 等待用户授权；10B/10C 技术前置已具备；10D 等待 10A..C |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
@@ -82,8 +82,8 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
 | 09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 保持回归 |
-| 03D-LIBTIFF | 03D-01..06 COMPLETE / GO_OPTIONAL | 执行 03D-07 可选后端收口；保持 handwritten 默认 |
-| 09D Production Texture/Single Material | 09D-01..06 PREPARED | 03D 当前范围完成后执行 |
+| 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 已收口；保持 handwritten 默认 |
+| 09D Production Texture/Single Material | 09D-01..06 PREPARED / READY | 执行 09D-01，再按 02 -> 06 顺序推进 |
 | 12E-10 Final Closure | 完整执行包 PREPARED / 10A READY | 用户授权后执行 10A，再按 10B -> 10C -> 10D |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
@@ -92,11 +92,11 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 ### 2.3 剩余任务数量
 
 ```text
-03D-07：1 个；
+03D-07：0 个（已完成）；
 12E-09D-01..06：6 个；
 12E-10A..D：4 个；
 12F-02..09：8 个；
-03D、09D 和 12E-10 合计待执行 14 个原子任务；
+03D、09D 和 12E-10 合计待执行 10 个原子任务；
 若另计 12F 性能专项，增加 8 个；
 12G-TCWS 候选 R0..R6 已冻结，当前激活任务数为 0。
 
@@ -255,12 +255,11 @@ Stage 12/13 的逐项执行状态、34 个近程/已规划原子任务顺序和�
 本次修订不改变既有阶段的完成证据，只调整后续执行入口：
 
 ```text
-1. 03D-01..06 已完成；03D-06 判定为 `GO_OPTIONAL`；
-2. 03D-07 只执行可选后端阶段收口，当前性能证据禁止切换默认 Writer；
-3. 12E-09D-01..06：在 03D 当前范围完成后执行，收口生产纹理厚度和单材料 W/V；
-4. 12E-10A..D：继续作为双模式最终闭环，排在 09D 之后；
-5. 12F-02..09：保持按性能证据逐项授权；
-6. 12G-TCWS：继续冻结，只保留 RIP 白区合同评审，不新增纹理铺底或协议通道。
+1. 03D-01..07 已完成，最终判定为 `GO_OPTIONAL`，默认 Writer 保持 handwritten；
+2. 12E-09D-01..06：作为当前下一任务，收口生产纹理厚度和单材料 W/V；
+3. 12E-10A..D：等待 09D 完成后执行最终生产矩阵；
+4. 12F-02..09：保持按性能证据逐项授权；
+5. 12G-TCWS：继续冻结，只保留 RIP 白区合同评审，不新增纹理铺底或协议通道。
 ```
 
 03D 和 09D 的“准备完成”只表示 PRD/DEV/DEMO/Decision/TASKS/PROMPT 齐备，不是代码完成，

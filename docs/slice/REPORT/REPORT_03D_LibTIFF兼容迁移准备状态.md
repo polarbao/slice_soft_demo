@@ -1,6 +1,6 @@
 # REPORT_03D LibTIFF 兼容迁移当前状态
 
-> 状态：03D-01..06 COMPLETE / GO_OPTIONAL / 03D-07 OPTIONAL CLOSURE READY
+> 状态：03D-01..07 COMPLETE / GO_OPTIONAL / DEFAULT HANDWRITTEN
 > 日期：2026-08-03
 > 当前优先级：P0
 
@@ -151,7 +151,7 @@ Reader 已正确解包总负载不超过 4 字节的 TIFF 内联 SHORT 数组；
 | 03D-05 等价、坏包与共享 Package Gate | COMPLETE / PASS |
 | 03D-06 Release 性能矩阵 | COMPLETE / GO_OPTIONAL |
 | 03D-07 默认切换 | BLOCKED BY PERFORMANCE GATE |
-| 03D-07 可选后端阶段收口 | READY |
+| 03D-07 可选后端阶段收口 | COMPLETE / GO_OPTIONAL |
 
 ## 8. 下一步
 
@@ -159,5 +159,5 @@ Reader 已正确解包总负载不超过 4 字节的 TIFF 内联 SHORT 数组；
 stripped 的最低 p50 改善为 -58.937%，未达到 15%，最终判定为 `GO_OPTIONAL`。详细证据见
 `REPORT_03D_06_LibTIFF性能矩阵与判定.md`。
 
-下一原子任务可执行 `03D-07 可选后端阶段收口`，但不得切换默认 Writer。准备边界见
-`DOC_PREP_03D_07_LibTIFF阶段收口准备.md`。
+03D-07 已完成可选后端阶段收口，默认 Writer 未切换。完整证据见
+`REPORT_03D_07_LibTIFF可选后端阶段收口.md`；下一优先任务可进入 `12E-09D`。

@@ -29,11 +29,12 @@ docs/codex_task/current/TASKS_03D_LibTIFF兼容迁移任务清单.md
 9. 03D-07 必须再次获得用户明确授权。
 ```
 
-当前 `03D-01..06` 已完成；03D-06 的正式判定为 `GO_OPTIONAL`。下一原子任务只能按
-`03D-07 可选后端阶段收口`执行，必须保持 handwritten 为默认生产 Writer，不得把本轮通用
-执行授权解释为默认后端切换授权。依据：
+当前 `03D-01..07` 已完成；03D 最终判定为 `GO_OPTIONAL`。handwritten 保持默认生产
+Writer，LibTIFF 4.7.1 保留为显式可选轨道。未来重新讨论默认切换仍需新的性能 Gate 和用户
+独立授权。完成依据：
 
 ```text
 docs/slice/REPORT/REPORT_03D_06_LibTIFF性能矩阵与判定.md
 docs/slice/DOC/DOC_PREP_03D_07_LibTIFF阶段收口准备.md
+docs/slice/REPORT/REPORT_03D_07_LibTIFF可选后端阶段收口.md
 ```

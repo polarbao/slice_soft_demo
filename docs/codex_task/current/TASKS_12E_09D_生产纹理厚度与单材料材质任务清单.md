@@ -1,11 +1,11 @@
 # TASKS_12E-09D 生产纹理厚度与单材料材质任务清单
 
-> 文档状态：PREPARED / WAIT 03D-LIBTIFF
+> 文档状态：PREPARED / 09D-01 READY
 > 日期：2026-07-31
 
 ## 12E-09D-01 合同与配置映射
 
-状态：PREPARED
+状态：READY
 
 ```text
 新增 DTO/错误码/字段映射单测；

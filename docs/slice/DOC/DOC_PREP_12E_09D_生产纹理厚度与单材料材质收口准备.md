@@ -1,6 +1,6 @@
 # DOC_PREP_12E-09D 生产纹理厚度与单材料材质收口准备
 
-> 文档状态：PREPARATION COMPLETE / WAIT 03D PRIORITY
+> 文档状态：PREPARATION COMPLETE / READY AFTER 03D
 > 日期：2026-07-31
 
 ## 1. 依赖
@@ -12,7 +12,7 @@
 | 12E-09C | COMPLETE | X/Y DPI、物理宽度和 Preview 比例已收口 |
 | 13C | COMPLETE | TIFF 原生生产预览可用于验收 |
 | 13D/13E | COMPLETE | 右侧检查器和 UI 信息架构已存在 |
-| 03D-LIBTIFF | P0 NEXT | 非技术硬依赖，但按用户优先级必须先执行 |
+| 03D-LIBTIFF | COMPLETE / GO_OPTIONAL | 非技术硬依赖；03D-07 已于 2026-08-03 收口 |
 | 12G-TCWS | FROZEN | 不纳入 09D |
 
 ## 2. 已确认代码证据
@@ -69,6 +69,6 @@ p0.rgbwsv.2。
 文档准备：PASS；
 需求/设计/验证：PASS；
 任务清单/Prompt：PASS；
-03D 第一优先级：WAIT；
+03D 第一优先级：COMPLETE；
 09D 代码授权：NOT YET REQUESTED。
 ```
