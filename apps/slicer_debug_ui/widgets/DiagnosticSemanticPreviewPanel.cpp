@@ -14,6 +14,7 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -151,6 +152,14 @@ void DiagnosticSemanticPreviewPanel::SetProductionLayer(
     Compose();
 }
 
+void DiagnosticSemanticPreviewPanel::
+    SetMaterialClosureSummary(
+        const MaterialClosureDiagnosticsSummary& summary)
+{
+    m_closureSummary = summary;
+    Compose();
+}
+
 bool DiagnosticSemanticPreviewPanel::
     SetDisplayModeForTest(
         const DiagnosticSemanticDisplayMode mode)
@@ -230,10 +239,41 @@ void DiagnosticSemanticPreviewPanel::Compose()
     slicer_core::
         TextureFillPartitionSemanticPreviewRequest
             request;
+    slicer_core::
+        TextureFillPartitionSemanticPreviewClosureEvidence
+            closureEvidence;
+    closureEvidence.available =
+        m_closureSummary.reportavailable
+        && m_closureSummary.schemavalid;
+    closureEvidence.exact =
+        closureEvidence.available
+        && !m_closureSummary.candidateonly
+        && m_closureSummary.confidence
+            == QStringLiteral("exact");
+    closureEvidence.layers.reserve(
+        static_cast<std::size_t>(
+            m_closureSummary.layers.size()));
+    for (const MaterialClosureLayerUi& layer :
+         m_closureSummary.layers)
+    {
+        slicer_core::
+            TextureFillPartitionSemanticPreviewClosureLayer
+                closureLayer;
+        closureLayer.layerindex = layer.layerindex;
+        closureLayer.zmm = layer.zmm;
+        closureLayer.closurepass =
+            layer.closurestatus == QStringLiteral("pass");
+        closureLayer.gappixels =
+            static_cast<std::uint64_t>(
+                std::max(0, layer.gappixels));
+        closureEvidence.layers.push_back(
+            std::move(closureLayer));
+    }
     request.partition =
         &m_analysis->evidence->partition;
     request.productionlayer =
         m_productionLayer.get();
+    request.closureevidence = &closureEvidence;
     m_semantics =
         slicer_core::
             BuildTextureFillPartitionSemanticPreview(
@@ -356,9 +396,9 @@ void DiagnosticSemanticPreviewPanel::Compose()
     m_status->setText(
         QStringLiteral(
             "同层 layer=%1  z=%2 mm；Texture=%3（%4%）；"
-            "Fill=%5（%6%）；S=%7；V=%8；width=%9 mm；"
-            "allTexture=%10；%11；config=%12；"
-            "材料闭环联动未评估")
+            "Fill=%5（%6%）；W=%7；S=%8；V=%9；width=%10 mm；"
+            "allTexture=%11；%12；config=%13；"
+            "材料闭环=%14（gap=%15）")
             .arg(m_semantics.layerindex)
             .arg(m_semantics.zmm, 0, 'f', 3)
             .arg(m_semantics.texturesurfacepixels)
@@ -373,6 +413,7 @@ void DiagnosticSemanticPreviewPanel::Compose()
                 0,
                 'f',
                 1)
+            .arg(m_semantics.whitepixels)
             .arg(m_semantics.supportpixels)
             .arg(m_semantics.varnishpixels)
             .arg(
@@ -387,7 +428,12 @@ void DiagnosticSemanticPreviewPanel::Compose()
                     : QStringLiteral("否"))
             .arg(identityWarning)
             .arg(ShortIdentity(
-                m_analysis->identity.confighash)));
+                m_analysis->identity.confighash))
+            .arg(
+                m_semantics.fullclosurepass
+                    ? QStringLiteral("通过")
+                    : QStringLiteral("未通过"))
+            .arg(m_semantics.fullclosuregappixels));
     ApplyImage();
 }
 

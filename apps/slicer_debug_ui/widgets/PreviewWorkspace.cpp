@@ -5,8 +5,11 @@
 #include "PreviewOverlayPanel.h"
 #include "PreviewPanel.h"
 
+#include "../services/MaterialClosureReportInterpreter.h"
+
 #include <QComboBox>
 #include <QFrame>
+#include <QFileInfo>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -236,6 +239,20 @@ void PreviewWorkspace::LoadPackage(const PackageSummary& package)
     m_productionView->LoadPackage(package);
     m_overlayView->loadPackage(package);
     m_rawPreviewView->loadPackage(package);
+    QString closureReportPath;
+    for (const QString& reportPath : package.report_paths)
+    {
+        if (QFileInfo(reportPath).fileName()
+            == QStringLiteral("material_closure_report.json"))
+        {
+            closureReportPath = reportPath;
+            break;
+        }
+    }
+    m_semanticView->SetMaterialClosureSummary(
+        MaterialClosureReportInterpreter::Interpret(
+            closureReportPath,
+            package.package_dir));
     RebuildCanonicalLayers();
     m_currentLayerIndex = m_layerIndices.isEmpty() ? -1 : m_layerIndices.first();
     m_probeContext->setText(DefaultProbeGuidance());

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DiagnosticSettingsPanel.h"
+#include "ProductionTextureSettingsPanel.h"
 
 #include <QStringList>
 #include <QWidget>
@@ -62,9 +63,21 @@ public:
         const DiagnosticSettingsPresentation& presentation);
 
     /**
+     * @brief Update conditional production texture or single-material controls.
+     * @param presentation Current requested/effective production state.
+     */
+    void SetProductionTexturePresentation(
+        const ProductionTextureSettingsPresentation& presentation);
+
+    /**
      * @brief Select the scene page after an import request.
      */
     void ShowScenePage();
+
+    /**
+     * @brief Select the independent texture-diagnostic page.
+     */
+    void ShowTextureDiagnosticPage();
 
     /**
      * @brief Return ordered inspector page titles.
@@ -121,6 +134,28 @@ signals:
      */
     void SigDiagnosticCancelRequested();
 
+    /**
+     * @brief Forward a Legacy production top-layer edit.
+     * @param layerCount Requested positive Z-layer count.
+     */
+    void SigProductionLegacyTopLayersChanged(int layerCount);
+
+    /**
+     * @brief Forward a Global production texture edit.
+     * @param widthMm Requested shell width in millimeters.
+     * @param mode Explicit partition mode.
+     */
+    void SigProductionGlobalTextureChanged(
+        double widthMm,
+        ProductionTexturePartitionMode mode);
+
+    /**
+     * @brief Forward a single-material relief W/V edit.
+     * @param material Requested white or varnish material.
+     */
+    void SigProductionSingleMaterialChanged(
+        SingleMaterialReliefMaterial material);
+
 private:
     QTabWidget* m_tabs{nullptr};
     QWidget* m_scenePage{nullptr};
@@ -128,6 +163,10 @@ private:
     QLabel* m_profileLabel{nullptr};
     QLabel* m_availabilityLabel{nullptr};
     QPushButton* m_openConfigButton{nullptr};
+    QTabWidget* m_preflightDiagnosticsTabs{nullptr};
+    QWidget* m_preflightDiagnosticsPage{nullptr};
     DiagnosticSettingsPanel* m_diagnosticSettingsPanel{
+        nullptr};
+    ProductionTextureSettingsPanel* m_productionTextureSettingsPanel{
         nullptr};
 };

@@ -903,7 +903,7 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             {"generated", Json{generatedPreviews}},
             {"files", Json{generatedPreviews}},
         });
-        const Json sliceReport = Json::object({
+        Json::Object sliceReportFields{
             {"schema", "p0.slice_report.1"},
             {"status",
              request.scene.has_value()
@@ -928,8 +928,14 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
              Json::object({
                  {"printPixels", ChannelCountsToJson(totalPrintPixels)},
                  {"emptyPixels", ChannelCountsToJson(totalEmptyPixels)},
-             })},
-        });
+            })},
+        };
+        if (request.productionSettings.has_value())
+        {
+            sliceReportFields["productionSettings"] =
+                *request.productionSettings;
+        }
+        const Json sliceReport{std::move(sliceReportFields)};
         Json::Object reportLinks{
             {"slice", "reports/slice_report.json"},
             {"preview", "reports/preview_report.json"},

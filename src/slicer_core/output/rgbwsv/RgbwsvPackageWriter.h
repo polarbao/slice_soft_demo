@@ -1,6 +1,7 @@
 #pragma once
 
 #include "slicer_core/config.h"
+#include "slicer_core/json_value.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 #include "slicer_core/output/rgbwsv/RgbwsvSceneExtension.h"
@@ -108,6 +109,7 @@ struct RgbwsvProductionPackageWriteRequest
     RgbwsvProductionPreviewSpec preview;
     std::vector<RgbwsvProductionLayer> layers;
     std::optional<MultiModelSceneReportDocument> scene;
+    std::optional<Json> productionSettings;
     RgbwsvProductionLayerWriteCallback layerwritecallback;
 };
 

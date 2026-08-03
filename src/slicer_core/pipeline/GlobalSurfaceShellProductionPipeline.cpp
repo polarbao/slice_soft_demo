@@ -193,6 +193,7 @@ RgbwsvProductionPackageWriteRequest BuildPackageRequest(
     const std::filesystem::path& configPath,
     const SceneModel& scene,
     const TextureFillPartitionRasterMappingResult& mapping,
+    const GlobalTextureFillPartitionResult& partition,
     const SliceRunOptions& options)
 {
     RgbwsvProductionPackageWriteRequest request;
@@ -231,6 +232,18 @@ RgbwsvProductionPackageWriteRequest BuildPackageRequest(
             : "tiff_native";
     request.preview.format = config.preview.format;
     request.preview.interval = config.preview.interval;
+    request.productionSettings = Json::object({
+        {"schema", "slicesoft.production_texture.12e_09d.1"},
+        {"strategy", "global_surface_shell"},
+        {"partitionMode", config.texture.surface_shell.mode},
+        {"requestedWidthMm", config.texture.surface_shell.width_mm},
+        {"effectiveWidthMm", partition.widthMetrics.effectiveWidthMm},
+        {"allTexture", partition.widthMetrics.allTexture},
+        {"backend", partition.backend},
+        {"modelVoxels", partition.stats.modelVoxels},
+        {"textureSurfaceVoxels", partition.stats.textureSurfaceVoxels},
+        {"modelFillVoxels", partition.stats.modelFillVoxels},
+    });
     return request;
 }
 
@@ -357,6 +370,8 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
     benchmarkRequest.buildType = kBuildType;
     benchmarkRequest.voxelMm = ClassificationResolutionMm(config);
     benchmarkRequest.widthMm = config.texture.surface_shell.width_mm;
+    benchmarkRequest.forceAllTexture =
+        config.texture.surface_shell.mode == "all_texture";
     benchmarkRequest.paddingVoxels = 1;
     benchmarkRequest.configLoadMs = configLoadMs;
     benchmarkRequest.modelLoadMs = modelLoadMs;
@@ -432,6 +447,7 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
                 configPath,
                 scene,
                 mapping,
+                benchmark.partition,
                 options),
             std::move(adapter));
     const double outputWriteMs = ElapsedMilliseconds(outputStart);

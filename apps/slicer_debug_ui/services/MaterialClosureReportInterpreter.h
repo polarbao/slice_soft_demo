@@ -17,6 +17,17 @@ struct MaterialClosureWorstLayerUi
 };
 
 /**
+ * @brief One exact or candidate closure layer from the production package report.
+ */
+struct MaterialClosureLayerUi
+{
+    int layerindex{-1};
+    double zmm{0.0};
+    QString closurestatus;
+    int gappixels{0};
+};
+
+/**
  * @brief Read-only UI projection of p0.material_closure.1.
  */
 struct MaterialClosureDiagnosticsSummary
@@ -40,6 +51,7 @@ struct MaterialClosureDiagnosticsSummary
     int varnishsupportgappixels{0};
     int externalbackgroundprotectedpixels{0};
     QStringList diagnosticcodes;
+    QVector<MaterialClosureLayerUi> layers;
     QVector<MaterialClosureWorstLayerUi> worstlayers;
 };
 

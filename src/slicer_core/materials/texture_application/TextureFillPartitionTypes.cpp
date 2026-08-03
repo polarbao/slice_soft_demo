@@ -9,6 +9,8 @@ std::string TextureFillPartitionErrorCodeName(const TextureFillPartitionErrorCod
     {
     case TextureFillPartitionErrorCode::SurfaceShellWidthInvalid:
         return "E_12E_SURFACE_SHELL_WIDTH_INVALID";
+    case TextureFillPartitionErrorCode::SurfaceShellPartitionModeUnsupported:
+        return "E_12E_SURFACE_SHELL_PARTITION_MODE_UNSUPPORTED";
     case TextureFillPartitionErrorCode::SurfaceShellStepUnsupported:
         return "E_12E_SURFACE_SHELL_STEP_UNSUPPORTED";
     case TextureFillPartitionErrorCode::SurfaceShellGeometryModeUnsupported:

@@ -30,6 +30,7 @@ struct TextureFillPartitionReleaseBenchmarkRequest
     std::string buildType{"unknown"};
     double voxelMm{0.10};
     double widthMm{0.20};
+    bool forceAllTexture{false};
     int paddingVoxels{1};
     double configLoadMs{0.0};
     double modelLoadMs{0.0};

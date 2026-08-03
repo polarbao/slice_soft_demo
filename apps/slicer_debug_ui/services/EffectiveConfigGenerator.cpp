@@ -1,6 +1,8 @@
 #include "EffectiveConfigGenerator.h"
 
 #include "ConfigValidator.h"
+#include "ProductionTextureSettingsModel.h"
+#include "SingleMaterialReliefResolver.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -474,6 +476,50 @@ void ApplyProductionAudit(
         {QStringLiteral("generatedAtUtc"),
          EffectiveGeneratedAtUtc(request.production)},
     };
+    if (request.settings.productiontextureoverrideenabled)
+    {
+        const ProductionTextureControlState& textureState =
+            request.settings.productiontexture;
+        productionAudit.insert(
+            QStringLiteral("texture"),
+            QJsonObject{
+                {QStringLiteral("strategy"),
+                 ProductionTextureSettingsContract::StrategyValue(
+                     textureState.strategy)},
+                {QStringLiteral("requestedTopSurfaceLayers"),
+                 textureState.requestedtoplayers},
+                {QStringLiteral("effectiveTopSurfaceLayers"),
+                 textureState.effectivetoplayers},
+                {QStringLiteral("effectiveTopSurfaceThicknessMm"),
+                 textureState.effectivetopthicknessmm},
+                {QStringLiteral("requestedWidthMm"),
+                 textureState.requestedwidthmm},
+                {QStringLiteral("effectiveWidthMm"),
+                 textureState.effectivewidthmm},
+                {QStringLiteral("partitionMode"),
+                 ProductionTextureSettingsContract::PartitionModeValue(
+                     textureState.partitionmode)},
+                {QStringLiteral("backend"), textureState.backend},
+                {QStringLiteral("stale"), textureState.stale},
+            });
+    }
+    if (request.settings.singlematerialreliefoverrideenabled)
+    {
+        const SingleMaterialReliefState& materialState =
+            request.settings.singlematerialrelief;
+        productionAudit.insert(
+            QStringLiteral("singleMaterialRelief"),
+            QJsonObject{
+                {QStringLiteral("requestedMaterial"),
+                 materialState.requestedmaterial
+                         == SingleMaterialReliefMaterial::White
+                     ? QStringLiteral("white")
+                     : QStringLiteral("varnish")},
+                {QStringLiteral("effectiveChannel"),
+                 materialState.effectivechannel},
+                {QStringLiteral("stale"), materialState.stale},
+            });
+    }
     QJsonObject uiAudit =
         root.value(QStringLiteral("uiAudit")).toObject();
     uiAudit.insert(QStringLiteral("production"), productionAudit);
@@ -506,7 +552,7 @@ QString BuildSummary(
     const EffectiveConfigResult& result)
 {
     const SliceSettingsState& settings = request.settings;
-    return QStringLiteral(
+    QString summary = QStringLiteral(
                "Profile：%1\n模板：%2\n生效配置：%3\n模型：%4\n输出：%5\n层高：%6 mm\n"
                "模型填充：%7\n支撑：%8，内部镂空=%9\n表面光油：%10 / %11 px\n"
                "外侧光油：%12 / %13 mm\n自动诊断图：%14 / 间隔 %15\n引擎：%16\n差异：%17 项")
@@ -527,6 +573,53 @@ QString BuildSummary(
         .arg(settings.preview.interval)
         .arg(EngineRoleValue(settings.enginerole))
         .arg(result.differences.size());
+    if (settings.productiontextureoverrideenabled)
+    {
+        const ProductionTextureControlState& state =
+            settings.productiontexture;
+        summary += QStringLiteral(
+                       "\n生产纹理：%1 / %2 / backend=%3 / stale=%4")
+                       .arg(
+                           ProductionTextureSettingsContract::StrategyValue(
+                               state.strategy),
+                           state.strategy
+                                   == ProductionTextureStrategy::LegacyTopBand
+                               ? QStringLiteral("%1 层 / %2 mm")
+                                     .arg(state.effectivetoplayers)
+                                     .arg(
+                                         state.effectivetopthicknessmm,
+                                         0,
+                                         'f',
+                                         4)
+                               : state.partitionmode
+                                         == ProductionTexturePartitionMode::AllTexture
+                                     ? QStringLiteral("all_texture")
+                                     : QStringLiteral("%1 mm")
+                                           .arg(
+                                               state.effectivewidthmm,
+                                               0,
+                                               'f',
+                                               2),
+                           state.backend,
+                           state.stale ? QStringLiteral("true")
+                                       : QStringLiteral("false"));
+    }
+    if (settings.singlematerialreliefoverrideenabled)
+    {
+        const SingleMaterialReliefState& state =
+            settings.singlematerialrelief;
+        summary += QStringLiteral(
+                       "\n单材料浮雕：%1 / channel=%2 / stale=%3")
+                       .arg(
+                           state.requestedmaterial
+                                   == SingleMaterialReliefMaterial::White
+                               ? QStringLiteral("white")
+                               : QStringLiteral("varnish"),
+                           state.effectivechannel,
+                           state.stale ? QStringLiteral("true")
+                                       : QStringLiteral("false"));
+    }
+    return summary;
 }
 
 bool SameFilePath(const QString& left, const QString& right)
@@ -599,6 +692,38 @@ EffectiveConfigResult EffectiveConfigGenerator::Generate(const EffectiveConfigRe
             result.errors))
     {
         return result;
+    }
+    if (request.settings.productiontextureoverrideenabled)
+    {
+        const ProductionTextureSettingsApplyResult textureResult =
+            ProductionTextureSettingsModel::Apply(
+                root,
+                request.settings.productiontexture);
+        if (!textureResult.applied)
+        {
+            result.errors.push_back(
+                textureResult.errorcode
+                + QStringLiteral(": ")
+                + textureResult.issues.join(QStringLiteral("; ")));
+            return result;
+        }
+        root = textureResult.config;
+    }
+    if (request.settings.singlematerialreliefoverrideenabled)
+    {
+        const SingleMaterialReliefApplyResult materialResult =
+            SingleMaterialReliefResolver::Apply(
+                root,
+                request.settings.singlematerialrelief);
+        if (!materialResult.applied)
+        {
+            result.errors.push_back(
+                materialResult.errorcode
+                + QStringLiteral(": ")
+                + materialResult.issues.join(QStringLiteral("; ")));
+            return result;
+        }
+        root = materialResult.config;
     }
     if (!disabledOverrides.isEmpty())
     {

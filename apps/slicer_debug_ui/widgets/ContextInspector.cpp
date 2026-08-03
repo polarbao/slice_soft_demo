@@ -53,11 +53,10 @@ ContextInspector::ContextInspector(
     sliceSettingsLayout->addWidget(m_profileLabel);
     sliceSettingsLayout->addWidget(m_availabilityLabel);
     sliceSettingsLayout->addWidget(m_openConfigButton);
-    m_diagnosticSettingsPanel =
-        new DiagnosticSettingsPanel(
-            sliceSettingsPage);
+    m_productionTextureSettingsPanel =
+        new ProductionTextureSettingsPanel(sliceSettingsPage);
     sliceSettingsLayout->addWidget(
-        m_diagnosticSettingsPanel,
+        m_productionTextureSettingsPanel,
         1);
 
     m_tabs->addTab(scenePage, QStringLiteral("场景"));
@@ -66,32 +65,38 @@ ContextInspector::ContextInspector(
     m_tabs->addTab(
         sliceSettingsPage,
         QStringLiteral("切片设置"));
-    auto* preflightDiagnosticsPage = new QWidget(m_tabs);
-    preflightDiagnosticsPage->setObjectName(
+    m_preflightDiagnosticsPage = new QWidget(m_tabs);
+    m_preflightDiagnosticsPage->setObjectName(
         QStringLiteral(
             "contextPreflightDiagnosticsPage"));
     auto* preflightDiagnosticsLayout =
-        new QVBoxLayout(preflightDiagnosticsPage);
+        new QVBoxLayout(m_preflightDiagnosticsPage);
     preflightDiagnosticsLayout->setContentsMargins(
         0,
         0,
         0,
         0);
-    auto* preflightDiagnosticsTabs =
-        new QTabWidget(preflightDiagnosticsPage);
-    preflightDiagnosticsTabs->setObjectName(
+    m_preflightDiagnosticsTabs =
+        new QTabWidget(m_preflightDiagnosticsPage);
+    m_preflightDiagnosticsTabs->setObjectName(
         QStringLiteral("preflightDiagnosticsTabs"));
-    preflightDiagnosticsTabs->setDocumentMode(true);
-    preflightDiagnosticsTabs->addTab(
+    m_preflightDiagnosticsTabs->setDocumentMode(true);
+    m_preflightDiagnosticsTabs->addTab(
         preflightPage,
         QStringLiteral("准入"));
-    preflightDiagnosticsTabs->addTab(
+    m_preflightDiagnosticsTabs->addTab(
         diagnosticPage,
         QStringLiteral("问题"));
+    m_diagnosticSettingsPanel =
+        new DiagnosticSettingsPanel(
+            m_preflightDiagnosticsTabs);
+    m_preflightDiagnosticsTabs->addTab(
+        m_diagnosticSettingsPanel,
+        QStringLiteral("纹理诊断"));
     preflightDiagnosticsLayout->addWidget(
-        preflightDiagnosticsTabs);
+        m_preflightDiagnosticsTabs);
     m_tabs->addTab(
-        preflightDiagnosticsPage,
+        m_preflightDiagnosticsPage,
         QStringLiteral("预检与诊断"));
     layout->addWidget(m_tabs);
 
@@ -128,6 +133,27 @@ ContextInspector::ContextInspector(
         this,
         &ContextInspector::
             SigDiagnosticCancelRequested);
+    connect(
+        m_productionTextureSettingsPanel,
+        &ProductionTextureSettingsPanel::
+            SigLegacyTopLayersChanged,
+        this,
+        &ContextInspector::
+            SigProductionLegacyTopLayersChanged);
+    connect(
+        m_productionTextureSettingsPanel,
+        &ProductionTextureSettingsPanel::
+            SigGlobalTextureChanged,
+        this,
+        &ContextInspector::
+            SigProductionGlobalTextureChanged);
+    connect(
+        m_productionTextureSettingsPanel,
+        &ProductionTextureSettingsPanel::
+            SigSingleMaterialChanged,
+        this,
+        &ContextInspector::
+            SigProductionSingleMaterialChanged);
     SetSliceSettingsSummary(
         QStringLiteral("传统切片"),
         QStringLiteral("自定义"),
@@ -163,9 +189,23 @@ void ContextInspector::SetDiagnosticPresentation(
         presentation);
 }
 
+void ContextInspector::SetProductionTexturePresentation(
+    const ProductionTextureSettingsPresentation& presentation)
+{
+    m_productionTextureSettingsPanel->SetPresentation(
+        presentation);
+}
+
 void ContextInspector::ShowScenePage()
 {
     m_tabs->setCurrentWidget(m_scenePage);
+}
+
+void ContextInspector::ShowTextureDiagnosticPage()
+{
+    m_tabs->setCurrentWidget(m_preflightDiagnosticsPage);
+    m_preflightDiagnosticsTabs->setCurrentWidget(
+        m_diagnosticSettingsPanel);
 }
 
 QStringList ContextInspector::PageTitles() const

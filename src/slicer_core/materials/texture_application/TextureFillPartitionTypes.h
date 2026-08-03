@@ -20,6 +20,7 @@ struct TriangleMeshData;
 enum class TextureFillPartitionErrorCode
 {
     SurfaceShellWidthInvalid,
+    SurfaceShellPartitionModeUnsupported,
     SurfaceShellStepUnsupported,
     SurfaceShellGeometryModeUnsupported,
     SurfaceShellMinimumPolicyUnsupported,
@@ -123,6 +124,7 @@ struct GlobalTextureFillPartitionOptions
     double widthStepMm{0.01};
     double baseMinimumWidthMm{0.10};
     std::string surfaceScope{"all_closed_surfaces"};
+    bool forceAllTexture{false};
 };
 
 /**

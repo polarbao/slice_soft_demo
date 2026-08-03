@@ -87,6 +87,7 @@ struct MaterialConfig {
 struct TextureSurfaceShellConfig
 {
     std::string geometry_mode{"global_3d_distance"};
+    std::string mode{"partial_shell"};
     double width_mm{0.10};
     double width_step_mm{0.01};
     std::string minimum_width_policy{"two_cells_floor_0_10_mm"};

@@ -31,6 +31,12 @@ add_executable(slicer_debug_ui
     services/ProductionModeCatalog.h
     services/ProductionProfileSourceResolver.cpp
     services/ProductionProfileSourceResolver.h
+    services/ProductionTextureSettingsContract.cpp
+    services/ProductionTextureSettingsContract.h
+    services/ProductionTextureSettingsModel.cpp
+    services/ProductionTextureSettingsModel.h
+    services/SingleMaterialReliefResolver.cpp
+    services/SingleMaterialReliefResolver.h
     services/ProductionSliceRunSession.cpp
     services/ProductionSliceRunSession.h
     services/ReportLoader.cpp
@@ -121,6 +127,8 @@ add_executable(slicer_debug_ui
     widgets/PreviewOverlayPanel.h
     widgets/PreviewWorkspace.cpp
     widgets/PreviewWorkspace.h
+    widgets/ProductionTextureSettingsPanel.cpp
+    widgets/ProductionTextureSettingsPanel.h
     widgets/ProjectToolsDock.cpp
     widgets/ProjectToolsDock.h
     widgets/ProductionModePanel.cpp
@@ -152,6 +160,12 @@ add_executable(production_effective_config_unit_tests
     services/EffectiveConfigGenerator.h
     services/ProductionModeCatalog.cpp
     services/ProductionModeCatalog.h
+    services/ProductionTextureSettingsContract.cpp
+    services/ProductionTextureSettingsContract.h
+    services/ProductionTextureSettingsModel.cpp
+    services/ProductionTextureSettingsModel.h
+    services/SingleMaterialReliefResolver.cpp
+    services/SingleMaterialReliefResolver.h
     services/SliceSettingsModel.cpp
     services/SliceSettingsModel.h
     ../../tests/unit/production_effective_config/Main.cpp
@@ -173,6 +187,77 @@ target_link_libraries(production_effective_config_unit_tests PRIVATE
 add_test(
     NAME production_effective_config_unit_tests
     COMMAND production_effective_config_unit_tests
+)
+
+add_executable(production_texture_settings_contract_unit_tests
+    services/ProductionTextureSettingsContract.cpp
+    services/ProductionTextureSettingsContract.h
+    ../../tests/unit/production_texture_settings_contract/Main.cpp
+)
+
+target_include_directories(
+    production_texture_settings_contract_unit_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
+)
+
+target_link_libraries(
+    production_texture_settings_contract_unit_tests
+    PRIVATE
+    Qt5::Core
+)
+
+add_test(
+    NAME production_texture_settings_contract_unit_tests
+    COMMAND production_texture_settings_contract_unit_tests
+)
+
+add_executable(production_texture_settings_model_unit_tests
+    services/ProductionTextureSettingsContract.cpp
+    services/ProductionTextureSettingsContract.h
+    services/ProductionTextureSettingsModel.cpp
+    services/ProductionTextureSettingsModel.h
+    ../../tests/unit/production_texture_settings_model/Main.cpp
+)
+
+target_include_directories(
+    production_texture_settings_model_unit_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
+)
+
+target_link_libraries(
+    production_texture_settings_model_unit_tests
+    PRIVATE
+    Qt5::Core
+)
+
+add_test(
+    NAME production_texture_settings_model_unit_tests
+    COMMAND production_texture_settings_model_unit_tests
+)
+
+add_executable(single_material_relief_resolver_unit_tests
+    services/SingleMaterialReliefResolver.cpp
+    services/SingleMaterialReliefResolver.h
+    ../../tests/unit/single_material_relief_resolver/Main.cpp
+)
+
+target_include_directories(
+    single_material_relief_resolver_unit_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
+)
+
+target_link_libraries(
+    single_material_relief_resolver_unit_tests
+    PRIVATE
+    Qt5::Core
+)
+
+add_test(
+    NAME single_material_relief_resolver_unit_tests
+    COMMAND single_material_relief_resolver_unit_tests
 )
 
 add_executable(production_slice_route_process_tests
@@ -338,6 +423,24 @@ if(MSVC)
         /MP
     )
     target_compile_options(
+        production_texture_settings_contract_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
+        production_texture_settings_model_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
+        single_material_relief_resolver_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
         production_slice_route_process_tests
         PRIVATE
         /utf-8
@@ -379,6 +482,21 @@ if(MSVC)
             ${qt515MsvcCompatibilityHeader}
         )
         target_sources(
+            production_texture_settings_contract_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_sources(
+            production_texture_settings_model_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_sources(
+            single_material_relief_resolver_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_sources(
             production_slice_route_process_tests
             PRIVATE
             ${qt515MsvcCompatibilityHeader}
@@ -408,6 +526,21 @@ if(MSVC)
         )
         target_compile_options(
             production_effective_config_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            production_texture_settings_contract_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            production_texture_settings_model_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            single_material_relief_resolver_unit_tests
             PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )

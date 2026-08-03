@@ -1,4 +1,5 @@
 #include "ConfigValidator.h"
+#include "SingleMaterialReliefResolver.h"
 #include "slicer_core/config.h"
 
 #include <QJsonArray>
@@ -368,6 +369,31 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
     }
     if (!root.contains("materialPolicy")) {
         result.warnings.push_back("未找到 materialPolicy 配置段。");
+    }
+
+    const QString effectiveProfileId =
+        root.value(QStringLiteral("materialProcessProfile"))
+            .toObject()
+            .value(QStringLiteral("target"))
+            .toString();
+    if (effectiveProfileId == QStringLiteral("single_material_relief"))
+    {
+        const SingleMaterialReliefState materialState =
+            SingleMaterialReliefResolver::Read(
+                root,
+                effectiveProfileId,
+                true,
+                false);
+        if (!materialState.valid)
+        {
+            result.errors.push_back(
+                SingleMaterialReliefResolver::ErrorCodeValue(
+                    materialState.errorcode)
+                + QStringLiteral(": ")
+                + (materialState.issues.isEmpty()
+                       ? QStringLiteral("单材料浮雕 W/V 配置字段组不一致。")
+                       : materialState.issues.front()));
+        }
     }
 
     return result;

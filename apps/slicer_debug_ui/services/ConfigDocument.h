@@ -24,6 +24,17 @@ public:
     bool revert();
     QJsonValue value(const QStringList& path) const;
     void setValue(const QStringList& path, const QJsonValue& value);
+
+    /**
+     * @brief Atomically replace the editable root object.
+     * @param root Complete configuration root.
+     *
+     * One changed and one validation notification are emitted after the
+     * complete field group has been installed. This prevents observers from
+     * seeing transiently inconsistent material or texture settings.
+     */
+    void ReplaceObject(const QJsonObject& root);
+
     bool isDirty() const;
     QString path() const;
     QString errorString() const;

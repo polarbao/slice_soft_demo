@@ -104,6 +104,12 @@ private slots:
     void OnCancelDiagnosticAnalysis();
     void OnDiagnosticAnalysisFinished(
         const DiagnosticAnalysisResult& result);
+    void OnProductionLegacyTopLayersChanged(int layerCount);
+    void OnProductionGlobalTextureChanged(
+        double widthMm,
+        ProductionTexturePartitionMode mode);
+    void OnProductionSingleMaterialChanged(
+        SingleMaterialReliefMaterial material);
     void handleProcessStarted(const QString& command);
     void handleProcessFinished(int exit_code, qint64 elapsed_ms);
     void handleProcessFailed(const QString& message);
@@ -151,6 +157,11 @@ private:
     void runCommand(const QString& action, const QString& program, const QStringList& args);
     void setBusy(bool busy);
     void SyncDiagnosticRequestedSettingsFromConfig();
+    void SyncProductionSettingsFromConfig();
+    ProductionTextureSettingsPresentation
+        BuildProductionSettingsPresentation() const;
+    QJsonObject BuildSelectedGlobalProfileConfig(
+        QString* errorMessage) const;
     void UpdateDiagnosticSettingsPresentation();
     std::optional<DiagnosticAnalysisRequest>
         BuildDiagnosticAnalysisRequest(

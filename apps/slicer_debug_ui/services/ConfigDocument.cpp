@@ -120,6 +120,14 @@ void ConfigDocument::setValue(const QStringList& path, const QJsonValue& value) 
     publishValidation(validate());
 }
 
+void ConfigDocument::ReplaceObject(const QJsonObject& root)
+{
+    document_.setObject(root);
+    setDirty(true);
+    emit changed();
+    publishValidation(validate());
+}
+
 bool ConfigDocument::isDirty() const {
     return dirty_;
 }

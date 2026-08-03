@@ -62,7 +62,8 @@ slicer_core::SliceConfig MakeAdmittedProfile()
 std::filesystem::path WriteConfig(
     const std::filesystem::path& directory,
     const bool supportEnabled,
-    const bool materialParity = false)
+    const bool materialParity = false,
+    const bool allTexture = false)
 {
     const std::filesystem::path modelPath =
         std::filesystem::absolute(
@@ -105,6 +106,7 @@ std::filesystem::path WriteConfig(
              {"surfaceShell",
               slicer_core::Json::object({
                   {"geometryMode", "global_3d_distance"},
+                  {"mode", allTexture ? "all_texture" : "partial_shell"},
                   {"widthMm", 0.2},
                   {"widthStepMm", 0.01},
                   {"minimumWidthPolicy", "two_cells_floor_0_10_mm"},
@@ -304,6 +306,59 @@ bool UnsupportedProfileWritesNothing()
     return ExpectTrue(false, "unsupported Global profile must fail closed");
 }
 
+bool ExplicitAllTextureWritesNoModelFill()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("all_texture");
+    const std::filesystem::path configPath =
+        WriteConfig(directory, false, false, true);
+    try
+    {
+        const slicer_core::SliceRunResult result =
+            slicer_core::RunSlicePipeline(
+                configPath,
+                slicer_core::SliceRunOptions{});
+        const slicer_core::RipValidationResult rip =
+            slicer_core::validate_slice_package(result.package_dir);
+        std::ifstream reportInput{
+            result.package_dir / "reports" / "slice_report.json"};
+        const slicer_core::Json report =
+            slicer_core::Json::parse(reportInput);
+        const slicer_core::Json& productionSettings =
+            report.at("productionSettings");
+        return ExpectTrue(
+                   rip.total_channel_stats.at(0U).print_pixels > 0U
+                       || rip.total_channel_stats.at(1U).print_pixels > 0U
+                       || rip.total_channel_stats.at(2U).print_pixels > 0U,
+                   "all_texture keeps RGB texture pixels")
+            && ExpectTrue(
+                rip.total_channel_stats.at(3U).print_pixels == 0U,
+                "all_texture removes white Model Fill pixels")
+            && ExpectTrue(
+                productionSettings.at("partitionMode").as_string()
+                        == "all_texture"
+                    && productionSettings.at("allTexture").as_bool()
+                    && productionSettings.at("effectiveWidthMm").as_double()
+                        > 0.0
+                    && productionSettings.at("backend").as_string()
+                        == "legacy_cpu_global_distance",
+                "all_texture report records requested/effective/backend evidence")
+            && ExpectTrue(
+                productionSettings.at("modelFillVoxels").as_int() == 0,
+                "all_texture report records zero semantic Model Fill voxels")
+            && ExpectTrue(
+                rip.layer_count == result.layer_count,
+                "all_texture package passes strict RIP validation");
+    }
+    catch (const std::exception& error)
+    {
+        return ExpectTrue(
+            false,
+            "all_texture production package failed: "
+                + std::string{error.what()});
+    }
+}
+
 bool MaterialParityProfileIsAdmitted()
 {
     auto config = MakeAdmittedProfile();
@@ -392,6 +447,7 @@ int main()
         {"support_enabled_profile_is_blocked", SupportEnabledProfileIsBlocked},
         {"explicit_profile_writes_production_package", ExplicitProfileWritesProductionPackage},
         {"unsupported_profile_writes_nothing", UnsupportedProfileWritesNothing},
+        {"explicit_all_texture_writes_no_model_fill", ExplicitAllTextureWritesNoModelFill},
         {"material_parity_profile_is_admitted", MaterialParityProfileIsAdmitted},
         {"material_parity_profile_writes_support_and_varnish", MaterialParityProfileWritesSupportAndVarnish},
     };

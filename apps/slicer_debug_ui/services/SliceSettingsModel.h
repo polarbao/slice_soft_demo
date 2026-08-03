@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ProductionTextureSettingsContract.h"
+#include "SingleMaterialReliefResolver.h"
 #include "slicer_core/config.h"
 
 #include <QString>
@@ -86,6 +88,10 @@ struct SliceSettingsState
     OuterVarnishSettings outervarnish;
     PreviewSettings preview;
     SliceEngineRole enginerole{SliceEngineRole::LegacyProduction};
+    bool productiontextureoverrideenabled{false};
+    ProductionTextureControlState productiontexture;
+    bool singlematerialreliefoverrideenabled{false};
+    SingleMaterialReliefState singlematerialrelief;
 };
 
 /**

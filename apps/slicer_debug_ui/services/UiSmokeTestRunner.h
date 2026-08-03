@@ -53,6 +53,8 @@ private:
         const UiSmokeTestOptions& options);
     int DiagnosticSettingsControls(
         const UiSmokeTestOptions& options);
+    int ProductionTextureControls(
+        const UiSmokeTestOptions& options);
     int ProductionModeSelector(const UiSmokeTestOptions& options);
     int GeneratedEffectiveConfig(const UiSmokeTestOptions& options);
     int SliceProgressTiming(const UiSmokeTestOptions& options);

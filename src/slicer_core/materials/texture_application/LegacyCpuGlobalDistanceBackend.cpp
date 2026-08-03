@@ -438,13 +438,17 @@ GlobalTextureFillPartitionCandidate LegacyCpuGlobalDistanceBackend::Evaluate(
             candidate.widthMetrics.effectiveMinimumWidthMm,
             candidate.widthMetrics.maxInteriorDistanceMm),
         request.options.widthStepMm);
-    candidate.widthMetrics.effectiveWidthMm = std::min(
-        request.options.requestedWidthMm,
-        candidate.widthMetrics.allTextureThresholdMm);
+    candidate.widthMetrics.effectiveWidthMm =
+        request.options.forceAllTexture
+        ? candidate.widthMetrics.allTextureThresholdMm
+        : std::min(
+              request.options.requestedWidthMm,
+              candidate.widthMetrics.allTextureThresholdMm);
     candidate.widthMetrics.allTexture =
-        candidate.widthMetrics.effectiveWidthMm
-            + candidate.widthMetrics.epsilonMm
-        >= candidate.widthMetrics.allTextureThresholdMm;
+        request.options.forceAllTexture
+        || candidate.widthMetrics.effectiveWidthMm
+                + candidate.widthMetrics.epsilonMm
+            >= candidate.widthMetrics.allTextureThresholdMm;
 
     const Clock::time_point partitionStart = Clock::now();
     for (std::size_t index{0U};

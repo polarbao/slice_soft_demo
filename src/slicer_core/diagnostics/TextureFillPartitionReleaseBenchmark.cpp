@@ -320,6 +320,7 @@ TextureFillPartitionReleaseBenchmarkResult RunTextureFillPartitionReleaseBenchma
     partitionRequest.mesh = request.mesh;
     partitionRequest.grid = grid;
     partitionRequest.options.requestedWidthMm = request.widthMm;
+    partitionRequest.options.forceAllTexture = request.forceAllTexture;
 
     const Clock::time_point benchmarkStart = Clock::now();
     TextureFillPartitionReleaseBenchmarkResult benchmark;

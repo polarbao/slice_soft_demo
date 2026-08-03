@@ -1,6 +1,8 @@
 #include "MainWindow.h"
 
+#include "services/ProductionModeCatalog.h"
 #include "services/ProductionProfileSourceResolver.h"
+#include "services/ProductionTextureSettingsModel.h"
 #include "widgets/MaterialClosurePanel.h"
 #include "slicer_core/config.h"
 #include "slicer_core/pipeline/DiagnosticEffectiveConfig.h"
@@ -44,6 +46,82 @@ namespace {
 constexpr int kPathEditMinimumWidth = 140;
 constexpr int kPathLabelMinimumWidth = 62;
 constexpr int kBrowseButtonWidth = 44;
+
+constexpr auto kUiProductionSettingsKey =
+    "uiProductionSettings";
+constexpr auto kGlobalOverridesKey =
+    "globalSurfaceShellOverrides";
+
+QJsonObject ApplyStoredGlobalTextureOverride(
+    const QJsonObject& sceneDraft,
+    const QString& profileId,
+    QJsonObject globalConfig)
+{
+    const QJsonObject settings = sceneDraft
+        .value(QString::fromLatin1(kUiProductionSettingsKey))
+        .toObject();
+    const QJsonObject overrides = settings
+        .value(QString::fromLatin1(kGlobalOverridesKey))
+        .toObject();
+    const QJsonObject profileOverride =
+        overrides.value(profileId).toObject();
+    if (profileOverride.isEmpty())
+    {
+        return globalConfig;
+    }
+
+    QJsonObject texture =
+        globalConfig.value(QStringLiteral("texture")).toObject();
+    QJsonObject surfaceShell =
+        texture.value(QStringLiteral("surfaceShell")).toObject();
+    if (profileOverride.contains(QStringLiteral("widthMm")))
+    {
+        surfaceShell.insert(
+            QStringLiteral("widthMm"),
+            profileOverride.value(QStringLiteral("widthMm")));
+    }
+    if (profileOverride.contains(QStringLiteral("mode")))
+    {
+        surfaceShell.insert(
+            QStringLiteral("mode"),
+            profileOverride.value(QStringLiteral("mode")));
+    }
+    texture.insert(QStringLiteral("surfaceShell"), surfaceShell);
+    globalConfig.insert(QStringLiteral("texture"), texture);
+    return globalConfig;
+}
+
+QJsonObject StoreGlobalTextureOverride(
+    QJsonObject sceneDraft,
+    const QString& profileId,
+    const ProductionTextureControlState& state)
+{
+    QJsonObject settings = sceneDraft
+        .value(QString::fromLatin1(kUiProductionSettingsKey))
+        .toObject();
+    settings.insert(
+        QStringLiteral("schema"),
+        QStringLiteral(
+            "slicesoft.ui.production_settings.12e_09d.1"));
+    QJsonObject overrides = settings
+        .value(QString::fromLatin1(kGlobalOverridesKey))
+        .toObject();
+    overrides.insert(
+        profileId,
+        QJsonObject{
+            {QStringLiteral("widthMm"), state.effectivewidthmm},
+            {QStringLiteral("mode"),
+             ProductionTextureSettingsContract::PartitionModeValue(
+                 state.partitionmode)},
+        });
+    settings.insert(
+        QString::fromLatin1(kGlobalOverridesKey),
+        overrides);
+    sceneDraft.insert(
+        QString::fromLatin1(kUiProductionSettingsKey),
+        settings);
+    return sceneDraft;
+}
 
 QPushButton* makeButton(const QString& text, QWidget* parent) {
     auto* button = new QPushButton(text, parent);
@@ -634,6 +712,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         [this](const QString&)
         {
             SyncDiagnosticRequestedSettingsFromConfig();
+            SyncProductionSettingsFromConfig();
             UpdateDiagnosticSettingsPresentation();
         });
     connect(config_editor_panel_, &ConfigEditorPanel::statusMessage, status_label_, &QLabel::setText);
@@ -648,6 +727,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
             config_editor_panel_->ShowProductionAdmissionState(
                 ProductionAdmissionState::Stale,
                 QStringLiteral("生产模式或 Profile 已改变，需要重新执行预检。"));
+            SyncProductionSettingsFromConfig();
             UpdateActionAvailability();
         });
     connect(
@@ -669,6 +749,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
                 m_modelPreflightController.MarkStale();
                 m_productionRunSession.Invalidate();
             }
+            SyncProductionSettingsFromConfig();
         });
     connect(
         &m_modelPreflightController,
@@ -950,6 +1031,24 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     connect(
         m_contextInspector,
         &ContextInspector::
+            SigProductionLegacyTopLayersChanged,
+        this,
+        &MainWindow::OnProductionLegacyTopLayersChanged);
+    connect(
+        m_contextInspector,
+        &ContextInspector::
+            SigProductionGlobalTextureChanged,
+        this,
+        &MainWindow::OnProductionGlobalTextureChanged);
+    connect(
+        m_contextInspector,
+        &ContextInspector::
+            SigProductionSingleMaterialChanged,
+        this,
+        &MainWindow::OnProductionSingleMaterialChanged);
+    connect(
+        m_contextInspector,
+        &ContextInspector::
             SigDiagnosticModelFillMaterialChanged,
         this,
         [this](const QString& material)
@@ -1053,6 +1152,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         config_editor_panel_->loadConfig(config_edit_->text());
     }
     SyncDiagnosticRequestedSettingsFromConfig();
+    SyncProductionSettingsFromConfig();
     loadPackage(package_edit_->text());
     UpdateModelPreflightUi();
     UpdateActionAvailability();
@@ -2149,6 +2249,22 @@ SliceSettingsState MainWindow::BuildCurrentSettings(
     settings.preview.interval = config_document_.value({"preview", "interval"})
                                     .toInt(settings.preview.interval);
     settings.enginerole = engineRole;
+    const ProductionTextureSettingsPresentation presentation =
+        BuildProductionSettingsPresentation();
+    if (presentation.singlematerialrelief.has_value()
+        && presentation.singlematerialrelief->valid
+        && presentation.singlematerialrelief->editable)
+    {
+        settings.singlematerialreliefoverrideenabled = true;
+        settings.singlematerialrelief =
+            *presentation.singlematerialrelief;
+    }
+    else if (presentation.texture.valid
+             && presentation.texture.editable)
+    {
+        settings.productiontextureoverrideenabled = true;
+        settings.productiontexture = presentation.texture;
+    }
     return settings;
 }
 
@@ -3141,6 +3257,7 @@ void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
     }
     ApplyProfileDefaultsToDocument(scenario.id, packageDir);
     SyncDiagnosticRequestedSettingsFromConfig();
+    SyncProductionSettingsFromConfig();
     if (!packageDir.isEmpty())
     {
         loadPackage(packageDir);
@@ -3228,6 +3345,264 @@ void MainWindow::SyncDiagnosticRequestedSettingsFromConfig()
                 m_diagnosticTextureSurfaceWidthMm,
                 m_diagnosticModelFillMaterial);
     }
+}
+
+QJsonObject MainWindow::BuildSelectedGlobalProfileConfig(
+    QString* errorMessage) const
+{
+    if (errorMessage != nullptr)
+    {
+        errorMessage->clear();
+    }
+    if (config_editor_panel_ == nullptr
+        || !config_document_.document().isObject())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage =
+                QStringLiteral("当前没有可用的场景配置。");
+        }
+        return {};
+    }
+
+    const QString profileId =
+        config_editor_panel_->SelectedProductionProfileId();
+    ProductionProfileSourceRequest request;
+    request.reporoot = paths_.repo_root;
+    request.mode =
+        slicer_core::SlicePipelineMode::GlobalSurfaceShell;
+    request.requestedprofileid = profileId;
+    request.legacytemplatepath = config_document_.path();
+    request.legacyoriginaldocument =
+        config_document_.originalDocument();
+    request.legacyoverridedocument =
+        config_document_.document();
+    const ProductionProfileSourceResult source =
+        ProductionProfileSourceResolver().Resolve(request);
+    if (!source.IsValid())
+    {
+        if (errorMessage != nullptr)
+        {
+            *errorMessage = source.errors.join(
+                QStringLiteral("；"));
+        }
+        return {};
+    }
+    return ApplyStoredGlobalTextureOverride(
+        config_document_.document().object(),
+        profileId,
+        source.overridedocument.object());
+}
+
+ProductionTextureSettingsPresentation
+MainWindow::BuildProductionSettingsPresentation() const
+{
+    ProductionTextureSettingsPresentation presentation;
+    presentation.profileid =
+        m_currentProfileId.trimmed().isEmpty()
+        ? QStringLiteral("custom")
+        : m_currentProfileId;
+    const bool stale = config_document_.isDirty();
+    if (!config_document_.document().isObject())
+    {
+        presentation.texture.lockreason =
+            QStringLiteral("当前没有可用的配置文档。");
+        presentation.texture.issues.push_back(
+            presentation.texture.lockreason);
+        return presentation;
+    }
+
+    const slicer_core::SlicePipelineMode selectedMode =
+        config_editor_panel_ == nullptr
+        ? slicer_core::SlicePipelineMode::Legacy
+        : config_editor_panel_->SelectedProductionMode();
+    if (selectedMode
+        == slicer_core::SlicePipelineMode::GlobalSurfaceShell)
+    {
+        presentation.profileid =
+            config_editor_panel_->SelectedProductionProfileId();
+        QString errorMessage;
+        const QJsonObject globalConfig =
+            BuildSelectedGlobalProfileConfig(&errorMessage);
+        if (globalConfig.isEmpty())
+        {
+            presentation.texture.lockreason = errorMessage;
+            presentation.texture.issues.push_back(errorMessage);
+            return presentation;
+        }
+        const bool admittedProfile =
+            ProductionModeCatalog::FindProfile(
+                presentation.profileid.toStdString())
+            != nullptr;
+        presentation.texture =
+            ProductionTextureSettingsModel::Read(
+                globalConfig,
+                admittedProfile,
+                admittedProfile,
+                stale);
+        if (!admittedProfile)
+        {
+            presentation.texture.lockreason =
+                QStringLiteral("当前 Global Profile 不在生产能力目录中。");
+        }
+        return presentation;
+    }
+
+    const QJsonObject root =
+        config_document_.document().object();
+    if (presentation.profileid
+        == QStringLiteral("single_material_relief"))
+    {
+        presentation.singlematerialrelief =
+            SingleMaterialReliefResolver::Read(
+                root,
+                presentation.profileid,
+                true,
+                stale);
+        return presentation;
+    }
+
+    bool editable = true;
+    const ScenarioEntry* scenario =
+        m_scenarioRegistry.FindById(presentation.profileid);
+    if (scenario != nullptr
+        && scenario->productionsafety
+            != QStringLiteral("production"))
+    {
+        editable = false;
+    }
+    presentation.texture =
+        ProductionTextureSettingsModel::Read(
+            root,
+            editable,
+            true,
+            stale);
+    if (!editable)
+    {
+        presentation.texture.lockreason =
+            QStringLiteral("当前场景不是生产 Profile，生产纹理设置已锁定。");
+    }
+    return presentation;
+}
+
+void MainWindow::SyncProductionSettingsFromConfig()
+{
+    if (m_contextInspector == nullptr)
+    {
+        return;
+    }
+    m_contextInspector->SetProductionTexturePresentation(
+        BuildProductionSettingsPresentation());
+}
+
+void MainWindow::OnProductionLegacyTopLayersChanged(
+    const int layerCount)
+{
+    const ProductionTextureSettingsPresentation presentation =
+        BuildProductionSettingsPresentation();
+    const double layerThicknessMm =
+        config_document_
+            .value({"output", "layerThicknessMm"})
+            .toDouble(slicer_core::kDefaultLayerThicknessMm);
+    const ProductionTextureControlState updated =
+        ProductionTextureSettingsModel::UpdateLegacyTopLayers(
+            presentation.texture,
+            layerCount,
+            layerThicknessMm);
+    const ProductionTextureSettingsApplyResult result =
+        ProductionTextureSettingsModel::Apply(
+            config_document_.document().object(),
+            updated);
+    if (!result.applied)
+    {
+        status_label_->setText(
+            result.errorcode + QStringLiteral("：")
+            + result.issues.join(QStringLiteral("；")));
+        SyncProductionSettingsFromConfig();
+        return;
+    }
+    config_document_.ReplaceObject(result.config);
+    status_label_->setText(
+        QStringLiteral(
+            "生产顶面纹理已设为 %1 层（有效 Z 厚度 %2 mm）；"
+            "已有输出已失效，请保存并重新切片。")
+            .arg(updated.effectivetoplayers)
+            .arg(updated.effectivetopthicknessmm, 0, 'f', 4));
+}
+
+void MainWindow::OnProductionGlobalTextureChanged(
+    const double widthMm,
+    const ProductionTexturePartitionMode mode)
+{
+    const ProductionTextureSettingsPresentation presentation =
+        BuildProductionSettingsPresentation();
+    const ProductionTextureControlState updated =
+        ProductionTextureSettingsModel::UpdateGlobal(
+            presentation.texture,
+            widthMm,
+            mode);
+    QString errorMessage;
+    const QJsonObject source =
+        BuildSelectedGlobalProfileConfig(&errorMessage);
+    const ProductionTextureSettingsApplyResult result =
+        ProductionTextureSettingsModel::Apply(source, updated);
+    if (!result.applied)
+    {
+        status_label_->setText(
+            result.errorcode + QStringLiteral("：")
+            + result.issues.join(QStringLiteral("；")));
+        SyncProductionSettingsFromConfig();
+        return;
+    }
+
+    QJsonObject draft = StoreGlobalTextureOverride(
+        config_document_.document().object(),
+        presentation.profileid,
+        result.state);
+    config_document_.ReplaceObject(draft);
+    status_label_->setText(
+        mode == ProductionTexturePartitionMode::AllTexture
+            ? QStringLiteral(
+                  "Global 生产纹理已设为全纹理；已有输出已失效。")
+            : QStringLiteral(
+                  "Global 生产纹理宽度已设为 %1 mm；已有输出已失效。")
+                  .arg(result.state.effectivewidthmm, 0, 'f', 2));
+}
+
+void MainWindow::OnProductionSingleMaterialChanged(
+    const SingleMaterialReliefMaterial material)
+{
+    const ProductionTextureSettingsPresentation presentation =
+        BuildProductionSettingsPresentation();
+    if (!presentation.singlematerialrelief.has_value())
+    {
+        status_label_->setText(
+            QStringLiteral(
+                "E_SINGLE_MATERIAL_RELIEF_UNSUPPORTED_PROFILE："
+                "当前 Profile 不是单材料浮雕。"));
+        return;
+    }
+    const SingleMaterialReliefState updated =
+        SingleMaterialReliefResolver::Update(
+            *presentation.singlematerialrelief,
+            material);
+    const SingleMaterialReliefApplyResult result =
+        SingleMaterialReliefResolver::Apply(
+            config_document_.document().object(),
+            updated);
+    if (!result.applied)
+    {
+        status_label_->setText(
+            result.errorcode + QStringLiteral("：")
+            + result.issues.join(QStringLiteral("；")));
+        SyncProductionSettingsFromConfig();
+        return;
+    }
+    config_document_.ReplaceObject(result.config);
+    status_label_->setText(
+        QStringLiteral(
+            "单材料浮雕已切换为 %1 通道；已有输出已失效，请保存并重新切片。")
+            .arg(result.state.effectivechannel));
 }
 
 std::optional<DiagnosticAnalysisRequest>

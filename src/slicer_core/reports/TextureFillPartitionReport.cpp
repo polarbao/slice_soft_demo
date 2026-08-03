@@ -658,6 +658,7 @@ Json BuildConfigSnapshot(
         {"textureEnabled", config.texture.enabled},
         {"textureApplyMode", config.texture.apply_mode},
         {"geometryMode", config.texture.surface_shell.geometry_mode},
+        {"partitionMode", config.texture.surface_shell.mode},
         {"widthMm", config.texture.surface_shell.width_mm},
         {"widthStepMm", config.texture.surface_shell.width_step_mm},
         {"minimumWidthPolicy", config.texture.surface_shell.minimum_width_policy},
@@ -823,8 +824,9 @@ Json BuildTextureFillPartitionReportSkeleton(const SliceConfig& config)
         {"issues", ValidationIssuesToJson(report.issues)},
         {"configSnapshot", Json::object({
              {"textureEnabled", config.texture.enabled},
-             {"textureApplyMode", config.texture.apply_mode},
-             {"geometryMode", config.texture.surface_shell.geometry_mode},
+              {"textureApplyMode", config.texture.apply_mode},
+              {"geometryMode", config.texture.surface_shell.geometry_mode},
+              {"partitionMode", config.texture.surface_shell.mode},
              {"widthMm", config.texture.surface_shell.width_mm},
              {"widthStepMm", config.texture.surface_shell.width_step_mm},
              {"minimumWidthPolicy", config.texture.surface_shell.minimum_width_policy},
@@ -864,6 +866,7 @@ Json BuildTextureFillPartitionReport(
     report["status"] = result.status;
     report["productionAcceptance"] = result.productionAcceptance;
     report["geometryMode"] = config.texture.surface_shell.geometry_mode;
+    report["partitionMode"] = config.texture.surface_shell.mode;
     report["surfaceScope"] = result.options.surfaceScope;
     report["backend"] = result.backend;
     report["backendRole"] = result.backendRole;

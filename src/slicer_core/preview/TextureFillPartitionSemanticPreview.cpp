@@ -11,6 +11,7 @@ namespace
 {
 
 constexpr std::size_t kChannelCount{6U};
+constexpr std::size_t kWhiteChannel{3U};
 constexpr std::size_t kSupportChannel{4U};
 constexpr std::size_t kVarnishChannel{5U};
 
@@ -107,6 +108,24 @@ int CellIndex(
         std::floor((coordinate - origin) / spacing));
 }
 
+const TextureFillPartitionSemanticPreviewClosureLayer*
+FindClosureLayer(
+    const TextureFillPartitionSemanticPreviewClosureEvidence& evidence,
+    const int layerIndex)
+{
+    const auto found = std::find_if(
+        evidence.layers.begin(),
+        evidence.layers.end(),
+        [layerIndex](
+            const TextureFillPartitionSemanticPreviewClosureLayer& layer)
+        {
+            return layer.layerindex == layerIndex;
+        });
+    return found == evidence.layers.end()
+        ? nullptr
+        : &(*found);
+}
+
 }  // namespace
 
 TextureFillPartitionSemanticPreviewResult
@@ -119,6 +138,19 @@ BuildTextureFillPartitionSemanticPreview(
         return FailResult(
             "SEMANTIC_PREVIEW_EVIDENCE_MISSING",
             "diagnostic partition and production TIFF layer are required");
+    }
+    if (request.closureevidence == nullptr
+        || !request.closureevidence->available)
+    {
+        return FailResult(
+            "SEMANTIC_PREVIEW_CLOSURE_EVIDENCE_MISSING",
+            "exact production material-closure evidence is required");
+    }
+    if (!request.closureevidence->exact)
+    {
+        return FailResult(
+            "SEMANTIC_PREVIEW_CLOSURE_NOT_EXACT",
+            "candidate material-closure evidence cannot prove production consistency");
     }
 
     const GlobalTextureFillPartitionResult& partition =
@@ -153,6 +185,28 @@ BuildTextureFillPartitionSemanticPreview(
         return FailResult(
             "SEMANTIC_PREVIEW_PRODUCTION_GRID_INVALID",
             "production TIFF physical grid is invalid");
+    }
+
+    const TextureFillPartitionSemanticPreviewClosureLayer*
+        closureLayer = FindClosureLayer(
+            *request.closureevidence,
+            production.layerIndex);
+    if (closureLayer == nullptr)
+    {
+        return FailResult(
+            "SEMANTIC_PREVIEW_CLOSURE_LAYER_MISSING",
+            "material-closure evidence does not contain the production layerIndex");
+    }
+    const double zTolerance = std::max(
+        1.0e-6,
+        production.layerthicknessmm * 0.25);
+    if (!std::isfinite(closureLayer->zmm)
+        || std::abs(closureLayer->zmm - production.zMm)
+            > zTolerance)
+    {
+        return FailResult(
+            "SEMANTIC_PREVIEW_CLOSURE_IDENTITY_MISMATCH",
+            "material-closure zMm does not match the production TIFF layer");
     }
 
     std::size_t pixelCount{0U};
@@ -196,9 +250,13 @@ BuildTextureFillPartitionSemanticPreview(
     result.height = production.height;
     result.alltexture =
         partition.widthMetrics.allTexture;
+    result.fullclosurelinkageevaluated = true;
+    result.fullclosurepass = closureLayer->closurepass;
+    result.fullclosuregappixels = closureLayer->gappixels;
     result.modelmask.assign(pixelCount, 0U);
     result.texturesurfacemask.assign(pixelCount, 0U);
     result.modelfillmask.assign(pixelCount, 0U);
+    result.whitemask.assign(pixelCount, 0U);
     result.supportmask.assign(pixelCount, 0U);
     result.varnishmask.assign(pixelCount, 0U);
 
@@ -208,6 +266,13 @@ BuildTextureFillPartitionSemanticPreview(
     {
         const std::size_t channelBase =
             pixelIndex * kChannelCount;
+        if (production.pixels.at(
+                channelBase + kWhiteChannel)
+            != 255U)
+        {
+            result.whitemask.at(pixelIndex) = 1U;
+            ++result.whitepixels;
+        }
         if (production.pixels.at(
                 channelBase + kSupportChannel)
             != 255U)

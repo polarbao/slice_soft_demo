@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../services/TiffLayerLoadWorker.h"
+#include "../services/MaterialClosureReportInterpreter.h"
 #include "../workers/DiagnosticAnalysisWorker.h"
 
 #include "slicer_core/preview/TextureFillPartitionSemanticPreview.h"
@@ -62,6 +63,13 @@ public:
         TiffLayerBufferPtr buffer);
 
     /**
+     * @brief Bind the exact production material-closure report to the semantic preview.
+     * @param summary Parsed package report summary.
+     */
+    void SetMaterialClosureSummary(
+        const MaterialClosureDiagnosticsSummary& summary);
+
+    /**
      * @brief Select a diagnostic display mode for tests.
      * @param mode Texture, fill, or partition with production S/V.
      * @return True when the mode exists.
@@ -105,6 +113,7 @@ private:
     QLabel* m_imageLabel{nullptr};
     TiffLayerBufferPtr m_productionLayer;
     std::optional<DiagnosticAnalysisResult> m_analysis;
+    MaterialClosureDiagnosticsSummary m_closureSummary;
     slicer_core::TextureFillPartitionSemanticPreviewResult
         m_semantics;
     QImage m_image;

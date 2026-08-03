@@ -1,4 +1,7 @@
+#include "ConfigValidator.h"
 #include "EffectiveConfigGenerator.h"
+#include "ProductionTextureSettingsModel.h"
+#include "SingleMaterialReliefResolver.h"
 
 #include <QFile>
 #include <QJsonArray>
@@ -527,6 +530,218 @@ bool TestGlobalProfileModeMismatchFailsClosed()
             "mismatch does not write session config");
 }
 
+QString ReliefFixturePath(const QString& fileName)
+{
+    return QStringLiteral(SLICESOFT_SOURCE_DIR)
+        + QStringLiteral("/samples/configs/relief/")
+        + fileName;
+}
+
+bool TestProductionTextureOverrideReachesSessionConfig()
+{
+    QTemporaryDir directory;
+    if (!ExpectTrue(directory.isValid(), "09D texture temp directory"))
+    {
+        return false;
+    }
+
+    const QString templatePath = FixturePath(
+        QStringLiteral("global_production_xiao_ma_white_fill.json"));
+    const QJsonDocument original = ReadJson(templatePath);
+    SliceSettingsState settings = BuildSettings(
+        directory.filePath(QStringLiteral("package")),
+        false,
+        false);
+    settings.productiontextureoverrideenabled = true;
+    settings.productiontexture = ProductionTextureSettingsModel::UpdateGlobal(
+        ProductionTextureSettingsModel::Read(
+            original.object(),
+            true,
+            true,
+            false),
+        0.35,
+        ProductionTexturePartitionMode::AllTexture);
+
+    const EffectiveConfigRequest request = BuildGlobalRequest(
+        original,
+        original,
+        templatePath,
+        directory.filePath(QStringLiteral("slice_config.effective.json")),
+        QStringLiteral("global_surface_shell_restricted_candidate"),
+        settings);
+    const EffectiveConfigResult result =
+        EffectiveConfigGenerator{}.Generate(request);
+    if (!ExpectTrue(result.IsValid(), "09D Global texture config generated"))
+    {
+        return false;
+    }
+
+    const QJsonObject root = result.document.object();
+    const QJsonObject surfaceShell =
+        root.value(QStringLiteral("texture"))
+            .toObject()
+            .value(QStringLiteral("surfaceShell"))
+            .toObject();
+    const QJsonObject textureAudit =
+        root.value(QStringLiteral("uiAudit"))
+            .toObject()
+            .value(QStringLiteral("production"))
+            .toObject()
+            .value(QStringLiteral("texture"))
+            .toObject();
+    return ExpectTrue(
+               std::abs(surfaceShell.value(QStringLiteral("widthMm")).toDouble()
+                        - 0.35)
+                   < 1.0e-9,
+               "09D requested Global width reaches effective config")
+        && ExpectTrue(
+            surfaceShell.value(QStringLiteral("mode")).toString()
+                == QStringLiteral("all_texture"),
+            "09D explicit mode reaches effective config")
+        && ExpectTrue(
+            textureAudit.value(QStringLiteral("strategy")).toString()
+                == QStringLiteral("global_surface_shell"),
+            "09D strategy is audited")
+        && ExpectTrue(
+            std::abs(textureAudit.value(QStringLiteral("effectiveWidthMm")).toDouble()
+                        - 0.35)
+                < 1.0e-9,
+            "09D effective width is audited")
+        && ExpectTrue(
+            ReadJson(request.generatedconfigpath) == result.document,
+            "09D session config persists the production texture state")
+        && ExpectTrue(
+            result.summary.contains(
+                QStringLiteral(
+                    "生产纹理：global_surface_shell / all_texture")),
+            "09D Global state reaches the run summary");
+}
+
+bool TestSingleMaterialReliefOverrideReachesSessionConfig()
+{
+    QTemporaryDir directory;
+    if (!ExpectTrue(directory.isValid(), "09D relief temp directory"))
+    {
+        return false;
+    }
+
+    const QString templatePath = ReliefFixturePath(
+        QStringLiteral("relief_nail_white_support.json"));
+    const QJsonDocument original = ReadJson(templatePath);
+    SliceSettingsState settings = BuildSettings(
+        directory.filePath(QStringLiteral("package")),
+        true,
+        false);
+    settings.profileid = QStringLiteral("single_material_relief");
+    settings.singlematerialreliefoverrideenabled = true;
+    settings.singlematerialrelief = SingleMaterialReliefResolver::Update(
+        SingleMaterialReliefResolver::Read(
+            original.object(),
+            settings.profileid,
+            true,
+            false),
+        SingleMaterialReliefMaterial::Varnish);
+
+    EffectiveConfigRequest request;
+    request.profileid = settings.profileid;
+    request.templatepath = templatePath;
+    request.generatedconfigpath =
+        directory.filePath(QStringLiteral("slice_config.effective.json"));
+    request.originaldocument = original;
+    request.overridedocument = original;
+    request.settings = settings;
+    request.production.requestedmode =
+        slicer_core::SlicePipelineMode::Legacy;
+    request.production.requestedprofileid = settings.profileid;
+    request.production.sourceprofileid = settings.profileid;
+    request.production.sessionid = QStringLiteral("session_09d_relief");
+    request.production.generatedatutc =
+        QStringLiteral("2026-08-03T12:00:00.000Z");
+
+    const EffectiveConfigResult result =
+        EffectiveConfigGenerator{}.Generate(request);
+    if (!ExpectTrue(result.IsValid(), "09D relief config generated"))
+    {
+        for (const QString& error : result.errors)
+        {
+            std::cerr << error.toStdString() << '\n';
+        }
+        return false;
+    }
+
+    const QJsonObject root = result.document.object();
+    const QJsonObject modelMaterial =
+        root.value(QStringLiteral("modelMaterial")).toObject();
+    const QJsonObject validation =
+        root.value(QStringLiteral("materialProcessProfile"))
+            .toObject()
+            .value(QStringLiteral("validation"))
+            .toObject();
+    const QJsonObject materialAudit =
+        root.value(QStringLiteral("uiAudit"))
+            .toObject()
+            .value(QStringLiteral("production"))
+            .toObject()
+            .value(QStringLiteral("singleMaterialRelief"))
+            .toObject();
+    return ExpectTrue(
+               modelMaterial.value(QStringLiteral("materialChannel")).toString()
+                   == QStringLiteral("V"),
+               "09D V channel reaches effective config")
+        && ExpectTrue(
+            modelMaterial.value(QStringLiteral("whiteValue")).toInt() == 255
+                && modelMaterial.value(QStringLiteral("varnishValue")).toInt()
+                    == 0,
+            "09D V values reach effective config")
+        && ExpectTrue(
+            !validation.value(QStringLiteral("requireWhitePixels"))
+                 .toBool(true)
+                && validation.value(QStringLiteral("requireVarnishPixels"))
+                       .toBool(false),
+            "09D material validation reaches effective config")
+        && ExpectTrue(
+            materialAudit.value(QStringLiteral("effectiveChannel")).toString()
+                == QStringLiteral("V"),
+            "09D material channel is audited")
+        && ExpectTrue(
+            materialAudit.value(QStringLiteral("stale")).toBool(false),
+            "09D material stale state is audited")
+        && ExpectTrue(
+            ReadJson(request.generatedconfigpath) == result.document,
+            "09D material session config is persisted")
+        && ExpectTrue(
+            result.summary.contains(
+                QStringLiteral("单材料浮雕：varnish / channel=V")),
+            "09D material state reaches the run summary");
+}
+
+bool TestSingleMaterialReliefConflictFailsConfigValidation()
+{
+    const QJsonDocument document = ReadJson(
+        ReliefFixturePath(
+            QStringLiteral("relief_nail_white_support.json")));
+    QJsonObject root = document.object();
+    QJsonObject process =
+        root.value(QStringLiteral("materialProcessProfile")).toObject();
+    QJsonObject varnish =
+        process.value(QStringLiteral("varnish")).toObject();
+    varnish.insert(QStringLiteral("enabled"), true);
+    varnish.insert(QStringLiteral("mode"), QStringLiteral("all_model"));
+    process.insert(QStringLiteral("varnish"), varnish);
+    root.insert(QStringLiteral("materialProcessProfile"), process);
+
+    const ConfigValidationResult validation =
+        ConfigValidator::validate(root);
+    return ExpectTrue(
+               !validation.isValid(),
+               "09D conflicting W/V fields fail config validation")
+        && ExpectTrue(
+            validation.errors.join(QStringLiteral("\n"))
+                .contains(QStringLiteral(
+                    "E_SINGLE_MATERIAL_RELIEF_CONFIG_CONFLICT")),
+            "09D config validation exposes stable conflict code");
+}
+
 }  // namespace
 
 int main()
@@ -535,7 +750,10 @@ int main()
         && TestMaterialParityRestoresProfileContract()
         && TestLegacyPreservesExistingProfile()
         && TestUnknownGlobalProfileFailsBeforeReplacingSessionFile()
-        && TestGlobalProfileModeMismatchFailsClosed();
+        && TestGlobalProfileModeMismatchFailsClosed()
+        && TestProductionTextureOverrideReachesSessionConfig()
+        && TestSingleMaterialReliefOverrideReachesSessionConfig()
+        && TestSingleMaterialReliefConflictFailsConfigValidation();
     if (!passed)
     {
         return 1;

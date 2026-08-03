@@ -8,6 +8,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <utility>
+
 namespace
 {
 
@@ -218,6 +220,18 @@ MaterialClosureDiagnosticsSummary MaterialClosureReportInterpreter::Interpret(
         {
             gapPreviewPaths.insert(layerIndex, path);
         }
+
+        MaterialClosureLayerUi layerSummary;
+        layerSummary.layerindex = layerIndex;
+        layerSummary.zmm = layer.value(QStringLiteral("zMm")).toDouble(0.0);
+        layerSummary.closurestatus =
+            layer.value(QStringLiteral("closureStatus")).toString();
+        layerSummary.gappixels =
+            layer.value(QStringLiteral("repair"))
+                .toObject()
+                .value(QStringLiteral("remainingGapPixels"))
+                .toInt(layer.value(QStringLiteral("gapPixels")).toInt(0));
+        summary.layers.push_back(std::move(layerSummary));
     }
 
     const QJsonArray worstLayers = root.value(QStringLiteral("worstLayers")).toArray();

@@ -271,6 +271,8 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             const auto& surfaceShellJson = texture.at("surfaceShell");
             config.texture.surface_shell.geometry_mode =
                 surfaceShellJson.value("geometryMode", config.texture.surface_shell.geometry_mode);
+            config.texture.surface_shell.mode =
+                surfaceShellJson.value("mode", config.texture.surface_shell.mode);
             config.texture.surface_shell.width_mm =
                 surfaceShellJson.value("widthMm", config.texture.surface_shell.width_mm);
             config.texture.surface_shell.width_step_mm =
@@ -945,6 +947,13 @@ void validate_slice_config(const SliceConfig& config) {
     if (globalSurfaceShell)
     {
         const TextureSurfaceShellConfig& surfaceShell = config.texture.surface_shell;
+        if (surfaceShell.mode != "partial_shell"
+            && surfaceShell.mode != "all_texture")
+        {
+            throw TextureFillPartitionError(
+                TextureFillPartitionErrorCode::SurfaceShellPartitionModeUnsupported,
+                "texture.surfaceShell.mode must be partial_shell or all_texture");
+        }
         if (!std::isfinite(surfaceShell.width_mm) || surfaceShell.width_mm <= 0.0)
         {
             throw TextureFillPartitionError(

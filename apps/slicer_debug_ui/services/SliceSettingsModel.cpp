@@ -176,5 +176,16 @@ SliceSettingsValidationResult SliceSettingsModel::Validate() const
         result.warnings.push_back(
             QStringLiteral("OpenVDB 当前仅为 utility/candidate，productionReplacementAllowed=false。"));
     }
+    if (m_state.singlematerialreliefoverrideenabled
+        && !m_state.singlematerialrelief.valid)
+    {
+        result.errors.push_back(
+            SingleMaterialReliefResolver::ErrorCodeValue(
+                m_state.singlematerialrelief.errorcode)
+            + QStringLiteral(": ")
+            + (m_state.singlematerialrelief.issues.isEmpty()
+                   ? QStringLiteral("单材料浮雕生产设置无效。")
+                   : m_state.singlematerialrelief.issues.front()));
+    }
     return result;
 }
