@@ -1,11 +1,11 @@
 # TASKS 12/13 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v3.3
+> 版本：v3.5
 > 更新日期：2026-08-03
-> 当前代码阶段：13G-00..07 COMPLETE；03D-01..07 COMPLETE / GO_OPTIONAL；Stage 12/13 既有完成项保持不变
-> 当前推荐任务：12E-09D-01 READY
-> 后续顺序：03D -> 12E-09D -> 12E-10A..D；13F-R1-01..05 保持独立准备
+> 当前代码阶段：13G-00..07 COMPLETE；03D-01..07 COMPLETE / GO_OPTIONAL；12E-09D-01..06 COMPLETE
+> 当前推荐任务：12E-10B READY
+> 后续顺序：12E-10B -> 10C -> 10D；13F-R1-01..05 保持独立准备
 
 ## 1. 文档职责
 
@@ -50,8 +50,8 @@
 |---|---|---:|---|
 | 12E-09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 0 | 保持回归 |
 | 03D-LIBTIFF Writer 兼容迁移 | 03D-01..07 COMPLETE / GO_OPTIONAL | 0 | 已收口；默认 Writer 保持 handwritten |
-| 12E-09D 生产纹理与单材料控制 | 09D-01 READY；02..06 PREPARED | 6 | 执行 09D-01 |
-| 12E-10 最终收口 | PRD/DEV/DEMO/PREP/TASKS/PROMPT 完整；10A READY | 4 | 用户授权后按 10A -> 10B -> 10C -> 10D |
+| 12E-09D 生产纹理与单材料控制 | 09D-01..06 COMPLETE / RELEASE MATRIX PASS | 0 | 保持回归 |
+| 12E-10 最终收口 | 10A COMPLETE / 10B READY | 3 | 执行 10B -> 10C -> 10D |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
@@ -64,8 +64,8 @@
 计数口径：
 
 ```text
-当前剩余任务：03D 2 个、12E-09D 6 个；
-03D/09D/12E-10 合计待执行：12 个；
+当前剩余任务：03D 0 个、12E-09D 0 个；
+12E-10 合计待执行：3 个；
 另含 12F 性能：8 个；
 Stage 13 近程 P0：17 个；
 13B-08/13D 共 8 个插入任务均已完成；13E 新增 5 个插入任务并已完成；
@@ -162,24 +162,25 @@ stripped/tiled。该阶段不新增压缩、BigTIFF、多 IFD 或 planar separat
 
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
-| 22Q | 12E-09D-01 合同与配置映射 | `READY` | 03D-07 COMPLETE | 诊断参数与生产参数不再混用 |
-| 22R | 12E-09D-02 生产纹理设置模型 | `PREPARED / WAIT 09D-01` | 09D-01 | Legacy 层数/等效厚度与 Global 物理宽度各自生效 |
-| 22S | 12E-09D-03 单材料 Relief W/V Resolver | `PREPARED / WAIT 09D-02` | 09D-02 | white/varnish 材料合同与闭环一致 |
-| 22T | 12E-09D-04 Qt 生产控件 | `PREPARED / WAIT 09D-03` | 09D-03 | 用户能区分诊断宽度和生产设置 |
-| 22U | 12E-09D-05 一键切片、报告和 Smoke | `PREPARED / WAIT 09D-04` | 09D-04 | Effective Config、package、preview/report 同源 |
-| 22V | 12E-09D-06 Release 矩阵与阶段收口 | `PREPARED / WAIT 09D-05` | 09D-05 | 真实模型、W/V、Legacy/Global 支持范围和 RIP strict 证据 |
+| 22Q | 12E-09D-01 合同与配置映射 | `COMPLETE` | 03D-07 COMPLETE | 诊断参数与生产参数不再混用 |
+| 22R | 12E-09D-02 生产纹理设置模型 | `COMPLETE` | 09D-01 COMPLETE | Legacy 层数/等效厚度与 Global 物理宽度各自生效 |
+| 22S | 12E-09D-03 单材料 Relief W/V Resolver | `COMPLETE` | 09D-02 | white/varnish 材料合同与闭环一致 |
+| 22T | 12E-09D-04 Qt 生产控件 | `COMPLETE` | 09D-03 | 用户能区分诊断宽度和生产设置 |
+| 22U | 12E-09D-05 一键切片、报告和 Smoke | `COMPLETE` | 09D-04 | Effective Config、package、preview/report 同源 |
+| 22V | 12E-09D-06 Release 矩阵与阶段收口 | `COMPLETE / PASS` | 09D-05 | Legacy/Global/W/V 与 RIP strict 证据闭环 |
 
 ### Wave 4：Stage 12 最终收口
 
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
-| 23 | 12E-10A Texture/Fill/Partition 同层预览 | `READY / WAIT USER AUTHORIZATION` | 13C-03、09A-05/06 | 生产/诊断同层口径 |
-| 24 | 12E-10B 真实 OBJ/3MF 模式矩阵 | `PREPARED / WAIT 10A` | 10A | 真实模型证据 |
+| 23 | 12E-10A Texture/Fill/Partition 同层预览 | `COMPLETE / PASS` | 13C-03、09A-05/06、09D | 生产 TIFF、诊断语义、W/S/V、精确闭环报告同层 |
+| 24 | 12E-10B 真实 OBJ/3MF 模式矩阵 | `READY` | 10A COMPLETE | 真实模型证据 |
 | 25 | 12E-10C Release/repair/peak-memory 汇总 | `PREPARED / WAIT 10B` | 10B | 最终工程矩阵 |
-| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `PREPARED / WAIT 10A..C` | 10C | 12E COMPLETE |
+| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `PREPARED / WAIT 10B..C` | 10C | 12E COMPLETE |
 
-`12E-10A..D` 的独立 PRD/DEV/DEMO/PREP/TASKS/CODEX_PROMPT 已于 2026-07-29 补齐；准备完成
-不等于代码完成；09A-06 已完成，10A 当前等待用户明确授权。
+`12E-10A..D` 的独立 PRD/DEV/DEMO/PREP/TASKS/CODEX_PROMPT 已于 2026-07-29 补齐；10A 已于
+2026-08-03 完成。10B 的固定资产、hash、配置来源、required 矩阵和 runner 合同已准备完成；
+`READY` 不等于代码完成。
 
 ### Wave 5：性能工程化
 
@@ -221,8 +222,9 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 因此，Stage 13 的 P0 需求分析、总体设计和原子任务准备已经完成。13A 和 13B 功能开发已经闭环，
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
 13C、13D-01..04、13E-01..05、13G-00..07 与 12E-09A-01..06 已完成。当前没有未完成的
-13G 原子任务；`03D-01..07` 已完成且最终结论为 `GO_OPTIONAL`。下一候选原子任务为
-`12E-09D-01`，12E-10A 在 09D 后按顺序等待。
+13G 原子任务；`03D-01..07` 已完成且最终结论为 `GO_OPTIONAL`，`12E-09D-01..06` 已完成并
+通过 Release/RIP 矩阵；10A 同层最终一致性已通过 Debug/Release CTest 与 UI smoke。当前任务为
+`12E-10B`。
 
 ### 尚未完成
 
@@ -272,11 +274,11 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：03D-01..07 COMPLETE / GO_OPTIONAL / 既有 Stage 12/13 回归保持；
+CURRENT：12E-10A COMPLETE / 12E-10B READY / 03D-01..07 GO_OPTIONAL / 12E-09D-01..06 COMPLETE；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-01..06；
 M13-1：CANDIDATE PASS；
-NEXT：12E-09D-01 READY；
-AFTER：12E-09D-01..06 -> 12E-10A..D；
+NEXT：12E-10B；
+AFTER：12E-10C -> 10D；
 FROZEN：12G-TCWS 仅保留 RIP 白区合同评审，不实现；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；

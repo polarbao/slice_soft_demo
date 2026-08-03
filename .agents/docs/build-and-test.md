@@ -457,3 +457,35 @@ ctest --test-dir build -C Debug -R "mesh_repair_(cleanup|preflight|r3_02)" --out
 `strict_no_repair` 与 `conservative_repair`，每条 lane 两次；完整自相交证据、non-manifold 分类、operation、
 attribute/evidence validator 和 stable projection 必须一致。confirmed/coplanar case 在 mutation 前 fail-fast；
 本入口只写诊断 JSON，不写 production package/TIFF。
+
+## 12E-09D Production Texture And Single Material
+
+```powershell
+.\scripts\run_12e_09d_production_texture_material_matrix.ps1 `
+  -BuildDir build-slicesoft/main -Config Release
+```
+
+该入口构建并验证生产纹理合同、设置模型、单材料 Resolver、Qt 控件、Effective Config、Global 显式
+`all_texture` 和共享 RGBWSV Writer。矩阵覆盖 Legacy 1/3/10、Global min/mid/all_texture、单材料 W/V，
+并对全部 package 执行 RIP strict。证据写入 `output/benchmarks/12e_09d`，默认不提交。
+
+## 12E-10A Same-Layer Preview Final Consistency
+
+```powershell
+cmake --build build-slicesoft/main --config Debug --target `
+  texture_fill_partition_semantic_preview_unit_tests `
+  tiff_layer_source_unit_tests `
+  material_preview_composer_unit_tests `
+  slicer_debug_ui
+ctest --test-dir build-slicesoft/main -C Debug `
+  -R "^(texture_fill_partition_semantic_preview_unit_tests|material_preview_composer_unit_tests|tiff_layer_source_unit_tests)$" `
+  --output-on-failure
+.\build-slicesoft\main\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe `
+  --ui-smoke-test --case diagnostic-semantic-preview --repo-root .
+.\build-slicesoft\main\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe `
+  --ui-smoke-test --case material-closure-diagnostics --repo-root .
+```
+
+Release 使用相同 target、CTest 过滤器和 smoke case，并把配置及可执行目录切换为 `Release`。该 Gate
+验证生产 TIFF、09A Texture/Fill、W/S/V 和精确 `p0.material_closure.1` 按真实 layerIndex/zMm 绑定；
+缺报告、candidate、跨层和 stale 必须 fail-closed。

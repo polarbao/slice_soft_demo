@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-07-31
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12E-08D/09A/09B/09C、Stage 13 原 P0、13B-08/13D/13E/13G、03D-LIBTIFF COMPLETE；12E-09D PREPARED / READY；NEXT 12E-09D-01
+> 当前阶段判断：12E-08D/09A/09B/09C/09D/10A、Stage 13 原 P0、13B-08/13D/13E/13G、03D-LIBTIFF COMPLETE；NEXT 12E-10B
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -362,6 +362,7 @@ docs/slice/DEV/DEV_12E_09D_生产纹理厚度与单材料材质控制设计.md
 docs/slice/DEMO/DEMO_12E_09D_生产纹理厚度与单材料材质验证方案.md
 docs/slice/DOC/DOC_PREP_12E_09D_生产纹理厚度与单材料材质收口准备.md
 docs/slice/REPORT/REPORT_12E_09D_生产纹理厚度与单材料材质准备状态.md
+docs/slice/REPORT/REPORT_12E_09D_01_生产纹理合同与配置映射当前状态.md
 docs/slice/DOC/DOC_REVIEW_12G_TCWS_现有RIP白区合同与六通道策略比对.md
 docs/slice/DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md
 docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
@@ -498,11 +499,12 @@ TASKS_12D / TASKS_12E / TASKS_12F = 保留候选和历史执行入口
 TASKS_13 = 当前新增产品专项执行入口
 ```
 
-12B、12C、12D 已收口；12E-08D、09A、09B、09C 已完成，Legacy 仍为默认，Global 仅显式候选。
+12B、12C、12D 已收口；12E-08D、09A、09B、09C、09D 已完成，Legacy 仍为默认，Global 仅显式候选。
 Stage 13 原 P0、13B-08、13D、13E、13G 已完成。`03D-LIBTIFF` 已完成 03D-01..07，最终
 `GO_OPTIONAL`，当前默认 TIFF Writer 仍为 handwritten，LibTIFF 4.7.1 为显式可选轨道。
-`12E-09D` 已形成生产纹理厚度和单材料 W/V 控制准备包，现作为下一优先任务，并排在
-`12E-10A` 之前。12G-TCWS 已记录现有 RIP 的同包透明/白色和 `WSV=000` 白区信号事实，
+`12E-09D` 已完成生产纹理厚度、显式 all_texture、诊断隔离、单材料 W/V、Qt 控件和 Release/RIP
+矩阵；`12E-10A` 已完成生产 TIFF、09A 语义、W/S/V 和精确材料闭环报告的同层绑定，当前下一任务为
+`12E-10B`。12G-TCWS 已记录现有 RIP 的同包透明/白色和 `WSV=000` 白区信号事实，
 但因其与固定物理通道语义冲突继续冻结，且不包含纹理铺底。12F 性能算法仍需逐项授权。
 
 03D TIFF Writer 专项入口：

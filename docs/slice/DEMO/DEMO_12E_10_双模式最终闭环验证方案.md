@@ -1,8 +1,8 @@
 # DEMO 12E-10 双模式最终闭环验证方案
 
-> 文档版本：v1.0
-> 文档状态：FORMAL / PREPARED / 10A READY
-> 日期：2026-07-29
+> 文档版本：v1.1
+> 文档状态：FORMAL / 10A COMPLETE / 10B READY
+> 日期：2026-08-03
 
 ## 1. 验证目标
 
@@ -20,6 +20,10 @@ Texture Surface、Model Fill、Partition；
 635/600 与 600/600 物理比例；
 缺诊断证据、stale、尺寸不匹配和跨层负向。
 ```
+
+10A 已实际覆盖：Debug/Release core CTest、同层语义 UI smoke、材料闭环报告 UI smoke、缺失/candidate/
+跨层/zMm stale/scene stale/非等方 DPI。详细命令与结果见
+`REPORT_12E_10A_同层Preview最终一致性当前状态.md`。
 
 ## 3. 10B 真实模型矩阵
 

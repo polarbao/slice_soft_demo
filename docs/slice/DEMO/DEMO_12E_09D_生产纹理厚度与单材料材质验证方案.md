@@ -1,6 +1,6 @@
 # DEMO_12E-09D 生产纹理厚度与单材料材质验证方案
 
-> 文档状态：VALIDATION PLAN READY
+> 文档状态：VALIDATED / COMPLETE
 > 日期：2026-07-31
 
 ## 1. Legacy 矩阵
@@ -97,7 +97,8 @@ ctest --test-dir build-slicesoft/main -C Debug `
   -BuildDir build-slicesoft/main -Config Release
 ```
 
-当前准备阶段不得宣称这些新增入口已经存在或运行。
+上述入口已实现并于 2026-08-03 在 Release 轨道执行通过。矩阵摘要写入
+`output/benchmarks/12e_09d/production_texture_material_matrix_summary.json`，该本地证据不默认提交。
 
 ## 6. 完成标准
 

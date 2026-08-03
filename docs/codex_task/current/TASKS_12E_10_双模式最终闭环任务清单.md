@@ -1,12 +1,12 @@
 # TASKS 12E-10 双模式最终闭环任务清单
 
-> 状态：PREPARED / 10A READY / WAIT USER AUTHORIZATION
-> 日期：2026-07-29
+> 状态：10A COMPLETE / 10B READY
+> 日期：2026-08-03
 > 规则：每次只执行用户明确授权的一个原子任务
 
 ## 1. 12E-10A 同层 Preview 最终一致性
 
-状态：`READY / 09A COMPLETE`
+状态：`COMPLETE / 2026-08-03`
 
 目标：
 
@@ -19,9 +19,20 @@
 
 完成 Gate：正向、缺证据、stale、跨层和非等方 DPI 测试通过。
 
+完成证据：
+
+```text
+REPORT_12E_10A_同层Preview最终一致性当前状态.md；
+Debug/Release 三项 core preview CTest PASS；
+Debug/Release diagnostic-semantic-preview 与 material-closure-diagnostics smoke PASS；
+精确闭环报告、生产 TIFF 和 09A 语义按 layerIndex/zMm 绑定。
+```
+
 ## 2. 12E-10B 真实 OBJ/3MF 双模式矩阵
 
-状态：`PREPARED / WAIT 10A`
+状态：`READY / 10A COMPLETE`
+
+准备证据：`DOC_PREP_12E_10B_真实模型双模式矩阵准备.md`。
 
 目标：
 
@@ -54,7 +65,7 @@ package/TIFF/report/RIP/no-fallback 证据完整。
 
 ## 4. 12E-10D 文档与阶段封口
 
-状态：`PREPARED / WAIT 10A-10C`
+状态：`PREPARED / WAIT 10B-10C`
 
 目标：
 
