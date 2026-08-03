@@ -40,7 +40,8 @@ cmake --build build --config Debug
 | 14A-05 | 三车道交互契约固化（`operationId` 幂等、`expectedSceneRevision`、`SceneRevisionStale` 回滚）| 14A-04 | 与打印侧 `CLD_04` §4.3 一致 | PREPARED |
 | 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | PREPARED |
 | 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | PREPARED |
-| 14A-08 | **对 RIP 统一确认清单发出并回签**（Q1–Q6，见 `INT_15` §2.1）| — | RIP 侧书面回复 | **PREPARED / 外部依赖** |
+| 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传 | **READY（清单已就绪，待发出）** |
+| | ↳ 清单已成文：`docs/slice/DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md`（自包含背景 + 六问 + 可填写回复模板）| | | |
 | 14A-09 | `REPORT_12X` 补 03E 行 | — | 主状态表完整 | PREPARED |
 
 **14A 出口**：`contracts/` 四份物料齐备；打印侧与 RIP 侧书面确认；`OPEN-14-03/04/05` 关闭。
