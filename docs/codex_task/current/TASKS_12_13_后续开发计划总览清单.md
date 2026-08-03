@@ -4,8 +4,8 @@
 > 版本：v3.5
 > 更新日期：2026-08-03
 > 当前代码阶段：13G-00..07 COMPLETE；03D-01..07 COMPLETE / GO_OPTIONAL；12E-09D-01..06 COMPLETE
-> 当前推荐任务：12E-10B READY
-> 后续顺序：12E-10B -> 10C -> 10D；13F-R1-01..05 保持独立准备
+> 当前推荐任务：12E-10C READY
+> 后续顺序：12E-10C -> 10D；13F-R1-01..05 保持独立准备
 
 ## 1. 文档职责
 
@@ -51,7 +51,7 @@
 | 12E-09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 0 | 保持回归 |
 | 03D-LIBTIFF Writer 兼容迁移 | 03D-01..07 COMPLETE / GO_OPTIONAL | 0 | 已收口；默认 Writer 保持 handwritten |
 | 12E-09D 生产纹理与单材料控制 | 09D-01..06 COMPLETE / RELEASE MATRIX PASS | 0 | 保持回归 |
-| 12E-10 最终收口 | 10A COMPLETE / 10B READY | 3 | 执行 10B -> 10C -> 10D |
+| 12E-10 最终收口 | 10A/10B COMPLETE / 10C READY | 2 | 执行 10C -> 10D |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
@@ -174,13 +174,12 @@ stripped/tiled。该阶段不新增压缩、BigTIFF、多 IFD 或 planar separat
 | 序号 | 任务 | 状态 | 前置 | 完成 Gate |
 |---:|---|---|---|---|
 | 23 | 12E-10A Texture/Fill/Partition 同层预览 | `COMPLETE / PASS` | 13C-03、09A-05/06、09D | 生产 TIFF、诊断语义、W/S/V、精确闭环报告同层 |
-| 24 | 12E-10B 真实 OBJ/3MF 模式矩阵 | `READY` | 10A COMPLETE | 真实模型证据 |
-| 25 | 12E-10C Release/repair/peak-memory 汇总 | `PREPARED / WAIT 10B` | 10B | 最终工程矩阵 |
-| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `PREPARED / WAIT 10B..C` | 10C | 12E COMPLETE |
+| 24 | 12E-10B 真实 OBJ/3MF 模式矩阵 | `COMPLETE / PASS` | 10A COMPLETE | 14 行生产 PASS、3 行 BLOCKED_EXPECTED、RIP strict 14/14 |
+| 25 | 12E-10C Release/repair/peak-memory 汇总 | `READY / 10B COMPLETE` | 10B | 最终工程矩阵 |
+| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `PREPARED / WAIT 10C` | 10C | 12E COMPLETE |
 
-`12E-10A..D` 的独立 PRD/DEV/DEMO/PREP/TASKS/CODEX_PROMPT 已于 2026-07-29 补齐；10A 已于
-2026-08-03 完成。10B 的固定资产、hash、配置来源、required 矩阵和 runner 合同已准备完成；
-`READY` 不等于代码完成。
+`12E-10A..D` 的独立 PRD/DEV/DEMO/PREP/TASKS/CODEX_PROMPT 已于 2026-07-29 补齐；10A/10B 已于
+2026-08-03 完成。10B 固定矩阵为 14 行生产 PASS、3 行 BLOCKED_EXPECTED；当前进入 10C。
 
 ### Wave 5：性能工程化
 
@@ -274,10 +273,10 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：12E-10A COMPLETE / 12E-10B READY / 03D-01..07 GO_OPTIONAL / 12E-09D-01..06 COMPLETE；
+CURRENT：12E-10A/10B COMPLETE / 12E-10C READY / 03D-01..07 GO_OPTIONAL / 12E-09D-01..06 COMPLETE；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-01..06；
 M13-1：CANDIDATE PASS；
-NEXT：12E-10B；
+NEXT：12E-10C；
 AFTER：12E-10C -> 10D；
 FROZEN：12G-TCWS 仅保留 RIP 白区合同评审，不实现；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；

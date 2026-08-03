@@ -1,6 +1,6 @@
 # DOC_PREP 12E-10 双模式最终闭环准备
 
-> 文档状态：10A COMPLETE / 10B READY
+> 文档状态：10A/10B COMPLETE / 10C READY
 > 版本：v1.1
 > 日期：2026-08-03
 
@@ -11,8 +11,8 @@
 
 ```text
 10A 已完成生产 TIFF、09A 语义和精确材料闭环报告的同层绑定；
-10B 的 R4/08D/09B/09C/09D/10A 技术前置已完成，当前 READY；
-10C 的 Release/timing/memory 技术前置已完成，但任务顺序等待 10B；
+10B 已完成真实 OBJ/3MF 双模式 required 矩阵；
+10C 的 Release/timing/memory 技术前置已完成，当前 READY；
 10D 等待 10A/10B/10C。
 ```
 
@@ -23,16 +23,17 @@
   -> 12E-09A-06 COMPLETE
   -> 12E-09D COMPLETE
   -> 12E-10A COMPLETE
-  -> 12E-10B READY
-  -> 12E-10C
+  -> 12E-10B COMPLETE
+  -> 12E-10C READY
   -> 12E-10D
   -> Stage 12E COMPLETE
 ```
 
-10B/10C 可在文件所有权隔离时准备 runner 和 fixture，但单贡献者主线按上述顺序执行。10A 的
+10C 可在文件所有权隔离时准备 runner 和 fixture，但单贡献者主线按上述顺序执行。10A 的
 实现与验证证据见 `REPORT_12E_10A_同层Preview最终一致性当前状态.md`。
 10B 的固定资产、hash、配置来源、required 矩阵和 runner 合同见
 `DOC_PREP_12E_10B_真实模型双模式矩阵准备.md`。
+10B 的实际矩阵结果见 `REPORT_12E_10B_真实OBJ_3MF双模式矩阵当前状态.md`。
 
 ## 3. 固定输出
 

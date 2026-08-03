@@ -489,3 +489,18 @@ ctest --test-dir build-slicesoft/main -C Debug `
 Release 使用相同 target、CTest 过滤器和 smoke case，并把配置及可执行目录切换为 `Release`。该 Gate
 验证生产 TIFF、09A Texture/Fill、W/S/V 和精确 `p0.material_closure.1` 按真实 layerIndex/zMm 绑定；
 缺报告、candidate、跨层和 stale 必须 fail-closed。
+
+## 12E-10B Real OBJ/3MF Dual-Mode Matrix
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\run_12e_10b_final_closure_matrix.ps1 `
+  -BuildDir build-slicesoft/main `
+  -Config Release `
+  -OutputRoot output/benchmarks/12e_10
+```
+
+该 Gate 核对冻结模型 hash，执行 xiao_ma/yecan 的 Legacy/Global minimum/intermediate/all_texture、
+Texture2D checker 3MF 的双模式格式控制，以及 aishen/meigui/titian strict blocked 披露。成功 case
+必须生成 `p0.rgbwsv.2` TIFF package 并通过 RIP strict；blocked case 禁止写包和 fallback。固定汇总为
+`output/benchmarks/12e_10/final_closure_matrix.json`，默认不提交。

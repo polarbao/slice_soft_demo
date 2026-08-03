@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-08-03
-> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C/09D/10A COMPLETE；03D COMPLETE / GO_OPTIONAL；03E INTERNAL COMPLETE / EXTERNAL RIP PENDING；12E-10B READY；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE
+> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C/09D/10A/10B COMPLETE；03D COMPLETE / GO_OPTIONAL；03E INTERNAL COMPLETE / EXTERNAL RIP PENDING；12E-10C READY；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06、12E-09D-01..06 和 12E-10A 已完成。09D 已闭环 Legacy 生产纹理层数、Global 物理宽度/显式 all_texture、诊断隔离和单材料 W/V，并通过 Release/RIP 矩阵；10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 已完成 `03D-01..07`，最终判定为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-01` 已完成 PackBits 原型和双 Writer 性能矩阵；`03E-02` 已完成生产配置、manifest、严格 Reader、原生预览、Qt 和真实 OBJ 内部 Gate，但目标 RIP/控制软件互操作待验证，因此默认压缩仍为 `none`。当前下一任务为 `12E-10B`；12E-10B..D 执行文档均已补齐。12F-02..09 未激活。12G-TCWS 继续冻结。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成；正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06、12E-09D-01..06 和 12E-10A/10B 已完成。09D 已闭环 Legacy 生产纹理层数、Global 物理宽度/显式 all_texture、诊断隔离和单材料 W/V；10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断，RIP strict 14/14、fallback 0。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 已完成 `03D-01..07`，最终判定为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-01` 已完成 PackBits 原型和双 Writer 性能矩阵；`03E-02` 已完成生产配置、manifest、严格 Reader、原生预览、Qt 和真实 OBJ 内部 Gate，但目标 RIP/控制软件互操作待验证，因此默认压缩仍为 `none`。当前下一任务为 `12E-10C`；10D 等待 10C。12F-02..09 未激活。12G-TCWS 继续冻结。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成；正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
 
 ## 目录结构
 
@@ -116,6 +116,7 @@
 | `DEMO/DEMO_12E_10_双模式最终闭环验证方案.md` | 12E-10 真实模型、RIP、Preview 和 Release 验证 |
 | `DOC/DOC_PREP_12E_10_双模式最终闭环准备.md` | 12E-10A..D 前置、顺序、风险和启动 Gate |
 | `DOC/DOC_PREP_12E_10B_真实模型双模式矩阵准备.md` | 12E-10B 固定资产、hash、配置来源、required 矩阵和 runner 合同 |
+| `REPORT/REPORT_12E_10B_真实OBJ_3MF双模式矩阵当前状态.md` | 12E-10B 17 行矩阵、RIP strict、阻断和 no-fallback 结果 |
 | `REPORT/REPORT_12C_Qt工作台启动状态.md` | 当前阶段启动状态，12C-R0 可开始 |
 | `REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | OpenVDB OBJ 彩色纹理前置状态报告 |
 | `REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md` | OpenVDB Candidate 写包当前状态报告 |

@@ -1,6 +1,6 @@
 # TASKS 12E-10 双模式最终闭环任务清单
 
-> 状态：10A COMPLETE / 10B READY
+> 状态：10A/10B COMPLETE / 10C READY
 > 日期：2026-08-03
 > 规则：每次只执行用户明确授权的一个原子任务
 
@@ -30,7 +30,7 @@ Debug/Release diagnostic-semantic-preview 与 material-closure-diagnostics smoke
 
 ## 2. 12E-10B 真实 OBJ/3MF 双模式矩阵
 
-状态：`READY / 10A COMPLETE`
+状态：`COMPLETE / 2026-08-03`
 
 准备证据：`DOC_PREP_12E_10B_真实模型双模式矩阵准备.md`。
 
@@ -47,9 +47,20 @@ package/TIFF/report/RIP/no-fallback 证据完整。
 
 完成 Gate：固定 required 行无遗漏，矩阵 schema 校验通过。
 
+完成证据：
+
+```text
+scripts/run_12e_10b_final_closure_matrix.ps1；
+REPORT_12E_10B_真实OBJ_3MF双模式矩阵当前状态.md；
+xiao_ma/yecan Legacy/Global minimum/intermediate/all_texture 12/12 PASS；
+Texture2D checker 3MF Legacy/Global 2/2 PASS；
+aishen/meigui/titian 3/3 BLOCKED_EXPECTED；
+RIP strict 14/14 PASS，fallback 0。
+```
+
 ## 3. 12E-10C Release 性能与内存结论
 
-状态：`PREPARED / READY AFTER 10B`
+状态：`READY / 10B COMPLETE`
 
 目标：
 

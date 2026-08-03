@@ -84,7 +84,7 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 13G-00..07 已完成，Reality 5/5 正反面修正、最大投影铺底、Qt/Effective Config、segment_105 Release/RIP 均 PASS；
 03D-LIBTIFF 01..07 COMPLETE，最终 GO_OPTIONAL，默认 Writer 未切换；
 03E-01 COMPLETE；03E-02 INTERNAL COMPLETE / EXTERNAL RIP PENDING，PackBits 仅显式实验，默认 none；
-12E-09D 01..06 执行包 PREPARED，排在 03E 内部收口之后、12E-10A 之前；
+12E-09D 01..06 COMPLETE；12E-10A/10B COMPLETE；12E-10C READY；
 12G-TCWS 已记录现有 RIP 的 WSV=000 白区信号，但仍为 FROZEN，不得实现。
 ```
 
@@ -103,7 +103,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08D-01..06 COMPLETE / 12E-09A-01..06 COMPLETE / 12E-09B-01..06 COMPLETE / 12E-09C-01..06 COMPLETE / 12E-09D PREPARED`。xiao_ma/yecan 两个独立 strict/admitted 真实模型族和四用例候选证据 PASS；爱神/玫瑰/梯田继续作为 0/3 复杂浮雕覆盖缺口。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`；Legacy 默认，两个 Global Profile 仅显式 opt-in，且禁止 silent fallback。09C 已完成 X=635/Y=600、显式 600/600、两引擎 package、RIP strict、物理比例 Preview 和回归收口。09D 将把生产纹理参数从只读诊断宽度中分离，并补齐单材料浮雕 W/V 选择；目前没有代码完成证据。03D-LIBTIFF 是第一优先级，完成当前 Writer 基线与双后端 Gate 后再进入 09D；12E-10A..D 保持后续准备状态。
+12E 当前状态为 `12E-08D-01..06 / 09A-01..06 / 09B-01..06 / 09C-01..06 / 09D-01..06 / 10A / 10B COMPLETE`。xiao_ma/yecan Legacy/Global minimum/intermediate/all_texture 与 Texture2D checker 3MF 共 14 行生产 PASS；爱神/玫瑰/梯田 3 行为 `BLOCKED_EXPECTED`，RIP strict 14/14、fallback 0。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`；Legacy 默认，Global 仅显式 opt-in，禁止 silent fallback。当前下一任务为 12E-10C，10D 等待 10C。
 
 ## 12F Release Runtime 与性能优化专项
 
