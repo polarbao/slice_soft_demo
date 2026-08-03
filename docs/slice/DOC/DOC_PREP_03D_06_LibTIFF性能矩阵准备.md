@@ -1,7 +1,7 @@
 # DOC_PREP_03D-06 LibTIFF Release 性能矩阵准备
 
-> 状态：READY
-> 日期：2026-07-31
+> 状态：CONSUMED / 03D-06 COMPLETE / GO_OPTIONAL
+> 日期：2026-08-03
 > 前置：03D-05 compatibility gate PASS
 
 ## 1. 任务目的
@@ -92,4 +92,13 @@ git diff --check
 层级并行；
 修改生产 Profile；
 默认后端切换。
+```
+
+## 8. 执行结果
+
+2026-08-03 已按本准备文档完成独立进程 Release 矩阵。兼容和内存 Gate 通过，主生产
+量级 warm stripped p50 改善未达到 15%，最终判定为 `GO_OPTIONAL`。详细证据见：
+
+```text
+docs/slice/REPORT/REPORT_03D_06_LibTIFF性能矩阵与判定.md
 ```

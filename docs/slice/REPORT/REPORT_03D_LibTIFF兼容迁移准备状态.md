@@ -1,7 +1,7 @@
 # REPORT_03D LibTIFF 兼容迁移当前状态
 
-> 状态：03D-01/02/03/04/05 COMPLETE / 03D-06 READY
-> 日期：2026-07-31
+> 状态：03D-01..06 COMPLETE / GO_OPTIONAL / 03D-07 OPTIONAL CLOSURE READY
+> 日期：2026-08-03
 > 当前优先级：P0
 
 ## 1. 当前事实
@@ -149,10 +149,15 @@ Reader 已正确解包总负载不超过 4 字节的 TIFF 内联 SHORT 数组；
 | LibTIFF stripped 代码实现 | COMPLETE |
 | 03D-04 tiled 与错误模型 | COMPLETE |
 | 03D-05 等价、坏包与共享 Package Gate | COMPLETE / PASS |
-| 03D-06 Release 性能矩阵 | READY |
+| 03D-06 Release 性能矩阵 | COMPLETE / GO_OPTIONAL |
+| 03D-07 默认切换 | BLOCKED BY PERFORMANCE GATE |
+| 03D-07 可选后端阶段收口 | READY |
 
 ## 8. 下一步
 
-下一原子任务为 `03D-06 Release 性能矩阵`。03D-05 已完成 decoded pixel/tag、
-RIP strict/bad package、Legacy/Global/scene package 和原子发布完整矩阵。03D-06 必须使用
-同 buffer、同机器、同磁盘和独立进程比较两后端；不得实现压缩或提前默认切换。
+03D-06 已使用同 buffer、同机器、同磁盘和独立进程完成双后端比较。主生产量级 warm
+stripped 的最低 p50 改善为 -58.937%，未达到 15%，最终判定为 `GO_OPTIONAL`。详细证据见
+`REPORT_03D_06_LibTIFF性能矩阵与判定.md`。
+
+下一原子任务可执行 `03D-07 可选后端阶段收口`，但不得切换默认 Writer。准备边界见
+`DOC_PREP_03D_07_LibTIFF阶段收口准备.md`。

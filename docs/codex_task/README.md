@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-07-31
-> 当前阶段：03D-LIBTIFF、12E-09D PREPARED；当前下一原子任务为 03D-06
+> 当前阶段：03D-01..06 COMPLETE / GO_OPTIONAL，03D-07 OPTIONAL CLOSURE READY；12E-09D PREPARED
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -83,7 +83,7 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 13D 工作台布局专项 13D-01..04 已完成；12E-09A-01..06 已完成；
 13E 甲片自动定向与诊断工作流 01..05 已完成，正面 +Z、9 mm 默认和右侧诊断 PASS；
 13G-00..07 已完成，Reality 5/5 正反面修正、最大投影铺底、Qt/Effective Config、segment_105 Release/RIP 均 PASS；
-03D-LIBTIFF 01..05 COMPLETE，03D-06 READY；未切换默认 Writer；
+03D-LIBTIFF 01..06 COMPLETE，03D-06=GO_OPTIONAL；03D-07 只允许可选后端收口，未切换默认 Writer；
 12E-09D 01..06 执行包 PREPARED，排在 03D 之后、12E-10A 之前；
 12G-TCWS 已记录现有 RIP 的 WSV=000 白区信号，但仍为 FROZEN，不得实现。
 ```

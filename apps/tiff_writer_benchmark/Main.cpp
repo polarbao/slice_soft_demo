@@ -1,4 +1,6 @@
 #include "slicer_core/json_value.h"
+#include "slicer_core/output/tiff/TiffBackendBuildInfo.h"
+#include "slicer_core/output/tiff/TiffWriterFactory.h"
 #include "slicer_core/system/ProcessMemoryStats.h"
 #include "slicer_core/tiff_io.h"
 
@@ -6,6 +8,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <ctime>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -20,6 +23,13 @@ namespace
 
 using BenchmarkClock = std::chrono::steady_clock;
 
+enum class StorageSelection
+{
+    Both,
+    Stripped,
+    Tiled
+};
+
 struct Options
 {
     std::filesystem::path outputpath;
@@ -32,24 +42,33 @@ struct Options
     std::uint32_t tileheight{256U};
     int warmupiterations{1};
     int measurementiterations{5};
+    StorageSelection storage{StorageSelection::Both};
+    std::string casename{"baseline"};
+    std::string cachecondition{"warm"};
+    std::string stage{"03D-01"};
 };
 
 struct Measurement
 {
     double milliseconds{0.0};
+    double cpumilliseconds{0.0};
     std::uint64_t byteswritten{0U};
 };
 
 struct CaseResult
 {
+    std::string backend;
     std::string storagemode;
     std::vector<Measurement> measurements;
     double p50milliseconds{0.0};
     double p95milliseconds{0.0};
     double minimummilliseconds{0.0};
     double maximummilliseconds{0.0};
+    double p50cpumilliseconds{0.0};
+    double p95cpumilliseconds{0.0};
     std::uint64_t byteswritten{0U};
     std::uint64_t writerstagingbytesestimate{0U};
+    int failurecount{0};
     bool decodedpixelsexact{false};
     slicer_core::ProcessMemoryStats memory;
 };
@@ -81,6 +100,24 @@ std::uint32_t ParsePositiveU32(
             argument + " must be a positive uint32");
     }
     return static_cast<std::uint32_t>(value);
+}
+
+StorageSelection ParseStorageSelection(const std::string& text)
+{
+    if (text == "both")
+    {
+        return StorageSelection::Both;
+    }
+    if (text == "stripped")
+    {
+        return StorageSelection::Stripped;
+    }
+    if (text == "tiled")
+    {
+        return StorageSelection::Tiled;
+    }
+    throw std::runtime_error(
+        "--storage must be both, stripped, or tiled");
 }
 
 Options ParseOptions(const int argc, char** argv)
@@ -139,6 +176,26 @@ Options ParseOptions(const int argc, char** argv)
             parsed.measurementiterations =
                 std::stoi(RequireValue(argc, argv, index, argument));
         }
+        else if (argument == "--storage")
+        {
+            parsed.storage = ParseStorageSelection(
+                RequireValue(argc, argv, index, argument));
+        }
+        else if (argument == "--case-name")
+        {
+            parsed.casename =
+                RequireValue(argc, argv, index, argument);
+        }
+        else if (argument == "--cache-condition")
+        {
+            parsed.cachecondition =
+                RequireValue(argc, argv, index, argument);
+        }
+        else if (argument == "--stage")
+        {
+            parsed.stage =
+                RequireValue(argc, argv, index, argument);
+        }
         else if (argument == "--help" || argument == "-h")
         {
             std::cout
@@ -146,7 +203,11 @@ Options ParseOptions(const int argc, char** argv)
                 << "[--work-dir <directory>] [--width <pixels>] "
                 << "[--height <pixels>] [--rows-per-strip <rows>] "
                 << "[--tile-width <pixels>] [--tile-height <pixels>] "
-                << "[--warmup <count>] [--iterations <count>]\n";
+                << "[--warmup <count>] [--iterations <count>] "
+                << "[--storage both|stripped|tiled] "
+                << "[--case-name <name>] "
+                << "[--cache-condition <name>] "
+                << "[--stage <name>]\n";
             std::exit(0);
         }
         else
@@ -168,6 +229,19 @@ Options ParseOptions(const int argc, char** argv)
     {
         throw std::runtime_error("--iterations must be positive");
     }
+    if (parsed.casename.empty())
+    {
+        throw std::runtime_error("--case-name must not be empty");
+    }
+    if (parsed.cachecondition.empty())
+    {
+        throw std::runtime_error(
+            "--cache-condition must not be empty");
+    }
+    if (parsed.stage.empty())
+    {
+        throw std::runtime_error("--stage must not be empty");
+    }
     return parsed;
 }
 
@@ -177,6 +251,20 @@ std::string BuildTypeName()
     return "Release";
 #else
     return "Debug";
+#endif
+}
+
+std::string CompilerName()
+{
+#ifdef _MSC_VER
+    return "MSVC " + std::to_string(_MSC_VER)
+        + "." + std::to_string(_MSC_FULL_VER);
+#elif defined(__clang__)
+    return "Clang " + std::string(__clang_version__);
+#elif defined(__GNUC__)
+    return "GCC " + std::string(__VERSION__);
+#else
+    return "unknown";
 #endif
 }
 
@@ -228,8 +316,19 @@ slicer_core::TiffImageSpec MakeSpec(
 }
 
 std::uint64_t CurrentWriterStagingBytesEstimate(
-    const slicer_core::TiffImageSpec& spec)
+    const slicer_core::TiffImageSpec& spec,
+    const slicer_core::TiffWriterBackend backend)
 {
+    if (backend == slicer_core::TiffWriterBackend::LibTiff)
+    {
+        if (spec.storage_mode == slicer_core::TiffStorageMode::Stripped)
+        {
+            return 0U;
+        }
+        return static_cast<std::uint64_t>(spec.tile_width)
+            * spec.tile_height
+            * spec.samples_per_pixel;
+    }
     if (spec.storage_mode == slicer_core::TiffStorageMode::Stripped)
     {
         return static_cast<std::uint64_t>(spec.width)
@@ -275,6 +374,7 @@ Measurement WriteMeasuredFile(
     const slicer_core::TiffImageSpec& spec,
     const std::vector<std::uint8_t>& pixels)
 {
+    const std::clock_t cpuStarted = std::clock();
     const BenchmarkClock::time_point started =
         BenchmarkClock::now();
     slicer_core::write_rgbwsv_tiff(path, spec, pixels);
@@ -282,8 +382,13 @@ Measurement WriteMeasuredFile(
         std::chrono::duration<double, std::milli>(
             BenchmarkClock::now() - started)
             .count();
+    const double cpuMilliseconds =
+        1000.0
+        * static_cast<double>(std::clock() - cpuStarted)
+        / static_cast<double>(CLOCKS_PER_SEC);
     return {
         milliseconds,
+        cpuMilliseconds,
         std::filesystem::file_size(path)};
 }
 
@@ -296,6 +401,8 @@ CaseResult RunCase(
         slicer_core::tiff_storage_mode_string(storageMode);
     const slicer_core::TiffImageSpec spec =
         MakeSpec(parsed, storageMode);
+    const slicer_core::TiffWriterBackend effectiveBackend =
+        slicer_core::ResolveTiffWriterBackend(spec);
     for (int index{0}; index < parsed.warmupiterations; ++index)
     {
         const std::filesystem::path path =
@@ -307,12 +414,17 @@ CaseResult RunCase(
     }
 
     CaseResult result;
+    result.backend =
+        slicer_core::TiffWriterBackendString(effectiveBackend);
     result.storagemode = storageName;
     result.writerstagingbytesestimate =
-        CurrentWriterStagingBytesEstimate(spec);
+        CurrentWriterStagingBytesEstimate(spec, effectiveBackend);
     std::vector<double> durations;
+    std::vector<double> cpuDurations;
     std::vector<std::filesystem::path> measurementPaths;
     durations.reserve(
+        static_cast<std::size_t>(parsed.measurementiterations));
+    cpuDurations.reserve(
         static_cast<std::size_t>(parsed.measurementiterations));
     measurementPaths.reserve(
         static_cast<std::size_t>(parsed.measurementiterations));
@@ -328,6 +440,7 @@ CaseResult RunCase(
             WriteMeasuredFile(path, spec, pixels);
         result.measurements.push_back(current);
         durations.push_back(current.milliseconds);
+        cpuDurations.push_back(current.cpumilliseconds);
         measurementPaths.push_back(path);
         result.byteswritten = current.byteswritten;
     }
@@ -349,6 +462,8 @@ CaseResult RunCase(
     result.decodedpixelsexact = true;
     result.p50milliseconds = Percentile(durations, 0.50);
     result.p95milliseconds = Percentile(durations, 0.95);
+    result.p50cpumilliseconds = Percentile(cpuDurations, 0.50);
+    result.p95cpumilliseconds = Percentile(cpuDurations, 0.95);
     const auto bounds =
         std::minmax_element(durations.begin(), durations.end());
     result.minimummilliseconds = *bounds.first;
@@ -366,10 +481,11 @@ slicer_core::Json BuildCaseJson(
     {
         samples.push_back(slicer_core::Json::object({
             {"milliseconds", item.milliseconds},
+            {"cpuMilliseconds", item.cpumilliseconds},
             {"bytesWritten", item.byteswritten}}));
     }
     return slicer_core::Json::object({
-        {"backend", "handwritten"},
+        {"backend", result.backend},
         {"storageMode", result.storagemode},
         {"rowsPerStrip",
          static_cast<std::uint64_t>(parsed.rowsperstrip)},
@@ -384,10 +500,21 @@ slicer_core::Json BuildCaseJson(
         {"p95Ms", result.p95milliseconds},
         {"minimumMs", result.minimummilliseconds},
         {"maximumMs", result.maximummilliseconds},
+        {"p50CpuMs", result.p50cpumilliseconds},
+        {"p95CpuMs", result.p95cpumilliseconds},
         {"bytesWritten", result.byteswritten},
+        {"failureCount", result.failurecount},
         {"decodedPixelsExact", result.decodedpixelsexact},
         {"writerStagingBytesEstimate",
          result.writerstagingbytesestimate},
+        {"writerStagingEstimateScope", "project_owned_known_buffer"},
+        {"phaseTiming", slicer_core::Json::object({
+            {"availability", "not_available"},
+            {"openMs", "not_available"},
+            {"tagSetupMs", "not_available"},
+            {"pixelWriteMs", "not_available"},
+            {"closeMs", "not_available"},
+            {"reason", "writer API exposes one atomic Write boundary"}})},
         {"memory", slicer_core::Json::object({
             {"available", result.memory.available},
             {"samplePoint", "after_measurement_writes_before_decode"},
@@ -400,15 +527,37 @@ slicer_core::Json BuildCaseJson(
 slicer_core::Json BuildReport(
     const Options& parsed,
     const std::vector<std::uint8_t>& pixels,
-    const CaseResult& stripped,
-    const CaseResult& tiled)
+    const std::vector<CaseResult>& results)
 {
+    const slicer_core::TiffBackendBuildInfo buildInfo =
+        slicer_core::GetTiffBackendBuildInfo();
+    slicer_core::Json::Array cases;
+    cases.reserve(results.size());
+    for (const CaseResult& result : results)
+    {
+        cases.push_back(BuildCaseJson(result, parsed));
+    }
     return slicer_core::Json::object({
         {"schema", "slicesoft.tiff_writer_benchmark.03d.1"},
-        {"stage", "03D-01"},
-        {"backend", "handwritten"},
+        {"stage", parsed.stage},
+        {"caseName", parsed.casename},
+        {"cacheCondition", parsed.cachecondition},
+        {"backend", buildInfo.configuredbackend},
+        {"configuredBackend", buildInfo.configuredbackend},
         {"buildType", BuildTypeName()},
+        {"compiler", CompilerName()},
         {"scope", "writer_only"},
+        {"capabilities", slicer_core::Json::object({
+            {"handwrittenAvailable", buildInfo.handwrittenavailable},
+            {"libtiffDependencyAvailable",
+             buildInfo.libtiffdependencyavailable},
+            {"libtiffWriterImplemented",
+             buildInfo.libtiffwriterimplemented},
+            {"libtiffStrippedWriterImplemented",
+             buildInfo.libtiffstrippedwriterimplemented},
+            {"libtiffTiledWriterImplemented",
+             buildInfo.libtifftiledwriterimplemented},
+            {"libtiffVersion", buildInfo.libtiffversion}})},
         {"input", slicer_core::Json::object({
             {"width", static_cast<std::uint64_t>(parsed.width)},
             {"height", static_cast<std::uint64_t>(parsed.height)},
@@ -430,9 +579,7 @@ slicer_core::Json BuildReport(
                 "P0 03B TIFF writer only supports RGBWSV uint8 contiguous pixels",
                 "P0 00B TIFF writer only supports RGBWSV uint8 contiguous pixels",
                 "pixel buffer size does not match TIFF dimensions"})}})},
-        {"cases", slicer_core::Json::array({
-            BuildCaseJson(stripped, parsed),
-            BuildCaseJson(tiled, parsed)})}});
+        {"cases", slicer_core::Json{std::move(cases)}}});
 }
 
 void WriteReport(
@@ -460,31 +607,44 @@ int RunBenchmark(const Options& parsed)
         parsed.workdirectory);
     const std::vector<std::uint8_t> pixels =
         MakePixels(parsed.width, parsed.height);
-    const CaseResult stripped = RunCase(
-        parsed,
-        slicer_core::TiffStorageMode::Stripped,
-        pixels);
-    const CaseResult tiled = RunCase(
-        parsed,
-        slicer_core::TiffStorageMode::Tiled,
-        pixels);
+    std::vector<CaseResult> results;
+    if (parsed.storage == StorageSelection::Both
+        || parsed.storage == StorageSelection::Stripped)
+    {
+        results.push_back(RunCase(
+            parsed,
+            slicer_core::TiffStorageMode::Stripped,
+            pixels));
+    }
+    if (parsed.storage == StorageSelection::Both
+        || parsed.storage == StorageSelection::Tiled)
+    {
+        results.push_back(RunCase(
+            parsed,
+            slicer_core::TiffStorageMode::Tiled,
+            pixels));
+    }
     WriteReport(
         parsed.outputpath,
-        BuildReport(parsed, pixels, stripped, tiled));
+        BuildReport(parsed, pixels, results));
+
+    const slicer_core::TiffBackendBuildInfo buildInfo =
+        slicer_core::GetTiffBackendBuildInfo();
 
     std::cout
-        << "tiff_writer_benchmark: baseline collected\n"
-        << "  backend: handwritten\n"
+        << "tiff_writer_benchmark: measurements collected\n"
+        << "  backend: " << buildInfo.configuredbackend << '\n'
         << "  buildType: " << BuildTypeName() << '\n'
         << "  iterations: "
-        << parsed.measurementiterations << '\n'
-        << "  stripped p50/p95 ms: "
-        << stripped.p50milliseconds << " / "
-        << stripped.p95milliseconds << '\n'
-        << "  tiled p50/p95 ms: "
-        << tiled.p50milliseconds << " / "
-        << tiled.p95milliseconds << '\n'
-        << "  report: "
+        << parsed.measurementiterations << '\n';
+    for (const CaseResult& result : results)
+    {
+        std::cout
+            << "  " << result.storagemode << " p50/p95 ms: "
+            << result.p50milliseconds << " / "
+            << result.p95milliseconds << '\n';
+    }
+    std::cout << "  report: "
         << parsed.outputpath.generic_string() << '\n';
     return 0;
 }

@@ -1,7 +1,7 @@
 # TASKS_03D LibTIFF 兼容迁移任务清单
 
-> 文档状态：03D-01/02/03/04/05 COMPLETE / 03D-06 READY / PRIORITY P0
-> 日期：2026-07-31
+> 文档状态：03D-01..06 COMPLETE / 03D-07 READY FOR OPTIONAL CLOSURE / PRIORITY P0
+> 日期：2026-08-03
 > 规则：每个原子任务完成后单独验证和提交；不得一次性切换默认后端
 
 ## 03D-01 当前合同与 Writer-only 基线
@@ -128,7 +128,7 @@ handwritten 与 LibTIFF 的 Writer/Legacy/Global/scene 共享 Package CTest 各 
 
 ## 03D-06 Release 性能矩阵
 
-状态：READY / 03D-05 GATE PASSED
+状态：COMPLETE / GO_OPTIONAL（2026-08-03）
 
 ```text
 同 buffer、同机器、同磁盘；
@@ -138,20 +138,24 @@ p50/p95/peak memory；
 形成 GO DEFAULT / GO OPTIONAL / NO-GO。
 ```
 
-准备依据：`docs/slice/DOC/DOC_PREP_03D_06_LibTIFF性能矩阵准备.md`。现有 benchmark 的
-backend 硬编码、独立进程、冷暖目录和矩阵汇总均已列为 03D-06 实现项；不得用 03D-05
-完整 package 日志替代 Writer-only 性能证据。
+实现证据：`docs/slice/REPORT/REPORT_03D_06_LibTIFF性能矩阵与判定.md`。benchmark 已读取
+真实 backend/LibTIFF 版本并支持单 storage；矩阵脚本以 16 个独立进程采集 warm/cold
+output-directory 数据。兼容 Gate 和内存 Gate 通过，但主生产量级 warm stripped 的最低
+p50 改善为 -58.937%，未达到 15%，因此只保留显式可选 LibTIFF 后端。
 
 ## 03D-07 默认切换与阶段收口
 
-状态：WAIT 03D-06 AND USER AUTHORIZATION
+状态：READY FOR OPTIONAL CLOSURE / DEFAULT SWITCH BLOCKED
 
 ```text
-只有 GO DEFAULT 且用户授权后切换；
+03D-06=GO_OPTIONAL，不切换默认 Writer；
+按可选后端路径更新 Runtime/用户说明、REPORT 和上下文；
 保留 handwritten 回滚；
-更新 Runtime、用户说明、REPORT 和上下文；
 Full regression。
 ```
+
+准备依据：`docs/slice/DOC/DOC_PREP_03D_07_LibTIFF阶段收口准备.md`。若未来重新申请默认
+切换，必须先重跑固定参考机性能 Gate 并再次获得用户明确授权。
 
 ## 固定停止条件
 

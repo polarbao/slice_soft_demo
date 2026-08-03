@@ -256,6 +256,20 @@ stripped/tiled packages, RIP strict checks, and the fixed bad-package error-code
 `output/benchmarks/03d_05` is local evidence and remains ignored. A PASS authorizes only `03D-06`
 performance measurement; it does not authorize changing the default Writer.
 
+`03D-06` runs the Release Writer-only matrix with one process per backend/storage/case/cache condition:
+
+```powershell
+.\scripts\run_03d_libtiff_writer_matrix.ps1 `
+  -HandwrittenBuildDir build-slicesoft/main `
+  -LibTiffBuildDir build-slicesoft/03d-libtiff `
+  -Config Release
+```
+
+The script re-runs the 03D-05 compatibility gate, then records actual configured/effective backend,
+LibTIFF version, wall/CPU p50/p95, exact decode, output bytes and independent-process memory. `warm`
+uses one untimed warmup; `cold_output_directory` uses a fresh directory without warmup but does not flush
+the OS disk cache. The 2026-08-03 reference run concluded `GO_OPTIONAL`; handwritten remains default.
+
 ## Baseline Gate
 
 Each meaningful refactor step must pass:
