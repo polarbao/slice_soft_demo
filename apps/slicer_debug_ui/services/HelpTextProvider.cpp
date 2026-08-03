@@ -11,6 +11,8 @@ const QString kOpenVdbDoc = QStringLiteral(
     "docs/slice/PRD/PRD_12B_R2_OpenVDB_SDFUtility定位.md");
 const QString kDpiDoc = QStringLiteral(
     "docs/slice/PRD/PRD_12E_09C_XY_DPI配置与生产协议兼容.md");
+const QString kTiffCompressionDoc = QStringLiteral(
+    "docs/slice/DOC/DOC_DECISION_03E_TIFF压缩候选与性能Gate.md");
 
 SettingHelpMetadata MakeMetadata(
     const QString& key,
@@ -75,6 +77,22 @@ const QVector<SettingHelpMetadata>& MetadataEntries()
             QStringLiteral("0.038 mm"),
             QStringLiteral("生产可用；必须大于 0"),
             kWorkbenchDoc),
+        MakeMetadata(
+            QStringLiteral("output.storageMode"),
+            QStringLiteral("TIFF 存储模式"),
+            QStringLiteral("选择生产 TIFF 使用条带或瓦片组织；该设置与压缩算法相互独立。"),
+            {QStringLiteral("TIFF 组织"), QStringLiteral("读写性能")},
+            QStringLiteral("stripped（按条带）"),
+            QStringLiteral("生产可用；不改变 RGBWSV、uint8 或 black_is_print"),
+            kTiffCompressionDoc),
+        MakeMetadata(
+            QStringLiteral("output.tiffCompression.algorithm"),
+            QStringLiteral("TIFF 压缩算法"),
+            QStringLiteral("选择 none 或无损 PackBits。PackBits 没有压缩等级，不提供虚假的压缩比例参数。"),
+            {QStringLiteral("TIFF 文件体积"), QStringLiteral("保存与读取耗时")},
+            QStringLiteral("none（不压缩）"),
+            QStringLiteral("PackBits 当前为实验选项；默认仍为 none，切换默认值需完整性能与目标 RIP Gate"),
+            kTiffCompressionDoc),
         MakeMetadata(
             QStringLiteral("modelTransform.scale"),
             QStringLiteral("模型缩放"),

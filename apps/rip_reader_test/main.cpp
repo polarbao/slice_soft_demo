@@ -77,6 +77,7 @@ void print_summary_result(const slicer_core::RipValidationResult& result) {
     std::cout << "  packageDir: " << result.package_dir.string() << '\n';
     std::cout << "  schema: " << result.schema << '\n';
     std::cout << "  storageMode: " << result.storage_mode << '\n';
+    std::cout << "  compression: " << result.compression << '\n';
     std::cout << "  grid: " << result.width_px << " x " << result.height_px << " x " << result.layer_count
               << '\n';
     std::cout << "  dpi: " << result.dpi_x << " x " << result.dpi_y << '\n';

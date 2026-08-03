@@ -133,6 +133,55 @@ bool TestInvalidDpiRejected()
                "output.dpiY");
 }
 
+bool ExpectLoadedCompression(
+    const std::string& name,
+    const std::string& outputFields,
+    const std::string& expectedAlgorithm)
+{
+    const slicer_core::SliceConfig config =
+        slicer_core::load_slice_config(WriteConfig(name, outputFields));
+    return ExpectTrue(
+        config.output.tiff_compression == expectedAlgorithm,
+        name + " preserves expected TIFF compression");
+}
+
+bool TestTiffCompressionConfiguration()
+{
+    const bool defaultsToNone = ExpectLoadedCompression(
+        "compression_omitted.json",
+        "",
+        "none");
+    const bool acceptsNone = ExpectLoadedCompression(
+        "compression_none.json",
+        ",\n    \"tiffCompression\": {\"algorithm\": \"none\"}",
+        "none");
+    const bool acceptsPackBits = ExpectLoadedCompression(
+        "compression_packbits.json",
+        ",\n    \"tiffCompression\": {\"algorithm\": \"packbits\"}",
+        "packbits");
+
+    bool rejectsUnsupported{false};
+    try
+    {
+        (void)slicer_core::load_slice_config(WriteConfig(
+            "compression_deflate.json",
+            ",\n    \"tiffCompression\": {\"algorithm\": \"deflate\"}"));
+    }
+    catch (const std::runtime_error& error)
+    {
+        rejectsUnsupported = ExpectTrue(
+            std::string{error.what()}.find("output.tiffCompression.algorithm")
+                != std::string::npos,
+            "unsupported TIFF compression reports the config field");
+    }
+    return defaultsToNone
+        && acceptsNone
+        && acceptsPackBits
+        && ExpectTrue(
+            rejectsUnsupported,
+            "unsupported TIFF compression is rejected");
+}
+
 }  // namespace
 
 int main()
@@ -140,7 +189,8 @@ int main()
     const bool ok =
         TestDefaultAndCompatibleDpi()
         && TestSupportedRangeBoundaries()
-        && TestInvalidDpiRejected();
+        && TestInvalidDpiRejected()
+        && TestTiffCompressionConfiguration();
     if (!ok)
     {
         return 1;
@@ -148,6 +198,7 @@ int main()
 
     std::cout
         << "PASS output_resolution_config_unit_tests "
-        << "default=635x600 explicit=600x600 range=72..2400\n";
+        << "default=635x600 explicit=600x600 range=72..2400 "
+        << "compression=none|packbits\n";
     return 0;
 }

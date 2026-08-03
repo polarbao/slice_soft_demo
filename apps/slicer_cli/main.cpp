@@ -243,6 +243,9 @@ slicer_core::Json ConfigSnapshotToJson(const slicer_core::SliceConfig& config)
     output["channelOrder"] = StringsToJsonArray(config.output.channel_order);
     output["bitDepth"] = config.output.bit_depth;
     output["storageMode"] = config.output.storage_mode;
+    output["tiffCompression"] = slicer_core::Json::object({
+        {"algorithm", config.output.tiff_compression},
+    });
 
     slicer_core::Json::Object openvdbPipeline;
     openvdbPipeline["enabled"] = config.experimental.openvdb_pipeline.enabled;

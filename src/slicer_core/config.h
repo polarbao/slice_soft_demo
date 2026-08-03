@@ -50,6 +50,7 @@ struct OutputConfig {
     int bit_depth{8};
     std::string planar_config{"contiguous"};
     std::string storage_mode{"stripped"};
+    std::string tiff_compression{"none"};
     bool tiled{false};
     std::array<int, 2> tile_size{256, 256};
     int rows_per_strip{64};

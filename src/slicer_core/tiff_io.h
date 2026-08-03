@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace slicer_core {
@@ -33,6 +34,14 @@ enum class TiffCompressionMode
  * @return `none` or `packbits`.
  */
 std::string TiffCompressionModeString(TiffCompressionMode mode);
+
+/**
+ * @brief Parse a stable TIFF compression configuration name.
+ * @param name Compression name (`none` or `packbits`).
+ * @return Matching compression mode.
+ * @throws std::invalid_argument When the name is unsupported.
+ */
+TiffCompressionMode ParseTiffCompressionMode(std::string_view name);
 
 struct TiffImageSpec {
     std::uint32_t width{0};

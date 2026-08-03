@@ -86,6 +86,7 @@ private slots:
     void updateDirty(bool dirty);
     void updateValidation(const QStringList& warnings, const QStringList& errors);
     void updateStorageMode(int index);
+    void OnTiffCompressionChanged(int index);
 
 private:
     void refreshEditors();
@@ -94,6 +95,7 @@ private:
     QLabel* path_label_{nullptr};
     QLabel* dirty_label_{nullptr};
     QComboBox* storage_mode_{nullptr};
+    QComboBox* m_tiffCompression{nullptr};
     QPlainTextEdit* validation_view_{nullptr};
     QPlainTextEdit* m_effectiveConfigView{nullptr};
     SettingHelpPanel* m_settingHelpPanel{nullptr};

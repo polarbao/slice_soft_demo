@@ -109,6 +109,7 @@ Report writer 不决定业务策略。
 ```text
 schema = p0.rgbwsv.2
 storageMode = stripped / tiled
+compression = none / packbits（默认 none；PackBits 仅显式实验）
 channelOrder = R G B W S V
 bitDepth = 8
 polarity = black_is_print

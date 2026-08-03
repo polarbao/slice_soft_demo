@@ -56,6 +56,14 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     storage_mode_->setToolTip("控制输出 TIFF 的存储组织方式；不改变 RGBWSV 通道顺序、位深或黑色打印协议。");
     storage_row->addWidget(new QLabel("TIFF 存储模式", this));
     storage_row->addWidget(storage_mode_);
+    m_tiffCompression = new QComboBox(this);
+    m_tiffCompression->setObjectName("tiffCompressionCombo");
+    addComboOption(m_tiffCompression, "不压缩（默认）", "none");
+    addComboOption(m_tiffCompression, "PackBits（实验）", "packbits");
+    m_tiffCompression->setToolTip(
+        "控制生产 TIFF 的无损压缩算法。PackBits 没有压缩等级；两种算法均保持 RGBWSV、uint8 和 black_is_print 不变。");
+    storage_row->addWidget(new QLabel("压缩算法", this));
+    storage_row->addWidget(m_tiffCompression);
     storage_row->addStretch(1);
     header->addWidget(path_label_);
     header->addWidget(dirty_label_);
@@ -120,6 +128,11 @@ ConfigEditorPanel::ConfigEditorPanel(ConfigDocument* document, QWidget* parent) 
     connect(document_, &ConfigDocument::validationChanged, this, &ConfigEditorPanel::updateValidation);
     connect(storage_mode_, qOverload<int>(&QComboBox::currentIndexChanged), this, &ConfigEditorPanel::updateStorageMode);
     connect(
+        m_tiffCompression,
+        qOverload<int>(&QComboBox::currentIndexChanged),
+        this,
+        &ConfigEditorPanel::OnTiffCompressionChanged);
+    connect(
         m_productionModePanel,
         &ProductionModePanel::SigSelectionChanged,
         this,
@@ -141,6 +154,10 @@ bool ConfigEditorPanel::loadConfig(const QString& path) {
     }
     path_label_->setText("配置：" + document_->path());
     setComboValue(storage_mode_, document_->value({"output", "storageMode"}).toString("stripped"));
+    setComboValue(
+        m_tiffCompression,
+        document_->value({"output", "tiffCompression", "algorithm"})
+            .toString("none"));
     refreshEditors();
     emit configPathChanged(document_->path());
     emit statusMessage("已加载配置：" + document_->path());
@@ -295,7 +312,35 @@ void ConfigEditorPanel::updateStorageMode(const int index) {
     }
 }
 
+void ConfigEditorPanel::OnTiffCompressionChanged(const int index)
+{
+    if (!document_->document().isObject())
+    {
+        return;
+    }
+    const QString value = m_tiffCompression->itemData(index).toString();
+    if (value.isEmpty())
+    {
+        return;
+    }
+    if (document_->value({"output", "tiffCompression", "algorithm"})
+            .toString("none")
+        != value)
+    {
+        document_->setValue(
+            {"output", "tiffCompression", "algorithm"},
+            value);
+    }
+}
+
 void ConfigEditorPanel::refreshEditors() {
+    setComboValue(
+        storage_mode_,
+        document_->value({"output", "storageMode"}).toString("stripped"));
+    setComboValue(
+        m_tiffCompression,
+        document_->value({"output", "tiffCompression", "algorithm"})
+            .toString("none"));
     profile_editor_->loadFromDocument();
     quick_config_panel_->LoadFromDocument();
     policy_editor_->loadFromDocument();

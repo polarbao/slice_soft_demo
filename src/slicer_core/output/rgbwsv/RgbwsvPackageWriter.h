@@ -63,6 +63,7 @@ struct RgbwsvProductionGridSpec
 struct RgbwsvProductionStorageSpec
 {
     std::string storageMode{"stripped"};
+    std::string compression{"none"};
     int rowsPerStrip{64};
     int tileWidth{256};
     int tileHeight{256};

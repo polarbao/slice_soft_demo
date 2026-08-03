@@ -198,6 +198,19 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.output.channel_order = read_string_array(output, "channelOrder", config.output.channel_order);
         config.output.bit_depth = output.value("bitDepth", config.output.bit_depth);
         config.output.planar_config = output.value("planarConfig", config.output.planar_config);
+        if (output.contains("tiffCompression"))
+        {
+            const auto& compression = output.at("tiffCompression");
+            if (!compression.is_object()
+                || !compression.contains("algorithm")
+                || !compression.at("algorithm").is_string())
+            {
+                throw std::runtime_error(
+                    "output.tiffCompression must be an object containing a string algorithm");
+            }
+            config.output.tiff_compression =
+                compression.at("algorithm").as_string();
+        }
         if (output.contains("storageMode")) {
             config.output.storage_mode = output.at("storageMode").as_string();
             config.output.tiled = config.output.storage_mode == "tiled";
@@ -675,6 +688,12 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.output.storage_mode != "stripped" && config.output.storage_mode != "tiled") {
         throw std::runtime_error("output.storageMode must be stripped or tiled");
+    }
+    if (config.output.tiff_compression != "none"
+        && config.output.tiff_compression != "packbits")
+    {
+        throw std::runtime_error(
+            "output.tiffCompression.algorithm must be none or packbits");
     }
     if (config.output.storage_mode == "tiled"
         && (config.output.tile_size.at(0) <= 0 || config.output.tile_size.at(1) <= 0)) {

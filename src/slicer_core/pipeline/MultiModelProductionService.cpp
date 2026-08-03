@@ -990,6 +990,8 @@ MultiModelProductionResult RunMultiModelProductionService(
             writeRequest.grid.pixelSizeYmm);
     writeRequest.storage.storageMode =
         profile.output.storage_mode;
+    writeRequest.storage.compression =
+        profile.output.tiff_compression;
     writeRequest.storage.rowsPerStrip =
         profile.output.rows_per_strip;
     writeRequest.storage.tileWidth =

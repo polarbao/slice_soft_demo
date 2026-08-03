@@ -1,14 +1,14 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-07-31
-> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C COMPLETE；03D-01..07 COMPLETE / GO_OPTIONAL；12E-09D READY；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE
+> 更新日期：2026-08-03
+> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C COMPLETE；03D COMPLETE / GO_OPTIONAL；03E INTERNAL COMPLETE / EXTERNAL RIP PENDING；12E-09D READY；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 已完成 `03D-01..07`：合同/Release 基线、可选 LibTIFF 4.7.1 构建与 Runtime、双 Writer、stripped/tiled、稳定错误与清理、decoded pixel/tag、RIP/bad-package/shared-Package Gate、独立进程 Release 性能矩阵和可选后端收口均已闭环。最终判定为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`12E-09D` 现可作为下一任务，之后进入 12E-10A。12E-10A..D 执行文档均已补齐；12F-02..09 未激活。12G-TCWS 已补入现有 RIP 白区 `WSV=000` 事实和策略对比，但因其与 `black_is_print` 物理语义存在冲突，继续冻结，且不包含纹理铺底。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成；13G 已完成 Reality 正反面修正、30 层最大投影铺底、Qt 配置和 segment_105 Release/RIP 收口。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
+当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06 已完成。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 已完成 `03D-01..07`，最终判定为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-01` 已完成 PackBits 原型和双 Writer 性能矩阵；`03E-02` 已完成生产配置、manifest、严格 Reader、原生预览、Qt 和真实 OBJ 内部 Gate，但目标 RIP/控制软件互操作待验证，因此默认压缩仍为 `none`。`12E-09D` 现可作为下一任务，之后进入 12E-10A。12E-10A..D 执行文档均已补齐；12F-02..09 未激活。12G-TCWS 已补入现有 RIP 白区 `WSV=000` 事实和策略对比，但因其与 `black_is_print` 物理语义存在冲突，继续冻结，且不包含纹理铺底。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成；13G 已完成 Reality 正反面修正、30 层最大投影铺底、Qt 配置和 segment_105 Release/RIP 收口。正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
 
 ## 目录结构
 
@@ -47,6 +47,8 @@
 | `REPORT/REPORT_03D_05_兼容矩阵与共享PackageGate.md` | 03D-05 双 Writer 像素/tag、严格 Reader、坏包和共享 Package Gate 证据 |
 | `REPORT/REPORT_03D_06_LibTIFF性能矩阵与判定.md` | 03D-06 Release 独立进程性能矩阵、GO_OPTIONAL 判定和默认 Writer 边界 |
 | `REPORT/REPORT_03D_07_LibTIFF可选后端阶段收口.md` | 03D-07 Runtime、RIP、full regression 和可选后端最终收口 |
+| `DOC/DOC_DECISION_03E_TIFF压缩候选与性能Gate.md` | PackBits 候选、生产压缩合同、性能 Gate 和默认策略决策 |
+| `REPORT/REPORT_03E_02_TIFF生产压缩协议与RIP兼容当前状态.md` | 03E-02 配置、manifest、严格 Reader、Qt、真实 OBJ 内部 Gate 与外部待办 |
 | `DOC/DOC_DECISION_12E_09D_生产纹理厚度与单材料材质收口.md` | 生产纹理控制与诊断宽度分离、Legacy/Global 语义和单材料 W/V 决策 |
 | `REPORT/REPORT_12E_09D_生产纹理厚度与单材料材质准备状态.md` | 12E-09D 文档完备度、依赖、任务顺序和启动 Gate |
 | `DOC/DOC_REVIEW_12G_TCWS_现有RIP白区合同与六通道策略比对.md` | 现有 WSV=000 RIP 白区合同与显式 W/V、混合策略的优缺点审查 |

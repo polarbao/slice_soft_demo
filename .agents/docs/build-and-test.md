@@ -281,6 +281,25 @@ deploys an isolated LibTIFF Runtime with `tiff.dll` and its license, runs Packag
 runs the default handwritten full regression. The generated `output/benchmarks/03d_07` evidence is local
 and ignored. There is no LibTIFF Reader backend; read compatibility uses the same project strict Reader.
 
+## 03E TIFF Compression
+
+03E-01 isolates Writer/Reader compression performance:
+
+```powershell
+.\scripts\Run03ETiffCompressionMatrix.ps1 -Config Release
+```
+
+03E-02 validates the optional production configuration, manifest declaration, strict Reader, Legacy/Global/Scene
+propagation, bad packages, and deterministic plus real OBJ packages across both Writer lanes:
+
+```powershell
+.\scripts\Run03EProductionCompressionGate.ps1 -Config Release
+```
+
+The 03E-02 gate records local evidence under `output/benchmarks/03e_02`. It does not run the external target RIP,
+Photoshop, or printer control software. `none` remains the default until external interoperability and a new explicit
+default-change authorization are both complete. PackBits has no compression-level setting.
+
 ## Baseline Gate
 
 Each meaningful refactor step must pass:

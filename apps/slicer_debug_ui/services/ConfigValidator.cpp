@@ -83,6 +83,31 @@ void CheckOutputDpi(
     }
 }
 
+void CheckTiffCompression(
+    const QJsonObject& output,
+    ConfigValidationResult& result)
+{
+    if (!output.contains("tiffCompression"))
+    {
+        return;
+    }
+    const QJsonValue value = output.value("tiffCompression");
+    if (!value.isObject())
+    {
+        result.errors.push_back(
+            "output.tiffCompression 必须是包含 algorithm 的对象。");
+        return;
+    }
+    const QJsonObject compression = value.toObject();
+    const QString algorithm = stringAt(compression, "algorithm");
+    if (!compression.value("algorithm").isString()
+        || (algorithm != "none" && algorithm != "packbits"))
+    {
+        result.errors.push_back(
+            "output.tiffCompression.algorithm 只能是 none 或 packbits。");
+    }
+}
+
 }  // namespace
 
 ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
@@ -99,6 +124,7 @@ ConfigValidationResult ConfigValidator::validate(const QJsonObject& root) {
     }
     CheckOutputDpi(output, QStringLiteral("dpiX"), result);
     CheckOutputDpi(output, QStringLiteral("dpiY"), result);
+    CheckTiffCompression(output, result);
     const QString storage_mode = stringAt(output, "storageMode");
     if (!storage_mode.isEmpty() && storage_mode != "stripped" && storage_mode != "tiled") {
         result.errors.push_back("output.storageMode 只能是 stripped 或 tiled。");

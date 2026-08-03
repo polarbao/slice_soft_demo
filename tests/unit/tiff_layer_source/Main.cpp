@@ -21,6 +21,8 @@ struct FixtureOptions
 {
     std::string schema{"p0.rgbwsv.2"};
     std::string storage{"stripped"};
+    std::string compression{"none"};
+    std::string actualCompression;
     std::string polarity{"black_is_print"};
     int bitDepth{8};
     int widthPx{kWidth};
@@ -109,6 +111,7 @@ slicer_core::Json MakeManifest(
         {"storageMode", options.storage},
         {"storage", options.storage},
         {"tiled", options.storage == "tiled"},
+        {"compression", options.compression},
         {"polarity", options.polarity},
         {"printValue", 0},
         {"emptyValue", 255},
@@ -190,6 +193,10 @@ std::filesystem::path MakePackage(
         spec.storage_mode = options.storage == "tiled"
             ? slicer_core::TiffStorageMode::Tiled
             : slicer_core::TiffStorageMode::Stripped;
+        spec.compression_mode = slicer_core::ParseTiffCompressionMode(
+            options.actualCompression.empty()
+                ? options.compression
+                : options.actualCompression);
         slicer_core::write_rgbwsv_tiff(
             packageDir / "layers"
                 / ("layer_" + std::to_string(layerIndex) + ".tiff"),
@@ -201,6 +208,30 @@ std::filesystem::path MakePackage(
         packageDir / "manifest.json",
         MakeManifest(options, layerIndices));
     return packageDir;
+}
+
+bool PackBitsPackageLoadsThroughTheSameSource()
+{
+    FixtureOptions options;
+    options.compression = "packbits";
+    const std::filesystem::path packageDir =
+        MakePackage("packbits", options);
+    slicer_core::TiffLayerSource source;
+    const slicer_core::ProductionPackageIndex package =
+        source.IndexPackage(packageDir / "manifest.json");
+    const auto layer = source.FindLayer(20);
+
+    return ExpectTrue(
+               package.compression
+                   == slicer_core::TiffCompressionMode::PackBits,
+               "PackBits compression is indexed")
+        && ExpectTrue(layer.has_value(), "PackBits layer is found")
+        && ExpectTrue(
+            layer->compression == slicer_core::TiffCompressionMode::PackBits,
+            "layer keeps manifest compression")
+        && ExpectTrue(
+            source.LoadLayer(*layer).buffer->pixels == MakePixels(20),
+            "PackBits layer preserves exact RGBWSV bytes");
 }
 
 bool ErrorCodeMatches(
@@ -326,6 +357,18 @@ bool ProtocolAndPathFailuresAreStable()
     const std::filesystem::path missingPixelSizePackage =
         MakePackage("missing_pixel_size", missingPixelSize);
 
+    FixtureOptions invalidCompression;
+    invalidCompression.compression = "deflate";
+    invalidCompression.actualCompression = "none";
+    const std::filesystem::path invalidCompressionPackage =
+        MakePackage("invalid_compression", invalidCompression);
+
+    FixtureOptions compressionMismatch;
+    compressionMismatch.compression = "none";
+    compressionMismatch.actualCompression = "packbits";
+    const std::filesystem::path compressionMismatchPackage =
+        MakePackage("compression_mismatch", compressionMismatch);
+
     return ErrorCodeMatches(
                [&]()
                {
@@ -390,7 +433,24 @@ bool ProtocolAndPathFailuresAreStable()
                 static_cast<void>(source.IndexPackage(
                     missingPixelSizePackage / "manifest.json"));
             },
-            slicer_core::TiffLayerErrorCode::ManifestInvalid);
+            slicer_core::TiffLayerErrorCode::ManifestInvalid)
+        && ErrorCodeMatches(
+            [&]()
+            {
+                slicer_core::TiffLayerSource source;
+                static_cast<void>(source.IndexPackage(
+                    invalidCompressionPackage / "manifest.json"));
+            },
+            slicer_core::TiffLayerErrorCode::ProtocolMismatch)
+        && ErrorCodeMatches(
+            [&]()
+            {
+                slicer_core::TiffLayerSource source;
+                const auto package = source.IndexPackage(
+                    compressionMismatchPackage / "manifest.json");
+                static_cast<void>(source.LoadLayer(package.layers.front()));
+            },
+            slicer_core::TiffLayerErrorCode::ProtocolMismatch);
 }
 
 bool CancellationAndStaleGenerationDoNotPopulateCache()
@@ -478,6 +538,7 @@ int main()
 {
     const bool ok = StrippedPackageIndexesAndLoadsByRealLayerIndex()
         && TiledPackageLoadsThroughTheSameSource()
+        && PackBitsPackageLoadsThroughTheSameSource()
         && ProtocolAndPathFailuresAreStable()
         && CancellationAndStaleGenerationDoNotPopulateCache()
         && ManifestChangeInvalidatesIndexedReferences()

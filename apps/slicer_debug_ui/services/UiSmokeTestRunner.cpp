@@ -4323,6 +4323,45 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
         return fail("generated-effective-config 无法加载 UI 展示文档。");
     }
     ConfigEditorPanel configpanel(&viewdocument);
+    if (!configpanel.loadConfig(templatepath))
+    {
+        return fail("generated-effective-config UI 无法加载压缩设置 fixture。");
+    }
+    auto* compressionCombo =
+        configpanel.findChild<QComboBox*>("tiffCompressionCombo");
+    if (compressionCombo == nullptr
+        || compressionCombo->findData(QStringLiteral("none")) < 0
+        || compressionCombo->findData(QStringLiteral("packbits")) < 0)
+    {
+        return fail("generated-effective-config UI 未提供 none/PackBits TIFF 压缩选项。");
+    }
+    compressionCombo->setCurrentIndex(
+        compressionCombo->findData(QStringLiteral("packbits")));
+    if (viewdocument
+            .value({"output", "tiffCompression", "algorithm"})
+            .toString()
+        != QStringLiteral("packbits"))
+    {
+        return fail("generated-effective-config UI 未写回 output.tiffCompression.algorithm。");
+    }
+    EffectiveConfigRequest uiCompressionRequest = request;
+    uiCompressionRequest.generatedconfigpath =
+        tempdir.filePath("ui_compression/slice_config.effective.json");
+    uiCompressionRequest.overridedocument = viewdocument.document();
+    const EffectiveConfigResult uiCompressionResult =
+        EffectiveConfigGenerator().Generate(uiCompressionRequest);
+    if (!uiCompressionResult.IsValid()
+        || uiCompressionResult.document.object()
+                   .value("output")
+                   .toObject()
+                   .value("tiffCompression")
+                   .toObject()
+                   .value("algorithm")
+                   .toString()
+            != QStringLiteral("packbits"))
+    {
+        return fail("generated-effective-config 未把 UI PackBits 选择传入生效配置。");
+    }
     configpanel.ShowEffectiveConfig(result);
     if (!configpanel.EffectiveConfigText().contains(settings.profileid)
         || !configpanel.EffectiveConfigText().contains(QStringLiteral("modelFill.material")))
@@ -4372,7 +4411,28 @@ int UiSmokeTestRunner::GeneratedEffectiveConfig(const UiSmokeTestOptions& option
         return fail("generated-effective-config 未阻断 RGBWSV 固定协议偏差。");
     }
 
-    return pass(QString("generated-effective-config differences=%1 template-readonly=true")
+    EffectiveConfigRequest compressionRequest = request;
+    compressionRequest.generatedconfigpath =
+        tempdir.filePath("bad_compression/slice_config.effective.json");
+    QJsonObject badCompressionRoot =
+        compressionRequest.overridedocument.object();
+    QJsonObject badCompressionOutput =
+        badCompressionRoot.value("output").toObject();
+    badCompressionOutput.insert(
+        "tiffCompression",
+        QJsonObject{{"algorithm", "deflate"}});
+    badCompressionRoot.insert("output", badCompressionOutput);
+    compressionRequest.overridedocument =
+        QJsonDocument(badCompressionRoot);
+    const EffectiveConfigResult compressionResult =
+        EffectiveConfigGenerator().Generate(compressionRequest);
+    if (compressionResult.IsValid()
+        || QFileInfo::exists(compressionRequest.generatedconfigpath))
+    {
+        return fail("generated-effective-config 未阻断不支持的 TIFF 压缩算法。");
+    }
+
+    return pass(QString("generated-effective-config differences=%1 template-readonly=true compression=packbits")
                     .arg(result.differences.size()));
 }
 

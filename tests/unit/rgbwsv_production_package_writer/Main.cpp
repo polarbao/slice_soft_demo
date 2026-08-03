@@ -2,6 +2,7 @@
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 #include "slicer_core/pipeline/GlobalSurfaceShellProductionPackage.h"
 #include "slicer_core/rip_reader.h"
+#include "slicer_core/tiff_io.h"
 
 #include <chrono>
 #include <cstddef>
@@ -48,6 +49,40 @@ slicer_core::Json ReadJson(const std::filesystem::path& path)
         throw std::runtime_error("failed to read test JSON: " + path.string());
     }
     return slicer_core::Json::parse(input);
+}
+
+void WriteJson(
+    const std::filesystem::path& path,
+    const slicer_core::Json& document)
+{
+    std::ofstream output{path, std::ios::binary | std::ios::trunc};
+    if (!output)
+    {
+        throw std::runtime_error("failed to write test JSON: " + path.string());
+    }
+    output << document.dump(2) << '\n';
+}
+
+void MutateManifestCompression(
+    const std::filesystem::path& packageDir,
+    const std::string& compression)
+{
+    const std::filesystem::path manifestPath = packageDir / "manifest.json";
+    slicer_core::Json::Object root = ReadJson(manifestPath).as_object();
+    slicer_core::Json::Object tiff = root.at("tiff").as_object();
+    tiff["compression"] = compression;
+    root["tiff"] = slicer_core::Json{std::move(tiff)};
+    WriteJson(manifestPath, slicer_core::Json{std::move(root)});
+}
+
+void RemoveManifestCompression(const std::filesystem::path& packageDir)
+{
+    const std::filesystem::path manifestPath = packageDir / "manifest.json";
+    slicer_core::Json::Object root = ReadJson(manifestPath).as_object();
+    slicer_core::Json::Object tiff = root.at("tiff").as_object();
+    tiff.erase("compression");
+    root["tiff"] = slicer_core::Json{std::move(tiff)};
+    WriteJson(manifestPath, slicer_core::Json{std::move(root)});
 }
 
 std::size_t ChannelIndex(
@@ -136,6 +171,9 @@ bool AdmittedGlobalPackagePassesRipAndReports()
         && ExpectTrue(result.layerCount == kLayerCount, "writer reports all layers")
         && ExpectTrue(rip.schema == "p0.rgbwsv.2", "RIP accepts current schema")
         && ExpectTrue(rip.bit_depth == 8, "RIP accepts uint8")
+        && ExpectTrue(
+            rip.compression == "none",
+            "RIP reports the default uncompressed payload")
         && ExpectTrue(rip.layer_count == kLayerCount, "RIP accepts complete layer list")
         && ExpectTrue(
             manifest.at("requestedPipelineMode").as_string()
@@ -161,6 +199,9 @@ bool AdmittedGlobalPackagePassesRipAndReports()
             manifest.at("tiff").at("layers").size() == kLayerCount,
             "manifest TIFF layer list is complete")
         && ExpectTrue(
+            manifest.at("tiff").at("compression").as_string() == "none",
+            "manifest explicitly records the default compression")
+        && ExpectTrue(
             sliceReport.at("productionTiffLayerCount").as_int() == kLayerCount,
             "slice report records production TIFF count")
         && ExpectTrue(
@@ -182,6 +223,113 @@ bool AdmittedGlobalPackagePassesRipAndReports()
         && ExpectTrue(
             std::filesystem::exists(packageDir / "preview" / "support_s_000001.ppm"),
             "support preview exists");
+}
+
+bool PackBitsPackageUsesTheDeclaredCompression()
+{
+    const std::filesystem::path directory = MakeTestDirectory("packbits");
+    const std::filesystem::path packageDir = directory / "package";
+    auto request = MakeRequest(packageDir);
+    request.storage.compression = "packbits";
+
+    const auto result = slicer_core::WriteRgbwsvProductionPackage(request);
+    const slicer_core::RipValidationResult rip =
+        slicer_core::validate_slice_package(packageDir);
+    const slicer_core::Json manifest = ReadJson(packageDir / "manifest.json");
+    const slicer_core::TiffReadResult layer = slicer_core::read_rgbwsv_tiff(
+        packageDir / "layers" / "layer_000000.tiff");
+
+    return ExpectTrue(result.productionOutputWritten, "PackBits package is written")
+        && ExpectTrue(
+            manifest.at("tiff").at("compression").as_string() == "packbits",
+            "manifest declares PackBits")
+        && ExpectTrue(rip.compression == "packbits", "RIP reports PackBits")
+        && ExpectTrue(
+            layer.spec.compression_mode == slicer_core::TiffCompressionMode::PackBits,
+            "TIFF Compression tag is PackBits")
+        && ExpectTrue(
+            layer.pixels == MakeLayer(0).channels,
+            "PackBits package preserves exact RGBWSV bytes");
+}
+
+bool CompressionManifestFailuresAreStable()
+{
+    const std::filesystem::path mismatchDirectory =
+        MakeTestDirectory("compression_mismatch");
+    const std::filesystem::path mismatchPackage =
+        mismatchDirectory / "package";
+    auto packBitsRequest = MakeRequest(mismatchPackage);
+    packBitsRequest.storage.compression = "packbits";
+    (void)slicer_core::WriteRgbwsvProductionPackage(packBitsRequest);
+    MutateManifestCompression(mismatchPackage, "none");
+
+    bool mismatchRejected{false};
+    try
+    {
+        (void)slicer_core::validate_slice_package(mismatchPackage);
+    }
+    catch (const slicer_core::ValidationError& error)
+    {
+        mismatchRejected = ExpectTrue(
+            error.code()
+                == slicer_core::ValidationErrorCode::TiffCompressionMismatch,
+            "manifest/TIFF compression mismatch has a stable error code");
+    }
+
+    const std::filesystem::path invalidDirectory =
+        MakeTestDirectory("compression_invalid");
+    const std::filesystem::path invalidPackage = invalidDirectory / "package";
+    (void)slicer_core::WriteRgbwsvProductionPackage(MakeRequest(invalidPackage));
+    MutateManifestCompression(invalidPackage, "deflate");
+
+    bool invalidRejected{false};
+    try
+    {
+        (void)slicer_core::validate_slice_package(invalidPackage);
+    }
+    catch (const slicer_core::ValidationError& error)
+    {
+        invalidRejected = ExpectTrue(
+            error.code()
+                == slicer_core::ValidationErrorCode::TiffCompressionInvalid,
+            "unsupported manifest compression has a stable error code");
+    }
+    return mismatchRejected && invalidRejected;
+}
+
+bool HistoricalManifestWithoutCompressionDefaultsToNone()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("compression_omitted");
+    const std::filesystem::path packageDir = directory / "package";
+    (void)slicer_core::WriteRgbwsvProductionPackage(MakeRequest(packageDir));
+    RemoveManifestCompression(packageDir);
+
+    const slicer_core::RipValidationResult rip =
+        slicer_core::validate_slice_package(packageDir);
+    return ExpectTrue(
+        rip.compression == "none",
+        "historical p0.rgbwsv.2 manifest without compression remains readable");
+}
+
+bool InvalidCompressionWritesNothing()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("invalid_compression_request");
+    const std::filesystem::path packageDir = directory / "package";
+    auto request = MakeRequest(packageDir);
+    request.storage.compression = "deflate";
+    try
+    {
+        (void)slicer_core::WriteRgbwsvProductionPackage(request);
+    }
+    catch (const std::exception&)
+    {
+        return ExpectTrue(
+            !std::filesystem::exists(packageDir),
+            "unsupported compression publishes no package");
+    }
+    return ExpectTrue(false, "unsupported compression must fail closed");
 }
 
 bool TiledPackageUsesTheSameProtocol()
@@ -479,6 +627,10 @@ int main()
     const std::vector<std::pair<std::string, bool (*)()>> tests{
         {"admitted_global_package_passes_rip_and_reports", AdmittedGlobalPackagePassesRipAndReports},
         {"tiled_package_uses_the_same_protocol", TiledPackageUsesTheSameProtocol},
+        {"packbits_package_uses_the_declared_compression", PackBitsPackageUsesTheDeclaredCompression},
+        {"compression_manifest_failures_are_stable", CompressionManifestFailuresAreStable},
+        {"historical_manifest_without_compression_defaults_to_none", HistoricalManifestWithoutCompressionDefaultsToNone},
+        {"invalid_compression_writes_nothing", InvalidCompressionWritesNothing},
         {"legacy_package_uses_the_same_writer_contract", LegacyPackageUsesTheSameWriterContract},
         {"admitted_global_adapter_writes_through_the_shared_writer", AdmittedGlobalAdapterWritesThroughTheSharedWriter},
         {"blocked_global_adapter_writes_nothing", BlockedGlobalAdapterWritesNothing},

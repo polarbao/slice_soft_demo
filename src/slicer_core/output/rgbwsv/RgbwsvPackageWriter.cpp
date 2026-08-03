@@ -78,6 +78,7 @@ std::filesystem::path MakeSiblingTemporaryDirectory(
 
 void ValidateStorage(const RgbwsvProductionStorageSpec& storage)
 {
+    (void)ParseTiffCompressionMode(storage.compression);
     if (storage.storageMode == "stripped")
     {
         if (storage.rowsPerStrip <= 0)
@@ -274,6 +275,7 @@ TiffImageSpec MakeTiffSpec(
     spec.storage_mode = storage.storageMode == "tiled"
         ? TiffStorageMode::Tiled
         : TiffStorageMode::Stripped;
+    spec.compression_mode = ParseTiffCompressionMode(storage.compression);
     return spec;
 }
 
@@ -634,6 +636,7 @@ Json MakeTiffJson(
     result["tiled"] = storage.storageMode == "tiled";
     result["storage"] = storage.storageMode;
     result["storageMode"] = storage.storageMode;
+    result["compression"] = storage.compression;
     result["polarity"] = protocol.polarity;
     result["printValue"] = static_cast<int>(protocol.print_value);
     result["emptyValue"] = static_cast<int>(protocol.empty_value);

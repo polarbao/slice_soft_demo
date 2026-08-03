@@ -1,0 +1,150 @@
+# REPORT_03E-02 TIFF 生产压缩协议与 RIP 兼容当前状态
+
+> 状态：INTERNAL COMPLETE / EXTERNAL TARGET RIP PENDING / NO_GO_DEFAULT
+> 日期：2026-08-03
+> 前置：03E-01 PackBits 原型与读写性能矩阵 COMPLETE
+
+## 1. 本阶段目标
+
+03E-02 把 03E-01 的 PackBits 原型接入可审计的生产配置链路，同时保持默认未压缩：
+
+```text
+Config -> Legacy / Global / Scene Pipeline -> shared RGBWSV Writer
+       -> manifest compression -> strict Reader -> TIFF native preview
+```
+
+本阶段不引入 Deflate，不改变 RGBWSV 通道、位深、极性或生产默认 Writer。
+
+## 2. 已实现合同
+
+### 2.1 配置
+
+```json
+"output": {
+  "tiffCompression": {
+    "algorithm": "none"
+  }
+}
+```
+
+支持 `none` 与 `packbits`。字段缺省时保持 `none`；其他值在配置加载或 Qt 生效配置生成时失败关闭。
+
+### 2.2 Package 与 Reader
+
+- 新 package 显式写入 `manifest.tiff.compression`；
+- TIFF `Compression(259)` 必须与 manifest 一致；
+- 项目严格 Reader 摘要输出 `compression`；
+- `E_TIFF_COMPRESSION_INVALID`：manifest 算法未知或类型错误；
+- `E_TIFF_COMPRESSION_MISMATCH`：manifest 与实际 TIFF 不一致；
+- 历史 `p0.rgbwsv.2` 未声明 compression 时按 `none` 读取。
+
+### 2.3 Pipeline 覆盖
+
+已接入并验证：
+
+```text
+Legacy 单模型
+Global Surface Shell 显式候选
+Multi-model Scene 共享写包
+OpenVDB Candidate 显式非默认路径
+TIFF native Layer Preview
+```
+
+OpenVDB 仍默认关闭；本阶段没有改变其生产准入规则。
+
+### 2.4 Qt UI
+
+配置页 TIFF 输出区域新增：
+
+```text
+不压缩（默认） -> none
+PackBits（实验） -> packbits
+```
+
+PackBits 是无损固定算法，没有压缩等级。UI 不提供“压缩比例”或 `compressionLevel`。
+
+## 3. 自动验证
+
+### 3.1 双 Writer 合同
+
+handwritten 与 LibTIFF Release 构建均通过：
+
+```text
+output_resolution_config_unit_tests
+rgbwsv_production_package_writer_unit_tests
+tiff_layer_source_unit_tests
+non_square_raster_pipeline_unit_tests
+global_surface_shell_production_pipeline_unit_tests
+multi_model_production_service_unit_tests
+```
+
+覆盖配置缺省、PackBits exact bytes、manifest/tag 一致性、Legacy/Global/Scene 传播、历史省略字段、
+未知算法和压缩不一致错误码。
+
+### 3.2 Qt
+
+```text
+generated-effective-config: PASS
+compression=packbits
+```
+
+该 Smoke 验证 UI 选项、文档写回、生效配置传播，以及 `deflate` 失败关闭。
+
+### 3.3 03E-02 生产 Gate
+
+入口：
+
+```powershell
+.\scripts\Run03EProductionCompressionGate.ps1 -Config Release
+```
+
+Gate 对 deterministic fixture 和真实 `model/obj/meigui_fudiao/04.obj` 分别生成
+handwritten/LibTIFF × none/PackBits package，检查 TIFF tag、manifest、项目严格 RIP 和坏包错误码。
+
+证据：
+
+```text
+output/benchmarks/03e_02/20260803_131354_875/production_compression_gate.json
+```
+
+| 用例 | Writer | none TIFF 字节 | PackBits TIFF 字节 | 体积缩减 | 完整写包 wall 变化 |
+|---|---|---:|---:|---:|---:|
+| deterministic_small | handwritten | 143000 | 142080 | 0.643% | -5.952% |
+| deterministic_small | LibTIFF | 143020 | 142100 | 0.643% | -1.059% |
+| real_meigui_04 | handwritten | 236061644 | 92350141 | 60.879% | -29.083% |
+| real_meigui_04 | LibTIFF | 236061826 | 92349666 | 60.879% | +27.334% |
+
+真实模型说明 PackBits 可显著减少以空白为主的 RGBWSV TIFF 体积，但不能稳定缩短完整切片写包时间。
+完整流程 wall 为单次观测，不作为替代 03E-01 p50 矩阵的精密性能结论。
+
+### 3.4 03D 回归
+
+`Run03DTiffCompatibilityGate.ps1 -Config Release` 通过，none、stripped/tiled、双 Writer、共享 Package、
+项目严格 RIP 和历史坏包矩阵未回归。
+
+## 4. 未完成项
+
+以下外部验证未在本机会话执行：
+
+```text
+Photoshop 打开 PackBits 六通道 TIFF
+目标 RIP 读取完整 PackBits package
+打印控制软件导入与打印前检查
+```
+
+因此不能声称目标 RIP 兼容，也不能默认启用 PackBits。
+
+## 5. 当前结论
+
+```text
+内部生产配置与协议：PASS
+项目严格 Reader/RIP：PASS
+真实 OBJ package：PASS
+外部目标 RIP：PENDING
+默认压缩：none（未改变）
+默认 Writer：handwritten（未改变）
+决策：NO_GO_DEFAULT_EXTERNAL_INTEROP_PENDING
+```
+
+03E 后续只需在明确具备目标 RIP/控制软件环境时补做外部互操作 Gate；在此之前，PackBits 保持
+用户显式选择的实验输出能力。

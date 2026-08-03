@@ -4191,6 +4191,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
 
     RgbwsvProductionStorageSpec productionStorage;
     productionStorage.storageMode = config.output.storage_mode;
+    productionStorage.compression = config.output.tiff_compression;
     productionStorage.tileWidth = config.output.tile_size.at(0);
     productionStorage.tileHeight = config.output.tile_size.at(1);
     productionStorage.rowsPerStrip = config.output.rows_per_strip;
@@ -5015,6 +5016,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         {"tiled", config.output.storage_mode == "tiled"},
         {"storage", config.output.storage_mode},
         {"storageMode", config.output.storage_mode},
+        {"compression", config.output.tiff_compression},
         {"polarity", "black_is_print"},
         {"printValue", 0},
         {"emptyValue", 255},

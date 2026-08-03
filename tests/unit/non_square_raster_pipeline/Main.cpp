@@ -77,6 +77,8 @@ std::filesystem::path WriteLegacyConfig(
              {"dpiY", 600},
              {"layerThicknessMm", 0.1},
              {"storageMode", "stripped"},
+             {"tiffCompression",
+              slicer_core::Json::object({{"algorithm", "packbits"}})},
              {"rowsPerStrip", 8},
          })},
         {"modelMaterial",
@@ -138,7 +140,14 @@ bool LegacyPipelineUsesIndependentRasterPitches()
                 "Legacy varnish uses output DPI as physical source")
             && ExpectTrue(
                 rip.dpi_x == 635 && rip.dpi_y == 600,
-                "RIP validates the Legacy non-square package");
+                "RIP validates the Legacy non-square package")
+            && ExpectTrue(
+                rip.compression == "packbits"
+                    && manifest.at("tiff")
+                           .at("compression")
+                           .as_string()
+                        == "packbits",
+                "Legacy package propagates configured PackBits compression");
     }
     catch (const std::exception& error)
     {

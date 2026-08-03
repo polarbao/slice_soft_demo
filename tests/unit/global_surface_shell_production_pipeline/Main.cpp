@@ -86,6 +86,8 @@ std::filesystem::path WriteConfig(
              {"dpiY", 600},
              {"layerThicknessMm", 0.1},
              {"storageMode", "stripped"},
+             {"tiffCompression",
+              slicer_core::Json::object({{"algorithm", "packbits"}})},
              {"rowsPerStrip", 8},
          })},
         {"autoOrient",
@@ -262,6 +264,13 @@ bool ExplicitProfileWritesProductionPackage()
             && ExpectTrue(
                 rip.layer_count == result.layer_count,
                 "RIP validates every Global layer")
+            && ExpectTrue(
+                rip.compression == "packbits"
+                    && manifest.at("tiff")
+                           .at("compression")
+                           .as_string()
+                        == "packbits",
+                "Global package propagates configured PackBits compression")
             && ExpectTrue(
                 rip.total_channel_stats.at(3U).print_pixels > 0U,
                 "Global model fill produces white channel pixels");

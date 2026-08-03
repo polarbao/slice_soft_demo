@@ -32,6 +32,8 @@ enum class ValidationErrorCode {
     TiffPlanarConfigInvalid,
     TiffStorageModeInvalid,
     TiffStorageMismatch,
+    TiffCompressionInvalid,
+    TiffCompressionMismatch,
     RowsPerStripInvalid,
     TileSizeInvalid,
     TiffReadFailed,
@@ -61,6 +63,7 @@ struct RipValidationResult {
     std::filesystem::path package_dir;
     std::string schema;
     std::string storage_mode;
+    std::string compression;
     int bit_depth{0};
     std::array<std::string, 6> channel_order{"R", "G", "B", "W", "S", "V"};
     int width_px{0};

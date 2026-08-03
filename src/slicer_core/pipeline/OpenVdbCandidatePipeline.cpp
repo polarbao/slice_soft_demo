@@ -304,6 +304,8 @@ TiffImageSpec MakeTiffSpec(const SliceConfig& config, const int width, const int
     spec.rows_per_strip = static_cast<std::uint32_t>(config.output.rows_per_strip);
     spec.storage_mode =
         config.output.storage_mode == "tiled" ? TiffStorageMode::Tiled : TiffStorageMode::Stripped;
+    spec.compression_mode =
+        ParseTiffCompressionMode(config.output.tiff_compression);
     return spec;
 }
 
@@ -614,6 +616,7 @@ OpenVdbCandidatePipelineResult RunOpenVdbCandidatePipelineCore(
     tiffJson["tiled"] = config.output.storage_mode == "tiled";
     tiffJson["storage"] = config.output.storage_mode;
     tiffJson["storageMode"] = config.output.storage_mode;
+    tiffJson["compression"] = config.output.tiff_compression;
     tiffJson["polarity"] = protocol.polarity;
     tiffJson["printValue"] = static_cast<int>(protocol.print_value);
     tiffJson["emptyValue"] = static_cast<int>(protocol.empty_value);

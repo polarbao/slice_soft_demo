@@ -539,6 +539,32 @@ TiffStorageMode ParseStorage(
         manifestPath);
 }
 
+TiffCompressionMode ParseCompression(
+    const Json& tiff,
+    const std::filesystem::path& manifestPath)
+{
+    if (!tiff.contains("compression"))
+    {
+        return TiffCompressionMode::None;
+    }
+    const std::string compression =
+        RequireString(tiff, "compression", manifestPath);
+    try
+    {
+        return ParseTiffCompressionMode(compression);
+    }
+    catch (const std::invalid_argument& error)
+    {
+        Fail(
+            TiffLayerErrorCode::ProtocolMismatch,
+            "TIFF compression must be none or packbits",
+            {},
+            -1,
+            manifestPath,
+            error.what());
+    }
+}
+
 bool IsPathWithin(
     const std::filesystem::path& directory,
     const std::filesystem::path& candidate)
@@ -798,6 +824,7 @@ ProductionPackageIndex TiffLayerSource::IndexPackage(
         }
     }
     package.storage = ParseStorage(tiff, absoluteManifest);
+    package.compression = ParseCompression(tiff, absoluteManifest);
 
     const Json& layers =
         RequireArray(manifest, "layers", absoluteManifest);
@@ -892,6 +919,7 @@ ProductionPackageIndex TiffLayerSource::IndexPackage(
         }
 
         layer.storage = package.storage;
+        layer.compression = package.compression;
         layer.checksum = ComputeFileMetadataIdentity(layer.path);
         layer.dpiX = package.dpiX;
         layer.dpiY = package.dpiY;
@@ -1108,7 +1136,8 @@ TiffLayerLoadResult TiffLayerSource::LoadLayer(
     if (decoded.spec.samples_per_pixel != rgbwsv_channel_count
         || decoded.spec.bits_per_sample != 8
         || decoded.spec.planar_config != 1
-        || decoded.spec.storage_mode != indexedLayer.storage)
+        || decoded.spec.storage_mode != indexedLayer.storage
+        || decoded.spec.compression_mode != indexedLayer.compression)
     {
         Fail(
             TiffLayerErrorCode::ProtocolMismatch,

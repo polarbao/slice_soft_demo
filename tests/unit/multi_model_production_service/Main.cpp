@@ -103,6 +103,49 @@ std::string ReadFile(const std::filesystem::path& path)
         std::istreambuf_iterator<char>()};
 }
 
+std::filesystem::path WritePackBitsProfile(
+    const std::filesystem::path& sourcePath,
+    const std::filesystem::path& destinationPath)
+{
+    std::ifstream source(sourcePath, std::ios::binary);
+    if (!source)
+    {
+        throw std::runtime_error(
+            "failed to read profile: " + sourcePath.generic_string());
+    }
+    slicer_core::Json::Object root =
+        slicer_core::Json::parse(source).as_object();
+    slicer_core::Json::Object input = root.at("input").as_object();
+    std::filesystem::path modelPath = input.at("modelPath").as_string();
+    if (modelPath.is_relative())
+    {
+        modelPath = std::filesystem::absolute(
+            sourcePath.parent_path() / modelPath)
+            .lexically_normal();
+    }
+    input["modelPath"] = modelPath.generic_string();
+    root["input"] = slicer_core::Json{std::move(input)};
+
+    slicer_core::Json::Object output = root.at("output").as_object();
+    output["tiffCompression"] = slicer_core::Json::object({
+        {"algorithm", "packbits"},
+    });
+    root["output"] = slicer_core::Json{std::move(output)};
+
+    std::filesystem::create_directories(destinationPath.parent_path());
+    std::ofstream stream(
+        destinationPath,
+        std::ios::binary | std::ios::trunc);
+    if (!stream)
+    {
+        throw std::runtime_error(
+            "failed to write PackBits profile: "
+            + destinationPath.generic_string());
+    }
+    stream << slicer_core::Json{std::move(root)}.dump(2) << '\n';
+    return destinationPath;
+}
+
 slicer_core::MultiModelScene MakeThreeInstanceScene(
     const std::filesystem::path& profileConfigPath)
 {
@@ -263,15 +306,17 @@ bool StableErrorNames()
 bool ThreeInstanceSceneWritesOneStrictPackage()
 {
     const std::filesystem::path sourceRoot{SLICESOFT_SOURCE_DIR};
-    const std::filesystem::path profileConfigPath =
-        sourceRoot
-        / "samples/configs/golden/material_process_top2_fixture.json";
     const std::filesystem::path root =
         std::filesystem::temp_directory_path()
         / "slicesoft_13b_08_multi_model_production";
     std::error_code cleanupError;
     std::filesystem::remove_all(root, cleanupError);
     std::filesystem::create_directories(root);
+    const std::filesystem::path profileConfigPath =
+        WritePackBitsProfile(
+            sourceRoot
+                / "samples/configs/golden/material_process_top2_fixture.json",
+            root / "packbits_profile.json");
 
     const slicer_core::SceneEffectiveConfigRequest effectiveRequest =
         MakeEffectiveRequest(root, profileConfigPath);
@@ -368,9 +413,14 @@ bool ThreeInstanceSceneWritesOneStrictPackage()
         && ExpectTrue(
             rip.schema == "p0.rgbwsv.2"
                 && rip.bit_depth == 8
+                && rip.compression == "packbits"
                 && rip.layer_count == result.layercount
                 && rip.warnings_count == 0,
-            "scene package passes strict RGBWSV validation")
+            "scene package passes strict PackBits RGBWSV validation")
+        && ExpectTrue(
+            manifest.at("tiff").at("compression").as_string()
+                == "packbits",
+            "scene package manifest declares PackBits")
         && ExpectTrue(
             manifest.at("scene").at("sceneId").as_string()
                     == effectiveRequest.scene.sceneid

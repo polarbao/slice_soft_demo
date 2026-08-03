@@ -219,6 +219,7 @@ RgbwsvProductionPackageWriteRequest BuildPackageRequest(
         mapping.grid.pixelPitchXMm,
         mapping.grid.pixelPitchYMm);
     request.storage.storageMode = config.output.storage_mode;
+    request.storage.compression = config.output.tiff_compression;
     request.storage.rowsPerStrip = config.output.rows_per_strip;
     request.storage.tileWidth = config.output.tile_size.at(0);
     request.storage.tileHeight = config.output.tile_size.at(1);

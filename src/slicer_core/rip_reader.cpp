@@ -225,6 +225,37 @@ std::string read_manifest_storage_mode(const Json& tiff, const std::string& sche
     return storage_mode;
 }
 
+std::string ReadManifestCompression(const Json& tiff)
+{
+    if (!tiff.contains("compression"))
+    {
+        return "none";
+    }
+    const Json& compression = tiff.at("compression");
+    if (!compression.is_string())
+    {
+        fail(
+            ValidationErrorCode::TiffCompressionInvalid,
+            "manifest.tiff.compression",
+            "none|packbits",
+            json_type_name(compression));
+    }
+    const std::string name = compression.as_string();
+    try
+    {
+        (void)ParseTiffCompressionMode(name);
+    }
+    catch (const std::invalid_argument&)
+    {
+        fail(
+            ValidationErrorCode::TiffCompressionInvalid,
+            "manifest.tiff.compression",
+            "none|packbits",
+            name);
+    }
+    return name;
+}
+
 void validate_manifest_storage_fields(const Json& tiff, const std::string& storage_mode) {
     if (storage_mode == "stripped") {
         const int rows_per_strip = tiff.contains("rowsPerStrip") ? tiff.at("rowsPerStrip").as_int() : 0;
@@ -515,6 +546,10 @@ std::string validation_error_code_string(const ValidationErrorCode code) {
             return "E_TIFF_STORAGE_MODE_INVALID";
         case ValidationErrorCode::TiffStorageMismatch:
             return "E_TIFF_STORAGE_MISMATCH";
+        case ValidationErrorCode::TiffCompressionInvalid:
+            return "E_TIFF_COMPRESSION_INVALID";
+        case ValidationErrorCode::TiffCompressionMismatch:
+            return "E_TIFF_COMPRESSION_MISMATCH";
         case ValidationErrorCode::RowsPerStripInvalid:
             return "E_ROWS_PER_STRIP_INVALID";
         case ValidationErrorCode::TileSizeInvalid:
@@ -564,6 +599,7 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
     const auto& grid = manifest.at("grid");
     const auto& tiff = manifest.at("tiff");
     const std::string manifest_storage_mode = read_manifest_storage_mode(tiff, schema);
+    const std::string manifestCompression = ReadManifestCompression(tiff);
     require_channel_order(tiff.at("channelOrder"));
     require_int(tiff, "channelCount", 6, ValidationErrorCode::ChannelCountInvalid, "manifest.tiff.channelCount");
     require_int(tiff, "bitDepth", 8, ValidationErrorCode::BitDepthInvalid, "manifest.tiff.bitDepth");
@@ -588,6 +624,7 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
     result.package_dir = package_dir;
     result.schema = schema;
     result.storage_mode = manifest_storage_mode;
+    result.compression = manifestCompression;
     result.bit_depth = tiff.at("bitDepth").as_int();
     validate_grid(grid, result);
 
@@ -663,6 +700,17 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
                 "layer.tiff.storageMode",
                 manifest_storage_mode,
                 actual_storage_mode,
+                layer_path);
+        }
+        const std::string actualCompression =
+            TiffCompressionModeString(tiff_result.spec.compression_mode);
+        if (actualCompression != manifestCompression)
+        {
+            fail(
+                ValidationErrorCode::TiffCompressionMismatch,
+                "layer.tiff.compression",
+                manifestCompression,
+                actualCompression,
                 layer_path);
         }
 

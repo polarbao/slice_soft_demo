@@ -469,6 +469,20 @@ std::string TiffCompressionModeString(const TiffCompressionMode mode)
     return "unknown";
 }
 
+TiffCompressionMode ParseTiffCompressionMode(const std::string_view name)
+{
+    if (name == "none")
+    {
+        return TiffCompressionMode::None;
+    }
+    if (name == "packbits")
+    {
+        return TiffCompressionMode::PackBits;
+    }
+    throw std::invalid_argument(
+        "TIFF compression must be none or packbits: " + std::string{name});
+}
+
 void write_rgbwsv_tiled_tiff(
     const std::filesystem::path& path,
     const TiffImageSpec& spec,
