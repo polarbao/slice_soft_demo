@@ -500,9 +500,10 @@ bool ValidateLayer(
                     request.protocol.empty_value))
             {
                 message +=
-                    "; RGB-only cannot encode an opaque pure-white model "
-                    "pixel under black_is_print because RGB=255 is Empty. "
-                    "Select a white or varnish model fill profile.";
+                    "; This pixel is in a pure-white texture region. The "
+                    "current Profile cannot express printable white under "
+                    "black_is_print; select the full-volume RGB + on-demand "
+                    "white carrier Profile or a white-fill Profile.";
             }
             Block(
                 result,

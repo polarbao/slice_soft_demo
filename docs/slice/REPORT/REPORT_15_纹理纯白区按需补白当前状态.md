@@ -40,7 +40,7 @@
 |---|---|---|
 | 15A | 配置契约（3 字段 + 校验 + 枚举扩展） | ✅ 15A-01..04 完成 |
 | 15B | 合成器补白写入 + 统计 | ✅ 15B-01..04 完成；NFR-02 性能门通过 |
-| 15C | 切片前预检与错误信息业务化 | 🟡 15C-01/02 完成；15C-03 待接入 |
+| 15C | 切片前预检与错误信息业务化 | ✅ 15C-01..03 完成 |
 | 15D | 验收与证据产出 | 🟡 15D-01..04 完成；15D-05 待工艺侧实物打样 |
 | 15E | 交付收口 | ⬜ 未开始 |
 
@@ -137,8 +137,7 @@ Stage 15 为 Stage 14「RIP 六问 Q2（白区语义）」追加一条显式不�
 
 ## 9. 当前下一任务
 
-1. `15C-03`：在既有协议错误措辞后追加纯白模型像素的业务解释。
-2. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
+1. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
 
 ### 2026-08-04 · 15C-02 切片前告警接入
 
@@ -147,5 +146,12 @@ Stage 15 为 Stage 14「RIP 六问 Q2（白区语义）」追加一条显式不�
 - Qt 场景工作流在后台扫描全部可见模型的源贴图，切片前显示保守告警但继续允许生产闭合校验作为最终真源。
 - 当前 Profile 声明 `unprintable_white_underbase` 能力时不告警；整图扫描可能命中未使用 UV texel，提示中已明确该边界。
 - Release 验证：`production_effective_config_unit_tests`、`texture_white_preflight_service_unit_tests` 与 `slicer_debug_ui --self-test` 全部 PASS。
+
+### 2026-08-04 · 15C-03 场景错误信息业务化
+
+- 保留 `instance RGBWSV bytes do not close against material ownership; pixel=` 既有协议错误前缀及 `ClosureFailed` 错误码。
+- 仅当失败像素归属 Model 且 R/G/B/W/S/V 全部等于 `emptyValue` 时，追加“纯白纹理区域、当前 Profile 无法表达可打印白色、改用按需补白或白墨填充 Profile”的业务解释。
+- 非 Empty 的普通材料闭合失败不追加纯白解释，避免把其他通道错误误导为纹理白区问题。
+- Release `multi_model_layer_composer_unit_tests`：PASS。
 
 G7 通过前，候选 Profile 必须继续保持 `enabled: false` / `productionSafety: diagnostic`。

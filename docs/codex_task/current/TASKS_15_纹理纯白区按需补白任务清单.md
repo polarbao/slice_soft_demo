@@ -42,7 +42,7 @@
 | 15B-04 | ✅ COMPLETE | Release 预热 1 次、计量 7 次；F-03/F-04 `sliceProcessingMs` p50 退化均 ≤ 2% |
 | 15C-01 | ✅ COMPLETE | 异步严格纯白扫描、完整资产身份缓存、single-flight、stale 丢弃和 C-15/C-16 服务单测通过 |
 | 15C-02 | ✅ COMPLETE | 异步结果已绑定 scene/revision/contentHash/Profile，Legacy RGB 路径在切片前显示保守告警；能力 Profile 与 stale 结果不告警 |
-| 15C-03 | ⬜ PENDING | 准备工作已完成，可进入开发 |
+| 15C-03 | ✅ COMPLETE | 保留既有协议错误前缀与错误码，仅在 model ownership + 六通道 Empty 条件下追加纯白纹理业务解释 |
 | 15D-01 | ✅ COMPLETE | F-01..F-05 manifest、F-03/F-04 合成资产和统一 Gate 骨架已落地 |
 | 15D-02 | ✅ COMPLETE | `pixel_diff_F04.csv` 仅 W 有差异；F-02 新旧 TIFF SHA-256 等价 |
 | 15D-03 | ✅ COMPLETE | 28 个 golden SHA-256 零漂移；历史 Fixture 固定源姿态后 Quick CI PASS；统一 Gate 关闭 G3 |
@@ -132,6 +132,8 @@
 - **硬约束**：只增不改 —— 既有错误码与前半段措辞不得变更（下游可能已在匹配）
 - **出口**：C-17
 - **依赖**：无
+- **状态**：✅ COMPLETE（2026-08-04）
+- **证据**：`multi_model_layer_composer_unit_tests` 验证既有前缀稳定、纯白失败包含按需补白建议，普通非空闭合失败不误标为纯白纹理
 
 ---
 

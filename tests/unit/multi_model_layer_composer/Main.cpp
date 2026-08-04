@@ -700,6 +700,10 @@ bool ClosureFailureIsAtomicAndInputIsImmutable()
                    slicer_core::SceneRasterErrorCode::ClosureFailed),
                "closure mismatch fails")
         && ExpectTrue(
+            result.error->message.find("pure-white texture region")
+                == std::string::npos,
+            "non-empty closure mismatch does not claim a pure-white texel")
+        && ExpectTrue(
             result.layers.empty()
                 && result.statistics.outputlayercount == 0U,
             "failure returns no partial writer-ready layers")
@@ -726,13 +730,18 @@ bool OpaqueWhiteRgbOnlyModelPixelHasActionableFailure()
                    slicer_core::SceneRasterErrorCode::ClosureFailed),
                "opaque white RGB-only model pixel fails closed")
         && ExpectTrue(
-            result.error->message.find("RGB-only")
-                != std::string::npos,
-            "failure identifies the RGB-only protocol limitation")
+            result.error->message.rfind(
+                "instance RGBWSV bytes do not close against material "
+                "ownership; pixel=",
+                0U)
+                == 0U,
+            "existing protocol error prefix remains stable")
         && ExpectTrue(
-            result.error->message.find("white or varnish model fill")
+            result.error->message.find("pure-white texture region")
+                != std::string::npos
+                && result.error->message.find("on-demand white carrier")
                 != std::string::npos,
-            "failure recommends a printable model-fill profile");
+            "failure explains pure-white texture and recommends a printable Profile");
 }
 
 bool DeterministicCompositionProducesIdenticalBytes()
