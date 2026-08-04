@@ -3,6 +3,9 @@
     "modelPath": "../../models/support/floating_island.stl",
     "format": "auto"
   },
+  "autoOrient": {
+    "enabled": false
+  },
   "output": {
     "packageDir": "output/SupportShapeSmoke",
     "dpiX": 600,

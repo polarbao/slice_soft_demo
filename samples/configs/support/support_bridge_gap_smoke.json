@@ -3,6 +3,9 @@
     "modelPath": "../../models/support/support_bridge_gap.obj",
     "format": "auto"
   },
+  "autoOrient": {
+    "enabled": false
+  },
   "output": {
     "packageDir": "output/SupportBridgeGapSmoke",
     "dpiX": 600,
