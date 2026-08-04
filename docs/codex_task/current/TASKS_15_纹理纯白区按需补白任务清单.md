@@ -48,7 +48,9 @@
 | 15D-03 | ✅ COMPLETE | 28 个 golden SHA-256 零漂移；历史 Fixture 固定源姿态后 Quick CI PASS；统一 Gate 关闭 G3 |
 | 15D-04 | ✅ COMPLETE | F-01 新包经项目内 `rip_reader_test --quiet` strict 读取通过，RIP 源码零改动 |
 | 15D-05 | ⬜ PENDING | 等待工艺侧实物打样；继续阻断 Profile 启用 |
-| 15E-01..03 | ⬜ PENDING | 等待对应出口门 |
+| 15E-01 | ✅ COMPLETE | UI 操作手册已补候选 Profile、选型原则与 G7 边界；PRD_12A 已回填 Stage 15 窄增量关系 |
+| 15E-02 | ⛔ BLOCKED | 等待 G7 实物打样；候选继续保持 disabled/diagnostic |
+| 15E-03 | ⬜ READY | 15D-04 已完成，可回填 Stage 14 Q2 项目内证据与外部边界 |
 
 ---
 
@@ -172,6 +174,8 @@
 ### 15E-01 文档同步
 - **内容**：更新 `docs/user_guides/QT_DEBUG_UI_操作手册.md` 新增 Profile 与选型指引；`PRD_12A` 补充本阶段增量引用
 - **依赖**：15D-02
+- **状态**：✅ COMPLETE（2026-08-04）
+- **证据**：操作手册已区分全实体 RGB 兼容、白墨填充和按需补白候选；PRD_12A 明确 Stage 15 不改变默认填充、支撑、光油和协议语义
 
 ### 15E-02 启用 Profile
 - **文件**：`samples/scenarios/slicer_scenarios.json`

@@ -1,6 +1,6 @@
 # REPORT_15 纹理纯白区按需补白当前状态
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.6 ｜ 更新：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.7 ｜ 更新：2026-08-04
 > 上游：`DOC_DECISION_15` / `PRD_15` / `DEV_15` / `DEMO_15`
 
 ---
@@ -42,7 +42,7 @@
 | 15B | 合成器补白写入 + 统计 | ✅ 15B-01..04 完成；NFR-02 性能门通过 |
 | 15C | 切片前预检与错误信息业务化 | ✅ 15C-01..03 完成 |
 | 15D | 验收与证据产出 | 🟡 15D-01..04 完成；15D-05 待工艺侧实物打样 |
-| 15E | 交付收口 | ⬜ 未开始 |
+| 15E | 交付收口 | 🟡 15E-01 完成；15E-03 READY；15E-02 被 G7 阻断 |
 
 ## 4. 出口门进度
 
@@ -137,7 +137,9 @@ Stage 15 为 Stage 14「RIP 六问 Q2（白区语义）」追加一条显式不�
 
 ## 9. 当前下一任务
 
-1. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
+1. `15E-03`：回填 Stage 14 Q2 的项目内 W 载体验证证据，并保留外部 RIP/12G 边界。
+2. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
+3. `15E-02`：只能在 G7 通过后启用候选 Profile；当前不得执行。
 
 ### 2026-08-04 · 15C-02 切片前告警接入
 
@@ -153,5 +155,11 @@ Stage 15 为 Stage 14「RIP 六问 Q2（白区语义）」追加一条显式不�
 - 仅当失败像素归属 Model 且 R/G/B/W/S/V 全部等于 `emptyValue` 时，追加“纯白纹理区域、当前 Profile 无法表达可打印白色、改用按需补白或白墨填充 Profile”的业务解释。
 - 非 Empty 的普通材料闭合失败不追加纯白解释，避免把其他通道错误误导为纹理白区问题。
 - Release `multi_model_layer_composer_unit_tests`：PASS。
+
+### 2026-08-04 · 15E-01 交付指引同步
+
+- Qt 操作手册新增“全实体 RGB + 按需补白”候选 Profile、三类 Profile 选型原则和保守预检说明。
+- PRD_12A 新增 Stage 15 增量关系，明确按需补白不是通用 Model Fill，不改变支撑、光油、层数或 RGBWSV 协议。
+- G7 前候选继续保持 `enabled: false` / `productionSafety: diagnostic`，文档同步不等于生产放行。
 
 G7 通过前，候选 Profile 必须继续保持 `enabled: false` / `productionSafety: diagnostic`。

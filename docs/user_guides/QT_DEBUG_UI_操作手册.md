@@ -461,6 +461,24 @@ docs/user_guides/SliceSoft切片策略与材料层说明.md
 填充”，否则生产闭环校验会阻断输出，不能通过伪造 RGB=254 绕过。
 ```
 
+全彩 OBJ、全实体 RGB、仅对纯白纹理按需补白（Stage 15 候选）：
+
+```text
+场景/Profile: 彩色纹理甲片 - 全实体 RGB + 按需补白 + 下表面支撑
+模板: samples/configs/material_process/obj_mtl_texture_rgb_white_ondemand.json
+适用: 希望保留全实体 RGB，同时让贴图中严格 RGB(255,255,255) 的模型像素能够通过材料闭合校验。
+行为: 只在命中纯白纹理的同层同像素写 W=0；RGB、S、V 不变，不新增 Z 层，也不把全部模型内部改成白墨填充。
+边界: 当前仍为 diagnostic 候选，G7 实物打样通过前 enabled=false，普通生产 Profile 列表不显示，不能作为已放行工艺使用。
+```
+
+UI 会在后台保守扫描当前可见模型的源贴图。若贴图包含严格纯白像素，而当前 Profile
+不具备 `unprintable_white_underbase` 能力，切片前会提示改用上述候选或白墨填充 Profile。
+扫描对象是整张源贴图，可能包含未被 UV 使用的像素，因此该提示是选型建议，不替代最终生产闭合校验。
+
+选型原则：需要整个模型内部由白墨承载时选择“RGB + 白墨填充”；仅需修复全实体 RGB
+纯白纹理不可打印问题时评估“按需补白”候选；必须保持 W/V 全空时继续选择兼容 Profile，
+但含纯白纹理的模型会按 fail-closed 规则被阻断。
+
 OBJ 全彩 + 白墨 + 光油：
 
 ```text

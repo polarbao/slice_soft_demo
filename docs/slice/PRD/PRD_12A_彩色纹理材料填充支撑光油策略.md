@@ -417,3 +417,31 @@ docs/slice/DOC/DOC_DECISION_12E_全局纹理表面层与模型填充互补策略
 docs/slice/PRD/PRD_12E_全局纹理表面层与模型填充连续调节.md
 docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
 ```
+
+---
+
+## 11. Stage 15 纯白纹理增量关系
+
+12A 的默认生产语义保持不变：彩色纹理模型的内部填充材料默认仍为白墨，模型区域不得因
+材料未分配而为空。Stage 15 只为 Legacy 全实体 RGB 的一个窄问题增加可选能力：当贴图
+像素严格等于 `RGB(255,255,255)`，且所选 Profile 明确声明
+`unprintable_white_underbase` 时，在同层同像素写入 `W=0` 作为可打印白色载体。
+
+该增量不等于通用 Model Fill 策略，也不改变以下 12A 规则：
+
+```text
+1. 不改变 RGBWSV 六通道、uint8 或 black_is_print 协议；
+2. 不写 S/V，不新增 Z 层，不修改支撑或光油优先级；
+3. 不把所有模型内部统一改写为白墨，只处理命中的严格纯白纹理像素；
+4. fail_closed 仍是默认行为，旧全实体 RGB Profile 保持兼容基线；
+5. 候选 Profile 在实物 G7 通过前保持 disabled/diagnostic，不属于已放行生产工艺。
+```
+
+正式入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_15_纹理纯白区按需补白与材料闭合修复专项.md
+docs/slice/PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md
+docs/slice/DEV/DEV_15_纹理纯白区按需补白设计.md
+docs/slice/REPORT/REPORT_15_纹理纯白区按需补白当前状态.md
+```
