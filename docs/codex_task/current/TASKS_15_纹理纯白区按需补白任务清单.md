@@ -1,6 +1,6 @@
 # TASKS_15 纹理纯白区按需补白任务清单
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.6 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / EXTERNAL GATE** ｜ 版本：v1.8 ｜ 日期：2026-08-04
 > 上游：`DOC_DECISION_15` / `PRD_15` / `DEV_15` / `DEMO_15`
 > 优先级：**高于 Stage 14**（14 为集成工程；15 阻断实际生产使用）
 
@@ -50,7 +50,7 @@
 | 15D-05 | ⬜ PENDING | 等待工艺侧实物打样；继续阻断 Profile 启用 |
 | 15E-01 | ✅ COMPLETE | UI 操作手册已补候选 Profile、选型原则与 G7 边界；PRD_12A 已回填 Stage 15 窄增量关系 |
 | 15E-02 | ⛔ BLOCKED | 等待 G7 实物打样；候选继续保持 disabled/diagnostic |
-| 15E-03 | ⬜ READY | 15D-04 已完成，可回填 Stage 14 Q2 项目内证据与外部边界 |
+| 15E-03 | ✅ COMPLETE | Stage 14 Q2 已回填 W 载体自动 Gate、strict Reader 与零漂移证据；外部 RIP、G7 和 12G 边界保留 |
 
 ---
 
@@ -187,6 +187,8 @@
 - **文件**：`docs/slice/DOC/DOC_ANALYSIS_14_Q2_RIP白区带内信号与配置冲突审查.md`、`docs/slice/DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md`
 - **内容**：向 Q2 追加“显式不透明白 Profile 可用 W 承载”的实证，不替换 Q2，不解冻“同一全 RGB Package 透明/不透明复用”的 12G 问题
 - **依赖**：15D-04
+- **状态**：✅ COMPLETE（2026-08-04）
+- **证据**：F-01/F-02/F-04、项目内 strict Reader、28/28 Golden 与 Quick CI 结果已回填；明确外部目标 RIP 与 G7 尚未验收
 
 ---
 

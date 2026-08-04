@@ -1,7 +1,7 @@
 # DOC_ANALYSIS_14 Q2 RIP 白区带内信号与配置冲突审查
 
 > 文档状态：**CURRENT AUDIT / DECISION INPUT**
-> 版本：v1.4 ｜ 日期：2026-08-04
+> 版本：v1.5 ｜ 日期：2026-08-04
 > 适用范围：固定六通道 `R/G/B/W/S/V`、`uint8`、`black_is_print` 的切片包与既有 RIP 白区处理
 > 结论边界：本文只审查现状、碰撞范围和可选迁移路径，不授权修改 `p0.rgbwsv.2`、切片代码或 RIP
 
@@ -270,7 +270,34 @@ Q2 应追加向 RIP 确认：
 > 请确认 RIP 按**常规白墨通道**处理即可，无需特殊识别逻辑；
 > 该确认只适用于显式不透明白 Profile；同包透明/不透明复用仍按原 Q2/12G 单独评审。
 
-对应追加由任务 `15E-03` 执行，同步更新 `DOC_CHECKLIST_14_对RIP侧技术确认清单.md`，不得用 Stage 15 结论解冻 12G。
+### 2.3.5 Stage 15 自动证据回填（15E-03）
+
+项目内统一 Gate 已对显式不透明白 Profile 的 W 载体路径完成以下验证：
+
+```text
+F-01 真实小马物语模型：切片 PASS，纯白载体像素 150581，validationFailures=[]；
+F-04 纯策略像素差异：仅 W(idx 3) 从 255 变为 0，共 4 个像素；R/G/B/S/V 差异均为 0；
+F-02 无严格纯白模型：候选载体像素为 0，新旧生产 TIFF 逐层 SHA-256 等价；
+项目内 rip_reader_test --quiet：strict PASS；
+既有 golden：28/28 SHA-256 一致，Quick CI PASS；
+本仓库 RIP 源码：Stage 15 零改动。
+```
+
+证据真源：
+
+```text
+output/benchmarks/stage15/stage15_white_carrier_summary.json
+output/benchmarks/stage15/pixel_diff_F04.csv
+output/benchmarks/stage15/tiff_hash_F02.json
+```
+
+因此，**项目内兼容性结论**是：显式不透明白 Profile 可以在冻结的 RGBWSV 六通道协议内，
+用 `255/255/255/0/255/255` 表达需打印白色；无需 sidecar、无需哨兵，也无需修改项目内严格
+Reader。该证据不等于外部目标 RIP 或实物工艺已验收。G7 仍为 pending，候选 Profile 继续
+保持 `enabled=false` / `productionSafety=diagnostic`。
+
+15E-03 只完成 Q2 的证据追加：原 Q2 继续保留，12G 的“同一全 RGB Package 在透明与
+不透明白之间复用”继续冻结，不得由本结论自动解冻。
 
 ---
 
@@ -564,3 +591,4 @@ fallback 冲突：texture.enabled == true
 | 2026-08-03 | v1.0 | 将 Q2 从 sidecar 推荐改为固定六通道约束下的深入审查；完整审计 109 份配置、30 个场景与 39 张贴图；列出 59 份直接冲突配置和 32 份黑 fallback 配置；明确删除配置不能保留协议字节值；给出既有 WSV=000 兼容、W-only Profile 迁移及 RGB 黑哨兵转义三条路径 |
 | 2026-08-04 | v1.3 | 新增 §2.3 实测验证：小马物语小指 + 全实体 RGB 复现闭合失败；查明 W 可作为合法模型材料载体；据此成立 Stage 15 专项 |
 | 2026-08-04 | v1.4 | 收紧 Stage 15 与 Q2/12G 边界：Stage 15 只证明显式不透明白 Profile 的 W 载体方案，不作废同包透明/不透明复用问题，不解冻 12G |
+| 2026-08-04 | v1.5 | 完成 15E-03：回填 F-01/F-02/F-04、strict Reader、Golden 与 Quick CI 项目内证据；明确 G7、外部目标 RIP 和 12G 仍未关闭 |

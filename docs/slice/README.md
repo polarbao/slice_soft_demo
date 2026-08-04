@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-08-04
-> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL；03E INTERNAL COMPLETE / EXTERNAL RIP PENDING；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；Stage 14 PREPARED；Stage 15 ACTIVE / 16 OF 19
+> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL；03E INTERNAL COMPLETE / EXTERNAL RIP PENDING；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；Stage 14 PREPARED；Stage 15 ACTIVE / 17 OF 19
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，但目标 RIP/控制软件互操作待验证，因此默认压缩仍为 `none`。12F-02..09 未激活。12G-TCWS 继续冻结。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。Stage 14 能力包集成保持 PREPARED。Stage 15 已完成 15A、15B、15C、15D-01..04 和 15E-01，G1..G6、零漂移与性能门均通过；15E-03 已就绪，G7 实物和由其阻断的 15E-02 尚未完成，候选 Profile 继续禁用且为 diagnostic。
+当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，但目标 RIP/控制软件互操作待验证，因此默认压缩仍为 `none`。12F-02..09 未激活。12G-TCWS 继续冻结。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。Stage 14 能力包集成保持 PREPARED。Stage 15 已完成 15A、15B、15C、15D-01..04 和 15E-01/03，共 17/19；G1..G6、零漂移与性能门均通过。剩余 15D-05/G7 实物打样及被其阻断的 15E-02，候选 Profile 继续禁用且为 diagnostic。
 
 ## 目录结构
 
