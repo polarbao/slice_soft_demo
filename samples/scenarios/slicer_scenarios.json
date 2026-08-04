@@ -37,8 +37,30 @@
       "docPath": "docs/slice/PRD/PRD_12A_彩色纹理材料填充支撑光油策略.md",
       "configPath": "samples/configs/material_process/obj_mtl_texture_rgb_only.json",
       "packageDir": "output/ProfileTexturedNailRgbOnlyLowerSupport",
-      "description": "兼容旧版全彩输出：顶面贴图颜色沿模型实体列投影，模型只写 RGB，不写 W/V；black_is_print 下无法表达需要打印的纯白像素，含白色纹理请改用白墨或光油填充 Profile。",
+      "description": "兼容旧版全彩输出：顶面贴图颜色沿模型实体列投影，模型只写 RGB，不写 W/V；black_is_print 下无法表达需要打印的纯白像素，含白色纹理请改用白墨或光油填充 Profile，或改用「全实体 RGB + 按需补白」Profile。",
       "enabled": true,
+      "ripSummary": true
+    },
+    {
+      "id": "textured_nail_rgb_white_ondemand_lower_support",
+      "displayName": "彩色纹理甲片 - 全实体 RGB + 按需补白 + 下表面支撑",
+      "category": "生产 / 彩色纹理",
+      "visibility": "normal",
+      "audience": "user",
+      "inputFormats": ["obj"],
+      "materialCapabilities": [
+        "rgb_full_volume_texture",
+        "unprintable_white_underbase",
+        "lower_support",
+        "internal_void_support",
+        "no_varnish"
+      ],
+      "productionSafety": "diagnostic",
+      "docPath": "docs/slice/PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md",
+      "configPath": "samples/configs/material_process/obj_mtl_texture_rgb_white_ondemand.json",
+      "packageDir": "output/ProfileTexturedNailRgbWhiteOnDemandLowerSupport",
+      "description": "候选能力：在「全实体 RGB」基础上，对 black_is_print 下无法表达的纯白纹理像素在同层同像素按需补写白墨 W；不写 S/V、不新增 Z 层。G7 实物 Gate 通过前保持禁用。",
+      "enabled": false,
       "ripSummary": true
     },
     {

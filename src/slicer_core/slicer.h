@@ -11,6 +11,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <string_view>
 
 namespace slicer_core {
 
@@ -87,6 +88,13 @@ struct SliceRunOptions {
      */
     const ModelReport* modelreportoverride{nullptr};
 };
+
+/**
+ * @brief Determine whether a material process white mode requires complete RGB underbase coverage.
+ * @param whiteMode Stable materialProcessProfile.white.mode value.
+ * @return True only for the exact legacy underbase mode.
+ */
+[[nodiscard]] bool RequiresCompleteWhiteUnderbase(std::string_view whiteMode) noexcept;
 
 /**
  * @brief Run the legacy production slicer with default output options.

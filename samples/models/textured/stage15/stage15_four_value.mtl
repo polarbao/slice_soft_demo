@@ -1,0 +1,3 @@
+newmtl stage15_four_value
+Kd 1.0 1.0 1.0
+map_Kd stage15_four_value.png

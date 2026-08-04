@@ -152,7 +152,142 @@ bool OldConfigDefaultsOpenVdbDisabled()
         && ExpectTrue(!config.support.placement_explicit, "legacy config keeps support placement implicit")
         && ExpectTrue(!config.support.base_projection.enabled, "legacy config keeps support base projection disabled")
         && ExpectTrue(config.support.base_projection.layer_count == 30, "legacy base projection layer count default")
-        && ExpectTrue(!config.outer_varnish.enabled, "legacy config keeps outerVarnish disabled");
+        && ExpectTrue(!config.outer_varnish.enabled, "legacy config keeps outerVarnish disabled")
+        && ExpectTrue(
+               config.texture.unprintable_white_policy == "fail_closed",
+               "Stage 15 unprintable white policy defaults fail closed")
+        && ExpectTrue(
+               config.texture.unprintable_white_ink_threshold == 0U,
+               "Stage 15 unprintable white threshold defaults to exact white")
+        && ExpectTrue(
+               config.texture.unprintable_white_value == 0U,
+               "Stage 15 unprintable white carrier defaults to print value zero");
+}
+
+std::string Stage15WhiteUnderbaseConfigBlock(const std::string& extraBlock = "")
+{
+    return std::string{
+        ",\n"
+        "  \"slicingMode\": \"relief_heightfield\",\n"
+        "  \"texture\": {\n"
+        "    \"enabled\": true,\n"
+        "    \"applyMode\": \"solid_volume_from_top_surface\",\n"
+        "    \"unprintableWhitePolicy\": \"white_underbase\",\n"
+        "    \"unprintableWhiteInkThreshold\": 0,\n"
+        "    \"unprintableWhiteValue\": 0\n"
+        "  }"}
+        + extraBlock;
+}
+
+bool Stage15TextureWhiteFieldsParse()
+{
+    const std::filesystem::path configPath = WriteConfig(
+        "stage_15_texture_white_fields.json",
+        MinimalConfigBody(Stage15WhiteUnderbaseConfigBlock()));
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    return ExpectTrue(
+               config.texture.unprintable_white_policy == "white_underbase",
+               "Stage 15 unprintable white policy parses")
+        && ExpectTrue(
+               config.texture.unprintable_white_ink_threshold == 0U,
+               "Stage 15 unprintable white threshold parses")
+        && ExpectTrue(
+               config.texture.unprintable_white_value == 0U,
+               "Stage 15 unprintable white value parses");
+}
+
+bool Stage15RejectsInvalidTextureWhiteConfiguration()
+{
+    return ConfigRejectedWith(
+               "stage_15_invalid_policy.json",
+               ",\n"
+               "  \"texture\": {\"unprintableWhitePolicy\": \"unknown\"}\n",
+               "texture.unprintableWhitePolicy")
+        && ConfigRejectedWith(
+               "stage_15_empty_white_value.json",
+               ",\n"
+               "  \"slicingMode\": \"relief_heightfield\",\n"
+               "  \"texture\": {\n"
+               "    \"enabled\": true,\n"
+               "    \"applyMode\": \"solid_volume_from_top_surface\",\n"
+               "    \"unprintableWhitePolicy\": \"white_underbase\",\n"
+               "    \"unprintableWhiteValue\": 255\n"
+               "  }\n",
+               "texture.unprintableWhiteValue")
+        && ConfigRejectedWith(
+               "stage_15_global_path.json",
+               ",\n"
+               "  \"slicingMode\": \"relief_heightfield\",\n"
+               "  \"slicePipeline\": {\"mode\": \"global_surface_shell\"},\n"
+               "  \"texture\": {\n"
+               "    \"enabled\": true,\n"
+               "    \"applyMode\": \"global_surface_shell\",\n"
+               "    \"unprintableWhitePolicy\": \"white_underbase\"\n"
+               "  },\n"
+               "  \"modelFill\": {\n"
+               "    \"enabled\": true,\n"
+               "    \"scope\": \"complement_of_global_texture_shell\"\n"
+               "  }\n",
+               "Legacy full-volume RGB texture path")
+        && ConfigRejectedWith(
+               "stage_15_material_policy.json",
+               Stage15WhiteUnderbaseConfigBlock(
+                   ",\n  \"materialPolicy\": {\"enabled\": true}\n"),
+               "materialPolicy.enabled=true")
+        && ConfigRejectedWith(
+               "stage_15_role_mapping.json",
+               Stage15WhiteUnderbaseConfigBlock(
+                   ",\n  \"materialRoleMapping\": {\"enabled\": true}\n"),
+               "materialRoleMapping.enabled=true")
+        && ConfigRejectedWith(
+               "stage_15_openvdb_path.json",
+               Stage15WhiteUnderbaseConfigBlock(
+                   ",\n"
+                   "  \"experimental\": {\n"
+                   "    \"openvdbPipeline\": {\"enabled\": true, \"engine\": \"openvdb\"}\n"
+                   "  }\n"),
+               "engine=legacy with enabled=false");
+}
+
+bool Stage15CandidateMaterialProcessProfileLoads()
+{
+    const std::filesystem::path sourceRoot =
+        std::filesystem::path{__FILE__}
+            .parent_path()
+            .parent_path()
+            .parent_path()
+            .parent_path();
+    const std::filesystem::path configPath = sourceRoot
+        / "samples"
+        / "configs"
+        / "material_process"
+        / "obj_mtl_texture_rgb_white_ondemand.json";
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(configPath);
+    return ExpectTrue(
+               config.material_process_profile.enabled,
+               "Stage 15 candidate material process profile is enabled")
+        && ExpectTrue(
+               config.material_process_profile.white.mode
+                   == "unprintable_white_underbase",
+               "Stage 15 candidate white mode parses")
+        && ExpectTrue(
+               config.material_process_profile.white.coverage
+                   == "texture_unprintable_white",
+               "Stage 15 candidate white coverage parses");
+}
+
+bool Stage15MaterialProcessUnderbaseModeIsExact()
+{
+    return ExpectTrue(
+               slicer_core::RequiresCompleteWhiteUnderbase("underbase"),
+               "legacy underbase mode still requires complete RGB coverage")
+        && ExpectTrue(
+               !slicer_core::RequiresCompleteWhiteUnderbase(
+                   "unprintable_white_underbase"),
+               "Stage 15 on-demand carrier mode is isolated from full underbase coverage")
+        && ExpectTrue(
+               !slicer_core::RequiresCompleteWhiteUnderbase("all_model"),
+               "unrelated white modes do not require complete RGB coverage");
 }
 
 bool Stage12EGlobalSurfaceShellConfigParses()
@@ -944,6 +1079,10 @@ int main()
 {
     const std::vector<std::pair<std::string, bool (*)()>> tests{
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
+        {"stage_15_texture_white_fields_parse", Stage15TextureWhiteFieldsParse},
+        {"stage_15_rejects_invalid_texture_white_configuration", Stage15RejectsInvalidTextureWhiteConfiguration},
+        {"stage_15_candidate_material_process_profile_loads", Stage15CandidateMaterialProcessProfileLoads},
+        {"stage_15_material_process_underbase_mode_is_exact", Stage15MaterialProcessUnderbaseModeIsExact},
         {"stage_12e_global_surface_shell_config_parses", Stage12EGlobalSurfaceShellConfigParses},
         {"stage_12e_rejects_invalid_surface_shell_fields", Stage12ERejectsInvalidSurfaceShellFields},
         {"stage_12e_rejects_mismatched_texture_and_fill", Stage12ERejectsMismatchedTextureAndFill},

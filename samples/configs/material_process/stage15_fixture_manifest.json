@@ -1,0 +1,42 @@
+{
+  "schema": "slicesoft.stage15.fixture_manifest.1",
+  "fixtures": [
+    {
+      "id": "F-01",
+      "purpose": "real_model_white_carrier",
+      "configPath": "samples/configs/material_process/stage15_f01_xiaoma_white_carrier.json"
+    },
+    {
+      "id": "F-02",
+      "purpose": "no_exact_white_zero_drift",
+      "legacyConfigPath": "samples/configs/material_process/obj_mtl_texture_rgb_only.json",
+      "candidateConfigPath": "samples/configs/material_process/obj_mtl_texture_rgb_white_ondemand.json"
+    },
+    {
+      "id": "F-03",
+      "purpose": "four_value_threshold_boundary",
+      "configPath": "samples/configs/material_process/stage15_f03_four_value.json",
+      "modelPath": "samples/models/textured/stage15/stage15_four_value.obj",
+      "texturePath": "samples/models/textured/stage15/stage15_four_value.png",
+      "expectedTexels": [
+        [255, 255, 255],
+        [254, 255, 255],
+        [254, 254, 254],
+        [128, 128, 128]
+      ]
+    },
+    {
+      "id": "F-04",
+      "purpose": "all_exact_white",
+      "configPath": "samples/configs/material_process/stage15_f04_all_white.json",
+      "modelPath": "samples/models/textured/stage15/stage15_all_white.obj",
+      "texturePath": "samples/models/textured/stage15/stage15_all_white.png",
+      "expectedTexel": [255, 255, 255]
+    },
+    {
+      "id": "F-05",
+      "purpose": "existing_golden_regression",
+      "goldenRoot": "tests/golden/expected"
+    }
+  ]
+}

@@ -6,6 +6,7 @@
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
+#include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
@@ -34,6 +35,12 @@
 #include <vector>
 
 namespace slicer_core {
+
+bool RequiresCompleteWhiteUnderbase(const std::string_view whiteMode) noexcept
+{
+    return whiteMode == "underbase";
+}
+
 namespace {
 
 using SlicerClock = std::chrono::steady_clock;
@@ -126,6 +133,7 @@ struct SupportConnectivityDiagnostics {
 
 struct LayerSemanticStats {
     int texture_surface_pixels{0};
+    std::uint64_t unprintable_white_carrier_pixels{0};
     int model_fill_pixels{0};
     int support_pixels{0};
     int internal_void_support_pixels{0};
@@ -3063,6 +3071,15 @@ std::vector<std::uint8_t> compose_layer(
                     pixels.at(base + 1U) = color.rgb.at(1);
                     pixels.at(base + 2U) = color.rgb.at(2);
                     update_texture_report_for_color(color, texture_report);
+                    if (ApplyUnprintableWhiteCarrier(
+                            config.texture.unprintable_white_policy,
+                            config.texture.unprintable_white_ink_threshold,
+                            config.texture.unprintable_white_value,
+                            color.rgb,
+                            pixels.at(base + 3U)))
+                    {
+                        ++semantic_stats.unprintable_white_carrier_pixels;
+                    }
                     counted_model_pixel = true;
                     texture_surface_pixel = true;
                     const ModelFillMaterial fill_material = ResolveModelFillMaterial(config, nullptr);
@@ -3193,6 +3210,7 @@ void merge_channel_stats(std::array<ChannelStats, rgbwsv_channel_count>& totals,
 
 void merge_semantic_stats(LayerSemanticStats& totals, const LayerSemanticStats& layer) {
     totals.texture_surface_pixels += layer.texture_surface_pixels;
+    totals.unprintable_white_carrier_pixels += layer.unprintable_white_carrier_pixels;
     totals.model_fill_pixels += layer.model_fill_pixels;
     totals.support_pixels += layer.support_pixels;
     totals.internal_void_support_pixels += layer.internal_void_support_pixels;
@@ -3291,6 +3309,7 @@ Json support_connectivity_summary_to_json(const std::vector<LayerDiagnostics>& d
 Json semantic_stats_to_json(const LayerSemanticStats& stats) {
     return Json::object({
         {"textureSurfacePixels", stats.texture_surface_pixels},
+        {"unprintableWhiteCarrierPixels", stats.unprintable_white_carrier_pixels},
         {"modelFillPixels", stats.model_fill_pixels},
         {"supportPixels", stats.support_pixels},
         {"internalVoidSupportPixels", stats.internal_void_support_pixels},
@@ -3574,6 +3593,7 @@ Json layer_diagnostics_to_json(const LayerDiagnostics& diagnostics) {
         {"modelNonZeroPixels", diagnostics.model_pixels},
         {"supportNonZeroPixels", diagnostics.support_pixels},
         {"textureSurfacePixels", diagnostics.semantic.texture_surface_pixels},
+        {"unprintableWhiteCarrierPixels", diagnostics.semantic.unprintable_white_carrier_pixels},
         {"modelFillPixels", diagnostics.semantic.model_fill_pixels},
         {"supportPixels", diagnostics.semantic.support_pixels},
         {"internalVoidSupportPixels", diagnostics.semantic.internal_void_support_pixels},
@@ -3682,6 +3702,7 @@ Json material_process_report_to_json(
         static_cast<std::uint64_t>(grid.width_px) * static_cast<std::uint64_t>(grid.height_px)
         * static_cast<std::uint64_t>(grid.layer_count);
     std::uint64_t rgb_print_pixels{0};
+    std::uint64_t unprintable_white_carrier_pixels{0};
     const std::uint64_t white_print_pixels = total_channel_stats.at(3).print_pixels;
     const std::uint64_t support_print_pixels = total_channel_stats.at(4).print_pixels;
     const std::uint64_t varnish_print_pixels = total_channel_stats.at(5).print_pixels;
@@ -3694,6 +3715,8 @@ Json material_process_report_to_json(
         const std::uint64_t layer_support = layer.channel_stats.at(4).print_pixels;
         const std::uint64_t layer_varnish = layer.channel_stats.at(5).print_pixels;
         rgb_print_pixels += layer_rgb;
+        unprintable_white_carrier_pixels +=
+            layer.semantic.unprintable_white_carrier_pixels;
         if (layer_varnish > 0U) {
             varnish_active_layer_indices.push_back(layer.layer_index);
         }
@@ -3701,6 +3724,8 @@ Json material_process_report_to_json(
             {"layerIndex", layer.layer_index},
             {"rgbPrintPixels", layer_rgb},
             {"whitePrintPixels", layer_white},
+            {"unprintableWhiteCarrierPixels",
+             layer.semantic.unprintable_white_carrier_pixels},
             {"varnishPrintPixels", layer_varnish},
             {"supportPrintPixels", layer_support},
         }));
@@ -3729,7 +3754,10 @@ Json material_process_report_to_json(
             > static_cast<std::uint64_t>(profile.validation.max_unexpected_overlap_pixels)) {
             validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNEXPECTED_OVERLAP");
         }
-        if (profile.white.enabled && profile.white.mode == "underbase" && missing_underbase_pixels > 0U) {
+        if (profile.white.enabled
+            && RequiresCompleteWhiteUnderbase(profile.white.mode)
+            && missing_underbase_pixels > 0U)
+        {
             validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNDERBASE_COVERAGE_LOW");
         }
         if (config.material_policy.enabled == false && config.material_role_mapping.enabled == false) {
@@ -3768,6 +3796,7 @@ Json material_process_report_to_json(
              {"expandPx", profile.white.expand_px},
              {"shrinkPx", profile.white.shrink_px},
              {"printPixels", white_print_pixels},
+             {"unprintableWhiteCarrierPixels", unprintable_white_carrier_pixels},
              {"coverageRatio", coverage_ratio(white_print_pixels, total_pixels)},
              {"missingUnderbasePixels", missing_underbase_pixels},
          })},
@@ -4575,6 +4604,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             {"modelPixels", layer_model_pixels},
             {"supportPixels", layer_support_pixels},
             {"textureSurfacePixels", diagnostics.semantic.texture_surface_pixels},
+            {"unprintableWhiteCarrierPixels",
+             diagnostics.semantic.unprintable_white_carrier_pixels},
             {"modelFillPixels", diagnostics.semantic.model_fill_pixels},
             {"internalVoidSupportPixels", diagnostics.semantic.internal_void_support_pixels},
             {"upperSurfaceSupportPixels", diagnostics.upper_projection_support_pixels},
@@ -4662,6 +4693,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"modelPrintPixels", total_model_pixels},
              {"supportPrintPixels", total_support_non_zero_pixels},
              {"textureSurfacePixels", total_semantic_stats.texture_surface_pixels},
+             {"unprintableWhiteCarrierPixels",
+              total_semantic_stats.unprintable_white_carrier_pixels},
              {"modelFillPixels", total_semantic_stats.model_fill_pixels},
              {"internalVoidSupportPixels", total_semantic_stats.internal_void_support_pixels},
              {"upperSurfaceSupportPixels", support_generation.upper_projection_support_pixels},

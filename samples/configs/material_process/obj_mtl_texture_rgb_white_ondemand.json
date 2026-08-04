@@ -1,0 +1,164 @@
+{
+  "_comment": "Stage 15 候选 Profile：全实体 RGB + 纹理纯白区按需补写同层 W，不写 S/V、不新增 Z 层。需 Stage 15 构建；pre-15 构建会因 materialProcessProfile 新枚举不受支持而 fail-closed。",
+  "slicingMode": "relief_heightfield",
+  "input": {
+    "modelPath": "../../../model/obj/meigui_fudiao/04.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/ProfileTexturedNailRgbWhiteOnDemandLowerSupport",
+    "dpiX": 635,
+    "dpiY": 600,
+    "layerThicknessMm": 0.038,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "modelTransform": {
+    "unit": "mm",
+    "scale": [1.0, 1.0, 1.0],
+    "rotationDeg": [0.0, 0.0, 0.0],
+    "translationMm": [0.0, 0.0, 0.0]
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 9.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "RGB",
+    "applyMode": "solid_volume",
+    "rgb": [0, 0, 0],
+    "whiteValue": 255,
+    "varnishValue": 255
+  },
+  "texture": {
+    "enabled": true,
+    "applyMode": "solid_volume_from_top_surface",
+    "topSurfaceLayers": 1,
+    "sampler": "bilinear",
+    "uvAddressMode": "clamp",
+    "flipV": true,
+    "fallbackRgb": [0, 0, 0],
+    "missingTexturePolicy": "warn_and_fallback",
+    "nonSurfaceRgbPolicy": "model_material",
+    "unprintableWhitePolicy": "white_underbase",
+    "unprintableWhiteInkThreshold": 0,
+    "unprintableWhiteValue": 0
+  },
+  "modelFill": {
+    "enabled": true,
+    "material": "rgb",
+    "scope": "below_texture_surface",
+    "value": 0,
+    "emptyAllowedInProduction": false,
+    "legacyRgbFallback": false
+  },
+  "materialPolicy": {
+    "enabled": false,
+    "white": {
+      "enabled": false,
+      "mode": "disabled"
+    },
+    "varnish": {
+      "enabled": false,
+      "mode": "disabled"
+    }
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "textured_nail_rgb_white_ondemand_lower_support",
+    "target": "uv_relief_obj_mtl_texture",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "white": {
+      "enabled": true,
+      "mode": "unprintable_white_underbase",
+      "coverage": "texture_unprintable_white",
+      "value": 0
+    },
+    "varnish": {
+      "enabled": false,
+      "mode": "disabled",
+      "coverage": "model_surface",
+      "topLayers": 1,
+      "value": 0
+    },
+    "support": {
+      "expected": true,
+      "mode": "existing_support_pipeline"
+    },
+    "validation": {
+      "requireRgbPixels": true,
+      "requireWhitePixels": false,
+      "requireVarnishPixels": false,
+      "requireSupportPixels": true,
+      "maxUnexpectedOverlapPixels": 0
+    }
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "placement": "lower",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0,
+    "internalVoid": {
+      "enabled": true,
+      "minAreaPx": 16,
+      "fillRule": "all_internal_voids"
+    },
+    "upper": {
+      "enabled": false,
+      "outside": "outer_varnish_shell",
+      "reason": "optional_detachable_surface_support"
+    }
+  },
+  "surfaceVarnish": {
+    "enabled": false,
+    "thicknessPx": 0
+  },
+  "outerVarnish": {
+    "enabled": false,
+    "thicknessMm": 0.0,
+    "thicknessStepMm": 0.01,
+    "pixelPitchUm": 42.3,
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
+    "value": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": true,
+    "format": "png",
+    "interval": 10,
+    "channels": ["texture_rgb", "white", "varnish", "support"],
+    "onlyNonEmptyLayers": false,
+    "pseudoColors": {
+      "empty": [255, 255, 255],
+      "support": [0, 255, 0],
+      "white": [0, 170, 255],
+      "varnish": [127, 127, 127]
+    }
+  },
+  "experimental": {
+    "openvdbPipeline": {
+      "enabled": false,
+      "engine": "legacy",
+      "admissionMode": "strict_closed",
+      "failurePolicy": "fail_fast",
+      "allowNonProductionOutput": false,
+      "writeProductionRgbwsv": false
+    }
+  }
+}

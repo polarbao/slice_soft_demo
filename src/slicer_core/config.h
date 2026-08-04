@@ -105,6 +105,9 @@ struct TextureConfig {
     std::array<std::uint8_t, 3> fallback_rgb{0, 0, 0};
     std::string missing_texture_policy{"warn_and_fallback"};
     std::string non_surface_rgb_policy{"model_material"};
+    std::string unprintable_white_policy{"fail_closed"};
+    std::uint8_t unprintable_white_ink_threshold{0};
+    std::uint8_t unprintable_white_value{0};
     TextureSurfaceShellConfig surface_shell;
 };
 

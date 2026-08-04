@@ -267,6 +267,16 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             texture.value("missingTexturePolicy", config.texture.missing_texture_policy);
         config.texture.non_surface_rgb_policy =
             texture.value("nonSurfaceRgbPolicy", config.texture.non_surface_rgb_policy);
+        config.texture.unprintable_white_policy =
+            texture.value("unprintableWhitePolicy", config.texture.unprintable_white_policy);
+        config.texture.unprintable_white_ink_threshold = read_u8(
+            texture,
+            "unprintableWhiteInkThreshold",
+            config.texture.unprintable_white_ink_threshold);
+        config.texture.unprintable_white_value = read_u8(
+            texture,
+            "unprintableWhiteValue",
+            config.texture.unprintable_white_value);
         if (texture.contains("surfaceShell")) {
             const auto& surfaceShellJson = texture.at("surfaceShell");
             config.texture.surface_shell.geometry_mode =
@@ -877,6 +887,50 @@ void validate_slice_config(const SliceConfig& config) {
     {
         throw std::runtime_error("materialClosure repair requires support.enabled=true");
     }
+    if (config.texture.unprintable_white_policy != "fail_closed"
+        && config.texture.unprintable_white_policy != "white_underbase")
+    {
+        throw std::runtime_error(
+            "texture.unprintableWhitePolicy must be fail_closed or white_underbase");
+    }
+    const bool whiteUnderbaseEnabled =
+        config.texture.unprintable_white_policy == "white_underbase";
+    if (whiteUnderbaseEnabled
+        && config.texture.unprintable_white_value == config.background.value)
+    {
+        throw std::runtime_error(
+            "texture.unprintableWhiteValue must not equal output emptyValue 255");
+    }
+    if (whiteUnderbaseEnabled
+        && (!config.texture.enabled
+            || config.texture.apply_mode != "solid_volume_from_top_surface"))
+    {
+        throw std::runtime_error(
+            "texture.unprintableWhitePolicy=white_underbase only supports the Legacy full-volume RGB texture path");
+    }
+    if (whiteUnderbaseEnabled
+        && config.slice_pipeline.mode != SlicePipelineMode::Legacy)
+    {
+        throw std::runtime_error(
+            "texture.unprintableWhitePolicy=white_underbase does not support the global_surface_shell pipeline");
+    }
+    if (whiteUnderbaseEnabled && config.material_policy.enabled)
+    {
+        throw std::runtime_error(
+            "texture.unprintableWhitePolicy=white_underbase does not support materialPolicy.enabled=true");
+    }
+    if (whiteUnderbaseEnabled && config.material_role_mapping.enabled)
+    {
+        throw std::runtime_error(
+            "texture.unprintableWhitePolicy=white_underbase does not support materialRoleMapping.enabled=true");
+    }
+    if (whiteUnderbaseEnabled
+        && (config.experimental.openvdb_pipeline.enabled
+            || config.experimental.openvdb_pipeline.engine != "legacy"))
+    {
+        throw std::runtime_error(
+            "texture.unprintableWhitePolicy=white_underbase only supports experimental.openvdbPipeline engine=legacy with enabled=false");
+    }
     if (config.texture.enabled)
     {
         const bool surfaceShellFromSdf = config.texture.apply_mode == "surface_shell_from_sdf";
@@ -1030,12 +1084,16 @@ void validate_slice_config(const SliceConfig& config) {
         }
         if (config.material_process_profile.white.mode != "disabled"
             && config.material_process_profile.white.mode != "underbase"
-            && config.material_process_profile.white.mode != "all_model") {
-            throw std::runtime_error("materialProcessProfile.white.mode must be disabled, underbase, or all_model");
+            && config.material_process_profile.white.mode != "all_model"
+            && config.material_process_profile.white.mode != "unprintable_white_underbase") {
+            throw std::runtime_error(
+                "materialProcessProfile.white.mode must be disabled, underbase, all_model, or unprintable_white_underbase");
         }
         if (config.material_process_profile.white.coverage != "all_model"
-            && config.material_process_profile.white.coverage != "model_surface") {
-            throw std::runtime_error("materialProcessProfile.white.coverage must be all_model or model_surface");
+            && config.material_process_profile.white.coverage != "model_surface"
+            && config.material_process_profile.white.coverage != "texture_unprintable_white") {
+            throw std::runtime_error(
+                "materialProcessProfile.white.coverage must be all_model, model_surface, or texture_unprintable_white");
         }
         if (config.material_process_profile.white.expand_px < 0 || config.material_process_profile.white.shrink_px < 0) {
             throw std::runtime_error("materialProcessProfile white expandPx/shrinkPx must be non-negative");

@@ -155,6 +155,8 @@ add_library(slicer_core
     src/slicer_core/materials/texture_application/OpenVdbTextureFillConformanceBackend.h
     src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.cpp
     src/slicer_core/materials/texture_application/TextureFillPartitionAdmission.h
+    src/slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.cpp
+    src/slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h
     src/slicer_core/materials/texture_application/TextureFillPartitionTypes.cpp
     src/slicer_core/materials/texture_application/TextureFillPartitionTypes.h
     src/slicer_core/materials/texture_application/TextureFillPartitionTextureTransfer.cpp
@@ -511,6 +513,12 @@ add_executable(experimental_config_unit_tests
 )
 
 target_link_libraries(experimental_config_unit_tests PRIVATE slicer_core)
+
+add_executable(texture_white_carrier_policy_unit_tests
+    tests/unit/texture_white_carrier_policy/Main.cpp
+)
+
+target_link_libraries(texture_white_carrier_policy_unit_tests PRIVATE slicer_core)
 
 add_executable(output_resolution_config_unit_tests
     tests/unit/output_resolution_config/Main.cpp
@@ -968,6 +976,7 @@ target_link_libraries(mesh_complete_self_intersection_analyzer_unit_tests PRIVAT
 enable_testing()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
+add_test(NAME texture_white_carrier_policy_unit_tests COMMAND texture_white_carrier_policy_unit_tests)
 add_test(NAME output_resolution_config_unit_tests COMMAND output_resolution_config_unit_tests)
 add_test(NAME preview_output_policy_unit_tests COMMAND preview_output_policy_unit_tests)
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
