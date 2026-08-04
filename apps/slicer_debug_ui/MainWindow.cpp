@@ -13,6 +13,7 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QComboBox>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -481,6 +482,7 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
       m_slicePreflightCoordinator(&m_modelPreflightController, this),
       m_sceneDocument(this),
       m_sceneSelectionModel(this),
+      m_textureWhitePreflightService(this),
       m_modelTopViewLoader(
           &m_sceneDocument,
           &m_sceneModelRepository,
@@ -761,6 +763,11 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         &SceneDocument::SigChanged,
         this,
         &MainWindow::OnSceneDocumentChanged);
+    connect(
+        &m_textureWhitePreflightService,
+        &TextureWhitePreflightService::SigPreflightFinished,
+        this,
+        &MainWindow::OnTextureWhitePreflightFinished);
     connect(
         &m_sceneSelectionModel,
         &SceneSelectionModel::SigSelectionChanged,
@@ -1717,7 +1724,27 @@ void MainWindow::OnSceneDocumentChanged()
         status_label_->setText(QStringLiteral("模型俯视加载已取消。"));
         break;
     }
+    RequestTextureWhitePreflight();
     UpdateActionAvailability();
+}
+
+void MainWindow::OnTextureWhitePreflightFinished(
+    const TextureWhitePreflightResult& result)
+{
+    m_lastTextureWhitePreflightResult = result;
+    if (!result.HasWarning())
+    {
+        return;
+    }
+
+    warnings_view_->setPlainText(result.warningmessage);
+    status_label_->setText(
+        QStringLiteral(
+            "切片前预检发现纯白纹理风险；当前告警为保守判断，"
+            "生产材料闭合校验仍是最终真源。"));
+    log_panel_->appendOutput(
+        QStringLiteral("纹理纯白预检警告：")
+        + result.warningmessage);
 }
 
 void MainWindow::OnSaveSceneTransform()
@@ -1781,6 +1808,18 @@ void MainWindow::OnSaveSceneTransform()
 
 void MainWindow::OnSliceCurrentScene()
 {
+    const QString textureWhiteWarning =
+        CurrentTextureWhitePreflightWarning();
+    if (!textureWhiteWarning.isEmpty())
+    {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("纹理纯白预检"),
+            textureWhiteWarning
+                + QStringLiteral(
+                    "\n\n该告警不会阻断切片；继续后将由生产材料闭合校验"
+                    "判定最终结果。"));
+    }
     SceneSliceActionRequest request;
     request.mode =
         config_editor_panel_->SelectedProductionMode();
@@ -2342,6 +2381,14 @@ EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
     request.production.requestedprofileid = requestedProfileId;
     request.production.sourceprofileid = source.profileid;
     request.production.sessionid = sessionName;
+    request.sceneid = m_sceneDocument.SceneId();
+    request.scenerevision = m_sceneDocument.SceneRevision();
+    request.scenecontenthash =
+        BuildTextureWhitePreflightContentHash();
+    request.profilecapabilities =
+        CurrentProfileCapabilities();
+    request.texturewhitepreflight =
+        m_lastTextureWhitePreflightResult;
 
     EffectiveConfigResult result = EffectiveConfigGenerator().Generate(request);
     config_editor_panel_->ShowEffectiveConfig(result);
@@ -2606,6 +2653,162 @@ void MainWindow::UpdateModelPreflightUi()
     {
         m_modelPreflightCancelButton->setEnabled(presentation.cancancel);
     }
+}
+
+QStringList MainWindow::CurrentProfileCapabilities() const
+{
+    const ScenarioEntry* scenario =
+        m_scenarioRegistry.FindById(m_currentProfileId);
+    return scenario != nullptr
+        ? scenario->materialcapabilities
+        : QStringList{};
+}
+
+QString MainWindow::BuildTextureWhitePreflightContentHash() const
+{
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    bool hasVisibleTexture{false};
+    for (const SceneDocumentItem& item : m_sceneDocument.Items())
+    {
+        if (!item.instance.visible || !item.geometry.has_value())
+        {
+            continue;
+        }
+
+        hash.addData(item.sourcehash.toUtf8());
+        hash.addData("\0", 1);
+        hash.addData(item.resourcehash.toUtf8());
+        hash.addData("\0", 1);
+        hash.addData(
+            QByteArray::fromStdString(
+                item.geometry->surfacepreview.contenthash));
+        hash.addData("\0", 1);
+        for (const slicer_core::SceneViewMaterialAppearance& appearance :
+             item.geometry->materialappearances)
+        {
+            if (!appearance.hastexture
+                || !appearance.textureexists
+                || appearance.texturepath.empty())
+            {
+                continue;
+            }
+            hasVisibleTexture = true;
+            hash.addData(
+                QDir::fromNativeSeparators(
+                    QString::fromStdWString(
+                        appearance.texturepath.wstring()))
+                    .toUtf8());
+            hash.addData("\0", 1);
+        }
+    }
+    return hasVisibleTexture
+        ? QString::fromLatin1(hash.result().toHex())
+        : QString{};
+}
+
+void MainWindow::RequestTextureWhitePreflight()
+{
+    if (m_sceneDocument.State() != SceneDocumentState::Ready
+        && m_sceneDocument.State() != SceneDocumentState::Blocked)
+    {
+        if (m_textureWhitePreflightService.IsRunning())
+        {
+            m_textureWhitePreflightService.Cancel();
+        }
+        m_lastTextureWhitePreflightResult.reset();
+        m_textureWhitePreflightRequestKey.clear();
+        return;
+    }
+
+    QStringList texturePaths;
+    for (const SceneDocumentItem& item : m_sceneDocument.Items())
+    {
+        if (!item.instance.visible || !item.geometry.has_value())
+        {
+            continue;
+        }
+        for (const slicer_core::SceneViewMaterialAppearance& appearance :
+             item.geometry->materialappearances)
+        {
+            if (appearance.hastexture
+                && appearance.textureexists
+                && !appearance.texturepath.empty())
+            {
+                texturePaths.push_back(
+                    QDir::fromNativeSeparators(
+                        QString::fromStdWString(
+                            appearance.texturepath.wstring())));
+            }
+        }
+    }
+    texturePaths.removeDuplicates();
+
+    const QString contentHash =
+        BuildTextureWhitePreflightContentHash();
+    if (texturePaths.isEmpty() || contentHash.isEmpty())
+    {
+        if (m_textureWhitePreflightService.IsRunning())
+        {
+            m_textureWhitePreflightService.Cancel();
+        }
+        m_lastTextureWhitePreflightResult.reset();
+        m_textureWhitePreflightRequestKey.clear();
+        return;
+    }
+
+    const QString requestKey = QStringLiteral("%1|%2|%3|%4")
+        .arg(
+            m_sceneDocument.SceneId(),
+            QString::number(m_sceneDocument.SceneRevision()),
+            contentHash,
+            m_currentProfileId);
+    if (requestKey == m_textureWhitePreflightRequestKey)
+    {
+        return;
+    }
+
+    m_textureWhitePreflightRequestKey = requestKey;
+    m_lastTextureWhitePreflightResult.reset();
+    TextureWhitePreflightRequest request;
+    request.sceneid = m_sceneDocument.SceneId();
+    request.scenerevision = m_sceneDocument.SceneRevision();
+    request.contenthash = contentHash;
+    request.profileid = m_currentProfileId;
+    request.texturepaths = texturePaths;
+    request.profilecapabilities =
+        CurrentProfileCapabilities();
+    m_textureWhitePreflightService.RequestScan(request);
+}
+
+QString MainWindow::CurrentTextureWhitePreflightWarning() const
+{
+    if (!m_lastTextureWhitePreflightResult.has_value())
+    {
+        return {};
+    }
+
+    const TextureWhitePreflightResult& result =
+        *m_lastTextureWhitePreflightResult;
+    const bool identityMatches =
+        result.sceneid == m_sceneDocument.SceneId()
+        && result.scenerevision == m_sceneDocument.SceneRevision()
+        && result.contenthash
+            == BuildTextureWhitePreflightContentHash()
+        && result.profileid == m_currentProfileId;
+    if (!identityMatches
+        || !result.containsstrictwhite
+        || CurrentProfileCapabilities().contains(
+            QStringLiteral("unprintable_white_underbase")))
+    {
+        return {};
+    }
+
+    return QStringLiteral("scene=%1，revision=%2，Profile=%3\n%4")
+        .arg(
+            result.sceneid,
+            QString::number(result.scenerevision),
+            result.profileid,
+            result.warningmessage);
 }
 
 SceneSliceActionSceneState MainWindow::BuildSceneSliceState() const
@@ -3262,6 +3465,7 @@ void MainWindow::ApplyScenario(const ScenarioEntry& scenario)
     {
         loadPackage(packageDir);
     }
+    RequestTextureWhitePreflight();
 }
 
 void MainWindow::loadPackage(const QString& package_dir) {

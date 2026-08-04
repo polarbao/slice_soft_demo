@@ -17,6 +17,7 @@
 #include "services/SliceProgressProtocolParser.h"
 #include "services/SlicePreflightCoordinator.h"
 #include "services/ToolPaths.h"
+#include "services/TextureWhitePreflightService.h"
 #include "services/TransformedModelPreflightLoader.h"
 #include "services/WorkspaceLayoutState.h"
 #include "workers/DiagnosticAnalysisWorker.h"
@@ -98,6 +99,8 @@ private slots:
     void OnRecheckModelPreflight();
     void OnCancelModelPreflight();
     void OnSceneDocumentChanged();
+    void OnTextureWhitePreflightFinished(
+        const TextureWhitePreflightResult& result);
     void OnSaveSceneTransform();
     void OnSliceCurrentScene();
     void OnStartDiagnosticAnalysis();
@@ -140,6 +143,10 @@ private:
     void UpdateModelPreflightUi();
     void UpdateActionAvailability();
     void UpdateBatchImportPresentation();
+    void RequestTextureWhitePreflight();
+    QString BuildTextureWhitePreflightContentHash() const;
+    QString CurrentTextureWhitePreflightWarning() const;
+    QStringList CurrentProfileCapabilities() const;
     SceneSliceActionSceneState BuildSceneSliceState() const;
     SceneSliceSnapshotResult WriteCurrentSceneSnapshot(
         const SceneSliceActionRequest& request);
@@ -181,6 +188,7 @@ private:
     SceneDocument m_sceneDocument;
     SceneSelectionModel m_sceneSelectionModel;
     SceneModelRepository m_sceneModelRepository;
+    TextureWhitePreflightService m_textureWhitePreflightService;
     ModelTopViewLoader m_modelTopViewLoader;
     SceneBatchImportController m_sceneBatchImportController;
     SceneTransformController m_sceneTransformController;
@@ -199,6 +207,9 @@ private:
     std::optional<DiagnosticAnalysisIdentity>
         m_activeDiagnosticAnalysisIdentity;
     QString m_diagnosticAnalysisMessage;
+    std::optional<TextureWhitePreflightResult>
+        m_lastTextureWhitePreflightResult;
+    QString m_textureWhitePreflightRequestKey;
 
     QLineEdit* config_edit_{nullptr};
     QLineEdit* package_edit_{nullptr};

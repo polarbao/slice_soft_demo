@@ -3,11 +3,14 @@
 #include "ConfigDiffModel.h"
 #include "ProductionModeCatalog.h"
 #include "SliceSettingsModel.h"
+#include "TextureWhitePreflightService.h"
 
 #include <QJsonDocument>
 #include <QString>
 #include <QStringList>
 #include <QVector>
+
+#include <optional>
 
 /**
  * @brief Production mode, Profile, and session audit requested by the Qt UI.
@@ -34,6 +37,11 @@ struct EffectiveConfigRequest
     QJsonDocument overridedocument;
     SliceSettingsState settings;
     ProductionEffectiveConfigSelection production;
+    QString sceneid;
+    quint64 scenerevision{0U};
+    QString scenecontenthash;
+    QStringList profilecapabilities;
+    std::optional<TextureWhitePreflightResult> texturewhitepreflight;
 };
 
 /**

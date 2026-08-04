@@ -4,6 +4,7 @@
 #include "SingleMaterialReliefResolver.h"
 
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -537,6 +538,13 @@ QString ReliefFixturePath(const QString& fileName)
         + fileName;
 }
 
+QString MaterialProcessFixturePath(const QString& fileName)
+{
+    return QStringLiteral(SLICESOFT_SOURCE_DIR)
+        + QStringLiteral("/samples/configs/material_process/")
+        + fileName;
+}
+
 bool TestProductionTextureOverrideReachesSessionConfig()
 {
     QTemporaryDir directory;
@@ -742,6 +750,115 @@ bool TestSingleMaterialReliefConflictFailsConfigValidation()
             "09D config validation exposes stable conflict code");
 }
 
+EffectiveConfigRequest BuildTextureWhiteWarningRequest(
+    const QString& generatedPath,
+    const QStringList& capabilities,
+    const quint64 preflightRevision)
+{
+    const QString templatePath = MaterialProcessFixturePath(
+        QStringLiteral("obj_mtl_texture_rgb_only.json"));
+    const QJsonDocument original = ReadJson(templatePath);
+    EffectiveConfigRequest request;
+    request.profileid =
+        QStringLiteral("textured_nail_rgb_only_lower_support");
+    request.templatepath = templatePath;
+    request.generatedconfigpath = generatedPath;
+    request.originaldocument = original;
+    request.overridedocument = original;
+    request.settings = BuildSettings(
+        QFileInfo(generatedPath).dir().filePath(
+            QStringLiteral("package")),
+        true,
+        false);
+    request.settings.modelfillmaterial = ModelFillMaterial::Rgb;
+    request.production.requestedmode =
+        slicer_core::SlicePipelineMode::Legacy;
+    request.production.requestedprofileid = request.profileid;
+    request.production.sourceprofileid = request.profileid;
+    request.production.sessionid =
+        QStringLiteral("stage15-white-warning-session");
+    request.production.generatedatutc =
+        QStringLiteral("2026-08-04T10:00:00.000Z");
+    request.sceneid = QStringLiteral("stage15-white-warning-scene");
+    request.scenerevision = 7U;
+    request.scenecontenthash =
+        QStringLiteral("stage15-white-warning-content");
+    request.profilecapabilities = capabilities;
+
+    TextureWhitePreflightResult preflight;
+    preflight.sceneid = request.sceneid;
+    preflight.scenerevision = preflightRevision;
+    preflight.contenthash = request.scenecontenthash;
+    preflight.profileid = request.profileid;
+    preflight.containsstrictwhite = true;
+    preflight.replacementprofileid = QStringLiteral(
+        "textured_nail_rgb_white_ondemand_lower_support");
+    preflight.replacementprofiledisplayname = QStringLiteral(
+        "彩色纹理甲片 - 全实体 RGB + 按需补白 + 下表面支撑");
+    request.texturewhitepreflight = preflight;
+    return request;
+}
+
+bool TestTextureWhitePreflightWarningIsProfileAndSceneBound()
+{
+    QTemporaryDir directory;
+    if (!ExpectTrue(directory.isValid(), "15C-02 temp directory"))
+    {
+        return false;
+    }
+
+    const EffectiveConfigRequest unsupported =
+        BuildTextureWhiteWarningRequest(
+            directory.filePath(
+                QStringLiteral("unsupported.effective.json")),
+            {QStringLiteral("rgb_full_volume_texture")},
+            7U);
+    const EffectiveConfigResult warned =
+        EffectiveConfigGenerator{}.Generate(unsupported);
+    const QString warnedText =
+        warned.warnings.join(QStringLiteral("\n"));
+    if (!ExpectTrue(warned.IsValid(), "15C-02 RGB config generated")
+        || !ExpectTrue(
+            warnedText.contains(unsupported.sceneid)
+                && warnedText.contains(unsupported.profileid)
+                && warnedText.contains(QStringLiteral("按需补白")),
+            "15C-02 RGB path exposes scene/Profile-bound warning"))
+    {
+        return false;
+    }
+
+    const EffectiveConfigRequest capable =
+        BuildTextureWhiteWarningRequest(
+            directory.filePath(
+                QStringLiteral("capable.effective.json")),
+            {QStringLiteral("unprintable_white_underbase")},
+            7U);
+    const EffectiveConfigResult capableResult =
+        EffectiveConfigGenerator{}.Generate(capable);
+    if (!ExpectTrue(capableResult.IsValid(), "15C-02 capable config generated")
+        || !ExpectTrue(
+            !capableResult.warnings.join(QStringLiteral("\n"))
+                 .contains(QStringLiteral("纹理纯白预检")),
+            "15C-02 capable Profile suppresses warning"))
+    {
+        return false;
+    }
+
+    const EffectiveConfigRequest stale =
+        BuildTextureWhiteWarningRequest(
+            directory.filePath(
+                QStringLiteral("stale.effective.json")),
+            {QStringLiteral("rgb_full_volume_texture")},
+            6U);
+    const EffectiveConfigResult staleResult =
+        EffectiveConfigGenerator{}.Generate(stale);
+    return ExpectTrue(staleResult.IsValid(), "15C-02 stale config generated")
+        && ExpectTrue(
+            !staleResult.warnings.join(QStringLiteral("\n"))
+                 .contains(QStringLiteral("纹理纯白预检")),
+            "15C-02 stale scene identity is discarded");
+}
+
 }  // namespace
 
 int main()
@@ -753,7 +870,8 @@ int main()
         && TestGlobalProfileModeMismatchFailsClosed()
         && TestProductionTextureOverrideReachesSessionConfig()
         && TestSingleMaterialReliefOverrideReachesSessionConfig()
-        && TestSingleMaterialReliefConflictFailsConfigValidation();
+        && TestSingleMaterialReliefConflictFailsConfigValidation()
+        && TestTextureWhitePreflightWarningIsProfileAndSceneBound();
     if (!passed)
     {
         return 1;

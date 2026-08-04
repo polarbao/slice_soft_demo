@@ -15,6 +15,7 @@ struct TextureWhitePreflightRequest
     QString sceneid;
     quint64 scenerevision{0U};
     QString contenthash;
+    QString profileid;
     QStringList texturepaths;
     QStringList profilecapabilities;
     QString replacementprofileid{
@@ -46,6 +47,7 @@ struct TextureWhitePreflightResult
     QString sceneid;
     quint64 scenerevision{0U};
     QString contenthash;
+    QString profileid;
     QVector<TextureWhiteAssetScanResult> assets;
     QString replacementprofileid;
     QString replacementprofiledisplayname;
@@ -141,5 +143,6 @@ private:
     QString m_sceneId;
     quint64 m_sceneRevision{0U};
     QString m_contentHash;
+    QString m_profileId;
     bool m_running{false};
 };

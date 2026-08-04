@@ -547,6 +547,46 @@ bool NormalizeModelFillTextureContract(QJsonObject& root)
     return true;
 }
 
+QString BuildTextureWhitePreflightWarning(
+    const EffectiveConfigRequest& request)
+{
+    if (!request.texturewhitepreflight.has_value())
+    {
+        return {};
+    }
+
+    const TextureWhitePreflightResult& preflight =
+        *request.texturewhitepreflight;
+    const bool identityMatches =
+        !request.sceneid.trimmed().isEmpty()
+        && request.scenerevision > 0U
+        && !request.scenecontenthash.trimmed().isEmpty()
+        && preflight.sceneid == request.sceneid
+        && preflight.scenerevision == request.scenerevision
+        && preflight.contenthash == request.scenecontenthash
+        && preflight.profileid == request.profileid;
+    if (!identityMatches
+        || !preflight.containsstrictwhite
+        || request.profilecapabilities.contains(
+            QStringLiteral("unprintable_white_underbase")))
+    {
+        return {};
+    }
+
+    return QStringLiteral(
+               "纹理纯白预检（scene=%1，revision=%2，Profile=%3）："
+               "源贴图包含纯白 RGB(255,255,255)，当前 Profile 不具备"
+               "按需补白能力，black_is_print 下这些模型像素可能无法形成"
+               "可打印材料。该判断扫描整张源贴图，未被 UV 使用的像素也"
+               "可能触发保守告警；建议改用「%4」(%5)。")
+        .arg(
+            request.sceneid,
+            QString::number(request.scenerevision),
+            request.profileid,
+            preflight.replacementprofiledisplayname,
+            preflight.replacementprofileid);
+}
+
 QString BuildSummary(
     const EffectiveConfigRequest& request,
     const EffectiveConfigResult& result)
@@ -679,6 +719,12 @@ EffectiveConfigResult EffectiveConfigGenerator::Generate(const EffectiveConfigRe
         result.warnings.push_back(
             QStringLiteral(
                 "纹理投影到整个实体会占满模型内部区域；生效配置已改为 1 层顶面纹理带，以保留白墨/光油模型内部填充。原始 Profile 模板未修改。"));
+    }
+    const QString textureWhiteWarning =
+        BuildTextureWhitePreflightWarning(request);
+    if (!textureWhiteWarning.isEmpty())
+    {
+        result.warnings.push_back(textureWhiteWarning);
     }
 
     QStringList disabledOverrides;

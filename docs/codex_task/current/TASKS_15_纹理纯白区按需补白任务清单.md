@@ -41,7 +41,8 @@
 | 15B-03 | ✅ COMPLETE | 两份报告逐层和/总计一致，F-01 实测均为 150581 |
 | 15B-04 | ✅ COMPLETE | Release 预热 1 次、计量 7 次；F-03/F-04 `sliceProcessingMs` p50 退化均 ≤ 2% |
 | 15C-01 | ✅ COMPLETE | 异步严格纯白扫描、完整资产身份缓存、single-flight、stale 丢弃和 C-15/C-16 服务单测通过 |
-| 15C-02..03 | ⬜ PENDING | 准备工作已完成，可进入开发 |
+| 15C-02 | ✅ COMPLETE | 异步结果已绑定 scene/revision/contentHash/Profile，Legacy RGB 路径在切片前显示保守告警；能力 Profile 与 stale 结果不告警 |
+| 15C-03 | ⬜ PENDING | 准备工作已完成，可进入开发 |
 | 15D-01 | ✅ COMPLETE | F-01..F-05 manifest、F-03/F-04 合成资产和统一 Gate 骨架已落地 |
 | 15D-02 | ✅ COMPLETE | `pixel_diff_F04.csv` 仅 W 有差异；F-02 新旧 TIFF SHA-256 等价 |
 | 15D-03 | ✅ COMPLETE | 28 个 golden SHA-256 零漂移；历史 Fixture 固定源姿态后 Quick CI PASS；统一 Gate 关闭 G3 |
@@ -122,6 +123,8 @@
 - **内容**：`NormalizeModelFillTextureContract` 的纠正逻辑**保持不变**；消费 15C-01 预检结果并映射到当前 Profile 能力，覆盖 `fillMaterial == "rgb"` 的静默路径；`ConfigValidator` 只做 JSON 字段校验
 - **出口**：rgb 路径不再静默，警告身份绑定当前 scene/revision/Profile
 - **依赖**：15C-01
+- **状态**：✅ COMPLETE（2026-08-04）
+- **证据**：`production_effective_config_unit_tests` 覆盖 RGB 静默路径、能力抑制与 stale identity 丢弃；`texture_white_preflight_service_unit_tests` 锁定 Profile 身份；Release Qt self-test PASS
 
 ### 15C-03 场景错误信息业务化
 - **文件**：`src/slicer_core/pipeline/SceneLayerComposer.cpp` 错误构造处（:468-490）

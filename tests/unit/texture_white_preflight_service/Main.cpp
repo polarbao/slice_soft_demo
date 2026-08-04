@@ -72,6 +72,7 @@ TextureWhitePreflightRequest MakeRequest(
     request.sceneid = QStringLiteral("stage15-preflight-scene");
     request.scenerevision = revision;
     request.contenthash = QStringLiteral("content-%1").arg(revision);
+    request.profileid = QStringLiteral("stage15-test-profile");
     request.texturepaths = QStringList{texturePath};
     request.profilecapabilities = capabilities;
     return request;
@@ -88,6 +89,9 @@ bool PureWhiteWithoutCapabilityWarns(const QString& whitePath)
         && ExpectTrue(result->HasWarning(), "unsupported Profile must warn")
         && ExpectTrue(result->conservative, "source scan must be conservative")
         && ExpectTrue(!result->blocking, "source scan must not block slicing")
+        && ExpectTrue(
+            result->profileid == QStringLiteral("stage15-test-profile"),
+            "result must retain the Profile identity")
         && ExpectTrue(
             result->warningmessage.contains(
                 QStringLiteral("textured_nail_rgb_white_ondemand_lower_support")),

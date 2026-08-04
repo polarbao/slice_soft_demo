@@ -40,7 +40,7 @@
 |---|---|---|
 | 15A | 配置契约（3 字段 + 校验 + 枚举扩展） | ✅ 15A-01..04 完成 |
 | 15B | 合成器补白写入 + 统计 | ✅ 15B-01..04 完成；NFR-02 性能门通过 |
-| 15C | 切片前预检与错误信息业务化 | 🟡 15C-01 完成；15C-02/03 待接入 |
+| 15C | 切片前预检与错误信息业务化 | 🟡 15C-01/02 完成；15C-03 待接入 |
 | 15D | 验收与证据产出 | 🟡 15D-01..04 完成；15D-05 待工艺侧实物打样 |
 | 15E | 交付收口 | ⬜ 未开始 |
 
@@ -53,7 +53,7 @@
 | G3 | 默认关闭零漂移 | ✅ 28 个基线 golden SHA-256 一致；Quick CI PASS；统一 Gate 已自动关闭 |
 | G4 | 无纯白模型生产 TIFF SHA-256 等价 | ✅ F-02 manifest layer TIFF 逐层 SHA-256 等价，候选补白计数为 0 |
 | G5 | 项目内 RIP strict 通过、本仓库 RIP 零改动 | ✅ F-01 strict Reader PASS；本阶段未修改 RIP 源码 |
-| G6 | 切片前预检告警 | 🟡 异步扫描、缓存与 stale 门完成；UI 切片前接入待 15C-02 |
+| G6 | 切片前预检告警 | ✅ 异步扫描、缓存、scene/revision/contentHash/Profile 身份门与 UI 切片前保守告警已完成 |
 | G7 | **实物打样确认** | ⬜ ← 唯一非自动化门 |
 | G8 | 注册表翻转与文档同步 | ⬜ |
 
@@ -137,8 +137,15 @@ Stage 15 为 Stage 14「RIP 六问 Q2（白区语义）」追加一条显式不�
 
 ## 9. 当前下一任务
 
-1. `15C-02`：把 15C-01 预检结果接入切片前决策，但保持保守告警而非误阻断。
-2. `15C-03`：在既有协议错误措辞后追加纯白模型像素的业务解释。
-3. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
+1. `15C-03`：在既有协议错误措辞后追加纯白模型像素的业务解释。
+2. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
+
+### 2026-08-04 · 15C-02 切片前告警接入
+
+- `TextureWhitePreflightService` 的请求与结果新增 Profile 身份，切换场景、revision、资产内容或 Profile 后旧结果不得复用。
+- `EffectiveConfigGenerator` 保持 `NormalizeModelFillTextureContract` 的既有纠正逻辑不变，独立消费预检证据；`modelFill.material=rgb` 不再静默。
+- Qt 场景工作流在后台扫描全部可见模型的源贴图，切片前显示保守告警但继续允许生产闭合校验作为最终真源。
+- 当前 Profile 声明 `unprintable_white_underbase` 能力时不告警；整图扫描可能命中未使用 UV texel，提示中已明确该边界。
+- Release 验证：`production_effective_config_unit_tests`、`texture_white_preflight_service_unit_tests` 与 `slicer_debug_ui --self-test` 全部 PASS。
 
 G7 通过前，候选 Profile 必须继续保持 `enabled: false` / `productionSafety: diagnostic`。

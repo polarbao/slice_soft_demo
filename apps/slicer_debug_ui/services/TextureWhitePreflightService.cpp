@@ -127,6 +127,7 @@ quint64 TextureWhitePreflightService::RequestScan(
     m_sceneId = request.sceneid;
     m_sceneRevision = request.scenerevision;
     m_contentHash = request.contenthash;
+    m_profileId = request.profileid;
     m_running = true;
     const quint64 generation = m_generation;
     emit SigPreflightStarted(generation);
@@ -141,6 +142,7 @@ quint64 TextureWhitePreflightService::RequestScan(
             result.sceneid = request.sceneid;
             result.scenerevision = request.scenerevision;
             result.contenthash = request.contenthash;
+            result.profileid = request.profileid;
             result.replacementprofileid = request.replacementprofileid;
             result.replacementprofiledisplayname =
                 request.replacementprofiledisplayname;
@@ -319,7 +321,8 @@ void TextureWhitePreflightService::OnWorkerCompleted(
     if (result.generation != m_generation
         || result.sceneid != m_sceneId
         || result.scenerevision != m_sceneRevision
-        || result.contenthash != m_contentHash)
+        || result.contenthash != m_contentHash
+        || result.profileid != m_profileId)
     {
         emit SigPreflightDiscarded(result.generation);
         return;
