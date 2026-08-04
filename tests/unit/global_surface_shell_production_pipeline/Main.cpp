@@ -275,7 +275,20 @@ bool ExplicitProfileWritesProductionPackage()
                 "Global package propagates configured PackBits compression")
             && ExpectTrue(
                 rip.total_channel_stats.at(3U).print_pixels > 0U,
-                "Global model fill produces white channel pixels");
+                "Global model fill produces white channel pixels")
+            && ExpectTrue(
+                result.profile.available
+                    && result.profile.profile_level == "detailed"
+                    && result.profile.layer_compute_ms > 0.0
+                    && result.profile.layer_compose_ms > 0.0
+                    && result.profile.tiff_write_ms > 0.0
+                    && result.profile.preview_write_ms > 0.0
+                    && result.profile.report_build_ms > 0.0
+                    && result.profile.report_write_ms > 0.0
+                    && result.profile.package_publish_ms > 0.0
+                    && result.profile.output_write_ms > 0.0
+                    && result.profile.total_ms > 0.0,
+                "Global production exposes detailed phase timings");
     }
     catch (const std::exception& error)
     {

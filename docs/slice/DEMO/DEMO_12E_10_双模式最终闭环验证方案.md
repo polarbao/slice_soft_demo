@@ -1,7 +1,7 @@
 # DEMO 12E-10 双模式最终闭环验证方案
 
 > 文档版本：v1.1
-> 文档状态：FORMAL / 10A-10B COMPLETE / 10C READY
+> 文档状态：FORMAL / 10A-10D COMPLETE
 > 日期：2026-08-03
 
 ## 1. 验证目标
@@ -74,6 +74,10 @@ git diff --check
 ```
 
 实际执行时必须记录完整参数、referenceMachine、输出目录、重复次数和真实结果。
+
+10C 实际执行使用 xiao_ma/yecan、600 x 600 DPI、0.20 mm 层厚、Preview 关闭、每 case 1 次预热和
+3 次计量。36/36 计量样本与 RIP strict 通过，fallback 为 0；完整结果见
+`REPORT_12E_10C_Release性能与内存当前状态.md`。
 
 ## 7. 通过标准
 

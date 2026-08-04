@@ -1,6 +1,6 @@
 # REPORT 12E-10B 真实 OBJ/3MF 双模式矩阵当前状态
 
-> 状态：COMPLETE / 12E-10C READY
+> 状态：COMPLETE / 12E-10C/10D SUBSEQUENTLY COMPLETE
 > 日期：2026-08-03
 > 协议边界：`p0.rgbwsv.2` / `R G B W S V` / `uint8` / `black_is_print`
 
@@ -98,5 +98,6 @@ OpenVDB 仍为可选且默认关闭；
 
 ## 7. 下一任务
 
-`12E-10C` 的准备合同已具备，下一步应在同参考机、同模型、同 DPI、同层厚和同输出策略下至少重复
-3 次，使用中位数形成 Legacy/Global Release 性能与峰值内存结论。12E-10D 继续等待 10C。
+后续 `12E-10C` 已按同参考机、同模型、同 DPI、同层厚和同输出策略完成 36 个计量样本及中位数
+汇总；`12E-10D` 也已完成最终文档封口。最新状态以
+`REPORT_12E_全局纹理壳层与模型填充当前状态.md` 为准。

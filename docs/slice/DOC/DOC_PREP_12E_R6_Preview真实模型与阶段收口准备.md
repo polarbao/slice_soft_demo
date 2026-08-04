@@ -87,7 +87,7 @@ docs/slice/REPORT/REPORT_12E_全局纹理壳层与模型填充当前状态.md
 ```
 
 10A 依赖 09A-05、09B-05 和 Stage 13C-03 TIFF 原生生产预览；10B/10C 的 R4/08D、09B、09C
-证据前置已完成。10D 等待 10A/10B/10C 后执行。
+证据前置和 10A/10B/10C/10D 已在本准备文档之后全部完成。
 
 ## 7. 验收
 
@@ -108,7 +108,7 @@ REPORT_12E 列出实际命令、结果、阻断和后续建议。
 12E-10A：WAIT 12E-09A-05；Stage 13C-03、12E-09C 已完成；
 12E-10B：PREPARED / 09B、09C EVIDENCE AVAILABLE；
 12E-10C：PREPARED / 08D、09B、09C EVIDENCE AVAILABLE；
-12E-10D：WAIT 10A/10B/10C。
+12E-10D：COMPLETE。
 ```
 
 ## 9. 双模式阶段收口补充
@@ -137,7 +137,7 @@ global 诊断结果可单独显示，但必须标注“诊断，未生成可打�
 12E-10A：09B-05、09C 物理比例显示和 13C-03 TIFF 原生生产预览已完成，等待 12E-09A-05 同层语义 preview；
 12E-10B：xiao_ma/yecan/3MF 控制/复杂浮雕阻断矩阵已冻结，09B-06、09C 已完成；
 12E-10C：可复用 R4-07-R2、08D-06、09B-06 和 09C-06 Release 证据；
-12E-10D：等待 10A/10B/10C 后收口；
+12E-10D：已完成最终收口；
 生产 package/RIP：08D 前置和 09B UI 路径均已验证。
 ```
 
@@ -147,7 +147,7 @@ global 诊断结果可单独显示，但必须标注“诊断，未生成可打�
 09C：COMPLETE；
 10A：仅被 09A-05 阻断；
 10B/10C：技术证据前置已满足，可进入执行文档准备；
-10D：等待 10A/10B/10C；
+10D：COMPLETE；
 独立 PRD、DEV、DEMO、TASKS、CODEX_PROMPT：COMPLETE；
 结论：12E-10 执行包完整，但主线必须等待 09A-05/06 后从 10A 开始。
 ```

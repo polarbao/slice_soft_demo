@@ -159,7 +159,7 @@ OpenVDB OFF build PASS；
 | 12E-09A | 09A-01 COMPLETE；09A-02..06 为独立 diagnostic UI 支线 |
 | 12E-09B | 09B-01..06 COMPLETE；双模式生产入口和六 case Release/TIFF/RIP 收口通过 |
 | 12E-09C | COMPLETE；09C-01..06 PASS；600/600 与 635/600 软件生产组合通过 |
-| 12E-10 | 概念级 PREPARED；10A 等待 09A-05；10B/10C 的 09C 依赖已解除；执行前补齐独立文档 |
+| 12E-10 | COMPLETE：10A 同层、10B 真实模型、10C Release 性能/内存、10D 文档封口均完成 |
 
 ## 12. 双切片模式与输出矩阵
 

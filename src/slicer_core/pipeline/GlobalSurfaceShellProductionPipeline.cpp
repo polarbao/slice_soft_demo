@@ -407,6 +407,7 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
             "global_surface_shell production raster mapping failed");
     }
 
+    const Clock::time_point composeStart = Clock::now();
     GlobalSurfaceShellMaterialEvidenceResult materialEvidence =
         ComposeGlobalSurfaceShellMaterialEvidence(mapping, config);
     if (!materialEvidence.available)
@@ -437,6 +438,7 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
     {
         throw SlicePipelineError(adapter.errorCode, adapter.detail);
     }
+    const double layerComposeMs = ElapsedMilliseconds(composeStart);
     const double sliceProcessingMs = ElapsedMilliseconds(sliceStart);
 
     const Clock::time_point outputStart = Clock::now();
@@ -472,11 +474,19 @@ SliceRunResult RunGlobalSurfaceShellProductionPipeline(
             materialEvidence.supportPixels,
             static_cast<std::uint64_t>(std::numeric_limits<int>::max())));
     result.profile.available = true;
-    result.profile.profile_level = "coarse";
+    result.profile.profile_level = "detailed";
     result.profile.config_load_ms = configLoadMs;
     result.profile.model_load_ms = modelLoadMs;
     result.profile.slice_processing_ms = sliceProcessingMs;
-    result.profile.layer_compute_ms = sliceProcessingMs;
+    result.profile.layer_compute_ms = std::max(
+        0.0,
+        sliceProcessingMs - layerComposeMs);
+    result.profile.layer_compose_ms = layerComposeMs;
+    result.profile.tiff_write_ms = package.profile.tiffwritems;
+    result.profile.preview_write_ms = package.profile.previewwritems;
+    result.profile.report_build_ms = package.profile.reportbuildms;
+    result.profile.report_write_ms = package.profile.reportwritems;
+    result.profile.package_publish_ms = package.profile.packagepublishms;
     result.profile.output_write_ms = outputWriteMs;
     result.profile.total_ms = ElapsedMilliseconds(runStart);
     return result;

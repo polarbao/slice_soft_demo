@@ -1,6 +1,6 @@
 # TASKS 12E-10 双模式最终闭环任务清单
 
-> 状态：10A/10B COMPLETE / 10C READY
+> 状态：10A/10B/10C/10D COMPLETE / STAGE 12E COMPLETE
 > 日期：2026-08-03
 > 规则：每次只执行用户明确授权的一个原子任务
 
@@ -60,7 +60,7 @@ RIP strict 14/14 PASS，fallback 0。
 
 ## 3. 12E-10C Release 性能与内存结论
 
-状态：`READY / 10B COMPLETE`
+状态：`COMPLETE / PASS / 2026-08-03`
 
 目标：
 
@@ -74,9 +74,21 @@ RIP strict 14/14 PASS，fallback 0。
 
 完成 Gate：口径一致、原始摘要可追溯，不把 I/O 差异冒充核心引擎差异。
 
+完成证据：
+
+```text
+scripts/run_12e_10c_release_performance.ps1；
+REPORT_12E_10C_Release性能与内存当前状态.md；
+36/36 计量样本与 RIP strict PASS，fallback 0；
+Global/Legacy core 1.826x..2.562x；
+Global/Legacy total 2.244x..3.161x；
+Global/Legacy peak memory 3.079x..4.304x；
+Legacy 默认、Global 显式候选结论保持不变。
+```
+
 ## 4. 12E-10D 文档与阶段封口
 
-状态：`PREPARED / WAIT 10B-10C`
+状态：`COMPLETE / 2026-08-03`
 
 目标：
 
@@ -88,6 +100,15 @@ RIP strict 14/14 PASS，fallback 0。
 ```
 
 完成 Gate：文档状态与实际验证一致，所有链接存在，`git diff --check` 通过。
+
+完成证据：
+
+```text
+DOC_PREP_12E_10D_阶段封口准备.md；
+REPORT_12E_全局纹理壳层与模型填充当前状态.md；
+SLICE_12E_双模式纹理壳层与模型填充验收说明.md；
+README、索引、任务看板、AGENTS 和项目上下文已同步。
+```
 
 ## 5. 任务验证规则
 

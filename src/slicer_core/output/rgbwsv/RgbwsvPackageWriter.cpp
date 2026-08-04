@@ -16,6 +16,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <system_error>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -729,6 +730,42 @@ void ValidatePersistedSceneExtension(
     }
 }
 
+bool IsTransientRenameError(const std::error_code& error)
+{
+    return error == std::errc::permission_denied
+        || error == std::errc::device_or_resource_busy
+        || error == std::errc::resource_unavailable_try_again
+        || error == std::errc::operation_not_permitted;
+}
+
+void RenameWithTransientRetry(
+    const std::filesystem::path& source,
+    const std::filesystem::path& destination)
+{
+    constexpr int kMaximumAttempts{6};
+    constexpr auto kInitialDelay{std::chrono::milliseconds{20}};
+    std::error_code error;
+    for (int attempt{0}; attempt < kMaximumAttempts; ++attempt)
+    {
+        error.clear();
+        std::filesystem::rename(source, destination, error);
+        if (!error)
+        {
+            return;
+        }
+        if (!IsTransientRenameError(error)
+            || attempt + 1 == kMaximumAttempts)
+        {
+            throw std::filesystem::filesystem_error(
+                "rename",
+                source,
+                destination,
+                error);
+        }
+        std::this_thread::sleep_for(kInitialDelay * (1 << attempt));
+    }
+}
+
 void PublishStagedPackage(
     const std::filesystem::path& stagingDir,
     const std::filesystem::path& packageDir,
@@ -737,12 +774,12 @@ void PublishStagedPackage(
     if (std::filesystem::exists(packageDir))
     {
         backupDir = MakeSiblingTemporaryDirectory(packageDir, "backup");
-        std::filesystem::rename(packageDir, backupDir);
+        RenameWithTransientRetry(packageDir, backupDir);
     }
 
     try
     {
-        std::filesystem::rename(stagingDir, packageDir);
+        RenameWithTransientRetry(stagingDir, packageDir);
     }
     catch (...)
     {
@@ -750,16 +787,15 @@ void PublishStagedPackage(
             && !std::filesystem::exists(packageDir)
             && std::filesystem::exists(backupDir))
         {
-            std::error_code restoreError;
-            std::filesystem::rename(
-                backupDir,
-                packageDir,
-                restoreError);
-            if (restoreError)
+            try
+            {
+                RenameWithTransientRetry(backupDir, packageDir);
+            }
+            catch (const std::filesystem::filesystem_error& error)
             {
                 throw std::runtime_error(
                     "failed to publish staged RGBWSV package and restore the previous package: "
-                    + restoreError.message());
+                    + error.code().message());
             }
         }
         throw;
