@@ -1,14 +1,14 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-08-03
-> 适用阶段：Stage 12D COMPLETE；12E-09A/09B/09C/09D/10A/10B COMPLETE；03D COMPLETE / GO_OPTIONAL；03E INTERNAL COMPLETE / EXTERNAL RIP PENDING；12E-10C READY；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE
+> 更新日期：2026-08-04
+> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL；03E INTERNAL COMPLETE / EXTERNAL RIP PENDING；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；Stage 14 PREPARED；Stage 15 ACTIVE / 10 OF 19
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 已收口。12E-01 至 12E-07、12E-08A/08B/08C 和 12E-08C-R1/R2/R3/R4 已完成既定证据链；R3-04 的 NO-GO 是历史快照，后续 R4-08-R2 已在技术 Gate 和独立授权闭环后转为 `GO`。12E-08D-01..06、12E-09A-01..06、12E-09B-01..06、12E-09C-01..06、12E-09D-01..06 和 12E-10A/10B 已完成。09D 已闭环 Legacy 生产纹理层数、Global 物理宽度/显式 all_texture、诊断隔离和单材料 W/V；10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断，RIP strict 14/14、fallback 0。Legacy 默认 GO，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 已完成 `03D-01..07`，最终判定为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-01` 已完成 PackBits 原型和双 Writer 性能矩阵；`03E-02` 已完成生产配置、manifest、严格 Reader、原生预览、Qt 和真实 OBJ 内部 Gate，但目标 RIP/控制软件互操作待验证，因此默认压缩仍为 `none`。当前下一任务为 `12E-10C`；10D 等待 10C。12F-02..09 未激活。12G-TCWS 继续冻结。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成；正式 production GO 仍等待设备 buildVolume/轴向和 22 实例预算。
+当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，但目标 RIP/控制软件互操作待验证，因此默认压缩仍为 `none`。12F-02..09 未激活。12G-TCWS 继续冻结。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。Stage 14 能力包集成保持 PREPARED。Stage 15 已完成配置契约、Legacy 按需补 W、统计报告和 15D-01/02/04 自动证据，G1/G2/G4/G5 已通过；G3、性能、UI 预检和实物 G7 尚未完成，Profile 继续禁用且为 diagnostic。
 
 ## 目录结构
 
@@ -55,6 +55,23 @@
 | `REPORT/REPORT_12E_09D_生产纹理厚度与单材料材质当前状态.md` | 12E-09D-01..06 实现、Release/RIP 矩阵、固定协议和下一阶段结论 |
 | `REPORT/REPORT_12E_10A_同层Preview最终一致性当前状态.md` | 生产 TIFF、09A 语义、W/S/V 与精确闭环报告的同层最终一致性证据 |
 | `DOC/DOC_REVIEW_12G_TCWS_现有RIP白区合同与六通道策略比对.md` | 现有 WSV=000 RIP 白区合同与显式 W/V、混合策略的优缺点审查 |
+| `DOC/DOC_ANALYSIS_14_Q2_RIP白区带内信号与配置冲突审查.md` | Stage 14 Q2 固定六通道白区信号、59 份直接配置、32 份黑 fallback 与真实黑贴图碰撞审查 |
+| `DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md` | Stage 14 能力包封装、打印软件集成与外部 RIP 确认边界 |
+| `PRD/PRD_14_切片能力包封装与打印软件集成.md` | Stage 14 产品需求与验收口径 |
+| `DEV/DEV_14_切片能力包封装与打印软件集成.md` | Stage 14 模块、接口与实施设计 |
+| `DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.md` | Stage 14 集成验收方案 |
+| `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` | Stage 14 准备状态与外部依赖 |
+| `DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md` | Stage 14 对目标 RIP 的技术确认问题 |
+| `DOC/DOC_DECISION_15_纹理纯白区按需补白与材料闭合修复专项.md` | Stage 15 纯白纹理材料闭合修复主决策 |
+| `DOC/DOC_PREP_15_纹理纯白区按需补白实施准备与依赖审查.md` | Stage 15 路径边界、依赖、基线和开工 Gate |
+| `PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md` | Stage 15 产品需求与验收标准 |
+| `DEV/DEV_15_纹理纯白区按需补白设计.md` | Stage 15 配置、纯策略模块、Legacy 写入和预检设计 |
+| `DEMO/DEMO_15_纹理纯白区按需补白验收方案.md` | Stage 15 自动化、Reader、性能与实物验收方案 |
+| `REPORT/REPORT_15_纹理纯白区按需补白当前状态.md` | Stage 15 准备和执行状态真源 |
+| `../codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md` | Stage 14 原子任务与依赖 |
+| `../codex_task/current/CODEX_PROMPT_14_切片能力包封装与打印软件集成执行指令.md` | Stage 14 执行边界与停止条件 |
+| `../codex_task/current/TASKS_15_纹理纯白区按需补白任务清单.md` | Stage 15 的 19 张原子任务卡、依赖和 Gate |
+| `../codex_task/current/CODEX_PROMPT_15_纹理纯白区按需补白执行指令.md` | Stage 15 执行边界、实现不变量和停止条件 |
 | `REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 文档准备、当前实现事实、优先级和下一任务 |
 | `REPORT/REPORT_13A_模型俯视工作区与实例变换当前状态.md` | 13A-01..05 实现、验证、M13-1 候选和后续边界 |
 | `REPORT/REPORT_13A_02_模型俯视渲染当前状态.md` | 13A-02 +Z 俯视几何、Qt 异步加载、选择和实际验证 |
@@ -117,6 +134,12 @@
 | `DOC/DOC_PREP_12E_10_双模式最终闭环准备.md` | 12E-10A..D 前置、顺序、风险和启动 Gate |
 | `DOC/DOC_PREP_12E_10B_真实模型双模式矩阵准备.md` | 12E-10B 固定资产、hash、配置来源、required 矩阵和 runner 合同 |
 | `REPORT/REPORT_12E_10B_真实OBJ_3MF双模式矩阵当前状态.md` | 12E-10B 17 行矩阵、RIP strict、阻断和 no-fallback 结果 |
+| `DOC/DOC_PREP_12E_10C_Release性能与内存准备.md` | 12E-10C 固定模型、宽度、Release 重复次数和计时合同 |
+| `DOC/DOC_SCHEMA_12E_ReleasePerformanceMatrix.md` | 12E-10C 版本化性能矩阵 schema |
+| `REPORT/REPORT_12E_10C_Release性能与内存当前状态.md` | 12E-10C 36 个计量样本、分段耗时、内存和引擎结论 |
+| `DOC/DOC_PREP_12E_10D_阶段封口准备.md` | 12E-10D 最终报告、用户说明和上下文封口合同 |
+| `REPORT/REPORT_12E_全局纹理壳层与模型填充当前状态.md` | Stage 12E 最终完成状态、生产边界和后续路线 |
+| `../user_guides/SLICE_12E_双模式纹理壳层与模型填充验收说明.md` | Legacy/Global、纹理填充、生产包和预览验收说明 |
 | `REPORT/REPORT_12C_Qt工作台启动状态.md` | 当前阶段启动状态，12C-R0 可开始 |
 | `REPORT/REPORT_11A_OpenVDB_OBJ彩色纹理切片前置当前状态.md` | OpenVDB OBJ 彩色纹理前置状态报告 |
 | `REPORT/REPORT_11A_R1_OpenVDB候选切片写包当前状态.md` | OpenVDB Candidate 写包当前状态报告 |

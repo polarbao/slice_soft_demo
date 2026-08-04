@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-08-03
-> 当前阶段：03D COMPLETE / GO_OPTIONAL；03E-01 COMPLETE，03E-02 INTERNAL COMPLETE / EXTERNAL RIP PENDING；12E-09D PREPARED
+> 更新日期：2026-08-04
+> 当前阶段：Stage 15 ACTIVE / 10 OF 19；当前下一原子任务 15D-03；Stage 14 PREPARED 但优先级低于 Stage 15
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -26,6 +26,10 @@ docs/codex_task/archive/handoff
 ## 下一候选执行入口
 
 ```text
+docs/codex_task/current/TASKS_15_纹理纯白区按需补白任务清单.md
+docs/codex_task/current/CODEX_PROMPT_15_纹理纯白区按需补白执行指令.md
+docs/codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md
+docs/codex_task/current/CODEX_PROMPT_14_切片能力包封装与打印软件集成执行指令.md
 docs/codex_task/current/TASKS_03E_TIFF压缩兼容与性能任务清单.md
 docs/codex_task/current/TASKS_12E_09D_生产纹理厚度与单材料材质任务清单.md
 docs/codex_task/current/CODEX_PROMPT_12E_09D_生产纹理厚度与单材料材质执行指令.md
@@ -84,8 +88,9 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 13G-00..07 已完成，Reality 5/5 正反面修正、最大投影铺底、Qt/Effective Config、segment_105 Release/RIP 均 PASS；
 03D-LIBTIFF 01..07 COMPLETE，最终 GO_OPTIONAL，默认 Writer 未切换；
 03E-01 COMPLETE；03E-02 INTERNAL COMPLETE / EXTERNAL RIP PENDING，PackBits 仅显式实验，默认 none；
-12E-09D 01..06 COMPLETE；12E-10A/10B COMPLETE；12E-10C READY；
+12E-09D 01..06 COMPLETE；12E-10A/10B/10C/10D COMPLETE；Stage 12E COMPLETE；
 12G-TCWS 已记录现有 RIP 的 WSV=000 白区信号，但仍为 FROZEN，不得实现。
+Stage 14 能力包集成为 PREPARED / NOT ACTIVE；Stage 15 纯白纹理按需补 W 已完成 15A-01..04、15B-01..03、15D-01/02/04，G1/G2/G4/G5 自动 Gate 通过。当前下一任务为 15D-03；G7 前候选 Profile 保持禁用和 diagnostic。
 ```
 
 12C-R0/R1/R2 已全部完成。12D-R0/R1/R2/R3 已封口，包含 candidate/exact 诊断、一像素 repair、外部背景保护、Qt 展示和三个真实 OBJ 验收。repair 仍默认关闭。
@@ -103,7 +108,7 @@ docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.
 docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md
 ```
 
-12E 当前状态为 `12E-08D-01..06 / 09A-01..06 / 09B-01..06 / 09C-01..06 / 09D-01..06 / 10A / 10B COMPLETE`。xiao_ma/yecan Legacy/Global minimum/intermediate/all_texture 与 Texture2D checker 3MF 共 14 行生产 PASS；爱神/玫瑰/梯田 3 行为 `BLOCKED_EXPECTED`，RIP strict 14/14、fallback 0。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`；Legacy 默认，Global 仅显式 opt-in，禁止 silent fallback。当前下一任务为 12E-10C，10D 等待 10C。
+12E 当前状态为 `12E-08D-01..06 / 09A-01..06 / 09B-01..06 / 09C-01..06 / 09D-01..06 / 10A..10D COMPLETE`。xiao_ma/yecan Legacy/Global minimum/intermediate/all_texture 与 Texture2D checker 3MF 共 14 行生产 PASS；爱神/玫瑰/梯田 3 行为 `BLOCKED_EXPECTED`。10C 通过 36/36 Release 计量样本和 RIP strict。Target State 保持 `slicePipeline.mode=legacy|global_surface_shell`；Legacy 默认，Global 仅显式 opt-in，禁止 silent fallback。Stage 12E 当前批准范围已封口，后续阶段需独立授权。
 
 ## 12F Release Runtime 与性能优化专项
 

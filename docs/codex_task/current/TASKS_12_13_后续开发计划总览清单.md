@@ -1,15 +1,15 @@
-# TASKS 12/13 后续开发计划总览清单
+# TASKS 12/13/14/15 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v3.5
-> 更新日期：2026-08-03
-> 当前代码阶段：13G-00..07 COMPLETE；03D-01..07 COMPLETE / GO_OPTIONAL；12E-09D-01..06 COMPLETE
-> 当前推荐任务：12E-10C READY
-> 后续顺序：12E-10C -> 10D；13F-R1-01..05 保持独立准备
+> 版本：v3.7
+> 更新日期：2026-08-04
+> 当前代码阶段：STAGE 12E COMPLETE；13G-00..07 COMPLETE；03D-01..07 COMPLETE / GO_OPTIONAL
+> 当前推荐任务：Stage 15 已进入开发并完成 10/19；下一原子任务 15D-03
+> 后续顺序：Stage 15 优先于 Stage 14；13F-R1-01..05 与 12F 保持独立准备
 
 ## 1. 文档职责
 
-本文是 Stage 12 剩余任务和 Stage 13 近程任务的唯一跨阶段执行看板，用于快速回答：
+本文沿用既有文件名，现作为 Stage 12/13/14/15 跨阶段执行看板，用于快速回答：
 
 ```text
 当前处于哪个阶段；
@@ -51,7 +51,7 @@
 | 12E-09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 0 | 保持回归 |
 | 03D-LIBTIFF Writer 兼容迁移 | 03D-01..07 COMPLETE / GO_OPTIONAL | 0 | 已收口；默认 Writer 保持 handwritten |
 | 12E-09D 生产纹理与单材料控制 | 09D-01..06 COMPLETE / RELEASE MATRIX PASS | 0 | 保持回归 |
-| 12E-10 最终收口 | 10A/10B COMPLETE / 10C READY | 2 | 执行 10C -> 10D |
+| 12E-10 最终收口 | 10A/10B/10C/10D COMPLETE | 0 | 已收口 |
 | 12F 性能专项 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 8 | Stage 12/13 边界稳定后先刷新 12F-02 |
 | 12G-TCWS | FROZEN / NO AUTHORIZATION | 0 个激活任务 | 等产品/RIP G1..G8，不实现 |
 | 13A 模型俯视与变换 | 13A-01..05 COMPLETE / M13-1 CANDIDATE PASS | 0 | 保持回归 |
@@ -60,17 +60,20 @@
 | 13D Qt 工作台布局 | 13D-01..04 COMPLETE | 0 | 保持回归 |
 | 13E 自动定向与诊断工作流 | 13E-01..05 COMPLETE / FUNCTIONAL PASS | 0 | 保持甲片 +Z 正面、9 mm 默认和右侧诊断回归 |
 | 13G 支撑投影铺底与层间连续性 | 00..07 COMPLETE / FUNCTIONAL PASS | 0 | 保持 front-up、0..29 铺底和 RIP 回归 |
+| Stage 14 能力包集成 | PREPARED / NOT ACTIVE | 任务齐备 | 等 Stage 15 与外部 RIP/打印软件输入 |
+| Stage 15 纯白纹理按需补 W | ACTIVE / 10 COMPLETE | 19 | 执行 15D-03；15B-04、15C 可并行；G7 前不启用 Profile |
 
 计数口径：
 
 ```text
 当前剩余任务：03D 0 个、12E-09D 0 个；
-12E-10 合计待执行：3 个；
+12E-10 合计待执行：0 个；
 另含 12F 性能：8 个；
 Stage 13 近程 P0：17 个；
 13B-08/13D 共 8 个插入任务均已完成；13E 新增 5 个插入任务并已完成；
 Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入待执行原子任务；
 12G-TCWS 已冻结，不计入激活任务；现有 RIP 白区事实只作为评审输入。
+Stage 15 共 19 张任务卡，当前完成 10；外部 G7 不阻断其余软件开发，只阻断 15E-02。
 ```
 
 ## 4. 固定执行顺序
@@ -175,11 +178,12 @@ stripped/tiled。该阶段不新增压缩、BigTIFF、多 IFD 或 planar separat
 |---:|---|---|---|---|
 | 23 | 12E-10A Texture/Fill/Partition 同层预览 | `COMPLETE / PASS` | 13C-03、09A-05/06、09D | 生产 TIFF、诊断语义、W/S/V、精确闭环报告同层 |
 | 24 | 12E-10B 真实 OBJ/3MF 模式矩阵 | `COMPLETE / PASS` | 10A COMPLETE | 14 行生产 PASS、3 行 BLOCKED_EXPECTED、RIP strict 14/14 |
-| 25 | 12E-10C Release/repair/peak-memory 汇总 | `READY / 10B COMPLETE` | 10B | 最终工程矩阵 |
-| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `PREPARED / WAIT 10C` | 10C | 12E COMPLETE |
+| 25 | 12E-10C Release/repair/peak-memory 汇总 | `COMPLETE / PASS` | 10B | 36/36 计量与 RIP strict、性能/内存结论 |
+| 26 | 12E-10D 用户手册、REPORT 和上下文封口 | `COMPLETE` | 10C | STAGE 12E COMPLETE |
 
-`12E-10A..D` 的独立 PRD/DEV/DEMO/PREP/TASKS/CODEX_PROMPT 已于 2026-07-29 补齐；10A/10B 已于
-2026-08-03 完成。10B 固定矩阵为 14 行生产 PASS、3 行 BLOCKED_EXPECTED；当前进入 10C。
+`12E-10A..D` 的独立 PRD/DEV/DEMO/PREP/TASKS/CODEX_PROMPT 已补齐并于 2026-08-03 全部完成。
+10B 固定矩阵为 14 行生产 PASS、3 行 BLOCKED_EXPECTED；10C 为 36/36 Release 计量与 RIP strict PASS；
+10D 已完成最终报告、用户说明和上下文封口。
 
 ### Wave 5：性能工程化
 
@@ -222,8 +226,8 @@ Stage 13 决策、路线、依赖矩阵和未决输入 Gate；
 批量导入、显式场景 CLI、Qt 当前场景主动作和真实模型作业流矩阵已经完成。`13C-03` 已实现，
 13C、13D-01..04、13E-01..05、13G-00..07 与 12E-09A-01..06 已完成。当前没有未完成的
 13G 原子任务；`03D-01..07` 已完成且最终结论为 `GO_OPTIONAL`，`12E-09D-01..06` 已完成并
-通过 Release/RIP 矩阵；10A 同层最终一致性已通过 Debug/Release CTest 与 UI smoke。当前任务为
-`12E-10B`。
+通过 Release/RIP 矩阵；12E-10A..10D 已完成同层一致性、真实模型、Release 性能/内存和最终文档
+封口。当前没有自动激活的 Stage 12E 任务。
 
 ### 尚未完成
 
@@ -273,11 +277,12 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 ## 8. 当前执行入口
 
 ```text
-CURRENT：12E-10A/10B COMPLETE / 12E-10C READY / 03D-01..07 GO_OPTIONAL / 12E-09D-01..06 COMPLETE；
+CURRENT：STAGE 12E COMPLETE / 03D-01..07 GO_OPTIONAL / 12E-09D-01..06 COMPLETE；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-01..06；
 M13-1：CANDIDATE PASS；
-NEXT：12E-10C；
-AFTER：12E-10C -> 10D；
+NEXT：Stage 15 执行 15D-03；15B-04、15C-01/03 可并行；
+AFTER_STAGE15：Stage 14 仍需按外部输入和独立授权进入；
+AFTER：保持 Legacy 默认、Global 显式候选和 Stage 12E 回归；
 FROZEN：12G-TCWS 仅保留 RIP 白区合同评审，不实现；
 AUTHORIZATION：13B-02 已按用户授权完成并原子提交；
 13B-06：FIXTURE COMPLETE，单 package、scene report 和 RIP strict 已闭环；

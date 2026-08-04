@@ -504,3 +504,43 @@ powershell -NoProfile -ExecutionPolicy Bypass `
 Texture2D checker 3MF 的双模式格式控制，以及 aishen/meigui/titian strict blocked 披露。成功 case
 必须生成 `p0.rgbwsv.2` TIFF package 并通过 RIP strict；blocked case 禁止写包和 fallback。固定汇总为
 `output/benchmarks/12e_10/final_closure_matrix.json`，默认不提交。
+
+## 12E-10C Release Performance And Memory
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\run_12e_10c_release_performance.ps1 `
+  -BuildDir build-slicesoft/main `
+  -Config Release `
+  -OutputRoot output/benchmarks/12e_10c `
+  -Iterations 3 `
+  -WarmupIterations 1
+```
+
+该 Gate 固定 xiao_ma/yecan、minimum/intermediate/all_texture、600 x 600 DPI、0.20 mm 层厚、
+stripped/uncompressed 和 Preview 关闭。每个 case 先预热再执行 3 次计量，并交替引擎顺序；所有生产包
+必须通过 RIP strict。固定矩阵为
+`output/benchmarks/12e_10c/release_performance_matrix.json`，默认不提交。
+
+## Stage 15 Texture White Carrier
+
+Stage 15 代码落地后使用默认 OpenVDB OFF 的 Release 轨道：
+
+```powershell
+cmake --build build-slicesoft/main --config Release --target `
+  texture_white_carrier_policy_unit_tests `
+  texture_white_preflight_service_unit_tests `
+  experimental_config_unit_tests `
+  production_effective_config_unit_tests `
+  slicer_cli `
+  rip_reader_test
+ctest --test-dir build-slicesoft/main -C Release `
+  -R "^(texture_white_carrier_policy_unit_tests|texture_white_preflight_service_unit_tests|experimental_config_unit_tests|production_effective_config_unit_tests)$" `
+  --output-on-failure
+.\scripts\run_stage15_white_carrier_gate.ps1 `
+  -BuildDir build-slicesoft/main `
+  -Config Release `
+  -OutputRoot output/benchmarks/stage15
+```
+
+`15A-01` 必须在第一处代码编辑前生成 `baseline_identity.json`。Stage 15 不新增第三方依赖，UI 扫描复用 Qt 5.15；OpenVDB 保持 OFF。脚本与前两个测试 target 由 Stage 15 实现任务创建，在此之前不得声称命令已运行。

@@ -1,11 +1,11 @@
 # DOC_INDEX_SliceSoft_PRD_DEV_文档体系整理
 
-> 文档版本：v0.3
+> 文档版本：v0.4
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-07-31
+> 更新日期：2026-08-04
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：12E-08D/09A/09B/09C/09D/10A、Stage 13 原 P0、13B-08/13D/13E/13G、03D-LIBTIFF COMPLETE；NEXT 12E-10B
+> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；Stage 14 PREPARED；Stage 15 ACTIVE / 10 OF 19
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -35,10 +35,10 @@
 
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
-最新完成阶段：12E-08C-R4 受限生产候选技术 Gate 收口
-当前执行阶段：Stage 13 P0 ATOMIC PREPARATION COMPLETE / 13A-01..05、13B-01..07、13C-01..03 COMPLETE
-最新完成任务：13B-08-01..04 批量导入、当前场景单 Package、真实 OBJ/3MF 作业流和 RIP strict
-当前推荐任务：执行 13C-04 Preview IO 收口；复杂浮雕 0/3 仍为披露缺口
+最新完成阶段：Stage 12E 与 Stage 13 批准范围已收口
+当前执行阶段：Stage 15 ACTIVE / 10 IMPLEMENTED
+最新完成任务：15D-02/04 自动差异证据与严格 Reader Gate
+当前推荐任务：关闭 15D-03 Quick CI；Stage 14 等待 Stage 15 与外部集成输入
 ```
 
 09P-R1 已完成：
@@ -363,6 +363,19 @@ docs/slice/DEMO/DEMO_12E_09D_生产纹理厚度与单材料材质验证方案.md
 docs/slice/DOC/DOC_PREP_12E_09D_生产纹理厚度与单材料材质收口准备.md
 docs/slice/REPORT/REPORT_12E_09D_生产纹理厚度与单材料材质准备状态.md
 docs/slice/REPORT/REPORT_12E_09D_01_生产纹理合同与配置映射当前状态.md
+docs/slice/PRD/PRD_12E_10_双模式最终闭环.md
+docs/slice/DEV/DEV_12E_10_双模式最终闭环设计.md
+docs/slice/DEMO/DEMO_12E_10_双模式最终闭环验证方案.md
+docs/slice/DOC/DOC_PREP_12E_10_双模式最终闭环准备.md
+docs/slice/DOC/DOC_PREP_12E_10B_真实模型双模式矩阵准备.md
+docs/slice/DOC/DOC_PREP_12E_10C_Release性能与内存准备.md
+docs/slice/DOC/DOC_SCHEMA_12E_ReleasePerformanceMatrix.md
+docs/slice/DOC/DOC_PREP_12E_10D_阶段封口准备.md
+docs/slice/REPORT/REPORT_12E_10A_同层Preview最终一致性当前状态.md
+docs/slice/REPORT/REPORT_12E_10B_真实OBJ_3MF双模式矩阵当前状态.md
+docs/slice/REPORT/REPORT_12E_10C_Release性能与内存当前状态.md
+docs/slice/REPORT/REPORT_12E_全局纹理壳层与模型填充当前状态.md
+docs/user_guides/SLICE_12E_双模式纹理壳层与模型填充验收说明.md
 docs/slice/DOC/DOC_REVIEW_12G_TCWS_现有RIP白区合同与六通道策略比对.md
 docs/slice/DOC/DOC_EXEC_12E_R4A_ClassificationRaster映射结果.md
 docs/slice/DOC/DOC_EXEC_12E_R4B_完整材料语义闭环结果.md
@@ -469,6 +482,26 @@ docs/slice/DEMO/DEMO_13D_Qt工作台交互验证方案.md
 docs/codex_task/current/TASKS_13D_Qt工作台布局收口任务清单.md
 ```
 
+Stage 14 / Stage 15 当前入口：
+
+```text
+docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md
+docs/slice/PRD/PRD_14_切片能力包封装与打印软件集成.md
+docs/slice/DEV/DEV_14_切片能力包封装与打印软件集成.md
+docs/slice/DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.md
+docs/slice/REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md
+docs/codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md
+docs/codex_task/current/CODEX_PROMPT_14_切片能力包封装与打印软件集成执行指令.md
+docs/slice/DOC/DOC_DECISION_15_纹理纯白区按需补白与材料闭合修复专项.md
+docs/slice/DOC/DOC_PREP_15_纹理纯白区按需补白实施准备与依赖审查.md
+docs/slice/PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md
+docs/slice/DEV/DEV_15_纹理纯白区按需补白设计.md
+docs/slice/DEMO/DEMO_15_纹理纯白区按需补白验收方案.md
+docs/slice/REPORT/REPORT_15_纹理纯白区按需补白当前状态.md
+docs/codex_task/current/TASKS_15_纹理纯白区按需补白任务清单.md
+docs/codex_task/current/CODEX_PROMPT_15_纹理纯白区按需补白执行指令.md
+```
+
 12C 当前闭环文档：
 
 ```text
@@ -497,15 +530,18 @@ ai_workspace/context_handoff/2026-07-10_12B-R2到12C-R0阶段交接.md
 FORMAL PRD / DEV / ROADMAP = 当前总控
 TASKS_12D / TASKS_12E / TASKS_12F = 保留候选和历史执行入口
 TASKS_13 = 当前新增产品专项执行入口
+TASKS_15 = 当前已授权专项执行入口；下一原子任务 15D-03
 ```
 
 12B、12C、12D 已收口；12E-08D、09A、09B、09C、09D 已完成，Legacy 仍为默认，Global 仅显式候选。
 Stage 13 原 P0、13B-08、13D、13E、13G 已完成。`03D-LIBTIFF` 已完成 03D-01..07，最终
 `GO_OPTIONAL`，当前默认 TIFF Writer 仍为 handwritten，LibTIFF 4.7.1 为显式可选轨道。
 `12E-09D` 已完成生产纹理厚度、显式 all_texture、诊断隔离、单材料 W/V、Qt 控件和 Release/RIP
-矩阵；`12E-10A` 已完成生产 TIFF、09A 语义、W/S/V 和精确材料闭环报告的同层绑定，当前下一任务为
-`12E-10B`。12G-TCWS 已记录现有 RIP 的同包透明/白色和 `WSV=000` 白区信号事实，
+矩阵；`12E-10A..10D` 已完成同层绑定、真实模型矩阵、Release 性能/内存和最终文档封口。Stage 12E
+当前批准范围已完成。12G-TCWS 已记录现有 RIP 的同包透明/白色和 `WSV=000` 白区信号事实，
 但因其与固定物理通道语义冲突继续冻结，且不包含纹理铺底。12F 性能算法仍需逐项授权。
+Stage 14 已完成文档准备但未激活；Stage 15 已完成配置契约、Legacy 按需补 W、统计报告与
+15D-01/02/04 自动证据，当前处理 15D-03。候选 Profile 在 G7 前保持 disabled/diagnostic。
 
 03D TIFF Writer 专项入口：
 
