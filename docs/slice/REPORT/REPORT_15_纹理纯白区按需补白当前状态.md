@@ -1,6 +1,6 @@
 # REPORT_15 纹理纯白区按需补白当前状态
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.3 ｜ 更新：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.4 ｜ 更新：2026-08-04
 > 上游：`DOC_DECISION_15` / `PRD_15` / `DEV_15` / `DEMO_15`
 
 ---
@@ -41,7 +41,7 @@
 | 15A | 配置契约（3 字段 + 校验 + 枚举扩展） | ✅ 15A-01..04 完成 |
 | 15B | 合成器补白写入 + 统计 | 🟡 15B-01..03 完成；15B-04 待性能 fixture |
 | 15C | 切片前预检与错误信息业务化 | ⬜ 未开始 |
-| 15D | 验收与证据产出 | 🟡 15D-01、15D-02、15D-04 完成；15D-03 部分完成，15D-05 待工艺侧 |
+| 15D | 验收与证据产出 | 🟡 15D-01..04 完成；15D-05 待工艺侧实物打样 |
 | 15E | 交付收口 | ⬜ 未开始 |
 
 ## 4. 出口门进度
@@ -50,7 +50,7 @@
 |---|---|---|
 | G1 | 纯白模型切片 PASS | ✅ F-01 自动 Gate PASS；实物仍由 G7 单独约束 |
 | G2 | 纯策略/单层组合差异仅落在 W 且仅在命中像素；旧 Profile 负向不变 | ✅ R/G/B/S/V 差异数均为 0，W 差异 4；fail_closed 报 `E_MATERIAL_PROCESS_PROFILE_EMPTY_WHITE` |
-| G3 | 默认关闭零漂移 | 🟡 基线 golden SHA-256 PASS；quick CI 在既有 `support bridge report expected bridgedGaps` 处失败，尚未关闭 |
+| G3 | 默认关闭零漂移 | ✅ 28 个基线 golden SHA-256 一致；Quick CI PASS；统一 Gate 已自动关闭 |
 | G4 | 无纯白模型生产 TIFF SHA-256 等价 | ✅ F-02 manifest layer TIFF 逐层 SHA-256 等价，候选补白计数为 0 |
 | G5 | 项目内 RIP strict 通过、本仓库 RIP 零改动 | ✅ F-01 strict Reader PASS；本阶段未修改 RIP 源码 |
 | G6 | 切片前预检告警 | ⬜ |
@@ -81,11 +81,13 @@ F-04 补白像素：6671
 F-04 差异通道计数：R=0, G=0, B=0, W=4, S=0, V=0
 F-02 候选补白像素：0；新旧生产 TIFF 逐层 SHA-256 等价
 F-01 RIP strict Reader：PASS
-基线 golden 文件 SHA-256：PASS
-run_ci_quick：FAIL（既有 support bridge schema 断言缺少 bridgedGaps；非 Stage 15 差异）
+基线 golden 文件 SHA-256：PASS（28 / 28）
+sha256_baseline_before.txt / sha256_baseline_after.txt：逐行一致
+run_ci_quick：PASS
+统一 Gate（-VerifyZeroDrift）：PASS（G1/G2/G3/G4/G5）
 ```
 
-上述证据证明 Legacy 目标路径能够仅在命中纯白纹理像素时写 W，并保持两份报告的逐层/汇总一致；G1、G2、G4、G5 已由统一 Gate 自动关闭。G3 仍需先处理 quick CI 的既有 support bridge 失败，G7 仍只能由实物打样关闭。
+上述证据证明 Legacy 目标路径能够仅在命中纯白纹理像素时写 W，并保持两份报告的逐层/汇总一致；G1、G2、G3、G4、G5 已由统一 Gate 自动关闭。历史 Golden 与 Stage 10 输出契约使用运行时配置固定源姿态，避免产品自动定向和 Z 落台默认值改变测试坐标语义；生产 Profile 未被改写。G7 仍只能由实物打样关闭。
 
 ## 5. 关键事实索引
 
@@ -132,8 +134,8 @@ Stage 15 为 Stage 14「RIP 六问 Q2（白区语义）」追加一条显式不�
 
 ## 9. 当前下一任务
 
-1. `15D-03`：隔离并处理 quick CI 的既有 support bridge schema 失败，关闭 G3。
-2. `15B-04`：基于已就绪的 F-03/F-04 执行同构 Release 性能基线。
-3. `15C-01` / `15C-03`：实现异步纯白预检与既有错误信息的业务解释。
+1. `15B-04`：基于已就绪的 F-03/F-04 执行同构 Release 性能基线。
+2. `15C-01` / `15C-03`：实现异步纯白预检与既有错误信息的业务解释。
+3. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
 
 G7 通过前，候选 Profile 必须继续保持 `enabled: false` / `productionSafety: diagnostic`。

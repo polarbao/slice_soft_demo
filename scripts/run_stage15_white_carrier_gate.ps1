@@ -5,6 +5,7 @@ param(
     [string]$OutputRoot = "output/benchmarks/stage15",
     [switch]$SkipBuild,
     [switch]$PreparationOnly,
+    [switch]$VerifyZeroDrift,
     [ValidateSet("pending", "passed", "failed")]
     [string]$PhysicalProof = "pending"
 )
@@ -366,6 +367,13 @@ $summary = [ordered]@{
         warmupRuns = 1
         p50 = $null
     }
+    zeroDrift = [ordered]@{
+        requested = [bool]$VerifyZeroDrift
+        status = if ($VerifyZeroDrift) { "pending" } else { "not_run" }
+        goldenFileCount = 0
+        quickCiExitCode = $null
+        quickCiLog = $null
+    }
     physicalProof = $PhysicalProof
 }
 
@@ -391,6 +399,79 @@ $logRoot = Join-Path $resolvedOutputRoot "logs"
 New-Item -ItemType Directory -Force -Path $configRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+
+if ($VerifyZeroDrift)
+{
+    $baselineIdentity = Read-Json $baselineIdentityPath
+    $baselineGolden = @(
+        $baselineIdentity.inputs |
+            Where-Object {
+                ([string]$_.path).Replace('\', '/').StartsWith(
+                    "tests/golden/expected/",
+                    [System.StringComparison]::OrdinalIgnoreCase)
+            } |
+            Sort-Object path
+    )
+    Assert-True ($baselineGolden.Count -gt 0) `
+        "15A-01 基线未包含 golden SHA-256"
+
+    $beforeLines = [System.Collections.Generic.List[string]]::new()
+    $afterLines = [System.Collections.Generic.List[string]]::new()
+    foreach ($entry in $baselineGolden)
+    {
+        $relativePath = ([string]$entry.path).Replace('\', '/')
+        $resolvedPath = Resolve-RepositoryPath $repoRoot $relativePath
+        Assert-True (Test-Path -LiteralPath $resolvedPath) `
+            "golden 文件不存在：$relativePath"
+        $actualHash = (Get-FileHash `
+                -Algorithm SHA256 `
+                -LiteralPath $resolvedPath).Hash.ToLowerInvariant()
+        $expectedHash = ([string]$entry.sha256).ToLowerInvariant()
+        $beforeLines.Add("$expectedHash  $relativePath")
+        $afterLines.Add("$actualHash  $relativePath")
+        Assert-True ($actualHash -eq $expectedHash) `
+            "G3 golden SHA-256 漂移：$relativePath"
+    }
+
+    $beforePath = Join-Path $resolvedOutputRoot "sha256_baseline_before.txt"
+    $afterPath = Join-Path $resolvedOutputRoot "sha256_baseline_after.txt"
+    [System.IO.File]::WriteAllLines(
+        $beforePath,
+        $beforeLines,
+        [System.Text.UTF8Encoding]::new($false))
+    [System.IO.File]::WriteAllLines(
+        $afterPath,
+        $afterLines,
+        [System.Text.UTF8Encoding]::new($false))
+
+    $quickCiLog = Join-Path $logRoot "quick_ci_zero_drift.log"
+    Push-Location $repoRoot
+    try
+    {
+        $quickCiResult = Invoke-CapturedTool `
+            -Executable (Join-Path $PSHOME "powershell.exe") `
+            -Arguments @(
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                (Join-Path $repoRoot "scripts/run_ci_quick.ps1")) `
+            -LogPath $quickCiLog
+    }
+    finally
+    {
+        Pop-Location
+    }
+    Assert-True ($quickCiResult.exitCode -eq 0) `
+        "G3 Quick CI 失败，日志：$quickCiLog"
+
+    $summary.gates.G3 = "passed"
+    $summary.zeroDrift.status = "passed"
+    $summary.zeroDrift.goldenFileCount = $baselineGolden.Count
+    $summary.zeroDrift.quickCiExitCode = $quickCiResult.exitCode
+    $summary.zeroDrift.quickCiLog = `
+        $quickCiLog.Substring($repoRoot.Length + 1).Replace('\', '/')
+}
 
 $pixelDiffPath = Join-Path $resolvedOutputRoot "pixel_diff_F04.csv"
 $policyResult = Invoke-CapturedTool `
@@ -576,5 +657,6 @@ $summary.evidence = [ordered]@{
 }
 Write-Json $summaryPath $summary
 
-Write-Host "Stage 15 automatic white-carrier Gate PASS (G1/G2/G4/G5)."
+$passedGates = if ($VerifyZeroDrift) { "G1/G2/G3/G4/G5" } else { "G1/G2/G4/G5" }
+Write-Host "Stage 15 automatic white-carrier Gate PASS ($passedGates)."
 Write-Host "Summary: $summaryPath"

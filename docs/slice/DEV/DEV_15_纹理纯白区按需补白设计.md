@@ -291,7 +291,7 @@ I15-05 是 G2 的直接证据，必须产出可复核的差异清单而非仅断
 
 ## 6. 基线与回滚
 
-15A-01 的第一步、且必须早于任何 Stage 15 代码编辑：记录 HEAD、`git status --short`、构建轨道、编译器/配置、Profile/fixture 哈希和既有 golden TIFF 哈希。若工作树包含非 Stage 15 代码改动，先提交或隔离；不得以脏工作树作为模糊基线。15D-03 复用该 before 证据并生成 after 清单。
+15A-01 的第一步、且必须早于任何 Stage 15 代码编辑：记录 HEAD、`git status --short`、构建轨道、编译器/配置、Profile/fixture 哈希和既有 golden TIFF 哈希。若工作树包含非 Stage 15 代码改动，先提交或隔离；不得以脏工作树作为模糊基线。15D-03 复用该 before 证据并生成 after 清单。历史 Golden 与 Stage 10 输出契约必须通过 `output/golden_runtime_configs` 下的运行时副本显式关闭自动定向，以固定合成资产源姿态；禁止为通过测试而修改生产 Profile 或 golden 期望值。
 
 回滚只需移除新配置字段、策略模块、Legacy 调用、报告新增字段和 UI 预检服务；旧 Profile、协议、Writer、Reader 与 Global 路径均不修改。
 
@@ -303,7 +303,8 @@ Stage 15 新增单一 Release Gate，统一调用单测、fixture、场景切片
 .\scripts\run_stage15_white_carrier_gate.ps1 `
   -BuildDir build-slicesoft/main `
   -Config Release `
-  -OutputRoot output/benchmarks/stage15
+  -OutputRoot output/benchmarks/stage15 `
+  -VerifyZeroDrift
 ```
 
-脚本输出 `stage15_white_carrier_summary.json`，至少包含构建身份、fixture/Profile 哈希、G1..G6 状态、TIFF SHA-256、通道差异计数、Reader 结果和 p50 性能数据。G7 实物证据不由脚本伪造，只在 summary 中记录 `physicalProof=pending|passed|failed`。
+脚本输出 `stage15_white_carrier_summary.json`，至少包含构建身份、fixture/Profile 哈希、G1..G6 状态、TIFF SHA-256、通道差异计数、Reader 结果和 p50 性能数据。`-VerifyZeroDrift` 负责 G3 的 golden 哈希与 Quick CI 硬门；G7 实物证据不由脚本伪造，只在 summary 中记录 `physicalProof=pending|passed|failed`。

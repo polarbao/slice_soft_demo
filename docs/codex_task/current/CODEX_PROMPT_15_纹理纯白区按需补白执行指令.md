@@ -225,7 +225,8 @@ Stage 15 只改 Legacy 新 Profile。Global Surface Shell 已有精确白写 W �
 .\scripts\run_stage15_white_carrier_gate.ps1 `
   -BuildDir build-slicesoft/main `
   -Config Release `
-  -OutputRoot output/benchmarks/stage15
+  -OutputRoot output/benchmarks/stage15 `
+  -VerifyZeroDrift
 ```
 
 完整任务卡见 `docs/codex_task/current/TASKS_15_纹理纯白区按需补白任务清单.md`。

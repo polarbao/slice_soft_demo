@@ -1,6 +1,6 @@
 # TASKS_15 纹理纯白区按需补白任务清单
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.3 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.4 ｜ 日期：2026-08-04
 > 上游：`DOC_DECISION_15` / `PRD_15` / `DEV_15` / `DEMO_15`
 > 优先级：**高于 Stage 14**（14 为集成工程；15 阻断实际生产使用）
 
@@ -43,7 +43,7 @@
 | 15C-01..03 | ⬜ PENDING | 准备工作已完成，可进入开发 |
 | 15D-01 | ✅ COMPLETE | F-01..F-05 manifest、F-03/F-04 合成资产和统一 Gate 骨架已落地 |
 | 15D-02 | ✅ COMPLETE | `pixel_diff_F04.csv` 仅 W 有差异；F-02 新旧 TIFF SHA-256 等价 |
-| 15D-03 | 🟡 PARTIAL | 基线 golden SHA-256 未漂移；quick CI 被既有 support bridge schema 失败阻断 |
+| 15D-03 | ✅ COMPLETE | 28 个 golden SHA-256 零漂移；历史 Fixture 固定源姿态后 Quick CI PASS；统一 Gate 关闭 G3 |
 | 15D-04 | ✅ COMPLETE | F-01 新包经项目内 `rip_reader_test --quiet` strict 读取通过，RIP 源码零改动 |
 | 15D-05 | ⬜ PENDING | 等待工艺侧实物打样；继续阻断 Profile 启用 |
 | 15E-01..03 | ⬜ PENDING | 等待对应出口门 |
@@ -144,7 +144,7 @@
 - **依赖**：15B-01
 
 ### 15D-03 零漂移回归
-- **内容**：复用 15A-01 在代码修改前产出的 `baseline_identity.json` 与 golden before SHA-256；实现后重跑并产出 after 清单。G4 只比较 manifest layer list 指向的 TIFF，不比较 Profile/报告元数据
+- **内容**：复用 15A-01 在代码修改前产出的 `baseline_identity.json` 与 golden before SHA-256；实现后重跑并产出 after 清单。历史 Golden/Stage 10 Fixture 通过运行时配置显式关闭自动定向，固定源姿态且不修改生产 Profile。G4 只比较 manifest layer list 指向的 TIFF，不比较 Profile/报告元数据
 - **出口**：**G3 硬门** —— 逐字节相同；`run_ci_quick.ps1` 不新增红项
 - **依赖**：15B-01
 

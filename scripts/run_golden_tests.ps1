@@ -17,9 +17,39 @@ function Run-Slicer([string]$Config) {
   }
 }
 
+function Write-GoldenRunConfig($Case) {
+  $sourceConfig = [System.IO.Path]::GetFullPath($Case.config)
+  $config = Read-Json $sourceConfig
+  $modelPath = [string]$config.input.modelPath
+
+  if (-not [System.IO.Path]::IsPathRooted($modelPath)) {
+    if ($modelPath.StartsWith(".")) {
+      $modelPath = [System.IO.Path]::GetFullPath(
+        (Join-Path (Split-Path -Parent $sourceConfig) $modelPath))
+    } else {
+      $modelPath = [System.IO.Path]::GetFullPath($modelPath)
+    }
+  }
+  $config.input.modelPath = $modelPath
+
+  if ($null -eq $config.autoOrient) {
+    $config | Add-Member -NotePropertyName autoOrient -NotePropertyValue ([pscustomobject]@{})
+  }
+  $config.autoOrient.enabled = $false
+
+  $runtimeRoot = [System.IO.Path]::GetFullPath("output/golden_runtime_configs")
+  New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
+  $runtimeConfig = Join-Path $runtimeRoot "$($Case.name).json"
+  [System.IO.File]::WriteAllText(
+    $runtimeConfig,
+    ($config | ConvertTo-Json -Depth 100),
+    [System.Text.UTF8Encoding]::new($false))
+  return $runtimeConfig
+}
+
 function Check-Golden($Case) {
   Write-Host "== golden $($Case.name)"
-  Run-Slicer $Case.config
+  Run-Slicer (Write-GoldenRunConfig $Case)
 
   $manifest = Read-Json (Join-Path $Case.package "manifest.json")
   $slice = Read-Json (Join-Path $Case.package "reports/slice_report.json")

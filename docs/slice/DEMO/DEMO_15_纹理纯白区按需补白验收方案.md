@@ -1,6 +1,6 @@
 # DEMO_15 纹理纯白区按需补白验收方案
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.2 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.3 ｜ 日期：2026-08-04
 > 上游：`PRD_15` / `DEV_15` / `DOC_DECISION_15`
 
 ---
@@ -56,7 +56,7 @@ C-03 对应原始 `pixel=38085` 故障语义，但不把一次历史运行中的
 | ID | 步骤 | 期望 |
 |---|---|---|
 | C-08 | F-05 全集在 Stage 15 构建上重跑 | 所有 TIFF SHA-256 与基线**逐字节相同** |
-| C-09 | `run_ci_quick.ps1` | 与 Stage 15 前同等结果（已知红基线不新增） |
+| C-09 | `run_ci_quick.ps1` | PASS；历史 Fixture 使用运行时副本固定源姿态，不受产品自动定向默认值影响 |
 | C-10 | 旧 Profile 显式配置未出现新字段 | 解析后 policy 为 `fail_closed` |
 
 ### 3.4 G4 · 无纯白模型等价
@@ -150,10 +150,11 @@ C-27 是对"阈值 0 即充分"这一核心论断的直接验证。
 .\scripts\run_stage15_white_carrier_gate.ps1 `
   -BuildDir build-slicesoft/main `
   -Config Release `
-  -OutputRoot output/benchmarks/stage15
+  -OutputRoot output/benchmarks/stage15 `
+  -VerifyZeroDrift
 ```
 
-该脚本由 15D-01/02 落地。实现前命令尚不存在，准备阶段不得宣称已执行。
+`-VerifyZeroDrift` 会校验 15A-01 冻结的 golden SHA-256，生成 before/after 清单并执行 Quick CI；缺少该参数时 G3 保持 `pending`。
 
 ## 6. 判定
 

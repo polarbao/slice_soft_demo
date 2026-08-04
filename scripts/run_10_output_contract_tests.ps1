@@ -55,6 +55,36 @@ function Read-Json([string]$Path) {
   return Get-Content -Raw $Path | ConvertFrom-Json
 }
 
+function Write-ContractRunConfig($Case) {
+  $sourceConfig = [System.IO.Path]::GetFullPath($Case.config)
+  $config = Read-Json $sourceConfig
+  $modelPath = [string]$config.input.modelPath
+
+  if (-not [System.IO.Path]::IsPathRooted($modelPath)) {
+    if ($modelPath.StartsWith(".")) {
+      $modelPath = [System.IO.Path]::GetFullPath(
+        (Join-Path (Split-Path -Parent $sourceConfig) $modelPath))
+    } else {
+      $modelPath = [System.IO.Path]::GetFullPath($modelPath)
+    }
+  }
+  $config.input.modelPath = $modelPath
+
+  if ($null -eq $config.autoOrient) {
+    $config | Add-Member -NotePropertyName autoOrient -NotePropertyValue ([pscustomobject]@{})
+  }
+  $config.autoOrient.enabled = $false
+
+  $runtimeRoot = [System.IO.Path]::GetFullPath("output/golden_runtime_configs/stage10")
+  New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
+  $runtimeConfig = Join-Path $runtimeRoot "$($Case.id).json"
+  [System.IO.File]::WriteAllText(
+    $runtimeConfig,
+    ($config | ConvertTo-Json -Depth 100),
+    [System.Text.UTF8Encoding]::new($false))
+  return $runtimeConfig
+}
+
 function Invoke-External([string]$Name, [string]$Exe, [string[]]$Arguments) {
   & $Exe @Arguments
   if ($LASTEXITCODE -ne 0) {
@@ -219,7 +249,8 @@ function Assert-MaterialPolicy($Package, $Expected, [string]$CaseId) {
 
 function Assert-Case($Case, $Contract, [string]$SlicerExe, [string]$RipExe) {
   Write-Host "== stage10 output contract $($Case.id)"
-  Invoke-External "slicer $($Case.id)" $SlicerExe @("--config", $Case.config)
+  $runtimeConfig = Write-ContractRunConfig $Case
+  Invoke-External "slicer $($Case.id)" $SlicerExe @("--config", $runtimeConfig)
 
   $package = $Case.package
   Invoke-External "rip_reader $($Case.id)" $RipExe @("--package", $package, "--quiet")
