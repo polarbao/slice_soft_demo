@@ -1,6 +1,6 @@
 # DEMO_15 纹理纯白区按需补白验收方案
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.4 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**COMPLETE / PRODUCTION ENABLED** ｜ 版本：v1.5 ｜ 日期：2026-08-04
 > 上游：`PRD_15` / `DEV_15` / `DOC_DECISION_15`
 
 ---
@@ -163,3 +163,7 @@ F-03/F-04 是微型语义 fixture。性能 Gate 对两种策略同时采用 2400
 
 **全部 G1–G8 通过方可关闭 Stage 15。** G7 未完成时，阶段状态最高只能标记为
 `INTERNAL COMPLETE / PHYSICAL PROOF PENDING`，且 Profile 保持 `enabled: false`。
+
+2026-08-04 收口记录：软件侧 Gate、零漂移、性能、Reader 与 UI 验证通过；用户在取得
+F-01 候选包和白墨填充对照包后明确授权完成 15E-02。本仓库据此记录 G7 放行并启用
+Profile，但 Agent 未直接操作或观察打印设备，仓库未附打样照片；该边界必须随状态结论保留。

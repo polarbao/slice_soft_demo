@@ -1,10 +1,10 @@
 # TASKS 12/13/14/15 后续开发计划总览清单
 
 > 文档状态：CURRENT CROSS-STAGE EXECUTION DASHBOARD
-> 版本：v3.9
+> 版本：v4.0
 > 更新日期：2026-08-04
 > 当前代码阶段：STAGE 12E COMPLETE；13G-00..07 COMPLETE；03D-01..07 COMPLETE / GO_OPTIONAL
-> 当前推荐任务：Stage 15 已完成 17/19；等待工艺侧 15D-05/G7，之后执行 15E-02
+> 当前推荐任务：Stage 15 已完成 19/19；Stage 14 保持 PREPARED，等待独立授权与外部输入
 > 后续顺序：Stage 15 优先于 Stage 14；13F-R1-01..05 与 12F 保持独立准备
 
 ## 1. 文档职责
@@ -61,7 +61,7 @@
 | 13E 自动定向与诊断工作流 | 13E-01..05 COMPLETE / FUNCTIONAL PASS | 0 | 保持甲片 +Z 正面、9 mm 默认和右侧诊断回归 |
 | 13G 支撑投影铺底与层间连续性 | 00..07 COMPLETE / FUNCTIONAL PASS | 0 | 保持 front-up、0..29 铺底和 RIP 回归 |
 | Stage 14 能力包集成 | PREPARED / NOT ACTIVE | 任务齐备 | 等 Stage 15 与外部 RIP/打印软件输入 |
-| Stage 15 纯白纹理按需补 W | ACTIVE / 17 COMPLETE | 2 | 等待 15D-05/G7；通过后执行 15E-02 |
+| Stage 15 纯白纹理按需补 W | COMPLETE / 19 COMPLETE | 0 | 保持回归；按需补白 Profile 已为 production |
 
 计数口径：
 
@@ -73,7 +73,7 @@ Stage 13 近程 P0：17 个；
 13B-08/13D 共 8 个插入任务均已完成；13E 新增 5 个插入任务并已完成；
 Stage 13 中长期 13A-R2、13A-R3、13B-R4 为未拆分 Epic，不计入待执行原子任务；
 12G-TCWS 已冻结，不计入激活任务；现有 RIP 白区事实只作为评审输入。
-Stage 15 共 19 张任务卡，当前完成 17；剩余 15D-05 与 15E-02，外部 G7 阻断 Profile 启用。
+Stage 15 共 19 张任务卡，当前完成 19；Profile 已启用，外部 RIP 与 12G 继续按独立边界处理。
 ```
 
 ## 4. 固定执行顺序
@@ -280,7 +280,7 @@ PLANNED/PREPARED -> READY -> IN PROGRESS -> COMPLETE；
 CURRENT：STAGE 12E COMPLETE / 03D-01..07 GO_OPTIONAL / 12E-09D-01..06 COMPLETE；
 COMPLETE：13A-01..05、13B-01..07、13B-04A、12E-09A-01..06；
 M13-1：CANDIDATE PASS；
-NEXT：Stage 15 等待工艺侧执行 15D-05/G7；通过后执行 15E-02；
+NEXT：Stage 15 已收口；Stage 14 保持 PREPARED，等待独立授权和外部集成输入；
 AFTER_STAGE15：Stage 14 仍需按外部输入和独立授权进入；
 AFTER：保持 Legacy 默认、Global 显式候选和 Stage 12E 回归；
 FROZEN：12G-TCWS 仅保留 RIP 白区合同评审，不实现；

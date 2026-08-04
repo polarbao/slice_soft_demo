@@ -55,12 +55,12 @@
         "internal_void_support",
         "no_varnish"
       ],
-      "productionSafety": "diagnostic",
+      "productionSafety": "production",
       "docPath": "docs/slice/PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md",
       "configPath": "samples/configs/material_process/obj_mtl_texture_rgb_white_ondemand.json",
       "packageDir": "output/ProfileTexturedNailRgbWhiteOnDemandLowerSupport",
-      "description": "候选能力：在「全实体 RGB」基础上，对 black_is_print 下无法表达的纯白纹理像素在同层同像素按需补写白墨 W；不写 S/V、不新增 Z 层。G7 实物 Gate 通过前保持禁用。",
-      "enabled": false,
+      "description": "生产能力：在「全实体 RGB」基础上，对 black_is_print 下无法表达的纯白纹理像素在同层同像素按需补写白墨 W；不写 S/V、不新增 Z 层。",
+      "enabled": true,
       "ripSummary": true
     },
     {

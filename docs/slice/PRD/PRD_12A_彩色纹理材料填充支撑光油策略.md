@@ -434,8 +434,11 @@ docs/slice/DEV/DEV_12E_全局纹理壳层与模型填充分区设计.md
 2. 不写 S/V，不新增 Z 层，不修改支撑或光油优先级；
 3. 不把所有模型内部统一改写为白墨，只处理命中的严格纯白纹理像素；
 4. fail_closed 仍是默认行为，旧全实体 RGB Profile 保持兼容基线；
-5. 候选 Profile 在实物 G7 通过前保持 disabled/diagnostic，不属于已放行生产工艺。
+5. Profile 只有在实物 G7 通过后才允许从 disabled/diagnostic 翻转为 enabled/production。
 ```
+
+当前状态：Stage 15 已于 2026-08-04 完成放行，按需补白 Profile 已注册为生产入口；上述
+第 5 条继续作为后续同类 Profile 的准入规则。
 
 正式入口：
 

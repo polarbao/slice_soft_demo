@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v5.2
+> 版本：v5.3
 > 更新日期：2026-08-04
 > 当前生产主线：STAGE 12E COMPLETE
-> 当前下一任务：Stage 15 已完成 17/19；等待工艺侧执行 15D-05/G7，之后方可执行 15E-02
+> 当前下一任务：Stage 15 已完成 19/19；Stage 14 保持 PREPARED，等待外部输入与独立授权
 
 ## 1. 使用规则
 
@@ -62,7 +62,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 已记录同一全 RGB package 由 RIP 生成透明/白色，以及白区 `WSV=000` 私有信号；完成三种策略比对 | `WSV=000` 与 black_is_print 物理语义冲突；等待 RIP 合同决策，不做纹理铺底 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E、13E-R1-01、13F-R0、13G COMPLETE | 多模型场景、TIFF 原生统一预览、Qt 工作台、甲片平面/Z 正反面、Reality 支撑连续性和 30 层最大投影铺底 | 13F-R1-01..05 性能可观测性 |
 | Stage 14 | PREPARED / NOT ACTIVE | 能力包封装、打印软件集成边界与 RIP 确认清单齐备 | 优先等待 Stage 15；外部 RIP/打印软件输入仍需确认 |
-| Stage 15 | ACTIVE / 17 OF 19 IMPLEMENTED | 15A、15B、15C、15D-01..04、15E-01/03 完成；G1..G6、零漂移与性能门通过 | 工艺侧完成 15D-05/G7 后方可执行 15E-02 |
+| Stage 15 | COMPLETE / 19 OF 19 | 按需补 W、预检、报告、自动 Gate、放行记录与 production Profile 全部收口 | 保持回归；外部 RIP 与 12G 不在本阶段 |
 
 ### 2.1 Stage 12 目的图
 
@@ -93,7 +93,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13C、13D、13E、13E-R1-01、13F-R0、13F-R1-06、13G COMPLETE | 13G 保持回归；13F-R1-01..05 保持独立 |
 | Stage 14 | PREPARED / NOT ACTIVE | 等待 Stage 15 和外部集成输入 |
-| Stage 15 | ACTIVE / 17 COMPLETE / 2 PENDING | 15D-05 等待工艺侧，15E-02 被 G7 阻断；无可继续的软件原子任务 |
+| Stage 15 | COMPLETE / 19 COMPLETE / 0 PENDING | 保持回归；Stage 14 需独立授权进入 |
 
 ### 2.3 剩余任务数量
 

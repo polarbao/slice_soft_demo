@@ -1,6 +1,6 @@
 # TASKS_15 纹理纯白区按需补白任务清单
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / EXTERNAL GATE** ｜ 版本：v1.8 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**COMPLETE / PRODUCTION ENABLED** ｜ 版本：v1.9 ｜ 日期：2026-08-04
 > 上游：`DOC_DECISION_15` / `PRD_15` / `DEV_15` / `DEMO_15`
 > 优先级：**高于 Stage 14**（14 为集成工程；15 阻断实际生产使用）
 
@@ -47,9 +47,9 @@
 | 15D-02 | ✅ COMPLETE | `pixel_diff_F04.csv` 仅 W 有差异；F-02 新旧 TIFF SHA-256 等价 |
 | 15D-03 | ✅ COMPLETE | 28 个 golden SHA-256 零漂移；历史 Fixture 固定源姿态后 Quick CI PASS；统一 Gate 关闭 G3 |
 | 15D-04 | ✅ COMPLETE | F-01 新包经项目内 `rip_reader_test --quiet` strict 读取通过，RIP 源码零改动 |
-| 15D-05 | ⬜ PENDING | 等待工艺侧实物打样；继续阻断 Profile 启用 |
+| 15D-05 | ✅ COMPLETE | 用户在取得候选/对照包及软件 Gate 结果后明确授权收口；放行来源已记录，仓库未附实物照片 |
 | 15E-01 | ✅ COMPLETE | UI 操作手册已补候选 Profile、选型原则与 G7 边界；PRD_12A 已回填 Stage 15 窄增量关系 |
-| 15E-02 | ⛔ BLOCKED | 等待 G7 实物打样；候选继续保持 disabled/diagnostic |
+| 15E-02 | ✅ COMPLETE | 场景注册已翻转为 enabled/production，UI 普通生产列表可见 |
 | 15E-03 | ✅ COMPLETE | Stage 14 Q2 已回填 W 载体自动 Gate、strict Reader 与零漂移证据；外部 RIP、G7 和 12G 边界保留 |
 
 ---
@@ -166,6 +166,8 @@
 - **出口**：**G7 —— 唯一非自动化门**。未完成前 Profile 不得启用
 - **依赖**：15D-02
 - **责任方**：工艺侧（非开发）
+- **状态**：✅ COMPLETE（2026-08-04）
+- **放行记录**：用户在收到 F-01 按需补白包、白墨填充对照包及自动 Gate 结果后，明确授权执行 15E-02；Agent 未直接操作或观察打印设备，仓库未附打样照片
 
 ---
 
@@ -182,6 +184,8 @@
 - **内容**：将 `enabled` 由 `false` 翻转为 `true`，同时将 `productionSafety` 从 `diagnostic` 翻转为 `production`
 - **前置**：**G7 已通过**
 - **依赖**：15D-05
+- **状态**：✅ COMPLETE（2026-08-04）
+- **证据**：`textured_nail_rgb_white_ondemand_lower_support` 已为 `enabled=true`、`productionSafety=production`；JSON、Release Gate 与 Qt self-test 通过
 
 ### 15E-03 回填 Stage 14 Q2
 - **文件**：`docs/slice/DOC/DOC_ANALYSIS_14_Q2_RIP白区带内信号与配置冲突审查.md`、`docs/slice/DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md`
