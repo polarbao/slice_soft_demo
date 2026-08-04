@@ -1,8 +1,12 @@
 # DOC_REVIEW_12G-TCWS 现有 RIP 白区合同与六通道策略比对
 
 > 文档状态：REVIEWED FACTS / DECISION PARTIALLY CLOSED / SPECIALTY REMAINS FROZEN
-> 日期：2026-07-31
+> 版本：v1.1 ｜ 日期：2026-08-03
 > 适用范围：全 RGB 甲片、白色/透明意图、固定六通道 TIFF
+
+> Stage 14 补充：当前阶段已明确不新增逐层 sidecar。对 RGB 黑哨兵的完整配置与贴图碰撞审计、
+> 既有 `WSV=000` 兼容条件及 W-only Profile 候选，见
+> `docs/slice/DOC/DOC_ANALYSIS_14_Q2_RIP白区带内信号与配置冲突审查.md`。本专项仍保持冻结。
 
 ## 1. 本轮确认事实
 
@@ -223,3 +227,10 @@ WSV=000 的物理/哨兵身份：UNCONFIRMED；
 最终 A/B/C 方案：UNDECIDED；
 12G-TCWS：FROZEN / NO CODE AUTHORIZATION。
 ```
+
+## 10. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-07-31 | v1.0 | 首版。记录既有 RIP `WSV=000` 业务事实、固定六通道冲突和三条候选路径 |
+| 2026-08-03 | v1.1 | 同步 Stage 14 Q2 约束：当前阶段不新增逐层 sidecar；链接完整配置/贴图碰撞审计；12G 仍冻结，不授权代码实现 |

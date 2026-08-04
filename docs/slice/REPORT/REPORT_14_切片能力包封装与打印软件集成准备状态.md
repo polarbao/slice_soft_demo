@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：**DOCUMENT PREPARED / IMPLEMENTATION NOT STARTED**
-> 版本：v1.0 ｜ 更新日期：2026-08-03
+> 版本：v1.1 ｜ 更新日期：2026-08-03
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 
 ---
@@ -23,7 +23,7 @@ CURRENT_NEXT_TASK    = 待用户授权后为 14B-06 或 14A-01
 | 需求 | `docs/slice/PRD/PRD_14_…` | ✅ v1.0 |
 | 设计 | `docs/slice/DEV/DEV_14_…` | ✅ v1.0 |
 | 验收 | `docs/slice/DEMO/DEMO_14_…` | ✅ v1.0 |
-| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v1.0 |
+| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v1.1 |
 | 任务 | `docs/codex_task/current/TASKS_14_…` | ✅ v1.0 |
 | 执行指令 | `docs/codex_task/current/CODEX_PROMPT_14_…` | ✅ v1.0 |
 | 分析底稿 | `docs/claude/INTEGRATION/INT_06..17` | ✅ |
@@ -49,7 +49,7 @@ slicer_module* / .def       全仓库零命中
 |---|---|---|---|
 | D-1 | 优先级插入方案 | **乙 并行插入**（12E-09D 走既有序列，14A/14B/14C 并行）| 2026-08-03 |
 | D-2 | TIFF 字对齐缺陷处置 | **切 LibTIFF 为默认后端**（仍需 G-3 独立 Gate 与授权）| 2026-08-03 |
-| D-3 | 白区语义传递 | **否决带内哨兵**（`0/0/0/255/255/255` 与 5 份样例配置正常输出逐字节相同）；推荐语义 sidecar | 2026-08-03 |
+| D-3 | 白区语义传递 | 当前阶段不新增 sidecar；未转义 RGB 黑哨兵 **NO-GO**（59 份直接配置 / 32 份黑 fallback / 15 张含可见纯黑贴图）。**v1.2 更新：代码级核实 `W/S/V=0/0/0` 在 composer 中结构性不可达（S 通道仅 3 处写入且与 W/V 互斥），故路径 A「保留既有 WSV=000」上调为推荐**，配套 Writer 断言 + manifest 显式声明；见 `DOC_ANALYSIS_14_Q2` §2.1 | 2026-08-03 |
 | D-4 | Worker 定位 | **可独立迭代替换的切片引擎**；core 拆 base/engine；切片只在 Worker | 2026-08-03 |
 
 ## 5. 未决项
@@ -57,7 +57,7 @@ slicer_module* / .def       全仓库零命中
 | 编号 | 事项 | 需谁答 | 阻塞 |
 |---|---|---|---|
 | OPEN-14-03 | W/S/V 墨滴量化归属 | **RIP 侧** | 🔴 14F |
-| OPEN-14-04 | 白区语义传递方式（sidecar 是否可行）| **RIP 侧 + 产品** | 🔴 14F |
+| OPEN-14-04 | 既有 WSV=000 的拦截/物化证据，或 W-only + RIP Profile 映射是否可行 | **RIP 侧 + 产品** | 🔴 14F |
 | OPEN-14-05 | PackBits 压缩是否被目标 RIP 支持 | **RIP 侧** | 03E-02 转 GO |
 | OPEN-14-06 | 三个必需 OBJ 处置 | **产品** | 真实模型 E2E（可用 7 个 strict-PASS 资产解耦）|
 | OPEN-14-07 | 白色语义类型（opaque / knockout）定义者 | **产品** | 长期 |
@@ -103,3 +103,4 @@ slicer_module* / .def       全仓库零命中
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版。文档齐备度 8/8、实现量 0；记录 D-1..D-4 四项裁定与 OPEN-14-03..08 六项未决；列出可立即启动的七卡（8–12 人日）|
+| 2026-08-03 | v1.1 | 同步 Q2 深度审查：撤回当前阶段 sidecar 推荐；记录完整配置/贴图碰撞范围；将 OPEN-14-04 改为确认既有 WSV=000 或 W-only Profile 六通道路径 |
