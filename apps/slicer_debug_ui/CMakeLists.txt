@@ -53,6 +53,8 @@ add_executable(slicer_debug_ui
     services/ToolPaths.h
     services/TiffLayerLoadWorker.cpp
     services/TiffLayerLoadWorker.h
+    services/TextureWhitePreflightService.cpp
+    services/TextureWhitePreflightService.h
     services/TransformedModelPreflightLoader.cpp
     services/TransformedModelPreflightLoader.h
     services/WorkspaceLayoutState.cpp
@@ -187,6 +189,36 @@ target_link_libraries(production_effective_config_unit_tests PRIVATE
 add_test(
     NAME production_effective_config_unit_tests
     COMMAND production_effective_config_unit_tests
+)
+
+add_executable(texture_white_preflight_service_unit_tests
+    services/TextureWhitePreflightService.cpp
+    services/TextureWhitePreflightService.h
+    ../../tests/unit/texture_white_preflight_service/Main.cpp
+)
+
+set_target_properties(
+    texture_white_preflight_service_unit_tests
+    PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(
+    texture_white_preflight_service_unit_tests
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/services
+)
+
+target_link_libraries(
+    texture_white_preflight_service_unit_tests
+    PRIVATE
+    Qt5::Core
+    Qt5::Gui
+)
+
+add_test(
+    NAME texture_white_preflight_service_unit_tests
+    COMMAND texture_white_preflight_service_unit_tests
 )
 
 add_executable(production_texture_settings_contract_unit_tests
@@ -423,6 +455,12 @@ if(MSVC)
         /MP
     )
     target_compile_options(
+        texture_white_preflight_service_unit_tests
+        PRIVATE
+        /utf-8
+        /MP
+    )
+    target_compile_options(
         production_texture_settings_contract_unit_tests
         PRIVATE
         /utf-8
@@ -482,6 +520,11 @@ if(MSVC)
             ${qt515MsvcCompatibilityHeader}
         )
         target_sources(
+            texture_white_preflight_service_unit_tests
+            PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_sources(
             production_texture_settings_contract_unit_tests
             PRIVATE
             ${qt515MsvcCompatibilityHeader}
@@ -526,6 +569,11 @@ if(MSVC)
         )
         target_compile_options(
             production_effective_config_unit_tests
+            PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+        target_compile_options(
+            texture_white_preflight_service_unit_tests
             PRIVATE
             "/FI${qt515MsvcCompatibilityHeader}"
         )
