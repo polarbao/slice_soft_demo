@@ -59,6 +59,15 @@ bool Gray254IsSelectedAtThresholdOne()
         "254 gray must be selected at threshold one");
 }
 
+bool ResolvedPolicyPredicateMatchesThePublicPolicyPath()
+{
+    const std::array<std::uint8_t, 3> rgb{254U, 254U, 254U};
+    return ExpectTrue(
+        slicer_core::IsUnprintableWhiteTexel(1U, rgb)
+            == slicer_core::IsUnprintableWhiteTexel("white_underbase", 1U, rgb),
+        "resolved policy predicate must match the public policy path");
+}
+
 bool ApplicationCanOnlyMutateTheWhiteChannel()
 {
     std::array<std::uint8_t, 6> rgbwsv{
@@ -129,6 +138,7 @@ int main(const int argc, const char* const argv[])
         || !ExactWhiteIsSelectedAtZeroThreshold()
         || !OffWhiteIsRejectedAtZeroThreshold()
         || !Gray254IsSelectedAtThresholdOne()
+        || !ResolvedPolicyPredicateMatchesThePublicPolicyPath()
         || !ApplicationCanOnlyMutateTheWhiteChannel())
     {
         return 1;

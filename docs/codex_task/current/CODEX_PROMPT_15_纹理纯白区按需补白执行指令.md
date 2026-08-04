@@ -1,6 +1,6 @@
 # CODEX_PROMPT_15 纹理纯白区按需补白执行指令
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.2 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.3 ｜ 日期：2026-08-04
 > 配套：`TASKS_15` / `DEV_15` / `DEMO_15` / `PRD_15` / `DOC_DECISION_15`
 
 ---
@@ -226,7 +226,8 @@ Stage 15 只改 Legacy 新 Profile。Global Surface Shell 已有精确白写 W �
   -BuildDir build-slicesoft/main `
   -Config Release `
   -OutputRoot output/benchmarks/stage15 `
-  -VerifyZeroDrift
+  -VerifyZeroDrift `
+  -VerifyPerformance
 ```
 
 完整任务卡见 `docs/codex_task/current/TASKS_15_纹理纯白区按需补白任务清单.md`。

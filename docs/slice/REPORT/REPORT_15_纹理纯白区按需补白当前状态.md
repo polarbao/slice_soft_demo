@@ -1,6 +1,6 @@
 # REPORT_15 纹理纯白区按需补白当前状态
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.4 ｜ 更新：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT** ｜ 版本：v1.5 ｜ 更新：2026-08-04
 > 上游：`DOC_DECISION_15` / `PRD_15` / `DEV_15` / `DEMO_15`
 
 ---
@@ -39,7 +39,7 @@
 | 任务组 | 内容 | 状态 |
 |---|---|---|
 | 15A | 配置契约（3 字段 + 校验 + 枚举扩展） | ✅ 15A-01..04 完成 |
-| 15B | 合成器补白写入 + 统计 | 🟡 15B-01..03 完成；15B-04 待性能 fixture |
+| 15B | 合成器补白写入 + 统计 | ✅ 15B-01..04 完成；NFR-02 性能门通过 |
 | 15C | 切片前预检与错误信息业务化 | ⬜ 未开始 |
 | 15D | 验收与证据产出 | 🟡 15D-01..04 完成；15D-05 待工艺侧实物打样 |
 | 15E | 交付收口 | ⬜ 未开始 |
@@ -85,6 +85,9 @@ F-01 RIP strict Reader：PASS
 sha256_baseline_before.txt / sha256_baseline_after.txt：逐行一致
 run_ci_quick：PASS
 统一 Gate（-VerifyZeroDrift）：PASS（G1/G2/G3/G4/G5）
+性能 Gate（-VerifyPerformance）：PASS（NFR-02）
+F-03 sliceProcessingMs p50：141.162 -> 139.611 ms（-1.10%）
+F-04 sliceProcessingMs p50：182.781 -> 145.924 ms（-20.16%）
 ```
 
 上述证据证明 Legacy 目标路径能够仅在命中纯白纹理像素时写 W，并保持两份报告的逐层/汇总一致；G1、G2、G3、G4、G5 已由统一 Gate 自动关闭。历史 Golden 与 Stage 10 输出契约使用运行时配置固定源姿态，避免产品自动定向和 Z 落台默认值改变测试坐标语义；生产 Profile 未被改写。G7 仍只能由实物打样关闭。
@@ -134,8 +137,8 @@ Stage 15 为 Stage 14「RIP 六问 Q2（白区语义）」追加一条显式不�
 
 ## 9. 当前下一任务
 
-1. `15B-04`：基于已就绪的 F-03/F-04 执行同构 Release 性能基线。
-2. `15C-01` / `15C-03`：实现异步纯白预检与既有错误信息的业务解释。
+1. `15C-01` / `15C-03`：实现异步纯白预检与既有错误信息的业务解释。
+2. `15C-02`：把预检结果接入切片前决策，但保持保守告警而非误阻断。
 3. `15D-05`：由工艺侧完成实物打样，关闭唯一非自动化门 G7。
 
 G7 通过前，候选 Profile 必须继续保持 `enabled: false` / `productionSafety: diagnostic`。

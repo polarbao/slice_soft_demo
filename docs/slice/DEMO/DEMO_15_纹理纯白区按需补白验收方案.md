@@ -1,6 +1,6 @@
 # DEMO_15 纹理纯白区按需补白验收方案
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.3 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.4 ｜ 日期：2026-08-04
 > 上游：`PRD_15` / `DEV_15` / `DOC_DECISION_15`
 
 ---
@@ -128,8 +128,10 @@ C-27 是对"阈值 0 即充分"这一核心论断的直接验证。
 
 | ID | 步骤 | 期望 |
 |---|---|---|
-| C-31 | 相同 Release 构建，F-03/F-04 各预热 1 次、计量 7 次 | 记录切片/组合阶段 p50，不混入 TIFF/preview/report IO |
+| C-31 | 相同 Release 构建，F-03/F-04 各预热 1 次、计量 7 次；基线/候选交替运行 | 记录 `sliceProcessingMs` p50，不混入 TIFF/preview/report IO |
 | C-32 | 开启策略与关闭策略 p50 比较 | 退化不超过 2%；若小于计时噪声则记录噪声区间，不使用单次总耗时下结论 |
+
+F-03/F-04 是微型语义 fixture。性能 Gate 对两种策略同时采用 2400 DPI、XY 4 倍的运行时栅格放大，使核心计时稳定在百毫秒量级；该放大仅用于同构 A/B 测量，不写回生产 Profile。
 
 ## 4. 证据产物清单
 
@@ -151,7 +153,8 @@ C-27 是对"阈值 0 即充分"这一核心论断的直接验证。
   -BuildDir build-slicesoft/main `
   -Config Release `
   -OutputRoot output/benchmarks/stage15 `
-  -VerifyZeroDrift
+  -VerifyZeroDrift `
+  -VerifyPerformance
 ```
 
 `-VerifyZeroDrift` 会校验 15A-01 冻结的 golden SHA-256，生成 before/after 清单并执行 Quick CI；缺少该参数时 G3 保持 `pending`。

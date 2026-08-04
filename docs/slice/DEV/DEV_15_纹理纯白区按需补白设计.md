@@ -1,6 +1,6 @@
 # DEV_15 纹理纯白区按需补白设计
 
-> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.2 ｜ 日期：2026-08-04
+> 阶段：Stage 15 ｜ 状态：**ACTIVE / DEVELOPMENT READY** ｜ 版本：v1.3 ｜ 日期：2026-08-04
 > 上游：`PRD_15` / `DOC_DECISION_15`
 > 证据等级：A=已核实代码事实（含行号），B=目标设计
 
@@ -287,7 +287,7 @@ I15-05 是 G2 的直接证据，必须产出可复核的差异清单而非仅断
 
 ## 5. 性能
 
-补白判定为逐像素 3 次比较 + 1 次减法，与既有逐像素写入同一循环，无额外遍历。Release 下固定机器与存储，预热 1 次、计量 7 次，以切片/组合阶段 p50 比较，不把 TIFF/preview/report IO 纳入策略开销；要求退化 ≤ 2%（NFR-02）。
+补白策略字符串在进入像素循环前解析一次；热循环只执行阈值下界与 RGB 三通道比较，命中时写 W，无额外遍历。Release 下固定机器与存储，预热 1 次、计量 7 次，基线/候选交替运行，以 `sliceProcessingMs` p50 比较，不把 TIFF/preview/report IO 纳入策略开销；要求退化 ≤ 2%（NFR-02）。微型 F-03/F-04 对两组策略统一使用 2400 DPI、XY 4 倍的基准专用放大以降低计时噪声，生产配置保持不变。
 
 ## 6. 基线与回滚
 
@@ -304,7 +304,8 @@ Stage 15 新增单一 Release Gate，统一调用单测、fixture、场景切片
   -BuildDir build-slicesoft/main `
   -Config Release `
   -OutputRoot output/benchmarks/stage15 `
-  -VerifyZeroDrift
+  -VerifyZeroDrift `
+  -VerifyPerformance
 ```
 
-脚本输出 `stage15_white_carrier_summary.json`，至少包含构建身份、fixture/Profile 哈希、G1..G6 状态、TIFF SHA-256、通道差异计数、Reader 结果和 p50 性能数据。`-VerifyZeroDrift` 负责 G3 的 golden 哈希与 Quick CI 硬门；G7 实物证据不由脚本伪造，只在 summary 中记录 `physicalProof=pending|passed|failed`。
+脚本输出 `stage15_white_carrier_summary.json`，至少包含构建身份、fixture/Profile 哈希、G1..G6 状态、TIFF SHA-256、通道差异计数、Reader 结果和 p50 性能数据。`-VerifyZeroDrift` 负责 G3 的 golden 哈希与 Quick CI 硬门，`-VerifyPerformance` 调用独立性能脚本并关闭 NFR-02；G7 实物证据不由脚本伪造，只在 summary 中记录 `physicalProof=pending|passed|failed`。

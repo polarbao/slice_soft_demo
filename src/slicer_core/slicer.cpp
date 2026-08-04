@@ -2984,6 +2984,8 @@ std::vector<std::uint8_t> compose_layer(
     std::vector<std::uint8_t> pixels(
         static_cast<std::size_t>(grid.width_px) * grid.height_px * rgbwsv_channel_count,
         config.background.value);
+    const bool whiteCarrierEnabled =
+        config.texture.unprintable_white_policy == "white_underbase";
 
     for (int y{0}; y < grid.height_px; ++y) {
         for (int x{0}; x < grid.width_px; ++x) {
@@ -3071,8 +3073,8 @@ std::vector<std::uint8_t> compose_layer(
                     pixels.at(base + 1U) = color.rgb.at(1);
                     pixels.at(base + 2U) = color.rgb.at(2);
                     update_texture_report_for_color(color, texture_report);
-                    if (ApplyUnprintableWhiteCarrier(
-                            config.texture.unprintable_white_policy,
+                    if (whiteCarrierEnabled
+                        && ApplyUnprintableWhiteCarrier(
                             config.texture.unprintable_white_ink_threshold,
                             config.texture.unprintable_white_value,
                             color.rgb,

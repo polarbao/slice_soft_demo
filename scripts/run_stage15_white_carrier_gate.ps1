@@ -6,6 +6,7 @@ param(
     [switch]$SkipBuild,
     [switch]$PreparationOnly,
     [switch]$VerifyZeroDrift,
+    [switch]$VerifyPerformance,
     [ValidateSet("pending", "passed", "failed")]
     [string]$PhysicalProof = "pending"
 )
@@ -142,8 +143,17 @@ function Invoke-CapturedTool
         [string[]]$Arguments,
         [string]$LogPath)
 
-    $lines = @(& $Executable @Arguments 2>&1 | ForEach-Object { $_.ToString() })
-    $exitCode = $LASTEXITCODE
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try
+    {
+        $lines = @(& $Executable @Arguments 2>&1 | ForEach-Object { $_.ToString() })
+        $exitCode = $LASTEXITCODE
+    }
+    finally
+    {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     $directory = Split-Path -Parent $LogPath
     if (-not [string]::IsNullOrWhiteSpace($directory))
     {
@@ -362,10 +372,12 @@ $summary = [ordered]@{
         exitCode = $null
     }
     performance = [ordered]@{
-        status = "pending"
+        requested = [bool]$VerifyPerformance
+        status = if ($VerifyPerformance) { "pending" } else { "not_run" }
         measurementRuns = 7
         warmupRuns = 1
         p50 = $null
+        evidence = $null
     }
     zeroDrift = [ordered]@{
         requested = [bool]$VerifyZeroDrift
@@ -471,6 +483,38 @@ if ($VerifyZeroDrift)
     $summary.zeroDrift.quickCiExitCode = $quickCiResult.exitCode
     $summary.zeroDrift.quickCiLog = `
         $quickCiLog.Substring($repoRoot.Length + 1).Replace('\', '/')
+}
+
+if ($VerifyPerformance)
+{
+    $performanceLog = Join-Path $logRoot "white_carrier_performance.log"
+    $performanceResult = Invoke-CapturedTool `
+        -Executable (Join-Path $PSHOME "powershell.exe") `
+        -Arguments @(
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            (Join-Path $repoRoot "scripts/run_stage15_white_carrier_performance.ps1"),
+            "-BuildDir",
+            $resolvedBuildDir,
+            "-Config",
+            $Config,
+            "-OutputRoot",
+            $resolvedOutputRoot,
+            "-SkipBuild") `
+        -LogPath $performanceLog
+    Assert-True ($performanceResult.exitCode -eq 0) `
+        "Stage 15 性能 Gate 失败，日志：$performanceLog"
+
+    $performancePath = Join-Path $resolvedOutputRoot "performance_p50.json"
+    $performanceEvidence = Read-Json $performancePath
+    Assert-True ($performanceEvidence.status -eq "passed") `
+        "Stage 15 性能证据未通过：$performancePath"
+    $summary.performance.status = "passed"
+    $summary.performance.p50 = $performanceEvidence.fixtures
+    $summary.performance.evidence = `
+        $performancePath.Substring($repoRoot.Length + 1).Replace('\', '/')
 }
 
 $pixelDiffPath = Join-Path $resolvedOutputRoot "pixel_diff_F04.csv"
@@ -659,4 +703,8 @@ Write-Json $summaryPath $summary
 
 $passedGates = if ($VerifyZeroDrift) { "G1/G2/G3/G4/G5" } else { "G1/G2/G4/G5" }
 Write-Host "Stage 15 automatic white-carrier Gate PASS ($passedGates)."
+if ($VerifyPerformance)
+{
+    Write-Host "Stage 15 performance Gate PASS (NFR-02)."
+}
 Write-Host "Summary: $summaryPath"

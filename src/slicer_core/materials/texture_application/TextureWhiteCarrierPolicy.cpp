@@ -1,7 +1,5 @@
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
 
-#include <algorithm>
-
 namespace slicer_core
 {
 
@@ -15,9 +13,7 @@ bool IsUnprintableWhiteTexel(
         return false;
     }
 
-    const std::uint8_t minimumChannel = std::min({rgb.at(0), rgb.at(1), rgb.at(2)});
-    const int inkDistance = 255 - static_cast<int>(minimumChannel);
-    return inkDistance <= static_cast<int>(inkThreshold);
+    return IsUnprintableWhiteTexel(inkThreshold, rgb);
 }
 
 bool ApplyUnprintableWhiteCarrier(
@@ -27,12 +23,15 @@ bool ApplyUnprintableWhiteCarrier(
     const std::array<std::uint8_t, 3>& rgb,
     std::uint8_t& whiteChannel) noexcept
 {
-    if (!IsUnprintableWhiteTexel(policy, inkThreshold, rgb))
+    if (policy != "white_underbase")
     {
         return false;
     }
-    whiteChannel = whiteValue;
-    return true;
+    return ApplyUnprintableWhiteCarrier(
+        inkThreshold,
+        whiteValue,
+        rgb,
+        whiteChannel);
 }
 
 }  // namespace slicer_core
