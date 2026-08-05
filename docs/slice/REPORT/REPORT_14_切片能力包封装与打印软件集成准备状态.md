@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.6 ｜ 更新日期：2026-08-05
+> 版本：v3.8 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14B-05
+CURRENT_NEXT_TASK      = 14C-01 + 14D-01 (PARALLEL)
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -125,6 +125,7 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14B-03 | ✅ COMPLETE（2026-08-05） | SceneFacade 权威状态、完整 Commit 响应、幂等、碰撞/越界及 ViewData Provider 边界 | Debug/Release 构建及目标 CTest 6/6 PASS；正常 Commit 不追加 snapshot |
 | 14B-04 | ✅ COMPLETE（2026-08-05） | SliceFacade 生产委托、单调进度与协作取消 | Debug/Release 正式目标和生产回归门禁 PASS；深度取消仍归 14D-04 |
 | 14B-03A-R1 | ✅ COMPLETE（2026-08-05） | ViewData 局部轮廓、显式预算降级、three_d 纹理降采样、world 单位矩阵和材质一致性 | 独立测试、Debug/Release、真实 OBJ/3MF 及 DTO/三车道合同门禁 PASS |
+| 14B-05 | ✅ COMPLETE（2026-08-05） | `--scene-config` 迁移生产 SliceFacade；保持旧错误名、进度与摘要 | Debug/Release 路由门禁 7/7 PASS；Debug full regression PASS（985.8 s） |
 | 14B-06 | ✅ COMPLETE（2026-08-05） | G1..G5 source-size 门禁、带到期条件白名单、quick CI 与 CTest 接线 | 自测覆盖 G1/G2/G3；全树 G4/G5 扫描可读；受保护 Stage 14 新目录禁止白名单 |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
@@ -151,8 +152,9 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 
 | 卡 | 任务 | 估算 |
 |---|---|---:|
-| 14B-05 | CLI 迁移 Facade 与完整回归 | 2–3 人日 |
-| **剩余关键路径估算** | | **2–3 人日** |
+| 14C-01 | SPI DLL 外壳与精确 11 符号导出 | 可启动 |
+| 14D-01 | 独立 `slicer_worker.exe` | 可与 14C-01 并行 |
+| **下一关键路径** | | **14C 与 14D 并行、共享集成串行** |
 
 本卡不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
@@ -208,3 +210,5 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-05 | v3.4 | 完成 14B-02：ModelFacade 与 PackageQueryFacade 接入权威模型/包能力，生产 TIFF Reader、缓存和材料预览形成 base-only 查询链路；Writer 与 backend 选择保持 engine，14B-03A/05 可并行 |
 | 2026-08-05 | v3.5 | 完成 14B-03A：top/three_d 真实纹理 Provider 接入正式 base target，真实 OBJ/3MF、纯白/近白、多模型 appearance、预算与 fail-closed 的 Debug/Release 门禁通过；下一任务为 14B-05 |
 | 2026-08-05 | v3.6 | 完成 14B-03A-R1：合同审计发现的 outline、静默降级、world 重复变换、请求字段和材质显示差异已闭合；下一任务保持 14B-05 |
+| 2026-08-05 | v3.7 | 14B-05 实现与 Debug/Release 路由门禁完成，full regression 执行中；通过后 14B 收口并并行进入 14C-01 / 14D-01 |
+| 2026-08-05 | v3.8 | 完成 14B-05：Debug full regression 以 985.8 s 通过，14B 核心 Facade 阶段收口；下一批 14C-01 与 14D-01 可并行，合同/CMake/集成提交继续串行审查 |

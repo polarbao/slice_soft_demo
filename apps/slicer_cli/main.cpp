@@ -1,21 +1,27 @@
 #include "slicer_core/config.h"
 #include "slicer_core/diagnostics/ProductionAdmissionPolicy.h"
+#include "slicer_core/engine/ProductionSliceFacadeFactory.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/tiff/TiffBackendBuildInfo.h"
-#include "slicer_core/pipeline/MultiModelProductionService.h"
 #include "slicer_core/pipeline/OpenVdbCandidatePipeline.h"
 #include "slicer_core/pipeline/SlicePipeline.h"
 #include "slicer_core/reports/ReportWriter.h"
+#include "slicer_core/scene/SceneEffectiveConfig.h"
 #include "slicer_core/slicer.h"
 #include "slicer_core/system/ProcessMemoryStats.h"
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -725,6 +731,167 @@ int RunOpenVdbCandidateSlice(const CliOptions& options)
     return 0;
 }
 
+/** @brief Non-cancelling token used by the synchronous CLI scene route. */
+class NeverCancelToken final : public slicer_core::api::ICancelToken
+{
+public:
+    /** @brief Reports that the CLI has not requested cancellation. @return Always false. */
+    [[nodiscard]] bool IsCancelRequested() const noexcept override
+    {
+        return false;
+    }
+};
+
+struct SceneFacadeRequestContext
+{
+    std::string scenehash;
+    std::filesystem::path packagedir;
+};
+
+struct SceneProductionSummary
+{
+    std::string sceneid;
+    std::uint64_t scenerevision{0U};
+    std::size_t visibleinstancecount{0U};
+};
+
+std::filesystem::path ResolveSceneContractPath(
+    const std::filesystem::path& path,
+    const std::filesystem::path& baseDirectory)
+{
+    const std::filesystem::path candidate =
+        path.is_absolute() ? path : baseDirectory / path;
+    std::error_code error;
+    const std::filesystem::path absolute =
+        std::filesystem::absolute(candidate, error);
+    return (error ? candidate : absolute).lexically_normal();
+}
+
+std::optional<SceneFacadeRequestContext> ReadSceneFacadeRequestContext(
+    const std::filesystem::path& effectiveConfigPath,
+    std::string& errorMessage)
+{
+    const slicer_core::SceneEffectiveConfigResult effective =
+        slicer_core::ReadSceneEffectiveConfig(effectiveConfigPath);
+    if (!effective.IsValid())
+    {
+        errorMessage = effective.error.has_value()
+            ? effective.error->message
+            : "scene effective config is invalid";
+        return std::nullopt;
+    }
+
+    try
+    {
+        SceneFacadeRequestContext context;
+        context.scenehash = effective.document
+                                .at("identity")
+                                .at("sceneHash")
+                                .as_string();
+        context.packagedir = ResolveSceneContractPath(
+            effective.document
+                .at("sliceContract")
+                .at("outputPackageDir")
+                .as_string(),
+            effectiveConfigPath.parent_path());
+        if (context.scenehash.empty() || context.packagedir.empty())
+        {
+            throw std::runtime_error(
+                "sceneHash or outputPackageDir is empty");
+        }
+        return context;
+    }
+    catch (const std::exception& error)
+    {
+        errorMessage = error.what();
+        return std::nullopt;
+    }
+}
+
+std::string LegacySceneErrorCode(
+    const slicer_core::api::ApiError& error)
+{
+    if (error.code == "PM-SLICER-PROFILE-0030")
+    {
+        return "SCENE_EFFECTIVE_CONFIG_INVALID";
+    }
+    if (error.code == "PM-SLICER-LAYOUT-0022")
+    {
+        return "SCENE_EFFECTIVE_CONFIG_STALE";
+    }
+    if (error.code == "PM-SLICER-INPUT-0001")
+    {
+        return "SCENE_RESOURCE_UNRESOLVED";
+    }
+    if (error.code == "PM-SLICER-PROFILE-0031")
+    {
+        constexpr const char* legacyCodes[]{
+            "SCENE_PROFILE_MISMATCH",
+            "SCENE_BUILD_VOLUME_UNDEFINED",
+            "SCENE_PIPELINE_MODE_NOT_ADMITTED"};
+        for (const char* legacyCode : legacyCodes)
+        {
+            if (error.detail.find(legacyCode) != std::string::npos)
+            {
+                return legacyCode;
+            }
+        }
+        return "SCENE_PROFILE_MISMATCH";
+    }
+    return "SCENE_PRODUCTION_PACKAGE_INVALID";
+}
+
+SceneProductionSummary ReadSceneProductionSummary(
+    const std::filesystem::path& packageDir)
+{
+    const std::filesystem::path reportPath =
+        packageDir / "reports/multimodel_scene_report.json";
+    std::ifstream input(reportPath, std::ios::binary);
+    if (!input)
+    {
+        throw std::runtime_error(
+            "published scene report is not readable");
+    }
+
+    const slicer_core::Json report = slicer_core::Json::parse(input);
+    const double sceneRevision =
+        report.at("sceneRevision").as_double();
+    const double visibleInstanceCount =
+        report.at("visibleInstanceCount").as_double();
+    if (sceneRevision < 0.0 || visibleInstanceCount < 0.0)
+    {
+        throw std::runtime_error(
+            "published scene report contains a negative summary value");
+    }
+
+    SceneProductionSummary summary;
+    summary.sceneid = report.at("sceneId").as_string();
+    summary.scenerevision =
+        static_cast<std::uint64_t>(sceneRevision);
+    summary.visibleinstancecount =
+        static_cast<std::size_t>(visibleInstanceCount);
+    return summary;
+}
+
+void PrintSceneFacadeTiming(
+    const slicer_core::api::SliceResult& result)
+{
+    const slicer_core::ProcessMemoryStats memory =
+        slicer_core::CaptureProcessMemoryStats();
+    std::cout
+        << "SLICE_TIMING"
+        << " engine=legacy-scene"
+        << " profileLevel=facade_summary"
+        << " totalMs="
+        << FormatMilliseconds(
+               static_cast<double>(result.elapsed_ms))
+        << " memoryAvailable=" << (memory.available ? 1 : 0)
+        << " workingSetBytes=" << memory.working_set_bytes
+        << " peakWorkingSetBytes=" << memory.peak_working_set_bytes
+        << '\n';
+    std::cout.flush();
+}
+
 int RunMultiModelSceneProduction(const CliOptions& options)
 {
     if (options.config_path_explicit
@@ -742,44 +909,104 @@ int RunMultiModelSceneProduction(const CliOptions& options)
         return 2;
     }
 
-    slicer_core::MultiModelProductionRequest request;
-    request.effectiveconfigpath =
-        options.scene_config_path;
-    request.progresscallback = PrintSliceProgress;
-    const slicer_core::MultiModelProductionResult result =
-        slicer_core::RunMultiModelProductionService(request);
-    if (!result.IsValid())
+    std::string contextError;
+    const std::optional<SceneFacadeRequestContext> context =
+        ReadSceneFacadeRequestContext(
+            options.scene_config_path,
+            contextError);
+    if (!context.has_value())
     {
-        const slicer_core::MultiModelProductionErrorCode code =
-            result.error.has_value()
-            ? result.error->code
-            : slicer_core::MultiModelProductionErrorCode::
-                ProductionPackageInvalid;
         std::cerr
             << "slicer_cli scene error: "
-            << slicer_core::MultiModelProductionErrorCodeName(code)
+            << "SCENE_EFFECTIVE_CONFIG_INVALID: "
+            << contextError
+            << '\n';
+        return 2;
+    }
+
+    slicer_core::api::SliceRequest request;
+    request.job_id = "slicer-cli-scene";
+    request.correlation_id = "slicer-cli-" +
+        context->scenehash.substr(
+            0U,
+            std::min<std::size_t>(12U, context->scenehash.size()));
+    request.scene_hash = context->scenehash;
+    request.scene_config_path = options.scene_config_path;
+    request.package_dir = context->packagedir;
+
+    const std::unique_ptr<slicer_core::api::SliceFacade> facade =
+        slicer_core::engine::CreateProductionSliceFacade();
+    if (!facade)
+    {
+        std::cerr
+            << "slicer_cli scene error: "
+            << "SCENE_PRODUCTION_PACKAGE_INVALID: "
+            << "production SliceFacade is unavailable\n";
+        return 2;
+    }
+
+    const NeverCancelToken cancelToken;
+    const auto start = std::chrono::steady_clock::now();
+    const slicer_core::api::ProgressSink progressSink =
+        [start](const slicer_core::api::ProgressEvent& event)
+        {
+            slicer_core::SliceRunProgress progress;
+            progress.phase = event.stage;
+            progress.current = event.layers_done;
+            progress.total = event.layers_total;
+            progress.percent = event.percent;
+            progress.elapsed_ms = MillisecondsSince(start);
+            PrintSliceProgress(progress);
+        };
+    const slicer_core::api::ApiResult<slicer_core::api::SliceResult>
+        facadeResult = facade->Run(
+            request,
+            cancelToken,
+            progressSink);
+    if (!facadeResult.IsOk() || facadeResult.Value() == nullptr)
+    {
+        const slicer_core::api::ApiError* error =
+            facadeResult.Error();
+        std::cerr
+            << "slicer_cli scene error: "
+            << (error != nullptr
+                    ? LegacySceneErrorCode(*error)
+                    : "SCENE_PRODUCTION_PACKAGE_INVALID")
             << ": "
-            << (result.error.has_value()
-                    ? result.error->message
+            << (error != nullptr
+                    ? error->message
                     : "scene production failed")
             << '\n';
         return 2;
     }
 
+    const slicer_core::api::SliceResult& result =
+        *facadeResult.Value();
+    SceneProductionSummary summary;
+    try
+    {
+        summary = ReadSceneProductionSummary(result.package_dir);
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr
+            << "slicer_cli scene error: "
+            << "SCENE_PRODUCTION_PACKAGE_INVALID: "
+            << error.what() << '\n';
+        return 2;
+    }
+
     std::cout << "slicer_cli: generated scene package\n";
     std::cout << "  packageDir: "
-              << result.packagedir.generic_string() << '\n';
-    std::cout << "  sceneId: " << result.sceneid << '\n';
+              << result.package_dir.generic_string() << '\n';
+    std::cout << "  sceneId: " << summary.sceneid << '\n';
     std::cout << "  sceneRevision: "
-              << result.scenerevision << '\n';
+              << summary.scenerevision << '\n';
     std::cout << "  visibleInstances: "
-              << result.visibleinstancecount << '\n';
+              << summary.visibleinstancecount << '\n';
     std::cout << "  layerCount: "
-              << result.layercount << '\n';
-    PrintSliceTiming(
-        "legacy-scene",
-        result.profile,
-        slicer_core::CaptureProcessMemoryStats());
+              << result.layer_count << '\n';
+    PrintSceneFacadeTiming(result);
     return 0;
 }
 
