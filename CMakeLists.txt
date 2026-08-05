@@ -671,6 +671,17 @@ add_executable(slicer_cli
 
 target_link_libraries(slicer_cli PRIVATE slicer_core)
 
+add_executable(slicer_worker
+    apps/slicer_worker/Main.cpp
+    apps/slicer_worker/WorkerApplication.cpp
+    apps/slicer_worker/WorkerApplication.h
+)
+target_include_directories(slicer_worker PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_worker
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(slicer_worker PRIVATE slicer_engine)
+
 add_executable(texture_fill_partition_release_benchmark
     apps/texture_fill_partition_release_benchmark/main.cpp
 )
@@ -1303,6 +1314,12 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14C01ModuleShell.py"
     )
     add_test(
+        NAME slicer_stage14d01_worker_shell_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14D01WorkerShell.py"
+            --worker $<TARGET_FILE:slicer_worker>
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1326,6 +1343,7 @@ if(Python3_Interpreter_FOUND)
         slicer_stage14b04_slice_facade_contract_test
         slicer_stage14b05_cli_facade_route_contract_test
         slicer_stage14c01_module_shell_contract_test
+        slicer_stage14d01_worker_shell_contract_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
         PROPERTIES

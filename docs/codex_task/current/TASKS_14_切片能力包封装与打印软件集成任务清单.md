@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.15 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.16 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -259,7 +259,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14D-01 | 新建 `apps/slicer_worker/`（由 `slicer_cli` 演进）| 14A-03 | 与 CLI 行为一致 | PREPARED |
+| 14D-01 | 新建 `apps/slicer_worker/`（由 `slicer_cli` 演进）| 14A-03 | 与 CLI 行为一致 | ✅ **COMPLETE（2026-08-05）**；独立目标沿用相同 engine 构建轨道，Debug/Release 参数外壳与负例 PASS；文件合同执行由后续卡实现 |
 | 14D-02 | `WorkerClient`（DLL 侧）：启动/进度解析/退出码映射/僵尸回收 | 14D-01, 14C-01 | 子进程后端可用 | PREPARED |
 | 14D-03 | **`file_contract_v1` 版本协商**：`slicer_worker.exe --contract-info` + major/minor 兼容规则 + 不匹配 fail-closed | 14D-02, 14A-03 | 篡改 major 被拒绝；minor 向后兼容可用 | PREPARED |
 | 14D-04 | **切片链路 cancel token 贯穿**（step 边界 + 逐层循环协作式取消，经 `ICancelToken`）| 14B-04 | 各阶段取消 ≤2s | PREPARED |
@@ -416,3 +416,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.13 | 14B-05 实现完成：`--scene-config` 改走生产 SliceFacade，新增架构路由门禁并通过 Debug/Release 目标测试；完整 Debug full regression 执行中 |
 | 2026-08-05 | v2.14 | 完成 14B-05：Debug full regression 以 985.8 s 通过，CLI 场景路由迁移收口；14B 全部任务完成，下一批并行进入 14C-01 / 14D-01 |
 | 2026-08-05 | v2.15 | 完成 14C-01：建立仅链接 slicer_base 的 slicer_module DLL 外壳，Debug/Release 精确导出 11 个无修饰 pm_* 符号；14C-02/03 可并行启动 |
+| 2026-08-05 | v2.16 | 完成 14D-01：建立独立 slicer_worker 目标和稳定参数外壳，Debug/Release 构建及负向合同门禁通过；真实协商、请求执行、取消和安全发布仍按 14D-02..08 原子卡推进 |

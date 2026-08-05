@@ -1,0 +1,132 @@
+#include "WorkerApplication.h"
+
+#include <filesystem>
+#include <iostream>
+#include <ostream>
+#include <string>
+
+namespace slicer_worker
+{
+namespace
+{
+
+constexpr std::string_view InvalidArgumentsCode{"invalid_arguments"};
+constexpr std::string_view NotImplementedCode{"not_implemented"};
+
+}  // namespace
+
+int WorkerApplication::Run(const int argc, char* const argv[]) const
+{
+    if (argc == 2)
+    {
+        const std::string argument{argv[1]};
+        if (argument == "--help" || argument == "-h")
+        {
+            PrintHelp(std::cout);
+            return static_cast<int>(ExitCode::Success);
+        }
+        if (argument == "--contract-info")
+        {
+            return PrintFailure(
+                std::cerr,
+                ExitCode::NotImplemented,
+                NotImplementedCode,
+                "--contract-info is reserved for Stage 14D-03 and is not implemented by the 14D-01 shell");
+        }
+        if (argument == "--spi-request")
+        {
+            return PrintFailure(
+                std::cerr,
+                ExitCode::InvalidArguments,
+                InvalidArgumentsCode,
+                "--spi-request requires one absolute request JSON path");
+        }
+    }
+
+    if (argc >= 2 && std::string_view{argv[1]} == "--spi-request")
+    {
+        return HandleSpiRequest(argc, argv);
+    }
+
+    if (argc <= 1)
+    {
+        PrintHelp(std::cerr);
+        return PrintFailure(
+            std::cerr,
+            ExitCode::InvalidArguments,
+            InvalidArgumentsCode,
+            "no command was provided");
+    }
+
+    return PrintFailure(
+        std::cerr,
+        ExitCode::InvalidArguments,
+        InvalidArgumentsCode,
+        std::string{"unknown argument: "} + argv[1]);
+}
+
+void WorkerApplication::PrintHelp(std::ostream& output)
+{
+    output
+        << "SliceSoft slicer_worker Stage 14D-01 shell\n"
+        << "Usage:\n"
+        << "  slicer_worker --help\n"
+        << "  slicer_worker --contract-info\n"
+        << "  slicer_worker --spi-request <absolute-request-json-path>\n"
+        << "\n"
+        << "Implemented in Stage 14D-01:\n"
+        << "  --help             Print this help and exit successfully.\n"
+        << "\n"
+        << "Reserved for later Stage 14D tasks:\n"
+        << "  --contract-info    Full contract negotiation is implemented by 14D-03.\n"
+        << "  --spi-request      File-contract job execution is implemented by 14D-08.\n"
+        << "\n"
+        << "Exit codes:\n"
+        << "  0  Shell command completed successfully.\n"
+        << "  1  Recognized capability is not implemented by this shell.\n"
+        << "  2  Invalid or unknown command-line arguments.\n";
+}
+
+int WorkerApplication::PrintFailure(
+    std::ostream& output,
+    const ExitCode exitCode,
+    const std::string_view errorCode,
+    const std::string_view message)
+{
+    output
+        << "SLICER_WORKER_ERROR code=" << errorCode
+        << " message=\"" << message << "\"\n";
+    return static_cast<int>(exitCode);
+}
+
+int WorkerApplication::HandleSpiRequest(
+    const int argc,
+    char* const argv[])
+{
+    if (argc != 3)
+    {
+        return PrintFailure(
+            std::cerr,
+            ExitCode::InvalidArguments,
+            InvalidArgumentsCode,
+            "--spi-request requires exactly one absolute request JSON path");
+    }
+
+    const std::filesystem::path requestPath{argv[2]};
+    if (!requestPath.is_absolute())
+    {
+        return PrintFailure(
+            std::cerr,
+            ExitCode::InvalidArguments,
+            InvalidArgumentsCode,
+            "--spi-request requires an absolute request JSON path");
+    }
+
+    return PrintFailure(
+        std::cerr,
+        ExitCode::NotImplemented,
+        NotImplementedCode,
+        "--spi-request execution is reserved for Stage 14D-08 and is not implemented by the 14D-01 shell");
+}
+
+}  // namespace slicer_worker
