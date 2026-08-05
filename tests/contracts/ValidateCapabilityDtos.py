@@ -76,6 +76,11 @@ def Main() -> int:
             )
 
     byId = {capability["id"]: capability for capability in capabilities}
+    RequirePaths(
+        byId["scene.apply_operation"],
+        "requestFields",
+        {"operationId", "currentSceneRevision", "expectedSceneRevision"},
+    )
     viewData = byId["scene.get_viewdata"]
     if viewData["operations"] != ["query", "read_blob"]:
         raise AssertionError("viewdata blob retrieval must remain a sub-operation")

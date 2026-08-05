@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.0",
+  "contractVersion": "1.1",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -83,6 +83,7 @@
         { "path": "operationId", "type": "string", "required": true },
         { "path": "sceneHandle", "type": "integer", "required": false },
         { "path": "scene", "type": "object", "required": false },
+        { "path": "currentSceneRevision", "type": "integer", "required": true },
         { "path": "expectedSceneRevision", "type": "integer", "required": true },
         { "path": "operations", "type": "array", "required": true },
         { "path": "operations[].type", "type": "enum:translate|rotateZ|uniformScale|mirror", "required": true },

@@ -66,7 +66,7 @@ cmake --build build --config Debug
 | 14A-02 | `p0.rgbwsv.2` + scene + Profile 扩展 schema 形式化 JSON Schema。**须覆盖三组新字段**（见注 A）；ViewData DTO 由 14A-04 独立冻结 | — | 用真实 manifest、真实 scene 与 Stage 15 Profile 样例分别校验通过；无该字段的既有样例仍可校验（向后兼容）| ✅ **COMPLETE（2026-08-05）** |
 | 14A-03 | `file_contract_v1` 完整规格（请求/结果 JSON schema、进度行、退出码表、超时、僵尸回收、staging 清理时序）| 14A-01 | 打印侧确认可满足 | 🟡 **SLICER-SIDE COMPLETE / PRINT-SIDE ACK PENDING（2026-08-05）** |
 | 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码；**`scene.get_viewdata` 网格 DTO 按注 B 纳入契约** | ✅ **COMPLETE（2026-08-05）** |
-| 14A-05 | 三车道交互契约固化（`operationId` 幂等、`expectedSceneRevision`、`SceneRevisionStale` 回滚）| 14A-04 | 与打印侧 `CLD_04` §4.3 一致 | PREPARED |
+| 14A-05 | 三车道交互契约固化（`operationId` 幂等、`expectedSceneRevision`、`SceneRevisionStale` 回滚）| 14A-04 | 与打印侧 `CLD_04` §4.3 一致 | ✅ **COMPLETE（2026-08-05）** |
 | 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | PREPARED |
 | 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | 🟢 **READY（首批）** |
 | 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传（见注 C）| ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
@@ -84,6 +84,11 @@ cmake --build build --config Debug
 JSON 类型、必填条件、承载和错误码冻结 15 项能力；`scene.get_viewdata` 完整纳入 local mesh、
 `worldMatrix`、LOD、`meshIdentity`、blob 分块和 `read_blob` 子操作。合同测试同时门禁能力数量、
 生产 RGBWSV 不变量、Worker 边界及“不得新增第 16 项能力/第 12 个导出符号”。
+
+**14A-05 本地证据（2026-08-05）**：`contracts/slicer_three_lane_contract.json/.md`
+冻结 Transient 零跨模块调用、Commit 原子幂等、Stale 回读回滚与 Production 只接受已提交
+`sceneHash`。同 ID 同 payload 只重放首次结果；同 ID 改 payload fail-closed；Worker full preflight
+保持生产权威，合同测试与 15 项 DTO 交叉校验字段一致性。
 
 ---
 
@@ -347,3 +352,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v1.4 | 完成 14A-02：新增 manifest、scene、Profile 三份 Draft 2020-12 Schema；覆盖 Stage 15 三字段、可选 `whiteSemantics`、可选 `zLimitMm`，并以真实/旧样例及负向变体通过自动校验 |
 | 2026-08-05 | v1.5 | 完成 14A-03 切片侧合同：冻结 `file_contract_v1` 请求/结果/协商 Schema、进度行、退出码、有限超时、Job Object 僵尸回收与 staging 双保险清理；打印侧书面确认仍待回签 |
 | 2026-08-05 | v1.6 | 完成 14A-04：冻结 15 项能力请求/响应字段、承载与错误码；完整吸纳 Scene ViewData 网格、LOD、缓存身份与复用现有 ABI 的 blob 分块合同，并增加自动漂移门禁 |
+| 2026-08-05 | v1.7 | 完成 14A-05：冻结 Transient/Commit/Production 三车道、operationId 幂等、revision 原子提交、SceneRevisionStale 回读回滚及生产 sceneHash 准入合同 |

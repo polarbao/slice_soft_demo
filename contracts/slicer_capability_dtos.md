@@ -1,7 +1,7 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.0  
-> SPI 版本：`PM_SPI_VERSION=1`  
+> 合同版本：1.1
+> SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 
 ## 1. 范围
@@ -97,5 +97,5 @@ emptyValue   255
 ## 6. 版本与后续实现
 
 本卡只冻结对外 DTO，不创建 facade、DLL 或 Worker。C++ 内部 DTO 与 facade 在 14B-01 实现，
-必须保持字段语义一致。交互幂等、revision 回滚和三车道细则由 14A-05 在本合同上继续冻结；
-取消状态机由 14A-06 冻结。
+必须保持字段语义一致。交互幂等、revision 回滚和三车道细则见
+`contracts/slicer_three_lane_contract.*`；取消状态机由 14A-06 冻结。

@@ -1,0 +1,86 @@
+{
+  "contractVersion": "1.0",
+  "lanes": {
+    "transient": {
+      "owner": "host",
+      "crossModuleCalls": 0,
+      "persistentMutation": false,
+      "sceneRevisionChange": false,
+      "allowedState": ["localTransform", "localBBoxApproximation", "localViewDataCache"]
+    },
+    "commit": {
+      "owner": "slicer_module",
+      "capability": "scene.apply_operation",
+      "atomic": true,
+      "requiredRequestFields": [
+        "operationId",
+        "currentSceneRevision",
+        "expectedSceneRevision",
+        "operations"
+      ],
+      "requiredSuccessFields": [
+        "newSceneRevision",
+        "sceneHash",
+        "instances[].canonicalTransform",
+        "collisions",
+        "outOfBoundsInstances",
+        "preflightDelta",
+        "viewdataIdentity"
+      ],
+      "idempotency": {
+        "scope": "module_instance_and_scene",
+        "identity": "operationId",
+        "sameCanonicalRequest": "replay_exact_result_without_revision_increment",
+        "differentCanonicalRequest": "reject_without_mutation",
+        "differentCanonicalRequestCode": "PM-SLICER-PROFILE-0031",
+        "retention": "until_scene_release_or_module_destroy"
+      },
+      "revision": {
+        "normalRequestRule": "currentSceneRevision_equals_expectedSceneRevision",
+        "authoritativeMatchRule": "expectedSceneRevision_equals_module_scene_revision",
+        "staleCode": "PM-SLICER-LAYOUT-0022",
+        "staleMutation": false,
+        "partialApply": false
+      }
+    },
+    "production": {
+      "owner": "slicer_worker",
+      "capability": "slice.rgbwsv",
+      "requiredRequestFields": ["jobId", "correlationId", "sceneHash", "scene", "output", "profile"],
+      "acceptedSceneState": "committed_scene_hash_only",
+      "staleCode": "PM-SLICER-LAYOUT-0022",
+      "authoritativePreflight": "full_in_worker",
+      "fastPreflightAuthoritative": false,
+      "silentFallback": false
+    }
+  },
+  "staleRollback": {
+    "steps": [
+      "discard_transient_state",
+      "call_scene.get_snapshot",
+      "replace_host_snapshot_and_revision",
+      "rebuild_local_view_from_authoritative_snapshot",
+      "create_new_operation_id_before_retry"
+    ],
+    "forbidden": [
+      "overwrite_authoritative_scene",
+      "reuse_operation_id_with_changed_payload",
+      "send_transient_state_to_production",
+      "silently_retry_without_snapshot_refresh"
+    ]
+  },
+  "canonicalRequest": {
+    "encoding": "UTF-8",
+    "objectKeyOrder": "lexicographic",
+    "numberFormat": "shortest_round_trip_json_number",
+    "ignoredFields": ["correlationId"],
+    "includedFields": ["scene_identity", "currentSceneRevision", "expectedSceneRevision", "operations"]
+  },
+  "invariants": {
+    "mouseMoveCrossModuleCalls": 0,
+    "commitRevisionIncrement": 1,
+    "productionPackageSchema": "p0.rgbwsv.2",
+    "legacyIsDefaultEngine": true,
+    "noSilentFallback": true
+  }
+}
