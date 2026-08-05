@@ -75,6 +75,26 @@
         "required": ["ok"]
       },
       "then": { "required": ["error"] }
+    },
+    {
+      "if": {
+        "properties": { "code": { "const": "PM-SLICER-CANCELLED-0070" } },
+        "required": ["code"]
+      },
+      "then": {
+        "required": ["cleanup"],
+        "properties": {
+          "ok": { "const": false },
+          "cleanup": {
+            "type": "object",
+            "required": ["stagingRemoved", "published"],
+            "properties": {
+              "stagingRemoved": { "const": true },
+              "published": { "const": false }
+            }
+          }
+        }
+      }
     }
   ],
   "additionalProperties": true

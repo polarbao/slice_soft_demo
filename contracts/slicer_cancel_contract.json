@@ -1,0 +1,59 @@
+{
+  "contractVersion": "1.0",
+  "api": "pm_cancel",
+  "maxCancelLatencyMs": 2000,
+  "states": {
+    "nonTerminal": ["queued", "running", "cancelling"],
+    "terminal": ["succeeded", "failed", "cancelled"]
+  },
+  "transitions": [
+    { "from": "queued", "to": ["running", "cancelling"] },
+    { "from": "running", "to": ["succeeded", "failed", "cancelling"] },
+    { "from": "cancelling", "to": ["cancelled", "failed"] }
+  ],
+  "cancelCall": {
+    "activeReturn": "PM_OK",
+    "stateBeforeReturn": "cancelling",
+    "repeatedCall": "PM_OK_idempotent",
+    "terminalCall": "PM_OK_noop",
+    "resultWhileCancelling": "PM_ERR_INVALID_STATE"
+  },
+  "completion": {
+    "cancelledCode": "PM-SLICER-CANCELLED-0070",
+    "workerExitRequired": true,
+    "stagingRemovedRequired": true,
+    "published": false,
+    "preserveLastValidPackage": true,
+    "cleanupFailureState": "failed",
+    "cleanupFailureCode": "PM-SLICER-OUTPUT-0050"
+  },
+  "workerProtocol": {
+    "marker": "cancel.requested",
+    "markerCreation": "atomic",
+    "cooperativeChecks": ["step_boundary", "per_layer_loop"],
+    "cooperativeExitCode": 8,
+    "gracePeriodMs": 2000,
+    "escalation": "terminate_windows_job_object"
+  },
+  "cleanup": {
+    "ownership": "exact_package_target_siblings_only",
+    "pathNormalizationRequired": true,
+    "workerStartup": "remove_stale_temporary_siblings_for_exact_target",
+    "workerCancel": "remove_current_staging_before_exit",
+    "moduleAfterExit": "repeat_idempotent_staging_cleanup",
+    "moduleRelease": "cancel_wait_close_job_object_repeat_cleanup",
+    "forbidden": [
+      "publish_partial_package",
+      "overwrite_last_valid_package",
+      "recursive_delete_outside_package_parent",
+      "report_cancelled_before_worker_exit",
+      "report_cancelled_with_staging_residue"
+    ]
+  },
+  "progress": {
+    "pollIntervalRecommendationMs": [200, 500],
+    "percentMonotonic": true,
+    "cancellingIsNonTerminal": true,
+    "finalSnapshotReadableAfterTerminal": true
+  }
+}

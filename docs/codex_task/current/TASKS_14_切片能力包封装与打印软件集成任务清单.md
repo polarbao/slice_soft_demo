@@ -67,7 +67,7 @@ cmake --build build --config Debug
 | 14A-03 | `file_contract_v1` 完整规格（请求/结果 JSON schema、进度行、退出码表、超时、僵尸回收、staging 清理时序）| 14A-01 | 打印侧确认可满足 | 🟡 **SLICER-SIDE COMPLETE / PRINT-SIDE ACK PENDING（2026-08-05）** |
 | 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码；**`scene.get_viewdata` 网格 DTO 按注 B 纳入契约** | ✅ **COMPLETE（2026-08-05）** |
 | 14A-05 | 三车道交互契约固化（`operationId` 幂等、`expectedSceneRevision`、`SceneRevisionStale` 回滚）| 14A-04 | 与打印侧 `CLD_04` §4.3 一致 | ✅ **COMPLETE（2026-08-05）** |
-| 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | PREPARED |
+| 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | ✅ **COMPLETE（2026-08-05）** |
 | 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | 🟢 **READY（首批）** |
 | 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传（见注 C）| ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
 | 14A-09 | `REPORT_12X` 补 03E 行（03E-02 现为 **`GO_ON_DEMAND`**，见 `REPORT_03E_02` §5.1）| — | 主状态表完整 | 🟢 **READY（首批）** |
@@ -89,6 +89,11 @@ JSON 类型、必填条件、承载和错误码冻结 15 项能力；`scene.get_
 冻结 Transient 零跨模块调用、Commit 原子幂等、Stale 回读回滚与 Production 只接受已提交
 `sceneHash`。同 ID 同 payload 只重放首次结果；同 ID 改 payload fail-closed；Worker full preflight
 保持生产权威，合同测试与 15 项 DTO 交叉校验字段一致性。
+
+**14A-06 本地证据（2026-08-05）**：`contracts/slicer_cancel_contract.json/.md`
+冻结 `pm_cancel` 幂等、`Cancelling` 非终结、Worker 真实退出与 staging 清理后才能进入
+`Cancelled`、2000ms 宽限和 Job Object 兜底。取消结果 Schema 强制
+`stagingRemoved=true/published=false`；清理失败必须报告 failed，禁止伪报 cancelled。
 
 ---
 
@@ -353,3 +358,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v1.5 | 完成 14A-03 切片侧合同：冻结 `file_contract_v1` 请求/结果/协商 Schema、进度行、退出码、有限超时、Job Object 僵尸回收与 staging 双保险清理；打印侧书面确认仍待回签 |
 | 2026-08-05 | v1.6 | 完成 14A-04：冻结 15 项能力请求/响应字段、承载与错误码；完整吸纳 Scene ViewData 网格、LOD、缓存身份与复用现有 ABI 的 blob 分块合同，并增加自动漂移门禁 |
 | 2026-08-05 | v1.7 | 完成 14A-05：冻结 Transient/Commit/Production 三车道、operationId 幂等、revision 原子提交、SceneRevisionStale 回读回滚及生产 sceneHash 准入合同 |
+| 2026-08-05 | v1.8 | 完成 14A-06：冻结 Cancelling/Cancelled 状态机、≤2s 协作取消、Job Object 兜底、双保险 staging 清理与取消结果 Schema 门禁 |
