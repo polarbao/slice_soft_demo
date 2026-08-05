@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "thresholds": {
+    "newSourceMaxLines": 500,
+    "newHeaderMaxLines": 200,
+    "legacyGrowthGuardLines": 1000,
+    "implementationRatioMinLines": 800,
+    "implementationRatioHeaderMaxLines": 99,
+    "emptyShellMaxLines": 19,
+    "emptyShellAgeDays": 30
+  },
+  "excludedPrefixes": [
+    "src/third_party/"
+  ],
+  "protectedPrefixes": [
+    "src/slicer_core/api/",
+    "src/slicer_module/",
+    "apps/slicer_worker/",
+    "apps/slicer_ui_host_sim/"
+  ],
+  "allowlist": [
+    {
+      "path": "apps/slicer_debug_ui/MainWindow.cpp",
+      "rules": ["G4"],
+      "reason": "既有主窗口大文件；仅豁免头实现比例告警，G2 仍禁止净增长。",
+      "expiresWhen": "14E-05 COMPLETE"
+    },
+    {
+      "path": "apps/slicer_debug_ui/services/UiSmokeTestRunner.cpp",
+      "rules": ["G4"],
+      "reason": "既有 UI Smoke 大文件；仅豁免头实现比例告警，G2 仍禁止净增长。",
+      "expiresWhen": "14E-05 COMPLETE"
+    }
+  ]
+}

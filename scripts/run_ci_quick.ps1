@@ -1,3 +1,7 @@
+param(
+  [string]$SourceGuardBaseRef = ""
+)
+
 $ErrorActionPreference = "Stop"
 
 function Run-Step([string]$Name, [scriptblock]$Block) {
@@ -5,6 +9,14 @@ function Run-Step([string]$Name, [scriptblock]$Block) {
   & $Block
   if ($LASTEXITCODE -ne 0) {
     throw "$Name failed"
+  }
+}
+
+Run-Step "source size guard" {
+  if ([string]::IsNullOrWhiteSpace($SourceGuardBaseRef)) {
+    python .\scripts\ValidateSourceSizeGuard.py
+  } else {
+    python .\scripts\ValidateSourceSizeGuard.py --base-ref $SourceGuardBaseRef
   }
 }
 

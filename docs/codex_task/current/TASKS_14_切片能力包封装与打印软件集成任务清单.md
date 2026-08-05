@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.3 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.4 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -219,15 +219,15 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | **14B-03A** | **`TexturedSceneViewDataProvider`**：从模型/材质资产生成 top `surfacePreview` 与 three_d `mesh + texcoord0 + submeshes + materials + textures`；实现 `appearances[]` 多模型引用、独立 identity 与预算降级 | 14B-02, 14B-03, 14A-04-R1 | checker 3MF、`shengdanjie_fudiao` 与双模型场景正例；白/近白纹理可保真；missing-texture / decode-fail / no-UV 显式失败；不得成功灰模 | PREPARED |
 | 14B-04 | `SliceFacade`（提交/进度/取消）| 14B-01 | 生产 TIFF 逐字节不变 | PREPARED |
 | 14B-05 | `slicer_cli` 改走 facade | 14B-02..04 | full 回归通过 | PREPARED |
-| 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）；**白名单初始条目见下方注**；新增目录不得入白名单 | 🟢 **READY（首批）** |
+| 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）；**白名单初始条目见下方注**；新增目录不得入白名单 | ✅ **COMPLETE（2026-08-05）**；quick CI/CTest 已接线 |
 
 > **14B-06 白名单初始条目（与 14E-05 关联）**
 >
 > 门禁一旦生效，以下两个既有文件立即超标，必须**显式登记**为白名单，否则 CI 直接红：
 >
 > ```text
-> apps/slicer_debug_ui/MainWindow.cpp            3659 行  → 14E-05 拆分后移除
-> apps/slicer_debug_ui/UiSmokeTestRunner.cpp     6963 行  → 14E-05 拆分后移除
+> apps/slicer_debug_ui/MainWindow.cpp                    4267 行  → 14E-05 拆分后移除
+> apps/slicer_debug_ui/services/UiSmokeTestRunner.cpp     7401 行  → 14E-05 拆分后移除
 > ```
 >
 > 白名单条目**必须带到期条件**（此处为「14E-05 完成」），不得无限期挂着。
@@ -402,3 +402,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.1 | 增加 14A-04-R1 与 14B-03A；双视图纹理改为硬标准；修正 M-MVP 自循环、Transient 碰撞权威性和 Commit 多余快照；细化 QOpenGL UI 信息架构与依赖链 |
 | 2026-08-05 | v2.2 | 完成 14A-11：增加可选 Z 限高、230 × 100 × 60 mm 显式设备默认、超限非阻断告警及 scene 响应字段；14A 切片侧实现任务全部完成，外部回签继续单独跟踪 |
 | 2026-08-05 | v2.3 | 完成 14B-00：输出 301 项文件级 base/engine 归属、4 条窄接口抽取边与独立模型导入编译探针；唯一结论为 `model.import=base` |
+| 2026-08-05 | v2.4 | 完成 14B-06：G1..G5 增量门禁接入 quick CI 与 CTest；初始 UI 白名单仅豁免 G4 且绑定 14E-05 到期条件 |

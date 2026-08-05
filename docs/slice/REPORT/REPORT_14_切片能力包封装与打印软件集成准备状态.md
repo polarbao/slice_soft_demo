@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v2.7 ｜ 更新日期：2026-08-05
+> 版本：v2.8 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14B-06 / 14B-01（14B-00 已完成）
+CURRENT_NEXT_TASK      = 14B-01（14B-00/06 已完成）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -116,6 +116,7 @@ slicer_module* / .def       全仓库零命中
 | 14A-10 | ✅ COMPLETE（2026-08-05） | manifest/Profile `whiteSemantics` 解析、传播、写出与 Reader 校验 | Debug/Release 配置与 Writer 单测、Schema 合同测试和 RIP Reader 通过；冲突/非法值 fail-closed，缺字段兼容 |
 | 14A-11 | ✅ COMPLETE（2026-08-05） | 可选 `zLimitMm`、显式 230 × 100 × 60 mm 设备默认、Z 超限告警及 scene DTO | Debug/Release scene/collision 单测与 Schema/DTO 合同测试 4/4；缺字段 canonical JSON 不变，超限仅告警 |
 | 14B-00 | ✅ COMPLETE（2026-08-05） | 301 项文件级 base/engine 归属、4 条窄接口抽取边、独立 `model_import_layering_probe` | 合同脚本 PASS；`model.cpp + miniz` 不链接 `slicer_core` 可独立导入 OBJ；唯一结论 `model.import=base` |
+| 14B-06 | ✅ COMPLETE（2026-08-05） | G1..G5 source-size 门禁、带到期条件白名单、quick CI 与 CTest 接线 | 自测覆盖 G1/G2/G3；全树 G4/G5 扫描可读；受保护 Stage 14 新目录禁止白名单 |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
 
@@ -141,9 +142,8 @@ slicer_module* / .def       全仓库零命中
 
 | 卡 | 任务 | 估算 |
 |---|---|---:|
-| 14B-06 | CI 行数门禁 G1..G5 | 2–3 人日 |
 | 14B-01 | Facade/DTO/ICancelToken | 2–3 人日 |
-| **剩余首批合计** | | **4–6 人日** |
+| **下一卡合计** | | **2–3 人日** |
 
 以上两卡均不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
@@ -190,3 +190,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v2.5 | 补齐 UI view spec 1.0、1 mm/10 mm 双视图网格、白纹理对比、多模型 appearances 与 78 项验收入口；14B-03A Provider 仍为 14E 硬前置 |
 | 2026-08-05 | v2.6 | 完成 14B 实施准备：冻结 Facade、base/engine 构建迁移、任务顺序、文件所有权、验证矩阵、回滚条件与机器门禁；下一开发任务为 14B-00，14B-06 可并行 |
 | 2026-08-05 | v2.7 | 完成 14B-00：以独立编译探针确认 `model.import=base`，登记 301 项文件归属与 4 条窄接口抽取边；下一任务为 14B-06 与 14B-01 |
+| 2026-08-05 | v2.8 | 完成 14B-06：G1..G5 门禁、到期白名单、quick CI 与 CTest 接线生效；14B 顺序推进为 14B-01 |
