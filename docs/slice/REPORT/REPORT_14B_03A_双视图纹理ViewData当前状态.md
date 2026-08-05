@@ -1,9 +1,9 @@
 # REPORT_14B-03A 双视图纹理 ViewData 当前状态
 
 > 更新时间：2026-08-05
-> 当前验证基线：`d7f36ce`
-> 任务：Stage 14B-03A
-> 状态：`IMPLEMENTATION_COMPLETE / DEBUG_RELEASE_GATES_PASS / HOST_INTEGRATION_PENDING`
+> 当前验证基线：14B-03A + 14B-03A-R1（本报告同提交）
+> 任务：Stage 14B-03A / 14B-03A-R1
+> 状态：`R1_CONTRACT_CLOSED / DEBUG_RELEASE_GATES_PASS / HOST_INTEGRATION_PENDING`
 > 打印侧 ACK：`NOT CONFIRMED`
 
 ## 1. 本次范围
@@ -20,6 +20,8 @@
 - 保留强制纹理资源，不使用灰模、轮廓或无纹理成功结果代替失败；
 - 通过构造时注入只读模型仓库和纹理源，避免修改 `ModelRepository` 或 importer 共享文件；
 - Provider 与单元/真实资产测试已接入根 CMake 和 CTest，并保持只链接 `slicer_base`。
+- R1 审计修正补齐局部闭合轮廓、请求 `content[]` / `texturePolicy`、显式预算降级、world 网格
+  单位矩阵、three_d 纹理降采样及 top/three_d 材质颜色一致性。
 
 本任务没有执行或取得打印侧回签，也没有接入 14C SPI blob 适配或 14E Qt 宿主显示。
 
@@ -48,6 +50,8 @@
 - 预览身份由局部几何、局部边界、appearance 和 RGBA 内容决定，不包含 `worldMatrix`。
 - 预算不足时依次尝试 768、512、384、256、128、64、32 像素级预算；无法保留必需纹理时返回
   `PM-SLICER-VIEWDATA-BUDGET`，不降级成灰模。
+- 从 `surfacePreview` alpha 提取确定性局部 XY 闭合轮廓，保留断开区域和孔洞；轮廓与局部边界均不含实例世界变换。
+- 分辨率因 `maxBytes` 降低时必须返回 `truncated=true` 与非空 `truncationReason`，禁止静默降级。
 
 ### 2.4 `three_d` 双视图纹理数据
 
@@ -55,7 +59,9 @@
 - 使用 seam-safe 展开顶点，避免共享位置但 UV 不同的纹理接缝被错误合并。
 - `three_d + outline_only` 被明确拒绝。
 - `Auto` LOD 依次尝试 `Lod0`、`Lod1`、`Lod2`；LOD 只降低三角形负载，不删除必需纹理。
+- 最低几何 LOD 仍超预算时，允许逐级降低纹理尺寸，但始终保留纹理、材质与 UV 闭环。
 - local mesh identity 不包含实例世界变换；请求 world mesh 时使用不同身份。
+- 请求 world mesh 时顶点已经烘焙世界变换，因此响应 `worldMatrix` 固定为单位矩阵，避免宿主重复变换。
 
 ## 3. Identity 与缓存语义
 
@@ -84,7 +90,10 @@ Transient/Commit/Production 边界。
 - `SceneViewMeshBuilder.h/.cpp`
 - `SceneViewIdentity.h/.cpp`
 - `SceneViewBudget.h/.cpp`
+- `SceneViewAppearanceBudget.h/.cpp`
+- `SceneViewCandidateBuilder.h/.cpp`
 - `SceneViewClosureValidator.h/.cpp`
+- `SceneViewOutlineBuilder.h/.cpp`
 
 独立测试位于 `tests/stage14b_03a/`：
 
@@ -112,6 +121,9 @@ Transient/Commit/Production 边界。
 | 双模型 appearances | `PASS` | 验证两个实例分别闭合到不同 appearance |
 | fail-closed 负向测试 | `PASS` | 覆盖缺纹理、解码失败、无 UV、错误材质、预算、取消 |
 | local/world identity 测试 | `PASS` | 验证实例移动不使局部资源身份失效 |
+| outline 与 world 变换闭环 | `PASS` | top/three_d 均返回局部轮廓；world 网格响应矩阵为单位矩阵 |
+| top/three_d 预算降级 | `PASS` | 降低 preview、LOD 或纹理分辨率时显式报告，且纹理不被删除 |
+| 纹理与 baseColorFactor 一致性 | `PASS` | 非白色基础色按同一规则调制 top/three_d；兼容 map_Kd 旁黑色 Kd 的生产 OBJ |
 | 真实 fixture 端到端 | `PASS` | `load_model_report` 导入 checker 3MF 与 shengdanjie OBJ，随后生成 top/three_d ViewData |
 | Capability DTO v1.2 合同门禁 | `PASS` | 15 项能力及双视图纹理/网格合同通过 |
 | Three-lane v1.1 合同门禁 | `PASS` | Transient/Commit/Production 调用规则通过 |
@@ -157,7 +169,7 @@ G4/G5 警告。
 | 项目 | 状态 | 原因 |
 |---|---|---|
 | Qt/打印软件 top/three_d GPU 显示 | `NOT RUN` | 不属于 14B-03A 独立写入范围 |
-| 真实模型 LOD、预算和性能基线 | `NOT RUN` | 当前只验证确定性预算行为和负向错误 |
+| 真实模型性能基线 | `NOT RUN` | 当前已验证确定性 LOD/preview/纹理预算行为，未建立性能阈值 |
 | 14C SPI wire/blob 适配 | `NOT RUN` | 属于 14C-04，必须复用本 Provider，不得另造 DTO |
 | 打印侧合同 ACK/回签 | `NOT CONFIRMED` | 本任务未收到、未执行且不声明打印侧 ACK |
 
@@ -174,14 +186,15 @@ G4/G5 警告。
 
 1. 14C-04 仍需把 capability DTO v1.2 的 wire/blob 适配接到本 Provider，禁止绕过或另造 ViewData DTO。
 2. 现有 importer 没有在 `SceneModel` 中保留源顶点法线；当前 Provider 生成确定性几何法线，复杂浮雕的视觉质量仍需 14E 验收。
-3. 当前 LOD 为确定性三角形降采样，不是质量保持的网格简化器；真实模型视觉质量和预算阈值仍需后续验证。
+3. 当前 LOD 为确定性三角形降采样，纹理预算使用 nearest-neighbor；二者都不是质量保持算法，真实模型视觉质量和性能阈值仍需后续验证。
 4. Qt 宿主显示和打印侧 ACK 属于后续 14E/外部协作，不得在本报告中标记为完成。
 5. `tests/stage14b_03a/` 被仓库 `.gitignore` 的 `tests/*` 规则忽略，提交时必须显式纳入。
 
 ## 8. 结论
 
-14B-03A 的切片侧实现已经完成：`top` 和 `three_d` 均具备真实纹理数据闭环，已使用纹理及其
-UV/材质绑定采用 fail-closed，appearance 与 local/world identity 语义已通过独立测试和冻结合同门禁。
+14B-03A 与 R1 的切片侧实现已经完成：`top` 和 `three_d` 均具备真实纹理、局部轮廓、显式预算
+降级及 world 变换闭环，已使用纹理及其 UV/材质绑定采用 fail-closed，appearance 与
+local/world identity 语义已通过独立测试和冻结合同门禁。
 
 正式 Debug/Release target 与真实 importer 资产端到端均已通过。当前仍不得将 14B-03A 描述为
 打印软件宿主集成完成，也不得宣称打印侧 ACK；这两项分别由 14C/14E 和外部回签关闭。

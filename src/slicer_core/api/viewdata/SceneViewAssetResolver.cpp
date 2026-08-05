@@ -163,7 +163,13 @@ ApiResult<ResolvedViewAppearance> ResolveViewAppearance(
                         sourceName);
                 }
                 source = found->second;
-                if (source->has_diffuse)
+                // Some production OBJ exporters write black Kd beside map_Kd.
+                const bool hasNeutralizedTexturedBlack =
+                    source->has_texture
+                    && source->diffuse_rgb.at(0U) == 0U
+                    && source->diffuse_rgb.at(1U) == 0U
+                    && source->diffuse_rgb.at(2U) == 0U;
+                if (source->has_diffuse && !hasNeutralizedTexturedBlack)
                 {
                     for (std::size_t channel{0U}; channel < 3U; ++channel)
                     {

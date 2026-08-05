@@ -1,5 +1,7 @@
 #include "TestSupport.h"
 
+#include <algorithm>
+
 namespace stage14b03a
 {
 namespace
@@ -85,6 +87,32 @@ void BudgetAndRequestFailures()
         outlineRequest);
     RequireError(outline.Error(), "PM-SLICER-PROFILE-0031",
                  "three_d outline_only");
+
+    auto missingContentRequest = MakeRequest(
+        slicer_core::api::ViewMode::Top);
+    missingContentRequest.content.erase(
+        std::remove(
+            missingContentRequest.content.begin(),
+            missingContentRequest.content.end(),
+            slicer_core::api::ViewContent::SurfacePreview),
+        missingContentRequest.content.end());
+    const auto missingContent = RunSingle(
+        MakeTexturedQuad("content.obj", "used", "valid.png"),
+        textures,
+        missingContentRequest);
+    RequireError(missingContent.Error(), "PM-SLICER-PROFILE-0031",
+                 "top content without surface preview");
+
+    auto duplicateContentRequest = MakeRequest(
+        slicer_core::api::ViewMode::Top);
+    duplicateContentRequest.content.push_back(
+        slicer_core::api::ViewContent::Bbox);
+    const auto duplicateContent = RunSingle(
+        MakeTexturedQuad("duplicate.obj", "used", "valid.png"),
+        textures,
+        duplicateContentRequest);
+    RequireError(duplicateContent.Error(), "PM-SLICER-PROFILE-0031",
+                 "duplicate ViewData content");
 }
 
 void CancellationFailure()

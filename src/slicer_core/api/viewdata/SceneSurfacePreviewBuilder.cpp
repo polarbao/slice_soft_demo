@@ -269,6 +269,18 @@ ApiResult<SurfacePreview> BuildSurfacePreview(
                                 resolvedMaterial.texture_index),
                             u,
                             v);
+                        const std::array<std::uint8_t, 4> factor =
+                            BaseColor(resolvedMaterial.material);
+                        for (std::size_t channel{0U};
+                             channel < color.size();
+                             ++channel)
+                        {
+                            color.at(channel) = static_cast<std::uint8_t>(
+                                (static_cast<unsigned int>(color.at(channel))
+                                     * factor.at(channel)
+                                 + 127U)
+                                / 255U);
+                        }
                     }
                     if (color.at(3U) == 0U)
                     {

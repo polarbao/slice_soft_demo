@@ -51,15 +51,21 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/scene/SceneFacadeService.h
     src/slicer_core/api/viewdata/SceneSurfacePreviewBuilder.cpp
     src/slicer_core/api/viewdata/SceneSurfacePreviewBuilder.h
+    src/slicer_core/api/viewdata/SceneViewAppearanceBudget.cpp
+    src/slicer_core/api/viewdata/SceneViewAppearanceBudget.h
     src/slicer_core/api/viewdata/SceneViewAssetResolver.cpp
     src/slicer_core/api/viewdata/SceneViewBudget.cpp
     src/slicer_core/api/viewdata/SceneViewBudget.h
+    src/slicer_core/api/viewdata/SceneViewCandidateBuilder.cpp
+    src/slicer_core/api/viewdata/SceneViewCandidateBuilder.h
     src/slicer_core/api/viewdata/SceneViewClosureValidator.cpp
     src/slicer_core/api/viewdata/SceneViewClosureValidator.h
     src/slicer_core/api/viewdata/SceneViewIdentity.cpp
     src/slicer_core/api/viewdata/SceneViewIdentity.h
     src/slicer_core/api/viewdata/SceneViewMeshBuilder.cpp
     src/slicer_core/api/viewdata/SceneViewMeshBuilder.h
+    src/slicer_core/api/viewdata/SceneViewOutlineBuilder.cpp
+    src/slicer_core/api/viewdata/SceneViewOutlineBuilder.h
     src/slicer_core/api/viewdata/SceneViewResolvedAsset.h
     src/slicer_core/api/viewdata/SceneViewResources.cpp
     src/slicer_core/api/viewdata/SceneViewResources.h

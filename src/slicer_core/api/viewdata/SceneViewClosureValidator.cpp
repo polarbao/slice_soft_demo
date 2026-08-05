@@ -1,6 +1,7 @@
 #include "slicer_core/api/viewdata/SceneViewClosureValidator.h"
 
 #include <cstddef>
+#include <cmath>
 #include <set>
 #include <string>
 #include <string_view>
@@ -20,11 +21,31 @@ ApiResult<void> Failure(
         detail});
 }
 
+bool IsIdentity(const Matrix4d& matrix)
+{
+    const Matrix4d identity;
+    for (std::size_t index{0U}; index < matrix.values.size(); ++index)
+    {
+        if (std::abs(matrix.values.at(index) - identity.values.at(index))
+            > 1.0e-12)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace
 
 ApiResult<void> ValidateViewDataClosure(
     const SceneViewData& viewData) noexcept
 {
+    if (viewData.truncated != !viewData.truncation_reason.empty())
+    {
+        return Failure(
+            "ViewData truncation state and reason are inconsistent",
+            viewData.truncation_reason);
+    }
     std::set<std::string> appearanceIdentities;
     for (const ViewAppearance& appearance : viewData.appearances)
     {
@@ -86,6 +107,31 @@ ApiResult<void> ValidateViewDataClosure(
                 "ViewData instance identity closure is invalid",
                 instance.instance_id);
         }
+        if (instance.outlines.empty())
+        {
+            return Failure(
+                "ViewData instance has no local-space outline",
+                instance.instance_id);
+        }
+        for (const ViewOutline& outline : instance.outlines)
+        {
+            if (outline.points_mm.size() < 3U)
+            {
+                return Failure(
+                    "ViewData outline has fewer than three points",
+                    instance.instance_id);
+            }
+            for (const std::array<double, 2>& point : outline.points_mm)
+            {
+                if (!std::isfinite(point.at(0U))
+                    || !std::isfinite(point.at(1U)))
+                {
+                    return Failure(
+                        "ViewData outline contains non-finite coordinates",
+                        instance.instance_id);
+                }
+            }
+        }
         if (viewData.view_mode == ViewMode::Top)
         {
             if (!instance.surface_preview.has_value()
@@ -123,6 +169,13 @@ ApiResult<void> ValidateViewDataClosure(
                     instance.instance_id);
             }
             const ViewMesh& mesh = *instance.mesh;
+            if (mesh.mesh_transform == MeshTransform::World
+                && !IsIdentity(instance.world_matrix))
+            {
+                return Failure(
+                    "world ViewData mesh requires an identity worldMatrix",
+                    instance.instance_id);
+            }
             const std::size_t vertexCount = mesh.positions.size() / 3U;
             if (mesh.positions.size() % 3U != 0U
                 || mesh.normals.size() != mesh.positions.size()

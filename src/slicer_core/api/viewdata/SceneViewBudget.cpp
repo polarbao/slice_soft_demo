@@ -16,6 +16,7 @@ std::uint64_t EstimateViewDataBytes(const SceneViewData& viewData) noexcept
 {
     std::uint64_t bytes{1024U};
     bytes += StringBytes(viewData.viewdata_identity);
+    bytes += StringBytes(viewData.truncation_reason);
     for (const ViewAppearance& appearance : viewData.appearances)
     {
         bytes += 128U + StringBytes(appearance.appearance_identity);
@@ -37,6 +38,12 @@ std::uint64_t EstimateViewDataBytes(const SceneViewData& viewData) noexcept
             + StringBytes(instance.mesh_identity)
             + StringBytes(instance.appearance_identity)
             + StringBytes(instance.preview_identity);
+        for (const ViewOutline& outline : instance.outlines)
+        {
+            bytes += 32U
+                + static_cast<std::uint64_t>(outline.points_mm.size())
+                    * sizeof(double) * 2U;
+        }
         if (instance.surface_preview.has_value())
         {
             bytes += 128U

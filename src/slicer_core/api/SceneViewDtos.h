@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-namespace slicer_core::api {
+namespace slicer_core::api
+{
 
 enum class ViewMode
 {
@@ -35,6 +36,22 @@ enum class MeshTransform
 {
     Local,
     World
+};
+
+/** @brief Selectable payload categories for one ViewData query. */
+enum class ViewContent
+{
+    Bbox,
+    Outline,
+    SurfacePreview,
+    Mesh,
+    Appearance
+};
+
+/** @brief Texture resolution policy for a ViewData query. */
+enum class TexturePolicy
+{
+    RequireIfPresent
 };
 
 /** @brief RGBA8 top-view preview with straight alpha. */
@@ -139,7 +156,14 @@ struct SceneViewData
 struct SceneViewDataRequest
 {
     SceneId scene_id{0};
+    std::vector<ViewContent> content{
+        ViewContent::Bbox,
+        ViewContent::Outline,
+        ViewContent::SurfacePreview,
+        ViewContent::Mesh,
+        ViewContent::Appearance};
     ViewMode view_mode{ViewMode::Top};
+    TexturePolicy texture_policy{TexturePolicy::RequireIfPresent};
     ViewLod lod{ViewLod::Auto};
     MeshTransform mesh_transform{MeshTransform::Local};
     std::uint64_t expected_scene_revision{0};

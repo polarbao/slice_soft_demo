@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.5 ｜ 更新日期：2026-08-05
+> 版本：v3.6 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -56,8 +56,9 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿�
 `contracts/slicer_ui_view_spec.json` 已冻结设置页默认视图、top/three_d 纹理内容、
 1 mm/10 mm 自适应网格、白纹理对比辅助与切换零模块调用；它不属于能力 ABI 或生产 TIFF。
 
-> ✅ **UI-R4 切片侧 Provider 已闭合**：14A-04-R1 已冻结双视图纹理 DTO，14B-03A 已实现
-> `TexturedSceneViewDataProvider` 并通过真实 OBJ/3MF 与 Debug/Release 门禁；14C/14E 仍需完成 SPI 适配和宿主显示。
+> ✅ **UI-R4 切片侧 Provider 已闭合**：14A-04-R1 已冻结双视图纹理 DTO，14B-03A 与
+> 14B-03A-R1 已实现 `TexturedSceneViewDataProvider`、局部轮廓、显式预算降级及 world 变换闭环，
+> 并通过真实 OBJ/3MF 与 Debug/Release 门禁；14C/14E 仍需完成 SPI 适配和宿主显示。
 
 ### 1.3 仍然开放的外部项
 
@@ -123,6 +124,7 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14B-02 | ✅ COMPLETE（2026-08-05） | ModelFacade、PackageQueryFacade、只读 TIFF API 与 base-only 预览查询链路 | Debug/Release 专属测试 5/5、相关 TIFF/RIP/preview CTest 12/12、base-only 链接和分层门禁 PASS |
 | 14B-03 | ✅ COMPLETE（2026-08-05） | SceneFacade 权威状态、完整 Commit 响应、幂等、碰撞/越界及 ViewData Provider 边界 | Debug/Release 构建及目标 CTest 6/6 PASS；正常 Commit 不追加 snapshot |
 | 14B-04 | ✅ COMPLETE（2026-08-05） | SliceFacade 生产委托、单调进度与协作取消 | Debug/Release 正式目标和生产回归门禁 PASS；深度取消仍归 14D-04 |
+| 14B-03A-R1 | ✅ COMPLETE（2026-08-05） | ViewData 局部轮廓、显式预算降级、three_d 纹理降采样、world 单位矩阵和材质一致性 | 独立测试、Debug/Release、真实 OBJ/3MF 及 DTO/三车道合同门禁 PASS |
 | 14B-06 | ✅ COMPLETE（2026-08-05） | G1..G5 source-size 门禁、带到期条件白名单、quick CI 与 CTest 接线 | 自测覆盖 G1/G2/G3；全树 G4/G5 扫描可读；受保护 Stage 14 新目录禁止白名单 |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
@@ -205,3 +207,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-05 | v3.3 | 完成 14B-04：SliceFacade 以既有生产服务为唯一执行入口，正式 Debug/Release target、单调进度、协作取消和生产回归门禁通过；14D-04 继续负责深度取消与 2 秒上限 |
 | 2026-08-05 | v3.4 | 完成 14B-02：ModelFacade 与 PackageQueryFacade 接入权威模型/包能力，生产 TIFF Reader、缓存和材料预览形成 base-only 查询链路；Writer 与 backend 选择保持 engine，14B-03A/05 可并行 |
 | 2026-08-05 | v3.5 | 完成 14B-03A：top/three_d 真实纹理 Provider 接入正式 base target，真实 OBJ/3MF、纯白/近白、多模型 appearance、预算与 fail-closed 的 Debug/Release 门禁通过；下一任务为 14B-05 |
+| 2026-08-05 | v3.6 | 完成 14B-03A-R1：合同审计发现的 outline、静默降级、world 重复变换、请求字段和材质显示差异已闭合；下一任务保持 14B-05 |

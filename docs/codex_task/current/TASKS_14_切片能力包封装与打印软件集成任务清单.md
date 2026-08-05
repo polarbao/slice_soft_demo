@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.11 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.12 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -217,7 +217,8 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14B-01A | **落地 base/engine 两库拆分 + CI 单向依赖检查** | 14B-00, 14B-01 | `slicer_base` 不含 engine 符号；构建图正确 | ✅ **COMPLETE（2026-08-05）**；318 项 source 唯一分配，base 78 / engine 240，单向构建图门禁 PASS |
 | 14B-02 | `ModelFacade` + `PackageQueryFacade` 实现（复用既有能力）| 14B-01-R1, 14B-01A | 行为与既有 CLI 一致 | ✅ **COMPLETE（2026-08-05）**；模型元数据、包摘要/层/预览/校验/报告及 base-only 链接门禁 PASS |
 | 14B-03 | `SceneFacade`（变换/碰撞/越界权威求值 + revision）| 14B-01 | 与 `layout/` 既有判定逐条一致 | ✅ **COMPLETE（2026-08-05）**；完整 Commit DTO、幂等/原子提交及 Debug/Release target 门禁 PASS |
-| **14B-03A** | **`TexturedSceneViewDataProvider`**：从模型/材质资产生成 top `surfacePreview` 与 three_d `mesh + texcoord0 + submeshes + materials + textures`；实现 `appearances[]` 多模型引用、独立 identity 与预算降级 | 14B-02, 14B-03, 14A-04-R1 | checker 3MF、`shengdanjie_fudiao` 与双模型场景正例；白/近白纹理可保真；missing-texture / decode-fail / no-UV 显式失败；不得成功灰模 | ✅ **COMPLETE（2026-08-05）**；独立、Debug/Release、真实 OBJ/3MF、双模型 appearance、纯白/近白与 fail-closed 门禁 PASS |
+| **14B-03A** | **`TexturedSceneViewDataProvider`**：从模型/材质资产生成 top `surfacePreview` 与 three_d `mesh + texcoord0 + submeshes + materials + textures`；实现 `appearances[]` 多模型引用、独立 identity 与预算降级 | 14B-02, 14B-03, 14A-04-R1 | checker 3MF、`shengdanjie_fudiao` 与双模型场景正例；白/近白纹理可保真；missing-texture / decode-fail / no-UV 显式失败；不得成功灰模 | ✅ **COMPLETE（由 14B-03A-R1 闭合，2026-08-05）**；独立、Debug/Release、真实 OBJ/3MF、双模型 appearance、纯白/近白与 fail-closed 门禁 PASS |
+| **14B-03A-R1** | **双视图 ViewData 合同审计修正**：补齐局部闭合轮廓、`content[]` / `texturePolicy` 内部请求字段、预算降级 `truncated` 语义、three_d 纹理降采样、world 网格单位矩阵及纹理与 `baseColorFactor` 一致性 | 14B-03A；DTO v1.2 | top/three_d 均带 outline；所有预算降级显式报告且不丢纹理；world 网格不重复变换；OBJ/3MF 真实资产和合成负例通过 | ✅ **COMPLETE（2026-08-05）**；独立测试、Debug/Release、真实 OBJ/3MF 与合同门禁 PASS |
 | 14B-04 | `SliceFacade`（提交/进度/取消）| 14B-01 | 生产 TIFF 逐字节不变 | ✅ **COMPLETE（2026-08-05）**；正式 Debug/Release target、进度/取消与生产回归门禁 PASS |
 | 14B-05 | `slicer_cli` 改走 facade | 14B-02..04 | full 回归通过 | PREPARED |
 | 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）；**白名单初始条目见下方注**；新增目录不得入白名单 | ✅ **COMPLETE（2026-08-05）**；quick CI/CTest 已接线 |
@@ -411,3 +412,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.9 | 完成 14B-04：SliceFacade 复用既有生产入口，接入正式 Debug/Release target，冻结提交身份、单调进度、协作取消和生产 TIFF 零改写边界；深度取消仍归 14D-04 |
 | 2026-08-05 | v2.10 | 完成 14B-02：ModelFacade 与 PackageQueryFacade 复用权威模型、包、TIFF Reader 和材料预览能力；只读 TIFF/preview 下沉 base，Writer 后端保持 engine；Debug/Release 及 base-only 链接门禁通过 |
 | 2026-08-05 | v2.11 | 完成 14B-03A：正式接入 TexturedSceneViewDataProvider，top/three_d 真实纹理、纯白/近白、多模型 appearance、预算与纹理失败关闭均通过独立及 Debug/Release 门禁；打印侧 ACK 仍待确认 |
+| 2026-08-05 | v2.12 | 完成 14B-03A-R1 合同审计修正：补齐 outline、content/texturePolicy、显式 truncated、three_d 纹理预算、world 单位矩阵和 baseColorFactor 一致性；14B-05 保持下一任务 |

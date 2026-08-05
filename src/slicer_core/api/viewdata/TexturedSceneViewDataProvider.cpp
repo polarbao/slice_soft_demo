@@ -1,10 +1,7 @@
 #include "slicer_core/api/viewdata/TexturedSceneViewDataProvider.h"
 
-#include "slicer_core/api/viewdata/SceneSurfacePreviewBuilder.h"
 #include "slicer_core/api/viewdata/SceneViewBudget.h"
-#include "slicer_core/api/viewdata/SceneViewClosureValidator.h"
-#include "slicer_core/api/viewdata/SceneViewIdentity.h"
-#include "slicer_core/api/viewdata/SceneViewMeshBuilder.h"
+#include "slicer_core/api/viewdata/SceneViewCandidateBuilder.h"
 #include "slicer_core/api/viewdata/SceneViewResolvedAsset.h"
 
 #include <array>
@@ -32,30 +29,10 @@ ApiResult<T> Failure(
         {std::string(code), std::string(message), detail});
 }
 
-Bounds3d LocalBounds(const SceneModel& model)
+struct TopBudgetAttempt
 {
-    Bounds3d bounds;
-    bounds.min_mm = {
-        model.bbox_mm.min.x,
-        model.bbox_mm.min.y,
-        model.bbox_mm.min.z};
-    bounds.max_mm = {
-        model.bbox_mm.max.x,
-        model.bbox_mm.max.y,
-        model.bbox_mm.max.z};
-    return bounds;
-}
-
-struct PreparedModel
-{
-    std::shared_ptr<const SceneModel> model;
-    viewdata_detail::ResolvedViewAppearance appearance;
-};
-
-struct PreparedInstance
-{
-    SceneInstanceState state;
-    std::shared_ptr<const PreparedModel> model;
+    int preview_dimension{0};
+    std::size_t max_texture_edge_px{0U};
 };
 
 class TexturedSceneViewDataProvider final
@@ -91,7 +68,8 @@ public:
                 return Cancelled(snapshot.scene_id);
             }
 
-            ApiResult<std::vector<PreparedInstance>> prepared = Prepare(
+            ApiResult<std::vector<viewdata_detail::PreparedViewInstance>>
+                prepared = Prepare(
                 request,
                 snapshot,
                 cancelToken);
@@ -105,16 +83,40 @@ public:
 
             if (request.view_mode == ViewMode::Top)
             {
-                constexpr std::array<int, 7> dimensions{
-                    768, 512, 384, 256, 128, 64, 32};
-                for (const int dimension : dimensions)
+                constexpr std::array<TopBudgetAttempt, 14> attempts{{
+                    {768, 0U},
+                    {512, 0U},
+                    {384, 0U},
+                    {256, 0U},
+                    {128, 0U},
+                    {64, 0U},
+                    {32, 0U},
+                    {256, 2048U},
+                    {256, 1024U},
+                    {128, 512U},
+                    {128, 256U},
+                    {64, 128U},
+                    {32, 64U},
+                    {32, 32U}}};
+                for (const TopBudgetAttempt& attempt : attempts)
                 {
-                    ApiResult<SceneViewData> candidate = BuildCandidate(
+                    viewdata_detail::ViewCandidateOptions options;
+                    options.preview_dimension = attempt.preview_dimension;
+                    options.lod = ViewLod::Lod0;
+                    options.max_texture_edge_px =
+                        attempt.max_texture_edge_px;
+                    options.degraded = attempt.preview_dimension < 768;
+                    if (options.degraded)
+                    {
+                        options.degradation_reason =
+                            "top_preview_resolution_reduced_for_max_bytes";
+                    }
+                    ApiResult<SceneViewData> candidate =
+                        viewdata_detail::BuildViewCandidate(
                         request,
                         snapshot,
                         *prepared.Value(),
-                        dimension,
-                        ViewLod::Lod0,
+                        options,
                         cancelToken);
                     if (!candidate.IsOk())
                     {
@@ -135,13 +137,57 @@ public:
                     : std::vector<ViewLod>{request.lod};
                 for (const ViewLod lod : lods)
                 {
-                    ApiResult<SceneViewData> candidate = BuildCandidate(
+                    viewdata_detail::ViewCandidateOptions options;
+                    options.lod = lod;
+                    options.degraded = request.lod == ViewLod::Auto
+                        && lod != ViewLod::Lod0;
+                    if (options.degraded)
+                    {
+                        options.degradation_reason =
+                            "mesh_lod_reduced_for_max_bytes";
+                    }
+                    ApiResult<SceneViewData> candidate =
+                        viewdata_detail::BuildViewCandidate(
                         request,
                         snapshot,
                         *prepared.Value(),
-                        0,
-                        lod,
+                        options,
                         cancelToken);
+                    if (!candidate.IsOk())
+                    {
+                        return candidate;
+                    }
+                    if (viewdata_detail::EstimateViewDataBytes(
+                            *candidate.Value()) <= request.max_bytes)
+                    {
+                        return candidate;
+                    }
+                }
+
+                constexpr std::array<std::size_t, 7> textureEdges{
+                    2048U, 1024U, 512U, 256U, 128U, 64U, 32U};
+                const ViewLod textureBudgetLod = request.lod == ViewLod::Auto
+                    ? ViewLod::Lod2
+                    : request.lod;
+                for (const std::size_t edge : textureEdges)
+                {
+                    viewdata_detail::ViewCandidateOptions options;
+                    options.lod = textureBudgetLod;
+                    options.max_texture_edge_px = edge;
+                    options.degraded = request.lod == ViewLod::Auto
+                        && textureBudgetLod != ViewLod::Lod0;
+                    if (options.degraded)
+                    {
+                        options.degradation_reason =
+                            "mesh_lod_reduced_for_max_bytes";
+                    }
+                    ApiResult<SceneViewData> candidate =
+                        viewdata_detail::BuildViewCandidate(
+                            request,
+                            snapshot,
+                            *prepared.Value(),
+                            options,
+                            cancelToken);
                     if (!candidate.IsOk())
                     {
                         return candidate;
@@ -209,6 +255,48 @@ private:
                 "ViewData maxBytes must be non-zero",
                 "max_bytes");
         }
+        if (request.content.empty())
+        {
+            return Failure<void>(
+                "PM-SLICER-PROFILE-0031",
+                "ViewData content must not be empty",
+                "content");
+        }
+        std::set<ViewContent> content;
+        for (const ViewContent item : request.content)
+        {
+            if (!content.emplace(item).second)
+            {
+                return Failure<void>(
+                    "PM-SLICER-PROFILE-0031",
+                    "ViewData content contains a duplicate",
+                    "content");
+            }
+        }
+        const std::array<ViewContent, 3> commonContent{
+            ViewContent::Bbox,
+            ViewContent::Outline,
+            ViewContent::Appearance};
+        for (const ViewContent required : commonContent)
+        {
+            if (!content.contains(required))
+            {
+                return Failure<void>(
+                    "PM-SLICER-PROFILE-0031",
+                    "ViewData content omits a required item",
+                    "content");
+            }
+        }
+        const ViewContent modeContent = request.view_mode == ViewMode::Top
+            ? ViewContent::SurfacePreview
+            : ViewContent::Mesh;
+        if (!content.contains(modeContent))
+        {
+            return Failure<void>(
+                "PM-SLICER-PROFILE-0031",
+                "ViewData content omits the required view payload",
+                "content");
+        }
         if (request.view_mode == ViewMode::ThreeD
             && request.lod == ViewLod::OutlineOnly)
         {
@@ -220,7 +308,7 @@ private:
         return ApiResult<void>::Success();
     }
 
-    ApiResult<std::vector<PreparedInstance>> Prepare(
+    ApiResult<std::vector<viewdata_detail::PreparedViewInstance>> Prepare(
         const SceneViewDataRequest& request,
         const SceneSnapshot& snapshot,
         const ICancelToken& cancelToken) const
@@ -246,7 +334,8 @@ private:
             {
                 if (!uniqueIds.emplace(instanceId).second)
                 {
-                    return Failure<std::vector<PreparedInstance>>(
+                    return Failure<std::vector<
+                        viewdata_detail::PreparedViewInstance>>(
                         "PM-SLICER-PROFILE-0031",
                         "ViewData instance filter contains a duplicate",
                         instanceId);
@@ -254,7 +343,8 @@ private:
                 const auto state = states.find(instanceId);
                 if (state == states.end())
                 {
-                    return Failure<std::vector<PreparedInstance>>(
+                    return Failure<std::vector<
+                        viewdata_detail::PreparedViewInstance>>(
                         "PM-SLICER-INPUT-0001",
                         "ViewData instance is not present in the scene",
                         instanceId);
@@ -264,20 +354,23 @@ private:
         }
         if (selected.empty())
         {
-            return Failure<std::vector<PreparedInstance>>(
+            return Failure<std::vector<
+                viewdata_detail::PreparedViewInstance>>(
                 "PM-SLICER-PROFILE-0031",
                 "ViewData request selected no instances",
                 "instance_ids");
         }
 
-        std::map<ModelId, std::shared_ptr<const PreparedModel>> modelCache;
-        std::vector<PreparedInstance> result;
+        std::map<ModelId, std::shared_ptr<const
+            viewdata_detail::PreparedViewModel>> modelCache;
+        std::vector<viewdata_detail::PreparedViewInstance> result;
         result.reserve(selected.size());
         for (const SceneInstanceState* state : selected)
         {
             if (cancelToken.IsCancelRequested())
             {
-                return Failure<std::vector<PreparedInstance>>(
+                return Failure<std::vector<
+                    viewdata_detail::PreparedViewInstance>>(
                     "PM-SLICER-CANCELLED-0070",
                     "ViewData resource preparation was cancelled",
                     state->instance.instance_id);
@@ -289,12 +382,14 @@ private:
                     m_models->GetModel(state->instance.model_id);
                 if (!model.IsOk())
                 {
-                    return Failure<std::vector<PreparedInstance>>(
+                    return Failure<std::vector<
+                        viewdata_detail::PreparedViewInstance>>(
                         model.Error()->code,
                         model.Error()->message,
                         model.Error()->detail);
                 }
-                auto prepared = std::make_shared<PreparedModel>();
+                auto prepared = std::make_shared<
+                    viewdata_detail::PreparedViewModel>();
                 prepared->model = *model.Value();
                 ApiResult<viewdata_detail::ResolvedViewAppearance> appearance =
                     viewdata_detail::ResolveViewAppearance(
@@ -303,7 +398,8 @@ private:
                         cancelToken);
                 if (!appearance.IsOk())
                 {
-                    return Failure<std::vector<PreparedInstance>>(
+                    return Failure<std::vector<
+                        viewdata_detail::PreparedViewInstance>>(
                         appearance.Error()->code,
                         appearance.Error()->message,
                         appearance.Error()->detail);
@@ -315,106 +411,9 @@ private:
             }
             result.push_back({*state, preparedModel->second});
         }
-        return ApiResult<std::vector<PreparedInstance>>::Success(
+        return ApiResult<std::vector<
+            viewdata_detail::PreparedViewInstance>>::Success(
             std::move(result));
-    }
-
-    static ApiResult<SceneViewData> BuildCandidate(
-        const SceneViewDataRequest& request,
-        const SceneSnapshot& snapshot,
-        const std::vector<PreparedInstance>& prepared,
-        const int previewDimension,
-        const ViewLod lod,
-        const ICancelToken& cancelToken)
-    {
-        SceneViewData result;
-        result.view_mode = request.view_mode;
-        result.scene_revision = snapshot.scene_revision;
-        std::map<std::string, std::size_t> appearances;
-
-        for (const PreparedInstance& preparedInstance : prepared)
-        {
-            if (cancelToken.IsCancelRequested())
-            {
-                return Cancelled(snapshot.scene_id);
-            }
-            const PreparedModel& preparedModel = *preparedInstance.model;
-            const std::string& appearanceIdentity =
-                preparedModel.appearance.appearance.appearance_identity;
-            if (!appearances.contains(appearanceIdentity))
-            {
-                appearances.emplace(
-                    appearanceIdentity,
-                    result.appearances.size());
-                result.appearances.push_back(
-                    preparedModel.appearance.appearance);
-            }
-
-            ViewInstance instance;
-            instance.instance_id =
-                preparedInstance.state.instance.instance_id;
-            instance.model_id = preparedInstance.state.instance.model_id;
-            instance.world_matrix =
-                preparedInstance.state.instance.world_matrix;
-            instance.local_bounds_mm = LocalBounds(*preparedModel.model);
-            instance.texture_status = preparedModel.appearance.has_texture
-                ? TextureStatus::Available
-                : TextureStatus::NotProvided;
-            instance.appearance_identity = appearanceIdentity;
-
-            if (request.view_mode == ViewMode::Top)
-            {
-                ApiResult<SurfacePreview> preview =
-                    viewdata_detail::BuildSurfacePreview(
-                        *preparedModel.model,
-                        preparedModel.appearance,
-                        previewDimension,
-                        cancelToken);
-                if (!preview.IsOk())
-                {
-                    return Failure<SceneViewData>(
-                        preview.Error()->code,
-                        preview.Error()->message,
-                        preview.Error()->detail);
-                }
-                instance.preview_identity =
-                    preview.Value()->preview_identity;
-                instance.surface_preview = std::move(*preview.Value());
-            }
-            else
-            {
-                ApiResult<ViewMesh> mesh = viewdata_detail::BuildViewMesh(
-                    *preparedModel.model,
-                    preparedModel.appearance,
-                    instance.world_matrix,
-                    lod,
-                    request.mesh_transform,
-                    cancelToken);
-                if (!mesh.IsOk())
-                {
-                    return Failure<SceneViewData>(
-                        mesh.Error()->code,
-                        mesh.Error()->message,
-                        mesh.Error()->detail);
-                }
-                instance.mesh_identity = mesh.Value()->mesh_identity;
-                instance.mesh = std::move(*mesh.Value());
-            }
-            result.instances.push_back(std::move(instance));
-        }
-
-        const ApiResult<void> closure =
-            viewdata_detail::ValidateViewDataClosure(result);
-        if (!closure.IsOk())
-        {
-            return Failure<SceneViewData>(
-                closure.Error()->code,
-                closure.Error()->message,
-                closure.Error()->detail);
-        }
-        result.viewdata_identity =
-            viewdata_detail::ComputeViewDataIdentity(result);
-        return ApiResult<SceneViewData>::Success(std::move(result));
     }
 
     const std::shared_ptr<const ISceneViewModelRepository> m_models;

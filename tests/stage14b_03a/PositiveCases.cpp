@@ -23,6 +23,33 @@ bool ContainsColor(
     return false;
 }
 
+slicer_core::TextureImage MakeLargeTexture(const int dimension)
+{
+    slicer_core::TextureImage image;
+    image.width = dimension;
+    image.height = dimension;
+    image.rgba.resize(
+        static_cast<std::size_t>(dimension)
+            * static_cast<std::size_t>(dimension) * 4U);
+    for (int y{0}; y < dimension; ++y)
+    {
+        for (int x{0}; x < dimension; ++x)
+        {
+            const std::size_t offset =
+                (static_cast<std::size_t>(y)
+                    * static_cast<std::size_t>(dimension)
+                    + static_cast<std::size_t>(x))
+                * 4U;
+            image.rgba.at(offset) = static_cast<std::uint8_t>(x % 256);
+            image.rgba.at(offset + 1U) =
+                static_cast<std::uint8_t>(y % 256);
+            image.rgba.at(offset + 2U) = 255U;
+            image.rgba.at(offset + 3U) = 255U;
+        }
+    }
+    return image;
+}
+
 void CheckerThreeMfSemanticCase()
 {
     const auto model = std::make_shared<const slicer_core::SceneModel>(
@@ -41,9 +68,14 @@ void CheckerThreeMfSemanticCase()
     const auto top = provider->GetViewData(
         MakeRequest(slicer_core::api::ViewMode::Top), snapshot, active);
     Require(top.IsOk(), "checker top view should close");
+    Require(!top.Value()->truncated
+                && top.Value()->truncation_reason.empty(),
+            "full-budget top view must not report truncation");
     Require(top.Value()->appearances.size() == 1U,
             "checker should expose one appearance");
     const auto& preview = *top.Value()->instances.front().surface_preview;
+    Require(!top.Value()->instances.front().outlines.empty(),
+            "top view should return a local-space outline");
     Require(ContainsColor(preview.rgba8, {0U, 0U, 0U, 255U}),
             "checker top view should retain opaque black");
     Require(ContainsColor(preview.rgba8, {255U, 64U, 64U, 255U}),
@@ -54,6 +86,8 @@ void CheckerThreeMfSemanticCase()
     Require(threeD.IsOk(), "checker three_d view should close");
     const auto& instance = threeD.Value()->instances.front();
     Require(instance.mesh.has_value(), "three_d should return a mesh");
+    Require(!instance.outlines.empty(),
+            "three_d should return a local-space outline");
     Require(instance.mesh->positions.size() == 18U
                 && instance.mesh->normals.size() == 18U
                 && instance.mesh->texcoord0.size() == 12U
@@ -64,6 +98,57 @@ void CheckerThreeMfSemanticCase()
     Require(instance.appearance_identity
                 == threeD.Value()->appearances.front().appearance_identity,
             "checker instance appearance should close");
+}
+
+void BudgetDegradationCase()
+{
+    const auto model = std::make_shared<const slicer_core::SceneModel>(
+        MakeTexturedQuad(
+            "budget-degradation.obj",
+            "budget-material",
+            "budget-large.png"));
+    auto textures = std::make_shared<TestTextureSource>();
+    textures->AddImage("budget-large.png", MakeLargeTexture(1024));
+    const auto provider = MakeProvider({{270U, model}}, textures);
+    const TestCancelToken active;
+    auto request = MakeRequest(slicer_core::api::ViewMode::Top);
+    request.max_bytes = 700U * 1024U;
+    const auto result = provider->GetViewData(
+        request,
+        MakeSnapshot({{"budget-degradation", 270U}}),
+        active);
+    Require(result.IsOk(), "bounded top view should degrade and close");
+    Require(result.Value()->truncated,
+            "budget degradation must be reported as truncated");
+    Require(!result.Value()->truncation_reason.empty(),
+            "budget degradation must include a reason");
+    const auto& texture = result.Value()->appearances.front().textures.front();
+    Require(texture.width_px <= 256 && texture.height_px <= 256,
+            "budget degradation should reduce texture dimensions");
+    Require(!texture.rgba8.empty(),
+            "budget degradation must retain textured content");
+
+    auto threeDRequest = MakeRequest(slicer_core::api::ViewMode::ThreeD);
+    threeDRequest.max_bytes = 500U * 1024U;
+    const auto threeD = provider->GetViewData(
+        threeDRequest,
+        MakeSnapshot({{"budget-degradation", 270U}}),
+        active);
+    Require(threeD.IsOk(),
+            "bounded three_d view should degrade and close");
+    Require(threeD.Value()->truncated
+                && !threeD.Value()->truncation_reason.empty(),
+            "three_d budget degradation must be explicit");
+    const auto& threeDTexture =
+        threeD.Value()->appearances.front().textures.front();
+    Require(threeDTexture.width_px <= 256
+                && threeDTexture.height_px <= 256,
+            "three_d budget degradation should reduce texture dimensions");
+    Require(threeD.Value()->instances.front().mesh.has_value(),
+            "three_d degradation must retain a mesh");
+    Require(threeD.Value()->instances.front().mesh->lod
+                == slicer_core::api::ViewLod::Lod2,
+            "three_d auto budget should report the selected mesh LOD");
 }
 
 void ShengdanjieUsedMaterialClosureCase()
@@ -125,6 +210,36 @@ void WhiteAndNearWhiteTextureCase()
             "pure white must remain opaque white");
     Require(ContainsColor(rgba, {252U, 250U, 248U, 255U}),
             "near-white must retain its original RGB values");
+}
+
+void TextureBaseColorFactorCase()
+{
+    slicer_core::SceneModel model = MakeTexturedQuad(
+        "base-color-factor.obj",
+        "tinted-material",
+        "tinted.png");
+    model.material_infos.front().has_diffuse = true;
+    model.material_infos.front().diffuse_rgb = {128U, 255U, 64U};
+    auto textures = std::make_shared<TestTextureSource>();
+    textures->AddImage(
+        "tinted.png",
+        MakeTexture(
+            {200U, 100U, 80U, 255U},
+            {200U, 100U, 80U, 255U}));
+    const auto provider = MakeProvider(
+        {{260U, std::make_shared<const slicer_core::SceneModel>(
+                     std::move(model))}},
+        textures);
+    const TestCancelToken active;
+    const auto result = provider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::Top),
+        MakeSnapshot({{"tinted", 260U}}),
+        active);
+    Require(result.IsOk(), "tinted texture top view should close");
+    Require(ContainsColor(
+                result.Value()->instances.front().surface_preview->rgba8,
+                {100U, 100U, 20U, 255U}),
+            "top preview must multiply texture by baseColorFactor");
 }
 
 void DualAppearanceAndIdentityCase()
@@ -198,6 +313,10 @@ void DualAppearanceAndIdentityCase()
     Require(movedWorldMesh.Value()->instances.front().mesh_identity
                 != movedLocalMesh.Value()->instances.front().mesh_identity,
             "world mesh content must use a distinct identity");
+    const slicer_core::api::Matrix4d identity;
+    Require(movedWorldMesh.Value()->instances.front().world_matrix.values
+                == identity.values,
+            "world mesh response must expose an identity worldMatrix");
 }
 
 }  // namespace
@@ -207,6 +326,8 @@ void RunPositiveCases()
     CheckerThreeMfSemanticCase();
     ShengdanjieUsedMaterialClosureCase();
     WhiteAndNearWhiteTextureCase();
+    TextureBaseColorFactorCase();
+    BudgetDegradationCase();
     DualAppearanceAndIdentityCase();
 }
 

@@ -220,12 +220,26 @@ std::string ComputeViewDataIdentity(const SceneViewData& viewData)
         writer.AppendString(instance.mesh_identity);
         writer.AppendString(instance.appearance_identity);
         writer.AppendString(instance.preview_identity);
+        writer.AppendUnsigned(
+            static_cast<std::uint64_t>(instance.outlines.size()));
+        for (const ViewOutline& outline : instance.outlines)
+        {
+            writer.AppendUnsigned(
+                static_cast<std::uint64_t>(outline.points_mm.size()));
+            for (const std::array<double, 2>& point : outline.points_mm)
+            {
+                writer.AppendDouble(point.at(0U));
+                writer.AppendDouble(point.at(1U));
+            }
+        }
     }
     writer.AppendUnsigned(static_cast<std::uint64_t>(viewData.appearances.size()));
     for (const ViewAppearance& appearance : viewData.appearances)
     {
         writer.AppendString(appearance.appearance_identity);
     }
+    writer.AppendBool(viewData.truncated);
+    writer.AppendString(viewData.truncation_reason);
     return writer.Digest("vd:");
 }
 
