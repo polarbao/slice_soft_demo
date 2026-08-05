@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-08-04
-> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；**Stage 14 ACTIVE（2026-08-04 授权激活）**；下一批任务为 14A-01/02/07/09、14B-06、14B-00
+> 更新日期：2026-08-05
+> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **ACTIVE**；14A 切片侧已收口，14B 准备门 PASS，下一开发任务为 14B-00（14B-06 可并行）
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -92,7 +92,7 @@ Stage 13 P0 总体文档和 17 个近程原子任务实施准备 COMPLETE；
 12G-TCWS 已记录现有 RIP 的 WSV=000 白区信号，但仍为 FROZEN，不得实现。
 Stage 15 纯白纹理按需补 W 已 **COMPLETE / PRODUCTION ENABLED**（19/19 任务卡，G1–G8 全通过，候选 Profile 已翻转为 enabled/production）。
 Stage 14 能力包集成已于 2026-08-04 **授权激活（ACTIVE）**：RIP 六问两轮闭合，S2 权威条款见 `docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。
-当前首批可并行任务：14A-01、14A-02、14A-07、14A-09、14B-06、14B-00。14A-08 已 COMPLETE，不要重发 RIP 问卷。
+14A 切片侧 01..11 已收口；14A-03 与 14A-04-R1 仍待打印侧书面回签。14B 实施准备门已通过，下一开发任务为 14B-00，14B-06 可并行。14A-08 已 COMPLETE，不要重发 RIP 问卷。
 ```
 
 12C-R0/R1/R2 已全部完成。12D-R0/R1/R2/R3 已封口，包含 candidate/exact 诊断、一像素 repair、外部背景保护、Qt 展示和三个真实 OBJ 验收。repair 仍默认关闭。

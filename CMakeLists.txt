@@ -1033,6 +1033,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateCancelContract.py"
     )
     add_test(
+        NAME slicer_stage14b_preparation_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BPreparation.py"
+    )
+    add_test(
         NAME third_party_notice_contract_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateThirdPartyNotices.py"
@@ -1043,6 +1048,7 @@ if(Python3_Interpreter_FOUND)
         slicer_capability_dto_contract_test
         slicer_three_lane_contract_test
         slicer_cancel_contract_test
+        slicer_stage14b_preparation_contract_test
         third_party_notice_contract_test
         PROPERTIES
             ENVIRONMENT "PYTHONUTF8=1"

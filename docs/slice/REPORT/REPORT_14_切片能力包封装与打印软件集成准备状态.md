@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v2.4 ｜ 更新日期：2026-08-05
+> 版本：v2.6 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -17,6 +17,7 @@ EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
 CURRENT_NEXT_TASK      = 14B-00 / 14B-06（14A 切片侧实现已收口）
+14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
 
@@ -52,6 +53,8 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿�
 新增 UI 需求（均落在 `apps/slicer_ui_host_sim/`，主干不动）：
 3D 视角与相机操作（14E-04c）、俯视⇄3D 切换设置项（14E-04d）。
 `slicer_ui_host_sim` 同时是**交付给打印侧的参考实现**，代码质量按对外交付物要求。
+`contracts/slicer_ui_view_spec.json` 已冻结设置页默认视图、top/three_d 纹理内容、
+1 mm/10 mm 自适应网格、白纹理对比辅助与切换零模块调用；它不属于能力 ABI 或生产 TIFF。
 
 > 🟡 **UI-R4 已完成合同侧缓解**：14A-04-R1 已冻结双视图纹理 DTO；14B-03A 仍须实现
 > `TexturedSceneViewDataProvider`，否则 top/three_d 只有字段而没有真实纹理数据。
@@ -70,14 +73,16 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿�
 |---|---|:--:|
 | 主决策 | `docs/slice/DOC/DOC_DECISION_14_…` | ✅ v1.4 |
 | S2 合同 | `docs/slice/DOC/DOC_DECISION_14_S2_…` | ✅ v1.0 / SETTLED |
-| UI 决策 | `docs/slice/DOC/DOC_DECISION_14_UI_…` | ✅ v1.2 |
-| ViewData DTO | `docs/slice/DOC/DOC_SCHEMA_14_SceneViewData…` | ✅ v1.1 / 供 14A-04 冻结 |
-| 需求 | `docs/slice/PRD/PRD_14_…` | ✅ v1.1 |
-| 设计 | `docs/slice/DEV/DEV_14_…` | ✅ v1.0 |
-| 验收 | `docs/slice/DEMO/DEMO_14_…` | ✅ v1.0 |
-| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v1.3 |
-| 任务与执行指令 | `docs/codex_task/current/TASKS_14_…`、`CODEX_PROMPT_14_…` | ✅ v1.2 / v1.2 |
+| UI 决策 | `docs/slice/DOC/DOC_DECISION_14_UI_…` | ✅ v1.3 |
+| ViewData DTO | `docs/slice/DOC/DOC_SCHEMA_14_SceneViewData…` | ✅ v1.2 / 14A-04-R1 |
+| UI 视图合同 | `contracts/slicer_ui_view_spec.json` | ✅ v1.0 / top+three_d+grid |
+| 需求 | `docs/slice/PRD/PRD_14_…` | ✅ v1.2 |
+| 设计 | `docs/slice/DEV/DEV_14_…` | ✅ v1.1 |
+| 验收 | `docs/slice/DEMO/DEMO_14_…` | ✅ v1.1 / 78 cases |
+| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v2.5 |
+| 任务与执行指令 | `docs/codex_task/current/TASKS_14_…`、`CODEX_PROMPT_14_…` | ✅ v2.2 / v1.3 |
 | 分析底稿 | `docs/claude/INTEGRATION/INT_06..17` | ✅（背景证据，不覆盖正式合同）|
+| 14B 实施准备 | `docs/slice/DOC/DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | ✅ PREPARATION COMPLETE |
 
 **结论：文档准入完成。** 但"文档齐备"**不等于**代码完成、不等于第三方依赖已就绪、不等于发布授权。
 
@@ -103,7 +108,7 @@ slicer_module* / .def       全仓库零命中
 | 14A-02 | ✅ COMPLETE（2026-08-05） | manifest、scene、Profile 三份 Draft 2020-12 Schema；Schema 自动验证脚本 | 真实 UI smoke manifest、既有 p0 manifest、既有 scene、Stage 15/旧 Profile 正向通过；通道顺序、whiteSemantics、zLimitMm 与 W 空值负例被拒绝；Debug/Release CTest 3/3 |
 | 14A-03 | 🟡 SLICER-SIDE COMPLETE（2026-08-05） | `file_contract_v1.md`、请求/结果/协商 Schema、退出码表 | Python 合同正负例通过；Debug/Release CTest 2/2；打印侧书面确认待取得，因此不标最终 COMPLETE |
 | 14A-04 | ✅ COMPLETE（2026-08-05） | 15 项能力字段级 JSON 合同、人工可读合同、ViewData 网格/LOD/blob 子操作 | Python 合同测试通过；能力数量、字段、错误码、生产协议与 Worker/ABI 边界均有漂移门禁 |
-| 14A-04-R1 | 🟡 SLICER-SIDE COMPLETE（2026-08-05） | ViewData DTO 1.2 与三车道合同 1.1；补齐 top/three_d 的 UV、材质、纹理和 surfacePreview | Debug/Release 合同测试 2/2 通过；保持 15 项能力、11 个 ABI 导出与 SPI v1；打印侧须按 1.2 回签 |
+| 14A-04-R1 | 🟡 SLICER-SIDE COMPLETE（2026-08-05） | ViewData DTO 1.2、三车道合同 1.1 与 UI view spec 1.0；补齐 top/three_d 纹理、多模型 appearances、1 mm/10 mm 网格和白纹理显示约束 | DTO/三车道合同测试通过；保持 15 项能力、11 个 ABI 导出与 SPI v1；打印侧须按 1.2 回签 |
 | 14A-05 | ✅ COMPLETE（2026-08-05） | 三车道机器合同与人工合同；同步补齐 Commit `currentSceneRevision` 字段 | 幂等、原子 revision、Stale 回读回滚、Production sceneHash/full preflight 门禁通过 |
 | 14A-06 | ✅ COMPLETE（2026-08-05） | 取消状态机/清理机器合同与人工合同；收紧 cancelled Worker 结果 Schema | ≤2s、真实退出、双保险清理、禁止取消时发布及残留 staging 的合同测试通过 |
 | 14A-07 | ✅ COMPLETE（2026-08-05） | `THIRD_PARTY_NOTICES.txt`、三项完整许可证、机器分发清单与合规审查 | miniz/LibTIFF/Assimp notice 完整性和 fail-closed 发布动作合同测试通过 |
@@ -159,7 +164,8 @@ slicer_module* / .def       全仓库零命中
 ② RIP 书面合同已闭合，但目标 RIP 实机互操作仍必须由 14F 留证；
 ③ base/engine 分层的三个高风险切分点（model.cpp / geometry / reports）需 14B-00 先验证；
 ④ 若无 CI 单向依赖门禁（14B-06 + P4），分层将在数月内退化回单库；
-⑤ ViewData 网格传输须在 14A-04 冻结 DTO，但不得增加第 12 个 ABI 导出符号。
+⑤ 14A-04-R1 已冻结双视图纹理合同，但 14B-03A Provider 尚未实现；只有字段或灰模不得解锁 14E；
+⑥ top/three_d 网格与白纹理辅助只影响参考宿主显示，不得渗入几何真值、切片采样或 TIFF。
 ```
 
 ## 9. 修订记录
@@ -180,3 +186,5 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v2.2 | 完成 14A-10：落地 manifest 权威、Profile 默认的 `whiteSemantics`；冲突与非法值 fail-closed，旧包缺字段兼容；下一任务推进为 14A-11 |
 | 2026-08-05 | v2.3 | 受控完成 14A-04-R1 切片侧合同修订：top/three_d 均要求真实纹理，补齐 ViewData 外观 DTO 与三车道调用约束；打印侧须基于 DTO 1.2 重新回签 |
 | 2026-08-05 | v2.4 | 完成 14A-11：落地可选 Z 限高、显式设备默认、超限非阻断告警和 scene 响应字段；14A 切片侧实现收口，后续转入 14B-00/06，打印侧回签继续独立跟踪 |
+| 2026-08-05 | v2.5 | 补齐 UI view spec 1.0、1 mm/10 mm 双视图网格、白纹理对比、多模型 appearances 与 78 项验收入口；14B-03A Provider 仍为 14E 硬前置 |
+| 2026-08-05 | v2.6 | 完成 14B 实施准备：冻结 Facade、base/engine 构建迁移、任务顺序、文件所有权、验证矩阵、回滚条件与机器门禁；下一开发任务为 14B-00，14B-06 可并行 |

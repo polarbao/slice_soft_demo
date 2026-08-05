@@ -65,6 +65,7 @@
 | `DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | 14A-04 冻结后受控补齐 top/three_d 纹理、Provider、UI Gate 与信息架构 |
 | `DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | ViewData v1.2：surfacePreview、UV/材质/纹理、multi-model appearances、LOD/blob/identity |
 | `DOC_DECISION_14_UI_宿主模拟改造专项.md` | 14E 独立打印软件参考宿主、双视图纹理、QOpenGL、网格和可测 Gate |
+| `DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | 14B Facade、base/engine 分层、执行顺序、验证矩阵与回滚边界 |
 
 ## 决策记录
 

@@ -66,6 +66,7 @@
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |
 | `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计 v1.3**：独立参考宿主、M-MVP-CANDIDATE→M-MVP、QOpenGL 双视图、三工作区信息架构、UI-M1..M13 与 14B-03A 前置 |
+| `DOC/DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | **14B 实施准备真源**：Facade、base/engine 迁移顺序、文件所有权、验证与回滚 Gate |
 | `../../contracts/slicer_ui_view_spec.json` | 参考宿主 top/three_d 设置、1 mm/10 mm 网格、纹理对比辅助与视图切换不变量 |
 | `DOC/DOC_DECISION_15_纹理纯白区按需补白与材料闭合修复专项.md` | Stage 15 纯白纹理材料闭合修复主决策 |
 | `DOC/DOC_PREP_15_纹理纯白区按需补白实施准备与依赖审查.md` | Stage 15 路径边界、依赖、基线和开工 Gate |
