@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/file_contract_v1.request.schema.json",
+  "title": "SliceSoft worker request",
+  "type": "object",
+  "required": [
+    "contract",
+    "major",
+    "minor",
+    "jobId",
+    "correlationId",
+    "capability",
+    "timeoutMs"
+  ],
+  "properties": {
+    "contract": { "const": "file_contract" },
+    "major": { "const": 1 },
+    "minor": { "const": 0 },
+    "jobId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "capability": {
+      "type": "string",
+      "enum": [
+        "slice.rgbwsv",
+        "geometry.preflight.full",
+        "geometry.repair"
+      ]
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 86400000
+    },
+    "sceneHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-fA-F]{8,64}$"
+    },
+    "scene": { "type": "object" },
+    "profile": { "type": "object" },
+    "input": { "type": "object" },
+    "output": {
+      "type": "object",
+      "properties": {
+        "contract": { "const": "p0.rgbwsv.2" },
+        "packageDir": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "capability": { "const": "slice.rgbwsv" } },
+        "required": ["capability"]
+      },
+      "then": {
+        "required": ["sceneHash", "scene", "profile", "output"],
+        "properties": {
+          "output": { "required": ["contract", "packageDir"] }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capability": {
+            "enum": ["geometry.preflight.full", "geometry.repair"]
+          }
+        },
+        "required": ["capability"]
+      },
+      "then": { "required": ["input"] }
+    }
+  ],
+  "additionalProperties": true
+}

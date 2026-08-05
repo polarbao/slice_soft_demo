@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/file_contract_v1.result.schema.json",
+  "title": "SliceSoft worker result",
+  "type": "object",
+  "required": [
+    "contract",
+    "major",
+    "minor",
+    "jobId",
+    "correlationId",
+    "capability",
+    "ok",
+    "code",
+    "engineVersion",
+    "elapsedMs"
+  ],
+  "properties": {
+    "contract": { "const": "file_contract" },
+    "major": { "const": 1 },
+    "minor": { "const": 0 },
+    "jobId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
+    },
+    "correlationId": { "type": "string", "minLength": 1 },
+    "capability": {
+      "type": "string",
+      "enum": [
+        "slice.rgbwsv",
+        "geometry.preflight.full",
+        "geometry.repair"
+      ]
+    },
+    "ok": { "type": "boolean" },
+    "code": {
+      "type": "string",
+      "pattern": "^PM-SLICER-[A-Z]+-(?:[0-9]{4}|STALE|BUDGET)$"
+    },
+    "output": { "type": "object" },
+    "error": {
+      "type": "object",
+      "required": ["message"],
+      "properties": {
+        "message": { "type": "string", "minLength": 1 },
+        "detail": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "engineVersion": { "type": "string", "minLength": 1 },
+    "elapsedMs": { "type": "number", "minimum": 0 },
+    "cleanup": {
+      "type": "object",
+      "properties": {
+        "stagingRemoved": { "type": "boolean" },
+        "published": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "ok": { "const": true } },
+        "required": ["ok"]
+      },
+      "then": {
+        "required": ["output"],
+        "properties": { "code": { "const": "PM-SLICER-OK-0000" } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "ok": { "const": false } },
+        "required": ["ok"]
+      },
+      "then": { "required": ["error"] }
+    }
+  ],
+  "additionalProperties": true
+}

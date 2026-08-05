@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/file_contract_v1.contract_info.schema.json",
+  "title": "SliceSoft worker contract information",
+  "type": "object",
+  "required": [
+    "contract",
+    "major",
+    "minor",
+    "engineVersion",
+    "produces",
+    "capabilities"
+  ],
+  "properties": {
+    "contract": { "const": "file_contract" },
+    "major": { "const": 1 },
+    "minor": { "type": "integer", "minimum": 0 },
+    "engineVersion": { "type": "string", "minLength": 1 },
+    "produces": {
+      "type": "array",
+      "contains": { "const": "p0.rgbwsv.2" },
+      "minContains": 1,
+      "items": { "type": "string" }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "slice.rgbwsv",
+          "geometry.preflight.full",
+          "geometry.repair"
+        ]
+      }
+    }
+  },
+  "additionalProperties": true
+}

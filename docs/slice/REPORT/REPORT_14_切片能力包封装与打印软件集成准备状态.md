@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v1.5 ｜ 更新日期：2026-08-05
+> 版本：v1.6 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14A-03（其余首批：14A-07 / 14A-09 / 14B-06 / 14B-00）
+CURRENT_NEXT_TASK      = 14A-04（14A-03 切片侧完成，打印侧回签待取得）
 ```
 
 ### 1.1 激活前置清单
@@ -92,7 +92,7 @@ slicer_base / slicer_engine 未分层（当前仍为单一 slicer_core，CMakeLi
 slicer_module* / .def       全仓库零命中
 ```
 
-**Stage 14 当前完成 14A-01/02 合同基础设施；能力 facade、DLL、Worker 与宿主模拟仍未实现。**
+**Stage 14 当前完成 14A-01/02 与 14A-03 切片侧合同；能力 facade、DLL、Worker 与宿主模拟仍未实现。**
 
 ### 3.1 已完成原子任务
 
@@ -100,6 +100,7 @@ slicer_module* / .def       全仓库零命中
 |---|---|---|---|
 | 14A-01 | ✅ COMPLETE（2026-08-05） | `contracts/print_module_spi.h`、`contracts/slicer_error_codes.json`、C/C++ 合同编译探针 | 打印侧头文件逐字匹配；C/C++ Debug 编译通过；11 个声明与 19 个唯一错误码测试通过 |
 | 14A-02 | ✅ COMPLETE（2026-08-05） | manifest、scene、Profile 三份 Draft 2020-12 Schema；Schema 自动验证脚本 | 真实 UI smoke manifest、既有 p0 manifest、既有 scene、Stage 15/旧 Profile 正向通过；通道顺序、whiteSemantics、zLimitMm 与 W 空值负例被拒绝；Debug/Release CTest 3/3 |
+| 14A-03 | 🟡 SLICER-SIDE COMPLETE（2026-08-05） | `file_contract_v1.md`、请求/结果/协商 Schema、退出码表 | Python 合同正负例通过；Debug/Release CTest 2/2；打印侧书面确认待取得，因此不标最终 COMPLETE |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
 
@@ -163,3 +164,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v1.3 | Stage 14 开工基线收口：文档门更新为 10/10；D-2/D-3 对齐 03D/03E 与 S2 权威结论；移除已关闭开放项和已完成 14A-08；登记独立宿主模拟与 ViewData DTO 风险 |
 | 2026-08-05 | v1.4 | 完成 14A-01：建立 contracts、同步 11 函数 SPI 头文件、登记 19 项错误码并通过 C/C++ 合同测试；下一任务推进为 14A-02 |
 | 2026-08-05 | v1.5 | 完成 14A-02：形式化 manifest、scene、Profile 三份 JSON Schema，覆盖 Stage 15 三字段、`whiteSemantics`、`zLimitMm`，并通过真实/既有样例兼容与负向合同测试；下一任务推进为 14A-03 |
+| 2026-08-05 | v1.6 | 完成 14A-03 切片侧 `file_contract_v1` 合同与自动验证；因打印侧书面确认尚未回签保持 SLICER-SIDE COMPLETE，切片侧下一任务推进为 14A-04 |

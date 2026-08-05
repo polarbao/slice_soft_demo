@@ -1,0 +1,18 @@
+{
+  "contract": "file_contract",
+  "major": 1,
+  "minor": 0,
+  "unknownExitCategory": "internal",
+  "unknownExitErrorCodePrefix": "PM-SLICER-INTERNAL-",
+  "exitCodes": [
+    { "exitCode": 0, "category": "ok", "errorCodePrefix": "PM-SLICER-OK-" },
+    { "exitCode": 1, "category": "internal", "errorCodePrefix": "PM-SLICER-INTERNAL-" },
+    { "exitCode": 2, "category": "input", "errorCodePrefix": "PM-SLICER-INPUT-" },
+    { "exitCode": 3, "category": "profile", "errorCodePrefix": "PM-SLICER-PROFILE-" },
+    { "exitCode": 4, "category": "topology", "errorCodePrefix": "PM-SLICER-TOPOLOGY-" },
+    { "exitCode": 5, "category": "resource", "errorCodePrefix": "PM-SLICER-RESOURCE-" },
+    { "exitCode": 6, "category": "output", "errorCodePrefix": "PM-SLICER-OUTPUT-" },
+    { "exitCode": 7, "category": "contract", "errorCodePrefix": "PM-SLICER-CONTRACT-" },
+    { "exitCode": 8, "category": "cancelled", "errorCodePrefix": "PM-SLICER-CANCELLED-" }
+  ]
+}

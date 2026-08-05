@@ -1012,8 +1012,14 @@ if(Python3_Interpreter_FOUND)
             --repo-root
             "${CMAKE_CURRENT_SOURCE_DIR}"
     )
+    add_test(
+        NAME file_contract_v1_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateFileContract.py"
+    )
     set_tests_properties(
         json_schema_contract_test
+        file_contract_v1_test
         PROPERTIES
             ENVIRONMENT "PYTHONUTF8=1"
     )
