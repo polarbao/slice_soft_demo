@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.3 ｜ 更新日期：2026-08-05
+> 版本：v3.4 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14B-02 → 14B-03A；14B-04 已完成
+CURRENT_NEXT_TASK      = 14B-03A 与 14B-05（可并行）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -89,17 +89,17 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿�
 ## 3. 实现状态（A 级核实）
 
 ```text
-src/slicer_core/api/        不存在
+src/slicer_core/api/        ✅ 已建立；Facade/DTO、Scene/Model/Package/Slice 实现已落地
+slicer_base / slicer_engine ✅ 已分层；base -> engine 单向依赖门禁为 0
 src/slicer_module/          不存在
 apps/slicer_worker/         不存在
-contracts/                  ✅ 已建立；SPI、错误码与三份 JSON Schema 已落盘（14A-01/02）
-slicer_base / slicer_engine 未分层（当前仍为单一 slicer_core，CMakeLists.txt:29 默认 STATIC）
+contracts/                  ✅ 已建立；SPI、错误码、Schema 与 ViewData v1.2 已落盘
 slicer_module* / .def       全仓库零命中
 ```
 
 **Stage 14 的 14A 切片侧实现任务已全部完成：14A-01..11（14A-08 已闭合），其中
-14A-03 与 14A-04-R1 仍待打印侧书面回签；14B 已完成分层、Facade 合同与 SceneFacade，
-Model/Package、SliceFacade、真实纹理 Provider 仍在推进；DLL、Worker 与宿主模拟尚未实现。**
+14A-03 与 14A-04-R1 仍待打印侧书面回签；14B 已完成分层、Facade 合同、Model/Package、
+SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在推进；DLL、Worker 与宿主模拟尚未实现。**
 
 ### 3.1 已完成原子任务
 
@@ -120,7 +120,9 @@ Model/Package、SliceFacade、真实纹理 Provider 仍在推进；DLL、Worker 
 | 14B-01 | ✅ COMPLETE（2026-08-05） | Qt-free Facade、DTO、`ApiResult`、`ICancelToken` 与 ViewData v1.2 内部合同 | 编译单测、头文件门禁、分层与行数门禁 PASS；未接入实现 |
 | 14B-01A | ✅ COMPLETE（2026-08-05） | `slicer_base` / `slicer_engine` 单向构建图与窄接口边界 | source 唯一归属、target graph、Debug/Release 构建 PASS |
 | 14B-01-R1 | ✅ COMPLETE（2026-08-05） | Package/Model Facade DTO 无损承载 capability DTO v1.2 | DTO 字段门禁、OBJ/STL 法线来源探针、Debug/Release CTest PASS |
+| 14B-02 | ✅ COMPLETE（2026-08-05） | ModelFacade、PackageQueryFacade、只读 TIFF API 与 base-only 预览查询链路 | Debug/Release 专属测试 5/5、相关 TIFF/RIP/preview CTest 12/12、base-only 链接和分层门禁 PASS |
 | 14B-03 | ✅ COMPLETE（2026-08-05） | SceneFacade 权威状态、完整 Commit 响应、幂等、碰撞/越界及 ViewData Provider 边界 | Debug/Release 构建及目标 CTest 6/6 PASS；正常 Commit 不追加 snapshot |
+| 14B-04 | ✅ COMPLETE（2026-08-05） | SliceFacade 生产委托、单调进度与协作取消 | Debug/Release 正式目标和生产回归门禁 PASS；深度取消仍归 14D-04 |
 | 14B-06 | ✅ COMPLETE（2026-08-05） | G1..G5 source-size 门禁、带到期条件白名单、quick CI 与 CTest 接线 | 自测覆盖 G1/G2/G3；全树 G4/G5 扫描可读；受保护 Stage 14 新目录禁止白名单 |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
@@ -147,10 +149,9 @@ Model/Package、SliceFacade、真实纹理 Provider 仍在推进；DLL、Worker 
 
 | 卡 | 任务 | 估算 |
 |---|---|---:|
-| 14B-02 | ModelFacade + PackageQueryFacade | 3–5 人日 |
-| 14B-04 | SliceFacade 提交、进度与取消 | ✅ COMPLETE |
 | 14B-03A | TexturedSceneViewDataProvider | 5–8 人日 |
-| **剩余关键路径估算** | | **8–13 人日** |
+| 14B-05 | CLI 迁移 Facade 与完整回归 | 2–3 人日 |
+| **剩余关键路径估算** | | **7–11 人日** |
 
 本卡不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
@@ -203,3 +204,4 @@ Model/Package、SliceFacade、真实纹理 Provider 仍在推进；DLL、Worker 
 | 2026-08-05 | v3.1 | 完成 14B-01-R1：内部 Facade DTO 完整承载能力合同 v1.2，补齐 package summary/layer/verify/report 与模型法线来源；外部 ABI、能力数量、生产 TIFF 均未变化 |
 | 2026-08-05 | v3.2 | 完成 14B-03：SceneFacade 权威 Commit、双 revision、完整响应、幂等、碰撞/越界及正式 Debug/Release target 门禁通过；真实双视图纹理仍由 14B-03A 解锁 |
 | 2026-08-05 | v3.3 | 完成 14B-04：SliceFacade 以既有生产服务为唯一执行入口，正式 Debug/Release target、单调进度、协作取消和生产回归门禁通过；14D-04 继续负责深度取消与 2 秒上限 |
+| 2026-08-05 | v3.4 | 完成 14B-02：ModelFacade 与 PackageQueryFacade 接入权威模型/包能力，生产 TIFF Reader、缓存和材料预览形成 base-only 查询链路；Writer 与 backend 选择保持 engine，14B-03A/05 可并行 |

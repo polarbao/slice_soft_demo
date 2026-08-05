@@ -2,7 +2,7 @@
 
 #include "slicer_core/json_value.h"
 #include "slicer_core/system/Sha256.h"
-#include "slicer_core/tiff_io.h"
+#include "slicer_core/TiffReadApi.h"
 
 #include <algorithm>
 #include <array>

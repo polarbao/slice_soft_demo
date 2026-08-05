@@ -23,20 +23,28 @@ function(SliceSoftPartitionCoreSources allSourcesVar baseSourcesVar engineSource
         "src/slicer_core/model"
         "src/slicer_core/output/rgbwsv/RgbwsvPackage"
         "src/slicer_core/output/rgbwsv/RgbwsvSceneExtension"
+        "src/slicer_core/preview/MaterialPreviewComposer"
+        "src/slicer_core/preview/ProductionLayerRef"
+        "src/slicer_core/preview/TiffLayerCache"
+        "src/slicer_core/preview/TiffLayerSource"
         "src/slicer_core/reports/ReportBase"
         "src/slicer_core/reports/ReportSchema"
         "src/slicer_core/reports/ReportSchemaValidator"
         "src/slicer_core/rip_reader"
         "src/slicer_core/system/Sha256"
         "src/slicer_core/system/Sha256Internal"
+        "src/slicer_core/TiffPackBitsReadInternal"
+        "src/slicer_core/TiffReadApi"
+        "src/slicer_core/TiffReadStructureInternal"
         "src/slicer_core/texture_image"
-        "src/slicer_core/tiff_io"
+    )
+    set(baseExactSources
+        "src/slicer_core/tiff_io.cpp"
     )
     set(engineExactSources
         "src/slicer_core/model/ModelLoadConfigAdapter.cpp"
         "src/slicer_core/scene/SceneEffectiveConfig.cpp"
         "src/slicer_core/scene/SceneEffectiveConfig.h"
-        "src/slicer_core/tiff_io.cpp"
     )
 
     foreach(source IN LISTS ${allSourcesVar})
@@ -49,6 +57,9 @@ function(SliceSoftPartitionCoreSources allSourcesVar baseSourcesVar engineSource
             endif()
         endforeach()
         if(sourceStem IN_LIST baseExactStems)
+            set(isBase true)
+        endif()
+        if(source IN_LIST baseExactSources)
             set(isBase true)
         endif()
         if(source IN_LIST engineExactSources)

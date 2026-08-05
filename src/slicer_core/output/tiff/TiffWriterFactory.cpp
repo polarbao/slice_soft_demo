@@ -80,4 +80,12 @@ void WriteRgbwsvTiffWithConfiguredBackend(
     writer->Write(path, spec, pixels);
 }
 
+void write_rgbwsv_tiff(
+    const std::filesystem::path& path,
+    const TiffImageSpec& spec,
+    const std::span<const std::uint8_t> pixels)
+{
+    WriteRgbwsvTiffWithConfiguredBackend(path, spec, pixels);
+}
+
 }  // namespace slicer_core

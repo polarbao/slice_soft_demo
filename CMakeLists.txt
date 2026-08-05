@@ -49,6 +49,16 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/scene/SceneFacadeOperation.cpp
     src/slicer_core/api/scene/SceneFacadeService.cpp
     src/slicer_core/api/scene/SceneFacadeService.h
+    src/slicer_core/api/implementation/ModelFacadeImplementation.cpp
+    src/slicer_core/api/implementation/ModelFacadeImplementation.h
+    src/slicer_core/api/implementation/PackageQueryFacadeCommon.cpp
+    src/slicer_core/api/implementation/PackageQueryFacadeImplementation.cpp
+    src/slicer_core/api/implementation/PackageQueryFacadeImplementation.h
+    src/slicer_core/api/implementation/PackageQueryFacadeInternal.h
+    src/slicer_core/api/implementation/PackageQueryFacadePackage.cpp
+    src/slicer_core/api/implementation/PackageQueryFacadePreview.cpp
+    src/slicer_core/api/implementation/PackageQueryFacadePreviewEncoding.cpp
+    src/slicer_core/api/implementation/PackageQueryFacadeReport.cpp
     src/slicer_core/config/ConfigMigration.cpp
     src/slicer_core/config/ConfigMigration.h
     src/slicer_core/config/ConfigSchema.cpp
@@ -342,6 +352,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/system/Sha256.cpp
     src/slicer_core/system/Sha256.h
     src/slicer_core/system/Sha256Internal.h
+    src/slicer_core/output/tiff/HandwrittenTiffStructureInternal.h
     src/slicer_core/output/tiff/HandwrittenTiffWriter.cpp
     src/slicer_core/output/tiff/ITiffWriter.h
     src/slicer_core/output/tiff/LibTiffWriter.cpp
@@ -352,8 +363,12 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/output/tiff/TiffWriterError.cpp
     src/slicer_core/output/tiff/TiffWriterError.h
     src/slicer_core/output/tiff/TiffWriterImplementations.h
+    src/slicer_core/output/tiff/TiffPackBitsWriteInternal.h
     src/slicer_core/texture_image.cpp
     src/slicer_core/texture_image.h
+    src/slicer_core/TiffPackBitsReadInternal.h
+    src/slicer_core/TiffReadApi.h
+    src/slicer_core/TiffReadStructureInternal.h
     src/slicer_core/tiff_io.cpp
     src/slicer_core/tiff_io.h
 )
@@ -523,6 +538,27 @@ target_include_directories(scene_facade_14b03_unit_tests PRIVATE
 target_link_libraries(scene_facade_14b03_unit_tests PRIVATE slicer_base)
 if(MSVC)
     target_compile_options(scene_facade_14b03_unit_tests PRIVATE /bigobj /MP)
+endif()
+
+add_executable(package_query_facade_14b02_unit_tests
+    tests/stage14b_02/Main.cpp
+)
+target_include_directories(package_query_facade_14b02_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14b_02
+)
+target_link_libraries(package_query_facade_14b02_unit_tests PRIVATE slicer_engine)
+
+add_executable(package_query_facade_14b02_base_link_test
+    tests/contracts/Stage14B02BaseLinkTest.cpp
+)
+target_include_directories(package_query_facade_14b02_base_link_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(package_query_facade_14b02_base_link_test PRIVATE slicer_base)
+if(MSVC)
+    target_compile_options(package_query_facade_14b02_unit_tests PRIVATE /bigobj /MP)
+    target_compile_options(package_query_facade_14b02_base_link_test PRIVATE /bigobj /MP)
 endif()
 
 add_executable(slice_facade_14b04_unit_tests
@@ -1220,6 +1256,14 @@ add_test(
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
+add_test(
+    NAME package_query_facade_14b02_unit_tests
+    COMMAND package_query_facade_14b02_unit_tests
+)
+add_test(
+    NAME package_query_facade_14b02_base_link_test
+    COMMAND package_query_facade_14b02_base_link_test
+)
 add_test(NAME slice_facade_14b04_unit_tests COMMAND slice_facade_14b04_unit_tests)
 add_test(
     NAME slice_facade_14b04_production_binding_test

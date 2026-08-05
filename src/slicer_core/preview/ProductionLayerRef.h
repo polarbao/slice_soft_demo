@@ -1,6 +1,6 @@
 #pragma once
 
-#include "slicer_core/tiff_io.h"
+#include "slicer_core/TiffReadApi.h"
 
 #include <array>
 #include <cstddef>

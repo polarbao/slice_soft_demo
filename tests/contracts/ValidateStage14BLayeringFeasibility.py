@@ -28,20 +28,29 @@ BASE_EXACT_STEMS = {
     "src/slicer_core/model",
     "src/slicer_core/output/rgbwsv/RgbwsvPackage",
     "src/slicer_core/output/rgbwsv/RgbwsvSceneExtension",
+    "src/slicer_core/preview/MaterialPreviewComposer",
+    "src/slicer_core/preview/ProductionLayerRef",
+    "src/slicer_core/preview/TiffLayerCache",
+    "src/slicer_core/preview/TiffLayerSource",
     "src/slicer_core/reports/ReportBase",
     "src/slicer_core/reports/ReportSchema",
     "src/slicer_core/reports/ReportSchemaValidator",
     "src/slicer_core/rip_reader",
     "src/slicer_core/system/Sha256",
     "src/slicer_core/system/Sha256Internal",
+    "src/slicer_core/TiffPackBitsReadInternal",
+    "src/slicer_core/TiffReadApi",
+    "src/slicer_core/TiffReadStructureInternal",
     "src/slicer_core/texture_image",
-    "src/slicer_core/tiff_io",
+}
+
+BASE_EXACT_SOURCES = {
+    "src/slicer_core/tiff_io.cpp",
 }
 
 ENGINE_EXACT_SOURCES = {
     "src/slicer_core/model/ModelLoadConfigAdapter.cpp",
     "src/slicer_core/scene/SceneEffectiveConfig",
-    "src/slicer_core/tiff_io.cpp",
 }
 
 KNOWN_BASE_TO_ENGINE_INCLUDES: set[tuple[str, str]] = set()
@@ -86,6 +95,8 @@ def AssignLayer(source: str) -> str:
     stem = SourceStem(source)
     if source in ENGINE_EXACT_SOURCES or stem in ENGINE_EXACT_SOURCES:
         return "engine"
+    if source in BASE_EXACT_SOURCES:
+        return "base"
     if stem in BASE_EXACT_STEMS:
         return "base"
     if any(source.startswith(prefix) for prefix in BASE_PREFIXES):

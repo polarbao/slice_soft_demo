@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.9 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.10 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -215,7 +215,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14B-01 | 新建 `src/slicer_core/api/`；定义 facade 接口与 DTO（含强制 `ICancelToken`）| 14A-04-R1 | 接口单测；不含 Qt/ABI 类型 | ✅ **COMPLETE（2026-08-05）**；Facade/DTO 编译与头文件门禁 PASS |
 | 14B-01-R1 | **内部 Facade DTO 与能力合同 v1.2 对齐**：补齐 package summary/layer/verify/report 及模型法线来源 | 14B-01 | C++ DTO 可无损承载 v1.2；模型法线有权威导入证据；不改外部 ABI/协议 | ✅ **COMPLETE（2026-08-05）**；DTO 字段门禁与法线探针 PASS |
 | 14B-01A | **落地 base/engine 两库拆分 + CI 单向依赖检查** | 14B-00, 14B-01 | `slicer_base` 不含 engine 符号；构建图正确 | ✅ **COMPLETE（2026-08-05）**；318 项 source 唯一分配，base 78 / engine 240，单向构建图门禁 PASS |
-| 14B-02 | `ModelFacade` + `PackageQueryFacade` 实现（复用既有能力）| 14B-01-R1, 14B-01A | 行为与既有 CLI 一致 | PREPARED；DTO 阻断已由 14B-01-R1 解除 |
+| 14B-02 | `ModelFacade` + `PackageQueryFacade` 实现（复用既有能力）| 14B-01-R1, 14B-01A | 行为与既有 CLI 一致 | ✅ **COMPLETE（2026-08-05）**；模型元数据、包摘要/层/预览/校验/报告及 base-only 链接门禁 PASS |
 | 14B-03 | `SceneFacade`（变换/碰撞/越界权威求值 + revision）| 14B-01 | 与 `layout/` 既有判定逐条一致 | ✅ **COMPLETE（2026-08-05）**；完整 Commit DTO、幂等/原子提交及 Debug/Release target 门禁 PASS |
 | **14B-03A** | **`TexturedSceneViewDataProvider`**：从模型/材质资产生成 top `surfacePreview` 与 three_d `mesh + texcoord0 + submeshes + materials + textures`；实现 `appearances[]` 多模型引用、独立 identity 与预算降级 | 14B-02, 14B-03, 14A-04-R1 | checker 3MF、`shengdanjie_fudiao` 与双模型场景正例；白/近白纹理可保真；missing-texture / decode-fail / no-UV 显式失败；不得成功灰模 | PREPARED |
 | 14B-04 | `SliceFacade`（提交/进度/取消）| 14B-01 | 生产 TIFF 逐字节不变 | ✅ **COMPLETE（2026-08-05）**；正式 Debug/Release target、进度/取消与生产回归门禁 PASS |
@@ -409,3 +409,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.7 | 受控完成 14B-01-R1：内部 Package/Model Facade DTO 对齐能力合同 v1.2，补齐 summary/layer/verify/report 字段与源法线证据；不修改 SPI、能力数量或生产协议 |
 | 2026-08-05 | v2.8 | 完成 14B-03：SceneFacade 接入正式 base target，补齐双 revision、完整 Commit 响应、幂等、碰撞/越界权威求值与 14B-03A Provider 边界；Debug/Release 门禁通过 |
 | 2026-08-05 | v2.9 | 完成 14B-04：SliceFacade 复用既有生产入口，接入正式 Debug/Release target，冻结提交身份、单调进度、协作取消和生产 TIFF 零改写边界；深度取消仍归 14D-04 |
+| 2026-08-05 | v2.10 | 完成 14B-02：ModelFacade 与 PackageQueryFacade 复用权威模型、包、TIFF Reader 和材料预览能力；只读 TIFF/preview 下沉 base，Writer 后端保持 engine；Debug/Release 及 base-only 链接门禁通过 |

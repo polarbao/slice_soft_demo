@@ -2,7 +2,7 @@
 
 #include "slicer_core/config/OutputResolution.h"
 #include "slicer_core/json_value.h"
-#include "slicer_core/tiff_io.h"
+#include "slicer_core/TiffReadApi.h"
 
 #include <algorithm>
 #include <cmath>
