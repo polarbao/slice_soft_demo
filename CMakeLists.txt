@@ -49,6 +49,22 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/scene/SceneFacadeOperation.cpp
     src/slicer_core/api/scene/SceneFacadeService.cpp
     src/slicer_core/api/scene/SceneFacadeService.h
+    src/slicer_core/api/viewdata/SceneSurfacePreviewBuilder.cpp
+    src/slicer_core/api/viewdata/SceneSurfacePreviewBuilder.h
+    src/slicer_core/api/viewdata/SceneViewAssetResolver.cpp
+    src/slicer_core/api/viewdata/SceneViewBudget.cpp
+    src/slicer_core/api/viewdata/SceneViewBudget.h
+    src/slicer_core/api/viewdata/SceneViewClosureValidator.cpp
+    src/slicer_core/api/viewdata/SceneViewClosureValidator.h
+    src/slicer_core/api/viewdata/SceneViewIdentity.cpp
+    src/slicer_core/api/viewdata/SceneViewIdentity.h
+    src/slicer_core/api/viewdata/SceneViewMeshBuilder.cpp
+    src/slicer_core/api/viewdata/SceneViewMeshBuilder.h
+    src/slicer_core/api/viewdata/SceneViewResolvedAsset.h
+    src/slicer_core/api/viewdata/SceneViewResources.cpp
+    src/slicer_core/api/viewdata/SceneViewResources.h
+    src/slicer_core/api/viewdata/TexturedSceneViewDataProvider.cpp
+    src/slicer_core/api/viewdata/TexturedSceneViewDataProvider.h
     src/slicer_core/api/implementation/ModelFacadeImplementation.cpp
     src/slicer_core/api/implementation/ModelFacadeImplementation.h
     src/slicer_core/api/implementation/PackageQueryFacadeCommon.cpp
@@ -538,6 +554,50 @@ target_include_directories(scene_facade_14b03_unit_tests PRIVATE
 target_link_libraries(scene_facade_14b03_unit_tests PRIVATE slicer_base)
 if(MSVC)
     target_compile_options(scene_facade_14b03_unit_tests PRIVATE /bigobj /MP)
+endif()
+
+add_executable(textured_scene_viewdata_14b03a_unit_tests
+    tests/stage14b_03a/Main.cpp
+    tests/stage14b_03a/PositiveCases.cpp
+    tests/stage14b_03a/FailureCases.cpp
+)
+target_include_directories(textured_scene_viewdata_14b03a_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14b_03a
+)
+target_link_libraries(
+    textured_scene_viewdata_14b03a_unit_tests
+    PRIVATE slicer_base
+)
+
+add_executable(textured_scene_viewdata_14b03a_real_fixture_tests
+    tests/stage14b_03a/RealFixtureMain.cpp
+)
+target_include_directories(
+    textured_scene_viewdata_14b03a_real_fixture_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14b_03a
+)
+target_compile_definitions(
+    textured_scene_viewdata_14b03a_real_fixture_tests
+    PRIVATE
+        SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+        SLICESOFT_BINARY_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+)
+target_link_libraries(
+    textured_scene_viewdata_14b03a_real_fixture_tests
+    PRIVATE slicer_base
+)
+if(MSVC)
+    target_compile_options(
+        textured_scene_viewdata_14b03a_unit_tests
+        PRIVATE /bigobj /MP
+    )
+    target_compile_options(
+        textured_scene_viewdata_14b03a_real_fixture_tests
+        PRIVATE /bigobj /MP
+    )
 endif()
 
 add_executable(package_query_facade_14b02_unit_tests
@@ -1256,6 +1316,14 @@ add_test(
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
+add_test(
+    NAME textured_scene_viewdata_14b03a_unit_tests
+    COMMAND textured_scene_viewdata_14b03a_unit_tests
+)
+add_test(
+    NAME textured_scene_viewdata_14b03a_real_fixture_tests
+    COMMAND textured_scene_viewdata_14b03a_real_fixture_tests
+)
 add_test(
     NAME package_query_facade_14b02_unit_tests
     COMMAND package_query_facade_14b02_unit_tests

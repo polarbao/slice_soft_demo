@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.4 ｜ 更新日期：2026-08-05
+> 版本：v3.5 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14B-03A 与 14B-05（可并行）
+CURRENT_NEXT_TASK      = 14B-05
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -56,8 +56,8 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿�
 `contracts/slicer_ui_view_spec.json` 已冻结设置页默认视图、top/three_d 纹理内容、
 1 mm/10 mm 自适应网格、白纹理对比辅助与切换零模块调用；它不属于能力 ABI 或生产 TIFF。
 
-> 🟡 **UI-R4 已完成合同侧缓解**：14A-04-R1 已冻结双视图纹理 DTO；14B-03A 仍须实现
-> `TexturedSceneViewDataProvider`，否则 top/three_d 只有字段而没有真实纹理数据。
+> ✅ **UI-R4 切片侧 Provider 已闭合**：14A-04-R1 已冻结双视图纹理 DTO，14B-03A 已实现
+> `TexturedSceneViewDataProvider` 并通过真实 OBJ/3MF 与 Debug/Release 门禁；14C/14E 仍需完成 SPI 适配和宿主显示。
 
 ### 1.3 仍然开放的外部项
 
@@ -149,9 +149,8 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 
 | 卡 | 任务 | 估算 |
 |---|---|---:|
-| 14B-03A | TexturedSceneViewDataProvider | 5–8 人日 |
 | 14B-05 | CLI 迁移 Facade 与完整回归 | 2–3 人日 |
-| **剩余关键路径估算** | | **7–11 人日** |
+| **剩余关键路径估算** | | **2–3 人日** |
 
 本卡不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
@@ -173,7 +172,7 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 ② RIP 书面合同已闭合，但目标 RIP 实机互操作仍必须由 14F 留证；
 ③ base/engine 分层的三个高风险切分点（model.cpp / geometry / reports）需 14B-00 先验证；
 ④ 若无 CI 单向依赖门禁（14B-06 + P4），分层将在数月内退化回单库；
-⑤ 14A-04-R1 已冻结双视图纹理合同，但 14B-03A Provider 尚未实现；只有字段或灰模不得解锁 14E；
+⑤ 14A-04-R1 双视图纹理合同与 14B-03A Provider 已闭合；14C/14E 必须复用该 Provider，禁止另造 DTO 或灰模降级；
 ⑥ top/three_d 网格与白纹理辅助只影响参考宿主显示，不得渗入几何真值、切片采样或 TIFF。
 ```
 
@@ -205,3 +204,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-05 | v3.2 | 完成 14B-03：SceneFacade 权威 Commit、双 revision、完整响应、幂等、碰撞/越界及正式 Debug/Release target 门禁通过；真实双视图纹理仍由 14B-03A 解锁 |
 | 2026-08-05 | v3.3 | 完成 14B-04：SliceFacade 以既有生产服务为唯一执行入口，正式 Debug/Release target、单调进度、协作取消和生产回归门禁通过；14D-04 继续负责深度取消与 2 秒上限 |
 | 2026-08-05 | v3.4 | 完成 14B-02：ModelFacade 与 PackageQueryFacade 接入权威模型/包能力，生产 TIFF Reader、缓存和材料预览形成 base-only 查询链路；Writer 与 backend 选择保持 engine，14B-03A/05 可并行 |
+| 2026-08-05 | v3.5 | 完成 14B-03A：top/three_d 真实纹理 Provider 接入正式 base target，真实 OBJ/3MF、纯白/近白、多模型 appearance、预算与 fail-closed 的 Debug/Release 门禁通过；下一任务为 14B-05 |
