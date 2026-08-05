@@ -140,9 +140,13 @@ def Main() -> int:
 
     modelSource = repoRoot / "src" / "slicer_core" / "model.cpp"
     modelIncludes = ReadProjectIncludes(repoRoot, "src/slicer_core/model.cpp")
-    if modelIncludes != ["src/slicer_core/model.h"]:
+    expectedModelIncludes = [
+        "src/slicer_core/model.h",
+        "src/slicer_core/model/ObjFaceParser.h",
+    ]
+    if modelIncludes != expectedModelIncludes:
         raise AssertionError(
-            "model.cpp acquired a project dependency outside model.h: "
+            "model.cpp acquired a project dependency outside the frozen base parser boundary: "
             f"{modelIncludes}"
         )
     if "OpenVdb" in modelSource.read_text(encoding="utf-8"):

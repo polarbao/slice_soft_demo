@@ -200,6 +200,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/model.h
     src/slicer_core/model/ModelLoadConfig.h
     src/slicer_core/model/ModelLoadConfigAdapter.cpp
+    src/slicer_core/model/ObjFaceParser.h
+    src/slicer_core/model/ObjFaceParser.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
@@ -1121,6 +1123,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateFacadeHeaders.py"
     )
     add_test(
+        NAME slicer_stage14b_facade_dto_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BFacadeDtos.py"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1153,6 +1160,12 @@ add_test(
     NAME model_import_layering_probe
     COMMAND model_import_layering_probe
         "${CMAKE_CURRENT_SOURCE_DIR}/samples/models/textured/fixtures/policy_textured_small.obj"
+)
+add_test(
+    NAME model_import_normals_probe
+    COMMAND model_import_layering_probe
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/stage14b/model_with_normals.obj"
+        --expect-normals
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)

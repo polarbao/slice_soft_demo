@@ -112,6 +112,7 @@ struct ModelReport {
     std::size_t triangle_count{0};
     std::size_t degenerate_triangle_count{0};
     std::size_t texcoord_count{0};
+    bool has_normals{false};
     std::size_t faces_with_uv{0};
     std::size_t faces_without_uv{0};
     std::vector<std::string> material_libraries;

@@ -35,8 +35,8 @@ public:
         const std::filesystem::path& package_dir,
         const ICancelToken& cancel_token) const noexcept = 0;
 
-    /** @brief Reads a named report without interpreting UI policy. @param package_dir Package root. @param name Report name. @return UTF-8 report or PM-SLICER error. */
-    [[nodiscard]] virtual ApiResult<std::string> ReadReport(
+    /** @brief Reads a named report without interpreting UI policy. @param package_dir Package root. @param name Report name. @return Structured report or PM-SLICER error. */
+    [[nodiscard]] virtual ApiResult<PackageReport> ReadReport(
         const std::filesystem::path& package_dir,
         std::string_view name) const noexcept = 0;
 };

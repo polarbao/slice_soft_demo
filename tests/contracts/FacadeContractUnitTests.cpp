@@ -36,10 +36,22 @@ bool VerifyResultContract()
 bool VerifyDtoDefaults()
 {
     const slicer_core::api::ModelImportRequest request;
+    const slicer_core::api::PackageSummary packageSummary;
+    const slicer_core::api::LayerDescriptor layerDescriptor;
+    const slicer_core::api::VerifyResult verifyResult;
+    const slicer_core::api::PackageReport packageReport;
     const slicer_core::api::SceneViewData viewData;
     const TestCancelToken cancelToken;
     return request.compute_bbox
         && request.extract_materials
+        && packageSummary.channels.at(0) == "R"
+        && packageSummary.channels.at(5) == "V"
+        && packageSummary.bit_depth == 8
+        && packageSummary.polarity == "black_is_print"
+        && packageSummary.profile_echo.utf8_json == "{}"
+        && layerDescriptor.empty_pixels.at(0) == 0U
+        && verifyResult.layer_count == 0
+        && packageReport.data.utf8_json == "{}"
         && viewData.view_mode == slicer_core::api::ViewMode::Top
         && !cancelToken.IsCancelRequested();
 }

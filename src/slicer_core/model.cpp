@@ -1,5 +1,7 @@
 #include "slicer_core/model.h"
 
+#include "slicer_core/model/ObjFaceParser.h"
+
 #include "miniz.h"
 
 #include <algorithm>
@@ -25,6 +27,8 @@ constexpr double pi{3.14159265358979323846};
 struct MeshData {
     std::vector<Vec3> vertices;
     std::vector<TexCoord> texcoords;
+    std::size_t normal_count{0};
+    bool has_normals{false};
     std::vector<std::array<std::size_t, 3>> faces;
     std::vector<TriangleTextureInfo> triangle_textures;
     std::size_t raw_face_count{0};
@@ -35,12 +39,6 @@ struct MeshData {
     std::vector<MaterialStat> materials;
     std::vector<MaterialInfo> material_infos;
     ThreeMfReportInfo three_mf;
-};
-
-struct ObjFaceVertex {
-    std::size_t position_index{0};
-    int texcoord_index{-1};
-    int normal_index{-1};
 };
 
 struct ZipEntryData {
@@ -650,6 +648,17 @@ void load_ascii_stl(const std::filesystem::path& path, const TransformConfig& tr
         std::istringstream stream{line};
         std::string token;
         stream >> token;
+        if (token == "facet")
+        {
+            std::string normalToken;
+            Vec3 normal;
+            if (stream >> normalToken >> normal.x >> normal.y >> normal.z
+                && normalToken == "normal")
+            {
+                mesh.has_normals = true;
+            }
+            continue;
+        }
         if (token != "vertex") {
             continue;
         }
@@ -716,6 +725,7 @@ void load_binary_stl(const std::filesystem::path& path, const TransformConfig& t
     }
     input.seekg(80, std::ios::beg);
     const std::uint32_t triangle_count{read_u32_le(input)};
+    mesh.has_normals = triangle_count > 0U;
     mesh.vertices.reserve(static_cast<std::size_t>(triangle_count) * 3U);
     mesh.faces.reserve(triangle_count);
     for (std::uint32_t i{0}; i < triangle_count; ++i) {
@@ -1653,79 +1663,6 @@ void load_3mf(const std::filesystem::path& path, const ModelLoadConfig& config, 
     mesh.three_mf.triangle_count = static_cast<int>(mesh.faces.size());
 }
 
-std::size_t parse_obj_index(const std::string& token, const std::size_t vertex_count) {
-    const std::size_t slash = token.find('/');
-    const std::string index_text = slash == std::string::npos ? token : token.substr(0, slash);
-    if (index_text.empty()) {
-        throw std::runtime_error("OBJ face contains empty vertex index");
-    }
-    const int index = std::stoi(index_text);
-    if (index == 0) {
-        throw std::runtime_error("OBJ vertex indices are 1-based; zero is invalid");
-    }
-    if (index > 0) {
-        const std::size_t zero_based = static_cast<std::size_t>(index - 1);
-        if (zero_based >= vertex_count) {
-            throw std::runtime_error("OBJ face references vertex outside loaded range");
-        }
-        return zero_based;
-    }
-    const int resolved = static_cast<int>(vertex_count) + index;
-    if (resolved < 0) {
-        throw std::runtime_error("OBJ negative face index is outside loaded range");
-    }
-    return static_cast<std::size_t>(resolved);
-}
-
-int parse_optional_obj_index(const std::string& token, const std::size_t item_count) {
-    if (token.empty()) {
-        return -1;
-    }
-    const int index = std::stoi(token);
-    if (index == 0) {
-        throw std::runtime_error("OBJ indices are 1-based; zero is invalid");
-    }
-    if (index > 0) {
-        const int zero_based = index - 1;
-        if (zero_based >= static_cast<int>(item_count)) {
-            throw std::runtime_error("OBJ face references index outside loaded range");
-        }
-        return zero_based;
-    }
-    const int resolved = static_cast<int>(item_count) + index;
-    if (resolved < 0) {
-        throw std::runtime_error("OBJ negative face index is outside loaded range");
-    }
-    return resolved;
-}
-
-ObjFaceVertex parse_obj_face_vertex(
-    const std::string& token,
-    const std::size_t vertex_count,
-    const std::size_t texcoord_count) {
-    ObjFaceVertex result;
-    const std::size_t first_slash = token.find('/');
-    if (first_slash == std::string::npos) {
-        result.position_index = parse_obj_index(token, vertex_count);
-        return result;
-    }
-
-    const std::string position_text = token.substr(0, first_slash);
-    result.position_index = parse_obj_index(position_text, vertex_count);
-
-    const std::size_t second_slash = token.find('/', first_slash + 1U);
-    const std::string texcoord_text = second_slash == std::string::npos
-        ? token.substr(first_slash + 1U)
-        : token.substr(first_slash + 1U, second_slash - first_slash - 1U);
-    result.texcoord_index = parse_optional_obj_index(texcoord_text, texcoord_count);
-
-    if (second_slash != std::string::npos) {
-        const std::string normal_text = token.substr(second_slash + 1U);
-        result.normal_index = normal_text.empty() ? -1 : std::stoi(normal_text);
-    }
-    return result;
-}
-
 MaterialStat& material_stat(MeshData& mesh, const std::string& name) {
     const auto found = std::find_if(mesh.materials.begin(), mesh.materials.end(), [&](const MaterialStat& item) {
         return item.name == name;
@@ -1854,17 +1791,29 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
                     throw std::runtime_error("invalid OBJ texture coordinate line in: " + path.string());
                 }
                 mesh.texcoords.push_back(texcoord);
+            } else if (token == "vn")
+            {
+                Vec3 normal{};
+                if (!(stream >> normal.x >> normal.y >> normal.z))
+                {
+                    throw std::runtime_error("invalid OBJ normal line in: " + path.string());
+                }
+                ++mesh.normal_count;
             } else if (token == "f") {
-                std::vector<ObjFaceVertex> face_vertices;
+                std::vector<model_detail::ObjFaceVertex> face_vertices;
                 std::string face_token;
                 while (stream >> face_token) {
-                    face_vertices.push_back(parse_obj_face_vertex(face_token, mesh.vertices.size(), mesh.texcoords.size()));
+                    face_vertices.push_back(model_detail::ParseObjFaceVertex(
+                        face_token,
+                        mesh.vertices.size(),
+                        mesh.texcoords.size(),
+                        mesh.normal_count));
                 }
                 if (face_vertices.size() < 3) {
                     throw std::runtime_error("OBJ face has fewer than three vertices: " + path.string());
                 }
                 ++mesh.raw_face_count;
-                const bool face_has_uv = std::all_of(face_vertices.begin(), face_vertices.end(), [](const ObjFaceVertex& item) {
+                const bool face_has_uv = std::all_of(face_vertices.begin(), face_vertices.end(), [](const model_detail::ObjFaceVertex& item) {
                     return item.texcoord_index >= 0;
                 });
                 if (face_has_uv) {
@@ -1872,6 +1821,13 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
                 } else {
                     ++mesh.faces_without_uv;
                 }
+                const bool faceHasNormals = std::all_of(
+                    face_vertices.begin(),
+                    face_vertices.end(),
+                    [](const model_detail::ObjFaceVertex& item) {
+                        return item.normal_index >= 0;
+                    });
+                mesh.has_normals = mesh.has_normals || faceHasNormals;
                 const std::size_t triangle_count = face_vertices.size() - 2U;
                 if (!active_material.empty()) {
                     MaterialStat& stat = material_stat(mesh, active_material);
@@ -1879,9 +1835,9 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
                     stat.triangle_count += triangle_count;
                 }
                 for (std::size_t i{1}; i + 1U < face_vertices.size(); ++i) {
-                    const ObjFaceVertex& a = face_vertices.at(0);
-                    const ObjFaceVertex& b = face_vertices.at(i);
-                    const ObjFaceVertex& c = face_vertices.at(i + 1U);
+                    const model_detail::ObjFaceVertex& a = face_vertices.at(0);
+                    const model_detail::ObjFaceVertex& b = face_vertices.at(i);
+                    const model_detail::ObjFaceVertex& c = face_vertices.at(i + 1U);
                     mesh.faces.push_back({a.position_index, b.position_index, c.position_index});
                     TriangleTextureInfo texture_info;
                     texture_info.material_name = active_material;
@@ -1949,6 +1905,7 @@ ModelReport load_model_report(const ModelLoadConfig& config, const std::filesyst
     report.triangle_count = mesh.faces.size();
     report.degenerate_triangle_count = count_degenerate_triangles(mesh.vertices, mesh.faces);
     report.texcoord_count = mesh.texcoords.size();
+    report.has_normals = mesh.has_normals;
     report.faces_with_uv = mesh.faces_with_uv;
     report.faces_without_uv = mesh.faces_without_uv;
     report.material_libraries = mesh.material_libraries;

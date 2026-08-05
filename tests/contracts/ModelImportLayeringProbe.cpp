@@ -7,7 +7,7 @@
 
 namespace {
 
-int RunProbe(const std::filesystem::path& modelPath)
+int RunProbe(const std::filesystem::path& modelPath, const bool expectNormals)
 {
     slicer_core::ModelLoadConfig config;
     config.input.model_path = modelPath;
@@ -24,6 +24,10 @@ int RunProbe(const std::filesystem::path& modelPath)
     {
         throw std::runtime_error("model import probe returned empty geometry");
     }
+    if (expectNormals && !report.has_normals)
+    {
+        throw std::runtime_error("model import probe lost referenced source normals");
+    }
 
     std::cout << "Stage 14B model import layering probe: PASS\n"
               << "vertices=" << report.vertex_count
@@ -37,12 +41,14 @@ int main(int argc, char** argv)
 {
     try
     {
-        if (argc != 2)
+        if (argc < 2 || argc > 3)
         {
             throw std::runtime_error(
-                "usage: model_import_layering_probe <fixture.obj>");
+                "usage: model_import_layering_probe <fixture.obj> [--expect-normals]");
         }
-        return RunProbe(std::filesystem::path(argv[1]));
+        const bool expectNormals = argc == 3
+            && std::string(argv[2]) == "--expect-normals";
+        return RunProbe(std::filesystem::path(argv[1]), expectNormals);
     }
     catch (const std::exception& error)
     {
