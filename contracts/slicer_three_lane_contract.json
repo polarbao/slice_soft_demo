@@ -1,12 +1,14 @@
 {
-  "contractVersion": "1.0",
+  "contractVersion": "1.1",
   "lanes": {
     "transient": {
       "owner": "host",
       "crossModuleCalls": 0,
       "persistentMutation": false,
       "sceneRevisionChange": false,
-      "allowedState": ["localTransform", "localBBoxApproximation", "localViewDataCache"]
+      "allowedState": ["localTransform", "localBBoxApproximation", "localViewDataCache", "localTextureCache"],
+      "collisionFeedback": "local_bbox_prediction_non_authoritative",
+      "forbiddenCalls": ["scene.apply_operation", "geometry.collision", "scene.get_viewdata"]
     },
     "commit": {
       "owner": "slicer_module",
@@ -41,7 +43,9 @@
         "staleCode": "PM-SLICER-LAYOUT-0022",
         "staleMutation": false,
         "partialApply": false
-      }
+      },
+      "successRefresh": "use_scene.apply_operation_response_without_forced_snapshot",
+      "snapshotRequiredFor": ["scene_revision_stale", "explicit_refresh", "recovery"]
     },
     "production": {
       "owner": "slicer_worker",
@@ -78,6 +82,8 @@
   },
   "invariants": {
     "mouseMoveCrossModuleCalls": 0,
+    "cameraMoveCrossModuleCalls": 0,
+    "authoritativeCollisionDuringMouseMove": false,
     "commitRevisionIncrement": 1,
     "productionPackageSchema": "p0.rgbwsv.2",
     "legacyIsDefaultEngine": true,

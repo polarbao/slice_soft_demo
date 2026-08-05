@@ -1,9 +1,10 @@
 # DOC_SCHEMA_14 `scene.get_viewdata` 网格 DTO 规格
 
-> 文档状态：✅ **ACTIVE / 契约草案**（供 14A-04 冻结采用）
-> 版本：v1.1 ｜ 日期：2026-08-04 ｜ 基线收口：2026-08-05
+> 文档状态：✅ **ACTIVE / CONTRACT AMENDED**（14A-04-R1）
+> 版本：v1.2 ｜ 日期：2026-08-04 ｜ 双视图纹理修订：2026-08-05
 > 定位：填补 `scene.get_viewdata` 网格数据的字段级规格空白（风险 UI-R4）
 > 上游：`DEV_14` §5（承载分派）、`DOC_DECISION_14_UI` §6.4（缺口来源）
+> 修订决策：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`
 > 证据等级：A=已核实事实，B=目标设计，P=判断
 
 ---
@@ -18,10 +19,12 @@
 | `INT_16` 示例 | `"viewdataIdentity": "vd:43:inst-01:lod0"` —— 出现 `lod0`，语义未定义 |
 | 现有实现 | `src/slicer_core/scene/SceneViewGeometry.*` 面向**俯视投影**构建 |
 
-**14A-04 是契约冻结任务，是唯一一次低成本定义它的机会。** 3D 视角（14E-04c）需要网格数据；
-若冻结时不定，届时将迫使**已交付给打印侧的 ABI 二次变更**。
+14A-04 已于 2026-08-05 冻结几何网格合同，但冻结版本缺少 UV、材质、纹理图像和带纹理俯视预览。
+用户随后把“top 与 three_d 都必须显示模型纹理”定为硬标准，因此在打印侧书面回签前执行
+14A-04-R1 受控 minor 修订。
 
-> 即使首版实现只返回俯视轮廓，**DTO 也必须完整定义**，实现可以缺、契约不能缺。
+本修订不增加 ABI 导出或能力数量；纹理字段必须完整定义，实际 3D UI 不得在纹理 Provider
+完成前启动。
 
 ## 1. 全局约定
 
@@ -41,7 +44,9 @@ JSON 编码   UTF-8，无 BOM
   "sceneId": "scene-001",
   "expectedSceneRevision": 43,          // 乐观并发：与当前不符则返回 SceneRevisionStale
   "instanceIds": ["inst-01", "inst-02"], // 空数组或缺省 = 全部实例
-  "content": ["bbox", "outline", "mesh"],// 请求内容，可任意组合
+  "content": ["bbox", "outline", "surface_preview", "mesh", "appearance"],
+  "viewMode": "three_d",                  // top | three_d
+  "texturePolicy": "require_if_present", // 带纹理模型不得静默退为灰模
   "lod": "auto",                         // auto | lod0 | lod1 | lod2 | outline_only
   "meshTransform": "local",              // local（推荐） | world
   "maxBytes": 33554432                   // 宿主给出的本次传输预算上限（32 MiB）
@@ -50,7 +55,9 @@ JSON 编码   UTF-8，无 BOM
 
 | 字段 | 必填 | 说明 |
 |---|:--:|---|
-| `content` | 是 | `bbox` / `outline` / `mesh` 三选多。不请求 `mesh` 时行为等价于现状 |
+| `content` | 是 | `bbox` / `outline` / `surface_preview` / `mesh` / `appearance` 多选 |
+| `viewMode` | 是 | `top` 为 +Z 正交俯视；`three_d` 为可交互 3D |
+| `texturePolicy` | 是 | 固定为 `require_if_present`；声明纹理的模型必须返回纹理数据 |
 | `lod` | 是 | 见 §4 |
 | `meshTransform` | 是 | 见 §3 |
 | `maxBytes` | 是 | **必填**。模块据此决定实际 LOD 与是否分块；不得默认无限 |
@@ -93,7 +100,8 @@ auto 的选择规则（B）
   1. 估算 lod0 在当前实例集下的总字节数
   2. 若 ≤ maxBytes → 用 lod0
   3. 否则依次尝试 lod1、lod2
-  4. 仍超出 → 返回 outline_only 并置 truncated=true，说明原因
+  4. top 模式可继续降低 surfacePreview 分辨率；three_d 模式可降低纹理分辨率
+  5. 对带纹理模型仍超出 → 返回 PM-SLICER-VIEWDATA-BUDGET，不得成功返回无纹理灰模
 ```
 
 **响应必须回报 `mesh.lod` 的实际值**，宿主不得假设拿到的就是所请求的。
@@ -113,7 +121,23 @@ auto 的选择规则（B）
       "modelId": "model-a",
       "bboxLocalMm": { "min": [-12.0, -8.0, 0.0], "max": [12.0, 8.0, 6.4] },
       "worldMatrix": [ 1,0,0,0,  0,1,0,0,  0,0,1,0,  35.0,20.0,0.0,1 ],
+      "textureStatus": "available",
       "outline": { "loops": [ /* 既有俯视轮廓结构，不变 */ ] },
+      "surfacePreview": {
+        "previewIdentity": "preview:model-a:9f3ac21b:1024",
+        "appearanceIdentity": "appearance:model-a:71c4e812",
+        "widthPx": 1024,
+        "heightPx": 512,
+        "worldBoundsMm": { "min": [-12.0, -8.0], "max": [12.0, 8.0] },
+        "pixelFormat": "rgba8_unorm",
+        "colorSpace": "srgb",
+        "alphaMode": "straight",
+        "rowOrigin": "top_left",
+        "blobId": "blob-preview-33a1",
+        "totalBytes": 2097152,
+        "chunkBytes": 4194304,
+        "chunkCount": 1
+      },
       "mesh": {
         "meshIdentity": "mesh:model-a:lod1:9f3ac21b",
         "lod": "lod1",
@@ -123,15 +147,51 @@ auto 的选择规则（B）
         "buffers": {
           "position": { "format": "float32x3", "byteOffset": 0,      "byteLength": 296160 },
           "normal":   { "format": "float32x3", "byteOffset": 296160, "byteLength": 296160 },
-          "index":    { "format": "uint32",    "byteOffset": 592320, "byteLength": 592272 }
+          "texcoord0":{ "format": "float32x2", "byteOffset": 592320, "byteLength": 197440 },
+          "index":    { "format": "uint32",    "byteOffset": 789760, "byteLength": 592272 }
         },
+        "submeshes": [
+          { "firstIndex": 0, "indexCount": 148068, "materialId": "material-0" }
+        ],
         "blobId": "blob-7f3a9c",
-        "totalBytes": 1184592,
+        "totalBytes": 1382032,
         "chunkBytes": 4194304,
         "chunkCount": 1
       }
     }
   ],
+  "appearance": {
+    "appearanceIdentity": "appearance:model-a:71c4e812",
+    "uvConvention": "u_right_v_up",
+    "materials": [
+      {
+        "materialId": "material-0",
+        "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+        "baseColorTextureId": "texture-0",
+        "alphaMode": "opaque",
+        "alphaCutoff": 0.5,
+        "doubleSided": false,
+        "uvSet": 0,
+        "uvTransform": [1,0,0, 0,1,0, 0,0,1]
+      }
+    ],
+    "textures": [
+      {
+        "textureId": "texture-0",
+        "textureIdentity": "texture:sha256:6d9f...",
+        "widthPx": 2048,
+        "heightPx": 2048,
+        "pixelFormat": "rgba8_unorm",
+        "colorSpace": "srgb",
+        "alphaMode": "straight",
+        "rowOrigin": "top_left",
+        "blobId": "blob-texture-2c91",
+        "totalBytes": 16777216,
+        "chunkBytes": 4194304,
+        "chunkCount": 4
+      }
+    ]
+  },
   "truncated": false,
   "truncationReason": null
 }
@@ -143,7 +203,11 @@ auto 的选择规则（B）
 |---|---|
 | `bboxLocalMm` | **局部**坐标 bbox。世界 bbox 由宿主用 `worldMatrix` 变换得到 —— 避免两处真源 |
 | `worldMatrix` | 行主序 16 元素；`meshTransform=world` 时为单位阵 |
+| `textureStatus` | `available` 或 `not_provided`；声明纹理但加载失败不得返回成功状态 |
+| `surfacePreview` | top 模式的带纹理 +Z 投影；透明背景与世界边界必须显式声明 |
 | `meshIdentity` | 只标识可复用网格内容，不含 scene revision 或实例世界变换 |
+| `appearanceIdentity` | 标识材质与纹理集合，不含实例世界变换 |
+| `textureIdentity` | 标识解码后纹理内容与采样语义，供宿主缓存 GPU 纹理 |
 | `buffers.*.byteOffset/byteLength` | 均相对于该实例 blob 的起始，非全局 |
 | `blobId` | 二进制缓冲的取回句柄，见 §7 |
 | `truncated` | 未能按请求返回完整内容时为 `true`，**不得静默截断** |
@@ -154,10 +218,13 @@ auto 的选择规则（B）
 ```text
 position   float32x3
 normal     float32x3
+texcoord0  float32x2
 index      uint16 | uint32   （顶点数 ≤ 65535 时允许 uint16）
+texture    rgba8_unorm / srgb / straight alpha / top_left rows
 ```
 
-首版**不含** UV 与顶点色 —— 3D 预览用平光着色即可；如后续需要，按 §9 版本化扩展。
+`texcoord0` 使用 `u_right_v_up`；图像行序为 `top_left`。宿主必须按声明完成 V 方向映射，
+不得依赖 OpenGL、QImage 或图像文件格式的隐式默认值。首版不含顶点色与法线贴图。
 
 ## 6. `viewdataIdentity` 构成与失效规则
 
@@ -181,6 +248,15 @@ index      uint16 | uint32   （顶点数 ≤ 65535 时允许 uint16）
 > 宿主应按 `meshIdentity` 缓存网格，而非按整个 `viewdataIdentity` 缓存。
 > `viewdataIdentity` 标识场景响应快照，`meshIdentity` 标识可跨实例变换复用的网格内容；两者不得混用。
 
+纹理缓存使用独立身份：
+
+```text
+appearanceIdentity  材质绑定、baseColorFactor、UV 约定或任一 textureIdentity 变化时失效
+textureIdentity     解码像素、尺寸、色彩空间、alpha 或行序变化时失效
+previewIdentity     源纹理、投影边界或预览分辨率变化时失效
+worldMatrix         不使 meshIdentity / appearanceIdentity / textureIdentity 失效
+```
+
 ## 7. 大缓冲传输策略（🔴 不新增导出符号）
 
 **约束（A）**：SPI 的 11 个 `pm_*` 导出**已冻结**，不得新增 `pm_get_blob` 之类的符号。
@@ -203,8 +279,8 @@ index      uint16 | uint32   （顶点数 ≤ 65535 时允许 uint16）
 
 ```text
 ① chunkBytes 默认 4 MiB，由模块决定并在响应中声明；宿主不得假设
-② blob 生命周期绑定 meshIdentity 与模块 TTL/LRU；仅 worldMatrix 或 sceneRevision 变化
-   不使同一 meshIdentity 的 blob 失效。源模型、LOD 或内容哈希变化时失效，
+② mesh blob 生命周期绑定 meshIdentity；纹理与俯视预览 blob 分别绑定 textureIdentity / previewIdentity。
+   仅 worldMatrix 或 sceneRevision 变化不使可复用 blob 失效。源模型、LOD、纹理或内容哈希变化时失效，
    再取返回 PM-SLICER-VIEWDATA-STALE
 ③ 模块须限制同时存活的 blob 数量与总内存，超限时按 LRU 回收最旧的；
    被回收的 blobId 同样返回 STALE，宿主重新请求即可
@@ -220,6 +296,8 @@ index      uint16 | uint32   （顶点数 ≤ 65535 时允许 uint16）
 |---|---|
 | `PM-SLICER-VIEWDATA-STALE` | `expectedSceneRevision` 不符，或 blobId 已失效/被回收 |
 | `PM-SLICER-VIEWDATA-BUDGET` | `maxBytes` 小到连 `outline_only` 都放不下 |
+| `PM-SLICER-INPUT-0001` | 模型声明的外部纹理文件不存在或不可读 |
+| `PM-SLICER-INPUT-0002` | 纹理解码失败、UV 无效或材质绑定无法解析 |
 | `PM-SLICER-PROFILE-0031` | `lod` / `meshTransform` / `content` 取值非法（复用既有参数越界码）|
 
 前两个为新增，需在 14A-01 的 `print_module_spi.h` 错误码表中登记。
@@ -232,19 +310,20 @@ index      uint16 | uint32   （顶点数 ≤ 65535 时允许 uint16）
 删改既有字段语义  → major 递增，需重新协商
 ```
 
-预留但**首版不实现**的扩展点：UV 坐标、顶点色、逐面材质分组、切片层预览网格。
+预留但**首版不实现**的扩展点：切线、法线贴图、金属度/粗糙度、顶点色、切片层预览网格。
 这些若将来需要，按 minor 追加，不破坏已交付 ABI —— 这正是本规格要提前占位的原因。
 
 ## 10. 对实现的最小要求（首版）
 
 ```text
 必须实现  bbox + outline + viewdataIdentity + 完整错误码 + truncated 语义
-可以缺席  mesh 实际数据（返回 content 不含 mesh，或 truncated=true 说明未实现）
+top       带纹理模型必须实现 surfacePreview；允许降低分辨率，不允许去纹理
+three_d   带纹理模型必须实现 mesh + texcoord0 + submesh + appearance + texture blob
+无纹理    明确 textureStatus=not_provided，并使用 baseColorFactor
 不得偏离  §1 全局约定、§3 local 语义、§6 失效规则、§7 不新增导出符号
 ```
 
-**契约完整 ≠ 实现完整。** 首版允许只返回俯视轮廓，但**字段与语义必须按本规格冻结**，
-以免 3D 视角落地时被迫改动已交付 ABI。
+合同层可以先于 Provider 实现完成，但 14E UI 不得在纹理 Provider 缺失时以灰模代替成功结果。
 
 ## 11. 修订记录
 
@@ -252,3 +331,4 @@ index      uint16 | uint32   （顶点数 ≤ 65535 时允许 uint16）
 |---|---|---|
 | 2026-08-04 | v1.0 | 首版。填补 `scene.get_viewdata` 网格 DTO 空白：定义全局约定、请求/响应 DTO、`local`+`worldMatrix` 实例变换语义及其三条理由、LOD 分级与 auto 选择规则、`viewdataIdentity` 构成与失效表（含"worldMatrix 变化不失效"这一关键授权）、**在不新增导出符号前提下**的 blob 分块传输方案、两个新增错误码、版本化规则与首版最小实现要求 |
 | 2026-08-05 | v1.1 | Stage 14 开工基线收口：新增独立 `meshIdentity`，消除 scene revision 与网格缓存生命周期冲突；blob 读取改为 `scene.get_viewdata` 子操作，保持 15 项能力与 11 个导出符号不变 |
+| 2026-08-05 | v1.2 | 14A-04-R1：增加 top/three_d、surfacePreview、texcoord0、submesh/material/texture、三类外观身份与纹理 fail-closed 规则；保持 15 项能力、11 个导出和 PM_SPI_VERSION=1 不变 |

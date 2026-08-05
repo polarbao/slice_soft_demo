@@ -1,8 +1,9 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.1
+> 合同版本：1.2
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
+> 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`
 
 ## 1. 范围
 
@@ -68,16 +69,36 @@ SPI major。
 坐标系      right_handed_z_up
 单位        mm
 字节序      little_endian
-网格        float32x3 position/normal + uint16|uint32 index
+网格        float32x3 position/normal + float32x2 texcoord0 + uint16|uint32 index
 LOD         auto/lod0/lod1/lod2/outline_only
 推荐变换    local mesh + row-major worldMatrix[16]
 缓存        viewdataIdentity 标识快照，meshIdentity 标识可复用网格
 分块        scene.get_viewdata operation=read_blob，经既有 pm_result 取回
+显示        top / three_d
+外观        appearanceIdentity + materials + RGBA8/sRGB texture blobs
+俯视纹理    surfacePreview RGBA8/sRGB blob，或同一 textured mesh 的 +Z 正交渲染
 ```
 
-只改变 `worldMatrix` 不使 `meshIdentity` 或 blob 失效。首版实现可只返回 bbox 与 outline，
-但必须显式设置 `truncated`/`truncationReason`；不得静默丢弃 mesh。不得新增第 16 项能力、
-`pm_get_blob` 或第 12 个 ABI 导出符号。
+只改变 `worldMatrix` 不使 `meshIdentity`、`appearanceIdentity` 或对应 blob 失效。
+对声明纹理的模型，`top` 必须返回带纹理 `surfacePreview`，`three_d` 必须返回 UV、材质和纹理；
+预算不足可降低 LOD/纹理分辨率，但不得静默退为无纹理灰模。模型本身没有纹理时返回
+`textureStatus=not_provided` 并使用 `baseColorFactor`。不得新增第 16 项能力、`pm_get_blob`
+或第 12 个 ABI 导出符号。
+
+### 4.1 双视图请求
+
+```json
+{
+  "capability": "scene.get_viewdata",
+  "operation": "query",
+  "viewMode": "top",
+  "texturePolicy": "require_if_present",
+  "content": ["bbox", "outline", "surface_preview", "appearance"]
+}
+```
+
+`top` 与 `three_d` 必须使用同一 `appearanceIdentity`。切换视图只切换相机和呈现策略，
+不能重新导入模型、改变 scene revision 或丢失选中集。
 
 ## 5. 生产协议红线
 

@@ -1,12 +1,14 @@
 # SliceSoft 三车道交互合同
 
-> 合同版本：1.0
+> 合同版本：1.1
 > 机器可读真源：`contracts/slicer_three_lane_contract.json`
 
 ## 1. Transient 车道
 
-拖拽、旋转、缩放进行中只修改宿主本地临时矩阵、近似 bbox 和已缓存 ViewData。
+拖拽、旋转、缩放进行中只修改宿主本地临时矩阵、近似 bbox、已缓存 ViewData 和纹理资源。
 鼠标移动期间跨模块调用必须恒为 0，不改变模块场景、不递增 revision，也不能进入切片。
+拖拽期碰撞提示只能来自宿主本地 bbox 预测，并必须标记为非权威；禁止逐 mouse-move 调用
+`geometry.collision`、`scene.apply_operation` 或 `scene.get_viewdata`。相机 orbit/pan/zoom 同样零跨模块调用。
 
 ## 2. Commit 车道
 
@@ -22,6 +24,10 @@ operations[]
 
 正常请求中 `currentSceneRevision == expectedSceneRevision`，且两者必须等于模块权威 revision。
 全部 operation 成功后 revision 恰好递增 1；任一失败则不应用任何 operation。
+
+正常 Commit 成功后，宿主直接采用 `scene.apply_operation` 返回的 canonical transform、collision、
+out-of-bounds、revision、sceneHash 与 ViewData identity，不强制追加一次 `scene.get_snapshot`。
+只有 SceneRevisionStale、显式刷新和恢复路径需要回读 snapshot。
 
 ### 2.1 幂等
 

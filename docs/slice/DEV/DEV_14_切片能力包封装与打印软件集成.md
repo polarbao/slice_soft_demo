@@ -2,7 +2,7 @@
 
 > 文档状态：✅ **ACTIVE / DESIGN BASELINE**（2026-08-04 激活，实现进行中）
 > S2（RIP 接缝）权威条款见 `docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`
-> 版本：v1.0 ｜ 日期：2026-08-03
+> 版本：v1.1 ｜ 日期：2026-08-03 ｜ 双视图纹理修订：2026-08-05
 > 作者：Claude 起草；实现前须主线开发确认
 > 上游：`PRD_14`、`DOC_DECISION_14` ｜ 详细推导：`docs/claude/INTEGRATION/INT_09/10/16/17`
 
@@ -55,6 +55,17 @@ apps/slicer_worker/                 切片引擎（链 base + engine）
 ├─ main.cpp                         --contract-info / --spi-request
 ├─ JobExecutor.*                    调 SliceFacade，透传 ICancelToken
 └─ StagingPublisher.*               staging → 自检 → 原子发布
+
+apps/slicer_host_sim/               纯 C 控制台参考宿主（14E-01）
+apps/slicer_ui_host_sim/            Qt5 Widgets 打印软件 UI 参考宿主（14E-02 起）
+├─ module/ModuleClient.*            仅运行时解析 11 个 pm_* 导出
+├─ scene/SceneInteractionController.*
+├─ scene/TransformCommitPolicy.*
+├─ render/TopViewRenderPolicy.*     top 带纹理 +Z 正交投影
+├─ render/SceneRenderPolicy.*       three_d 带纹理网格
+├─ render/AppearanceCache.*         identity 驱动的纹理/GPU 资源缓存
+├─ camera/CameraController.*
+└─ settings/ViewDisplaySettings.*   默认视图与 3D 投影设置
 ```
 
 ## 3. 三条契约
@@ -105,10 +116,13 @@ DllMain 只 return TRUE；初始化放 pm_create + std::call_once
 
 ```text
 Transient  宿主本地矩阵 + 本地 bbox 近似 → 【不跨 DLL】
+           碰撞仅作 non-authoritative 视觉反馈，不得显示为正式裁决
 Commit     operationId + expectedSceneRevision → DLL 进程内权威求值
            ← newSceneRevision / sceneHash / canonicalTransform
              / collisions[] / outOfBoundsInstances[] / preflightDelta[] / viewdataIdentity
+           正常成功直接采用 apply_operation 响应，不强制追加 get_snapshot
            revision 不符 → PM-SLICER-LAYOUT-0022（SceneRevisionStale），不静默覆盖
+           仅 Stale、显式刷新或恢复流程调用 get_snapshot
            同 operationId 重试必须幂等
 Production slice.rgbwsv 只接受已提交 sceneHash；Worker 内重跑 full preflight
 ```
@@ -128,7 +142,7 @@ Production slice.rgbwsv 只接受已提交 sceneHash；Worker 内重跑 full pre
 | 能力 | 需要 | 承载 |
 |---|---|---|
 | `model.import` / `get_metadata` / `release` | base（待 14B-00 验证）| DLL 进程内 |
-| `scene.apply_operation` / `get_snapshot` / `get_viewdata` | base | DLL 进程内 |
+| `scene.apply_operation` / `get_snapshot` / `get_viewdata` | base | DLL 进程内；`get_viewdata` 的纹理 Provider 由 14B-03A 落地 |
 | `geometry.collision` / `preflight(fast)` | base | DLL 进程内 |
 | `package.verify` / `get_summary` / `get_layer_descriptor` / `render_layer_preview` / `read_report` | base | DLL 进程内 |
 | `geometry.preflight(full)` / `geometry.repair` | engine | **Worker** |
@@ -143,6 +157,37 @@ Production slice.rgbwsv 只接受已提交 sceneHash；Worker 内重跑 full pre
 >
 > ⚠️ `model.import` 是 15 项中**唯一未定归属**的能力，结论由 **14B-00** 给出。
 > 在 14B-00 出结论前，`syncCapabilities[]` 不得写入该项。
+
+### 5.1 双视图纹理 ViewData
+
+`scene.get_viewdata` 复用既有能力名和 `pm_submit/pm_result` blob 通道，不增加第 16 项能力或
+第 12 个导出。合同版本由 `slicer_capability_dtos` 1.1 受控修订为 1.2：
+
+```text
+top       surfacePreview（RGBA8 / sRGB / straight alpha / top-left）+ 世界边界
+three_d   mesh + texcoord0 + submeshes + materials + texture blobs
+缓存      meshIdentity / appearanceIdentity / textureIdentity / previewIdentity 分离
+失败      声明纹理但缺文件、解码失败或 UV/材质绑定无效 → INPUT-0001/0002
+禁止      以“成功 + 灰模”掩盖纹理失败；auto LOD 只能降几何/纹理分辨率，不能删除纹理
+```
+
+新增原子任务 **14B-03A `TexturedSceneViewDataProvider`**。14A-04-R1 只冻结合同，
+14B-03A 才负责从 OBJ/MTL/3MF 与现有模型缓存生成上述 ViewData；14E-04c 不得绕过该 Provider
+直接读取 `slicer_core` 内部对象。
+
+### 5.2 UI 参考宿主与渲染边界
+
+参考宿主采用固定信息架构：顶部作业命令，左侧实例树，中央 top/three_d 纹理画布，右侧上下文
+属性/切片设置，底部任务、层预览与模块诊断。工作区分为“准备”“切片预览”“模块诊断”，
+避免把设备/RIP 诊断长期塞在建模画布中。
+
+首版 3D 后端使用 **`QOpenGLWidget + QOpenGLFunctions`**：复用现有 Qt5 Widgets/Gui，
+不引入新的 vcpkg 包；Qt3D 因部署模块、维护面和打印侧移植成本较高不采用。渲染后端不得拥有
+Scene 真值：相机、拾取、纹理上传和瞬时矩阵均为宿主本地状态，Commit 仍由模块权威求值。
+
+设置页保存默认 `top` / `three_d`；中央画布提供即时分段切换。两种入口只改变相机与呈现策略，
+不得改变 scene revision、选中集、实例变换或作业状态。白色/近白纹理由非纯白平台、轮廓线、
+选中高亮和透明棋盘格辅助辨识，辅助显示不得写回纹理或 TIFF。
 
 ## 6. 线程与取消
 
@@ -173,7 +218,7 @@ pm_release   对 running job 必须先取消并 join，不得杀线程
 | L2 | C-SPI-01..18 一致性套件（`test_spi_conformance`）|
 | L3 | 引擎一致性套件 E-01..08（Worker 替换准入门）|
 | L4 | S1 接缝契约测试（正例 + 7 类负例）|
-| L5 | 端到端：单模型 / 多模型 / 取消 / 大场景 / 模块缺失 |
+| L5 | 端到端：单模型 / 多模型 / 取消 / 大场景 / 模块缺失；top/three_d 纹理、视图切换、白色纹理辨识与纹理负例 |
 | L6 | 稳定性：边打印边切片、强杀 Worker、磁盘满、长时连续 |
 | L7 | 三方联调（打印侧 M1–M5 + RIP）|
 
@@ -195,9 +240,15 @@ pm_release   对 running job 必须先取消并 join，不得杀线程
 | fast/full 判定不一致 | §4.1 三条不变量 |
 | ABI 过早冻结 | 机制层先冻（11 导出稳定），能力面用 capability 声明扩展 |
 | 分层退化回单库 | P4 门禁 + 新文件必须显式归属 |
+| 14A-04 冻结后缺少纹理字段 | 通过 14A-04-R1 受控 minor 修订补齐，保持 11 个导出、15 项能力和 `PM_SPI_VERSION=1` 不变；打印侧按 1.2 回签 |
+| 合同已有字段但 Provider 未实现 | 14B-03A 成为 14E-04c 硬前置；不得用灰模假装完成 |
+| UI Gate 自循环 | `14C-06 + 14D-05` 只形成 M-MVP-CANDIDATE；14E-01 纯 C 宿主闭环 PASS 后才形成 M-MVP 并解锁 Qt UI |
+| 拖拽期碰撞被误当权威 | Transient 仅本地 bbox 提示；Commit 响应才显示权威碰撞/越界结果 |
+| 3D 后端扩大依赖面 | 首版固定 QOpenGLWidget；不引入 Qt3D 或新第三方库 |
 
 ## 11. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版。四目标构建结构；三条契约与版本轴；三车道数据流与"权威判定必须在 Worker 内"不变量；承载分派；取消链路；L1–L7 验证策略；base/engine 六步迁移 |
+| 2026-08-05 | v1.1 | 补齐双视图纹理 ViewData、14B-03A Provider、UI 参考宿主信息架构与 QOpenGL 后端；修正 M-MVP 自循环、Transient 碰撞权威性和 Commit 多余快照调用 |

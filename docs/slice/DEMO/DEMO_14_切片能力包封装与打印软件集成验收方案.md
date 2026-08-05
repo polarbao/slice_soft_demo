@@ -1,7 +1,7 @@
 # DEMO_14 切片能力包封装与打印软件集成验收方案
 
 > 文档状态：**PREPARED / NOT EXECUTED**
-> 版本：v1.0 ｜ 日期：2026-08-03
+> 版本：v1.1 ｜ 日期：2026-08-03 ｜ 双视图纹理修订：2026-08-05
 > 上游：`PRD_14`、`DEV_14`、`DOC_DECISION_14`
 > 证据纪律：**未执行项保持 `NOT RUN`，不得以 PREPARED 代替 PASS**
 
@@ -12,12 +12,12 @@
 | 组 | 主题 | 用例数 | 依赖 |
 |---|---|---:|---|
 | D14-A | 契约物料与合规 | 6 | 无 |
-| D14-B | Facade 与 base/engine 分层 | 8 | 14B |
+| D14-B | Facade、ViewData Provider 与 base/engine 分层 | 11 | 14B |
 | D14-C | ABI 与一致性（C-SPI）| 18 | 14C |
 | D14-D | Worker、取消与引擎替换 | 12 | 14D |
-| D14-E | 交互与可移植性 | 7 | 14E |
+| D14-E | 交互、双视图纹理与可移植性 | 18 | 14E |
 | D14-F | 打包、稳定性与三方联调 | 11 | 14F |
-| **合计** | | **62** | |
+| **合计** | | **76** | |
 
 ---
 
@@ -44,6 +44,9 @@
 | D14-B-06 | 新增源文件必须显式归入 base 或 engine | CI 检查 | NOT RUN |
 | D14-B-07 | `slicer_cli` 改走 facade 后行为不变 | TIFF 逐字节不变 + full 回归 | NOT RUN |
 | D14-B-08 | `model.import` 归属结论（base 或 Worker）有明确证据 | 14B-00 结论文档 | NOT RUN |
+| D14-B-09 | `TexturedSceneViewDataProvider` 为 top 返回可解码 `surfacePreview`，世界边界与透明语义完整 | checker 3MF + 圣诞节浮雕正例通过 | NOT RUN |
+| D14-B-10 | Provider 为 three_d 返回 `mesh + texcoord0 + submeshes + materials + textures`，identity 可复用 | UV/材质绑定和纹理方向与源资产一致 | NOT RUN |
+| D14-B-11 | 声明纹理但缺文件、解码失败或 UV 无效 | 稳定返回 `INPUT-0001/0002`，不得成功返回灰模 | NOT RUN |
 
 ## 3. D14-C ABI 与一致性（C-SPI-01..18）
 
@@ -93,13 +96,24 @@
 
 | 编号 | 用例 | 判据 | 状态 |
 |---|---|---|---|
-| D14-E-01 | `slicer_host_sim` 走完三车道 | 通过 | NOT RUN |
+| D14-E-01 | `slicer_host_sim` 仅通过 11 个导出完成导入→变换→切片→取包→校验 | 通过后由 M-MVP-CANDIDATE 晋级为 M-MVP | NOT RUN |
 | D14-E-02 | **`mouse-move` 期间 `Host→DLL` 调用次数为 0** | 计数为 0（可证伪）| NOT RUN |
 | D14-E-03 | Commit 返回 `SceneRevisionStale` 时 UI 重取重试成功 | 通过 | NOT RUN |
 | D14-E-04 | 碰撞/越界时回滚显示 + 稳定错误码文案 | 通过 | NOT RUN |
 | D14-E-05 | `fast` 预检返回标注 `authoritative: false` | 字段存在 | NOT RUN |
 | D14-E-06 | 可移植模块**不 include** `slicer_core/**` | CI 依赖检查 | NOT RUN |
 | D14-E-07 | 可移植模块清单交打印侧并确认可移植 | 对方确认 | NOT RUN |
+| D14-E-08 | 同一带纹理模型在 `top` 与 `three_d` 都显示真实纹理 | checker 3MF 与圣诞节浮雕均通过；无静默灰模 | NOT RUN |
+| D14-E-09 | 白色/近白纹理与背景、透明区可辨 | 非纯白平台、轮廓/高亮、透明棋盘格有效；纹理像素未改写 | NOT RUN |
+| D14-E-10 | 设置页选择默认 `top` / `three_d` 后重启 | session config round-trip，默认视图恢复 | NOT RUN |
+| D14-E-11 | 中央画布即时切换 top/three_d | scene revision、选中集、实例变换和作业状态不变；mesh/texture identity 复用 | NOT RUN |
+| D14-E-12 | orbit/pan/zoom 与视图切换期间 `Host→DLL` 调用次数 | 恒为 0 | NOT RUN |
+| D14-E-13 | three_d 连续 orbit（10 万三角面）| 30 秒采样 P5 ≥ 30 FPS | NOT RUN |
+| D14-E-14 | top 连续平移/缩放 | 帧率均值 ≥ 主干 `slicer_debug_ui` 的 90% | NOT RUN |
+| D14-E-15 | 缺纹理、纹理解码失败、无有效 UV 负例 | 显式错误与恢复动作；不得显示成功灰模 | NOT RUN |
+| D14-E-16 | 准备、切片预览、模块诊断三个工作区及固定区域 | 导入排版、层检查、模块自检各有唯一主入口；状态可切换且不丢失 | NOT RUN |
+| D14-E-17 | UI 渲染依赖边界 | 使用 Qt5 Widgets/Gui + QOpenGLWidget；不链接 Qt3D、不新增 vcpkg 依赖、不 include `slicer_core/**` | NOT RUN |
+| D14-E-18 | 正常 Commit 与恢复调用序列 | 成功直接采用 `apply_operation` 响应，不追加快照；仅 Stale/显式刷新/恢复调用 `get_snapshot` | NOT RUN |
 
 ## 6. D14-F 打包、稳定性与联调
 
@@ -145,3 +159,4 @@ legacy 保持默认；Global 保持显式 opt-in
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版。62 个用例分 6 组；含 C-SPI 18 项、引擎替换 E-01..08 挂钩、`mouse-move` 零跨 DLL 可证伪指标、边打印边切片稳定性专项 |
+| 2026-08-05 | v1.1 | 扩为 76 个用例：增加 TexturedSceneViewDataProvider、top/three_d 纹理、白色纹理辨识、默认/即时视图切换、缓存与调用计数、QOpenGL 依赖边界及 Commit 调用序列验证 |

@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v2.2 ｜ 更新日期：2026-08-05
+> 版本：v2.3 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -92,7 +92,7 @@ slicer_base / slicer_engine 未分层（当前仍为单一 slicer_core，CMakeLi
 slicer_module* / .def       全仓库零命中
 ```
 
-**Stage 14 当前完成 14A-01/02/04/05/06/07/08/09/10 与 14A-03 切片侧合同；能力 facade、DLL、Worker 与宿主模拟仍未实现。**
+**Stage 14 当前完成 14A-01/02/04/05/06/07/08/09/10、14A-04-R1 切片侧修订与 14A-03 切片侧合同；能力 facade、DLL、Worker 与宿主模拟仍未实现。**
 
 ### 3.1 已完成原子任务
 
@@ -102,6 +102,7 @@ slicer_module* / .def       全仓库零命中
 | 14A-02 | ✅ COMPLETE（2026-08-05） | manifest、scene、Profile 三份 Draft 2020-12 Schema；Schema 自动验证脚本 | 真实 UI smoke manifest、既有 p0 manifest、既有 scene、Stage 15/旧 Profile 正向通过；通道顺序、whiteSemantics、zLimitMm 与 W 空值负例被拒绝；Debug/Release CTest 3/3 |
 | 14A-03 | 🟡 SLICER-SIDE COMPLETE（2026-08-05） | `file_contract_v1.md`、请求/结果/协商 Schema、退出码表 | Python 合同正负例通过；Debug/Release CTest 2/2；打印侧书面确认待取得，因此不标最终 COMPLETE |
 | 14A-04 | ✅ COMPLETE（2026-08-05） | 15 项能力字段级 JSON 合同、人工可读合同、ViewData 网格/LOD/blob 子操作 | Python 合同测试通过；能力数量、字段、错误码、生产协议与 Worker/ABI 边界均有漂移门禁 |
+| 14A-04-R1 | 🟡 SLICER-SIDE COMPLETE（2026-08-05） | ViewData DTO 1.2 与三车道合同 1.1；补齐 top/three_d 的 UV、材质、纹理和 surfacePreview | Debug/Release 合同测试 2/2 通过；保持 15 项能力、11 个 ABI 导出与 SPI v1；打印侧须按 1.2 回签 |
 | 14A-05 | ✅ COMPLETE（2026-08-05） | 三车道机器合同与人工合同；同步补齐 Commit `currentSceneRevision` 字段 | 幂等、原子 revision、Stale 回读回滚、Production sceneHash/full preflight 门禁通过 |
 | 14A-06 | ✅ COMPLETE（2026-08-05） | 取消状态机/清理机器合同与人工合同；收紧 cancelled Worker 结果 Schema | ≤2s、真实退出、双保险清理、禁止取消时发布及残留 staging 的合同测试通过 |
 | 14A-07 | ✅ COMPLETE（2026-08-05） | `THIRD_PARTY_NOTICES.txt`、三项完整许可证、机器分发清单与合规审查 | miniz/LibTIFF/Assimp notice 完整性和 fail-closed 发布动作合同测试通过 |
@@ -175,3 +176,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v2.0 | 完成 14A-07：落盘第三方 NOTICE、assimp/miniz/LibTIFF 完整许可证、分发清单与合规门禁；下一任务推进为 14A-09 |
 | 2026-08-05 | v2.1 | 完成 14A-09：Stage 12 总览补齐 03E `GO_ON_DEMAND`、默认不压缩与 14F 外部互操作边界；下一任务推进为 14A-10 |
 | 2026-08-05 | v2.2 | 完成 14A-10：落地 manifest 权威、Profile 默认的 `whiteSemantics`；冲突与非法值 fail-closed，旧包缺字段兼容；下一任务推进为 14A-11 |
+| 2026-08-05 | v2.3 | 受控完成 14A-04-R1 切片侧合同修订：top/three_d 均要求真实纹理，补齐 ViewData 外观 DTO 与三车道调用约束；打印侧须基于 DTO 1.2 重新回签 |

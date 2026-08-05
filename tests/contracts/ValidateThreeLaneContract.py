@@ -18,10 +18,16 @@ def Main() -> int:
     byId = {capability["id"]: capability for capability in capabilities["capabilities"]}
 
     transient = contract["lanes"]["transient"]
+    if contract["contractVersion"] != "1.1":
+        raise AssertionError("expected the amended three-lane contract")
     if transient["owner"] != "host" or transient["crossModuleCalls"] != 0:
         raise AssertionError("transient lane must remain host-local")
     if transient["persistentMutation"] or transient["sceneRevisionChange"]:
         raise AssertionError("transient lane must not mutate authoritative state")
+    if transient["collisionFeedback"] != "local_bbox_prediction_non_authoritative":
+        raise AssertionError("transient collision feedback must remain local")
+    if "geometry.collision" not in transient["forbiddenCalls"]:
+        raise AssertionError("mouse-move must not call authoritative collision")
 
     commit = contract["lanes"]["commit"]
     if commit["capability"] != "scene.apply_operation" or not commit["atomic"]:
@@ -53,6 +59,16 @@ def Main() -> int:
         raise AssertionError("stale revision error drifted")
     if revision["staleMutation"] or revision["partialApply"]:
         raise AssertionError("stale/failed commits must be atomic")
+    if commit["successRefresh"] != (
+        "use_scene.apply_operation_response_without_forced_snapshot"
+    ):
+        raise AssertionError("successful commits must not force a second round trip")
+    if set(commit["snapshotRequiredFor"]) != {
+        "scene_revision_stale",
+        "explicit_refresh",
+        "recovery",
+    }:
+        raise AssertionError("snapshot refresh conditions drifted")
 
     production = contract["lanes"]["production"]
     if production["capability"] != "slice.rgbwsv":
@@ -75,6 +91,8 @@ def Main() -> int:
         raise AssertionError("stale rollback sequence drifted")
     if contract["invariants"]["commitRevisionIncrement"] != 1:
         raise AssertionError("successful commit must increment revision exactly once")
+    if contract["invariants"]["authoritativeCollisionDuringMouseMove"]:
+        raise AssertionError("mouse-move collision cannot be authoritative")
 
     print("Transient/Commit/Production interaction contract: PASS")
     return 0

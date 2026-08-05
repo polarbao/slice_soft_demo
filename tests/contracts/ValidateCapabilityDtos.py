@@ -46,6 +46,8 @@ def RequirePaths(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
+    if contract["contractVersion"] != "1.2":
+        raise AssertionError("expected the dual-view textured ViewData contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -90,6 +92,8 @@ def Main() -> int:
         {
             "expectedSceneRevision",
             "content",
+            "viewMode",
+            "texturePolicy",
             "lod",
             "meshTransform",
             "maxBytes",
@@ -105,19 +109,35 @@ def Main() -> int:
             "coordinateSystem",
             "byteOrder",
             "instances[].worldMatrix",
+            "instances[].textureStatus",
+            "instances[].surfacePreview.appearanceIdentity",
+            "instances[].surfacePreview.pixelFormat",
+            "instances[].surfacePreview.colorSpace",
+            "instances[].surfacePreview.blobId",
             "instances[].mesh.meshIdentity",
             "instances[].mesh.buffers.position.format",
             "instances[].mesh.buffers.normal.format",
+            "instances[].mesh.buffers.texcoord0.format",
             "instances[].mesh.buffers.index.format",
+            "instances[].mesh.submeshes[].materialId",
             "instances[].mesh.blobId",
             "instances[].mesh.chunkBytes",
             "instances[].mesh.chunkCount",
+            "appearance.appearanceIdentity",
+            "appearance.materials[].baseColorFactor",
+            "appearance.materials[].baseColorTextureId",
+            "appearance.textures[].textureIdentity",
+            "appearance.textures[].pixelFormat",
+            "appearance.textures[].colorSpace",
+            "appearance.textures[].blobId",
             "truncated",
             "truncationReason",
             "binaryChunk",
         },
     )
     if set(viewData["errors"]) < {
+        "PM-SLICER-INPUT-0001",
+        "PM-SLICER-INPUT-0002",
         "PM-SLICER-VIEWDATA-STALE",
         "PM-SLICER-VIEWDATA-BUDGET",
     }:
@@ -137,6 +157,12 @@ def Main() -> int:
             raise AssertionError(f"protocol invariant drifted: {key}")
     if set(invariants["workerOnly"]) != {"slice.rgbwsv", "geometry.repair"}:
         raise AssertionError("worker-only capability boundary drifted")
+    if invariants["viewModes"] != ["top", "three_d"]:
+        raise AssertionError("dual-view modes drifted")
+    if not invariants["textureRequiredIfPresent"]:
+        raise AssertionError("textured models must remain textured in both views")
+    if not invariants["noSilentTextureFallback"]:
+        raise AssertionError("texture failures must not silently become flat shading")
     if not invariants["noNewBlobCapability"] or not invariants["noNewAbiExport"]:
         raise AssertionError("viewdata must reuse the frozen ABI surface")
 
