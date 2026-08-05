@@ -125,6 +125,10 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/geometry/repair/MeshRepairBoundaryOperations.h
     src/slicer_core/geometry/repair/MeshRepairTopologyOperations.cpp
     src/slicer_core/geometry/repair/MeshRepairTopologyOperations.h
+    src/slicer_core/engine/ProductionSliceFacadeFactory.cpp
+    src/slicer_core/engine/ProductionSliceFacadeFactory.h
+    src/slicer_core/engine/SliceFacadeAdapter.cpp
+    src/slicer_core/engine/SliceFacadeAdapter.h
     src/slicer_core/layout/GridLayoutPolicy.cpp
     src/slicer_core/layout/GridLayoutPolicy.h
     src/slicer_core/layout/SceneCollisionService.cpp
@@ -519,6 +523,32 @@ target_include_directories(scene_facade_14b03_unit_tests PRIVATE
 target_link_libraries(scene_facade_14b03_unit_tests PRIVATE slicer_base)
 if(MSVC)
     target_compile_options(scene_facade_14b03_unit_tests PRIVATE /bigobj /MP)
+endif()
+
+add_executable(slice_facade_14b04_unit_tests
+    tests/contracts/Stage14B04SliceFacadeUnitTests.cpp
+)
+target_include_directories(slice_facade_14b04_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(slice_facade_14b04_unit_tests PRIVATE slicer_engine)
+
+add_executable(slice_facade_14b04_production_binding_test
+    tests/contracts/Stage14B04ProductionBindingLinkTest.cpp
+)
+target_include_directories(slice_facade_14b04_production_binding_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(
+    slice_facade_14b04_production_binding_test
+    PRIVATE slicer_engine
+)
+if(MSVC)
+    target_compile_options(slice_facade_14b04_unit_tests PRIVATE /bigobj /MP)
+    target_compile_options(
+        slice_facade_14b04_production_binding_test
+        PRIVATE /bigobj /MP
+    )
 endif()
 
 add_executable(slicer_cli
@@ -1144,6 +1174,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BFacadeDtos.py"
     )
     add_test(
+        NAME slicer_stage14b04_slice_facade_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14B04SliceFacade.py"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1185,6 +1220,11 @@ add_test(
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
+add_test(NAME slice_facade_14b04_unit_tests COMMAND slice_facade_14b04_unit_tests)
+add_test(
+    NAME slice_facade_14b04_production_binding_test
+    COMMAND slice_facade_14b04_production_binding_test
+)
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_white_carrier_policy_unit_tests COMMAND texture_white_carrier_policy_unit_tests)

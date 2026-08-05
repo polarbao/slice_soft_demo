@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.2 ｜ 更新日期：2026-08-05
+> 版本：v3.3 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14B-02 / 14B-04（并行收口）→ 14B-03A
+CURRENT_NEXT_TASK      = 14B-02 → 14B-03A；14B-04 已完成
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -148,9 +148,9 @@ Model/Package、SliceFacade、真实纹理 Provider 仍在推进；DLL、Worker 
 | 卡 | 任务 | 估算 |
 |---|---|---:|
 | 14B-02 | ModelFacade + PackageQueryFacade | 3–5 人日 |
-| 14B-04 | SliceFacade 提交、进度与取消 | 3–5 人日 |
+| 14B-04 | SliceFacade 提交、进度与取消 | ✅ COMPLETE |
 | 14B-03A | TexturedSceneViewDataProvider | 5–8 人日 |
-| **并行/关键路径合计** | | **11–18 人日** |
+| **剩余关键路径估算** | | **8–13 人日** |
 
 本卡不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
@@ -202,3 +202,4 @@ Model/Package、SliceFacade、真实纹理 Provider 仍在推进；DLL、Worker 
 | 2026-08-05 | v3.0 | 完成 14B-01A：落地 `slicer_base` / `slicer_engine` 两库、窄化模型与 DPI 配置边界、生成式 source 唯一归属与单向依赖门禁；14B-02/03/04 可并行开发 |
 | 2026-08-05 | v3.1 | 完成 14B-01-R1：内部 Facade DTO 完整承载能力合同 v1.2，补齐 package summary/layer/verify/report 与模型法线来源；外部 ABI、能力数量、生产 TIFF 均未变化 |
 | 2026-08-05 | v3.2 | 完成 14B-03：SceneFacade 权威 Commit、双 revision、完整响应、幂等、碰撞/越界及正式 Debug/Release target 门禁通过；真实双视图纹理仍由 14B-03A 解锁 |
+| 2026-08-05 | v3.3 | 完成 14B-04：SliceFacade 以既有生产服务为唯一执行入口，正式 Debug/Release target、单调进度、协作取消和生产回归门禁通过；14D-04 继续负责深度取消与 2 秒上限 |
