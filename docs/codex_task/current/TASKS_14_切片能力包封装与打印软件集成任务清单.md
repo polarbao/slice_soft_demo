@@ -337,7 +337,18 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 【第二批】14A-02 完成后
   14A-10（whiteSemantics）· 14A-11（zLimitMm）
 【第二批】14A-01 完成后
-  14A-03 · 14A-04（含网格 DTO）· 14A-06
+  14A-03 · 14A-04/04-R1（双视图纹理 DTO）· 14A-06
+
+【UI 数据硬前置】
+  14B-03A TexturedSceneViewDataProvider
+  → 14C-04 scene.get_viewdata 接线
+  → 14E-04 top 纹理
+  → 14E-04c three_d 纹理
+
+【UI Gate】
+  14C-06 + 14D-05 = M-MVP-CANDIDATE
+  → 14E-01 纯 C 宿主 PASS = M-MVP
+  → 14E-02..04d Qt 参考宿主
 
 【已关闭，不再阻塞】
   ✅ 14A-08 RIP 回签 —— 两轮闭合，条款见 DOC_DECISION_14_S2
@@ -353,8 +364,8 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
   G7 类            实物工艺验证 —— 阻塞发布授权，不阻塞开发
 ```
 
-> **UI 组（14E）不在首批**：其前置是里程碑 **M-MVP = 14C-06 全绿 + 14D-05 完成**（见 §5）。
-> M-MVP 达成前主干 UI 一行不改。
+> **UI 组（14E）不在首批**：`14C-06 + 14D-05` 先形成 **M-MVP-CANDIDATE**，只解锁
+> 14E-01；14E-01 PASS 后形成 M-MVP，才解锁 Qt UI。M-MVP 达成前主干 UI 一行不改。
 
 ## 8. 与 12E-09D 的文件所有权隔离
 
@@ -362,6 +373,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 |---|---|
 | `src/slicer_core/config.*` | **12E-09D**（Stage 14 不动）|
 | `src/slicer_core/api/`、`src/slicer_module/`、`apps/slicer_worker/` | **Stage 14**（新建，零冲突）|
+| `src/slicer_core/api/viewdata/**`（或 14B 分层确认的等价 base 目录）| **14B-03A**；提供双视图纹理 ViewData，不得被 14E 绕过 |
 | `apps/slicer_debug_ui/**` | Stage 14 的 M-MVP 前**不修改**；14E 使用独立 `apps/slicer_ui_host_sim/`，不建立模拟分支 |
 | `src/slicer_core/slicer.cpp` | 暂无（拆分随 `CLAUDE_09` R-B，本阶段不启动）|
 
@@ -380,3 +392,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v1.8 | 完成 14A-06：冻结 Cancelling/Cancelled 状态机、≤2s 协作取消、Job Object 兜底、双保险 staging 清理与取消结果 Schema 门禁 |
 | 2026-08-05 | v1.9 | 完成 14A-07：落盘第三方 NOTICE、assimp/miniz/LibTIFF 完整许可证、机器分发清单及再分发合规审查门禁 |
 | 2026-08-05 | v2.0 | 完成 14A-10：实现 manifest 权威、Profile 默认的 `whiteSemantics` 解析与写出；冲突/非法值 fail-closed，旧包缺字段保持兼容；下一任务推进为 14A-11 |
+| 2026-08-05 | v2.1 | 增加 14A-04-R1 与 14B-03A；双视图纹理改为硬标准；修正 M-MVP 自循环、Transient 碰撞权威性和 Commit 多余快照；细化 QOpenGL UI 信息架构与依赖链 |

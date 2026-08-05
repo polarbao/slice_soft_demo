@@ -1,7 +1,7 @@
 # CODEX_PROMPT_14 切片能力包封装与打印软件集成执行指令
 
 > 文档状态：✅ **ACTIVE / DEVELOPMENT READY**（2026-08-04 授权激活）
-> 版本：v1.2 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
+> 版本：v1.3 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 双视图纹理修订：2026-08-05
 > 适用：Stage 14 全部原子任务（14A–14F）
 
 ---
@@ -54,25 +54,41 @@
 
 ```text
 现阶段主干 UI（apps/slicer_debug_ui/）布局与功能【保持原样，一行不改】。
-14E 的前置不是 14C-06，而是里程碑 M-MVP：
+14E 分成“关闭 Gate 的控制台验证”和“Gate 后的 Qt UI”：
 
-  M-MVP「最小切片能力包」= 14C-06 全绿  +  14D-05 完成
-  判据：宿主仅通过 11 个 pm_* 导出即可完成
-        【导入 → 变换 → 切片 → 取包 → 校验】一次闭环
+  M-MVP-CANDIDATE = 14C-06 全绿 + 14D-05 完成
+  M-MVP = M-MVP-CANDIDATE + 14E-01 纯 C 宿主闭环 PASS
 
-M-MVP 达成前不要动任何 UI 代码；达成后再新建 apps/slicer_ui_host_sim/。
+Candidate 达成前不要启动 14E；Candidate 达成后只启动 apps/slicer_host_sim/。
+14E-01 PASS 形成 M-MVP 后，才新建 apps/slicer_ui_host_sim/。
 ```
 
-### 0.5 🔴 14A-04 有一项容易漏掉、漏了就要改 ABI 的要求
+### 0.5 🔴 14A-04-R1 已受控修订双视图纹理合同
 
-`scene.get_viewdata` 的**网格 DTO 至今没有字段级定义**（现有文档只写「可选三角缓冲」）。
-14E-04c 的 3D 视角需要它。**若 14A-04 冻结契约时不定死，将迫使已交付打印侧的 ABI 二次变更。**
+原 14A-04 只冻结几何网格，不足以满足用户确认的硬标准：**top 与 three_d 都必须显示模型纹理**。
+用户已授权修改冻结文件，受控修订由 `DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`
+定案，并已同步到能力 DTO 1.2：
 
-✅ **规格已成文，直接采用**：`docs/slice/DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md`
-—— 五项语义全部已定义，14A-04 只需审阅确认并纳入契约，不必重新设计。
-**首版可只实现 bbox + outline，但字段与语义必须按规格冻结。**
+```text
+top       surfacePreview（带纹理 +Z 正交投影）
+three_d   mesh + texcoord0 + submeshes + materials + texture blobs
+失败      缺纹理、解码失败、UV/材质绑定无效必须显式失败，禁止“成功 + 灰模”
+不变      PM_SPI_VERSION=1、11 个导出、15 项能力、p0.rgbwsv.2
+```
 
-### 0.6 🔴 另一处独立的生产风险：`buildVolume` 没有 Z 限高
+**合同不是实现。** 14B-03A 必须实现 `TexturedSceneViewDataProvider`，并成为 14C-04、
+14E-04 与 14E-04c 的硬前置；UI 不得 include core 或自行旁路加载纹理。
+
+### 0.6 🔴 三车道调用逻辑已修正
+
+```text
+Transient  只用宿主本地矩阵和 bbox；碰撞只是 non-authoritative 视觉反馈；mouse-move 0 次 DLL
+Commit     正常成功直接采用 apply_operation 响应，不强制追加 get_snapshot
+Recovery   只有 SceneRevisionStale、显式刷新或恢复流程才调用 get_snapshot
+Camera     orbit/pan/zoom 与 top/three_d 切换均为 0 次 DLL
+```
+
+### 0.7 🔴 另一处独立的生产风险：`buildVolume` 没有 Z 限高
 
 `MultiModelScene.h:149` 的 `SceneBuildVolume` 注释明写 “Optional printable **XY** volume”，
 只有 `widthmm`(X) / `heightmm`(**Y，不是 Z**)。后果：
@@ -161,7 +177,7 @@ cmake --build build --config Debug
 | DLL 薄壳 | `test_spi_conformance`（C-SPI-01..18）+ `dumpbin /EXPORTS` + `/DEPENDENTS` |
 | Worker / 取消 | 各阶段取消用例 + `.staging` 残留检查 + `--contract-info` 协商 |
 | 引擎替换 | 引擎一致性套件 E-01..08 |
-| UI 改动 | `slicer_debug_ui --self-test` + overlay smoke |
+| UI 改动 | 独立 `slicer_ui_host_sim` smoke + 双视图纹理 fixture + 调用计数/FPS/设置持久化；仅 14E-05 修改主干时才跑 `slicer_debug_ui --self-test` + overlay smoke |
 | 打包 | 干净机装载 + `EnumProcessModules`（AC-28-04）|
 
 **禁止**：把历史报告中的 PASS 当作本轮结果；未运行的验证不得写 PASS。
@@ -208,6 +224,8 @@ cmake --build build --config Debug
   14B-00  核心库分层可行性验证
 
 已完成，不要重做：14A-08（RIP 六问两轮闭合）
+已受控修订：14A-04-R1（切片侧合同已完成，打印侧 DTO 1.2 回签待取得）
+UI 数据前置：14B-03A TexturedSceneViewDataProvider
 不得作为起点：14C 及以后（需 14A 契约冻结完成）
 14F 三方联调：切片侧可推进，但外部 RIP 实机互操作与 S2-R1 极性映射表由双边关闭
 ```
@@ -218,3 +236,4 @@ cmake --build build --config Debug
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版。必读顺序、执行规则、11 条红线、统一验证门与按类型追加、回答格式、完成后同步项 |
 | 2026-08-05 | v1.2 | Stage 14 开工基线收口：明确 14A-02 Schema 范围，保持 ViewData DTO 归 14A-04，禁止借 Stage 14 静默切换默认 TIFF Writer |
+| 2026-08-05 | v1.3 | 修正 M-MVP 自循环；登记 14A-04-R1 双视图纹理合同与 14B-03A Provider；冻结 Transient/Commit/Recovery 调用边界，并补充独立 UI 宿主验证口径 |
