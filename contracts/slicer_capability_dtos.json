@@ -1,0 +1,407 @@
+{
+  "contractVersion": "1.0",
+  "spiVersion": 1,
+  "encoding": "UTF-8",
+  "resultEnvelope": {
+    "required": ["ok", "code"],
+    "fields": [
+      { "path": "ok", "type": "boolean", "description": "能力是否成功完成" },
+      { "path": "code", "type": "string", "description": "contracts/slicer_error_codes.json 中的错误码" },
+      { "path": "message", "type": "string", "required": false, "description": "面向日志与诊断的 UTF-8 信息" }
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "model.import",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "model.import", "required": true },
+        { "path": "modelPath", "type": "string", "required": true },
+        { "path": "options.computeBBox", "type": "boolean", "required": true },
+        { "path": "options.extractMaterials", "type": "boolean", "required": true }
+      ],
+      "responseFields": [
+        { "path": "modelId", "type": "string", "required": true },
+        { "path": "triangleCount", "type": "integer", "required": true },
+        { "path": "vertexCount", "type": "integer", "required": true },
+        { "path": "hasUV", "type": "boolean", "required": true },
+        { "path": "hasNormals", "type": "boolean", "required": true },
+        { "path": "materials", "type": "array", "required": true },
+        { "path": "materials[].name", "type": "string", "required": true },
+        { "path": "materials[].diffuseRgb", "type": "number[3]", "required": true },
+        { "path": "materials[].texturePath", "type": "string|null", "required": true },
+        { "path": "bboxMm.min", "type": "number[3]", "required": true },
+        { "path": "bboxMm.max", "type": "number[3]", "required": true },
+        { "path": "units", "type": "string", "const": "mm", "required": true },
+        { "path": "sourceDigest", "type": "string", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-INPUT-0002", "PM-SLICER-RESOURCE-0040", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "model.get_metadata",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "model.get_metadata", "required": true },
+        { "path": "modelId", "type": "string", "required": true }
+      ],
+      "responseFields": [
+        { "path": "modelId", "type": "string", "required": true },
+        { "path": "triangleCount", "type": "integer", "required": true },
+        { "path": "vertexCount", "type": "integer", "required": true },
+        { "path": "hasUV", "type": "boolean", "required": true },
+        { "path": "hasNormals", "type": "boolean", "required": true },
+        { "path": "materials", "type": "array", "required": true },
+        { "path": "bboxMm.min", "type": "number[3]", "required": true },
+        { "path": "bboxMm.max", "type": "number[3]", "required": true },
+        { "path": "units", "type": "string", "const": "mm", "required": true },
+        { "path": "sourceDigest", "type": "string", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "model.release",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "model.release", "required": true },
+        { "path": "modelId", "type": "string", "required": true }
+      ],
+      "responseFields": [
+        { "path": "modelId", "type": "string", "required": true },
+        { "path": "released", "type": "boolean", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "scene.apply_operation",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "scene.apply_operation", "required": true },
+        { "path": "operationId", "type": "string", "required": true },
+        { "path": "sceneHandle", "type": "integer", "required": false },
+        { "path": "scene", "type": "object", "required": false },
+        { "path": "expectedSceneRevision", "type": "integer", "required": true },
+        { "path": "operations", "type": "array", "required": true },
+        { "path": "operations[].type", "type": "enum:translate|rotateZ|uniformScale|mirror", "required": true },
+        { "path": "operations[].instanceId", "type": "string", "required": true },
+        { "path": "operations[].deltaMm", "type": "number[3]", "required": false },
+        { "path": "operations[].degrees", "type": "number", "required": false },
+        { "path": "operations[].factor", "type": "number", "required": false },
+        { "path": "operations[].axis", "type": "enum:x|y", "required": false }
+      ],
+      "responseFields": [
+        { "path": "newSceneRevision", "type": "integer", "required": true },
+        { "path": "sceneHash", "type": "string", "required": true },
+        { "path": "instances", "type": "array", "required": true },
+        { "path": "instances[].instanceId", "type": "string", "required": true },
+        { "path": "instances[].canonicalTransform", "type": "object", "required": true },
+        { "path": "instances[].effectiveBBoxMm", "type": "object", "required": true },
+        { "path": "instances[].outOfBounds", "type": "boolean", "required": true },
+        { "path": "collisions", "type": "array", "required": true },
+        { "path": "outOfBoundsInstances", "type": "array", "required": true },
+        { "path": "preflightDelta", "type": "array", "required": true },
+        { "path": "viewdataIdentity", "type": "string", "required": true }
+      ],
+      "errors": ["PM-SLICER-LAYOUT-0020", "PM-SLICER-LAYOUT-0021", "PM-SLICER-LAYOUT-0022", "PM-SLICER-LAYOUT-0023", "PM-SLICER-PROFILE-0031", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "scene.get_snapshot",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "scene.get_snapshot", "required": true },
+        { "path": "sceneId", "type": "string", "required": false },
+        { "path": "sceneHandle", "type": "integer", "required": false }
+      ],
+      "responseFields": [
+        { "path": "scene", "type": "object", "required": true },
+        { "path": "sceneRevision", "type": "integer", "required": true },
+        { "path": "sceneHash", "type": "string", "required": true },
+        { "path": "buildVolume.widthMm", "type": "number", "required": true },
+        { "path": "buildVolume.heightMm", "type": "number", "required": true },
+        { "path": "buildVolume.zLimitMm", "type": "number", "required": false }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "scene.get_viewdata",
+      "carrier": "in_process",
+      "synchronous": true,
+      "operations": ["query", "read_blob"],
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "scene.get_viewdata", "required": true },
+        { "path": "operation", "type": "enum:query|read_blob", "required": false, "default": "query" },
+        { "path": "sceneId", "type": "string", "requiredFor": "query" },
+        { "path": "expectedSceneRevision", "type": "integer", "requiredFor": "query" },
+        { "path": "instanceIds", "type": "array<string>", "required": false },
+        { "path": "content", "type": "array<enum:bbox|outline|mesh>", "requiredFor": "query" },
+        { "path": "lod", "type": "enum:auto|lod0|lod1|lod2|outline_only", "requiredFor": "query" },
+        { "path": "meshTransform", "type": "enum:local|world", "requiredFor": "query" },
+        { "path": "maxBytes", "type": "integer", "requiredFor": "query" },
+        { "path": "blobId", "type": "string", "requiredFor": "read_blob" },
+        { "path": "chunkIndex", "type": "integer", "requiredFor": "read_blob" }
+      ],
+      "responseFields": [
+        { "path": "viewdataIdentity", "type": "string", "requiredFor": "query" },
+        { "path": "sceneRevision", "type": "integer", "requiredFor": "query" },
+        { "path": "units", "type": "string", "const": "mm", "requiredFor": "query" },
+        { "path": "coordinateSystem", "type": "string", "const": "right_handed_z_up", "requiredFor": "query" },
+        { "path": "byteOrder", "type": "string", "const": "little_endian", "requiredFor": "query" },
+        { "path": "instances", "type": "array", "requiredFor": "query" },
+        { "path": "instances[].instanceId", "type": "string", "requiredFor": "query" },
+        { "path": "instances[].modelId", "type": "string", "requiredFor": "query" },
+        { "path": "instances[].bboxLocalMm", "type": "object", "requiredFor": "query" },
+        { "path": "instances[].worldMatrix", "type": "number[16]", "requiredFor": "query" },
+        { "path": "instances[].outline.loops", "type": "array", "required": false },
+        { "path": "instances[].mesh.meshIdentity", "type": "string", "required": false },
+        { "path": "instances[].mesh.lod", "type": "enum:lod0|lod1|lod2", "required": false },
+        { "path": "instances[].mesh.vertexCount", "type": "integer", "required": false },
+        { "path": "instances[].mesh.triangleCount", "type": "integer", "required": false },
+        { "path": "instances[].mesh.meshTransform", "type": "enum:local|world", "required": false },
+        { "path": "instances[].mesh.buffers.position.format", "type": "string", "const": "float32x3", "required": false },
+        { "path": "instances[].mesh.buffers.normal.format", "type": "string", "const": "float32x3", "required": false },
+        { "path": "instances[].mesh.buffers.index.format", "type": "enum:uint16|uint32", "required": false },
+        { "path": "instances[].mesh.buffers.*.byteOffset", "type": "integer", "required": false },
+        { "path": "instances[].mesh.buffers.*.byteLength", "type": "integer", "required": false },
+        { "path": "instances[].mesh.blobId", "type": "string", "required": false },
+        { "path": "instances[].mesh.totalBytes", "type": "integer", "required": false },
+        { "path": "instances[].mesh.chunkBytes", "type": "integer", "required": false },
+        { "path": "instances[].mesh.chunkCount", "type": "integer", "required": false },
+        { "path": "truncated", "type": "boolean", "requiredFor": "query" },
+        { "path": "truncationReason", "type": "string|null", "requiredFor": "query" },
+        { "path": "binaryChunk", "type": "binary", "requiredFor": "read_blob" }
+      ],
+      "errors": ["PM-SLICER-VIEWDATA-STALE", "PM-SLICER-VIEWDATA-BUDGET", "PM-SLICER-PROFILE-0031", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "geometry.preflight",
+      "carrier": "mode_dependent",
+      "carrierRules": { "fast": "in_process", "full": "worker" },
+      "synchronous": "mode_dependent",
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "geometry.preflight", "required": true },
+        { "path": "modelId", "type": "string", "required": false },
+        { "path": "modelPath", "type": "string", "required": false },
+        { "path": "mode", "type": "enum:fast|full", "required": true },
+        { "path": "scene", "type": "object", "required": false },
+        { "path": "buildVolume", "type": "object", "required": false }
+      ],
+      "responseFields": [
+        { "path": "admission", "type": "enum:passed|blocked|manual_repair_required", "required": true },
+        { "path": "issues", "type": "array", "required": true },
+        { "path": "issues[].code", "type": "string", "required": true },
+        { "path": "issues[].severity", "type": "enum:info|warning|error", "required": true },
+        { "path": "issues[].count", "type": "integer", "required": true },
+        { "path": "issues[].detail", "type": "string", "required": true },
+        { "path": "topology.boundaryEdges", "type": "integer", "required": true },
+        { "path": "topology.nonManifoldEdges", "type": "integer", "required": true },
+        { "path": "topology.selfIntersectionPairs", "type": "integer", "required": true },
+        { "path": "topology.isClosed", "type": "boolean", "required": true },
+        { "path": "bboxMm", "type": "object", "required": true },
+        { "path": "outOfBounds", "type": "boolean", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-INPUT-0002", "PM-SLICER-TOPOLOGY-0010", "PM-SLICER-TOPOLOGY-0011", "PM-SLICER-CANCELLED-0070", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "geometry.collision",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "geometry.collision", "required": true },
+        { "path": "scene", "type": "object", "required": true },
+        { "path": "expectedSceneRevision", "type": "integer", "required": true },
+        { "path": "buildVolume", "type": "object", "required": false }
+      ],
+      "responseFields": [
+        { "path": "sceneRevision", "type": "integer", "required": true },
+        { "path": "collisions", "type": "array", "required": true },
+        { "path": "collisions[].a", "type": "string", "required": true },
+        { "path": "collisions[].b", "type": "string", "required": true },
+        { "path": "collisions[].overlapMm3", "type": "number", "required": false },
+        { "path": "outOfBoundsInstances", "type": "array<string>", "required": true }
+      ],
+      "errors": ["PM-SLICER-LAYOUT-0020", "PM-SLICER-LAYOUT-0021", "PM-SLICER-LAYOUT-0022", "PM-SLICER-LAYOUT-0023", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "geometry.repair",
+      "carrier": "worker",
+      "synchronous": false,
+      "defaultEnabled": false,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "geometry.repair", "required": true },
+        { "path": "jobId", "type": "string", "required": true },
+        { "path": "correlationId", "type": "string", "required": true },
+        { "path": "modelId", "type": "string", "required": false },
+        { "path": "modelPath", "type": "string", "required": false },
+        { "path": "outputPath", "type": "string", "required": true },
+        { "path": "policy", "type": "string", "const": "conservative", "required": true },
+        { "path": "requireStrictPass", "type": "boolean", "const": true, "required": true }
+      ],
+      "responseFields": [
+        { "path": "outputPath", "type": "string", "required": true },
+        { "path": "sourceDigest", "type": "string", "required": true },
+        { "path": "outputDigest", "type": "string", "required": true },
+        { "path": "preflightBefore", "type": "object", "required": true },
+        { "path": "preflightAfter", "type": "object", "required": true },
+        { "path": "evidence", "type": "object", "required": true },
+        { "path": "elapsedMs", "type": "number", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-TOPOLOGY-0010", "PM-SLICER-TOPOLOGY-0011", "PM-SLICER-OUTPUT-0050", "PM-SLICER-CANCELLED-0070", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "slice.rgbwsv",
+      "carrier": "worker",
+      "synchronous": false,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "slice.rgbwsv", "required": true },
+        { "path": "jobId", "type": "string", "required": true },
+        { "path": "correlationId", "type": "string", "required": true },
+        { "path": "sceneHash", "type": "string", "required": true },
+        { "path": "scene", "type": "object", "required": true },
+        { "path": "output.contract", "type": "string", "const": "p0.rgbwsv.2", "required": true },
+        { "path": "output.packageDir", "type": "string", "required": true },
+        { "path": "profile", "type": "object", "required": true },
+        { "path": "profile.profileVersion", "type": "string", "required": true },
+        { "path": "profile.profileHash", "type": "string", "required": true },
+        { "path": "options.backend", "type": "string", "required": false },
+        { "path": "options.threads", "type": "integer", "required": false }
+      ],
+      "responseFields": [
+        { "path": "output.packageDir", "type": "string", "required": true },
+        { "path": "output.manifestPath", "type": "string", "required": true },
+        { "path": "output.layerCount", "type": "integer", "required": true },
+        { "path": "output.grid.widthPx", "type": "integer", "required": true },
+        { "path": "output.grid.heightPx", "type": "integer", "required": true },
+        { "path": "output.grid.dpiX", "type": "number", "required": true },
+        { "path": "output.grid.dpiY", "type": "number", "required": true },
+        { "path": "perInstance", "type": "array", "required": true },
+        { "path": "perInstance[].instanceId", "type": "string", "required": true },
+        { "path": "perInstance[].modelId", "type": "string", "required": true },
+        { "path": "perInstance[].layerRange", "type": "integer[2]", "required": true },
+        { "path": "perInstance[].printPixels", "type": "channel_counts", "required": true },
+        { "path": "perInstance[].emptyPixels", "type": "channel_counts", "required": true },
+        { "path": "perInstance[].bboxMm", "type": "object", "required": true },
+        { "path": "perInstance[].transformApplied", "type": "object", "required": true },
+        { "path": "reports", "type": "object", "required": true },
+        { "path": "profileEcho.profileVersion", "type": "string", "required": true },
+        { "path": "profileEcho.profileHash", "type": "string", "required": true },
+        { "path": "engineVersion", "type": "string", "required": true },
+        { "path": "elapsedMs", "type": "number", "required": true }
+      ],
+      "errors": ["PM-SLICER-PROFILE-0030", "PM-SLICER-PROFILE-0031", "PM-SLICER-RESOURCE-0040", "PM-SLICER-OUTPUT-0050", "PM-SLICER-CONTRACT-0060", "PM-SLICER-CANCELLED-0070", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "package.verify",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "package.verify", "required": true },
+        { "path": "packageDir", "type": "string", "required": true }
+      ],
+      "responseFields": [
+        { "path": "valid", "type": "boolean", "required": true },
+        { "path": "errors", "type": "array", "required": true },
+        { "path": "errors[].code", "type": "string", "required": true },
+        { "path": "errors[].message", "type": "string", "required": true },
+        { "path": "perLayerChecksum", "type": "array<uint64[6]>", "required": true },
+        { "path": "layerCount", "type": "integer", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-CONTRACT-0060", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "package.get_summary",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "package.get_summary", "required": true },
+        { "path": "packageDir", "type": "string", "required": true }
+      ],
+      "responseFields": [
+        { "path": "packageIdentity", "type": "string", "required": true },
+        { "path": "schema", "type": "string", "const": "p0.rgbwsv.2", "required": true },
+        { "path": "layerCount", "type": "integer", "required": true },
+        { "path": "grid", "type": "object", "required": true },
+        { "path": "channels", "type": "string[6]", "const": "R,G,B,W,S,V", "required": true },
+        { "path": "bitDepth", "type": "integer", "const": 8, "required": true },
+        { "path": "polarity", "type": "string", "const": "black_is_print", "required": true },
+        { "path": "perInstance", "type": "array", "required": true },
+        { "path": "profileEcho", "type": "object", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-CONTRACT-0060", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "package.get_layer_descriptor",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "package.get_layer_descriptor", "required": true },
+        { "path": "packageDir", "type": "string", "required": true },
+        { "path": "layerIndex", "type": "integer", "required": true }
+      ],
+      "responseFields": [
+        { "path": "layerIndex", "type": "integer", "required": true },
+        { "path": "zMm", "type": "number", "required": true },
+        { "path": "widthPx", "type": "integer", "required": true },
+        { "path": "heightPx", "type": "integer", "required": true },
+        { "path": "printPixels", "type": "channel_counts", "required": true },
+        { "path": "emptyPixels", "type": "channel_counts", "required": true },
+        { "path": "storageMode", "type": "string", "required": true },
+        { "path": "tiffPath", "type": "string", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-CONTRACT-0060", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "package.render_layer_preview",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "package.render_layer_preview", "required": true },
+        { "path": "packageDir", "type": "string", "required": true },
+        { "path": "layerIndex", "type": "integer", "required": true },
+        { "path": "mode", "type": "enum:single_channel|composite", "required": true },
+        { "path": "channels", "type": "array<enum:R|G|B|W|S|V>", "required": true },
+        { "path": "maxWidthPx", "type": "integer", "required": true },
+        { "path": "outputPath", "type": "string", "required": true }
+      ],
+      "responseFields": [
+        { "path": "outputPath", "type": "string", "required": true },
+        { "path": "widthPx", "type": "integer", "required": true },
+        { "path": "heightPx", "type": "integer", "required": true },
+        { "path": "cacheKey", "type": "string", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-CONTRACT-0060", "PM-SLICER-OUTPUT-0050", "PM-SLICER-INTERNAL-0099"]
+    },
+    {
+      "id": "package.read_report",
+      "carrier": "in_process",
+      "synchronous": true,
+      "requestFields": [
+        { "path": "capability", "type": "string", "const": "package.read_report", "required": true },
+        { "path": "packageDir", "type": "string", "required": true },
+        { "path": "reportName", "type": "string", "required": true }
+      ],
+      "responseFields": [
+        { "path": "reportName", "type": "string", "required": true },
+        { "path": "reportSchema", "type": "string", "required": true },
+        { "path": "data", "type": "object", "required": true },
+        { "path": "sourcePath", "type": "string", "required": true }
+      ],
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-CONTRACT-0060", "PM-SLICER-INTERNAL-0099"]
+    }
+  ],
+  "forbiddenCapabilities": ["scene.layout"],
+  "protocolInvariants": {
+    "packageSchema": "p0.rgbwsv.2",
+    "channels": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "polarity": "black_is_print",
+    "printValue": 0,
+    "emptyValue": 255,
+    "workerOnly": ["slice.rgbwsv", "geometry.repair"],
+    "noNewBlobCapability": true,
+    "noNewAbiExport": true
+  }
+}

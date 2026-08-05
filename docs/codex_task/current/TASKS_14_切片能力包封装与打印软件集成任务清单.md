@@ -65,7 +65,7 @@ cmake --build build --config Debug
 | 14A-01 | 建立 `contracts/` 目录；落盘 `print_module_spi.h`（与打印侧 `CLD_10` 同源，我方只同步不改）+ **错误码表登记 `PM-SLICER-VIEWDATA-STALE` / `PM-SLICER-VIEWDATA-BUDGET`** | — | C 与 C++ 编译器分别编过；合同声明恰好 11 个 `pm_*`。实际 DLL 的 `dumpbin /EXPORTS` 延后到 14C-01 / 14C-06 验证（**新增的是错误码不是导出符号，符号数不变**）| ✅ **COMPLETE（2026-08-05）** |
 | 14A-02 | `p0.rgbwsv.2` + scene + Profile 扩展 schema 形式化 JSON Schema。**须覆盖三组新字段**（见注 A）；ViewData DTO 由 14A-04 独立冻结 | — | 用真实 manifest、真实 scene 与 Stage 15 Profile 样例分别校验通过；无该字段的既有样例仍可校验（向后兼容）| ✅ **COMPLETE（2026-08-05）** |
 | 14A-03 | `file_contract_v1` 完整规格（请求/结果 JSON schema、进度行、退出码表、超时、僵尸回收、staging 清理时序）| 14A-01 | 打印侧确认可满足 | 🟡 **SLICER-SIDE COMPLETE / PRINT-SIDE ACK PENDING（2026-08-05）** |
-| 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码；**`scene.get_viewdata` 网格 DTO 按注 B 纳入契约** | PREPARED |
+| 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码；**`scene.get_viewdata` 网格 DTO 按注 B 纳入契约** | ✅ **COMPLETE（2026-08-05）** |
 | 14A-05 | 三车道交互契约固化（`operationId` 幂等、`expectedSceneRevision`、`SceneRevisionStale` 回滚）| 14A-04 | 与打印侧 `CLD_04` §4.3 一致 | PREPARED |
 | 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | PREPARED |
 | 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | 🟢 **READY（首批）** |
@@ -79,6 +79,11 @@ cmake --build build --config Debug
 **14A-03 本地证据（2026-08-05）**：`contracts/file_contract_v1.md`、请求/结果/
 协商三份 Schema、退出码表及自动合同测试已落盘。切片侧内容已完成，状态不写 COMPLETE
 仅因为验收项要求打印侧书面确认；该外部回签不阻塞 14A-04/05/06 的切片侧工作。
+
+**14A-04 本地证据（2026-08-05）**：`contracts/slicer_capability_dtos.json` 以字段路径、
+JSON 类型、必填条件、承载和错误码冻结 15 项能力；`scene.get_viewdata` 完整纳入 local mesh、
+`worldMatrix`、LOD、`meshIdentity`、blob 分块和 `read_blob` 子操作。合同测试同时门禁能力数量、
+生产 RGBWSV 不变量、Worker 边界及“不得新增第 16 项能力/第 12 个导出符号”。
 
 ---
 
@@ -341,3 +346,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v1.3 | 完成 14A-01：同步打印侧 11 函数 C ABI 头文件、登记 18 项切片错误码并增加 C/C++ 编译与合同数量验证；明确实际 DLL 导出表验证归 14C-01 / 14C-06 |
 | 2026-08-05 | v1.4 | 完成 14A-02：新增 manifest、scene、Profile 三份 Draft 2020-12 Schema；覆盖 Stage 15 三字段、可选 `whiteSemantics`、可选 `zLimitMm`，并以真实/旧样例及负向变体通过自动校验 |
 | 2026-08-05 | v1.5 | 完成 14A-03 切片侧合同：冻结 `file_contract_v1` 请求/结果/协商 Schema、进度行、退出码、有限超时、Job Object 僵尸回收与 staging 双保险清理；打印侧书面确认仍待回签 |
+| 2026-08-05 | v1.6 | 完成 14A-04：冻结 15 项能力请求/响应字段、承载与错误码；完整吸纳 Scene ViewData 网格、LOD、缓存身份与复用现有 ABI 的 blob 分块合同，并增加自动漂移门禁 |
