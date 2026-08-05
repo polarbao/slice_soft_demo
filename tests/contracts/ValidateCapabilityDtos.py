@@ -129,6 +129,7 @@ def Main() -> int:
             "byteOrder",
             "instances[].worldMatrix",
             "instances[].textureStatus",
+            "instances[].appearanceIdentity",
             "instances[].surfacePreview.appearanceIdentity",
             "instances[].surfacePreview.localBoundsMm",
             "instances[].surfacePreview.pixelFormat",
@@ -206,6 +207,15 @@ def Main() -> int:
         "textures",
     ]:
         raise AssertionError("textured instance requirements drifted")
+    expectedAppearanceRules = {
+        "collection": "appearances[]",
+        "identityField": "appearances[].appearanceIdentity",
+        "instanceReference": "instances[].appearanceIdentity",
+        "previewReference": "instances[].surfacePreview.appearanceIdentity",
+        "materialResolutionScope": "instance_appearance",
+    }
+    if viewDataRules["multiModelAppearance"] != expectedAppearanceRules:
+        raise AssertionError("multi-model appearance references are ambiguous")
 
     uiViewSpec = LoadJson(repoRoot / "contracts" / "slicer_ui_view_spec.json")
     if uiViewSpec["contractVersion"] != "1.0" or uiViewSpec["units"] != "mm":
@@ -234,6 +244,15 @@ def Main() -> int:
     uiGrid = uiViewSpec["grid"]
     if uiGrid["extentSource"] != "scene.buildVolume":
         raise AssertionError("grid extent must come from the device build volume")
+    if uiGrid["coordinateFrame"] != {
+        "originSource": "scene.buildVolume.origin",
+        "xDirectionSource": "scene.buildVolume.xDirection",
+        "yDirectionSource": "scene.buildVolume.yDirection",
+        "unresolvedBehavior": (
+            "show_product_fallback_with_unresolved_diagnostic_not_production_truth"
+        ),
+    }:
+        raise AssertionError("grid coordinate frame or unresolved behavior drifted")
     if uiGrid["minorSpacingMm"] != 1.0 or uiGrid["majorSpacingMm"] != 10.0:
         raise AssertionError("the 1 mm / 10 mm grid specification drifted")
     texturePresentation = uiViewSpec["texturePresentation"]

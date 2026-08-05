@@ -99,8 +99,9 @@ LOD         auto/lod0/lod1/lod2/outline_only
 `surfacePreview.localBoundsMm` 使用模型局部 XY 边界；宿主通过实例 `worldMatrix` 放置预览四边形。
 不得把世界边界塞入 preview blob identity，否则每次拖拽都会错误地使纹理预览缓存失效。
 
-多模型响应使用 `appearances[]`，实例的 `surfacePreview.appearanceIdentity` 与网格 submesh 的
-`materialId` 必须能解析到其中唯一一组外观；单数 `appearance` 无法表达多模型场景，禁止使用。
+多模型响应使用 `appearances[]`；`instances[].appearanceIdentity` 必须解析到其中唯一一组外观，
+该实例的 `surfacePreview.appearanceIdentity` 必须与其一致，网格 submesh 的 `materialId` 在该组
+`materials[]` 内解析。单数 `appearance` 无法表达多模型场景，禁止使用。
 `outline_only` 在 top 模式仍必须保留 `surfacePreview`，在 three_d 模式不允许使用。
 
 ### 4.1 双视图请求

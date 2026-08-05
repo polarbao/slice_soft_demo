@@ -123,6 +123,7 @@ auto 的选择规则（B）
       "bboxLocalMm": { "min": [-12.0, -8.0, 0.0], "max": [12.0, 8.0, 6.4] },
       "worldMatrix": [ 1,0,0,0,  0,1,0,0,  0,0,1,0,  35.0,20.0,0.0,1 ],
       "textureStatus": "available",
+      "appearanceIdentity": "appearance:model-a:71c4e812",
       "outline": { "loops": [ /* 既有俯视轮廓结构，不变 */ ] },
       "surfacePreview": {
         "previewIdentity": "preview:model-a:9f3ac21b:1024",
@@ -207,6 +208,7 @@ auto 的选择规则（B）
 | `bboxLocalMm` | **局部**坐标 bbox。世界 bbox 由宿主用 `worldMatrix` 变换得到 —— 避免两处真源 |
 | `worldMatrix` | 行主序 16 元素；`meshTransform=world` 时为单位阵 |
 | `textureStatus` | `available` 或 `not_provided`；声明纹理但加载失败不得返回成功状态 |
+| `instances[].appearanceIdentity` | 实例所用外观集合；必须在顶层 `appearances[]` 中唯一解析 |
 | `surfacePreview` | top 模式的带纹理 +Z 投影；透明背景与模型局部边界必须显式声明 |
 | `surfacePreview.localBoundsMm` | 预览四边形的模型局部 XY 边界；宿主用 `worldMatrix` 放置，避免变换使 preview cache 失效 |
 | `meshIdentity` | 只标识可复用网格内容，不含 scene revision 或实例世界变换 |
@@ -234,8 +236,9 @@ texture    rgba8_unorm / srgb / straight alpha / top_left rows
 ### 5.3 多模型外观引用
 
 响应必须使用 `appearances[]`，不能使用单数 `appearance`。每个元素以
-`appearanceIdentity` 唯一标识一套材质和纹理；`surfacePreview.appearanceIdentity` 引用该元素，
-`mesh.submeshes[].materialId` 必须在该元素的 `materials[]` 中唯一解析。不同模型可以共享
+`appearanceIdentity` 唯一标识一套材质和纹理；`instances[].appearanceIdentity` 和
+`surfacePreview.appearanceIdentity` 引用同一元素，`mesh.submeshes[].materialId` 必须在该元素的
+`materials[]` 中唯一解析。不同模型可以共享
 `textureIdentity`，但不得因共享纹理而合并具有不同 UV 变换或 baseColorFactor 的外观集合。
 
 ## 6. `viewdataIdentity` 构成与失效规则

@@ -115,7 +115,7 @@
 | D14-E-16 | 准备、切片预览、模块诊断三个工作区及固定区域 | 导入排版、层检查、模块自检各有唯一主入口；状态可切换且不丢失 | NOT RUN |
 | D14-E-17 | UI 渲染依赖边界 | 使用 Qt5 Widgets/Gui + QOpenGLWidget；不链接 Qt3D、不新增 vcpkg 依赖、不 include `slicer_core/**` | NOT RUN |
 | D14-E-18 | 正常 Commit 与恢复调用序列 | 成功直接采用 `apply_operation` 响应，不追加快照；仅 Stale/显式刷新/恢复调用 `get_snapshot` | NOT RUN |
-| D14-E-19 | top/three_d 网格规格 | buildVolume 范围一致；1 mm 小格/10 mm 大格；top 忽略 Z；three_d 按 zLimit 画线框；网格不改变切片结果 | NOT RUN |
+| D14-E-19 | top/three_d 网格规格 | buildVolume 范围/原点/轴向一致；1 mm 小格/10 mm 大格；top 忽略 Z；three_d 按 zLimit 画线框；未解析坐标显式诊断；网格不改变切片结果 | NOT RUN |
 
 ## 6. D14-F 打包、稳定性与联调
 

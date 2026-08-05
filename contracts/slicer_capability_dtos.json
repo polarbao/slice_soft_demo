@@ -163,6 +163,7 @@
         { "path": "instances[].bboxLocalMm", "type": "object", "requiredFor": "query" },
         { "path": "instances[].worldMatrix", "type": "number[16]", "requiredFor": "query" },
         { "path": "instances[].textureStatus", "type": "enum:available|not_provided", "requiredFor": "query" },
+        { "path": "instances[].appearanceIdentity", "type": "string", "requiredFor": "query" },
         { "path": "instances[].outline.loops", "type": "array", "required": false },
         { "path": "instances[].surfacePreview.previewIdentity", "type": "string", "required": false },
         { "path": "instances[].surfacePreview.appearanceIdentity", "type": "string", "required": false },
@@ -467,7 +468,13 @@
       "requiredContent": ["mesh", "appearance"],
       "outlineOnlyAllowed": false
     },
-    "multiModelAppearance": "appearances[] keyed by appearanceIdentity; every instance and submesh reference must resolve",
+    "multiModelAppearance": {
+      "collection": "appearances[]",
+      "identityField": "appearances[].appearanceIdentity",
+      "instanceReference": "instances[].appearanceIdentity",
+      "previewReference": "instances[].surfacePreview.appearanceIdentity",
+      "materialResolutionScope": "instance_appearance"
+    },
     "texturedInstanceRequires": ["texcoord0", "submeshes", "materials", "textures"],
     "budgetExhaustion": "reduce geometry or image resolution, then PM-SLICER-VIEWDATA-BUDGET; never drop required texture content",
     "failureMode": "declared texture load/decode/UV/material failure returns an error and no successful gray fallback"

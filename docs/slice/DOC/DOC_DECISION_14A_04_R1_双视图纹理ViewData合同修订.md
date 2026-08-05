@@ -99,7 +99,8 @@ surfacePreview                  top 模式的带纹理 RGBA8/sRGB 投影 blob
 
 `appearanceIdentity` 只随材质/纹理内容变化；实例平移、旋转、缩放不得使它失效。
 `meshIdentity` 与 `appearanceIdentity` 分离，允许同一模型的多个实例共享网格和纹理 GPU 资源。
-多模型响应必须使用 `appearances[]`，实例预览与 submesh 引用都必须能解析到唯一的外观集合；
+多模型响应必须使用 `appearances[]`，每个 `instances[].appearanceIdentity` 必须唯一解析；
+实例预览须引用同一 identity，submesh 的 materialId 须在该外观集合内解析；
 单数 `appearance` 无法表达同场景多个模型，禁止使用。
 
 `outline_only` 只允许用于 top，并且仍须返回 `surfacePreview`；three_d 不得降为 outline_only。

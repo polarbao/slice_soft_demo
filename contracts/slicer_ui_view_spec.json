@@ -30,6 +30,12 @@
   },
   "grid": {
     "extentSource": "scene.buildVolume",
+    "coordinateFrame": {
+      "originSource": "scene.buildVolume.origin",
+      "xDirectionSource": "scene.buildVolume.xDirection",
+      "yDirectionSource": "scene.buildVolume.yDirection",
+      "unresolvedBehavior": "show_product_fallback_with_unresolved_diagnostic_not_production_truth"
+    },
     "productFallbackMm": { "x": 230.0, "y": 100.0, "z": 60.0 },
     "minorSpacingMm": 1.0,
     "majorSpacingMm": 10.0,
