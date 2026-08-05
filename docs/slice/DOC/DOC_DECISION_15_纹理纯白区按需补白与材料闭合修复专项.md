@@ -265,8 +265,8 @@ if (model_fill.enabled && !empty_allowed_in_production && !legacy_rgb_fallback
 
 | 阶段 | 关系 |
 |---|---|
-| **Stage 14**（能力包封装，PROPOSED/NOT ACTIVE） | **Stage 15 优先级更高，先行**。14 是集成工程，15 是阻断实际生产使用的能力缺口 |
-| **14 · RIP 六问 Q2** | Stage 15 为“显式不透明白 Profile”追加实证；不替换 Q2，不证明同一全 RGB Package 可同时承担透明/不透明白决策 |
+| **Stage 14**（能力包封装，✅ **ACTIVE** 2026-08-04）| Stage 15 已 COMPLETE 并让出优先级，Stage 14 随后激活 |
+| **14 · RIP 六问 Q2** | ✅ **已闭合**：RIP 侧选定**路径 D**（废弃 `WSV=000`，改用 `W=0` 真实材料语义），Stage 15 的显式不透明白证据成为该路径的实证。权威条款见 `DOC_DECISION_14_S2_RIP接口合同定案.md` §1.3 |
 | 12A | 本专项是 `PRD_12A` 材料策略的增量，不推翻其结论 |
 | 12E | Legacy 为目标路径；Global 已有精确白写 W 行为，本阶段只做回归，不改其语义 |
 | 13B/13F | 并行不冲突；场景闭合校验保持原样（本方案通过其检查而非绕过） |

@@ -41,15 +41,20 @@ RIP 文档：契约先行（由打印软件侧定义 API，RIP 侧据此适配�
 
 > ⚠️ **v1.0 表述统一作废（见 `INT_17` §3）**：凡出现"core 静态链接进 DLL 与 Worker 各一份"、"必须同一次构建/成对替换"、"backend=auto\|inprocess\|subprocess"、"双后端 SHA-256 比对"、"Worker 不可独立替换"等表述，一律以 `INT_16` / `INT_10` v1.1 为准。`INT_02/06/09/12/13/15` 与 `PLANNING/CLAUDE_09/13` 中的相关段落属此类。
 
-### Stage 14 已成立（正式文档，PROPOSED）
+### Stage 14 已成立并激活（正式文档，✅ ACTIVE）
 
 ```text
 docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md   ← 成立决策
 docs/codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md ← 40 张原子任务卡
-状态：PROPOSED / NOT ACTIVE —— 待用户授权 OPEN-14-01（优先级插入方案）后转 ACTIVE
+状态：✅ ACTIVE（2026-08-04 用户授权激活；Stage 15 已 COMPLETE，优先级冲突自然解除）
+S2（RIP 接缝）权威条款见 `docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`；
+本目录 INT_* 为设计底稿，与合同定案冲突时以定案为准。
 ```
 
-> 🔴 **2026-08-03 开工前提醒**：按主状态文档 `REPORT_12X` v4.5，**当前官方下一任务是 `12E-09D-01`**，而**封装（Stage 14）尚未在 `docs/slice` 立项**——本目录全部文档属分析建议层（P 级），不具备开工资格。开工前须先裁定 `INT_14` §5 的 D-1/D-3/D-4 三个阻塞项。
+> ~~🔴 2026-08-03 开工前提醒：封装（Stage 14）尚未在 `docs/slice` 立项，本目录全部文档属分析建议层（P 级），不具备开工资格~~
+> ✅ **2026-08-04 已失效**：Stage 14 已在 `docs/slice` 完整立项（DOC_DECISION/PRD/DEV/DEMO/REPORT/TASKS/PROMPT 七件套 + S2 合同定案），
+> 并由用户授权转为 **ACTIVE**。`INT_14` §5 的 D-1/D-3/D-4 三项阻塞已全部裁定或闭合。
+> **本目录 INT_* 仍为设计底稿（P 级）；与 `docs/slice` 正式文档冲突时，一律以正式文档为准。**
 
 ### 术语约定（`INT_13` §4 裁定，避免"三"字歧义）
 

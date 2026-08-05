@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-08-04
 > 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；Stage 14 PREPARED；Stage 15 ACTIVE / 10 OF 19
+> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；03E-02 **GO_ON_DEMAND**；**Stage 14 ACTIVE（2026-08-04 授权激活）**；Stage 15 **COMPLETE / 19 OF 19**
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
 最新完成阶段：Stage 12E 与 Stage 13 批准范围已收口
-当前执行阶段：Stage 15 ACTIVE / 10 IMPLEMENTED
-最新完成任务：15D-02/04 自动差异证据与严格 Reader Gate
-当前推荐任务：关闭 15D-03 Quick CI；Stage 14 等待 Stage 15 与外部集成输入
+当前执行阶段：Stage 14 ACTIVE（2026-08-04 授权激活）；Stage 15 COMPLETE / 19 OF 19
+最新完成任务：Stage 15 全量收口（G1–G8）；RIP 六问两轮闭合，S2 条款收敛至 DOC_DECISION_14_S2
+当前推荐任务：Stage 14 首批并行 —— 14A-01 / 14A-02 / 14A-07 / 14A-09 / 14B-06 / 14B-00
 ```
 
 09P-R1 已完成：
@@ -486,6 +486,7 @@ Stage 14 / Stage 15 当前入口：
 
 ```text
 docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md
+docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md          ← 【S2 权威合同，实施只看这份】
 docs/slice/PRD/PRD_14_切片能力包封装与打印软件集成.md
 docs/slice/DEV/DEV_14_切片能力包封装与打印软件集成.md
 docs/slice/DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.md
@@ -540,8 +541,9 @@ Stage 13 原 P0、13B-08、13D、13E、13G 已完成。`03D-LIBTIFF` 已完成 0
 矩阵；`12E-10A..10D` 已完成同层绑定、真实模型矩阵、Release 性能/内存和最终文档封口。Stage 12E
 当前批准范围已完成。12G-TCWS 已记录现有 RIP 的同包透明/白色和 `WSV=000` 白区信号事实，
 但因其与固定物理通道语义冲突继续冻结，且不包含纹理铺底。12F 性能算法仍需逐项授权。
-Stage 14 已完成文档准备但未激活；Stage 15 已完成配置契约、Legacy 按需补 W、统计报告与
-15D-01/02/04 自动证据，当前处理 15D-03。候选 Profile 在 G7 前保持 disabled/diagnostic。
+**Stage 14 已于 2026-08-04 授权激活（ACTIVE）**，RIP 六问两轮闭合，S2 权威条款见
+`DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（含 8 项作废方案禁止实现清单）。
+Stage 15 已全量收口（19/19 任务卡、G1–G8 全通过），按需补白 Profile 已启用为 production。
 
 03D TIFF Writer 专项入口：
 

@@ -1,19 +1,52 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
-> 文档状态：**DOCUMENT PREPARED / IMPLEMENTATION NOT STARTED**
-> 版本：v1.1 ｜ 更新日期：2026-08-03
+> 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
+> 版本：v1.2 ｜ 更新日期：2026-08-04
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
+> **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
 ---
 
-## 1. 门禁状态
+## 1. 门禁状态（v1.2 · 2026-08-04）
 
 ```text
-DOCUMENTATION_GATE   = PASS        （8/8 必需文档齐备，见 §2）
-IMPLEMENTATION_GATE  = NOT_AUTHORIZED
-EXTERNAL_EVIDENCE_GATE = OPEN      （RIP 六项确认未回签）
-CURRENT_NEXT_TASK    = 待用户授权后为 14B-06 或 14A-01
+DOCUMENTATION_GATE     = PASS          （9/9 必需文档齐备，见 §2）
+IMPLEMENTATION_GATE    = AUTHORIZED    ← 用户于 2026-08-04 授权
+STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED）
+EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
+                         RIP 六问两轮闭合、14A-08 COMPLETE；
+                         外部 RIP【实机】互操作仍由 14F 关闭
+CURRENT_NEXT_TASK      = 首批并行：14A-01 / 14A-02 / 14A-07 / 14A-09 / 14B-06 / 14B-00
 ```
+
+### 1.1 激活前置清单
+
+| 前置 | 状态 | 证据 |
+|---|---|---|
+| Stage 15 优先级让位 | ✅ CLEARED | `REPORT_15` COMPLETE / PRODUCTION ENABLED |
+| RIP 六问回签 | ✅ CLOSED | `DOC_CHECKLIST_14` v1.4 §4.4，两轮闭合 |
+| S2 条款收敛 | ✅ DONE | `DOC_DECISION_14_S2` v1.0 |
+| 作废方案清理 | ✅ DONE | `DOC_ANALYSIS_14_Q2` 降级为档案；8 项禁止实现已登记 |
+| 用户授权 | ✅ 2026-08-04 | 本次激活 |
+
+### 1.2 本轮 RIP 问答对 Stage 14 的净影响
+
+```text
+✅ Q1=方案A  → 切片与打印软件零改动，14F 具备开工条件
+✅ Q3.1      → 12G-TCWS 保持冻结，p0.rgbwsv.3 不需要
+✅ Q4        → 03E-02 由 NO_GO_DEFAULT 转 GO_ON_DEMAND
+➕ 14A-10    → manifest 新增 whiteSemantics（本轮唯一新增实现工作）
+⛔ 8 项作废  → 见 DOC_DECISION_14_S2 §4，禁止实现
+🔶 S2-R1     → 极性映射表转 RIP↔打印软件双边，【不阻塞切片侧】
+```
+
+### 1.3 仍然开放的外部项
+
+| 项 | 归属 | 阻塞范围 |
+|---|---|---|
+| 极性映射表书面确认（S2-R1） | RIP ↔ 打印软件双边 | RIP 实现、S2 校验器；**不阻塞切片侧** |
+| 外部目标 RIP 实机互操作 | 14F 三方联调 | 14F 出口 |
+| 实物工艺验证 | 工艺侧 | 发布授权 |
 
 ## 2. 文档齐备度
 

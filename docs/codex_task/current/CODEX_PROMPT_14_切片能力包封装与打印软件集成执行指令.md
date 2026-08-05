@@ -1,8 +1,54 @@
 # CODEX_PROMPT_14 切片能力包封装与打印软件集成执行指令
 
-> 文档状态：**PREPARED / NOT ACTIVE**
-> 版本：v1.0 ｜ 日期：2026-08-03
+> 文档状态：✅ **ACTIVE / DEVELOPMENT READY**（2026-08-04 授权激活）
+> 版本：v1.1 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04
 > 适用：Stage 14 全部原子任务（14A–14F）
+
+---
+
+## 0. 开工前三条最重要的事（2026-08-04 新增）
+
+### 0.1 S2 条款只看一份文档
+
+```text
+✅ docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md   ← 权威，实施只看这里
+❌ docs/slice/DOC/DOC_CHECKLIST_14_...md                  ← 往来记录档案，含【被否决】的候选
+❌ docs/slice/DOC/DOC_ANALYSIS_14_Q2_...md                ← 推导过程档案，已降级
+```
+
+清单与分析文档里保留了完整的方案比选过程，其中大部分**已被否决**。
+照着它们实现会写出作废代码。
+
+### 0.2 ⛔ 以下内容禁止实现
+
+```text
+✗ Writer 断言：写出前扫描 W==0 && S==0 && V==0 的哨兵检查
+✗ manifest 字段 ripBoundIntermediate { whiteRegionSentinel: "WSV=000", ... }
+✗ 白区路径 A / B / C / E 的任何形式
+✗ 逐层 1-bit sidecar
+✗ p0.rgbwsv.3 协议扩展
+```
+
+原因：RIP 侧已选定**路径 D** —— 废弃 `WSV=000` 哨兵，用 `W=0` 真实材料语义表达
+需要打印的白。**不存在哨兵，就不需要保护哨兵的机制。**
+完整作废清单见 `DOC_DECISION_14_S2` §4。
+
+> ⚠️ **不要误删**：错误码 `PM-SLICER-CONTRACT-0060` 本身**有效** —— 它是 SPI 既有通用错误码
+> （「自检发现产物不符合 `p0.rgbwsv.2`」，见 `INT_07` §错误码表、`INT_02` §6）。
+> 作废的只是「用它承载 `WSV=000` 哨兵扫描」这一用途；**错误码表整体保留，不因本轮 Q2 定案变更。**
+
+### 0.3 首批可并行开工
+
+```text
+14A-01  contracts/ 目录 + print_module_spi.h
+14A-02  p0.rgbwsv.2 JSON Schema（须覆盖 Stage 15 三字段 + 14A-10 whiteSemantics）
+14A-07  第三方依赖再分发合规审查
+14A-09  REPORT_12X 补 03E 行（03E-02 现为 GO_ON_DEMAND）
+14B-06  CI 行数门禁
+14B-00  核心库分层可行性验证
+```
+
+**14A-08 已 COMPLETE，不要重新发 RIP 问卷。**
 
 ---
 
@@ -13,11 +59,12 @@
 2. .agents/AGENTS.md
 3. docs/slice/REPORT/REPORT_12X_阶段计划与完成度总览.md        ← 当前主状态
 4. docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md
-5. docs/slice/PRD/PRD_14_切片能力包封装与打印软件集成.md
-6. docs/slice/DEV/DEV_14_切片能力包封装与打印软件集成.md
-7. docs/slice/DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.md
-8. docs/codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md
-9. 目标任务对应的 docs/claude/INTEGRATION/INT_* 细节（见下表）
+5. docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md        ← 【S2 权威条款】
+6. docs/slice/PRD/PRD_14_切片能力包封装与打印软件集成.md
+7. docs/slice/DEV/DEV_14_切片能力包封装与打印软件集成.md
+8. docs/slice/DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.md
+9. docs/codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md
+10. 目标任务对应的 docs/claude/INTEGRATION/INT_* 细节（见下表）
 ```
 
 | 任务组 | 细节文档 |
@@ -110,9 +157,19 @@ cmake --build build --config Debug
 ## 7. 当前可执行入口
 
 ```text
-状态：Stage 14 = PROPOSED / NOT ACTIVE（待用户授权）
-授权后建议起点：14B-06（CI 行数门禁）与 14A-01（contracts/ 落盘）—— 二者无外部依赖
+状态：Stage 14 = ✅ ACTIVE（2026-08-04 用户授权激活）
+
+首批可并行开工（互不依赖）：
+  14A-01  contracts/ 目录 + print_module_spi.h
+  14A-02  p0.rgbwsv.2 JSON Schema（覆盖 Stage 15 三字段 + 14A-10 whiteSemantics）
+  14A-07  第三方依赖再分发合规审查
+  14A-09  REPORT_12X 补 03E 行（03E-02 现为 GO_ON_DEMAND）
+  14B-06  CI 行数门禁
+  14B-00  核心库分层可行性验证
+
+已完成，不要重做：14A-08（RIP 六问两轮闭合）
 不得作为起点：14C 及以后（需 14A 契约冻结完成）
+14F 三方联调：切片侧可推进，但外部 RIP 实机互操作与 S2-R1 极性映射表由双边关闭
 ```
 
 ## 8. 修订记录

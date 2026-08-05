@@ -1,11 +1,40 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
-> 文档状态：**PREPARED / NOT ACTIVE**（待用户授权后转 ACTIVE）
-> 版本：v1.0 ｜ 日期：2026-08-03
-> 作者：Claude 起草；执行前须由主线开发确认
+> 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
+> 版本：v1.1 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04
+> 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
+> **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
 > 详细设计：`docs/claude/INTEGRATION/INT_06..15`
 > 打印侧对接：`ry_print_demo/docs/claude/INTEGRATION/CLD_04,05,06,10,27` + `PLANNING/CLD_07`
+
+---
+
+## 0.0 开工须知（2026-08-04 激活时新增）
+
+```text
+① 首批可并行开工：14A-01、14A-02、14A-07、14A-09、14B-06、14B-00（互不依赖）
+② 14A-08 已 COMPLETE —— RIP 六问两轮闭合，不要重新发问卷
+③ 新增 14A-10（manifest whiteSemantics），依赖 14A-02
+④ Stage 15 已 COMPLETE，其新增的 texture.unprintableWhite* 三字段与
+   whiteSemantics 是【不同层级】的东西：前者是像素级写入策略，后者是作业级语义声明。
+   14A-02 的 Schema 必须同时覆盖两者，不要混为一谈。
+```
+
+**⛔ 禁止实现（路径 A 配套，已随路径 D 定案作废）**
+
+```text
+✗ Writer 断言：写出前扫描 W==0 && S==0 && V==0 的哨兵检查
+✗ manifest ripBoundIntermediate { whiteRegionSentinel: "WSV=000", ... }
+✗ 路径 A / B / C / E 的任何形式
+✗ 逐层 1-bit sidecar
+✗ p0.rgbwsv.3 协议扩展
+完整清单：DOC_DECISION_14_S2 §4。若在旧文档中见到上述内容，以合同定案为准。
+
+⚠️ 不要误删：错误码 PM-SLICER-CONTRACT-0060 本身【有效】，它是 SPI 既有通用错误码
+   （「自检发现产物不符合 p0.rgbwsv.2」，见 INT_07 / INT_02 错误码表）。
+   作废的只是「用它承载 WSV=000 哨兵扫描」这一用途，错误码与错误码表整体保留。
+```
 
 ---
 
@@ -33,18 +62,26 @@ cmake --build build --config Debug
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14A-01 | 建立 `contracts/` 目录；落盘 `print_module_spi.h`（与打印侧 `CLD_10` 同源，我方只同步不改）| — | C 与 C++ 编译器分别编过；`dumpbin /EXPORTS` 预期恰好 11 个 `pm_*` | PREPARED |
-| 14A-02 | `p0.rgbwsv.2` 形式化 JSON Schema | — | 用真实 manifest 样例校验通过 | PREPARED |
+| 14A-01 | 建立 `contracts/` 目录；落盘 `print_module_spi.h`（与打印侧 `CLD_10` 同源，我方只同步不改）| — | C 与 C++ 编译器分别编过；`dumpbin /EXPORTS` 预期恰好 11 个 `pm_*` | 🟢 **READY（首批）** |
+| 14A-02 | `p0.rgbwsv.2` 形式化 JSON Schema（**须同时覆盖 Stage 15 的 `texture.unprintableWhite*` 三字段与 14A-10 的 `whiteSemantics`**）| — | 用真实 manifest 样例校验通过 | 🟢 **READY（首批）** |
 | 14A-03 | `file_contract_v1` 完整规格（请求/结果 JSON schema、进度行、退出码表、超时、僵尸回收、staging 清理时序）| 14A-01 | 打印侧确认可满足 | PREPARED |
 | 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码 | PREPARED |
 | 14A-05 | 三车道交互契约固化（`operationId` 幂等、`expectedSceneRevision`、`SceneRevisionStale` 回滚）| 14A-04 | 与打印侧 `CLD_04` §4.3 一致 | PREPARED |
 | 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | PREPARED |
-| 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | PREPARED |
-| 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传 | **READY（清单已就绪，待发出）** |
-| | ↳ 清单已成文：`docs/slice/DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md`（自包含背景 + 六问 + 可填写回复模板）| | | |
-| 14A-09 | `REPORT_12X` 补 03E 行 | — | 主状态表完整 | PREPARED |
+| 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | 🟢 **READY（首批）** |
+| 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传 | ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
+| | ↳ 往来记录：`docs/slice/DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md`（v1.4，已转档案）| | | |
+| | ↳ **权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` —— 实施只看该文** | | | |
+| 14A-09 | `REPORT_12X` 补 03E 行（03E-02 现为 **`GO_ON_DEMAND`**，见 `REPORT_03E_02` §5.1）| — | 主状态表完整 | 🟢 **READY（首批）** |
+| **14A-10** | **manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）**：manifest 为权威、Profile 仅提供默认值；两处不一致时 **fail-closed** | 14A-02 | Schema 覆盖新字段；不一致用例 fail-closed；无该字段的既有包仍可读（向后兼容） | **NEW（合同定案 N1 产生，2026-08-04）** |
 
 **14A 出口**：`contracts/` 四份物料齐备；打印侧与 RIP 侧书面确认；`OPEN-14-03/04/05` 关闭。
+
+> **14A-10 溯源**：`DOC_DECISION_14_S2` §1.4。Q3.1 确认「同层不需混用两种白」，故白色语义为
+> **作业级**声明而非逐像素，不需要 `p0.rgbwsv.3`。这是本轮 RIP 问答产生的**唯一**切片侧新实现工作。
+
+> ⛔ **禁止实现**（路径 A 配套，已随路径 D 定案作废）：Writer 断言 `PM-SLICER-CONTRACT-0060`、
+> manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_S2` §4。
 
 ---
 
@@ -52,14 +89,14 @@ cmake --build build --config Debug
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14B-00 | **核心库分层可行性验证**：能否把 `scene/ layout/ config/ 几何查询/ 包读取/ preview` 拆为 `slicer_base`，其余入 `slicer_engine`；重点验证 `model.cpp`(1970 行) 能否进 base | 14A-04 | 出结论文档；若不可行则 `model.import` 改 Worker 承载 | PREPARED |
+| 14B-00 | **核心库分层可行性验证**：能否把 `scene/ layout/ config/ 几何查询/ 包读取/ preview` 拆为 `slicer_base`，其余入 `slicer_engine`；重点验证 `model.cpp`(1970 行) 能否进 base | 14A-04 | 出结论文档；若不可行则 `model.import` 改 Worker 承载 | 🟢 **READY（首批，14A-04 未完成前先出可行性结论）** |
 | 14B-01 | 新建 `src/slicer_core/api/`；定义 facade 接口与 DTO（含强制 `ICancelToken`）| 14A-04 | 接口单测；不含 Qt/ABI 类型 | PREPARED |
 | 14B-01A | **落地 base/engine 两库拆分 + CI 单向依赖检查** | 14B-00, 14B-01 | `slicer_base` 不含 engine 符号；构建图正确 | PREPARED |
 | 14B-02 | `ModelFacade` + `PackageQueryFacade` 实现（复用既有能力）| 14B-01 | 行为与既有 CLI 一致 | PREPARED |
 | 14B-03 | `SceneFacade`（变换/碰撞/越界权威求值 + revision）| 14B-01 | 与 `layout/` 既有判定逐条一致 | PREPARED |
 | 14B-04 | `SliceFacade`（提交/进度/取消）| 14B-01 | 生产 TIFF 逐字节不变 | PREPARED |
 | 14B-05 | `slicer_cli` 改走 facade | 14B-02..04 | full 回归通过 | PREPARED |
-| 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）| PREPARED |
+| 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）| 🟢 **READY（首批）** |
 
 ---
 

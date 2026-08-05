@@ -4,7 +4,7 @@
 > 版本：v5.3
 > 更新日期：2026-08-04
 > 当前生产主线：STAGE 12E COMPLETE
-> 当前下一任务：Stage 15 已完成 19/19；Stage 14 保持 PREPARED，等待外部输入与独立授权
+> 当前下一任务：Stage 15 已完成 19/19；**Stage 14 已于 2026-08-04 授权激活（ACTIVE）**，首批并行 14A-01 / 14A-02 / 14A-07 / 14A-09 / 14B-06 / 14B-00
 
 ## 1. 使用规则
 
@@ -61,7 +61,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 已记录同一全 RGB package 由 RIP 生成透明/白色，以及白区 `WSV=000` 私有信号；完成三种策略比对 | `WSV=000` 与 black_is_print 物理语义冲突；等待 RIP 合同决策，不做纹理铺底 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E、13E-R1-01、13F-R0、13G COMPLETE | 多模型场景、TIFF 原生统一预览、Qt 工作台、甲片平面/Z 正反面、Reality 支撑连续性和 30 层最大投影铺底 | 13F-R1-01..05 性能可观测性 |
-| Stage 14 | PREPARED / NOT ACTIVE | 能力包封装、打印软件集成边界与 RIP 确认清单齐备 | 优先等待 Stage 15；外部 RIP/打印软件输入仍需确认 |
+| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权激活）| 能力包封装与打印软件集成边界齐备；**RIP 六问两轮闭合**，条款收敛至 `DOC_DECISION_14_S2_RIP接口合同定案.md`；14A-08 COMPLETE；8 项作废方案已登记禁止实现 | 首批并行：14A-01/02/07/09、14B-06、14B-00；新增 14A-10（manifest `whiteSemantics`）；外部 RIP 实机互操作由 14F 关闭 |
 | Stage 15 | COMPLETE / 19 OF 19 | 按需补 W、预检、报告、自动 Gate、放行记录与 production Profile 全部收口 | 保持回归；外部 RIP 与 12G 不在本阶段 |
 
 ### 2.1 Stage 12 目的图
@@ -77,6 +77,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F | 整理 Debug/Release Runtime，并在后续阶段继续性能工程化 |
 | 13 | 建立模型场景、实例变换、多模型排版联合切片和 TIFF 原生生产预览 |
 | 14 | 封装切片能力并定义与打印软件、目标 RIP 的集成边界 |
+| 15 | 补齐 `black_is_print` 下纯白纹理无法表达的能力缺口（按需补写 W 载体）|
 | 15 | 修复全实体 RGB 纯白纹理在 black_is_print 下无材料载体导致的闭合失败 |
 
 ### 2.2 当前原子任务进度
@@ -92,8 +93,8 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13C、13D、13E、13E-R1-01、13F-R0、13F-R1-06、13G COMPLETE | 13G 保持回归；13F-R1-01..05 保持独立 |
-| Stage 14 | PREPARED / NOT ACTIVE | 等待 Stage 15 和外部集成输入 |
-| Stage 15 | COMPLETE / 19 COMPLETE / 0 PENDING | 保持回归；Stage 14 需独立授权进入 |
+| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权）| 首批并行 14A-01/02/07/09、14B-06、14B-00；S2 条款见 `DOC_DECISION_14_S2`；14F 待外部 RIP 实机 |
+| Stage 15 | COMPLETE / 19 COMPLETE / 0 PENDING | 保持回归 |
 
 ### 2.3 剩余任务数量
 

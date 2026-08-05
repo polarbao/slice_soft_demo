@@ -116,9 +116,10 @@ F-04 sliceProcessingMs p50：182.781 -> 145.924 ms（-20.16%）
 | R4 | golden 基线漂移 | 中 | 🟡 由 G2/G3/G4 三门共同控制 |
 | R5 | 命名不实 | 低 | 🟢 已消解（新增 Profile 而非改造） |
 
-## 7. 待办：独立缺陷卡
+## 7. 已建卡：独立缺陷（2026-08-04 关闭本待办）
 
-**`unexpected_overlap_pixels` 恒 0（R3）尚未建卡。**
+**`unexpected_overlap_pixels` 恒 0（R3）已立独立缺陷卡：
+`docs/slice/DOC/DOC_ANALYSIS_材料重叠校验空转缺陷与修复前置条件.md`（OPEN DEFECT / NOT SCHEDULED）。**
 
 `slicer.cpp:3711` 的 `constexpr std::uint64_t unexpected_overlap_pixels{0U}` 使
 `maxUnexpectedOverlapPixels` 校验永久空转。修复需先定义「合法材料共写」与「意外重叠」的

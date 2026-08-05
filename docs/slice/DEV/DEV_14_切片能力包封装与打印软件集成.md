@@ -1,6 +1,7 @@
 # DEV_14 切片能力包封装与打印软件集成（技术设计）
 
-> 文档状态：**PREPARED / DESIGN ONLY / NOT IMPLEMENTED**
+> 文档状态：✅ **ACTIVE / DESIGN BASELINE**（2026-08-04 激活，实现进行中）
+> S2（RIP 接缝）权威条款见 `docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`
 > 版本：v1.0 ｜ 日期：2026-08-03
 > 作者：Claude 起草；实现前须主线开发确认
 > 上游：`PRD_14`、`DOC_DECISION_14` ｜ 详细推导：`docs/claude/INTEGRATION/INT_09/10/16/17`

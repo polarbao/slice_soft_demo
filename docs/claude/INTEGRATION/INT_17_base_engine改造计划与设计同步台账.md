@@ -228,7 +228,7 @@ target_link_libraries(slicer_engine PUBLIC slicer_base) # 单向：engine → ba
 | 主状态登记 | `REPORT_12X` 补 Stage 14 行 | ❌ 缺（= 14A-09 顺带办）|
 | 契约物料 | `contracts/`（4 份）| ❌ 缺（= 14A-01..03 的产出，属实现范畴）|
 
-**齐备度：7 / 7 必需文档 ✅（2026-08-03 补齐）**。文档准入完成，`DOCUMENTATION_GATE = PASS`；`IMPLEMENTATION_GATE` 仍为 `NOT_AUTHORIZED`。
+**齐备度：7 / 7 必需文档 ✅（2026-08-03 补齐）**。文档准入完成，`DOCUMENTATION_GATE = PASS`；`IMPLEMENTATION_GATE` 已于 **2026-08-04 转为 `AUTHORIZED`**（用户授权激活 Stage 14）。
 
 ## 8. 能否开启准备工作？—— **可以，但分两类**
 

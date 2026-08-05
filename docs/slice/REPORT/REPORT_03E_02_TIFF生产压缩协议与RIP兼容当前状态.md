@@ -1,6 +1,6 @@
 # REPORT_03E-02 TIFF 生产压缩协议与 RIP 兼容当前状态
 
-> 状态：INTERNAL COMPLETE / EXTERNAL TARGET RIP PENDING / NO_GO_DEFAULT
+> 状态：INTERNAL COMPLETE / EXTERNAL RIP SUPPORT CONFIRMED / **GO_ON_DEMAND**（2026-08-04 由 `NO_GO_DEFAULT` 转入，见 §5.1）
 > 日期：2026-08-03
 > 前置：03E-01 PackBits 原型与读写性能矩阵 COMPLETE
 
@@ -134,17 +134,45 @@ Photoshop 打开 PackBits 六通道 TIFF
 
 因此不能声称目标 RIP 兼容，也不能默认启用 PackBits。
 
-## 5. 当前结论
+## 5. 当前结论（v2 · 2026-08-04 更新）
 
 ```text
 内部生产配置与协议：PASS
 项目严格 Reader/RIP：PASS
 真实 OBJ package：PASS
-外部目标 RIP：PENDING
+外部目标 RIP 声明支持：CONFIRMED   ← 2026-08-04 新增
+外部目标 RIP 实机互操作：PENDING   （由 Stage 14 的 14F 三方联调关闭）
 默认压缩：none（未改变）
 默认 Writer：handwritten（未改变）
-决策：NO_GO_DEFAULT_EXTERNAL_INTEROP_PENDING
+决策：GO_ON_DEMAND —— 按需显式开启已获授权；默认值维持 none
 ```
 
-03E 后续只需在明确具备目标 RIP/控制软件环境时补做外部互操作 Gate；在此之前，PackBits 保持
-用户显式选择的实验输出能力。
+### 5.1 由 NO_GO_DEFAULT 转 GO_ON_DEMAND 的依据（2026-08-04）
+
+RIP 侧在 `DOC_CHECKLIST_14` 第一轮回复中明确确认：
+
+```text
+Q4.1  支持 Compression = PackBits (32773)   ✅
+Q4.2  优先使用 libtiff 处理，并采用压缩
+Q4.3  建议默认开启
+```
+
+第二轮（R5）就落地节奏达成一致，**我方取「分两步」**：
+
+| 步骤 | 内容 | 状态 |
+|---|---|---|
+| 第一步（本次） | 保持 `output.tiffCompression` 默认 `none`，**按需显式开启已获授权** | ✅ 生效 |
+| 第二步（独立决策） | 是否改为默认开启 | ⬜ 未启动 |
+
+**为什么不直接默认开启**：改默认会使**全部既有 golden TIFF 的 SHA-256 失效**，需重新固化基线，
+且很可能需同期把 LibTIFF 由 `GO_OPTIONAL` 切为默认后端。对方已确认两种节奏均可接受
+（并接受我方为此所需的一个独立验收轮次），故取风险较低者。
+
+第二步若启动，应与 `tiff_io.cpp` 字对齐缺陷、LibTIFF 默认后端切换合并为同一决策，避免多次重固化基线。
+
+### 5.2 残留边界
+
+`CONFIRMED` 仅指对方**声明**支持 PackBits，不等同实机互操作已验证。
+实机 Gate 由 Stage 14 的 14F 三方联调关闭；在此之前不得宣称外部互操作已通过。
+
+> 权威条款见 `docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` §1.5。

@@ -1,6 +1,7 @@
 # PRD_14 切片能力包封装与打印软件集成
 
-> 文档状态：**PREPARED / PENDING USER AUTHORIZATION**
+> 文档状态：✅ **ACTIVE**（2026-08-04 授权激活）
+> S2（RIP 接缝）权威条款见 `docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`
 > 版本：v1.0 ｜ 日期：2026-08-03
 > 作者：Claude 起草；生效需用户授权
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
