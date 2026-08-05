@@ -8,6 +8,7 @@ from pathlib import Path
 
 BASE_PREFIXES = (
     "src/third_party/miniz/",
+    "src/slicer_core/api/",
     "src/slicer_core/importers/",
     "src/slicer_core/layout/",
     "src/slicer_core/scene/",

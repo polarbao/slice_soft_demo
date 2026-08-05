@@ -31,6 +31,19 @@ add_library(slicer_core
     src/third_party/miniz/miniz_tdef.c
     src/third_party/miniz/miniz_tinfl.c
     src/third_party/miniz/miniz_zip.c
+    src/slicer_core/api/ApiResult.h
+    src/slicer_core/api/Cancellation.h
+    src/slicer_core/api/CommonDtos.h
+    src/slicer_core/api/Facades.h
+    src/slicer_core/api/ModelDtos.h
+    src/slicer_core/api/ModelFacade.h
+    src/slicer_core/api/PackageDtos.h
+    src/slicer_core/api/PackageQueryFacade.h
+    src/slicer_core/api/SceneDtos.h
+    src/slicer_core/api/SceneFacade.h
+    src/slicer_core/api/SceneViewDtos.h
+    src/slicer_core/api/SliceDtos.h
+    src/slicer_core/api/SliceFacade.h
     src/slicer_core/config/ConfigMigration.cpp
     src/slicer_core/config/ConfigMigration.h
     src/slicer_core/config/ConfigSchema.cpp
@@ -452,6 +465,13 @@ target_include_directories(model_import_layering_probe PRIVATE
 if(MSVC)
     target_compile_options(model_import_layering_probe PRIVATE /bigobj /MP)
 endif()
+
+add_executable(facade_contract_unit_tests
+    tests/contracts/FacadeContractUnitTests.cpp
+)
+target_include_directories(facade_contract_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
@@ -1059,6 +1079,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BLayeringFeasibility.py"
     )
     add_test(
+        NAME slicer_facade_header_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateFacadeHeaders.py"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1077,6 +1102,7 @@ if(Python3_Interpreter_FOUND)
         slicer_cancel_contract_test
         slicer_stage14b_preparation_contract_test
         slicer_stage14b_layering_feasibility_test
+        slicer_facade_header_contract_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
         PROPERTIES
@@ -1090,6 +1116,7 @@ add_test(
     COMMAND model_import_layering_probe
         "${CMAKE_CURRENT_SOURCE_DIR}/samples/models/textured/fixtures/policy_textured_small.obj"
 )
+add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_white_carrier_policy_unit_tests COMMAND texture_white_carrier_policy_unit_tests)

@@ -73,7 +73,7 @@ def Main() -> int:
         (
             "14B_PREPARATION_GATE",
             "= PASS          （Facade/Base-Engine 实施准备已冻结）",
-            "CURRENT_NEXT_TASK      = 14B-01",
+            "CURRENT_NEXT_TASK      = 14B-01A",
         ),
     )
 
