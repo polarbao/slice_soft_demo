@@ -1,0 +1,39 @@
+SliceSoft Third-Party Notices
+=============================
+
+This distribution may contain the following third-party components. The full
+license texts are distributed in the licenses directory and form part of this
+notice:
+
+1. miniz 3.1.0
+   Copyright 2013-2014 RAD Game Tools and Valve Software.
+   Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC.
+   License: MIT / public-domain dedication (Unlicense text included upstream).
+   Full text: licenses/miniz.txt
+
+2. LibTIFF
+   Copyright 1988-1997 Sam Leffler.
+   Copyright 1991-1997 Silicon Graphics, Inc.
+   License: LibTIFF permissive license; bundled LZW notice included.
+   Full text: licenses/libtiff.txt
+
+3. Open Asset Import Library (Assimp)
+   Copyright 2006-2026 assimp team.
+   License: BSD 3-Clause; bundled Poly2Tri notice included.
+   Full text: licenses/assimp.txt
+
+No name of a copyright holder or contributor may be used to endorse or
+promote SliceSoft without prior written permission where the corresponding
+license prohibits such use.
+
+Build-specific note
+-------------------
+
+miniz is compiled into slicer_core in every current build. LibTIFF is shipped
+only when SLICESOFT_TIFF_BACKEND=libtiff. Assimp is declared in vcpkg.json but
+is not linked by the current CMake target graph. This notice includes Assimp in
+advance; shipping its binary later still requires including its full license.
+
+The release packaging step must copy this file and the complete licenses
+directory. It must also regenerate the runtime dependency inventory and add
+the notices of any newly shipped transitive dependency before publication.

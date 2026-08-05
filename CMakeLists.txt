@@ -1032,12 +1032,18 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateCancelContract.py"
     )
+    add_test(
+        NAME third_party_notice_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateThirdPartyNotices.py"
+    )
     set_tests_properties(
         json_schema_contract_test
         file_contract_v1_test
         slicer_capability_dto_contract_test
         slicer_three_lane_contract_test
         slicer_cancel_contract_test
+        third_party_notice_contract_test
         PROPERTIES
             ENVIRONMENT "PYTHONUTF8=1"
     )

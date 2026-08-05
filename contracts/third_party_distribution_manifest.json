@@ -1,0 +1,48 @@
+{
+  "manifestVersion": "1.0",
+  "releaseFiles": {
+    "notice": "THIRD_PARTY_NOTICES.txt",
+    "licenseDirectory": "licenses"
+  },
+  "components": [
+    {
+      "name": "miniz",
+      "version": "3.1.0",
+      "source": "src/third_party/miniz",
+      "currentUsage": "statically_compiled_into_slicer_core",
+      "license": "MIT_and_public_domain_dedication",
+      "licenseFile": "licenses/miniz.txt",
+      "noticeRequired": true
+    },
+    {
+      "name": "libtiff",
+      "version": "resolved_by_vcpkg_baseline",
+      "source": "vcpkg:tiff",
+      "currentUsage": "optional_dynamic_runtime_when_SLICESOFT_TIFF_BACKEND_libtiff",
+      "license": "LibTIFF_permissive_with_LZW_notice",
+      "licenseFile": "licenses/libtiff.txt",
+      "noticeRequired": true
+    },
+    {
+      "name": "assimp",
+      "version": "resolved_by_vcpkg_baseline",
+      "source": "vcpkg:assimp",
+      "currentUsage": "declared_in_vcpkg_json_not_linked_by_current_CMake_graph",
+      "license": "BSD-3-Clause_with_Poly2Tri_notice",
+      "licenseFile": "licenses/assimp.txt",
+      "noticeRequiredWhenShipped": true
+    }
+  ],
+  "releaseGate": {
+    "copyNotice": true,
+    "copyAllLicenseFiles": true,
+    "regenerateRuntimeDependencyInventory": true,
+    "includeNewTransitiveNotices": true,
+    "forbidEndorsementUse": true
+  },
+  "excludedFromThisAudit": [
+    "OpenVDB experimental feature and its transitive runtime set",
+    "Qt host applications",
+    "operating-system components"
+  ]
+}
