@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v1.4 ｜ 更新日期：2026-08-05
+> 版本：v1.5 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14A-02（其余首批：14A-07 / 14A-09 / 14B-06 / 14B-00）
+CURRENT_NEXT_TASK      = 14A-03（其余首批：14A-07 / 14A-09 / 14B-06 / 14B-00）
 ```
 
 ### 1.1 激活前置清单
@@ -87,18 +87,19 @@ M-MVP 判据：宿主仅通过 11 个 pm_* 导出完成【导入→变换→切�
 src/slicer_core/api/        不存在
 src/slicer_module/          不存在
 apps/slicer_worker/         不存在
-contracts/                  ✅ 已建立（14A-01）
+contracts/                  ✅ 已建立；SPI、错误码与三份 JSON Schema 已落盘（14A-01/02）
 slicer_base / slicer_engine 未分层（当前仍为单一 slicer_core，CMakeLists.txt:29 默认 STATIC）
 slicer_module* / .def       全仓库零命中
 ```
 
-**Stage 14 当前完成 14A-01 合同基础设施；能力 facade、DLL、Worker 与宿主模拟仍未实现。**
+**Stage 14 当前完成 14A-01/02 合同基础设施；能力 facade、DLL、Worker 与宿主模拟仍未实现。**
 
 ### 3.1 已完成原子任务
 
 | 卡号 | 状态 | 交付物 | 验证 |
 |---|---|---|---|
 | 14A-01 | ✅ COMPLETE（2026-08-05） | `contracts/print_module_spi.h`、`contracts/slicer_error_codes.json`、C/C++ 合同编译探针 | 打印侧头文件逐字匹配；C/C++ Debug 编译通过；11 个声明与 19 个唯一错误码测试通过 |
+| 14A-02 | ✅ COMPLETE（2026-08-05） | manifest、scene、Profile 三份 Draft 2020-12 Schema；Schema 自动验证脚本 | 真实 UI smoke manifest、既有 p0 manifest、既有 scene、Stage 15/旧 Profile 正向通过；通道顺序、whiteSemantics、zLimitMm 与 W 空值负例被拒绝；Debug/Release CTest 3/3 |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
 
@@ -125,11 +126,10 @@ slicer_module* / .def       全仓库零命中
 | 卡 | 任务 | 估算 |
 |---|---|---:|
 | 14B-06 | CI 行数门禁 G1..G5 | 2–3 人日 |
-| 14A-02 | `p0.rgbwsv.2` JSON Schema | 1–2 人日 |
 | 14A-07 | 第三方依赖再分发合规审查 | 1 人日 |
 | 14A-09 | `REPORT_12X` 补 03E 行 | 0.2 人日 |
 | 14B-00 | base/engine 分层可行性验证 | 2–3 人日 |
-| **剩余首批合计** | | **6–10 人日** |
+| **剩余首批合计** | | **5–8 人日** |
 
 以上五卡均不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08 已完成，不得重复执行。
 
@@ -162,3 +162,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-03 | v1.1 | 同步 Q2 深度审查：撤回当前阶段 sidecar 推荐；记录完整配置/贴图碰撞范围；将 OPEN-14-04 改为确认既有 WSV=000 或 W-only Profile 六通道路径 |
 | 2026-08-05 | v1.3 | Stage 14 开工基线收口：文档门更新为 10/10；D-2/D-3 对齐 03D/03E 与 S2 权威结论；移除已关闭开放项和已完成 14A-08；登记独立宿主模拟与 ViewData DTO 风险 |
 | 2026-08-05 | v1.4 | 完成 14A-01：建立 contracts、同步 11 函数 SPI 头文件、登记 19 项错误码并通过 C/C++ 合同测试；下一任务推进为 14A-02 |
+| 2026-08-05 | v1.5 | 完成 14A-02：形式化 manifest、scene、Profile 三份 JSON Schema，覆盖 Stage 15 三字段、`whiteSemantics`、`zLimitMm`，并通过真实/既有样例兼容与负向合同测试；下一任务推进为 14A-03 |

@@ -987,6 +987,8 @@ add_executable(mesh_complete_self_intersection_analyzer_unit_tests
 
 target_link_libraries(mesh_complete_self_intersection_analyzer_unit_tests PRIVATE slicer_core)
 
+find_package(Python3 QUIET COMPONENTS Interpreter)
+
 enable_testing()
 add_test(
     NAME print_module_spi_contract_declaration_test
@@ -1002,6 +1004,22 @@ add_test(
         -P
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/VerifySlicerErrorCodes.cmake"
 )
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME json_schema_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateJsonSchemas.py"
+            --repo-root
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    set_tests_properties(
+        json_schema_contract_test
+        PROPERTIES
+            ENVIRONMENT "PYTHONUTF8=1"
+    )
+else()
+    message(WARNING "Python 3 was not found; json_schema_contract_test is disabled.")
+endif()
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_white_carrier_policy_unit_tests COMMAND texture_white_carrier_policy_unit_tests)

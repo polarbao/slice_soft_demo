@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/slicesoft.multimodel_scene.13b.1.schema.json",
+  "title": "SliceSoft multi-model scene",
+  "type": "object",
+  "required": [
+    "schema",
+    "subjectType",
+    "sceneId",
+    "sceneRevision",
+    "buildVolume",
+    "layout",
+    "resourceScopes",
+    "models",
+    "instances"
+  ],
+  "properties": {
+    "schema": {
+      "const": "slicesoft.multimodel_scene.13b.1"
+    },
+    "subjectType": {
+      "const": "scene"
+    },
+    "sceneId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sceneRevision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "buildVolume": {
+      "$ref": "#/$defs/buildVolume"
+    },
+    "layout": {
+      "$ref": "#/$defs/layout"
+    },
+    "resourceScopes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/resourceScope"
+      }
+    },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/model"
+      }
+    },
+    "instances": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/instance"
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "positiveOrNull": {
+      "oneOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "buildVolume": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "widthMm": {
+          "$ref": "#/$defs/positiveOrNull"
+        },
+        "heightMm": {
+          "$ref": "#/$defs/positiveOrNull"
+        },
+        "zLimitMm": {
+          "$ref": "#/$defs/positiveOrNull"
+        },
+        "origin": {
+          "type": "string"
+        },
+        "xDirection": {
+          "type": "string"
+        },
+        "yDirection": {
+          "type": "string"
+        },
+        "isFixture": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "layout": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "type": "string"
+        },
+        "maxColumns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxRows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "columnGapMm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rowGapMm": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "resourceScope": {
+      "type": "object",
+      "required": ["resourceScopeId", "kind"],
+      "properties": {
+        "resourceScopeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rootPath": {
+          "type": "string"
+        },
+        "packagePath": {
+          "type": "string"
+        },
+        "partIdentity": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "model": {
+      "type": "object",
+      "required": ["modelId", "sourcePath", "format", "resourceScopeId"],
+      "properties": {
+        "modelId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourcePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resourceScopeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceHash": {
+          "type": "string"
+        },
+        "resourceHash": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "transform": {
+      "type": "object",
+      "required": [
+        "translateXMm",
+        "translateYMm",
+        "rotateZDeg",
+        "uniformScale",
+        "mirrorX",
+        "mirrorY"
+      ],
+      "properties": {
+        "translateXMm": {
+          "type": "number"
+        },
+        "translateYMm": {
+          "type": "number"
+        },
+        "rotateZDeg": {
+          "type": "number"
+        },
+        "uniformScale": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mirrorX": {
+          "type": "boolean"
+        },
+        "mirrorY": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "vector3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "bbox": {
+      "type": "object",
+      "required": ["min", "max"],
+      "properties": {
+        "min": {
+          "$ref": "#/$defs/vector3"
+        },
+        "max": {
+          "$ref": "#/$defs/vector3"
+        }
+      },
+      "additionalProperties": true
+    },
+    "instance": {
+      "type": "object",
+      "required": [
+        "instanceId",
+        "modelId",
+        "requestedTransform",
+        "effectiveTransform",
+        "visible",
+        "locked",
+        "transformRevision"
+      ],
+      "properties": {
+        "instanceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "modelId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requestedTransform": {
+          "$ref": "#/$defs/transform"
+        },
+        "derivedLayoutTransform": {
+          "$ref": "#/$defs/transform"
+        },
+        "effectiveTransform": {
+          "$ref": "#/$defs/transform"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "transformRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceBboxMm": {
+          "$ref": "#/$defs/bbox"
+        },
+        "effectiveBboxMm": {
+          "$ref": "#/$defs/bbox"
+        },
+        "admissionStatus": {
+          "type": "string"
+        },
+        "resolvedProfileId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

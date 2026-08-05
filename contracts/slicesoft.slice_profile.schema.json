@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/slicesoft.slice_profile.schema.json",
+  "title": "SliceSoft slice profile extension contract",
+  "type": "object",
+  "properties": {
+    "texture": {
+      "$ref": "#/$defs/texture"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "uint8": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "texture": {
+      "type": "object",
+      "properties": {
+        "unprintableWhitePolicy": {
+          "type": "string",
+          "enum": ["fail_closed", "white_underbase"]
+        },
+        "unprintableWhiteInkThreshold": {
+          "$ref": "#/$defs/uint8"
+        },
+        "unprintableWhiteValue": {
+          "$ref": "#/$defs/uint8"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "unprintableWhitePolicy": {
+                "const": "white_underbase"
+              }
+            },
+            "required": ["unprintableWhitePolicy"]
+          },
+          "then": {
+            "properties": {
+              "unprintableWhiteValue": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 254
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    }
+  }
+}
