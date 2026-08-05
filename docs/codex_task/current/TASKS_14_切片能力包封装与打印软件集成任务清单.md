@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v1.2 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
+> 版本：v1.3 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -62,7 +62,7 @@ cmake --build build --config Debug
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14A-01 | 建立 `contracts/` 目录；落盘 `print_module_spi.h`（与打印侧 `CLD_10` 同源，我方只同步不改）+ **错误码表登记 `PM-SLICER-VIEWDATA-STALE` / `PM-SLICER-VIEWDATA-BUDGET`** | — | C 与 C++ 编译器分别编过；`dumpbin /EXPORTS` 恰好 11 个 `pm_*`（**新增的是错误码不是导出符号，符号数不变**）| 🟢 **READY（首批）** |
+| 14A-01 | 建立 `contracts/` 目录；落盘 `print_module_spi.h`（与打印侧 `CLD_10` 同源，我方只同步不改）+ **错误码表登记 `PM-SLICER-VIEWDATA-STALE` / `PM-SLICER-VIEWDATA-BUDGET`** | — | C 与 C++ 编译器分别编过；合同声明恰好 11 个 `pm_*`。实际 DLL 的 `dumpbin /EXPORTS` 延后到 14C-01 / 14C-06 验证（**新增的是错误码不是导出符号，符号数不变**）| ✅ **COMPLETE（2026-08-05）** |
 | 14A-02 | `p0.rgbwsv.2` + scene schema 形式化 JSON Schema。**须覆盖三组新字段**（见注 A）；ViewData DTO 由 14A-04 独立冻结 | — | 用真实 manifest 与真实 scene 样例分别校验通过；无该字段的既有样例仍可校验（向后兼容）| 🟢 **READY（首批）** |
 | 14A-03 | `file_contract_v1` 完整规格（请求/结果 JSON schema、进度行、退出码表、超时、僵尸回收、staging 清理时序）| 14A-01 | 打印侧确认可满足 | PREPARED |
 | 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码；**`scene.get_viewdata` 网格 DTO 按注 B 纳入契约** | PREPARED |
@@ -321,3 +321,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版，PREPARED。6 个子阶段共 40 张原子任务卡；标注外部依赖与并行项；给出与 12E-09D 的文件所有权隔离 |
 | 2026-08-05 | v1.2 | Stage 14 开工基线收口：14A-02 与 14A-04 职责分离；14B-00 移除矛盾前置并明确输出用途；TIFF 后端与 UI 独立 app 边界对齐权威决策 |
+| 2026-08-05 | v1.3 | 完成 14A-01：同步打印侧 11 函数 C ABI 头文件、登记 18 项切片错误码并增加 C/C++ 编译与合同数量验证；明确实际 DLL 导出表验证归 14C-01 / 14C-06 |

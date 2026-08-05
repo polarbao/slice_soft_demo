@@ -1,0 +1,25 @@
+{
+  "contractVersion": "1.0",
+  "module": "slicer",
+  "codes": [
+    { "code": "PM-SLICER-OK-0000", "category": "ok", "message": "成功" },
+    { "code": "PM-SLICER-INPUT-0001", "category": "input", "message": "模型文件不存在或不可读" },
+    { "code": "PM-SLICER-INPUT-0002", "category": "input", "message": "格式不支持或解析失败" },
+    { "code": "PM-SLICER-TOPOLOGY-0010", "category": "topology", "message": "strict 准入阻断" },
+    { "code": "PM-SLICER-TOPOLOGY-0011", "category": "topology", "message": "需要人工修复" },
+    { "code": "PM-SLICER-LAYOUT-0020", "category": "layout", "message": "实例间碰撞" },
+    { "code": "PM-SLICER-LAYOUT-0021", "category": "layout", "message": "超出构建体积幅面" },
+    { "code": "PM-SLICER-LAYOUT-0022", "category": "layout", "message": "场景版本过期" },
+    { "code": "PM-SLICER-LAYOUT-0023", "category": "layout", "message": "实例数超过上限" },
+    { "code": "PM-SLICER-PROFILE-0030", "category": "profile", "message": "必需参数缺失" },
+    { "code": "PM-SLICER-PROFILE-0031", "category": "profile", "message": "参数越界" },
+    { "code": "PM-SLICER-RESOURCE-0040", "category": "resource", "message": "内存不足" },
+    { "code": "PM-SLICER-RESOURCE-0041", "category": "resource", "message": "并发作业数超过模块上限" },
+    { "code": "PM-SLICER-OUTPUT-0050", "category": "output", "message": "输出目录不可写或空间不足" },
+    { "code": "PM-SLICER-CONTRACT-0060", "category": "contract", "message": "产物不符合 p0.rgbwsv.2" },
+    { "code": "PM-SLICER-CANCELLED-0070", "category": "cancelled", "message": "作业已取消且临时产物已清理" },
+    { "code": "PM-SLICER-VIEWDATA-STALE", "category": "viewdata", "message": "场景版本不匹配或视图数据已失效" },
+    { "code": "PM-SLICER-VIEWDATA-BUDGET", "category": "viewdata", "message": "视图数据预算不足" },
+    { "code": "PM-SLICER-INTERNAL-0099", "category": "internal", "message": "内部错误" }
+  ]
+}

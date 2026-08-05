@@ -423,6 +423,20 @@ if(USE_OPENVDB)
     endif()
 endif()
 
+add_library(print_module_spi_c_compile_test OBJECT
+    tests/contracts/PrintModuleSpiCCompileTest.c
+)
+target_include_directories(print_module_spi_c_compile_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/contracts
+)
+
+add_library(print_module_spi_cpp_compile_test OBJECT
+    tests/contracts/PrintModuleSpiCppCompileTest.cpp
+)
+target_include_directories(print_module_spi_cpp_compile_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/contracts
+)
+
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
 )
@@ -974,6 +988,20 @@ add_executable(mesh_complete_self_intersection_analyzer_unit_tests
 target_link_libraries(mesh_complete_self_intersection_analyzer_unit_tests PRIVATE slicer_core)
 
 enable_testing()
+add_test(
+    NAME print_module_spi_contract_declaration_test
+    COMMAND ${CMAKE_COMMAND}
+        "-DCONTRACT_HEADER=${CMAKE_CURRENT_SOURCE_DIR}/contracts/print_module_spi.h"
+        -P
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/VerifyPrintModuleSpiContract.cmake"
+)
+add_test(
+    NAME slicer_error_codes_contract_test
+    COMMAND ${CMAKE_COMMAND}
+        "-DERROR_CODE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/contracts/slicer_error_codes.json"
+        -P
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/VerifySlicerErrorCodes.cmake"
+)
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_white_carrier_policy_unit_tests COMMAND texture_white_carrier_policy_unit_tests)
