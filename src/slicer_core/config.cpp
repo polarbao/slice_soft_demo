@@ -164,6 +164,10 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
 
     const Json root = NormalizeConfigJson(Json::parse(input));
     SliceConfig config;
+    if (root.contains("whiteSemantics"))
+    {
+        config.white_semantics = root.at("whiteSemantics").as_string();
+    }
     config.slicing_mode = root.value("slicingMode", config.slicing_mode);
 
     if (root.contains("slicePipeline"))
@@ -198,6 +202,11 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.output.channel_order = read_string_array(output, "channelOrder", config.output.channel_order);
         config.output.bit_depth = output.value("bitDepth", config.output.bit_depth);
         config.output.planar_config = output.value("planarConfig", config.output.planar_config);
+        if (output.contains("whiteSemantics"))
+        {
+            config.output.white_semantics =
+                output.at("whiteSemantics").as_string();
+        }
         if (output.contains("tiffCompression"))
         {
             const auto& compression = output.at("tiffCompression");
@@ -707,6 +716,29 @@ void validate_slice_config(const SliceConfig& config) {
         throw std::runtime_error(
             "output.tiffCompression.algorithm must be none or packbits");
     }
+    const auto IsWhiteSemanticsValid = [](const std::optional<std::string>& value)
+    {
+        return !value.has_value()
+            || *value == "opaque"
+            || *value == "transparent";
+    };
+    if (!IsWhiteSemanticsValid(config.white_semantics))
+    {
+        throw std::runtime_error(
+            "whiteSemantics must be opaque or transparent");
+    }
+    if (!IsWhiteSemanticsValid(config.output.white_semantics))
+    {
+        throw std::runtime_error(
+            "output.whiteSemantics must be opaque or transparent");
+    }
+    if (config.white_semantics.has_value()
+        && config.output.white_semantics.has_value()
+        && config.white_semantics != config.output.white_semantics)
+    {
+        throw std::runtime_error(
+            "output.whiteSemantics conflicts with Profile whiteSemantics");
+    }
     if (config.output.storage_mode == "tiled"
         && (config.output.tile_size.at(0) <= 0 || config.output.tile_size.at(1) <= 0)) {
         throw std::runtime_error("output.tileSize values must be positive");
@@ -1215,6 +1247,15 @@ void validate_slice_config(const SliceConfig& config) {
         throw std::runtime_error(
             "experimental.openvdbPipeline.writeProductionRgbwsv requires enabled=true and engine=openvdb");
     }
+}
+
+std::optional<std::string> ResolveWhiteSemantics(const SliceConfig& config)
+{
+    if (config.output.white_semantics.has_value())
+    {
+        return config.output.white_semantics;
+    }
+    return config.white_semantics;
 }
 
 std::vector<ValidationIssue> BuildExperimentalOpenVdbPipelineDiagnostics(const SliceConfig& config)

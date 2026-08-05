@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v1.4 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
+> 版本：v2.0 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -71,7 +71,7 @@ cmake --build build --config Debug
 | 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | ✅ **COMPLETE（2026-08-05）** |
 | 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传（见注 C）| ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
 | 14A-09 | `REPORT_12X` 补 03E 行（03E-02 现为 **`GO_ON_DEMAND`**，见 `REPORT_03E_02` §5.1）| — | 主状态表完整 | ✅ **COMPLETE（2026-08-05）** |
-| **14A-10** | **manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）**：manifest 为权威、Profile 仅提供默认值；两处不一致时 **fail-closed**（见注 D）| 14A-02 | Schema 覆盖新字段；不一致用例 fail-closed；无该字段的既有包仍可读 | PREPARED（2026-08-04 新增）|
+| **14A-10** | **manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）**：manifest 为权威、Profile 仅提供默认值；两处不一致时 **fail-closed**（见注 D）| 14A-02 | Schema 覆盖新字段；不一致用例 fail-closed；无该字段的既有包仍可读 | ✅ **COMPLETE（2026-08-05）** |
 | **14A-11** | **`SceneBuildVolume` 新增 Z 限高 `zLimitMm`**（`std::optional<double>`）+ scene schema 同步 + Z 超限判定；默认设备幅面 **230 × 100 × 60 mm**（见注 E）| 14A-02 | 缺省时行为与现状**逐字节一致**（既有场景与 golden 零影响）；`zLimitMm` 存在时实例世界 bbox `max.z` 超限产出**告警**；`get_snapshot` / `apply_operation` 响应带该字段 | PREPARED（2026-08-04 新增）|
 
 **14A 出口**：`contracts/` 物料齐备（`print_module_spi.h` + 错误码表 + `file_contract_v1` + 能力 DTO 含网格 DTO + JSON Schema 含三组新字段）；打印侧书面确认；RIP 侧已回签（14A-08 COMPLETE）；`OPEN-14-03/04/05` 已关闭。
@@ -98,6 +98,11 @@ JSON 类型、必填条件、承载和错误码冻结 15 项能力；`scene.get_
 **14A-07 本地证据（2026-08-05）**：根 NOTICE、assimp/miniz/LibTIFF 完整许可证、
 机器可读分发清单与合规审查已落盘。审查区分“vcpkg 声明”与“CMake 实际链接”：miniz 始终静态
 编入，LibTIFF 按后端可选，Assimp 当前未链接；自动门禁确保许可证和发布动作不被删漏。
+
+**14A-10 本地证据（2026-08-05）**：Profile 根字段提供作业级默认值，`output.whiteSemantics`
+作为 manifest 显式权威值；两者冲突或枚举非法时配置与 Writer 均 fail-closed。Legacy、
+Global Surface Shell 与多模型场景写包链路统一传播该字段；严格 Reader 校验可选枚举，旧包缺字段
+仍保持兼容。Debug/Release 配置、Writer、Schema 与 RIP Reader 定向验证均通过。
 
 ---
 
@@ -365,3 +370,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v1.7 | 完成 14A-05：冻结 Transient/Commit/Production 三车道、operationId 幂等、revision 原子提交、SceneRevisionStale 回读回滚及生产 sceneHash 准入合同 |
 | 2026-08-05 | v1.8 | 完成 14A-06：冻结 Cancelling/Cancelled 状态机、≤2s 协作取消、Job Object 兜底、双保险 staging 清理与取消结果 Schema 门禁 |
 | 2026-08-05 | v1.9 | 完成 14A-07：落盘第三方 NOTICE、assimp/miniz/LibTIFF 完整许可证、机器分发清单及再分发合规审查门禁 |
+| 2026-08-05 | v2.0 | 完成 14A-10：实现 manifest 权威、Profile 默认的 `whiteSemantics` 解析与写出；冲突/非法值 fail-closed，旧包缺字段保持兼容；下一任务推进为 14A-11 |

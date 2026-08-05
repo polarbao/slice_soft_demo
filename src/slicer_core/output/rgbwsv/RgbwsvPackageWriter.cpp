@@ -141,8 +141,40 @@ std::string ExpectedProductionAcceptance(
         : "functional_fixture_admitted";
 }
 
+bool IsWhiteSemanticsValid(const std::optional<std::string>& value)
+{
+    return !value.has_value()
+        || *value == "opaque"
+        || *value == "transparent";
+}
+
+std::optional<std::string> ResolveWhiteSemantics(
+    const RgbwsvProductionPackageWriteRequest& request)
+{
+    if (!IsWhiteSemanticsValid(request.manifestWhiteSemantics)
+        || !IsWhiteSemanticsValid(request.profileWhiteSemantics))
+    {
+        throw std::invalid_argument(
+            "RGBWSV package whiteSemantics must be opaque or transparent");
+    }
+    if (request.manifestWhiteSemantics.has_value()
+        && request.profileWhiteSemantics.has_value()
+        && request.manifestWhiteSemantics
+            != request.profileWhiteSemantics)
+    {
+        throw std::runtime_error(
+            "RGBWSV package whiteSemantics conflicts with Profile default");
+    }
+    if (request.manifestWhiteSemantics.has_value())
+    {
+        return request.manifestWhiteSemantics;
+    }
+    return request.profileWhiteSemantics;
+}
+
 void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
 {
+    (void)ResolveWhiteSemantics(request);
     if (request.packageDir.empty())
     {
         throw std::invalid_argument(
@@ -846,6 +878,8 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
     const WriterClock::time_point totalStart = WriterClock::now();
     RgbwsvProductionPackageWriteProfile profile;
     ValidateRequest(request);
+    const std::optional<std::string> whiteSemantics =
+        ResolveWhiteSemantics(request);
 
     const std::filesystem::path packageDir =
         std::filesystem::absolute(request.packageDir).lexically_normal();
@@ -1008,8 +1042,12 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                  {"enabled", request.preview.enabled},
                  {"format", request.preview.format},
                  {"files", Json{generatedPreviews}},
-             })},
+            })},
         };
+        if (whiteSemantics.has_value())
+        {
+            manifestObject["whiteSemantics"] = *whiteSemantics;
+        }
         if (request.scene.has_value())
         {
             manifestObject["scene"] =

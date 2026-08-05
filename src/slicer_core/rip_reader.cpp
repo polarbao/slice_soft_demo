@@ -256,6 +256,33 @@ std::string ReadManifestCompression(const Json& tiff)
     return name;
 }
 
+std::optional<std::string> ReadWhiteSemantics(const Json& manifest)
+{
+    if (!manifest.contains("whiteSemantics"))
+    {
+        return std::nullopt;
+    }
+    const Json& value = manifest.at("whiteSemantics");
+    if (!value.is_string())
+    {
+        fail(
+            ValidationErrorCode::WhiteSemanticsInvalid,
+            "manifest.whiteSemantics",
+            "opaque|transparent",
+            json_type_name(value));
+    }
+    const std::string semantics = value.as_string();
+    if (semantics != "opaque" && semantics != "transparent")
+    {
+        fail(
+            ValidationErrorCode::WhiteSemanticsInvalid,
+            "manifest.whiteSemantics",
+            "opaque|transparent",
+            semantics);
+    }
+    return semantics;
+}
+
 void validate_manifest_storage_fields(const Json& tiff, const std::string& storage_mode) {
     if (storage_mode == "stripped") {
         const int rows_per_strip = tiff.contains("rowsPerStrip") ? tiff.at("rowsPerStrip").as_int() : 0;
@@ -514,6 +541,8 @@ std::string validation_error_code_string(const ValidationErrorCode code) {
             return "E_MANIFEST_PARSE_FAILED";
         case ValidationErrorCode::SchemaUnsupported:
             return "E_SCHEMA_UNSUPPORTED";
+        case ValidationErrorCode::WhiteSemanticsInvalid:
+            return "E_WHITE_SEMANTICS_INVALID";
         case ValidationErrorCode::ChannelOrderInvalid:
             return "E_CHANNEL_ORDER_INVALID";
         case ValidationErrorCode::ChannelCountInvalid:
@@ -623,6 +652,7 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
     RipValidationResult result;
     result.package_dir = package_dir;
     result.schema = schema;
+    result.white_semantics = ReadWhiteSemantics(manifest);
     result.storage_mode = manifest_storage_mode;
     result.compression = manifestCompression;
     result.bit_depth = tiff.at("bitDepth").as_int();

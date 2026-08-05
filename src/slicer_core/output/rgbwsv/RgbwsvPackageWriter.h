@@ -103,6 +103,8 @@ struct RgbwsvProductionPackageWriteRequest
     std::string requestedPipelineMode;
     std::string effectivePipelineMode;
     std::string productionAcceptance{"not_evaluated"};
+    std::optional<std::string> manifestWhiteSemantics;
+    std::optional<std::string> profileWhiteSemantics;
     RgbwsvProductionGridSpec grid;
     OuterVarnishDiscretization outerVarnish;
     RgbwsvProductionStorageSpec storage;

@@ -973,6 +973,10 @@ MultiModelProductionResult RunMultiModelProductionService(
         contract.production
         ? "scene_production_admitted"
         : "functional_fixture_admitted";
+    writeRequest.manifestWhiteSemantics =
+        profile.output.white_semantics;
+    writeRequest.profileWhiteSemantics =
+        profile.white_semantics;
     writeRequest.grid.dpiX = contract.dpix;
     writeRequest.grid.dpiY = contract.dpiy;
     writeRequest.grid.pixelSizeXmm =

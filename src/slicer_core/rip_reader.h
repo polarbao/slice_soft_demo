@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -16,6 +17,7 @@ enum class ValidationErrorCode {
     ManifestMissing,
     ManifestParseFailed,
     SchemaUnsupported,
+    WhiteSemanticsInvalid,
     ChannelOrderInvalid,
     ChannelCountInvalid,
     BitDepthInvalid,
@@ -62,6 +64,7 @@ struct RipLayerChecksum {
 struct RipValidationResult {
     std::filesystem::path package_dir;
     std::string schema;
+    std::optional<std::string> white_semantics;
     std::string storage_mode;
     std::string compression;
     int bit_depth{0};

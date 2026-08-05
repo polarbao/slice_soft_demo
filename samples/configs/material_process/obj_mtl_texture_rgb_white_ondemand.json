@@ -1,5 +1,6 @@
 {
   "_comment": "Stage 15 候选 Profile：全实体 RGB + 纹理纯白区按需补写同层 W，不写 S/V、不新增 Z 层。需 Stage 15 构建；pre-15 构建会因 materialProcessProfile 新枚举不受支持而 fail-closed。",
+  "whiteSemantics": "opaque",
   "slicingMode": "relief_heightfield",
   "input": {
     "modelPath": "../../../model/obj/meigui_fudiao/04.obj",

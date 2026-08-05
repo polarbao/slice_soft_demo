@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -51,6 +52,7 @@ struct OutputConfig {
     std::string planar_config{"contiguous"};
     std::string storage_mode{"stripped"};
     std::string tiff_compression{"none"};
+    std::optional<std::string> white_semantics;
     bool tiled{false};
     std::array<int, 2> tile_size{256, 256};
     int rows_per_strip{64};
@@ -360,6 +362,7 @@ struct ExperimentalConfig
 };
 
 struct SliceConfig {
+    std::optional<std::string> white_semantics;
     std::string slicing_mode{"closed_mesh_scanline"};
     SlicePipelineConfig slice_pipeline;
     InputConfig input;
@@ -384,6 +387,13 @@ struct SliceConfig {
 
 SliceConfig load_slice_config(const std::filesystem::path& config_path);
 void validate_slice_config(const SliceConfig& config);
+
+/**
+ * @brief Resolve the job-level white semantics written to the package manifest.
+ * @param config Validated slice Profile and output configuration.
+ * @return Manifest override when present, otherwise the Profile default; empty for legacy Profiles.
+ */
+std::optional<std::string> ResolveWhiteSemantics(const SliceConfig& config);
 
 /**
  * @brief Build diagnostics for experimental OpenVDB pipeline configuration.

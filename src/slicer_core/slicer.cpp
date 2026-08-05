@@ -5064,7 +5064,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         tiff_json["rowsPerStrip"] = config.output.rows_per_strip;
     }
 
-    const Json manifest = Json::object({
+    Json::Object manifest_fields = Json::object({
         {"schema", "p0.rgbwsv.2"},
         {"schemaVersion", "p0.rgbwsv.2"},
         {"requestedPipelineMode", "legacy"},
@@ -5129,7 +5129,14 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"format", config.preview.format},
              {"files", Json{preview_files}},
          })},
-    });
+    }).as_object();
+    const std::optional<std::string> white_semantics =
+        ResolveWhiteSemantics(config);
+    if (white_semantics.has_value())
+    {
+        manifest_fields["whiteSemantics"] = *white_semantics;
+    }
+    const Json manifest{std::move(manifest_fields)};
     profile.report_build_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "report_write", 0, 1, 95);
     phase_start = SlicerClock::now();

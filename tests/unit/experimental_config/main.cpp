@@ -161,7 +161,52 @@ bool OldConfigDefaultsOpenVdbDisabled()
                "Stage 15 unprintable white threshold defaults to exact white")
         && ExpectTrue(
                config.texture.unprintable_white_value == 0U,
-               "Stage 15 unprintable white carrier defaults to print value zero");
+               "Stage 15 unprintable white carrier defaults to print value zero")
+        && ExpectTrue(
+               !config.white_semantics.has_value()
+                   && !config.output.white_semantics.has_value(),
+               "legacy Profile omits white semantics");
+}
+
+bool Stage14WhiteSemanticsContractParsesAndRejectsConflicts()
+{
+    const std::filesystem::path profilePath = WriteConfig(
+        "stage_14_white_semantics_profile.json",
+        MinimalConfigBody(
+            ",\n  \"whiteSemantics\": \"opaque\"\n"));
+    const slicer_core::SliceConfig profile =
+        slicer_core::load_slice_config(profilePath);
+    const bool profilePass = ExpectTrue(
+        slicer_core::ResolveWhiteSemantics(profile).has_value()
+            && *slicer_core::ResolveWhiteSemantics(profile) == "opaque",
+        "Profile whiteSemantics provides the manifest default");
+
+    const std::filesystem::path manifestPath = WriteConfig(
+        "stage_14_white_semantics_manifest.json",
+        MinimalConfigBody(
+            ",\n"
+            "  \"whiteSemantics\": \"transparent\",\n"
+            "  \"output\": {\"whiteSemantics\": \"transparent\"}\n"));
+    const slicer_core::SliceConfig manifest =
+        slicer_core::load_slice_config(manifestPath);
+    const bool manifestPass = ExpectTrue(
+        slicer_core::ResolveWhiteSemantics(manifest).has_value()
+            && *slicer_core::ResolveWhiteSemantics(manifest)
+                == "transparent",
+        "output whiteSemantics is the manifest authority");
+
+    return profilePass
+        && manifestPass
+        && ConfigRejectedWith(
+            "stage_14_white_semantics_conflict.json",
+            ",\n"
+            "  \"whiteSemantics\": \"opaque\",\n"
+            "  \"output\": {\"whiteSemantics\": \"transparent\"}\n",
+            "conflicts with Profile")
+        && ConfigRejectedWith(
+            "stage_14_white_semantics_invalid.json",
+            ",\n  \"whiteSemantics\": \"mixed\"\n",
+            "whiteSemantics must be opaque or transparent");
 }
 
 std::string Stage15WhiteUnderbaseConfigBlock(const std::string& extraBlock = "")
@@ -1079,6 +1124,7 @@ int main()
 {
     const std::vector<std::pair<std::string, bool (*)()>> tests{
         {"old_config_defaults_openvdb_disabled", OldConfigDefaultsOpenVdbDisabled},
+        {"stage_14_white_semantics_contract_parses_and_rejects_conflicts", Stage14WhiteSemanticsContractParsesAndRejectsConflicts},
         {"stage_15_texture_white_fields_parse", Stage15TextureWhiteFieldsParse},
         {"stage_15_rejects_invalid_texture_white_configuration", Stage15RejectsInvalidTextureWhiteConfiguration},
         {"stage_15_candidate_material_process_profile_loads", Stage15CandidateMaterialProcessProfileLoads},

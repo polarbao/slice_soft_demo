@@ -85,6 +85,16 @@ void RemoveManifestCompression(const std::filesystem::path& packageDir)
     WriteJson(manifestPath, slicer_core::Json{std::move(root)});
 }
 
+void MutateManifestWhiteSemantics(
+    const std::filesystem::path& packageDir,
+    const slicer_core::Json& semantics)
+{
+    const std::filesystem::path manifestPath = packageDir / "manifest.json";
+    slicer_core::Json::Object root = ReadJson(manifestPath).as_object();
+    root["whiteSemantics"] = semantics;
+    WriteJson(manifestPath, slicer_core::Json{std::move(root)});
+}
+
 std::size_t ChannelIndex(
     const int x,
     const int y,
@@ -310,6 +320,104 @@ bool HistoricalManifestWithoutCompressionDefaultsToNone()
     return ExpectTrue(
         rip.compression == "none",
         "historical p0.rgbwsv.2 manifest without compression remains readable");
+}
+
+bool WhiteSemanticsUsesManifestAuthority()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("white_semantics");
+    const std::filesystem::path packageDir = directory / "package";
+    auto request = MakeRequest(packageDir);
+    request.profileWhiteSemantics = "opaque";
+    request.manifestWhiteSemantics = "opaque";
+    (void)slicer_core::WriteRgbwsvProductionPackage(request);
+
+    const slicer_core::Json manifest =
+        ReadJson(packageDir / "manifest.json");
+    const slicer_core::RipValidationResult rip =
+        slicer_core::validate_slice_package(packageDir);
+    return ExpectTrue(
+               manifest.at("whiteSemantics").as_string() == "opaque",
+               "manifest records the authoritative white semantics")
+        && ExpectTrue(
+               rip.white_semantics.has_value()
+                   && *rip.white_semantics == "opaque",
+               "strict RIP reports manifest white semantics");
+}
+
+bool ProfileWhiteSemanticsProvidesTheDefault()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("white_semantics_default");
+    const std::filesystem::path packageDir = directory / "package";
+    auto request = MakeRequest(packageDir);
+    request.profileWhiteSemantics = "transparent";
+    (void)slicer_core::WriteRgbwsvProductionPackage(request);
+
+    const slicer_core::Json manifest =
+        ReadJson(packageDir / "manifest.json");
+    return ExpectTrue(
+        manifest.at("whiteSemantics").as_string() == "transparent",
+        "Profile white semantics seeds the manifest default");
+}
+
+bool WhiteSemanticsMismatchFailsClosed()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("white_semantics_mismatch");
+    const std::filesystem::path packageDir = directory / "package";
+    auto request = MakeRequest(packageDir);
+    request.profileWhiteSemantics = "opaque";
+    request.manifestWhiteSemantics = "transparent";
+    try
+    {
+        (void)slicer_core::WriteRgbwsvProductionPackage(request);
+    }
+    catch (const std::exception& error)
+    {
+        return ExpectTrue(
+                   std::string{error.what()}.find("conflicts")
+                       != std::string::npos,
+                   "white semantics mismatch reports a stable conflict")
+            && ExpectTrue(
+                   !std::filesystem::exists(packageDir),
+                   "white semantics mismatch publishes no package");
+    }
+    return ExpectTrue(false, "white semantics mismatch must fail closed");
+}
+
+bool HistoricalManifestWithoutWhiteSemanticsRemainsReadable()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("white_semantics_omitted");
+    const std::filesystem::path packageDir = directory / "package";
+    (void)slicer_core::WriteRgbwsvProductionPackage(MakeRequest(packageDir));
+    const slicer_core::RipValidationResult rip =
+        slicer_core::validate_slice_package(packageDir);
+    return ExpectTrue(
+        !rip.white_semantics.has_value(),
+        "historical manifest without whiteSemantics remains readable");
+}
+
+bool InvalidManifestWhiteSemanticsFailsClosed()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("white_semantics_invalid");
+    const std::filesystem::path packageDir = directory / "package";
+    (void)slicer_core::WriteRgbwsvProductionPackage(MakeRequest(packageDir));
+    MutateManifestWhiteSemantics(packageDir, slicer_core::Json{"mixed"});
+    try
+    {
+        (void)slicer_core::validate_slice_package(packageDir);
+    }
+    catch (const slicer_core::ValidationError& error)
+    {
+        return ExpectTrue(
+            error.code()
+                == slicer_core::ValidationErrorCode::WhiteSemanticsInvalid,
+            "invalid manifest whiteSemantics has a stable error code");
+    }
+    return ExpectTrue(false, "invalid manifest whiteSemantics must fail closed");
 }
 
 bool InvalidCompressionWritesNothing()
@@ -630,6 +738,11 @@ int main()
         {"packbits_package_uses_the_declared_compression", PackBitsPackageUsesTheDeclaredCompression},
         {"compression_manifest_failures_are_stable", CompressionManifestFailuresAreStable},
         {"historical_manifest_without_compression_defaults_to_none", HistoricalManifestWithoutCompressionDefaultsToNone},
+        {"white_semantics_uses_manifest_authority", WhiteSemanticsUsesManifestAuthority},
+        {"profile_white_semantics_provides_the_default", ProfileWhiteSemanticsProvidesTheDefault},
+        {"white_semantics_mismatch_fails_closed", WhiteSemanticsMismatchFailsClosed},
+        {"historical_manifest_without_white_semantics_remains_readable", HistoricalManifestWithoutWhiteSemanticsRemainsReadable},
+        {"invalid_manifest_white_semantics_fails_closed", InvalidManifestWhiteSemanticsFailsClosed},
         {"invalid_compression_writes_nothing", InvalidCompressionWritesNothing},
         {"legacy_package_uses_the_same_writer_contract", LegacyPackageUsesTheSameWriterContract},
         {"admitted_global_adapter_writes_through_the_shared_writer", AdmittedGlobalAdapterWritesThroughTheSharedWriter},

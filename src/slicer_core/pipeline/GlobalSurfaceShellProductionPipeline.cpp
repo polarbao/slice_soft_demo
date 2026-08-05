@@ -204,6 +204,8 @@ RgbwsvProductionPackageWriteRequest BuildPackageRequest(
     request.requestedPipelineMode = "global_surface_shell";
     request.effectivePipelineMode = "global_surface_shell";
     request.productionAcceptance = "admitted";
+    request.manifestWhiteSemantics = config.output.white_semantics;
+    request.profileWhiteSemantics = config.white_semantics;
     request.grid.widthPx = mapping.grid.width;
     request.grid.heightPx = mapping.grid.height;
     request.grid.layerCount = mapping.grid.depth;

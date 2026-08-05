@@ -1,7 +1,7 @@
 # DOC_DECISION_14_S2 RIP 接口合同定案（S2 接缝）
 
 > 文档状态：**SETTLED / 权威合同**（两轮问答已闭合，2026-08-04）
-> 版本：v1.0 ｜ 日期：2026-08-04
+> 版本：v1.1 ｜ 日期：2026-08-04 ｜ 实现状态更新：2026-08-05
 > 定位：**S2 接缝（切片 → RIP → 打印软件）的唯一权威条款来源。**
 > 溯源：`DOC_CHECKLIST_14_对RIP侧技术确认清单.md`（往来记录）、`DOC_ANALYSIS_14_Q2`（推导过程）
 > 证据等级：**S=双方已确认条款**，A=代码事实，P=我方判断
@@ -133,8 +133,8 @@ p0.rgbwsv.3 协议扩展【不需要】，12G-TCWS 保持冻结。
 
 | 编号 | 工作项 | 来源 | 状态 |
 |---|---|---|---|
-| **N1** | manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）；manifest 为权威，与 Profile 不一致时 fail-closed | §1.4 | ⬜ **新增，此前无任务卡覆盖** |
-| **N2** | 03E-02 由 `NO_GO_DEFAULT` 转 **GO（按需开启）** —— RIP 已确认支持 PackBits，默认值保持 `none` 不变 | §1.5 | ⬜ 待更新 `REPORT_03E_02` 与 `DOC_DECISION_03E` |
+| **N1** | manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）；manifest 为权威，与 Profile 不一致时 fail-closed | §1.4 | ✅ **COMPLETE（14A-10，2026-08-05）** |
+| **N2** | 03E-02 由 `NO_GO_DEFAULT` 转 **GO（按需开启）** —— RIP 已确认支持 PackBits，默认值保持 `none` 不变 | §1.5 | ✅ **COMPLETE（14A-09 / 03E，2026-08-05）** |
 
 > N1 是本轮唯一真正新增的切片侧实现工作。其余条款均为"确认既有行为可用"，不产生代码改动。
 
@@ -218,3 +218,4 @@ Stage 15 的 G5 仅证明**本仓库** strict Reader 兼容，不等同外部目
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-04 | v1.0 | 首版。收敛 `DOC_CHECKLIST_14` 两轮问答的已定条款；Q1~Q6 全部定案（Q2 取路径 D、Q3 取 manifest 权威 + `whiteSemantics`、Q4 取分两步、Q6 输出组织由 S3 硬约束确定）；R1 极性映射表重分类为 RIP↔打印软件双边事项并给出我方代拟值；登记切片侧新工作项 N1/N2；列出 8 项作废方案禁止实现 |
+| 2026-08-05 | v1.1 | 状态同步：N1 已由 14A-10 完成 manifest 权威、Profile 默认及冲突 fail-closed；N2 已由 03E/14A-09 完成 `GO_ON_DEMAND` 登记，默认压缩仍为 `none` |
