@@ -64,7 +64,7 @@ sceneId / sceneRevision / sceneHash
 
 | 显示模式 | 必需数据 | 允许降级 |
 |---|---|---|
-| `top` | 带纹理 `surfacePreview`，或同一 textured mesh 的 +Z 正交渲染 | 可降低预览分辨率；不得丢纹理 |
+| `top` | 带纹理 `surfacePreview`（合同响应必需） | 可降低预览分辨率；不得丢纹理 |
 | `three_d` | position + normal + texcoord0 + index + submesh/material/texture | 可降低 mesh LOD 或纹理分辨率；不得退为无纹理灰模 |
 
 模型本身没有纹理时允许使用 `baseColorFactor`，但必须返回 `textureStatus=not_provided`。
@@ -90,15 +90,20 @@ texturePolicy require_if_present
 响应新增三类数据：
 
 ```text
-mesh.buffers.texcoord0       float32x2
-mesh.submeshes[]             index range -> materialId
-appearance.materials[]       baseColorFactor / textureId / alpha / UV 约定
-appearance.textures[]        RGBA8/sRGB 图像 blob 与 textureIdentity
-surfacePreview               top 模式的带纹理 RGBA8/sRGB 投影 blob
+mesh.buffers.texcoord0          float32x2
+mesh.submeshes[]                index range -> materialId
+appearances[].materials[]       baseColorFactor / textureId / alpha / UV 约定
+appearances[].textures[]        RGBA8/sRGB 图像 blob 与 textureIdentity
+surfacePreview                  top 模式的带纹理 RGBA8/sRGB 投影 blob
 ```
 
 `appearanceIdentity` 只随材质/纹理内容变化；实例平移、旋转、缩放不得使它失效。
 `meshIdentity` 与 `appearanceIdentity` 分离，允许同一模型的多个实例共享网格和纹理 GPU 资源。
+多模型响应必须使用 `appearances[]`，实例预览与 submesh 引用都必须能解析到唯一的外观集合；
+单数 `appearance` 无法表达同场景多个模型，禁止使用。
+
+`outline_only` 只允许用于 top，并且仍须返回 `surfacePreview`；three_d 不得降为 outline_only。
+预算不足时返回 `PM-SLICER-VIEWDATA-BUDGET`，不得删除纹理后继续成功。
 
 ## 5. 交互合同修正
 

@@ -76,7 +76,7 @@ INT_07 U0–U5  = 把【现有】slicer_debug_ui 整体迁移到 DLL
 **现阶段继续使用当前 UI 布局，UI 层处理整体后置。**
 
 原 14E 前置只写「14C-06」，过早 —— 那时 Worker 尚未打通，UI 拿不到可调用的完整能力包。
-本专项前置改为里程碑 **M-MVP**：
+本专项采用 **M-MVP-CANDIDATE → M-MVP** 两级 Gate：
 
 ```text
 M-MVP-CANDIDATE
@@ -96,7 +96,7 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS；14E-02 及后续 Qt UI 才可启动。
 | M-MVP 达成 | 14E-01 已证明公开 ABI 可用 | 启动 14E-02，新建 `slicer_ui_host_sim` |
 
 > 这条时序同时降低了返工风险：能力面在 14A–14D 期间还可能微调，
-> 等 M-MVP 稳定后再写宿主，避免 UI 追着 ABI 改。
+> 等 M-MVP 稳定后再写 Qt 宿主，避免 UI 追着 ABI 改。
 
 ## 3. 目标目录与依赖守卫（B）
 
@@ -157,7 +157,7 @@ apps/slicer_ui_host_sim/
 | 编号 | 指标 | 阈值 | 测法 |
 |---|---|---|---|
 | **UI-M1** | 拖拽期（`mouse-move`）跨 DLL 调用次数 | **恒为 0** | `ModuleClient` 内置调用计数器，拖拽起止取差值断言 |
-| **UI-M2** | 变换提交（Commit 车道）往返延迟 P95 | **≤ 150 ms** | 提交时间戳 → `get_snapshot` 返回时间戳，采样 ≥ 50 次 |
+| **UI-M2** | 变换提交（Commit 车道）往返延迟 P95 | **≤ 150 ms** | 提交时间戳 → `apply_operation` 响应时间戳，采样 ≥ 50 次；正常成功不追加快照 |
 | **UI-M3** | 俯视渲染帧率 | **≥ 主干 `slicer_debug_ui` 的 90%** | 同模型同视角，各测 30 秒取均值 |
 | **UI-M4** | `SceneRevisionStale` 回滚 | **可演示且状态一致** | 构造并发修改 → 断言回滚后快照与权威一致 |
 | **UI-M5** | 切片取消响应 | **≤ 2 s 且无 `.staging` 残留** | 与 14D-04/05 同口径 |
@@ -170,11 +170,11 @@ apps/slicer_ui_host_sim/
 | **UI-M12** | 纹理失败 | 显式错误，不出现静默灰模 | missing-texture / no-UV 负例 |
 | **UI-M13** | 默认视图设置 | 重启后恢复 | session config round-trip |
 
-UI-M1 是三车道设计是否真正落地的**唯一硬证据** —— 只要拖拽期出现任何跨 DLL 调用，
-说明 Transient 车道没做对，手感问题必然随之而来。
+UI-M1 是三车道交互是否真正落地的硬证据；UI-M9/M10/M12 则是双视图纹理是否真正落地的
+硬证据。拖拽期出现跨 DLL 调用，或带纹理模型出现成功灰模，均不得放行。
 
-UI-M3 取 90% 而非 100%：跨 ABI 必然有开销，要求完全持平不现实；
-低于 90% 则说明渲染数据获取路径需要优化（多半是没做节流或批量）。
+UI-M3 取 90% 而非 100%：新宿主渲染后端与主干 QPainter 路径不同，完全持平并非合理合同；
+低于 90% 则说明本地缓存、批量上传或刷新节流存在问题。逐帧渲染本身不得跨 ABI。
 
 ## 6. 3D 视角能力（v1.1 新增需求 · 用户 2026-08-04 提出）
 
@@ -232,9 +232,9 @@ UI-M3 取 90% 而非 100%：跨 ABI 必然有开销，要求完全持平不现�
 通过 `DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` 执行受控 minor 修订：
 
 ```text
-top       surfacePreview RGBA8/sRGB，或同一 textured mesh 的 +Z 正交渲染
+top       surfacePreview RGBA8/sRGB（合同响应必需，不由宿主自行投影替代）
 three_d   position + normal + texcoord0 + index + submesh/material/texture
-缓存      meshIdentity / appearanceIdentity / textureIdentity 分离
+缓存      meshIdentity / appearanceIdentity / textureIdentity / previewIdentity 分离
 传输      mesh、texture、surfacePreview 均复用 read_blob 分块，不新增 ABI 导出
 失败      声明纹理但读取/解码/UV 失败时显式失败，不得静默灰模
 ```
@@ -428,7 +428,7 @@ fixture、golden 与打印侧对接，收益远小于代价。命名瑕疵就地
 | 编号 | 风险 | 等级 | 缓解 |
 |---|---|---|---|
 | **UI-R1** | 两套 UI 代码并存，短期维护成本上升 | 中 | 明确边界：新 app **只做宿主模拟与参考实现**，不追求功能完整，不承担生产职责 |
-| **UI-R2** | 新 app 沦为"只跑得通的玩具"，暴露不出真实问题 | **高** | 由 §4 覆盖档与 §5 八项可测指标共同约束；UI-M1/M3/M7/M8 难以靠玩具蒙混 |
+| **UI-R2** | 新 app 沦为"只跑得通的玩具"，暴露不出真实问题 | **高** | 由 §4 覆盖档与 §5 十三项可测指标共同约束；交互调用计数、双视图纹理、负例与 FPS 必须留证 |
 | **UI-R3** | 跨 ABI 开销导致交互延迟不可接受 | 中 | UI-M2/M3 提前量化；若不达标，结论本身就是对能力面设计的有效反馈 |
 | **UI-R4** | 几何 DTO 已冻结但缺 UV/纹理，双视图只能出现灰模 | **高** | `14A-04-R1` 已补充 appearance/texture/surfacePreview；仍需 14B-03A 实现 |
 | **UI-R5** | 3D 渲染依赖影响参考实现可移植性 | 中 | 首版定为 QOpenGLWidget；相机/交互与渲染后端解耦 |

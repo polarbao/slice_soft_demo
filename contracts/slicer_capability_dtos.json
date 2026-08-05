@@ -164,7 +164,7 @@
         { "path": "instances[].surfacePreview.appearanceIdentity", "type": "string", "required": false },
         { "path": "instances[].surfacePreview.widthPx", "type": "integer", "required": false },
         { "path": "instances[].surfacePreview.heightPx", "type": "integer", "required": false },
-        { "path": "instances[].surfacePreview.worldBoundsMm", "type": "object", "required": false },
+        { "path": "instances[].surfacePreview.localBoundsMm", "type": "object", "required": false },
         { "path": "instances[].surfacePreview.pixelFormat", "type": "string", "const": "rgba8_unorm", "required": false },
         { "path": "instances[].surfacePreview.colorSpace", "type": "string", "const": "srgb", "required": false },
         { "path": "instances[].surfacePreview.alphaMode", "type": "string", "const": "straight", "required": false },

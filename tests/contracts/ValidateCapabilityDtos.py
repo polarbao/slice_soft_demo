@@ -111,6 +111,7 @@ def Main() -> int:
             "instances[].worldMatrix",
             "instances[].textureStatus",
             "instances[].surfacePreview.appearanceIdentity",
+            "instances[].surfacePreview.localBoundsMm",
             "instances[].surfacePreview.pixelFormat",
             "instances[].surfacePreview.colorSpace",
             "instances[].surfacePreview.blobId",
@@ -123,13 +124,14 @@ def Main() -> int:
             "instances[].mesh.blobId",
             "instances[].mesh.chunkBytes",
             "instances[].mesh.chunkCount",
-            "appearance.appearanceIdentity",
-            "appearance.materials[].baseColorFactor",
-            "appearance.materials[].baseColorTextureId",
-            "appearance.textures[].textureIdentity",
-            "appearance.textures[].pixelFormat",
-            "appearance.textures[].colorSpace",
-            "appearance.textures[].blobId",
+            "appearances",
+            "appearances[].appearanceIdentity",
+            "appearances[].materials[].baseColorFactor",
+            "appearances[].materials[].baseColorTextureId",
+            "appearances[].textures[].textureIdentity",
+            "appearances[].textures[].pixelFormat",
+            "appearances[].textures[].colorSpace",
+            "appearances[].textures[].blobId",
             "truncated",
             "truncationReason",
             "binaryChunk",
@@ -166,7 +168,27 @@ def Main() -> int:
     if not invariants["noNewBlobCapability"] or not invariants["noNewAbiExport"]:
         raise AssertionError("viewdata must reuse the frozen ABI surface")
 
-    print("15 capability DTOs and ViewData mesh contract: PASS")
+    viewDataRules = contract["viewDataRules"]
+    if viewDataRules["top"]["requiredContent"] != [
+        "surface_preview",
+        "appearance",
+    ]:
+        raise AssertionError("top view must retain its textured surface preview")
+    if not viewDataRules["top"]["outlineOnlyKeepsSurfacePreview"]:
+        raise AssertionError("top outline-only LOD must not remove its texture preview")
+    if viewDataRules["three_d"]["requiredContent"] != ["mesh", "appearance"]:
+        raise AssertionError("3D view must retain mesh and appearance data")
+    if viewDataRules["three_d"]["outlineOnlyAllowed"]:
+        raise AssertionError("3D textured rendering cannot downgrade to outline-only")
+    if viewDataRules["texturedInstanceRequires"] != [
+        "texcoord0",
+        "submeshes",
+        "materials",
+        "textures",
+    ]:
+        raise AssertionError("textured instance requirements drifted")
+
+    print("15 capability DTOs and dual-view texture contract: PASS")
     return 0
 
 

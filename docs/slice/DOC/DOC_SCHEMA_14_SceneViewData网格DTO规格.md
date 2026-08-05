@@ -90,7 +90,7 @@ world  网格 = 已应用世界变换的坐标，worldMatrix 为单位阵
 | `lod0` | 原始网格，不简化 | 原样 |
 | `lod1` | 中等简化 | 目标 ≈ 50k 三角面/实例 |
 | `lod2` | 高度简化 | 目标 ≈ 10k 三角面/实例 |
-| `outline_only` | 不含网格，仅俯视轮廓 + bbox | —— |
+| `outline_only` | 不含 3D 网格；仅允许 top 使用，且仍须返回 `surfacePreview` + 轮廓 + bbox | —— |
 | `auto` | **由模块**按 `maxBytes` 预算与实例数自动选择 | 见下 |
 
 **谁决定：模块决定实际 LOD，宿主只给预算。** 理由：模块知道网格实际规模，宿主不知道。
@@ -100,8 +100,9 @@ auto 的选择规则（B）
   1. 估算 lod0 在当前实例集下的总字节数
   2. 若 ≤ maxBytes → 用 lod0
   3. 否则依次尝试 lod1、lod2
-  4. top 模式可继续降低 surfacePreview 分辨率；three_d 模式可降低纹理分辨率
-  5. 对带纹理模型仍超出 → 返回 PM-SLICER-VIEWDATA-BUDGET，不得成功返回无纹理灰模
+  4. top 模式可降到 outline_only，但仍保留 surfacePreview，并可继续降低其分辨率
+  5. three_d 模式可降低纹理分辨率，但不得使用 outline_only
+  6. 对带纹理模型仍超出 → 返回 PM-SLICER-VIEWDATA-BUDGET，不得成功返回无纹理灰模
 ```
 
 **响应必须回报 `mesh.lod` 的实际值**，宿主不得假设拿到的就是所请求的。
@@ -128,7 +129,7 @@ auto 的选择规则（B）
         "appearanceIdentity": "appearance:model-a:71c4e812",
         "widthPx": 1024,
         "heightPx": 512,
-        "worldBoundsMm": { "min": [-12.0, -8.0], "max": [12.0, 8.0] },
+        "localBoundsMm": { "min": [-12.0, -8.0], "max": [12.0, 8.0] },
         "pixelFormat": "rgba8_unorm",
         "colorSpace": "srgb",
         "alphaMode": "straight",
@@ -160,38 +161,40 @@ auto 的选择规则（B）
       }
     }
   ],
-  "appearance": {
-    "appearanceIdentity": "appearance:model-a:71c4e812",
-    "uvConvention": "u_right_v_up",
-    "materials": [
-      {
-        "materialId": "material-0",
-        "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
-        "baseColorTextureId": "texture-0",
-        "alphaMode": "opaque",
-        "alphaCutoff": 0.5,
-        "doubleSided": false,
-        "uvSet": 0,
-        "uvTransform": [1,0,0, 0,1,0, 0,0,1]
-      }
-    ],
-    "textures": [
-      {
-        "textureId": "texture-0",
-        "textureIdentity": "texture:sha256:6d9f...",
-        "widthPx": 2048,
-        "heightPx": 2048,
-        "pixelFormat": "rgba8_unorm",
-        "colorSpace": "srgb",
-        "alphaMode": "straight",
-        "rowOrigin": "top_left",
-        "blobId": "blob-texture-2c91",
-        "totalBytes": 16777216,
-        "chunkBytes": 4194304,
-        "chunkCount": 4
-      }
-    ]
-  },
+  "appearances": [
+    {
+      "appearanceIdentity": "appearance:model-a:71c4e812",
+      "uvConvention": "u_right_v_up",
+      "materials": [
+        {
+          "materialId": "material-0",
+          "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+          "baseColorTextureId": "texture-0",
+          "alphaMode": "opaque",
+          "alphaCutoff": 0.5,
+          "doubleSided": false,
+          "uvSet": 0,
+          "uvTransform": [1,0,0, 0,1,0, 0,0,1]
+        }
+      ],
+      "textures": [
+        {
+          "textureId": "texture-0",
+          "textureIdentity": "texture:sha256:6d9f...",
+          "widthPx": 2048,
+          "heightPx": 2048,
+          "pixelFormat": "rgba8_unorm",
+          "colorSpace": "srgb",
+          "alphaMode": "straight",
+          "rowOrigin": "top_left",
+          "blobId": "blob-texture-2c91",
+          "totalBytes": 16777216,
+          "chunkBytes": 4194304,
+          "chunkCount": 4
+        }
+      ]
+    }
+  ],
   "truncated": false,
   "truncationReason": null
 }
@@ -204,14 +207,16 @@ auto 的选择规则（B）
 | `bboxLocalMm` | **局部**坐标 bbox。世界 bbox 由宿主用 `worldMatrix` 变换得到 —— 避免两处真源 |
 | `worldMatrix` | 行主序 16 元素；`meshTransform=world` 时为单位阵 |
 | `textureStatus` | `available` 或 `not_provided`；声明纹理但加载失败不得返回成功状态 |
-| `surfacePreview` | top 模式的带纹理 +Z 投影；透明背景与世界边界必须显式声明 |
+| `surfacePreview` | top 模式的带纹理 +Z 投影；透明背景与模型局部边界必须显式声明 |
+| `surfacePreview.localBoundsMm` | 预览四边形的模型局部 XY 边界；宿主用 `worldMatrix` 放置，避免变换使 preview cache 失效 |
 | `meshIdentity` | 只标识可复用网格内容，不含 scene revision 或实例世界变换 |
 | `appearanceIdentity` | 标识材质与纹理集合，不含实例世界变换 |
+| `appearances[]` | 多模型场景的外观集合；每个 identity 唯一，实例预览与 submesh 引用必须可解析 |
 | `textureIdentity` | 标识解码后纹理内容与采样语义，供宿主缓存 GPU 纹理 |
 | `buffers.*.byteOffset/byteLength` | 均相对于该实例 blob 的起始，非全局 |
 | `blobId` | 二进制缓冲的取回句柄，见 §7 |
 | `truncated` | 未能按请求返回完整内容时为 `true`，**不得静默截断** |
-| `truncationReason` | `truncated=true` 时必填，如 `"budget_exceeded_downgraded_to_outline_only"` |
+| `truncationReason` | `truncated=true` 时必填，如 top 的 `"budget_exceeded_mesh_downgraded_to_outline_only_preview_retained"`；three_d 不得降为 outline_only |
 
 ### 5.2 允许的 `format` 取值
 
@@ -225,6 +230,13 @@ texture    rgba8_unorm / srgb / straight alpha / top_left rows
 
 `texcoord0` 使用 `u_right_v_up`；图像行序为 `top_left`。宿主必须按声明完成 V 方向映射，
 不得依赖 OpenGL、QImage 或图像文件格式的隐式默认值。首版不含顶点色与法线贴图。
+
+### 5.3 多模型外观引用
+
+响应必须使用 `appearances[]`，不能使用单数 `appearance`。每个元素以
+`appearanceIdentity` 唯一标识一套材质和纹理；`surfacePreview.appearanceIdentity` 引用该元素，
+`mesh.submeshes[].materialId` 必须在该元素的 `materials[]` 中唯一解析。不同模型可以共享
+`textureIdentity`，但不得因共享纹理而合并具有不同 UV 变换或 baseColorFactor 的外观集合。
 
 ## 6. `viewdataIdentity` 构成与失效规则
 
@@ -295,7 +307,7 @@ worldMatrix         不使 meshIdentity / appearanceIdentity / textureIdentity �
 | 错误码 | 触发条件 |
 |---|---|
 | `PM-SLICER-VIEWDATA-STALE` | `expectedSceneRevision` 不符，或 blobId 已失效/被回收 |
-| `PM-SLICER-VIEWDATA-BUDGET` | `maxBytes` 小到连 `outline_only` 都放不下 |
+| `PM-SLICER-VIEWDATA-BUDGET` | `maxBytes` 小到无法容纳当前视图的最小合法表示：top 为 preview+outline+bbox，three_d 为带必需外观的最低 LOD 网格 |
 | `PM-SLICER-INPUT-0001` | 模型声明的外部纹理文件不存在或不可读 |
 | `PM-SLICER-INPUT-0002` | 纹理解码失败、UV 无效或材质绑定无法解析 |
 | `PM-SLICER-PROFILE-0031` | `lod` / `meshTransform` / `content` 取值非法（复用既有参数越界码）|
@@ -317,8 +329,8 @@ worldMatrix         不使 meshIdentity / appearanceIdentity / textureIdentity �
 
 ```text
 必须实现  bbox + outline + viewdataIdentity + 完整错误码 + truncated 语义
-top       带纹理模型必须实现 surfacePreview；允许降低分辨率，不允许去纹理
-three_d   带纹理模型必须实现 mesh + texcoord0 + submesh + appearance + texture blob
+top       带纹理模型必须实现 surfacePreview；outline_only 也保留 preview；允许降低分辨率，不允许去纹理
+three_d   带纹理模型必须实现 mesh + texcoord0 + submesh + appearance + texture blob；禁止 outline_only
 无纹理    明确 textureStatus=not_provided，并使用 baseColorFactor
 不得偏离  §1 全局约定、§3 local 语义、§6 失效规则、§7 不新增导出符号
 ```

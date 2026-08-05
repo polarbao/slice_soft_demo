@@ -75,8 +75,8 @@ LOD         auto/lod0/lod1/lod2/outline_only
 缓存        viewdataIdentity 标识快照，meshIdentity 标识可复用网格
 分块        scene.get_viewdata operation=read_blob，经既有 pm_result 取回
 显示        top / three_d
-外观        appearanceIdentity + materials + RGBA8/sRGB texture blobs
-俯视纹理    surfacePreview RGBA8/sRGB blob，或同一 textured mesh 的 +Z 正交渲染
+外观        appearances[]；每组由 appearanceIdentity + materials + RGBA8/sRGB texture blobs 标识
+俯视纹理    surfacePreview RGBA8/sRGB blob（必需，不以宿主自行投影替代合同响应）
 ```
 
 只改变 `worldMatrix` 不使 `meshIdentity`、`appearanceIdentity` 或对应 blob 失效。
@@ -84,6 +84,13 @@ LOD         auto/lod0/lod1/lod2/outline_only
 预算不足可降低 LOD/纹理分辨率，但不得静默退为无纹理灰模。模型本身没有纹理时返回
 `textureStatus=not_provided` 并使用 `baseColorFactor`。不得新增第 16 项能力、`pm_get_blob`
 或第 12 个 ABI 导出符号。
+
+`surfacePreview.localBoundsMm` 使用模型局部 XY 边界；宿主通过实例 `worldMatrix` 放置预览四边形。
+不得把世界边界塞入 preview blob identity，否则每次拖拽都会错误地使纹理预览缓存失效。
+
+多模型响应使用 `appearances[]`，实例的 `surfacePreview.appearanceIdentity` 与网格 submesh 的
+`materialId` 必须能解析到其中唯一一组外观；单数 `appearance` 无法表达多模型场景，禁止使用。
+`outline_only` 在 top 模式仍必须保留 `surfacePreview`，在 three_d 模式不允许使用。
 
 ### 4.1 双视图请求
 
@@ -97,7 +104,7 @@ LOD         auto/lod0/lod1/lod2/outline_only
 }
 ```
 
-`top` 与 `three_d` 必须使用同一 `appearanceIdentity`。切换视图只切换相机和呈现策略，
+同一模型在 `top` 与 `three_d` 必须解析到同一 `appearanceIdentity`。切换视图只切换相机和呈现策略，
 不能重新导入模型、改变 scene revision 或丢失选中集。
 
 ## 5. 生产协议红线
