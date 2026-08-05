@@ -63,7 +63,8 @@
 | `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` | Stage 14 准备状态与外部依赖 |
 | `DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md` | Stage 14 对目标 RIP 的技术确认往来记录（两轮已闭合，转档案；实施不看本文） |
 | `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` | **S2 接缝权威合同**：Q1~Q6 定案条款、切片侧新工作项 N1/N2、8 项作废方案禁止实现 |
-| `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计**：独立 app target 定案（不开分支）、15 项能力 P0/P1/P2 覆盖清单、UI-M1..M6 可测验收、三条 CI 依赖守卫 |
+| `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` 网格 DTO 契约草案**：缓冲格式、LOD 语义、`local`+`worldMatrix`、blob 分块（不新增导出符号）、失效规则；供 14A-04 冻结采用 |
+| `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计**：独立 app target 定案（不开分支）、M-MVP 时序前置、打印软件参考实现定位、15 项能力 P0/P1/P2 覆盖清单、**3D 视角与相机操作**、UI-M1..M8 可测验收、三条 CI 依赖守卫、viewdata 网格 DTO 缺口（UI-R4）|
 | `DOC/DOC_DECISION_15_纹理纯白区按需补白与材料闭合修复专项.md` | Stage 15 纯白纹理材料闭合修复主决策 |
 | `DOC/DOC_PREP_15_纹理纯白区按需补白实施准备与依赖审查.md` | Stage 15 路径边界、依赖、基线和开工 Gate |
 | `PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md` | Stage 15 产品需求与验收标准 |

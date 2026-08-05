@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v1.1 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04
+> 版本：v1.2 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -62,26 +62,91 @@ cmake --build build --config Debug
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14A-01 | 建立 `contracts/` 目录；落盘 `print_module_spi.h`（与打印侧 `CLD_10` 同源，我方只同步不改）| — | C 与 C++ 编译器分别编过；`dumpbin /EXPORTS` 预期恰好 11 个 `pm_*` | 🟢 **READY（首批）** |
-| 14A-02 | `p0.rgbwsv.2` 形式化 JSON Schema（**须同时覆盖 Stage 15 的 `texture.unprintableWhite*` 三字段与 14A-10 的 `whiteSemantics`**）| — | 用真实 manifest 样例校验通过 | 🟢 **READY（首批）** |
+| 14A-01 | 建立 `contracts/` 目录；落盘 `print_module_spi.h`（与打印侧 `CLD_10` 同源，我方只同步不改）+ **错误码表登记 `PM-SLICER-VIEWDATA-STALE` / `PM-SLICER-VIEWDATA-BUDGET`** | — | C 与 C++ 编译器分别编过；`dumpbin /EXPORTS` 恰好 11 个 `pm_*`（**新增的是错误码不是导出符号，符号数不变**）| 🟢 **READY（首批）** |
+| 14A-02 | `p0.rgbwsv.2` + scene schema 形式化 JSON Schema。**须覆盖三组新字段**（见注 A）；ViewData DTO 由 14A-04 独立冻结 | — | 用真实 manifest 与真实 scene 样例分别校验通过；无该字段的既有样例仍可校验（向后兼容）| 🟢 **READY（首批）** |
 | 14A-03 | `file_contract_v1` 完整规格（请求/结果 JSON schema、进度行、退出码表、超时、僵尸回收、staging 清理时序）| 14A-01 | 打印侧确认可满足 | PREPARED |
-| 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码 | PREPARED |
+| 14A-04 | 能力 DTO 字段级规格（15 项能力的请求/响应字段与类型）| 14A-01 | 打印侧据此可编码；**`scene.get_viewdata` 网格 DTO 按注 B 纳入契约** | PREPARED |
 | 14A-05 | 三车道交互契约固化（`operationId` 幂等、`expectedSceneRevision`、`SceneRevisionStale` 回滚）| 14A-04 | 与打印侧 `CLD_04` §4.3 一致 | PREPARED |
 | 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | PREPARED |
 | 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | 🟢 **READY（首批）** |
-| 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传 | ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
-| | ↳ 往来记录：`docs/slice/DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md`（v1.4，已转档案）| | | |
-| | ↳ **权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` —— 实施只看该文** | | | |
+| 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传（见注 C）| ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
 | 14A-09 | `REPORT_12X` 补 03E 行（03E-02 现为 **`GO_ON_DEMAND`**，见 `REPORT_03E_02` §5.1）| — | 主状态表完整 | 🟢 **READY（首批）** |
-| **14A-10** | **manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）**：manifest 为权威、Profile 仅提供默认值；两处不一致时 **fail-closed** | 14A-02 | Schema 覆盖新字段；不一致用例 fail-closed；无该字段的既有包仍可读（向后兼容） | **NEW（合同定案 N1 产生，2026-08-04）** |
+| **14A-10** | **manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）**：manifest 为权威、Profile 仅提供默认值；两处不一致时 **fail-closed**（见注 D）| 14A-02 | Schema 覆盖新字段；不一致用例 fail-closed；无该字段的既有包仍可读 | PREPARED（2026-08-04 新增）|
+| **14A-11** | **`SceneBuildVolume` 新增 Z 限高 `zLimitMm`**（`std::optional<double>`）+ scene schema 同步 + Z 超限判定；默认设备幅面 **230 × 100 × 60 mm**（见注 E）| 14A-02 | 缺省时行为与现状**逐字节一致**（既有场景与 golden 零影响）；`zLimitMm` 存在时实例世界 bbox `max.z` 超限产出**告警**；`get_snapshot` / `apply_operation` 响应带该字段 | PREPARED（2026-08-04 新增）|
 
-**14A 出口**：`contracts/` 四份物料齐备；打印侧与 RIP 侧书面确认；`OPEN-14-03/04/05` 关闭。
+**14A 出口**：`contracts/` 物料齐备（`print_module_spi.h` + 错误码表 + `file_contract_v1` + 能力 DTO 含网格 DTO + JSON Schema 含三组新字段）；打印侧书面确认；RIP 侧已回签（14A-08 COMPLETE）；`OPEN-14-03/04/05` 已关闭。
 
-> **14A-10 溯源**：`DOC_DECISION_14_S2` §1.4。Q3.1 确认「同层不需混用两种白」，故白色语义为
-> **作业级**声明而非逐像素，不需要 `p0.rgbwsv.3`。这是本轮 RIP 问答产生的**唯一**切片侧新实现工作。
+---
 
-> ⛔ **禁止实现**（路径 A 配套，已随路径 D 定案作废）：Writer 断言 `PM-SLICER-CONTRACT-0060`、
-> manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_S2` §4。
+#### 注 A · 14A-02 须覆盖的三组新字段
+
+```text
+① texture.unprintableWhitePolicy / unprintableWhiteInkThreshold / unprintableWhiteValue
+                                                       （Stage 15 已落地，schema 需补齐）
+② manifest.whiteSemantics                              （14A-10）
+③ buildVolume.zLimitMm                                 （14A-11，scene schema）
+```
+
+> ⚠️ 14A-02 是 14A-10 与 14A-11 的共同前置，务必一次把四组字段都纳入，
+> 不要分批 —— 分批会让 schema 反复变更，下游校验器跟着反复改。
+
+#### 注 B · `scene.get_viewdata` 网格 DTO —— 规格已成文，直接采用
+
+✅ **`docs/slice/DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md`**
+14A-04 只需**审阅确认并纳入契约**，不必重新设计：
+
+```text
+① 网格缓冲   float32x3 顶点/法线、uint16|uint32 索引；mm；little_endian；右手 Z-up
+② LOD 分级   lod0/lod1/lod2/outline_only/auto；【模块决定实际 LOD，宿主给 maxBytes 预算】
+③ 实例变换   local + worldMatrix（推荐默认）—— 多实例只传一份网格；
+             且【worldMatrix 变化不使网格失效】，这是 UI-M1/M7 零跨 DLL 调用的前提
+④ 传输策略   blob 分块，经【既有】pm_submit/pm_result 通道取回，
+             使用 scene.get_viewdata 的 read_blob 子操作，不新增第 16 项能力或导出符号
+⑤ 缓存失效   vd:<rev>:<inst>:<lod>:<hash8>；失效表见规格 §6
+```
+
+**契约冻结是一次性机会。** 首版可只实现 `bbox + outline`，但**字段与语义必须按规格冻结** ——
+否则 14E-04c 的 3D 视角落地时，将迫使**已交付给打印侧的 ABI 二次变更**。
+
+#### 注 C · 14A-08 已闭合，不要重发问卷
+
+```text
+往来记录   docs/slice/DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md（v1.4，已转档案）
+权威条款   docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md ← 实施只看该文
+```
+
+⛔ **禁止实现**（路径 A 配套，已随路径 D 定案作废）：`WSV=000` 哨兵 Writer 断言、
+manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_S2` §4。
+⚠️ 但错误码 `PM-SLICER-CONTRACT-0060` 本身**有效**，不要误删（见 §0.0）。
+
+#### 注 D · 14A-10 溯源
+
+`DOC_DECISION_14_S2` §1.4。Q3.1 确认「同层不需混用两种白」，故白色语义为**作业级**声明
+而非逐像素，不需要 `p0.rgbwsv.3`。这是本轮 RIP 问答产生的**唯一**切片侧新实现工作。
+
+#### 注 E · 14A-11 是独立于 3D 视角的生产风险
+
+`MultiModelScene.h:149` 的 `SceneBuildVolume` 注释明写 “Optional printable **XY** volume”，
+只有 `widthmm`(X) / `heightmm`(**Y，不是 Z**)，**没有任何 Z 限高字段**。后果：
+**模型超高无法判定 —— 切片会成功，但实物打不出来。**
+
+**渲染与判定分开看（2026-08-04 用户澄清 + 我方补充）**：
+
+```text
+渲染用途   zLimitMm 只在【3D 视角】画构建体积盒子；【俯视视角忽略 Z】—— 用户已确认
+判定用途   与视角【无关】。俯视工作的用户同样需要超高提示，
+           否则会出现"全程俯视作业、软件全绿、实物打不出来"
+判定强度   告警，不硬阻断 —— 切片包本身合法，设备可换；zLimitMm 缺省时完全不判
+```
+
+⚠️ 不得拿 `autoOrient.maxHeightMm`（现配置 9.0 / 6.0）当限高：那是**自动定向目标高度**，
+语义是"尽量压矮"，与"设备物理最高能打多高"是两回事，混用会同时错两处。
+
+命名取 `zLimitMm` 而非 `depthMm`/`heightMm`：本项目已把 Y 命名为 height，再用 height 表示 Z
+会直接冲突，用 depth 又与业界 depth=Y 相反。**不做破坏性重命名** ——
+改 `heightMm` 会波及 schema/配置/fixture/golden/打印侧对接，得不偿失。
+
+详见 `DOC_DECISION_14_UI_宿主模拟改造专项.md` §6.6。
 
 ---
 
@@ -89,7 +154,7 @@ cmake --build build --config Debug
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14B-00 | **核心库分层可行性验证**：能否把 `scene/ layout/ config/ 几何查询/ 包读取/ preview` 拆为 `slicer_base`，其余入 `slicer_engine`；重点验证 `model.cpp`(1970 行) 能否进 base | 14A-04 | 出结论文档；若不可行则 `model.import` 改 Worker 承载 | 🟢 **READY（首批，14A-04 未完成前先出可行性结论）** |
+| 14B-00 | **核心库分层可行性验证**：能否把 `scene/ layout/ config/ 几何查询/ 包读取/ preview` 拆为 `slicer_base`，其余入 `slicer_engine`；重点验证 `model.cpp`(1970 行) 能否进 base | — | 出结论文档；若不可行则 `model.import` 改 Worker 承载；结论作为 14A-04/14B-01/14C-04 输入 | 🟢 **READY（首批）** |
 | 14B-01 | 新建 `src/slicer_core/api/`；定义 facade 接口与 DTO（含强制 `ICancelToken`）| 14A-04 | 接口单测；不含 Qt/ABI 类型 | PREPARED |
 | 14B-01A | **落地 base/engine 两库拆分 + CI 单向依赖检查** | 14B-00, 14B-01 | `slicer_base` 不含 engine 符号；构建图正确 | PREPARED |
 | 14B-02 | `ModelFacade` + `PackageQueryFacade` 实现（复用既有能力）| 14B-01 | 行为与既有 CLI 一致 | PREPARED |
@@ -147,22 +212,46 @@ cmake --build build --config Debug
 
 ## 5. 14E 宿主模拟与交互验证
 
-> 🔑 **权威设计：`docs/slice/DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md`**（2026-08-04 新建）
+> 🔑 **权威设计：`docs/slice/DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` v1.1**
 >
 > **承载方式已定案：独立 app target，不开分支。** 新建 `apps/slicer_ui_host_sim/`（Qt，只链 DLL）；
 > 主干 `apps/slicer_debug_ui/` **一行不改**，继续直连 `slicer_core`。
-> 原"UI 模拟分支"方案作废 —— 它与 `INT_07` §3.2「不做长命分支」原则冲突，
-> 且主干仍在演进（Stage 15 刚落地预检服务改造），分支会立刻分叉。
+> 原"UI 模拟分支"方案作废 —— 它与 `INT_07` §3.2「不做长命分支」原则冲突。
+>
+> ⏱ **时序前置已改为里程碑 M-MVP（2026-08-04 用户决策）**
+>
+> ```text
+> M-MVP「最小切片能力包」= 14C-06 全绿  +  14D-05 完成
+> 判据：宿主可仅通过 11 个 pm_* 导出，完成【导入 → 变换 → 切片 → 取包 → 校验】一次闭环
+>
+> M-MVP 之前：主干 UI 布局与功能【保持原样，不做任何改造】
+> M-MVP 之后：14E 才启动
+> ```
+>
+> 理由：原前置只写 14C-06 过早 —— 那时 Worker 未打通，UI 无完整能力包可调；
+> 且能力面在 14A–14D 期间仍可能微调，等 M-MVP 稳定再写宿主可避免 UI 追着 ABI 改。
+>
+> 🎯 **定位强化**：`slicer_ui_host_sim` 同时是**交付给打印侧的参考实现**，
+> 代码质量按对外交付物要求（完整走公开 ABI、每能力有可读示例、Doxygen、错误分支不吞）。
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14E-01 | 轨一：`apps/slicer_host_sim/`（控制台，纯 C 调用参考实现）| 14C-06 | 可进 CI；演示 fail-closed | PREPARED |
-| 14E-02 | 轨二：新建 **`apps/slicer_ui_host_sim/`**（Qt）+ `ModuleClient`（运行时装载 11 符号）| 14C-06 | 三条依赖守卫全过（专项 §3）：CMake 不链 core、源码禁 include core、DLL 不进导入表 | PREPARED |
+| 14E-01 | 轨一：`apps/slicer_host_sim/`（控制台，纯 C 调用参考实现）| **M-MVP** | 可进 CI；演示 fail-closed | PREPARED |
+| 14E-02 | 轨二：新建 **`apps/slicer_ui_host_sim/`**（Qt）+ `ModuleClient`（运行时装载 11 符号）| **M-MVP** | 三条依赖守卫全过（专项 §3）：CMake 不链 core、源码禁 include core、DLL 不进导入表 | PREPARED |
 | 14E-03 | 轨二：`SceneInteractionController` + `TransformCommitPolicy`（三车道 + Stale 回滚）| 14E-02 | **UI-M1** 拖拽期跨 DLL 调用恒为 0；**UI-M4** Stale 回滚可演示且状态一致 | PREPARED |
 | 14E-04 | 轨二：`TopViewRenderPolicy` + `MoveOptimizationPolicy` | 14E-03 | **UI-M2** 提交往返 P95 ≤ 150ms；**UI-M3** 帧率 ≥ 主干 90% | PREPARED |
-| **14E-04b** | **能力覆盖达标**：P0 五项端到端打通并可演示；P1 五项全部打通；P2 各调用一次并记录 | 14E-04 | 按专项 §4 清单逐项核对；**UI-M5** 取消 ≤2s 无 `.staging` 残留；**UI-M6** DLL 缺失优雅报错 | **NEW** |
+| **14E-04b** | **能力覆盖达标**：P0 五项端到端打通并可演示；P1 五项全部打通；P2 各调用一次并记录 | 14E-04 | 按专项 §4 清单逐项核对；**UI-M5** 取消 ≤2s 无 `.staging` 残留；**UI-M6** DLL 缺失优雅报错 | NEW |
+| **14E-04c** | **3D 视角与相机操作**：`CameraController`（orbit/pan/zoom，滚轮以光标为中心）+ 七向预设视角 + 透视/正交切换 + **构建体积线框（默认 230×100×60 mm）**/平台网格/坐标轴/越界高亮 | 14E-04, **14A-04**, **14A-11** | **UI-M7** 相机操作期间跨 DLL 调用恒为 0；**UI-M8** 10 万面场景 orbit ≥ 30 FPS（P5）；俯视强制正交；幅面尺寸取自 `buildVolume`，**不得硬编码** | **NEW** |
+| **14E-04d** | **视角切换设置项**：`ViewModeSwitch`（俯视 ⇄ 3D）+ 设置层入口 + session config 持久化 | 14E-04c | 切换后**场景状态与选中集不变**；相机绑定方案可选（Cura 风格 / PrusaSlicer 风格 / 自定义）| **NEW** |
 | 14E-05 | **拆分主干 UI 大文件**（`MainWindow` 3659 / `UiSmokeTestRunner` 6963）| 14E-04 | 各降至 <1500 行；self-test 绿；**完成后从 14B-06 白名单移除** | PREPARED |
-| 14E-06 | 产出"可移植模块清单"交打印侧 | 14E-04b | 打印侧确认可直接移植 | PREPARED |
+| 14E-06 | 产出"可移植模块清单"交打印侧（**精确到文件级**，标明可直接复制 / 需改写）| 14E-04b, 14E-04d | 打印侧确认可据此评估移植成本 | PREPARED |
+
+> ⚠️ **14E-04c 依赖 14A-04 不可省**：3D 渲染需要网格数据，而 `scene.get_viewdata` 的
+> **网格 DTO 至今未定义**（现有描述只写「可选三角缓冲」）。若 14A-04 冻结契约时不定死，
+> 3D 会迫使**已交付给打印侧的 ABI 二次变更**。详见专项 §6.4 与风险 UI-R4。
+>
+> **3D 视角不新增任何权威求值** —— 相机与拾取纯本地，模型变换仍走三车道，
+> 碰撞/越界仍由 `geometry.collision` / `scene.apply_operation` 给出。13A 系列的实例变换求值全部复用。
 
 > **顺序判断**：14E-05 必须在 14E-02..04 **之后**——先让使用场景长出"可移植 / 切片专有"的边界，再据此拆分，比按文件大小机械切分可靠。
 >
@@ -187,15 +276,35 @@ cmake --build build --config Debug
 ## 7. 关键路径与并行
 
 ```text
-可立即并行（不依赖外部）：
-  14B-06 门禁  ·  14A-01/02/03/04/05/06/07/09  ·  TIFF 缺陷处置（OPEN-14-02 授权后）
+【首批·立即可并行】（无任何前置）
+  14A-01  contracts/ + 错误码表
+  14A-02  JSON Schema（三组新字段一次到位，见注 A）
+  14A-07  第三方依赖合规审查
+  14A-09  REPORT_12X 补 03E 行
+  14B-06  CI 行数门禁
+  14B-00  核心库分层可行性验证
 
-阻塞于外部：
-  14A-08（RIP 回签）→ 14F-04
-  OPEN-14-01（优先级裁定）→ 全阶段启动时点
-  OPEN-14-06（模型资产）→ 真实模型 E2E
+【第二批】14A-02 完成后
+  14A-10（whiteSemantics）· 14A-11（zLimitMm）
+【第二批】14A-01 完成后
+  14A-03 · 14A-04（含网格 DTO）· 14A-06
+
+【已关闭，不再阻塞】
+  ✅ 14A-08 RIP 回签 —— 两轮闭合，条款见 DOC_DECISION_14_S2
+  ✅ OPEN-14-01 优先级裁定 —— 已裁定「乙 并行插入」
+  ✅ OPEN-14-02 TIFF 后端策略 —— 手写 Writer 默认、LibTIFF 可选；默认切换未授权
+  ✅ OPEN-14-03/04/05 —— 随 RIP 六问闭合
+
+【仍阻塞于外部】
+  14F-02/03/04/05  外部打印软件与目标 RIP 实机联调
+  OPEN-14-06       三个必需 OBJ 的处置（产品）
     ↳ 解耦手段：用已有 7 个 strict-PASS 资产先跑通 14F-02/03
+  OPEN-14-07       S2-R1 极性映射表（RIP↔打印软件双边）—— 不阻塞切片侧
+  G7 类            实物工艺验证 —— 阻塞发布授权，不阻塞开发
 ```
+
+> **UI 组（14E）不在首批**：其前置是里程碑 **M-MVP = 14C-06 全绿 + 14D-05 完成**（见 §5）。
+> M-MVP 达成前主干 UI 一行不改。
 
 ## 8. 与 12E-09D 的文件所有权隔离
 
@@ -203,7 +312,7 @@ cmake --build build --config Debug
 |---|---|
 | `src/slicer_core/config.*` | **12E-09D**（Stage 14 不动）|
 | `src/slicer_core/api/`、`src/slicer_module/`、`apps/slicer_worker/` | **Stage 14**（新建，零冲突）|
-| `apps/slicer_debug_ui/**` | Stage 14（14E），但**只在模拟分支上**，主干不动 |
+| `apps/slicer_debug_ui/**` | Stage 14 的 M-MVP 前**不修改**；14E 使用独立 `apps/slicer_ui_host_sim/`，不建立模拟分支 |
 | `src/slicer_core/slicer.cpp` | 暂无（拆分随 `CLAUDE_09` R-B，本阶段不启动）|
 
 ## 9. 修订记录
@@ -211,3 +320,4 @@ cmake --build build --config Debug
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版，PREPARED。6 个子阶段共 40 张原子任务卡；标注外部依赖与并行项；给出与 12E-09D 的文件所有权隔离 |
+| 2026-08-05 | v1.2 | Stage 14 开工基线收口：14A-02 与 14A-04 职责分离；14B-00 移除矛盾前置并明确输出用途；TIFF 后端与 UI 独立 app 边界对齐权威决策 |

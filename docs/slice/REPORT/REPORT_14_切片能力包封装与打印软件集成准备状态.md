@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v1.2 ｜ 更新日期：2026-08-04
+> 版本：v1.3 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -10,7 +10,7 @@
 ## 1. 门禁状态（v1.2 · 2026-08-04）
 
 ```text
-DOCUMENTATION_GATE     = PASS          （9/9 必需文档齐备，见 §2）
+DOCUMENTATION_GATE     = PASS          （10/10 必需文档齐备，见 §2）
 IMPLEMENTATION_GATE    = AUTHORIZED    ← 用户于 2026-08-04 授权
 STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED）
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
@@ -40,6 +40,22 @@ CURRENT_NEXT_TASK      = 首批并行：14A-01 / 14A-02 / 14A-07 / 14A-09 / 14B-
 🔶 S2-R1     → 极性映射表转 RIP↔打印软件双边，【不阻塞切片侧】
 ```
 
+### 1.2b UI 层时序（2026-08-04 用户决策）
+
+```text
+现阶段主干 UI 布局与功能【保持原样，不做任何改造】。
+14E 前置为里程碑 M-MVP = 14C-06 全绿 + 14D-05 完成。
+M-MVP 判据：宿主仅通过 11 个 pm_* 导出完成【导入→变换→切片→取包→校验】一次闭环。
+```
+
+新增 UI 需求（均落在 `apps/slicer_ui_host_sim/`，主干不动）：
+3D 视角与相机操作（14E-04c）、俯视⇄3D 切换设置项（14E-04d）。
+`slicer_ui_host_sim` 同时是**交付给打印侧的参考实现**，代码质量按对外交付物要求。
+
+> 🔴 **新增高风险项 UI-R4**：`scene.get_viewdata` 的网格 DTO 从未定义，
+> 而 3D 视角需要它。**必须在 14A-04 契约冻结时一并定死**，否则将迫使已交付 ABI 二次变更。
+> 该要求已写入 14A-04 验收。
+
 ### 1.3 仍然开放的外部项
 
 | 项 | 归属 | 阻塞范围 |
@@ -52,14 +68,16 @@ CURRENT_NEXT_TASK      = 首批并行：14A-01 / 14A-02 / 14A-07 / 14A-09 / 14B-
 
 | 类型 | 路径 | 状态 |
 |---|---|:--:|
-| 决策 | `docs/slice/DOC/DOC_DECISION_14_…` | ✅ v1.1 |
-| 需求 | `docs/slice/PRD/PRD_14_…` | ✅ v1.0 |
+| 主决策 | `docs/slice/DOC/DOC_DECISION_14_…` | ✅ v1.4 |
+| S2 合同 | `docs/slice/DOC/DOC_DECISION_14_S2_…` | ✅ v1.0 / SETTLED |
+| UI 决策 | `docs/slice/DOC/DOC_DECISION_14_UI_…` | ✅ v1.2 |
+| ViewData DTO | `docs/slice/DOC/DOC_SCHEMA_14_SceneViewData…` | ✅ v1.1 / 供 14A-04 冻结 |
+| 需求 | `docs/slice/PRD/PRD_14_…` | ✅ v1.1 |
 | 设计 | `docs/slice/DEV/DEV_14_…` | ✅ v1.0 |
 | 验收 | `docs/slice/DEMO/DEMO_14_…` | ✅ v1.0 |
-| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v1.1 |
-| 任务 | `docs/codex_task/current/TASKS_14_…` | ✅ v1.0 |
-| 执行指令 | `docs/codex_task/current/CODEX_PROMPT_14_…` | ✅ v1.0 |
-| 分析底稿 | `docs/claude/INTEGRATION/INT_06..17` | ✅ |
+| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v1.3 |
+| 任务与执行指令 | `docs/codex_task/current/TASKS_14_…`、`CODEX_PROMPT_14_…` | ✅ v1.2 / v1.2 |
+| 分析底稿 | `docs/claude/INTEGRATION/INT_06..17` | ✅（背景证据，不覆盖正式合同）|
 
 **结论：文档准入完成。** 但"文档齐备"**不等于**代码完成、不等于第三方依赖已就绪、不等于发布授权。
 
@@ -81,20 +99,18 @@ slicer_module* / .def       全仓库零命中
 | 编号 | 事项 | 结论 | 日期 |
 |---|---|---|---|
 | D-1 | 优先级插入方案 | **乙 并行插入**（12E-09D 走既有序列，14A/14B/14C 并行）| 2026-08-03 |
-| D-2 | TIFF 字对齐缺陷处置 | **切 LibTIFF 为默认后端**（仍需 G-3 独立 Gate 与授权）| 2026-08-03 |
-| D-3 | 白区语义传递 | 当前阶段不新增 sidecar；未转义 RGB 黑哨兵 **NO-GO**（59 份直接配置 / 32 份黑 fallback / 15 张含可见纯黑贴图）。**v1.2 更新：代码级核实 `W/S/V=0/0/0` 在 composer 中结构性不可达（S 通道仅 3 处写入且与 W/V 互斥），故路径 A「保留既有 WSV=000」上调为推荐**，配套 Writer 断言 + manifest 显式声明；见 `DOC_ANALYSIS_14_Q2` §2.1 | 2026-08-03 |
+| D-2 | TIFF Writer 后端 | **手写 Writer 保持默认、LibTIFF 保持可选**；默认切换未授权，PackBits 仅按需开启 | 2026-08-05 基线收口 |
+| D-3 | 白区语义传递 | **S2 路径 D**：白色使用 `255/255/255/0/255/255` 的 W 真实材料语义；`whiteSemantics` 为作业级声明；WSV 哨兵、sidecar、`p0.rgbwsv.3` 均禁止 | 2026-08-04 S2 定案 |
 | D-4 | Worker 定位 | **可独立迭代替换的切片引擎**；core 拆 base/engine；切片只在 Worker | 2026-08-03 |
 
 ## 5. 未决项
 
 | 编号 | 事项 | 需谁答 | 阻塞 |
 |---|---|---|---|
-| OPEN-14-03 | W/S/V 墨滴量化归属 | **RIP 侧** | 🔴 14F |
-| OPEN-14-04 | 既有 WSV=000 的拦截/物化证据，或 W-only + RIP Profile 映射是否可行 | **RIP 侧 + 产品** | 🔴 14F |
-| OPEN-14-05 | PackBits 压缩是否被目标 RIP 支持 | **RIP 侧** | 03E-02 转 GO |
 | OPEN-14-06 | 三个必需 OBJ 处置 | **产品** | 真实模型 E2E（可用 7 个 strict-PASS 资产解耦）|
-| OPEN-14-07 | 白色语义类型（opaque / knockout）定义者 | **产品** | 长期 |
-| OPEN-14-08 | `grayBits` 请求路径固化 | 打印侧 + RIP 侧 | S2 校验 |
+| OPEN-14-07 | S2-R1 极性映射表 | **RIP 侧 + 打印侧** | 不阻塞切片侧；阻塞最终物理映射验收 |
+
+`OPEN-14-03/04/05` 已由 `DOC_DECISION_14_S2` 关闭；旧问题及候选方案仅保留在档案文档中。
 
 ## 6. 可立即启动的准备任务（不受未决项阻塞）
 
@@ -104,12 +120,11 @@ slicer_module* / .def       全仓库零命中
 | 14A-01 | `contracts/` + `print_module_spi.h` 落盘 | 1 人日 |
 | 14A-02 | `p0.rgbwsv.2` JSON Schema | 1–2 人日 |
 | 14A-07 | 第三方依赖再分发合规审查 | 1 人日 |
-| 14A-08 | 对 RIP 六项确认清单发出 | 0.5 人日 |
 | 14A-09 | `REPORT_12X` 补 03E 行 | 0.2 人日 |
 | 14B-00 | base/engine 分层可行性验证 | 2–3 人日 |
-| **合计** | | **8–12 人日** |
+| **首批合计** | | **7–11 人日** |
 
-以上七卡均不与 12E-09D 抢文件（所有权见 `TASKS_14` §8）。
+以上六卡均不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08 已完成，不得重复执行。
 
 ## 7. 与其他阶段的边界
 
@@ -118,17 +133,18 @@ slicer_module* / .def       全仓库零命中
 12F               Stage 14 的步骤/分层边界是其前置；仍按实测证据逐项授权
 13F-R1            独立并行；其 Cancelling≠Cancelled 已被 Stage 14 采纳为契约条款
 12G-TCWS          保持冻结；Stage 14 不实现，仅把白区语义列为对 RIP 确认项
-03D               已 COMPLETE / GO_OPTIONAL；默认 Writer 切换归 Stage 14 的 D-2
-03E               03E-02 INTERNAL COMPLETE / EXTERNAL RIP PENDING / NO_GO_DEFAULT
+03D               已 COMPLETE / GO_OPTIONAL；手写 Writer 保持默认，LibTIFF 可选
+03E               03E-02 GO_ON_DEMAND；PackBits 可显式开启，默认仍为 none
 ```
 
 ## 8. 风险提示
 
 ```text
-① 默认 Writer 仍为手写实现，tiff_io.cpp 两处字对齐缺陷仍在生产路径（D-2 待授权执行）；
-② RIP 六项未回签前，14F 无法开工；建议尽早发出；
+① 默认 Writer 仍为手写实现；LibTIFF 仅为可选后端，禁止在 Stage 14 内静默切换默认值；
+② RIP 书面合同已闭合，但目标 RIP 实机互操作仍必须由 14F 留证；
 ③ base/engine 分层的三个高风险切分点（model.cpp / geometry / reports）需 14B-00 先验证；
-④ 若无 CI 单向依赖门禁（14B-06 + P4），分层将在数月内退化回单库。
+④ 若无 CI 单向依赖门禁（14B-06 + P4），分层将在数月内退化回单库；
+⑤ ViewData 网格传输须在 14A-04 冻结 DTO，但不得增加第 12 个 ABI 导出符号。
 ```
 
 ## 9. 修订记录
@@ -137,3 +153,4 @@ slicer_module* / .def       全仓库零命中
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版。文档齐备度 8/8、实现量 0；记录 D-1..D-4 四项裁定与 OPEN-14-03..08 六项未决；列出可立即启动的七卡（8–12 人日）|
 | 2026-08-03 | v1.1 | 同步 Q2 深度审查：撤回当前阶段 sidecar 推荐；记录完整配置/贴图碰撞范围；将 OPEN-14-04 改为确认既有 WSV=000 或 W-only Profile 六通道路径 |
+| 2026-08-05 | v1.3 | Stage 14 开工基线收口：文档门更新为 10/10；D-2/D-3 对齐 03D/03E 与 S2 权威结论；移除已关闭开放项和已完成 14A-08；登记独立宿主模拟与 ViewData DTO 风险 |

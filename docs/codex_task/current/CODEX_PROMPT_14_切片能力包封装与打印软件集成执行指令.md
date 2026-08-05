@@ -1,7 +1,7 @@
 # CODEX_PROMPT_14 切片能力包封装与打印软件集成执行指令
 
 > 文档状态：✅ **ACTIVE / DEVELOPMENT READY**（2026-08-04 授权激活）
-> 版本：v1.1 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04
+> 版本：v1.2 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
 > 适用：Stage 14 全部原子任务（14A–14F）
 
 ---
@@ -41,7 +41,7 @@
 
 ```text
 14A-01  contracts/ 目录 + print_module_spi.h
-14A-02  p0.rgbwsv.2 JSON Schema（须覆盖 Stage 15 三字段 + 14A-10 whiteSemantics）
+14A-02  p0.rgbwsv.2 / scene JSON Schema（覆盖 Stage 15 三字段、whiteSemantics、zLimitMm）
 14A-07  第三方依赖再分发合规审查
 14A-09  REPORT_12X 补 03E 行（03E-02 现为 GO_ON_DEMAND）
 14B-06  CI 行数门禁
@@ -49,6 +49,45 @@
 ```
 
 **14A-08 已 COMPLETE，不要重新发 RIP 问卷。**
+
+### 0.4 UI 层整体后置，先做能力包（2026-08-04 用户决策）
+
+```text
+现阶段主干 UI（apps/slicer_debug_ui/）布局与功能【保持原样，一行不改】。
+14E 的前置不是 14C-06，而是里程碑 M-MVP：
+
+  M-MVP「最小切片能力包」= 14C-06 全绿  +  14D-05 完成
+  判据：宿主仅通过 11 个 pm_* 导出即可完成
+        【导入 → 变换 → 切片 → 取包 → 校验】一次闭环
+
+M-MVP 达成前不要动任何 UI 代码；达成后再新建 apps/slicer_ui_host_sim/。
+```
+
+### 0.5 🔴 14A-04 有一项容易漏掉、漏了就要改 ABI 的要求
+
+`scene.get_viewdata` 的**网格 DTO 至今没有字段级定义**（现有文档只写「可选三角缓冲」）。
+14E-04c 的 3D 视角需要它。**若 14A-04 冻结契约时不定死，将迫使已交付打印侧的 ABI 二次变更。**
+
+✅ **规格已成文，直接采用**：`docs/slice/DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md`
+—— 五项语义全部已定义，14A-04 只需审阅确认并纳入契约，不必重新设计。
+**首版可只实现 bbox + outline，但字段与语义必须按规格冻结。**
+
+### 0.6 🔴 另一处独立的生产风险：`buildVolume` 没有 Z 限高
+
+`MultiModelScene.h:149` 的 `SceneBuildVolume` 注释明写 “Optional printable **XY** volume”，
+只有 `widthmm`(X) / `heightmm`(**Y，不是 Z**)。后果：
+
+```text
+模型超高无法判定 —— 切片会成功，但实物打不出来。
+```
+
+由 **14A-11** 修复：新增 `zLimitMm`（`std::optional`，缺省时行为与现状逐字节一致）。
+默认设备幅面 **230 × 100 × 60 mm**。
+
+⚠️ 不得拿 `autoOrient.maxHeightMm`（现配置 9.0 / 6.0）当限高 —— 那是**自动定向目标高度**，
+与"设备物理最高能打多高"是两回事，混用会同时错两处。
+
+详见 `DOC_DECISION_14_UI_宿主模拟改造专项.md` §6.4 / §6.6。
 
 ---
 
@@ -162,7 +201,7 @@ cmake --build build --config Debug
 
 首批可并行开工（互不依赖）：
   14A-01  contracts/ 目录 + print_module_spi.h
-  14A-02  p0.rgbwsv.2 JSON Schema（覆盖 Stage 15 三字段 + 14A-10 whiteSemantics）
+  14A-02  p0.rgbwsv.2 / scene JSON Schema（覆盖 Stage 15 三字段、whiteSemantics、zLimitMm）
   14A-07  第三方依赖再分发合规审查
   14A-09  REPORT_12X 补 03E 行（03E-02 现为 GO_ON_DEMAND）
   14B-06  CI 行数门禁
@@ -178,3 +217,4 @@ cmake --build build --config Debug
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版。必读顺序、执行规则、11 条红线、统一验证门与按类型追加、回答格式、完成后同步项 |
+| 2026-08-05 | v1.2 | Stage 14 开工基线收口：明确 14A-02 Schema 范围，保持 ViewData DTO 归 14A-04，禁止借 Stage 14 静默切换默认 TIFF Writer |

@@ -1,7 +1,7 @@
 # DOC_DECISION_14 切片能力包封装与打印软件集成专项
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v1.3 ｜ 决策日期：2026-08-03 ｜ 激活日期：2026-08-04
+> 版本：v1.4 ｜ 决策日期：2026-08-03 ｜ 激活日期：2026-08-04 ｜ 基线收口：2026-08-05
 > 作者：Claude（分析与起草）；执行由主线开发（codex）接管
 > 证据等级：A=已核实代码/文档事实，B=目标设计，P=判断
 > 详细分析与推导过程见 `docs/claude/INTEGRATION/INT_06..15`
@@ -36,9 +36,6 @@
 > （「自检发现产物不符合 `p0.rgbwsv.2`」，见 `INT_07` §错误码表、`INT_02` §6）。
 > 作废的只是「用它承载 `WSV=000` 哨兵扫描」这一用途；错误码表整体保留。
 
-```text
-```
-
 **首批开工任务**：14A-01、14A-02、14A-07、14A-09、14B-06、14B-00（互不依赖，可并行）。
 
 ---
@@ -64,8 +61,8 @@
 | 12F | Stage 14 的步骤边界是 12F 优化的前置；但 12F 仍按实测证据逐项授权 |
 | 13F-R1 | 独立并行。13F 的取消状态机（`Cancelling≠Cancelled`）被 Stage 14 直接采纳为契约条款 |
 | 12G-TCWS | 保持冻结。Stage 14 **不实现**其配置/composer/RIP 合同；但会把"白区语义"列为对 RIP 的确认项 |
-| 03D | 已 COMPLETE（`GO_OPTIONAL`）。Stage 14 需就"是否切 LibTIFF 为默认后端"做独立决策（见 §5 G-3）|
-| 03E | `03E-02 INTERNAL COMPLETE / EXTERNAL RIP PENDING`。压缩是否启用纳入对 RIP 确认清单 |
+| 03D | 已 COMPLETE（`GO_OPTIONAL`）。手写 Writer 保持默认，LibTIFF 仅为可选后端；任何默认切换仍需独立 Gate 与用户授权（G-3）|
+| 03E | `03E-02 GO_ON_DEMAND`。PackBits 可显式按需开启，默认压缩仍为 `none`；外部目标 RIP 实机互操作由 14F 关闭 |
 
 ## 3. 封装结构（v1.1 修订：Worker 定位为可独立替换的切片引擎）
 
@@ -139,20 +136,17 @@ D-1 优先级插入方案 = 【乙 并行插入】
     依据：v0.1 能力面语义已由 12E-09B/09C 收口，不依赖 09D 结论；
          且二者文件所有权可完全隔离（TASKS_14 §8）。
 
-D-2 TIFF 字对齐缺陷处置 = 【切 LibTIFF 为默认后端】
-    依据：03D-01..07 已完成兼容/性能 Gate，切换成本低于修手写 writer，
-         且根治"自产自销读写器互为盲区"的结构问题。
-    约束：仍需按 G-3 走独立 Gate 与授权；切换前后须逐像素解码一致。
+D-2 TIFF Writer 后端策略 = 【手写 Writer 保持默认，LibTIFF 保持可选】
+    依据：03D-01..07 的最终结论为 GO_OPTIONAL，LibTIFF 未达到默认切换性能 Gate；
+         03E-02 仅授权 PackBits 按需开启，未授权更换默认 Writer。
+    约束：后续若切换默认后端，必须按 G-3 重新取得性能、兼容性 Gate 与用户单独授权。
 
-D-3 白区语义传递 = 【当前阶段保持固定六通道，不新增逐层 sidecar；未转义 RGB 黑哨兵 NO-GO】
-    依据：完整审计 109 份配置，59 份明确允许普通模型像素产生
-         0/0/0/255/255/255，32 份启用纹理的配置使用有效黑色 fallback；
-         39 张现有贴图中 15 张含可见纯黑像素。删除配置无法禁止合法输入产生纯黑。
-    当前兼容候选：把既有 WSV=000 限定为版本化 rip_bound_intermediate 私有合同，
-         前提是 RIP 证明其在物理量化前拦截且 S/V 不泄漏。
-    目标评估候选：白区显式写 W=0、S/V=255，由 RIP Profile 决定使用或抑制 W。
-    详细证据见 DOC_ANALYSIS_14_Q2_RIP白区带内信号与配置冲突审查.md；
-         最终方案仍待 RIP 侧回签（OPEN-14-04）。
+D-3 白区语义传递 = 【路径 D：W=0 真实材料语义】
+    生产白像素写为 R/G/B/W/S/V = 255/255/255/0/255/255；黑色仍按普通 RGB 内容表达。
+    manifest 使用作业级 whiteSemantics（opaque | transparent），manifest 为权威，
+    与 Profile 不一致时 fail-closed。固定 p0.rgbwsv.2 六通道，不新增 sidecar 或 p0.rgbwsv.3。
+    WSV=000 私有哨兵及其 Writer 断言、ripBoundIntermediate 字段均已作废。
+    唯一权威依据：DOC_DECISION_14_S2_RIP接口合同定案.md。
 ```
 
 ## 6. 阶段划分
@@ -163,7 +157,7 @@ D-3 白区语义传递 = 【当前阶段保持固定六通道，不新增逐层 
 | **14B 核心 facade** | 新建 `src/slicer_core/api/`；Qt-free C++ 门面；CLI 改走 facade | 行为不变；facade 单测 |
 | **14C DLL 薄壳** | 新建 `src/slicer_module/`；11 导出 + `.def` + 句柄 + 缓冲三态 | **过 C-SPI-01..18** |
 | **14D Worker 与取消** | `apps/slicer_worker/`；`file_contract_v1` 落地；**切片链路 cancel token** | 取消 ≤2s 且无 staging 残留；双后端 SHA 一致 |
-| **14E 交互验证与拆分** | 轨一 `slicer_host_sim` + 轨二 UI 模拟分支；据此拆 UI 大文件 | 可移植操作层模块产出；`mouse-move` 零跨 DLL 调用 |
+| **14E 交互验证与拆分** | M-MVP 后新建控制台 `slicer_host_sim` 与独立 `slicer_ui_host_sim` app；不使用 UI 长期分支，不改主干调试 UI | 可移植操作层模块产出；`mouse-move` 零跨 DLL 调用 |
 | **14F 打包与联调** | `modules/slicer/` 打包；与打印侧 M1–M5 联调 | 干净机装载；端到端到 Ready |
 
 ## 7. 拒绝的替代方案
@@ -181,7 +175,7 @@ D-3 白区语义传递 = 【当前阶段保持固定六通道，不新增逐层 
 | 编号 | 事项 | 需谁答 |
 |---|---|---|
 | ~~OPEN-14-01~~ | ~~优先级插入方案~~ → ✅ **已裁定：乙 并行插入**（§5.1 D-1）| — |
-| ~~OPEN-14-02~~ | ~~TIFF 缺陷处置~~ → ✅ **已裁定：切 LibTIFF 默认后端**（§5.1 D-2，仍需 G-3 授权）| — |
+| ~~OPEN-14-02~~ | ~~TIFF 后端策略~~ → ✅ **已裁定：手写 Writer 默认、LibTIFF 可选**（§5.1 D-2）；默认切换未获授权 | — |
 | ~~OPEN-14-03~~ | ~~W/S/V 墨滴量化归属~~ → ✅ **已闭合：由 RIP 承担（方案 A）**，档位见 `DOC_DECISION_14_S2` §1.2 | — |
 | ~~OPEN-14-04~~ | ~~白区语义传递方式~~ → ✅ **已闭合：路径 D**（废弃 `WSV=000`，改用 `W=0` 真实材料语义），见 `DOC_DECISION_14_S2` §1.3 | — |
 | ~~OPEN-14-05~~ | ~~PackBits 是否被目标 RIP 支持~~ → ✅ **已闭合：支持**；03E-02 转 `GO_ON_DEMAND`，见 `DOC_DECISION_14_S2` §1.5 | — |
@@ -199,3 +193,4 @@ D-3 白区语义传递 = 【当前阶段保持固定六通道，不新增逐层 
 | 2026-08-03 | v1.1 | Worker 定位修订为可独立替换引擎；取消进程内切片路径；补 base/engine 单向依赖 Gate |
 | 2026-08-04 | v1.3 | **用户授权激活，状态转 ACTIVE**（§0 激活记录）；RIP 六问两轮闭合，S2 条款收敛至 `DOC_DECISION_14_S2_RIP接口合同定案.md`；关闭 OPEN-14-03/04/05，新增 OPEN-14-07（极性映射表转双边）；登记 14A-10（manifest `whiteSemantics`）与 8 项作废方案 |
 | 2026-08-03 | v1.2 | 按 Q2 深度审查修订 D-3/G-4/OPEN-14-04：当前阶段不新增逐层 sidecar；将 `0/0/0/255/255/255` 定性为不可直接占用的合法纯黑；记录 59 份直接配置、32 份黑 fallback 和 15 张真实黑贴图证据；转为确认既有 WSV=000 或 W-only Profile 路径 |
+| 2026-08-05 | v1.4 | Stage 14 开工基线收口：D-2 对齐 03D/03E 最终结论（手写默认、LibTIFF 可选、PackBits 按需）；D-3 对齐 S2 路径 D；14E 改为 M-MVP 后独立 app，不再使用 UI 模拟分支 |
