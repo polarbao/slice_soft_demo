@@ -532,6 +532,18 @@ target_include_directories(print_module_spi_cpp_compile_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/contracts
 )
 
+add_library(slicer_module SHARED
+    src/slicer_module/Exports.cpp
+    src/slicer_module/slicer_module.def
+)
+target_include_directories(slicer_module PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_compile_definitions(slicer_module PRIVATE PM_MODULE_BUILD_SHARED)
+target_link_libraries(slicer_module PRIVATE slicer_base)
+set_target_properties(slicer_module PROPERTIES PREFIX "")
+
 add_executable(model_import_layering_probe
     tests/contracts/ModelImportLayeringProbe.cpp
 )
@@ -1286,6 +1298,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BCliFacadeRoute.py"
     )
     add_test(
+        NAME slicer_stage14c01_module_shell_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14C01ModuleShell.py"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1308,6 +1325,7 @@ if(Python3_Interpreter_FOUND)
         slicer_facade_header_contract_test
         slicer_stage14b04_slice_facade_contract_test
         slicer_stage14b05_cli_facade_route_contract_test
+        slicer_stage14c01_module_shell_contract_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
         PROPERTIES

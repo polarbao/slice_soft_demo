@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.14 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.15 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -242,7 +242,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14C-01 | 新建 `src/slicer_module/`；`PM_API`/`PM_CALL __cdecl`/`.def`（11 符号）| 14A-01, 14B-01 | `dumpbin /EXPORTS` 恰好 11 个，无 C++ 修饰名 | PREPARED |
+| 14C-01 | 新建 `src/slicer_module/`；`PM_API`/`PM_CALL __cdecl`/`.def`（11 符号）| 14A-01, 14B-01 | `dumpbin /EXPORTS` 恰好 11 个，无 C++ 修饰名 | ✅ **COMPLETE（2026-08-05）**；Debug/Release 构建、静态合同和 `dumpbin` 精确 11 符号 PASS |
 | 14C-02 | 缓冲三态协议 `WriteOut()` 单一实现 | 14C-01 | C-SPI-05a/b/c | PREPARED |
 | 14C-03 | `HandleRegistry` 句柄生命周期 + `pm_last_error`（TLS）| 14C-01 | C-SPI-04/12/13/14/15 | PREPARED |
 | 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03A, **14B-00** | 首次 `pm_poll` 即返回终态；**`syncCapabilities[]` 逐条对齐 `DEV_14` §5 承载分派表，二者不一致即判不通过**；`scene.get_viewdata` 不得绕过 14B-03A | PREPARED |
@@ -415,3 +415,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.12 | 完成 14B-03A-R1 合同审计修正：补齐 outline、content/texturePolicy、显式 truncated、three_d 纹理预算、world 单位矩阵和 baseColorFactor 一致性；14B-05 保持下一任务 |
 | 2026-08-05 | v2.13 | 14B-05 实现完成：`--scene-config` 改走生产 SliceFacade，新增架构路由门禁并通过 Debug/Release 目标测试；完整 Debug full regression 执行中 |
 | 2026-08-05 | v2.14 | 完成 14B-05：Debug full regression 以 985.8 s 通过，CLI 场景路由迁移收口；14B 全部任务完成，下一批并行进入 14C-01 / 14D-01 |
+| 2026-08-05 | v2.15 | 完成 14C-01：建立仅链接 slicer_base 的 slicer_module DLL 外壳，Debug/Release 精确导出 11 个无修饰 pm_* 符号；14C-02/03 可并行启动 |

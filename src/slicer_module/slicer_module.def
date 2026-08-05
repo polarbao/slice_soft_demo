@@ -1,0 +1,14 @@
+LIBRARY "slicer_module"
+
+EXPORTS
+    pm_spi_version
+    pm_module_info
+    pm_create
+    pm_destroy
+    pm_submit
+    pm_poll
+    pm_cancel
+    pm_result
+    pm_release
+    pm_self_test
+    pm_last_error

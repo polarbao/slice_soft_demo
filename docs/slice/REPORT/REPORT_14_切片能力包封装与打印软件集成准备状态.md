@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.8 ｜ 更新日期：2026-08-05
+> 版本：v3.9 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14C-01 + 14D-01 (PARALLEL)
+CURRENT_NEXT_TASK      = 14C-02 + 14C-03 + 14D-01 (PARALLEL)
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -127,6 +127,7 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14B-03A-R1 | ✅ COMPLETE（2026-08-05） | ViewData 局部轮廓、显式预算降级、three_d 纹理降采样、world 单位矩阵和材质一致性 | 独立测试、Debug/Release、真实 OBJ/3MF 及 DTO/三车道合同门禁 PASS |
 | 14B-05 | ✅ COMPLETE（2026-08-05） | `--scene-config` 迁移生产 SliceFacade；保持旧错误名、进度与摘要 | Debug/Release 路由门禁 7/7 PASS；Debug full regression PASS（985.8 s） |
 | 14B-06 | ✅ COMPLETE（2026-08-05） | G1..G5 source-size 门禁、带到期条件白名单、quick CI 与 CTest 接线 | 自测覆盖 G1/G2/G3；全树 G4/G5 扫描可读；受保护 Stage 14 新目录禁止白名单 |
+| 14C-01 | ✅ COMPLETE（2026-08-05） | `slicer_module.dll` C ABI 外壳、`.def` 与仅链接 base 的构建目标 | Debug/Release `dumpbin` 精确 11 个无修饰导出；静态合同与 CTest PASS |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
 
@@ -212,3 +213,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-05 | v3.6 | 完成 14B-03A-R1：合同审计发现的 outline、静默降级、world 重复变换、请求字段和材质显示差异已闭合；下一任务保持 14B-05 |
 | 2026-08-05 | v3.7 | 14B-05 实现与 Debug/Release 路由门禁完成，full regression 执行中；通过后 14B 收口并并行进入 14C-01 / 14D-01 |
 | 2026-08-05 | v3.8 | 完成 14B-05：Debug full regression 以 985.8 s 通过，14B 核心 Facade 阶段收口；下一批 14C-01 与 14D-01 可并行，合同/CMake/集成提交继续串行审查 |
+| 2026-08-05 | v3.9 | 完成 14C-01：建立只依赖 slicer_base 的 DLL ABI 外壳，Debug/Release 精确 11 导出通过；14C-02/03 与 14D-01 可按文件所有权并行 |
