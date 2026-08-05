@@ -437,6 +437,22 @@ target_include_directories(print_module_spi_cpp_compile_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/contracts
 )
 
+add_executable(model_import_layering_probe
+    tests/contracts/ModelImportLayeringProbe.cpp
+    src/third_party/miniz/miniz.c
+    src/third_party/miniz/miniz_tdef.c
+    src/third_party/miniz/miniz_tinfl.c
+    src/third_party/miniz/miniz_zip.c
+    src/slicer_core/model.cpp
+)
+target_include_directories(model_import_layering_probe PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
+)
+if(MSVC)
+    target_compile_options(model_import_layering_probe PRIVATE /bigobj /MP)
+endif()
+
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
 )
@@ -1038,6 +1054,11 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BPreparation.py"
     )
     add_test(
+        NAME slicer_stage14b_layering_feasibility_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BLayeringFeasibility.py"
+    )
+    add_test(
         NAME third_party_notice_contract_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateThirdPartyNotices.py"
@@ -1049,6 +1070,7 @@ if(Python3_Interpreter_FOUND)
         slicer_three_lane_contract_test
         slicer_cancel_contract_test
         slicer_stage14b_preparation_contract_test
+        slicer_stage14b_layering_feasibility_test
         third_party_notice_contract_test
         PROPERTIES
             ENVIRONMENT "PYTHONUTF8=1"
@@ -1056,6 +1078,11 @@ if(Python3_Interpreter_FOUND)
 else()
     message(WARNING "Python 3 was not found; json_schema_contract_test is disabled.")
 endif()
+add_test(
+    NAME model_import_layering_probe
+    COMMAND model_import_layering_probe
+        "${CMAKE_CURRENT_SOURCE_DIR}/samples/models/textured/fixtures/policy_textured_small.obj"
+)
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_white_carrier_policy_unit_tests COMMAND texture_white_carrier_policy_unit_tests)

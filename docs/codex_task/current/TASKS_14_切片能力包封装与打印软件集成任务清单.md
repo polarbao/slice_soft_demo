@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.2 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.3 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -211,7 +211,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14B-00 | **核心库分层可行性验证**：能否把 `scene/ layout/ config/ 几何查询/ 包读取/ preview` 拆为 `slicer_base`，其余入 `slicer_engine`；重点验证 `model.cpp`(1970 行) 能否进 base | — | 出结论文档；若不可行则 `model.import` 改 Worker 承载；结论作为 14A-04/14B-01/14C-04 输入 | 🟢 **READY（首批）** |
+| 14B-00 | **核心库分层可行性验证**：能否把 `scene/ layout/ config/ 几何查询/ 包读取/ preview` 拆为 `slicer_base`，其余入 `slicer_engine`；重点验证 `model.cpp`(1970 行) 能否进 base | — | 出结论文档；若不可行则 `model.import` 改 Worker 承载；结论作为 14A-04/14B-01/14C-04 输入 | ✅ **COMPLETE（2026-08-05）**；`model.import=base`，独立编译探针 PASS |
 | 14B-01 | 新建 `src/slicer_core/api/`；定义 facade 接口与 DTO（含强制 `ICancelToken`）| 14A-04-R1 | 接口单测；不含 Qt/ABI 类型 | PREPARED |
 | 14B-01A | **落地 base/engine 两库拆分 + CI 单向依赖检查** | 14B-00, 14B-01 | `slicer_base` 不含 engine 符号；构建图正确 | PREPARED |
 | 14B-02 | `ModelFacade` + `PackageQueryFacade` 实现（复用既有能力）| 14B-01 | 行为与既有 CLI 一致 | PREPARED |
@@ -401,3 +401,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.0 | 完成 14A-10：实现 manifest 权威、Profile 默认的 `whiteSemantics` 解析与写出；冲突/非法值 fail-closed，旧包缺字段保持兼容；下一任务推进为 14A-11 |
 | 2026-08-05 | v2.1 | 增加 14A-04-R1 与 14B-03A；双视图纹理改为硬标准；修正 M-MVP 自循环、Transient 碰撞权威性和 Commit 多余快照；细化 QOpenGL UI 信息架构与依赖链 |
 | 2026-08-05 | v2.2 | 完成 14A-11：增加可选 Z 限高、230 × 100 × 60 mm 显式设备默认、超限非阻断告警及 scene 响应字段；14A 切片侧实现任务全部完成，外部回签继续单独跟踪 |
+| 2026-08-05 | v2.3 | 完成 14B-00：输出 301 项文件级 base/engine 归属、4 条窄接口抽取边与独立模型导入编译探针；唯一结论为 `model.import=base` |
