@@ -26,6 +26,12 @@ struct Matrix4d
         0.0, 0.0, 0.0, 1.0};
 };
 
+/** @brief Validated JSON object kept opaque across the Qt-free facade boundary. */
+struct StructuredJsonObject
+{
+    std::string utf8_json{"{}"};
+};
+
 /** @brief Stable reference to a cached model instance. */
 struct InstanceReference
 {

@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.1 ｜ 更新日期：2026-08-05
+> 版本：v3.2 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14B-02 / 14B-03 / 14B-04（可并行；14B-01-R1 已解除 DTO 阻断）
+CURRENT_NEXT_TASK      = 14B-02 / 14B-04（并行收口）→ 14B-03A
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -98,7 +98,8 @@ slicer_module* / .def       全仓库零命中
 ```
 
 **Stage 14 的 14A 切片侧实现任务已全部完成：14A-01..11（14A-08 已闭合），其中
-14A-03 与 14A-04-R1 仍待打印侧书面回签；能力 facade、DLL、Worker 与宿主模拟尚未实现。**
+14A-03 与 14A-04-R1 仍待打印侧书面回签；14B 已完成分层、Facade 合同与 SceneFacade，
+Model/Package、SliceFacade、真实纹理 Provider 仍在推进；DLL、Worker 与宿主模拟尚未实现。**
 
 ### 3.1 已完成原子任务
 
@@ -117,6 +118,9 @@ slicer_module* / .def       全仓库零命中
 | 14A-11 | ✅ COMPLETE（2026-08-05） | 可选 `zLimitMm`、显式 230 × 100 × 60 mm 设备默认、Z 超限告警及 scene DTO | Debug/Release scene/collision 单测与 Schema/DTO 合同测试 4/4；缺字段 canonical JSON 不变，超限仅告警 |
 | 14B-00 | ✅ COMPLETE（2026-08-05） | 301 项文件级 base/engine 归属、4 条窄接口抽取边、独立 `model_import_layering_probe` | 合同脚本 PASS；`model.cpp + miniz` 不链接 `slicer_core` 可独立导入 OBJ；唯一结论 `model.import=base` |
 | 14B-01 | ✅ COMPLETE（2026-08-05） | Qt-free Facade、DTO、`ApiResult`、`ICancelToken` 与 ViewData v1.2 内部合同 | 编译单测、头文件门禁、分层与行数门禁 PASS；未接入实现 |
+| 14B-01A | ✅ COMPLETE（2026-08-05） | `slicer_base` / `slicer_engine` 单向构建图与窄接口边界 | source 唯一归属、target graph、Debug/Release 构建 PASS |
+| 14B-01-R1 | ✅ COMPLETE（2026-08-05） | Package/Model Facade DTO 无损承载 capability DTO v1.2 | DTO 字段门禁、OBJ/STL 法线来源探针、Debug/Release CTest PASS |
+| 14B-03 | ✅ COMPLETE（2026-08-05） | SceneFacade 权威状态、完整 Commit 响应、幂等、碰撞/越界及 ViewData Provider 边界 | Debug/Release 构建及目标 CTest 6/6 PASS；正常 Commit 不追加 snapshot |
 | 14B-06 | ✅ COMPLETE（2026-08-05） | G1..G5 source-size 门禁、带到期条件白名单、quick CI 与 CTest 接线 | 自测覆盖 G1/G2/G3；全树 G4/G5 扫描可读；受保护 Stage 14 新目录禁止白名单 |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
@@ -144,9 +148,9 @@ slicer_module* / .def       全仓库零命中
 | 卡 | 任务 | 估算 |
 |---|---|---:|
 | 14B-02 | ModelFacade + PackageQueryFacade | 3–5 人日 |
-| 14B-03 | SceneFacade 权威求值与 revision | 3–5 人日 |
 | 14B-04 | SliceFacade 提交、进度与取消 | 3–5 人日 |
-| **并行任务合计** | | **9–15 人日** |
+| 14B-03A | TexturedSceneViewDataProvider | 5–8 人日 |
+| **并行/关键路径合计** | | **11–18 人日** |
 
 本卡不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
@@ -197,3 +201,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v2.9 | 完成 14B-01：建立 Qt-free Facade/DTO/取消合同并接入 CTest；下一任务推进为 14B-01A |
 | 2026-08-05 | v3.0 | 完成 14B-01A：落地 `slicer_base` / `slicer_engine` 两库、窄化模型与 DPI 配置边界、生成式 source 唯一归属与单向依赖门禁；14B-02/03/04 可并行开发 |
 | 2026-08-05 | v3.1 | 完成 14B-01-R1：内部 Facade DTO 完整承载能力合同 v1.2，补齐 package summary/layer/verify/report 与模型法线来源；外部 ABI、能力数量、生产 TIFF 均未变化 |
+| 2026-08-05 | v3.2 | 完成 14B-03：SceneFacade 权威 Commit、双 revision、完整响应、幂等、碰撞/越界及正式 Debug/Release target 门禁通过；真实双视图纹理仍由 14B-03A 解锁 |

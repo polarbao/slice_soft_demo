@@ -1,5 +1,7 @@
 #pragma once
 
+#include "slicer_core/api/CommonDtos.h"
+
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -7,12 +9,6 @@
 #include <vector>
 
 namespace slicer_core::api {
-
-/** @brief Validated JSON object kept opaque across the Qt-free facade boundary. */
-struct StructuredJsonObject
-{
-    std::string utf8_json{"{}"};
-};
 
 /** @brief Output grid carried by a package summary. */
 struct PackageGrid

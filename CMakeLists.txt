@@ -44,6 +44,11 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/SceneViewDtos.h
     src/slicer_core/api/SliceDtos.h
     src/slicer_core/api/SliceFacade.h
+    src/slicer_core/api/scene/SceneFacadeAuthority.cpp
+    src/slicer_core/api/scene/SceneFacadeAuthority.h
+    src/slicer_core/api/scene/SceneFacadeOperation.cpp
+    src/slicer_core/api/scene/SceneFacadeService.cpp
+    src/slicer_core/api/scene/SceneFacadeService.h
     src/slicer_core/config/ConfigMigration.cpp
     src/slicer_core/config/ConfigMigration.h
     src/slicer_core/config/ConfigSchema.cpp
@@ -504,6 +509,17 @@ add_executable(facade_contract_unit_tests
 target_include_directories(facade_contract_unit_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+add_executable(scene_facade_14b03_unit_tests
+    tests/contracts/scene_facade_14b03/Main.cpp
+)
+target_include_directories(scene_facade_14b03_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(scene_facade_14b03_unit_tests PRIVATE slicer_base)
+if(MSVC)
+    target_compile_options(scene_facade_14b03_unit_tests PRIVATE /bigobj /MP)
+endif()
 
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
@@ -1168,6 +1184,7 @@ add_test(
         --expect-normals
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
+add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(NAME production_admission_policy_unit_tests COMMAND production_admission_policy_unit_tests)
 add_test(NAME experimental_config_unit_tests COMMAND experimental_config_unit_tests)
 add_test(NAME texture_white_carrier_policy_unit_tests COMMAND texture_white_carrier_policy_unit_tests)

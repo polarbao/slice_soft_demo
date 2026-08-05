@@ -14,8 +14,8 @@ class SceneFacade
 public:
     virtual ~SceneFacade() = default;
 
-    /** @brief Applies one atomic operation batch. @param request Commit request. @param cancel_token Cancellation source. @return New snapshot or PM-SLICER error. */
-    [[nodiscard]] virtual ApiResult<SceneSnapshot> ApplyOperation(
+    /** @brief Applies one atomic operation batch. @param request Commit request. @param cancel_token Cancellation source. @return Complete Commit response or PM-SLICER error. */
+    [[nodiscard]] virtual ApiResult<SceneCommitResult> ApplyOperation(
         const SceneOperationRequest& request,
         const ICancelToken& cancel_token) noexcept = 0;
 
