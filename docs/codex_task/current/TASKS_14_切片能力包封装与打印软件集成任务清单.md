@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v1.3 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
+> 版本：v1.4 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 基线收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -70,7 +70,7 @@ cmake --build build --config Debug
 | 14A-06 | 取消语义写入契约（`Cancelling ≠ Cancelled`、≤2s、staging 清理）| 14A-01 | 与 13F-R0-03 实现一致 | ✅ **COMPLETE（2026-08-05）** |
 | 14A-07 | 第三方依赖再分发合规审查（assimp / miniz / libtiff 许可证 + NOTICE）| — | 成文，可随包分发 | ✅ **COMPLETE（2026-08-05）** |
 | 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传（见注 C）| ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
-| 14A-09 | `REPORT_12X` 补 03E 行（03E-02 现为 **`GO_ON_DEMAND`**，见 `REPORT_03E_02` §5.1）| — | 主状态表完整 | 🟢 **READY（首批）** |
+| 14A-09 | `REPORT_12X` 补 03E 行（03E-02 现为 **`GO_ON_DEMAND`**，见 `REPORT_03E_02` §5.1）| — | 主状态表完整 | ✅ **COMPLETE（2026-08-05）** |
 | **14A-10** | **manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）**：manifest 为权威、Profile 仅提供默认值；两处不一致时 **fail-closed**（见注 D）| 14A-02 | Schema 覆盖新字段；不一致用例 fail-closed；无该字段的既有包仍可读 | PREPARED（2026-08-04 新增）|
 | **14A-11** | **`SceneBuildVolume` 新增 Z 限高 `zLimitMm`**（`std::optional<double>`）+ scene schema 同步 + Z 超限判定；默认设备幅面 **230 × 100 × 60 mm**（见注 E）| 14A-02 | 缺省时行为与现状**逐字节一致**（既有场景与 golden 零影响）；`zLimitMm` 存在时实例世界 bbox `max.z` 超限产出**告警**；`get_snapshot` / `apply_operation` 响应带该字段 | PREPARED（2026-08-04 新增）|
 
@@ -357,6 +357,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版，PREPARED。6 个子阶段共 40 张原子任务卡；标注外部依赖与并行项；给出与 12E-09D 的文件所有权隔离 |
 | 2026-08-05 | v1.2 | Stage 14 开工基线收口：14A-02 与 14A-04 职责分离；14B-00 移除矛盾前置并明确输出用途；TIFF 后端与 UI 独立 app 边界对齐权威决策 |
+| 2026-08-05 | v1.4 | 完成 14A-09：`REPORT_12X` 登记 03E-01/02 COMPLETE、`GO_ON_DEMAND`、默认 `none` 与 14F 外部实机互操作边界 |
 | 2026-08-05 | v1.3 | 完成 14A-01：同步打印侧 11 函数 C ABI 头文件、登记 18 项切片错误码并增加 C/C++ 编译与合同数量验证；明确实际 DLL 导出表验证归 14C-01 / 14C-06 |
 | 2026-08-05 | v1.4 | 完成 14A-02：新增 manifest、scene、Profile 三份 Draft 2020-12 Schema；覆盖 Stage 15 三字段、可选 `whiteSemantics`、可选 `zLimitMm`，并以真实/旧样例及负向变体通过自动校验 |
 | 2026-08-05 | v1.5 | 完成 14A-03 切片侧合同：冻结 `file_contract_v1` 请求/结果/协商 Schema、进度行、退出码、有限超时、Job Object 僵尸回收与 staging 双保险清理；打印侧书面确认仍待回签 |

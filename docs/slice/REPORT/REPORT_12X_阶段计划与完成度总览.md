@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v5.3
-> 更新日期：2026-08-04
+> 版本：v5.4
+> 更新日期：2026-08-05
 > 当前生产主线：STAGE 12E COMPLETE
-> 当前下一任务：Stage 15 已完成 19/19；**Stage 14 已于 2026-08-04 授权激活（ACTIVE）**，首批并行 14A-01 / 14A-02 / 14A-07 / 14A-09 / 14B-06 / 14B-00
+> 当前下一任务：Stage 15 已完成 19/19；**Stage 14 已于 2026-08-04 授权激活（ACTIVE）**，14A-01..02、14A-04..09 已完成，14A-03 等待打印侧回签，下一项为 14A-10
 
 ## 1. 使用规则
 
@@ -55,13 +55,14 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
 | 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
 | 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 手写基线、可选 LibTIFF 依赖/Runtime、stripped/tiled、兼容/性能 Gate、隔离 Runtime/RIP 和 full regression 已闭环 | 默认 Writer 保持 handwritten；未来切换需新 Gate 与独立授权 |
+| 03E-TIFF-COMPRESSION | 03E-01/02 COMPLETE / GO_ON_DEMAND | `none|packbits` 已贯通 Legacy/Global/Scene、manifest、严格 Reader、原生预览与 Qt；RIP 侧已声明支持 PackBits | 默认压缩保持 `none`；外部 RIP 实机互操作由 14F 关闭；默认启用需独立决策与 golden 重固化 |
 | 12E-09D | 09D-01..06 COMPLETE / RELEASE MATRIX PASS | Legacy/Global/诊断身份、显式 all_texture、单材料 W/V、Qt、一键切片和 RIP strict 已闭环 | 保持回归 |
 | 12E-10 | 10A/10B/10C/10D COMPLETE | 同层闭环、17 行真实模型矩阵、36 个 Release 计量样本、最终报告和用户说明 | 无；Stage 12E 已封口 |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 已记录同一全 RGB package 由 RIP 生成透明/白色，以及白区 `WSV=000` 私有信号；完成三种策略比对 | `WSV=000` 与 black_is_print 物理语义冲突；等待 RIP 合同决策，不做纹理铺底 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E、13E-R1-01、13F-R0、13G COMPLETE | 多模型场景、TIFF 原生统一预览、Qt 工作台、甲片平面/Z 正反面、Reality 支撑连续性和 30 层最大投影铺底 | 13F-R1-01..05 性能可观测性 |
-| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权激活）| 能力包封装与打印软件集成边界齐备；**RIP 六问两轮闭合**，条款收敛至 `DOC_DECISION_14_S2_RIP接口合同定案.md`；14A-08 COMPLETE；8 项作废方案已登记禁止实现 | 首批并行：14A-01/02/07/09、14B-06、14B-00；新增 14A-10（manifest `whiteSemantics`）；外部 RIP 实机互操作由 14F 关闭 |
+| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权激活）| 14A-01/02/04/05/06/07/08/09 COMPLETE；14A-03 切片侧合同完成；RIP 六问两轮闭合并登记 8 项禁用方案 | 14A-03 等打印侧回签；下一项 14A-10（manifest `whiteSemantics`），随后 14A-11；外部 RIP 实机互操作由 14F 关闭 |
 | Stage 15 | COMPLETE / 19 OF 19 | 按需补 W、预检、报告、自动 Gate、放行记录与 production Profile 全部收口 | 保持回归；外部 RIP 与 12G 不在本阶段 |
 
 ### 2.1 Stage 12 目的图
@@ -74,6 +75,7 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12D | 建立横截面材料闭环、repair-disabled 不变性和真实模型验证 |
 | 12E | 建立 Global Surface Shell、双模式生产写包、Qt 产品入口和最终生产矩阵 |
 | 03D | 在不改变 RGBWSV 生产协议的前提下，以 LibTIFF 双后端和性能 Gate 收口 TIFF Writer |
+| 03E | 在保持默认 `none` 的前提下，以显式 PackBits 选项降低 TIFF 体积，并维持六通道协议与严格 Reader 兼容 |
 | 12F | 整理 Debug/Release Runtime，并在后续阶段继续性能工程化 |
 | 13 | 建立模型场景、实例变换、多模型排版联合切片和 TIFF 原生生产预览 |
 | 14 | 封装切片能力并定义与打印软件、目标 RIP 的集成边界 |
@@ -88,18 +90,20 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
 | 09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 保持回归 |
 | 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 已收口；保持 handwritten 默认 |
+| 03E TIFF Compression | 03E-01/02 COMPLETE / GO_ON_DEMAND | 显式 PackBits 可按需使用；默认保持 `none`，外部实机互操作由 14F 关闭 |
 | 09D Production Texture/Single Material | 09D-01..06 COMPLETE / PASS | 保持回归 |
 | 12E-10 Final Closure | 10A/10B/10C/10D COMPLETE | 已收口 |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
 | 12G-TCWS | FROZEN | 不实现；不计入当前 Stage 12 原子任务 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13C、13D、13E、13E-R1-01、13F-R0、13F-R1-06、13G COMPLETE | 13G 保持回归；13F-R1-01..05 保持独立 |
-| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权）| 首批并行 14A-01/02/07/09、14B-06、14B-00；S2 条款见 `DOC_DECISION_14_S2`；14F 待外部 RIP 实机 |
+| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权）| 14A-01/02/04/05/06/07/08/09 COMPLETE；14A-03 等打印侧回签；下一项 14A-10 |
 | Stage 15 | COMPLETE / 19 COMPLETE / 0 PENDING | 保持回归 |
 
 ### 2.3 剩余任务数量
 
 ```text
 03D-07：0 个（已完成）；
+03E-01/02：0 个（已完成，结论 GO_ON_DEMAND）；
 12E-09D：0 个（已完成）；
 12E-10A：0 个（已完成）；
 12E-10B：0 个（已完成）；

@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v2.0 ｜ 更新日期：2026-08-05
+> 版本：v2.1 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14A-09（14A-08 已完成；14A-03 打印侧回签仍待取得）
+CURRENT_NEXT_TASK      = 14A-10（14A-09 已完成；14A-03 打印侧回签仍待取得）
 ```
 
 ### 1.1 激活前置清单
@@ -131,11 +131,10 @@ slicer_module* / .def       全仓库零命中
 | 卡 | 任务 | 估算 |
 |---|---|---:|
 | 14B-06 | CI 行数门禁 G1..G5 | 2–3 人日 |
-| 14A-09 | `REPORT_12X` 补 03E 行 | 0.2 人日 |
 | 14B-00 | base/engine 分层可行性验证 | 2–3 人日 |
-| **剩余首批合计** | | **4–7 人日** |
+| **剩余首批合计** | | **4–6 人日** |
 
-以上三卡均不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08 已完成，不得重复执行。
+以上两卡均不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
 ## 7. 与其他阶段的边界
 
@@ -172,3 +171,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v1.8 | 完成 14A-05：冻结三车道交互、operationId 幂等、SceneRevisionStale 回滚与 Production 准入；下一任务推进为 14A-06 |
 | 2026-08-05 | v1.9 | 完成 14A-06：冻结取消状态机、2000ms 协作/Job Object 兜底与 staging 双保险清理；下一任务推进为 14A-07 |
 | 2026-08-05 | v2.0 | 完成 14A-07：落盘第三方 NOTICE、assimp/miniz/LibTIFF 完整许可证、分发清单与合规门禁；下一任务推进为 14A-09 |
+| 2026-08-05 | v2.1 | 完成 14A-09：Stage 12 总览补齐 03E `GO_ON_DEMAND`、默认不压缩与 14F 外部互操作边界；下一任务推进为 14A-10 |
