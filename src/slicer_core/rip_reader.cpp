@@ -1,6 +1,6 @@
 #include "slicer_core/rip_reader.h"
 
-#include "slicer_core/config.h"
+#include "slicer_core/config/OutputResolution.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/tiff_io.h"
 

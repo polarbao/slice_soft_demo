@@ -26,7 +26,7 @@ if(NOT SLICESOFT_TIFF_BACKEND STREQUAL "handwritten"
         "Expected handwritten or libtiff.")
 endif()
 
-add_library(slicer_core
+set(SLICESOFT_CORE_SOURCES
     src/third_party/miniz/miniz.c
     src/third_party/miniz/miniz_tdef.c
     src/third_party/miniz/miniz_tinfl.c
@@ -50,6 +50,8 @@ add_library(slicer_core
     src/slicer_core/config/ConfigSchema.h
     src/slicer_core/config/NormalizedConfig.cpp
     src/slicer_core/config/NormalizedConfig.h
+    src/slicer_core/config/OutputResolution.cpp
+    src/slicer_core/config/OutputResolution.h
     src/slicer_core/config/SlicePipelineConfig.cpp
     src/slicer_core/config/SlicePipelineConfig.h
     src/slicer_core/config.cpp
@@ -196,6 +198,8 @@ add_library(slicer_core
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp
     src/slicer_core/model.h
+    src/slicer_core/model/ModelLoadConfig.h
+    src/slicer_core/model/ModelLoadConfigAdapter.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
@@ -343,22 +347,52 @@ add_library(slicer_core
     src/slicer_core/tiff_io.h
 )
 
-target_include_directories(slicer_core PUBLIC
+include(cmake/SliceSoftCoreLayering.cmake)
+SliceSoftPartitionCoreSources(
+    SLICESOFT_CORE_SOURCES
+    SLICESOFT_BASE_SOURCES
+    SLICESOFT_ENGINE_SOURCES
+)
+
+set(SLICESOFT_LAYER_ASSIGNMENT_FILE
+    "${CMAKE_BINARY_DIR}/stage14b_layer_assignment.txt"
+)
+file(WRITE "${SLICESOFT_LAYER_ASSIGNMENT_FILE}" "")
+foreach(source IN LISTS SLICESOFT_BASE_SOURCES)
+    file(APPEND "${SLICESOFT_LAYER_ASSIGNMENT_FILE}" "base ${source}\n")
+endforeach()
+foreach(source IN LISTS SLICESOFT_ENGINE_SOURCES)
+    file(APPEND "${SLICESOFT_LAYER_ASSIGNMENT_FILE}" "engine ${source}\n")
+endforeach()
+
+add_library(slicer_base STATIC ${SLICESOFT_BASE_SOURCES})
+add_library(slicer_engine STATIC ${SLICESOFT_ENGINE_SOURCES})
+add_library(slicer_core INTERFACE)
+
+target_include_directories(slicer_base PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
 )
+target_include_directories(slicer_engine PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
+)
+target_link_libraries(slicer_engine PUBLIC slicer_base)
+target_link_libraries(slicer_core INTERFACE slicer_engine)
 target_compile_definitions(
-    slicer_core
+    slicer_engine
     PRIVATE
         SLICESOFT_CONFIGURED_TIFF_BACKEND="${SLICESOFT_TIFF_BACKEND}"
 )
 
 if(MSVC)
-    target_compile_options(slicer_core PRIVATE /bigobj /MP)
+    target_compile_options(slicer_base PRIVATE /bigobj /MP)
+    target_compile_options(slicer_engine PRIVATE /bigobj /MP)
 endif()
 
 if(WIN32)
-    target_link_libraries(slicer_core PRIVATE windowscodecs ole32 psapi)
+    target_link_libraries(slicer_base PUBLIC windowscodecs ole32)
+    target_link_libraries(slicer_engine PRIVATE psapi)
 endif()
 
 set(_slicesoft_tiff_runtime_file "")
@@ -369,8 +403,8 @@ if(SLICESOFT_TIFF_BACKEND STREQUAL "libtiff")
         message(FATAL_ERROR
             "LibTIFF was found but the TIFF::TIFF imported target is unavailable.")
     endif()
-    target_compile_definitions(slicer_core PRIVATE SLICER_CORE_HAS_LIBTIFF=1)
-    target_link_libraries(slicer_core PRIVATE TIFF::TIFF)
+    target_compile_definitions(slicer_engine PRIVATE SLICER_CORE_HAS_LIBTIFF=1)
+    target_link_libraries(slicer_engine PRIVATE TIFF::TIFF)
     if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
         if(WIN32)
             find_file(
@@ -426,11 +460,11 @@ if(USE_OPENVDB)
             "Alternatively set -DOpenVDB_DIR=<directory-containing-OpenVDBConfig.cmake>."
         )
     endif()
-    target_compile_definitions(slicer_core PRIVATE SLICER_CORE_USE_OPENVDB=1)
+    target_compile_definitions(slicer_engine PRIVATE SLICER_CORE_USE_OPENVDB=1)
     if(TARGET OpenVDB::openvdb)
-        target_link_libraries(slicer_core PRIVATE OpenVDB::openvdb)
+        target_link_libraries(slicer_engine PRIVATE OpenVDB::openvdb)
     elseif(TARGET OpenVDB::OpenVDB)
-        target_link_libraries(slicer_core PRIVATE OpenVDB::OpenVDB)
+        target_link_libraries(slicer_engine PRIVATE OpenVDB::OpenVDB)
     else()
         message(FATAL_ERROR "OpenVDB package found but no supported imported target is available.")
     endif()
@@ -452,16 +486,12 @@ target_include_directories(print_module_spi_cpp_compile_test PRIVATE
 
 add_executable(model_import_layering_probe
     tests/contracts/ModelImportLayeringProbe.cpp
-    src/third_party/miniz/miniz.c
-    src/third_party/miniz/miniz_tdef.c
-    src/third_party/miniz/miniz_tinfl.c
-    src/third_party/miniz/miniz_zip.c
-    src/slicer_core/model.cpp
 )
 target_include_directories(model_import_layering_probe PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
 )
+target_link_libraries(model_import_layering_probe PRIVATE slicer_base)
 if(MSVC)
     target_compile_options(model_import_layering_probe PRIVATE /bigobj /MP)
 endif()
@@ -1079,6 +1109,13 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BLayeringFeasibility.py"
     )
     add_test(
+        NAME slicer_stage14b_target_graph_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14BTargetGraph.py"
+            --assignment
+            "${SLICESOFT_LAYER_ASSIGNMENT_FILE}"
+    )
+    add_test(
         NAME slicer_facade_header_contract_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateFacadeHeaders.py"
@@ -1102,6 +1139,7 @@ if(Python3_Interpreter_FOUND)
         slicer_cancel_contract_test
         slicer_stage14b_preparation_contract_test
         slicer_stage14b_layering_feasibility_test
+        slicer_stage14b_target_graph_test
         slicer_facade_header_contract_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test

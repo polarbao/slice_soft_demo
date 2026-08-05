@@ -1,7 +1,9 @@
 #pragma once
 
 #include "slicer_core/config/SlicePipelineConfig.h"
+#include "slicer_core/config/OutputResolution.h"
 #include "slicer_core/diagnostics/ValidationIssue.h"
+#include "slicer_core/model/ModelLoadConfig.h"
 
 #include <array>
 #include <cstdint>
@@ -11,36 +13,6 @@
 #include <vector>
 
 namespace slicer_core {
-
-inline constexpr int kDefaultOutputDpiX{635};
-inline constexpr int kDefaultOutputDpiY{600};
-inline constexpr double kDefaultLayerThicknessMm{0.038};
-inline constexpr int kMinimumOutputDpi{72};
-inline constexpr int kMaximumOutputDpi{2400};
-inline constexpr double kMillimetersPerInch{25.4};
-inline constexpr double kOutputPixelSizeToleranceMm{1.0e-9};
-
-/**
- * @brief Check whether one output-axis DPI value is supported.
- * @param dpi Output resolution for one raster axis.
- * @return True when dpi is inside the shared defensive range.
- */
-bool IsSupportedOutputDpi(int dpi) noexcept;
-
-/**
- * @brief Check whether a physical pixel size matches one output-axis DPI.
- * @param dpi Output resolution for one raster axis.
- * @param pixelSizeMm Physical pixel size in millimeters.
- * @return True when both values are valid and consistent within protocol tolerance.
- */
-bool IsOutputPixelSizeConsistent(
-    int dpi,
-    double pixelSizeMm) noexcept;
-
-struct InputConfig {
-    std::filesystem::path model_path;
-    std::string format{"auto"};
-};
 
 struct OutputConfig {
     std::filesystem::path package_dir{"output/SlicePackage"};
@@ -56,19 +28,6 @@ struct OutputConfig {
     bool tiled{false};
     std::array<int, 2> tile_size{256, 256};
     int rows_per_strip{64};
-};
-
-struct TransformConfig {
-    std::string unit{"mm"};
-    std::array<double, 3> scale{1.0, 1.0, 1.0};
-    std::array<double, 3> rotation_deg{0.0, 0.0, 0.0};
-    std::array<double, 3> translation_mm{0.0, 0.0, 0.0};
-};
-
-struct AutoOrientConfig {
-    bool enabled{true};
-    double max_height_mm{9.0};
-    std::string strategy{"minimize_height_by_right_angle_rotation"};
 };
 
 struct BackgroundConfig {

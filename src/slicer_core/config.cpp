@@ -135,27 +135,6 @@ std::uint8_t read_legacy_u16_as_u8(const Json& object, const char* key, const st
 
 }  // namespace
 
-bool IsSupportedOutputDpi(const int dpi) noexcept
-{
-    return dpi >= kMinimumOutputDpi && dpi <= kMaximumOutputDpi;
-}
-
-bool IsOutputPixelSizeConsistent(
-    const int dpi,
-    const double pixelSizeMm) noexcept
-{
-    if (!IsSupportedOutputDpi(dpi)
-        || !std::isfinite(pixelSizeMm)
-        || pixelSizeMm <= 0.0)
-    {
-        return false;
-    }
-    const double expectedPixelSizeMm =
-        kMillimetersPerInch / static_cast<double>(dpi);
-    return std::abs(pixelSizeMm - expectedPixelSizeMm)
-        <= kOutputPixelSizeToleranceMm;
-}
-
 SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     std::ifstream input{config_path};
     if (!input) {

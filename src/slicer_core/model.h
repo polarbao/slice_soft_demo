@@ -1,6 +1,6 @@
 #pragma once
 
-#include "slicer_core/config.h"
+#include "slicer_core/model/ModelLoadConfig.h"
 
 #include <array>
 #include <cstddef>
@@ -10,6 +10,8 @@
 #include <vector>
 
 namespace slicer_core {
+
+struct SliceConfig;
 
 struct Vec3 {
     double x{0.0};
@@ -122,6 +124,31 @@ struct ModelReport {
     std::vector<TriangleTextureInfo> triangle_textures;
 };
 
-ModelReport load_model_report(const SliceConfig& config, const std::filesystem::path& config_dir);
+/**
+ * @brief Load a model using the narrow base-layer configuration.
+ * @param config Model load configuration.
+ * @param configDir Base directory for relative input paths.
+ * @return Imported model report.
+ */
+ModelReport load_model_report(
+    const ModelLoadConfig& config,
+    const std::filesystem::path& configDir);
+
+/**
+ * @brief Compatibility adapter for existing engine callers.
+ * @param config Full engine configuration.
+ * @param configDir Base directory for relative input paths.
+ * @return Imported model report.
+ */
+ModelReport load_model_report(
+    const SliceConfig& config,
+    const std::filesystem::path& configDir);
+
+/**
+ * @brief Convert an engine configuration to the narrow model-load contract.
+ * @param config Full engine configuration.
+ * @return Narrow model-load configuration.
+ */
+ModelLoadConfig MakeModelLoadConfig(const SliceConfig& config);
 
 }  // namespace slicer_core

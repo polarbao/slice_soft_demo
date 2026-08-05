@@ -1,6 +1,6 @@
 #pragma once
 
-#include "slicer_core/config.h"
+#include "slicer_core/model/ModelLoadConfig.h"
 #include "slicer_core/scene/SceneModel.h"
 
 #include <filesystem>
@@ -13,7 +13,7 @@ namespace slicer_core
  */
 struct ThreeMfImportRequest
 {
-    SliceConfig config;
+    ModelLoadConfig config;
     std::filesystem::path config_dir;
 };
 

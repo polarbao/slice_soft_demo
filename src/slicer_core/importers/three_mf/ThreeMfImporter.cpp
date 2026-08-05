@@ -7,7 +7,7 @@ namespace slicer_core
 
 SceneModel LoadThreeMfSceneLegacy(const ThreeMfImportRequest& request)
 {
-    SliceConfig config = request.config;
+    ModelLoadConfig config = request.config;
     config.input.format = "3mf";
     return load_model_report(config, request.config_dir);
 }

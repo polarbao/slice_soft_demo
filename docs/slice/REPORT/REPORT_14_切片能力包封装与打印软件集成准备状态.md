@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v2.9 ｜ 更新日期：2026-08-05
+> 版本：v3.0 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14B-01A（14B-00/01/06 已完成）
+CURRENT_NEXT_TASK      = 14B-02 / 14B-03 / 14B-04（可并行）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -79,7 +79,7 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿�
 | 需求 | `docs/slice/PRD/PRD_14_…` | ✅ v1.2 |
 | 设计 | `docs/slice/DEV/DEV_14_…` | ✅ v1.1 |
 | 验收 | `docs/slice/DEMO/DEMO_14_…` | ✅ v1.1 / 78 cases |
-| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v2.9 |
+| 状态 | `docs/slice/REPORT/REPORT_14_…`（本文）| ✅ v3.0 |
 | 任务与执行指令 | `docs/codex_task/current/TASKS_14_…`、`CODEX_PROMPT_14_…` | ✅ v2.2 / v1.3 |
 | 分析底稿 | `docs/claude/INTEGRATION/INT_06..17` | ✅（背景证据，不覆盖正式合同）|
 | 14B 实施准备 | `docs/slice/DOC/DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | ✅ PREPARATION COMPLETE |
@@ -143,8 +143,10 @@ slicer_module* / .def       全仓库零命中
 
 | 卡 | 任务 | 估算 |
 |---|---|---:|
-| 14B-01A | base/engine 两库拆分与 CI 单向依赖检查 | 3–5 人日 |
-| **下一卡合计** | | **3–5 人日** |
+| 14B-02 | ModelFacade + PackageQueryFacade | 3–5 人日 |
+| 14B-03 | SceneFacade 权威求值与 revision | 3–5 人日 |
+| 14B-04 | SliceFacade 提交、进度与取消 | 3–5 人日 |
+| **并行任务合计** | | **9–15 人日** |
 
 本卡不与已完成阶段抢文件（所有权见 `TASKS_14` §8）；14A-08/09 已完成，不得重复执行。
 
@@ -193,3 +195,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v2.7 | 完成 14B-00：以独立编译探针确认 `model.import=base`，登记 301 项文件归属与 4 条窄接口抽取边；下一任务为 14B-06 与 14B-01 |
 | 2026-08-05 | v2.8 | 完成 14B-06：G1..G5 门禁、到期白名单、quick CI 与 CTest 接线生效；14B 顺序推进为 14B-01 |
 | 2026-08-05 | v2.9 | 完成 14B-01：建立 Qt-free Facade/DTO/取消合同并接入 CTest；下一任务推进为 14B-01A |
+| 2026-08-05 | v3.0 | 完成 14B-01A：落地 `slicer_base` / `slicer_engine` 两库、窄化模型与 DPI 配置边界、生成式 source 唯一归属与单向依赖门禁；14B-02/03/04 可并行开发 |

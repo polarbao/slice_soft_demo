@@ -7,7 +7,7 @@ namespace slicer_core
 
 SceneModel LoadObjSceneLegacy(const ObjImportRequest& request)
 {
-    SliceConfig config = request.config;
+    ModelLoadConfig config = request.config;
     config.input.format = "obj";
     return load_model_report(config, request.config_dir);
 }

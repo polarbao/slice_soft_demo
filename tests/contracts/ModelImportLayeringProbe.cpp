@@ -9,7 +9,7 @@ namespace {
 
 int RunProbe(const std::filesystem::path& modelPath)
 {
-    slicer_core::SliceConfig config;
+    slicer_core::ModelLoadConfig config;
     config.input.model_path = modelPath;
     config.input.format = "obj";
     config.auto_orient.enabled = false;

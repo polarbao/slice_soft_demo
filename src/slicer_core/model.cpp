@@ -1372,7 +1372,7 @@ void add_three_mf_object_instance(
     }
 }
 
-void load_3mf(const std::filesystem::path& path, const SliceConfig& config, MeshData& mesh) {
+void load_3mf(const std::filesystem::path& path, const ModelLoadConfig& config, MeshData& mesh) {
     mesh.three_mf.enabled = true;
     mesh.three_mf.package_path = path;
     const TransformConfig& transform = config.transform;
@@ -1407,7 +1407,7 @@ void load_3mf(const std::filesystem::path& path, const SliceConfig& config, Mesh
     std::map<std::string, ThreeMfColorGroup> color_groups;
     std::map<std::string, ThreeMfTexture2D> textures;
     std::map<std::string, ThreeMfTexture2DGroup> texture_groups;
-    const std::filesystem::path texture_cache_dir = config.output.package_dir / "cache/3mf_textures";
+    const std::filesystem::path texture_cache_dir = config.output_package_dir / "cache/3mf_textures";
 
     for (const std::string& color_group_block : model_reader.blocks("colorgroup")) {
         const std::size_t tag_end = color_group_block.find('>');
@@ -1907,7 +1907,7 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
 
 }  // namespace
 
-ModelReport load_model_report(const SliceConfig& config, const std::filesystem::path& config_dir) {
+ModelReport load_model_report(const ModelLoadConfig& config, const std::filesystem::path& config_dir) {
     const std::filesystem::path model_path = resolve_path(config.input.model_path, config_dir);
     if (!std::filesystem::exists(model_path)) {
         throw std::runtime_error("model file does not exist: " + model_path.string());
