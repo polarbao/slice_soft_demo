@@ -1131,6 +1131,7 @@ int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
         50);
     if (projectDock->IsExpanded()
         || diagnosticsDock->IsExpanded()
+        || inspector->isHidden()
         || projectAction->isChecked()
         || diagnosticsAction->isChecked()
         || window.dockWidgetArea(diagnosticsDock)
@@ -1162,28 +1163,61 @@ int UiSmokeTestRunner::WorkbenchProjectDiagnostics(
     if (projectDock->IsExpanded()
         || !diagnosticsDock->IsExpanded()
         || !diagnosticsAction->isChecked()
-        || !inspector->isHidden()
+        || inspector->isHidden()
         || window.m_sceneDocument.SceneRevision()
             != sceneRevision)
     {
         return fail(QStringLiteral(
-            "13D-03 right-side task details did not replace "
-            "the context inspector safely"));
+            "13D-03 task details and the resident context inspector "
+            "cannot be displayed together safely"));
     }
     diagnosticsDock->SetExpanded(false);
     QApplication::processEvents(
         QEventLoop::AllEvents,
         50);
-    if (inspector->isHidden())
+    if (inspector->isHidden()
+        || diagnosticsDock->IsExpanded())
     {
         return fail(QStringLiteral(
-            "13D-03 closing task details did not restore "
-            "the context inspector"));
+            "13D-03 closing task details changed the resident "
+            "context inspector"));
     }
+
+    diagnosticsDock->SetExpanded(true);
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    window.m_contextInspectorToggleAction->setChecked(false);
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (!inspector->isHidden()
+        || !diagnosticsDock->IsExpanded())
+    {
+        return fail(QStringLiteral(
+            "13D-03 explicitly hiding the context inspector changed "
+            "task details"));
+    }
+    window.m_contextInspectorToggleAction->setChecked(true);
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
+    if (inspector->isHidden()
+        || !diagnosticsDock->IsExpanded()
+        || !diagnosticsAction->isChecked())
+    {
+        return fail(QStringLiteral(
+            "13D-03 restoring the resident context inspector changed "
+            "task details"));
+    }
+    diagnosticsDock->SetExpanded(false);
+    QApplication::processEvents(
+        QEventLoop::AllEvents,
+        50);
 
     return pass(QStringLiteral(
         "workbench-project-diagnostics project=collapsed/"
-        "advanced-actions diagnostics=right-side-alternate "
+        "advanced-actions diagnostics=parallel-right-side-detail "
         "contexts=five"));
 }
 
@@ -1304,7 +1338,7 @@ int UiSmokeTestRunner::WorkbenchLayoutRestore(
     }
 
     return pass(QStringLiteral(
-        "workbench-layout-restore schema=2/"
+        "workbench-layout-restore schema=3/"
         "valid-state/corrupt-state-safe-default"));
 }
 
@@ -1872,6 +1906,35 @@ int UiSmokeTestRunner::ProductionTextureControls(
             "12E-09D-04 save/readback mismatch"));
     }
 
+    const ScenarioEntry* whiteOnDemandScenario =
+        window.m_scenarioRegistry.FindById(
+            QStringLiteral(
+                "textured_nail_rgb_white_ondemand_lower_support"));
+    if (whiteOnDemandScenario == nullptr)
+    {
+        return fail(QStringLiteral(
+            "Stage 15 production scenario missing"));
+    }
+    window.ApplyScenario(*whiteOnDemandScenario);
+    QApplication::processEvents();
+    const EffectiveConfigResult whiteOnDemandEffective =
+        window.GenerateEffectiveConfig(
+            {},
+            {},
+            SliceEngineRole::LegacyProduction,
+            QStringLiteral("scene_legacy"));
+    const QString compactSessionName = QFileInfo(
+        whiteOnDemandEffective.generatedconfigpath)
+        .absoluteDir()
+        .dirName();
+    if (!whiteOnDemandEffective.IsValid()
+        || compactSessionName.size() > 72)
+    {
+        return fail(QStringLiteral(
+            "Stage 15 production session path was not compacted: ")
+            + compactSessionName);
+    }
+
     const ScenarioEntry* singleScenario =
         window.m_scenarioRegistry.FindById(
             QStringLiteral("single_material_relief"));
@@ -2019,7 +2082,8 @@ int UiSmokeTestRunner::ProductionTextureControls(
 
     return pass(QStringLiteral(
         "production-texture-controls legacy/global/single/"
-        "diagnostic-separated/stale/save-readback/one-click-effective"));
+        "diagnostic-separated/stale/save-readback/one-click-effective/"
+        "compact-session-path"));
 }
 
 int UiSmokeTestRunner::loadPackage(const UiSmokeTestOptions& options) {
@@ -6881,6 +6945,8 @@ int UiSmokeTestRunner::MultiModelList(
         QStringLiteral("modelInstanceList"));
     auto* visibility = panel.findChild<QToolButton*>(
         QStringLiteral("modelListVisibilityButton"));
+    auto* selectAll = panel.findChild<QToolButton*>(
+        QStringLiteral("modelListSelectAllButton"));
     auto* lock = panel.findChild<QToolButton*>(
         QStringLiteral("modelListLockButton"));
     auto* remove = panel.findChild<QToolButton*>(
@@ -6889,6 +6955,7 @@ int UiSmokeTestRunner::MultiModelList(
         QStringLiteral("modelListAddButton"));
     if (list == nullptr
         || visibility == nullptr
+        || selectAll == nullptr
         || lock == nullptr
         || remove == nullptr
         || add == nullptr
@@ -6896,6 +6963,15 @@ int UiSmokeTestRunner::MultiModelList(
     {
         return fail(
             QStringLiteral("multi-model-list controls or rows missing"));
+    }
+
+    selectAll->click();
+    if (list->selectionMode()
+            != QAbstractItemView::ExtendedSelection
+        || list->selectedItems().size() != 2)
+    {
+        return fail(QStringLiteral(
+            "multi-model-list select-all did not select every row"));
     }
 
     list->setCurrentRow(1);
@@ -7082,7 +7158,7 @@ int UiSmokeTestRunner::MultiModelList(
 
     return pass(QStringLiteral(
         "multi-model-list add/share/duplicate/visibility/lock/delete/"
-        "selection/material-appearance/textured-import/auto-layout/"
+        "selection/select-all/material-appearance/textured-import/auto-layout/"
         "three-window-sizes"));
 }
 

@@ -2,6 +2,7 @@
 
 #include <QBoxLayout>
 #include <QFileInfo>
+#include <QItemSelectionModel>
 #include <QLabel>
 #include <QListWidget>
 #include <QStyle>
@@ -85,6 +86,14 @@ ModelListPanel::ModelListPanel(
     m_addButton->setObjectName(QStringLiteral("modelListAddButton"));
     m_addButton->setIcon(style()->standardIcon(QStyle::SP_FileDialogNewFolder));
     m_addButton->setToolTip(QStringLiteral("添加模型"));
+    m_selectAllButton = new QToolButton(this);
+    m_selectAllButton->setObjectName(
+        QStringLiteral("modelListSelectAllButton"));
+    m_selectAllButton->setIcon(
+        style()->standardIcon(QStyle::SP_FileDialogListView));
+    m_selectAllButton->setToolTip(
+        QStringLiteral(
+            "全选模型（Ctrl+A）；变换与工具栏命令仍作用于蓝框当前模型"));
     m_duplicateButton = new QToolButton(this);
     m_duplicateButton->setObjectName(
         QStringLiteral("modelListDuplicateButton"));
@@ -108,6 +117,7 @@ ModelListPanel::ModelListPanel(
     m_lockButton->setToolTip(QStringLiteral("锁定或解锁选中实例"));
     for (QToolButton* button : {
              m_addButton,
+             m_selectAllButton,
              m_duplicateButton,
              m_deleteButton,
              m_visibilityButton,
@@ -121,7 +131,7 @@ ModelListPanel::ModelListPanel(
 
     m_modelList = new QListWidget(this);
     m_modelList->setObjectName(QStringLiteral("modelInstanceList"));
-    m_modelList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_modelList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_modelList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     rootLayout->addWidget(m_modelList, 1);
 
@@ -141,10 +151,20 @@ ModelListPanel::ModelListPanel(
         this,
         &ModelListPanel::OnCurrentRowChanged);
     connect(
+        m_modelList,
+        &QListWidget::itemSelectionChanged,
+        this,
+        &ModelListPanel::OnListSelectionChanged);
+    connect(
         m_addButton,
         &QToolButton::clicked,
         this,
         &ModelListPanel::SigAddRequested);
+    connect(
+        m_selectAllButton,
+        &QToolButton::clicked,
+        this,
+        &ModelListPanel::OnSelectAllRequested);
     connect(
         m_duplicateButton,
         &QToolButton::clicked,
@@ -195,8 +215,6 @@ void ModelListPanel::OnDocumentChanged()
         }
         ++row;
     }
-    m_summaryLabel->setText(
-        QStringLiteral("模型 %1 / 22").arg(m_document->InstanceCount()));
     if (selectedRow >= 0)
     {
         m_modelList->setCurrentRow(selectedRow);
@@ -238,6 +256,35 @@ void ModelListPanel::OnCurrentRowChanged(const int row)
         m_selectionModel->SetSelectedInstance(instanceId);
     }
     UpdateButtons();
+}
+
+void ModelListPanel::OnListSelectionChanged()
+{
+    if (m_refreshing)
+    {
+        return;
+    }
+    UpdateButtons();
+}
+
+void ModelListPanel::OnSelectAllRequested()
+{
+    if (m_modelList->count() == 0)
+    {
+        return;
+    }
+    m_modelList->selectAll();
+    if (m_modelList->currentRow() < 0)
+    {
+        m_modelList->setCurrentRow(
+            0,
+            QItemSelectionModel::SelectCurrent);
+    }
+    UpdateButtons();
+    emit SigStatusMessage(
+        QStringLiteral(
+            "已全选 %1 个模型；蓝框模型仍是变换和工具栏命令的当前对象。")
+            .arg(m_modelList->selectedItems().size()));
 }
 
 void ModelListPanel::OnDuplicateRequested()
@@ -376,8 +423,18 @@ void ModelListPanel::UpdateButtons()
     const bool sceneReady =
         m_document->State() != SceneDocumentState::Loading
         && !m_document->IsGeometryStale();
+    const int selectedCount = m_modelList->selectedItems().size();
+    m_summaryLabel->setText(
+        selectedCount > 0
+            ? QStringLiteral("模型 %1 / 22 · 已选 %2")
+                  .arg(m_document->InstanceCount())
+                  .arg(selectedCount)
+            : QStringLiteral("模型 %1 / 22")
+                  .arg(m_document->InstanceCount()));
     m_addButton->setEnabled(
         m_document->InstanceCount() < 22U && sceneReady);
+    m_selectAllButton->setEnabled(
+        m_modelList->count() > 0 && sceneReady);
     m_duplicateButton->setEnabled(
         hasSelection
         && m_document->InstanceCount() < 22U

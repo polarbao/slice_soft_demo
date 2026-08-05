@@ -38,7 +38,7 @@ const QString kInspectorVisibleKey =
 
 int WorkspaceLayoutState::SchemaVersion()
 {
-    return 2;
+    return 3;
 }
 
 QString WorkspaceLayoutState::OrganizationName()

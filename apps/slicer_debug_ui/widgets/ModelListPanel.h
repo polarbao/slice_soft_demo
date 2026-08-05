@@ -44,6 +44,8 @@ private slots:
     void OnDocumentChanged();
     void OnSelectionChanged(const QString& instanceId);
     void OnCurrentRowChanged(int row);
+    void OnListSelectionChanged();
+    void OnSelectAllRequested();
     void OnDuplicateRequested();
     void OnDeleteRequested();
     void OnVisibilityRequested();
@@ -65,6 +67,7 @@ private:
     QLabel* m_summaryLabel{nullptr};
     QListWidget* m_modelList{nullptr};
     QToolButton* m_addButton{nullptr};
+    QToolButton* m_selectAllButton{nullptr};
     QToolButton* m_duplicateButton{nullptr};
     QToolButton* m_deleteButton{nullptr};
     QToolButton* m_visibilityButton{nullptr};

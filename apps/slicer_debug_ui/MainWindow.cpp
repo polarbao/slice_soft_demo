@@ -441,6 +441,54 @@ QString SanitizeSessionName(const QString& name)
     return normalized.isEmpty() ? QStringLiteral("model") : normalized;
 }
 
+QString BuildProductionSessionName(
+    const QString& modelName,
+    const QString& profileId,
+    const QString& sessionTag,
+    const QString& timestamp)
+{
+    constexpr int kMaximumSessionNameLength{72};
+    constexpr int kMaximumTagLength{16};
+    constexpr int kHashLength{8};
+
+    const QString modelPart = SanitizeSessionName(modelName);
+    const QString profilePart = SanitizeSessionName(profileId);
+    const QString tagPart =
+        SanitizeSessionName(sessionTag).left(kMaximumTagLength);
+    const QString timestampPart = SanitizeSessionName(timestamp);
+    const QString candidate =
+        modelPart + QStringLiteral("_")
+        + profilePart + QStringLiteral("_")
+        + tagPart + QStringLiteral("_")
+        + timestampPart;
+    if (candidate.size() <= kMaximumSessionNameLength)
+    {
+        return candidate;
+    }
+
+    const QString identityHash = QString::fromLatin1(
+        QCryptographicHash::hash(
+            candidate.toUtf8(),
+            QCryptographicHash::Sha256)
+            .toHex()
+            .left(kHashLength));
+    const QString suffix =
+        QStringLiteral("_") + tagPart
+        + QStringLiteral("_") + timestampPart
+        + QStringLiteral("_") + identityHash;
+    const int readableBudget = std::max(
+        3,
+        kMaximumSessionNameLength - suffix.size());
+    const int modelBudget = std::max(1, (readableBudget - 1) / 2);
+    const int profileBudget = std::max(
+        1,
+        readableBudget - modelBudget - 1);
+    return modelPart.left(modelBudget)
+        + QStringLiteral("_")
+        + profilePart.left(profileBudget)
+        + suffix;
+}
+
 SupportPlacement ParseSupportPlacement(const QString& value)
 {
     if (value == QStringLiteral("upper"))
@@ -645,12 +693,6 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
         this,
         [this](const bool visible)
         {
-            if (visible
-                && m_diagnosticsDock != nullptr
-                && m_diagnosticsDock->IsExpanded())
-            {
-                m_diagnosticsDock->SetExpanded(false);
-            }
             m_contextInspector->setVisible(visible);
         });
     QAction* diagnosticsAction = m_diagnosticsDock->toggleViewAction();
@@ -659,21 +701,6 @@ MainWindow::MainWindow(QString repo_root, QWidget* parent)
     diagnosticsAction->setShortcut(
         QKeySequence(QStringLiteral("Ctrl+Alt+D")));
     viewMenu->addAction(diagnosticsAction);
-    connect(
-        m_diagnosticsDock,
-        &QDockWidget::visibilityChanged,
-        this,
-        [this](const bool visible)
-        {
-            if (visible)
-            {
-                m_contextInspectorToggleAction->setChecked(false);
-            }
-            else if (!m_contextInspectorToggleAction->isChecked())
-            {
-                m_contextInspectorToggleAction->setChecked(true);
-            }
-        });
 
     connect(
         &runner_,
@@ -2359,10 +2386,12 @@ EffectiveConfigResult MainWindow::GenerateEffectiveConfig(
         return errorresult;
     }
 
-    const QString profilePart = SanitizeSessionName(source.profileid);
-    const QString modelPart = SanitizeSessionName(modelInfo.completeBaseName());
-    const QString sessionName = modelPart + "_" + profilePart + "_" + sessionTag + "_"
-        + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz");
+    const QString sessionName = BuildProductionSessionName(
+        modelInfo.completeBaseName(),
+        source.profileid,
+        sessionTag,
+        QDateTime::currentDateTime().toString(
+            QStringLiteral("yyyyMMdd_HHmmss_zzz")));
     const QString relativeSessionRoot = QStringLiteral("output/ui_sessions/") + sessionName;
     const QString generatedPath = QDir(paths_.repo_root).filePath(
         relativeSessionRoot + QStringLiteral("/slice_config.effective.json"));
