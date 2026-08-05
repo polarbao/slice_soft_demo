@@ -1,0 +1,71 @@
+{
+  "contractVersion": "1.0",
+  "scope": "slicer_ui_host_sim_reference_host_only",
+  "units": "mm",
+  "settings": {
+    "defaultViewMode": "top",
+    "allowedViewModes": ["top", "three_d"],
+    "threeDProjectionDefault": "orthographic",
+    "threeDProjectionAllowed": ["orthographic", "perspective"],
+    "persistence": "session_config"
+  },
+  "viewModes": {
+    "top": {
+      "projection": "orthographic",
+      "projectionMutable": false,
+      "cameraDirection": [0.0, 0.0, -1.0],
+      "upDirection": [0.0, 1.0, 0.0],
+      "gridPlane": "xy_at_z0",
+      "buildVolumePresentation": "xy_platform_only",
+      "requiredTextureContent": ["surface_preview", "appearance"]
+    },
+    "three_d": {
+      "projection": "orthographic",
+      "projectionMutable": true,
+      "defaultCamera": "isometric_front_right_top",
+      "gridPlane": "xy_at_z0",
+      "buildVolumePresentation": "xyz_wireframe_when_z_limit_available",
+      "requiredTextureContent": ["mesh", "texcoord0", "submeshes", "materials", "textures"]
+    }
+  },
+  "grid": {
+    "extentSource": "scene.buildVolume",
+    "productFallbackMm": { "x": 230.0, "y": 100.0, "z": 60.0 },
+    "minorSpacingMm": 1.0,
+    "majorSpacingMm": 10.0,
+    "axisSpacingMm": 10.0,
+    "adaptiveVisibility": {
+      "minorVisibleWhenPixelsPerMmGte": 4.0,
+      "majorAlwaysVisible": true,
+      "labelsVisibleWhenPixelsPerMmGte": 2.0
+    },
+    "rendering": {
+      "minorLineWidthPx": 1.0,
+      "majorLineWidthPx": 1.5,
+      "boundaryLineWidthPx": 2.0,
+      "depthTestInThreeD": true,
+      "antiAlias": true
+    }
+  },
+  "texturePresentation": {
+    "requiredIfModelDeclaresTexture": true,
+    "silentGrayFallbackAllowed": false,
+    "whiteTextureContrast": {
+      "canvasColor": "#2b2d31",
+      "platformColor": "#686d75",
+      "outlineColor": "#17191c",
+      "selectionColor": "#f2c14e",
+      "transparentCheckerColors": ["#d6d8dc", "#f2f3f5"]
+    },
+    "displayAssistsModifyTexturePixels": false,
+    "displayAssistsModifyProductionOutput": false
+  },
+  "switchInvariants": {
+    "preserveSceneRevision": true,
+    "preserveSelection": true,
+    "preserveInstanceTransforms": true,
+    "preserveJobState": true,
+    "reuseMeshAndTextureCaches": true,
+    "moduleCallsDuringSwitch": 0
+  }
+}

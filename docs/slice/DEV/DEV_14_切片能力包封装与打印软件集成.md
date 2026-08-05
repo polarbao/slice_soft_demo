@@ -189,6 +189,11 @@ Scene 真值：相机、拾取、纹理上传和瞬时矩阵均为宿主本地�
 不得改变 scene revision、选中集、实例变换或作业状态。白色/近白纹理由非纯白平台、轮廓线、
 选中高亮和透明棋盘格辅助辨识，辅助显示不得写回纹理或 TIFF。
 
+UI 视图与网格的机器可读真源为 `contracts/slicer_ui_view_spec.json`：top/three_d 均使用
+`scene.buildVolume` 的 XY 范围、1 mm 小格和 10 mm 大格；top 只画 XY 平台，three_d 可按
+`zLimitMm` 画构建体积线框。缩放低于 4 px/mm 时隐藏小格，但大格常显。该网格只服务呈现，
+不得参与几何判定、切片采样或 TIFF 输出。
+
 ## 6. 线程与取消
 
 ```text

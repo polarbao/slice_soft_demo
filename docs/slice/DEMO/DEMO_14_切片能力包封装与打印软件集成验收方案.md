@@ -12,12 +12,12 @@
 | 组 | 主题 | 用例数 | 依赖 |
 |---|---|---:|---|
 | D14-A | 契约物料与合规 | 6 | 无 |
-| D14-B | Facade、ViewData Provider 与 base/engine 分层 | 11 | 14B |
+| D14-B | Facade、ViewData Provider 与 base/engine 分层 | 12 | 14B |
 | D14-C | ABI 与一致性（C-SPI）| 18 | 14C |
 | D14-D | Worker、取消与引擎替换 | 12 | 14D |
-| D14-E | 交互、双视图纹理与可移植性 | 18 | 14E |
+| D14-E | 交互、双视图纹理与可移植性 | 19 | 14E |
 | D14-F | 打包、稳定性与三方联调 | 11 | 14F |
-| **合计** | | **76** | |
+| **合计** | | **78** | |
 
 ---
 
@@ -47,6 +47,7 @@
 | D14-B-09 | `TexturedSceneViewDataProvider` 为 top 返回可解码 `surfacePreview`，世界边界与透明语义完整 | checker 3MF + 圣诞节浮雕正例通过 | NOT RUN |
 | D14-B-10 | Provider 为 three_d 返回 `mesh + texcoord0 + submeshes + materials + textures`，identity 可复用 | UV/材质绑定和纹理方向与源资产一致 | NOT RUN |
 | D14-B-11 | 声明纹理但缺文件、解码失败或 UV 无效 | 稳定返回 `INPUT-0001/0002`，不得成功返回灰模 | NOT RUN |
+| D14-B-12 | 多模型 ViewData 外观引用 | `appearances[]` identity 唯一；每个 preview/submesh 引用均可解析，无单数外观覆盖 | NOT RUN |
 
 ## 3. D14-C ABI 与一致性（C-SPI-01..18）
 
@@ -114,6 +115,7 @@
 | D14-E-16 | 准备、切片预览、模块诊断三个工作区及固定区域 | 导入排版、层检查、模块自检各有唯一主入口；状态可切换且不丢失 | NOT RUN |
 | D14-E-17 | UI 渲染依赖边界 | 使用 Qt5 Widgets/Gui + QOpenGLWidget；不链接 Qt3D、不新增 vcpkg 依赖、不 include `slicer_core/**` | NOT RUN |
 | D14-E-18 | 正常 Commit 与恢复调用序列 | 成功直接采用 `apply_operation` 响应，不追加快照；仅 Stale/显式刷新/恢复调用 `get_snapshot` | NOT RUN |
+| D14-E-19 | top/three_d 网格规格 | buildVolume 范围一致；1 mm 小格/10 mm 大格；top 忽略 Z；three_d 按 zLimit 画线框；网格不改变切片结果 | NOT RUN |
 
 ## 6. D14-F 打包、稳定性与联调
 
@@ -159,4 +161,4 @@ legacy 保持默认；Global 保持显式 opt-in
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-03 | v1.0 | 首版。62 个用例分 6 组；含 C-SPI 18 项、引擎替换 E-01..08 挂钩、`mouse-move` 零跨 DLL 可证伪指标、边打印边切片稳定性专项 |
-| 2026-08-05 | v1.1 | 扩为 76 个用例：增加 TexturedSceneViewDataProvider、top/three_d 纹理、白色纹理辨识、默认/即时视图切换、缓存与调用计数、QOpenGL 依赖边界及 Commit 调用序列验证 |
+| 2026-08-05 | v1.1 | 扩为 78 个用例：增加 TexturedSceneViewDataProvider、多模型外观、top/three_d 纹理与网格、白色纹理辨识、默认/即时视图切换、缓存与调用计数、QOpenGL 依赖边界及 Commit 调用序列验证 |

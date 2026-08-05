@@ -79,6 +79,9 @@ three_d   mesh + texcoord0 + submeshes + materials + texture blobs
 **合同不是实现。** 14B-03A 必须实现 `TexturedSceneViewDataProvider`，并成为 14C-04、
 14E-04 与 14E-04c 的硬前置；UI 不得 include core 或自行旁路加载纹理。
 
+UI 视图、设置与网格只看 `contracts/slicer_ui_view_spec.json`：top/three_d 双模式、
+1 mm 小格/10 mm 大格、buildVolume 范围、白纹理对比和切换零模块调用均受自动合同测试门禁。
+
 ### 0.6 🔴 三车道调用逻辑已修正
 
 ```text

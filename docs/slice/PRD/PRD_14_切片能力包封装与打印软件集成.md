@@ -75,6 +75,7 @@
 | NFR14-10 | 双视图纹理完整性 | 声明纹理的模型：`top` 必须返回带纹理投影；`three_d` 必须返回 `mesh + texcoord0 + material + texture`；缺纹理、解码失败、无有效 UV 均显式失败 |
 | NFR14-11 | 视图切换不引入模块抖动 | top/three_d 切换复用 mesh/texture identity 与本地缓存；相机操作、视图切换和 `mouse-move` 均为 0 次跨 DLL 调用 |
 | NFR14-12 | 白色纹理可辨识 | UI 使用非纯白平台、轮廓/选中高亮和透明棋盘格区分白色、近白纹理与背景，不修改纹理像素或生产数据 |
+| NFR14-13 | 双视图网格尺度一致 | top/three_d 共用 `scene.buildVolume` 的 XY 范围和 1 mm 小格/10 mm 大格；top 忽略 Z，three_d 在有 `zLimitMm` 时画构建体积线框；网格不参与切片真值 |
 
 > ⚠️ **数值预算说明**：NFR14-04 等具体阈值必须在 14A 实测后冻结，本 PRD 不虚构。当前只给目标量级。
 

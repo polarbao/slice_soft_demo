@@ -8,7 +8,7 @@
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，RIP 侧已确认支持 PackBits，状态转为 `GO_ON_DEMAND`（按需显式开启已授权，默认压缩仍为 `none`）。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：RIP 六问两轮闭合，S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`，首批并行任务为 14A-01/02/07/09、14B-06、14B-00。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
+当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，RIP 侧已确认支持 PackBits，状态转为 `GO_ON_DEMAND`（按需显式开启已授权，默认压缩仍为 `none`）。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：14A 切片侧实现已收口，14A-03 与双视图纹理 14A-04-R1 待打印侧回签；后续入口为 14B-00/06，14B-03A 将提供 top/three_d 真实纹理 ViewData。S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
 
 ## 目录结构
 
@@ -63,8 +63,10 @@
 | `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` | Stage 14 准备状态与外部依赖 |
 | `DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md` | Stage 14 对目标 RIP 的技术确认往来记录（两轮已闭合，转档案；实施不看本文） |
 | `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` | **S2 接缝权威合同**：Q1~Q6 定案条款、切片侧新工作项 N1/N2、8 项作废方案禁止实现 |
-| `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` 网格 DTO 契约草案**：缓冲格式、LOD 语义、`local`+`worldMatrix`、blob 分块（不新增导出符号）、失效规则；供 14A-04 冻结采用 |
-| `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计**：独立 app target 定案（不开分支）、M-MVP 时序前置、打印软件参考实现定位、15 项能力 P0/P1/P2 覆盖清单、**3D 视角与相机操作**、UI-M1..M8 可测验收、三条 CI 依赖守卫、viewdata 网格 DTO 缺口（UI-R4）|
+| `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
+| `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |
+| `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计 v1.3**：独立参考宿主、M-MVP-CANDIDATE→M-MVP、QOpenGL 双视图、三工作区信息架构、UI-M1..M13 与 14B-03A 前置 |
+| `../../contracts/slicer_ui_view_spec.json` | 参考宿主 top/three_d 设置、1 mm/10 mm 网格、纹理对比辅助与视图切换不变量 |
 | `DOC/DOC_DECISION_15_纹理纯白区按需补白与材料闭合修复专项.md` | Stage 15 纯白纹理材料闭合修复主决策 |
 | `DOC/DOC_PREP_15_纹理纯白区按需补白实施准备与依赖审查.md` | Stage 15 路径边界、依赖、基线和开工 Gate |
 | `PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md` | Stage 15 产品需求与验收标准 |

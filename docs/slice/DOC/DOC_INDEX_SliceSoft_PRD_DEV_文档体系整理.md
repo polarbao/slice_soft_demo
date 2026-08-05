@@ -38,7 +38,7 @@
 最新完成阶段：Stage 12E 与 Stage 13 批准范围已收口
 当前执行阶段：Stage 14 ACTIVE（2026-08-04 授权激活）；Stage 15 COMPLETE / 19 OF 19
 最新完成任务：Stage 15 全量收口（G1–G8）；RIP 六问两轮闭合，S2 条款收敛至 DOC_DECISION_14_S2
-当前推荐任务：Stage 14 首批并行 —— 14A-01 / 14A-02 / 14A-07 / 14A-09 / 14B-06 / 14B-00
+当前推荐任务：Stage 14 14A 切片侧已收口；下一批为 14B-00 / 14B-06，双视图纹理 Provider 为 14B-03A
 ```
 
 09P-R1 已完成：
@@ -487,6 +487,10 @@ Stage 14 / Stage 15 当前入口：
 ```text
 docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md
 docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md          ← 【S2 权威合同，实施只看这份】
+docs/slice/DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md ← 【冻结合同受控修订】
+docs/slice/DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md          ← 【14E 权威设计 v1.3】
+docs/slice/DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md       ← 【ViewData v1.2】
+contracts/slicer_ui_view_spec.json                             ← 【双视图设置与网格真源】
 docs/slice/PRD/PRD_14_切片能力包封装与打印软件集成.md
 docs/slice/DEV/DEV_14_切片能力包封装与打印软件集成.md
 docs/slice/DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.md

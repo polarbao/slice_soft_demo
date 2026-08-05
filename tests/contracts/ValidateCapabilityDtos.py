@@ -207,7 +207,58 @@ def Main() -> int:
     ]:
         raise AssertionError("textured instance requirements drifted")
 
-    print("15 capability DTOs and dual-view texture contract: PASS")
+    uiViewSpec = LoadJson(repoRoot / "contracts" / "slicer_ui_view_spec.json")
+    if uiViewSpec["contractVersion"] != "1.0" or uiViewSpec["units"] != "mm":
+        raise AssertionError("UI view contract version or unit drifted")
+    uiSettings = uiViewSpec["settings"]
+    if uiSettings["allowedViewModes"] != ["top", "three_d"]:
+        raise AssertionError("the reference host must expose exactly two view modes")
+    if uiSettings["defaultViewMode"] not in uiSettings["allowedViewModes"]:
+        raise AssertionError("default view mode must be selectable")
+    uiViews = uiViewSpec["viewModes"]
+    if uiViews["top"]["projection"] != "orthographic":
+        raise AssertionError("top view must remain orthographic")
+    if uiViews["top"]["requiredTextureContent"] != [
+        "surface_preview",
+        "appearance",
+    ]:
+        raise AssertionError("top view texture contract drifted")
+    if set(uiViews["three_d"]["requiredTextureContent"]) != {
+        "mesh",
+        "texcoord0",
+        "submeshes",
+        "materials",
+        "textures",
+    }:
+        raise AssertionError("3D view texture contract drifted")
+    uiGrid = uiViewSpec["grid"]
+    if uiGrid["extentSource"] != "scene.buildVolume":
+        raise AssertionError("grid extent must come from the device build volume")
+    if uiGrid["minorSpacingMm"] != 1.0 or uiGrid["majorSpacingMm"] != 10.0:
+        raise AssertionError("the 1 mm / 10 mm grid specification drifted")
+    texturePresentation = uiViewSpec["texturePresentation"]
+    if not texturePresentation["requiredIfModelDeclaresTexture"]:
+        raise AssertionError("both views must retain declared model textures")
+    if texturePresentation["silentGrayFallbackAllowed"]:
+        raise AssertionError("texture failures cannot silently become gray models")
+    if texturePresentation["displayAssistsModifyTexturePixels"]:
+        raise AssertionError("white-texture assists cannot rewrite texture pixels")
+    if texturePresentation["displayAssistsModifyProductionOutput"]:
+        raise AssertionError("UI display assists cannot change production output")
+    switchInvariants = uiViewSpec["switchInvariants"]
+    if switchInvariants["moduleCallsDuringSwitch"] != 0:
+        raise AssertionError("view switching must remain a host-local operation")
+    for key in (
+        "preserveSceneRevision",
+        "preserveSelection",
+        "preserveInstanceTransforms",
+        "preserveJobState",
+        "reuseMeshAndTextureCaches",
+    ):
+        if not switchInvariants[key]:
+            raise AssertionError(f"view switch invariant drifted: {key}")
+
+    print("15 capability DTOs plus dual-view texture/grid contract: PASS")
     return 0
 
 

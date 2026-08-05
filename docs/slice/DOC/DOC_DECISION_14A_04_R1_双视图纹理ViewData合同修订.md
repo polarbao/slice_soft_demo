@@ -54,13 +54,13 @@ three_d   可 orbit/pan/zoom；默认正交，可切换透视
 ```text
 sceneId / sceneRevision / sceneHash
 实例变换、选中集和当前操作上下文
-已缓存 meshIdentity / appearanceIdentity / textureIdentity
+已缓存 meshIdentity / appearanceIdentity / textureIdentity / previewIdentity
 未完成作业和 Package 身份
 ```
 
 ### 3.2 纹理硬标准
 
-对 `model.import.hasTexture=true` 的模型：
+对模型导入元数据中任一 material 声明纹理绑定的模型：
 
 | 显示模式 | 必需数据 | 允许降级 |
 |---|---|---|
@@ -154,11 +154,15 @@ M-MVP           = M-MVP-CANDIDATE + 14E-01 PASS
 
 ## 8. 新增任务与 Gate
 
+UI 显示规格另以 `contracts/slicer_ui_view_spec.json` 冻结：设置页默认视图、top/three_d 投影、
+1 mm/10 mm 自适应网格、白纹理对比辅助和切换零模块调用均由该文件门禁。它是参考宿主合同，
+不属于切片能力 ABI，也不改变生产 TIFF。
+
 新增 `14B-03A TexturedSceneViewDataProvider`：
 
 ```text
-输入    14A-04-R1、14B-01、14B-03
-输出    textured mesh、surfacePreview、materials/textures、blob/LRU
+输入    14A-04-R1、14B-01、14B-02、14B-03
+输出    textured mesh、surfacePreview、materials/textures、identity/blob
 边界    Qt-free，进入 slicer_base；不得依赖 slicer_engine
 出口    OBJ+MTL+PNG、3MF Texture2D、纹理缺失/无 UV/预算不足矩阵通过
 ```
