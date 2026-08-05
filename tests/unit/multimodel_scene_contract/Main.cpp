@@ -300,6 +300,80 @@ bool SchemaRoundTripAndHash()
             "unsupported schema fails closed");
 }
 
+bool BuildVolumeZLimitContract()
+{
+    const slicer_core::MultiModelScene legacyScene = MakeDraftScene();
+    const slicer_core::Json legacyDocument =
+        slicer_core::SerializeMultiModelScene(legacyScene);
+    const std::string legacyCanonical = legacyDocument.dump(0);
+    const auto legacyDecoded =
+        slicer_core::DeserializeMultiModelScene(legacyDocument);
+
+    const slicer_core::SceneBuildVolume defaultVolume =
+        slicer_core::MakeDefaultDeviceBuildVolume();
+
+    slicer_core::MultiModelScene limitedScene = MakeDraftScene();
+    limitedScene.buildvolume = defaultVolume;
+    limitedScene.buildvolume.zlimitmm = 1.5;
+    const auto exceeded = slicer_core::ValidateMultiModelScene(
+        limitedScene,
+        slicer_core::SceneValidationPurpose::Production);
+    const slicer_core::Json limitedDocument =
+        slicer_core::SerializeMultiModelScene(limitedScene);
+    const auto limitedDecoded =
+        slicer_core::DeserializeMultiModelScene(limitedDocument);
+
+    limitedScene.buildvolume.zlimitmm = 2.0;
+    const auto atLimit = slicer_core::ValidateMultiModelScene(
+        limitedScene,
+        slicer_core::SceneValidationPurpose::Production);
+
+    limitedScene.buildvolume.zlimitmm = 0.0;
+    const auto invalid = slicer_core::ValidateMultiModelScene(
+        limitedScene,
+        slicer_core::SceneValidationPurpose::Production);
+
+    return ExpectTrue(
+               !legacyDocument.at("buildVolume").contains("zLimitMm")
+                   && legacyDecoded.IsValid()
+                   && !legacyDecoded.scene.buildvolume.zlimitmm.has_value()
+                   && legacyCanonical
+                       == slicer_core::SerializeMultiModelScene(
+                              legacyDecoded.scene)
+                              .dump(0),
+               "omitted Z limit preserves legacy canonical scene bytes")
+        && ExpectTrue(
+            defaultVolume.source
+                    == slicer_core::BuildVolumeSource::DeviceProfile
+                && defaultVolume.widthmm
+                    == slicer_core::kDefaultDeviceBuildVolumeWidthMm
+                && defaultVolume.heightmm
+                    == slicer_core::kDefaultDeviceBuildVolumeHeightMm
+                && defaultVolume.zlimitmm
+                    == slicer_core::kDefaultDeviceBuildVolumeZLimitMm
+                && !defaultVolume.isfixture,
+            "default device volume is explicitly 230 x 100 x 60 mm")
+        && ExpectTrue(
+            exceeded.IsValid()
+                && exceeded.warnings.size() == limitedScene.instances.size(),
+            "world bbox Z exceedance produces non-blocking warnings")
+        && ExpectTrue(
+            limitedDocument.at("buildVolume").at("zLimitMm").as_double()
+                    == 1.5
+                && limitedDecoded.IsValid()
+                && limitedDecoded.scene.buildvolume.zlimitmm == 1.5,
+            "explicit Z limit survives canonical scene round-trip")
+        && ExpectTrue(
+            atLimit.IsValid() && atLimit.warnings.empty(),
+            "world bbox at the exact Z limit does not warn")
+        && ExpectTrue(
+            !invalid.IsValid()
+                && invalid.errors.front().code
+                    == slicer_core::SceneValidationErrorCode::
+                        BuildVolumeUndefined,
+            "non-positive Z limit fails closed");
+}
+
 bool EffectiveTransformCompositionIsFrozen()
 {
     slicer_core::ModelTransform requested;
@@ -639,6 +713,7 @@ int main()
         && DraftAndProductionValidation()
         && IdentityAndResourceValidation()
         && SchemaRoundTripAndHash()
+        && BuildVolumeZLimitContract()
         && EffectiveTransformCompositionIsFrozen()
         && SceneRevisionIsOptimistic()
         && SceneRevisionsRemainJsonExact()

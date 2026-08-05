@@ -111,6 +111,9 @@ std::optional<SceneCollisionError> ValidateBuildVolume(
         || !std::isfinite(*volume.heightmm)
         || *volume.widthmm <= 0.0
         || *volume.heightmm <= 0.0
+        || (volume.zlimitmm.has_value()
+            && (!std::isfinite(*volume.zlimitmm)
+                || *volume.zlimitmm <= 0.0))
         || !std::isfinite(request.contactepsilonmm)
         || request.contactepsilonmm < 0.0)
     {
@@ -121,7 +124,7 @@ std::optional<SceneCollisionError> ValidateBuildVolume(
             {},
             {},
             "buildvolume",
-            "build volume dimensions and contact epsilon must be finite and non-negative");
+            "build volume dimensions must be finite and positive; contact epsilon must be finite and non-negative");
     }
     if ((volume.source == BuildVolumeSource::Fixture
          && !volume.isfixture)

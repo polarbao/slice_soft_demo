@@ -254,7 +254,7 @@ ModelTransform DeserializeTransform(const Json& value)
 
 Json SerializeBuildVolume(const SceneBuildVolume& value)
 {
-    return Json::object({
+    Json::Object object{
         {"source", BuildVolumeSourceValue(value.source)},
         {"widthMm", value.widthmm.has_value()
                         ? Json(*value.widthmm)
@@ -266,7 +266,12 @@ Json SerializeBuildVolume(const SceneBuildVolume& value)
         {"xDirection", AxisDirectionValue(value.xdirection)},
         {"yDirection", AxisDirectionValue(value.ydirection)},
         {"isFixture", value.isfixture},
-    });
+    };
+    if (value.zlimitmm.has_value())
+    {
+        object.emplace("zLimitMm", *value.zlimitmm);
+    }
+    return Json(std::move(object));
 }
 
 std::optional<double> DeserializeOptionalDouble(const Json& value)
@@ -302,6 +307,11 @@ SceneBuildVolume DeserializeBuildVolume(const Json& value)
         DeserializeOptionalDouble(value.at("widthMm"));
     volume.heightmm =
         DeserializeOptionalDouble(value.at("heightMm"));
+    if (value.contains("zLimitMm"))
+    {
+        volume.zlimitmm =
+            DeserializeOptionalDouble(value.at("zLimitMm"));
+    }
     volume.origin =
         ParseBuildVolumeOrigin(value.at("origin").as_string());
     volume.xdirection =
@@ -628,6 +638,20 @@ std::string_view SceneValidationErrorCodeName(
     return "SCENE_VALIDATION_UNKNOWN";
 }
 
+SceneBuildVolume MakeDefaultDeviceBuildVolume()
+{
+    SceneBuildVolume volume;
+    volume.source = BuildVolumeSource::DeviceProfile;
+    volume.widthmm = kDefaultDeviceBuildVolumeWidthMm;
+    volume.heightmm = kDefaultDeviceBuildVolumeHeightMm;
+    volume.zlimitmm = kDefaultDeviceBuildVolumeZLimitMm;
+    volume.origin = BuildVolumeOrigin::Center;
+    volume.xdirection = BuildVolumeAxisDirection::Positive;
+    volume.ydirection = BuildVolumeAxisDirection::Positive;
+    volume.isfixture = false;
+    return volume;
+}
+
 SceneValidationResult ValidateMultiModelScene(
     const MultiModelScene& scene,
     const SceneValidationPurpose purpose)
@@ -691,6 +715,20 @@ SceneValidationResult ValidateMultiModelScene(
                 {},
                 "layout",
                 "scene layout must satisfy the P0 11x2 grid contract"));
+    }
+
+    if (scene.buildvolume.zlimitmm.has_value()
+        && (!std::isfinite(*scene.buildvolume.zlimitmm)
+            || *scene.buildvolume.zlimitmm <= 0.0))
+    {
+        result.errors.push_back(
+            MakeError(
+                SceneValidationErrorCode::BuildVolumeUndefined,
+                scene,
+                {},
+                {},
+                "buildvolume.zlimitmm",
+                "build volume Z limit must be finite and positive"));
     }
 
     std::set<std::string> scopeIds;
@@ -885,6 +923,18 @@ SceneValidationResult ValidateMultiModelScene(
                     instance.instanceid,
                     "resolvedprofileid",
                     "all P0 scene instances must share one Profile"));
+        }
+
+        if (scene.buildvolume.zlimitmm.has_value()
+            && std::isfinite(*scene.buildvolume.zlimitmm)
+            && *scene.buildvolume.zlimitmm > 0.0
+            && std::isfinite(instance.effectivebboxmm.max.z)
+            && instance.effectivebboxmm.max.z
+                > *scene.buildvolume.zlimitmm)
+        {
+            result.warnings.push_back(
+                "instance " + instance.instanceid
+                + " exceeds buildVolume.zLimitMm");
         }
     }
 

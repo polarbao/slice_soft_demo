@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.1 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 双视图纹理修订：2026-08-05
+> 版本：v2.2 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -73,7 +73,7 @@ cmake --build build --config Debug
 | 14A-08 | **对 RIP 统一确认清单发出并回签** | — | RIP 侧按模板回填并回传（见注 C）| ✅ **COMPLETE（2026-08-04，两轮均已闭合）** |
 | 14A-09 | `REPORT_12X` 补 03E 行（03E-02 现为 **`GO_ON_DEMAND`**，见 `REPORT_03E_02` §5.1）| — | 主状态表完整 | ✅ **COMPLETE（2026-08-05）** |
 | **14A-10** | **manifest 新增 `whiteSemantics`（`opaque` \| `transparent`）**：manifest 为权威、Profile 仅提供默认值；两处不一致时 **fail-closed**（见注 D）| 14A-02 | Schema 覆盖新字段；不一致用例 fail-closed；无该字段的既有包仍可读 | ✅ **COMPLETE（2026-08-05）** |
-| **14A-11** | **`SceneBuildVolume` 新增 Z 限高 `zLimitMm`**（`std::optional<double>`）+ scene schema 同步 + Z 超限判定；默认设备幅面 **230 × 100 × 60 mm**（见注 E）| 14A-02 | 缺省时行为与现状**逐字节一致**（既有场景与 golden 零影响）；`zLimitMm` 存在时实例世界 bbox `max.z` 超限产出**告警**；`get_snapshot` / `apply_operation` 响应带该字段 | PREPARED（2026-08-04 新增）|
+| **14A-11** | **`SceneBuildVolume` 新增 Z 限高 `zLimitMm`**（`std::optional<double>`）+ scene schema 同步 + Z 超限判定；默认设备幅面 **230 × 100 × 60 mm**（见注 E）| 14A-02 | 缺省时行为与现状**逐字节一致**（既有场景与 golden 零影响）；`zLimitMm` 存在时实例世界 bbox `max.z` 超限产出**告警**；`get_snapshot` / `apply_operation` 响应带该字段 | ✅ **COMPLETE（2026-08-05）** |
 
 **14A 出口**：`contracts/` 物料齐备（`print_module_spi.h` + 错误码表 + `file_contract_v1` + 能力 DTO 1.2 含双视图纹理 ViewData + JSON Schema 含三组新字段）；打印侧书面确认；RIP 侧已回签（14A-08 COMPLETE）；`OPEN-14-03/04/05` 已关闭。
 
@@ -88,7 +88,8 @@ JSON 类型、必填条件、承载和错误码冻结 15 项能力；`scene.get_
 
 **14A-04-R1 本地证据（2026-08-05）**：用户明确授权在 14A 开发已启动后受控修改冻结文件。
 `slicer_capability_dtos` 从 1.1 升至 1.2，`slicer_three_lane_contract` 从 1.0 升至 1.1；
-补齐 top 带纹理投影、three_d UV/材质/纹理、四类缓存 identity 和纹理失败显式错误，
+补齐 top 带纹理投影、three_d UV/材质/纹理、`appearances[]` 多模型引用、四类缓存 identity、
+`contracts/slicer_ui_view_spec.json` 双视图网格和纹理失败显式错误，
 同时修正 Transient 碰撞权威性与正常 Commit 多余 `get_snapshot`。未新增 ABI 导出或能力。
 
 **14A-05 本地证据（2026-08-05）**：`contracts/slicer_three_lane_contract.json/.md`
@@ -109,6 +110,12 @@ JSON 类型、必填条件、承载和错误码冻结 15 项能力；`scene.get_
 作为 manifest 显式权威值；两者冲突或枚举非法时配置与 Writer 均 fail-closed。Legacy、
 Global Surface Shell 与多模型场景写包链路统一传播该字段；严格 Reader 校验可选枚举，旧包缺字段
 仍保持兼容。Debug/Release 配置、Writer、Schema 与 RIP Reader 定向验证均通过。
+
+**14A-11 本地证据（2026-08-05）**：`SceneBuildVolume::zlimitmm` 已成为可选字段；显式
+`MakeDefaultDeviceBuildVolume()` 固化 230 × 100 × 60 mm 设备幅面，而旧 scene 缺字段时不补写，
+canonical JSON 与 scene hash 保持兼容。实例世界 bbox `max.z` 超限只产生告警，不阻断生产准入；
+`scene.get_snapshot` / `scene.apply_operation` DTO 均携带构建体积，后者额外携带 warnings。
+Debug/Release scene、collision、Schema 与 DTO 定向验证均通过。
 
 ---
 
@@ -209,7 +216,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14B-01A | **落地 base/engine 两库拆分 + CI 单向依赖检查** | 14B-00, 14B-01 | `slicer_base` 不含 engine 符号；构建图正确 | PREPARED |
 | 14B-02 | `ModelFacade` + `PackageQueryFacade` 实现（复用既有能力）| 14B-01 | 行为与既有 CLI 一致 | PREPARED |
 | 14B-03 | `SceneFacade`（变换/碰撞/越界权威求值 + revision）| 14B-01 | 与 `layout/` 既有判定逐条一致 | PREPARED |
-| **14B-03A** | **`TexturedSceneViewDataProvider`**：从模型/材质资产生成 top `surfacePreview` 与 three_d `mesh + texcoord0 + submeshes + materials + textures`；实现独立 identity 与预算降级 | 14B-02, 14B-03, 14A-04-R1 | checker 3MF 与 `shengdanjie_fudiao` 双视图正例；白/近白纹理可保真；missing-texture / decode-fail / no-UV 显式失败；不得成功灰模 | PREPARED |
+| **14B-03A** | **`TexturedSceneViewDataProvider`**：从模型/材质资产生成 top `surfacePreview` 与 three_d `mesh + texcoord0 + submeshes + materials + textures`；实现 `appearances[]` 多模型引用、独立 identity 与预算降级 | 14B-02, 14B-03, 14A-04-R1 | checker 3MF、`shengdanjie_fudiao` 与双模型场景正例；白/近白纹理可保真；missing-texture / decode-fail / no-UV 显式失败；不得成功灰模 | PREPARED |
 | 14B-04 | `SliceFacade`（提交/进度/取消）| 14B-01 | 生产 TIFF 逐字节不变 | PREPARED |
 | 14B-05 | `slicer_cli` 改走 facade | 14B-02..04 | full 回归通过 | PREPARED |
 | 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）；**白名单初始条目见下方注**；新增目录不得入白名单 | 🟢 **READY（首批）** |
@@ -293,7 +300,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14E-04 | 轨二：`TopViewRenderPolicy` + `MoveOptimizationPolicy`，使用 14B-03A 的 `surfacePreview` | 14E-03, 14B-03A | top 显示真实纹理；**UI-M2** Commit P95 ≤ 150ms；**UI-M3** 帧率 ≥ 主干 90% | PREPARED |
 | **14E-04b** | **能力覆盖达标**：P0 五项端到端打通并可演示；P1 五项全部打通；P2 各调用一次并记录 | 14E-04 | 按专项 §4 清单逐项核对；**UI-M5** 取消 ≤2s 无 `.staging` 残留；**UI-M6** DLL 缺失优雅报错 | NEW |
 | **14E-04c** | **带纹理 3D 视角与相机操作**：QOpenGLWidget `SceneRenderPolicy` + `AppearanceCache` + `CameraController`（orbit/pan/zoom、光标中心缩放、七向预设、透视/正交）+ 构建体积/网格/坐标轴/越界高亮 | 14E-04, **14A-04-R1**, **14A-11**, **14B-03A** | three_d 必须显示 UV/材质/纹理；**UI-M7** 相机期跨 DLL 调用恒为 0；**UI-M8** 10 万面 orbit P5 ≥ 30 FPS；不引入 Qt3D/vcpkg 新依赖 | **NEW** |
-| **14E-04d** | **双入口视图选择**：设置页保存默认 `top` / `three_d`；中央画布分段控件即时切换；白/近白纹理与背景辅助区分 | 14E-04c | **UI-M9..13**：两视图纹理正确；切换保持 scene/selection/transform/job 并复用缓存；默认值重启恢复；纹理失败显式报错；辅助显示不修改纹理/TIFF | **NEW** |
+| **14E-04d** | **双入口视图选择**：设置页保存默认 `top` / `three_d`；中央画布分段控件即时切换；按 `slicer_ui_view_spec.json` 实现 1 mm/10 mm 自适应网格和白/近白纹理对比辅助 | 14E-04c | **UI-M9..13**：两视图纹理正确；切换保持 scene/selection/transform/job 并复用缓存；默认值重启恢复；网格范围取 buildVolume 且不改变切片；纹理失败显式报错；辅助显示不修改纹理/TIFF | **NEW** |
 | 14E-05 | **拆分主干 UI 大文件**（`MainWindow` 3659 / `UiSmokeTestRunner` 6963）| 14E-04 | 各降至 <1500 行；self-test 绿；**完成后从 14B-06 白名单移除** | PREPARED |
 | 14E-06 | 产出"可移植模块清单"交打印侧（**精确到文件级**，标明可直接复制 / 需改写）| 14E-04b, 14E-04d | 打印侧确认可据此评估移植成本 | PREPARED |
 
@@ -393,3 +400,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v1.9 | 完成 14A-07：落盘第三方 NOTICE、assimp/miniz/LibTIFF 完整许可证、机器分发清单及再分发合规审查门禁 |
 | 2026-08-05 | v2.0 | 完成 14A-10：实现 manifest 权威、Profile 默认的 `whiteSemantics` 解析与写出；冲突/非法值 fail-closed，旧包缺字段保持兼容；下一任务推进为 14A-11 |
 | 2026-08-05 | v2.1 | 增加 14A-04-R1 与 14B-03A；双视图纹理改为硬标准；修正 M-MVP 自循环、Transient 碰撞权威性和 Commit 多余快照；细化 QOpenGL UI 信息架构与依赖链 |
+| 2026-08-05 | v2.2 | 完成 14A-11：增加可选 Z 限高、230 × 100 × 60 mm 显式设备默认、超限非阻断告警及 scene 响应字段；14A 切片侧实现任务全部完成，外部回签继续单独跟踪 |

@@ -24,6 +24,21 @@ inline constexpr double kDefaultSceneColumnGapMm{10.0};
 inline constexpr double kDefaultSceneRowGapMm{10.0};
 
 /**
+ * @brief Default device build-volume width along X in millimetres.
+ */
+inline constexpr double kDefaultDeviceBuildVolumeWidthMm{230.0};
+
+/**
+ * @brief Default device build-volume height along Y in millimetres.
+ */
+inline constexpr double kDefaultDeviceBuildVolumeHeightMm{100.0};
+
+/**
+ * @brief Default device build-volume limit along Z in millimetres.
+ */
+inline constexpr double kDefaultDeviceBuildVolumeZLimitMm{60.0};
+
+/**
  * @brief Storage scope used to resolve one model's adjacent resources.
  */
 enum class ResourceScopeKind
@@ -34,7 +49,7 @@ enum class ResourceScopeKind
 };
 
 /**
- * @brief Source of the printable XY build volume.
+ * @brief Source of the printable XYZ build-volume limits.
  */
 enum class BuildVolumeSource
 {
@@ -144,13 +159,14 @@ struct ModelSource
 };
 
 /**
- * @brief Optional printable XY volume and its provenance.
+ * @brief Optional printable XYZ limits and their provenance.
  */
 struct SceneBuildVolume
 {
     BuildVolumeSource source{BuildVolumeSource::Unresolved};
     std::optional<double> widthmm;
     std::optional<double> heightmm;
+    std::optional<double> zlimitmm;
     BuildVolumeOrigin origin{BuildVolumeOrigin::Unresolved};
     BuildVolumeAxisDirection xdirection{
         BuildVolumeAxisDirection::Unresolved};
@@ -262,6 +278,12 @@ std::string_view MultiModelSceneSchemaName();
  */
 std::string_view SceneValidationErrorCodeName(
     SceneValidationErrorCode code);
+
+/**
+ * @brief Create the default 230 x 100 x 60 mm device build volume.
+ * @return Explicit device-profile build volume with production provenance.
+ */
+SceneBuildVolume MakeDefaultDeviceBuildVolume();
 
 /**
  * @brief Validate identities, resources, transforms, Profile, and volume.

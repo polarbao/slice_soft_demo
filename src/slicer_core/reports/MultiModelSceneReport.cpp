@@ -195,6 +195,7 @@ bool SameBuildVolume(
     return first.source == second.source
         && first.widthmm == second.widthmm
         && first.heightmm == second.heightmm
+        && first.zlimitmm == second.zlimitmm
         && first.origin == second.origin
         && first.xdirection == second.xdirection
         && first.ydirection == second.ydirection

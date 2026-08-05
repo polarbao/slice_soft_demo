@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v2.3 ｜ 更新日期：2026-08-05
+> 版本：v2.4 ｜ 更新日期：2026-08-05
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,8 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14A-11（14A-10 已完成；14A-03 打印侧回签仍待取得）
+CURRENT_NEXT_TASK      = 14B-00 / 14B-06（14A 切片侧实现已收口）
+14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
 
 ### 1.1 激活前置清单
@@ -44,17 +45,16 @@ CURRENT_NEXT_TASK      = 14A-11（14A-10 已完成；14A-03 打印侧回签仍�
 
 ```text
 现阶段主干 UI 布局与功能【保持原样，不做任何改造】。
-14E 前置为里程碑 M-MVP = 14C-06 全绿 + 14D-05 完成。
-M-MVP 判据：宿主仅通过 11 个 pm_* 导出完成【导入→变换→切片→取包→校验】一次闭环。
+M-MVP-CANDIDATE = 14C-06 全绿 + 14D-05 完成，只解锁 14E-01 纯 C 宿主。
+M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿主。
 ```
 
 新增 UI 需求（均落在 `apps/slicer_ui_host_sim/`，主干不动）：
 3D 视角与相机操作（14E-04c）、俯视⇄3D 切换设置项（14E-04d）。
 `slicer_ui_host_sim` 同时是**交付给打印侧的参考实现**，代码质量按对外交付物要求。
 
-> 🔴 **新增高风险项 UI-R4**：`scene.get_viewdata` 的网格 DTO 从未定义，
-> 而 3D 视角需要它。**必须在 14A-04 契约冻结时一并定死**，否则将迫使已交付 ABI 二次变更。
-> 该要求已写入 14A-04 验收。
+> 🟡 **UI-R4 已完成合同侧缓解**：14A-04-R1 已冻结双视图纹理 DTO；14B-03A 仍须实现
+> `TexturedSceneViewDataProvider`，否则 top/three_d 只有字段而没有真实纹理数据。
 
 ### 1.3 仍然开放的外部项
 
@@ -92,7 +92,8 @@ slicer_base / slicer_engine 未分层（当前仍为单一 slicer_core，CMakeLi
 slicer_module* / .def       全仓库零命中
 ```
 
-**Stage 14 当前完成 14A-01/02/04/05/06/07/08/09/10、14A-04-R1 切片侧修订与 14A-03 切片侧合同；能力 facade、DLL、Worker 与宿主模拟仍未实现。**
+**Stage 14 的 14A 切片侧实现任务已全部完成：14A-01..11（14A-08 已闭合），其中
+14A-03 与 14A-04-R1 仍待打印侧书面回签；能力 facade、DLL、Worker 与宿主模拟尚未实现。**
 
 ### 3.1 已完成原子任务
 
@@ -108,6 +109,7 @@ slicer_module* / .def       全仓库零命中
 | 14A-07 | ✅ COMPLETE（2026-08-05） | `THIRD_PARTY_NOTICES.txt`、三项完整许可证、机器分发清单与合规审查 | miniz/LibTIFF/Assimp notice 完整性和 fail-closed 发布动作合同测试通过 |
 | 14A-09 | ✅ COMPLETE（2026-08-05） | Stage 12 总览补齐 03E 按需压缩结论 | `GO_ON_DEMAND`、默认 `none` 与 14F 外部互操作边界已登记 |
 | 14A-10 | ✅ COMPLETE（2026-08-05） | manifest/Profile `whiteSemantics` 解析、传播、写出与 Reader 校验 | Debug/Release 配置与 Writer 单测、Schema 合同测试和 RIP Reader 通过；冲突/非法值 fail-closed，缺字段兼容 |
+| 14A-11 | ✅ COMPLETE（2026-08-05） | 可选 `zLimitMm`、显式 230 × 100 × 60 mm 设备默认、Z 超限告警及 scene DTO | Debug/Release scene/collision 单测与 Schema/DTO 合同测试 4/4；缺字段 canonical JSON 不变，超限仅告警 |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
 
@@ -177,3 +179,4 @@ slicer_module* / .def       全仓库零命中
 | 2026-08-05 | v2.1 | 完成 14A-09：Stage 12 总览补齐 03E `GO_ON_DEMAND`、默认不压缩与 14F 外部互操作边界；下一任务推进为 14A-10 |
 | 2026-08-05 | v2.2 | 完成 14A-10：落地 manifest 权威、Profile 默认的 `whiteSemantics`；冲突与非法值 fail-closed，旧包缺字段兼容；下一任务推进为 14A-11 |
 | 2026-08-05 | v2.3 | 受控完成 14A-04-R1 切片侧合同修订：top/three_d 均要求真实纹理，补齐 ViewData 外观 DTO 与三车道调用约束；打印侧须基于 DTO 1.2 重新回签 |
+| 2026-08-05 | v2.4 | 完成 14A-11：落地可选 Z 限高、显式设备默认、超限非阻断告警和 scene 响应字段；14A 切片侧实现收口，后续转入 14B-00/06，打印侧回签继续独立跟踪 |

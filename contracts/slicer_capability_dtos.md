@@ -34,6 +34,17 @@ package.read_report
 `scene.layout` 不属于能力包；packing 策略由宿主负责，碰撞和越界真值由
 `geometry.collision` 与 `scene.apply_operation` 返回。
 
+### 1.1 构建体积
+
+`scene.get_snapshot` 与 `scene.apply_operation` 响应均携带 `buildVolume.widthMm`、
+`buildVolume.heightMm` 以及可选 `buildVolume.zLimitMm`。默认设备 Profile 显式解析为
+`230 x 100 x 60 mm`；旧 scene 未声明 `zLimitMm` 时不得自动补写该字段，确保 canonical JSON
+与 scene hash 保持逐字节兼容。
+
+当 `zLimitMm` 存在且实例世界 bbox 的 `max.z` 超限时，`scene.apply_operation.warnings`
+返回非阻断告警。该判定与 top/three_d 视图无关，也不得复用 `autoOrient.maxHeightMm`；后者只
+表示自动定向目标高度，不是设备物理限高。
+
 ## 2. 承载边界
 
 | 类型 | 能力 |

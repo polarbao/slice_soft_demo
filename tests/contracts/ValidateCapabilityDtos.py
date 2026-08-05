@@ -83,6 +83,25 @@ def Main() -> int:
         "requestFields",
         {"operationId", "currentSceneRevision", "expectedSceneRevision"},
     )
+    RequirePaths(
+        byId["scene.apply_operation"],
+        "responseFields",
+        {
+            "buildVolume.widthMm",
+            "buildVolume.heightMm",
+            "buildVolume.zLimitMm",
+            "warnings",
+        },
+    )
+    RequirePaths(
+        byId["scene.get_snapshot"],
+        "responseFields",
+        {
+            "buildVolume.widthMm",
+            "buildVolume.heightMm",
+            "buildVolume.zLimitMm",
+        },
+    )
     viewData = byId["scene.get_viewdata"]
     if viewData["operations"] != ["query", "read_blob"]:
         raise AssertionError("viewdata blob retrieval must remain a sub-operation")

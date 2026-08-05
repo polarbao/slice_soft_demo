@@ -103,6 +103,10 @@
         { "path": "instances[].outOfBounds", "type": "boolean", "required": true },
         { "path": "collisions", "type": "array", "required": true },
         { "path": "outOfBoundsInstances", "type": "array", "required": true },
+        { "path": "buildVolume.widthMm", "type": "number", "required": true },
+        { "path": "buildVolume.heightMm", "type": "number", "required": true },
+        { "path": "buildVolume.zLimitMm", "type": "number", "required": false },
+        { "path": "warnings", "type": "array<string>", "required": true },
         { "path": "preflightDelta", "type": "array", "required": true },
         { "path": "viewdataIdentity", "type": "string", "required": true }
       ],
