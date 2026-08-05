@@ -239,9 +239,17 @@ slicer_worker.exe --spi-request <req.json>   # 独立运行后附加调试器
 | `third_party/miniz` | **base** | 3MF 解压，导入需要 |
 | `tests/` | 不入任何库 | 测试目标 |
 
-| 目录 | 文件数/行数（A）| 归属 | 说明 |
+### 4.1 ⛔【已作废 · v1.0 旧表，仅作行数参考】
+
+> **下表的「归属」列是 v1.0 的 `core` 单层口径，已被上方 v1.1 的 `base` / `engine` 判定取代，
+> 不得据以实施。** 保留本表的唯一目的是它带有**文件数与行数的实测数据（A 级）**，
+> 拆分与工作量估算仍可参考；**凡涉及归属，一律看上方 v1.1 表。**
+>
+> 若两表冲突：**上方 v1.1 表为准**。正式树的权威承载分派见 `docs/slice/DEV/DEV_14_...md` §5。
+
+| 目录 | 文件数/行数（A）| ~~归属~~（作废）| 说明 |
 |---|---|:--:|---|
-| `src/slicer_core/geometry/`（含 `repair/`）| — | **core** | 算法，两边共用 |
+| `src/slicer_core/geometry/`（含 `repair/`）| — | ~~core~~ | 算法，两边共用 |
 | `src/slicer_core/materials/` + `material/` | — | **core** | 同上 |
 | `src/slicer_core/support/` | — | **core** | 同上 |
 | `src/slicer_core/scene/` | 14 / 3508 | **core** | 场景 DTO 与求值，两边共用 |
@@ -260,7 +268,8 @@ slicer_worker.exe --spi-request <req.json>   # 独立运行后附加调试器
 | **`src/slicer_core/api/`（新建）** | — | **core** | Qt-free facade：`ModelFacade` / `SceneFacade` / `SliceFacade` / `PackageQueryFacade` |
 | **`apps/slicer_worker/`（新建）** | — | **worker** | `JobServer` / `JobExecutor` / `StagingPublisher`（可由现 `slicer_cli` 演进）|
 | `apps/slicer_cli/` | 871 | **worker**（演进）| 保留 CLI 形态，同时充当 worker |
-| `apps/slicer_debug_ui/` | 152 / 42429 | 消费方 | 改走 DLL（见 `INT_07` U0–U5）|
+| `apps/slicer_debug_ui/` | 152 / 42429 | 消费方 | ⚠️ **2026-08-04 更正：主干【保持直连 core，一行不改】**。`INT_07` U0–U5 整体迁移已降级为可选后置；改走 DLL 的是**新建**的 `apps/slicer_ui_host_sim/`，见 `DOC_DECISION_14_UI_宿主模拟改造专项.md` |
+| **`apps/slicer_ui_host_sim/`（新建）** | — | 消费方 | Qt 宿主模拟，**只链 `slicer_module.dll`**，禁 include `slicer_core` |
 | `apps/rip_reader_test/` | — | 工具 | 保持直连 core |
 
 > **`pipeline/` 的归属注（P）**：它现在混装了两类东西——**编排**（`MultiModelSliceOrchestrator`、`MultiModelProductionService` 1126 行）与**计算**（`SceneLayerComposer` 1163 行）。目标是把编排上提到 `api/` 与 `orchestration/`，把计算下沉为 `steps/`。这是 `INT_11` 的拆分对象，不是本篇的归属问题。

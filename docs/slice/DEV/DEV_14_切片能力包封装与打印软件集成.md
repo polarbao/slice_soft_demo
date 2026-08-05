@@ -136,6 +136,14 @@ Production slice.rgbwsv 只接受已提交 sceneHash；Worker 内重跑 full pre
 
 > 规则：若某轻量能力实际需要 engine → **该能力改为 Worker 承载**，不得把 engine 拉进 DLL。
 
+> 🔑 **本表是承载分派的单一真源（2026-08-04 确立）。**
+> `src/slicer_module/` 中的 `syncCapabilities[]` 数组必须与本表**逐条一致**：
+> 凡本表标「DLL 进程内」的能力才可入该数组，标「Worker」的一律不得入。
+> 14C-04 的验收包含该一致性检查；两者出现分歧时**以本表为准**，不得反向修改本表迁就实现。
+>
+> ⚠️ `model.import` 是 15 项中**唯一未定归属**的能力，结论由 **14B-00** 给出。
+> 在 14B-00 出结论前，`syncCapabilities[]` 不得写入该项。
+
 ## 6. 线程与取消
 
 ```text

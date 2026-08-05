@@ -96,7 +96,20 @@ cmake --build build --config Debug
 | 14B-03 | `SceneFacade`（变换/碰撞/越界权威求值 + revision）| 14B-01 | 与 `layout/` 既有判定逐条一致 | PREPARED |
 | 14B-04 | `SliceFacade`（提交/进度/取消）| 14B-01 | 生产 TIFF 逐字节不变 | PREPARED |
 | 14B-05 | `slicer_cli` 改走 facade | 14B-02..04 | full 回归通过 | PREPARED |
-| 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）| 🟢 **READY（首批）** |
+| 14B-06 | **CI 行数门禁 G1..G5 + 白名单机制** | — | 门禁生效（`INT_11` §2.1）；**白名单初始条目见下方注**；新增目录不得入白名单 | 🟢 **READY（首批）** |
+
+> **14B-06 白名单初始条目（与 14E-05 关联）**
+>
+> 门禁一旦生效，以下两个既有文件立即超标，必须**显式登记**为白名单，否则 CI 直接红：
+>
+> ```text
+> apps/slicer_debug_ui/MainWindow.cpp            3659 行  → 14E-05 拆分后移除
+> apps/slicer_debug_ui/UiSmokeTestRunner.cpp     6963 行  → 14E-05 拆分后移除
+> ```
+>
+> 白名单条目**必须带到期条件**（此处为「14E-05 完成」），不得无限期挂着。
+> **`apps/slicer_ui_host_sim/`（14E-02 新建）与 `src/slicer_module/`（14C-01 新建）
+> 从第一天起受完整门禁约束，不得进白名单** —— 新代码不应重蹈主干覆辙。
 
 ---
 
@@ -107,7 +120,8 @@ cmake --build build --config Debug
 | 14C-01 | 新建 `src/slicer_module/`；`PM_API`/`PM_CALL __cdecl`/`.def`（11 符号）| 14A-01, 14B-01 | `dumpbin /EXPORTS` 恰好 11 个，无 C++ 修饰名 | PREPARED |
 | 14C-02 | 缓冲三态协议 `WriteOut()` 单一实现 | 14C-01 | C-SPI-05a/b/c | PREPARED |
 | 14C-03 | `HandleRegistry` 句柄生命周期 + `pm_last_error`（TLS）| 14C-01 | C-SPI-04/12/13/14/15 | PREPARED |
-| 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03 | 首次 `pm_poll` 即返回终态 | PREPARED |
+| 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03, **14B-00** | 首次 `pm_poll` 即返回终态；**`syncCapabilities[]` 逐条对齐 `DEV_14` §5 承载分派表，二者不一致即判不通过** | PREPARED |
+| | ↳ ⚠️ **前置 14B-00 不可省**：`model.import` 归属目前是「base（待 14B-00 验证）」，是 15 项能力中**唯一未定**的一项。若 14B-00 结论为「导入必须进 Worker」，`syncCapabilities[]` 必须相应移除该项，否则返工。 | | | |
 | 14C-05 | `pm_module_info` + `module.json` + 版本/运行时自述 | 14C-01 | C-SPI-01/02/03 | PREPARED |
 | 14C-06 | `test_spi_conformance` 自测套件 | 14C-01..05 | **C-SPI-01..18 全绿** | PREPARED |
 | 14C-07 | `DllMain` 红线 + `std::call_once` 初始化 + 无 Qt/PrintSDK 依赖 | 14C-01 | C-SPI-16/17 | PREPARED |
@@ -131,18 +145,30 @@ cmake --build build --config Debug
 
 ---
 
-## 5. 14E 交互验证与拆分
+## 5. 14E 宿主模拟与交互验证
+
+> 🔑 **权威设计：`docs/slice/DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md`**（2026-08-04 新建）
+>
+> **承载方式已定案：独立 app target，不开分支。** 新建 `apps/slicer_ui_host_sim/`（Qt，只链 DLL）；
+> 主干 `apps/slicer_debug_ui/` **一行不改**，继续直连 `slicer_core`。
+> 原"UI 模拟分支"方案作废 —— 它与 `INT_07` §3.2「不做长命分支」原则冲突，
+> 且主干仍在演进（Stage 15 刚落地预检服务改造），分支会立刻分叉。
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
 | 14E-01 | 轨一：`apps/slicer_host_sim/`（控制台，纯 C 调用参考实现）| 14C-06 | 可进 CI；演示 fail-closed | PREPARED |
-| 14E-02 | 轨二：UI 模拟分支——`ModuleClient` + `SceneInteractionController` | 14C-06 | **禁 include `slicer_core/**`**，CI 依赖检查强制 | PREPARED |
-| 14E-03 | 轨二：`TransformCommitPolicy`（三车道 + Stale 回滚）| 14E-02 | `mouse-move` 零跨 DLL 调用（可测）| PREPARED |
-| 14E-04 | 轨二：`TopViewRenderPolicy` + `MoveOptimizationPolicy` | 14E-03 | 手感不回归；策略可配置 | PREPARED |
-| 14E-05 | **据轨二边界拆分 UI 大文件**（`MainWindow` 3659 / `UiSmokeTestRunner` 6963）| 14E-04 | 各降至 <1500 行；self-test 绿 | PREPARED |
-| 14E-06 | 产出"可移植模块清单"交打印侧 | 14E-04 | 打印侧确认可直接移植 | PREPARED |
+| 14E-02 | 轨二：新建 **`apps/slicer_ui_host_sim/`**（Qt）+ `ModuleClient`（运行时装载 11 符号）| 14C-06 | 三条依赖守卫全过（专项 §3）：CMake 不链 core、源码禁 include core、DLL 不进导入表 | PREPARED |
+| 14E-03 | 轨二：`SceneInteractionController` + `TransformCommitPolicy`（三车道 + Stale 回滚）| 14E-02 | **UI-M1** 拖拽期跨 DLL 调用恒为 0；**UI-M4** Stale 回滚可演示且状态一致 | PREPARED |
+| 14E-04 | 轨二：`TopViewRenderPolicy` + `MoveOptimizationPolicy` | 14E-03 | **UI-M2** 提交往返 P95 ≤ 150ms；**UI-M3** 帧率 ≥ 主干 90% | PREPARED |
+| **14E-04b** | **能力覆盖达标**：P0 五项端到端打通并可演示；P1 五项全部打通；P2 各调用一次并记录 | 14E-04 | 按专项 §4 清单逐项核对；**UI-M5** 取消 ≤2s 无 `.staging` 残留；**UI-M6** DLL 缺失优雅报错 | **NEW** |
+| 14E-05 | **拆分主干 UI 大文件**（`MainWindow` 3659 / `UiSmokeTestRunner` 6963）| 14E-04 | 各降至 <1500 行；self-test 绿；**完成后从 14B-06 白名单移除** | PREPARED |
+| 14E-06 | 产出"可移植模块清单"交打印侧 | 14E-04b | 打印侧确认可直接移植 | PREPARED |
 
 > **顺序判断**：14E-05 必须在 14E-02..04 **之后**——先让使用场景长出"可移植 / 切片专有"的边界，再据此拆分，比按文件大小机械切分可靠。
+>
+> **14E-05 与本专项解耦**：新 app 不改主干，主干拆分按 `INT_11` 独立推进；两者只在 14B-06 白名单上有交集。
+>
+> **新 app 从第一天起受 14B-06 行数门禁约束**（≤500 行/文件），**不进白名单** —— 新代码不应重蹈主干覆辙。
 
 ---
 

@@ -60,6 +60,7 @@
 3. docs/slice/REPORT/REPORT_12X_阶段计划与完成度总览.md        ← 当前主状态
 4. docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md
 5. docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md        ← 【S2 权威条款】
+5b. docs/slice/DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md      ← 【14E 权威设计】做 14E 前必读
 6. docs/slice/PRD/PRD_14_切片能力包封装与打印软件集成.md
 7. docs/slice/DEV/DEV_14_切片能力包封装与打印软件集成.md
 8. docs/slice/DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.md
