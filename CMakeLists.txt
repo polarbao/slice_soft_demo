@@ -533,6 +533,8 @@ target_include_directories(print_module_spi_cpp_compile_test PRIVATE
 )
 
 add_library(slicer_module SHARED
+    src/slicer_module/BufferApi.cpp
+    src/slicer_module/BufferApi.h
     src/slicer_module/Exports.cpp
     src/slicer_module/slicer_module.def
 )
@@ -543,6 +545,16 @@ target_include_directories(slicer_module PRIVATE
 target_compile_definitions(slicer_module PRIVATE PM_MODULE_BUILD_SHARED)
 target_link_libraries(slicer_module PRIVATE slicer_base)
 set_target_properties(slicer_module PROPERTIES PREFIX "")
+
+add_executable(stage14c02_buffer_api_unit_tests
+    tests/stage14c_02/BufferApiTests.cpp
+    src/slicer_module/BufferApi.cpp
+    src/slicer_module/BufferApi.h
+)
+target_include_directories(stage14c02_buffer_api_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 add_executable(model_import_layering_probe
     tests/contracts/ModelImportLayeringProbe.cpp
@@ -1364,6 +1376,7 @@ add_test(
         --expect-normals
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
+add_test(NAME stage14c02_buffer_api_unit_tests COMMAND stage14c02_buffer_api_unit_tests)
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(
     NAME textured_scene_viewdata_14b03a_unit_tests
