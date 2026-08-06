@@ -256,14 +256,24 @@ WorkerSliceMaterialization::WorkerSliceMaterialization(
     std::filesystem::path packageDirectory,
     std::string sceneHash,
     std::string profileHash,
-    std::string profileVersion)
+    std::string profileVersion,
+    const std::uint64_t sceneRevision,
+    std::string targetMode,
+    const int dpiX,
+    const int dpiY,
+    const bool productionAdmissionCommitted)
     : m_sceneSnapshotPath(std::move(sceneSnapshotPath)),
       m_profilePath(std::move(profilePath)),
       m_sceneConfigPath(std::move(sceneConfigPath)),
       m_packageDirectory(std::move(packageDirectory)),
       m_sceneHash(std::move(sceneHash)),
       m_profileHash(std::move(profileHash)),
-      m_profileVersion(std::move(profileVersion))
+      m_profileVersion(std::move(profileVersion)),
+      m_sceneRevision(sceneRevision),
+      m_targetMode(std::move(targetMode)),
+      m_dpiX(dpiX),
+      m_dpiY(dpiY),
+      m_productionAdmissionCommitted(productionAdmissionCommitted)
 {
 }
 
@@ -300,6 +310,31 @@ const std::string& WorkerSliceMaterialization::ProfileHash() const noexcept
 const std::string& WorkerSliceMaterialization::ProfileVersion() const noexcept
 {
     return m_profileVersion;
+}
+
+std::uint64_t WorkerSliceMaterialization::SceneRevision() const noexcept
+{
+    return m_sceneRevision;
+}
+
+const std::string& WorkerSliceMaterialization::TargetMode() const noexcept
+{
+    return m_targetMode;
+}
+
+int WorkerSliceMaterialization::DpiX() const noexcept
+{
+    return m_dpiX;
+}
+
+int WorkerSliceMaterialization::DpiY() const noexcept
+{
+    return m_dpiY;
+}
+
+bool WorkerSliceMaterialization::ProductionAdmissionCommitted() const noexcept
+{
+    return m_productionAdmissionCommitted;
 }
 
 std::string WorkerSliceRequestMaterializer::ComputeProfileHash(
@@ -459,7 +494,20 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
             packageDirectory,
             sceneHash,
             profileHash,
-            profileVersion);
+            profileVersion,
+            decoded.scene.scenerevision,
+            slicer_core::SlicePipelineModeName(profile.slice_pipeline.mode),
+            profile.output.dpi_x,
+            profile.output.dpi_y,
+            std::all_of(
+                decoded.scene.instances.begin(),
+                decoded.scene.instances.end(),
+                [](const slicer_core::SceneModelInstance& item)
+                {
+                    return !item.instance.visible
+                        || item.admissionstatus
+                            == slicer_core::SceneInstanceAdmissionStatus::Admitted;
+                }));
     }
     catch (const WorkerSliceRequestMaterializationError&)
     {

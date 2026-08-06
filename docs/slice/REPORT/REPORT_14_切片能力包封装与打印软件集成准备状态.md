@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.29 ｜ 更新日期：2026-08-06
+> 版本：v3.30 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-08-R2-02 IMPLEMENTATION
+CURRENT_NEXT_TASK      = 14D-08-R3-02B IMPLEMENTATION
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -147,8 +147,9 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14D-08-R1-01 | ✅ COMPLETE（2026-08-06） | `request.json` 严格解析与不可变作业身份 | Debug/Release 5/5 定向门禁 PASS；不创建 result/package，不接入 executor |
 | 14D-08-R1-02 | ✅ COMPLETE（2026-08-06） | `result.json` 身份闭合与原子替换 | Debug/Release 4/4 定向门禁 PASS；写入失败稳定映射 OUTPUT-0050/exit 6 |
 | 14D-08-R1-03 | ✅ COMPLETE（2026-08-06） | 三能力精确调度与共享命令入口 | Debug/Release 8/8 定向门禁 PASS；测试 fake 未进入生产 Worker，无 executor 时不伪成功 |
-| 14D-08-R2 | 🟡 IN PROGRESS | 切片请求映射与真实执行 | R2-01 COMPLETE；R2-02 等待 R3-01 权威 full preflight，R2-03 等待安全发布 |
+| 14D-08-R2 | 🟡 IN PROGRESS | 切片请求映射与真实执行 | R2-01/02 COMPLETE；真实 Facade 已生成受控开发 Package，R2-03 等待安全发布 |
 | 14D-08-R2-01 | ✅ COMPLETE（2026-08-06） | scene/Profile 双 hash、绝对资源、输出身份和 job 目录物化 | Debug/Release 1/1，R1+R2 回归 4/4，target graph PASS；未注册 executor、未写 package |
+| 14D-08-R2-02 | ✅ COMPLETE（2026-08-06） | 权威 full preflight 后调用唯一生产 SliceFacade | Debug/Release R2/R3 定向门禁 PASS；修正 production acceptance 合同；未注册 Worker、未宣称安全发布 |
 | 14D-08-R3 | 🟡 IN PROGRESS | 权威 full preflight 与 repair Facade 适配 | R3-01A/01B COMPLETE；02B 已具备准备门，等待 Writer、strict adapter 与 Worker repair 接线 |
 | 14D-08-R3-01A | ✅ COMPLETE（2026-08-06） | 全场景资源、拓扑、显式目标模式、越界和碰撞权威聚合 | Debug/Release 1/1 PASS；预算未完成、stale、资源变化和取消均 fail-closed；未接 Worker |
 | 14D-08-R3-01B | ✅ COMPLETE（2026-08-06） | PreflightFullFacade、生产等价 Profile 重建与 Worker executor | Debug/Release 定向测试 PASS；Worker 与直接 Facade 身份/计数/admission 一致；资源、stale、取消 fail-closed；不生成 Package |
@@ -262,3 +263,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.27 | 完成 R3-01B/02B 准备复核：发现跨进程 scene 缺 effective Profile/target mode 身份，以及 repair 缺生产资产 Writer/单模型 strict adapter；新增 `14A-04-R2` 受控修订提案，未授权前不修改机器合同或生产代码 |
 | 2026-08-06 | v3.28 | 用户授权并完成 14A-04-R2：能力 DTO 升至 v1.3，full preflight 冻结 scene/Profile/hash/targetMode 身份，repair 首版冻结项目内 OBJ/MTL Writer 与完整证据；SPI v1、11 导出、15 能力和生产协议不变 |
 | 2026-08-06 | v3.29 | 完成 14D-08-R3-01B：权威 preflight Facade 按完整 Profile 重建生产几何，Worker 严格物化 scene/Profile 并输出全场景证据；Debug/Release 门禁通过，下一任务转 14D-08-R2-02 |
+| 2026-08-06 | v3.30 | 完成 14D-08-R2-02：文件合同经权威 full preflight 调用唯一生产 SliceFacade 并生成受控开发 RGBWSV Package；修正 production acceptance 值，stale admission 与取消 fail-closed；下一任务转 R3-02B 与 14D-05 |

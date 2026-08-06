@@ -10,6 +10,8 @@
 >
 > R2-01 实施状态：`COMPLETE（2026-08-06）`
 >
+> R2-02 实施状态：`COMPLETE（2026-08-06）`
+>
 > 父任务状态：`14D-08=BLOCKED`
 
 ## 1. 准备结论
@@ -20,8 +22,8 @@
 | 子任务 | 内容 | 准备状态 |
 |---|---|---|
 | `14D-08-R2-01` | scene/profile/output 校验、hash 复核和 job 目录原子物化 | **COMPLETE（2026-08-06）** |
-| `14D-08-R2-02` | 通过唯一 `CreateProductionSliceFacade()` 执行真实切片 | **BLOCKED_BY_R3_01** |
-| `14D-08-R2-03` | package、RIP strict、独立入口正负例集成证据 | **BLOCKED_BY_R2_02_AND_14D_05** |
+| `14D-08-R2-02` | 通过唯一 `CreateProductionSliceFacade()` 执行真实切片 | **COMPLETE（2026-08-06）** |
+| `14D-08-R2-03` | package、RIP strict、独立入口正负例集成证据 | **BLOCKED_BY_14D_05** |
 
 R2-01 只生成可供现有生产 Facade 消费的受信输入，不创建 TIFF、manifest 或成功
 `result.json`。生产执行必须等待 R3-01 的权威 full preflight，并继续受 14D-05 安全发布约束。
@@ -48,7 +50,8 @@ R2-01 只生成可供现有生产 Facade 消费的受信输入，不创建 TIFF�
 4. `SceneEffectiveConfig` 与 `SliceFacade` 内部继续使用不带前缀的 64 位摘要。
 5. `CreateProductionSliceFacade()` 是唯一现成生产切片 Facade；不得在 Worker 复制 CLI 或切片器实现。
 6. `MultiModelProductionService` 要求 production scene、可加载 Profile、Profile 名称一致、DPI/层高一致。
-7. `PreflightFullFacade` 当前只有接口，没有可构造实现；因此 R2-02 尚不能诚实满足生产顺序。
+7. `PreflightFullFacade` 已由 R3-01B 提供唯一生产工厂，R2-02 已按固定顺序接入；生产注册仍等待
+   R2-03 与 14D-05。
 
 ## 4. R2-01 规范映射
 
@@ -202,6 +205,18 @@ R2-02 必须满足：
 R2-03 还必须等待 14D-05 的 staging、租约、自检、原子 publish、崩溃恢复和双清理。没有
 14D-05 时产生的真实 package 只能作为受控开发证据，不能进入 M-MVP、模块发布或 Worker 替换结论。
 
+### 8.1 R2-02 实施结果
+
+1. 新增 `WorkerSliceExecutor`，执行顺序固定为 materialize -> authoritative full preflight ->
+   `CreateProductionSliceFacade()`；未复制 CLI、切片器或第二套生产入口。
+2. committed scene 必须已携带所有可见实例的 `admissionStatus=admitted`；Worker 内 full preflight
+   负责重新验证，不负责静默改写 committed scene。缺少提交准入时返回 `PM-SLICER-LAYOUT-0022`。
+3. 修正多模型生产服务向 RGBWSV Writer 传递的生产准入值：production scene 使用 Writer 冻结的
+   `admitted`，functional fixture 继续使用 `functional_fixture_admitted`。
+4. 成功结果只返回当前执行级 package、grid、Profile echo、engine 与耗时证据；完整 per-instance、
+   strict package 查询及安全发布仍属于 R2-03。
+5. 当前 executor 未注册到 production Worker，避免在 14D-05 完成前暴露不完整的生产成功路径。
+
 ## 9. 并行边界
 
 - R2-01 可与 R3 准备审计、14D-07-R0 合同冻结并行，文件所有权不重叠。
@@ -216,11 +231,12 @@ R2-03 还必须等待 14D-05 的 staging、租约、自检、原子 publish、�
 14D_08_R2_PREPARATION_GATE=PASS_WITH_CONTROLLED_SPLIT
 14D_08_R2_01_PREPARATION_GATE=PASS
 14D_08_R2_01_STATUS=COMPLETE
-14D_08_R2_02_PREPARATION_GATE=BLOCKED_BY_14D_08_R3_01
-14D_08_R2_03_PREPARATION_GATE=BLOCKED_BY_R2_02_AND_14D_05
+14D_08_R2_02_PREPARATION_GATE=PASS
+14D_08_R2_02_STATUS=COMPLETE
+14D_08_R2_03_PREPARATION_GATE=BLOCKED_BY_14D_05
 14D_08_PARENT_GATE=BLOCKED
 ```
 
-`14D-08-R2-01` 已完成并通过 Debug/Release 定向门禁。它只解除输入物化缺口，未把
-`slice.rgbwsv` 标记为 Worker 生产可用。下一关键路径是先补齐并实施 `R3-01A/01B` 的权威
-full preflight，再进入 `R2-02` 真实 SliceFacade 执行。
+`14D-08-R2-01/02` 已完成并通过 Debug/Release 定向门禁。真实 Facade 可生成受控开发 Package，
+但 `slice.rgbwsv` 尚未注册为 Worker 生产能力。下一关键路径为 `14D-08-R3-02B` repair 接线与
+`14D-05` 安全发布；二者闭合后才能执行 R2-03。

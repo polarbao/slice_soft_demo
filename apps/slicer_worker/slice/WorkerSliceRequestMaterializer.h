@@ -5,6 +5,7 @@
 #include "slicer_core/api/Cancellation.h"
 #include "slicer_core/json_value.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -45,6 +46,11 @@ public:
      * @param sceneHash Plain lowercase SHA-256 scene digest.
      * @param profileHash Prefixed lowercase SHA-256 Profile digest.
      * @param profileVersion Caller-declared Profile version included in the hash.
+     * @param sceneRevision Committed scene revision verified during materialization.
+     * @param targetMode Explicit production pipeline mode from the effective Profile.
+     * @param dpiX Horizontal production resolution.
+     * @param dpiY Vertical production resolution.
+     * @param productionAdmissionCommitted True when every visible instance carries committed admission.
      */
     WorkerSliceMaterialization(
         std::filesystem::path sceneSnapshotPath,
@@ -53,7 +59,12 @@ public:
         std::filesystem::path packageDirectory,
         std::string sceneHash,
         std::string profileHash,
-        std::string profileVersion);
+        std::string profileVersion,
+        std::uint64_t sceneRevision,
+        std::string targetMode,
+        int dpiX,
+        int dpiY,
+        bool productionAdmissionCommitted);
 
     /** @brief Returns the committed scene snapshot path. */
     [[nodiscard]] const std::filesystem::path& SceneSnapshotPath() const noexcept;
@@ -76,6 +87,21 @@ public:
     /** @brief Returns the caller-declared Profile version. */
     [[nodiscard]] const std::string& ProfileVersion() const noexcept;
 
+    /** @brief Returns the committed scene revision. */
+    [[nodiscard]] std::uint64_t SceneRevision() const noexcept;
+
+    /** @brief Returns the explicit production pipeline mode. */
+    [[nodiscard]] const std::string& TargetMode() const noexcept;
+
+    /** @brief Returns the horizontal production DPI. */
+    [[nodiscard]] int DpiX() const noexcept;
+
+    /** @brief Returns the vertical production DPI. */
+    [[nodiscard]] int DpiY() const noexcept;
+
+    /** @brief Returns whether the committed scene carries production admission. */
+    [[nodiscard]] bool ProductionAdmissionCommitted() const noexcept;
+
 private:
     std::filesystem::path m_sceneSnapshotPath;
     std::filesystem::path m_profilePath;
@@ -84,6 +110,11 @@ private:
     std::string m_sceneHash;
     std::string m_profileHash;
     std::string m_profileVersion;
+    std::uint64_t m_sceneRevision{0U};
+    std::string m_targetMode;
+    int m_dpiX{0};
+    int m_dpiY{0};
+    bool m_productionAdmissionCommitted{false};
 };
 
 /** @brief Validates and atomically materializes file-contract slice inputs. */

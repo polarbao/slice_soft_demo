@@ -948,7 +948,7 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
     writeRequest.effectivePipelineMode = "legacy";
     writeRequest.productionAcceptance =
         contract.production
-        ? "scene_production_admitted"
+        ? "admitted"
         : "functional_fixture_admitted";
     writeRequest.manifestWhiteSemantics =
         profile.output.white_semantics;
