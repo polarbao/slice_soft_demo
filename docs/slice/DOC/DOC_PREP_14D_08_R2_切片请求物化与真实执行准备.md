@@ -128,7 +128,7 @@ Profile id/path、scene snapshot path 和 packageDir 必须来自已校验输入
 | scene 解码/生产校验失败、sceneHash 不一致 | `PM-SLICER-LAYOUT-0022` | stale/身份不闭合，不执行 |
 | Profile 缺字段、hash 不一致、加载失败 | `PM-SLICER-PROFILE-0030` | 不使用默认 Profile 兜底 |
 | scene/Profile 身份冲突 | `PM-SLICER-PROFILE-0031` | 不改写 scene 或 Profile |
-| 相对、逃逸、不存在或类型错误的资源路径 | `PM-SLICER-RESOURCE-0040` | 不进入算法 |
+| 相对、逃逸、不存在或类型错误的资源路径 | `PM-SLICER-INPUT-0001` | 现有稳定码定义为模型文件不存在或不可读；不误用内存不足码 |
 | 物化文件写入/替换失败 | `PM-SLICER-OUTPUT-0050` | 不报告成功 |
 | 物化前后观察到取消 | `PM-SLICER-CANCELLED-0070` | 清理本步骤拥有文件 |
 | 未分类异常 | `PM-SLICER-INTERNAL-0099` | 在 executor 边界转换 |

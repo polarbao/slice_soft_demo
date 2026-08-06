@@ -110,7 +110,7 @@ admission 必须分开表达，不能把 warning 计数为权威失败，也不�
 |---|---|---|
 | scene/instance identity stale | `PM-SLICER-LAYOUT-0022` | 不运行预检/修复 |
 | Profile/策略冲突 | `PM-SLICER-PROFILE-0030/0031` | 不猜默认策略 |
-| 资源缺失/越界 | `PM-SLICER-RESOURCE-0040` | 不扫描 scope 外路径 |
+| 模型资源缺失/越界 | `PM-SLICER-INPUT-0001` | 现有稳定码定义为模型文件不存在或不可读；不扫描 scope 外路径 |
 | topology/admission blocked | 既有 geometry/admission 稳定码 | 保留原始 issue 投影 |
 | 取消 | `PM-SLICER-CANCELLED-0070` | authoritative=false，无发布 |
 | 输出失败 | `PM-SLICER-OUTPUT-0050` | 不报告 repair success |
