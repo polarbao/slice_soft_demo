@@ -27,9 +27,11 @@ Debug/Release 定向门禁后，才负责 API DTO 投影和 Worker 适配。
 | `modelResolver` | 以 `ModelSource` 为键加载不可变 `SceneModel`，不得扫描 resource scope 外路径 |
 | `cancellationRequested` | 可在资源、模型、实例和完整几何循环边界协作取消 |
 
-file contract 的 `geometry.preflight.full` 传输映射留给 `R3-01B`。映射固定为
-`input.mode=full`、`input.scene` 和可选 `input.buildVolume`；若单独携带 build volume，其规范化值
-必须与 scene 内值一致。`file_contract_v1` 的 `input` 已允许对象，本任务不需要提升 minor 版本。
+file contract 的 `geometry.preflight.full` 传输映射留给 `R3-01B`。R3-01A 完成后的跨进程身份审计
+确认 `input.scene` 不足以重建生产加载后的几何；01B 还必须携带 canonical effective Profile、
+Profile hash、scene hash/revision 和显式 target mode。字段级要求以
+`DOC_PREP_14D_08_R3_01B_权威预检Facade与Worker适配准备.md` 为准，并须先完成
+`DOC_DECISION_14A_04_R2_重能力输入身份补充.md` 的受控授权。R3-01A 内部服务合同本身不变。
 
 ## 3. 冻结输出
 
@@ -128,5 +130,5 @@ ctest --test-dir build-slicesoft/main -C Release --output-on-failure -R "^stage1
 ```text
 14D_08_R3_01A_PREPARATION_GATE=PASS
 14D_08_R3_01A_IMPLEMENTATION=READY
-14D_08_R3_01B=BLOCKED_BY_R3_01A
+14D_08_R3_01B=BLOCKED_BY_14A_04_R2_INPUT_IDENTITY
 ```

@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.26 ｜ 更新日期：2026-08-06
+> 版本：v3.27 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-08-R3-01B PREPARATION
+CURRENT_NEXT_TASK      = 14A-04-R2 DECISION / AUTHORIZATION
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -149,8 +149,11 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14D-08-R1-03 | ✅ COMPLETE（2026-08-06） | 三能力精确调度与共享命令入口 | Debug/Release 8/8 定向门禁 PASS；测试 fake 未进入生产 Worker，无 executor 时不伪成功 |
 | 14D-08-R2 | 🟡 IN PROGRESS | 切片请求映射与真实执行 | R2-01 COMPLETE；R2-02 等待 R3-01 权威 full preflight，R2-03 等待安全发布 |
 | 14D-08-R2-01 | ✅ COMPLETE（2026-08-06） | scene/Profile 双 hash、绝对资源、输出身份和 job 目录物化 | Debug/Release 1/1，R1+R2 回归 4/4，target graph PASS；未注册 executor、未写 package |
-| 14D-08-R3 | 🟡 IN PROGRESS | 权威 full preflight 与 repair Facade 适配 | R3-01A 服务 COMPLETE；01B 进入适配准备，02B 等待 repair 服务实现 |
+| 14D-08-R3 | 🟡 IN PROGRESS | 权威 full preflight 与 repair Facade 适配 | R3-01A 服务 COMPLETE；01B 被重能力输入身份修订阻断；02B 被资产 Writer 与 strict adapter 阻断 |
 | 14D-08-R3-01A | ✅ COMPLETE（2026-08-06） | 全场景资源、拓扑、显式目标模式、越界和碰撞权威聚合 | Debug/Release 1/1 PASS；预算未完成、stale、资源变化和取消均 fail-closed；未接 Worker |
+| 14D-08-R3-01B | ⛔ PREPARATION_GATE BLOCKED | PreflightFullFacade 与 Worker executor | 审计确认 scene 缺少 effective Profile、Profile hash 和显式 targetMode，需先授权 `14A-04-R2` 受控合同修订 |
+| 14D-08-R3-02A | ✅ PREPARATION COMPLETE（2026-08-06） | repair 请求、job-owned 输出与 strict 复检合同 | 字段级合同已冻结；后续审计发现生产资产 Writer 和单模型 strict adapter 尚缺 |
+| 14D-08-R3-02B | ⛔ PREPARATION_GATE BLOCKED | RepairFacade 与 Worker executor | 先决策首版 repaired asset 格式/属性保真；仓库当前无生产 OBJ/STL/3MF Writer，Assimp 仅声明未接线 |
 | 14D-07-R1 | ✅ COMPLETE（2026-08-06） | 参数化 E-01..08 合同、fixture 身份、runner 与定义门禁 | 当前 runner 诚实输出 BLOCKED；完整 Worker Gate 归 R2 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
@@ -256,3 +259,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.24 | 完成 14D-08-R3-01A/02A 字段级准备：冻结全场景权威预检 DTO、完整性/准入聚合、repair 输入/输出资产/strict 复检和清理顺序；R3-01A 与 14D-07-R1 可并行开发 |
 | 2026-08-06 | v3.25 | 完成 14D-07-R1：落地参数化 E-01..08 合同、固定 fixture SHA-256、定义门禁和 Worker runner；真实能力未完成时只输出 BLOCKED，完整准入保留给 R2 |
 | 2026-08-06 | v3.26 | 完成 14D-08-R3-01A：全场景权威预检服务对 committed scene 的资源、完整 topology、显式目标模式、越界和碰撞进行稳定聚合；Debug/Release 定向门禁通过，下一步准备 R3-01B Worker/API 适配 |
+| 2026-08-06 | v3.27 | 完成 R3-01B/02B 准备复核：发现跨进程 scene 缺 effective Profile/target mode 身份，以及 repair 缺生产资产 Writer/单模型 strict adapter；新增 `14A-04-R2` 受控修订提案，未授权前不修改机器合同或生产代码 |

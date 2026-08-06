@@ -8,10 +8,10 @@
 
 ## 1. 准备结论
 
-`geometry.repair` 的文件合同、目标资产、证据和 strict 复检顺序已冻结。当前合同无需提升
-`file_contract_v1` minor：顶层 `input` 是开放对象，且 `slicer_capability_dtos.json` 已定义
-`modelId/modelPath/outputPath/policy/requireStrictPass`。`R3-02B` 可以在不修改 C SPI 的前提下实现
-`RepairFacade` factory 与 Worker executor。
+`geometry.repair` 的请求基线、目标资产、证据和 strict 复检顺序已冻结。R3-02B 实现前复核进一步
+确认：现有字段不足以固定模型加载 Profile、资源范围与输出格式，仓库也没有生产资产 Writer 和
+单模型 strict adapter。因此本文仍是 02A 基线，但 02B 的最新门禁以
+`DOC_PREP_14D_08_R3_02B_修复Facade与Worker执行准备.md` 为准，不能直接进入 executor 实现。
 
 ## 2. file contract 字段映射
 
@@ -83,11 +83,12 @@ validate envelope/input/path ownership
 - `EvaluateMeshRepairPreflight`：修复前 topology/eligibility 证据。
 - `ExecuteMeshRepairCleanup`：仅执行批准的保守操作，不承担文件发布。
 - `BuildMeshRepairReport`：生成 evidence JSON 基础，不替代公开 result identity。
-- `R3-01A SceneFullPreflightService`：修复后 strict 判定的唯一权威入口；`R3-02B` 不复制
-  topology admission 规则。
+- `R3-01A SceneFullPreflightService`：提供可复用的 topology/admission 组件和 scene-wide 复检入口；
+  repaired source asset 在进入真实 scene 前，必须先由单模型 strict adapter 重导入并完成属性检查，
+  禁止伪造 committed scene。
 
-因此 `R3-02B` 的开发前置为 `R3-01A COMPLETE`。修复执行器可先编译，但在权威复检接入前不得
-注册为生产 capability。
+因此 `R3-02B` 的开发前置不只包括 `R3-01A COMPLETE`，还包括 Writer/输出格式决策、同 Profile
+重导入和单模型 strict adapter。前置未闭合前不得注册为生产 capability。
 
 ## 7. API DTO 加法扩展
 
@@ -123,7 +124,7 @@ self-intersection/manual required、属性冲突、修复后 strict 失败、取
 
 ```text
 14D_08_R3_02A_PREPARATION_GATE=PASS
-FILE_CONTRACT_MINOR_CHANGE_REQUIRED=NO
-14D_08_R3_02B_PREPARATION_GATE=PASS_WITH_R3_01A_DEPENDENCY
-14D_08_R3_02B_IMPLEMENTATION=BLOCKED_BY_R3_01A
+FILE_CONTRACT_MINOR_CHANGE_REQUIRED=YES_FOR_PROFILE_AND_OUTPUT_IDENTITY
+14D_08_R3_02B_PREPARATION_GATE=BLOCKED_BY_ASSET_WRITER_AND_STRICT_ADAPTER
+14D_08_R3_02B_IMPLEMENTATION=NOT_STARTED
 ```
