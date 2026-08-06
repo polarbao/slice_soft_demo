@@ -539,11 +539,14 @@ add_library(slicer_module SHARED
     src/slicer_module/CapabilityJsonAdapter.h
     src/slicer_module/ErrorApi.cpp
     src/slicer_module/ErrorApi.h
+    src/slicer_module/DllMain.cpp
     src/slicer_module/Exports.cpp
     src/slicer_module/HandleRegistry.cpp
     src/slicer_module/HandleRegistry.h
     src/slicer_module/ModuleInfo.cpp
     src/slicer_module/ModuleInfo.h
+    src/slicer_module/ModuleInitialization.cpp
+    src/slicer_module/ModuleInitialization.h
     src/slicer_module/ModelCapabilityAdapter.cpp
     src/slicer_module/ModelCapabilityAdapter.h
     src/slicer_module/PackageCapabilityAdapter.cpp
@@ -640,6 +643,20 @@ target_include_directories(stage14c05_module_info_tests PRIVATE
 target_link_libraries(stage14c05_module_info_tests PRIVATE slicer_module)
 if(MSVC)
     target_compile_options(stage14c05_module_info_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14c07_dll_initialization_tests
+    tests/stage14c_07/DllInitializationTests.cpp
+    src/slicer_module/ModuleInitialization.cpp
+    src/slicer_module/ModuleInitialization.h
+)
+target_include_directories(stage14c07_dll_initialization_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14c07_dll_initialization_tests PRIVATE slicer_module)
+if(MSVC)
+    target_compile_options(stage14c07_dll_initialization_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(stage14d02_worker_client_unit_tests
@@ -1479,6 +1496,13 @@ if(Python3_Interpreter_FOUND)
             --repo "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_test(
+        NAME slicer_stage14c07_dll_initialization_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14c_07/ValidateDllInitializationContracts.py"
+            --repo "${CMAKE_CURRENT_SOURCE_DIR}"
+            --library $<TARGET_FILE:slicer_module>
+    )
+    add_test(
         NAME slicer_stage14d01_worker_shell_contract_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14D01WorkerShell.py"
@@ -1542,6 +1566,7 @@ add_test(NAME stage14c02_buffer_api_unit_tests COMMAND stage14c02_buffer_api_uni
 add_test(NAME stage14c03_handle_registry_unit_tests COMMAND stage14c03_handle_registry_unit_tests)
 add_test(NAME stage14c03_module_abi_tests COMMAND stage14c03_module_abi_tests)
 add_test(NAME stage14c05_module_info_tests COMMAND stage14c05_module_info_tests)
+add_test(NAME stage14c07_dll_initialization_tests COMMAND stage14c07_dll_initialization_tests)
 add_test(NAME stage14d02_worker_client_unit_tests COMMAND stage14d02_worker_client_unit_tests)
 add_test(
     NAME stage14d03_worker_contract_unit_tests

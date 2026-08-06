@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.23 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.24 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -266,8 +266,10 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03A, **14B-00** | 首次 `pm_poll` 即返回终态；**`syncCapabilities[]` 逐条对齐 `DEV_14` §5 承载分派表，二者不一致即判不通过**；`scene.get_viewdata` 不得绕过 14B-03A | ✅ **COMPLETE（2026-08-06）**；13 项进程内承载、真实 SPI 终态轮询、ViewData Provider 复用与 Worker 能力 fail-closed 的 Debug/Release 门禁 PASS |
 | | ↳ ⚠️ **前置 14B-00 不可省**：`model.import` 归属目前是「base（待 14B-00 验证）」，是 15 项能力中**唯一未定**的一项。若 14B-00 结论为「导入必须进 Worker」，`syncCapabilities[]` 必须相应移除该项，否则返工。 | | | |
 | 14C-05 | `pm_module_info` + `module.json` + 版本/运行时自述 | 14C-01, 14C-04 | C-SPI-01/02/03 | ✅ **COMPLETE（2026-08-06）**；双 Schema、运行时自述、Debug/Release 部署清单、缓冲三态与 11 导出回归 PASS |
-| 14C-06 | `test_spi_conformance` 自测套件 | 14C-01..05 | **C-SPI-01..18 全绿** | PREPARED |
-| 14C-07 | `DllMain` 红线 + `std::call_once` 初始化 + 无 Qt/PrintSDK 依赖 | 14C-01, 14C-05 | C-SPI-16/17 | ✅ **PREPARATION_GATE PASS（2026-08-06）**；初始化状态机、Loader Lock 红线、依赖/重复初始化负例已冻结 |
+| 14C-06 | `test_spi_conformance` 自测套件（受控拆为 06A/06B） | 14C-01..05 | **C-SPI-01..18 全绿** | ⏳ **PARTIAL / WAITING_FOR_06A_06B**；完整套件不得在 Worker 生命周期证据缺失时伪报全绿 |
+| 14C-06A | 模块本地 SPI 一致性与无副作用 `pm_self_test` | 14C-01..05, 14C-07 | 不依赖 Worker 的 C-SPI 项形成独立 Debug/Release 套件 | ✅ **PREPARATION_GATE PASS / READY（2026-08-06）** |
+| 14C-06B | Worker 生命周期 SPI 一致性 | 14C-06A, 14D-04B, 14D-05, 14D-08 | C-SPI-08/09/13/15 真实 Worker 全绿 | ⛔ **PREPARATION_GATE BLOCKED**；等待真实 Worker、安全发布与取消链路 |
+| 14C-07 | `DllMain` 红线 + `std::call_once` 初始化 + 无 Qt/PrintSDK 依赖 | 14C-01, 14C-05 | C-SPI-16/17 | ✅ **COMPLETE（2026-08-06）**；Debug/Release 初始化、并发实例、精确 11 导出与 PE 依赖红线 PASS |
 
 **14C 出口**：`slicer_module.dll` 可被独立套件全绿验证 = 打印侧 M1-07 门禁满足。
 
@@ -283,9 +285,9 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14D-04 | **切片链路 cancel token 贯穿**（受控拆为 04A/04B）| 14B-04 | 04A 核心贯穿；04B Worker 各阶段取消 ≤2s 且无 staging 残留 | ✅ **PREPARATION_GATE PASS_WITH_SPLIT（2026-08-06）** |
 | 14D-04A | 核心 token 贯穿：阶段、逐层和长循环协作检查 | 14B-04 | 直接引擎取消 ≤2s；正常生产回归不变 | ✅ **COMPLETE（2026-08-06）**；核心链路 token、staging 清理、既有包保护和正常字节不变性 Debug/Release PASS |
 | 14D-04B | Worker 真实取消、退出与残留收口 | 14D-04A, 14D-05, 14D-08 | 退出码 8、稳定取消码、≤2s、无 staging | PREPARED / 等待后置前置 |
-| 14D-05 | staging→自检→原子发布 + 取消/崩溃清理双保险 | 14D-01 | C-SPI-09；无残留 | PREPARED |
-| 14D-06 | 取消 `backend=inprocess` 切片路径；`options.backend` 收敛为 `worker` | 14D-02 | 无第二条切片路径 | PREPARED |
-| 14D-07 | **引擎一致性套件 E-01..08**（Worker 独立替换的准入门）| 14D-03, 14D-05 | 套件可对任意 Worker 版本运行 | PREPARED |
+| 14D-05 | staging→自检→原子发布 + 取消/崩溃清理双保险 | 14D-01 | C-SPI-09；无残留 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；缺 jobId 临时产物身份、真实 Worker 执行、模块退出后二次清理与崩溃恢复 |
+| 14D-06 | 取消 `backend=inprocess` 切片路径；`options.backend` 收敛为 `worker` | 14D-02 | 无第二条切片路径 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；Worker 唯一路由尚不可执行，等待 14D-08/05 解阻 |
+| 14D-07 | **引擎一致性套件 E-01..08**（Worker 独立替换的准入门）| 14D-03, 14D-05 | 套件可对任意 Worker 版本运行 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；E-01..08 尚未规范冻结，且缺真实 Worker 与安全发布证据 |
 | 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>` | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；内嵌 scene/profile/input 映射及 full preflight/repair 适配器尚未冻结 |
 
 ---
@@ -444,3 +446,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-06 | v2.21 | 完成 14C-04：13 项同步轻能力经既有 Facade 接入 SPI；`geometry.preflight` 仅 `mode=fast` 进程内执行，ViewData 复用 14B-03A Provider；Debug/Release 真实 ABI 调用门禁 PASS |
 | 2026-08-06 | v2.22 | 完成下一批准备审计：14C-05 冻结运行时自述/部署双 Schema 与版本真源；14D-04 受控拆为可立即执行的核心贯穿 04A 和依赖 14D-05/08 的 Worker 收口 04B |
 | 2026-08-06 | v2.23 | 完成 14C-05 与 14D-04A：模块自述/部署清单和核心取消令牌贯穿通过 Debug/Release 门禁；14C-07 准备门 PASS，14D-08 显式登记准备阻断缺口 |
+| 2026-08-06 | v2.24 | 完成 14C-07：最小 DllMain、进程级 call_once、并发创建、精确 11 导出与 PE 依赖红线通过 Debug/Release 门禁；14C-06 受控拆为可执行 06A 和等待 Worker 的 06B；14D-05/06/07 准备审计均登记真实阻断项 |

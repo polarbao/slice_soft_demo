@@ -72,6 +72,10 @@
 | `DOC_PREP_14D_04_取消令牌贯穿实施准备.md` | 14D-04A 核心 token 贯穿及 14D-04B Worker E2E 的受控拆分 |
 | `DOC_PREP_14C_07_DLL初始化与依赖红线实施准备.md` | 14C-07 Loader Lock、call_once、状态机和依赖红线门禁 |
 | `DOC_PREP_14D_08_Worker独立调试入口实施准备.md` | 14D-08 独立请求入口准备审计及当前阻断映射 |
+| `DOC_PREP_14C_06_SPI一致性套件实施准备.md` | 14C-06 受控拆分为模块本地 06A 与 Worker 生命周期 06B |
+| `DOC_PREP_14D_05_安全发布与清理双保险实施准备.md` | 14D-05 staging、自检、原子发布、崩溃恢复与双保险清理准备审计 |
+| `DOC_PREP_14D_06_重能力Worker唯一路由实施准备.md` | 14D-06 重能力 Worker 唯一路由、backend 收敛与无回退准备审计 |
+| `DOC_PREP_14D_07_引擎一致性套件实施准备.md` | 14D-07 E-01..08 一致性合同、Worker 替换和安全发布前置审计 |
 
 ## 决策记录
 

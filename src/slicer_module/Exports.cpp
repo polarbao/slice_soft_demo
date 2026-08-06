@@ -2,6 +2,7 @@
 #include "slicer_module/BufferApi.h"
 #include "slicer_module/ErrorApi.h"
 #include "slicer_module/HandleRegistry.h"
+#include "slicer_module/ModuleInitialization.h"
 #include "slicer_module/ModuleInfo.h"
 #include "slicer_module/SyncCapabilityAdapter.h"
 
@@ -65,6 +66,11 @@ extern "C" PM_API pm_module_t* PM_CALL pm_create(const char* optionsJson)
     try
     {
         (void)optionsJson;
+        if (!slicesoft::module::EnsureProcessModuleInitialized())
+        {
+            SetInternalError("pm_create process initialization failed");
+            return nullptr;
+        }
         auto& registry = slicesoft::module::HandleRegistry::Instance();
         pm_module_t* const module = registry.CreateModule();
         try
