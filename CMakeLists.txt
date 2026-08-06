@@ -582,6 +582,8 @@ add_library(slicer_module SHARED
     src/slicer_module/WorkerClient.h
     src/slicer_module/WorkerContract.cpp
     src/slicer_module/WorkerContract.h
+    src/slicer_module/WorkerJobService.cpp
+    src/slicer_module/WorkerJobService.h
     src/slicer_module/WorkerProcessWindows.cpp
     src/slicer_module/WorkerProcessWindows.h
     src/slicer_module/WorkerProtocol.cpp
@@ -747,6 +749,24 @@ target_include_directories(stage14d06_capability_carrier_tests PRIVATE
 target_link_libraries(stage14d06_capability_carrier_tests PRIVATE slicer_base)
 if(MSVC)
     target_compile_options(stage14d06_capability_carrier_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d06_public_worker_routing_tests
+    tests/stage14d_06/PublicWorkerRoutingTests.cpp
+)
+target_include_directories(stage14d06_public_worker_routing_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_compile_definitions(stage14d06_public_worker_routing_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(stage14d06_public_worker_routing_tests PRIVATE
+    slicer_module
+    slicer_engine
+)
+if(MSVC)
+    target_compile_options(stage14d06_public_worker_routing_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(stage14d04a_cancellation_unit_tests
@@ -1145,6 +1165,8 @@ target_link_libraries(slicer_worker PRIVATE
     slicer_worker_slice_runtime
 )
 add_dependencies(stage14d05_real_worker_artifact_tests slicer_worker)
+add_dependencies(slicer_module slicer_worker)
+add_dependencies(stage14d06_public_worker_routing_tests slicer_worker)
 
 add_executable(texture_fill_partition_release_benchmark
     apps/texture_fill_partition_release_benchmark/main.cpp
@@ -2243,6 +2265,10 @@ add_test(NAME mesh_complete_self_intersection_analyzer_unit_tests COMMAND mesh_c
 add_test(
     NAME stage14d06_capability_carrier_tests
     COMMAND stage14d06_capability_carrier_tests
+)
+add_test(
+    NAME stage14d06_public_worker_routing_tests
+    COMMAND stage14d06_public_worker_routing_tests
 )
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)

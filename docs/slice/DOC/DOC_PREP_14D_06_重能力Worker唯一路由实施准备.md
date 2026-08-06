@@ -6,13 +6,13 @@
 >
 > 审计基线：分支 `feature/14-slicer-capability-package`，`HEAD=2edb935`，并读取当前工作树代码
 >
-> 文档性质：准备审计，不包含实现，不构成开发完成证据
+> 文档性质：准备审计与 R1/R2 实施收口证据
 >
 > `PREPARATION_GATE`：**PASS（2026-08-06 复审）**
 >
-> 实施状态：`R1 COMPLETE / R2 READY`
+> 实施状态：`R1 COMPLETE / R2 COMPLETE`
 >
-> 验收状态：`R1 DEBUG/RELEASE PASS / R2 NOT RUN`
+> 验收状态：`R1/R2 DEBUG/RELEASE PASS`
 
 ## 1. 审计结论
 
@@ -375,14 +375,14 @@ git status --short
 
 将本文件由 `BLOCKED` 改为 `PASS` 前必须提供以下证据：
 
-- [ ] `options.backend` 的 worker-only 缺省、枚举、错误码和兼容规则已受控冻结；
-- [ ] `14D-08` 已完成，或共享 Worker 请求执行基础已通过授权拆分并可真实执行三项重能力；
-- [ ] `14D-05` 最小安全发布链可供 `slice.rgbwsv` 正向验收；
-- [ ] Worker 可执行文件定位、合同缓存失效和模块销毁规则已冻结；
-- [ ] 异步 job carrier、poll/cancel/result/release/destroy 的状态与所有权已冻结；
-- [ ] 文件所有权无 14D-05/08 并行冲突；
-- [ ] 正例和 N-01..18 的自动化入口、夹具及稳定错误码已确定；
-- [ ] Debug/Release 构建目标和 CTest 名称已确认。
+- [x] `options.backend` 的 worker-only 缺省、枚举、错误码和兼容规则已受控冻结；
+- [x] 共享 Worker 请求执行基础可真实执行 full preflight、repair 与 slice；
+- [x] `14D-05` 最小安全发布链可供 `slice.rgbwsv` 正向验收；
+- [x] Worker 可执行文件按模块部署目录定位，模块销毁会取消并回收其全部作业；
+- [x] 异步 job carrier、poll/cancel/result/release/destroy 的状态与所有权已冻结；
+- [x] 文件所有权无 14D-05/08 并行冲突；
+- [x] 正向三能力、backend 负例、取消及稳定结果码已进入自动化测试；
+- [x] Debug/Release 构建目标和 CTest 名称已确认并通过。
 
 截至 2026-08-06 复审，前 3 项已经关闭：三项生产 Worker executor 已接入，
 `options.backend` 已由 DTO v1.4 冻结为缺省且唯一合法值 `worker`，Writer 与模块恢复链路已完成
@@ -397,13 +397,31 @@ R1..R3 和真实 Worker R4-A。允许继续进行的下一步是：
 
 ```text
 NO_INPROCESS_HEAVY_PATH_OBSERVED=true
-WORKER_HEAVY_ROUTE_USABLE=false
+WORKER_HEAVY_ROUTE_USABLE=true
 PREPARATION_GATE=PASS
-IMPLEMENTATION=R1_COMPLETE_R2_READY
-ACCEPTANCE=R1_DEBUG_RELEASE_PASS
+IMPLEMENTATION=R1_COMPLETE_R2_COMPLETE
+ACCEPTANCE=R1_R2_DEBUG_RELEASE_PASS
 ```
 
 R1 已完成 carrier 分类、full preflight 私有能力映射及 worker-only backend 规范化；
 非 `worker` 字符串稳定返回 `PM-SLICER-PROFILE-0031`，类型错误返回
-`PM-SLICER-INPUT-0002`。当前尚未形成可工作的公开 SPI Worker 路由，R2 必须完成异步 job
-生命周期后才可把 `WORKER_HEAVY_ROUTE_USABLE` 改为 true。
+`PM-SLICER-INPUT-0002`。R2 已新增进程级 `WorkerJobService`，公共 SPI 通过异步作业唯一调用
+同包 `slicer_worker`，并将 poll/cancel/result/release/destroy 生命周期、私有 job 根目录、
+合同协商、结果身份闭合、修复资产发布和 Package 恢复串成一条链。full preflight、repair、
+slice 与取消用例均通过 Debug/Release，模块目标仍只链接 `slicer_base`，不存在进程内重能力回退。
+
+## 12. R2 实施证据
+
+| 证据 | 结果 |
+|---|---|
+| 公共 SPI full preflight | Worker 异步执行并返回 authoritative/complete 结果 |
+| 公共 SPI repair | Worker 生成 job-owned 资产，模块发布到请求的绝对输出路径，release 后仍存在 |
+| 公共 SPI slice | Worker 写入 `p0.rgbwsv.2` Package，并通过严格包校验 |
+| backend 负例 | `inprocess` 在启动 Worker 前稳定拒绝，不产生 Package |
+| 取消 | `pm_cancel` 同时写入协作取消标记并通知活动进程，终态与结果码均为 cancelled |
+| 生命周期 | `pm_release`/`pm_destroy` 先取消并 join Worker，再退休公开句柄和私有 job 目录 |
+| 架构边界 | 静态门禁确认 `slicer_module` 不链接或调用 `slicer_engine` |
+| 构建与测试 | Debug/Release 选定 CTest 5/5 PASS；Debug 公共路由测试连续 3 次 PASS |
+| 合同门禁 | Capability DTO、Three Lane、File Contract 与 Worker-only 路由校验 PASS |
+
+下一任务为 `14D-05-R4-B`：在公共 DLL 链路补齐旧包保护和 C-SPI-09 证据。

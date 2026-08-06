@@ -1,14 +1,17 @@
 #include "contracts/print_module_spi.h"
 #include "slicer_module/BufferApi.h"
+#include "slicer_module/CapabilityCarrierRouter.h"
 #include "slicer_module/ErrorApi.h"
 #include "slicer_module/HandleRegistry.h"
 #include "slicer_module/ModuleInitialization.h"
 #include "slicer_module/ModuleInfo.h"
 #include "slicer_module/ModuleSelfTest.h"
 #include "slicer_module/SyncCapabilityAdapter.h"
+#include "slicer_module/WorkerJobService.h"
 
 #include <exception>
 #include <string_view>
+#include <utility>
 
 namespace
 {
@@ -30,6 +33,13 @@ void SetInvalidRequestError(const std::string_view detail) noexcept
         InputErrorCode,
         "invalid slicer module request",
         detail);
+}
+
+bool IsTerminal(const slicesoft::module::JobLifecycleState state) noexcept
+{
+    return state == slicesoft::module::JobLifecycleState::Succeeded
+        || state == slicesoft::module::JobLifecycleState::Failed
+        || state == slicesoft::module::JobLifecycleState::Cancelled;
 }
 
 }  // namespace
@@ -102,12 +112,23 @@ extern "C" PM_API void PM_CALL pm_destroy(pm_module_t* module)
 {
     try
     {
+        if (module == nullptr)
+        {
+            return;
+        }
+        if (slicesoft::module::HandleRegistry::Instance().FindModule(module)
+            == nullptr)
+        {
+            SetInvalidRequestError("pm_destroy received an unknown module handle");
+            return;
+        }
+        slicesoft::module::WorkerJobService::Instance().RemoveModule(module);
+        slicesoft::module::SyncCapabilityAdapter::Instance().RemoveModule(module);
         if (!slicesoft::module::HandleRegistry::Instance().DestroyModule(module))
         {
             SetInvalidRequestError("pm_destroy received an unknown module handle");
             return;
         }
-        slicesoft::module::SyncCapabilityAdapter::Instance().RemoveModule(module);
     }
     catch (...)
     {
@@ -129,6 +150,53 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
             SetInvalidRequestError("pm_submit received an unknown module handle");
             return nullptr;
         }
+        slicesoft::module::CapabilityRoute route =
+            slicesoft::module::CapabilityCarrierRouter::Route(requestJson);
+        if (!route.accepted)
+        {
+            slicesoft::module::SetThreadLastError(
+                route.errorCode,
+                route.errorMessage,
+                route.errorDetail);
+            return nullptr;
+        }
+
+        auto& registry = slicesoft::module::HandleRegistry::Instance();
+        if (route.carrier == slicesoft::module::CapabilityCarrier::Worker)
+        {
+            pm_job_t* const job = registry.CreateJob(module);
+            if (job == nullptr)
+            {
+                SetInternalError("pm_submit could not allocate a Worker job handle");
+                return nullptr;
+            }
+            const auto moduleState = registry.FindModule(module);
+            const auto jobState = registry.FindJob(job);
+            if (!moduleState || !jobState)
+            {
+                (void)registry.ReleaseJob(job);
+                SetInternalError("pm_submit could not resolve Worker job identity");
+                return nullptr;
+            }
+            const auto submission =
+                slicesoft::module::WorkerJobService::Instance().Submit(
+                    job,
+                    module,
+                    std::move(route),
+                    moduleState->Id(),
+                    jobState->Id());
+            if (!submission.accepted)
+            {
+                (void)registry.ReleaseJob(job);
+                slicesoft::module::SetThreadLastError(
+                    submission.errorCode,
+                    submission.errorMessage,
+                    submission.errorDetail);
+                return nullptr;
+            }
+            return job;
+        }
+
         auto submission = slicesoft::module::SyncCapabilityAdapter::Instance()
             .Execute(module, requestJson);
         if (!submission.accepted)
@@ -140,7 +208,6 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
             return nullptr;
         }
 
-        auto& registry = slicesoft::module::HandleRegistry::Instance();
         pm_job_t* const job = registry.CreateJob(module);
         if (job == nullptr)
         {
@@ -198,8 +265,10 @@ extern "C" PM_API int PM_CALL pm_poll(
             SetInvalidRequestError("pm_poll received an unknown job handle");
             return PM_ERR_INVALID_ARG;
         }
-        const std::string progress =
-            slicesoft::module::SyncCapabilityAdapter::Instance().Poll(job);
+        auto& workerJobs = slicesoft::module::WorkerJobService::Instance();
+        const std::string progress = workerJobs.HasJob(job)
+            ? workerJobs.Poll(job)
+            : slicesoft::module::SyncCapabilityAdapter::Instance().Poll(job);
         if (progress.empty())
         {
             SetInternalError("pm_poll could not resolve terminal progress");
@@ -222,10 +291,25 @@ extern "C" PM_API int PM_CALL pm_cancel(pm_job_t* job)
 {
     try
     {
-        if (!slicesoft::module::HandleRegistry::Instance().RequestCancel(job))
+        auto& registry = slicesoft::module::HandleRegistry::Instance();
+        if (registry.FindJob(job) == nullptr)
         {
             SetInvalidRequestError("pm_cancel received an unknown job handle");
             return PM_ERR_INVALID_ARG;
+        }
+        auto& workerJobs = slicesoft::module::WorkerJobService::Instance();
+        if (workerJobs.HasJob(job))
+        {
+            if (!workerJobs.RequestCancel(job))
+            {
+                SetInternalError("pm_cancel could not signal the Worker job");
+                return PM_ERR_FAILED;
+            }
+        }
+        else if (!registry.RequestCancel(job))
+        {
+            SetInternalError("pm_cancel could not update the synchronous job");
+            return PM_ERR_FAILED;
         }
         return PM_OK;
     }
@@ -244,13 +328,25 @@ extern "C" PM_API int PM_CALL pm_result(
 {
     try
     {
-        if (slicesoft::module::HandleRegistry::Instance().FindJob(job) == nullptr)
+        const auto jobState =
+            slicesoft::module::HandleRegistry::Instance().FindJob(job);
+        if (jobState == nullptr)
         {
             SetInvalidRequestError("pm_result received an unknown job handle");
             return PM_ERR_INVALID_ARG;
         }
-        const auto result =
-            slicesoft::module::SyncCapabilityAdapter::Instance().Result(job);
+        if (!IsTerminal(jobState->LifecycleState()))
+        {
+            slicesoft::module::SetThreadLastError(
+                "PM-SLICER-INPUT-0002",
+                "job result is not available before terminal state",
+                "pm_result requires succeeded, failed, or cancelled");
+            return PM_ERR_INVALID_STATE;
+        }
+        auto& workerJobs = slicesoft::module::WorkerJobService::Instance();
+        const auto result = workerJobs.HasJob(job)
+            ? workerJobs.Result(job)
+            : slicesoft::module::SyncCapabilityAdapter::Instance().Result(job);
         if (!result)
         {
             SetInternalError("pm_result could not resolve terminal output");
@@ -274,12 +370,22 @@ extern "C" PM_API void PM_CALL pm_release(pm_job_t* job)
     try
     {
         auto& registry = slicesoft::module::HandleRegistry::Instance();
+        if (job == nullptr)
+        {
+            return;
+        }
+        if (registry.FindJob(job) == nullptr)
+        {
+            SetInvalidRequestError("pm_release received an unknown job handle");
+            return;
+        }
+        slicesoft::module::WorkerJobService::Instance().ReleaseJob(job);
+        slicesoft::module::SyncCapabilityAdapter::Instance().ReleaseJob(job);
         if (!registry.ReleaseJob(job))
         {
             SetInvalidRequestError("pm_release received an unknown job handle");
             return;
         }
-        slicesoft::module::SyncCapabilityAdapter::Instance().ReleaseJob(job);
     }
     catch (...)
     {
