@@ -116,7 +116,10 @@ def Main() -> int:
     ValidateContract(contract)
     fixtureIds = ValidateFixtures(repoRoot, fixtures)
     ValidateReferences(contract, fixtureIds)
-    print("Stage 14D-07 conformance definition: PASS (E-01..E-08 frozen; execution NOT RUN)")
+    print(
+        "Stage 14D-07 conformance definition: PASS "
+        "(E-01..E-08 frozen; execution is a separate gate)"
+    )
     return 0
 
 

@@ -2,7 +2,7 @@
 
 > 日期：2026-08-06
 >
-> 状态：`COMPLETE / EXECUTION BLOCKED BY R2`
+> 状态：`COMPLETE / R2 EXECUTED`
 
 ## 1. 本任务成果
 
@@ -14,7 +14,8 @@
 
 ## 2. 当前边界
 
-`14D-07-R1` 建设的是可替换 Worker 的测试外壳，不是当前 Worker 准入结论。完整执行仍等待：
+`14D-07-R1` 建设的是可替换 Worker 的测试外壳，本任务本身不提供当前 Worker 准入结论。
+原等待项现均已关闭：
 
 ```text
 14D-04B  Worker E2E cancellation
@@ -22,7 +23,8 @@
 14D-08   three real capability executors
 ```
 
-完成这些前置后，由 `14D-07-R2` 使用同一合同、fixture 和 runner 生成 E-01..08 完整证据。
+`14D-07-R2` 已使用同一合同、fixture 和 runner 生成 E-01..08 完整证据。执行结论见
+`REPORT_14D_07_R2_当前Worker引擎一致性Gate当前状态.md`。
 
 ## 3. 验证
 
@@ -33,7 +35,7 @@ scripts/Run14D07EngineConformance.ps1 `
   -EvidenceRoot output/benchmarks/14d_07/debug-r1
 ```
 
-第二条命令当前预期 `overall=blocked`，这是诚实结果，不是失败或 PASS。
+第二条命令在显式传入当前构建的 gate 后预期 `overall=pass`；未来 Worker 替换仍须独立重跑。
 
 ## 4. 不变量
 

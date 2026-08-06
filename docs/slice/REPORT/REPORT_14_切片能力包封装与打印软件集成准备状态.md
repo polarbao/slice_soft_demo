@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.43 ｜ 更新日期：2026-08-06
+> 版本：v3.44 ｜ 更新日期：2026-08-07
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-07-R2 PREPARATION AUDIT / CURRENT WORKER GATE
+CURRENT_NEXT_TASK      = 14D-08 PARENT CLOSURE AUDIT
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -148,7 +148,7 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 14D-05-R4-A | ✅ COMPLETE（2026-08-06） | 真实 Worker 正常、取消、超时强杀与旧包保护 | Debug/Release 生产 Worker + WorkerClient 集成 PASS；有效包严格可读，取消/强杀后 manifest 字节不变且 owned staging/backup/lease 无残留 |
 | 14D-05-R4-B | ✅ COMPLETE（2026-08-06） | 公开 DLL -> Worker -> Writer 与 C-SPI-09 收口 | Debug/Release 公开 C SPI 取消返回稳定代码；既有 manifest 字节不变，owned staging/backup/lease 无残留且包仍可严格读取 |
 | 14D-06 | ✅ COMPLETE（2026-08-06） | Worker 唯一重能力路由 | R1/R2 完成；公共 SPI 异步执行 full preflight/repair/slice，poll/cancel/result/release/destroy 闭合，Debug/Release 与合同门禁 PASS；module 不链接 engine |
-| 14D-07 | 🟡 R1 COMPLETE / R2 PREPARATION AUDIT | 引擎一致性套件 E-01..08 | E-01..08 合同和参数化外壳已冻结；14D-04B/05 及真实 Worker 已就绪，下一步对 R2 准备门复审 |
+| 14D-07 | ✅ COMPLETE（2026-08-07） | 引擎一致性套件 E-01..08 | R1 合同/fixture/runner 与 R2 当前 Worker Gate 均完成；Debug/Release E-01..08 PASS |
 | 14D-08 | ⛔ 父任务 BLOCKED / CONTROLLED SPLIT | Worker 独立 `--spi-request` | 已拆 R1..R4；R1 共享基础可实施，R2/R3/R4 继续等待真实映射、Facade 和安全发布 |
 | 14D-08-R1 | ✅ COMPLETE（2026-08-06） | 共享请求解析、身份、结果与调度基础 | R1-01..03 COMPLETE；生产 Worker 在无 executor 时身份闭合地显式失败 |
 | 14D-08-R1-01 | ✅ COMPLETE（2026-08-06） | `request.json` 严格解析与不可变作业身份 | Debug/Release 5/5 定向门禁 PASS；不创建 result/package，不接入 executor |
@@ -166,7 +166,8 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 14D-08-R3-02B-S1 | ✅ COMPLETE（2026-08-06） | staged OBJ 重导入与单模型完整 strict 复检 | Debug/Release 门禁 PASS；Profile hash、geometry/attribute identity、完整自交审计均 fail-closed |
 | 14D-08-R3-02B-F1 | ✅ COMPLETE（2026-08-06） | ProductionRepairFacadeFactory | 保守 OBJ repair、Writer、重导入 strict 证据和 job staging 清理闭合；由 E1 接入生产 Worker |
 | 14D-08-R3-02B-E1 | ✅ COMPLETE（2026-08-06） | 生产 Worker repair executor 与 job-owned 发布 | `geometry.repair` 精确注册；OBJ、相邻资源与 strict 证据发布闭合，取消、路径越界、Profile 漂移和发布异常 fail-closed；Debug/Release 门禁 PASS |
-| 14D-07-R1 | ✅ COMPLETE（2026-08-06） | 参数化 E-01..08 合同、fixture 身份、runner 与定义门禁 | 当前 runner 诚实输出 BLOCKED；完整 Worker Gate 归 R2 |
+| 14D-07-R1 | ✅ COMPLETE（2026-08-06） | 参数化 E-01..08 合同、fixture 身份、runner 与定义门禁 | R1 外壳完成；执行结论由 R2 独立产生 |
+| 14D-07-R2 | ✅ COMPLETE（2026-08-07） | 当前 Worker E-01..08 完整 Gate | Debug/Release 真实 Worker PASS；生产包协议、golden、报告、负例、取消恢复及参数化替换边界闭合 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
 11 个冻结符号；C-SPI-01..18 已由 14C-06A/06B 合并关闭。
@@ -288,3 +289,4 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 2026-08-06 | v3.41 | 完成 14D-05-R4-B：公开 DLL -> Worker -> Writer 取消链路在 Debug/Release 下保持既有有效包、清理 owned 临时产物并返回稳定取消码；C-SPI-09 真实链路闭合，14D-05 COMPLETE，下一任务转 14D-04B |
 | 2026-08-06 | v3.42 | 完成 14D-04B：公开 C SPI 在真实 Worker 活动阶段验证取消 ≤2000ms、非终态结果拒绝、重复/终态取消幂等和零 owned 临时产物；原 14D-04 COMPLETE，下一任务转 14C-06B |
 | 2026-08-06 | v3.43 | 完成 14C-06B：公开 C ABI 在真实 Worker 链路关闭 C-SPI-08/09/13/15，Debug/Release Stage 14C 各 11/11 并连续 3 次 PASS；14C-06 全绿与 14D-05 共同满足 M-MVP-CANDIDATE，下一任务转 14D-07-R2 准备复审 |
+| 2026-08-07 | v3.44 | 完成 14D-07-R2：当前 Worker 经公开进程/文件合同通过 E-01..08 Debug/Release Gate；下一任务转 14D-08 父任务收口审计，14E 保持未启动 |

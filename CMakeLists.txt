@@ -1149,6 +1149,26 @@ if(MSVC)
     target_compile_options(stage14d05_real_worker_artifact_tests PRIVATE /W4 /WX)
 endif()
 
+add_executable(stage14d07_engine_conformance_gate
+    tests/stage14d_07/EngineConformanceGate.cpp
+    src/slicer_module/WorkerClient.cpp
+    src/slicer_module/WorkerClient.h
+    src/slicer_module/WorkerProcessWindows.cpp
+    src/slicer_module/WorkerProcessWindows.h
+    src/slicer_module/WorkerProtocol.cpp
+    src/slicer_module/WorkerProtocol.h
+)
+target_include_directories(stage14d07_engine_conformance_gate PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d07_engine_conformance_gate PRIVATE
+    slicer_engine
+)
+if(MSVC)
+    target_compile_options(stage14d07_engine_conformance_gate PRIVATE /W4 /WX)
+endif()
+
 add_executable(slicer_worker
     apps/slicer_worker/Main.cpp
     apps/slicer_worker/WorkerApplication.cpp
@@ -1166,6 +1186,7 @@ target_link_libraries(slicer_worker PRIVATE
     slicer_worker_slice_runtime
 )
 add_dependencies(stage14d05_real_worker_artifact_tests slicer_worker)
+add_dependencies(stage14d07_engine_conformance_gate slicer_worker)
 add_dependencies(slicer_module slicer_worker)
 add_dependencies(stage14d06_public_worker_routing_tests slicer_worker)
 
@@ -1959,6 +1980,13 @@ add_test(
 add_test(
     NAME stage14d05_real_worker_artifact_tests
     COMMAND stage14d05_real_worker_artifact_tests $<TARGET_FILE:slicer_worker>
+)
+add_test(
+    NAME slicer_stage14d07_r2_engine_conformance_test
+    COMMAND stage14d07_engine_conformance_gate
+        $<TARGET_FILE:slicer_worker>
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}/stage14d07_evidence/$<CONFIG>"
 )
 add_test(
     NAME stage14d08_r1_worker_runtime_tests

@@ -46,6 +46,7 @@ def Main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=pathlib.Path, required=True)
     parser.add_argument("--worker", type=pathlib.Path, required=True)
+    parser.add_argument("--gate", type=pathlib.Path)
     parser.add_argument("--evidence-root", type=pathlib.Path, required=True)
     arguments = parser.parse_args()
 
@@ -53,6 +54,12 @@ def Main() -> int:
     workerPath = arguments.worker.resolve()
     if not workerPath.is_file():
         raise ValueError("worker path must identify an existing file")
+    gatePath = arguments.gate
+    if gatePath is None:
+        gatePath = workerPath.parent / "stage14d07_engine_conformance_gate.exe"
+    gatePath = gatePath.resolve()
+    if not gatePath.is_file():
+        raise ValueError("conformance gate path must identify an existing file")
 
     contract = LoadJson(repoRoot / "contracts" / "slicer_engine_conformance_v1.json")
     workerInfo = QueryWorker(workerPath)
@@ -65,36 +72,58 @@ def Main() -> int:
         and required.issubset(supported)
     )
 
+    evidenceRoot = arguments.evidence_root.resolve()
+    if not discoveryPassed:
+        raise RuntimeError("worker contract-info does not satisfy the frozen baseline")
+    completed = subprocess.run(
+        [str(gatePath), str(workerPath), str(repoRoot), str(evidenceRoot)],
+        check=False,
+        timeout=120,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"engine conformance gate failed with exit {completed.returncode}"
+        )
+
+    evidenceFiles = {
+        "E-01": "e01_contract_identity.json",
+        "E-02": "e02_package_protocol.json",
+        "E-03": "e03_golden.json",
+        "E-04": "e04_reports.json",
+        "E-05": "e05_progress_timing.json",
+        "E-06": "e06_negative.json",
+        "E-07": "e07_cancel_recovery.json",
+        "E-08": "e08_replaceability.json",
+    }
     themeResults = []
     for theme in contract["themes"]:
-        blockers = list(theme["blockedBy"])
-        if not discoveryPassed:
-            blockers.insert(0, "worker contract-info mismatch")
+        evidencePath = evidenceRoot / evidenceFiles[theme["id"]]
+        evidence = LoadJson(evidencePath)
+        if evidence.get("theme") != theme["id"] or evidence.get("status") != "pass":
+            raise RuntimeError(f"{theme['id']} evidence is not PASS")
         themeResults.append({
             "id": theme["id"],
-            "status": "blocked",
-            "blockers": blockers,
-            "note": "14D-07-R1 builds the harness; full execution belongs to R2",
+            "status": "pass",
+            "evidence": evidencePath.name,
         })
-
-    evidenceRoot = arguments.evidence_root.resolve()
     runIdentity = {
         "schema": "slicesoft.engine_conformance.run_identity.14d_07.1",
         "generatedAtUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "workerPath": str(workerPath),
+        "gatePath": str(gatePath),
         "workerInfo": workerInfo,
         "discoveryStatus": "pass" if discoveryPassed else "fail",
         "contractVersion": contract["version"],
     }
     summary = {
         "schema": "slicesoft.engine_conformance.summary.14d_07.1",
-        "overall": "blocked",
+        "overall": "pass",
         "themes": themeResults,
         "rule": contract["overallRule"],
     }
     WriteJson(evidenceRoot / "run_identity.json", runIdentity)
     WriteJson(evidenceRoot / "summary.json", summary)
-    print(f"Stage 14D-07 runner: BLOCKED evidence written to {evidenceRoot}")
+    print(f"Stage 14D-07 runner: PASS evidence written to {evidenceRoot}")
     return 0
 
 
