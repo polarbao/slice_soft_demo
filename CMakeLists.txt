@@ -310,6 +310,9 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/preflight/ModelPreflightService.h
     src/slicer_core/preflight/ModelPreflightTypes.cpp
     src/slicer_core/preflight/ModelPreflightTypes.h
+    src/slicer_core/preflight/SceneFullPreflightResourceResolver.cpp
+    src/slicer_core/preflight/SceneFullPreflightService.cpp
+    src/slicer_core/preflight/SceneFullPreflightService.h
     src/slicer_core/preflight/TransformedModelPreflight.cpp
     src/slicer_core/preflight/TransformedModelPreflight.h
     src/slicer_core/preflight/RepairedAssetIntakeService.cpp
@@ -1423,6 +1426,18 @@ target_compile_definitions(transformed_model_preflight_unit_tests PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(stage14d08_r3_scene_preflight_tests
+    tests/stage14d_08_r3/SceneFullPreflightServiceTests.cpp
+)
+
+target_link_libraries(stage14d08_r3_scene_preflight_tests PRIVATE slicer_engine)
+target_compile_definitions(stage14d08_r3_scene_preflight_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(stage14d08_r3_scene_preflight_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(model_preflight_pipeline_gate_unit_tests
     tests/unit/model_preflight_pipeline_gate/main.cpp
 )
@@ -1992,6 +2007,10 @@ add_test(NAME diagnostic_effective_config_unit_tests COMMAND diagnostic_effectiv
 add_test(NAME model_preflight_service_unit_tests COMMAND model_preflight_service_unit_tests)
 add_test(NAME model_preflight_admission_unit_tests COMMAND model_preflight_admission_unit_tests)
 add_test(NAME transformed_model_preflight_unit_tests COMMAND transformed_model_preflight_unit_tests)
+add_test(
+    NAME stage14d08_r3_scene_preflight_tests
+    COMMAND stage14d08_r3_scene_preflight_tests
+)
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
 add_test(NAME slice_pipeline_router_unit_tests COMMAND slice_pipeline_router_unit_tests)
 add_test(NAME production_mode_catalog_unit_tests COMMAND production_mode_catalog_unit_tests)

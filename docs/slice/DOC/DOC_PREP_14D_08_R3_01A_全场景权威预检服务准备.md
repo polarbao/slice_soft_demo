@@ -22,6 +22,7 @@ Debug/Release 定向门禁后，才负责 API DTO 投影和 Worker 适配。
 | `sceneHash` | `ComputeMultiModelSceneHash(scene)` 的小写 SHA-256；必须精确匹配调用方身份 |
 | `expectedSceneRevision` | 必须等于 `scene.sceneRevision` |
 | `options` | 完整模型预检选项；不得静默降低 self-intersection 或 topology 检查 |
+| `targetMode` | 当前生产请求明确选择的 `Legacy` 或 `GlobalSurfaceShell`；禁止由 Profile 名称猜测 |
 | `admissionContext` | Legacy/Global backend 可用性，仅用于既有模式准入投影 |
 | `modelResolver` | 以 `ModelSource` 为键加载不可变 `SceneModel`，不得扫描 resource scope 外路径 |
 | `cancellationRequested` | 可在资源、模型、实例和完整几何循环边界协作取消 |
@@ -64,6 +65,9 @@ sceneIssues[] / collisions[] / outOfBoundsInstances[]
 ## 5. Admission 唯一关系
 
 - 普通 scene-wide 预检使用 `EvaluateModelPreflightAdmissions` 作为每实例 Legacy/Global 模式投影。
+- scene 最终 `productionAdmitted` 只读取请求中显式 `targetMode` 对应的模式结果；warning 可继续
+  进入 Legacy，Global topology blocker 仍保持阻断。缺少或无法解析目标模式必须在 `R3-01B`
+  映射层 fail-closed，禁止根据 `resolvedProfileId` 字符串猜测。
 - `EvaluateProductionAdmission` 是 OpenVDB 实验诊断策略，不得被 scene service 再次作为通用准入器；
   它只允许在既有 OpenVDB 诊断链内部调用一次，其 blocker 作为该实例 issue 输入聚合。
 - scene 最终 `productionAdmitted` 是“所有 visible 实例目标模式 admitted + collision PASS + complete”
@@ -100,6 +104,7 @@ domain blocker 应返回成功执行的 authoritative blocked 业务结果，而
 
 ```text
 src/slicer_core/preflight/SceneFullPreflightService.h/.cpp
+src/slicer_core/preflight/SceneFullPreflightResourceResolver.cpp
 tests/stage14d_08_r3/SceneFullPreflightServiceTests.cpp
 ```
 
