@@ -1087,6 +1087,29 @@ if(MSVC)
     target_compile_options(stage14d05_artifact_safety_tests PRIVATE /W4 /WX)
 endif()
 
+add_executable(stage14d05_real_worker_artifact_tests
+    tests/stage14d_05/RealWorkerArtifactRecoveryTests.cpp
+    src/slicer_module/WorkerClient.cpp
+    src/slicer_module/WorkerClient.h
+    src/slicer_module/WorkerProcessWindows.cpp
+    src/slicer_module/WorkerProcessWindows.h
+    src/slicer_module/WorkerProtocol.cpp
+    src/slicer_module/WorkerProtocol.h
+)
+target_include_directories(stage14d05_real_worker_artifact_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_compile_definitions(stage14d05_real_worker_artifact_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(stage14d05_real_worker_artifact_tests PRIVATE
+    slicer_engine
+)
+if(MSVC)
+    target_compile_options(stage14d05_real_worker_artifact_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(slicer_worker
     apps/slicer_worker/Main.cpp
     apps/slicer_worker/WorkerApplication.cpp
@@ -1103,6 +1126,7 @@ target_link_libraries(slicer_worker PRIVATE
     slicer_worker_repair_runtime
     slicer_worker_slice_runtime
 )
+add_dependencies(stage14d05_real_worker_artifact_tests slicer_worker)
 
 add_executable(texture_fill_partition_release_benchmark
     apps/texture_fill_partition_release_benchmark/main.cpp
@@ -1890,6 +1914,10 @@ add_test(
 add_test(
     NAME stage14d04a_cancellation_unit_tests
     COMMAND stage14d04a_cancellation_unit_tests
+)
+add_test(
+    NAME stage14d05_real_worker_artifact_tests
+    COMMAND stage14d05_real_worker_artifact_tests $<TARGET_FILE:slicer_worker>
 )
 add_test(
     NAME stage14d08_r1_worker_runtime_tests

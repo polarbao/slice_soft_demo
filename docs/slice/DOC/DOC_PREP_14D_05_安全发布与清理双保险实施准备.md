@@ -4,8 +4,8 @@
 > 审计任务：Stage 14D-05
 > 审计基线：`fba8b04 feat(14D-08-R3-02B-F1): 【生产修复】闭合保守修复Facade`
 > 文档状态：`PREPARATION_GATE=PASS_WITH_SPLIT`
-> 实施状态：`R1..R3 COMPLETE / R4 NOT STARTED`
-> 验收状态：`R3 DEBUG/RELEASE DIRECTED PASS / R4 NOT RUN`
+> 实施状态：`R1..R3 COMPLETE / R4 IN PROGRESS (R4-A COMPLETE)`
+> 验收状态：`R4-A DEBUG/RELEASE REAL WORKER PASS / R4-B WAITING MODULE ROUTE`
 
 ## 1. 审计结论
 
@@ -33,7 +33,14 @@ C-SPI-09、M-MVP-CANDIDATE 或任何 14E 准入证据。
 | 14D-05-R1 | 共享 job/attempt 产物身份、临时路径识别、精确 owned 恢复 | COMPLETE |
 | 14D-05-R2 | Writer 使用 owned staging/backup、同目标租约与发布证据 | COMPLETE |
 | 14D-05-R3 | Worker 第一轮、模块第二轮清理及查询/RIP 临时路径拒绝 | COMPLETE |
-| 14D-05-R4 | Debug/Release、取消、强杀、崩溃和真实 Worker 集成验收 | NOT STARTED |
+| 14D-05-R4 | Debug/Release、取消、强杀、崩溃和真实 Worker 集成验收 | IN PROGRESS |
+| 14D-05-R4-A | 真实 Worker 正常发布、协作取消、超时强杀与旧包保护 | COMPLETE（2026-08-06） |
+| 14D-05-R4-B | DLL -> Worker -> Writer、清理失败与 C-SPI-09 最终闭环 | WAITING 14D-06 |
+
+R4-A 使用生产 `slicer_worker --spi-request` 与模块 `WorkerClient` 完成真实进程验收：正常包经严格
+validator 接受；协作取消和零宽限超时强杀均等待 Worker 退出后执行模块第二轮清理；最后有效包的
+manifest 字节保持不变，精确 owned staging/backup/lease 无残留。该证据不替代 R4-B 的公开 DLL
+链路，因此 14D-05 暂不标 COMPLETE。
 
 ### 1.1 最小解阻条件
 
