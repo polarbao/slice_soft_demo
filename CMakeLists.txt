@@ -542,6 +542,8 @@ add_library(slicer_module SHARED
     src/slicer_module/HandleRegistry.h
     src/slicer_module/WorkerClient.cpp
     src/slicer_module/WorkerClient.h
+    src/slicer_module/WorkerContract.cpp
+    src/slicer_module/WorkerContract.h
     src/slicer_module/WorkerProcessWindows.cpp
     src/slicer_module/WorkerProcessWindows.h
     src/slicer_module/WorkerProtocol.cpp
@@ -602,6 +604,27 @@ target_include_directories(stage14d02_worker_client_unit_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+add_executable(stage14d03_worker_contract_unit_tests
+    tests/stage14d_03/WorkerContractTests.cpp
+    src/slicer_module/WorkerClient.cpp
+    src/slicer_module/WorkerClient.h
+    src/slicer_module/WorkerContract.cpp
+    src/slicer_module/WorkerContract.h
+    src/slicer_module/WorkerProcessWindows.cpp
+    src/slicer_module/WorkerProcessWindows.h
+    src/slicer_module/WorkerProtocol.cpp
+    src/slicer_module/WorkerProtocol.h
+)
+target_include_directories(stage14d03_worker_contract_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d03_worker_contract_unit_tests PRIVATE slicer_base)
+add_dependencies(stage14d03_worker_contract_unit_tests slicer_worker)
+if(MSVC)
+    target_compile_options(stage14d03_worker_contract_unit_tests PRIVATE /W4 /WX)
+endif()
 
 add_executable(model_import_layering_probe
     tests/contracts/ModelImportLayeringProbe.cpp
@@ -1427,6 +1450,10 @@ add_test(NAME stage14c02_buffer_api_unit_tests COMMAND stage14c02_buffer_api_uni
 add_test(NAME stage14c03_handle_registry_unit_tests COMMAND stage14c03_handle_registry_unit_tests)
 add_test(NAME stage14c03_module_abi_tests COMMAND stage14c03_module_abi_tests)
 add_test(NAME stage14d02_worker_client_unit_tests COMMAND stage14d02_worker_client_unit_tests)
+add_test(
+    NAME stage14d03_worker_contract_unit_tests
+    COMMAND stage14d03_worker_contract_unit_tests $<TARGET_FILE:slicer_worker>
+)
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(
     NAME textured_scene_viewdata_14b03a_unit_tests

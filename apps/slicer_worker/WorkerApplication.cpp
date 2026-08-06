@@ -12,6 +12,7 @@ namespace
 
 constexpr std::string_view InvalidArgumentsCode{"invalid_arguments"};
 constexpr std::string_view NotImplementedCode{"not_implemented"};
+constexpr std::string_view EngineVersion{"0.1.0"};
 
 }  // namespace
 
@@ -27,11 +28,7 @@ int WorkerApplication::Run(const int argc, char* const argv[]) const
         }
         if (argument == "--contract-info")
         {
-            return PrintFailure(
-                std::cerr,
-                ExitCode::NotImplemented,
-                NotImplementedCode,
-                "--contract-info is reserved for Stage 14D-03 and is not implemented by the 14D-01 shell");
+            return PrintContractInfo(std::cout);
         }
         if (argument == "--spi-request")
         {
@@ -68,23 +65,38 @@ int WorkerApplication::Run(const int argc, char* const argv[]) const
 void WorkerApplication::PrintHelp(std::ostream& output)
 {
     output
-        << "SliceSoft slicer_worker Stage 14D-01 shell\n"
+        << "SliceSoft slicer_worker file-contract shell\n"
         << "Usage:\n"
         << "  slicer_worker --help\n"
         << "  slicer_worker --contract-info\n"
         << "  slicer_worker --spi-request <absolute-request-json-path>\n"
         << "\n"
-        << "Implemented in Stage 14D-01:\n"
+        << "Implemented:\n"
         << "  --help             Print this help and exit successfully.\n"
+        << "  --contract-info    Print the file_contract_v1 discovery JSON.\n"
         << "\n"
-        << "Reserved for later Stage 14D tasks:\n"
-        << "  --contract-info    Full contract negotiation is implemented by 14D-03.\n"
+        << "Reserved for a later Stage 14D task:\n"
         << "  --spi-request      File-contract job execution is implemented by 14D-08.\n"
         << "\n"
         << "Exit codes:\n"
         << "  0  Shell command completed successfully.\n"
         << "  1  Recognized capability is not implemented by this shell.\n"
         << "  2  Invalid or unknown command-line arguments.\n";
+}
+
+int WorkerApplication::PrintContractInfo(std::ostream& output)
+{
+    // Contract discovery owns stdout exclusively so callers can parse one JSON object.
+    output
+        << "{\"contract\":\"file_contract\","
+        << "\"major\":1,\"minor\":0,"
+        << "\"engineVersion\":\"" << EngineVersion << "\","
+        << "\"produces\":[\"p0.rgbwsv.2\"],"
+        << "\"capabilities\":["
+        << "\"slice.rgbwsv\","
+        << "\"geometry.preflight.full\","
+        << "\"geometry.repair\"]}\n";
+    return static_cast<int>(ExitCode::Success);
 }
 
 int WorkerApplication::PrintFailure(

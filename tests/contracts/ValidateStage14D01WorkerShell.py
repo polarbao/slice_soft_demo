@@ -41,10 +41,10 @@ def Validate() -> None:
     worker = Path(arguments.worker).resolve()
     assert worker.is_file(), f"worker executable is missing: {worker}"
 
-    RequireStableResult(worker, 0, "Stage 14D-01 shell", "--help")
+    RequireStableResult(worker, 0, "file-contract shell", "--help")
     RequireStableResult(worker, 2, "invalid_arguments")
     RequireStableResult(worker, 2, "unknown argument", "--unknown")
-    RequireStableResult(worker, 1, "not_implemented", "--contract-info")
+    RequireStableResult(worker, 0, '"contract":"file_contract"', "--contract-info")
     RequireStableResult(worker, 2, "requires one absolute", "--spi-request")
     RequireStableResult(
         worker,

@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14C-04 + 14D-03 (PARALLEL; SHARED INTEGRATION SERIAL)
+CURRENT_NEXT_TASK      = 14C-04 (IN PROGRESS); THEN 14C-05 + 14D-04
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -221,3 +221,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.11 | 完成 14C-02：唯一缓冲三态实现和 Debug/Release 单测闭合；并行批次余下 14C-03 与 14D-02，后续仍按共享 CMake/导出接线串行集成 |
 | 2026-08-06 | v3.12 | 完成 14C-03：句柄/TLS 基础设施及当前 ABI 接线通过 Debug/Release 门禁；14D-02 继续集成，14C-04 已解除代码前置但须避开共享 CMake/Exports 冲突 |
 | 2026-08-06 | v3.13 | 完成 14D-02：WorkerClient 子进程、协议解析、退出映射、取消/超时与进程树回收通过 Debug/Release 门禁；下一批 14C-04 与 14D-03 准备门禁 PASS，14C-05/07 因共享 DLL 文件转入串行集成 |
+| 2026-08-06 | v3.14 | 完成 14D-03：`--contract-info` 与模块侧合同协商通过 Debug/Release 门禁，版本、生产协议、能力和 stdout 日志边界均 fail-closed；14C-04 继续并行收口 |

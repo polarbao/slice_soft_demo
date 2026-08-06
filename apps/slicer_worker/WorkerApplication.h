@@ -7,10 +7,10 @@ namespace slicer_worker
 {
 
 /**
- * @brief Provides the Stage 14D-01 command-line shell for slicer_worker.
+ * @brief Provides the file-contract command-line shell for slicer_worker.
  *
- * The shell deliberately does not execute file-contract jobs. Contract
- * negotiation and request execution are added by later Stage 14D tasks.
+ * Contract discovery is available through --contract-info. Request execution
+ * remains assigned to the later Stage 14D-08 task.
  */
 class WorkerApplication final
 {
@@ -37,6 +37,7 @@ private:
         ExitCode exitCode,
         std::string_view errorCode,
         std::string_view message);
+    static int PrintContractInfo(std::ostream& output);
     static int HandleSpiRequest(int argc, char* const argv[]);
 };
 
