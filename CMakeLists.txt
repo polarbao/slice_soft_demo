@@ -881,6 +881,22 @@ if(MSVC)
     target_compile_options(slicer_worker_runtime PRIVATE /W4 /WX)
 endif()
 
+add_library(slicer_worker_slice_runtime STATIC
+    apps/slicer_worker/slice/WorkerSliceRequestMaterializer.cpp
+    apps/slicer_worker/slice/WorkerSliceRequestMaterializer.h
+)
+target_include_directories(slicer_worker_slice_runtime PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(slicer_worker_slice_runtime PUBLIC
+    slicer_worker_runtime
+    slicer_engine
+)
+if(MSVC)
+    target_compile_options(slicer_worker_slice_runtime PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage14d08_r1_worker_runtime_tests
     tests/stage14d_08_r1/WorkerRequestParserTests.cpp
 )
@@ -921,6 +937,20 @@ target_link_libraries(stage14d08_r1_dispatcher_tests PRIVATE
 )
 if(MSVC)
     target_compile_options(stage14d08_r1_dispatcher_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d08_r2_slice_materializer_tests
+    tests/stage14d_08_r2/WorkerSliceRequestMaterializerTests.cpp
+)
+target_include_directories(stage14d08_r2_slice_materializer_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d08_r2_slice_materializer_tests PRIVATE
+    slicer_worker_slice_runtime
+)
+if(MSVC)
+    target_compile_options(stage14d08_r2_slice_materializer_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(slicer_worker
@@ -1697,6 +1727,10 @@ add_test(
 add_test(
     NAME stage14d08_r1_dispatcher_tests
     COMMAND stage14d08_r1_dispatcher_tests
+)
+add_test(
+    NAME stage14d08_r2_slice_materializer_tests
+    COMMAND stage14d08_r2_slice_materializer_tests
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(

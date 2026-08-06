@@ -8,6 +8,8 @@
 >
 > 文档状态：`PREPARATION_GATE=PASS_WITH_CONTROLLED_SPLIT`
 >
+> R2-01 实施状态：`COMPLETE（2026-08-06）`
+>
 > 父任务状态：`14D-08=BLOCKED`
 
 ## 1. 准备结论
@@ -17,7 +19,7 @@
 
 | 子任务 | 内容 | 准备状态 |
 |---|---|---|
-| `14D-08-R2-01` | scene/profile/output 校验、hash 复核和 job 目录原子物化 | **READY** |
+| `14D-08-R2-01` | scene/profile/output 校验、hash 复核和 job 目录原子物化 | **COMPLETE（2026-08-06）** |
 | `14D-08-R2-02` | 通过唯一 `CreateProductionSliceFacade()` 执行真实切片 | **BLOCKED_BY_R3_01** |
 | `14D-08-R2-03` | package、RIP strict、独立入口正负例集成证据 | **BLOCKED_BY_R2_02_AND_14D_05** |
 
@@ -213,10 +215,12 @@ R2-03 还必须等待 14D-05 的 staging、租约、自检、原子 publish、�
 ```text
 14D_08_R2_PREPARATION_GATE=PASS_WITH_CONTROLLED_SPLIT
 14D_08_R2_01_PREPARATION_GATE=PASS
+14D_08_R2_01_STATUS=COMPLETE
 14D_08_R2_02_PREPARATION_GATE=BLOCKED_BY_14D_08_R3_01
 14D_08_R2_03_PREPARATION_GATE=BLOCKED_BY_R2_02_AND_14D_05
 14D_08_PARENT_GATE=BLOCKED
 ```
 
-下一张可执行原子卡是 `14D-08-R2-01`。完成它只解除输入物化缺口，不得把
-`slice.rgbwsv` 标记为 Worker 生产可用。
+`14D-08-R2-01` 已完成并通过 Debug/Release 定向门禁。它只解除输入物化缺口，未把
+`slice.rgbwsv` 标记为 Worker 生产可用。下一关键路径是先补齐并实施 `R3-01A/01B` 的权威
+full preflight，再进入 `R2-02` 真实 SliceFacade 执行。
