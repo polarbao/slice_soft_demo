@@ -249,9 +249,13 @@ def ValidateRuntime(library: ctypes.CDLL, fixture: Path) -> None:
                 "modelPath": str(fixture),
             },
         )
-        Require(fullJob is None, "full preflight was accepted in-process")
+        Require(fullJob is None, "incomplete full preflight was accepted")
         fullError = ReadJson(library.pm_last_error)
-        Require("Worker" in fullError["message"], "full preflight lacks Worker routing")
+        Require(
+            fullError["code"] == "PM-SLICER-INPUT-0002"
+            and "missing required field" in fullError.get("detail", ""),
+            "full preflight did not enforce the Worker carrier payload",
+        )
 
         for invalidMode in ("slow", "FAST"):
             invalidModeJob = Submit(
@@ -275,9 +279,13 @@ def ValidateRuntime(library: ctypes.CDLL, fixture: Path) -> None:
         Require(fakeJob is None, "invented geometry.preflight.fast ID was accepted")
 
         workerJob = Submit(library, module, {"capability": "slice.rgbwsv"})
-        Require(workerJob is None, "Worker-only slice capability was accepted")
+        Require(workerJob is None, "incomplete Worker slice request was accepted")
         workerError = ReadJson(library.pm_last_error)
-        Require("Worker" in workerError["message"], "Worker failure is not explicit")
+        Require(
+            workerError["code"] == "PM-SLICER-INPUT-0002"
+            and "missing required field" in workerError.get("detail", ""),
+            "Worker slice request did not fail closed on missing identity",
+        )
 
         fastJob = Submit(
             library,

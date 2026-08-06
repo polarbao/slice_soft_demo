@@ -113,9 +113,12 @@ void TestSubmitDoesNotFakeCapabilitySuccess()
     Require(
         pm_submit(module, "{}") == nullptr,
         "unwired capability routing must fail closed");
+    const std::string error = ReadLastError();
     Require(
-        ReadLastError().find("14C-04/14D") != std::string::npos,
-        "unwired routing failure must explain the owning future task");
+        error.find("PM-SLICER-INPUT-0002") != std::string::npos
+            && error.find("invalid capability carrier request")
+                != std::string::npos,
+        "invalid routing request must publish the stable input contract error");
     pm_destroy(module);
 }
 

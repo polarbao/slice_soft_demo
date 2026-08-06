@@ -1,4 +1,5 @@
 #include "SpiModuleApi.h"
+#include "WorkerLifecycleConformance.h"
 
 #include "slicer_core/json_value.h"
 
@@ -36,11 +37,6 @@ void Require(const bool condition, const std::string_view message)
 void ReportPass(const std::string_view id, const std::string_view detail)
 {
     std::cout << id << " PASS " << detail << '\n';
-}
-
-void ReportWorkerBlocked(const std::string_view id)
-{
-    std::cout << id << " BLOCKED_BY_WORKER_GATE\n";
 }
 
 std::string ReadOutput(const OutputCall& call)
@@ -450,19 +446,20 @@ int main(const int argumentCount, char* arguments[])
         TestSelfTest(api, module);
         TestInvalidRequests(api, module);
         TestTerminalJob(api, module, repository);
+        slicesoft::tests::TestWorkerLifecycleConformance(
+            api,
+            module,
+            repository);
         api.Destroy(module);
         TestNullHandles(api);
         TestDestroyWithJob(api, repository);
 
-        ReportWorkerBlocked("C-SPI-08");
-        ReportWorkerBlocked("C-SPI-09");
-        ReportWorkerBlocked("C-SPI-13");
-        std::cout << "14C-06A COMPLETE; 14C-06 PARTIAL / WAITING_FOR_14C-06B\n";
+        std::cout << "14C-06 COMPLETE; C-SPI-01..18 PASS\n";
         return 0;
     }
     catch (const std::exception& error)
     {
-        std::cerr << "Stage 14C-06A SPI conformance: FAIL: "
+        std::cerr << "Stage 14C-06 SPI conformance: FAIL: "
                   << error.what() << '\n';
         return 1;
     }

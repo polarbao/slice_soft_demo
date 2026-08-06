@@ -684,14 +684,15 @@ add_executable(test_spi_conformance
     tests/stage14c_06/SpiConformanceTests.cpp
     tests/stage14c_06/SpiModuleApi.cpp
     tests/stage14c_06/SpiModuleApi.h
-    src/slicer_core/json_value.cpp
-    src/slicer_core/json_value.h
+    tests/stage14c_06/WorkerLifecycleConformance.cpp
+    tests/stage14c_06/WorkerLifecycleConformance.h
 )
 target_include_directories(test_spi_conformance PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-add_dependencies(test_spi_conformance slicer_module)
+target_link_libraries(test_spi_conformance PRIVATE slicer_engine)
+add_dependencies(test_spi_conformance slicer_module slicer_worker)
 if(WIN32)
     target_link_libraries(test_spi_conformance PRIVATE Psapi)
 endif()

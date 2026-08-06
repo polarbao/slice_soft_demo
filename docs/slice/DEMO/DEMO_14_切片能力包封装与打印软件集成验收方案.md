@@ -55,26 +55,26 @@
 
 | 编号 | 检查 | 状态 |
 |---|---|---|
-| C-SPI-01 | `pm_spi_version()` == 宿主 `PM_SPI_VERSION` | NOT RUN |
-| C-SPI-02 | `pm_module_info` 合法 JSON 且过 schema | NOT RUN |
-| C-SPI-03 | `runtime`/`buildConfig` 不符时宿主拒绝装载 | NOT RUN |
-| C-SPI-04 | `pm_create`/`pm_destroy` 循环 100 次，内存增长 < 1MB | NOT RUN |
-| C-SPI-05a | `out=nullptr, cap=0` → `PM_ERR_BUFFER_SMALL` 且 `required>0` | NOT RUN |
-| C-SPI-05b | `cap = required`（差 1）→ 错误码且**缓冲未被写**（哨兵验证）| NOT RUN |
-| C-SPI-05c | `cap = required+1` → 返回 `required`，末尾 `'\0'` | NOT RUN |
-| C-SPI-06 | 提交 → 轮询到终结 → `pm_result` 闭环 | NOT RUN |
-| C-SPI-07 | 进度单调不回退（记录全序列）| NOT RUN |
-| C-SPI-08 | `pm_cancel` 后 ≤ `cancelLatencyMs` 进 `cancelled` | NOT RUN |
-| C-SPI-09 | 取消后 `.staging` 不存在 | NOT RUN |
-| C-SPI-10 | 错误码匹配 `^PM-[A-Z]+-[A-Z0-9]+-\d{4}$` | NOT RUN |
-| C-SPI-11 | 非法请求 JSON（12 变体）→ 稳定码，不崩溃 | NOT RUN |
-| C-SPI-12 | 所有函数传 `nullptr` 句柄 → `PM_ERR_INVALID_ARG` | NOT RUN |
-| C-SPI-13 | `pm_result` 在 running 态 → `PM_ERR_INVALID_STATE` | NOT RUN |
-| C-SPI-14 | `pm_destroy` 时仍有未 release 的 job → 不崩溃不泄漏 | NOT RUN |
-| C-SPI-15 | `pm_cancel` 重复调用 → 均返回 `PM_OK` | NOT RUN |
-| C-SPI-16 | `dumpbin /EXPORTS` 恰好 11 个 `pm_*`，无 C++ 修饰名 | NOT RUN |
-| C-SPI-17 | `dumpbin /DEPENDENTS` 不含 `PrintSDK.dll` / `Qt5*.dll` | NOT RUN |
-| C-SPI-18 | `pm_self_test` 返回合法 JSON，无持久化副作用 | NOT RUN |
+| C-SPI-01 | `pm_spi_version()` == 宿主 `PM_SPI_VERSION` | PASS（Debug/Release） |
+| C-SPI-02 | `pm_module_info` 合法 JSON 且过 schema | PASS（Debug/Release） |
+| C-SPI-03 | `runtime`/`buildConfig` 不符时宿主拒绝装载 | PASS（Debug/Release） |
+| C-SPI-04 | `pm_create`/`pm_destroy` 循环 100 次，内存增长 < 1MB | PASS（Debug/Release） |
+| C-SPI-05a | `out=nullptr, cap=0` → `PM_ERR_BUFFER_SMALL` 且 `required>0` | PASS（Debug/Release） |
+| C-SPI-05b | `cap = required`（差 1）→ 错误码且**缓冲未被写**（哨兵验证）| PASS（Debug/Release） |
+| C-SPI-05c | `cap = required+1` → 返回 `required`，末尾 `'\0'` | PASS（Debug/Release） |
+| C-SPI-06 | 提交 → 轮询到终结 → `pm_result` 闭环 | PASS（Debug/Release） |
+| C-SPI-07 | 进度单调不回退（记录全序列）| PASS（Debug/Release） |
+| C-SPI-08 | `pm_cancel` 后 ≤ `cancelLatencyMs` 进 `cancelled` | PASS（Debug/Release 真实 Worker） |
+| C-SPI-09 | 取消后 `.staging` 不存在 | PASS（Debug/Release 真实 Worker） |
+| C-SPI-10 | 错误码匹配 `^PM-[A-Z]+-[A-Z0-9]+-\d{4}$` | PASS（Debug/Release） |
+| C-SPI-11 | 非法请求 JSON（12 变体）→ 稳定码，不崩溃 | PASS（Debug/Release） |
+| C-SPI-12 | 所有函数传 `nullptr` 句柄 → `PM_ERR_INVALID_ARG` | PASS（Debug/Release） |
+| C-SPI-13 | `pm_result` 在 running 态 → `PM_ERR_INVALID_STATE` | PASS（Debug/Release 真实 Worker） |
+| C-SPI-14 | `pm_destroy` 时仍有未 release 的 job → 不崩溃不泄漏 | PASS（Debug/Release） |
+| C-SPI-15 | `pm_cancel` 重复调用 → 均返回 `PM_OK` | PASS（Debug/Release 真实 Worker） |
+| C-SPI-16 | `dumpbin /EXPORTS` 恰好 11 个 `pm_*`，无 C++ 修饰名 | PASS（Debug/Release） |
+| C-SPI-17 | `dumpbin /DEPENDENTS` 不含 `PrintSDK.dll` / `Qt5*.dll` | PASS（Debug/Release） |
+| C-SPI-18 | `pm_self_test` 返回合法 JSON，无持久化副作用 | PASS（Debug/Release） |
 
 ## 4. D14-D Worker、取消与引擎替换
 

@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.42 ｜ 更新日期：2026-08-06
+> 版本：v3.43 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14C-06B WORKER LIFECYCLE SPI CONFORMANCE
+CURRENT_NEXT_TASK      = 14D-07-R2 PREPARATION AUDIT / CURRENT WORKER GATE
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -137,8 +137,9 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 14D-03 | ✅ COMPLETE（2026-08-06） | `file_contract_v1` 发现和 major/minor 协商 | Debug/Release 合同发现、生产协议、能力完整性与日志边界门禁 PASS |
 | 14D-04A | ✅ COMPLETE（2026-08-06） | 进程内核心取消令牌贯穿和 Writer staging 清理 | Debug/Release 取消时限、长循环检查、既有包保护与正常生产字节不变性 PASS；Worker E2E 已由 04B 闭合 |
 | 14D-04B | ✅ COMPLETE（2026-08-06） | 公开 SPI 真实 Worker 取消与生命周期收口 | 活动 Worker 取消 ≤2000ms，非终态结果拒绝、重复/终态取消幂等、稳定取消码和零 owned 临时产物在 Debug/Release 下 PASS |
-| 14C-06A | ✅ COMPLETE（2026-08-06） | 模块本地 SPI 一致性与无副作用自检 | Debug/Release Stage 14C 定向 CTest 11/11 PASS；C-SPI-08/09/13 显式等待 Worker |
-| 14C-06B | ⛔ PREPARATION_GATE BLOCKED | Worker 生命周期 SPI 一致性 | 等待 14D-04B、14D-05、14D-08 |
+| 14C-06A | ✅ COMPLETE（2026-08-06） | 模块本地 SPI 一致性与无副作用自检 | Debug/Release Stage 14C 定向 CTest 11/11 PASS；历史 Worker 保留项由 06B 关闭 |
+| 14C-06B | ✅ COMPLETE（2026-08-06） | Worker 生命周期 SPI 一致性 | 真实 Worker 取消、旧包保护、非终态 result 拒绝和幂等 cancel 在 Debug/Release 连续 3 次 PASS |
+| 14C-06 | ✅ COMPLETE（2026-08-06） | C-SPI-01..18 公开 ABI 一致性 | 14C-06A/06B 合并全绿；与已完成 14D-05 共同满足 `M-MVP-CANDIDATE` |
 | 14C-07 | ✅ COMPLETE（2026-08-06） | DLL 初始化与依赖红线 | Debug/Release 5/5 定向测试、并发 call_once、32 实例、精确 11 导出和 PE 依赖红线 PASS |
 | 14D-05 | ✅ COMPLETE（2026-08-06） | 安全发布与清理双保险 | R1..R4 完成；真实 Worker 与公开 DLL 链路均验证取消/强杀后的旧包保护和 owned 临时产物清零 |
 | 14D-05-R1 | ✅ COMPLETE（2026-08-06） | 共享产物身份与恢复状态机 | job/attempt 精确 owned 路径、临时路径识别、reparse fail-closed、备份恢复与相邻作业保护通过定向门禁 |
@@ -147,7 +148,7 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 14D-05-R4-A | ✅ COMPLETE（2026-08-06） | 真实 Worker 正常、取消、超时强杀与旧包保护 | Debug/Release 生产 Worker + WorkerClient 集成 PASS；有效包严格可读，取消/强杀后 manifest 字节不变且 owned staging/backup/lease 无残留 |
 | 14D-05-R4-B | ✅ COMPLETE（2026-08-06） | 公开 DLL -> Worker -> Writer 与 C-SPI-09 收口 | Debug/Release 公开 C SPI 取消返回稳定代码；既有 manifest 字节不变，owned staging/backup/lease 无残留且包仍可严格读取 |
 | 14D-06 | ✅ COMPLETE（2026-08-06） | Worker 唯一重能力路由 | R1/R2 完成；公共 SPI 异步执行 full preflight/repair/slice，poll/cancel/result/release/destroy 闭合，Debug/Release 与合同门禁 PASS；module 不链接 engine |
-| 14D-07 | ⛔ PREPARATION_GATE BLOCKED | 引擎一致性套件 E-01..08 | 八项用例尚未规范冻结，真实 Worker 与安全发布也未就绪 |
+| 14D-07 | 🟡 R1 COMPLETE / R2 PREPARATION AUDIT | 引擎一致性套件 E-01..08 | E-01..08 合同和参数化外壳已冻结；14D-04B/05 及真实 Worker 已就绪，下一步对 R2 准备门复审 |
 | 14D-08 | ⛔ 父任务 BLOCKED / CONTROLLED SPLIT | Worker 独立 `--spi-request` | 已拆 R1..R4；R1 共享基础可实施，R2/R3/R4 继续等待真实映射、Facade 和安全发布 |
 | 14D-08-R1 | ✅ COMPLETE（2026-08-06） | 共享请求解析、身份、结果与调度基础 | R1-01..03 COMPLETE；生产 Worker 在无 executor 时身份闭合地显式失败 |
 | 14D-08-R1-01 | ✅ COMPLETE（2026-08-06） | `request.json` 严格解析与不可变作业身份 | Debug/Release 5/5 定向门禁 PASS；不创建 result/package，不接入 executor |
@@ -168,7 +169,7 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 14D-07-R1 | ✅ COMPLETE（2026-08-06） | 参数化 E-01..08 合同、fixture 身份、runner 与定义门禁 | 当前 runner 诚实输出 BLOCKED；完整 Worker Gate 归 R2 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
-11 个冻结符号；完整 C-SPI-01..18 仍由 14C-06A/06B 合并关闭。
+11 个冻结符号；C-SPI-01..18 已由 14C-06A/06B 合并关闭。
 
 ## 4. 已裁定事项
 
@@ -286,3 +287,4 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 2026-08-06 | v3.40 | 完成 14D-06-R2：公共 SPI 以异步 `WorkerJobService` 唯一路由 full preflight、repair 与 slice；生命周期、协作取消、结果身份、私有作业目录和修复发布闭合，Debug/Release 定向门禁及合同校验通过；下一任务转 14D-05-R4-B |
 | 2026-08-06 | v3.41 | 完成 14D-05-R4-B：公开 DLL -> Worker -> Writer 取消链路在 Debug/Release 下保持既有有效包、清理 owned 临时产物并返回稳定取消码；C-SPI-09 真实链路闭合，14D-05 COMPLETE，下一任务转 14D-04B |
 | 2026-08-06 | v3.42 | 完成 14D-04B：公开 C SPI 在真实 Worker 活动阶段验证取消 ≤2000ms、非终态结果拒绝、重复/终态取消幂等和零 owned 临时产物；原 14D-04 COMPLETE，下一任务转 14C-06B |
+| 2026-08-06 | v3.43 | 完成 14C-06B：公开 C ABI 在真实 Worker 链路关闭 C-SPI-08/09/13/15，Debug/Release Stage 14C 各 11/11 并连续 3 次 PASS；14C-06 全绿与 14D-05 共同满足 M-MVP-CANDIDATE，下一任务转 14D-07-R2 准备复审 |

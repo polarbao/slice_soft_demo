@@ -4,6 +4,10 @@
 > 对应任务：`14C-06A`
 > 状态：`COMPLETE / 14C-06 PARTIAL / WAITING_FOR_14C-06B`
 
+> 后续闭环：14C-06B 已于 2026-08-06 关闭真实 Worker 生命周期项；
+> 本报告保留 06A 完成时的历史边界，当前总状态见
+> `REPORT_14C_06B_SPI_Worker生命周期一致性当前状态.md`。
+
 ## 1. 结论
 
 已建立独立的 `test_spi_conformance`。该程序不链接 `slicer_module` 导入库，而是在运行时
