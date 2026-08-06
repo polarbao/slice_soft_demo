@@ -10,7 +10,7 @@ namespace slicer_worker
  * @brief Provides the file-contract command-line shell for slicer_worker.
  *
  * Contract discovery is available through --contract-info. Request execution
- * remains assigned to the later Stage 14D-08 task.
+ * enters the shared Worker runtime and fails closed when no real executor is installed.
  */
 class WorkerApplication final
 {
@@ -27,8 +27,14 @@ private:
     enum class ExitCode : int
     {
         Success = 0,
-        NotImplemented = 1,
-        InvalidArguments = 2
+        Internal = 1,
+        InvalidArguments = 2,
+        Profile = 3,
+        Topology = 4,
+        Resource = 5,
+        Output = 6,
+        Contract = 7,
+        Cancelled = 8
     };
 
     static void PrintHelp(std::ostream& output);

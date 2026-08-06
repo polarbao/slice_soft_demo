@@ -55,8 +55,8 @@ def Validate() -> None:
     )
     RequireStableResult(
         worker,
-        1,
-        "not_implemented",
+        2,
+        "PM-SLICER-INPUT-0002",
         "--spi-request",
         str((worker.parent / "request.json").resolve()),
     )

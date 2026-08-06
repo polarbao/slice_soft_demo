@@ -13,6 +13,10 @@
 > 父任务状态：`14D-08=BLOCKED`
 >
 > R1-01 实施状态：`COMPLETE（2026-08-06）`
+>
+> R1-02 实施状态：`COMPLETE（2026-08-06）`
+>
+> R1-03 实施状态：`COMPLETE（2026-08-06）`
 
 ## 1. 审计结论
 
@@ -39,7 +43,7 @@
 
 | 范围 | 结论 | 说明 |
 |---|---|---|
-| `14D-08-R1` 共享执行基础 | **PASS / READY** | 当前合同和代码事实足以实施，不依赖 full preflight/repair 算法适配 |
+| `14D-08-R1` 共享执行基础 | **COMPLETE** | parser、不可变身份、结果原子发布、精确调度和命令入口已闭合 |
 | `14D-08-R2` 切片请求映射与真实执行 | **BLOCKED** | 内嵌 scene/profile 到 `scene_config_path` 的物化规则尚未冻结；安全发布仍依赖 14D-05 |
 | `14D-08-R3` full preflight/repair 适配 | **BLOCKED** | 两项 Facade 只有接口，没有具体工厂/适配器 |
 | `14D-08-R4` 三能力独立调试收口 | **BLOCKED** | 需 R1/R2/R3 和 14D-05 全部完成 |
@@ -87,14 +91,12 @@
 
 ### 3.2 尚不具备
 
-1. 仓库中没有 `WorkerRequest`、`WorkerJobIdentity`、`WorkerJobDispatcher` 或等价实现。
-2. `WorkerApplication::HandleSpiRequest()` 只做参数检查，随后返回 `NotImplemented`。
-3. 没有 C++ 侧的 request/result 语义校验、身份闭合和原子 `result.json` 写入服务。
-4. 没有 capability 到真实执行器的精确注册表，也没有缺执行器时的统一 fail-closed 路径。
-5. 内嵌 scene/profile/output 到 `SliceRequest::scene_config_path` 的映射未冻结。
-6. `PreflightFullFacade` 与 `RepairFacade` 仅有抽象接口，未发现可构造的具体工厂。
-7. Worker 未接入 14D-05 的作业级 staging/backup 所有权和崩溃恢复。
-8. 模块 `pm_submit` 尚未路由到 `WorkerClient`，但该缺口属于 14D-06，不属于本 R1。
+1. 内嵌 scene/profile/output 到 `SliceRequest::scene_config_path` 的映射未冻结。
+2. production registry 尚未安装三项真实 executor；当前会身份闭合地返回
+   `PM-SLICER-INTERNAL-0099`，不会伪成功或生成 package。
+3. `PreflightFullFacade` 与 `RepairFacade` 仅有抽象接口，未发现可构造的具体工厂。
+4. Worker 未接入 14D-05 的作业级 staging/backup 所有权和崩溃恢复。
+5. 模块 `pm_submit` 尚未路由到 `WorkerClient`，但该缺口属于 14D-06，不属于本 R1。
 
 ## 4. 拆分原则
 
@@ -395,17 +397,17 @@ R1 完成后，14D-06 可稳定生成/启动同一文件合同入口，并可证
 ```text
 SPLIT_DECISION=ACCEPTED_FOR_PREPARATION
 14D_08_R1_PREPARATION_GATE=PASS
-14D_08_R1_IMPLEMENTATION_STATUS=IN_PROGRESS
+14D_08_R1_IMPLEMENTATION_STATUS=COMPLETE
 14D_08_R1_01_STATUS=COMPLETE
 14D_08_R1_02_STATUS=COMPLETE
 14D_08_R1_03_PREPARATION_GATE=PASS
-14D_08_R1_03_STATUS=READY
+14D_08_R1_03_STATUS=COMPLETE
 14D_08_R2_PREPARATION_GATE=BLOCKED
 14D_08_R3_PREPARATION_GATE=BLOCKED
 14D_08_PARENT_GATE=BLOCKED
 ```
 
-`14D-08-R1-01` 与 `R1-02` 已按本合同完成并通过 Debug/Release 门禁。下一张原子卡是
-`14D-08-R1-03 capability 精确调度与命令入口接线`；严格 parser、不可变身份、结果封装、
-原子替换和退出映射均已就绪，因此其准备门转为 PASS。不得注册占位成功 executor，也不得
-跳过后续映射、真实 Facade、安全发布或取消门禁。
+`14D-08-R1-01..03` 已按本合同完成并通过 Debug/Release 门禁。生产 Worker 现在统一进入
+共享 runtime，并在没有真实 executor 时生成身份闭合的显式失败；测试 fake 未进入生产目标。
+下一步只能进入 `14D-08-R2` 的受控映射准备，不得直接注册占位成功 executor，也不得跳过
+scene/profile 物化、真实 Facade、安全发布或取消门禁。

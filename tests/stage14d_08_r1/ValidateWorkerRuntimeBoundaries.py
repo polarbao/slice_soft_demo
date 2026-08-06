@@ -14,8 +14,14 @@ def main() -> int:
     repo = args.repo_root.resolve()
     runtime = repo / "apps" / "slicer_worker" / "runtime"
     required = {
+        "WorkerCapabilityExecutor.h",
+        "WorkerCapabilityExecutor.cpp",
         "WorkerJobIdentity.h",
         "WorkerJobIdentity.cpp",
+        "WorkerJobDispatcher.h",
+        "WorkerJobDispatcher.cpp",
+        "WorkerJobRuntime.h",
+        "WorkerJobRuntime.cpp",
         "WorkerRequestEnvelope.h",
         "WorkerRequestEnvelope.cpp",
         "WorkerRequestParser.h",

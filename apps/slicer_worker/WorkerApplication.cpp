@@ -1,5 +1,8 @@
 #include "WorkerApplication.h"
 
+#include "slicer_worker/runtime/WorkerJobDispatcher.h"
+#include "slicer_worker/runtime/WorkerJobRuntime.h"
+
 #include <filesystem>
 #include <iostream>
 #include <ostream>
@@ -11,7 +14,6 @@ namespace
 {
 
 constexpr std::string_view InvalidArgumentsCode{"invalid_arguments"};
-constexpr std::string_view NotImplementedCode{"not_implemented"};
 constexpr std::string_view EngineVersion{"0.1.0"};
 
 }  // namespace
@@ -75,13 +77,15 @@ void WorkerApplication::PrintHelp(std::ostream& output)
         << "  --help             Print this help and exit successfully.\n"
         << "  --contract-info    Print the file_contract_v1 discovery JSON.\n"
         << "\n"
-        << "Reserved for a later Stage 14D task:\n"
-        << "  --spi-request      File-contract job execution is implemented by 14D-08.\n"
+        << "Implemented fail-closed runtime:\n"
+        << "  --spi-request      Parse, dispatch, and publish one file-contract result.\n"
+        << "                     Missing production executors return an explicit failure.\n"
         << "\n"
         << "Exit codes:\n"
         << "  0  Shell command completed successfully.\n"
-        << "  1  Recognized capability is not implemented by this shell.\n"
-        << "  2  Invalid or unknown command-line arguments.\n";
+        << "  1  Internal failure or production executor is not installed.\n"
+        << "  2  Invalid input or command-line arguments.\n"
+        << "  3..8  Frozen profile/topology/resource/output/contract/cancel categories.\n";
 }
 
 int WorkerApplication::PrintContractInfo(std::ostream& output)
@@ -134,11 +138,21 @@ int WorkerApplication::HandleSpiRequest(
             "--spi-request requires an absolute request JSON path");
     }
 
+    const slicesoft::worker::WorkerJobDispatcher dispatcher;
+    const slicesoft::worker::WorkerJobRuntimeResult result =
+        slicesoft::worker::WorkerJobRuntime::Run(requestPath, dispatcher);
+    if (result.processexitcode == 0)
+    {
+        return 0;
+    }
+    const std::string message = result.message.empty()
+        ? "worker request failed without a diagnostic message"
+        : result.message;
     return PrintFailure(
         std::cerr,
-        ExitCode::NotImplemented,
-        NotImplementedCode,
-        "--spi-request execution is reserved for Stage 14D-08 and is not implemented by the 14D-01 shell");
+        static_cast<ExitCode>(result.processexitcode),
+        result.stablecode,
+        message);
 }
 
 }  // namespace slicer_worker

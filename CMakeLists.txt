@@ -855,8 +855,14 @@ add_executable(slicer_cli
 target_link_libraries(slicer_cli PRIVATE slicer_core)
 
 add_library(slicer_worker_runtime STATIC
+    apps/slicer_worker/runtime/WorkerCapabilityExecutor.cpp
+    apps/slicer_worker/runtime/WorkerCapabilityExecutor.h
     apps/slicer_worker/runtime/WorkerJobIdentity.cpp
     apps/slicer_worker/runtime/WorkerJobIdentity.h
+    apps/slicer_worker/runtime/WorkerJobDispatcher.cpp
+    apps/slicer_worker/runtime/WorkerJobDispatcher.h
+    apps/slicer_worker/runtime/WorkerJobRuntime.cpp
+    apps/slicer_worker/runtime/WorkerJobRuntime.h
     apps/slicer_worker/runtime/WorkerRequestEnvelope.cpp
     apps/slicer_worker/runtime/WorkerRequestEnvelope.h
     apps/slicer_worker/runtime/WorkerRequestParser.cpp
@@ -901,6 +907,20 @@ target_link_libraries(stage14d08_r1_result_writer_tests PRIVATE
 )
 if(MSVC)
     target_compile_options(stage14d08_r1_result_writer_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d08_r1_dispatcher_tests
+    tests/stage14d_08_r1/WorkerJobDispatcherTests.cpp
+)
+target_include_directories(stage14d08_r1_dispatcher_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d08_r1_dispatcher_tests PRIVATE
+    slicer_worker_runtime
+)
+if(MSVC)
+    target_compile_options(stage14d08_r1_dispatcher_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(slicer_worker
@@ -1590,6 +1610,12 @@ if(Python3_Interpreter_FOUND)
             --repo-root "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_test(
+        NAME slicer_stage14d08_r1_no_fake_worker_executor_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14d_08_r1/ValidateNoFakeWorkerExecutor.py"
+            --worker $<TARGET_FILE:slicer_worker>
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1619,6 +1645,7 @@ if(Python3_Interpreter_FOUND)
         slicer_stage14d01_worker_shell_contract_test
         slicer_stage14d04a_cancel_propagation_test
         slicer_stage14d08_r1_worker_runtime_boundary_test
+        slicer_stage14d08_r1_no_fake_worker_executor_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
         PROPERTIES
@@ -1666,6 +1693,10 @@ add_test(
 add_test(
     NAME stage14d08_r1_result_writer_tests
     COMMAND stage14d08_r1_result_writer_tests
+)
+add_test(
+    NAME stage14d08_r1_dispatcher_tests
+    COMMAND stage14d08_r1_dispatcher_tests
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(

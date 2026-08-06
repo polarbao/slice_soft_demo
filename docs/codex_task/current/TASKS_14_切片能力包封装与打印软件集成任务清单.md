@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.27 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.28 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -289,10 +289,10 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14D-06 | 取消 `backend=inprocess` 切片路径；`options.backend` 收敛为 `worker` | 14D-02 | 无第二条切片路径 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；Worker 唯一路由尚不可执行，等待 14D-08/05 解阻 |
 | 14D-07 | **引擎一致性套件 E-01..08**（Worker 独立替换的准入门）| 14D-03, 14D-05 | 套件可对任意 Worker 版本运行 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；E-01..08 尚未规范冻结，且缺真实 Worker 与安全发布证据 |
 | 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>`（受控拆为 R1..R4） | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | ⛔ **父任务 BLOCKED**；R1 共享执行基础准备门已通过，R2/R3/R4 仍等待真实映射、Facade 与安全发布 |
-| 14D-08-R1 | 共享 Worker 请求解析、不可变身份、结果封装与精确调度基础 | 14D-01..03 | 无真实 executor 时身份闭合地显式失败，禁止伪成功和 fallback | ✅ **PREPARATION_GATE PASS_WITH_SPLIT（2026-08-06）** |
+| 14D-08-R1 | 共享 Worker 请求解析、不可变身份、结果封装与精确调度基础 | 14D-01..03 | 无真实 executor 时身份闭合地显式失败，禁止伪成功和 fallback | ✅ **COMPLETE（2026-08-06）**；Debug/Release 定向套件 8/8 PASS |
 | 14D-08-R1-01 | request.json 严格解析与不可变作业身份 | 14D-08-R1 | 合同/路径/身份正负例通过，不创建生产包 | ✅ **COMPLETE（2026-08-06）**；Debug/Release 5/5 定向门禁 PASS |
 | 14D-08-R1-02 | result.json 原子写入与稳定退出映射 | 14D-08-R1-01 | 身份闭合、tmp 原子替换、写入失败稳定码 | ✅ **COMPLETE（2026-08-06）**；Debug/Release 4/4 定向门禁 PASS |
-| 14D-08-R1-03 | capability 精确调度与命令入口接线 | 14D-08-R1-01..02 | 无 executor 明确失败；测试 fake 不进入生产 Worker | ✅ **READY（2026-08-06）** |
+| 14D-08-R1-03 | capability 精确调度与命令入口接线 | 14D-08-R1-01..02 | 无 executor 明确失败；测试 fake 不进入生产 Worker | ✅ **COMPLETE（2026-08-06）**；共享 runtime 已接线，生产 Worker fail-closed |
 
 ---
 
@@ -470,3 +470,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-06 | v2.25 | 完成 14C-06A：独立公开 C ABI 一致性程序和无副作用 pm_self_test 通过 Debug/Release 11/11 门禁，完整 14C-06 仍等待 06B；14D-08 受控拆为 R1..R4，共享执行基础 R1 准备门 PASS，下一卡为 R1-01 |
 | 2026-08-06 | v2.26 | 完成 14D-08-R1-01：严格解析 file_contract_v1 请求并冻结不可变 job/result/cancel 身份，Debug/Release 定向门禁 5/5 PASS；R1-02 准备门转 READY，父任务继续 BLOCKED |
 | 2026-08-06 | v2.27 | 完成 14D-08-R1-02：身份闭合结果、稳定退出映射和同目录 tmp 原子替换通过 Debug/Release 4/4 门禁；R1-03 准备门转 READY，仍禁止伪成功 executor |
+| 2026-08-06 | v2.28 | 完成 14D-08-R1-03：三能力精确注册、共享 runtime、取消前检和命令入口接线通过 Debug/Release 8/8 门禁；R1 COMPLETE，R2 映射准备仍 BLOCKED |
