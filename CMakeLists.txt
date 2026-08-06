@@ -145,6 +145,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/geometry/repair/MeshRepairHash.h
     src/slicer_core/geometry/repair/DeterministicObjAssetWriter.cpp
     src/slicer_core/geometry/repair/DeterministicObjAssetWriter.h
+    src/slicer_core/geometry/repair/StrictRepairAssetRecheck.cpp
+    src/slicer_core/geometry/repair/StrictRepairAssetRecheck.h
     src/slicer_core/geometry/repair/MeshRepairEligibilityPolicy.cpp
     src/slicer_core/geometry/repair/MeshRepairEligibilityPolicy.h
     src/slicer_core/geometry/repair/MeshRepairEvidenceValidator.cpp
@@ -1006,6 +1008,20 @@ target_include_directories(stage14d08_r3_obj_writer_tests PRIVATE
 target_link_libraries(stage14d08_r3_obj_writer_tests PRIVATE slicer_engine)
 if(MSVC)
     target_compile_options(stage14d08_r3_obj_writer_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d08_r3_strict_recheck_tests
+    tests/stage14d_08_r3/StrictRepairAssetRecheckTests.cpp
+)
+target_include_directories(stage14d08_r3_strict_recheck_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_compile_definitions(stage14d08_r3_strict_recheck_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(stage14d08_r3_strict_recheck_tests PRIVATE slicer_engine)
+if(MSVC)
+    target_compile_options(stage14d08_r3_strict_recheck_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(slicer_worker
