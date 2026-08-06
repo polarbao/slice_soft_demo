@@ -1151,6 +1151,8 @@ endif()
 
 add_executable(stage14d07_engine_conformance_gate
     tests/stage14d_07/EngineConformanceGate.cpp
+    tests/stage14d_07/EngineConformanceSupport.cpp
+    tests/stage14d_07/EngineConformanceSupport.h
     src/slicer_module/WorkerClient.cpp
     src/slicer_module/WorkerClient.h
     src/slicer_module/WorkerProcessWindows.cpp
