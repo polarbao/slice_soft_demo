@@ -12,7 +12,7 @@
 >
 > 父任务状态：`14D-08=BLOCKED`
 >
-> 本轮实施授权：`NOT_GRANTED_BY_THIS_DOCUMENT`
+> R1-01 实施状态：`COMPLETE（2026-08-06）`
 
 ## 1. 审计结论
 
@@ -395,12 +395,17 @@ R1 完成后，14D-06 可稳定生成/启动同一文件合同入口，并可证
 ```text
 SPLIT_DECISION=ACCEPTED_FOR_PREPARATION
 14D_08_R1_PREPARATION_GATE=PASS
-14D_08_R1_IMPLEMENTATION_STATUS=NOT_STARTED
+14D_08_R1_IMPLEMENTATION_STATUS=IN_PROGRESS
+14D_08_R1_01_STATUS=COMPLETE
+14D_08_R1_02_PREPARATION_GATE=PASS
+14D_08_R1_02_STATUS=READY
+14D_08_R1_03_STATUS=PREPARED
 14D_08_R2_PREPARATION_GATE=BLOCKED
 14D_08_R3_PREPARATION_GATE=BLOCKED
 14D_08_PARENT_GATE=BLOCKED
 ```
 
-推荐的下一张原子卡是 `14D-08-R1-01 请求解析与不可变身份`。实施前必须在共享
-`TASKS_14` 中登记受控拆分及文件所有权；本审计按约束不修改 TASKS、REPORT、README，
-也不授权跳过后续映射、真实 Facade、安全发布或取消门禁。
+`14D-08-R1-01 请求解析与不可变身份` 已按本合同完成并通过 Debug/Release 门禁。下一张
+原子卡是 `14D-08-R1-02 result.json 原子写入与稳定退出映射`；其身份、路径和稳定错误
+边界已经由 R1-01 提供，因此准备门转为 PASS。不得跳过 R1-02 直接把 R1-03 接入命令
+入口，也不得跳过后续映射、真实 Facade、安全发布或取消门禁。

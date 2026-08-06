@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.25 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.26 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -290,8 +290,8 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14D-07 | **引擎一致性套件 E-01..08**（Worker 独立替换的准入门）| 14D-03, 14D-05 | 套件可对任意 Worker 版本运行 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；E-01..08 尚未规范冻结，且缺真实 Worker 与安全发布证据 |
 | 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>`（受控拆为 R1..R4） | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | ⛔ **父任务 BLOCKED**；R1 共享执行基础准备门已通过，R2/R3/R4 仍等待真实映射、Facade 与安全发布 |
 | 14D-08-R1 | 共享 Worker 请求解析、不可变身份、结果封装与精确调度基础 | 14D-01..03 | 无真实 executor 时身份闭合地显式失败，禁止伪成功和 fallback | ✅ **PREPARATION_GATE PASS_WITH_SPLIT（2026-08-06）** |
-| 14D-08-R1-01 | request.json 严格解析与不可变作业身份 | 14D-08-R1 | 合同/路径/身份正负例通过，不创建生产包 | ✅ **READY（2026-08-06）** |
-| 14D-08-R1-02 | result.json 原子写入与稳定退出映射 | 14D-08-R1-01 | 身份闭合、tmp 原子替换、写入失败稳定码 | PREPARED |
+| 14D-08-R1-01 | request.json 严格解析与不可变作业身份 | 14D-08-R1 | 合同/路径/身份正负例通过，不创建生产包 | ✅ **COMPLETE（2026-08-06）**；Debug/Release 5/5 定向门禁 PASS |
+| 14D-08-R1-02 | result.json 原子写入与稳定退出映射 | 14D-08-R1-01 | 身份闭合、tmp 原子替换、写入失败稳定码 | ✅ **READY（2026-08-06）** |
 | 14D-08-R1-03 | capability 精确调度与命令入口接线 | 14D-08-R1-01..02 | 无 executor 明确失败；测试 fake 不进入生产 Worker | PREPARED |
 
 ---
@@ -468,3 +468,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-06 | v2.23 | 完成 14C-05 与 14D-04A：模块自述/部署清单和核心取消令牌贯穿通过 Debug/Release 门禁；14C-07 准备门 PASS，14D-08 显式登记准备阻断缺口 |
 | 2026-08-06 | v2.24 | 完成 14C-07：最小 DllMain、进程级 call_once、并发创建、精确 11 导出与 PE 依赖红线通过 Debug/Release 门禁；14C-06 受控拆为可执行 06A 和等待 Worker 的 06B；14D-05/06/07 准备审计均登记真实阻断项 |
 | 2026-08-06 | v2.25 | 完成 14C-06A：独立公开 C ABI 一致性程序和无副作用 pm_self_test 通过 Debug/Release 11/11 门禁，完整 14C-06 仍等待 06B；14D-08 受控拆为 R1..R4，共享执行基础 R1 准备门 PASS，下一卡为 R1-01 |
+| 2026-08-06 | v2.26 | 完成 14D-08-R1-01：严格解析 file_contract_v1 请求并冻结不可变 job/result/cancel 身份，Debug/Release 定向门禁 5/5 PASS；R1-02 准备门转 READY，父任务继续 BLOCKED |

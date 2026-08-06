@@ -854,6 +854,37 @@ add_executable(slicer_cli
 
 target_link_libraries(slicer_cli PRIVATE slicer_core)
 
+add_library(slicer_worker_runtime STATIC
+    apps/slicer_worker/runtime/WorkerJobIdentity.cpp
+    apps/slicer_worker/runtime/WorkerJobIdentity.h
+    apps/slicer_worker/runtime/WorkerRequestEnvelope.cpp
+    apps/slicer_worker/runtime/WorkerRequestEnvelope.h
+    apps/slicer_worker/runtime/WorkerRequestParser.cpp
+    apps/slicer_worker/runtime/WorkerRequestParser.h
+)
+target_include_directories(slicer_worker_runtime PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(slicer_worker_runtime PUBLIC slicer_base)
+if(MSVC)
+    target_compile_options(slicer_worker_runtime PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d08_r1_worker_runtime_tests
+    tests/stage14d_08_r1/WorkerRequestParserTests.cpp
+)
+target_include_directories(stage14d08_r1_worker_runtime_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d08_r1_worker_runtime_tests PRIVATE
+    slicer_worker_runtime
+)
+if(MSVC)
+    target_compile_options(stage14d08_r1_worker_runtime_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(slicer_worker
     apps/slicer_worker/Main.cpp
     apps/slicer_worker/WorkerApplication.cpp
@@ -863,7 +894,7 @@ target_include_directories(slicer_worker PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_worker
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_link_libraries(slicer_worker PRIVATE slicer_engine)
+target_link_libraries(slicer_worker PRIVATE slicer_engine slicer_worker_runtime)
 
 add_executable(texture_fill_partition_release_benchmark
     apps/texture_fill_partition_release_benchmark/main.cpp
@@ -1535,6 +1566,12 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14d_04a/ValidateCancelTokenPropagation.py"
     )
     add_test(
+        NAME slicer_stage14d08_r1_worker_runtime_boundary_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14d_08_r1/ValidateWorkerRuntimeBoundaries.py"
+            --repo-root "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1563,6 +1600,7 @@ if(Python3_Interpreter_FOUND)
         slicer_stage14c05_module_contract_test
         slicer_stage14d01_worker_shell_contract_test
         slicer_stage14d04a_cancel_propagation_test
+        slicer_stage14d08_r1_worker_runtime_boundary_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
         PROPERTIES
@@ -1602,6 +1640,10 @@ add_test(
 add_test(
     NAME stage14d04a_cancellation_unit_tests
     COMMAND stage14d04a_cancellation_unit_tests
+)
+add_test(
+    NAME stage14d08_r1_worker_runtime_tests
+    COMMAND stage14d08_r1_worker_runtime_tests
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(
