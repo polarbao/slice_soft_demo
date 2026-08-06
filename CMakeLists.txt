@@ -46,6 +46,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/SceneViewDtos.h
     src/slicer_core/api/SliceDtos.h
     src/slicer_core/api/SliceFacade.h
+    src/slicer_core/api/artifacts/PackageArtifactSafety.cpp
+    src/slicer_core/api/artifacts/PackageArtifactSafety.h
     src/slicer_core/api/scene/SceneFacadeAuthority.cpp
     src/slicer_core/api/scene/SceneFacadeAuthority.h
     src/slicer_core/api/scene/SceneFacadeOperation.cpp
@@ -1038,6 +1040,17 @@ target_compile_definitions(stage14d08_r3_repair_facade_tests PRIVATE
 target_link_libraries(stage14d08_r3_repair_facade_tests PRIVATE slicer_engine)
 if(MSVC)
     target_compile_options(stage14d08_r3_repair_facade_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d05_artifact_safety_tests
+    tests/stage14d_05/PackageArtifactSafetyTests.cpp
+)
+target_include_directories(stage14d05_artifact_safety_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d05_artifact_safety_tests PRIVATE slicer_base)
+if(MSVC)
+    target_compile_options(stage14d05_artifact_safety_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(slicer_worker

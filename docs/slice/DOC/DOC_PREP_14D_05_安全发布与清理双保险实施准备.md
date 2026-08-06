@@ -2,9 +2,9 @@
 
 > 日期：2026-08-06
 > 审计任务：Stage 14D-05
-> 审计基线：`2edb935 feat(14D-04A): 【协作取消】贯穿核心切片与安全写包`
-> 文档状态：`PREPARATION_GATE=BLOCKED`
-> 实施状态：`NOT STARTED`
+> 审计基线：`fba8b04 feat(14D-08-R3-02B-F1): 【生产修复】闭合保守修复Facade`
+> 文档状态：`PREPARATION_GATE=PASS_WITH_SPLIT`
+> 实施状态：`R1 COMPLETE / R2..R4 NOT STARTED`
 > 验收状态：`NOT RUN`
 
 ## 1. 审计结论
@@ -19,10 +19,20 @@
 6. 清理失败不得伪装成 `Cancelled` 或成功；
 7. 查询、读取和宿主侧使用路径不得接受 staging、backup、tmp 目录。
 
-当前代码已经具备“进程内 Writer 正常路径”的大部分基础能力，但尚未具备可验证的 Worker
-双保险链路。尤其是 Worker 的 `--spi-request` 仍明确返回 `not_implemented`，模块侧
-`WorkerClient` 也没有目标包身份和退出后清理能力。因此，本次准备审计必须判定为
-`PREPARATION_GATE=BLOCKED`，不能用 Writer 单元测试代替 C-SPI-09 或 Worker 崩溃证据。
+复审基线已经具备严格请求身份、真实 `slice.rgbwsv` executor、生产 SliceFacade 和
+ProductionRepairFacade。旧审计中“Worker 入口完全未实现”的描述已经失效；当前真实缺口是
+executor 尚未注册到生产 Worker，以及安全发布、两轮清理和临时路径拒绝尚未接线。
+
+本文件现将实施受控拆为 R1..R4。拆分边界、文件所有权、状态机和验收命令均已冻结，因此
+准备门改为 `PASS_WITH_SPLIT`；这只授权按顺序实施，不等于 14D-05 完成，也不构成
+C-SPI-09、M-MVP-CANDIDATE 或任何 14E 准入证据。
+
+| 子任务 | 范围 | 当前状态 |
+|---|---|---|
+| 14D-05-R1 | 共享 job/attempt 产物身份、临时路径识别、精确 owned 恢复 | COMPLETE |
+| 14D-05-R2 | Writer 使用 owned staging/backup、同目标租约与发布证据 | NOT STARTED |
+| 14D-05-R3 | Worker 第一轮、模块第二轮清理及查询/RIP 临时路径拒绝 | NOT STARTED |
+| 14D-05-R4 | Debug/Release、取消、强杀、崩溃和真实 Worker 集成验收 | NOT STARTED |
 
 ### 1.1 最小解阻条件
 
@@ -61,14 +71,14 @@ U2 只要求解除 14D-05 所需的窄切片路径阻塞，不代表 14D-08 的�
 
 | 领域 | 当前事实 | 14D-05 判断 |
 |---|---|---|
-| Worker 入口 | `WorkerApplication.cpp` 的 `--spi-request` 只校验参数后返回 `not_implemented`，并声明执行归 14D-08 | **阻塞 Worker E2E** |
+| Worker 入口 | `--spi-request` 已接共享 runtime；full preflight 已注册，slice executor 已实现但尚未注册 | **R3 接线后关闭 Worker E2E 缺口** |
 | WorkerClient | 已有 Windows Job Object、超时、取消标记、强杀和 stdout 协议解析 | 可复用 |
 | WorkerClient 清理 | `WorkerLaunchOptions` 只有取消标记路径，没有 `jobId`、`packageDir` 或退出后清理回调 | **阻塞模块第二保险** |
-| Writer staging | `RgbwsvPackageWriter.cpp` 在目标同级创建 `<package>.staging.<steady_clock>` | 已有基础，但不能稳定证明作业所有权 |
+| Writer staging | 仍使用 `<package>.staging.<steady_clock>`；R1 已提供 `<package>.staging.<job>.<attempt>` 身份组件 | **R2 负责替换生产接线** |
 | Writer 自检 | 写完 manifest/report 后调用场景扩展校验和 `validate_slice_package(stagingDir)` | 已实现正常路径基础 |
 | Writer 发布 | 旧目标先 rename 为 backup，再将 staging rename 为目标；第二步失败时尝试恢复 backup | 已有可恢复两步替换雏形 |
 | Writer 取消 | 14D-04A 已在阶段、逐层、长循环、TIFF 和发布边界检查 token；异常路径删除当前 staging | 已完成进程内协作取消基础 |
-| 崩溃恢复 | Worker 启动前不清理旧 staging/backup；模块在进程退出后也不清理 | **阻塞双保险** |
+| 崩溃恢复 | R1 已提供只操作精确 owned 路径的幂等恢复函数；Worker/模块尚未调用 | **R3 负责双保险接线** |
 | 旧包保护 | 正常异常能尝试恢复 backup；进程在两次 rename 之间崩溃时，目标可能缺失且 backup 遗留 | **阻塞崩溃场景** |
 | 清理错误 | 多处使用带 `error_code` 的 `remove_all`，错误没有稳定映射为 `PM-SLICER-OUTPUT-0050` | **阻塞失败语义** |
 | 包入口拒绝 | 严格包验证和查询入口没有统一拒绝 staging/backup/tmp/bak 后缀 | **阻塞 fail-closed** |
@@ -251,12 +261,10 @@ SPI ABI 或几何算法。
 - 14D-04A 核心取消 token、进程内 staging 清理和正常字节不变性；
 - 14B-04 Facade 生产切片绑定。
 
-### 7.2 当前阻塞依赖
+### 7.2 当前实施依赖
 
-- 14D-08 当前准备门为 BLOCKED，且 `--spi-request` 未实现；
-- 14D-05 需要从 14D-08 拆出 U2 所述的最小 `slice.rgbwsv` 请求适配，或先关闭 14D-08
-  中对应子任务；
-- 当前请求 `jobId` 尚未贯穿到 `RgbwsvProductionPackageWriteRequest`；
+- 14D-08-R2-02 已提供 `slice.rgbwsv` executor 与真实 Facade 执行，但生产 Worker 尚未注册；
+- 当前请求 `jobId` 尚未贯穿到 `RgbwsvProductionPackageWriteRequest`，归 R2；
 - WorkerClient 尚无 `packageDir`/作业身份和退出后清理输入；
 - 同目标并发、临时路径拒绝和崩溃恢复规则尚无代码门禁。
 
@@ -347,10 +355,17 @@ powershell -ExecutionPolicy Bypass -File scripts/run_quick_ci.ps1
 - [ ] Debug/Release 负例能够运行，而不是仅有测试名称；
 - [ ] C-SPI-09 可以通过真实链路执行。
 
-当前以上项目均未全部满足，因此结论保持：
+以上项目是 R2..R4 的**完成门**，不是再次阻断已冻结实施方案的准备门。当前结论为：
 
 ```text
-PREPARATION_GATE=BLOCKED
-IMPLEMENTATION=NOT STARTED
+PREPARATION_GATE=PASS_WITH_SPLIT
+IMPLEMENTATION=R1_COMPLETE_R2_TO_R4_PENDING
 ACCEPTANCE=NOT RUN
 ```
+
+## 12. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-08-06 | v1.0 | 首次审计，因 Worker 请求和安全发布基础缺失判定 BLOCKED |
+| 2026-08-06 | v1.1 | 基于 14D-08-R1/R2/R3 与 F1 复审，冻结 R1..R4 实施拆分；R1 共享产物身份与恢复组件完成，准备门改为 PASS_WITH_SPLIT |
