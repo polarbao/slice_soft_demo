@@ -98,6 +98,8 @@ struct RgbwsvProductionLayerView
 struct RgbwsvProductionPackageWriteRequest
 {
     std::filesystem::path packageDir;
+    std::string jobId;
+    std::string attemptId;
     std::filesystem::path sourceConfigPath;
     std::filesystem::path sourceModelPath;
     std::string sourceFormat;
@@ -134,8 +136,13 @@ struct RgbwsvProductionPackageWriteResult
     bool fallbackApplied{false};
     bool strictProtocolValidated{false};
     int layerCount{0};
+    std::string jobId;
+    std::string attemptId;
     std::filesystem::path packageDir;
     std::filesystem::path replacedPackageBackupDir;
+    bool stagingRemoved{false};
+    bool backupRemoved{false};
+    bool leaseReleased{false};
     RgbwsvProductionPackageWriteProfile profile;
 };
 

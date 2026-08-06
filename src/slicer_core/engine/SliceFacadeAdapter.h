@@ -29,7 +29,7 @@ using SliceProductionRunner = std::function<api::ApiResult<api::SliceResult>(
 /** @brief Invokes production slicing with an explicit synchronous cancel token. */
 using CancellableSliceProductionRunner =
     std::function<api::ApiResult<api::SliceResult>(
-        const std::filesystem::path&,
+        const api::SliceRequest&,
         const api::ICancelToken&,
         const api::ProgressSink&)>;
 

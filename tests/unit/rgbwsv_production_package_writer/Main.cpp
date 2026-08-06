@@ -1,3 +1,4 @@
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 #include "slicer_core/pipeline/GlobalSurfaceShellProductionPackage.h"
@@ -179,6 +180,14 @@ bool AdmittedGlobalPackagePassesRipAndReports()
     return ExpectTrue(result.productionOutputWritten, "writer reports production output")
         && ExpectTrue(!result.fallbackApplied, "writer applies no fallback")
         && ExpectTrue(result.layerCount == kLayerCount, "writer reports all layers")
+        && ExpectTrue(
+            !result.jobId.empty() && !result.attemptId.empty(),
+            "writer reports the effective publication identity")
+        && ExpectTrue(
+            result.stagingRemoved
+                && result.backupRemoved
+                && result.leaseReleased,
+            "writer reports no owned publication residue")
         && ExpectTrue(rip.schema == "p0.rgbwsv.2", "RIP accepts current schema")
         && ExpectTrue(rip.bit_depth == 8, "RIP accepts uint8")
         && ExpectTrue(
@@ -728,6 +737,42 @@ bool ExistingPackageIsAtomicallyReplaced()
         && ExpectTrue(rip.layer_count == kLayerCount, "replacement package passes RIP");
 }
 
+bool ConcurrentPackageTargetIsRejectedBeforeWriting()
+{
+    const std::filesystem::path directory = MakeTestDirectory("lease_conflict");
+    const std::filesystem::path packageDir =
+        std::filesystem::absolute(directory / "package").lexically_normal();
+    const auto owner =
+        slicer_core::api::artifacts::MakePackageArtifactIdentity(
+            packageDir,
+            "job-owner",
+            "attempt-owner");
+    const auto lease =
+        slicer_core::api::artifacts::AcquirePackageArtifactLease(owner);
+    auto request = MakeRequest(packageDir);
+    request.jobId = "job-second";
+    request.attemptId = "attempt-second";
+    bool rejected{false};
+    try
+    {
+        (void)slicer_core::WriteRgbwsvProductionPackage(request);
+    }
+    catch (const slicer_core::api::artifacts::PackageArtifactLeaseConflict&)
+    {
+        rejected = true;
+    }
+    const auto released =
+        slicer_core::api::artifacts::ReleasePackageArtifactLease(owner);
+    return ExpectTrue(lease.success, "first writer owns the target lease")
+        && ExpectTrue(rejected, "second writer fails with a target lease conflict")
+        && ExpectTrue(
+            !std::filesystem::exists(
+                packageDir.parent_path()
+                / "package.staging.job-second.attempt-second"),
+            "conflicting writer creates no staging package")
+        && ExpectTrue(released.success, "owner releases the target lease");
+}
+
 }  // namespace
 
 int main()
@@ -754,6 +799,7 @@ int main()
         {"mode_mismatch_writes_nothing", ModeMismatchWritesNothing},
         {"broken_layer_sequence_writes_nothing", BrokenLayerSequenceWritesNothing},
         {"existing_package_is_atomically_replaced", ExistingPackageIsAtomicallyReplaced},
+        {"concurrent_package_target_is_rejected_before_writing", ConcurrentPackageTargetIsRejectedBeforeWriting},
     };
 
     bool passed{true};

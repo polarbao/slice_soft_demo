@@ -1,7 +1,10 @@
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 
+#include "slicer_core/system/Sha256.h"
+
 #include <algorithm>
 #include <cctype>
+#include <fstream>
 #include <stdexcept>
 #include <string_view>
 #include <system_error>
@@ -19,15 +22,19 @@ namespace
 
 bool IsSafeToken(const std::string& value)
 {
-    return !value.empty() && std::all_of(
-        value.begin(),
-        value.end(),
-        [](const unsigned char character)
-        {
-            return std::isalnum(character) != 0
-                || character == '-'
-                || character == '_';
-        });
+    return !value.empty()
+        && value.size() <= 128U
+        && std::isalnum(static_cast<unsigned char>(value.front())) != 0
+        && std::all_of(
+            value.begin(),
+            value.end(),
+            [](const unsigned char character)
+            {
+                return std::isalnum(character) != 0
+                    || character == '-'
+                    || character == '_'
+                    || character == '.';
+            });
 }
 
 bool IsReparsePoint(const std::filesystem::path& path)
@@ -77,6 +84,58 @@ bool RemoveOwnedDirectory(
     }
     removed = true;
     return true;
+}
+
+std::filesystem::path LeaseOwnerPath(
+    const PackageArtifactIdentity& identity)
+{
+    return identity.lease_directory / "owner.txt";
+}
+
+std::string LeaseOwnerText(const PackageArtifactIdentity& identity)
+{
+    return identity.job_id + "\n" + identity.attempt_id + "\n";
+}
+
+bool LeaseMatchesOwner(const PackageArtifactIdentity& identity)
+{
+    std::ifstream input(LeaseOwnerPath(identity), std::ios::binary);
+    if (!input)
+    {
+        return false;
+    }
+    const std::string bytes{
+        std::istreambuf_iterator<char>(input),
+        std::istreambuf_iterator<char>()};
+    return bytes == LeaseOwnerText(identity);
+}
+
+bool RemoveOwnedLease(
+    const PackageArtifactIdentity& identity,
+    bool& removed,
+    std::string& errorMessage)
+{
+    std::error_code error;
+    if (!std::filesystem::exists(identity.lease_directory, error))
+    {
+        if (error)
+        {
+            errorMessage = "failed to inspect package lease";
+            return false;
+        }
+        removed = true;
+        return true;
+    }
+    if (IsReparsePoint(identity.lease_directory)
+        || !LeaseMatchesOwner(identity))
+    {
+        errorMessage = "package lease is not owned by this attempt";
+        return false;
+    }
+    return RemoveOwnedDirectory(
+        identity.lease_directory,
+        removed,
+        errorMessage);
 }
 
 void AddResidual(
@@ -129,6 +188,16 @@ PackageArtifactIdentity MakePackageArtifactIdentity(
     return identity;
 }
 
+std::string MakePackageAttemptId(const std::string_view correlationId)
+{
+    if (correlationId.empty())
+    {
+        throw std::invalid_argument(
+            "package publication correlation identity is required");
+    }
+    return "attempt-" + ComputeSha256(correlationId).substr(0U, 32U);
+}
+
 bool IsTemporaryPackagePath(const std::filesystem::path& path) noexcept
 {
     std::string filename = path.filename().string();
@@ -149,6 +218,61 @@ bool IsTemporaryPackagePath(const std::filesystem::path& path) noexcept
         {
             return filename.find(marker) != std::string::npos;
         });
+}
+
+PackageArtifactLeaseResult AcquirePackageArtifactLease(
+    const PackageArtifactIdentity& identity) noexcept
+{
+    PackageArtifactLeaseResult result;
+    try
+    {
+        const PackageArtifactIdentity validated = MakePackageArtifactIdentity(
+            identity.package_directory,
+            identity.job_id,
+            identity.attempt_id);
+        if (validated.lease_directory != identity.lease_directory)
+        {
+            result.error = "package lease identity is invalid";
+            return result;
+        }
+        std::error_code error;
+        if (!std::filesystem::create_directory(identity.lease_directory, error))
+        {
+            result.conflict = !error;
+            result.error = error
+                ? "failed to create package lease: " + error.message()
+                : "package target lease is already held";
+            return result;
+        }
+        std::ofstream output(
+            LeaseOwnerPath(identity),
+            std::ios::binary | std::ios::trunc);
+        output << LeaseOwnerText(identity);
+        output.close();
+        if (!output)
+        {
+            std::error_code ignored;
+            std::filesystem::remove_all(identity.lease_directory, ignored);
+            result.error = "failed to persist package lease owner";
+            return result;
+        }
+        result.success = true;
+        return result;
+    }
+    catch (const std::exception& error)
+    {
+        result.error = error.what();
+        return result;
+    }
+}
+
+PackageArtifactLeaseResult ReleasePackageArtifactLease(
+    const PackageArtifactIdentity& identity) noexcept
+{
+    PackageArtifactLeaseResult result;
+    bool removed{false};
+    result.success = RemoveOwnedLease(identity, removed, result.error);
+    return result;
 }
 
 PackageArtifactRecoveryResult RecoverPackageArtifacts(
@@ -231,8 +355,8 @@ PackageArtifactRecoveryResult RecoverPackageArtifacts(
                 identity.staging_directory,
                 result.staging_removed,
                 result.error)
-            || !RemoveOwnedDirectory(
-                identity.lease_directory,
+            || !RemoveOwnedLease(
+                identity,
                 result.lease_removed,
                 result.error))
         {

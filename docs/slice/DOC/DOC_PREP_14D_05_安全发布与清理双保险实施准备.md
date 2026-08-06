@@ -4,7 +4,7 @@
 > 审计任务：Stage 14D-05
 > 审计基线：`fba8b04 feat(14D-08-R3-02B-F1): 【生产修复】闭合保守修复Facade`
 > 文档状态：`PREPARATION_GATE=PASS_WITH_SPLIT`
-> 实施状态：`R1 COMPLETE / R2..R4 NOT STARTED`
+> 实施状态：`R1..R2 COMPLETE / R3..R4 NOT STARTED`
 > 验收状态：`NOT RUN`
 
 ## 1. 审计结论
@@ -30,7 +30,7 @@ C-SPI-09、M-MVP-CANDIDATE 或任何 14E 准入证据。
 | 子任务 | 范围 | 当前状态 |
 |---|---|---|
 | 14D-05-R1 | 共享 job/attempt 产物身份、临时路径识别、精确 owned 恢复 | COMPLETE |
-| 14D-05-R2 | Writer 使用 owned staging/backup、同目标租约与发布证据 | NOT STARTED |
+| 14D-05-R2 | Writer 使用 owned staging/backup、同目标租约与发布证据 | COMPLETE |
 | 14D-05-R3 | Worker 第一轮、模块第二轮清理及查询/RIP 临时路径拒绝 | NOT STARTED |
 | 14D-05-R4 | Debug/Release、取消、强杀、崩溃和真实 Worker 集成验收 | NOT STARTED |
 
@@ -346,10 +346,10 @@ powershell -ExecutionPolicy Bypass -File scripts/run_quick_ci.ps1
 
 将本文件的状态从 BLOCKED 改为 PASS 前，必须逐项提供代码或合同证据：
 
-- [ ] U1 作业级临时产物身份已贯穿；
+- [x] U1 作业级临时产物身份已贯穿；
 - [ ] U2 Worker 最小 `slice.rgbwsv` 入口已可执行；
 - [ ] U3 Worker/模块共享路径安全和恢复组件已落地；
-- [ ] U4 同目标并发策略已落地并有测试；
+- [x] U4 同目标并发策略已落地并有测试；
 - [ ] U5 崩溃窗口恢复状态机已落地并有强杀测试；
 - [ ] U6 临时路径读取拒绝已落地；
 - [ ] Debug/Release 负例能够运行，而不是仅有测试名称；
@@ -359,7 +359,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_quick_ci.ps1
 
 ```text
 PREPARATION_GATE=PASS_WITH_SPLIT
-IMPLEMENTATION=R1_COMPLETE_R2_TO_R4_PENDING
+IMPLEMENTATION=R1_R2_COMPLETE_R3_R4_PENDING
 ACCEPTANCE=NOT RUN
 ```
 
@@ -369,3 +369,4 @@ ACCEPTANCE=NOT RUN
 |---|---|---|
 | 2026-08-06 | v1.0 | 首次审计，因 Worker 请求和安全发布基础缺失判定 BLOCKED |
 | 2026-08-06 | v1.1 | 基于 14D-08-R1/R2/R3 与 F1 复审，冻结 R1..R4 实施拆分；R1 共享产物身份与恢复组件完成，准备门改为 PASS_WITH_SPLIT |
+| 2026-08-06 | v1.2 | 完成 R2：`jobId`/派生 `attemptId` 贯穿 SliceFacade、场景生产服务与 Writer；Writer 使用精确 owned staging/backup、目标级租约、发布后严格复验和无残留证据，同目标并发在写包前 fail-closed；R3/R4 继续待实施 |

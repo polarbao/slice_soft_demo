@@ -1,5 +1,6 @@
 #include "slicer_core/engine/ProductionSliceFacadeFactory.h"
 
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/engine/SliceFacadeAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/pipeline/MultiModelProductionService.h"
@@ -122,6 +123,12 @@ api::ApiError MapProductionError(
     case MultiModelProductionErrorCode::ProductionPackageInvalid:
         pmCode = "PM-SLICER-CONTRACT-0060";
         break;
+    case MultiModelProductionErrorCode::OutputPublicationFailed:
+        pmCode = "PM-SLICER-OUTPUT-0050";
+        break;
+    case MultiModelProductionErrorCode::PackageTargetBusy:
+        pmCode = "PM-SLICER-RESOURCE-0041";
+        break;
     case MultiModelProductionErrorCode::Cancelled:
         pmCode = "PM-SLICER-CANCELLED-0070";
         break;
@@ -148,12 +155,16 @@ api::ApiError MapProductionError(
 }
 
 api::ApiResult<api::SliceResult> RunExistingProductionEntry(
-    const std::filesystem::path& effectiveConfigPath,
+    const api::SliceRequest& sliceRequest,
     const api::ICancelToken& cancelToken,
     const api::ProgressSink& progressSink)
 {
     MultiModelProductionRequest request;
-    request.effectiveconfigpath = effectiveConfigPath;
+    request.effectiveconfigpath = sliceRequest.scene_config_path;
+    request.jobid = sliceRequest.job_id;
+    request.attemptid =
+        api::artifacts::MakePackageAttemptId(
+            sliceRequest.correlation_id);
     request.canceltoken = &cancelToken;
     request.progresscallback =
         [&progressSink](const SliceRunProgress& progress)

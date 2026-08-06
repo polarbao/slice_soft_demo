@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-05-R2 WRITER OWNED PUBLICATION
+CURRENT_NEXT_TASK      = 14D-05-R3 DOUBLE CLEANUP AND TEMP PATH REJECTION
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -139,8 +139,9 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14C-06A | ✅ COMPLETE（2026-08-06） | 模块本地 SPI 一致性与无副作用自检 | Debug/Release Stage 14C 定向 CTest 11/11 PASS；C-SPI-08/09/13 显式等待 Worker |
 | 14C-06B | ⛔ PREPARATION_GATE BLOCKED | Worker 生命周期 SPI 一致性 | 等待 14D-04B、14D-05、14D-08 |
 | 14C-07 | ✅ COMPLETE（2026-08-06） | DLL 初始化与依赖红线 | Debug/Release 5/5 定向测试、并发 call_once、32 实例、精确 11 导出和 PE 依赖红线 PASS |
-| 14D-05 | 🟡 IMPLEMENTATION IN PROGRESS | 安全发布与清理双保险 | 准备门 PASS_WITH_SPLIT；R1 完成，R2..R4 待实施 |
+| 14D-05 | 🟡 IMPLEMENTATION IN PROGRESS | 安全发布与清理双保险 | 准备门 PASS_WITH_SPLIT；R1/R2 完成，R3/R4 待实施 |
 | 14D-05-R1 | ✅ COMPLETE（2026-08-06） | 共享产物身份与恢复状态机 | job/attempt 精确 owned 路径、临时路径识别、reparse fail-closed、备份恢复与相邻作业保护通过定向门禁 |
+| 14D-05-R2 | ✅ COMPLETE（2026-08-06） | Writer owned 发布事务 | job/attempt 贯穿生产链路；精确 staging/backup、目标级租约、发布后复验、无残留证据和并发拒绝通过 Debug/Release 定向门禁 |
 | 14D-06 | ⛔ PREPARATION_GATE BLOCKED | Worker 唯一重能力路由 | 缺可执行 Worker 请求入口、backend 冻结和安全发布正向链路 |
 | 14D-07 | ⛔ PREPARATION_GATE BLOCKED | 引擎一致性套件 E-01..08 | 八项用例尚未规范冻结，真实 Worker 与安全发布也未就绪 |
 | 14D-08 | ⛔ 父任务 BLOCKED / CONTROLLED SPLIT | Worker 独立 `--spi-request` | 已拆 R1..R4；R1 共享基础可实施，R2/R3/R4 继续等待真实映射、Facade 和安全发布 |
@@ -272,3 +273,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.32 | 完成 14D-08-R3-02B-S1：staged OBJ 按 effective Profile 资源规则重导入，geometry/attribute hash 与完整 strict 审计闭合；下一任务为 ProductionRepairFacadeFactory |
 | 2026-08-06 | v3.33 | 完成 14D-08-R3-02B-F1：生产 RepairFacade 串联 Profile/path identity、保守修复、确定性 Writer 和完整 strict 复检，成功仅处于 job staging；下一步重新审计 14D-05 安全发布门 |
 | 2026-08-06 | v3.34 | 完成 14D-05 复审及 R1：准备门按 R1..R4 拆分后转 PASS_WITH_SPLIT，共享 job/attempt 产物身份、临时路径识别和精确 owned 恢复组件落地；下一任务为 R2 Writer 发布接线 |
+| 2026-08-06 | v3.35 | 完成 14D-05-R2：SliceFacade 作业身份贯穿场景生产与 RGBWSV Writer，owned staging/backup、目标级租约、发布后严格复验和清理证据闭合；同目标并发在写包前稳定拒绝，下一任务为 R3 双保险清理与临时路径读取拒绝 |

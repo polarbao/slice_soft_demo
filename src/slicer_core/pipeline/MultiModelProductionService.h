@@ -26,6 +26,8 @@ enum class MultiModelProductionErrorCode
     BuildVolumeUndefined,
     PipelineModeNotAdmitted,
     ProductionPackageInvalid,
+    OutputPublicationFailed,
+    PackageTargetBusy,
     Cancelled,
 };
 
@@ -49,6 +51,8 @@ struct MultiModelProductionError
 struct MultiModelProductionRequest
 {
     std::filesystem::path effectiveconfigpath;
+    std::string jobid;
+    std::string attemptid;
     SliceRunProgressCallback progresscallback;
 
     /**

@@ -1,5 +1,6 @@
 #include "slicer_core/pipeline/MultiModelProductionService.h"
 
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/config.h"
 #include "slicer_core/layout/SceneCollisionService.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
@@ -452,6 +453,10 @@ std::string_view MultiModelProductionErrorCodeName(
         return "SCENE_PIPELINE_MODE_NOT_ADMITTED";
     case MultiModelProductionErrorCode::ProductionPackageInvalid:
         return "SCENE_PRODUCTION_PACKAGE_INVALID";
+    case MultiModelProductionErrorCode::OutputPublicationFailed:
+        return "SCENE_OUTPUT_PUBLICATION_FAILED";
+    case MultiModelProductionErrorCode::PackageTargetBusy:
+        return "SCENE_PACKAGE_TARGET_BUSY";
     case MultiModelProductionErrorCode::Cancelled:
         return "SCENE_PRODUCTION_CANCELLED";
     }
@@ -939,6 +944,8 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
         78);
     RgbwsvProductionPackageWriteRequest writeRequest;
     writeRequest.packageDir = contract.outputpackagedir;
+    writeRequest.jobId = request.jobid;
+    writeRequest.attemptId = request.attemptid;
     writeRequest.sourceConfigPath =
         request.effectiveconfigpath;
     writeRequest.sourceModelPath =
@@ -1061,6 +1068,24 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
         }
         runProfile.package_publish_ms +=
             ElapsedMilliseconds(phaseStart);
+    }
+    catch (const api::artifacts::PackageArtifactLeaseConflict& exception)
+    {
+        return Block(
+            request,
+            MultiModelProductionErrorCode::PackageTargetBusy,
+            "packageDir",
+            exception.what(),
+            scene.sceneid);
+    }
+    catch (const api::artifacts::PackageArtifactOutputError& exception)
+    {
+        return Block(
+            request,
+            MultiModelProductionErrorCode::OutputPublicationFailed,
+            "package",
+            exception.what(),
+            scene.sceneid);
     }
     catch (const std::exception& exception)
     {

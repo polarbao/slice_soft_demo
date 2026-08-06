@@ -1,5 +1,6 @@
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/rip_reader.h"
@@ -7,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -69,15 +71,48 @@ std::string LayerNumber(const int layerIndex)
     return stream.str();
 }
 
-std::filesystem::path MakeSiblingTemporaryDirectory(
-    const std::filesystem::path& packageDir,
-    const std::string& suffix)
+api::artifacts::PackageArtifactIdentity MakeWriterArtifactIdentity(
+    const RgbwsvProductionPackageWriteRequest& request,
+    const std::filesystem::path& packageDir)
 {
-    const auto stamp =
-        std::chrono::steady_clock::now().time_since_epoch().count();
-    return packageDir.parent_path()
-        / (packageDir.filename().string() + "." + suffix + "."
-           + std::to_string(stamp));
+    if (request.jobId.empty() != request.attemptId.empty())
+    {
+        throw std::invalid_argument(
+            "RGBWSV package jobId and attemptId must be provided together");
+    }
+    if (!request.jobId.empty())
+    {
+        return api::artifacts::MakePackageArtifactIdentity(
+            packageDir,
+            request.jobId,
+            request.attemptId);
+    }
+
+    static std::atomic<std::uint64_t> directAttemptCounter{0U};
+    const std::string correlation =
+        packageDir.generic_string()
+        + ":"
+        + std::to_string(
+            WriterClock::now().time_since_epoch().count())
+        + ":"
+        + std::to_string(directAttemptCounter.fetch_add(1U));
+    return api::artifacts::MakePackageArtifactIdentity(
+        packageDir,
+        "direct",
+        api::artifacts::MakePackageAttemptId(correlation));
+}
+
+bool IsStrictPackageValid(const std::filesystem::path& packageDir)
+{
+    try
+    {
+        (void)validate_slice_package(packageDir);
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
 }
 
 void ValidateStorage(const RgbwsvProductionStorageSpec& storage)
@@ -767,29 +802,36 @@ void RenameWithTransientRetry(
 }
 
 void PublishStagedPackage(
-    const std::filesystem::path& stagingDir,
-    const std::filesystem::path& packageDir,
-    std::filesystem::path& backupDir)
+    const api::artifacts::PackageArtifactIdentity& identity)
 {
-    if (std::filesystem::exists(packageDir))
+    if (std::filesystem::exists(identity.backup_directory))
     {
-        backupDir = MakeSiblingTemporaryDirectory(packageDir, "backup");
-        RenameWithTransientRetry(packageDir, backupDir);
+        throw api::artifacts::PackageArtifactOutputError(
+            "owned package backup still exists before publication");
+    }
+    if (std::filesystem::exists(identity.package_directory))
+    {
+        RenameWithTransientRetry(
+            identity.package_directory,
+            identity.backup_directory);
     }
 
     try
     {
-        RenameWithTransientRetry(stagingDir, packageDir);
+        RenameWithTransientRetry(
+            identity.staging_directory,
+            identity.package_directory);
     }
     catch (...)
     {
-        if (!backupDir.empty()
-            && !std::filesystem::exists(packageDir)
-            && std::filesystem::exists(backupDir))
+        if (!std::filesystem::exists(identity.package_directory)
+            && std::filesystem::exists(identity.backup_directory))
         {
             try
             {
-                RenameWithTransientRetry(backupDir, packageDir);
+                RenameWithTransientRetry(
+                    identity.backup_directory,
+                    identity.package_directory);
             }
             catch (const std::filesystem::filesystem_error& error)
             {
@@ -799,16 +841,6 @@ void PublishStagedPackage(
             }
         }
         throw;
-    }
-
-    if (!backupDir.empty())
-    {
-        std::error_code cleanupError;
-        std::filesystem::remove_all(backupDir, cleanupError);
-        if (!cleanupError)
-        {
-            backupDir.clear();
-        }
     }
 }
 
@@ -851,9 +883,43 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
 
     const std::filesystem::path packageDir =
         std::filesystem::absolute(request.packageDir).lexically_normal();
-    const std::filesystem::path stagingDir =
-        MakeSiblingTemporaryDirectory(packageDir, "staging");
-    std::filesystem::path backupDir;
+    const api::artifacts::PackageArtifactIdentity artifactIdentity =
+        MakeWriterArtifactIdentity(request, packageDir);
+    const std::filesystem::path& stagingDir =
+        artifactIdentity.staging_directory;
+
+    const api::artifacts::PackageArtifactRecoveryResult initialRecovery =
+        api::artifacts::RecoverPackageArtifacts(
+            artifactIdentity,
+            IsStrictPackageValid);
+    if (!initialRecovery.success)
+    {
+        if (initialRecovery.error
+            == "package lease is not owned by this attempt")
+        {
+            throw api::artifacts::PackageArtifactLeaseConflict(
+                initialRecovery.error);
+        }
+        throw api::artifacts::PackageArtifactOutputError(
+            initialRecovery.error.empty()
+                ? "failed to recover owned package artifacts"
+                : initialRecovery.error);
+    }
+
+    const api::artifacts::PackageArtifactLeaseResult lease =
+        api::artifacts::AcquirePackageArtifactLease(artifactIdentity);
+    if (!lease.success)
+    {
+        if (lease.conflict)
+        {
+            throw api::artifacts::PackageArtifactLeaseConflict(
+                lease.error);
+        }
+        throw api::artifacts::PackageArtifactOutputError(
+            lease.error.empty()
+                ? "failed to acquire package publication lease"
+                : lease.error);
+    }
 
     try
     {
@@ -1073,7 +1139,20 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
         ThrowIfCancellationRequested(
             request.canceltoken,
             "before_package_publish");
-        PublishStagedPackage(stagingDir, packageDir, backupDir);
+        PublishStagedPackage(artifactIdentity);
+        ValidatePersistedSceneExtension(packageDir, request);
+        (void)validate_slice_package(packageDir);
+        const api::artifacts::PackageArtifactRecoveryResult cleanup =
+            api::artifacts::RecoverPackageArtifacts(
+                artifactIdentity,
+                IsStrictPackageValid);
+        if (!cleanup.success)
+        {
+            throw api::artifacts::PackageArtifactOutputError(
+                cleanup.error.empty()
+                    ? "failed to remove owned package publication artifacts"
+                    : cleanup.error);
+        }
         profile.packagepublishms =
             ElapsedMilliseconds(publishStart);
         profile.totalms = ElapsedMilliseconds(totalStart);
@@ -1083,15 +1162,28 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
         result.fallbackApplied = false;
         result.strictProtocolValidated = true;
         result.layerCount = request.grid.layerCount;
+        result.jobId = artifactIdentity.job_id;
+        result.attemptId = artifactIdentity.attempt_id;
         result.packageDir = packageDir;
-        result.replacedPackageBackupDir = backupDir;
+        result.stagingRemoved = cleanup.staging_removed;
+        result.backupRemoved = cleanup.backup_removed;
+        result.leaseReleased = cleanup.lease_removed;
         result.profile = profile;
         return result;
     }
     catch (...)
     {
-        std::error_code cleanupError;
-        std::filesystem::remove_all(stagingDir, cleanupError);
+        const api::artifacts::PackageArtifactRecoveryResult recovery =
+            api::artifacts::RecoverPackageArtifacts(
+                artifactIdentity,
+                IsStrictPackageValid);
+        if (!recovery.success)
+        {
+            throw api::artifacts::PackageArtifactOutputError(
+                recovery.error.empty()
+                    ? "failed to recover package artifacts after publication failure"
+                    : recovery.error);
+        }
         throw;
     }
 }
