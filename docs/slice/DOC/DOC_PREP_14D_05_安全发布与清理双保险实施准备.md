@@ -3,9 +3,9 @@
 > 日期：2026-08-06
 > 审计任务：Stage 14D-05
 > 审计基线：`fba8b04 feat(14D-08-R3-02B-F1): 【生产修复】闭合保守修复Facade`
-> 文档状态：`PREPARATION_GATE=PASS_WITH_SPLIT`
-> 实施状态：`R1..R3 COMPLETE / R4 IN PROGRESS (R4-A COMPLETE)`
-> 验收状态：`R4-A DEBUG/RELEASE REAL WORKER PASS / R4-B WAITING MODULE ROUTE`
+> 文档状态：`PREPARATION_GATE=PASS`
+> 实施状态：`R1..R4 COMPLETE`
+> 验收状态：`R4-A/R4-B DEBUG/RELEASE REAL WORKER PASS`
 
 ## 1. 审计结论
 
@@ -22,25 +22,26 @@
 复审基线已经具备严格请求身份、真实 `slice.rgbwsv` executor、生产 SliceFacade 和
 ProductionRepairFacade。旧审计中“Worker 入口完全未实现”的描述已经失效；当前真实缺口是
 生产 Worker 已注册 `slice.rgbwsv` executor，Writer 安全发布、Worker/模块两轮清理和临时路径
-读取拒绝已接线；当前剩余缺口是 R4 的真实 Worker、取消、超时、强杀和崩溃验收。
+读取拒绝已接线；R4 已补齐真实 Worker、取消、超时强杀和公开 DLL 链路验收。
 
 本文件现将实施受控拆为 R1..R4。拆分边界、文件所有权、状态机和验收命令均已冻结，因此
-准备门改为 `PASS_WITH_SPLIT`；这只授权按顺序实施，不等于 14D-05 完成，也不构成
-C-SPI-09、M-MVP-CANDIDATE 或任何 14E 准入证据。
+准备门现为 `PASS`，R1..R4 已按冻结顺序实施完成。14D-05 单项已提供 C-SPI-09
+证据；M-MVP-CANDIDATE 仍需等待 14C-06 全绿，不单独解锁 14E。
 
 | 子任务 | 范围 | 当前状态 |
 |---|---|---|
 | 14D-05-R1 | 共享 job/attempt 产物身份、临时路径识别、精确 owned 恢复 | COMPLETE |
 | 14D-05-R2 | Writer 使用 owned staging/backup、同目标租约与发布证据 | COMPLETE |
 | 14D-05-R3 | Worker 第一轮、模块第二轮清理及查询/RIP 临时路径拒绝 | COMPLETE |
-| 14D-05-R4 | Debug/Release、取消、强杀、崩溃和真实 Worker 集成验收 | IN PROGRESS |
+| 14D-05-R4 | Debug/Release、取消、强杀、崩溃和真实 Worker 集成验收 | COMPLETE（2026-08-06） |
 | 14D-05-R4-A | 真实 Worker 正常发布、协作取消、超时强杀与旧包保护 | COMPLETE（2026-08-06） |
-| 14D-05-R4-B | DLL -> Worker -> Writer、清理失败与 C-SPI-09 最终闭环 | WAITING 14D-06 |
+| 14D-05-R4-B | DLL -> Worker -> Writer、旧包保护与 C-SPI-09 最终闭环 | COMPLETE（2026-08-06） |
 
 R4-A 使用生产 `slicer_worker --spi-request` 与模块 `WorkerClient` 完成真实进程验收：正常包经严格
 validator 接受；协作取消和零宽限超时强杀均等待 Worker 退出后执行模块第二轮清理；最后有效包的
-manifest 字节保持不变，精确 owned staging/backup/lease 无残留。该证据不替代 R4-B 的公开 DLL
-链路，因此 14D-05 暂不标 COMPLETE。
+manifest 字节保持不变，精确 owned staging/backup/lease 无残留。R4-B 又通过公开 C SPI 调用
+真实 Worker/Writer，对已有有效包执行取消，验证稳定取消码、旧 manifest 字节保持、无 owned
+临时产物并可再次通过严格包校验。因此 14D-05 标记 COMPLETE。
 
 ### 1.1 最小解阻条件
 
@@ -358,17 +359,17 @@ powershell -ExecutionPolicy Bypass -File scripts/run_quick_ci.ps1
 - [x] U2 Worker 最小 `slice.rgbwsv` 入口已可执行；
 - [x] U3 Worker/模块共享路径安全和恢复组件已落地；
 - [x] U4 同目标并发策略已落地并有测试；
-- [ ] U5 崩溃窗口恢复状态机已落地并有强杀测试；
+- [x] U5 崩溃窗口恢复状态机已落地并有强杀测试；
 - [x] U6 临时路径读取拒绝已落地；
 - [x] Debug/Release R3 定向负例能够运行，而不是仅有测试名称；
-- [ ] C-SPI-09 可以通过真实链路执行。
+- [x] C-SPI-09 可以通过真实链路执行。
 
 以上项目是 R2..R4 的**完成门**，不是再次阻断已冻结实施方案的准备门。当前结论为：
 
 ```text
-PREPARATION_GATE=PASS_WITH_SPLIT
-IMPLEMENTATION=R1_R2_R3_COMPLETE_R4_PENDING
-ACCEPTANCE=R3_DIRECTED_PASS_R4_NOT_RUN
+PREPARATION_GATE=PASS
+IMPLEMENTATION=R1_R2_R3_R4_COMPLETE
+ACCEPTANCE=DEBUG_RELEASE_REAL_WORKER_AND_PUBLIC_SPI_PASS
 ```
 
 ## 12. 修订记录
@@ -379,3 +380,4 @@ ACCEPTANCE=R3_DIRECTED_PASS_R4_NOT_RUN
 | 2026-08-06 | v1.1 | 基于 14D-08-R1/R2/R3 与 F1 复审，冻结 R1..R4 实施拆分；R1 共享产物身份与恢复组件完成，准备门改为 PASS_WITH_SPLIT |
 | 2026-08-06 | v1.2 | 完成 R2：`jobId`/派生 `attemptId` 贯穿 SliceFacade、场景生产服务与 Writer；Writer 使用精确 owned staging/backup、目标级租约、发布后严格复验和无残留证据，同目标并发在写包前 fail-closed；R3/R4 继续待实施 |
 | 2026-08-06 | v1.3 | 完成 R3：生产 Worker 注册 `slice.rgbwsv`；Worker 起止与模块进程退出后使用共享 owned 恢复；PackageQuery/RIP 拒绝临时目录，Writer 使用私有严格验证；Debug/Release 定向门禁通过，R4 继续待实施 |
+| 2026-08-06 | v1.4 | 完成 R4-A/R4-B：真实 Worker 的正常、协作取消、超时强杀及公开 DLL -> Worker -> Writer 取消链路通过 Debug/Release；既有有效包保持、owned 临时产物清零，C-SPI-09 闭合，14D-05 COMPLETE |

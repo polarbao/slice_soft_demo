@@ -1,6 +1,7 @@
 #include "contracts/print_module_spi.h"
 
 #include "slicer_core/api/ProfileIdentity.h"
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/config.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/model.h"
@@ -293,6 +294,53 @@ void TestWorkerSliceAndBackendRejection(
         "public Worker result preserves the requested package identity");
     (void)slicer_core::internal::ValidateSlicePackageArtifact(packageDirectory);
     pm_release(job);
+
+    const std::string baselineManifest =
+        ReadBytes(packageDirectory / "manifest.json");
+    constexpr std::string_view cancellationJobId{"job-public-preserve-cancel"};
+    constexpr std::string_view cancellationCorrelation{
+        "correlation-job-public-preserve-cancel"};
+    const std::string cancellationRequest = MakeSliceRequest(
+        packageDirectory,
+        scene,
+        std::string{cancellationJobId},
+        0.0001).dump(0);
+    pm_job_t* const cancelledJob = pm_submit(
+        module,
+        cancellationRequest.c_str());
+    Check(cancelledJob != nullptr,
+        "public SPI accepts cancellation against an existing valid package");
+    if (cancelledJob != nullptr)
+    {
+        Check(pm_cancel(cancelledJob) == PM_OK,
+            "public SPI accepts package-preserving cancellation");
+        const slicer_core::Json cancelledProgress = WaitForTerminal(cancelledJob);
+        Check(cancelledProgress.at("state").as_string() == "cancelled",
+            "package-preserving cancellation reaches cancelled");
+        const slicer_core::Json cancelledResult = ParseJson(ReadBuffered(
+            [cancelledJob](char* output, const int capacity, int* required)
+            {
+                return pm_result(cancelledJob, output, capacity, required);
+            }));
+        Check(!cancelledResult.at("ok").as_bool()
+                && cancelledResult.at("code").as_string()
+                    == "PM-SLICER-CANCELLED-0070",
+            "package-preserving cancellation returns the frozen code");
+        pm_release(cancelledJob);
+    }
+    Check(ReadBytes(packageDirectory / "manifest.json") == baselineManifest,
+        "public DLL cancellation preserves the last valid package bytes");
+    const auto cancelledIdentity =
+        slicer_core::api::artifacts::MakePackageArtifactIdentity(
+            packageDirectory,
+            std::string{cancellationJobId},
+            slicer_core::api::artifacts::MakePackageAttemptId(
+                cancellationCorrelation));
+    Check(!std::filesystem::exists(cancelledIdentity.staging_directory)
+            && !std::filesystem::exists(cancelledIdentity.backup_directory)
+            && !std::filesystem::exists(cancelledIdentity.lease_directory),
+        "public DLL cancellation leaves no owned package residue");
+    (void)slicer_core::internal::ValidateSlicePackageArtifact(packageDirectory);
 
     const std::filesystem::path rejectedPackage = root / "package-rejected";
     const std::string rejectedRequest = MakeSliceRequest(

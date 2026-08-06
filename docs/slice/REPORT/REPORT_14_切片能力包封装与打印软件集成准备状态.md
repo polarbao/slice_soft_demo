@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.40 ｜ 更新日期：2026-08-06
+> 版本：v3.41 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-05-R4-B PUBLIC DLL SAFE-PUBLISH CLOSURE
+CURRENT_NEXT_TASK      = 14D-04B REAL WORKER CANCELLATION CLOSURE
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -139,12 +139,12 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 14C-06A | ✅ COMPLETE（2026-08-06） | 模块本地 SPI 一致性与无副作用自检 | Debug/Release Stage 14C 定向 CTest 11/11 PASS；C-SPI-08/09/13 显式等待 Worker |
 | 14C-06B | ⛔ PREPARATION_GATE BLOCKED | Worker 生命周期 SPI 一致性 | 等待 14D-04B、14D-05、14D-08 |
 | 14C-07 | ✅ COMPLETE（2026-08-06） | DLL 初始化与依赖红线 | Debug/Release 5/5 定向测试、并发 call_once、32 实例、精确 11 导出和 PE 依赖红线 PASS |
-| 14D-05 | 🟡 IMPLEMENTATION IN PROGRESS | 安全发布与清理双保险 | R1/R2/R3 与 R4-A 完成；R4-B 等待 14D-06 公开 DLL 重能力路由 |
+| 14D-05 | ✅ COMPLETE（2026-08-06） | 安全发布与清理双保险 | R1..R4 完成；真实 Worker 与公开 DLL 链路均验证取消/强杀后的旧包保护和 owned 临时产物清零 |
 | 14D-05-R1 | ✅ COMPLETE（2026-08-06） | 共享产物身份与恢复状态机 | job/attempt 精确 owned 路径、临时路径识别、reparse fail-closed、备份恢复与相邻作业保护通过定向门禁 |
 | 14D-05-R2 | ✅ COMPLETE（2026-08-06） | Writer owned 发布事务 | job/attempt 贯穿生产链路；精确 staging/backup、目标级租约、发布后复验、无残留证据和并发拒绝通过 Debug/Release 定向门禁 |
 | 14D-05-R3 | ✅ COMPLETE（2026-08-06） | Worker/模块双重恢复与临时路径拒绝 | Worker 起止第一轮、进程退出后模块第二轮共享精确 owned 恢复；查询/RIP 拒绝临时路径，Writer 私有验证不泄漏；Debug/Release 定向门禁 PASS |
 | 14D-05-R4-A | ✅ COMPLETE（2026-08-06） | 真实 Worker 正常、取消、超时强杀与旧包保护 | Debug/Release 生产 Worker + WorkerClient 集成 PASS；有效包严格可读，取消/强杀后 manifest 字节不变且 owned staging/backup/lease 无残留 |
-| 14D-05-R4-B | 🟢 READY | 公开 DLL -> Worker -> Writer 与 C-SPI-09 收口 | 14D-06 已提供真实公共 SPI 路由；下一步补旧包保护和公开生命周期证据后关闭 14D-05 |
+| 14D-05-R4-B | ✅ COMPLETE（2026-08-06） | 公开 DLL -> Worker -> Writer 与 C-SPI-09 收口 | Debug/Release 公开 C SPI 取消返回稳定代码；既有 manifest 字节不变，owned staging/backup/lease 无残留且包仍可严格读取 |
 | 14D-06 | ✅ COMPLETE（2026-08-06） | Worker 唯一重能力路由 | R1/R2 完成；公共 SPI 异步执行 full preflight/repair/slice，poll/cancel/result/release/destroy 闭合，Debug/Release 与合同门禁 PASS；module 不链接 engine |
 | 14D-07 | ⛔ PREPARATION_GATE BLOCKED | 引擎一致性套件 E-01..08 | 八项用例尚未规范冻结，真实 Worker 与安全发布也未就绪 |
 | 14D-08 | ⛔ 父任务 BLOCKED / CONTROLLED SPLIT | Worker 独立 `--spi-request` | 已拆 R1..R4；R1 共享基础可实施，R2/R3/R4 继续等待真实映射、Facade 和安全发布 |
@@ -283,3 +283,4 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 2026-08-06 | v3.38 | 完成 14D-05-R4-A：真实生产 Worker 经 WorkerClient 的正常发布、协作取消与零宽限超时强杀通过 Debug/Release；旧有效包字节保持且 owned 临时产物无残留。R4-B 必须等待 14D-06 公开 DLL 路由，下一任务转 14D-06 |
 | 2026-08-06 | v3.39 | 完成 14D-06-R1：能力 DTO 升至 v1.4，`options.backend` 缺省且唯一为 `worker`；新增 carrier 路由器，冻结 full preflight/repair/slice 的 Worker 映射和 fail-closed 负例，R2 异步 job 接线准备门 PASS |
 | 2026-08-06 | v3.40 | 完成 14D-06-R2：公共 SPI 以异步 `WorkerJobService` 唯一路由 full preflight、repair 与 slice；生命周期、协作取消、结果身份、私有作业目录和修复发布闭合，Debug/Release 定向门禁及合同校验通过；下一任务转 14D-05-R4-B |
+| 2026-08-06 | v3.41 | 完成 14D-05-R4-B：公开 DLL -> Worker -> Writer 取消链路在 Debug/Release 下保持既有有效包、清理 owned 临时产物并返回稳定取消码；C-SPI-09 真实链路闭合，14D-05 COMPLETE，下一任务转 14D-04B |
