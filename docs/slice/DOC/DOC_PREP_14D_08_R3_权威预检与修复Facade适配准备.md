@@ -4,7 +4,7 @@
 >
 > 对应任务：`14D-08-R3`
 >
-> 文档状态：`PREPARATION_GATE=PASS_WITH_BLOCKED_IMPLEMENTATION`
+> 文档状态：`PREPARATION_GATE=PASS`
 >
 > 父任务状态：`14D-08=BLOCKED`
 
@@ -19,9 +19,9 @@ Profile/模型，既有修复服务是低层保守处理，不等于多模型 sc
 | 子任务 | 内容 | 状态 |
 |---|---|---|
 | `14D-08-R3-00` | DTO/服务/错误和证据映射审计 | **READY / 本文完成准备** |
-| `14D-08-R3-01A` | scene-wide authoritative full preflight service | **PREPARATION REQUIRED** |
+| `14D-08-R3-01A` | scene-wide authoritative full preflight service | **READY / 字段级准备完成** |
 | `14D-08-R3-01B` | `PreflightFullFacade` 工厂和 Worker executor | **BLOCKED_BY_R3_01A** |
-| `14D-08-R3-02A` | repair DTO、输出资产和 strict 复检合同冻结 | **PREPARATION REQUIRED** |
+| `14D-08-R3-02A` | repair DTO、输出资产和 strict 复检合同冻结 | **READY / 字段级准备完成** |
 | `14D-08-R3-02B` | `RepairFacade` 工厂和 Worker executor | **BLOCKED_BY_R3_02A** |
 
 ## 2. 当前代码事实
@@ -158,33 +158,38 @@ TIFF Writer、UI 和模块 DLL 不进入这些实现文件。
 - R3-02 不阻塞最窄 slice 路径，但阻塞父任务 14D-08 的三能力 COMPLETE。
 - 14D-05 仍负责 artifact publish/recovery，R3 不自行建立第二套发布器。
 
-## 9. 后续准备缺口
+## 9. 后续准备结论
 
-R3-01A 开发前必须补齐：
+R3-01A 的以下内容已由
+`DOC_PREP_14D_08_R3_01A_全场景权威预检服务准备.md` 冻结：
 
 1. scene-wide service DTO 与稳定 issue 聚合表；
 2. visible/hidden、同 model 多 instance、transform、取消和预算负例；
 3. 与 `ProductionAdmissionPolicy` 的唯一调用关系；
 4. target/source 所有权和定向测试命令。
 
-R3-02A 开发前必须补齐：
+R3-02A 的以下内容已由
+`DOC_PREP_14D_08_R3_02A_修复请求与证据合同准备.md` 冻结：
 
 1. file-contract `input` 到 repair request 的字段级映射；
 2. policy/version、目标模型、输出资产与 evidence 路径合同；
 3. 修复后 strict 复检和失败清理顺序；
-4. 是否需要 `file_contract_v1` minor 兼容修订的明确结论。
+4. `file_contract_v1` minor 兼容修订结论：**不需要**。
+
+剩余项均为实现依赖，不再是准备文档缺口：R3-01B 等待 R3-01A，R3-02B 等待 R3-01A
+提供修复后权威 strict 复检。
 
 ## 10. 门禁结论
 
 ```text
-14D_08_R3_PREPARATION_GATE=PASS_WITH_BLOCKED_IMPLEMENTATION
+14D_08_R3_PREPARATION_GATE=PASS
 14D_08_R3_00_PREPARATION_GATE=PASS
-14D_08_R3_01A_PREPARATION_GATE=PREPARATION_REQUIRED
+14D_08_R3_01A_PREPARATION_GATE=PASS
 14D_08_R3_01B_PREPARATION_GATE=BLOCKED_BY_R3_01A
-14D_08_R3_02A_PREPARATION_GATE=PREPARATION_REQUIRED
-14D_08_R3_02B_PREPARATION_GATE=BLOCKED_BY_R3_02A
+14D_08_R3_02A_PREPARATION_GATE=PASS
+14D_08_R3_02B_PREPARATION_GATE=BLOCKED_BY_R3_01A
 14D_08_PARENT_GATE=BLOCKED
 ```
 
-该结论关闭了“R3 做什么”的歧义，但没有把缺少实现的 Facade 伪记为可用。下一批可并行准备
-R3-01A 与 R3-02A；当前开发关键路径仍是 `14D-08-R2-01 -> R3-01A/01B -> R2-02`。
+该结论关闭了“R3 做什么”和字段级映射的歧义，但没有把缺少实现的 Facade 伪记为可用。
+当前开发关键路径为 `R3-01A -> R3-01B -> R2-02`；R3-02B 可在 R3-01A 完成后并行推进。

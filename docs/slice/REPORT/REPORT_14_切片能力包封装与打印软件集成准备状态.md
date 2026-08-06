@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.23 ｜ 更新日期：2026-08-06
+> 版本：v3.24 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-08-R3-01A PREPARATION + 14D-07-R1
+CURRENT_NEXT_TASK      = 14D-08-R3-01A IMPLEMENTATION + 14D-07-R1
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -149,7 +149,7 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14D-08-R1-03 | ✅ COMPLETE（2026-08-06） | 三能力精确调度与共享命令入口 | Debug/Release 8/8 定向门禁 PASS；测试 fake 未进入生产 Worker，无 executor 时不伪成功 |
 | 14D-08-R2 | 🟡 IN PROGRESS | 切片请求映射与真实执行 | R2-01 COMPLETE；R2-02 等待 R3-01 权威 full preflight，R2-03 等待安全发布 |
 | 14D-08-R2-01 | ✅ COMPLETE（2026-08-06） | scene/Profile 双 hash、绝对资源、输出身份和 job 目录物化 | Debug/Release 1/1，R1+R2 回归 4/4，target graph PASS；未注册 executor、未写 package |
-| 14D-08-R3 | 🟡 PREPARATION SPLIT | 权威 full preflight 与 repair Facade 适配 | R3-00 边界已冻结；R3-01A/02A 仍需补字段级准备 |
+| 14D-08-R3 | 🟡 IMPLEMENTATION READY | 权威 full preflight 与 repair Facade 适配 | R3-00/01A/02A 字段级准备均 PASS；01B/02B 等待服务实现 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
 11 个冻结符号；完整 C-SPI-01..18 仍由 14C-06A/06B 合并关闭。
@@ -251,3 +251,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.21 | 完成 14D-08-R1-02：身份闭合结果、稳定退出类别和 result.tmp 原子替换通过 Debug/Release 4/4 门禁；R1-03 准备门转 READY，父任务继续 BLOCKED |
 | 2026-08-06 | v3.22 | 完成 14D-08-R1-03：三能力精确注册、共享 runtime、取消前检与命令入口通过 Debug/Release 8/8；R1 COMPLETE，下一步先补 14D-08-R2 映射准备合同 |
 | 2026-08-06 | v3.23 | 完成 14D-08-R2-01：scene/Profile 双 hash、绝对路径、Profile/输出身份和 job 内原子物化通过 Debug/Release 门禁；同时冻结 R3 拆分与 E-01..08 合同，下一步并行准备 R3-01A 和建设 14D-07-R1 外壳 |
+| 2026-08-06 | v3.24 | 完成 14D-08-R3-01A/02A 字段级准备：冻结全场景权威预检 DTO、完整性/准入聚合、repair 输入/输出资产/strict 复检和清理顺序；R3-01A 与 14D-07-R1 可并行开发 |
