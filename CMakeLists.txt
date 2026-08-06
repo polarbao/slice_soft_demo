@@ -552,6 +552,8 @@ add_library(slicer_module SHARED
     src/slicer_module/BufferApi.h
     src/slicer_module/CapabilityJsonAdapter.cpp
     src/slicer_module/CapabilityJsonAdapter.h
+    src/slicer_module/CapabilityCarrierRouter.cpp
+    src/slicer_module/CapabilityCarrierRouter.h
     src/slicer_module/ErrorApi.cpp
     src/slicer_module/ErrorApi.h
     src/slicer_module/DllMain.cpp
@@ -729,6 +731,22 @@ target_link_libraries(stage14d03_worker_contract_unit_tests PRIVATE slicer_base)
 add_dependencies(stage14d03_worker_contract_unit_tests slicer_worker)
 if(MSVC)
     target_compile_options(stage14d03_worker_contract_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d06_capability_carrier_tests
+    tests/stage14d_06/CapabilityCarrierRouterTests.cpp
+    src/slicer_module/CapabilityCarrierRouter.cpp
+    src/slicer_module/CapabilityCarrierRouter.h
+    src/slicer_module/CapabilityJsonAdapter.cpp
+    src/slicer_module/CapabilityJsonAdapter.h
+)
+target_include_directories(stage14d06_capability_carrier_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d06_capability_carrier_tests PRIVATE slicer_base)
+if(MSVC)
+    target_compile_options(stage14d06_capability_carrier_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(stage14d04a_cancellation_unit_tests
@@ -2222,6 +2240,10 @@ add_test(NAME mesh_repair_cleanup_unit_tests COMMAND mesh_repair_cleanup_unit_te
 add_test(NAME mesh_repair_evidence_validator_unit_tests COMMAND mesh_repair_evidence_validator_unit_tests)
 add_test(NAME mesh_non_manifold_pattern_classifier_unit_tests COMMAND mesh_non_manifold_pattern_classifier_unit_tests)
 add_test(NAME mesh_complete_self_intersection_analyzer_unit_tests COMMAND mesh_complete_self_intersection_analyzer_unit_tests)
+add_test(
+    NAME stage14d06_capability_carrier_tests
+    COMMAND stage14d06_capability_carrier_tests
+)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

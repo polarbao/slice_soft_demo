@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.3",
+  "contractVersion": "1.4",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -350,7 +350,7 @@
         { "path": "profile", "type": "object", "required": true },
         { "path": "profile.profileVersion", "type": "string", "required": true },
         { "path": "profile.profileHash", "type": "string", "required": true },
-        { "path": "options.backend", "type": "string", "required": false },
+        { "path": "options.backend", "type": "enum:worker", "required": false, "default": "worker", "caseSensitive": true, "rejectedValues": ["inprocess", "auto"] },
         { "path": "options.threads", "type": "integer", "required": false }
       ],
       "responseFields": [
@@ -485,6 +485,12 @@
     "printValue": 0,
     "emptyValue": 255,
     "workerOnly": ["slice.rgbwsv", "geometry.repair"],
+    "sliceBackend": {
+      "field": "options.backend",
+      "default": "worker",
+      "allowed": ["worker"],
+      "noInProcessFallback": true
+    },
     "viewModes": ["top", "three_d"],
     "textureRequiredIfPresent": true,
     "noSilentTextureFallback": true,

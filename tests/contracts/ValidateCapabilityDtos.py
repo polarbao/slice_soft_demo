@@ -46,8 +46,8 @@ def RequirePaths(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.3":
-        raise AssertionError("expected the heavy-operation identity contract")
+    if contract["contractVersion"] != "1.4":
+        raise AssertionError("expected the Worker-only backend contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -232,6 +232,18 @@ def Main() -> int:
             "requireStrictPass",
         },
     )
+
+    sliceCapability = byId["slice.rgbwsv"]
+    sliceRequest = {
+        field["path"]: field for field in sliceCapability["requestFields"]
+    }
+    backend = sliceRequest["options.backend"]
+    if backend.get("type") != "enum:worker" or backend.get("default") != "worker":
+        raise AssertionError("slice backend must default to the sole Worker carrier")
+    if not backend.get("caseSensitive"):
+        raise AssertionError("slice backend matching must remain case-sensitive")
+    if set(backend.get("rejectedValues", [])) != {"inprocess", "auto"}:
+        raise AssertionError("legacy backend aliases must fail closed")
     repairRequest = {field["path"]: field for field in repair["requestFields"]}
     for path in ("modelFormat", "repairOutputFormat"):
         if repairRequest[path].get("const") != "obj":
@@ -262,6 +274,13 @@ def Main() -> int:
             raise AssertionError(f"protocol invariant drifted: {key}")
     if set(invariants["workerOnly"]) != {"slice.rgbwsv", "geometry.repair"}:
         raise AssertionError("worker-only capability boundary drifted")
+    if invariants["sliceBackend"] != {
+        "field": "options.backend",
+        "default": "worker",
+        "allowed": ["worker"],
+        "noInProcessFallback": True,
+    }:
+        raise AssertionError("slice Worker-only backend invariant drifted")
     if invariants["viewModes"] != ["top", "three_d"]:
         raise AssertionError("dual-view modes drifted")
     if not invariants["textureRequiredIfPresent"]:
@@ -360,7 +379,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus heavy-operation identity contract: PASS")
+    print("15 capability DTOs plus Worker-only backend contract: PASS")
     return 0
 
 

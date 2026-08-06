@@ -1,6 +1,6 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.3
+> 合同版本：1.4
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
@@ -150,6 +150,10 @@ emptyValue   255
 `package.render_layer_preview` 必须从生产 TIFF 解码，不能读取调试 preview PNG。
 `slice.rgbwsv` 只接受已经 Commit 的 `sceneHash`，并通过 Worker 生产包；不允许回退到进程内
 切片或静默切换 Legacy/OpenVDB 引擎。
+
+`options.backend` 是兼容字段，不是引擎选择器。缺省值和唯一合法值均为小写 `worker`；
+`inprocess`、`auto`、大小写变体及其他字符串返回 `PM-SLICER-PROFILE-0031`，非字符串返回
+`PM-SLICER-INPUT-0002`。Worker 启动、合同协商或执行失败时不得回退到 DLL 进程内切片。
 
 ## 6. 版本与后续实现
 

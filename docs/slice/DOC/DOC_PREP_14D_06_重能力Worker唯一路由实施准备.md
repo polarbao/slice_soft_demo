@@ -8,11 +8,11 @@
 >
 > 文档性质：准备审计，不包含实现，不构成开发完成证据
 >
-> `PREPARATION_GATE`：**BLOCKED**
+> `PREPARATION_GATE`：**PASS（2026-08-06 复审）**
 >
-> 实施状态：`NOT STARTED`
+> 实施状态：`R1 COMPLETE / R2 READY`
 >
-> 验收状态：`NOT RUN`
+> 验收状态：`R1 DEBUG/RELEASE PASS / R2 NOT RUN`
 
 ## 1. 审计结论
 
@@ -384,22 +384,26 @@ git status --short
 - [ ] 正例和 N-01..18 的自动化入口、夹具及稳定错误码已确定；
 - [ ] Debug/Release 构建目标和 CTest 名称已确认。
 
-当前前 3 项均未满足，因此不得开始 `14D-06` 生产代码开发。允许继续进行的下一步是：
+截至 2026-08-06 复审，前 3 项已经关闭：三项生产 Worker executor 已接入，
+`options.backend` 已由 DTO v1.4 冻结为缺省且唯一合法值 `worker`，Writer 与模块恢复链路已完成
+R1..R3 和真实 Worker R4-A。允许继续进行的下一步是：
 
-1. 受控修订 `options.backend` 合同；
-2. 解阻 `14D-08` 的映射和 Engine 适配器，或授权拆分共享执行基础；
-3. 与 `14D-05` 共用最小 slice Worker 入口和安全发布服务；
-4. 重新执行本准备审计，再决定是否进入实现。
+1. 将 `CapabilityCarrierRouter` 接入 11 个冻结 ABI 的 job carrier 分派；
+2. 实现异步 Worker job 的 poll/cancel/result/release/destroy；
+3. 通过公开 DLL 完成 slice、full preflight 与 repair 正向路由；
+4. 关闭 14D-05-R4-B 和 C-SPI-09。
 
 ## 11. 最终结论
 
 ```text
 NO_INPROCESS_HEAVY_PATH_OBSERVED=true
 WORKER_HEAVY_ROUTE_USABLE=false
-PREPARATION_GATE=BLOCKED
-IMPLEMENTATION=NOT_STARTED
-ACCEPTANCE=NOT_RUN
+PREPARATION_GATE=PASS
+IMPLEMENTATION=R1_COMPLETE_R2_READY
+ACCEPTANCE=R1_DEBUG_RELEASE_PASS
 ```
 
-当前实现保持了正确的 fail-closed 安全下限，但尚未形成可工作的 Worker 唯一路由。
-`14D-06` 必须等待 Worker 真实执行入口、backend 合同和安全发布前置关闭后再开发。
+R1 已完成 carrier 分类、full preflight 私有能力映射及 worker-only backend 规范化；
+非 `worker` 字符串稳定返回 `PM-SLICER-PROFILE-0031`，类型错误返回
+`PM-SLICER-INPUT-0002`。当前尚未形成可工作的公开 SPI Worker 路由，R2 必须完成异步 job
+生命周期后才可把 `WORKER_HEAVY_ROUTE_USABLE` 改为 true。
