@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-08-R3-02B IMPLEMENTATION
+CURRENT_NEXT_TASK      = 14D-08-R3-02B-S1 IMPLEMENTATION
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -154,7 +154,8 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14D-08-R3-01A | ✅ COMPLETE（2026-08-06） | 全场景资源、拓扑、显式目标模式、越界和碰撞权威聚合 | Debug/Release 1/1 PASS；预算未完成、stale、资源变化和取消均 fail-closed；未接 Worker |
 | 14D-08-R3-01B | ✅ COMPLETE（2026-08-06） | PreflightFullFacade、生产等价 Profile 重建与 Worker executor | Debug/Release 定向测试 PASS；Worker 与直接 Facade 身份/计数/admission 一致；资源、stale、取消 fail-closed；不生成 Package |
 | 14D-08-R3-02A | ✅ PREPARATION COMPLETE（2026-08-06） | repair 请求、job-owned 输出与 strict 复检合同 | 字段级合同已冻结；后续审计发现生产资产 Writer 和单模型 strict adapter 尚缺 |
-| 14D-08-R3-02B | 🟡 DECISION CLEARED / IMPLEMENTATION PENDING | RepairFacade 与 Worker executor | 首版冻结项目内确定性 OBJ/MTL Writer；等待 Writer、strict adapter 和 01B Profile 身份实现 |
+| 14D-08-R3-02B | 🟡 IN PROGRESS | RepairFacade 与 Worker executor | W2 确定性 OBJ/MTL Writer COMPLETE；等待 S1 strict adapter、F1 Facade 和 E1 Worker 接线 |
+| 14D-08-R3-02B-W2 | ✅ COMPLETE（2026-08-06） | 项目内确定性 OBJ/MTL Writer 与资源复制 | Debug/Release 门禁 PASS；UV、材质分配、MTL 和纹理字节保持，缺失资源 fail-closed |
 | 14D-07-R1 | ✅ COMPLETE（2026-08-06） | 参数化 E-01..08 合同、fixture 身份、runner 与定义门禁 | 当前 runner 诚实输出 BLOCKED；完整 Worker Gate 归 R2 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
@@ -264,3 +265,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.28 | 用户授权并完成 14A-04-R2：能力 DTO 升至 v1.3，full preflight 冻结 scene/Profile/hash/targetMode 身份，repair 首版冻结项目内 OBJ/MTL Writer 与完整证据；SPI v1、11 导出、15 能力和生产协议不变 |
 | 2026-08-06 | v3.29 | 完成 14D-08-R3-01B：权威 preflight Facade 按完整 Profile 重建生产几何，Worker 严格物化 scene/Profile 并输出全场景证据；Debug/Release 门禁通过，下一任务转 14D-08-R2-02 |
 | 2026-08-06 | v3.30 | 完成 14D-08-R2-02：文件合同经权威 full preflight 调用唯一生产 SliceFacade 并生成受控开发 RGBWSV Package；修正 production acceptance 值，stale admission 与取消 fail-closed；下一任务转 R3-02B 与 14D-05 |
+| 2026-08-06 | v3.31 | 完成 14D-08-R3-02B-W2：新增项目内确定性 OBJ/MTL Writer，稳定保留 UV、材质分配与纹理字节；Debug/Release 与合同门禁通过，下一任务为单模型 strict recheck adapter |
