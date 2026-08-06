@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.12 ｜ 更新日期：2026-08-06
+> 版本：v3.13 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-02 + 14C-04 (PARALLEL AFTER SHARED INTEGRATION)
+CURRENT_NEXT_TASK      = 14C-04 + 14D-03 (PARALLEL; SHARED INTEGRATION SERIAL)
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -220,3 +220,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-05 | v3.10 | 完成 14D-01：独立 Worker 进程目标和参数外壳落地，不伪造合同能力；下一批 14C-02、14C-03 与 14D-02 可并行 |
 | 2026-08-06 | v3.11 | 完成 14C-02：唯一缓冲三态实现和 Debug/Release 单测闭合；并行批次余下 14C-03 与 14D-02，后续仍按共享 CMake/导出接线串行集成 |
 | 2026-08-06 | v3.12 | 完成 14C-03：句柄/TLS 基础设施及当前 ABI 接线通过 Debug/Release 门禁；14D-02 继续集成，14C-04 已解除代码前置但须避开共享 CMake/Exports 冲突 |
+| 2026-08-06 | v3.13 | 完成 14D-02：WorkerClient 子进程、协议解析、退出映射、取消/超时与进程树回收通过 Debug/Release 门禁；下一批 14C-04 与 14D-03 准备门禁 PASS，14C-05/07 因共享 DLL 文件转入串行集成 |

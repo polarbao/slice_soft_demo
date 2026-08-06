@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.18 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.19 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -260,7 +260,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
 | 14D-01 | 新建 `apps/slicer_worker/`（由 `slicer_cli` 演进）| 14A-03 | 与 CLI 行为一致 | ✅ **COMPLETE（2026-08-05）**；独立目标沿用相同 engine 构建轨道，Debug/Release 参数外壳与负例 PASS；文件合同执行由后续卡实现 |
-| 14D-02 | `WorkerClient`（DLL 侧）：启动/进度解析/退出码映射/僵尸回收 | 14D-01, 14C-01 | 子进程后端可用 | PREPARED |
+| 14D-02 | `WorkerClient`（DLL 侧）：启动/进度解析/退出码映射/僵尸回收 | 14D-01, 14C-01 | 子进程后端可用 | ✅ **COMPLETE（2026-08-06）**；Debug/Release、严格协议解析、取消/超时与进程树回收门禁 PASS |
 | 14D-03 | **`file_contract_v1` 版本协商**：`slicer_worker.exe --contract-info` + major/minor 兼容规则 + 不匹配 fail-closed | 14D-02, 14A-03 | 篡改 major 被拒绝；minor 向后兼容可用 | PREPARED |
 | 14D-04 | **切片链路 cancel token 贯穿**（step 边界 + 逐层循环协作式取消，经 `ICancelToken`）| 14B-04 | 各阶段取消 ≤2s | PREPARED |
 | 14D-05 | staging→自检→原子发布 + 取消/崩溃清理双保险 | 14D-01 | C-SPI-09；无残留 | PREPARED |
@@ -419,3 +419,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.16 | 完成 14D-01：建立独立 slicer_worker 目标和稳定参数外壳，Debug/Release 构建及负向合同门禁通过；真实协商、请求执行、取消和安全发布仍按 14D-02..08 原子卡推进 |
 | 2026-08-06 | v2.17 | 完成 14C-02：落地唯一 `WriteOut()` 缓冲三态实现，Debug/Release 覆盖探测、差 1、完整写入、空串、负容量和哨兵不变；后续 ABI 字符串出参统一复用 |
 | 2026-08-06 | v2.18 | 完成 14C-03：建立不透明句柄注册表、module-job 归属、最小状态机与 TLS 错误 JSON；接入 module 生命周期和 `pm_last_error`，未接线能力继续 fail-closed |
+| 2026-08-06 | v2.19 | 完成 14D-02：建立 Windows WorkerClient、严格进度/耗时解析、退出码映射、协作取消与 Job Object 进程树回收；下一批 14C-04 与 14D-03 可并行，14C-05/07 已准备但共享 DLL 接线需串行集成 |

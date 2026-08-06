@@ -540,6 +540,12 @@ add_library(slicer_module SHARED
     src/slicer_module/Exports.cpp
     src/slicer_module/HandleRegistry.cpp
     src/slicer_module/HandleRegistry.h
+    src/slicer_module/WorkerClient.cpp
+    src/slicer_module/WorkerClient.h
+    src/slicer_module/WorkerProcessWindows.cpp
+    src/slicer_module/WorkerProcessWindows.h
+    src/slicer_module/WorkerProtocol.cpp
+    src/slicer_module/WorkerProtocol.h
     src/slicer_module/slicer_module.def
 )
 target_include_directories(slicer_module PRIVATE
@@ -582,6 +588,20 @@ target_link_libraries(stage14c03_module_abi_tests PRIVATE slicer_module)
 if(WIN32)
     target_link_libraries(stage14c03_module_abi_tests PRIVATE Psapi)
 endif()
+
+add_executable(stage14d02_worker_client_unit_tests
+    tests/stage14d_02/WorkerClientTests.cpp
+    src/slicer_module/WorkerClient.cpp
+    src/slicer_module/WorkerClient.h
+    src/slicer_module/WorkerProcessWindows.cpp
+    src/slicer_module/WorkerProcessWindows.h
+    src/slicer_module/WorkerProtocol.cpp
+    src/slicer_module/WorkerProtocol.h
+)
+target_include_directories(stage14d02_worker_client_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 add_executable(model_import_layering_probe
     tests/contracts/ModelImportLayeringProbe.cpp
@@ -1406,6 +1426,7 @@ add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME stage14c02_buffer_api_unit_tests COMMAND stage14c02_buffer_api_unit_tests)
 add_test(NAME stage14c03_handle_registry_unit_tests COMMAND stage14c03_handle_registry_unit_tests)
 add_test(NAME stage14c03_module_abi_tests COMMAND stage14c03_module_abi_tests)
+add_test(NAME stage14d02_worker_client_unit_tests COMMAND stage14d02_worker_client_unit_tests)
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(
     NAME textured_scene_viewdata_14b03a_unit_tests
