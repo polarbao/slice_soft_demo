@@ -547,6 +547,8 @@ add_library(slicer_module SHARED
     src/slicer_module/ModuleInfo.h
     src/slicer_module/ModuleInitialization.cpp
     src/slicer_module/ModuleInitialization.h
+    src/slicer_module/ModuleSelfTest.cpp
+    src/slicer_module/ModuleSelfTest.h
     src/slicer_module/ModelCapabilityAdapter.cpp
     src/slicer_module/ModelCapabilityAdapter.h
     src/slicer_module/PackageCapabilityAdapter.cpp
@@ -657,6 +659,25 @@ target_include_directories(stage14c07_dll_initialization_tests PRIVATE
 target_link_libraries(stage14c07_dll_initialization_tests PRIVATE slicer_module)
 if(MSVC)
     target_compile_options(stage14c07_dll_initialization_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(test_spi_conformance
+    tests/stage14c_06/SpiConformanceTests.cpp
+    tests/stage14c_06/SpiModuleApi.cpp
+    tests/stage14c_06/SpiModuleApi.h
+    src/slicer_core/json_value.cpp
+    src/slicer_core/json_value.h
+)
+target_include_directories(test_spi_conformance PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+add_dependencies(test_spi_conformance slicer_module)
+if(WIN32)
+    target_link_libraries(test_spi_conformance PRIVATE Psapi)
+endif()
+if(MSVC)
+    target_compile_options(test_spi_conformance PRIVATE /W4 /WX)
 endif()
 
 add_executable(stage14d02_worker_client_unit_tests
@@ -1567,6 +1588,12 @@ add_test(NAME stage14c03_handle_registry_unit_tests COMMAND stage14c03_handle_re
 add_test(NAME stage14c03_module_abi_tests COMMAND stage14c03_module_abi_tests)
 add_test(NAME stage14c05_module_info_tests COMMAND stage14c05_module_info_tests)
 add_test(NAME stage14c07_dll_initialization_tests COMMAND stage14c07_dll_initialization_tests)
+add_test(
+    NAME stage14c06_spi_conformance
+    COMMAND test_spi_conformance
+        $<TARGET_FILE:slicer_module>
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 add_test(NAME stage14d02_worker_client_unit_tests COMMAND stage14d02_worker_client_unit_tests)
 add_test(
     NAME stage14d03_worker_contract_unit_tests

@@ -2,13 +2,13 @@
 
 > 日期：2026-08-06
 > 对应任务：`14C-06`
-> 状态：`PREPARATION_GATE = BLOCKED_WITH_CONTROLLED_SPLIT`
+> 状态：`14C-06A COMPLETE / 14C-06B BLOCKED / CONTROLLED_SPLIT`
 
 ## 1. 结论
 
 原任务要求一次性证明 `C-SPI-01..18` 全绿。当前同步轻能力、缓冲协议、句柄、模块自述和
-ABI 基础已经存在，但 Worker 三项重能力仍未接入真实执行入口，`pm_self_test` 仍返回
-`PM_ERR_FAILED`。因此不能把现有分散测试简单汇总后宣称 `14C-06 COMPLETE`。
+ABI 基础已经存在，14C-06A 已实现无副作用 `pm_self_test` 和公开 C ABI 动态装载一致性程序；
+但 Worker 三项重能力仍未接入真实执行入口。因此仍不能宣称 `14C-06 COMPLETE`。
 
 为避免阻塞可验证的模块侧工作，本任务受控拆为：
 
@@ -29,17 +29,16 @@ ABI 基础已经存在，但 Worker 三项重能力仍未接入真实执行入�
 | C-SPI-05a/b/c | `14C-02` 已冻结唯一 `WriteOut()` 三态实现 |
 | C-SPI-06/07 | `14C-04` 同步能力可提交、首次 poll 即终态并读取 result |
 | C-SPI-10..12、14/15 | 句柄、TLS 错误与部分非法请求/幂等行为已有基础测试 |
-| C-SPI-16/17 | `14C-01` 已冻结 11 导出；`14C-07` 正在补 DllMain、初始化与依赖红线 |
+| C-SPI-16/17 | `14C-01/07` 已冻结并验证 11 导出、DllMain、初始化与依赖红线 |
 
 ### 2.2 尚未满足的真实缺口
 
-1. `pm_self_test` 当前对有效 module 仍直接返回 `PM_ERR_FAILED`，C-SPI-18 未实现。
-2. 同步轻能力提交后立即终态，无法诚实构造 C-SPI-13 的 running 状态。
-3. `geometry.repair`、`slice.rgbwsv` 和 `geometry.preflight.full` 仍 fail-closed，尚无真实
+1. 同步轻能力提交后立即终态，无法诚实构造 C-SPI-13 的 running 状态。
+2. `geometry.repair`、`slice.rgbwsv` 和 `geometry.preflight.full` 仍 fail-closed，尚无真实
    Worker job 可用于 C-SPI-08/09/13。
-4. `14D-08` 的 file-contract 到 Facade 映射及 full preflight/repair 适配器仍被阻断。
-5. `14D-05` 的 Worker 级 staging、自检、原子发布和崩溃清理尚未完成准备审计。
-6. `14D-04A` 只证明进程内协作取消；Worker 退出码 8、两秒上限与无残留属于 04B。
+3. `14D-08` 的共享执行基础已完成拆分准备，但真实切片映射及 full preflight/repair 适配器仍被阻断。
+4. `14D-05` 的 Worker 级 staging、自检、原子发布和崩溃清理准备门仍为 BLOCKED。
+5. `14D-04A` 只证明进程内协作取消；Worker 退出码 8、两秒上限与无残留属于 04B。
 
 ## 3. 受控拆分
 
@@ -135,10 +134,10 @@ git diff --check
 ## 8. 准备门结论
 
 ```text
-14C-06A PREPARATION_GATE=WAIT_FOR_14C-07_COMPLETE
+14C-06A STATUS=COMPLETE
 14C-06B PREPARATION_GATE=BLOCKED_BY_14D-04B_14D-05_14D-08
 14C-06 OVERALL=BLOCKED_WITH_CONTROLLED_SPLIT
 ```
 
-当前不存在理由提前宣称 C-SPI-01..18 全绿。`14C-07` 完成后可立即进入 06A；06B
-必须等待真实 Worker 生产和取消链路完成。
+当前仍不存在理由提前宣称 C-SPI-01..18 全绿。06A 已关闭模块本地项；06B 必须等待真实
+Worker 生产、运行态和取消链路完成。

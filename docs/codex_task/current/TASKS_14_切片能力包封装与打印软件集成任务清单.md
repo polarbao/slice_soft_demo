@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.24 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.25 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -267,7 +267,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | | ↳ ⚠️ **前置 14B-00 不可省**：`model.import` 归属目前是「base（待 14B-00 验证）」，是 15 项能力中**唯一未定**的一项。若 14B-00 结论为「导入必须进 Worker」，`syncCapabilities[]` 必须相应移除该项，否则返工。 | | | |
 | 14C-05 | `pm_module_info` + `module.json` + 版本/运行时自述 | 14C-01, 14C-04 | C-SPI-01/02/03 | ✅ **COMPLETE（2026-08-06）**；双 Schema、运行时自述、Debug/Release 部署清单、缓冲三态与 11 导出回归 PASS |
 | 14C-06 | `test_spi_conformance` 自测套件（受控拆为 06A/06B） | 14C-01..05 | **C-SPI-01..18 全绿** | ⏳ **PARTIAL / WAITING_FOR_06A_06B**；完整套件不得在 Worker 生命周期证据缺失时伪报全绿 |
-| 14C-06A | 模块本地 SPI 一致性与无副作用 `pm_self_test` | 14C-01..05, 14C-07 | 不依赖 Worker 的 C-SPI 项形成独立 Debug/Release 套件 | ✅ **PREPARATION_GATE PASS / READY（2026-08-06）** |
+| 14C-06A | 模块本地 SPI 一致性与无副作用 `pm_self_test` | 14C-01..05, 14C-07 | 不依赖 Worker 的 C-SPI 项形成独立 Debug/Release 套件 | ✅ **COMPLETE（2026-08-06）**；公开 C ABI 动态装载套件 Debug/Release 11/11 PASS，Worker 项显式 BLOCKED |
 | 14C-06B | Worker 生命周期 SPI 一致性 | 14C-06A, 14D-04B, 14D-05, 14D-08 | C-SPI-08/09/13/15 真实 Worker 全绿 | ⛔ **PREPARATION_GATE BLOCKED**；等待真实 Worker、安全发布与取消链路 |
 | 14C-07 | `DllMain` 红线 + `std::call_once` 初始化 + 无 Qt/PrintSDK 依赖 | 14C-01, 14C-05 | C-SPI-16/17 | ✅ **COMPLETE（2026-08-06）**；Debug/Release 初始化、并发实例、精确 11 导出与 PE 依赖红线 PASS |
 
@@ -288,7 +288,11 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14D-05 | staging→自检→原子发布 + 取消/崩溃清理双保险 | 14D-01 | C-SPI-09；无残留 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；缺 jobId 临时产物身份、真实 Worker 执行、模块退出后二次清理与崩溃恢复 |
 | 14D-06 | 取消 `backend=inprocess` 切片路径；`options.backend` 收敛为 `worker` | 14D-02 | 无第二条切片路径 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；Worker 唯一路由尚不可执行，等待 14D-08/05 解阻 |
 | 14D-07 | **引擎一致性套件 E-01..08**（Worker 独立替换的准入门）| 14D-03, 14D-05 | 套件可对任意 Worker 版本运行 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；E-01..08 尚未规范冻结，且缺真实 Worker 与安全发布证据 |
-| 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>` | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；内嵌 scene/profile/input 映射及 full preflight/repair 适配器尚未冻结 |
+| 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>`（受控拆为 R1..R4） | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | ⛔ **父任务 BLOCKED**；R1 共享执行基础准备门已通过，R2/R3/R4 仍等待真实映射、Facade 与安全发布 |
+| 14D-08-R1 | 共享 Worker 请求解析、不可变身份、结果封装与精确调度基础 | 14D-01..03 | 无真实 executor 时身份闭合地显式失败，禁止伪成功和 fallback | ✅ **PREPARATION_GATE PASS_WITH_SPLIT（2026-08-06）** |
+| 14D-08-R1-01 | request.json 严格解析与不可变作业身份 | 14D-08-R1 | 合同/路径/身份正负例通过，不创建生产包 | ✅ **READY（2026-08-06）** |
+| 14D-08-R1-02 | result.json 原子写入与稳定退出映射 | 14D-08-R1-01 | 身份闭合、tmp 原子替换、写入失败稳定码 | PREPARED |
+| 14D-08-R1-03 | capability 精确调度与命令入口接线 | 14D-08-R1-01..02 | 无 executor 明确失败；测试 fake 不进入生产 Worker | PREPARED |
 
 ---
 
@@ -315,6 +319,22 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 >
 > 🎯 **定位强化**：`slicer_ui_host_sim` 同时是**交付给打印侧的参考实现**，
 > 代码质量按对外交付物要求（完整走公开 ABI、每能力有可读示例、Doxygen、错误分支不吞）。
+>
+> 🚧 **渲染后端选型已移出 14E（2026-08-06）**
+>
+> ```text
+> 独立专项：docs/slice/DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md
+>
+> 14E【不做】后端选型，只【面向已冻结的 IRenderBackend 接口编程】。
+> 后端换谁（cpu_raster / qrhi_d3d11 / qopengl）都不影响 14E 任何一张卡。
+> ```
+>
+> 移出理由：后端选型牵扯 Qt 版本升级与第三方许可等长周期决策，
+> 与 Stage 14 的交付目标（能力包 + 集成契约）**无依赖关系**，不应阻塞 14E 与 Stage 14 收口。
+>
+> **14E 只需最低满足 `cpu_raster` 后端即可通过验收**；GPU 后端是可选加速，不是前置。
+> 接口冻结条款 R-C1..C8 见该专项 §5.3，其中 **R-C8（渲染与拾取不得发起跨 DLL 调用）**
+> 是 UI-M1 / UI-M7 成立的前提，实现时必须遵守。
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
@@ -323,7 +343,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14E-03 | 轨二：`SceneInteractionController` + `TransformCommitPolicy`（三车道 + Stale 回滚）| 14E-02 | **UI-M1** 拖拽期跨 DLL 调用恒为 0；拖拽碰撞仅为本地 bbox 非权威提示；正常 Commit 不追加快照；**UI-M4** Stale 回滚可演示且状态一致 | PREPARED |
 | 14E-04 | 轨二：`TopViewRenderPolicy` + `MoveOptimizationPolicy`，使用 14B-03A 的 `surfacePreview` | 14E-03, 14B-03A | top 显示真实纹理；**UI-M2** Commit P95 ≤ 150ms；**UI-M3** 帧率 ≥ 主干 90% | PREPARED |
 | **14E-04b** | **能力覆盖达标**：P0 五项端到端打通并可演示；P1 五项全部打通；P2 各调用一次并记录 | 14E-04 | 按专项 §4 清单逐项核对；**UI-M5** 取消 ≤2s 无 `.staging` 残留；**UI-M6** DLL 缺失优雅报错 | NEW |
-| **14E-04c** | **带纹理 3D 视角与相机操作**：QOpenGLWidget `SceneRenderPolicy` + `AppearanceCache` + `CameraController`（orbit/pan/zoom、光标中心缩放、七向预设、透视/正交）+ 构建体积/网格/坐标轴/越界高亮 | 14E-04, **14A-04-R1**, **14A-11**, **14B-03A** | three_d 必须显示 UV/材质/纹理；**UI-M7** 相机期跨 DLL 调用恒为 0；**UI-M8** 10 万面 orbit P5 ≥ 30 FPS；不引入 Qt3D/vcpkg 新依赖 | **NEW** |
+| **14E-04c** | **带纹理 3D 视角与相机操作**：`SceneRenderPolicy`（**经 `IRenderBackend`，不直接写图形 API**）+ `AppearanceCache` + `CameraController`（orbit/pan/zoom、光标中心缩放、七向预设、透视/正交）+ 构建体积/网格/坐标轴/越界高亮 | 14E-04, **14A-04-R1**, **14A-11**, **14B-03A** | three_d 必须显示 UV/材质/纹理；**UI-M7** 相机期跨 DLL 调用恒为 0（对应冻结条款 R-C8）；**UI-M8** 帧率门由所选后端满足；**最低只需 `cpu_raster` 后端即可验收** | PREPARED（2026-08-04 新增）|
 | **14E-04d** | **双入口视图选择**：设置页保存默认 `top` / `three_d`；中央画布分段控件即时切换；按 `slicer_ui_view_spec.json` 实现 1 mm/10 mm 自适应网格和白/近白纹理对比辅助 | 14E-04c | **UI-M9..13**：两视图纹理正确；切换保持 scene/selection/transform/job 并复用缓存；默认值重启恢复；网格范围取 buildVolume 且不改变切片；纹理失败显式报错；辅助显示不修改纹理/TIFF | **NEW** |
 | 14E-05 | **拆分主干 UI 大文件**（`MainWindow.cpp` **4267** / `services/UiSmokeTestRunner.cpp` **7401**，与 14B-06 白名单同源）| 14E-04 | 各降至 <1500 行；self-test 绿；**完成后从 14B-06 白名单移除** | PREPARED |
 | 14E-06 | 产出"可移植模块清单"交打印侧（**精确到文件级**，标明可直接复制 / 需改写）| 14E-04b, 14E-04d | 打印侧确认可据此评估移植成本 | PREPARED |
@@ -447,3 +467,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-06 | v2.22 | 完成下一批准备审计：14C-05 冻结运行时自述/部署双 Schema 与版本真源；14D-04 受控拆为可立即执行的核心贯穿 04A 和依赖 14D-05/08 的 Worker 收口 04B |
 | 2026-08-06 | v2.23 | 完成 14C-05 与 14D-04A：模块自述/部署清单和核心取消令牌贯穿通过 Debug/Release 门禁；14C-07 准备门 PASS，14D-08 显式登记准备阻断缺口 |
 | 2026-08-06 | v2.24 | 完成 14C-07：最小 DllMain、进程级 call_once、并发创建、精确 11 导出与 PE 依赖红线通过 Debug/Release 门禁；14C-06 受控拆为可执行 06A 和等待 Worker 的 06B；14D-05/06/07 准备审计均登记真实阻断项 |
+| 2026-08-06 | v2.25 | 完成 14C-06A：独立公开 C ABI 一致性程序和无副作用 pm_self_test 通过 Debug/Release 11/11 门禁，完整 14C-06 仍等待 06B；14D-08 受控拆为 R1..R4，共享执行基础 R1 准备门 PASS，下一卡为 R1-01 |

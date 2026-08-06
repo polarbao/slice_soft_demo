@@ -4,6 +4,7 @@
 #include "slicer_module/HandleRegistry.h"
 #include "slicer_module/ModuleInitialization.h"
 #include "slicer_module/ModuleInfo.h"
+#include "slicer_module/ModuleSelfTest.h"
 #include "slicer_module/SyncCapabilityAdapter.h"
 
 #include <exception>
@@ -299,10 +300,11 @@ extern "C" PM_API int PM_CALL pm_self_test(
             SetInvalidRequestError("pm_self_test received an unknown module handle");
             return PM_ERR_INVALID_ARG;
         }
-        (void)reportJson;
-        (void)cap;
-        (void)outRequired;
-        return PM_ERR_FAILED;
+        return slicesoft::module::WriteOut(
+            slicesoft::module::GetModuleSelfTestJson(),
+            reportJson,
+            cap,
+            outRequired);
     }
     catch (...)
     {
