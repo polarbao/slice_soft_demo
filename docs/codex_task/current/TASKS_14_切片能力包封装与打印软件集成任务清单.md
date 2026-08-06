@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.17 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.18 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -244,7 +244,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 |---|---|---|---|---|
 | 14C-01 | 新建 `src/slicer_module/`；`PM_API`/`PM_CALL __cdecl`/`.def`（11 符号）| 14A-01, 14B-01 | `dumpbin /EXPORTS` 恰好 11 个，无 C++ 修饰名 | ✅ **COMPLETE（2026-08-05）**；Debug/Release 构建、静态合同和 `dumpbin` 精确 11 符号 PASS |
 | 14C-02 | 缓冲三态协议 `WriteOut()` 单一实现 | 14C-01 | C-SPI-05a/b/c | ✅ **COMPLETE（2026-08-06）**；Debug/Release 单测、DLL 构建和 11 导出回归 PASS |
-| 14C-03 | `HandleRegistry` 句柄生命周期 + `pm_last_error`（TLS）| 14C-01 | C-SPI-04/12/13/14/15 | PREPARED |
+| 14C-03 | `HandleRegistry` 句柄生命周期 + `pm_last_error`（TLS）| 14C-01 | C-SPI-04/12/13/14/15 | ✅ **COMPLETE（2026-08-06）**；底层状态与 ABI Debug/Release 门禁 PASS，完整 Worker job 验收保留给 14C-06/14D |
 | 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03A, **14B-00** | 首次 `pm_poll` 即返回终态；**`syncCapabilities[]` 逐条对齐 `DEV_14` §5 承载分派表，二者不一致即判不通过**；`scene.get_viewdata` 不得绕过 14B-03A | PREPARED |
 | | ↳ ⚠️ **前置 14B-00 不可省**：`model.import` 归属目前是「base（待 14B-00 验证）」，是 15 项能力中**唯一未定**的一项。若 14B-00 结论为「导入必须进 Worker」，`syncCapabilities[]` 必须相应移除该项，否则返工。 | | | |
 | 14C-05 | `pm_module_info` + `module.json` + 版本/运行时自述 | 14C-01 | C-SPI-01/02/03 | PREPARED |
@@ -418,3 +418,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-05 | v2.15 | 完成 14C-01：建立仅链接 slicer_base 的 slicer_module DLL 外壳，Debug/Release 精确导出 11 个无修饰 pm_* 符号；14C-02/03 可并行启动 |
 | 2026-08-05 | v2.16 | 完成 14D-01：建立独立 slicer_worker 目标和稳定参数外壳，Debug/Release 构建及负向合同门禁通过；真实协商、请求执行、取消和安全发布仍按 14D-02..08 原子卡推进 |
 | 2026-08-06 | v2.17 | 完成 14C-02：落地唯一 `WriteOut()` 缓冲三态实现，Debug/Release 覆盖探测、差 1、完整写入、空串、负容量和哨兵不变；后续 ABI 字符串出参统一复用 |
+| 2026-08-06 | v2.18 | 完成 14C-03：建立不透明句柄注册表、module-job 归属、最小状态机与 TLS 错误 JSON；接入 module 生命周期和 `pm_last_error`，未接线能力继续 fail-closed |

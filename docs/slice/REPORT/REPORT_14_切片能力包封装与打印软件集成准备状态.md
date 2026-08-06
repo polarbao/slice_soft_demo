@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.11 ｜ 更新日期：2026-08-06
+> 版本：v3.12 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14C-03 + 14D-02 (PARALLEL)
+CURRENT_NEXT_TASK      = 14D-02 + 14C-04 (PARALLEL AFTER SHARED INTEGRATION)
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -129,6 +129,7 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14B-06 | ✅ COMPLETE（2026-08-05） | G1..G5 source-size 门禁、带到期条件白名单、quick CI 与 CTest 接线 | 自测覆盖 G1/G2/G3；全树 G4/G5 扫描可读；受保护 Stage 14 新目录禁止白名单 |
 | 14C-01 | ✅ COMPLETE（2026-08-05） | `slicer_module.dll` C ABI 外壳、`.def` 与仅链接 base 的构建目标 | Debug/Release `dumpbin` 精确 11 个无修饰导出；静态合同与 CTest PASS |
 | 14C-02 | ✅ COMPLETE（2026-08-06） | 唯一 `WriteOut()` 缓冲三态实现及独立单测 | Debug/Release 探测、差 1、完整写入、空串、负容量和哨兵不变 PASS；DLL 仍精确 11 导出 |
+| 14C-03 | ✅ COMPLETE（2026-08-06） | 句柄注册表、最小 job 状态与 TLS `pm_last_error` | Debug/Release 组件/ABI 测试 PASS；100 次 module 生命周期增长低于 1 MiB；真实 Worker job 关闭保留给后续 |
 | 14D-01 | ✅ COMPLETE（2026-08-05） | 独立 `slicer_worker.exe` 目标和稳定参数外壳 | Debug/Release 构建、帮助/未知参数/未实现能力负例与重复确定性 PASS；D14-D-01..12 仍 NOT RUN |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
@@ -218,3 +219,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-05 | v3.9 | 完成 14C-01：建立只依赖 slicer_base 的 DLL ABI 外壳，Debug/Release 精确 11 导出通过；14C-02/03 与 14D-01 可按文件所有权并行 |
 | 2026-08-05 | v3.10 | 完成 14D-01：独立 Worker 进程目标和参数外壳落地，不伪造合同能力；下一批 14C-02、14C-03 与 14D-02 可并行 |
 | 2026-08-06 | v3.11 | 完成 14C-02：唯一缓冲三态实现和 Debug/Release 单测闭合；并行批次余下 14C-03 与 14D-02，后续仍按共享 CMake/导出接线串行集成 |
+| 2026-08-06 | v3.12 | 完成 14C-03：句柄/TLS 基础设施及当前 ABI 接线通过 Debug/Release 门禁；14D-02 继续集成，14C-04 已解除代码前置但须避开共享 CMake/Exports 冲突 |

@@ -535,7 +535,11 @@ target_include_directories(print_module_spi_cpp_compile_test PRIVATE
 add_library(slicer_module SHARED
     src/slicer_module/BufferApi.cpp
     src/slicer_module/BufferApi.h
+    src/slicer_module/ErrorApi.cpp
+    src/slicer_module/ErrorApi.h
     src/slicer_module/Exports.cpp
+    src/slicer_module/HandleRegistry.cpp
+    src/slicer_module/HandleRegistry.h
     src/slicer_module/slicer_module.def
 )
 target_include_directories(slicer_module PRIVATE
@@ -555,6 +559,29 @@ target_include_directories(stage14c02_buffer_api_unit_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+add_executable(stage14c03_handle_registry_unit_tests
+    tests/stage14c_03/HandleRegistryTests.cpp
+    src/slicer_module/ErrorApi.cpp
+    src/slicer_module/ErrorApi.h
+    src/slicer_module/HandleRegistry.cpp
+    src/slicer_module/HandleRegistry.h
+)
+target_include_directories(stage14c03_handle_registry_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_executable(stage14c03_module_abi_tests
+    tests/stage14c_03/ModuleAbiTests.cpp
+)
+target_include_directories(stage14c03_module_abi_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(stage14c03_module_abi_tests PRIVATE slicer_module)
+if(WIN32)
+    target_link_libraries(stage14c03_module_abi_tests PRIVATE Psapi)
+endif()
 
 add_executable(model_import_layering_probe
     tests/contracts/ModelImportLayeringProbe.cpp
@@ -1377,6 +1404,8 @@ add_test(
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME stage14c02_buffer_api_unit_tests COMMAND stage14c02_buffer_api_unit_tests)
+add_test(NAME stage14c03_handle_registry_unit_tests COMMAND stage14c03_handle_registry_unit_tests)
+add_test(NAME stage14c03_module_abi_tests COMMAND stage14c03_module_abi_tests)
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(
     NAME textured_scene_viewdata_14b03a_unit_tests
