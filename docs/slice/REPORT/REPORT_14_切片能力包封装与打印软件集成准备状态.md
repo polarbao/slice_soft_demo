@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.36 ｜ 更新日期：2026-08-06
+> 版本：v3.37 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -93,7 +93,7 @@ M-MVP = M-MVP-CANDIDATE + 14E-01 PASS，才解锁 14E-02 及后续 Qt 参考宿�
 src/slicer_core/api/        ✅ 已建立；Facade/DTO、Scene/Model/Package/Slice 实现已落地
 slicer_base / slicer_engine ✅ 已分层；base -> engine 单向依赖门禁为 0
 src/slicer_module/          ✅ DLL、同步能力、WorkerClient 与模块侧第二轮产物恢复已建立
-apps/slicer_worker/         ✅ Worker runtime 已建立；full preflight 与 slice executor 已注册
+apps/slicer_worker/         ✅ Worker runtime 已建立；full preflight、repair 与 slice executor 已注册
 contracts/                  ✅ 已建立；SPI、错误码、Schema 与 ViewData v1.3 已落盘
 slicer_module* / .def       ✅ Debug/Release 精确 11 个冻结导出
 ```
@@ -153,14 +153,15 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 14D-08-R2 | 🟡 IN PROGRESS | 切片请求映射与真实执行 | R2-01/02 COMPLETE；真实 Facade 已生成受控开发 Package，R2-03 等待安全发布 |
 | 14D-08-R2-01 | ✅ COMPLETE（2026-08-06） | scene/Profile 双 hash、绝对资源、输出身份和 job 目录物化 | Debug/Release 1/1，R1+R2 回归 4/4，target graph PASS；未注册 executor、未写 package |
 | 14D-08-R2-02 | ✅ COMPLETE（2026-08-06） | 权威 full preflight 后调用唯一生产 SliceFacade | Debug/Release R2/R3 定向门禁 PASS；修正 production acceptance 合同；未注册 Worker、未宣称安全发布 |
-| 14D-08-R3 | 🟡 IN PROGRESS | 权威 full preflight 与 repair Facade 适配 | R3-01A/01B COMPLETE；02B 已具备准备门，等待 Writer、strict adapter 与 Worker repair 接线 |
+| 14D-08-R3 | ✅ COMPLETE（2026-08-06） | 权威 full preflight 与 repair Facade 适配 | R3-01A/01B 与 02B COMPLETE；三项重能力均具备真实 Worker executor |
 | 14D-08-R3-01A | ✅ COMPLETE（2026-08-06） | 全场景资源、拓扑、显式目标模式、越界和碰撞权威聚合 | Debug/Release 1/1 PASS；预算未完成、stale、资源变化和取消均 fail-closed；未接 Worker |
 | 14D-08-R3-01B | ✅ COMPLETE（2026-08-06） | PreflightFullFacade、生产等价 Profile 重建与 Worker executor | Debug/Release 定向测试 PASS；Worker 与直接 Facade 身份/计数/admission 一致；资源、stale、取消 fail-closed；不生成 Package |
 | 14D-08-R3-02A | ✅ PREPARATION COMPLETE（2026-08-06） | repair 请求、job-owned 输出与 strict 复检合同 | 字段级合同已冻结；后续审计发现生产资产 Writer 和单模型 strict adapter 尚缺 |
-| 14D-08-R3-02B | 🟡 IN PROGRESS | RepairFacade 与 Worker executor | W2 Writer、S1 strict adapter 与 F1 Facade COMPLETE；等待 14D-05 后的 E1 Worker 接线 |
+| 14D-08-R3-02B | ✅ COMPLETE（2026-08-06） | RepairFacade 与 Worker executor | W2 Writer、S1 strict adapter、F1 Facade 与 E1 Worker 接线全部完成 |
 | 14D-08-R3-02B-W2 | ✅ COMPLETE（2026-08-06） | 项目内确定性 OBJ/MTL Writer 与资源复制 | Debug/Release 门禁 PASS；UV、材质分配、MTL 和纹理字节保持，缺失资源 fail-closed |
 | 14D-08-R3-02B-S1 | ✅ COMPLETE（2026-08-06） | staged OBJ 重导入与单模型完整 strict 复检 | Debug/Release 门禁 PASS；Profile hash、geometry/attribute identity、完整自交审计均 fail-closed |
-| 14D-08-R3-02B-F1 | ✅ COMPLETE（2026-08-06） | ProductionRepairFacadeFactory | 保守 OBJ repair、Writer、重导入 strict 证据和 job staging 清理闭合；未注册 Worker，等待 14D-05 |
+| 14D-08-R3-02B-F1 | ✅ COMPLETE（2026-08-06） | ProductionRepairFacadeFactory | 保守 OBJ repair、Writer、重导入 strict 证据和 job staging 清理闭合；由 E1 接入生产 Worker |
+| 14D-08-R3-02B-E1 | ✅ COMPLETE（2026-08-06） | 生产 Worker repair executor 与 job-owned 发布 | `geometry.repair` 精确注册；OBJ、相邻资源与 strict 证据发布闭合，取消、路径越界、Profile 漂移和发布异常 fail-closed；Debug/Release 门禁 PASS |
 | 14D-07-R1 | ✅ COMPLETE（2026-08-06） | 参数化 E-01..08 合同、fixture 身份、runner 与定义门禁 | 当前 runner 诚实输出 BLOCKED；完整 Worker Gate 归 R2 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
@@ -276,3 +277,4 @@ SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路�
 | 2026-08-06 | v3.34 | 完成 14D-05 复审及 R1：准备门按 R1..R4 拆分后转 PASS_WITH_SPLIT，共享 job/attempt 产物身份、临时路径识别和精确 owned 恢复组件落地；下一任务为 R2 Writer 发布接线 |
 | 2026-08-06 | v3.35 | 完成 14D-05-R2：SliceFacade 作业身份贯穿场景生产与 RGBWSV Writer，owned staging/backup、目标级租约、发布后严格复验和清理证据闭合；同目标并发在写包前稳定拒绝，下一任务为 R3 双保险清理与临时路径读取拒绝 |
 | 2026-08-06 | v3.36 | 完成 14D-05-R3：生产 Worker 注册 `slice.rgbwsv`，Worker 起止与模块退出后双重恢复 exact-owned 产物；PackageQuery/RIP 临时路径 fail-closed，Debug/Release 定向测试与四项合同门禁通过；下一任务为 R4 强杀/崩溃与真实 Worker 验收 |
+| 2026-08-06 | v3.37 | 完成 14D-08-R3-02B-E1：生产 Worker 注册 `geometry.repair`，job-owned 修复资产、相邻资源和 strict 证据安全发布；取消、越界和异常清理闭合，Debug/Release repair/strict/Worker 与合同门禁通过；14D-08-R3 收口，下一任务保持 14D-05-R4 |

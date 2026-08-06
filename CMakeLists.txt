@@ -931,6 +931,22 @@ if(MSVC)
     target_compile_options(slicer_worker_preflight_runtime PRIVATE /W4 /WX)
 endif()
 
+add_library(slicer_worker_repair_runtime STATIC
+    apps/slicer_worker/repair/WorkerRepairExecutor.cpp
+    apps/slicer_worker/repair/WorkerRepairExecutor.h
+)
+target_include_directories(slicer_worker_repair_runtime PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(slicer_worker_repair_runtime PUBLIC
+    slicer_worker_runtime
+    slicer_engine
+)
+if(MSVC)
+    target_compile_options(slicer_worker_repair_runtime PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage14d08_r1_worker_runtime_tests
     tests/stage14d_08_r1/WorkerRequestParserTests.cpp
 )
@@ -1043,6 +1059,23 @@ if(MSVC)
     target_compile_options(stage14d08_r3_repair_facade_tests PRIVATE /W4 /WX)
 endif()
 
+add_executable(stage14d08_r3_worker_repair_tests
+    tests/stage14d_08_r3/WorkerRepairExecutorTests.cpp
+)
+target_include_directories(stage14d08_r3_worker_repair_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_compile_definitions(stage14d08_r3_worker_repair_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(stage14d08_r3_worker_repair_tests PRIVATE
+    slicer_worker_repair_runtime
+)
+if(MSVC)
+    target_compile_options(stage14d08_r3_worker_repair_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage14d05_artifact_safety_tests
     tests/stage14d_05/PackageArtifactSafetyTests.cpp
 )
@@ -1067,6 +1100,7 @@ target_link_libraries(slicer_worker PRIVATE
     slicer_engine
     slicer_worker_runtime
     slicer_worker_preflight_runtime
+    slicer_worker_repair_runtime
     slicer_worker_slice_runtime
 )
 
@@ -2138,6 +2172,10 @@ add_test(
 add_test(
     NAME stage14d08_r3_worker_preflight_tests
     COMMAND stage14d08_r3_worker_preflight_tests
+)
+add_test(
+    NAME stage14d08_r3_worker_repair_tests
+    COMMAND stage14d08_r3_worker_repair_tests
 )
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
 add_test(NAME slice_pipeline_router_unit_tests COMMAND slice_pipeline_router_unit_tests)

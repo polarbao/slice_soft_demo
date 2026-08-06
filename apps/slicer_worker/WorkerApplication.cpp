@@ -1,6 +1,7 @@
 #include "WorkerApplication.h"
 
 #include "slicer_worker/preflight/WorkerPreflightExecutor.h"
+#include "slicer_worker/repair/WorkerRepairExecutor.h"
 #include "slicer_worker/runtime/WorkerJobDispatcher.h"
 #include "slicer_worker/runtime/WorkerJobRuntime.h"
 #include "slicer_worker/slice/WorkerSliceExecutor.h"
@@ -147,6 +148,9 @@ int WorkerApplication::HandleSpiRequest(
     dispatcher.Register(
         "slice.rgbwsv",
         slicesoft::worker::CreateProductionWorkerSliceExecutor(std::cout));
+    dispatcher.Register(
+        "geometry.repair",
+        slicesoft::worker::CreateProductionWorkerRepairExecutor());
     const slicesoft::worker::WorkerJobRuntimeResult result =
         slicesoft::worker::WorkerJobRuntime::Run(requestPath, dispatcher);
     if (result.processexitcode == 0)

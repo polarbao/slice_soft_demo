@@ -4,7 +4,7 @@
 >
 > 对应任务：`14D-08-R3-02B`
 >
-> 文档状态：`PREPARATION_GATE=PASS / IMPLEMENTATION=READY_AFTER_R3_01B`
+> 文档状态：`PREPARATION_GATE=PASS / IMPLEMENTATION=COMPLETE`
 
 ## 1. 审计结论
 
@@ -94,6 +94,10 @@ repairOutputFormat
 | `14D-08-R3-02B-F1` | ProductionRepairFacadeFactory | W2 + S1 |
 | `14D-08-R3-02B-E1` | Worker executor、清理与结果封装 | F1 + 14D-05 发布边界 |
 
+截至 2026-08-06，W2、S1、F1 与 E1 已全部完成。生产 Worker 已精确注册
+`geometry.repair`，只接受 job-owned `repair/` 输出，成功时发布修复 OBJ、相邻资源和 strict
+证据；取消、输入越界、Profile 漂移和发布异常均 fail-closed，并清理本作业 staging。
+
 Writer 与 strict adapter 可并行；共享 DTO、CMake 和 Worker registry 串行集成。
 
 ## 8. 验收矩阵
@@ -113,6 +117,10 @@ Writer 与 strict adapter 可并行；共享 DTO、CMake 和 Worker registry 串
 14D_08_R3_02A_PREPARATION_GATE=PASS
 14A_04_R2_REPAIR_WRITER_DECISION=PROJECT_OWNED_DETERMINISTIC_OBJ_MTL
 14D_08_R3_02B_PREPARATION_GATE=PASS
+14D_08_R3_02B_IMPLEMENTATION=COMPLETE
+14D_08_R3_02B_E1=COMPLETE
 14D_08_R3_02B_IMPLEMENTATION=READY_AFTER_R3_01B_PROFILE_IDENTITY
 NEXT_TASK_AFTER_R3_01B=14D_08_R3_02B
 ```
+
+历史准备标记 `READY_AFTER_R3_01B_PROFILE_IDENTITY` 仅保留实施前依赖记录，不再代表当前状态。
