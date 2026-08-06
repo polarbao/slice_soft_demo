@@ -4,6 +4,8 @@
 
 #include "slicer_core/engine/ProductionPreflightFullFacadeFactory.h"
 #include "slicer_core/engine/ProductionSliceFacadeFactory.h"
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+#include "slicer_core/rip_reader.h"
 
 #include <algorithm>
 #include <chrono>
@@ -25,6 +27,7 @@ constexpr const char* kInternalCode{"PM-SLICER-INTERNAL-0099"};
 constexpr const char* kLayoutCollisionCode{"PM-SLICER-LAYOUT-0020"};
 constexpr const char* kLayoutBoundsCode{"PM-SLICER-LAYOUT-0021"};
 constexpr const char* kLayoutStaleCode{"PM-SLICER-LAYOUT-0022"};
+constexpr const char* kOutputCode{"PM-SLICER-OUTPUT-0050"};
 constexpr const char* kTopologyCode{"PM-SLICER-TOPOLOGY-0010"};
 
 using WorkerClock = std::chrono::steady_clock;
@@ -55,6 +58,33 @@ WorkerCapabilityExecutionResult FacadeFailure(
             ? std::optional<WorkerResultCleanup>(
                   WorkerResultCleanup{true, false})
             : std::nullopt);
+}
+
+bool IsValidPublishedPackage(const std::filesystem::path& packageDirectory)
+{
+    try
+    {
+        (void)slicer_core::internal::ValidateSlicePackageArtifact(
+            packageDirectory);
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
+WorkerCapabilityExecutionResult ArtifactCleanupFailure(
+    const std::string& phase,
+    const slicer_core::api::artifacts::PackageArtifactRecoveryResult& recovery)
+{
+    return WorkerCapabilityExecutionResult::Failure(
+        kOutputCode,
+        "Worker package artifact cleanup failed during " + phase,
+        recovery.error.empty()
+            ? std::nullopt
+            : std::optional<std::string>(recovery.error),
+        WorkerResultCleanup{recovery.staging_removed, false});
 }
 
 std::string AdmissionFailureCode(
@@ -117,10 +147,43 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
     const slicer_core::api::ICancelToken& cancelToken)
 {
     const WorkerClock::time_point start = WorkerClock::now();
+    std::optional<slicer_core::api::artifacts::PackageArtifactIdentity>
+        artifactIdentity;
+    const auto finalize = [&artifactIdentity](
+        WorkerCapabilityExecutionResult result)
+    {
+        if (!artifactIdentity.has_value())
+        {
+            return result;
+        }
+        const auto recovery =
+            slicer_core::api::artifacts::RecoverPackageArtifacts(
+                *artifactIdentity,
+                IsValidPublishedPackage);
+        if (!recovery.success)
+        {
+            return ArtifactCleanupFailure("Worker exit", recovery);
+        }
+        return result;
+    };
     try
     {
         const WorkerSliceMaterialization materialized =
             WorkerSliceRequestMaterializer::Materialize(request, cancelToken);
+        artifactIdentity =
+            slicer_core::api::artifacts::MakePackageArtifactIdentity(
+                materialized.PackageDirectory(),
+                request.Identity().JobId(),
+                slicer_core::api::artifacts::MakePackageAttemptId(
+                    request.Identity().CorrelationId()));
+        const auto startupRecovery =
+            slicer_core::api::artifacts::RecoverPackageArtifacts(
+                *artifactIdentity,
+                IsValidPublishedPackage);
+        if (!startupRecovery.success)
+        {
+            return ArtifactCleanupFailure("Worker startup", startupRecovery);
+        }
 
         slicer_core::api::PreflightRequest preflightRequest;
         preflightRequest.scene_config_path = materialized.SceneSnapshotPath();
@@ -136,39 +199,39 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
         if (!preflight.IsOk())
         {
             const slicer_core::api::ApiError* error = preflight.Error();
-            return FacadeFailure(
+            return finalize(FacadeFailure(
                 error,
                 "authoritative preflight failed before slicing",
-                error != nullptr && error->code == kCancelledCode);
+                error != nullptr && error->code == kCancelledCode));
         }
         if (preflight.Value() == nullptr)
         {
-            return WorkerCapabilityExecutionResult::Failure(
+            return finalize(WorkerCapabilityExecutionResult::Failure(
                 kInternalCode,
-                "authoritative preflight returned no result");
+                "authoritative preflight returned no result"));
         }
         const slicer_core::api::PreflightResult& admission = *preflight.Value();
         if (admission.cancelled || cancelToken.IsCancelRequested())
         {
-            return WorkerCapabilityExecutionResult::Failure(
+            return finalize(WorkerCapabilityExecutionResult::Failure(
                 kCancelledCode,
                 "slice job was cancelled after authoritative preflight",
                 std::nullopt,
-                WorkerResultCleanup{true, false});
+                WorkerResultCleanup{true, false}));
         }
         if (!admission.authoritative
             || !admission.complete
             || !admission.admitted)
         {
-            return WorkerCapabilityExecutionResult::Failure(
+            return finalize(WorkerCapabilityExecutionResult::Failure(
                 AdmissionFailureCode(admission),
-                "authoritative full preflight blocked production slicing");
+                "authoritative full preflight blocked production slicing"));
         }
         if (!materialized.ProductionAdmissionCommitted())
         {
-            return WorkerCapabilityExecutionResult::Failure(
+            return finalize(WorkerCapabilityExecutionResult::Failure(
                 kLayoutStaleCode,
-                "committed scene has no passing production admission");
+                "committed scene has no passing production admission"));
         }
 
         int lastPercent{-1};
@@ -207,16 +270,16 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
         if (!sliced.IsOk())
         {
             const slicer_core::api::ApiError* error = sliced.Error();
-            return FacadeFailure(
+            return finalize(FacadeFailure(
                 error,
                 "production SliceFacade failed without an error",
-                error != nullptr && error->code == kCancelledCode);
+                error != nullptr && error->code == kCancelledCode));
         }
         if (sliced.Value() == nullptr)
         {
-            return WorkerCapabilityExecutionResult::Failure(
+            return finalize(WorkerCapabilityExecutionResult::Failure(
                 kInternalCode,
-                "production SliceFacade returned no package result");
+                "production SliceFacade returned no package result"));
         }
         const slicer_core::api::SliceResult& result = *sliced.Value();
         if (result.package_dir != materialized.PackageDirectory()
@@ -227,9 +290,9 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
             || result.grid_px[0] <= 0
             || result.grid_px[1] <= 0)
         {
-            return WorkerCapabilityExecutionResult::Failure(
+            return finalize(WorkerCapabilityExecutionResult::Failure(
                 kContractCode,
-                "production SliceFacade returned incomplete package evidence");
+                "production SliceFacade returned incomplete package evidence"));
         }
         if (m_protocolOutput != nullptr)
         {
@@ -250,26 +313,26 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
                 << " workingSetBytes=0 peakWorkingSetBytes=0\n";
             m_protocolOutput->flush();
         }
-        return WorkerCapabilityExecutionResult::Success(
-            BuildBasicOutput(result, materialized));
+        return finalize(WorkerCapabilityExecutionResult::Success(
+            BuildBasicOutput(result, materialized)));
     }
     catch (const WorkerSliceRequestMaterializationError& error)
     {
-        return WorkerCapabilityExecutionResult::Failure(
+        return finalize(WorkerCapabilityExecutionResult::Failure(
             error.Code(),
             error.what(),
             std::nullopt,
             error.Code() == kCancelledCode
                 ? std::optional<WorkerResultCleanup>(
                       WorkerResultCleanup{true, false})
-                : std::nullopt);
+                : std::nullopt));
     }
     catch (const std::exception& error)
     {
-        return WorkerCapabilityExecutionResult::Failure(
+        return finalize(WorkerCapabilityExecutionResult::Failure(
             kInternalCode,
             "unexpected slice Worker executor failure",
-            std::string(error.what()));
+            std::string(error.what())));
     }
 }
 

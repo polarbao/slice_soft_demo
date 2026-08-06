@@ -3,6 +3,7 @@
 #include "slicer_worker/preflight/WorkerPreflightExecutor.h"
 #include "slicer_worker/runtime/WorkerJobDispatcher.h"
 #include "slicer_worker/runtime/WorkerJobRuntime.h"
+#include "slicer_worker/slice/WorkerSliceExecutor.h"
 
 #include <filesystem>
 #include <iostream>
@@ -80,7 +81,7 @@ void WorkerApplication::PrintHelp(std::ostream& output)
         << "\n"
         << "Implemented fail-closed runtime:\n"
         << "  --spi-request      Parse, dispatch, and publish one file-contract result.\n"
-        << "                     Missing production executors return an explicit failure.\n"
+        << "                     Slice and full-preflight executors are registered.\n"
         << "\n"
         << "Exit codes:\n"
         << "  0  Shell command completed successfully.\n"
@@ -143,6 +144,9 @@ int WorkerApplication::HandleSpiRequest(
     dispatcher.Register(
         "geometry.preflight.full",
         slicesoft::worker::CreateProductionWorkerPreflightExecutor());
+    dispatcher.Register(
+        "slice.rgbwsv",
+        slicesoft::worker::CreateProductionWorkerSliceExecutor(std::cout));
     const slicesoft::worker::WorkerJobRuntimeResult result =
         slicesoft::worker::WorkerJobRuntime::Run(requestPath, dispatcher);
     if (result.processexitcode == 0)

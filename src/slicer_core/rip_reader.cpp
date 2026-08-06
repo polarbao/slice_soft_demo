@@ -1,5 +1,7 @@
 #include "slicer_core/rip_reader.h"
 
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+
 #include "slicer_core/config/OutputResolution.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/TiffReadApi.h"
@@ -597,7 +599,19 @@ ValidationErrorCode ValidationError::code() const noexcept {
     return code_;
 }
 
-RipValidationResult validate_slice_package(const std::filesystem::path& package_dir) {
+namespace
+{
+
+RipValidationResult ValidateSlicePackageImpl(
+    const std::filesystem::path& package_dir,
+    const bool rejectTemporary) {
+    if (rejectTemporary
+        && api::artifacts::IsTemporaryPackagePath(package_dir)) {
+        throw ValidationError(
+            ValidationErrorCode::PackageNotFound,
+            "temporary package artifacts cannot be validated: field=packageDir path="
+                + package_dir.string());
+    }
     if (!std::filesystem::exists(package_dir) || !std::filesystem::is_directory(package_dir)) {
         throw ValidationError(
             ValidationErrorCode::PackageNotFound,
@@ -763,5 +777,22 @@ RipValidationResult validate_slice_package(const std::filesystem::path& package_
 
     return result;
 }
+
+}  // namespace
+
+RipValidationResult validate_slice_package(
+    const std::filesystem::path& package_dir) {
+    return ValidateSlicePackageImpl(package_dir, true);
+}
+
+namespace internal
+{
+
+RipValidationResult ValidateSlicePackageArtifact(
+    const std::filesystem::path& packageDirectory) {
+    return ValidateSlicePackageImpl(packageDirectory, false);
+}
+
+}  // namespace internal
 
 }  // namespace slicer_core

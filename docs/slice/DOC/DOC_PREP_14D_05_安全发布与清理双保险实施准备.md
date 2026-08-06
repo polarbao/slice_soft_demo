@@ -4,8 +4,8 @@
 > 审计任务：Stage 14D-05
 > 审计基线：`fba8b04 feat(14D-08-R3-02B-F1): 【生产修复】闭合保守修复Facade`
 > 文档状态：`PREPARATION_GATE=PASS_WITH_SPLIT`
-> 实施状态：`R1..R2 COMPLETE / R3..R4 NOT STARTED`
-> 验收状态：`NOT RUN`
+> 实施状态：`R1..R3 COMPLETE / R4 NOT STARTED`
+> 验收状态：`R3 DEBUG/RELEASE DIRECTED PASS / R4 NOT RUN`
 
 ## 1. 审计结论
 
@@ -21,7 +21,8 @@
 
 复审基线已经具备严格请求身份、真实 `slice.rgbwsv` executor、生产 SliceFacade 和
 ProductionRepairFacade。旧审计中“Worker 入口完全未实现”的描述已经失效；当前真实缺口是
-executor 尚未注册到生产 Worker，以及安全发布、两轮清理和临时路径拒绝尚未接线。
+生产 Worker 已注册 `slice.rgbwsv` executor，Writer 安全发布、Worker/模块两轮清理和临时路径
+读取拒绝已接线；当前剩余缺口是 R4 的真实 Worker、取消、超时、强杀和崩溃验收。
 
 本文件现将实施受控拆为 R1..R4。拆分边界、文件所有权、状态机和验收命令均已冻结，因此
 准备门改为 `PASS_WITH_SPLIT`；这只授权按顺序实施，不等于 14D-05 完成，也不构成
@@ -31,7 +32,7 @@ C-SPI-09、M-MVP-CANDIDATE 或任何 14E 准入证据。
 |---|---|---|
 | 14D-05-R1 | 共享 job/attempt 产物身份、临时路径识别、精确 owned 恢复 | COMPLETE |
 | 14D-05-R2 | Writer 使用 owned staging/backup、同目标租约与发布证据 | COMPLETE |
-| 14D-05-R3 | Worker 第一轮、模块第二轮清理及查询/RIP 临时路径拒绝 | NOT STARTED |
+| 14D-05-R3 | Worker 第一轮、模块第二轮清理及查询/RIP 临时路径拒绝 | COMPLETE |
 | 14D-05-R4 | Debug/Release、取消、强杀、崩溃和真实 Worker 集成验收 | NOT STARTED |
 
 ### 1.1 最小解阻条件
@@ -71,17 +72,17 @@ U2 只要求解除 14D-05 所需的窄切片路径阻塞，不代表 14D-08 的�
 
 | 领域 | 当前事实 | 14D-05 判断 |
 |---|---|---|
-| Worker 入口 | `--spi-request` 已接共享 runtime；full preflight 已注册，slice executor 已实现但尚未注册 | **R3 接线后关闭 Worker E2E 缺口** |
+| Worker 入口 | `--spi-request` 已接共享 runtime；full preflight 与 `slice.rgbwsv` executor 均已注册 | R3 已关闭生产注册缺口 |
 | WorkerClient | 已有 Windows Job Object、超时、取消标记、强杀和 stdout 协议解析 | 可复用 |
-| WorkerClient 清理 | `WorkerLaunchOptions` 只有取消标记路径，没有 `jobId`、`packageDir` 或退出后清理回调 | **阻塞模块第二保险** |
+| WorkerClient 清理 | `WorkerLaunchOptions.packageArtifacts` 承载 `packageDir/jobId/attemptId`；进程完全退出后执行共享恢复组件 | R3 已完成模块第二保险 |
 | Writer staging | 仍使用 `<package>.staging.<steady_clock>`；R1 已提供 `<package>.staging.<job>.<attempt>` 身份组件 | **R2 负责替换生产接线** |
 | Writer 自检 | 写完 manifest/report 后调用场景扩展校验和 `validate_slice_package(stagingDir)` | 已实现正常路径基础 |
 | Writer 发布 | 旧目标先 rename 为 backup，再将 staging rename 为目标；第二步失败时尝试恢复 backup | 已有可恢复两步替换雏形 |
 | Writer 取消 | 14D-04A 已在阶段、逐层、长循环、TIFF 和发布边界检查 token；异常路径删除当前 staging | 已完成进程内协作取消基础 |
-| 崩溃恢复 | R1 已提供只操作精确 owned 路径的幂等恢复函数；Worker/模块尚未调用 | **R3 负责双保险接线** |
+| 崩溃恢复 | Worker 在执行起止各调用精确 owned 恢复，模块在进程退出后再次调用；强杀/崩溃实测仍归 R4 | R3 接线完成，R4 待验收 |
 | 旧包保护 | 正常异常能尝试恢复 backup；进程在两次 rename 之间崩溃时，目标可能缺失且 backup 遗留 | **阻塞崩溃场景** |
-| 清理错误 | 多处使用带 `error_code` 的 `remove_all`，错误没有稳定映射为 `PM-SLICER-OUTPUT-0050` | **阻塞失败语义** |
-| 包入口拒绝 | 严格包验证和查询入口没有统一拒绝 staging/backup/tmp/bak 后缀 | **阻塞 fail-closed** |
+| 清理错误 | Worker/模块清理失败均覆盖原终态并稳定映射 `PM-SLICER-OUTPUT-0050` | R3 已关闭失败语义 |
+| 包入口拒绝 | 对外 PackageQuery/RIP 严格拒绝 staging/backup/lease/tmp/bak；Writer 私有验证仅接受精确 owned 产物 | R3 已关闭 fail-closed 缺口 |
 | 同目标并发 | 没有目标级互斥或发布租约 | **阻塞所有权安全** |
 | 断电持久性 | 当前没有目录/文件 `fsync` 或 Windows `FlushFileBuffers` 证据 | 不纳入 14D-05，不得宣称抗断电 |
 
@@ -347,20 +348,20 @@ powershell -ExecutionPolicy Bypass -File scripts/run_quick_ci.ps1
 将本文件的状态从 BLOCKED 改为 PASS 前，必须逐项提供代码或合同证据：
 
 - [x] U1 作业级临时产物身份已贯穿；
-- [ ] U2 Worker 最小 `slice.rgbwsv` 入口已可执行；
-- [ ] U3 Worker/模块共享路径安全和恢复组件已落地；
+- [x] U2 Worker 最小 `slice.rgbwsv` 入口已可执行；
+- [x] U3 Worker/模块共享路径安全和恢复组件已落地；
 - [x] U4 同目标并发策略已落地并有测试；
 - [ ] U5 崩溃窗口恢复状态机已落地并有强杀测试；
-- [ ] U6 临时路径读取拒绝已落地；
-- [ ] Debug/Release 负例能够运行，而不是仅有测试名称；
+- [x] U6 临时路径读取拒绝已落地；
+- [x] Debug/Release R3 定向负例能够运行，而不是仅有测试名称；
 - [ ] C-SPI-09 可以通过真实链路执行。
 
 以上项目是 R2..R4 的**完成门**，不是再次阻断已冻结实施方案的准备门。当前结论为：
 
 ```text
 PREPARATION_GATE=PASS_WITH_SPLIT
-IMPLEMENTATION=R1_R2_COMPLETE_R3_R4_PENDING
-ACCEPTANCE=NOT RUN
+IMPLEMENTATION=R1_R2_R3_COMPLETE_R4_PENDING
+ACCEPTANCE=R3_DIRECTED_PASS_R4_NOT_RUN
 ```
 
 ## 12. 修订记录
@@ -370,3 +371,4 @@ ACCEPTANCE=NOT RUN
 | 2026-08-06 | v1.0 | 首次审计，因 Worker 请求和安全发布基础缺失判定 BLOCKED |
 | 2026-08-06 | v1.1 | 基于 14D-08-R1/R2/R3 与 F1 复审，冻结 R1..R4 实施拆分；R1 共享产物身份与恢复组件完成，准备门改为 PASS_WITH_SPLIT |
 | 2026-08-06 | v1.2 | 完成 R2：`jobId`/派生 `attemptId` 贯穿 SliceFacade、场景生产服务与 Writer；Writer 使用精确 owned staging/backup、目标级租约、发布后严格复验和无残留证据，同目标并发在写包前 fail-closed；R3/R4 继续待实施 |
+| 2026-08-06 | v1.3 | 完成 R3：生产 Worker 注册 `slice.rgbwsv`；Worker 起止与模块进程退出后使用共享 owned 恢复；PackageQuery/RIP 拒绝临时目录，Writer 使用私有严格验证；Debug/Release 定向门禁通过，R4 继续待实施 |

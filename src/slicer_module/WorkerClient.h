@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -32,7 +33,16 @@ enum class WorkerStopReason
     StartupFailed,
     ContractViolation,
     Cancelled,
-    TimedOut
+    TimedOut,
+    ArtifactCleanupFailed
+};
+
+/** @brief Job-owned package identity required by the module cleanup pass. */
+struct WorkerPackageArtifactContext
+{
+    std::filesystem::path packageDirectory;
+    std::string jobId;
+    std::string attemptId;
 };
 
 /** @brief Strictly parsed SLICE_PROGRESS payload. */
@@ -68,6 +78,7 @@ struct WorkerLaunchOptions
     std::chrono::milliseconds cancelGracePeriod{2000};
     bool requireTerminalProgress{true};
     WorkerProgressSink progressSink;
+    std::optional<WorkerPackageArtifactContext> packageArtifacts;
 };
 
 /** @brief Complete process, protocol, and diagnostic outcome for one Run(). */
@@ -85,6 +96,10 @@ struct WorkerRunResult
     std::vector<WorkerTimingEvent> timingEvents;
     std::vector<std::string> stdoutLogLines;
     std::vector<std::string> stderrLogLines;
+    bool artifactCleanupAttempted{false};
+    bool artifactCleanupSucceeded{false};
+    bool artifactTargetRestored{false};
+    std::vector<std::filesystem::path> residualArtifactPaths;
 };
 
 /**

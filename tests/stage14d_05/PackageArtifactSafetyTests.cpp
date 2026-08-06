@@ -1,9 +1,12 @@
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+#include "slicer_core/api/implementation/PackageQueryFacadeImplementation.h"
+#include "slicer_core/rip_reader.h"
 
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -153,6 +156,53 @@ bool PreservesInvalidBackupAndUnownedNeighbor()
     return pass;
 }
 
+bool StrictReadersRejectTemporaryPackages()
+{
+    const std::filesystem::path root = MakeRoot("temporary_readers");
+    const std::vector<std::string> names{
+        "package.staging.job.attempt",
+        "package.backup.job.attempt",
+        "package.lease",
+        "package.tmp",
+        "package.bak"};
+    bool pass{true};
+    const auto facade =
+        slicer_core::api::implementation::CreatePackageQueryFacade();
+    for (const std::string& name : names)
+    {
+        const std::filesystem::path temporary = root / name;
+        MakeValidPackage(temporary);
+        bool ripRejected{false};
+        try
+        {
+            (void)slicer_core::validate_slice_package(temporary);
+        }
+        catch (const slicer_core::ValidationError& error)
+        {
+            ripRejected =
+                error.code() == slicer_core::ValidationErrorCode::PackageNotFound
+                && std::string(error.what()).find("temporary package")
+                    != std::string::npos;
+        }
+        const auto summary = facade->GetSummary(temporary);
+        pass = Expect(
+                   ripRejected,
+                   "strict RIP validation rejects " + name)
+            && pass;
+        pass = Expect(
+                   !summary.IsOk()
+                       && summary.Error() != nullptr
+                       && summary.Error()->code == "PM-SLICER-INPUT-0001"
+                       && summary.Error()->detail.find("temporary package")
+                           != std::string::npos,
+                   "package query rejects " + name)
+            && pass;
+    }
+    std::error_code ignored;
+    std::filesystem::remove_all(root, ignored);
+    return pass;
+}
+
 }  // namespace
 
 int main()
@@ -160,7 +210,8 @@ int main()
     const bool pass = IdentityIsDeterministicAndRejectsTemporaryTargets()
         && RecoversUniqueOwnedBackupAndRemovesStaging()
         && LeaseRejectsConcurrentAndForeignRelease()
-        && PreservesInvalidBackupAndUnownedNeighbor();
+        && PreservesInvalidBackupAndUnownedNeighbor()
+        && StrictReadersRejectTemporaryPackages();
     if (!pass)
     {
         return 1;

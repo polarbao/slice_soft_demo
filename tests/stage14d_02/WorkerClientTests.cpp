@@ -1,5 +1,7 @@
 #include "slicer_module/WorkerClient.h"
 
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -126,6 +128,27 @@ int RunWorkerHelper(const int argc, char* const argv[])
     if (mode == "process-tree")
     {
         return SpawnSleepingChild(CurrentExecutable());
+    }
+    if (mode == "artifact-residue")
+    {
+        if (argc < 6)
+        {
+            return 2;
+        }
+        const auto identity =
+            slicer_core::api::artifacts::MakePackageArtifactIdentity(
+                std::filesystem::path{argv[3]},
+                argv[4],
+                argv[5]);
+        std::filesystem::create_directories(identity.staging_directory);
+        const auto lease =
+            slicer_core::api::artifacts::AcquirePackageArtifactLease(identity);
+        if (!lease.success)
+        {
+            return 6;
+        }
+        EmitTerminalProgress();
+        return 0;
     }
     if (mode == "sleep-child")
     {
@@ -338,6 +361,77 @@ void TestStartupFailure()
         "startup failure is classified");
 }
 
+void TestModuleArtifactCleanupAfterWorkerExit()
+{
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path()
+        / (L"slicesoft_worker_artifacts_"
+            + std::to_wstring(GetCurrentProcessId()));
+    std::error_code ignored;
+    std::filesystem::remove_all(root, ignored);
+    std::filesystem::create_directories(root);
+
+    constexpr const char* JobId{"job-module-cleanup"};
+    constexpr const char* AttemptId{"attempt-module-cleanup"};
+    const std::filesystem::path packageDirectory = root / "package";
+    const auto identity =
+        slicer_core::api::artifacts::MakePackageArtifactIdentity(
+            packageDirectory,
+            JobId,
+            AttemptId);
+
+    slicer_module::WorkerClient client;
+    auto options = Options("artifact-residue");
+    options.arguments.push_back(Utf8(packageDirectory));
+    options.arguments.push_back(JobId);
+    options.arguments.push_back(AttemptId);
+    options.packageArtifacts = slicer_module::WorkerPackageArtifactContext{
+        packageDirectory,
+        JobId,
+        AttemptId};
+    const auto result = client.Run(options);
+    Check(result.exitCategory == slicer_module::WorkerExitCategory::Ok,
+        "successful Worker remains successful after module cleanup");
+    Check(result.artifactCleanupAttempted
+            && result.artifactCleanupSucceeded,
+        "module performs its owned cleanup pass after Worker exit");
+    Check(!std::filesystem::exists(identity.staging_directory)
+            && !std::filesystem::exists(identity.lease_directory),
+        "module cleanup removes exact staging and lease residue");
+
+    auto conflict = Options("artifact-residue");
+    conflict.arguments.push_back(Utf8(packageDirectory));
+    conflict.arguments.push_back("foreign-job");
+    conflict.arguments.push_back("foreign-attempt");
+    conflict.packageArtifacts = slicer_module::WorkerPackageArtifactContext{
+        packageDirectory,
+        JobId,
+        AttemptId};
+    const auto conflictResult = client.Run(conflict);
+    Check(
+        conflictResult.exitCategory == slicer_module::WorkerExitCategory::Ok
+            && conflictResult.artifactCleanupSucceeded
+            && std::filesystem::exists(
+                packageDirectory.parent_path()
+                / "package.lease"),
+        "module cleanup preserves a lease owned by another job");
+
+    auto invalid = Options("plain-success");
+    invalid.requireTerminalProgress = false;
+    invalid.packageArtifacts = slicer_module::WorkerPackageArtifactContext{
+        packageDirectory,
+        "invalid/job",
+        AttemptId};
+    const auto invalidResult = client.Run(invalid);
+    Check(
+        invalidResult.exitCategory == slicer_module::WorkerExitCategory::Output
+            && invalidResult.stopReason
+                == slicer_module::WorkerStopReason::ArtifactCleanupFailed
+            && invalidResult.errorCode == "PM-SLICER-OUTPUT-0050",
+        "invalid cleanup identity fails closed as an output error");
+    std::filesystem::remove_all(root, ignored);
+}
+
 }  // namespace
 
 int main(const int argc, char* const argv[])
@@ -352,6 +446,7 @@ int main(const int argc, char* const argv[])
     TestCooperativeCancellation();
     TestTimeoutKillsProcessTree();
     TestStartupFailure();
+    TestModuleArtifactCleanupAfterWorkerExit();
     if (g_failures == 0)
     {
         std::cout << "WorkerClientTests: PASS\n";

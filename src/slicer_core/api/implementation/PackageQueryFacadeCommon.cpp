@@ -1,5 +1,7 @@
 #include "slicer_core/api/implementation/PackageQueryFacadeInternal.h"
 
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -45,6 +47,13 @@ std::filesystem::path RequirePackageDirectory(
     }
     const std::filesystem::path absolute =
         std::filesystem::absolute(packageDir).lexically_normal();
+    if (artifacts::IsTemporaryPackagePath(absolute))
+    {
+        throw ValidationError(
+            ValidationErrorCode::PackageNotFound,
+            "temporary package artifacts cannot be queried: "
+                + absolute.generic_string());
+    }
     if (!std::filesystem::is_directory(absolute))
     {
         throw ValidationError(

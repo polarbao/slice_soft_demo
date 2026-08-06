@@ -106,7 +106,7 @@ bool IsStrictPackageValid(const std::filesystem::path& packageDir)
 {
     try
     {
-        (void)validate_slice_package(packageDir);
+        (void)internal::ValidateSlicePackageArtifact(packageDir);
         return true;
     }
     catch (...)
@@ -1135,7 +1135,7 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             request.canceltoken,
             "package_validation");
         ValidatePersistedSceneExtension(stagingDir, request);
-        (void)validate_slice_package(stagingDir);
+        (void)internal::ValidateSlicePackageArtifact(stagingDir);
         ThrowIfCancellationRequested(
             request.canceltoken,
             "before_package_publish");

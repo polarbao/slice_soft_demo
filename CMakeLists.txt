@@ -708,6 +708,7 @@ target_include_directories(stage14d02_worker_client_unit_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+target_link_libraries(stage14d02_worker_client_unit_tests PRIVATE slicer_base)
 
 add_executable(stage14d03_worker_contract_unit_tests
     tests/stage14d_03/WorkerContractTests.cpp
@@ -1066,6 +1067,7 @@ target_link_libraries(slicer_worker PRIVATE
     slicer_engine
     slicer_worker_runtime
     slicer_worker_preflight_runtime
+    slicer_worker_slice_runtime
 )
 
 add_executable(texture_fill_partition_release_benchmark

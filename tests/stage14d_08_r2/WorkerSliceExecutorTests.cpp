@@ -1,6 +1,7 @@
 #include "slicer_worker/slice/WorkerSliceExecutor.h"
 
 #include "slicer_core/api/ProfileIdentity.h"
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/config.h"
 #include "slicer_core/engine/ProductionPreflightFullFacadeFactory.h"
 #include "slicer_core/engine/ProductionSliceFacadeFactory.h"
@@ -283,6 +284,19 @@ void TestUncommittedAdmissionFailsClosed(
         slicer_core::SceneInstanceAdmissionStatus::Unknown;
     const std::filesystem::path packageDirectory =
         root / "package-uncommitted";
+    const std::filesystem::path jobDirectory = root / "job-uncommitted";
+    const auto artifactIdentity =
+        slicer_core::api::artifacts::MakePackageArtifactIdentity(
+            packageDirectory,
+            jobDirectory.filename().generic_string(),
+            slicer_core::api::artifacts::MakePackageAttemptId(
+                "correlation-r2-executor"));
+    std::filesystem::create_directories(
+        artifactIdentity.staging_directory);
+    const auto lease =
+        slicer_core::api::artifacts::AcquirePackageArtifactLease(
+            artifactIdentity);
+    Check(lease.success, "test residue lease is created");
     const slicer_core::Json profile = MakeProfile(packageDirectory);
     std::ostringstream protocol;
     worker::WorkerSliceExecutor executor(
@@ -291,7 +305,7 @@ void TestUncommittedAdmissionFailsClosed(
         protocol);
     const worker::WorkerCapabilityExecutionResult result = executor.Execute(
         MakeRequest(
-            root / "job-uncommitted",
+            jobDirectory,
             packageDirectory,
             scene,
             profile),
@@ -300,6 +314,9 @@ void TestUncommittedAdmissionFailsClosed(
         "uncommitted admission fails with the stable scene code");
     Check(!std::filesystem::exists(packageDirectory),
         "uncommitted admission publishes no package");
+    Check(!std::filesystem::exists(artifactIdentity.staging_directory)
+            && !std::filesystem::exists(artifactIdentity.lease_directory),
+        "Worker startup and exit cleanup remove exact owned residue before Writer");
 }
 
 }  // namespace

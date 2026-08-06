@@ -138,6 +138,38 @@ bool RemoveOwnedLease(
         errorMessage);
 }
 
+bool RecoverOwnedLease(
+    const PackageArtifactIdentity& identity,
+    bool& removed,
+    std::string& errorMessage)
+{
+    std::error_code error;
+    if (!std::filesystem::exists(identity.lease_directory, error))
+    {
+        if (error)
+        {
+            errorMessage = "failed to inspect package lease";
+            return false;
+        }
+        removed = true;
+        return true;
+    }
+    if (IsReparsePoint(identity.lease_directory))
+    {
+        errorMessage = "package lease is an unsafe reparse point";
+        return false;
+    }
+    if (!LeaseMatchesOwner(identity))
+    {
+        removed = false;
+        return true;
+    }
+    return RemoveOwnedDirectory(
+        identity.lease_directory,
+        removed,
+        errorMessage);
+}
+
 void AddResidual(
     const std::filesystem::path& path,
     std::vector<std::filesystem::path>& residuals)
@@ -355,7 +387,7 @@ PackageArtifactRecoveryResult RecoverPackageArtifacts(
                 identity.staging_directory,
                 result.staging_removed,
                 result.error)
-            || !RemoveOwnedLease(
+            || !RecoverOwnedLease(
                 identity,
                 result.lease_removed,
                 result.error))

@@ -2,6 +2,9 @@
 #include "WorkerProcessWindows.h"
 #include "WorkerProtocol.h"
 
+#include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+#include "slicer_core/rip_reader.h"
+
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -100,6 +103,71 @@ std::string StableExitCode(const WorkerExitCategory category)
     }
 }
 
+bool IsValidPublishedPackage(const std::filesystem::path& packageDirectory)
+{
+    try
+    {
+        (void)slicer_core::internal::ValidateSlicePackageArtifact(
+            packageDirectory);
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
+void ApplyModuleArtifactRecovery(
+    const WorkerLaunchOptions& options,
+    WorkerRunResult& result)
+{
+    if (!options.packageArtifacts.has_value())
+    {
+        return;
+    }
+
+    result.artifactCleanupAttempted = true;
+    try
+    {
+        const WorkerPackageArtifactContext& context =
+            *options.packageArtifacts;
+        const auto identity =
+            slicer_core::api::artifacts::MakePackageArtifactIdentity(
+                context.packageDirectory,
+                context.jobId,
+                context.attemptId);
+        const auto recovery =
+            slicer_core::api::artifacts::RecoverPackageArtifacts(
+                identity,
+                IsValidPublishedPackage);
+        result.artifactCleanupSucceeded = recovery.success;
+        result.artifactTargetRestored = recovery.target_restored;
+        result.residualArtifactPaths = recovery.residual_paths;
+        if (recovery.success)
+        {
+            return;
+        }
+        result.exitCategory = WorkerExitCategory::Output;
+        result.stopReason = WorkerStopReason::ArtifactCleanupFailed;
+        result.errorCode = "PM-SLICER-OUTPUT-0050";
+        result.errorMessage = "module package artifact cleanup failed";
+        if (!recovery.error.empty())
+        {
+            result.errorMessage += ": " + recovery.error;
+        }
+    }
+    catch (const std::exception& error)
+    {
+        result.artifactCleanupSucceeded = false;
+        result.exitCategory = WorkerExitCategory::Output;
+        result.stopReason = WorkerStopReason::ArtifactCleanupFailed;
+        result.errorCode = "PM-SLICER-OUTPUT-0050";
+        result.errorMessage =
+            std::string{"module package artifact cleanup failed: "}
+            + error.what();
+    }
+}
+
 }  // namespace
 
 class WorkerClient::Impl final
@@ -114,6 +182,7 @@ public:
     void WaitUntilIdle();
 
 private:
+    WorkerRunResult RunProcess(const WorkerLaunchOptions& options);
     void FinishRun();
 
     std::atomic<bool> m_running{false};
@@ -141,6 +210,16 @@ WorkerRunResult WorkerClient::Impl::Run(const WorkerLaunchOptions& options)
         }
     } finishGuard{this};
     m_cancelRequested.store(false, std::memory_order_release);
+
+    result = RunProcess(options);
+    ApplyModuleArtifactRecovery(options, result);
+    return result;
+}
+
+WorkerRunResult WorkerClient::Impl::RunProcess(
+    const WorkerLaunchOptions& options)
+{
+    WorkerRunResult result;
 
     if (options.executablePath.empty() || options.timeout.count() <= 0
         || options.cancelGracePeriod.count() < 0 || options.cancelGracePeriod.count() > 2000)

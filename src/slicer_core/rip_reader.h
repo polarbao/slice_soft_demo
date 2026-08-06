@@ -88,4 +88,18 @@ struct RipValidationResult {
  */
 RipValidationResult validate_slice_package(const std::filesystem::path& package_dir);
 
+namespace internal
+{
+
+/**
+ * @brief Validate one writer-owned staging or backup package artifact.
+ * @param packageDirectory Exact job-owned artifact directory.
+ * @return Strict validation result using the production RGBWSV contract.
+ * @throws ValidationError When package contents violate the contract.
+ */
+RipValidationResult ValidateSlicePackageArtifact(
+    const std::filesystem::path& packageDirectory);
+
+}  // namespace internal
+
 }  // namespace slicer_core
