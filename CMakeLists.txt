@@ -861,6 +861,10 @@ add_library(slicer_worker_runtime STATIC
     apps/slicer_worker/runtime/WorkerRequestEnvelope.h
     apps/slicer_worker/runtime/WorkerRequestParser.cpp
     apps/slicer_worker/runtime/WorkerRequestParser.h
+    apps/slicer_worker/runtime/WorkerResultEnvelope.cpp
+    apps/slicer_worker/runtime/WorkerResultEnvelope.h
+    apps/slicer_worker/runtime/WorkerResultWriter.cpp
+    apps/slicer_worker/runtime/WorkerResultWriter.h
 )
 target_include_directories(slicer_worker_runtime PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
@@ -883,6 +887,20 @@ target_link_libraries(stage14d08_r1_worker_runtime_tests PRIVATE
 )
 if(MSVC)
     target_compile_options(stage14d08_r1_worker_runtime_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d08_r1_result_writer_tests
+    tests/stage14d_08_r1/WorkerResultWriterTests.cpp
+)
+target_include_directories(stage14d08_r1_result_writer_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d08_r1_result_writer_tests PRIVATE
+    slicer_worker_runtime
+)
+if(MSVC)
+    target_compile_options(stage14d08_r1_result_writer_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(slicer_worker
@@ -1644,6 +1662,10 @@ add_test(
 add_test(
     NAME stage14d08_r1_worker_runtime_tests
     COMMAND stage14d08_r1_worker_runtime_tests
+)
+add_test(
+    NAME stage14d08_r1_result_writer_tests
+    COMMAND stage14d08_r1_result_writer_tests
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(

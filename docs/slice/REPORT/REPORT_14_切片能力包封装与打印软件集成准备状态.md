@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.20 ｜ 更新日期：2026-08-06
+> 版本：v3.21 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14D-08-R1-02 (READY)
+CURRENT_NEXT_TASK      = 14D-08-R1-03 (READY)
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -143,8 +143,9 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14D-06 | ⛔ PREPARATION_GATE BLOCKED | Worker 唯一重能力路由 | 缺可执行 Worker 请求入口、backend 冻结和安全发布正向链路 |
 | 14D-07 | ⛔ PREPARATION_GATE BLOCKED | 引擎一致性套件 E-01..08 | 八项用例尚未规范冻结，真实 Worker 与安全发布也未就绪 |
 | 14D-08 | ⛔ 父任务 BLOCKED / CONTROLLED SPLIT | Worker 独立 `--spi-request` | 已拆 R1..R4；R1 共享基础可实施，R2/R3/R4 继续等待真实映射、Facade 和安全发布 |
-| 14D-08-R1 | 🚧 IN PROGRESS | 共享请求解析、身份、结果与调度基础 | R1-01 COMPLETE；R1-02 READY；生产 Worker 在无 executor 时必须身份闭合地显式失败 |
+| 14D-08-R1 | 🚧 IN PROGRESS | 共享请求解析、身份、结果与调度基础 | R1-01/02 COMPLETE；R1-03 READY；生产 Worker 在无 executor 时必须身份闭合地显式失败 |
 | 14D-08-R1-01 | ✅ COMPLETE（2026-08-06） | `request.json` 严格解析与不可变作业身份 | Debug/Release 5/5 定向门禁 PASS；不创建 result/package，不接入 executor |
+| 14D-08-R1-02 | ✅ COMPLETE（2026-08-06） | `result.json` 身份闭合与原子替换 | Debug/Release 4/4 定向门禁 PASS；写入失败稳定映射 OUTPUT-0050/exit 6 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
 11 个冻结符号；完整 C-SPI-01..18 仍由 14C-06A/06B 合并关闭。
@@ -243,3 +244,4 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.18 | 完成 14C-07：最小 DLL 入口、进程级一次初始化、并发实例、精确 11 导出和无 Qt/PrintSDK/Engine 依赖通过 Debug/Release 门禁；14C-06A 准备门转 READY，14D-05/06/07 准备审计均保持显式阻断，下一并行批次为 06A 实现与 14D-08 解阻拆分准备 |
 | 2026-08-06 | v3.19 | 完成 14C-06A：公开 C ABI 动态装载一致性程序与无副作用 pm_self_test 通过 Debug/Release 11/11 门禁，Worker 项诚实保留给 06B；14D-08 受控拆为 R1..R4，R1 准备门 PASS，下一开发卡为 R1-01 |
 | 2026-08-06 | v3.20 | 完成 14D-08-R1-01：严格请求解析、原始业务对象保留和 normalized 作业身份通过 Debug/Release 5/5 门禁；R1-02 准备门转 READY，父任务仍等待结果封装、调度与真实执行 |
+| 2026-08-06 | v3.21 | 完成 14D-08-R1-02：身份闭合结果、稳定退出类别和 result.tmp 原子替换通过 Debug/Release 4/4 门禁；R1-03 准备门转 READY，父任务继续 BLOCKED |

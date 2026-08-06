@@ -397,15 +397,15 @@ SPLIT_DECISION=ACCEPTED_FOR_PREPARATION
 14D_08_R1_PREPARATION_GATE=PASS
 14D_08_R1_IMPLEMENTATION_STATUS=IN_PROGRESS
 14D_08_R1_01_STATUS=COMPLETE
-14D_08_R1_02_PREPARATION_GATE=PASS
-14D_08_R1_02_STATUS=READY
-14D_08_R1_03_STATUS=PREPARED
+14D_08_R1_02_STATUS=COMPLETE
+14D_08_R1_03_PREPARATION_GATE=PASS
+14D_08_R1_03_STATUS=READY
 14D_08_R2_PREPARATION_GATE=BLOCKED
 14D_08_R3_PREPARATION_GATE=BLOCKED
 14D_08_PARENT_GATE=BLOCKED
 ```
 
-`14D-08-R1-01 请求解析与不可变身份` 已按本合同完成并通过 Debug/Release 门禁。下一张
-原子卡是 `14D-08-R1-02 result.json 原子写入与稳定退出映射`；其身份、路径和稳定错误
-边界已经由 R1-01 提供，因此准备门转为 PASS。不得跳过 R1-02 直接把 R1-03 接入命令
-入口，也不得跳过后续映射、真实 Facade、安全发布或取消门禁。
+`14D-08-R1-01` 与 `R1-02` 已按本合同完成并通过 Debug/Release 门禁。下一张原子卡是
+`14D-08-R1-03 capability 精确调度与命令入口接线`；严格 parser、不可变身份、结果封装、
+原子替换和退出映射均已就绪，因此其准备门转为 PASS。不得注册占位成功 executor，也不得
+跳过后续映射、真实 Facade、安全发布或取消门禁。

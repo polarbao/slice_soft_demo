@@ -20,6 +20,10 @@ def main() -> int:
         "WorkerRequestEnvelope.cpp",
         "WorkerRequestParser.h",
         "WorkerRequestParser.cpp",
+        "WorkerResultEnvelope.h",
+        "WorkerResultEnvelope.cpp",
+        "WorkerResultWriter.h",
+        "WorkerResultWriter.cpp",
     }
     actual = {path.name for path in runtime.glob("*") if path.is_file()}
     missing = sorted(required - actual)
@@ -34,7 +38,7 @@ def main() -> int:
         "slicer_module",
         "Qt",
     )
-    for path in runtime.glob("WorkerRequest*"):
+    for path in runtime.glob("Worker*"):
         if not path.is_file():
             continue
         text = path.read_text(encoding="utf-8")
