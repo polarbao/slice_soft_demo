@@ -1,0 +1,35 @@
+{
+  "schema": "slicesoft.engine_conformance.fixtures.14d_07.1",
+  "fixtures": [
+    {
+      "id": "closed_textured_obj",
+      "kind": "asset_set",
+      "files": [
+        {"path": "samples/models/openvdb/surface_shell_cube.obj", "sha256": "3d5f447b0a962ca4f8a6047db8e6ee81b8f135add47c7c23590212fca1620c53"},
+        {"path": "samples/models/openvdb/surface_shell_cube.mtl", "sha256": "2c75cb7cc890e209d4fcabc40267cc75a81a0fbe715f380622c44af675e02a59"},
+        {"path": "samples/models/textured/dise(2)_1.png", "sha256": "ab1b3ab7033fd0ec3812cfd64f388defbc2afa52139a7013f471f929a195cbac"}
+      ]
+    },
+    {
+      "id": "textured_3mf",
+      "kind": "asset_set",
+      "files": [
+        {"path": "samples/models/3mf/texture2d_checker_cube.3mf", "sha256": "d7ec399818c5a1b9bdf4b5a986ca304f4113256ec0c908f951e4a308445f2c57"},
+        {"path": "samples/configs/3mf/three_mf_texture2d_checker.json", "sha256": "377b68067c542bdca320ac8e8dcc7537c85c2cf07bfdd0caaa9b4b6a80aa0da2"}
+      ]
+    },
+    {
+      "id": "strict_open_mesh",
+      "kind": "asset_set",
+      "files": [
+        {"path": "samples/models/openvdb/surface_shell_open_mesh.obj", "sha256": "979467243e13a64abd7fb31fb63cf70d8b7dd1e7ac00d99e4f79bbcbbd9485d0"},
+        {"path": "samples/configs/openvdb/surface_shell_open_mesh.json", "sha256": "d20fadb57d8e6379c33e8e6b6796027878b6cdd64d076f47fac0ac5a0328c861"}
+      ]
+    },
+    {"id": "stale_scene_request", "kind": "generated_negative", "generator": "stale_scene_hash"},
+    {"id": "missing_resource_request", "kind": "generated_negative", "generator": "missing_model_resource"},
+    {"id": "invalid_contract_request", "kind": "generated_negative", "generator": "invalid_file_contract"},
+    {"id": "cancel_runtime_fixture", "kind": "generated_runtime", "generator": "cooperative_cancel"},
+    {"id": "existing_package_guard", "kind": "generated_runtime", "generator": "existing_package_sha256_guard"}
+  ]
+}

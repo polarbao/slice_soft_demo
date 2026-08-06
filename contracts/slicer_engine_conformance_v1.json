@@ -1,0 +1,81 @@
+{
+  "schema": "slicesoft.engine_conformance.14d_07.1",
+  "version": "1.0",
+  "statusValues": ["pass", "fail", "blocked", "not_run"],
+  "overallRule": "all_e01_through_e08_pass",
+  "frozenInvariants": {
+    "spiVersion": 1,
+    "exportCount": 11,
+    "capabilityCount": 15,
+    "packageSchema": "p0.rgbwsv.2",
+    "channels": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "polarity": "black_is_print"
+  },
+  "themes": [
+    {
+      "id": "E-01",
+      "title": "合同与身份闭合",
+      "fixtureIds": ["closed_textured_obj"],
+      "comparisons": ["contract", "jobId", "correlationId", "capability", "sceneHash", "stableErrorCode", "unknownCapabilityFailClosed"],
+      "passRule": "request/result identity is exact and unknown capability has no fallback",
+      "blockedBy": ["14D-08 real capability executors"]
+    },
+    {
+      "id": "E-02",
+      "title": "生产包协议",
+      "fixtureIds": ["closed_textured_obj"],
+      "comparisons": ["packageLayout", "manifestSchema", "layerList", "tiffTags", "channelOrder", "bitDepth", "polarity", "ripStrict"],
+      "passRule": "every frozen p0.rgbwsv.2 invariant and RIP strict validation passes",
+      "blockedBy": ["14D-05 safe publish", "14D-08 real slice executor"]
+    },
+    {
+      "id": "E-03",
+      "title": "固定 Golden",
+      "fixtureIds": ["closed_textured_obj"],
+      "comparisons": ["productionTiffSha256", "stableRequestProjection", "stableResultProjection"],
+      "passRule": "same release identity produces byte-identical TIFF and canonical stable projections",
+      "blockedBy": ["14D-08 real slice executor", "authorized golden baseline"]
+    },
+    {
+      "id": "E-04",
+      "title": "报告语义",
+      "fixtureIds": ["closed_textured_obj", "strict_open_mesh"],
+      "comparisons": ["sceneReport", "materialReport", "supportReport", "sliceReport", "stableFieldProjection"],
+      "passRule": "stable semantic projection matches and nondeterministic fields are explicitly excluded",
+      "blockedBy": ["14D-08 real slice executor"]
+    },
+    {
+      "id": "E-05",
+      "title": "进度与耗时",
+      "fixtureIds": ["closed_textured_obj", "cancel_runtime_fixture"],
+      "comparisons": ["monotonicPercent", "singleTerminalState", "successAt100", "nonNegativeTiming", "knownPhaseNames"],
+      "passRule": "progress is monotonic and timing grammar is valid without comparing wall-clock values",
+      "blockedBy": ["14D-08 real capability executors"]
+    },
+    {
+      "id": "E-06",
+      "title": "错误与拒绝",
+      "fixtureIds": ["strict_open_mesh", "stale_scene_request", "missing_resource_request", "invalid_contract_request"],
+      "comparisons": ["stableErrorCode", "exitCategory", "okFalse", "noSuccessOutput", "noInProcessFallback"],
+      "passRule": "all negative cases fail closed with the frozen stable error and no package",
+      "blockedBy": ["14D-08 real capability executors"]
+    },
+    {
+      "id": "E-07",
+      "title": "取消与恢复",
+      "fixtureIds": ["cancel_runtime_fixture", "existing_package_guard"],
+      "comparisons": ["cancelDeadline", "exitCode", "stagingCleanup", "existingPackageUnchanged", "jobOwnedRecovery"],
+      "passRule": "cancel/recovery leaves no owned staging and never changes the last successful package",
+      "blockedBy": ["14D-04B worker cancellation", "14D-05 safe publish", "14D-08 real slice executor"]
+    },
+    {
+      "id": "E-08",
+      "title": "Worker 可替换性",
+      "fixtureIds": ["closed_textured_obj", "textured_3mf", "strict_open_mesh"],
+      "comparisons": ["sameHost", "sameModule", "sameRequests", "workerIdentity", "e01ThroughE07"],
+      "passRule": "only worker path/version changes and E-01 through E-07 all pass",
+      "blockedBy": ["E-01 through E-07"]
+    }
+  ]
+}

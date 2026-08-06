@@ -1646,6 +1646,12 @@ if(Python3_Interpreter_FOUND)
             --worker $<TARGET_FILE:slicer_worker>
     )
     add_test(
+        NAME slicer_stage14d07_r1_conformance_definition_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14d_07/ValidateEngineConformanceDefinition.py"
+            --repo-root "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
