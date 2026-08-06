@@ -542,6 +542,8 @@ add_library(slicer_module SHARED
     src/slicer_module/Exports.cpp
     src/slicer_module/HandleRegistry.cpp
     src/slicer_module/HandleRegistry.h
+    src/slicer_module/ModuleInfo.cpp
+    src/slicer_module/ModuleInfo.h
     src/slicer_module/ModelCapabilityAdapter.cpp
     src/slicer_module/ModelCapabilityAdapter.h
     src/slicer_module/PackageCapabilityAdapter.cpp
@@ -571,6 +573,27 @@ target_include_directories(slicer_module PRIVATE
 target_compile_definitions(slicer_module PRIVATE PM_MODULE_BUILD_SHARED)
 target_link_libraries(slicer_module PRIVATE slicer_base)
 set_target_properties(slicer_module PROPERTIES PREFIX "")
+
+set(SLICESOFT_MODULE_RUNTIME "MSVC-x64-MDd")
+set(SLICESOFT_MODULE_BUILD_CONFIG "Debug")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/slicer_module/module.json.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/slicer_module_manifest/Debug/module.json"
+    @ONLY
+)
+set(SLICESOFT_MODULE_RUNTIME "MSVC-x64-MD")
+set(SLICESOFT_MODULE_BUILD_CONFIG "Release")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/slicer_module/module.json.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/slicer_module_manifest/Release/module.json"
+    @ONLY
+)
+add_custom_command(TARGET slicer_module POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_BINARY_DIR}/slicer_module_manifest/$<CONFIG>/module.json"
+        "$<TARGET_FILE_DIR:slicer_module>/module.json"
+    VERBATIM
+)
 
 add_executable(stage14c02_buffer_api_unit_tests
     tests/stage14c_02/BufferApiTests.cpp
@@ -603,6 +626,20 @@ target_include_directories(stage14c03_module_abi_tests PRIVATE
 target_link_libraries(stage14c03_module_abi_tests PRIVATE slicer_module)
 if(WIN32)
     target_link_libraries(stage14c03_module_abi_tests PRIVATE Psapi)
+endif()
+
+add_executable(stage14c05_module_info_tests
+    tests/stage14c_05/ModuleInfoTests.cpp
+    src/slicer_module/ModuleInfo.cpp
+    src/slicer_module/ModuleInfo.h
+)
+target_include_directories(stage14c05_module_info_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14c05_module_info_tests PRIVATE slicer_module)
+if(MSVC)
+    target_compile_options(stage14c05_module_info_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(stage14d02_worker_client_unit_tests
@@ -1424,6 +1461,12 @@ if(Python3_Interpreter_FOUND)
             --repo "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_test(
+        NAME slicer_stage14c05_module_contract_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14c_05/ValidateModuleInfoContracts.py"
+            --repo "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_test(
         NAME slicer_stage14d01_worker_shell_contract_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14D01WorkerShell.py"
@@ -1455,6 +1498,7 @@ if(Python3_Interpreter_FOUND)
         slicer_stage14c01_module_shell_contract_test
         slicer_stage14c04_sync_capability_wiring_test
         slicer_stage14c04_sync_capability_safety_test
+        slicer_stage14c05_module_contract_test
         slicer_stage14d01_worker_shell_contract_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
@@ -1479,6 +1523,7 @@ add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
 add_test(NAME stage14c02_buffer_api_unit_tests COMMAND stage14c02_buffer_api_unit_tests)
 add_test(NAME stage14c03_handle_registry_unit_tests COMMAND stage14c03_handle_registry_unit_tests)
 add_test(NAME stage14c03_module_abi_tests COMMAND stage14c03_module_abi_tests)
+add_test(NAME stage14c05_module_info_tests COMMAND stage14c05_module_info_tests)
 add_test(NAME stage14d02_worker_client_unit_tests COMMAND stage14d02_worker_client_unit_tests)
 add_test(
     NAME stage14d03_worker_contract_unit_tests

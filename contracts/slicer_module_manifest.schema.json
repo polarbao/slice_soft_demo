@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/slicer_module_manifest.schema.json",
+  "title": "SliceSoft slicer module deployment manifest",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "name",
+    "dll",
+    "spi",
+    "version",
+    "runtime",
+    "buildConfig",
+    "provides",
+    "consumes",
+    "produces",
+    "profileKeys",
+    "subprocess"
+  ],
+  "properties": {
+    "schema": {
+      "const": "slicesoft.module_manifest.1"
+    },
+    "id": {
+      "const": "slicer"
+    },
+    "name": {
+      "const": "SliceSoft Geometry Slicer"
+    },
+    "dll": {
+      "type": "string",
+      "const": "slicer_module.dll",
+      "pattern": "^[^\\\\/:]+\\.dll$"
+    },
+    "spi": {
+      "const": 1
+    },
+    "version": {
+      "type": "string",
+      "const": "0.1.0",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "runtime": {
+      "type": "string",
+      "enum": [
+        "MSVC-x64-MD",
+        "MSVC-x64-MDd"
+      ]
+    },
+    "buildConfig": {
+      "type": "string",
+      "enum": [
+        "Release",
+        "Debug"
+      ]
+    },
+    "provides": {
+      "const": [
+        "model.import",
+        "model.get_metadata",
+        "model.release",
+        "scene.apply_operation",
+        "scene.get_snapshot",
+        "scene.get_viewdata",
+        "geometry.preflight",
+        "geometry.collision",
+        "geometry.repair",
+        "slice.rgbwsv",
+        "package.verify",
+        "package.get_summary",
+        "package.get_layer_descriptor",
+        "package.render_layer_preview",
+        "package.read_report"
+      ],
+      "uniqueItems": true
+    },
+    "consumes": {
+      "const": []
+    },
+    "produces": {
+      "const": [
+        {
+          "contract": "p0.rgbwsv.2",
+          "kind": "package"
+        }
+      ]
+    },
+    "profileKeys": {
+      "const": []
+    },
+    "subprocess": {
+      "type": "object",
+      "required": [
+        "exe",
+        "protocol"
+      ],
+      "properties": {
+        "exe": {
+          "type": "string",
+          "const": "slicer_worker.exe",
+          "pattern": "^[^\\\\/:]+\\.exe$"
+        },
+        "protocol": {
+          "const": "file_contract_v1"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "buildConfig": {
+            "const": "Debug"
+          }
+        },
+        "required": [
+          "buildConfig"
+        ]
+      },
+      "then": {
+        "properties": {
+          "runtime": {
+            "const": "MSVC-x64-MDd"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "buildConfig": {
+            "const": "Release"
+          }
+        },
+        "required": [
+          "buildConfig"
+        ]
+      },
+      "then": {
+        "properties": {
+          "runtime": {
+            "const": "MSVC-x64-MD"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

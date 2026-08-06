@@ -2,6 +2,7 @@
 #include "slicer_module/BufferApi.h"
 #include "slicer_module/ErrorApi.h"
 #include "slicer_module/HandleRegistry.h"
+#include "slicer_module/ModuleInfo.h"
 #include "slicer_module/SyncCapabilityAdapter.h"
 
 #include <exception>
@@ -47,10 +48,11 @@ extern "C" PM_API int PM_CALL pm_module_info(char* jsonOut, int cap, int* outReq
 {
     try
     {
-        (void)jsonOut;
-        (void)cap;
-        (void)outRequired;
-        return PM_ERR_FAILED;
+        return slicesoft::module::WriteOut(
+            slicesoft::module::GetModuleInfoJson(),
+            jsonOut,
+            cap,
+            outRequired);
     }
     catch (...)
     {

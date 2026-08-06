@@ -1,0 +1,39 @@
+{
+  "schema": "slicesoft.module_manifest.1",
+  "id": "slicer",
+  "name": "SliceSoft Geometry Slicer",
+  "dll": "slicer_module.dll",
+  "spi": 1,
+  "version": "0.1.0",
+  "runtime": "@SLICESOFT_MODULE_RUNTIME@",
+  "buildConfig": "@SLICESOFT_MODULE_BUILD_CONFIG@",
+  "provides": [
+    "model.import",
+    "model.get_metadata",
+    "model.release",
+    "scene.apply_operation",
+    "scene.get_snapshot",
+    "scene.get_viewdata",
+    "geometry.preflight",
+    "geometry.collision",
+    "geometry.repair",
+    "slice.rgbwsv",
+    "package.verify",
+    "package.get_summary",
+    "package.get_layer_descriptor",
+    "package.render_layer_preview",
+    "package.read_report"
+  ],
+  "consumes": [],
+  "produces": [
+    {
+      "contract": "p0.rgbwsv.2",
+      "kind": "package"
+    }
+  ],
+  "profileKeys": [],
+  "subprocess": {
+    "exe": "slicer_worker.exe",
+    "protocol": "file_contract_v1"
+  }
+}
