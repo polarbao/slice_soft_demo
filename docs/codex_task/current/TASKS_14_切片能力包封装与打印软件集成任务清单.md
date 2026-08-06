@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.19 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.23 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -47,6 +47,24 @@
 未运行的验证不得写成 PASS；
 同一文件同一时间只能有一个任务 Owner。
 ```
+
+**状态取值全集（2026-08-06 补充登记）** —— 执行中演化出的限定态已在使用，此处正式收录，
+避免"规则四级、实践八级"长期打架：
+
+| 取值 | 含义 | 可否作为下游卡的前置 |
+|---|---|:--:|
+| `PREPARED` | 已成文，未开工 | ❌ |
+| `READY` | 前置已清，可立即开工 | ❌ |
+| `IN PROGRESS` | 执行中 | ❌ |
+| `COMPLETE` | 完成且验收证据齐备 | ✅ |
+| **`PREPARATION_GATE PASS`** | 准备门通过（设计/Schema/负例已冻结），**实现未完成** | ❌ **不得当作 COMPLETE** |
+| **`PREPARATION_GATE PASS_WITH_SPLIT`** | 同上，且该卡已受控拆为子卡；**以子卡状态为准** | ❌ |
+| **`SLICER-SIDE COMPLETE / PRINT-SIDE ACK PENDING`** | 我方交付完成，等外部书面回签 | ✅ **对切片侧下游放行**；❌ 对 14F 联调不放行 |
+| **`外部依赖`** | 阻塞源在仓库外，非本仓库可推进 | ❌ |
+| `NEW` | ⚠️ **不是状态**，是"本轮新增卡"的标注。新增卡的状态应另写 `PREPARED` | ❌ |
+
+> ⚠️ **`PREPARATION_GATE PASS` ≠ `COMPLETE`**。14C-05 与 14D-04A 已完成实现；
+> 14D-04 总卡仍须等待 04B，14D-08 准备门仍为阻断态，不得提前放行 Worker E2E。
 
 **统一出口门（所有涉及生产路径的任务）**：
 
@@ -247,9 +265,9 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14C-03 | `HandleRegistry` 句柄生命周期 + `pm_last_error`（TLS）| 14C-01 | C-SPI-04/12/13/14/15 | ✅ **COMPLETE（2026-08-06）**；底层状态与 ABI Debug/Release 门禁 PASS，完整 Worker job 验收保留给 14C-06/14D |
 | 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03A, **14B-00** | 首次 `pm_poll` 即返回终态；**`syncCapabilities[]` 逐条对齐 `DEV_14` §5 承载分派表，二者不一致即判不通过**；`scene.get_viewdata` 不得绕过 14B-03A | ✅ **COMPLETE（2026-08-06）**；13 项进程内承载、真实 SPI 终态轮询、ViewData Provider 复用与 Worker 能力 fail-closed 的 Debug/Release 门禁 PASS |
 | | ↳ ⚠️ **前置 14B-00 不可省**：`model.import` 归属目前是「base（待 14B-00 验证）」，是 15 项能力中**唯一未定**的一项。若 14B-00 结论为「导入必须进 Worker」，`syncCapabilities[]` 必须相应移除该项，否则返工。 | | | |
-| 14C-05 | `pm_module_info` + `module.json` + 版本/运行时自述 | 14C-01 | C-SPI-01/02/03 | PREPARED |
+| 14C-05 | `pm_module_info` + `module.json` + 版本/运行时自述 | 14C-01, 14C-04 | C-SPI-01/02/03 | ✅ **COMPLETE（2026-08-06）**；双 Schema、运行时自述、Debug/Release 部署清单、缓冲三态与 11 导出回归 PASS |
 | 14C-06 | `test_spi_conformance` 自测套件 | 14C-01..05 | **C-SPI-01..18 全绿** | PREPARED |
-| 14C-07 | `DllMain` 红线 + `std::call_once` 初始化 + 无 Qt/PrintSDK 依赖 | 14C-01 | C-SPI-16/17 | PREPARED |
+| 14C-07 | `DllMain` 红线 + `std::call_once` 初始化 + 无 Qt/PrintSDK 依赖 | 14C-01, 14C-05 | C-SPI-16/17 | ✅ **PREPARATION_GATE PASS（2026-08-06）**；初始化状态机、Loader Lock 红线、依赖/重复初始化负例已冻结 |
 
 **14C 出口**：`slicer_module.dll` 可被独立套件全绿验证 = 打印侧 M1-07 门禁满足。
 
@@ -262,11 +280,13 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14D-01 | 新建 `apps/slicer_worker/`（由 `slicer_cli` 演进）| 14A-03 | 与 CLI 行为一致 | ✅ **COMPLETE（2026-08-05）**；独立目标沿用相同 engine 构建轨道，Debug/Release 参数外壳与负例 PASS；文件合同执行由后续卡实现 |
 | 14D-02 | `WorkerClient`（DLL 侧）：启动/进度解析/退出码映射/僵尸回收 | 14D-01, 14C-01 | 子进程后端可用 | ✅ **COMPLETE（2026-08-06）**；Debug/Release、严格协议解析、取消/超时与进程树回收门禁 PASS |
 | 14D-03 | **`file_contract_v1` 版本协商**：`slicer_worker.exe --contract-info` + major/minor 兼容规则 + 不匹配 fail-closed | 14D-02, 14A-03 | 篡改 major 被拒绝；minor 向后兼容可用 | ✅ **COMPLETE（2026-08-06）**；Debug/Release 合同发现、版本兼容、声明缺失与日志边界门禁 PASS |
-| 14D-04 | **切片链路 cancel token 贯穿**（step 边界 + 逐层循环协作式取消，经 `ICancelToken`）| 14B-04 | 各阶段取消 ≤2s | PREPARED |
+| 14D-04 | **切片链路 cancel token 贯穿**（受控拆为 04A/04B）| 14B-04 | 04A 核心贯穿；04B Worker 各阶段取消 ≤2s 且无 staging 残留 | ✅ **PREPARATION_GATE PASS_WITH_SPLIT（2026-08-06）** |
+| 14D-04A | 核心 token 贯穿：阶段、逐层和长循环协作检查 | 14B-04 | 直接引擎取消 ≤2s；正常生产回归不变 | ✅ **COMPLETE（2026-08-06）**；核心链路 token、staging 清理、既有包保护和正常字节不变性 Debug/Release PASS |
+| 14D-04B | Worker 真实取消、退出与残留收口 | 14D-04A, 14D-05, 14D-08 | 退出码 8、稳定取消码、≤2s、无 staging | PREPARED / 等待后置前置 |
 | 14D-05 | staging→自检→原子发布 + 取消/崩溃清理双保险 | 14D-01 | C-SPI-09；无残留 | PREPARED |
 | 14D-06 | 取消 `backend=inprocess` 切片路径；`options.backend` 收敛为 `worker` | 14D-02 | 无第二条切片路径 | PREPARED |
 | 14D-07 | **引擎一致性套件 E-01..08**（Worker 独立替换的准入门）| 14D-03, 14D-05 | 套件可对任意 Worker 版本运行 | PREPARED |
-| 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>` | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | PREPARED |
+| 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>` | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；内嵌 scene/profile/input 映射及 full preflight/repair 适配器尚未冻结 |
 
 ---
 
@@ -303,7 +323,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | **14E-04b** | **能力覆盖达标**：P0 五项端到端打通并可演示；P1 五项全部打通；P2 各调用一次并记录 | 14E-04 | 按专项 §4 清单逐项核对；**UI-M5** 取消 ≤2s 无 `.staging` 残留；**UI-M6** DLL 缺失优雅报错 | NEW |
 | **14E-04c** | **带纹理 3D 视角与相机操作**：QOpenGLWidget `SceneRenderPolicy` + `AppearanceCache` + `CameraController`（orbit/pan/zoom、光标中心缩放、七向预设、透视/正交）+ 构建体积/网格/坐标轴/越界高亮 | 14E-04, **14A-04-R1**, **14A-11**, **14B-03A** | three_d 必须显示 UV/材质/纹理；**UI-M7** 相机期跨 DLL 调用恒为 0；**UI-M8** 10 万面 orbit P5 ≥ 30 FPS；不引入 Qt3D/vcpkg 新依赖 | **NEW** |
 | **14E-04d** | **双入口视图选择**：设置页保存默认 `top` / `three_d`；中央画布分段控件即时切换；按 `slicer_ui_view_spec.json` 实现 1 mm/10 mm 自适应网格和白/近白纹理对比辅助 | 14E-04c | **UI-M9..13**：两视图纹理正确；切换保持 scene/selection/transform/job 并复用缓存；默认值重启恢复；网格范围取 buildVolume 且不改变切片；纹理失败显式报错；辅助显示不修改纹理/TIFF | **NEW** |
-| 14E-05 | **拆分主干 UI 大文件**（`MainWindow` 3659 / `UiSmokeTestRunner` 6963）| 14E-04 | 各降至 <1500 行；self-test 绿；**完成后从 14B-06 白名单移除** | PREPARED |
+| 14E-05 | **拆分主干 UI 大文件**（`MainWindow.cpp` **4267** / `services/UiSmokeTestRunner.cpp` **7401**，与 14B-06 白名单同源）| 14E-04 | 各降至 <1500 行；self-test 绿；**完成后从 14B-06 白名单移除** | PREPARED |
 | 14E-06 | 产出"可移植模块清单"交打印侧（**精确到文件级**，标明可直接复制 / 需改写）| 14E-04b, 14E-04d | 打印侧确认可据此评估移植成本 | PREPARED |
 
 > ⚠️ **14E-04c 的 14A-04-R1 与 14B-03A 前置不可省**：前者冻结双视图纹理字段，后者实际提供
@@ -422,3 +442,5 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-06 | v2.19 | 完成 14D-02：建立 Windows WorkerClient、严格进度/耗时解析、退出码映射、协作取消与 Job Object 进程树回收；下一批 14C-04 与 14D-03 可并行，14C-05/07 已准备但共享 DLL 接线需串行集成 |
 | 2026-08-06 | v2.20 | 完成 14D-03：Worker 输出 `file_contract_v1` 自述，模块侧以 major 相等、worker minor 不低于要求、生产协议和能力完整为准 fail-closed 协商；14C-04 保持并行开发中 |
 | 2026-08-06 | v2.21 | 完成 14C-04：13 项同步轻能力经既有 Facade 接入 SPI；`geometry.preflight` 仅 `mode=fast` 进程内执行，ViewData 复用 14B-03A Provider；Debug/Release 真实 ABI 调用门禁 PASS |
+| 2026-08-06 | v2.22 | 完成下一批准备审计：14C-05 冻结运行时自述/部署双 Schema 与版本真源；14D-04 受控拆为可立即执行的核心贯穿 04A 和依赖 14D-05/08 的 Worker 收口 04B |
+| 2026-08-06 | v2.23 | 完成 14C-05 与 14D-04A：模块自述/部署清单和核心取消令牌贯穿通过 Debug/Release 门禁；14C-07 准备门 PASS，14D-08 显式登记准备阻断缺口 |

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/api/Cancellation.h"
 #include "slicer_core/config/SlicePipelineConfig.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 
@@ -33,6 +34,7 @@ enum class SceneRasterErrorCode
     RevisionStale,
     PipelineModeMismatch,
     ProducerFailed,
+    Cancelled,
 };
 
 /**
@@ -119,6 +121,9 @@ struct SceneLayerComposeRequest
     RgbwsvProtocol protocol;
     std::vector<SceneInstanceRaster> instances;
     double quantizationtolerance{1.0e-6};
+
+    /** @brief Synchronous, non-owning cancellation source for long loops. */
+    const api::ICancelToken* canceltoken{nullptr};
 };
 
 /**
@@ -206,6 +211,13 @@ struct SceneLayerComposeResult
      * @return True only after every input and output layer passed validation.
      */
     bool IsValid() const;
+
+    /**
+     * @brief Validate composed bytes while observing cancellation.
+     * @param cancelToken Synchronous non-owning cancellation source.
+     * @return False when invalid or cancellation was requested.
+     */
+    bool IsValid(const api::ICancelToken* cancelToken) const;
 };
 
 /**
@@ -224,6 +236,13 @@ struct SceneRasterAdapterResult
      * @return True only when no package was written and no error exists.
      */
     bool IsValid() const;
+
+    /**
+     * @brief Validate adapter bytes while observing cancellation.
+     * @param cancelToken Synchronous non-owning cancellation source.
+     * @return False when invalid or cancellation was requested.
+     */
+    bool IsValid(const api::ICancelToken* cancelToken) const;
 };
 
 /**

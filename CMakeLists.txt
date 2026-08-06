@@ -677,6 +677,18 @@ if(MSVC)
     target_compile_options(stage14d03_worker_contract_unit_tests PRIVATE /W4 /WX)
 endif()
 
+add_executable(stage14d04a_cancellation_unit_tests
+    tests/stage14d_04a/Stage14D04ACancellationTests.cpp
+)
+target_include_directories(stage14d04a_cancellation_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d04a_cancellation_unit_tests PRIVATE slicer_engine)
+if(MSVC)
+    target_compile_options(stage14d04a_cancellation_unit_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(model_import_layering_probe
     tests/contracts/ModelImportLayeringProbe.cpp
 )
@@ -1473,6 +1485,11 @@ if(Python3_Interpreter_FOUND)
             --worker $<TARGET_FILE:slicer_worker>
     )
     add_test(
+        NAME slicer_stage14d04a_cancel_propagation_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14d_04a/ValidateCancelTokenPropagation.py"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1500,6 +1517,7 @@ if(Python3_Interpreter_FOUND)
         slicer_stage14c04_sync_capability_safety_test
         slicer_stage14c05_module_contract_test
         slicer_stage14d01_worker_shell_contract_test
+        slicer_stage14d04a_cancel_propagation_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
         PROPERTIES
@@ -1528,6 +1546,10 @@ add_test(NAME stage14d02_worker_client_unit_tests COMMAND stage14d02_worker_clie
 add_test(
     NAME stage14d03_worker_contract_unit_tests
     COMMAND stage14d03_worker_contract_unit_tests $<TARGET_FILE:slicer_worker>
+)
+add_test(
+    NAME stage14d04a_cancellation_unit_tests
+    COMMAND stage14d04a_cancellation_unit_tests
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(

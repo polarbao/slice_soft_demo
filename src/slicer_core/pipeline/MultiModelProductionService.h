@@ -1,6 +1,7 @@
 #pragma once
 
 #include "slicer_core/SliceRunTelemetry.h"
+#include "slicer_core/api/Cancellation.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -25,6 +26,7 @@ enum class MultiModelProductionErrorCode
     BuildVolumeUndefined,
     PipelineModeNotAdmitted,
     ProductionPackageInvalid,
+    Cancelled,
 };
 
 /**
@@ -48,6 +50,13 @@ struct MultiModelProductionRequest
 {
     std::filesystem::path effectiveconfigpath;
     SliceRunProgressCallback progresscallback;
+
+    /**
+     * @brief Optional synchronous, non-owning cancellation source.
+     *
+     * The caller must keep the token alive until the service returns.
+     */
+    const api::ICancelToken* canceltoken{nullptr};
 };
 
 /**

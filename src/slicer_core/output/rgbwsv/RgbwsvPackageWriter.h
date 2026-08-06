@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/api/Cancellation.h"
 #include "slicer_core/config.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
@@ -113,6 +114,15 @@ struct RgbwsvProductionPackageWriteRequest
     std::optional<MultiModelSceneReportDocument> scene;
     std::optional<Json> productionSettings;
     RgbwsvProductionLayerWriteCallback layerwritecallback;
+
+    /**
+     * @brief Synchronous, non-owning cancellation source for staged writing.
+     *
+     * Cancellation is checked before and after each TIFF plus report and
+     * publication boundaries. The caller must keep the token alive until
+     * this function returns.
+     */
+    const api::ICancelToken* canceltoken{nullptr};
 };
 
 /**

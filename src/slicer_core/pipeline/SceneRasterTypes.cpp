@@ -12,6 +12,14 @@ namespace
 {
 
 constexpr std::size_t kChannelCount{6U};
+constexpr std::size_t kCancellationCheckStride{4096U};
+
+bool IsCancellationRequested(
+    const api::ICancelToken* cancelToken) noexcept
+{
+    return cancelToken != nullptr
+        && cancelToken->IsCancelRequested();
+}
 
 bool SameProtocol(
     const RgbwsvProtocol& first,
@@ -27,16 +35,27 @@ bool SameProtocol(
 
 bool IsBinaryMask(
     const std::vector<std::uint8_t>& mask,
-    const std::size_t expectedSize)
+    const std::size_t expectedSize,
+    const api::ICancelToken* cancelToken)
 {
-    return mask.size() == expectedSize
-        && std::all_of(
-            mask.begin(),
-            mask.end(),
-            [](const std::uint8_t value)
-            {
-                return value == 0U || value == 1U;
-            });
+    if (mask.size() != expectedSize)
+    {
+        return false;
+    }
+    for (std::size_t index{0U}; index < mask.size(); ++index)
+    {
+        if ((index % kCancellationCheckStride) == 0U
+            && IsCancellationRequested(cancelToken))
+        {
+            return false;
+        }
+        const std::uint8_t value = mask.at(index);
+        if (value != 0U && value != 1U)
+        {
+            return false;
+        }
+    }
+    return !IsCancellationRequested(cancelToken);
 }
 
 bool CheckedPixelCount(
@@ -74,7 +93,9 @@ bool CheckedAdd(
     return true;
 }
 
-bool HasValidLayerSequence(const SceneInstanceRaster& raster)
+bool HasValidLayerSequence(
+    const SceneInstanceRaster& raster,
+    const api::ICancelToken* cancelToken)
 {
     std::size_t pixelCount{0U};
     if (!CheckedPixelCount(
@@ -93,6 +114,10 @@ bool HasValidLayerSequence(const SceneInstanceRaster& raster)
          layerIndex < raster.localgrid.layercount;
          ++layerIndex)
     {
+        if (IsCancellationRequested(cancelToken))
+        {
+            return false;
+        }
         const SceneInstanceRasterLayer& layer =
             raster.layers.at(static_cast<std::size_t>(layerIndex));
         const double expectedZ = raster.localgrid.originzmm
@@ -110,16 +135,22 @@ bool HasValidLayerSequence(const SceneInstanceRaster& raster)
             || std::abs(layer.output.zMm - expectedZ) > zTolerance
             || layer.output.channels.size()
                 != pixelCount * kChannelCount
-            || !IsBinaryMask(layer.modelownership, pixelCount)
+            || !IsBinaryMask(
+                layer.modelownership,
+                pixelCount,
+                cancelToken)
             || !IsBinaryMask(
                 layer.modelvarnishownership,
-                pixelCount)
+                pixelCount,
+                cancelToken)
             || !IsBinaryMask(
                 layer.outervarnishownership,
-                pixelCount)
+                pixelCount,
+                cancelToken)
             || !IsBinaryMask(
                 layer.supportownership,
-                pixelCount))
+                pixelCount,
+                cancelToken))
         {
             return false;
         }
@@ -130,7 +161,8 @@ bool HasValidLayerSequence(const SceneInstanceRaster& raster)
 bool HasValidComposedLayers(
     const SceneLayerComposeResult& result,
     std::size_t& occupiedPixels,
-    std::size_t& emptyPixels)
+    std::size_t& emptyPixels,
+    const api::ICancelToken* cancelToken)
 {
     std::size_t pixelCount{0U};
     if (!SameProtocol(result.protocol, FixedSceneRasterProtocol())
@@ -150,6 +182,10 @@ bool HasValidComposedLayers(
          layerIndex < result.grid.layercount;
          ++layerIndex)
     {
+        if (IsCancellationRequested(cancelToken))
+        {
+            return false;
+        }
         const RgbwsvProductionLayer& layer =
             result.layers.at(static_cast<std::size_t>(layerIndex));
         const double expectedZ = result.grid.originzmm
@@ -170,6 +206,11 @@ bool HasValidComposedLayers(
              pixelIndex < pixelCount;
              ++pixelIndex)
         {
+            if ((pixelIndex % kCancellationCheckStride) == 0U
+                && IsCancellationRequested(cancelToken))
+            {
+                return false;
+            }
             const std::size_t base = pixelIndex * kChannelCount;
             const bool occupied = std::any_of(
                 layer.channels.begin()
@@ -292,7 +333,14 @@ bool SceneRasterGrid::IsValid() const
 
 bool SceneLayerComposeResult::IsValid() const
 {
-    if (!available
+    return IsValid(nullptr);
+}
+
+bool SceneLayerComposeResult::IsValid(
+    const api::ICancelToken* cancelToken) const
+{
+    if (IsCancellationRequested(cancelToken)
+        || !available
         || status != "ready_for_writer"
         || error.has_value()
         || sceneid.empty()
@@ -308,7 +356,8 @@ bool SceneLayerComposeResult::IsValid() const
     return HasValidComposedLayers(
                *this,
                occupiedPixels,
-               emptyPixels)
+               emptyPixels,
+               cancelToken)
         && HasClosedComposeStatistics(
             *this,
             occupiedPixels,
@@ -317,7 +366,14 @@ bool SceneLayerComposeResult::IsValid() const
 
 bool SceneRasterAdapterResult::IsValid() const
 {
-    return available
+    return IsValid(nullptr);
+}
+
+bool SceneRasterAdapterResult::IsValid(
+    const api::ICancelToken* cancelToken) const
+{
+    return !IsCancellationRequested(cancelToken)
+        && available
         && status == "ready_for_composer"
         && !productionoutputwritten
         && !error.has_value()
@@ -335,7 +391,7 @@ bool SceneRasterAdapterResult::IsValid() const
         && SameProtocol(
             raster.protocol,
             FixedSceneRasterProtocol())
-        && HasValidLayerSequence(raster);
+        && HasValidLayerSequence(raster, cancelToken);
 }
 
 std::string_view SceneRasterErrorCodeName(const SceneRasterErrorCode code)
@@ -372,6 +428,8 @@ std::string_view SceneRasterErrorCodeName(const SceneRasterErrorCode code)
             return "SCENE_RASTER_PIPELINE_MODE_MISMATCH";
         case SceneRasterErrorCode::ProducerFailed:
             return "SCENE_RASTER_PRODUCER_FAILED";
+        case SceneRasterErrorCode::Cancelled:
+            return "SCENE_RASTER_CANCELLED";
     }
     return "SCENE_RASTER_UNKNOWN";
 }

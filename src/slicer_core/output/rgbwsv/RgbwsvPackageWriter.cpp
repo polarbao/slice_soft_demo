@@ -32,7 +32,10 @@ constexpr std::array<std::uint8_t, 3> kEmptyPreviewColor{255U, 255U, 255U};
 constexpr std::array<std::uint8_t, 3> kWhitePreviewColor{0U, 174U, 239U};
 constexpr std::array<std::uint8_t, 3> kSupportPreviewColor{64U, 240U, 80U};
 constexpr std::array<std::uint8_t, 3> kVarnishPreviewColor{127U, 127U, 127U};
+constexpr std::size_t kCancellationCheckStride{4096U};
 using WriterClock = std::chrono::steady_clock;
+
+#include "slicer_core/output/rgbwsv/RgbwsvPackageCancellation.h"
 
 double ElapsedMilliseconds(const WriterClock::time_point& start)
 {
@@ -174,6 +177,9 @@ std::optional<std::string> ResolveWhiteSemantics(
 
 void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
 {
+    ThrowIfCancellationRequested(
+        request.canceltoken,
+        "request_validation");
     (void)ResolveWhiteSemantics(request);
     if (request.packageDir.empty())
     {
@@ -276,6 +282,9 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
         * kChannelCount;
     for (int layerIndex{0}; layerIndex < request.grid.layerCount; ++layerIndex)
     {
+        ThrowIfCancellationRequested(
+            request.canceltoken,
+            "layer_validation");
         const RgbwsvProductionLayer& layer =
             request.layers.at(static_cast<std::size_t>(layerIndex));
         if (layer.layerIndex != layerIndex
@@ -313,11 +322,18 @@ TiffImageSpec MakeTiffSpec(
 }
 
 LayerChannelStats CalculateLayerStats(
-    const std::span<const std::uint8_t> channels)
+    const std::span<const std::uint8_t> channels,
+    const api::ICancelToken* cancelToken)
 {
     LayerChannelStats stats;
     for (std::size_t offset{0U}; offset < channels.size(); ++offset)
     {
+        if ((offset % kCancellationCheckStride) == 0U)
+        {
+            ThrowIfCancellationRequested(
+                cancelToken,
+                "layer_statistics");
+        }
         const std::size_t channel = offset % kChannelCount;
         if (channels[offset] == 255U)
         {
@@ -464,88 +480,11 @@ void WritePngChunk(
         static_cast<std::streamsize>(encodedValue.size()));
 }
 
-void WritePpm(
-    const std::filesystem::path& path,
-    const int widthPx,
-    const int heightPx,
-    const std::vector<std::array<std::uint8_t, 3>>& pixels)
-{
-    std::ofstream output{path, std::ios::binary};
-    if (!output)
-    {
-        throw std::runtime_error(
-            "failed to write RGBWSV preview: " + path.string());
-    }
-    output << "P6\n" << widthPx << ' ' << heightPx << "\n255\n";
-    for (const auto& pixel : pixels)
-    {
-        output.write(
-            reinterpret_cast<const char*>(pixel.data()),
-            static_cast<std::streamsize>(pixel.size()));
-    }
-}
-
-void WritePng(
-    const std::filesystem::path& path,
-    const int widthPx,
-    const int heightPx,
-    const std::vector<std::array<std::uint8_t, 3>>& pixels)
-{
-    std::vector<std::uint8_t> raw;
-    raw.reserve(
-        static_cast<std::size_t>(heightPx)
-        * (static_cast<std::size_t>(widthPx) * 3U + 1U));
-    for (int y{0}; y < heightPx; ++y)
-    {
-        raw.push_back(0U);
-        for (int x{0}; x < widthPx; ++x)
-        {
-            const auto& pixel = pixels.at(
-                static_cast<std::size_t>(y)
-                    * static_cast<std::size_t>(widthPx)
-                + static_cast<std::size_t>(x));
-            raw.insert(raw.end(), pixel.begin(), pixel.end());
-        }
-    }
-
-    std::ofstream output{path, std::ios::binary};
-    if (!output)
-    {
-        throw std::runtime_error(
-            "failed to write RGBWSV preview: " + path.string());
-    }
-    const std::array<std::uint8_t, 8> signature{
-        137U, 80U, 78U, 71U, 13U, 10U, 26U, 10U};
-    output.write(
-        reinterpret_cast<const char*>(signature.data()),
-        static_cast<std::streamsize>(signature.size()));
-
-    std::vector<std::uint8_t> header;
-    AppendBigEndianUint32(header, static_cast<std::uint32_t>(widthPx));
-    AppendBigEndianUint32(header, static_cast<std::uint32_t>(heightPx));
-    header.insert(header.end(), {8U, 2U, 0U, 0U, 0U});
-    WritePngChunk(output, {'I', 'H', 'D', 'R'}, header);
-    WritePngChunk(output, {'I', 'D', 'A', 'T'}, EncodeStoredZlibBlocks(raw));
-    WritePngChunk(output, {'I', 'E', 'N', 'D'}, {});
-}
-
-void WritePreviewImage(
-    const std::filesystem::path& path,
-    const int widthPx,
-    const int heightPx,
-    const std::vector<std::array<std::uint8_t, 3>>& pixels,
-    const std::string& format)
-{
-    if (format == "png")
-    {
-        WritePng(path, widthPx, heightPx, pixels);
-        return;
-    }
-    WritePpm(path, widthPx, heightPx, pixels);
-}
+#include "slicer_core/output/rgbwsv/RgbwsvPreviewIo.h"
 
 std::vector<std::array<std::uint8_t, 3>> BuildRgbPreview(
-    const RgbwsvProductionLayer& layer)
+    const RgbwsvProductionLayer& layer,
+    const api::ICancelToken* cancelToken)
 {
     const std::size_t pixelCount =
         static_cast<std::size_t>(layer.widthPx)
@@ -555,6 +494,12 @@ std::vector<std::array<std::uint8_t, 3>> BuildRgbPreview(
         kEmptyPreviewColor);
     for (std::size_t pixelIndex{0U}; pixelIndex < pixelCount; ++pixelIndex)
     {
+        if ((pixelIndex % kCancellationCheckStride) == 0U)
+        {
+            ThrowIfCancellationRequested(
+                cancelToken,
+                "preview_rgb_build");
+        }
         const std::size_t source = pixelIndex * kChannelCount;
         result.at(pixelIndex) = {
             layer.channels.at(source),
@@ -567,7 +512,8 @@ std::vector<std::array<std::uint8_t, 3>> BuildRgbPreview(
 std::vector<std::array<std::uint8_t, 3>> BuildChannelPreview(
     const RgbwsvProductionLayer& layer,
     const std::size_t channel,
-    const std::array<std::uint8_t, 3>& printColor)
+    const std::array<std::uint8_t, 3>& printColor,
+    const api::ICancelToken* cancelToken)
 {
     const std::size_t pixelCount =
         static_cast<std::size_t>(layer.widthPx)
@@ -577,6 +523,12 @@ std::vector<std::array<std::uint8_t, 3>> BuildChannelPreview(
         kEmptyPreviewColor);
     for (std::size_t pixelIndex{0U}; pixelIndex < pixelCount; ++pixelIndex)
     {
+        if ((pixelIndex % kCancellationCheckStride) == 0U)
+        {
+            ThrowIfCancellationRequested(
+                cancelToken,
+                "preview_channel_build");
+        }
         if (layer.channels.at(pixelIndex * kChannelCount + channel) != 255U)
         {
             result.at(pixelIndex) = printColor;
@@ -617,20 +569,36 @@ void WriteLayerPreviews(
         "varnish_v_" + number + extension};
     const std::array<std::string, 4> channels{"RGB", "W", "S", "V"};
     const std::array<std::vector<std::array<std::uint8_t, 3>>, 4> images{
-        BuildRgbPreview(layer),
-        BuildChannelPreview(layer, 3U, kWhitePreviewColor),
-        BuildChannelPreview(layer, 4U, kSupportPreviewColor),
-        BuildChannelPreview(layer, 5U, kVarnishPreviewColor)};
+        BuildRgbPreview(layer, request.canceltoken),
+        BuildChannelPreview(
+            layer,
+            3U,
+            kWhitePreviewColor,
+            request.canceltoken),
+        BuildChannelPreview(
+            layer,
+            4U,
+            kSupportPreviewColor,
+            request.canceltoken),
+        BuildChannelPreview(
+            layer,
+            5U,
+            kVarnishPreviewColor,
+            request.canceltoken)};
 
     for (std::size_t index{0U}; index < images.size(); ++index)
     {
+        ThrowIfCancellationRequested(
+            request.canceltoken,
+            "preview_image_write");
         const std::string relativePath = "preview/" + names.at(index);
         WritePreviewImage(
             stagingDir / relativePath,
             layer.widthPx,
             layer.heightPx,
             images.at(index),
-            request.preview.format);
+            request.preview.format,
+            request.canceltoken);
         generated.push_back(
             MakePreviewEntry(
                 layer.layerIndex,
@@ -889,6 +857,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
 
     try
     {
+        ThrowIfCancellationRequested(
+            request.canceltoken,
+            "staging_setup");
         std::filesystem::create_directories(stagingDir / "layers");
         std::filesystem::create_directories(stagingDir / "reports");
         if (request.preview.enabled)
@@ -906,6 +877,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
         int writtenLayerCount{0};
         for (const RgbwsvProductionLayer& layer : request.layers)
         {
+            ThrowIfCancellationRequested(
+                request.canceltoken,
+                "before_layer_tiff");
             const std::string relativePath =
                 "layers/layer_" + LayerNumber(layer.layerIndex) + ".tiff";
             const WriterClock::time_point tiffStart =
@@ -919,11 +893,16 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                     layer.channels});
             profile.tiffwritems +=
                 ElapsedMilliseconds(tiffStart);
+            ThrowIfCancellationRequested(
+                request.canceltoken,
+                "after_layer_tiff");
 
             const WriterClock::time_point layerReportStart =
                 WriterClock::now();
             const LayerChannelStats stats =
-                CalculateLayerStats(layer.channels);
+                CalculateLayerStats(
+                    layer.channels,
+                    request.canceltoken);
             for (std::size_t channel{0U};
                  channel < kChannelCount;
                  ++channel)
@@ -946,6 +925,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                 request,
                 layer,
                 generatedPreviews);
+            ThrowIfCancellationRequested(
+                request.canceltoken,
+                "after_layer_preview");
             profile.previewwritems +=
                 ElapsedMilliseconds(previewStart);
             ++writtenLayerCount;
@@ -959,6 +941,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
 
         const WriterClock::time_point reportBuildStart =
             WriterClock::now();
+        ThrowIfCancellationRequested(
+            request.canceltoken,
+            "report_build");
         const Json previewReport = Json::object({
             {"schema", "p0.preview_report.1"},
             {"outputPolicy", request.preview.outputpolicy},
@@ -1059,6 +1044,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
 
         const WriterClock::time_point reportWriteStart =
             WriterClock::now();
+        ThrowIfCancellationRequested(
+            request.canceltoken,
+            "report_write");
         WriteReportJsonFile(stagingDir / "manifest.json", manifest);
         WriteReportJsonFile(
             stagingDir / "reports" / "slice_report.json",
@@ -1077,8 +1065,14 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
 
         const WriterClock::time_point publishStart =
             WriterClock::now();
+        ThrowIfCancellationRequested(
+            request.canceltoken,
+            "package_validation");
         ValidatePersistedSceneExtension(stagingDir, request);
         (void)validate_slice_package(stagingDir);
+        ThrowIfCancellationRequested(
+            request.canceltoken,
+            "before_package_publish");
         PublishStagedPackage(stagingDir, packageDir, backupDir);
         profile.packagepublishms =
             ElapsedMilliseconds(publishStart);

@@ -118,6 +118,21 @@ SliceFacadeAdapter::SliceFacadeAdapter(
     SliceSubmissionContractResolver contractResolver,
     SliceProductionRunner productionRunner)
     : m_contractResolver(std::move(contractResolver)),
+      m_productionRunner(
+          [runner = std::move(productionRunner)](
+              const std::filesystem::path& configPath,
+              const api::ICancelToken&,
+              const api::ProgressSink& progressSink)
+          {
+              return runner(configPath, progressSink);
+          })
+{
+}
+
+SliceFacadeAdapter::SliceFacadeAdapter(
+    SliceSubmissionContractResolver contractResolver,
+    CancellableSliceProductionRunner productionRunner)
+    : m_contractResolver(std::move(contractResolver)),
       m_productionRunner(std::move(productionRunner))
 {
 }
@@ -243,6 +258,7 @@ api::ApiResult<api::SliceResult> SliceFacadeAdapter::Run(
         api::ApiResult<api::SliceResult> result =
             m_productionRunner(
                 request.scene_config_path,
+                cancelToken,
                 guardedProgress);
         if (!result.IsOk() && cancelToken.IsCancelRequested())
         {

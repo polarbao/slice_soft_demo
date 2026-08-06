@@ -66,6 +66,12 @@
 | `DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | ViewData v1.2：surfacePreview、UV/材质/纹理、multi-model appearances、LOD/blob/identity |
 | `DOC_DECISION_14_UI_宿主模拟改造专项.md` | 14E 独立打印软件参考宿主、双视图纹理、QOpenGL、网格和可测 Gate |
 | `DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | 14B Facade、base/engine 分层、执行顺序、验证矩阵与回滚边界 |
+| `DOC_PREP_14C_04_同步轻能力接线实施准备.md` | 14C-04 同步能力承载、终态 job、Facade/Provider 复用和 Worker fail-closed 边界 |
+| `DOC_PREP_14C_05_模块自述与部署清单实施准备.md` | 14C-05 module_info/module.json 双 Schema、版本/CRT 与一致性门禁 |
+| `DOC_PREP_14D_03_文件合同协商实施准备.md` | 14D-03 Worker file-contract 发现、版本兼容与日志边界 |
+| `DOC_PREP_14D_04_取消令牌贯穿实施准备.md` | 14D-04A 核心 token 贯穿及 14D-04B Worker E2E 的受控拆分 |
+| `DOC_PREP_14C_07_DLL初始化与依赖红线实施准备.md` | 14C-07 Loader Lock、call_once、状态机和依赖红线门禁 |
+| `DOC_PREP_14D_08_Worker独立调试入口实施准备.md` | 14D-08 独立请求入口准备审计及当前阻断映射 |
 
 ## 决策记录
 

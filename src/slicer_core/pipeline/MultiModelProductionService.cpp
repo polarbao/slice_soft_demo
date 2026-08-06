@@ -35,34 +35,7 @@ constexpr double kNumericTolerance{1.0e-9};
 constexpr double kRasterQuantizationTolerance{0.500001};
 using ProductionClock = std::chrono::steady_clock;
 
-double ElapsedMilliseconds(
-    const ProductionClock::time_point& start)
-{
-    return std::chrono::duration<double, std::milli>(
-               ProductionClock::now() - start)
-        .count();
-}
-
-void ReportProgress(
-    const MultiModelProductionRequest& request,
-    const ProductionClock::time_point& runStart,
-    const std::string& phase,
-    const int current,
-    const int total,
-    const int percent)
-{
-    if (!request.progresscallback)
-    {
-        return;
-    }
-    request.progresscallback(
-        SliceRunProgress{
-            phase,
-            current,
-            total,
-            std::clamp(percent, 0, 100),
-            ElapsedMilliseconds(runStart)});
-}
+#include "slicer_core/pipeline/MultiModelProductionCancellation.h"
 
 struct SceneProductionContract
 {
@@ -81,30 +54,6 @@ struct LoadedSceneModel
     ModelSource source;
     SceneModel model;
 };
-
-MultiModelProductionResult Block(
-    const MultiModelProductionRequest& request,
-    const MultiModelProductionErrorCode code,
-    const std::string& field,
-    const std::string& message,
-    const std::string& sceneId = {},
-    const std::string& modelId = {},
-    const std::string& instanceId = {})
-{
-    MultiModelProductionResult result;
-    MultiModelProductionError error;
-    error.code = code;
-    error.sceneid = sceneId;
-    error.modelid = modelId;
-    error.instanceid = instanceId;
-    error.field = field.empty()
-        ? request.effectiveconfigpath.generic_string()
-        : field;
-    error.message = message;
-    result.sceneid = sceneId;
-    result.error = std::move(error);
-    return result;
-}
 
 std::filesystem::path ResolvePath(
     const std::filesystem::path& path,
@@ -251,11 +200,13 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
     const MultiModelScene& scene,
     const SliceConfig& profile,
     const std::filesystem::path& profileConfigPath,
-    const std::filesystem::path& sceneBaseDirectory)
+    const std::filesystem::path& sceneBaseDirectory,
+    const MultiModelProductionRequest& request)
 {
     std::set<std::string> visibleModelIds;
     for (const SceneModelInstance& item : scene.instances)
     {
+        ThrowIfCancellationRequested(request, "scene_model_visibility_scan");
         if (item.instance.visible)
         {
             visibleModelIds.insert(item.instance.modelid);
@@ -265,6 +216,7 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
     std::map<std::string, LoadedSceneModel> loaded;
     for (const ModelSource& source : scene.models)
     {
+        ThrowIfCancellationRequested(request, "scene_model_load");
         if (!visibleModelIds.contains(source.modelid))
         {
             continue;
@@ -287,6 +239,7 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
         SceneModel model = load_model_report(
             modelConfig,
             profileConfigPath.parent_path());
+        ThrowIfCancellationRequested(request, "scene_model_loaded");
         if (model.triangles.empty())
         {
             throw std::runtime_error(
@@ -321,7 +274,8 @@ SceneCollisionResult AdmitScene(
     const MultiModelScene& scene,
     const SliceConfig& profile,
     const std::map<std::string, LoadedSceneModel>& models,
-    const SceneValidationPurpose purpose)
+    const SceneValidationPurpose purpose,
+    const MultiModelProductionRequest& productionRequest)
 {
     SceneCollisionRequest request;
     request.sceneid = scene.sceneid;
@@ -333,6 +287,7 @@ SceneCollisionResult AdmitScene(
 
     for (const SceneModelInstance& item : scene.instances)
     {
+        ThrowIfCancellationRequested(productionRequest, "scene_admission");
         if (!item.instance.visible)
         {
             const ModelTransformHashResult transformHash =
@@ -403,6 +358,8 @@ SceneCollisionResult AdmitScene(
             BuildSceneViewGeometry(
                 model->second.model,
                 geometryRequest);
+        ThrowIfCancellationRequested(
+            productionRequest, "scene_admission_geometry");
         if (!geometry.IsValid())
         {
             throw std::runtime_error(
@@ -495,11 +452,16 @@ std::string_view MultiModelProductionErrorCodeName(
         return "SCENE_PIPELINE_MODE_NOT_ADMITTED";
     case MultiModelProductionErrorCode::ProductionPackageInvalid:
         return "SCENE_PRODUCTION_PACKAGE_INVALID";
+    case MultiModelProductionErrorCode::Cancelled:
+        return "SCENE_PRODUCTION_CANCELLED";
     }
     return "SCENE_PRODUCTION_PACKAGE_INVALID";
 }
 
-MultiModelProductionResult RunMultiModelProductionService(
+namespace
+{
+
+MultiModelProductionResult RunMultiModelProductionServiceImpl(
     const MultiModelProductionRequest& request)
 {
     const ProductionClock::time_point runStart =
@@ -714,7 +676,12 @@ MultiModelProductionResult RunMultiModelProductionService(
             scene,
             profile,
             contract.profileconfigpath,
-            contract.scenebasedirectory);
+            contract.scenebasedirectory,
+            request);
+    }
+    catch (const ProductionCancellation&)
+    {
+        throw;
     }
     catch (const std::exception& exception)
     {
@@ -743,7 +710,12 @@ MultiModelProductionResult RunMultiModelProductionService(
             scene,
             profile,
             models,
-            purpose);
+            purpose,
+            request);
+    }
+    catch (const ProductionCancellation&)
+    {
+        throw;
     }
     catch (const std::exception& exception)
     {
@@ -800,6 +772,7 @@ MultiModelProductionResult RunMultiModelProductionService(
     int lastInstanceProgressPercent{22};
     for (const SceneModelInstance& item : scene.instances)
     {
+        ThrowIfCancellationRequested(request, "scene_instance_slice");
         if (!item.instance.visible)
         {
             const SceneRasterIdentity identity =
@@ -851,6 +824,7 @@ MultiModelProductionResult RunMultiModelProductionService(
         adapterRequest.instance = item.instance;
         adapterRequest.modelreportoverride =
             &model->second.model;
+        adapterRequest.canceltoken = request.canceltoken;
         const std::size_t completedBefore =
             visibleInstanceOrdinal;
         adapterRequest.progresscallback =
@@ -895,8 +869,9 @@ MultiModelProductionResult RunMultiModelProductionService(
             };
         SceneRasterAdapterResult adapted =
             AdaptLegacySceneLayers(adapterRequest);
-        if (!adapted.IsValid())
+        if (!adapted.IsValid(request.canceltoken))
         {
+            ThrowIfCancellationRequested(request, "scene_instance_slice");
             return Block(
                 request,
                 MultiModelProductionErrorCode::
@@ -934,10 +909,12 @@ MultiModelProductionResult RunMultiModelProductionService(
     composeRequest.instances = std::move(rasters);
     composeRequest.quantizationtolerance =
         kRasterQuantizationTolerance;
+    composeRequest.canceltoken = request.canceltoken;
     SceneLayerComposeResult composition =
         ComposeAdmittedSceneRasters(composeRequest);
-    if (!composition.IsValid())
+    if (!composition.IsValid(request.canceltoken))
     {
+        ThrowIfCancellationRequested(request, "scene_composition");
         return Block(
             request,
             MultiModelProductionErrorCode::
@@ -1010,6 +987,7 @@ MultiModelProductionResult RunMultiModelProductionService(
         profile.preview.format;
     writeRequest.preview.interval =
         profile.preview.interval;
+    writeRequest.canceltoken = request.canceltoken;
     int lastPackageProgressPercent{78};
     writeRequest.layerwritecallback =
         [&request,
@@ -1086,6 +1064,7 @@ MultiModelProductionResult RunMultiModelProductionService(
     }
     catch (const std::exception& exception)
     {
+        ThrowIfCancellationRequested(request, "scene_package_write");
         return Block(
             request,
             MultiModelProductionErrorCode::
@@ -1127,6 +1106,26 @@ MultiModelProductionResult RunMultiModelProductionService(
         1,
         100);
     return result;
+}
+
+}  // namespace
+
+MultiModelProductionResult RunMultiModelProductionService(
+    const MultiModelProductionRequest& request)
+{
+    try
+    {
+        return RunMultiModelProductionServiceImpl(request);
+    }
+    catch (const ProductionCancellation& cancellation)
+    {
+        return Block(
+            request,
+            MultiModelProductionErrorCode::Cancelled,
+            "canceltoken",
+            "scene production stopped at cooperative checkpoint: "
+                + std::string(cancellation.what()));
+    }
 }
 
 }  // namespace slicer_core

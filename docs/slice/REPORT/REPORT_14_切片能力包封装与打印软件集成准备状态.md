@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.15 ｜ 更新日期：2026-08-06
+> 版本：v3.17 ｜ 更新日期：2026-08-06
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14C-05 + 14D-04 (PREPARATION AUDIT)
+CURRENT_NEXT_TASK      = 14C-07 (AUTHORIZED) + 14D-05 (PREPARATION AUDIT)
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
 ```
@@ -131,9 +131,13 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 14C-02 | ✅ COMPLETE（2026-08-06） | 唯一 `WriteOut()` 缓冲三态实现及独立单测 | Debug/Release 探测、差 1、完整写入、空串、负容量和哨兵不变 PASS；DLL 仍精确 11 导出 |
 | 14C-03 | ✅ COMPLETE（2026-08-06） | 句柄注册表、最小 job 状态与 TLS `pm_last_error` | Debug/Release 组件/ABI 测试 PASS；100 次 module 生命周期增长低于 1 MiB；真实 Worker job 关闭保留给后续 |
 | 14C-04 | ✅ COMPLETE（2026-08-06） | 13 项同步轻能力、终态 job 与既有 Facade/Provider 接线 | Debug/Release 真实 DLL 调用覆盖同步清单、Worker 能力拒绝、首次 poll 终态、ViewData 纹理及包查询 fail-closed |
+| 14C-05 | ✅ COMPLETE（2026-08-06） | `pm_module_info`、双 Schema 与 Debug/Release `module.json` | 运行时/部署一致性、缓冲三态、同步能力、精确 11 导出与 ABI 回归 PASS |
 | 14D-01 | ✅ COMPLETE（2026-08-05） | 独立 `slicer_worker.exe` 目标和稳定参数外壳 | Debug/Release 构建、帮助/未知参数/未实现能力负例与重复确定性 PASS；D14-D-01..12 仍 NOT RUN |
 | 14D-02 | ✅ COMPLETE（2026-08-06） | WorkerClient、严格 stdout 协议、退出映射与进程树回收 | Debug/Release 子进程、取消、超时、协议污染和僵尸回收门禁 PASS |
 | 14D-03 | ✅ COMPLETE（2026-08-06） | `file_contract_v1` 发现和 major/minor 协商 | Debug/Release 合同发现、生产协议、能力完整性与日志边界门禁 PASS |
+| 14D-04A | ✅ COMPLETE（2026-08-06） | 进程内核心取消令牌贯穿和 Writer staging 清理 | Debug/Release 取消时限、长循环检查、既有包保护与正常生产字节不变性 PASS；Worker E2E 仍归 04B |
+| 14C-07 | ✅ PREPARATION_GATE PASS | DLL 初始化与依赖红线 | 实现待执行；已释放 14C-05 的 Exports/CMake 所有权 |
+| 14D-08 | ⛔ PREPARATION_GATE BLOCKED | Worker 独立 `--spi-request` | 仍缺 scene/profile/input 映射及 full preflight/repair 适配器冻结，不伪造 PASS |
 
 14A-01 尚无 DLL，因此 `dumpbin /EXPORTS` 不在本卡伪造执行；实际 11 符号导出表由 14C-01 / 14C-06 关闭。
 
@@ -226,3 +230,5 @@ SceneFacade 与 SliceFacade；真实纹理 Provider 和 CLI Facade 迁移仍在�
 | 2026-08-06 | v3.13 | 完成 14D-02：WorkerClient 子进程、协议解析、退出映射、取消/超时与进程树回收通过 Debug/Release 门禁；下一批 14C-04 与 14D-03 准备门禁 PASS，14C-05/07 因共享 DLL 文件转入串行集成 |
 | 2026-08-06 | v3.14 | 完成 14D-03：`--contract-info` 与模块侧合同协商通过 Debug/Release 门禁，版本、生产协议、能力和 stdout 日志边界均 fail-closed；14C-04 继续并行收口 |
 | 2026-08-06 | v3.15 | 完成 14C-04：同步轻能力通过真实 SPI 接入既有 Facade/Provider，首次 poll 即终态；Worker 能力、full preflight、非法请求与纹理失败均 fail-closed；下一批先审计 14C-05/14D-04 准备门禁 |
+| 2026-08-06 | v3.16 | 完成下一批准备门禁：14C-05 双 Schema、模块版本/CRT 与部署一致性已冻结；14D-04 拆分为核心 token 贯穿 04A 和依赖 14D-05/08 的 Worker E2E 04B；14C-05/14D-04A 获准并行 |
+| 2026-08-06 | v3.17 | 完成 14C-05 与 14D-04A：模块自述/部署和核心协作取消通过 Debug/Release 门禁；下一批 14C-07 可实施，14D-05 先做准备审计，14D-08 保持显式阻断 |

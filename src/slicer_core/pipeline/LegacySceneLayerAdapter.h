@@ -1,6 +1,7 @@
 #pragma once
 
 #include "slicer_core/SliceRunTelemetry.h"
+#include "slicer_core/api/Cancellation.h"
 #include "slicer_core/model.h"
 #include "slicer_core/pipeline/SceneRasterTypes.h"
 #include "slicer_core/scene/ModelInstance.h"
@@ -22,6 +23,9 @@ struct LegacySceneLayerAdapterRequest
     ModelInstance instance;
     const ModelReport* modelreportoverride{nullptr};
     SliceRunProgressCallback progresscallback;
+
+    /** @brief Synchronous, non-owning cancellation source for this adapter run. */
+    const api::ICancelToken* canceltoken{nullptr};
 };
 
 /**

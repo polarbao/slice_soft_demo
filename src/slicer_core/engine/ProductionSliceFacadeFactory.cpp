@@ -122,6 +122,9 @@ api::ApiError MapProductionError(
     case MultiModelProductionErrorCode::ProductionPackageInvalid:
         pmCode = "PM-SLICER-CONTRACT-0060";
         break;
+    case MultiModelProductionErrorCode::Cancelled:
+        pmCode = "PM-SLICER-CANCELLED-0070";
+        break;
     case MultiModelProductionErrorCode::None:
         pmCode = "PM-SLICER-INTERNAL-0099";
         break;
@@ -146,10 +149,12 @@ api::ApiError MapProductionError(
 
 api::ApiResult<api::SliceResult> RunExistingProductionEntry(
     const std::filesystem::path& effectiveConfigPath,
+    const api::ICancelToken& cancelToken,
     const api::ProgressSink& progressSink)
 {
     MultiModelProductionRequest request;
     request.effectiveconfigpath = effectiveConfigPath;
+    request.canceltoken = &cancelToken;
     request.progresscallback =
         [&progressSink](const SliceRunProgress& progress)
         {

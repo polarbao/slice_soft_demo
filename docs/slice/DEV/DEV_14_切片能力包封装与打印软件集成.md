@@ -97,7 +97,7 @@ DllMain 只 return TRUE；初始化放 pm_create + std::call_once
 协商：slicer_worker.exe --contract-info
       → { contract, major, minor, engineVersion, produces[], capabilities[] }
 兼容：major 不等 → 拒绝（PM-SLICER-INTERNAL-0099）
-      Worker minor 更高 → 允许；更低 → 允许但 DLL 不用高版字段
+      Worker minor 更高 → 允许；更低 → 拒绝（DLL 所需字段/语义不可保证）
       produces 不含 p0.rgbwsv.2 → 拒绝
 执行：DLL 写 <tempDir>/<jobId>/request.json
       → slicer_worker.exe --spi-request <path>

@@ -11,6 +11,31 @@ namespace slicer_core
 namespace
 {
 
+class LegacyAdapterCancellation final : public std::exception
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "Legacy scene-layer adapter cancellation requested";
+    }
+};
+
+bool IsCancellationRequested(
+    const LegacySceneLayerAdapterRequest& request) noexcept
+{
+    return request.canceltoken != nullptr
+        && request.canceltoken->IsCancelRequested();
+}
+
+void ThrowIfCancellationRequested(
+    const LegacySceneLayerAdapterRequest& request)
+{
+    if (IsCancellationRequested(request))
+    {
+        throw LegacyAdapterCancellation{};
+    }
+}
+
 void BlockLegacyAdapter(
     SceneRasterAdapterResult& result,
     const LegacySceneLayerAdapterRequest& request,
@@ -117,13 +142,38 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
         return result;
     }
 
+    if (IsCancellationRequested(request))
+    {
+        BlockLegacyAdapter(
+            result,
+            request,
+            SceneRasterErrorCode::Cancelled,
+            "canceltoken",
+            "Legacy scene-layer adapter was cancelled before producer start");
+        return result;
+    }
+
     SliceRunOptions options;
     options.write_tiff_layers = false;
     options.write_preview_files = false;
     options.write_reports = false;
     options.instanceoverride = request.instance;
     options.modelreportoverride = request.modelreportoverride;
-    options.progress_callback = request.progresscallback;
+    if (request.canceltoken == nullptr)
+    {
+        options.progress_callback = request.progresscallback;
+    }
+    else
+    {
+        options.progress_callback = [&request](const SliceRunProgress& progress)
+        {
+            ThrowIfCancellationRequested(request);
+            if (request.progresscallback)
+            {
+                request.progresscallback(progress);
+            }
+        };
+    }
     if (!request.modelpathoverride.empty())
     {
         options.inputoverride = SliceRunInputOverride{
@@ -132,8 +182,10 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
     }
     bool gridReceived{false};
     options.gridcallback =
-        [&result, &gridReceived](const SliceRunRasterGrid& grid)
+        [&request, &result, &gridReceived](
+            const SliceRunRasterGrid& grid)
         {
+            ThrowIfCancellationRequested(request);
             result.raster.localgrid.widthpx = grid.widthpx;
             result.raster.localgrid.heightpx = grid.heightpx;
             result.raster.localgrid.layercount = grid.layercount;
@@ -147,10 +199,11 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             gridReceived = true;
         };
     options.layercallback =
-        [&result](
+        [&request, &result](
             const RgbwsvProductionLayer& output,
             const MaterialClosureSemanticLayerInput& semantic)
         {
+            ThrowIfCancellationRequested(request);
             SceneInstanceRasterLayer layer;
             layer.layerindex = output.layerIndex;
             layer.zmm = output.zMm;
@@ -165,6 +218,7 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
                 semantic.outerVarnishShellMask;
             layer.supportownership = semantic.supportFillMask;
             result.raster.layers.push_back(std::move(layer));
+            ThrowIfCancellationRequested(request);
         };
 
     try
@@ -182,6 +236,16 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             return result;
         }
     }
+    catch (const LegacyAdapterCancellation&)
+    {
+        BlockLegacyAdapter(
+            result,
+            request,
+            SceneRasterErrorCode::Cancelled,
+            "canceltoken",
+            "Legacy scene-layer adapter stopped at a cooperative checkpoint");
+        return result;
+    }
     catch (const std::exception& exception)
     {
         BlockLegacyAdapter(
@@ -190,6 +254,17 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             SceneRasterErrorCode::ProducerFailed,
             "configpath",
             exception.what());
+        return result;
+    }
+
+    if (IsCancellationRequested(request))
+    {
+        BlockLegacyAdapter(
+            result,
+            request,
+            SceneRasterErrorCode::Cancelled,
+            "canceltoken",
+            "Legacy scene-layer adapter was cancelled after producer exit");
         return result;
     }
 

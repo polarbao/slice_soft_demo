@@ -19,6 +19,7 @@ namespace
 constexpr std::size_t kChannelCount{6U};
 constexpr std::size_t kSupportChannel{4U};
 constexpr std::size_t kVarnishChannel{5U};
+constexpr std::size_t kCancellationCheckStride{4096U};
 
 struct InstancePlacement
 {
@@ -328,6 +329,8 @@ void Block(
     result.error = std::move(error);
 }
 
+#include "slicer_core/pipeline/SceneLayerComposerCancellation.h"
+
 bool ValidateRequest(
     const SceneLayerComposeRequest& request,
     SceneLayerComposeResult& result,
@@ -393,6 +396,11 @@ bool ValidateLayer(
     const std::size_t byteCount,
     SceneLayerComposeResult& result)
 {
+    if (StopIfCancellationRequested(
+            request, result, "composition.layer_validation", expectedLayerIndex))
+    {
+        return false;
+    }
     const double expectedZ = instance.localgrid.originzmm
         + (static_cast<double>(expectedLayerIndex) + 0.5)
             * instance.localgrid.layerthicknessmm;
@@ -457,6 +465,12 @@ bool ValidateLayer(
     }
     for (std::size_t pixelIndex{0U}; pixelIndex < pixelCount; ++pixelIndex)
     {
+        if ((pixelIndex % kCancellationCheckStride) == 0U
+            && StopIfCancellationRequested(
+                request, result, "composition.source_closure", expectedLayerIndex))
+        {
+            return false;
+        }
         const SceneRasterOwnership ownership =
             ResolveOwnership(layer, pixelIndex);
         if (!SourcePixelHasClosure(
@@ -691,6 +705,11 @@ bool ValidateInstance(
          layerIndex < instance.localgrid.layercount;
          ++layerIndex)
     {
+        if (StopIfCancellationRequested(
+                request, result, "composition.instance_layers", layerIndex))
+        {
+            return false;
+        }
         if (!ValidateLayer(
                 request,
                 instance,
@@ -860,66 +879,6 @@ void CountInstanceOutputPixel(
     }
 }
 
-bool OutputPixelHasClosure(
-    const std::vector<std::uint8_t>& channels,
-    const std::size_t pixelIndex,
-    const SceneRasterOwnership ownership,
-    const RgbwsvProtocol& protocol)
-{
-    const std::size_t base = pixelIndex * kChannelCount;
-    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
-    {
-        const std::uint8_t value = channels.at(base + channel);
-        if (ownership == SceneRasterOwnership::Empty
-            && value != protocol.empty_value)
-        {
-            return false;
-        }
-        if (ownership == SceneRasterOwnership::Support)
-        {
-            const std::uint8_t expected =
-                channel == kSupportChannel
-                    ? protocol.print_value
-                    : protocol.empty_value;
-            if (value != expected)
-            {
-                return false;
-            }
-        }
-        if (ownership == SceneRasterOwnership::OuterVarnish)
-        {
-            const std::uint8_t expected =
-                channel == kVarnishChannel
-                    ? protocol.print_value
-                    : protocol.empty_value;
-            if (value != expected)
-            {
-                return false;
-            }
-        }
-    }
-    if (ownership != SceneRasterOwnership::Model)
-    {
-        return true;
-    }
-    if (channels.at(base + kSupportChannel) != protocol.empty_value)
-    {
-        return false;
-    }
-    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
-    {
-        if (channel == kSupportChannel)
-        {
-            continue;
-        }
-        if (channels.at(base + channel) != protocol.empty_value)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 }  // namespace
 
 SceneLayerComposeResult ComposeSceneLayers(
@@ -934,6 +893,11 @@ SceneLayerComposeResult ComposeSceneLayers(
     result.effectivepipelinemode =
         request.effectivepipelinemode;
     result.statistics.totalinstancecount = request.instances.size();
+
+    if (StopIfCancellationRequested(request, result, "composition.start"))
+    {
+        return result;
+    }
 
     std::size_t globalPixelCount{0U};
     std::size_t globalByteCount{0U};
@@ -984,6 +948,10 @@ SceneLayerComposeResult ComposeSceneLayers(
     std::unordered_set<std::string> knownInstanceIds;
     for (const SceneInstanceRaster& instance : request.instances)
     {
+        if (StopIfCancellationRequested(request, result, "composition.instances"))
+        {
+            return result;
+        }
         if (!instance.visible)
         {
             ++result.statistics.hiddeninstancecount;
@@ -1033,6 +1001,11 @@ SceneLayerComposeResult ComposeSceneLayers(
          globalLayerIndex < request.globalgrid.layercount;
          ++globalLayerIndex)
     {
+        if (StopIfCancellationRequested(
+                request, result, "composition.layers", globalLayerIndex))
+        {
+            return result;
+        }
         std::fill(
             ownership.begin(),
             ownership.end(),
@@ -1051,6 +1024,11 @@ SceneLayerComposeResult ComposeSceneLayers(
 
         for (const InstancePlacement& placement : placements)
         {
+            if (StopIfCancellationRequested(
+                    request, result, "composition.placements", globalLayerIndex))
+            {
+                return result;
+            }
             const int localLayerIndex =
                 globalLayerIndex - placement.offsetz;
             if (localLayerIndex < 0
@@ -1071,6 +1049,12 @@ SceneLayerComposeResult ComposeSceneLayers(
                         static_cast<std::size_t>(y)
                             * static_cast<std::size_t>(localWidth)
                         + static_cast<std::size_t>(x);
+                    if ((sourcePixel % kCancellationCheckStride) == 0U
+                        && StopIfCancellationRequested(
+                            request, result, "composition.pixel_copy", globalLayerIndex))
+                    {
+                        return result;
+                    }
                     const SceneRasterOwnership sourceOwnership =
                         ResolveOwnership(sourceLayer, sourcePixel);
                     if (sourceOwnership == SceneRasterOwnership::Empty)
@@ -1112,6 +1096,12 @@ SceneLayerComposeResult ComposeSceneLayers(
              pixelIndex < ownership.size();
              ++pixelIndex)
         {
+            if ((pixelIndex % kCancellationCheckStride) == 0U
+                && StopIfCancellationRequested(
+                    request, result, "composition.closure", globalLayerIndex))
+            {
+                return result;
+            }
             const SceneRasterOwnership pixelOwnership =
                 ownership.at(pixelIndex);
             if (!OutputPixelHasClosure(
@@ -1151,6 +1141,11 @@ SceneLayerComposeResult ComposeSceneLayers(
             }
         }
         result.layers.push_back(std::move(output));
+        if (StopIfCancellationRequested(
+                request, result, "composition.layer_complete", globalLayerIndex))
+        {
+            return result;
+        }
     }
 
     result.available = true;

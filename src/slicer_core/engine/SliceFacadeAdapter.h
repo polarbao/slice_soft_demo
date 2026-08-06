@@ -26,6 +26,13 @@ using SliceProductionRunner = std::function<api::ApiResult<api::SliceResult>(
     const std::filesystem::path&,
     const api::ProgressSink&)>;
 
+/** @brief Invokes production slicing with an explicit synchronous cancel token. */
+using CancellableSliceProductionRunner =
+    std::function<api::ApiResult<api::SliceResult>(
+        const std::filesystem::path&,
+        const api::ICancelToken&,
+        const api::ProgressSink&)>;
+
 /**
  * @brief Engine-side SliceFacade adapter over the existing production entry.
  *
@@ -46,6 +53,15 @@ public:
         SliceProductionRunner productionRunner);
 
     /**
+     * @brief Creates an adapter with a cancellation-aware production binding.
+     * @param contractResolver Effective-config identity resolver.
+     * @param productionRunner Production entry receiving the caller token.
+     */
+    SliceFacadeAdapter(
+        SliceSubmissionContractResolver contractResolver,
+        CancellableSliceProductionRunner productionRunner);
+
+    /**
      * @brief Runs one committed production scene slice.
      * @param request Caller-owned job, scene, config, and package identities.
      * @param cancelToken Cooperative cancellation source.
@@ -59,7 +75,7 @@ public:
 
 private:
     SliceSubmissionContractResolver m_contractResolver;
-    SliceProductionRunner m_productionRunner;
+    CancellableSliceProductionRunner m_productionRunner;
 };
 
 }  // namespace slicer_core::engine

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/api/Cancellation.h"
 #include "slicer_core/layout/SceneCollisionService.h"
 #include "slicer_core/pipeline/SceneLayerComposer.h"
 
@@ -20,6 +21,9 @@ struct MultiModelLayerComposeRequest
         SlicePipelineMode::Legacy};
     std::vector<SceneInstanceRaster> instances;
     double quantizationtolerance{1.0e-6};
+
+    /** @brief Synchronous, non-owning cancellation source for composition. */
+    const api::ICancelToken* canceltoken{nullptr};
 };
 
 /**

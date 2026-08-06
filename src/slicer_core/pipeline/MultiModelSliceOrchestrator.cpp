@@ -12,6 +12,13 @@ namespace slicer_core
 namespace
 {
 
+bool IsCancellationRequested(
+    const MultiModelLayerComposeRequest& request) noexcept
+{
+    return request.canceltoken != nullptr
+        && request.canceltoken->IsCancelRequested();
+}
+
 SceneLayerComposeResult BlockOrchestrator(
     const MultiModelLayerComposeRequest& request,
     const SceneRasterErrorCode code,
@@ -123,6 +130,14 @@ bool ExtendExtent(
 SceneLayerComposeResult ComposeAdmittedSceneRasters(
     const MultiModelLayerComposeRequest& request)
 {
+    if (IsCancellationRequested(request))
+    {
+        return BlockOrchestrator(
+            request,
+            SceneRasterErrorCode::Cancelled,
+            "canceltoken",
+            "scene composition was cancelled before orchestration");
+    }
     if (!request.admission.IsValid()
         || request.admission.scenestatus
             != SceneCollisionStatus::Passed
@@ -151,6 +166,14 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
     for (const SceneCollisionInstanceResult& instance :
          request.admission.instances)
     {
+        if (IsCancellationRequested(request))
+        {
+            return BlockOrchestrator(
+                request,
+                SceneRasterErrorCode::Cancelled,
+                "canceltoken",
+                "scene composition was cancelled while indexing admission");
+        }
         if (instance.visible)
         {
             const auto inserted =
@@ -173,6 +196,14 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
     visible.reserve(request.instances.size());
     for (const SceneInstanceRaster& raster : request.instances)
     {
+        if (IsCancellationRequested(request))
+        {
+            return BlockOrchestrator(
+                request,
+                SceneRasterErrorCode::Cancelled,
+                "canceltoken",
+                "scene composition was cancelled while validating rasters");
+        }
         if (!raster.visible)
         {
             continue;
@@ -241,6 +272,14 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
     global.layerthicknessmm = reference.layerthicknessmm;
     for (const SceneInstanceRaster* raster : visible)
     {
+        if (IsCancellationRequested(request))
+        {
+            return BlockOrchestrator(
+                request,
+                SceneRasterErrorCode::Cancelled,
+                "canceltoken",
+                "scene composition was cancelled while resolving the grid");
+        }
         if (!raster->localgrid.IsValid()
             || !SameSampling(
                 raster->localgrid.pitchxmm,
@@ -270,6 +309,14 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
 
     for (const SceneInstanceRaster* raster : visible)
     {
+        if (IsCancellationRequested(request))
+        {
+            return BlockOrchestrator(
+                request,
+                SceneRasterErrorCode::Cancelled,
+                "canceltoken",
+                "scene composition was cancelled while quantizing offsets");
+        }
         int offsetX{0};
         int offsetY{0};
         int offsetZ{0};
@@ -343,6 +390,7 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
     compose.instances = request.instances;
     compose.quantizationtolerance =
         request.quantizationtolerance;
+    compose.canceltoken = request.canceltoken;
     return ComposeSceneLayers(compose);
 }
 
