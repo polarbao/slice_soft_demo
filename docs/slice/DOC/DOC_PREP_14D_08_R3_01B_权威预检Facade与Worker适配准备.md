@@ -4,7 +4,7 @@
 >
 > 对应任务：`14D-08-R3-01B`
 >
-> 文档状态：`PREPARATION_GATE=PASS / IMPLEMENTATION=READY`
+> 文档状态：`PREPARATION_GATE=PASS / IMPLEMENTATION=COMPLETE`
 
 ## 1. 审计结论
 
@@ -125,12 +125,23 @@ tests/stage14d_08_r3/WorkerPreflightExecutorTests.cpp
 共享合同、根 CMake 和 Worker production registry 必须串行集成；Facade 实现和测试 fixture 可在合同
 确认后并行开发。
 
-## 8. 门禁
+## 8. 实施结果
+
+`14D-08-R3-01B` 已完成以下闭环：
+
+1. `api::PreflightRequest/Result` 已扩展为 scene/Profile/hash/revision/targetMode 与完整实例证据 DTO；
+2. `ProductionPreflightFullFacade` 使用物化后的完整 Profile 重建模型，并复用生产 importer 规则；
+3. Worker executor 严格校验输入身份、物化 job-owned scene/Profile，并把 blocker 保留为业务结果；
+4. 资源缺失、hash/revision stale、Profile 不一致与取消均返回稳定失败；
+5. Debug/Release 定向测试验证直接 Facade 与 Worker 的 scene 身份、实例计数和 admission 一致；
+6. 预检未生成 TIFF、manifest 或生产 Package。
+
+## 9. 门禁
 
 ```text
 14D_08_R3_01A_IMPLEMENTATION=COMPLETE
 14A_04_R2_DECISION=ACCEPTED
 14D_08_R3_01B_PREPARATION_GATE=PASS
-14D_08_R3_01B_IMPLEMENTATION=READY
-NEXT_TASK=14D_08_R3_01B
+14D_08_R3_01B_IMPLEMENTATION=COMPLETE
+NEXT_TASK=14D_08_R2_02
 ```

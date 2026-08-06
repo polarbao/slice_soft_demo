@@ -39,6 +39,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/ModelFacade.h
     src/slicer_core/api/PackageDtos.h
     src/slicer_core/api/PackageQueryFacade.h
+    src/slicer_core/api/ProfileIdentity.cpp
+    src/slicer_core/api/ProfileIdentity.h
     src/slicer_core/api/SceneDtos.h
     src/slicer_core/api/SceneFacade.h
     src/slicer_core/api/SceneViewDtos.h
@@ -159,6 +161,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/geometry/repair/MeshRepairTopologyOperations.h
     src/slicer_core/engine/ProductionSliceFacadeFactory.cpp
     src/slicer_core/engine/ProductionSliceFacadeFactory.h
+    src/slicer_core/engine/ProductionPreflightFullFacadeFactory.cpp
+    src/slicer_core/engine/ProductionPreflightFullFacadeFactory.h
     src/slicer_core/engine/SliceFacadeAdapter.cpp
     src/slicer_core/engine/SliceFacadeAdapter.h
     src/slicer_core/layout/GridLayoutPolicy.cpp
@@ -900,6 +904,22 @@ if(MSVC)
     target_compile_options(slicer_worker_slice_runtime PRIVATE /W4 /WX)
 endif()
 
+add_library(slicer_worker_preflight_runtime STATIC
+    apps/slicer_worker/preflight/WorkerPreflightExecutor.cpp
+    apps/slicer_worker/preflight/WorkerPreflightExecutor.h
+)
+target_include_directories(slicer_worker_preflight_runtime PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(slicer_worker_preflight_runtime PUBLIC
+    slicer_worker_runtime
+    slicer_engine
+)
+if(MSVC)
+    target_compile_options(slicer_worker_preflight_runtime PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage14d08_r1_worker_runtime_tests
     tests/stage14d_08_r1/WorkerRequestParserTests.cpp
 )
@@ -965,7 +985,11 @@ target_include_directories(slicer_worker PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_worker
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_link_libraries(slicer_worker PRIVATE slicer_engine slicer_worker_runtime)
+target_link_libraries(slicer_worker PRIVATE
+    slicer_engine
+    slicer_worker_runtime
+    slicer_worker_preflight_runtime
+)
 
 add_executable(texture_fill_partition_release_benchmark
     apps/texture_fill_partition_release_benchmark/main.cpp
@@ -1436,6 +1460,23 @@ target_compile_definitions(stage14d08_r3_scene_preflight_tests PRIVATE
 )
 if(MSVC)
     target_compile_options(stage14d08_r3_scene_preflight_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d08_r3_worker_preflight_tests
+    tests/stage14d_08_r3/WorkerPreflightExecutorTests.cpp
+)
+target_include_directories(stage14d08_r3_worker_preflight_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(stage14d08_r3_worker_preflight_tests PRIVATE
+    slicer_worker_preflight_runtime
+)
+target_compile_definitions(stage14d08_r3_worker_preflight_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(stage14d08_r3_worker_preflight_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(model_preflight_pipeline_gate_unit_tests
@@ -2010,6 +2051,10 @@ add_test(NAME transformed_model_preflight_unit_tests COMMAND transformed_model_p
 add_test(
     NAME stage14d08_r3_scene_preflight_tests
     COMMAND stage14d08_r3_scene_preflight_tests
+)
+add_test(
+    NAME stage14d08_r3_worker_preflight_tests
+    COMMAND stage14d08_r3_worker_preflight_tests
 )
 add_test(NAME model_preflight_pipeline_gate_unit_tests COMMAND model_preflight_pipeline_gate_unit_tests)
 add_test(NAME slice_pipeline_router_unit_tests COMMAND slice_pipeline_router_unit_tests)

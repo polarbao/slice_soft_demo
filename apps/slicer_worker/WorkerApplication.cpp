@@ -1,5 +1,6 @@
 #include "WorkerApplication.h"
 
+#include "slicer_worker/preflight/WorkerPreflightExecutor.h"
 #include "slicer_worker/runtime/WorkerJobDispatcher.h"
 #include "slicer_worker/runtime/WorkerJobRuntime.h"
 
@@ -138,7 +139,10 @@ int WorkerApplication::HandleSpiRequest(
             "--spi-request requires an absolute request JSON path");
     }
 
-    const slicesoft::worker::WorkerJobDispatcher dispatcher;
+    slicesoft::worker::WorkerJobDispatcher dispatcher;
+    dispatcher.Register(
+        "geometry.preflight.full",
+        slicesoft::worker::CreateProductionWorkerPreflightExecutor());
     const slicesoft::worker::WorkerJobRuntimeResult result =
         slicesoft::worker::WorkerJobRuntime::Run(requestPath, dispatcher);
     if (result.processexitcode == 0)

@@ -1,10 +1,10 @@
 #include "slicer_worker/slice/WorkerSliceRequestMaterializer.h"
 
+#include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/config.h"
 #include "slicer_core/config/SlicePipelineConfig.h"
 #include "slicer_core/scene/MultiModelScene.h"
 #include "slicer_core/scene/SceneEffectiveConfig.h"
-#include "slicer_core/system/Sha256.h"
 
 #include <algorithm>
 #include <chrono>
@@ -305,15 +305,7 @@ const std::string& WorkerSliceMaterialization::ProfileVersion() const noexcept
 std::string WorkerSliceRequestMaterializer::ComputeProfileHash(
     const slicer_core::Json& profile)
 {
-    if (!profile.is_object())
-    {
-        throw std::invalid_argument("Profile must be an object");
-    }
-    slicer_core::Json::Object hashInput = profile.as_object();
-    hashInput.erase("profileHash");
-    return "sha256:"
-        + slicer_core::ComputeSha256(
-            slicer_core::Json(std::move(hashInput)).dump(0));
+    return slicer_core::api::ComputeProfileDocumentHash(profile);
 }
 
 WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
