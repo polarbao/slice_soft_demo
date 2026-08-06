@@ -535,11 +535,25 @@ target_include_directories(print_module_spi_cpp_compile_test PRIVATE
 add_library(slicer_module SHARED
     src/slicer_module/BufferApi.cpp
     src/slicer_module/BufferApi.h
+    src/slicer_module/CapabilityJsonAdapter.cpp
+    src/slicer_module/CapabilityJsonAdapter.h
     src/slicer_module/ErrorApi.cpp
     src/slicer_module/ErrorApi.h
     src/slicer_module/Exports.cpp
     src/slicer_module/HandleRegistry.cpp
     src/slicer_module/HandleRegistry.h
+    src/slicer_module/ModelCapabilityAdapter.cpp
+    src/slicer_module/ModelCapabilityAdapter.h
+    src/slicer_module/PackageCapabilityAdapter.cpp
+    src/slicer_module/PackageCapabilityAdapter.h
+    src/slicer_module/SceneCapabilityAdapter.cpp
+    src/slicer_module/SceneCapabilityAdapter.h
+    src/slicer_module/SceneCapabilitySerializationAdapter.cpp
+    src/slicer_module/SceneCapabilitySerializationAdapter.h
+    src/slicer_module/SceneViewDataAdapter.cpp
+    src/slicer_module/SceneViewDataAdapter.h
+    src/slicer_module/SyncCapabilityAdapter.cpp
+    src/slicer_module/SyncCapabilityAdapter.h
     src/slicer_module/WorkerClient.cpp
     src/slicer_module/WorkerClient.h
     src/slicer_module/WorkerContract.cpp
@@ -1396,6 +1410,20 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14C01ModuleShell.py"
     )
     add_test(
+        NAME slicer_stage14c04_sync_capability_wiring_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14c_04/ValidateSyncCapabilityWiring.py"
+            --library $<TARGET_FILE:slicer_module>
+            --repo "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_test(
+        NAME slicer_stage14c04_sync_capability_safety_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14c_04/ValidateSyncCapabilitySafety.py"
+            --library $<TARGET_FILE:slicer_module>
+            --repo "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_test(
         NAME slicer_stage14d01_worker_shell_contract_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateStage14D01WorkerShell.py"
@@ -1425,6 +1453,8 @@ if(Python3_Interpreter_FOUND)
         slicer_stage14b04_slice_facade_contract_test
         slicer_stage14b05_cli_facade_route_contract_test
         slicer_stage14c01_module_shell_contract_test
+        slicer_stage14c04_sync_capability_wiring_test
+        slicer_stage14c04_sync_capability_safety_test
         slicer_stage14d01_worker_shell_contract_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test

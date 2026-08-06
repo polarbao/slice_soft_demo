@@ -2,6 +2,7 @@
 #include "slicer_module/BufferApi.h"
 #include "slicer_module/ErrorApi.h"
 #include "slicer_module/HandleRegistry.h"
+#include "slicer_module/SyncCapabilityAdapter.h"
 
 #include <exception>
 #include <string_view>
@@ -62,7 +63,24 @@ extern "C" PM_API pm_module_t* PM_CALL pm_create(const char* optionsJson)
     try
     {
         (void)optionsJson;
-        return slicesoft::module::HandleRegistry::Instance().CreateModule();
+        auto& registry = slicesoft::module::HandleRegistry::Instance();
+        pm_module_t* const module = registry.CreateModule();
+        try
+        {
+            if (!slicesoft::module::SyncCapabilityAdapter::Instance()
+                    .RegisterModule(module))
+            {
+                (void)registry.DestroyModule(module);
+                SetInternalError("pm_create could not register capability services");
+                return nullptr;
+            }
+            return module;
+        }
+        catch (...)
+        {
+            (void)registry.DestroyModule(module);
+            throw;
+        }
     }
     catch (...)
     {
@@ -78,7 +96,9 @@ extern "C" PM_API void PM_CALL pm_destroy(pm_module_t* module)
         if (!slicesoft::module::HandleRegistry::Instance().DestroyModule(module))
         {
             SetInvalidRequestError("pm_destroy received an unknown module handle");
+            return;
         }
+        slicesoft::module::SyncCapabilityAdapter::Instance().RemoveModule(module);
     }
     catch (...)
     {
@@ -100,8 +120,54 @@ extern "C" PM_API pm_job_t* PM_CALL pm_submit(pm_module_t* module, const char* r
             SetInvalidRequestError("pm_submit received an unknown module handle");
             return nullptr;
         }
-        SetInternalError("pm_submit capability routing is not implemented before Stage 14C-04/14D");
-        return nullptr;
+        auto submission = slicesoft::module::SyncCapabilityAdapter::Instance()
+            .Execute(module, requestJson);
+        if (!submission.accepted)
+        {
+            slicesoft::module::SetThreadLastError(
+                submission.errorcode,
+                submission.errormessage,
+                submission.errordetail);
+            return nullptr;
+        }
+
+        auto& registry = slicesoft::module::HandleRegistry::Instance();
+        pm_job_t* const job = registry.CreateJob(module);
+        if (job == nullptr)
+        {
+            SetInternalError("pm_submit could not allocate a terminal job handle");
+            return nullptr;
+        }
+        try
+        {
+            const bool succeeded = submission.output.succeeded;
+            if (!slicesoft::module::SyncCapabilityAdapter::Instance().StoreJob(
+                    job,
+                    module,
+                    std::move(submission)))
+            {
+                (void)registry.ReleaseJob(job);
+                SetInternalError("pm_submit could not retain the terminal result");
+                return nullptr;
+            }
+            const auto state = succeeded
+                ? slicesoft::module::JobLifecycleState::Succeeded
+                : slicesoft::module::JobLifecycleState::Failed;
+            if (!registry.SetJobLifecycleState(job, state))
+            {
+                slicesoft::module::SyncCapabilityAdapter::Instance().ReleaseJob(job);
+                (void)registry.ReleaseJob(job);
+                SetInternalError("pm_submit could not publish terminal job state");
+                return nullptr;
+            }
+            return job;
+        }
+        catch (...)
+        {
+            slicesoft::module::SyncCapabilityAdapter::Instance().ReleaseJob(job);
+            (void)registry.ReleaseJob(job);
+            throw;
+        }
     }
     catch (...)
     {
@@ -123,10 +189,18 @@ extern "C" PM_API int PM_CALL pm_poll(
             SetInvalidRequestError("pm_poll received an unknown job handle");
             return PM_ERR_INVALID_ARG;
         }
-        (void)progressJson;
-        (void)cap;
-        (void)outRequired;
-        return PM_ERR_FAILED;
+        const std::string progress =
+            slicesoft::module::SyncCapabilityAdapter::Instance().Poll(job);
+        if (progress.empty())
+        {
+            SetInternalError("pm_poll could not resolve terminal progress");
+            return PM_ERR_FAILED;
+        }
+        return slicesoft::module::WriteOut(
+            progress,
+            progressJson,
+            cap,
+            outRequired);
     }
     catch (...)
     {
@@ -166,10 +240,18 @@ extern "C" PM_API int PM_CALL pm_result(
             SetInvalidRequestError("pm_result received an unknown job handle");
             return PM_ERR_INVALID_ARG;
         }
-        (void)resultJson;
-        (void)cap;
-        (void)outRequired;
-        return PM_ERR_INVALID_STATE;
+        const auto result =
+            slicesoft::module::SyncCapabilityAdapter::Instance().Result(job);
+        if (!result)
+        {
+            SetInternalError("pm_result could not resolve terminal output");
+            return PM_ERR_FAILED;
+        }
+        return slicesoft::module::WriteOut(
+            result->bytes,
+            resultJson,
+            cap,
+            outRequired);
     }
     catch (...)
     {
@@ -182,10 +264,13 @@ extern "C" PM_API void PM_CALL pm_release(pm_job_t* job)
 {
     try
     {
-        if (!slicesoft::module::HandleRegistry::Instance().ReleaseJob(job))
+        auto& registry = slicesoft::module::HandleRegistry::Instance();
+        if (!registry.ReleaseJob(job))
         {
             SetInvalidRequestError("pm_release received an unknown job handle");
+            return;
         }
+        slicesoft::module::SyncCapabilityAdapter::Instance().ReleaseJob(job);
     }
     catch (...)
     {

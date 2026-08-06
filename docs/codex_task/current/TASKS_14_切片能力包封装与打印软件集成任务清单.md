@@ -245,7 +245,7 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14C-01 | 新建 `src/slicer_module/`；`PM_API`/`PM_CALL __cdecl`/`.def`（11 符号）| 14A-01, 14B-01 | `dumpbin /EXPORTS` 恰好 11 个，无 C++ 修饰名 | ✅ **COMPLETE（2026-08-05）**；Debug/Release 构建、静态合同和 `dumpbin` 精确 11 符号 PASS |
 | 14C-02 | 缓冲三态协议 `WriteOut()` 单一实现 | 14C-01 | C-SPI-05a/b/c | ✅ **COMPLETE（2026-08-06）**；Debug/Release 单测、DLL 构建和 11 导出回归 PASS |
 | 14C-03 | `HandleRegistry` 句柄生命周期 + `pm_last_error`（TLS）| 14C-01 | C-SPI-04/12/13/14/15 | ✅ **COMPLETE（2026-08-06）**；底层状态与 ABI Debug/Release 门禁 PASS，完整 Worker job 验收保留给 14C-06/14D |
-| 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03A, **14B-00** | 首次 `pm_poll` 即返回终态；**`syncCapabilities[]` 逐条对齐 `DEV_14` §5 承载分派表，二者不一致即判不通过**；`scene.get_viewdata` 不得绕过 14B-03A | PREPARED |
+| 14C-04 | 同步轻能力接线（`syncCapabilities[]` 声明）| 14C-02, 14B-02..03A, **14B-00** | 首次 `pm_poll` 即返回终态；**`syncCapabilities[]` 逐条对齐 `DEV_14` §5 承载分派表，二者不一致即判不通过**；`scene.get_viewdata` 不得绕过 14B-03A | ✅ **COMPLETE（2026-08-06）**；13 项进程内承载、真实 SPI 终态轮询、ViewData Provider 复用与 Worker 能力 fail-closed 的 Debug/Release 门禁 PASS |
 | | ↳ ⚠️ **前置 14B-00 不可省**：`model.import` 归属目前是「base（待 14B-00 验证）」，是 15 项能力中**唯一未定**的一项。若 14B-00 结论为「导入必须进 Worker」，`syncCapabilities[]` 必须相应移除该项，否则返工。 | | | |
 | 14C-05 | `pm_module_info` + `module.json` + 版本/运行时自述 | 14C-01 | C-SPI-01/02/03 | PREPARED |
 | 14C-06 | `test_spi_conformance` 自测套件 | 14C-01..05 | **C-SPI-01..18 全绿** | PREPARED |
@@ -421,3 +421,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-06 | v2.18 | 完成 14C-03：建立不透明句柄注册表、module-job 归属、最小状态机与 TLS 错误 JSON；接入 module 生命周期和 `pm_last_error`，未接线能力继续 fail-closed |
 | 2026-08-06 | v2.19 | 完成 14D-02：建立 Windows WorkerClient、严格进度/耗时解析、退出码映射、协作取消与 Job Object 进程树回收；下一批 14C-04 与 14D-03 可并行，14C-05/07 已准备但共享 DLL 接线需串行集成 |
 | 2026-08-06 | v2.20 | 完成 14D-03：Worker 输出 `file_contract_v1` 自述，模块侧以 major 相等、worker minor 不低于要求、生产协议和能力完整为准 fail-closed 协商；14C-04 保持并行开发中 |
+| 2026-08-06 | v2.21 | 完成 14C-04：13 项同步轻能力经既有 Facade 接入 SPI；`geometry.preflight` 仅 `mode=fast` 进程内执行，ViewData 复用 14B-03A Provider；Debug/Release 真实 ABI 调用门禁 PASS |
