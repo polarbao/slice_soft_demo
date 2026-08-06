@@ -167,6 +167,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/engine/ProductionSliceFacadeFactory.h
     src/slicer_core/engine/ProductionPreflightFullFacadeFactory.cpp
     src/slicer_core/engine/ProductionPreflightFullFacadeFactory.h
+    src/slicer_core/engine/ProductionRepairFacadeFactory.cpp
+    src/slicer_core/engine/ProductionRepairFacadeFactory.h
     src/slicer_core/engine/SliceFacadeAdapter.cpp
     src/slicer_core/engine/SliceFacadeAdapter.h
     src/slicer_core/layout/GridLayoutPolicy.cpp
@@ -1022,6 +1024,20 @@ target_compile_definitions(stage14d08_r3_strict_recheck_tests PRIVATE
 target_link_libraries(stage14d08_r3_strict_recheck_tests PRIVATE slicer_engine)
 if(MSVC)
     target_compile_options(stage14d08_r3_strict_recheck_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(stage14d08_r3_repair_facade_tests
+    tests/stage14d_08_r3/ProductionRepairFacadeTests.cpp
+)
+target_include_directories(stage14d08_r3_repair_facade_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_compile_definitions(stage14d08_r3_repair_facade_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_link_libraries(stage14d08_r3_repair_facade_tests PRIVATE slicer_engine)
+if(MSVC)
+    target_compile_options(stage14d08_r3_repair_facade_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(slicer_worker

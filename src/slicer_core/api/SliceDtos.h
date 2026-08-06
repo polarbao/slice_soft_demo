@@ -135,8 +135,19 @@ struct SliceResult
 /** @brief Geometry repair request owned by the Worker lane. */
 struct RepairRequest
 {
+    std::string job_id;
+    std::string correlation_id;
+    std::string model_id;
     std::filesystem::path source_model_path;
     std::filesystem::path repaired_model_path;
+    std::filesystem::path profile_config_path;
+    std::filesystem::path source_resource_root;
+    std::filesystem::path job_root_path;
+    std::string profile_hash;
+    std::string model_format{"obj"};
+    std::string repair_output_format{"obj"};
+    std::string policy{"conservative"};
+    bool require_strict_pass{true};
 };
 
 /** @brief Geometry repair evidence. */
@@ -145,6 +156,10 @@ struct RepairResult
     std::filesystem::path repaired_model_path;
     std::string source_hash;
     std::string repaired_hash;
+    Json preflight_before{Json::object({})};
+    Json preflight_after{Json::object({})};
+    Json evidence{Json::object({})};
+    std::uint64_t elapsed_ms{0U};
 };
 
 }  // namespace slicer_core::api
