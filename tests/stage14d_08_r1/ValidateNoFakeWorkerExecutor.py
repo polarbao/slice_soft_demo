@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prove the production Worker has no test executor and fails closed."""
+"""Prove the production Worker has no test executor or malformed fallback."""
 
 from __future__ import annotations
 
@@ -44,17 +44,17 @@ def main() -> int:
             encoding="utf-8",
             errors="replace",
         )
-        if process.returncode != 1:
-            raise SystemExit(f"missing executor must exit 1, got {process.returncode}")
+        if process.returncode != 2:
+            raise SystemExit(f"malformed repair request must exit 2, got {process.returncode}")
         if process.stdout:
             raise SystemExit("failed Worker request must not write ordinary stdout")
-        if "PM-SLICER-INTERNAL-0099" not in process.stderr:
-            raise SystemExit("missing executor diagnostic lacks stable internal code")
+        if "PM-SLICER-INPUT-0001" not in process.stderr:
+            raise SystemExit("malformed repair diagnostic lacks stable input code")
         result_path = job / "result.json"
         if not result_path.is_file() or (job / "result.json.tmp").exists():
             raise SystemExit("identity-closed failure result was not atomically published")
         result = json.loads(result_path.read_text(encoding="utf-8"))
-        if result.get("ok") is not False or result.get("code") != "PM-SLICER-INTERNAL-0099":
+        if result.get("ok") is not False or result.get("code") != "PM-SLICER-INPUT-0001":
             raise SystemExit("production Worker returned a fake success")
         for key in ("jobId", "correlationId", "capability"):
             if result.get(key) != request[key]:
@@ -62,7 +62,7 @@ def main() -> int:
         if any(path.name.startswith("package") for path in job.iterdir()):
             raise SystemExit("R1 Worker created a forbidden production package")
 
-    print("Stage 14D-08-R1 production Worker fail-closed boundary: PASS")
+    print("Stage 14D-08 production Worker no-fake/fail-closed boundary: PASS")
     return 0
 
 

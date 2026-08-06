@@ -309,6 +309,45 @@
       "problemMatcher": []
     },
     {
+      "label": "SliceSoft: Advanced - Build Worker Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "build-slicesoft/main",
+        "--config",
+        "Debug",
+        "--target",
+        "slicer_worker",
+        "--parallel"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Configure Main Build",
+      "group": "build",
+      "problemMatcher": "$msCompile",
+      "detail": "只构建 Stage 14D Worker，供独立请求调试入口使用。"
+    },
+    {
+      "label": "SliceSoft: Stage 14D-08 Prepare Worker Debug Request",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/Prepare14D08WorkerDebugRequest.py",
+        "--repo-root",
+        "${workspaceFolder}",
+        "--output",
+        "${workspaceFolder}/output/debug/stage14d08_worker/request.json"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Advanced - Build Worker Debug",
+      "problemMatcher": [],
+      "detail": "生成绝对路径、身份闭合的 geometry.repair 调试请求。"
+    },
+    {
       "label": "SliceSoft: Advanced - Run Sample Matrix",
       "type": "shell",
       "command": "powershell",

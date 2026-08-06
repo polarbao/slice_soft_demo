@@ -116,6 +116,20 @@
       "preLaunchTask": "SliceSoft: Build Runtime (Debug)",
       "console": "integratedTerminal",
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
+      "name": "SliceSoft: Advanced - Debug Worker Request",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-slicesoft/main/Debug/slicer_worker.exe",
+      "args": [
+        "--spi-request",
+        "${workspaceFolder}/output/debug/stage14d08_worker/request.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "SliceSoft: Stage 14D-08 Prepare Worker Debug Request",
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     }
   ],
   "inputs": [

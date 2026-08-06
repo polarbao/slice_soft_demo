@@ -8,10 +8,13 @@
 | 编制日期 | 2026-08-06 |
 | 依据任务清单 | `TASKS_14` v2.22 |
 | 依据执行指令 | `CODEX_PROMPT_14` v1.3 |
-| `PREPARATION_GATE` | **BLOCKED** |
-| 阻塞类型 | **FILE_CONTRACT_TO_FACADE_MAPPING_AND_ENGINE_ADAPTER_GAP** |
+| `PREPARATION_GATE` | **PASS / IMPLEMENTATION COMPLETE** |
+| 阻塞类型 | **CLOSED_BY_14A_04_R2_AND_14D_08_R1_TO_R4** |
 
-本门禁不得标记为 `PASS`。现有 Worker 已提供命令行外壳，但实际执行路径仍返回 `NotImplemented`；同时，冻结文件合同与当前 Facade 输入之间缺少明确映射，三项已声明重能力中只有生产切片 Facade 存在可核实的具体工厂。直接开发会迫使实现者猜测合同语义或只支持部分能力，两者都违反 fail-closed 和“合同先于实现”的要求。
+本文件最初登记的阻塞已经关闭。`14A-04-R2` 冻结重能力输入身份，`14D-08-R1..R3`
+实现共享 runtime、真实 slice/full-preflight/repair executor，`14D-05/06/04B` 关闭安全发布、
+唯一路由与取消，`14D-07-R2` 通过当前 Worker E-01..08 Gate。R4 又补齐 VS Code 直接调试
+入口及无 fake/fallback 回归，因此父任务可标记为完成。
 
 ## 2. 目标与当前事实
 
@@ -201,9 +204,13 @@ git diff --check
 当前结论为：
 
 ```text
-PREPARATION_GATE=BLOCKED
-BLOCKER_1=FILE_CONTRACT_TO_FACADE_MAPPING_NOT_FROZEN
-BLOCKER_2=PREFLIGHT_FULL_AND_REPAIR_CONCRETE_ADAPTERS_NOT_AVAILABLE
+PREPARATION_GATE=PASS
+BLOCKER_1=CLOSED_BY_14A_04_R2
+BLOCKER_2=CLOSED_BY_14D_08_R2_AND_R3
+INDEPENDENT_DEBUG_ENTRY=PASS
+PARENT_STATUS=COMPLETE
 ```
 
-命令行外壳、合同解析基础和 Slice Facade 已提供可复用起点，但不足以诚实完成三能力独立调试入口。在 B1/B2 解除前，不得进入 `14D-08` 正式开发或将其标记为 PASS。
+VS Code 的 `SliceSoft: Advanced - Debug Worker Request` 会先构建 Worker、生成绝对路径且
+身份闭合的真实 `geometry.repair` 请求，再直接启动 `slicer_worker --spi-request`，可命中共享
+executor 断点。需要调试其他能力时可替换生成后的 request，但不得绕开同一 runtime。

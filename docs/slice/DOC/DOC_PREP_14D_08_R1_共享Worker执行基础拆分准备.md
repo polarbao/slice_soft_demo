@@ -10,7 +10,7 @@
 >
 > 文档状态：`PREPARATION_GATE=PASS_WITH_SPLIT`
 >
-> 父任务状态：`14D-08=BLOCKED`
+> 父任务状态：`14D-08=COMPLETE（2026-08-07）`
 >
 > R1-01 实施状态：`COMPLETE（2026-08-06）`
 >
@@ -44,12 +44,11 @@
 | 范围 | 结论 | 说明 |
 |---|---|---|
 | `14D-08-R1` 共享执行基础 | **COMPLETE** | parser、不可变身份、结果原子发布、精确调度和命令入口已闭合 |
-| `14D-08-R2` 切片请求映射与真实执行 | **BLOCKED** | 内嵌 scene/profile 到 `scene_config_path` 的物化规则尚未冻结；安全发布仍依赖 14D-05 |
-| `14D-08-R3` full preflight/repair 适配 | **BLOCKED** | 两项 Facade 只有接口，没有具体工厂/适配器 |
-| `14D-08-R4` 三能力独立调试收口 | **BLOCKED** | 需 R1/R2/R3 和 14D-05 全部完成 |
+| `14D-08-R2` 切片请求映射与真实执行 | **COMPLETE** | 真实 SliceFacade、安全发布、RIP strict 与独立入口证据闭合 |
+| `14D-08-R3` full preflight/repair 适配 | **COMPLETE** | 两项真实 Facade/Worker executor 已接入共享 runtime |
+| `14D-08-R4` 三能力独立调试收口 | **COMPLETE** | Debug/Release、无 fake/fallback 与 VS Code 直接调试入口闭合 |
 
-因此，本文件只解除“共享执行基础”的准备门，不改变原
-`DOC_PREP_14D_08_Worker独立调试入口实施准备.md` 对父任务的 `BLOCKED` 结论。
+R1 的职责仍只限共享执行基础；父任务完成结论由后续 R2/R3/R4 的独立证据共同形成。
 
 ## 2. 已读取依据
 

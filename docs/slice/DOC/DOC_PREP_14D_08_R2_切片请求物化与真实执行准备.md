@@ -12,7 +12,9 @@
 >
 > R2-02 实施状态：`COMPLETE（2026-08-06）`
 >
-> 父任务状态：`14D-08=BLOCKED`
+> R2-03 实施状态：`COMPLETE（2026-08-07）`
+>
+> 父任务状态：`14D-08=COMPLETE（2026-08-07）`
 
 ## 1. 准备结论
 
@@ -23,7 +25,7 @@
 |---|---|---|
 | `14D-08-R2-01` | scene/profile/output 校验、hash 复核和 job 目录原子物化 | **COMPLETE（2026-08-06）** |
 | `14D-08-R2-02` | 通过唯一 `CreateProductionSliceFacade()` 执行真实切片 | **COMPLETE（2026-08-06）** |
-| `14D-08-R2-03` | package、RIP strict、独立入口正负例集成证据 | **BLOCKED_BY_14D_05** |
+| `14D-08-R2-03` | package、RIP strict、独立入口正负例集成证据 | **COMPLETE（2026-08-07）** |
 
 R2-01 只生成可供现有生产 Facade 消费的受信输入，不创建 TIFF、manifest 或成功
 `result.json`。生产执行必须等待 R3-01 的权威 full preflight，并继续受 14D-05 安全发布约束。
@@ -233,10 +235,11 @@ R2-03 还必须等待 14D-05 的 staging、租约、自检、原子 publish、�
 14D_08_R2_01_STATUS=COMPLETE
 14D_08_R2_02_PREPARATION_GATE=PASS
 14D_08_R2_02_STATUS=COMPLETE
-14D_08_R2_03_PREPARATION_GATE=BLOCKED_BY_14D_05
-14D_08_PARENT_GATE=BLOCKED
+14D_08_R2_03_PREPARATION_GATE=PASS
+14D_08_R2_03_STATUS=COMPLETE
+14D_08_PARENT_GATE=PASS
 ```
 
-`14D-08-R2-01/02` 已完成并通过 Debug/Release 定向门禁。真实 Facade 可生成受控开发 Package，
-但 `slice.rgbwsv` 尚未注册为 Worker 生产能力。下一关键路径为 `14D-08-R3-02B` repair 接线与
-`14D-05` 安全发布；二者闭合后才能执行 R2-03。
+`14D-08-R2-01/02` 已实现物化和真实 SliceFacade；`14D-05` 与 Worker 注册随后完成。
+`14D-07-R2` 已从独立 Worker 入口验证真实 `p0.rgbwsv.2` Package、RIP strict、正负例、
+取消恢复和无 fallback，因此 R2-03 与父任务收口条件均已满足。
