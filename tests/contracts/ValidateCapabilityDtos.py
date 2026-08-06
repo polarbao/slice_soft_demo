@@ -46,8 +46,8 @@ def RequirePaths(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.2":
-        raise AssertionError("expected the dual-view textured ViewData contract")
+    if contract["contractVersion"] != "1.3":
+        raise AssertionError("expected the heavy-operation identity contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -165,6 +165,89 @@ def Main() -> int:
     }:
         raise AssertionError("viewdata errors are incomplete")
 
+    preflight = byId["geometry.preflight"]
+    RequirePaths(
+        preflight,
+        "requestFields",
+        {
+            "scene",
+            "sceneHash",
+            "expectedSceneRevision",
+            "profile",
+            "profileHash",
+            "targetMode",
+            "buildVolume",
+        },
+    )
+    RequirePaths(
+        preflight,
+        "responseFields",
+        {
+            "sceneId",
+            "sceneRevision",
+            "sceneHash",
+            "authoritative",
+            "complete",
+            "cancelled",
+            "checkedModelCount",
+            "checkedInstanceCount",
+            "blockedInstanceCount",
+            "skippedInstanceCount",
+            "instances",
+            "instances[].modelId",
+            "instances[].instanceId",
+            "instances[].transformHash",
+            "instances[].issues",
+            "collisions",
+            "outOfBoundsInstances",
+        },
+    )
+    preflightRequest = {
+        field["path"]: field for field in preflight["requestFields"]
+    }
+    for path in (
+        "scene",
+        "sceneHash",
+        "expectedSceneRevision",
+        "profile",
+        "profileHash",
+        "targetMode",
+    ):
+        if preflightRequest[path].get("requiredFor") != "full":
+            raise AssertionError(f"full preflight identity is not conditional: {path}")
+
+    repair = byId["geometry.repair"]
+    RequirePaths(
+        repair,
+        "requestFields",
+        {
+            "modelPath",
+            "modelFormat",
+            "outputPath",
+            "profile",
+            "profileHash",
+            "sourceResourceScope",
+            "repairOutputFormat",
+            "policy",
+            "requireStrictPass",
+        },
+    )
+    repairRequest = {field["path"]: field for field in repair["requestFields"]}
+    for path in ("modelFormat", "repairOutputFormat"):
+        if repairRequest[path].get("const") != "obj":
+            raise AssertionError(f"repair v1 output format drifted: {path}")
+    RequirePaths(
+        repair,
+        "responseFields",
+        {
+            "evidence.assetWritten",
+            "evidence.assetReimported",
+            "evidence.strictComplete",
+            "evidence.strictPass",
+            "evidence.attributesPreserved",
+        },
+    )
+
     invariants = contract["protocolInvariants"]
     expectedInvariants = {
         "packageSchema": "p0.rgbwsv.2",
@@ -277,7 +360,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus dual-view texture/grid contract: PASS")
+    print("15 capability DTOs plus heavy-operation identity contract: PASS")
     return 0
 
 

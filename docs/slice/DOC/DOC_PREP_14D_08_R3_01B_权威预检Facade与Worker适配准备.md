@@ -4,17 +4,16 @@
 >
 > 对应任务：`14D-08-R3-01B`
 >
-> 文档状态：`PREPARATION_GATE=BLOCKED_BY_14A_04_R2_INPUT_IDENTITY`
+> 文档状态：`PREPARATION_GATE=PASS / IMPLEMENTATION=READY`
 
 ## 1. 审计结论
 
-`14D-08-R3-01A` 的 engine 内部全场景权威预检服务已经完成，但当前不能直接把
-`geometry.preflight.full` 注册为生产 Worker 能力。阻断原因不是几何算法缺失，而是跨进程请求
-没有携带重建 committed scene 几何所需的完整身份。
+`14D-08-R3-01A` 的 engine 内部全场景权威预检服务已经完成。`14A-04-R2` 已获用户授权并将
+能力 DTO 升至 v1.3，跨进程请求现在具备重建 committed scene 几何所需的完整身份；本任务的
+准备门禁已经通过，可以实现 Facade 与 Worker executor。
 
-若 Worker 只依据 `input.scene` 重新导入模型，它只能使用默认 `SliceConfig`，无法保证与 UI 导入、
-场景提交和生产切片使用相同的 `modelTransform`、`autoOrient` 与模型加载策略。这样会对另一份几何
-执行“权威预检”，属于静默错误，必须 fail-closed。
+实现仍不得退回到只依据 `input.scene` 和默认 `SliceConfig` 重新导入模型；这会对另一份几何执行
+“权威预检”，属于静默错误，必须 fail-closed。
 
 ## 2. 代码事实
 
@@ -88,8 +87,8 @@ Worker failure。预检不得生成 TIFF、manifest 或 Package。
 
 ## 5. 受控合同修订要求
 
-该补充会改变冻结的能力 DTO v1.2。根据 `DOC_DECISION_14A-04-R1`，不得直接修改机器合同，必须先
-完成 `14A-04-R2` 受控修订并重新运行合同门禁。修订保持：
+该补充已通过 `DOC_DECISION_14A-04-R2` 受控修订进入能力 DTO v1.3，并须持续通过合同门禁。
+修订保持：
 
 ```text
 PM_SPI_VERSION = 1
@@ -130,7 +129,8 @@ tests/stage14d_08_r3/WorkerPreflightExecutorTests.cpp
 
 ```text
 14D_08_R3_01A_IMPLEMENTATION=COMPLETE
-14D_08_R3_01B_PREPARATION_GATE=BLOCKED_BY_14A_04_R2_INPUT_IDENTITY
-14D_08_R3_01B_IMPLEMENTATION=NOT_STARTED
-NEXT_DECISION=14A_04_R2
+14A_04_R2_DECISION=ACCEPTED
+14D_08_R3_01B_PREPARATION_GATE=PASS
+14D_08_R3_01B_IMPLEMENTATION=READY
+NEXT_TASK=14D_08_R3_01B
 ```

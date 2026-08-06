@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.2",
+  "contractVersion": "1.3",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -238,7 +238,12 @@
         { "path": "modelId", "type": "string", "required": false },
         { "path": "modelPath", "type": "string", "required": false },
         { "path": "mode", "type": "enum:fast|full", "required": true },
-        { "path": "scene", "type": "object", "required": false },
+        { "path": "scene", "type": "object", "requiredFor": "full" },
+        { "path": "sceneHash", "type": "string", "requiredFor": "full" },
+        { "path": "expectedSceneRevision", "type": "integer", "requiredFor": "full" },
+        { "path": "profile", "type": "object", "requiredFor": "full" },
+        { "path": "profileHash", "type": "string", "requiredFor": "full" },
+        { "path": "targetMode", "type": "enum:legacy|global_surface_shell", "requiredFor": "full" },
         { "path": "buildVolume", "type": "object", "required": false }
       ],
       "responseFields": [
@@ -253,7 +258,24 @@
         { "path": "topology.selfIntersectionPairs", "type": "integer", "required": true },
         { "path": "topology.isClosed", "type": "boolean", "required": true },
         { "path": "bboxMm", "type": "object", "required": true },
-        { "path": "outOfBounds", "type": "boolean", "required": true }
+        { "path": "outOfBounds", "type": "boolean", "required": true },
+        { "path": "sceneId", "type": "string", "requiredFor": "full" },
+        { "path": "sceneRevision", "type": "integer", "requiredFor": "full" },
+        { "path": "sceneHash", "type": "string", "requiredFor": "full" },
+        { "path": "authoritative", "type": "boolean", "requiredFor": "full" },
+        { "path": "complete", "type": "boolean", "requiredFor": "full" },
+        { "path": "cancelled", "type": "boolean", "requiredFor": "full" },
+        { "path": "checkedModelCount", "type": "integer", "requiredFor": "full" },
+        { "path": "checkedInstanceCount", "type": "integer", "requiredFor": "full" },
+        { "path": "blockedInstanceCount", "type": "integer", "requiredFor": "full" },
+        { "path": "skippedInstanceCount", "type": "integer", "requiredFor": "full" },
+        { "path": "instances", "type": "array", "requiredFor": "full" },
+        { "path": "instances[].modelId", "type": "string", "requiredFor": "full" },
+        { "path": "instances[].instanceId", "type": "string", "requiredFor": "full" },
+        { "path": "instances[].transformHash", "type": "string", "requiredFor": "full" },
+        { "path": "instances[].issues", "type": "array", "requiredFor": "full" },
+        { "path": "collisions", "type": "array", "requiredFor": "full" },
+        { "path": "outOfBoundsInstances", "type": "array<string>", "requiredFor": "full" }
       ],
       "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-INPUT-0002", "PM-SLICER-TOPOLOGY-0010", "PM-SLICER-TOPOLOGY-0011", "PM-SLICER-CANCELLED-0070", "PM-SLICER-INTERNAL-0099"]
     },
@@ -287,8 +309,13 @@
         { "path": "jobId", "type": "string", "required": true },
         { "path": "correlationId", "type": "string", "required": true },
         { "path": "modelId", "type": "string", "required": false },
-        { "path": "modelPath", "type": "string", "required": false },
+        { "path": "modelPath", "type": "string", "required": true },
+        { "path": "modelFormat", "type": "string", "const": "obj", "required": true },
         { "path": "outputPath", "type": "string", "required": true },
+        { "path": "profile", "type": "object", "required": true },
+        { "path": "profileHash", "type": "string", "required": true },
+        { "path": "sourceResourceScope", "type": "object", "required": true },
+        { "path": "repairOutputFormat", "type": "string", "const": "obj", "required": true },
         { "path": "policy", "type": "string", "const": "conservative", "required": true },
         { "path": "requireStrictPass", "type": "boolean", "const": true, "required": true }
       ],
@@ -299,6 +326,11 @@
         { "path": "preflightBefore", "type": "object", "required": true },
         { "path": "preflightAfter", "type": "object", "required": true },
         { "path": "evidence", "type": "object", "required": true },
+        { "path": "evidence.assetWritten", "type": "boolean", "required": true },
+        { "path": "evidence.assetReimported", "type": "boolean", "required": true },
+        { "path": "evidence.strictComplete", "type": "boolean", "required": true },
+        { "path": "evidence.strictPass", "type": "boolean", "required": true },
+        { "path": "evidence.attributesPreserved", "type": "boolean", "required": true },
         { "path": "elapsedMs", "type": "number", "required": true }
       ],
       "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-TOPOLOGY-0010", "PM-SLICER-TOPOLOGY-0011", "PM-SLICER-OUTPUT-0050", "PM-SLICER-CANCELLED-0070", "PM-SLICER-INTERNAL-0099"]

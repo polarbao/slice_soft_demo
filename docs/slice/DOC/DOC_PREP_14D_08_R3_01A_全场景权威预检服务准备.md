@@ -130,5 +130,6 @@ ctest --test-dir build-slicesoft/main -C Release --output-on-failure -R "^stage1
 ```text
 14D_08_R3_01A_PREPARATION_GATE=PASS
 14D_08_R3_01A_IMPLEMENTATION=READY
-14D_08_R3_01B=BLOCKED_BY_14A_04_R2_INPUT_IDENTITY
+14A_04_R2=ACCEPTED
+14D_08_R3_01B=READY
 ```

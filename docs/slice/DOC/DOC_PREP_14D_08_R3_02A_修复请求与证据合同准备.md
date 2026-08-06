@@ -9,9 +9,9 @@
 ## 1. 准备结论
 
 `geometry.repair` 的请求基线、目标资产、证据和 strict 复检顺序已冻结。R3-02B 实现前复核进一步
-确认：现有字段不足以固定模型加载 Profile、资源范围与输出格式，仓库也没有生产资产 Writer 和
-单模型 strict adapter。因此本文仍是 02A 基线，但 02B 的最新门禁以
-`DOC_PREP_14D_08_R3_02B_修复Facade与Worker执行准备.md` 为准，不能直接进入 executor 实现。
+确认：现有字段不足以固定模型加载 Profile、资源范围与输出格式。`14A-04-R2` 已补齐机器合同，
+并批准项目内确定性 OBJ/MTL Writer；本文仍是 02A 基线，02B 的最新实施顺序以
+`DOC_PREP_14D_08_R3_02B_修复Facade与Worker执行准备.md` 为准，在 R3-01B 完成后进入实现。
 
 ## 2. file contract 字段映射
 
@@ -124,7 +124,7 @@ self-intersection/manual required、属性冲突、修复后 strict 失败、取
 
 ```text
 14D_08_R3_02A_PREPARATION_GATE=PASS
-FILE_CONTRACT_MINOR_CHANGE_REQUIRED=YES_FOR_PROFILE_AND_OUTPUT_IDENTITY
-14D_08_R3_02B_PREPARATION_GATE=BLOCKED_BY_ASSET_WRITER_AND_STRICT_ADAPTER
-14D_08_R3_02B_IMPLEMENTATION=NOT_STARTED
+CAPABILITY_DTO_V1_3_IDENTITY=COMPLETE
+14D_08_R3_02B_PREPARATION_GATE=PASS
+14D_08_R3_02B_IMPLEMENTATION=READY_AFTER_R3_01B
 ```

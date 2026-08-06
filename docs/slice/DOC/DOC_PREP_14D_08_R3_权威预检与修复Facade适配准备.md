@@ -4,7 +4,7 @@
 >
 > 对应任务：`14D-08-R3`
 >
-> 文档状态：`PARENT_PREPARATION=PASS / CHILD_IMPLEMENTATION_GATES_BLOCKED`
+> 文档状态：`PARENT_PREPARATION=PASS / CHILD_IMPLEMENTATION_READY`
 >
 > 父任务状态：`14D-08=BLOCKED`
 
@@ -20,9 +20,9 @@ Profile/模型，既有修复服务是低层保守处理，不等于多模型 sc
 |---|---|---|
 | `14D-08-R3-00` | DTO/服务/错误和证据映射审计 | **READY / 本文完成准备** |
 | `14D-08-R3-01A` | scene-wide authoritative full preflight service | **READY / 字段级准备完成** |
-| `14D-08-R3-01B` | `PreflightFullFacade` 工厂和 Worker executor | **BLOCKED_BY_14A_04_R2_INPUT_IDENTITY** |
+| `14D-08-R3-01B` | `PreflightFullFacade` 工厂和 Worker executor | **READY / 14A-04-R2 已授权** |
 | `14D-08-R3-02A` | repair DTO、输出资产和 strict 复检合同冻结 | **READY / 字段级准备完成** |
-| `14D-08-R3-02B` | `RepairFacade` 工厂和 Worker executor | **BLOCKED_BY_ASSET_WRITER_AND_STRICT_ADAPTER** |
+| `14D-08-R3-02B` | `RepairFacade` 工厂和 Worker executor | **READY_AFTER_R3_01B / OBJ Writer 决策已冻结** |
 
 ## 2. 当前代码事实
 
@@ -187,12 +187,12 @@ R3-01A 完成后的实现前复核发现两个新增准备缺口：scene 本身�
 14D_08_R3_PARENT_PREPARATION_GATE=PASS
 14D_08_R3_00_PREPARATION_GATE=PASS
 14D_08_R3_01A_PREPARATION_GATE=PASS
-14D_08_R3_01B_PREPARATION_GATE=BLOCKED_BY_14A_04_R2_INPUT_IDENTITY
+14D_08_R3_01B_PREPARATION_GATE=PASS
 14D_08_R3_02A_PREPARATION_GATE=PASS
-14D_08_R3_02B_PREPARATION_GATE=BLOCKED_BY_ASSET_WRITER_AND_STRICT_ADAPTER
+14D_08_R3_02B_PREPARATION_GATE=PASS
 14D_08_PARENT_GATE=BLOCKED
 ```
 
 该结论关闭了“R3 做什么”和字段级映射的歧义，但没有把缺少实现的 Facade 伪记为可用。
-当前开发关键路径为 `14A-04-R2 授权 -> R3-01B -> R2-02`。R3-02B 需先冻结 repair 输出格式、
-属性保真和单模型 strict adapter；Writer 与 strict adapter 可在该决策后并行实现。
+当前开发关键路径为 `R3-01B -> R2-02`。R3-02B 的 repair 输出格式、属性保真和单模型 strict
+adapter 输入身份已冻结；Writer 与 strict adapter 可在 R3-01B 完成后并行实现。

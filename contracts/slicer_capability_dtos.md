@@ -1,9 +1,10 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.2
+> 合同版本：1.3
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
-> 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`
+> 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
+> `DOC_DECISION_14A_04_R2_重能力输入身份补充.md`
 
 ## 1. 范围
 
@@ -71,6 +72,22 @@ package.read_report
 
 失败时不得返回部分成功语义；未知字段可按 SPI minor 向前兼容，删改既有字段语义必须提升
 SPI major。
+
+### 3.1 Worker 重能力输入身份
+
+`geometry.preflight.full` 除 committed `scene` 外，必须携带 `sceneHash`、
+`expectedSceneRevision`、canonical effective `profile`、`profileHash` 和显式 `targetMode`。
+Worker 使用该 Profile 重建与生产切片相同的模型加载几何；禁止使用默认配置，禁止从 Profile 名称
+猜测 Legacy/Global。可选 `buildVolume` 出现时必须与 scene 完全一致。
+
+full preflight 响应必须绑定 scene/revision/hash，返回 authoritative/complete/cancelled、模型与实例
+计数、每实例 transform identity、碰撞和越界证据。几何 blocker 是成功执行后的业务结果；资源、
+身份、完整性和取消失败不得伪装为 authoritative PASS。
+
+`geometry.repair` 首版只接受并输出 OBJ。请求必须携带 effective Profile、Profile hash、资源范围、
+`modelFormat=obj` 和 `repairOutputFormat=obj`。成功结果必须证明资产已写入、已重导入、strict 检查
+完整且通过，并且 UV/材质/资源属性得到保留。STL/3MF repair 在首版显式返回不支持，不得丢属性
+后成功。
 
 ## 4. Scene ViewData
 

@@ -1,8 +1,8 @@
 # DOC_DECISION_14A-04-R2 重能力输入身份补充
 
-> 文档状态：PROPOSED / AWAITING USER AUTHORIZATION
+> 文档状态：ACCEPTED / USER AUTHORIZED
 >
-> 日期：2026-08-06
+> 日期：2026-08-06（用户授权）
 >
 > 适用范围：`geometry.preflight.full`、`geometry.repair`、Worker file contract 映射
 >
@@ -47,7 +47,8 @@ sourceResourceScope
 repairOutputFormat
 ```
 
-首版 `repairOutputFormat` 的可接受值在 Writer 决策中另行冻结；本提案不预先宣布多格式支持。
+首版固定 `modelFormat=obj`、`repairOutputFormat=obj`，采用项目内确定性 OBJ/MTL Writer；
+STL/3MF repair 显式返回不支持。后续增加格式必须另立受控修订。
 
 ### 2.3 不变量
 
@@ -78,11 +79,11 @@ file_contract_v1 major = 1
 
 ## 4. Consequences
 
-1. R3-01B 与 R3-02B 在本提案授权、机器合同更新和合同测试通过前保持阻断。
+1. R3-01B 与 R3-02B 在机器合同更新和合同测试通过前保持阻断；本次用户授权已解除决策阻断。
 2. Worker 物化器可复用 R2 scene/Profile 双 hash 和 job-owned staging。
 3. 打印侧需要基于修订后的 DTO 重新 ACK；既有 ABI 不需要重新链接。
 4. R2-02 slice executor 因依赖 full preflight，继续等待 R3-01B。
-5. 本修订不批准 repair Writer 方案；Writer/格式仍需独立决策。
+5. 本修订批准项目内确定性 OBJ/MTL Writer 作为 repair 首版，不引入 Assimp 运行依赖。
 
 ## 5. Validation
 
@@ -109,4 +110,4 @@ ctest --test-dir build-slicesoft/main -C Release --output-on-failure -R "stage14
   -> 独立确认 repair Writer 后实现 14D-08-R3-02B
 ```
 
-在明确授权前，本文仅记录审计结论和建议，不修改机器合同或生产代码。
+本决策已获授权；机器合同实现由 `14A-04-R2` 原子提交完成，生产 Facade/Worker 仍按后续任务开发。
