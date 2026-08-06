@@ -260,6 +260,39 @@ slicer_core::Json WaitForTerminal(pm_job_t* job)
     }
 }
 
+slicer_core::Json WaitForWorkerActivity(pm_job_t* job)
+{
+    const auto deadline = std::chrono::steady_clock::now() + 30s;
+    for (;;)
+    {
+        const slicer_core::Json progress = ParseJson(ReadBuffered(
+            [job](char* output, const int capacity, int* required)
+            {
+                return pm_poll(job, output, capacity, required);
+            }));
+        const std::string state = progress.at("state").as_string();
+        const std::string phase = progress.at("phase").as_string();
+        if (state == "running"
+            && phase != "queued"
+            && phase != "worker_contract"
+            && phase != "worker_execute")
+        {
+            return progress;
+        }
+        if (state == "succeeded" || state == "failed" || state == "cancelled")
+        {
+            throw std::runtime_error(
+                "public Worker job became terminal before active cancellation");
+        }
+        if (std::chrono::steady_clock::now() >= deadline)
+        {
+            throw std::runtime_error(
+                "public Worker job did not expose active Worker progress");
+        }
+        std::this_thread::sleep_for(10ms);
+    }
+}
+
 void TestWorkerSliceAndBackendRejection(
     pm_module_t* module,
     const std::filesystem::path& root,
@@ -367,10 +400,13 @@ void TestWorkerCancellation(
     const std::filesystem::path& root,
     const slicer_core::MultiModelScene& scene)
 {
+    const std::filesystem::path packageDirectory = root / "package-cancelled";
+    constexpr std::string_view jobId{"job-public-cancelled"};
+    constexpr std::string_view correlationId{"correlation-job-public-cancelled"};
     const std::string request = MakeSliceRequest(
-        root / "package-cancelled",
+        packageDirectory,
         scene,
-        "job-public-cancelled",
+        std::string{jobId},
         0.0001).dump(0);
     pm_job_t* const job = pm_submit(module, request.c_str());
     Check(job != nullptr, "public SPI accepts the cancellable Worker job");
@@ -378,11 +414,35 @@ void TestWorkerCancellation(
     {
         return;
     }
+    const slicer_core::Json activeProgress = WaitForWorkerActivity(job);
+    Check(activeProgress.at("state").as_string() == "running",
+        "public cancellation sample reaches a real Worker phase");
+    int unavailableRequired{0};
+    Check(pm_result(job, nullptr, 0, &unavailableRequired)
+            == PM_ERR_INVALID_STATE,
+        "public result remains unavailable while Worker is active");
+
+    const auto cancellationStarted = std::chrono::steady_clock::now();
     Check(pm_cancel(job) == PM_OK,
         "public SPI accepts cooperative Worker cancellation");
+    const slicer_core::Json cancellingProgress = ParseJson(ReadBuffered(
+        [job](char* output, const int capacity, int* required)
+        {
+            return pm_poll(job, output, capacity, required);
+        }));
+    const std::string cancellingState =
+        cancellingProgress.at("state").as_string();
+    Check(cancellingState == "cancelling" || cancellingState == "cancelled",
+        "pm_cancel exposes cancelling or an already completed cancellation");
+    Check(pm_cancel(job) == PM_OK,
+        "repeated public cancellation is idempotent");
     const slicer_core::Json progress = WaitForTerminal(job);
+    const auto cancellationElapsed =
+        std::chrono::steady_clock::now() - cancellationStarted;
     Check(progress.at("state").as_string() == "cancelled",
         "public Worker cancellation becomes terminal cancelled");
+    Check(cancellationElapsed <= 2000ms,
+        "active public Worker cancellation completes within 2000 ms");
     const slicer_core::Json result = ParseJson(ReadBuffered(
         [job](char* output, const int capacity, int* required)
         {
@@ -391,7 +451,20 @@ void TestWorkerCancellation(
     Check(!result.at("ok").as_bool()
             && result.at("code").as_string() == "PM-SLICER-CANCELLED-0070",
         "public Worker cancellation returns the frozen result code");
+    Check(pm_cancel(job) == PM_OK,
+        "cancellation after terminal state is an idempotent no-op");
     pm_release(job);
+
+    const auto identity =
+        slicer_core::api::artifacts::MakePackageArtifactIdentity(
+            packageDirectory,
+            std::string{jobId},
+            slicer_core::api::artifacts::MakePackageAttemptId(correlationId));
+    Check(!std::filesystem::exists(packageDirectory)
+            && !std::filesystem::exists(identity.staging_directory)
+            && !std::filesystem::exists(identity.backup_directory)
+            && !std::filesystem::exists(identity.lease_directory),
+        "active public cancellation publishes no package and leaves no residue");
 }
 
 void TestWorkerFullPreflight(

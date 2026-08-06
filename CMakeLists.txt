@@ -2274,6 +2274,10 @@ add_test(
     NAME stage14d05_r4b_public_worker_artifact_tests
     COMMAND stage14d06_public_worker_routing_tests
 )
+add_test(
+    NAME stage14d04b_public_worker_cancellation_tests
+    COMMAND stage14d06_public_worker_routing_tests
+)
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo
