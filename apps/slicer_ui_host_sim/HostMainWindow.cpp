@@ -99,18 +99,23 @@ void HostMainWindow::BuildInterface()
     importPanel->setMinimumWidth(300);
     importPanel->setMaximumWidth(420);
     auto* importLayout = new QVBoxLayout(importPanel);
-    m_modelListPanel = new HostModelListPanel(importPanel);
-    importLayout->addWidget(m_modelListPanel, 1);
+    auto* inspectorTabs = new QTabWidget(importPanel);
+    inspectorTabs->setObjectName(QStringLiteral("hostSceneInspectorTabs"));
+    auto* modelPage = new QWidget(inspectorTabs);
+    auto* modelLayout = new QVBoxLayout(modelPage);
+    modelLayout->setContentsMargins(4, 4, 4, 4);
+    m_modelListPanel = new HostModelListPanel(modelPage);
+    modelLayout->addWidget(m_modelListPanel, 1);
 
     m_importSummaryLabel = new QLabel(
-        QStringLiteral("尚未导入模型。"), importPanel);
+        QStringLiteral("尚未导入模型。"), modelPage);
     m_importSummaryLabel->setObjectName(
         QStringLiteral("hostImportSummaryLabel"));
     m_importSummaryLabel->setWordWrap(true);
     m_importSummaryLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    importLayout->addWidget(m_importSummaryLabel);
+    modelLayout->addWidget(m_importSummaryLabel);
 
-    m_preflightTable = new QTableWidget(importPanel);
+    m_preflightTable = new QTableWidget(modelPage);
     m_preflightTable->setObjectName(
         QStringLiteral("hostImportPreflightTable"));
     m_preflightTable->setColumnCount(3);
@@ -128,7 +133,13 @@ void HostMainWindow::BuildInterface()
     m_preflightTable->horizontalHeader()->setSectionResizeMode(
         2, QHeaderView::Stretch);
     m_preflightTable->setMinimumHeight(150);
-    importLayout->addWidget(m_preflightTable, 2);
+    modelLayout->addWidget(m_preflightTable, 2);
+    inspectorTabs->addTab(modelPage, QStringLiteral("模型"));
+
+    m_transformLayoutPanel = new HostTransformLayoutPanel(inspectorTabs);
+    inspectorTabs->addTab(
+        m_transformLayoutPanel, QStringLiteral("变换与排版"));
+    importLayout->addWidget(inspectorTabs, 1);
 
     workspaceSplitter->addWidget(m_workspace);
     workspaceSplitter->addWidget(importPanel);
@@ -219,6 +230,16 @@ void HostMainWindow::BuildInterface()
         &HostModelListPanel::SigSelectionChanged,
         this,
         &HostMainWindow::OnModelSelectionChanged);
+    connect(
+        m_transformLayoutPanel,
+        &HostTransformLayoutPanel::SigTransformRequested,
+        this,
+        &HostMainWindow::OnTransformRequested);
+    connect(
+        m_transformLayoutPanel,
+        &HostTransformLayoutPanel::SigLayoutRequested,
+        this,
+        &HostMainWindow::OnLayoutRequested);
 }
 
 void HostMainWindow::LoadModule(const QString& modulePath)
@@ -245,7 +266,7 @@ void HostMainWindow::LoadModule(const QString& modulePath)
         QStringLiteral("模块已就绪 · SPI v%1 · ABI 调用 %2 次")
             .arg(PM_SPI_VERSION)
             .arg(m_client.CallCount()));
-    m_modelListPanel->SetCommandsEnabled(true);
+    SetSceneCommandsEnabled(true);
     m_moduleInfoView->setPlainText(
         QStringLiteral("模块信息\n%1\n\n自检报告\n%2")
             .arg(
@@ -266,7 +287,7 @@ void HostMainWindow::OnImportModel()
         return;
     }
 
-    m_modelListPanel->SetCommandsEnabled(false);
+    SetSceneCommandsEnabled(false);
     m_importSummaryLabel->setText(QStringLiteral("正在导入并执行快速预检…"));
     QCoreApplication::processEvents();
 
@@ -274,7 +295,7 @@ void HostMainWindow::OnImportModel()
     QString error;
     const bool imported = m_importWorkflow->ImportModel(
         modelPath, &result, &error);
-    m_modelListPanel->SetCommandsEnabled(m_client.IsOpen());
+    SetSceneCommandsEnabled(m_client.IsOpen());
     if (!imported)
     {
         ShowImportError(error);
@@ -285,17 +306,20 @@ void HostMainWindow::OnImportModel()
 
 void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)
 {
-    m_modelListPanel->SetCommandsEnabled(false);
+    SetSceneCommandsEnabled(false);
     QString error;
     const bool removed = m_importWorkflow->RemoveInstances(
         instanceIds, &error);
-    m_modelListPanel->SetCommandsEnabled(m_client.IsOpen());
+    SetSceneCommandsEnabled(m_client.IsOpen());
     if (!removed)
     {
         ShowImportError(error);
         return;
     }
     m_modelListPanel->RemoveInstances(instanceIds);
+    m_transformLayoutPanel->SetSceneState(
+        m_importWorkflow->InstanceCount(),
+        m_importWorkflow->SceneRevision());
     m_importSummaryLabel->setText(
         QStringLiteral("已删除 %1 个模型实例；场景 revision=%2")
             .arg(instanceIds.size())
@@ -309,6 +333,7 @@ void HostMainWindow::OnModelSelectionChanged(
     const QStringList& instanceIds)
 {
     m_workspace->SetSelectedInstances(instanceIds);
+    m_transformLayoutPanel->SetSelectedInstances(instanceIds);
 }
 
 void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
@@ -321,6 +346,9 @@ void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
             ? QStringLiteral("需要人工修复")
             : QStringLiteral("阻断");
     m_modelListPanel->AddModel(result);
+    m_transformLayoutPanel->SetSceneState(
+        m_importWorkflow->InstanceCount(),
+        m_importWorkflow->SceneRevision());
     m_importSummaryLabel->setText(
         QStringLiteral(
             "%1\nOBJ/3MF 元数据：%2 三角形，%3 顶点，"

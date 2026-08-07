@@ -1,0 +1,218 @@
+#include "HostModelImportWorkflow.h"
+
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QUuid>
+
+#include <cmath>
+
+namespace
+{
+bool IsZero(const double value)
+{
+    return std::abs(value) <= 1.0e-12;
+}
+
+void AppendInstanceOperations(
+    const QString& instanceId,
+    const hosttransformrequest& request,
+    QJsonArray* operations)
+{
+    if (!IsZero(request.deltaxmm)
+        || !IsZero(request.deltaymm)
+        || !IsZero(request.deltazmm))
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("translate")},
+            {QStringLiteral("instanceId"), instanceId},
+            {QStringLiteral("deltaMm"), QJsonArray{
+                 request.deltaxmm,
+                 request.deltaymm,
+                 request.deltazmm}}});
+    }
+    if (!IsZero(request.rotatezdegrees))
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("rotateZ")},
+            {QStringLiteral("instanceId"), instanceId},
+            {QStringLiteral("degrees"), request.rotatezdegrees}});
+    }
+    if (!IsZero(request.uniformscalefactor - 1.0))
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("uniformScale")},
+            {QStringLiteral("instanceId"), instanceId},
+            {QStringLiteral("factor"), request.uniformscalefactor}});
+    }
+    if (request.mirrorx)
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("mirror")},
+            {QStringLiteral("instanceId"), instanceId},
+            {QStringLiteral("axis"), QStringLiteral("x")}});
+    }
+    if (request.mirrory)
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("mirror")},
+            {QStringLiteral("instanceId"), instanceId},
+            {QStringLiteral("axis"), QStringLiteral("y")}});
+    }
+}
+}
+
+bool HostModelImportWorkflow::ApplyTransforms(
+    const QStringList& instanceIds,
+    const hosttransformrequest& request,
+    hostsceneeditresult* result,
+    QString* error)
+{
+    if (!std::isfinite(request.deltaxmm)
+        || !std::isfinite(request.deltaymm)
+        || !std::isfinite(request.deltazmm)
+        || !std::isfinite(request.rotatezdegrees)
+        || !std::isfinite(request.uniformscalefactor)
+        || request.uniformscalefactor <= 0.0)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("实例变换参数必须为有限值且缩放因子大于零。");
+        }
+        return false;
+    }
+
+    QStringList uniqueIds;
+    for (const QString& instanceId : instanceIds)
+    {
+        if (!instanceId.isEmpty() && !uniqueIds.contains(instanceId))
+        {
+            uniqueIds.append(instanceId);
+        }
+    }
+    for (const QString& instanceId : uniqueIds)
+    {
+        if (!m_instanceModels.contains(instanceId))
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral("当前场景不存在实例：%1")
+                             .arg(instanceId);
+            }
+            return false;
+        }
+    }
+
+    QJsonArray operations;
+    for (const QString& instanceId : uniqueIds)
+    {
+        AppendInstanceOperations(instanceId, request, &operations);
+    }
+    if (operations.isEmpty())
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("实例变换没有产生可提交的变化。");
+        }
+        return false;
+    }
+    return CommitSceneOperations(operations, result, error);
+}
+
+bool HostModelImportWorkflow::ApplyGridLayout(
+    const hostgridlayoutrequest& request,
+    hostsceneeditresult* result,
+    QString* error)
+{
+    if (m_instanceModels.isEmpty()
+        || request.maxcolumns < 1 || request.maxcolumns > 11
+        || request.maxrows < 1 || request.maxrows > 2
+        || !std::isfinite(request.columngapmm)
+        || !std::isfinite(request.rowgapmm)
+        || request.columngapmm < 0.0 || request.rowgapmm < 0.0)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("规则排版需要有效场景、1..11 列、1..2 行和非负净距。");
+        }
+        return false;
+    }
+    if (m_instanceModels.size() > request.maxcolumns * request.maxrows)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("规则排版容量不足：当前 %1 个实例，容量 %2。")
+                         .arg(m_instanceModels.size())
+                         .arg(request.maxcolumns * request.maxrows);
+        }
+        return false;
+    }
+
+    const QJsonObject layout{
+        {QStringLiteral("policy"), QStringLiteral("grid")},
+        {QStringLiteral("maxColumns"), request.maxcolumns},
+        {QStringLiteral("maxRows"), request.maxrows},
+        {QStringLiteral("columnGapMm"), request.columngapmm},
+        {QStringLiteral("rowGapMm"), request.rowgapmm},
+        {QStringLiteral("spacingMode"), QStringLiteral("edge_clearance")},
+        {QStringLiteral("order"), QStringLiteral("row_major")}};
+    return CommitSceneOperations(
+        QJsonArray{QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("applyGridLayout")},
+            {QStringLiteral("layout"), layout}}},
+        result,
+        error);
+}
+
+bool HostModelImportWorkflow::CommitSceneOperations(
+    const QJsonArray& operations,
+    hostsceneeditresult* result,
+    QString* error)
+{
+    if (result == nullptr || m_sceneHandle == 0U || operations.isEmpty())
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("场景 Commit 缺少结果目标、场景会话或操作。");
+        }
+        return false;
+    }
+    *result = {};
+    const QJsonObject request{
+        {QStringLiteral("capability"),
+         QStringLiteral("scene.apply_operation")},
+        {QStringLiteral("operationId"),
+         QStringLiteral("operation-edit-%1").arg(
+             QUuid::createUuid().toString(QUuid::WithoutBraces))},
+        {QStringLiteral("sceneHandle"), static_cast<qint64>(m_sceneHandle)},
+        {QStringLiteral("currentSceneRevision"),
+         static_cast<qint64>(m_sceneRevision)},
+        {QStringLiteral("expectedSceneRevision"),
+         static_cast<qint64>(m_sceneRevision)},
+        {QStringLiteral("operations"), operations}};
+    QJsonObject response;
+    if (!ExecuteObject(request, &response, error))
+    {
+        return false;
+    }
+
+    const quint64 newRevision = static_cast<quint64>(response.value(
+        QStringLiteral("newSceneRevision")).toDouble());
+    if (newRevision != m_sceneRevision + 1U)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("场景 Commit 未返回连续 sceneRevision。");
+        }
+        return false;
+    }
+    m_sceneRevision = newRevision;
+    result->scenerevision = newRevision;
+    result->scenehash = response.value(QStringLiteral("sceneHash")).toString();
+    result->viewdataidentity = response.value(
+        QStringLiteral("viewdataIdentity")).toString();
+    result->collisioncount = response.value(
+        QStringLiteral("collisions")).toArray().size();
+    result->outofboundscount = response.value(
+        QStringLiteral("outOfBoundsInstances")).toArray().size();
+    return true;
+}

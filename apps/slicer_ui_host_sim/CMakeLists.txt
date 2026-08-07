@@ -9,10 +9,14 @@ add_executable(slicer_ui_host_sim
     CapabilityCoverageWorkflow.cpp
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
     HostModelListPanel.cpp
     HostModelListPanel.h
+    HostTransformLayoutPanel.cpp
+    HostTransformLayoutPanel.h
     HostMainWindow.cpp
     HostMainWindow.h
+    HostMainWindowScene.cpp
     Main.cpp
     ModuleClient.cpp
     ModuleClient.h
@@ -240,6 +244,58 @@ endif()
 add_test(
     NAME hostflow_hb02_model_list_selection
     COMMAND hostflow_hb02_model_list_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(hostflow_hb03_transform_layout_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    HostTransformLayoutPanel.cpp
+    HostTransformLayoutPanel.h
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostTransformLayoutPanelTests.cpp
+)
+
+set_target_properties(hostflow_hb03_transform_layout_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(hostflow_hb03_transform_layout_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hb03_transform_layout_tests PRIVATE
+    Qt5::Widgets
+    bcrypt
+)
+
+add_dependencies(hostflow_hb03_transform_layout_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb03_transform_layout_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb03_transform_layout_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb03_transform_layout_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb03_transform_layout
+    COMMAND hostflow_hb03_transform_layout_tests
         --module $<TARGET_FILE:slicer_module>
         --repo-root ${CMAKE_SOURCE_DIR}
 )
@@ -498,6 +554,7 @@ set_tests_properties(
     hostflow_ha03_qt_end_to_end
     hostflow_hb01_import_ui_smoke
     hostflow_hb02_model_list_selection
+    hostflow_hb03_transform_layout
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )

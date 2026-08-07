@@ -311,6 +311,12 @@ bool SceneInteractionController::AdoptSnapshot(
     const QJsonObject& result,
     QString* error)
 {
+    const quint64 responseHandle = static_cast<quint64>(result.value(
+        QStringLiteral("sceneHandle")).toDouble());
+    if (responseHandle != 0U)
+    {
+        m_sceneHandle = responseHandle;
+    }
     const qint64 revision = static_cast<qint64>(result.value(
         QStringLiteral("sceneRevision")).toDouble());
     const QString sceneHash = result.value(

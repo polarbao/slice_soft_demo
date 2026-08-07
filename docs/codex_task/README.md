@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-08-06
-> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **ACTIVE / H-A COMPLETE / H-B-01..02 COMPLETE / H-B-03 NEXT**；Stage 16 **PROPOSED / NOT ACTIVE**
+> 更新日期：2026-08-07
+> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **ACTIVE / H-A COMPLETE / H-B-01..03 COMPLETE / H-B-04 NEXT**；Stage 16 **PROPOSED / NOT ACTIVE**
 >
 > **⬇️ 切片侧收口后的下一步：见下方「切片侧收口后的接续专项」**
 
@@ -38,7 +38,7 @@ docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.
 
 > HOSTFLOW 已于 2026-08-07 获得 HQ-01 授权并转为 `ACTIVE`；H-A-01 已完成合同受控修订。
 > HQ-07 已授权，DTO v1.6 `sceneContext` 与 H-A-02 场景生命周期运行时已通过 Debug/Release 门禁。
-> DTO v1.7 与 H-A-03 空场景端到端闭环已通过 Debug/Release 门禁；H-A 全组完成。H-B-01 模型导入与快速预检、H-B-02 实例列表/多选/删除/联动均已通过 Debug/Release 门禁，下一张独立卡为 H-B-03。
+> DTO v1.7 与 H-A-03 空场景端到端闭环已通过 Debug/Release 门禁；H-A 全组完成。H-B-01 模型导入与快速预检、H-B-02 实例列表/多选/删除/联动、H-B-03 精确变换/镜像/规则排版均已通过 Debug/Release 门禁，下一张独立卡为 H-B-04。
 > RENDER 仍为 `PROPOSED / NOT ACTIVE`。
 > 按本目录使用规则「一次只执行用户明确指定的一个原子任务」，
 > **codex 不得自行启动**，须等用户指定卡号（例如「执行 H-B-04」）。
@@ -53,7 +53,7 @@ docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.
 ```text
 P0 · 已完成 H-A-01..04 COMPLETE       ABI 场景生命周期（HOSTFLOW）
             R-A-01                       实测甲片三角面数（RENDER，成本极低）
-P1 · 当前   H-B-01..02 COMPLETE；H-B-03..08  宿主业务流程 UI（HOSTFLOW）
+P1 · 当前   H-B-01..03 COMPLETE；H-B-04..08  宿主业务流程 UI（HOSTFLOW）
             R-B-01/02                    LOD 跳采样修复（RENDER，若 R-A-01 判为 P1）
 P2          H-C-01..03 · R-C-01/02 · R-D-01
 P3          Stage 16 · 03E 第二步 · R-D-02/03/04

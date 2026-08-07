@@ -8,6 +8,7 @@
 #include <QStringList>
 
 class QJsonObject;
+class QJsonArray;
 
 /** @brief One issue returned by the synchronous model preflight. */
 struct hostpreflightissue
@@ -33,6 +34,37 @@ struct hostmodelimportresult
     double heightmm{0.0};
     double depthmm{0.0};
     QList<hostpreflightissue> issues;
+};
+
+/** @brief Incremental transform values committed to selected scene instances. */
+struct hosttransformrequest
+{
+    double deltaxmm{0.0};
+    double deltaymm{0.0};
+    double deltazmm{0.0};
+    double rotatezdegrees{0.0};
+    double uniformscalefactor{1.0};
+    bool mirrorx{false};
+    bool mirrory{false};
+};
+
+/** @brief Deterministic grid-layout values owned by the host UI. */
+struct hostgridlayoutrequest
+{
+    int maxcolumns{11};
+    int maxrows{2};
+    double columngapmm{10.0};
+    double rowgapmm{10.0};
+};
+
+/** @brief Authoritative summary returned by one scene Commit. */
+struct hostsceneeditresult
+{
+    quint64 scenerevision{0};
+    QString scenehash;
+    QString viewdataidentity;
+    int collisioncount{0};
+    int outofboundscount{0};
 };
 
 /**
@@ -73,6 +105,32 @@ public:
         QString* error);
 
     /**
+     * @brief Atomically applies incremental transforms to selected instances.
+     * @param instanceIds Stable instance identities selected by the host.
+     * @param request Finite translation, rotation, scale and mirror commands.
+     * @param result Receives the authoritative Commit summary.
+     * @param error Receives a user-readable fail-closed reason.
+     * @return True when all requested operations commit in one revision.
+     */
+    bool ApplyTransforms(
+        const QStringList& instanceIds,
+        const hosttransformrequest& request,
+        hostsceneeditresult* result,
+        QString* error);
+
+    /**
+     * @brief Applies authoritative 11x2 grid layout through the public SPI.
+     * @param request Valid host-owned row, column and spacing values.
+     * @param result Receives the authoritative Commit summary.
+     * @param error Receives a user-readable fail-closed reason.
+     * @return True when applyGridLayout advances the scene once.
+     */
+    bool ApplyGridLayout(
+        const hostgridlayoutrequest& request,
+        hostsceneeditresult* result,
+        QString* error);
+
+    /**
      * @brief Returns the module-owned scene handle after the first import.
      * @return Zero before a scene has been created.
      */
@@ -99,6 +157,10 @@ private:
     bool RunFastPreflight(
         const QString& modelId,
         hostmodelimportresult* result,
+        QString* error);
+    bool CommitSceneOperations(
+        const QJsonArray& operations,
+        hostsceneeditresult* result,
         QString* error);
     void RollbackImport(
         const QString& modelId,

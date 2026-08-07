@@ -2,6 +2,7 @@
 
 #include "HostModelListPanel.h"
 #include "HostModelImportWorkflow.h"
+#include "HostTransformLayoutPanel.h"
 #include "ModuleClient.h"
 
 #include <QMainWindow>
@@ -41,6 +42,25 @@ private:
     void OnImportModel();
     void OnRemoveModels(const QStringList& instanceIds);
     void OnModelSelectionChanged(const QStringList& instanceIds);
+    void OnTransformRequested(
+        const QStringList& instanceIds,
+        double deltaXMm,
+        double deltaYMm,
+        double deltaZMm,
+        double rotateZDegrees,
+        double uniformScaleFactor,
+        bool mirrorX,
+        bool mirrorY);
+    void OnLayoutRequested(
+        int maxColumns,
+        int maxRows,
+        double columnGapMm,
+        double rowGapMm);
+    void SetSceneCommandsEnabled(bool enabled);
+    void ShowSceneEditResult(
+        const QString& action,
+        const hostsceneeditresult& result);
+    void ShowSceneEditError(const QString& action, const QString& error);
     void ShowImportResult(const hostmodelimportresult& result);
     void ShowImportError(const QString& error);
 
@@ -53,6 +73,7 @@ private:
     QLabel* m_statusLabel{nullptr};
     QLabel* m_pathLabel{nullptr};
     HostModelListPanel* m_modelListPanel{nullptr};
+    HostTransformLayoutPanel* m_transformLayoutPanel{nullptr};
     QLabel* m_importSummaryLabel{nullptr};
     QTableWidget* m_preflightTable{nullptr};
     QPlainTextEdit* m_moduleInfoView{nullptr};
