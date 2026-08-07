@@ -72,6 +72,8 @@
 | `DOC_PREP_HOSTFLOW_H_B_01_模型导入业务流程准备.md` | H-B-01 OBJ/3MF 导入、实例入场、快速预检、UI 展示与联合门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_02_模型实例列表与选择准备.md` | H-B-02 实例列表、原子删除、多选、全选、视图联动与主干 A/B 门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_03_实例变换与规则排版准备.md` | H-B-03 精确变换、镜像、规则排版、三车道调用边界与联合门禁 |
+| `DOC_PREP_HOSTFLOW_H_B_04_Profile目录与能力查询准备.md` | H-B-04 Profile 所有权、模块能力查询、实现计划和停止条件 |
+| `DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` | HQ-08 Profile 发现协议二选一决策，推荐宿主目录 + ABI 能力求交 |
 | `DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | ViewData v1.2：surfacePreview、UV/材质/纹理、multi-model appearances、LOD/blob/identity |
 | `DOC_DECISION_14_UI_宿主模拟改造专项.md` | 14E 独立打印软件参考宿主、双视图纹理、QOpenGL、网格和可测 Gate |
 | `DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | 14B Facade、base/engine 分层、执行顺序、验证矩阵与回滚边界 |

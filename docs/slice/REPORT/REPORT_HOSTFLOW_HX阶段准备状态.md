@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE / H-A COMPLETE / H-B-01..03 COMPLETE / H-B-04 NEXT**
+> 状态：**ACTIVE / H-A COMPLETE / H-B-01..03 COMPLETE / H-B-04 PREP COMPLETE / HQ-08 BLOCKED**
 > 日期：2026-08-07
 > 范围：HOSTFLOW H-A、H-B、H-C，不属于 Stage 14 编号任务。
 
@@ -9,7 +9,7 @@
 | 任务组 | 准备状态 | 当前可执行范围 | 阻断 |
 |---|---|---|---|
 | H-A 场景生命周期 | COMPLETE | H-A-01..04 全部完成；DTO 当前为 v1.7 | 无切片侧阻断 |
-| H-B 宿主业务 UI | ACTIVE | H-B-01..03 已完成；H-B-04..08 的能力前置均已具备 | 后续各卡仍须显式启动 |
+| H-B 宿主业务 UI | BLOCKED | H-B-01..03 已完成；H-B-04 准备审计完成 | HQ-08 Profile 目录所有权未决；H-B-05..08 依赖 H-B-04 |
 | H-C 移植交付 | NOT READY | 可提前建立文件清单模板 | H-C-01 等 H-B-07；H-C-02/03 继续依赖 H-C-01/H-B-07 |
 
 H-A-02 已完成：Facade 支持 add/remove 与候选态原子提交；Adapter 支持既有 handle、inline scene、
@@ -65,9 +65,11 @@ H-A-03 已证明宿主只经 11 个导出实现：
 1. **HQ-07 已关闭**：用户接受 `sceneContext`，DTO 已受控提升到 v1.6。
 2. **H-A-04 已关闭**：`applyGridLayout` 已独立实现并通过门禁，不新增能力或导出。
 3. 打印侧 ACK 继续为 `PENDING / DEFERRED`，不得写成 PASS。
+4. **HQ-08 待关闭**：推荐 Profile 目录归宿主，模块能力经 `pm_module_info` 查询并求交；备选为
+   受控扩展 module_info。不得新增第 16 项能力或读取内部场景 JSON。
 
 ## Next Action
 
-下一候选为 H-B-04；H-B-04 → H-B-08 已具备能力前置。按照专项
-单卡规则，下一张卡仍须由用户显式启动。H-C-01/03 继续等待 H-B-07，打印侧 ACK 维持
-`PENDING / DEFERRED`。
+H-B-04 准备已完成，但实际开发等待 HQ-08 决策。HQ-08 关闭后按
+H-B-04 → H-B-05 → H-B-06 → H-B-07 → H-B-08 串行推进。H-C-01/03 继续等待 H-B-07，
+打印侧 ACK 维持 `PENDING / DEFERRED`。

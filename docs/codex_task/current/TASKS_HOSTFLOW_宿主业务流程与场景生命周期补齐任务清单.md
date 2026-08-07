@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
 > 文档状态：**ACTIVE / HQ-01 + HQ-07 AUTHORIZED**
-> 版本：v1.9 ｜ 日期：2026-08-07 ｜ 激活日期：2026-08-07
+> 版本：v2.0 ｜ 日期：2026-08-07 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -177,7 +177,7 @@
 | **H-B-01** | 模型导入流程：文件对话框 → `model.import` → `addInstance` → 列表显示 + 导入预检结果展示 | **H-A-03**（硬依赖）| 可导入 OBJ/3MF；预检失败有明确提示；对照主干 `ModelPreflightPanel` 行为一致 | **COMPLETE（2026-08-07）** |
 | **H-B-02** | 模型/实例列表与选择：增删、多选、选中联动视图 | **无**（用 fixture scene）；删除实例需 H-A-01 | 对照主干 `ModelListPanel` | **COMPLETE（2026-08-07）** |
 | **H-B-03** | 排版与变换 UI 入口：移动/旋转/缩放/镜像 + 精确数值输入（三车道机制 14E-03 已有，本卡只补入口） | **无**（四种变换已在 ABI）；**规则排版部分需 H-A-04** | 对照主干 `ModelTransformPanel`、`SceneLayoutPanel`；**UI-M1 仍须成立** | **COMPLETE（2026-08-07）** |
-| **H-B-04** | Profile 选择：经 ABI 查询可用 Profile 与能力集，展示能力标签与生产安全级别 | **无** | 对照主干 `ProductionModePanel` + `ScenarioRegistry`；**不得直接读 `slicer_scenarios.json`** | PROPOSED |
+| **H-B-04** | Profile 选择：经 ABI 查询可用 Profile 与能力集，展示能力标签与生产安全级别 | **HQ-08**：当前 ABI 无 Profile 目录 | 对照主干 `ProductionModePanel` + `ScenarioRegistry`；**不得直接读 `slicer_scenarios.json`** | **PREP COMPLETE / BLOCKED BY HQ-08** |
 | **H-B-05** | 切片参数设置：DPI、层厚、输出目录、材料策略等；含有效配置预览与校验提示。**须体现 `buildVolume` 归属宿主**（`CLD_04`:360）| H-B-04 | 对照主干 `ConfigEditorPanel` / `QuickConfigPanel` / `EffectiveConfigGenerator` | PROPOSED |
 | **H-B-06** | 切片提交与作业管理：提交、进度条、取消、错误展示 | H-B-05 | 对照主干 `ProductionSliceRunSession`；取消 ≤2s 且无 `.staging` 残留 | PROPOSED |
 | **H-B-07** | 结果查看：包校验、摘要、报告、层预览与通道图 | H-B-06 | 对照主干 `PackageLoader` / `LayerPreviewPanel` / `ChannelChartPanel` | PROPOSED |
@@ -355,6 +355,7 @@ P4 · 无返工压力，可最后做
 | HQ-05 | R-A-01 甲片三角面数（需实测，非决策）| 决定 LOD 缺陷是 P1 还是 P2 |
 | HQ-06 | 渲染四项待决 RD-A/B/C/D | 见 `TASKS_RENDER` §9 |
 | **HQ-07** | **隐式场景如何取得宿主权威的 `resolvedProfileId` 与 `buildVolume`** | H-A-02 代码审计确认 DTO v1.5 缺少生产所需场景上下文；建议采用 `sceneContext` 并受控升至 v1.6，见 `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md` |
+| **HQ-08** | **Profile 目录由宿主提供，还是随模块 ABI 自述** | H-B-04 准备审计确认 `pm_module_info` 无 Profile 目录且禁止内部 JSON；推荐宿主目录 + ABI 能力求交，见 `DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` |
 
 ## 6.6 ✅ HQ-03 / HQ-04 已闭合（2026-08-07）
 
@@ -452,6 +453,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-07 | v2.0 | H-B-04 准备审计完成：确认冻结 `pm_module_info`/15 项能力没有 Profile 目录，主干内部 JSON 与 `slicer_core` 目录均不可移植；新增 HQ-08，推荐“宿主 Profile 目录 + ABI 模块能力求交”。H-B-04 标记为 PREP COMPLETE / BLOCKED，H-B-05..08 不得越过该 Gate。 |
 | 2026-08-07 | v1.9 | 完成 H-B-03：参考宿主增加多选实例精确移动/旋转/缩放/镜像及 11×2 规则排版入口；本地编辑零 DLL 调用，变换与排版各以单次原子 Commit 推进一次 revision。Debug/Release 各 8/8 联合门禁通过，主干三组 A/B smoke PASS，下一卡为 H-B-04。 |
 | 2026-08-07 | v1.8 | 完成 H-B-02：参考宿主增加扩展选择、全选、添加/原子删除入口和中央工作区选择联动；删除经单次 `removeInstance[]` Commit，未知实例 fail-closed。Debug/Release 各 6/6 联合门禁通过，主干 `multi-model-list` 源码构建 smoke PASS，下一卡为 H-B-03。 |
 | 2026-08-07 | v1.7 | 完成 H-B-01：参考宿主经公开 SPI 完成 OBJ/3MF 导入、`addInstance`、快速预检、模型列表与问题展示；缺失/不支持文件显式 fail-closed。Debug/Release 各 5/5 联合门禁通过，下一卡为 H-B-02。 |
