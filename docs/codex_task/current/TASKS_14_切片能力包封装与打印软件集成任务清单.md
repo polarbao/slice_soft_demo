@@ -373,11 +373,15 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| 14F-01 | `modules/slicer/` 打包（DLL + Worker + module.json + 依赖 DLL）| 14C-06, 14D-07 | 干净机可装载 | PREPARED |
-| 14F-02 | 与打印侧 M1 联调（装载 + 能力清单 + 自检）| 14F-01 | 打印侧 M1 出口 | **外部依赖** |
-| 14F-03 | 与打印侧 M2 联调（单模型 → S1 校验）| 14F-02 | S1 正/负例通过 | **外部依赖** |
-| 14F-04 | 与 RIP 联调（S2 契约 + `rip_output_validator`）| 14A-08 | S2 C1–C7 通过 | **外部依赖** |
-| 14F-05 | 端到端到 Ready + 阶段收口报告 | 14F-04 | E2E 通过；出 `REPORT_14` | **外部依赖** |
+| 14F-01 | `modules/slicer/` 打包（DLL + Worker + module.json + 依赖 DLL）| 14C-06, 14D-07 | 分发包本地隔离验证 | ✅ **SLICER-SIDE COMPLETE** |
+| 14F-02 | 与打印侧 M1 联调（装载 + 能力清单 + 自检）| 14F-01 | M1 handoff 与本地接收门禁 | 🟡 **INTERFACE FROZEN / EXTERNAL VALIDATION DEFERRED** |
+| 14F-03 | 与打印侧 M2 联调（单模型 → S1 校验）| 14F-02 冻结合同 | S1 正例 + 7 类负例 | 🟢 **LOCAL GATE READY** |
+| 14F-04 | 与 RIP 联调（S2 契约 + `rip_output_validator`）| 14A-08 | S2 C1–C7 本地合同门禁 | 🟢 **LOCAL GATE READY** |
+| 14F-05 | 端到端到 Ready + 阶段收口报告 | 14F-03/04 本地门禁 | 切片侧收口；外部验收显式延期 | 🟡 **WAIT LOCAL GATES** |
+
+> 2026-08-07 用户授权暂不执行打印侧验证，并按打印侧可实现性成立继续推进。
+> 权威边界见 `docs/slice/DOC/DOC_DECISION_14F_外部验证延期与接口冻结.md`；
+> `IMPLEMENTABILITY_ASSUMED` 不得写成打印侧或目标 RIP 已 PASS。
 
 ---
 
@@ -414,8 +418,8 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
   ✅ OPEN-14-02 TIFF 后端策略 —— 手写 Writer 默认、LibTIFF 可选；默认切换未授权
   ✅ OPEN-14-03/04/05 —— 随 RIP 六问闭合
 
-【仍阻塞于外部】
-  14F-02/03/04/05  外部打印软件与目标 RIP 实机联调
+【外部验收延期，不再阻塞切片侧本地收口】
+  14F-02/03/04/05  打印软件、目标 RIP、干净机与实物证据
   OPEN-14-06       三个必需 OBJ 的处置（产品）
     ↳ 解耦手段：用已有 7 个 strict-PASS 资产先跑通 14F-02/03
   OPEN-14-07       S2-R1 极性映射表（RIP↔打印软件双边）—— 不阻塞切片侧

@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.56 ｜ 更新日期：2026-08-07
+> 版本：v3.58 ｜ 更新日期：2026-08-07
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -13,13 +13,14 @@
 DOCUMENTATION_GATE     = PASS          （10/10 必需文档齐备，见 §2）
 IMPLEMENTATION_GATE    = AUTHORIZED    ← 用户于 2026-08-04 授权
 STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED）
-EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
-                         RIP 六问两轮闭合、14A-08 COMPLETE；
-                         外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14F-02 打印侧 M1 联调（切片侧交付 READY，打印侧 ACK 外部依赖）
+EXTERNAL_EVIDENCE_GATE = DEFERRED_BY_USER
+                         打印侧可实现性按假定成立；接口立即冻结；
+                         打印侧、目标 RIP、干净机与实物证据不得伪记 PASS
+CURRENT_NEXT_TASK      = 14F-03 单模型到 S1 本地正负例门禁
 M_MVP_GATE             = PASS          （14E-01 纯 C 公开 ABI 闭环 Debug/Release PASS）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
+14F_INTERFACE_STATE    = FROZEN        （见 DOC_DECISION_14F_外部验证延期与接口冻结）
 ```
 
 ### 1.1 激活前置清单
@@ -184,6 +185,7 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 14E-07 | ✅ COMPLETE（2026-08-07） | VSCode 中新增独立 `SliceSoft 14E:` Debug/Release 编译、运行、自检与调试入口 | 原 UI Debug/Release 构建、部署、启动通过；封装宿主 Debug/Release SPI 自检与启动通过 |
 | 14F-01 | 🟡 SLICER-SIDE COMPLETE（2026-08-07） | `modules/slicer/` Release 打包脚本、依赖 inventory、哈希、NOTICE/许可证与本地隔离验证 | 包内 Worker 合同和纯 C 宿主 import→slice→verify PASS；独立干净机装载仍 NOT RUN，14F-02 外部依赖 |
 | 14F-02-PREP | 🟡 SLICER-SIDE READY（2026-08-07） | 打印侧 M1 handoff、公开合同、独立装载/能力/自检探针、缺 DLL 负例和执行手册 | Release M1 探针、handoff 哈希和本地接收门禁 PASS；打印侧 ModuleRegistry、进程模块清单及 ACK 仍待外部完成 |
+| 14F-02-FREEZE | ✅ COMPLETE（2026-08-07） | 冻结 SPI v1、11 导出、15 能力、DTO v1.4、三车道 v1.1、Worker 文件合同、S1/S2 与交付边界 | 用户授权按打印侧可实现继续推进；外部验证统一标记 DEFERRED，不伪造 PASS |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
 11 个冻结符号；C-SPI-01..18 已由 14C-06A/06B 合并关闭。
@@ -319,3 +321,4 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 2026-08-07 | v3.55 | 完成 14E-07：VSCode 新增与原 UI 明确区分的封装宿主 Debug/Release 编译、运行、自检和调试入口；原 UI 构建/部署/启动与新宿主 SPI 自检均完成实测，14F-01 已获用户授权 |
 | 2026-08-07 | v3.56 | 完成 14F-01 切片侧打包：生成独立 `modules/slicer/` Release 能力包，递归闭合 PE/MSVC Runtime 依赖并携带 NOTICE、许可证、运行时 inventory 与 SHA-256；包内 Worker 合同和纯 C 宿主 import→slice→verify 本地隔离闭环 PASS，真实干净机与打印侧 M1 证据仍待外部执行 |
 | 2026-08-07 | v3.57 | 完成 14F-02 切片侧联调准备：新增只执行装载、15 项能力和 `pm_self_test` 的 M1 探针，生成能力包+公开合同+手册的自包含 handoff 并验证哈希与缺 DLL 负例；打印侧 ModuleRegistry 和进程模块清单 ACK 仍为外部依赖，14F-02 不标 COMPLETE |
+| 2026-08-07 | v3.58 | 用户授权暂缓打印侧验证并按可实现性成立继续推进；新增 14F 外部验证延期与接口冻结决策，明确切片侧本地 S1/S2 门禁可继续、外部证据不得伪记 PASS；下一任务为 14F-03 |
