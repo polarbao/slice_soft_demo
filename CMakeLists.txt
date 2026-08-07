@@ -1192,6 +1192,32 @@ add_dependencies(stage14d07_engine_conformance_gate slicer_worker)
 add_dependencies(slicer_module slicer_worker)
 add_dependencies(stage14d06_public_worker_routing_tests slicer_worker)
 
+add_executable(slicer_host_sim
+    apps/slicer_host_sim/Main.c
+    apps/slicer_host_sim/HostModuleApi.c
+    apps/slicer_host_sim/HostModuleApi.h
+    apps/slicer_host_sim/HostPath.c
+    apps/slicer_host_sim/HostPath.h
+    apps/slicer_host_sim/HostRequestBuilder.c
+    apps/slicer_host_sim/HostRequestBuilder.h
+    apps/slicer_host_sim/JsonText.c
+    apps/slicer_host_sim/JsonText.h
+)
+set_target_properties(slicer_host_sim PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+)
+target_include_directories(slicer_host_sim PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_host_sim
+)
+target_link_libraries(slicer_host_sim PRIVATE bcrypt)
+add_dependencies(slicer_host_sim slicer_module slicer_worker)
+if(MSVC)
+    target_compile_options(slicer_host_sim PRIVATE /W4 /WX)
+endif()
+
 add_executable(texture_fill_partition_release_benchmark
     apps/texture_fill_partition_release_benchmark/main.cpp
 )
@@ -1909,6 +1935,12 @@ if(Python3_Interpreter_FOUND)
             --repo-root "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_test(
+        NAME slicer_stage14e01_pure_c_host_boundary_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage14e_01/ValidatePureCHost.py"
+            --repo-root "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_test(
         NAME slicer_source_size_guard_self_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/scripts/ValidateSourceSizeGuard.py"
@@ -1939,6 +1971,7 @@ if(Python3_Interpreter_FOUND)
         slicer_stage14d04a_cancel_propagation_test
         slicer_stage14d08_r1_worker_runtime_boundary_test
         slicer_stage14d08_r1_no_fake_worker_executor_test
+        slicer_stage14e01_pure_c_host_boundary_test
         slicer_source_size_guard_self_test
         third_party_notice_contract_test
         PROPERTIES
@@ -2009,6 +2042,19 @@ add_test(
 add_test(
     NAME stage14d08_r2_slice_executor_tests
     COMMAND stage14d08_r2_slice_executor_tests
+)
+add_test(
+    NAME stage14e01_c_host_end_to_end
+    COMMAND slicer_host_sim
+        $<TARGET_FILE:slicer_module>
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}/stage14e01_evidence/$<CONFIG>"
+)
+set_tests_properties(
+    stage14e01_c_host_end_to_end
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 90
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(
