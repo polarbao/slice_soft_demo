@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.53 ｜ 更新日期：2026-08-07
+> 版本：v3.54 ｜ 更新日期：2026-08-07
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14E-06 可移植模块文件级清单
+CURRENT_NEXT_TASK      = 14F-01 打包准备审计（需独立授权）
 M_MVP_GATE             = PASS          （14E-01 纯 C 公开 ABI 闭环 Debug/Release PASS）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
@@ -310,3 +310,4 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 2026-08-07 | v3.51 | 完成 14E-04c：真实 three_d mesh/UV/submesh/material/texture 经后端中立接口闭合，七向相机与构建体积显示全本地运行；UI-M7=0，10 万三角面 30 秒 UI-M8 P5=51.4168 FPS，下一任务为 14E-04d |
 | 2026-08-07 | v3.52 | 完成 14E-04d：新增中央俯视/3D 双入口、默认视图与投影 session config 持久化、buildVolume 1 mm/10 mm 自适应网格和白纹理对比辅助；Debug/Release 9/9 PASS，UI-M9..13 闭合，下一任务为 14E-05 |
 | 2026-08-07 | v3.53 | 完成 14E-05：按职责拆分主干 `MainWindow` 与 `UiSmokeTestRunner`，分别降至 1218/642 行；新增实现文件均低于 500 行，Debug/Release 自测与代表性 UI Smoke PASS，并移除 14B-06 临时白名单；下一任务为 14E-06 |
+| 2026-08-07 | v3.54 | 完成 14E-06 切片侧交付：文件级清单覆盖 46 个宿主源/构建文件，42 个可直接复制、4 个需改写；机器清单同步公开合同、运行时交付物和内部源码禁入边界，自动完整性验证 PASS；打印侧 ACK 仍待外部确认，下一阶段转 14F-01 准备审计 |

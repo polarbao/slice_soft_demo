@@ -1,0 +1,96 @@
+{
+  "contractVersion": "1.0",
+  "scope": "stage14e_reference_host_portability",
+  "status": "slicer_side_ready_print_side_ack_pending",
+  "sourceRoot": "apps/slicer_ui_host_sim",
+  "targetAssumptions": {
+    "platform": "windows_x64",
+    "toolchain": "msvc_cxx20",
+    "qt": "5.15_widgets_core_gui",
+    "moduleLoading": "runtime_loadlibrary_only"
+  },
+  "dispositions": {
+    "direct_copy": "May be copied without changing slicer semantics; namespace, UI wiring, and build registration may be adapted.",
+    "adapt_required": "Reference implementation only; replace or integrate with the printing software shell and build system."
+  },
+  "sourceInventory": [
+    { "path": "apps/slicer_ui_host_sim/ModuleClient.cpp", "disposition": "direct_copy", "layer": "abi_adapter" },
+    { "path": "apps/slicer_ui_host_sim/ModuleClient.h", "disposition": "direct_copy", "layer": "abi_adapter" },
+    { "path": "apps/slicer_host_sim/HostRequestBuilder.c", "disposition": "direct_copy", "layer": "abi_request_builder" },
+    { "path": "apps/slicer_host_sim/HostRequestBuilder.h", "disposition": "direct_copy", "layer": "abi_request_builder" },
+    { "path": "apps/slicer_host_sim/JsonText.c", "disposition": "direct_copy", "layer": "abi_request_builder" },
+    { "path": "apps/slicer_host_sim/JsonText.h", "disposition": "direct_copy", "layer": "abi_request_builder" },
+
+    { "path": "apps/slicer_ui_host_sim/MoveOptimizationPolicy.cpp", "disposition": "direct_copy", "layer": "interaction_policy" },
+    { "path": "apps/slicer_ui_host_sim/MoveOptimizationPolicy.h", "disposition": "direct_copy", "layer": "interaction_policy" },
+    { "path": "apps/slicer_ui_host_sim/SceneInteractionController.cpp", "disposition": "direct_copy", "layer": "interaction_policy" },
+    { "path": "apps/slicer_ui_host_sim/SceneInteractionController.h", "disposition": "direct_copy", "layer": "interaction_policy" },
+    { "path": "apps/slicer_ui_host_sim/TransformCommitPolicy.cpp", "disposition": "direct_copy", "layer": "interaction_policy" },
+    { "path": "apps/slicer_ui_host_sim/TransformCommitPolicy.h", "disposition": "direct_copy", "layer": "interaction_policy" },
+
+    { "path": "apps/slicer_ui_host_sim/camera/CameraController.cpp", "disposition": "direct_copy", "layer": "camera" },
+    { "path": "apps/slicer_ui_host_sim/camera/CameraController.h", "disposition": "direct_copy", "layer": "camera" },
+    { "path": "apps/slicer_ui_host_sim/camera/ViewModeSwitch.cpp", "disposition": "direct_copy", "layer": "camera" },
+    { "path": "apps/slicer_ui_host_sim/camera/ViewModeSwitch.h", "disposition": "direct_copy", "layer": "camera" },
+
+    { "path": "apps/slicer_ui_host_sim/render/AppearanceCache.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/AppearanceCache.h", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/CpuRasterBackend.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/CpuRasterBackend.h", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/CpuRasterDecor.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/CpuRasterDecor.h", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/CpuRasterizer.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/CpuRasterResources.h", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/IRenderBackend.h", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/SceneRenderPolicy.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/SceneRenderPolicy.h", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/SceneRenderPolicyData.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/SceneRenderPolicyMesh.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/TopViewRenderPolicy.cpp", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/TopViewRenderPolicy.h", "disposition": "direct_copy", "layer": "render" },
+    { "path": "apps/slicer_ui_host_sim/render/TopViewRenderPolicyData.cpp", "disposition": "direct_copy", "layer": "render" },
+
+    { "path": "apps/slicer_ui_host_sim/settings/ViewPresentationSettings.cpp", "disposition": "direct_copy", "layer": "presentation_settings" },
+    { "path": "apps/slicer_ui_host_sim/settings/ViewPresentationSettings.h", "disposition": "direct_copy", "layer": "presentation_settings" },
+    { "path": "apps/slicer_ui_host_sim/ViewWorkspaceWidget.cpp", "disposition": "direct_copy", "layer": "reusable_qt_widget" },
+    { "path": "apps/slicer_ui_host_sim/ViewWorkspaceWidget.h", "disposition": "direct_copy", "layer": "reusable_qt_widget" },
+
+    { "path": "apps/slicer_ui_host_sim/CapabilityCoverageRequests.cpp", "disposition": "direct_copy", "layer": "acceptance_harness" },
+    { "path": "apps/slicer_ui_host_sim/CapabilityCoverageRequests.h", "disposition": "direct_copy", "layer": "acceptance_harness" },
+    { "path": "apps/slicer_ui_host_sim/CapabilityCoverageRunner.cpp", "disposition": "direct_copy", "layer": "acceptance_harness" },
+    { "path": "apps/slicer_ui_host_sim/CapabilityCoverageRunner.h", "disposition": "direct_copy", "layer": "acceptance_harness" },
+    { "path": "apps/slicer_ui_host_sim/CapabilityCoverageWorkflow.cpp", "disposition": "direct_copy", "layer": "acceptance_harness" },
+    { "path": "apps/slicer_ui_host_sim/Qt515MsvcCompatibility.h", "disposition": "direct_copy", "layer": "optional_toolchain_shim" },
+
+    { "path": "apps/slicer_ui_host_sim/CMakeLists.txt", "disposition": "adapt_required", "layer": "build_integration" },
+    { "path": "apps/slicer_ui_host_sim/HostMainWindow.cpp", "disposition": "adapt_required", "layer": "reference_shell" },
+    { "path": "apps/slicer_ui_host_sim/HostMainWindow.h", "disposition": "adapt_required", "layer": "reference_shell" },
+    { "path": "apps/slicer_ui_host_sim/Main.cpp", "disposition": "adapt_required", "layer": "reference_shell" }
+  ],
+  "contractInputs": [
+    { "path": "contracts/print_module_spi.h", "usage": "compile_time_public_abi" },
+    { "path": "contracts/slicer_capability_dtos.json", "usage": "machine_readable_payload_contract" },
+    { "path": "contracts/slicer_capability_dtos.md", "usage": "payload_semantics" },
+    { "path": "contracts/slicer_three_lane_contract.json", "usage": "machine_readable_interaction_contract" },
+    { "path": "contracts/slicer_three_lane_contract.md", "usage": "interaction_semantics" },
+    { "path": "contracts/slicer_cancel_contract.json", "usage": "machine_readable_cancel_contract" },
+    { "path": "contracts/slicer_cancel_contract.md", "usage": "cancel_semantics" },
+    { "path": "contracts/slicer_error_codes.json", "usage": "stable_error_mapping" },
+    { "path": "contracts/slicer_module_info.schema.json", "usage": "module_runtime_introspection" },
+    { "path": "contracts/slicer_module_manifest.schema.json", "usage": "deployment_manifest_validation" },
+    { "path": "contracts/slicer_ui_view_spec.json", "usage": "reference_view_presentation" }
+  ],
+  "runtimeArtifacts": [
+    { "name": "slicer_module.dll", "ownership": "slicer_delivery", "integration": "load_at_runtime" },
+    { "name": "slicer_worker.exe", "ownership": "slicer_delivery", "integration": "co_locate_with_module" },
+    { "name": "module.json", "ownership": "slicer_delivery", "integration": "validate_before_load" },
+    { "name": "runtime_dependency_dlls", "ownership": "slicer_delivery", "integration": "use_14f_distribution_manifest" }
+  ],
+  "forbiddenSourceDependencies": [
+    "src/slicer_core/",
+    "src/slicer_base/",
+    "src/slicer_engine/",
+    "src/slicer_module/",
+    "apps/slicer_worker/"
+  ]
+}
