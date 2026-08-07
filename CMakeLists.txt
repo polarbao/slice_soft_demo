@@ -1195,6 +1195,8 @@ add_dependencies(stage14d06_public_worker_routing_tests slicer_worker)
 
 add_executable(slicer_host_sim
     apps/slicer_host_sim/Main.c
+    apps/slicer_host_sim/HostM1Intake.c
+    apps/slicer_host_sim/HostM1Intake.h
     apps/slicer_host_sim/HostModuleApi.c
     apps/slicer_host_sim/HostModuleApi.h
     apps/slicer_host_sim/HostPath.c
@@ -2051,11 +2053,23 @@ add_test(
         "${CMAKE_CURRENT_SOURCE_DIR}"
         "${CMAKE_CURRENT_BINARY_DIR}/stage14e01_evidence/$<CONFIG>"
 )
+add_test(
+    NAME stage14f02_m1_intake_self_test
+    COMMAND slicer_host_sim
+        --m1-self-test
+        $<TARGET_FILE:slicer_module>
+)
 set_tests_properties(
     stage14e01_c_host_end_to_end
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 90
+)
+set_tests_properties(
+    stage14f02_m1_intake_self_test
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 30
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(

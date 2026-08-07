@@ -369,6 +369,47 @@
       "detail": "校验 14F 包结构、哈希、依赖闭包、Worker 合同，并通过纯 C 宿主执行导入到 RGBWSV 校验的本地闭环。"
     },
     {
+      "label": "SliceSoft 14F: Prepare Print M1 Handoff (Release)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/Prepare14F02PrintM1Handoff.ps1",
+        "-Config",
+        "Release",
+        "-SkipBuild"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft 14F: Validate Slicer Module Package (Release)",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "生成 14F-02 打印侧 M1 联调交付目录，包含能力包、公开合同、独立探针、执行手册和全文件哈希。"
+    },
+    {
+      "label": "SliceSoft 14F: Validate Print M1 Handoff (Release)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/Test14F02PrintM1Handoff.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft 14F: Prepare Print M1 Handoff (Release)",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "验证 14F-02 交付哈希、SPI v1、15 项能力、运行时装载、自检和缺 DLL 负例；打印侧进程模块证据仍需外部回签。"
+    },
+    {
       "label": "SliceSoft: Advanced - Build Runtime Release (NMake Fallback)",
       "type": "shell",
       "command": "powershell",

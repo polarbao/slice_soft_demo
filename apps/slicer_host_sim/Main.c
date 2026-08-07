@@ -1,6 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include "HostM1Intake.h"
 #include "HostModuleApi.h"
 #include "HostPath.h"
 #include "HostRequestBuilder.h"
@@ -9,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 static int JsonSucceeded(const char* json)
 {
@@ -105,57 +107,6 @@ static int RunJob(
     }
     free(terminalState);
     return 1;
-}
-
-static int CheckModuleInfo(const HostModuleApi* api)
-{
-    static const char* capabilities[] = {
-        "model.import", "model.get_metadata", "model.release",
-        "scene.apply_operation", "scene.get_snapshot", "scene.get_viewdata",
-        "geometry.preflight", "geometry.collision", "geometry.repair",
-        "slice.rgbwsv", "package.verify", "package.get_summary",
-        "package.get_layer_descriptor", "package.render_layer_preview",
-        "package.read_report"};
-    char* info = NULL;
-    size_t index;
-    if (api->m_spiVersion() != PM_SPI_VERSION
-        || !HostModuleApiReadInfo(api, &info))
-    {
-        free(info);
-        return 0;
-    }
-    for (index = 0U; index < sizeof(capabilities) / sizeof(capabilities[0]); ++index)
-    {
-        if (strstr(info, capabilities[index]) == NULL)
-        {
-            free(info);
-            return 0;
-        }
-    }
-    free(info);
-    return 1;
-}
-
-static int CheckFailClosed(const HostModuleApi* api, pm_module_t* module)
-{
-    pm_job_t* job = api->m_submit(
-        module,
-        "{\"capability\":\"host.invalid_capability\"}");
-    char* error = NULL;
-    int passed;
-    if (job != NULL)
-    {
-        api->m_release(job);
-        return 0;
-    }
-    passed = HostModuleApiReadLastError(api, &error)
-        && strstr(error, "PM-SLICER-") != NULL;
-    if (passed)
-    {
-        printf("[14E-01] fail-closed PASS: %s\n", error);
-    }
-    free(error);
-    return passed;
 }
 
 static int ReadImportedModel(
@@ -407,38 +358,55 @@ int wmain(int argumentCount, wchar_t* arguments[])
     char* repository = NULL;
     char* outputRoot = NULL;
     char* selfTest = NULL;
+    const wchar_t* modulePath = NULL;
+    int m1IntakeOnly = 0;
     int result = 1;
     memset(&api, 0, sizeof(api));
     loadError[0] = '\0';
-    if (argumentCount != 4)
+    if (argumentCount == 3
+        && wcscmp(arguments[1], L"--m1-self-test") == 0)
+    {
+        m1IntakeOnly = 1;
+        modulePath = arguments[2];
+    }
+    else if (argumentCount == 4)
+    {
+        modulePath = arguments[1];
+    }
+    else
     {
         fwprintf(
             stderr,
-            L"usage: slicer_host_sim <slicer_module.dll> <repository> <output-root>\n");
+            L"usage:\n"
+            L"  slicer_host_sim --m1-self-test <slicer_module.dll>\n"
+            L"  slicer_host_sim <slicer_module.dll> <repository> <output-root>\n");
         return 2;
     }
-    if (!HostEnsureDirectoryTree(arguments[3]))
+    if (!m1IntakeOnly && !HostEnsureDirectoryTree(arguments[3]))
     {
         fprintf(stderr, "[14E-01] failed to create output root\n");
         goto cleanup;
     }
-    repository = HostUtf8FromWide(arguments[2]);
-    outputRoot = HostUtf8FromWide(arguments[3]);
-    if (repository == NULL || outputRoot == NULL)
+    if (!m1IntakeOnly)
     {
-        fprintf(stderr, "[14E-01] UTF-8 path conversion failed\n");
-        goto cleanup;
+        repository = HostUtf8FromWide(arguments[2]);
+        outputRoot = HostUtf8FromWide(arguments[3]);
+        if (repository == NULL || outputRoot == NULL)
+        {
+            fprintf(stderr, "[14E-01] UTF-8 path conversion failed\n");
+            goto cleanup;
+        }
     }
     if (!HostModuleApiLoad(
                &api,
-               arguments[1],
+               modulePath,
                loadError,
                sizeof(loadError)))
     {
         fprintf(stderr, "[14E-01] load failed: %s\n", loadError);
         goto cleanup;
     }
-    if (!CheckModuleInfo(&api))
+    if (!HostM1IntakeCheckModuleInfo(&api))
     {
         fprintf(stderr, "[14E-01] module metadata contract rejected\n");
         goto cleanup;
@@ -449,10 +417,18 @@ int wmain(int argumentCount, wchar_t* arguments[])
         PrintLastError(&api, "pm_create");
         goto cleanup;
     }
-    if (!HostModuleApiReadSelfTest(&api, module, &selfTest)
-        || !JsonSucceeded(selfTest)
-        || !CheckFailClosed(&api, module)
-        || !RunReferenceFlow(&api, module, repository, outputRoot))
+    if (!HostM1IntakeRun(&api, module, &selfTest))
+    {
+        goto cleanup;
+    }
+    if (m1IntakeOnly)
+    {
+        printf(
+            "STAGE14F02_M1_INTAKE_PASS spi=%d capabilities=15\n",
+            api.m_spiVersion());
+    }
+    if (!m1IntakeOnly
+        && !RunReferenceFlow(&api, module, repository, outputRoot))
     {
         goto cleanup;
     }
