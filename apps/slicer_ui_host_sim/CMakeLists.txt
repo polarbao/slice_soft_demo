@@ -1,4 +1,6 @@
 add_executable(slicer_ui_host_sim
+    camera/CameraController.cpp
+    camera/CameraController.h
     CapabilityCoverageRequests.cpp
     CapabilityCoverageRequests.h
     CapabilityCoverageRunner.cpp
@@ -15,6 +17,19 @@ add_executable(slicer_ui_host_sim
     SceneInteractionController.h
     TransformCommitPolicy.cpp
     TransformCommitPolicy.h
+    render/AppearanceCache.cpp
+    render/AppearanceCache.h
+    render/CpuRasterBackend.cpp
+    render/CpuRasterBackend.h
+    render/CpuRasterDecor.cpp
+    render/CpuRasterDecor.h
+    render/CpuRasterResources.h
+    render/CpuRasterizer.cpp
+    render/IRenderBackend.h
+    render/SceneRenderPolicy.cpp
+    render/SceneRenderPolicyData.cpp
+    render/SceneRenderPolicyMesh.cpp
+    render/SceneRenderPolicy.h
     render/TopViewRenderPolicy.cpp
     render/TopViewRenderPolicyData.cpp
     render/TopViewRenderPolicy.h
@@ -202,6 +217,70 @@ endif()
 add_test(
     NAME slicer_stage14e04_top_view_contract_test
     COMMAND stage14e04_top_view_tests
+        --module $<TARGET_FILE:slicer_module>
+)
+
+add_executable(stage14e04c_three_d_tests
+    ModuleClient.cpp
+    ModuleClient.h
+    SceneInteractionController.cpp
+    SceneInteractionController.h
+    TransformCommitPolicy.cpp
+    TransformCommitPolicy.h
+    camera/CameraController.cpp
+    camera/CameraController.h
+    render/AppearanceCache.cpp
+    render/AppearanceCache.h
+    render/CpuRasterBackend.cpp
+    render/CpuRasterBackend.h
+    render/CpuRasterDecor.cpp
+    render/CpuRasterDecor.h
+    render/CpuRasterResources.h
+    render/CpuRasterizer.cpp
+    render/IRenderBackend.h
+    render/SceneRenderPolicy.cpp
+    render/SceneRenderPolicyData.cpp
+    render/SceneRenderPolicyMesh.cpp
+    render/SceneRenderPolicy.h
+    ${CMAKE_SOURCE_DIR}/tests/stage14e_04c/Stage14E04CThreeDTests.cpp
+)
+
+target_include_directories(stage14e04c_three_d_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_compile_definitions(stage14e04c_three_d_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_link_libraries(stage14e04c_three_d_tests PRIVATE
+    Qt5::Core
+)
+
+add_dependencies(stage14e04c_three_d_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(stage14e04c_three_d_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(stage14e04c_three_d_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(stage14e04c_three_d_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME slicer_stage14e04c_three_d_contract_test
+    COMMAND stage14e04c_three_d_tests
         --module $<TARGET_FILE:slicer_module>
 )
 
