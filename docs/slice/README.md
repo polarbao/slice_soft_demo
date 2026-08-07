@@ -65,6 +65,7 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` | Stage 14 准备状态与外部依赖 |
 | `DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md` | Stage 14 对目标 RIP 的技术确认往来记录（两轮已闭合，转档案；实施不看本文） |
 | `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` | **S2 接缝权威合同**：Q1~Q6 定案条款、切片侧新工作项 N1/N2、8 项作废方案禁止实现 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（非 Stage 14）**：ABI 场景生命周期缺口（`addInstance`/`removeInstance`）、宿主业务流程 UI 补齐、主干 UI 68 文件三桶分类、P0–P4 优先级框架 |
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |
