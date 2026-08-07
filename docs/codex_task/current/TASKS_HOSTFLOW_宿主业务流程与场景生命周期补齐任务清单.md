@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
 > 文档状态：**ACTIVE / HQ-01 + HQ-07 AUTHORIZED**
-> 版本：v1.7 ｜ 日期：2026-08-07 ｜ 激活日期：2026-08-07
+> 版本：v1.8 ｜ 日期：2026-08-07 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -11,7 +11,7 @@
 > Stage 14 对外接口。本文 H-A 仍是有效缺口分析，但不得在 14F 收口前修改冻结合同；
 > 用户已于 2026-08-07 授权 HQ-01，并建立
 > `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md`。H-A-01、H-A-02、H-A-04
-> 已按独立原子卡完成；H-A-03 与 H-B-01 也已完成，后续 H-B/H-C 卡仍须按卡号显式启动。
+> 已按独立原子卡完成；H-A-03、H-B-01 与 H-B-02 也已完成，后续 H-B/H-C 卡仍须按卡号显式启动。
 
 ---
 
@@ -175,7 +175,7 @@
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
 | **H-B-01** | 模型导入流程：文件对话框 → `model.import` → `addInstance` → 列表显示 + 导入预检结果展示 | **H-A-03**（硬依赖）| 可导入 OBJ/3MF；预检失败有明确提示；对照主干 `ModelPreflightPanel` 行为一致 | **COMPLETE（2026-08-07）** |
-| **H-B-02** | 模型/实例列表与选择：增删、多选、选中联动视图 | **无**（用 fixture scene）；删除实例需 H-A-01 | 对照主干 `ModelListPanel` | PROPOSED |
+| **H-B-02** | 模型/实例列表与选择：增删、多选、选中联动视图 | **无**（用 fixture scene）；删除实例需 H-A-01 | 对照主干 `ModelListPanel` | **COMPLETE（2026-08-07）** |
 | **H-B-03** | 排版与变换 UI 入口：移动/旋转/缩放/镜像 + 精确数值输入（三车道机制 14E-03 已有，本卡只补入口） | **无**（四种变换已在 ABI）；**规则排版部分需 H-A-04** | 对照主干 `ModelTransformPanel`、`SceneLayoutPanel`；**UI-M1 仍须成立** | PROPOSED |
 | **H-B-04** | Profile 选择：经 ABI 查询可用 Profile 与能力集，展示能力标签与生产安全级别 | **无** | 对照主干 `ProductionModePanel` + `ScenarioRegistry`；**不得直接读 `slicer_scenarios.json`** | PROPOSED |
 | **H-B-05** | 切片参数设置：DPI、层厚、输出目录、材料策略等；含有效配置预览与校验提示。**须体现 `buildVolume` 归属宿主**（`CLD_04`:360）| H-B-04 | 对照主干 `ConfigEditorPanel` / `QuickConfigPanel` / `EffectiveConfigGenerator` | PROPOSED |
@@ -452,6 +452,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-07 | v1.8 | 完成 H-B-02：参考宿主增加扩展选择、全选、添加/原子删除入口和中央工作区选择联动；删除经单次 `removeInstance[]` Commit，未知实例 fail-closed。Debug/Release 各 6/6 联合门禁通过，主干 `multi-model-list` 源码构建 smoke PASS，下一卡为 H-B-03。 |
 | 2026-08-07 | v1.7 | 完成 H-B-01：参考宿主经公开 SPI 完成 OBJ/3MF 导入、`addInstance`、快速预检、模型列表与问题展示；缺失/不支持文件显式 fail-closed。Debug/Release 各 5/5 联合门禁通过，下一卡为 H-B-02。 |
 | 2026-08-07 | v1.6 | 完成 H-A-03：纯 C/Qt 宿主均从空场景经 11 导出完成 import、隐式 add、规则排版、transform、slice 与 package verify；移除宿主手工 scene builder；权威 snapshot scene 改为不透明透传；修正源路径身份与 signed-zero hash 稳定性。Debug/Release 各 5/5 联合回归及合同/边界门禁通过，H-A 全组收口，H-B-01 解锁。 |
 | 2026-08-07 | v1.5 | 完成 H-A-04：DTO 升至 v1.7，在既有 `scene.apply_operation` 增加单操作 `applyGridLayout`，复用 `GridLayoutPolicy` 完成 11×2/22 实例规则排版；容量、参数、混批、replay 与原子失败负例通过 Debug/Release 门禁。下一卡为 H-A-03。 |

@@ -65,6 +65,12 @@ ViewWorkspaceWidget::ViewWorkspaceWidget(QWidget* parent)
     m_errorLabel->setWordWrap(true);
     m_errorLabel->hide();
 
+    m_selectionLabel = new QLabel(
+        QStringLiteral("未选择模型实例。"), this);
+    m_selectionLabel->setObjectName(QStringLiteral("viewSelectionLabel"));
+    m_selectionLabel->setWordWrap(true);
+    m_selectionLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
     m_canvasStack = new QStackedWidget(this);
     m_canvasStack->setObjectName(QStringLiteral("viewCanvasStack"));
     m_canvasStack->addWidget(CreateCanvas(
@@ -78,6 +84,7 @@ ViewWorkspaceWidget::ViewWorkspaceWidget(QWidget* parent)
 
     root->addLayout(toolbar);
     root->addWidget(m_errorLabel);
+    root->addWidget(m_selectionLabel);
     root->addWidget(m_canvasStack, 1);
 
     connect(m_topButton, &QToolButton::clicked, this, [this]()
@@ -106,6 +113,22 @@ void ViewWorkspaceWidget::ShowViewError(const QString& message)
 {
     m_errorLabel->setText(message);
     m_errorLabel->setVisible(!message.isEmpty());
+}
+
+void ViewWorkspaceWidget::SetSelectedInstances(
+    const QStringList& instanceIds)
+{
+    if (instanceIds.isEmpty())
+    {
+        m_selectionLabel->setText(QStringLiteral("未选择模型实例。"));
+        return;
+    }
+    m_selectionLabel->setText(
+        instanceIds.size() == 1
+            ? QStringLiteral("当前模型：%1").arg(instanceIds.front())
+            : QStringLiteral("已选择 %1 个模型：%2")
+                  .arg(instanceIds.size())
+                  .arg(instanceIds.join(QStringLiteral("、"))));
 }
 
 void ViewWorkspaceWidget::ApplyMode()

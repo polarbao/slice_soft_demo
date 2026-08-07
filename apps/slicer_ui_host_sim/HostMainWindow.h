@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HostModelListPanel.h"
 #include "HostModelImportWorkflow.h"
 #include "ModuleClient.h"
 
@@ -9,9 +10,7 @@
 
 class QComboBox;
 class QLabel;
-class QListWidget;
 class QPlainTextEdit;
-class QPushButton;
 class QTableWidget;
 class QTabWidget;
 class ViewPresentationSettings;
@@ -40,6 +39,8 @@ private:
     void LoadModule(const QString& modulePath);
     void SaveViewSettings();
     void OnImportModel();
+    void OnRemoveModels(const QStringList& instanceIds);
+    void OnModelSelectionChanged(const QStringList& instanceIds);
     void ShowImportResult(const hostmodelimportresult& result);
     void ShowImportError(const QString& error);
 
@@ -51,8 +52,7 @@ private:
     QComboBox* m_projectionCombo{nullptr};
     QLabel* m_statusLabel{nullptr};
     QLabel* m_pathLabel{nullptr};
-    QPushButton* m_importButton{nullptr};
-    QListWidget* m_modelList{nullptr};
+    HostModelListPanel* m_modelListPanel{nullptr};
     QLabel* m_importSummaryLabel{nullptr};
     QTableWidget* m_preflightTable{nullptr};
     QPlainTextEdit* m_moduleInfoView{nullptr};

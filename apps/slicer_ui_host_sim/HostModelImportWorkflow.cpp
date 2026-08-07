@@ -142,6 +142,92 @@ bool HostModelImportWorkflow::ImportModel(
         RollbackImport(result->modelid, result->instanceid);
         return false;
     }
+    m_instanceModels.insert(result->instanceid, result->modelid);
+    return true;
+}
+
+bool HostModelImportWorkflow::RemoveInstances(
+    const QStringList& instanceIds,
+    QString* error)
+{
+    QStringList uniqueIds;
+    for (const QString& instanceId : instanceIds)
+    {
+        if (!instanceId.isEmpty() && !uniqueIds.contains(instanceId))
+        {
+            uniqueIds.append(instanceId);
+        }
+    }
+    if (m_sceneHandle == 0U || uniqueIds.isEmpty())
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("请选择当前场景中存在的模型实例。");
+        }
+        return false;
+    }
+    for (const QString& instanceId : uniqueIds)
+    {
+        if (!m_instanceModels.contains(instanceId))
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral("当前场景不存在实例：%1")
+                             .arg(instanceId);
+            }
+            return false;
+        }
+    }
+
+    QJsonArray operations;
+    for (const QString& instanceId : uniqueIds)
+    {
+        operations.append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("removeInstance")},
+            {QStringLiteral("instanceId"), instanceId}});
+    }
+    const QJsonObject request{
+        {QStringLiteral("capability"),
+         QStringLiteral("scene.apply_operation")},
+        {QStringLiteral("operationId"),
+         QStringLiteral("operation-remove-%1").arg(
+             QUuid::createUuid().toString(QUuid::WithoutBraces))},
+        {QStringLiteral("sceneHandle"), static_cast<qint64>(m_sceneHandle)},
+        {QStringLiteral("currentSceneRevision"),
+         static_cast<qint64>(m_sceneRevision)},
+        {QStringLiteral("expectedSceneRevision"),
+         static_cast<qint64>(m_sceneRevision)},
+        {QStringLiteral("operations"), operations}};
+    QJsonObject response;
+    if (!ExecuteObject(request, &response, error))
+    {
+        return false;
+    }
+    const quint64 newRevision = static_cast<quint64>(response.value(
+        QStringLiteral("newSceneRevision")).toDouble());
+    if (newRevision != m_sceneRevision + 1U)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("removeInstance 未返回连续 sceneRevision。");
+        }
+        return false;
+    }
+    m_sceneRevision = newRevision;
+
+    for (const QString& instanceId : uniqueIds)
+    {
+        const QString modelId = m_instanceModels.take(instanceId);
+        QJsonObject ignoredResponse;
+        QString ignoredError;
+        (void)ExecuteObject(
+            QJsonObject{
+                {QStringLiteral("capability"),
+                 QStringLiteral("model.release")},
+                {QStringLiteral("modelId"), modelId}},
+            &ignoredResponse,
+            &ignoredError);
+    }
     return true;
 }
 
@@ -153,6 +239,11 @@ quint64 HostModelImportWorkflow::SceneHandle() const
 quint64 HostModelImportWorkflow::SceneRevision() const
 {
     return m_sceneRevision;
+}
+
+int HostModelImportWorkflow::InstanceCount() const
+{
+    return m_instanceModels.size();
 }
 
 bool HostModelImportWorkflow::ExecuteObject(

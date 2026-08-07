@@ -2,8 +2,10 @@
 
 #include "ModuleClient.h"
 
+#include <QHash>
 #include <QList>
 #include <QString>
+#include <QStringList>
 
 class QJsonObject;
 
@@ -61,6 +63,16 @@ public:
         QString* error);
 
     /**
+     * @brief Atomically removes existing scene instances.
+     * @param instanceIds Stable instance identities selected by the host.
+     * @param error Receives a user-readable fail-closed reason.
+     * @return True when the module commits the complete removal set.
+     */
+    bool RemoveInstances(
+        const QStringList& instanceIds,
+        QString* error);
+
+    /**
      * @brief Returns the module-owned scene handle after the first import.
      * @return Zero before a scene has been created.
      */
@@ -71,6 +83,9 @@ public:
      * @return Monotonic scene revision, initially zero.
      */
     [[nodiscard]] quint64 SceneRevision() const;
+
+    /** @brief Returns the number of host-tracked imported instances. */
+    [[nodiscard]] int InstanceCount() const;
 
 private:
     bool ExecuteObject(
@@ -90,6 +105,7 @@ private:
         const QString& instanceId);
 
     ModuleClient& m_client;
+    QHash<QString, QString> m_instanceModels;
     quint64 m_sceneHandle{0};
     quint64 m_sceneRevision{0};
 };

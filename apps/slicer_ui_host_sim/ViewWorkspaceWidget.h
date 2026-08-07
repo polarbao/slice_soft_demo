@@ -2,6 +2,7 @@
 
 #include "camera/ViewModeSwitch.h"
 
+#include <QStringList>
 #include <QWidget>
 
 class QLabel;
@@ -26,12 +27,19 @@ public:
     /** @brief Shows an explicit fail-closed view diagnostic. */
     void ShowViewError(const QString& message);
 
+    /**
+     * @brief Updates host-local model selection without a module call.
+     * @param instanceIds Stable identities selected in the model list.
+     */
+    void SetSelectedInstances(const QStringList& instanceIds);
+
 private:
     void ApplyMode();
 
     ViewModeSwitch m_switch;
     QToolButton* m_topButton{nullptr};
     QToolButton* m_threeDButton{nullptr};
+    QLabel* m_selectionLabel{nullptr};
     QStackedWidget* m_canvasStack{nullptr};
     QLabel* m_errorLabel{nullptr};
 };

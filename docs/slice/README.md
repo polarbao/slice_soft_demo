@@ -73,10 +73,11 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `DOC/DOC_PREP_HOSTFLOW_H_A_04_规则排版运行时准备.md` | H-A-04 复用审计、运行时规则、正负例矩阵与 Debug/Release Gate |
 | `DOC/DOC_PREP_HOSTFLOW_H_A_03_空场景端到端闭环准备.md` | H-A-03 纯 C/Qt 空场景生产闭环、权威 scene 透传与边界 Gate |
 | `DOC/DOC_PREP_HOSTFLOW_H_B_01_模型导入业务流程准备.md` | H-B-01 参考宿主 OBJ/3MF 导入、实例入场、快速预检与 Debug/Release Gate |
+| `DOC/DOC_PREP_HOSTFLOW_H_B_02_模型实例列表与选择准备.md` | H-B-02 参考宿主模型列表、原子删除、多选、全选、视图联动与 A/B Gate |
 | `REPORT/REPORT_14F_04_S2本地合同门禁当前状态.md` | 14F-04 S2 C1-C7 机器合同、正负例、CTest 与外部 RIP 延期边界 |
 | `REPORT/REPORT_14F_切片能力包本地交付与外部验收延期当前状态.md` | **Stage 14F 收口真源**：能力包可交付、接口冻结、六步本地门禁和外部验收延期边界 |
 | `../../contracts/slicer_rip_s2_contract.json` | 冻结的 S2 本地机器合同：输入协议、量化、白区、输出组织、混合和外部状态 |
-| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A-01..04、H-B-01 已完成，DTO v1.7；下一卡 H-B-02，后续为宿主业务流程 UI 与移植交付 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A-01..04、H-B-01..02 已完成，DTO v1.7；下一卡 H-B-03，后续为宿主业务流程 UI 与移植交付 |
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |

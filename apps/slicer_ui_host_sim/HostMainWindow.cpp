@@ -15,13 +15,10 @@
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QListWidget>
 #include <QMessageBox>
 #include <QPlainTextEdit>
-#include <QPushButton>
 #include <QSplitter>
 #include <QStandardPaths>
-#include <QStyle>
 #include <QStringList>
 #include <QTabWidget>
 #include <QTableWidget>
@@ -102,22 +99,8 @@ void HostMainWindow::BuildInterface()
     importPanel->setMinimumWidth(300);
     importPanel->setMaximumWidth(420);
     auto* importLayout = new QVBoxLayout(importPanel);
-    m_importButton = new QPushButton(
-        style()->standardIcon(QStyle::SP_DialogOpenButton),
-        QStringLiteral("导入 OBJ / 3MF"),
-        importPanel);
-    m_importButton->setObjectName(QStringLiteral("hostImportModelButton"));
-    m_importButton->setToolTip(QStringLiteral(
-        "选择模型后依次执行 model.import、addInstance 与快速预检"));
-    m_importButton->setEnabled(false);
-    importLayout->addWidget(m_importButton);
-
-    m_modelList = new QListWidget(importPanel);
-    m_modelList->setObjectName(QStringLiteral("hostImportedModelList"));
-    m_modelList->setMinimumHeight(100);
-    m_modelList->setToolTip(QStringLiteral(
-        "已通过公开 SPI 导入并加入当前场景的模型实例"));
-    importLayout->addWidget(m_modelList, 1);
+    m_modelListPanel = new HostModelListPanel(importPanel);
+    importLayout->addWidget(m_modelListPanel, 1);
 
     m_importSummaryLabel = new QLabel(
         QStringLiteral("尚未导入模型。"), importPanel);
@@ -222,10 +205,20 @@ void HostMainWindow::BuildInterface()
                 SaveViewSettings();
             });
     connect(
-        m_importButton,
-        &QPushButton::clicked,
+        m_modelListPanel,
+        &HostModelListPanel::SigAddRequested,
         this,
         &HostMainWindow::OnImportModel);
+    connect(
+        m_modelListPanel,
+        &HostModelListPanel::SigRemoveRequested,
+        this,
+        &HostMainWindow::OnRemoveModels);
+    connect(
+        m_modelListPanel,
+        &HostModelListPanel::SigSelectionChanged,
+        this,
+        &HostMainWindow::OnModelSelectionChanged);
 }
 
 void HostMainWindow::LoadModule(const QString& modulePath)
@@ -252,7 +245,7 @@ void HostMainWindow::LoadModule(const QString& modulePath)
         QStringLiteral("模块已就绪 · SPI v%1 · ABI 调用 %2 次")
             .arg(PM_SPI_VERSION)
             .arg(m_client.CallCount()));
-    m_importButton->setEnabled(true);
+    m_modelListPanel->SetCommandsEnabled(true);
     m_moduleInfoView->setPlainText(
         QStringLiteral("模块信息\n%1\n\n自检报告\n%2")
             .arg(
@@ -273,7 +266,7 @@ void HostMainWindow::OnImportModel()
         return;
     }
 
-    m_importButton->setEnabled(false);
+    m_modelListPanel->SetCommandsEnabled(false);
     m_importSummaryLabel->setText(QStringLiteral("正在导入并执行快速预检…"));
     QCoreApplication::processEvents();
 
@@ -281,13 +274,41 @@ void HostMainWindow::OnImportModel()
     QString error;
     const bool imported = m_importWorkflow->ImportModel(
         modelPath, &result, &error);
-    m_importButton->setEnabled(m_client.IsOpen());
+    m_modelListPanel->SetCommandsEnabled(m_client.IsOpen());
     if (!imported)
     {
         ShowImportError(error);
         return;
     }
     ShowImportResult(result);
+}
+
+void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)
+{
+    m_modelListPanel->SetCommandsEnabled(false);
+    QString error;
+    const bool removed = m_importWorkflow->RemoveInstances(
+        instanceIds, &error);
+    m_modelListPanel->SetCommandsEnabled(m_client.IsOpen());
+    if (!removed)
+    {
+        ShowImportError(error);
+        return;
+    }
+    m_modelListPanel->RemoveInstances(instanceIds);
+    m_importSummaryLabel->setText(
+        QStringLiteral("已删除 %1 个模型实例；场景 revision=%2")
+            .arg(instanceIds.size())
+            .arg(m_importWorkflow->SceneRevision()));
+    m_statusLabel->setText(
+        QStringLiteral("模型实例已删除 · ABI 调用 %1 次")
+            .arg(m_client.CallCount()));
+}
+
+void HostMainWindow::OnModelSelectionChanged(
+    const QStringList& instanceIds)
+{
+    m_workspace->SetSelectedInstances(instanceIds);
 }
 
 void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
@@ -299,9 +320,7 @@ void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
         : result.admission == QStringLiteral("manual_repair_required")
             ? QStringLiteral("需要人工修复")
             : QStringLiteral("阻断");
-    m_modelList->addItem(QStringLiteral("%1\n%2 · %3")
-        .arg(source.fileName(), result.instanceid, admissionText));
-    m_modelList->setCurrentRow(m_modelList->count() - 1);
+    m_modelListPanel->AddModel(result);
     m_importSummaryLabel->setText(
         QStringLiteral(
             "%1\nOBJ/3MF 元数据：%2 三角形，%3 顶点，"

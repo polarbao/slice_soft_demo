@@ -9,6 +9,8 @@ add_executable(slicer_ui_host_sim
     CapabilityCoverageWorkflow.cpp
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
+    HostModelListPanel.cpp
+    HostModelListPanel.h
     HostMainWindow.cpp
     HostMainWindow.h
     Main.cpp
@@ -185,6 +187,61 @@ add_test(
     COMMAND slicer_ui_host_sim
         --hostflow-import-ui-self-test
         --module $<TARGET_FILE:slicer_module>
+)
+
+add_executable(hostflow_hb02_model_list_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelListPanel.cpp
+    HostModelListPanel.h
+    ModuleClient.cpp
+    ModuleClient.h
+    ViewWorkspaceWidget.cpp
+    ViewWorkspaceWidget.h
+    camera/ViewModeSwitch.cpp
+    camera/ViewModeSwitch.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostModelListPanelTests.cpp
+)
+
+set_target_properties(hostflow_hb02_model_list_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(hostflow_hb02_model_list_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hb02_model_list_tests PRIVATE
+    Qt5::Widgets
+    bcrypt
+)
+
+add_dependencies(hostflow_hb02_model_list_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb02_model_list_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb02_model_list_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb02_model_list_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb02_model_list_selection
+    COMMAND hostflow_hb02_model_list_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
 )
 
 add_executable(stage14e03_interaction_tests
@@ -440,6 +497,7 @@ set_tests_properties(
     slicer_stage14e04b_capability_coverage_test
     hostflow_ha03_qt_end_to_end
     hostflow_hb01_import_ui_smoke
+    hostflow_hb02_model_list_selection
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
