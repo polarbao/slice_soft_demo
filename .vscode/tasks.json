@@ -458,6 +458,31 @@
       "detail": "执行14F-04 S2 C1-C7本地合同正负例门禁；不声称目标RIP、ChannelSplitter或极性映射已经外部验收。"
     },
     {
+      "label": "SliceSoft 14F: Run Local Closure Gate (Release)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/Run14F05StageClosureGate.ps1",
+        "-BuildDirectory",
+        "build-slicesoft/main",
+        "-Config",
+        "Release",
+        "-RepositoryRoot",
+        "."
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft 14F: Run S2 Contract Gate (Release)",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "重新打包并汇总14F-01..04本地证据，生成接口哈希与阶段收口证据；外部验收继续延期。"
+    },
+    {
       "label": "SliceSoft: Advanced - Build Runtime Release (NMake Fallback)",
       "type": "shell",
       "command": "powershell",

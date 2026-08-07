@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.60 ｜ 更新日期：2026-08-07
+> 版本：v3.61 ｜ 更新日期：2026-08-07
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = DEFERRED_BY_USER
                          打印侧可实现性按假定成立；接口立即冻结；
                          打印侧、目标 RIP、干净机与实物证据不得伪记 PASS
-CURRENT_NEXT_TASK      = 14F-05 切片侧阶段收口
+CURRENT_NEXT_TASK      = NONE（切片侧已收口；外部验收按用户决策延期）
 M_MVP_GATE             = PASS          （14E-01 纯 C 公开 ABI 闭环 Debug/Release PASS）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
@@ -188,6 +188,7 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 14F-02-FREEZE | ✅ COMPLETE（2026-08-07） | 冻结 SPI v1、11 导出、15 能力、DTO v1.4、三车道 v1.1、Worker 文件合同、S1/S2 与交付边界 | 用户授权按打印侧可实现继续推进；外部验证统一标记 DEFERRED，不伪造 PASS |
 | 14F-03 | ✅ SLICER-SIDE COMPLETE（2026-08-07） | 单模型公开 ABI import→transform→Worker slice→S1 strict 正例及 7 类负例 | Release 生成 3 层 `p0.rgbwsv.2` 包；正例 1/1、负例 7/7、CTest 1/1 PASS；打印侧 M2 外部验证延期 |
 | 14F-04 | ✅ SLICER-SIDE COMPLETE（2026-08-07） | S2 C1-C7 机器合同、`rip_output_validator` 本地门禁、grayBits=1/2 正例及 7 类负例 | 本地正例 2/2、负例 7/7、CTest 1/1 PASS；目标 RIP、ChannelSplitter 与极性映射证据延期 |
+| 14F-05 | ✅ SLICER-SIDE COMPLETE（2026-08-07） | 重新生成能力包/handoff，串联 14F-01..04 六步 Release 门禁并固化 12 项冻结合同哈希 | `SLICER PACKAGE READY / INTERFACES FROZEN / EXTERNAL ACCEPTANCE DEFERRED`；不构成生产发布授权 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
 11 个冻结符号；C-SPI-01..18 已由 14C-06A/06B 合并关闭。
@@ -326,3 +327,4 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 2026-08-07 | v3.58 | 用户授权暂缓打印侧验证并按可实现性成立继续推进；新增 14F 外部验证延期与接口冻结决策，明确切片侧本地 S1/S2 门禁可继续、外部证据不得伪记 PASS；下一任务为 14F-03 |
 | 2026-08-07 | v3.59 | 完成 14F-03 切片侧本地联调：公开 ABI 单模型链路生成真实 RGBWSV 包，S1 正例和 7 类负例全部通过；打印侧 M2 继续标记 EXTERNAL VALIDATION DEFERRED，下一任务为 14F-04 |
 | 2026-08-07 | v3.60 | 完成 14F-04 S2 本地合同门禁：冻结 C1-C7 机器合同、稳定错误码和 grayBits=1/2 正例，7 类负例全部 fail-closed；目标 RIP 与打印侧证据保持延期，下一任务为 14F-05 |
+| 2026-08-07 | v3.61 | 完成 14F-05 切片侧阶段收口：六步 Release 汇总门禁与 12 项冻结合同哈希通过；Stage 14 定位为能力包可交付、接口冻结、外部验收延期，不标记生产就绪 |
