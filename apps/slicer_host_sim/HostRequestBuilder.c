@@ -231,9 +231,10 @@ cleanup:
     return scene;
 }
 
-char* HostBuildProfile(
+char* HostBuildProfileWithLayerThickness(
     const char* modelPath,
     const char* packageDirectory,
+    double layerThicknessMm,
     char* profileHash,
     unsigned long profileHashCapacity)
 {
@@ -243,6 +244,7 @@ char* HostBuildProfile(
     char* profile = NULL;
     char digest[65];
     if (modelPath == NULL || packageDirectory == NULL
+        || layerThicknessMm <= 0.0
         || profileHash == NULL || profileHashCapacity < 72U)
     {
         return NULL;
@@ -294,7 +296,7 @@ char* HostBuildProfile(
         "],\n"
         "\"dpiX\": 127,\n"
         "\"dpiY\": 127,\n"
-        "\"layerThicknessMm\": 0.2,\n"
+        "\"layerThicknessMm\": %.15g,\n"
         "\"packageDir\": \"%s\",\n"
         "\"planarConfig\": \"contiguous\",\n"
         "\"rowsPerStrip\": 64,\n"
@@ -310,6 +312,7 @@ char* HostBuildProfile(
         "\"slicingMode\": \"closed_mesh_scanline\"\n"
         "}",
         escapedModel,
+        layerThicknessMm,
         escapedPackage);
     if (canonical == NULL || !ComputeSha256(canonical, digest))
     {
@@ -331,7 +334,7 @@ char* HostBuildProfile(
         "\"varnishValue\":255,\"whiteValue\":255},"
         "\"output\":{\"bitDepth\":8,"
         "\"channelOrder\":[\"R\",\"G\",\"B\",\"W\",\"S\",\"V\"],"
-        "\"dpiX\":127,\"dpiY\":127,\"layerThicknessMm\":0.2,"
+        "\"dpiX\":127,\"dpiY\":127,\"layerThicknessMm\":%.15g,"
         "\"packageDir\":\"%s\",\"planarConfig\":\"contiguous\","
         "\"rowsPerStrip\":64,\"storageMode\":\"stripped\"},"
         "\"preview\":{\"enabled\":false},\"profileHash\":\"%s\","
@@ -339,6 +342,7 @@ char* HostBuildProfile(
         "\"slicePipeline\":{\"mode\":\"legacy\"},"
         "\"slicingMode\":\"closed_mesh_scanline\"}",
         escapedModel,
+        layerThicknessMm,
         escapedPackage,
         profileHash);
 
@@ -347,4 +351,18 @@ cleanup:
     free(escapedPackage);
     free(canonical);
     return profile;
+}
+
+char* HostBuildProfile(
+    const char* modelPath,
+    const char* packageDirectory,
+    char* profileHash,
+    unsigned long profileHashCapacity)
+{
+    return HostBuildProfileWithLayerThickness(
+        modelPath,
+        packageDirectory,
+        0.2,
+        profileHash,
+        profileHashCapacity);
 }

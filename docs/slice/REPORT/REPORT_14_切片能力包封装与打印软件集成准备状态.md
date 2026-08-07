@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.49 ｜ 更新日期：2026-08-07
+> 版本：v3.50 ｜ 更新日期：2026-08-07
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14E-04b 能力覆盖达标
+CURRENT_NEXT_TASK      = 14E-04c 带纹理 3D 视角与相机操作
 M_MVP_GATE             = PASS          （14E-01 纯 C 公开 ABI 闭环 Debug/Release PASS）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
@@ -102,7 +102,8 @@ slicer_module* / .def       ✅ Debug/Release 精确 11 个冻结导出
 **Stage 14 的 14A 切片侧实现任务已全部完成：14A-01..11（14A-08 已闭合），其中
 14A-03 与 14A-04-R1 仍待打印侧书面回签；14B 已完成分层、Facade 合同、Model/Package、
 SceneFacade、SliceFacade、真实纹理 Provider、DLL 与 Worker 基础链路；14E-01 纯 C 宿主已关闭
-M-MVP，14E-02..04 已完成 Qt ABI 边界、三车道交互和带纹理俯视性能门禁。**
+M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视性能门禁和
+15 项公开能力覆盖。**
 
 ### 3.1 已完成原子任务
 
@@ -175,6 +176,7 @@ M-MVP，14E-02..04 已完成 Qt ABI 边界、三车道交互和带纹理俯视�
 | 14E-02 | ✅ COMPLETE（2026-08-07） | `apps/slicer_ui_host_sim/` Qt 参考宿主骨架与 `ModuleClient`；运行时解析 11 个导出并提供统一作业 API/调用计数 | Debug/Release Stage 14E-02 各 3/3 PASS；源码/CMake/PE 导入表三重依赖守卫及 DLL 缺失 fail-closed PASS |
 | 14E-03 | ✅ COMPLETE（2026-08-07） | `SceneInteractionController` + `TransformCommitPolicy`；本地 Transient、原子 Commit、显式初始刷新与 Stale 快照恢复 | Debug/Release 真实 DLL 合同测试 PASS；50 次 transient 更新跨 DLL 调用为 0；正常 Commit 不追加 snapshot；Stale 丢弃本地状态且不自动重试 |
 | 14E-04 | ✅ COMPLETE（2026-08-07） | `TopViewRenderPolicy` + `MoveOptimizationPolicy`；top 真实纹理 blob、双身份缓存、宿主本地移动和 retained render | Debug/Release Stage 14E-02..04 各 6/6；60 次 Commit P95=0.3819 ms；300 本地帧零 ABI；30 秒 UI-M3=133.303% |
+| 14E-04b | ✅ COMPLETE（2026-08-07） | Qt 宿主 15 项公开能力覆盖 runner、机器证据、UI-M5 真实 Worker 取消与 UI-M6 缺 DLL 门禁 | Debug/Release Stage 14E-02..04b 各 7/7；P0=5/5、P1=5/5、P2=6/6；取消 103 ms 且 owned 临时产物零残留 |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
 11 个冻结符号；C-SPI-01..18 已由 14C-06A/06B 合并关闭。
@@ -302,3 +304,4 @@ M-MVP，14E-02..04 已完成 Qt ABI 边界、三车道交互和带纹理俯视�
 | 2026-08-07 | v3.47 | 完成 14E-02：新增独立 Qt 参考宿主与 runtime-loaded `ModuleClient`，冻结 11 导出解析、15 能力自述、统一作业入口和 ABI 调用计数；Debug/Release 3/3 PASS，下一任务为 14E-03 |
 | 2026-08-07 | v3.48 | 完成 14E-03：落地 Transient/Commit/Stale 三车道控制器；UI-M1 零跨 DLL 调用、正常 Commit 无追加快照和 UI-M4 Stale 回滚经 Debug/Release 真实模块验证，下一任务为 14E-04 |
 | 2026-08-07 | v3.49 | 完成 14E-04：top ViewData 真实纹理、preview/layout 双层缓存和本地移动零调用闭合；Commit P95=0.3819 ms，Release 30 秒 UI-M3 为主干 133.303%，下一任务为 14E-04b |
+| 2026-08-07 | v3.50 | 完成 14E-04b：Qt 参考宿主经公开 SPI 覆盖 15 项能力，P0/P1 全部端到端通过、P2 返回完整记录；UI-M5 取消 103 ms 无残留，UI-M6 保持 fail-closed，下一任务为 14E-04c |

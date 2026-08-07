@@ -1,4 +1,9 @@
 add_executable(slicer_ui_host_sim
+    CapabilityCoverageRequests.cpp
+    CapabilityCoverageRequests.h
+    CapabilityCoverageRunner.cpp
+    CapabilityCoverageRunner.h
+    CapabilityCoverageWorkflow.cpp
     HostMainWindow.cpp
     HostMainWindow.h
     Main.cpp
@@ -13,6 +18,16 @@ add_executable(slicer_ui_host_sim
     render/TopViewRenderPolicy.cpp
     render/TopViewRenderPolicyData.cpp
     render/TopViewRenderPolicy.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.h
+)
+
+set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    PROPERTIES LANGUAGE CXX
 )
 
 set_target_properties(slicer_ui_host_sim PROPERTIES
@@ -21,10 +36,12 @@ set_target_properties(slicer_ui_host_sim PROPERTIES
 
 target_include_directories(slicer_ui_host_sim PRIVATE
     ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim
 )
 
 target_link_libraries(slicer_ui_host_sim PRIVATE
     Qt5::Widgets
+    bcrypt
 )
 
 add_dependencies(slicer_ui_host_sim slicer_module)
@@ -45,7 +62,7 @@ if(MSVC)
             ${qt515MsvcCompatibilityHeader}
         )
         target_compile_options(slicer_ui_host_sim PRIVATE
-            "/FI${qt515MsvcCompatibilityHeader}"
+            "$<$<COMPILE_LANGUAGE:CXX>:/FI${qt515MsvcCompatibilityHeader}>"
         )
     endif()
 endif()
@@ -72,6 +89,16 @@ add_test(
     COMMAND slicer_ui_host_sim
         --self-test
         --module $<TARGET_FILE:slicer_module>
+)
+
+add_test(
+    NAME slicer_stage14e04b_capability_coverage_test
+    COMMAND slicer_ui_host_sim
+        --capability-self-test
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+        --evidence-root
+            ${CMAKE_BINARY_DIR}/stage14e04b_evidence/$<CONFIG>
 )
 
 add_executable(stage14e03_interaction_tests
@@ -180,6 +207,7 @@ add_test(
 
 set_tests_properties(
     slicer_stage14e02_qt_host_smoke_test
+    slicer_stage14e04b_capability_coverage_test
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )

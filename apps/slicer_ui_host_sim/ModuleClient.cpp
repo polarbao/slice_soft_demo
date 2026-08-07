@@ -42,26 +42,45 @@ bool ReadTextBuffer(
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral("模块未遵守缓冲区三态协议。");
+            *error = QStringLiteral(
+                "模块未遵守缓冲区三态协议：probe=%1 required=%2。")
+                         .arg(probeCode)
+                         .arg(required);
         }
         return false;
     }
 
-    QByteArray buffer(required + 1, '\0');
-    int written = 0;
-    const int readCode = reader(buffer.data(), buffer.size(), &written);
-    if (readCode < 0 || written != required)
+    for (int attempt = 0; attempt < 3; ++attempt)
     {
+        QByteArray buffer(required + 1, '\0');
+        int written = 0;
+        const int readCode = reader(buffer.data(), buffer.size(), &written);
+        if (readCode >= 0 && written == readCode && written <= required)
+        {
+            buffer.resize(written);
+            *output = buffer;
+            return true;
+        }
+        if (readCode == PM_ERR_BUFFER_SMALL && written > required)
+        {
+            required = written;
+            continue;
+        }
         if (error != nullptr)
         {
-            *error = QStringLiteral("模块返回文本读取失败。");
+            *error = QStringLiteral(
+                "模块返回文本读取失败：read=%1 written=%2 required=%3。")
+                         .arg(readCode)
+                         .arg(written)
+                         .arg(required);
         }
         return false;
     }
-
-    buffer.resize(written);
-    *output = buffer;
-    return true;
+    if (error != nullptr)
+    {
+        *error = QStringLiteral("模块结果长度连续变化，三次读取仍未稳定。");
+    }
+    return false;
 }
 
 QString WindowsErrorText(DWORD errorCode)
