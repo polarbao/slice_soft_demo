@@ -435,6 +435,29 @@
       "detail": "执行14F-03单模型导入、变换、Worker切片、S1严格正例和7类负例；打印侧M2实际联调保持延期。"
     },
     {
+      "label": "SliceSoft 14F: Run S2 Contract Gate (Release)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/Run14F04S2ContractGate.ps1",
+        "-RepositoryRoot",
+        ".",
+        "-OutputRoot",
+        "build-slicesoft/main/stage14f04_evidence/Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft 14F: Run Single Model S1 Gate (Release)",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "执行14F-04 S2 C1-C7本地合同正负例门禁；不声称目标RIP、ChannelSplitter或极性映射已经外部验收。"
+    },
+    {
       "label": "SliceSoft: Advanced - Build Runtime Release (NMake Fallback)",
       "type": "shell",
       "command": "powershell",

@@ -1,0 +1,89 @@
+{
+  "schema": "slicesoft.rip.s2.contract.1",
+  "contractId": "s2.rip_output.1",
+  "status": "INTERFACE_FROZEN",
+  "input": {
+    "packageSchema": "p0.rgbwsv.2",
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V"
+    ],
+    "bitDepth": 8,
+    "polarity": "black_is_print",
+    "printValue": 0,
+    "emptyValue": 255
+  },
+  "device": {
+    "grayBitsPath": "profile.device.grayBits",
+    "allowedGrayBits": [
+      1,
+      2
+    ],
+    "missingBehavior": "fail_closed"
+  },
+  "quantization": {
+    "1": {
+      "W": 2,
+      "S": 3,
+      "V": 3
+    },
+    "2": {
+      "W": 6,
+      "S": 9,
+      "V": 9
+    }
+  },
+  "whiteSemantics": {
+    "authority": "manifest",
+    "allowed": [
+      "opaque",
+      "transparent"
+    ],
+    "opaqueRgbwsv": [
+      255,
+      255,
+      255,
+      0,
+      255,
+      255
+    ],
+    "sentinelMode": "forbidden",
+    "profileConflictBehavior": "fail_closed"
+  },
+  "output": {
+    "organization": "one_interleaved_multichannel_tiff_per_layer",
+    "filePattern": "rip_%06d.tif",
+    "minimumSamplesPerPixel": 7,
+    "storage": "stripped",
+    "tiled": false,
+    "dropRange": "optional"
+  },
+  "supportMixing": {
+    "supportParts": 6,
+    "varnishParts": 1,
+    "clampMax": 9,
+    "enabledBy": "print_software_configuration"
+  },
+  "externalPolarityMapping": {
+    "owner": "rip_and_print_software",
+    "allowedLocalGateStatus": "EXTERNAL_VALIDATION_DEFERRED",
+    "mustNotClaim": [
+      "PASS",
+      "EXTERNAL_ACCEPTED",
+      "PRODUCTION_READY"
+    ]
+  },
+  "validationCodes": {
+    "C1": "S2_C1_INPUT_CONTRACT_INVALID",
+    "C2": "S2_C2_GRAY_BITS_INVALID",
+    "C3": "S2_C3_QUANTIZATION_LIMIT_INVALID",
+    "C4": "S2_C4_WHITE_SEMANTICS_INVALID",
+    "C5": "S2_C5_OUTPUT_LAYOUT_INVALID",
+    "C6": "S2_C6_DROP_RANGE_INVALID",
+    "C7": "S2_C7_MIXING_OR_EXTERNAL_STATE_INVALID"
+  }
+}

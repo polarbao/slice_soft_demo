@@ -1,0 +1,90 @@
+{
+  "schema": "slicesoft.rip.output_descriptor.1",
+  "input": {
+    "packageSchema": "p0.rgbwsv.2",
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V"
+    ],
+    "bitDepth": 8,
+    "polarity": "black_is_print",
+    "printValue": 0,
+    "emptyValue": 255
+  },
+  "device": {
+    "grayBits": 2
+  },
+  "quantization": {
+    "maxDrops": {
+      "W": 6,
+      "S": 9,
+      "V": 9
+    }
+  },
+  "whiteSemantics": {
+    "authority": "manifest",
+    "manifest": "opaque",
+    "profile": "opaque",
+    "opaqueRgbwsv": [
+      255,
+      255,
+      255,
+      0,
+      255,
+      255
+    ],
+    "sentinelMode": "forbidden"
+  },
+  "output": {
+    "organization": "one_interleaved_multichannel_tiff_per_layer",
+    "filePattern": "rip_%06d.tif",
+    "samplesPerPixel": 7,
+    "storage": "stripped",
+    "tiled": false,
+    "dropRange": {
+      "W": [
+        0,
+        6
+      ],
+      "S": [
+        0,
+        9
+      ],
+      "V": [
+        0,
+        9
+      ]
+    },
+    "sampleDrops": {
+      "W": [
+        0,
+        1,
+        6
+      ],
+      "S": [
+        0,
+        4,
+        9
+      ],
+      "V": [
+        0,
+        5,
+        9
+      ]
+    }
+  },
+  "supportMixing": {
+    "supportParts": 6,
+    "varnishParts": 1,
+    "clampMax": 9,
+    "enabledBy": "print_software_configuration"
+  },
+  "externalPolarityMapping": {
+    "owner": "rip_and_print_software",
+    "status": "EXTERNAL_VALIDATION_DEFERRED"
+  }
+}

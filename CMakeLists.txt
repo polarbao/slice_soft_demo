@@ -2070,6 +2070,15 @@ add_test(
         -RepositoryRoot "${CMAKE_CURRENT_SOURCE_DIR}"
         -OutputRoot "${CMAKE_CURRENT_BINARY_DIR}/stage14f03_evidence/$<CONFIG>"
 )
+add_test(
+    NAME stage14f04_s2_contract_gate
+    COMMAND powershell
+        -NoProfile
+        -ExecutionPolicy Bypass
+        -File "${CMAKE_CURRENT_SOURCE_DIR}/scripts/Run14F04S2ContractGate.ps1"
+        -RepositoryRoot "${CMAKE_CURRENT_SOURCE_DIR}"
+        -OutputRoot "${CMAKE_CURRENT_BINARY_DIR}/stage14f04_evidence/$<CONFIG>"
+)
 set_tests_properties(
     stage14e01_c_host_end_to_end
     PROPERTIES
@@ -2087,6 +2096,12 @@ set_tests_properties(
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 120
+)
+set_tests_properties(
+    stage14f04_s2_contract_gate
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 60
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(

@@ -1,7 +1,7 @@
 # TASKS_14 切片能力包封装与打印软件集成任务清单
 
 > 文档状态：✅ **ACTIVE**（用户于 2026-08-04 授权激活）
-> 版本：v2.28 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
+> 版本：v2.30 ｜ 日期：2026-08-03 ｜ 激活：2026-08-04 ｜ 14A 实现收口：2026-08-05
 > 作者：Claude 起草；执行由主线开发（codex）接管
 > 决策依据：`docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md`
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（实施只看该文）**
@@ -376,8 +376,8 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14F-01 | `modules/slicer/` 打包（DLL + Worker + module.json + 依赖 DLL）| 14C-06, 14D-07 | 分发包本地隔离验证 | ✅ **SLICER-SIDE COMPLETE** |
 | 14F-02 | 与打印侧 M1 联调（装载 + 能力清单 + 自检）| 14F-01 | M1 handoff 与本地接收门禁 | 🟡 **INTERFACE FROZEN / EXTERNAL VALIDATION DEFERRED** |
 | 14F-03 | 与打印侧 M2 联调（单模型 → S1 校验）| 14F-02 冻结合同 | S1 正例 + 7 类负例 | ✅ **SLICER-SIDE COMPLETE / EXTERNAL VALIDATION DEFERRED** |
-| 14F-04 | 与 RIP 联调（S2 契约 + `rip_output_validator`）| 14A-08 | S2 C1–C7 本地合同门禁 | 🟢 **LOCAL GATE READY** |
-| 14F-05 | 端到端到 Ready + 阶段收口报告 | 14F-03/04 本地门禁 | 切片侧收口；外部验收显式延期 | 🟡 **WAIT 14F-04 LOCAL GATE** |
+| 14F-04 | 与 RIP 联调（S2 契约 + `rip_output_validator`）| 14A-08 | S2 C1–C7 本地合同门禁 | ✅ **SLICER-SIDE COMPLETE / EXTERNAL VALIDATION DEFERRED** |
+| 14F-05 | 端到端到 Ready + 阶段收口报告 | 14F-03/04 本地门禁 | 切片侧收口；外部验收显式延期 | 🟢 **LOCAL CLOSURE READY** |
 
 > 2026-08-07 用户授权暂不执行打印侧验证，并按打印侧可实现性成立继续推进。
 > 权威边界见 `docs/slice/DOC/DOC_DECISION_14F_外部验证延期与接口冻结.md`；
@@ -483,3 +483,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-06 | v2.27 | 完成 14D-08-R1-02：身份闭合结果、稳定退出映射和同目录 tmp 原子替换通过 Debug/Release 4/4 门禁；R1-03 准备门转 READY，仍禁止伪成功 executor |
 | 2026-08-06 | v2.28 | 完成 14D-08-R1-03：三能力精确注册、共享 runtime、取消前检和命令入口接线通过 Debug/Release 8/8 门禁；R1 COMPLETE，R2 映射准备仍 BLOCKED |
 | 2026-08-07 | v2.29 | 完成 14F-03 切片侧本地门禁：公开 ABI 单模型 import→transform→Worker slice→S1 strict 正例通过，7 类坏包稳定 fail-closed；打印侧 M2 外部验证保持延期，下一任务为 14F-04 |
+| 2026-08-07 | v2.30 | 完成 14F-04 S2 本地合同门禁：冻结 C1-C7 机器合同与稳定错误码，grayBits=1/2 正例及 7 类负例通过；目标 RIP、ChannelSplitter 和极性映射实证保持延期，下一任务为 14F-05 |
