@@ -328,6 +328,47 @@
       "detail": "离屏验证 Stage 14E Release 宿主可加载能力包并通过公共 SPI 自检。"
     },
     {
+      "label": "SliceSoft 14F: Package Slicer Module (Release)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/PackageSlicerModule.ps1",
+        "-Config",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "构建并打包 Stage 14F Release 能力包到 output/distribution/Release/modules/slicer；与原 Runtime 和 14E 宿主入口分离。"
+    },
+    {
+      "label": "SliceSoft 14F: Validate Slicer Module Package (Release)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/TestSlicerModulePackage.ps1",
+        "-Config",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft 14F: Package Slicer Module (Release)",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "校验 14F 包结构、哈希、依赖闭包、Worker 合同，并通过纯 C 宿主执行导入到 RGBWSV 校验的本地闭环。"
+    },
+    {
       "label": "SliceSoft: Advanced - Build Runtime Release (NMake Fallback)",
       "type": "shell",
       "command": "powershell",
