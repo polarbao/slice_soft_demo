@@ -1,7 +1,7 @@
 # REPORT_14 切片能力包封装与打印软件集成准备状态
 
 > 文档状态：✅ **ACTIVE / IMPLEMENTATION AUTHORIZED**（2026-08-04 激活）
-> 版本：v3.46 ｜ 更新日期：2026-08-07
+> 版本：v3.47 ｜ 更新日期：2026-08-07
 > 本文是 Stage 14 的状态入口；Stage 12 总状态仍以 `REPORT_12X` 为准
 > **S2 权威条款：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`**
 
@@ -16,7 +16,7 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = CLOSED_ON_PAPER
                          RIP 六问两轮闭合、14A-08 COMPLETE；
                          外部 RIP【实机】互操作仍由 14F 关闭
-CURRENT_NEXT_TASK      = 14E-02 Qt 参考宿主与 ModuleClient
+CURRENT_NEXT_TASK      = 14E-03 三车道交互控制器与 Stale 回滚
 M_MVP_GATE             = PASS          （14E-01 纯 C 公开 ABI 闭环 Debug/Release PASS）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
@@ -172,6 +172,7 @@ M-MVP，14E-02 Qt 参考宿主现已解锁。**
 | 14D-07-R2 | ✅ COMPLETE（2026-08-07） | 当前 Worker E-01..08 完整 Gate | Debug/Release 真实 Worker PASS；生产包协议、golden、报告、负例、取消恢复及参数化替换边界闭合 |
 | 14D-08-R4 | ✅ COMPLETE（2026-08-07） | Worker 独立调试入口父任务收口 | Debug/Release Stage 14D-08 各 10/10；VS Code 直接 Worker 调试、可移植请求生成与无 fake/fallback 门禁 PASS |
 | 14E-01 | ✅ COMPLETE（2026-08-07） | `apps/slicer_host_sim/` 纯 C 参考宿主；运行时装载 11 个公开导出，完成导入、变换、Worker 切片、取包、校验和 fail-closed | Debug/Release Stage 14E-01 各 2/2 PASS；15 能力/三车道/源码行数门禁 PASS；形成 M-MVP |
+| 14E-02 | ✅ COMPLETE（2026-08-07） | `apps/slicer_ui_host_sim/` Qt 参考宿主骨架与 `ModuleClient`；运行时解析 11 个导出并提供统一作业 API/调用计数 | Debug/Release Stage 14E-02 各 3/3 PASS；源码/CMake/PE 导入表三重依赖守卫及 DLL 缺失 fail-closed PASS |
 
 实际 DLL 已由 14C-01 建立，并在 14C-07 使用 Debug/Release `dumpbin /EXPORTS` 再次确认精确
 11 个冻结符号；C-SPI-01..18 已由 14C-06A/06B 合并关闭。
@@ -296,3 +297,4 @@ M-MVP，14E-02 Qt 参考宿主现已解锁。**
 | 2026-08-07 | v3.44 | 完成 14D-07-R2：当前 Worker 经公开进程/文件合同通过 E-01..08 Debug/Release Gate；下一任务转 14D-08 父任务收口审计，14E 保持未启动 |
 | 2026-08-07 | v3.45 | 完成 14D-08-R4：三项真实 executor、共享 runtime、安全发布/取消/唯一路由、Debug/Release、RIP strict、无 fallback 与 VS Code 独立调试入口全部闭合；Stage 14D 父任务收口，下一步只执行 14E 前最终门禁 |
 | 2026-08-07 | v3.46 | 完成 14E-01：新增纯 C 控制台宿主，仅经 11 个公开导出完成导入、变换、Worker 切片、Package 校验与 fail-closed；Debug/Release 2/2 PASS，M-MVP 成立并解锁 14E-02 |
+| 2026-08-07 | v3.47 | 完成 14E-02：新增独立 Qt 参考宿主与 runtime-loaded `ModuleClient`，冻结 11 导出解析、15 能力自述、统一作业入口和 ABI 调用计数；Debug/Release 3/3 PASS，下一任务为 14E-03 |

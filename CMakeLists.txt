@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_SLICER_DEBUG_UI "Build Qt slicer debug UI" ON)
+option(BUILD_SLICER_UI_HOST_SIM "Build Qt public-ABI reference host" ON)
 option(ENABLE_GEOMETRY_KERNEL_DEMO "Build experimental geometry kernel demo" ON)
 option(USE_OPENVDB "Enable optional OpenVDB adapter" OFF)
 set(
@@ -2388,12 +2389,23 @@ if(ENABLE_GEOMETRY_KERNEL_DEMO)
     target_link_libraries(surface_shell_robustness_demo PRIVATE slicer_core)
 endif()
 
-if(BUILD_SLICER_DEBUG_UI)
+if(BUILD_SLICER_DEBUG_UI OR BUILD_SLICER_UI_HOST_SIM)
     find_package(Qt5 COMPONENTS Widgets QUIET)
+endif()
+
+if(BUILD_SLICER_DEBUG_UI)
     if(Qt5Widgets_FOUND)
         add_subdirectory(apps/slicer_debug_ui)
     else()
         message(STATUS "Qt5 Widgets not found; slicer_debug_ui target is skipped.")
+    endif()
+endif()
+
+if(BUILD_SLICER_UI_HOST_SIM)
+    if(Qt5Widgets_FOUND)
+        add_subdirectory(apps/slicer_ui_host_sim)
+    else()
+        message(STATUS "Qt5 Widgets not found; slicer_ui_host_sim target is skipped.")
     endif()
 endif()
 

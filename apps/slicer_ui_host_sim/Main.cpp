@@ -1,0 +1,101 @@
+#include "HostMainWindow.h"
+#include "ModuleClient.h"
+
+#include <QApplication>
+#include <QCoreApplication>
+#include <QDir>
+#include <QStringList>
+#include <QTextStream>
+
+namespace
+{
+bool HasArgument(const QStringList& arguments, const QString& name)
+{
+    return arguments.contains(name);
+}
+
+QString FindArgumentValue(
+    const QStringList& arguments,
+    const QString& name)
+{
+    const int index = arguments.indexOf(name);
+    if (index < 0 || index + 1 >= arguments.size())
+    {
+        return {};
+    }
+    return arguments.at(index + 1);
+}
+
+QString DefaultModulePath()
+{
+    return QDir(QCoreApplication::applicationDirPath())
+        .filePath(QStringLiteral("slicer_module.dll"));
+}
+
+int RunSelfTest(const QString& modulePath)
+{
+    ModuleClient client;
+    QString error;
+    if (!client.Open(modulePath, QByteArrayLiteral("{}"), &error))
+    {
+        QTextStream(stderr)
+            << "MODULE_LOAD_FAILED: " << error << Qt::endl;
+        return 3;
+    }
+
+    QByteArray report;
+    if (!client.SelfTest(&report, &error))
+    {
+        QTextStream(stderr)
+            << "MODULE_SELF_TEST_FAILED: " << error << Qt::endl;
+        return 4;
+    }
+
+    QTextStream(stdout)
+        << "STAGE14E02_SELF_TEST_PASS spi=" << PM_SPI_VERSION
+        << " calls=" << client.CallCount() << Qt::endl;
+    return 0;
+}
+}
+
+int main(int argc, char* argv[])
+{
+    bool selfTestRequested = false;
+    for (int index = 1; index < argc; ++index)
+    {
+        if (QString::fromLocal8Bit(argv[index]) == QStringLiteral("--self-test"))
+        {
+            selfTestRequested = true;
+            break;
+        }
+    }
+
+    if (selfTestRequested)
+    {
+        QCoreApplication application(argc, argv);
+        const QStringList arguments = application.arguments();
+        const QString requestedPath = FindArgumentValue(
+            arguments,
+            QStringLiteral("--module"));
+        return RunSelfTest(
+            requestedPath.isEmpty() ? DefaultModulePath() : requestedPath);
+    }
+
+    QApplication application(argc, argv);
+    const QStringList arguments = application.arguments();
+    if (HasArgument(arguments, QStringLiteral("--help")))
+    {
+        QTextStream(stdout)
+            << "slicer_ui_host_sim [--module <slicer_module.dll>] [--self-test]"
+            << Qt::endl;
+        return 0;
+    }
+
+    const QString requestedPath = FindArgumentValue(
+        arguments,
+        QStringLiteral("--module"));
+    HostMainWindow window(
+        requestedPath.isEmpty() ? DefaultModulePath() : requestedPath);
+    window.show();
+    return application.exec();
+}
