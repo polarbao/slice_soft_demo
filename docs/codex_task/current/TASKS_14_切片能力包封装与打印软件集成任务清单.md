@@ -323,11 +323,18 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 > 🚧 **渲染后端选型已移出 14E（2026-08-06）**
 >
 > ```text
-> 独立专项：docs/slice/DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md
+> 独立专项决策：docs/slice/DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md
+> 独立任务清单：docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
 >
 > 14E【不做】后端选型，只【面向已冻结的 IRenderBackend 接口编程】。
-> 后端换谁（cpu_raster / qrhi_d3d11 / qopengl）都不影响 14E 任何一张卡。
+> 后端换谁（qrhi_d3d11 / cpu_raster）都不影响 14E 任何一张卡。
 > ```
+>
+> ⚠️ **R 组另有一项与 14E 相关的既存缺陷**：ViewData 的 `lod1/lod2` 当前由
+> **跳采样**（每 N 个三角取 1 个）实现，不是网格简化，会产出破碎网格
+> （证据：`SceneViewMeshBuilder.cpp:143-146`）。该缺陷归 **R-B 组**处理，
+> **不属于 14E**；但 14E-04c 落地前若未修，3D 视角可能显示满身是洞的模型。
+> 触发阈值：单实例超过约 13.8k 三角，22 实例场景下 `lod: auto` 即会降级。
 >
 > 移出理由：后端选型牵扯 Qt 版本升级与第三方许可等长周期决策，
 > 与 Stage 14 的交付目标（能力包 + 集成契约）**无依赖关系**，不应阻塞 14E 与 Stage 14 收口。
