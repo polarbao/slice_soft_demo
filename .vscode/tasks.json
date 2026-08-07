@@ -212,6 +212,122 @@
       "problemMatcher": []
     },
     {
+      "label": "SliceSoft 14E: Build Packaged Host UI (Debug)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "slicesoft-debug",
+        "--target",
+        "slicer_ui_host_sim"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Configure Main Build",
+      "group": "build",
+      "problemMatcher": "$msCompile",
+      "detail": "仅构建 Stage 14E 封装宿主 UI、slicer_module.dll 与 slicer_worker.exe；不替代原 slicer_debug_ui 入口。"
+    },
+    {
+      "label": "SliceSoft 14E: Build Packaged Host UI (Release)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "slicesoft-release",
+        "--target",
+        "slicer_ui_host_sim"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft: Configure Main Build",
+      "group": "build",
+      "problemMatcher": "$msCompile",
+      "detail": "仅构建 Stage 14E Release 封装宿主 UI 及其能力包依赖；不部署原 Runtime。"
+    },
+    {
+      "label": "SliceSoft 14E: Run Packaged Host UI (Debug)",
+      "type": "shell",
+      "command": "${workspaceFolder}/build-slicesoft/main/apps/slicer_ui_host_sim/Debug/slicer_ui_host_sim.exe",
+      "args": [
+        "--module",
+        "${workspaceFolder}/build-slicesoft/main/Debug/slicer_module.dll"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "${env:QTDIR}/bin;${env:PATH}"
+        }
+      },
+      "dependsOn": "SliceSoft 14E: Build Packaged Host UI (Debug)",
+      "problemMatcher": [],
+      "detail": "运行 Stage 14E Debug 封装宿主 UI，并显式加载 Debug slicer_module.dll。"
+    },
+    {
+      "label": "SliceSoft 14E: Run Packaged Host UI (Release)",
+      "type": "shell",
+      "command": "${workspaceFolder}/build-slicesoft/main/apps/slicer_ui_host_sim/Release/slicer_ui_host_sim.exe",
+      "args": [
+        "--module",
+        "${workspaceFolder}/build-slicesoft/main/Release/slicer_module.dll"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "${env:QTDIR}/bin;${env:PATH}"
+        }
+      },
+      "dependsOn": "SliceSoft 14E: Build Packaged Host UI (Release)",
+      "problemMatcher": [],
+      "detail": "运行 Stage 14E Release 封装宿主 UI，并显式加载 Release slicer_module.dll。"
+    },
+    {
+      "label": "SliceSoft 14E: Self-Test Packaged Host UI (Debug)",
+      "type": "shell",
+      "command": "${workspaceFolder}/build-slicesoft/main/apps/slicer_ui_host_sim/Debug/slicer_ui_host_sim.exe",
+      "args": [
+        "--self-test",
+        "--module",
+        "${workspaceFolder}/build-slicesoft/main/Debug/slicer_module.dll"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "${env:QTDIR}/bin;${env:PATH}",
+          "QT_QPA_PLATFORM": "offscreen"
+        }
+      },
+      "dependsOn": "SliceSoft 14E: Build Packaged Host UI (Debug)",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "离屏验证 Stage 14E Debug 宿主可加载能力包并通过公共 SPI 自检。"
+    },
+    {
+      "label": "SliceSoft 14E: Self-Test Packaged Host UI (Release)",
+      "type": "shell",
+      "command": "${workspaceFolder}/build-slicesoft/main/apps/slicer_ui_host_sim/Release/slicer_ui_host_sim.exe",
+      "args": [
+        "--self-test",
+        "--module",
+        "${workspaceFolder}/build-slicesoft/main/Release/slicer_module.dll"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PATH": "${env:QTDIR}/bin;${env:PATH}",
+          "QT_QPA_PLATFORM": "offscreen"
+        }
+      },
+      "dependsOn": "SliceSoft 14E: Build Packaged Host UI (Release)",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "离屏验证 Stage 14E Release 宿主可加载能力包并通过公共 SPI 自检。"
+    },
+    {
       "label": "SliceSoft: Advanced - Build Runtime Release (NMake Fallback)",
       "type": "shell",
       "command": "powershell",
