@@ -26,3 +26,4 @@
 | `PRD_13B_多模型规则排版与联合切片.md` | 13B 11x2 规则排版、多模型联合切片和单 package |
 | `PRD_13C_RGBWSV_TIFF原生统一预览.md` | 13C TIFF 原生单通道、全材料叠加和预览 IO 收口 |
 | `PRD_12E_09A_SceneAware诊断UI.md` | 09A single_model/scene 诊断配置、异步分析和同层语义预览 |
+| `PRD_16_切片几何采样与甲片接触姿态性能专项.md` | Stage 16 层体积采样、甲片接触姿态和 12/13 性能收口需求；当前未激活 |

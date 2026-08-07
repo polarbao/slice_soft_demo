@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-08-05
-> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **ACTIVE**；14A 切片侧已收口，14B 准备门 PASS，下一开发任务为 14B-00（14B-06 可并行）
+> 更新日期：2026-08-06
+> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **ACTIVE**，当前入口以 `REPORT_14` 为准（2026-08-06：14C-06A READY，14D-08 解阻拆分准备）；Stage 16 **PROPOSED / NOT ACTIVE**，等待 Stage 14 收口后 16-00 复核
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -28,6 +28,8 @@ docs/codex_task/archive/handoff
 ```text
 docs/codex_task/current/TASKS_15_纹理纯白区按需补白任务清单.md
 docs/codex_task/current/CODEX_PROMPT_15_纹理纯白区按需补白执行指令.md
+docs/codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md
+docs/codex_task/current/CODEX_PROMPT_16_切片几何采样甲片接触姿态与性能专项执行指令.md
 docs/codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md
 docs/codex_task/current/CODEX_PROMPT_14_切片能力包封装与打印软件集成执行指令.md
 docs/codex_task/current/TASKS_03E_TIFF压缩兼容与性能任务清单.md
@@ -141,6 +143,17 @@ Stage 13 不改变 RGBWSV 协议，也不把多模型失败静默
 
 跨 Stage 12/13 的当前状态、固定顺序和更新规则统一查看
 `current/TASKS_12_13_后续开发计划总览清单.md`。
+
+## Stage 16 几何采样、接触姿态与性能专项
+
+2026-08-06 建立 Stage 16 文档准备，用于评估层体积/2x2 几何采样、甲片接触诊断/受限调平，并整并 12F-02..09、13F-R1-01..05 和 13B 22 实例性能预算：
+
+```text
+docs/codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md
+docs/codex_task/current/CODEX_PROMPT_16_切片几何采样甲片接触姿态与性能专项执行指令.md
+```
+
+当前状态是 `PROPOSED / NOT ACTIVE`。Stage 14 收口前不得执行 Stage 16 代码卡；Stage 14 收口后仍需先完成 16-00 GO/DEFER/NO-GO 复核和用户授权。
 
 ## 使用规则
 

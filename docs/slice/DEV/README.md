@@ -33,3 +33,4 @@
 | `DEV_13B_MultiModelScene规则排版与联合切片设计.md` | 13B MultiModelScene、规则排版、全局 raster 和联合写包 |
 | `DEV_13C_TIFFLayerSource与统一材料合成设计.md` | 13C TIFF Layer Source、LRU 和 RGBWSV 材料合成 |
 | `DEV_12E_09A_SceneAware诊断UI设计.md` | 09A Scene-aware Diagnostic Effective Config、Worker 和预览边界 |
+| `DEV_16_层体积采样接触调平与性能治理设计.md` | Stage 16 Occupancy Provider、边界 2x2、接触调平诊断和性能整并设计 |

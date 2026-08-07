@@ -1,14 +1,16 @@
 # SliceSoft 正式文档入口
 
 > 文档状态：Formal Docs Entry
-> 更新日期：2026-08-04
-> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL；03E-02 INTERNAL COMPLETE / **GO_ON_DEMAND**；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；**Stage 14 ACTIVE（2026-08-04 授权）**；Stage 15 COMPLETE / 19 OF 19
+> 更新日期：2026-08-06
+> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL；03E-02 INTERNAL COMPLETE / **GO_ON_DEMAND**；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；**Stage 14 ACTIVE（2026-08-04 授权）**；Stage 15 COMPLETE / 19 OF 19；Stage 16 PROPOSED / WAITING FOR STAGE 14 CLOSURE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，RIP 侧已确认支持 PackBits，状态转为 `GO_ON_DEMAND`（按需显式开启已授权，默认压缩仍为 `none`）。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：14A 切片侧实现已收口，14A-03 与双视图纹理 14A-04-R1 待打印侧回签；后续入口为 14B-00/06，14B-03A 将提供 top/three_d 真实纹理 ViewData。S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
+当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，RIP 侧已确认支持 PackBits，状态转为 `GO_ON_DEMAND`（按需显式开启已授权，默认压缩仍为 `none`）。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：14A 切片侧实现已收口，14A-03 与双视图纹理 14A-04-R1 待打印侧回签；2026-08-06 的当前入口为 14C-06A READY 与 14D-08 解阻拆分准备，后续状态以 `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` 为准。S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
+
+Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲片接触姿态诊断/受限调平候选，以及 12F-02..09、13F-R1-01..05 和 13B 22 实例性能预算整并。该阶段为 `PROPOSED / NOT ACTIVE`；Stage 14 收口前禁止实施，收口后仍必须先执行 16-00 GO/DEFER/NO-GO 复核。
 
 ## 目录结构
 
@@ -63,6 +65,7 @@
 | `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` | Stage 14 准备状态与外部依赖 |
 | `DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md` | Stage 14 对目标 RIP 的技术确认往来记录（两轮已闭合，转档案；实施不看本文） |
 | `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` | **S2 接缝权威合同**：Q1~Q6 定案条款、切片侧新工作项 N1/N2、8 项作废方案禁止实现 |
+| `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |
 | `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计 v1.3**：独立参考宿主、M-MVP-CANDIDATE→M-MVP、QOpenGL 双视图、三工作区信息架构、UI-M1..M13 与 14B-03A 前置 |
@@ -79,6 +82,12 @@
 | `../codex_task/current/CODEX_PROMPT_14_切片能力包封装与打印软件集成执行指令.md` | Stage 14 执行边界与停止条件 |
 | `../codex_task/current/TASKS_15_纹理纯白区按需补白任务清单.md` | Stage 15 的 19 张原子任务卡、依赖和 Gate |
 | `../codex_task/current/CODEX_PROMPT_15_纹理纯白区按需补白执行指令.md` | Stage 15 执行边界、实现不变量和停止条件 |
+| `DOC/DOC_DECISION_16_切片几何采样甲片接触姿态与性能专项.md` | Stage 16 立项、候选方案、12F/13F 整并、Stage 14 后准入和回退决策 |
+| `PRD/PRD_16_切片几何采样与甲片接触姿态性能专项.md` | Stage 16 产品目标、验收 Gate 和待确认产品输入 |
+| `DEV/DEV_16_层体积采样接触调平与性能治理设计.md` | Stage 16 采样 Provider、调平分析器、Telemetry 和性能治理设计 |
+| `DOC/DOC_PREP_16_切片几何采样甲片接触姿态与性能实施准备.md` | Stage 16 当前证据、离线模拟、资产边界和开工停止条件 |
+| `../codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md` | Stage 16 的 16-00/16A/16B/16C/16D 原子任务，当前禁止执行 |
+| `../codex_task/current/CODEX_PROMPT_16_切片几何采样甲片接触姿态与性能专项执行指令.md` | Stage 16 执行硬门、不变量、验证和停止条件 |
 | `REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 文档准备、当前实现事实、优先级和下一任务 |
 | `REPORT/REPORT_13A_模型俯视工作区与实例变换当前状态.md` | 13A-01..05 实现、验证、M13-1 候选和后续边界 |
 | `REPORT/REPORT_13A_02_模型俯视渲染当前状态.md` | 13A-02 +Z 俯视几何、Qt 异步加载、选择和实际验证 |
