@@ -2059,6 +2059,17 @@ add_test(
         --m1-self-test
         $<TARGET_FILE:slicer_module>
 )
+add_test(
+    NAME stage14f03_single_model_s1_gate
+    COMMAND powershell
+        -NoProfile
+        -ExecutionPolicy Bypass
+        -File "${CMAKE_CURRENT_SOURCE_DIR}/scripts/Run14F03SingleModelS1Gate.ps1"
+        -BuildDirectory "${CMAKE_CURRENT_BINARY_DIR}"
+        -Config $<CONFIG>
+        -RepositoryRoot "${CMAKE_CURRENT_SOURCE_DIR}"
+        -OutputRoot "${CMAKE_CURRENT_BINARY_DIR}/stage14f03_evidence/$<CONFIG>"
+)
 set_tests_properties(
     stage14e01_c_host_end_to_end
     PROPERTIES
@@ -2070,6 +2081,12 @@ set_tests_properties(
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 30
+)
+set_tests_properties(
+    stage14f03_single_model_s1_gate
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 120
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(

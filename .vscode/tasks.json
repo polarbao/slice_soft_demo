@@ -410,6 +410,31 @@
       "detail": "验证 14F-02 交付哈希、SPI v1、15 项能力、运行时装载、自检和缺 DLL 负例；打印侧进程模块证据仍需外部回签。"
     },
     {
+      "label": "SliceSoft 14F: Run Single Model S1 Gate (Release)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/Run14F03SingleModelS1Gate.ps1",
+        "-BuildDirectory",
+        "build-slicesoft/main",
+        "-Config",
+        "Release",
+        "-RepositoryRoot",
+        "."
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": "SliceSoft 14F: Validate Print M1 Handoff (Release)",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "执行14F-03单模型导入、变换、Worker切片、S1严格正例和7类负例；打印侧M2实际联调保持延期。"
+    },
+    {
       "label": "SliceSoft: Advanced - Build Runtime Release (NMake Fallback)",
       "type": "shell",
       "command": "powershell",
