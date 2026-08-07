@@ -408,7 +408,7 @@ private:
         slicer_core::Json response =
             SceneCapabilitySerializationAdapter::SerializeCommit(
                 *result.Value());
-        if (implicitRequest)
+        if (implicitRequest || !hasHandle)
         {
             slicer_core::Json::Object fields = response.as_object();
             fields.emplace("sceneHandle", session->id);

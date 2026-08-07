@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HostModelImportWorkflow.h"
 #include "ModuleClient.h"
 
 #include <QMainWindow>
@@ -8,7 +9,10 @@
 
 class QComboBox;
 class QLabel;
+class QListWidget;
 class QPlainTextEdit;
+class QPushButton;
+class QTableWidget;
 class QTabWidget;
 class ViewPresentationSettings;
 class ViewWorkspaceWidget;
@@ -35,13 +39,21 @@ private:
     void BuildInterface();
     void LoadModule(const QString& modulePath);
     void SaveViewSettings();
+    void OnImportModel();
+    void ShowImportResult(const hostmodelimportresult& result);
+    void ShowImportError(const QString& error);
 
     ModuleClient m_client;
+    std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
     ViewWorkspaceWidget* m_workspace{nullptr};
     QComboBox* m_defaultViewCombo{nullptr};
     QComboBox* m_projectionCombo{nullptr};
     QLabel* m_statusLabel{nullptr};
     QLabel* m_pathLabel{nullptr};
+    QPushButton* m_importButton{nullptr};
+    QListWidget* m_modelList{nullptr};
+    QLabel* m_importSummaryLabel{nullptr};
+    QTableWidget* m_preflightTable{nullptr};
     QPlainTextEdit* m_moduleInfoView{nullptr};
 };

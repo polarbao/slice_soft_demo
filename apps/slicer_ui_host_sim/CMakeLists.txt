@@ -3,9 +3,12 @@ add_executable(slicer_ui_host_sim
     camera/CameraController.h
     CapabilityCoverageRequests.cpp
     CapabilityCoverageRequests.h
+    CapabilityCoverageReport.cpp
     CapabilityCoverageRunner.cpp
     CapabilityCoverageRunner.h
     CapabilityCoverageWorkflow.cpp
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
     HostMainWindow.cpp
     HostMainWindow.h
     Main.cpp
@@ -130,6 +133,58 @@ add_test(
         --repo-root ${CMAKE_SOURCE_DIR}
         --evidence-root
             ${CMAKE_BINARY_DIR}/hostflow_ha03_qt_evidence/$<CONFIG>
+)
+
+add_executable(hostflow_hb01_model_import_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostModelImportWorkflowTests.cpp
+)
+
+target_include_directories(hostflow_hb01_model_import_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hb01_model_import_tests PRIVATE
+    Qt5::Core
+    bcrypt
+)
+
+add_dependencies(hostflow_hb01_model_import_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb01_model_import_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb01_model_import_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb01_model_import_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb01_model_import
+    COMMAND hostflow_hb01_model_import_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME hostflow_hb01_import_ui_smoke
+    COMMAND slicer_ui_host_sim
+        --hostflow-import-ui-self-test
+        --module $<TARGET_FILE:slicer_module>
 )
 
 add_executable(stage14e03_interaction_tests
@@ -384,6 +439,7 @@ set_tests_properties(
     slicer_stage14e02_qt_host_smoke_test
     slicer_stage14e04b_capability_coverage_test
     hostflow_ha03_qt_end_to_end
+    hostflow_hb01_import_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )

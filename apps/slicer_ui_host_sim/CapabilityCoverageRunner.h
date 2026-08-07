@@ -57,6 +57,11 @@ private:
         const QString& evidenceRoot,
         QJsonObject* evidence,
         QString* error);
+    bool FinalizeCoverage(
+        const QString& runRoot,
+        const QJsonObject& cancelEvidence,
+        QByteArray* reportBytes,
+        QString* error);
     void Record(
         const QString& tier,
         const QString& capability,

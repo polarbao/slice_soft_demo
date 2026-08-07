@@ -298,6 +298,12 @@ bool SceneInteractionController::AdoptCommit(
     m_sceneRevision = static_cast<quint64>(revision);
     m_sceneHash = sceneHash;
     m_viewDataIdentity = viewDataIdentity;
+    const quint64 responseHandle = static_cast<quint64>(result.value(
+        QStringLiteral("sceneHandle")).toDouble());
+    if (responseHandle != 0U)
+    {
+        m_sceneHandle = responseHandle;
+    }
     return true;
 }
 
@@ -309,13 +315,7 @@ bool SceneInteractionController::AdoptSnapshot(
         QStringLiteral("sceneRevision")).toDouble());
     const QString sceneHash = result.value(
         QStringLiteral("sceneHash")).toString();
-    const QString handleText = result.value(QStringLiteral("scene"))
-                                   .toObject()
-                                   .value(QStringLiteral("sceneId"))
-                                   .toString();
-    bool handleOk = false;
-    const quint64 handle = handleText.toULongLong(&handleOk);
-    if (revision <= 0 || sceneHash.isEmpty() || !handleOk || handle == 0)
+    if (revision <= 0 || sceneHash.isEmpty() || m_sceneHandle == 0U)
     {
         if (error != nullptr)
         {
@@ -327,6 +327,5 @@ bool SceneInteractionController::AdoptSnapshot(
     m_sceneRevision = static_cast<quint64>(revision);
     m_sceneHash = sceneHash;
     m_viewDataIdentity.clear();
-    m_sceneHandle = handle;
     return true;
 }

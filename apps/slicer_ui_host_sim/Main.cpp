@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QStringList>
 #include <QTextStream>
+#include <QVariant>
 
 namespace
 {
@@ -95,6 +96,29 @@ int RunCapabilityCoverage(
         << client.CallCount() << Qt::endl;
     return 0;
 }
+
+int RunHostFlowImportUiSmoke(const QString& modulePath)
+{
+    HostMainWindow window(modulePath);
+    const QObject* importButton = window.findChild<QObject*>(
+        QStringLiteral("hostImportModelButton"));
+    const QObject* modelList = window.findChild<QObject*>(
+        QStringLiteral("hostImportedModelList"));
+    const QObject* preflightTable = window.findChild<QObject*>(
+        QStringLiteral("hostImportPreflightTable"));
+    if (importButton == nullptr || modelList == nullptr
+        || preflightTable == nullptr
+        || !importButton->property("enabled").toBool())
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB01_UI_FAILED: import panel is incomplete"
+            << Qt::endl;
+        return 8;
+    }
+    QTextStream(stdout)
+        << "HOSTFLOW_HB01_UI_PASS" << Qt::endl;
+    return 0;
+}
 }
 
 int main(int argc, char* argv[])
@@ -149,8 +173,15 @@ int main(int argc, char* argv[])
     const QString requestedPath = FindArgumentValue(
         arguments,
         QStringLiteral("--module"));
-    HostMainWindow window(
-        requestedPath.isEmpty() ? DefaultModulePath() : requestedPath);
+    const QString modulePath = requestedPath.isEmpty()
+        ? DefaultModulePath() : requestedPath;
+    if (HasArgument(
+            arguments,
+            QStringLiteral("--hostflow-import-ui-self-test")))
+    {
+        return RunHostFlowImportUiSmoke(modulePath);
+    }
+    HostMainWindow window(modulePath);
     window.show();
     return application.exec();
 }

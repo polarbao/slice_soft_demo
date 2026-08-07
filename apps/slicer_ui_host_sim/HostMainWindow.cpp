@@ -3,16 +3,29 @@
 #include "ViewWorkspaceWidget.h"
 #include "settings/ViewPresentationSettings.h"
 
+#include <QAbstractItemView>
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDir>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QFontDatabase>
 #include <QGroupBox>
+#include <QHeaderView>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QListWidget>
+#include <QMessageBox>
 #include <QPlainTextEdit>
+#include <QPushButton>
+#include <QSplitter>
 #include <QStandardPaths>
+#include <QStyle>
+#include <QStringList>
 #include <QTabWidget>
+#include <QTableWidget>
+#include <QTableWidgetItem>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -37,6 +50,7 @@ HostMainWindow::HostMainWindow(
 {
     m_viewSettings = std::make_unique<ViewPresentationSettings>(
         DefaultSessionConfigPath());
+    m_importWorkflow = std::make_unique<HostModelImportWorkflow>(m_client);
     QString settingsError;
     m_viewSettings->Load(&settingsError);
     BuildInterface();
@@ -71,10 +85,74 @@ void HostMainWindow::BuildInterface()
     auto* tabs = new QTabWidget(centralWidget);
     tabs->setObjectName(QStringLiteral("hostWorkspaceTabs"));
 
-    m_workspace = new ViewWorkspaceWidget(tabs);
+    auto* workspacePage = new QWidget(tabs);
+    auto* workspaceLayout = new QHBoxLayout(workspacePage);
+    workspaceLayout->setContentsMargins(0, 0, 0, 0);
+    workspaceLayout->setSpacing(8);
+    auto* workspaceSplitter = new QSplitter(Qt::Horizontal, workspacePage);
+    workspaceSplitter->setObjectName(QStringLiteral("workspaceSplitter"));
+
+    m_workspace = new ViewWorkspaceWidget(workspaceSplitter);
     m_workspace->setObjectName(QStringLiteral("dualViewWorkspace"));
     m_workspace->SetMode(m_viewSettings->DefaultViewMode());
-    tabs->addTab(m_workspace, QStringLiteral("工作区"));
+
+    auto* importPanel = new QGroupBox(
+        QStringLiteral("模型与导入预检"), workspaceSplitter);
+    importPanel->setObjectName(QStringLiteral("hostModelImportPanel"));
+    importPanel->setMinimumWidth(300);
+    importPanel->setMaximumWidth(420);
+    auto* importLayout = new QVBoxLayout(importPanel);
+    m_importButton = new QPushButton(
+        style()->standardIcon(QStyle::SP_DialogOpenButton),
+        QStringLiteral("导入 OBJ / 3MF"),
+        importPanel);
+    m_importButton->setObjectName(QStringLiteral("hostImportModelButton"));
+    m_importButton->setToolTip(QStringLiteral(
+        "选择模型后依次执行 model.import、addInstance 与快速预检"));
+    m_importButton->setEnabled(false);
+    importLayout->addWidget(m_importButton);
+
+    m_modelList = new QListWidget(importPanel);
+    m_modelList->setObjectName(QStringLiteral("hostImportedModelList"));
+    m_modelList->setMinimumHeight(100);
+    m_modelList->setToolTip(QStringLiteral(
+        "已通过公开 SPI 导入并加入当前场景的模型实例"));
+    importLayout->addWidget(m_modelList, 1);
+
+    m_importSummaryLabel = new QLabel(
+        QStringLiteral("尚未导入模型。"), importPanel);
+    m_importSummaryLabel->setObjectName(
+        QStringLiteral("hostImportSummaryLabel"));
+    m_importSummaryLabel->setWordWrap(true);
+    m_importSummaryLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    importLayout->addWidget(m_importSummaryLabel);
+
+    m_preflightTable = new QTableWidget(importPanel);
+    m_preflightTable->setObjectName(
+        QStringLiteral("hostImportPreflightTable"));
+    m_preflightTable->setColumnCount(3);
+    m_preflightTable->setHorizontalHeaderLabels(QStringList{
+        QStringLiteral("级别"),
+        QStringLiteral("问题 / 数量"),
+        QStringLiteral("详情")});
+    m_preflightTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_preflightTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_preflightTable->verticalHeader()->setVisible(false);
+    m_preflightTable->horizontalHeader()->setSectionResizeMode(
+        0, QHeaderView::ResizeToContents);
+    m_preflightTable->horizontalHeader()->setSectionResizeMode(
+        1, QHeaderView::ResizeToContents);
+    m_preflightTable->horizontalHeader()->setSectionResizeMode(
+        2, QHeaderView::Stretch);
+    m_preflightTable->setMinimumHeight(150);
+    importLayout->addWidget(m_preflightTable, 2);
+
+    workspaceSplitter->addWidget(m_workspace);
+    workspaceSplitter->addWidget(importPanel);
+    workspaceSplitter->setStretchFactor(0, 1);
+    workspaceSplitter->setStretchFactor(1, 0);
+    workspaceLayout->addWidget(workspaceSplitter);
+    tabs->addTab(workspacePage, QStringLiteral("工作区"));
 
     auto* settingsPage = new QWidget(tabs);
     auto* settingsLayout = new QVBoxLayout(settingsPage);
@@ -143,6 +221,11 @@ void HostMainWindow::BuildInterface()
             {
                 SaveViewSettings();
             });
+    connect(
+        m_importButton,
+        &QPushButton::clicked,
+        this,
+        &HostMainWindow::OnImportModel);
 }
 
 void HostMainWindow::LoadModule(const QString& modulePath)
@@ -169,11 +252,102 @@ void HostMainWindow::LoadModule(const QString& modulePath)
         QStringLiteral("模块已就绪 · SPI v%1 · ABI 调用 %2 次")
             .arg(PM_SPI_VERSION)
             .arg(m_client.CallCount()));
+    m_importButton->setEnabled(true);
     m_moduleInfoView->setPlainText(
         QStringLiteral("模块信息\n%1\n\n自检报告\n%2")
             .arg(
                 QString::fromUtf8(m_client.ModuleInfo()),
                 QString::fromUtf8(selfTestReport)));
+}
+
+void HostMainWindow::OnImportModel()
+{
+    const QString modelPath = QFileDialog::getOpenFileName(
+        this,
+        QStringLiteral("选择要导入的 OBJ 或 3MF 模型"),
+        QDir::homePath(),
+        QStringLiteral(
+            "支持的模型 (*.obj *.3mf);;OBJ 模型 (*.obj);;3MF 模型 (*.3mf)"));
+    if (modelPath.isEmpty())
+    {
+        return;
+    }
+
+    m_importButton->setEnabled(false);
+    m_importSummaryLabel->setText(QStringLiteral("正在导入并执行快速预检…"));
+    QCoreApplication::processEvents();
+
+    hostmodelimportresult result;
+    QString error;
+    const bool imported = m_importWorkflow->ImportModel(
+        modelPath, &result, &error);
+    m_importButton->setEnabled(m_client.IsOpen());
+    if (!imported)
+    {
+        ShowImportError(error);
+        return;
+    }
+    ShowImportResult(result);
+}
+
+void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
+{
+    const QFileInfo source(result.sourcepath);
+    const QString admissionText =
+        result.admission == QStringLiteral("passed")
+        ? QStringLiteral("通过")
+        : result.admission == QStringLiteral("manual_repair_required")
+            ? QStringLiteral("需要人工修复")
+            : QStringLiteral("阻断");
+    m_modelList->addItem(QStringLiteral("%1\n%2 · %3")
+        .arg(source.fileName(), result.instanceid, admissionText));
+    m_modelList->setCurrentRow(m_modelList->count() - 1);
+    m_importSummaryLabel->setText(
+        QStringLiteral(
+            "%1\nOBJ/3MF 元数据：%2 三角形，%3 顶点，"
+            "%4 × %5 × %6 mm，UV=%7，法线=%8\n"
+            "快速预检：%9；场景 revision=%10")
+            .arg(source.fileName())
+            .arg(result.trianglecount)
+            .arg(result.vertexcount)
+            .arg(result.widthmm, 0, 'f', 2)
+            .arg(result.heightmm, 0, 'f', 2)
+            .arg(result.depthmm, 0, 'f', 2)
+            .arg(result.hasuv ? QStringLiteral("有") : QStringLiteral("无"))
+            .arg(result.hasnormals ? QStringLiteral("有") : QStringLiteral("无"))
+            .arg(admissionText)
+            .arg(m_importWorkflow->SceneRevision()));
+
+    m_preflightTable->setRowCount(result.issues.size());
+    for (int rowIndex = 0; rowIndex < result.issues.size(); ++rowIndex)
+    {
+        const hostpreflightissue& issue = result.issues.at(rowIndex);
+        m_preflightTable->setItem(
+            rowIndex, 0, new QTableWidgetItem(issue.severity));
+        m_preflightTable->setItem(
+            rowIndex,
+            1,
+            new QTableWidgetItem(QStringLiteral("%1 (%2)")
+                .arg(issue.code)
+                .arg(issue.count)));
+        m_preflightTable->setItem(
+            rowIndex, 2, new QTableWidgetItem(issue.detail));
+    }
+    m_preflightTable->resizeRowsToContents();
+    m_statusLabel->setText(
+        QStringLiteral("模型已导入 · %1 · ABI 调用 %2 次")
+            .arg(admissionText)
+            .arg(m_client.CallCount()));
+}
+
+void HostMainWindow::ShowImportError(const QString& error)
+{
+    const QString detail = error.isEmpty()
+        ? QStringLiteral("模型导入流程失败，模块未返回详细原因。")
+        : error;
+    m_importSummaryLabel->setText(QStringLiteral("导入失败：%1").arg(detail));
+    m_statusLabel->setText(QStringLiteral("模型导入失败"));
+    QMessageBox::critical(this, QStringLiteral("模型导入失败"), detail);
 }
 
 void HostMainWindow::SaveViewSettings()
