@@ -2,6 +2,15 @@ add_executable(slicer_debug_ui
     main.cpp
     MainWindow.cpp
     MainWindow.h
+    MainWindowInternal.h
+    MainWindowConfigActions.cpp
+    MainWindowDiagnostics.cpp
+    MainWindowLifecycle.cpp
+    MainWindowPanels.cpp
+    MainWindowPreflight.cpp
+    MainWindowProductionSettings.cpp
+    MainWindowScenarios.cpp
+    MainWindowSceneSlice.cpp
     models/SceneDocument.cpp
     models/SceneDocument.h
     models/SceneProjectionRequest.h
@@ -83,6 +92,26 @@ add_executable(slicer_debug_ui
     services/PreviewPhysicalScale.h
     services/UiSmokeTestRunner.cpp
     services/UiSmokeTestRunner.h
+    services/UiSmokeTestInternal.h
+    services/UiSmokeBatchImportCases.cpp
+    services/UiSmokeConfigCases.cpp
+    services/UiSmokeDiagnosticPreviewCases.cpp
+    services/UiSmokeDiagnosticSettingsCases.cpp
+    services/UiSmokeEffectiveConfigCases.cpp
+    services/UiSmokeGridAndReportCases.cpp
+    services/UiSmokeMaterialDiagnosticsCases.cpp
+    services/UiSmokeModelViewCases.cpp
+    services/UiSmokeMultiModelCases.cpp
+    services/UiSmokePackageCases.cpp
+    services/UiSmokePreflightCases.cpp
+    services/UiSmokePreviewCases.cpp
+    services/UiSmokePreviewScaleCases.cpp
+    services/UiSmokeProductionTextureCases.cpp
+    services/UiSmokeSceneSliceCases.cpp
+    services/UiSmokeSceneSliceLifecycleCases.cpp
+    services/UiSmokeWorkbenchCases.cpp
+    services/UiSmokeWorkbenchLayoutCases.cpp
+    services/UiSmokeWorkspaceCases.cpp
     widgets/LogPanel.cpp
     widgets/LogPanel.h
     widgets/ChannelChartPanel.cpp

@@ -1,7 +1,7 @@
 # REPORT_14B-06 CI 行数与结构门禁
 
-> 状态：**COMPLETE / GATE ACTIVE**  
-> 日期：2026-08-05  
+> 状态：**COMPLETE / GATE ACTIVE / UI ALLOWLIST CLOSED**
+> 日期：2026-08-07
 > 任务：14B-06  
 > 依据：`INT_11_文件拆分与结构治理专项.md` §2.1
 
@@ -33,15 +33,16 @@ apps/slicer_worker/
 apps/slicer_ui_host_sim/
 ```
 
-初始白名单只登记两个既有 UI 大文件，且仅豁免 G4 比例告警；G2 的只减不增仍然生效：
+初始白名单曾只登记两个既有 UI 大文件，且仅豁免 G4 比例告警；G2 的只减不增始终生效。14E-05 已于 2026-08-07 完成拆分并关闭白名单：
 
-| 文件 | 当前实测 | 到期条件 |
-|---|---:|---|
-| `apps/slicer_debug_ui/MainWindow.cpp` | 4267 行 | 14E-05 COMPLETE |
-| `apps/slicer_debug_ui/services/UiSmokeTestRunner.cpp` | 7401 行 | 14E-05 COMPLETE |
+| 文件 | 拆分前 | 拆分后 | 状态 |
+|---|---:|---:|---|
+| `apps/slicer_debug_ui/MainWindow.cpp` | 4267 行 | 1218 行 | 白名单已移除 |
+| `apps/slicer_debug_ui/services/UiSmokeTestRunner.cpp` | 7401 行 | 642 行 | 白名单已移除 |
 
-文档中原先的 3659/6963 是 2026-08-02 历史测量值，不再作为当前基线。14E-05 完成时
-必须删除这两个条目，脚本会继续按普通规则检查拆分后的文件。
+文档中原先的 3659/6963 是 2026-08-02 历史测量值，不再作为当前基线。当前
+`scripts/SourceSizeGuardConfig.json` 的 `allowlist` 为空，脚本按普通规则检查拆分后的全部文件；
+14E-05 新增实现文件均低于 500 行。
 
 ## 3. 验证
 
@@ -61,3 +62,12 @@ powershell -ExecutionPolicy Bypass -File scripts/run_ci_quick.ps1 -SourceGuardBa
 - 新增 api/module/worker/参考宿主从第一天起受 G1/G3 约束。
 - 门禁检查提交增量；正式 CI 必须使用目标分支 merge-base，不能固定用 `HEAD` 绕过。
 
+## 5. 14E-05 关闭证据
+
+2026-08-07 实际验证：
+
+- Debug/Release `slicer_debug_ui` 构建通过；
+- Debug/Release `--self-test` 通过；
+- 工作台、上下文检查器、诊断设置、生产纹理、场景排版和报告摘要代表性 UI Smoke 通过；
+- `ValidateSourceSizeGuard.py --self-test` 与 `--base-ref HEAD` 通过；
+- 详细拆分清单见 `REPORT_14E_05_主干UI大文件拆分当前状态.md`。
