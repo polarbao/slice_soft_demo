@@ -225,6 +225,33 @@ bool ModuleClient::SelfTest(QByteArray* report, QString* error)
     return success;
 }
 
+bool ModuleClient::Execute(
+    const QByteArray& requestJson,
+    QByteArray* result,
+    QString* error)
+{
+    if (result == nullptr)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("能力结果缓冲不能为空。");
+        }
+        return false;
+    }
+
+    pm_job_t* job = Submit(requestJson, error);
+    if (job == nullptr)
+    {
+        return false;
+    }
+
+    QByteArray progress;
+    const bool polled = Poll(job, &progress, error);
+    const bool read = polled && Result(job, result, error);
+    Release(job);
+    return read;
+}
+
 pm_job_t* ModuleClient::Submit(
     const QByteArray& requestJson,
     QString* error)

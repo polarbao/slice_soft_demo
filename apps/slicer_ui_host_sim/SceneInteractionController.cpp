@@ -144,6 +144,11 @@ QString SceneInteractionController::SceneHash() const
     return m_sceneHash;
 }
 
+QString SceneInteractionController::ViewDataIdentity() const
+{
+    return m_viewDataIdentity;
+}
+
 quint64 SceneInteractionController::SnapshotReadCount() const
 {
     return m_snapshotReadCount;
@@ -276,7 +281,9 @@ bool SceneInteractionController::AdoptCommit(
         QStringLiteral("newSceneRevision")).toDouble());
     const QString sceneHash = result.value(
         QStringLiteral("sceneHash")).toString();
-    if (revision <= 0 || sceneHash.isEmpty())
+    const QString viewDataIdentity = result.value(
+        QStringLiteral("viewdataIdentity")).toString();
+    if (revision <= 0 || sceneHash.isEmpty() || viewDataIdentity.isEmpty())
     {
         if (error != nullptr)
         {
@@ -290,6 +297,7 @@ bool SceneInteractionController::AdoptCommit(
 
     m_sceneRevision = static_cast<quint64>(revision);
     m_sceneHash = sceneHash;
+    m_viewDataIdentity = viewDataIdentity;
     return true;
 }
 
@@ -318,6 +326,7 @@ bool SceneInteractionController::AdoptSnapshot(
 
     m_sceneRevision = static_cast<quint64>(revision);
     m_sceneHash = sceneHash;
+    m_viewDataIdentity.clear();
     m_sceneHandle = handle;
     return true;
 }

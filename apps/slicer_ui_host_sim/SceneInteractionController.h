@@ -85,6 +85,12 @@ public:
     QString SceneHash() const;
 
     /**
+     * @brief Returns the ViewData identity adopted from the latest Commit.
+     * @return Empty after a snapshot refresh, otherwise the committed identity.
+     */
+    QString ViewDataIdentity() const;
+
+    /**
      * @brief Returns the number of explicit snapshot recovery/refresh reads.
      * @return Snapshot count; normal Commit must not increment it.
      */
@@ -104,6 +110,7 @@ private:
     TransformCommitPolicy m_transformPolicy;
     QString m_externalSceneId;
     QString m_sceneHash;
+    QString m_viewDataIdentity;
     quint64 m_sceneHandle{0};
     quint64 m_sceneRevision{0};
     quint64 m_snapshotReadCount{0};

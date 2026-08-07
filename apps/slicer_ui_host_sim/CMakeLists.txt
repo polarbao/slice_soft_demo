@@ -4,10 +4,15 @@ add_executable(slicer_ui_host_sim
     Main.cpp
     ModuleClient.cpp
     ModuleClient.h
+    MoveOptimizationPolicy.cpp
+    MoveOptimizationPolicy.h
     SceneInteractionController.cpp
     SceneInteractionController.h
     TransformCommitPolicy.cpp
     TransformCommitPolicy.h
+    render/TopViewRenderPolicy.cpp
+    render/TopViewRenderPolicyData.cpp
+    render/TopViewRenderPolicy.h
 )
 
 set_target_properties(slicer_ui_host_sim PROPERTIES
@@ -115,6 +120,61 @@ endif()
 add_test(
     NAME slicer_stage14e03_interaction_contract_test
     COMMAND stage14e03_interaction_tests
+        --module $<TARGET_FILE:slicer_module>
+)
+
+add_executable(stage14e04_top_view_tests
+    ModuleClient.cpp
+    ModuleClient.h
+    MoveOptimizationPolicy.cpp
+    MoveOptimizationPolicy.h
+    SceneInteractionController.cpp
+    SceneInteractionController.h
+    TransformCommitPolicy.cpp
+    TransformCommitPolicy.h
+    render/TopViewRenderPolicy.cpp
+    render/TopViewRenderPolicyData.cpp
+    render/TopViewRenderPolicy.h
+    ${CMAKE_SOURCE_DIR}/tests/stage14e_04/Stage14E04TopViewTests.cpp
+)
+
+target_include_directories(stage14e04_top_view_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_compile_definitions(stage14e04_top_view_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_link_libraries(stage14e04_top_view_tests PRIVATE
+    Qt5::Core
+    Qt5::Gui
+)
+
+add_dependencies(stage14e04_top_view_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(stage14e04_top_view_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(stage14e04_top_view_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(stage14e04_top_view_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME slicer_stage14e04_top_view_contract_test
+    COMMAND stage14e04_top_view_tests
         --module $<TARGET_FILE:slicer_module>
 )
 

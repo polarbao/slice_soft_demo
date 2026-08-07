@@ -70,6 +70,18 @@ public:
     bool SelfTest(QByteArray* report, QString* error);
 
     /**
+     * @brief Executes one capability request to its terminal byte result.
+     * @param requestJson UTF-8 request matching a frozen capability DTO.
+     * @param result Receives JSON text or a binary blob chunk.
+     * @param error Receives a user-readable failure reason.
+     * @return True when submit, poll and result retrieval all succeed.
+     */
+    bool Execute(
+        const QByteArray& requestJson,
+        QByteArray* result,
+        QString* error);
+
+    /**
      * @brief Submits a capability request through pm_submit.
      * @param requestJson UTF-8 request matching a frozen capability DTO.
      * @param error Receives the thread-local public error on rejection.
