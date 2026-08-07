@@ -18,6 +18,7 @@ namespace
 {
 constexpr double kCanvasPadding{34.0};
 constexpr double kHeaderHeight{52.0};
+constexpr double kMinorGridVisibilityPixelsPerMm{4.0};
 
 QPointF TransformPoint(
     const std::array<double, 16>& matrix,
@@ -61,6 +62,12 @@ bool TopViewRenderPolicy::Refresh(
         return false;
     }
 
+    TopViewDecor decor;
+    if (!LoadSceneDecor(
+            sceneHandle, sceneRevision, &decor, error))
+    {
+        return false;
+    }
     const QJsonObject request{
         {QStringLiteral("capability"), QStringLiteral("scene.get_viewdata")},
         {QStringLiteral("operation"), QStringLiteral("query")},
@@ -128,6 +135,7 @@ bool TopViewRenderPolicy::Refresh(
     TopViewFrame decoded;
     decoded.viewDataIdentity = identity;
     decoded.sceneRevision = returnedRevision;
+    decoded.decor = decor;
     const QJsonArray instances = result.value(
         QStringLiteral("instances")).toArray();
     if (instances.isEmpty())
@@ -200,22 +208,15 @@ bool TopViewRenderPolicy::RenderInto(
         && m_renderPlanDestinations.size() == frame.instances.size();
     if (!cachedPlan)
     {
-        double minX = (std::numeric_limits<double>::max)();
-        double minY = (std::numeric_limits<double>::max)();
-        double maxX = std::numeric_limits<double>::lowest();
-        double maxY = std::numeric_limits<double>::lowest();
+        const double minX = 0.0;
+        const double minY = 0.0;
+        const double maxX = frame.decor.buildWidthMm;
+        const double maxY = frame.decor.buildHeightMm;
         QVector<QPolygonF> worldPolygons;
         worldPolygons.reserve(frame.instances.size());
         for (const TopViewInstance& instance : frame.instances)
         {
             const QPolygonF polygon = WorldCorners(instance);
-            for (const QPointF& point : polygon)
-            {
-                minX = (std::min)(minX, point.x());
-                minY = (std::min)(minY, point.y());
-                maxX = (std::max)(maxX, point.x());
-                maxY = (std::max)(maxY, point.y());
-            }
             worldPolygons.push_back(polygon);
         }
         const double width = maxX - minX;
@@ -255,6 +256,57 @@ bool TopViewRenderPolicy::RenderInto(
     QPainter painter(output);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     painter.setRenderHint(QPainter::Antialiasing, true);
+    const double worldScale = 0.90 * (std::min)(
+        renderViewport.width() / frame.decor.buildWidthMm,
+        renderViewport.height() / frame.decor.buildHeightMm);
+    const QRectF platform(
+        renderViewport.center().x()
+            - frame.decor.buildWidthMm * worldScale * 0.5,
+        renderViewport.center().y()
+            - frame.decor.buildHeightMm * worldScale * 0.5,
+        frame.decor.buildWidthMm * worldScale,
+        frame.decor.buildHeightMm * worldScale);
+    painter.fillRect(platform, QColor(104, 109, 117));
+    const auto mapWorld = [&platform, worldScale](double x, double y)
+    {
+        return QPointF(
+            platform.left() + x * worldScale,
+            platform.bottom() - y * worldScale);
+    };
+    const auto drawGrid = [&](double spacing, const QColor& color)
+    {
+        if (!(spacing > 0.0))
+        {
+            return;
+        }
+        painter.setPen(QPen(color, 1.0));
+        for (double x = 0.0; x <= frame.decor.buildWidthMm; x += spacing)
+        {
+            painter.drawLine(
+                mapWorld(x, 0.0),
+                mapWorld(x, frame.decor.buildHeightMm));
+        }
+        for (double y = 0.0; y <= frame.decor.buildHeightMm; y += spacing)
+        {
+            painter.drawLine(
+                mapWorld(0.0, y),
+                mapWorld(frame.decor.buildWidthMm, y));
+        }
+    };
+    if (worldScale >= kMinorGridVisibilityPixelsPerMm)
+    {
+        drawGrid(frame.decor.minorGridMm, QColor(83, 87, 94));
+    }
+    drawGrid(frame.decor.majorGridMm, QColor(111, 116, 126));
+    painter.setPen(QPen(QColor(148, 156, 170), 2.0));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(platform);
+    if (!frame.decor.coordinateFrameResolved)
+    {
+        painter.fillRect(
+            QRectF(platform.left(), platform.top(), platform.width(), 3.0),
+            QColor(242, 193, 78));
+    }
     for (int index = 0; index < frame.instances.size(); ++index)
     {
         const TopViewInstance& instance = frame.instances.at(index);

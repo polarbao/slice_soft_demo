@@ -17,6 +17,8 @@ add_executable(slicer_ui_host_sim
     SceneInteractionController.h
     TransformCommitPolicy.cpp
     TransformCommitPolicy.h
+    ViewWorkspaceWidget.cpp
+    ViewWorkspaceWidget.h
     render/AppearanceCache.cpp
     render/AppearanceCache.h
     render/CpuRasterBackend.cpp
@@ -33,6 +35,10 @@ add_executable(slicer_ui_host_sim
     render/TopViewRenderPolicy.cpp
     render/TopViewRenderPolicyData.cpp
     render/TopViewRenderPolicy.h
+    settings/ViewPresentationSettings.cpp
+    settings/ViewPresentationSettings.h
+    camera/ViewModeSwitch.cpp
+    camera/ViewModeSwitch.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
@@ -282,6 +288,86 @@ add_test(
     NAME slicer_stage14e04c_three_d_contract_test
     COMMAND stage14e04c_three_d_tests
         --module $<TARGET_FILE:slicer_module>
+)
+
+add_executable(stage14e04d_view_switch_tests
+    ModuleClient.cpp
+    ModuleClient.h
+    SceneInteractionController.cpp
+    SceneInteractionController.h
+    TransformCommitPolicy.cpp
+    TransformCommitPolicy.h
+    ViewWorkspaceWidget.cpp
+    ViewWorkspaceWidget.h
+    camera/CameraController.cpp
+    camera/CameraController.h
+    camera/ViewModeSwitch.cpp
+    camera/ViewModeSwitch.h
+    render/AppearanceCache.cpp
+    render/AppearanceCache.h
+    render/CpuRasterBackend.cpp
+    render/CpuRasterBackend.h
+    render/CpuRasterDecor.cpp
+    render/CpuRasterDecor.h
+    render/CpuRasterResources.h
+    render/CpuRasterizer.cpp
+    render/IRenderBackend.h
+    render/SceneRenderPolicy.cpp
+    render/SceneRenderPolicyData.cpp
+    render/SceneRenderPolicyMesh.cpp
+    render/SceneRenderPolicy.h
+    render/TopViewRenderPolicy.cpp
+    render/TopViewRenderPolicyData.cpp
+    render/TopViewRenderPolicy.h
+    settings/ViewPresentationSettings.cpp
+    settings/ViewPresentationSettings.h
+    ${CMAKE_SOURCE_DIR}/tests/stage14e_04d/Stage14E04DViewSwitchTests.cpp
+)
+
+target_include_directories(stage14e04d_view_switch_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_compile_definitions(stage14e04d_view_switch_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+target_link_libraries(stage14e04d_view_switch_tests PRIVATE
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
+)
+
+add_dependencies(stage14e04d_view_switch_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(stage14e04d_view_switch_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(stage14e04d_view_switch_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(stage14e04d_view_switch_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME slicer_stage14e04d_dual_view_contract_test
+    COMMAND stage14e04d_view_switch_tests
+        --module $<TARGET_FILE:slicer_module>
+)
+
+set_tests_properties(
+    slicer_stage14e04d_dual_view_contract_test
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
 set_tests_properties(

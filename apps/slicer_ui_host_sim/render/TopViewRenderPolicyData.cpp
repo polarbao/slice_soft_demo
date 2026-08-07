@@ -89,6 +89,56 @@ bool TopViewRenderPolicy::ExecuteJson(
     return true;
 }
 
+bool TopViewRenderPolicy::LoadSceneDecor(
+    const quint64 sceneHandle,
+    const quint64 sceneRevision,
+    TopViewDecor* decor,
+    QString* error)
+{
+    if (decor == nullptr)
+    {
+        return false;
+    }
+    QJsonObject result;
+    if (!ExecuteJson(QJsonObject{
+            {QStringLiteral("capability"),
+             QStringLiteral("scene.get_snapshot")},
+            {QStringLiteral("sceneHandle"),
+             static_cast<qint64>(sceneHandle)}},
+            &result,
+            error)
+        || !result.value(QStringLiteral("ok")).toBool()
+        || static_cast<quint64>(result.value(
+               QStringLiteral("sceneRevision")).toDouble()) != sceneRevision)
+    {
+        return false;
+    }
+    const QJsonObject volume = result.value(
+        QStringLiteral("buildVolume")).toObject();
+    const double width = volume.value(
+        QStringLiteral("widthMm")).toDouble(230.0);
+    const double height = volume.value(
+        QStringLiteral("heightMm")).toDouble(100.0);
+    if (!(width > 0.0) || !(height > 0.0))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("场景 buildVolume 的 XY 范围无效。");
+        }
+        return false;
+    }
+    decor->buildWidthMm = width;
+    decor->buildHeightMm = height;
+    decor->coordinateFrameResolved =
+        volume.value(QStringLiteral("origin")).toString()
+            == QStringLiteral("lower_left")
+        && volume.value(QStringLiteral("xDirection")).toString()
+            == QStringLiteral("positive")
+        && volume.value(QStringLiteral("yDirection")).toString()
+            == QStringLiteral("positive");
+    return true;
+}
+
 bool TopViewRenderPolicy::DecodeInstance(
     const QJsonObject& value,
     const QHash<QString, bool>& appearances,

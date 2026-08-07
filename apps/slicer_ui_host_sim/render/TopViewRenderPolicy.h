@@ -33,12 +33,23 @@ struct TopViewInstance final
     QImage surfacePreview;
 };
 
+/** @brief Display-only build-volume and adaptive-grid settings for top view. */
+struct TopViewDecor final
+{
+    double buildWidthMm{230.0};
+    double buildHeightMm{100.0};
+    double minorGridMm{1.0};
+    double majorGridMm{10.0};
+    bool coordinateFrameResolved{false};
+};
+
 /** @brief Immutable-by-convention local rendering snapshot for one scene revision. */
 struct TopViewFrame final
 {
     QString viewDataIdentity;
     quint64 sceneRevision{0};
     quint64 localRevision{0};
+    TopViewDecor decor;
     QVector<TopViewInstance> instances;
 };
 
@@ -109,6 +120,11 @@ private:
     bool ExecuteJson(
         const QJsonObject& request,
         QJsonObject* result,
+        QString* error);
+    bool LoadSceneDecor(
+        quint64 sceneHandle,
+        quint64 sceneRevision,
+        TopViewDecor* decor,
         QString* error);
     bool DecodeInstance(
         const QJsonObject& value,

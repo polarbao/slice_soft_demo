@@ -121,7 +121,21 @@ void DrawSceneDecor(
     const Matrix viewProjection = Multiply(projection, view);
     const float width = frame.decor.buildVolumeMm[0];
     const float height = frame.decor.buildVolumeMm[1];
-    const float spacing = frame.decor.gridMinorMm;
+    Point origin;
+    Point oneMillimetreX;
+    const bool projectionResolved = Project(
+        viewProjection, 0.0F, 0.0F, 0.0F, *output, &origin)
+        && Project(
+            viewProjection, 1.0F, 0.0F, 0.0F,
+            *output, &oneMillimetreX);
+    const float pixelsPerMm = projectionResolved
+        ? std::hypot(
+              oneMillimetreX.x - origin.x,
+              oneMillimetreX.y - origin.y)
+        : 0.0F;
+    const float spacing = pixelsPerMm >= 4.0F
+        ? frame.decor.gridMinorMm
+        : frame.decor.gridMajorMm;
     if (frame.decor.showGrid && spacing > 0.0F)
     {
         const int xLines = static_cast<int>(std::floor(width / spacing));
