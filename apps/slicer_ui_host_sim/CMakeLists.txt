@@ -122,6 +122,16 @@ add_test(
             ${CMAKE_BINARY_DIR}/stage14e04b_evidence/$<CONFIG>
 )
 
+add_test(
+    NAME hostflow_ha03_qt_end_to_end
+    COMMAND slicer_ui_host_sim
+        --capability-self-test
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+        --evidence-root
+            ${CMAKE_BINARY_DIR}/hostflow_ha03_qt_evidence/$<CONFIG>
+)
+
 add_executable(stage14e03_interaction_tests
     ModuleClient.cpp
     ModuleClient.h
@@ -373,6 +383,14 @@ set_tests_properties(
 set_tests_properties(
     slicer_stage14e02_qt_host_smoke_test
     slicer_stage14e04b_capability_coverage_test
+    hostflow_ha03_qt_end_to_end
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+set_tests_properties(
+    hostflow_ha03_qt_end_to_end
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 180
 )

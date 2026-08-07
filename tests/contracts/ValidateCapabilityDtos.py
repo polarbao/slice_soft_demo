@@ -43,11 +43,22 @@ def RequirePaths(
         )
 
 
+def FieldSpec(
+    capability: dict[str, Any], key: str, path: str
+) -> dict[str, Any]:
+    matches = [field for field in capability[key] if field["path"] == path]
+    if len(matches) != 1:
+        raise AssertionError(
+            f"{capability['id']} {key} expected one {path}, found {len(matches)}"
+        )
+    return matches[0]
+
+
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.4":
-        raise AssertionError("expected the Worker-only backend contract")
+    if contract["contractVersion"] != "1.7":
+        raise AssertionError("expected the HOSTFLOW grid-layout contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -81,12 +92,45 @@ def Main() -> int:
     RequirePaths(
         byId["scene.apply_operation"],
         "requestFields",
-        {"operationId", "currentSceneRevision", "expectedSceneRevision"},
+        {
+            "operationId",
+            "sceneContext",
+            "sceneContext.resolvedProfileId",
+            "sceneContext.buildVolume",
+            "sceneContext.buildVolume.source",
+            "sceneContext.buildVolume.widthMm",
+            "sceneContext.buildVolume.heightMm",
+            "sceneContext.buildVolume.zLimitMm",
+            "sceneContext.buildVolume.origin",
+            "sceneContext.buildVolume.xDirection",
+            "sceneContext.buildVolume.yDirection",
+            "sceneContext.buildVolume.isFixture",
+            "currentSceneRevision",
+            "expectedSceneRevision",
+            "operations[].modelId",
+            "operations[].assignInstanceId",
+            "operations[].initialTransform",
+            "operations[].initialTransform.translateXMm",
+            "operations[].initialTransform.translateYMm",
+            "operations[].initialTransform.rotateZDeg",
+            "operations[].initialTransform.uniformScale",
+            "operations[].initialTransform.mirrorX",
+            "operations[].initialTransform.mirrorY",
+            "operations[].layout",
+            "operations[].layout.policy",
+            "operations[].layout.maxColumns",
+            "operations[].layout.maxRows",
+            "operations[].layout.columnGapMm",
+            "operations[].layout.rowGapMm",
+            "operations[].layout.spacingMode",
+            "operations[].layout.order",
+        },
     )
     RequirePaths(
         byId["scene.apply_operation"],
         "responseFields",
         {
+            "sceneHandle",
             "buildVolume.widthMm",
             "buildVolume.heightMm",
             "buildVolume.zLimitMm",
@@ -179,6 +223,127 @@ def Main() -> int:
             "buildVolume",
         },
     )
+    sceneOperation = byId["scene.apply_operation"]
+    operationType = FieldSpec(
+        sceneOperation, "requestFields", "operations[].type"
+    )
+    expectedOperationType = (
+        "enum:addInstance|removeInstance|applyGridLayout|translate|rotateZ|uniformScale|mirror"
+    )
+    if operationType != {
+        "path": "operations[].type",
+        "type": expectedOperationType,
+        "required": True,
+    }:
+        raise AssertionError("scene operation type enum drifted")
+
+    instanceId = FieldSpec(
+        sceneOperation, "requestFields", "operations[].instanceId"
+    )
+    if instanceId != {
+        "path": "operations[].instanceId",
+        "type": "string",
+        "requiredFor": "removeInstance|translate|rotateZ|uniformScale|mirror",
+    }:
+        raise AssertionError("instanceId conditional requirement drifted")
+    modelId = FieldSpec(sceneOperation, "requestFields", "operations[].modelId")
+    if modelId.get("requiredFor") != "addInstance":
+        raise AssertionError("addInstance must require modelId")
+    responseSceneHandle = FieldSpec(
+        sceneOperation, "responseFields", "sceneHandle"
+    )
+    if responseSceneHandle.get("requiredFor") != "implicit_scene_create":
+        raise AssertionError("implicit scene creation must return sceneHandle")
+
+    legacyFields = {
+        "operations[].deltaMm": ("number[3]", False),
+        "operations[].degrees": ("number", False),
+        "operations[].factor": ("number", False),
+        "operations[].axis": ("enum:x|y", False),
+    }
+    for path, expected in legacyFields.items():
+        field = FieldSpec(sceneOperation, "requestFields", path)
+        if (field["type"], field["required"]) != expected:
+            raise AssertionError(f"legacy scene operation field drifted: {path}")
+
+    operationRules = contract["sceneOperationRules"]
+    if operationRules["applicationOrder"] != "request_order":
+        raise AssertionError("scene operations must preserve request order")
+    if operationRules["atomic"] is not True:
+        raise AssertionError("scene operations must be atomic")
+    implicitCreation = operationRules["implicitSceneCreation"]
+    expectedCreationRequirements = [
+        "sceneHandle_absent",
+        "scene_absent_or_empty_object",
+        "operations_contains_addInstance",
+        "sceneContext_valid",
+        "currentSceneRevision_equals_0",
+        "expectedSceneRevision_equals_0",
+    ]
+    if implicitCreation["requires"] != expectedCreationRequirements:
+        raise AssertionError("implicit scene creation conditions drifted")
+    if implicitCreation["responseRequires"] != ["sceneHandle"]:
+        raise AssertionError("implicit scene creation response drifted")
+    if (
+        implicitCreation["legacyOperationOnlyRequestWithoutScene"]
+        != "preserve_previous_failure"
+        or implicitCreation["nonEmptyInlineScene"] != "preserve_v1.4_behavior"
+    ):
+        raise AssertionError("legacy scene request compatibility drifted")
+    sceneContext = operationRules["sceneContext"]
+    if sceneContext != {
+        "requiredOnlyFor": "implicit_scene_create",
+        "forbiddenWith": ["sceneHandle", "non_empty_inline_scene"],
+        "profileSource": "host_authority",
+        "buildVolumeSource": "device_profile",
+        "fixtureBuildVolumeAllowed": False,
+        "includedInOperationFingerprint": True,
+    }:
+        raise AssertionError("implicit sceneContext authority rules drifted")
+
+    requirements = operationRules["operationRequirements"]
+    if requirements["addInstance"]["required"] != ["modelId"]:
+        raise AssertionError("addInstance required fields drifted")
+    if requirements["addInstance"]["forbidden"] != ["instanceId"]:
+        raise AssertionError("addInstance instance identity source is ambiguous")
+    if requirements["removeInstance"]["required"] != ["instanceId"]:
+        raise AssertionError("removeInstance required fields drifted")
+    if requirements["removeInstance"]["modelRelease"] != "not_implied":
+        raise AssertionError("removeInstance must not release the model")
+    gridLayout = requirements["applyGridLayout"]
+    if gridLayout["batchMode"] != "sole_operation":
+        raise AssertionError("applyGridLayout must remain an atomic sole operation")
+    if gridLayout["capacityLimit"] != 22:
+        raise AssertionError("applyGridLayout capacity drifted")
+    if gridLayout["instanceOrder"] != "scene_order":
+        raise AssertionError("applyGridLayout instance order drifted")
+    if not gridLayout["hiddenInstancesOccupyCells"]:
+        raise AssertionError("hidden instances must occupy grid cells")
+    if not gridLayout["lockedInstancesRemainInPlace"]:
+        raise AssertionError("locked instances must retain their placement")
+    sessionLifetime = operationRules["sessionLifetime"]
+    if sessionLifetime != {
+        "scope": "pm_module_t",
+        "releasedBy": "pm_destroy",
+        "pm_releaseClosesScene": False,
+        "explicitPerSceneClose": False,
+    }:
+        raise AssertionError("scene session lifetime drifted")
+    compatibility = operationRules["backwardCompatibility"]
+    if compatibility["legacyOperationTypes"] != [
+        "translate",
+        "rotateZ",
+        "uniformScale",
+        "mirror",
+    ]:
+        raise AssertionError("legacy scene operation order drifted")
+    if compatibility["legacyRequestResponseSemantics"] != "unchanged":
+        raise AssertionError("legacy request compatibility must remain explicit")
+    if (
+        compatibility["standaloneSceneLayoutCapability"]
+        != "forbidden_use_scene.apply_operation"
+    ):
+        raise AssertionError("standalone scene.layout must remain forbidden")
     RequirePaths(
         preflight,
         "responseFields",
@@ -379,7 +544,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus Worker-only backend contract: PASS")
+    print("15 capability DTOs plus HOSTFLOW v1.7 grid-layout contract: PASS")
     return 0
 
 

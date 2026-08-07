@@ -215,6 +215,7 @@ ApiResult<AuthorityState> EvaluateCandidate(SceneFacadeSeed seed)
     state.snapshot.scene_id = state.seed.scene_id;
     state.snapshot.scene_revision = state.seed.scene.scenerevision;
     state.snapshot.scene_hash = ComputeMultiModelSceneHash(state.seed.scene);
+    state.snapshot.scene = state.seed.scene;
     state.snapshot.build_volume.width_mm =
         *state.seed.scene.buildvolume.widthmm;
     state.snapshot.build_volume.height_mm =

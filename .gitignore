@@ -17,3 +17,5 @@ tests/*
 !tests/golden/**
 !tests/unit/
 !tests/unit/**
+!tests/hostflow/
+!tests/hostflow/**

@@ -20,7 +20,7 @@ powershell -NoProfile -ExecutionPolicy Bypass `
 ```text
 output/handoff/stage14f02/
   modules/slicer/          # Release DLL、Worker、manifest、运行时依赖和许可证
-  contracts/               # SPI v1、DTO 1.2、三车道、取消、错误码和文件合同
+  contracts/               # SPI v1、DTO v1.7、三车道、取消、错误码和文件合同
   tools/slicer_host_sim.exe
   handoff_manifest.json
   handoff_checksums.sha256
@@ -62,6 +62,7 @@ output/handoff/stage14f02/
 | manifest 前置校验 | 非法 schema/SPI/runtime/buildConfig 在装载前被拒绝 |
 | ABI 装载 | 11 个符号全部解析，缺符号负例 fail-closed |
 | 能力清单 | `pm_module_info()` 精确包含冻结的 15 项能力 |
+| DTO v1.7 场景生命周期与规则排版 | 书面确认 `addInstance` / `removeInstance`、兼容型隐式建场景、宿主权威 `sceneContext`、`applyGridLayout` 和 scene session 的 `pm_module_t` 生命周期；不得把 `pm_release` 用于整数 `sceneHandle` |
 | 模块自检 | `pm_self_test()` 返回成功，并完成实例销毁和卸载 |
 | 纯打印路径 | 进程模块列表不含 `slicer_module.dll` |
 | 前处理路径 | 模块列表记录的 DLL 绝对路径指向部署目录 |
@@ -75,3 +76,4 @@ output/handoff/stage14f02/
 - 14F-02 通过后才能进入 14F-03 的单模型导入、切片和 S1 正负例。
 - 本任务不改变 `p0.rgbwsv.2`、`R G B W S V`、8-bit、`black_is_print`、默认手写 TIFF Writer
   或 Legacy 默认切片路径。
+- DTO v1.7 已完成 H-A-01/H-A-02/H-A-04 运行时闭合，并由 H-A-03 的 C/Qt 空场景端到端门禁覆盖；打印侧 ACK 仍按本手册约定延期，不影响切片侧合同冻结。

@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.4",
+  "contractVersion": "1.7",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -83,17 +83,46 @@
         { "path": "operationId", "type": "string", "required": true },
         { "path": "sceneHandle", "type": "integer", "required": false },
         { "path": "scene", "type": "object", "required": false },
+        { "path": "sceneContext", "type": "object", "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.resolvedProfileId", "type": "string", "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume", "type": "object", "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume.source", "type": "const:device_profile", "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume.widthMm", "type": "number", "exclusiveMinimum": 0, "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume.heightMm", "type": "number", "exclusiveMinimum": 0, "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume.zLimitMm", "type": "number", "exclusiveMinimum": 0, "required": false },
+        { "path": "sceneContext.buildVolume.origin", "type": "enum:lower_left|center", "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume.xDirection", "type": "enum:positive|negative", "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume.yDirection", "type": "enum:positive|negative", "requiredFor": "implicit_scene_create" },
+        { "path": "sceneContext.buildVolume.isFixture", "type": "const:false", "requiredFor": "implicit_scene_create" },
         { "path": "currentSceneRevision", "type": "integer", "required": true },
         { "path": "expectedSceneRevision", "type": "integer", "required": true },
         { "path": "operations", "type": "array", "required": true },
-        { "path": "operations[].type", "type": "enum:translate|rotateZ|uniformScale|mirror", "required": true },
-        { "path": "operations[].instanceId", "type": "string", "required": true },
+        { "path": "operations[].type", "type": "enum:addInstance|removeInstance|applyGridLayout|translate|rotateZ|uniformScale|mirror", "required": true },
+        { "path": "operations[].instanceId", "type": "string", "requiredFor": "removeInstance|translate|rotateZ|uniformScale|mirror" },
+        { "path": "operations[].modelId", "type": "string", "requiredFor": "addInstance" },
+        { "path": "operations[].assignInstanceId", "type": "string", "required": false },
+        { "path": "operations[].initialTransform", "type": "object", "required": false },
+        { "path": "operations[].initialTransform.translateXMm", "type": "number", "required": false },
+        { "path": "operations[].initialTransform.translateYMm", "type": "number", "required": false },
+        { "path": "operations[].initialTransform.rotateZDeg", "type": "number", "required": false },
+        { "path": "operations[].initialTransform.uniformScale", "type": "number", "exclusiveMinimum": 0, "required": false },
+        { "path": "operations[].initialTransform.mirrorX", "type": "boolean", "required": false },
+        { "path": "operations[].initialTransform.mirrorY", "type": "boolean", "required": false },
         { "path": "operations[].deltaMm", "type": "number[3]", "required": false },
         { "path": "operations[].degrees", "type": "number", "required": false },
         { "path": "operations[].factor", "type": "number", "required": false },
-        { "path": "operations[].axis", "type": "enum:x|y", "required": false }
+        { "path": "operations[].axis", "type": "enum:x|y", "required": false },
+        { "path": "operations[].layout", "type": "object", "requiredFor": "applyGridLayout" },
+        { "path": "operations[].layout.policy", "type": "const:grid", "requiredFor": "applyGridLayout" },
+        { "path": "operations[].layout.maxColumns", "type": "integer", "minimum": 1, "maximum": 11, "requiredFor": "applyGridLayout" },
+        { "path": "operations[].layout.maxRows", "type": "integer", "minimum": 1, "maximum": 2, "requiredFor": "applyGridLayout" },
+        { "path": "operations[].layout.columnGapMm", "type": "number", "minimum": 0, "requiredFor": "applyGridLayout" },
+        { "path": "operations[].layout.rowGapMm", "type": "number", "minimum": 0, "requiredFor": "applyGridLayout" },
+        { "path": "operations[].layout.spacingMode", "type": "const:edge_clearance", "requiredFor": "applyGridLayout" },
+        { "path": "operations[].layout.order", "type": "const:row_major", "requiredFor": "applyGridLayout" }
       ],
       "responseFields": [
+        { "path": "sceneHandle", "type": "integer", "requiredFor": "implicit_scene_create" },
         { "path": "newSceneRevision", "type": "integer", "required": true },
         { "path": "sceneHash", "type": "string", "required": true },
         { "path": "instances", "type": "array", "required": true },
@@ -110,7 +139,7 @@
         { "path": "preflightDelta", "type": "array", "required": true },
         { "path": "viewdataIdentity", "type": "string", "required": true }
       ],
-      "errors": ["PM-SLICER-LAYOUT-0020", "PM-SLICER-LAYOUT-0021", "PM-SLICER-LAYOUT-0022", "PM-SLICER-LAYOUT-0023", "PM-SLICER-PROFILE-0031", "PM-SLICER-INTERNAL-0099"]
+      "errors": ["PM-SLICER-INPUT-0001", "PM-SLICER-INPUT-0002", "PM-SLICER-LAYOUT-0020", "PM-SLICER-LAYOUT-0021", "PM-SLICER-LAYOUT-0022", "PM-SLICER-LAYOUT-0023", "PM-SLICER-PROFILE-0030", "PM-SLICER-PROFILE-0031", "PM-SLICER-INTERNAL-0099"]
     },
     {
       "id": "scene.get_snapshot",
@@ -496,6 +525,86 @@
     "noSilentTextureFallback": true,
     "noNewBlobCapability": true,
     "noNewAbiExport": true
+  },
+  "sceneOperationRules": {
+    "applicationOrder": "request_order",
+    "atomic": true,
+    "implicitSceneCreation": {
+      "requires": [
+        "sceneHandle_absent",
+        "scene_absent_or_empty_object",
+        "operations_contains_addInstance",
+        "sceneContext_valid",
+        "currentSceneRevision_equals_0",
+        "expectedSceneRevision_equals_0"
+      ],
+      "responseRequires": ["sceneHandle"],
+      "legacyOperationOnlyRequestWithoutScene": "preserve_previous_failure",
+      "nonEmptyInlineScene": "preserve_v1.4_behavior"
+    },
+    "sceneContext": {
+      "requiredOnlyFor": "implicit_scene_create",
+      "forbiddenWith": ["sceneHandle", "non_empty_inline_scene"],
+      "profileSource": "host_authority",
+      "buildVolumeSource": "device_profile",
+      "fixtureBuildVolumeAllowed": false,
+      "includedInOperationFingerprint": true
+    },
+    "operationRequirements": {
+      "addInstance": {
+        "required": ["modelId"],
+        "optional": ["assignInstanceId", "initialTransform"],
+        "forbidden": ["instanceId"],
+        "modelPrecondition": "model.import_succeeded_and_not_released",
+        "allocatedInstanceId": "module_unique_when_assignInstanceId_absent",
+        "defaultInitialTransform": {
+          "translateXMm": 0,
+          "translateYMm": 0,
+          "rotateZDeg": 0,
+          "uniformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        }
+      },
+      "removeInstance": {
+        "required": ["instanceId"],
+        "modelRelease": "not_implied"
+      },
+      "applyGridLayout": {
+        "required": [
+          "layout.policy",
+          "layout.maxColumns",
+          "layout.maxRows",
+          "layout.columnGapMm",
+          "layout.rowGapMm",
+          "layout.spacingMode",
+          "layout.order"
+        ],
+        "forbidden": ["instanceId", "modelId", "assignInstanceId", "initialTransform"],
+        "batchMode": "sole_operation",
+        "instanceOrder": "scene_order",
+        "hiddenInstancesOccupyCells": true,
+        "lockedInstancesRemainInPlace": true,
+        "capacityLimit": 22,
+        "resultIncludesCollisionAndOutOfBounds": true
+      },
+      "translate": { "required": ["instanceId", "deltaMm"] },
+      "rotateZ": { "required": ["instanceId", "degrees"] },
+      "uniformScale": { "required": ["instanceId", "factor"] },
+      "mirror": { "required": ["instanceId", "axis"] }
+    },
+    "sessionLifetime": {
+      "scope": "pm_module_t",
+      "releasedBy": "pm_destroy",
+      "pm_releaseClosesScene": false,
+      "explicitPerSceneClose": false
+    },
+    "backwardCompatibility": {
+      "legacyOperationTypes": ["translate", "rotateZ", "uniformScale", "mirror"],
+      "legacyRequestResponseSemantics": "unchanged",
+      "newResponseSceneHandleOnlyFor": "implicit_scene_create",
+      "standaloneSceneLayoutCapability": "forbidden_use_scene.apply_operation"
+    }
   },
   "viewDataRules": {
     "top": {

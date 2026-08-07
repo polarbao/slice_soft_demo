@@ -1,8 +1,9 @@
 #include "CapabilityCoverageRequests.h"
 
+#include "HostRequestBuilder.h"
+
 #include <QDir>
 #include <QFileInfo>
-#include <QJsonArray>
 #include <QJsonDocument>
 
 #include <cstdlib>
@@ -64,8 +65,6 @@ bool CapabilityCoverageRequests::InitializePaths(
     const QDir repository(repositoryRoot);
     fixture->modelpath = NormalizePath(repository.filePath(QStringLiteral(
         "samples/models/openvdb/surface_shell_cube_no_uv.obj")));
-    fixture->resourceroot = NormalizePath(
-        QFileInfo(fixture->modelpath).absolutePath());
     fixture->packagedirectory = NormalizePath(
         QDir(evidenceRoot).filePath(QStringLiteral("package")));
     fixture->previewpath = NormalizePath(
@@ -107,38 +106,16 @@ bool CapabilityCoverageRequests::BindImportedModel(
     }
 
     fixture->modelid = imported.value(QStringLiteral("modelId")).toString();
-    fixture->sourcedigest = imported.value(
-        QStringLiteral("sourceDigest")).toString();
-    if (fixture->modelid.isEmpty() || fixture->sourcedigest.isEmpty()
-        || !ParseBounds(imported, &fixture->sourcebounds, error))
-    {
-        return false;
-    }
-
-    fixture->effectivebounds = fixture->sourcebounds;
-    fixture->effectivebounds.min[0] += 1.0;
-    fixture->effectivebounds.max[0] += 1.0;
-    fixture->effectivebounds.min[1] += 2.0;
-    fixture->effectivebounds.max[1] += 2.0;
-
-    char resourceDigest[65]{};
-    const QByteArray modelPath = fixture->modelpath.toUtf8();
-    if (!HostComputeUntexturedObjResourceDigest(
-            modelPath.constData(),
-            resourceDigest,
-            sizeof(resourceDigest)))
+    if (fixture->modelid.isEmpty())
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral("无法计算参考模型资源身份。");
+            *error = QStringLiteral("model.import 未返回 modelId。");
         }
         return false;
     }
-    fixture->resourcedigest = QString::fromLatin1(resourceDigest);
 
-    if (!BuildScene(*fixture, false, &fixture->initialscene, error)
-        || !BuildScene(*fixture, true, &fixture->committedscene, error)
-        || !BuildProfile(
+    if (!BuildProfile(
             *fixture,
             0.2,
             &fixture->profile,
@@ -182,55 +159,5 @@ bool CapabilityCoverageRequests::BuildProfile(
         return false;
     }
     *profileHash = QString::fromLatin1(hash);
-    return true;
-}
-
-bool CapabilityCoverageRequests::BuildScene(
-    const capabilitycoveragefixture& fixture,
-    const bool committed,
-    QJsonObject* scene,
-    QString* error)
-{
-    const QByteArray modelPath = fixture.modelpath.toUtf8();
-    const QByteArray resourceRoot = fixture.resourceroot.toUtf8();
-    const QByteArray sourceDigest = fixture.sourcedigest.toUtf8();
-    const QByteArray resourceDigest = fixture.resourcedigest.toUtf8();
-    char* sceneText = HostBuildScene(
-        modelPath.constData(),
-        resourceRoot.constData(),
-        sourceDigest.constData(),
-        resourceDigest.constData(),
-        &fixture.sourcebounds,
-        committed ? &fixture.effectivebounds : &fixture.sourcebounds,
-        committed ? 1U : 0U,
-        committed ? 1.0 : 0.0,
-        committed ? 2.0 : 0.0,
-        committed ? 1U : 0U);
-    const bool parsed = ParseObject(sceneText, scene, error);
-    std::free(sceneText);
-    return parsed;
-}
-
-bool CapabilityCoverageRequests::ParseBounds(
-    const QJsonObject& imported,
-    HostBounds3* bounds,
-    QString* error)
-{
-    const QJsonObject bbox = imported.value(QStringLiteral("bboxMm")).toObject();
-    const QJsonArray minimum = bbox.value(QStringLiteral("min")).toArray();
-    const QJsonArray maximum = bbox.value(QStringLiteral("max")).toArray();
-    if (bounds == nullptr || minimum.size() != 3 || maximum.size() != 3)
-    {
-        if (error != nullptr)
-        {
-            *error = QStringLiteral("model.import bboxMm 不是三维边界。");
-        }
-        return false;
-    }
-    for (int index = 0; index < 3; ++index)
-    {
-        bounds->min[index] = minimum.at(index).toDouble();
-        bounds->max[index] = maximum.at(index).toDouble();
-    }
     return true;
 }

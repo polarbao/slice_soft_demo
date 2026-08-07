@@ -2,12 +2,15 @@
 
 #include "slicer_module/ModelCapabilityAdapter.h"
 #include "slicer_module/SceneCapabilitySerializationAdapter.h"
+#include "slicer_module/SceneLifecycleSupport.h"
 #include "slicer_module/SceneViewDataAdapter.h"
 #include "slicer_core/api/scene/SceneFacadeService.h"
 #include "slicer_core/api/viewdata/SceneViewResources.h"
 #include "slicer_core/api/viewdata/TexturedSceneViewDataProvider.h"
 #include "slicer_core/scene/MultiModelScene.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <filesystem>
 #include <map>
 #include <memory>
@@ -64,6 +67,12 @@ private:
         slicer_core::api::SceneId id{0U};
         std::string externalid;
         std::shared_ptr<slicer_core::api::SceneFacadeService> facade;
+        std::shared_ptr<
+            scene_lifecycle::MutableSceneViewModelRepository> repository;
+        std::mutex mutex;
+        std::uint64_t nextinstanceid{1U};
+        std::map<std::string, std::map<std::size_t, std::string>>
+            generatedinstanceids;
     };
 
     struct SceneBuildResult
@@ -90,9 +99,8 @@ private:
         }
         seed.scene = decoded.scene;
         seed.validation_purpose = slicer_core::SceneValidationPurpose::Draft;
-        std::map<
-            slicer_core::api::ModelId,
-            std::shared_ptr<const slicer_core::SceneModel>> repositoryModels;
+        auto repository = std::make_shared<
+            scene_lifecycle::MutableSceneViewModelRepository>();
         for (const slicer_core::ModelSource& source : seed.scene.models)
         {
             const std::filesystem::path path = ResolveSourcePath(seed.scene, source);
@@ -106,16 +114,42 @@ private:
             }
             seed.models_by_id[source.modelid] = resource->scenemodel;
             seed.api_model_ids[source.modelid] = resource->metadata.model_id;
-            repositoryModels[resource->metadata.model_id] = resource->scenemodel;
-        }
-        auto repository = slicer_core::api::CreateSceneViewModelRepository(
-            std::move(repositoryModels));
-        if (!repository.IsOk())
-        {
-            return {{}, *repository.Error()};
+            const auto registered = repository->Register(
+                resource->metadata.model_id,
+                resource->scenemodel);
+            if (!registered.IsOk())
+            {
+                return {{}, *registered.Error()};
+            }
+            auto registration = scene_lifecycle::BuildModelRegistration(
+                *resource);
+            if (!registration.IsOk())
+            {
+                return {{}, *registration.Error()};
+            }
+            const auto scope = std::find_if(
+                seed.scene.resourcescopes.begin(),
+                seed.scene.resourcescopes.end(),
+                [&source](const slicer_core::ResourceScope& value)
+                {
+                    return value.resourcescopeid == source.resourcescopeid;
+                });
+            if (scope == seed.scene.resourcescopes.end())
+            {
+                return {{}, slicer_core::api::ApiError{
+                    "PM-SLICER-INPUT-0002",
+                    "scene model resource scope is missing",
+                    source.modelid}};
+            }
+            auto inlineRegistration = *registration.Value();
+            inlineRegistration.scene_model_id = source.modelid;
+            inlineRegistration.source = source;
+            inlineRegistration.scope = *scope;
+            seed.registered_models[resource->metadata.model_id] =
+                std::move(inlineRegistration);
         }
         auto provider = slicer_core::api::CreateTexturedSceneViewDataProvider(
-            *repository.Value(),
+            repository,
             slicer_core::api::CreateFileSceneViewTextureSource());
         if (!provider.IsOk())
         {
@@ -133,6 +167,46 @@ private:
         session->id = sceneId;
         session->externalid = decoded.scene.sceneid;
         session->facade = *facade.Value();
+        session->repository = std::move(repository);
+        return {std::move(session), std::nullopt};
+    }
+
+    [[nodiscard]] SceneBuildResult BuildImplicitSession(
+        const slicer_core::Json& sceneContext)
+    {
+        slicer_core::api::SceneId sceneId{0U};
+        {
+            std::scoped_lock lock{m_mutex};
+            sceneId = m_nextSceneId++;
+        }
+        auto seed = scene_lifecycle::BuildImplicitSceneSeed(
+            sceneContext,
+            sceneId);
+        if (!seed.IsOk())
+        {
+            return {{}, *seed.Error()};
+        }
+        auto repository = std::make_shared<
+            scene_lifecycle::MutableSceneViewModelRepository>();
+        auto provider = slicer_core::api::CreateTexturedSceneViewDataProvider(
+            repository,
+            slicer_core::api::CreateFileSceneViewTextureSource());
+        if (!provider.IsOk())
+        {
+            return {{}, *provider.Error()};
+        }
+        const auto facade = slicer_core::api::SceneFacadeService::Create(
+            std::move(*seed.Value()),
+            *provider.Value());
+        if (!facade.IsOk())
+        {
+            return {{}, *facade.Error()};
+        }
+        auto session = std::make_shared<SceneSession>();
+        session->id = sceneId;
+        session->externalid = "scene-" + std::to_string(sceneId);
+        session->facade = *facade.Value();
+        session->repository = std::move(repository);
         return {std::move(session), std::nullopt};
     }
 
@@ -154,11 +228,27 @@ private:
         return source.sourcepath;
     }
 
-    void StoreSession(const std::shared_ptr<SceneSession>& session)
+    void StoreSession(
+        const std::shared_ptr<SceneSession>& session,
+        const std::string& implicitOperationId = {})
     {
         std::scoped_lock lock{m_mutex};
         m_byId[session->id] = session;
         m_byExternalId[session->externalid] = session;
+        if (!implicitOperationId.empty())
+        {
+            m_implicitByOperationId[implicitOperationId] = session;
+        }
+    }
+
+    [[nodiscard]] std::shared_ptr<SceneSession> FindImplicitSession(
+        const std::string& operationId) const
+    {
+        std::scoped_lock lock{m_mutex};
+        const auto entry = m_implicitByOperationId.find(operationId);
+        return entry == m_implicitByOperationId.end()
+            ? nullptr
+            : entry->second;
     }
 
     [[nodiscard]] std::shared_ptr<SceneSession> FindSession(
@@ -178,10 +268,42 @@ private:
     [[nodiscard]] slicer_core::Json ApplyOperation(
         const slicer_core::Json& request)
     {
-        std::shared_ptr<SceneSession> session;
-        if (request.contains("scene"))
+        const std::string operationId = RequireString(request, "operationId");
+        const auto& operations = RequireArray(request, "operations");
+        const bool hasHandle = request.contains("sceneHandle");
+        const bool hasContext = request.contains("sceneContext");
+        const bool hasScene = request.contains("scene");
+        const slicer_core::Json* sceneDocument = nullptr;
+        if (hasScene)
         {
-            const SceneBuildResult built = BuildSession(RequireObject(request, "scene"));
+            sceneDocument = &RequireObject(request, "scene");
+        }
+        const bool nonEmptyInlineScene = sceneDocument != nullptr
+            && sceneDocument->size() > 0U;
+        const bool hasAddInstance = std::any_of(
+            operations.begin(),
+            operations.end(),
+            [](const slicer_core::Json& operation)
+            {
+                return operation.is_object()
+                    && operation.contains("type")
+                    && operation.at("type").is_string()
+                    && operation.at("type").as_string() == "addInstance";
+            });
+
+        if (hasContext && (hasHandle || nonEmptyInlineScene))
+        {
+            return MakeFailure(
+                "PM-SLICER-INPUT-0002",
+                "sceneContext is only valid for implicit scene creation");
+        }
+
+        std::shared_ptr<SceneSession> session;
+        bool implicitRequest{false};
+        bool newImplicitSession{false};
+        if (nonEmptyInlineScene)
+        {
+            const SceneBuildResult built = BuildSession(*sceneDocument);
             if (built.error)
             {
                 return MakeFailure(*built.error);
@@ -189,9 +311,52 @@ private:
             session = built.session;
             StoreSession(session);
         }
-        else
+        else if (hasHandle)
         {
             session = FindSession(request);
+        }
+        else
+        {
+            session = FindImplicitSession(operationId);
+            if (session)
+            {
+                implicitRequest = true;
+                if (!hasContext)
+                {
+                    return MakeFailure(
+                        "PM-SLICER-INPUT-0002",
+                        "implicit scene replay requires sceneContext");
+                }
+            }
+            else if (hasAddInstance)
+            {
+                implicitRequest = true;
+                if (!hasContext)
+                {
+                    return MakeFailure(
+                        "PM-SLICER-INPUT-0002",
+                        "implicit scene creation requires sceneContext");
+                }
+                if (RequireUnsigned(request, "currentSceneRevision") != 0U
+                    || RequireUnsigned(request, "expectedSceneRevision") != 0U)
+                {
+                    return MakeFailure(
+                        "PM-SLICER-PROFILE-0031",
+                        "implicit scene creation requires revision zero");
+                }
+                const SceneBuildResult built = BuildImplicitSession(
+                    RequireObject(request, "sceneContext"));
+                if (built.error)
+                {
+                    return MakeFailure(*built.error);
+                }
+                session = built.session;
+                newImplicitSession = true;
+            }
+            else
+            {
+                session = FindSession(request);
+            }
         }
         if (!session)
         {
@@ -201,37 +366,153 @@ private:
         }
         slicer_core::api::SceneOperationRequest operationRequest;
         operationRequest.scene_id = session->id;
-        operationRequest.operation_id = RequireString(request, "operationId");
+        operationRequest.operation_id = operationId;
         operationRequest.current_scene_revision = RequireUnsigned(
             request,
             "currentSceneRevision");
         operationRequest.expected_scene_revision = RequireUnsigned(
             request,
             "expectedSceneRevision");
-        for (const slicer_core::Json& operation : RequireArray(request, "operations"))
+        if (hasContext)
         {
-            operationRequest.operations.push_back(ParseOperation(operation));
+            operationRequest.scene_context_identity =
+                RequireObject(request, "sceneContext").dump(0);
+        }
+
+        for (std::size_t index = 0U; index < operations.size(); ++index)
+        {
+            const auto parsed = ParseOperation(
+                operations[index],
+                session,
+                operationId,
+                index);
+            if (!parsed.IsOk())
+            {
+                return MakeFailure(*parsed.Error());
+            }
+            operationRequest.operations.push_back(*parsed.Value());
         }
         NeverCancelToken cancelToken;
         const auto result = session->facade->ApplyOperation(
             operationRequest,
             cancelToken);
-        return result.IsOk()
-            ? SceneCapabilitySerializationAdapter::SerializeCommit(*result.Value())
-            : MakeFailure(*result.Error());
+        if (!result.IsOk())
+        {
+            return MakeFailure(*result.Error());
+        }
+        if (newImplicitSession)
+        {
+            StoreSession(session, operationId);
+        }
+
+        slicer_core::Json response =
+            SceneCapabilitySerializationAdapter::SerializeCommit(
+                *result.Value());
+        if (implicitRequest)
+        {
+            slicer_core::Json::Object fields = response.as_object();
+            fields.emplace("sceneHandle", session->id);
+            response = slicer_core::Json{std::move(fields)};
+        }
+        return response;
     }
 
-    [[nodiscard]] static slicer_core::api::SceneOperation ParseOperation(
-        const slicer_core::Json& operation)
+    [[nodiscard]] slicer_core::api::ApiResult<
+        slicer_core::api::SceneOperation> ParseOperation(
+        const slicer_core::Json& operation,
+        const std::shared_ptr<SceneSession>& session,
+        const std::string& operationId,
+        const std::size_t operationIndex)
     {
         if (!operation.is_object())
         {
             throw CapabilityRequestError("operations must contain objects");
         }
         slicer_core::api::SceneOperation result;
-        result.instance_id = RequireString(operation, "instanceId");
         const std::string type = RequireString(operation, "type");
-        if (type == "translate")
+        if (type == "addInstance")
+        {
+            if (operation.contains("instanceId"))
+            {
+                throw CapabilityRequestError(
+                    "addInstance must not contain instanceId");
+            }
+            result.type = slicer_core::api::SceneOperationType::AddInstance;
+            result.model_id = ParseModelId(RequireString(operation, "modelId"));
+            result.instance_id = ResolveAddInstanceId(
+                session,
+                operation,
+                operationId,
+                operationIndex);
+            if (operation.contains("initialTransform"))
+            {
+                result.initial_transform = ParseInitialTransform(
+                    RequireObject(operation, "initialTransform"));
+            }
+            const auto resource = m_models.Find(result.model_id);
+            if (!resource)
+            {
+                return slicer_core::api::ApiResult<
+                    slicer_core::api::SceneOperation>::Failure({
+                    "PM-SLICER-INPUT-0001",
+                    "addInstance references an unknown or released modelId",
+                    std::to_string(result.model_id)});
+            }
+            const auto registration =
+                scene_lifecycle::BuildModelRegistration(*resource);
+            if (!registration.IsOk())
+            {
+                return slicer_core::api::ApiResult<
+                    slicer_core::api::SceneOperation>::Failure(
+                    *registration.Error());
+            }
+            const auto registered = session->facade->RegisterModel(
+                *registration.Value());
+            if (!registered.IsOk())
+            {
+                return slicer_core::api::ApiResult<
+                    slicer_core::api::SceneOperation>::Failure(
+                    *registered.Error());
+            }
+            const auto viewRegistered = session->repository->Register(
+                resource->metadata.model_id,
+                resource->scenemodel);
+            if (!viewRegistered.IsOk())
+            {
+                return slicer_core::api::ApiResult<
+                    slicer_core::api::SceneOperation>::Failure(
+                    *viewRegistered.Error());
+            }
+        }
+        else if (type == "applyGridLayout")
+        {
+            for (const char* const forbiddenField : {
+                     "instanceId",
+                     "modelId",
+                     "assignInstanceId",
+                     "initialTransform"})
+            {
+                if (operation.contains(forbiddenField))
+                {
+                    throw CapabilityRequestError(
+                        "applyGridLayout contains a forbidden instance field");
+                }
+            }
+            result.type =
+                slicer_core::api::SceneOperationType::ApplyGridLayout;
+            result.layout = ParseGridLayout(
+                RequireObject(operation, "layout"));
+        }
+        else
+        {
+            result.instance_id = RequireString(operation, "instanceId");
+        }
+
+        if (type == "removeInstance")
+        {
+            result.type = slicer_core::api::SceneOperationType::RemoveInstance;
+        }
+        else if (type == "translate")
         {
             result.type = slicer_core::api::SceneOperationType::Translate;
             const auto delta = ReadNumber3(RequireField(operation, "deltaMm"));
@@ -260,11 +541,80 @@ private:
                 throw CapabilityRequestError("mirror axis must be x or y");
             }
         }
-        else
+        else if (type != "addInstance" && type != "applyGridLayout")
         {
             throw CapabilityRequestError("scene operation type is invalid");
         }
-        return result;
+        return slicer_core::api::ApiResult<
+            slicer_core::api::SceneOperation>::Success(std::move(result));
+    }
+
+    [[nodiscard]] static std::string ResolveAddInstanceId(
+        const std::shared_ptr<SceneSession>& session,
+        const slicer_core::Json& operation,
+        const std::string& operationId,
+        const std::size_t operationIndex)
+    {
+        if (operation.contains("assignInstanceId"))
+        {
+            return RequireString(operation, "assignInstanceId");
+        }
+        std::scoped_lock lock{session->mutex};
+        auto& generated = session->generatedinstanceids[operationId];
+        const auto existing = generated.find(operationIndex);
+        if (existing != generated.end())
+        {
+            return existing->second;
+        }
+        const std::string instanceId =
+            "instance-" + std::to_string(session->nextinstanceid++);
+        generated.emplace(operationIndex, instanceId);
+        return instanceId;
+    }
+
+    [[nodiscard]] static slicer_core::ModelTransform ParseInitialTransform(
+        const slicer_core::Json& value)
+    {
+        slicer_core::ModelTransform transform;
+        if (value.contains("translateXMm"))
+        {
+            transform.translatexmm = RequireNumber(value, "translateXMm");
+        }
+        if (value.contains("translateYMm"))
+        {
+            transform.translateymm = RequireNumber(value, "translateYMm");
+        }
+        if (value.contains("rotateZDeg"))
+        {
+            transform.rotatezdeg = RequireNumber(value, "rotateZDeg");
+        }
+        if (value.contains("uniformScale"))
+        {
+            transform.uniformscale = RequireNumber(value, "uniformScale");
+        }
+        if (value.contains("mirrorX"))
+        {
+            transform.mirrorx = RequireBoolean(value, "mirrorX");
+        }
+        if (value.contains("mirrorY"))
+        {
+            transform.mirrory = RequireBoolean(value, "mirrorY");
+        }
+        return transform;
+    }
+
+    [[nodiscard]] static slicer_core::SceneLayout ParseGridLayout(
+        const slicer_core::Json& value)
+    {
+        slicer_core::SceneLayout layout;
+        layout.policy = RequireString(value, "policy");
+        layout.maxcolumns = RequireInteger(value, "maxColumns");
+        layout.maxrows = RequireInteger(value, "maxRows");
+        layout.columngapmm = RequireNumber(value, "columnGapMm");
+        layout.rowgapmm = RequireNumber(value, "rowGapMm");
+        layout.spacingmode = RequireString(value, "spacingMode");
+        layout.order = RequireString(value, "order");
+        return layout;
     }
 
     [[nodiscard]] slicer_core::Json GetSnapshot(
@@ -434,6 +784,8 @@ private:
     slicer_core::api::SceneId m_nextSceneId{1U};
     std::map<slicer_core::api::SceneId, std::shared_ptr<SceneSession>> m_byId;
     std::map<std::string, std::shared_ptr<SceneSession>> m_byExternalId;
+    std::map<std::string, std::shared_ptr<SceneSession>>
+        m_implicitByOperationId;
 };
 
 SceneCapabilityAdapter::SceneCapabilityAdapter(ModelCapabilityAdapter& models)

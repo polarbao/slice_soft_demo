@@ -53,10 +53,8 @@ SceneCapabilitySerializationAdapter::SerializeSnapshotFields(
     {
         buildVolume.emplace("zLimitMm", *snapshot.build_volume.z_limit_mm);
     }
-    slicer_core::Json scene = slicer_core::Json::object({
-        {"sceneId", std::to_string(snapshot.scene_id)},
-        {"sceneRevision", snapshot.scene_revision},
-        {"instances", slicer_core::Json{instances}}});
+    slicer_core::Json scene = slicer_core::SerializeMultiModelScene(
+        snapshot.scene);
     return {
         {"scene", std::move(scene)},
         {"sceneRevision", snapshot.scene_revision},

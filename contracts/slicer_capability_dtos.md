@@ -1,10 +1,13 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.4
+> 合同版本：1.7
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
-> `DOC_DECISION_14A_04_R2_重能力输入身份补充.md`
+> `DOC_DECISION_14A_04_R2_重能力输入身份补充.md`、
+> `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md`、
+> `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md`、
+> `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md`
 
 ## 1. 范围
 
@@ -32,8 +35,8 @@ package.render_layer_preview
 package.read_report
 ```
 
-`scene.layout` 不属于能力包；packing 策略由宿主负责，碰撞和越界真值由
-`geometry.collision` 与 `scene.apply_operation` 返回。
+不新增独立 `scene.layout` 能力；规则排版经既有 `scene.apply_operation` 的
+`applyGridLayout` 操作提交。碰撞和越界真值继续由既有响应返回。
 
 ### 1.1 构建体积
 
@@ -73,7 +76,78 @@ package.read_report
 失败时不得返回部分成功语义；未知字段可按 SPI minor 向前兼容，删改既有字段语义必须提升
 SPI major。
 
-### 3.1 Worker 重能力输入身份
+### 3.1 场景生命周期与实例操作
+
+`scene.apply_operation.operations[].type` 支持：
+
+```text
+addInstance
+removeInstance
+applyGridLayout
+translate
+rotateZ
+uniformScale
+mirror
+```
+
+`addInstance` 条件必填 `modelId`。该 id 必须由同一个模块实例内成功的 `model.import` 返回，
+且尚未执行 `model.release`。`assignInstanceId` 可选；缺省时由模块分配唯一实例 id。
+`initialTransform` 可选，字段与 scene 的 canonical model transform 一致：
+`translateXMm`、`translateYMm`、`rotateZDeg`、`uniformScale`、`mirrorX`、`mirrorY`；
+缺省为 identity。`addInstance` 禁止同时提供 `instanceId`，避免实例 id 双重来源。
+
+`removeInstance` 条件必填 `instanceId`，只移除场景实例，不隐式释放 `modelId`。既有四种变换仍按
+v1.4 字段工作：`translate.deltaMm`、`rotateZ.degrees`、`uniformScale.factor` 和 `mirror.axis`。
+多个 operation 按请求数组顺序原子执行，任一操作失败不得暴露部分提交。
+
+`applyGridLayout` 通过 `layout` 条件必填对象提交 11×2 行优先规则排版：`policy=grid`、
+`maxColumns=1..11`、`maxRows=1..2`、非负 `columnGapMm` / `rowGapMm`、
+`spacingMode=edge_clearance`、`order=row_major`。它作用于场景稳定实例顺序，隐藏实例继续占位，
+锁定实例保持原位，容量上限为 22。为避免同一批中变换中间态与排版基准不一致，
+`applyGridLayout` 必须是该请求的唯一 operation；不得携带实例或模型身份字段。
+成功响应沿用 `scene.apply_operation`，包含全部实例 canonical transform、碰撞与越界结果。
+
+#### 3.1.1 隐式空场景创建
+
+以下条件同时成立时，模块创建新空场景，并在成功响应中条件必填 `sceneHandle`：
+
+```text
+sceneHandle 缺省；
+scene 缺省或严格为空对象 {}；
+operations 至少包含一个 addInstance；
+sceneContext 携带宿主权威的 resolvedProfileId 与 device_profile buildVolume；
+currentSceneRevision == 0；
+expectedSceneRevision == 0。
+```
+
+`sceneContext` 只允许出现在隐式创建路径。`resolvedProfileId` 必须为非空字符串；
+`buildVolume.source` 必须为 `device_profile`，`isFixture` 必须为 `false`，宽高以及可选的
+`zLimitMm` 必须为有限正数。原点和轴向由宿主显式给出。已有 `sceneHandle` 或非空 inline
+scene 请求禁止携带 `sceneContext`，避免两个权威源并存。幂等 fingerprint 必须包含完整
+`sceneContext`，同一 `operationId` 改变 Profile 或构建体积时 fail-closed。
+
+该限制用于保持旧请求兼容：不含新枚举、无 handle、无 scene 的旧变换请求继续按 v1.4 失败；
+非空 inline `scene` 请求继续使用原语义，响应不得仅因合同升级而新增 `sceneHandle`。后续状态请求
+使用隐式创建响应中的 `sceneHandle` 和最新 revision。
+
+场景 session 绑定 `pm_module_t`，由 `pm_destroy` 统一清理。`pm_release` 只释放 `pm_job_t*`，
+不得用于关闭整数 `sceneHandle`。v1.6 不提供显式 per-scene close；若后续需要提前回收，必须另行
+受控修订。
+
+#### 3.1.2 权威场景快照与生产透传
+
+`scene.get_snapshot` 和 `scene.apply_operation` 响应中的 `scene` 是与 `sceneHash`、
+`sceneRevision` 对应的完整 canonical scene，不是只含 handle/instance 摘要的展示对象。宿主可以把
+该对象作为 opaque JSON 原样传给 `slice.rgbwsv.scene`，但不得自行构造、删减或补写内部 scene
+字段。canonical 数值统一消除有符号零，避免 `-0.0` 经不同 JSON 实现归一为 `0.0` 后改变 hash。
+
+`addInstance` 生成的 `sourceTransformIdentity` 使用已注册模型的源路径身份，以满足生产切片器的
+资源一致性校验；source digest 继续只作为内容身份，不能代替可解析的源路径。
+
+> H-A-01 冻结 add/remove，HQ-07 冻结隐式场景上下文。新操作运行时、幂等和负例属于
+> H-A-02；在 H-A-02 完成前，不得把 v1.6 合同存在误写成新操作已经可用。
+
+### 3.2 Worker 重能力输入身份
 
 `geometry.preflight.full` 除 committed `scene` 外，必须携带 `sceneHash`、
 `expectedSceneRevision`、canonical effective `profile`、`profileHash` 和显式 `targetMode`。
@@ -157,6 +231,8 @@ emptyValue   255
 
 ## 6. 版本与后续实现
 
-本卡只冻结对外 DTO，不创建 facade、DLL 或 Worker。C++ 内部 DTO 与 facade 在 14B-01 实现，
-必须保持字段语义一致。交互幂等、revision 回滚和三车道细则见
+本合同冻结对外 DTO；v1.6 的 `addInstance` / `removeInstance` 和隐式建场景已由 H-A-02 实现，
+v1.7 的 `applyGridLayout` 由 H-A-04 实现，H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主
+不透明透传到生产切片。独立 `scene.layout` 能力仍被禁止。
+交互幂等、revision 回滚和三车道细则见
 `contracts/slicer_three_lane_contract.*`；取消状态机由 14A-06 冻结。

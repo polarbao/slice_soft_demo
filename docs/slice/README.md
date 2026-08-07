@@ -66,10 +66,16 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `DOC/DOC_CHECKLIST_14_对RIP侧技术确认清单.md` | Stage 14 对目标 RIP 的技术确认往来记录（两轮已闭合，转档案；实施不看本文） |
 | `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md` | **S2 接缝权威合同**：Q1~Q6 定案条款、切片侧新工作项 N1/N2、8 项作废方案禁止实现 |
 | `DOC/DOC_DECISION_14F_外部验证延期与接口冻结.md` | **14F 收口边界**：接口冻结、打印侧可实现性假定、本地门禁与外部验收延期的状态词典 |
+| `DOC/DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md` | **HQ-01 受控修订**：DTO v1.5 的 add/remove 实例、兼容型隐式建场景、scene session 生命周期与 H-A-01 边界 |
+| `DOC/DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md` | **HQ-07 已授权并实施**：隐式场景显式接收宿主权威 Profile/buildVolume，禁止模块写死默认值 |
+| `DOC/DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md` | **H-A-04 受控修订**：DTO v1.7 `applyGridLayout`、11×2/22 实例排版与单操作原子边界 |
+| `DOC/DOC_PREP_HOSTFLOW_H_A_02_场景生命周期运行时准备.md` | H-A-02 Facade/Adapter 实现、负例、Debug/Release 验证和停止条件 |
+| `DOC/DOC_PREP_HOSTFLOW_H_A_04_规则排版运行时准备.md` | H-A-04 复用审计、运行时规则、正负例矩阵与 Debug/Release Gate |
+| `DOC/DOC_PREP_HOSTFLOW_H_A_03_空场景端到端闭环准备.md` | H-A-03 纯 C/Qt 空场景生产闭环、权威 scene 透传与边界 Gate |
 | `REPORT/REPORT_14F_04_S2本地合同门禁当前状态.md` | 14F-04 S2 C1-C7 机器合同、正负例、CTest 与外部 RIP 延期边界 |
 | `REPORT/REPORT_14F_切片能力包本地交付与外部验收延期当前状态.md` | **Stage 14F 收口真源**：能力包可交付、接口冻结、六步本地门禁和外部验收延期边界 |
 | `../../contracts/slicer_rip_s2_contract.json` | 冻结的 S2 本地机器合同：输入协议、量化、白区、输出组织、混合和外部状态 |
-| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（非 Stage 14）**：ABI 场景生命周期缺口（`addInstance`/`removeInstance`）、宿主业务流程 UI 补齐、主干 UI 68 文件三桶分类、P0–P4 优先级框架 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A-01..04 已完成，DTO v1.7；下一卡 H-B-01，后续为宿主业务流程 UI 与移植交付 |
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |

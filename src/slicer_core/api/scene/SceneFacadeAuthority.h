@@ -7,6 +7,7 @@
 #include "slicer_core/layout/SceneCollisionService.h"
 
 #include <string>
+#include <vector>
 
 namespace slicer_core::api::scene_facade_detail
 {
@@ -39,6 +40,16 @@ struct AuthorityState
     const AuthorityState& current,
     const SceneOperationRequest& request,
     const ICancelToken& cancelToken) noexcept;
+
+/**
+ * @brief Applies one complete grid layout to an isolated authority candidate.
+ * @param candidate Candidate authority to update only after full validation.
+ * @param layout Frozen 11x2 row-major layout settings.
+ * @return Changed instance identities or one fail-closed layout error.
+ */
+[[nodiscard]] ApiResult<std::vector<std::string>> ApplyGridLayout(
+    AuthorityState& candidate,
+    const SceneLayout& layout) noexcept;
 
 /**
  * @brief Computes the canonical request identity used by operation replay.

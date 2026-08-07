@@ -3,9 +3,9 @@
 > 文档版本：v0.4
 > 文档状态：Document Control / PRD-DEV Index
 > 生成日期：2026-06-30
-> 更新日期：2026-08-04
-> 当前分支：`feature/12e-08c-mesh-repair`，每个任务开始前仍需重新确认
-> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；03E-02 **GO_ON_DEMAND**；**Stage 14 ACTIVE（2026-08-04 授权激活）**；Stage 15 **COMPLETE / 19 OF 19**
+> 更新日期：2026-08-07
+> 当前分支：`feature/14-slicer-capability-package`，每个任务开始前仍需重新确认
+> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；03E-02 **GO_ON_DEMAND**；Stage 14 **SLICER-SIDE COMPLETE / EXTERNAL VALIDATION DEFERRED**；Stage 15 **COMPLETE / 19 OF 19**；HOSTFLOW **ACTIVE / H-A COMPLETE / H-B-01 NEXT**
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -34,11 +34,11 @@
 当前代码和报告显示：
 
 ```text
-当前分支：feature/12e-08c-mesh-repair，任务开始前通过 git 命令确认
+当前分支：feature/14-slicer-capability-package，任务开始前通过 git 命令确认
 最新完成阶段：Stage 12E 与 Stage 13 批准范围已收口
-当前执行阶段：Stage 14 ACTIVE（2026-08-04 授权激活）；Stage 15 COMPLETE / 19 OF 19
+当前执行阶段：Stage 14 切片侧已收口，外部验收延期；Stage 15 COMPLETE / 19 OF 19；HOSTFLOW ACTIVE
 最新完成任务：Stage 15 全量收口（G1–G8）；RIP 六问两轮闭合，S2 条款收敛至 DOC_DECISION_14_S2
-当前推荐任务：Stage 14 14A 切片侧已收口；下一批为 14B-00 / 14B-06，双视图纹理 Provider 为 14B-03A
+当前推荐任务：HOSTFLOW H-A-01..04 已完成；DTO v1.7 已冻结 `sceneContext` 与 `applyGridLayout`，下一卡为 H-B-01
 ```
 
 09P-R1 已完成：
@@ -488,6 +488,12 @@ Stage 14 / Stage 15 当前入口：
 docs/slice/DOC/DOC_DECISION_14_切片能力包封装与打印软件集成专项.md
 docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md          ← 【S2 权威合同，实施只看这份】
 docs/slice/DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md ← 【冻结合同受控修订】
+docs/slice/DOC/DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md ← 【HQ-01 / DTO v1.5】
+docs/slice/DOC/DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md ← 【HQ-07 已关闭 / DTO v1.6】
+docs/slice/DOC/DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md ← 【H-A-04 / DTO v1.7】
+docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_02_场景生命周期运行时准备.md ← 【H-A-02 准备真源】
+docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_04_规则排版运行时准备.md ← 【H-A-04 准备真源】
+docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_03_空场景端到端闭环准备.md ← 【H-A-03 闭环证据】
 docs/slice/DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md          ← 【14E 权威设计 v1.3】
 docs/slice/DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md       ← 【ViewData v1.2】
 contracts/slicer_ui_view_spec.json                             ← 【双视图设置与网格真源】
@@ -497,6 +503,8 @@ docs/slice/DEMO/DEMO_14_切片能力包封装与打印软件集成验收方案.m
 docs/slice/REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md
 docs/codex_task/current/TASKS_14_切片能力包封装与打印软件集成任务清单.md
 docs/codex_task/current/CODEX_PROMPT_14_切片能力包封装与打印软件集成执行指令.md
+docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
+docs/codex_task/current/CODEX_PROMPT_HOSTFLOW_宿主业务流程与场景生命周期执行指令.md
 docs/slice/DOC/DOC_DECISION_15_纹理纯白区按需补白与材料闭合修复专项.md
 docs/slice/DOC/DOC_PREP_15_纹理纯白区按需补白实施准备与依赖审查.md
 docs/slice/PRD/PRD_15_纹理纯白区按需补白与材料闭合修复.md
@@ -545,8 +553,9 @@ Stage 13 原 P0、13B-08、13D、13E、13G 已完成。`03D-LIBTIFF` 已完成 0
 矩阵；`12E-10A..10D` 已完成同层绑定、真实模型矩阵、Release 性能/内存和最终文档封口。Stage 12E
 当前批准范围已完成。12G-TCWS 已记录现有 RIP 的同包透明/白色和 `WSV=000` 白区信号事实，
 但因其与固定物理通道语义冲突继续冻结，且不包含纹理铺底。12F 性能算法仍需逐项授权。
-**Stage 14 已于 2026-08-04 授权激活（ACTIVE）**，RIP 六问两轮闭合，S2 权威条款见
-`DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（含 8 项作废方案禁止实现清单）。
+**Stage 14 切片侧已于 2026-08-07 收口，外部验收延期**。RIP 六问两轮闭合，S2 权威条款见
+`DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`（含 8 项作废方案禁止实现清单）。HOSTFLOW 已获 HQ-01 授权，
+H-A-01 已完成 DTO v1.5 合同冻结；H-A-02 及后续卡仍需逐卡点名。
 Stage 15 已全量收口（19/19 任务卡、G1–G8 全通过），按需补白 Profile 已启用为 production。
 
 03D TIFF Writer 专项入口：

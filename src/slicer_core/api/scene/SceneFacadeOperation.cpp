@@ -84,6 +84,12 @@ std::string OperationTypeName(const SceneOperationType type)
 {
     switch (type)
     {
+    case SceneOperationType::AddInstance:
+        return "addInstance";
+    case SceneOperationType::RemoveInstance:
+        return "removeInstance";
+    case SceneOperationType::ApplyGridLayout:
+        return "applyGridLayout";
     case SceneOperationType::Translate:
         return "translate";
     case SceneOperationType::RotateZ:
@@ -107,6 +113,130 @@ StructuredJsonObject BuildPreflightDelta(
         + "\",\"outOfBounds\":"
         + (instance.out_of_bounds ? "true" : "false") + "}";
     return delta;
+}
+
+StructuredJsonObject BuildRemovedPreflightDelta(
+    const std::string_view instanceId)
+{
+    StructuredJsonObject delta;
+    delta.utf8_json = "{\"instanceId\":\""
+        + EscapeJson(instanceId) + "\",\"removed\":true}";
+    return delta;
+}
+
+ApiResult<void> AddRegisteredModelToScene(
+    AuthorityState& candidate,
+    const SceneOperation& operation)
+{
+    if (operation.instance_id.empty())
+    {
+        return Failure<void>(
+            "PM-SLICER-PROFILE-0031",
+            "addInstance requires an assigned instance identity",
+            "instanceId");
+    }
+    if (operation.model_id == 0U)
+    {
+        return Failure<void>(
+            "PM-SLICER-INPUT-0002",
+            "addInstance requires a valid modelId",
+            operation.instance_id);
+    }
+    const auto duplicate = std::find_if(
+        candidate.seed.scene.instances.begin(),
+        candidate.seed.scene.instances.end(),
+        [&operation](const SceneModelInstance& instance)
+        {
+            return instance.instance.instanceid == operation.instance_id;
+        });
+    if (duplicate != candidate.seed.scene.instances.end())
+    {
+        return Failure<void>(
+            "PM-SLICER-PROFILE-0031",
+            "addInstance assigned an existing instance identity",
+            operation.instance_id);
+    }
+
+    const auto registration = candidate.seed.registered_models.find(
+        operation.model_id);
+    if (registration == candidate.seed.registered_models.end()
+        || !registration->second.model)
+    {
+        return Failure<void>(
+            "PM-SLICER-INPUT-0001",
+            "addInstance references an unavailable imported model",
+            std::to_string(operation.model_id));
+    }
+    const SceneFacadeModelRegistration& model = registration->second;
+    const ModelTransformValidationResult transformValidation =
+        ValidateModelTransform(
+            operation.initial_transform,
+            operation.instance_id,
+            model.scene_model_id);
+    if (!transformValidation.IsValid())
+    {
+        return Failure<void>(
+            "PM-SLICER-PROFILE-0031",
+            transformValidation.error->message,
+            transformValidation.error->field);
+    }
+
+    const auto source = std::find_if(
+        candidate.seed.scene.models.begin(),
+        candidate.seed.scene.models.end(),
+        [&model](const ModelSource& value)
+        {
+            return value.modelid == model.scene_model_id;
+        });
+    if (source == candidate.seed.scene.models.end())
+    {
+        const auto scope = std::find_if(
+            candidate.seed.scene.resourcescopes.begin(),
+            candidate.seed.scene.resourcescopes.end(),
+            [&model](const ResourceScope& value)
+            {
+                return value.resourcescopeid == model.scope.resourcescopeid;
+            });
+        if (scope == candidate.seed.scene.resourcescopes.end())
+        {
+            candidate.seed.scene.resourcescopes.push_back(model.scope);
+        }
+        candidate.seed.scene.models.push_back(model.source);
+        candidate.seed.models_by_id[model.scene_model_id] = model.model;
+        candidate.seed.api_model_ids[model.scene_model_id] =
+            model.api_model_id;
+    }
+    else
+    {
+        const auto apiIdentity = candidate.seed.api_model_ids.find(
+            model.scene_model_id);
+        if (apiIdentity == candidate.seed.api_model_ids.end()
+            || apiIdentity->second != model.api_model_id)
+        {
+            return Failure<void>(
+                "PM-SLICER-PROFILE-0031",
+                "scene model identity conflicts with modelId",
+                model.scene_model_id);
+        }
+    }
+
+    SceneModelInstance instance;
+    instance.instance.instanceid = operation.instance_id;
+    instance.instance.modelid = model.scene_model_id;
+    instance.instance.sourcetransformidentity =
+        model.source.sourcepath.generic_string();
+    instance.instance.sourcebboxmm = model.model->bbox_mm;
+    instance.requestedtransform = NormalizeModelTransform(
+        operation.initial_transform);
+    instance.effectivetransform = ComposeModelTransforms(
+        instance.derivedlayouttransform,
+        instance.requestedtransform);
+    instance.instance.transform = instance.effectivetransform;
+    instance.instance.effectivebboxmm = model.model->bbox_mm;
+    instance.admissionstatus = SceneInstanceAdmissionStatus::Admitted;
+    instance.resolvedprofileid = candidate.seed.scene.resolvedprofileid;
+    candidate.seed.scene.instances.push_back(std::move(instance));
+    return ApiResult<void>::Success();
 }
 
 ApiResult<ModelTransform> ApplyDelta(
@@ -204,6 +334,7 @@ ApiResult<AuthorityState> ApplyOperationBatch(
 
         AuthorityState candidate = current;
         std::set<std::string> touchedInstances;
+        std::set<std::string> removedInstances;
         for (const SceneOperation& operation : request.operations)
         {
             if (cancelToken.IsCancelRequested())
@@ -213,6 +344,46 @@ ApiResult<AuthorityState> ApplyOperationBatch(
                     "scene operation was cancelled before commit",
                     request.operation_id);
             }
+            if (operation.type == SceneOperationType::AddInstance)
+            {
+                const ApiResult<void> added = AddRegisteredModelToScene(
+                    candidate,
+                    operation);
+                if (!added.IsOk())
+                {
+                    return Failure<AuthorityState>(
+                        added.Error()->code,
+                        added.Error()->message,
+                        added.Error()->detail);
+                }
+                touchedInstances.insert(operation.instance_id);
+                continue;
+            }
+            if (operation.type == SceneOperationType::ApplyGridLayout)
+            {
+                if (request.operations.size() != 1U)
+                {
+                    return Failure<AuthorityState>(
+                        "PM-SLICER-PROFILE-0031",
+                        "applyGridLayout must be the only operation in its batch",
+                        request.operation_id);
+                }
+                const auto layout = ApplyGridLayout(
+                    candidate,
+                    operation.layout);
+                if (!layout.IsOk())
+                {
+                    return Failure<AuthorityState>(
+                        layout.Error()->code,
+                        layout.Error()->message,
+                        layout.Error()->detail);
+                }
+                touchedInstances.insert(
+                    layout.Value()->begin(),
+                    layout.Value()->end());
+                continue;
+            }
+
             const auto found = std::find_if(
                 candidate.seed.scene.instances.begin(),
                 candidate.seed.scene.instances.end(),
@@ -234,6 +405,13 @@ ApiResult<AuthorityState> ApplyOperationBatch(
                     "PM-SLICER-PROFILE-0031",
                     "scene operation cannot modify a locked instance",
                     operation.instance_id);
+            }
+            if (operation.type == SceneOperationType::RemoveInstance)
+            {
+                removedInstances.insert(operation.instance_id);
+                touchedInstances.erase(operation.instance_id);
+                candidate.seed.scene.instances.erase(found);
+                continue;
             }
             const ApiResult<ModelTransform> updated = ApplyDelta(
                 found->requestedtransform,
@@ -292,6 +470,11 @@ ApiResult<AuthorityState> ApplyOperationBatch(
                     BuildPreflightDelta(instance));
             }
         }
+        for (const std::string& instanceId : removedInstances)
+        {
+            evaluatedState.preflight_delta.push_back(
+                BuildRemovedPreflightDelta(instanceId));
+        }
         return ApiResult<AuthorityState>::Success(
             std::move(evaluatedState));
     }
@@ -328,14 +511,44 @@ std::string ComputeOperationFingerprint(const SceneOperationRequest& request)
         }
         canonical << "{\"instanceId\":\""
                   << EscapeJson(operation.instance_id)
-                  << "\",\"type\":\""
+                  << "\",\"modelId\":" << operation.model_id
+                  << ",\"layout\":{\"policy\":\""
+                  << EscapeJson(operation.layout.policy)
+                  << "\",\"maxColumns\":"
+                  << operation.layout.maxcolumns
+                  << ",\"maxRows\":"
+                  << operation.layout.maxrows
+                  << ",\"columnGapMm\":"
+                  << FormatNumber(operation.layout.columngapmm)
+                  << ",\"rowGapMm\":"
+                  << FormatNumber(operation.layout.rowgapmm)
+                  << ",\"spacingMode\":\""
+                  << EscapeJson(operation.layout.spacingmode)
+                  << "\",\"order\":\""
+                  << EscapeJson(operation.layout.order) << "\"}"
+                  << ",\"type\":\""
                   << OperationTypeName(operation.type)
-                  << "\",\"valueX\":" << FormatNumber(operation.value_x)
+                  << "\",\"initialTransform\":{\"translateXMm\":"
+                  << FormatNumber(operation.initial_transform.translatexmm)
+                  << ",\"translateYMm\":"
+                  << FormatNumber(operation.initial_transform.translateymm)
+                  << ",\"rotateZDeg\":"
+                  << FormatNumber(operation.initial_transform.rotatezdeg)
+                  << ",\"uniformScale\":"
+                  << FormatNumber(operation.initial_transform.uniformscale)
+                  << ",\"mirrorX\":"
+                  << (operation.initial_transform.mirrorx ? "true" : "false")
+                  << ",\"mirrorY\":"
+                  << (operation.initial_transform.mirrory ? "true" : "false")
+                  << '}'
+                  << ",\"valueX\":" << FormatNumber(operation.value_x)
                   << ",\"valueY\":" << FormatNumber(operation.value_y)
                   << ",\"valueZ\":" << FormatNumber(operation.value_z)
                   << '}';
     }
-    canonical << "],\"scene_identity\":" << request.scene_id << '}';
+    canonical << "],\"sceneContextIdentity\":\""
+              << EscapeJson(request.scene_context_identity)
+              << "\",\"scene_identity\":" << request.scene_id << '}';
     return ComputeSha256(canonical.str());
 }
 

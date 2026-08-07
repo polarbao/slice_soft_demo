@@ -88,17 +88,34 @@ void SupportsOneElevenTwelveAndTwentyTwo()
     Require(
         ApproximatelyEqual(
             twelve.placements.at(10U).effectivebboxmm.min.x,
-            300.0),
-        "column gap should be edge-to-edge 20 mm");
+            200.0),
+        "column gap should be edge-to-edge 10 mm");
     Require(
         ApproximatelyEqual(
             twelve.placements.at(11U).effectivebboxmm.min.y,
-            35.0),
-        "row gap should be edge-to-edge 30 mm");
+            15.0),
+        "row gap should be edge-to-edge 10 mm");
 }
 
 void RejectsCapacityParametersAndStaleRevision()
 {
+    const slicer_core::GridLayoutResult empty =
+        slicer_core::ComputeGridLayout(MakeRequest(0));
+    Require(
+        !empty.IsValid()
+            && empty.error->code
+                == slicer_core::GridLayoutErrorCode::InstanceNotFound,
+        "empty layout should fail closed");
+
+    const slicer_core::GridLayoutResult maximumExceeded =
+        slicer_core::ComputeGridLayout(MakeRequest(23));
+    Require(
+        !maximumExceeded.IsValid()
+            && maximumExceeded.error->code
+                == slicer_core::GridLayoutErrorCode::
+                    InstanceCapacityExceeded,
+        "more than 22 instances should be rejected");
+
     slicer_core::GridLayoutRequest overflow = MakeRequest(12);
     overflow.layout.maxcolumns = 5;
     overflow.layout.maxrows = 2;
@@ -120,6 +137,43 @@ void RejectsCapacityParametersAndStaleRevision()
         slicer_core::ComputeGridLayout(invalid).error->code
             == slicer_core::GridLayoutErrorCode::ParameterOutOfRange,
         "negative gap should be rejected");
+
+    for (const int columns : {0, 12})
+    {
+        slicer_core::GridLayoutRequest invalidColumns = MakeRequest(1);
+        invalidColumns.layout.maxcolumns = columns;
+        Require(
+            slicer_core::ComputeGridLayout(invalidColumns).error->code
+                == slicer_core::GridLayoutErrorCode::ParameterOutOfRange,
+            "column count outside 1..11 should be rejected");
+    }
+    for (const int rows : {0, 3})
+    {
+        slicer_core::GridLayoutRequest invalidRows = MakeRequest(1);
+        invalidRows.layout.maxrows = rows;
+        Require(
+            slicer_core::ComputeGridLayout(invalidRows).error->code
+                == slicer_core::GridLayoutErrorCode::ParameterOutOfRange,
+            "row count outside 1..2 should be rejected");
+    }
+    slicer_core::GridLayoutRequest invalidPolicy = MakeRequest(1);
+    invalidPolicy.layout.policy = "manual";
+    Require(
+        slicer_core::ComputeGridLayout(invalidPolicy).error->code
+            == slicer_core::GridLayoutErrorCode::ParameterOutOfRange,
+        "non-grid policy should be rejected");
+    slicer_core::GridLayoutRequest invalidSpacing = MakeRequest(1);
+    invalidSpacing.layout.spacingmode = "origin_distance";
+    Require(
+        slicer_core::ComputeGridLayout(invalidSpacing).error->code
+            == slicer_core::GridLayoutErrorCode::ParameterOutOfRange,
+        "non-edge spacing should be rejected");
+    slicer_core::GridLayoutRequest invalidOrder = MakeRequest(1);
+    invalidOrder.layout.order = "column_major";
+    Require(
+        slicer_core::ComputeGridLayout(invalidOrder).error->code
+            == slicer_core::GridLayoutErrorCode::ParameterOutOfRange,
+        "non-row-major order should be rejected");
 
     slicer_core::GridLayoutRequest stale = MakeRequest(1);
     stale.expectedscenerevision = 6U;
@@ -148,12 +202,12 @@ void UsesMaximumColumnAndRowBoundsDeterministically()
     Require(
         ApproximatelyEqual(
             first.placements.at(1U).effectivebboxmm.min.x,
-            40.0),
+            30.0),
         "second column should follow maximum first-column width");
     Require(
         ApproximatelyEqual(
             first.placements.at(2U).effectivebboxmm.min.y,
-            38.0),
+            18.0),
         "second row should follow maximum first-row height");
     for (std::size_t index = 0U;
          index < first.placements.size();
@@ -200,6 +254,25 @@ void PreservesHiddenOccupancyAndLockedPlacement()
     Require(
         lockedResult.placements.empty(),
         "locked conflict must not expose partial placements");
+
+    slicer_core::GridLayoutRequest lockedWithoutConflict = MakeRequest(2);
+    lockedWithoutConflict.items.at(1U).instance.locked = true;
+    lockedWithoutConflict.items.at(1U).instance.effectivebboxmm = {
+        {40.0, 0.0, 0.0},
+        {50.0, 5.0, 1.0}};
+    lockedWithoutConflict.items.at(1U).instance.transform.translatexmm =
+        40.0;
+    lockedWithoutConflict.items.at(1U)
+        .currentderivedlayouttransform.translatexmm = 40.0;
+    const slicer_core::GridLayoutResult lockedWithoutConflictResult =
+        slicer_core::ComputeGridLayout(lockedWithoutConflict);
+    Require(
+        lockedWithoutConflictResult.IsValid()
+            && ApproximatelyEqual(
+                lockedWithoutConflictResult.placements.at(1U)
+                    .effectivebboxmm.min.x,
+                40.0),
+        "non-overlapping locked instance should retain its placement");
 }
 
 void RemovesPreviousDerivedOffsetBeforeRelayout()

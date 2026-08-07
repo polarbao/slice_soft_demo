@@ -63,6 +63,12 @@
 | `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | Stage 13 的 17 个近程原子任务依赖、建议文件所有权、测试和验收准备 |
 | `DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 设备/Profile/性能/3D 后端未决输入及阻断范围 |
 | `DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | 14A-04 冻结后受控补齐 top/three_d 纹理、Provider、UI Gate 与信息架构 |
+| `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md` | HQ-01 授权的 DTO v1.5 场景生命周期受控修订；冻结 add/remove、隐式建场景与 session 生命周期 |
+| `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md` | H-A-02 的 Profile/buildVolume 输入缺口与已实施 `sceneContext` v1.6 受控修订 |
+| `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md` | H-A-04 的 DTO v1.7 `applyGridLayout` 规则排版受控修订 |
+| `DOC_PREP_HOSTFLOW_H_A_02_场景生命周期运行时准备.md` | H-A-02 代码落点、测试矩阵、文件所有权和 HQ-07 准入门禁 |
+| `DOC_PREP_HOSTFLOW_H_A_04_规则排版运行时准备.md` | H-A-04 代码落点、GridLayoutPolicy 复用与正负例 Gate |
+| `DOC_PREP_HOSTFLOW_H_A_03_空场景端到端闭环准备.md` | H-A-03 纯 C/Qt 空场景生产闭环、权威 scene 透传与边界验证 |
 | `DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | ViewData v1.2：surfacePreview、UV/材质/纹理、multi-model appearances、LOD/blob/identity |
 | `DOC_DECISION_14_UI_宿主模拟改造专项.md` | 14E 独立打印软件参考宿主、双视图纹理、QOpenGL、网格和可测 Gate |
 | `DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | 14B Facade、base/engine 分层、执行顺序、验证矩阵与回滚边界 |

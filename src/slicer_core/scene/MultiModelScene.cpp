@@ -193,12 +193,17 @@ SceneInstanceAdmissionStatus ParseAdmissionStatus(
         "unsupported scene admission status: " + value);
 }
 
+double CanonicalSceneNumber(const double value)
+{
+    return value == 0.0 ? 0.0 : value;
+}
+
 Json SerializeVec3(const Vec3& value)
 {
     return Json::object({
-        {"x", value.x},
-        {"y", value.y},
-        {"z", value.z},
+        {"x", CanonicalSceneNumber(value.x)},
+        {"y", CanonicalSceneNumber(value.y)},
+        {"z", CanonicalSceneNumber(value.z)},
     });
 }
 
@@ -257,10 +262,10 @@ Json SerializeBuildVolume(const SceneBuildVolume& value)
     Json::Object object{
         {"source", BuildVolumeSourceValue(value.source)},
         {"widthMm", value.widthmm.has_value()
-                        ? Json(*value.widthmm)
+                        ? Json(CanonicalSceneNumber(*value.widthmm))
                         : Json(nullptr)},
         {"heightMm", value.heightmm.has_value()
-                         ? Json(*value.heightmm)
+                         ? Json(CanonicalSceneNumber(*value.heightmm))
                          : Json(nullptr)},
         {"origin", BuildVolumeOriginValue(value.origin)},
         {"xDirection", AxisDirectionValue(value.xdirection)},
@@ -269,7 +274,9 @@ Json SerializeBuildVolume(const SceneBuildVolume& value)
     };
     if (value.zlimitmm.has_value())
     {
-        object.emplace("zLimitMm", *value.zlimitmm);
+        object.emplace(
+            "zLimitMm",
+            CanonicalSceneNumber(*value.zlimitmm));
     }
     return Json(std::move(object));
 }
@@ -328,8 +335,8 @@ Json SerializeLayout(const SceneLayout& value)
         {"policy", value.policy},
         {"maxColumns", value.maxcolumns},
         {"maxRows", value.maxrows},
-        {"columnGapMm", value.columngapmm},
-        {"rowGapMm", value.rowgapmm},
+        {"columnGapMm", CanonicalSceneNumber(value.columngapmm)},
+        {"rowGapMm", CanonicalSceneNumber(value.rowgapmm)},
         {"spacingMode", value.spacingmode},
         {"order", value.order},
     });

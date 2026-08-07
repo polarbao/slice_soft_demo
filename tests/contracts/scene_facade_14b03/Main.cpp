@@ -1,4 +1,5 @@
 #include "slicer_core/api/scene/SceneFacadeService.h"
+#include "slicer_core/scene/MultiModelScene.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -201,6 +202,13 @@ slicer_core::api::SceneFacadeSeed MakeSeed()
         "model-b",
         std::make_shared<const slicer_core::SceneModel>(MakeModel("model-b")));
     seed.api_model_ids = {{"model-a", 101U}, {"model-b", 102U}};
+    slicer_core::api::SceneFacadeModelRegistration registration;
+    registration.api_model_id = 101U;
+    registration.scene_model_id = "model-a";
+    registration.source = seed.scene.models.front();
+    registration.scope = seed.scene.resourcescopes.front();
+    registration.model = seed.models_by_id.at("model-a");
+    seed.registered_models.emplace(101U, std::move(registration));
     return seed;
 }
 
@@ -213,6 +221,24 @@ std::shared_ptr<slicer_core::api::SceneFacadeService> CreateFacade(
         std::move(provider));
     Require(created.IsOk(), "valid seed should create a facade");
     return *created.Value();
+}
+
+void VerifiesCanonicalSignedZeroHash()
+{
+    slicer_core::MultiModelScene negativeZeroScene = MakeSeed().scene;
+    negativeZeroScene.instances.front().instance.sourcebboxmm.min.x = -0.0;
+    negativeZeroScene.instances.front().requestedtransform.translatexmm = -0.0;
+    negativeZeroScene.layout.columngapmm = -0.0;
+
+    slicer_core::MultiModelScene positiveZeroScene = negativeZeroScene;
+    positiveZeroScene.instances.front().instance.sourcebboxmm.min.x = 0.0;
+    positiveZeroScene.instances.front().requestedtransform.translatexmm = 0.0;
+    positiveZeroScene.layout.columngapmm = 0.0;
+
+    Require(
+        slicer_core::ComputeMultiModelSceneHash(negativeZeroScene)
+            == slicer_core::ComputeMultiModelSceneHash(positiveZeroScene),
+        "scene hash should canonicalize signed zero values");
 }
 
 slicer_core::api::SceneOperationRequest Translate(
@@ -344,6 +370,220 @@ void VerifiesAuthoritativeCollisionAndBounds()
                  "stale collision snapshot");
 }
 
+void VerifiesAddRemoveReplayAndAtomicity()
+{
+    const TestCancelToken active;
+    const auto facade = CreateFacade();
+
+    slicer_core::api::SceneOperation add;
+    add.type = slicer_core::api::SceneOperationType::AddInstance;
+    add.instance_id = "instance-added";
+    add.model_id = 101U;
+    add.initial_transform.translatexmm = 55.0;
+    add.initial_transform.translateymm = 10.0;
+
+    slicer_core::api::SceneOperationRequest addRequest;
+    addRequest.scene_id = 42U;
+    addRequest.operation_id = "operation-add";
+    addRequest.current_scene_revision = 7U;
+    addRequest.expected_scene_revision = 7U;
+    addRequest.scene_context_identity = "context-a";
+    addRequest.operations.push_back(add);
+
+    const auto added = facade->ApplyOperation(addRequest, active);
+    Require(added.IsOk(), "registered addInstance should commit");
+    Require(added.Value()->snapshot.scene_revision == 8U
+                && added.Value()->snapshot.instances.size() == 3U,
+            "addInstance should append one authoritative instance");
+    Require(added.Value()->snapshot.instances.back().instance.instance_id
+                == "instance-added"
+                && added.Value()->snapshot.instances.back().instance.model_id
+                    == 101U,
+            "addInstance should preserve assigned and imported identities");
+    Require(
+        added.Value()->snapshot.scene.instances.back()
+                .instance.sourcetransformidentity
+            == "models/model-a.obj",
+        "addInstance should preserve the registered source path identity");
+
+    const auto replay = facade->ApplyOperation(addRequest, active);
+    Require(replay.IsOk()
+                && replay.Value()->snapshot.scene_revision == 8U
+                && replay.Value()->snapshot.instances.size() == 3U,
+            "addInstance exact replay must not duplicate the instance");
+
+    auto changedContext = addRequest;
+    changedContext.scene_context_identity = "context-b";
+    const auto contextConflict = facade->ApplyOperation(
+        changedContext,
+        active);
+    RequireError(
+        contextConflict.Error(),
+        "PM-SLICER-PROFILE-0031",
+        "addInstance replay with changed sceneContext");
+
+    auto duplicateRequest = addRequest;
+    duplicateRequest.operation_id = "operation-add-duplicate";
+    duplicateRequest.current_scene_revision = 8U;
+    duplicateRequest.expected_scene_revision = 8U;
+    duplicateRequest.operations.front().instance_id = "instance-a";
+    const auto duplicate = facade->ApplyOperation(duplicateRequest, active);
+    RequireError(
+        duplicate.Error(),
+        "PM-SLICER-PROFILE-0031",
+        "duplicate addInstance identity");
+    Require(facade->GetSnapshot(42U).Value()->scene_revision == 8U,
+            "duplicate addInstance must not mutate the scene");
+
+    auto unknownModelRequest = duplicateRequest;
+    unknownModelRequest.operation_id = "operation-add-unknown-model";
+    unknownModelRequest.operations.front().instance_id = "instance-unknown";
+    unknownModelRequest.operations.front().model_id = 999U;
+    const auto unknownModel = facade->ApplyOperation(
+        unknownModelRequest,
+        active);
+    RequireError(
+        unknownModel.Error(),
+        "PM-SLICER-INPUT-0001",
+        "addInstance unknown modelId");
+
+    slicer_core::api::SceneOperationRequest addTransformRequest;
+    addTransformRequest.scene_id = 42U;
+    addTransformRequest.operation_id = "operation-add-transform";
+    addTransformRequest.current_scene_revision = 8U;
+    addTransformRequest.expected_scene_revision = 8U;
+    addTransformRequest.operations.push_back(add);
+    addTransformRequest.operations.front().instance_id = "instance-batch";
+    addTransformRequest.operations.front().initial_transform.translatexmm =
+        65.0;
+    slicer_core::api::SceneOperation translate;
+    translate.type = slicer_core::api::SceneOperationType::Translate;
+    translate.instance_id = "instance-batch";
+    translate.value_x = 2.0;
+    addTransformRequest.operations.push_back(translate);
+    const auto addTransform = facade->ApplyOperation(
+        addTransformRequest,
+        active);
+    Require(addTransform.IsOk()
+                && addTransform.Value()->snapshot.scene_revision == 9U
+                && addTransform.Value()->snapshot.instances.size() == 4U,
+            "add then transform should commit in request order");
+    Require(
+        addTransform.Value()->snapshot.instances.back()
+                .instance.world_matrix.values[3]
+            == 67.0,
+        "add initial transform and same-batch translate should compose");
+
+    slicer_core::api::SceneOperation remove;
+    remove.type = slicer_core::api::SceneOperationType::RemoveInstance;
+    remove.instance_id = "instance-batch";
+    slicer_core::api::SceneOperationRequest removeRequest;
+    removeRequest.scene_id = 42U;
+    removeRequest.operation_id = "operation-remove";
+    removeRequest.current_scene_revision = 9U;
+    removeRequest.expected_scene_revision = 9U;
+    removeRequest.operations.push_back(remove);
+    const auto removed = facade->ApplyOperation(removeRequest, active);
+    Require(removed.IsOk()
+                && removed.Value()->snapshot.scene_revision == 10U
+                && removed.Value()->snapshot.instances.size() == 3U,
+            "removeInstance should remove one authoritative instance");
+
+    auto removeMissingRequest = removeRequest;
+    removeMissingRequest.operation_id = "operation-remove-missing";
+    removeMissingRequest.current_scene_revision = 10U;
+    removeMissingRequest.expected_scene_revision = 10U;
+    removeMissingRequest.operations.front().instance_id = "missing";
+    const auto removeMissing = facade->ApplyOperation(
+        removeMissingRequest,
+        active);
+    RequireError(
+        removeMissing.Error(),
+        "PM-SLICER-PROFILE-0031",
+        "removeInstance unknown instance");
+
+    slicer_core::api::SceneOperationRequest addRemoveRequest;
+    addRemoveRequest.scene_id = 42U;
+    addRemoveRequest.operation_id = "operation-add-remove";
+    addRemoveRequest.current_scene_revision = 10U;
+    addRemoveRequest.expected_scene_revision = 10U;
+    addRemoveRequest.operations.push_back(add);
+    addRemoveRequest.operations.front().instance_id = "instance-transient";
+    remove.instance_id = "instance-transient";
+    addRemoveRequest.operations.push_back(remove);
+    const auto addRemove = facade->ApplyOperation(addRemoveRequest, active);
+    Require(addRemove.IsOk()
+                && addRemove.Value()->snapshot.scene_revision == 11U
+                && addRemove.Value()->snapshot.instances.size() == 3U,
+            "same-batch add then remove should commit with no residual instance");
+}
+
+void VerifiesGridLayoutCommitAndAtomicity()
+{
+    const TestCancelToken active;
+    const auto facade = CreateFacade();
+    slicer_core::api::SceneOperation layout;
+    layout.type = slicer_core::api::SceneOperationType::ApplyGridLayout;
+    layout.layout.maxcolumns = 2;
+    layout.layout.maxrows = 1;
+    layout.layout.columngapmm = 10.0;
+    layout.layout.rowgapmm = 10.0;
+
+    slicer_core::api::SceneOperationRequest request;
+    request.scene_id = 42U;
+    request.operation_id = "operation-grid-layout";
+    request.current_scene_revision = 7U;
+    request.expected_scene_revision = 7U;
+    request.operations.push_back(layout);
+    const auto committed = facade->ApplyOperation(request, active);
+    Require(
+        committed.IsOk()
+            && committed.Value()->snapshot.scene_revision == 8U
+            && committed.Value()->snapshot.instances.size() == 2U,
+        "grid layout should commit all instances in one revision");
+    Require(
+        committed.Value()->snapshot.instances.at(0U)
+                .effective_bounds_mm.min_mm[0]
+            == 0.0
+            && committed.Value()->snapshot.instances.at(1U)
+                    .effective_bounds_mm.min_mm[0]
+                == 20.0
+            && committed.Value()->collision_report.collisions.empty(),
+        "grid layout should reuse row-major edge-clearance semantics");
+
+    const auto replay = facade->ApplyOperation(request, active);
+    Require(
+        replay.IsOk()
+            && replay.Value()->snapshot.scene_revision == 8U
+            && replay.Value()->snapshot.scene_hash
+                == committed.Value()->snapshot.scene_hash,
+        "grid layout exact replay should return the original commit");
+
+    auto changedReplay = request;
+    changedReplay.operations.front().layout.columngapmm = 9.0;
+    RequireError(
+        facade->ApplyOperation(changedReplay, active).Error(),
+        "PM-SLICER-PROFILE-0031",
+        "grid layout replay with changed parameters");
+
+    auto mixed = request;
+    mixed.operation_id = "operation-grid-layout-mixed";
+    mixed.current_scene_revision = 8U;
+    mixed.expected_scene_revision = 8U;
+    slicer_core::api::SceneOperation translate;
+    translate.type = slicer_core::api::SceneOperationType::Translate;
+    translate.instance_id = "instance-a";
+    translate.value_x = 1.0;
+    mixed.operations.push_back(translate);
+    RequireError(
+        facade->ApplyOperation(mixed, active).Error(),
+        "PM-SLICER-PROFILE-0031",
+        "grid layout mixed operation batch");
+    Require(
+        facade->GetSnapshot(42U).Value()->scene_revision == 8U,
+        "rejected grid layout requests must not mutate authority state");
+}
+
 void VerifiesCancellationAndProviderBoundary()
 {
     const TestCancelToken active;
@@ -390,8 +630,11 @@ void VerifiesCancellationAndProviderBoundary()
 
 int main()
 {
+    VerifiesCanonicalSignedZeroHash();
     VerifiesRevisionReplayAndAtomicity();
     VerifiesAuthoritativeCollisionAndBounds();
+    VerifiesAddRemoveReplayAndAtomicity();
+    VerifiesGridLayoutCommitAndAtomicity();
     VerifiesCancellationAndProviderBoundary();
     std::cout << "SceneFacade Stage 14B-03 independent tests: PASS\n";
     return 0;

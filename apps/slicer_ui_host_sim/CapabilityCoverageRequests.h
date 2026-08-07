@@ -1,26 +1,18 @@
 #pragma once
 
-#include "HostRequestBuilder.h"
-
 #include <QJsonObject>
 #include <QString>
 
 struct capabilitycoveragefixture
 {
     QString modelpath;
-    QString resourceroot;
     QString packagedirectory;
     QString previewpath;
     QString modelid;
-    QString sourcedigest;
-    QString resourcedigest;
     QString scenehash;
     QString profilehash;
     quint64 scenerevision{0};
     quint64 scenehandle{0};
-    HostBounds3 sourcebounds{};
-    HostBounds3 effectivebounds{};
-    QJsonObject initialscene;
     QJsonObject committedscene;
     QJsonObject profile;
 };
@@ -44,11 +36,11 @@ public:
         QString* error);
 
     /**
-     * @brief Binds import metadata and builds source/committed scene documents.
+     * @brief Binds imported model identity and builds the reference Profile.
      * @param imported Successful model.import response.
      * @param fixture In/out host fixture state.
-     * @param error Receives malformed metadata or scene-builder failure.
-     * @return True when both scene documents and the default Profile are ready.
+     * @param error Receives malformed metadata or Profile-builder failure.
+     * @return True when the model identity and default Profile are ready.
      */
     static bool BindImportedModel(
         const QJsonObject& imported,
@@ -69,25 +61,5 @@ public:
         double layerThicknessMm,
         QJsonObject* profile,
         QString* profileHash,
-        QString* error);
-
-    /**
-     * @brief Builds a scene document for the fixture's current transforms.
-     * @param fixture Bound host fixture.
-     * @param committed Selects revision-one translated bounds when true.
-     * @param scene Receives the scene object.
-     * @param error Receives a builder or JSON error.
-     * @return True when the scene is valid JSON.
-     */
-    static bool BuildScene(
-        const capabilitycoveragefixture& fixture,
-        bool committed,
-        QJsonObject* scene,
-        QString* error);
-
-private:
-    static bool ParseBounds(
-        const QJsonObject& imported,
-        HostBounds3* bounds,
         QString* error);
 };

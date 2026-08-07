@@ -1,6 +1,8 @@
 #pragma once
 
 #include "slicer_core/api/CommonDtos.h"
+#include "slicer_core/scene/ModelTransform.h"
+#include "slicer_core/scene/MultiModelScene.h"
 
 #include <cstdint>
 #include <optional>
@@ -11,6 +13,9 @@ namespace slicer_core::api {
 
 enum class SceneOperationType
 {
+    AddInstance,
+    RemoveInstance,
+    ApplyGridLayout,
     Translate,
     RotateZ,
     UniformScale,
@@ -23,6 +28,9 @@ struct SceneOperation
 {
     SceneOperationType type{SceneOperationType::Translate};
     std::string instance_id;
+    ModelId model_id{0};
+    ModelTransform initial_transform;
+    SceneLayout layout;
     double value_x{0.0};
     double value_y{0.0};
     double value_z{0.0};
@@ -35,6 +43,7 @@ struct SceneOperationRequest
     std::string operation_id;
     std::uint64_t current_scene_revision{0};
     std::uint64_t expected_scene_revision{0};
+    std::string scene_context_identity;
     std::vector<SceneOperation> operations;
 };
 
@@ -60,6 +69,7 @@ struct SceneSnapshot
     SceneId scene_id{0};
     std::uint64_t scene_revision{0};
     std::string scene_hash;
+    MultiModelScene scene;
     SceneBuildVolumeDescriptor build_volume;
     std::vector<SceneInstanceState> instances;
 };

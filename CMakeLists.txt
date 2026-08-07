@@ -51,6 +51,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/artifacts/PackageArtifactSafety.h
     src/slicer_core/api/scene/SceneFacadeAuthority.cpp
     src/slicer_core/api/scene/SceneFacadeAuthority.h
+    src/slicer_core/api/scene/SceneFacadeLayout.cpp
     src/slicer_core/api/scene/SceneFacadeOperation.cpp
     src/slicer_core/api/scene/SceneFacadeService.cpp
     src/slicer_core/api/scene/SceneFacadeService.h
@@ -575,6 +576,8 @@ add_library(slicer_module SHARED
     src/slicer_module/SceneCapabilityAdapter.h
     src/slicer_module/SceneCapabilitySerializationAdapter.cpp
     src/slicer_module/SceneCapabilitySerializationAdapter.h
+    src/slicer_module/SceneLifecycleSupport.cpp
+    src/slicer_module/SceneLifecycleSupport.h
     src/slicer_module/SceneViewDataAdapter.cpp
     src/slicer_module/SceneViewDataAdapter.h
     src/slicer_module/SyncCapabilityAdapter.cpp
@@ -811,6 +814,42 @@ target_include_directories(scene_facade_14b03_unit_tests PRIVATE
 target_link_libraries(scene_facade_14b03_unit_tests PRIVATE slicer_base)
 if(MSVC)
     target_compile_options(scene_facade_14b03_unit_tests PRIVATE /bigobj /MP)
+endif()
+
+add_executable(hostflow_ha02_scene_lifecycle_tests
+    tests/hostflow/SceneLifecycleAdapterTests.cpp
+)
+target_include_directories(hostflow_ha02_scene_lifecycle_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(
+    hostflow_ha02_scene_lifecycle_tests
+    PRIVATE slicer_module slicer_base
+)
+if(MSVC)
+    target_compile_options(
+        hostflow_ha02_scene_lifecycle_tests
+        PRIVATE /bigobj /MP
+    )
+endif()
+
+add_executable(hostflow_ha04_grid_layout_tests
+    tests/hostflow/SceneLayoutAdapterTests.cpp
+)
+target_include_directories(hostflow_ha04_grid_layout_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(
+    hostflow_ha04_grid_layout_tests
+    PRIVATE slicer_module slicer_base
+)
+if(MSVC)
+    target_compile_options(
+        hostflow_ha04_grid_layout_tests
+        PRIVATE /bigobj /MP
+    )
 endif()
 
 add_executable(textured_scene_viewdata_14b03a_unit_tests
@@ -1195,6 +1234,8 @@ add_dependencies(stage14d06_public_worker_routing_tests slicer_worker)
 
 add_executable(slicer_host_sim
     apps/slicer_host_sim/Main.c
+    apps/slicer_host_sim/HostFlowEndToEnd.c
+    apps/slicer_host_sim/HostFlowEndToEnd.h
     apps/slicer_host_sim/HostM1Intake.c
     apps/slicer_host_sim/HostM1Intake.h
     apps/slicer_host_sim/HostModuleApi.c
@@ -1995,6 +2036,16 @@ add_test(
         --expect-normals
 )
 add_test(NAME facade_contract_unit_tests COMMAND facade_contract_unit_tests)
+add_test(
+    NAME hostflow_ha02_scene_lifecycle_tests
+    COMMAND hostflow_ha02_scene_lifecycle_tests
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/stage14b/model_with_normals.obj"
+)
+add_test(
+    NAME hostflow_ha04_grid_layout_tests
+    COMMAND hostflow_ha04_grid_layout_tests
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/stage14b/model_with_normals.obj"
+)
 add_test(NAME stage14c02_buffer_api_unit_tests COMMAND stage14c02_buffer_api_unit_tests)
 add_test(NAME stage14c03_handle_registry_unit_tests COMMAND stage14c03_handle_registry_unit_tests)
 add_test(NAME stage14c03_module_abi_tests COMMAND stage14c03_module_abi_tests)
@@ -2054,6 +2105,13 @@ add_test(
         "${CMAKE_CURRENT_BINARY_DIR}/stage14e01_evidence/$<CONFIG>"
 )
 add_test(
+    NAME hostflow_ha03_c_end_to_end
+    COMMAND slicer_host_sim
+        $<TARGET_FILE:slicer_module>
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}/hostflow_ha03_c_evidence/$<CONFIG>"
+)
+add_test(
     NAME stage14f02_m1_intake_self_test
     COMMAND slicer_host_sim
         --m1-self-test
@@ -2092,6 +2150,7 @@ add_test(
 )
 set_tests_properties(
     stage14e01_c_host_end_to_end
+    hostflow_ha03_c_end_to_end
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 90

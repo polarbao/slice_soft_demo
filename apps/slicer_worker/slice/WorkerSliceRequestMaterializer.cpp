@@ -388,7 +388,10 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
         if (!IsLowercaseSha256(*request.SceneHash())
             || *request.SceneHash() != externalSceneHash)
         {
-            Fail(kLayoutCode, "request sceneHash does not match the committed scene");
+            Fail(
+                kLayoutCode,
+                "request sceneHash does not match the committed scene: requested="
+                    + *request.SceneHash() + ", actual=" + externalSceneHash);
         }
 
         const std::string profileVersion = ReadStringField(

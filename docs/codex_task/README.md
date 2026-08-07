@@ -3,7 +3,9 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-08-06
-> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **ACTIVE**，当前入口以 `REPORT_14` 为准（2026-08-06：14C-06A READY，14D-08 解阻拆分准备）；Stage 16 **PROPOSED / NOT ACTIVE**，等待 Stage 14 收口后 16-00 复核
+> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **ACTIVE / H-A COMPLETE / H-B-01 NEXT**；Stage 16 **PROPOSED / NOT ACTIVE**
+>
+> **⬇️ 切片侧收口后的下一步：见下方「切片侧收口后的接续专项」**
 
 本目录存放 Codex 操作任务、执行提示词和历史任务归档。`current` 表示文件仍需保留或可能继续执行，不表示其中每份任务都是当前入口。
 
@@ -22,6 +24,53 @@ docs/codex_task/archive/completed_prompts
 docs/codex_task/archive/handoff
   历史交接文档，只作背景。
 ```
+
+## 切片侧收口后的接续专项（2026-08-07 新增）
+
+Stage 14 切片侧已收口、`CURRENT_NEXT_TASK = NONE`，外部验收延期。
+以下两个**独立补充专项**不占阶段编号，与 Stage 16 互不依赖，是接续执行的候选：
+
+```text
+docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
+docs/codex_task/current/CODEX_PROMPT_HOSTFLOW_宿主业务流程与场景生命周期执行指令.md  ← 开工入口
+docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
+```
+
+> HOSTFLOW 已于 2026-08-07 获得 HQ-01 授权并转为 `ACTIVE`；H-A-01 已完成合同受控修订。
+> HQ-07 已授权，DTO v1.6 `sceneContext` 与 H-A-02 场景生命周期运行时已通过 Debug/Release 门禁。
+> DTO v1.7 与 H-A-03 空场景端到端闭环已通过 Debug/Release 门禁；H-A 全组完成，下一张独立卡为 H-B-01。
+> RENDER 仍为 `PROPOSED / NOT ACTIVE`。
+> 按本目录使用规则「一次只执行用户明确指定的一个原子任务」，
+> **codex 不得自行启动**，须等用户指定卡号（例如「执行 H-B-04」）。
+>
+> **无需任何新授权即可启动的路径**：`H-B-04 → 05 → 06 → 07 → 08`
+> （Profile → 参数 → 切片 → 结果 → 持久化；用既有 fixture scene，不改契约）
+>
+> **H-A 授权状态**：HQ-01 已授权；每张后续原子卡仍需用户点名执行。
+
+**建议执行顺序（按「晚做的返工成本」排序，非按重要性）**
+
+```text
+P0 · 已完成 H-A-01..04 COMPLETE       ABI 场景生命周期（HOSTFLOW）
+            R-A-01                       实测甲片三角面数（RENDER，成本极低）
+P1 · 当前   H-B-01..08                   宿主业务流程 UI（HOSTFLOW）
+            R-B-01/02                    LOD 跳采样修复（RENDER，若 R-A-01 判为 P1）
+P2          H-C-01..03 · R-C-01/02 · R-D-01
+P3          Stage 16 · 03E 第二步 · R-D-02/03/04
+P4          12F-02..09 · unexpected_overlap 缺陷卡
+```
+
+> 🔴 **H-A 为什么必须现在做（时机窗口）**
+>
+> `14A_EXTERNAL_ACK = PENDING` —— 14A-03 与 14A-04-R1 **尚未取得打印侧回签**。
+> H-A 若在此窗口内落地，可并入同一批回签，**零额外协调成本**；
+> 一旦打印侧完成回签，再加 `addInstance`/`removeInstance` 就是**破坏已回签契约**，代价陡增。
+>
+> 且切片侧已收口，此刻修订契约**不会打断任何进行中的验证**。
+> **这是最后一个能低成本扩展 ABI 的窗口。**
+>
+> H-A 解决的是 Stage 14 核心目标的唯一未验证项：
+> ABI 当前无 `addInstance`，宿主只能自拼 scene JSON → 「打印软件最少改动移植」无法成立。
 
 ## 下一候选执行入口
 

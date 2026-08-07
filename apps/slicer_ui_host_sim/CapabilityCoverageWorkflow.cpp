@@ -117,18 +117,100 @@ bool CapabilityCoverageRunner::Run(
                     {QStringLiteral("modelId"), fixture.modelid}},
         kSyncTimeoutMs, false, &ignored);
 
+    invocationresult added;
+    const QJsonObject buildVolume{
+        {QStringLiteral("source"), QStringLiteral("device_profile")},
+        {QStringLiteral("widthMm"), 230.0},
+        {QStringLiteral("heightMm"), 100.0},
+        {QStringLiteral("zLimitMm"), 60.0},
+        {QStringLiteral("origin"), QStringLiteral("lower_left")},
+        {QStringLiteral("xDirection"), QStringLiteral("positive")},
+        {QStringLiteral("yDirection"), QStringLiteral("positive")},
+        {QStringLiteral("isFixture"), false}};
+    const QJsonObject sceneContext{
+        {QStringLiteral("resolvedProfileId"),
+         QStringLiteral("profile-stage14e01")},
+        {QStringLiteral("buildVolume"), buildVolume}};
+    const QJsonObject addOperation{
+        {QStringLiteral("type"), QStringLiteral("addInstance")},
+        {QStringLiteral("modelId"), fixture.modelid},
+        {QStringLiteral("assignInstanceId"),
+         QStringLiteral("instance-hostflow-qt")}};
+    const QJsonObject addRequest{
+        {QStringLiteral("capability"),
+         QStringLiteral("scene.apply_operation")},
+        {QStringLiteral("operationId"), NewIdentity(
+             QStringLiteral("operation-hostflow-add"))},
+        {QStringLiteral("sceneContext"), sceneContext},
+        {QStringLiteral("currentSceneRevision"), 0},
+        {QStringLiteral("expectedSceneRevision"), 0},
+        {QStringLiteral("operations"), QJsonArray{addOperation}}};
+    if (!invoke(QStringLiteral("H-A-03"),
+            QStringLiteral("scene.apply_operation"), QStringLiteral("DLL"),
+            QStringLiteral("implicit_add_instance"), addRequest,
+            kSyncTimeoutMs, true, &added))
+    {
+        return false;
+    }
+    fixture.scenehandle = static_cast<quint64>(added.payload.value(
+        QStringLiteral("sceneHandle")).toDouble());
+    fixture.scenerevision = static_cast<quint64>(added.payload.value(
+        QStringLiteral("newSceneRevision")).toDouble());
+    if (fixture.scenehandle == 0U || fixture.scenerevision != 1U)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "隐式 addInstance 未返回 sceneHandle/revision=1。");
+        }
+        return false;
+    }
+
+    invocationresult laidOut;
+    const QJsonObject layout{
+        {QStringLiteral("policy"), QStringLiteral("grid")},
+        {QStringLiteral("maxColumns"), 11},
+        {QStringLiteral("maxRows"), 2},
+        {QStringLiteral("columnGapMm"), 10.0},
+        {QStringLiteral("rowGapMm"), 10.0},
+        {QStringLiteral("spacingMode"), QStringLiteral("edge_clearance")},
+        {QStringLiteral("order"), QStringLiteral("row_major")}};
+    const QJsonObject layoutOperation{
+        {QStringLiteral("type"), QStringLiteral("applyGridLayout")},
+        {QStringLiteral("layout"), layout}};
+    const QJsonObject layoutRequest{
+        {QStringLiteral("capability"),
+         QStringLiteral("scene.apply_operation")},
+        {QStringLiteral("operationId"), NewIdentity(
+             QStringLiteral("operation-hostflow-layout"))},
+        {QStringLiteral("sceneHandle"),
+         static_cast<qint64>(fixture.scenehandle)},
+        {QStringLiteral("currentSceneRevision"), 1},
+        {QStringLiteral("expectedSceneRevision"), 1},
+        {QStringLiteral("operations"), QJsonArray{layoutOperation}}};
+    if (!invoke(QStringLiteral("H-A-03"),
+            QStringLiteral("scene.apply_operation"), QStringLiteral("DLL"),
+            QStringLiteral("grid_layout"), layoutRequest,
+            kSyncTimeoutMs, true, &laidOut)
+        || static_cast<quint64>(laidOut.payload.value(
+            QStringLiteral("newSceneRevision")).toDouble()) != 2U)
+    {
+        return false;
+    }
+
     const QJsonObject transformRequest{
         {QStringLiteral("capability"),
          QStringLiteral("scene.apply_operation")},
         {QStringLiteral("operationId"), NewIdentity(
-             QStringLiteral("operation-stage14e04b"))},
-        {QStringLiteral("scene"), fixture.initialscene},
-        {QStringLiteral("currentSceneRevision"), 0},
-        {QStringLiteral("expectedSceneRevision"), 0},
+             QStringLiteral("operation-hostflow-transform"))},
+        {QStringLiteral("sceneHandle"),
+         static_cast<qint64>(fixture.scenehandle)},
+        {QStringLiteral("currentSceneRevision"), 2},
+        {QStringLiteral("expectedSceneRevision"), 2},
         {QStringLiteral("operations"), QJsonArray{QJsonObject{
              {QStringLiteral("type"), QStringLiteral("translate")},
              {QStringLiteral("instanceId"),
-              QStringLiteral("instance-stage14e01")},
+              QStringLiteral("instance-hostflow-qt")},
              {QStringLiteral("deltaMm"), QJsonArray{1.0, 2.0, 0.0}}}}}};
     invocationresult committed;
     if (!invoke(QStringLiteral("P0"),
@@ -142,6 +224,14 @@ bool CapabilityCoverageRunner::Run(
         QStringLiteral("sceneHash")).toString());
     fixture.scenerevision = static_cast<quint64>(committed.payload.value(
         QStringLiteral("newSceneRevision")).toDouble());
+    if (fixture.scenerevision != 3U)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("变换提交未返回 revision=3。");
+        }
+        return false;
+    }
 
     invocationresult snapshot;
     if (!invoke(QStringLiteral("P0"),
@@ -149,25 +239,35 @@ bool CapabilityCoverageRunner::Run(
             QStringLiteral("end_to_end"),
             QJsonObject{{QStringLiteral("capability"),
                          QStringLiteral("scene.get_snapshot")},
-                        {QStringLiteral("sceneId"),
-                         QStringLiteral("scene-stage14e01")}},
+                        {QStringLiteral("sceneHandle"),
+                         static_cast<qint64>(fixture.scenehandle)}},
             kSyncTimeoutMs, true, &snapshot))
     {
         return false;
     }
-    bool handleOk = false;
-    fixture.scenehandle = snapshot.payload.value(QStringLiteral("scene"))
-                              .toObject()
-                              .value(QStringLiteral("sceneId"))
-                              .toString()
-                              .toULongLong(&handleOk);
-    if (!handleOk || fixture.scenehandle == 0)
+    fixture.committedscene = snapshot.payload.value(
+        QStringLiteral("scene")).toObject();
+    fixture.scenehash = EnsureSha256Prefix(snapshot.payload.value(
+        QStringLiteral("sceneHash")).toString());
+    fixture.scenerevision = static_cast<quint64>(snapshot.payload.value(
+        QStringLiteral("sceneRevision")).toDouble());
+    if (fixture.committedscene.value(QStringLiteral("schema")).toString()
+            != QStringLiteral("slicesoft.multimodel_scene.13b.1")
+        || fixture.scenehash.isEmpty() || fixture.scenerevision != 3U)
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral("scene.get_snapshot 未返回内部场景句柄。");
+            *error = QStringLiteral(
+                "scene.get_snapshot 未返回可透传的权威完整场景。");
         }
         return false;
+    }
+    QFile snapshotEvidence(QDir(runRoot).filePath(QStringLiteral(
+        "hostflow_ha03_snapshot.json")));
+    if (snapshotEvidence.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    {
+        snapshotEvidence.write(QJsonDocument(snapshot.payload).toJson(
+            QJsonDocument::Indented));
     }
 
     TopViewRenderPolicy topView(m_client);
@@ -209,7 +309,8 @@ bool CapabilityCoverageRunner::Run(
             QJsonObject{{QStringLiteral("capability"),
                          QStringLiteral("geometry.collision")},
                         {QStringLiteral("scene"), fixture.committedscene},
-                        {QStringLiteral("expectedSceneRevision"), 1},
+                        {QStringLiteral("expectedSceneRevision"),
+                         static_cast<qint64>(fixture.scenerevision)},
                         {QStringLiteral("buildVolume"),
                          fixture.committedscene.value(
                              QStringLiteral("buildVolume")).toObject()}},
@@ -238,7 +339,8 @@ bool CapabilityCoverageRunner::Run(
                     {QStringLiteral("mode"), QStringLiteral("full")},
                     {QStringLiteral("scene"), fixture.committedscene},
                     {QStringLiteral("sceneHash"), fixture.scenehash},
-                    {QStringLiteral("expectedSceneRevision"), 1},
+                    {QStringLiteral("expectedSceneRevision"),
+                     static_cast<qint64>(fixture.scenerevision)},
                     {QStringLiteral("profile"), fixture.profile},
                     {QStringLiteral("profileHash"), fixture.profilehash},
                     {QStringLiteral("targetMode"), QStringLiteral("legacy")},

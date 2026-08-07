@@ -12,6 +12,23 @@ namespace slicer_core::api
 {
 
 /**
+ * @brief Immutable imported model registration available to addInstance.
+ */
+struct SceneFacadeModelRegistration
+{
+    /** @brief Numeric model identity returned by model.import. */
+    ModelId api_model_id{0};
+    /** @brief Stable scene-local model identity. */
+    std::string scene_model_id;
+    /** @brief Source and resource hashes retained by the scene. */
+    ModelSource source;
+    /** @brief Resource boundary used to resolve adjacent model assets. */
+    ResourceScope scope;
+    /** @brief Immutable geometry and appearance resource. */
+    std::shared_ptr<const SceneModel> model;
+};
+
+/**
  * @brief Provider boundary implemented by Stage 14B-03A for contract-v1.2 views.
  */
 class ITexturedSceneViewDataProvider
@@ -46,6 +63,8 @@ struct SceneFacadeSeed
     std::map<std::string, std::shared_ptr<const SceneModel>> models_by_id;
     /** @brief Numeric API model identities keyed by scene model identity. */
     std::map<std::string, ModelId> api_model_ids;
+    /** @brief Imported models that may be added after facade creation. */
+    std::map<ModelId, SceneFacadeModelRegistration> registered_models;
     /** @brief Existing scene/layout admission purpose to reuse. */
     SceneValidationPurpose validation_purpose{SceneValidationPurpose::Draft};
     /** @brief Existing collision contact tolerance in millimetres. */
@@ -70,6 +89,14 @@ public:
 
     /** @brief Destroys the facade and its authoritative scene state. */
     ~SceneFacadeService() override;
+
+    /**
+     * @brief Registers one imported model for a future addInstance operation.
+     * @param registration Stable source, scope, geometry, and API identity.
+     * @return Success or a fail-closed identity/resource conflict.
+     */
+    [[nodiscard]] ApiResult<void> RegisterModel(
+        SceneFacadeModelRegistration registration) noexcept;
 
     /** @copydoc SceneFacade::ApplyOperation */
     [[nodiscard]] ApiResult<SceneCommitResult> ApplyOperation(

@@ -99,6 +99,75 @@ SceneFacadeService::SceneFacadeService(
 
 SceneFacadeService::~SceneFacadeService() = default;
 
+ApiResult<void> SceneFacadeService::RegisterModel(
+    SceneFacadeModelRegistration registration) noexcept
+{
+    try
+    {
+        if (registration.api_model_id == 0U
+            || registration.scene_model_id.empty()
+            || registration.source.modelid != registration.scene_model_id
+            || registration.source.sourcepath.empty()
+            || registration.source.format.empty()
+            || registration.source.resourcescopeid.empty()
+            || registration.source.sourcehash.empty()
+            || registration.source.resourcehash.empty()
+            || registration.scope.resourcescopeid
+                != registration.source.resourcescopeid
+            || !registration.model)
+        {
+            return Failure<void>(
+                "PM-SLICER-INPUT-0002",
+                "scene model registration is incomplete",
+                std::to_string(registration.api_model_id));
+        }
+
+        std::scoped_lock lock(m_implementation->mutex);
+        const auto existing =
+            m_implementation->authority.seed.registered_models.find(
+                registration.api_model_id);
+        if (existing !=
+            m_implementation->authority.seed.registered_models.end())
+        {
+            const SceneFacadeModelRegistration& current = existing->second;
+            const bool equivalent =
+                current.scene_model_id == registration.scene_model_id
+                && current.source.sourcepath.lexically_normal()
+                    == registration.source.sourcepath.lexically_normal()
+                && current.source.sourcehash == registration.source.sourcehash
+                && current.source.resourcehash
+                    == registration.source.resourcehash
+                && current.scope.resourcescopeid
+                    == registration.scope.resourcescopeid;
+            return equivalent
+                ? ApiResult<void>::Success()
+                : Failure<void>(
+                    "PM-SLICER-PROFILE-0031",
+                    "modelId was registered with conflicting scene resources",
+                    std::to_string(registration.api_model_id));
+        }
+
+        m_implementation->authority.seed.registered_models.emplace(
+            registration.api_model_id,
+            std::move(registration));
+        return ApiResult<void>::Success();
+    }
+    catch (const std::exception& error)
+    {
+        return Failure<void>(
+            "PM-SLICER-INTERNAL-0099",
+            "failed to register a SceneFacade model resource",
+            error.what());
+    }
+    catch (...)
+    {
+        return Failure<void>(
+            "PM-SLICER-INTERNAL-0099",
+            "failed to register a SceneFacade model resource",
+            "unknown exception");
+    }
+}
+
 ApiResult<std::shared_ptr<SceneFacadeService>> SceneFacadeService::Create(
     SceneFacadeSeed seed,
     std::shared_ptr<const ITexturedSceneViewDataProvider> viewDataProvider) noexcept
