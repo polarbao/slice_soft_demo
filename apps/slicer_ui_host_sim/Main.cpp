@@ -3,8 +3,10 @@
 #include "ModuleClient.h"
 
 #include <QApplication>
+#include <QComboBox>
 #include <QCoreApplication>
 #include <QDir>
+#include <QLabel>
 #include <QStringList>
 #include <QTextStream>
 #include <QVariant>
@@ -119,6 +121,33 @@ int RunHostFlowImportUiSmoke(const QString& modulePath)
         << "HOSTFLOW_HB01_UI_PASS" << Qt::endl;
     return 0;
 }
+
+int RunHostFlowProfileUiSmoke(const QString& modulePath)
+{
+    HostMainWindow window(modulePath);
+    const auto* profileCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostProfileCombo"));
+    const auto* safetyLabel = window.findChild<QLabel*>(
+        QStringLiteral("hostProfileSafetyLabel"));
+    const auto* availabilityLabel = window.findChild<QLabel*>(
+        QStringLiteral("hostProfileAvailabilityLabel"));
+    if (profileCombo == nullptr || safetyLabel == nullptr
+        || availabilityLabel == nullptr || !profileCombo->isEnabled()
+        || profileCombo->count() < 3
+        || profileCombo->currentData().toString().isEmpty()
+        || safetyLabel->text().isEmpty()
+        || availabilityLabel->text().isEmpty())
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB04_UI_FAILED: Profile panel is incomplete"
+            << Qt::endl;
+        return 9;
+    }
+    QTextStream(stdout)
+        << "HOSTFLOW_HB04_UI_PASS profiles=" << profileCombo->count()
+        << Qt::endl;
+    return 0;
+}
 }
 
 int main(int argc, char* argv[])
@@ -165,7 +194,9 @@ int main(int argc, char* argv[])
         QTextStream(stdout)
             << "slicer_ui_host_sim [--module <slicer_module.dll>] "
             << "[--self-test | --capability-self-test "
-            << "--repo-root <path> --evidence-root <path>]"
+            << "--repo-root <path> --evidence-root <path> | "
+            << "--hostflow-import-ui-self-test | "
+            << "--hostflow-profile-ui-self-test]"
             << Qt::endl;
         return 0;
     }
@@ -180,6 +211,12 @@ int main(int argc, char* argv[])
             QStringLiteral("--hostflow-import-ui-self-test")))
     {
         return RunHostFlowImportUiSmoke(modulePath);
+    }
+    if (HasArgument(
+            arguments,
+            QStringLiteral("--hostflow-profile-ui-self-test")))
+    {
+        return RunHostFlowProfileUiSmoke(modulePath);
     }
     HostMainWindow window(modulePath);
     window.show();

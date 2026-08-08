@@ -2,6 +2,8 @@
 
 #include "HostModelListPanel.h"
 #include "HostModelImportWorkflow.h"
+#include "HostProfileCatalog.h"
+#include "HostProfilePanel.h"
 #include "HostTransformLayoutPanel.h"
 #include "ModuleClient.h"
 
@@ -38,10 +40,12 @@ public:
 private:
     void BuildInterface();
     void LoadModule(const QString& modulePath);
+    void ConfigureProfiles();
     void SaveViewSettings();
     void OnImportModel();
     void OnRemoveModels(const QStringList& instanceIds);
     void OnModelSelectionChanged(const QStringList& instanceIds);
+    void OnProfileChanged(const QString& profileId);
     void OnTransformRequested(
         const QStringList& instanceIds,
         double deltaXMm,
@@ -66,6 +70,7 @@ private:
 
     ModuleClient m_client;
     std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
+    std::unique_ptr<IHostProfileCatalog> m_profileCatalog;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
     ViewWorkspaceWidget* m_workspace{nullptr};
     QComboBox* m_defaultViewCombo{nullptr};
@@ -73,8 +78,10 @@ private:
     QLabel* m_statusLabel{nullptr};
     QLabel* m_pathLabel{nullptr};
     HostModelListPanel* m_modelListPanel{nullptr};
+    HostProfilePanel* m_profilePanel{nullptr};
     HostTransformLayoutPanel* m_transformLayoutPanel{nullptr};
     QLabel* m_importSummaryLabel{nullptr};
     QTableWidget* m_preflightTable{nullptr};
     QPlainTextEdit* m_moduleInfoView{nullptr};
+    QString m_selectedProfileId;
 };

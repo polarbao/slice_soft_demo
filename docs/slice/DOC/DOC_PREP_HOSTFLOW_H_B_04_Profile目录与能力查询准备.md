@@ -1,14 +1,14 @@
 # DOC PREP HOSTFLOW H-B-04 Profile 目录与能力查询准备
 
-> 状态：**PREPARATION COMPLETE / IMPLEMENTATION BLOCKED BY HQ-08**
-> 日期：2026-08-07
+> 状态：**IMPLEMENTATION COMPLETE / GATE PASS**
+> 日期：2026-08-08
 > 任务：HOSTFLOW H-B-04
 > 范围：Profile 来源、模块能力查询、生产安全等级和参考宿主选择入口。
 
 ## 1. 准备结论
 
-H-B-04 的 UI、主干 A/B 基线和模块能力查询入口均已定位，但当前冻结公开合同**没有 Profile
-目录载体**，因此尚不能按卡面“经 ABI 查询可用 Profile 与能力集”进入编码。
+H-B-04 的 UI、主干 A/B 基线和模块能力查询入口均已定位。2026-08-08 用户授权 HQ-08-A，
+Profile 目录归宿主，模块能力经现有 ABI 查询，可用性由二者求交；实现不再阻断。
 
 已确认事实：
 
@@ -22,8 +22,8 @@ H-B-04 的 UI、主干 A/B 基线和模块能力查询入口均已定位，但�
 5. 主干 `ProductionModeCatalog` 是编译期宿主目录，但依赖 `slicer_core` 类型，不能直接复制到
    只允许公开 SPI 的参考宿主。
 
-因此，任务清单中“H-B-04 无前置、可立即开发”的旧判断不完整。准备工作已完成，但必须先关闭
-HQ-08 的 Profile 所有权与发现协议决策。
+因此，任务清单中“H-B-04 无前置、可立即开发”的旧判断已被 HQ-08-A 受控修订。该决策现已
+关闭，H-B-04 已按准备方案实现并通过 Gate。
 
 ## 2. 候选方案
 
@@ -63,36 +63,45 @@ Profile 是打印应用面向设备、材料和用户的业务选择；切片模
 
 由于 `additionalProperties=false` 且 Stage 14 已冻结，该方案未经用户授权不得实施。
 
-## 3. H-B-04 实现计划（HQ-08 关闭后）
+## 3. H-B-04 实现结果
 
-1. 增加不依赖 `slicer_core` 的 Profile 描述 DTO 和目录 Provider。
-2. 结构化解析 `ModuleClient::ModuleInfo()`，禁止字符串包含式推断能力。
-3. 根据 required capabilities 计算 Profile 可用状态、缺失能力和生产安全等级。
-4. 在参考宿主顶部/右侧增加 Profile 选择与能力摘要；不可用项禁用并显示原因。
-5. Profile 切换只更新宿主 session 草稿，不触发切片；H-B-05 接管参数与有效 Profile 生成。
-6. 增加缺失能力、重复 id、未知安全等级和空目录负例。
-7. 执行 Debug/Release、模块边界和主干 `ProductionModePanel` A/B smoke。
+1. 已增加不依赖 `slicer_core` 的 `IHostProfileCatalog`、参考目录与结构化能力解析器。
+2. 已结构化解析 `ModuleClient::ModuleInfo()`，禁止字符串包含式推断能力。
+3. 已根据 required capabilities 计算可用状态、缺失能力和生产安全等级。
+4. 已在参考宿主右侧增加 Profile 选择与能力摘要；不可用项禁用并显示原因。
+5. Profile 切换只更新宿主 session 草稿，不触发切片；H-B-05 接管参数与有效配置生成。
+6. 已覆盖缺失能力、重复 id、未知安全等级和空目录负例。
+7. Debug/Release H-B-01..04 联合门禁各 6/6 PASS；模块边界/缺失模块/自检各 3/3 PASS；
+   主干 `production-mode-selector` A/B smoke 在 Debug/Release 均 PASS。
 
 ## 4. 文件所有权
 
-预期 H-B-04 修改范围：
+H-B-04 实际修改范围：
 
 ```text
 apps/slicer_ui_host_sim/HostProfileCatalog.*
 apps/slicer_ui_host_sim/HostProfilePanel.*
-apps/slicer_ui_host_sim/ModuleClient.*
 apps/slicer_ui_host_sim/HostMainWindow*.cpp
 tests/hostflow/HostProfilePanelTests.cpp
 ```
 
+`ModuleClient` 与公开合同无需修改；模块能力直接来自既有 `pm_module_info`。
+
 若选择方案 B，另需修改 `contracts/` 与 `src/slicer_module/ModuleInfo.*`，必须单独建立受控合同
 修订任务，不得偷渡进 H-B-04 UI 提交。
 
-## 5. 停止条件
+## 5. 冻结边界
 
-- HQ-08 未关闭前不得实现 H-B-04。
+- HQ-08-A 已关闭；未经新的受控决策不得切换为 HQ-08-B。
 - 不得新增第 16 项能力或第 12 个导出。
 - 不得读取 `samples/scenarios/slicer_scenarios.json`。
 - 不得复制依赖 `slicer_core` 的 `ProductionModeCatalog` 到参考宿主。
 - 不得把候选 Profile 显示为可用，除非其能力要求已与模块自述求交验证。
-- H-B-05..08 依赖 H-B-04 的稳定选择结果，当前不得越过该 Gate 并行编码。
+- H-B-05..08 可依赖 H-B-04 的稳定选择结果继续推进；H-B-05 不得把宿主 Profile 目录下沉给模块。
+
+## 6. Revision History
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-08-08 | v1.1 | HQ-08-A 获授权；完成宿主 Profile 目录、ABI 能力求交、UI、负例与 Debug/Release/A-B Gate。 |
+| 2026-08-07 | v1.0 | 完成准备审计并登记 HQ-08 实现阻断。 |

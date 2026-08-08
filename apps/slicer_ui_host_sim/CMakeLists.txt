@@ -12,10 +12,15 @@ add_executable(slicer_ui_host_sim
     HostModelImportWorkflowScene.cpp
     HostModelListPanel.cpp
     HostModelListPanel.h
+    HostProfileCatalog.cpp
+    HostProfileCatalog.h
+    HostProfilePanel.cpp
+    HostProfilePanel.h
     HostTransformLayoutPanel.cpp
     HostTransformLayoutPanel.h
     HostMainWindow.cpp
     HostMainWindow.h
+    HostMainWindowProfile.cpp
     HostMainWindowScene.cpp
     Main.cpp
     ModuleClient.cpp
@@ -300,6 +305,63 @@ add_test(
         --repo-root ${CMAKE_SOURCE_DIR}
 )
 
+add_executable(hostflow_hb04_profile_catalog_tests
+    HostProfileCatalog.cpp
+    HostProfileCatalog.h
+    HostProfilePanel.cpp
+    HostProfilePanel.h
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostProfilePanelTests.cpp
+)
+
+set_target_properties(hostflow_hb04_profile_catalog_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(hostflow_hb04_profile_catalog_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hb04_profile_catalog_tests PRIVATE
+    Qt5::Widgets
+    bcrypt
+)
+
+add_dependencies(hostflow_hb04_profile_catalog_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb04_profile_catalog_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb04_profile_catalog_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb04_profile_catalog_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb04_profile_catalog
+    COMMAND hostflow_hb04_profile_catalog_tests
+        --module $<TARGET_FILE:slicer_module>
+)
+
+add_test(
+    NAME hostflow_hb04_profile_ui_smoke
+    COMMAND slicer_ui_host_sim
+        --hostflow-profile-ui-self-test
+        --module $<TARGET_FILE:slicer_module>
+)
+
 add_executable(stage14e03_interaction_tests
     ModuleClient.cpp
     ModuleClient.h
@@ -555,6 +617,8 @@ set_tests_properties(
     hostflow_hb01_import_ui_smoke
     hostflow_hb02_model_list_selection
     hostflow_hb03_transform_layout
+    hostflow_hb04_profile_catalog
+    hostflow_hb04_profile_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )

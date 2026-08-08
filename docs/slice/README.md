@@ -75,12 +75,12 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `DOC/DOC_PREP_HOSTFLOW_H_B_01_模型导入业务流程准备.md` | H-B-01 参考宿主 OBJ/3MF 导入、实例入场、快速预检与 Debug/Release Gate |
 | `DOC/DOC_PREP_HOSTFLOW_H_B_02_模型实例列表与选择准备.md` | H-B-02 参考宿主模型列表、原子删除、多选、全选、视图联动与 A/B Gate |
 | `DOC/DOC_PREP_HOSTFLOW_H_B_03_实例变换与规则排版准备.md` | H-B-03 多选实例精确变换、镜像、规则排版、三车道边界与联合 Gate |
-| `DOC/DOC_PREP_HOSTFLOW_H_B_04_Profile目录与能力查询准备.md` | H-B-04 Profile 来源、ABI 能力求交、实现计划与 HQ-08 阻断 |
-| `DOC/DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` | HQ-08：宿主 Profile 目录与 module_info 受控扩展的二选一决策 |
+| `DOC/DOC_PREP_HOSTFLOW_H_B_04_Profile目录与能力查询准备.md` | H-B-04 宿主 Profile 目录、ABI 能力求交、实现结果与验证 Gate |
+| `DOC/DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` | HQ-08-A 已授权：Profile 归宿主，模块能力经既有 ABI 求交 |
 | `REPORT/REPORT_14F_04_S2本地合同门禁当前状态.md` | 14F-04 S2 C1-C7 机器合同、正负例、CTest 与外部 RIP 延期边界 |
 | `REPORT/REPORT_14F_切片能力包本地交付与外部验收延期当前状态.md` | **Stage 14F 收口真源**：能力包可交付、接口冻结、六步本地门禁和外部验收延期边界 |
 | `../../contracts/slicer_rip_s2_contract.json` | 冻结的 S2 本地机器合同：输入协议、量化、白区、输出组织、混合和外部状态 |
-| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A-01..04、H-B-01..03 已完成；H-B-04 准备完成但被 HQ-08 Profile 发现协议阻断 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A-01..04、H-B-01..04 已完成；H-B-05 为下一任务 |
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |

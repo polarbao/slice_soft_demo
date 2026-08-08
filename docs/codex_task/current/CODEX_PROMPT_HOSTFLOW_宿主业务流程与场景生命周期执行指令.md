@@ -1,7 +1,7 @@
 # CODEX_PROMPT_HOSTFLOW 宿主业务流程与场景生命周期执行指令
 
-> 文档状态：**ACTIVE / H-A COMPLETE / H-B-01..03 COMPLETE / H-B-04 BLOCKED BY HQ-08**
-> 版本：v1.6 ｜ 日期：2026-08-07
+> 文档状态：**ACTIVE / H-A COMPLETE / H-B-01..04 COMPLETE / H-B-05 NEXT**
+> 版本：v1.7 ｜ 日期：2026-08-08
 > **定位：独立补充专项的执行入口，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 任务卡：`docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md`
 
@@ -149,14 +149,14 @@ H-A-02 的隐式场景同样受此约束。HQ-07 已接受 14F-R2 `sceneContext`
 由宿主提供 `resolvedProfileId` 与权威 `buildVolume`；实现不得回退到写死
 `230 x 100 x 60 mm` 或默认 Profile。
 
-### 坑 2 · Profile 列表必须经 ABI 查，不得直接读 JSON
+### 坑 2 · Profile 目录归宿主，模块能力必须经 ABI 查
 
 主干 `ScenarioRegistry` 直接读 `samples/scenarios/slicer_scenarios.json`。
-**宿主不能这么做** —— 那是内部资产路径，打印侧拿不到。必须经能力查询。
+**宿主不能这么做** —— 那是内部资产路径，打印侧拿不到。宿主 Profile 必须来自 PrintApp
+自有目录，模块能力必须来自 `pm_module_info`，可用性由二者结构化求交。
 
-> **2026-08-07 准备审计修订**：当前冻结 ABI 只提供模块能力，没有 Profile 目录。HQ-08
-> 必须先决定“宿主 Profile 目录 + ABI 能力求交”（推荐）或受控扩展 `pm_module_info`。
-> HQ-08 未关闭前，H-B-04 及其后续链不得编码，也不得用硬编码/内部 JSON 绕过。
+> **2026-08-08 授权结论**：用户已授权 HQ-08-A。Profile 目录与安全等级归宿主，模块只经
+> 既有 ABI 自述能力；不得改用内部 JSON、模块内 Profile 目录或字符串包含式能力推断。
 
 ### 坑 3 · H-B 大部分卡不依赖 H-A，别串成一条链
 
@@ -195,7 +195,7 @@ H-B-03 是**补操作入口**，不是重写交互机制。动了它们就会破
           （H-A-04 排在 03 之前：空场景闭环最好一次把排版也验上）
 
 【无需额外授权，可立即开工】
-第 2 批   H-B-04 → H-B-05 → H-B-06 → H-B-07 → H-B-08
+第 2 批   H-B-04（已完成）→ H-B-05 → H-B-06 → H-B-07 → H-B-08
           H-B-02 · H-B-03（变换部分）可并行
 
 【H-A 完成后】
@@ -220,6 +220,7 @@ H-B-03 是**补操作入口**，不是重写交互机制。动了它们就会破
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-08 | v1.7 | 用户授权 HQ-08-A；H-B-04 完成宿主 Profile 目录、ABI 模块能力求交、生产安全等级和不可用原因 UI，选择期零 DLL 调用；联合门禁与主干 A/B smoke 通过。下一卡为 H-B-05。 |
 | 2026-08-07 | v1.6 | H-B-04 准备审计发现 ABI Profile 发现协议缺口，新增 HQ-08 与停止条件；H-B-04 标记为准备完成但实现阻断，推荐宿主目录与 ABI 模块能力求交。 |
 | 2026-08-07 | v1.5 | H-A-03 完成：纯 C/Qt 宿主从空场景仅经 11 导出完成生产闭环，宿主手工 scene builder 已移除；权威 snapshot scene 可不透明透传，Debug/Release 与边界门禁通过。H-A 全组完成，H-B-01 成为下一候选卡，但仍须显式启动。 |
 | 2026-08-07 | v1.4 | H-A-04 完成：`applyGridLayout` 经既有 Commit lane 暴露 11×2 规则排版，DTO v1.7、22 实例、replay 与 fail-closed 门禁通过；H-A-03 成为下一独立卡。 |

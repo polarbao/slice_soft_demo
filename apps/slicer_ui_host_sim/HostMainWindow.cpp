@@ -48,6 +48,7 @@ HostMainWindow::HostMainWindow(
     m_viewSettings = std::make_unique<ViewPresentationSettings>(
         DefaultSessionConfigPath());
     m_importWorkflow = std::make_unique<HostModelImportWorkflow>(m_client);
+    m_profileCatalog = std::make_unique<ReferenceHostProfileCatalog>();
     QString settingsError;
     m_viewSettings->Load(&settingsError);
     BuildInterface();
@@ -135,6 +136,9 @@ void HostMainWindow::BuildInterface()
     m_preflightTable->setMinimumHeight(150);
     modelLayout->addWidget(m_preflightTable, 2);
     inspectorTabs->addTab(modelPage, QStringLiteral("模型"));
+
+    m_profilePanel = new HostProfilePanel(inspectorTabs);
+    inspectorTabs->addTab(m_profilePanel, QStringLiteral("Profile"));
 
     m_transformLayoutPanel = new HostTransformLayoutPanel(inspectorTabs);
     inspectorTabs->addTab(
@@ -231,6 +235,11 @@ void HostMainWindow::BuildInterface()
         this,
         &HostMainWindow::OnModelSelectionChanged);
     connect(
+        m_profilePanel,
+        &HostProfilePanel::SigProfileChanged,
+        this,
+        &HostMainWindow::OnProfileChanged);
+    connect(
         m_transformLayoutPanel,
         &HostTransformLayoutPanel::SigTransformRequested,
         this,
@@ -262,9 +271,12 @@ void HostMainWindow::LoadModule(const QString& modulePath)
         return;
     }
 
+    ConfigureProfiles();
+
     m_statusLabel->setText(
-        QStringLiteral("模块已就绪 · SPI v%1 · ABI 调用 %2 次")
+        QStringLiteral("模块已就绪 · SPI v%1 · Profile %2 · ABI 调用 %3 次")
             .arg(PM_SPI_VERSION)
+            .arg(m_selectedProfileId)
             .arg(m_client.CallCount()));
     SetSceneCommandsEnabled(true);
     m_moduleInfoView->setPlainText(
