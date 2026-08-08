@@ -73,6 +73,7 @@
 | `DOC_PREP_HOSTFLOW_H_B_02_模型实例列表与选择准备.md` | H-B-02 实例列表、原子删除、多选、全选、视图联动与主干 A/B 门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_03_实例变换与规则排版准备.md` | H-B-03 精确变换、镜像、规则排版、三车道调用边界与联合门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_04_Profile目录与能力查询准备.md` | H-B-04 宿主 Profile 目录、模块能力求交、实现结果和冻结边界 |
+| `DOC_PREP_HOSTFLOW_H_B_05_切片参数与有效Profile准备.md` | H-B-05 参数合同、设备 buildVolume、有效 Profile、场景绑定和联合门禁 |
 | `DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` | HQ-08-A 已授权：宿主目录 + ABI 能力求交，不修改冻结合同 |
 | `DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | ViewData v1.2：surfacePreview、UV/材质/纹理、multi-model appearances、LOD/blob/identity |
 | `DOC_DECISION_14_UI_宿主模拟改造专项.md` | 14E 独立打印软件参考宿主、双视图纹理、QOpenGL、网格和可测 Gate |

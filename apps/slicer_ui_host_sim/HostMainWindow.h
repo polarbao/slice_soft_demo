@@ -4,6 +4,7 @@
 #include "HostModelImportWorkflow.h"
 #include "HostProfileCatalog.h"
 #include "HostProfilePanel.h"
+#include "HostSliceSettingsPanel.h"
 #include "HostTransformLayoutPanel.h"
 #include "ModuleClient.h"
 
@@ -46,6 +47,10 @@ private:
     void OnRemoveModels(const QStringList& instanceIds);
     void OnModelSelectionChanged(const QStringList& instanceIds);
     void OnProfileChanged(const QString& profileId);
+    bool ProfileSupportsSlice(const QString& profileId) const;
+    void OnSliceSettingsChanged();
+    bool ApplyPendingSceneContext(QString* error);
+    void RefreshSliceSettings();
     void OnTransformRequested(
         const QStringList& instanceIds,
         double deltaXMm,
@@ -79,6 +84,7 @@ private:
     QLabel* m_pathLabel{nullptr};
     HostModelListPanel* m_modelListPanel{nullptr};
     HostProfilePanel* m_profilePanel{nullptr};
+    HostSliceSettingsPanel* m_sliceSettingsPanel{nullptr};
     HostTransformLayoutPanel* m_transformLayoutPanel{nullptr};
     QLabel* m_importSummaryLabel{nullptr};
     QTableWidget* m_preflightTable{nullptr};

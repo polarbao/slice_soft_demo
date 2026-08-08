@@ -222,3 +222,189 @@ char* HostBuildProfile(
         profileHash,
         profileHashCapacity);
 }
+
+char* HostBuildEffectiveProfile(
+    const struct hosteffectiveprofilesettings* settings,
+    char* profileHash,
+    unsigned long profileHashCapacity)
+{
+    const char* materialChannel = NULL;
+    int red = 255;
+    int green = 255;
+    int blue = 255;
+    int whiteValue = 255;
+    int varnishValue = 255;
+    char* escapedModel = NULL;
+    char* escapedFormat = NULL;
+    char* escapedPackage = NULL;
+    char* escapedProfile = NULL;
+    char* canonical = NULL;
+    char* profile = NULL;
+    char digest[65];
+    if (settings == NULL || settings->modelpath == NULL
+        || settings->modelformat == NULL
+        || settings->packagedirectory == NULL
+        || settings->profileid == NULL
+        || settings->modelpath[0] == '\0'
+        || settings->packagedirectory[0] == '\0'
+        || settings->profileid[0] == '\0'
+        || (strcmp(settings->modelformat, "obj") != 0
+            && strcmp(settings->modelformat, "3mf") != 0)
+        || settings->dpix < 72 || settings->dpix > 2400
+        || settings->dpiy < 72 || settings->dpiy > 2400
+        || settings->layerthicknessmm <= 0.0
+        || settings->layerthicknessmm > 10.0
+        || profileHash == NULL || profileHashCapacity < 72U)
+    {
+        return NULL;
+    }
+
+    switch (settings->materialstrategy)
+    {
+    case HOST_MATERIAL_RGB_SOLID:
+        materialChannel = "RGB";
+        red = 0;
+        green = 0;
+        blue = 0;
+        break;
+    case HOST_MATERIAL_WHITE_SOLID:
+        materialChannel = "W";
+        whiteValue = 0;
+        break;
+    case HOST_MATERIAL_VARNISH_SOLID:
+        materialChannel = "V";
+        varnishValue = 0;
+        break;
+    default:
+        return NULL;
+    }
+
+    escapedModel = HostJsonEscape(settings->modelpath);
+    escapedFormat = HostJsonEscape(settings->modelformat);
+    escapedPackage = HostJsonEscape(settings->packagedirectory);
+    escapedProfile = HostJsonEscape(settings->profileid);
+    if (escapedModel == NULL || escapedFormat == NULL
+        || escapedPackage == NULL || escapedProfile == NULL)
+    {
+        goto cleanup;
+    }
+
+    canonical = HostFormat(
+        "{\n"
+        "\"autoOrient\": {\n"
+        "\"enabled\": true,\n"
+        "\"maxHeightMm\": 9\n"
+        "},\n"
+        "\"background\": {\n"
+        "\"value\": 255\n"
+        "},\n"
+        "\"input\": {\n"
+        "\"format\": \"%s\",\n"
+        "\"modelPath\": \"%s\"\n"
+        "},\n"
+        "\"materialProcessProfile\": {\n"
+        "\"enabled\": true,\n"
+        "\"name\": \"%s\",\n"
+        "\"target\": \"host-reference\"\n"
+        "},\n"
+        "\"modelMaterial\": {\n"
+        "\"applyMode\": \"solid_volume\",\n"
+        "\"materialChannel\": \"%s\",\n"
+        "\"rgb\": [\n"
+        "%d,\n"
+        "%d,\n"
+        "%d\n"
+        "],\n"
+        "\"varnishValue\": %d,\n"
+        "\"whiteValue\": %d\n"
+        "},\n"
+        "\"output\": {\n"
+        "\"bitDepth\": 8,\n"
+        "\"channelOrder\": [\n"
+        "\"R\",\n"
+        "\"G\",\n"
+        "\"B\",\n"
+        "\"W\",\n"
+        "\"S\",\n"
+        "\"V\"\n"
+        "],\n"
+        "\"dpiX\": %d,\n"
+        "\"dpiY\": %d,\n"
+        "\"layerThicknessMm\": %.15g,\n"
+        "\"packageDir\": \"%s\",\n"
+        "\"planarConfig\": \"contiguous\",\n"
+        "\"rowsPerStrip\": 64,\n"
+        "\"storageMode\": \"stripped\"\n"
+        "},\n"
+        "\"preview\": {\n"
+        "\"enabled\": false\n"
+        "},\n"
+        "\"profileVersion\": \"1.0\",\n"
+        "\"slicePipeline\": {\n"
+        "\"mode\": \"legacy\"\n"
+        "},\n"
+        "\"slicingMode\": \"closed_mesh_scanline\"\n"
+        "}",
+        escapedFormat,
+        escapedModel,
+        escapedProfile,
+        materialChannel,
+        red,
+        green,
+        blue,
+        varnishValue,
+        whiteValue,
+        settings->dpix,
+        settings->dpiy,
+        settings->layerthicknessmm,
+        escapedPackage);
+    if (canonical == NULL || !ComputeSha256(canonical, digest))
+    {
+        goto cleanup;
+    }
+    (void)snprintf(
+        profileHash,
+        profileHashCapacity,
+        "sha256:%s",
+        digest);
+    profile = HostFormat(
+        "{\"autoOrient\":{\"enabled\":true,\"maxHeightMm\":9},"
+        "\"background\":{\"value\":255},"
+        "\"input\":{\"format\":\"%s\",\"modelPath\":\"%s\"},"
+        "\"materialProcessProfile\":{\"enabled\":true,"
+        "\"name\":\"%s\",\"target\":\"host-reference\"},"
+        "\"modelMaterial\":{\"applyMode\":\"solid_volume\","
+        "\"materialChannel\":\"%s\",\"rgb\":[%d,%d,%d],"
+        "\"varnishValue\":%d,\"whiteValue\":%d},"
+        "\"output\":{\"bitDepth\":8,"
+        "\"channelOrder\":[\"R\",\"G\",\"B\",\"W\",\"S\",\"V\"],"
+        "\"dpiX\":%d,\"dpiY\":%d,\"layerThicknessMm\":%.15g,"
+        "\"packageDir\":\"%s\",\"planarConfig\":\"contiguous\","
+        "\"rowsPerStrip\":64,\"storageMode\":\"stripped\"},"
+        "\"preview\":{\"enabled\":false},\"profileHash\":\"%s\","
+        "\"profileVersion\":\"1.0\","
+        "\"slicePipeline\":{\"mode\":\"legacy\"},"
+        "\"slicingMode\":\"closed_mesh_scanline\"}",
+        escapedFormat,
+        escapedModel,
+        escapedProfile,
+        materialChannel,
+        red,
+        green,
+        blue,
+        varnishValue,
+        whiteValue,
+        settings->dpix,
+        settings->dpiy,
+        settings->layerthicknessmm,
+        escapedPackage,
+        profileHash);
+
+cleanup:
+    free(escapedModel);
+    free(escapedFormat);
+    free(escapedPackage);
+    free(escapedProfile);
+    free(canonical);
+    return profile;
+}

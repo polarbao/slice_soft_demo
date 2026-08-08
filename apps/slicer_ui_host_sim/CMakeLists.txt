@@ -22,6 +22,11 @@ add_executable(slicer_ui_host_sim
     HostMainWindow.h
     HostMainWindowProfile.cpp
     HostMainWindowScene.cpp
+    HostMainWindowSettings.cpp
+    HostSliceSettings.cpp
+    HostSliceSettings.h
+    HostSliceSettingsPanel.cpp
+    HostSliceSettingsPanel.h
     Main.cpp
     ModuleClient.cpp
     ModuleClient.h
@@ -362,6 +367,78 @@ add_test(
         --module $<TARGET_FILE:slicer_module>
 )
 
+add_executable(hostflow_hb05_slice_settings_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    HostSliceSettings.cpp
+    HostSliceSettings.h
+    HostSliceSettingsPanel.cpp
+    HostSliceSettingsPanel.h
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostSliceSettingsTests.cpp
+)
+
+set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    PROPERTIES LANGUAGE CXX
+)
+
+set_target_properties(hostflow_hb05_slice_settings_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(hostflow_hb05_slice_settings_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim
+)
+
+target_link_libraries(hostflow_hb05_slice_settings_tests PRIVATE
+    Qt5::Widgets
+    bcrypt
+)
+
+add_dependencies(hostflow_hb05_slice_settings_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb05_slice_settings_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb05_slice_settings_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb05_slice_settings_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb05_slice_settings
+    COMMAND hostflow_hb05_slice_settings_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME hostflow_hb05_settings_ui_smoke
+    COMMAND slicer_ui_host_sim
+        --hostflow-settings-ui-self-test
+        --module $<TARGET_FILE:slicer_module>
+)
+
 add_executable(stage14e03_interaction_tests
     ModuleClient.cpp
     ModuleClient.h
@@ -619,6 +696,8 @@ set_tests_properties(
     hostflow_hb03_transform_layout
     hostflow_hb04_profile_catalog
     hostflow_hb04_profile_ui_smoke
+    hostflow_hb05_slice_settings
+    hostflow_hb05_settings_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )

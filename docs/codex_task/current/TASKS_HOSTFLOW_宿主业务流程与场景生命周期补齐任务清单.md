@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
 > 文档状态：**ACTIVE / HQ-01 + HQ-07 + HQ-08-A AUTHORIZED**
-> 版本：v2.1 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
+> 版本：v2.2 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -11,7 +11,7 @@
 > Stage 14 对外接口。本文 H-A 仍是有效缺口分析，但不得在 14F 收口前修改冻结合同；
 > 用户已于 2026-08-07 授权 HQ-01，并建立
 > `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md`。H-A-01、H-A-02、H-A-04
-> 已按独立原子卡完成；H-A-03、H-B-01、H-B-02、H-B-03 与 H-B-04 也已完成。用户已于
+> 已按独立原子卡完成；H-A-03、H-B-01..05 也已完成。用户已于
 > 2026-08-08 授权 HQ-08-A，后续 H-B/H-C 卡仍须按卡号显式启动。
 
 ---
@@ -179,7 +179,7 @@
 | **H-B-02** | 模型/实例列表与选择：增删、多选、选中联动视图 | **无**（用 fixture scene）；删除实例需 H-A-01 | 对照主干 `ModelListPanel` | **COMPLETE（2026-08-07）** |
 | **H-B-03** | 排版与变换 UI 入口：移动/旋转/缩放/镜像 + 精确数值输入（三车道机制 14E-03 已有，本卡只补入口） | **无**（四种变换已在 ABI）；**规则排版部分需 H-A-04** | 对照主干 `ModelTransformPanel`、`SceneLayoutPanel`；**UI-M1 仍须成立** | **COMPLETE（2026-08-07）** |
 | **H-B-04** | Profile 选择：宿主提供 Profile 目录与安全等级；模块能力经 ABI 查询，二者求交得到可用 Profile | **HQ-08-A**（已授权） | 对照主干 `ProductionModePanel` + `ScenarioRegistry`；**不得直接读 `slicer_scenarios.json`**；选择不触发 DLL 调用 | **COMPLETE（2026-08-08）** |
-| **H-B-05** | 切片参数设置：DPI、层厚、输出目录、材料策略等；含有效配置预览与校验提示。**须体现 `buildVolume` 归属宿主**（`CLD_04`:360）| H-B-04 | 对照主干 `ConfigEditorPanel` / `QuickConfigPanel` / `EffectiveConfigGenerator` | PROPOSED |
+| **H-B-05** | 切片参数设置：DPI、层厚、输出目录、材料策略等；含有效配置预览与校验提示。**须体现 `buildVolume` 归属宿主**（`CLD_04`:360）| H-B-04 | 对照主干 `ConfigEditorPanel` / `QuickConfigPanel` / `EffectiveConfigGenerator` | **COMPLETE（2026-08-08）** |
 | **H-B-06** | 切片提交与作业管理：提交、进度条、取消、错误展示 | H-B-05 | 对照主干 `ProductionSliceRunSession`；取消 ≤2s 且无 `.staging` 残留 | PROPOSED |
 | **H-B-07** | 结果查看：包校验、摘要、报告、层预览与通道图 | H-B-06 | 对照主干 `PackageLoader` / `LayerPreviewPanel` / `ChannelChartPanel` | PROPOSED |
 | **H-B-08** | 设置持久化与工作区状态：会话恢复、布局记忆 | H-B-05 | 对照主干 `WorkspaceLayoutState` | PROPOSED |
@@ -187,7 +187,7 @@
 **不依赖 H-A 的后续链**：
 
 ```text
-H-B-04（已完成）→ H-B-05 → H-B-06 → H-B-07 → H-B-08
+H-B-04..05（已完成）→ H-B-06 → H-B-07 → H-B-08
                     （Profile → 参数 → 切片 → 结果 → 持久化）
 H-B-02 · H-B-03（变换部分）                      可并行，用既有 fixture scene
 ```
@@ -455,6 +455,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-08 | v2.2 | 完成 H-B-05：参考宿主新增 635/600 DPI、0.038 mm 层厚、输出目录、RGB/W/V 实体材料和宿主设备 buildVolume 编辑；有效 Profile 自哈希预览与场景 Profile/buildVolume 绑定 fail-closed。Debug/Release H-B-01..05 各 8/8、模块边界各 3/3、主干设置 A/B smoke 通过。下一卡为 H-B-06。 |
 | 2026-08-08 | v2.1 | 用户授权 HQ-08-A；完成 H-B-04 宿主 Profile 目录、`pm_module_info` 能力结构化求交、生产安全等级与缺失能力 UI。Profile 选择仅更新宿主草稿且零 DLL 调用；Debug/Release H-B-01..04 各 6/6、模块边界各 3/3、主干 A/B smoke PASS。下一卡为 H-B-05。 |
 | 2026-08-07 | v2.0 | H-B-04 准备审计完成：确认冻结 `pm_module_info`/15 项能力没有 Profile 目录，主干内部 JSON 与 `slicer_core` 目录均不可移植；新增 HQ-08，推荐“宿主 Profile 目录 + ABI 模块能力求交”。H-B-04 标记为 PREP COMPLETE / BLOCKED，H-B-05..08 不得越过该 Gate。 |
 | 2026-08-07 | v1.9 | 完成 H-B-03：参考宿主增加多选实例精确移动/旋转/缩放/镜像及 11×2 规则排版入口；本地编辑零 DLL 调用，变换与排版各以单次原子 Commit 推进一次 revision。Debug/Release 各 8/8 联合门禁通过，主干三组 A/B smoke PASS，下一卡为 H-B-04。 |

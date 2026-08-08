@@ -7,9 +7,14 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QLabel>
+#include <QDoubleSpinBox>
+#include <QPlainTextEdit>
+#include <QSpinBox>
 #include <QStringList>
 #include <QTextStream>
 #include <QVariant>
+
+#include <cmath>
 
 namespace
 {
@@ -148,6 +153,36 @@ int RunHostFlowProfileUiSmoke(const QString& modulePath)
         << Qt::endl;
     return 0;
 }
+
+int RunHostFlowSettingsUiSmoke(const QString& modulePath)
+{
+    HostMainWindow window(modulePath);
+    const auto* dpiXSpin = window.findChild<QSpinBox*>(
+        QStringLiteral("hostSliceDpiXSpin"));
+    const auto* dpiYSpin = window.findChild<QSpinBox*>(
+        QStringLiteral("hostSliceDpiYSpin"));
+    const auto* layerSpin = window.findChild<QDoubleSpinBox*>(
+        QStringLiteral("hostSliceLayerThicknessSpin"));
+    const auto* profilePreview = window.findChild<QPlainTextEdit*>(
+        QStringLiteral("hostEffectiveProfilePreview"));
+    const auto* validationLabel = window.findChild<QLabel*>(
+        QStringLiteral("hostSliceValidationLabel"));
+    if (dpiXSpin == nullptr || dpiYSpin == nullptr || layerSpin == nullptr
+        || profilePreview == nullptr || validationLabel == nullptr
+        || dpiXSpin->value() != 635 || dpiYSpin->value() != 600
+        || std::abs(layerSpin->value() - 0.038) > 1.0e-9
+        || validationLabel->text().isEmpty())
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB05_UI_FAILED: slice settings are incomplete"
+            << Qt::endl;
+        return 10;
+    }
+    QTextStream(stdout)
+        << "HOSTFLOW_HB05_UI_PASS dpi=" << dpiXSpin->value()
+        << "x" << dpiYSpin->value() << Qt::endl;
+    return 0;
+}
 }
 
 int main(int argc, char* argv[])
@@ -196,7 +231,8 @@ int main(int argc, char* argv[])
             << "[--self-test | --capability-self-test "
             << "--repo-root <path> --evidence-root <path> | "
             << "--hostflow-import-ui-self-test | "
-            << "--hostflow-profile-ui-self-test]"
+            << "--hostflow-profile-ui-self-test | "
+            << "--hostflow-settings-ui-self-test]"
             << Qt::endl;
         return 0;
     }
@@ -217,6 +253,12 @@ int main(int argc, char* argv[])
             QStringLiteral("--hostflow-profile-ui-self-test")))
     {
         return RunHostFlowProfileUiSmoke(modulePath);
+    }
+    if (HasArgument(
+            arguments,
+            QStringLiteral("--hostflow-settings-ui-self-test")))
+    {
+        return RunHostFlowSettingsUiSmoke(modulePath);
     }
     HostMainWindow window(modulePath);
     window.show();

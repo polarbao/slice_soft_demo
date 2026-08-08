@@ -5,6 +5,27 @@ extern "C"
 {
 #endif
 
+/** @brief Host-owned material strategy for an effective slice Profile. */
+enum hostmaterialstrategy
+{
+    HOST_MATERIAL_RGB_SOLID = 0,
+    HOST_MATERIAL_WHITE_SOLID = 1,
+    HOST_MATERIAL_VARNISH_SOLID = 2
+};
+
+/** @brief C-compatible inputs used to build one effective slice Profile. */
+struct hosteffectiveprofilesettings
+{
+    const char* modelpath;
+    const char* modelformat;
+    const char* packagedirectory;
+    const char* profileid;
+    int dpix;
+    int dpiy;
+    double layerthicknessmm;
+    enum hostmaterialstrategy materialstrategy;
+};
+
 /**
  * @brief Builds a self-hashed effective Profile for the reference slice.
  * @param modelPath Normalized absolute model path.
@@ -32,6 +53,18 @@ char* HostBuildProfileWithLayerThickness(
     const char* modelPath,
     const char* packageDirectory,
     double layerThicknessMm,
+    char* profileHash,
+    unsigned long profileHashCapacity);
+
+/**
+ * @brief Builds a parameterized self-hashed effective Profile.
+ * @param settings Valid host-owned model, output and material settings.
+ * @param profileHash Receives `sha256:` plus 64 lowercase hex characters.
+ * @param profileHashCapacity Output buffer capacity.
+ * @return Heap JSON string owned by the caller, or NULL on validation failure.
+ */
+char* HostBuildEffectiveProfile(
+    const struct hosteffectiveprofilesettings* settings,
     char* profileHash,
     unsigned long profileHashCapacity);
 

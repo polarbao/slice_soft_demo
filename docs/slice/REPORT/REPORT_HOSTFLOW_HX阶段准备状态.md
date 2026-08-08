@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE / H-A COMPLETE / H-B-01..04 COMPLETE / H-B-05 NEXT**
+> 状态：**ACTIVE / H-A COMPLETE / H-B-01..05 COMPLETE / H-B-06 NEXT**
 > 日期：2026-08-08
 > 范围：HOSTFLOW H-A、H-B、H-C，不属于 Stage 14 编号任务。
 
@@ -9,7 +9,7 @@
 | 任务组 | 准备状态 | 当前可执行范围 | 阻断 |
 |---|---|---|---|
 | H-A 场景生命周期 | COMPLETE | H-A-01..04 全部完成；DTO 当前为 v1.7 | 无切片侧阻断 |
-| H-B 宿主业务 UI | ACTIVE | H-B-01..04 已完成；H-B-05 为下一卡 | H-B-05..08 仍须按依赖串行闭环 |
+| H-B 宿主业务 UI | ACTIVE | H-B-01..05 已完成；H-B-06 为下一卡 | H-B-06..08 仍须按依赖串行闭环 |
 | H-C 移植交付 | NOT READY | 可提前建立文件清单模板 | H-C-01 等 H-B-07；H-C-02/03 继续依赖 H-C-01/H-B-07 |
 
 H-A-02 已完成：Facade 支持 add/remove 与候选态原子提交；Adapter 支持既有 handle、inline scene、
@@ -43,6 +43,12 @@ H-B-04 已完成：用户授权 HQ-08-A，参考宿主拥有独立 Profile 目�
 选择仅更新宿主 session 草稿且零 DLL 调用。Debug/Release H-B-01..04 联合门禁各 6/6 PASS，
 模块边界/缺失模块/自检各 3/3 PASS，主干 `production-mode-selector` A/B smoke 均 PASS。
 
+H-B-05 已完成：参考宿主增加切片设置页，宿主拥有 635/600 DPI、0.038 mm 层厚、输出目录、
+RGB/W/V 实体材料策略和设备 buildVolume；有效 Profile 使用既有自哈希合同生成并实时预览。
+首次导入把 Profile/buildVolume 注入 `sceneContext`，场景建立后异值修改 fail-closed；本地参数
+编辑保持零 DLL 调用。Debug/Release H-B-01..05 联合门禁各 8/8、模块边界各 3/3，主干
+`slice-settings-model` 与 `generated-effective-config` A/B smoke 均 PASS。
+
 ## Target State
 
 ```text
@@ -75,6 +81,6 @@ H-A-03 已证明宿主只经 11 个导出实现：
 
 ## Next Action
 
-H-B-04 已完成。下一步先完成 H-B-05 准备审计，再按
-H-B-05 → H-B-06 → H-B-07 → H-B-08 串行推进。H-C-01/03 继续等待 H-B-07，
+H-B-05 已完成。下一步先完成 H-B-06 作业生命周期准备审计，再按
+H-B-06 → H-B-07 → H-B-08 串行推进。H-C-01/03 继续等待 H-B-07，
 打印侧 ACK 维持 `PENDING / DEFERRED`。

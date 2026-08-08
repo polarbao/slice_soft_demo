@@ -22,12 +22,42 @@ void HostMainWindow::ConfigureProfiles()
     }
     m_profilePanel->SetProfiles(resolution);
     m_selectedProfileId = m_profilePanel->SelectedProfileId();
+    m_sliceSettingsPanel->SetSelectedProfileId(
+        m_selectedProfileId,
+        ProfileSupportsSlice(m_selectedProfileId));
+    QString contextError;
+    if (!ApplyPendingSceneContext(&contextError))
+    {
+        m_statusLabel->setText(contextError);
+    }
 }
 
 void HostMainWindow::OnProfileChanged(const QString& profileId)
 {
     m_selectedProfileId = profileId;
+    m_sliceSettingsPanel->SetSelectedProfileId(
+        profileId,
+        ProfileSupportsSlice(profileId));
+    QString contextError;
+    if (!ApplyPendingSceneContext(&contextError))
+    {
+        m_statusLabel->setText(contextError);
+        return;
+    }
     m_statusLabel->setText(
         QStringLiteral("Profile 已选择：%1 · 仅更新宿主会话草稿")
             .arg(profileId));
+}
+
+bool HostMainWindow::ProfileSupportsSlice(const QString& profileId) const
+{
+    for (const hostprofiledescriptor& profile : m_profileCatalog->Profiles())
+    {
+        if (profile.profileid == profileId)
+        {
+            return profile.requiredcapabilities.contains(
+                QStringLiteral("slice.rgbwsv"));
+        }
+    }
+    return false;
 }

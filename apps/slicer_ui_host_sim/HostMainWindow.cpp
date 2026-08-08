@@ -140,6 +140,9 @@ void HostMainWindow::BuildInterface()
     m_profilePanel = new HostProfilePanel(inspectorTabs);
     inspectorTabs->addTab(m_profilePanel, QStringLiteral("Profile"));
 
+    m_sliceSettingsPanel = new HostSliceSettingsPanel(inspectorTabs);
+    inspectorTabs->addTab(m_sliceSettingsPanel, QStringLiteral("切片设置"));
+
     m_transformLayoutPanel = new HostTransformLayoutPanel(inspectorTabs);
     inspectorTabs->addTab(
         m_transformLayoutPanel, QStringLiteral("变换与排版"));
@@ -240,6 +243,11 @@ void HostMainWindow::BuildInterface()
         this,
         &HostMainWindow::OnProfileChanged);
     connect(
+        m_sliceSettingsPanel,
+        &HostSliceSettingsPanel::SigSettingsChanged,
+        this,
+        &HostMainWindow::OnSliceSettingsChanged);
+    connect(
         m_transformLayoutPanel,
         &HostTransformLayoutPanel::SigTransformRequested,
         this,
@@ -299,6 +307,13 @@ void HostMainWindow::OnImportModel()
         return;
     }
 
+    QString contextError;
+    if (!ApplyPendingSceneContext(&contextError))
+    {
+        ShowImportError(contextError);
+        return;
+    }
+
     SetSceneCommandsEnabled(false);
     m_importSummaryLabel->setText(QStringLiteral("正在导入并执行快速预检…"));
     QCoreApplication::processEvents();
@@ -313,6 +328,7 @@ void HostMainWindow::OnImportModel()
         ShowImportError(error);
         return;
     }
+    RefreshSliceSettings();
     ShowImportResult(result);
 }
 
@@ -329,6 +345,7 @@ void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)
         return;
     }
     m_modelListPanel->RemoveInstances(instanceIds);
+    RefreshSliceSettings();
     m_transformLayoutPanel->SetSceneState(
         m_importWorkflow->InstanceCount(),
         m_importWorkflow->SceneRevision());

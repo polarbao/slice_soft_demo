@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HostSliceSettings.h"
 #include "ModuleClient.h"
 
 #include <QHash>
@@ -145,6 +146,30 @@ public:
     /** @brief Returns the number of host-tracked imported instances. */
     [[nodiscard]] int InstanceCount() const;
 
+    /**
+     * @brief Sets the host-owned context used by the first scene Commit.
+     * @param profileId Selected host Profile identity.
+     * @param buildVolume Device-owned build volume.
+     * @param error Receives an immutable-scene or validation reason.
+     * @return True when the pending context is accepted.
+     */
+    bool SetPendingSceneContext(
+        const QString& profileId,
+        const hostbuildvolume& buildVolume,
+        QString* error);
+
+    /** @brief Returns the Profile identity bound to the current scene. */
+    [[nodiscard]] QString SceneProfileId() const;
+
+    /** @brief Returns the device build volume bound to the current scene. */
+    [[nodiscard]] hostbuildvolume SceneBuildVolume() const;
+
+    /**
+     * @brief Returns a stable imported model path for effective Profile input.
+     * @return Lexicographically first current source path, or empty.
+     */
+    [[nodiscard]] QString ReferenceModelPath() const;
+
 private:
     bool ExecuteObject(
         const QJsonObject& request,
@@ -168,6 +193,11 @@ private:
 
     ModuleClient& m_client;
     QHash<QString, QString> m_instanceModels;
+    QHash<QString, QString> m_instanceSources;
+    QString m_pendingProfileId{QStringLiteral("host-reference-default")};
+    hostbuildvolume m_pendingBuildVolume;
+    QString m_sceneProfileId;
+    hostbuildvolume m_sceneBuildVolume;
     quint64 m_sceneHandle{0};
     quint64 m_sceneRevision{0};
 };

@@ -13,6 +13,24 @@ bool IsZero(const double value)
     return std::abs(value) <= 1.0e-12;
 }
 
+bool IsFinitePositive(const double value)
+{
+    return std::isfinite(value) && value > 0.0;
+}
+
+bool BuildVolumesEqual(
+    const hostbuildvolume& left,
+    const hostbuildvolume& right)
+{
+    constexpr double epsilon = 1.0e-9;
+    return std::abs(left.widthmm - right.widthmm) <= epsilon
+        && std::abs(left.heightmm - right.heightmm) <= epsilon
+        && std::abs(left.zlimitmm - right.zlimitmm) <= epsilon
+        && left.origin == right.origin
+        && left.xdirection == right.xdirection
+        && left.ydirection == right.ydirection;
+}
+
 void AppendInstanceOperations(
     const QString& instanceId,
     const hosttransformrequest& request,
@@ -59,6 +77,62 @@ void AppendInstanceOperations(
             {QStringLiteral("axis"), QStringLiteral("y")}});
     }
 }
+}
+
+bool HostModelImportWorkflow::SetPendingSceneContext(
+    const QString& profileId,
+    const hostbuildvolume& buildVolume,
+    QString* error)
+{
+    const QString normalizedProfile = profileId.trimmed();
+    if (normalizedProfile.isEmpty()
+        || !IsFinitePositive(buildVolume.widthmm)
+        || !IsFinitePositive(buildVolume.heightmm)
+        || !IsFinitePositive(buildVolume.zlimitmm)
+        || buildVolume.origin != QStringLiteral("lower_left")
+        || buildVolume.xdirection != QStringLiteral("positive")
+        || buildVolume.ydirection != QStringLiteral("positive"))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "场景 Profile 和宿主设备 buildVolume 必须完整有效。");
+        }
+        return false;
+    }
+    if (m_sceneHandle != 0U
+        && (normalizedProfile != m_sceneProfileId
+            || !BuildVolumesEqual(buildVolume, m_sceneBuildVolume)))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "当前场景已绑定 Profile/buildVolume；请新建场景后修改。");
+        }
+        return false;
+    }
+    m_pendingProfileId = normalizedProfile;
+    m_pendingBuildVolume = buildVolume;
+    return true;
+}
+
+QString HostModelImportWorkflow::SceneProfileId() const
+{
+    return m_sceneHandle == 0U ? m_pendingProfileId : m_sceneProfileId;
+}
+
+hostbuildvolume HostModelImportWorkflow::SceneBuildVolume() const
+{
+    return m_sceneHandle == 0U
+        ? m_pendingBuildVolume : m_sceneBuildVolume;
+}
+
+QString HostModelImportWorkflow::ReferenceModelPath() const
+{
+    QStringList paths = m_instanceSources.values();
+    paths.removeDuplicates();
+    paths.sort();
+    return paths.isEmpty() ? QString{} : paths.first();
 }
 
 bool HostModelImportWorkflow::ApplyTransforms(

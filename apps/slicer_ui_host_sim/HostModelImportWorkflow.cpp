@@ -44,21 +44,23 @@ double ArrayValue(const QJsonArray& values, const int index)
         : 0.0;
 }
 
-QJsonObject ReferenceSceneContext()
+QJsonObject BuildSceneContext(
+    const QString& profileId,
+    const hostbuildvolume& volume)
 {
     return QJsonObject{
-        {QStringLiteral("resolvedProfileId"),
-         QStringLiteral("host-reference-default")},
+        {QStringLiteral("resolvedProfileId"), profileId},
         {QStringLiteral("buildVolume"), QJsonObject{
              {QStringLiteral("source"), QStringLiteral("device_profile")},
-             {QStringLiteral("widthMm"), 230.0},
-             {QStringLiteral("heightMm"), 100.0},
-             {QStringLiteral("zLimitMm"), 60.0},
-             {QStringLiteral("origin"), QStringLiteral("lower_left")},
-             {QStringLiteral("xDirection"), QStringLiteral("positive")},
-             {QStringLiteral("yDirection"), QStringLiteral("positive")},
+             {QStringLiteral("widthMm"), volume.widthmm},
+             {QStringLiteral("heightMm"), volume.heightmm},
+             {QStringLiteral("zLimitMm"), volume.zlimitmm},
+             {QStringLiteral("origin"), volume.origin},
+             {QStringLiteral("xDirection"), volume.xdirection},
+             {QStringLiteral("yDirection"), volume.ydirection},
              {QStringLiteral("isFixture"), false}}}};
 }
+
 }
 
 HostModelImportWorkflow::HostModelImportWorkflow(ModuleClient& client)
@@ -143,6 +145,7 @@ bool HostModelImportWorkflow::ImportModel(
         return false;
     }
     m_instanceModels.insert(result->instanceid, result->modelid);
+    m_instanceSources.insert(result->instanceid, normalizedPath);
     return true;
 }
 
@@ -218,6 +221,7 @@ bool HostModelImportWorkflow::RemoveInstances(
     for (const QString& instanceId : uniqueIds)
     {
         const QString modelId = m_instanceModels.take(instanceId);
+        m_instanceSources.remove(instanceId);
         QJsonObject ignoredResponse;
         QString ignoredError;
         (void)ExecuteObject(
@@ -317,7 +321,9 @@ bool HostModelImportWorkflow::AddInstance(
              {QStringLiteral("assignInstanceId"), *instanceId}}}}};
     if (m_sceneHandle == 0U)
     {
-        request.insert(QStringLiteral("sceneContext"), ReferenceSceneContext());
+        request.insert(
+            QStringLiteral("sceneContext"),
+            BuildSceneContext(m_pendingProfileId, m_pendingBuildVolume));
     }
     else
     {
@@ -336,6 +342,8 @@ bool HostModelImportWorkflow::AddInstance(
     if (m_sceneHandle == 0U)
     {
         m_sceneHandle = responseHandle;
+        m_sceneProfileId = m_pendingProfileId;
+        m_sceneBuildVolume = m_pendingBuildVolume;
     }
     const quint64 newRevision = static_cast<quint64>(response.value(
         QStringLiteral("newSceneRevision")).toDouble());
