@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C-01 COMPLETE**
+> 状态：**ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C-01..02 COMPLETE**
 > 日期：2026-08-08
 > 范围：HOSTFLOW H-A、H-B、H-C，不属于 Stage 14 编号任务。
 
@@ -10,7 +10,7 @@
 |---|---|---|---|
 | H-A 场景生命周期 | COMPLETE | H-A-01..04 全部完成；DTO 当前为 v1.7 | 无切片侧阻断 |
 | H-B 宿主业务 UI | COMPLETE | H-B-01..08 全部完成 | 无切片侧阻断 |
-| H-C 移植交付 | ACTIVE | H-C-01 已完成；H-C-02/03 可准备 | 各卡仍须独立准备审计 |
+| H-C 移植交付 | ACTIVE | H-C-01/02 已完成；H-C-03 可准备 | H-C-03 仍须独立准备审计 |
 
 H-A-02 已完成：Facade 支持 add/remove 与候选态原子提交；Adapter 支持既有 handle、inline scene、
 受控隐式 scene 三条路径；import model resource 可映射到 scene authority；DTO v1.6 `sceneContext`
@@ -70,6 +70,10 @@ H-C-01 已完成：历史 68 个头文件范围已校正为当前 77 个，并�
 `A=6 / B=41 / C=30`。A 桶直接复用单元通过无 core 及本地依赖闭包门禁；B 桶成为 H-C-02
 逐文件改造指南输入，C 桶明确不进入打印宿主。
 
+H-C-02 已完成：41 个 B 桶单元均有迁移动作、公开替代实现、工作流和相对复杂度，按
+scene/profile/job/package 四个工作包形成 38-59 人日建议。机器门禁确认 H-C-01 B 桶与计划
+双向集合完全一致；这是打印侧排期输入，不代表打印侧已经实现或验收。
+
 ## Target State
 
 ```text
@@ -102,6 +106,5 @@ H-A-03 已证明宿主只经 11 个导出实现：
 
 ## Next Action
 
-H-B 核心业务流程和 H-C-01 已收口。下一步可分别准备 H-C-02 B 桶移植指南与 H-C-03
-主干/参考宿主 A/B 差异报告；两者前置相互独立，可在准备 Gate 通过后并行推进。打印侧 ACK
-维持 `PENDING / DEFERRED`。
+H-B 核心业务流程和 H-C-01/02 已收口。下一步准备并执行 H-C-03 主干/参考宿主 A/B 差异
+报告，关闭 HOSTFLOW 本地交付。打印侧 ACK 维持 `PENDING / DEFERRED`。
