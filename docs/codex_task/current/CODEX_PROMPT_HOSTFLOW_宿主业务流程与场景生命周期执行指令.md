@@ -1,7 +1,7 @@
 # CODEX_PROMPT_HOSTFLOW 宿主业务流程与场景生命周期执行指令
 
-> 文档状态：**ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C-01..02 COMPLETE / H-C-03 NEXT**
-> 版本：v2.3 ｜ 日期：2026-08-08
+> 文档状态：**LOCAL COMPLETE / EXTERNAL ACK DEFERRED**
+> 版本：v2.4 ｜ 日期：2026-08-08
 > **定位：独立补充专项的执行入口，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 任务卡：`docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md`
 
@@ -227,6 +227,7 @@ H-B-05 已把宿主 Profile 与设备 buildVolume 注入首次 `sceneContext`。
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-08 | v2.4 | H-C-03 完成主干/参考宿主同模型、等价 Profile 语义 A/B 对照：13 条差异覆盖 8 个维度，Debug/Release 主干 smoke、宿主 self-test 与 H-A/H-B 联合门禁通过。HOSTFLOW 本地工作全部收口，外部 ACK 继续延期。 |
 | 2026-08-08 | v2.3 | H-C-02 完成 41 个 B 桶单元逐文件迁移计划与 38-59 人日工作包建议；计划机器门禁与 H-C-01 双向闭合。下一卡为 H-C-03 A/B 行为差异交付。 |
 | 2026-08-08 | v2.2 | H-C-01 完成当前 77 个主干 UI 头文件三桶分类：A=6、B=41、C=30；机器清单和门禁替代历史 68 个候选范围。H-C-02 已解除前置，H-C-03 仍可独立准备。 |
 | 2026-08-08 | v2.1 | H-B-08 完成带版本的宿主设置持久化、工作区布局记忆、非法状态安全回退和 self-test 隔离；明确不恢复 scene/job/model/cache 运行时身份。Debug/Release H-A/H-B 联合门禁各 18/18、宿主边界与源码尺寸守卫通过。H-B 全组完成，下一步为 H-C-01/H-C-03 准备审计。 |

@@ -1,0 +1,153 @@
+{
+  "schema": "hostflow.ab_matrix.1",
+  "version": 1,
+  "date": "2026-08-08",
+  "status": "local_verified_external_ack_deferred",
+  "canonicalFixture": {
+    "modelPath": "samples/models/openvdb/surface_shell_cube_no_uv.obj",
+    "mainProfileId": "textured_nail_rgb_only_lower_support",
+    "hostProfileId": "host-reference-default",
+    "profileSemantics": "legacy_rgb_solid_rgbwsv_strict",
+    "dpiX": 635,
+    "dpiY": 600,
+    "layerThicknessMm": 0.038,
+    "materialStrategy": "rgb_solid",
+    "buildVolume": {
+      "widthMm": 230.0,
+      "heightMm": 100.0,
+      "zLimitMm": 60.0,
+      "origin": "lower_left",
+      "xDirection": "positive",
+      "yDirection": "positive"
+    }
+  },
+  "requiredAxes": [
+    "import_preflight",
+    "model_list_selection",
+    "transform_layout",
+    "profile_settings",
+    "slice_job_cancel",
+    "package_result",
+    "workspace_persistence",
+    "diagnostics_scope"
+  ],
+  "entries": [
+    {
+      "id": "AB-01",
+      "axis": "import_preflight",
+      "businessStep": "OBJ/3MF 导入与快速预检",
+      "mainEvidence": "main smoke multi-model-list；SceneBatchImportController/ModelPreflightController",
+      "hostEvidence": "hostflow_hb01_import_ui_smoke；HostModelImportWorkflow",
+      "disposition": "equivalent",
+      "explanation": "两端都对缺失文件和不支持格式 fail-closed；参考宿主经 model.import 与 geometry.preflight，不读取 core。"
+    },
+    {
+      "id": "AB-02",
+      "axis": "import_preflight",
+      "businessStep": "STL 与切片专用导入诊断",
+      "mainEvidence": "主干导入器和高级预检支持 STL 与更多诊断入口",
+      "hostEvidence": "H-B-01 批准范围仅覆盖 OBJ/3MF 核心打印作业流",
+      "disposition": "known_trim",
+      "explanation": "这是 HOSTFLOW 核心流程的已知格式裁剪，不改变模块能力或主干支持范围。"
+    },
+    {
+      "id": "AB-03",
+      "axis": "model_list_selection",
+      "businessStep": "单选、Ctrl/Shift、多选、全选与批量删除",
+      "mainEvidence": "main smoke multi-model-list",
+      "hostEvidence": "hostflow_hb02_model_list_selection",
+      "disposition": "equivalent",
+      "explanation": "选择为宿主本地状态且零 DLL 调用；删除以单次 removeInstance[] 原子 Commit 完成。"
+    },
+    {
+      "id": "AB-04",
+      "axis": "transform_layout",
+      "businessStep": "移动、旋转、缩放与镜像",
+      "mainEvidence": "主干 ModelTransformPanel 与 SceneTransformController 行为 smoke",
+      "hostEvidence": "hostflow_hb03_transform_layout",
+      "disposition": "equivalent",
+      "explanation": "参数编辑和 transient 反馈留在 UI，本地交互零 DLL 调用，确认时单次原子 Commit。"
+    },
+    {
+      "id": "AB-05",
+      "axis": "transform_layout",
+      "businessStep": "11x2 规则排版",
+      "mainEvidence": "main smoke scene-grid-layout",
+      "hostEvidence": "hostflow_hb03_transform_layout / applyGridLayout",
+      "disposition": "equivalent",
+      "explanation": "两端复用冻结排版语义；参考宿主通过公开 operation 暴露，不复制排版算法。"
+    },
+    {
+      "id": "AB-06",
+      "axis": "profile_settings",
+      "businessStep": "Profile 发现、选择与能力可用性",
+      "mainEvidence": "main smoke production-mode-selector；主干内部 ScenarioRegistry",
+      "hostEvidence": "hostflow_hb04_profile_catalog / profile UI smoke",
+      "disposition": "known_trim",
+      "explanation": "Profile id 和目录有意不同：主干读取内部注册表，参考宿主拥有独立目录并与 pm_module_info 结构化求交。"
+    },
+    {
+      "id": "AB-07",
+      "axis": "profile_settings",
+      "businessStep": "DPI、层厚、实体材料与 buildVolume",
+      "mainEvidence": "main smoke slice-settings-model / generated-effective-config",
+      "hostEvidence": "hostflow_hb05_slice_settings / settings UI smoke",
+      "disposition": "equivalent",
+      "explanation": "规范化参数均为 635/600、0.038 mm、RGB 实体；buildVolume 在参考宿主中明确由设备/宿主拥有。"
+    },
+    {
+      "id": "AB-08",
+      "axis": "slice_job_cancel",
+      "businessStep": "生产切片提交、进度与终态",
+      "mainEvidence": "主干 ProductionSliceRunSession 与 scene slice smoke",
+      "hostEvidence": "hostflow_hb06_slice_job / job UI smoke",
+      "disposition": "equivalent",
+      "explanation": "结果包和错误语义等价；主干使用 CLI/QProcess，参考宿主使用 Worker submit/poll/release 是批准的宿主实现差异。"
+    },
+    {
+      "id": "AB-09",
+      "axis": "slice_job_cancel",
+      "businessStep": "协作取消与临时产物清理",
+      "mainEvidence": "主干 scene-slice-cancel smoke",
+      "hostEvidence": "hostflow_hb06_slice_job",
+      "disposition": "equivalent",
+      "explanation": "取消均须到达终态且不遗留 staging/backup/lease；参考宿主不实现 PrintApp 作业队列。"
+    },
+    {
+      "id": "AB-10",
+      "axis": "package_result",
+      "businessStep": "生产包校验、层预览、通道图与报告",
+      "mainEvidence": "主干 LayerPreviewPanel/ReportPanel/ChannelChartPanel",
+      "hostEvidence": "hostflow_hb07_package_review / result UI smoke",
+      "disposition": "equivalent",
+      "explanation": "两端消费同一 p0.rgbwsv.2；参考宿主只经五项 package 能力读取，不猜测未声明文件。"
+    },
+    {
+      "id": "AB-11",
+      "axis": "package_result",
+      "businessStep": "切片专用材料闭环和工艺对比深度面板",
+      "mainEvidence": "主干 MaterialProcessPanel、MaterialPolicyEditor 与工艺对比页",
+      "hostEvidence": "参考宿主保留包摘要、命名报告和基础通道图",
+      "disposition": "known_trim",
+      "explanation": "核心结果可操作性保留，切片工程调参深度页不属于打印宿主核心流程。"
+    },
+    {
+      "id": "AB-12",
+      "axis": "workspace_persistence",
+      "businessStep": "窗口、分栏、工作区和常用参数恢复",
+      "mainEvidence": "主干 WorkspaceLayoutState 与布局 smoke",
+      "hostEvidence": "hostflow_hb08_workspace_state / workspace UI smoke",
+      "disposition": "equivalent",
+      "explanation": "两端恢复用户偏好但不恢复 scene/job/model/cache 运行时身份；schema 由各应用独立拥有。"
+    },
+    {
+      "id": "AB-13",
+      "axis": "diagnostics_scope",
+      "businessStep": "OpenVDB、拓扑修复、原始配置和高级诊断",
+      "mainEvidence": "主干 OpenVDB/修复/ConfigEditor/诊断工作区",
+      "hostEvidence": "HOSTFLOW 明确排除切片专有诊断类",
+      "disposition": "slicer_only",
+      "explanation": "这些能力继续由切片专用工作台承担，打印宿主只显示模块和生产包返回的结构化错误。"
+    }
+  ]
+}

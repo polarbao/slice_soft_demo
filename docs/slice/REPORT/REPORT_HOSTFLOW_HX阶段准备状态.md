@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C-01..02 COMPLETE**
+> 状态：**LOCAL COMPLETE / EXTERNAL ACK DEFERRED**
 > 日期：2026-08-08
 > 范围：HOSTFLOW H-A、H-B、H-C，不属于 Stage 14 编号任务。
 
@@ -10,7 +10,7 @@
 |---|---|---|---|
 | H-A 场景生命周期 | COMPLETE | H-A-01..04 全部完成；DTO 当前为 v1.7 | 无切片侧阻断 |
 | H-B 宿主业务 UI | COMPLETE | H-B-01..08 全部完成 | 无切片侧阻断 |
-| H-C 移植交付 | ACTIVE | H-C-01/02 已完成；H-C-03 可准备 | H-C-03 仍须独立准备审计 |
+| H-C 移植交付 | COMPLETE | H-C-01/02/03 全部完成 | 无切片侧阻断；打印侧 ACK 延期 |
 
 H-A-02 已完成：Facade 支持 add/remove 与候选态原子提交；Adapter 支持既有 handle、inline scene、
 受控隐式 scene 三条路径；import model resource 可映射到 scene authority；DTO v1.6 `sceneContext`
@@ -74,6 +74,11 @@ H-C-02 已完成：41 个 B 桶单元均有迁移动作、公开替代实现、�
 scene/profile/job/package 四个工作包形成 38-59 人日建议。机器门禁确认 H-C-01 B 桶与计划
 双向集合完全一致；这是打印侧排期输入，不代表打印侧已经实现或验收。
 
+H-C-03 已完成：主干和参考宿主使用同一规范化模型，并把主干
+`textured_nail_rgb_only_lower_support` 与宿主 `host-reference-default` 映射为等价 Legacy RGB
+实体语义。13 条差异覆盖 8 个维度，结论为 `9 equivalent / 3 known_trim / 1 slicer_only`。
+Debug/Release 主干 5 个 smoke、宿主 6 个 UI self-test 和 H-A/H-B CTest 各 18/18 PASS。
+
 ## Target State
 
 ```text
@@ -93,7 +98,7 @@ H-A-03 已证明宿主只经 11 个导出实现：
 ## Historical State
 
 - Stage 14F 切片侧已收口，打印侧外部验收延期。
-- H-A-01 在延期窗口内完成 add/remove 合同修订，但尚未实现运行时。
+- H-A-01..04 已在延期窗口内完成合同和运行时闭环。
 - 原 HOSTFLOW 草案把默认构建体积当作可直接使用的实现输入；当前审计已纠正为宿主权威。
 
 ## Remaining Decisions
@@ -106,5 +111,5 @@ H-A-03 已证明宿主只经 11 个导出实现：
 
 ## Next Action
 
-H-B 核心业务流程和 H-C-01/02 已收口。下一步准备并执行 H-C-03 主干/参考宿主 A/B 差异
-报告，关闭 HOSTFLOW 本地交付。打印侧 ACK 维持 `PENDING / DEFERRED`。
+HOSTFLOW 本地 H-A/H-B/H-C 已全部收口。后续只在打印侧正式接入时消费 H-C-01 三桶清单、
+H-C-02 迁移计划与 H-C-03 A/B 差异矩阵；打印侧 ACK 维持 `PENDING / DEFERRED`。
