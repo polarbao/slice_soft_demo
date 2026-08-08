@@ -11,6 +11,7 @@
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QSlider>
 #include <QSpinBox>
 #include <QStringList>
 #include <QTextStream>
@@ -212,6 +213,33 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
         << "HOSTFLOW_HB06_UI_PASS" << Qt::endl;
     return 0;
 }
+
+int RunHostFlowResultUiSmoke(const QString& modulePath)
+{
+    HostMainWindow window(modulePath);
+    const auto* panel = window.findChild<QObject*>(
+        QStringLiteral("hostPackageReviewPanel"));
+    const auto* layerSlider = window.findChild<QSlider*>(
+        QStringLiteral("hostPackageLayerSlider"));
+    const auto* previewMode = window.findChild<QComboBox*>(
+        QStringLiteral("hostPackagePreviewModeCombo"));
+    const auto* reportCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostPackageReportCombo"));
+    const auto* chart = window.findChild<QObject*>(
+        QStringLiteral("hostPackageChannelChart"));
+    if (panel == nullptr || layerSlider == nullptr || previewMode == nullptr
+        || reportCombo == nullptr || chart == nullptr
+        || layerSlider->isEnabled() || previewMode->count() < 7
+        || reportCombo->count() < 3)
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB07_UI_FAILED: result workspace is incomplete"
+            << Qt::endl;
+        return 12;
+    }
+    QTextStream(stdout) << "HOSTFLOW_HB07_UI_PASS" << Qt::endl;
+    return 0;
+}
 }
 
 int main(int argc, char* argv[])
@@ -262,7 +290,8 @@ int main(int argc, char* argv[])
             << "--hostflow-import-ui-self-test | "
             << "--hostflow-profile-ui-self-test | "
             << "--hostflow-settings-ui-self-test | "
-            << "--hostflow-job-ui-self-test]"
+            << "--hostflow-job-ui-self-test | "
+            << "--hostflow-result-ui-self-test]"
             << Qt::endl;
         return 0;
     }
@@ -295,6 +324,12 @@ int main(int argc, char* argv[])
             QStringLiteral("--hostflow-job-ui-self-test")))
     {
         return RunHostFlowJobUiSmoke(modulePath);
+    }
+    if (HasArgument(
+            arguments,
+            QStringLiteral("--hostflow-result-ui-self-test")))
+    {
+        return RunHostFlowResultUiSmoke(modulePath);
     }
     HostMainWindow window(modulePath);
     window.show();

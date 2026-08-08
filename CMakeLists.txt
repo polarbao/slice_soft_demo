@@ -261,6 +261,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.h
+    src/slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.cpp
+    src/slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.h
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.cpp
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.h
     src/slicer_core/pipeline/PipelineContext.cpp
@@ -341,6 +343,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/reports/ReportBase.h
     src/slicer_core/reports/MultiModelSceneReport.cpp
     src/slicer_core/reports/MultiModelSceneReport.h
+    src/slicer_core/reports/SceneCapabilitySummary.cpp
+    src/slicer_core/reports/SceneCapabilitySummary.h
     src/slicer_core/reports/MultiModelSceneMatrixReport.cpp
     src/slicer_core/reports/MultiModelSceneMatrixReport.h
     src/slicer_core/reports/MaterialClosureReport.cpp

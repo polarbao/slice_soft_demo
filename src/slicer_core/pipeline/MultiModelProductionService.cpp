@@ -1033,7 +1033,7 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
             std::move(writeRequest),
             std::move(composition),
             scene,
-            admission);
+            admission, composeRequest.instances, contract.profileconfigpath);
         runProfile.tiff_write_ms =
             written.profile.tiffwritems;
         runProfile.preview_write_ms =

@@ -3,6 +3,7 @@
 #include "slicer_core/config.h"
 #include "slicer_core/config/SlicePipelineConfig.h"
 #include "slicer_core/reports/MultiModelSceneReport.h"
+#include "slicer_core/reports/SceneCapabilitySummary.h"
 
 #include <stdexcept>
 #include <string>
@@ -70,7 +71,9 @@ WriteMultiModelSceneProductionPackage(
     RgbwsvProductionPackageWriteRequest request,
     SceneLayerComposeResult composition,
     const MultiModelScene& scene,
-    const SceneCollisionResult& admission)
+    const SceneCollisionResult& admission,
+    const std::vector<SceneInstanceRaster>& instanceRasters,
+    const std::filesystem::path& profileConfigPath)
 {
     ValidateScenePackageRequest(
         request,
@@ -94,6 +97,13 @@ WriteMultiModelSceneProductionPackage(
         composition,
         request.requestedPipelineMode,
         request.packageDir);
+    const auto capabilitySummary = BuildSceneCapabilitySummary(
+        scene, instanceRasters, profileConfigPath);
+    if (capabilitySummary.has_value())
+    {
+        request.perinstance = capabilitySummary->perinstance;
+        request.profileecho = capabilitySummary->profileecho;
+    }
     request.layers = std::move(composition.layers);
     return WriteRgbwsvProductionPackage(request);
 }

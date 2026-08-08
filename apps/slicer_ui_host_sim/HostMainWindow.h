@@ -4,6 +4,8 @@
 #include "HostModelImportWorkflow.h"
 #include "HostProfileCatalog.h"
 #include "HostProfilePanel.h"
+#include "HostPackageReviewController.h"
+#include "HostPackageReviewPanel.h"
 #include "HostSliceJobController.h"
 #include "HostSliceJobPanel.h"
 #include "HostSliceSettingsPanel.h"
@@ -69,6 +71,11 @@ private:
         const QString& packageDirectory,
         qint64 elapsedMs,
         qint64 cancelLatencyMs);
+    void LoadSliceResult(const QString& packageDirectory);
+    void OnResultLayerRequested(
+        int layerIndex,
+        const QStringList& channels);
+    void OnResultReportRequested(const QString& reportName);
     bool ApplyPendingSceneContext(QString* error);
     void RefreshSliceSettings();
     void RefreshSliceJobReadiness();
@@ -98,9 +105,11 @@ private:
     ModuleClient m_client;
     std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
     std::unique_ptr<HostSliceJobController> m_sliceJobController;
+    std::unique_ptr<HostPackageReviewController> m_packageReviewController;
     std::unique_ptr<IHostProfileCatalog> m_profileCatalog;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
     ViewWorkspaceWidget* m_workspace{nullptr};
+    QTabWidget* m_workspaceTabs{nullptr};
     QComboBox* m_defaultViewCombo{nullptr};
     QComboBox* m_projectionCombo{nullptr};
     QLabel* m_statusLabel{nullptr};
@@ -109,6 +118,7 @@ private:
     HostProfilePanel* m_profilePanel{nullptr};
     HostSliceSettingsPanel* m_sliceSettingsPanel{nullptr};
     HostSliceJobPanel* m_sliceJobPanel{nullptr};
+    HostPackageReviewPanel* m_packageReviewPanel{nullptr};
     HostTransformLayoutPanel* m_transformLayoutPanel{nullptr};
     QLabel* m_importSummaryLabel{nullptr};
     QTableWidget* m_preflightTable{nullptr};

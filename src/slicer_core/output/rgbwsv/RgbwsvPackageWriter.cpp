@@ -2,6 +2,7 @@
 
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/json_value.h"
+#include "slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.h"
 #include "slicer_core/reports/ReportWriter.h"
 #include "slicer_core/rip_reader.h"
 #include "slicer_core/tiff_io.h"
@@ -216,6 +217,7 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
         request.canceltoken,
         "request_validation");
     (void)ResolveWhiteSemantics(request);
+    ValidateRgbwsvCapabilitySummary(request);
     if (request.packageDir.empty())
     {
         throw std::invalid_argument(
@@ -981,8 +983,7 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             const Json entry = MakeLayerEntry(layer, stats, relativePath);
             layers.push_back(entry);
             layerStats.push_back(entry);
-            profile.reportbuildms +=
-                ElapsedMilliseconds(layerReportStart);
+            profile.reportbuildms += ElapsedMilliseconds(layerReportStart);
 
             const WriterClock::time_point previewStart =
                 WriterClock::now();
@@ -994,8 +995,7 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             ThrowIfCancellationRequested(
                 request.canceltoken,
                 "after_layer_preview");
-            profile.previewwritems +=
-                ElapsedMilliseconds(previewStart);
+            profile.previewwritems += ElapsedMilliseconds(previewStart);
             ++writtenLayerCount;
             if (request.layerwritecallback)
             {
@@ -1104,9 +1104,9 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             manifestObject["scene"] =
                 request.scene->manifestsummary;
         }
+        AppendRgbwsvCapabilitySummary(manifestObject, request);
         const Json manifest{std::move(manifestObject)};
-        profile.reportbuildms +=
-            ElapsedMilliseconds(reportBuildStart);
+        profile.reportbuildms += ElapsedMilliseconds(reportBuildStart);
 
         const WriterClock::time_point reportWriteStart =
             WriterClock::now();

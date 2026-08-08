@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE / H-A COMPLETE / H-B-01..06 COMPLETE / H-B-07 NEXT**
+> 状态：**ACTIVE / H-A COMPLETE / H-B-01..07 COMPLETE / H-B-08 NEXT**
 > 日期：2026-08-08
 > 范围：HOSTFLOW H-A、H-B、H-C，不属于 Stage 14 编号任务。
 
@@ -9,8 +9,8 @@
 | 任务组 | 准备状态 | 当前可执行范围 | 阻断 |
 |---|---|---|---|
 | H-A 场景生命周期 | COMPLETE | H-A-01..04 全部完成；DTO 当前为 v1.7 | 无切片侧阻断 |
-| H-B 宿主业务 UI | ACTIVE | H-B-01..06 已完成；H-B-07 为下一卡 | H-B-07..08 仍须按依赖串行闭环 |
-| H-C 移植交付 | NOT READY | 可提前建立文件清单模板 | H-C-01 等 H-B-07；H-C-02/03 继续依赖 H-C-01/H-B-07 |
+| H-B 宿主业务 UI | ACTIVE | H-B-01..07 已完成；H-B-08 为下一卡 | H-B-08 尚须完成准备审计 |
+| H-C 移植交付 | READY FOR PREP | H-C-01、H-C-03 已解除 H-B-07 前置 | H-C-02 仍依赖 H-C-01；各卡尚须准备审计 |
 
 H-A-02 已完成：Facade 支持 add/remove 与候选态原子提交；Adapter 支持既有 handle、inline scene、
 受控隐式 scene 三条路径；import model resource 可映射到 scene authority；DTO v1.6 `sceneContext`
@@ -55,6 +55,12 @@ H-B-06 已完成：参考宿主经公开 SPI 提交真实 `slice.rgbwsv` Worker 
 `.staging`、`.backup`、`.lease` 残留。Debug/Release 宿主联合门禁各 13/13、Worker 合同与
 取消门禁各 6/6 PASS。
 
+H-B-07 已完成：参考宿主新增“结果”工作区，仅经冻结的五项 `package.*` 能力完成生产包校验、
+协议/实例/Profile 摘要、逐层 descriptor、生产 TIFF 层预览、命名报告及 RGBWSV 六通道图。
+场景生产 Writer 补齐真实 `perInstance/profileEcho` 摘要，Facade 对旧包仍保持 fail-closed。
+Debug H-B-01..07 联合门禁 16/16、Release 含 package query 联合门禁 18/18 PASS；
+Debug/Release 宿主边界与源码尺寸守卫各 4/4 PASS。
+
 ## Target State
 
 ```text
@@ -87,6 +93,5 @@ H-A-03 已证明宿主只经 11 个导出实现：
 
 ## Next Action
 
-H-B-06 已完成。下一步先完成 H-B-07 结果查看准备审计，再按
-H-B-07 → H-B-08 串行推进。H-C-01/03 继续等待 H-B-07，
-打印侧 ACK 维持 `PENDING / DEFERRED`。
+H-B-07 已完成。下一步审计并执行 H-B-08 设置持久化与工作区状态；H-C-01 与 H-C-03
+已解除前置，可在各自准备 Gate 通过后并行推进。打印侧 ACK 维持 `PENDING / DEFERRED`。

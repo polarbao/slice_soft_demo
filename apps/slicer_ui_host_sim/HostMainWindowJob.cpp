@@ -109,6 +109,7 @@ void HostMainWindow::OnSliceJobCompleted(
             QStringLiteral("切片完成 · %1 ms · %2")
                 .arg(elapsedMs)
                 .arg(packageDirectory));
+        LoadSliceResult(packageDirectory);
     }
     else if (cancelled)
     {

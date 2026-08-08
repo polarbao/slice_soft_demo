@@ -49,6 +49,8 @@ HostMainWindow::HostMainWindow(
         DefaultSessionConfigPath());
     m_importWorkflow = std::make_unique<HostModelImportWorkflow>(m_client);
     m_sliceJobController = std::make_unique<HostSliceJobController>(m_client);
+    m_packageReviewController =
+        std::make_unique<HostPackageReviewController>(m_client);
     m_profileCatalog = std::make_unique<ReferenceHostProfileCatalog>();
     QString settingsError;
     m_viewSettings->Load(&settingsError);
@@ -81,10 +83,10 @@ void HostMainWindow::BuildInterface()
     m_pathLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     m_pathLabel->setWordWrap(true);
 
-    auto* tabs = new QTabWidget(centralWidget);
-    tabs->setObjectName(QStringLiteral("hostWorkspaceTabs"));
+    m_workspaceTabs = new QTabWidget(centralWidget);
+    m_workspaceTabs->setObjectName(QStringLiteral("hostWorkspaceTabs"));
 
-    auto* workspacePage = new QWidget(tabs);
+    auto* workspacePage = new QWidget(m_workspaceTabs);
     auto* workspaceLayout = new QHBoxLayout(workspacePage);
     workspaceLayout->setContentsMargins(0, 0, 0, 0);
     workspaceLayout->setSpacing(8);
@@ -157,9 +159,12 @@ void HostMainWindow::BuildInterface()
     workspaceSplitter->setStretchFactor(0, 1);
     workspaceSplitter->setStretchFactor(1, 0);
     workspaceLayout->addWidget(workspaceSplitter);
-    tabs->addTab(workspacePage, QStringLiteral("工作区"));
+    m_workspaceTabs->addTab(workspacePage, QStringLiteral("工作区"));
 
-    auto* settingsPage = new QWidget(tabs);
+    m_packageReviewPanel = new HostPackageReviewPanel(m_workspaceTabs);
+    m_workspaceTabs->addTab(m_packageReviewPanel, QStringLiteral("结果"));
+
+    auto* settingsPage = new QWidget(m_workspaceTabs);
     auto* settingsLayout = new QVBoxLayout(settingsPage);
     settingsLayout->setContentsMargins(16, 16, 16, 16);
     auto* displayGroup = new QGroupBox(
@@ -195,9 +200,9 @@ void HostMainWindow::BuildInterface()
     form->addRow(QStringLiteral("显示合同"), contractLabel);
     settingsLayout->addWidget(displayGroup);
     settingsLayout->addStretch(1);
-    tabs->addTab(settingsPage, QStringLiteral("设置"));
+    m_workspaceTabs->addTab(settingsPage, QStringLiteral("设置"));
 
-    auto* diagnosticPage = new QWidget(tabs);
+    auto* diagnosticPage = new QWidget(m_workspaceTabs);
     auto* diagnosticLayout = new QVBoxLayout(diagnosticPage);
     m_moduleInfoView = new QPlainTextEdit(diagnosticPage);
     m_moduleInfoView->setObjectName(QStringLiteral("moduleInfoView"));
@@ -205,11 +210,11 @@ void HostMainWindow::BuildInterface()
     m_moduleInfoView->setFont(QFontDatabase::systemFont(
         QFontDatabase::FixedFont));
     diagnosticLayout->addWidget(m_moduleInfoView);
-    tabs->addTab(diagnosticPage, QStringLiteral("模块诊断"));
+    m_workspaceTabs->addTab(diagnosticPage, QStringLiteral("模块诊断"));
 
     layout->addWidget(m_statusLabel);
     layout->addWidget(m_pathLabel);
-    layout->addWidget(tabs, 1);
+    layout->addWidget(m_workspaceTabs, 1);
     setCentralWidget(centralWidget);
 
     connect(m_defaultViewCombo,
@@ -271,6 +276,16 @@ void HostMainWindow::BuildInterface()
         &HostSliceJobController::SigCompleted,
         this,
         &HostMainWindow::OnSliceJobCompleted);
+    connect(
+        m_packageReviewPanel,
+        &HostPackageReviewPanel::SigLayerPreviewRequested,
+        this,
+        &HostMainWindow::OnResultLayerRequested);
+    connect(
+        m_packageReviewPanel,
+        &HostPackageReviewPanel::SigReportRequested,
+        this,
+        &HostMainWindow::OnResultReportRequested);
     connect(
         m_transformLayoutPanel,
         &HostTransformLayoutPanel::SigTransformRequested,
