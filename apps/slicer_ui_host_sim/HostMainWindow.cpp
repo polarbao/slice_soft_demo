@@ -55,14 +55,13 @@ HostMainWindow::HostMainWindow(
     QString settingsError;
     m_viewSettings->Load(&settingsError);
     BuildInterface();
+    RestoreWorkspaceState();
     if (!settingsError.isEmpty())
     {
         m_workspace->ShowViewError(settingsError);
     }
     LoadModule(modulePath);
 }
-
-HostMainWindow::~HostMainWindow() = default;
 
 void HostMainWindow::BuildInterface()
 {
@@ -90,22 +89,22 @@ void HostMainWindow::BuildInterface()
     auto* workspaceLayout = new QHBoxLayout(workspacePage);
     workspaceLayout->setContentsMargins(0, 0, 0, 0);
     workspaceLayout->setSpacing(8);
-    auto* workspaceSplitter = new QSplitter(Qt::Horizontal, workspacePage);
-    workspaceSplitter->setObjectName(QStringLiteral("workspaceSplitter"));
+    m_workspaceSplitter = new QSplitter(Qt::Horizontal, workspacePage);
+    m_workspaceSplitter->setObjectName(QStringLiteral("workspaceSplitter"));
 
-    m_workspace = new ViewWorkspaceWidget(workspaceSplitter);
+    m_workspace = new ViewWorkspaceWidget(m_workspaceSplitter);
     m_workspace->setObjectName(QStringLiteral("dualViewWorkspace"));
     m_workspace->SetMode(m_viewSettings->DefaultViewMode());
 
     auto* importPanel = new QGroupBox(
-        QStringLiteral("模型与导入预检"), workspaceSplitter);
+        QStringLiteral("模型与导入预检"), m_workspaceSplitter);
     importPanel->setObjectName(QStringLiteral("hostModelImportPanel"));
     importPanel->setMinimumWidth(300);
     importPanel->setMaximumWidth(420);
     auto* importLayout = new QVBoxLayout(importPanel);
-    auto* inspectorTabs = new QTabWidget(importPanel);
-    inspectorTabs->setObjectName(QStringLiteral("hostSceneInspectorTabs"));
-    auto* modelPage = new QWidget(inspectorTabs);
+    m_inspectorTabs = new QTabWidget(importPanel);
+    m_inspectorTabs->setObjectName(QStringLiteral("hostSceneInspectorTabs"));
+    auto* modelPage = new QWidget(m_inspectorTabs);
     auto* modelLayout = new QVBoxLayout(modelPage);
     modelLayout->setContentsMargins(4, 4, 4, 4);
     m_modelListPanel = new HostModelListPanel(modelPage);
@@ -138,27 +137,27 @@ void HostMainWindow::BuildInterface()
         2, QHeaderView::Stretch);
     m_preflightTable->setMinimumHeight(150);
     modelLayout->addWidget(m_preflightTable, 2);
-    inspectorTabs->addTab(modelPage, QStringLiteral("模型"));
+    m_inspectorTabs->addTab(modelPage, QStringLiteral("模型"));
 
-    m_profilePanel = new HostProfilePanel(inspectorTabs);
-    inspectorTabs->addTab(m_profilePanel, QStringLiteral("Profile"));
+    m_profilePanel = new HostProfilePanel(m_inspectorTabs);
+    m_inspectorTabs->addTab(m_profilePanel, QStringLiteral("Profile"));
 
-    m_sliceSettingsPanel = new HostSliceSettingsPanel(inspectorTabs);
-    inspectorTabs->addTab(m_sliceSettingsPanel, QStringLiteral("切片设置"));
+    m_sliceSettingsPanel = new HostSliceSettingsPanel(m_inspectorTabs);
+    m_inspectorTabs->addTab(m_sliceSettingsPanel, QStringLiteral("切片设置"));
 
-    m_sliceJobPanel = new HostSliceJobPanel(inspectorTabs);
-    inspectorTabs->addTab(m_sliceJobPanel, QStringLiteral("切片作业"));
+    m_sliceJobPanel = new HostSliceJobPanel(m_inspectorTabs);
+    m_inspectorTabs->addTab(m_sliceJobPanel, QStringLiteral("切片作业"));
 
-    m_transformLayoutPanel = new HostTransformLayoutPanel(inspectorTabs);
-    inspectorTabs->addTab(
+    m_transformLayoutPanel = new HostTransformLayoutPanel(m_inspectorTabs);
+    m_inspectorTabs->addTab(
         m_transformLayoutPanel, QStringLiteral("变换与排版"));
-    importLayout->addWidget(inspectorTabs, 1);
+    importLayout->addWidget(m_inspectorTabs, 1);
 
-    workspaceSplitter->addWidget(m_workspace);
-    workspaceSplitter->addWidget(importPanel);
-    workspaceSplitter->setStretchFactor(0, 1);
-    workspaceSplitter->setStretchFactor(1, 0);
-    workspaceLayout->addWidget(workspaceSplitter);
+    m_workspaceSplitter->addWidget(m_workspace);
+    m_workspaceSplitter->addWidget(importPanel);
+    m_workspaceSplitter->setStretchFactor(0, 1);
+    m_workspaceSplitter->setStretchFactor(1, 0);
+    workspaceLayout->addWidget(m_workspaceSplitter);
     m_workspaceTabs->addTab(workspacePage, QStringLiteral("工作区"));
 
     m_packageReviewPanel = new HostPackageReviewPanel(m_workspaceTabs);

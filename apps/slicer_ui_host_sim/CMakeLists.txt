@@ -24,6 +24,8 @@ add_executable(slicer_ui_host_sim
     HostProfilePanel.h
     HostTransformLayoutPanel.cpp
     HostTransformLayoutPanel.h
+    HostWorkspaceState.cpp
+    HostWorkspaceState.h
     HostMainWindow.cpp
     HostMainWindow.h
     HostMainWindowJob.cpp
@@ -31,6 +33,7 @@ add_executable(slicer_ui_host_sim
     HostMainWindowResult.cpp
     HostMainWindowScene.cpp
     HostMainWindowSettings.cpp
+    HostMainWindowState.cpp
     HostSliceSettings.cpp
     HostSliceSettings.h
     HostSliceSettingsPanel.cpp
@@ -598,6 +601,65 @@ add_test(
         --module $<TARGET_FILE:slicer_module>
 )
 
+add_executable(hostflow_hb08_workspace_state_tests
+    HostSliceSettings.cpp
+    HostSliceSettings.h
+    HostWorkspaceState.cpp
+    HostWorkspaceState.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostWorkspaceStateTests.cpp
+)
+
+set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    PROPERTIES LANGUAGE CXX
+)
+
+target_include_directories(hostflow_hb08_workspace_state_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim
+)
+
+target_link_libraries(hostflow_hb08_workspace_state_tests PRIVATE
+    Qt5::Widgets
+    bcrypt
+)
+
+if(MSVC)
+    target_compile_options(hostflow_hb08_workspace_state_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb08_workspace_state_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb08_workspace_state_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb08_workspace_state
+    COMMAND hostflow_hb08_workspace_state_tests
+)
+
+add_test(
+    NAME hostflow_hb08_workspace_ui_smoke
+    COMMAND slicer_ui_host_sim
+        --hostflow-workspace-ui-self-test
+        --module $<TARGET_FILE:slicer_module>
+)
+
 add_executable(stage14e03_interaction_tests
     ModuleClient.cpp
     ModuleClient.h
@@ -859,6 +921,8 @@ set_tests_properties(
     hostflow_hb05_settings_ui_smoke
     hostflow_hb06_job_ui_smoke
     hostflow_hb07_result_ui_smoke
+    hostflow_hb08_workspace_state
+    hostflow_hb08_workspace_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )

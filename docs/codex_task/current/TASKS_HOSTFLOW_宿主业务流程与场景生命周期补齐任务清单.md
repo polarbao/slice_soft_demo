@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
 > 文档状态：**ACTIVE / HQ-01 + HQ-07 + HQ-08-A AUTHORIZED**
-> 版本：v2.4 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
+> 版本：v2.5 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -11,8 +11,8 @@
 > Stage 14 对外接口。本文 H-A 仍是有效缺口分析，但不得在 14F 收口前修改冻结合同；
 > 用户已于 2026-08-07 授权 HQ-01，并建立
 > `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md`。H-A-01、H-A-02、H-A-04
-> 已按独立原子卡完成；H-A-03、H-B-01..06 也已完成。用户已于
-> 2026-08-08 授权 HQ-08-A，后续 H-B/H-C 卡仍须按卡号显式启动。
+> 已按独立原子卡完成；H-A-03、H-B-01..08 也已完成。用户已于
+> 2026-08-08 授权 HQ-08-A，后续 H-C 卡仍须按卡号显式启动。
 
 ---
 
@@ -182,12 +182,12 @@
 | **H-B-05** | 切片参数设置：DPI、层厚、输出目录、材料策略等；含有效配置预览与校验提示。**须体现 `buildVolume` 归属宿主**（`CLD_04`:360）| H-B-04 | 对照主干 `ConfigEditorPanel` / `QuickConfigPanel` / `EffectiveConfigGenerator` | **COMPLETE（2026-08-08）** |
 | **H-B-06** | 切片提交与作业管理：提交、进度条、取消、错误展示 | H-B-05 | 对照主干 `ProductionSliceRunSession`；取消 ≤2s 且无 `.staging` 残留 | **COMPLETE（2026-08-08）** |
 | **H-B-07** | 结果查看：包校验、摘要、报告、层预览与通道图 | H-B-06 | 对照主干 `PackageLoader` / `LayerPreviewPanel` / `ChannelChartPanel` | **COMPLETE（2026-08-08）** |
-| **H-B-08** | 设置持久化与工作区状态：会话恢复、布局记忆 | H-B-05 | 对照主干 `WorkspaceLayoutState` | PROPOSED |
+| **H-B-08** | 设置持久化与工作区状态：会话恢复、布局记忆 | H-B-05 | 对照主干 `WorkspaceLayoutState` | **COMPLETE（2026-08-08）** |
 
 **不依赖 H-A 的后续链**：
 
 ```text
-H-B-04..07（已完成）→ H-B-08
+H-B-04..08（已完成）
                     （Profile → 参数 → 切片 → 结果 → 持久化）
 H-B-02 · H-B-03（变换部分）                      可并行，用既有 fixture scene
 ```
@@ -455,6 +455,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-08 | v2.5 | 完成 H-B-08：参考宿主使用 `hostflow.workspace.1` 持久化窗口、分栏、业务页、Profile、DPI、层厚、输出目录、实体材料与 buildVolume；运行时 scene/job/model/cache 身份不持久化，旧 schema 与非法状态安全回退，自检进程不读写真实用户设置。Debug/Release H-A/H-B 联合门禁各 18/18、宿主边界各 4/4、源码尺寸守卫 PASS。H-B 核心业务流程全部完成，下一组为 H-C 移植交付。 |
 | 2026-08-08 | v2.4 | 完成 H-B-07：参考宿主仅经冻结 `package.*` 能力闭合生产包校验、实例/Profile 摘要、逐层 descriptor、生产 TIFF 预览、命名报告与 RGBWSV 六通道图；生产 Writer 补齐真实 `perInstance/profileEcho`，旧包仍 fail-closed。Debug H-B 联合门禁 16/16、Release 含 package query 联合门禁 18/18、Debug/Release 宿主边界各 4/4 PASS。下一卡为 H-B-08。 |
 | 2026-08-08 | v2.3 | 完成 H-B-06：参考宿主经公开 SPI 提交真实 `slice.rgbwsv` Worker 作业，非阻塞轮询进度、协作取消、终态释放、包身份闭合和错误详情展示；取消 ≤2s 且不残留临时目录。Debug/Release 宿主联合门禁各 13/13、Worker 合同与取消门禁各 6/6 PASS。下一卡为 H-B-07。 |
 | 2026-08-08 | v2.2 | 完成 H-B-05：参考宿主新增 635/600 DPI、0.038 mm 层厚、输出目录、RGB/W/V 实体材料和宿主设备 buildVolume 编辑；有效 Profile 自哈希预览与场景 Profile/buildVolume 绑定 fail-closed。Debug/Release H-B-01..05 各 8/8、模块边界各 3/3、主干设置 A/B smoke 通过。下一卡为 H-B-06。 |

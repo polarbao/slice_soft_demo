@@ -51,6 +51,13 @@ public:
         const hostbuildvolume& buildVolume);
 
     /**
+     * @brief Applies validated user preferences before a scene is created.
+     * @param settings Persisted host-owned parameters; model identity is ignored.
+     * @return This function does not return a value.
+     */
+    void SetPersistentSettings(const hostslicesettings& settings);
+
+    /**
      * @brief Returns all host-owned values currently shown in the editor.
      * @return Settings snapshot independent from module state.
      */

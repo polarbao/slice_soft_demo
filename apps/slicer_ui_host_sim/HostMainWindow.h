@@ -19,6 +19,7 @@
 class QComboBox;
 class QLabel;
 class QPlainTextEdit;
+class QSplitter;
 class QTableWidget;
 class QTabWidget;
 class ViewPresentationSettings;
@@ -47,6 +48,8 @@ private:
     void LoadModule(const QString& modulePath);
     void ConfigureProfiles();
     void SaveViewSettings();
+    void RestoreWorkspaceState();
+    void SaveWorkspaceState();
     void OnImportModel();
     void OnRemoveModels(const QStringList& instanceIds);
     void OnModelSelectionChanged(const QStringList& instanceIds);
@@ -109,7 +112,9 @@ private:
     std::unique_ptr<IHostProfileCatalog> m_profileCatalog;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
     ViewWorkspaceWidget* m_workspace{nullptr};
+    QSplitter* m_workspaceSplitter{nullptr};
     QTabWidget* m_workspaceTabs{nullptr};
+    QTabWidget* m_inspectorTabs{nullptr};
     QComboBox* m_defaultViewCombo{nullptr};
     QComboBox* m_projectionCombo{nullptr};
     QLabel* m_statusLabel{nullptr};
@@ -124,4 +129,5 @@ private:
     QTableWidget* m_preflightTable{nullptr};
     QPlainTextEdit* m_moduleInfoView{nullptr};
     QString m_selectedProfileId;
+    QString m_restoredProfileId;
 };

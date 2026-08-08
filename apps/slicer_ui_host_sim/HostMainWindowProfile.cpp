@@ -21,6 +21,11 @@ void HostMainWindow::ConfigureProfiles()
         return;
     }
     m_profilePanel->SetProfiles(resolution);
+    if (!m_restoredProfileId.isEmpty())
+    {
+        m_profilePanel->SelectProfile(m_restoredProfileId);
+        m_restoredProfileId.clear();
+    }
     m_selectedProfileId = m_profilePanel->SelectedProfileId();
     m_sliceSettingsPanel->SetSelectedProfileId(
         m_selectedProfileId,

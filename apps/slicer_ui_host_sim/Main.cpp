@@ -1,5 +1,6 @@
 #include "CapabilityCoverageRunner.h"
 #include "HostMainWindow.h"
+#include "HostWorkspaceState.h"
 #include "ModuleClient.h"
 
 #include <QApplication>
@@ -12,8 +13,10 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSlider>
+#include <QSplitter>
 #include <QSpinBox>
 #include <QStringList>
+#include <QTabWidget>
 #include <QTextStream>
 #include <QVariant>
 
@@ -240,6 +243,31 @@ int RunHostFlowResultUiSmoke(const QString& modulePath)
     QTextStream(stdout) << "HOSTFLOW_HB07_UI_PASS" << Qt::endl;
     return 0;
 }
+
+int RunHostFlowWorkspaceUiSmoke(const QString& modulePath)
+{
+    HostMainWindow window(modulePath);
+    const auto* workspaceTabs = window.findChild<QTabWidget*>(
+        QStringLiteral("hostWorkspaceTabs"));
+    const auto* inspectorTabs = window.findChild<QTabWidget*>(
+        QStringLiteral("hostSceneInspectorTabs"));
+    const auto* splitter = window.findChild<QSplitter*>(
+        QStringLiteral("workspaceSplitter"));
+    if (workspaceTabs == nullptr || inspectorTabs == nullptr
+        || splitter == nullptr || workspaceTabs->count() < 4
+        || inspectorTabs->count() < 5 || splitter->count() != 2
+        || HostWorkspaceState::SchemaVersion() != 1)
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB08_UI_FAILED: workspace state is incomplete"
+            << Qt::endl;
+        return 13;
+    }
+    QTextStream(stdout)
+        << "HOSTFLOW_HB08_UI_PASS tabs=" << workspaceTabs->count()
+        << "/" << inspectorTabs->count() << Qt::endl;
+    return 0;
+}
 }
 
 int main(int argc, char* argv[])
@@ -291,7 +319,8 @@ int main(int argc, char* argv[])
             << "--hostflow-profile-ui-self-test | "
             << "--hostflow-settings-ui-self-test | "
             << "--hostflow-job-ui-self-test | "
-            << "--hostflow-result-ui-self-test]"
+            << "--hostflow-result-ui-self-test | "
+            << "--hostflow-workspace-ui-self-test]"
             << Qt::endl;
         return 0;
     }
@@ -330,6 +359,12 @@ int main(int argc, char* argv[])
             QStringLiteral("--hostflow-result-ui-self-test")))
     {
         return RunHostFlowResultUiSmoke(modulePath);
+    }
+    if (HasArgument(
+            arguments,
+            QStringLiteral("--hostflow-workspace-ui-self-test")))
+    {
+        return RunHostFlowWorkspaceUiSmoke(modulePath);
     }
     HostMainWindow window(modulePath);
     window.show();

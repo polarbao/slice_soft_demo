@@ -14,6 +14,7 @@
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSpinBox>
 #include <QStandardPaths>
 #include <QVBoxLayout>
@@ -217,6 +218,34 @@ void HostSliceSettingsPanel::SetSceneAuthority(
     m_sceneBound = bound;
     m_sceneProfileId = profileId;
     m_sceneBuildVolume = buildVolume;
+    RefreshPreview();
+}
+
+void HostSliceSettingsPanel::SetPersistentSettings(
+    const hostslicesettings& settings)
+{
+    const QSignalBlocker dpiXBlocker(m_dpiXSpin);
+    const QSignalBlocker dpiYBlocker(m_dpiYSpin);
+    const QSignalBlocker layerBlocker(m_layerThicknessSpin);
+    const QSignalBlocker outputBlocker(m_outputEdit);
+    const QSignalBlocker materialBlocker(m_materialCombo);
+    const QSignalBlocker widthBlocker(m_buildWidthSpin);
+    const QSignalBlocker heightBlocker(m_buildHeightSpin);
+    const QSignalBlocker zBlocker(m_buildZSpin);
+    m_dpiXSpin->setValue(settings.dpix);
+    m_dpiYSpin->setValue(settings.dpiy);
+    m_layerThicknessSpin->setValue(settings.layerthicknessmm);
+    m_outputEdit->setText(settings.outputdirectory);
+    const int materialIndex = m_materialCombo->findData(
+        HostEffectiveProfileBuilder::MaterialStrategyId(
+            settings.materialstrategy));
+    if (materialIndex >= 0)
+    {
+        m_materialCombo->setCurrentIndex(materialIndex);
+    }
+    m_buildWidthSpin->setValue(settings.buildvolume.widthmm);
+    m_buildHeightSpin->setValue(settings.buildvolume.heightmm);
+    m_buildZSpin->setValue(settings.buildvolume.zlimitmm);
     RefreshPreview();
 }
 
