@@ -1,7 +1,7 @@
 # CODEX_PROMPT_HOSTFLOW 宿主业务流程与场景生命周期执行指令
 
-> 文档状态：**ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C NEXT**
-> 版本：v2.1 ｜ 日期：2026-08-08
+> 文档状态：**ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C-01 COMPLETE / H-C-02..03 NEXT**
+> 版本：v2.2 ｜ 日期：2026-08-08
 > **定位：独立补充专项的执行入口，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 任务卡：`docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md`
 
@@ -227,6 +227,7 @@ H-B-05 已把宿主 Profile 与设备 buildVolume 注入首次 `sceneContext`。
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-08 | v2.2 | H-C-01 完成当前 77 个主干 UI 头文件三桶分类：A=6、B=41、C=30；机器清单和门禁替代历史 68 个候选范围。H-C-02 已解除前置，H-C-03 仍可独立准备。 |
 | 2026-08-08 | v2.1 | H-B-08 完成带版本的宿主设置持久化、工作区布局记忆、非法状态安全回退和 self-test 隔离；明确不恢复 scene/job/model/cache 运行时身份。Debug/Release H-A/H-B 联合门禁各 18/18、宿主边界与源码尺寸守卫通过。H-B 全组完成，下一步为 H-C-01/H-C-03 准备审计。 |
 | 2026-08-08 | v2.0 | H-B-07 完成生产包校验、摘要、逐层生产 TIFF 预览、命名报告和 RGBWSV 通道图；场景生产 Writer 补齐真实 `perInstance/profileEcho`，不放宽 Facade。Debug/Release 联合门禁、宿主边界与源码尺寸守卫通过。下一卡为 H-B-08；H-C-01/03 已解除 H-B-07 前置。 |
 | 2026-08-08 | v1.9 | H-B-06 完成真实 Worker 作业提交、非阻塞进度、协作取消、终态释放、包身份闭合和错误详情展示；Debug/Release 宿主联合门禁各 13/13、Worker 合同与取消门禁各 6/6 PASS。下一卡为 H-B-07。 |

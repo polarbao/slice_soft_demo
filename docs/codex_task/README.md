@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-08-08
-> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C NEXT**；Stage 16 **PROPOSED / NOT ACTIVE**
+> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **ACTIVE / H-A COMPLETE / H-B COMPLETE / H-C-01 COMPLETE**；Stage 16 **PROPOSED / NOT ACTIVE**
 >
 > **⬇️ 切片侧收口后的下一步：见下方「切片侧收口后的接续专项」**
 
@@ -43,7 +43,7 @@ docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.
 > 按本目录使用规则「一次只执行用户明确指定的一个原子任务」，
 > **codex 不得自行启动**，须等用户指定卡号（例如「执行 H-B-04」）。
 >
-> **无需任何新授权即可启动的路径**：`H-C-01` 与 `H-C-03` 分别通过准备 Gate 后可并行；`H-C-02` 依赖 `H-C-01`。
+> **无需任何新授权即可启动的路径**：H-C-01 已完成；`H-C-02` 与 `H-C-03` 分别通过准备 Gate 后可并行。
 > （Profile → 参数 → 切片 → 结果 → 持久化；用既有 fixture scene，不改契约）
 >
 > **H-A 授权状态**：HQ-01 已授权；每张后续原子卡仍需用户点名执行。

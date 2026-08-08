@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
 > 文档状态：**ACTIVE / HQ-01 + HQ-07 + HQ-08-A AUTHORIZED**
-> 版本：v2.5 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
+> 版本：v2.6 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -199,7 +199,7 @@ H-B-02 · H-B-03（变换部分）                      可并行，用既有 fi
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| **H-C-01** | **逐文件三桶分类定稿**（§1.2 是候选，须逐个核实是否依赖 core 类型）| H-B-07 | 68 个文件全部归桶；桶 A 需给出「可直接复制」的证据（无 core include） | PROPOSED |
+| **H-C-01** | **逐文件三桶分类定稿**（§1.2 是候选，须逐个核实是否依赖 core 类型）| H-B-07 | 当前 77 个头文件全部归桶；桶 A 给出依赖闭包证据 | **COMPLETE（2026-08-08）** |
 | **H-C-02** | 移植指南：桶 B 每个文件的「改走 ABI」改造要点与工作量估算 | H-C-01 | 打印侧确认可据此排期 | PROPOSED |
 | **H-C-03** | 并排 A/B 对照报告：主干 UI 与宿主模拟对同一模型同一 Profile 的行为差异清单 | H-B-07 | 差异逐条有解释（属于「切片专有」或「已知裁剪」）| PROPOSED |
 
@@ -455,6 +455,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-08 | v2.6 | 完成 H-C-01：把历史 68 个范围校正为当前 77 个头文件，并以 `hostflow.migration_inventory.1` 唯一归类为 A=6、B=41、C=30；新增机器门禁验证全覆盖、理由码、路径和 A 桶无 core/非 A 本地依赖。H-C-02 前置已解除，H-C-03 可独立准备。 |
 | 2026-08-08 | v2.5 | 完成 H-B-08：参考宿主使用 `hostflow.workspace.1` 持久化窗口、分栏、业务页、Profile、DPI、层厚、输出目录、实体材料与 buildVolume；运行时 scene/job/model/cache 身份不持久化，旧 schema 与非法状态安全回退，自检进程不读写真实用户设置。Debug/Release H-A/H-B 联合门禁各 18/18、宿主边界各 4/4、源码尺寸守卫 PASS。H-B 核心业务流程全部完成，下一组为 H-C 移植交付。 |
 | 2026-08-08 | v2.4 | 完成 H-B-07：参考宿主仅经冻结 `package.*` 能力闭合生产包校验、实例/Profile 摘要、逐层 descriptor、生产 TIFF 预览、命名报告与 RGBWSV 六通道图；生产 Writer 补齐真实 `perInstance/profileEcho`，旧包仍 fail-closed。Debug H-B 联合门禁 16/16、Release 含 package query 联合门禁 18/18、Debug/Release 宿主边界各 4/4 PASS。下一卡为 H-B-08。 |
 | 2026-08-08 | v2.3 | 完成 H-B-06：参考宿主经公开 SPI 提交真实 `slice.rgbwsv` Worker 作业，非阻塞轮询进度、协作取消、终态释放、包身份闭合和错误详情展示；取消 ≤2s 且不残留临时目录。Debug/Release 宿主联合门禁各 13/13、Worker 合同与取消门禁各 6/6 PASS。下一卡为 H-B-07。 |
