@@ -16,7 +16,9 @@ STAGE15_PRECEDENCE     = CLEARED       （Stage 15 COMPLETE / PRODUCTION ENABLED
 EXTERNAL_EVIDENCE_GATE = DEFERRED_BY_USER
                          打印侧可实现性按假定成立；接口立即冻结；
                          打印侧、目标 RIP、干净机与实物证据不得伪记 PASS
-CURRENT_NEXT_TASK      = NONE（切片侧已收口；外部验收按用户决策延期）
+CURRENT_NEXT_TASK      = NONE（Stage 14 切片侧已收口；外部验收按用户决策延期）
+                         ⚠️ 但补充专项有待办：TASKS_HOSTFLOW 的 H-D 组（视图接线）
+                         详见下方 14E-04d 行的 2026-08-08 更正
 M_MVP_GATE             = PASS          （14E-01 纯 C 公开 ABI 闭环 Debug/Release PASS）
 14B_PREPARATION_GATE   = PASS          （Facade/Base-Engine 实施准备已冻结）
 14A_EXTERNAL_ACK       = PENDING       （14A-03 与 14A-04-R1 打印侧回签）
@@ -179,7 +181,15 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 14E-04 | ✅ COMPLETE（2026-08-07） | `TopViewRenderPolicy` + `MoveOptimizationPolicy`；top 真实纹理 blob、双身份缓存、宿主本地移动和 retained render | Debug/Release Stage 14E-02..04 各 6/6；60 次 Commit P95=0.3819 ms；300 本地帧零 ABI；30 秒 UI-M3=133.303% |
 | 14E-04b | ✅ COMPLETE（2026-08-07） | Qt 宿主 15 项公开能力覆盖 runner、机器证据、UI-M5 真实 Worker 取消与 UI-M6 缺 DLL 门禁 | Debug/Release Stage 14E-02..04b 各 7/7；P0=5/5、P1=5/5、P2=6/6；取消 103 ms 且 owned 临时产物零残留 |
 | 14E-04c | ✅ COMPLETE（2026-08-07） | `IRenderBackend`、`cpu_raster`、`SceneRenderPolicy`、`AppearanceCache` 与本地相机控制器闭合带纹理 three_d 显示 | Debug/Release Stage 14E-02..04c 各 8/8；UI-M7=0 次 DLL 调用；100352 三角面 30 秒 UI-M8 P5=51.4168 FPS |
-| 14E-04d | ✅ COMPLETE（2026-08-07） | `ViewModeSwitch`、中央俯视/3D 分段入口、session config 默认视图/投影持久化，以及双视图 buildVolume 自适应网格和白纹理对比 | Debug/Release Stage 14E-02..04d 各 9/9；UI-M9..13 PASS；100 次本地切换 DLL 调用为 0；missing texture 显式失败 |
+| 14E-04d | ⚠️ **COMPLETE（合同/门禁）但显示未接线** | `ViewModeSwitch`、中央俯视/3D 分段入口、session config 默认视图/投影持久化，以及双视图 buildVolume 自适应网格和白纹理对比 | Debug/Release Stage 14E-02..04d 各 9/9；UI-M9..13 PASS；100 次本地切换 DLL 调用为 0；missing texture 显式失败 |
+
+> 🔴 **2026-08-08 更正（14E-04c / 04d）**：这两张卡的门禁**全部是离屏渲染验证**。
+> 可见 UI 上没有像素输出 —— `ViewWorkspaceWidget.cpp:13-27` 的两个画布是
+> `QLabel` + 静态文字；`SceneRenderPolicy` / `TopViewRenderPolicy` / `CpuRasterBackend` /
+> `CameraController` 在 app 内的唯一引用者是 `CapabilityCoverageWorkflow`（批处理自检）。
+> `REPORT_14E_04d` §5 把接线推给打印侧的决定**已作废**，接线立为
+> `TASKS_HOSTFLOW` **H-D-01/02/04**。
+> **结论：3D 与俯视的渲染内核可用且有证据；但用户在应用里看不到模型。**
 | 14E-05 | ✅ COMPLETE（2026-08-07） | 主干 UI 大文件按职责拆分并关闭临时白名单 | Debug/Release 自测与代表性 UI Smoke PASS；新增实现文件均低于 500 行 |
 | 14E-06 | ✅ SLICER-SIDE COMPLETE（2026-08-07） | 打印侧文件级可移植清单与自动完整性验证 | 46 个宿主源/构建文件已登记；打印侧 ACK 仍待外部确认 |
 | 14E-07 | ✅ COMPLETE（2026-08-07） | VSCode 中新增独立 `SliceSoft 14E:` Debug/Release 编译、运行、自检与调试入口 | 原 UI Debug/Release 构建、部署、启动通过；封装宿主 Debug/Release SPI 自检与启动通过 |

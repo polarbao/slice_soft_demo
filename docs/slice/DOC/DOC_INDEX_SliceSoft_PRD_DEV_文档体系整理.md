@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-08-07
 > 当前分支：`feature/14-slicer-capability-package`，每个任务开始前仍需重新确认
-> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；03E-02 **GO_ON_DEMAND**；Stage 14 **SLICER-SIDE COMPLETE / EXTERNAL VALIDATION DEFERRED**；Stage 15 **COMPLETE / 19 OF 19**；HOSTFLOW **ACTIVE / H-A COMPLETE / H-B-01 NEXT**
+> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；03E-02 **GO_ON_DEMAND**；Stage 14 **SLICER-SIDE COMPLETE / EXTERNAL VALIDATION DEFERRED**；Stage 15 **COMPLETE / 19 OF 19**；HOSTFLOW **ACTIVE / H-A·H-B·H-C COMPLETE / H-D 待点名 / H-E 已授权分三批**
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -37,8 +37,9 @@
 当前分支：feature/14-slicer-capability-package，任务开始前通过 git 命令确认
 最新完成阶段：Stage 12E 与 Stage 13 批准范围已收口
 当前执行阶段：Stage 14 切片侧已收口，外部验收延期；Stage 15 COMPLETE / 19 OF 19；HOSTFLOW ACTIVE
-最新完成任务：Stage 15 全量收口（G1–G8）；RIP 六问两轮闭合，S2 条款收敛至 DOC_DECISION_14_S2
-当前推荐任务：HOSTFLOW H-A-01..04 已完成；DTO v1.7 已冻结 `sceneContext` 与 `applyGridLayout`，下一卡为 H-B-01
+最新完成任务：HOSTFLOW H-A-01..04 · H-B-01..08 · H-C-01..03 全部完成（2026-08-08）
+当前推荐任务：HOSTFLOW **H-D-01 俯视画布接线**（不改契约、无需新授权），建议与 R-A-01 同批
+已裁决：HQ-09 = 乙（参考宿主等价于封装前切片软件，分 E1/E2/E3 三批）；HQ-10 = 甲（场景保存加载归 PrintApp）
 ```
 
 09P-R1 已完成：
@@ -491,6 +492,8 @@ docs/slice/DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md ←
 docs/slice/DOC/DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md ← 【HQ-01 / DTO v1.5】
 docs/slice/DOC/DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md ← 【HQ-07 已关闭 / DTO v1.6】
 docs/slice/DOC/DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md ← 【H-A-04 / DTO v1.7】
+docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_D_R1_视图接线归属与14E_04d延期作废.md ← 【H-D 组真源 / 决策反转】
+docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md ← 【H-E 组真源 / HQ-09=乙 · HQ-10=甲】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_02_场景生命周期运行时准备.md ← 【H-A-02 准备真源】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_04_规则排版运行时准备.md ← 【H-A-04 准备真源】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_03_空场景端到端闭环准备.md ← 【H-A-03 闭环证据】

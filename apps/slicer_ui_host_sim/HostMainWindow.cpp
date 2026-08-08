@@ -1,6 +1,7 @@
 #include "HostMainWindow.h"
 
 #include "ViewWorkspaceWidget.h"
+#include "render/TopViewRenderPolicy.h"
 #include "settings/ViewPresentationSettings.h"
 
 #include <QAbstractItemView>
@@ -369,6 +370,7 @@ void HostMainWindow::OnImportModel()
     }
     RefreshSliceSettings();
     ShowImportResult(result);
+    RefreshTopView();
 }
 
 void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)

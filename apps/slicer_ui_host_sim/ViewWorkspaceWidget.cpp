@@ -1,5 +1,7 @@
 #include "ViewWorkspaceWidget.h"
 
+#include "TopViewCanvasWidget.h"
+
 #include <QButtonGroup>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -8,9 +10,11 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 namespace
 {
-QLabel* CreateCanvas(
+QLabel* CreatePlaceholderCanvas(
     const QString& objectName,
     const QString& title,
     QWidget* parent)
@@ -73,11 +77,10 @@ ViewWorkspaceWidget::ViewWorkspaceWidget(QWidget* parent)
 
     m_canvasStack = new QStackedWidget(this);
     m_canvasStack->setObjectName(QStringLiteral("viewCanvasStack"));
-    m_canvasStack->addWidget(CreateCanvas(
-        QStringLiteral("topCanvas"),
-        QStringLiteral("俯视工作区\n1 mm / 10 mm 自适应网格"),
-        m_canvasStack));
-    m_canvasStack->addWidget(CreateCanvas(
+    m_topCanvas = new TopViewCanvasWidget(m_canvasStack);
+    m_topCanvas->setObjectName(QStringLiteral("topCanvas"));
+    m_canvasStack->addWidget(m_topCanvas);
+    m_canvasStack->addWidget(CreatePlaceholderCanvas(
         QStringLiteral("threeDCanvas"),
         QStringLiteral("3D 工作区\n正交 / 透视 · 七向预设"),
         m_canvasStack));
@@ -129,6 +132,29 @@ void ViewWorkspaceWidget::SetSelectedInstances(
             : QStringLiteral("已选择 %1 个模型：%2")
                   .arg(instanceIds.size())
                   .arg(instanceIds.join(QStringLiteral("、"))));
+}
+
+void ViewWorkspaceWidget::SetTopImage(const QImage& image)
+{
+    m_topCanvas->SetImage(image);
+}
+
+void ViewWorkspaceWidget::ClearTopImage()
+{
+    m_topCanvas->ClearImage();
+}
+
+QSize ViewWorkspaceWidget::TopRenderSize() const
+{
+    const QSize canvasSize = m_topCanvas->size();
+    return {
+        (std::max)(canvasSize.width(), 800),
+        (std::max)(canvasSize.height(), 480)};
+}
+
+TopViewCanvasWidget* ViewWorkspaceWidget::TopCanvas() const
+{
+    return m_topCanvas;
 }
 
 void ViewWorkspaceWidget::ApplyMode()

@@ -1,5 +1,6 @@
 #include "ModuleClient.h"
 #include "SceneInteractionController.h"
+#include "TopViewCanvasWidget.h"
 #include "ViewWorkspaceWidget.h"
 #include "camera/CameraController.h"
 #include "camera/ViewModeSwitch.h"
@@ -291,6 +292,23 @@ int main(int argc, char* argv[])
     const QImage topImage = topRenderer.Render(topFrame, QSize(900, 360));
     Require(CountColorful(topImage) > 0,
             QStringLiteral("UI-M9 top texture is not visible"));
+
+    ViewWorkspaceWidget visibleWorkspace;
+    visibleWorkspace.resize(960, 520);
+    visibleWorkspace.SetTopImage(topImage);
+    TopViewCanvasWidget* topCanvas = visibleWorkspace.TopCanvas();
+    Require(topCanvas != nullptr && topCanvas->HasImage(),
+            QStringLiteral("H-D-01 top canvas did not retain ViewData image"));
+    client.ResetCallCount();
+    topCanvas->ZoomAt(1.5, QPointF(320.0, 180.0));
+    topCanvas->PanBy(QPointF(24.0, -12.0));
+    Require(topCanvas->ZoomFactor() > 1.0
+            && topCanvas->PanOffset() != QPointF()
+            && client.CallCount() == 0U,
+            QStringLiteral("H-D-01 local pan/zoom crossed DLL boundary"));
+    visibleWorkspace.show();
+    QApplication::processEvents();
+    visibleWorkspace.hide();
 
     CpuRasterBackend backend;
     SceneRenderPolicy threeDRenderer(client, backend);

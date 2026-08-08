@@ -34,6 +34,7 @@ add_executable(slicer_ui_host_sim
     HostMainWindowScene.cpp
     HostMainWindowSettings.cpp
     HostMainWindowState.cpp
+    HostMainWindowView.cpp
     HostSliceSettings.cpp
     HostSliceSettings.h
     HostSliceSettingsPanel.cpp
@@ -51,6 +52,8 @@ add_executable(slicer_ui_host_sim
     SceneInteractionController.h
     TransformCommitPolicy.cpp
     TransformCommitPolicy.h
+    TopViewCanvasWidget.cpp
+    TopViewCanvasWidget.h
     ViewWorkspaceWidget.cpp
     ViewWorkspaceWidget.h
     render/AppearanceCache.cpp
@@ -835,6 +838,8 @@ add_executable(stage14e04d_view_switch_tests
     SceneInteractionController.h
     TransformCommitPolicy.cpp
     TransformCommitPolicy.h
+    TopViewCanvasWidget.cpp
+    TopViewCanvasWidget.h
     ViewWorkspaceWidget.cpp
     ViewWorkspaceWidget.h
     camera/CameraController.cpp
@@ -903,9 +908,75 @@ add_test(
         --module $<TARGET_FILE:slicer_module>
 )
 
+add_executable(hostflow_hd01_top_canvas_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    ModuleClient.cpp
+    ModuleClient.h
+    TopViewCanvasWidget.cpp
+    TopViewCanvasWidget.h
+    ViewWorkspaceWidget.cpp
+    ViewWorkspaceWidget.h
+    camera/ViewModeSwitch.cpp
+    camera/ViewModeSwitch.h
+    render/TopViewRenderPolicy.cpp
+    render/TopViewRenderPolicyData.cpp
+    render/TopViewRenderPolicy.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostTopViewCanvasTests.cpp
+)
+
+target_include_directories(hostflow_hd01_top_canvas_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hd01_top_canvas_tests PRIVATE
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
+    bcrypt
+)
+
+add_dependencies(hostflow_hd01_top_canvas_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hd01_top_canvas_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hd01_top_canvas_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hd01_top_canvas_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hd01_top_canvas
+    COMMAND hostflow_hd01_top_canvas_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+        --evidence-root ${CMAKE_BINARY_DIR}/hostflow_hd01_evidence/$<CONFIG>
+)
+
 set_tests_properties(
     slicer_stage14e04d_dual_view_contract_test
+    hostflow_hd01_top_canvas
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
+
+set_tests_properties(
+    hostflow_hd01_top_canvas
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 180
 )
 
 set_tests_properties(

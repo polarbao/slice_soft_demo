@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
-> 文档状态：**LOCAL COMPLETE / EXTERNAL ACK DEFERRED**
-> 版本：v2.8 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
+> 文档状态：**ACTIVE — H-D 待点名开工 / H-E 范围已授权分三批**（H-A/H-B/H-C 完成；外部 ACK 延期）
+> 版本：v3.1 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -12,7 +12,23 @@
 > 用户已于 2026-08-07 授权 HQ-01，并建立
 > `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md`。H-A-01、H-A-02、H-A-04
 > 已按独立原子卡完成；H-A-03、H-B-01..08 也已完成。用户已于
-> 2026-08-08 授权 HQ-08-A；H-C-01..03 已完成，HOSTFLOW 本地交付关闭。
+> 2026-08-08 授权 HQ-08-A；H-C-01..03 已完成。
+>
+> **2026-08-08 复核结论（A 级）**：H-A/H-B/H-C 十五张卡的**业务与数据链路**确已闭合，
+> 但**视图显示链路未接线** —— 中央画布仍是占位 `QLabel`，渲染与交互内核只被批处理自检
+> 引用。因此 §4「操作员能独立完成」的验收口径**尚未真正达成**，本专项不能算关闭。
+> 新增 **H-D 组（视图接线与端到端可操作性，6 张卡）**，状态 `PROPOSED`，待用户点名启动。
+>
+> **同时发现第二层缺口**：即使 H-D 全部完成，参考宿主**仍不等于封装前切片软件的操作能力** ——
+> H-C-02 机器计划中 8 项 `adapt_to_host_profile` 的替代物（支撑编辑、材料工艺 Profile 编辑、
+> 生产纹理设置）**当前并不存在**，另缺 STL 与批量导入。列为 **H-E 组（6 张卡）**，
+> 但其范围**超出用户此前「HQ-03 只做核心流程」的裁决**，须由用户重新裁决（**HQ-09**）。
+> 场景/项目保存加载另立 **HQ-10**。
+>
+> **2026-08-08 用户裁决**：**HQ-09 = 乙**（提升到等价水位，分 E1/E2/E3 三批）；
+> **HQ-10 = 甲**（场景保存加载归 PrintApp，参考宿主不实现）。
+> 权威记录：`DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md`。
+> H-E 六卡范围已授权，但仍须用户点名单张原子卡后方可开工。
 
 ---
 
@@ -203,6 +219,123 @@ H-B-02 · H-B-03（变换部分）                      可并行，用既有 fi
 | **H-C-02** | 移植指南：桶 B 每个文件的「改走 ABI」改造要点与工作量估算 | H-C-01 | 41 项机器计划、工作包顺序与 38-59 人日建议 | **COMPLETE（2026-08-08）** |
 | **H-C-03** | 并排 A/B 对照报告：主干 UI 与宿主模拟对同一模型同一 Profile 语义的行为差异清单 | H-B-07 | 13 条差异覆盖 8 个维度；Debug/Release 对照门禁通过 | **COMPLETE（2026-08-08）** |
 
+### H-D 组 · 视图接线与端到端可操作性（2026-08-08 新增）
+
+> 🔴 **本组的成立原因是一条 A 级代码事实：渲染内核已交付，但没有接到可见画布上。**
+>
+> `apps/slicer_ui_host_sim/ViewWorkspaceWidget.cpp:13-27` 的两个画布是
+> `QLabel` + 静态文字（`"俯视工作区\n1 mm / 10 mm 自适应网格"`、
+> `"3D 工作区\n正交 / 透视 · 七向预设"`），**没有任何像素输出**。
+>
+> `SceneRenderPolicy` / `TopViewRenderPolicy` / `CpuRasterBackend` / `CameraController` /
+> `SceneInteractionController` / `TransformCommitPolicy` / `MoveOptimizationPolicy`
+> 在整个 app 中的引用位置只有：**自身文件、`CMakeLists.txt`、
+> `CapabilityCoverageWorkflow.cpp`（批处理自检）**。
+> `HostMainWindow.cpp` 对 `m_workspace` 的调用只有三处：
+> `SetMode` / `ShowViewError` / `SetSelectedInstances`。
+>
+> `REPORT_14E_04d` §5 自己写明了这次延期：
+> 「参考宿主的中央画布目前是双视图交互入口；**真实场景载入与渲染策略接线由打印侧集成时
+> 按本任务类边界复用**。」
+>
+> ⛔ **该延期决定作废。** 理由：本专项 §4 的验收口径要求「操作员能独立完成……」，
+> 而模型不可见时排版、变换、越界都无法用眼判断；把接线推给打印侧，等于把
+> 「参考实现」最难的一段留给移植方，与 Stage 14「最少改动移植」目标直接冲突。
+> **接线归切片侧，在 H-D 组内完成。**
+
+| 卡号 | 任务 | 前置 | 验收 | 状态 |
+|---|---|---|---|---|
+| **H-D-01** | **俯视画布接线**：用 `TopViewRenderPolicy` + `QImage` 输出替换 `topCanvas` 占位 `QLabel`；显示当前 `sceneHandle/sceneRevision` 的真实带纹理俯视 + buildVolume 平台与 1 mm/10 mm 网格 | 无（14E-04 已交付策略）| 导入模型后**画布上能看到模型**；缩放/平移可用；纹理失败显式报错不显示灰模 | **COMPLETE（2026-08-09）** |
+| **H-D-02** | **3D 画布接线**：`SceneRenderPolicy` + `CpuRasterBackend` 输出接 `threeDCanvas`；`CameraController` 接鼠标/滚轮事件与七向预设、正交/透视切换控件 | H-D-01 | 3D 可 orbit/pan/光标中心 zoom；**UI-M7 相机操作期跨 DLL 调用恒为 0**（实测计数，不得推断）| **PROPOSED** |
+| **H-D-03** | **三车道拖拽接线**：`SceneInteractionController` + `TransformCommitPolicy` + `MoveOptimizationPolicy` 接画布拾取与拖拽 | H-D-02 | **UI-M1 拖拽期跨 DLL 调用恒为 0**；松手一次原子 Commit 推进一次 revision；Stale 回滚可演示（UI-M4）| **PROPOSED** |
+| **H-D-04** | **视图刷新事件接线**：导入 / add / remove / transform / applyGridLayout / `sceneContext` 变更后自动 Refresh；按 `DOC_SCHEMA_14` §6 失效规则，**`worldMatrix` 变化不得使网格缓冲失效** | H-D-01 | 22 实例排版后视图一次刷新到位；`MeshUploadCount` 在纯变换后**增量为 0**（实测）| **PROPOSED** |
+| **H-D-05** | **打开切片数据目录**：结果页新增「打开包目录」，`QDesktopServices::openUrl(QUrl::fromLocalFile(...))`；路径**只能取作业返回的 `packageDir`**，不得自行拼接或猜测；目录缺失显式 fail-closed | H-B-07（已完成）| 点击后系统文件管理器定位到包目录；作业失败或路径不存在时按钮禁用并给出原因 | **PROPOSED** |
+| **H-D-06** | **端到端人工可操作性验收**：按 §4 口径逐步走通七步流程并归档截图；把「显示」维度回填 `REPORT_HOSTFLOW_H_C_03` | H-D-01..05 | 七步全部人工可完成；A/B 对照新增「显示」维度差异条目 | **PROPOSED** |
+
+> 决策记录：`DOC_DECISION_HOSTFLOW_H_D_R1_视图接线归属与14E_04d延期作废.md`
+
+> H-D-01 实际门禁：Debug/Release 真实纹理甲片俯视画布与 14E-04d 回归均 PASS；
+> 本地 pan/zoom 的 DLL 调用计数为 0；H-A/H-B 联合门禁各 22/22 PASS。
+> 证据见 `REPORT_HOSTFLOW_H_D_01_俯视画布接线当前状态.md`。
+
+> 🔴 **H-D-01 / H-D-05 开工前必看：`HostMainWindow.cpp` 当前 484 行，门禁上限 500 行，只剩 16 行余量（A）。**
+> 接线代码**必然放不下**。按既有拆分惯例（`HostMainWindowScene/Job/Result/Profile/Settings/State.cpp`），
+> H-D-01 应新建 **`HostMainWindowView.cpp`** 承载视图刷新与画布接线，
+> H-D-05 的"打开包目录"槽应放入既有 **`HostMainWindowResult.cpp`**。
+> ⛔ **不得把 `apps/slicer_ui_host_sim/` 加入 14B-06 白名单来绕过门禁。**
+
+> ⚠️ **H-D-01 会把一个既有缺陷从「不可见」变成「用户可见」**：
+> `src/slicer_core/api/viewdata/SceneViewMeshBuilder.cpp:143-146` 的 LOD 用**均匀跳采样**
+> （`stride = (tris + limit - 1) / limit`，`groupIndex += stride`），
+> 超过阈值后会产出**满身是洞的网格**。阈值约 13.8k 三角面/实例。
+> 因此 `TASKS_RENDER` 的 **R-A-01（实测甲片模型三角面数）必须与 H-D-01 同批执行** ——
+> 它决定这个缺陷在真实资产上是否会被触发。
+
+### H-E 组 · 参数深度与导入补齐（✅ **2026-08-08 用户裁决 HQ-09 = 乙，范围已授权，分三批执行**）
+
+> ✅ **HQ-09 已裁决：乙 —— 参考宿主提升到「等价于切片库封装前的切片软件」水位，分批执行。**
+> 决策记录：`DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md`
+>
+> **批次划分（按「用户可感知价值 / 单位成本」降序）：**
+>
+> ```text
+> E1  H-E-01 STL 导入 · H-E-03 支撑参数编辑        ← 立即价值，建议随 H-D 一并推进
+> E2  H-E-04 材料工艺 Profile · H-E-05 生产纹理设置  ← 依赖 E1 建立的 Profile 编辑框架
+> E3  H-E-02 批量导入 · H-E-06 白区预检接入          ← 便利性与安全网，晚做不返工
+> ```
+>
+> ⚠️ **每批完成后必须复核，不得三批一次性排完。**
+> H-E-03 会先建立「宿主 Profile 可编辑段」的结构形态，E2 在其上扩展；
+> 若 E1 完成后发现框架需调整，E2 尚未开工则返工成本为零。
+>
+> ⛔ **H-E 全组不新增 ABI 面**：新增参数一律进入**宿主 Profile**，经既有 `slice.rgbwsv`
+> 的有效配置通道下发。**不得改为读取内部 `slicer_scenarios.json` 或 `samples/configs/**`**
+> —— 那会推翻 HQ-08-A 已确立的「Profile 目录归宿主」。
+
+> 🔴 **成立原因**：H-D 只解决「看得见」。即使 H-D 全部完成，参考宿主**仍不等于
+> 封装前切片软件的操作能力** —— 差的不是显示，是**参数深度与导入广度**。
+>
+> 证据来自 H-C-02 自己的机器计划 `assets/hostflow_hc02_migration_plan.json`：
+> 41 项 B 桶中 `action = adapt_to_host_profile` 的 **8 项**，其 `replacement` 字段
+> 指向的宿主功能**当前并不存在**，是计划目标而非既有实现：
+
+| 主干单元 | 计划替代物 | 宿主现状 |
+|---|---|---|
+| `widgets/SupportEditor.h` | 「host support Profile editor」| ❌ 不存在 |
+| `widgets/MaterialProcessProfileEditor.h` | 「host material process Profile editor」| ❌ 不存在 |
+| `widgets/MaterialRoleMappingEditor.h` | 「host material role Profile editor」| ❌ 不存在 |
+| `widgets/MaterialPolicyEditor.h` | 「host material strategy editor」| ❌ 不存在 |
+| `widgets/ProductionTextureSettingsPanel.h` | 「HostSliceSettingsPanel advanced Profile section」| ❌ 不存在 |
+| `services/ProductionTextureSettingsContract.h` | 「host Profile schema and editor DTO」| ❌ 不存在 |
+| `services/ProductionTextureSettingsModel.h` | 「HostSliceSettings model」| ⚠️ 仅覆盖 DPI/层厚/输出目录/材料策略 |
+| `services/SingleMaterialReliefResolver.h` | 「host Profile material strategy」| ❌ 不存在 |
+
+> 核实方式：`HostSliceSettings.h` 中 `support` / `texture` / `支撑` / `纹理` **零命中**。
+
+| 卡号 | 批次 | 任务 | 前置 | 验收 | 状态 |
+|---|:--:|---|---|---|---|
+| **H-E-01** | E1 | **STL 导入**：文件过滤增加 `.stl`，预检结果展示 | 无 | `src/slicer_core/model.cpp:626` 已支持 `.stl`（A 级）；**纯 UI 缺口，不需改 ABI**；ASCII/binary 两种编码均可导入并切片 | **AUTHORIZED / 待点名** |
+| **H-E-03** | E1 | **支撑参数编辑**：宿主 Profile 支撑段可编辑；对照主干 `SupportEditor` | 无 | 与 `lower_support` 类 Profile 的实际字段对齐；越界值 fail-closed；**本卡确立「宿主 Profile 可编辑段」的结构形态，E2 在其上扩展** | **AUTHORIZED / 待点名** |
+| **H-E-04** | E2 | **材料工艺 Profile 编辑**：材料策略 / 角色映射 / 单材料浮雕；对照 `MaterialPolicyEditor`、`MaterialRoleMappingEditor`、`MaterialProcessProfileEditor`、`SingleMaterialReliefResolver` | H-E-03（复用其编辑框架）| 编辑结果进入宿主 Profile 并反映到有效配置自哈希；**不得改用内部 JSON** | **AUTHORIZED / 待 E1 批次门** |
+| **H-E-05** | E2 | **生产纹理设置**：对照 `ProductionTextureSettingsPanel` + `Contract` + `Model` | H-E-04 | 纹理应用模式、UV 策略等进入有效 Profile；与 Stage 15 `unprintable_white_*` 字段协同 | **AUTHORIZED / 待 E1 批次门** |
+| **H-E-02** | E3 | **批量导入**：多选文件一次导入并逐个 `addInstance`；对照主干 `SceneBatchImportController` | H-E-01 | 单次原子 Commit 或明确的逐项失败语义；**部分失败不得留半个场景** | **AUTHORIZED / 待 E2 批次门** |
+| **H-E-06** | E3 | **纹理白区预检接入**：对照主干 `TextureWhitePreflightService`（Stage 15 15C 成果）| H-E-05 | 导入/切片前给出保守告警；结果携带 scene/revision/contentHash，切换场景后旧结果丢弃（Stage 15 坑 7）| **AUTHORIZED / 待 E2 批次门** |
+
+**批次门**（每批完成后复核，不得三批一次排完）：
+
+```text
+E1 完成 → 复核实际可用性，再决定 E2 是否照原样执行
+E2 完成 → 复核 8 项 adapt_to_host_profile 是否已全部有归宿
+E3 完成 → 回填 REPORT_HOSTFLOW_H_C_03 的 known_trim 条目
+```
+
+> 📌 **`SceneDocument`（场景/项目保存与加载）：HQ-10 已裁决为【甲】—— 归 PrintApp，参考宿主不实现。**
+> 依据：`CLD_04` §4.2 已把持久化与多任务划归 PrintApp；两侧各存一份工程格式必然产生权威之争；
+> 该项不影响「一次切片作业能否完成」。
+> **`SceneDocument.h` 维持 B 桶 `abi_scene`**（打印侧按 H-C-02 计划自行实现），
+> **`ProjectToolsDock.h` 维持 C 桶 `debug_only`**（不移植）。
+> ⚠️ 因此参考宿主**重启后场景丢失、须重新导入**是**已裁决的预期行为**，不是缺陷，不得作为 bug 提报。
+
 ---
 
 ## 4. 业务级验收硬标准
@@ -283,27 +416,81 @@ Debug/Release 门禁，H-A 全组收口。
 
 ### 5.3 建议排序
 
+> ⚠️ **2026-08-08 再次更正**：H-A/H-B/H-C 已全部完成，本表原 P0/P1/P2 均已消耗。
+> 新的 P0 是 **H-D 组视图接线** —— 当前唯一阻止「操作员能独立走通七步流程」的缺口。
+>
+> **为什么 H-D-01 单独排最前**：投入最小、可见收益最大。策略类已交付且有门禁，
+> 接线本身只是把 `QImage` 输出接到画布并处理 resize 与刷新时机；
+> 做完这一张，用户第一次能在新宿主里**看见自己导入的模型**，
+> 后续所有显示类问题才有了可观察的载体。
+
+### 5.3.1 并行性判定（H-D-01 · R-A-01 · H-D-05）
+
+**结论：R-A-01 可完全并行；H-D-01 与 H-D-05 建议串行，不建议真并行。**
+
+| 卡 | 触碰的文件 | 冲突 |
+|---|---|:--:|
+| **R-A-01** | 无源码改动（只统计三角面数、出数字）| **零** |
+| **H-D-01** | `ViewWorkspaceWidget.h/.cpp`、新建 `HostMainWindowView.cpp`、`HostMainWindow.h` | ⚠️ |
+| **H-D-05** | `HostPackageReviewPanel.h/.cpp`（283 行）、`HostMainWindowResult.cpp`、`HostMainWindow.h` | ⚠️ |
+
+```text
+H-D-01 与 H-D-05 的实现文件【完全不重叠】，
+但两者都要在 HostMainWindow.h 增加成员/槽声明 —— 这是唯一的共享写入点。
+```
+
+**判定（P）**：
+
+```text
+✅ R-A-01 与任意卡同批     零源码改动；且它的结果决定 H-D-01 要不要带 LOD 兜底
+                          → 建议【先跑 R-A-01】，出数字后再开 H-D-01
+
+⚠️ H-D-01 与 H-D-05 真并行  两个分支同时改 HostMainWindow.h 会产生合并冲突；
+                          更关键的是会破坏「每卡独立 Debug/Release 门禁 + 单独提交」
+                          的证据链 —— 门禁绿了也分不清是哪张卡的功劳
+
+✅ 同一会话顺序执行         无技术障碍。推荐：R-A-01 → H-D-01 → H-D-05
+                          （H-D-05 独立于视图，放后可避免与 H-D-01 的头文件改动交织）
+```
+
+> **一句话**：三张卡可以**一次性授权**，但应**顺序执行**。
+> 「同步开启」若指「现在把三张都批下去」→ 可以；若指「三张同时动代码」→ 不建议。
+>
 > ⚠️ **2026-08-07 更正**：本表原以「14F-03 → 14F-04 → 14F-05」为 P0 主线，**该前提已失效**。
 > 核对 `TASKS_14` :376-380 与 `REPORT_14` v3.61：**14F-01..05 全部 `SLICER-SIDE COMPLETE`**
 > （外部验收延期），`CURRENT_NEXT_TASK = NONE`。
 > **Stage 14 切片侧已无待办主线** —— 下一步做什么需要用户选定。
 
 ```text
-P0 · 当前 H-A-01..04 已完成，后续两组互不依赖，需用户选定其一启动：
-     ① H-B-01..08                      宿主业务流程 UI（不改契约，无需额外授权）
-     ② Stage 16 的 16-00 复核           几何采样 / 接触姿态 / 性能
+P0 · 视图接线（唯一阻塞项，不改契约、不需新授权，只需用户点名启动）
+     H-D-01                            俯视画布接线   ← 最先做，一张卡就能让模型可见
+     R-A-01                            实测甲片三角面数（与 H-D-01 同批，成本极低）
+     H-D-05                            打开包目录（独立可并行，半天量级）
 
-P0.5 · 无论选哪组都建议顺手做（成本极低、决定 R-B 优先级）
-     R-A-01                            实测甲片三角面数
+P1 · 交互接线
+     H-D-02                            3D 画布 + 相机接线
+     H-D-04                            视图刷新事件接线
+     R-B-01/02                         LOD 跳采样修复（若 R-A-01 判为会触发）
 
-P1 · 上述之后
-     H-B-01..08（若 P0 尚未选择宿主业务流程）
-     R-B-01/02                         LOD 跳采样修复（若 R-A-01 判为 P1）
+P2 · 收口
+     H-D-03                            三车道拖拽接线
+     H-D-06                            端到端人工可操作性验收 + 回填 H-C-03「显示」维度
 
-P2 · 14F 收口后
-     H-C-01..03                        移植交付物（需业务流程先跑通）
+P1.5 · 【HQ-09 已授权】E1 批 —— 可与 H-D 交替推进
+     H-E-01                            STL 导入（纯 UI 缺口，成本极低）
+     H-E-03                            支撑参数编辑（确立宿主 Profile 编辑框架）
+     ── E1 批次门：复核实际可用性 ──
+
+P2.5 · E2 批（过 E1 批次门后）
+     H-E-04                            材料工艺 Profile 编辑
+     H-E-05                            生产纹理设置
+     ── E2 批次门：复核 8 项 adapt_to_host_profile 是否全部有归宿 ──
+
+P3.0 · E3 批（过 E2 批次门后）
+     H-E-02                            批量导入
+     H-E-06                            纹理白区预检接入
      R-C-01/02                         屏幕空间 LOD 提示
-     R-D-01                            Qt6 升级可行性评估
+     R-D-01                            Qt6 升级可行性评估（长期版本 Qt 6.8+）
 
 P3 · 独立排期
      Stage 16                          几何采样 / 接触姿态 / 性能
@@ -358,6 +545,8 @@ P4 · 无返工压力，可最后做
 | HQ-06 | 渲染四项待决 RD-A/B/C/D | 见 `TASKS_RENDER` §9 |
 | **HQ-07** | **隐式场景如何取得宿主权威的 `resolvedProfileId` 与 `buildVolume`** | H-A-02 代码审计确认 DTO v1.5 缺少生产所需场景上下文；建议采用 `sceneContext` 并受控升至 v1.6，见 `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md` |
 | **HQ-08** | **Profile 目录由宿主提供，还是随模块 ABI 自述** | H-B-04 准备审计确认 `pm_module_info` 无 Profile 目录且禁止内部 JSON；推荐宿主目录 + ABI 能力求交，见 `DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` |
+| ~~HQ-09~~ | ~~参考宿主的目标水位~~ → ✅ **已裁决：乙（等价于封装前切片软件），分 E1/E2/E3 三批** | 权威记录：`DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md`（2026-08-08） |
+| ~~HQ-10~~ | ~~场景/项目保存与加载归谁~~ → ✅ **已裁决：甲（归 PrintApp，参考宿主不实现）** | 同上；`SceneDocument` 维持 B 桶、`ProjectToolsDock` 维持 C 桶，分类不变 |
 
 ## 6.6 ✅ HQ-03 / HQ-04 已闭合（2026-08-07）
 
@@ -455,6 +644,10 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-09 | v3.2 | 完成 H-D-01：参考宿主俯视占位控件替换为真实 ViewData/QImage 画布，导入后按权威 scene identity 刷新；本地缩放/平移保持零 DLL 调用，失败清空旧帧并显式报错。Debug/Release H-D-01 与 14E-04d 回归、H-A/H-B 22 项联合门禁、宿主边界和源码尺寸守卫全部通过。同批 R-A-01 确认 17/36 模型超过 13.8k 阈值，H-D-02 前须先裁决 LOD 修复。 |
+| 2026-08-08 | v3.1 | **用户裁决 HQ-09 = 乙（等价水位，分 E1/E2/E3 三批）、HQ-10 = 甲（场景保存归 PrintApp）**；新增 `DOC_DECISION_HOSTFLOW_H_E_R1`。H-E 六卡状态由 PROPOSED 转 AUTHORIZED 并按批次重排（E1: H-E-01/03 → 批次门 → E2: H-E-04/05 → 批次门 → E3: H-E-02/06）；H-E-04 前置改为 H-E-03（复用其 Profile 编辑框架）。新增 §5.3.1 并行性判定：R-A-01 零冲突可同批，H-D-01 与 H-D-05 实现文件不重叠但共享 `HostMainWindow.h`，建议顺序执行。新增行数门禁警示：`HostMainWindow.cpp` 已 484/500 行，H-D-01 须新建 `HostMainWindowView.cpp`，不得进白名单。 |
+| 2026-08-08 | v3.0 | **第二层复核：H-D 完成也不等于封装前切片软件**。依据 `hostflow_hc02_migration_plan.json` 的 8 项 `adapt_to_host_profile`，其 `replacement`（host support Profile editor、host material process Profile editor、HostSliceSettingsPanel advanced Profile section 等）**当前均不存在**；`HostSliceSettings.h` 中 support/texture 零命中。另发现 STL 已由 `model.cpp:626` 支持但宿主未提供入口，批量导入缺失。新增 **H-E 组 6 卡**（状态 PROPOSED，超出 HQ-03 核心流程裁决）与 **HQ-09（目标水位）/ HQ-10（场景保存归属）**；补 `DOC_DECISION_HOSTFLOW_H_D_R1` 决策记录；同步 `REPORT_HOSTFLOW_HX`、`DOC_INDEX`、`CODEX_PROMPT_HOSTFLOW`。 |
+| 2026-08-08 | v2.9 | **复核发现视图显示链路未接线**：`ViewWorkspaceWidget` 两个画布仍是占位 `QLabel`；`SceneRenderPolicy`/`TopViewRenderPolicy`/`CpuRasterBackend`/`CameraController`/`SceneInteractionController`/`TransformCommitPolicy`/`MoveOptimizationPolicy` 在 app 内只被 `CapabilityCoverageWorkflow` 引用；`HostMainWindow` 对 `m_workspace` 仅调用 `SetMode`/`ShowViewError`/`SetSelectedInstances`。另发现结果页无「打开包目录」入口，`H-C-03` A/B 对照缺「显示」维度。作废 `REPORT_14E_04d` §5 把接线推给打印侧的延期决定，新增 **H-D 组 6 张卡**，文档状态从 LOCAL COMPLETE 回退为 ACTIVE，§5.3 优先级改以 H-D-01 为 P0。 |
 | 2026-08-08 | v2.8 | 完成 H-C-03：冻结同一模型与等价 Profile 语义的 A/B 口径，建立 13 条/8 维机器差异矩阵、门禁和双轨运行脚本；Debug/Release 主干 5 个 smoke、参考宿主 6 个 UI self-test、H-A/H-B CTest 各 18/18 PASS。HOSTFLOW 本地交付完成，打印侧 ACK 继续延期。 |
 | 2026-08-08 | v2.7 | 完成 H-C-02：41 个 B 桶单元逐项映射 action、公开替代实现、工作流和复杂度；按 scene=15、profile=14、job=2、package=10 形成 38-59 人日工作包建议。机器门禁与 H-C-01 B 桶双向集合闭合，未新增 ABI 或改动主干 UI。 |
 | 2026-08-08 | v2.6 | 完成 H-C-01：把历史 68 个范围校正为当前 77 个头文件，并以 `hostflow.migration_inventory.1` 唯一归类为 A=6、B=41、C=30；新增机器门禁验证全覆盖、理由码、路径和 A 桶无 core/非 A 本地依赖。H-C-02 前置已解除，H-C-03 可独立准备。 |

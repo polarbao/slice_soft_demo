@@ -3,7 +3,7 @@
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
 > 更新日期：2026-08-08
-> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **LOCAL COMPLETE / EXTERNAL ACK DEFERRED**；Stage 16 **PROPOSED / NOT ACTIVE**
+> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **ACTIVE — H-D-01 已完成，H-D-02..06 待逐卡 / H-E 已授权分三批**；RENDER **R-A-01 已完成并确认 LOD=P1，其余未授权**；Stage 16 **PROPOSED / NOT ACTIVE**
 >
 > **⬇️ 切片侧收口后的下一步：见下方「切片侧收口后的接续专项」**
 
@@ -39,12 +39,43 @@ docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.
 > HOSTFLOW 已于 2026-08-07 获得 HQ-01 授权并转为 `ACTIVE`；H-A-01 已完成合同受控修订。
 > HQ-07 已授权，DTO v1.6 `sceneContext` 与 H-A-02 场景生命周期运行时已通过 Debug/Release 门禁。
 > DTO v1.7 与 H-A-03 空场景端到端闭环已通过 Debug/Release 门禁；H-A 全组完成。H-B-01..08 已闭合模型导入、选择、变换排版、Profile、参数、作业、结果与宿主设置持久化。H-C-01..03 已闭合三桶清单、逐文件迁移计划和主干/参考宿主 A/B 差异矩阵；HOSTFLOW 本地交付完成，打印侧 ACK 延期。
-> RENDER 仍为 `PROPOSED / NOT ACTIVE`。
+> RENDER 的只读测量卡 R-A-01 已完成并确认 LOD 风险为 P1；R-B..R-E 仍为
+> `PROPOSED / NOT ACTIVE`，不得未经选型与授权自行启动。
 > 按本目录使用规则「一次只执行用户明确指定的一个原子任务」，
 > **codex 不得自行启动**，须等用户指定卡号（例如「执行 H-B-04」）。
 >
-> **HOSTFLOW 当前无本地待执行卡**：H-C-03 已通过准备 Gate 并完成 Debug/Release A/B 对照。
-> 后续打印侧接入必须消费冻结移植交付物，不得把外部 ACK 写成 PASS。
+> 🔴 **2026-08-08 复核更正**：原文此处写「HOSTFLOW 当前无本地待执行卡」，**该结论不成立**。
+> H-A/H-B/H-C 闭合的是**业务与数据链路**；**视图显示链路从未接线** ——
+> `ViewWorkspaceWidget.cpp:13-27` 的两个画布是 `QLabel` + 静态文字，
+> `SceneRenderPolicy`/`TopViewRenderPolicy`/`CpuRasterBackend`/`CameraController`/
+> `SceneInteractionController` 在 app 内的唯一引用者是 `CapabilityCoverageWorkflow`（批处理自检）。
+> 结果页也没有「打开包目录」入口。
+>
+> 因此新增 **H-D 组（视图接线与端到端可操作性，6 卡）**，状态 `PROPOSED`，
+> 不改契约、不需新授权。
+>
+> **另有第二层缺口**：H-D 完成也**不等于封装前切片软件的操作能力** ——
+> `hostflow_hc02_migration_plan.json` 中 8 项 `adapt_to_host_profile` 的替代物
+> （支撑编辑、材料工艺 Profile 编辑、生产纹理设置）**当前并不存在**，另缺 STL 与批量导入。
+> 列为 **H-E 组（6 卡）**。
+>
+> ✅ **2026-08-08 用户裁决**：**HQ-09 = 乙**（参考宿主提升到「等价于封装前切片软件」，
+> 分 **E1**（H-E-01 STL / H-E-03 支撑）→ **E2**（H-E-04 材料工艺 / H-E-05 生产纹理）
+> → **E3**（H-E-02 批量导入 / H-E-06 白区预检）三批，**每批过批次门后方可进下一批**）；
+> **HQ-10 = 甲**（场景/项目保存加载归 PrintApp，参考宿主不实现）。
+> ⚠️ 因此参考宿主**重启后场景丢失是预期行为，不是缺陷**。
+> 权威记录：`docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md`
+> **当前进度：`R-A-01`、`H-D-01` 已完成；下一候选为 `H-D-05`。**
+> R-A-01 零源码改动，先跑它 —— 画布一接通，LOD 跳采样缺陷就从「不可见」
+> 变成用户可见问题，它的数字决定 H-D-01 是否需要带 LOD 兜底。
+> H-D-01 与 H-D-05 实现文件不重叠，但都要改 `HostMainWindow.h`；
+> 并行还会破坏「每卡独立 Debug/Release 门禁 + 单独提交」的证据链。
+>
+> ⚠️ `HostMainWindow.cpp` 已 **484/500 行**，H-D-01 须新建 `HostMainWindowView.cpp`，
+> H-D-05 的槽放入既有 `HostMainWindowResult.cpp`；
+> **不得把 `apps/slicer_ui_host_sim/` 加入行数白名单绕过门禁**。
+>
+> 打印侧接入仍须消费冻结移植交付物，不得把外部 ACK 写成 PASS。
 >
 > **H-A 授权状态**：HQ-01 已授权；每张后续原子卡仍需用户点名执行。
 
@@ -52,7 +83,8 @@ docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.
 
 ```text
 P0 · 已完成 H-A-01..04 COMPLETE       ABI 场景生命周期（HOSTFLOW）
-            R-A-01                       实测甲片三角面数（RENDER，成本极低）
+     已完成 R-A-01 / H-D-01           三角面实测与真实俯视画布
+            H-D-05                       打开生产包目录
 P1 · 已完成 H-B-01..08 COMPLETE       宿主业务流程 UI（HOSTFLOW）
             R-B-01/02                    LOD 跳采样修复（RENDER，若 R-A-01 判为 P1）
 P2 · 已完成 H-C-01..03                HOSTFLOW 移植交付

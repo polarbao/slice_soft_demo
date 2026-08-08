@@ -22,6 +22,7 @@ class QPlainTextEdit;
 class QSplitter;
 class QTableWidget;
 class QTabWidget;
+class TopViewRenderPolicy;
 class ViewPresentationSettings;
 class ViewWorkspaceWidget;
 
@@ -104,6 +105,7 @@ private:
     void ShowSceneEditError(const QString& action, const QString& error);
     void ShowImportResult(const hostmodelimportresult& result);
     void ShowImportError(const QString& error);
+    void RefreshTopView();
 
     ModuleClient m_client;
     std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
@@ -111,6 +113,7 @@ private:
     std::unique_ptr<HostPackageReviewController> m_packageReviewController;
     std::unique_ptr<IHostProfileCatalog> m_profileCatalog;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
+    std::unique_ptr<TopViewRenderPolicy> m_topViewPolicy;
     ViewWorkspaceWidget* m_workspace{nullptr};
     QSplitter* m_workspaceSplitter{nullptr};
     QTabWidget* m_workspaceTabs{nullptr};

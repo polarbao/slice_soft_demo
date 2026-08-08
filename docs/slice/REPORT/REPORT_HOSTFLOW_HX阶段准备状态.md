@@ -1,8 +1,8 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**LOCAL COMPLETE / EXTERNAL ACK DEFERRED**
-> 日期：2026-08-08
-> 范围：HOSTFLOW H-A、H-B、H-C，不属于 Stage 14 编号任务。
+> 状态：**ACTIVE — H-D-01 已完成 / H-E 已授权分批**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
+> 日期：2026-08-09
+> 范围：HOSTFLOW H-A、H-B、H-C、H-D、H-E，不属于 Stage 14 编号任务。
 
 ## Current State
 
@@ -11,6 +11,25 @@
 | H-A 场景生命周期 | COMPLETE | H-A-01..04 全部完成；DTO 当前为 v1.7 | 无切片侧阻断 |
 | H-B 宿主业务 UI | COMPLETE | H-B-01..08 全部完成 | 无切片侧阻断 |
 | H-C 移植交付 | COMPLETE | H-C-01/02/03 全部完成 | 无切片侧阻断；打印侧 ACK 延期 |
+| **H-D 视图接线** | **ACTIVE** | H-D-01 已完成；H-D-02..06 待逐卡启动 | H-D-02 受真实模型 LOD P1 风险影响；H-D-05 可独立顺序执行 |
+| **H-E 参数深度与导入** | **AUTHORIZED / 分三批** | E1: H-E-01/03 → E2: H-E-04/05 → E3: H-E-02/06 | **HQ-09=乙 已裁决**；每批过批次门后方可进下一批 |
+
+> 🔴 **2026-08-08 复核更正**：本文原状态为 `LOCAL COMPLETE`，**该结论不成立**。
+> H-A/H-B/H-C 闭合的是**业务与数据链路**，两层缺口未覆盖：
+>
+> **① 显示链路未接线（A 级）** —— `ViewWorkspaceWidget.cpp:13-27` 两个画布是
+> `QLabel` + 静态文字；渲染与交互七个类在 app 内的唯一引用者是批处理自检。
+> 决策记录见 `DOC_DECISION_HOSTFLOW_H_D_R1_视图接线归属与14E_04d延期作废.md`。
+>
+> **② 参数深度不足（A 级）** —— `assets/hostflow_hc02_migration_plan.json` 中
+> 8 项 `adapt_to_host_profile` 的 `replacement` 指向的宿主功能尚不存在
+> （支撑编辑、材料工艺 Profile 编辑、生产纹理设置）；另缺 STL 与批量导入。
+> 因此**「参考宿主等价于封装前切片软件」目前不成立**。
+>
+> ✅ **2026-08-08 用户裁决**：**HQ-09 = 乙**（提升到等价水位，分 E1/E2/E3 三批执行）；
+> **HQ-10 = 甲**（场景/项目保存加载归 PrintApp，参考宿主不实现 ——
+> 因此**重启后场景丢失是预期行为，不是缺陷**）。
+> 权威记录：`DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md`。
 
 H-A-02 已完成：Facade 支持 add/remove 与候选态原子提交；Adapter 支持既有 handle、inline scene、
 受控隐式 scene 三条路径；import model resource 可映射到 scene authority；DTO v1.6 `sceneContext`
@@ -79,6 +98,11 @@ H-C-03 已完成：主干和参考宿主使用同一规范化模型，并把主�
 实体语义。13 条差异覆盖 8 个维度，结论为 `9 equivalent / 3 known_trim / 1 slicer_only`。
 Debug/Release 主干 5 个 smoke、宿主 6 个 UI self-test 和 H-A/H-B CTest 各 18/18 PASS。
 
+H-D-01 已完成：参考宿主使用 `TopViewRenderPolicy` 和真实 `top` ViewData 显示当前场景的
+纹理俯视、buildVolume 与网格；滚轮缩放和中键平移完全在宿主本地完成。Debug/Release
+H-D-01、14E-04d 与 H-A/H-B 联合门禁通过。R-A-01 同批实测确认 17/36 个 OBJ 超过
+约 13.8k 三角阈值，3D 接线前须先裁决 LOD 修复。
+
 ## Target State
 
 ```text
@@ -111,5 +135,6 @@ H-A-03 已证明宿主只经 11 个导出实现：
 
 ## Next Action
 
-HOSTFLOW 本地 H-A/H-B/H-C 已全部收口。后续只在打印侧正式接入时消费 H-C-01 三桶清单、
-H-C-02 迁移计划与 H-C-03 A/B 差异矩阵；打印侧 ACK 维持 `PENDING / DEFERRED`。
+H-D-01 已闭合。按独立门禁和提交顺序，下一候选是 H-D-05；H-D-02 在形式上已满足前置，
+但 R-A-01 已把真实模型 LOD 风险定为 P1，应先完成 R-B 方案裁决。H-E 继续按 E1/E2/E3
+批次门执行。打印侧 ACK 维持 `PENDING / DEFERRED`。

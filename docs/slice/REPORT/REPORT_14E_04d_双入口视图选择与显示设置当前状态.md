@@ -1,8 +1,21 @@
 # REPORT_14E-04d 双入口视图选择与显示设置当前状态
 
-> 状态：COMPLETE
-> 日期：2026-08-07
+> 状态：COMPLETE（合同与门禁）／⚠️ **§5 的接线延期决定已于 2026-08-08 作废**
+> 日期：2026-08-07 ｜ 修订：2026-08-08
 > 适用分支：`feature/14-slicer-capability-package`
+
+> 🔴 **2026-08-08 复核更正 —— 读本文前必看**
+>
+> 本文第 2、3 节的结论**仅对离屏渲染与合同门禁成立**。
+> `stage14e04d_view_switch_tests` 全部是 offscreen 验证，**可见 UI 上没有任何像素输出**：
+> `ViewWorkspaceWidget.cpp:13-27` 的两个画布是 `QLabel` + 静态文字，
+> `HostMainWindow.cpp` 对 `m_workspace` 只调用 `SetMode`/`ShowViewError`/`SetSelectedInstances`。
+>
+> 因此 §5 中「真实场景载入与渲染策略接线由**打印侧集成时**按本任务类边界复用」
+> 这一延期决定**作废**：接线归切片侧，已立为 `TASKS_HOSTFLOW` 的 **H-D-01/02/04**。
+>
+> 教训：**「离屏门禁全绿」不等于「界面上看得见」。** 涉及可见 UI 的卡片，
+> 验收必须把 app 真的跑起来并归档截图。
 
 ## 1. 任务目标
 
@@ -67,8 +80,10 @@ ctest --test-dir build-slicesoft/main -C Release \
 
 本任务没有修改 `PM_SPI_VERSION=1`、11 个 `pm_*` 导出、15 项能力、
 `p0.rgbwsv.2`、RGBWSV/8-bit/`black_is_print`、切片采样或生产 Package。主干
-`slicer_debug_ui` 仍未迁移，参考宿主的中央画布目前是双视图交互入口；真实场景载入与
-渲染策略接线由打印侧集成时按本任务类边界复用。
+`slicer_debug_ui` 仍未迁移，参考宿主的中央画布目前是双视图交互入口。
+
+> ⛔ **原文此处写「真实场景载入与渲染策略接线由打印侧集成时按本任务类边界复用」，
+> 该决定已于 2026-08-08 作废。** 接线归切片侧，见 `TASKS_HOSTFLOW` H-D 组。
 
 下一张任务卡为 14E-05：拆分主干 UI 既有大文件并关闭源码行数白名单；该任务与
 参考宿主双视图合同解耦，应单独提交和验证。

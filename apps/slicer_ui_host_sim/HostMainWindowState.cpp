@@ -1,6 +1,7 @@
 #include "HostMainWindow.h"
 
 #include "HostWorkspaceState.h"
+#include "render/TopViewRenderPolicy.h"
 #include "settings/ViewPresentationSettings.h"
 
 #include <QSettings>
