@@ -20,6 +20,7 @@ add_executable(slicer_ui_host_sim
     HostTransformLayoutPanel.h
     HostMainWindow.cpp
     HostMainWindow.h
+    HostMainWindowJob.cpp
     HostMainWindowProfile.cpp
     HostMainWindowScene.cpp
     HostMainWindowSettings.cpp
@@ -27,6 +28,10 @@ add_executable(slicer_ui_host_sim
     HostSliceSettings.h
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
+    HostSliceJobController.cpp
+    HostSliceJobController.h
+    HostSliceJobPanel.cpp
+    HostSliceJobPanel.h
     Main.cpp
     ModuleClient.cpp
     ModuleClient.h
@@ -439,6 +444,78 @@ add_test(
         --module $<TARGET_FILE:slicer_module>
 )
 
+add_executable(hostflow_hb06_slice_job_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    HostSliceJobController.cpp
+    HostSliceJobController.h
+    HostSliceSettings.cpp
+    HostSliceSettings.h
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostSliceJobTests.cpp
+)
+
+set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    PROPERTIES LANGUAGE CXX
+)
+
+set_target_properties(hostflow_hb06_slice_job_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(hostflow_hb06_slice_job_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim
+)
+
+target_link_libraries(hostflow_hb06_slice_job_tests PRIVATE
+    Qt5::Core
+    bcrypt
+)
+
+add_dependencies(hostflow_hb06_slice_job_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb06_slice_job_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb06_slice_job_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb06_slice_job_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb06_slice_job
+    COMMAND hostflow_hb06_slice_job_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME hostflow_hb06_job_ui_smoke
+    COMMAND slicer_ui_host_sim
+        --hostflow-job-ui-self-test
+        --module $<TARGET_FILE:slicer_module>
+)
+
 add_executable(stage14e03_interaction_tests
     ModuleClient.cpp
     ModuleClient.h
@@ -698,12 +775,14 @@ set_tests_properties(
     hostflow_hb04_profile_ui_smoke
     hostflow_hb05_slice_settings
     hostflow_hb05_settings_ui_smoke
+    hostflow_hb06_job_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
 set_tests_properties(
     hostflow_ha03_qt_end_to_end
+    hostflow_hb06_slice_job
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 180

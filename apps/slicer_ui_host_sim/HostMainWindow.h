@@ -4,6 +4,8 @@
 #include "HostModelImportWorkflow.h"
 #include "HostProfileCatalog.h"
 #include "HostProfilePanel.h"
+#include "HostSliceJobController.h"
+#include "HostSliceJobPanel.h"
 #include "HostSliceSettingsPanel.h"
 #include "HostTransformLayoutPanel.h"
 #include "ModuleClient.h"
@@ -49,8 +51,27 @@ private:
     void OnProfileChanged(const QString& profileId);
     bool ProfileSupportsSlice(const QString& profileId) const;
     void OnSliceSettingsChanged();
+    void OnStartSlice();
+    void OnCancelSlice();
+    void OnSliceJobProgress(
+        const QString& state,
+        const QString& phase,
+        int current,
+        int total,
+        int percent,
+        qint64 elapsedMs);
+    void OnSliceJobCompleted(
+        bool success,
+        bool cancelled,
+        const QString& code,
+        const QString& message,
+        const QString& detail,
+        const QString& packageDirectory,
+        qint64 elapsedMs,
+        qint64 cancelLatencyMs);
     bool ApplyPendingSceneContext(QString* error);
     void RefreshSliceSettings();
+    void RefreshSliceJobReadiness();
     void OnTransformRequested(
         const QStringList& instanceIds,
         double deltaXMm,
@@ -66,6 +87,7 @@ private:
         double columnGapMm,
         double rowGapMm);
     void SetSceneCommandsEnabled(bool enabled);
+    void SetWorkflowEditingEnabled(bool enabled);
     void ShowSceneEditResult(
         const QString& action,
         const hostsceneeditresult& result);
@@ -75,6 +97,7 @@ private:
 
     ModuleClient m_client;
     std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
+    std::unique_ptr<HostSliceJobController> m_sliceJobController;
     std::unique_ptr<IHostProfileCatalog> m_profileCatalog;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
     ViewWorkspaceWidget* m_workspace{nullptr};
@@ -85,6 +108,7 @@ private:
     HostModelListPanel* m_modelListPanel{nullptr};
     HostProfilePanel* m_profilePanel{nullptr};
     HostSliceSettingsPanel* m_sliceSettingsPanel{nullptr};
+    HostSliceJobPanel* m_sliceJobPanel{nullptr};
     HostTransformLayoutPanel* m_transformLayoutPanel{nullptr};
     QLabel* m_importSummaryLabel{nullptr};
     QTableWidget* m_preflightTable{nullptr};

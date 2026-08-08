@@ -48,6 +48,7 @@ HostMainWindow::HostMainWindow(
     m_viewSettings = std::make_unique<ViewPresentationSettings>(
         DefaultSessionConfigPath());
     m_importWorkflow = std::make_unique<HostModelImportWorkflow>(m_client);
+    m_sliceJobController = std::make_unique<HostSliceJobController>(m_client);
     m_profileCatalog = std::make_unique<ReferenceHostProfileCatalog>();
     QString settingsError;
     m_viewSettings->Load(&settingsError);
@@ -142,6 +143,9 @@ void HostMainWindow::BuildInterface()
 
     m_sliceSettingsPanel = new HostSliceSettingsPanel(inspectorTabs);
     inspectorTabs->addTab(m_sliceSettingsPanel, QStringLiteral("切片设置"));
+
+    m_sliceJobPanel = new HostSliceJobPanel(inspectorTabs);
+    inspectorTabs->addTab(m_sliceJobPanel, QStringLiteral("切片作业"));
 
     m_transformLayoutPanel = new HostTransformLayoutPanel(inspectorTabs);
     inspectorTabs->addTab(
@@ -248,6 +252,26 @@ void HostMainWindow::BuildInterface()
         this,
         &HostMainWindow::OnSliceSettingsChanged);
     connect(
+        m_sliceJobPanel,
+        &HostSliceJobPanel::SigStartRequested,
+        this,
+        &HostMainWindow::OnStartSlice);
+    connect(
+        m_sliceJobPanel,
+        &HostSliceJobPanel::SigCancelRequested,
+        this,
+        &HostMainWindow::OnCancelSlice);
+    connect(
+        m_sliceJobController.get(),
+        &HostSliceJobController::SigProgressChanged,
+        this,
+        &HostMainWindow::OnSliceJobProgress);
+    connect(
+        m_sliceJobController.get(),
+        &HostSliceJobController::SigCompleted,
+        this,
+        &HostMainWindow::OnSliceJobCompleted);
+    connect(
         m_transformLayoutPanel,
         &HostTransformLayoutPanel::SigTransformRequested,
         this,
@@ -287,6 +311,7 @@ void HostMainWindow::LoadModule(const QString& modulePath)
             .arg(m_selectedProfileId)
             .arg(m_client.CallCount()));
     SetSceneCommandsEnabled(true);
+    RefreshSliceJobReadiness();
     m_moduleInfoView->setPlainText(
         QStringLiteral("模块信息\n%1\n\n自检报告\n%2")
             .arg(

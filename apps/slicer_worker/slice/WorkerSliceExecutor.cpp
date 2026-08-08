@@ -101,6 +101,25 @@ std::string AdmissionFailureCode(
     return kTopologyCode;
 }
 
+std::optional<std::string> AdmissionFailureDetail(
+    const slicer_core::api::PreflightResult& preflight)
+{
+    if (!preflight.issues.empty())
+    {
+        const slicer_core::api::PreflightIssue& issue =
+            preflight.issues.front();
+        return issue.detail.empty()
+            ? std::optional<std::string>{issue.code}
+            : std::optional<std::string>{issue.code + ": " + issue.detail};
+    }
+    if (!preflight.out_of_bounds_instances.empty())
+    {
+        return "out_of_bounds instance="
+            + preflight.out_of_bounds_instances.front();
+    }
+    return std::nullopt;
+}
+
 slicer_core::Json BuildBasicOutput(
     const slicer_core::api::SliceResult& result,
     const WorkerSliceMaterialization& materialized)
@@ -225,7 +244,8 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
         {
             return finalize(WorkerCapabilityExecutionResult::Failure(
                 AdmissionFailureCode(admission),
-                "authoritative full preflight blocked production slicing"));
+                "authoritative full preflight blocked production slicing",
+                AdmissionFailureDetail(admission)));
         }
         if (!materialized.ProductionAdmissionCommitted())
         {

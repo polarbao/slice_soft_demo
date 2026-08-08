@@ -19,6 +19,7 @@ void HostMainWindow::RefreshSliceSettings()
         m_importWorkflow->SceneHandle() != 0U,
         m_importWorkflow->SceneProfileId(),
         m_importWorkflow->SceneBuildVolume());
+    RefreshSliceJobReadiness();
 }
 
 void HostMainWindow::OnSliceSettingsChanged()
@@ -28,10 +29,12 @@ void HostMainWindow::OnSliceSettingsChanged()
     {
         m_statusLabel->setText(
             QStringLiteral("切片设置未生效：%1").arg(error));
+        RefreshSliceJobReadiness();
         return;
     }
     m_statusLabel->setText(
         m_sliceSettingsPanel->IsReady()
             ? QStringLiteral("有效 Profile 已更新 · 未调用切片模块")
             : QStringLiteral("切片参数草稿已更新 · 等待导入模型"));
+    RefreshSliceJobReadiness();
 }

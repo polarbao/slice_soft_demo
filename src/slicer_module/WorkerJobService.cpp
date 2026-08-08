@@ -6,6 +6,7 @@
 #include "slicer_module/WorkerContract.h"
 #include "slicer_module/WorkerProcessWindows.h"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <filesystem>
@@ -412,7 +413,19 @@ struct WorkerJobService::Implementation
         const std::string message = result.errorMessage.empty()
             ? "Worker process failed without a diagnostic"
             : result.errorMessage;
-        return FailureOutput(code, message);
+        const auto detail = std::find_if(
+            result.stderrLogLines.rbegin(),
+            result.stderrLogLines.rend(),
+            [](const std::string& line)
+            {
+                return !line.empty();
+            });
+        return FailureOutput(
+            code,
+            message,
+            detail == result.stderrLogLines.rend()
+                ? std::string_view{}
+                : std::string_view{*detail});
     }
 
     static void Run(const std::shared_ptr<JobExecution>& execution) noexcept

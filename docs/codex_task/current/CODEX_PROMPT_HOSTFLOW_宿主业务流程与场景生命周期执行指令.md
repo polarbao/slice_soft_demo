@@ -1,7 +1,7 @@
 # CODEX_PROMPT_HOSTFLOW 宿主业务流程与场景生命周期执行指令
 
-> 文档状态：**ACTIVE / H-A COMPLETE / H-B-01..05 COMPLETE / H-B-06 NEXT**
-> 版本：v1.8 ｜ 日期：2026-08-08
+> 文档状态：**ACTIVE / H-A COMPLETE / H-B-01..06 COMPLETE / H-B-07 NEXT**
+> 版本：v1.9 ｜ 日期：2026-08-08
 > **定位：独立补充专项的执行入口，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 任务卡：`docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md`
 
@@ -178,7 +178,8 @@ H-B-03 是**补操作入口**，不是重写交互机制。动了它们就会破
 
 H-B-05 已把宿主 Profile 与设备 buildVolume 注入首次 `sceneContext`。场景创建后两者成为
 权威身份；参数面板允许继续修改 DPI、层厚、输出目录和材料策略，但 Profile/buildVolume 异值
-必须提示新建场景后生效。H-B-06 不得绕过该状态提交切片。
+必须提示新建场景后生效。H-B-06 已在提交前执行该检查；后续结果页不得绕过作业返回的
+`packageDir` 或自行猜测输出位置。
 
 ## 7. 停止条件
 
@@ -226,6 +227,7 @@ H-B-05 已把宿主 Profile 与设备 buildVolume 注入首次 `sceneContext`。
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-08 | v1.9 | H-B-06 完成真实 Worker 作业提交、非阻塞进度、协作取消、终态释放、包身份闭合和错误详情展示；Debug/Release 宿主联合门禁各 13/13、Worker 合同与取消门禁各 6/6 PASS。下一卡为 H-B-07。 |
 | 2026-08-08 | v1.8 | H-B-05 完成宿主切片参数、设备 buildVolume、有效 Profile 自哈希预览和场景绑定保护；Debug/Release 联合门禁与主干设置 A/B smoke 通过。下一卡为 H-B-06。 |
 | 2026-08-08 | v1.7 | 用户授权 HQ-08-A；H-B-04 完成宿主 Profile 目录、ABI 模块能力求交、生产安全等级和不可用原因 UI，选择期零 DLL 调用；联合门禁与主干 A/B smoke 通过。下一卡为 H-B-05。 |
 | 2026-08-07 | v1.6 | H-B-04 准备审计发现 ABI Profile 发现协议缺口，新增 HQ-08 与停止条件；H-B-04 标记为准备完成但实现阻断，推荐宿主目录与 ABI 模块能力求交。 |

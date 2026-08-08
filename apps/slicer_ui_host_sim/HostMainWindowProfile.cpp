@@ -42,11 +42,13 @@ void HostMainWindow::OnProfileChanged(const QString& profileId)
     if (!ApplyPendingSceneContext(&contextError))
     {
         m_statusLabel->setText(contextError);
+        RefreshSliceJobReadiness();
         return;
     }
     m_statusLabel->setText(
         QStringLiteral("Profile 已选择：%1 · 仅更新宿主会话草稿")
             .arg(profileId));
+    RefreshSliceJobReadiness();
 }
 
 bool HostMainWindow::ProfileSupportsSlice(const QString& profileId) const

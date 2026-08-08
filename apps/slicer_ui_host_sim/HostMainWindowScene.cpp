@@ -70,6 +70,13 @@ void HostMainWindow::SetSceneCommandsEnabled(const bool enabled)
     m_transformLayoutPanel->SetCommandsEnabled(enabled);
 }
 
+void HostMainWindow::SetWorkflowEditingEnabled(const bool enabled)
+{
+    SetSceneCommandsEnabled(enabled);
+    m_profilePanel->setEnabled(enabled);
+    m_sliceSettingsPanel->setEnabled(enabled);
+}
+
 void HostMainWindow::ShowSceneEditResult(
     const QString& action,
     const hostsceneeditresult& result)
