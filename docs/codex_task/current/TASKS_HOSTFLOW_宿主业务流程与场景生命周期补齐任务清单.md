@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
-> 文档状态：**ACTIVE — H-D-01/05 完成 / H-E E1 准备通过**（H-A/H-B/H-C 完成；外部 ACK 延期）
-> 版本：v3.4 ｜ 日期：2026-08-09 ｜ 激活日期：2026-08-07
+> 文档状态：**ACTIVE — H-D-01..05 完成 / H-E-01 完成 / H-E-03 就绪**（H-D-06 等待人工证据）
+> 版本：v3.9 ｜ 日期：2026-08-10 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -329,7 +329,7 @@ H-B-02 · H-B-03（变换部分）                      可并行，用既有 fi
 
 | 卡号 | 批次 | 任务 | 前置 | 验收 | 状态 |
 |---|:--:|---|---|---|---|
-| **H-E-01** | E1 | **STL 导入**：文件过滤增加 `.stl`，预检结果展示 | 无 | `src/slicer_core/model.cpp:626` 已支持 `.stl`（A 级）；**纯 UI 缺口，不需改 ABI**；ASCII/binary 两种编码均可导入并切片 | **READY / E1 PREP PASS** |
+| **H-E-01** | E1 | **STL 导入**：文件过滤增加 `.stl`，预检结果展示 | 无 | `src/slicer_core/model.cpp:626` 已支持 `.stl`（A 级）；**纯 UI 缺口，不需改 ABI**；ASCII/binary 两种编码均可导入并切片 | **COMPLETE（2026-08-10）** |
 | **H-E-03** | E1 | **支撑参数编辑**：宿主 Profile 支撑段可编辑；对照主干 `SupportEditor` | 无 | 与 `lower_support` 类 Profile 的实际字段对齐；越界值 fail-closed；**本卡确立「宿主 Profile 可编辑段」的结构形态，E2 在其上扩展** | **READY / E1 PREP PASS** |
 | **H-E-04** | E2 | **材料工艺 Profile 编辑**：材料策略 / 角色映射 / 单材料浮雕；对照 `MaterialPolicyEditor`、`MaterialRoleMappingEditor`、`MaterialProcessProfileEditor`、`SingleMaterialReliefResolver` | H-E-03（复用其编辑框架）| 编辑结果进入宿主 Profile 并反映到有效配置自哈希；**不得改用内部 JSON** | **AUTHORIZED / 待 E1 批次门** |
 | **H-E-05** | E2 | **生产纹理设置**：对照 `ProductionTextureSettingsPanel` + `Contract` + `Model` | H-E-04 | 纹理应用模式、UV 策略等进入有效 Profile；与 Stage 15 `unprintable_white_*` 字段协同 | **AUTHORIZED / 待 E1 批次门** |
@@ -659,6 +659,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v3.9 | 完成 H-E-01：参考宿主文件入口、导入工作流、有效 Profile 校验与宿主 C request builder 统一接受 STL；ASCII 与测试内生成的 binary tetrahedron 均完成 `import → addInstance → slice → manifest`，伪装、截断和未知格式均 fail-closed 且不推进 revision。Debug/Release H-E-01 与 H-B-01/05/06、边界和源码尺寸联合门禁各 6/6 PASS；未修改 ABI、生产协议或主干调试 UI。 |
 | 2026-08-10 | v3.8 | 完成 H-D-04：导入、删除、精确变换和规则排版统一经过一对俯视/3D 刷新；空场景显式清空双视图。新增 22 实例真实纹理刷新门禁，规则排版和纯变换后 `MeshUploadCount`、`TextureUploadCount` 增量均为 0，surface preview 缓存不失效。Debug/Release H-D-01..04、14E 三车道/双视图、边界和源码尺寸联合门禁各 8/8 PASS。H-D-06 代码前置已完成，仍等待人工七步截图证据。 |
 | 2026-08-10 | v3.7 | 完成 H-D-03：俯视画布支持本地实例拾取与拖拽，pointer-move 仅更新缓存矩阵和 QImage，实测 12 次移动为 0 次 DLL 调用；松手只执行一次 `scene.apply_operation`，revision 恰好 `+1` 且正常路径不追加 snapshot。Stale 路径沿用 UI-M4 权威快照恢复并丢弃瞬态帧。Debug/Release H-D-01/02/03、14E-03/04/04d、边界和源码尺寸联合门禁各 8/8 PASS。 |
 | 2026-08-09 | v3.6 | 完成 H-D-02 与优先 RB-P1：参考宿主接入真实纹理 3D 画布、七向预设、正交/透视、orbit/pan/光标中心 zoom；相机操作保持 0 次 DLL 调用。`SceneRenderPolicy` 改用 `lod=auto`，预算失败显式 `PM-SLICER-VIEWDATA-BUDGET` 且清空旧帧。Release 36 资产矩阵为 22 个完整 lod0、14 个冻结纹理合同显式拒绝、0 个破碎降级；H-D-03/04 前置解除。 |

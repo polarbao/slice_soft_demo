@@ -223,6 +223,78 @@ add_test(
         --module $<TARGET_FILE:slicer_module>
 )
 
+add_executable(hostflow_he01_stl_import_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    HostSliceJobController.cpp
+    HostSliceJobController.h
+    HostSliceSettings.cpp
+    HostSliceSettings.h
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostStlImportTests.cpp
+)
+
+set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    PROPERTIES LANGUAGE CXX
+)
+
+set_target_properties(hostflow_he01_stl_import_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(hostflow_he01_stl_import_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim
+)
+
+target_link_libraries(hostflow_he01_stl_import_tests PRIVATE
+    Qt5::Core
+    bcrypt
+)
+
+add_dependencies(hostflow_he01_stl_import_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_he01_stl_import_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_he01_stl_import_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_he01_stl_import_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_he01_stl_import
+    COMMAND hostflow_he01_stl_import_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+set_tests_properties(
+    hostflow_he01_stl_import
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 180
+)
+
 add_executable(hostflow_hb02_model_list_tests
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h

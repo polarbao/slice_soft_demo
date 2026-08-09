@@ -341,7 +341,7 @@ void HostSliceSettingsPanel::RefreshPreview()
     if (m_modelPath.isEmpty())
     {
         m_validationLabel->setText(
-            QStringLiteral("参数草稿已就绪；等待导入 OBJ/3MF 模型。"));
+            QStringLiteral("参数草稿已就绪；等待导入 OBJ/3MF/STL 模型。"));
         m_profilePreview->clear();
         return;
     }

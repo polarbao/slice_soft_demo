@@ -87,12 +87,13 @@ bool HostModelImportWorkflow::ImportModel(
     const QString suffix = modelFile.suffix().toLower();
     if (!modelFile.isFile()
         || (suffix != QStringLiteral("obj")
-            && suffix != QStringLiteral("3mf")))
+            && suffix != QStringLiteral("3mf")
+            && suffix != QStringLiteral("stl")))
     {
         if (error != nullptr)
         {
             *error = QStringLiteral(
-                "请选择存在的 OBJ 或 3MF 模型：%1").arg(modelPath);
+                "请选择存在的 OBJ、3MF 或 STL 模型：%1").arg(modelPath);
         }
         return false;
     }

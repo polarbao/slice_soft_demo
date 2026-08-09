@@ -84,7 +84,7 @@ public:
     explicit HostModelImportWorkflow(ModuleClient& client);
 
     /**
-     * @brief Imports an OBJ or 3MF model and adds one instance to the scene.
+     * @brief Imports an OBJ, 3MF, or STL model and adds one scene instance.
      * @param modelPath Existing model path selected by the operator.
      * @param result Receives model metadata, instance identity and preflight data.
      * @param error Receives a user-readable fail-closed reason.

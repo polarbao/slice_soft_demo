@@ -249,7 +249,8 @@ char* HostBuildEffectiveProfile(
         || settings->packagedirectory[0] == '\0'
         || settings->profileid[0] == '\0'
         || (strcmp(settings->modelformat, "obj") != 0
-            && strcmp(settings->modelformat, "3mf") != 0)
+            && strcmp(settings->modelformat, "3mf") != 0
+            && strcmp(settings->modelformat, "stl") != 0)
         || settings->dpix < 72 || settings->dpix > 2400
         || settings->dpiy < 72 || settings->dpiy > 2400
         || settings->layerthicknessmm <= 0.0

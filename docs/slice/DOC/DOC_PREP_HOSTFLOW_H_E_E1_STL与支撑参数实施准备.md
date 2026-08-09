@@ -1,6 +1,6 @@
 # HOSTFLOW H-E E1 STL 与支撑参数实施准备
 
-> 状态：**E1 PREPARATION GATE = PASS**
+> 状态：**E1 PREPARATION GATE = PASS / H-E-01 COMPLETE / H-E-03 READY**
 > 日期：2026-08-09
 > 范围：H-E-01、H-E-03；不提前实现 E2/E3。
 
@@ -31,7 +31,7 @@ E1 只补齐参考宿主的 STL 导入和宿主 Profile 支撑段。所有参数
 
 ### 2.3 Fixture 与门禁
 
-- ASCII：复用 `samples/models/sample.stl`；
+- ASCII：复用已登记的 `samples/models/sample.stl`；
 - binary：测试内按固定字节生成最小二进制 STL，避免提交来源不明资产；
 - negative：扩展名伪装、截断 binary、未知格式必须失败且不推进 scene revision；
 - Debug/Release 均验证导入、addInstance、有效 Profile 与切片请求构造。
@@ -83,7 +83,8 @@ H-E-03 在 `HostSliceSettingsPanel` 增加可折叠“支撑”段；字段先�
 
 | 批次 | 状态 | 说明 |
 |---|---|---|
-| E1 H-E-01/03 | **READY** | 可按两张独立任务卡顺序开发、验证、提交 |
+| E1 H-E-01 | **COMPLETE（2026-08-10）** | ASCII/binary 均完成导入与切片；三类负例 fail-closed |
+| E1 H-E-03 | **READY** | 支撑 Profile 可编辑段可独立开发、验证、提交 |
 | E2 H-E-04/05 | **WAIT E1 GATE** | 需复核 E1 Profile 编辑框架后再细化字段 |
 | E3 H-E-02/06 | **WAIT E2 GATE** | 批量事务语义与白区预检身份仍不得提前实现 |
 

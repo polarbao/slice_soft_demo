@@ -347,10 +347,11 @@ void HostMainWindow::OnImportModel()
 {
     const QString modelPath = QFileDialog::getOpenFileName(
         this,
-        QStringLiteral("选择要导入的 OBJ 或 3MF 模型"),
+        QStringLiteral("选择要导入的 OBJ、3MF 或 STL 模型"),
         QDir::homePath(),
         QStringLiteral(
-            "支持的模型 (*.obj *.3mf);;OBJ 模型 (*.obj);;3MF 模型 (*.3mf)"));
+            "支持的模型 (*.obj *.3mf *.stl);;OBJ 模型 (*.obj);;"
+            "3MF 模型 (*.3mf);;STL 模型 (*.stl)"));
     if (modelPath.isEmpty())
     {
         return;
@@ -431,7 +432,7 @@ void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
         m_importWorkflow->SceneRevision());
     m_importSummaryLabel->setText(
         QStringLiteral(
-            "%1\nOBJ/3MF 元数据：%2 三角形，%3 顶点，"
+            "%1\nOBJ/3MF/STL 元数据：%2 三角形，%3 顶点，"
             "%4 × %5 × %6 mm，UV=%7，法线=%8\n"
             "快速预检：%9；场景 revision=%10")
             .arg(source.fileName())

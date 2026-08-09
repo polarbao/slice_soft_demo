@@ -44,7 +44,7 @@ HostModelListPanel::HostModelListPanel(QWidget* parent)
     m_addButton = new QToolButton(this);
     m_addButton->setObjectName(QStringLiteral("hostImportModelButton"));
     m_addButton->setIcon(style()->standardIcon(QStyle::SP_DialogOpenButton));
-    m_addButton->setToolTip(QStringLiteral("导入 OBJ 或 3MF 模型"));
+    m_addButton->setToolTip(QStringLiteral("导入 OBJ、3MF 或 STL 模型"));
     m_addButton->setFixedSize(28, 28);
 
     m_selectAllButton = new QToolButton(this);

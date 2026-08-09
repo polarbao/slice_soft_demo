@@ -35,7 +35,7 @@ public:
 
     /**
      * @brief Updates the model used by the effective Profile preview.
-     * @param modelPath Existing imported OBJ or 3MF path, or empty.
+     * @param modelPath Existing imported OBJ, 3MF, or STL path, or empty.
      */
     void SetModelPath(const QString& modelPath);
 

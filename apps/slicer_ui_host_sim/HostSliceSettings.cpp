@@ -66,12 +66,14 @@ bool HostEffectiveProfileBuilder::Validate(
     }
     if (!model.isFile()
         || (format != QStringLiteral("obj")
-            && format != QStringLiteral("3mf"))
+            && format != QStringLiteral("3mf")
+            && format != QStringLiteral("stl"))
         || model.suffix().toLower() != format)
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral("有效 Profile 需要已导入的 OBJ 或 3MF 模型。");
+            *error = QStringLiteral(
+                "有效 Profile 需要已导入的 OBJ、3MF 或 STL 模型。");
         }
         return false;
     }
