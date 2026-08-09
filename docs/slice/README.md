@@ -81,7 +81,10 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `REPORT/REPORT_14F_04_S2本地合同门禁当前状态.md` | 14F-04 S2 C1-C7 机器合同、正负例、CTest 与外部 RIP 延期边界 |
 | `REPORT/REPORT_14F_切片能力包本地交付与外部验收延期当前状态.md` | **Stage 14F 收口真源**：能力包可交付、接口冻结、六步本地门禁和外部验收延期边界 |
 | `../../contracts/slicer_rip_s2_contract.json` | 冻结的 S2 本地机器合同：输入协议、量化、白区、输出组织、混合和外部状态 |
-| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A-01..04、H-B-01..05 已完成；H-B-06 为下一任务 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A/H-B/H-C 完成；H-D-01/05 完成；H-E E1 准备通过 |
+| `DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md` | H-D-02..06 准备、阻断关系、刷新矩阵和人工验收证据 |
+| `DOC/DOC_PREP_HOSTFLOW_H_E_E1_STL与支撑参数实施准备.md` | H-E E1 的 STL 与支撑 Profile 字段、负例和批次门 |
+| `DOC/DOC_PREP_RENDER_R_B_LOD缺陷修复选型准备.md` | R-B meshoptimizer/自研简化选型、依赖风险和解锁门禁 |
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |

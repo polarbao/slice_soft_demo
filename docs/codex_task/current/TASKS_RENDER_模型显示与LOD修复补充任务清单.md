@@ -1,7 +1,7 @@
 # TASKS_RENDER 模型显示与 LOD 修复补充任务清单
 
-> 文档状态：**PROPOSED / NOT ACTIVE**（待用户选定方案后授权）
-> 版本：v1.0 ｜ 日期：2026-08-06
+> 文档状态：**R-A COMPLETE / R-B DECISION READY**（待用户选定简化方案后授权）
+> 版本：v1.2 ｜ 日期：2026-08-09
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 上游决策：`docs/slice/DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md`
 > 前提：Qt 升级至 **6.8+ 作为长期版本**（用户 2026-08-06 确认方向）
@@ -228,8 +228,8 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | PROPOSED |
-| **R-B-02** | **替换跳采样为真正的网格简化**。选定方案后二择一：<br/>·（推荐）引入 `meshoptimizer`，用 `meshopt_simplify`<br/>· 自研保守顶点聚类简化 | R-A-01；用户选定 §4.2 | 简化后网格**仍连通**（无孤立三角）；轮廓 Hausdorff 距离 ≤ 模型尺寸 2%；UV 边界不破裂 | PROPOSED |
+| **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01；与 R-B-02 同批 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | **PREPARED / WAIT RD-B** |
+| **R-B-02** | **替换跳采样为真正的网格简化**。选定方案后二择一：<br/>·（推荐）引入 `meshoptimizer`，用 `meshopt_simplify`<br/>· 自研保守顶点聚类简化 | R-A-01；用户选定 §4.2 | 简化后网格**仍连通**（无孤立三角）；轮廓 Hausdorff 距离 ≤ 模型尺寸 2%；UV 边界不破裂 | **DECISION READY / WAIT RD-B** |
 | **R-B-03** | 降级理由细分：区分「几何被简化」`mesh_simplified_*` 与「几何被抽稀」`mesh_decimated_*`，使宿主可判断是否提示用户 | R-B-02 | 两种情况返回不同 `truncationReason`；契约文档同步 | PROPOSED |
 | **R-B-04** | （若选 meshoptimizer）**顶点量化**：`meshopt_quantizeHalf` 把 position/normal 降至 16-bit | R-B-02 | ViewData 体积减少 ≥ 40%；预算阈值实测抬升至 ≥ 25k 三角/实例；视觉无可察差异 | PROPOSED |
 
@@ -283,5 +283,6 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-09 | v1.2 | 完成 R-B 选型准备：比较 meshoptimizer 与自研保守简化的 CMake/vcpkg/许可证/部署/维护风险，推荐 MIT `meshoptimizer` 并冻结 R-B-01/02 分卡、真实资产和质量门禁；未获 RD-B 裁决前不修改依赖或生产源码。 |
 | 2026-08-09 | v1.1 | 完成 R-A-01：按 OBJ 扇形三角化口径统计 `model/obj` 36 个模型，17 个超过约 13.8k 阈值，LOD 跳采样风险确认为 P1；证据见 `REPORT_RENDER_R_A_01_甲片模型三角面数实测.md`。R-B/R-C/R-D 仍未获实现授权。 |
 | 2026-08-06 | v1.0 | 首版。汇总近几轮显示功能分析：工作负载量化与三条推论、13.8k 三角阈值公式、**LOD 跳采样缺陷的 A 级代码证据**及两个次级缺陷、LOD 判据方向错误、四方案优劣对比、**两处自我更正（WARP 使 llvmpipe 分发多余；像素级 golden 性价比下调）**；在 Qt 6.8+ 长期版本前提下推荐方案 A + meshoptimizer；分 R-A..R-E 五组共 12 张任务卡；登记 RD-A..D 四项待决 |
