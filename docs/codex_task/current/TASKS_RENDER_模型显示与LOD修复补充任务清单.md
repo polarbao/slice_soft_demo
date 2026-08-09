@@ -228,7 +228,11 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
-| **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01；与 R-B-02 同批 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | **PREPARED / WAIT RD-B** |
+| **RB-P1 / H-D-02** | 宿主 `SceneRenderPolicy` 从固定 `lod2` 改为 `auto`；预算或纹理资产错误显式 fail-closed，不回退破碎网格 | H-D-01 | UI-M7 相机期 DLL 调用为 0；36 真实资产为完整 lod0 或显式合同错误 | **COMPLETE（2026-08-09）** |
+| **R-B-00** | **模块按 `model_id` 缓存 `ViewMesh` 并提升到顶层 `meshes[]`**（镜像既有 `budgetedAppearances` 与 `appearances[]` 的做法），实例只留 `meshIdentity` 引用 | 无 | `SceneViewCandidateBuilder.cpp:194` 现在逐实例重建 mesh，**违反 `DOC_SCHEMA_14` §3「同一模型多实例只传一份」**；`local` 模式下顶点逐字节相同已核实（`SceneViewMeshBuilder.cpp:188` 仅 World 分支用矩阵），去重安全。⚠️ 顶层新增 `meshes[]` 属新增可选字段（minor 兼容），**仍须按 14F-R1/R2/R3 先例走受控修订，不得直接改** | **PROPOSED / 优先于 R-B-01/02** |
+| **R-B-05** | **顶点共享**：按 `position + normal + uv` 三元组去重，替代当前每三角 3 独立顶点 | R-B-00 | 当前 108 B/三角 → 目标 ≈28 B/三角；**UV 缝上的顶点必须保持分裂**，不得强行合并导致贴图撕裂 | **PROPOSED** |
+| **R-A-02** | **修完 RB-P1/P2/P3 后重测 36 个模型**，重算真实触发面 | R-B-00、R-B-05、H-D-02 的 lod 改动 | 给出新阈值与新的超限模型数；**RD-B 依据本卡结果裁决**，不得沿用 R-A-01 的 13.8k 口径 | **PROPOSED** |
+| **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01；与 R-B-02 同批 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | **PREPARED / 降级：仅在 R-A-02 判定仍超预算时才需要** |
 | **R-B-02** | **替换跳采样为真正的网格简化**。选定方案后二择一：<br/>·（推荐）引入 `meshoptimizer`，用 `meshopt_simplify`<br/>· 自研保守顶点聚类简化 | R-A-01；用户选定 §4.2 | 简化后网格**仍连通**（无孤立三角）；轮廓 Hausdorff 距离 ≤ 模型尺寸 2%；UV 边界不破裂 | **DECISION READY / WAIT RD-B** |
 | **R-B-03** | 降级理由细分：区分「几何被简化」`mesh_simplified_*` 与「几何被抽稀」`mesh_decimated_*`，使宿主可判断是否提示用户 | R-B-02 | 两种情况返回不同 `truncationReason`；契约文档同步 | PROPOSED |
 | **R-B-04** | （若选 meshoptimizer）**顶点量化**：`meshopt_quantizeHalf` 把 position/normal 降至 16-bit | R-B-02 | ViewData 体积减少 ≥ 40%；预算阈值实测抬升至 ≥ 25k 三角/实例；视觉无可察差异 | PROPOSED |
@@ -261,11 +265,11 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 ## 8. 建议执行顺序
 
 ```text
-第 1 步   R-A-01                      ← 先测那个数，成本最低、信息量最大
-第 2 步   用户在 §4.1 / §4.2 选定方案
-第 3 步   R-B-01/02（+04）· R-C-01/02  ← 与后端无关，可先做
-第 4 步   R-D-01 → R-D-02 → R-D-03/04
-第 5 步   R-E-01
+已完成     R-A-01 → RB-P1/H-D-02
+下一步     R-B-00（RB-P2）→ R-B-05（RB-P3）→ R-A-02
+再裁决     RD-B；仅在重测仍需简化时执行 R-B-01/02（+04）
+正交线     R-C-01/02
+后端线     R-D-01 → R-D-02 → R-D-03/04 → R-E-01
 ```
 
 **R-B 与 R-C 不依赖后端决策，可以立刻开工**；R-D 才需要等 Qt 升级决策。
@@ -275,7 +279,7 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 | 编号 | 决定项 | 我方建议 |
 |---|---|---|
 | **RD-A** | §4.1 后端方案（A / B / C / D）| **方案 A（QRhiWidget 单后端）** |
-| **RD-B** | §4.2 是否引入 `meshoptimizer` | **引入** —— 收益最高的一项，且与后端决策无关 |
+| **RD-B** | §4.2 是否引入 `meshoptimizer` | ⛔ **2026-08-09 推迟裁决** —— 见 `DOC_ANALYSIS_RENDER_RD_B_前置复核_预算膨胀三处根因.md`。预算超限的主因是三处自身实现缺陷（宿主硬编码 `lod2` / mesh 未按 model 去重 / 顶点未共享），合计放大数十倍；须先修 RB-P1/P2/P3 并由 **R-A-02 重测**，再据实测结果裁决。选型准备（MIT 许可、vcpkg port、CMake 方案）不作废，可随时启用 |
 | **RD-C** | 是否接受用「输入确定性 + 图像容差比对」替代逐像素 golden | **接受** —— 省 10–18 人日，取得约 90% 价值 |
 | **RD-D** | R-C-01 的屏幕空间提示字段命名（`pixelsPerMm` / `targetScreenPx`）| `pixelsPerMm` —— 与项目 mm 单位体系一致 |
 
@@ -283,6 +287,7 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-09 | v1.3 | RB-P1 随 H-D-02 完成：宿主改用自动 LOD、预算失败显式且空帧；Release 36 资产矩阵为 22 个完整 lod0、14 个冻结纹理合同显式拒绝、0 个破碎降级。执行顺序调整为 RB-P2/P3 和 R-A-02 后再裁决 RD-B。 |
 | 2026-08-09 | v1.2 | 完成 R-B 选型准备：比较 meshoptimizer 与自研保守简化的 CMake/vcpkg/许可证/部署/维护风险，推荐 MIT `meshoptimizer` 并冻结 R-B-01/02 分卡、真实资产和质量门禁；未获 RD-B 裁决前不修改依赖或生产源码。 |
 | 2026-08-09 | v1.1 | 完成 R-A-01：按 OBJ 扇形三角化口径统计 `model/obj` 36 个模型，17 个超过约 13.8k 阈值，LOD 跳采样风险确认为 P1；证据见 `REPORT_RENDER_R_A_01_甲片模型三角面数实测.md`。R-B/R-C/R-D 仍未获实现授权。 |
 | 2026-08-06 | v1.0 | 首版。汇总近几轮显示功能分析：工作负载量化与三条推论、13.8k 三角阈值公式、**LOD 跳采样缺陷的 A 级代码证据**及两个次级缺陷、LOD 判据方向错误、四方案优劣对比、**两处自我更正（WARP 使 llvmpipe 分发多余；像素级 golden 性价比下调）**；在 Qt 6.8+ 长期版本前提下推荐方案 A + meshoptimizer；分 R-A..R-E 五组共 12 张任务卡；登记 RD-A..D 四项待决 |
