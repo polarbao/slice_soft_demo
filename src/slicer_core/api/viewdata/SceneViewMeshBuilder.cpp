@@ -120,6 +120,102 @@ std::vector<std::vector<std::size_t>> GroupTriangles(
     return groups;
 }
 
+struct GroupBudgetRemainder
+{
+    std::size_t group_index{0U};
+    std::uint64_t remainder{0U};
+};
+
+std::vector<std::size_t> AllocateTriangleBudgets(
+    const std::vector<std::vector<std::size_t>>& groups,
+    const std::size_t triangleLimit)
+{
+    std::vector<std::size_t> budgets(groups.size(), 0U);
+    std::size_t totalTriangles{0U};
+    std::vector<std::size_t> activeGroups;
+    for (std::size_t groupIndex{0U}; groupIndex < groups.size(); ++groupIndex)
+    {
+        const std::size_t groupSize = groups.at(groupIndex).size();
+        totalTriangles += groupSize;
+        if (groupSize > 0U)
+        {
+            activeGroups.push_back(groupIndex);
+        }
+    }
+    if (totalTriangles <= triangleLimit)
+    {
+        for (std::size_t groupIndex{0U}; groupIndex < groups.size();
+             ++groupIndex)
+        {
+            budgets.at(groupIndex) = groups.at(groupIndex).size();
+        }
+        return budgets;
+    }
+
+    const std::size_t targetTriangles = triangleLimit;
+    if (targetTriangles < activeGroups.size())
+    {
+        std::stable_sort(
+            activeGroups.begin(),
+            activeGroups.end(),
+            [&groups](const std::size_t left, const std::size_t right)
+            {
+                return groups.at(left).size() > groups.at(right).size();
+            });
+        for (std::size_t index{0U}; index < targetTriangles; ++index)
+        {
+            budgets.at(activeGroups.at(index)) = 1U;
+        }
+        return budgets;
+    }
+
+    for (const std::size_t groupIndex : activeGroups)
+    {
+        budgets.at(groupIndex) = 1U;
+    }
+    const std::size_t remainingTarget =
+        targetTriangles - activeGroups.size();
+    const std::size_t remainingCapacity =
+        totalTriangles - activeGroups.size();
+    if (remainingTarget == 0U || remainingCapacity == 0U)
+    {
+        return budgets;
+    }
+
+    std::size_t assigned{0U};
+    std::vector<GroupBudgetRemainder> remainders;
+    remainders.reserve(activeGroups.size());
+    for (const std::size_t groupIndex : activeGroups)
+    {
+        const std::size_t capacity = groups.at(groupIndex).size() - 1U;
+        const std::uint64_t numerator =
+            static_cast<std::uint64_t>(capacity)
+            * static_cast<std::uint64_t>(remainingTarget);
+        const std::size_t allocation = static_cast<std::size_t>(
+            numerator / remainingCapacity);
+        budgets.at(groupIndex) += allocation;
+        assigned += allocation;
+        remainders.push_back({
+            groupIndex,
+            numerator % remainingCapacity});
+    }
+
+    std::stable_sort(
+        remainders.begin(),
+        remainders.end(),
+        [](const GroupBudgetRemainder& left,
+           const GroupBudgetRemainder& right)
+        {
+            return left.remainder > right.remainder;
+        });
+    const std::size_t remainderCount = remainingTarget - assigned;
+    for (std::size_t index{0U}; index < remainderCount; ++index)
+    {
+        ++budgets.at(remainders.at(index).group_index);
+    }
+    return budgets;
+}
+
 struct VertexKey
 {
     std::array<std::uint32_t, 8> values{};
@@ -215,16 +311,17 @@ ApiResult<ViewMesh> BuildViewMesh(
         }
 
         const auto groups = GroupTriangles(model, appearance);
-        const std::size_t stride = model.triangles.size() <= triangleLimit
-            ? 1U
-            : (model.triangles.size() + triangleLimit - 1U)
-                / triangleLimit;
+        const std::vector<std::size_t> groupBudgets =
+            AllocateTriangleBudgets(groups, triangleLimit);
 
         ViewMesh mesh;
         mesh.lod = lod;
         mesh.mesh_transform = meshTransform;
-        const std::size_t estimatedTriangles =
-            (model.triangles.size() + stride - 1U) / stride;
+        std::size_t estimatedTriangles{0U};
+        for (const std::size_t groupBudget : groupBudgets)
+        {
+            estimatedTriangles += groupBudget;
+        }
         mesh.positions.reserve(estimatedTriangles * 9U);
         mesh.normals.reserve(estimatedTriangles * 9U);
         mesh.texcoord0.reserve(estimatedTriangles * 6U);
@@ -237,7 +334,8 @@ ApiResult<ViewMesh> BuildViewMesh(
         {
             const std::vector<std::size_t>& triangleIndices =
                 groups.at(materialIndex);
-            if (triangleIndices.empty())
+            const std::size_t groupBudget = groupBudgets.at(materialIndex);
+            if (triangleIndices.empty() || groupBudget == 0U)
             {
                 continue;
             }
@@ -247,9 +345,9 @@ ApiResult<ViewMesh> BuildViewMesh(
             submesh.material_id =
                 appearance.materials.at(materialIndex).material.material_id;
 
-            for (std::size_t groupIndex{0U};
-                 groupIndex < triangleIndices.size();
-                 groupIndex += stride)
+            for (std::size_t sampleIndex{0U};
+                 sampleIndex < groupBudget;
+                 ++sampleIndex)
             {
                 if (cancelToken.IsCancelRequested())
                 {
@@ -258,8 +356,10 @@ ApiResult<ViewMesh> BuildViewMesh(
                         "ViewData mesh generation was cancelled",
                         model.model_path.generic_string());
                 }
-                const std::size_t triangleIndex =
-                    triangleIndices.at(groupIndex);
+                const std::size_t groupIndex =
+                    sampleIndex * triangleIndices.size() / groupBudget;
+                const std::size_t triangleIndex = triangleIndices.at(
+                    groupIndex);
                 Triangle triangle = model.triangles.at(triangleIndex);
                 if (meshTransform == MeshTransform::World)
                 {
