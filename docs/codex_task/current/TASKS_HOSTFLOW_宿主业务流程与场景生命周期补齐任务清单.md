@@ -246,13 +246,20 @@ H-B-02 · H-B-03（变换部分）                      可并行，用既有 fi
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
 | **H-D-01** | **俯视画布接线**：用 `TopViewRenderPolicy` + `QImage` 输出替换 `topCanvas` 占位 `QLabel`；显示当前 `sceneHandle/sceneRevision` 的真实带纹理俯视 + buildVolume 平台与 1 mm/10 mm 网格 | 无（14E-04 已交付策略）| 导入模型后**画布上能看到模型**；缩放/平移可用；纹理失败显式报错不显示灰模 | **COMPLETE（2026-08-09）** |
-| **H-D-02** | **3D 画布接线**：`SceneRenderPolicy` + `CpuRasterBackend` 输出接 `threeDCanvas`；`CameraController` 接鼠标/滚轮事件与七向预设、正交/透视切换控件 | H-D-01；R-B-02 | 3D 可 orbit/pan/光标中心 zoom；**UI-M7 相机操作期跨 DLL 调用恒为 0**（实测计数，不得推断）| **BLOCKED BY R-B DECISION** |
-| **H-D-03** | **三车道拖拽接线**：`SceneInteractionController` + `TransformCommitPolicy` + `MoveOptimizationPolicy` 接画布拾取与拖拽 | H-D-02 | **UI-M1 拖拽期跨 DLL 调用恒为 0**；松手一次原子 Commit 推进一次 revision；Stale 回滚可演示（UI-M4）| **BLOCKED BY H-D-02** |
-| **H-D-04** | **视图刷新事件接线**：导入 / add / remove / transform / applyGridLayout / `sceneContext` 变更后自动 Refresh；按 `DOC_SCHEMA_14` §6 失效规则，**`worldMatrix` 变化不得使网格缓冲失效** | H-D-01；完整验收需 H-D-02 | 22 实例排版后视图一次刷新到位；`MeshUploadCount` 在纯变换后**增量为 0**（实测）| **PREPARED / WAIT H-D-02** |
+| **H-D-02** | **3D 画布接线**：`SceneRenderPolicy` + `CpuRasterBackend` 输出接 `threeDCanvas`；`CameraController` 接鼠标/滚轮事件与七向预设、正交/透视切换控件。<br/>🔴 **本卡内先做 RB-P1**：`SceneRenderPolicy` 改用 `lod=auto`，并按 `DOC_SCHEMA_14` §4 规则 6 处理 `PM-SLICER-VIEWDATA-BUDGET` —— **超预算时显式报错，不静默显示破碎网格** | H-D-01（**R-B-02 前置已解除**）| 3D 可 orbit/pan/光标中心 zoom；**UI-M7 相机操作期跨 DLL 调用恒为 0**（实测计数）；36 个真实模型均为完整 `lod0` 或按冻结纹理合同显式 fail-closed，不出现破碎网格 | **COMPLETE（2026-08-09）** |
+| **H-D-03** | **三车道拖拽接线**：`SceneInteractionController` + `TransformCommitPolicy` + `MoveOptimizationPolicy` 接画布拾取与拖拽 | H-D-02 | **UI-M1 拖拽期跨 DLL 调用恒为 0**；松手一次原子 Commit 推进一次 revision；Stale 回滚可演示（UI-M4）| **PREPARED**（H-D-02 前置已完成）|
+| **H-D-04** | **视图刷新事件接线**：导入 / add / remove / transform / applyGridLayout / `sceneContext` 变更后自动 Refresh；按 `DOC_SCHEMA_14` §6 失效规则，**`worldMatrix` 变化不得使网格缓冲失效** | H-D-01；完整验收需 H-D-02 | 22 实例排版后视图一次刷新到位；`MeshUploadCount` 在纯变换后**增量为 0**（实测）| **PREPARED**（H-D-02 前置已完成）|
 | **H-D-05** | **打开切片数据目录**：结果页新增「打开包目录」，`QDesktopServices::openUrl(QUrl::fromLocalFile(...))`；路径**只能取作业返回的 `packageDir`**，不得自行拼接或猜测；目录缺失显式 fail-closed | H-B-07（已完成）| 点击后系统文件管理器定位到包目录；作业失败或路径不存在时按钮禁用并给出原因 | **COMPLETE（2026-08-09）** |
-| **H-D-06** | **端到端人工可操作性验收**：按 §4 口径逐步走通七步流程并归档截图；把「显示」维度回填 `REPORT_HOSTFLOW_H_C_03` | H-D-01..05 | 七步全部人工可完成；A/B 对照新增「显示」维度差异条目 | **BLOCKED BY H-D-02..04** |
+| **H-D-06** | **端到端人工可操作性验收**：按 §4 口径逐步走通七步流程并归档截图；把「显示」维度回填 `REPORT_HOSTFLOW_H_C_03` | H-D-01..05 | 七步全部人工可完成；A/B 对照新增「显示」维度差异条目 | **PREPARED / WAIT H-D-03..04**（H-D-02 前置已完成）|
 
 > 决策记录：`DOC_DECISION_HOSTFLOW_H_D_R1_视图接线归属与14E_04d延期作废.md`
+
+> **H-D-02 验证证据（2026-08-09）**：Debug/Release 的
+> `hostflow_hd02_three_d_canvas`、双视图合同和 H-A/H-B 联合门禁通过；
+> UI-M7 实测 `cameraCalls=0`。Release 真实资产矩阵覆盖 `model/obj` 全部 36 个 OBJ，
+> 结果为 `lod0=22 / budgetRejected=0 / assetRejected=14`。14 个拒绝均为冻结合同要求的
+> `PM-SLICER-INPUT-0001/0002` 贴图或材质资产错误，画布清空旧帧并显式提示，不回退灰模或
+> 破碎网格。逐资产修复不属于 H-D-02，后续由 RENDER 资产治理任务承接。
 
 > H-D-01 实际门禁：Debug/Release 真实纹理甲片俯视画布与 14E-04d 回归均 PASS；
 > 本地 pan/zoom 的 DLL 调用计数为 0；H-A/H-B 联合门禁各 22/22 PASS。
@@ -652,6 +659,8 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-09 | v3.6 | 完成 H-D-02 与优先 RB-P1：参考宿主接入真实纹理 3D 画布、七向预设、正交/透视、orbit/pan/光标中心 zoom；相机操作保持 0 次 DLL 调用。`SceneRenderPolicy` 改用 `lod=auto`，预算失败显式 `PM-SLICER-VIEWDATA-BUDGET` 且清空旧帧。Release 36 资产矩阵为 22 个完整 lod0、14 个冻结纹理合同显式拒绝、0 个破碎降级；H-D-03/04 前置解除。 |
+| 2026-08-09 | v3.5 | **解除 H-D-02 的 R-B 硬阻塞**。复核发现暂停理由（破洞模型）可由更便宜的手段消除：`SceneRenderPolicy.cpp:46` 把 `lod` **硬编码为 `lod2`**（阈值恒为 10,000，与 128 MiB 预算无关），改为 `auto` 即为一行改动；`SceneViewCandidateBuilder.cpp:194` 逐实例重建 mesh、外观有缓存而网格没有，违反 `DOC_SCHEMA_14` §3。真实触发面为 **35/36**（非报告的 17/36）。RB-P1 并入 H-D-02，H-D-03/04/06 阻塞同步解除；RD-B 推迟至 R-A-02 重测后裁决。分析见 `DOC_ANALYSIS_RENDER_RD_B_前置复核_预算膨胀三处根因.md`。 |
 | 2026-08-09 | v3.4 | 完成 H-D-02..06 与 H-E E1 准备审查：H-D-02 因 R-A-01 证实的 LOD P1 风险转为 `BLOCKED BY R-B DECISION`，H-D-03/06 同步阻断，H-D-04 冻结刷新与缓存矩阵；H-E-01/03 的 STL 编码、支撑 Profile 字段、fail-closed 和 Debug/Release 门禁准备通过。 |
 | 2026-08-09 | v3.3 | 完成 H-D-05：结果页只使用作业返回并经严格校验的 `packageDir` 打开生产包目录；空路径、目录缺失、包校验失败和身份不一致均 fail-closed。Debug/Release H-D-05、H-B-07 与 H-A/H-B 联合门禁通过。 |
 | 2026-08-09 | v3.2 | 完成 H-D-01：参考宿主俯视占位控件替换为真实 ViewData/QImage 画布，导入后按权威 scene identity 刷新；本地缩放/平移保持零 DLL 调用，失败清空旧帧并显式报错。Debug/Release H-D-01 与 14E-04d 回归、H-A/H-B 22 项联合门禁、宿主边界和源码尺寸守卫全部通过。同批 R-A-01 确认 17/36 模型超过 13.8k 阈值，H-D-02 前须先裁决 LOD 修复。 |

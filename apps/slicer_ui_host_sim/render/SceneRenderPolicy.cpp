@@ -4,12 +4,47 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 
+#include <algorithm>
 #include <utility>
+
+namespace
+{
+QString FormatViewDataFailure(const QJsonObject& result)
+{
+    const QString code = result.value(QStringLiteral("code")).toString();
+    const QString message = result.value(
+        QStringLiteral("message")).toString();
+    const QString detail = result.value(QStringLiteral("detail")).toString();
+    if (code == QStringLiteral("PM-SLICER-VIEWDATA-BUDGET"))
+    {
+        return QStringLiteral(
+            "PM-SLICER-VIEWDATA-BUDGET：3D 视图数据超过显示预算，"
+            "已停止显示且不会使用破碎网格。%1")
+            .arg(detail.isEmpty() ? QString{} : QStringLiteral(" 预算：%1 字节。")
+                .arg(detail));
+    }
+    if (!code.isEmpty())
+    {
+        return QStringLiteral("%1：%2%3")
+            .arg(
+                code,
+                message.isEmpty() ? QStringLiteral("3D ViewData 请求失败")
+                                  : message,
+                detail.isEmpty() ? QString{} : QStringLiteral("（%1）").arg(detail));
+    }
+    return QString::fromUtf8(
+        QJsonDocument(result).toJson(QJsonDocument::Compact));
+}
+}
 
 SceneRenderPolicy::SceneRenderPolicy(
     ModuleClient& client,
-    slicer::render::IRenderBackend& backend)
-    : m_client(client), m_backend(backend), m_cache(backend)
+    slicer::render::IRenderBackend& backend,
+    const qint64 maxViewDataBytes)
+    : m_client(client),
+      m_backend(backend),
+      m_cache(backend),
+      m_maxViewDataBytes((std::max)(maxViewDataBytes, 1LL))
 {
 }
 
@@ -27,6 +62,7 @@ bool SceneRenderPolicy::Refresh(
         }
         return false;
     }
+    *frame = ThreeDFrame{};
     QHash<QString, bool> outOfBounds;
     slicer::render::SceneDecorDesc decor;
     if (!LoadSnapshot(
@@ -43,22 +79,24 @@ bool SceneRenderPolicy::Refresh(
         {QStringLiteral("viewMode"), QStringLiteral("three_d")},
         {QStringLiteral("texturePolicy"),
          QStringLiteral("require_if_present")},
-        {QStringLiteral("lod"), QStringLiteral("lod2")},
+        {QStringLiteral("lod"), QStringLiteral("auto")},
         {QStringLiteral("meshTransform"), QStringLiteral("local")},
-        {QStringLiteral("maxBytes"), 128 * 1024 * 1024},
+        {QStringLiteral("maxBytes"), m_maxViewDataBytes},
         {QStringLiteral("content"), QJsonArray{
              QStringLiteral("bbox"),
              QStringLiteral("outline"),
              QStringLiteral("mesh"),
              QStringLiteral("appearance")}}};
     QJsonObject result;
-    if (!ExecuteJson(request, &result, error)
-        || !result.value(QStringLiteral("ok")).toBool())
+    if (!ExecuteJson(request, &result, error))
     {
-        if (error != nullptr && error->isEmpty())
+        return false;
+    }
+    if (!result.value(QStringLiteral("ok")).toBool())
+    {
+        if (error != nullptr)
         {
-            *error = QString::fromUtf8(
-                QJsonDocument(result).toJson(QJsonDocument::Compact));
+            *error = FormatViewDataFailure(result);
         }
         return false;
     }

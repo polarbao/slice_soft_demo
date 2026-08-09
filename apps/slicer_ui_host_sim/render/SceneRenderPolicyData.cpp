@@ -308,13 +308,16 @@ bool SceneRenderPolicy::DecodeInstances(
     for (const QJsonValue& item : instances)
     {
         const QJsonObject value = item.toObject();
+        const QJsonObject meshValue = value.value(
+            QStringLiteral("mesh")).toObject();
+        const QString meshLod = meshValue.value(
+            QStringLiteral("lod")).toString();
         slicer::render::InstanceDraw instance;
         instance.instanceId = value.value(
             QStringLiteral("instanceId")).toString().toStdString();
         instance.appearanceIdentity = value.value(
             QStringLiteral("appearanceIdentity")).toString().toStdString();
-        instance.meshIdentity = value.value(QStringLiteral("mesh"))
-            .toObject().value(QStringLiteral("meshIdentity"))
+        instance.meshIdentity = meshValue.value(QStringLiteral("meshIdentity"))
             .toString().toStdString();
         const QString instanceId = QString::fromStdString(instance.instanceId);
         const QString appearance = QString::fromStdString(
@@ -327,6 +330,10 @@ bool SceneRenderPolicy::DecodeInstances(
             || (textureStatus == QStringLiteral("not_provided")
                 && identities.value(appearance).isEmpty());
         if (instance.instanceId.empty() || instance.meshIdentity.empty()
+            || (meshLod != QStringLiteral("lod0")
+                && meshLod != QStringLiteral("lod1")
+                && meshLod != QStringLiteral("lod2"))
+            || (!frame->meshLod.isEmpty() && frame->meshLod != meshLod)
             || !identities.contains(appearance))
         {
             if (error != nullptr)
@@ -336,6 +343,7 @@ bool SceneRenderPolicy::DecodeInstances(
             }
             return false;
         }
+        frame->meshLod = meshLod;
         if (!ReadMatrix(value.value(
                 QStringLiteral("worldMatrix")).toArray(),
                 instance.worldMatrix)
@@ -359,8 +367,7 @@ bool SceneRenderPolicy::DecodeInstances(
             }
             return false;
         }
-        if (!UploadMesh(value.value(
-                QStringLiteral("mesh")).toObject(), error))
+        if (!UploadMesh(meshValue, error))
         {
             if (error != nullptr && error->isEmpty())
             {

@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE — H-D-01/05 已完成 / H-E E1 准备通过**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
+> 状态：**ACTIVE — H-D-01/02/05 已完成 / H-E E1 准备通过**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
 > 日期：2026-08-09
 > 范围：HOSTFLOW H-A、H-B、H-C、H-D、H-E，不属于 Stage 14 编号任务。
 
@@ -11,7 +11,7 @@
 | H-A 场景生命周期 | COMPLETE | H-A-01..04 全部完成；DTO 当前为 v1.7 | 无切片侧阻断 |
 | H-B 宿主业务 UI | COMPLETE | H-B-01..08 全部完成 | 无切片侧阻断 |
 | H-C 移植交付 | COMPLETE | H-C-01/02/03 全部完成 | 无切片侧阻断；打印侧 ACK 延期 |
-| **H-D 视图接线** | **ACTIVE** | H-D-01/05 已完成；H-D-04 准备完成 | H-D-02 由真实模型 LOD P1 风险阻断；H-D-03/06 依赖链阻断 |
+| **H-D 视图接线** | **ACTIVE** | H-D-01/02/05 已完成；H-D-03/04 已准备 | H-D-06 等待 H-D-03/04 和人工证据 |
 | **H-E 参数深度与导入** | **E1 READY / 分三批** | E1: H-E-01/03 → E2: H-E-04/05 → E3: H-E-02/06 | **HQ-09=乙 已裁决**；E2/E3 仍须等待批次门 |
 
 > 🔴 **2026-08-08 复核更正**：本文原状态为 `LOCAL COMPLETE`，**该结论不成立**。
@@ -100,12 +100,16 @@ Debug/Release 主干 5 个 smoke、宿主 6 个 UI self-test 和 H-A/H-B CTest �
 
 H-D-01 已完成：参考宿主使用 `TopViewRenderPolicy` 和真实 `top` ViewData 显示当前场景的
 纹理俯视、buildVolume 与网格；滚轮缩放和中键平移完全在宿主本地完成。Debug/Release
-H-D-01、14E-04d 与 H-A/H-B 联合门禁通过。R-A-01 同批实测确认 17/36 个 OBJ 超过
-约 13.8k 三角阈值，3D 接线前须先裁决 LOD 修复。
+H-D-01、14E-04d 与 H-A/H-B 联合门禁通过。
+
+H-D-02 已完成并优先闭合 RB-P1：`SceneRenderPolicy` 从固定 `lod2` 改为 `auto`，参考宿主
+显示真实纹理 3D 帧，并支持 orbit/pan/光标中心 zoom、七向预设和正交/透视；相机操作期
+实测 DLL 调用为 0。Release 36 资产矩阵为 22 个完整 lod0、14 个冻结纹理合同显式资产
+拒绝、0 个破碎降级；1 字节预算负例显式返回 `PM-SLICER-VIEWDATA-BUDGET` 并清空旧帧。
 
 H-D-05 已完成：结果页只对当前已校验作业返回的精确 `packageDir` 开放系统目录入口，
 空路径、目录不存在、包无效或身份不一致均 fail-closed。H-D-02..06 的准备审查已冻结：
-H-D-02 等待 R-B 简化方案裁决，H-D-04 已冻结刷新事件和缓存失效矩阵。
+H-D-02 已完成，H-D-03/04 已解除前置，H-D-06 继续等待两卡及人工证据。
 
 H-E E1 准备门已通过：H-E-01 明确 ASCII/binary STL、格式白名单和负例；H-E-03 明确
 lower support、internal void、base projection、Profile hash 与持久化边界。E2/E3 尚未准备
@@ -143,6 +147,7 @@ H-A-03 已证明宿主只经 11 个导出实现：
 
 ## Next Action
 
-H-D-01/05 已闭合。H-D 主线下一步是裁决 RD-B 并完成 R-B-01/02，再启动 H-D-02；
-在该决策等待期间，可按已通过的 E1 准备依次执行 H-E-01、H-E-03。R-A-01 已完成，
-R-A 没有遗留准备任务；其后属于 R-B 新阶段。打印侧 ACK 维持 `PENDING / DEFERRED`。
+H-D-01/02/05 已闭合。H-D 主线可按独立原子卡执行 H-D-03 或 H-D-04；H-D-06 等待
+两卡和人工七步证据。RB-P2/P3 与 R-A-02 保持独立 RENDER 后续，不再阻断 H-D。
+H-E 可按已通过的 E1 准备依次执行 H-E-01、H-E-03。打印侧 ACK 维持
+`PENDING / DEFERRED`。

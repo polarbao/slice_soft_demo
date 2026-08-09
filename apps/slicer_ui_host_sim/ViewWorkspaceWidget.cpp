@@ -1,9 +1,10 @@
 #include "ViewWorkspaceWidget.h"
 
+#include "ThreeDCanvasWidget.h"
 #include "TopViewCanvasWidget.h"
 
 #include <QButtonGroup>
-#include <QFrame>
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QStackedWidget>
@@ -11,25 +12,6 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
-
-namespace
-{
-QLabel* CreatePlaceholderCanvas(
-    const QString& objectName,
-    const QString& title,
-    QWidget* parent)
-{
-    auto* canvas = new QLabel(parent);
-    canvas->setObjectName(objectName);
-    canvas->setAlignment(Qt::AlignCenter);
-    canvas->setText(title);
-    canvas->setMinimumSize(640, 400);
-    canvas->setStyleSheet(QStringLiteral(
-        "QLabel { color: #f2f3f5; background: #2b2d31; "
-        "border: 1px solid #686d75; }"));
-    return canvas;
-}
-}
 
 ViewWorkspaceWidget::ViewWorkspaceWidget(QWidget* parent)
     : QWidget(parent)
@@ -63,6 +45,41 @@ ViewWorkspaceWidget::ViewWorkspaceWidget(QWidget* parent)
     toolbar->addWidget(m_threeDButton);
     toolbar->addStretch(1);
 
+    m_threeDControls = new QWidget(this);
+    auto* cameraLayout = new QHBoxLayout(m_threeDControls);
+    cameraLayout->setContentsMargins(0, 0, 0, 0);
+    cameraLayout->setSpacing(6);
+    m_presetCombo = new QComboBox(m_threeDControls);
+    m_presetCombo->setObjectName(QStringLiteral("threeDCameraPresetCombo"));
+    m_presetCombo->setToolTip(QStringLiteral("选择 3D 相机方向"));
+    m_presetCombo->addItem(QStringLiteral("顶"), static_cast<int>(CameraPreset::Top));
+    m_presetCombo->addItem(QStringLiteral("底"), static_cast<int>(CameraPreset::Bottom));
+    m_presetCombo->addItem(QStringLiteral("前"), static_cast<int>(CameraPreset::Front));
+    m_presetCombo->addItem(QStringLiteral("后"), static_cast<int>(CameraPreset::Back));
+    m_presetCombo->addItem(QStringLiteral("左"), static_cast<int>(CameraPreset::Left));
+    m_presetCombo->addItem(QStringLiteral("右"), static_cast<int>(CameraPreset::Right));
+    m_presetCombo->addItem(
+        QStringLiteral("等轴"), static_cast<int>(CameraPreset::Isometric));
+    m_presetCombo->setCurrentIndex(6);
+    m_projectionCombo = new QComboBox(m_threeDControls);
+    m_projectionCombo->setObjectName(
+        QStringLiteral("threeDToolbarProjectionCombo"));
+    m_projectionCombo->setToolTip(QStringLiteral("切换 3D 投影方式"));
+    m_projectionCombo->addItem(
+        QStringLiteral("正交"),
+        static_cast<int>(slicer::render::Projection::Orthographic));
+    m_projectionCombo->addItem(
+        QStringLiteral("透视"),
+        static_cast<int>(slicer::render::Projection::Perspective));
+    auto* fitButton = new QToolButton(m_threeDControls);
+    fitButton->setObjectName(QStringLiteral("threeDFitButton"));
+    fitButton->setText(QStringLiteral("适配"));
+    fitButton->setToolTip(QStringLiteral("适配全部 3D 模型"));
+    cameraLayout->addWidget(m_presetCombo);
+    cameraLayout->addWidget(m_projectionCombo);
+    cameraLayout->addWidget(fitButton);
+    toolbar->addWidget(m_threeDControls);
+
     m_errorLabel = new QLabel(this);
     m_errorLabel->setObjectName(QStringLiteral("viewErrorLabel"));
     m_errorLabel->setStyleSheet(QStringLiteral("color: #c62828;"));
@@ -79,11 +96,10 @@ ViewWorkspaceWidget::ViewWorkspaceWidget(QWidget* parent)
     m_canvasStack->setObjectName(QStringLiteral("viewCanvasStack"));
     m_topCanvas = new TopViewCanvasWidget(m_canvasStack);
     m_topCanvas->setObjectName(QStringLiteral("topCanvas"));
+    m_threeDCanvas = new ThreeDCanvasWidget(m_canvasStack);
+    m_threeDCanvas->setObjectName(QStringLiteral("threeDCanvas"));
     m_canvasStack->addWidget(m_topCanvas);
-    m_canvasStack->addWidget(CreatePlaceholderCanvas(
-        QStringLiteral("threeDCanvas"),
-        QStringLiteral("3D 工作区\n正交 / 透视 · 七向预设"),
-        m_canvasStack));
+    m_canvasStack->addWidget(m_threeDCanvas);
 
     root->addLayout(toolbar);
     root->addWidget(m_errorLabel);
@@ -97,6 +113,29 @@ ViewWorkspaceWidget::ViewWorkspaceWidget(QWidget* parent)
     connect(m_threeDButton, &QToolButton::clicked, this, [this]()
     {
         SetMode(HostViewMode::ThreeD);
+    });
+    connect(
+        m_presetCombo,
+        qOverload<int>(&QComboBox::currentIndexChanged),
+        this,
+        [this](int)
+        {
+            m_threeDCanvas->SetPreset(static_cast<CameraPreset>(
+                m_presetCombo->currentData().toInt()));
+        });
+    connect(
+        m_projectionCombo,
+        qOverload<int>(&QComboBox::currentIndexChanged),
+        this,
+        [this](int)
+        {
+            m_threeDCanvas->SetProjection(
+                static_cast<slicer::render::Projection>(
+                    m_projectionCombo->currentData().toInt()));
+        });
+    connect(fitButton, &QToolButton::clicked, this, [this]()
+    {
+        m_threeDCanvas->FitScene();
     });
     ApplyMode();
 }
@@ -157,10 +196,48 @@ TopViewCanvasWidget* ViewWorkspaceWidget::TopCanvas() const
     return m_topCanvas;
 }
 
+void ViewWorkspaceWidget::SetThreeDImage(const QImage& image)
+{
+    m_threeDCanvas->SetImage(image);
+}
+
+void ViewWorkspaceWidget::ClearThreeDImage()
+{
+    m_threeDCanvas->ClearImage();
+}
+
+void ViewWorkspaceWidget::SetThreeDSceneBounds(const CameraBounds& bounds)
+{
+    m_threeDCanvas->SetSceneBounds(bounds);
+}
+
+QSize ViewWorkspaceWidget::ThreeDRenderSize() const
+{
+    return m_threeDCanvas->RenderSize();
+}
+
+ThreeDCanvasWidget* ViewWorkspaceWidget::ThreeDCanvas() const
+{
+    return m_threeDCanvas;
+}
+
+void ViewWorkspaceWidget::SetThreeDProjection(
+    const slicer::render::Projection projection)
+{
+    const int index = m_projectionCombo->findData(static_cast<int>(projection));
+    if (index >= 0 && index != m_projectionCombo->currentIndex())
+    {
+        m_projectionCombo->setCurrentIndex(index);
+        return;
+    }
+    m_threeDCanvas->SetProjection(projection);
+}
+
 void ViewWorkspaceWidget::ApplyMode()
 {
     const bool top = m_switch.Mode() == HostViewMode::Top;
     m_topButton->setChecked(top);
     m_threeDButton->setChecked(!top);
     m_canvasStack->setCurrentIndex(top ? 0 : 1);
+    m_threeDControls->setVisible(!top);
 }

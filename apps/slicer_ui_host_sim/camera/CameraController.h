@@ -47,6 +47,15 @@ public:
         std::uint32_t viewportWidthPx,
         std::uint32_t viewportHeightPx);
 
+    /**
+     * @brief Updates viewport dimensions without changing the current pose.
+     * @param viewportWidthPx Viewport width in pixels.
+     * @param viewportHeightPx Viewport height in pixels.
+     */
+    void SetViewportSize(
+        std::uint32_t viewportWidthPx,
+        std::uint32_t viewportHeightPx);
+
     /** @brief Applies local orbit deltas in degrees. */
     void Orbit(float yawDeltaDeg, float pitchDeltaDeg);
 

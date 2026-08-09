@@ -54,6 +54,8 @@ add_executable(slicer_ui_host_sim
     TransformCommitPolicy.h
     TopViewCanvasWidget.cpp
     TopViewCanvasWidget.h
+    ThreeDCanvasWidget.cpp
+    ThreeDCanvasWidget.h
     ViewWorkspaceWidget.cpp
     ViewWorkspaceWidget.h
     render/AppearanceCache.cpp
@@ -228,8 +230,14 @@ add_executable(hostflow_hb02_model_list_tests
     HostModelListPanel.h
     ModuleClient.cpp
     ModuleClient.h
+    ThreeDCanvasWidget.cpp
+    ThreeDCanvasWidget.h
+    TopViewCanvasWidget.cpp
+    TopViewCanvasWidget.h
     ViewWorkspaceWidget.cpp
     ViewWorkspaceWidget.h
+    camera/CameraController.cpp
+    camera/CameraController.h
     camera/ViewModeSwitch.cpp
     camera/ViewModeSwitch.h
     ${CMAKE_SOURCE_DIR}/tests/hostflow/HostModelListPanelTests.cpp
@@ -884,6 +892,8 @@ add_executable(stage14e04d_view_switch_tests
     TransformCommitPolicy.h
     TopViewCanvasWidget.cpp
     TopViewCanvasWidget.h
+    ThreeDCanvasWidget.cpp
+    ThreeDCanvasWidget.h
     ViewWorkspaceWidget.cpp
     ViewWorkspaceWidget.h
     camera/CameraController.cpp
@@ -960,8 +970,12 @@ add_executable(hostflow_hd01_top_canvas_tests
     ModuleClient.h
     TopViewCanvasWidget.cpp
     TopViewCanvasWidget.h
+    ThreeDCanvasWidget.cpp
+    ThreeDCanvasWidget.h
     ViewWorkspaceWidget.cpp
     ViewWorkspaceWidget.h
+    camera/CameraController.cpp
+    camera/CameraController.h
     camera/ViewModeSwitch.cpp
     camera/ViewModeSwitch.h
     render/TopViewRenderPolicy.cpp
@@ -1010,17 +1024,108 @@ add_test(
         --evidence-root ${CMAKE_BINARY_DIR}/hostflow_hd01_evidence/$<CONFIG>
 )
 
+add_executable(hostflow_hd02_three_d_canvas_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    ModuleClient.cpp
+    ModuleClient.h
+    ThreeDCanvasWidget.cpp
+    ThreeDCanvasWidget.h
+    TopViewCanvasWidget.cpp
+    TopViewCanvasWidget.h
+    ViewWorkspaceWidget.cpp
+    ViewWorkspaceWidget.h
+    camera/CameraController.cpp
+    camera/CameraController.h
+    camera/ViewModeSwitch.cpp
+    camera/ViewModeSwitch.h
+    render/AppearanceCache.cpp
+    render/AppearanceCache.h
+    render/CpuRasterBackend.cpp
+    render/CpuRasterBackend.h
+    render/CpuRasterDecor.cpp
+    render/CpuRasterDecor.h
+    render/CpuRasterResources.h
+    render/CpuRasterizer.cpp
+    render/IRenderBackend.h
+    render/SceneRenderPolicy.cpp
+    render/SceneRenderPolicyData.cpp
+    render/SceneRenderPolicyMesh.cpp
+    render/SceneRenderPolicy.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostThreeDCanvasTests.cpp
+)
+
+target_include_directories(hostflow_hd02_three_d_canvas_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hd02_three_d_canvas_tests PRIVATE
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
+    bcrypt
+)
+
+add_dependencies(hostflow_hd02_three_d_canvas_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hd02_three_d_canvas_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hd02_three_d_canvas_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hd02_three_d_canvas_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hd02_three_d_canvas
+    COMMAND hostflow_hd02_three_d_canvas_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+        --evidence-root ${CMAKE_BINARY_DIR}/hostflow_hd02_evidence/$<CONFIG>
+)
+
+add_test(
+    NAME hostflow_hd02_real_asset_matrix
+    COMMAND hostflow_hd02_three_d_canvas_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+        --evidence-root ${CMAKE_BINARY_DIR}/hostflow_hd02_evidence/$<CONFIG>
+        --real-asset-matrix
+)
+
 set_tests_properties(
     slicer_stage14e04d_dual_view_contract_test
     hostflow_hd01_top_canvas
+    hostflow_hd02_three_d_canvas
+    hostflow_hd02_real_asset_matrix
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
 set_tests_properties(
     hostflow_hd01_top_canvas
+    hostflow_hd02_three_d_canvas
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 180
+)
+
+set_tests_properties(
+    hostflow_hd02_real_asset_matrix
+    PROPERTIES
+        RUN_SERIAL TRUE
+        TIMEOUT 900
 )
 
 set_tests_properties(

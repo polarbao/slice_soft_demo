@@ -117,6 +117,14 @@ void CameraController::Fit(
         extentX * extentX + extentY * extentY + extentZ * extentZ);
 }
 
+void CameraController::SetViewportSize(
+    const std::uint32_t viewportWidthPx,
+    const std::uint32_t viewportHeightPx)
+{
+    m_viewportWidthPx = (std::max)(viewportWidthPx, 1U);
+    m_viewportHeightPx = (std::max)(viewportHeightPx, 1U);
+}
+
 void CameraController::Orbit(
     const float yawDeltaDeg,
     const float pitchDeltaDeg)

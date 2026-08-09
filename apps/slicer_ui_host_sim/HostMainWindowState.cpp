@@ -1,6 +1,8 @@
 #include "HostMainWindow.h"
 
 #include "HostWorkspaceState.h"
+#include "render/CpuRasterBackend.h"
+#include "render/SceneRenderPolicy.h"
 #include "render/TopViewRenderPolicy.h"
 #include "settings/ViewPresentationSettings.h"
 

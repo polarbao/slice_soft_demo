@@ -1,6 +1,8 @@
 #include "HostMainWindow.h"
 
 #include "ViewWorkspaceWidget.h"
+#include "render/CpuRasterBackend.h"
+#include "render/SceneRenderPolicy.h"
 #include "render/TopViewRenderPolicy.h"
 #include "settings/ViewPresentationSettings.h"
 
@@ -95,7 +97,7 @@ void HostMainWindow::BuildInterface()
 
     m_workspace = new ViewWorkspaceWidget(m_workspaceSplitter);
     m_workspace->setObjectName(QStringLiteral("dualViewWorkspace"));
-    m_workspace->SetMode(m_viewSettings->DefaultViewMode());
+    InitializeViewWorkspace();
 
     auto* importPanel = new QGroupBox(
         QStringLiteral("模型与导入预检"), m_workspaceSplitter);
@@ -376,6 +378,7 @@ void HostMainWindow::OnImportModel()
     RefreshSliceSettings();
     ShowImportResult(result);
     RefreshTopView();
+    RefreshThreeDView();
 }
 
 void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)
@@ -483,6 +486,7 @@ void HostMainWindow::SaveViewSettings()
                 == QStringLiteral("perspective")
             ? slicer::render::Projection::Perspective
             : slicer::render::Projection::Orthographic);
+    m_workspace->SetThreeDProjection(m_viewSettings->ThreeDProjection());
     QString error;
     if (!m_viewSettings->Save(&error))
     {

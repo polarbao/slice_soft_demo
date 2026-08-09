@@ -17,6 +17,7 @@
 struct ThreeDFrame final
 {
     QString viewDataIdentity;
+    QString meshLod;
     quint64 sceneRevision{0U};
     CameraBounds worldBounds;
     slicer::render::FrameDesc descriptor;
@@ -32,10 +33,12 @@ public:
      * @brief Creates a policy over the public module and one renderer backend.
      * @param client Runtime-loaded module client.
      * @param backend Backend-neutral renderer implementation.
+     * @param maxViewDataBytes Maximum accepted three-dimensional ViewData bytes.
      */
     SceneRenderPolicy(
         ModuleClient& client,
-        slicer::render::IRenderBackend& backend);
+        slicer::render::IRenderBackend& backend,
+        qint64 maxViewDataBytes = 128LL * 1024LL * 1024LL);
 
     /**
      * @brief Refreshes authoritative three_d ViewData and resource caches.
@@ -117,5 +120,6 @@ private:
     ModuleClient& m_client;
     slicer::render::IRenderBackend& m_backend;
     AppearanceCache m_cache;
+    qint64 m_maxViewDataBytes{128LL * 1024LL * 1024LL};
     quint64 m_blobReadCount{0U};
 };
