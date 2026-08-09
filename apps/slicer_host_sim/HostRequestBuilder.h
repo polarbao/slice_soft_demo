@@ -13,6 +13,16 @@ enum hostmaterialstrategy
     HOST_MATERIAL_VARNISH_SOLID = 2
 };
 
+/** @brief Host-owned support mode written to the effective Profile. */
+enum hostsupportmode
+{
+    HOST_SUPPORT_NONE = 0,
+    HOST_SUPPORT_BOTTOM_PROJECTION = 1,
+    HOST_SUPPORT_UNSUPPORTED_ONLY = 2,
+    HOST_SUPPORT_BOTTOM_PLUS_UNSUPPORTED = 3,
+    HOST_SUPPORT_FULL_VERTICAL_PROJECTION = 4
+};
+
 /** @brief C-compatible inputs used to build one effective slice Profile. */
 struct hosteffectiveprofilesettings
 {
@@ -24,6 +34,14 @@ struct hosteffectiveprofilesettings
     int dpiy;
     double layerthicknessmm;
     enum hostmaterialstrategy materialstrategy;
+    int supportenabled;
+    enum hostsupportmode supportmode;
+    double supportoffsetmm;
+    int supportminareapx;
+    int internalvoidenabled;
+    int internalvoidminareapx;
+    int baseprojectionenabled;
+    int baseprojectionlayercount;
 };
 
 /**

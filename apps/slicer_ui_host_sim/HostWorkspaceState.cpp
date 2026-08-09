@@ -60,6 +60,31 @@ bool ParseMaterialStrategy(
     return false;
 }
 
+bool ParseSupportMode(
+    const QString& identifier,
+    HostSupportMode* mode)
+{
+    if (mode == nullptr)
+    {
+        return false;
+    }
+    for (const HostSupportMode candidate : {
+             HostSupportMode::None,
+             HostSupportMode::BottomProjection,
+             HostSupportMode::UnsupportedOnly,
+             HostSupportMode::BottomProjectionPlusUnsupported,
+             HostSupportMode::FullVerticalProjection})
+    {
+        if (HostEffectiveProfileBuilder::SupportModeId(candidate)
+            == identifier)
+        {
+            *mode = candidate;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool IsFiniteInRange(
     const double value,
     const double minimum,
@@ -71,7 +96,7 @@ bool IsFiniteInRange(
 
 int HostWorkspaceState::SchemaVersion()
 {
-    return 1;
+    return 2;
 }
 
 QString HostWorkspaceState::OrganizationName()
@@ -155,6 +180,30 @@ void HostWorkspaceState::Save(
     settings.setValue(
         QStringLiteral("buildVolume/yDirection"),
         sliceSettings.buildvolume.ydirection);
+    settings.setValue(
+        QStringLiteral("support/enabled"), sliceSettings.support.enabled);
+    settings.setValue(
+        QStringLiteral("support/mode"),
+        HostEffectiveProfileBuilder::SupportModeId(
+            sliceSettings.support.mode));
+    settings.setValue(
+        QStringLiteral("support/offsetMm"),
+        sliceSettings.support.offsetmm);
+    settings.setValue(
+        QStringLiteral("support/minAreaPx"),
+        sliceSettings.support.minareapx);
+    settings.setValue(
+        QStringLiteral("support/internalVoid/enabled"),
+        sliceSettings.support.internalvoid.enabled);
+    settings.setValue(
+        QStringLiteral("support/internalVoid/minAreaPx"),
+        sliceSettings.support.internalvoid.minareapx);
+    settings.setValue(
+        QStringLiteral("support/baseProjection/enabled"),
+        sliceSettings.support.baseprojection.enabled);
+    settings.setValue(
+        QStringLiteral("support/baseProjection/layerCount"),
+        sliceSettings.support.baseprojection.layercount);
     settings.endGroup();
     settings.sync();
 }
@@ -210,6 +259,22 @@ bool HostWorkspaceState::Restore(
         QStringLiteral("buildVolume/xDirection")).toString();
     restored.buildvolume.ydirection = settings.value(
         QStringLiteral("buildVolume/yDirection")).toString();
+    restored.support.enabled = settings.value(
+        QStringLiteral("support/enabled")).toBool();
+    const QString supportModeId = settings.value(
+        QStringLiteral("support/mode")).toString();
+    restored.support.offsetmm = settings.value(
+        QStringLiteral("support/offsetMm"), -1.0).toDouble();
+    restored.support.minareapx = settings.value(
+        QStringLiteral("support/minAreaPx"), -1).toInt();
+    restored.support.internalvoid.enabled = settings.value(
+        QStringLiteral("support/internalVoid/enabled")).toBool();
+    restored.support.internalvoid.minareapx = settings.value(
+        QStringLiteral("support/internalVoid/minAreaPx"), -1).toInt();
+    restored.support.baseprojection.enabled = settings.value(
+        QStringLiteral("support/baseProjection/enabled")).toBool();
+    restored.support.baseprojection.layercount = settings.value(
+        QStringLiteral("support/baseProjection/layerCount"), -1).toInt();
     settings.endGroup();
 
     QList<int> splitterSizes;
@@ -225,6 +290,7 @@ bool HostWorkspaceState::Restore(
     splitterValid = splitterValid && splitterTotal > 0;
 
     HostMaterialStrategy materialStrategy{};
+    HostSupportMode supportMode{};
     const bool preferencesValid = !restored.profileid.trimmed().isEmpty()
         && restored.dpix >= 72 && restored.dpix <= 2400
         && restored.dpiy >= 72 && restored.dpiy <= 2400
@@ -236,7 +302,22 @@ bool HostWorkspaceState::Restore(
         && IsFiniteInRange(restored.buildvolume.zlimitmm, 1.0, 10000.0)
         && restored.buildvolume.origin == QStringLiteral("lower_left")
         && restored.buildvolume.xdirection == QStringLiteral("positive")
-        && restored.buildvolume.ydirection == QStringLiteral("positive");
+        && restored.buildvolume.ydirection == QStringLiteral("positive")
+        && ParseSupportMode(supportModeId, &supportMode)
+        && ((restored.support.enabled
+             && supportMode != HostSupportMode::None)
+            || (!restored.support.enabled
+                && supportMode == HostSupportMode::None))
+        && IsFiniteInRange(restored.support.offsetmm, 0.0, 10.0)
+        && restored.support.minareapx >= 0
+        && restored.support.minareapx <= 1000000
+        && restored.support.internalvoid.minareapx >= 0
+        && restored.support.internalvoid.minareapx <= 1000000
+        && restored.support.baseprojection.layercount >= 0
+        && restored.support.baseprojection.layercount <= 1000
+        && (restored.support.enabled
+            || (!restored.support.internalvoid.enabled
+                && !restored.support.baseprojection.enabled));
     const bool layoutValid = schema == kSchemaId
         && version == SchemaVersion() && !geometry.isEmpty()
         && splitterValid && workspaceTab >= 0
@@ -251,6 +332,7 @@ bool HostWorkspaceState::Restore(
     }
 
     restored.materialstrategy = materialStrategy;
+    restored.support.mode = supportMode;
     workspaceSplitter->setSizes(splitterSizes);
     workspaceTabs->setCurrentIndex(workspaceTab);
     inspectorTabs->setCurrentIndex(inspectorTab);

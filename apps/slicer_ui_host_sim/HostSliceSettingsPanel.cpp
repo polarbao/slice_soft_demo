@@ -1,5 +1,7 @@
 #include "HostSliceSettingsPanel.h"
 
+#include "HostSupportSettingsPanel.h"
+
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDir>
@@ -138,6 +140,14 @@ void HostSliceSettingsPanel::BuildInterface()
     volumeForm->addRow(QStringLiteral("Z 上限"), m_buildZSpin);
     layout->addWidget(volumeGroup);
 
+    auto* supportGroup = new QGroupBox(
+        QStringLiteral("宿主 Profile 支撑段"), this);
+    auto* supportLayout = new QVBoxLayout(supportGroup);
+    supportLayout->setContentsMargins(8, 8, 8, 8);
+    m_supportPanel = new HostSupportSettingsPanel(supportGroup);
+    supportLayout->addWidget(m_supportPanel);
+    layout->addWidget(supportGroup);
+
     m_validationLabel = new QLabel(this);
     m_validationLabel->setObjectName(
         QStringLiteral("hostSliceValidationLabel"));
@@ -191,6 +201,11 @@ void HostSliceSettingsPanel::BuildInterface()
             this,
             &HostSliceSettingsPanel::OnSettingsEdited);
     }
+    connect(
+        m_supportPanel,
+        &HostSupportSettingsPanel::SigSettingsChanged,
+        this,
+        &HostSliceSettingsPanel::OnSettingsEdited);
 }
 
 void HostSliceSettingsPanel::SetSelectedProfileId(
@@ -246,6 +261,7 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_buildWidthSpin->setValue(settings.buildvolume.widthmm);
     m_buildHeightSpin->setValue(settings.buildvolume.heightmm);
     m_buildZSpin->setValue(settings.buildvolume.zlimitmm);
+    m_supportPanel->SetSettings(settings.support);
     RefreshPreview();
 }
 
@@ -261,7 +277,7 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     {
         material = HostMaterialStrategy::VarnishSolid;
     }
-    return hostslicesettings{
+    hostslicesettings settings{
         m_profileId,
         m_modelPath,
         QFileInfo(m_modelPath).suffix().toLower(),
@@ -277,6 +293,8 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
             QStringLiteral("lower_left"),
             QStringLiteral("positive"),
             QStringLiteral("positive")}};
+    settings.support = m_supportPanel->Settings();
+    return settings;
 }
 
 bool HostSliceSettingsPanel::IsReady() const

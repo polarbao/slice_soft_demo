@@ -1,6 +1,6 @@
 # HOSTFLOW H-E E1 STL 与支撑参数实施准备
 
-> 状态：**E1 PREPARATION GATE = PASS / H-E-01 COMPLETE / H-E-03 READY**
+> 状态：**E1 IMPLEMENTATION COMPLETE / BATCH REVIEW PENDING**
 > 日期：2026-08-09
 > 范围：H-E-01、H-E-03；不提前实现 E2/E3。
 
@@ -54,11 +54,15 @@ E1 采用“生产常用字段 + 高级字段显式收起”的最小结构，�
 | `internalVoid.minAreaPx` | 0..1000000 | 16 | 内部镂空最小面积 |
 | `internalVoid.fillRule` | 固定 enum | `all_internal_voids` | E1 不开放实验规则 |
 | `baseProjection.enabled` | bool | false | 支撑最大投影铺底开关 |
-| `baseProjection.layerCount` | 0..10000 | 30 | 开启时写入的铺底层数 |
+| `baseProjection.layerCount` | 0..1000 | 30 | 开启时写入的铺底层数；与生产解析器上限一致 |
 
 `baseProjection` 若现有生产 schema 还要求 `source` 或 `layerPlacement`，构造器必须写入当前
 冻结默认值，UI 不暴露实验枚举。配置对象中的 `materialProcessProfile.support.expected`
 与 `support.enabled` 保持一致，禁止形成相互矛盾的双真源。
+
+实现复核说明：生产解析器中显式 `placement` 的优先级高于 `mode`。因此默认
+`bottom_projection` 显式写 `placement=lower`；选择孤岛或完整垂直投影时省略
+`placement`，使 `mode` 生效。UI 仍不开放 `upper/both`，有效 placement 语义没有扩张。
 
 ### 3.2 UI 与数据流
 
@@ -84,7 +88,7 @@ H-E-03 在 `HostSliceSettingsPanel` 增加可折叠“支撑”段；字段先�
 | 批次 | 状态 | 说明 |
 |---|---|---|
 | E1 H-E-01 | **COMPLETE（2026-08-10）** | ASCII/binary 均完成导入与切片；三类负例 fail-closed |
-| E1 H-E-03 | **READY** | 支撑 Profile 可编辑段可独立开发、验证、提交 |
+| E1 H-E-03 | **COMPLETE（2026-08-10）** | 独立可折叠编辑器、有效 Profile、自哈希、持久化和负例门禁均完成 |
 | E2 H-E-04/05 | **WAIT E1 GATE** | 需复核 E1 Profile 编辑框架后再细化字段 |
 | E3 H-E-02/06 | **WAIT E2 GATE** | 批量事务语义与白区预检身份仍不得提前实现 |
 

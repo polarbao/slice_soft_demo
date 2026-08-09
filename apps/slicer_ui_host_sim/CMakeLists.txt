@@ -39,6 +39,8 @@ add_executable(slicer_ui_host_sim
     HostSliceSettings.h
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
+    HostSupportSettingsPanel.cpp
+    HostSupportSettingsPanel.h
     HostSliceJobController.cpp
     HostSliceJobController.h
     HostSliceJobPanel.cpp
@@ -473,6 +475,8 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostSliceSettings.h
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
+    HostSupportSettingsPanel.cpp
+    HostSupportSettingsPanel.h
     ModuleClient.cpp
     ModuleClient.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -525,6 +529,13 @@ endif()
 
 add_test(
     NAME hostflow_hb05_slice_settings
+    COMMAND hostflow_hb05_slice_settings_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME hostflow_he03_support_settings
     COMMAND hostflow_hb05_slice_settings_tests
         --module $<TARGET_FILE:slicer_module>
         --repo-root ${CMAKE_SOURCE_DIR}
@@ -777,6 +788,11 @@ endif()
 
 add_test(
     NAME hostflow_hb08_workspace_state
+    COMMAND hostflow_hb08_workspace_state_tests
+)
+
+add_test(
+    NAME hostflow_he03_support_persistence
     COMMAND hostflow_hb08_workspace_state_tests
 )
 
@@ -1339,11 +1355,13 @@ set_tests_properties(
     hostflow_hb04_profile_catalog
     hostflow_hb04_profile_ui_smoke
     hostflow_hb05_slice_settings
+    hostflow_he03_support_settings
     hostflow_hb05_settings_ui_smoke
     hostflow_hb06_job_ui_smoke
     hostflow_hb07_result_ui_smoke
     hostflow_hd05_package_directory
     hostflow_hb08_workspace_state
+    hostflow_he03_support_persistence
     hostflow_hb08_workspace_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"

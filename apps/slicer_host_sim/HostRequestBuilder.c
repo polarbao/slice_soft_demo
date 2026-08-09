@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 static int ComputeSha256(const char* input, char output[65])
 {
     BCRYPT_ALG_HANDLE algorithm = NULL;
@@ -76,7 +75,6 @@ static int ComputeSha256(const char* input, char output[65])
     }
     output[64] = '\0';
     success = 1;
-
 cleanup:
     if (hash != NULL)
     {
@@ -86,7 +84,6 @@ cleanup:
     BCryptCloseAlgorithmProvider(algorithm, 0U);
     return success;
 }
-
 char* HostBuildProfileWithLayerThickness(
     const char* modelPath,
     const char* packageDirectory,
@@ -208,7 +205,6 @@ cleanup:
     free(canonical);
     return profile;
 }
-
 char* HostBuildProfile(
     const char* modelPath,
     const char* packageDirectory,
@@ -222,13 +218,15 @@ char* HostBuildProfile(
         profileHash,
         profileHashCapacity);
 }
-
 char* HostBuildEffectiveProfile(
     const struct hosteffectiveprofilesettings* settings,
     char* profileHash,
     unsigned long profileHashCapacity)
 {
     const char* materialChannel = NULL;
+    const char* supportMode = NULL;
+    const char* supportPlacementCanonical = "";
+    const char* supportPlacementCompact = "";
     int red = 255;
     int green = 255;
     int blue = 255;
@@ -255,11 +253,18 @@ char* HostBuildEffectiveProfile(
         || settings->dpiy < 72 || settings->dpiy > 2400
         || settings->layerthicknessmm <= 0.0
         || settings->layerthicknessmm > 10.0
+        || settings->supportoffsetmm < 0.0
+        || settings->supportoffsetmm > 10.0
+        || settings->supportminareapx < 0
+        || settings->supportminareapx > 1000000
+        || settings->internalvoidminareapx < 0
+        || settings->internalvoidminareapx > 1000000
+        || settings->baseprojectionlayercount < 0
+        || settings->baseprojectionlayercount > 1000
         || profileHash == NULL || profileHashCapacity < 72U)
     {
         return NULL;
     }
-
     switch (settings->materialstrategy)
     {
     case HOST_MATERIAL_RGB_SOLID:
@@ -279,7 +284,40 @@ char* HostBuildEffectiveProfile(
     default:
         return NULL;
     }
-
+    switch (settings->supportmode)
+    {
+    case HOST_SUPPORT_NONE:
+        supportMode = "none";
+        break;
+    case HOST_SUPPORT_BOTTOM_PROJECTION:
+        supportMode = "bottom_projection";
+        break;
+    case HOST_SUPPORT_UNSUPPORTED_ONLY:
+        supportMode = "unsupported_only";
+        break;
+    case HOST_SUPPORT_BOTTOM_PLUS_UNSUPPORTED:
+        supportMode = "bottom_projection_plus_unsupported";
+        break;
+    case HOST_SUPPORT_FULL_VERTICAL_PROJECTION:
+        supportMode = "full_vertical_projection";
+        break;
+    default:
+        return NULL;
+    }
+    if (settings->supportmode == HOST_SUPPORT_BOTTOM_PROJECTION)
+    {
+        supportPlacementCanonical = "\"placement\": \"lower\",\n";
+        supportPlacementCompact = "\"placement\":\"lower\",";
+    }
+    if ((settings->supportenabled != 0
+         && settings->supportmode == HOST_SUPPORT_NONE)
+        || (settings->supportenabled == 0
+            && (settings->supportmode != HOST_SUPPORT_NONE
+                || settings->internalvoidenabled != 0
+                || settings->baseprojectionenabled != 0)))
+    {
+        return NULL;
+    }
     escapedModel = HostJsonEscape(settings->modelpath);
     escapedFormat = HostJsonEscape(settings->modelformat);
     escapedPackage = HostJsonEscape(settings->packagedirectory);
@@ -306,6 +344,10 @@ char* HostBuildEffectiveProfile(
         "\"materialProcessProfile\": {\n"
         "\"enabled\": true,\n"
         "\"name\": \"%s\",\n"
+        "\"support\": {\n"
+        "\"expected\": %s,\n"
+        "\"mode\": \"existing_support_pipeline\"\n"
+        "},\n"
         "\"target\": \"host-reference\"\n"
         "},\n"
         "\"modelMaterial\": {\n"
@@ -344,11 +386,31 @@ char* HostBuildEffectiveProfile(
         "\"slicePipeline\": {\n"
         "\"mode\": \"legacy\"\n"
         "},\n"
-        "\"slicingMode\": \"closed_mesh_scanline\"\n"
+        "\"slicingMode\": \"closed_mesh_scanline\",\n"
+        "\"support\": {\n"
+        "\"baseProjection\": {\n"
+        "\"enabled\": %s,\n"
+        "\"layerCount\": %d,\n"
+        "\"layerPlacement\": \"overlay_existing\",\n"
+        "\"source\": \"max_support_footprint\"\n"
+        "},\n"
+        "\"enabled\": %s,\n"
+        "\"internalVoid\": {\n"
+        "\"enabled\": %s,\n"
+        "\"fillRule\": \"all_internal_voids\",\n"
+        "\"minAreaPx\": %d\n"
+        "},\n"
+        "\"minAreaPx\": %d,\n"
+        "\"mode\": \"%s\",\n"
+        "\"offsetMm\": %.15g,\n"
+        "%s"
+        "\"value\": 0\n"
+        "}\n"
         "}",
         escapedFormat,
         escapedModel,
         escapedProfile,
+        settings->supportenabled != 0 ? "true" : "false",
         materialChannel,
         red,
         green,
@@ -358,7 +420,16 @@ char* HostBuildEffectiveProfile(
         settings->dpix,
         settings->dpiy,
         settings->layerthicknessmm,
-        escapedPackage);
+        escapedPackage,
+        settings->baseprojectionenabled != 0 ? "true" : "false",
+        settings->baseprojectionlayercount,
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->internalvoidenabled != 0 ? "true" : "false",
+        settings->internalvoidminareapx,
+        settings->supportminareapx,
+        supportMode,
+        settings->supportoffsetmm,
+        supportPlacementCanonical);
     if (canonical == NULL || !ComputeSha256(canonical, digest))
     {
         goto cleanup;
@@ -373,7 +444,8 @@ char* HostBuildEffectiveProfile(
         "\"background\":{\"value\":255},"
         "\"input\":{\"format\":\"%s\",\"modelPath\":\"%s\"},"
         "\"materialProcessProfile\":{\"enabled\":true,"
-        "\"name\":\"%s\",\"target\":\"host-reference\"},"
+        "\"name\":\"%s\",\"support\":{\"expected\":%s,"
+        "\"mode\":\"existing_support_pipeline\"},\"target\":\"host-reference\"},"
         "\"modelMaterial\":{\"applyMode\":\"solid_volume\","
         "\"materialChannel\":\"%s\",\"rgb\":[%d,%d,%d],"
         "\"varnishValue\":%d,\"whiteValue\":%d},"
@@ -385,10 +457,19 @@ char* HostBuildEffectiveProfile(
         "\"preview\":{\"enabled\":false},\"profileHash\":\"%s\","
         "\"profileVersion\":\"1.0\","
         "\"slicePipeline\":{\"mode\":\"legacy\"},"
-        "\"slicingMode\":\"closed_mesh_scanline\"}",
+        "\"slicingMode\":\"closed_mesh_scanline\","
+        "\"support\":{\"baseProjection\":{\"enabled\":%s,"
+        "\"layerCount\":%d,"
+        "\"layerPlacement\":\"overlay_existing\","
+        "\"source\":\"max_support_footprint\"},\"enabled\":%s,"
+        "\"internalVoid\":{\"enabled\":%s,"
+        "\"fillRule\":\"all_internal_voids\",\"minAreaPx\":%d},"
+        "\"minAreaPx\":%d,\"mode\":\"%s\",\"offsetMm\":%.15g,"
+        "%s\"value\":0}}",
         escapedFormat,
         escapedModel,
         escapedProfile,
+        settings->supportenabled != 0 ? "true" : "false",
         materialChannel,
         red,
         green,
@@ -399,8 +480,16 @@ char* HostBuildEffectiveProfile(
         settings->dpiy,
         settings->layerthicknessmm,
         escapedPackage,
-        profileHash);
-
+        profileHash,
+        settings->baseprojectionenabled != 0 ? "true" : "false",
+        settings->baseprojectionlayercount,
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->internalvoidenabled != 0 ? "true" : "false",
+        settings->internalvoidminareapx,
+        settings->supportminareapx,
+        supportMode,
+        settings->supportoffsetmm,
+        supportPlacementCompact);
 cleanup:
     free(escapedModel);
     free(escapedFormat);

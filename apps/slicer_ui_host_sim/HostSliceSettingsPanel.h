@@ -11,6 +11,7 @@ class QLineEdit;
 class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
+class HostSupportSettingsPanel;
 
 /** @brief Host-owned slice settings editor and effective Profile preview. */
 class HostSliceSettingsPanel final : public QWidget
@@ -96,6 +97,7 @@ private:
     QDoubleSpinBox* m_buildWidthSpin{nullptr};
     QDoubleSpinBox* m_buildHeightSpin{nullptr};
     QDoubleSpinBox* m_buildZSpin{nullptr};
+    HostSupportSettingsPanel* m_supportPanel{nullptr};
     QLabel* m_validationLabel{nullptr};
     QPlainTextEdit* m_profilePreview{nullptr};
     QString m_profileId;

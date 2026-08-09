@@ -48,6 +48,24 @@ enum hostmaterialstrategy ToHostMaterialStrategy(
     }
     return static_cast<enum hostmaterialstrategy>(-1);
 }
+
+enum hostsupportmode ToHostSupportMode(const HostSupportMode mode)
+{
+    switch (mode)
+    {
+    case HostSupportMode::None:
+        return HOST_SUPPORT_NONE;
+    case HostSupportMode::BottomProjection:
+        return HOST_SUPPORT_BOTTOM_PROJECTION;
+    case HostSupportMode::UnsupportedOnly:
+        return HOST_SUPPORT_UNSUPPORTED_ONLY;
+    case HostSupportMode::BottomProjectionPlusUnsupported:
+        return HOST_SUPPORT_BOTTOM_PLUS_UNSUPPORTED;
+    case HostSupportMode::FullVerticalProjection:
+        return HOST_SUPPORT_FULL_VERTICAL_PROJECTION;
+    }
+    return static_cast<enum hostsupportmode>(-1);
+}
 }
 
 bool HostEffectiveProfileBuilder::Validate(
@@ -134,6 +152,44 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
+    const hostsupportsettings& support = settings.support;
+    const QString supportMode = SupportModeId(support.mode);
+    if (supportMode == QStringLiteral("unknown")
+        || (support.enabled && support.mode == HostSupportMode::None)
+        || (!support.enabled && support.mode != HostSupportMode::None))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "支撑开关与支撑模式不一致，关闭时必须使用 none。");
+        }
+        return false;
+    }
+    if (!std::isfinite(support.offsetmm)
+        || support.offsetmm < 0.0 || support.offsetmm > 10.0
+        || support.minareapx < 0 || support.minareapx > 1000000
+        || support.internalvoid.minareapx < 0
+        || support.internalvoid.minareapx > 1000000
+        || support.baseprojection.layercount < 0
+        || support.baseprojection.layercount > 1000)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "支撑参数越界：外扩 0..10 mm，面积 0..1000000 px，铺底 0..1000 层。");
+        }
+        return false;
+    }
+    if (!support.enabled
+        && (support.internalvoid.enabled || support.baseprojection.enabled))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "关闭支撑时不能启用内部镂空或投影铺底。");
+        }
+        return false;
+    }
     return true;
 }
 
@@ -170,7 +226,15 @@ bool HostEffectiveProfileBuilder::Build(
         settings.dpix,
         settings.dpiy,
         settings.layerthicknessmm,
-        ToHostMaterialStrategy(settings.materialstrategy)};
+        ToHostMaterialStrategy(settings.materialstrategy),
+        settings.support.enabled ? 1 : 0,
+        ToHostSupportMode(settings.support.mode),
+        settings.support.offsetmm,
+        settings.support.minareapx,
+        settings.support.internalvoid.enabled ? 1 : 0,
+        settings.support.internalvoid.minareapx,
+        settings.support.baseprojection.enabled ? 1 : 0,
+        settings.support.baseprojection.layercount};
     char profileHash[72] = {};
     char* profileText = HostBuildEffectiveProfile(
         &requestSettings, profileHash, sizeof(profileHash));
@@ -223,6 +287,25 @@ QString HostEffectiveProfileBuilder::MaterialStrategyId(
         return QStringLiteral("white_solid");
     case HostMaterialStrategy::VarnishSolid:
         return QStringLiteral("varnish_solid");
+    }
+    return QStringLiteral("unknown");
+}
+
+QString HostEffectiveProfileBuilder::SupportModeId(
+    const HostSupportMode mode)
+{
+    switch (mode)
+    {
+    case HostSupportMode::None:
+        return QStringLiteral("none");
+    case HostSupportMode::BottomProjection:
+        return QStringLiteral("bottom_projection");
+    case HostSupportMode::UnsupportedOnly:
+        return QStringLiteral("unsupported_only");
+    case HostSupportMode::BottomProjectionPlusUnsupported:
+        return QStringLiteral("bottom_projection_plus_unsupported");
+    case HostSupportMode::FullVerticalProjection:
+        return QStringLiteral("full_vertical_projection");
     }
     return QStringLiteral("unknown");
 }

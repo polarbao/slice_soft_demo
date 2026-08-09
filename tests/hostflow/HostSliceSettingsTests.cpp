@@ -4,8 +4,10 @@
 #include "apps/slicer_ui_host_sim/ModuleClient.h"
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDir>
+#include <QDoubleSpinBox>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -68,6 +70,11 @@ bool VerifyEffectiveProfiles(
         QStringLiteral("output")).toObject();
     const QJsonObject material = first.profile.value(
         QStringLiteral("modelMaterial")).toObject();
+    const QJsonObject support = first.profile.value(
+        QStringLiteral("support")).toObject();
+    const QJsonObject processSupport = first.profile.value(
+        QStringLiteral("materialProcessProfile")).toObject().value(
+            QStringLiteral("support")).toObject();
     if (!Check(
             output.value(QStringLiteral("dpiX")).toInt() == 635
                 && output.value(QStringLiteral("dpiY")).toInt() == 600
@@ -79,6 +86,19 @@ bool VerifyEffectiveProfiles(
             material.value(QStringLiteral("materialChannel")).toString()
                 == QStringLiteral("RGB"),
             QStringLiteral("默认材料策略应映射到 RGB。"),
+            errors)
+        || !Check(
+            support.value(QStringLiteral("enabled")).toBool()
+                && support.value(QStringLiteral("mode")).toString()
+                    == QStringLiteral("bottom_projection")
+                && support.value(QStringLiteral("placement")).toString()
+                    == QStringLiteral("lower")
+                && support.value(QStringLiteral("value")).toInt(-1) == 0
+                && support.value(QStringLiteral("internalVoid")).toObject()
+                    .value(QStringLiteral("enabled")).toBool()
+                && processSupport.value(
+                    QStringLiteral("expected")).toBool(),
+            QStringLiteral("默认 lower support Profile 段不完整。"),
             errors))
     {
         return false;
@@ -100,6 +120,67 @@ bool VerifyEffectiveProfiles(
             HostEffectiveProfileBuilder::Build(settings, &changed, &error)
                 && changed.profilehash != first.profilehash,
             QStringLiteral("DPI 变化必须使 Profile hash 变化。"),
+            errors))
+    {
+        return false;
+    }
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.support.mode = HostSupportMode::FullVerticalProjection;
+    settings.support.offsetmm = 0.25;
+    settings.support.minareapx = 32;
+    settings.support.baseprojection.enabled = true;
+    settings.support.baseprojection.layercount = 30;
+    hosteffectiveprofile supportChanged;
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &supportChanged, &error)
+                && supportChanged.profilehash != first.profilehash,
+            QStringLiteral("支撑参数变化必须使 Profile hash 变化。"),
+            errors))
+    {
+        return false;
+    }
+    const QJsonObject changedSupport = supportChanged.profile.value(
+        QStringLiteral("support")).toObject();
+    if (!Check(
+            changedSupport.value(QStringLiteral("mode")).toString()
+                    == QStringLiteral("full_vertical_projection")
+                && !changedSupport.contains(QStringLiteral("placement"))
+                && changedSupport.value(
+                    QStringLiteral("baseProjection")).toObject().value(
+                        QStringLiteral("layerCount")).toInt() == 30,
+            QStringLiteral("高级支撑参数未进入有效 Profile。"),
+            errors))
+    {
+        return false;
+    }
+
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.support.enabled = false;
+    settings.support.mode = HostSupportMode::None;
+    settings.support.internalvoid.enabled = false;
+    settings.support.baseprojection.enabled = false;
+    hosteffectiveprofile disabledSupport;
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &disabledSupport, &error),
+            QStringLiteral("关闭支撑的有效 Profile 构造失败：%1").arg(error),
+            errors))
+    {
+        return false;
+    }
+    const QJsonObject disabledRoot = disabledSupport.profile.value(
+        QStringLiteral("support")).toObject();
+    const QJsonObject disabledProcess = disabledSupport.profile.value(
+        QStringLiteral("materialProcessProfile")).toObject().value(
+            QStringLiteral("support")).toObject();
+    if (!Check(
+            !disabledRoot.value(QStringLiteral("enabled")).toBool()
+                && disabledRoot.value(QStringLiteral("mode")).toString()
+                    == QStringLiteral("none")
+                && !disabledProcess.value(
+                    QStringLiteral("expected")).toBool(),
+            QStringLiteral("关闭支撑时 expected/mode 未同步。"),
             errors))
     {
         return false;
@@ -144,9 +225,19 @@ bool VerifyEffectiveProfiles(
     settings = MakeSettings(modelPath, outputDirectory);
     settings.materialstrategy = static_cast<HostMaterialStrategy>(99);
     error.clear();
-    return Check(
+    if (!Check(
         !HostEffectiveProfileBuilder::Validate(settings, &error),
         QStringLiteral("未知材料策略必须 fail-closed。"),
+        errors))
+    {
+        return false;
+    }
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.support.baseprojection.layercount = 1001;
+    error.clear();
+    return Check(
+        !HostEffectiveProfileBuilder::Validate(settings, &error),
+        QStringLiteral("越界铺底层数必须 fail-closed。"),
         errors);
 }
 
@@ -164,9 +255,16 @@ bool VerifyPanelIsLocal(
         QStringLiteral("hostSliceDpiXSpin"));
     auto* materialCombo = panel.findChild<QComboBox*>(
         QStringLiteral("hostSliceMaterialCombo"));
+    auto* supportEnabled = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostSupportEnabledCheck"));
+    auto* supportMode = panel.findChild<QComboBox*>(
+        QStringLiteral("hostSupportModeCombo"));
+    auto* supportOffset = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("hostSupportOffsetSpin"));
     if (!Check(
             outputEdit != nullptr && dpiXSpin != nullptr
-                && materialCombo != nullptr,
+                && materialCombo != nullptr && supportEnabled != nullptr
+                && supportMode != nullptr && supportOffset != nullptr,
             QStringLiteral("切片设置面板控件不完整。"),
             errors))
     {
@@ -177,6 +275,8 @@ bool VerifyPanelIsLocal(
     client.ResetCallCount();
     dpiXSpin->setValue(700);
     materialCombo->setCurrentIndex(1);
+    supportMode->setCurrentIndex(2);
+    supportOffset->setValue(0.2);
     QCoreApplication::processEvents();
     if (!Check(
         panel.IsReady(),
@@ -312,7 +412,7 @@ int main(int argc, char* argv[])
         return 4;
     }
     QTextStream(stdout)
-        << "HOSTFLOW_HB05_PASS profile=host-reference-default"
-        << " dpi=635x600 layer=0.038" << Qt::endl;
+        << "HOSTFLOW_HE03_PASS profile=host-reference-default"
+        << " dpi=635x600 layer=0.038 support=editable" << Qt::endl;
     return 0;
 }

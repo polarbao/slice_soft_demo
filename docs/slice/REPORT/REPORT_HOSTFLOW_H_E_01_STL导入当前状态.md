@@ -23,7 +23,7 @@
 - 文件选择器、模型列表提示和导入摘要增加 STL；
 - `HostModelImportWorkflow` 接受规范化 `.stl` 后缀；
 - `HostEffectiveProfileBuilder` 与 C request builder 接受 `stl`，并保持后缀/声明一致校验；
-- 增加四面体 ASCII fixture；binary fixture 在测试内以固定 little-endian 字节生成；
+- 复用仓库既有 ASCII box fixture；binary 四面体在测试内以固定 little-endian 字节生成；
 - 新增独立 `hostflow_he01_stl_import` 门禁，实际执行两种编码的导入与切片；
 - 伪装 STL、截断 binary STL、未知扩展名均显式失败且场景 revision 不变。
 

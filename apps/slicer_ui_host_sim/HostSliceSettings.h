@@ -11,6 +11,41 @@ enum class HostMaterialStrategy
     VarnishSolid
 };
 
+/** @brief Support generation mode exposed by the reference host Profile. */
+enum class HostSupportMode
+{
+    None,
+    BottomProjection,
+    UnsupportedOnly,
+    BottomProjectionPlusUnsupported,
+    FullVerticalProjection
+};
+
+/** @brief Host-owned internal-void support parameters. */
+struct hostinternalvoidsettings
+{
+    bool enabled{true};
+    int minareapx{16};
+};
+
+/** @brief Host-owned maximum-footprint support base parameters. */
+struct hostbaseprojectionsettings
+{
+    bool enabled{false};
+    int layercount{30};
+};
+
+/** @brief Host-owned editable support parameters. */
+struct hostsupportsettings
+{
+    bool enabled{true};
+    HostSupportMode mode{HostSupportMode::BottomProjection};
+    double offsetmm{0.0};
+    int minareapx{0};
+    hostinternalvoidsettings internalvoid;
+    hostbaseprojectionsettings baseprojection;
+};
+
 /** @brief Device-owned build volume injected into the first scene Commit. */
 struct hostbuildvolume
 {
@@ -34,6 +69,7 @@ struct hostslicesettings
     double layerthicknessmm{0.038};
     HostMaterialStrategy materialstrategy{HostMaterialStrategy::RgbSolid};
     hostbuildvolume buildvolume;
+    hostsupportsettings support;
 };
 
 /** @brief Validated Profile preview ready for a future slice request. */
@@ -75,6 +111,13 @@ public:
      * @return Stable lowercase identifier used by UI tests and persistence.
      */
     static QString MaterialStrategyId(HostMaterialStrategy strategy);
+
+    /**
+     * @brief Converts a support mode to a stable production Profile value.
+     * @param mode Support mode selected by the operator.
+     * @return Stable identifier written to `support.mode`.
+     */
+    static QString SupportModeId(HostSupportMode mode);
 
     /**
      * @brief Compares two build volumes using the frozen scene semantics.

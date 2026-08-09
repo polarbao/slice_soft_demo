@@ -91,6 +91,13 @@ int main(int argc, char* argv[])
     expected.buildvolume.widthmm = 260.0;
     expected.buildvolume.heightmm = 120.0;
     expected.buildvolume.zlimitmm = 80.0;
+    expected.support.mode = HostSupportMode::BottomProjectionPlusUnsupported;
+    expected.support.offsetmm = 0.3;
+    expected.support.minareapx = 24;
+    expected.support.internalvoid.enabled = true;
+    expected.support.internalvoid.minareapx = 32;
+    expected.support.baseprojection.enabled = true;
+    expected.support.baseprojection.layercount = 40;
     {
         QSettings settings(settingsPath, QSettings::IniFormat);
         HostWorkspaceState::Save(
@@ -141,7 +148,18 @@ int main(int argc, char* argv[])
         || !Check(
             HostEffectiveProfileBuilder::BuildVolumesEqual(
                 actual.buildvolume, expected.buildvolume),
-            QStringLiteral("设备 buildVolume 未完整恢复。"), errors))
+            QStringLiteral("设备 buildVolume 未完整恢复。"), errors)
+        || !Check(
+            actual.support.enabled
+                && actual.support.mode
+                    == HostSupportMode::BottomProjectionPlusUnsupported
+                && std::abs(actual.support.offsetmm - 0.3) < 1.0e-9
+                && actual.support.minareapx == 24
+                && actual.support.internalvoid.enabled
+                && actual.support.internalvoid.minareapx == 32
+                && actual.support.baseprojection.enabled
+                && actual.support.baseprojection.layercount == 40,
+            QStringLiteral("宿主支撑 Profile 草稿未完整恢复。"), errors))
     {
         return 3;
     }
@@ -179,7 +197,7 @@ int main(int argc, char* argv[])
     }
 
     QTextStream(stdout)
-        << "HOSTFLOW_HB08_PASS schema="
+        << "HOSTFLOW_HE03_PERSISTENCE_PASS schema="
         << HostWorkspaceState::SchemaVersion()
         << " runtimeHandles=persisted:false" << Qt::endl;
     return 0;
