@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE — H-D-01..05 已完成 / H-E-02 完成，H-E-06 READY**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
+> 状态：**ACTIVE — H-D-01..05 已完成 / H-E-01..06 已完成 / E3_GATE=PASS**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
 > 日期：2026-08-10
 > 范围：HOSTFLOW H-A、H-B、H-C、H-D、H-E，不属于 Stage 14 编号任务。
 
@@ -12,7 +12,7 @@
 | H-B 宿主业务 UI | COMPLETE | H-B-01..08 全部完成 | 无切片侧阻断 |
 | H-C 移植交付 | COMPLETE | H-C-01/02/03 全部完成 | 无切片侧阻断；打印侧 ACK 延期 |
 | **H-D 视图接线** | **CODE COMPLETE** | H-D-01..05 已完成 | H-D-06 仅等待人工七步证据 |
-| **H-E 参数深度与导入** | **E3 IN PROGRESS** | H-E-01..05 完成；H-E-02 原子批量导入完成 | H-E-06 白区预检待闭合 |
+| **H-E 参数深度与导入** | **COMPLETE** | H-E-01..06 全部完成；E1/E2/E3 Gate 均 PASS | 无切片侧阻断 |
 
 > 🔴 **2026-08-08 复核更正**：本文原状态为 `LOCAL COMPLETE`，**该结论不成立**。
 > H-A/H-B/H-C 闭合的是**业务与数据链路**，两层缺口未覆盖：
@@ -95,7 +95,8 @@ scene/profile/job/package 四个工作包形成 38-59 人日建议。机器门�
 
 H-C-03 已完成：主干和参考宿主使用同一规范化模型，并把主干
 `textured_nail_rgb_only_lower_support` 与宿主 `host-reference-default` 映射为等价 Legacy RGB
-实体语义。13 条差异覆盖 8 个维度，结论为 `9 equivalent / 3 known_trim / 1 slicer_only`。
+实体语义。E3 收口后 13 条差异覆盖 8 个维度，结论为
+`10 equivalent / 2 known_trim / 1 slicer_only`。
 Debug/Release 主干 5 个 smoke、宿主 6 个 UI self-test 和 H-A/H-B CTest 各 18/18 PASS。
 
 H-D-01 已完成：参考宿主使用 `TopViewRenderPolicy` 和真实 `top` ViewData 显示当前场景的

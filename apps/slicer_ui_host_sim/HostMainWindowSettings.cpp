@@ -30,6 +30,7 @@ void HostMainWindow::OnSliceSettingsChanged()
         m_statusLabel->setText(
             QStringLiteral("切片设置未生效：%1").arg(error));
         RefreshSliceJobReadiness();
+        RefreshTextureWhitePreflight();
         return;
     }
     m_statusLabel->setText(
@@ -37,4 +38,5 @@ void HostMainWindow::OnSliceSettingsChanged()
             ? QStringLiteral("有效 Profile 已更新 · 未调用切片模块")
             : QStringLiteral("切片参数草稿已更新 · 等待导入模型"));
     RefreshSliceJobReadiness();
+    RefreshTextureWhitePreflight();
 }

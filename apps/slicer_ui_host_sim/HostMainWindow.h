@@ -27,6 +27,8 @@ class CpuRasterBackend;
 class MoveOptimizationPolicy;
 class SceneRenderPolicy;
 class SceneInteractionController;
+class HostTextureWhitePreflightService;
+struct hosttexturewhitepreflightresult;
 struct ThreeDFrame;
 struct TopViewFrame;
 class TopViewRenderPolicy;
@@ -122,6 +124,10 @@ private:
     void UpdateTopViewDrag(const QPointF& imagePoint);
     void FinishTopViewDrag();
     void RenderTransientTopView();
+    void RefreshTextureWhitePreflight();
+    void OnTextureWhitePreflightFinished(
+        const hosttexturewhitepreflightresult& result);
+    void OnTextureWhitePreflightDiscarded(quint64 generation);
 
     ModuleClient m_client;
     std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
@@ -136,6 +142,8 @@ private:
     std::unique_ptr<CpuRasterBackend> m_threeDBackend;
     std::unique_ptr<SceneRenderPolicy> m_threeDPolicy;
     std::unique_ptr<ThreeDFrame> m_threeDFrame;
+    std::unique_ptr<HostTextureWhitePreflightService>
+        m_textureWhitePreflightService;
     ViewWorkspaceWidget* m_workspace{nullptr};
     QSplitter* m_workspaceSplitter{nullptr};
     QTabWidget* m_workspaceTabs{nullptr};
@@ -157,4 +165,5 @@ private:
     QString m_restoredProfileId;
     QPointF m_dragStartWorld;
     quint64 m_dragCallCount{0U};
+    bool m_textureWhiteWarning{false};
 };

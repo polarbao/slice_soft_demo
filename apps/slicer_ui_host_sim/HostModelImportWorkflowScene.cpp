@@ -135,6 +135,23 @@ QString HostModelImportWorkflow::ReferenceModelPath() const
     return paths.isEmpty() ? QString{} : paths.first();
 }
 
+QStringList HostModelImportWorkflow::TexturePaths() const
+{
+    QStringList paths;
+    for (const QStringList& instancePaths : m_instanceTexturePaths)
+    {
+        for (const QString& path : instancePaths)
+        {
+            if (!path.isEmpty() && !paths.contains(path))
+            {
+                paths.append(path);
+            }
+        }
+    }
+    paths.sort();
+    return paths;
+}
+
 bool HostModelImportWorkflow::AdoptSceneState(
     const quint64 sceneHandle,
     const quint64 sceneRevision,

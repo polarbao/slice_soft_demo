@@ -1,5 +1,4 @@
 #include "HostModelImportWorkflow.h"
-
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -8,14 +7,12 @@
 #include <QJsonParseError>
 #include <QStringList>
 #include <QUuid>
-
 namespace
 {
 QByteArray Compact(const QJsonObject& value)
 {
     return QJsonDocument(value).toJson(QJsonDocument::Compact);
 }
-
 QString ResultError(const QJsonObject& value, const QString& fallback)
 {
     const QString code = value.value(QStringLiteral("code")).toString();
@@ -36,14 +33,12 @@ QString ResultError(const QJsonObject& value, const QString& fallback)
     }
     return parts.isEmpty() ? fallback : parts.join(QStringLiteral("："));
 }
-
 double ArrayValue(const QJsonArray& values, const int index)
 {
     return index >= 0 && index < values.size()
         ? values.at(index).toDouble()
         : 0.0;
 }
-
 QJsonObject BuildSceneContext(
     const QString& profileId,
     const hostbuildvolume& volume)
@@ -187,6 +182,19 @@ bool HostModelImportWorkflow::ImportResource(
         QStringLiteral("vertexCount")).toDouble());
     result->hasuv = imported.value(QStringLiteral("hasUV")).toBool();
     result->hasnormals = imported.value(QStringLiteral("hasNormals")).toBool();
+    const QJsonArray materials = imported.value(QStringLiteral("materials")).toArray();
+    for (const QJsonValue& materialValue : materials)
+    {
+        const QString texturePath = materialValue.toObject().value(
+            QStringLiteral("texturePath")).toString();
+        if (!texturePath.isEmpty())
+        {
+            result->texturepaths.append(
+                QDir::fromNativeSeparators(QDir::cleanPath(texturePath)));
+        }
+    }
+    result->texturepaths.removeDuplicates();
+    result->texturepaths.sort();
     const QJsonObject bounds = imported.value(QStringLiteral("bboxMm")).toObject();
     const QJsonArray minimum = bounds.value(QStringLiteral("min")).toArray();
     const QJsonArray maximum = bounds.value(QStringLiteral("max")).toArray();
@@ -275,6 +283,7 @@ bool HostModelImportWorkflow::RemoveInstances(
     {
         const QString modelId = m_instanceModels.take(instanceId);
         m_instanceSources.remove(instanceId);
+        m_instanceTexturePaths.remove(instanceId);
         QJsonObject ignoredResponse;
         QString ignoredError;
         (void)ExecuteObject(
@@ -423,6 +432,8 @@ bool HostModelImportWorkflow::CommitImportedInstances(
     {
         m_instanceModels.insert(result.instanceid, result.modelid);
         m_instanceSources.insert(result.instanceid, result.sourcepath);
+        m_instanceTexturePaths.insert(
+            result.instanceid, result.texturepaths);
     }
     return true;
 }

@@ -1,15 +1,15 @@
 # REPORT HOSTFLOW H-C-03 主干与参考宿主 A/B 对照
 
 > 状态：**LOCAL PASS / EXTERNAL ACK DEFERRED**
-> 日期：2026-08-08
+> 日期：2026-08-10
 > 原子任务：H-C-03
 
 ## 1. 结论
 
 主干 `slicer_debug_ui` 与参考宿主 `slicer_ui_host_sim` 已在同一规范化模型和等价 Profile 语义下完成业务对照。13 条差异记录全部归入：
 
-- `equivalent`：9 条；
-- `known_trim`：3 条；
+- `equivalent`：10 条；
+- `known_trim`：2 条；
 - `slicer_only`：1 条。
 
 核心操作员流程已经闭合：
@@ -34,7 +34,7 @@ Profile 名称不同是宿主拥有 Profile 目录的冻结设计，不是行为
 
 | 类别 | 差异 | 结论 |
 |---|---|---|
-| 导入 | 主干还提供 STL 和更多切片专用导入诊断 | `known_trim`；HOSTFLOW 核心范围为 OBJ/3MF |
+| 导入 | 两端支持 OBJ/3MF/STL；参考宿主支持批量原子导入和严格白区非阻断预检 | `equivalent`；更多切片专用诊断仍归 `slicer_only` |
 | Profile | 主干读内部 ScenarioRegistry，参考宿主使用自有目录并与 `pm_module_info` 求交 | `known_trim`；符合 HQ-08-A |
 | 作业 | 主干经 CLI/QProcess，参考宿主经 Worker ABI | `equivalent`；用户终态与取消语义一致 |
 | 结果 | 参考宿主保留生产包、层、通道和命名报告，不复制全部工程调参面板 | `known_trim` |
@@ -57,7 +57,7 @@ powershell -ExecutionPolicy Bypass -File scripts/RunHostflowAbComparison.ps1 -Co
 
 - Debug：`HOSTFLOW_HC03_PASS config=Debug main=5 host=6`；H-A/H-B CTest `18/18 PASS`；
 - Release：`HOSTFLOW_HC03_PASS config=Release main=5 host=6`；H-A/H-B CTest `18/18 PASS`；
-- 矩阵：`13` 条、`8` 个维度、`9 equivalent / 3 known_trim / 1 slicer_only`；
+- 矩阵：`13` 条、`8` 个维度、`10 equivalent / 2 known_trim / 1 slicer_only`；
 - H-C-01：`77` 个主干头文件，`A=6 / B=41 / C=30`；
 - H-C-02：`41` 个 B 桶迁移单元完整覆盖。
 

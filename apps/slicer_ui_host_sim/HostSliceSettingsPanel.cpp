@@ -160,6 +160,13 @@ void HostSliceSettingsPanel::BuildInterface()
     m_validationLabel->setWordWrap(true);
     layout->addWidget(m_validationLabel);
 
+    m_textureWhitePreflightLabel = new QLabel(
+        QStringLiteral("纹理白区预检：等待导入带纹理模型。"), this);
+    m_textureWhitePreflightLabel->setObjectName(
+        QStringLiteral("hostTextureWhitePreflightLabel"));
+    m_textureWhitePreflightLabel->setWordWrap(true);
+    layout->addWidget(m_textureWhitePreflightLabel);
+
     m_profilePreview = new QPlainTextEdit(this);
     m_profilePreview->setObjectName(
         QStringLiteral("hostEffectiveProfilePreview"));
@@ -302,6 +309,15 @@ bool HostSliceSettingsPanel::IsReady() const
 hosteffectiveprofile HostSliceSettingsPanel::EffectiveProfile() const
 {
     return m_effectiveProfile;
+}
+
+void HostSliceSettingsPanel::SetTextureWhitePreflightStatus(
+    const QString& message,
+    const bool warning)
+{
+    m_textureWhitePreflightLabel->setText(message);
+    m_textureWhitePreflightLabel->setStyleSheet(
+        warning ? QStringLiteral("color: #9c4f00;") : QString{});
 }
 
 void HostSliceSettingsPanel::OnBrowseOutput()

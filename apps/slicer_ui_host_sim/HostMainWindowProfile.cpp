@@ -35,6 +35,7 @@ void HostMainWindow::ConfigureProfiles()
     {
         m_statusLabel->setText(contextError);
     }
+    RefreshTextureWhitePreflight();
 }
 
 void HostMainWindow::OnProfileChanged(const QString& profileId)
@@ -48,12 +49,14 @@ void HostMainWindow::OnProfileChanged(const QString& profileId)
     {
         m_statusLabel->setText(contextError);
         RefreshSliceJobReadiness();
+        RefreshTextureWhitePreflight();
         return;
     }
     m_statusLabel->setText(
         QStringLiteral("Profile 已选择：%1 · 仅更新宿主会话草稿")
             .arg(profileId));
     RefreshSliceJobReadiness();
+    RefreshTextureWhitePreflight();
 }
 
 bool HostMainWindow::ProfileSupportsSlice(const QString& profileId) const

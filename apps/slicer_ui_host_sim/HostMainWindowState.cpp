@@ -1,5 +1,6 @@
 #include "HostMainWindow.h"
 
+#include "HostTextureWhitePreflightService.h"
 #include "HostWorkspaceState.h"
 #include "MoveOptimizationPolicy.h"
 #include "SceneInteractionController.h"

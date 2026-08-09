@@ -34,6 +34,7 @@ struct hostmodelimportresult
     double widthmm{0.0};
     double heightmm{0.0};
     double depthmm{0.0};
+    QStringList texturepaths;
     QList<hostpreflightissue> issues;
 };
 
@@ -183,6 +184,12 @@ public:
     [[nodiscard]] QString ReferenceModelPath() const;
 
     /**
+     * @brief Returns distinct source textures used by current scene instances.
+     * @return Normalized texture paths in deterministic lexical order.
+     */
+    [[nodiscard]] QStringList TexturePaths() const;
+
+    /**
      * @brief Adopts a scene revision committed by another host controller.
      * @param sceneHandle Existing module-owned scene handle.
      * @param sceneRevision New authoritative revision after Commit or recovery.
@@ -220,6 +227,7 @@ private:
     ModuleClient& m_client;
     QHash<QString, QString> m_instanceModels;
     QHash<QString, QString> m_instanceSources;
+    QHash<QString, QStringList> m_instanceTexturePaths;
     QString m_pendingProfileId{QStringLiteral("host-reference-default")};
     hostbuildvolume m_pendingBuildVolume;
     QString m_sceneProfileId;

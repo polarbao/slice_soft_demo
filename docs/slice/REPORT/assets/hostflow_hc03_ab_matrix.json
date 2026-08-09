@@ -1,7 +1,7 @@
 {
   "schema": "hostflow.ab_matrix.1",
   "version": 1,
-  "date": "2026-08-08",
+  "date": "2026-08-10",
   "status": "local_verified_external_ack_deferred",
   "canonicalFixture": {
     "modelPath": "samples/models/openvdb/surface_shell_cube_no_uv.obj",
@@ -44,11 +44,11 @@
     {
       "id": "AB-02",
       "axis": "import_preflight",
-      "businessStep": "STL 与切片专用导入诊断",
-      "mainEvidence": "主干导入器和高级预检支持 STL 与更多诊断入口",
-      "hostEvidence": "H-B-01 批准范围仅覆盖 OBJ/3MF 核心打印作业流",
-      "disposition": "known_trim",
-      "explanation": "这是 HOSTFLOW 核心流程的已知格式裁剪，不改变模块能力或主干支持范围。"
+      "businessStep": "OBJ/3MF/STL 批量导入与纹理白区预检",
+      "mainEvidence": "主干导入器、SceneBatchImportController 与 TextureWhitePreflightService",
+      "hostEvidence": "H-E-01 STL 双编码、H-E-02 原子批量导入、H-E-06 严格白区非阻断预检",
+      "disposition": "equivalent",
+      "explanation": "参考宿主已闭合三格式、批量失败原子性和绑定 scene/revision/Profile hash 的白区告警；OpenVDB 等切片专用诊断仍归 slicer_only。"
     },
     {
       "id": "AB-03",

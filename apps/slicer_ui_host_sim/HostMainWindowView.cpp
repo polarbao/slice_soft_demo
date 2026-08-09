@@ -173,6 +173,7 @@ void HostMainWindow::FinishTopViewDrag()
         m_movePolicy->Rollback();
         RefreshTopView();
         RefreshThreeDView();
+        RefreshTextureWhitePreflight();
         m_workspace->ShowViewError(error);
         return;
     }
@@ -198,6 +199,7 @@ void HostMainWindow::FinishTopViewDrag()
         .arg(m_interactionController->OutOfBoundsCount())
         .arg(m_client.CallCount()));
     RefreshThreeDView();
+    RefreshTextureWhitePreflight();
 }
 
 void HostMainWindow::RenderTransientTopView()
@@ -253,6 +255,7 @@ void HostMainWindow::RefreshThreeDView()
 
 void HostMainWindow::RefreshSceneViews()
 {
+    RefreshTextureWhitePreflight();
     if (m_importWorkflow->InstanceCount() == 0)
     {
         m_topViewFrame.reset();

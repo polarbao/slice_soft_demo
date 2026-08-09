@@ -37,11 +37,14 @@ add_executable(slicer_ui_host_sim
     HostMainWindowScene.cpp
     HostMainWindowSettings.cpp
     HostMainWindowState.cpp
+    HostMainWindowPreflight.cpp
     HostMainWindowView.cpp
     HostMaterialSettingsPanel.cpp
     HostMaterialSettingsPanel.h
     HostTextureSettingsPanel.cpp
     HostTextureSettingsPanel.h
+    HostTextureWhitePreflightService.cpp
+    HostTextureWhitePreflightService.h
     HostSliceSettings.cpp
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
@@ -191,6 +194,7 @@ add_test(
 add_executable(hostflow_hb01_model_import_tests
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
     ModuleClient.cpp
     ModuleClient.h
     ${CMAKE_SOURCE_DIR}/tests/hostflow/HostModelImportWorkflowTests.cpp
@@ -595,6 +599,49 @@ add_test(
     COMMAND hostflow_hb05_slice_settings_tests
         --module $<TARGET_FILE:slicer_module>
         --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(hostflow_he06_texture_white_preflight_tests
+    HostTextureWhitePreflightService.cpp
+    HostTextureWhitePreflightService.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostTextureWhitePreflightTests.cpp
+)
+
+set_target_properties(
+    hostflow_he06_texture_white_preflight_tests
+    PROPERTIES AUTOMOC ON
+)
+
+target_include_directories(
+    hostflow_he06_texture_white_preflight_tests
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(
+    hostflow_he06_texture_white_preflight_tests
+    PRIVATE Qt5::Core Qt5::Gui
+)
+
+if(MSVC)
+    target_compile_options(
+        hostflow_he06_texture_white_preflight_tests
+        PRIVATE /MP /W4 /WX /utf-8
+    )
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(
+            hostflow_he06_texture_white_preflight_tests
+            PRIVATE ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(
+            hostflow_he06_texture_white_preflight_tests
+            PRIVATE "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_he06_texture_white_preflight
+    COMMAND hostflow_he06_texture_white_preflight_tests
 )
 
 add_test(

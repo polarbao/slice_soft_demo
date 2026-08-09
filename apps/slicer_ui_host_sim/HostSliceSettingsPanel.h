@@ -77,6 +77,15 @@ public:
      */
     [[nodiscard]] hosteffectiveprofile EffectiveProfile() const;
 
+    /**
+     * @brief Shows the current non-blocking source texture white preflight.
+     * @param message User-readable identity-bound preflight state.
+     * @param warning True when exact-white evidence needs operator attention.
+     */
+    void SetTextureWhitePreflightStatus(
+        const QString& message,
+        bool warning);
+
 signals:
     /** @brief Emitted after an operator changes a local slice setting. */
     void SigSettingsChanged();
@@ -101,6 +110,7 @@ private:
     HostTextureSettingsPanel* m_texturePanel{nullptr};
     HostSupportSettingsPanel* m_supportPanel{nullptr};
     QLabel* m_validationLabel{nullptr};
+    QLabel* m_textureWhitePreflightLabel{nullptr};
     QPlainTextEdit* m_profilePreview{nullptr};
     QString m_profileId;
     bool m_profileSupportsSlice{true};

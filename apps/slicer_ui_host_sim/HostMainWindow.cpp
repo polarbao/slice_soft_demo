@@ -1,5 +1,6 @@
 #include "HostMainWindow.h"
 
+#include "HostTextureWhitePreflightService.h"
 #include "MoveOptimizationPolicy.h"
 #include "SceneInteractionController.h"
 #include "ViewWorkspaceWidget.h"
@@ -52,6 +53,8 @@ HostMainWindow::HostMainWindow(
     m_sliceJobController = std::make_unique<HostSliceJobController>(m_client);
     m_packageReviewController =
         std::make_unique<HostPackageReviewController>(m_client);
+    m_textureWhitePreflightService =
+        std::make_unique<HostTextureWhitePreflightService>();
     m_profileCatalog = std::make_unique<ReferenceHostProfileCatalog>();
     QString settingsError;
     m_viewSettings->Load(&settingsError);
@@ -256,6 +259,16 @@ void HostMainWindow::BuildInterface()
         &HostSliceSettingsPanel::SigSettingsChanged,
         this,
         &HostMainWindow::OnSliceSettingsChanged);
+    connect(
+        m_textureWhitePreflightService.get(),
+        &HostTextureWhitePreflightService::SigPreflightFinished,
+        this,
+        &HostMainWindow::OnTextureWhitePreflightFinished);
+    connect(
+        m_textureWhitePreflightService.get(),
+        &HostTextureWhitePreflightService::SigPreflightDiscarded,
+        this,
+        &HostMainWindow::OnTextureWhitePreflightDiscarded);
     connect(
         m_sliceJobPanel,
         &HostSliceJobPanel::SigStartRequested,

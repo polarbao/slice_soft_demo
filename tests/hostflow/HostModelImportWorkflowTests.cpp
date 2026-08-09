@@ -177,6 +177,30 @@ int main(int argc, char* argv[])
         return 11;
     }
 
+    const QString texturedPath = QDir(repositoryRoot).filePath(QStringLiteral(
+        "samples/models/openvdb_candidate/closed_textured_obj.obj"));
+    hostmodelimportresult texturedResult;
+    error.clear();
+    if (!workflow.ImportModel(texturedPath, &texturedResult, &error))
+    {
+        errors << "带纹理 OBJ 导入流程失败：" << error << Qt::endl;
+        return 12;
+    }
+    const QStringList texturePaths = workflow.TexturePaths();
+    if (!Check(texturedResult.texturepaths.size() == 1,
+               QStringLiteral("导入响应应保留唯一源贴图路径。"),
+               errors)
+        || !Check(QFileInfo(texturedResult.texturepaths.constFirst()).isFile(),
+                  QStringLiteral("导入响应返回的源贴图必须存在。"),
+                  errors)
+        || !Check(texturePaths.contains(
+                      texturedResult.texturepaths.constFirst()),
+                  QStringLiteral("场景纹理集合应包含带纹理实例的源贴图。"),
+                  errors))
+    {
+        return 13;
+    }
+
     QTextStream(stdout)
         << "HOSTFLOW_HE02_PASS sceneHandle=" << workflow.SceneHandle()
         << " revision=" << workflow.SceneRevision()

@@ -173,11 +173,15 @@ int RunHostFlowSettingsUiSmoke(const QString& modulePath)
         QStringLiteral("hostEffectiveProfilePreview"));
     const auto* validationLabel = window.findChild<QLabel*>(
         QStringLiteral("hostSliceValidationLabel"));
+    const auto* whitePreflightLabel = window.findChild<QLabel*>(
+        QStringLiteral("hostTextureWhitePreflightLabel"));
     if (dpiXSpin == nullptr || dpiYSpin == nullptr || layerSpin == nullptr
         || profilePreview == nullptr || validationLabel == nullptr
+        || whitePreflightLabel == nullptr
         || dpiXSpin->value() != 635 || dpiYSpin->value() != 600
         || std::abs(layerSpin->value() - 0.038) > 1.0e-9
-        || validationLabel->text().isEmpty())
+        || validationLabel->text().isEmpty()
+        || whitePreflightLabel->text().isEmpty())
     {
         QTextStream(stderr)
             << "HOSTFLOW_HB05_UI_FAILED: slice settings are incomplete"

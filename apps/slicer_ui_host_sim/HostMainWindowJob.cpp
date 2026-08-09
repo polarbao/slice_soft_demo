@@ -57,7 +57,11 @@ void HostMainWindow::OnStartSlice()
     }
     SetWorkflowEditingEnabled(false);
     m_sliceJobPanel->SetActive();
-    m_statusLabel->setText(QStringLiteral("切片作业已提交到 Worker。"));
+    m_statusLabel->setText(
+        m_textureWhiteWarning
+            ? QStringLiteral(
+                "切片作业已提交；纹理白区预检存在非阻断保守告警。")
+            : QStringLiteral("切片作业已提交到 Worker。"));
 }
 
 void HostMainWindow::OnCancelSlice()
