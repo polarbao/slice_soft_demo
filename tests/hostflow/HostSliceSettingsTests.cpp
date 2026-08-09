@@ -270,6 +270,102 @@ bool VerifyEffectiveProfiles(
         return false;
     }
 
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.texture.enabled = true;
+    settings.texture.applymode = HostTextureApplyMode::TopSurfaceBand;
+    settings.texture.topsurfacelayers = 5;
+    settings.texture.uvaddressmode = HostTextureUvAddressMode::Repeat;
+    settings.texture.missingpolicy = HostTextureMissingPolicy::FailFast;
+    settings.texture.nonsurfacepolicy = HostTextureNonSurfacePolicy::Empty;
+    settings.texture.fallbackred = 12;
+    settings.texture.fallbackgreen = 34;
+    settings.texture.fallbackblue = 56;
+    hosteffectiveprofile textured;
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &textured, &error)
+                && textured.profilehash != first.profilehash,
+            QStringLiteral("生产纹理有效 Profile 构造失败：%1").arg(error),
+            errors))
+    {
+        return false;
+    }
+    const QJsonObject texture = textured.profile.value(
+        QStringLiteral("texture")).toObject();
+    if (!Check(
+            textured.profile.value(QStringLiteral("slicingMode")).toString()
+                    == QStringLiteral("relief_heightfield")
+                && texture.value(QStringLiteral("enabled")).toBool()
+                && texture.value(QStringLiteral("applyMode")).toString()
+                    == QStringLiteral("top_surface_band")
+                && texture.value(QStringLiteral("topSurfaceLayers")).toInt()
+                    == 5
+                && texture.value(QStringLiteral("uvAddressMode")).toString()
+                    == QStringLiteral("repeat")
+                && texture.value(
+                    QStringLiteral("missingTexturePolicy")).toString()
+                    == QStringLiteral("fail_fast")
+                && texture.value(
+                    QStringLiteral("nonSurfaceRgbPolicy")).toString()
+                    == QStringLiteral("empty")
+                && texture.value(QStringLiteral("fallbackRgb")).toArray()
+                    == QJsonArray{12, 34, 56},
+            QStringLiteral("纹理应用、UV 或回退策略未进入有效 Profile。"),
+            errors))
+    {
+        return false;
+    }
+
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.texture.enabled = true;
+    settings.texture.whitepolicy = HostTextureWhitePolicy::WhiteUnderbase;
+    settings.texture.whiteinkthreshold = 4;
+    settings.texture.whitevalue = 0;
+    hosteffectiveprofile whiteCarrier;
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &whiteCarrier, &error),
+            QStringLiteral("Stage 15 按需补白 Profile 构造失败：%1").arg(error),
+            errors))
+    {
+        return false;
+    }
+    const QJsonObject carrierTexture = whiteCarrier.profile.value(
+        QStringLiteral("texture")).toObject();
+    const QJsonObject carrierPolicy = whiteCarrier.profile.value(
+        QStringLiteral("materialPolicy")).toObject();
+    const QJsonObject carrierProcess = whiteCarrier.profile.value(
+        QStringLiteral("materialProcessProfile")).toObject();
+    if (!Check(
+            carrierTexture.value(
+                QStringLiteral("unprintableWhitePolicy")).toString()
+                    == QStringLiteral("white_underbase")
+                && carrierTexture.value(
+                    QStringLiteral("unprintableWhiteInkThreshold")).toInt()
+                    == 4
+                && !carrierPolicy.value(QStringLiteral("enabled")).toBool()
+                && carrierProcess.value(
+                    QStringLiteral("white")).toObject().value(
+                        QStringLiteral("mode")).toString()
+                    == QStringLiteral("unprintable_white_underbase")
+                && !whiteCarrier.profile.value(
+                    QStringLiteral("materialRoleMapping")).toObject().value(
+                        QStringLiteral("enabled")).toBool(),
+            QStringLiteral("Stage 15 按需补白与材料合同未协同。"),
+            errors))
+    {
+        return false;
+    }
+    settings.materialstrategy = HostMaterialStrategy::RgbWhite;
+    error.clear();
+    if (!Check(
+            !HostEffectiveProfileBuilder::Validate(settings, &error),
+            QStringLiteral("按需补白与普通 RGB+W 策略组合必须 fail-closed。"),
+            errors))
+    {
+        return false;
+    }
+
     settings.outputdirectory = QStringLiteral("relative/package");
     error.clear();
     if (!Check(
@@ -333,11 +429,20 @@ bool VerifyPanelIsLocal(
         QStringLiteral("hostMaterialRoleMappingCheck"));
     auto* whiteExpand = panel.findChild<QSpinBox*>(
         QStringLiteral("hostMaterialWhiteExpandSpin"));
+    auto* textureEnabled = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostTextureEnabledCheck"));
+    auto* textureApplyMode = panel.findChild<QComboBox*>(
+        QStringLiteral("hostTextureApplyModeCombo"));
+    auto* textureWhitePolicy = panel.findChild<QComboBox*>(
+        QStringLiteral("hostTextureWhitePolicyCombo"));
     if (!Check(
             outputEdit != nullptr && dpiXSpin != nullptr
                 && materialCombo != nullptr && supportEnabled != nullptr
                 && supportMode != nullptr && supportOffset != nullptr
-                && roleMapping != nullptr && whiteExpand != nullptr,
+                && roleMapping != nullptr && whiteExpand != nullptr
+                && textureEnabled != nullptr
+                && textureApplyMode != nullptr
+                && textureWhitePolicy != nullptr,
             QStringLiteral("切片设置面板控件不完整。"),
             errors))
     {
@@ -352,6 +457,11 @@ bool VerifyPanelIsLocal(
     whiteExpand->setValue(2);
     supportMode->setCurrentIndex(2);
     supportOffset->setValue(0.2);
+    materialCombo->setCurrentIndex(0);
+    roleMapping->setChecked(false);
+    textureEnabled->setChecked(true);
+    textureApplyMode->setCurrentIndex(0);
+    textureWhitePolicy->setCurrentIndex(1);
     QCoreApplication::processEvents();
     if (!Check(
         panel.IsReady(),

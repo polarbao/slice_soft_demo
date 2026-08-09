@@ -1,6 +1,6 @@
 # DOC_PREP HOSTFLOW H-E E2 材料与纹理实施准备
 
-> 状态：**H-E-04 COMPLETE / H-E-05 READY**
+> 状态：**H-E-04 / H-E-05 COMPLETE，E2_GATE=PASS**
 > 日期：2026-08-10
 > 范围：E1 批次复核、H-E-04 材料工艺 Profile、H-E-05 生产纹理设置。
 
@@ -33,7 +33,7 @@ H-E-01 与 H-E-03 的 Debug/Release 门禁均通过。H-E-03 建立的宿主 Pro
 实现保持 `HostRequestBuilder.c` 尺寸门禁：材料 JSON 由独立的
 `HostMaterialProfile.c` 生成。UI 编辑仅修改宿主草稿，不调用 DLL。
 
-## 3. H-E-05 准备合同
+## 3. H-E-05 实施合同与结果
 
 H-E-05 只补生产纹理 Profile 段，字段必须以当前 core 配置和 Stage 15 冻结语义为准：
 
@@ -43,16 +43,34 @@ H-E-05 只补生产纹理 Profile 段，字段必须以当前 core 配置和 Sta
 4. `unprintable_white_*` 仅在已授权的 Legacy 全实体 RGB 场景启用；
 5. 纹理缺失、解码失败、UV/材质绑定无效继续 fail-closed。
 
-H-E-05 开发前必须逐项复核 `ProductionTextureSettingsPanel`、Contract、Model、
-`slicer_core/config` 和 Stage 15 设计，禁止仅凭 UI 名称猜测字段。
+实施已逐项复核 `ProductionTextureSettingsPanel`、Contract、Model、`slicer_core/config`
+和 Stage 15 设计，并落为以下单一结构化链路：
+
+```text
+HostTextureSettingsPanel
+  -> hostslicesettings.texture
+  -> HostTextureProfileBridge
+  -> HostBuildTextureProfileFragments
+  -> canonical Profile / profileHash
+  -> HostWorkspaceTextureState（schema 4）
+```
+
+宿主开放 `applyMode`、表面层数、采样器、UV 寻址、`flipV`、缺失纹理策略、
+非表面 RGB 策略和 fallback RGB。Stage 15 白区载体只允许
+`white_underbase + Legacy 全实体纹理 + RGB solid + 关闭角色映射`；其它组合在宿主本地
+fail-closed。纹理关闭时使用 `closed_mesh_scanline`，开启时使用
+`relief_heightfield`。所有字段均进入 canonical Profile 和工作区草稿，编辑过程不调用 DLL。
 
 ## 4. Gate
 
 ```text
 E1_GATE = PASS
 H_E_04_GATE = PASS
-H_E_05_PREPARATION_GATE = PASS
-E3_GATE = WAIT_E2_REVIEW
+H_E_05_GATE = PASS
+E2_GATE = PASS
+E3_GATE = PASS / READY
 ```
 
-E2 完成后必须复核八项 `adapt_to_host_profile` 是否都有宿主归宿，之后才能进入 E3。
+E2 复核确认八项 `adapt_to_host_profile` 已有明确宿主归宿：支撑、材料策略、角色映射、
+材料工艺、单材料通道、生产纹理、白区载体和有效 Profile 自哈希均由宿主结构化编辑链负责。
+E3 的 H-E-02/H-E-06 可以按顺序进入实现；不得把批量导入或白区预检混入本次提交。

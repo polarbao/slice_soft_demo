@@ -36,6 +36,49 @@ enum hostsupportmode
     HOST_SUPPORT_FULL_VERTICAL_PROJECTION = 4
 };
 
+/** @brief C-compatible texture application mode. */
+enum hosttextureapplymode
+{
+    HOST_TEXTURE_SOLID_VOLUME_FROM_TOP = 0,
+    HOST_TEXTURE_TOP_SURFACE_ONLY = 1,
+    HOST_TEXTURE_TOP_SURFACE_BAND = 2
+};
+
+/** @brief C-compatible texture sampler. */
+enum hosttexturesampler
+{
+    HOST_TEXTURE_NEAREST = 0,
+    HOST_TEXTURE_BILINEAR = 1
+};
+
+/** @brief C-compatible UV address mode. */
+enum hosttextureuvaddressmode
+{
+    HOST_TEXTURE_UV_CLAMP = 0,
+    HOST_TEXTURE_UV_REPEAT = 1
+};
+
+/** @brief C-compatible missing-texture policy. */
+enum hosttexturemissingpolicy
+{
+    HOST_TEXTURE_WARN_AND_FALLBACK = 0,
+    HOST_TEXTURE_FAIL_FAST = 1
+};
+
+/** @brief C-compatible non-surface RGB policy. */
+enum hosttexturenonsurfacepolicy
+{
+    HOST_TEXTURE_NON_SURFACE_MODEL_MATERIAL = 0,
+    HOST_TEXTURE_NON_SURFACE_EMPTY = 1
+};
+
+/** @brief C-compatible unprintable-white policy. */
+enum hosttexturewhitepolicy
+{
+    HOST_TEXTURE_WHITE_FAIL_CLOSED = 0,
+    HOST_TEXTURE_WHITE_UNDERBASE = 1
+};
+
 /** @brief C-compatible inputs used to build one effective slice Profile. */
 struct hosteffectiveprofilesettings
 {
@@ -64,6 +107,20 @@ struct hosteffectiveprofilesettings
     int internalvoidminareapx;
     int baseprojectionenabled;
     int baseprojectionlayercount;
+    int textureenabled;
+    enum hosttextureapplymode textureapplymode;
+    int texturetopsurfacelayers;
+    enum hosttexturesampler texturesampler;
+    enum hosttextureuvaddressmode textureuvaddressmode;
+    int textureflipv;
+    int texturefallbackred;
+    int texturefallbackgreen;
+    int texturefallbackblue;
+    enum hosttexturemissingpolicy texturemissingpolicy;
+    enum hosttexturenonsurfacepolicy texturenonsurfacepolicy;
+    enum hosttexturewhitepolicy texturewhitepolicy;
+    int texturewhiteinkthreshold;
+    int texturewhitevalue;
 };
 
 /**

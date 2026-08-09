@@ -73,6 +73,73 @@ struct hostsupportsettings
     hostbaseprojectionsettings baseprojection;
 };
 
+/** @brief Production texture application mode exposed by the host Profile. */
+enum class HostTextureApplyMode
+{
+    SolidVolumeFromTopSurface,
+    TopSurfaceOnly,
+    TopSurfaceBand
+};
+
+/** @brief Texture filtering mode used while sampling UV coordinates. */
+enum class HostTextureSampler
+{
+    Nearest,
+    Bilinear
+};
+
+/** @brief Texture addressing mode used outside the normalized UV range. */
+enum class HostTextureUvAddressMode
+{
+    Clamp,
+    Repeat
+};
+
+/** @brief Fail-closed behavior for missing or invalid texture assets. */
+enum class HostTextureMissingPolicy
+{
+    WarnAndFallback,
+    FailFast
+};
+
+/** @brief RGB behavior below a limited texture surface band. */
+enum class HostTextureNonSurfacePolicy
+{
+    ModelMaterial,
+    Empty
+};
+
+/** @brief Carrier policy for texture pixels that are all channel-empty. */
+enum class HostTextureWhitePolicy
+{
+    FailClosed,
+    WhiteUnderbase
+};
+
+/** @brief Host-owned production texture and Stage 15 white-carrier settings. */
+struct hosttexturesettings
+{
+    bool enabled{false};
+    HostTextureApplyMode applymode{
+        HostTextureApplyMode::SolidVolumeFromTopSurface};
+    int topsurfacelayers{1};
+    HostTextureSampler sampler{HostTextureSampler::Bilinear};
+    HostTextureUvAddressMode uvaddressmode{
+        HostTextureUvAddressMode::Clamp};
+    bool flipv{true};
+    int fallbackred{0};
+    int fallbackgreen{0};
+    int fallbackblue{0};
+    HostTextureMissingPolicy missingpolicy{
+        HostTextureMissingPolicy::WarnAndFallback};
+    HostTextureNonSurfacePolicy nonsurfacepolicy{
+        HostTextureNonSurfacePolicy::ModelMaterial};
+    HostTextureWhitePolicy whitepolicy{
+        HostTextureWhitePolicy::FailClosed};
+    int whiteinkthreshold{0};
+    int whitevalue{0};
+};
+
 /** @brief Device-owned build volume injected into the first scene Commit. */
 struct hostbuildvolume
 {
@@ -98,6 +165,7 @@ struct hostslicesettings
     hostmaterialprocesssettings materialprocess;
     hostbuildvolume buildvolume;
     hostsupportsettings support;
+    hosttexturesettings texture;
 };
 
 /** @brief Validated Profile preview ready for a future slice request. */

@@ -107,6 +107,20 @@ int main(int argc, char* argv[])
     expected.support.internalvoid.minareapx = 32;
     expected.support.baseprojection.enabled = true;
     expected.support.baseprojection.layercount = 40;
+    expected.texture.enabled = true;
+    expected.texture.applymode = HostTextureApplyMode::TopSurfaceBand;
+    expected.texture.topsurfacelayers = 7;
+    expected.texture.sampler = HostTextureSampler::Nearest;
+    expected.texture.uvaddressmode = HostTextureUvAddressMode::Repeat;
+    expected.texture.flipv = false;
+    expected.texture.fallbackred = 10;
+    expected.texture.fallbackgreen = 20;
+    expected.texture.fallbackblue = 30;
+    expected.texture.missingpolicy = HostTextureMissingPolicy::FailFast;
+    expected.texture.nonsurfacepolicy = HostTextureNonSurfacePolicy::Empty;
+    expected.texture.whitepolicy = HostTextureWhitePolicy::FailClosed;
+    expected.texture.whiteinkthreshold = 5;
+    expected.texture.whitevalue = 6;
     {
         QSettings settings(settingsPath, QSettings::IniFormat);
         HostWorkspaceState::Save(
@@ -181,7 +195,29 @@ int main(int argc, char* argv[])
                 && actual.support.internalvoid.minareapx == 32
                 && actual.support.baseprojection.enabled
                 && actual.support.baseprojection.layercount == 40,
-            QStringLiteral("宿主支撑 Profile 草稿未完整恢复。"), errors))
+            QStringLiteral("宿主支撑 Profile 草稿未完整恢复。"), errors)
+        || !Check(
+            actual.texture.enabled
+                && actual.texture.applymode
+                    == HostTextureApplyMode::TopSurfaceBand
+                && actual.texture.topsurfacelayers == 7
+                && actual.texture.sampler == HostTextureSampler::Nearest
+                && actual.texture.uvaddressmode
+                    == HostTextureUvAddressMode::Repeat
+                && !actual.texture.flipv
+                && actual.texture.fallbackred == 10
+                && actual.texture.fallbackgreen == 20
+                && actual.texture.fallbackblue == 30
+                && actual.texture.missingpolicy
+                    == HostTextureMissingPolicy::FailFast
+                && actual.texture.nonsurfacepolicy
+                    == HostTextureNonSurfacePolicy::Empty
+                && actual.texture.whitepolicy
+                    == HostTextureWhitePolicy::FailClosed
+                && actual.texture.whiteinkthreshold == 5
+                && actual.texture.whitevalue == 6,
+            QStringLiteral("宿主生产纹理 Profile 草稿未完整恢复。"),
+            errors))
     {
         return 3;
     }
@@ -219,7 +255,7 @@ int main(int argc, char* argv[])
     }
 
     QTextStream(stdout)
-        << "HOSTFLOW_HE04_PERSISTENCE_PASS schema="
+        << "HOSTFLOW_HE05_PERSISTENCE_PASS schema="
         << HostWorkspaceState::SchemaVersion()
         << " runtimeHandles=persisted:false" << Qt::endl;
     return 0;

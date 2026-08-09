@@ -2,6 +2,7 @@
 
 #include "HostMaterialSettingsPanel.h"
 #include "HostSupportSettingsPanel.h"
+#include "HostTextureSettingsPanel.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -115,6 +116,14 @@ void HostSliceSettingsPanel::BuildInterface()
     materialLayout->addWidget(m_materialPanel);
     layout->addWidget(materialGroup);
 
+    auto* textureGroup = new QGroupBox(
+        QStringLiteral("宿主 Profile 生产纹理段"), this);
+    auto* textureLayout = new QVBoxLayout(textureGroup);
+    textureLayout->setContentsMargins(8, 8, 8, 8);
+    m_texturePanel = new HostTextureSettingsPanel(textureGroup);
+    textureLayout->addWidget(m_texturePanel);
+    layout->addWidget(textureGroup);
+
     auto* volumeGroup = new QGroupBox(
         QStringLiteral("宿主设备构建体积"), this);
     volumeGroup->setToolTip(QStringLiteral(
@@ -199,6 +208,11 @@ void HostSliceSettingsPanel::BuildInterface()
         this,
         &HostSliceSettingsPanel::OnSettingsEdited);
     connect(
+        m_texturePanel,
+        &HostTextureSettingsPanel::SigSettingsChanged,
+        this,
+        &HostSliceSettingsPanel::OnSettingsEdited);
+    connect(
         m_supportPanel,
         &HostSupportSettingsPanel::SigSettingsChanged,
         this,
@@ -249,6 +263,7 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_outputEdit->setText(settings.outputdirectory);
     m_materialPanel->SetSettings(
         settings.materialstrategy, settings.materialprocess);
+    m_texturePanel->SetSettings(settings.texture);
     m_buildWidthSpin->setValue(settings.buildvolume.widthmm);
     m_buildHeightSpin->setValue(settings.buildvolume.heightmm);
     m_buildZSpin->setValue(settings.buildvolume.zlimitmm);
@@ -268,6 +283,7 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.layerthicknessmm = m_layerThicknessSpin->value();
     settings.materialstrategy = m_materialPanel->Strategy();
     settings.materialprocess = m_materialPanel->Settings();
+    settings.texture = m_texturePanel->Settings();
     settings.buildvolume.widthmm = m_buildWidthSpin->value();
     settings.buildvolume.heightmm = m_buildHeightSpin->value();
     settings.buildvolume.zlimitmm = m_buildZSpin->value();

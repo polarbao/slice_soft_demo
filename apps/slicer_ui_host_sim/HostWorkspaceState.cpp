@@ -1,4 +1,5 @@
 #include "HostWorkspaceState.h"
+#include "HostWorkspaceTextureState.h"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -142,7 +143,7 @@ bool IsFiniteInRange(
 
 int HostWorkspaceState::SchemaVersion()
 {
-    return 3;
+    return 4;
 }
 
 QString HostWorkspaceState::OrganizationName()
@@ -278,6 +279,7 @@ void HostWorkspaceState::Save(
     settings.setValue(
         QStringLiteral("support/baseProjection/layerCount"),
         sliceSettings.support.baseprojection.layercount);
+    HostWorkspaceTextureState::Save(settings, sliceSettings.texture);
     settings.endGroup();
     settings.sync();
 }
@@ -368,6 +370,8 @@ bool HostWorkspaceState::Restore(
         QStringLiteral("support/baseProjection/enabled")).toBool();
     restored.support.baseprojection.layercount = settings.value(
         QStringLiteral("support/baseProjection/layerCount"), -1).toInt();
+    const bool textureValid = HostWorkspaceTextureState::Restore(
+        settings, &restored.texture);
     settings.endGroup();
 
     QList<int> splitterSizes;
@@ -418,6 +422,7 @@ bool HostWorkspaceState::Restore(
         && restored.support.internalvoid.minareapx <= 1000000
         && restored.support.baseprojection.layercount >= 0
         && restored.support.baseprojection.layercount <= 1000
+        && textureValid
         && (restored.support.enabled
             || (!restored.support.internalvoid.enabled
                 && !restored.support.baseprojection.enabled));

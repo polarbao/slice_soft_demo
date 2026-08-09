@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE — H-D-01..05 已完成 / H-E E2 执行中**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
+> 状态：**ACTIVE — H-D-01..05 已完成 / H-E E2 完成，E3 READY**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
 > 日期：2026-08-10
 > 范围：HOSTFLOW H-A、H-B、H-C、H-D、H-E，不属于 Stage 14 编号任务。
 
@@ -12,7 +12,7 @@
 | H-B 宿主业务 UI | COMPLETE | H-B-01..08 全部完成 | 无切片侧阻断 |
 | H-C 移植交付 | COMPLETE | H-C-01/02/03 全部完成 | 无切片侧阻断；打印侧 ACK 延期 |
 | **H-D 视图接线** | **CODE COMPLETE** | H-D-01..05 已完成 | H-D-06 仅等待人工七步证据 |
-| **H-E 参数深度与导入** | **E2 ACTIVE / 分三批** | E1 完成且 Gate PASS；H-E-04 完成；H-E-05 READY | E3 仍须等待 E2 批次门 |
+| **H-E 参数深度与导入** | **E2 COMPLETE / E3 READY** | H-E-01/03/04/05 完成；E1/E2 Gate PASS | H-E-02 后再闭合 H-E-06 |
 
 > 🔴 **2026-08-08 复核更正**：本文原状态为 `LOCAL COMPLETE`，**该结论不成立**。
 > H-A/H-B/H-C 闭合的是**业务与数据链路**，两层缺口未覆盖：
@@ -111,10 +111,10 @@ H-D-05 已完成：结果页只对当前已校验作业返回的精确 `packageD
 空路径、目录不存在、包无效或身份不一致均 fail-closed。H-D-02..06 的准备审查已冻结：
 H-D-02 已完成，H-D-03/04 已解除前置，H-D-06 继续等待两卡及人工证据。
 
-H-E E1 已完成并通过批次复核：H-E-01 闭合 ASCII/binary STL 与负例；H-E-03 建立独立
-Profile 编辑链。H-E-04 已在该链上增加六种材料策略、角色映射和白墨/光油参数，并进入
-canonical Profile、自哈希和工作区 schema 3。H-E-05 准备 Gate 已通过；E3 仍不得越过
-E2 批次门提前实现。
+H-E E1/E2 已完成并通过批次复核：H-E-01 闭合 ASCII/binary STL 与负例；H-E-03 建立
+独立 Profile 编辑链；H-E-04 增加六种材料策略、角色映射和白墨/光油参数；H-E-05 增加
+生产纹理、UV、缺失策略、非表面策略和 Stage 15 白区载体，并进入 canonical Profile、
+自哈希和工作区 schema 4。E3 已解锁，按 H-E-02 → H-E-06 顺序实施。
 
 ## Target State
 
@@ -149,6 +149,6 @@ H-A-03 已证明宿主只经 11 个导出实现：
 ## Next Action
 
 H-D-01..05 已闭合；H-D-06 只等待人工七步证据，自动化不得代替人工 PASS。
-H-E 下一张卡为 H-E-05，完成后执行 E2 批次复核，再决定 H-E-02/H-E-06。
+H-E 下一张卡为 H-E-02，之后执行 H-E-06 并完成 E3 批次复核。
 RB-P2/RB-P3 与 R-A-02 保持独立 RENDER 后续，不阻断 H-E。打印侧 ACK 维持
 `PENDING / DEFERRED`。

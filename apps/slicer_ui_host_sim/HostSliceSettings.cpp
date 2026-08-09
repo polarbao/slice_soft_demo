@@ -1,6 +1,7 @@
 #include "HostSliceSettings.h"
 
 #include "HostRequestBuilder.h"
+#include "HostTextureProfileBridge.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -90,6 +91,7 @@ enum hostsupportmode ToHostSupportMode(const HostSupportMode mode)
     }
     return static_cast<enum hostsupportmode>(-1);
 }
+
 }
 
 bool HostEffectiveProfileBuilder::Validate(
@@ -232,6 +234,39 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
+    const hosttexturesettings& texture = settings.texture;
+    const bool textureValuesValid = HostTextureProfileBridge::IsValid(texture)
+        && texture.topsurfacelayers > 0
+        && texture.topsurfacelayers <= 100000
+        && texture.fallbackred >= 0 && texture.fallbackred <= 255
+        && texture.fallbackgreen >= 0 && texture.fallbackgreen <= 255
+        && texture.fallbackblue >= 0 && texture.fallbackblue <= 255
+        && texture.whiteinkthreshold >= 0
+        && texture.whiteinkthreshold <= 255
+        && texture.whitevalue >= 0 && texture.whitevalue <= 255;
+    if (!textureValuesValid)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "纹理参数越界：表面层数 1..100000，RGB/白区阈值和值 0..255。");
+        }
+        return false;
+    }
+    if (texture.whitepolicy == HostTextureWhitePolicy::WhiteUnderbase
+        && (!texture.enabled
+            || texture.applymode
+                != HostTextureApplyMode::SolidVolumeFromTopSurface
+            || settings.materialstrategy != HostMaterialStrategy::RgbSolid
+            || settings.materialprocess.rolemappingenabled))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "按需补白只支持 Legacy 全实体 RGB 纹理、RGB 实体材料且禁用材料角色映射。");
+        }
+        return false;
+    }
     return true;
 }
 
@@ -285,7 +320,24 @@ bool HostEffectiveProfileBuilder::Build(
         settings.support.internalvoid.enabled ? 1 : 0,
         settings.support.internalvoid.minareapx,
         settings.support.baseprojection.enabled ? 1 : 0,
-        settings.support.baseprojection.layercount};
+        settings.support.baseprojection.layercount,
+        settings.texture.enabled ? 1 : 0,
+        HostTextureProfileBridge::ToApplyMode(settings.texture.applymode),
+        settings.texture.topsurfacelayers,
+        HostTextureProfileBridge::ToSampler(settings.texture.sampler),
+        HostTextureProfileBridge::ToUvAddressMode(
+            settings.texture.uvaddressmode),
+        settings.texture.flipv ? 1 : 0,
+        settings.texture.fallbackred,
+        settings.texture.fallbackgreen,
+        settings.texture.fallbackblue,
+        HostTextureProfileBridge::ToMissingPolicy(
+            settings.texture.missingpolicy),
+        HostTextureProfileBridge::ToNonSurfacePolicy(
+            settings.texture.nonsurfacepolicy),
+        HostTextureProfileBridge::ToWhitePolicy(settings.texture.whitepolicy),
+        settings.texture.whiteinkthreshold,
+        settings.texture.whitevalue};
     char profileHash[72] = {};
     char* profileText = HostBuildEffectiveProfile(
         &requestSettings, profileHash, sizeof(profileHash));

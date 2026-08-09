@@ -26,6 +26,8 @@ add_executable(slicer_ui_host_sim
     HostTransformLayoutPanel.h
     HostWorkspaceState.cpp
     HostWorkspaceState.h
+    HostWorkspaceTextureState.cpp
+    HostWorkspaceTextureState.h
     HostMainWindow.cpp
     HostMainWindow.h
     HostMainWindowJob.cpp
@@ -37,7 +39,11 @@ add_executable(slicer_ui_host_sim
     HostMainWindowView.cpp
     HostMaterialSettingsPanel.cpp
     HostMaterialSettingsPanel.h
+    HostTextureSettingsPanel.cpp
+    HostTextureSettingsPanel.h
     HostSliceSettings.cpp
+    HostTextureProfileBridge.cpp
+    HostTextureProfileBridge.h
     HostSliceSettings.h
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
@@ -84,6 +90,8 @@ add_executable(slicer_ui_host_sim
     camera/ViewModeSwitch.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
@@ -92,6 +100,7 @@ add_executable(slicer_ui_host_sim
 
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
     PROPERTIES LANGUAGE CXX
@@ -237,11 +246,15 @@ add_executable(hostflow_he01_stl_import_tests
     HostSliceJobController.cpp
     HostSliceJobController.h
     HostSliceSettings.cpp
+    HostTextureProfileBridge.cpp
+    HostTextureProfileBridge.h
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
@@ -251,6 +264,7 @@ add_executable(hostflow_he01_stl_import_tests
 
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
     PROPERTIES LANGUAGE CXX
@@ -480,9 +494,13 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
     HostSliceSettings.cpp
+    HostTextureProfileBridge.cpp
+    HostTextureProfileBridge.h
     HostSliceSettings.h
     HostMaterialSettingsPanel.cpp
     HostMaterialSettingsPanel.h
+    HostTextureSettingsPanel.cpp
+    HostTextureSettingsPanel.h
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
     HostSupportSettingsPanel.cpp
@@ -491,6 +509,8 @@ add_executable(hostflow_hb05_slice_settings_tests
     ModuleClient.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
@@ -500,6 +520,7 @@ add_executable(hostflow_hb05_slice_settings_tests
 
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
     PROPERTIES LANGUAGE CXX
@@ -562,6 +583,13 @@ add_test(
 )
 
 add_test(
+    NAME hostflow_he05_texture_profile
+    COMMAND hostflow_hb05_slice_settings_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
     NAME hostflow_hb05_settings_ui_smoke
     COMMAND slicer_ui_host_sim
         --hostflow-settings-ui-self-test
@@ -575,11 +603,15 @@ add_executable(hostflow_hb06_slice_job_tests
     HostSliceJobController.cpp
     HostSliceJobController.h
     HostSliceSettings.cpp
+    HostTextureProfileBridge.cpp
+    HostTextureProfileBridge.h
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
@@ -589,6 +621,7 @@ add_executable(hostflow_hb06_slice_job_tests
 
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
     PROPERTIES LANGUAGE CXX
@@ -652,11 +685,15 @@ add_executable(hostflow_hb07_package_review_tests
     HostSliceJobController.cpp
     HostSliceJobController.h
     HostSliceSettings.cpp
+    HostTextureProfileBridge.cpp
+    HostTextureProfileBridge.h
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
@@ -666,6 +703,7 @@ add_executable(hostflow_hb07_package_review_tests
 
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
     PROPERTIES LANGUAGE CXX
@@ -767,11 +805,17 @@ add_test(
 
 add_executable(hostflow_hb08_workspace_state_tests
     HostSliceSettings.cpp
+    HostTextureProfileBridge.cpp
+    HostTextureProfileBridge.h
     HostSliceSettings.h
     HostWorkspaceState.cpp
     HostWorkspaceState.h
+    HostWorkspaceTextureState.cpp
+    HostWorkspaceTextureState.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
@@ -781,6 +825,7 @@ add_executable(hostflow_hb08_workspace_state_tests
 
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
     PROPERTIES LANGUAGE CXX
@@ -827,6 +872,11 @@ add_test(
 
 add_test(
     NAME hostflow_he04_material_persistence
+    COMMAND hostflow_hb08_workspace_state_tests
+)
+
+add_test(
+    NAME hostflow_he05_texture_persistence
     COMMAND hostflow_hb08_workspace_state_tests
 )
 
@@ -1391,6 +1441,7 @@ set_tests_properties(
     hostflow_hb05_slice_settings
     hostflow_he03_support_settings
     hostflow_he04_material_profile
+    hostflow_he05_texture_profile
     hostflow_hb05_settings_ui_smoke
     hostflow_hb06_job_ui_smoke
     hostflow_hb07_result_ui_smoke
@@ -1398,6 +1449,7 @@ set_tests_properties(
     hostflow_hb08_workspace_state
     hostflow_he03_support_persistence
     hostflow_he04_material_persistence
+    hostflow_he05_texture_persistence
     hostflow_hb08_workspace_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"

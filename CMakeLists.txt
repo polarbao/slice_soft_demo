@@ -1244,10 +1244,14 @@ add_executable(slicer_host_sim
     apps/slicer_host_sim/HostM1Intake.h
     apps/slicer_host_sim/HostModuleApi.c
     apps/slicer_host_sim/HostModuleApi.h
+    apps/slicer_host_sim/HostMaterialProfile.c
+    apps/slicer_host_sim/HostMaterialProfile.h
     apps/slicer_host_sim/HostPath.c
     apps/slicer_host_sim/HostPath.h
     apps/slicer_host_sim/HostRequestBuilder.c
     apps/slicer_host_sim/HostRequestBuilder.h
+    apps/slicer_host_sim/HostTextureProfile.c
+    apps/slicer_host_sim/HostTextureProfile.h
     apps/slicer_host_sim/JsonText.c
     apps/slicer_host_sim/JsonText.h
 )

@@ -70,6 +70,115 @@ static char* BuildRulesCompact(
     return HostFormat("");
 }
 
+static int BuildWhiteCarrierFragments(
+    const struct hosteffectiveprofilesettings* settings,
+    const char* escapedProfileId,
+    char** canonical,
+    char** compact)
+{
+    if (settings->materialstrategy != HOST_MATERIAL_RGB_SOLID
+        || settings->materialrolemappingenabled != 0
+        || settings->textureenabled == 0
+        || settings->textureapplymode
+            != HOST_TEXTURE_SOLID_VOLUME_FROM_TOP)
+    {
+        return 0;
+    }
+    *canonical = HostFormat(
+        "\"materialPolicy\": {\n"
+        "\"conflictPolicy\": \"model_material_over_support\",\n"
+        "\"enabled\": false,\n"
+        "\"rgb\": {\n\"enabled\": false,\n"
+        "\"source\": \"modelMaterial\"\n},\n"
+        "\"varnish\": {\n\"enabled\": false,\n"
+        "\"mode\": \"disabled\",\n\"topLayers\": 1,\n"
+        "\"value\": 0\n},\n"
+        "\"white\": {\n\"enabled\": false,\n"
+        "\"layers\": \"all_model\",\n\"mode\": \"disabled\",\n"
+        "\"value\": 0\n}\n},\n"
+        "\"materialProcessProfile\": {\n\"enabled\": true,\n"
+        "\"name\": \"%s\",\n"
+        "\"rgb\": {\n\"enabled\": true,\n"
+        "\"source\": \"texture_or_color\"\n},\n"
+        "\"support\": {\n\"expected\": %s,\n"
+        "\"mode\": \"existing_support_pipeline\"\n},\n"
+        "\"target\": \"host-reference\",\n"
+        "\"validation\": {\n"
+        "\"maxUnexpectedOverlapPixels\": %d,\n"
+        "\"requireRgbPixels\": true,\n"
+        "\"requireSupportPixels\": %s,\n"
+        "\"requireVarnishPixels\": false,\n"
+        "\"requireWhitePixels\": false\n},\n"
+        "\"varnish\": {\n\"coverage\": \"model_surface\",\n"
+        "\"enabled\": false,\n\"mode\": \"disabled\",\n"
+        "\"topLayers\": 1,\n\"value\": 0\n},\n"
+        "\"white\": {\n"
+        "\"coverage\": \"texture_unprintable_white\",\n"
+        "\"enabled\": true,\n\"expandPx\": 0,\n"
+        "\"mode\": \"unprintable_white_underbase\",\n"
+        "\"shrinkPx\": 0,\n\"value\": %d\n}\n},\n"
+        "\"materialRoleMapping\": {\n"
+        "\"allowInputSupportMaterial\": false,\n"
+        "\"defaultRole\": \"rgb\",\n\"enabled\": false,\n"
+        "\"mode\": \"rules_then_default\",\n\"rules\": [\n]\n},\n"
+        "\"modelFill\": {\n\"emptyAllowedInProduction\": false,\n"
+        "\"enabled\": true,\n\"legacyRgbFallback\": false,\n"
+        "\"material\": \"rgb\",\n"
+        "\"scope\": \"below_texture_surface\",\n\"value\": 0\n},\n"
+        "\"modelMaterial\": {\n\"applyMode\": \"solid_volume\",\n"
+        "\"materialChannel\": \"RGB\",\n"
+        "\"rgb\": [\n0,\n0,\n0\n],\n"
+        "\"varnishValue\": 255,\n\"whiteValue\": 255\n},\n",
+        escapedProfileId,
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->maxunexpectedoverlappixels,
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->texturewhitevalue);
+    *compact = HostFormat(
+        "\"materialPolicy\":{\"conflictPolicy\":"
+        "\"model_material_over_support\",\"enabled\":false,"
+        "\"rgb\":{\"enabled\":false,\"source\":\"modelMaterial\"},"
+        "\"varnish\":{\"enabled\":false,\"mode\":\"disabled\","
+        "\"topLayers\":1,\"value\":0},\"white\":{\"enabled\":false,"
+        "\"layers\":\"all_model\",\"mode\":\"disabled\",\"value\":0}},"
+        "\"materialProcessProfile\":{\"enabled\":true,\"name\":\"%s\","
+        "\"rgb\":{\"enabled\":true,\"source\":\"texture_or_color\"},"
+        "\"support\":{\"expected\":%s,"
+        "\"mode\":\"existing_support_pipeline\"},"
+        "\"target\":\"host-reference\",\"validation\":{"
+        "\"maxUnexpectedOverlapPixels\":%d,\"requireRgbPixels\":true,"
+        "\"requireSupportPixels\":%s,\"requireVarnishPixels\":false,"
+        "\"requireWhitePixels\":false},\"varnish\":{"
+        "\"coverage\":\"model_surface\",\"enabled\":false,"
+        "\"mode\":\"disabled\",\"topLayers\":1,\"value\":0},"
+        "\"white\":{\"coverage\":\"texture_unprintable_white\","
+        "\"enabled\":true,\"expandPx\":0,"
+        "\"mode\":\"unprintable_white_underbase\",\"shrinkPx\":0,"
+        "\"value\":%d}},\"materialRoleMapping\":{"
+        "\"allowInputSupportMaterial\":false,\"defaultRole\":\"rgb\","
+        "\"enabled\":false,\"mode\":\"rules_then_default\",\"rules\":[]},"
+        "\"modelFill\":{\"emptyAllowedInProduction\":false,"
+        "\"enabled\":true,\"legacyRgbFallback\":false,"
+        "\"material\":\"rgb\",\"scope\":\"below_texture_surface\","
+        "\"value\":0},\"modelMaterial\":{"
+        "\"applyMode\":\"solid_volume\",\"materialChannel\":\"RGB\","
+        "\"rgb\":[0,0,0],\"varnishValue\":255,\"whiteValue\":255},",
+        escapedProfileId,
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->maxunexpectedoverlappixels,
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->texturewhitevalue);
+    if (*canonical == NULL || *compact == NULL)
+    {
+        free(*canonical);
+        free(*compact);
+        *canonical = NULL;
+        *compact = NULL;
+        return 0;
+    }
+    return 1;
+}
+
 int HostBuildMaterialProfileFragments(
     const struct hosteffectiveprofilesettings* settings,
     const char* escapedProfileId,
@@ -98,6 +207,12 @@ int HostBuildMaterialProfileFragments(
     }
     *canonical = NULL;
     *compact = NULL;
+    if (settings->texturewhitepolicy
+        == HOST_TEXTURE_WHITE_UNDERBASE)
+    {
+        return BuildWhiteCarrierFragments(
+            settings, escapedProfileId, canonical, compact);
+    }
     switch (settings->materialstrategy)
     {
     case HOST_MATERIAL_RGB_SOLID:

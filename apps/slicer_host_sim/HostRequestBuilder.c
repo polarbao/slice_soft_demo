@@ -4,6 +4,7 @@
 
 #include "HostRequestBuilder.h"
 #include "HostMaterialProfile.h"
+#include "HostTextureProfile.h"
 #include "JsonText.h"
 
 #include <stdio.h>
@@ -225,6 +226,7 @@ char* HostBuildEffectiveProfile(
     unsigned long profileHashCapacity)
 {
     const char* supportMode = NULL;
+    const char* slicingMode = NULL;
     const char* supportPlacementCanonical = "";
     const char* supportPlacementCompact = "";
     char* escapedModel = NULL;
@@ -233,6 +235,8 @@ char* HostBuildEffectiveProfile(
     char* escapedProfile = NULL;
     char* materialCanonical = NULL;
     char* materialCompact = NULL;
+    char* textureCanonical = NULL;
+    char* textureCompact = NULL;
     char* canonical = NULL;
     char* profile = NULL;
     char digest[65];
@@ -266,6 +270,18 @@ char* HostBuildEffectiveProfile(
         || settings->varnishtoplayers > 100000
         || settings->maxunexpectedoverlappixels < 0
         || settings->maxunexpectedoverlappixels > 1000000
+        || settings->texturetopsurfacelayers <= 0
+        || settings->texturetopsurfacelayers > 100000
+        || settings->texturefallbackred < 0
+        || settings->texturefallbackred > 255
+        || settings->texturefallbackgreen < 0
+        || settings->texturefallbackgreen > 255
+        || settings->texturefallbackblue < 0
+        || settings->texturefallbackblue > 255
+        || settings->texturewhiteinkthreshold < 0
+        || settings->texturewhiteinkthreshold > 255
+        || settings->texturewhitevalue < 0
+        || settings->texturewhitevalue > 255
         || profileHash == NULL || profileHashCapacity < 72U)
     {
         return NULL;
@@ -304,6 +320,8 @@ char* HostBuildEffectiveProfile(
     {
         return NULL;
     }
+    slicingMode = settings->textureenabled != 0
+        ? "relief_heightfield" : "closed_mesh_scanline";
     escapedModel = HostJsonEscape(settings->modelpath);
     escapedFormat = HostJsonEscape(settings->modelformat);
     escapedPackage = HostJsonEscape(settings->packagedirectory);
@@ -318,6 +336,13 @@ char* HostBuildEffectiveProfile(
             escapedProfile,
             &materialCanonical,
             &materialCompact))
+    {
+        goto cleanup;
+    }
+    if (!HostBuildTextureProfileFragments(
+            settings,
+            &textureCanonical,
+            &textureCompact))
     {
         goto cleanup;
     }
@@ -361,7 +386,7 @@ char* HostBuildEffectiveProfile(
         "\"slicePipeline\": {\n"
         "\"mode\": \"legacy\"\n"
         "},\n"
-        "\"slicingMode\": \"closed_mesh_scanline\",\n"
+        "\"slicingMode\": \"%s\",\n"
         "\"support\": {\n"
         "\"baseProjection\": {\n"
         "\"enabled\": %s,\n"
@@ -380,7 +405,8 @@ char* HostBuildEffectiveProfile(
         "\"offsetMm\": %.15g,\n"
         "%s"
         "\"value\": 0\n"
-        "}\n"
+        "},\n"
+        "%s"
         "}",
         escapedFormat,
         escapedModel,
@@ -389,6 +415,7 @@ char* HostBuildEffectiveProfile(
         settings->dpiy,
         settings->layerthicknessmm,
         escapedPackage,
+        slicingMode,
         settings->baseprojectionenabled != 0 ? "true" : "false",
         settings->baseprojectionlayercount,
         settings->supportenabled != 0 ? "true" : "false",
@@ -397,7 +424,8 @@ char* HostBuildEffectiveProfile(
         settings->supportminareapx,
         supportMode,
         settings->supportoffsetmm,
-        supportPlacementCanonical);
+        supportPlacementCanonical,
+        textureCanonical);
     if (canonical == NULL || !ComputeSha256(canonical, digest))
     {
         goto cleanup;
@@ -420,7 +448,7 @@ char* HostBuildEffectiveProfile(
         "\"preview\":{\"enabled\":false},\"profileHash\":\"%s\","
         "\"profileVersion\":\"1.0\","
         "\"slicePipeline\":{\"mode\":\"legacy\"},"
-        "\"slicingMode\":\"closed_mesh_scanline\","
+        "\"slicingMode\":\"%s\","
         "\"support\":{\"baseProjection\":{\"enabled\":%s,"
         "\"layerCount\":%d,"
         "\"layerPlacement\":\"overlay_existing\","
@@ -428,7 +456,7 @@ char* HostBuildEffectiveProfile(
         "\"internalVoid\":{\"enabled\":%s,"
         "\"fillRule\":\"all_internal_voids\",\"minAreaPx\":%d},"
         "\"minAreaPx\":%d,\"mode\":\"%s\",\"offsetMm\":%.15g,"
-        "%s\"value\":0}}",
+        "%s\"value\":0},%s}",
         escapedFormat,
         escapedModel,
         materialCompact,
@@ -437,6 +465,7 @@ char* HostBuildEffectiveProfile(
         settings->layerthicknessmm,
         escapedPackage,
         profileHash,
+        slicingMode,
         settings->baseprojectionenabled != 0 ? "true" : "false",
         settings->baseprojectionlayercount,
         settings->supportenabled != 0 ? "true" : "false",
@@ -445,7 +474,8 @@ char* HostBuildEffectiveProfile(
         settings->supportminareapx,
         supportMode,
         settings->supportoffsetmm,
-        supportPlacementCompact);
+        supportPlacementCompact,
+        textureCompact);
 cleanup:
     free(escapedModel);
     free(escapedFormat);
@@ -453,6 +483,8 @@ cleanup:
     free(escapedProfile);
     free(materialCanonical);
     free(materialCompact);
+    free(textureCanonical);
+    free(textureCompact);
     free(canonical);
     return profile;
 }

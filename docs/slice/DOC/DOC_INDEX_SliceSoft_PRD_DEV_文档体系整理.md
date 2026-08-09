@@ -501,7 +501,10 @@ docs/slice/REPORT/REPORT_HOSTFLOW_H_D_03_三车道拖拽接线当前状态.md �
 docs/slice/REPORT/REPORT_HOSTFLOW_H_D_04_双视图刷新接线当前状态.md ← 【H-D-04 状态真源】
 docs/slice/REPORT/REPORT_HOSTFLOW_H_E_01_STL导入当前状态.md ← 【H-E-01 状态真源】
 docs/slice/REPORT/REPORT_HOSTFLOW_H_E_03_支撑参数编辑当前状态.md ← 【H-E-03 状态真源】
+docs/slice/REPORT/REPORT_HOSTFLOW_H_E_04_材料工艺Profile编辑当前状态.md ← 【H-E-04 状态真源】
+docs/slice/REPORT/REPORT_HOSTFLOW_H_E_05_生产纹理设置当前状态.md ← 【H-E-05 / E2 Gate 状态真源】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_E_E1_STL与支撑参数实施准备.md ← 【H-E E1 准备真源】
+docs/slice/DOC/DOC_PREP_HOSTFLOW_H_E_E2_材料与纹理实施准备.md ← 【H-E E2 合同与复核真源】
 docs/slice/DOC/DOC_PREP_RENDER_R_B_LOD缺陷修复选型准备.md ← 【R-B 选型准备 / RD-B 待裁决】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_02_场景生命周期运行时准备.md ← 【H-A-02 准备真源】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_04_规则排版运行时准备.md ← 【H-A-04 准备真源】
