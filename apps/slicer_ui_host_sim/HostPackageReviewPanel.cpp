@@ -3,6 +3,7 @@
 #include "HostChannelChartWidget.h"
 
 #include <QComboBox>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -10,6 +11,7 @@
 #include <QJsonDocument>
 #include <QLabel>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QPixmap>
 #include <QScrollArea>
 #include <QSignalBlocker>
@@ -48,6 +50,15 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_validationLabel->setWordWrap(true);
     m_validationLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
     rootLayout->addWidget(m_validationLabel);
+
+    m_openPackageDirectoryButton = new QPushButton(
+        QStringLiteral("打开包目录"), this);
+    m_openPackageDirectoryButton->setObjectName(
+        QStringLiteral("hostOpenPackageDirectoryButton"));
+    m_openPackageDirectoryButton->setEnabled(false);
+    m_openPackageDirectoryButton->setToolTip(
+        QStringLiteral("完成切片并严格校验生产包后可用。"));
+    rootLayout->addWidget(m_openPackageDirectoryButton, 0, Qt::AlignLeft);
 
     auto* controls = new QHBoxLayout();
     controls->addWidget(new QLabel(QStringLiteral("生产层"), this));
@@ -158,6 +169,11 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
         qOverload<int>(&QComboBox::currentIndexChanged),
         this,
         &HostPackageReviewPanel::OnReportChanged);
+    connect(
+        m_openPackageDirectoryButton,
+        &QPushButton::clicked,
+        this,
+        &HostPackageReviewPanel::OnOpenPackageDirectory);
 }
 
 void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
@@ -199,6 +215,32 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
             .arg(review.profileversion)
             .arg(review.profilehash));
     m_channelChart->SetLayers(review.layers);
+
+    const bool packageDirectoryAvailable = review.valid
+        && !review.packagedirectory.isEmpty()
+        && QFileInfo(review.packagedirectory).isDir();
+    m_openPackageDirectoryButton->setEnabled(packageDirectoryAvailable);
+    if (packageDirectoryAvailable)
+    {
+        m_openPackageDirectoryButton->setToolTip(
+            QStringLiteral("打开本次作业返回的生产包目录：%1")
+                .arg(review.packagedirectory));
+    }
+    else if (!review.valid)
+    {
+        m_openPackageDirectoryButton->setToolTip(
+            QStringLiteral("生产包严格校验未通过，不能打开目录。"));
+    }
+    else if (review.packagedirectory.isEmpty())
+    {
+        m_openPackageDirectoryButton->setToolTip(
+            QStringLiteral("切片作业未返回生产包目录。"));
+    }
+    else
+    {
+        m_openPackageDirectoryButton->setToolTip(
+            QStringLiteral("切片作业返回的生产包目录不存在。"));
+    }
 }
 
 void HostPackageReviewPanel::ShowPreview(
@@ -271,6 +313,18 @@ void HostPackageReviewPanel::OnReportChanged(const int index)
     {
         emit SigReportRequested(m_reportCombo->itemText(index));
     }
+}
+
+void HostPackageReviewPanel::OnOpenPackageDirectory()
+{
+    if (!m_review.valid || m_review.packagedirectory.isEmpty()
+        || !QFileInfo(m_review.packagedirectory).isDir())
+    {
+        m_openPackageDirectoryButton->setEnabled(false);
+        ShowError(QStringLiteral("切片作业返回的生产包目录不存在，已停止打开。"));
+        return;
+    }
+    emit SigOpenPackageDirectoryRequested(m_review.packagedirectory);
 }
 
 void HostPackageReviewPanel::EmitPreviewRequest()

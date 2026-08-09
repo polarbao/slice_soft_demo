@@ -230,10 +230,13 @@ int RunHostFlowResultUiSmoke(const QString& modulePath)
         QStringLiteral("hostPackageReportCombo"));
     const auto* chart = window.findChild<QObject*>(
         QStringLiteral("hostPackageChannelChart"));
+    const auto* openPackageButton = window.findChild<QPushButton*>(
+        QStringLiteral("hostOpenPackageDirectoryButton"));
     if (panel == nullptr || layerSlider == nullptr || previewMode == nullptr
         || reportCombo == nullptr || chart == nullptr
+        || openPackageButton == nullptr
         || layerSlider->isEnabled() || previewMode->count() < 7
-        || reportCombo->count() < 3)
+        || reportCombo->count() < 3 || openPackageButton->isEnabled())
     {
         QTextStream(stderr)
             << "HOSTFLOW_HB07_UI_FAILED: result workspace is incomplete"

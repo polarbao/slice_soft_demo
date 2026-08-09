@@ -604,6 +604,50 @@ add_test(
         --module $<TARGET_FILE:slicer_module>
 )
 
+add_executable(hostflow_hd05_package_directory_tests
+    HostChannelChartWidget.cpp
+    HostChannelChartWidget.h
+    HostPackageReviewPanel.cpp
+    HostPackageReviewPanel.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostPackageDirectoryPanelTests.cpp
+)
+
+set_target_properties(hostflow_hd05_package_directory_tests PROPERTIES
+    AUTOMOC ON
+)
+
+target_include_directories(hostflow_hd05_package_directory_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hd05_package_directory_tests PRIVATE
+    Qt5::Widgets
+)
+
+if(MSVC)
+    target_compile_options(hostflow_hd05_package_directory_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hd05_package_directory_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hd05_package_directory_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hd05_package_directory
+    COMMAND hostflow_hd05_package_directory_tests
+)
+
 add_executable(hostflow_hb08_workspace_state_tests
     HostSliceSettings.cpp
     HostSliceSettings.h
@@ -992,6 +1036,7 @@ set_tests_properties(
     hostflow_hb05_settings_ui_smoke
     hostflow_hb06_job_ui_smoke
     hostflow_hb07_result_ui_smoke
+    hostflow_hd05_package_directory
     hostflow_hb08_workspace_state
     hostflow_hb08_workspace_ui_smoke
     PROPERTIES

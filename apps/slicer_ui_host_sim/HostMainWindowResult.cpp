@@ -1,7 +1,10 @@
 #include "HostMainWindow.h"
 
+#include <QDesktopServices>
+#include <QFileInfo>
 #include <QLabel>
 #include <QTabWidget>
+#include <QUrl>
 
 void HostMainWindow::LoadSliceResult(const QString& packageDirectory)
 {
@@ -52,4 +55,27 @@ void HostMainWindow::OnResultReportRequested(const QString& reportName)
         return;
     }
     m_packageReviewPanel->ShowReport(report);
+}
+
+void HostMainWindow::OnOpenPackageDirectoryRequested(
+    const QString& packageDirectory)
+{
+    const QString verifiedDirectory =
+        m_packageReviewController->Review().packagedirectory;
+    if (packageDirectory.isEmpty() || packageDirectory != verifiedDirectory
+        || !QFileInfo(packageDirectory).isDir())
+    {
+        m_packageReviewPanel->ShowError(
+            QStringLiteral("生产包目录身份不一致或目录已不存在，已停止打开。"));
+        m_statusLabel->setText(QStringLiteral("生产包目录打开失败"));
+        return;
+    }
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(packageDirectory)))
+    {
+        m_packageReviewPanel->ShowError(
+            QStringLiteral("系统文件管理器拒绝打开生产包目录。"));
+        m_statusLabel->setText(QStringLiteral("生产包目录打开失败"));
+        return;
+    }
+    m_statusLabel->setText(QStringLiteral("已打开本次切片生产包目录"));
 }

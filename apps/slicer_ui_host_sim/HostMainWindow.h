@@ -80,6 +80,7 @@ private:
         int layerIndex,
         const QStringList& channels);
     void OnResultReportRequested(const QString& reportName);
+    void OnOpenPackageDirectoryRequested(const QString& packageDirectory);
     bool ApplyPendingSceneContext(QString* error);
     void RefreshSliceSettings();
     void RefreshSliceJobReadiness();

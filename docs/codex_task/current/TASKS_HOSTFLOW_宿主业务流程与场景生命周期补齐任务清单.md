@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
-> 文档状态：**ACTIVE — H-D 待点名开工 / H-E 范围已授权分三批**（H-A/H-B/H-C 完成；外部 ACK 延期）
-> 版本：v3.1 ｜ 日期：2026-08-08 ｜ 激活日期：2026-08-07
+> 文档状态：**ACTIVE — H-D-01/05 完成 / H-E 范围已授权分三批**（H-A/H-B/H-C 完成；外部 ACK 延期）
+> 版本：v3.3 ｜ 日期：2026-08-09 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -249,7 +249,7 @@ H-B-02 · H-B-03（变换部分）                      可并行，用既有 fi
 | **H-D-02** | **3D 画布接线**：`SceneRenderPolicy` + `CpuRasterBackend` 输出接 `threeDCanvas`；`CameraController` 接鼠标/滚轮事件与七向预设、正交/透视切换控件 | H-D-01 | 3D 可 orbit/pan/光标中心 zoom；**UI-M7 相机操作期跨 DLL 调用恒为 0**（实测计数，不得推断）| **PROPOSED** |
 | **H-D-03** | **三车道拖拽接线**：`SceneInteractionController` + `TransformCommitPolicy` + `MoveOptimizationPolicy` 接画布拾取与拖拽 | H-D-02 | **UI-M1 拖拽期跨 DLL 调用恒为 0**；松手一次原子 Commit 推进一次 revision；Stale 回滚可演示（UI-M4）| **PROPOSED** |
 | **H-D-04** | **视图刷新事件接线**：导入 / add / remove / transform / applyGridLayout / `sceneContext` 变更后自动 Refresh；按 `DOC_SCHEMA_14` §6 失效规则，**`worldMatrix` 变化不得使网格缓冲失效** | H-D-01 | 22 实例排版后视图一次刷新到位；`MeshUploadCount` 在纯变换后**增量为 0**（实测）| **PROPOSED** |
-| **H-D-05** | **打开切片数据目录**：结果页新增「打开包目录」，`QDesktopServices::openUrl(QUrl::fromLocalFile(...))`；路径**只能取作业返回的 `packageDir`**，不得自行拼接或猜测；目录缺失显式 fail-closed | H-B-07（已完成）| 点击后系统文件管理器定位到包目录；作业失败或路径不存在时按钮禁用并给出原因 | **PROPOSED** |
+| **H-D-05** | **打开切片数据目录**：结果页新增「打开包目录」，`QDesktopServices::openUrl(QUrl::fromLocalFile(...))`；路径**只能取作业返回的 `packageDir`**，不得自行拼接或猜测；目录缺失显式 fail-closed | H-B-07（已完成）| 点击后系统文件管理器定位到包目录；作业失败或路径不存在时按钮禁用并给出原因 | **COMPLETE（2026-08-09）** |
 | **H-D-06** | **端到端人工可操作性验收**：按 §4 口径逐步走通七步流程并归档截图；把「显示」维度回填 `REPORT_HOSTFLOW_H_C_03` | H-D-01..05 | 七步全部人工可完成；A/B 对照新增「显示」维度差异条目 | **PROPOSED** |
 
 > 决策记录：`DOC_DECISION_HOSTFLOW_H_D_R1_视图接线归属与14E_04d延期作废.md`
@@ -257,6 +257,10 @@ H-B-02 · H-B-03（变换部分）                      可并行，用既有 fi
 > H-D-01 实际门禁：Debug/Release 真实纹理甲片俯视画布与 14E-04d 回归均 PASS；
 > 本地 pan/zoom 的 DLL 调用计数为 0；H-A/H-B 联合门禁各 22/22 PASS。
 > 证据见 `REPORT_HOSTFLOW_H_D_01_俯视画布接线当前状态.md`。
+
+> H-D-05 实际门禁：Debug/Release 精确作业 `packageDir`、缺失路径 fail-closed、H-B-07
+> 结果回归与 H-A/H-B 联合门禁均 PASS。证据见
+> `REPORT_HOSTFLOW_H_D_05_生产包目录入口当前状态.md`。
 
 > 🔴 **H-D-01 / H-D-05 开工前必看：`HostMainWindow.cpp` 当前 484 行，门禁上限 500 行，只剩 16 行余量（A）。**
 > 接线代码**必然放不下**。按既有拆分惯例（`HostMainWindowScene/Job/Result/Profile/Settings/State.cpp`），
@@ -644,6 +648,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-09 | v3.3 | 完成 H-D-05：结果页只使用作业返回并经严格校验的 `packageDir` 打开生产包目录；空路径、目录缺失、包校验失败和身份不一致均 fail-closed。Debug/Release H-D-05、H-B-07 与 H-A/H-B 联合门禁通过。 |
 | 2026-08-09 | v3.2 | 完成 H-D-01：参考宿主俯视占位控件替换为真实 ViewData/QImage 画布，导入后按权威 scene identity 刷新；本地缩放/平移保持零 DLL 调用，失败清空旧帧并显式报错。Debug/Release H-D-01 与 14E-04d 回归、H-A/H-B 22 项联合门禁、宿主边界和源码尺寸守卫全部通过。同批 R-A-01 确认 17/36 模型超过 13.8k 阈值，H-D-02 前须先裁决 LOD 修复。 |
 | 2026-08-08 | v3.1 | **用户裁决 HQ-09 = 乙（等价水位，分 E1/E2/E3 三批）、HQ-10 = 甲（场景保存归 PrintApp）**；新增 `DOC_DECISION_HOSTFLOW_H_E_R1`。H-E 六卡状态由 PROPOSED 转 AUTHORIZED 并按批次重排（E1: H-E-01/03 → 批次门 → E2: H-E-04/05 → 批次门 → E3: H-E-02/06）；H-E-04 前置改为 H-E-03（复用其 Profile 编辑框架）。新增 §5.3.1 并行性判定：R-A-01 零冲突可同批，H-D-01 与 H-D-05 实现文件不重叠但共享 `HostMainWindow.h`，建议顺序执行。新增行数门禁警示：`HostMainWindow.cpp` 已 484/500 行，H-D-01 须新建 `HostMainWindowView.cpp`，不得进白名单。 |
 | 2026-08-08 | v3.0 | **第二层复核：H-D 完成也不等于封装前切片软件**。依据 `hostflow_hc02_migration_plan.json` 的 8 项 `adapt_to_host_profile`，其 `replacement`（host support Profile editor、host material process Profile editor、HostSliceSettingsPanel advanced Profile section 等）**当前均不存在**；`HostSliceSettings.h` 中 support/texture 零命中。另发现 STL 已由 `model.cpp:626` 支持但宿主未提供入口，批量导入缺失。新增 **H-E 组 6 卡**（状态 PROPOSED，超出 HQ-03 核心流程裁决）与 **HQ-09（目标水位）/ HQ-10（场景保存归属）**；补 `DOC_DECISION_HOSTFLOW_H_D_R1` 决策记录；同步 `REPORT_HOSTFLOW_HX`、`DOC_INDEX`、`CODEX_PROMPT_HOSTFLOW`。 |

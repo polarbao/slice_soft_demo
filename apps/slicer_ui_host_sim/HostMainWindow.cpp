@@ -287,6 +287,11 @@ void HostMainWindow::BuildInterface()
         this,
         &HostMainWindow::OnResultReportRequested);
     connect(
+        m_packageReviewPanel,
+        &HostPackageReviewPanel::SigOpenPackageDirectoryRequested,
+        this,
+        &HostMainWindow::OnOpenPackageDirectoryRequested);
+    connect(
         m_transformLayoutPanel,
         &HostTransformLayoutPanel::SigTransformRequested,
         this,

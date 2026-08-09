@@ -7,6 +7,7 @@
 class QComboBox;
 class QLabel;
 class QPlainTextEdit;
+class QPushButton;
 class QSlider;
 class QSpinBox;
 class HostChannelChartWidget;
@@ -67,11 +68,15 @@ signals:
     /** @brief Requests one manifest-registered named report. */
     void SigReportRequested(QString reportName);
 
+    /** @brief Requests opening the exact verified production package directory. */
+    void SigOpenPackageDirectoryRequested(QString packageDirectory);
+
 private slots:
     void OnLayerSliderChanged(int layerIndex);
     void OnLayerSpinChanged(int layerIndex);
     void OnPreviewModeChanged(int index);
     void OnReportChanged(int index);
+    void OnOpenPackageDirectory();
 
 private:
     void EmitPreviewRequest();
@@ -85,6 +90,7 @@ private:
     QSpinBox* m_layerSpin{nullptr};
     QComboBox* m_previewModeCombo{nullptr};
     QComboBox* m_reportCombo{nullptr};
+    QPushButton* m_openPackageDirectoryButton{nullptr};
     HostChannelChartWidget* m_channelChart{nullptr};
     hostpackagereview m_review;
 };
