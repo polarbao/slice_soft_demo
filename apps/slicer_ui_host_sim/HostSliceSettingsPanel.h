@@ -4,13 +4,13 @@
 
 #include <QWidget>
 
-class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
+class HostMaterialSettingsPanel;
 class HostSupportSettingsPanel;
 
 /** @brief Host-owned slice settings editor and effective Profile preview. */
@@ -93,10 +93,10 @@ private:
     QDoubleSpinBox* m_layerThicknessSpin{nullptr};
     QLineEdit* m_outputEdit{nullptr};
     QPushButton* m_outputBrowseButton{nullptr};
-    QComboBox* m_materialCombo{nullptr};
     QDoubleSpinBox* m_buildWidthSpin{nullptr};
     QDoubleSpinBox* m_buildHeightSpin{nullptr};
     QDoubleSpinBox* m_buildZSpin{nullptr};
+    HostMaterialSettingsPanel* m_materialPanel{nullptr};
     HostSupportSettingsPanel* m_supportPanel{nullptr};
     QLabel* m_validationLabel{nullptr};
     QPlainTextEdit* m_profilePreview{nullptr};

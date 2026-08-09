@@ -1,8 +1,8 @@
 #include "HostSliceSettingsPanel.h"
 
+#include "HostMaterialSettingsPanel.h"
 #include "HostSupportSettingsPanel.h"
 
-#include <QComboBox>
 #include <QCoreApplication>
 #include <QDir>
 #include <QDoubleSpinBox>
@@ -101,22 +101,19 @@ void HostSliceSettingsPanel::BuildInterface()
     outputLayout->addWidget(m_outputEdit, 1);
     outputLayout->addWidget(m_outputBrowseButton);
 
-    m_materialCombo = new QComboBox(processGroup);
-    m_materialCombo->setObjectName(
-        QStringLiteral("hostSliceMaterialCombo"));
-    m_materialCombo->addItem(
-        QStringLiteral("RGB 实体"), QStringLiteral("rgb_solid"));
-    m_materialCombo->addItem(
-        QStringLiteral("白墨实体"), QStringLiteral("white_solid"));
-    m_materialCombo->addItem(
-        QStringLiteral("光油实体"), QStringLiteral("varnish_solid"));
-
     processForm->addRow(QStringLiteral("当前 Profile"), m_profileLabel);
     processForm->addRow(QStringLiteral("输出分辨率"), dpiRow);
     processForm->addRow(QStringLiteral("层厚"), m_layerThicknessSpin);
     processForm->addRow(QStringLiteral("输出目录"), outputRow);
-    processForm->addRow(QStringLiteral("模型材料"), m_materialCombo);
     layout->addWidget(processGroup);
+
+    auto* materialGroup = new QGroupBox(
+        QStringLiteral("宿主 Profile 材料工艺段"), this);
+    auto* materialLayout = new QVBoxLayout(materialGroup);
+    materialLayout->setContentsMargins(8, 8, 8, 8);
+    m_materialPanel = new HostMaterialSettingsPanel(materialGroup);
+    materialLayout->addWidget(m_materialPanel);
+    layout->addWidget(materialGroup);
 
     auto* volumeGroup = new QGroupBox(
         QStringLiteral("宿主设备构建体积"), this);
@@ -187,11 +184,6 @@ void HostSliceSettingsPanel::BuildInterface()
         &QLineEdit::textChanged,
         this,
         &HostSliceSettingsPanel::OnSettingsEdited);
-    connect(
-        m_materialCombo,
-        qOverload<int>(&QComboBox::currentIndexChanged),
-        this,
-        &HostSliceSettingsPanel::OnSettingsEdited);
     for (QDoubleSpinBox* spin : {
              m_buildWidthSpin, m_buildHeightSpin, m_buildZSpin})
     {
@@ -201,6 +193,11 @@ void HostSliceSettingsPanel::BuildInterface()
             this,
             &HostSliceSettingsPanel::OnSettingsEdited);
     }
+    connect(
+        m_materialPanel,
+        &HostMaterialSettingsPanel::SigSettingsChanged,
+        this,
+        &HostSliceSettingsPanel::OnSettingsEdited);
     connect(
         m_supportPanel,
         &HostSupportSettingsPanel::SigSettingsChanged,
@@ -243,7 +240,6 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     const QSignalBlocker dpiYBlocker(m_dpiYSpin);
     const QSignalBlocker layerBlocker(m_layerThicknessSpin);
     const QSignalBlocker outputBlocker(m_outputEdit);
-    const QSignalBlocker materialBlocker(m_materialCombo);
     const QSignalBlocker widthBlocker(m_buildWidthSpin);
     const QSignalBlocker heightBlocker(m_buildHeightSpin);
     const QSignalBlocker zBlocker(m_buildZSpin);
@@ -251,13 +247,8 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_dpiYSpin->setValue(settings.dpiy);
     m_layerThicknessSpin->setValue(settings.layerthicknessmm);
     m_outputEdit->setText(settings.outputdirectory);
-    const int materialIndex = m_materialCombo->findData(
-        HostEffectiveProfileBuilder::MaterialStrategyId(
-            settings.materialstrategy));
-    if (materialIndex >= 0)
-    {
-        m_materialCombo->setCurrentIndex(materialIndex);
-    }
+    m_materialPanel->SetSettings(
+        settings.materialstrategy, settings.materialprocess);
     m_buildWidthSpin->setValue(settings.buildvolume.widthmm);
     m_buildHeightSpin->setValue(settings.buildvolume.heightmm);
     m_buildZSpin->setValue(settings.buildvolume.zlimitmm);
@@ -267,32 +258,22 @@ void HostSliceSettingsPanel::SetPersistentSettings(
 
 hostslicesettings HostSliceSettingsPanel::Settings() const
 {
-    HostMaterialStrategy material = HostMaterialStrategy::RgbSolid;
-    const QString materialId = m_materialCombo->currentData().toString();
-    if (materialId == QStringLiteral("white_solid"))
-    {
-        material = HostMaterialStrategy::WhiteSolid;
-    }
-    else if (materialId == QStringLiteral("varnish_solid"))
-    {
-        material = HostMaterialStrategy::VarnishSolid;
-    }
-    hostslicesettings settings{
-        m_profileId,
-        m_modelPath,
-        QFileInfo(m_modelPath).suffix().toLower(),
-        m_outputEdit->text().trimmed(),
-        m_dpiXSpin->value(),
-        m_dpiYSpin->value(),
-        m_layerThicknessSpin->value(),
-        material,
-        hostbuildvolume{
-            m_buildWidthSpin->value(),
-            m_buildHeightSpin->value(),
-            m_buildZSpin->value(),
-            QStringLiteral("lower_left"),
-            QStringLiteral("positive"),
-            QStringLiteral("positive")}};
+    hostslicesettings settings;
+    settings.profileid = m_profileId;
+    settings.modelpath = m_modelPath;
+    settings.modelformat = QFileInfo(m_modelPath).suffix().toLower();
+    settings.outputdirectory = m_outputEdit->text().trimmed();
+    settings.dpix = m_dpiXSpin->value();
+    settings.dpiy = m_dpiYSpin->value();
+    settings.layerthicknessmm = m_layerThicknessSpin->value();
+    settings.materialstrategy = m_materialPanel->Strategy();
+    settings.materialprocess = m_materialPanel->Settings();
+    settings.buildvolume.widthmm = m_buildWidthSpin->value();
+    settings.buildvolume.heightmm = m_buildHeightSpin->value();
+    settings.buildvolume.zlimitmm = m_buildZSpin->value();
+    settings.buildvolume.origin = QStringLiteral("lower_left");
+    settings.buildvolume.xdirection = QStringLiteral("positive");
+    settings.buildvolume.ydirection = QStringLiteral("positive");
     settings.support = m_supportPanel->Settings();
     return settings;
 }

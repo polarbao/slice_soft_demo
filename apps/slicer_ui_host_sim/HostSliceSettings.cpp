@@ -41,12 +41,36 @@ enum hostmaterialstrategy ToHostMaterialStrategy(
     {
     case HostMaterialStrategy::RgbSolid:
         return HOST_MATERIAL_RGB_SOLID;
+    case HostMaterialStrategy::RgbWhite:
+        return HOST_MATERIAL_RGB_WHITE;
+    case HostMaterialStrategy::RgbVarnish:
+        return HOST_MATERIAL_RGB_VARNISH;
+    case HostMaterialStrategy::RgbWhiteVarnish:
+        return HOST_MATERIAL_RGB_WHITE_VARNISH;
     case HostMaterialStrategy::WhiteSolid:
         return HOST_MATERIAL_WHITE_SOLID;
     case HostMaterialStrategy::VarnishSolid:
         return HOST_MATERIAL_VARNISH_SOLID;
     }
     return static_cast<enum hostmaterialstrategy>(-1);
+}
+
+enum hostmaterialrole ToHostMaterialRole(const HostMaterialRole role)
+{
+    switch (role)
+    {
+    case HostMaterialRole::Rgb:
+        return HOST_MATERIAL_ROLE_RGB;
+    case HostMaterialRole::White:
+        return HOST_MATERIAL_ROLE_WHITE;
+    case HostMaterialRole::Varnish:
+        return HOST_MATERIAL_ROLE_VARNISH;
+    case HostMaterialRole::Ignore:
+        return HOST_MATERIAL_ROLE_IGNORE;
+    case HostMaterialRole::SupportCandidate:
+        return HOST_MATERIAL_ROLE_SUPPORT_CANDIDATE;
+    }
+    return static_cast<enum hostmaterialrole>(-1);
 }
 
 enum hostsupportmode ToHostSupportMode(const HostSupportMode mode)
@@ -152,6 +176,24 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
+    const hostmaterialprocesssettings& material = settings.materialprocess;
+    if (MaterialRoleId(material.defaultrole) == QStringLiteral("unknown")
+        || material.whiteexpandpx < 0
+        || material.whiteexpandpx > 100000
+        || material.whiteshrinkpx < 0
+        || material.whiteshrinkpx > 100000
+        || material.varnishtoplayers <= 0
+        || material.varnishtoplayers > 100000
+        || material.maxunexpectedoverlappixels < 0
+        || material.maxunexpectedoverlappixels > 1000000)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "材料工艺参数越界：白墨扩缩 0..100000 px，光油层 1..100000，重叠像素 0..1000000。");
+        }
+        return false;
+    }
     const hostsupportsettings& support = settings.support;
     const QString supportMode = SupportModeId(support.mode);
     if (supportMode == QStringLiteral("unknown")
@@ -227,6 +269,15 @@ bool HostEffectiveProfileBuilder::Build(
         settings.dpiy,
         settings.layerthicknessmm,
         ToHostMaterialStrategy(settings.materialstrategy),
+        settings.materialprocess.rolemappingenabled ? 1 : 0,
+        ToHostMaterialRole(settings.materialprocess.defaultrole),
+        settings.materialprocess.mapwhitenames ? 1 : 0,
+        settings.materialprocess.mapvarnishnames ? 1 : 0,
+        settings.materialprocess.allowinputsupportmaterial ? 1 : 0,
+        settings.materialprocess.whiteexpandpx,
+        settings.materialprocess.whiteshrinkpx,
+        settings.materialprocess.varnishtoplayers,
+        settings.materialprocess.maxunexpectedoverlappixels,
         settings.support.enabled ? 1 : 0,
         ToHostSupportMode(settings.support.mode),
         settings.support.offsetmm,
@@ -283,10 +334,35 @@ QString HostEffectiveProfileBuilder::MaterialStrategyId(
     {
     case HostMaterialStrategy::RgbSolid:
         return QStringLiteral("rgb_solid");
+    case HostMaterialStrategy::RgbWhite:
+        return QStringLiteral("rgb_white");
+    case HostMaterialStrategy::RgbVarnish:
+        return QStringLiteral("rgb_varnish");
+    case HostMaterialStrategy::RgbWhiteVarnish:
+        return QStringLiteral("rgb_white_varnish");
     case HostMaterialStrategy::WhiteSolid:
         return QStringLiteral("white_solid");
     case HostMaterialStrategy::VarnishSolid:
         return QStringLiteral("varnish_solid");
+    }
+    return QStringLiteral("unknown");
+}
+
+QString HostEffectiveProfileBuilder::MaterialRoleId(
+    const HostMaterialRole role)
+{
+    switch (role)
+    {
+    case HostMaterialRole::Rgb:
+        return QStringLiteral("rgb");
+    case HostMaterialRole::White:
+        return QStringLiteral("white");
+    case HostMaterialRole::Varnish:
+        return QStringLiteral("varnish");
+    case HostMaterialRole::Ignore:
+        return QStringLiteral("ignore");
+    case HostMaterialRole::SupportCandidate:
+        return QStringLiteral("support_candidate");
     }
     return QStringLiteral("unknown");
 }

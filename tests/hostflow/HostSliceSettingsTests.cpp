@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLineEdit>
@@ -39,16 +40,12 @@ hostslicesettings MakeSettings(
     const QString& modelPath,
     const QString& outputDirectory)
 {
-    return hostslicesettings{
-        QStringLiteral("host-reference-default"),
-        modelPath,
-        QStringLiteral("obj"),
-        outputDirectory,
-        635,
-        600,
-        0.038,
-        HostMaterialStrategy::RgbSolid,
-        hostbuildvolume{}};
+    hostslicesettings settings;
+    settings.profileid = QStringLiteral("host-reference-default");
+    settings.modelpath = modelPath;
+    settings.modelformat = QStringLiteral("obj");
+    settings.outputdirectory = outputDirectory;
+    return settings;
 }
 
 bool VerifyEffectiveProfiles(
@@ -62,6 +59,66 @@ bool VerifyEffectiveProfiles(
     if (!Check(
             HostEffectiveProfileBuilder::Build(settings, &first, &error),
             QStringLiteral("默认有效 Profile 构造失败：%1").arg(error),
+            errors))
+    {
+        return false;
+    }
+
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.materialstrategy = HostMaterialStrategy::RgbWhiteVarnish;
+    settings.materialprocess.rolemappingenabled = true;
+    settings.materialprocess.defaultrole = HostMaterialRole::Ignore;
+    settings.materialprocess.allowinputsupportmaterial = true;
+    settings.materialprocess.whiteexpandpx = 2;
+    settings.materialprocess.whiteshrinkpx = 1;
+    settings.materialprocess.varnishtoplayers = 3;
+    settings.materialprocess.maxunexpectedoverlappixels = 4;
+    hosteffectiveprofile combined;
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(settings, &combined, &error)
+                && combined.profilehash != first.profilehash,
+            QStringLiteral("组合材料有效 Profile 构造失败：%1").arg(error),
+            errors))
+    {
+        return false;
+    }
+    const QJsonObject combinedPolicy = combined.profile.value(
+        QStringLiteral("materialPolicy")).toObject();
+    const QJsonObject combinedProcess = combined.profile.value(
+        QStringLiteral("materialProcessProfile")).toObject();
+    const QJsonObject roleMapping = combined.profile.value(
+        QStringLiteral("materialRoleMapping")).toObject();
+    const QJsonObject modelFill = combined.profile.value(
+        QStringLiteral("modelFill")).toObject();
+    if (!Check(
+            combinedPolicy.value(QStringLiteral("rgb")).toObject().value(
+                QStringLiteral("enabled")).toBool()
+                && combinedPolicy.value(
+                    QStringLiteral("white")).toObject().value(
+                        QStringLiteral("enabled")).toBool()
+                && combinedPolicy.value(
+                    QStringLiteral("varnish")).toObject().value(
+                        QStringLiteral("enabled")).toBool()
+                && combinedProcess.value(
+                    QStringLiteral("white")).toObject().value(
+                        QStringLiteral("expandPx")).toInt() == 2
+                && combinedProcess.value(
+                    QStringLiteral("varnish")).toObject().value(
+                        QStringLiteral("topLayers")).toInt() == 3
+                && combinedProcess.value(
+                    QStringLiteral("validation")).toObject().value(
+                        QStringLiteral("maxUnexpectedOverlapPixels"))
+                        .toInt() == 4
+                && roleMapping.value(QStringLiteral("enabled")).toBool()
+                && roleMapping.value(
+                    QStringLiteral("defaultRole")).toString()
+                    == QStringLiteral("ignore")
+                && roleMapping.value(QStringLiteral("rules")).toArray()
+                    .size() == 2
+                && modelFill.value(QStringLiteral("enabled")).toBool()
+                && modelFill.value(QStringLiteral("material")).toString()
+                    == QStringLiteral("white"),
+            QStringLiteral("材料策略、角色映射或模型填充未进入有效 Profile。"),
             errors))
     {
         return false;
@@ -104,6 +161,7 @@ bool VerifyEffectiveProfiles(
         return false;
     }
 
+    settings = MakeSettings(modelPath, outputDirectory);
     hosteffectiveprofile repeated;
     if (!Check(
             HostEffectiveProfileBuilder::Build(
@@ -235,9 +293,19 @@ bool VerifyEffectiveProfiles(
     settings = MakeSettings(modelPath, outputDirectory);
     settings.support.baseprojection.layercount = 1001;
     error.clear();
-    return Check(
+    if (!Check(
         !HostEffectiveProfileBuilder::Validate(settings, &error),
         QStringLiteral("越界铺底层数必须 fail-closed。"),
+        errors))
+    {
+        return false;
+    }
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.materialprocess.varnishtoplayers = 0;
+    error.clear();
+    return Check(
+        !HostEffectiveProfileBuilder::Validate(settings, &error),
+        QStringLiteral("越界光油顶层数必须 fail-closed。"),
         errors);
 }
 
@@ -261,10 +329,15 @@ bool VerifyPanelIsLocal(
         QStringLiteral("hostSupportModeCombo"));
     auto* supportOffset = panel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostSupportOffsetSpin"));
+    auto* roleMapping = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostMaterialRoleMappingCheck"));
+    auto* whiteExpand = panel.findChild<QSpinBox*>(
+        QStringLiteral("hostMaterialWhiteExpandSpin"));
     if (!Check(
             outputEdit != nullptr && dpiXSpin != nullptr
                 && materialCombo != nullptr && supportEnabled != nullptr
-                && supportMode != nullptr && supportOffset != nullptr,
+                && supportMode != nullptr && supportOffset != nullptr
+                && roleMapping != nullptr && whiteExpand != nullptr,
             QStringLiteral("切片设置面板控件不完整。"),
             errors))
     {
@@ -275,6 +348,8 @@ bool VerifyPanelIsLocal(
     client.ResetCallCount();
     dpiXSpin->setValue(700);
     materialCombo->setCurrentIndex(1);
+    roleMapping->setChecked(true);
+    whiteExpand->setValue(2);
     supportMode->setCurrentIndex(2);
     supportOffset->setValue(0.2);
     QCoreApplication::processEvents();
@@ -412,7 +487,8 @@ int main(int argc, char* argv[])
         return 4;
     }
     QTextStream(stdout)
-        << "HOSTFLOW_HE03_PASS profile=host-reference-default"
-        << " dpi=635x600 layer=0.038 support=editable" << Qt::endl;
+        << "HOSTFLOW_HE04_PASS profile=host-reference-default"
+        << " dpi=635x600 layer=0.038 support=editable"
+        << " material=editable" << Qt::endl;
     return 0;
 }

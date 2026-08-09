@@ -7,8 +7,35 @@
 enum class HostMaterialStrategy
 {
     RgbSolid,
+    RgbWhite,
+    RgbVarnish,
+    RgbWhiteVarnish,
     WhiteSolid,
     VarnishSolid
+};
+
+/** @brief Material role used when resolving OBJ/3MF input materials. */
+enum class HostMaterialRole
+{
+    Rgb,
+    White,
+    Varnish,
+    Ignore,
+    SupportCandidate
+};
+
+/** @brief Host-owned material policy and role-mapping parameters. */
+struct hostmaterialprocesssettings
+{
+    bool rolemappingenabled{false};
+    HostMaterialRole defaultrole{HostMaterialRole::Rgb};
+    bool mapwhitenames{true};
+    bool mapvarnishnames{true};
+    bool allowinputsupportmaterial{false};
+    int whiteexpandpx{0};
+    int whiteshrinkpx{0};
+    int varnishtoplayers{1};
+    int maxunexpectedoverlappixels{0};
 };
 
 /** @brief Support generation mode exposed by the reference host Profile. */
@@ -68,6 +95,7 @@ struct hostslicesettings
     int dpiy{600};
     double layerthicknessmm{0.038};
     HostMaterialStrategy materialstrategy{HostMaterialStrategy::RgbSolid};
+    hostmaterialprocesssettings materialprocess;
     hostbuildvolume buildvolume;
     hostsupportsettings support;
 };
@@ -111,6 +139,13 @@ public:
      * @return Stable lowercase identifier used by UI tests and persistence.
      */
     static QString MaterialStrategyId(HostMaterialStrategy strategy);
+
+    /**
+     * @brief Converts a material role to a stable Profile value.
+     * @param role Material role selected by the operator.
+     * @return Stable identifier written to `materialRoleMapping`.
+     */
+    static QString MaterialRoleId(HostMaterialRole role);
 
     /**
      * @brief Converts a support mode to a stable production Profile value.

@@ -87,7 +87,16 @@ int main(int argc, char* argv[])
     expected.dpix = 720;
     expected.dpiy = 600;
     expected.layerthicknessmm = 0.05;
-    expected.materialstrategy = HostMaterialStrategy::WhiteSolid;
+    expected.materialstrategy = HostMaterialStrategy::RgbWhiteVarnish;
+    expected.materialprocess.rolemappingenabled = true;
+    expected.materialprocess.defaultrole = HostMaterialRole::Ignore;
+    expected.materialprocess.mapwhitenames = true;
+    expected.materialprocess.mapvarnishnames = false;
+    expected.materialprocess.allowinputsupportmaterial = true;
+    expected.materialprocess.whiteexpandpx = 2;
+    expected.materialprocess.whiteshrinkpx = 1;
+    expected.materialprocess.varnishtoplayers = 3;
+    expected.materialprocess.maxunexpectedoverlappixels = 4;
     expected.buildvolume.widthmm = 260.0;
     expected.buildvolume.heightmm = 120.0;
     expected.buildvolume.zlimitmm = 80.0;
@@ -141,8 +150,21 @@ int main(int argc, char* argv[])
                                   - expected.layerthicknessmm) < 1.0e-9
                       && actual.outputdirectory == expected.outputdirectory
                       && actual.materialstrategy
-                          == HostMaterialStrategy::WhiteSolid,
+                          == HostMaterialStrategy::RgbWhiteVarnish,
                   QStringLiteral("切片操作偏好未完整恢复。"), errors)
+        || !Check(
+            actual.materialprocess.rolemappingenabled
+                && actual.materialprocess.defaultrole
+                    == HostMaterialRole::Ignore
+                && actual.materialprocess.mapwhitenames
+                && !actual.materialprocess.mapvarnishnames
+                && actual.materialprocess.allowinputsupportmaterial
+                && actual.materialprocess.whiteexpandpx == 2
+                && actual.materialprocess.whiteshrinkpx == 1
+                && actual.materialprocess.varnishtoplayers == 3
+                && actual.materialprocess.maxunexpectedoverlappixels == 4,
+            QStringLiteral("宿主材料工艺 Profile 草稿未完整恢复。"),
+            errors)
         || !Check(actual.modelpath.isEmpty() && actual.modelformat.isEmpty(),
                   QStringLiteral("运行时模型身份不得进入持久化状态。"), errors)
         || !Check(
@@ -197,7 +219,7 @@ int main(int argc, char* argv[])
     }
 
     QTextStream(stdout)
-        << "HOSTFLOW_HE03_PERSISTENCE_PASS schema="
+        << "HOSTFLOW_HE04_PERSISTENCE_PASS schema="
         << HostWorkspaceState::SchemaVersion()
         << " runtimeHandles=persisted:false" << Qt::endl;
     return 0;

@@ -9,8 +9,21 @@ extern "C"
 enum hostmaterialstrategy
 {
     HOST_MATERIAL_RGB_SOLID = 0,
-    HOST_MATERIAL_WHITE_SOLID = 1,
-    HOST_MATERIAL_VARNISH_SOLID = 2
+    HOST_MATERIAL_RGB_WHITE = 1,
+    HOST_MATERIAL_RGB_VARNISH = 2,
+    HOST_MATERIAL_RGB_WHITE_VARNISH = 3,
+    HOST_MATERIAL_WHITE_SOLID = 4,
+    HOST_MATERIAL_VARNISH_SOLID = 5
+};
+
+/** @brief Host-owned default role for input material mapping. */
+enum hostmaterialrole
+{
+    HOST_MATERIAL_ROLE_RGB = 0,
+    HOST_MATERIAL_ROLE_WHITE = 1,
+    HOST_MATERIAL_ROLE_VARNISH = 2,
+    HOST_MATERIAL_ROLE_IGNORE = 3,
+    HOST_MATERIAL_ROLE_SUPPORT_CANDIDATE = 4
 };
 
 /** @brief Host-owned support mode written to the effective Profile. */
@@ -34,6 +47,15 @@ struct hosteffectiveprofilesettings
     int dpiy;
     double layerthicknessmm;
     enum hostmaterialstrategy materialstrategy;
+    int materialrolemappingenabled;
+    enum hostmaterialrole materialdefaultrole;
+    int mapwhitenames;
+    int mapvarnishnames;
+    int allowinputsupportmaterial;
+    int whiteexpandpx;
+    int whiteshrinkpx;
+    int varnishtoplayers;
+    int maxunexpectedoverlappixels;
     int supportenabled;
     enum hostsupportmode supportmode;
     double supportoffsetmm;

@@ -26,6 +26,12 @@ QString MaterialStrategyId(const HostMaterialStrategy strategy)
     {
     case HostMaterialStrategy::RgbSolid:
         return QStringLiteral("rgb_solid");
+    case HostMaterialStrategy::RgbWhite:
+        return QStringLiteral("rgb_white");
+    case HostMaterialStrategy::RgbVarnish:
+        return QStringLiteral("rgb_varnish");
+    case HostMaterialStrategy::RgbWhiteVarnish:
+        return QStringLiteral("rgb_white_varnish");
     case HostMaterialStrategy::WhiteSolid:
         return QStringLiteral("white_solid");
     case HostMaterialStrategy::VarnishSolid:
@@ -52,10 +58,50 @@ bool ParseMaterialStrategy(
         *strategy = HostMaterialStrategy::WhiteSolid;
         return true;
     }
+    if (identifier == QStringLiteral("rgb_white"))
+    {
+        *strategy = HostMaterialStrategy::RgbWhite;
+        return true;
+    }
+    if (identifier == QStringLiteral("rgb_varnish"))
+    {
+        *strategy = HostMaterialStrategy::RgbVarnish;
+        return true;
+    }
+    if (identifier == QStringLiteral("rgb_white_varnish"))
+    {
+        *strategy = HostMaterialStrategy::RgbWhiteVarnish;
+        return true;
+    }
     if (identifier == QStringLiteral("varnish_solid"))
     {
         *strategy = HostMaterialStrategy::VarnishSolid;
         return true;
+    }
+    return false;
+}
+
+bool ParseMaterialRole(
+    const QString& identifier,
+    HostMaterialRole* role)
+{
+    if (role == nullptr)
+    {
+        return false;
+    }
+    for (const HostMaterialRole candidate : {
+             HostMaterialRole::Rgb,
+             HostMaterialRole::White,
+             HostMaterialRole::Varnish,
+             HostMaterialRole::Ignore,
+             HostMaterialRole::SupportCandidate})
+    {
+        if (HostEffectiveProfileBuilder::MaterialRoleId(candidate)
+            == identifier)
+        {
+            *role = candidate;
+            return true;
+        }
     }
     return false;
 }
@@ -96,7 +142,7 @@ bool IsFiniteInRange(
 
 int HostWorkspaceState::SchemaVersion()
 {
-    return 2;
+    return 3;
 }
 
 QString HostWorkspaceState::OrganizationName()
@@ -162,6 +208,34 @@ void HostWorkspaceState::Save(
     settings.setValue(
         QStringLiteral("materialStrategy"),
         MaterialStrategyId(sliceSettings.materialstrategy));
+    settings.setValue(
+        QStringLiteral("materialProcess/roleMappingEnabled"),
+        sliceSettings.materialprocess.rolemappingenabled);
+    settings.setValue(
+        QStringLiteral("materialProcess/defaultRole"),
+        HostEffectiveProfileBuilder::MaterialRoleId(
+            sliceSettings.materialprocess.defaultrole));
+    settings.setValue(
+        QStringLiteral("materialProcess/mapWhiteNames"),
+        sliceSettings.materialprocess.mapwhitenames);
+    settings.setValue(
+        QStringLiteral("materialProcess/mapVarnishNames"),
+        sliceSettings.materialprocess.mapvarnishnames);
+    settings.setValue(
+        QStringLiteral("materialProcess/allowInputSupportMaterial"),
+        sliceSettings.materialprocess.allowinputsupportmaterial);
+    settings.setValue(
+        QStringLiteral("materialProcess/whiteExpandPx"),
+        sliceSettings.materialprocess.whiteexpandpx);
+    settings.setValue(
+        QStringLiteral("materialProcess/whiteShrinkPx"),
+        sliceSettings.materialprocess.whiteshrinkpx);
+    settings.setValue(
+        QStringLiteral("materialProcess/varnishTopLayers"),
+        sliceSettings.materialprocess.varnishtoplayers);
+    settings.setValue(
+        QStringLiteral("materialProcess/maxUnexpectedOverlapPixels"),
+        sliceSettings.materialprocess.maxunexpectedoverlappixels);
     settings.setValue(
         QStringLiteral("buildVolume/widthMm"),
         sliceSettings.buildvolume.widthmm);
@@ -247,6 +321,25 @@ bool HostWorkspaceState::Restore(
         QStringLiteral("outputDirectory")).toString();
     const QString materialId = settings.value(
         QStringLiteral("materialStrategy")).toString();
+    restored.materialprocess.rolemappingenabled = settings.value(
+        QStringLiteral("materialProcess/roleMappingEnabled")).toBool();
+    const QString materialRoleId = settings.value(
+        QStringLiteral("materialProcess/defaultRole")).toString();
+    restored.materialprocess.mapwhitenames = settings.value(
+        QStringLiteral("materialProcess/mapWhiteNames")).toBool();
+    restored.materialprocess.mapvarnishnames = settings.value(
+        QStringLiteral("materialProcess/mapVarnishNames")).toBool();
+    restored.materialprocess.allowinputsupportmaterial = settings.value(
+        QStringLiteral("materialProcess/allowInputSupportMaterial")).toBool();
+    restored.materialprocess.whiteexpandpx = settings.value(
+        QStringLiteral("materialProcess/whiteExpandPx"), -1).toInt();
+    restored.materialprocess.whiteshrinkpx = settings.value(
+        QStringLiteral("materialProcess/whiteShrinkPx"), -1).toInt();
+    restored.materialprocess.varnishtoplayers = settings.value(
+        QStringLiteral("materialProcess/varnishTopLayers"), -1).toInt();
+    restored.materialprocess.maxunexpectedoverlappixels = settings.value(
+        QStringLiteral("materialProcess/maxUnexpectedOverlapPixels"),
+        -1).toInt();
     restored.buildvolume.widthmm = settings.value(
         QStringLiteral("buildVolume/widthMm"), -1.0).toDouble();
     restored.buildvolume.heightmm = settings.value(
@@ -290,6 +383,7 @@ bool HostWorkspaceState::Restore(
     splitterValid = splitterValid && splitterTotal > 0;
 
     HostMaterialStrategy materialStrategy{};
+    HostMaterialRole materialRole{};
     HostSupportMode supportMode{};
     const bool preferencesValid = !restored.profileid.trimmed().isEmpty()
         && restored.dpix >= 72 && restored.dpix <= 2400
@@ -297,6 +391,15 @@ bool HostWorkspaceState::Restore(
         && IsFiniteInRange(restored.layerthicknessmm, 0.001, 10.0)
         && !restored.outputdirectory.trimmed().isEmpty()
         && ParseMaterialStrategy(materialId, &materialStrategy)
+        && ParseMaterialRole(materialRoleId, &materialRole)
+        && restored.materialprocess.whiteexpandpx >= 0
+        && restored.materialprocess.whiteexpandpx <= 100000
+        && restored.materialprocess.whiteshrinkpx >= 0
+        && restored.materialprocess.whiteshrinkpx <= 100000
+        && restored.materialprocess.varnishtoplayers > 0
+        && restored.materialprocess.varnishtoplayers <= 100000
+        && restored.materialprocess.maxunexpectedoverlappixels >= 0
+        && restored.materialprocess.maxunexpectedoverlappixels <= 1000000
         && IsFiniteInRange(restored.buildvolume.widthmm, 1.0, 10000.0)
         && IsFiniteInRange(restored.buildvolume.heightmm, 1.0, 10000.0)
         && IsFiniteInRange(restored.buildvolume.zlimitmm, 1.0, 10000.0)
@@ -332,6 +435,7 @@ bool HostWorkspaceState::Restore(
     }
 
     restored.materialstrategy = materialStrategy;
+    restored.materialprocess.defaultrole = materialRole;
     restored.support.mode = supportMode;
     workspaceSplitter->setSizes(splitterSizes);
     workspaceTabs->setCurrentIndex(workspaceTab);

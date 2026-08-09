@@ -1,0 +1,289 @@
+#include "HostMaterialProfile.h"
+
+#include "JsonText.h"
+
+#include <stdlib.h>
+
+static const char* RoleId(const enum hostmaterialrole role)
+{
+    switch (role)
+    {
+    case HOST_MATERIAL_ROLE_RGB: return "rgb";
+    case HOST_MATERIAL_ROLE_WHITE: return "white";
+    case HOST_MATERIAL_ROLE_VARNISH: return "varnish";
+    case HOST_MATERIAL_ROLE_IGNORE: return "ignore";
+    case HOST_MATERIAL_ROLE_SUPPORT_CANDIDATE:
+        return "support_candidate";
+    }
+    return NULL;
+}
+
+static char* BuildRulesCanonical(
+    const int mapWhite,
+    const int mapVarnish)
+{
+    if (mapWhite != 0 && mapVarnish != 0)
+    {
+        return HostFormat(
+            "{\n\"matchNameContains\": \"white\",\n"
+            "\"role\": \"white\"\n},\n"
+            "{\n\"matchNameContains\": \"varnish\",\n"
+            "\"role\": \"varnish\"\n}");
+    }
+    if (mapWhite != 0)
+    {
+        return HostFormat(
+            "{\n\"matchNameContains\": \"white\",\n"
+            "\"role\": \"white\"\n}");
+    }
+    if (mapVarnish != 0)
+    {
+        return HostFormat(
+            "{\n\"matchNameContains\": \"varnish\",\n"
+            "\"role\": \"varnish\"\n}");
+    }
+    return HostFormat("");
+}
+
+static char* BuildRulesCompact(
+    const int mapWhite,
+    const int mapVarnish)
+{
+    if (mapWhite != 0 && mapVarnish != 0)
+    {
+        return HostFormat(
+            "{\"matchNameContains\":\"white\",\"role\":\"white\"},"
+            "{\"matchNameContains\":\"varnish\","
+            "\"role\":\"varnish\"}");
+    }
+    if (mapWhite != 0)
+    {
+        return HostFormat(
+            "{\"matchNameContains\":\"white\",\"role\":\"white\"}");
+    }
+    if (mapVarnish != 0)
+    {
+        return HostFormat(
+            "{\"matchNameContains\":\"varnish\","
+            "\"role\":\"varnish\"}");
+    }
+    return HostFormat("");
+}
+
+int HostBuildMaterialProfileFragments(
+    const struct hosteffectiveprofilesettings* settings,
+    const char* escapedProfileId,
+    char** canonical,
+    char** compact)
+{
+    int rgbEnabled = 0;
+    int whiteEnabled = 0;
+    int varnishEnabled = 0;
+    const char* materialChannel = NULL;
+    const char* modelFillMaterial = "white";
+    const char* defaultRole;
+    const char* whiteMode;
+    const char* varnishMode;
+    int red = 255;
+    int green = 255;
+    int blue = 255;
+    int whiteValue = 255;
+    int varnishValue = 255;
+    char* rulesCanonical = NULL;
+    char* rulesCompact = NULL;
+    if (settings == NULL || escapedProfileId == NULL
+        || canonical == NULL || compact == NULL)
+    {
+        return 0;
+    }
+    *canonical = NULL;
+    *compact = NULL;
+    switch (settings->materialstrategy)
+    {
+    case HOST_MATERIAL_RGB_SOLID:
+        rgbEnabled = 1;
+        materialChannel = "RGB";
+        red = green = blue = 0;
+        break;
+    case HOST_MATERIAL_RGB_WHITE:
+        rgbEnabled = whiteEnabled = 1;
+        materialChannel = "RGB";
+        red = green = blue = 0;
+        break;
+    case HOST_MATERIAL_RGB_VARNISH:
+        rgbEnabled = varnishEnabled = 1;
+        modelFillMaterial = "varnish";
+        materialChannel = "RGB";
+        red = green = blue = 0;
+        break;
+    case HOST_MATERIAL_RGB_WHITE_VARNISH:
+        rgbEnabled = whiteEnabled = varnishEnabled = 1;
+        materialChannel = "RGB";
+        red = green = blue = 0;
+        break;
+    case HOST_MATERIAL_WHITE_SOLID:
+        whiteEnabled = 1;
+        materialChannel = "W";
+        whiteValue = 0;
+        break;
+    case HOST_MATERIAL_VARNISH_SOLID:
+        varnishEnabled = 1;
+        modelFillMaterial = "varnish";
+        materialChannel = "V";
+        varnishValue = 0;
+        break;
+    default:
+        return 0;
+    }
+    defaultRole = RoleId(settings->materialdefaultrole);
+    if (defaultRole == NULL)
+    {
+        return 0;
+    }
+    whiteMode = whiteEnabled != 0
+        ? (rgbEnabled != 0 ? "underbase" : "all_model")
+        : "disabled";
+    varnishMode = varnishEnabled != 0
+        ? (rgbEnabled != 0 ? "top_n_layers" : "all_model")
+        : "disabled";
+    rulesCanonical = BuildRulesCanonical(
+        settings->mapwhitenames, settings->mapvarnishnames);
+    rulesCompact = BuildRulesCompact(
+        settings->mapwhitenames, settings->mapvarnishnames);
+    if (rulesCanonical == NULL || rulesCompact == NULL)
+    {
+        goto cleanup;
+    }
+    *canonical = HostFormat(
+        "\"materialPolicy\": {\n"
+        "\"conflictPolicy\": \"model_material_over_support\",\n"
+        "\"enabled\": true,\n"
+        "\"rgb\": {\n\"enabled\": %s,\n"
+        "\"source\": \"modelMaterial\"\n},\n"
+        "\"varnish\": {\n\"enabled\": %s,\n"
+        "\"mode\": \"%s\",\n\"topLayers\": %d,\n"
+        "\"value\": 0\n},\n"
+        "\"white\": {\n\"enabled\": %s,\n"
+        "\"layers\": \"all_model\",\n\"mode\": \"%s\",\n"
+        "\"value\": 0\n}\n},\n"
+        "\"materialProcessProfile\": {\n\"enabled\": true,\n"
+        "\"name\": \"%s\",\n"
+        "\"rgb\": {\n\"enabled\": %s,\n"
+        "\"source\": \"modelMaterial\"\n},\n"
+        "\"support\": {\n\"expected\": %s,\n"
+        "\"mode\": \"existing_support_pipeline\"\n},\n"
+        "\"target\": \"host-reference\",\n"
+        "\"validation\": {\n"
+        "\"maxUnexpectedOverlapPixels\": %d,\n"
+        "\"requireRgbPixels\": %s,\n"
+        "\"requireSupportPixels\": %s,\n"
+        "\"requireVarnishPixels\": %s,\n"
+        "\"requireWhitePixels\": %s\n},\n"
+        "\"varnish\": {\n\"coverage\": \"model_surface\",\n"
+        "\"enabled\": %s,\n\"mode\": \"%s\",\n"
+        "\"topLayers\": %d,\n\"value\": 0\n},\n"
+        "\"white\": {\n\"coverage\": \"all_model\",\n"
+        "\"enabled\": %s,\n\"expandPx\": %d,\n"
+        "\"mode\": \"%s\",\n\"shrinkPx\": %d,\n"
+        "\"value\": 0\n}\n},\n"
+        "\"materialRoleMapping\": {\n"
+        "\"allowInputSupportMaterial\": %s,\n"
+        "\"defaultRole\": \"%s\",\n\"enabled\": %s,\n"
+        "\"mode\": \"rules_then_default\",\n"
+        "\"rules\": [\n%s\n]\n},\n"
+        "\"modelFill\": {\n\"emptyAllowedInProduction\": false,\n"
+        "\"enabled\": %s,\n\"legacyRgbFallback\": false,\n"
+        "\"material\": \"%s\",\n\"scope\": \"all_model\",\n"
+        "\"value\": 0\n},\n"
+        "\"modelMaterial\": {\n\"applyMode\": \"solid_volume\",\n"
+        "\"materialChannel\": \"%s\",\n"
+        "\"rgb\": [\n%d,\n%d,\n%d\n],\n"
+        "\"varnishValue\": %d,\n\"whiteValue\": %d\n},\n",
+        rgbEnabled != 0 ? "true" : "false",
+        varnishEnabled != 0 ? "true" : "false", varnishMode,
+        settings->varnishtoplayers,
+        whiteEnabled != 0 ? "true" : "false", whiteMode,
+        escapedProfileId, rgbEnabled != 0 ? "true" : "false",
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->maxunexpectedoverlappixels,
+        rgbEnabled != 0 ? "true" : "false",
+        settings->supportenabled != 0 ? "true" : "false",
+        varnishEnabled != 0 ? "true" : "false",
+        whiteEnabled != 0 ? "true" : "false",
+        varnishEnabled != 0 ? "true" : "false", varnishMode,
+        settings->varnishtoplayers,
+        whiteEnabled != 0 ? "true" : "false",
+        settings->whiteexpandpx, whiteMode, settings->whiteshrinkpx,
+        settings->allowinputsupportmaterial != 0 ? "true" : "false",
+        defaultRole,
+        settings->materialrolemappingenabled != 0 ? "true" : "false",
+        rulesCanonical,
+        (whiteEnabled != 0 || varnishEnabled != 0) ? "true" : "false",
+        modelFillMaterial, materialChannel,
+        red, green, blue, varnishValue, whiteValue);
+    *compact = HostFormat(
+        "\"materialPolicy\":{\"conflictPolicy\":"
+        "\"model_material_over_support\",\"enabled\":true,"
+        "\"rgb\":{\"enabled\":%s,\"source\":\"modelMaterial\"},"
+        "\"varnish\":{\"enabled\":%s,\"mode\":\"%s\","
+        "\"topLayers\":%d,\"value\":0},"
+        "\"white\":{\"enabled\":%s,\"layers\":\"all_model\","
+        "\"mode\":\"%s\",\"value\":0}},"
+        "\"materialProcessProfile\":{\"enabled\":true,"
+        "\"name\":\"%s\",\"rgb\":{\"enabled\":%s,"
+        "\"source\":\"modelMaterial\"},\"support\":{"
+        "\"expected\":%s,\"mode\":\"existing_support_pipeline\"},"
+        "\"target\":\"host-reference\",\"validation\":{"
+        "\"maxUnexpectedOverlapPixels\":%d,\"requireRgbPixels\":%s,"
+        "\"requireSupportPixels\":%s,\"requireVarnishPixels\":%s,"
+        "\"requireWhitePixels\":%s},\"varnish\":{"
+        "\"coverage\":\"model_surface\",\"enabled\":%s,"
+        "\"mode\":\"%s\",\"topLayers\":%d,\"value\":0},"
+        "\"white\":{\"coverage\":\"all_model\",\"enabled\":%s,"
+        "\"expandPx\":%d,\"mode\":\"%s\",\"shrinkPx\":%d,"
+        "\"value\":0}},\"materialRoleMapping\":{"
+        "\"allowInputSupportMaterial\":%s,\"defaultRole\":\"%s\","
+        "\"enabled\":%s,\"mode\":\"rules_then_default\","
+        "\"rules\":[%s]},\"modelFill\":{"
+        "\"emptyAllowedInProduction\":false,\"enabled\":%s,"
+        "\"legacyRgbFallback\":false,\"material\":\"%s\","
+        "\"scope\":\"all_model\",\"value\":0},"
+        "\"modelMaterial\":{\"applyMode\":\"solid_volume\","
+        "\"materialChannel\":\"%s\",\"rgb\":[%d,%d,%d],"
+        "\"varnishValue\":%d,\"whiteValue\":%d},",
+        rgbEnabled != 0 ? "true" : "false",
+        varnishEnabled != 0 ? "true" : "false", varnishMode,
+        settings->varnishtoplayers,
+        whiteEnabled != 0 ? "true" : "false", whiteMode,
+        escapedProfileId, rgbEnabled != 0 ? "true" : "false",
+        settings->supportenabled != 0 ? "true" : "false",
+        settings->maxunexpectedoverlappixels,
+        rgbEnabled != 0 ? "true" : "false",
+        settings->supportenabled != 0 ? "true" : "false",
+        varnishEnabled != 0 ? "true" : "false",
+        whiteEnabled != 0 ? "true" : "false",
+        varnishEnabled != 0 ? "true" : "false", varnishMode,
+        settings->varnishtoplayers,
+        whiteEnabled != 0 ? "true" : "false",
+        settings->whiteexpandpx, whiteMode, settings->whiteshrinkpx,
+        settings->allowinputsupportmaterial != 0 ? "true" : "false",
+        defaultRole,
+        settings->materialrolemappingenabled != 0 ? "true" : "false",
+        rulesCompact,
+        (whiteEnabled != 0 || varnishEnabled != 0) ? "true" : "false",
+        modelFillMaterial, materialChannel,
+        red, green, blue, varnishValue, whiteValue);
+
+cleanup:
+    free(rulesCanonical);
+    free(rulesCompact);
+    if (*canonical == NULL || *compact == NULL)
+    {
+        free(*canonical);
+        free(*compact);
+        *canonical = NULL;
+        *compact = NULL;
+        return 0;
+    }
+    return 1;
+}

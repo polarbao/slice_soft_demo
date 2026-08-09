@@ -3,6 +3,7 @@
 #include <bcrypt.h>
 
 #include "HostRequestBuilder.h"
+#include "HostMaterialProfile.h"
 #include "JsonText.h"
 
 #include <stdio.h>
@@ -223,19 +224,15 @@ char* HostBuildEffectiveProfile(
     char* profileHash,
     unsigned long profileHashCapacity)
 {
-    const char* materialChannel = NULL;
     const char* supportMode = NULL;
     const char* supportPlacementCanonical = "";
     const char* supportPlacementCompact = "";
-    int red = 255;
-    int green = 255;
-    int blue = 255;
-    int whiteValue = 255;
-    int varnishValue = 255;
     char* escapedModel = NULL;
     char* escapedFormat = NULL;
     char* escapedPackage = NULL;
     char* escapedProfile = NULL;
+    char* materialCanonical = NULL;
+    char* materialCompact = NULL;
     char* canonical = NULL;
     char* profile = NULL;
     char digest[65];
@@ -261,27 +258,16 @@ char* HostBuildEffectiveProfile(
         || settings->internalvoidminareapx > 1000000
         || settings->baseprojectionlayercount < 0
         || settings->baseprojectionlayercount > 1000
+        || settings->whiteexpandpx < 0
+        || settings->whiteexpandpx > 100000
+        || settings->whiteshrinkpx < 0
+        || settings->whiteshrinkpx > 100000
+        || settings->varnishtoplayers <= 0
+        || settings->varnishtoplayers > 100000
+        || settings->maxunexpectedoverlappixels < 0
+        || settings->maxunexpectedoverlappixels > 1000000
         || profileHash == NULL || profileHashCapacity < 72U)
     {
-        return NULL;
-    }
-    switch (settings->materialstrategy)
-    {
-    case HOST_MATERIAL_RGB_SOLID:
-        materialChannel = "RGB";
-        red = 0;
-        green = 0;
-        blue = 0;
-        break;
-    case HOST_MATERIAL_WHITE_SOLID:
-        materialChannel = "W";
-        whiteValue = 0;
-        break;
-    case HOST_MATERIAL_VARNISH_SOLID:
-        materialChannel = "V";
-        varnishValue = 0;
-        break;
-    default:
         return NULL;
     }
     switch (settings->supportmode)
@@ -327,6 +313,14 @@ char* HostBuildEffectiveProfile(
     {
         goto cleanup;
     }
+    if (!HostBuildMaterialProfileFragments(
+            settings,
+            escapedProfile,
+            &materialCanonical,
+            &materialCompact))
+    {
+        goto cleanup;
+    }
 
     canonical = HostFormat(
         "{\n"
@@ -341,26 +335,7 @@ char* HostBuildEffectiveProfile(
         "\"format\": \"%s\",\n"
         "\"modelPath\": \"%s\"\n"
         "},\n"
-        "\"materialProcessProfile\": {\n"
-        "\"enabled\": true,\n"
-        "\"name\": \"%s\",\n"
-        "\"support\": {\n"
-        "\"expected\": %s,\n"
-        "\"mode\": \"existing_support_pipeline\"\n"
-        "},\n"
-        "\"target\": \"host-reference\"\n"
-        "},\n"
-        "\"modelMaterial\": {\n"
-        "\"applyMode\": \"solid_volume\",\n"
-        "\"materialChannel\": \"%s\",\n"
-        "\"rgb\": [\n"
-        "%d,\n"
-        "%d,\n"
-        "%d\n"
-        "],\n"
-        "\"varnishValue\": %d,\n"
-        "\"whiteValue\": %d\n"
-        "},\n"
+        "%s"
         "\"output\": {\n"
         "\"bitDepth\": 8,\n"
         "\"channelOrder\": [\n"
@@ -409,14 +384,7 @@ char* HostBuildEffectiveProfile(
         "}",
         escapedFormat,
         escapedModel,
-        escapedProfile,
-        settings->supportenabled != 0 ? "true" : "false",
-        materialChannel,
-        red,
-        green,
-        blue,
-        varnishValue,
-        whiteValue,
+        materialCanonical,
         settings->dpix,
         settings->dpiy,
         settings->layerthicknessmm,
@@ -443,12 +411,7 @@ char* HostBuildEffectiveProfile(
         "{\"autoOrient\":{\"enabled\":true,\"maxHeightMm\":9},"
         "\"background\":{\"value\":255},"
         "\"input\":{\"format\":\"%s\",\"modelPath\":\"%s\"},"
-        "\"materialProcessProfile\":{\"enabled\":true,"
-        "\"name\":\"%s\",\"support\":{\"expected\":%s,"
-        "\"mode\":\"existing_support_pipeline\"},\"target\":\"host-reference\"},"
-        "\"modelMaterial\":{\"applyMode\":\"solid_volume\","
-        "\"materialChannel\":\"%s\",\"rgb\":[%d,%d,%d],"
-        "\"varnishValue\":%d,\"whiteValue\":%d},"
+        "%s"
         "\"output\":{\"bitDepth\":8,"
         "\"channelOrder\":[\"R\",\"G\",\"B\",\"W\",\"S\",\"V\"],"
         "\"dpiX\":%d,\"dpiY\":%d,\"layerThicknessMm\":%.15g,"
@@ -468,14 +431,7 @@ char* HostBuildEffectiveProfile(
         "%s\"value\":0}}",
         escapedFormat,
         escapedModel,
-        escapedProfile,
-        settings->supportenabled != 0 ? "true" : "false",
-        materialChannel,
-        red,
-        green,
-        blue,
-        varnishValue,
-        whiteValue,
+        materialCompact,
         settings->dpix,
         settings->dpiy,
         settings->layerthicknessmm,
@@ -495,6 +451,8 @@ cleanup:
     free(escapedFormat);
     free(escapedPackage);
     free(escapedProfile);
+    free(materialCanonical);
+    free(materialCompact);
     free(canonical);
     return profile;
 }

@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
-> 文档状态：**ACTIVE — H-D-01..05 完成 / H-E E1 完成待批次复核**（H-D-06 等待人工证据）
-> 版本：v4.0 ｜ 日期：2026-08-10 ｜ 激活日期：2026-08-07
+> 文档状态：**ACTIVE — H-D-01..05 完成 / H-E E2 执行中**（H-D-06 等待人工证据）
+> 版本：v4.1 ｜ 日期：2026-08-10 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -330,9 +330,9 @@ H-B-02 · H-B-03（变换部分）                      可并行，用既有 fi
 | 卡号 | 批次 | 任务 | 前置 | 验收 | 状态 |
 |---|:--:|---|---|---|---|
 | **H-E-01** | E1 | **STL 导入**：文件过滤增加 `.stl`，预检结果展示 | 无 | `src/slicer_core/model.cpp:626` 已支持 `.stl`（A 级）；**纯 UI 缺口，不需改 ABI**；ASCII/binary 两种编码均可导入并切片 | **COMPLETE（2026-08-10）** |
-| **H-E-03** | E1 | **支撑参数编辑**：宿主 Profile 支撑段可编辑；对照主干 `SupportEditor` | 无 | 与 `lower_support` 类 Profile 的实际字段对齐；越界值 fail-closed；**本卡确立「宿主 Profile 可编辑段」的结构形态，E2 在其上扩展** | **COMPLETE（2026-08-10）/ E1 待复核** |
-| **H-E-04** | E2 | **材料工艺 Profile 编辑**：材料策略 / 角色映射 / 单材料浮雕；对照 `MaterialPolicyEditor`、`MaterialRoleMappingEditor`、`MaterialProcessProfileEditor`、`SingleMaterialReliefResolver` | H-E-03（复用其编辑框架）| 编辑结果进入宿主 Profile 并反映到有效配置自哈希；**不得改用内部 JSON** | **AUTHORIZED / 待 E1 批次门** |
-| **H-E-05** | E2 | **生产纹理设置**：对照 `ProductionTextureSettingsPanel` + `Contract` + `Model` | H-E-04 | 纹理应用模式、UV 策略等进入有效 Profile；与 Stage 15 `unprintable_white_*` 字段协同 | **AUTHORIZED / 待 E1 批次门** |
+| **H-E-03** | E1 | **支撑参数编辑**：宿主 Profile 支撑段可编辑；对照主干 `SupportEditor` | 无 | 与 `lower_support` 类 Profile 的实际字段对齐；越界值 fail-closed；**本卡确立「宿主 Profile 可编辑段」的结构形态，E2 在其上扩展** | **COMPLETE（2026-08-10）/ E1 GATE PASS** |
+| **H-E-04** | E2 | **材料工艺 Profile 编辑**：材料策略 / 角色映射 / 单材料浮雕；对照 `MaterialPolicyEditor`、`MaterialRoleMappingEditor`、`MaterialProcessProfileEditor`、`SingleMaterialReliefResolver` | H-E-03（复用其编辑框架）| 编辑结果进入宿主 Profile 并反映到有效配置自哈希；**不得改用内部 JSON** | **COMPLETE（2026-08-10）** |
+| **H-E-05** | E2 | **生产纹理设置**：对照 `ProductionTextureSettingsPanel` + `Contract` + `Model` | H-E-04 | 纹理应用模式、UV 策略等进入有效 Profile；与 Stage 15 `unprintable_white_*` 字段协同 | **PREPARED / READY** |
 | **H-E-02** | E3 | **批量导入**：多选文件一次导入并逐个 `addInstance`；对照主干 `SceneBatchImportController` | H-E-01 | 单次原子 Commit 或明确的逐项失败语义；**部分失败不得留半个场景** | **AUTHORIZED / 待 E2 批次门** |
 | **H-E-06** | E3 | **纹理白区预检接入**：对照主干 `TextureWhitePreflightService`（Stage 15 15C 成果）| H-E-05 | 导入/切片前给出保守告警；结果携带 scene/revision/contentHash，切换场景后旧结果丢弃（Stage 15 坑 7）| **AUTHORIZED / 待 E2 批次门** |
 
@@ -659,6 +659,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v4.1 | E1 批次复核通过并完成 H-E-04：新增独立材料工艺编辑器，六种材料策略、角色映射与白墨/光油参数进入宿主有效 Profile、自哈希和工作区 schema 3；材料 JSON 拆入纯 C `HostMaterialProfile` 以维持源码尺寸门禁。Debug/Release H-E-04 与 H-B-05/06/08、支撑回归、Qt 边界和源码尺寸门禁各 9/9 PASS。H-E-05 准备 Gate 通过。 |
 | 2026-08-10 | v4.0 | 完成 H-E-03：新增独立可折叠宿主支撑参数编辑器，`support`、`internalVoid`、`baseProjection` 进入 `hostslicesettings → HostEffectiveProfileBuilder → C request builder → profileHash` 单一链路；关闭支撑同步 `mode=none` 与 `materialProcessProfile.support.expected=false`，固定 lower/value/fillRule/source/layerPlacement。工作区 schema 升至 2 并只持久化宿主草稿。Debug/Release H-E-03、H-B-05/06/08、边界和源码尺寸门禁各 7/7 PASS。E1 进入批次复核，E2 尚未开工。 |
 | 2026-08-10 | v3.9 | 完成 H-E-01：参考宿主文件入口、导入工作流、有效 Profile 校验与宿主 C request builder 统一接受 STL；ASCII 与测试内生成的 binary tetrahedron 均完成 `import → addInstance → slice → manifest`，伪装、截断和未知格式均 fail-closed 且不推进 revision。Debug/Release H-E-01 与 H-B-01/05/06、边界和源码尺寸联合门禁各 6/6 PASS；未修改 ABI、生产协议或主干调试 UI。 |
 | 2026-08-10 | v3.8 | 完成 H-D-04：导入、删除、精确变换和规则排版统一经过一对俯视/3D 刷新；空场景显式清空双视图。新增 22 实例真实纹理刷新门禁，规则排版和纯变换后 `MeshUploadCount`、`TextureUploadCount` 增量均为 0，surface preview 缓存不失效。Debug/Release H-D-01..04、14E 三车道/双视图、边界和源码尺寸联合门禁各 8/8 PASS。H-D-06 代码前置已完成，仍等待人工七步截图证据。 |
