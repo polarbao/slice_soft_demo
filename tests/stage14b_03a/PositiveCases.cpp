@@ -94,16 +94,56 @@ void CheckerThreeMfSemanticCase()
             "canonical three_d DTO must not inline the mesh per instance");
     Require(!instance.outlines.empty(),
             "three_d should return a local-space outline");
-    Require(mesh.positions.size() == 18U
-                && mesh.normals.size() == 18U
-                && mesh.texcoord0.size() == 12U
+    Require(mesh.positions.size() == 12U
+                && mesh.normals.size() == 12U
+                && mesh.texcoord0.size() == 8U
                 && mesh.indices.size() == 6U,
-            "three_d should return position/normal/UV/index buffers");
+            "three_d should share identical position/normal/UV vertices");
     Require(mesh.submeshes.size() == 1U,
             "checker should return one material submesh");
     Require(instance.appearance_identity
                 == threeD.Value()->appearances.front().appearance_identity,
             "checker instance appearance should close");
+}
+
+void UvSeamPreservationCase()
+{
+    slicer_core::SceneModel model = MakeTexturedQuad(
+        "uv-seam.obj",
+        "uv-seam-material",
+        "uv-seam.png");
+    model.triangle_textures.at(1U).uv.at(0U).u = 0.25;
+    auto textures = std::make_shared<TestTextureSource>();
+    textures->AddImage(
+        "uv-seam.png",
+        MakeTexture({30U, 60U, 90U, 255U}, {180U, 150U, 120U, 255U}));
+    const auto provider = MakeProvider(
+        {{420U, std::make_shared<const slicer_core::SceneModel>(
+                     std::move(model))}},
+        textures);
+    const TestCancelToken active;
+    const auto result = provider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::ThreeD),
+        MakeSnapshot({{"uv-seam-instance", 420U}}),
+        active);
+    Require(result.IsOk(), "UV seam three_d view should close");
+    const auto& mesh = result.Value()->meshes.front();
+    Require(mesh.positions.size() == 15U
+                && mesh.texcoord0.size() == 10U
+                && mesh.indices.size() == 6U,
+            "a UV seam must split the shared geometric vertex");
+
+    std::size_t seamVertexCount{0U};
+    for (std::size_t vertex{0U}; vertex < mesh.positions.size() / 3U; ++vertex)
+    {
+        if (mesh.positions.at(vertex * 3U) == 0.0F
+            && mesh.positions.at(vertex * 3U + 1U) == 0.0F)
+        {
+            ++seamVertexCount;
+        }
+    }
+    Require(seamVertexCount == 2U,
+            "the geometric seam point must retain both UV vertices");
 }
 
 void BudgetDegradationCase()
@@ -379,6 +419,7 @@ void RunPositiveCases()
     WhiteAndNearWhiteTextureCase();
     TextureBaseColorFactorCase();
     BudgetDegradationCase();
+    UvSeamPreservationCase();
     SharedLocalMeshCase();
     DualAppearanceAndIdentityCase();
 }

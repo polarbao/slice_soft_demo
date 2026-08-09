@@ -4,10 +4,12 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <exception>
 #include <limits>
+#include <map>
 #include <optional>
 #include <string_view>
 #include <utility>
@@ -118,6 +120,79 @@ std::vector<std::vector<std::size_t>> GroupTriangles(
     return groups;
 }
 
+struct VertexKey
+{
+    std::array<std::uint32_t, 8> values{};
+
+    [[nodiscard]] bool operator<(const VertexKey& other) const noexcept
+    {
+        return values < other.values;
+    }
+};
+
+std::uint32_t FloatBits(const float value)
+{
+    return value == 0.0F
+        ? 0U
+        : std::bit_cast<std::uint32_t>(value);
+}
+
+VertexKey MakeVertexKey(
+    const Vec3& point,
+    const Vec3& normal,
+    const TexCoord& uv)
+{
+    const std::array<float, 8> values{
+        static_cast<float>(point.x),
+        static_cast<float>(point.y),
+        static_cast<float>(point.z),
+        static_cast<float>(normal.x),
+        static_cast<float>(normal.y),
+        static_cast<float>(normal.z),
+        static_cast<float>(uv.u),
+        static_cast<float>(uv.v)};
+    VertexKey key;
+    std::transform(
+        values.begin(),
+        values.end(),
+        key.values.begin(),
+        FloatBits);
+    return key;
+}
+
+std::uint32_t ResolveVertex(
+    ViewMesh& mesh,
+    std::map<VertexKey, std::uint32_t>& vertexIndices,
+    const Vec3& point,
+    const Vec3& normal,
+    const TexCoord& uv)
+{
+    const VertexKey key = MakeVertexKey(point, normal, uv);
+    const auto existing = vertexIndices.find(key);
+    if (existing != vertexIndices.end())
+    {
+        return existing->second;
+    }
+    const std::uint32_t index = static_cast<std::uint32_t>(
+        mesh.positions.size() / 3U);
+    mesh.positions.insert(
+        mesh.positions.end(),
+        {static_cast<float>(point.x),
+         static_cast<float>(point.y),
+         static_cast<float>(point.z)});
+    mesh.normals.insert(
+        mesh.normals.end(),
+        {static_cast<float>(normal.x),
+         static_cast<float>(normal.y),
+         static_cast<float>(normal.z)});
+    mesh.texcoord0.insert(
+        mesh.texcoord0.end(),
+        {static_cast<float>(uv.u),
+         static_cast<float>(uv.v)});
+    vertexIndices.emplace(key, index);
+    return index;
+}
+
 }  // namespace
 
 ApiResult<ViewMesh> BuildViewMesh(
@@ -154,6 +229,7 @@ ApiResult<ViewMesh> BuildViewMesh(
         mesh.normals.reserve(estimatedTriangles * 9U);
         mesh.texcoord0.reserve(estimatedTriangles * 6U);
         mesh.indices.reserve(estimatedTriangles * 3U);
+        std::map<VertexKey, std::uint32_t> vertexIndices;
 
         for (std::size_t materialIndex{0U};
              materialIndex < groups.size();
@@ -218,25 +294,15 @@ ApiResult<ViewMesh> BuildViewMesh(
                 for (std::size_t vertex{0U}; vertex < 3U; ++vertex)
                 {
                     const Vec3& point = points.at(vertex);
-                    mesh.positions.insert(
-                        mesh.positions.end(),
-                        {static_cast<float>(point.x),
-                         static_cast<float>(point.y),
-                         static_cast<float>(point.z)});
-                    mesh.normals.insert(
-                        mesh.normals.end(),
-                        {static_cast<float>(normal->x),
-                         static_cast<float>(normal->y),
-                         static_cast<float>(normal->z)});
                     const TexCoord uv = binding != nullptr && binding->has_uv
                         ? binding->uv.at(vertex)
                         : TexCoord{};
-                    mesh.texcoord0.insert(
-                        mesh.texcoord0.end(),
-                        {static_cast<float>(uv.u),
-                         static_cast<float>(uv.v)});
-                    mesh.indices.push_back(static_cast<std::uint32_t>(
-                        mesh.indices.size()));
+                    mesh.indices.push_back(ResolveVertex(
+                        mesh,
+                        vertexIndices,
+                        point,
+                        *normal,
+                        uv));
                 }
             }
             submesh.index_count = static_cast<std::uint32_t>(
