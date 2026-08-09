@@ -9,6 +9,7 @@
 #include <QComboBox>
 #include <QDir>
 #include <QDirIterator>
+#include <QFile>
 #include <QFileInfo>
 #include <QImage>
 #include <QTextStream>
@@ -19,6 +20,89 @@
 
 namespace
 {
+class MeasuringRenderBackend final : public slicer::render::IRenderBackend
+{
+public:
+    [[nodiscard]] slicer::render::BackendCaps Caps() const override
+    {
+        return {"ra02_measurement", true, false, false, 16384U, 0U};
+    }
+
+    bool UploadMesh(const slicer::render::MeshDesc& mesh) override
+    {
+        m_vertexCount += mesh.vertexCount;
+        m_triangleCount += mesh.triangleCount;
+        m_meshBytes += static_cast<quint64>(mesh.vertexCount) * 32U
+            + static_cast<quint64>(mesh.triangleCount) * 12U;
+        return true;
+    }
+
+    bool UploadTexture(const slicer::render::TextureDesc& texture) override
+    {
+        m_textureBytes += static_cast<quint64>(texture.widthPx)
+            * static_cast<quint64>(texture.heightPx) * 4U;
+        return true;
+    }
+
+    bool UploadMaterial(const slicer::render::MaterialDesc&) override
+    {
+        return true;
+    }
+
+    void ReleaseUnused(const std::vector<std::string>&) override
+    {
+    }
+
+    [[nodiscard]] slicer::render::FrameResult RenderFrame(
+        const slicer::render::FrameDesc&) override
+    {
+        slicer::render::FrameResult result;
+        result.ok = true;
+        return result;
+    }
+
+    bool RenderToImage(
+        const slicer::render::FrameDesc&,
+        slicer::render::ImageOut&) override
+    {
+        return false;
+    }
+
+    [[nodiscard]] slicer::render::PickResult Pick(
+        const slicer::render::FrameDesc&,
+        const int,
+        const int) override
+    {
+        return {};
+    }
+
+    [[nodiscard]] quint64 VertexCount() const
+    {
+        return m_vertexCount;
+    }
+
+    [[nodiscard]] quint64 TriangleCount() const
+    {
+        return m_triangleCount;
+    }
+
+    [[nodiscard]] quint64 MeshBytes() const
+    {
+        return m_meshBytes;
+    }
+
+    [[nodiscard]] quint64 TextureBytes() const
+    {
+        return m_textureBytes;
+    }
+
+private:
+    quint64 m_vertexCount{0U};
+    quint64 m_triangleCount{0U};
+    quint64 m_meshBytes{0U};
+    quint64 m_textureBytes{0U};
+};
+
 void Require(const bool condition, const QString& message)
 {
     if (!condition)
@@ -71,7 +155,8 @@ int CountColorfulPixels(const QImage& image)
 
 void VerifyRealAssetMatrix(
     const QString& modulePath,
-    const QString& repositoryRoot)
+    const QString& repositoryRoot,
+    const QString& evidenceRoot)
 {
     const QString modelRoot = QDir(repositoryRoot).filePath(
         QStringLiteral("model/obj"));
@@ -92,6 +177,20 @@ void VerifyRealAssetMatrix(
     int renderedCount{0};
     int budgetRejectedCount{0};
     int assetRejectedCount{0};
+    QStringList renderedPaths;
+    QFile evidenceFile;
+    QTextStream evidence;
+    if (!evidenceRoot.isEmpty())
+    {
+        Require(QDir().mkpath(evidenceRoot),
+                QStringLiteral("R-A-02 evidence directory creation failed"));
+        evidenceFile.setFileName(QDir(evidenceRoot).filePath(
+            QStringLiteral("render_ra02_real_asset_matrix.csv")));
+        Require(evidenceFile.open(QIODevice::WriteOnly | QIODevice::Text),
+                QStringLiteral("R-A-02 evidence file creation failed"));
+        evidence.setDevice(&evidenceFile);
+        evidence << "model,status,lod,vertices,triangles,meshBytes,textureBytes,error\n";
+    }
     for (const QString& modelPath : modelPaths)
     {
         ModuleClient matrixClient;
@@ -104,7 +203,7 @@ void VerifyRealAssetMatrix(
         Require(workflow.ImportModel(modelPath, &imported, &error),
                 QStringLiteral("%1：%2").arg(modelPath, error));
 
-        CpuRasterBackend backend;
+        MeasuringRenderBackend backend;
         SceneRenderPolicy renderer(matrixClient, backend);
         ThreeDFrame frame;
         if (!renderer.Refresh(
@@ -123,6 +222,13 @@ void VerifyRealAssetMatrix(
                         QStringLiteral("%1：%2").arg(modelPath, error));
                 ++assetRejectedCount;
             }
+            if (evidence.device() != nullptr)
+            {
+                QString escapedError = error;
+                escapedError.replace('"', QStringLiteral("\"\""));
+                evidence << '"' << QDir(modelRoot).relativeFilePath(modelPath)
+                         << "\",rejected,,,,,,\"" << escapedError << "\"\n";
+            }
             continue;
         }
         Require(frame.meshLod == QStringLiteral("lod0")
@@ -130,13 +236,63 @@ void VerifyRealAssetMatrix(
                 QStringLiteral(
                     "%1：auto LOD returned destructive degradation %2")
                     .arg(modelPath, frame.meshLod));
+        if (evidence.device() != nullptr)
+        {
+            evidence << '"' << QDir(modelRoot).relativeFilePath(modelPath)
+                     << "\",rendered," << frame.meshLod << ','
+                     << backend.VertexCount() << ','
+                     << backend.TriangleCount() << ','
+                     << backend.MeshBytes() << ','
+                     << backend.TextureBytes() << ",\n";
+        }
+        renderedPaths.push_back(modelPath);
         ++renderedCount;
+    }
+
+    ModuleClient aggregateClient;
+    QString aggregateError;
+    Require(aggregateClient.Open(
+                modulePath, QByteArrayLiteral("{}"), &aggregateError),
+            aggregateError);
+    HostModelImportWorkflow aggregateWorkflow(aggregateClient);
+    QList<hostmodelimportresult> aggregateImports;
+    Require(aggregateWorkflow.ImportModels(
+                renderedPaths, &aggregateImports, &aggregateError),
+            QStringLiteral("R-A-02 aggregate import: %1").arg(aggregateError));
+    MeasuringRenderBackend aggregateBackend;
+    SceneRenderPolicy aggregateRenderer(aggregateClient, aggregateBackend);
+    ThreeDFrame aggregateFrame;
+    const bool aggregateRendered = aggregateRenderer.Refresh(
+        aggregateWorkflow.SceneHandle(),
+        aggregateWorkflow.SceneRevision(),
+        &aggregateFrame,
+        &aggregateError);
+    if (!evidenceRoot.isEmpty())
+    {
+        QFile aggregateFile(QDir(evidenceRoot).filePath(
+            QStringLiteral("render_ra02_aggregate_scene.txt")));
+        Require(aggregateFile.open(QIODevice::WriteOnly | QIODevice::Text),
+                QStringLiteral("R-A-02 aggregate evidence creation failed"));
+        QTextStream aggregateEvidence(&aggregateFile);
+        aggregateEvidence
+            << "validAssets=" << renderedPaths.size() << '\n'
+            << "sceneInstances=" << aggregateImports.size() << '\n'
+            << "rendered=" << (aggregateRendered ? "true" : "false") << '\n'
+            << "lod=" << aggregateFrame.meshLod << '\n'
+            << "vertices=" << aggregateBackend.VertexCount() << '\n'
+            << "triangles=" << aggregateBackend.TriangleCount() << '\n'
+            << "meshBytes=" << aggregateBackend.MeshBytes() << '\n'
+            << "textureBytes=" << aggregateBackend.TextureBytes() << '\n'
+            << "error=" << aggregateError << '\n';
     }
     QTextStream(stdout)
         << "HOSTFLOW_H_D_02_ASSET_MATRIX_PASS total=" << modelPaths.size()
         << " lod0=" << renderedCount
         << " budgetRejected=" << budgetRejectedCount
         << " assetRejected=" << assetRejectedCount
+        << " aggregateRendered=" << aggregateRendered
+        << " aggregateLod=" << aggregateFrame.meshLod
+        << " evidence=" << evidenceFile.fileName()
         << Qt::endl;
 }
 }
@@ -276,7 +432,7 @@ int main(int argc, char* argv[])
     if (application.arguments().contains(
             QStringLiteral("--real-asset-matrix")))
     {
-        VerifyRealAssetMatrix(modulePath, repositoryRoot);
+        VerifyRealAssetMatrix(modulePath, repositoryRoot, evidenceRoot);
     }
     return 0;
 }

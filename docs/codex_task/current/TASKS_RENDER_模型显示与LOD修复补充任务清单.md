@@ -1,7 +1,7 @@
 # TASKS_RENDER 模型显示与 LOD 修复补充任务清单
 
-> 文档状态：**RB-P3 COMPLETE / R-A-02 NEXT**
-> 版本：v1.5 ｜ 日期：2026-08-10
+> 文档状态：**R-A-02 COMPLETE / R-B-01 READY / RD-B WAIT AUTHORIZATION**
+> 版本：v1.6 ｜ 日期：2026-08-10
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 上游决策：`docs/slice/DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md`
 > 前提：Qt 升级至 **6.8+ 作为长期版本**（用户 2026-08-06 确认方向）
@@ -231,8 +231,8 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 | **RB-P1 / H-D-02** | 宿主 `SceneRenderPolicy` 从固定 `lod2` 改为 `auto`；预算或纹理资产错误显式 fail-closed，不回退破碎网格 | H-D-01 | UI-M7 相机期 DLL 调用为 0；36 真实资产为完整 lod0 或显式合同错误 | **COMPLETE（2026-08-09）** |
 | **R-B-00** | **模块按 `model_id` 缓存 `ViewMesh` 并提升到顶层 `meshes[]`**（镜像既有 `budgetedAppearances` 与 `appearances[]` 的做法），实例只留 `meshIdentity` 引用 | 无 | DTO v1.8 与 Schema v1.3 受控修订；local 同模型双实例只构建/存储一个 mesh blob；Debug/Release provider 与宿主 3D 门禁 PASS | **COMPLETE（2026-08-10）** |
 | **R-B-05** | **顶点共享**：按 `position + normal + uv` 三元组去重，替代当前每三角 3 独立顶点 | R-B-00 | 当前 108 B/三角 → 目标 ≈28 B/三角；**UV 缝上的顶点必须保持分裂**，不得强行合并导致贴图撕裂 | **COMPLETE（2026-08-10；UV 缝保持分裂）** |
-| **R-A-02** | **修完 RB-P1/P2/P3 后重测 36 个模型**，重算真实触发面 | R-B-00、R-B-05、H-D-02 的 lod 改动 | 给出新阈值与新的超限模型数；**RD-B 依据本卡结果裁决**，不得沿用 R-A-01 的 13.8k 口径 | **PROPOSED** |
-| **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01；与 R-B-02 同批 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | **PREPARED / 降级：仅在 R-A-02 判定仍超预算时才需要** |
+| **R-A-02** | **修完 RB-P1/P2/P3 后重测 36 个模型**，重算真实触发面 | R-B-00、R-B-05、H-D-02 的 lod 改动 | 给出新阈值与新的超限模型数；**RD-B 依据本卡结果裁决**，不得沿用 R-A-01 的 13.8k 口径 | **COMPLETE（2026-08-10；22 lod0 / 14 资产拒绝 / 聚合场景 lod2）** |
+| **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01；与 R-B-02 同批 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | **READY / R-A-02 已确认聚合降级** |
 | **R-B-02** | **替换跳采样为真正的网格简化**。选定方案后二择一：<br/>·（推荐）引入 `meshoptimizer`，用 `meshopt_simplify`<br/>· 自研保守顶点聚类简化 | R-A-01；用户选定 §4.2 | 简化后网格**仍连通**（无孤立三角）；轮廓 Hausdorff 距离 ≤ 模型尺寸 2%；UV 边界不破裂 | **DECISION READY / WAIT RD-B** |
 | **R-B-03** | 降级理由细分：区分「几何被简化」`mesh_simplified_*` 与「几何被抽稀」`mesh_decimated_*`，使宿主可判断是否提示用户 | R-B-02 | 两种情况返回不同 `truncationReason`；契约文档同步 | PROPOSED |
 | **R-B-04** | （若选 meshoptimizer）**顶点量化**：`meshopt_quantizeHalf` 把 position/normal 降至 16-bit | R-B-02 | ViewData 体积减少 ≥ 40%；预算阈值实测抬升至 ≥ 25k 三角/实例；视觉无可察差异 | PROPOSED |
@@ -267,8 +267,9 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 ```text
 已完成     R-A-01 → RB-P1/H-D-02
 已完成     R-B-00（RB-P2）→ R-B-05（RB-P3）
-下一步     R-A-02
-再裁决     RD-B；仅在重测仍需简化时执行 R-B-01/02（+04）
+已完成     R-A-02（单实例 0 预算拒绝；22 有效资产聚合返回 lod2）
+下一步     R-B-01；RD-B 显式授权后执行 R-B-02
+再裁决     R-B-03/04 与 R-C/R-D 后端线
 正交线     R-C-01/02
 后端线     R-D-01 → R-D-02 → R-D-03/04 → R-E-01
 ```
@@ -280,7 +281,7 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 | 编号 | 决定项 | 我方建议 |
 |---|---|---|
 | **RD-A** | §4.1 后端方案（A / B / C / D）| **方案 A（QRhiWidget 单后端）** |
-| **RD-B** | §4.2 是否引入 `meshoptimizer` | ⛔ **2026-08-09 推迟裁决** —— 见 `DOC_ANALYSIS_RENDER_RD_B_前置复核_预算膨胀三处根因.md`。预算超限的主因是三处自身实现缺陷（宿主硬编码 `lod2` / mesh 未按 model 去重 / 顶点未共享），合计放大数十倍；须先修 RB-P1/P2/P3 并由 **R-A-02 重测**，再据实测结果裁决。选型准备（MIT 许可、vcpkg port、CMake 方案）不作废，可随时启用 |
+| **RD-B** | §4.2 是否引入 `meshoptimizer` | ⚠️ **TRIGGERED / WAIT EXPLICIT AUTHORIZATION** —— R-A-02 实测 22 个合同有效资产聚合仍返回 lod2，且安全顶点共享仅把平均值从 108 降到 105.15 B/三角。真正简化仍有必要；选型准备保留 MIT `meshoptimizer` 推荐，但第三方依赖改动必须取得明确授权。 |
 | **RD-C** | 是否接受用「输入确定性 + 图像容差比对」替代逐像素 golden | **接受** —— 省 10–18 人日，取得约 90% 价值 |
 | **RD-D** | R-C-01 的屏幕空间提示字段命名（`pixelsPerMm` / `targetScreenPx`）| `pixelsPerMm` —— 与项目 mm 单位体系一致 |
 
@@ -288,6 +289,7 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v1.6 | 完成 R-A-02：冻结 36 OBJ 中 22 个单实例 lod0、0 个预算拒绝、14 个纹理资产合同拒绝；22 个有效资产聚合实测返回 lod2。R-B-05 平均 105.15 B/三角，RD-B 启动条件成立，R-B-01 进入 READY，第三方依赖等待明确授权。 |
 | 2026-08-10 | v1.5 | 完成 R-B-05：ViewMesh 按最终 `position + normal + uv` 精确键共享顶点，`+0/-0` 规范化；共面四边形压缩为 4 顶点，UV 缝保持分裂，Debug/Release provider、宿主三维和 14E-04c 门禁通过。下一步执行 R-A-02 真实资产重测。 |
 | 2026-08-10 | v1.4 | 完成 R-B-00：能力 DTO v1.8 新增顶层可复用 `meshes[]`，local 同模型多实例只构建和存储一份 mesh blob；保留复用同一 blobId 的 v1.7 兼容别名，Debug/Release provider 与参考宿主门禁通过。R-B-05 已完成实施准备。 |
 | 2026-08-09 | v1.3 | RB-P1 随 H-D-02 完成：宿主改用自动 LOD、预算失败显式且空帧；Release 36 资产矩阵为 22 个完整 lod0、14 个冻结纹理合同显式拒绝、0 个破碎降级。执行顺序调整为 RB-P2/P3 和 R-A-02 后再裁决 RD-B。 |
