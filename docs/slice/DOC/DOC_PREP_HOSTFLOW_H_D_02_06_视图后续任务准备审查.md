@@ -1,6 +1,6 @@
 # HOSTFLOW H-D-02..06 视图后续任务准备审查
 
-> 状态：**H-D-02/03 COMPLETE / H-D-04/06 PREPARED**
+> 状态：**H-D-02/03/04 COMPLETE / H-D-06 WAIT HUMAN EVIDENCE**
 > 日期：2026-08-10
 > 基线：H-D-01、H-D-02、H-D-05 已完成；SPI v1、11 个导出、15 项能力保持冻结。
 
@@ -16,14 +16,19 @@ R-A-01 的原始 13.8k 口径已由 RB-P1 复核修正：参考宿主过去固�
 |---|---|---|---|
 | H-D-02 3D 画布与相机 | **COMPLETE（2026-08-09）** | 维持 Debug/Release 与真实资产矩阵回归 | 无 |
 | H-D-03 三车道拖拽 | **COMPLETE（2026-08-10）** | 维持 Debug/Release 与 UI-M1/UI-M4 回归 | 无 |
-| H-D-04 刷新事件 | **PREPARED** | 可按独立原子卡开工 | 无；验收须观察 3D `MeshUploadCount` |
+| H-D-04 刷新事件 | **COMPLETE（2026-08-10）** | 维持 22 实例与缓存失效回归 | 无 |
 | H-D-05 包目录入口 | **COMPLETE** | 维持回归 | 无 |
-| H-D-06 人工验收 | **PREPARED / WAIT H-D-04** | 不生成虚假 PASS | H-D-04 完成并取得人工截图证据 |
+| H-D-06 人工验收 | **PREPARED / WAIT HUMAN EVIDENCE** | 不生成虚假 PASS | 取得人工七步截图证据 |
 
 H-D-03 已把拾取和拖拽接入真实俯视画布：pointer-move 只更新宿主缓存的
 `worldMatrix` 和显示图像，松手时才提交一次 `scene.apply_operation`。自动化实测
 12 次移动期间模块调用为 0，正常 Commit 仅推进一次 revision 且不追加 snapshot；
 Stale 分支继续按冻结三车道合同读取一次权威快照并丢弃本地瞬态状态。
+
+H-D-04 已把导入、删除、精确变换和规则排版统一到一对双视图刷新；删除最后实例时
+清空画布而不是请求无实例 ViewData。22 实例规则排版和后续纯变换实测
+`MeshUploadCount=0`、`TextureUploadCount=0` 增量，证明 `worldMatrix` 变化没有错误
+失效不可变网格、纹理或 surface preview 缓存。
 
 ## 2. H-D-02 已实现合同
 

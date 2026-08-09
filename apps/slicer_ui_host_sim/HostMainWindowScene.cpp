@@ -36,6 +36,7 @@ void HostMainWindow::OnTransformRequested(
     }
     m_transformLayoutPanel->ResetTransformInputs();
     ShowSceneEditResult(QStringLiteral("实例变换"), result);
+    RefreshSceneViews();
 }
 
 void HostMainWindow::OnLayoutRequested(
@@ -62,6 +63,7 @@ void HostMainWindow::OnLayoutRequested(
         return;
     }
     ShowSceneEditResult(QStringLiteral("规则排版"), result);
+    RefreshSceneViews();
 }
 
 void HostMainWindow::SetSceneCommandsEnabled(const bool enabled)

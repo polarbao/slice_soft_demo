@@ -1165,12 +1165,78 @@ add_test(
         --evidence-root ${CMAKE_BINARY_DIR}/hostflow_hd03_evidence/$<CONFIG>
 )
 
+add_executable(hostflow_hd04_scene_refresh_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    ModuleClient.cpp
+    ModuleClient.h
+    camera/CameraController.cpp
+    camera/CameraController.h
+    render/AppearanceCache.cpp
+    render/AppearanceCache.h
+    render/CpuRasterBackend.cpp
+    render/CpuRasterBackend.h
+    render/CpuRasterDecor.cpp
+    render/CpuRasterDecor.h
+    render/CpuRasterResources.h
+    render/CpuRasterizer.cpp
+    render/IRenderBackend.h
+    render/SceneRenderPolicy.cpp
+    render/SceneRenderPolicyData.cpp
+    render/SceneRenderPolicyMesh.cpp
+    render/SceneRenderPolicy.h
+    render/TopViewRenderPolicy.cpp
+    render/TopViewRenderPolicyData.cpp
+    render/TopViewRenderPolicy.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostSceneRefreshTests.cpp
+)
+
+target_include_directories(hostflow_hd04_scene_refresh_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hd04_scene_refresh_tests PRIVATE
+    Qt5::Core
+    Qt5::Gui
+    bcrypt
+)
+
+add_dependencies(hostflow_hd04_scene_refresh_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hd04_scene_refresh_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hd04_scene_refresh_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hd04_scene_refresh_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hd04_scene_refresh
+    COMMAND hostflow_hd04_scene_refresh_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
 set_tests_properties(
     slicer_stage14e04d_dual_view_contract_test
     hostflow_hd01_top_canvas
     hostflow_hd02_three_d_canvas
     hostflow_hd02_real_asset_matrix
     hostflow_hd03_drag_interaction
+    hostflow_hd04_scene_refresh
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
@@ -1178,6 +1244,7 @@ set_tests_properties(
     hostflow_hd01_top_canvas
     hostflow_hd02_three_d_canvas
     hostflow_hd03_drag_interaction
+    hostflow_hd04_scene_refresh
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 180

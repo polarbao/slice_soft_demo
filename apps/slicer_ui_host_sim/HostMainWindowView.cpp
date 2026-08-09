@@ -251,6 +251,21 @@ void HostMainWindow::RefreshThreeDView()
     RenderThreeDView();
 }
 
+void HostMainWindow::RefreshSceneViews()
+{
+    if (m_importWorkflow->InstanceCount() == 0)
+    {
+        m_topViewFrame.reset();
+        m_threeDFrame.reset();
+        m_workspace->ClearTopImage();
+        m_workspace->ClearThreeDImage();
+        m_workspace->ShowViewError({});
+        return;
+    }
+    RefreshTopView();
+    RefreshThreeDView();
+}
+
 void HostMainWindow::RenderThreeDView()
 {
     if (!m_threeDFrame || !m_threeDPolicy)

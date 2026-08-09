@@ -379,8 +379,7 @@ void HostMainWindow::OnImportModel()
     }
     RefreshSliceSettings();
     ShowImportResult(result);
-    RefreshTopView();
-    RefreshThreeDView();
+    RefreshSceneViews();
 }
 
 void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)
@@ -407,6 +406,7 @@ void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)
     m_statusLabel->setText(
         QStringLiteral("模型实例已删除 · ABI 调用 %1 次")
             .arg(m_client.CallCount()));
+    RefreshSceneViews();
 }
 
 void HostMainWindow::OnModelSelectionChanged(

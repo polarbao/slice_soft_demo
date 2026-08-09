@@ -116,6 +116,7 @@ private:
     void InitializeViewWorkspace();
     void RefreshTopView();
     void RefreshThreeDView();
+    void RefreshSceneViews();
     void RenderThreeDView();
     bool BeginTopViewDrag(const QPointF& imagePoint);
     void UpdateTopViewDrag(const QPointF& imagePoint);
