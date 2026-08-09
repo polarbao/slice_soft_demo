@@ -8,7 +8,7 @@
 namespace slicesoft::module
 {
 
-/** @brief Serializes the frozen ViewData v1.2 DTO and owns bounded blob storage. */
+/** @brief Serializes the frozen ViewData DTO and owns bounded blob storage. */
 class SceneViewDataAdapter final
 {
 public:

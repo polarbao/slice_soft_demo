@@ -286,10 +286,46 @@ bool SceneRenderPolicy::UploadTexture(
     return m_cache.UploadTexture(*texture);
 }
 
+bool SceneRenderPolicy::UploadMeshes(
+    const QJsonObject& result,
+    MeshValueMap* meshes,
+    std::vector<std::string>* liveIdentities,
+    QString* error)
+{
+    const QJsonArray values = result.value(
+        QStringLiteral("meshes")).toArray();
+    if (values.isEmpty())
+    {
+        return true;
+    }
+    for (const QJsonValue& item : values)
+    {
+        const QJsonObject mesh = item.toObject();
+        const QString identity = mesh.value(
+            QStringLiteral("meshIdentity")).toString();
+        if (identity.isEmpty() || meshes->contains(identity))
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral("ViewData 网格身份缺失或重复。");
+            }
+            return false;
+        }
+        if (!UploadMesh(mesh, error))
+        {
+            return false;
+        }
+        meshes->insert(identity, mesh);
+        liveIdentities->push_back(identity.toStdString());
+    }
+    return true;
+}
+
 bool SceneRenderPolicy::DecodeInstances(
     const QJsonObject& result,
     const QHash<QString, bool>& outOfBounds,
     const AppearanceTextureMap& identities,
+    const MeshValueMap& meshes,
     ThreeDFrame* frame,
     std::vector<std::string>* liveIdentities,
     QString* error)
@@ -308,17 +344,33 @@ bool SceneRenderPolicy::DecodeInstances(
     for (const QJsonValue& item : instances)
     {
         const QJsonObject value = item.toObject();
-        const QJsonObject meshValue = value.value(
-            QStringLiteral("mesh")).toObject();
+        QString meshIdentity = value.value(
+            QStringLiteral("meshIdentity")).toString();
+        QJsonObject meshValue;
+        const auto sharedMesh = meshes.constFind(meshIdentity);
+        if (sharedMesh != meshes.constEnd())
+        {
+            meshValue = sharedMesh.value();
+        }
+        else
+        {
+            meshValue = value.value(QStringLiteral("mesh")).toObject();
+            if (meshIdentity.isEmpty())
+            {
+                meshIdentity = meshValue.value(
+                    QStringLiteral("meshIdentity")).toString();
+            }
+        }
         const QString meshLod = meshValue.value(
             QStringLiteral("lod")).toString();
+        const QString descriptorMeshIdentity = meshValue.value(
+            QStringLiteral("meshIdentity")).toString();
         slicer::render::InstanceDraw instance;
         instance.instanceId = value.value(
             QStringLiteral("instanceId")).toString().toStdString();
         instance.appearanceIdentity = value.value(
             QStringLiteral("appearanceIdentity")).toString().toStdString();
-        instance.meshIdentity = meshValue.value(QStringLiteral("meshIdentity"))
-            .toString().toStdString();
+        instance.meshIdentity = meshIdentity.toStdString();
         const QString instanceId = QString::fromStdString(instance.instanceId);
         const QString appearance = QString::fromStdString(
             instance.appearanceIdentity);
@@ -330,6 +382,7 @@ bool SceneRenderPolicy::DecodeInstances(
             || (textureStatus == QStringLiteral("not_provided")
                 && identities.value(appearance).isEmpty());
         if (instance.instanceId.empty() || instance.meshIdentity.empty()
+            || descriptorMeshIdentity != meshIdentity
             || (meshLod != QStringLiteral("lod0")
                 && meshLod != QStringLiteral("lod1")
                 && meshLod != QStringLiteral("lod2"))
@@ -367,7 +420,8 @@ bool SceneRenderPolicy::DecodeInstances(
             }
             return false;
         }
-        if (!UploadMesh(meshValue, error))
+        if (!meshes.contains(meshIdentity)
+            && !UploadMesh(meshValue, error))
         {
             if (error != nullptr && error->isEmpty())
             {
@@ -379,7 +433,10 @@ bool SceneRenderPolicy::DecodeInstances(
         instance.outOfBuildVolume = outOfBounds.value(instanceId, false);
         frame->descriptor.instances.push_back(instance);
         ExpandBounds(instance, zBounds, &frame->worldBounds, &firstBounds);
-        liveIdentities->push_back(instance.meshIdentity);
+        if (!meshes.contains(meshIdentity))
+        {
+            liveIdentities->push_back(instance.meshIdentity);
+        }
     }
     return !firstBounds;
 }

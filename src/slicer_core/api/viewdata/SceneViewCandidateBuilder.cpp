@@ -111,6 +111,8 @@ ApiResult<SceneViewData> BuildViewCandidate(
 
         std::map<ModelId, ResolvedViewAppearance> budgetedAppearances;
         std::map<std::string, std::size_t> appearanceIndices;
+        std::map<ModelId, std::size_t> localMeshIndices;
+        std::map<std::string, std::size_t> meshIndices;
         for (const PreparedViewInstance& preparedInstance : prepared)
         {
             if (cancelToken.IsCancelRequested())
@@ -191,22 +193,53 @@ ApiResult<SceneViewData> BuildViewCandidate(
             }
             else
             {
-                ApiResult<ViewMesh> mesh = BuildViewMesh(
-                    *preparedModel.model,
-                    appearance,
-                    sourceWorldMatrix,
-                    options.lod,
-                    request.mesh_transform,
-                    cancelToken);
-                if (!mesh.IsOk())
+                const ViewMesh* resolvedMesh{nullptr};
+                if (request.mesh_transform == MeshTransform::Local)
                 {
-                    return Failure<SceneViewData>(
-                        mesh.Error()->code,
-                        mesh.Error()->message,
-                        mesh.Error()->detail);
+                    const auto cached = localMeshIndices.find(
+                        preparedInstance.state.instance.model_id);
+                    if (cached != localMeshIndices.end())
+                    {
+                        resolvedMesh = &result.meshes.at(cached->second);
+                    }
                 }
-                instance.mesh_identity = mesh.Value()->mesh_identity;
-                instance.mesh = std::move(*mesh.Value());
+                if (resolvedMesh == nullptr)
+                {
+                    ApiResult<ViewMesh> mesh = BuildViewMesh(
+                        *preparedModel.model,
+                        appearance,
+                        sourceWorldMatrix,
+                        options.lod,
+                        request.mesh_transform,
+                        cancelToken);
+                    if (!mesh.IsOk())
+                    {
+                        return Failure<SceneViewData>(
+                            mesh.Error()->code,
+                            mesh.Error()->message,
+                            mesh.Error()->detail);
+                    }
+                    auto cached = meshIndices.find(
+                        mesh.Value()->mesh_identity);
+                    if (cached == meshIndices.end())
+                    {
+                        const std::size_t meshIndex = result.meshes.size();
+                        meshIndices.emplace(
+                            mesh.Value()->mesh_identity,
+                            meshIndex);
+                        result.meshes.push_back(std::move(*mesh.Value()));
+                        cached = meshIndices.find(
+                            result.meshes.back().mesh_identity);
+                    }
+                    resolvedMesh = &result.meshes.at(cached->second);
+                    if (request.mesh_transform == MeshTransform::Local)
+                    {
+                        localMeshIndices.emplace(
+                            preparedInstance.state.instance.model_id,
+                            cached->second);
+                    }
+                }
+                instance.mesh_identity = resolvedMesh->mesh_identity;
                 if (request.mesh_transform == MeshTransform::World)
                 {
                     instance.world_matrix = Matrix4d{};

@@ -207,9 +207,14 @@ std::string ComputePreviewIdentity(const SurfacePreview& preview)
 std::string ComputeViewDataIdentity(const SceneViewData& viewData)
 {
     CanonicalWriter writer;
-    writer.AppendString("slicesoft.scene_viewdata.1");
+    writer.AppendString("slicesoft.scene_viewdata.2");
     writer.AppendUnsigned(viewData.scene_revision);
     writer.AppendUnsigned(static_cast<std::uint32_t>(viewData.view_mode));
+    writer.AppendUnsigned(static_cast<std::uint64_t>(viewData.meshes.size()));
+    for (const ViewMesh& mesh : viewData.meshes)
+    {
+        writer.AppendString(mesh.mesh_identity);
+    }
     writer.AppendUnsigned(static_cast<std::uint64_t>(viewData.instances.size()));
     for (const ViewInstance& instance : viewData.instances)
     {

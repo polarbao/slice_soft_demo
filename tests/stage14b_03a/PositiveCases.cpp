@@ -85,15 +85,21 @@ void CheckerThreeMfSemanticCase()
         MakeRequest(slicer_core::api::ViewMode::ThreeD), snapshot, active);
     Require(threeD.IsOk(), "checker three_d view should close");
     const auto& instance = threeD.Value()->instances.front();
-    Require(instance.mesh.has_value(), "three_d should return a mesh");
+    Require(threeD.Value()->meshes.size() == 1U,
+            "three_d should return one reusable mesh");
+    const auto& mesh = threeD.Value()->meshes.front();
+    Require(instance.mesh_identity == mesh.mesh_identity,
+            "three_d instance should reference the reusable mesh");
+    Require(!instance.mesh.has_value(),
+            "canonical three_d DTO must not inline the mesh per instance");
     Require(!instance.outlines.empty(),
             "three_d should return a local-space outline");
-    Require(instance.mesh->positions.size() == 18U
-                && instance.mesh->normals.size() == 18U
-                && instance.mesh->texcoord0.size() == 12U
-                && instance.mesh->indices.size() == 6U,
+    Require(mesh.positions.size() == 18U
+                && mesh.normals.size() == 18U
+                && mesh.texcoord0.size() == 12U
+                && mesh.indices.size() == 6U,
             "three_d should return position/normal/UV/index buffers");
-    Require(instance.mesh->submeshes.size() == 1U,
+    Require(mesh.submeshes.size() == 1U,
             "checker should return one material submesh");
     Require(instance.appearance_identity
                 == threeD.Value()->appearances.front().appearance_identity,
@@ -144,11 +150,56 @@ void BudgetDegradationCase()
     Require(threeDTexture.width_px <= 256
                 && threeDTexture.height_px <= 256,
             "three_d budget degradation should reduce texture dimensions");
-    Require(threeD.Value()->instances.front().mesh.has_value(),
-            "three_d degradation must retain a mesh");
-    Require(threeD.Value()->instances.front().mesh->lod
+    Require(threeD.Value()->meshes.size() == 1U,
+            "three_d degradation must retain one reusable mesh");
+    Require(threeD.Value()->meshes.front().lod
                 == slicer_core::api::ViewLod::Lod2,
             "three_d auto budget should report the selected mesh LOD");
+}
+
+void SharedLocalMeshCase()
+{
+    const auto model = std::make_shared<const slicer_core::SceneModel>(
+        MakeTexturedQuad(
+            "shared-local.obj",
+            "shared-local-material",
+            "shared-local.png"));
+    auto textures = std::make_shared<TestTextureSource>();
+    textures->AddImage(
+        "shared-local.png",
+        MakeTexture({40U, 80U, 120U, 255U}, {160U, 200U, 240U, 255U}));
+    const auto provider = MakeProvider({{410U, model}}, textures);
+    const TestCancelToken active;
+    const auto snapshot = MakeSnapshot({
+        {"shared-local-a", 410U},
+        {"shared-local-b", 410U}});
+
+    const auto local = provider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::ThreeD), snapshot, active);
+    Require(local.IsOk(), "shared local three_d view should close");
+    Require(local.Value()->instances.size() == 2U,
+            "shared local view should retain both instances");
+    Require(local.Value()->meshes.size() == 1U,
+            "same model local instances must share one mesh");
+    Require(local.Value()->instances.at(0U).mesh_identity
+                == local.Value()->instances.at(1U).mesh_identity,
+            "same model local instances must reference one mesh identity");
+    Require(!local.Value()->instances.at(0U).mesh.has_value()
+                && !local.Value()->instances.at(1U).mesh.has_value(),
+            "shared local mesh must not be duplicated inline");
+
+    auto worldRequest = MakeRequest(slicer_core::api::ViewMode::ThreeD);
+    worldRequest.mesh_transform = slicer_core::api::MeshTransform::World;
+    const auto world = provider->GetViewData(
+        worldRequest,
+        snapshot,
+        active);
+    Require(world.IsOk(), "shared world three_d view should close");
+    Require(world.Value()->meshes.size() == 2U,
+            "differently transformed world meshes must remain distinct");
+    Require(world.Value()->instances.at(0U).mesh_identity
+                != world.Value()->instances.at(1U).mesh_identity,
+            "world mesh identity must include transformed geometry");
 }
 
 void ShengdanjieUsedMaterialClosureCase()
@@ -328,6 +379,7 @@ void RunPositiveCases()
     WhiteAndNearWhiteTextureCase();
     TextureBaseColorFactorCase();
     BudgetDegradationCase();
+    SharedLocalMeshCase();
     DualAppearanceAndIdentityCase();
 }
 

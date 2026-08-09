@@ -82,6 +82,7 @@ public:
 private:
     using TextureIdentityMap = QHash<QString, QString>;
     using AppearanceTextureMap = QHash<QString, TextureIdentityMap>;
+    using MeshValueMap = QHash<QString, QJsonObject>;
 
     bool ExecuteJson(
         const QJsonObject& request,
@@ -102,10 +103,16 @@ private:
         AppearanceTextureMap* identities,
         std::vector<std::string>* liveIdentities,
         QString* error);
+    bool UploadMeshes(
+        const QJsonObject& result,
+        MeshValueMap* meshes,
+        std::vector<std::string>* liveIdentities,
+        QString* error);
     bool DecodeInstances(
         const QJsonObject& result,
         const QHash<QString, bool>& outOfBounds,
         const AppearanceTextureMap& identities,
+        const MeshValueMap& meshes,
         ThreeDFrame* frame,
         std::vector<std::string>* liveIdentities,
         QString* error);

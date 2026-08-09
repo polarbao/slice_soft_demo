@@ -137,6 +137,7 @@ struct ViewInstance
     std::string preview_identity;
     std::vector<ViewOutline> outlines;
     std::optional<SurfacePreview> surface_preview;
+    /** @brief Deprecated inline compatibility payload; canonical data uses SceneViewData::meshes. */
     std::optional<ViewMesh> mesh;
 };
 
@@ -147,6 +148,8 @@ struct SceneViewData
     std::uint64_t scene_revision{0};
     std::string viewdata_identity;
     std::vector<ViewAppearance> appearances;
+    /** @brief Reusable meshes keyed by ViewMesh::mesh_identity. */
+    std::vector<ViewMesh> meshes;
     std::vector<ViewInstance> instances;
     bool truncated{false};
     std::string truncation_reason;

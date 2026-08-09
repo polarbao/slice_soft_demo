@@ -1,13 +1,14 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.7
+> 合同版本：1.8
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
 > `DOC_DECISION_14A_04_R2_重能力输入身份补充.md`、
 > `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md`、
 > `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md`、
-> `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md`
+> `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md`、
+> `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`
 
 ## 1. 范围
 
@@ -174,7 +175,7 @@ full preflight 响应必须绑定 scene/revision/hash，返回 authoritative/com
 网格        float32x3 position/normal + float32x2 texcoord0 + uint16|uint32 index
 LOD         auto/lod0/lod1/lod2/outline_only
 推荐变换    local mesh + row-major worldMatrix[16]
-缓存        viewdataIdentity 标识快照，meshIdentity 标识可复用网格
+缓存        viewdataIdentity 标识快照，顶层 meshes[] 按 meshIdentity 复用网格
 分块        scene.get_viewdata operation=read_blob，经既有 pm_result 取回
 显示        top / three_d
 外观        appearances[]；每组由 appearanceIdentity + materials + RGBA8/sRGB texture blobs 标识
@@ -194,6 +195,11 @@ LOD         auto/lod0/lod1/lod2/outline_only
 该实例的 `surfacePreview.appearanceIdentity` 必须与其一致，网格 submesh 的 `materialId` 在该组
 `materials[]` 内解析。单数 `appearance` 无法表达多模型场景，禁止使用。
 `outline_only` 在 top 模式仍必须保留 `surfacePreview`，在 three_d 模式不允许使用。
+
+three_d 响应的规范网格载体为顶层 `meshes[]`。每个 `instances[].meshIdentity` 必须唯一解析到
+`meshes[].meshIdentity`；`meshTransform=local` 时，同一模型内容和 LOD 的多个实例只序列化并存储
+一份网格 blob。为兼容 v1.7 宿主，v1.8 暂时保留 `instances[].mesh` 描述符别名，但该别名复用
+同一 `blobId`，不得再次存储二进制内容。新宿主必须优先读取顶层 `meshes[]`。
 
 ### 4.1 双视图请求
 
@@ -232,7 +238,8 @@ emptyValue   255
 ## 6. 版本与后续实现
 
 本合同冻结对外 DTO；v1.6 的 `addInstance` / `removeInstance` 和隐式建场景已由 H-A-02 实现，
-v1.7 的 `applyGridLayout` 由 H-A-04 实现，H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主
-不透明透传到生产切片。独立 `scene.layout` 能力仍被禁止。
+v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可复用 `meshes[]`；
+H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主不透明透传到生产切片。独立 `scene.layout`
+能力仍被禁止。
 交互幂等、revision 回滚和三车道细则见
 `contracts/slicer_three_lane_contract.*`；取消状态机由 14A-06 冻结。

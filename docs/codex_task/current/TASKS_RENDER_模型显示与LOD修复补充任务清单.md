@@ -1,7 +1,7 @@
 # TASKS_RENDER 模型显示与 LOD 修复补充任务清单
 
-> 文档状态：**R-A COMPLETE / R-B DECISION READY**（待用户选定简化方案后授权）
-> 版本：v1.2 ｜ 日期：2026-08-09
+> 文档状态：**RB-P2 COMPLETE / RB-P3 NEXT**
+> 版本：v1.4 ｜ 日期：2026-08-10
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 上游决策：`docs/slice/DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md`
 > 前提：Qt 升级至 **6.8+ 作为长期版本**（用户 2026-08-06 确认方向）
@@ -229,8 +229,8 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
 | **RB-P1 / H-D-02** | 宿主 `SceneRenderPolicy` 从固定 `lod2` 改为 `auto`；预算或纹理资产错误显式 fail-closed，不回退破碎网格 | H-D-01 | UI-M7 相机期 DLL 调用为 0；36 真实资产为完整 lod0 或显式合同错误 | **COMPLETE（2026-08-09）** |
-| **R-B-00** | **模块按 `model_id` 缓存 `ViewMesh` 并提升到顶层 `meshes[]`**（镜像既有 `budgetedAppearances` 与 `appearances[]` 的做法），实例只留 `meshIdentity` 引用 | 无 | `SceneViewCandidateBuilder.cpp:194` 现在逐实例重建 mesh，**违反 `DOC_SCHEMA_14` §3「同一模型多实例只传一份」**；`local` 模式下顶点逐字节相同已核实（`SceneViewMeshBuilder.cpp:188` 仅 World 分支用矩阵），去重安全。⚠️ 顶层新增 `meshes[]` 属新增可选字段（minor 兼容），**仍须按 14F-R1/R2/R3 先例走受控修订，不得直接改** | **PROPOSED / 优先于 R-B-01/02** |
-| **R-B-05** | **顶点共享**：按 `position + normal + uv` 三元组去重，替代当前每三角 3 独立顶点 | R-B-00 | 当前 108 B/三角 → 目标 ≈28 B/三角；**UV 缝上的顶点必须保持分裂**，不得强行合并导致贴图撕裂 | **PROPOSED** |
+| **R-B-00** | **模块按 `model_id` 缓存 `ViewMesh` 并提升到顶层 `meshes[]`**（镜像既有 `budgetedAppearances` 与 `appearances[]` 的做法），实例只留 `meshIdentity` 引用 | 无 | DTO v1.8 与 Schema v1.3 受控修订；local 同模型双实例只构建/存储一个 mesh blob；Debug/Release provider 与宿主 3D 门禁 PASS | **COMPLETE（2026-08-10）** |
+| **R-B-05** | **顶点共享**：按 `position + normal + uv` 三元组去重，替代当前每三角 3 独立顶点 | R-B-00 | 当前 108 B/三角 → 目标 ≈28 B/三角；**UV 缝上的顶点必须保持分裂**，不得强行合并导致贴图撕裂 | **PREPARED / NEXT** |
 | **R-A-02** | **修完 RB-P1/P2/P3 后重测 36 个模型**，重算真实触发面 | R-B-00、R-B-05、H-D-02 的 lod 改动 | 给出新阈值与新的超限模型数；**RD-B 依据本卡结果裁决**，不得沿用 R-A-01 的 13.8k 口径 | **PROPOSED** |
 | **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01；与 R-B-02 同批 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | **PREPARED / 降级：仅在 R-A-02 判定仍超预算时才需要** |
 | **R-B-02** | **替换跳采样为真正的网格简化**。选定方案后二择一：<br/>·（推荐）引入 `meshoptimizer`，用 `meshopt_simplify`<br/>· 自研保守顶点聚类简化 | R-A-01；用户选定 §4.2 | 简化后网格**仍连通**（无孤立三角）；轮廓 Hausdorff 距离 ≤ 模型尺寸 2%；UV 边界不破裂 | **DECISION READY / WAIT RD-B** |
@@ -287,6 +287,7 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v1.4 | 完成 R-B-00：能力 DTO v1.8 新增顶层可复用 `meshes[]`，local 同模型多实例只构建和存储一份 mesh blob；保留复用同一 blobId 的 v1.7 兼容别名，Debug/Release provider 与参考宿主门禁通过。R-B-05 已完成实施准备。 |
 | 2026-08-09 | v1.3 | RB-P1 随 H-D-02 完成：宿主改用自动 LOD、预算失败显式且空帧；Release 36 资产矩阵为 22 个完整 lod0、14 个冻结纹理合同显式拒绝、0 个破碎降级。执行顺序调整为 RB-P2/P3 和 R-A-02 后再裁决 RD-B。 |
 | 2026-08-09 | v1.2 | 完成 R-B 选型准备：比较 meshoptimizer 与自研保守简化的 CMake/vcpkg/许可证/部署/维护风险，推荐 MIT `meshoptimizer` 并冻结 R-B-01/02 分卡、真实资产和质量门禁；未获 RD-B 裁决前不修改依赖或生产源码。 |
 | 2026-08-09 | v1.1 | 完成 R-A-01：按 OBJ 扇形三角化口径统计 `model/obj` 36 个模型，17 个超过约 13.8k 阈值，LOD 跳采样风险确认为 P1；证据见 `REPORT_RENDER_R_A_01_甲片模型三角面数实测.md`。R-B/R-C/R-D 仍未获实现授权。 |

@@ -32,6 +32,22 @@ std::uint64_t EstimateViewDataBytes(const SceneViewData& viewData) noexcept
                 + static_cast<std::uint64_t>(texture.rgba8.size());
         }
     }
+    for (const ViewMesh& mesh : viewData.meshes)
+    {
+        bytes += 256U + StringBytes(mesh.mesh_identity)
+            + static_cast<std::uint64_t>(mesh.positions.size())
+                * sizeof(float)
+            + static_cast<std::uint64_t>(mesh.normals.size())
+                * sizeof(float)
+            + static_cast<std::uint64_t>(mesh.texcoord0.size())
+                * sizeof(float)
+            + static_cast<std::uint64_t>(mesh.indices.size())
+                * sizeof(std::uint32_t);
+        for (const ViewSubmesh& submesh : mesh.submeshes)
+        {
+            bytes += 32U + StringBytes(submesh.material_id);
+        }
+    }
     for (const ViewInstance& instance : viewData.instances)
     {
         bytes += 512U + StringBytes(instance.instance_id)
@@ -50,7 +66,7 @@ std::uint64_t EstimateViewDataBytes(const SceneViewData& viewData) noexcept
                 + static_cast<std::uint64_t>(
                     instance.surface_preview->rgba8.size());
         }
-        if (instance.mesh.has_value())
+        if (viewData.meshes.empty() && instance.mesh.has_value())
         {
             const ViewMesh& mesh = *instance.mesh;
             bytes += 256U

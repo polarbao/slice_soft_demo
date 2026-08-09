@@ -1,10 +1,11 @@
 # DOC_SCHEMA_14 `scene.get_viewdata` 网格 DTO 规格
 
-> 文档状态：✅ **ACTIVE / CONTRACT AMENDED**（14A-04-R1）
-> 版本：v1.2 ｜ 日期：2026-08-04 ｜ 双视图纹理修订：2026-08-05
+> 文档状态：✅ **ACTIVE / CONTRACT AMENDED**（R-B-00）
+> 版本：v1.3 ｜ 日期：2026-08-04 ｜ ViewMesh 复用修订：2026-08-10
 > 定位：填补 `scene.get_viewdata` 网格数据的字段级规格空白（风险 UI-R4）
 > 上游：`DEV_14` §5（承载分派）、`DOC_DECISION_14_UI` §6.4（缺口来源）
-> 修订决策：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`
+> 修订决策：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
+> `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`
 > 证据等级：A=已核实事实，B=目标设计，P=判断
 
 ---
@@ -105,7 +106,7 @@ auto 的选择规则（B）
   6. 对带纹理模型仍超出 → 返回 PM-SLICER-VIEWDATA-BUDGET，不得成功返回无纹理灰模
 ```
 
-**响应必须回报 `mesh.lod` 的实际值**，宿主不得假设拿到的就是所请求的。
+**响应必须回报 `meshes[].lod` 的实际值**，宿主不得假设拿到的就是所请求的。
 
 ## 5. 响应 DTO
 
@@ -116,6 +117,28 @@ auto 的选择规则（B）
   "units": "mm",
   "coordinateSystem": "right_handed_z_up",
   "byteOrder": "little_endian",
+  "meshes": [
+    {
+      "meshIdentity": "mesh:model-a:lod1:9f3ac21b",
+      "lod": "lod1",
+      "vertexCount": 24680,
+      "triangleCount": 49356,
+      "meshTransform": "local",
+      "buffers": {
+        "position": { "format": "float32x3", "byteOffset": 0,      "byteLength": 296160 },
+        "normal":   { "format": "float32x3", "byteOffset": 296160, "byteLength": 296160 },
+        "texcoord0":{ "format": "float32x2", "byteOffset": 592320, "byteLength": 197440 },
+        "index":    { "format": "uint32",    "byteOffset": 789760, "byteLength": 592272 }
+      },
+      "submeshes": [
+        { "firstIndex": 0, "indexCount": 148068, "materialId": "material-0" }
+      ],
+      "blobId": "blob-7f3a9c",
+      "totalBytes": 1382032,
+      "chunkBytes": 4194304,
+      "chunkCount": 1
+    }
+  ],
   "instances": [
     {
       "instanceId": "inst-01",
@@ -123,6 +146,7 @@ auto 的选择规则（B）
       "bboxLocalMm": { "min": [-12.0, -8.0, 0.0], "max": [12.0, 8.0, 6.4] },
       "worldMatrix": [ 1,0,0,0,  0,1,0,0,  0,0,1,0,  35.0,20.0,0.0,1 ],
       "textureStatus": "available",
+      "meshIdentity": "mesh:model-a:lod1:9f3ac21b",
       "appearanceIdentity": "appearance:model-a:71c4e812",
       "outline": { "loops": [ /* 既有俯视轮廓结构，不变 */ ] },
       "surfacePreview": {
@@ -137,26 +161,6 @@ auto 的选择规则（B）
         "rowOrigin": "top_left",
         "blobId": "blob-preview-33a1",
         "totalBytes": 2097152,
-        "chunkBytes": 4194304,
-        "chunkCount": 1
-      },
-      "mesh": {
-        "meshIdentity": "mesh:model-a:lod1:9f3ac21b",
-        "lod": "lod1",
-        "vertexCount": 24680,
-        "triangleCount": 49356,
-        "meshTransform": "local",
-        "buffers": {
-          "position": { "format": "float32x3", "byteOffset": 0,      "byteLength": 296160 },
-          "normal":   { "format": "float32x3", "byteOffset": 296160, "byteLength": 296160 },
-          "texcoord0":{ "format": "float32x2", "byteOffset": 592320, "byteLength": 197440 },
-          "index":    { "format": "uint32",    "byteOffset": 789760, "byteLength": 592272 }
-        },
-        "submeshes": [
-          { "firstIndex": 0, "indexCount": 148068, "materialId": "material-0" }
-        ],
-        "blobId": "blob-7f3a9c",
-        "totalBytes": 1382032,
         "chunkBytes": 4194304,
         "chunkCount": 1
       }
@@ -208,14 +212,16 @@ auto 的选择规则（B）
 | `bboxLocalMm` | **局部**坐标 bbox。世界 bbox 由宿主用 `worldMatrix` 变换得到 —— 避免两处真源 |
 | `worldMatrix` | 行主序 16 元素；`meshTransform=world` 时为单位阵 |
 | `textureStatus` | `available` 或 `not_provided`；声明纹理但加载失败不得返回成功状态 |
+| `instances[].meshIdentity` | 实例引用的网格身份；three_d 时必须在顶层 `meshes[]` 唯一解析 |
 | `instances[].appearanceIdentity` | 实例所用外观集合；必须在顶层 `appearances[]` 中唯一解析 |
 | `surfacePreview` | top 模式的带纹理 +Z 投影；透明背景与模型局部边界必须显式声明 |
 | `surfacePreview.localBoundsMm` | 预览四边形的模型局部 XY 边界；宿主用 `worldMatrix` 放置，避免变换使 preview cache 失效 |
-| `meshIdentity` | 只标识可复用网格内容，不含 scene revision 或实例世界变换 |
+| `meshes[]` | three_d 规范网格集合；同一 `meshIdentity` 只出现一次并只存储一份 blob |
+| `meshIdentity` | 只标识可复用网格内容，不含 scene revision 或 local 实例世界变换 |
 | `appearanceIdentity` | 标识材质与纹理集合，不含实例世界变换 |
 | `appearances[]` | 多模型场景的外观集合；每个 identity 唯一，实例预览与 submesh 引用必须可解析 |
 | `textureIdentity` | 标识解码后纹理内容与采样语义，供宿主缓存 GPU 纹理 |
-| `buffers.*.byteOffset/byteLength` | 均相对于该实例 blob 的起始，非全局 |
+| `buffers.*.byteOffset/byteLength` | 均相对于对应顶层 mesh blob 的起始，非全局 |
 | `blobId` | 二进制缓冲的取回句柄，见 §7 |
 | `truncated` | 未能按请求返回完整内容时为 `true`，**不得静默截断** |
 | `truncationReason` | `truncated=true` 时必填，如 top 的 `"budget_exceeded_mesh_downgraded_to_outline_only_preview_retained"`；three_d 不得降为 outline_only |
@@ -237,9 +243,20 @@ texture    rgba8_unorm / srgb / straight alpha / top_left rows
 
 响应必须使用 `appearances[]`，不能使用单数 `appearance`。每个元素以
 `appearanceIdentity` 唯一标识一套材质和纹理；`instances[].appearanceIdentity` 和
-`surfacePreview.appearanceIdentity` 引用同一元素，`mesh.submeshes[].materialId` 必须在该元素的
+`surfacePreview.appearanceIdentity` 引用同一元素，`meshes[].submeshes[].materialId` 必须在该元素的
 `materials[]` 中唯一解析。不同模型可以共享
 `textureIdentity`，但不得因共享纹理而合并具有不同 UV 变换或 baseColorFactor 的外观集合。
+
+### 5.4 多实例网格复用与 v1.7 兼容别名
+
+three_d 的规范载体是顶层 `meshes[]`。`meshTransform=local` 时，模块按模型内容与实际 LOD
+缓存 `ViewMesh`，同一模型的多个实例只返回一个顶层元素；实例只通过 `meshIdentity` 引用它。
+`meshTransform=world` 已把矩阵烘焙到顶点中，只允许按最终 `meshIdentity` 去重，不能只按 modelId
+合并。
+
+v1.8 在过渡期继续输出 `instances[].mesh`，但它只是顶层 mesh JSON 描述符的兼容别名：
+`blobId`、offset、length 与顶层完全相同，不允许再次保存 blob。新宿主必须优先读取顶层
+`meshes[]`；旧宿主可以继续读取兼容别名。后续删除别名属于 major 修订，不在 R-B-00 范围内。
 
 ## 6. `viewdataIdentity` 构成与失效规则
 
@@ -347,3 +364,4 @@ three_d   带纹理模型必须实现 mesh + texcoord0 + submesh + appearance + 
 | 2026-08-04 | v1.0 | 首版。填补 `scene.get_viewdata` 网格 DTO 空白：定义全局约定、请求/响应 DTO、`local`+`worldMatrix` 实例变换语义及其三条理由、LOD 分级与 auto 选择规则、`viewdataIdentity` 构成与失效表（含"worldMatrix 变化不失效"这一关键授权）、**在不新增导出符号前提下**的 blob 分块传输方案、两个新增错误码、版本化规则与首版最小实现要求 |
 | 2026-08-05 | v1.1 | Stage 14 开工基线收口：新增独立 `meshIdentity`，消除 scene revision 与网格缓存生命周期冲突；blob 读取改为 `scene.get_viewdata` 子操作，保持 15 项能力与 11 个导出符号不变 |
 | 2026-08-05 | v1.2 | 14A-04-R1：增加 top/three_d、surfacePreview、texcoord0、submesh/material/texture、三类外观身份与纹理 fail-closed 规则；保持 15 项能力、11 个导出和 PM_SPI_VERSION=1 不变 |
+| 2026-08-10 | v1.3 | R-B-00：three_d 网格提升到顶层 `meshes[]`，实例改用 `meshIdentity` 引用；local 同模型多实例仅构建和存储一份 mesh blob，保留复用同一 blobId 的 v1.7 `instances[].mesh` 兼容别名 |

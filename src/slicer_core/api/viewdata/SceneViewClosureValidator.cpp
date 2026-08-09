@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cmath>
+#include <map>
 #include <set>
 #include <string>
 #include <string_view>
@@ -33,6 +34,35 @@ bool IsIdentity(const Matrix4d& matrix)
         }
     }
     return true;
+}
+
+ApiResult<void> ValidateMesh(const ViewMesh& mesh)
+{
+    const std::size_t vertexCount = mesh.positions.size() / 3U;
+    if (mesh.mesh_identity.empty()
+        || mesh.positions.size() % 3U != 0U
+        || mesh.normals.size() != mesh.positions.size()
+        || mesh.texcoord0.size() != vertexCount * 2U
+        || mesh.indices.empty())
+    {
+        return Failure(
+            "three_d ViewData mesh buffers are invalid",
+            mesh.mesh_identity);
+    }
+    for (const ViewSubmesh& submesh : mesh.submeshes)
+    {
+        if (submesh.material_id.empty()
+            || submesh.index_count == 0U
+            || static_cast<std::size_t>(submesh.first_index)
+                    + submesh.index_count
+                > mesh.indices.size())
+        {
+            return Failure(
+                "three_d ViewData submesh range is invalid",
+                submesh.material_id);
+        }
+    }
+    return ApiResult<void>::Success();
 }
 
 }  // namespace
@@ -95,7 +125,38 @@ ApiResult<void> ValidateViewDataClosure(
         }
     }
 
+    std::map<std::string, const ViewMesh*> meshesByIdentity;
+    for (const ViewMesh& mesh : viewData.meshes)
+    {
+        const ApiResult<void> validMesh = ValidateMesh(mesh);
+        if (!validMesh.IsOk())
+        {
+            return validMesh;
+        }
+        if (!meshesByIdentity.emplace(
+                mesh.mesh_identity,
+                &mesh).second)
+        {
+            return Failure(
+                "ViewData mesh identity is duplicated",
+                mesh.mesh_identity);
+        }
+    }
+    if (viewData.view_mode == ViewMode::Top && !viewData.meshes.empty())
+    {
+        return Failure(
+            "top ViewData must not include three_d meshes",
+            std::to_string(viewData.meshes.size()));
+    }
+    if (viewData.view_mode == ViewMode::ThreeD && viewData.meshes.empty())
+    {
+        return Failure(
+            "three_d ViewData has no reusable meshes",
+            "meshes[]");
+    }
+
     std::set<std::string> instanceIds;
+    std::set<std::string> referencedMeshIdentities;
     for (const ViewInstance& instance : viewData.instances)
     {
         if (instance.instance_id.empty()
@@ -159,31 +220,25 @@ ApiResult<void> ValidateViewDataClosure(
         }
         else
         {
-            if (!instance.mesh.has_value()
-                || instance.mesh_identity.empty()
-                || instance.mesh_identity
-                    != instance.mesh->mesh_identity)
+            const auto meshEntry = meshesByIdentity.find(
+                instance.mesh_identity);
+            if (instance.mesh_identity.empty()
+                || meshEntry == meshesByIdentity.end()
+                || (instance.mesh.has_value()
+                    && instance.mesh->mesh_identity
+                        != instance.mesh_identity))
             {
                 return Failure(
                     "three_d ViewData mesh identity is not closed",
                     instance.instance_id);
             }
-            const ViewMesh& mesh = *instance.mesh;
+            const ViewMesh& mesh = *meshEntry->second;
+            referencedMeshIdentities.emplace(instance.mesh_identity);
             if (mesh.mesh_transform == MeshTransform::World
                 && !IsIdentity(instance.world_matrix))
             {
                 return Failure(
                     "world ViewData mesh requires an identity worldMatrix",
-                    instance.instance_id);
-            }
-            const std::size_t vertexCount = mesh.positions.size() / 3U;
-            if (mesh.positions.size() % 3U != 0U
-                || mesh.normals.size() != mesh.positions.size()
-                || mesh.texcoord0.size() != vertexCount * 2U
-                || mesh.indices.empty())
-            {
-                return Failure(
-                    "three_d ViewData mesh buffers are invalid",
                     instance.instance_id);
             }
             const ViewAppearance* appearance{nullptr};
@@ -204,10 +259,7 @@ ApiResult<void> ValidateViewDataClosure(
             for (const ViewSubmesh& submesh : mesh.submeshes)
             {
                 if (!materialIds.contains(submesh.material_id)
-                    || submesh.index_count == 0U
-                    || static_cast<std::size_t>(submesh.first_index)
-                            + submesh.index_count
-                        > mesh.indices.size())
+                    || submesh.index_count == 0U)
                 {
                     return Failure(
                         "three_d ViewData submesh binding is invalid",
@@ -215,6 +267,14 @@ ApiResult<void> ValidateViewDataClosure(
                 }
             }
         }
+    }
+    if (viewData.view_mode == ViewMode::ThreeD
+        && referencedMeshIdentities.size() != meshesByIdentity.size())
+    {
+        return Failure(
+            "three_d ViewData contains an unreferenced mesh",
+            std::to_string(
+                meshesByIdentity.size() - referencedMeshIdentities.size()));
     }
     return ApiResult<void>::Success();
 }

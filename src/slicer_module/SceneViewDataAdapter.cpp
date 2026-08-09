@@ -23,10 +23,20 @@ public:
         {
             appearances.emplace_back(SerializeAppearance(appearance));
         }
+        slicer_core::Json::Array meshes;
+        std::map<std::string, slicer_core::Json> meshesByIdentity;
+        for (const auto& mesh : data.meshes)
+        {
+            slicer_core::Json serialized = SerializeMesh(mesh);
+            meshesByIdentity.emplace(mesh.mesh_identity, serialized);
+            meshes.emplace_back(std::move(serialized));
+        }
         slicer_core::Json::Array instances;
         for (const auto& instance : data.instances)
         {
-            instances.emplace_back(SerializeInstance(instance));
+            instances.emplace_back(SerializeInstance(
+                instance,
+                meshesByIdentity));
         }
         return MakeSuccess({
             {"viewdataIdentity", data.viewdata_identity},
@@ -38,6 +48,7 @@ public:
             {"byteOrder", "little_endian"},
             {"instances", slicer_core::Json{std::move(instances)}},
             {"appearances", slicer_core::Json{std::move(appearances)}},
+            {"meshes", slicer_core::Json{std::move(meshes)}},
             {"truncated", data.truncated},
             {"truncationReason", data.truncation_reason.empty()
                 ? slicer_core::Json{nullptr}
@@ -207,7 +218,8 @@ private:
     }
 
     [[nodiscard]] slicer_core::Json SerializeInstance(
-        const slicer_core::api::ViewInstance& instance)
+        const slicer_core::api::ViewInstance& instance,
+        const std::map<std::string, slicer_core::Json>& meshesByIdentity)
     {
         slicer_core::Json::Array loops;
         for (const auto& outline : instance.outlines)
@@ -240,7 +252,12 @@ private:
                 "surfacePreview",
                 SerializePreview(*instance.surface_preview));
         }
-        if (instance.mesh)
+        const auto mesh = meshesByIdentity.find(instance.mesh_identity);
+        if (mesh != meshesByIdentity.end())
+        {
+            fields.emplace("mesh", mesh->second);
+        }
+        else if (instance.mesh)
         {
             fields.emplace("mesh", SerializeMesh(*instance.mesh));
         }

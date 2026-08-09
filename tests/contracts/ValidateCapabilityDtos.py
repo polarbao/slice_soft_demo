@@ -57,8 +57,8 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.7":
-        raise AssertionError("expected the HOSTFLOW grid-layout contract")
+    if contract["contractVersion"] != "1.8":
+        raise AssertionError("expected the reusable ViewMesh contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -179,6 +179,7 @@ def Main() -> int:
             "instances[].surfacePreview.pixelFormat",
             "instances[].surfacePreview.colorSpace",
             "instances[].surfacePreview.blobId",
+            "instances[].meshIdentity",
             "instances[].mesh.meshIdentity",
             "instances[].mesh.buffers.position.format",
             "instances[].mesh.buffers.normal.format",
@@ -188,6 +189,17 @@ def Main() -> int:
             "instances[].mesh.blobId",
             "instances[].mesh.chunkBytes",
             "instances[].mesh.chunkCount",
+            "meshes",
+            "meshes[].meshIdentity",
+            "meshes[].lod",
+            "meshes[].buffers.position.format",
+            "meshes[].buffers.normal.format",
+            "meshes[].buffers.texcoord0.format",
+            "meshes[].buffers.index.format",
+            "meshes[].submeshes[].materialId",
+            "meshes[].blobId",
+            "meshes[].chunkBytes",
+            "meshes[].chunkCount",
             "appearances",
             "appearances[].appearanceIdentity",
             "appearances[].materials[].baseColorFactor",
@@ -483,6 +495,18 @@ def Main() -> int:
     }
     if viewDataRules["multiModelAppearance"] != expectedAppearanceRules:
         raise AssertionError("multi-model appearance references are ambiguous")
+    expectedMeshRules = {
+        "collection": "meshes[]",
+        "identityField": "meshes[].meshIdentity",
+        "instanceReference": "instances[].meshIdentity",
+        "canonicalPlacement": "top_level",
+        "legacyCompatibilityAlias": "instances[].mesh",
+        "localReuse": "one_mesh_per_model_content_and_lod",
+        "worldReuse": "by_mesh_identity_only",
+        "blobStorage": "once_per_mesh_identity",
+    }
+    if viewDataRules["multiInstanceMesh"] != expectedMeshRules:
+        raise AssertionError("multi-instance mesh reuse rules are ambiguous")
 
     uiViewSpec = LoadJson(repoRoot / "contracts" / "slicer_ui_view_spec.json")
     if uiViewSpec["contractVersion"] != "1.0" or uiViewSpec["units"] != "mm":
@@ -544,7 +568,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus HOSTFLOW v1.7 grid-layout contract: PASS")
+    print("15 capability DTOs plus HOSTFLOW v1.8 reusable-mesh contract: PASS")
     return 0
 
 

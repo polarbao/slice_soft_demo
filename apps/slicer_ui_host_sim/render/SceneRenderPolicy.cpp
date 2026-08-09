@@ -122,10 +122,12 @@ bool SceneRenderPolicy::Refresh(
     decoded.descriptor.decor = decor;
     std::vector<std::string> liveIdentities;
     AppearanceTextureMap textureIdentities;
+    MeshValueMap meshes;
     if (!UploadAppearances(
             result, &textureIdentities, &liveIdentities, error)
+        || !UploadMeshes(result, &meshes, &liveIdentities, error)
         || !DecodeInstances(
-            result, outOfBounds, textureIdentities, &decoded,
+            result, outOfBounds, textureIdentities, meshes, &decoded,
             &liveIdentities, error))
     {
         return false;
