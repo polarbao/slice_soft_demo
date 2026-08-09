@@ -1,7 +1,7 @@
 # HOSTFLOW H-D-02..06 视图后续任务准备审查
 
-> 状态：**H-D-02 COMPLETE / H-D-03..06 PREPARED**
-> 日期：2026-08-09
+> 状态：**H-D-02/03 COMPLETE / H-D-04/06 PREPARED**
+> 日期：2026-08-10
 > 基线：H-D-01、H-D-02、H-D-05 已完成；SPI v1、11 个导出、15 项能力保持冻结。
 
 ## 1. 审查结论
@@ -15,10 +15,15 @@ R-A-01 的原始 13.8k 口径已由 RB-P1 复核修正：参考宿主过去固�
 | 任务 | 准备结论 | 当前动作 | 解锁条件 |
 |---|---|---|---|
 | H-D-02 3D 画布与相机 | **COMPLETE（2026-08-09）** | 维持 Debug/Release 与真实资产矩阵回归 | 无 |
-| H-D-03 三车道拖拽 | **PREPARED** | 可按独立原子卡开工 | 无；H-D-02 已完成 UI-M7 门禁 |
+| H-D-03 三车道拖拽 | **COMPLETE（2026-08-10）** | 维持 Debug/Release 与 UI-M1/UI-M4 回归 | 无 |
 | H-D-04 刷新事件 | **PREPARED** | 可按独立原子卡开工 | 无；验收须观察 3D `MeshUploadCount` |
 | H-D-05 包目录入口 | **COMPLETE** | 维持回归 | 无 |
-| H-D-06 人工验收 | **PREPARED / WAIT H-D-03..04** | 不生成虚假 PASS | H-D-03/04 完成并取得人工截图证据 |
+| H-D-06 人工验收 | **PREPARED / WAIT H-D-04** | 不生成虚假 PASS | H-D-04 完成并取得人工截图证据 |
+
+H-D-03 已把拾取和拖拽接入真实俯视画布：pointer-move 只更新宿主缓存的
+`worldMatrix` 和显示图像，松手时才提交一次 `scene.apply_operation`。自动化实测
+12 次移动期间模块调用为 0，正常 Commit 仅推进一次 revision 且不追加 snapshot；
+Stale 分支继续按冻结三车道合同读取一次权威快照并丢弃本地瞬态状态。
 
 ## 2. H-D-02 已实现合同
 

@@ -135,6 +135,25 @@ QString HostModelImportWorkflow::ReferenceModelPath() const
     return paths.isEmpty() ? QString{} : paths.first();
 }
 
+bool HostModelImportWorkflow::AdoptSceneState(
+    const quint64 sceneHandle,
+    const quint64 sceneRevision,
+    QString* error)
+{
+    if (sceneHandle == 0U || sceneHandle != m_sceneHandle
+        || sceneRevision < m_sceneRevision)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "拖拽 Commit 返回了不匹配或倒退的权威场景身份。");
+        }
+        return false;
+    }
+    m_sceneRevision = sceneRevision;
+    return true;
+}
+
 bool HostModelImportWorkflow::ApplyTransforms(
     const QStringList& instanceIds,
     const hosttransformrequest& request,

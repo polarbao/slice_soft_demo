@@ -84,6 +84,7 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A/H-B/H-C 完成；H-D-01/02/05 完成；H-E E1 准备通过 |
 | `DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md` | H-D-02 完成证据、H-D-03..06 准备、刷新矩阵和人工验收边界 |
 | `REPORT/REPORT_HOSTFLOW_H_D_02_三维画布与RB_P1当前状态.md` | H-D-02 真实纹理 3D 画布、UI-M7 零 DLL 调用、RB-P1 与 36 资产矩阵结果 |
+| `REPORT/REPORT_HOSTFLOW_H_D_03_三车道拖拽接线当前状态.md` | H-D-03 俯视拾取、本地拖拽、单次 Commit、Stale 恢复与 Debug/Release 门禁 |
 | `DOC/DOC_PREP_HOSTFLOW_H_E_E1_STL与支撑参数实施准备.md` | H-E E1 的 STL 与支撑 Profile 字段、负例和批次门 |
 | `DOC/DOC_PREP_RENDER_R_B_LOD缺陷修复选型准备.md` | R-B meshoptimizer/自研简化选型、依赖风险和解锁门禁 |
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |

@@ -116,6 +116,32 @@ public:
      */
     quint64 BlobReadCount() const;
 
+    /**
+     * @brief Converts one rendered image coordinate to build-volume XY.
+     * @param frame Frame used to render the image.
+     * @param canvasSize Pixel size passed to Render.
+     * @param imagePoint Point in rendered-image pixels.
+     * @param worldPoint Receives build-volume millimetres.
+     * @return True when the point can be mapped through valid scene decor.
+     */
+    static bool ImageToWorld(
+        const TopViewFrame& frame,
+        const QSize& canvasSize,
+        const QPointF& imagePoint,
+        QPointF* worldPoint);
+
+    /**
+     * @brief Picks the topmost instance under a rendered image coordinate.
+     * @param frame Frame used to render the image.
+     * @param canvasSize Pixel size passed to Render.
+     * @param imagePoint Point in rendered-image pixels.
+     * @return Stable instance identity, or an empty value when no model is hit.
+     */
+    static QString PickInstance(
+        const TopViewFrame& frame,
+        const QSize& canvasSize,
+        const QPointF& imagePoint);
+
 private:
     bool ExecuteJson(
         const QJsonObject& request,

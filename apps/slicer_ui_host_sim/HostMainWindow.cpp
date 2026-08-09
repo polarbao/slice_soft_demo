@@ -1,5 +1,7 @@
 #include "HostMainWindow.h"
 
+#include "MoveOptimizationPolicy.h"
+#include "SceneInteractionController.h"
 #include "ViewWorkspaceWidget.h"
 #include "render/CpuRasterBackend.h"
 #include "render/SceneRenderPolicy.h"

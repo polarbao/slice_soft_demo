@@ -45,6 +45,9 @@ public:
      */
     void SetTopImage(const QImage& image);
 
+    /** @brief Updates transient top-view pixels without resetting navigation. */
+    void UpdateTopImage(const QImage& image);
+
     /** @brief Clears the top-view image after an explicit refresh failure. */
     void ClearTopImage();
 

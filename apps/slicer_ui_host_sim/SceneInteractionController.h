@@ -35,6 +35,14 @@ public:
     bool Initialize(const QJsonObject& scene, QString* error);
 
     /**
+     * @brief Attaches transient interaction to an existing host-owned scene.
+     * @param sceneHandle Module-owned scene handle.
+     * @param sceneRevision Latest host-adopted authoritative revision.
+     * @return True when the existing scene identity is valid.
+     */
+    bool Attach(quint64 sceneHandle, quint64 sceneRevision);
+
+    /**
      * @brief Starts local-only transient feedback for an instance.
      * @param instanceId Stable scene instance identity.
      * @return True when the transient state was initialized.
@@ -59,6 +67,9 @@ public:
      * @return Commit result; Stale recovery never auto-retries changed payload.
      */
     CommitOutcome CommitTransient(QString* error);
+
+    /** @brief Discards local transient state without a module call. */
+    void DiscardTransient();
 
     /**
      * @brief Reports whether local transient state is active.
@@ -96,6 +107,12 @@ public:
      */
     quint64 SnapshotReadCount() const;
 
+    /** @brief Returns authoritative collision count from the latest Commit. */
+    [[nodiscard]] int CollisionCount() const;
+
+    /** @brief Returns authoritative out-of-bounds count from the latest Commit. */
+    [[nodiscard]] int OutOfBoundsCount() const;
+
 private:
     bool Bootstrap(const QJsonObject& scene, QJsonObject* result, QString* error);
     bool RefreshSnapshot(QString* error);
@@ -114,4 +131,6 @@ private:
     quint64 m_sceneHandle{0};
     quint64 m_sceneRevision{0};
     quint64 m_snapshotReadCount{0};
+    int m_collisionCount{0};
+    int m_outOfBoundsCount{0};
 };

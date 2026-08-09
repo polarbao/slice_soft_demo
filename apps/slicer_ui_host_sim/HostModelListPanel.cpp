@@ -163,6 +163,21 @@ int HostModelListPanel::ModelCount() const
     return m_modelList->count();
 }
 
+bool HostModelListPanel::SelectInstance(const QString& instanceId)
+{
+    for (int rowIndex = 0; rowIndex < m_modelList->count(); ++rowIndex)
+    {
+        QListWidgetItem* item = m_modelList->item(rowIndex);
+        if (item->data(Qt::UserRole).toString() == instanceId)
+        {
+            m_modelList->setCurrentItem(
+                item, QItemSelectionModel::ClearAndSelect);
+            return true;
+        }
+    }
+    return false;
+}
+
 void HostModelListPanel::OnSelectAllRequested()
 {
     m_modelList->selectAll();

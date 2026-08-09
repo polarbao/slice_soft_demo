@@ -13,6 +13,7 @@
 #include "ModuleClient.h"
 
 #include <QMainWindow>
+#include <QPointF>
 
 #include <memory>
 
@@ -23,8 +24,11 @@ class QSplitter;
 class QTableWidget;
 class QTabWidget;
 class CpuRasterBackend;
+class MoveOptimizationPolicy;
 class SceneRenderPolicy;
+class SceneInteractionController;
 struct ThreeDFrame;
+struct TopViewFrame;
 class TopViewRenderPolicy;
 class ViewPresentationSettings;
 class ViewWorkspaceWidget;
@@ -113,6 +117,10 @@ private:
     void RefreshTopView();
     void RefreshThreeDView();
     void RenderThreeDView();
+    bool BeginTopViewDrag(const QPointF& imagePoint);
+    void UpdateTopViewDrag(const QPointF& imagePoint);
+    void FinishTopViewDrag();
+    void RenderTransientTopView();
 
     ModuleClient m_client;
     std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
@@ -121,6 +129,9 @@ private:
     std::unique_ptr<IHostProfileCatalog> m_profileCatalog;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
     std::unique_ptr<TopViewRenderPolicy> m_topViewPolicy;
+    std::unique_ptr<TopViewFrame> m_topViewFrame;
+    std::unique_ptr<MoveOptimizationPolicy> m_movePolicy;
+    std::unique_ptr<SceneInteractionController> m_interactionController;
     std::unique_ptr<CpuRasterBackend> m_threeDBackend;
     std::unique_ptr<SceneRenderPolicy> m_threeDPolicy;
     std::unique_ptr<ThreeDFrame> m_threeDFrame;
@@ -143,4 +154,6 @@ private:
     QPlainTextEdit* m_moduleInfoView{nullptr};
     QString m_selectedProfileId;
     QString m_restoredProfileId;
+    QPointF m_dragStartWorld;
+    quint64 m_dragCallCount{0U};
 };

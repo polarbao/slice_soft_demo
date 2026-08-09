@@ -495,8 +495,9 @@ docs/slice/DOC/DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控�
 docs/slice/DOC/DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md ← 【H-A-04 / DTO v1.7】
 docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_D_R1_视图接线归属与14E_04d延期作废.md ← 【H-D 组真源 / 决策反转】
 docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md ← 【H-E 组真源 / HQ-09=乙 · HQ-10=甲】
-docs/slice/DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md ← 【H-D-02 完成证据 / H-D-03..06 准备】
+docs/slice/DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md ← 【H-D-02/03 完成证据 / H-D-04/06 准备】
 docs/slice/REPORT/REPORT_HOSTFLOW_H_D_02_三维画布与RB_P1当前状态.md ← 【H-D-02 / RB-P1 状态真源】
+docs/slice/REPORT/REPORT_HOSTFLOW_H_D_03_三车道拖拽接线当前状态.md ← 【H-D-03 状态真源】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_E_E1_STL与支撑参数实施准备.md ← 【H-E E1 准备真源】
 docs/slice/DOC/DOC_PREP_RENDER_R_B_LOD缺陷修复选型准备.md ← 【R-B 选型准备 / RD-B 待裁决】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_02_场景生命周期运行时准备.md ← 【H-A-02 准备真源】

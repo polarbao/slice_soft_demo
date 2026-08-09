@@ -359,3 +359,61 @@ quint64 TopViewRenderPolicy::BlobReadCount() const
 {
     return m_blobReadCount;
 }
+
+bool TopViewRenderPolicy::ImageToWorld(
+    const TopViewFrame& frame,
+    const QSize& canvasSize,
+    const QPointF& imagePoint,
+    QPointF* worldPoint)
+{
+    if (worldPoint == nullptr
+        || !(frame.decor.buildWidthMm > 0.0)
+        || !(frame.decor.buildHeightMm > 0.0))
+    {
+        return false;
+    }
+    const QRectF renderViewport(
+        kCanvasPadding,
+        kHeaderHeight,
+        canvasSize.width() - 2.0 * kCanvasPadding,
+        canvasSize.height() - kHeaderHeight - kCanvasPadding);
+    if (renderViewport.width() <= 1.0 || renderViewport.height() <= 1.0)
+    {
+        return false;
+    }
+    const double scale = 0.90 * (std::min)(
+        renderViewport.width() / frame.decor.buildWidthMm,
+        renderViewport.height() / frame.decor.buildHeightMm);
+    if (!(scale > 0.0))
+    {
+        return false;
+    }
+    *worldPoint = QPointF(
+        frame.decor.buildWidthMm * 0.5
+            + (imagePoint.x() - renderViewport.center().x()) / scale,
+        frame.decor.buildHeightMm * 0.5
+            - (imagePoint.y() - renderViewport.center().y()) / scale);
+    return true;
+}
+
+QString TopViewRenderPolicy::PickInstance(
+    const TopViewFrame& frame,
+    const QSize& canvasSize,
+    const QPointF& imagePoint)
+{
+    QPointF worldPoint;
+    if (!ImageToWorld(frame, canvasSize, imagePoint, &worldPoint))
+    {
+        return {};
+    }
+    for (int index = frame.instances.size() - 1; index >= 0; --index)
+    {
+        const TopViewInstance& instance = frame.instances.at(index);
+        if (WorldCorners(instance).containsPoint(
+                worldPoint, Qt::OddEvenFill))
+        {
+            return instance.instanceId;
+        }
+    }
+    return {};
+}

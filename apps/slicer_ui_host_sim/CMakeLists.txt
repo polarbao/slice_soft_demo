@@ -1105,17 +1105,79 @@ add_test(
         --real-asset-matrix
 )
 
+add_executable(hostflow_hd03_drag_interaction_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    ModuleClient.cpp
+    ModuleClient.h
+    MoveOptimizationPolicy.cpp
+    MoveOptimizationPolicy.h
+    SceneInteractionController.cpp
+    SceneInteractionController.h
+    TopViewCanvasWidget.cpp
+    TopViewCanvasWidget.h
+    TransformCommitPolicy.cpp
+    TransformCommitPolicy.h
+    render/TopViewRenderPolicy.cpp
+    render/TopViewRenderPolicyData.cpp
+    render/TopViewRenderPolicy.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostDragInteractionTests.cpp
+)
+
+target_include_directories(hostflow_hd03_drag_interaction_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hd03_drag_interaction_tests PRIVATE
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
+    bcrypt
+)
+
+add_dependencies(hostflow_hd03_drag_interaction_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hd03_drag_interaction_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hd03_drag_interaction_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hd03_drag_interaction_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hd03_drag_interaction
+    COMMAND hostflow_hd03_drag_interaction_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+        --evidence-root ${CMAKE_BINARY_DIR}/hostflow_hd03_evidence/$<CONFIG>
+)
+
 set_tests_properties(
     slicer_stage14e04d_dual_view_contract_test
     hostflow_hd01_top_canvas
     hostflow_hd02_three_d_canvas
     hostflow_hd02_real_asset_matrix
+    hostflow_hd03_drag_interaction
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
 
 set_tests_properties(
     hostflow_hd01_top_canvas
     hostflow_hd02_three_d_canvas
+    hostflow_hd03_drag_interaction
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 180

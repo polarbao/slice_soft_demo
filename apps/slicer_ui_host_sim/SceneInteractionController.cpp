@@ -55,6 +55,23 @@ bool SceneInteractionController::Initialize(
     return RefreshSnapshot(error);
 }
 
+bool SceneInteractionController::Attach(
+    const quint64 sceneHandle,
+    const quint64 sceneRevision)
+{
+    if (!m_client.IsOpen() || sceneHandle == 0U || sceneRevision == 0U)
+    {
+        return false;
+    }
+    m_transformPolicy.Reset();
+    m_sceneHandle = sceneHandle;
+    m_sceneRevision = sceneRevision;
+    m_viewDataIdentity.clear();
+    m_collisionCount = 0;
+    m_outOfBoundsCount = 0;
+    return true;
+}
+
 bool SceneInteractionController::BeginTransient(const QString& instanceId)
 {
     return m_transformPolicy.Begin(instanceId);
@@ -124,6 +141,11 @@ CommitOutcome SceneInteractionController::CommitTransient(QString* error)
     return CommitOutcome::Committed;
 }
 
+void SceneInteractionController::DiscardTransient()
+{
+    m_transformPolicy.Reset();
+}
+
 bool SceneInteractionController::HasTransient() const
 {
     return m_transformPolicy.IsActive();
@@ -152,6 +174,16 @@ QString SceneInteractionController::ViewDataIdentity() const
 quint64 SceneInteractionController::SnapshotReadCount() const
 {
     return m_snapshotReadCount;
+}
+
+int SceneInteractionController::CollisionCount() const
+{
+    return m_collisionCount;
+}
+
+int SceneInteractionController::OutOfBoundsCount() const
+{
+    return m_outOfBoundsCount;
 }
 
 bool SceneInteractionController::Bootstrap(
@@ -298,6 +330,10 @@ bool SceneInteractionController::AdoptCommit(
     m_sceneRevision = static_cast<quint64>(revision);
     m_sceneHash = sceneHash;
     m_viewDataIdentity = viewDataIdentity;
+    m_collisionCount = result.value(
+        QStringLiteral("collisions")).toArray().size();
+    m_outOfBoundsCount = result.value(
+        QStringLiteral("outOfBoundsInstances")).toArray().size();
     const quint64 responseHandle = static_cast<quint64>(result.value(
         QStringLiteral("sceneHandle")).toDouble());
     if (responseHandle != 0U)

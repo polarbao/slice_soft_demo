@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace
 {
@@ -29,6 +30,12 @@ void TopViewCanvasWidget::SetImage(const QImage& image)
     ResetView();
 }
 
+void TopViewCanvasWidget::UpdateImage(const QImage& image)
+{
+    m_image = image;
+    update();
+}
+
 void TopViewCanvasWidget::ClearImage()
 {
     m_image = {};
@@ -39,6 +46,7 @@ void TopViewCanvasWidget::ResetView()
 {
     m_zoomFactor = 1.0;
     m_panOffset = {};
+    m_draggingModel = false;
     m_panning = false;
     setCursor(Qt::OpenHandCursor);
     update();
@@ -93,6 +101,16 @@ QPointF TopViewCanvasWidget::PanOffset() const
     return m_panOffset;
 }
 
+void TopViewCanvasWidget::SetModelDragCallbacks(
+    std::function<bool(const QPointF&)> begin,
+    std::function<void(const QPointF&)> update,
+    std::function<void()> finish)
+{
+    m_dragBeginCallback = std::move(begin);
+    m_dragUpdateCallback = std::move(update);
+    m_dragFinishCallback = std::move(finish);
+}
+
 void TopViewCanvasWidget::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
@@ -136,6 +154,16 @@ void TopViewCanvasWidget::wheelEvent(QWheelEvent* event)
 
 void TopViewCanvasWidget::mousePressEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::LeftButton
+        && HasImage()
+        && m_dragBeginCallback
+        && m_dragBeginCallback(MapCanvasToImage(event->localPos())))
+    {
+        m_draggingModel = true;
+        setCursor(Qt::ClosedHandCursor);
+        event->accept();
+        return;
+    }
     if (event->button() == Qt::MiddleButton && HasImage())
     {
         m_panning = true;
@@ -149,6 +177,15 @@ void TopViewCanvasWidget::mousePressEvent(QMouseEvent* event)
 
 void TopViewCanvasWidget::mouseMoveEvent(QMouseEvent* event)
 {
+    if (m_draggingModel)
+    {
+        if (m_dragUpdateCallback)
+        {
+            m_dragUpdateCallback(MapCanvasToImage(event->localPos()));
+        }
+        event->accept();
+        return;
+    }
     if (m_panning)
     {
         const QPoint currentPosition = event->pos();
@@ -162,6 +199,17 @@ void TopViewCanvasWidget::mouseMoveEvent(QMouseEvent* event)
 
 void TopViewCanvasWidget::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::LeftButton && m_draggingModel)
+    {
+        m_draggingModel = false;
+        setCursor(Qt::OpenHandCursor);
+        if (m_dragFinishCallback)
+        {
+            m_dragFinishCallback();
+        }
+        event->accept();
+        return;
+    }
     if (event->button() == Qt::MiddleButton && m_panning)
     {
         m_panning = false;
@@ -181,4 +229,29 @@ void TopViewCanvasWidget::mouseDoubleClickEvent(QMouseEvent* event)
         return;
     }
     QWidget::mouseDoubleClickEvent(event);
+}
+
+QPointF TopViewCanvasWidget::MapCanvasToImage(
+    const QPointF& canvasPoint) const
+{
+    if (m_image.isNull() || width() <= 0 || height() <= 0)
+    {
+        return {};
+    }
+    const double fitScale = (std::min)(
+        static_cast<double>(width()) / m_image.width(),
+        static_cast<double>(height()) / m_image.height());
+    const double scale = fitScale * m_zoomFactor;
+    if (!(scale > 0.0))
+    {
+        return {};
+    }
+    const QPointF center(
+        static_cast<double>(width()) * 0.5,
+        static_cast<double>(height()) * 0.5);
+    const QPointF targetTopLeft = center + m_panOffset
+        - QPointF(
+            m_image.width() * scale * 0.5,
+            m_image.height() * scale * 0.5);
+    return (canvasPoint - targetTopLeft) / scale;
 }

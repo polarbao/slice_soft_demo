@@ -170,6 +170,18 @@ public:
      */
     [[nodiscard]] QString ReferenceModelPath() const;
 
+    /**
+     * @brief Adopts a scene revision committed by another host controller.
+     * @param sceneHandle Existing module-owned scene handle.
+     * @param sceneRevision New authoritative revision after Commit or recovery.
+     * @param error Receives an identity or monotonicity failure reason.
+     * @return True when the workflow now shares the authoritative revision.
+     */
+    bool AdoptSceneState(
+        quint64 sceneHandle,
+        quint64 sceneRevision,
+        QString* error);
+
 private:
     bool ExecuteObject(
         const QJsonObject& request,

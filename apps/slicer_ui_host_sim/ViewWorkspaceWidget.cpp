@@ -178,6 +178,11 @@ void ViewWorkspaceWidget::SetTopImage(const QImage& image)
     m_topCanvas->SetImage(image);
 }
 
+void ViewWorkspaceWidget::UpdateTopImage(const QImage& image)
+{
+    m_topCanvas->UpdateImage(image);
+}
+
 void ViewWorkspaceWidget::ClearTopImage()
 {
     m_topCanvas->ClearImage();

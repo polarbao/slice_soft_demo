@@ -45,6 +45,13 @@ public:
     /** @brief Returns the number of imported instances displayed by the host. */
     [[nodiscard]] int ModelCount() const;
 
+    /**
+     * @brief Selects one instance picked from a host-local canvas.
+     * @param instanceId Stable scene instance identity.
+     * @return True when the instance exists in the presentation list.
+     */
+    bool SelectInstance(const QString& instanceId);
+
 signals:
     /** @brief Requests opening the model import workflow. */
     void SigAddRequested();
