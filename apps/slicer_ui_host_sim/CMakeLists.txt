@@ -30,6 +30,7 @@ add_executable(slicer_ui_host_sim
     HostWorkspaceTextureState.h
     HostMainWindow.cpp
     HostMainWindow.h
+    HostMainWindowImport.cpp
     HostMainWindowJob.cpp
     HostMainWindowProfile.cpp
     HostMainWindowResult.cpp
@@ -227,6 +228,13 @@ endif()
 
 add_test(
     NAME hostflow_hb01_model_import
+    COMMAND hostflow_hb01_model_import_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+    NAME hostflow_he02_batch_import
     COMMAND hostflow_hb01_model_import_tests
         --module $<TARGET_FILE:slicer_module>
         --repo-root ${CMAKE_SOURCE_DIR}

@@ -81,11 +81,78 @@ bool HostModelImportWorkflow::ImportModel(
         }
         return false;
     }
-    *result = {};
+    QList<hostmodelimportresult> results;
+    if (!ImportModels(QStringList{modelPath}, &results, error))
+    {
+        return false;
+    }
+    *result = results.constFirst();
+    return true;
+}
 
+bool HostModelImportWorkflow::ImportModels(
+    const QStringList& modelPaths,
+    QList<hostmodelimportresult>* results,
+    QString* error)
+{
+    if (results == nullptr || modelPaths.isEmpty()
+        || m_instanceModels.size() + modelPaths.size() > 22)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "批量导入需要 1..%1 个模型且场景总数不得超过 22。")
+                         .arg(qMax(0, 22 - m_instanceModels.size()));
+        }
+        return false;
+    }
+    results->clear();
+    for (const QString& modelPath : modelPaths)
+    {
+        const QFileInfo modelFile(modelPath);
+        const QString suffix = modelFile.suffix().toLower();
+        if (!modelFile.isFile()
+            || (suffix != QStringLiteral("obj")
+                && suffix != QStringLiteral("3mf")
+                && suffix != QStringLiteral("stl")))
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "批量导入包含不存在或不受支持的模型：%1")
+                             .arg(modelPath);
+            }
+            return false;
+        }
+    }
+    QList<hostmodelimportresult> imported;
+    for (const QString& modelPath : modelPaths)
+    {
+        hostmodelimportresult result;
+        if (!ImportResource(modelPath, &result, error))
+        {
+            ReleaseImportedModels(imported);
+            return false;
+        }
+        imported.append(result);
+    }
+    if (!CommitImportedInstances(&imported, error))
+    {
+        ReleaseImportedModels(imported);
+        return false;
+    }
+    *results = imported;
+    return true;
+}
+
+bool HostModelImportWorkflow::ImportResource(
+    const QString& modelPath,
+    hostmodelimportresult* result,
+    QString* error)
+{
     const QFileInfo modelFile(modelPath);
     const QString suffix = modelFile.suffix().toLower();
-    if (!modelFile.isFile()
+    if (result == nullptr || !modelFile.isFile()
         || (suffix != QStringLiteral("obj")
             && suffix != QStringLiteral("3mf")
             && suffix != QStringLiteral("stl")))
@@ -97,22 +164,22 @@ bool HostModelImportWorkflow::ImportModel(
         }
         return false;
     }
-
-    QJsonObject imported;
-    const QString normalizedPath = QDir::fromNativeSeparators(
+    *result = {};
+    result->sourcepath = QDir::fromNativeSeparators(
         modelFile.absoluteFilePath());
-    const QJsonObject importRequest{
-        {QStringLiteral("capability"), QStringLiteral("model.import")},
-        {QStringLiteral("modelPath"), normalizedPath},
-        {QStringLiteral("options"), QJsonObject{
-             {QStringLiteral("computeBBox"), true},
-             {QStringLiteral("extractMaterials"), true}}}};
-    if (!ExecuteObject(importRequest, &imported, error))
+    QJsonObject imported;
+    if (!ExecuteObject(
+            QJsonObject{
+                {QStringLiteral("capability"), QStringLiteral("model.import")},
+                {QStringLiteral("modelPath"), result->sourcepath},
+                {QStringLiteral("options"), QJsonObject{
+                     {QStringLiteral("computeBBox"), true},
+                     {QStringLiteral("extractMaterials"), true}}}},
+            &imported,
+            error))
     {
         return false;
     }
-
-    result->sourcepath = normalizedPath;
     result->modelid = imported.value(QStringLiteral("modelId")).toString();
     result->trianglecount = static_cast<quint64>(imported.value(
         QStringLiteral("triangleCount")).toDouble());
@@ -126,27 +193,12 @@ bool HostModelImportWorkflow::ImportModel(
     result->widthmm = ArrayValue(maximum, 0) - ArrayValue(minimum, 0);
     result->heightmm = ArrayValue(maximum, 1) - ArrayValue(minimum, 1);
     result->depthmm = ArrayValue(maximum, 2) - ArrayValue(minimum, 2);
-    if (result->modelid.isEmpty())
+    if (result->modelid.isEmpty()
+        || !RunFastPreflight(result->modelid, result, error))
     {
-        if (error != nullptr)
-        {
-            *error = QStringLiteral("model.import 未返回 modelId。");
-        }
+        ReleaseImportedModels(QList<hostmodelimportresult>{*result});
         return false;
     }
-
-    if (!AddInstance(result->modelid, &result->instanceid, error))
-    {
-        RollbackImport(result->modelid, QString{});
-        return false;
-    }
-    if (!RunFastPreflight(result->modelid, result, error))
-    {
-        RollbackImport(result->modelid, result->instanceid);
-        return false;
-    }
-    m_instanceModels.insert(result->instanceid, result->modelid);
-    m_instanceSources.insert(result->instanceid, normalizedPath);
     return true;
 }
 
@@ -295,17 +347,24 @@ bool HostModelImportWorkflow::ExecuteObject(
     return true;
 }
 
-bool HostModelImportWorkflow::AddInstance(
-    const QString& modelId,
-    QString* instanceId,
+bool HostModelImportWorkflow::CommitImportedInstances(
+    QList<hostmodelimportresult>* results,
     QString* error)
 {
-    if (instanceId == nullptr)
+    if (results == nullptr || results->isEmpty())
     {
         return false;
     }
-    *instanceId = QStringLiteral("instance-%1").arg(
-        QUuid::createUuid().toString(QUuid::WithoutBraces));
+    QJsonArray operations;
+    for (hostmodelimportresult& result : *results)
+    {
+        result.instanceid = QStringLiteral("instance-%1").arg(
+            QUuid::createUuid().toString(QUuid::WithoutBraces));
+        operations.append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("addInstance")},
+            {QStringLiteral("modelId"), result.modelid},
+            {QStringLiteral("assignInstanceId"), result.instanceid}});
+    }
     QJsonObject request{
         {QStringLiteral("capability"),
          QStringLiteral("scene.apply_operation")},
@@ -316,10 +375,7 @@ bool HostModelImportWorkflow::AddInstance(
          static_cast<qint64>(m_sceneRevision)},
         {QStringLiteral("expectedSceneRevision"),
          static_cast<qint64>(m_sceneRevision)},
-        {QStringLiteral("operations"), QJsonArray{QJsonObject{
-             {QStringLiteral("type"), QStringLiteral("addInstance")},
-             {QStringLiteral("modelId"), modelId},
-             {QStringLiteral("assignInstanceId"), *instanceId}}}}};
+        {QStringLiteral("operations"), operations}};
     if (m_sceneHandle == 0U)
     {
         request.insert(
@@ -338,26 +394,36 @@ bool HostModelImportWorkflow::AddInstance(
     {
         return false;
     }
+    const quint64 previousHandle = m_sceneHandle;
     const quint64 responseHandle = static_cast<quint64>(response.value(
         QStringLiteral("sceneHandle")).toDouble());
-    if (m_sceneHandle == 0U)
-    {
-        m_sceneHandle = responseHandle;
-        m_sceneProfileId = m_pendingProfileId;
-        m_sceneBuildVolume = m_pendingBuildVolume;
-    }
     const quint64 newRevision = static_cast<quint64>(response.value(
         QStringLiteral("newSceneRevision")).toDouble());
-    if (m_sceneHandle == 0U || newRevision != m_sceneRevision + 1U)
+    const quint64 committedHandle = previousHandle == 0U
+        ? responseHandle : previousHandle;
+    if (committedHandle == 0U
+        || (responseHandle != 0U && responseHandle != committedHandle)
+        || newRevision != m_sceneRevision + 1U)
     {
         if (error != nullptr)
         {
             *error = QStringLiteral(
-                "addInstance 未返回有效 sceneHandle/sceneRevision。");
+                "批量 addInstance 未返回有效 sceneHandle/sceneRevision。");
         }
         return false;
     }
+    m_sceneHandle = committedHandle;
+    if (previousHandle == 0U)
+    {
+        m_sceneProfileId = m_pendingProfileId;
+        m_sceneBuildVolume = m_pendingBuildVolume;
+    }
     m_sceneRevision = newRevision;
+    for (const hostmodelimportresult& result : *results)
+    {
+        m_instanceModels.insert(result.instanceid, result.modelid);
+        m_instanceSources.insert(result.instanceid, result.sourcepath);
+    }
     return true;
 }
 
@@ -401,40 +467,22 @@ bool HostModelImportWorkflow::RunFastPreflight(
     return true;
 }
 
-void HostModelImportWorkflow::RollbackImport(
-    const QString& modelId,
-    const QString& instanceId)
+void HostModelImportWorkflow::ReleaseImportedModels(
+    const QList<hostmodelimportresult>& results)
 {
     QString ignoredError;
-    if (!instanceId.isEmpty() && m_sceneHandle != 0U)
+    for (const hostmodelimportresult& result : results)
     {
-        QJsonObject response;
-        const QJsonObject request{
-            {QStringLiteral("capability"),
-             QStringLiteral("scene.apply_operation")},
-            {QStringLiteral("operationId"),
-             QStringLiteral("operation-import-rollback-%1").arg(
-                 QUuid::createUuid().toString(QUuid::WithoutBraces))},
-            {QStringLiteral("sceneHandle"),
-             static_cast<qint64>(m_sceneHandle)},
-            {QStringLiteral("currentSceneRevision"),
-             static_cast<qint64>(m_sceneRevision)},
-            {QStringLiteral("expectedSceneRevision"),
-             static_cast<qint64>(m_sceneRevision)},
-            {QStringLiteral("operations"), QJsonArray{QJsonObject{
-                 {QStringLiteral("type"), QStringLiteral("removeInstance")},
-                 {QStringLiteral("instanceId"), instanceId}}}}};
-        if (ExecuteObject(request, &response, &ignoredError))
+        if (result.modelid.isEmpty())
         {
-            m_sceneRevision = static_cast<quint64>(response.value(
-                QStringLiteral("newSceneRevision")).toDouble());
+            continue;
         }
+        QJsonObject ignoredResponse;
+        (void)ExecuteObject(
+            QJsonObject{
+                {QStringLiteral("capability"), QStringLiteral("model.release")},
+                {QStringLiteral("modelId"), result.modelid}},
+            &ignoredResponse,
+            &ignoredError);
     }
-    QJsonObject ignoredResponse;
-    (void)ExecuteObject(
-        QJsonObject{
-            {QStringLiteral("capability"), QStringLiteral("model.release")},
-            {QStringLiteral("modelId"), modelId}},
-        &ignoredResponse,
-        &ignoredError);
 }

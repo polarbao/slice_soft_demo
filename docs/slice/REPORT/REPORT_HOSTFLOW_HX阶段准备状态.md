@@ -1,6 +1,6 @@
 # REPORT HOSTFLOW H-X 阶段准备状态
 
-> 状态：**ACTIVE — H-D-01..05 已完成 / H-E E2 完成，E3 READY**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
+> 状态：**ACTIVE — H-D-01..05 已完成 / H-E-02 完成，H-E-06 READY**（H-A/H-B/H-C 本地完成，外部 ACK 延期）
 > 日期：2026-08-10
 > 范围：HOSTFLOW H-A、H-B、H-C、H-D、H-E，不属于 Stage 14 编号任务。
 
@@ -12,7 +12,7 @@
 | H-B 宿主业务 UI | COMPLETE | H-B-01..08 全部完成 | 无切片侧阻断 |
 | H-C 移植交付 | COMPLETE | H-C-01/02/03 全部完成 | 无切片侧阻断；打印侧 ACK 延期 |
 | **H-D 视图接线** | **CODE COMPLETE** | H-D-01..05 已完成 | H-D-06 仅等待人工七步证据 |
-| **H-E 参数深度与导入** | **E2 COMPLETE / E3 READY** | H-E-01/03/04/05 完成；E1/E2 Gate PASS | H-E-02 后再闭合 H-E-06 |
+| **H-E 参数深度与导入** | **E3 IN PROGRESS** | H-E-01..05 完成；H-E-02 原子批量导入完成 | H-E-06 白区预检待闭合 |
 
 > 🔴 **2026-08-08 复核更正**：本文原状态为 `LOCAL COMPLETE`，**该结论不成立**。
 > H-A/H-B/H-C 闭合的是**业务与数据链路**，两层缺口未覆盖：
@@ -116,6 +116,10 @@ H-E E1/E2 已完成并通过批次复核：H-E-01 闭合 ASCII/binary STL 与负
 生产纹理、UV、缺失策略、非表面策略和 Stage 15 白区载体，并进入 canonical Profile、
 自哈希和工作区 schema 4。E3 已解锁，按 H-E-02 → H-E-06 顺序实施。
 
+H-E-02 已完成：OBJ/3MF/STL 多选批次在场景变更前完成全部资源导入与快速预检，随后以
+一次原子 `addInstance[]` Commit 推进一次 revision；任一失败会释放本批资源，实例集合和
+revision 不变。Debug/Release 批量原子性、UI smoke 与源码尺寸门禁均 PASS。
+
 ## Target State
 
 ```text
@@ -149,6 +153,6 @@ H-A-03 已证明宿主只经 11 个导出实现：
 ## Next Action
 
 H-D-01..05 已闭合；H-D-06 只等待人工七步证据，自动化不得代替人工 PASS。
-H-E 下一张卡为 H-E-02，之后执行 H-E-06 并完成 E3 批次复核。
+H-E 下一张卡为 H-E-06；完成后执行 E3 批次复核。
 RB-P2/RB-P3 与 R-A-02 保持独立 RENDER 后续，不阻断 H-E。打印侧 ACK 维持
 `PENDING / DEFERRED`。

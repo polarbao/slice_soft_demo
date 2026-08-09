@@ -121,8 +121,64 @@ int main(int argc, char* argv[])
         return 8;
     }
 
+    const quint64 revisionBeforeBatch = workflow.SceneRevision();
+    QList<hostmodelimportresult> batchResults;
+    error.clear();
+    if (!workflow.ImportModels(
+            QStringList{objPath, threeMfPath}, &batchResults, &error))
+    {
+        errors << "批量导入流程失败：" << error << Qt::endl;
+        return 9;
+    }
+    if (!Check(batchResults.size() == 2,
+               QStringLiteral("批量导入应返回两个有序结果。"),
+               errors)
+        || !Check(batchResults.at(0).sourcepath.endsWith(
+                      QStringLiteral("surface_shell_cube_no_uv.obj")),
+                  QStringLiteral("批量导入结果必须保持用户选择顺序。"),
+                  errors)
+        || !Check(batchResults.at(0).instanceid
+                      != batchResults.at(1).instanceid,
+                  QStringLiteral("批量导入实例身份必须唯一。"),
+                  errors)
+        || !Check(workflow.SceneRevision() == revisionBeforeBatch + 1U,
+                  QStringLiteral("批量导入只能推进一次场景 revision。"),
+                  errors)
+        || !Check(workflow.InstanceCount() == 4,
+                  QStringLiteral("批量导入后场景实例数应增加两个。"),
+                  errors))
+    {
+        return 10;
+    }
+
+    const quint64 revisionBeforeRejectedBatch = workflow.SceneRevision();
+    const int instancesBeforeRejectedBatch = workflow.InstanceCount();
+    batchResults.clear();
+    error.clear();
+    const bool rejectedBatchAccepted = workflow.ImportModels(
+        QStringList{
+            objPath,
+            QDir(repositoryRoot).filePath(QStringLiteral("missing.obj"))},
+        &batchResults,
+        &error);
+    if (!Check(!rejectedBatchAccepted && !error.isEmpty(),
+               QStringLiteral("含无效路径的批次必须整体 fail-closed。"),
+               errors)
+        || !Check(batchResults.isEmpty(),
+                  QStringLiteral("失败批次不得返回半成品结果。"),
+                  errors)
+        || !Check(workflow.SceneRevision() == revisionBeforeRejectedBatch,
+                  QStringLiteral("失败批次不得改变场景 revision。"),
+                  errors)
+        || !Check(workflow.InstanceCount() == instancesBeforeRejectedBatch,
+                  QStringLiteral("失败批次不得留下半个场景。"),
+                  errors))
+    {
+        return 11;
+    }
+
     QTextStream(stdout)
-        << "HOSTFLOW_HB01_PASS sceneHandle=" << workflow.SceneHandle()
+        << "HOSTFLOW_HE02_PASS sceneHandle=" << workflow.SceneHandle()
         << " revision=" << workflow.SceneRevision()
         << " calls=" << client.CallCount()
         << Qt::endl;

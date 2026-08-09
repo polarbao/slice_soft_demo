@@ -12,22 +12,18 @@
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDir>
-#include <QFileDialog>
-#include <QFileInfo>
 #include <QFormLayout>
 #include <QFontDatabase>
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QSplitter>
 #include <QStandardPaths>
 #include <QStringList>
 #include <QTabWidget>
 #include <QTableWidget>
-#include <QTableWidgetItem>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -343,46 +339,6 @@ void HostMainWindow::LoadModule(const QString& modulePath)
                 QString::fromUtf8(selfTestReport)));
 }
 
-void HostMainWindow::OnImportModel()
-{
-    const QString modelPath = QFileDialog::getOpenFileName(
-        this,
-        QStringLiteral("选择要导入的 OBJ、3MF 或 STL 模型"),
-        QDir::homePath(),
-        QStringLiteral(
-            "支持的模型 (*.obj *.3mf *.stl);;OBJ 模型 (*.obj);;"
-            "3MF 模型 (*.3mf);;STL 模型 (*.stl)"));
-    if (modelPath.isEmpty())
-    {
-        return;
-    }
-
-    QString contextError;
-    if (!ApplyPendingSceneContext(&contextError))
-    {
-        ShowImportError(contextError);
-        return;
-    }
-
-    SetSceneCommandsEnabled(false);
-    m_importSummaryLabel->setText(QStringLiteral("正在导入并执行快速预检…"));
-    QCoreApplication::processEvents();
-
-    hostmodelimportresult result;
-    QString error;
-    const bool imported = m_importWorkflow->ImportModel(
-        modelPath, &result, &error);
-    SetSceneCommandsEnabled(m_client.IsOpen());
-    if (!imported)
-    {
-        ShowImportError(error);
-        return;
-    }
-    RefreshSliceSettings();
-    ShowImportResult(result);
-    RefreshSceneViews();
-}
-
 void HostMainWindow::OnRemoveModels(const QStringList& instanceIds)
 {
     SetSceneCommandsEnabled(false);
@@ -415,67 +371,6 @@ void HostMainWindow::OnModelSelectionChanged(
 {
     m_workspace->SetSelectedInstances(instanceIds);
     m_transformLayoutPanel->SetSelectedInstances(instanceIds);
-}
-
-void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
-{
-    const QFileInfo source(result.sourcepath);
-    const QString admissionText =
-        result.admission == QStringLiteral("passed")
-        ? QStringLiteral("通过")
-        : result.admission == QStringLiteral("manual_repair_required")
-            ? QStringLiteral("需要人工修复")
-            : QStringLiteral("阻断");
-    m_modelListPanel->AddModel(result);
-    m_transformLayoutPanel->SetSceneState(
-        m_importWorkflow->InstanceCount(),
-        m_importWorkflow->SceneRevision());
-    m_importSummaryLabel->setText(
-        QStringLiteral(
-            "%1\nOBJ/3MF/STL 元数据：%2 三角形，%3 顶点，"
-            "%4 × %5 × %6 mm，UV=%7，法线=%8\n"
-            "快速预检：%9；场景 revision=%10")
-            .arg(source.fileName())
-            .arg(result.trianglecount)
-            .arg(result.vertexcount)
-            .arg(result.widthmm, 0, 'f', 2)
-            .arg(result.heightmm, 0, 'f', 2)
-            .arg(result.depthmm, 0, 'f', 2)
-            .arg(result.hasuv ? QStringLiteral("有") : QStringLiteral("无"))
-            .arg(result.hasnormals ? QStringLiteral("有") : QStringLiteral("无"))
-            .arg(admissionText)
-            .arg(m_importWorkflow->SceneRevision()));
-
-    m_preflightTable->setRowCount(result.issues.size());
-    for (int rowIndex = 0; rowIndex < result.issues.size(); ++rowIndex)
-    {
-        const hostpreflightissue& issue = result.issues.at(rowIndex);
-        m_preflightTable->setItem(
-            rowIndex, 0, new QTableWidgetItem(issue.severity));
-        m_preflightTable->setItem(
-            rowIndex,
-            1,
-            new QTableWidgetItem(QStringLiteral("%1 (%2)")
-                .arg(issue.code)
-                .arg(issue.count)));
-        m_preflightTable->setItem(
-            rowIndex, 2, new QTableWidgetItem(issue.detail));
-    }
-    m_preflightTable->resizeRowsToContents();
-    m_statusLabel->setText(
-        QStringLiteral("模型已导入 · %1 · ABI 调用 %2 次")
-            .arg(admissionText)
-            .arg(m_client.CallCount()));
-}
-
-void HostMainWindow::ShowImportError(const QString& error)
-{
-    const QString detail = error.isEmpty()
-        ? QStringLiteral("模型导入流程失败，模块未返回详细原因。")
-        : error;
-    m_importSummaryLabel->setText(QStringLiteral("导入失败：%1").arg(detail));
-    m_statusLabel->setText(QStringLiteral("模型导入失败"));
-    QMessageBox::critical(this, QStringLiteral("模型导入失败"), detail);
 }
 
 void HostMainWindow::SaveViewSettings()

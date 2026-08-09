@@ -96,6 +96,18 @@ public:
         QString* error);
 
     /**
+     * @brief Imports and admits multiple models with one atomic scene Commit.
+     * @param modelPaths Existing OBJ, 3MF, or STL paths in operator order.
+     * @param results Receives one metadata and preflight result per path.
+     * @param error Receives a fail-closed reason; no instance is added on failure.
+     * @return True when every resource passes preflight and all instances commit.
+     */
+    bool ImportModels(
+        const QStringList& modelPaths,
+        QList<hostmodelimportresult>* results,
+        QString* error);
+
+    /**
      * @brief Atomically removes existing scene instances.
      * @param instanceIds Stable instance identities selected by the host.
      * @param error Receives a user-readable fail-closed reason.
@@ -187,9 +199,12 @@ private:
         const QJsonObject& request,
         QJsonObject* response,
         QString* error);
-    bool AddInstance(
-        const QString& modelId,
-        QString* instanceId,
+    bool ImportResource(
+        const QString& modelPath,
+        hostmodelimportresult* result,
+        QString* error);
+    bool CommitImportedInstances(
+        QList<hostmodelimportresult>* results,
         QString* error);
     bool RunFastPreflight(
         const QString& modelId,
@@ -199,9 +214,8 @@ private:
         const QJsonArray& operations,
         hostsceneeditresult* result,
         QString* error);
-    void RollbackImport(
-        const QString& modelId,
-        const QString& instanceId);
+    void ReleaseImportedModels(
+        const QList<hostmodelimportresult>& results);
 
     ModuleClient& m_client;
     QHash<QString, QString> m_instanceModels;
