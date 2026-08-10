@@ -22,6 +22,16 @@ QString SafetyText(const QString& safety)
     }
     return QStringLiteral("仅诊断");
 }
+
+QString ProfileTooltip(const hostprofiledescriptor& profile)
+{
+    return QStringLiteral("%1\n默认工艺：%2\n输出：%3\n注意：%4")
+        .arg(
+            profile.usage,
+            profile.defaultprocess,
+            profile.outputcontract,
+            profile.limitations);
+}
 }
 
 HostProfilePanel::HostProfilePanel(QWidget* parent)
@@ -36,7 +46,7 @@ HostProfilePanel::HostProfilePanel(QWidget* parent)
     m_profileCombo->setObjectName(QStringLiteral("hostProfileCombo"));
     m_profileCombo->setToolTip(QStringLiteral(
         "Profile 目录由打印宿主提供；可用性由模块 ABI 能力求交决定。"));
-    form->addRow(QStringLiteral("工艺 Profile"), m_profileCombo);
+    form->addRow(QStringLiteral("工艺配置"), m_profileCombo);
 
     m_safetyLabel = new QLabel(QStringLiteral("未解析"), this);
     m_safetyLabel->setObjectName(QStringLiteral("hostProfileSafetyLabel"));
@@ -59,9 +69,9 @@ HostProfilePanel::HostProfilePanel(QWidget* parent)
     m_capabilityView->setObjectName(
         QStringLiteral("hostProfileCapabilityView"));
     m_capabilityView->setReadOnly(true);
-    m_capabilityView->setMaximumBlockCount(20);
+    m_capabilityView->setMaximumBlockCount(40);
     m_capabilityView->setPlaceholderText(
-        QStringLiteral("此处显示标签与所需模块能力。"));
+        QStringLiteral("此处显示适用场景、默认工艺、输出合同和限制。"));
     layout->addWidget(m_capabilityView, 1);
 
     connect(
@@ -90,6 +100,10 @@ void HostProfilePanel::SetProfiles(
             QStringLiteral("%1 [%2]")
                 .arg(availability.profile.displayname, suffix),
             availability.profile.profileid);
+        m_profileCombo->setItemData(
+            index,
+            ProfileTooltip(availability.profile),
+            Qt::ToolTipRole);
         if (!availability.available && model != nullptr)
         {
             model->item(index)->setEnabled(false);
@@ -181,11 +195,25 @@ void HostProfilePanel::RefreshPresentation()
             ? QStringLiteral("模块能力满足全部要求")
             : QStringLiteral("缺少能力：%1").arg(
                   availability->missingcapabilities.join(", ")));
-    m_descriptionLabel->setText(availability->profile.description);
+    m_descriptionLabel->setText(
+        QStringLiteral("配置说明：%1")
+            .arg(availability->profile.description));
     m_capabilityView->setPlainText(
-        QStringLiteral("标签：%1\n\n所需模块能力：\n%2")
+        QStringLiteral(
+            "适用场景：%1\n\n"
+            "默认工艺：%2\n\n"
+            "输出合同：%3\n\n"
+            "使用限制：%4\n\n"
+            "标签：%5\n\n"
+            "Profile ID：%6\n\n"
+            "所需模块能力：\n%7")
             .arg(
+                availability->profile.usage,
+                availability->profile.defaultprocess,
+                availability->profile.outputcontract,
+                availability->profile.limitations,
                 availability->profile.tags.join(QStringLiteral(" · ")),
+                availability->profile.profileid,
                 availability->profile.requiredcapabilities.join(
                     QStringLiteral("\n"))));
 }

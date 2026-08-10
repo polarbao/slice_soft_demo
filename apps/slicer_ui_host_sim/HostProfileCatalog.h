@@ -14,6 +14,10 @@ struct hostprofiledescriptor
     QString productionsafety;
     QStringList tags;
     QStringList requiredcapabilities;
+    QString usage;
+    QString defaultprocess;
+    QString outputcontract;
+    QString limitations;
 };
 
 /** @brief Capability-intersection result for one host Profile. */

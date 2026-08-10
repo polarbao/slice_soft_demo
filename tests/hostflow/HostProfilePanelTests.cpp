@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QFileInfo>
+#include <QPlainTextEdit>
 #include <QStringList>
 #include <QTextStream>
 
@@ -56,7 +57,11 @@ hostprofiledescriptor MakeProfile(
         QStringLiteral("HOSTFLOW H-B-04 测试目录项"),
         safety,
         {QStringLiteral("测试")},
-        requirements};
+        requirements,
+        QStringLiteral("测试用途"),
+        QStringLiteral("测试默认工艺"),
+        QStringLiteral("测试输出合同"),
+        QStringLiteral("测试限制")};
 }
 }
 
@@ -127,13 +132,25 @@ int main(int argc, char* argv[])
     panel.SetProfiles(resolution);
     auto* profileCombo = panel.findChild<QComboBox*>(
         QStringLiteral("hostProfileCombo"));
+    auto* profileDetails = panel.findChild<QPlainTextEdit*>(
+        QStringLiteral("hostProfileCapabilityView"));
     if (!Check(
-            profileCombo != nullptr && profileCombo->count() == 3,
+            profileCombo != nullptr && profileDetails != nullptr
+                && profileCombo->count() == 3,
             QStringLiteral("Profile 选择控件或目录项不完整。"),
             errors)
         || !Check(
             panel.AvailableProfileCount() == 3,
             QStringLiteral("可用 Profile 计数错误。"),
+            errors)
+        || !Check(
+            profileCombo->itemData(0, Qt::ToolTipRole)
+                    .toString().contains(QStringLiteral("默认工艺"))
+                && profileDetails->toPlainText().contains(
+                    QStringLiteral("输出合同"))
+                && profileDetails->toPlainText().contains(
+                    QStringLiteral("使用限制")),
+            QStringLiteral("Profile 未提供面向操作员的完整工艺说明。"),
             errors))
     {
         return 6;

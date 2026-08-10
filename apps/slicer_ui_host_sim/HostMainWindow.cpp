@@ -144,7 +144,7 @@ void HostMainWindow::BuildInterface()
     m_inspectorTabs->addTab(modelPage, QStringLiteral("模型"));
 
     m_profilePanel = new HostProfilePanel(m_inspectorTabs);
-    m_inspectorTabs->addTab(m_profilePanel, QStringLiteral("Profile"));
+    m_inspectorTabs->addTab(m_profilePanel, QStringLiteral("工艺配置"));
 
     m_sliceSettingsPanel = new HostSliceSettingsPanel(m_inspectorTabs);
     m_inspectorTabs->addTab(m_sliceSettingsPanel, QStringLiteral("切片设置"));
