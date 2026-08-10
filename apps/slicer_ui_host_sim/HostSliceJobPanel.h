@@ -90,4 +90,5 @@ private:
     QPlainTextEdit* m_detailView{nullptr};
     bool m_ready{false};
     bool m_active{false};
+    bool m_hasCompletion{false};
 };

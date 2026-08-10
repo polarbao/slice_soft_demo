@@ -403,6 +403,12 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
     {
         const QJsonObject resultError = result.value(
             QStringLiteral("error")).toObject();
+        const QString nestedCode = resultError.value(
+            QStringLiteral("code")).toString();
+        if (!nestedCode.isEmpty())
+        {
+            m_completion.code = nestedCode;
+        }
         m_completion.message = resultError.value(
             QStringLiteral("message")).toString();
         m_completion.detail = resultError.value(

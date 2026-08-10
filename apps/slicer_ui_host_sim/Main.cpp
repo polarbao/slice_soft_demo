@@ -205,14 +205,40 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
         QStringLiteral("hostSliceJobProgressBar"));
     const auto* statusLabel = window.findChild<QLabel*>(
         QStringLiteral("hostSliceJobStatusLabel"));
+    auto* jobPanel = window.findChild<HostSliceJobPanel*>(
+        QStringLiteral("hostSliceJobPanel"));
+    const auto* detailView = window.findChild<QPlainTextEdit*>(
+        QStringLiteral("hostSliceJobDetailView"));
     if (startButton == nullptr || cancelButton == nullptr
         || progressBar == nullptr || statusLabel == nullptr
+        || jobPanel == nullptr || detailView == nullptr
         || startButton->isEnabled() || cancelButton->isEnabled()
         || progressBar->minimum() != 0 || progressBar->maximum() != 100
         || statusLabel->text().isEmpty())
     {
         QTextStream(stderr)
             << "HOSTFLOW_HB06_UI_FAILED: job panel is incomplete"
+            << Qt::endl;
+        return 11;
+    }
+    jobPanel->ShowCompletion(
+        false,
+        false,
+        QStringLiteral("HOSTFLOW-TEST-ERROR"),
+        QStringLiteral("测试错误说明"),
+        QStringLiteral("测试详细信息"),
+        QString{},
+        25,
+        -1);
+    if (!detailView->toPlainText().contains(
+            QStringLiteral("错误码：HOSTFLOW-TEST-ERROR"))
+        || !detailView->toPlainText().contains(
+            QStringLiteral("错误说明：测试错误说明"))
+        || !detailView->toPlainText().contains(
+            QStringLiteral("详细信息：测试详细信息")))
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB06_UI_FAILED: failure detail is incomplete"
             << Qt::endl;
         return 11;
     }

@@ -1,6 +1,7 @@
 #include "HostMainWindow.h"
 
 #include <QLabel>
+#include <QTabWidget>
 
 void HostMainWindow::RefreshSliceJobReadiness()
 {
@@ -52,11 +53,13 @@ void HostMainWindow::OnStartSlice()
             QString{},
             0,
             -1);
+        m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
         RefreshSliceJobReadiness();
         return;
     }
     SetWorkflowEditingEnabled(false);
     m_sliceJobPanel->SetActive();
+    m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
     m_statusLabel->setText(
         m_textureWhiteWarning
             ? QStringLiteral(
@@ -117,12 +120,14 @@ void HostMainWindow::OnSliceJobCompleted(
     }
     else if (cancelled)
     {
+        m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
         m_statusLabel->setText(
             QStringLiteral("切片已取消 · 清理耗时 %1 ms")
                 .arg(cancelLatencyMs));
     }
     else
     {
+        m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
         m_statusLabel->setText(
             QStringLiteral("切片失败 · %1 · %2").arg(code, message));
     }

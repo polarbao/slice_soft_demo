@@ -10,6 +10,7 @@
 HostSliceJobPanel::HostSliceJobPanel(QWidget* parent)
     : QWidget(parent)
 {
+    setObjectName(QStringLiteral("hostSliceJobPanel"));
     BuildInterface();
     SetReady(false, QStringLiteral("请先选择可切片 Profile 并导入模型。"));
 }
@@ -76,7 +77,7 @@ void HostSliceJobPanel::SetReady(
     const QString& reason)
 {
     m_ready = ready;
-    if (!m_active)
+    if (!m_active && !m_hasCompletion)
     {
         m_statusLabel->setText(
             ready ? QStringLiteral("切片作业已就绪") : reason);
@@ -87,6 +88,7 @@ void HostSliceJobPanel::SetReady(
 void HostSliceJobPanel::SetActive()
 {
     m_active = true;
+    m_hasCompletion = false;
     m_progressBar->setValue(0);
     m_statusLabel->setText(QStringLiteral("切片作业已提交"));
     m_phaseLabel->setText(QStringLiteral("排队中"));
@@ -125,31 +127,42 @@ void HostSliceJobPanel::ShowCompletion(
     const qint64 cancelLatencyMs)
 {
     m_active = false;
+    m_hasCompletion = true;
     m_progressBar->setValue(success || cancelled ? 100 : m_progressBar->value());
     m_statusLabel->setText(
         success ? QStringLiteral("切片完成")
                 : cancelled ? QStringLiteral("切片已取消")
                             : QStringLiteral("切片失败"));
+    m_phaseLabel->setText(
+        success ? QStringLiteral("作业已完成，可在结果页检查生产包。")
+                : cancelled ? QStringLiteral("作业已取消，临时产物已清理。")
+                            : QStringLiteral(
+                                  "作业失败，请检查下方错误码与详细信息。"));
     QStringList details{
-        QStringLiteral("code=%1").arg(
+        QStringLiteral("错误码：%1").arg(
             code.isEmpty() ? QStringLiteral("未返回") : code),
-        QStringLiteral("elapsedMs=%1").arg(elapsedMs)};
+        QStringLiteral("总耗时：%1 ms").arg(elapsedMs)};
     if (cancelLatencyMs >= 0)
     {
-        details.append(QStringLiteral("cancelLatencyMs=%1")
+        details.append(QStringLiteral("取消清理耗时：%1 ms")
                            .arg(cancelLatencyMs));
     }
     if (!packageDirectory.isEmpty())
     {
-        details.append(QStringLiteral("packageDir=%1").arg(packageDirectory));
+        details.append(QStringLiteral("生产包目录：%1").arg(packageDirectory));
     }
     if (!message.isEmpty())
     {
-        details.append(QStringLiteral("message=%1").arg(message));
+        details.append(QStringLiteral("错误说明：%1").arg(message));
     }
     if (!detail.isEmpty())
     {
-        details.append(QStringLiteral("detail=%1").arg(detail));
+        details.append(QStringLiteral("详细信息：%1").arg(detail));
+    }
+    if (!success && !cancelled && message.isEmpty() && detail.isEmpty())
+    {
+        details.append(QStringLiteral(
+            "错误说明：模块未返回更多信息，请复制错误码并检查模块诊断日志。"));
     }
     m_detailView->setPlainText(details.join(QLatin1Char('\n')));
     UpdateButtons();
