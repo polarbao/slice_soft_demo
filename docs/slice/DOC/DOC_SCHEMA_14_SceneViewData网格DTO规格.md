@@ -1,6 +1,6 @@
 # DOC_SCHEMA_14 `scene.get_viewdata` 网格 DTO 规格
 
-> 文档状态：✅ **ACTIVE / CONTRACT AMENDED**（R-B-00）
+> 文档状态：✅ **ACTIVE / CONTRACT AMENDED**（R-B-03）
 > 版本：v1.3 ｜ 日期：2026-08-04 ｜ ViewMesh 复用修订：2026-08-10
 > 定位：填补 `scene.get_viewdata` 网格数据的字段级规格空白（风险 UI-R4）
 > 上游：`DEV_14` §5（承载分派）、`DOC_DECISION_14_UI` §6.4（缺口来源）
@@ -226,6 +226,18 @@ auto 的选择规则（B）
 | `truncated` | 未能按请求返回完整内容时为 `true`，**不得静默截断** |
 | `truncationReason` | `truncated=true` 时必填，如 top 的 `"budget_exceeded_mesh_downgraded_to_outline_only_preview_retained"`；three_d 不得降为 outline_only |
 
+`truncationReason` 可用分号组合。R-B-03 冻结以下几何理由：
+
+| 理由 | 含义 | 当前 Provider |
+|---|---|---|
+| `mesh_simplified_lod1_for_max_bytes` | meshoptimizer 安全简化至 lod1 | 可产生 |
+| `mesh_simplified_lod2_for_max_bytes` | meshoptimizer 安全简化至 lod2 | 可产生 |
+| `mesh_decimated_lod1_for_max_bytes` | 历史跳采样/抽稀至 lod1 | 保留字，禁止产生 |
+| `mesh_decimated_lod2_for_max_bytes` | 历史跳采样/抽稀至 lod2 | 保留字，禁止产生 |
+
+只有输出三角数实际少于源网格时才能写 `mesh_simplified_*`。宿主不得把安全简化与历史抽稀显示为
+同一质量状态；当前 Provider 若重新产生 `mesh_decimated_*`，合同测试必须失败。
+
 ### 5.2 允许的 `format` 取值
 
 ```text
@@ -361,6 +373,7 @@ three_d   带纹理模型必须实现 mesh + texcoord0 + submesh + appearance + 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v1.4 | R-B-03：冻结安全简化 `mesh_simplified_*` 与历史抽稀 `mesh_decimated_*` 的不同诊断语义；当前 Provider 禁止产生 decimated 理由。 |
 | 2026-08-04 | v1.0 | 首版。填补 `scene.get_viewdata` 网格 DTO 空白：定义全局约定、请求/响应 DTO、`local`+`worldMatrix` 实例变换语义及其三条理由、LOD 分级与 auto 选择规则、`viewdataIdentity` 构成与失效表（含"worldMatrix 变化不失效"这一关键授权）、**在不新增导出符号前提下**的 blob 分块传输方案、两个新增错误码、版本化规则与首版最小实现要求 |
 | 2026-08-05 | v1.1 | Stage 14 开工基线收口：新增独立 `meshIdentity`，消除 scene revision 与网格缓存生命周期冲突；blob 读取改为 `scene.get_viewdata` 子操作，保持 15 项能力与 11 个导出符号不变 |
 | 2026-08-05 | v1.2 | 14A-04-R1：增加 top/three_d、surfacePreview、texcoord0、submesh/material/texture、三类外观身份与纹理 fail-closed 规则；保持 15 项能力、11 个导出和 PM_SPI_VERSION=1 不变 |

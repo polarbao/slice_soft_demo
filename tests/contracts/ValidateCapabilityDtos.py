@@ -57,8 +57,8 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.8":
-        raise AssertionError("expected the reusable ViewMesh contract")
+    if contract["contractVersion"] != "1.9":
+        raise AssertionError("expected the classified ViewData degradation contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -507,6 +507,24 @@ def Main() -> int:
     }
     if viewDataRules["multiInstanceMesh"] != expectedMeshRules:
         raise AssertionError("multi-instance mesh reuse rules are ambiguous")
+    expectedTruncationReasons = {
+        "separator": ";",
+        "meshSimplified": [
+            "mesh_simplified_lod1_for_max_bytes",
+            "mesh_simplified_lod2_for_max_bytes",
+        ],
+        "meshDecimatedLegacy": [
+            "mesh_decimated_lod1_for_max_bytes",
+            "mesh_decimated_lod2_for_max_bytes",
+        ],
+        "currentProviderEmitsMeshDecimated": False,
+        "textureResolutionReduced": "texture_resolution_reduced_for_max_bytes",
+        "topPreviewResolutionReduced": (
+            "top_preview_resolution_reduced_for_max_bytes"
+        ),
+    }
+    if viewDataRules["truncationReasons"] != expectedTruncationReasons:
+        raise AssertionError("ViewData truncation reason taxonomy drifted")
 
     uiViewSpec = LoadJson(repoRoot / "contracts" / "slicer_ui_view_spec.json")
     if uiViewSpec["contractVersion"] != "1.0" or uiViewSpec["units"] != "mm":
@@ -568,7 +586,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus HOSTFLOW v1.8 reusable-mesh contract: PASS")
+    print("15 capability DTOs plus HOSTFLOW v1.9 degradation contract: PASS")
     return 0
 
 

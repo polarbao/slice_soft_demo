@@ -139,13 +139,6 @@ public:
                 {
                     viewdata_detail::ViewCandidateOptions options;
                     options.lod = lod;
-                    options.degraded = request.lod == ViewLod::Auto
-                        && lod != ViewLod::Lod0;
-                    if (options.degraded)
-                    {
-                        options.degradation_reason =
-                            "mesh_lod_reduced_for_max_bytes";
-                    }
                     ApiResult<SceneViewData> candidate =
                         viewdata_detail::BuildViewCandidate(
                         request,
@@ -174,13 +167,6 @@ public:
                     viewdata_detail::ViewCandidateOptions options;
                     options.lod = textureBudgetLod;
                     options.max_texture_edge_px = edge;
-                    options.degraded = request.lod == ViewLod::Auto
-                        && textureBudgetLod != ViewLod::Lod0;
-                    if (options.degraded)
-                    {
-                        options.degradation_reason =
-                            "mesh_lod_reduced_for_max_bytes";
-                    }
                     ApiResult<SceneViewData> candidate =
                         viewdata_detail::BuildViewCandidate(
                             request,

@@ -1,7 +1,7 @@
 # TASKS_RENDER 模型显示与 LOD 修复补充任务清单
 
-> 文档状态：**R-B-02 COMPLETE / R-B-03 READY**
-> 版本：v1.8 ｜ 日期：2026-08-10
+> 文档状态：**R-B-03 COMPLETE / R-B-04 PREPARATION REQUIRED**
+> 版本：v1.9 ｜ 日期：2026-08-10
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 上游决策：`docs/slice/DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md`
 > 前提：Qt 升级至 **6.8+ 作为长期版本**（用户 2026-08-06 确认方向）
@@ -234,7 +234,7 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 | **R-A-02** | **修完 RB-P1/P2/P3 后重测 36 个模型**，重算真实触发面 | R-B-00、R-B-05、H-D-02 的 lod 改动 | 给出新阈值与新的超限模型数；**RD-B 依据本卡结果裁决**，不得沿用 R-A-01 的 13.8k 口径 | **COMPLETE（2026-08-10；22 lod0 / 14 资产拒绝 / 聚合场景 lod2）** |
 | **R-B-01** | 修 §2.2 的 **D1**：`stride` 作用域改为按材质组计算，使各组保留总数合计逼近 `triangleLimit` | R-A-01；与 R-B-02 同批 | 多材质 fixture 的实际三角数与 `triangleLimit` 偏差 ≤ 5% | **COMPLETE（2026-08-10；双材质 10000/10000，聚合配额精确闭合）** |
 | **R-B-02** | **替换跳采样为真正的网格简化**。选定方案后二择一：<br/>·（推荐）引入 `meshoptimizer`，用 `meshopt_simplify`<br/>· 自研保守顶点聚类简化 | R-A-01；用户选定 §4.2 | 简化后网格**仍连通**（无孤立三角）；轮廓 Hausdorff 距离 ≤ 模型尺寸 2%；UV 边界不破裂 | **COMPLETE（2026-08-10；meshoptimizer 1.1 / static-md）** |
-| **R-B-03** | 降级理由细分：区分「几何被简化」`mesh_simplified_*` 与「几何被抽稀」`mesh_decimated_*`，使宿主可判断是否提示用户 | R-B-02 | 两种情况返回不同 `truncationReason`；契约文档同步 | **READY** |
+| **R-B-03** | 降级理由细分：区分「几何被简化」`mesh_simplified_*` 与「几何被抽稀」`mesh_decimated_*`，使宿主可判断是否提示用户 | R-B-02 | 两种情况返回不同 `truncationReason`；契约文档同步 | **COMPLETE（2026-08-10；DTO v1.9）** |
 | **R-B-04** | （若选 meshoptimizer）**顶点量化**：`meshopt_quantizeHalf` 把 position/normal 降至 16-bit | R-B-02 | ViewData 体积减少 ≥ 40%；预算阈值实测抬升至 ≥ 25k 三角/实例；视觉无可察差异 | PROPOSED |
 
 ### R-C 组 · 契约层修正（与 R-B 正交）
@@ -269,8 +269,9 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 已完成     R-B-00（RB-P2）→ R-B-05（RB-P3）
 已完成     R-A-02（单实例 0 预算拒绝；22 有效资产聚合返回 lod2）
 已完成     RD-B 授权 → R-B-02 真正网格简化
-下一步     R-B-03 降级理由细分
-再裁决     R-B-04 与 R-C/R-D 后端线
+已完成     R-B-03 降级理由细分与 DTO v1.9 冻结
+下一步     R-B-04 顶点量化准备与受控 DTO 修订评估
+并行线     R-C/R-D 后端线
 正交线     R-C-01/02
 后端线     R-D-01 → R-D-02 → R-D-03/04 → R-E-01
 ```
@@ -290,6 +291,7 @@ Windows **系统内置 WARP**（Windows Advanced Rasterization Platform），是
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v1.9 | 完成 R-B-03：合同 v1.9 区分 `mesh_simplified_*` 与历史保留 `mesh_decimated_*`；当前 Provider 只在 auto 模式且三角数真实减少时报告 safe simplification，小 mesh 仅降纹理时不再误报几何降级。 |
 | 2026-08-10 | v1.8 | 完成 R-B-02：以 meshoptimizer 属性感知简化替换跳采样，保护外轮廓、UV seam 和材质边界；无法安全达到预算时显式失败。Debug/Release、真实 fixture、第三方合规及能力包打包门禁通过，R-B-03 进入 READY。 |
 | 2026-08-10 | v1.7 | 完成 R-B-01：全实例目标按材质组做确定性比例分配，12000/4000 fixture 在 lod2 精确输出 7500/2500；22 个有效资产聚合输出 210308 三角，等于逐模型 `min(source, 10000)` 总和。任务仍不修拓扑，R-B-02 等待 RD-B 明确依赖授权。 |
 | 2026-08-10 | v1.6 | 完成 R-A-02：冻结 36 OBJ 中 22 个单实例 lod0、0 个预算拒绝、14 个纹理资产合同拒绝；22 个有效资产聚合实测返回 lod2。R-B-05 平均 105.15 B/三角，RD-B 启动条件成立，R-B-01 进入 READY，第三方依赖等待明确授权。 |

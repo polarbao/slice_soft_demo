@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.8",
+  "contractVersion": "1.9",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -652,6 +652,20 @@
       "localReuse": "one_mesh_per_model_content_and_lod",
       "worldReuse": "by_mesh_identity_only",
       "blobStorage": "once_per_mesh_identity"
+    },
+    "truncationReasons": {
+      "separator": ";",
+      "meshSimplified": [
+        "mesh_simplified_lod1_for_max_bytes",
+        "mesh_simplified_lod2_for_max_bytes"
+      ],
+      "meshDecimatedLegacy": [
+        "mesh_decimated_lod1_for_max_bytes",
+        "mesh_decimated_lod2_for_max_bytes"
+      ],
+      "currentProviderEmitsMeshDecimated": false,
+      "textureResolutionReduced": "texture_resolution_reduced_for_max_bytes",
+      "topPreviewResolutionReduced": "top_preview_resolution_reduced_for_max_bytes"
     },
     "texturedInstanceRequires": ["texcoord0", "submeshes", "materials", "textures"],
     "budgetExhaustion": "reduce geometry or image resolution, then PM-SLICER-VIEWDATA-BUDGET; never drop required texture content",

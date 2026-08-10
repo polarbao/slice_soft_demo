@@ -332,6 +332,39 @@ void UvSeamSimplificationCase()
             "simplification must preserve both sides of a UV seam");
 }
 
+void AutoSimplificationReasonCase()
+{
+    const auto model = std::make_shared<const slicer_core::SceneModel>(
+        MakeGridModel(false, false));
+    auto textures = std::make_shared<TestTextureSource>();
+    const auto provider = MakeProvider({{433U, model}}, textures);
+    const TestCancelToken active;
+    auto request = MakeRequest(slicer_core::api::ViewMode::ThreeD);
+    request.lod = slicer_core::api::ViewLod::Auto;
+    request.max_bytes = 384U * 1024U;
+    const auto result = provider->GetViewData(
+        request,
+        MakeSnapshot({{"auto-simplification-reason", 433U}}),
+        active);
+    Require(
+        result.IsOk(),
+        result.IsOk()
+            ? "auto simplification should close"
+            : "auto simplification failed: " + result.Error()->code
+                + " " + result.Error()->message
+                + " " + result.Error()->detail);
+    Require(result.Value()->truncated,
+            "auto simplification must report truncation");
+    Require(
+        result.Value()->truncation_reason
+            == "mesh_simplified_lod2_for_max_bytes",
+        "safe simplification must not use the legacy decimation reason: "
+            + result.Value()->truncation_reason);
+    Require(result.Value()->meshes.front().lod
+                == slicer_core::api::ViewLod::Lod2,
+            "auto simplification should select lod2 for the bounded fixture");
+}
+
 void UnsafeDisconnectedMeshCase()
 {
     const auto model = std::make_shared<const slicer_core::SceneModel>(
@@ -360,6 +393,7 @@ void RunSimplificationCases()
 {
     MultiMaterialTriangleBudgetCase();
     UvSeamSimplificationCase();
+    AutoSimplificationReasonCase();
     UnsafeDisconnectedMeshCase();
 }
 

@@ -185,6 +185,10 @@ void BudgetDegradationCase()
     Require(threeD.Value()->truncated
                 && !threeD.Value()->truncation_reason.empty(),
             "three_d budget degradation must be explicit");
+    Require(
+        threeD.Value()->truncation_reason
+            == "texture_resolution_reduced_for_max_bytes",
+        "an unchanged tiny mesh must not be reported as simplified");
     const auto& threeDTexture =
         threeD.Value()->appearances.front().textures.front();
     Require(threeDTexture.width_px <= 256

@@ -92,6 +92,38 @@ void MarkTextureDegradation(
     reason += "texture_resolution_reduced_for_max_bytes";
 }
 
+void AppendUniqueReason(
+    std::string& reasons,
+    const std::string_view reason)
+{
+    if (reasons == reason
+        || reasons.starts_with(std::string(reason) + ";")
+        || reasons.ends_with(";" + std::string(reason))
+        || reasons.find(";" + std::string(reason) + ";")
+            != std::string::npos)
+    {
+        return;
+    }
+    if (!reasons.empty())
+    {
+        reasons += ";";
+    }
+    reasons += reason;
+}
+
+std::string MeshSimplificationReason(const ViewLod lod)
+{
+    switch (lod)
+    {
+    case ViewLod::Lod1:
+        return "mesh_simplified_lod1_for_max_bytes";
+    case ViewLod::Lod2:
+        return "mesh_simplified_lod2_for_max_bytes";
+    default:
+        return {};
+    }
+}
+
 }  // namespace
 
 ApiResult<SceneViewData> BuildViewCandidate(
@@ -218,6 +250,20 @@ ApiResult<SceneViewData> BuildViewCandidate(
                             mesh.Error()->code,
                             mesh.Error()->message,
                             mesh.Error()->detail);
+                    }
+                    if (request.lod == ViewLod::Auto
+                        && mesh.Value()->indices.size() / 3U
+                            < preparedModel.model->triangles.size())
+                    {
+                        const std::string reason = MeshSimplificationReason(
+                            options.lod);
+                        if (!reason.empty())
+                        {
+                            result.truncated = true;
+                            AppendUniqueReason(
+                                result.truncation_reason,
+                                reason);
+                        }
                     }
                     auto cached = meshIndices.find(
                         mesh.Value()->mesh_identity);

@@ -1,6 +1,6 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.8
+> 合同版本：1.9
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
@@ -8,7 +8,8 @@
 > `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md`、
 > `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md`、
 > `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md`、
-> `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`
+> `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`、
+> `DOC_DECISION_RENDER_R_B_03_ViewData降级理由受控修订.md`
 
 ## 1. 范围
 
@@ -201,7 +202,23 @@ three_d 响应的规范网格载体为顶层 `meshes[]`。每个 `instances[].me
 一份网格 blob。为兼容 v1.7 宿主，v1.8 暂时保留 `instances[].mesh` 描述符别名，但该别名复用
 同一 `blobId`，不得再次存储二进制内容。新宿主必须优先读取顶层 `meshes[]`。
 
-### 4.1 双视图请求
+### 4.1 降级理由
+
+`truncationReason` 使用分号连接多个独立原因。当前 Provider 只允许以下稳定值：
+
+```text
+mesh_simplified_lod1_for_max_bytes
+mesh_simplified_lod2_for_max_bytes
+texture_resolution_reduced_for_max_bytes
+top_preview_resolution_reduced_for_max_bytes
+```
+
+只有实际三角数低于源网格时才能返回 `mesh_simplified_*`；仅尝试较低 LOD 但几何未变化时不得误报。
+历史跳采样语义保留 `mesh_decimated_lod1_for_max_bytes` / `mesh_decimated_lod2_for_max_bytes`
+作为诊断保留字，但 R-B-02 后的当前 Provider 禁止产生这些值。宿主可对 `mesh_decimated_*` 显示强告警，
+对 `mesh_simplified_*` 显示受控质量降级提示。
+
+### 4.2 双视图请求
 
 ```json
 {
@@ -238,7 +255,8 @@ emptyValue   255
 ## 6. 版本与后续实现
 
 本合同冻结对外 DTO；v1.6 的 `addInstance` / `removeInstance` 和隐式建场景已由 H-A-02 实现，
-v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可复用 `meshes[]`；
+v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可复用 `meshes[]`，
+v1.9 由 R-B-03 冻结安全简化与历史抽稀的降级理由；
 H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主不透明透传到生产切片。独立 `scene.layout`
 能力仍被禁止。
 交互幂等、revision 回滚和三车道细则见
