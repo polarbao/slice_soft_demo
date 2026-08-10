@@ -76,7 +76,9 @@
 | `DOC_PREP_HOSTFLOW_H_B_05_切片参数与有效Profile准备.md` | H-B-05 参数合同、设备 buildVolume、有效 Profile、场景绑定和联合门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_06_切片提交与作业管理准备.md` | H-B-06 Worker 作业提交、进度、协作取消、终态结果、错误诊断与联合门禁 |
 | `DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` | HQ-08-A 已授权：宿主目录 + ABI 能力求交，不修改冻结合同 |
-| `DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | ViewData v1.2：surfacePreview、UV/材质/纹理、multi-model appearances、LOD/blob/identity |
+| `DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | ViewData Schema v1.5：surfacePreview、复用 mesh、UV/材质/纹理、LOD/blob/identity 与 float16 wire |
+| `DOC_DECISION_RENDER_R_B_04_ViewData半精度传输合同修订.md` | R-B-04 float16 网格属性 wire 合同、兼容边界、预算和缓存身份决策 |
+| `DOC_PREP_RENDER_R_B_04_半精度网格传输实施准备.md` | R-B-04 算术复核、文件边界与验证矩阵 |
 | `DOC_DECISION_14_UI_宿主模拟改造专项.md` | 14E 独立打印软件参考宿主、双视图纹理、QOpenGL、网格和可测 Gate |
 | `DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | 14B Facade、base/engine 分层、执行顺序、验证矩阵与回滚边界 |
 | `DOC_PREP_14C_04_同步轻能力接线实施准备.md` | 14C-04 同步能力承载、终态 job、Facade/Provider 复用和 Worker fail-closed 边界 |

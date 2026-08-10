@@ -81,6 +81,7 @@ bool SceneRenderPolicy::Refresh(
          QStringLiteral("require_if_present")},
         {QStringLiteral("lod"), QStringLiteral("auto")},
         {QStringLiteral("meshTransform"), QStringLiteral("local")},
+        {QStringLiteral("meshAttributeFormat"), QStringLiteral("float16")},
         {QStringLiteral("maxBytes"), m_maxViewDataBytes},
         {QStringLiteral("content"), QJsonArray{
              QStringLiteral("bbox"),

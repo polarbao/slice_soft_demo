@@ -652,6 +652,8 @@ private:
         viewRequest.lod = ParseLod(RequireString(request, "lod"));
         viewRequest.mesh_transform = ParseMeshTransform(
             RequireString(request, "meshTransform"));
+        viewRequest.mesh_attribute_format = ParseMeshAttributeFormat(
+            OptionalString(request, "meshAttributeFormat", "float32"));
         viewRequest.max_bytes = RequireUnsigned(request, "maxBytes");
         if (RequireString(request, "texturePolicy") != "require_if_present")
         {
@@ -759,6 +761,20 @@ private:
             return slicer_core::api::MeshTransform::World;
         }
         throw CapabilityRequestError("meshTransform is invalid");
+    }
+
+    [[nodiscard]] static slicer_core::api::MeshAttributeFormat
+    ParseMeshAttributeFormat(const std::string& value)
+    {
+        if (value == "float32")
+        {
+            return slicer_core::api::MeshAttributeFormat::Float32;
+        }
+        if (value == "float16")
+        {
+            return slicer_core::api::MeshAttributeFormat::Float16;
+        }
+        throw CapabilityRequestError("meshAttributeFormat is invalid");
     }
 
     [[nodiscard]] static slicer_core::api::ViewContent ParseContent(

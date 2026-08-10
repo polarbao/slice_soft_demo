@@ -2,6 +2,7 @@
 #include "SceneInteractionController.h"
 #include "camera/CameraController.h"
 #include "render/CpuRasterBackend.h"
+#include "render/MeshAttributeDecoder.h"
 #include "render/SceneRenderPolicy.h"
 
 #include <QCoreApplication>
@@ -144,6 +145,67 @@ QJsonObject BuildScene(const QString& fixturePath)
               QStringLiteral("admitted")},
              {QStringLiteral("resolvedProfileId"),
               QStringLiteral("stage14e04c-profile")}}}}};
+}
+
+QJsonObject QueryViewData(
+    ModuleClient& client,
+    const quint64 sceneHandle,
+    const quint64 sceneRevision,
+    const QString& attributeFormat = {})
+{
+    QJsonObject request{
+        {QStringLiteral("capability"), QStringLiteral("scene.get_viewdata")},
+        {QStringLiteral("operation"), QStringLiteral("query")},
+        {QStringLiteral("sceneHandle"), static_cast<qint64>(sceneHandle)},
+        {QStringLiteral("expectedSceneRevision"),
+         static_cast<qint64>(sceneRevision)},
+        {QStringLiteral("viewMode"), QStringLiteral("three_d")},
+        {QStringLiteral("texturePolicy"),
+         QStringLiteral("require_if_present")},
+        {QStringLiteral("lod"), QStringLiteral("lod0")},
+        {QStringLiteral("meshTransform"), QStringLiteral("local")},
+        {QStringLiteral("maxBytes"), 64 * 1024 * 1024},
+        {QStringLiteral("content"), QJsonArray{
+             QStringLiteral("bbox"),
+             QStringLiteral("outline"),
+             QStringLiteral("mesh"),
+             QStringLiteral("appearance")}}};
+    if (!attributeFormat.isEmpty())
+    {
+        request.insert(
+            QStringLiteral("meshAttributeFormat"),
+            attributeFormat);
+    }
+    return ExecuteJson(client, request);
+}
+
+QJsonObject FirstMesh(const QJsonObject& viewData)
+{
+    Require(viewData.value(QStringLiteral("ok")).toBool(),
+            QStringLiteral("ViewData query failed"));
+    const QJsonArray meshes = viewData.value(QStringLiteral("meshes")).toArray();
+    Require(meshes.size() == 1, QStringLiteral("expected one reusable mesh"));
+    return meshes.first().toObject();
+}
+
+void VerifyFloat32DecoderCompatibility()
+{
+    const std::array<float, 3> source{0.0F, 1.0F, -2.0F};
+    const QByteArray blob(
+        reinterpret_cast<const char*>(source.data()),
+        static_cast<int>(sizeof(source)));
+    const QJsonObject buffers{{QStringLiteral("position"), QJsonObject{
+        {QStringLiteral("format"), QStringLiteral("float32x3")},
+        {QStringLiteral("byteOffset"), 0},
+        {QStringLiteral("byteLength"), static_cast<int>(sizeof(source))}}}};
+    std::vector<float> decoded;
+    QString error;
+    Require(slicer::render::DecodeMeshAttribute(
+                blob, buffers, QStringLiteral("position"), 3, 1,
+                &decoded, &error),
+            error);
+    Require(decoded == std::vector<float>(source.begin(), source.end()),
+            QStringLiteral("float32 decoder compatibility drifted"));
 }
 
 int CountColorfulPixels(const slicer::render::ImageOut& image)
@@ -317,6 +379,39 @@ int main(int argc, char* argv[])
             QStringLiteral("model import failed"));
     SceneInteractionController controller(client);
     Require(controller.Initialize(BuildScene(fixturePath), &error), error);
+    const QJsonObject floatMesh = FirstMesh(QueryViewData(
+        client, controller.SceneHandle(), controller.SceneRevision()));
+    const QJsonObject halfMesh = FirstMesh(QueryViewData(
+        client, controller.SceneHandle(), controller.SceneRevision(),
+        QStringLiteral("float16")));
+    VerifyFloat32DecoderCompatibility();
+    const QJsonObject floatBuffers = floatMesh.value(
+        QStringLiteral("buffers")).toObject();
+    const QJsonObject halfBuffers = halfMesh.value(
+        QStringLiteral("buffers")).toObject();
+    Require(floatBuffers.value(QStringLiteral("position")).toObject().value(
+                QStringLiteral("format")).toString()
+            == QStringLiteral("float32x3"),
+            QStringLiteral("missing format must preserve float32 compatibility"));
+    Require(halfBuffers.value(QStringLiteral("position")).toObject().value(
+                QStringLiteral("format")).toString()
+            == QStringLiteral("float16x3")
+            && halfBuffers.value(QStringLiteral("normal")).toObject().value(
+                QStringLiteral("format")).toString()
+                == QStringLiteral("float16x3")
+            && halfBuffers.value(QStringLiteral("texcoord0")).toObject().value(
+                QStringLiteral("format")).toString()
+                == QStringLiteral("float16x2"),
+            QStringLiteral("float16 request did not close all attributes"));
+    const qint64 floatBytes = static_cast<qint64>(floatMesh.value(
+        QStringLiteral("totalBytes")).toDouble());
+    const qint64 halfBytes = static_cast<qint64>(halfMesh.value(
+        QStringLiteral("totalBytes")).toDouble());
+    Require(floatBytes > 0 && halfBytes * 100 <= floatBytes * 60,
+            QStringLiteral("float16 mesh blob did not shrink by at least 40%"));
+    Require(floatMesh.value(QStringLiteral("meshIdentity")).toString()
+            != halfMesh.value(QStringLiteral("meshIdentity")).toString(),
+            QStringLiteral("mesh identity omitted attribute encoding"));
     CpuRasterBackend backend;
     SceneRenderPolicy renderer(client, backend);
     ThreeDFrame frame;
@@ -382,6 +477,8 @@ int main(int argc, char* argv[])
         << renderer.MeshUploadCount()
         << " textureUploads=" << renderer.TextureUploadCount()
         << " blobReads=" << renderer.BlobReadCount()
+        << " floatBytes=" << floatBytes
+        << " halfBytes=" << halfBytes
         << " cameraCalls=" << client.CallCount()
         << " p5Fps=" << p5Fps << Qt::endl;
     return 0;

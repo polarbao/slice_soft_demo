@@ -38,6 +38,13 @@ enum class MeshTransform
     World
 };
 
+/** @brief Selects the scalar encoding used by serialized mesh attributes. */
+enum class MeshAttributeFormat
+{
+    Float32,
+    Float16
+};
+
 /** @brief Selectable payload categories for one ViewData query. */
 enum class ViewContent
 {
@@ -84,6 +91,7 @@ struct ViewMesh
     std::string mesh_identity;
     ViewLod lod{ViewLod::Lod0};
     MeshTransform mesh_transform{MeshTransform::Local};
+    MeshAttributeFormat attribute_format{MeshAttributeFormat::Float32};
 };
 
 /** @brief Embedded or referenced sRGB texture payload. */
@@ -169,6 +177,7 @@ struct SceneViewDataRequest
     TexturePolicy texture_policy{TexturePolicy::RequireIfPresent};
     ViewLod lod{ViewLod::Auto};
     MeshTransform mesh_transform{MeshTransform::Local};
+    MeshAttributeFormat mesh_attribute_format{MeshAttributeFormat::Float32};
     std::uint64_t expected_scene_revision{0};
     std::vector<std::string> instance_ids;
     std::uint64_t max_bytes{0};

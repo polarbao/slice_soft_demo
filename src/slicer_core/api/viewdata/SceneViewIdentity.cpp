@@ -159,9 +159,10 @@ std::string ComputeAppearanceIdentity(const ViewAppearance& appearance)
 std::string ComputeMeshIdentity(const ViewMesh& mesh)
 {
     CanonicalWriter writer;
-    writer.AppendString("slicesoft.view.mesh.1");
+    writer.AppendString("slicesoft.view.mesh.2");
     writer.AppendUnsigned(static_cast<std::uint32_t>(mesh.lod));
     writer.AppendUnsigned(static_cast<std::uint32_t>(mesh.mesh_transform));
+    writer.AppendUnsigned(static_cast<std::uint32_t>(mesh.attribute_format));
     writer.AppendUnsigned(static_cast<std::uint64_t>(mesh.positions.size()));
     for (const float value : mesh.positions)
     {

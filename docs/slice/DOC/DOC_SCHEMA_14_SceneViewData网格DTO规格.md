@@ -1,11 +1,12 @@
 # DOC_SCHEMA_14 `scene.get_viewdata` 网格 DTO 规格
 
-> 文档状态：✅ **ACTIVE / CONTRACT AMENDED**（R-B-03）
-> 版本：v1.3 ｜ 日期：2026-08-04 ｜ ViewMesh 复用修订：2026-08-10
+> 文档状态：✅ **ACTIVE / CONTRACT AMENDED**（R-B-04）
+> 版本：v1.5 ｜ 日期：2026-08-04 ｜ 半精度传输修订：2026-08-10
 > 定位：填补 `scene.get_viewdata` 网格数据的字段级规格空白（风险 UI-R4）
 > 上游：`DEV_14` §5（承载分派）、`DOC_DECISION_14_UI` §6.4（缺口来源）
 > 修订决策：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
-> `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`
+> `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`、
+> `DOC_DECISION_RENDER_R_B_04_ViewData半精度传输合同修订.md`
 > 证据等级：A=已核实事实，B=目标设计，P=判断
 
 ---
@@ -50,6 +51,7 @@ JSON 编码   UTF-8，无 BOM
   "texturePolicy": "require_if_present", // 带纹理模型不得静默退为灰模
   "lod": "auto",                         // auto | lod0 | lod1 | lod2 | outline_only
   "meshTransform": "local",              // local（推荐） | world
+  "meshAttributeFormat": "float16",       // 可选；float32（缺省）| float16
   "maxBytes": 33554432                   // 宿主给出的本次传输预算上限（32 MiB）
 }
 ```
@@ -61,6 +63,7 @@ JSON 编码   UTF-8，无 BOM
 | `texturePolicy` | 是 | 固定为 `require_if_present`；声明纹理的模型必须返回纹理数据 |
 | `lod` | 是 | 见 §4 |
 | `meshTransform` | 是 | 见 §3 |
+| `meshAttributeFormat` | 否 | 缺省 `float32` 保持旧宿主兼容；新宿主可请求 `float16` |
 | `maxBytes` | 是 | **必填**。模块据此决定实际 LOD 与是否分块；不得默认无限 |
 
 ## 3. 实例变换：`local` + `worldMatrix`（关键设计）
@@ -125,16 +128,16 @@ auto 的选择规则（B）
       "triangleCount": 49356,
       "meshTransform": "local",
       "buffers": {
-        "position": { "format": "float32x3", "byteOffset": 0,      "byteLength": 296160 },
-        "normal":   { "format": "float32x3", "byteOffset": 296160, "byteLength": 296160 },
-        "texcoord0":{ "format": "float32x2", "byteOffset": 592320, "byteLength": 197440 },
-        "index":    { "format": "uint32",    "byteOffset": 789760, "byteLength": 592272 }
+        "position": { "format": "float16x3", "byteOffset": 0,      "byteLength": 148080 },
+        "normal":   { "format": "float16x3", "byteOffset": 148080, "byteLength": 148080 },
+        "texcoord0":{ "format": "float16x2", "byteOffset": 296160, "byteLength": 98720 },
+        "index":    { "format": "uint32",    "byteOffset": 394880, "byteLength": 592272 }
       },
       "submeshes": [
         { "firstIndex": 0, "indexCount": 148068, "materialId": "material-0" }
       ],
       "blobId": "blob-7f3a9c",
-      "totalBytes": 1382032,
+      "totalBytes": 987152,
       "chunkBytes": 4194304,
       "chunkCount": 1
     }
@@ -217,7 +220,7 @@ auto 的选择规则（B）
 | `surfacePreview` | top 模式的带纹理 +Z 投影；透明背景与模型局部边界必须显式声明 |
 | `surfacePreview.localBoundsMm` | 预览四边形的模型局部 XY 边界；宿主用 `worldMatrix` 放置，避免变换使 preview cache 失效 |
 | `meshes[]` | three_d 规范网格集合；同一 `meshIdentity` 只出现一次并只存储一份 blob |
-| `meshIdentity` | 只标识可复用网格内容，不含 scene revision 或 local 实例世界变换 |
+| `meshIdentity` | 标识可复用网格内容及 attribute format；不含 scene revision 或 local 实例世界变换 |
 | `appearanceIdentity` | 标识材质与纹理集合，不含实例世界变换 |
 | `appearances[]` | 多模型场景的外观集合；每个 identity 唯一，实例预览与 submesh 引用必须可解析 |
 | `textureIdentity` | 标识解码后纹理内容与采样语义，供宿主缓存 GPU 纹理 |
@@ -241,15 +244,20 @@ auto 的选择规则（B）
 ### 5.2 允许的 `format` 取值
 
 ```text
-position   float32x3
-normal     float32x3
-texcoord0  float32x2
+position   float32x3 | float16x3
+normal     float32x3 | float16x3
+texcoord0  float32x2 | float16x2
 index      uint16 | uint32   （顶点数 ≤ 65535 时允许 uint16）
 texture    rgba8_unorm / srgb / straight alpha / top_left rows
 ```
 
 `texcoord0` 使用 `u_right_v_up`；图像行序为 `top_left`。宿主必须按声明完成 V 方向映射，
 不得依赖 OpenGL、QImage 或图像文件格式的隐式默认值。首版不含顶点色与法线贴图。
+
+`float16` 使用 IEEE-754 binary16、小端序，并同时作用于 position、normal、texcoord0。
+只量化 position/normal 的理论缩减不足 40%，因此 R-B-04 受控修订把 UV 一并量化；宿主解码为
+本地 float32 后再上传渲染后端。缺省请求仍返回 float32，保证旧宿主兼容。预算估算必须使用实际
+序列化标量宽度，不能继续按内存中的 float32 容器计费。
 
 ### 5.3 多模型外观引用
 
@@ -373,6 +381,7 @@ three_d   带纹理模型必须实现 mesh + texcoord0 + submesh + appearance + 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v1.5 | R-B-04：增加可选 `meshAttributeFormat`；缺省 float32，显式请求可用 float16；三类属性以 `meshopt_quantizeHalf` 编码，预算与 mesh identity 均包含 wire format，宿主兼容解码两种格式。 |
 | 2026-08-10 | v1.4 | R-B-03：冻结安全简化 `mesh_simplified_*` 与历史抽稀 `mesh_decimated_*` 的不同诊断语义；当前 Provider 禁止产生 decimated 理由。 |
 | 2026-08-04 | v1.0 | 首版。填补 `scene.get_viewdata` 网格 DTO 空白：定义全局约定、请求/响应 DTO、`local`+`worldMatrix` 实例变换语义及其三条理由、LOD 分级与 auto 选择规则、`viewdataIdentity` 构成与失效表（含"worldMatrix 变化不失效"这一关键授权）、**在不新增导出符号前提下**的 blob 分块传输方案、两个新增错误码、版本化规则与首版最小实现要求 |
 | 2026-08-05 | v1.1 | Stage 14 开工基线收口：新增独立 `meshIdentity`，消除 scene revision 与网格缓存生命周期冲突；blob 读取改为 `scene.get_viewdata` 子操作，保持 15 项能力与 11 个导出符号不变 |

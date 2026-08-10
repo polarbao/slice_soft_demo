@@ -10,7 +10,31 @@ std::uint64_t StringBytes(const std::string& value)
     return static_cast<std::uint64_t>(value.size()) + 8U;
 }
 
+std::uint64_t AttributeScalarBytes(const MeshAttributeFormat format)
+{
+    return format == MeshAttributeFormat::Float16
+        ? sizeof(std::uint16_t)
+        : sizeof(float);
+}
+
 }  // namespace
+
+std::uint64_t EstimateViewMeshBytes(const ViewMesh& mesh) noexcept
+{
+    const std::uint64_t scalarBytes = AttributeScalarBytes(
+        mesh.attribute_format);
+    std::uint64_t bytes = 256U + StringBytes(mesh.mesh_identity)
+        + static_cast<std::uint64_t>(mesh.positions.size()) * scalarBytes
+        + static_cast<std::uint64_t>(mesh.normals.size()) * scalarBytes
+        + static_cast<std::uint64_t>(mesh.texcoord0.size()) * scalarBytes
+        + static_cast<std::uint64_t>(mesh.indices.size())
+            * sizeof(std::uint32_t);
+    for (const ViewSubmesh& submesh : mesh.submeshes)
+    {
+        bytes += 32U + StringBytes(submesh.material_id);
+    }
+    return bytes;
+}
 
 std::uint64_t EstimateViewDataBytes(const SceneViewData& viewData) noexcept
 {
@@ -34,19 +58,7 @@ std::uint64_t EstimateViewDataBytes(const SceneViewData& viewData) noexcept
     }
     for (const ViewMesh& mesh : viewData.meshes)
     {
-        bytes += 256U + StringBytes(mesh.mesh_identity)
-            + static_cast<std::uint64_t>(mesh.positions.size())
-                * sizeof(float)
-            + static_cast<std::uint64_t>(mesh.normals.size())
-                * sizeof(float)
-            + static_cast<std::uint64_t>(mesh.texcoord0.size())
-                * sizeof(float)
-            + static_cast<std::uint64_t>(mesh.indices.size())
-                * sizeof(std::uint32_t);
-        for (const ViewSubmesh& submesh : mesh.submeshes)
-        {
-            bytes += 32U + StringBytes(submesh.material_id);
-        }
+        bytes += EstimateViewMeshBytes(mesh);
     }
     for (const ViewInstance& instance : viewData.instances)
     {
@@ -69,19 +81,7 @@ std::uint64_t EstimateViewDataBytes(const SceneViewData& viewData) noexcept
         if (viewData.meshes.empty() && instance.mesh.has_value())
         {
             const ViewMesh& mesh = *instance.mesh;
-            bytes += 256U
-                + static_cast<std::uint64_t>(mesh.positions.size())
-                    * sizeof(float)
-                + static_cast<std::uint64_t>(mesh.normals.size())
-                    * sizeof(float)
-                + static_cast<std::uint64_t>(mesh.texcoord0.size())
-                    * sizeof(float)
-                + static_cast<std::uint64_t>(mesh.indices.size())
-                    * sizeof(std::uint32_t);
-            for (const ViewSubmesh& submesh : mesh.submeshes)
-            {
-                bytes += 32U + StringBytes(submesh.material_id);
-            }
+            bytes += EstimateViewMeshBytes(mesh);
         }
     }
     return bytes;

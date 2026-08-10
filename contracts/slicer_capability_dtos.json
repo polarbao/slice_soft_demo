@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.9",
+  "contractVersion": "1.10",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -176,6 +176,7 @@
         { "path": "texturePolicy", "type": "string", "const": "require_if_present", "requiredFor": "query" },
         { "path": "lod", "type": "enum:auto|lod0|lod1|lod2|outline_only", "requiredFor": "query" },
         { "path": "meshTransform", "type": "enum:local|world", "requiredFor": "query" },
+        { "path": "meshAttributeFormat", "type": "enum:float32|float16", "required": false, "default": "float32" },
         { "path": "maxBytes", "type": "integer", "requiredFor": "query" },
         { "path": "blobId", "type": "string", "requiredFor": "read_blob" },
         { "path": "chunkIndex", "type": "integer", "requiredFor": "read_blob" }
@@ -213,9 +214,9 @@
         { "path": "instances[].mesh.vertexCount", "type": "integer", "required": false },
         { "path": "instances[].mesh.triangleCount", "type": "integer", "required": false },
         { "path": "instances[].mesh.meshTransform", "type": "enum:local|world", "required": false },
-        { "path": "instances[].mesh.buffers.position.format", "type": "string", "const": "float32x3", "required": false },
-        { "path": "instances[].mesh.buffers.normal.format", "type": "string", "const": "float32x3", "required": false },
-        { "path": "instances[].mesh.buffers.texcoord0.format", "type": "string", "const": "float32x2", "required": false },
+        { "path": "instances[].mesh.buffers.position.format", "type": "enum:float32x3|float16x3", "required": false },
+        { "path": "instances[].mesh.buffers.normal.format", "type": "enum:float32x3|float16x3", "required": false },
+        { "path": "instances[].mesh.buffers.texcoord0.format", "type": "enum:float32x2|float16x2", "required": false },
         { "path": "instances[].mesh.buffers.index.format", "type": "enum:uint16|uint32", "required": false },
         { "path": "instances[].mesh.buffers.*.byteOffset", "type": "integer", "required": false },
         { "path": "instances[].mesh.buffers.*.byteLength", "type": "integer", "required": false },
@@ -233,9 +234,9 @@
         { "path": "meshes[].vertexCount", "type": "integer", "required": false },
         { "path": "meshes[].triangleCount", "type": "integer", "required": false },
         { "path": "meshes[].meshTransform", "type": "enum:local|world", "required": false },
-        { "path": "meshes[].buffers.position.format", "type": "string", "const": "float32x3", "required": false },
-        { "path": "meshes[].buffers.normal.format", "type": "string", "const": "float32x3", "required": false },
-        { "path": "meshes[].buffers.texcoord0.format", "type": "string", "const": "float32x2", "required": false },
+        { "path": "meshes[].buffers.position.format", "type": "enum:float32x3|float16x3", "required": false },
+        { "path": "meshes[].buffers.normal.format", "type": "enum:float32x3|float16x3", "required": false },
+        { "path": "meshes[].buffers.texcoord0.format", "type": "enum:float32x2|float16x2", "required": false },
         { "path": "meshes[].buffers.index.format", "type": "enum:uint16|uint32", "required": false },
         { "path": "meshes[].buffers.*.byteOffset", "type": "integer", "required": false },
         { "path": "meshes[].buffers.*.byteLength", "type": "integer", "required": false },
@@ -652,6 +653,15 @@
       "localReuse": "one_mesh_per_model_content_and_lod",
       "worldReuse": "by_mesh_identity_only",
       "blobStorage": "once_per_mesh_identity"
+    },
+    "meshAttributeEncoding": {
+      "requestField": "meshAttributeFormat",
+      "supported": ["float32", "float16"],
+      "defaultWhenAbsent": "float32",
+      "float16Components": ["position", "normal", "texcoord0"],
+      "float16Quantizer": "meshopt_quantizeHalf",
+      "budgetUsesSerializedWireBytes": true,
+      "meshIdentityIncludesEncoding": true
     },
     "truncationReasons": {
       "separator": ";",

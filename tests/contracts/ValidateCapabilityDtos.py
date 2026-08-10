@@ -57,8 +57,8 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.9":
-        raise AssertionError("expected the classified ViewData degradation contract")
+    if contract["contractVersion"] != "1.10":
+        raise AssertionError("expected the half-precision ViewData contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -159,6 +159,7 @@ def Main() -> int:
             "texturePolicy",
             "lod",
             "meshTransform",
+            "meshAttributeFormat",
             "maxBytes",
             "blobId",
             "chunkIndex",
@@ -220,6 +221,39 @@ def Main() -> int:
         "PM-SLICER-VIEWDATA-BUDGET",
     }:
         raise AssertionError("viewdata errors are incomplete")
+
+    meshAttributeFormat = FieldSpec(
+        viewData, "requestFields", "meshAttributeFormat"
+    )
+    if meshAttributeFormat != {
+        "path": "meshAttributeFormat",
+        "type": "enum:float32|float16",
+        "required": False,
+        "default": "float32",
+    }:
+        raise AssertionError("mesh attribute format compatibility drifted")
+    expectedFormats = {
+        "instances[].mesh.buffers.position.format": "enum:float32x3|float16x3",
+        "instances[].mesh.buffers.normal.format": "enum:float32x3|float16x3",
+        "instances[].mesh.buffers.texcoord0.format": "enum:float32x2|float16x2",
+        "meshes[].buffers.position.format": "enum:float32x3|float16x3",
+        "meshes[].buffers.normal.format": "enum:float32x3|float16x3",
+        "meshes[].buffers.texcoord0.format": "enum:float32x2|float16x2",
+    }
+    for path, expectedType in expectedFormats.items():
+        if FieldSpec(viewData, "responseFields", path).get("type") != expectedType:
+            raise AssertionError(f"mesh attribute response format drifted: {path}")
+    encoding = contract["viewDataRules"]["meshAttributeEncoding"]
+    if encoding != {
+        "requestField": "meshAttributeFormat",
+        "supported": ["float32", "float16"],
+        "defaultWhenAbsent": "float32",
+        "float16Components": ["position", "normal", "texcoord0"],
+        "float16Quantizer": "meshopt_quantizeHalf",
+        "budgetUsesSerializedWireBytes": True,
+        "meshIdentityIncludesEncoding": True,
+    }:
+        raise AssertionError("mesh attribute encoding rules drifted")
 
     preflight = byId["geometry.preflight"]
     RequirePaths(
@@ -586,7 +620,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus HOSTFLOW v1.9 degradation contract: PASS")
+    print("15 capability DTOs plus ViewData v1.10 half contract: PASS")
     return 0
 
 

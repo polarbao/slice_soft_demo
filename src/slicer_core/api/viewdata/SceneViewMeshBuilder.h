@@ -16,6 +16,7 @@ namespace slicer_core::api::viewdata_detail
  * @param worldMatrix Authoritative instance transform.
  * @param lod Requested actual mesh LOD.
  * @param meshTransform Local or world buffer semantics.
+ * @param attributeFormat Serialized mesh attribute scalar encoding.
  * @param cancelToken Cooperative cancellation token.
  * @return Mesh payload or a stable geometry/material error.
  */
@@ -25,6 +26,7 @@ namespace slicer_core::api::viewdata_detail
     const Matrix4d& worldMatrix,
     ViewLod lod,
     MeshTransform meshTransform,
+    MeshAttributeFormat attributeFormat,
     const ICancelToken& cancelToken) noexcept;
 
 }  // namespace slicer_core::api::viewdata_detail

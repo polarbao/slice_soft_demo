@@ -1,5 +1,7 @@
 #include "slicer_module/SceneViewDataAdapter.h"
 
+#include "slicer_core/api/viewdata/MeshAttributeQuantizer.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -288,14 +290,50 @@ private:
         const slicer_core::api::ViewMesh& mesh)
     {
         std::vector<std::uint8_t> bytes;
+        const bool useHalf = mesh.attribute_format
+            == slicer_core::api::MeshAttributeFormat::Float16;
         const std::size_t positionOffset = bytes.size();
-        AppendBytes(&bytes, mesh.positions);
+        if (useHalf)
+        {
+            AppendBytes(
+                &bytes,
+                slicer_core::api::viewdata_detail::
+                    QuantizeMeshAttributesToHalf(mesh.positions));
+        }
+        else
+        {
+            AppendBytes(&bytes, mesh.positions);
+        }
         const std::size_t normalOffset = bytes.size();
-        AppendBytes(&bytes, mesh.normals);
+        if (useHalf)
+        {
+            AppendBytes(
+                &bytes,
+                slicer_core::api::viewdata_detail::
+                    QuantizeMeshAttributesToHalf(mesh.normals));
+        }
+        else
+        {
+            AppendBytes(&bytes, mesh.normals);
+        }
         const std::size_t textureOffset = bytes.size();
-        AppendBytes(&bytes, mesh.texcoord0);
+        if (useHalf)
+        {
+            AppendBytes(
+                &bytes,
+                slicer_core::api::viewdata_detail::
+                    QuantizeMeshAttributesToHalf(mesh.texcoord0));
+        }
+        else
+        {
+            AppendBytes(&bytes, mesh.texcoord0);
+        }
         const std::size_t indexOffset = bytes.size();
         AppendBytes(&bytes, mesh.indices);
+        const std::string positionFormat = useHalf
+            ? "float16x3" : "float32x3";
+        const std::string textureFormat = useHalf
+            ? "float16x2" : "float32x2";
         slicer_core::Json::Array submeshes;
         for (const auto& submesh : mesh.submeshes)
         {
@@ -313,9 +351,9 @@ private:
                     == slicer_core::api::MeshTransform::Local
                 ? "local" : "world"},
             {"buffers", slicer_core::Json::object({
-                {"position", MakeBuffer("float32x3", positionOffset, normalOffset - positionOffset)},
-                {"normal", MakeBuffer("float32x3", normalOffset, textureOffset - normalOffset)},
-                {"texcoord0", MakeBuffer("float32x2", textureOffset, indexOffset - textureOffset)},
+                {"position", MakeBuffer(positionFormat, positionOffset, normalOffset - positionOffset)},
+                {"normal", MakeBuffer(positionFormat, normalOffset, textureOffset - normalOffset)},
+                {"texcoord0", MakeBuffer(textureFormat, textureOffset, indexOffset - textureOffset)},
                 {"index", MakeBuffer("uint32", indexOffset, bytes.size() - indexOffset)}})},
             {"submeshes", slicer_core::Json{std::move(submeshes)}}};
         const auto blob = MakeBlobDescriptor(

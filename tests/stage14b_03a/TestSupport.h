@@ -245,6 +245,7 @@ MakeProvider(
 
 void RunPositiveCases();
 void RunSimplificationCases();
+void RunQuantizationCases();
 void RunFailureCases();
 
 }  // namespace stage14b03a

@@ -90,8 +90,11 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `REPORT/REPORT_HOSTFLOW_H_E_03_支撑参数编辑当前状态.md` | H-E-03 宿主支撑 Profile 编辑、自哈希、持久化与负向门禁证据 |
 | `DOC/DOC_PREP_HOSTFLOW_H_E_E1_STL与支撑参数实施准备.md` | H-E E1 的 STL 与支撑 Profile 字段、负例和批次门 |
 | `DOC/DOC_PREP_RENDER_R_B_LOD缺陷修复选型准备.md` | R-B meshoptimizer/自研简化选型、依赖风险和解锁门禁 |
+| `DOC/DOC_DECISION_RENDER_R_B_04_ViewData半精度传输合同修订.md` | R-B-04 向后兼容的 float16 ViewData wire 合同、预算和缓存身份决策 |
+| `DOC/DOC_PREP_RENDER_R_B_04_半精度网格传输实施准备.md` | R-B-04 算术复核、文件边界、验证矩阵和实施 Gate |
+| `REPORT/REPORT_RENDER_R_B_04_ViewData半精度传输当前状态.md` | R-B-04 Debug/Release、42.1% 传输缩减、25k 阈值与能力包验证结果 |
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
-| `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` v1.2 合同**：top surfacePreview、three_d UV/材质/纹理、`appearances[]` 多模型引用、LOD/blob/identity 与纹理 fail-closed |
+| `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` Schema v1.5**：双视图纹理、复用 mesh、LOD/blob/identity、float16 wire 与 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |
 | `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计 v1.3**：独立参考宿主、M-MVP-CANDIDATE→M-MVP、QOpenGL 双视图、三工作区信息架构、UI-M1..M13 与 14B-03A 前置 |
 | `DOC/DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | **14B 实施准备真源**：Facade、base/engine 迁移顺序、文件所有权、验证与回滚 Gate |

@@ -68,6 +68,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/viewdata/SceneViewClosureValidator.h
     src/slicer_core/api/viewdata/SceneViewIdentity.cpp
     src/slicer_core/api/viewdata/SceneViewIdentity.h
+    src/slicer_core/api/viewdata/MeshAttributeQuantizer.cpp
+    src/slicer_core/api/viewdata/MeshAttributeQuantizer.h
     src/slicer_core/api/viewdata/MeshSimplifier.cpp
     src/slicer_core/api/viewdata/MeshSimplifier.h
     src/slicer_core/api/viewdata/SceneViewMeshInputBuilder.cpp
@@ -867,6 +869,7 @@ add_executable(textured_scene_viewdata_14b03a_unit_tests
     tests/stage14b_03a/Main.cpp
     tests/stage14b_03a/PositiveCases.cpp
     tests/stage14b_03a/SimplificationCases.cpp
+    tests/stage14b_03a/QuantizationCases.cpp
     tests/stage14b_03a/FailureCases.cpp
 )
 target_include_directories(textured_scene_viewdata_14b03a_unit_tests PRIVATE

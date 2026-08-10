@@ -1,5 +1,7 @@
 #include "SceneRenderPolicy.h"
 
+#include "MeshAttributeDecoder.h"
+
 #include <QJsonArray>
 
 #include <cstdint>
@@ -49,38 +51,32 @@ bool SceneRenderPolicy::UploadMesh(
     }
     const QJsonObject buffers = value.value(
         QStringLiteral("buffers")).toObject();
-    qint64 positionOffset{0};
-    qint64 positionLength{0};
-    qint64 normalOffset{0};
-    qint64 normalLength{0};
-    qint64 uvOffset{0};
-    qint64 uvLength{0};
     qint64 indexOffset{0};
     qint64 indexLength{0};
     const int vertexCount = value.value(
         QStringLiteral("vertexCount")).toInt();
     const int triangleCount = value.value(
         QStringLiteral("triangleCount")).toInt();
+    std::vector<float> positions;
+    std::vector<float> normals;
+    std::vector<float> texcoord0;
     if (vertexCount <= 0 || triangleCount <= 0
-        || !ReadBuffer(buffers, QStringLiteral("position"),
-            QStringLiteral("float32x3"), bytes.size(),
-            &positionOffset, &positionLength)
-        || !ReadBuffer(buffers, QStringLiteral("normal"),
-            QStringLiteral("float32x3"), bytes.size(),
-            &normalOffset, &normalLength)
-        || !ReadBuffer(buffers, QStringLiteral("texcoord0"),
-            QStringLiteral("float32x2"), bytes.size(),
-            &uvOffset, &uvLength)
+        || !slicer::render::DecodeMeshAttribute(
+            bytes, buffers, QStringLiteral("position"), 3,
+            vertexCount, &positions, error)
+        || !slicer::render::DecodeMeshAttribute(
+            bytes, buffers, QStringLiteral("normal"), 3,
+            vertexCount, &normals, error)
+        || !slicer::render::DecodeMeshAttribute(
+            bytes, buffers, QStringLiteral("texcoord0"), 2,
+            vertexCount, &texcoord0, error)
         || !ReadBuffer(buffers, QStringLiteral("index"),
             QStringLiteral("uint32"), bytes.size(),
             &indexOffset, &indexLength)
-        || positionLength != vertexCount * 3 * static_cast<int>(sizeof(float))
-        || normalLength != positionLength
-        || uvLength != vertexCount * 2 * static_cast<int>(sizeof(float))
         || indexLength != triangleCount * 3
             * static_cast<int>(sizeof(std::uint32_t)))
     {
-        if (error != nullptr)
+        if (error != nullptr && error->isEmpty())
         {
             *error = QStringLiteral("three_d 网格 buffer 合同无效。");
         }
@@ -90,9 +86,9 @@ bool SceneRenderPolicy::UploadMesh(
     mesh.meshIdentity = identity;
     mesh.vertexCount = static_cast<std::uint32_t>(vertexCount);
     mesh.triangleCount = static_cast<std::uint32_t>(triangleCount);
-    mesh.position = bytes.constData() + positionOffset;
-    mesh.normal = bytes.constData() + normalOffset;
-    mesh.texcoord0 = bytes.constData() + uvOffset;
+    mesh.position = positions.data();
+    mesh.normal = normals.data();
+    mesh.texcoord0 = texcoord0.data();
     mesh.index = bytes.constData() + indexOffset;
     mesh.indexIs32Bit = true;
     for (const QJsonValue& item : value.value(

@@ -243,6 +243,7 @@ ApiResult<SceneViewData> BuildViewCandidate(
                         sourceWorldMatrix,
                         options.lod,
                         request.mesh_transform,
+                        request.mesh_attribute_format,
                         cancelToken);
                     if (!mesh.IsOk())
                     {

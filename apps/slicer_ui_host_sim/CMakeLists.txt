@@ -81,6 +81,8 @@ add_executable(slicer_ui_host_sim
     render/CpuRasterResources.h
     render/CpuRasterizer.cpp
     render/IRenderBackend.h
+    render/MeshAttributeDecoder.cpp
+    render/MeshAttributeDecoder.h
     render/SceneRenderPolicy.cpp
     render/SceneRenderPolicyData.cpp
     render/SceneRenderPolicyMesh.cpp
@@ -1064,6 +1066,8 @@ add_executable(stage14e04c_three_d_tests
     render/CpuRasterResources.h
     render/CpuRasterizer.cpp
     render/IRenderBackend.h
+    render/MeshAttributeDecoder.cpp
+    render/MeshAttributeDecoder.h
     render/SceneRenderPolicy.cpp
     render/SceneRenderPolicyData.cpp
     render/SceneRenderPolicyMesh.cpp
@@ -1136,6 +1140,8 @@ add_executable(stage14e04d_view_switch_tests
     render/CpuRasterResources.h
     render/CpuRasterizer.cpp
     render/IRenderBackend.h
+    render/MeshAttributeDecoder.cpp
+    render/MeshAttributeDecoder.h
     render/SceneRenderPolicy.cpp
     render/SceneRenderPolicyData.cpp
     render/SceneRenderPolicyMesh.cpp
@@ -1276,6 +1282,8 @@ add_executable(hostflow_hd02_three_d_canvas_tests
     render/CpuRasterResources.h
     render/CpuRasterizer.cpp
     render/IRenderBackend.h
+    render/MeshAttributeDecoder.cpp
+    render/MeshAttributeDecoder.h
     render/SceneRenderPolicy.cpp
     render/SceneRenderPolicyData.cpp
     render/SceneRenderPolicyMesh.cpp
@@ -1409,6 +1417,8 @@ add_executable(hostflow_hd04_scene_refresh_tests
     render/CpuRasterResources.h
     render/CpuRasterizer.cpp
     render/IRenderBackend.h
+    render/MeshAttributeDecoder.cpp
+    render/MeshAttributeDecoder.h
     render/SceneRenderPolicy.cpp
     render/SceneRenderPolicyData.cpp
     render/SceneRenderPolicyMesh.cpp

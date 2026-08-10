@@ -1,6 +1,6 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.9
+> 合同版本：1.10
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
@@ -9,7 +9,8 @@
 > `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md`、
 > `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md`、
 > `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`、
-> `DOC_DECISION_RENDER_R_B_03_ViewData降级理由受控修订.md`
+> `DOC_DECISION_RENDER_R_B_03_ViewData降级理由受控修订.md`、
+> `DOC_DECISION_RENDER_R_B_04_ViewData半精度传输合同修订.md`
 
 ## 1. 范围
 
@@ -173,7 +174,7 @@ full preflight 响应必须绑定 scene/revision/hash，返回 authoritative/com
 坐标系      right_handed_z_up
 单位        mm
 字节序      little_endian
-网格        float32x3 position/normal + float32x2 texcoord0 + uint16|uint32 index
+网格        float32 或 float16 position/normal/texcoord0 + uint32 index
 LOD         auto/lod0/lod1/lod2/outline_only
 推荐变换    local mesh + row-major worldMatrix[16]
 缓存        viewdataIdentity 标识快照，顶层 meshes[] 按 meshIdentity 复用网格
@@ -202,7 +203,20 @@ three_d 响应的规范网格载体为顶层 `meshes[]`。每个 `instances[].me
 一份网格 blob。为兼容 v1.7 宿主，v1.8 暂时保留 `instances[].mesh` 描述符别名，但该别名复用
 同一 `blobId`，不得再次存储二进制内容。新宿主必须优先读取顶层 `meshes[]`。
 
-### 4.1 降级理由
+### 4.1 网格属性编码
+
+`meshAttributeFormat` 是可选查询字段，支持 `float32` 与 `float16`，缺省严格保持 `float32`，
+因此旧宿主无需修改即可继续读取原有格式。请求 `float16` 时，position、normal 与 texcoord0
+分别返回 `float16x3`、`float16x3`、`float16x2`，均使用 IEEE-754 binary16 与小端字节序；
+index 继续使用 `uint32`。半精度由 `meshopt_quantizeHalf` 产生，宿主必须按 descriptor 解码，
+不得把 binary16 指针当作 float32 使用。
+
+`maxBytes` 预算按实际 wire format 估算；`meshIdentity` 包含编码身份，避免 float32/float16
+缓存互相污染。R-B-04 同时量化 UV，原因是仅量化 position/normal 的理论上限不足以满足既定
+40% 传输缩减目标；对冻结真实甲片口径，三类属性全部半精度后每个无共享三角由 108 B 降至
+60 B，并把 22 实例均分预算阈值抬升到至少 25k 三角/实例。
+
+### 4.2 降级理由
 
 `truncationReason` 使用分号连接多个独立原因。当前 Provider 只允许以下稳定值：
 
@@ -218,7 +232,7 @@ top_preview_resolution_reduced_for_max_bytes
 作为诊断保留字，但 R-B-02 后的当前 Provider 禁止产生这些值。宿主可对 `mesh_decimated_*` 显示强告警，
 对 `mesh_simplified_*` 显示受控质量降级提示。
 
-### 4.2 双视图请求
+### 4.3 双视图请求
 
 ```json
 {
@@ -226,6 +240,7 @@ top_preview_resolution_reduced_for_max_bytes
   "operation": "query",
   "viewMode": "top",
   "texturePolicy": "require_if_present",
+  "meshAttributeFormat": "float16",
   "content": ["bbox", "outline", "surface_preview", "appearance"]
 }
 ```
@@ -256,7 +271,8 @@ emptyValue   255
 
 本合同冻结对外 DTO；v1.6 的 `addInstance` / `removeInstance` 和隐式建场景已由 H-A-02 实现，
 v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可复用 `meshes[]`，
-v1.9 由 R-B-03 冻结安全简化与历史抽稀的降级理由；
+v1.9 由 R-B-03 冻结安全简化与历史抽稀的降级理由，v1.10 由 R-B-04 增加向后兼容的
+半精度网格属性请求与响应格式；
 H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主不透明透传到生产切片。独立 `scene.layout`
 能力仍被禁止。
 交互幂等、revision 回滚和三车道细则见

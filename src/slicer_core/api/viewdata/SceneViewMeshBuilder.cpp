@@ -274,6 +274,7 @@ ApiResult<ViewMesh> BuildViewMesh(
     const Matrix4d& worldMatrix,
     const ViewLod lod,
     const MeshTransform meshTransform,
+    const MeshAttributeFormat attributeFormat,
     const ICancelToken& cancelToken) noexcept
 {
     try
@@ -294,6 +295,7 @@ ApiResult<ViewMesh> BuildViewMesh(
         ViewMesh mesh;
         mesh.lod = lod;
         mesh.mesh_transform = meshTransform;
+        mesh.attribute_format = attributeFormat;
         std::size_t estimatedTriangles{0U};
         for (const std::size_t groupBudget : groupBudgets)
         {
