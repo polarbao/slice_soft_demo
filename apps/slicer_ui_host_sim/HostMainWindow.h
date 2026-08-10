@@ -163,6 +163,7 @@ private:
     QPlainTextEdit* m_moduleInfoView{nullptr};
     QString m_selectedProfileId;
     QString m_restoredProfileId;
+    QString m_modelImportDirectory;
     QPointF m_dragStartWorld;
     quint64 m_dragCallCount{0U};
     bool m_textureWhiteWarning{false};

@@ -11,6 +11,8 @@
 #include <QStringList>
 #include <QTextStream>
 
+#include <cmath>
+
 namespace
 {
 bool Check(const bool condition, const QString& message, QTextStream& errors)
@@ -143,6 +145,18 @@ int main(int argc, char* argv[])
                QStringLiteral("变换或排版控件不完整。"), errors))
     {
         return 5;
+    }
+    const hostgridlayoutrequest defaultLayout = panel.LayoutRequest();
+    if (!Check(
+            defaultLayout.maxcolumns == 11
+                && defaultLayout.maxrows == 2
+                && std::abs(defaultLayout.columngapmm - 10.0) < 1.0e-9
+                && std::abs(defaultLayout.rowgapmm - 10.0) < 1.0e-9,
+            QStringLiteral(
+                "导入自动排版与手动排版必须共享 11x2、10 mm 默认参数。"),
+            errors))
+    {
+        return 11;
     }
 
     client.ResetCallCount();

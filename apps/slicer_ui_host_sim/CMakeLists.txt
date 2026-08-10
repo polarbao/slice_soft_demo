@@ -10,6 +10,8 @@ add_executable(slicer_ui_host_sim
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
+    HostImportDirectoryPolicy.cpp
+    HostImportDirectoryPolicy.h
     HostModelListPanel.cpp
     HostModelListPanel.h
     HostChannelChartWidget.cpp
@@ -194,6 +196,8 @@ add_test(
 )
 
 add_executable(hostflow_hb01_model_import_tests
+    HostImportDirectoryPolicy.cpp
+    HostImportDirectoryPolicy.h
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp

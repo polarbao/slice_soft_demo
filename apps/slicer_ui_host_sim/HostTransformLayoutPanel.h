@@ -1,5 +1,7 @@
 #pragma once
 
+#include "HostModelImportWorkflow.h"
+
 #include <QStringList>
 #include <QWidget>
 
@@ -42,6 +44,12 @@ public:
 
     /** @brief Resets incremental transform inputs after a successful Commit. */
     void ResetTransformInputs();
+
+    /**
+     * @brief Returns the grid values currently shown to the operator.
+     * @return Host-owned layout request used by automatic and manual layout.
+     */
+    [[nodiscard]] hostgridlayoutrequest LayoutRequest() const;
 
 signals:
     /** @brief Requests one atomic Commit for selected instance transforms. */

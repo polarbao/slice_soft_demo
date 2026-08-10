@@ -1,5 +1,7 @@
 #include "HostMainWindow.h"
 
+#include "HostImportDirectoryPolicy.h"
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileDialog>
@@ -11,10 +13,14 @@
 
 void HostMainWindow::OnImportModel()
 {
+    m_modelImportDirectory = HostImportDirectoryPolicy::Resolve(
+        QCoreApplication::applicationDirPath(),
+        QDir::currentPath(),
+        m_modelImportDirectory);
     const QStringList modelPaths = QFileDialog::getOpenFileNames(
         this,
         QStringLiteral("选择要批量导入的 OBJ、3MF 或 STL 模型"),
-        QDir::homePath(),
+        m_modelImportDirectory,
         QStringLiteral(
             "支持的模型 (*.obj *.3mf *.stl);;OBJ 模型 (*.obj);;"
             "3MF 模型 (*.3mf);;STL 模型 (*.stl)"));
@@ -22,6 +28,7 @@ void HostMainWindow::OnImportModel()
     {
         return;
     }
+    m_modelImportDirectory = QFileInfo(modelPaths.constFirst()).absolutePath();
 
     QString contextError;
     if (!ApplyPendingSceneContext(&contextError))
@@ -40,27 +47,61 @@ void HostMainWindow::OnImportModel()
     QString error;
     const bool imported = m_importWorkflow->ImportModels(
         modelPaths, &results, &error);
-    SetSceneCommandsEnabled(m_client.IsOpen());
     if (!imported)
     {
+        SetSceneCommandsEnabled(m_client.IsOpen());
         ShowImportError(error);
         return;
     }
+
+    bool autoLayoutApplied = false;
+    QString autoLayoutError;
+    hostsceneeditresult autoLayoutResult;
+    if (m_importWorkflow->InstanceCount() > 1)
+    {
+        autoLayoutApplied = m_importWorkflow->ApplyGridLayout(
+            m_transformLayoutPanel->LayoutRequest(),
+            &autoLayoutResult,
+            &autoLayoutError);
+    }
+    SetSceneCommandsEnabled(m_client.IsOpen());
 
     RefreshSliceSettings();
     for (const hostmodelimportresult& result : results)
     {
         ShowImportResult(result);
     }
+    const bool autoLayoutRequired = m_importWorkflow->InstanceCount() > 1;
+    const QString layoutSummary = !autoLayoutRequired
+        ? QStringLiteral("单模型无需自动排版")
+        : autoLayoutApplied
+            ? QStringLiteral("已按当前参数自动排版，碰撞=%1，越界=%2")
+                  .arg(autoLayoutResult.collisioncount)
+                  .arg(autoLayoutResult.outofboundscount)
+            : QStringLiteral("自动排版失败：%1")
+                  .arg(autoLayoutError.isEmpty()
+                           ? QStringLiteral("模块未返回详细原因")
+                           : autoLayoutError);
     m_importSummaryLabel->setText(
         QStringLiteral(
-            "已按选择顺序导入 %1 个模型；一次原子提交完成，场景 revision=%2。"
-            "预检表显示最后一个模型。")
+            "已按选择顺序导入 %1 个模型；一次原子提交完成。\n"
+            "%2；场景 revision=%3。预检表显示最后一个模型。")
             .arg(results.size())
+            .arg(layoutSummary)
             .arg(m_importWorkflow->SceneRevision()));
     m_statusLabel->setText(
-        QStringLiteral("批量模型已导入 · ABI 调用 %1 次")
+        QStringLiteral("批量模型已导入 · %1 · ABI 调用 %2 次")
+            .arg(layoutSummary)
             .arg(m_client.CallCount()));
+    if (autoLayoutRequired && !autoLayoutApplied)
+    {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("模型已导入，但自动排版失败"),
+            QStringLiteral(
+                "%1\n\n已导入的模型仍保留，可在“变换与排版”页调整参数后手动排版。")
+                .arg(layoutSummary));
+    }
     RefreshSceneViews();
 }
 

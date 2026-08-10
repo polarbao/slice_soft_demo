@@ -186,6 +186,15 @@ void HostTransformLayoutPanel::ResetTransformInputs()
     m_mirrorYCheck->setChecked(false);
 }
 
+hostgridlayoutrequest HostTransformLayoutPanel::LayoutRequest() const
+{
+    return hostgridlayoutrequest{
+        m_columnsSpin->value(),
+        m_rowsSpin->value(),
+        m_columnGapSpin->value(),
+        m_rowGapSpin->value()};
+}
+
 void HostTransformLayoutPanel::OnApplyTransform()
 {
     emit SigTransformRequested(
@@ -201,11 +210,12 @@ void HostTransformLayoutPanel::OnApplyTransform()
 
 void HostTransformLayoutPanel::OnApplyLayout()
 {
+    const hostgridlayoutrequest request = LayoutRequest();
     emit SigLayoutRequested(
-        m_columnsSpin->value(),
-        m_rowsSpin->value(),
-        m_columnGapSpin->value(),
-        m_rowGapSpin->value());
+        request.maxcolumns,
+        request.maxrows,
+        request.columngapmm,
+        request.rowgapmm);
 }
 
 void HostTransformLayoutPanel::UpdateControls()

@@ -1,10 +1,12 @@
 #include "apps/slicer_ui_host_sim/HostModelImportWorkflow.h"
+#include "apps/slicer_ui_host_sim/HostImportDirectoryPolicy.h"
 
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QStringList>
 #include <QTextStream>
+#include <QTemporaryDir>
 
 namespace
 {
@@ -46,6 +48,52 @@ int main(int argc, char* argv[])
                   errors))
     {
         return 2;
+    }
+
+    QTemporaryDir importRoot;
+    const QDir importBase(importRoot.path());
+    const QString applicationDirectory = importBase.filePath(
+        QStringLiteral("application"));
+    const QString workingDirectory = importBase.filePath(
+        QStringLiteral("working"));
+    const QString previousDirectory = importBase.filePath(
+        QStringLiteral("previous"));
+    const QString buildApplicationDirectory = importBase.filePath(
+        QStringLiteral("build-application"));
+    QDir().mkpath(QDir(applicationDirectory).filePath(
+        QStringLiteral("model")));
+    QDir().mkpath(QDir(workingDirectory).filePath(
+        QStringLiteral("model")));
+    QDir().mkpath(previousDirectory);
+    QDir().mkpath(buildApplicationDirectory);
+    if (!Check(
+            importRoot.isValid()
+                && HostImportDirectoryPolicy::Resolve(
+                       applicationDirectory,
+                       workingDirectory)
+                    == QDir(applicationDirectory).absoluteFilePath(
+                        QStringLiteral("model")),
+            QStringLiteral("运行目录存在 model 时应优先从该目录导入。"),
+            errors)
+        || !Check(
+            HostImportDirectoryPolicy::Resolve(
+                applicationDirectory,
+                workingDirectory,
+                previousDirectory)
+                == QDir(previousDirectory).absolutePath(),
+            QStringLiteral("本次会话已使用的模型目录应保持优先。"),
+            errors)
+        || !Check(
+            HostImportDirectoryPolicy::Resolve(
+                buildApplicationDirectory,
+                workingDirectory)
+                == QDir(workingDirectory).absoluteFilePath(
+                    QStringLiteral("model")),
+            QStringLiteral(
+                "构建目录无 model 时应回退到工作目录下的 model。"),
+            errors))
+    {
+        return 14;
     }
 
     ModuleClient client;
