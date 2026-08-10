@@ -8,7 +8,8 @@
       "name": "tiff",
       "default-features": false
     },
-    "assimp"
+    "assimp",
+    "meshoptimizer"
   ],
   "features": {
     "openvdb": {

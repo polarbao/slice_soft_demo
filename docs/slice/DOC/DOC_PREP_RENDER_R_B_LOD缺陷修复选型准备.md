@@ -1,7 +1,7 @@
 # R-B LOD 缺陷修复选型准备
 
-> 状态：**DECISION READY / IMPLEMENTATION BLOCKED BY RD-B**
-> 日期：2026-08-09
+> 状态：**IMPLEMENTED / R-B-02 COMPLETE**
+> 日期：2026-08-10
 > 前置：R-A-01 COMPLETE，真实资产风险 P1 CONFIRMED。
 
 ## 1. 问题与影响
@@ -45,7 +45,9 @@ R-B 是 H-D-02 生产 3D 画布的硬前置。俯视 `surfacePreview` 不依赖�
 3. MIT、CMake 和 vcpkg 路径明确，可通过适配层隔离第三方 API；
 4. 单一贡献者项目不适合长期维护完整网格简化算法。
 
-该推荐不是实现授权。用户明确选择 RD-B 之前，不修改 `vcpkg.json`、CMake 或生产源码。
+用户已于 2026-08-10 明确授权 `RD-B = meshoptimizer`。实际接入锁定 vcpkg baseline 下的
+meshoptimizer 1.1，并通过内部 adapter 隔离第三方类型；默认轨道使用
+`x64-windows-static-md` 静态链接，不新增运行时 DLL。
 
 ## 4. 实施分解
 
@@ -93,3 +95,19 @@ RD-B = custom
   → 先补自研算法 DEV/DEMO/任务卡
   → 评审通过后再执行 R-B-01 / R-B-02
 ```
+
+## 7. 实施结果
+
+- 已用 `meshopt_simplifyWithAttributes` 替换组内跳采样，UV 作为属性误差参与简化；
+- 外轮廓使用 `meshopt_SimplifyLockBorder` 锁定，实际平面门禁为零轮廓漂移；
+- 材质组独立建索引，位置与 UV 共同确定拓扑顶点，材质边界和 UV seam 不跨域合并；
+- 禁止 sloppy/prune；不能满足 2% 相对误差、预算或连通性时返回
+  `PM-SLICER-VIEWDATA-SIMPLIFICATION`，不回退跳采样；
+- Debug/Release、真实 fixture、第三方合规和能力包打包门禁均已通过。
+
+## 8. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-08-10 | v1.1 | 记录 RD-B 明确授权和 R-B-02 实际实施结果；冻结 meshoptimizer 1.1、static-md、无动态 DLL 与 fail-closed 边界。 |
+| 2026-08-09 | v1.0 | 完成候选比较与实施准备，等待 RD-B。 |

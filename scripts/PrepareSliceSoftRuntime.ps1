@@ -133,7 +133,7 @@ function ResolveVcpkgRoot
 
     if ([string]::IsNullOrWhiteSpace($Candidate))
     {
-        throw "VCPKG_ROOT or -VcpkgRoot is required for the libtiff lane."
+        throw "VCPKG_ROOT or -VcpkgRoot is required for SliceSoft dependencies."
     }
 
     $resolved = [System.IO.Path]::GetFullPath($Candidate)
@@ -525,15 +525,7 @@ function TestPortableProfileResources
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $resolvedQt5Dir = ResolveQt5CMakeDir -Candidate $Qt5Dir
-$resolvedVcpkgRoot =
-    if ($TiffBackend -eq "libtiff")
-    {
-        ResolveVcpkgRoot -Candidate $VcpkgRoot
-    }
-    else
-    {
-        ""
-    }
+$resolvedVcpkgRoot = ResolveVcpkgRoot -Candidate $VcpkgRoot
 $resolvedBuildDir = ResolveRepoPath -RepoRoot $repoRoot -Path $BuildDir
 $isNMakeBuild = $BuildSystem -eq "NMake"
 $resolvedConfigBuildDir =
@@ -590,6 +582,15 @@ try
                 $ForceClean.IsPresent
             }
 
+        $dependencyTriplet = if ($TiffBackend -eq "libtiff")
+        {
+            "x64-windows"
+        }
+        else
+        {
+            "x64-windows-static-md"
+        }
+        $dependencyInstallRoot = Join-Path $repoRoot "build-slicesoft/vcpkg_installed"
         $configureArguments = @(
             "-S", $repoRoot,
             "-B", $resolvedConfigBuildDir
@@ -612,15 +613,12 @@ try
             "-DQt5_DIR=$resolvedQt5Dir",
             "-DBUILD_SLICER_DEBUG_UI=ON",
             "-DUSE_OPENVDB=OFF",
-            "-DSLICESOFT_TIFF_BACKEND=$TiffBackend"
+            "-DSLICESOFT_TIFF_BACKEND=$TiffBackend",
+            "-DCMAKE_TOOLCHAIN_FILE=$(Join-Path $resolvedVcpkgRoot 'scripts/buildsystems/vcpkg.cmake')",
+            "-DVCPKG_INSTALLED_DIR=$dependencyInstallRoot",
+            "-Dmeshoptimizer_DIR=$(Join-Path $dependencyInstallRoot "$dependencyTriplet/share/meshoptimizer")",
+            "-DVCPKG_TARGET_TRIPLET=$dependencyTriplet"
         )
-        if ($TiffBackend -eq "libtiff")
-        {
-            $configureArguments += @(
-                "-DCMAKE_TOOLCHAIN_FILE=$(Join-Path $resolvedVcpkgRoot 'scripts/buildsystems/vcpkg.cmake')",
-                "-DVCPKG_TARGET_TRIPLET=x64-windows"
-            )
-        }
 
         InvokeNativeStep `
             -Name "configure unified SliceSoft Qt build ($BuildSystem)" `
@@ -730,6 +728,13 @@ try
         Copy-Item -LiteralPath $slicerCli -Destination (Join-Path $stagingDir "slicer_cli.exe")
         Copy-Item -LiteralPath $ripReader -Destination (Join-Path $stagingDir "rip_reader_test.exe")
         Copy-Item -LiteralPath $uiExecutable -Destination (Join-Path $stagingDir "slicer_debug_ui.exe")
+        Copy-Item `
+            -LiteralPath (Join-Path $repoRoot "THIRD_PARTY_NOTICES.txt") `
+            -Destination $stagingDir
+        Copy-Item `
+            -LiteralPath (Join-Path $repoRoot "licenses") `
+            -Destination $stagingDir `
+            -Recurse
         $tiffRuntimeLibraries = @()
         $tiffLicenseRelativePath = $null
         if ($TiffBackend -eq "libtiff")

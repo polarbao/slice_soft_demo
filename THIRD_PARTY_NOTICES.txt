@@ -22,6 +22,11 @@ notice:
    License: BSD 3-Clause; bundled Poly2Tri notice included.
    Full text: licenses/assimp.txt
 
+4. meshoptimizer 1.1
+   Copyright 2016-2026 Arseny Kapoulkine.
+   License: MIT.
+   Full text: licenses/meshoptimizer.txt
+
 No name of a copyright holder or contributor may be used to endorse or
 promote SliceSoft without prior written permission where the corresponding
 license prohibits such use.
@@ -29,10 +34,11 @@ license prohibits such use.
 Build-specific note
 -------------------
 
-miniz is compiled into slicer_core in every current build. LibTIFF is shipped
-only when SLICESOFT_TIFF_BACKEND=libtiff. Assimp is declared in vcpkg.json but
-is not linked by the current CMake target graph. This notice includes Assimp in
-advance; shipping its binary later still requires including its full license.
+miniz and meshoptimizer are statically compiled into SliceSoft core libraries
+in every current build. LibTIFF is shipped only when SLICESOFT_TIFF_BACKEND=libtiff.
+Assimp is declared in vcpkg.json but is not linked by the current CMake target
+graph. This notice includes Assimp in advance; shipping its binary later still
+requires including its full license.
 
 The release packaging step must copy this file and the complete licenses
 directory. It must also regenerate the runtime dependency inventory and add

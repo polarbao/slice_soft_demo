@@ -17,9 +17,13 @@
       "binaryDir": "${sourceDir}/build-slicesoft/main",
       "cacheVariables": {
         "BUILD_SLICER_DEBUG_UI": "ON",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_PREFIX_PATH": "$env{QTDIR}",
+        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows-static-md/share/meshoptimizer",
         "SLICESOFT_TIFF_BACKEND": "handwritten",
-        "USE_OPENVDB": "OFF"
+        "USE_OPENVDB": "OFF",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
       }
     },
     {
@@ -37,8 +41,12 @@
       "cacheVariables": {
         "BUILD_SLICER_DEBUG_UI": "ON",
         "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_PREFIX_PATH": "$env{QTDIR}",
-        "USE_OPENVDB": "OFF"
+        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows-static-md/share/meshoptimizer",
+        "USE_OPENVDB": "OFF",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
       }
     },
     {
@@ -49,6 +57,7 @@
       "binaryDir": "${sourceDir}/build-slicesoft/03d-libtiff",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows/share/meshoptimizer",
         "SLICESOFT_TIFF_BACKEND": "libtiff",
         "VCPKG_TARGET_TRIPLET": "x64-windows"
       }

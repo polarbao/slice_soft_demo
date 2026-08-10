@@ -12,7 +12,7 @@ def Main() -> int:
 
     noticePath = repoRoot / manifest["releaseFiles"]["notice"]
     noticeText = noticePath.read_text(encoding="utf-8")
-    expectedComponents = {"miniz", "libtiff", "assimp"}
+    expectedComponents = {"miniz", "libtiff", "assimp", "meshoptimizer"}
     actualComponents = {entry["name"] for entry in manifest["components"]}
     if actualComponents != expectedComponents:
         raise AssertionError("third-party component inventory drifted")
@@ -37,6 +37,14 @@ def Main() -> int:
     assimpText = (repoRoot / "licenses" / "assimp.txt").read_text(encoding="utf-8")
     if "assimp team" not in assimpText or "Poly2Tri" not in assimpText:
         raise AssertionError("Assimp notices are incomplete")
+
+    meshoptimizerText = (
+        repoRoot / "licenses" / "meshoptimizer.txt"
+    ).read_text(encoding="utf-8")
+    if "Arseny Kapoulkine" not in meshoptimizerText:
+        raise AssertionError("meshoptimizer copyright is incomplete")
+    if "Permission is hereby granted" not in meshoptimizerText:
+        raise AssertionError("meshoptimizer MIT text is incomplete")
 
     if not all(manifest["releaseGate"].values()):
         raise AssertionError("release compliance gate must be fail-closed")

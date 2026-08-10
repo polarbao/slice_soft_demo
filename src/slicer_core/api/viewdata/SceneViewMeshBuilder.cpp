@@ -1,6 +1,8 @@
 #include "slicer_core/api/viewdata/SceneViewMeshBuilder.h"
 
+#include "slicer_core/api/viewdata/MeshSimplifier.h"
 #include "slicer_core/api/viewdata/SceneViewIdentity.h"
+#include "slicer_core/api/viewdata/SceneViewMeshInputBuilder.h"
 
 #include <algorithm>
 #include <array>
@@ -28,31 +30,6 @@ ApiResult<T> Failure(
 {
     return ApiResult<T>::Failure(
         {std::string(code), std::string(message), detail});
-}
-
-bool IsFinite(const Vec3& point)
-{
-    return std::isfinite(point.x)
-        && std::isfinite(point.y)
-        && std::isfinite(point.z);
-}
-
-Vec3 TransformPoint(const Vec3& point, const Matrix4d& matrix)
-{
-    return {
-        matrix.values.at(0U) * point.x
-            + matrix.values.at(1U) * point.y
-            + matrix.values.at(2U) * point.z
-            + matrix.values.at(3U),
-        matrix.values.at(4U) * point.x
-            + matrix.values.at(5U) * point.y
-            + matrix.values.at(6U) * point.z
-            + matrix.values.at(7U),
-        matrix.values.at(8U) * point.x
-            + matrix.values.at(9U) * point.y
-            + matrix.values.at(10U) * point.z
-            + matrix.values.at(11U),
-    };
 }
 
 std::optional<Vec3> ComputeNormal(const Triangle& triangle)
@@ -345,64 +322,66 @@ ApiResult<ViewMesh> BuildViewMesh(
             submesh.material_id =
                 appearance.materials.at(materialIndex).material.material_id;
 
-            for (std::size_t sampleIndex{0U};
-                 sampleIndex < groupBudget;
-                 ++sampleIndex)
+            ApiResult<MeshSimplificationInput> input = BuildViewMeshGroupInput(
+                model,
+                triangleIndices,
+                worldMatrix,
+                meshTransform,
+                cancelToken);
+            if (!input.IsOk())
             {
-                if (cancelToken.IsCancelRequested())
-                {
-                    return Failure<ViewMesh>(
-                        "PM-SLICER-CANCELLED-0070",
-                        "ViewData mesh generation was cancelled",
-                        model.model_path.generic_string());
-                }
-                const std::size_t groupIndex =
-                    sampleIndex * triangleIndices.size() / groupBudget;
-                const std::size_t triangleIndex = triangleIndices.at(
-                    groupIndex);
-                Triangle triangle = model.triangles.at(triangleIndex);
-                if (meshTransform == MeshTransform::World)
-                {
-                    triangle.a = TransformPoint(triangle.a, worldMatrix);
-                    triangle.b = TransformPoint(triangle.b, worldMatrix);
-                    triangle.c = TransformPoint(triangle.c, worldMatrix);
-                }
-                if (!IsFinite(triangle.a)
-                    || !IsFinite(triangle.b)
-                    || !IsFinite(triangle.c))
-                {
-                    return Failure<ViewMesh>(
-                        "PM-SLICER-INPUT-0002",
-                        "ViewData mesh contains non-finite geometry",
-                        std::to_string(triangleIndex));
-                }
+                return Failure<ViewMesh>(
+                    input.Error()->code,
+                    input.Error()->message,
+                    input.Error()->detail);
+            }
+            ApiResult<MeshSimplificationResult> simplified =
+                SimplifyViewMesh(*input.Value(), groupBudget, cancelToken);
+            if (!simplified.IsOk())
+            {
+                return Failure<ViewMesh>(
+                    simplified.Error()->code,
+                    simplified.Error()->message,
+                    appearance.materials.at(materialIndex)
+                        .material.material_id
+                        + ":" + simplified.Error()->detail);
+            }
+
+            for (std::size_t offset{0U};
+                 offset < simplified.Value()->indices.size();
+                 offset += 3U)
+            {
+                Triangle triangle{
+                    ReadSimplificationPoint(
+                        *input.Value(),
+                        simplified.Value()->indices.at(offset)),
+                    ReadSimplificationPoint(
+                        *input.Value(),
+                        simplified.Value()->indices.at(offset + 1U)),
+                    ReadSimplificationPoint(
+                        *input.Value(),
+                        simplified.Value()->indices.at(offset + 2U))};
                 const std::optional<Vec3> normal = ComputeNormal(triangle);
                 if (!normal.has_value())
                 {
                     return Failure<ViewMesh>(
-                        "PM-SLICER-INPUT-0002",
-                        "ViewData mesh contains a degenerate triangle",
-                        std::to_string(triangleIndex));
+                        "PM-SLICER-VIEWDATA-SIMPLIFICATION",
+                        "ViewData simplification produced a degenerate triangle",
+                        appearance.materials.at(materialIndex)
+                            .material.material_id);
                 }
-
                 const std::array<Vec3, 3> points{
                     triangle.a, triangle.b, triangle.c};
-                const TriangleTextureInfo* binding =
-                    model.triangle_textures.empty()
-                    ? nullptr
-                    : &model.triangle_textures.at(triangleIndex);
                 for (std::size_t vertex{0U}; vertex < 3U; ++vertex)
                 {
-                    const Vec3& point = points.at(vertex);
-                    const TexCoord uv = binding != nullptr && binding->has_uv
-                        ? binding->uv.at(vertex)
-                        : TexCoord{};
+                    const std::uint32_t sourceIndex =
+                        simplified.Value()->indices.at(offset + vertex);
                     mesh.indices.push_back(ResolveVertex(
                         mesh,
                         vertexIndices,
-                        point,
+                        points.at(vertex),
                         *normal,
-                        uv));
+                        ReadSimplificationUv(*input.Value(), sourceIndex)));
                 }
             }
             submesh.index_count = static_cast<std::uint32_t>(

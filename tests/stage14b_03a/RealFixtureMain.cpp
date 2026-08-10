@@ -143,9 +143,18 @@ void VerifyThreeDView(const slicer_core::api::SceneViewData& viewData)
             "three_d response did not retain both real models");
     for (const slicer_core::api::ViewInstance& instance : viewData.instances)
     {
-        Require(instance.mesh.has_value(),
-                "three_d response did not contain a mesh");
-        const slicer_core::api::ViewMesh& mesh = *instance.mesh;
+        Require(!instance.mesh.has_value(),
+                "canonical three_d response must not inline instance mesh");
+        const auto meshIterator = std::find_if(
+            viewData.meshes.begin(),
+            viewData.meshes.end(),
+            [&instance](const slicer_core::api::ViewMesh& mesh)
+            {
+                return mesh.mesh_identity == instance.mesh_identity;
+            });
+        Require(meshIterator != viewData.meshes.end(),
+                "three_d response did not resolve the reusable mesh");
+        const slicer_core::api::ViewMesh& mesh = *meshIterator;
         Require(!mesh.positions.empty() && !mesh.indices.empty(),
                 "three_d mesh buffers were empty");
         Require(mesh.texcoord0.size() == mesh.positions.size() / 3U * 2U,

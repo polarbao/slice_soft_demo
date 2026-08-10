@@ -31,6 +31,15 @@
       "license": "BSD-3-Clause_with_Poly2Tri_notice",
       "licenseFile": "licenses/assimp.txt",
       "noticeRequiredWhenShipped": true
+    },
+    {
+      "name": "meshoptimizer",
+      "version": "1.1",
+      "source": "vcpkg:meshoptimizer",
+      "currentUsage": "statically_linked_into_slicer_base",
+      "license": "MIT",
+      "licenseFile": "licenses/meshoptimizer.txt",
+      "noticeRequired": true
     }
   ],
   "releaseGate": {

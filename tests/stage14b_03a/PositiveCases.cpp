@@ -50,50 +50,6 @@ slicer_core::TextureImage MakeLargeTexture(const int dimension)
     return image;
 }
 
-slicer_core::SceneModel MakeMultiMaterialBudgetModel()
-{
-    constexpr std::size_t firstCount{12000U};
-    constexpr std::size_t secondCount{4000U};
-    constexpr std::size_t totalCount{firstCount + secondCount};
-
-    slicer_core::SceneModel model;
-    model.model_path = "multi-material-budget.obj";
-    model.format = "obj";
-    model.vertex_count = totalCount * 3U;
-    model.face_count = totalCount;
-    model.triangle_count = totalCount;
-    model.bbox_mm = {
-        {0.0, 0.0, 0.0},
-        {static_cast<double>(totalCount), 1.0, 0.0}};
-
-    slicer_core::MaterialInfo firstMaterial;
-    firstMaterial.name = "material-a";
-    firstMaterial.has_diffuse = true;
-    firstMaterial.diffuse_rgb = {200U, 80U, 40U};
-    slicer_core::MaterialInfo secondMaterial;
-    secondMaterial.name = "material-b";
-    secondMaterial.has_diffuse = true;
-    secondMaterial.diffuse_rgb = {40U, 120U, 220U};
-    model.material_infos = {firstMaterial, secondMaterial};
-
-    model.triangles.reserve(totalCount);
-    model.triangle_textures.reserve(totalCount);
-    for (std::size_t index{0U}; index < totalCount; ++index)
-    {
-        const double x = static_cast<double>(index);
-        model.triangles.push_back({
-            {x, 0.0, 0.0},
-            {x + 0.5, 0.0, 0.0},
-            {x, 0.5, 0.0}});
-        slicer_core::TriangleTextureInfo binding;
-        binding.material_name = index < firstCount
-            ? firstMaterial.name
-            : secondMaterial.name;
-        model.triangle_textures.push_back(std::move(binding));
-    }
-    return model;
-}
-
 void CheckerThreeMfSemanticCase()
 {
     const auto model = std::make_shared<const slicer_core::SceneModel>(
@@ -286,31 +242,6 @@ void SharedLocalMeshCase()
             "world mesh identity must include transformed geometry");
 }
 
-void MultiMaterialTriangleBudgetCase()
-{
-    const auto model = std::make_shared<const slicer_core::SceneModel>(
-        MakeMultiMaterialBudgetModel());
-    auto textures = std::make_shared<TestTextureSource>();
-    const auto provider = MakeProvider({{430U, model}}, textures);
-    const TestCancelToken active;
-    auto request = MakeRequest(slicer_core::api::ViewMode::ThreeD);
-    request.lod = slicer_core::api::ViewLod::Lod2;
-
-    const auto result = provider->GetViewData(
-        request,
-        MakeSnapshot({{"multi-material-budget", 430U}}),
-        active);
-    Require(result.IsOk(), "multi-material lod2 view should close");
-    const auto& mesh = result.Value()->meshes.front();
-    Require(mesh.indices.size() / 3U == 10000U,
-            "multi-material lod2 should use the full instance budget");
-    Require(mesh.submeshes.size() == 2U,
-            "multi-material lod2 should retain both material groups");
-    Require(mesh.submeshes.at(0U).index_count / 3U == 7500U
-                && mesh.submeshes.at(1U).index_count / 3U == 2500U,
-            "multi-material lod2 should allocate proportional budgets");
-}
-
 void ShengdanjieUsedMaterialClosureCase()
 {
     auto mutableModel = MakeTexturedQuad(
@@ -490,7 +421,6 @@ void RunPositiveCases()
     BudgetDegradationCase();
     UvSeamPreservationCase();
     SharedLocalMeshCase();
-    MultiMaterialTriangleBudgetCase();
     DualAppearanceAndIdentityCase();
 }
 

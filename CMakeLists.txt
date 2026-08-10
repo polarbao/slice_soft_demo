@@ -68,6 +68,10 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/api/viewdata/SceneViewClosureValidator.h
     src/slicer_core/api/viewdata/SceneViewIdentity.cpp
     src/slicer_core/api/viewdata/SceneViewIdentity.h
+    src/slicer_core/api/viewdata/MeshSimplifier.cpp
+    src/slicer_core/api/viewdata/MeshSimplifier.h
+    src/slicer_core/api/viewdata/SceneViewMeshInputBuilder.cpp
+    src/slicer_core/api/viewdata/SceneViewMeshInputBuilder.h
     src/slicer_core/api/viewdata/SceneViewMeshBuilder.cpp
     src/slicer_core/api/viewdata/SceneViewMeshBuilder.h
     src/slicer_core/api/viewdata/SceneViewOutlineBuilder.cpp
@@ -438,6 +442,8 @@ add_library(slicer_base STATIC ${SLICESOFT_BASE_SOURCES})
 add_library(slicer_engine STATIC ${SLICESOFT_ENGINE_SOURCES})
 add_library(slicer_core INTERFACE)
 
+find_package(meshoptimizer CONFIG REQUIRED)
+
 target_include_directories(slicer_base PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/miniz
@@ -448,6 +454,7 @@ target_include_directories(slicer_engine PUBLIC
 )
 target_link_libraries(slicer_engine PUBLIC slicer_base)
 target_link_libraries(slicer_core INTERFACE slicer_engine)
+target_link_libraries(slicer_base PRIVATE meshoptimizer::meshoptimizer)
 target_compile_definitions(
     slicer_engine
     PRIVATE
@@ -859,6 +866,7 @@ endif()
 add_executable(textured_scene_viewdata_14b03a_unit_tests
     tests/stage14b_03a/Main.cpp
     tests/stage14b_03a/PositiveCases.cpp
+    tests/stage14b_03a/SimplificationCases.cpp
     tests/stage14b_03a/FailureCases.cpp
 )
 target_include_directories(textured_scene_viewdata_14b03a_unit_tests PRIVATE

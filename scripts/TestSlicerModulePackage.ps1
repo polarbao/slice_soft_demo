@@ -73,7 +73,8 @@ $requiredFiles = @(
     "third_party_distribution_manifest.json",
     "licenses/miniz.txt",
     "licenses/libtiff.txt",
-    "licenses/assimp.txt")
+    "licenses/assimp.txt",
+    "licenses/meshoptimizer.txt")
 foreach ($relativePath in $requiredFiles)
 {
     $path = Join-Path $resolvedPackageDir $relativePath
@@ -190,10 +191,11 @@ finally
     $env:PATH = $originalPath
 }
 
-$manifest = Join-Path $resolvedEvidenceRoot "stage14e01_package/manifest.json"
-if (-not (Test-Path -LiteralPath $manifest -PathType Leaf))
+$packageManifests = @(
+    Get-ChildItem -LiteralPath $resolvedEvidenceRoot -Filter "manifest.json" -File -Recurse)
+if ($packageManifests.Count -ne 1)
 {
-    throw "The packaged module did not produce the reference RGBWSV package."
+    throw "The packaged module must produce exactly one reference RGBWSV package; found $($packageManifests.Count)."
 }
 
 Write-Host "STAGE14F01_PACKAGE_VALIDATION_PASS package=$resolvedPackageDir evidence=$resolvedEvidenceRoot"

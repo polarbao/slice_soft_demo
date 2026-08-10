@@ -23,6 +23,17 @@ If vcpkg is used:
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake
 ```
 
+The default Stage 14+ lane requires the manifest dependency `meshoptimizer` and uses
+`x64-windows-static-md` under the repository-local installed root. Configure through the preset or runtime script:
+
+```powershell
+cmake --preset slicesoft-main
+.\scripts\PrepareSliceSoftRuntime.ps1 -Config Debug
+```
+
+`meshoptimizer` is statically linked into `slicer_base`; no meshoptimizer DLL is deployed. The optional LibTIFF
+lane remains `x64-windows` and resolves its own meshoptimizer package in the same repository-local installed root.
+
 OpenVDB experimental builds require an explicitly prepared dependency environment. Do not make this path mandatory for normal builds.
 
 ## Build

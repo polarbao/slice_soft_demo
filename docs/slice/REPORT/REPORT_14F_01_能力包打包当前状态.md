@@ -1,7 +1,7 @@
 # REPORT_14F-01 能力包打包当前状态
 
 > 状态：SLICER-SIDE COMPLETE / CLEAN-MACHINE EVIDENCE PENDING
-> 日期：2026-08-07
+> 日期：2026-08-10（R-B-02 依赖清单复测）
 > 范围：生成并验证 `modules/slicer/` Release 能力包；不包含打印侧 M1/M2、目标 RIP 或实物联调
 
 ## 1. 交付结论
@@ -33,6 +33,7 @@ modules/slicer/
     miniz.txt
     libtiff.txt
     assimp.txt
+    meshoptimizer.txt
 ```
 
 打包脚本不按 `vcpkg.json` 盲目复制 DLL，而是对最终 `slicer_module.dll`、
@@ -41,7 +42,8 @@ MSVC Release Runtime 从当前 Visual Studio Redistributable 目录复制；无�
 打包 fail-closed。
 
 当前默认手写 TIFF 后端未动态链接 LibTIFF，Assimp 也未进入 CMake 链接图，因此包内没有二者
-的 DLL；许可证仍按 Stage 14 合规合同统一携带。
+的 DLL。R-B-02 的 meshoptimizer 采用静态 `x64-windows-static-md` 链接，因此同样不新增运行时
+DLL；四项许可证均按 Stage 14 合规合同统一携带。
 
 ## 3. 新增入口
 
@@ -64,7 +66,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/TestSlicerModulePack
 | Release `slicer_module` / `slicer_worker` / `slicer_host_sim` 构建 | PASS |
 | `module.json` schema、SPI v1、DLL/Worker 名称与 15 项能力 | PASS |
 | PE import 递归审计与 MSVC Runtime 本地闭包 | PASS |
-| NOTICE、三份许可证与分发清单 | PASS |
+| NOTICE、四份许可证与分发清单 | PASS |
 | 全文件 SHA-256 校验 | PASS |
 | 打包后 `slicer_worker --contract-info` | PASS |
 | 限制 PATH 后由纯 C 宿主加载包内 DLL/Worker | PASS |
@@ -75,7 +77,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/TestSlicerModulePack
 ```text
 STAGE14F01_PACKAGE_PASS
 STAGE14F01_PACKAGE_VALIDATION_PASS
-[14E-01] M-MVP PASS: import -> transform -> slice (3 layers) -> package -> verify
+HOSTFLOW_HA03_PASS sceneHandle=1 revision=3 layers=3
 ```
 
 ## 5. 未关闭边界
