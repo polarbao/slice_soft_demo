@@ -1,6 +1,6 @@
 # HOSTFLOW H-D-02..06 视图后续任务准备审查
 
-> 状态：**H-D-02/03/04 COMPLETE / H-D-06 WAIT HUMAN EVIDENCE**
+> 状态：**H-D-02/03/04/06 COMPLETE**
 > 日期：2026-08-10
 > 基线：H-D-01、H-D-02、H-D-05 已完成；SPI v1、11 个导出、15 项能力保持冻结。
 
@@ -18,7 +18,7 @@ R-A-01 的原始 13.8k 口径已由 RB-P1 复核修正：参考宿主过去固�
 | H-D-03 三车道拖拽 | **COMPLETE（2026-08-10）** | 维持 Debug/Release 与 UI-M1/UI-M4 回归 | 无 |
 | H-D-04 刷新事件 | **COMPLETE（2026-08-10）** | 维持 22 实例与缓存失效回归 | 无 |
 | H-D-05 包目录入口 | **COMPLETE** | 维持回归 | 无 |
-| H-D-06 人工验收 | **PREPARED / WAIT HUMAN EVIDENCE** | 不生成虚假 PASS | 取得人工七步截图证据 |
+| H-D-06 人工验收 | **COMPLETE（2026-08-10）** | Release 七步人工证据 + Debug/Release UI smoke | 打印侧外部 ACK 仍延期 |
 
 H-D-03 已把拾取和拖拽接入真实俯视画布：pointer-move 只更新宿主缓存的
 `worldMatrix` 和显示图像，松手时才提交一次 `scene.apply_operation`。自动化实测
@@ -67,6 +67,12 @@ H-D-04 的代码可以在 H-D-02 完成后独立提交，但验收必须同时�
 H-D-06 必须人工走通导入、显示、选择、变换、排版、切片、打开生产包目录七步；记录
 Debug/Release、scene/revision、Profile、模型资产、截图和失败路径。没有人工证据时只能写
 `NOT RUN`，不得根据自动化测试推断人工可操作性 PASS。
+
+2026-08-10 已完成：Release 参考宿主人工完成七步操作并归档 `REPORT/assets/hostflow_hd06/`
+中的 7 张截图；同一代码在 Debug/Release 下分别通过 7 组 UI self-test。人工验收使用
+`host-reference-default` 与真实纹理 OBJ，最终包由宿主内置严格校验通过。为控制证据包体，人工
+验证临时使用 72 x 72 DPI，该值不改变产品默认配置。Debug 未重复人工七步，只完成同构 UI
+smoke；此边界在状态报告中显式保留。
 
 ## 5. 验证门禁
 

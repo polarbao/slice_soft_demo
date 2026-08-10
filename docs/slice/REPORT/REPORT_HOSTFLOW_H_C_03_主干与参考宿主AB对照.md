@@ -6,9 +6,9 @@
 
 ## 1. 结论
 
-主干 `slicer_debug_ui` 与参考宿主 `slicer_ui_host_sim` 已在同一规范化模型和等价 Profile 语义下完成业务对照。13 条差异记录全部归入：
+主干 `slicer_debug_ui` 与参考宿主 `slicer_ui_host_sim` 已在同一规范化模型和等价 Profile 语义下完成业务对照。H-D-06 完成后，机器矩阵回填真实双视图显示维度，共 14 条差异记录：
 
-- `equivalent`：10 条；
+- `equivalent`：11 条；
 - `known_trim`：2 条；
 - `slicer_only`：1 条。
 
@@ -39,6 +39,7 @@ Profile 名称不同是宿主拥有 Profile 目录的冻结设计，不是行为
 | 作业 | 主干经 CLI/QProcess，参考宿主经 Worker ABI | `equivalent`；用户终态与取消语义一致 |
 | 结果 | 参考宿主保留生产包、层、通道和命名报告，不复制全部工程调参面板 | `known_trim` |
 | 诊断 | OpenVDB、拓扑修复、原始配置和深度工艺诊断只留主干 | `slicer_only` |
+| 显示 | 两端均显示带纹理俯视和 3D；参考宿主消费冻结 ViewData，局部相机与拖拽不调用 DLL | `equivalent`；纹理失败显式 fail-closed |
 
 完整机器清单见 `assets/hostflow_hc03_ab_matrix.json`。
 
@@ -57,7 +58,8 @@ powershell -ExecutionPolicy Bypass -File scripts/RunHostflowAbComparison.ps1 -Co
 
 - Debug：`HOSTFLOW_HC03_PASS config=Debug main=5 host=6`；H-A/H-B CTest `18/18 PASS`；
 - Release：`HOSTFLOW_HC03_PASS config=Release main=5 host=6`；H-A/H-B CTest `18/18 PASS`；
-- 矩阵：`13` 条、`8` 个维度、`10 equivalent / 2 known_trim / 1 slicer_only`；
+- 矩阵：`14` 条、`9` 个维度、`11 equivalent / 2 known_trim / 1 slicer_only`；
+- H-D-06：Release 七步人工操作截图归档；Debug/Release 七组参考宿主 UI self-test 均通过；
 - H-C-01：`77` 个主干头文件，`A=6 / B=41 / C=30`；
 - H-C-02：`41` 个 B 桶迁移单元完整覆盖。
 

@@ -20,6 +20,7 @@ EXPECTED_AXES = {
     "package_result",
     "workspace_persistence",
     "diagnostics_scope",
+    "scene_display",
 }
 ALLOWED_DISPOSITIONS = {"equivalent", "known_trim", "slicer_only"}
 

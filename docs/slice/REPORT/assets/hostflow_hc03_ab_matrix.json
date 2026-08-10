@@ -29,7 +29,8 @@
     "slice_job_cancel",
     "package_result",
     "workspace_persistence",
-    "diagnostics_scope"
+    "diagnostics_scope",
+    "scene_display"
   ],
   "entries": [
     {
@@ -148,6 +149,15 @@
       "hostEvidence": "HOSTFLOW 明确排除切片专有诊断类",
       "disposition": "slicer_only",
       "explanation": "这些能力继续由切片专用工作台承担，打印宿主只显示模块和生产包返回的结构化错误。"
+    },
+    {
+      "id": "AB-14",
+      "axis": "scene_display",
+      "businessStep": "真实纹理俯视与 3D 显示、选择、变换和排版刷新",
+      "mainEvidence": "主干模型俯视、生产预览与场景交互工作区",
+      "hostEvidence": "H-D-01..04 自动门禁及 H-D-06 Release 七步人工截图",
+      "disposition": "equivalent",
+      "explanation": "参考宿主只消费冻结 ViewData；俯视与 3D 均携带真实纹理，局部相机和拖拽保持零 DLL 调用，变换和规则排版提交后刷新；缺失纹理或超预算显式 fail-closed。"
     }
   ]
 }
