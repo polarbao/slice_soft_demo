@@ -5,7 +5,7 @@
 > 生成日期：2026-06-30
 > 更新日期：2026-08-09
 > 当前分支：`feature/14-slicer-capability-package`，每个任务开始前仍需重新确认
-> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；03E-02 **GO_ON_DEMAND**；Stage 14 **SLICER-SIDE COMPLETE / EXTERNAL VALIDATION DEFERRED**；Stage 15 **COMPLETE / 19 OF 19**；HOSTFLOW **ACTIVE / H-A·H-B·H-C COMPLETE / H-D-01·02·05 COMPLETE / H-E 已授权分三批**
+> 当前阶段判断：Stage 12E COMPLETE；Stage 13 COMPLETE（批准范围）；03D-LIBTIFF GO_OPTIONAL；03E-02 **GO_ON_DEMAND**；Stage 14 **SLICER-SIDE COMPLETE / EXTERNAL VALIDATION DEFERRED**；Stage 15 **COMPLETE / 19 OF 19**；HOSTFLOW **LOCAL COMPLETE / H-A..H-E 与 H-F-01 COMPLETE**
 > 适用范围：`docs/slice` 正式文档入口、`docs/codex_task` Codex 任务入口、`docs/archive` 历史归档
 
 ---
@@ -36,9 +36,9 @@
 ```text
 当前分支：feature/14-slicer-capability-package，任务开始前通过 git 命令确认
 最新完成阶段：Stage 12E 与 Stage 13 批准范围已收口
-当前执行阶段：Stage 14 切片侧已收口，外部验收延期；Stage 15 COMPLETE / 19 OF 19；HOSTFLOW ACTIVE
-最新完成任务：HOSTFLOW H-A-01..04 · H-B-01..08 · H-C-01..03 全部完成（2026-08-08）
-当前状态：HOSTFLOW **H-D-01 俯视画布接线**、**H-D-02 三维画布与 RB-P1**、
+当前执行阶段：Stage 14 切片侧已收口，外部验收延期；Stage 15 COMPLETE / 19 OF 19；HOSTFLOW LOCAL COMPLETE
+最新完成任务：HOSTFLOW H-A..H-E 与 H-F-01 操作流回归收口全部完成（2026-08-10）
+历史状态：HOSTFLOW **H-D-01 俯视画布接线**、**H-D-02 三维画布与 RB-P1**、
 **H-D-05 生产包目录入口**已完成；H-D-03/04 已解除前置并完成准备。
 已裁决：HQ-09 = 乙（参考宿主等价于封装前切片软件，分 E1/E2/E3 三批）；HQ-10 = 甲（场景保存加载归 PrintApp）
 ```
@@ -507,6 +507,7 @@ docs/slice/DOC/DOC_PREP_HOSTFLOW_H_E_E1_STL与支撑参数实施准备.md ← �
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_E_E2_材料与纹理实施准备.md ← 【H-E E2 合同与复核真源】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_E_E3_批量导入与白区预检实施准备.md ← 【H-E E3 合同与准入真源】
 docs/slice/REPORT/REPORT_HOSTFLOW_H_E_02_批量导入当前状态.md ← 【H-E-02 状态真源】
+docs/slice/REPORT/REPORT_HOSTFLOW_H_F_01_参考宿主操作流回归收口当前状态.md ← 【H-F-01 状态真源】
 docs/slice/DOC/DOC_PREP_RENDER_R_B_LOD缺陷修复选型准备.md ← 【R-B 选型准备 / RD-B 待裁决】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_02_场景生命周期运行时准备.md ← 【H-A-02 准备真源】
 docs/slice/DOC/DOC_PREP_HOSTFLOW_H_A_04_规则排版运行时准备.md ← 【H-A-04 准备真源】

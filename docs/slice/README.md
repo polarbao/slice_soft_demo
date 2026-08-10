@@ -81,7 +81,8 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `REPORT/REPORT_14F_04_S2本地合同门禁当前状态.md` | 14F-04 S2 C1-C7 机器合同、正负例、CTest 与外部 RIP 延期边界 |
 | `REPORT/REPORT_14F_切片能力包本地交付与外部验收延期当前状态.md` | **Stage 14F 收口真源**：能力包可交付、接口冻结、六步本地门禁和外部验收延期边界 |
 | `../../contracts/slicer_rip_s2_contract.json` | 冻结的 S2 本地机器合同：输入协议、量化、白区、输出组织、混合和外部状态 |
-| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A/H-B/H-C 完成；H-D-01/02/05 完成；H-E E1 准备通过 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（LOCAL COMPLETE）**：H-A..H-E 完成；H-F-01 操作流回归收口完成 |
+| `REPORT/REPORT_HOSTFLOW_H_F_01_参考宿主操作流回归收口当前状态.md` | H-F-01 默认导入目录、Profile 说明、自动排版和切片错误可见性收口 |
 | `DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md` | H-D-02 完成证据、H-D-03..06 准备、刷新矩阵和人工验收边界 |
 | `REPORT/REPORT_HOSTFLOW_H_D_02_三维画布与RB_P1当前状态.md` | H-D-02 真实纹理 3D 画布、UI-M7 零 DLL 调用、RB-P1 与 36 资产矩阵结果 |
 | `REPORT/REPORT_HOSTFLOW_H_D_03_三车道拖拽接线当前状态.md` | H-D-03 俯视拾取、本地拖拽、单次 Commit、Stale 恢复与 Debug/Release 门禁 |

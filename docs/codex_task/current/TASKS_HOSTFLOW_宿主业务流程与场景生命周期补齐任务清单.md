@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
-> 文档状态：**LOCAL COMPLETE — H-D-01..06 完成 / H-E-01..06 完成 / E3_GATE=PASS**
-> 版本：v4.1 ｜ 日期：2026-08-10 ｜ 激活日期：2026-08-07
+> 文档状态：**LOCAL COMPLETE — H-D/H-E 完成 / H-F-01 操作流回归收口完成**
+> 版本：v4.5 ｜ 日期：2026-08-10 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -351,6 +351,14 @@ E3 完成 → 回填 REPORT_HOSTFLOW_H_C_03 的 known_trim 条目
 > **`ProjectToolsDock.h` 维持 C 桶 `debug_only`**（不移植）。
 > ⚠️ 因此参考宿主**重启后场景丢失、须重新导入**是**已裁决的预期行为**，不是缺陷，不得作为 bug 提报。
 
+### H-F 组 · 参考宿主操作流回归收口（2026-08-10）
+
+| 卡号 | 任务 | 前置 | 验收 | 状态 |
+|---|---|---|---|---|
+| **H-F-01** | 修复新宿主默认模型目录、Profile 中文工艺说明、批量导入后单次自动排版以及切片失败信息可见性 | H-D/H-E 完成；用户明确提出四项回归 | 发布目录优先打开 `<exe>/model`，构建目录回退 `<cwd>/model`；多模型导入按当前 11×2/10 mm 参数排版一次；Profile 显示用途/默认工艺/输出/限制；提交或 Worker 失败自动显示切片作业页及可复制错误信息；Debug/Release 定向门禁通过 | **COMPLETE（2026-08-10）** |
+
+边界：本卡不修改 SPI v1、11 个导出、15 项能力、生产 TIFF、Profile 身份或主干 `slicer_debug_ui`。
+
 ---
 
 ## 4. 业务级验收硬标准
@@ -661,6 +669,7 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-10 | v4.5 | 完成 H-F-01 操作流回归收口：导入目录按本次会话、运行目录 `model`、工作目录 `model` 的稳定优先级解析；批量导入后复用当前 11×2/10 mm 参数执行一次权威排版，失败保留模型并显式告警；工艺配置补齐用途、默认工艺、输出合同和限制；切片提交/Worker 失败自动切换作业页并展示中文可复制错误信息。Debug/Release 相关 7 项测试均 PASS。 |
 | 2026-08-10 | v4.4 | 完成 H-E-06 与 E3 收口：宿主从公开 `model.import` 材料响应收集源贴图，异步执行严格 RGB(255,255,255) 扫描；结果绑定 scene/revision/Profile contentHash，旧结果丢弃，路径/尺寸/mtime/SHA-256 缓存支持 single-flight。提示保持非阻断，不自动切换材料，生产材料闭合仍为最终权威。Debug/Release 白区服务、批量导入、宿主 UI、Qt 边界和源码尺寸联合门禁各 9/9 PASS。 |
 | 2026-08-10 | v4.3 | 完成 H-E-02：宿主支持 OBJ/3MF/STL 多选，批次先完成路径、格式、容量和快速预检，再用一次 `scene.apply_operation` 原子提交全部 `addInstance`；失败释放本批资源且不改变实例集合和 revision。Debug/Release 批量原子性、UI smoke 和源码尺寸门禁各 3/3 PASS。H-E-06 转为下一张 READY 卡。 |
 | 2026-08-10 | v4.2 | 完成 H-E-05 与 E2 批次复核：生产纹理应用模式、采样、UV、缺失策略、非表面策略、fallback RGB 和 Stage 15 按需白区载体进入宿主结构化 Profile、自哈希与工作区 schema 4；非法白区载体组合本地 fail-closed。Debug 10/10、Release 11/11 专项目标通过，H-B-06 真实作业验证 Profile hash 闭合。E2_GATE=PASS，H-E-02/H-E-06 转 READY。 |

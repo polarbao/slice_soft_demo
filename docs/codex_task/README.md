@@ -2,8 +2,8 @@
 
 > 文档状态：Codex Task Entry
 > 生成日期：2026-06-30
-> 更新日期：2026-08-09
-> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **ACTIVE — H-D-01/02/05 已完成，H-D-03/04 已准备 / H-E 已授权分三批**；RENDER **RB-P1 已随 H-D-02 完成，RB-P2/P3 与 R-A-02 待后续授权**；Stage 16 **PROPOSED / NOT ACTIVE**
+> 更新日期：2026-08-10
+> 当前阶段：Stage 15 **COMPLETE / 19 OF 19**；Stage 14 **切片侧已收口（2026-08-07）**，外部验收按用户决策延期；HOSTFLOW **LOCAL COMPLETE — H-A..H-E 与 H-F-01 操作流回归收口完成**；RENDER **R-B-04 已完成，后续以 RENDER 任务卡状态为准**；Stage 16 **PROPOSED / NOT ACTIVE**
 >
 > **⬇️ 切片侧收口后的下一步：见下方「切片侧收口后的接续专项」**
 
@@ -54,10 +54,9 @@ docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.
 > 因此新增 **H-D 组（视图接线与端到端可操作性，6 卡）**，状态 `PROPOSED`，
 > 不改契约、不需新授权。
 >
-> **另有第二层缺口**：H-D 完成也**不等于封装前切片软件的操作能力** ——
-> `hostflow_hc02_migration_plan.json` 中 8 项 `adapt_to_host_profile` 的替代物
-> （支撑编辑、材料工艺 Profile 编辑、生产纹理设置）**当前并不存在**，另缺 STL 与批量导入。
-> 列为 **H-E 组（6 卡）**。
+> **2026-08-10 完成状态**：H-D 已接通可见双视图与任务结果；H-E 已补齐 STL/批量导入、
+> 支撑、材料工艺、生产纹理和纹理白区预检。随后 H-F-01 收口默认模型目录、导入后自动排版、
+> 工艺配置说明和切片失败可见性。HOSTFLOW 当前无未完成本地开发卡。
 >
 > ✅ **2026-08-08 用户裁决**：**HQ-09 = 乙**（参考宿主提升到「等价于封装前切片软件」，
 > 分 **E1**（H-E-01 STL / H-E-03 支撑）→ **E2**（H-E-04 材料工艺 / H-E-05 生产纹理）
@@ -65,15 +64,8 @@ docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.
 > **HQ-10 = 甲**（场景/项目保存加载归 PrintApp，参考宿主不实现）。
 > ⚠️ 因此参考宿主**重启后场景丢失是预期行为，不是缺陷**。
 > 权威记录：`docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md`
-> **当前进度：`R-A-01`、`H-D-01` 已完成；下一候选为 `H-D-05`。**
-> R-A-01 零源码改动，先跑它 —— 画布一接通，LOD 跳采样缺陷就从「不可见」
-> 变成用户可见问题，它的数字决定 H-D-01 是否需要带 LOD 兜底。
-> H-D-01 与 H-D-05 实现文件不重叠，但都要改 `HostMainWindow.h`；
-> 并行还会破坏「每卡独立 Debug/Release 门禁 + 单独提交」的证据链。
->
-> ⚠️ `HostMainWindow.cpp` 已 **484/500 行**，H-D-01 须新建 `HostMainWindowView.cpp`，
-> H-D-05 的槽放入既有 `HostMainWindowResult.cpp`；
-> **不得把 `apps/slicer_ui_host_sim/` 加入行数白名单绕过门禁**。
+> 详细完成证据见 HOSTFLOW 任务清单与
+> `docs/slice/REPORT/REPORT_HOSTFLOW_H_F_01_参考宿主操作流回归收口当前状态.md`。
 >
 > 打印侧接入仍须消费冻结移植交付物，不得把外部 ACK 写成 PASS。
 >
