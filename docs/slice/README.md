@@ -44,6 +44,7 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `DOC/DOC_PREP_03D_06_LibTIFF性能矩阵准备.md` | 03D-06 双后端 Release Writer-only 性能矩阵、计时边界和 GO/NO-GO 门槛 |
 | `DOC/DOC_PREP_03D_07_LibTIFF阶段收口准备.md` | 03D-07 GO_OPTIONAL 收口、默认切换阻断和未来重新准入条件 |
 | `DOC/DOC_PREP_TIFF_T_A_03_默认LibTIFF切换准备.md` | T-A-03 默认 LibTIFF 切换、动态 Runtime、Golden 对照和遗留 Writer 回滚边界 |
+| `DOC/DOC_PREP_TIFF_T_A_05_HandwrittenWriter弃用与移除准备.md` | T-A-05A 弃用告警、消费方审计，以及 T-A-05B 移除前置和破坏性边界 |
 | `REPORT/REPORT_03D_LibTIFF兼容迁移准备状态.md` | 03D 依赖、代码事实、风险和原子任务准备状态 |
 | `REPORT/REPORT_03D_01_手写TIFFWriter合同与性能基线.md` | 03D-01 tag/像素/错误合同、Release Writer-only 数字和后续 Gate |
 | `REPORT/REPORT_03D_04_LibTIFF_Tiled与错误模型.md` | 03D-04 tiled、255 padding、稳定错误、临时文件和原子发布证据 |

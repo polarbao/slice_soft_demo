@@ -14,7 +14,7 @@ set(
     SLICESOFT_TIFF_BACKEND
     "libtiff"
     CACHE STRING
-    "TIFF dependency lane: handwritten or libtiff"
+    "TIFF Writer backend: libtiff or deprecated handwritten legacy lane"
 )
 set_property(
     CACHE SLICESOFT_TIFF_BACKEND
@@ -25,6 +25,12 @@ if(NOT SLICESOFT_TIFF_BACKEND STREQUAL "handwritten"
     message(FATAL_ERROR
         "Unsupported SLICESOFT_TIFF_BACKEND='${SLICESOFT_TIFF_BACKEND}'. "
         "Expected handwritten or libtiff.")
+endif()
+if(SLICESOFT_TIFF_BACKEND STREQUAL "handwritten")
+    message(DEPRECATION
+        "SLICESOFT_TIFF_BACKEND=handwritten is deprecated and must not be "
+        "used for production output. Use libtiff; the legacy lane remains "
+        "temporarily available only for T-A-05 migration evidence.")
 endif()
 
 set(SLICESOFT_CORE_SOURCES

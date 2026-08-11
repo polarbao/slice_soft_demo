@@ -52,6 +52,7 @@ cmake --build --preset slicesoft-handwritten-legacy-release
 ```
 
 该轨道不是生产回滚默认，其对齐探针必须按已知失败被 CTest 的 `WILL_FAIL` 门禁捕获。
+配置该轨道时 CMake 会输出 `DEPRECATION` 告警；该告警是预期行为，不能在生产构建中屏蔽。
 
 ## 3. 部署隔离 Runtime
 

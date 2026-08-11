@@ -1,7 +1,7 @@
 # TASKS_TIFF 默认后端切换与对齐根治任务清单
 
-> 文档状态：**ACTIVE — T-A-01..03 COMPLETE；T-A-04 外部阻塞；T-A-05 等待稳定周期**
-> 版本：v1.4 ｜ 日期：2026-08-11
+> 文档状态：**ACTIVE — T-A-01..03 COMPLETE；T-A-04 外部阻塞；T-A-05A COMPLETE / T-A-05B WAITING**
+> 版本：v1.5 ｜ 日期：2026-08-11
 > 定位：独立补充专项，不占阶段编号。承接 `03D-LIBTIFF`（COMPLETE / GO_OPTIONAL）与 `03E-02`
 > 上游：`DOC_DECISION_03E_TIFF压缩候选与性能Gate.md`、`REPORT_03E_02_*`、打印侧 `CLD_42` §2.1
 > 证据等级：A=已核实代码事实，B=目标设计，P=判断
@@ -99,7 +99,7 @@ baseExactSources  src/slicer_core/tiff_io.cpp          ← 只有【读取器】
 | **T-A-02** | **libtiff 车道的对齐与压缩实测**：在 `SLICESOFT_TIFF_BACKEND=libtiff` 下产出 stripped/tiled × `none`/`PackBits` 四组，跑 T-A-01 的断言 + 项目内 strict Reader | T-A-01 | libtiff 四组全部**偶偏移 PASS**；strict Reader PASS；给出与 handwritten 的体积/耗时对比 | **COMPLETE / 2026-08-11** |
 | **T-A-03** | **默认后端切 libtiff**：改 `CMakeLists.txt:15` 默认值；同步 `runtime_dependencies.json`、`third_party_distribution_manifest.json`、`THIRD_PARTY_NOTICES.txt`、`checksums.sha256` | T-A-02 | 分发包含 libtiff 运行时与许可；`tiff_backend_build_info_unit_tests` 期望值同步；语义 Golden Package 与旧 Writer 做像素/协议等价对照，不冻结跨 Writer 的原始 TIFF 字节哈希 | **COMPLETE / 2026-08-11** |
 | **T-A-04** | **压缩默认开启**：`output.tiffCompression.algorithm` 默认由 `none` 改为 `PackBits` | T-A-03；⛔ **外部 RIP 互操作确认** | 目标 RIP 与控制软件均能读；未确认前**不得翻默认值** | **BLOCKED / 需外部证据** |
-| **T-A-05** | 🔴 **handwritten 弃用与移除**（用户已裁决 §3.1 = 乙）：分两步 —— ①构建期对 `SLICESOFT_TIFF_BACKEND=handwritten` 发 deprecation 警告并在文档标注弃用；②确认无消费方后移除 `HandwrittenTiffWriter.*` / `HandwrittenTiffStructureInternal.h` / `TiffPackBitsWriteInternal.h` 及其构建分支 | T-A-03 稳定运行一个验收周期 | ⚠️ **只移除写入器**；`tiff_io.cpp` / `TiffReadApi` / `TiffPackBitsReadInternal` 是**读取侧**且在 `slicer_base`（DLL 内），**必须保留**；移除后 `SLICESOFT_TIFF_BACKEND` 选项本身也应一并简化 | **PROPOSED** |
+| **T-A-05** | 🔴 **handwritten 弃用与移除**（用户已裁决 §3.1 = 乙）：分两步 —— ①构建期对 `SLICESOFT_TIFF_BACKEND=handwritten` 发 deprecation 警告并在文档标注弃用；②确认无消费方后移除 `HandwrittenTiffWriter.*` / `HandwrittenTiffStructureInternal.h` / `TiffPackBitsWriteInternal.h` 及其构建分支 | T-A-03 稳定运行一个验收周期 | ⚠️ **只移除写入器**；`tiff_io.cpp` / `TiffReadApi` / `TiffPackBitsReadInternal` 是**读取侧**且在 `slicer_base`（DLL 内），**必须保留**；移除后 `SLICESOFT_TIFF_BACKEND` 选项本身也应一并简化 | **IN_PROGRESS / T-A-05A COMPLETE；T-A-05B WAITING** |
 | **T-A-06** | **压缩算法扩展位**：为 `output.tiffCompression.algorithm` 预留 LZW / Deflate(ZIP) 等后续算法的接入点 | T-A-04 | 枚举可扩展且**新增值默认关闭**；每新增一种算法必须各自过 RIP 互操作确认，**不得因 PackBits 已确认就默认放行新算法** | **PROPOSED / 待需求触发** |
 
 ### 2.1 T-A-01 / T-A-02 实施证据（2026-08-11）
@@ -161,6 +161,27 @@ PackBits 在两种 Writer 上均减少约 `58.740%..66.930%` 文件体积；本�
   对齐已知失败：WILL_FAIL 门禁按预期 PASS
 ```
 
+### 2.3 T-A-05A 弃用告警与消费方审计（2026-08-11）
+
+```text
+验收周期
+  默认 LibTIFF 主轨道的 Release 5/5 TIFF Gate、语义 Package/RIP strict、Runtime staging、
+  Stage 14 能力包和遗留轨道 3/3 已完成一次完整验收周期。
+
+T-A-05A
+  CMake 选择 SLICESOFT_TIFF_BACKEND=handwritten 时输出 DEPRECATION 告警；
+  默认 libtiff 配置不输出该告警；handwritten 仍可用于迁移证据，不得用于生产。
+
+T-A-05B 尚未准入
+  TiffWriterFactory 仍把 8x4 等非 16 倍数 tiled 请求回退到 handwritten；
+  tiff_writer_backend/equivalence/build_info 测试仍直接消费 handwritten；
+  03D/03E 历史脚本仍依赖 handwritten 对照车道；
+  删除源文件属于破坏性操作，必须在迁移上述消费方并取得明确删除确认后执行。
+```
+
+详细准备与迁移边界见
+`docs/slice/DOC/DOC_PREP_TIFF_T_A_05_HandwrittenWriter弃用与移除准备.md`。
+
 ## 3. 两个问题的处置
 
 ### 3.1 ✅ handwritten 车道 —— 已裁决【乙：废弃】
@@ -208,14 +229,16 @@ T-A-04 后落地   压缩默认 PackBits
 ✅ T-A-01   补对齐回归测试            ← handwritten 已按预期命中奇偏移
 ✅ T-A-02   libtiff 四组实测          ← 对齐与 strict Reader 全部 PASS
 ✅ T-A-03   默认后端切 libtiff        ← 主轨道、Runtime、能力包与 RIP strict PASS
-⏳ T-A-05   handwritten 弃用 → 移除   ← 等待 T-A-03 稳定运行一个验收周期
+🟡 T-A-05A  handwritten 弃用告警       ← COMPLETE
+⏳ T-A-05B  handwritten Writer 移除     ← 等待回退/测试/历史脚本迁移与删除确认
   ─────────────────────────────────
 ⛔ T-A-04   压缩默认 PackBits         ← 等外部目标 RIP/控制软件互操作证据
 ⏸ T-A-06   扩展 LZW / Deflate        ← 待需求触发
 ```
 
-当前没有可立即继续的 T-A 实现卡：T-A-04 是外部阻塞，T-A-05 需要稳定周期，T-A-06
-需要新增算法需求。默认压缩继续保持 `none`。
+当前没有可立即继续的无破坏性 T-A 实现卡：T-A-04 是外部阻塞，T-A-05B 需要先迁移
+非标准 tiled 回退、测试和历史脚本并取得删除确认，T-A-06 需要新增算法需求。默认压缩继续
+保持 `none`。
 
 **顺带前置**：`samples/configs/material_process/obj_mtl_texture_rgb_varnish.json:22`
 的绝对路径应在 T-A-01 一并修掉（原为 `TASKS_CI` 的 `C-A-01`；CI 已暂缓，
@@ -234,6 +257,7 @@ T-A-04 后落地   压缩默认 PackBits
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-11 | v1.5 | 完成 T-A-05A：默认轨道完整验收周期通过；handwritten 配置新增 CMake DEPRECATION 告警。审计确认 T-A-05B 仍被非标准 tiled 回退、直接测试、历史脚本及破坏性删除确认阻塞。 |
 | 2026-08-11 | v1.4 | 完成 T-A-03：默认主轨道切换为 LibTIFF 4.7.1 与动态 x64-windows triplet；主轨道 5/5 TIFF Gate、语义 Package/RIP strict、Runtime staging、能力包依赖/哈希和 handwritten 遗留车道全部 PASS。T-A-04 保持外部阻塞，T-A-05 等待稳定周期，默认压缩保持 none。 |
 | 2026-08-11 | v1.3 | 完成 T-A-01 / T-A-02：增加 IFD 与外置字段偶偏移断言；handwritten 机器证据按预期命中 tag 273 奇偏移；LibTIFF stripped/tiled × none/PackBits 对齐、严格 Reader 与 backend/equivalence 5/5 PASS；补录同机 Release 体积/耗时矩阵并把下一张卡推进到 T-A-03。 |
 | 2026-08-10 | v1.1 | 回填用户第二轮裁决：**废弃 handwritten**（§3.1 = 乙，T-A-05 由「修对齐」改为「弃用与移除」，并标注**只删写入器、读取侧在 DLL 内必须保留**）；**压缩后续可扩展算法**（新增 T-A-06，要求每种新算法各自过 RIP 确认）。新增 §3.5 开工顺序，并把 `obj_mtl_texture_rgb_varnish.json:22` 的绝对路径修正并入 T-A-01（CI 已暂缓但该缺陷与 CI 无关）。 |
