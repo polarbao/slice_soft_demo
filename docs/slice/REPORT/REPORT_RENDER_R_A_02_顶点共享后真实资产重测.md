@@ -1,8 +1,27 @@
 # REPORT R-A-02 顶点共享后真实资产重测
 
-> 状态：**COMPLETE / RD-B TRIGGERED**
-> 日期：2026-08-10
+> 状态：**HISTORICAL / SUPERSEDED BY R-F-02**
+> 日期：2026-08-11
 > 配置：Release，宿主默认 `maxBytes=128 MiB`
+
+## 0. 2026-08-11 R-F-02 重固化通知
+
+R-F-01 已用按共享边、40° crease angle 的角度加权平滑顶点法线替换逐面法线，因此本文后续记录的 **105.15 B/三角** 和 lod2 聚合结论只保留为历史证据，不再代表当前实现。
+
+当前同一 36 OBJ 矩阵仍为 22 个有效资产、14 个资产合同拒绝；22 资产聚合新基线为：
+
+```text
+lod=lod0
+vertices=665123
+triangles=1005246
+meshBytes=33346888
+bytesPerTriangle=33.17
+textureBytes=105380368
+previewBytes=666112
+```
+
+相对旧 105.15 B/三角下降 68.45%。完整当前结论见
+`REPORT_RENDER_R_F_02_真实资产预算重测当前状态.md`。
 
 ## 1. 结论
 

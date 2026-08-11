@@ -1297,6 +1297,9 @@ add_executable(hostflow_hd02_three_d_canvas_tests
     render/SceneRenderPolicyData.cpp
     render/SceneRenderPolicyMesh.cpp
     render/SceneRenderPolicy.h
+    render/TopViewRenderPolicy.cpp
+    render/TopViewRenderPolicyData.cpp
+    render/TopViewRenderPolicy.h
     ${CMAKE_SOURCE_DIR}/tests/hostflow/HostThreeDCanvasTests.cpp
 )
 

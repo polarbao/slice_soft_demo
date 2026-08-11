@@ -4,14 +4,17 @@
 #include "ViewWorkspaceWidget.h"
 #include "render/CpuRasterBackend.h"
 #include "render/SceneRenderPolicy.h"
+#include "render/TopViewRenderPolicy.h"
 
 #include <QApplication>
 #include <QComboBox>
 #include <QDir>
 #include <QDirIterator>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QImage>
+#include <QSet>
 #include <QTextStream>
 
 #include <algorithm>
@@ -34,23 +37,34 @@ public:
         m_triangleCount += mesh.triangleCount;
         m_meshBytes += static_cast<quint64>(mesh.vertexCount) * 32U
             + static_cast<quint64>(mesh.triangleCount) * 12U;
-        return true;
+        QElapsedTimer timer;
+        timer.start();
+        const bool uploaded = m_delegate.UploadMesh(mesh);
+        m_meshUploadNanoseconds += static_cast<quint64>(timer.nsecsElapsed());
+        return uploaded;
     }
 
     bool UploadTexture(const slicer::render::TextureDesc& texture) override
     {
         m_textureBytes += static_cast<quint64>(texture.widthPx)
             * static_cast<quint64>(texture.heightPx) * 4U;
-        return true;
+        QElapsedTimer timer;
+        timer.start();
+        const bool uploaded = m_delegate.UploadTexture(texture);
+        m_textureUploadNanoseconds += static_cast<quint64>(
+            timer.nsecsElapsed());
+        return uploaded;
     }
 
-    bool UploadMaterial(const slicer::render::MaterialDesc&) override
+    bool UploadMaterial(const slicer::render::MaterialDesc& material) override
     {
-        return true;
+        return m_delegate.UploadMaterial(material);
     }
 
-    void ReleaseUnused(const std::vector<std::string>&) override
+    void ReleaseUnused(
+        const std::vector<std::string>& liveIdentities) override
     {
+        m_delegate.ReleaseUnused(liveIdentities);
     }
 
     [[nodiscard]] slicer::render::FrameResult RenderFrame(
@@ -96,11 +110,24 @@ public:
         return m_textureBytes;
     }
 
+    [[nodiscard]] quint64 MeshUploadNanoseconds() const
+    {
+        return m_meshUploadNanoseconds;
+    }
+
+    [[nodiscard]] quint64 TextureUploadNanoseconds() const
+    {
+        return m_textureUploadNanoseconds;
+    }
+
 private:
+    CpuRasterBackend m_delegate;
     quint64 m_vertexCount{0U};
     quint64 m_triangleCount{0U};
     quint64 m_meshBytes{0U};
     quint64 m_textureBytes{0U};
+    quint64 m_meshUploadNanoseconds{0U};
+    quint64 m_textureUploadNanoseconds{0U};
 };
 
 void Require(const bool condition, const QString& message)
@@ -189,7 +216,8 @@ void VerifyRealAssetMatrix(
         Require(evidenceFile.open(QIODevice::WriteOnly | QIODevice::Text),
                 QStringLiteral("R-A-02 evidence file creation failed"));
         evidence.setDevice(&evidenceFile);
-        evidence << "model,status,lod,vertices,triangles,meshBytes,textureBytes,error\n";
+        evidence << "model,status,lod,vertices,triangles,meshBytes,textureBytes,"
+                    "meshUploadNs,textureUploadNs,threeDRefreshNs,error\n";
     }
     for (const QString& modelPath : modelPaths)
     {
@@ -206,6 +234,8 @@ void VerifyRealAssetMatrix(
         MeasuringRenderBackend backend;
         SceneRenderPolicy renderer(matrixClient, backend);
         ThreeDFrame frame;
+        QElapsedTimer refreshTimer;
+        refreshTimer.start();
         if (!renderer.Refresh(
                 workflow.SceneHandle(), workflow.SceneRevision(),
                 &frame, &error))
@@ -227,10 +257,12 @@ void VerifyRealAssetMatrix(
                 QString escapedError = error;
                 escapedError.replace('"', QStringLiteral("\"\""));
                 evidence << '"' << QDir(modelRoot).relativeFilePath(modelPath)
-                         << "\",rejected,,,,,,\"" << escapedError << "\"\n";
+                         << "\",rejected,,,,,,,,,\"" << escapedError << "\"\n";
             }
             continue;
         }
+        const quint64 refreshNanoseconds = static_cast<quint64>(
+            refreshTimer.nsecsElapsed());
         Require(frame.meshLod == QStringLiteral("lod0")
                     && !frame.descriptor.instances.empty(),
                 QStringLiteral(
@@ -243,11 +275,22 @@ void VerifyRealAssetMatrix(
                      << backend.VertexCount() << ','
                      << backend.TriangleCount() << ','
                      << backend.MeshBytes() << ','
-                     << backend.TextureBytes() << ",\n";
+                     << backend.TextureBytes() << ','
+                     << backend.MeshUploadNanoseconds() << ','
+                     << backend.TextureUploadNanoseconds() << ','
+                     << refreshNanoseconds << ",\n";
         }
         renderedPaths.push_back(modelPath);
         ++renderedCount;
     }
+    Require(renderedCount == 22
+                && budgetRejectedCount == 0
+                && assetRejectedCount == 14,
+            QStringLiteral(
+                "R-F-02 frozen matrix changed: rendered=%1 budget=%2 asset=%3")
+                .arg(renderedCount)
+                .arg(budgetRejectedCount)
+                .arg(assetRejectedCount));
 
     ModuleClient aggregateClient;
     QString aggregateError;
@@ -262,11 +305,40 @@ void VerifyRealAssetMatrix(
     MeasuringRenderBackend aggregateBackend;
     SceneRenderPolicy aggregateRenderer(aggregateClient, aggregateBackend);
     ThreeDFrame aggregateFrame;
+    QElapsedTimer aggregateThreeDTimer;
+    aggregateThreeDTimer.start();
     const bool aggregateRendered = aggregateRenderer.Refresh(
         aggregateWorkflow.SceneHandle(),
         aggregateWorkflow.SceneRevision(),
         &aggregateFrame,
         &aggregateError);
+    const quint64 aggregateThreeDRefreshNanoseconds =
+        static_cast<quint64>(aggregateThreeDTimer.nsecsElapsed());
+
+    TopViewRenderPolicy aggregateTopRenderer(aggregateClient);
+    TopViewFrame aggregateTopFrame;
+    QString aggregateTopError;
+    QElapsedTimer aggregateTopTimer;
+    aggregateTopTimer.start();
+    const bool aggregateTopRendered = aggregateTopRenderer.Refresh(
+        aggregateWorkflow.SceneHandle(),
+        aggregateWorkflow.SceneRevision(),
+        &aggregateTopFrame,
+        &aggregateTopError);
+    const quint64 aggregatePreviewRefreshNanoseconds =
+        static_cast<quint64>(aggregateTopTimer.nsecsElapsed());
+    quint64 aggregatePreviewBytes{0U};
+    QSet<QString> previewIdentities;
+    for (const TopViewInstance& instance : aggregateTopFrame.instances)
+    {
+        if (previewIdentities.contains(instance.previewIdentity))
+        {
+            continue;
+        }
+        previewIdentities.insert(instance.previewIdentity);
+        aggregatePreviewBytes += static_cast<quint64>(
+            instance.surfacePreview.sizeInBytes());
+    }
     if (!evidenceRoot.isEmpty())
     {
         QFile aggregateFile(QDir(evidenceRoot).filePath(
@@ -283,8 +355,27 @@ void VerifyRealAssetMatrix(
             << "triangles=" << aggregateBackend.TriangleCount() << '\n'
             << "meshBytes=" << aggregateBackend.MeshBytes() << '\n'
             << "textureBytes=" << aggregateBackend.TextureBytes() << '\n'
-            << "error=" << aggregateError << '\n';
+            << "previewBytes=" << aggregatePreviewBytes << '\n'
+            << "meshUploadNs="
+            << aggregateBackend.MeshUploadNanoseconds() << '\n'
+            << "textureUploadNs="
+            << aggregateBackend.TextureUploadNanoseconds() << '\n'
+            << "threeDRefreshNs="
+            << aggregateThreeDRefreshNanoseconds << '\n'
+            << "previewRefreshNs="
+            << aggregatePreviewRefreshNanoseconds << '\n'
+            << "topRendered="
+            << (aggregateTopRendered ? "true" : "false") << '\n'
+            << "previewIdentityCount=" << previewIdentities.size() << '\n'
+            << "error=" << aggregateError << '\n'
+            << "topError=" << aggregateTopError << '\n';
     }
+    Require(aggregateRendered,
+            QStringLiteral("R-F-02 aggregate three_d failed: %1")
+                .arg(aggregateError));
+    Require(aggregateTopRendered,
+            QStringLiteral("R-F-02 aggregate top failed: %1")
+                .arg(aggregateTopError));
     QTextStream(stdout)
         << "HOSTFLOW_H_D_02_ASSET_MATRIX_PASS total=" << modelPaths.size()
         << " lod0=" << renderedCount
@@ -292,6 +383,7 @@ void VerifyRealAssetMatrix(
         << " assetRejected=" << assetRejectedCount
         << " aggregateRendered=" << aggregateRendered
         << " aggregateLod=" << aggregateFrame.meshLod
+        << " aggregateTopRendered=" << aggregateTopRendered
         << " evidence=" << evidenceFile.fileName()
         << Qt::endl;
 }

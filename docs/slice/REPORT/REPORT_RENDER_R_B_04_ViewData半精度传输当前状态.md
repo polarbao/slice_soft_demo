@@ -4,6 +4,11 @@
 > 日期：2026-08-10
 > 合同：`slicer_capability_dtos` v1.10
 
+> 2026-08-11 R-F-02 复核：平滑法线合入后，本报告的小型真实纹理 fixture 仍为
+> `floatBytes=304 / halfBytes=176`，42.1% wire 缩减结论有效。22 资产宿主解码内存的
+> 新口径为 33.17 B/三角，详见 `REPORT_RENDER_R_F_02_真实资产预算重测当前状态.md`；
+> 两个数字口径不同，不得混用。
+
 ## 1. 当前成果
 
 - ViewData 查询新增可选 `meshAttributeFormat=float32|float16`；缺省保持 float32；
