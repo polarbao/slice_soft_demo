@@ -19,11 +19,11 @@
         "BUILD_SLICER_DEBUG_UI": "ON",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_PREFIX_PATH": "$env{QTDIR}",
-        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows-static-md/share/meshoptimizer",
-        "SLICESOFT_TIFF_BACKEND": "handwritten",
+        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows/share/meshoptimizer",
+        "SLICESOFT_TIFF_BACKEND": "libtiff",
         "USE_OPENVDB": "OFF",
         "VCPKG_INSTALLED_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     },
     {
@@ -43,23 +43,38 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_PREFIX_PATH": "$env{QTDIR}",
-        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows-static-md/share/meshoptimizer",
+        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows/share/meshoptimizer",
+        "SLICESOFT_TIFF_BACKEND": "libtiff",
         "USE_OPENVDB": "OFF",
         "VCPKG_INSTALLED_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     },
     {
       "name": "slicesoft-libtiff",
       "displayName": "SliceSoft 03D LibTIFF 依赖轨道",
-      "description": "显式可选 LibTIFF 4.7.1 Writer/Runtime 轨道；默认生产轨道保持 handwritten。",
+      "description": "LibTIFF 4.7.1 Writer/Runtime 专项验证轨道；默认生产轨道同样使用 LibTIFF。",
       "inherits": "slicesoft-base",
       "binaryDir": "${sourceDir}/build-slicesoft/03d-libtiff",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows/share/meshoptimizer",
+        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/03d-libtiff/vcpkg_installed/x64-windows/share/meshoptimizer",
         "SLICESOFT_TIFF_BACKEND": "libtiff",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build-slicesoft/03d-libtiff/vcpkg_installed",
         "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "slicesoft-handwritten-legacy",
+      "displayName": "SliceSoft Handwritten 遗留验证轨道",
+      "description": "仅用于 T-A-05 弃用观察期和字节对照，不是默认生产轨道。",
+      "inherits": "slicesoft-base",
+      "binaryDir": "${sourceDir}/build-slicesoft/03d-handwritten",
+      "cacheVariables": {
+        "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/03d-handwritten/vcpkg_installed/x64-windows-static-md/share/meshoptimizer",
+        "SLICESOFT_TIFF_BACKEND": "handwritten",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build-slicesoft/03d-handwritten/vcpkg_installed",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
       }
     }
   ],
@@ -109,6 +124,17 @@
       "configuration": "Release",
       "targets": [
         "slicesoft_runtime",
+        "tiff_backend_build_info_unit_tests"
+      ],
+      "jobs": 8
+    },
+    {
+      "name": "slicesoft-handwritten-legacy-release",
+      "displayName": "SliceSoft Handwritten 遗留 Release",
+      "configurePreset": "slicesoft-handwritten-legacy",
+      "configuration": "Release",
+      "targets": [
+        "tiff_writer_contract_unit_tests",
         "tiff_backend_build_info_unit_tests"
       ],
       "jobs": 8

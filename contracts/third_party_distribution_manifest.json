@@ -18,7 +18,7 @@
       "name": "libtiff",
       "version": "resolved_by_vcpkg_baseline",
       "source": "vcpkg:tiff",
-      "currentUsage": "optional_dynamic_runtime_when_SLICESOFT_TIFF_BACKEND_libtiff",
+      "currentUsage": "default_dynamic_runtime; handwritten_is_legacy_explicit_only",
       "license": "LibTIFF_permissive_with_LZW_notice",
       "licenseFile": "licenses/libtiff.txt",
       "noticeRequired": true

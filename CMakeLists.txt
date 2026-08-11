@@ -12,7 +12,7 @@ option(ENABLE_GEOMETRY_KERNEL_DEMO "Build experimental geometry kernel demo" ON)
 option(USE_OPENVDB "Enable optional OpenVDB adapter" OFF)
 set(
     SLICESOFT_TIFF_BACKEND
-    "handwritten"
+    "libtiff"
     CACHE STRING
     "TIFF dependency lane: handwritten or libtiff"
 )

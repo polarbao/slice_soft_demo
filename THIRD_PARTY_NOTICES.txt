@@ -34,8 +34,9 @@ license prohibits such use.
 Build-specific note
 -------------------
 
-miniz and meshoptimizer are statically compiled into SliceSoft core libraries
-in every current build. LibTIFF is shipped only when SLICESOFT_TIFF_BACKEND=libtiff.
+miniz is statically compiled into SliceSoft core libraries. meshoptimizer follows
+the selected vcpkg triplet. LibTIFF is shipped by the default production build;
+the explicit handwritten legacy verification lane does not ship LibTIFF.
 Assimp is declared in vcpkg.json but is not linked by the current CMake target
 graph. This notice includes Assimp in advance; shipping its binary later still
 requires including its full license.

@@ -10,7 +10,7 @@ param(
     [int]$Jobs = 8,
     [string]$Qt5Dir = $env:Qt5_DIR,
     [ValidateSet("handwritten", "libtiff")]
-    [string]$TiffBackend = "handwritten",
+    [string]$TiffBackend = "libtiff",
     [string]$VcpkgRoot = $env:VCPKG_ROOT,
     [switch]$ConfigureOnly,
     [switch]$DeployOnly,
