@@ -378,6 +378,25 @@ int main(int argc, char* argv[])
             && projectionCombo != nullptr && projectionCombo->count() == 2,
             QStringLiteral("seven presets or projection controls are missing"));
 
+    CameraController continuityCamera;
+    continuityCamera.Fit(frame.worldBounds, 1100U, 700U);
+    continuityCamera.Orbit(0.0F, 42.5F);
+    const slicer::render::CameraDesc beforePoleThreshold =
+        continuityCamera.BuildCamera();
+    continuityCamera.Orbit(0.0F, 1.0F);
+    const slicer::render::CameraDesc afterPoleThreshold =
+        continuityCamera.BuildCamera();
+    const float rightAxisDot =
+        beforePoleThreshold.viewMatrix[0]
+            * afterPoleThreshold.viewMatrix[0]
+        + beforePoleThreshold.viewMatrix[1]
+            * afterPoleThreshold.viewMatrix[1]
+        + beforePoleThreshold.viewMatrix[2]
+            * afterPoleThreshold.viewMatrix[2];
+    Require(rightAxisDot > 0.99F,
+            QStringLiteral(
+                "vertical orbit changed the camera up basis discontinuously"));
+
     client.ResetCallCount();
     canvas->Orbit(8.0F, -3.0F);
     canvas->Pan(0.25F, -0.1F);

@@ -17,6 +17,12 @@ struct Vector3 final
     float z{0.0F};
 };
 
+struct ViewBasis final
+{
+    Vector3 right;
+    Vector3 up;
+};
+
 float Radians(float degrees)
 {
     return degrees * kPi / 180.0F;
@@ -44,6 +50,21 @@ float Dot(const Vector3& a, const Vector3& b)
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+ViewBasis BuildViewBasis(const Vector3& forward)
+{
+    const Vector3 worldUp{0.0F, 0.0F, 1.0F};
+    Vector3 right = Cross(forward, worldUp);
+    if (Dot(right, right) <= 1.0e-12F)
+    {
+        right = {1.0F, 0.0F, 0.0F};
+    }
+    else
+    {
+        right = Normalize(right);
+    }
+    return {right, Cross(right, forward)};
+}
+
 void CopyMatrix(
     const std::array<float, 16>& source,
     float destination[16])
@@ -59,14 +80,11 @@ std::array<float, 16> LookAt(
         target.x - eye.x,
         target.y - eye.y,
         target.z - eye.z});
-    const Vector3 preferredUp = std::abs(forward.z) > 0.98F
-        ? Vector3{0.0F, 1.0F, 0.0F}
-        : Vector3{0.0F, 0.0F, 1.0F};
-    const Vector3 right = Normalize(Cross(forward, preferredUp));
-    const Vector3 up = Cross(right, forward);
+    const ViewBasis basis = BuildViewBasis(forward);
     return {
-        right.x, right.y, right.z, -Dot(right, eye),
-        up.x, up.y, up.z, -Dot(up, eye),
+        basis.right.x, basis.right.y, basis.right.z,
+        -Dot(basis.right, eye),
+        basis.up.x, basis.up.y, basis.up.z, -Dot(basis.up, eye),
         -forward.x, -forward.y, -forward.z, Dot(forward, eye),
         0.0F, 0.0F, 0.0F, 1.0F};
 }
@@ -145,14 +163,10 @@ void CameraController::Pan(const float rightMm, const float upMm)
         std::cos(pitch) * std::sin(yaw),
         std::sin(pitch)};
     const Vector3 forward{-fromTarget.x, -fromTarget.y, -fromTarget.z};
-    const Vector3 preferredUp = std::abs(forward.z) > 0.98F
-        ? Vector3{0.0F, 1.0F, 0.0F}
-        : Vector3{0.0F, 0.0F, 1.0F};
-    const Vector3 right = Normalize(Cross(forward, preferredUp));
-    const Vector3 up = Cross(right, forward);
-    m_targetX += right.x * rightMm + up.x * upMm;
-    m_targetY += right.y * rightMm + up.y * upMm;
-    m_targetZ += right.z * rightMm + up.z * upMm;
+    const ViewBasis basis = BuildViewBasis(forward);
+    m_targetX += basis.right.x * rightMm + basis.up.x * upMm;
+    m_targetY += basis.right.y * rightMm + basis.up.y * upMm;
+    m_targetZ += basis.right.z * rightMm + basis.up.z * upMm;
 }
 
 void CameraController::ZoomAtCursor(
