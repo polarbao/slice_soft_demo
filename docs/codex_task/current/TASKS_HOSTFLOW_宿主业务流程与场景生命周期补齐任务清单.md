@@ -1,7 +1,7 @@
 # TASKS_HOSTFLOW 宿主业务流程与场景生命周期补齐任务清单
 
-> 文档状态：**LOCAL COMPLETE — H-D/H-E 完成 / H-F-01 操作流回归收口完成**
-> 版本：v4.5 ｜ 日期：2026-08-10 ｜ 激活日期：2026-08-07
+> 文档状态：**LOCAL COMPLETE — H-D/H-E 完成 / H-F-01..05 回归收口完成；H-G 已准备、延期实施**
+> 版本：v4.9 ｜ 日期：2026-08-11 ｜ 激活日期：2026-08-07
 > **定位：独立补充专项，不属于 Stage 14 任何任务组，不占阶段编号。**
 > 起因：14E 交付的 `slicer_ui_host_sim` 是「技术验证壳」，未实现原设想的完整业务流程
 > 上游：`DOC_DECISION_14_UI_宿主模拟改造专项.md`、`contracts/slicer_capability_dtos.json`
@@ -356,6 +356,11 @@ E3 完成 → 回填 REPORT_HOSTFLOW_H_C_03 的 known_trim 条目
 | 卡号 | 任务 | 前置 | 验收 | 状态 |
 |---|---|---|---|---|
 | **H-F-01** | 修复新宿主默认模型目录、Profile 中文工艺说明、批量导入后单次自动排版以及切片失败信息可见性 | H-D/H-E 完成；用户明确提出四项回归 | 发布目录优先打开 `<exe>/model`，构建目录回退 `<cwd>/model`；多模型导入按当前 11×2/10 mm 参数排版一次；Profile 显示用途/默认工艺/输出/限制；提交或 Worker 失败自动显示切片作业页及可复制错误信息；Debug/Release 定向门禁通过 | **COMPLETE（2026-08-10）** |
+| **H-F-02** | 修复 3D 左键纵向环绕跨越近极点阈值时的相机基向量跳变 | H-D-02 完成；用户报告 3D 拖拽显示跳变 | 视图矩阵和 Pan 共用连续的世界 Z 向上基向量；跨越旧 `abs(forward.z)=0.98` 阈值时右轴点积大于 `0.99`；Debug/Release 三维合同与宿主画布门禁通过 | **COMPLETE（2026-08-10）** |
+| **H-F-03** | 收口默认边界留量、旧版常用工艺快捷切换与输出目录约定 | H-F-01 完成；用户明确要求处理构建体积边界、策略入口和输出位置 | Grid 首个可移动实例从 `(10,10)` 开始；新版宿主可切换全实体 RGB、RGB+白墨、按需补白、RGB+光油及单材料白墨/光油常用工艺；默认输出使用与旧版相同的 `<应用根目录>/output/ui_sessions/<session>/package`；Debug/Release 排版、预检、设置与 UI smoke 门禁通过 | **COMPLETE（2026-08-10）** |
+| **H-F-04** | 修复旧版常用工艺迁移后的 Profile hash 闭合与名称歧义 | H-F-03 完成；新版 Worker 报 `PM-SLICER-PROFILE-0030` | 不改变六类工艺的材料、纹理和支撑语义；空 `materialRoleMapping.rules` 使用 Worker 一致的规范 JSON 表达；全部预设通过 Worker 同算法 hash 重算；用户可见名称明确 RGB 表层/实体填充/W/V/纯白限制；Debug/Release 设置、材料、纹理、支撑、作业及 UI smoke 门禁通过 | **COMPLETE（2026-08-11）** |
+| **H-F-05** | 新版宿主补齐 Worker 核心细分耗时与宿主墙钟耗时 | H-F-04 完成；用户要求按旧版 UI 恢复切片耗时观测 | 处理中中文显示当前阶段、进度与 Worker 已用时；终结后显示配置、模型、网格/准入、切片、逐层计算、场景合成、TIFF、预览、报告、输出、Worker 总耗时与宿主总耗时；不可用项显式显示“未提供”；失败/取消保留已观测总耗时；不修改 SPI、TIFF 或 Profile 语义 | **COMPLETE（2026-08-11）** |
+| **H-G-01** | 建立生产 TIFF 三维层栈预览专项 | H-D-05 完成；用户提出三维切片结果检查需求 | 明确二维生产层仍为像素权威；冻结 2.5D 稀疏层栈、通道伪彩、LOD、缓存、取消和内存 Gate；不新增生产 IO 文件、不修改协议 | **PREPARED / DEFERRED（2026-08-10）** |
 
 边界：本卡不修改 SPI v1、11 个导出、15 项能力、生产 TIFF、Profile 身份或主干 `slicer_debug_ui`。
 
@@ -669,6 +674,10 @@ RIP / 通道化 / Qt 类型                       → RIP 模块 / ChannelSplitt
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-11 | v4.9 | 完成 H-F-05：新版宿主切片作业页接入 Worker 核心 `SliceRunProfile` 细分耗时，恢复配置/模型/网格/切片/逐层计算/场景合成/TIFF/预览/报告/输出分项，并单独显示 Worker 核心总耗时与宿主墙钟总耗时。进度阶段转为中文可读文本；细分证据缺失时显式标记“未提供”，失败/取消仍保留已观测 Worker 已用时。该数据仅为诊断遥测，不改变 SPI v1、生产 TIFF、Profile 身份或包协议。 |
+| 2026-08-11 | v4.8 | 完成 H-F-04：定位旧版常用工艺迁移后 `PM-SLICER-PROFILE-0030` 为 Profile 构造器对空材料规则数组使用了与 Worker 规范化结果不同的文本表示；统一空/非空规则数组的 canonical/compact 语义，补充六类预设逐项 Worker 同算法 hash 闭合及空规则负载回归。用户可见名称改为“纹理范围｜实体填充材料｜支撑范围”结构，并为每项补充用途与限制提示；稳定 Profile ID 和 RGB/W/V/S 业务语义不变。Debug/Release 相关 7 项设置、支撑、材料、纹理、作业和 UI smoke 测试全部 PASS。 |
+| 2026-08-10 | v4.7 | 完成 H-F-03：规则排版增加 10 mm 左/下构建体积边界留量，首个可移动实例从 `(10,10)` 开始；参考宿主新增六类旧版常用工艺快捷方案，手工细调后自动回到“自定义”；默认输出迁移到与旧版相同的 `<应用根目录>/output/ui_sessions/<session>/package`，并兼容迁移旧 Documents 自动路径。建立 H-G 生产 TIFF 三维层栈预览专项，当前只完成准备并延期实施。Debug/Release 7 项排版、预检、设置和 UI smoke 测试全部 PASS，源码尺寸门禁 PASS。 |
+| 2026-08-10 | v4.6 | 完成 H-F-02：删除近极点处在世界 Z/Y 向上之间硬切换的相机基向量逻辑，视图矩阵、平移和光标缩放统一使用连续世界 Z 向上基；新增跨旧阈值纵向环绕连续性断言。Debug/Release 的 `hostflow_hd02_three_d_canvas` 与 `slicer_stage14e04c_three_d_contract_test` 各 2/2 PASS。Release 宿主可执行文件因正在运行而未重新链接，测试目标已完成 Release 编译。 |
 | 2026-08-10 | v4.5 | 完成 H-F-01 操作流回归收口：导入目录按本次会话、运行目录 `model`、工作目录 `model` 的稳定优先级解析；批量导入后复用当前 11×2/10 mm 参数执行一次权威排版，失败保留模型并显式告警；工艺配置补齐用途、默认工艺、输出合同和限制；切片提交/Worker 失败自动切换作业页并展示中文可复制错误信息。Debug/Release 相关 7 项测试均 PASS。 |
 | 2026-08-10 | v4.4 | 完成 H-E-06 与 E3 收口：宿主从公开 `model.import` 材料响应收集源贴图，异步执行严格 RGB(255,255,255) 扫描；结果绑定 scene/revision/Profile contentHash，旧结果丢弃，路径/尺寸/mtime/SHA-256 缓存支持 single-flight。提示保持非阻断，不自动切换材料，生产材料闭合仍为最终权威。Debug/Release 白区服务、批量导入、宿主 UI、Qt 边界和源码尺寸联合门禁各 9/9 PASS。 |
 | 2026-08-10 | v4.3 | 完成 H-E-02：宿主支持 OBJ/3MF/STL 多选，批次先完成路径、格式、容量和快速预检，再用一次 `scene.apply_operation` 原子提交全部 `addInstance`；失败释放本批资源且不改变实例集合和 revision。Debug/Release 批量原子性、UI smoke 和源码尺寸门禁各 3/3 PASS。H-E-06 转为下一张 READY 卡。 |

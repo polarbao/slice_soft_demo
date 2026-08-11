@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "slicer_core/SliceRunTelemetry.h"
 #include "slicer_core/json_value.h"
 
 namespace slicer_core::api {
@@ -130,6 +131,7 @@ struct SliceResult
     std::array<int, 2> grid_px{};
     std::string engine_version;
     std::uint64_t elapsed_ms{0};
+    SliceRunProfile profile;
 };
 
 /** @brief Geometry repair request owned by the Worker lane. */

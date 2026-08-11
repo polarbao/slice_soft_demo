@@ -399,6 +399,18 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
         QStringLiteral("message")).toString();
     m_completion.detail = result.value(
         QStringLiteral("detail")).toString();
+    m_completion.timing = result.value(
+        QStringLiteral("timing")).toObject();
+    if (!m_completion.timing.contains(QStringLiteral("totalMs")))
+    {
+        const double workerElapsedMs = result.value(
+            QStringLiteral("elapsedMs")).toDouble(-1.0);
+        if (workerElapsedMs >= 0.0)
+        {
+            m_completion.timing.insert(
+                QStringLiteral("totalMs"), workerElapsedMs);
+        }
+    }
     if (result.value(QStringLiteral("error")).isObject())
     {
         const QJsonObject resultError = result.value(
@@ -443,6 +455,7 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
         m_completion.message,
         m_completion.detail,
         m_completion.packagedirectory,
+        m_completion.timing,
         m_completion.elapsedms,
         m_completion.cancellatencyms);
 }
@@ -469,6 +482,7 @@ void HostSliceJobController::FinishTransportFailure(const QString& message)
         m_completion.message,
         QString{},
         QString{},
+        QJsonObject{},
         m_completion.elapsedms,
         -1);
 }

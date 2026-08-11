@@ -138,6 +138,20 @@ bool VerifySuccessfulJob(
                      QStringLiteral("manifest.json"))).isFile(),
                  QStringLiteral("成功作业未发布 manifest.json。"),
                  errors)
+        && Check(
+            completion.timing.value(
+                QStringLiteral("available")).toBool(),
+            QStringLiteral("成功作业未返回 Worker 核心细分耗时。"),
+            errors)
+        && Check(
+            completion.timing.value(
+                QStringLiteral("totalMs")).toDouble(-1.0) >= 0.0
+                && completion.timing.value(
+                    QStringLiteral("modelLoadMs")).toDouble(-1.0) >= 0.0
+                && completion.timing.value(
+                    QStringLiteral("tiffWriteMs")).toDouble(-1.0) >= 0.0,
+            QStringLiteral("Worker 核心耗时字段不完整。"),
+            errors)
         && Check(!controller.IsActive(),
                  QStringLiteral("终结后仍保留公开作业句柄。"),
                  errors);

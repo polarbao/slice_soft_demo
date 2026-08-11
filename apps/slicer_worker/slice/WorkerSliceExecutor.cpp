@@ -124,6 +124,7 @@ slicer_core::Json BuildBasicOutput(
     const slicer_core::api::SliceResult& result,
     const WorkerSliceMaterialization& materialized)
 {
+    const slicer_core::SliceRunProfile& profile = result.profile;
     return slicer_core::Json::object({
         {"packageDir", result.package_dir.generic_string()},
         {"manifestPath", result.manifest_path.generic_string()},
@@ -140,6 +141,28 @@ slicer_core::Json BuildBasicOutput(
         })},
         {"engineVersion", result.engine_version},
         {"elapsedMs", static_cast<double>(result.elapsed_ms)},
+        {"timing", slicer_core::Json::object({
+            {"available", profile.available},
+            {"source", "worker_core"},
+            {"profileLevel", profile.profile_level},
+            {"engine", result.engine_version},
+            {"configLoadMs", profile.config_load_ms},
+            {"modelLoadMs", profile.model_load_ms},
+            {"gridSetupMs", profile.grid_setup_ms},
+            {"maskSamplingMs", profile.mask_sampling_ms},
+            {"texturePrepareMs", profile.texture_prepare_ms},
+            {"supportGenerationMs", profile.support_generation_ms},
+            {"sliceProcessingMs", profile.slice_processing_ms},
+            {"layerComputeMs", profile.layer_compute_ms},
+            {"layerComposeMs", profile.layer_compose_ms},
+            {"tiffWriteMs", profile.tiff_write_ms},
+            {"previewWriteMs", profile.preview_write_ms},
+            {"reportBuildMs", profile.report_build_ms},
+            {"reportWriteMs", profile.report_write_ms},
+            {"packagePublishMs", profile.package_publish_ms},
+            {"outputWriteMs", profile.output_write_ms},
+            {"totalMs", profile.total_ms},
+        })},
         {"executionScope", "14D-08-R2-02"},
     });
 }
@@ -328,8 +351,23 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
             }
             *m_protocolOutput
                 << "SLICE_TIMING engine=" << result.engine_version
-                << " totalMs=" << std::fixed << std::setprecision(3)
-                << ElapsedMilliseconds(start)
+                << " profileLevel=" << result.profile.profile_level
+                << std::fixed << std::setprecision(3)
+                << " configLoadMs=" << result.profile.config_load_ms
+                << " modelLoadMs=" << result.profile.model_load_ms
+                << " gridSetupMs=" << result.profile.grid_setup_ms
+                << " sliceProcessingMs="
+                << result.profile.slice_processing_ms
+                << " layerComputeMs=" << result.profile.layer_compute_ms
+                << " layerComposeMs=" << result.profile.layer_compose_ms
+                << " tiffWriteMs=" << result.profile.tiff_write_ms
+                << " previewWriteMs=" << result.profile.preview_write_ms
+                << " reportBuildMs=" << result.profile.report_build_ms
+                << " reportWriteMs=" << result.profile.report_write_ms
+                << " packagePublishMs="
+                << result.profile.package_publish_ms
+                << " outputWriteMs=" << result.profile.output_write_ms
+                << " totalMs=" << ElapsedMilliseconds(start)
                 << " workingSetBytes=0 peakWorkingSetBytes=0\n";
             m_protocolOutput->flush();
         }

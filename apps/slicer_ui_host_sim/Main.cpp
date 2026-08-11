@@ -209,9 +209,19 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
         QStringLiteral("hostSliceJobPanel"));
     const auto* detailView = window.findChild<QPlainTextEdit*>(
         QStringLiteral("hostSliceJobDetailView"));
+    const auto* modelLoadValue = window.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingModelLoadValue"));
+    const auto* tiffWriteValue = window.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingTiffWriteValue"));
+    const auto* workerTotalValue = window.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingWorkerTotalValue"));
+    const auto* hostTotalValue = window.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingHostTotalValue"));
     if (startButton == nullptr || cancelButton == nullptr
         || progressBar == nullptr || statusLabel == nullptr
         || jobPanel == nullptr || detailView == nullptr
+        || modelLoadValue == nullptr || tiffWriteValue == nullptr
+        || workerTotalValue == nullptr || hostTotalValue == nullptr
         || startButton->isEnabled() || cancelButton->isEnabled()
         || progressBar->minimum() != 0 || progressBar->maximum() != 100
         || statusLabel->text().isEmpty())
@@ -228,6 +238,12 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
         QStringLiteral("测试错误说明"),
         QStringLiteral("测试详细信息"),
         QString{},
+        QJsonObject{
+            {QStringLiteral("available"), true},
+            {QStringLiteral("engine"), QStringLiteral("legacy-scene-v1")},
+            {QStringLiteral("modelLoadMs"), 12.5},
+            {QStringLiteral("tiffWriteMs"), 8.0},
+            {QStringLiteral("totalMs"), 20.5}},
         25,
         -1);
     if (!detailView->toPlainText().contains(
@@ -235,10 +251,41 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
         || !detailView->toPlainText().contains(
             QStringLiteral("错误说明：测试错误说明"))
         || !detailView->toPlainText().contains(
-            QStringLiteral("详细信息：测试详细信息")))
+            QStringLiteral("详细信息：测试详细信息"))
+        || modelLoadValue->text() != QStringLiteral("12.5 ms")
+        || tiffWriteValue->text() != QStringLiteral("8.0 ms")
+        || workerTotalValue->text() != QStringLiteral("20.5 ms")
+        || hostTotalValue->text() != QStringLiteral("25.0 ms"))
     {
         QTextStream(stderr)
             << "HOSTFLOW_HB06_UI_FAILED: failure detail is incomplete"
+            << Qt::endl;
+        return 11;
+    }
+    jobPanel->SetActive();
+    jobPanel->UpdateProgress(
+        QStringLiteral("running"),
+        QStringLiteral("scene_instance_slice"),
+        1,
+        3,
+        33,
+        17);
+    jobPanel->ShowCompletion(
+        false,
+        false,
+        QStringLiteral("HOSTFLOW-TEST-NO-TIMING"),
+        QStringLiteral("Worker 未返回细分耗时"),
+        QString{},
+        QString{},
+        QJsonObject{},
+        22,
+        -1);
+    if (modelLoadValue->text() != QStringLiteral("未提供")
+        || workerTotalValue->text() != QStringLiteral("17.0 ms")
+        || hostTotalValue->text() != QStringLiteral("22.0 ms"))
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB06_UI_FAILED: timing fallback is incorrect"
             << Qt::endl;
         return 11;
     }

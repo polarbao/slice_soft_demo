@@ -51,6 +51,7 @@ void HostMainWindow::OnStartSlice()
             detail,
             QString{},
             QString{},
+            QJsonObject{},
             0,
             -1);
         m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
@@ -97,6 +98,7 @@ void HostMainWindow::OnSliceJobCompleted(
     const QString& message,
     const QString& detail,
     const QString& packageDirectory,
+    const QJsonObject& timing,
     const qint64 elapsedMs,
     const qint64 cancelLatencyMs)
 {
@@ -107,6 +109,7 @@ void HostMainWindow::OnSliceJobCompleted(
         message,
         detail,
         packageDirectory,
+        timing,
         elapsedMs,
         cancelLatencyMs);
     SetWorkflowEditingEnabled(m_client.IsOpen());

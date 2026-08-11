@@ -1,11 +1,129 @@
 #include "HostSliceJobPanel.h"
 
+#include <QGridLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QList>
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QVBoxLayout>
+
+#include <cmath>
+
+namespace
+{
+QLabel* MakeTimingValue(const QString& objectName, QWidget* parent)
+{
+    auto* label = new QLabel(QStringLiteral("未提供"), parent);
+    label->setObjectName(objectName);
+    label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    return label;
+}
+
+void AddTimingRow(
+    QGridLayout* layout,
+    const int row,
+    const QString& title,
+    QLabel* value)
+{
+    layout->addWidget(new QLabel(title, value->parentWidget()), row, 0);
+    layout->addWidget(value, row, 1);
+}
+
+QString FormatDuration(const double milliseconds)
+{
+    if (!std::isfinite(milliseconds) || milliseconds < 0.0)
+    {
+        return QStringLiteral("未提供");
+    }
+    if (milliseconds < 1000.0)
+    {
+        return QStringLiteral("%1 ms").arg(milliseconds, 0, 'f', 1);
+    }
+    if (milliseconds < 60000.0)
+    {
+        return QStringLiteral("%1 s").arg(milliseconds / 1000.0, 0, 'f', 2);
+    }
+    const int totalSeconds = static_cast<int>(milliseconds / 1000.0);
+    return QStringLiteral("%1 分 %2 秒")
+        .arg(totalSeconds / 60)
+        .arg(totalSeconds % 60);
+}
+
+QString StateText(const QString& state)
+{
+    if (state == QStringLiteral("queued"))
+    {
+        return QStringLiteral("排队中");
+    }
+    if (state == QStringLiteral("running"))
+    {
+        return QStringLiteral("处理中");
+    }
+    if (state == QStringLiteral("cancelling"))
+    {
+        return QStringLiteral("正在取消");
+    }
+    return state.isEmpty() ? QStringLiteral("未知") : state;
+}
+
+QString PhaseText(const QString& phase)
+{
+    if (phase == QStringLiteral("queued"))
+    {
+        return QStringLiteral("等待 Worker 接收作业");
+    }
+    if (phase == QStringLiteral("scene_config_load"))
+    {
+        return QStringLiteral("读取并冻结场景配置");
+    }
+    if (phase == QStringLiteral("scene_model_load"))
+    {
+        return QStringLiteral("加载场景模型与材料资源");
+    }
+    if (phase == QStringLiteral("scene_admission"))
+    {
+        return QStringLiteral("校验排版、碰撞与打印范围");
+    }
+    if (phase == QStringLiteral("scene_instance_slice"))
+    {
+        return QStringLiteral("逐模型生成 RGBWSV 图层");
+    }
+    if (phase == QStringLiteral("scene_composition"))
+    {
+        return QStringLiteral("合成全场景 RGBWSV 图层");
+    }
+    if (phase == QStringLiteral("scene_package_write"))
+    {
+        return QStringLiteral("保存 TIFF、预览与报告");
+    }
+    if (phase == QStringLiteral("scene_package_validation"))
+    {
+        return QStringLiteral("校验生产包与 TIFF 协议");
+    }
+    if (phase == QStringLiteral("completed"))
+    {
+        return QStringLiteral("Worker 核心处理完成");
+    }
+    if (phase == QStringLiteral("cancelling"))
+    {
+        return QStringLiteral("取消作业并清理临时产物");
+    }
+    return phase.isEmpty() ? QStringLiteral("未知阶段") : phase;
+}
+
+void SetTimingValue(
+    QLabel* label,
+    const QJsonObject& timing,
+    const QString& key)
+{
+    label->setText(FormatDuration(
+        timing.value(key).toDouble(-1.0)));
+}
+}
 
 HostSliceJobPanel::HostSliceJobPanel(QWidget* parent)
     : QWidget(parent)
@@ -54,10 +172,58 @@ void HostSliceJobPanel::BuildInterface()
     m_detailView->setPlaceholderText(QStringLiteral(
         "终结状态、错误码和输出目录将在这里显示。"));
 
+    auto* timingGroup = new QGroupBox(QStringLiteral("切片耗时"), this);
+    timingGroup->setToolTip(QStringLiteral(
+        "Worker 核心实测与宿主墙钟耗时；部分细分项存在包含关系，不能直接相加。"));
+    auto* timingLayout = new QGridLayout(timingGroup);
+    timingLayout->setContentsMargins(6, 6, 6, 6);
+    timingLayout->setHorizontalSpacing(8);
+    timingLayout->setVerticalSpacing(2);
+    m_engineValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingEngineValue"), timingGroup);
+    m_configLoadValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingConfigLoadValue"), timingGroup);
+    m_modelLoadValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingModelLoadValue"), timingGroup);
+    m_gridSetupValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingGridSetupValue"), timingGroup);
+    m_sliceProcessingValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingProcessingValue"), timingGroup);
+    m_layerComputeValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingLayerComputeValue"), timingGroup);
+    m_layerComposeValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingLayerComposeValue"), timingGroup);
+    m_tiffWriteValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingTiffWriteValue"), timingGroup);
+    m_previewWriteValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingPreviewWriteValue"), timingGroup);
+    m_reportValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingReportValue"), timingGroup);
+    m_outputWriteValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingOutputWriteValue"), timingGroup);
+    m_workerTotalValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingWorkerTotalValue"), timingGroup);
+    m_hostTotalValue = MakeTimingValue(
+        QStringLiteral("hostSliceTimingHostTotalValue"), timingGroup);
+    AddTimingRow(timingLayout, 0, QStringLiteral("引擎"), m_engineValue);
+    AddTimingRow(timingLayout, 1, QStringLiteral("配置加载"), m_configLoadValue);
+    AddTimingRow(timingLayout, 2, QStringLiteral("模型加载"), m_modelLoadValue);
+    AddTimingRow(timingLayout, 3, QStringLiteral("网格/场景准入"), m_gridSetupValue);
+    AddTimingRow(timingLayout, 4, QStringLiteral("切片处理"), m_sliceProcessingValue);
+    AddTimingRow(timingLayout, 5, QStringLiteral("逐层计算"), m_layerComputeValue);
+    AddTimingRow(timingLayout, 6, QStringLiteral("场景图层合成"), m_layerComposeValue);
+    AddTimingRow(timingLayout, 7, QStringLiteral("TIFF 保存"), m_tiffWriteValue);
+    AddTimingRow(timingLayout, 8, QStringLiteral("预览保存"), m_previewWriteValue);
+    AddTimingRow(timingLayout, 9, QStringLiteral("报告处理"), m_reportValue);
+    AddTimingRow(timingLayout, 10, QStringLiteral("切片保存合计"), m_outputWriteValue);
+    AddTimingRow(timingLayout, 11, QStringLiteral("Worker 总耗时"), m_workerTotalValue);
+    AddTimingRow(timingLayout, 12, QStringLiteral("宿主总耗时"), m_hostTotalValue);
+
     layout->addWidget(m_statusLabel);
     layout->addWidget(m_phaseLabel);
     layout->addWidget(m_progressBar);
     layout->addLayout(commands);
+    layout->addWidget(timingGroup);
     layout->addWidget(m_detailView, 1);
 
     connect(
@@ -93,6 +259,8 @@ void HostSliceJobPanel::SetActive()
     m_statusLabel->setText(QStringLiteral("切片作业已提交"));
     m_phaseLabel->setText(QStringLiteral("排队中"));
     m_detailView->clear();
+    m_lastWorkerElapsedMs = 0;
+    ResetTiming();
     UpdateButtons();
 }
 
@@ -106,14 +274,17 @@ void HostSliceJobPanel::UpdateProgress(
 {
     m_progressBar->setValue(percent);
     m_statusLabel->setText(QStringLiteral("状态：%1 · %2%")
-                               .arg(state)
+                               .arg(StateText(state))
                                .arg(percent));
     m_phaseLabel->setText(
-        QStringLiteral("阶段：%1 · %2/%3 · %4 ms")
-            .arg(phase.isEmpty() ? QStringLiteral("unknown") : phase)
+        QStringLiteral("阶段：%1 · %2/%3 · 已用 %4")
+            .arg(PhaseText(phase))
             .arg(current)
             .arg(total)
-            .arg(elapsedMs));
+            .arg(FormatDuration(static_cast<double>(elapsedMs))));
+    m_workerTotalValue->setText(
+        FormatDuration(static_cast<double>(elapsedMs)));
+    m_lastWorkerElapsedMs = elapsedMs;
 }
 
 void HostSliceJobPanel::ShowCompletion(
@@ -123,6 +294,7 @@ void HostSliceJobPanel::ShowCompletion(
     const QString& message,
     const QString& detail,
     const QString& packageDirectory,
+    const QJsonObject& timing,
     const qint64 elapsedMs,
     const qint64 cancelLatencyMs)
 {
@@ -138,10 +310,26 @@ void HostSliceJobPanel::ShowCompletion(
                 : cancelled ? QStringLiteral("作业已取消，临时产物已清理。")
                             : QStringLiteral(
                                   "作业失败，请检查下方错误码与详细信息。"));
+    QJsonObject displayTiming = timing;
+    if (!displayTiming.contains(QStringLiteral("totalMs")))
+    {
+        displayTiming.insert(
+            QStringLiteral("totalMs"),
+            static_cast<double>(m_lastWorkerElapsedMs));
+    }
+    ApplyTiming(displayTiming, elapsedMs);
     QStringList details{
         QStringLiteral("错误码：%1").arg(
             code.isEmpty() ? QStringLiteral("未返回") : code),
-        QStringLiteral("总耗时：%1 ms").arg(elapsedMs)};
+        QStringLiteral("宿主总耗时：%1").arg(
+            FormatDuration(static_cast<double>(elapsedMs)))};
+    const double workerTotalMs = displayTiming.value(
+        QStringLiteral("totalMs")).toDouble(-1.0);
+    if (workerTotalMs >= 0.0)
+    {
+        details.append(QStringLiteral("Worker 总耗时：%1")
+                           .arg(FormatDuration(workerTotalMs)));
+    }
     if (cancelLatencyMs >= 0)
     {
         details.append(QStringLiteral("取消清理耗时：%1 ms")
@@ -166,6 +354,83 @@ void HostSliceJobPanel::ShowCompletion(
     }
     m_detailView->setPlainText(details.join(QLatin1Char('\n')));
     UpdateButtons();
+}
+
+void HostSliceJobPanel::ApplyTiming(
+    const QJsonObject& timing,
+    const qint64 hostElapsedMs)
+{
+    ResetTiming();
+    const QString engine = timing.value(
+        QStringLiteral("engine")).toString();
+    m_engineValue->setText(
+        engine.isEmpty() ? QStringLiteral("未提供") : engine);
+    if (timing.value(QStringLiteral("available")).toBool())
+    {
+        SetTimingValue(
+            m_configLoadValue,
+            timing,
+            QStringLiteral("configLoadMs"));
+        SetTimingValue(m_modelLoadValue, timing, QStringLiteral("modelLoadMs"));
+        SetTimingValue(m_gridSetupValue, timing, QStringLiteral("gridSetupMs"));
+        SetTimingValue(
+            m_sliceProcessingValue,
+            timing,
+            QStringLiteral("sliceProcessingMs"));
+        SetTimingValue(
+            m_layerComputeValue,
+            timing,
+            QStringLiteral("layerComputeMs"));
+        SetTimingValue(
+            m_layerComposeValue,
+            timing,
+            QStringLiteral("layerComposeMs"));
+        SetTimingValue(m_tiffWriteValue, timing, QStringLiteral("tiffWriteMs"));
+        SetTimingValue(
+            m_previewWriteValue,
+            timing,
+            QStringLiteral("previewWriteMs"));
+        const double reportBuildMs = timing.value(
+            QStringLiteral("reportBuildMs")).toDouble(-1.0);
+        const double reportWriteMs = timing.value(
+            QStringLiteral("reportWriteMs")).toDouble(-1.0);
+        m_reportValue->setText(
+            reportBuildMs >= 0.0 && reportWriteMs >= 0.0
+                ? FormatDuration(reportBuildMs + reportWriteMs)
+                : QStringLiteral("未提供"));
+        SetTimingValue(
+            m_outputWriteValue,
+            timing,
+            QStringLiteral("outputWriteMs"));
+    }
+    SetTimingValue(
+        m_workerTotalValue,
+        timing,
+        QStringLiteral("totalMs"));
+    m_hostTotalValue->setText(
+        FormatDuration(static_cast<double>(hostElapsedMs)));
+}
+
+void HostSliceJobPanel::ResetTiming()
+{
+    const QList<QLabel*> values{
+        m_engineValue,
+        m_configLoadValue,
+        m_modelLoadValue,
+        m_gridSetupValue,
+        m_sliceProcessingValue,
+        m_layerComputeValue,
+        m_layerComposeValue,
+        m_tiffWriteValue,
+        m_previewWriteValue,
+        m_reportValue,
+        m_outputWriteValue,
+        m_workerTotalValue,
+        m_hostTotalValue};
+    for (QLabel* value : values)
+    {
+        value->setText(QStringLiteral("未提供"));
+    }
 }
 
 void HostSliceJobPanel::OnStartRequested()

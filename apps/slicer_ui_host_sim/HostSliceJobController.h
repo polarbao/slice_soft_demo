@@ -41,6 +41,7 @@ struct hostslicejobcompletion
     QString message;
     QString detail;
     QString packagedirectory;
+    QJsonObject timing;
     qint64 elapsedms{0};
     qint64 cancellatencyms{-1};
     QJsonObject result;
@@ -125,6 +126,7 @@ signals:
         QString message,
         QString detail,
         QString packageDirectory,
+        QJsonObject timing,
         qint64 elapsedMs,
         qint64 cancelLatencyMs);
 

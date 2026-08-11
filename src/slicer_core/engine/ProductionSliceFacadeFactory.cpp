@@ -214,6 +214,7 @@ api::ApiResult<api::SliceResult> RunExistingProductionEntry(
         result.engine_version = "legacy-scene-v1";
         result.elapsed_ms = static_cast<std::uint64_t>(
             std::llround(std::max(0.0, produced.profile.total_ms)));
+        result.profile = produced.profile;
         return api::ApiResult<api::SliceResult>::Success(
             std::move(result));
     }

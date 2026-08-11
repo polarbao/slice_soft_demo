@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QWidget>
 
 class QLabel;
@@ -54,6 +55,7 @@ public:
      * @param message User-facing detail.
      * @param detail Additional Worker or preflight diagnostic.
      * @param packageDirectory Published package directory, if any.
+     * @param timing Worker-core detailed timing telemetry, if available.
      * @param elapsedMs Host-observed total job time.
      * @param cancelLatencyMs Host-observed cancellation latency, or -1.
      */
@@ -64,6 +66,7 @@ public:
         const QString& message,
         const QString& detail,
         const QString& packageDirectory,
+        const QJsonObject& timing,
         qint64 elapsedMs,
         qint64 cancelLatencyMs);
 
@@ -80,6 +83,8 @@ private slots:
 
 private:
     void BuildInterface();
+    void ApplyTiming(const QJsonObject& timing, qint64 hostElapsedMs);
+    void ResetTiming();
     void UpdateButtons();
 
     QLabel* m_statusLabel{nullptr};
@@ -88,7 +93,21 @@ private:
     QPushButton* m_startButton{nullptr};
     QPushButton* m_cancelButton{nullptr};
     QPlainTextEdit* m_detailView{nullptr};
+    QLabel* m_engineValue{nullptr};
+    QLabel* m_configLoadValue{nullptr};
+    QLabel* m_modelLoadValue{nullptr};
+    QLabel* m_gridSetupValue{nullptr};
+    QLabel* m_sliceProcessingValue{nullptr};
+    QLabel* m_layerComputeValue{nullptr};
+    QLabel* m_layerComposeValue{nullptr};
+    QLabel* m_tiffWriteValue{nullptr};
+    QLabel* m_previewWriteValue{nullptr};
+    QLabel* m_reportValue{nullptr};
+    QLabel* m_outputWriteValue{nullptr};
+    QLabel* m_workerTotalValue{nullptr};
+    QLabel* m_hostTotalValue{nullptr};
     bool m_ready{false};
     bool m_active{false};
     bool m_hasCompletion{false};
+    qint64 m_lastWorkerElapsedMs{0};
 };
