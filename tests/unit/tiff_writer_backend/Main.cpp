@@ -273,14 +273,47 @@ int main()
                 return Fail("LibTIFF tiled padding was not initialized to 255");
             }
 
-            slicer_core::TiffImageSpec compatibilitySpec = tiledSpec;
-            compatibilitySpec.tile_width = 8U;
-            compatibilitySpec.tile_height = 4U;
-            if (slicer_core::ResolveTiffWriterBackend(compatibilitySpec)
-                != slicer_core::TiffWriterBackend::Handwritten)
+            slicer_core::TiffImageSpec nonstandardTiledSpec = tiledSpec;
+            nonstandardTiledSpec.tile_width = 8U;
+            nonstandardTiledSpec.tile_height = 4U;
+            const std::filesystem::path fallbackPath =
+                directory / "deprecated_fallback.tiff";
+            const std::string fallbackSentinel{"existing-fallback-output"};
+            {
+                std::ofstream output(fallbackPath, std::ios::binary);
+                output << fallbackSentinel;
+            }
+            try
+            {
+                slicer_core::WriteRgbwsvTiffWithConfiguredBackend(
+                    fallbackPath,
+                    nonstandardTiledSpec,
+                    pixels);
+                return Fail(
+                    "nonstandard tiled storage used the deprecated fallback");
+            }
+            catch (const slicer_core::TiffWriterException& error)
+            {
+                if (error.Code()
+                    != slicer_core::TiffWriterErrorCode::InvalidInput)
+                {
+                    return Fail(
+                        "nonstandard tiled storage returned the wrong error code");
+                }
+            }
+            std::ifstream fallbackInput(fallbackPath, std::ios::binary);
+            const std::string preservedFallback{
+                std::istreambuf_iterator<char>{fallbackInput},
+                std::istreambuf_iterator<char>{}};
+            if (preservedFallback != fallbackSentinel)
             {
                 return Fail(
-                    "nonstandard tiled storage did not retain compatibility fallback");
+                    "rejected nonstandard tiled storage replaced the existing output");
+            }
+            if (CountTemporarySiblings(fallbackPath) != 0U)
+            {
+                return Fail(
+                    "rejected nonstandard tiled storage left a temporary sibling");
             }
 
             const std::filesystem::path atomicPath =

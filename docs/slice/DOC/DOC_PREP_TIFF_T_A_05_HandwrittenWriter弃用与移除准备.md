@@ -1,6 +1,6 @@
 # DOC_PREP_TIFF_T_A_05 Handwritten Writer 弃用与移除准备
 
-> 状态：`T-A-05A=COMPLETE` / `T-A-05B_REMOVAL_GATE=WAITING`
+> 状态：`T-A-05A=COMPLETE` / `T-A-05B-01=COMPLETE` / `T-A-05B_REMOVAL_GATE=WAITING`
 > 日期：2026-08-11
 > 上游：`TASKS_TIFF_默认后端切换与对齐根治任务清单.md`
 
@@ -29,8 +29,8 @@ T-A-05 分为两个不可混淆的交付：
 
 | 消费方 | 当前事实 | T-A-05B 处置 |
 |---|---|---|
-| `TiffWriterFactory.cpp` | LibTIFF 遇到小于 16 或非 16 倍数的 tiled 尺寸时回退 handwritten | 改为配置/写入边界显式失败；禁止静默改尺寸 |
-| `tiff_writer_backend` | 直接创建 handwritten，并冻结 8x4 回退 | 改为 LibTIFF 正向和非标准 tiled fail-closed 用例 |
+| `TiffWriterFactory.cpp` | 默认 LibTIFF 已不再回退；小于 16 或非 16 倍数的 tiled 尺寸返回 `InvalidInput` | T-A-05B-01 COMPLETE |
+| `tiff_writer_backend` | 已把 8x4 回退断言改为 fail-closed、既有目标保留和无临时文件断言；仍直接创建 handwritten 做迁移期正向对照 | T-A-05B-01 COMPLETE；直接创建部分留给 T-A-05B-02 |
 | `tiff_writer_equivalence` | 逐组合比较两个 Writer | 在删除前保留最后一次对照证据；删除后由语义 Golden + strict Reader 接管 |
 | `tiff_backend_build_info` | 断言 `handwrittenAvailable=true` | 移除字段或冻结为 false 前必须审查诊断 JSON 消费方 |
 | 03D/03E 历史脚本 | 构建并比较 handwritten 车道 | 转为历史证据脚本或显式报“后端已移除”，不得继续作为当前 Gate |
@@ -60,7 +60,15 @@ T-A-05 分为两个不可混淆的交付：
 4. 默认 LibTIFF 再跑完整 Release、Runtime、能力包和 RIP strict；
 5. 用户明确确认删除 Writer 源文件和遗留 preset。
 
+### 5.1 T-A-05B-01 验证结果（2026-08-11）
+
+- 默认 LibTIFF `tiff_writer_backend_unit_tests`：PASS；
+- handwritten 遗留 `tiff_writer_backend_unit_tests`：PASS；
+- 8 x 4 tiled 请求在默认轨道稳定返回 `TiffWriterErrorCode::InvalidInput`；
+- 失败前已有目标文件保持不变，且没有遗留 `.tmp.*` 文件。
+
 ## 6. 结论
 
-`T-A-05A` 已完成。`T-A-05B` 当前为 `WAITING`，原因是存在可定位的代码消费方且删除
-属于破坏性操作；不得用“默认已经是 LibTIFF”代替消费方迁移和删除确认。
+`T-A-05A` 与非标准 tiled 回退迁移 `T-A-05B-01` 已完成。下一张非破坏性卡为
+`T-A-05B-02`；最终删除 `T-A-05B-03` 仍为 `WAITING`，不得用“默认已经是 LibTIFF”
+代替消费方迁移和删除确认。

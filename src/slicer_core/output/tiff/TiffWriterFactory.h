@@ -27,7 +27,8 @@ TiffWriterBackend GetConfiguredTiffWriterBackend();
 /**
  * @brief Resolves the effective backend for an image specification.
  * @param spec Requested TIFF image and storage contract.
- * @return Effective backend. Nonstandard tile sizes retain handwritten compatibility.
+ * @return Effective configured backend.
+ * @throws TiffWriterException If a LibTIFF tiled request is not aligned to 16 pixels.
  */
 TiffWriterBackend ResolveTiffWriterBackend(const TiffImageSpec& spec);
 

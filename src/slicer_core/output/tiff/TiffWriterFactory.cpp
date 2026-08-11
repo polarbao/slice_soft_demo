@@ -1,5 +1,6 @@
 #include "slicer_core/output/tiff/TiffWriterFactory.h"
 
+#include "slicer_core/output/tiff/TiffWriterError.h"
 #include "slicer_core/output/tiff/TiffWriterImplementations.h"
 
 #include <memory>
@@ -50,7 +51,10 @@ TiffWriterBackend ResolveTiffWriterBackend(
             || spec.tile_width % 16U != 0U
             || spec.tile_height % 16U != 0U))
     {
-        return TiffWriterBackend::Handwritten;
+        throw TiffWriterException(
+            TiffWriterErrorCode::InvalidInput,
+            "LibTIFF tile width and height must be positive multiples of 16; "
+            "the deprecated handwritten compatibility fallback is disabled");
     }
     return configured;
 }
