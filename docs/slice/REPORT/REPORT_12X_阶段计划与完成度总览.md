@@ -1,10 +1,10 @@
 # REPORT_12X 阶段计划与完成度总览
 
 > 文档状态：CURRENT MASTER STATUS
-> 版本：v5.4
-> 更新日期：2026-08-05
+> 版本：v5.5
+> 更新日期：2026-08-11
 > 当前生产主线：STAGE 12E COMPLETE
-> 当前下一任务：Stage 15 已完成 19/19；**Stage 14 已于 2026-08-04 授权激活（ACTIVE）**，14A-01..02、14A-04..09 已完成，14A-03 等待打印侧回签，下一项为 14A-10
+> 当前下一任务：TIFF T-A-01..03 COMPLETE；T-A-04 外部阻塞，T-A-05 等待 LibTIFF 稳定周期，T-A-06 待需求触发
 
 ## 1. 使用规则
 
@@ -54,15 +54,16 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 12E-09A | 09A-01..06 COMPLETE / PASS | 只读 Diagnostic Facade、场景感知 Effective Config、中文参数状态区、可取消 Worker、TIFF 同层语义 Preview 和阶段回归 | 保持回归 |
 | 12E-09B | COMPLETE / GO | 能力目录、Effective Config、中文选择器、双模式一键路由、session/package 身份、no-fallback、同源 preview/report、实测资源和六 case Release 收口 | 无；09A diagnostic 不在本阶段 |
 | 12E-09C | COMPLETE / 09C-01..06 PASS | 默认 X=635/Y=600、显式 600/600 兼容、Reader/writer、两引擎非等方 Raster、外侧光油、Qt、一键切片、物理比例 Preview、真实模型 Release/RIP 矩阵 | 无；硬件标定不在本阶段 |
-| 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 手写基线、可选 LibTIFF 依赖/Runtime、stripped/tiled、兼容/性能 Gate、隔离 Runtime/RIP 和 full regression 已闭环 | 默认 Writer 保持 handwritten；未来切换需新 Gate 与独立授权 |
-| 03E-TIFF-COMPRESSION | 03E-01/02 COMPLETE / GO_ON_DEMAND | `none|packbits` 已贯通 Legacy/Global/Scene、manifest、严格 Reader、原生预览与 Qt；RIP 侧已声明支持 PackBits | 默认压缩保持 `none`；外部 RIP 实机互操作由 14F 关闭；默认启用需独立决策与 golden 重固化 |
+| 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 手写基线、可选 LibTIFF 依赖/Runtime、stripped/tiled、兼容/性能 Gate、隔离 Runtime/RIP 和 full regression 已闭环 | 历史结论：Writer 保持 handwritten；已由后续 TIFF-T-A 默认切换取代 |
+| 03E-TIFF-COMPRESSION | 03E-01/02 COMPLETE / GO_ON_DEMAND | `none|packbits` 已贯通 Legacy/Global/Scene、manifest、严格 Reader、原生预览与 Qt；项目内 PackBits Gate 已闭环 | 默认压缩保持 `none`；目标外部 RIP/控制软件互操作仍待 T-A-04 证据；默认启用需独立决策与语义 Golden 重固化 |
+| TIFF-T-A | T-A-01..03 COMPLETE | 对齐回归、双 Writer 四组合矩阵、默认 LibTIFF 4.7.1、Runtime/能力包依赖和 RIP strict 已闭环 | T-A-04 外部阻塞；T-A-05 等待稳定周期；默认压缩保持 `none` |
 | 12E-09D | 09D-01..06 COMPLETE / RELEASE MATRIX PASS | Legacy/Global/诊断身份、显式 all_texture、单材料 W/V、Qt、一键切片和 RIP strict 已闭环 | 保持回归 |
 | 12E-10 | 10A/10B/10C/10D COMPLETE | 同层闭环、17 行真实模型矩阵、36 个 Release 计量样本、最终报告和用户说明 | 无；Stage 12E 已封口 |
 | 12F-R0 | COMPLETE | Debug/Release Runtime、VS Code 日常入口和部署收口 | R1-R5 未激活 |
 | 12F-R1..R5 | PLANNED / NOT ACTIVE | 文档和任务边界已建立 | benchmark、支撑/compose/occupancy/cache/I/O 优化 |
 | 12G-TCWS 候选 | FROZEN / 0 ACTIVE TASKS | 已记录同一全 RGB package 由 RIP 生成透明/白色，以及白区 `WSV=000` 私有信号；完成三种策略比对 | `WSV=000` 与 black_is_print 物理语义冲突；等待 RIP 合同决策，不做纹理铺底 |
 | Stage 13 | 原 P0 17/17 COMPLETE；13B-08、13D、13E、13E-R1-01、13F-R0、13G COMPLETE | 多模型场景、TIFF 原生统一预览、Qt 工作台、甲片平面/Z 正反面、Reality 支撑连续性和 30 层最大投影铺底 | 13F-R1-01..05 性能可观测性 |
-| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权激活）| 14A-01/02/04/05/06/07/08/09 COMPLETE；14A-03 切片侧合同完成；RIP 六问两轮闭合并登记 8 项禁用方案 | 14A-03 等打印侧回签；下一项 14A-10（manifest `whiteSemantics`），随后 14A-11；外部 RIP 实机互操作由 14F 关闭 |
+| Stage 14 | ✅ **ACTIVE**（2026-08-04 授权激活）| 14A-01/02/04/05/06/07/08/09 COMPLETE；14A-03 切片侧合同完成；RIP 六问两轮闭合并登记 8 项禁用方案 | 14A-03 等打印侧回签；下一项 14A-10（manifest `whiteSemantics`），随后 14A-11；PackBits 默认启用仍按 T-A-04 独立取得目标外部 RIP/控制软件证据 |
 | Stage 15 | COMPLETE / 19 OF 19 | 按需补 W、预检、报告、自动 Gate、放行记录与 production Profile 全部收口 | 保持回归；外部 RIP 与 12G 不在本阶段 |
 
 ### 2.1 Stage 12 目的图
@@ -89,8 +90,9 @@ TASKS/CODEX_PROMPT 负责：原子任务与执行命令；
 | 09B Production UI | 09B-01..06 COMPLETE | 已收口 |
 | 09C X/Y DPI | 09C-01..06 COMPLETE | 已收口 |
 | 09A Diagnostic UI | 09A-01..06 COMPLETE / PASS | 保持回归 |
-| 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 已收口；保持 handwritten 默认 |
-| 03E TIFF Compression | 03E-01/02 COMPLETE / GO_ON_DEMAND | 显式 PackBits 可按需使用；默认保持 `none`，外部实机互操作由 14F 关闭 |
+| 03D-LIBTIFF | 03D-01..07 COMPLETE / GO_OPTIONAL | 历史默认结论已由 TIFF T-A 取代 |
+| 03E TIFF Compression | 03E-01/02 COMPLETE / GO_ON_DEMAND | 显式 PackBits 可按需用于项目内验证；默认保持 `none`，目标外部 RIP/控制软件互操作仍待 T-A-04 证据 |
+| TIFF T-A | T-A-01..03 COMPLETE | LibTIFF 4.7.1 已为默认 Writer；等待 T-A-04 外部证据或 T-A-05 稳定周期 |
 | 09D Production Texture/Single Material | 09D-01..06 COMPLETE / PASS | 保持回归 |
 | 12E-10 Final Closure | 10A/10B/10C/10D COMPLETE | 已收口 |
 | 12F 性能 | 12F-01 COMPLETE；12F-02..09 NOT ACTIVE | 场景/Raster 边界稳定后先刷新 benchmark |
@@ -268,7 +270,7 @@ Stage 12/13 的逐项执行状态、34 个近程/已规划原子任务顺序和�
 本次修订不改变既有阶段的完成证据，只调整后续执行入口：
 
 ```text
-1. 03D-01..07 已完成，最终判定为 `GO_OPTIONAL`，默认 Writer 保持 handwritten；
+1. 03D-01..07 已完成，最终判定为 `GO_OPTIONAL`；其 handwritten 默认结论已由 TIFF T-A-03 取代；
 2. 12E-09D-01..06 已完成，生产纹理厚度、显式 all_texture、单材料 W/V 和 Release/RIP 已收口；
 3. 12E-10A：已完成生产 TIFF、09A 语义、W/S/V 与精确材料闭环报告的同层绑定；
 4. 12E-10B：已完成 14 行生产 PASS、3 行 BLOCKED_EXPECTED 和 RIP strict 14/14；

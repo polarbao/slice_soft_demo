@@ -216,7 +216,7 @@ To republish already-built artifacts without rebuilding:
 
 ## 03D TIFF Writer
 
-Use this Release-only gate to freeze the handwritten Writer before any LibTIFF dependency or backend work:
+The following 03D commands freeze the historical handwritten baseline before the later T-A default switch:
 
 ```powershell
 .\scripts\Run03DTiffWriterBaseline.ps1 `
@@ -225,11 +225,11 @@ Use this Release-only gate to freeze the handwritten Writer before any LibTIFF d
   -Iterations 5
 ```
 
-The benchmark measures only `write_rgbwsv_tiff` with a pre-generated buffer. It must keep the handwritten
+The benchmark measures only `write_rgbwsv_tiff` with a pre-generated buffer. Its historical evidence keeps the handwritten
 backend, exact RGBWSV decode, stripped/tiled tags, 255 tile padding, current errors, and RIP strict PASS.
 Do not compare these numbers with full-package elapsed time.
 
-`03D-04` completes the optional LibTIFF stripped/tiled lane while the default remains handwritten. Use the same
+`03D-04` completed the then-optional LibTIFF stripped/tiled lane while handwritten was still default. Use the same
 targeted contract suite in both build directories:
 
 ```powershell
@@ -279,9 +279,10 @@ performance measurement; it does not authorize changing the default Writer.
 The script re-runs the 03D-05 compatibility gate, then records actual configured/effective backend,
 LibTIFF version, wall/CPU p50/p95, exact decode, output bytes and independent-process memory. `warm`
 uses one untimed warmup; `cold_output_directory` uses a fresh directory without warmup but does not flush
-the OS disk cache. The 2026-08-03 reference run concluded `GO_OPTIONAL`; handwritten remains default.
+the OS disk cache. The 2026-08-03 reference run concluded `GO_OPTIONAL`; that default decision is historical
+and was superseded by T-A-03.
 
-`03D-07` closes the optional lane without changing the default:
+`03D-07` closed the optional lane without changing the then-current default:
 
 ```powershell
 .\scripts\Run03DTiffOptionalClosure.ps1 -Config Release
@@ -291,6 +292,35 @@ This command verifies the default/optional Preset policy, re-runs compatibility 
 deploys an isolated LibTIFF Runtime with `tiff.dll` and its license, runs Package/RIP strict smoke, and
 runs the default handwritten full regression. The generated `output/benchmarks/03d_07` evidence is local
 and ignored. There is no LibTIFF Reader backend; read compatibility uses the same project strict Reader.
+
+## TIFF T-A Current Default
+
+As of 2026-08-11, T-A-03 makes LibTIFF 4.7.1 the default Writer on the dynamic `x64-windows`
+triplet. Use the main preset for production validation and the explicit legacy preset only for the
+handwritten known-failure lane:
+
+```powershell
+cmake --preset slicesoft-main
+cmake --build build-slicesoft/main --config Release --target `
+  tiff_writer_contract_unit_tests `
+  tiff_backend_build_info_unit_tests `
+  tiff_writer_backend_unit_tests `
+  tiff_writer_equivalence_unit_tests `
+  slicer_cli rip_reader_test slicer_worker slicer_module
+ctest --test-dir build-slicesoft/main -C Release `
+  -R "^(tiff_writer_contract_unit_tests|tiff_writer_alignment_conformance_unit_tests|tiff_backend_build_info_unit_tests|tiff_writer_backend_unit_tests|tiff_writer_equivalence_unit_tests)$" `
+  --output-on-failure
+
+cmake --preset slicesoft-handwritten-legacy
+cmake --build --preset slicesoft-handwritten-legacy-release
+ctest --test-dir build-slicesoft/03d-handwritten -C Release `
+  -R "tiff_writer_(contract|handwritten_alignment)|tiff_backend_build_info" `
+  --output-on-failure
+```
+
+The main Runtime and Stage 14 package must contain `tiff.dll`, `licenses/libtiff.txt`, and matching
+hash/dependency inventory. Default compression remains `none`; do not enable PackBits by default until
+T-A-04 receives external target RIP/control-software evidence.
 
 ## 03E TIFF Compression
 

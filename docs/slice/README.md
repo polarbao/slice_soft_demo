@@ -2,13 +2,13 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-08-06
-> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL；03E-02 INTERNAL COMPLETE / **GO_ON_DEMAND**；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；**Stage 14 ACTIVE（2026-08-04 授权）**；Stage 15 COMPLETE / 19 OF 19；Stage 16 PROPOSED / WAITING FOR STAGE 14 CLOSURE
+> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL（历史）；TIFF T-A-01..03 COMPLETE；03E-02 INTERNAL COMPLETE / **GO_ON_DEMAND**；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；**Stage 14 ACTIVE（2026-08-04 授权）**；Stage 15 COMPLETE / 19 OF 19；Stage 16 PROPOSED / WAITING FOR STAGE 14 CLOSURE
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
 第一次接触项目、希望按学习顺序理解行业名词、切片原理、架构、配置、输出、构建、测试和后续路线时，请从 [SliceSoft 从零到参与开发教程](../tutorials/README.md) 开始；本目录继续作为正式需求、设计、决策和阶段状态真源。
 
-当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 最终为 `GO_OPTIONAL`，默认 Writer 仍为 handwritten。`03E-02` 已完成内部 Gate，RIP 侧已确认支持 PackBits，状态转为 `GO_ON_DEMAND`（按需显式开启已授权，默认压缩仍为 `none`）。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：14A 切片侧实现已收口，14A-03 与双视图纹理 14A-04-R1 待打印侧回签；2026-08-06 的当前入口为 14C-06A READY 与 14D-08 解阻拆分准备，后续状态以 `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` 为准。S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
+当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 的 `GO_OPTIONAL` 保留为历史基线；用户授权的 TIFF T-A-01..03 已于 2026-08-11 完成，默认 Writer 现为 LibTIFF 4.7.1，handwritten 仅保留显式遗留验证轨道，默认压缩仍为 `none`。`03E-02` 已完成项目内 PackBits Gate 并转为 `GO_ON_DEMAND`；这不等于目标外部 RIP/控制软件互操作已验收，T-A-04 在取得该证据前继续阻塞。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：14A 切片侧实现已收口，14A-03 与双视图纹理 14A-04-R1 待打印侧回签；2026-08-06 的当前入口为 14C-06A READY 与 14D-08 解阻拆分准备，后续状态以 `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` 为准。S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
 
 Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲片接触姿态诊断/受限调平候选，以及 12F-02..09、13F-R1-01..05 和 13B 22 实例性能预算整并。该阶段为 `PROPOSED / NOT ACTIVE`；Stage 14 收口前禁止实施，收口后仍必须先执行 16-00 GO/DEFER/NO-GO 复核。
 
@@ -43,6 +43,7 @@ Stage 16 已完成文档准备，范围为层体积/2x2 几何采样候选、甲
 | `DOC/DOC_DECISION_03D_LibTIFFWriter兼容迁移与性能Gate.md` | 手写 TIFF 与 LibTIFF 双后端迁移、协议兼容和切换 Gate |
 | `DOC/DOC_PREP_03D_06_LibTIFF性能矩阵准备.md` | 03D-06 双后端 Release Writer-only 性能矩阵、计时边界和 GO/NO-GO 门槛 |
 | `DOC/DOC_PREP_03D_07_LibTIFF阶段收口准备.md` | 03D-07 GO_OPTIONAL 收口、默认切换阻断和未来重新准入条件 |
+| `DOC/DOC_PREP_TIFF_T_A_03_默认LibTIFF切换准备.md` | T-A-03 默认 LibTIFF 切换、动态 Runtime、Golden 对照和遗留 Writer 回滚边界 |
 | `REPORT/REPORT_03D_LibTIFF兼容迁移准备状态.md` | 03D 依赖、代码事实、风险和原子任务准备状态 |
 | `REPORT/REPORT_03D_01_手写TIFFWriter合同与性能基线.md` | 03D-01 tag/像素/错误合同、Release Writer-only 数字和后续 Gate |
 | `REPORT/REPORT_03D_04_LibTIFF_Tiled与错误模型.md` | 03D-04 tiled、255 padding、稳定错误、临时文件和原子发布证据 |
