@@ -24,6 +24,8 @@ add_executable(slicer_ui_host_sim
     HostProfileCatalog.h
     HostProfilePanel.cpp
     HostProfilePanel.h
+    HostProcessPresetCatalog.cpp
+    HostProcessPresetCatalog.h
     HostTransformLayoutPanel.cpp
     HostTransformLayoutPanel.h
     HostWorkspaceState.cpp
@@ -511,6 +513,8 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
+    HostProcessPresetCatalog.cpp
+    HostProcessPresetCatalog.h
     HostSliceSettings.cpp
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
@@ -557,6 +561,7 @@ target_include_directories(hostflow_hb05_slice_settings_tests PRIVATE
 target_link_libraries(hostflow_hb05_slice_settings_tests PRIVATE
     Qt5::Widgets
     bcrypt
+    slicer_base
 )
 
 add_dependencies(hostflow_hb05_slice_settings_tests slicer_module)

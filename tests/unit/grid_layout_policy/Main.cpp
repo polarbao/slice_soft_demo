@@ -87,13 +87,21 @@ void SupportsOneElevenTwelveAndTwentyTwo()
         "the twelfth instance should begin the second row");
     Require(
         ApproximatelyEqual(
+            twelve.placements.front().effectivebboxmm.min.x,
+            slicer_core::kDefaultSceneBoundaryMarginMm)
+            && ApproximatelyEqual(
+                twelve.placements.front().effectivebboxmm.min.y,
+                slicer_core::kDefaultSceneBoundaryMarginMm),
+        "the first movable instance should keep 10 mm boundary clearance");
+    Require(
+        ApproximatelyEqual(
             twelve.placements.at(10U).effectivebboxmm.min.x,
-            200.0),
+            210.0),
         "column gap should be edge-to-edge 10 mm");
     Require(
         ApproximatelyEqual(
             twelve.placements.at(11U).effectivebboxmm.min.y,
-            15.0),
+            25.0),
         "row gap should be edge-to-edge 10 mm");
 }
 
@@ -202,12 +210,12 @@ void UsesMaximumColumnAndRowBoundsDeterministically()
     Require(
         ApproximatelyEqual(
             first.placements.at(1U).effectivebboxmm.min.x,
-            30.0),
+            40.0),
         "second column should follow maximum first-column width");
     Require(
         ApproximatelyEqual(
             first.placements.at(2U).effectivebboxmm.min.y,
-            18.0),
+            28.0),
         "second row should follow maximum first-row height");
     for (std::size_t index = 0U;
          index < first.placements.size();
@@ -235,14 +243,20 @@ void PreservesHiddenOccupancyAndLockedPlacement()
     Require(
         ApproximatelyEqual(
             hiddenResult.placements.at(1U).effectivebboxmm.min.x,
-            10.01),
+            20.01),
         "hidden item should occupy its row-major slot");
 
     slicer_core::GridLayoutRequest locked = MakeRequest(2);
     locked.items.at(1U).instance.locked = true;
     locked.items.at(1U).instance.effectivebboxmm = {
-        {0.0, 0.0, 0.0},
-        {10.0, 5.0, 1.0}};
+        {15.0, 10.0, 0.0},
+        {25.0, 15.0, 1.0}};
+    locked.items.at(1U).instance.transform.translatexmm = 15.0;
+    locked.items.at(1U).instance.transform.translateymm = 10.0;
+    locked.items.at(1U)
+        .currentderivedlayouttransform.translatexmm = 15.0;
+    locked.items.at(1U)
+        .currentderivedlayouttransform.translateymm = 10.0;
     const slicer_core::GridLayoutResult lockedResult =
         slicer_core::ComputeGridLayout(locked);
     Require(
@@ -295,10 +309,10 @@ void RemovesPreviousDerivedOffsetBeforeRelayout()
     Require(
         ApproximatelyEqual(
             result.placements.front().effectivebboxmm.min.x,
-            0.0)
+            10.0)
             && ApproximatelyEqual(
                 result.placements.front().effectivebboxmm.min.y,
-                0.0),
+                10.0),
         "relayout should not accumulate an old derived offset");
 }
 

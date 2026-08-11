@@ -24,6 +24,11 @@ inline constexpr double kDefaultSceneColumnGapMm{10.0};
 inline constexpr double kDefaultSceneRowGapMm{10.0};
 
 /**
+ * @brief Default clearance from the lower-left build-volume boundary.
+ */
+inline constexpr double kDefaultSceneBoundaryMarginMm{10.0};
+
+/**
  * @brief Default device build-volume width along X in millimetres.
  */
 inline constexpr double kDefaultDeviceBuildVolumeWidthMm{230.0};

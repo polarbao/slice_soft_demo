@@ -229,14 +229,14 @@ int VerifiesTwentyTwoInstanceLayoutAndReplay(
     Require(
         ApproximatelyEqual(
             BoundsMinimum(FindInstance(laidOut, "instance-1"), 0U),
-            0.0)
+            10.0)
             && ApproximatelyEqual(
                 BoundsMinimum(FindInstance(laidOut, "instance-11"), 0U),
-                110.0)
+                120.0)
             && ApproximatelyEqual(
                 BoundsMinimum(FindInstance(laidOut, "instance-12"), 1U),
-                11.0),
-        "row-major placements must use 10 mm edge clearances");
+                21.0),
+        "row-major placements must use 10 mm edge clearances and boundary margin");
 
     const slicer_core::Json replay = Parse(RunJob(module, request));
     RequireSuccess(replay, "exact layout replay");

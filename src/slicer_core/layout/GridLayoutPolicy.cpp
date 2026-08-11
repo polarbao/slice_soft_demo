@@ -256,7 +256,9 @@ GridLayoutResult ComputeGridLayout(
                 baseBounds.max.y - baseBounds.min.y);
     }
 
-    std::vector<double> columnOrigins(columnWidths.size(), 0.0);
+    std::vector<double> columnOrigins(
+        columnWidths.size(),
+        kDefaultSceneBoundaryMarginMm);
     for (std::size_t column = 1U;
          column < columnOrigins.size();
          ++column)
@@ -266,7 +268,9 @@ GridLayoutResult ComputeGridLayout(
             + columnWidths[column - 1U]
             + request.layout.columngapmm;
     }
-    std::vector<double> rowOrigins(rowHeights.size(), 0.0);
+    std::vector<double> rowOrigins(
+        rowHeights.size(),
+        kDefaultSceneBoundaryMarginMm);
     for (std::size_t row = 1U; row < rowOrigins.size(); ++row)
     {
         rowOrigins[row] =

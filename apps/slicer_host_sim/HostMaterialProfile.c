@@ -25,24 +25,24 @@ static char* BuildRulesCanonical(
     if (mapWhite != 0 && mapVarnish != 0)
     {
         return HostFormat(
-            "{\n\"matchNameContains\": \"white\",\n"
+            "[\n{\n\"matchNameContains\": \"white\",\n"
             "\"role\": \"white\"\n},\n"
             "{\n\"matchNameContains\": \"varnish\",\n"
-            "\"role\": \"varnish\"\n}");
+            "\"role\": \"varnish\"\n}\n]");
     }
     if (mapWhite != 0)
     {
         return HostFormat(
-            "{\n\"matchNameContains\": \"white\",\n"
-            "\"role\": \"white\"\n}");
+            "[\n{\n\"matchNameContains\": \"white\",\n"
+            "\"role\": \"white\"\n}\n]");
     }
     if (mapVarnish != 0)
     {
         return HostFormat(
-            "{\n\"matchNameContains\": \"varnish\",\n"
-            "\"role\": \"varnish\"\n}");
+            "[\n{\n\"matchNameContains\": \"varnish\",\n"
+            "\"role\": \"varnish\"\n}\n]");
     }
-    return HostFormat("");
+    return HostFormat("[]");
 }
 
 static char* BuildRulesCompact(
@@ -52,22 +52,22 @@ static char* BuildRulesCompact(
     if (mapWhite != 0 && mapVarnish != 0)
     {
         return HostFormat(
-            "{\"matchNameContains\":\"white\",\"role\":\"white\"},"
+            "[{\"matchNameContains\":\"white\",\"role\":\"white\"},"
             "{\"matchNameContains\":\"varnish\","
-            "\"role\":\"varnish\"}");
+            "\"role\":\"varnish\"}]");
     }
     if (mapWhite != 0)
     {
         return HostFormat(
-            "{\"matchNameContains\":\"white\",\"role\":\"white\"}");
+            "[{\"matchNameContains\":\"white\",\"role\":\"white\"}]");
     }
     if (mapVarnish != 0)
     {
         return HostFormat(
-            "{\"matchNameContains\":\"varnish\","
-            "\"role\":\"varnish\"}");
+            "[{\"matchNameContains\":\"varnish\","
+            "\"role\":\"varnish\"}]");
     }
-    return HostFormat("");
+    return HostFormat("[]");
 }
 
 static int BuildWhiteCarrierFragments(
@@ -120,7 +120,7 @@ static int BuildWhiteCarrierFragments(
         "\"materialRoleMapping\": {\n"
         "\"allowInputSupportMaterial\": false,\n"
         "\"defaultRole\": \"rgb\",\n\"enabled\": false,\n"
-        "\"mode\": \"rules_then_default\",\n\"rules\": [\n]\n},\n"
+        "\"mode\": \"rules_then_default\",\n\"rules\": []\n},\n"
         "\"modelFill\": {\n\"emptyAllowedInProduction\": false,\n"
         "\"enabled\": true,\n\"legacyRgbFallback\": false,\n"
         "\"material\": \"rgb\",\n"
@@ -305,7 +305,7 @@ int HostBuildMaterialProfileFragments(
         "\"allowInputSupportMaterial\": %s,\n"
         "\"defaultRole\": \"%s\",\n\"enabled\": %s,\n"
         "\"mode\": \"rules_then_default\",\n"
-        "\"rules\": [\n%s\n]\n},\n"
+        "\"rules\": %s\n},\n"
         "\"modelFill\": {\n\"emptyAllowedInProduction\": false,\n"
         "\"enabled\": %s,\n\"legacyRgbFallback\": false,\n"
         "\"material\": \"%s\",\n\"scope\": \"all_model\",\n"
@@ -359,7 +359,7 @@ int HostBuildMaterialProfileFragments(
         "\"value\":0}},\"materialRoleMapping\":{"
         "\"allowInputSupportMaterial\":%s,\"defaultRole\":\"%s\","
         "\"enabled\":%s,\"mode\":\"rules_then_default\","
-        "\"rules\":[%s]},\"modelFill\":{"
+        "\"rules\":%s},\"modelFill\":{"
         "\"emptyAllowedInProduction\":false,\"enabled\":%s,"
         "\"legacyRgbFallback\":false,\"material\":\"%s\","
         "\"scope\":\"all_model\",\"value\":0},"

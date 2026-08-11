@@ -1,7 +1,10 @@
 #include "apps/slicer_ui_host_sim/HostModelImportWorkflow.h"
+#include "apps/slicer_ui_host_sim/HostProcessPresetCatalog.h"
 #include "apps/slicer_ui_host_sim/HostSliceSettings.h"
 #include "apps/slicer_ui_host_sim/HostSliceSettingsPanel.h"
 #include "apps/slicer_ui_host_sim/ModuleClient.h"
+#include "slicer_core/api/ProfileIdentity.h"
+#include "slicer_core/json_value.h"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -17,6 +20,8 @@
 #include <QStringList>
 #include <QTemporaryDir>
 #include <QTextStream>
+
+#include <sstream>
 
 namespace
 {
@@ -46,6 +51,58 @@ hostslicesettings MakeSettings(
     settings.modelformat = QStringLiteral("obj");
     settings.outputdirectory = outputDirectory;
     return settings;
+}
+
+QString ComputeWorkerProfileHash(const QJsonObject& profile)
+{
+    const QByteArray serialized = QJsonDocument(
+        profile).toJson(QJsonDocument::Compact);
+    std::istringstream input(serialized.toStdString());
+    return QString::fromStdString(
+        slicer_core::api::ComputeProfileDocumentHash(
+            slicer_core::Json::parse(input)));
+}
+
+bool VerifyPresetProfileHashClosure(
+    const QString& modelPath,
+    const QString& outputDirectory,
+    QTextStream& errors)
+{
+    for (const hostprocesspreset& preset
+         : HostProcessPresetCatalog::Presets())
+    {
+        hostslicesettings settings = MakeSettings(
+            modelPath, outputDirectory);
+        settings.materialstrategy = preset.materialstrategy;
+        settings.materialprocess = preset.materialprocess;
+        settings.texture = preset.texture;
+        settings.support = preset.support;
+
+        hosteffectiveprofile effective;
+        QString error;
+        if (!Check(
+                HostEffectiveProfileBuilder::Build(
+                    settings, &effective, &error),
+                QStringLiteral("常用工艺 %1 的有效 Profile 构造失败：%2")
+                    .arg(preset.id, error),
+                errors))
+        {
+            return false;
+        }
+
+        const QString computed = ComputeWorkerProfileHash(
+            effective.profile);
+        if (!Check(
+                computed == effective.profilehash,
+                QStringLiteral(
+                    "常用工艺 %1 的 Profile hash 未闭合：声明=%2，重算=%3")
+                    .arg(preset.id, effective.profilehash, computed),
+                errors))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool VerifyEffectiveProfiles(
@@ -78,6 +135,20 @@ bool VerifyEffectiveProfiles(
             HostEffectiveProfileBuilder::Build(settings, &combined, &error)
                 && combined.profilehash != first.profilehash,
             QStringLiteral("组合材料有效 Profile 构造失败：%1").arg(error),
+            errors))
+    {
+        return false;
+    }
+    settings.materialprocess.mapwhitenames = false;
+    settings.materialprocess.mapvarnishnames = false;
+    hosteffectiveprofile emptyRules;
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &emptyRules, &error)
+                && ComputeWorkerProfileHash(emptyRules.profile)
+                    == emptyRules.profilehash,
+            QStringLiteral(
+                "空材料映射规则的 Profile hash 必须与 Worker 重算一致。"),
             errors))
     {
         return false;
@@ -415,6 +486,8 @@ bool VerifyPanelIsLocal(
     panel.SetSelectedProfileId(QStringLiteral("host-reference-default"));
     auto* outputEdit = panel.findChild<QLineEdit*>(
         QStringLiteral("hostSliceOutputEdit"));
+    auto* processPreset = panel.findChild<QComboBox*>(
+        QStringLiteral("hostProcessPresetCombo"));
     auto* dpiXSpin = panel.findChild<QSpinBox*>(
         QStringLiteral("hostSliceDpiXSpin"));
     auto* materialCombo = panel.findChild<QComboBox*>(
@@ -436,7 +509,8 @@ bool VerifyPanelIsLocal(
     auto* textureWhitePolicy = panel.findChild<QComboBox*>(
         QStringLiteral("hostTextureWhitePolicyCombo"));
     if (!Check(
-            outputEdit != nullptr && dpiXSpin != nullptr
+            outputEdit != nullptr && processPreset != nullptr
+                && dpiXSpin != nullptr
                 && materialCombo != nullptr && supportEnabled != nullptr
                 && supportMode != nullptr && supportOffset != nullptr
                 && roleMapping != nullptr && whiteExpand != nullptr
@@ -448,9 +522,66 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
+    const QString defaultOutput = QDir::fromNativeSeparators(
+        outputEdit->text());
+    if (!Check(
+            QFileInfo(defaultOutput).isAbsolute()
+                && defaultOutput.contains(
+                    QStringLiteral("/output/ui_sessions/"))
+                && defaultOutput.endsWith(QStringLiteral("/package")),
+            QStringLiteral(
+                "参考宿主默认输出目录未对齐旧版 output/ui_sessions/<session>/package。"),
+            errors))
+    {
+        return false;
+    }
     outputEdit->setText(outputDirectory);
     panel.SetModelPath(modelPath);
     client.ResetCallCount();
+
+    const int onDemandIndex = processPreset->findData(
+        QStringLiteral("textured_nail_rgb_white_ondemand_lower_support"));
+    processPreset->setCurrentIndex(onDemandIndex);
+    QCoreApplication::processEvents();
+    hostslicesettings presetSettings = panel.Settings();
+    if (!Check(
+            onDemandIndex > 0
+                && processPreset->itemText(onDemandIndex)
+                    == QStringLiteral(
+                        "彩色纹理｜全实体 RGB + 纯白按需补 W｜下表面支撑")
+                && !processPreset->itemData(
+                    onDemandIndex, Qt::ToolTipRole).toString().isEmpty()
+                && presetSettings.materialstrategy
+                    == HostMaterialStrategy::RgbSolid
+                && presetSettings.texture.enabled
+                && presetSettings.texture.applymode
+                    == HostTextureApplyMode::SolidVolumeFromTopSurface
+                && presetSettings.texture.whitepolicy
+                    == HostTextureWhitePolicy::WhiteUnderbase
+                && presetSettings.support.enabled
+                && presetSettings.support.mode
+                    == HostSupportMode::BottomProjection,
+            QStringLiteral("常用按需补白工艺方案未完整应用。"),
+            errors))
+    {
+        return false;
+    }
+    const int varnishIndex = processPreset->findData(
+        QStringLiteral("single_material_relief_varnish"));
+    processPreset->setCurrentIndex(varnishIndex);
+    QCoreApplication::processEvents();
+    presetSettings = panel.Settings();
+    if (!Check(
+            varnishIndex > 0
+                && presetSettings.materialstrategy
+                    == HostMaterialStrategy::VarnishSolid
+                && !presetSettings.texture.enabled,
+            QStringLiteral("单材料光油工艺方案未完整应用。"),
+            errors))
+    {
+        return false;
+    }
+
     dpiXSpin->setValue(700);
     materialCombo->setCurrentIndex(1);
     roleMapping->setChecked(true);
@@ -470,6 +601,11 @@ bool VerifyPanelIsLocal(
         || !Check(
             client.CallCount() == 0U,
             QStringLiteral("切片参数编辑不得调用 DLL。"),
+            errors)
+        || !Check(
+            processPreset->currentData().toString()
+                == QStringLiteral("custom"),
+            QStringLiteral("手工细调材料参数后应切换为自定义工艺。"),
             errors))
     {
         return false;
@@ -589,7 +725,9 @@ int main(int argc, char* argv[])
         errors << "模块加载失败：" << error << Qt::endl;
         return 3;
     }
-    if (!VerifyEffectiveProfiles(modelPath, outputDirectory, errors)
+    if (!VerifyPresetProfileHashClosure(
+            modelPath, outputDirectory, errors)
+        || !VerifyEffectiveProfiles(modelPath, outputDirectory, errors)
         || !VerifyPanelIsLocal(
             client, modelPath, outputDirectory, errors)
         || !VerifySceneAuthority(client, modelPath, errors))

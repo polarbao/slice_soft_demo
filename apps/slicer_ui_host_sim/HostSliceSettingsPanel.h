@@ -5,6 +5,7 @@
 #include <QWidget>
 
 class QDoubleSpinBox;
+class QComboBox;
 class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
@@ -93,11 +94,14 @@ signals:
 private:
     void BuildInterface();
     void OnBrowseOutput();
+    void OnProcessPresetChanged(int index);
+    void OnProcessSettingsEdited();
     void OnSettingsEdited();
     void RefreshPreview();
     bool ValidateSceneBinding(QString* error) const;
 
     QLabel* m_profileLabel{nullptr};
+    QComboBox* m_processPresetCombo{nullptr};
     QSpinBox* m_dpiXSpin{nullptr};
     QSpinBox* m_dpiYSpin{nullptr};
     QDoubleSpinBox* m_layerThicknessSpin{nullptr};
@@ -119,4 +123,6 @@ private:
     QString m_sceneProfileId;
     hostbuildvolume m_sceneBuildVolume;
     hosteffectiveprofile m_effectiveProfile;
+    QString m_defaultOutputDirectory;
+    bool m_applyingProcessPreset{false};
 };

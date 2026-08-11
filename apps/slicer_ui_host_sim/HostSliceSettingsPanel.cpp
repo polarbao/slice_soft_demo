@@ -1,10 +1,14 @@
 #include "HostSliceSettingsPanel.h"
 
 #include "HostMaterialSettingsPanel.h"
+#include "HostProcessPresetCatalog.h"
 #include "HostSupportSettingsPanel.h"
 #include "HostTextureSettingsPanel.h"
 
 #include <QCoreApplication>
+#include <QAbstractItemView>
+#include <QComboBox>
+#include <QDateTime>
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFileDialog>
@@ -24,7 +28,28 @@
 
 namespace
 {
+QString LegacyCompatibleApplicationRoot()
+{
+    const QDir applicationDirectory(
+        QCoreApplication::applicationDirPath());
+    if (QFileInfo::exists(applicationDirectory.filePath(
+            QStringLiteral("samples/scenarios/slicer_scenarios.json"))))
+    {
+        return applicationDirectory.absolutePath();
+    }
+    return QDir::currentPath();
+}
+
 QString DefaultOutputDirectory()
+{
+    const QString sessionName = QStringLiteral("host_")
+        + QDateTime::currentDateTime().toString(
+            QStringLiteral("yyyyMMdd_HHmmss_zzz"));
+    return QDir(LegacyCompatibleApplicationRoot()).filePath(
+        QStringLiteral("output/ui_sessions/%1/package").arg(sessionName));
+}
+
+QString LegacyDefaultOutputDirectory()
 {
     QString root = QStandardPaths::writableLocation(
         QStandardPaths::DocumentsLocation);
@@ -34,6 +59,13 @@ QString DefaultOutputDirectory()
     }
     return QDir(root).filePath(
         QStringLiteral("SliceSoftHostOutput/package"));
+}
+
+bool PathsEqual(const QString& left, const QString& right)
+{
+    return QDir::cleanPath(QFileInfo(left).absoluteFilePath()).compare(
+        QDir::cleanPath(QFileInfo(right).absoluteFilePath()),
+        Qt::CaseInsensitive) == 0;
 }
 
 void ConfigureVolumeSpin(QDoubleSpinBox* spin, const double value)
@@ -49,6 +81,7 @@ void ConfigureVolumeSpin(QDoubleSpinBox* spin, const double value)
 HostSliceSettingsPanel::HostSliceSettingsPanel(QWidget* parent)
     : QWidget(parent)
 {
+    m_defaultOutputDirectory = DefaultOutputDirectory();
     BuildInterface();
     RefreshPreview();
 }
@@ -63,6 +96,29 @@ void HostSliceSettingsPanel::BuildInterface()
     auto* processForm = new QFormLayout(processGroup);
     m_profileLabel = new QLabel(QStringLiteral("未选择"), processGroup);
     m_profileLabel->setObjectName(QStringLiteral("hostSliceProfileLabel"));
+
+    m_processPresetCombo = new QComboBox(processGroup);
+    m_processPresetCombo->setObjectName(
+        QStringLiteral("hostProcessPresetCombo"));
+    m_processPresetCombo->setToolTip(QStringLiteral(
+        "快速套用旧版常用生产工艺。套用后仍可在下方材料、纹理和支撑段继续细调。"));
+    m_processPresetCombo->addItem(
+        QStringLiteral("自定义｜保留当前参数"),
+        QStringLiteral("custom"));
+    m_processPresetCombo->setItemData(
+        0,
+        QStringLiteral("不套用预设，保留当前材料、纹理和支撑参数。"),
+        Qt::ToolTipRole);
+    for (const hostprocesspreset& preset
+         : HostProcessPresetCatalog::Presets())
+    {
+        m_processPresetCombo->addItem(preset.displayname, preset.id);
+        m_processPresetCombo->setItemData(
+            m_processPresetCombo->count() - 1,
+            preset.description,
+            Qt::ToolTipRole);
+    }
+    m_processPresetCombo->view()->setMinimumWidth(560);
 
     auto* dpiRow = new QWidget(processGroup);
     auto* dpiLayout = new QHBoxLayout(dpiRow);
@@ -93,7 +149,7 @@ void HostSliceSettingsPanel::BuildInterface()
     auto* outputLayout = new QHBoxLayout(outputRow);
     outputLayout->setContentsMargins(0, 0, 0, 0);
     m_outputEdit = new QLineEdit(
-        QDir::toNativeSeparators(DefaultOutputDirectory()), outputRow);
+        QDir::toNativeSeparators(m_defaultOutputDirectory), outputRow);
     m_outputEdit->setObjectName(QStringLiteral("hostSliceOutputEdit"));
     m_outputBrowseButton = new QPushButton(
         QStringLiteral("浏览…"), outputRow);
@@ -103,6 +159,8 @@ void HostSliceSettingsPanel::BuildInterface()
     outputLayout->addWidget(m_outputBrowseButton);
 
     processForm->addRow(QStringLiteral("当前 Profile"), m_profileLabel);
+    processForm->addRow(
+        QStringLiteral("常用工艺预设"), m_processPresetCombo);
     processForm->addRow(QStringLiteral("输出分辨率"), dpiRow);
     processForm->addRow(QStringLiteral("层厚"), m_layerThicknessSpin);
     processForm->addRow(QStringLiteral("输出目录"), outputRow);
@@ -176,6 +234,11 @@ void HostSliceSettingsPanel::BuildInterface()
     layout->addWidget(m_profilePreview, 1);
 
     connect(
+        m_processPresetCombo,
+        qOverload<int>(&QComboBox::currentIndexChanged),
+        this,
+        &HostSliceSettingsPanel::OnProcessPresetChanged);
+    connect(
         m_outputBrowseButton,
         &QPushButton::clicked,
         this,
@@ -213,17 +276,17 @@ void HostSliceSettingsPanel::BuildInterface()
         m_materialPanel,
         &HostMaterialSettingsPanel::SigSettingsChanged,
         this,
-        &HostSliceSettingsPanel::OnSettingsEdited);
+        &HostSliceSettingsPanel::OnProcessSettingsEdited);
     connect(
         m_texturePanel,
         &HostTextureSettingsPanel::SigSettingsChanged,
         this,
-        &HostSliceSettingsPanel::OnSettingsEdited);
+        &HostSliceSettingsPanel::OnProcessSettingsEdited);
     connect(
         m_supportPanel,
         &HostSupportSettingsPanel::SigSettingsChanged,
         this,
-        &HostSliceSettingsPanel::OnSettingsEdited);
+        &HostSliceSettingsPanel::OnProcessSettingsEdited);
 }
 
 void HostSliceSettingsPanel::SetSelectedProfileId(
@@ -264,10 +327,19 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     const QSignalBlocker widthBlocker(m_buildWidthSpin);
     const QSignalBlocker heightBlocker(m_buildHeightSpin);
     const QSignalBlocker zBlocker(m_buildZSpin);
+    const QSignalBlocker presetBlocker(m_processPresetCombo);
     m_dpiXSpin->setValue(settings.dpix);
     m_dpiYSpin->setValue(settings.dpiy);
     m_layerThicknessSpin->setValue(settings.layerthicknessmm);
-    m_outputEdit->setText(settings.outputdirectory);
+    const QString persistedOutput = settings.outputdirectory.trimmed();
+    m_outputEdit->setText(
+        persistedOutput.isEmpty()
+            || PathsEqual(
+                persistedOutput,
+                LegacyDefaultOutputDirectory())
+            ? QDir::toNativeSeparators(m_defaultOutputDirectory)
+            : persistedOutput);
+    m_processPresetCombo->setCurrentIndex(0);
     m_materialPanel->SetSettings(
         settings.materialstrategy, settings.materialprocess);
     m_texturePanel->SetSettings(settings.texture);
@@ -330,6 +402,39 @@ void HostSliceSettingsPanel::OnBrowseOutput()
     {
         m_outputEdit->setText(QDir::toNativeSeparators(directory));
     }
+}
+
+void HostSliceSettingsPanel::OnProcessPresetChanged(const int index)
+{
+    if (index <= 0)
+    {
+        return;
+    }
+
+    const QString presetId = m_processPresetCombo->itemData(index).toString();
+    hostprocesspreset preset;
+    if (!HostProcessPresetCatalog::Resolve(presetId, &preset))
+    {
+        return;
+    }
+
+    m_applyingProcessPreset = true;
+    m_materialPanel->SetSettings(
+        preset.materialstrategy, preset.materialprocess);
+    m_texturePanel->SetSettings(preset.texture);
+    m_supportPanel->SetSettings(preset.support);
+    m_applyingProcessPreset = false;
+    OnSettingsEdited();
+}
+
+void HostSliceSettingsPanel::OnProcessSettingsEdited()
+{
+    if (!m_applyingProcessPreset)
+    {
+        const QSignalBlocker presetBlocker(m_processPresetCombo);
+        m_processPresetCombo->setCurrentIndex(0);
+    }
+    OnSettingsEdited();
 }
 
 void HostSliceSettingsPanel::OnSettingsEdited()
