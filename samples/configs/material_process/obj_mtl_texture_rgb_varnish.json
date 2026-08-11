@@ -19,7 +19,7 @@
     },
     "input": {
         "format": "auto",
-        "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/meigui_fudiao/04.obj"
+        "modelPath": "../../../model/obj/meigui_fudiao/04.obj"
     },
     "materialPolicy": {
         "enabled": false,

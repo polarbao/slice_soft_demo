@@ -2228,6 +2228,21 @@ add_test(NAME preview_output_policy_unit_tests COMMAND preview_output_policy_uni
 add_test(NAME rip_reader_resolution_unit_tests COMMAND rip_reader_resolution_unit_tests)
 add_test(NAME tiff_layer_source_unit_tests COMMAND tiff_layer_source_unit_tests)
 add_test(NAME tiff_writer_contract_unit_tests COMMAND tiff_writer_contract_unit_tests)
+if(SLICESOFT_TIFF_BACKEND STREQUAL "libtiff")
+    add_test(
+        NAME tiff_writer_alignment_conformance_unit_tests
+        COMMAND tiff_writer_contract_unit_tests --require-word-alignment
+    )
+else()
+    add_test(
+        NAME tiff_writer_handwritten_alignment_known_failure_unit_tests
+        COMMAND tiff_writer_contract_unit_tests --require-word-alignment
+    )
+    set_tests_properties(
+        tiff_writer_handwritten_alignment_known_failure_unit_tests
+        PROPERTIES WILL_FAIL TRUE
+    )
+endif()
 add_test(NAME tiff_backend_build_info_unit_tests COMMAND tiff_backend_build_info_unit_tests)
 add_test(NAME tiff_writer_backend_unit_tests COMMAND tiff_writer_backend_unit_tests)
 add_test(NAME tiff_writer_equivalence_unit_tests COMMAND tiff_writer_equivalence_unit_tests)

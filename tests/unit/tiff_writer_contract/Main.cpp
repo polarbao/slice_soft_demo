@@ -29,6 +29,7 @@ struct ParsedTiff
 {
     std::vector<std::uint8_t> bytes;
     std::map<std::uint16_t, TagEntry> entries;
+    std::uint32_t ifdoffset{0};
     std::uint32_t nextifdoffset{0};
 };
 
@@ -126,6 +127,7 @@ ParsedTiff ParseTiff(const std::filesystem::path& path)
     }
 
     const std::uint32_t ifdOffset = ReadU32(parsed.bytes, 4U);
+    parsed.ifdoffset = ifdOffset;
     const std::uint16_t entryCount =
         ReadU16(parsed.bytes, ifdOffset);
     for (std::uint16_t index{0}; index < entryCount; ++index)
@@ -154,6 +156,31 @@ ParsedTiff ParseTiff(const std::filesystem::path& path)
     parsed.nextifdoffset =
         ReadU32(parsed.bytes, nextIfdOffsetPosition);
     return parsed;
+}
+
+bool ValidateWordAlignment(const ParsedTiff& parsed)
+{
+    if (!ExpectTrue(
+            parsed.ifdoffset % 2U == 0U,
+            "TIFF IFD offset must be word-aligned"))
+    {
+        return false;
+    }
+    for (const auto& [tag, entry] : parsed.entries)
+    {
+        const std::size_t byteCount =
+            static_cast<std::size_t>(entry.count)
+            * TiffTypeSize(entry.type);
+        if (byteCount > 4U
+            && !ExpectTrue(
+                entry.valueoffset % 2U == 0U,
+                "TIFF external field offset must be word-aligned, tag="
+                    + std::to_string(tag)))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 const TagEntry& RequireTag(
@@ -314,7 +341,8 @@ bool ValidateCommonTags(
     const ParsedTiff& parsed,
     const std::uint32_t width,
     const std::uint32_t height,
-    const std::uint16_t compression = 1U)
+    const std::uint16_t compression,
+    const bool requireWordAlignment)
 {
     const std::vector<std::uint16_t> bits =
         ReadTagShorts(parsed, 258U);
@@ -322,7 +350,8 @@ bool ValidateCommonTags(
         ReadTagShorts(parsed, 339U);
     const std::vector<std::uint16_t> extraSamples =
         ReadTagShorts(parsed, 338U);
-    return ExpectEqual(
+    return (!requireWordAlignment || ValidateWordAlignment(parsed))
+        && ExpectEqual(
                ReadTagUnsignedIntegers(parsed, 256U).at(0),
                width,
                "ImageWidth tag")
@@ -461,7 +490,8 @@ bool ValidateTilePadding(
 }
 
 bool StrippedContractAndPixelsAreFrozen(
-    const std::filesystem::path& directory)
+    const std::filesystem::path& directory,
+    const bool requireWordAlignment)
 {
     constexpr std::uint32_t width{19U};
     constexpr std::uint32_t height{7U};
@@ -488,7 +518,7 @@ bool StrippedContractAndPixelsAreFrozen(
         && ExpectTrue(
             decoded.pixels == pixels,
             "stripped decoded pixels are exact")
-        && ValidateCommonTags(parsed, width, height)
+        && ValidateCommonTags(parsed, width, height, 1U, requireWordAlignment)
         && ExpectEqual(
             ReadTagUnsignedIntegers(parsed, 278U).at(0),
             static_cast<std::uint32_t>(3U),
@@ -509,7 +539,8 @@ bool StrippedContractAndPixelsAreFrozen(
 }
 
 bool TiledContractAndPixelsAreFrozen(
-    const std::filesystem::path& directory)
+    const std::filesystem::path& directory,
+    const bool requireWordAlignment)
 {
     constexpr std::uint32_t width{19U};
     constexpr std::uint32_t height{7U};
@@ -518,8 +549,8 @@ bool TiledContractAndPixelsAreFrozen(
     slicer_core::TiffImageSpec spec;
     spec.width = width;
     spec.height = height;
-    spec.tile_width = 8U;
-    spec.tile_height = 4U;
+    spec.tile_width = 16U;
+    spec.tile_height = 16U;
     spec.storage_mode = slicer_core::TiffStorageMode::Tiled;
     const std::filesystem::path path =
         directory / "contract_tiled.tiff";
@@ -537,7 +568,7 @@ bool TiledContractAndPixelsAreFrozen(
         && ExpectTrue(
             decoded.pixels == pixels,
             "tiled decoded pixels and 255 padding are exact")
-        && ValidateCommonTags(parsed, width, height)
+        && ValidateCommonTags(parsed, width, height, 1U, requireWordAlignment)
         && ValidateTilePadding(
             parsed,
             width,
@@ -546,16 +577,16 @@ bool TiledContractAndPixelsAreFrozen(
             spec.tile_height)
         && ExpectEqual(
             ReadTagUnsignedIntegers(parsed, 322U).at(0),
-            static_cast<std::uint32_t>(8U),
+            static_cast<std::uint32_t>(16U),
             "TileWidth contract")
         && ExpectEqual(
             ReadTagUnsignedIntegers(parsed, 323U).at(0),
-            static_cast<std::uint32_t>(4U),
+            static_cast<std::uint32_t>(16U),
             "TileLength contract")
         && ExpectTrue(
             tileBytes
-                == std::vector<std::uint32_t>(6U, 192U),
-            "six full-size tiles are stored")
+                == std::vector<std::uint32_t>(2U, 1536U),
+            "two full-size 16x16 tiles are stored")
         && ExpectTrue(
             parsed.entries.contains(324U)
                 && parsed.entries.contains(325U)
@@ -565,7 +596,8 @@ bool TiledContractAndPixelsAreFrozen(
 }
 
 bool PackBitsCompressionRoundTrips(
-    const std::filesystem::path& directory)
+    const std::filesystem::path& directory,
+    const bool requireWordAlignment)
 {
     constexpr std::uint32_t width{19U};
     constexpr std::uint32_t height{7U};
@@ -588,8 +620,8 @@ bool PackBitsCompressionRoundTrips(
 
     slicer_core::TiffImageSpec tiled = stripped;
     tiled.storage_mode = slicer_core::TiffStorageMode::Tiled;
-    tiled.tile_width = 8U;
-    tiled.tile_height = 4U;
+    tiled.tile_width = 16U;
+    tiled.tile_height = 16U;
     const std::filesystem::path tiledPath =
         directory / "packbits_tiled.tiff";
     slicer_core::write_rgbwsv_tiff(tiledPath, tiled, pixels);
@@ -609,7 +641,8 @@ bool PackBitsCompressionRoundTrips(
             strippedParsed,
             width,
             height,
-            packBitsCompression)
+            packBitsCompression,
+            requireWordAlignment)
         && ExpectTrue(
             tiledDecoded.pixels == pixels,
             "PackBits tiled decoded pixels are exact")
@@ -621,7 +654,8 @@ bool PackBitsCompressionRoundTrips(
             tiledParsed,
             width,
             height,
-            packBitsCompression);
+            packBitsCompression,
+            requireWordAlignment);
 }
 
 bool ExpectThrowsExact(
@@ -737,16 +771,35 @@ std::filesystem::path MakeTemporaryDirectory()
 
 }  // namespace
 
-int main()
+int main(const int argc, const char* const argv[])
 {
+    bool requireWordAlignment{false};
+    if (argc == 2
+        && std::string{argv[1]} == "--require-word-alignment")
+    {
+        requireWordAlignment = true;
+    }
+    else if (argc != 1)
+    {
+        std::cerr
+            << "usage: tiff_writer_contract_unit_tests "
+               "[--require-word-alignment]\n";
+        return 2;
+    }
     const std::filesystem::path directory =
         MakeTemporaryDirectory();
     try
     {
         const bool passed =
-            StrippedContractAndPixelsAreFrozen(directory)
-            && TiledContractAndPixelsAreFrozen(directory)
-            && PackBitsCompressionRoundTrips(directory)
+            StrippedContractAndPixelsAreFrozen(
+                directory,
+                requireWordAlignment)
+            && TiledContractAndPixelsAreFrozen(
+                directory,
+                requireWordAlignment)
+            && PackBitsCompressionRoundTrips(
+                directory,
+                requireWordAlignment)
             && CurrentErrorsAreFrozen(directory);
         std::filesystem::remove_all(directory);
         if (!passed)
