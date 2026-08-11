@@ -239,15 +239,33 @@ T-A-04 后落地   压缩默认 PackBits
 ✅ T-A-03   默认后端切 libtiff        ← 主轨道、Runtime、能力包与 RIP strict PASS
 🟡 T-A-05A  handwritten 弃用告警       ← COMPLETE
 ✅ T-A-05B-01 非标准 tiled fail-closed  ← COMPLETE
-⏳ T-A-05B-02 消费方与历史 Gate 迁移    ← 下一张非破坏性实现卡
-⏳ T-A-05B-03 handwritten Writer 移除    ← 等待删除确认
+⏸ T-A-05B-02 消费方与历史 Gate 迁移    ┐ 2026-08-11 改判【延后并捆绑】
+⏸ T-A-05B-03 handwritten Writer 移除    ┘ 触发＝用户给出删除确认，届时一次做完
   ─────────────────────────────────
 ⛔ T-A-04   压缩默认 PackBits         ← 等外部目标 RIP/控制软件互操作证据
 ⏸ T-A-06   扩展 LZW / Deflate        ← 待需求触发
 ```
 
-当前下一张非破坏性卡为 T-A-05B-02；T-A-04 仍被外部互操作证据阻塞，T-A-05B-03
-必须取得删除确认，T-A-06 需要新增算法需求。默认压缩继续保持 `none`。
+TIFF 专项当前**无待办**：T-A-05B-02/03 已改判为延后并捆绑（等删除确认），
+T-A-04 仍被外部互操作证据阻塞，T-A-06 需要新增算法需求。默认压缩继续保持 `none`。
+
+> **🔴 2026-08-11 排期裁定**：当前主线为 RENDER 专项的 R-F 线（R-F-01 → R-F-02），
+> 其后进入 Stage 16 的 16-00 准入复核。
+>
+> **`T-A-05B-02` 判定为【延后】，且必须与 `T-A-05B-03` 捆绑执行。**
+>
+> ```text
+> 理由  05B-02 的唯一下游是 05B-03（删除 Writer），而删除确认尚未给出
+>       ⇒ 单独做 05B-02 拿不到终局价值，只是把债从 A 挪到 B，
+>         中间还多养一段「迁移了但没删干净」的中间态
+>       ⇒ TIFF 的实际风险已被 T-A-05B-01 关死
+>         （fail-closed + 弃用告警 + 无静默回退）
+>         它现在是【债】，不是【风险】
+>
+> 触发  用户给出 handwritten Writer 删除确认 → 05B-02 与 05B-03 一次做完
+> ```
+>
+> 权威分级见 `docs/slice/DOC/DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md` §3.5。
 
 **顺带前置**：`samples/configs/material_process/obj_mtl_texture_rgb_varnish.json:22`
 的绝对路径应在 T-A-01 一并修掉（原为 `TASKS_CI` 的 `C-A-01`；CI 已暂缓，
@@ -266,6 +284,7 @@ T-A-04 后落地   压缩默认 PackBits
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-11 | v1.7 | 排期裁定：当前主线转为 RENDER 的 R-F 线，**`T-A-05B-02` 由「下一张卡」改判为【延后】并与 `T-A-05B-03` 捆绑**，触发条件为用户给出删除确认。理由是 05B-02 单独完成拿不到终局价值，且 TIFF 实际风险已被 T-A-05B-01 关死——现在是债不是风险。本次不改任何任务内容、验收标准或代码。 |
 | 2026-08-11 | v1.6 | 完成 T-A-05B-01：默认 LibTIFF 不再静默回退 handwritten；非 16 倍数 tiled 请求稳定返回 `InvalidInput`，且既有目标文件和临时文件原子性回归 PASS。拆分后续消费方迁移与破坏性删除。 |
 | 2026-08-11 | v1.5 | 完成 T-A-05A：默认轨道完整验收周期通过；handwritten 配置新增 CMake DEPRECATION 告警。审计确认 T-A-05B 仍被非标准 tiled 回退、直接测试、历史脚本及破坏性删除确认阻塞。 |
 | 2026-08-11 | v1.4 | 完成 T-A-03：默认主轨道切换为 LibTIFF 4.7.1 与动态 x64-windows triplet；主轨道 5/5 TIFF Gate、语义 Package/RIP strict、Runtime staging、能力包依赖/哈希和 handwritten 遗留车道全部 PASS。T-A-04 保持外部阻塞，T-A-05 等待稳定周期，默认压缩保持 none。 |

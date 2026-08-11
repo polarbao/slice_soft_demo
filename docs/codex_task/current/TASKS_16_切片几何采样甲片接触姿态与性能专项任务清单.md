@@ -1,10 +1,62 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：PROPOSED / NOT ACTIVE / BLOCKED BY STAGE 14
-> 版本：v0.1
-> 日期：2026-08-06
+> 状态：**16-00 ACTIVE / R-F GATE COMPLETE / CODE CARDS NOT YET AUTHORIZED**
+> 版本：v0.3
+> 日期：2026-08-11
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
+
+## 0. 🔴 2026-08-11 用户裁定：准入 Gate 口径与开工条件
+
+权威决策：`docs/slice/DOC/DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md`
+
+```text
+① 本清单的「Stage 14 收口」取【读法甲】= Stage 14【切片侧】收口
+   14F-05 已 SLICER-SIDE COMPLETE，收口报告已产出 ⇒ 16-00 的阻塞条件已满足
+   【不等】14A_EXTERNAL_ACK 外部书面回签
+
+② 开工条件：RENDER 专项的 R-F 线（R-F-01 平滑顶点法线 → R-F-02 基线重固化）已完成，
+   16-00-01..04 已解锁
+
+③ 16-00-04 的 GO 仍须用户明确确认，第一张代码卡才能转 READY
+```
+
+### 0.1 ⚠️ Stage 14 Worker/Facade 边界复核结果
+
+当前 `REPORT_14_切片能力包封装与打印软件集成准备状态.md` v3.61 已确认：
+`14D-05/06/07/08` 与 `14C-06B` 全部 `COMPLETE`。因此早期任务表中残留的
+`PREPARATION_GATE BLOCKED` 行属于历史状态，不能继续作为 `16C-08` 的阻塞依据。
+
+须在 `16-00-02` 中逐项显式登记：
+
+| 阻塞项 | 性质 | 影响 |
+|---|---|---|
+| Stage 14 Worker/Facade 最终边界 | **已满足**：真实 Worker、安全发布、取消和 SPI 生命周期均已完成 | `16C-08` 不再被 Stage 14 阻塞，但实现本身仍为 `still_required` |
+| `13B` 的 `OPEN INPUT`：设备 buildVolume/origin/axes 与 22 实例生产预算未定 | **产品输入**，切片侧定不了 | `16C-10` 出口本就是「只输出实测，状态仍 `INPUT_OPEN`」——**不是能关掉的卡** |
+
+⇒ **`16C-01..09` 均可进入本阶段排期；`16C-10` 只能形成实测，不能关闭生产 Gate。**
+
+### 0.2 🔴 Stage 14 之前的性能基线已整体作废（A）
+
+`T-A-03` 已把默认 Writer 切为 LibTIFF 4.7.1，同机 Release Writer-only p50 相对 handwritten
+变化区间 **+1.086% ~ +48.775%**。
+
+```text
+13F-R1-06 的「完整写包 6516.322 ms」是 handwritten 时代的数字
+12F / 13F 的全部 Release 性能数字同理
+⇒ 均不可与 Stage 16 新基线直接比较
+⇒ 16C-02 必须整套重跑，【不得复用旧数做 before/after】
+```
+
+### 0.3 已知的一处 carry-in 重叠（须在 16-00-02 判定）
+
+H-F-05（2026-08-11）已把 Worker 核心 `SliceRunProfile` 细分耗时接入参考宿主，
+覆盖配置/模型/网格/切片/逐层计算/场景合成/TIFF/预览/报告/输出与 Worker 总耗时。
+这与 `16C-01` 的 carry-in（13F-R1-01/02 分项计时）高度重叠。
+
+⚠️ **不得直接判 `already_satisfied`**：`16C-01` 要的是**单实例** core/compose 与
+**import 的 parse/texture/preview/hash** 分项，H-F-05 提供的是**作业级**阶段耗时。
+粒度对不上的部分仍是 `still_required`。
 
 ## 1. 任务总览
 
@@ -31,7 +83,10 @@ Legacy center sample 在 Stage 16 全程保留；
 
 ### 16-00-01 收口身份和脏工作树审计
 
-**状态：BLOCKED BY STAGE 14**
+**状态：ACTIVE（2026-08-11 R-F Gate 已完成）**
+
+> R-F 线已按任务独立提交。Stage 16 治理文档为本卡开始前的已知改动，须先单独提交，
+> 再固化 `baseline_identity.json`，不得把治理改动误记为代码基线漂移。
 
 ```text
 读取 Stage 14 最终报告、当前 commit、Facade/SPI/Worker 合同；
@@ -44,21 +99,22 @@ Legacy center sample 在 Stage 16 全程保留；
 
 ### 16-00-02 任务重叠审计
 
-**状态：BLOCKED**
+**状态：READY / 16-00-01 后执行**
 
 检查 Stage 14 是否已实现或更改 12F/13F 的 telemetry、取消、Worker I/O、buffer 和缓存能力。
+**须一并登记 §0.1 的 Worker/Facade 已满足事实、`16C-10` 产品输入和 §0.3 的 H-F-05 telemetry 重叠。**
 
 **出口：** carry-in 矩阵的每项状态为 `already_satisfied|still_required|superseded|blocked_external`。
 
 ### 16-00-03 资产和外部语义审计
 
-**状态：BLOCKED**
+**状态：READY / 16-00-02 后执行**
 
 确认 `segment_101`、参考 TIFF 堆栈的版本化/授权/通道/层高/像素尺寸。不能确认时，保留为本地对照，不得升级为生产 Golden。
 
 ### 16-00-04 GO/DEFER/NO-GO 评审
 
-**状态：BLOCKED**
+**状态：READY / 等 16-00-01..03 完成**
 
 ```text
 GO：明确可启动的 16A/16B/16C 子范围；
@@ -255,10 +311,19 @@ Stage 14 closure
 其余性能优化必须等采样语义冻结后再做。
 ```
 
-## 9. 当前唯一允许动作
+## 9. 当前唯一允许动作（2026-08-11 更新）
 
 ```text
 保留本文档和上游 PRD/DEV/DECISION/PREP/PROMPT；
-等待 Stage 14 完成；
-不运行 Stage 16 构建、不修改代码、不改默认配置。
+R-F 线已完成，按 16-00-01..04 顺序执行；
+16-00 全程为审计与文档动作 —— 不运行 Stage 16 构建、不修改代码、不改默认配置；
+16-00-04 未得到用户明确 GO 之前，任何 16A/16B/16C/16D 代码卡不得转 READY。
 ```
+
+## 10. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-08-11 | v0.3 | R-F-01/02 完成后启动 16-00；依据 `REPORT_14` v3.61 修正早期状态漂移：14D-05/06/07/08 与 14C-06B 均已完成，`16C-08` 不再被 Stage 14 内部边界阻塞；`16C-10` 继续保持产品输入开放。 |
+| 2026-08-11 | v0.2 | 用户裁定准入 Gate 取读法甲（Stage 14 切片侧收口），16-00-01..04 由 `BLOCKED` 转 `READY / 等 R-F 线完成`；新增 §0 记录裁定、§0.1 两项残留阻塞（`16C-08` 被 14D 内部阻塞、`16C-10` 保持 `INPUT_OPEN`，16C 按 8 张可推进卡计）、§0.2 历史性能基线因 LibTIFF 切换整体作废、§0.3 H-F-05 telemetry 与 `16C-01` carry-in 的重叠须逐项判定；§9 改写为当前允许动作。权威决策见 `DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md`。 |
+| 2026-08-06 | v0.1 | 首版。 |

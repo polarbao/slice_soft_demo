@@ -5,24 +5,46 @@
 ## ⚡ Active Work Entry（开工前先看这里）
 
 ```text
-▶ 当前唯一待办主线：TIFF 专项，T-A-01..03、T-A-05A、T-A-05B-01 已完成；
-  下一张非破坏性实现卡为 T-A-05B-02
-  卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
+▶【当前主线】16-00-01..04 Stage 16 准入复核（2026-08-11）
+  ✅ R-F-01 平滑顶点法线已完成
+  ✅ R-F-02 基线重固化与证据刷新（含 R-C-00）已完成
+  ▶ 16-00-01..04 纯审计，出口 GO / DEFER / NO-GO
+  卡 docs/codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md
+  裁决 docs/slice/DOC/DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md
+
+⏸【可延后】每项均有触发条件，不满足不得开工 —— 完整表见上述裁决文 §3.5
+  T-A-05B-02+03 捆绑 ← 等【用户删除确认】     T-A-04      ← 等外部 RIP 证据
+  R-C-01/02          ← 等 R-F-02 数据+回签    R-D / R-E   ← 无触发迹象
+  H-G 组             ← 等 5 项产品 Gate       CI 组       ← 等解除暂缓+定 runner
+  16C-10             ← 13B 产品输入，恒 INPUT_OPEN
+
+  🔀 R-C-00 已并入 R-F-02（同一次测量，拆开等于跑两次 Release 测量周期）
+
+🔴 Stage 16 准入 Gate 已裁定取【读法甲】= Stage 14【切片侧】收口，
+   不等 14A_EXTERNAL_ACK 外部回签。当前报告已确认 14D-05/06/07/08 与
+   14C-06B 全部完成，因此 16C-08 不再被 Stage 14 内部边界阻塞；
+   16C-10 仍因设备 buildVolume/SLA 等产品输入保持 INPUT_OPEN。
 
 各专项状态（均不占阶段编号，状态以各任务卡内的状态列为准）
 
-HOSTFLOW  ✅ H-A..H-F 全组完成（2026-08-11）；H-G 已准备并延期实施
-          卡 docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
-RENDER    ✅ R-A / R-B 收口（含 meshoptimizer 1.1）
-          ⏸ R-C / R-D 判定【不进入下一步】；唯一低成本入口是 R-C-00（纯测量）
+RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与真实资产预算重测）
+          ⏸ R-C / R-D 判定【不进入下一步】；低成本入口是 R-C-00（纯测量）
           卡 docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
-TIFF      ⏳ 默认后端已切 libtiff；T-A-04 外部阻塞；T-A-05B-02 等待执行
+HOSTFLOW  ✅ H-A..H-F 全组完成（2026-08-11）；H-G 已准备并延期实施（等 5 项产品输入）
+          卡 docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
+TIFF      ⏸ 默认后端已切 libtiff，风险已关死（fail-closed+弃用告警+无静默回退）
+          当前【无待办】：05B-02/03 延后并捆绑（等删除确认）、T-A-04 外部阻塞
           卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
 CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
           卡 docs/codex_task/current/TASKS_CI_冻结面工程保护任务清单.md
 
 ⛔ 外部阻塞（切片侧做不了）：14A_EXTERNAL_ACK 待打印侧书面回签
-   → 它阻塞 14D-05..08、14C-06B 与整个 Stage 16
+   → 它阻塞 14D-05..08、14C-06B 与 Stage 14 的 14F-02..05 外部验收
+   → 但【不再阻塞】Stage 16 的 16-00 准入复核（见上方读法甲裁定）
+
+⚠️ Stage 14 之前的全部 Release 性能基线因 T-A-03 切换 LibTIFF 已作废
+   （Writer-only p50 变化 +1.086%~+48.775%）。13F-R1-06 的「完整写包 6516.322 ms」
+   等旧数【不可与新基线比较】，16C-02 必须整套重跑。
 ```
 
 **「下一张卡是什么」不在本文件维护，去任务卡里读状态列。**
