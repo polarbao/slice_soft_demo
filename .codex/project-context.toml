@@ -4,11 +4,12 @@
 name = "slice_soft_demo"
 repository = "polarbao/slice_soft_demo"
 main_app_path = "src/slicer_core"
-current_branch_or_ref = "spike/09P-openvdb-experimental-pipeline"
+current_branch_or_ref = "feature/14-slicer-capability-package"
 formal_docs = "docs/slice"
 codex_tasks = "docs/codex_task"
 archive_docs = "docs/archive/2026-06-30_slicer_legacy"
-current_task_file = "docs/codex_task/current/TASKS_09P_R2_正式化前置文档治理与Hardening任务清单.md"
+# 任务状态以任务清单内的状态列为唯一真源，本文件只指向入口。
+current_task_file = "docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md"
 language = "zh-CN"
 role = "senior C++20 / Qt 5.15 / CMake slicing-software architect"
 
@@ -43,6 +44,8 @@ openvdb_pipeline = 'powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_e
 pause_before = [
   "destructive filesystem operations",
   "dependency upgrades or new third-party libraries",
+  "introducing meshoptimizer (RD-B deferred; see DOC_ANALYSIS_RENDER_RD_B_前置复核)",
+  "changing ViewData response structure (requires controlled revision per 14F-R1/R2/R3)",
   "deleting files",
   "rewriting git history",
   "production data changes",

@@ -1,11 +1,45 @@
 # Slice Soft Demo Codex Instructions
 
+---
+
+## ⚡ Active Work Entry（开工前先看这里）
+
+```text
+▶ 当前唯一待办主线：TIFF 专项，T-A-01..03、T-A-05A、T-A-05B-01 已完成；
+  下一张非破坏性实现卡为 T-A-05B-02
+  卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
+
+各专项状态（均不占阶段编号，状态以各任务卡内的状态列为准）
+
+HOSTFLOW  ✅ H-A..H-F 全组完成（2026-08-11）；H-G 已准备并延期实施
+          卡 docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
+RENDER    ✅ R-A / R-B 收口（含 meshoptimizer 1.1）
+          ⏸ R-C / R-D 判定【不进入下一步】；唯一低成本入口是 R-C-00（纯测量）
+          卡 docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
+TIFF      ⏳ 默认后端已切 libtiff；T-A-04 外部阻塞；T-A-05B-02 等待执行
+          卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
+CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
+          卡 docs/codex_task/current/TASKS_CI_冻结面工程保护任务清单.md
+
+⛔ 外部阻塞（切片侧做不了）：14A_EXTERNAL_ACK 待打印侧书面回签
+   → 它阻塞 14D-05..08、14C-06B 与整个 Stage 16
+```
+
+**「下一张卡是什么」不在本文件维护，去任务卡里读状态列。**
+用户说「下一个任务是什么」时，读上述任务卡，报出第一张状态为
+`PROPOSED` / `PREPARED` 且前置已满足的卡，**不要自行开工**。
+
+⚠️ 本文件下方的 `Current Phase` 与 `Mandatory Reference Docs` 含大量 Stage 09–13 时期的
+历史条目，**不代表当前待办**。以 `Active Work Entry` 与任务卡为准。
+
+---
+
 ## Project Identity
 
 - Project: `slice_soft_demo`
 - Repository: `polarbao/slice_soft_demo`
-- Current branch/ref: `feature/12e-08c-mesh-repair` as of 2026-07-21; verify with `git branch --show-current` before each task
-- Main implementation paths: `src/slicer_core`, `apps/slicer_cli`, `apps/slicer_debug_ui`
+- Current branch/ref: `feature/14-slicer-capability-package` as of 2026-08-09; verify with `git branch --show-current` before each task
+- Main implementation paths: `src/slicer_core`, `apps/slicer_cli`, `apps/slicer_debug_ui`, `apps/slicer_ui_host_sim`（参考宿主）, `apps/slicer_host_sim`（纯 C 宿主）
 - Formal docs: `docs/slice`
 - Codex task docs: `docs/codex_task`
 - Archived historical docs: `docs/archive/2026-06-30_slicer_legacy`
@@ -25,7 +59,7 @@
 - `13E-R1-01` planar heading normalization is complete: enabled auto-orient rotates flat X-major nail footprints by a deterministic Z quarter-turn, checks already Y-major footprints for a reversed narrow end, and makes the nail tip face scene `+Y`; explicit auto-orient disable still preserves source heading.
 - Inserted `13G` support base projection and layer-continuity specialty is functionally complete (`13G-00..07`). Reality 5/5 source models were confirmed face-down, front-up correction selects `rotate_x_180_rotate_z_minus_90`, and corrected segment_105 keeps S support continuous through the former layer 20/21 break. `support.baseProjection` now provides configurable maximum-footprint S-channel base layers; production UI defaults to 30 layers while legacy configs with the field absent remain disabled. The Release segment_105 package passes RIP with exact base range `layerIndex 0..29`.
 - The candidate texture-carrier/white-separation/RIP-underbase specialty (`12G-TCWS`) is frozen as of 2026-07-27. Do not implement its config, resolver, composer, UI, or RIP contract until its product/RIP questions and G1-G8 are explicitly closed.
-- `03D-01..07` remain the 2026-08-03 historical `GO_OPTIONAL` baseline. The user-authorized TIFF T-A-01..03 follow-up completed on 2026-08-11 and supersedes only its default-Writer conclusion: LibTIFF 4.7.1 is now the default Writer, handwritten is an explicit legacy validation lane, and default compression remains `none`. T-A-04 is externally blocked; T-A-05 waits for a stabilization cycle.
+- `03D-01..07` remain the 2026-08-03 historical `GO_OPTIONAL` baseline. The user-authorized TIFF T-A-01..03 follow-up completed on 2026-08-11 and supersedes only its default-Writer conclusion: LibTIFF 4.7.1 is now the default Writer, handwritten is an explicit legacy validation lane, and default compression remains `none`. T-A-05A and T-A-05B-01 are complete; T-A-05B-02 is the next non-destructive migration card. T-A-04 remains externally blocked, while T-A-05B-03 requires explicit deletion confirmation.
 - `03E-01` is complete and `03E-02` is internally complete as of 2026-08-03. PackBits is an explicit experimental `output.tiffCompression.algorithm` option across Legacy/Global/Scene, manifest, strict Reader, native preview, and Qt; the default remains `none`. External target RIP/control-software interoperability is still pending, so the decision is `NO_GO_DEFAULT_EXTERNAL_INTEROP_PENDING`.
 - `12E-09D-01..06` and `12E-10A/10B/10C/10D` are complete as of 2026-08-03. 10B adds a reproducible 17-row real OBJ/3MF final-closure matrix: xiao_ma/yecan Legacy/Global minimum/intermediate/all_texture and Texture2D checker 3MF are 14/14 production PASS; aishen/meigui/titian are 3/3 `BLOCKED_EXPECTED`; RIP strict is 14/14 and fallback is zero. 10C passes 36/36 measured Release samples and RIP strict; Global is 1.826x-2.562x core, 2.244x-3.161x total, and 3.079x-4.304x peak memory versus Legacy. 10D closes the final report and user guide. Stage 12E is complete within the approved scope; Legacy remains default and Global remains explicit candidate.
 - Stage 15 is complete as of 2026-08-04 (`19/19`, production Profile enabled). Its scope remains Legacy full-volume RGB same-layer W carrier output only; do not change `p0.rgbwsv.2`, closure rules, S/V ownership, the existing strict RGB Profile, or Global Surface Shell behavior without a new decision.
@@ -36,12 +70,15 @@
 - `12D-R0` documentation admission is complete and the 12C gate is satisfied.
 - `global_surface_shell_restricted_candidate` and `global_surface_shell_material_parity_candidate` are admitted as explicit opt-in Profiles at 0.01 mm. xiao_ma/yecan TIFF and RIP strict pass. In the 2026-07-24 09B closure matrix, Global remains 4.09x-5.92x slower and uses 8.19x-8.74x peak memory versus Legacy, so Legacy remains the default and no silent fallback is permitted.
 - The repair prerequisite must remain explicit and disabled by default. `repair_then_strict` must re-run strict diagnostics; `manual_repair_required` must never count as a production PASS.
-- The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`.
+- **HOSTFLOW 补充专项（不占阶段编号）**：H-A..H-F 已全部完成（2026-08-11）；H-F-02..05 收口相机连续性、排版边距、常用工艺/Profile 哈希和新版宿主耗时观测。H-G 生产 TIFF 三维层栈预览仅完成准备并延期实施，不属于当前开工项。
+- **RENDER 补充专项**：R-A-01 已完成但口径需按 `DOC_ANALYSIS_RENDER_RD_B_前置复核` 更正（真实触发面为 35/36 而非 17/36）。**RD-B（引入 `meshoptimizer`）已推迟**，须先修 RB-P1/P2/P3 并由 R-A-02 重测后再裁决。
+- The formal product direction is tracked in `docs/slice`; operational Codex tasks are tracked in `docs/codex_task/current`. 任务状态以各任务清单内的状态列为唯一真源。
 
 ## Always-On Rules
 
 1. Answer in Chinese unless the user explicitly asks for English.
 2. Execute only the task explicitly requested by the user; do not start the next task without explicit instruction.
+2b. 完成一张卡后，必须在**该卡所属的任务清单**内更新其状态列、完成日期与实际验证结果，并追加修订记录。任务卡是任务状态的唯一真源；不得只写报告不更新状态列。
 3. Before code, build, dependency, or architecture changes, read the relevant source and project docs first.
 4. Do not invent command results, tests, builds, hardware validation, repository state, or implementation status.
 5. Before each task, run `git status --short` and report unrelated dirty state instead of overwriting it.
@@ -84,11 +121,24 @@ Project-level slice skills and `.agents/docs` facts override generic templates w
 - Code standards: `.agents/docs/code-standards.md`
 - Commit style: `.agents/docs/commit-style.md`
 - Document state: `.agents/docs/doc-state.md`
+### ⚡ 当前有效（先看这几份，其余为历史条目）
+
+- **TIFF 当前任务卡**：`docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md`
+- **T-A-03 默认 LibTIFF 准备**：`docs/slice/DOC/DOC_PREP_TIFF_T_A_03_默认LibTIFF切换准备.md`
+- **HOSTFLOW 开工入口**：`docs/codex_task/current/CODEX_PROMPT_HOSTFLOW_宿主业务流程与场景生命周期执行指令.md`
+- **HOSTFLOW 任务卡**：`docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md`
+- **RENDER 任务卡**：`docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md`
+- **视图接线归属裁决**：`docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_D_R1_视图接线归属与14E_04d延期作废.md`
+- **目标水位裁决（HQ-09/HQ-10）**：`docs/slice/DOC/DOC_DECISION_HOSTFLOW_H_E_R1_参考宿主目标水位裁决.md`
+- **RD-B 前置复核（推迟 meshoptimizer 的依据）**：`docs/slice/DOC/DOC_ANALYSIS_RENDER_RD_B_前置复核_预算膨胀三处根因.md`
+- **ViewData 网格 DTO 规格**：`docs/slice/DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md`
+- **S2 合同定案（含 8 项作废方案禁止清单）**：`docs/slice/DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`
+
+### 📚 历史条目（Stage 09–13 时期，仅作背景，**不代表当前待办**）
+
 - Formal docs index: `docs/slice/README.md`
 - Codex task index: `docs/codex_task/README.md`
 - Completed 12D task list: `docs/codex_task/current/TASKS_12D_横截面材料无缝闭环任务清单.md`
-- Next prepared task list: `docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md`
-- Next prepared execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
 - Prepared 12E task list: `docs/codex_task/current/TASKS_12E_全局纹理壳层与模型填充任务清单.md`
 - Prepared 12E execution prompt: `docs/codex_task/current/CODEX_PROMPT_12E_全局纹理壳层与模型填充执行指令.md`
 - Prepared 12E repair task list: `docs/codex_task/current/TASKS_12E_08C_真实模型拓扑修复任务清单.md`
