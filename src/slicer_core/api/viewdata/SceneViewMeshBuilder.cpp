@@ -32,6 +32,36 @@ ApiResult<T> Failure(
         {std::string(code), std::string(message), detail});
 }
 
+struct PreparedTriangle
+{
+    std::array<Vec3, 3> points{};
+    std::array<TexCoord, 3> uvs{};
+    Vec3 face_normal{};
+    std::array<double, 3> corner_weights{};
+    std::array<Vec3, 3> vertex_normals{};
+};
+
+double Length(const Vec3& vector)
+{
+    return std::sqrt(
+        vector.x * vector.x
+        + vector.y * vector.y
+        + vector.z * vector.z);
+}
+
+std::optional<Vec3> Normalize(const Vec3& vector)
+{
+    const double length = Length(vector);
+    if (!std::isfinite(length) || length <= 1.0e-12)
+    {
+        return std::nullopt;
+    }
+    return Vec3{
+        vector.x / length,
+        vector.y / length,
+        vector.z / length};
+}
+
 std::optional<Vec3> ComputeNormal(const Triangle& triangle)
 {
     const Vec3 ab{
@@ -42,22 +72,74 @@ std::optional<Vec3> ComputeNormal(const Triangle& triangle)
         triangle.c.x - triangle.a.x,
         triangle.c.y - triangle.a.y,
         triangle.c.z - triangle.a.z};
-    Vec3 normal{
+    const Vec3 normal{
         ab.y * ac.z - ab.z * ac.y,
         ab.z * ac.x - ab.x * ac.z,
         ab.x * ac.y - ab.y * ac.x};
-    const double length = std::sqrt(
-        normal.x * normal.x
-        + normal.y * normal.y
-        + normal.z * normal.z);
-    if (!std::isfinite(length) || length <= 1.0e-12)
+    return Normalize(normal);
+}
+
+double CornerAngle(
+    const Vec3& point,
+    const Vec3& firstNeighbor,
+    const Vec3& secondNeighbor)
+{
+    const std::optional<Vec3> first = Normalize({
+        firstNeighbor.x - point.x,
+        firstNeighbor.y - point.y,
+        firstNeighbor.z - point.z});
+    const std::optional<Vec3> second = Normalize({
+        secondNeighbor.x - point.x,
+        secondNeighbor.y - point.y,
+        secondNeighbor.z - point.z});
+    if (!first.has_value() || !second.has_value())
+    {
+        return 1.0;
+    }
+    const double cosine = std::clamp(
+        first->x * second->x
+            + first->y * second->y
+            + first->z * second->z,
+        -1.0,
+        1.0);
+    const double angle = std::acos(cosine);
+    return std::isfinite(angle) && angle > 1.0e-12 ? angle : 1.0;
+}
+
+std::optional<PreparedTriangle> PrepareTriangle(
+    const MeshSimplificationInput& input,
+    const MeshSimplificationResult& simplified,
+    const std::size_t offset)
+{
+    PreparedTriangle prepared;
+    for (std::size_t corner{0U}; corner < 3U; ++corner)
+    {
+        const std::uint32_t sourceIndex =
+            simplified.indices.at(offset + corner);
+        prepared.points.at(corner) = ReadSimplificationPoint(
+            input,
+            sourceIndex);
+        prepared.uvs.at(corner) = ReadSimplificationUv(input, sourceIndex);
+    }
+    const Triangle triangle{
+        prepared.points.at(0U),
+        prepared.points.at(1U),
+        prepared.points.at(2U)};
+    const std::optional<Vec3> normal = ComputeNormal(triangle);
+    if (!normal.has_value())
     {
         return std::nullopt;
     }
-    normal.x /= length;
-    normal.y /= length;
-    normal.z /= length;
-    return normal;
+    prepared.face_normal = *normal;
+    prepared.vertex_normals.fill(*normal);
+    for (std::size_t corner{0U}; corner < 3U; ++corner)
+    {
+        prepared.corner_weights.at(corner) = CornerAngle(
+            prepared.points.at(corner),
+            prepared.points.at((corner + 1U) % 3U),
+            prepared.points.at((corner + 2U) % 3U));
+    }
+    return prepared;
 }
 
 std::size_t TriangleLimit(const ViewLod lod)
@@ -203,11 +285,171 @@ struct VertexKey
     }
 };
 
+struct PositionKey
+{
+    std::array<std::uint32_t, 3> values{};
+
+    [[nodiscard]] bool operator<(const PositionKey& other) const noexcept
+    {
+        return values < other.values;
+    }
+
+    [[nodiscard]] bool operator==(const PositionKey& other) const noexcept
+    {
+        return values == other.values;
+    }
+};
+
+struct CornerReference
+{
+    std::size_t triangle_index{0U};
+    std::size_t corner_index{0U};
+};
+
 std::uint32_t FloatBits(const float value)
 {
     return value == 0.0F
         ? 0U
         : std::bit_cast<std::uint32_t>(value);
+}
+
+PositionKey MakePositionKey(const Vec3& point)
+{
+    return {{
+        FloatBits(static_cast<float>(point.x)),
+        FloatBits(static_cast<float>(point.y)),
+        FloatBits(static_cast<float>(point.z))}};
+}
+
+double Dot(const Vec3& left, const Vec3& right)
+{
+    return left.x * right.x + left.y * right.y + left.z * right.z;
+}
+
+bool SharesEdgeAtPosition(
+    const PreparedTriangle& leftTriangle,
+    const std::size_t leftCorner,
+    const PreparedTriangle& rightTriangle,
+    const std::size_t rightCorner)
+{
+    const std::array<PositionKey, 2> leftNeighbors{
+        MakePositionKey(leftTriangle.points.at((leftCorner + 1U) % 3U)),
+        MakePositionKey(leftTriangle.points.at((leftCorner + 2U) % 3U))};
+    const std::array<PositionKey, 2> rightNeighbors{
+        MakePositionKey(rightTriangle.points.at((rightCorner + 1U) % 3U)),
+        MakePositionKey(rightTriangle.points.at((rightCorner + 2U) % 3U))};
+    return std::any_of(
+        leftNeighbors.begin(),
+        leftNeighbors.end(),
+        [&rightNeighbors](const PositionKey& left)
+        {
+            return std::find(
+                       rightNeighbors.begin(),
+                       rightNeighbors.end(),
+                       left)
+                != rightNeighbors.end();
+        });
+}
+
+std::size_t FindRoot(
+    std::vector<std::size_t>& parents,
+    const std::size_t index)
+{
+    if (parents.at(index) != index)
+    {
+        parents.at(index) = FindRoot(parents, parents.at(index));
+    }
+    return parents.at(index);
+}
+
+void MergeRoots(
+    std::vector<std::size_t>& parents,
+    const std::size_t left,
+    const std::size_t right)
+{
+    const std::size_t leftRoot = FindRoot(parents, left);
+    const std::size_t rightRoot = FindRoot(parents, right);
+    if (leftRoot != rightRoot)
+    {
+        parents.at(rightRoot) = leftRoot;
+    }
+}
+
+void ComputeSmoothNormals(
+    std::vector<PreparedTriangle>& triangles,
+    const double creaseAngleDegrees)
+{
+    constexpr double pi{3.14159265358979323846};
+    const double creaseCosine = std::cos(creaseAngleDegrees * pi / 180.0);
+    std::map<PositionKey, std::vector<CornerReference>> cornersByPosition;
+    for (std::size_t triangleIndex{0U};
+         triangleIndex < triangles.size();
+         ++triangleIndex)
+    {
+        for (std::size_t cornerIndex{0U}; cornerIndex < 3U; ++cornerIndex)
+        {
+            cornersByPosition[MakePositionKey(
+                triangles.at(triangleIndex).points.at(cornerIndex))]
+                .push_back({triangleIndex, cornerIndex});
+        }
+    }
+
+    for (const auto& [position, corners] : cornersByPosition)
+    {
+        static_cast<void>(position);
+        std::vector<std::size_t> parents(corners.size());
+        for (std::size_t index{0U}; index < parents.size(); ++index)
+        {
+            parents.at(index) = index;
+        }
+        for (std::size_t left{0U}; left < corners.size(); ++left)
+        {
+            const CornerReference& leftCorner = corners.at(left);
+            const PreparedTriangle& leftTriangle =
+                triangles.at(leftCorner.triangle_index);
+            for (std::size_t right{left + 1U}; right < corners.size(); ++right)
+            {
+                const CornerReference& rightCorner = corners.at(right);
+                const PreparedTriangle& rightTriangle =
+                    triangles.at(rightCorner.triangle_index);
+                if (SharesEdgeAtPosition(
+                        leftTriangle,
+                        leftCorner.corner_index,
+                        rightTriangle,
+                        rightCorner.corner_index)
+                    && Dot(leftTriangle.face_normal, rightTriangle.face_normal)
+                        + 1.0e-12 >= creaseCosine)
+                {
+                    MergeRoots(parents, left, right);
+                }
+            }
+        }
+
+        std::map<std::size_t, Vec3> weightedNormals;
+        for (std::size_t index{0U}; index < corners.size(); ++index)
+        {
+            const CornerReference& corner = corners.at(index);
+            const PreparedTriangle& triangle =
+                triangles.at(corner.triangle_index);
+            const double weight = triangle.corner_weights.at(
+                corner.corner_index);
+            Vec3& sum = weightedNormals[FindRoot(parents, index)];
+            sum.x += triangle.face_normal.x * weight;
+            sum.y += triangle.face_normal.y * weight;
+            sum.z += triangle.face_normal.z * weight;
+        }
+        for (std::size_t index{0U}; index < corners.size(); ++index)
+        {
+            const CornerReference& corner = corners.at(index);
+            const std::optional<Vec3> normal = Normalize(
+                weightedNormals.at(FindRoot(parents, index)));
+            if (normal.has_value())
+            {
+                triangles.at(corner.triangle_index)
+                    .vertex_normals.at(corner.corner_index) = *normal;
+            }
+        }
+    }
 }
 
 VertexKey MakeVertexKey(
@@ -275,10 +517,20 @@ ApiResult<ViewMesh> BuildViewMesh(
     const ViewLod lod,
     const MeshTransform meshTransform,
     const MeshAttributeFormat attributeFormat,
-    const ICancelToken& cancelToken) noexcept
+    const ICancelToken& cancelToken,
+    const ViewMeshNormalOptions& normalOptions) noexcept
 {
     try
     {
+        if (!std::isfinite(normalOptions.crease_angle_degrees)
+            || normalOptions.crease_angle_degrees < 0.0
+            || normalOptions.crease_angle_degrees > 180.0)
+        {
+            return Failure<ViewMesh>(
+                "PM-SLICER-PROFILE-0031",
+                "ViewData crease angle must be within [0, 180] degrees",
+                "viewMeshNormalOptions.creaseAngleDegrees");
+        }
         const std::size_t triangleLimit = TriangleLimit(lod);
         if (triangleLimit == 0U)
         {
@@ -349,22 +601,19 @@ ApiResult<ViewMesh> BuildViewMesh(
                         + ":" + simplified.Error()->detail);
             }
 
+            std::vector<PreparedTriangle> preparedTriangles;
+            preparedTriangles.reserve(
+                simplified.Value()->indices.size() / 3U);
             for (std::size_t offset{0U};
                  offset < simplified.Value()->indices.size();
                  offset += 3U)
             {
-                Triangle triangle{
-                    ReadSimplificationPoint(
+                const std::optional<PreparedTriangle> prepared =
+                    PrepareTriangle(
                         *input.Value(),
-                        simplified.Value()->indices.at(offset)),
-                    ReadSimplificationPoint(
-                        *input.Value(),
-                        simplified.Value()->indices.at(offset + 1U)),
-                    ReadSimplificationPoint(
-                        *input.Value(),
-                        simplified.Value()->indices.at(offset + 2U))};
-                const std::optional<Vec3> normal = ComputeNormal(triangle);
-                if (!normal.has_value())
+                        *simplified.Value(),
+                        offset);
+                if (!prepared.has_value())
                 {
                     return Failure<ViewMesh>(
                         "PM-SLICER-VIEWDATA-SIMPLIFICATION",
@@ -372,18 +621,22 @@ ApiResult<ViewMesh> BuildViewMesh(
                         appearance.materials.at(materialIndex)
                             .material.material_id);
                 }
-                const std::array<Vec3, 3> points{
-                    triangle.a, triangle.b, triangle.c};
+                preparedTriangles.push_back(*prepared);
+            }
+            ComputeSmoothNormals(
+                preparedTriangles,
+                normalOptions.crease_angle_degrees);
+
+            for (const PreparedTriangle& triangle : preparedTriangles)
+            {
                 for (std::size_t vertex{0U}; vertex < 3U; ++vertex)
                 {
-                    const std::uint32_t sourceIndex =
-                        simplified.Value()->indices.at(offset + vertex);
                     mesh.indices.push_back(ResolveVertex(
                         mesh,
                         vertexIndices,
-                        points.at(vertex),
-                        *normal,
-                        ReadSimplificationUv(*input.Value(), sourceIndex)));
+                        triangle.points.at(vertex),
+                        triangle.vertex_normals.at(vertex),
+                        triangle.uvs.at(vertex)));
                 }
             }
             submesh.index_count = static_cast<std::uint32_t>(

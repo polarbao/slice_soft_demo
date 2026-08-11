@@ -146,6 +146,61 @@ void UvSeamPreservationCase()
             "the geometric seam point must retain both UV vertices");
 }
 
+void SmoothNormalsAndCreasePreservationCase()
+{
+    auto smoothModel = MakeTexturedQuad(
+        "smooth-fold.obj",
+        "smooth-fold-material",
+        "smooth-fold.png");
+    smoothModel.triangles = {
+        {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.2}},
+        {{0.0, 0.0, 0.0}, {1.0, 1.0, 0.2}, {0.0, 1.0, 0.0}}};
+    smoothModel.bbox_mm = {{0.0, 0.0, 0.0}, {1.0, 1.0, 0.2}};
+    auto textures = std::make_shared<TestTextureSource>();
+    textures->AddImage(
+        "smooth-fold.png",
+        MakeTexture({20U, 40U, 60U, 255U}, {80U, 100U, 120U, 255U}));
+    const auto smoothProvider = MakeProvider(
+        {{421U, std::make_shared<const slicer_core::SceneModel>(
+                    std::move(smoothModel))}},
+        textures);
+    const TestCancelToken active;
+    const auto smooth = smoothProvider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::ThreeD),
+        MakeSnapshot({{"smooth-fold", 421U}}),
+        active);
+    Require(smooth.IsOk(), "smooth fold three_d view should close");
+    const auto& smoothMesh = smooth.Value()->meshes.front();
+    Require(smoothMesh.positions.size() == 12U
+                && smoothMesh.indices.size() == 6U,
+            "a fold below the default crease angle must share vertices");
+
+    auto hardModel = MakeTexturedQuad(
+        "hard-fold.obj",
+        "hard-fold-material",
+        "hard-fold.png");
+    hardModel.triangles = {
+        {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}},
+        {{0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}};
+    hardModel.bbox_mm = {{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}};
+    textures->AddImage(
+        "hard-fold.png",
+        MakeTexture({30U, 50U, 70U, 255U}, {90U, 110U, 130U, 255U}));
+    const auto hardProvider = MakeProvider(
+        {{422U, std::make_shared<const slicer_core::SceneModel>(
+                    std::move(hardModel))}},
+        textures);
+    const auto hard = hardProvider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::ThreeD),
+        MakeSnapshot({{"hard-fold", 422U}}),
+        active);
+    Require(hard.IsOk(), "hard fold three_d view should close");
+    const auto& hardMesh = hard.Value()->meshes.front();
+    Require(hardMesh.positions.size() == 18U
+                && hardMesh.indices.size() == 6U,
+            "a 90 degree fold must retain split hard-edge vertices");
+}
+
 void BudgetDegradationCase()
 {
     const auto model = std::make_shared<const slicer_core::SceneModel>(
@@ -424,6 +479,7 @@ void RunPositiveCases()
     TextureBaseColorFactorCase();
     BudgetDegradationCase();
     UvSeamPreservationCase();
+    SmoothNormalsAndCreasePreservationCase();
     SharedLocalMeshCase();
     DualAppearanceAndIdentityCase();
 }
