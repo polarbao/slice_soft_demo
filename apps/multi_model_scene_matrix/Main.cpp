@@ -54,6 +54,9 @@ struct CliOptions
     std::filesystem::path outputdir{
         std::filesystem::path(SLICESOFT_SOURCE_DIR)
         / "output/benchmarks/13b_07"};
+    std::optional<std::string> caseid;
+    std::string samplingstrategy{"legacy_center_sample"};
+    bool positiveonly{false};
 };
 
 struct AssetSpec
@@ -172,11 +175,25 @@ CliOptions ParseOptions(const int argc, char** argv)
         {
             options.outputdir = argv[++index];
         }
+        else if (argument == "--case-id" && index + 1 < argc)
+        {
+            options.caseid = argv[++index];
+        }
+        else if (argument == "--sampling-strategy" && index + 1 < argc)
+        {
+            options.samplingstrategy = argv[++index];
+        }
+        else if (argument == "--positive-only")
+        {
+            options.positiveonly = true;
+        }
         else if (argument == "--help")
         {
             std::cout
                 << "Usage: multi_model_scene_matrix "
-                   "[--source-root <path>] [--output <path>]\n";
+                   "[--source-root <path>] [--output <path>] "
+                   "[--case-id <13B-M01|13B-M11|13B-M12|13B-M22|13B-M3F>] "
+                   "[--sampling-strategy <strategy>] [--positive-only]\n";
             std::exit(0);
         }
         else
@@ -191,6 +208,18 @@ CliOptions ParseOptions(const int argc, char** argv)
     options.outputdir =
         std::filesystem::absolute(options.outputdir)
             .lexically_normal();
+    const std::set<std::string> supportedStrategies{
+        "legacy_center_sample",
+        "layer_slab_pixel_center_candidate",
+        "layer_slab_supersample_2x2_at_least_two_candidate",
+        "layer_slab_supersample_2x2_any_hit_candidate",
+    };
+    if (!supportedStrategies.contains(options.samplingstrategy))
+    {
+        throw std::invalid_argument(
+            "unsupported geometry sampling strategy: "
+            + options.samplingstrategy);
+    }
     return options;
 }
 
@@ -234,14 +263,56 @@ const AssetSpec& FindAssetSpec(
     return *found;
 }
 
+std::filesystem::path PrepareStrategyConfig(
+    const CliOptions& options,
+    const AssetSpec& spec)
+{
+    const std::filesystem::path sourceConfigPath{
+        (options.sourceroot / spec.configrelativepath)
+            .lexically_normal()};
+    std::ifstream input(sourceConfigPath, std::ios::binary);
+    if (!input)
+    {
+        throw std::runtime_error(
+            "failed to read matrix config: "
+            + sourceConfigPath.generic_string());
+    }
+    slicer_core::Json::Object root{
+        slicer_core::Json::parse(input).as_object()};
+    slicer_core::Json::Object modelInput{
+        root.at("input").as_object()};
+    const std::filesystem::path configuredModelPath{
+        modelInput.at("modelPath").as_string()};
+    const std::filesystem::path resolvedModelPath{
+        std::filesystem::absolute(
+            sourceConfigPath.parent_path()
+            / configuredModelPath)
+            .lexically_normal()};
+    modelInput["modelPath"] =
+        resolvedModelPath.generic_string();
+    root["input"] = slicer_core::Json{std::move(modelInput)};
+    root["geometrySampling"] = slicer_core::Json::object({
+        {"strategy", options.samplingstrategy},
+    });
+
+    const std::filesystem::path generatedConfigPath{
+        options.outputdir / "effective_configs"
+        / (spec.key + ".json")};
+    std::filesystem::create_directories(
+        generatedConfigPath.parent_path());
+    slicer_core::WriteReportJsonFile(
+        generatedConfigPath,
+        slicer_core::Json{std::move(root)});
+    return generatedConfigPath;
+}
+
 LoadedAsset LoadAsset(
-    const std::filesystem::path& sourceRoot,
+    const CliOptions& options,
     const AssetSpec& spec)
 {
     LoadedAsset asset;
     asset.spec = spec;
-    asset.configpath =
-        (sourceRoot / spec.configrelativepath).lexically_normal();
+    asset.configpath = PrepareStrategyConfig(options, spec);
     asset.config =
         slicer_core::load_slice_config(asset.configpath);
     asset.model =
@@ -262,7 +333,7 @@ LoadedAsset LoadAsset(
 }
 
 std::map<std::string, LoadedAsset> LoadCaseAssets(
-    const std::filesystem::path& sourceRoot,
+    const CliOptions& options,
     const PositiveCasePlan& plan)
 {
     const std::vector<AssetSpec> catalog = AssetCatalog();
@@ -273,7 +344,7 @@ std::map<std::string, LoadedAsset> LoadCaseAssets(
         {
             assets.emplace(
                 key,
-                LoadAsset(sourceRoot, FindAssetSpec(catalog, key)));
+                LoadAsset(options, FindAssetSpec(catalog, key)));
         }
     }
     return assets;
@@ -705,7 +776,7 @@ slicer_core::MultiModelSceneMatrixCase RunPositiveCase(
 
     const Clock::time_point importStart = Clock::now();
     const std::map<std::string, LoadedAsset> assets =
-        LoadCaseAssets(options.sourceroot, plan);
+        LoadCaseAssets(options, plan);
     result.timing.importms = ElapsedMs(importStart);
     result.uniquemodelcount =
         static_cast<int>(assets.size());
@@ -761,6 +832,8 @@ slicer_core::MultiModelSceneMatrixCase RunPositiveCase(
 
     result.packagedir =
         options.outputdir / plan.caseid / "package";
+    std::filesystem::create_directories(
+        result.packagedir.parent_path());
     slicer_core::RgbwsvProductionPackageWriteRequest writeRequest;
     writeRequest.packageDir = result.packagedir;
     writeRequest.sourceConfigPath =
@@ -1128,6 +1201,30 @@ std::vector<PositiveCasePlan> PositivePlans()
     return plans;
 }
 
+std::vector<PositiveCasePlan> SelectedPositivePlans(
+    const CliOptions& options)
+{
+    std::vector<PositiveCasePlan> plans{PositivePlans()};
+    if (!options.caseid.has_value())
+    {
+        return plans;
+    }
+    const auto found = std::find_if(
+        plans.begin(),
+        plans.end(),
+        [&options](const PositiveCasePlan& plan)
+        {
+            return plan.caseid == *options.caseid;
+        });
+    if (found == plans.end())
+    {
+        throw std::invalid_argument(
+            "unknown positive matrix case: "
+            + *options.caseid);
+    }
+    return {*found};
+}
+
 bool ExpectedOutcome(
     const slicer_core::MultiModelSceneMatrixCase& item)
 {
@@ -1156,6 +1253,8 @@ void WriteMarkdown(
 
 int Run(const CliOptions& options)
 {
+    std::filesystem::create_directories(
+        options.outputdir.parent_path());
     std::filesystem::create_directories(options.outputdir);
     slicer_core::MultiModelSceneMatrixReport report;
     report.buildconfig = SLICESOFT_BUILD_CONFIG;
@@ -1171,7 +1270,8 @@ int Run(const CliOptions& options)
         "functional_127dpi_metrics_are_not_device_production_sla",
     };
 
-    for (const PositiveCasePlan& plan : PositivePlans())
+    for (const PositiveCasePlan& plan :
+         SelectedPositivePlans(options))
     {
         try
         {
@@ -1196,11 +1296,14 @@ int Run(const CliOptions& options)
         }
     }
 
-    const auto negativeCases = RunNegativeCases();
-    report.cases.insert(
-        report.cases.end(),
-        negativeCases.begin(),
-        negativeCases.end());
+    if (!options.positiveonly)
+    {
+        const auto negativeCases = RunNegativeCases();
+        report.cases.insert(
+            report.cases.end(),
+            negativeCases.begin(),
+            negativeCases.end());
+    }
     report.functionalmatrixpass = std::all_of(
         report.cases.begin(),
         report.cases.end(),

@@ -1,0 +1,69 @@
+{
+  "schema": "slicesoft.stage16.release_baseline.1",
+  "stage": "16C-02",
+  "status": "complete",
+  "mode": "quick",
+  "measurementContract": {
+    "warmupIterations": 1,
+    "measuredIterations": 3,
+    "coldDefinition": "isolated process",
+    "warmDefinition": "warm OS file cache",
+    "coreOnlyBoundary": "scene instance raster production",
+    "endToEndBoundary": "package and RIP strict",
+    "percentileMethod": "linear interpolation"
+  },
+  "buildIdentity": {
+    "gitCommit": "fixture",
+    "worktreeDirty": false,
+    "buildConfig": "Release",
+    "executablePath": "fixture/multi_model_scene_matrix.exe",
+    "executableSha256": "fixture-sha256",
+    "compiler": "fixture-compiler",
+    "tiffBackend": "libtiff",
+    "powershell": "fixture",
+    "os": "fixture-os"
+  },
+  "strategies": [
+    {"id": "S0", "value": "legacy_center_sample"},
+    {"id": "S3", "value": "layer_slab_supersample_2x2_at_least_two_candidate"},
+    {"id": "S4", "value": "layer_slab_supersample_2x2_any_hit_candidate"}
+  ],
+  "cases": [
+    {"id": "13B-M01", "instances": 1}
+  ],
+  "summaries": [
+    {
+      "strategyId": "S0",
+      "caseId": "13B-M01",
+      "instanceCount": 1,
+      "cold": {"coreOnlyMs": 10, "endToEndMs": 20, "wallClockMs": 21, "peakWorkingSetBytes": 100},
+      "warm": {"sampleCount": 3, "coreOnlyP50Ms": 9, "coreOnlyP95Ms": 10, "endToEndP50Ms": 18, "endToEndP95Ms": 20, "wallClockP50Ms": 19, "wallClockP95Ms": 21, "peakWorkingSetBytes": 100},
+      "deterministicOutputHash": "s0-hash",
+      "packageBytes": 1,
+      "ripStrictPass": true
+    },
+    {
+      "strategyId": "S3",
+      "caseId": "13B-M01",
+      "instanceCount": 1,
+      "cold": {"coreOnlyMs": 12, "endToEndMs": 22, "wallClockMs": 23, "peakWorkingSetBytes": 110},
+      "warm": {"sampleCount": 3, "coreOnlyP50Ms": 11, "coreOnlyP95Ms": 12, "endToEndP50Ms": 20, "endToEndP95Ms": 22, "wallClockP50Ms": 21, "wallClockP95Ms": 23, "peakWorkingSetBytes": 110},
+      "deterministicOutputHash": "s3-hash",
+      "packageBytes": 1,
+      "ripStrictPass": true
+    },
+    {
+      "strategyId": "S4",
+      "caseId": "13B-M01",
+      "instanceCount": 1,
+      "cold": {"coreOnlyMs": 13, "endToEndMs": 23, "wallClockMs": 24, "peakWorkingSetBytes": 120},
+      "warm": {"sampleCount": 3, "coreOnlyP50Ms": 12, "coreOnlyP95Ms": 13, "endToEndP50Ms": 21, "endToEndP95Ms": 23, "wallClockP50Ms": 22, "wallClockP95Ms": 24, "peakWorkingSetBytes": 120},
+      "deterministicOutputHash": "s4-hash",
+      "packageBytes": 1,
+      "ripStrictPass": true
+    }
+  ],
+  "samples": [],
+  "productionStatus": "INPUT_OPEN",
+  "productionBlockers": ["22_instance_performance_budget_open"]
+}

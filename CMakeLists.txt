@@ -1963,6 +1963,13 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateCapabilityDtos.py"
     )
     add_test(
+        NAME stage16_release_baseline_contract_tests
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage16/ValidateReleaseBaseline.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stage16/fixtures/release_baseline_contract_fixture.json"
+            --allow-quick
+    )
+    add_test(
         NAME slicer_three_lane_contract_test
         COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/contracts/ValidateThreeLaneContract.py"
