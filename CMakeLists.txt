@@ -139,6 +139,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/geometry/DistanceField2D.h
     src/slicer_core/geometry/ContactPostureMetrics.cpp
     src/slicer_core/geometry/ContactPostureMetrics.h
+    src/slicer_core/geometry/ContactLevelingAnalyzer.cpp
+    src/slicer_core/geometry/ContactLevelingAnalyzer.h
     src/slicer_core/geometry/GeometryKernelReport.cpp
     src/slicer_core/geometry/GeometryKernelReport.h
     src/slicer_core/geometry/GeometryKernelService.h
@@ -1613,6 +1615,19 @@ target_compile_definitions(stage16_posture_baseline PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(stage16_contact_leveling_analyzer_tests
+    tests/stage16/ContactLevelingAnalyzerTests.cpp
+)
+target_link_libraries(stage16_contact_leveling_analyzer_tests PRIVATE slicer_core)
+
+add_executable(stage16_contact_leveling_diagnostic
+    apps/stage16_contact_leveling_diagnostic/Main.cpp
+)
+target_link_libraries(stage16_contact_leveling_diagnostic PRIVATE slicer_core)
+target_compile_definitions(stage16_contact_leveling_diagnostic PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(material_closure_report_unit_tests
     tests/unit/material_closure_report/main.cpp
 )
@@ -2455,11 +2470,18 @@ add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_
 add_test(NAME stage16_geometry_sampling_fixture_tests COMMAND stage16_geometry_sampling_fixture_tests)
 add_test(NAME stage16_layer_occupancy_provider_tests COMMAND stage16_layer_occupancy_provider_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
+add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
     NAME stage16_posture_baseline_tests
     COMMAND stage16_posture_baseline
         --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
         --output "${CMAKE_CURRENT_BINARY_DIR}/stage16/posture_baseline.json"
+)
+add_test(
+    NAME stage16_contact_leveling_diagnostic_tests
+    COMMAND stage16_contact_leveling_diagnostic
+        --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
+        --output "${CMAKE_CURRENT_BINARY_DIR}/stage16/contact_leveling_diagnostic.json"
 )
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
 add_test(NAME material_closure_candidate_detector_unit_tests COMMAND material_closure_candidate_detector_unit_tests)
