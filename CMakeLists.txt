@@ -1578,6 +1578,15 @@ add_executable(openvdb_sdf_utility_report_unit_tests
 
 target_link_libraries(openvdb_sdf_utility_report_unit_tests PRIVATE slicer_core)
 
+add_executable(stage16_geometry_sampling_fixture_tests
+    tests/stage16/GeometrySamplingFixtureTests.cpp
+)
+
+target_link_libraries(stage16_geometry_sampling_fixture_tests PRIVATE slicer_core)
+target_compile_definitions(stage16_geometry_sampling_fixture_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(material_closure_report_unit_tests
     tests/unit/material_closure_report/main.cpp
 )
@@ -2417,6 +2426,7 @@ set_tests_properties(mesh_repair_r3_02_cli_test PROPERTIES
 )
 add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service_unit_tests)
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
+add_test(NAME stage16_geometry_sampling_fixture_tests COMMAND stage16_geometry_sampling_fixture_tests)
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
 add_test(NAME material_closure_candidate_detector_unit_tests COMMAND material_closure_candidate_detector_unit_tests)
 add_test(NAME material_closure_semantic_detector_unit_tests COMMAND material_closure_semantic_detector_unit_tests)

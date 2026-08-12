@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16-00 COMPLETE / PARTIAL GO / 16A-01 READY**
-> 版本：v0.4
+> 状态：**16A-01 COMPLETE / 16A-02 NEXT**
+> 版本：v0.5
 > 日期：2026-08-12
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -140,13 +140,17 @@ production Gate 和统一收口仍按报告中的 DEFER 条件控制。
 
 ### 16A-01 合成 fixture 和差异 schema
 
-**状态：READY / USER AUTHORIZED（2026-08-12）**
+**状态：COMPLETE（2026-08-12）**
 
 **依赖：** 16-00 GO
 **内容：** 建立平底、上升/下降斜楔、圆弧边、亚像素薄片和多区间负向 fixture；冻结 layer/channel/connected-component/dimension diff schema。
 **出口：** fixture 不依赖 Reality 文件名，手算期望可复核。
 
+**实际结果：** 六组 fixture、diff schema、示例报告和 C++ 合同测试已落地；Debug 构建与定向 CTest 1/1 PASS。生产采样路径未修改。
+
 ### 16A-02 GeometryOccupancyPolicy 和 Provider 合同
+
+**状态：NEXT / DEPENDENCY SATISFIED / NOT STARTED**
 
 **依赖：** 16A-01
 **内容：** 新增策略 DTO/provider wrapper，Legacy 实现仍调用现有路径。
@@ -330,15 +334,17 @@ Stage 14 closure
 ```text
 保留本文档和上游 PRD/DEV/DECISION/PREP/PROMPT；
 R-F 线与 16-00-01..04 已完成；
-按用户本轮启动授权，只执行 16A-01 合成 fixture 和差异 schema；
-16A-01 不改生产路径、不改默认配置；完成验证和独立提交后停止；
-16A-02 及后续卡仍按任务依赖、状态列和各自授权推进。
+16A-01 已完成并通过定向验证；
+下一张依赖已满足的卡为 16A-02 GeometryOccupancyPolicy 和 Provider 合同；
+16A-02 仍须按任务边界单独实施，不与 16A-03 的 Layer Slab 语义混做；
+候选和默认配置继续关闭。
 ```
 
 ## 10. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-12 | v0.5 | 完成 16A-01：新增六组可手算合成 fixture、逐层/通道/连通分量/尺寸差异合同和定向 C++ 测试；16A-02 依赖满足但尚未开始。 |
 | 2026-08-12 | v0.4 | 完成 16-00-01..04：固化 Release/资产/Profile 身份，完成 carry-in 与外部语义审计，形成 PARTIAL GO；依据用户启动授权将 16A-01 转 READY。 |
 | 2026-08-11 | v0.3 | R-F-01/02 完成后启动 16-00；依据 `REPORT_14` v3.61 修正早期状态漂移：14D-05/06/07/08 与 14C-06B 均已完成，`16C-08` 不再被 Stage 14 内部边界阻塞；`16C-10` 继续保持产品输入开放。 |
 | 2026-08-11 | v0.2 | 用户裁定准入 Gate 取读法甲（Stage 14 切片侧收口），16-00-01..04 由 `BLOCKED` 转 `READY / 等 R-F 线完成`；新增 §0 记录裁定、§0.1 两项残留阻塞（`16C-08` 被 14D 内部阻塞、`16C-10` 保持 `INPUT_OPEN`，16C 按 8 张可推进卡计）、§0.2 历史性能基线因 LibTIFF 切换整体作废、§0.3 H-F-05 telemetry 与 `16C-01` carry-in 的重叠须逐项判定；§9 改写为当前允许动作。权威决策见 `DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md`。 |

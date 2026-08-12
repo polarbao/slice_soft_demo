@@ -1,0 +1,35 @@
+{
+  "schema": "slicesoft.stage16.layer_channel_diff.1",
+  "baselineIdentity": "fixture://ascending_wedge/legacy_center",
+  "candidateIdentity": "fixture://ascending_wedge/layer_slab",
+  "grid": { "width": 4, "height": 1, "layers": 4 },
+  "layers": [
+    {
+      "layerIndex": 0,
+      "baselineNonEmptyPixels": 2,
+      "candidateNonEmptyPixels": 4,
+      "falsePositiveOccupancyPixels": 2,
+      "falseNegativeOccupancyPixels": 0,
+      "connectedComponentDelta": 0,
+      "channels": [
+        { "channel": "R", "differentPixels": 2, "baselinePrintPixels": 2, "candidatePrintPixels": 4, "falsePositivePrintPixels": 2, "falseNegativePrintPixels": 0 },
+        { "channel": "G", "differentPixels": 2, "baselinePrintPixels": 2, "candidatePrintPixels": 4, "falsePositivePrintPixels": 2, "falseNegativePrintPixels": 0 },
+        { "channel": "B", "differentPixels": 2, "baselinePrintPixels": 2, "candidatePrintPixels": 4, "falsePositivePrintPixels": 2, "falseNegativePrintPixels": 0 },
+        { "channel": "W", "differentPixels": 0, "baselinePrintPixels": 0, "candidatePrintPixels": 0, "falsePositivePrintPixels": 0, "falseNegativePrintPixels": 0 },
+        { "channel": "S", "differentPixels": 0, "baselinePrintPixels": 0, "candidatePrintPixels": 0, "falsePositivePrintPixels": 0, "falseNegativePrintPixels": 0 },
+        { "channel": "V", "differentPixels": 0, "baselinePrintPixels": 0, "candidatePrintPixels": 0, "falsePositivePrintPixels": 0, "falseNegativePrintPixels": 0 }
+      ]
+    }
+  ],
+  "summary": {
+    "firstNonEmptyLayerDelta": 0,
+    "lastNonEmptyLayerDelta": 0,
+    "totalModelPixelDelta": 2,
+    "totalSupportPixelDelta": 0,
+    "totalUnionPixelDelta": 2,
+    "connectedComponentDelta": 0,
+    "dimensionBiasPixels": { "x": 2, "y": 0, "z": 0 },
+    "dimensionBiasMm": { "x": 0.08, "y": 0.0, "z": 0.0 },
+    "ripStrictStatus": "not_run"
+  }
+}

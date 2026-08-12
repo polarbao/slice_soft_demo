@@ -1,0 +1,44 @@
+{
+  "schema": "slicesoft.stage16.layer_channel_diff_contract.1",
+  "reportSchema": "slicesoft.stage16.layer_channel_diff.1",
+  "channelOrder": ["R", "G", "B", "W", "S", "V"],
+  "requiredTopLevelFields": [
+    "schema",
+    "baselineIdentity",
+    "candidateIdentity",
+    "grid",
+    "layers",
+    "summary"
+  ],
+  "requiredLayerFields": [
+    "layerIndex",
+    "baselineNonEmptyPixels",
+    "candidateNonEmptyPixels",
+    "falsePositiveOccupancyPixels",
+    "falseNegativeOccupancyPixels",
+    "connectedComponentDelta",
+    "channels"
+  ],
+  "requiredChannelFields": [
+    "channel",
+    "differentPixels",
+    "baselinePrintPixels",
+    "candidatePrintPixels",
+    "falsePositivePrintPixels",
+    "falseNegativePrintPixels"
+  ],
+  "requiredSummaryFields": [
+    "firstNonEmptyLayerDelta",
+    "lastNonEmptyLayerDelta",
+    "totalModelPixelDelta",
+    "totalSupportPixelDelta",
+    "totalUnionPixelDelta",
+    "connectedComponentDelta",
+    "dimensionBiasPixels",
+    "dimensionBiasMm",
+    "ripStrictStatus"
+  ],
+  "dimensionBiasAxes": ["x", "y", "z"],
+  "ripStrictStatuses": ["not_run", "passed", "failed"],
+  "missingMetricPolicy": "explicit_null"
+}

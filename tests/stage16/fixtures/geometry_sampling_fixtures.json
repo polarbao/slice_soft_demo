@@ -1,0 +1,84 @@
+{
+  "schema": "slicesoft.stage16.geometry_sampling_fixture.1",
+  "units": {
+    "length": "mm",
+    "layerIndex": "zero_based"
+  },
+  "intervalConvention": "half_open",
+  "fixtures": [
+    {
+      "id": "flat_bottom_block",
+      "kind": "heightfield_columns",
+      "purpose": "锁定平底体的首层和末层边界",
+      "layerThicknessMm": 0.25,
+      "grid": { "width": 2, "height": 2 },
+      "columns": [
+        { "x": 0, "y": 0, "intervalsMm": [[0.0, 0.5]] },
+        { "x": 1, "y": 0, "intervalsMm": [[0.0, 0.5]] },
+        { "x": 0, "y": 1, "intervalsMm": [[0.0, 0.5]] },
+        { "x": 1, "y": 1, "intervalsMm": [[0.0, 0.5]] }
+      ],
+      "expectedOccupiedLayers": [0, 1]
+    },
+    {
+      "id": "ascending_wedge",
+      "kind": "heightfield_columns",
+      "purpose": "验证上升斜楔逐层增加覆盖",
+      "layerThicknessMm": 0.25,
+      "grid": { "width": 4, "height": 1 },
+      "columns": [
+        { "x": 0, "y": 0, "intervalsMm": [[0.0, 0.125]] },
+        { "x": 1, "y": 0, "intervalsMm": [[0.0, 0.375]] },
+        { "x": 2, "y": 0, "intervalsMm": [[0.0, 0.625]] },
+        { "x": 3, "y": 0, "intervalsMm": [[0.0, 0.875]] }
+      ],
+      "expectedOccupiedPixelCountByLayer": [4, 3, 2, 1]
+    },
+    {
+      "id": "descending_wedge",
+      "kind": "heightfield_columns",
+      "purpose": "验证下降斜楔与上升斜楔层覆盖对称",
+      "layerThicknessMm": 0.25,
+      "grid": { "width": 4, "height": 1 },
+      "columns": [
+        { "x": 0, "y": 0, "intervalsMm": [[0.0, 0.875]] },
+        { "x": 1, "y": 0, "intervalsMm": [[0.0, 0.625]] },
+        { "x": 2, "y": 0, "intervalsMm": [[0.0, 0.375]] },
+        { "x": 3, "y": 0, "intervalsMm": [[0.0, 0.125]] }
+      ],
+      "expectedOccupiedPixelCountByLayer": [4, 3, 2, 1]
+    },
+    {
+      "id": "circular_contact_edge",
+      "kind": "coverage_samples",
+      "purpose": "验证圆弧接触边的首层渐宽",
+      "layerThicknessMm": 0.25,
+      "grid": { "width": 5, "height": 1 },
+      "coveredSubsamplesByPixel": [1, 2, 4, 2, 1],
+      "expectedMaskAtLeastOneOfFour": [1, 1, 1, 1, 1],
+      "expectedMaskAtLeastTwoOfFour": [0, 1, 1, 1, 0]
+    },
+    {
+      "id": "subpixel_thin_sheet",
+      "kind": "coverage_samples",
+      "purpose": "区分 >=1/4 与 >=2/4 的亚像素薄片保存行为",
+      "layerThicknessMm": 0.25,
+      "grid": { "width": 3, "height": 1 },
+      "coveredSubsamplesByPixel": [0, 1, 0],
+      "expectedMaskAtLeastOneOfFour": [0, 1, 0],
+      "expectedMaskAtLeastTwoOfFour": [0, 0, 0]
+    },
+    {
+      "id": "multi_interval_column_negative",
+      "kind": "multi_interval_columns",
+      "purpose": "证明 relief_heightfield 单区间准入必须 fail-closed",
+      "layerThicknessMm": 0.25,
+      "grid": { "width": 1, "height": 1 },
+      "columns": [
+        { "x": 0, "y": 0, "intervalsMm": [[0.0, 0.25], [0.5, 0.75]] }
+      ],
+      "expectedAdmission": "rejected",
+      "expectedErrorCode": "E_GEOMETRY_SAMPLING_MULTI_INTERVAL_UNSUPPORTED"
+    }
+  ]
+}

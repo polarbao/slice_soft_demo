@@ -12,7 +12,8 @@ archive_docs = "docs/archive/2026-06-30_slicer_legacy"
 # 2026-08-11 裁定的执行顺序与优先级（权威记录见 next_sequence_decision §3.5）：
 # 【已完成】R-F-01 平滑顶点法线；R-F-02 基线重固化（含 R-C-00）。
 # 【已完成】16-00-01..04 Stage 16 准入复核，结论 PARTIAL GO。
-# 【当前主线】16A-01 合成 fixture 和差异 schema，READY / USER AUTHORIZED。
+# 【已完成】16A-01 合成 fixture 和差异 schema。
+# 【当前主线】16A-02 GeometryOccupancyPolicy 和 Provider 合同，依赖满足、尚未开始。
 # 【可延后】不满足触发条件不得开工：
 #   T-A-05B-02+03（等用户删除确认，捆绑执行）、T-A-04（等外部 RIP 证据）、
 #   R-C-01/02（等 R-F-02 数据与打印侧回签）、R-D/R-E（无触发迹象）、

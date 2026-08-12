@@ -5,11 +5,12 @@
 ## ⚡ Active Work Entry（开工前先看这里）
 
 ```text
-▶【当前主线】16A-01 合成 fixture 和差异 schema（2026-08-12）
+▶【当前主线】16A-02 GeometryOccupancyPolicy 和 Provider 合同（2026-08-12）
   ✅ R-F-01 平滑顶点法线已完成
   ✅ R-F-02 基线重固化与证据刷新（含 R-C-00）已完成
   ✅ 16-00-01..04 准入复核已完成，结论 PARTIAL GO
-  ▶ 16A-01 READY / USER AUTHORIZED；候选默认关闭
+  ✅ 16A-01 合成 fixture 和差异 schema 已完成
+  ▶ 16A-02 依赖满足、尚未开始；候选默认关闭
   卡 docs/codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md
   裁决 docs/slice/DOC/DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md
 
