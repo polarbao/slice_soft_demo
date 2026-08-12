@@ -1,0 +1,5361 @@
+{
+  "assetCount": 7,
+  "assets": [
+    {
+      "assetId": "synthetic_policy_fixture",
+      "comparisonsAgainstS0": [
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S2",
+          "grid": {
+            "height": 48,
+            "layers": 20,
+            "width": 24
+          },
+          "layers": [
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 0
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 1
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 2
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 3
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 4
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 5
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 6
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 7
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 8
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 9
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 10
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 11
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 12
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 13
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 14
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 15
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 16
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 17
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 18
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 19
+            }
+          ],
+          "packageManifestSha256": "d764d063962e6f33a4ba30c6603d2d9311166771fdda48f962244b2215a019b1",
+          "performance": {
+            "layerComputeMs": 3.783,
+            "maskSamplingMs": 0.164,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 12943360,
+            "sliceProcessingMs": 21.2518,
+            "totalMs": 179.2463,
+            "wallMs": 180.2065,
+            "workingSetBytesAfter": 10579968,
+            "workingSetBytesBefore": 10035200
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 0,
+              "G": 0,
+              "R": 0,
+              "S": 0,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "passed",
+            "totalModelPixelDelta": 0,
+            "totalSupportPixelDelta": 0,
+            "totalUnionPixelDelta": 0
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S3",
+          "grid": {
+            "height": 48,
+            "layers": 20,
+            "width": 24
+          },
+          "layers": [
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 0
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 1
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 2
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 3
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 4
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 5
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 6
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 7
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 8
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 9
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 10
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 11
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 12
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 13
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 14
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 15
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 16
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 17
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 18
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 19
+            }
+          ],
+          "packageManifestSha256": "d860fa6581515375abdfe1f13d59e8452a1d577bdf14c0bf622fb758a0937c7a",
+          "performance": {
+            "layerComputeMs": 3.7416,
+            "maskSamplingMs": 0.4368,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 13217792,
+            "sliceProcessingMs": 19.0643,
+            "totalMs": 179.903,
+            "wallMs": 180.8221,
+            "workingSetBytesAfter": 10854400,
+            "workingSetBytesBefore": 10338304
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 1960,
+              "G": 2560,
+              "R": 2560,
+              "S": 0,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "passed",
+            "totalModelPixelDelta": 0,
+            "totalSupportPixelDelta": 0,
+            "totalUnionPixelDelta": 0
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S4",
+          "grid": {
+            "height": 48,
+            "layers": 20,
+            "width": 24
+          },
+          "layers": [
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 0
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 1
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 2
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 3
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 4
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 5
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 6
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 7
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 8
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 9
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 10
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 11
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 12
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 13
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 14
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 15
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 16
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 17
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 18
+            },
+            {
+              "baselineNonEmptyPixels": 1128,
+              "candidateNonEmptyPixels": 1128,
+              "channels": [
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "R",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "G",
+                  "differentPixels": 128,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 1128,
+                  "candidatePrintPixels": 1128,
+                  "channel": "B",
+                  "differentPixels": 98,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "W",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "S",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                },
+                {
+                  "baselinePrintPixels": 0,
+                  "candidatePrintPixels": 0,
+                  "channel": "V",
+                  "differentPixels": 0,
+                  "falseNegativePrintPixels": 0,
+                  "falsePositivePrintPixels": 0
+                }
+              ],
+              "connectedComponentDelta": 0,
+              "falseNegativeOccupancyPixels": 0,
+              "falsePositiveOccupancyPixels": 0,
+              "layerIndex": 19
+            }
+          ],
+          "packageManifestSha256": "e9cb71556faa9a020b60ddfbd1d8d481a8a9ba1e82f4918ace08ea35a93ccc86",
+          "performance": {
+            "layerComputeMs": 3.7726,
+            "maskSamplingMs": 0.4637,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 13434880,
+            "sliceProcessingMs": 19.4182,
+            "totalMs": 173.4746,
+            "wallMs": 174.3382,
+            "workingSetBytesAfter": 10936320,
+            "workingSetBytesBefore": 10551296
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 1960,
+              "G": 2560,
+              "R": 2560,
+              "S": 0,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "passed",
+            "totalModelPixelDelta": 0,
+            "totalSupportPixelDelta": 0,
+            "totalUnionPixelDelta": 0
+          }
+        }
+      ],
+      "configPath": "samples/configs/stage16/layer_slab_pixel_center_candidate.json",
+      "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/samples/models/textured/fixtures/policy_textured_small.obj",
+      "packageRipRequired": true,
+      "runs": [
+        {
+          "configStrategy": "legacy_center_sample",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 48,
+            "layers": 20,
+            "width": 24
+          },
+          "lastNonEmptyLayer": 19,
+          "modelPixels": 22560,
+          "performance": {
+            "layerComputeMs": 4.1795,
+            "maskSamplingMs": 0.2716,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 12541952,
+            "sliceProcessingMs": 23.7503,
+            "totalMs": 197.0318,
+            "wallMs": 198.0098,
+            "workingSetBytesAfter": 9994240,
+            "workingSetBytesBefore": 7131136
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S0",
+          "supportPixels": 0
+        },
+        {
+          "configStrategy": "layer_slab_pixel_center_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 48,
+            "layers": 20,
+            "width": 24
+          },
+          "lastNonEmptyLayer": 19,
+          "modelPixels": 22560,
+          "performance": {
+            "layerComputeMs": 3.783,
+            "maskSamplingMs": 0.164,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 12943360,
+            "sliceProcessingMs": 21.2518,
+            "totalMs": 179.2463,
+            "wallMs": 180.2065,
+            "workingSetBytesAfter": 10579968,
+            "workingSetBytesBefore": 10035200
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S2",
+          "supportPixels": 0
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_at_least_two_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 48,
+            "layers": 20,
+            "width": 24
+          },
+          "lastNonEmptyLayer": 19,
+          "modelPixels": 22560,
+          "performance": {
+            "layerComputeMs": 3.7416,
+            "maskSamplingMs": 0.4368,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 13217792,
+            "sliceProcessingMs": 19.0643,
+            "totalMs": 179.903,
+            "wallMs": 180.8221,
+            "workingSetBytesAfter": 10854400,
+            "workingSetBytesBefore": 10338304
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S3",
+          "supportPixels": 0
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_any_hit_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 48,
+            "layers": 20,
+            "width": 24
+          },
+          "lastNonEmptyLayer": 19,
+          "modelPixels": 22560,
+          "performance": {
+            "layerComputeMs": 3.7726,
+            "maskSamplingMs": 0.4637,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 13434880,
+            "sliceProcessingMs": 19.4182,
+            "totalMs": 173.4746,
+            "wallMs": 174.3382,
+            "workingSetBytesAfter": 10936320,
+            "workingSetBytesBefore": 10551296
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S4",
+          "supportPixels": 0
+        }
+      ]
+    },
+    {
+      "assetId": "reality_101",
+      "comparisonsAgainstS0": [
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S2",
+          "grid": {
+            "height": 614,
+            "layers": 698,
+            "width": 286
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 3892.9654,
+            "maskSamplingMs": 149.7538,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3169550336,
+            "sliceProcessingMs": 9169.7302,
+            "totalMs": 9502.1005,
+            "wallMs": 9648.3812,
+            "workingSetBytesAfter": 2226855936,
+            "workingSetBytesBefore": 1118175232
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 141781,
+              "G": 141781,
+              "R": 141781,
+              "S": 78958,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 141781,
+            "totalSupportPixelDelta": -62662,
+            "totalUnionPixelDelta": 79119
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S3",
+          "grid": {
+            "height": 614,
+            "layers": 698,
+            "width": 286
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 2726.1019,
+            "maskSamplingMs": 271.1421,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3169779712,
+            "sliceProcessingMs": 7931.4347,
+            "totalMs": 8187.5628,
+            "wallMs": 8303.3856,
+            "workingSetBytesAfter": 2228092928,
+            "workingSetBytesBefore": 1121456128
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 151545,
+              "G": 151545,
+              "R": 151545,
+              "S": 128613,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 151521,
+            "totalSupportPixelDelta": -15275,
+            "totalUnionPixelDelta": 136246
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S4",
+          "grid": {
+            "height": 614,
+            "layers": 698,
+            "width": 286
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 3210.6791,
+            "maskSamplingMs": 203.2857,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 6944.5427,
+            "totalMs": 7247.6563,
+            "wallMs": 7434.3662,
+            "workingSetBytesAfter": 2233163776,
+            "workingSetBytesBefore": 1120382976
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 155092,
+              "G": 155092,
+              "R": 155092,
+              "S": 160115,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 155092,
+            "totalSupportPixelDelta": 14529,
+            "totalUnionPixelDelta": 169621
+          }
+        }
+      ],
+      "configPath": "samples/configs/stage16/layer_slab_pixel_center_candidate.json",
+      "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/reality/260729-16-39-21-792-segment_101.txt.obj",
+      "packageRipRequired": false,
+      "runs": [
+        {
+          "configStrategy": "legacy_center_sample",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 614,
+            "layers": 698,
+            "width": 286
+          },
+          "lastNonEmptyLayer": 697,
+          "modelPixels": 9525511,
+          "performance": {
+            "layerComputeMs": 3715.0932,
+            "maskSamplingMs": 63.0753,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 2063314944,
+            "sliceProcessingMs": 8005.3879,
+            "totalMs": 8271.6691,
+            "wallMs": 8417.3229,
+            "workingSetBytesAfter": 1118167040,
+            "workingSetBytesBefore": 10706944
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S0",
+          "supportPixels": 56738768
+        },
+        {
+          "configStrategy": "layer_slab_pixel_center_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 614,
+            "layers": 698,
+            "width": 286
+          },
+          "lastNonEmptyLayer": 697,
+          "modelPixels": 9667292,
+          "performance": {
+            "layerComputeMs": 3892.9654,
+            "maskSamplingMs": 149.7538,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3169550336,
+            "sliceProcessingMs": 9169.7302,
+            "totalMs": 9502.1005,
+            "wallMs": 9648.3812,
+            "workingSetBytesAfter": 2226855936,
+            "workingSetBytesBefore": 1118175232
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S2",
+          "supportPixels": 56676106
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_at_least_two_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 614,
+            "layers": 698,
+            "width": 286
+          },
+          "lastNonEmptyLayer": 697,
+          "modelPixels": 9677032,
+          "performance": {
+            "layerComputeMs": 2726.1019,
+            "maskSamplingMs": 271.1421,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3169779712,
+            "sliceProcessingMs": 7931.4347,
+            "totalMs": 8187.5628,
+            "wallMs": 8303.3856,
+            "workingSetBytesAfter": 2228092928,
+            "workingSetBytesBefore": 1121456128
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S3",
+          "supportPixels": 56723493
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_any_hit_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 614,
+            "layers": 698,
+            "width": 286
+          },
+          "lastNonEmptyLayer": 697,
+          "modelPixels": 9680603,
+          "performance": {
+            "layerComputeMs": 3210.6791,
+            "maskSamplingMs": 203.2857,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 6944.5427,
+            "totalMs": 7247.6563,
+            "wallMs": 7434.3662,
+            "workingSetBytesAfter": 2233163776,
+            "workingSetBytesBefore": 1120382976
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S4",
+          "supportPixels": 56753297
+        }
+      ]
+    },
+    {
+      "assetId": "reality_102",
+      "comparisonsAgainstS0": [
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S2",
+          "grid": {
+            "height": 510,
+            "layers": 665,
+            "width": 216
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 2221.7698,
+            "maskSamplingMs": 105.7744,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5494.0706,
+            "totalMs": 5729.6759,
+            "wallMs": 5848.4723,
+            "workingSetBytesAfter": 1356722176,
+            "workingSetBytesBefore": 703873024
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 90181,
+              "G": 90181,
+              "R": 90181,
+              "S": 52554,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 90181,
+            "totalSupportPixelDelta": -37322,
+            "totalUnionPixelDelta": 52859
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S3",
+          "grid": {
+            "height": 510,
+            "layers": 665,
+            "width": 216
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 2054.4333,
+            "maskSamplingMs": 158.5444,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5359.7664,
+            "totalMs": 5588.6716,
+            "wallMs": 5697.0434,
+            "workingSetBytesAfter": 1414725632,
+            "workingSetBytesBefore": 677277696
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 96361,
+              "G": 96361,
+              "R": 96361,
+              "S": 92650,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 96355,
+            "totalSupportPixelDelta": 1386,
+            "totalUnionPixelDelta": 97741
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S4",
+          "grid": {
+            "height": 510,
+            "layers": 665,
+            "width": 216
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 2194.1411,
+            "maskSamplingMs": 153.2751,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5498.6629,
+            "totalMs": 5736.9527,
+            "wallMs": 5836.7909,
+            "workingSetBytesAfter": 1419669504,
+            "workingSetBytesBefore": 678211584
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 99375,
+              "G": 99375,
+              "R": 99375,
+              "S": 119035,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 99375,
+            "totalSupportPixelDelta": 26339,
+            "totalUnionPixelDelta": 125714
+          }
+        }
+      ],
+      "configPath": "samples/configs/stage16/layer_slab_pixel_center_candidate.json",
+      "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/reality/260729-16-39-48-086-segment_102.txt.obj",
+      "packageRipRequired": false,
+      "runs": [
+        {
+          "configStrategy": "legacy_center_sample",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 510,
+            "layers": 665,
+            "width": 216
+          },
+          "lastNonEmptyLayer": 663,
+          "modelPixels": 6441105,
+          "performance": {
+            "layerComputeMs": 2116.3444,
+            "maskSamplingMs": 76.3811,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5082.6725,
+            "totalMs": 5303.4436,
+            "wallMs": 5440.9764,
+            "workingSetBytesAfter": 703873024,
+            "workingSetBytesBefore": 14909440
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S0",
+          "supportPixels": 31724833
+        },
+        {
+          "configStrategy": "layer_slab_pixel_center_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 510,
+            "layers": 665,
+            "width": 216
+          },
+          "lastNonEmptyLayer": 664,
+          "modelPixels": 6531286,
+          "performance": {
+            "layerComputeMs": 2221.7698,
+            "maskSamplingMs": 105.7744,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5494.0706,
+            "totalMs": 5729.6759,
+            "wallMs": 5848.4723,
+            "workingSetBytesAfter": 1356722176,
+            "workingSetBytesBefore": 703873024
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S2",
+          "supportPixels": 31687511
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_at_least_two_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 510,
+            "layers": 665,
+            "width": 216
+          },
+          "lastNonEmptyLayer": 664,
+          "modelPixels": 6537460,
+          "performance": {
+            "layerComputeMs": 2054.4333,
+            "maskSamplingMs": 158.5444,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5359.7664,
+            "totalMs": 5588.6716,
+            "wallMs": 5697.0434,
+            "workingSetBytesAfter": 1414725632,
+            "workingSetBytesBefore": 677277696
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S3",
+          "supportPixels": 31726219
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_any_hit_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 510,
+            "layers": 665,
+            "width": 216
+          },
+          "lastNonEmptyLayer": 664,
+          "modelPixels": 6540480,
+          "performance": {
+            "layerComputeMs": 2194.1411,
+            "maskSamplingMs": 153.2751,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5498.6629,
+            "totalMs": 5736.9527,
+            "wallMs": 5836.7909,
+            "workingSetBytesAfter": 1419669504,
+            "workingSetBytesBefore": 678211584
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S4",
+          "supportPixels": 31751172
+        }
+      ]
+    },
+    {
+      "assetId": "reality_103",
+      "comparisonsAgainstS0": [
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S2",
+          "grid": {
+            "height": 521,
+            "layers": 556,
+            "width": 220
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 1808.3938,
+            "maskSamplingMs": 98.563,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4647.0628,
+            "totalMs": 4875.8275,
+            "wallMs": 4922.732,
+            "workingSetBytesAfter": 1591971840,
+            "workingSetBytesBefore": 610512896
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 94620,
+              "G": 94620,
+              "R": 94620,
+              "S": 55366,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 94620,
+            "totalSupportPixelDelta": -39462,
+            "totalUnionPixelDelta": 55158
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S3",
+          "grid": {
+            "height": 521,
+            "layers": 556,
+            "width": 220
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 1718.2797,
+            "maskSamplingMs": 119.1985,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4388.03,
+            "totalMs": 4605.6527,
+            "wallMs": 4666.5165,
+            "workingSetBytesAfter": 1620234240,
+            "workingSetBytesBefore": 1014169600
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 100525,
+              "G": 100525,
+              "R": 100525,
+              "S": 84535,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 100517,
+            "totalSupportPixelDelta": -11615,
+            "totalUnionPixelDelta": 88902
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S4",
+          "grid": {
+            "height": 521,
+            "layers": 556,
+            "width": 220
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 1813.2077,
+            "maskSamplingMs": 189.3394,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5144.9663,
+            "totalMs": 5374.7086,
+            "wallMs": 5422.0692,
+            "workingSetBytesAfter": 1617850368,
+            "workingSetBytesBefore": 594444288
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 103208,
+              "G": 103208,
+              "R": 103208,
+              "S": 110443,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 0,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 0,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 103208,
+            "totalSupportPixelDelta": 13005,
+            "totalUnionPixelDelta": 116213
+          }
+        }
+      ],
+      "configPath": "samples/configs/stage16/layer_slab_pixel_center_candidate.json",
+      "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/reality/260729-16-39-55-435-segment_103.txt.obj",
+      "packageRipRequired": false,
+      "runs": [
+        {
+          "configStrategy": "legacy_center_sample",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 521,
+            "layers": 556,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 555,
+          "modelPixels": 6518784,
+          "performance": {
+            "layerComputeMs": 1805.2959,
+            "maskSamplingMs": 54.4661,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4931.6564,
+            "totalMs": 5160.5939,
+            "wallMs": 5257.4154,
+            "workingSetBytesAfter": 610512896,
+            "workingSetBytesBefore": 17559552
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S0",
+          "supportPixels": 28455239
+        },
+        {
+          "configStrategy": "layer_slab_pixel_center_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 521,
+            "layers": 556,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 555,
+          "modelPixels": 6613404,
+          "performance": {
+            "layerComputeMs": 1808.3938,
+            "maskSamplingMs": 98.563,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4647.0628,
+            "totalMs": 4875.8275,
+            "wallMs": 4922.732,
+            "workingSetBytesAfter": 1591971840,
+            "workingSetBytesBefore": 610512896
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S2",
+          "supportPixels": 28415777
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_at_least_two_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 521,
+            "layers": 556,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 555,
+          "modelPixels": 6619301,
+          "performance": {
+            "layerComputeMs": 1718.2797,
+            "maskSamplingMs": 119.1985,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4388.03,
+            "totalMs": 4605.6527,
+            "wallMs": 4666.5165,
+            "workingSetBytesAfter": 1620234240,
+            "workingSetBytesBefore": 1014169600
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S3",
+          "supportPixels": 28443624
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_any_hit_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 521,
+            "layers": 556,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 555,
+          "modelPixels": 6621992,
+          "performance": {
+            "layerComputeMs": 1813.2077,
+            "maskSamplingMs": 189.3394,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 5144.9663,
+            "totalMs": 5374.7086,
+            "wallMs": 5422.0692,
+            "workingSetBytesAfter": 1617850368,
+            "workingSetBytesBefore": 594444288
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S4",
+          "supportPixels": 28468244
+        }
+      ]
+    },
+    {
+      "assetId": "reality_104",
+      "comparisonsAgainstS0": [
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S2",
+          "grid": {
+            "height": 529,
+            "layers": 505,
+            "width": 220
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 1912.4351,
+            "maskSamplingMs": 59.3741,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4420.1859,
+            "totalMs": 4647.1406,
+            "wallMs": 4744.637,
+            "workingSetBytesAfter": 1105887232,
+            "workingSetBytesBefore": 960684032
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 95919,
+              "G": 95919,
+              "R": 95919,
+              "S": 56809,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 95919,
+            "totalSupportPixelDelta": -39029,
+            "totalUnionPixelDelta": 56890
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S3",
+          "grid": {
+            "height": 529,
+            "layers": 505,
+            "width": 220
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 1766.3862,
+            "maskSamplingMs": 176.4055,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4659.2647,
+            "totalMs": 4889.0636,
+            "wallMs": 4939.2851,
+            "workingSetBytesAfter": 1532796928,
+            "workingSetBytesBefore": 549535744
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 102614,
+              "G": 102614,
+              "R": 102614,
+              "S": 90833,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 102606,
+            "totalSupportPixelDelta": -6311,
+            "totalUnionPixelDelta": 96295
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S4",
+          "grid": {
+            "height": 529,
+            "layers": 505,
+            "width": 220
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 1844.3986,
+            "maskSamplingMs": 113.9727,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4343.2633,
+            "totalMs": 4574.2024,
+            "wallMs": 4640.765,
+            "workingSetBytesAfter": 1538809856,
+            "workingSetBytesBefore": 1013649408
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 105143,
+              "G": 105143,
+              "R": 105143,
+              "S": 119643,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 105143,
+            "totalSupportPixelDelta": 21195,
+            "totalUnionPixelDelta": 126338
+          }
+        }
+      ],
+      "configPath": "samples/configs/stage16/layer_slab_pixel_center_candidate.json",
+      "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/reality/260729-16-40-09-567-segment_104.txt.obj",
+      "packageRipRequired": false,
+      "runs": [
+        {
+          "configStrategy": "legacy_center_sample",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 529,
+            "layers": 505,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 503,
+          "modelPixels": 6404121,
+          "performance": {
+            "layerComputeMs": 1697.3214,
+            "maskSamplingMs": 75.6607,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4326.2375,
+            "totalMs": 4547.2251,
+            "wallMs": 4584.4925,
+            "workingSetBytesAfter": 960684032,
+            "workingSetBytesBefore": 18173952
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S0",
+          "supportPixels": 28753191
+        },
+        {
+          "configStrategy": "layer_slab_pixel_center_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 529,
+            "layers": 505,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 504,
+          "modelPixels": 6500040,
+          "performance": {
+            "layerComputeMs": 1912.4351,
+            "maskSamplingMs": 59.3741,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4420.1859,
+            "totalMs": 4647.1406,
+            "wallMs": 4744.637,
+            "workingSetBytesAfter": 1105887232,
+            "workingSetBytesBefore": 960684032
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S2",
+          "supportPixels": 28714162
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_at_least_two_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 529,
+            "layers": 505,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 504,
+          "modelPixels": 6506727,
+          "performance": {
+            "layerComputeMs": 1766.3862,
+            "maskSamplingMs": 176.4055,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4659.2647,
+            "totalMs": 4889.0636,
+            "wallMs": 4939.2851,
+            "workingSetBytesAfter": 1532796928,
+            "workingSetBytesBefore": 549535744
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S3",
+          "supportPixels": 28746880
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_any_hit_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 529,
+            "layers": 505,
+            "width": 220
+          },
+          "lastNonEmptyLayer": 504,
+          "modelPixels": 6509264,
+          "performance": {
+            "layerComputeMs": 1844.3986,
+            "maskSamplingMs": 113.9727,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 4343.2633,
+            "totalMs": 4574.2024,
+            "wallMs": 4640.765,
+            "workingSetBytesAfter": 1538809856,
+            "workingSetBytesBefore": 1013649408
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S4",
+          "supportPixels": 28774386
+        }
+      ]
+    },
+    {
+      "assetId": "reality_105",
+      "comparisonsAgainstS0": [
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S2",
+          "grid": {
+            "height": 395,
+            "layers": 405,
+            "width": 165
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 889.803099999999,
+            "maskSamplingMs": 44.553,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2090.7118,
+            "totalMs": 2296.8522,
+            "wallMs": 2372.797,
+            "workingSetBytesAfter": 511049728,
+            "workingSetBytesBefore": 475832320
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 53036,
+              "G": 53036,
+              "R": 53036,
+              "S": 32594,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 53036,
+            "totalSupportPixelDelta": -20614,
+            "totalUnionPixelDelta": 32422
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S3",
+          "grid": {
+            "height": 395,
+            "layers": 405,
+            "width": 165
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 984.7288,
+            "maskSamplingMs": 84.3917,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2376.6555,
+            "totalMs": 2606.6767,
+            "wallMs": 2650.0341,
+            "workingSetBytesAfter": 699641856,
+            "workingSetBytesBefore": 255512576
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 58971,
+              "G": 58971,
+              "R": 58971,
+              "S": 54329,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0.0423333333333333,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 1,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 58963,
+            "totalSupportPixelDelta": -227,
+            "totalUnionPixelDelta": 58736
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S4",
+          "grid": {
+            "height": 395,
+            "layers": 405,
+            "width": 165
+          },
+          "layers": [],
+          "packageManifestSha256": null,
+          "performance": {
+            "layerComputeMs": 851.902400000001,
+            "maskSamplingMs": 64.1884,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 1986.3594,
+            "totalMs": 2155.6659,
+            "wallMs": 2197.6948,
+            "workingSetBytesAfter": 706314240,
+            "workingSetBytesBefore": 497500160
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 60995,
+              "G": 60995,
+              "R": 60995,
+              "S": 75974,
+              "V": 0,
+              "W": 0
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0.0423333333333333,
+              "z": 0.01
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 1,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "not_run",
+            "totalModelPixelDelta": 60995,
+            "totalSupportPixelDelta": 20484,
+            "totalUnionPixelDelta": 81479
+          }
+        }
+      ],
+      "configPath": "samples/configs/stage16/layer_slab_pixel_center_candidate.json",
+      "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/reality/260729-16-40-21-739-segment_105.txt.obj",
+      "packageRipRequired": false,
+      "runs": [
+        {
+          "configStrategy": "legacy_center_sample",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 395,
+            "layers": 405,
+            "width": 165
+          },
+          "lastNonEmptyLayer": 403,
+          "modelPixels": 3570581,
+          "performance": {
+            "layerComputeMs": 884.566900000001,
+            "maskSamplingMs": 40.3595,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2113.9422,
+            "totalMs": 2275.9965,
+            "wallMs": 2325.5668,
+            "workingSetBytesAfter": 475832320,
+            "workingSetBytesBefore": 19451904
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S0",
+          "supportPixels": 12677349
+        },
+        {
+          "configStrategy": "layer_slab_pixel_center_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 395,
+            "layers": 405,
+            "width": 165
+          },
+          "lastNonEmptyLayer": 404,
+          "modelPixels": 3623617,
+          "performance": {
+            "layerComputeMs": 889.803099999999,
+            "maskSamplingMs": 44.553,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2090.7118,
+            "totalMs": 2296.8522,
+            "wallMs": 2372.797,
+            "workingSetBytesAfter": 511049728,
+            "workingSetBytesBefore": 475832320
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S2",
+          "supportPixels": 12656735
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_at_least_two_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 395,
+            "layers": 405,
+            "width": 165
+          },
+          "lastNonEmptyLayer": 404,
+          "modelPixels": 3629544,
+          "performance": {
+            "layerComputeMs": 984.7288,
+            "maskSamplingMs": 84.3917,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2376.6555,
+            "totalMs": 2606.6767,
+            "wallMs": 2650.0341,
+            "workingSetBytesAfter": 699641856,
+            "workingSetBytesBefore": 255512576
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S3",
+          "supportPixels": 12677122
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_any_hit_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 395,
+            "layers": 405,
+            "width": 165
+          },
+          "lastNonEmptyLayer": 404,
+          "modelPixels": 3631576,
+          "performance": {
+            "layerComputeMs": 851.902400000001,
+            "maskSamplingMs": 64.1884,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 1986.3594,
+            "totalMs": 2155.6659,
+            "wallMs": 2197.6948,
+            "workingSetBytesAfter": 706314240,
+            "workingSetBytesBefore": 497500160
+          },
+          "ripStrictStatus": "not_run",
+          "strategy": "S4",
+          "supportPixels": 12697833
+        }
+      ]
+    },
+    {
+      "assetId": "stage15_white_carrier",
+      "comparisonsAgainstS0": [
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S2",
+          "grid": {
+            "height": 623,
+            "layers": 145,
+            "width": 300
+          },
+          "layers": [],
+          "packageManifestSha256": "972de7cd79e167230073e83583faef6dbfd3d100d29176c7fd14dd2d90d2f8f7",
+          "performance": {
+            "layerComputeMs": 1400.7594,
+            "maskSamplingMs": 38.2348,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2768.4593,
+            "totalMs": 5401.4633,
+            "wallMs": 5421.7932,
+            "workingSetBytesAfter": 720785408,
+            "workingSetBytesBefore": 475111424
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 153006,
+              "G": 145877,
+              "R": 144012,
+              "S": 82414,
+              "V": 0,
+              "W": 8424
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.038
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "passed",
+            "totalModelPixelDelta": 164954,
+            "totalSupportPixelDelta": -82358,
+            "totalUnionPixelDelta": 82596
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S3",
+          "grid": {
+            "height": 623,
+            "layers": 145,
+            "width": 300
+          },
+          "layers": [],
+          "packageManifestSha256": "179edfb106f4dd2401b625fb533446af75ca893ccce907114843b0136a663789",
+          "performance": {
+            "layerComputeMs": 1307.1196,
+            "maskSamplingMs": 96.5363,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2825.874,
+            "totalMs": 4744.221,
+            "wallMs": 4758.2069,
+            "workingSetBytesAfter": 721309696,
+            "workingSetBytesBefore": 558305280
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 158220,
+              "G": 150915,
+              "R": 149111,
+              "S": 91961,
+              "V": 0,
+              "W": 8450
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.038
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "passed",
+            "totalModelPixelDelta": 169598,
+            "totalSupportPixelDelta": -73675,
+            "totalUnionPixelDelta": 95923
+          }
+        },
+        {
+          "baselineIdentity": "S0",
+          "candidateIdentity": "S4",
+          "grid": {
+            "height": 623,
+            "layers": 145,
+            "width": 300
+          },
+          "layers": [],
+          "packageManifestSha256": "c953f5df8cc7d80c7aaeae7fa4b2003f586dc59a162d75305f44783e49710efd",
+          "performance": {
+            "layerComputeMs": 1571.7464,
+            "maskSamplingMs": 166.7779,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 3582.5907,
+            "totalMs": 6103.9125,
+            "wallMs": 6120.2962,
+            "workingSetBytesAfter": 718389248,
+            "workingSetBytesBefore": 264765440
+          },
+          "schema": "slicesoft.stage16.layer_channel_diff.1",
+          "summary": {
+            "channelDifferentPixels": {
+              "B": 160449,
+              "G": 153132,
+              "R": 151338,
+              "S": 99610,
+              "V": 0,
+              "W": 8464
+            },
+            "connectedComponentDelta": 1,
+            "dimensionBiasMm": {
+              "x": 0,
+              "y": 0,
+              "z": 0.038
+            },
+            "dimensionBiasPixels": {
+              "x": 0,
+              "y": 0,
+              "z": 1
+            },
+            "firstNonEmptyLayerDelta": 0,
+            "lastNonEmptyLayerDelta": 1,
+            "ripStrictStatus": "passed",
+            "totalModelPixelDelta": 171857,
+            "totalSupportPixelDelta": -66408,
+            "totalUnionPixelDelta": 105449
+          }
+        }
+      ],
+      "configPath": "samples/configs/material_process/stage15_f01_xiaoma_white_carrier.json",
+      "modelPath": "E:/__Code/__Work/slice_test_demo/slice_soft_demo/model/obj/小马物语/小马物语小指/MF_Xiao_ma_Xiaozhi_ty03.obj",
+      "packageRipRequired": true,
+      "runs": [
+        {
+          "configStrategy": "legacy_center_sample",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 623,
+            "layers": 145,
+            "width": 300
+          },
+          "lastNonEmptyLayer": 143,
+          "modelPixels": 2747715,
+          "performance": {
+            "layerComputeMs": 1274.8526,
+            "maskSamplingMs": 39.2433,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2390.8439,
+            "totalMs": 4022.0871,
+            "wallMs": 4033.1507,
+            "workingSetBytesAfter": 474415104,
+            "workingSetBytesBefore": 18452480
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S0",
+          "supportPixels": 14589758
+        },
+        {
+          "configStrategy": "layer_slab_pixel_center_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 623,
+            "layers": 145,
+            "width": 300
+          },
+          "lastNonEmptyLayer": 144,
+          "modelPixels": 2912669,
+          "performance": {
+            "layerComputeMs": 1400.7594,
+            "maskSamplingMs": 38.2348,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2768.4593,
+            "totalMs": 5401.4633,
+            "wallMs": 5421.7932,
+            "workingSetBytesAfter": 720785408,
+            "workingSetBytesBefore": 475111424
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S2",
+          "supportPixels": 14507400
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_at_least_two_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 623,
+            "layers": 145,
+            "width": 300
+          },
+          "lastNonEmptyLayer": 144,
+          "modelPixels": 2917313,
+          "performance": {
+            "layerComputeMs": 1307.1196,
+            "maskSamplingMs": 96.5363,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 2825.874,
+            "totalMs": 4744.221,
+            "wallMs": 4758.2069,
+            "workingSetBytesAfter": 721309696,
+            "workingSetBytesBefore": 558305280
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S3",
+          "supportPixels": 14516083
+        },
+        {
+          "configStrategy": "layer_slab_supersample_2x2_any_hit_candidate",
+          "firstNonEmptyLayer": 0,
+          "grid": {
+            "height": 623,
+            "layers": 145,
+            "width": 300
+          },
+          "lastNonEmptyLayer": 144,
+          "modelPixels": 2919572,
+          "performance": {
+            "layerComputeMs": 1571.7464,
+            "maskSamplingMs": 166.7779,
+            "memoryIsolation": "process_wide_diagnostic_not_per_run_peak",
+            "processPeakWorkingSetBytes": 3170930688,
+            "sliceProcessingMs": 3582.5907,
+            "totalMs": 6103.9125,
+            "wallMs": 6120.2962,
+            "workingSetBytesAfter": 718389248,
+            "workingSetBytesBefore": 264765440
+          },
+          "ripStrictStatus": "passed",
+          "strategy": "S4",
+          "supportPixels": 14523350
+        }
+      ]
+    }
+  ],
+  "buildConfig": "Release",
+  "notes": [
+    "timing is diagnostic and not a p50/p95 performance baseline",
+    "memory peak is process-wide; isolated Release measurements belong to 16C-02",
+    "S0 remains the production default"
+  ],
+  "pass": true,
+  "quickMode": false,
+  "schema": "slicesoft.stage16.sampling_matrix.1",
+  "stage": "16A-05",
+  "strategies": [
+    "S0",
+    "S2",
+    "S3",
+    "S4"
+  ],
+  "syntheticFixtureGate": {
+    "fixtureCount": 6,
+    "fixtureSchema": "slicesoft.stage16.geometry_sampling_fixture.1",
+    "fixtures": [
+      {
+        "id": "flat_bottom_block",
+        "kind": "heightfield_columns",
+        "status": "passed"
+      },
+      {
+        "id": "ascending_wedge",
+        "kind": "heightfield_columns",
+        "status": "passed"
+      },
+      {
+        "id": "descending_wedge",
+        "kind": "heightfield_columns",
+        "status": "passed"
+      },
+      {
+        "id": "circular_contact_edge",
+        "kind": "coverage_samples",
+        "status": "passed"
+      },
+      {
+        "id": "subpixel_thin_sheet",
+        "kind": "coverage_samples",
+        "status": "passed"
+      },
+      {
+        "id": "multi_interval_column_negative",
+        "kind": "multi_interval_columns",
+        "status": "expected_rejected"
+      }
+    ],
+    "pass": true
+  }
+}

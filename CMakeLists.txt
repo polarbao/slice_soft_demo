@@ -1628,6 +1628,15 @@ target_compile_definitions(stage16_contact_leveling_diagnostic PRIVATE
     SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(stage16_sampling_matrix
+    apps/stage16_sampling_matrix/Main.cpp
+)
+target_link_libraries(stage16_sampling_matrix PRIVATE slicer_core)
+target_compile_definitions(stage16_sampling_matrix PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    SLICESOFT_BUILD_CONFIG="$<CONFIG>"
+)
+
 add_executable(material_closure_report_unit_tests
     tests/unit/material_closure_report/main.cpp
 )
@@ -2482,6 +2491,13 @@ add_test(
     COMMAND stage16_contact_leveling_diagnostic
         --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
         --output "${CMAKE_CURRENT_BINARY_DIR}/stage16/contact_leveling_diagnostic.json"
+)
+add_test(
+    NAME stage16_sampling_matrix_tests
+    COMMAND stage16_sampling_matrix
+        --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
+        --output "${CMAKE_CURRENT_BINARY_DIR}/stage16/sampling_matrix.json"
+        --quick
 )
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)
 add_test(NAME material_closure_candidate_detector_unit_tests COMMAND material_closure_candidate_detector_unit_tests)

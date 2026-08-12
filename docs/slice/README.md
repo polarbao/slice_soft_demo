@@ -10,7 +10,7 @@
 
 当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 的 `GO_OPTIONAL` 保留为历史基线；用户授权的 TIFF T-A-01..03 已于 2026-08-11 完成，默认 Writer 现为 LibTIFF 4.7.1，handwritten 仅保留显式遗留验证轨道，默认压缩仍为 `none`。`03E-02` 已完成项目内 PackBits Gate 并转为 `GO_ON_DEMAND`；这不等于目标外部 RIP/控制软件互操作已验收，T-A-04 在取得该证据前继续阻塞。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：14A 切片侧实现已收口，14A-03 与双视图纹理 14A-04-R1 待打印侧回签；2026-08-06 的当前入口为 14C-06A READY 与 14D-08 解阻拆分准备，后续状态以 `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` 为准。S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
 
-Stage 16 已通过 16-00 PARTIAL GO 并进入实施。16A-01..04、16B-01/02 与 16C-01 已完成；当前唯一跨线瓶颈是 16A-05，16B-03 与 16C-02 均等待其冻结采样比较口径，16D 仍等待 16A-06 和必要的 16B 候选。默认策略继续关闭。
+Stage 16 已通过 16-00 PARTIAL GO 并进入实施。16A-01..05、16B-01/02 与 16C-01 已完成；机器可读 S0/S2/S3/S4 矩阵已覆盖合成 fixture、Reality 5/5、Stage 15 和 Package/RIP。16A-06、16B-03 与 16C-02 的准备依赖已满足，16D 仍等待 16A-06 和必要的 16B 候选。默认策略继续关闭。
 
 ## 目录结构
 
@@ -117,6 +117,8 @@ Stage 16 已通过 16-00 PARTIAL GO 并进入实施。16A-01..04、16B-01/02 与
 | `PRD/PRD_16_切片几何采样与甲片接触姿态性能专项.md` | Stage 16 产品目标、验收 Gate 和待确认产品输入 |
 | `DEV/DEV_16_层体积采样接触调平与性能治理设计.md` | Stage 16 采样 Provider、调平分析器、Telemetry 和性能治理设计 |
 | `DOC/DOC_PREP_16_切片几何采样甲片接触姿态与性能实施准备.md` | Stage 16 当前证据、离线模拟、资产边界和开工停止条件 |
+| `DOC/DOC_PREP_16A_05_机器可读候选矩阵实施准备.md` | 16A-05 S0/S2/S3/S4 资产、逐层差异、RIP 与性能证据边界 |
+| `REPORT/REPORT_16A_05_机器可读候选矩阵当前状态.md` | 16A-05 Reality/Stage 15/Package-RIP 实测矩阵与后续 Gate |
 | `../codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md` | Stage 16 的 16-00/16A/16B/16C/16D 原子任务与当前准入状态 |
 | `../codex_task/current/CODEX_PROMPT_16_切片几何采样甲片接触姿态与性能专项执行指令.md` | Stage 16 执行硬门、不变量、验证和停止条件 |
 | `REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 文档准备、当前实现事实、优先级和下一任务 |

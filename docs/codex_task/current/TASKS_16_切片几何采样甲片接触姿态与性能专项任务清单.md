@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-04 / 16B-02 / 16C-01 COMPLETE；16A-05 NEXT**
-> 版本：v1.1
+> 状态：**16A-05 / 16B-02 / 16C-01 COMPLETE；16A-06、16B-03、16C-02 READY**
+> 版本：v1.2
 > 日期：2026-08-12
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -190,6 +190,11 @@ PASS，Stage 16 CTest 2/2 PASS，Legacy Golden TIFF 差异 0/25；默认仍为 L
 **内容：** 对 S0/S2/S3/S4 运行合成 fixture、Reality 5/5、Stage 15 和 Package/RIP 矩阵。
 **出口：** `sampling_matrix.json`，包含逐层/通道 diff、尺寸偏差、连通分量、时间和内存。
 
+**实际结果：** 新增 Release `stage16_sampling_matrix`。合成 fixture 与 Stage 15 白区载体
+S0/S2/S3/S4 Package/RIP strict 8/8 PASS；Reality 5/5 使用真实下表面支撑完成四策略矩阵。
+S3 在 Reality 5/5 上比 S4 更克制地扩张模型/支撑占用；候选计时和进程内存只作诊断，
+16C-02 仍须独立重跑 p50/p95。默认继续为 S0。
+
 ### 16A-06 采样候选决策刷新
 
 **依赖：** 16A-05
@@ -370,10 +375,10 @@ Stage 14 closure
 ```text
 保留本文档和上游 PRD/DEV/DECISION/PREP/PROMPT；
 R-F 线与 16-00-01..04 已完成；
-16A-01/02/03/04 已完成并通过定向验证、候选 Package/RIP 与 Golden 零漂移检查；
+16A-01/02/03/04/05 已完成并通过定向验证、候选 Package/RIP、真实矩阵与 Golden 零漂移检查；
 16B-01/02 已完成，Reality 5/5 与标准甲片的基线、只读调平候选均为 6/6 PASS；
-下一张依赖已满足的 16A 卡为 16A-05 机器可读候选矩阵；
-用户已授权同步推进，16C-01 已完成；16B-03 与 16C-02 均等待 16A-05；
+下一张依赖已满足的 16A 卡为 16A-06 候选决策刷新；
+用户已授权同步推进，16B-03 与 16C-02 的 16A-05 前置均已满足；
 16D 仍依赖 16A-06 和必要的 16B 候选，不得提前越过 Gate；
 候选和默认配置继续关闭。
 ```
@@ -382,6 +387,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-12 | v1.2 | 完成 16A-05：新增机器可读 S0/S2/S3/S4 候选矩阵，合成 fixture、Reality 5/5、Stage 15 和 Package/RIP 全部执行；归档逐层/通道、尺寸、连通分量、时间和内存诊断，16A-06、16B-03、16C-02 依赖转为满足。 |
 | 2026-08-12 | v1.1 | 完成 16B-02：实现无 Qt、无文件名特判的确定性只读调平分析器，Reality 5/5 与标准甲片 1/1 共 6/6 PASS；候选不改变顶点和默认姿态，16B-03 继续等待 16A-05。 |
 | 2026-08-12 | v1.0 | 完成 16C-01：新增 import parse/hash 与 visible instance core/compose/total 真实计时，未独立执行的 texture/preview 输出 null；Worker/scene CTest 2/2 PASS，16C-02 继续等待 16A-05。 |
 | 2026-08-12 | v0.9 | 完成 16B-01：冻结两侧边界带、首半 slab 接触面积代理、候选角及 +Z/+Y 约束；新增无 Qt 只读测量器、单测和确定性 `posture_baseline.json`，Reality 5/5 与标准甲片 6/6 PASS；16B-02 依赖满足，16D 仍等待 16A-06。 |
