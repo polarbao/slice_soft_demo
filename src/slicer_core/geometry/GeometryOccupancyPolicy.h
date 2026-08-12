@@ -45,4 +45,19 @@ constexpr GeometryOccupancyPolicy MakeLayerSlabGeometryOccupancyPolicy() noexcep
     return policy;
 }
 
+/**
+ * @brief Build a Stage 16A-04 layer-slab, fixed 2x2 coverage candidate policy.
+ * @param minimumCoveredSubsamples Required covered samples per output pixel and layer.
+ * @return Policy using half-open layer slabs and fixed 2x2 XY coverage.
+ */
+constexpr GeometryOccupancyPolicy MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(
+    const unsigned minimumCoveredSubsamples) noexcept
+{
+    GeometryOccupancyPolicy policy;
+    policy.layerMode = LayerOccupancyMode::LayerSlabCoverage;
+    policy.xyMode = XyCoverageMode::Supersample2x2;
+    policy.minimumCoveredSubsamples = minimumCoveredSubsamples;
+    return policy;
+}
+
 }  // namespace slicer_core

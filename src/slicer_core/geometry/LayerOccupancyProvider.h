@@ -28,6 +28,7 @@ struct GeometryOccupancyColumn
 struct LayerOccupancyRequest
 {
     std::span<const GeometryOccupancyColumn> columns;
+    std::span<const GeometryOccupancyColumn> coverageSubsampleColumns;
     int layerCount{0};
     double layerThicknessMm{0.0};
     GeometryOccupancyInputKind inputKind{GeometryOccupancyInputKind::SingleIntervalHeightfield};
@@ -49,7 +50,7 @@ struct LayerOccupancyResult
 
 /**
  * @brief Materializes geometry occupancy using an explicit STL-only strategy.
- * @param request Column field, output-layer geometry, and occupancy strategy.
+ * @param request Column field, optional fixed 2x2 coverage field, output-layer geometry, and strategy.
  * @return Layer masks and per-column occupied ranges.
  * @throws std::invalid_argument when the request is invalid or selects an unsupported candidate.
  */

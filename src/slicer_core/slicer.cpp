@@ -1209,135 +1209,326 @@ int last_layer_at_or_below_z(const double z_mm, const double layer_thickness_mm)
     return static_cast<int>(std::floor(z_mm / layer_thickness_mm - 0.5));
 }
 
+constexpr std::array<std::array<double, 2>, 4> kSupersample2x2Offsets{{
+    {0.25, 0.25},
+    {0.75, 0.25},
+    {0.25, 0.75},
+    {0.75, 0.75},
+}};
+
+bool IsProvenInteriorHeightfieldPixel(
+    const std::vector<int>& hitCount,
+    const GridSpec& grid,
+    const int x,
+    const int y)
+{
+    if (x <= 0 || y <= 0 || x >= grid.width_px - 1 || y >= grid.height_px - 1)
+    {
+        return false;
+    }
+    for (int yOffset{-1}; yOffset <= 1; ++yOffset)
+    {
+        for (int xOffset{-1}; xOffset <= 1; ++xOffset)
+        {
+            if (hitCount.at(mask_index(grid, x + xOffset, y + yOffset)) == 0)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void AccumulateReliefColumnReport(
+    ReliefReportData& reliefReport,
+    const ReliefColumnInfo& column)
+{
+    ++reliefReport.hit_columns;
+    if (column.multi_hit)
+    {
+        ++reliefReport.multi_hit_columns;
+    }
+    const double thicknessMm{column.z_max_mm - column.z_min_mm};
+    if (!reliefReport.has_hits)
+    {
+        reliefReport.z_min_mm = column.z_min_mm;
+        reliefReport.z_max_mm = column.z_max_mm;
+        reliefReport.thickness_min_mm = thicknessMm;
+        reliefReport.thickness_max_mm = thicknessMm;
+        reliefReport.has_hits = true;
+        return;
+    }
+    reliefReport.z_min_mm = std::min(reliefReport.z_min_mm, column.z_min_mm);
+    reliefReport.z_max_mm = std::max(reliefReport.z_max_mm, column.z_max_mm);
+    reliefReport.thickness_min_mm = std::min(reliefReport.thickness_min_mm, thicknessMm);
+    reliefReport.thickness_max_mm = std::max(reliefReport.thickness_max_mm, thicknessMm);
+}
+
 ReliefSamplingResult sample_relief_heightfield_masks(
     const SliceConfig& config,
     const ModelReport& model_report,
     const GridSpec& grid,
-    std::vector<LayerDiagnostics>& diagnostics) {
-    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    std::vector<double> z_min(pixel_count, std::numeric_limits<double>::max());
-    std::vector<double> z_max(pixel_count, std::numeric_limits<double>::lowest());
-    std::vector<int> hit_count(pixel_count, 0);
-    const bool useLayerSlabCandidate =
-        config.geometry_sampling.strategy == "layer_slab_pixel_center_candidate";
-    const GeometryOccupancyPolicy occupancyPolicy = useLayerSlabCandidate
-        ? MakeLayerSlabGeometryOccupancyPolicy()
-        : MakeLegacyGeometryOccupancyPolicy();
+    std::vector<LayerDiagnostics>& diagnostics)
+{
+    const std::size_t pixelCount{static_cast<std::size_t>(grid.width_px) * grid.height_px};
+    std::vector<double> zMin(pixelCount, std::numeric_limits<double>::max());
+    std::vector<double> zMax(pixelCount, std::numeric_limits<double>::lowest());
+    std::vector<int> hitCount(pixelCount, 0);
+    const bool useSupersampleAtLeastTwo = config.geometry_sampling.strategy
+        == "layer_slab_supersample_2x2_at_least_two_candidate";
+    const bool useSupersampleAnyHit = config.geometry_sampling.strategy
+        == "layer_slab_supersample_2x2_any_hit_candidate";
+    const bool useSupersampleCandidate{useSupersampleAtLeastTwo || useSupersampleAnyHit};
+    const bool useLayerSlabCandidate = useSupersampleCandidate
+        || config.geometry_sampling.strategy == "layer_slab_pixel_center_candidate";
+    const GeometryOccupancyPolicy occupancyPolicy = useSupersampleCandidate
+        ? MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(useSupersampleAtLeastTwo ? 2U : 1U)
+        : (useLayerSlabCandidate
+            ? MakeLayerSlabGeometryOccupancyPolicy()
+            : MakeLegacyGeometryOccupancyPolicy());
     ValidateLayerOccupancyPolicy(occupancyPolicy);
 
     ReliefSamplingResult result;
-    result.columns.resize(pixel_count);
-    ReliefReportData& relief_report = result.report;
-    relief_report.total_columns = static_cast<int>(pixel_count);
+    result.columns.resize(pixelCount);
+    ReliefReportData& reliefReport{result.report};
+    reliefReport.total_columns = static_cast<int>(pixelCount);
+    std::vector<std::uint8_t> projectedCandidateMask;
+    if (useSupersampleCandidate)
+    {
+        projectedCandidateMask.assign(pixelCount, 0);
+    }
 
-    for (std::size_t triangle_index{0}; triangle_index < model_report.triangles.size(); ++triangle_index) {
-        const Triangle& triangle = model_report.triangles.at(triangle_index);
-        const double min_x = std::min({triangle.a.x, triangle.b.x, triangle.c.x});
-        const double max_x = std::max({triangle.a.x, triangle.b.x, triangle.c.x});
-        const double min_y = std::min({triangle.a.y, triangle.b.y, triangle.c.y});
-        const double max_y = std::max({triangle.a.y, triangle.b.y, triangle.c.y});
-        int start_x = static_cast<int>(std::floor((min_x - grid.origin_x_mm) / grid.pixel_size_x_mm)) - 1;
-        int end_x = static_cast<int>(std::ceil((max_x - grid.origin_x_mm) / grid.pixel_size_x_mm)) + 1;
-        int start_y = static_cast<int>(std::floor((min_y - grid.origin_y_mm) / grid.pixel_size_y_mm)) - 1;
-        int end_y = static_cast<int>(std::ceil((max_y - grid.origin_y_mm) / grid.pixel_size_y_mm)) + 1;
-        start_x = std::max(0, start_x);
-        start_y = std::max(0, start_y);
-        end_x = std::min(grid.width_px - 1, end_x);
-        end_y = std::min(grid.height_px - 1, end_y);
-        if (start_x > end_x || start_y > end_y) {
+    for (std::size_t triangleIndex{0}; triangleIndex < model_report.triangles.size(); ++triangleIndex)
+    {
+        const Triangle& triangle{model_report.triangles.at(triangleIndex)};
+        const double minX{std::min({triangle.a.x, triangle.b.x, triangle.c.x})};
+        const double maxX{std::max({triangle.a.x, triangle.b.x, triangle.c.x})};
+        const double minY{std::min({triangle.a.y, triangle.b.y, triangle.c.y})};
+        const double maxY{std::max({triangle.a.y, triangle.b.y, triangle.c.y})};
+        int startX{static_cast<int>(std::floor((minX - grid.origin_x_mm) / grid.pixel_size_x_mm)) - 1};
+        int endX{static_cast<int>(std::ceil((maxX - grid.origin_x_mm) / grid.pixel_size_x_mm)) + 1};
+        int startY{static_cast<int>(std::floor((minY - grid.origin_y_mm) / grid.pixel_size_y_mm)) - 1};
+        int endY{static_cast<int>(std::ceil((maxY - grid.origin_y_mm) / grid.pixel_size_y_mm)) + 1};
+        startX = std::max(0, startX);
+        startY = std::max(0, startY);
+        endX = std::min(grid.width_px - 1, endX);
+        endY = std::min(grid.height_px - 1, endY);
+        if (startX > endX || startY > endY)
+        {
             continue;
         }
 
-        for (int y{start_y}; y <= end_y; ++y) {
-            const double y_mm = grid.origin_y_mm + (static_cast<double>(y) + 0.5) * grid.pixel_size_y_mm;
-            for (int x{start_x}; x <= end_x; ++x) {
-                const double x_mm = grid.origin_x_mm + (static_cast<double>(x) + 0.5) * grid.pixel_size_x_mm;
+        for (int y{startY}; y <= endY; ++y)
+        {
+            const double yMm{grid.origin_y_mm + (static_cast<double>(y) + 0.5) * grid.pixel_size_y_mm};
+            for (int x{startX}; x <= endX; ++x)
+            {
+                const std::size_t pixelIndex{mask_index(grid, x, y)};
+                if (useSupersampleCandidate)
+                {
+                    projectedCandidateMask.at(pixelIndex) = 1;
+                }
+                const double xMm{grid.origin_x_mm + (static_cast<double>(x) + 0.5) * grid.pixel_size_x_mm};
                 double w0{0.0};
                 double w1{0.0};
                 double w2{0.0};
-                if (!point_in_triangle_xy({x_mm, y_mm, 0.0}, triangle, w0, w1, w2)) {
+                if (!point_in_triangle_xy({xMm, yMm, 0.0}, triangle, w0, w1, w2))
+                {
                     continue;
                 }
-                const double z_mm = w0 * triangle.a.z + w1 * triangle.b.z + w2 * triangle.c.z;
-                const std::size_t index = mask_index(grid, x, y);
-                z_min.at(index) = std::min(z_min.at(index), z_mm);
-                if (z_mm >= z_max.at(index)) {
-                    z_max.at(index) = z_mm;
-                    ReliefColumnInfo& column = result.columns.at(index);
-                    column.top_triangle_index = static_cast<int>(triangle_index);
+                const double zMm{w0 * triangle.a.z + w1 * triangle.b.z + w2 * triangle.c.z};
+                zMin.at(pixelIndex) = std::min(zMin.at(pixelIndex), zMm);
+                if (zMm >= zMax.at(pixelIndex))
+                {
+                    zMax.at(pixelIndex) = zMm;
+                    ReliefColumnInfo& column{result.columns.at(pixelIndex)};
+                    column.top_triangle_index = static_cast<int>(triangleIndex);
                     column.top_barycentric = {w0, w1, w2};
                 }
-                ++hit_count.at(index);
+                ++hitCount.at(pixelIndex);
             }
+        }
+    }
+
+    std::vector<GeometryOccupancyColumn> coverageSubsampleColumns;
+    if (useSupersampleCandidate)
+    {
+        coverageSubsampleColumns.resize(pixelCount * kSupersample2x2Offsets.size());
+        std::vector<std::uint8_t> boundaryCandidateMask(pixelCount, 0);
+        std::vector<double> subsampleZMin(
+            coverageSubsampleColumns.size(),
+            std::numeric_limits<double>::max());
+        std::vector<double> subsampleZMax(
+            coverageSubsampleColumns.size(),
+            std::numeric_limits<double>::lowest());
+        std::vector<int> subsampleHitCount(coverageSubsampleColumns.size(), 0);
+        std::vector<double> representativeTopZ{zMax};
+
+        for (int y{0}; y < grid.height_px; ++y)
+        {
+            for (int x{0}; x < grid.width_px; ++x)
+            {
+                const std::size_t pixelIndex{mask_index(grid, x, y)};
+                if (IsProvenInteriorHeightfieldPixel(hitCount, grid, x, y))
+                {
+                    const double startZ = config.relief.fill_mode == "surface_to_base"
+                        ? config.relief.base_z_mm
+                        : zMin.at(pixelIndex);
+                    for (std::size_t sampleIndex{0}; sampleIndex < kSupersample2x2Offsets.size(); ++sampleIndex)
+                    {
+                        coverageSubsampleColumns.at(
+                            pixelIndex * kSupersample2x2Offsets.size() + sampleIndex) = {
+                                true,
+                                startZ,
+                                zMax.at(pixelIndex)};
+                    }
+                }
+                else if (projectedCandidateMask.at(pixelIndex) != 0)
+                {
+                    boundaryCandidateMask.at(pixelIndex) = 1;
+                }
+            }
+        }
+
+        for (std::size_t triangleIndex{0}; triangleIndex < model_report.triangles.size(); ++triangleIndex)
+        {
+            const Triangle& triangle{model_report.triangles.at(triangleIndex)};
+            const double minX{std::min({triangle.a.x, triangle.b.x, triangle.c.x})};
+            const double maxX{std::max({triangle.a.x, triangle.b.x, triangle.c.x})};
+            const double minY{std::min({triangle.a.y, triangle.b.y, triangle.c.y})};
+            const double maxY{std::max({triangle.a.y, triangle.b.y, triangle.c.y})};
+            int startX{static_cast<int>(std::floor((minX - grid.origin_x_mm) / grid.pixel_size_x_mm)) - 1};
+            int endX{static_cast<int>(std::ceil((maxX - grid.origin_x_mm) / grid.pixel_size_x_mm)) + 1};
+            int startY{static_cast<int>(std::floor((minY - grid.origin_y_mm) / grid.pixel_size_y_mm)) - 1};
+            int endY{static_cast<int>(std::ceil((maxY - grid.origin_y_mm) / grid.pixel_size_y_mm)) + 1};
+            startX = std::max(0, startX);
+            startY = std::max(0, startY);
+            endX = std::min(grid.width_px - 1, endX);
+            endY = std::min(grid.height_px - 1, endY);
+
+            for (int y{startY}; y <= endY; ++y)
+            {
+                for (int x{startX}; x <= endX; ++x)
+                {
+                    const std::size_t pixelIndex{mask_index(grid, x, y)};
+                    if (boundaryCandidateMask.at(pixelIndex) == 0)
+                    {
+                        continue;
+                    }
+                    for (std::size_t sampleIndex{0}; sampleIndex < kSupersample2x2Offsets.size(); ++sampleIndex)
+                    {
+                        const double xMm = grid.origin_x_mm
+                            + (static_cast<double>(x) + kSupersample2x2Offsets.at(sampleIndex).at(0))
+                                * grid.pixel_size_x_mm;
+                        const double yMm = grid.origin_y_mm
+                            + (static_cast<double>(y) + kSupersample2x2Offsets.at(sampleIndex).at(1))
+                                * grid.pixel_size_y_mm;
+                        double w0{0.0};
+                        double w1{0.0};
+                        double w2{0.0};
+                        if (!point_in_triangle_xy({xMm, yMm, 0.0}, triangle, w0, w1, w2))
+                        {
+                            continue;
+                        }
+                        const double zMm{w0 * triangle.a.z + w1 * triangle.b.z + w2 * triangle.c.z};
+                        const std::size_t flatSampleIndex{
+                            pixelIndex * kSupersample2x2Offsets.size() + sampleIndex};
+                        subsampleZMin.at(flatSampleIndex) = std::min(subsampleZMin.at(flatSampleIndex), zMm);
+                        subsampleZMax.at(flatSampleIndex) = std::max(subsampleZMax.at(flatSampleIndex), zMm);
+                        ++subsampleHitCount.at(flatSampleIndex);
+                        zMin.at(pixelIndex) = std::min(zMin.at(pixelIndex), zMm);
+                        zMax.at(pixelIndex) = std::max(zMax.at(pixelIndex), zMm);
+                        hitCount.at(pixelIndex) = std::max(
+                            hitCount.at(pixelIndex),
+                            subsampleHitCount.at(flatSampleIndex));
+                        if (zMm >= representativeTopZ.at(pixelIndex))
+                        {
+                            representativeTopZ.at(pixelIndex) = zMm;
+                            ReliefColumnInfo& column{result.columns.at(pixelIndex)};
+                            column.top_triangle_index = static_cast<int>(triangleIndex);
+                            column.top_barycentric = {w0, w1, w2};
+                        }
+                    }
+                }
+            }
+        }
+
+        for (std::size_t flatSampleIndex{0}; flatSampleIndex < coverageSubsampleColumns.size(); ++flatSampleIndex)
+        {
+            if (subsampleHitCount.at(flatSampleIndex) == 0)
+            {
+                continue;
+            }
+            const double startZ = config.relief.fill_mode == "surface_to_base"
+                ? config.relief.base_z_mm
+                : subsampleZMin.at(flatSampleIndex);
+            coverageSubsampleColumns.at(flatSampleIndex) = {
+                true,
+                startZ,
+                subsampleZMax.at(flatSampleIndex)};
         }
     }
 
     result.model_masks.resize(
         static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixel_count, 0));
+        std::vector<std::uint8_t>(pixelCount, 0));
     diagnostics.clear();
     diagnostics.reserve(grid.layer_count);
-    for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
-        LayerDiagnostics layer_diagnostics;
-        layer_diagnostics.layer_index = layer_index;
-        layer_diagnostics.z_mm = (static_cast<double>(layer_index) + 0.5) * config.output.layer_thickness_mm;
-        diagnostics.push_back(layer_diagnostics);
+    for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
+    {
+        LayerDiagnostics layerDiagnostics;
+        layerDiagnostics.layer_index = layerIndex;
+        layerDiagnostics.z_mm = (static_cast<double>(layerIndex) + 0.5)
+            * config.output.layer_thickness_mm;
+        diagnostics.push_back(layerDiagnostics);
     }
 
     std::vector<GeometryOccupancyColumn> occupancyColumns;
     if (useLayerSlabCandidate)
     {
-        occupancyColumns.resize(pixel_count);
+        occupancyColumns.resize(pixelCount);
     }
 
-    for (std::size_t index{0}; index < pixel_count; ++index) {
-        if (hit_count.at(index) == 0) {
+    for (std::size_t pixelIndex{0}; pixelIndex < pixelCount; ++pixelIndex)
+    {
+        if (hitCount.at(pixelIndex) == 0)
+        {
             continue;
         }
-        ReliefColumnInfo& column = result.columns.at(index);
+        ReliefColumnInfo& column{result.columns.at(pixelIndex)};
         column.has_model = true;
-        column.z_min_mm = z_min.at(index);
-        column.z_max_mm = z_max.at(index);
-        column.hit_count = hit_count.at(index);
-        column.multi_hit = hit_count.at(index) > 1;
+        column.z_min_mm = zMin.at(pixelIndex);
+        column.z_max_mm = zMax.at(pixelIndex);
+        column.hit_count = hitCount.at(pixelIndex);
+        column.multi_hit = hitCount.at(pixelIndex) > 1;
 
-        ++relief_report.hit_columns;
-        if (column.multi_hit) {
-            ++relief_report.multi_hit_columns;
-        }
-        if (!relief_report.has_hits) {
-            relief_report.z_min_mm = z_min.at(index);
-            relief_report.z_max_mm = z_max.at(index);
-            relief_report.thickness_min_mm = z_max.at(index) - z_min.at(index);
-            relief_report.thickness_max_mm = relief_report.thickness_min_mm;
-            relief_report.has_hits = true;
-        } else {
-            relief_report.z_min_mm = std::min(relief_report.z_min_mm, z_min.at(index));
-            relief_report.z_max_mm = std::max(relief_report.z_max_mm, z_max.at(index));
-            const double thickness_mm = z_max.at(index) - z_min.at(index);
-            relief_report.thickness_min_mm = std::min(relief_report.thickness_min_mm, thickness_mm);
-            relief_report.thickness_max_mm = std::max(relief_report.thickness_max_mm, thickness_mm);
+        if (!useSupersampleCandidate)
+        {
+            AccumulateReliefColumnReport(reliefReport, column);
         }
 
-        const double start_z =
-            config.relief.fill_mode == "surface_to_base" ? config.relief.base_z_mm : z_min.at(index);
-        const double end_z = z_max.at(index);
+        const double startZ = config.relief.fill_mode == "surface_to_base"
+            ? config.relief.base_z_mm
+            : zMin.at(pixelIndex);
+        const double endZ{zMax.at(pixelIndex)};
         if (useLayerSlabCandidate)
         {
-            occupancyColumns.at(index) = {true, start_z, end_z};
+            occupancyColumns.at(pixelIndex) = {true, startZ, endZ};
             continue;
         }
-        int start_layer = first_layer_at_or_above_z(start_z, config.output.layer_thickness_mm);
-        int end_layer = last_layer_at_or_below_z(end_z, config.output.layer_thickness_mm);
-        start_layer = std::max(0, start_layer);
-        end_layer = std::min(grid.layer_count - 1, end_layer);
-        if (start_layer > end_layer) {
+        int startLayer{first_layer_at_or_above_z(startZ, config.output.layer_thickness_mm)};
+        int endLayer{last_layer_at_or_below_z(endZ, config.output.layer_thickness_mm)};
+        startLayer = std::max(0, startLayer);
+        endLayer = std::min(grid.layer_count - 1, endLayer);
+        if (startLayer > endLayer)
+        {
             continue;
         }
-        column.lower_layer = start_layer;
-        column.upper_layer = end_layer;
-        for (int layer_index{start_layer}; layer_index <= end_layer; ++layer_index) {
-            result.model_masks.at(layer_index).at(index) = 1;
+        column.lower_layer = startLayer;
+        column.upper_layer = endLayer;
+        for (int layerIndex{startLayer}; layerIndex <= endLayer; ++layerIndex)
+        {
+            result.model_masks.at(layerIndex).at(pixelIndex) = 1;
         }
     }
 
@@ -1345,26 +1536,35 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     {
         LayerOccupancyRequest occupancyRequest;
         occupancyRequest.columns = occupancyColumns;
+        occupancyRequest.coverageSubsampleColumns = coverageSubsampleColumns;
         occupancyRequest.layerCount = grid.layer_count;
         occupancyRequest.layerThicknessMm = config.output.layer_thickness_mm;
         occupancyRequest.inputKind = GeometryOccupancyInputKind::SingleIntervalHeightfield;
         occupancyRequest.policy = occupancyPolicy;
-        LayerOccupancyResult occupancyResult = BuildLayerOccupancy(occupancyRequest);
+        LayerOccupancyResult occupancyResult{BuildLayerOccupancy(occupancyRequest)};
         result.model_masks = std::move(occupancyResult.masks);
 
-        for (std::size_t index{0}; index < pixel_count; ++index)
+        for (std::size_t pixelIndex{0}; pixelIndex < pixelCount; ++pixelIndex)
         {
-            if (!result.columns.at(index).has_model)
+            ReliefColumnInfo& column{result.columns.at(pixelIndex)};
+            if (!column.has_model)
             {
                 continue;
             }
-            result.columns.at(index).lower_layer =
-                occupancyResult.firstOccupiedLayers.at(index);
-            result.columns.at(index).upper_layer =
-                occupancyResult.lastOccupiedLayers.at(index);
+            column.lower_layer = occupancyResult.firstOccupiedLayers.at(pixelIndex);
+            column.upper_layer = occupancyResult.lastOccupiedLayers.at(pixelIndex);
+            if (useSupersampleCandidate && column.lower_layer < 0)
+            {
+                column.has_model = false;
+                continue;
+            }
+            if (useSupersampleCandidate)
+            {
+                AccumulateReliefColumnReport(reliefReport, column);
+            }
         }
     }
-    relief_report.empty_columns = relief_report.total_columns - relief_report.hit_columns;
+    reliefReport.empty_columns = reliefReport.total_columns - reliefReport.hit_columns;
     return result;
 }
 

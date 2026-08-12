@@ -5,14 +5,15 @@
 ## ⚡ Active Work Entry（开工前先看这里）
 
 ```text
-▶【当前主线】16A-04 边界自适应 2x2 Candidate（2026-08-12）
+▶【当前主线】16A-05 候选矩阵；16B-01 / 16C-01 可独立准备（2026-08-12）
   ✅ R-F-01 平滑顶点法线已完成
   ✅ R-F-02 基线重固化与证据刷新（含 R-C-00）已完成
   ✅ 16-00-01..04 准入复核已完成，结论 PARTIAL GO
   ✅ 16A-01 合成 fixture 和差异 schema 已完成
   ✅ 16A-02 STL-only Policy/Provider 合同已完成，Golden 零漂移
   ✅ 16A-03 Layer Slab Candidate 已完成，候选 Package/RIP PASS
-  ▶ 16A-04 依赖满足、尚未开始；候选默认关闭
+  ✅ 16A-04 固定 2x2 S3/S4 候选已完成，Package/RIP PASS，Legacy Golden 零漂移
+  ▶ 16A-05 依赖满足；用户授权同步推进 16B/16C/16D，但 16D 仍等待 16A-06
   卡 docs/codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md
   裁决 docs/slice/DOC/DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md
 

@@ -23,6 +23,7 @@ using slicer_core::LayerOccupancyRequest;
 using slicer_core::LayerOccupancyResult;
 using slicer_core::MakeLegacyGeometryOccupancyPolicy;
 using slicer_core::MakeLayerSlabGeometryOccupancyPolicy;
+using slicer_core::MakeLayerSlabSupersample2x2GeometryOccupancyPolicy;
 using slicer_core::SliceConfig;
 using slicer_core::XyCoverageMode;
 
@@ -192,6 +193,54 @@ bool DescendingLayerSlabWedgeIsSymmetric()
         "descending wedge remains layer-symmetric");
 }
 
+bool SupersampleCandidatesApplyPerLayerThresholds()
+{
+    const std::vector<GeometryOccupancyColumn> columns{
+        {true, 0.0, 0.4},
+        {true, 0.0, 0.4},
+    };
+    const std::vector<GeometryOccupancyColumn> samples{
+        {true, 0.0, 0.1},
+        {true, 0.0, 0.2},
+        {true, 0.1, 0.3},
+        {false, 0.0, 0.0},
+        {true, 0.2, 0.3},
+        {false, 0.0, 0.0},
+        {false, 0.0, 0.0},
+        {false, 0.0, 0.0},
+    };
+    LayerOccupancyRequest request;
+    request.columns = columns;
+    request.coverageSubsampleColumns = samples;
+    request.layerCount = 4;
+    request.layerThicknessMm = 0.1;
+    request.policy = MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(2U);
+
+    const LayerOccupancyResult atLeastTwoResult = BuildLayerOccupancy(request);
+    const std::vector<std::vector<std::uint8_t>> expectedAtLeastTwo{
+        {1, 0},
+        {1, 0},
+        {0, 0},
+        {0, 0},
+    };
+    bool passed = ExpectTrue(
+        atLeastTwoResult.masks == expectedAtLeastTwo,
+        "2/4 coverage threshold is applied independently per layer");
+
+    request.policy = MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(1U);
+    const LayerOccupancyResult anyHitResult = BuildLayerOccupancy(request);
+    const std::vector<std::vector<std::uint8_t>> expectedAnyHit{
+        {1, 0},
+        {1, 0},
+        {1, 1},
+        {1, 1},
+    };
+    return ExpectTrue(
+               anyHitResult.masks == expectedAnyHit,
+               "1/4 coverage preserves single-sample thin features")
+        && passed;
+}
+
 bool UnsupportedCandidatesFailClosed()
 {
     const std::vector<GeometryOccupancyColumn> columns{{true, 0.0, 0.2}};
@@ -211,7 +260,19 @@ bool UnsupportedCandidatesFailClosed()
     request.policy.xyMode = XyCoverageMode::Supersample2x2;
     passed = ExpectThrowsInvalidArgument(
                  [&request]() { (void)BuildLayerOccupancy(request); },
-                 "2x2 must remain unavailable before 16A-04")
+                 "2x2 must require Layer Slab coverage")
+        && passed;
+
+    request.policy = MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(3U);
+    passed = ExpectThrowsInvalidArgument(
+                 [&request]() { (void)BuildLayerOccupancy(request); },
+                 "unapproved 3/4 threshold must fail closed")
+        && passed;
+
+    request.policy = MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(1U);
+    passed = ExpectThrowsInvalidArgument(
+                 [&request]() { (void)BuildLayerOccupancy(request); },
+                 "2x2 must require four coverage samples per output column")
         && passed;
     return passed;
 }
@@ -287,6 +348,32 @@ bool CandidateConfigurationIsExplicitAndHeightfieldOnly()
                  },
                  "non-heightfield candidate config fails closed")
         && passed;
+
+    for (const std::string strategy : {
+             std::string("layer_slab_supersample_2x2_at_least_two_candidate"),
+             std::string("layer_slab_supersample_2x2_any_hit_candidate")})
+    {
+        const SliceConfig supersampleConfig = slicer_core::load_slice_config(
+            WriteConfig(
+                strategy + ".json",
+                "relief_heightfield",
+                "{\"strategy\": \"" + strategy + "\"}"));
+        passed = ExpectTrue(
+                     supersampleConfig.geometry_sampling.strategy == strategy,
+                     "heightfield 2x2 candidate is explicit")
+            && passed;
+        passed = ExpectThrowsRuntimeError(
+                     [strategy]()
+                     {
+                         (void)slicer_core::load_slice_config(
+                             WriteConfig(
+                                 "non_heightfield_" + strategy + ".json",
+                                 "closed_mesh_scanline",
+                                 "{\"strategy\": \"" + strategy + "\"}"));
+                     },
+                     "non-heightfield 2x2 candidate config fails closed")
+            && passed;
+    }
     return passed;
 }
 
@@ -300,6 +387,7 @@ int main()
             && LegacyProviderMatchesCenterSampleRanges()
             && LayerSlabProviderMatchesHalfOpenRanges()
             && DescendingLayerSlabWedgeIsSymmetric()
+            && SupersampleCandidatesApplyPerLayerThresholds()
             && UnsupportedCandidatesFailClosed()
             && InvalidInputsFailClosed()
             && CandidateConfigurationIsExplicitAndHeightfieldOnly();

@@ -1180,17 +1180,28 @@ void validate_slice_config(const SliceConfig& config) {
     if (config.relief.base_z_mm < 0.0) {
         throw std::runtime_error("relief.baseZMm must be non-negative");
     }
+    const bool isLayerSlabPixelCenterCandidate = config.geometry_sampling.strategy
+        == "layer_slab_pixel_center_candidate";
+    const bool isLayerSlabSupersampleAtLeastTwoCandidate = config.geometry_sampling.strategy
+        == "layer_slab_supersample_2x2_at_least_two_candidate";
+    const bool isLayerSlabSupersampleAnyHitCandidate = config.geometry_sampling.strategy
+        == "layer_slab_supersample_2x2_any_hit_candidate";
+    const bool isGeometrySamplingCandidate = isLayerSlabPixelCenterCandidate
+        || isLayerSlabSupersampleAtLeastTwoCandidate
+        || isLayerSlabSupersampleAnyHitCandidate;
     if (config.geometry_sampling.strategy != "legacy_center_sample"
-        && config.geometry_sampling.strategy != "layer_slab_pixel_center_candidate")
+        && !isGeometrySamplingCandidate)
     {
         throw std::runtime_error(
-            "geometrySampling.strategy must be legacy_center_sample or layer_slab_pixel_center_candidate");
+            "geometrySampling.strategy must be legacy_center_sample, "
+            "layer_slab_pixel_center_candidate, "
+            "layer_slab_supersample_2x2_at_least_two_candidate, or "
+            "layer_slab_supersample_2x2_any_hit_candidate");
     }
-    if (config.geometry_sampling.strategy == "layer_slab_pixel_center_candidate"
-        && config.slicing_mode != "relief_heightfield")
+    if (isGeometrySamplingCandidate && config.slicing_mode != "relief_heightfield")
     {
         throw std::runtime_error(
-            "geometrySampling.strategy=layer_slab_pixel_center_candidate requires slicingMode=relief_heightfield");
+            "geometrySampling candidate strategies require slicingMode=relief_heightfield");
     }
     if (config.preview.format != "ppm" && config.preview.format != "png") {
         throw std::runtime_error("preview.format must be ppm or png");
