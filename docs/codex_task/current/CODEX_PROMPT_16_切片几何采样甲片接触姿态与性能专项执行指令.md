@@ -1,7 +1,7 @@
 # CODEX_PROMPT_16 切片几何采样、甲片接触姿态与性能专项执行指令
 
-> 状态：PREPARED / DO NOT EXECUTE BEFORE STAGE 14 CLOSURE
-> 日期：2026-08-06
+> 状态：ACTIVE / 16-00 PARTIAL GO / 16A-01 READY
+> 日期：2026-08-12
 > 对应任务：`TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md`
 
 ## 1. 执行前硬门
@@ -18,6 +18,10 @@
 ```
 
 任一条不满足，只允许更新文档的 `BLOCKED/DEFERRED` 原因，不得修改代码。
+
+当前审计结果：六项硬门均已满足；权威证据见
+`docs/slice/REPORT/REPORT_16_00_Stage16准入复核当前状态.md`。首张允许执行的代码卡仅为
+`16A-01`，后续卡仍须满足任务表依赖和各自验证出口。
 
 ## 2. 必读文档
 

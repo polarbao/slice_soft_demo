@@ -1,9 +1,9 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16-00 ACTIVE / R-F GATE COMPLETE / CODE CARDS NOT YET AUTHORIZED**
-> 版本：v0.3
-> 日期：2026-08-11
+> 状态：**16-00 COMPLETE / PARTIAL GO / 16A-01 READY**
+> 版本：v0.4
+> 日期：2026-08-12
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
 ## 0. 🔴 2026-08-11 用户裁定：准入 Gate 口径与开工条件
@@ -18,7 +18,8 @@
 ② 开工条件：RENDER 专项的 R-F 线（R-F-01 平滑顶点法线 → R-F-02 基线重固化）已完成，
    16-00-01..04 已解锁
 
-③ 16-00-04 的 GO 仍须用户明确确认，第一张代码卡才能转 READY
+③ 用户于 2026-08-11/12 明确要求 R-F 和准备工作完成后开启 Stage 16；
+   16-00-04 已形成 PARTIAL GO，第一张代码卡 16A-01 转 READY
 ```
 
 ### 0.1 ⚠️ Stage 14 Worker/Facade 边界复核结果
@@ -83,7 +84,7 @@ Legacy center sample 在 Stage 16 全程保留；
 
 ### 16-00-01 收口身份和脏工作树审计
 
-**状态：ACTIVE（2026-08-11 R-F Gate 已完成）**
+**状态：COMPLETE（2026-08-12）**
 
 > R-F 线已按任务独立提交。Stage 16 治理文档为本卡开始前的已知改动，须先单独提交，
 > 再固化 `baseline_identity.json`，不得把治理改动误记为代码基线漂移。
@@ -97,24 +98,32 @@ Legacy center sample 在 Stage 16 全程保留；
 
 **出口：** `baseline_identity.json` 包含 commit/build/compiler/Profile/asset/config hash。
 
+**实际结果：** 已生成 `output/benchmarks/stage16/baseline_identity.json`；当前 Release
+Legacy core-only 基线 PASS，工作树身份、LibTIFF/OpenVDB 开关、编译器、Profile 与资产 hash 已冻结。
+
 ### 16-00-02 任务重叠审计
 
-**状态：READY / 16-00-01 后执行**
+**状态：COMPLETE（2026-08-12）**
 
 检查 Stage 14 是否已实现或更改 12F/13F 的 telemetry、取消、Worker I/O、buffer 和缓存能力。
 **须一并登记 §0.1 的 Worker/Facade 已满足事实、`16C-10` 产品输入和 §0.3 的 H-F-05 telemetry 重叠。**
 
 **出口：** carry-in 矩阵的每项状态为 `already_satisfied|still_required|superseded|blocked_external`。
 
+**实际结果：** 12F/13F/13B/Stage 14 carry-in 已逐项分类，详见
+`REPORT_16_00_Stage16准入复核当前状态.md`。
+
 ### 16-00-03 资产和外部语义审计
 
-**状态：READY / 16-00-02 后执行**
+**状态：COMPLETE（2026-08-12）**
 
 确认 `segment_101`、参考 TIFF 堆栈的版本化/授权/通道/层高/像素尺寸。不能确认时，保留为本地对照，不得升级为生产 Golden。
 
+**实际结果：** OBJ/参考 TIFF 均已记录 SHA-256；参考 TIFF 的通道、像素尺寸、来源授权和重分发边界未获权威确认，只保留为本地对照。
+
 ### 16-00-04 GO/DEFER/NO-GO 评审
 
-**状态：READY / 等 16-00-01..03 完成**
+**状态：COMPLETE / PARTIAL GO（2026-08-12）**
 
 ```text
 GO：明确可启动的 16A/16B/16C 子范围；
@@ -124,9 +133,14 @@ NO-GO：记录新证据为何否定本专项。
 
 **出口：** 用户明确确认后才可将第一张代码卡改为 READY。
 
+**实际结果：** 用户本轮启动要求视为首卡授权；16A-01 READY。默认采样、实际调平、
+production Gate 和统一收口仍按报告中的 DEFER 条件控制。
+
 ## 4. 16A 几何采样
 
 ### 16A-01 合成 fixture 和差异 schema
+
+**状态：READY / USER AUTHORIZED（2026-08-12）**
 
 **依赖：** 16-00 GO
 **内容：** 建立平底、上升/下降斜楔、圆弧边、亚像素薄片和多区间负向 fixture；冻结 layer/channel/connected-component/dimension diff schema。
@@ -311,19 +325,21 @@ Stage 14 closure
 其余性能优化必须等采样语义冻结后再做。
 ```
 
-## 9. 当前唯一允许动作（2026-08-11 更新）
+## 9. 当前唯一允许动作（2026-08-12 更新）
 
 ```text
 保留本文档和上游 PRD/DEV/DECISION/PREP/PROMPT；
-R-F 线已完成，按 16-00-01..04 顺序执行；
-16-00 全程为审计与文档动作 —— 不运行 Stage 16 构建、不修改代码、不改默认配置；
-16-00-04 未得到用户明确 GO 之前，任何 16A/16B/16C/16D 代码卡不得转 READY。
+R-F 线与 16-00-01..04 已完成；
+按用户本轮启动授权，只执行 16A-01 合成 fixture 和差异 schema；
+16A-01 不改生产路径、不改默认配置；完成验证和独立提交后停止；
+16A-02 及后续卡仍按任务依赖、状态列和各自授权推进。
 ```
 
 ## 10. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-12 | v0.4 | 完成 16-00-01..04：固化 Release/资产/Profile 身份，完成 carry-in 与外部语义审计，形成 PARTIAL GO；依据用户启动授权将 16A-01 转 READY。 |
 | 2026-08-11 | v0.3 | R-F-01/02 完成后启动 16-00；依据 `REPORT_14` v3.61 修正早期状态漂移：14D-05/06/07/08 与 14C-06B 均已完成，`16C-08` 不再被 Stage 14 内部边界阻塞；`16C-10` 继续保持产品输入开放。 |
 | 2026-08-11 | v0.2 | 用户裁定准入 Gate 取读法甲（Stage 14 切片侧收口），16-00-01..04 由 `BLOCKED` 转 `READY / 等 R-F 线完成`；新增 §0 记录裁定、§0.1 两项残留阻塞（`16C-08` 被 14D 内部阻塞、`16C-10` 保持 `INPUT_OPEN`，16C 按 8 张可推进卡计）、§0.2 历史性能基线因 LibTIFF 切换整体作废、§0.3 H-F-05 telemetry 与 `16C-01` carry-in 的重叠须逐项判定；§9 改写为当前允许动作。权威决策见 `DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md`。 |
 | 2026-08-06 | v0.1 | 首版。 |

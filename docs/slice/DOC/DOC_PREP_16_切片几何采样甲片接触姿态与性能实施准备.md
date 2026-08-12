@@ -1,7 +1,7 @@
 # DOC_PREP_16 切片几何采样、甲片接触姿态与性能实施准备
 
-> 文档状态：PREPARED / IMPLEMENTATION BLOCKED BY STAGE 14
-> 日期：2026-08-06
+> 文档状态：REVIEWED / PARTIAL GO / FIRST CARD READY
+> 日期：2026-08-12
 > 对应阶段：Stage 16
 > 执行前置：Stage 14 收口 + 16-00 GO/DEFER/NO-GO 复核
 
@@ -177,10 +177,21 @@ Legacy 默认出现任何 golden 漂移；
 
 ## 10. 准备结论
 
-Stage 16 的问题、候选、依赖、历史性能任务整并、验证资产和停止条件已完成文档准备。当前状态仍为：
+Stage 16 的问题、候选、依赖、历史性能任务整并、验证资产和停止条件已完成文档准备。
+16-00 已在 Stage 14 切片侧收口和 R-F 完成后复核通过，当前状态更新为：
 
 ```text
-DOCUMENTATION READY
-IMPLEMENTATION NOT AUTHORIZED
-WAIT FOR STAGE 14 CLOSURE AND 16-00 REVIEW
+DOCUMENTATION REVIEWED
+16-00 PARTIAL GO
+16A-01 READY / USER AUTHORIZED
+PRODUCTION DEFAULT CHANGES DEFERRED
 ```
+
+权威准入结果见 `docs/slice/REPORT/REPORT_16_00_Stage16准入复核当前状态.md`。
+
+## 11. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-08-12 | v0.2 | 完成 Stage 14/15、12F/13F、资产和外部语义复核；Stage 16 形成 PARTIAL GO，首张代码卡 16A-01 READY，默认切换和生产 Gate 继续延期。 |
+| 2026-08-06 | v0.1 | 首版准备文档。 |

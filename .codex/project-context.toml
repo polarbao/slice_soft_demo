@@ -11,7 +11,8 @@ archive_docs = "docs/archive/2026-06-30_slicer_legacy"
 # 任务状态以任务清单内的状态列为唯一真源，本文件只指向入口。
 # 2026-08-11 裁定的执行顺序与优先级（权威记录见 next_sequence_decision §3.5）：
 # 【已完成】R-F-01 平滑顶点法线；R-F-02 基线重固化（含 R-C-00）。
-# 【当前主线】16-00-01..04 Stage 16 准入复核，纯审计，出口 GO/DEFER/NO-GO。
+# 【已完成】16-00-01..04 Stage 16 准入复核，结论 PARTIAL GO。
+# 【当前主线】16A-01 合成 fixture 和差异 schema，READY / USER AUTHORIZED。
 # 【可延后】不满足触发条件不得开工：
 #   T-A-05B-02+03（等用户删除确认，捆绑执行）、T-A-04（等外部 RIP 证据）、
 #   R-C-01/02（等 R-F-02 数据与打印侧回签）、R-D/R-E（无触发迹象）、
@@ -64,7 +65,7 @@ pause_before = [
   "dependency upgrades or new third-party libraries",
   "changing ViewData response structure (requires controlled revision per 14F-R1/R2/R3)",
   "removing the handwritten TIFF writer (T-A-05B-03 needs explicit deletion approval)",
-  "turning any 16A/16B/16C/16D code card READY before the user approves 16-00-04 GO",
+  "turning any Stage 16 card beyond 16A-01 READY before its task dependencies and task-specific authorization are satisfied",
   "switching any Stage 16 candidate to production default (16D-05 needs explicit authorization)",
   "deleting files",
   "rewriting git history",
