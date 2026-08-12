@@ -1,0 +1,579 @@
+{
+  "assetCount": 6,
+  "assets": [
+    {
+      "assetId": "reality_101",
+      "modelPath": "model/obj/reality/260729-16-39-21-792-segment_101.txt.obj",
+      "p3EvaluatedCandidateCount": 60,
+      "pass": true,
+      "postures": [
+        {
+          "angleDeg": 0,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.090306167161657,
+            "improvementAgainstP0Mm2": 0,
+            "sideEnvelopeDeltaMm": -1.03910000000002
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0,
+            "footprintXMm": 12.104787,
+            "heightIncreaseAgainstP0Mm": 0,
+            "heightMm": 6.97520000000003,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P0",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 698,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 9677032,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 56723493
+          }
+        },
+        {
+          "angleDeg": 4.90636060359861,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.0664251339768356,
+            "improvementAgainstP0Mm2": -0.0238810331848214,
+            "sideEnvelopeDeltaMm": -0.203973937169436
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0.129896970670432,
+            "footprintXMm": 12.2346839706704,
+            "heightIncreaseAgainstP0Mm": -0.269252536369259,
+            "heightMm": 6.70594746363077,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P2",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 671,
+            "modelPixelDeltaAgainstP0": -597,
+            "modelPixels": 9676435,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": -3146345,
+            "supportPixels": 53577148
+          }
+        },
+        {
+          "angleDeg": -5.4,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.134865167092508,
+            "improvementAgainstP0Mm2": 0.0445589999308513,
+            "sideEnvelopeDeltaMm": -1.90547374054971
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": -0.209923068395018,
+            "footprintXMm": 11.894863931605,
+            "heightIncreaseAgainstP0Mm": 0.494340551013007,
+            "heightMm": 7.46954055101304,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P3",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 747,
+            "modelPixelDeltaAgainstP0": 10920,
+            "modelPixels": 9687952,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 6059541,
+            "supportPixels": 62783034
+          }
+        }
+      ],
+      "samplingStrategy": "S3",
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sliceExecutionRequired": true,
+      "sourceSha256": "83fd9447faeb7c7f4f3148ed2e651da8c6c54547c0c6e70992a87a1e1945dab0"
+    },
+    {
+      "assetId": "reality_102",
+      "modelPath": "model/obj/reality/260729-16-39-48-086-segment_102.txt.obj",
+      "p3EvaluatedCandidateCount": 60,
+      "pass": true,
+      "postures": [
+        {
+          "angleDeg": 0,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.0983073500664382,
+            "improvementAgainstP0Mm2": 0,
+            "sideEnvelopeDeltaMm": -0.418000000000006
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0,
+            "footprintXMm": 9.107389,
+            "heightIncreaseAgainstP0Mm": 0,
+            "heightMm": 6.64330000000001,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P0",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 665,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 6537460,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 31726219
+          }
+        },
+        {
+          "angleDeg": 2.62784869457548,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.0887843305860159,
+            "improvementAgainstP0Mm2": -0.00952301948042233,
+            "sideEnvelopeDeltaMm": -0.127224643398141
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0.0842607653059755,
+            "footprintXMm": 9.19164976530597,
+            "heightIncreaseAgainstP0Mm": -0.0925567700742045,
+            "heightMm": 6.55074322992581,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P2",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 656,
+            "modelPixelDeltaAgainstP0": 169,
+            "modelPixels": 6537629,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": -538767,
+            "supportPixels": 31187452
+          }
+        },
+        {
+          "angleDeg": -7.3,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.177222653985085,
+            "improvementAgainstP0Mm2": 0.078915303918647,
+            "sideEnvelopeDeltaMm": -1.1313961861857
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": -0.223294154182414,
+            "footprintXMm": 8.88409484581758,
+            "heightIncreaseAgainstP0Mm": 0.495569681593799,
+            "heightMm": 7.13886968159381,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P3",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 714,
+            "modelPixelDeltaAgainstP0": 2480,
+            "modelPixels": 6539940,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 3297861,
+            "supportPixels": 35024080
+          }
+        }
+      ],
+      "samplingStrategy": "S3",
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sliceExecutionRequired": true,
+      "sourceSha256": "56097fa9bc410c9ad60f71241e2393b11db05808a6af975183a4983f1c0fe3e4"
+    },
+    {
+      "assetId": "reality_103",
+      "modelPath": "model/obj/reality/260729-16-39-55-435-segment_103.txt.obj",
+      "p3EvaluatedCandidateCount": 55,
+      "pass": true,
+      "postures": [
+        {
+          "angleDeg": 0,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.110140638354037,
+            "improvementAgainstP0Mm2": 0,
+            "sideEnvelopeDeltaMm": -0.319500000000005
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0,
+            "footprintXMm": 9.299528,
+            "heightIncreaseAgainstP0Mm": 0,
+            "heightMm": 5.5598,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P0",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 556,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 6619301,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 28443624
+          }
+        },
+        {
+          "angleDeg": 1.96771320048349,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.090607560221855,
+            "improvementAgainstP0Mm2": -0.0195330781321816,
+            "sideEnvelopeDeltaMm": -0.0812573377865188
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0.0152408990821193,
+            "footprintXMm": 9.31476889908212,
+            "heightIncreaseAgainstP0Mm": -0.134244517909201,
+            "heightMm": 5.42555548209079,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P2",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 543,
+            "modelPixelDeltaAgainstP0": 343,
+            "modelPixels": 6619644,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": -1149454,
+            "supportPixels": 27294170
+          }
+        },
+        {
+          "angleDeg": 12,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.363352215430818,
+            "improvementAgainstP0Mm2": 0.253211577076781,
+            "sideEnvelopeDeltaMm": 1.14023197692022
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0.0175502052381749,
+            "footprintXMm": 9.31707820523818,
+            "heightIncreaseAgainstP0Mm": 0.326653690587008,
+            "heightMm": 5.886453690587,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P3",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 589,
+            "modelPixelDeltaAgainstP0": 2163,
+            "modelPixels": 6621464,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 3624004,
+            "supportPixels": 32067628
+          }
+        }
+      ],
+      "samplingStrategy": "S3",
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sliceExecutionRequired": true,
+      "sourceSha256": "ba6d5ab153184d607e076ad2f49cd0f8e7df02a7e5842314082ad2e720ee3f28"
+    },
+    {
+      "assetId": "reality_104",
+      "modelPath": "model/obj/reality/260729-16-40-09-567-segment_104.txt.obj",
+      "p3EvaluatedCandidateCount": 60,
+      "pass": true,
+      "postures": [
+        {
+          "angleDeg": 0,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.116576282116268,
+            "improvementAgainstP0Mm2": 0,
+            "sideEnvelopeDeltaMm": 1.03469999999999
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0,
+            "footprintXMm": 9.298959,
+            "heightIncreaseAgainstP0Mm": 0,
+            "heightMm": 5.04180000000002,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P0",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 505,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 6506727,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 28746880
+          }
+        },
+        {
+          "angleDeg": -6.3492136402966,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.0730487288310726,
+            "improvementAgainstP0Mm2": -0.0435275532851958,
+            "sideEnvelopeDeltaMm": 0.156193229178132
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0.0635617482886026,
+            "footprintXMm": 9.3625207482886,
+            "heightIncreaseAgainstP0Mm": -0.396024653097655,
+            "heightMm": 4.64577534690237,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P2",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 465,
+            "modelPixelDeltaAgainstP0": -625,
+            "modelPixels": 6506102,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": -4064931,
+            "supportPixels": 24681949
+          }
+        },
+        {
+          "angleDeg": 7.7,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.52486029144591,
+            "improvementAgainstP0Mm2": 0.408284009329641,
+            "sideEnvelopeDeltaMm": 2.06818775838036
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": -0.185072979011622,
+            "footprintXMm": 9.11388602098838,
+            "heightIncreaseAgainstP0Mm": 0.493972051744587,
+            "heightMm": 5.53577205174461,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P3",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 554,
+            "modelPixelDeltaAgainstP0": 8550,
+            "modelPixels": 6515277,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 4399776,
+            "supportPixels": 33146656
+          }
+        }
+      ],
+      "samplingStrategy": "S3",
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sliceExecutionRequired": true,
+      "sourceSha256": "d5742de89c0e622cf40fb7bfff8186eb58a32b218e526ee99a5218b3c76211ab"
+    },
+    {
+      "assetId": "reality_105",
+      "modelPath": "model/obj/reality/260729-16-40-21-739-segment_105.txt.obj",
+      "p3EvaluatedCandidateCount": 60,
+      "pass": true,
+      "postures": [
+        {
+          "angleDeg": 0,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.657198070326691,
+            "improvementAgainstP0Mm2": 0,
+            "sideEnvelopeDeltaMm": 1.30239999999998
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0,
+            "footprintXMm": 6.981037,
+            "heightIncreaseAgainstP0Mm": 0,
+            "heightMm": 4.04039999999998,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P0",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 405,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 3629544,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 12677122
+          }
+        },
+        {
+          "angleDeg": -10.5677582179004,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.100211216272721,
+            "improvementAgainstP0Mm2": -0.55698685405397,
+            "sideEnvelopeDeltaMm": 0.252934089663799
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0.168308643894896,
+            "footprintXMm": 7.1493456438949,
+            "heightIncreaseAgainstP0Mm": -0.525995832556319,
+            "heightMm": 3.51440416744366,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P2",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 352,
+            "modelPixelDeltaAgainstP0": -1720,
+            "modelPixels": 3627824,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": -2669311,
+            "supportPixels": 10007811
+          }
+        },
+        {
+          "angleDeg": 2.2,
+          "contact": {
+            "firstHalfSlabAreaMm2": 1.15400991674884,
+            "improvementAgainstP0Mm2": 0.496811846422146,
+            "sideEnvelopeDeltaMm": 1.51233215555954
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": -0.051199891420648,
+            "footprintXMm": 6.92983710857935,
+            "heightIncreaseAgainstP0Mm": 0.113165918969759,
+            "heightMm": 4.15356591896974,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P3",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 416,
+            "modelPixelDeltaAgainstP0": 2438,
+            "modelPixels": 3631982,
+            "status": "passed",
+            "supportPixelDeltaAgainstP0": 487659,
+            "supportPixels": 13164781
+          }
+        }
+      ],
+      "samplingStrategy": "S3",
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sliceExecutionRequired": true,
+      "sourceSha256": "65cdb90ae0c144e2cc089079aa86585928d73ba4418a2b34819e1159f0b9041f"
+    },
+    {
+      "assetId": "standard_nai_you",
+      "modelPath": "model/obj/nai_you_new/MF_nai_you.obj",
+      "p3EvaluatedCandidateCount": 60,
+      "pass": true,
+      "postures": [
+        {
+          "angleDeg": 0,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.0145945432896823,
+            "improvementAgainstP0Mm2": 0,
+            "sideEnvelopeDeltaMm": 7.00000000009027e-06
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0,
+            "footprintXMm": 12.072345,
+            "heightIncreaseAgainstP0Mm": 0,
+            "heightMm": 6.221612,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P0",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 0,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 0,
+            "status": "not_run",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 0
+          }
+        },
+        {
+          "angleDeg": -3.32222494135732e-05,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.0145986464043641,
+            "improvementAgainstP0Mm2": 4.10311468179714e-06,
+            "sideEnvelopeDeltaMm": 5.03380246346285e-08
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": -4.59275765862799e-07,
+            "footprintXMm": 12.0723445407242,
+            "heightIncreaseAgainstP0Mm": -3.6320239873433e-06,
+            "heightMm": 6.22160836797601,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P2",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 0,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 0,
+            "status": "not_run",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 0
+          }
+        },
+        {
+          "angleDeg": -2.77555756156289e-17,
+          "contact": {
+            "firstHalfSlabAreaMm2": 0.0145945432896823,
+            "improvementAgainstP0Mm2": 0,
+            "sideEnvelopeDeltaMm": 7.00000000009027e-06
+          },
+          "geometry": {
+            "footprintIncreaseAgainstP0Mm": 0,
+            "footprintXMm": 12.072345,
+            "heightIncreaseAgainstP0Mm": 0,
+            "heightMm": 6.221612,
+            "positiveYConstraintSatisfied": true,
+            "positiveZConstraintSatisfied": true
+          },
+          "postureId": "P3",
+          "slice": {
+            "admissionChangedAgainstP0": false,
+            "error": "",
+            "layerCount": 0,
+            "modelPixelDeltaAgainstP0": 0,
+            "modelPixels": 0,
+            "status": "not_run",
+            "supportPixelDeltaAgainstP0": 0,
+            "supportPixels": 0
+          }
+        }
+      ],
+      "samplingStrategy": "S3",
+      "selectedOrientation": "rotate_x_90_rotate_z_180",
+      "sliceExecutionRequired": false,
+      "sourceSha256": "675c99fe25958f0140f228e6b55d11333925d89f178da7cb950bdf433bcabd13"
+    }
+  ],
+  "mode": "diagnostic_only",
+  "notes": [
+    "P0 remains the production default",
+    "P2 and P3 are diagnostic-only and do not mutate imported assets",
+    "admissionChangedAgainstP0 compares core-only execution status under the same S3 config"
+  ],
+  "pass": true,
+  "postureDefinitions": {
+    "P0": "existing deterministic right-angle orientation",
+    "P2": "side boundary-band lower-envelope balance",
+    "P3": "bounded maximum first-half-slab contact-area search"
+  },
+  "quickMode": false,
+  "samplingStrategy": "S3",
+  "schema": "slicesoft.stage16.posture_matrix.1",
+  "stage": "16B-03"
+}

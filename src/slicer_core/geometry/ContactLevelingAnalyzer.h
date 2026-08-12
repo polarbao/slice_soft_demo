@@ -56,4 +56,14 @@ ContactLevelingCandidate AnalyzeContactLeveling(
     const ContactPostureMetricPolicy& metricpolicy = {},
     const ContactLevelingPolicy& levelingpolicy = {});
 
+/**
+ * @brief Apply a diagnostic roll angle and ground the copied model at Z=0.
+ * @param model Imported, auto-oriented and grounded source model.
+ * @param angledeg Roll angle around the positive Y long axis in degrees.
+ * @return Transformed copy; the source model is not modified.
+ */
+ModelReport ApplyContactLevelingAngle(
+    const ModelReport& model,
+    double angledeg);
+
 }  // namespace slicer_core

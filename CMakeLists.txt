@@ -1637,6 +1637,14 @@ target_compile_definitions(stage16_sampling_matrix PRIVATE
     SLICESOFT_BUILD_CONFIG="$<CONFIG>"
 )
 
+add_executable(stage16_posture_matrix
+    apps/stage16_posture_matrix/Main.cpp
+)
+target_link_libraries(stage16_posture_matrix PRIVATE slicer_core)
+target_compile_definitions(stage16_posture_matrix PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 add_executable(material_closure_report_unit_tests
     tests/unit/material_closure_report/main.cpp
 )
@@ -2497,6 +2505,13 @@ add_test(
     COMMAND stage16_sampling_matrix
         --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
         --output "${CMAKE_CURRENT_BINARY_DIR}/stage16/sampling_matrix.json"
+        --quick
+)
+add_test(
+    NAME stage16_posture_matrix_tests
+    COMMAND stage16_posture_matrix
+        --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
+        --output "${CMAKE_CURRENT_BINARY_DIR}/stage16/posture_matrix.json"
         --quick
 )
 add_test(NAME material_closure_report_unit_tests COMMAND material_closure_report_unit_tests)

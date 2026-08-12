@@ -103,13 +103,29 @@ bool RejectsInvalidSearchPolicy()
     return Expect(false, "invalid search policy must throw");
 }
 
+bool AppliesAngleToCopyAndGroundsResult()
+{
+    const slicer_core::ModelReport source{MakeArchedNail(0.5)};
+    const slicer_core::ModelReport transformed{
+        slicer_core::ApplyContactLevelingAngle(source, 3.0)};
+    return Expect(transformed.bbox_mm.min.z == 0.0,
+                  "applied candidate is grounded")
+        && Expect(std::abs(transformed.bbox_mm.max.z - source.bbox_mm.max.z)
+                      > kTolerance,
+                  "applied candidate changes copied geometry")
+        && Expect(source.bbox_mm.min.z == 0.0
+                      && source.triangles.front().a.z == 0.0,
+                  "candidate application leaves source unchanged");
+}
+
 }  // namespace
 
 int main()
 {
     const bool passed = FindsDeterministicDiagnosticCandidate()
         && ReportsStableBaselineRejection()
-        && RejectsInvalidSearchPolicy();
+        && RejectsInvalidSearchPolicy()
+        && AppliesAngleToCopyAndGroundsResult();
     if (passed)
     {
         std::cout << "stage16 contact leveling analyzer tests passed\n";

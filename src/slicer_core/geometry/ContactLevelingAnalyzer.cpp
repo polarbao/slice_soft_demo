@@ -126,6 +126,21 @@ bool SatisfiesConstraints(
 
 }  // namespace
 
+ModelReport ApplyContactLevelingAngle(
+    const ModelReport& model,
+    const double angleDeg)
+{
+    if (!std::isfinite(angleDeg))
+    {
+        throw std::invalid_argument("contact leveling angle must be finite");
+    }
+    if (model.triangles.empty())
+    {
+        throw std::invalid_argument("contact leveling model must contain triangles");
+    }
+    return RollAndGround(model, angleDeg);
+}
+
 ContactLevelingCandidate AnalyzeContactLeveling(
     const ModelReport& model,
     const ContactPostureMetricPolicy& metricPolicy,

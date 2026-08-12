@@ -91,6 +91,7 @@
 | `DOC_PREP_16_切片几何采样甲片接触姿态与性能实施准备.md` | Stage 16 `segment_101` 定量证据、资产边界、12F/13F carry-in 和开工停止条件 |
 | `DOC_PREP_16B_01_边界带与接触指标基线实施准备.md` | 16B-01 两侧边界带、接触 slab、候选角和 +Z/+Y 测量合同 |
 | `DOC_PREP_16B_02_ContactLevelingAnalyzer实施准备.md` | 16B-02 长轴有界搜索、约束、稳定回退与 diagnostic-only 输出合同 |
+| `DOC_PREP_16B_03_姿态AB矩阵实施准备.md` | 16B-03 P0/P2/P3、S3 统一采样和真实支撑 A/B 证据合同 |
 | `DOC_PREP_16C_01_分项Telemetry收口实施准备.md` | 16C-01 单实例 core/compose 与 import parse/texture/preview/hash 真实计时边界 |
 | `DOC_DECISION_16A_06_采样候选决策刷新.md` | 16A-06 选择 S3 诊断候选、S4 上限对照并保持 S0 生产默认的权威决策 |
 | `DOC_PREP_14C_06_SPI一致性套件实施准备.md` | 14C-06 受控拆分为模块本地 06A 与 Worker 生命周期 06B |

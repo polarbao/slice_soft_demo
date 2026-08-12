@@ -42,5 +42,6 @@
 | `REPORT_HOSTFLOW_HX阶段准备状态.md` | HOSTFLOW H-A/H-B/H-C 准备矩阵；H-A 已收口，H-B-01 为下一候选 |
 | `REPORT_16C_01_分项Telemetry收口当前状态.md` | 16C-01 import 与单实例分项计时、null 语义和 Worker 加法 schema |
 | `REPORT_16B_02_ContactLevelingAnalyzer当前状态.md` | 16B-02 只读长轴调平候选、约束和确定性诊断矩阵 |
+| `REPORT_16B_03_姿态AB矩阵当前状态.md` | 16B-03 P0/P2/P3 Reality 支撑矩阵和候选结论 |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。
