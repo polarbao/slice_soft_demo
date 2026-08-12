@@ -87,8 +87,9 @@
 | `DOC_PREP_14D_04_取消令牌贯穿实施准备.md` | 14D-04A 核心 token 贯穿及 14D-04B Worker E2E 的受控拆分 |
 | `DOC_PREP_14C_07_DLL初始化与依赖红线实施准备.md` | 14C-07 Loader Lock、call_once、状态机和依赖红线门禁 |
 | `DOC_PREP_14D_08_Worker独立调试入口实施准备.md` | 14D-08 独立请求入口准备审计及当前阻断映射 |
-| `DOC_DECISION_16_切片几何采样甲片接触姿态与性能专项.md` | Stage 16 采样/姿态/性能专项立项、候选和 Stage 14 后准入决策；当前未激活 |
+| `DOC_DECISION_16_切片几何采样甲片接触姿态与性能专项.md` | Stage 16 采样/姿态/性能专项立项、候选和 Stage 14 后准入决策；当前 PARTIAL GO |
 | `DOC_PREP_16_切片几何采样甲片接触姿态与性能实施准备.md` | Stage 16 `segment_101` 定量证据、资产边界、12F/13F carry-in 和开工停止条件 |
+| `DOC_PREP_16B_01_边界带与接触指标基线实施准备.md` | 16B-01 两侧边界带、接触 slab、候选角和 +Z/+Y 测量合同 |
 | `DOC_PREP_14C_06_SPI一致性套件实施准备.md` | 14C-06 受控拆分为模块本地 06A 与 Worker 生命周期 06B |
 | `DOC_PREP_14D_05_安全发布与清理双保险实施准备.md` | 14D-05 staging、自检、原子发布、崩溃恢复与双保险清理准备审计 |
 | `DOC_PREP_14D_06_重能力Worker唯一路由实施准备.md` | 14D-06 重能力 Worker 唯一路由、backend 收敛与无回退准备审计 |

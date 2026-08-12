@@ -1,0 +1,293 @@
+{
+  "assetCount": 6,
+  "assets": [
+    {
+      "assetId": "reality_101",
+      "boundingBoxMm": {
+        "max": [
+          -2.42964300000004,
+          12.95237,
+          6.97520000000003
+        ],
+        "min": [
+          -14.53443,
+          -13.02486,
+          0
+        ]
+      },
+      "metrics": {
+        "candidateAngleDeg": -4.90636060359861,
+        "candidateAngleWithinLimit": true,
+        "centerBandVertexCount": 8959,
+        "centerToSideEnvelopeDeltaMm": 0.900200000000041,
+        "firstHalfSlabAreaMm2": 0.090306167161657,
+        "firstSlabAreaMm2": 0.262159201152204,
+        "leftBandMinimumZMm": 1.03910000000002,
+        "leftBandVertexCount": 4439,
+        "longAxisLengthMm": 25.97723,
+        "positiveYConstraintSatisfied": true,
+        "positiveYTipWidthDeltaMm": 4.989054,
+        "positiveZConstraintSatisfied": true,
+        "rejectionReason": "",
+        "rightBandMinimumZMm": 0,
+        "rightBandVertexCount": 10526,
+        "secondSlabAreaMm2": 0.782912649058755,
+        "sideEnvelopeDeltaMm": -1.03910000000002,
+        "transverseSpanMm": 12.104787,
+        "valid": true
+      },
+      "modelPath": "model/obj/reality/260729-16-39-21-792-segment_101.txt.obj",
+      "pass": true,
+      "rotationDeg": [
+        180,
+        0,
+        -90
+      ],
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sourceSha256": "83fd9447faeb7c7f4f3148ed2e651da8c6c54547c0c6e70992a87a1e1945dab0",
+      "triangleCount": 14774
+    },
+    {
+      "assetId": "reality_102",
+      "boundingBoxMm": {
+        "max": [
+          -4.62019100000004,
+          11.0472,
+          6.64330000000001
+        ],
+        "min": [
+          -13.72758,
+          -10.52537,
+          0
+        ]
+      },
+      "metrics": {
+        "candidateAngleDeg": -2.62784869457548,
+        "candidateAngleWithinLimit": true,
+        "centerBandVertexCount": 8408,
+        "centerToSideEnvelopeDeltaMm": 0.343999999999994,
+        "firstHalfSlabAreaMm2": 0.0983073500664382,
+        "firstSlabAreaMm2": 0.2857589584446,
+        "leftBandMinimumZMm": 0.427400000000034,
+        "leftBandVertexCount": 5183,
+        "longAxisLengthMm": 21.57257,
+        "positiveYConstraintSatisfied": true,
+        "positiveYTipWidthDeltaMm": 2.900143,
+        "positiveZConstraintSatisfied": true,
+        "rejectionReason": "",
+        "rightBandMinimumZMm": 0.00940000000002783,
+        "rightBandVertexCount": 5908,
+        "secondSlabAreaMm2": 0.811460534937176,
+        "sideEnvelopeDeltaMm": -0.418000000000006,
+        "transverseSpanMm": 9.107389,
+        "valid": true
+      },
+      "modelPath": "model/obj/reality/260729-16-39-48-086-segment_102.txt.obj",
+      "pass": true,
+      "rotationDeg": [
+        180,
+        0,
+        -90
+      ],
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sourceSha256": "56097fa9bc410c9ad60f71241e2393b11db05808a6af975183a4983f1c0fe3e4",
+      "triangleCount": 13386
+    },
+    {
+      "assetId": "reality_103",
+      "boundingBoxMm": {
+        "max": [
+          -2.19524200000004,
+          10.86793,
+          5.5598
+        ],
+        "min": [
+          -11.49477,
+          -11.1821,
+          0
+        ]
+      },
+      "metrics": {
+        "candidateAngleDeg": -1.96771320048349,
+        "candidateAngleWithinLimit": true,
+        "centerBandVertexCount": 8361,
+        "centerToSideEnvelopeDeltaMm": 0.729600000000005,
+        "firstHalfSlabAreaMm2": 0.110140638354037,
+        "firstSlabAreaMm2": 0.334942251105441,
+        "leftBandMinimumZMm": 0.319500000000005,
+        "leftBandVertexCount": 5205,
+        "longAxisLengthMm": 22.05003,
+        "positiveYConstraintSatisfied": true,
+        "positiveYTipWidthDeltaMm": 2.40387,
+        "positiveZConstraintSatisfied": true,
+        "rejectionReason": "",
+        "rightBandMinimumZMm": 0,
+        "rightBandVertexCount": 5150,
+        "secondSlabAreaMm2": 1.01731640559973,
+        "sideEnvelopeDeltaMm": -0.319500000000005,
+        "transverseSpanMm": 9.299528,
+        "valid": true
+      },
+      "modelPath": "model/obj/reality/260729-16-39-55-435-segment_103.txt.obj",
+      "pass": true,
+      "rotationDeg": [
+        180,
+        0,
+        -90
+      ],
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sourceSha256": "ba6d5ab153184d607e076ad2f49cd0f8e7df02a7e5842314082ad2e720ee3f28",
+      "triangleCount": 13386
+    },
+    {
+      "assetId": "reality_104",
+      "boundingBoxMm": {
+        "max": [
+          -4.18089100000004,
+          10.49398,
+          5.04180000000002
+        ],
+        "min": [
+          -13.47985,
+          -11.85976,
+          0
+        ]
+      },
+      "metrics": {
+        "candidateAngleDeg": 6.3492136402966,
+        "candidateAngleWithinLimit": true,
+        "centerBandVertexCount": 8292,
+        "centerToSideEnvelopeDeltaMm": 1.53430000000003,
+        "firstHalfSlabAreaMm2": 0.116576282116268,
+        "firstSlabAreaMm2": 0.36837130569678,
+        "leftBandMinimumZMm": 0,
+        "leftBandVertexCount": 7022,
+        "longAxisLengthMm": 22.35374,
+        "positiveYConstraintSatisfied": true,
+        "positiveYTipWidthDeltaMm": 1.902891,
+        "positiveZConstraintSatisfied": true,
+        "rejectionReason": "",
+        "rightBandMinimumZMm": 1.03469999999999,
+        "rightBandVertexCount": 3064,
+        "secondSlabAreaMm2": 1.17451922596446,
+        "sideEnvelopeDeltaMm": 1.03469999999999,
+        "transverseSpanMm": 9.298959,
+        "valid": true
+      },
+      "modelPath": "model/obj/reality/260729-16-40-09-567-segment_104.txt.obj",
+      "pass": true,
+      "rotationDeg": [
+        180,
+        0,
+        -90
+      ],
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sourceSha256": "d5742de89c0e622cf40fb7bfff8186eb58a32b218e526ee99a5218b3c76211ab",
+      "triangleCount": 13386
+    },
+    {
+      "assetId": "reality_105",
+      "boundingBoxMm": {
+        "max": [
+          -8.07966300000004,
+          6.546644,
+          4.04039999999998
+        ],
+        "min": [
+          -15.0607,
+          -10.15178,
+          0
+        ]
+      },
+      "metrics": {
+        "candidateAngleDeg": 10.5677582179004,
+        "candidateAngleWithinLimit": true,
+        "centerBandVertexCount": 7861,
+        "centerToSideEnvelopeDeltaMm": 1.51939999999996,
+        "firstHalfSlabAreaMm2": 0.657198070326691,
+        "firstSlabAreaMm2": 1.42938354907201,
+        "leftBandMinimumZMm": 0,
+        "leftBandVertexCount": 8244,
+        "longAxisLengthMm": 16.698424,
+        "positiveYConstraintSatisfied": true,
+        "positiveYTipWidthDeltaMm": 1.334428,
+        "positiveZConstraintSatisfied": true,
+        "rejectionReason": "",
+        "rightBandMinimumZMm": 1.30239999999998,
+        "rightBandVertexCount": 2293,
+        "secondSlabAreaMm2": 2.29310795552532,
+        "sideEnvelopeDeltaMm": 1.30239999999998,
+        "transverseSpanMm": 6.981037,
+        "valid": true
+      },
+      "modelPath": "model/obj/reality/260729-16-40-21-739-segment_105.txt.obj",
+      "pass": true,
+      "rotationDeg": [
+        180,
+        0,
+        -90
+      ],
+      "selectedOrientation": "identity_rotate_x_180_rotate_z_minus_90",
+      "sourceSha256": "65cdb90ae0c144e2cc089079aa86585928d73ba4418a2b34819e1159f0b9041f",
+      "triangleCount": 13386
+    },
+    {
+      "assetId": "standard_nai_you",
+      "boundingBoxMm": {
+        "max": [
+          6.000193,
+          24.001617,
+          6.221612
+        ],
+        "min": [
+          -6.072152,
+          -0.044031,
+          0
+        ]
+      },
+      "metrics": {
+        "candidateAngleDeg": 3.32222494135732e-05,
+        "candidateAngleWithinLimit": true,
+        "centerBandVertexCount": 70164,
+        "centerToSideEnvelopeDeltaMm": 3.337213,
+        "firstHalfSlabAreaMm2": 0.0145945432896823,
+        "firstSlabAreaMm2": 0.0430939258504264,
+        "leftBandMinimumZMm": 0,
+        "leftBandVertexCount": 48863,
+        "longAxisLengthMm": 24.045648,
+        "positiveYConstraintSatisfied": true,
+        "positiveYTipWidthDeltaMm": 0.137339000000001,
+        "positiveZConstraintSatisfied": true,
+        "rejectionReason": "",
+        "rightBandMinimumZMm": 7.00000000009027e-06,
+        "rightBandVertexCount": 73406,
+        "secondSlabAreaMm2": 0.141561291081304,
+        "sideEnvelopeDeltaMm": 7.00000000009027e-06,
+        "transverseSpanMm": 12.072345,
+        "valid": true
+      },
+      "modelPath": "model/obj/nai_you_new/MF_nai_you.obj",
+      "pass": true,
+      "rotationDeg": [
+        90,
+        0,
+        180
+      ],
+      "selectedOrientation": "rotate_x_90_rotate_z_180",
+      "sourceSha256": "675c99fe25958f0140f228e6b55d11333925d89f178da7cb950bdf433bcabd13",
+      "triangleCount": 117706
+    }
+  ],
+  "pass": true,
+  "policy": {
+    "contactAreaDefinition": "xy_projected_triangle_area_clipped_below_z",
+    "firstSlabFraction": 0.5,
+    "layerThicknessMm": 0.038,
+    "maximumAbsoluteCandidateAngleDeg": 12,
+    "requiredPositiveYTipDeltaMm": 0,
+    "requiredPositiveZEnvelopeDeltaMm": 0,
+    "sideBandFraction": 0.125
+  },
+  "schema": "slicesoft.stage16.posture_baseline.1",
+  "stage": "16B-01"
+}

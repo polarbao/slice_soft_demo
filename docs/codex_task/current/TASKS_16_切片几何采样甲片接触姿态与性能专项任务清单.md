@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-04 COMPLETE / 16A-05 NEXT；16B-01 / 16C-01 PREP REVIEW AUTHORIZED**
-> 版本：v0.8
+> 状态：**16A-04 / 16B-01 COMPLETE；16A-05 / 16B-02 / 16C-01 NEXT**
+> 版本：v0.9
 > 日期：2026-08-12
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -204,6 +204,12 @@ PASS，Stage 16 CTest 2/2 PASS，Legacy Golden TIFF 差异 0/25；默认仍为 L
 **内容：** 冻结两侧边界带、前 1/2 slab 接触面积、角度和方向约束。
 **出口：** Reality 5/5 和标准甲片的 `posture_baseline.json`。
 
+**状态：COMPLETE（2026-08-12）**
+
+**实际结果：** 新增只读 `ContactPostureMetrics` 与确定性基线工具，冻结两侧各 `12.5%`
+边界带、`0.5 * 0.038 mm` 首半 slab 接触面积代理、`12 deg` 角度边界及 +Z/+Y 约束；
+Reality 5/5 与标准 `nai_you` 共 6/6 PASS，基线重复生成 SHA-256 一致，不修改顶点和默认策略。
+
 ### 16B-02 ContactLevelingAnalyzer diagnostic-only
 
 **依赖：** 16B-01
@@ -351,8 +357,9 @@ Stage 14 closure
 保留本文档和上游 PRD/DEV/DECISION/PREP/PROMPT；
 R-F 线与 16-00-01..04 已完成；
 16A-01/02/03/04 已完成并通过定向验证、候选 Package/RIP 与 Golden 零漂移检查；
+16B-01 已完成，Reality 5/5 与标准甲片接触姿态基线 6/6 PASS；
 下一张依赖已满足的 16A 卡为 16A-05 机器可读候选矩阵；
-用户已授权同步推进，16B-01 与 16C-01 可在确认各自准备工作后独立实施；
+用户已授权同步推进，16B-02 与 16C-01 可在确认各自准备工作后独立实施；
 16D 仍依赖 16A-06 和必要的 16B 候选，不得提前越过 Gate；
 候选和默认配置继续关闭。
 ```
@@ -361,6 +368,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-12 | v0.9 | 完成 16B-01：冻结两侧边界带、首半 slab 接触面积代理、候选角及 +Z/+Y 约束；新增无 Qt 只读测量器、单测和确定性 `posture_baseline.json`，Reality 5/5 与标准甲片 6/6 PASS；16B-02 依赖满足，16D 仍等待 16A-06。 |
 | 2026-08-12 | v0.8 | 完成 16A-04：新增 S3 `>=2/4` 与 S4 `>=1/4` 两个固定 2x2 边界自适应候选；Stage 16 CTest 2/2、两个 Package/RIP strict PASS，Legacy TIFF 0/25 差异；用户授权同步推进 16B/16C/16D，当前仅 16B-01、16C-01 前置满足，16D 继续等待 16A-06。 |
 | 2026-08-12 | v0.7 | 完成 16A-03：实现仅限 `relief_heightfield` 的半开 Layer Slab + Pixel Center 候选，冻结正测度相交、固定 `1e-9 mm` 边界容差和零厚度不占据；定向 CTest 2/2、候选 Package/RIP strict PASS，Legacy TIFF 0/25 差异；16A-04 转为下一张依赖已满足的卡。 |
 | 2026-08-12 | v0.6 | 完成 16A-02：新增 STL-only GeometryOccupancyPolicy、列占用 DTO 与 Provider；Legacy 生产路径显式校验策略并保持原有循环，定向 CTest 2/2 PASS，Golden TIFF layer 0/25 字节差异；16A-03 转为下一张依赖已满足但尚未开始的卡。 |
