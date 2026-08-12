@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-01 COMPLETE / 16A-02 NEXT**
-> 版本：v0.5
+> 状态：**16A-02 COMPLETE / 16A-03 NEXT**
+> 版本：v0.6
 > 日期：2026-08-12
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -150,13 +150,17 @@ production Gate 和统一收口仍按报告中的 DEFER 条件控制。
 
 ### 16A-02 GeometryOccupancyPolicy 和 Provider 合同
 
-**状态：NEXT / DEPENDENCY SATISFIED / NOT STARTED**
+**状态：COMPLETE（2026-08-12）**
 
 **依赖：** 16A-01
 **内容：** 新增策略 DTO/provider wrapper，Legacy 实现仍调用现有路径。
 **出口：** 默认 Legacy package/golden 逐字节不变；公共核心 API 为 STL-only。
 
+**实际结果：** 新增 STL-only 策略 DTO、列占用 DTO 与 Provider；既有 `relief_heightfield` 路径显式构造并校验 Legacy 策略，仍沿用原有 mask 循环。Stage 16 定向 CTest 2/2 PASS，Golden fixture 的 25 个 TIFF layer 逐文件 SHA-256 差异为 0；Layer Slab 与 2x2 继续 fail-closed。
+
 ### 16A-03 Layer Slab Candidate
+
+**状态：NEXT / DEPENDENCY SATISFIED / NOT STARTED**
 
 **依赖：** 16A-02
 **内容：** 实现半开 layer slab 相交，首版只支持已准入 `relief_heightfield`。
@@ -334,9 +338,9 @@ Stage 14 closure
 ```text
 保留本文档和上游 PRD/DEV/DECISION/PREP/PROMPT；
 R-F 线与 16-00-01..04 已完成；
-16A-01 已完成并通过定向验证；
-下一张依赖已满足的卡为 16A-02 GeometryOccupancyPolicy 和 Provider 合同；
-16A-02 仍须按任务边界单独实施，不与 16A-03 的 Layer Slab 语义混做；
+16A-01/02 已完成并通过定向验证与 Golden 零漂移检查；
+下一张依赖已满足的卡为 16A-03 Layer Slab Candidate；
+16A-03 必须保持只支持已准入 relief_heightfield，并与 16A-04 的 2x2 语义分开；
 候选和默认配置继续关闭。
 ```
 
@@ -344,6 +348,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-12 | v0.6 | 完成 16A-02：新增 STL-only GeometryOccupancyPolicy、列占用 DTO 与 Provider；Legacy 生产路径显式校验策略并保持原有循环，定向 CTest 2/2 PASS，Golden TIFF layer 0/25 字节差异；16A-03 转为下一张依赖已满足但尚未开始的卡。 |
 | 2026-08-12 | v0.5 | 完成 16A-01：新增六组可手算合成 fixture、逐层/通道/连通分量/尺寸差异合同和定向 C++ 测试；16A-02 依赖满足但尚未开始。 |
 | 2026-08-12 | v0.4 | 完成 16-00-01..04：固化 Release/资产/Profile 身份，完成 carry-in 与外部语义审计，形成 PARTIAL GO；依据用户启动授权将 16A-01 转 READY。 |
 | 2026-08-11 | v0.3 | R-F-01/02 完成后启动 16-00；依据 `REPORT_14` v3.61 修正早期状态漂移：14D-05/06/07/08 与 14C-06B 均已完成，`16C-08` 不再被 Stage 14 内部边界阻塞；`16C-10` 继续保持产品输入开放。 |

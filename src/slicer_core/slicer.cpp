@@ -2,6 +2,7 @@
 
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
+#include "slicer_core/geometry/LayerOccupancyProvider.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
@@ -1217,6 +1218,8 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     std::vector<double> z_min(pixel_count, std::numeric_limits<double>::max());
     std::vector<double> z_max(pixel_count, std::numeric_limits<double>::lowest());
     std::vector<int> hit_count(pixel_count, 0);
+    const GeometryOccupancyPolicy occupancyPolicy = MakeLegacyGeometryOccupancyPolicy();
+    ValidateLayerOccupancyPolicy(occupancyPolicy);
 
     ReliefSamplingResult result;
     result.columns.resize(pixel_count);
