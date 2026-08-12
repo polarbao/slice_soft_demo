@@ -225,6 +225,7 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
     {
         const SliceRunResult run =
             run_slicer(request.configpath, options);
+        result.profile = run.profile;
         if (run.effective_pipeline_mode != "legacy")
         {
             BlockLegacyAdapter(

@@ -1,7 +1,7 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-04 / 16B-01 COMPLETE；16A-05 / 16B-02 / 16C-01 NEXT**
+> 状态：**16A-04 / 16B-01 / 16C-01 COMPLETE；16A-05 / 16B-02 NEXT**
 > 版本：v0.9
 > 日期：2026-08-12
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
@@ -241,6 +241,13 @@ Reality 5/5 与标准 `nai_you` 共 6/6 PASS，基线重复生成 SHA-256 一致
 **内容：** 补齐单实例 core/compose 和 import parse/texture/preview/hash 计时；优先复用 Stage 14 telemetry。
 **出口：** 字段有真实计时边界，无法分解的字段为 null，不伪造。
 
+**状态：COMPLETE（2026-08-12）**
+
+**实际结果：** `SliceRunProfile` 新增 unique model import 与 visible instance 加法诊断；
+`load_model_report`、resource hash、单实例 core/compose/total 均在真实边界计时，当前生产链
+没有独立执行的 texture decode 与 surface preview 明确输出 `null`。Worker JSON 与场景生产
+定向 CTest 2/2 PASS，既有作业级字段、SPI 和 Package 协议不变。
+
 ### 16C-02 Stage 14 后 Release 基线
 
 **依赖：** 16C-01，16A-05
@@ -359,7 +366,7 @@ R-F 线与 16-00-01..04 已完成；
 16A-01/02/03/04 已完成并通过定向验证、候选 Package/RIP 与 Golden 零漂移检查；
 16B-01 已完成，Reality 5/5 与标准甲片接触姿态基线 6/6 PASS；
 下一张依赖已满足的 16A 卡为 16A-05 机器可读候选矩阵；
-用户已授权同步推进，16B-02 与 16C-01 可在确认各自准备工作后独立实施；
+用户已授权同步推进，16C-01 已完成；16B-02 可在确认准备工作后独立实施；
 16D 仍依赖 16A-06 和必要的 16B 候选，不得提前越过 Gate；
 候选和默认配置继续关闭。
 ```
@@ -368,6 +375,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-12 | v1.0 | 完成 16C-01：新增 import parse/hash 与 visible instance core/compose/total 真实计时，未独立执行的 texture/preview 输出 null；Worker/scene CTest 2/2 PASS，16C-02 继续等待 16A-05。 |
 | 2026-08-12 | v0.9 | 完成 16B-01：冻结两侧边界带、首半 slab 接触面积代理、候选角及 +Z/+Y 约束；新增无 Qt 只读测量器、单测和确定性 `posture_baseline.json`，Reality 5/5 与标准甲片 6/6 PASS；16B-02 依赖满足，16D 仍等待 16A-06。 |
 | 2026-08-12 | v0.8 | 完成 16A-04：新增 S3 `>=2/4` 与 S4 `>=1/4` 两个固定 2x2 边界自适应候选；Stage 16 CTest 2/2、两个 Package/RIP strict PASS，Legacy TIFF 0/25 差异；用户授权同步推进 16B/16C/16D，当前仅 16B-01、16C-01 前置满足，16D 继续等待 16A-06。 |
 | 2026-08-12 | v0.7 | 完成 16A-03：实现仅限 `relief_heightfield` 的半开 Layer Slab + Pixel Center 候选，冻结正测度相交、固定 `1e-9 mm` 边界容差和零厚度不占据；定向 CTest 2/2、候选 Package/RIP strict PASS，Legacy TIFF 0/25 差异；16A-04 转为下一张依赖已满足的卡。 |

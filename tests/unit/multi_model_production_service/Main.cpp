@@ -382,6 +382,44 @@ bool ThreeInstanceSceneWritesOneStrictPackage()
                 return left.percent > right.percent;
             })
         == progressEvents.end();
+    const bool importTimingsAreHonest =
+        !result.profile.imports.empty()
+        && std::all_of(
+            result.profile.imports.begin(),
+            result.profile.imports.end(),
+            [](const slicer_core::SliceRunImportProfile& item)
+            {
+                return !item.modelid.empty()
+                    && !item.sourcepath.empty()
+                    && item.parseboundary
+                        == "load_model_report_total"
+                    && item.parsems.has_value()
+                    && item.parsems.value() >= 0.0
+                    && !item.texturems.has_value()
+                    && !item.previewms.has_value()
+                    && item.hashms.has_value()
+                    && item.hashms.value() >= 0.0;
+            });
+    const bool instanceTimingsAreComplete =
+        result.profile.instances.size()
+            == result.visibleinstancecount
+        && std::all_of(
+            result.profile.instances.begin(),
+            result.profile.instances.end(),
+            [](const slicer_core::SliceRunInstanceProfile& item)
+            {
+                return !item.modelid.empty()
+                    && !item.instanceid.empty()
+                    && item.widthpx > 0
+                    && item.heightpx > 0
+                    && item.layercount > 0
+                    && item.coreslicems.has_value()
+                    && item.coreslicems.value() >= 0.0
+                    && item.composems.has_value()
+                    && item.composems.value() >= 0.0
+                    && item.totalms.has_value()
+                    && item.totalms.value() >= 0.0;
+            });
     const bool ok =
         ExpectTrue(
             result.visibleinstancecount == 3U,
@@ -410,6 +448,12 @@ bool ThreeInstanceSceneWritesOneStrictPackage()
                 && result.profile.layer_compute_ms > 0.0
                 && result.profile.output_write_ms > 0.0,
             "scene production returns detailed timing telemetry")
+        && ExpectTrue(
+            importTimingsAreHonest,
+            "scene production reports real import and hash boundaries with unavailable phases unset")
+        && ExpectTrue(
+            instanceTimingsAreComplete,
+            "scene production reports core and compose timing for every visible instance")
         && ExpectTrue(
             rip.schema == "p0.rgbwsv.2"
                 && rip.bit_depth == 8

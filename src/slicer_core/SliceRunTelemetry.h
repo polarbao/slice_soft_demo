@@ -1,10 +1,44 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 #include <string>
+#include <vector>
 
 namespace slicer_core
 {
+
+/**
+ * @brief Import timing for one unique scene model resource.
+ *
+ * Optional values serialize as null when the production path has no honest,
+ * independently measurable boundary for that phase.
+ */
+struct SliceRunImportProfile
+{
+    std::string modelid;
+    std::string sourcepath;
+    std::string parseboundary{"load_model_report_total"};
+    std::optional<double> parsems;
+    std::optional<double> texturems;
+    std::optional<double> previewms;
+    std::optional<double> hashms;
+};
+
+/**
+ * @brief Core-only timing and raster identity for one visible scene instance.
+ */
+struct SliceRunInstanceProfile
+{
+    std::string modelid;
+    std::string instanceid;
+    int widthpx{0};
+    int heightpx{0};
+    int layercount{0};
+    std::optional<double> coreslicems;
+    std::optional<double> composems;
+    std::optional<double> totalms;
+};
 
 /**
  * @brief Diagnostic timing profile for one slicer run.
@@ -32,6 +66,8 @@ struct SliceRunProfile
     double slice_processing_ms{0.0};
     double output_write_ms{0.0};
     double total_ms{0.0};
+    std::vector<SliceRunImportProfile> imports;
+    std::vector<SliceRunInstanceProfile> instances;
 };
 
 /**

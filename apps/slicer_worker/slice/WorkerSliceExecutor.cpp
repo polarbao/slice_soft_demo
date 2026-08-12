@@ -38,6 +38,55 @@ double ElapsedMilliseconds(const WorkerClock::time_point start)
         WorkerClock::now() - start).count();
 }
 
+slicer_core::Json OptionalMilliseconds(
+    const std::optional<double>& value)
+{
+    return value.has_value()
+        ? slicer_core::Json{value.value()}
+        : slicer_core::Json{nullptr};
+}
+
+slicer_core::Json BuildImportTimings(
+    const slicer_core::SliceRunProfile& profile)
+{
+    slicer_core::Json::Array values;
+    values.reserve(profile.imports.size());
+    for (const slicer_core::SliceRunImportProfile& item : profile.imports)
+    {
+        values.push_back(slicer_core::Json::object({
+            {"modelId", item.modelid},
+            {"sourcePath", item.sourcepath},
+            {"parseBoundary", item.parseboundary},
+            {"parseMs", OptionalMilliseconds(item.parsems)},
+            {"textureMs", OptionalMilliseconds(item.texturems)},
+            {"previewMs", OptionalMilliseconds(item.previewms)},
+            {"hashMs", OptionalMilliseconds(item.hashms)},
+        }));
+    }
+    return slicer_core::Json{std::move(values)};
+}
+
+slicer_core::Json BuildInstanceTimings(
+    const slicer_core::SliceRunProfile& profile)
+{
+    slicer_core::Json::Array values;
+    values.reserve(profile.instances.size());
+    for (const slicer_core::SliceRunInstanceProfile& item : profile.instances)
+    {
+        values.push_back(slicer_core::Json::object({
+            {"modelId", item.modelid},
+            {"instanceId", item.instanceid},
+            {"widthPx", item.widthpx},
+            {"heightPx", item.heightpx},
+            {"layerCount", item.layercount},
+            {"coreSliceMs", OptionalMilliseconds(item.coreslicems)},
+            {"composeMs", OptionalMilliseconds(item.composems)},
+            {"totalMs", OptionalMilliseconds(item.totalms)},
+        }));
+    }
+    return slicer_core::Json{std::move(values)};
+}
+
 WorkerCapabilityExecutionResult FacadeFailure(
     const slicer_core::api::ApiError* error,
     const std::string& fallbackMessage,
@@ -162,6 +211,8 @@ slicer_core::Json BuildBasicOutput(
             {"packagePublishMs", profile.package_publish_ms},
             {"outputWriteMs", profile.output_write_ms},
             {"totalMs", profile.total_ms},
+            {"imports", BuildImportTimings(profile)},
+            {"instances", BuildInstanceTimings(profile)},
         })},
         {"executionScope", "14D-08-R2-02"},
     });

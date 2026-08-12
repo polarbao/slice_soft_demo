@@ -54,6 +54,7 @@ struct LoadedSceneModel
 {
     ModelSource source;
     SceneModel model;
+    SliceRunImportProfile importprofile;
 };
 
 std::filesystem::path ResolvePath(
@@ -237,19 +238,27 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
         modelConfig.input.model_path = sourcePath;
         modelConfig.input.format = source.format;
         validate_slice_config(modelConfig);
+        const ProductionClock::time_point parseStart =
+            ProductionClock::now();
         SceneModel model = load_model_report(
             modelConfig,
             profileConfigPath.parent_path());
+        const double parseMs =
+            ElapsedMilliseconds(parseStart);
         ThrowIfCancellationRequested(request, "scene_model_loaded");
         if (model.triangles.empty())
         {
             throw std::runtime_error(
                 "scene model importer returned no triangles");
         }
+        const ProductionClock::time_point hashStart =
+            ProductionClock::now();
         const std::string sourceHash =
             ComputeSha256(ReadFile(sourcePath));
         const std::string resourceHash =
             ComputeSceneResourceHash(model);
+        const double hashMs =
+            ElapsedMilliseconds(hashStart);
         if (sourceHash != source.sourcehash
             || resourceHash != source.resourcehash)
         {
@@ -266,6 +275,13 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
         item.source = source;
         item.source.sourcepath = sourcePath;
         item.model = std::move(model);
+        item.importprofile.modelid = source.modelid;
+        item.importprofile.sourcepath =
+            sourcePath.generic_string();
+        item.importprofile.parsems = parseMs;
+        item.importprofile.texturems = std::nullopt;
+        item.importprofile.previewms = std::nullopt;
+        item.importprofile.hashms = hashMs;
         loaded.emplace(source.modelid, std::move(item));
     }
     return loaded;
@@ -700,6 +716,13 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
 
     runProfile.model_load_ms =
         ElapsedMilliseconds(phaseStart);
+    runProfile.imports.reserve(models.size());
+    for (const auto& [modelId, loadedModel] : models)
+    {
+        (void)modelId;
+        runProfile.imports.push_back(
+            loadedModel.importprofile);
+    }
     ReportProgress(
         request,
         runStart,
@@ -891,6 +914,26 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
                 item.instance.modelid,
                 item.instance.instanceid);
         }
+        SliceRunInstanceProfile instanceProfile;
+        instanceProfile.modelid = item.instance.modelid;
+        instanceProfile.instanceid = item.instance.instanceid;
+        instanceProfile.widthpx =
+            adapted.raster.localgrid.widthpx;
+        instanceProfile.heightpx =
+            adapted.raster.localgrid.heightpx;
+        instanceProfile.layercount =
+            adapted.raster.localgrid.layercount;
+        if (adapted.profile.available)
+        {
+            instanceProfile.coreslicems =
+                adapted.profile.slice_processing_ms;
+            instanceProfile.composems =
+                adapted.profile.layer_compose_ms;
+            instanceProfile.totalms =
+                adapted.profile.total_ms;
+        }
+        runProfile.instances.push_back(
+            std::move(instanceProfile));
         rasters.push_back(std::move(adapted.raster));
         ++visibleInstanceOrdinal;
     }

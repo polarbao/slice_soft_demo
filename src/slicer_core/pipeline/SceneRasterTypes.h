@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slicer_core/SliceRunTelemetry.h"
 #include "slicer_core/api/Cancellation.h"
 #include "slicer_core/config/SlicePipelineConfig.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
@@ -229,6 +230,7 @@ struct SceneRasterAdapterResult
     std::string status{"blocked"};
     bool productionoutputwritten{false};
     SceneInstanceRaster raster;
+    SliceRunProfile profile;
     std::optional<SceneRasterError> error;
 
     /**

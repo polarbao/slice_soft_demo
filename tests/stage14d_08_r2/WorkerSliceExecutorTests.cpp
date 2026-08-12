@@ -243,6 +243,23 @@ void TestRealProductionExecution(
         Check(result.Output().at("executionScope").as_string()
                 == "14D-08-R2-02",
             "R2 execution-only response remains explicit");
+        const slicer_core::Json& timing =
+            result.Output().at("timing");
+        const slicer_core::Json& imports =
+            timing.at("imports");
+        const slicer_core::Json& instances =
+            timing.at("instances");
+        Check(imports.size() == 1U
+                && imports.at(0U).at("parseMs").as_double() >= 0.0
+                && imports.at(0U).at("textureMs").is_null()
+                && imports.at(0U).at("previewMs").is_null()
+                && imports.at(0U).at("hashMs").as_double() >= 0.0,
+            "Worker serializes honest import timing and null unavailable phases");
+        Check(instances.size() == 1U
+                && instances.at(0U).at("coreSliceMs").as_double() >= 0.0
+                && instances.at(0U).at("composeMs").as_double() >= 0.0
+                && instances.at(0U).at("layerCount").as_int() > 0,
+            "Worker serializes one visible instance core and compose timing");
     }
     Check(std::filesystem::is_regular_file(packageDirectory / "manifest.json"),
         "real SliceFacade publishes a manifest");
