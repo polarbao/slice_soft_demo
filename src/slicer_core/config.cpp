@@ -594,6 +594,19 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
         config.relief.base_z_mm = relief.value("baseZMm", config.relief.base_z_mm);
     }
 
+    if (root.contains("geometrySampling"))
+    {
+        const auto& geometrySampling = root.at("geometrySampling");
+        if (!geometrySampling.is_object()
+            || !geometrySampling.contains("strategy")
+            || !geometrySampling.at("strategy").is_string())
+        {
+            throw std::runtime_error(
+                "geometrySampling must be an object containing a string strategy");
+        }
+        config.geometry_sampling.strategy = geometrySampling.at("strategy").as_string();
+    }
+
     if (root.contains("experimental"))
     {
         const auto& experimental = root.at("experimental");
@@ -1166,6 +1179,18 @@ void validate_slice_config(const SliceConfig& config) {
     }
     if (config.relief.base_z_mm < 0.0) {
         throw std::runtime_error("relief.baseZMm must be non-negative");
+    }
+    if (config.geometry_sampling.strategy != "legacy_center_sample"
+        && config.geometry_sampling.strategy != "layer_slab_pixel_center_candidate")
+    {
+        throw std::runtime_error(
+            "geometrySampling.strategy must be legacy_center_sample or layer_slab_pixel_center_candidate");
+    }
+    if (config.geometry_sampling.strategy == "layer_slab_pixel_center_candidate"
+        && config.slicing_mode != "relief_heightfield")
+    {
+        throw std::runtime_error(
+            "geometrySampling.strategy=layer_slab_pixel_center_candidate requires slicingMode=relief_heightfield");
     }
     if (config.preview.format != "ppm" && config.preview.format != "png") {
         throw std::runtime_error("preview.format must be ppm or png");

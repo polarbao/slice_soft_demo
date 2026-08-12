@@ -1,8 +1,8 @@
 # DEV_16 层体积采样、接触调平与性能治理设计
 
 > 阶段：Stage 16
-> 状态：PROPOSED / DESIGN ONLY / NOT ACTIVE
-> 版本：v0.1
+> 状态：ACTIVE / 16A-03 IMPLEMENTED
+> 版本：v0.2
 > 日期：2026-08-06
 > 上游：`PRD_16` / `DOC_DECISION_16`
 
@@ -84,17 +84,26 @@ Telemetry 由 pipeline/report 组装，不允许 report writer 决定优化策�
 ```text
 slabLow  = i * h
 slabHigh = (i + 1) * h
-occupied = columnMaxZ >= slabLow && columnMinZ < slabHigh
+occupied = columnMaxZ > slabLow && columnMinZ < slabHigh
 ```
 
 边界规则：
 
 ```text
 使用半开区间；
+几何区间必须与 layer slab 有正测度重叠；仅在 slabLow 处结束的区间不占据该层；
+零厚度区间不产生占据；
 容差来自统一几何容差合同，不按模型缩放；
 相邻层的边界不重复、不遗漏；
 最后一个空层是否写出由统一 layer-count 合同决定，不由 TIFF writer 自行修补。
 ```
+
+### 3.1 16A-03 边界澄清
+
+`columnMaxZ > slabLow` 是半开区间正测度相交的必要条件。早期 v0.1 草案中的
+`>=` 会把恰好终止在下一层下边界的列重复计入该层，与 16A-01 已冻结的
+`intervalHigh > slabLow && intervalLow < slabHigh` fixture 合同冲突。16A-03 因此采用
+严格大于，并仅使用固定 `1e-9 mm` 的层边界吸附容差处理浮点表示误差；该容差不随模型缩放。
 
 对多区间列或强倒扣网格，单一 `z_min/z_max` 可能过度填充。首版 Stage 16 只允许在既有 `relief_heightfield` 准入范围内使用新候选；推广到通用网格需新的 heightfield admission。
 
@@ -269,3 +278,10 @@ L6 必要时的实物打样，不由软件验证伪造。
 性能优化每张卡单独前后对比，不绑定大批重写；
 公开 Facade/SPI 未冻结前只在内部 Effective Config 启用候选。
 ```
+
+## 10. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-08-12 | v0.2 | 完成 16A-03 实施并澄清半开 layer slab 的正测度相交合同：上界必须严格大于 slabLow，零厚度区间不占据；候选仍只准入 `relief_heightfield`。 |
+| 2026-08-06 | v0.1 | 首版设计草案。 |

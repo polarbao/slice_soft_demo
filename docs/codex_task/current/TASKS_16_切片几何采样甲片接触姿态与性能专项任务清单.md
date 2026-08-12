@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-02 COMPLETE / 16A-03 NEXT**
-> 版本：v0.6
+> 状态：**16A-03 COMPLETE / 16A-04 NEXT**
+> 版本：v0.7
 > 日期：2026-08-12
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -160,11 +160,16 @@ production Gate 和统一收口仍按报告中的 DEFER 条件控制。
 
 ### 16A-03 Layer Slab Candidate
 
-**状态：NEXT / DEPENDENCY SATISFIED / NOT STARTED**
+**状态：COMPLETE（2026-08-12）**
 
 **依赖：** 16A-02
 **内容：** 实现半开 layer slab 相交，首版只支持已准入 `relief_heightfield`。
 **出口：** 上升/下降斜楔无边界重复或丢层；非 heightfield 配置 fail-closed。
+
+**实际结果：** 已实现 `LayerSlabCoverage + PixelCenter` 半开层体积候选，固定边界容差为
+`1e-9 mm`，零厚度列不占据；只允许显式 `relief_heightfield` 配置，通用 mesh 和 2x2
+继续 fail-closed。定向 CTest 2/2 PASS，候选 Package 与 RIP strict PASS，Legacy Golden
+TIFF layer 逐文件 SHA-256 差异 0/25。
 
 ### 16A-04 边界自适应 2x2 Candidate
 
@@ -338,9 +343,9 @@ Stage 14 closure
 ```text
 保留本文档和上游 PRD/DEV/DECISION/PREP/PROMPT；
 R-F 线与 16-00-01..04 已完成；
-16A-01/02 已完成并通过定向验证与 Golden 零漂移检查；
-下一张依赖已满足的卡为 16A-03 Layer Slab Candidate；
-16A-03 必须保持只支持已准入 relief_heightfield，并与 16A-04 的 2x2 语义分开；
+16A-01/02/03 已完成并通过定向验证、候选 Package/RIP 与 Golden 零漂移检查；
+下一张依赖已满足的卡为 16A-04 边界自适应 2x2 Candidate；
+16A-04 必须保持固定 2x2 子样本和独立阈值候选，不得改写已冻结的 Layer Slab 语义；
 候选和默认配置继续关闭。
 ```
 
@@ -348,6 +353,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-12 | v0.7 | 完成 16A-03：实现仅限 `relief_heightfield` 的半开 Layer Slab + Pixel Center 候选，冻结正测度相交、固定 `1e-9 mm` 边界容差和零厚度不占据；定向 CTest 2/2、候选 Package/RIP strict PASS，Legacy TIFF 0/25 差异；16A-04 转为下一张依赖已满足的卡。 |
 | 2026-08-12 | v0.6 | 完成 16A-02：新增 STL-only GeometryOccupancyPolicy、列占用 DTO 与 Provider；Legacy 生产路径显式校验策略并保持原有循环，定向 CTest 2/2 PASS，Golden TIFF layer 0/25 字节差异；16A-03 转为下一张依赖已满足但尚未开始的卡。 |
 | 2026-08-12 | v0.5 | 完成 16A-01：新增六组可手算合成 fixture、逐层/通道/连通分量/尺寸差异合同和定向 C++ 测试；16A-02 依赖满足但尚未开始。 |
 | 2026-08-12 | v0.4 | 完成 16-00-01..04：固化 Release/资产/Profile 身份，完成 carry-in 与外部语义审计，形成 PARTIAL GO；依据用户启动授权将 16A-01 转 READY。 |

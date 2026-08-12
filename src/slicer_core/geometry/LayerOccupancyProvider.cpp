@@ -9,6 +9,8 @@ namespace slicer_core
 namespace
 {
 
+constexpr double kLayerBoundaryToleranceMm{1.0e-9};
+
 void ValidateRequest(const LayerOccupancyRequest& request)
 {
     if (request.layerCount <= 0)
@@ -20,6 +22,12 @@ void ValidateRequest(const LayerOccupancyRequest& request)
         throw std::invalid_argument("LayerOccupancyRequest layerThicknessMm must be positive and finite");
     }
     ValidateLayerOccupancyPolicy(request.policy);
+    if (request.policy.layerMode == LayerOccupancyMode::LayerSlabCoverage
+        && request.inputKind != GeometryOccupancyInputKind::SingleIntervalHeightfield)
+    {
+        throw std::invalid_argument(
+            "LayerSlabCoverage requires a single-interval heightfield input");
+    }
 }
 
 int FirstLayerAtOrAboveZ(const double zMm, const double layerThicknessMm)
@@ -32,13 +40,35 @@ int LastLayerAtOrBelowZ(const double zMm, const double layerThicknessMm)
     return static_cast<int>(std::floor(zMm / layerThicknessMm - 0.5));
 }
 
+double SnapToLayerBoundary(const double zMm, const double layerThicknessMm)
+{
+    const double boundaryIndex{std::round(zMm / layerThicknessMm)};
+    const double boundaryMm{boundaryIndex * layerThicknessMm};
+    return std::abs(zMm - boundaryMm) <= kLayerBoundaryToleranceMm
+        ? boundaryMm
+        : zMm;
+}
+
+int FirstLayerIntersectingSlab(const double zMm, const double layerThicknessMm)
+{
+    const double snappedZ{SnapToLayerBoundary(zMm, layerThicknessMm)};
+    return static_cast<int>(std::floor(snappedZ / layerThicknessMm));
+}
+
+int LastLayerIntersectingSlab(const double zMm, const double layerThicknessMm)
+{
+    const double snappedZ{SnapToLayerBoundary(zMm, layerThicknessMm)};
+    return static_cast<int>(std::ceil(snappedZ / layerThicknessMm)) - 1;
+}
+
 }  // namespace
 
 void ValidateLayerOccupancyPolicy(const GeometryOccupancyPolicy& policy)
 {
-    if (policy.layerMode != LayerOccupancyMode::LegacyCenterSample)
+    if (policy.layerMode != LayerOccupancyMode::LegacyCenterSample
+        && policy.layerMode != LayerOccupancyMode::LayerSlabCoverage)
     {
-        throw std::invalid_argument("LayerSlabCoverage is not implemented by the 16A-02 provider");
+        throw std::invalid_argument("Layer occupancy mode is unsupported");
     }
     if (policy.xyMode != XyCoverageMode::PixelCenter)
     {
@@ -75,8 +105,32 @@ LayerOccupancyResult BuildLayerOccupancy(const LayerOccupancyRequest& request)
             throw std::invalid_argument("GeometryOccupancyColumn must contain a finite ordered interval");
         }
 
-        int firstLayer{FirstLayerAtOrAboveZ(column.minimumZMm, request.layerThicknessMm)};
-        int lastLayer{LastLayerAtOrBelowZ(column.maximumZMm, request.layerThicknessMm)};
+        if (request.policy.layerMode == LayerOccupancyMode::LayerSlabCoverage
+            && column.maximumZMm - column.minimumZMm <= kLayerBoundaryToleranceMm)
+        {
+            continue;
+        }
+
+        int firstLayer{0};
+        int lastLayer{-1};
+        if (request.policy.layerMode == LayerOccupancyMode::LayerSlabCoverage)
+        {
+            firstLayer = FirstLayerIntersectingSlab(
+                column.minimumZMm,
+                request.layerThicknessMm);
+            lastLayer = LastLayerIntersectingSlab(
+                column.maximumZMm,
+                request.layerThicknessMm);
+        }
+        else
+        {
+            firstLayer = FirstLayerAtOrAboveZ(
+                column.minimumZMm,
+                request.layerThicknessMm);
+            lastLayer = LastLayerAtOrBelowZ(
+                column.maximumZMm,
+                request.layerThicknessMm);
+        }
         firstLayer = std::max(0, firstLayer);
         lastLayer = std::min(request.layerCount - 1, lastLayer);
         if (firstLayer > lastLayer)

@@ -9,6 +9,13 @@
 namespace slicer_core
 {
 
+/** @brief Geometry field admission used by a layer occupancy request. */
+enum class GeometryOccupancyInputKind
+{
+    SingleIntervalHeightfield,
+    GeneralMesh
+};
+
 /** @brief One XY column represented by its occupied vertical extent in millimeters. */
 struct GeometryOccupancyColumn
 {
@@ -23,6 +30,7 @@ struct LayerOccupancyRequest
     std::span<const GeometryOccupancyColumn> columns;
     int layerCount{0};
     double layerThicknessMm{0.0};
+    GeometryOccupancyInputKind inputKind{GeometryOccupancyInputKind::SingleIntervalHeightfield};
     GeometryOccupancyPolicy policy{MakeLegacyGeometryOccupancyPolicy()};
 };
 

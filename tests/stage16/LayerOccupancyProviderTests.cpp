@@ -2,21 +2,28 @@
 
 #include <cstdint>
 #include <exception>
+#include <filesystem>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "slicer_core/config.h"
+
 namespace
 {
 
 using slicer_core::BuildLayerOccupancy;
 using slicer_core::GeometryOccupancyColumn;
+using slicer_core::GeometryOccupancyInputKind;
 using slicer_core::LayerOccupancyMode;
 using slicer_core::LayerOccupancyRequest;
 using slicer_core::LayerOccupancyResult;
 using slicer_core::MakeLegacyGeometryOccupancyPolicy;
+using slicer_core::MakeLayerSlabGeometryOccupancyPolicy;
+using slicer_core::SliceConfig;
 using slicer_core::XyCoverageMode;
 
 bool ExpectTrue(const bool condition, const std::string& message)
@@ -36,6 +43,23 @@ bool ExpectThrowsInvalidArgument(const std::function<void()>& operation, const s
         operation();
     }
     catch (const std::invalid_argument&)
+    {
+        return true;
+    }
+    catch (...)
+    {
+    }
+    std::cerr << "FAIL " << message << '\n';
+    return false;
+}
+
+bool ExpectThrowsRuntimeError(const std::function<void()>& operation, const std::string& message)
+{
+    try
+    {
+        operation();
+    }
+    catch (const std::runtime_error&)
     {
         return true;
     }
@@ -104,6 +128,70 @@ bool LegacyProviderMatchesCenterSampleRanges()
             "last occupied layer ranges");
 }
 
+bool LayerSlabProviderMatchesHalfOpenRanges()
+{
+    const std::vector<GeometryOccupancyColumn> columns{
+        {true, 0.0, 0.125},
+        {true, 0.0, 0.375},
+        {true, 0.0, 0.625},
+        {true, 0.0, 0.875},
+        {true, 0.25, 0.50},
+        {true, 0.50, 0.50},
+    };
+    LayerOccupancyRequest request;
+    request.columns = columns;
+    request.layerCount = 4;
+    request.layerThicknessMm = 0.25;
+    request.policy = MakeLayerSlabGeometryOccupancyPolicy();
+
+    const LayerOccupancyResult result = BuildLayerOccupancy(request);
+    const std::vector<std::vector<std::uint8_t>> expected{
+        {1, 1, 1, 1, 0, 0},
+        {0, 1, 1, 1, 1, 0},
+        {0, 0, 1, 1, 0, 0},
+        {0, 0, 0, 1, 0, 0},
+    };
+    const std::vector<int> expectedFirst{0, 0, 0, 0, 1, -1};
+    const std::vector<int> expectedLast{0, 1, 2, 3, 1, -1};
+    return ExpectTrue(result.masks == expected, "half-open slab masks")
+        && ExpectTrue(
+            result.firstOccupiedLayers == expectedFirst,
+            "half-open first occupied layers")
+        && ExpectTrue(
+            result.lastOccupiedLayers == expectedLast,
+            "half-open last occupied layers");
+}
+
+bool DescendingLayerSlabWedgeIsSymmetric()
+{
+    const std::vector<GeometryOccupancyColumn> columns{
+        {true, 0.0, 0.875},
+        {true, 0.0, 0.625},
+        {true, 0.0, 0.375},
+        {true, 0.0, 0.125},
+    };
+    LayerOccupancyRequest request;
+    request.columns = columns;
+    request.layerCount = 4;
+    request.layerThicknessMm = 0.25;
+    request.policy = MakeLayerSlabGeometryOccupancyPolicy();
+
+    const LayerOccupancyResult result = BuildLayerOccupancy(request);
+    std::vector<int> occupiedCounts;
+    for (const auto& mask : result.masks)
+    {
+        int count{0};
+        for (const std::uint8_t value : mask)
+        {
+            count += value != 0 ? 1 : 0;
+        }
+        occupiedCounts.push_back(count);
+    }
+    return ExpectTrue(
+        occupiedCounts == std::vector<int>({4, 3, 2, 1}),
+        "descending wedge remains layer-symmetric");
+}
+
 bool UnsupportedCandidatesFailClosed()
 {
     const std::vector<GeometryOccupancyColumn> columns{{true, 0.0, 0.2}};
@@ -112,13 +200,14 @@ bool UnsupportedCandidatesFailClosed()
     request.layerCount = 2;
     request.layerThicknessMm = 0.1;
 
-    request.policy = MakeLegacyGeometryOccupancyPolicy();
-    request.policy.layerMode = LayerOccupancyMode::LayerSlabCoverage;
+    request.policy = MakeLayerSlabGeometryOccupancyPolicy();
+    request.inputKind = GeometryOccupancyInputKind::GeneralMesh;
     bool passed = ExpectThrowsInvalidArgument(
         [&request]() { (void)BuildLayerOccupancy(request); },
-        "Layer Slab must remain unavailable before 16A-03");
+        "Layer Slab must reject non-heightfield geometry");
 
     request.policy = MakeLegacyGeometryOccupancyPolicy();
+    request.inputKind = GeometryOccupancyInputKind::SingleIntervalHeightfield;
     request.policy.xyMode = XyCoverageMode::Supersample2x2;
     passed = ExpectThrowsInvalidArgument(
                  [&request]() { (void)BuildLayerOccupancy(request); },
@@ -146,6 +235,61 @@ bool InvalidInputsFailClosed()
     return passed;
 }
 
+std::filesystem::path WriteConfig(
+    const std::string& name,
+    const std::string& slicingMode,
+    const std::string& geometrySamplingObject)
+{
+    const std::filesystem::path directory =
+        std::filesystem::temp_directory_path() / "slicesoft_stage16_layer_occupancy";
+    std::filesystem::create_directories(directory);
+    const std::filesystem::path path = directory / name;
+    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    output
+        << "{\n"
+        << "  \"slicingMode\": \"" << slicingMode << "\",\n"
+        << "  \"input\": {\"modelPath\": \"fixture.obj\"}";
+    if (!geometrySamplingObject.empty())
+    {
+        output << ",\n  \"geometrySampling\": " << geometrySamplingObject;
+    }
+    output << "\n}\n";
+    return path;
+}
+
+bool CandidateConfigurationIsExplicitAndHeightfieldOnly()
+{
+    const SliceConfig defaultConfig = slicer_core::load_slice_config(
+        WriteConfig("default.json", "relief_heightfield", ""));
+    bool passed = ExpectTrue(
+        defaultConfig.geometry_sampling.strategy == "legacy_center_sample",
+        "missing geometrySampling keeps Legacy default");
+
+    const SliceConfig candidateConfig = slicer_core::load_slice_config(
+        WriteConfig(
+            "candidate.json",
+            "relief_heightfield",
+            "{\"strategy\": \"layer_slab_pixel_center_candidate\"}"));
+    passed = ExpectTrue(
+                 candidateConfig.geometry_sampling.strategy
+                     == "layer_slab_pixel_center_candidate",
+                 "heightfield candidate is explicit")
+        && passed;
+
+    passed = ExpectThrowsRuntimeError(
+                 []()
+                 {
+                     (void)slicer_core::load_slice_config(
+                         WriteConfig(
+                             "non_heightfield.json",
+                             "closed_mesh_scanline",
+                             "{\"strategy\": \"layer_slab_pixel_center_candidate\"}"));
+                 },
+                 "non-heightfield candidate config fails closed")
+        && passed;
+    return passed;
+}
+
 }  // namespace
 
 int main()
@@ -154,8 +298,11 @@ int main()
     {
         const bool passed = DefaultPolicyIsLegacyOnly()
             && LegacyProviderMatchesCenterSampleRanges()
+            && LayerSlabProviderMatchesHalfOpenRanges()
+            && DescendingLayerSlabWedgeIsSymmetric()
             && UnsupportedCandidatesFailClosed()
-            && InvalidInputsFailClosed();
+            && InvalidInputsFailClosed()
+            && CandidateConfigurationIsExplicitAndHeightfieldOnly();
         if (!passed)
         {
             return 1;

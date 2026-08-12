@@ -299,6 +299,12 @@ struct ReliefConfig {
     double base_z_mm{0.0};
 };
 
+/** @brief Stage 16 geometry occupancy sampling selection. */
+struct GeometrySamplingConfig
+{
+    std::string strategy{"legacy_center_sample"};
+};
+
 /**
  * @brief Feature-gated configuration for the experimental OpenVDB pipeline.
  */
@@ -341,6 +347,7 @@ struct SliceConfig {
     MaterialClosureConfig material_closure;
     PreviewConfig preview;
     ReliefConfig relief;
+    GeometrySamplingConfig geometry_sampling;
     ExperimentalConfig experimental;
 };
 

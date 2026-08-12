@@ -1218,7 +1218,11 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     std::vector<double> z_min(pixel_count, std::numeric_limits<double>::max());
     std::vector<double> z_max(pixel_count, std::numeric_limits<double>::lowest());
     std::vector<int> hit_count(pixel_count, 0);
-    const GeometryOccupancyPolicy occupancyPolicy = MakeLegacyGeometryOccupancyPolicy();
+    const bool useLayerSlabCandidate =
+        config.geometry_sampling.strategy == "layer_slab_pixel_center_candidate";
+    const GeometryOccupancyPolicy occupancyPolicy = useLayerSlabCandidate
+        ? MakeLayerSlabGeometryOccupancyPolicy()
+        : MakeLegacyGeometryOccupancyPolicy();
     ValidateLayerOccupancyPolicy(occupancyPolicy);
 
     ReliefSamplingResult result;
@@ -1280,6 +1284,12 @@ ReliefSamplingResult sample_relief_heightfield_masks(
         diagnostics.push_back(layer_diagnostics);
     }
 
+    std::vector<GeometryOccupancyColumn> occupancyColumns;
+    if (useLayerSlabCandidate)
+    {
+        occupancyColumns.resize(pixel_count);
+    }
+
     for (std::size_t index{0}; index < pixel_count; ++index) {
         if (hit_count.at(index) == 0) {
             continue;
@@ -1312,6 +1322,11 @@ ReliefSamplingResult sample_relief_heightfield_masks(
         const double start_z =
             config.relief.fill_mode == "surface_to_base" ? config.relief.base_z_mm : z_min.at(index);
         const double end_z = z_max.at(index);
+        if (useLayerSlabCandidate)
+        {
+            occupancyColumns.at(index) = {true, start_z, end_z};
+            continue;
+        }
         int start_layer = first_layer_at_or_above_z(start_z, config.output.layer_thickness_mm);
         int end_layer = last_layer_at_or_below_z(end_z, config.output.layer_thickness_mm);
         start_layer = std::max(0, start_layer);
@@ -1323,6 +1338,30 @@ ReliefSamplingResult sample_relief_heightfield_masks(
         column.upper_layer = end_layer;
         for (int layer_index{start_layer}; layer_index <= end_layer; ++layer_index) {
             result.model_masks.at(layer_index).at(index) = 1;
+        }
+    }
+
+    if (useLayerSlabCandidate)
+    {
+        LayerOccupancyRequest occupancyRequest;
+        occupancyRequest.columns = occupancyColumns;
+        occupancyRequest.layerCount = grid.layer_count;
+        occupancyRequest.layerThicknessMm = config.output.layer_thickness_mm;
+        occupancyRequest.inputKind = GeometryOccupancyInputKind::SingleIntervalHeightfield;
+        occupancyRequest.policy = occupancyPolicy;
+        LayerOccupancyResult occupancyResult = BuildLayerOccupancy(occupancyRequest);
+        result.model_masks = std::move(occupancyResult.masks);
+
+        for (std::size_t index{0}; index < pixel_count; ++index)
+        {
+            if (!result.columns.at(index).has_model)
+            {
+                continue;
+            }
+            result.columns.at(index).lower_layer =
+                occupancyResult.firstOccupiedLayers.at(index);
+            result.columns.at(index).upper_layer =
+                occupancyResult.lastOccupiedLayers.at(index);
         }
     }
     relief_report.empty_columns = relief_report.total_columns - relief_report.hit_columns;

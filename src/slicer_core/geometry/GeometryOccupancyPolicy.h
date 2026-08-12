@@ -34,4 +34,15 @@ constexpr GeometryOccupancyPolicy MakeLegacyGeometryOccupancyPolicy() noexcept
     return GeometryOccupancyPolicy{};
 }
 
+/**
+ * @brief Build the Stage 16A-03 layer-slab, pixel-center candidate policy.
+ * @return Policy using half-open layer slabs and existing XY pixel centers.
+ */
+constexpr GeometryOccupancyPolicy MakeLayerSlabGeometryOccupancyPolicy() noexcept
+{
+    GeometryOccupancyPolicy policy;
+    policy.layerMode = LayerOccupancyMode::LayerSlabCoverage;
+    return policy;
+}
+
 }  // namespace slicer_core
