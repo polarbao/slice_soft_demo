@@ -255,3 +255,10 @@ git status --short
 
 For documentation/config-only tasks, validate with targeted text/schema checks and `git diff --check`.
 For C++/Qt/CMake changes, use the task-specific commands from `.agents/docs/build-and-test.md`.
+
+## Stage 16D-02 Qt diagnostics context (2026-08-13)
+
+- Reference Host exposes S0 production-default and S3 diagnostic-candidate geometry sampling; S3 remains restricted to `relief_heightfield` and never silently replaces S0.
+- Workspace schema v5 persists the explicit strategy. Unknown or stale values fail safe.
+- Qt only presents effective Profile, Worker timing, manifest statistics and package-rendered TIFF previews; it must not recompute geometry or posture.
+- Result A/B means first production layer versus current production layer using the same package/channels. P0 remains production posture and P3 remains diagnostic-only until separately authorized.

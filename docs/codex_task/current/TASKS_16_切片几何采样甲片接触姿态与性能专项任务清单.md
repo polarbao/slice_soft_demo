@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16D-01 COMPLETE；16D-02 READY；16B-04 待单独授权**
-> 版本：v1.8
+> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16D-01..02 COMPLETE；16D-03 READY；16B-04 待单独授权**
+> 版本：v1.9
 > 日期：2026-08-13
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -360,6 +360,12 @@ S3+非 relief 组合以及 Profile/contract 不一致执行 fail-closed。Qt 本
 **依赖：** 16D-01
 **内容：** 展示策略、首层/当前层差异、姿态候选和性能摘要；不在 UI 重算几何。
 
+**状态：COMPLETE（2026-08-13）**
+
+**实际结果：** Reference Host 已提供 S0/S3 显式选择与 schema v5 持久化；作业页展示策略、
+P0/P3 边界和支撑统计扫描次数；结果页以生产 TIFF 并排显示首层 A/当前层 B，并用 manifest
+统计展示 RGBWSV 差值。S0/P0 默认不变，Qt 未重算几何。
+
 ### 16D-03 统一回归 Gate
 
 ```text
@@ -426,6 +432,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-13 | v1.9 | 完成 16D-02：Qt 显式展示 S0/S3、P0/P3 与性能 telemetry；工作区 schema v5 持久化采样策略；结果页并排显示首层 A/当前层 B 和 RGBWSV 打印像素差值，10/10 定向 CTest PASS。 |
 | 2026-08-13 | v1.8 | 完成 16C-03：支撑 island 汇总与最终 mask/type 统计分离，后处理后统一扫描一次；新增 scan count telemetry，三真实模型逐层 TIFF/hash/type totals 零差异、RIP strict 6/6 PASS，并记录同机 Release A/B 中位数。 |
 | 2026-08-13 | v1.7 | 完成 16C-03 实施准备：定位支撑生成后与后处理后的重复全 volume 统计，冻结单一统计器、最终 mask 扫描、island totals 保留及三模型 Release A/B Gate。 |
 | 2026-08-13 | v1.6 | 完成 16D-01：Host/Worker/Scene Effective Config/Production Service 贯通显式 S0/S3 采样合同；S2/S4/未知值、S3+非 relief 及 Profile/contract 不一致均 fail-closed；默认仍为 S0，Qt 可见控制延后至 16D-02。 |

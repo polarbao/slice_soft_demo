@@ -115,6 +115,11 @@ void HostMainWindow::OnSliceJobCompleted(
     SetWorkflowEditingEnabled(m_client.IsOpen());
     if (success)
     {
+        const hostslicesettings settings = m_sliceSettingsPanel->Settings();
+        m_packageReviewPanel->SetStage16Context(
+            HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+                settings.geometrysamplingstrategy),
+            timing);
         m_statusLabel->setText(
             QStringLiteral("切片完成 · %1 ms · %2")
                 .arg(elapsedMs)

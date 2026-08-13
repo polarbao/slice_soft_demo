@@ -132,6 +132,29 @@ bool ParseSupportMode(
     return false;
 }
 
+bool ParseGeometrySamplingStrategy(
+    const QString& identifier,
+    HostGeometrySamplingStrategy* strategy)
+{
+    if (strategy == nullptr)
+    {
+        return false;
+    }
+    for (const HostGeometrySamplingStrategy candidate : {
+             HostGeometrySamplingStrategy::LegacyCenterSample,
+             HostGeometrySamplingStrategy::
+                 LayerSlabSupersample2x2AtLeastTwoCandidate})
+    {
+        if (HostEffectiveProfileBuilder::GeometrySamplingStrategyId(candidate)
+            == identifier)
+        {
+            *strategy = candidate;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool IsFiniteInRange(
     const double value,
     const double minimum,
@@ -143,7 +166,7 @@ bool IsFiniteInRange(
 
 int HostWorkspaceState::SchemaVersion()
 {
-    return 4;
+    return 5;
 }
 
 QString HostWorkspaceState::OrganizationName()
@@ -204,6 +227,10 @@ void HostWorkspaceState::Save(
     settings.setValue(
         QStringLiteral("layerThicknessMm"),
         sliceSettings.layerthicknessmm);
+    settings.setValue(
+        QStringLiteral("geometrySamplingStrategy"),
+        HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+            sliceSettings.geometrysamplingstrategy));
     settings.setValue(
         QStringLiteral("outputDirectory"), sliceSettings.outputdirectory);
     settings.setValue(
@@ -319,6 +346,8 @@ bool HostWorkspaceState::Restore(
     restored.dpiy = settings.value(QStringLiteral("dpiY"), -1).toInt();
     restored.layerthicknessmm = settings.value(
         QStringLiteral("layerThicknessMm"), -1.0).toDouble();
+    const QString geometrySamplingId = settings.value(
+        QStringLiteral("geometrySamplingStrategy")).toString();
     restored.outputdirectory = settings.value(
         QStringLiteral("outputDirectory")).toString();
     const QString materialId = settings.value(
@@ -389,10 +418,13 @@ bool HostWorkspaceState::Restore(
     HostMaterialStrategy materialStrategy{};
     HostMaterialRole materialRole{};
     HostSupportMode supportMode{};
+    HostGeometrySamplingStrategy geometrySamplingStrategy{};
     const bool preferencesValid = !restored.profileid.trimmed().isEmpty()
         && restored.dpix >= 72 && restored.dpix <= 2400
         && restored.dpiy >= 72 && restored.dpiy <= 2400
         && IsFiniteInRange(restored.layerthicknessmm, 0.001, 10.0)
+        && ParseGeometrySamplingStrategy(
+            geometrySamplingId, &geometrySamplingStrategy)
         && !restored.outputdirectory.trimmed().isEmpty()
         && ParseMaterialStrategy(materialId, &materialStrategy)
         && ParseMaterialRole(materialRoleId, &materialRole)
@@ -442,6 +474,7 @@ bool HostWorkspaceState::Restore(
     restored.materialstrategy = materialStrategy;
     restored.materialprocess.defaultrole = materialRole;
     restored.support.mode = supportMode;
+    restored.geometrysamplingstrategy = geometrySamplingStrategy;
     workspaceSplitter->setSizes(splitterSizes);
     workspaceTabs->setCurrentIndex(workspaceTab);
     inspectorTabs->setCurrentIndex(inspectorTab);

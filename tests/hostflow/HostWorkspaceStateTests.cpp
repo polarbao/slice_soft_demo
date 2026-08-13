@@ -87,6 +87,8 @@ int main(int argc, char* argv[])
     expected.dpix = 720;
     expected.dpiy = 600;
     expected.layerthicknessmm = 0.05;
+    expected.geometrysamplingstrategy = HostGeometrySamplingStrategy::
+        LayerSlabSupersample2x2AtLeastTwoCandidate;
     expected.materialstrategy = HostMaterialStrategy::RgbWhiteVarnish;
     expected.materialprocess.rolemappingenabled = true;
     expected.materialprocess.defaultrole = HostMaterialRole::Ignore;
@@ -161,7 +163,9 @@ int main(int argc, char* argv[])
                       && actual.dpix == expected.dpix
                       && actual.dpiy == expected.dpiy
                       && std::abs(actual.layerthicknessmm
-                                  - expected.layerthicknessmm) < 1.0e-9
+                                   - expected.layerthicknessmm) < 1.0e-9
+                      && actual.geometrysamplingstrategy
+                          == expected.geometrysamplingstrategy
                       && actual.outputdirectory == expected.outputdirectory
                       && actual.materialstrategy
                           == HostMaterialStrategy::RgbWhiteVarnish,

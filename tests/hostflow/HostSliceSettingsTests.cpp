@@ -2,6 +2,8 @@
 #include "apps/slicer_ui_host_sim/HostProcessPresetCatalog.h"
 #include "apps/slicer_ui_host_sim/HostSliceSettings.h"
 #include "apps/slicer_ui_host_sim/HostSliceSettingsPanel.h"
+#include "apps/slicer_ui_host_sim/HostPackageReviewPanel.h"
+#include "apps/slicer_ui_host_sim/HostSliceJobPanel.h"
 #include "apps/slicer_ui_host_sim/ModuleClient.h"
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/json_value.h"
@@ -16,6 +18,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLineEdit>
+#include <QLabel>
 #include <QSpinBox>
 #include <QStringList>
 #include <QTemporaryDir>
@@ -529,6 +532,8 @@ bool VerifyPanelIsLocal(
         QStringLiteral("hostProcessPresetCombo"));
     auto* dpiXSpin = panel.findChild<QSpinBox*>(
         QStringLiteral("hostSliceDpiXSpin"));
+    auto* geometrySampling = panel.findChild<QComboBox*>(
+        QStringLiteral("hostGeometrySamplingCombo"));
     auto* materialCombo = panel.findChild<QComboBox*>(
         QStringLiteral("hostSliceMaterialCombo"));
     auto* supportEnabled = panel.findChild<QCheckBox*>(
@@ -550,6 +555,7 @@ bool VerifyPanelIsLocal(
     if (!Check(
             outputEdit != nullptr && processPreset != nullptr
                 && dpiXSpin != nullptr
+                && geometrySampling != nullptr
                 && materialCombo != nullptr && supportEnabled != nullptr
                 && supportMode != nullptr && supportOffset != nullptr
                 && roleMapping != nullptr && whiteExpand != nullptr
@@ -577,6 +583,15 @@ bool VerifyPanelIsLocal(
     outputEdit->setText(outputDirectory);
     panel.SetModelPath(modelPath);
     client.ResetCallCount();
+
+    if (!Check(
+            geometrySampling->currentData().toString()
+                == QStringLiteral("legacy_center_sample"),
+            QStringLiteral("Stage 16 几何采样必须默认显示 S0。"),
+            errors))
+    {
+        return false;
+    }
 
     const int onDemandIndex = processPreset->findData(
         QStringLiteral("textured_nail_rgb_white_ondemand_lower_support"));
@@ -632,10 +647,24 @@ bool VerifyPanelIsLocal(
     textureEnabled->setChecked(true);
     textureApplyMode->setCurrentIndex(0);
     textureWhitePolicy->setCurrentIndex(1);
+    const int s3Index = geometrySampling->findData(QStringLiteral(
+        "layer_slab_supersample_2x2_at_least_two_candidate"));
+    geometrySampling->setCurrentIndex(s3Index);
     QCoreApplication::processEvents();
+    const hostslicesettings samplingSettings = panel.Settings();
+    hosteffectiveprofile samplingProfile;
+    QString samplingError;
+    const bool samplingBuilt = HostEffectiveProfileBuilder::Build(
+        samplingSettings, &samplingProfile, &samplingError);
     if (!Check(
-        panel.IsReady(),
-        QStringLiteral("有效设置未生成 Profile 预览。"),
+        s3Index >= 0 && samplingBuilt
+            && samplingProfile.profile.value(
+                QStringLiteral("geometrySampling")).toObject().value(
+                    QStringLiteral("strategy")).toString()
+                == QStringLiteral(
+                    "layer_slab_supersample_2x2_at_least_two_candidate"),
+        QStringLiteral("S3 选择未进入有效 Profile/hash：%1")
+            .arg(samplingError),
         errors)
         || !Check(
             client.CallCount() == 0U,
@@ -655,6 +684,81 @@ bool VerifyPanelIsLocal(
         !panel.IsReady(),
         QStringLiteral("不含 slice.rgbwsv 的诊断 Profile 不得生成切片配置。"),
         errors);
+}
+
+bool VerifyStage16Diagnostics(QTextStream& errors)
+{
+    HostSliceJobPanel jobPanel;
+    jobPanel.SetStage16Context(QStringLiteral(
+        "layer_slab_supersample_2x2_at_least_two_candidate"));
+    auto* jobContext = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostStage16JobContextLabel"));
+    QJsonObject timing{
+        {QStringLiteral("available"), true},
+        {QStringLiteral("engine"), QStringLiteral("legacy-scene")},
+        {QStringLiteral("sliceProcessingMs"), 12.5},
+        {QStringLiteral("supportStatisticsScanCount"), 3},
+        {QStringLiteral("totalMs"), 18.0}};
+    jobPanel.ShowCompletion(
+        true,
+        false,
+        QString{},
+        QString{},
+        QString{},
+        QStringLiteral("package"),
+        timing,
+        20,
+        -1);
+    auto* scanValue = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostSupportStatisticsScanValue"));
+
+    HostPackageReviewPanel reviewPanel;
+    hostpackagereview review;
+    review.valid = true;
+    review.layercount = 2;
+    hostlayerdescriptor first;
+    first.layerindex = 0;
+    first.printpixels.values = {10U, 20U, 30U, 40U, 50U, 60U};
+    hostlayerdescriptor current = first;
+    current.layerindex = 1;
+    current.printpixels.values = {15U, 18U, 30U, 44U, 45U, 70U};
+    review.layers = {first, current};
+    reviewPanel.SetStage16Context(
+        QStringLiteral("legacy_center_sample"), timing);
+    reviewPanel.SetPackage(review);
+    auto* layerSpin = reviewPanel.findChild<QSpinBox*>(
+        QStringLiteral("hostPackageLayerSpin"));
+    auto* summary = reviewPanel.findChild<QLabel*>(
+        QStringLiteral("hostPackageStage16SummaryLabel"));
+    auto* referencePreview = reviewPanel.findChild<QLabel*>(
+        QStringLiteral("hostPackageReferencePreviewImage"));
+    reviewPanel.SetStage16Context(
+        QStringLiteral("legacy_center_sample"), timing);
+    layerSpin->setValue(1);
+    QCoreApplication::processEvents();
+
+    return Check(
+               jobContext != nullptr
+                   && jobContext->text().contains(QStringLiteral("S3"))
+                   && jobContext->text().contains(QStringLiteral("P3")),
+               QStringLiteral("Stage 16 作业策略/姿态摘要缺失。"),
+               errors)
+        && Check(
+               scanValue != nullptr
+                   && scanValue->text().contains(QStringLiteral("3 次")),
+               QStringLiteral("支撑统计扫描 telemetry 未显示。"),
+               errors)
+        && Check(
+               summary != nullptr && referencePreview != nullptr
+                   && summary->text().contains(QStringLiteral("A 首层 layer=0"))
+                   && summary->text().contains(QStringLiteral("B 当前层 layer=1"))
+                   && summary->text().contains(QStringLiteral("R=+5"))
+                   && summary->text().contains(QStringLiteral("S=-5")),
+               QStringLiteral("首层/当前层 A/B 差值摘要缺失：%1")
+                   .arg(summary != nullptr
+                       ? summary->text()
+                       : QStringLiteral("summary=null")),
+               errors);
 }
 
 bool VerifySceneAuthority(
@@ -769,6 +873,7 @@ int main(int argc, char* argv[])
         || !VerifyEffectiveProfiles(modelPath, outputDirectory, errors)
         || !VerifyPanelIsLocal(
             client, modelPath, outputDirectory, errors)
+        || !VerifyStage16Diagnostics(errors)
         || !VerifySceneAuthority(client, modelPath, errors))
     {
         return 4;

@@ -48,6 +48,17 @@ Target-only selectable legacy/global_surface_shell pipeline contract; shared wri
 quick/full/heavy regression
 ```
 
+## Stage 16D-02 Qt diagnostics context
+
+```text
+Reference Host exposes S0 production-default and S3 diagnostic-candidate geometry sampling.
+S3 remains restricted to relief_heightfield and never silently replaces S0.
+Workspace schema v5 persists the explicit strategy; invalid values fail safe.
+Qt presents effective Profile, Worker timing, manifest statistics and package TIFF previews only.
+Result A/B is first production layer versus current production layer using identical channels.
+P0 remains production posture; P3 remains diagnostic-only until separately authorized.
+```
+
 ## Critical constraints
 
 ```text

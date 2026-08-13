@@ -27,6 +27,12 @@ public:
      */
     void SetReady(bool ready, const QString& reason);
 
+    /**
+     * @brief Displays the Stage 16 strategy and frozen posture state.
+     * @param samplingStrategyId Effective Profile geometry strategy identity.
+     */
+    void SetStage16Context(const QString& samplingStrategyId);
+
     /** @brief Marks the panel active after the module accepts a job. */
     void SetActive();
 
@@ -89,6 +95,7 @@ private:
 
     QLabel* m_statusLabel{nullptr};
     QLabel* m_phaseLabel{nullptr};
+    QLabel* m_stage16ContextLabel{nullptr};
     QProgressBar* m_progressBar{nullptr};
     QPushButton* m_startButton{nullptr};
     QPushButton* m_cancelButton{nullptr};
@@ -106,6 +113,7 @@ private:
     QLabel* m_outputWriteValue{nullptr};
     QLabel* m_workerTotalValue{nullptr};
     QLabel* m_hostTotalValue{nullptr};
+    QLabel* m_supportStatisticsScanValue{nullptr};
     bool m_ready{false};
     bool m_active{false};
     bool m_hasCompletion{false};

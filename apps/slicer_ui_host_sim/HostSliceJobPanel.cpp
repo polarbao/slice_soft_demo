@@ -115,6 +115,16 @@ QString PhaseText(const QString& phase)
     return phase.isEmpty() ? QStringLiteral("未知阶段") : phase;
 }
 
+QString SamplingStrategyText(const QString& strategyId)
+{
+    if (strategyId == QStringLiteral(
+            "layer_slab_supersample_2x2_at_least_two_candidate"))
+    {
+        return QStringLiteral("S3 诊断候选｜层体积 2×2（至少 2/4）");
+    }
+    return QStringLiteral("S0 生产默认｜Legacy 中心采样");
+}
+
 void SetTimingValue(
     QLabel* label,
     const QJsonObject& timing,
@@ -147,6 +157,16 @@ void HostSliceJobPanel::BuildInterface()
     m_phaseLabel = new QLabel(this);
     m_phaseLabel->setObjectName(QStringLiteral("hostSliceJobPhaseLabel"));
     m_phaseLabel->setWordWrap(true);
+
+    m_stage16ContextLabel = new QLabel(
+        QStringLiteral(
+            "几何采样：S0 生产默认｜Legacy 中心采样\n"
+            "姿态：P0 生产默认；P3 仅诊断，未获生产应用授权"),
+        this);
+    m_stage16ContextLabel->setObjectName(
+        QStringLiteral("hostStage16JobContextLabel"));
+    m_stage16ContextLabel->setWordWrap(true);
+    m_stage16ContextLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     m_progressBar = new QProgressBar(this);
     m_progressBar->setObjectName(QStringLiteral("hostSliceJobProgressBar"));
@@ -205,6 +225,8 @@ void HostSliceJobPanel::BuildInterface()
         QStringLiteral("hostSliceTimingWorkerTotalValue"), timingGroup);
     m_hostTotalValue = MakeTimingValue(
         QStringLiteral("hostSliceTimingHostTotalValue"), timingGroup);
+    m_supportStatisticsScanValue = MakeTimingValue(
+        QStringLiteral("hostSupportStatisticsScanValue"), timingGroup);
     AddTimingRow(timingLayout, 0, QStringLiteral("引擎"), m_engineValue);
     AddTimingRow(timingLayout, 1, QStringLiteral("配置加载"), m_configLoadValue);
     AddTimingRow(timingLayout, 2, QStringLiteral("模型加载"), m_modelLoadValue);
@@ -218,9 +240,15 @@ void HostSliceJobPanel::BuildInterface()
     AddTimingRow(timingLayout, 10, QStringLiteral("切片保存合计"), m_outputWriteValue);
     AddTimingRow(timingLayout, 11, QStringLiteral("Worker 总耗时"), m_workerTotalValue);
     AddTimingRow(timingLayout, 12, QStringLiteral("宿主总耗时"), m_hostTotalValue);
+    AddTimingRow(
+        timingLayout,
+        13,
+        QStringLiteral("支撑统计扫描"),
+        m_supportStatisticsScanValue);
 
     layout->addWidget(m_statusLabel);
     layout->addWidget(m_phaseLabel);
+    layout->addWidget(m_stage16ContextLabel);
     layout->addWidget(m_progressBar);
     layout->addLayout(commands);
     layout->addWidget(timingGroup);
@@ -236,6 +264,14 @@ void HostSliceJobPanel::BuildInterface()
         &QPushButton::clicked,
         this,
         &HostSliceJobPanel::OnCancelRequested);
+}
+
+void HostSliceJobPanel::SetStage16Context(const QString& samplingStrategyId)
+{
+    m_stage16ContextLabel->setText(
+        QStringLiteral(
+            "几何采样：%1\n姿态：P0 生产默认；P3 仅诊断，未获生产应用授权")
+            .arg(SamplingStrategyText(samplingStrategyId)));
 }
 
 void HostSliceJobPanel::SetReady(
@@ -402,6 +438,12 @@ void HostSliceJobPanel::ApplyTiming(
             m_outputWriteValue,
             timing,
             QStringLiteral("outputWriteMs"));
+        const int scanCount = timing.value(
+            QStringLiteral("supportStatisticsScanCount")).toInt(-1);
+        m_supportStatisticsScanValue->setText(
+            scanCount >= 0
+                ? QStringLiteral("%1 次（实例累计）").arg(scanCount)
+                : QStringLiteral("未提供"));
     }
     SetTimingValue(
         m_workerTotalValue,
@@ -426,7 +468,8 @@ void HostSliceJobPanel::ResetTiming()
         m_reportValue,
         m_outputWriteValue,
         m_workerTotalValue,
-        m_hostTotalValue};
+        m_hostTotalValue,
+        m_supportStatisticsScanValue};
     for (QLabel* value : values)
     {
         value->setText(QStringLiteral("未提供"));

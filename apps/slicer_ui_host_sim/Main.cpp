@@ -336,7 +336,7 @@ int RunHostFlowWorkspaceUiSmoke(const QString& modulePath)
     if (workspaceTabs == nullptr || inspectorTabs == nullptr
         || splitter == nullptr || workspaceTabs->count() < 4
         || inspectorTabs->count() < 5 || splitter->count() != 2
-        || HostWorkspaceState::SchemaVersion() != 4)
+        || HostWorkspaceState::SchemaVersion() != 5)
     {
         QTextStream(stderr)
             << "HOSTFLOW_HB08_UI_FAILED: workspace state is incomplete"

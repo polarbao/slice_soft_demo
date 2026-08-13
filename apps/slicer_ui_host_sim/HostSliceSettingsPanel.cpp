@@ -61,6 +61,14 @@ QString LegacyDefaultOutputDirectory()
         QStringLiteral("SliceSoftHostOutput/package"));
 }
 
+int GeometrySamplingIndex(
+    const QComboBox* combo,
+    const HostGeometrySamplingStrategy strategy)
+{
+    return combo->findData(
+        HostEffectiveProfileBuilder::GeometrySamplingStrategyId(strategy));
+}
+
 bool PathsEqual(const QString& left, const QString& right)
 {
     return QDir::cleanPath(QFileInfo(left).absoluteFilePath()).compare(
@@ -145,6 +153,28 @@ void HostSliceSettingsPanel::BuildInterface()
     m_layerThicknessSpin->setSuffix(QStringLiteral(" mm"));
     m_layerThicknessSpin->setValue(0.038);
 
+    m_geometrySamplingCombo = new QComboBox(processGroup);
+    m_geometrySamplingCombo->setObjectName(
+        QStringLiteral("hostGeometrySamplingCombo"));
+    m_geometrySamplingCombo->addItem(
+        QStringLiteral("生产默认｜S0 Legacy 中心采样"),
+        HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+            HostGeometrySamplingStrategy::LegacyCenterSample));
+    m_geometrySamplingCombo->setItemData(
+        0,
+        QStringLiteral("现有生产基线；适用于全部已支持 Profile。"),
+        Qt::ToolTipRole);
+    m_geometrySamplingCombo->addItem(
+        QStringLiteral("诊断候选｜S3 层体积 2×2（至少 2/4）"),
+        HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+            HostGeometrySamplingStrategy::
+                LayerSlabSupersample2x2AtLeastTwoCandidate));
+    m_geometrySamplingCombo->setItemData(
+        1,
+        QStringLiteral(
+            "仅限 relief_heightfield 纹理 Profile；不会自动替换生产默认。"),
+        Qt::ToolTipRole);
+
     auto* outputRow = new QWidget(processGroup);
     auto* outputLayout = new QHBoxLayout(outputRow);
     outputLayout->setContentsMargins(0, 0, 0, 0);
@@ -163,6 +193,8 @@ void HostSliceSettingsPanel::BuildInterface()
         QStringLiteral("常用工艺预设"), m_processPresetCombo);
     processForm->addRow(QStringLiteral("输出分辨率"), dpiRow);
     processForm->addRow(QStringLiteral("层厚"), m_layerThicknessSpin);
+    processForm->addRow(
+        QStringLiteral("几何采样"), m_geometrySamplingCombo);
     processForm->addRow(QStringLiteral("输出目录"), outputRow);
     layout->addWidget(processGroup);
 
@@ -259,6 +291,11 @@ void HostSliceSettingsPanel::BuildInterface()
         this,
         &HostSliceSettingsPanel::OnSettingsEdited);
     connect(
+        m_geometrySamplingCombo,
+        qOverload<int>(&QComboBox::currentIndexChanged),
+        this,
+        &HostSliceSettingsPanel::OnSettingsEdited);
+    connect(
         m_outputEdit,
         &QLineEdit::textChanged,
         this,
@@ -328,6 +365,7 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     const QSignalBlocker heightBlocker(m_buildHeightSpin);
     const QSignalBlocker zBlocker(m_buildZSpin);
     const QSignalBlocker presetBlocker(m_processPresetCombo);
+    const QSignalBlocker samplingBlocker(m_geometrySamplingCombo);
     m_dpiXSpin->setValue(settings.dpix);
     m_dpiYSpin->setValue(settings.dpiy);
     m_layerThicknessSpin->setValue(settings.layerthicknessmm);
@@ -340,6 +378,10 @@ void HostSliceSettingsPanel::SetPersistentSettings(
             ? QDir::toNativeSeparators(m_defaultOutputDirectory)
             : persistedOutput);
     m_processPresetCombo->setCurrentIndex(0);
+    const int samplingIndex = GeometrySamplingIndex(
+        m_geometrySamplingCombo, settings.geometrysamplingstrategy);
+    m_geometrySamplingCombo->setCurrentIndex(
+        samplingIndex >= 0 ? samplingIndex : 0);
     m_materialPanel->SetSettings(
         settings.materialstrategy, settings.materialprocess);
     m_texturePanel->SetSettings(settings.texture);
@@ -360,6 +402,14 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.dpix = m_dpiXSpin->value();
     settings.dpiy = m_dpiYSpin->value();
     settings.layerthicknessmm = m_layerThicknessSpin->value();
+    const QString samplingId = m_geometrySamplingCombo->currentData().toString();
+    settings.geometrysamplingstrategy = samplingId
+            == HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+                HostGeometrySamplingStrategy::
+                    LayerSlabSupersample2x2AtLeastTwoCandidate)
+        ? HostGeometrySamplingStrategy::
+            LayerSlabSupersample2x2AtLeastTwoCandidate
+        : HostGeometrySamplingStrategy::LegacyCenterSample;
     settings.materialstrategy = m_materialPanel->Strategy();
     settings.materialprocess = m_materialPanel->Settings();
     settings.texture = m_texturePanel->Settings();

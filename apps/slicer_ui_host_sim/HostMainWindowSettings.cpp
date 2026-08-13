@@ -19,11 +19,19 @@ void HostMainWindow::RefreshSliceSettings()
         m_importWorkflow->SceneHandle() != 0U,
         m_importWorkflow->SceneProfileId(),
         m_importWorkflow->SceneBuildVolume());
+    const hostslicesettings settings = m_sliceSettingsPanel->Settings();
+    m_sliceJobPanel->SetStage16Context(
+        HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+            settings.geometrysamplingstrategy));
     RefreshSliceJobReadiness();
 }
 
 void HostMainWindow::OnSliceSettingsChanged()
 {
+    const hostslicesettings settings = m_sliceSettingsPanel->Settings();
+    m_sliceJobPanel->SetStage16Context(
+        HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+            settings.geometrysamplingstrategy));
     QString error;
     if (!ApplyPendingSceneContext(&error))
     {

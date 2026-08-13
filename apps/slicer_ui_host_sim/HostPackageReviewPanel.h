@@ -32,12 +32,30 @@ public:
     void SetPackage(const hostpackagereview& review);
 
     /**
+     * @brief Stores Stage 16 strategy and Worker timing for result diagnostics.
+     * @param samplingStrategyId Effective Profile geometry strategy identity.
+     * @param timing Worker timing object returned by the completed job.
+     */
+    void SetStage16Context(
+        const QString& samplingStrategyId,
+        const QJsonObject& timing);
+
+    /**
      * @brief Displays a module-rendered production layer preview.
      * @param imagePath Host cache path returned by the module.
      * @param layer Layer descriptor corresponding to the image.
      * @return This function does not return a value.
      */
     void ShowPreview(
+        const QString& imagePath,
+        const hostlayerdescriptor& layer);
+
+    /**
+     * @brief Displays the first production layer used as A-side reference.
+     * @param imagePath Host cache path returned by the module.
+     * @param layer Verified first-layer descriptor.
+     */
+    void ShowReferencePreview(
         const QString& imagePath,
         const hostlayerdescriptor& layer);
 
@@ -80,10 +98,13 @@ private slots:
 
 private:
     void EmitPreviewRequest();
+    void RefreshStage16Summary(int layerIndex);
 
     QLabel* m_validationLabel{nullptr};
     QLabel* m_layerLabel{nullptr};
+    QLabel* m_stage16SummaryLabel{nullptr};
     QLabel* m_previewLabel{nullptr};
+    QLabel* m_referencePreviewLabel{nullptr};
     QPlainTextEdit* m_summaryView{nullptr};
     QPlainTextEdit* m_reportView{nullptr};
     QSlider* m_layerSlider{nullptr};
@@ -93,4 +114,6 @@ private:
     QPushButton* m_openPackageDirectoryButton{nullptr};
     HostChannelChartWidget* m_channelChart{nullptr};
     hostpackagereview m_review;
+    QString m_samplingStrategyId;
+    QJsonObject m_timing;
 };

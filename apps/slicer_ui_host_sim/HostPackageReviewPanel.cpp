@@ -8,6 +8,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QImage>
+#include <QJsonObject>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QPlainTextEdit>
@@ -32,6 +33,28 @@ QStringList Channels(std::initializer_list<const char*> names)
         channels.append(QString::fromLatin1(name));
     }
     return channels;
+}
+
+QString SamplingStrategyText(const QString& strategyId)
+{
+    if (strategyId == QStringLiteral(
+            "layer_slab_supersample_2x2_at_least_two_candidate"))
+    {
+        return QStringLiteral("S3 诊断候选｜层体积 2×2（至少 2/4）");
+    }
+    return QStringLiteral("S0 生产默认｜Legacy 中心采样");
+}
+
+qint64 PrintPixels(
+    const hostlayerdescriptor& layer,
+    const QString& channel)
+{
+    const QStringList channels = Channels({"R", "G", "B", "W", "S", "V"});
+    const int index = channels.indexOf(channel);
+    return index >= 0
+        ? static_cast<qint64>(layer.printpixels.values.at(
+            static_cast<std::size_t>(index)))
+        : 0;
 }
 }
 
@@ -103,17 +126,42 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_layerLabel->setObjectName(QStringLiteral("hostPackageLayerLabel"));
     m_layerLabel->setWordWrap(true);
     previewLayout->addWidget(m_layerLabel);
-    auto* scrollArea = new QScrollArea(previewPage);
-    scrollArea->setObjectName(QStringLiteral("hostPackagePreviewScroll"));
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setAlignment(Qt::AlignCenter);
+    m_stage16SummaryLabel = new QLabel(
+        QStringLiteral("Stage 16 诊断：等待生产包。"), previewPage);
+    m_stage16SummaryLabel->setObjectName(
+        QStringLiteral("hostPackageStage16SummaryLabel"));
+    m_stage16SummaryLabel->setWordWrap(true);
+    m_stage16SummaryLabel->setTextInteractionFlags(
+        Qt::TextSelectableByMouse);
+    previewLayout->addWidget(m_stage16SummaryLabel);
+
+    auto* comparisonLayout = new QHBoxLayout();
+    auto* referenceArea = new QScrollArea(previewPage);
+    referenceArea->setObjectName(
+        QStringLiteral("hostPackageReferencePreviewScroll"));
+    referenceArea->setWidgetResizable(true);
+    referenceArea->setAlignment(Qt::AlignCenter);
+    m_referencePreviewLabel = new QLabel(
+        QStringLiteral("首层 A：尚无预览"), referenceArea);
+    m_referencePreviewLabel->setObjectName(
+        QStringLiteral("hostPackageReferencePreviewImage"));
+    m_referencePreviewLabel->setAlignment(Qt::AlignCenter);
+    m_referencePreviewLabel->setMinimumSize(240, 200);
+    referenceArea->setWidget(m_referencePreviewLabel);
+    comparisonLayout->addWidget(referenceArea, 1);
+
+    auto* currentArea = new QScrollArea(previewPage);
+    currentArea->setObjectName(QStringLiteral("hostPackagePreviewScroll"));
+    currentArea->setWidgetResizable(true);
+    currentArea->setAlignment(Qt::AlignCenter);
     m_previewLabel = new QLabel(
-        QStringLiteral("尚无生产层预览"), scrollArea);
+        QStringLiteral("当前层 B：尚无预览"), currentArea);
     m_previewLabel->setObjectName(QStringLiteral("hostPackagePreviewImage"));
     m_previewLabel->setAlignment(Qt::AlignCenter);
-    m_previewLabel->setMinimumSize(320, 240);
-    scrollArea->setWidget(m_previewLabel);
-    previewLayout->addWidget(scrollArea, 2);
+    m_previewLabel->setMinimumSize(240, 200);
+    currentArea->setWidget(m_previewLabel);
+    comparisonLayout->addWidget(currentArea, 1);
+    previewLayout->addLayout(comparisonLayout, 2);
     m_channelChart = new HostChannelChartWidget(previewPage);
     previewLayout->addWidget(m_channelChart, 1);
     splitter->addWidget(previewPage);
@@ -215,6 +263,7 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
             .arg(review.profileversion)
             .arg(review.profilehash));
     m_channelChart->SetLayers(review.layers);
+    RefreshStage16Summary(0);
 
     const bool packageDirectoryAvailable = review.valid
         && !review.packagedirectory.isEmpty()
@@ -243,6 +292,15 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
     }
 }
 
+void HostPackageReviewPanel::SetStage16Context(
+    const QString& samplingStrategyId,
+    const QJsonObject& timing)
+{
+    m_samplingStrategyId = samplingStrategyId;
+    m_timing = timing;
+    RefreshStage16Summary(m_layerSpin->value());
+}
+
 void HostPackageReviewPanel::ShowPreview(
     const QString& imagePath,
     const hostlayerdescriptor& layer)
@@ -263,6 +321,26 @@ void HostPackageReviewPanel::ShowPreview(
             .arg(layer.widthpx)
             .arg(layer.heightpx)
             .arg(layer.storagemode));
+    RefreshStage16Summary(layer.layerindex);
+}
+
+void HostPackageReviewPanel::ShowReferencePreview(
+    const QString& imagePath,
+    const hostlayerdescriptor& layer)
+{
+    const QImage image(imagePath);
+    if (image.isNull())
+    {
+        ShowError(QStringLiteral("宿主无法读取首层 A 预览：%1")
+                      .arg(imagePath));
+        return;
+    }
+    m_referencePreviewLabel->setPixmap(QPixmap::fromImage(image));
+    m_referencePreviewLabel->resize(image.size());
+    m_referencePreviewLabel->setToolTip(
+        QStringLiteral("首层 A · layer=%1 · z=%2 mm")
+            .arg(layer.layerindex)
+            .arg(layer.zmm, 0, 'f', 3));
 }
 
 void HostPackageReviewPanel::ShowReport(const hostpackagereport& report)
@@ -291,6 +369,7 @@ void HostPackageReviewPanel::OnLayerSliderChanged(const int layerIndex)
 {
     const QSignalBlocker blocker(m_layerSpin);
     m_layerSpin->setValue(layerIndex);
+    RefreshStage16Summary(layerIndex);
     EmitPreviewRequest();
 }
 
@@ -298,6 +377,7 @@ void HostPackageReviewPanel::OnLayerSpinChanged(const int layerIndex)
 {
     const QSignalBlocker blocker(m_layerSlider);
     m_layerSlider->setValue(layerIndex);
+    RefreshStage16Summary(layerIndex);
     EmitPreviewRequest();
 }
 
@@ -334,4 +414,48 @@ void HostPackageReviewPanel::EmitPreviewRequest()
         emit SigLayerPreviewRequested(
             m_layerSpin->value(), SelectedChannels());
     }
+}
+
+void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
+{
+    if (!m_review.valid || m_review.layers.isEmpty()
+        || layerIndex < 0 || layerIndex >= m_review.layers.size())
+    {
+        m_stage16SummaryLabel->setText(
+            QStringLiteral("Stage 16 诊断：等待生产包。"));
+        return;
+    }
+
+    const hostlayerdescriptor& first = m_review.layers.first();
+    const hostlayerdescriptor& current = m_review.layers.at(layerIndex);
+    QStringList channelDeltas;
+    for (const QString& channel : Channels({"R", "G", "B", "W", "S", "V"}))
+    {
+        const qint64 delta = PrintPixels(current, channel)
+            - PrintPixels(first, channel);
+        channelDeltas.append(QStringLiteral("%1=%2%3")
+                                 .arg(channel)
+                                 .arg(delta >= 0 ? QStringLiteral("+") : QString{})
+                                 .arg(delta));
+    }
+    const int scanCount = m_timing.value(
+        QStringLiteral("supportStatisticsScanCount")).toInt(-1);
+    const double sliceProcessingMs = m_timing.value(
+        QStringLiteral("sliceProcessingMs")).toDouble(-1.0);
+    m_stage16SummaryLabel->setText(
+        QStringLiteral(
+            "几何采样：%1｜姿态：P0 生产默认，P3 仅诊断未应用\n"
+            "A 首层 layer=%2 → B 当前层 layer=%3｜打印像素差 Δ：%4\n"
+            "性能：sliceProcessing=%5｜支撑统计扫描=%6")
+            .arg(SamplingStrategyText(m_samplingStrategyId))
+            .arg(first.layerindex)
+            .arg(current.layerindex)
+            .arg(channelDeltas.join(QStringLiteral("  ")))
+            .arg(sliceProcessingMs >= 0.0
+                    ? QStringLiteral("%1 ms").arg(
+                        sliceProcessingMs, 0, 'f', 1)
+                    : QStringLiteral("未提供"))
+            .arg(scanCount >= 0
+                    ? QStringLiteral("%1 次（实例累计）").arg(scanCount)
+                    : QStringLiteral("未提供")));
 }

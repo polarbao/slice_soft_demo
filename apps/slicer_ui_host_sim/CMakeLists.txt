@@ -525,6 +525,13 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostTextureSettingsPanel.h
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
+    HostSliceJobPanel.cpp
+    HostSliceJobPanel.h
+    HostPackageReviewPanel.cpp
+    HostPackageReviewPanel.h
+    HostPackageReviewController.h
+    HostChannelChartWidget.cpp
+    HostChannelChartWidget.h
     HostSupportSettingsPanel.cpp
     HostSupportSettingsPanel.h
     ModuleClient.cpp

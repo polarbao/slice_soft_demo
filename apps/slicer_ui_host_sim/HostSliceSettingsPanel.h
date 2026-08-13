@@ -105,6 +105,7 @@ private:
     QSpinBox* m_dpiXSpin{nullptr};
     QSpinBox* m_dpiYSpin{nullptr};
     QDoubleSpinBox* m_layerThicknessSpin{nullptr};
+    QComboBox* m_geometrySamplingCombo{nullptr};
     QLineEdit* m_outputEdit{nullptr};
     QPushButton* m_outputBrowseButton{nullptr};
     QDoubleSpinBox* m_buildWidthSpin{nullptr};
