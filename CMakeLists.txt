@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(BUILD_SLICER_DEBUG_UI "Build Qt slicer debug UI" ON)
-option(BUILD_SLICER_UI_HOST_SIM "Build Qt public-ABI reference host" ON)
+option(BUILD_SLICER_DEBUG_UI "Build legacy Qt slicer debug UI" OFF)
+option(BUILD_SLICER_UI_HOST_SIM "Build packaged Qt public-ABI host" ON)
 option(ENABLE_GEOMETRY_KERNEL_DEMO "Build experimental geometry kernel demo" ON)
 option(USE_OPENVDB "Enable optional OpenVDB adapter" OFF)
 set(
@@ -1854,16 +1854,6 @@ add_executable(slice_pipeline_router_unit_tests
 
 target_link_libraries(slice_pipeline_router_unit_tests PRIVATE slicer_core)
 
-add_executable(production_mode_catalog_unit_tests
-    apps/slicer_debug_ui/services/ProductionModeCatalog.cpp
-    tests/unit/production_mode_catalog/Main.cpp
-)
-
-target_include_directories(production_mode_catalog_unit_tests PRIVATE
-    apps/slicer_debug_ui/services
-)
-target_link_libraries(production_mode_catalog_unit_tests PRIVATE slicer_core)
-
 add_executable(global_surface_shell_production_layer_adapter_unit_tests
     tests/unit/global_surface_shell_production_layer_adapter/Main.cpp
 )
@@ -2655,16 +2645,15 @@ if(ENABLE_GEOMETRY_KERNEL_DEMO)
     target_link_libraries(surface_shell_robustness_demo PRIVATE slicer_core)
 endif()
 
-if(BUILD_SLICER_DEBUG_UI OR BUILD_SLICER_UI_HOST_SIM)
-    find_package(Qt5 COMPONENTS Widgets QUIET)
+if(BUILD_SLICER_DEBUG_UI)
+    message(FATAL_ERROR
+        "The legacy slicer_debug_ui source is not part of the packaged product line. "
+        "Use product/legacy-slicer for the legacy UI."
+    )
 endif()
 
-if(BUILD_SLICER_DEBUG_UI)
-    if(Qt5Widgets_FOUND)
-        add_subdirectory(apps/slicer_debug_ui)
-    else()
-        message(STATUS "Qt5 Widgets not found; slicer_debug_ui target is skipped.")
-    endif()
+if(BUILD_SLICER_UI_HOST_SIM)
+    find_package(Qt5 COMPONENTS Widgets QUIET)
 endif()
 
 if(BUILD_SLICER_UI_HOST_SIM)
@@ -2675,83 +2664,14 @@ if(BUILD_SLICER_UI_HOST_SIM)
     endif()
 endif()
 
-if(TARGET slicer_debug_ui AND TARGET slicer_ui_host_sim)
-    add_executable(stage14e04_render_benchmark
-        tests/stage14e_04/Stage14E04RenderBenchmark.cpp
-        apps/slicer_ui_host_sim/ModuleClient.cpp
-        apps/slicer_ui_host_sim/ModuleClient.h
-        apps/slicer_ui_host_sim/render/TopViewRenderPolicy.cpp
-        apps/slicer_ui_host_sim/render/TopViewRenderPolicyData.cpp
-        apps/slicer_ui_host_sim/render/TopViewRenderPolicy.h
-        apps/slicer_debug_ui/models/SceneDocument.cpp
-        apps/slicer_debug_ui/models/SceneDocument.h
-        apps/slicer_debug_ui/models/SceneSelectionModel.cpp
-        apps/slicer_debug_ui/models/SceneSelectionModel.h
-        apps/slicer_debug_ui/widgets/ModelTopViewWidget.cpp
-        apps/slicer_debug_ui/widgets/ModelTopViewWidget.h
-    )
-
-    set_target_properties(stage14e04_render_benchmark PROPERTIES
-        AUTOMOC ON
-    )
-
-    target_include_directories(stage14e04_render_benchmark PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-    target_compile_definitions(stage14e04_render_benchmark PRIVATE
-        SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-    )
-
-    target_link_libraries(stage14e04_render_benchmark PRIVATE
-        Qt5::Widgets
-        slicer_core
-    )
-
-    if(MSVC)
-        target_compile_options(stage14e04_render_benchmark PRIVATE
-            /MP
-            /W4
-            /WX
-            /utf-8
-        )
-
-        if(MSVC_VERSION GREATER_EQUAL 1950)
-            set(stage14e04CompatibilityHeader
-                "${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_ui_host_sim/Qt515MsvcCompatibility.h"
-            )
-            target_sources(stage14e04_render_benchmark PRIVATE
-                ${stage14e04CompatibilityHeader}
-            )
-            target_compile_options(stage14e04_render_benchmark PRIVATE
-                "/FI${stage14e04CompatibilityHeader}"
-            )
-        endif()
-    endif()
-
-    add_test(
-        NAME slicer_stage14e04_render_benchmark_smoke
-        COMMAND stage14e04_render_benchmark --seconds 1
-    )
-    set_tests_properties(
-        slicer_stage14e04_render_benchmark_smoke
-        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
-    )
-endif()
-
-if(TARGET slicer_debug_ui)
+if(TARGET slicer_ui_host_sim)
     set(slicesoftRuntimeTargets
         slicer_cli
         rip_reader_test
-        slicer_debug_ui
+        slicer_ui_host_sim
+        slicer_module
+        slicer_worker
     )
-    if(TARGET slicer_ui_host_sim)
-        list(APPEND slicesoftRuntimeTargets
-            slicer_ui_host_sim
-            slicer_module
-            slicer_worker
-        )
-    endif()
     add_custom_target(slicesoft_runtime
         DEPENDS ${slicesoftRuntimeTargets}
     )

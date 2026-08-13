@@ -362,7 +362,6 @@ function AssertRuntimeDirectoryNotInUse
         [System.IO.Path]::GetFullPath($RuntimeDir).TrimEnd('\', '/') +
         [System.IO.Path]::DirectorySeparatorChar
     foreach ($processName in @(
-        "slicer_debug_ui",
         "slicer_ui_host_sim",
         "slicer_cli",
         "slicer_worker",
@@ -636,7 +635,8 @@ try
         }
         $configureArguments += @(
             "-DQt5_DIR=$resolvedQt5Dir",
-            "-DBUILD_SLICER_DEBUG_UI=ON",
+            "-DBUILD_SLICER_DEBUG_UI=OFF",
+            "-DBUILD_SLICER_UI_HOST_SIM=ON",
             "-DUSE_OPENVDB=OFF",
             "-DSLICESOFT_TIFF_BACKEND=$TiffBackend",
             "-DCMAKE_TOOLCHAIN_FILE=$(Join-Path $resolvedVcpkgRoot 'scripts/buildsystems/vcpkg.cmake')",
@@ -718,12 +718,6 @@ try
     $ripReader = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
         -Candidates @("$Config/rip_reader_test.exe", "rip_reader_test.exe")
-    $uiExecutable = ResolveBuiltExecutable `
-        -BuildRoot $resolvedConfigBuildDir `
-        -Candidates @(
-            "apps/slicer_debug_ui/$Config/slicer_debug_ui.exe",
-            "apps/slicer_debug_ui/slicer_debug_ui.exe"
-        )
     $hostUiExecutable = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
         -Candidates @(
@@ -778,7 +772,6 @@ try
     {
         Copy-Item -LiteralPath $slicerCli -Destination (Join-Path $stagingDir "slicer_cli.exe")
         Copy-Item -LiteralPath $ripReader -Destination (Join-Path $stagingDir "rip_reader_test.exe")
-        Copy-Item -LiteralPath $uiExecutable -Destination (Join-Path $stagingDir "slicer_debug_ui.exe")
         Copy-Item -LiteralPath $hostUiExecutable -Destination (Join-Path $stagingDir "slicer_ui_host_sim.exe")
         Copy-Item -LiteralPath $moduleLibrary -Destination (Join-Path $stagingDir "slicer_module.dll")
         Copy-Item -LiteralPath $workerExecutable -Destination (Join-Path $stagingDir "slicer_worker.exe")
@@ -867,7 +860,7 @@ try
                 "--compiler-runtime",
                 "--no-translations",
                 "--dir", $stagingDir,
-                (Join-Path $stagingDir "slicer_debug_ui.exe")
+                (Join-Path $stagingDir "slicer_ui_host_sim.exe")
             )
 
         @(
@@ -904,8 +897,7 @@ try
                 license = $tiffLicenseRelativePath
             }
             tools = [ordered]@{
-                ui = "slicer_debug_ui.exe"
-                hostUi = "slicer_ui_host_sim.exe"
+                ui = "slicer_ui_host_sim.exe"
                 slicerCli = "slicer_cli.exe"
                 ripReader = "rip_reader_test.exe"
             }
@@ -959,6 +951,17 @@ try
                         -Destination $resolvedRuntimeDir `
                         -Recurse `
                         -Force
+
+                # In-place deployment preserves user output, but product-line
+                # files removed from the immutable payload must not survive.
+                foreach ($retiredRuntimeFile in @("slicer_debug_ui.exe"))
+                {
+                    $retiredPath = Join-Path $resolvedRuntimeDir $retiredRuntimeFile
+                    if (Test-Path -LiteralPath $retiredPath -PathType Leaf)
+                    {
+                        Remove-Item -LiteralPath $retiredPath -Force
+                    }
+                }
             }
             else
             {

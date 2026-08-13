@@ -16,7 +16,8 @@
       },
       "binaryDir": "${sourceDir}/build-slicesoft/main",
       "cacheVariables": {
-        "BUILD_SLICER_DEBUG_UI": "ON",
+        "BUILD_SLICER_DEBUG_UI": "OFF",
+        "BUILD_SLICER_UI_HOST_SIM": "ON",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_PREFIX_PATH": "$env{QTDIR}",
         "meshoptimizer_DIR": "${sourceDir}/build-slicesoft/vcpkg_installed/x64-windows/share/meshoptimizer",
@@ -39,7 +40,8 @@
       "generator": "NMake Makefiles",
       "binaryDir": "${sourceDir}/build-slicesoft-nmake/Release",
       "cacheVariables": {
-        "BUILD_SLICER_DEBUG_UI": "ON",
+        "BUILD_SLICER_DEBUG_UI": "OFF",
+        "BUILD_SLICER_UI_HOST_SIM": "ON",
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_PREFIX_PATH": "$env{QTDIR}",

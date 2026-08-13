@@ -187,13 +187,14 @@ build-slicesoft/main/<Config>
 runtime/slicesoft/<Config>
 ```
 
-The runtime directory contains `slicer_debug_ui.exe`, `slicer_ui_host_sim.exe`,
+On `product/packaged-slicer`, the runtime directory contains `slicer_ui_host_sim.exe`,
 `slicer_module.dll`, `slicer_worker.exe`, `module.json`, `slicer_cli.exe`,
 `rip_reader_test.exe`, required third-party runtime DLLs, Qt DLLs, platform plugins,
 the MSVC runtime, `samples/`, `model/`, Profile-referenced documents, and
 `runtime_manifest.json`. The deployment script validates all scenario
 config/model/document paths and runs the packaged host module self-test before
-publishing. OpenVDB remains OFF. Runtime UI resolves its application directory
+publishing. The legacy `slicer_debug_ui.exe` is maintained only on
+`product/legacy-slicer`. OpenVDB remains OFF. Runtime UI resolves its application directory
 as the packaged resource root and resolves sibling executables before any
 build-directory fallback.
 
