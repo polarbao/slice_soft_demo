@@ -292,6 +292,8 @@ slicer_core::Json SliceRunProfileToJson(const slicer_core::SliceRunProfile& prof
     json["maskSamplingMs"] = profile.mask_sampling_ms;
     json["texturePrepareMs"] = profile.texture_prepare_ms;
     json["supportGenerationMs"] = profile.support_generation_ms;
+    json["supportStatisticsScanCount"] =
+        profile.support_statistics_scan_count;
     json["layerComputeMs"] = profile.layer_compute_ms;
     json["tiffWriteMs"] = profile.tiff_write_ms;
     json["previewWriteMs"] = profile.preview_write_ms;

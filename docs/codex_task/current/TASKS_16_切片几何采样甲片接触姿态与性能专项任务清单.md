@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-06 / 16B-03 / 16C-01..02 / 16D-01 COMPLETE；16C-03、16D-02 READY；16B-04 待单独授权**
-> 版本：v1.6
+> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16D-01 COMPLETE；16D-02 READY；16B-04 待单独授权**
+> 版本：v1.8
 > 日期：2026-08-13
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -293,6 +293,14 @@ Reality 5/5 与标准 `nai_you` 共 6/6 PASS，基线重复生成 SHA-256 一致
 mask/type 后扫描一次”，不改变 island 生成、SupportType 优先级、支撑 mask 或报告 schema。
 三真实模型 Release before/after 和逐层 hash 是完成 Gate。
 
+**状态：COMPLETE / PASS（2026-08-13）**
+
+**实际结果：** island/filter 汇总留在生成阶段；最终 support mask、SupportType、layersWithSupport 和
+连接性统一在全部后处理后扫描一次，并通过 `supportStatisticsScanCount` 诊断字段证明单模型扫描次数为
+1。`nai_you_new`、`aishen_fudiao`、`meigui_fudiao` 的 Grid、model/support/type totals 和逐层 TIFF
+SHA-256 完全一致，RIP strict 6/6 PASS。三模型 Release 交替 A/B 各 3 次，中位 core 变化分别为
+-11.89%、-1.58%、+1.46%；收益只在原先确实触发重复重扫的路径上显著。
+
 ### 16C-04 Bottom Projection Range Provider
 
 **carry-in：** 12F-04
@@ -418,6 +426,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-13 | v1.8 | 完成 16C-03：支撑 island 汇总与最终 mask/type 统计分离，后处理后统一扫描一次；新增 scan count telemetry，三真实模型逐层 TIFF/hash/type totals 零差异、RIP strict 6/6 PASS，并记录同机 Release A/B 中位数。 |
 | 2026-08-13 | v1.7 | 完成 16C-03 实施准备：定位支撑生成后与后处理后的重复全 volume 统计，冻结单一统计器、最终 mask 扫描、island totals 保留及三模型 Release A/B Gate。 |
 | 2026-08-13 | v1.6 | 完成 16D-01：Host/Worker/Scene Effective Config/Production Service 贯通显式 S0/S3 采样合同；S2/S4/未知值、S3+非 relief 及 Profile/contract 不一致均 fail-closed；默认仍为 S0，Qt 可见控制延后至 16D-02。 |
 | 2026-08-12 | v1.5 | 完成 16C-02：新增 Release 基线脚本和合同校验，完成 S0/S3/S4 x 1/11/12/22 cold/warm、p50/p95、峰值内存、确定性 hash 与 RIP strict 全矩阵；设备 SLA 继续 INPUT_OPEN。 |

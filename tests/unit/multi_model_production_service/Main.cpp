@@ -443,11 +443,14 @@ bool ThreeInstanceSceneWritesOneStrictPackage()
             result.profile.available
                 && result.profile.profile_level
                     == "scene_detailed"
+                && result.profile.support_statistics_scan_count
+                    == static_cast<int>(
+                        result.visibleinstancecount)
                 && result.profile.total_ms > 0.0
                 && result.profile.model_load_ms > 0.0
                 && result.profile.layer_compute_ms > 0.0
                 && result.profile.output_write_ms > 0.0,
-            "scene production returns detailed timing telemetry")
+            "scene production returns detailed timing telemetry with one support statistics scan per instance")
         && ExpectTrue(
             importTimingsAreHonest,
             "scene production reports real import and hash boundaries with unavailable phases unset")

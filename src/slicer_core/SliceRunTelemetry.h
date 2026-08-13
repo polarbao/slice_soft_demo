@@ -56,6 +56,7 @@ struct SliceRunProfile
     double mask_sampling_ms{0.0};
     double texture_prepare_ms{0.0};
     double support_generation_ms{0.0};
+    int support_statistics_scan_count{0};
     double layer_compute_ms{0.0};
     double tiff_write_ms{0.0};
     double preview_write_ms{0.0};

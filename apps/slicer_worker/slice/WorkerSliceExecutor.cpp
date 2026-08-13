@@ -201,6 +201,8 @@ slicer_core::Json BuildBasicOutput(
             {"maskSamplingMs", profile.mask_sampling_ms},
             {"texturePrepareMs", profile.texture_prepare_ms},
             {"supportGenerationMs", profile.support_generation_ms},
+            {"supportStatisticsScanCount",
+             profile.support_statistics_scan_count},
             {"sliceProcessingMs", profile.slice_processing_ms},
             {"layerComputeMs", profile.layer_compute_ms},
             {"layerComposeMs", profile.layer_compose_ms},

@@ -2227,47 +2227,6 @@ SupportGenerationResult generate_support_masks(
     }
 
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
-        bool layer_has_support{false};
-        const auto& support_mask = result.support_masks.at(layer_index);
-        const auto& support_type_map = result.support_type_maps.at(layer_index);
-        for (std::size_t index{0}; index < pixel_count; ++index) {
-            if (support_mask.at(index) == 0) {
-                continue;
-            }
-            layer_has_support = true;
-            ++result.support_pixels;
-            switch (support_type_map.at(index)) {
-                case SupportType::BottomProjection:
-                    ++result.bottom_projection_support_pixels;
-                    ++diagnostics.at(layer_index).bottom_projection_support_pixels;
-                    break;
-                case SupportType::UnsupportedIsland:
-                    ++result.unsupported_island_support_pixels;
-                    ++diagnostics.at(layer_index).unsupported_island_support_pixels;
-                    break;
-                case SupportType::FullVerticalProjection:
-                    ++result.full_vertical_projection_support_pixels;
-                    ++diagnostics.at(layer_index).full_vertical_projection_support_pixels;
-                    break;
-                case SupportType::InternalVoid:
-                    ++result.internal_void_support_pixels;
-                    ++diagnostics.at(layer_index).internal_void_support_pixels;
-                    break;
-                case SupportType::UpperProjection:
-                    ++result.upper_projection_support_pixels;
-                    ++diagnostics.at(layer_index).upper_projection_support_pixels;
-                    break;
-                case SupportType::ProjectionBase:
-                    ++result.projection_base_support_pixels;
-                    ++diagnostics.at(layer_index).projection_base_support_pixels;
-                    break;
-                case SupportType::None:
-                    break;
-            }
-        }
-        if (layer_has_support) {
-            ++result.layers_with_support;
-        }
         if (diagnostics.at(layer_index).island_count > 0 || diagnostics.at(layer_index).filtered_island_count > 0) {
             ++result.layers_with_islands;
             result.island_count += diagnostics.at(layer_index).island_count;
@@ -2276,14 +2235,12 @@ SupportGenerationResult generate_support_masks(
             result.filtered_island_count += diagnostics.at(layer_index).filtered_island_count;
             result.filtered_island_pixels += diagnostics.at(layer_index).filtered_island_pixels;
         }
-        diagnostics.at(layer_index).support_connectivity =
-            analyze_support_connectivity(support_mask, grid, config.support.connectivity);
     }
 
     return result;
 }
 
-void RecalculateSupportGenerationStats(
+void CalculateSupportGenerationStats(
     SupportGenerationResult& result,
     std::vector<LayerDiagnostics>& diagnostics,
     const GridSpec& grid,
@@ -4637,16 +4594,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             collectMaterialClosureSemantic
                 ? &clearedOuterVarnishSupportIndices
                 : nullptr);
-    const bool supportBaseProjectionTypesChanged =
-        supportBaseProjectionResult.layer_placement == "prepend_below_model"
-        && supportBaseProjectionResult.effective_layer_count > 0;
-    if (support_shape_result.enabled
-        || supportBaseProjectionResult.added_support_pixels > 0
-        || supportBaseProjectionTypesChanged
-        || cleared_outer_varnish_support_pixels > 0)
-    {
-        RecalculateSupportGenerationStats(support_generation, layer_diagnostics, grid, config);
-    }
+    CalculateSupportGenerationStats(
+        support_generation,
+        layer_diagnostics,
+        grid,
+        config);
+    profile.support_statistics_scan_count = 1;
     profile.support_generation_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "layer_processing", 0, grid.layer_count, 36);
     phase_start = SlicerClock::now();

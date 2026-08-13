@@ -941,6 +941,8 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
             adapted.raster.localgrid.layercount;
         if (adapted.profile.available)
         {
+            runProfile.support_statistics_scan_count +=
+                adapted.profile.support_statistics_scan_count;
             instanceProfile.coreslicems =
                 adapted.profile.slice_processing_ms;
             instanceProfile.composems =
