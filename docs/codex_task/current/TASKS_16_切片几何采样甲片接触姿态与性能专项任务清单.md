@@ -286,6 +286,13 @@ Reality 5/5 与标准 `nai_you` 共 6/6 PASS，基线重复生成 SHA-256 一致
 **carry-in：** 12F-03
 **出口：** grid/model/support/type totals/hash 完全一致；三模型 Release before/after。
 
+**准备状态：PREPARATION COMPLETE / IMPLEMENTATION READY（2026-08-13）**
+
+**准备结论：** 当前重复成本位于 `generate_support_masks()` 首次全 volume 统计与后处理后的
+`RecalculateSupportGenerationStats()` 重扫。实施将采用“单一统计器 + 后处理存在时延迟到最终
+mask/type 后扫描一次”，不改变 island 生成、SupportType 优先级、支撑 mask 或报告 schema。
+三真实模型 Release before/after 和逐层 hash 是完成 Gate。
+
 ### 16C-04 Bottom Projection Range Provider
 
 **carry-in：** 12F-04
@@ -411,6 +418,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-13 | v1.7 | 完成 16C-03 实施准备：定位支撑生成后与后处理后的重复全 volume 统计，冻结单一统计器、最终 mask 扫描、island totals 保留及三模型 Release A/B Gate。 |
 | 2026-08-13 | v1.6 | 完成 16D-01：Host/Worker/Scene Effective Config/Production Service 贯通显式 S0/S3 采样合同；S2/S4/未知值、S3+非 relief 及 Profile/contract 不一致均 fail-closed；默认仍为 S0，Qt 可见控制延后至 16D-02。 |
 | 2026-08-12 | v1.5 | 完成 16C-02：新增 Release 基线脚本和合同校验，完成 S0/S3/S4 x 1/11/12/22 cold/warm、p50/p95、峰值内存、确定性 hash 与 RIP strict 全矩阵；设备 SLA 继续 INPUT_OPEN。 |
 | 2026-08-12 | v1.4 | 完成 16B-03：新增 P0/P2/P3 姿态矩阵和可测试的模型副本调平应用；Reality 15/15 S3 core-only PASS。P2 在 5/5 降低接触面积，P3 在 5/5 改善但支撑变化明显，后续只允许 P3 进入显式 opt-in 评估，P0 继续默认。 |
