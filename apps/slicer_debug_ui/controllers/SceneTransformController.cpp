@@ -463,6 +463,8 @@ SceneTransformController::SaveSceneEffectiveConfig(
     coreRequest.dpiy = request.dpiy;
     coreRequest.layerheightmm = request.layerheightmm;
     coreRequest.slicepipelinemode = request.slicepipelinemode;
+    coreRequest.geometrysamplingstrategy =
+        request.geometrysamplingstrategy;
     coreRequest.production = request.production;
 
     const slicer_core::SceneEffectiveConfigResult written =

@@ -119,6 +119,9 @@ char* HostBuildProfileWithLayerThickness(
         "\"background\": {\n"
         "\"value\": 255\n"
         "},\n"
+        "\"geometrySampling\": {\n"
+        "\"strategy\": \"legacy_center_sample\"\n"
+        "},\n"
         "\"input\": {\n"
         "\"format\": \"obj\",\n"
         "\"modelPath\": \"%s\"\n"
@@ -181,6 +184,7 @@ char* HostBuildProfileWithLayerThickness(
     profile = HostFormat(
         "{\"autoOrient\":{\"enabled\":true,\"maxHeightMm\":9},"
         "\"background\":{\"value\":255},"
+        "\"geometrySampling\":{\"strategy\":\"legacy_center_sample\"},"
         "\"input\":{\"format\":\"obj\",\"modelPath\":\"%s\"},"
         "\"materialProcessProfile\":{\"enabled\":true,"
         "\"name\":\"profile-stage14e01\",\"target\":\"stage14e01-fixture\"},"
@@ -227,6 +231,7 @@ char* HostBuildEffectiveProfile(
 {
     const char* supportMode = NULL;
     const char* slicingMode = NULL;
+    const char* geometrySamplingStrategy = NULL;
     const char* supportPlacementCanonical = "";
     const char* supportPlacementCompact = "";
     char* escapedModel = NULL;
@@ -306,6 +311,18 @@ char* HostBuildEffectiveProfile(
     default:
         return NULL;
     }
+    switch (settings->geometrysamplingstrategy)
+    {
+    case HOST_GEOMETRY_SAMPLING_LEGACY_CENTER:
+        geometrySamplingStrategy = "legacy_center_sample";
+        break;
+    case HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO:
+        geometrySamplingStrategy =
+            "layer_slab_supersample_2x2_at_least_two_candidate";
+        break;
+    default:
+        return NULL;
+    }
     if (settings->supportmode == HOST_SUPPORT_BOTTOM_PROJECTION)
     {
         supportPlacementCanonical = "\"placement\": \"lower\",\n";
@@ -322,6 +339,12 @@ char* HostBuildEffectiveProfile(
     }
     slicingMode = settings->textureenabled != 0
         ? "relief_heightfield" : "closed_mesh_scanline";
+    if (settings->geometrysamplingstrategy
+            == HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO
+        && settings->textureenabled == 0)
+    {
+        return NULL;
+    }
     escapedModel = HostJsonEscape(settings->modelpath);
     escapedFormat = HostJsonEscape(settings->modelformat);
     escapedPackage = HostJsonEscape(settings->packagedirectory);
@@ -355,6 +378,9 @@ char* HostBuildEffectiveProfile(
         "},\n"
         "\"background\": {\n"
         "\"value\": 255\n"
+        "},\n"
+        "\"geometrySampling\": {\n"
+        "\"strategy\": \"%s\"\n"
         "},\n"
         "\"input\": {\n"
         "\"format\": \"%s\",\n"
@@ -408,6 +434,7 @@ char* HostBuildEffectiveProfile(
         "},\n"
         "%s"
         "}",
+        geometrySamplingStrategy,
         escapedFormat,
         escapedModel,
         materialCanonical,
@@ -438,6 +465,7 @@ char* HostBuildEffectiveProfile(
     profile = HostFormat(
         "{\"autoOrient\":{\"enabled\":true,\"maxHeightMm\":9},"
         "\"background\":{\"value\":255},"
+        "\"geometrySampling\":{\"strategy\":\"%s\"},"
         "\"input\":{\"format\":\"%s\",\"modelPath\":\"%s\"},"
         "%s"
         "\"output\":{\"bitDepth\":8,"
@@ -457,6 +485,7 @@ char* HostBuildEffectiveProfile(
         "\"fillRule\":\"all_internal_voids\",\"minAreaPx\":%d},"
         "\"minAreaPx\":%d,\"mode\":\"%s\",\"offsetMm\":%.15g,"
         "%s\"value\":0},%s}",
+        geometrySamplingStrategy,
         escapedFormat,
         escapedModel,
         materialCompact,

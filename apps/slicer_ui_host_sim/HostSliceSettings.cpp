@@ -92,6 +92,20 @@ enum hostsupportmode ToHostSupportMode(const HostSupportMode mode)
     return static_cast<enum hostsupportmode>(-1);
 }
 
+enum hostgeometrysamplingstrategy ToHostGeometrySamplingStrategy(
+    const HostGeometrySamplingStrategy strategy)
+{
+    switch (strategy)
+    {
+    case HostGeometrySamplingStrategy::LegacyCenterSample:
+        return HOST_GEOMETRY_SAMPLING_LEGACY_CENTER;
+    case HostGeometrySamplingStrategy::
+            LayerSlabSupersample2x2AtLeastTwoCandidate:
+        return HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO;
+    }
+    return static_cast<enum hostgeometrysamplingstrategy>(-1);
+}
+
 }
 
 bool HostEffectiveProfileBuilder::Validate(
@@ -267,6 +281,20 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
+    if (GeometrySamplingStrategyId(settings.geometrysamplingstrategy)
+            == QStringLiteral("unknown")
+        || (settings.geometrysamplingstrategy
+                == HostGeometrySamplingStrategy::
+                    LayerSlabSupersample2x2AtLeastTwoCandidate
+            && !texture.enabled))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "S3 几何采样候选只允许用于 relief_heightfield 纹理 Profile。");
+        }
+        return false;
+    }
     return true;
 }
 
@@ -337,7 +365,9 @@ bool HostEffectiveProfileBuilder::Build(
             settings.texture.nonsurfacepolicy),
         HostTextureProfileBridge::ToWhitePolicy(settings.texture.whitepolicy),
         settings.texture.whiteinkthreshold,
-        settings.texture.whitevalue};
+        settings.texture.whitevalue,
+        ToHostGeometrySamplingStrategy(
+            settings.geometrysamplingstrategy)};
     char profileHash[72] = {};
     char* profileText = HostBuildEffectiveProfile(
         &requestSettings, profileHash, sizeof(profileHash));
@@ -434,6 +464,21 @@ QString HostEffectiveProfileBuilder::SupportModeId(
         return QStringLiteral("bottom_projection_plus_unsupported");
     case HostSupportMode::FullVerticalProjection:
         return QStringLiteral("full_vertical_projection");
+    }
+    return QStringLiteral("unknown");
+}
+
+QString HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
+    const HostGeometrySamplingStrategy strategy)
+{
+    switch (strategy)
+    {
+    case HostGeometrySamplingStrategy::LegacyCenterSample:
+        return QStringLiteral("legacy_center_sample");
+    case HostGeometrySamplingStrategy::
+            LayerSlabSupersample2x2AtLeastTwoCandidate:
+        return QStringLiteral(
+            "layer_slab_supersample_2x2_at_least_two_candidate");
     }
     return QStringLiteral("unknown");
 }

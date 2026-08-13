@@ -79,6 +79,13 @@ enum hosttexturewhitepolicy
     HOST_TEXTURE_WHITE_UNDERBASE = 1
 };
 
+/** @brief C-compatible geometry occupancy sampling strategy. */
+enum hostgeometrysamplingstrategy
+{
+    HOST_GEOMETRY_SAMPLING_LEGACY_CENTER = 0,
+    HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO = 1
+};
+
 /** @brief C-compatible inputs used to build one effective slice Profile. */
 struct hosteffectiveprofilesettings
 {
@@ -121,6 +128,7 @@ struct hosteffectiveprofilesettings
     enum hosttexturewhitepolicy texturewhitepolicy;
     int texturewhiteinkthreshold;
     int texturewhitevalue;
+    enum hostgeometrysamplingstrategy geometrysamplingstrategy;
 };
 
 /**

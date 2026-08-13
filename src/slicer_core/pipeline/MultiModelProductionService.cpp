@@ -47,6 +47,7 @@ struct SceneProductionContract
     int dpiy{0};
     double layerheightmm{0.0};
     std::string slicepipelinemode;
+    std::string geometrysamplingstrategy;
     bool production{false};
 };
 
@@ -127,6 +128,8 @@ SceneProductionContract ReadContract(
         contract.at("layerHeightMm").as_double();
     result.slicepipelinemode =
         contract.at("slicePipelineMode").as_string();
+    result.geometrysamplingstrategy =
+        contract.at("geometrySamplingStrategy").as_string();
     result.production = document.at("production").as_bool();
     return result;
 }
@@ -574,6 +577,17 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
             "multi-model Global production is not admitted and cannot fall back to Legacy",
             scene.sceneid);
     }
+    if (contract.geometrysamplingstrategy != "legacy_center_sample"
+        && contract.geometrysamplingstrategy
+            != "layer_slab_supersample_2x2_at_least_two_candidate")
+    {
+        return Block(
+            request,
+            MultiModelProductionErrorCode::EffectiveConfigInvalid,
+            "sliceContract.geometrySamplingStrategy",
+            "scene geometry sampling strategy is not approved for production integration",
+            scene.sceneid);
+    }
     if (scene.buildvolume.source
             == BuildVolumeSource::Unresolved
         || !scene.buildvolume.widthmm.has_value()
@@ -670,13 +684,15 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
         || std::abs(
                profile.output.layer_thickness_mm
                - contract.layerheightmm)
-            > kNumericTolerance)
+            > kNumericTolerance
+        || profile.geometry_sampling.strategy
+            != contract.geometrysamplingstrategy)
     {
         return Block(
             request,
             MultiModelProductionErrorCode::ProfileMismatch,
             "sliceContract.resolvedProfileId",
-            "scene Profile identity, DPI, or layer height does not match the explicit Profile config",
+            "scene Profile identity, DPI, layer height, or geometry sampling does not match the explicit Profile config",
             scene.sceneid);
     }
 

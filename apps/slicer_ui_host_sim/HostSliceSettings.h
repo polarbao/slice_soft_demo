@@ -116,6 +116,13 @@ enum class HostTextureWhitePolicy
     WhiteUnderbase
 };
 
+/** @brief Geometry occupancy sampling strategy exposed by host code. */
+enum class HostGeometrySamplingStrategy
+{
+    LegacyCenterSample,
+    LayerSlabSupersample2x2AtLeastTwoCandidate
+};
+
 /** @brief Host-owned production texture and Stage 15 white-carrier settings. */
 struct hosttexturesettings
 {
@@ -166,6 +173,8 @@ struct hostslicesettings
     hostbuildvolume buildvolume;
     hostsupportsettings support;
     hosttexturesettings texture;
+    HostGeometrySamplingStrategy geometrysamplingstrategy{
+        HostGeometrySamplingStrategy::LegacyCenterSample};
 };
 
 /** @brief Validated Profile preview ready for a future slice request. */
@@ -221,6 +230,14 @@ public:
      * @return Stable identifier written to `support.mode`.
      */
     static QString SupportModeId(HostSupportMode mode);
+
+    /**
+     * @brief Converts geometry sampling to its stable Profile value.
+     * @param strategy Geometry sampling selected by host code.
+     * @return Approved Profile identifier, or `unknown`.
+     */
+    static QString GeometrySamplingStrategyId(
+        HostGeometrySamplingStrategy strategy);
 
     /**
      * @brief Compares two build volumes using the frozen scene semantics.

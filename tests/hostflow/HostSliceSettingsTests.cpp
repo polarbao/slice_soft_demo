@@ -196,6 +196,8 @@ bool VerifyEffectiveProfiles(
     }
     const QJsonObject output = first.profile.value(
         QStringLiteral("output")).toObject();
+    const QJsonObject geometrySampling = first.profile.value(
+        QStringLiteral("geometrySampling")).toObject();
     const QJsonObject material = first.profile.value(
         QStringLiteral("modelMaterial")).toObject();
     const QJsonObject support = first.profile.value(
@@ -207,8 +209,11 @@ bool VerifyEffectiveProfiles(
             output.value(QStringLiteral("dpiX")).toInt() == 635
                 && output.value(QStringLiteral("dpiY")).toInt() == 600
                 && output.value(
-                    QStringLiteral("layerThicknessMm")).toDouble() == 0.038,
-            QStringLiteral("参考默认 DPI/层厚未进入有效 Profile。"),
+                    QStringLiteral("layerThicknessMm")).toDouble() == 0.038
+                && geometrySampling.value(
+                    QStringLiteral("strategy")).toString()
+                    == QStringLiteral("legacy_center_sample"),
+            QStringLiteral("参考默认 DPI/层厚/Legacy 采样未进入有效 Profile。"),
             errors)
         || !Check(
             material.value(QStringLiteral("materialChannel")).toString()
@@ -382,6 +387,40 @@ bool VerifyEffectiveProfiles(
                 && texture.value(QStringLiteral("fallbackRgb")).toArray()
                     == QJsonArray{12, 34, 56},
             QStringLiteral("纹理应用、UV 或回退策略未进入有效 Profile。"),
+            errors))
+    {
+        return false;
+    }
+
+    settings.geometrysamplingstrategy =
+        HostGeometrySamplingStrategy::
+            LayerSlabSupersample2x2AtLeastTwoCandidate;
+    hosteffectiveprofile sampled;
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &sampled, &error)
+                && sampled.profilehash != textured.profilehash
+                && sampled.profile.value(
+                    QStringLiteral("geometrySampling")).toObject().value(
+                        QStringLiteral("strategy")).toString()
+                    == QStringLiteral(
+                        "layer_slab_supersample_2x2_at_least_two_candidate")
+                && ComputeWorkerProfileHash(sampled.profile)
+                    == sampled.profilehash,
+            QStringLiteral("S3 显式候选未进入自哈希 relief Profile。"),
+            errors))
+    {
+        return false;
+    }
+
+    settings = MakeSettings(modelPath, outputDirectory);
+    settings.geometrysamplingstrategy =
+        HostGeometrySamplingStrategy::
+            LayerSlabSupersample2x2AtLeastTwoCandidate;
+    error.clear();
+    if (!Check(
+            !HostEffectiveProfileBuilder::Validate(settings, &error),
+            QStringLiteral("S3 与非 relief Profile 组合必须 fail-closed。"),
             errors))
     {
         return false;

@@ -26,6 +26,7 @@ struct SceneEffectiveConfigRequest
     int dpiy{kDefaultOutputDpiY};
     double layerheightmm{kDefaultLayerThicknessMm};
     std::string slicepipelinemode{"legacy"};
+    std::string geometrysamplingstrategy{"legacy_center_sample"};
     bool production{false};
     bool cancelled{false};
 };

@@ -12,6 +12,17 @@ namespace slicer_core
 namespace
 {
 
+constexpr std::string_view kLegacySamplingStrategy{
+    "legacy_center_sample"};
+constexpr std::string_view kApprovedSamplingCandidate{
+    "layer_slab_supersample_2x2_at_least_two_candidate"};
+
+bool IsApprovedGeometrySamplingStrategy(const std::string_view strategy)
+{
+    return strategy == kLegacySamplingStrategy
+        || strategy == kApprovedSamplingCandidate;
+}
+
 SceneValidationError MakeEffectiveConfigError(
     const SceneValidationErrorCode code,
     const SceneEffectiveConfigRequest& request,
@@ -177,7 +188,9 @@ SceneEffectiveConfigResult GenerateSceneEffectiveConfig(
         || request.layerheightmm <= 0.0
         || (request.slicepipelinemode != "legacy"
             && request.slicepipelinemode
-                != "global_surface_shell"))
+                != "global_surface_shell")
+        || !IsApprovedGeometrySamplingStrategy(
+            request.geometrysamplingstrategy))
     {
         return {
             {},
@@ -208,6 +221,8 @@ SceneEffectiveConfigResult GenerateSceneEffectiveConfig(
              {"dpiY", request.dpiy},
              {"layerHeightMm", request.layerheightmm},
              {"slicePipelineMode", request.slicepipelinemode},
+             {"geometrySamplingStrategy",
+              request.geometrysamplingstrategy},
              {"materialBindingMode", "scene_profile_only"},
              {"resolvedProfileId", request.scene.resolvedprofileid},
          })},

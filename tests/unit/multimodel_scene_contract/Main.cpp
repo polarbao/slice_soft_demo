@@ -597,8 +597,19 @@ bool EffectiveConfigWriteReadbackAndStale()
     const auto overwriteResult =
         slicer_core::WriteSceneEffectiveConfig(overwrite);
 
+    slicer_core::SceneEffectiveConfigRequest unapproved = request;
+    unapproved.geometrysamplingstrategy =
+        "layer_slab_supersample_2x2_any_hit_candidate";
+    const auto unapprovedResult =
+        slicer_core::GenerateSceneEffectiveConfig(unapproved);
+
     const bool result =
         ExpectTrue(generated.IsValid(), "effective config generation succeeds")
+        && ExpectTrue(
+            generated.document.at("sliceContract")
+                    .at("geometrySamplingStrategy").as_string()
+                == "legacy_center_sample",
+            "effective config freezes explicit Legacy sampling")
         && ExpectTrue(written.IsValid(), "effective config writes atomically")
         && ExpectTrue(
             readback.IsValid()
@@ -643,7 +654,13 @@ bool EffectiveConfigWriteReadbackAndStale()
                 && overwriteResult.error->code
                     == slicer_core::SceneValidationErrorCode::
                         EffectiveConfigWriteFailed,
-            "effective config cannot overwrite scene draft");
+            "effective config cannot overwrite scene draft")
+        && ExpectTrue(
+            !unapprovedResult.IsValid()
+                && unapprovedResult.error->code
+                    == slicer_core::SceneValidationErrorCode::
+                        EffectiveConfigIntegrityFailed,
+            "unapproved sampling strategies fail closed");
 
     std::filesystem::remove_all(root, cleanupError);
     return result;

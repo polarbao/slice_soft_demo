@@ -230,6 +230,12 @@ SceneSliceSnapshotResult MainWindow::WriteCurrentSceneSnapshot(
                 slicer_core::kDefaultLayerThicknessMm);
     saveRequest.slicepipelinemode =
         slicer_core::SlicePipelineModeName(request.mode);
+    saveRequest.geometrysamplingstrategy =
+        profileRoot.value(QStringLiteral("geometrySampling"))
+            .toObject()
+            .value(QStringLiteral("strategy"))
+            .toString(QStringLiteral("legacy_center_sample"))
+            .toStdString();
     saveRequest.expectedscenerevision =
         m_sceneDocument.SceneRevision();
     saveRequest.expectedtransformrevision =

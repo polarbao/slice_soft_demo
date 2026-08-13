@@ -27,6 +27,9 @@ constexpr const char* kLayoutCode{"PM-SLICER-LAYOUT-0022"};
 constexpr const char* kOutputCode{"PM-SLICER-OUTPUT-0050"};
 constexpr const char* kProfileCode{"PM-SLICER-PROFILE-0030"};
 constexpr const char* kProfileMismatchCode{"PM-SLICER-PROFILE-0031"};
+constexpr const char* kLegacySamplingStrategy{"legacy_center_sample"};
+constexpr const char* kApprovedSamplingCandidate{
+    "layer_slab_supersample_2x2_at_least_two_candidate"};
 
 struct MaterializedPaths
 {
@@ -446,6 +449,14 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
         {
             Fail(kProfileCode, std::string("Profile validation failed: ") + error.what());
         }
+        if (profile.geometry_sampling.strategy != kLegacySamplingStrategy
+            && profile.geometry_sampling.strategy
+                != kApprovedSamplingCandidate)
+        {
+            Fail(
+                kProfileCode,
+                "geometrySampling.strategy is not approved for production integration");
+        }
         if (!profile.material_process_profile.enabled
             || profile.material_process_profile.name
                 != decoded.scene.resolvedprofileid)
@@ -473,6 +484,8 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
         effectiveRequest.layerheightmm = profile.output.layer_thickness_mm;
         effectiveRequest.slicepipelinemode =
             slicer_core::SlicePipelineModeName(profile.slice_pipeline.mode);
+        effectiveRequest.geometrysamplingstrategy =
+            profile.geometry_sampling.strategy;
         effectiveRequest.production = true;
         effectiveRequest.cancelled = cancelToken.IsCancelRequested();
         const slicer_core::SceneEffectiveConfigResult effective =

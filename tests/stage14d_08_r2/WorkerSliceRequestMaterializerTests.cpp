@@ -113,6 +113,9 @@ slicer_core::Json MakeProfile(
     slicer_core::Json::Object profile{
         {"profileVersion", "1.0"},
         {"slicingMode", "closed_mesh_scanline"},
+        {"geometrySampling", slicer_core::Json::object({
+            {"strategy", "legacy_center_sample"},
+        })},
         {"slicePipeline", slicer_core::Json::object({{"mode", "legacy"}})},
         {"input", slicer_core::Json::object({
             {"modelPath", modelPath.generic_string()},
@@ -140,6 +143,24 @@ slicer_core::Json MakeProfile(
     profile.emplace(
         "profileHash",
         worker::WorkerSliceRequestMaterializer::ComputeProfileHash(withoutHash));
+    return slicer_core::Json(std::move(profile));
+}
+
+slicer_core::Json WithSamplingStrategy(
+    const slicer_core::Json& source,
+    const std::string& strategy,
+    const std::string& slicingMode)
+{
+    slicer_core::Json::Object profile = source.as_object();
+    profile.erase("profileHash");
+    profile["slicingMode"] = slicingMode;
+    profile["geometrySampling"] = slicer_core::Json::object({
+        {"strategy", strategy},
+    });
+    const slicer_core::Json withoutHash(profile);
+    profile["profileHash"] =
+        worker::WorkerSliceRequestMaterializer::ComputeProfileHash(
+            withoutHash);
     return slicer_core::Json(std::move(profile));
 }
 
@@ -250,7 +271,52 @@ void TestPositiveMaterialization(const std::filesystem::path& root)
                     .at("outputPackageDir").as_string()
                 == packageDirectory.generic_string(),
             "effective config output path matches the request");
+        Check(effective.document.at("sliceContract")
+                    .at("geometrySamplingStrategy").as_string()
+                == "legacy_center_sample",
+            "effective config freezes the explicit Legacy sampling strategy");
     }
+}
+
+void TestGeometrySamplingIntegration(const std::filesystem::path& root)
+{
+    const std::filesystem::path modelPath = root / "assets" / "model.obj";
+    const slicer_core::MultiModelScene scene = MakeScene(modelPath);
+
+    const std::filesystem::path candidatePackage =
+        root / "packages" / "package-s3";
+    const slicer_core::Json candidate = WithSamplingStrategy(
+        MakeProfile(modelPath, candidatePackage),
+        "layer_slab_supersample_2x2_at_least_two_candidate",
+        "relief_heightfield");
+    const std::filesystem::path candidateRequest = WriteRequest(
+        root / "job-s3", scene, candidate, candidatePackage);
+    const worker::WorkerSliceMaterialization materialized =
+        worker::WorkerSliceRequestMaterializer::Materialize(
+            worker::WorkerRequestParser::Parse(candidateRequest),
+            TestCancelToken{});
+    const slicer_core::SceneEffectiveConfigResult effective =
+        slicer_core::ReadSceneEffectiveConfig(
+            materialized.SceneConfigPath());
+    Check(effective.IsValid(), "approved S3 candidate materializes");
+    if (effective.IsValid())
+    {
+        Check(effective.document.at("sliceContract")
+                    .at("geometrySamplingStrategy").as_string()
+                == "layer_slab_supersample_2x2_at_least_two_candidate",
+            "effective config freezes the approved S3 candidate");
+    }
+
+    const std::filesystem::path rejectedPackage =
+        root / "packages" / "package-s4";
+    const slicer_core::Json rejected = WithSamplingStrategy(
+        MakeProfile(modelPath, rejectedPackage),
+        "layer_slab_supersample_2x2_any_hit_candidate",
+        "relief_heightfield");
+    const std::filesystem::path rejectedRequest = WriteRequest(
+        root / "job-s4", scene, rejected, rejectedPackage);
+    Check(ExpectFailure(rejectedRequest, "PM-SLICER-PROFILE-0030"),
+        "unapproved S4 candidate fails closed in Worker materialization");
 }
 
 void TestIdentityFailures(const std::filesystem::path& root)
@@ -321,6 +387,7 @@ int main()
     try
     {
         TestPositiveMaterialization(root);
+        TestGeometrySamplingIntegration(root);
         TestIdentityFailures(root);
         TestPathAndCancellationFailures(root);
     }

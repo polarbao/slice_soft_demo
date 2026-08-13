@@ -668,6 +668,19 @@ bool SceneContractFailuresAreStable()
         slicer_core::RunMultiModelProductionService(
             mismatchRequest);
 
+    slicer_core::SceneEffectiveConfigRequest samplingMismatch =
+        MakeEffectiveRequest(root / "sampling-mismatch", profileConfigPath);
+    samplingMismatch.geometrysamplingstrategy =
+        "layer_slab_supersample_2x2_at_least_two_candidate";
+    const auto samplingMismatchEffective =
+        slicer_core::WriteSceneEffectiveConfig(samplingMismatch);
+    slicer_core::MultiModelProductionRequest samplingMismatchRequest;
+    samplingMismatchRequest.effectiveconfigpath =
+        samplingMismatch.generatedconfigpath;
+    const auto samplingMismatchResult =
+        slicer_core::RunMultiModelProductionService(
+            samplingMismatchRequest);
+
     const bool ok =
         ExpectTrue(
             noVisibleEffective.IsValid()
@@ -689,7 +702,14 @@ bool SceneContractFailuresAreStable()
                 && mismatchResult.error->code
                     == slicer_core::MultiModelProductionErrorCode::
                         ProfileMismatch,
-            "scene-wide Profile mismatch fails closed");
+            "scene-wide Profile mismatch fails closed")
+        && ExpectTrue(
+            samplingMismatchEffective.IsValid()
+                && !samplingMismatchResult.IsValid()
+                && samplingMismatchResult.error->code
+                    == slicer_core::MultiModelProductionErrorCode::
+                        ProfileMismatch,
+            "effective/Profile sampling mismatch fails closed");
     std::filesystem::remove_all(root, cleanupError);
     return ok;
 }

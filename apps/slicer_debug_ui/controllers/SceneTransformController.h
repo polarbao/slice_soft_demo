@@ -77,6 +77,7 @@ struct SceneTransformSaveRequest
     double layerheightmm{
         slicer_core::kDefaultLayerThicknessMm};
     std::string slicepipelinemode{"legacy"};
+    std::string geometrysamplingstrategy{"legacy_center_sample"};
     std::uint64_t expectedscenerevision{0U};
     std::uint64_t expectedtransformrevision{0U};
     bool production{false};
