@@ -277,7 +277,8 @@ int main(int argc, char* argv[])
             client,
             workflow.SceneHandle(),
             modelPath,
-            QDir(outputRoot.path()).filePath(QStringLiteral("success-package")),
+            QDir(outputRoot.path()).filePath(
+                QStringLiteral("ui_sessions/host-test/package")),
             errors)
         || !VerifyCancellation(
             client,

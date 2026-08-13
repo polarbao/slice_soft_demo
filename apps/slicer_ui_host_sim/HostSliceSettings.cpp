@@ -35,6 +35,15 @@ bool IsWritableOutput(const QString& outputDirectory)
     return existing.isDir() && existing.isWritable();
 }
 
+bool IsSharedUiSessionRoot(const QString& outputDirectory)
+{
+    const QString normalized = QDir::fromNativeSeparators(
+        QDir::cleanPath(QFileInfo(outputDirectory).absoluteFilePath()));
+    return normalized.endsWith(
+        QStringLiteral("/output/ui_sessions"),
+        Qt::CaseInsensitive);
+}
+
 enum hostmaterialstrategy ToHostMaterialStrategy(
     const HostMaterialStrategy strategy)
 {
@@ -160,12 +169,17 @@ bool HostEffectiveProfileBuilder::Validate(
     const QString rootPath = QDir::cleanPath(
         QDir(absoluteOutput).rootPath());
     if (!outputInfo.isAbsolute() || absoluteOutput == rootPath
+        || IsSharedUiSessionRoot(absoluteOutput)
         || !IsWritableOutput(absoluteOutput))
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral(
-                "输出目录必须是非磁盘根目录的绝对可写路径。");
+            *error = IsSharedUiSessionRoot(absoluteOutput)
+                ? QStringLiteral(
+                    "输出目录不能直接使用共享会话根目录 output/ui_sessions；"
+                    "请选择独立的 <session>/package 目录。")
+                : QStringLiteral(
+                    "输出目录必须是非磁盘根目录的绝对可写路径。");
         }
         return false;
     }

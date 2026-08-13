@@ -130,7 +130,42 @@ target_link_libraries(slicer_ui_host_sim PRIVATE
     bcrypt
 )
 
-add_dependencies(slicer_ui_host_sim slicer_module)
+add_dependencies(slicer_ui_host_sim slicer_module slicer_worker)
+
+# ModuleClient loads the capability DLL at runtime, so the linker cannot infer
+# the app-local module, worker, manifest, or their dynamic dependencies.
+set(slicesoftHostRuntimeFiles
+    $<TARGET_FILE:slicer_module>
+    $<TARGET_FILE:slicer_worker>
+    $<TARGET_FILE_DIR:slicer_module>/module.json
+)
+
+get_target_property(
+    slicesoftMeshoptimizerTargetType
+    meshoptimizer::meshoptimizer
+    TYPE
+)
+if(slicesoftMeshoptimizerTargetType MATCHES
+    "^(SHARED_LIBRARY|MODULE_LIBRARY|UNKNOWN_LIBRARY)$"
+)
+    list(APPEND slicesoftHostRuntimeFiles
+        $<TARGET_FILE:meshoptimizer::meshoptimizer>
+    )
+endif()
+
+if(_slicesoft_tiff_runtime_file)
+    list(APPEND slicesoftHostRuntimeFiles
+        ${_slicesoft_tiff_runtime_file}
+    )
+endif()
+
+add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${slicesoftHostRuntimeFiles}
+        $<TARGET_FILE_DIR:slicer_ui_host_sim>
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+)
 
 if(MSVC)
     target_compile_options(slicer_ui_host_sim PRIVATE
@@ -175,6 +210,11 @@ add_test(
     COMMAND slicer_ui_host_sim
         --self-test
         --module $<TARGET_FILE:slicer_module>
+)
+
+add_test(
+    NAME slicer_stage14e02_qt_host_default_module_test
+    COMMAND slicer_ui_host_sim --self-test
 )
 
 add_test(

@@ -489,6 +489,19 @@ bool VerifyEffectiveProfiles(
     {
         return false;
     }
+    settings = MakeSettings(
+        modelPath,
+        QDir(QFileInfo(outputDirectory).absolutePath()).filePath(
+            QStringLiteral("output/ui_sessions")));
+    error.clear();
+    if (!Check(
+            !HostEffectiveProfileBuilder::Validate(settings, &error)
+                && error.contains(QStringLiteral("共享会话根目录")),
+            QStringLiteral("共享 output/ui_sessions 根目录必须 fail-closed。"),
+            errors))
+    {
+        return false;
+    }
     settings = MakeSettings(modelPath, outputDirectory);
     settings.materialstrategy = static_cast<HostMaterialStrategy>(99);
     error.clear();
@@ -567,6 +580,20 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
+    const int rgbWhiteIndex = materialCombo->findData(
+        QStringLiteral("rgb_white"));
+    if (!Check(
+            rgbWhiteIndex >= 0
+                && materialCombo->itemText(rgbWhiteIndex)
+                    == QStringLiteral("RGB 表层 + 白墨实体填充")
+                && materialCombo->itemData(
+                    rgbWhiteIndex, Qt::ToolTipRole).toString().contains(
+                        QStringLiteral("不是‘全实体 RGB + 按需补白墨’")),
+            QStringLiteral("普通 RGB+W 与按需补白的材料入口仍存在歧义。"),
+            errors))
+    {
+        return false;
+    }
     const QString defaultOutput = QDir::fromNativeSeparators(
         outputEdit->text());
     if (!Check(
@@ -576,6 +603,25 @@ bool VerifyPanelIsLocal(
                 && defaultOutput.endsWith(QStringLiteral("/package")),
             QStringLiteral(
                 "参考宿主默认输出目录未对齐旧版 output/ui_sessions/<session>/package。"),
+            errors))
+    {
+        return false;
+    }
+    const QDir sharedSessionRoot(
+        QFileInfo(QFileInfo(defaultOutput).absolutePath()).absolutePath());
+    hostslicesettings persistedSettings;
+    persistedSettings.outputdirectory = sharedSessionRoot.absolutePath();
+    panel.SetPersistentSettings(persistedSettings);
+    const QString migratedOutput = QDir::fromNativeSeparators(
+        outputEdit->text());
+    if (!Check(
+            migratedOutput != QDir::fromNativeSeparators(
+                sharedSessionRoot.absolutePath())
+                && migratedOutput.contains(
+                    QStringLiteral("/output/ui_sessions/"))
+                && migratedOutput.endsWith(QStringLiteral("/package")),
+            QStringLiteral(
+                "持久化的共享 ui_sessions 根目录未迁移到独立会话包目录。"),
             errors))
     {
         return false;
@@ -602,7 +648,7 @@ bool VerifyPanelIsLocal(
             onDemandIndex > 0
                 && processPreset->itemText(onDemandIndex)
                     == QStringLiteral(
-                        "彩色纹理｜全实体 RGB + 纯白按需补 W｜下表面支撑")
+                        "彩色纹理｜全实体 RGB + 按需补白墨｜下表面支撑")
                 && !processPreset->itemData(
                     onDemandIndex, Qt::ToolTipRole).toString().isEmpty()
                 && presetSettings.materialstrategy

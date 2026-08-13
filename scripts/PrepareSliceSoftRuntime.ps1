@@ -131,18 +131,23 @@ function ResolveVcpkgRoot
 {
     param([string]$Candidate)
 
-    if ([string]::IsNullOrWhiteSpace($Candidate))
+    $candidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($Candidate))
     {
-        throw "VCPKG_ROOT or -VcpkgRoot is required for SliceSoft dependencies."
+        $candidates += $Candidate
     }
+    $candidates += "D:/Program Files Tools/vcpkg"
 
-    $resolved = [System.IO.Path]::GetFullPath($Candidate)
-    $toolchain = Join-Path $resolved "scripts/buildsystems/vcpkg.cmake"
-    if (-not (Test-Path -LiteralPath $toolchain -PathType Leaf))
+    foreach ($path in $candidates)
     {
-        throw "vcpkg toolchain was not found: $toolchain"
+        $resolved = [System.IO.Path]::GetFullPath($path)
+        $toolchain = Join-Path $resolved "scripts/buildsystems/vcpkg.cmake"
+        if (Test-Path -LiteralPath $toolchain -PathType Leaf)
+        {
+            return $resolved
+        }
     }
-    return $resolved
+    throw "vcpkg toolchain was not found. Set VCPKG_ROOT or pass -VcpkgRoot."
 }
 
 function SetVisualStudioRuntimeDiscoveryEnvironment
@@ -194,6 +199,23 @@ function GetRuntimeBuildInputFingerprint
         [bool]$HashFileContents
     )
 
+    $rootDirectoryPrefix =
+        [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/') +
+        [System.IO.Path]::DirectorySeparatorChar
+    $cmakeInputFiles = @()
+    foreach ($relativeRoot in @("apps", "cmake", "src", "tests", "tools"))
+    {
+        $searchRoot = Join-Path $RepoRoot $relativeRoot
+        if (Test-Path -LiteralPath $searchRoot -PathType Container)
+        {
+            $cmakeInputFiles += Get-ChildItem `
+                -LiteralPath $searchRoot `
+                -Recurse `
+                -Filter "CMakeLists.txt" `
+                -File
+        }
+    }
+
     $inputFiles = @(
         Get-ChildItem -LiteralPath (Join-Path $RepoRoot "src") -Recurse -File |
             Where-Object {
@@ -207,11 +229,9 @@ function GetRuntimeBuildInputFingerprint
                     ".c", ".cc", ".cpp", ".cxx",
                     ".h", ".hh", ".hpp", ".hxx", ".inl")
             }
-        Get-ChildItem -LiteralPath $RepoRoot -Recurse -Filter "CMakeLists.txt" -File |
-            Where-Object {
-                $_.FullName -notmatch
-                    '[\\/](build|runtime|output)(-[^\\/]*)?[\\/]'
-            }
+        # Never recurse through volatile build/runtime/output trees while the UI
+        # may be replacing session directories. Build inputs only live here.
+        $cmakeInputFiles
         Get-Item -LiteralPath (Join-Path $RepoRoot "CMakeLists.txt")
         Get-Item -LiteralPath (Join-Path $RepoRoot "vcpkg.json")
         Get-Item -LiteralPath $PSCommandPath
@@ -223,7 +243,7 @@ function GetRuntimeBuildInputFingerprint
     [void]$manifest.AppendLine("qt5Dir=$Qt5Dir")
     [void]$manifest.AppendLine("tiffBackend=$TiffBackend")
     [void]$manifest.AppendLine("vcpkgRoot=$VcpkgRoot")
-    $rootPrefix = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+    $rootPrefix = $rootDirectoryPrefix
     foreach ($file in $inputFiles)
     {
         $fullPath = [System.IO.Path]::GetFullPath($file.FullName)
@@ -341,7 +361,12 @@ function AssertRuntimeDirectoryNotInUse
     $runtimePrefix =
         [System.IO.Path]::GetFullPath($RuntimeDir).TrimEnd('\', '/') +
         [System.IO.Path]::DirectorySeparatorChar
-    foreach ($processName in @("slicer_debug_ui", "slicer_cli", "rip_reader_test"))
+    foreach ($processName in @(
+        "slicer_debug_ui",
+        "slicer_ui_host_sim",
+        "slicer_cli",
+        "slicer_worker",
+        "rip_reader_test"))
     {
         foreach ($process in @(Get-Process -Name $processName -ErrorAction SilentlyContinue))
         {
@@ -699,6 +724,32 @@ try
             "apps/slicer_debug_ui/$Config/slicer_debug_ui.exe",
             "apps/slicer_debug_ui/slicer_debug_ui.exe"
         )
+    $hostUiExecutable = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @(
+            "apps/slicer_ui_host_sim/$Config/slicer_ui_host_sim.exe",
+            "apps/slicer_ui_host_sim/slicer_ui_host_sim.exe"
+        )
+    $moduleLibrary = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @("$Config/slicer_module.dll", "slicer_module.dll")
+    $workerExecutable = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @("$Config/slicer_worker.exe", "slicer_worker.exe")
+    $moduleManifest = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @("$Config/module.json", "module.json")
+    $moduleRuntimeLibraries = @()
+    foreach ($candidate in @(
+        (Join-Path $resolvedConfigBuildDir "$Config/meshoptimizer.dll"),
+        (Join-Path $resolvedConfigBuildDir "meshoptimizer.dll")))
+    {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf)
+        {
+            $moduleRuntimeLibraries += (Resolve-Path -LiteralPath $candidate).Path
+            break
+        }
+    }
     $tiffRuntimeMetadata =
         ReadTiffRuntimeMetadata -BuildRoot $resolvedConfigBuildDir -Config $Config
     if ($tiffRuntimeMetadata.backend -ne $TiffBackend)
@@ -728,6 +779,23 @@ try
         Copy-Item -LiteralPath $slicerCli -Destination (Join-Path $stagingDir "slicer_cli.exe")
         Copy-Item -LiteralPath $ripReader -Destination (Join-Path $stagingDir "rip_reader_test.exe")
         Copy-Item -LiteralPath $uiExecutable -Destination (Join-Path $stagingDir "slicer_debug_ui.exe")
+        Copy-Item -LiteralPath $hostUiExecutable -Destination (Join-Path $stagingDir "slicer_ui_host_sim.exe")
+        Copy-Item -LiteralPath $moduleLibrary -Destination (Join-Path $stagingDir "slicer_module.dll")
+        Copy-Item -LiteralPath $workerExecutable -Destination (Join-Path $stagingDir "slicer_worker.exe")
+        Copy-Item -LiteralPath $moduleManifest -Destination (Join-Path $stagingDir "module.json")
+        $moduleRuntimeInventory = @()
+        foreach ($runtimeLibrary in $moduleRuntimeLibraries)
+        {
+            $runtimeFileName = [System.IO.Path]::GetFileName($runtimeLibrary)
+            $runtimeDestination = Join-Path $stagingDir $runtimeFileName
+            Copy-Item -LiteralPath $runtimeLibrary -Destination $runtimeDestination
+            $moduleRuntimeInventory += [ordered]@{
+                file = $runtimeFileName
+                sha256 = (Get-FileHash `
+                    -LiteralPath $runtimeDestination `
+                    -Algorithm SHA256).Hash.ToLowerInvariant()
+            }
+        }
         Copy-Item `
             -LiteralPath (Join-Path $repoRoot "THIRD_PARTY_NOTICES.txt") `
             -Destination $stagingDir
@@ -807,6 +875,13 @@ try
             "Plugins=."
         ) | Set-Content -LiteralPath (Join-Path $stagingDir "qt.conf") -Encoding Ascii
 
+        $hostSelfTestOutput =
+            & (Join-Path $stagingDir "slicer_ui_host_sim.exe") --self-test
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw "Packaged host module self-test failed with exit code $LASTEXITCODE."
+        }
+
         $profileResourceValidation = TestPortableProfileResources -RuntimeRoot $stagingDir
         $manifest = [ordered]@{
             schema = "slicesoft.runtime.1"
@@ -830,8 +905,16 @@ try
             }
             tools = [ordered]@{
                 ui = "slicer_debug_ui.exe"
+                hostUi = "slicer_ui_host_sim.exe"
                 slicerCli = "slicer_cli.exe"
                 ripReader = "rip_reader_test.exe"
+            }
+            capabilityPackage = [ordered]@{
+                module = "slicer_module.dll"
+                worker = "slicer_worker.exe"
+                manifest = "module.json"
+                runtimeLibraries = $moduleRuntimeInventory
+                selfTest = ($hostSelfTestOutput -join [Environment]::NewLine)
             }
             resources = [ordered]@{
                 profileRegistry = $profileResourceValidation.registry

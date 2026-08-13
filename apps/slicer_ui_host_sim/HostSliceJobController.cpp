@@ -273,6 +273,16 @@ bool HostSliceJobController::BuildRequest(
         }
         return false;
     }
+    const QString outputParent = QFileInfo(requestedDirectory).absolutePath();
+    if (!QDir().mkpath(outputParent))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "无法创建宿主拥有的输出父目录：%1").arg(outputParent);
+        }
+        return false;
+    }
 
     const QJsonObject snapshotRequest{
         {QStringLiteral("capability"), QStringLiteral("scene.get_snapshot")},

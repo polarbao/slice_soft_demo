@@ -77,18 +77,26 @@ void HostMaterialSettingsPanel::BuildInterface()
     m_strategyCombo = new QComboBox(header);
     m_strategyCombo->setObjectName(QStringLiteral("hostSliceMaterialCombo"));
     m_strategyCombo->addItem(
-        QStringLiteral("RGB 实体"), QStringLiteral("rgb_solid"));
+        QStringLiteral("全实体 RGB"), QStringLiteral("rgb_solid"));
     m_strategyCombo->addItem(
-        QStringLiteral("RGB + 白墨"), QStringLiteral("rgb_white"));
+        QStringLiteral("RGB 表层 + 白墨实体填充"),
+        QStringLiteral("rgb_white"));
     m_strategyCombo->addItem(
-        QStringLiteral("RGB + 光油"), QStringLiteral("rgb_varnish"));
+        QStringLiteral("RGB 表层 + 光油实体填充"),
+        QStringLiteral("rgb_varnish"));
     m_strategyCombo->addItem(
-        QStringLiteral("RGB + 白墨 + 光油"),
+        QStringLiteral("RGB 表层 + 白墨实体填充 + 光油"),
         QStringLiteral("rgb_white_varnish"));
     m_strategyCombo->addItem(
         QStringLiteral("单材料白墨"), QStringLiteral("white_solid"));
     m_strategyCombo->addItem(
         QStringLiteral("单材料光油"), QStringLiteral("varnish_solid"));
+    m_strategyCombo->setItemData(
+        m_strategyCombo->findData(QStringLiteral("rgb_white")),
+        QStringLiteral(
+            "白墨用于模型实体填充，不是‘全实体 RGB + 按需补白墨’；"
+            "按需补白请从上方常用工艺预设选择。"),
+        Qt::ToolTipRole);
     m_expandButton = new QToolButton(header);
     m_expandButton->setObjectName(QStringLiteral("hostMaterialExpandButton"));
     m_expandButton->setText(QStringLiteral("展开"));

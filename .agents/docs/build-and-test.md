@@ -187,7 +187,15 @@ build-slicesoft/main/<Config>
 runtime/slicesoft/<Config>
 ```
 
-The runtime directory contains `slicer_debug_ui.exe`, `slicer_cli.exe`, `rip_reader_test.exe`, Qt DLLs, platform plugins, the MSVC runtime, `samples/`, `model/`, Profile-referenced documents, and `runtime_manifest.json`. The deployment script validates all scenario config/model/document paths before publishing. OpenVDB remains OFF. Runtime UI resolves its application directory as the packaged resource root and resolves the sibling CLI and RIP reader before any build-directory fallback.
+The runtime directory contains `slicer_debug_ui.exe`, `slicer_ui_host_sim.exe`,
+`slicer_module.dll`, `slicer_worker.exe`, `module.json`, `slicer_cli.exe`,
+`rip_reader_test.exe`, required third-party runtime DLLs, Qt DLLs, platform plugins,
+the MSVC runtime, `samples/`, `model/`, Profile-referenced documents, and
+`runtime_manifest.json`. The deployment script validates all scenario
+config/model/document paths and runs the packaged host module self-test before
+publishing. OpenVDB remains OFF. Runtime UI resolves its application directory
+as the packaged resource root and resolves sibling executables before any
+build-directory fallback.
 
 The Visual Studio/MSBuild lane relies on normal compiler dependency tracking and does not turn an
 ordinary `.cpp` edit into a clean rebuild. The script still computes the input fingerprint before and

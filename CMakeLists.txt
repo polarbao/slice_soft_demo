@@ -2740,10 +2740,19 @@ if(TARGET slicer_debug_ui AND TARGET slicer_ui_host_sim)
 endif()
 
 if(TARGET slicer_debug_ui)
+    set(slicesoftRuntimeTargets
+        slicer_cli
+        rip_reader_test
+        slicer_debug_ui
+    )
+    if(TARGET slicer_ui_host_sim)
+        list(APPEND slicesoftRuntimeTargets
+            slicer_ui_host_sim
+            slicer_module
+            slicer_worker
+        )
+    endif()
     add_custom_target(slicesoft_runtime
-        DEPENDS
-            slicer_cli
-            rip_reader_test
-            slicer_debug_ui
+        DEPENDS ${slicesoftRuntimeTargets}
     )
 endif()

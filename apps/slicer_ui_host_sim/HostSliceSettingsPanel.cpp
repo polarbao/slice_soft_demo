@@ -61,6 +61,14 @@ QString LegacyDefaultOutputDirectory()
         QStringLiteral("SliceSoftHostOutput/package"));
 }
 
+bool IsSharedUiSessionRoot(const QString& path)
+{
+    return QDir::fromNativeSeparators(
+        QDir::cleanPath(QFileInfo(path).absoluteFilePath())).endsWith(
+            QStringLiteral("/output/ui_sessions"),
+            Qt::CaseInsensitive);
+}
+
 int GeometrySamplingIndex(
     const QComboBox* combo,
     const HostGeometrySamplingStrategy strategy)
@@ -375,6 +383,7 @@ void HostSliceSettingsPanel::SetPersistentSettings(
             || PathsEqual(
                 persistedOutput,
                 LegacyDefaultOutputDirectory())
+            || IsSharedUiSessionRoot(persistedOutput)
             ? QDir::toNativeSeparators(m_defaultOutputDirectory)
             : persistedOutput);
     m_processPresetCombo->setCurrentIndex(0);

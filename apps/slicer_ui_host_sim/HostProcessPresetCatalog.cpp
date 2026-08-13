@@ -64,7 +64,7 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
     hostprocesspreset onDemandWhite = MakeTexturedPreset(
         QStringLiteral("textured_nail_rgb_white_ondemand_lower_support"),
         QStringLiteral(
-            "彩色纹理｜全实体 RGB + 纯白按需补 W｜下表面支撑"),
+            "彩色纹理｜全实体 RGB + 按需补白墨｜下表面支撑"),
         QStringLiteral(
             "Stage 15 工艺：保持全实体 RGB，仅在不可打印纯白纹理像素的"
             "同层写入 W 载体；不写 V。"),
