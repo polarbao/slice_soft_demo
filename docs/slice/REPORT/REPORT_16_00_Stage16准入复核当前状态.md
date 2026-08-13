@@ -57,9 +57,11 @@ output/benchmarks/stage16/baseline_identity.json
 | Stage 15 G1/G2/G4/G5 | PASS |
 | `texture_white_carrier_policy_unit_tests` 等定向测试 | 5/5 PASS |
 | Golden SHA-256 | 28/28 PASS |
-| Quick CI | BLOCKED_INFRASTRUCTURE |
+| Quick CI | PASS（16D-03 于 2026-08-13 复测） |
 
-Quick CI 失败不是材料语义回归：`scripts/run_ci_quick.ps1` 固定使用历史 `build` 目录，该目录重新配置时找不到 `meshoptimizer`。日志位于 `output/benchmarks/stage15/logs/quick_ci_zero_drift.log`。该债不阻塞合成 fixture、诊断-only 和 telemetry 卡，但在 `16D-03` 统一回归及任何默认切换前必须解决。
+历史 Quick CI 失败不是材料语义回归：当时脚本固定使用历史 `build` 目录，该目录重新配置时找不到
+`meshoptimizer`。16D-03 已为 Quick CI 增加可选择的 `BuildDir/Config/SkipBuild`，保留旧默认入口，
+并在 `build-slicesoft/main` Debug 轨道复测通过；Stage 15 G3 零漂移也已使用同一显式构建轨道通过。
 
 ## 12F/13F Carry-In Audit
 

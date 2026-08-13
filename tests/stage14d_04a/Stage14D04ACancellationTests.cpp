@@ -181,14 +181,15 @@ bool FacadeForwardsCallerToken()
         },
         slicer_core::engine::CancellableSliceProductionRunner{
             [&token, &sameToken, &request](
-                const std::filesystem::path&,
+                const slicer_core::api::SliceRequest& runnerRequest,
                 const slicer_core::api::ICancelToken& runnerToken,
                 const slicer_core::api::ProgressSink&)
             {
                 sameToken = &runnerToken == &token;
                 slicer_core::api::SliceResult result;
-                result.package_dir = request.package_dir;
-                result.manifest_path = request.package_dir / "manifest.json";
+                result.package_dir = runnerRequest.package_dir;
+                result.manifest_path =
+                    runnerRequest.package_dir / "manifest.json";
                 return slicer_core::api::ApiResult<
                     slicer_core::api::SliceResult>::Success(
                         std::move(result));
@@ -259,6 +260,7 @@ bool WriterRemovesCancelledStagingOutput()
     const std::filesystem::path root =
         std::filesystem::temp_directory_path()
         / ("slicesoft_14d04a_" + std::to_string(suffix));
+    std::filesystem::create_directories(root);
     const std::filesystem::path packageDir = root / "package";
     CountingCancelToken token{4U};
     auto request = MakeWriteRequest(packageDir);
@@ -327,6 +329,7 @@ bool NormalWriterOutputIsUnchanged()
     const std::filesystem::path root =
         std::filesystem::temp_directory_path()
         / ("slicesoft_14d04a_normal_" + std::to_string(suffix));
+    std::filesystem::create_directories(root);
     const std::filesystem::path baselineDir = root / "baseline";
     const std::filesystem::path cancellableDir = root / "cancellable";
     (void)slicer_core::WriteRgbwsvProductionPackage(
@@ -359,6 +362,7 @@ bool CancelledWriterPreservesExistingPackage()
     const std::filesystem::path root =
         std::filesystem::temp_directory_path()
         / ("slicesoft_14d04a_existing_" + std::to_string(suffix));
+    std::filesystem::create_directories(root);
     const std::filesystem::path packageDir = root / "package";
     (void)slicer_core::WriteRgbwsvProductionPackage(
         MakeWriteRequest(packageDir));

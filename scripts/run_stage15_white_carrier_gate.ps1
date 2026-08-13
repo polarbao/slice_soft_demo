@@ -467,7 +467,12 @@ if ($VerifyZeroDrift)
                 "-ExecutionPolicy",
                 "Bypass",
                 "-File",
-                (Join-Path $repoRoot "scripts/run_ci_quick.ps1")) `
+                (Join-Path $repoRoot "scripts/run_ci_quick.ps1"),
+                "-BuildDir",
+                $resolvedBuildDir,
+                "-Config",
+                $Config,
+                "-SkipBuild") `
             -LogPath $quickCiLog
     }
     finally

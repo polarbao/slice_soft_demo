@@ -1,4 +1,13 @@
+param(
+  [string]$BuildDir = "build",
+  [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
+  [string]$Config = "Debug"
+)
+
 $ErrorActionPreference = "Stop"
+
+$resolvedBuildDir = [System.IO.Path]::GetFullPath($BuildDir)
+$slicerExe = Join-Path $resolvedBuildDir "$Config/slicer_cli.exe"
 
 function Assert-Equal($Actual, $Expected, [string]$Message) {
   if ($Actual -ne $Expected) {
@@ -11,7 +20,7 @@ function Read-Json([string]$Path) {
 }
 
 function Run-Slicer([string]$Config) {
-  & .\build\Debug\slicer_cli.exe --config $Config
+  & $slicerExe --config $Config
   if ($LASTEXITCODE -ne 0) {
     throw "slicer_cli failed: $Config"
   }

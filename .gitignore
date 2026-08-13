@@ -8,6 +8,9 @@ runtime/
 .qodo/
 .specstory/
 
+# External RIP SDK/runtime drop; not part of the SliceSoft source tree.
+rip_project/
+
 
 # 切片生成文件
 tests/

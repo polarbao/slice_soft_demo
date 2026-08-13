@@ -1,4 +1,14 @@
+param(
+  [string]$BuildDir = "build",
+  [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
+  [string]$Config = "Debug"
+)
+
 $ErrorActionPreference = "Stop"
+
+$resolvedBuildDir = [System.IO.Path]::GetFullPath($BuildDir)
+$slicerExe = Join-Path $resolvedBuildDir "$Config/slicer_cli.exe"
+$ripExe = Join-Path $resolvedBuildDir "$Config/rip_reader_test.exe"
 
 function Assert-Equal($Actual, $Expected, [string]$Message) {
   if ($Actual -ne $Expected) {
@@ -17,12 +27,12 @@ function Read-Json([string]$Path) {
 }
 
 Write-Host "== support shape smoke"
-& .\build\Debug\slicer_cli.exe --config samples\configs\support\support_shape_smoke.json
+& $slicerExe --config samples\configs\support\support_shape_smoke.json
 if ($LASTEXITCODE -ne 0) {
   throw "slicer_cli failed: support_shape_smoke"
 }
 
-& .\build\Debug\rip_reader_test.exe --package output\SupportShapeSmoke --quiet
+& $ripExe --package output\SupportShapeSmoke --quiet
 if ($LASTEXITCODE -ne 0) {
   throw "rip_reader_test failed: SupportShapeSmoke"
 }
@@ -42,12 +52,12 @@ Assert-True ($report.addedSupportPixels -gt 0 -or $report.removedSupportPixels -
 Assert-True ($slice.totals.supportPixels -gt 0) "slice_report expected support pixels"
 
 Write-Host "== support bridge gap smoke"
-& .\build\Debug\slicer_cli.exe --config samples\configs\support\support_bridge_gap_smoke.json
+& $slicerExe --config samples\configs\support\support_bridge_gap_smoke.json
 if ($LASTEXITCODE -ne 0) {
   throw "slicer_cli failed: support_bridge_gap_smoke"
 }
 
-& .\build\Debug\rip_reader_test.exe --package output\SupportBridgeGapSmoke --quiet
+& $ripExe --package output\SupportBridgeGapSmoke --quiet
 if ($LASTEXITCODE -ne 0) {
   throw "rip_reader_test failed: SupportBridgeGapSmoke"
 }

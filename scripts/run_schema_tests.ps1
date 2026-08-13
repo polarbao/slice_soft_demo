@@ -1,4 +1,14 @@
+param(
+  [string]$BuildDir = "build",
+  [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
+  [string]$Config = "Debug"
+)
+
 $ErrorActionPreference = "Stop"
+
+$resolvedBuildDir = [System.IO.Path]::GetFullPath($BuildDir)
+$slicerExe = Join-Path $resolvedBuildDir "$Config/slicer_cli.exe"
+$ripExe = Join-Path $resolvedBuildDir "$Config/rip_reader_test.exe"
 
 function Assert-Equal($Actual, $Expected, [string]$Message) {
   if ($Actual -ne $Expected) {
@@ -17,14 +27,14 @@ function Read-Json([string]$Path) {
 }
 
 function Run-Slicer([string]$Config) {
-  & .\build\Debug\slicer_cli.exe --config $Config
+  & $slicerExe --config $Config
   if ($LASTEXITCODE -ne 0) {
     throw "slicer_cli failed: $Config"
   }
 }
 
 function Run-Rip([string]$Package) {
-  & .\build\Debug\rip_reader_test.exe --package $Package --quiet
+  & $ripExe --package $Package --quiet
   if ($LASTEXITCODE -ne 0) {
     throw "rip_reader_test failed: $Package"
   }

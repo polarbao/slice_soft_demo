@@ -156,7 +156,7 @@ if (-not $SkipBuild) {
 if ($Mode -eq "quick" -or $Mode -eq "full") {
   Run-Step "make 3MF samples" {
     & .\scripts\make_3mf_samples.ps1
-    if ($LASTEXITCODE -ne 0) { throw "make_3mf_samples failed" }
+    if (-not $?) { throw "make_3mf_samples failed" }
   }
 }
 
