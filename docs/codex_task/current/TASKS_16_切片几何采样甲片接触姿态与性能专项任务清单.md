@@ -1,7 +1,7 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16D-01..03 COMPLETE；16D-04 READY；16B-04 / 16D-05 待单独授权**
+> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16D-01..04 COMPLETE；工程候选已收口；16B-04 / 16D-05 待单独授权**
 > 版本：v1.9
 > 日期：2026-08-13
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
@@ -400,6 +400,12 @@ External Pending Confirmation；
 12F/13F carry-in disposition。
 ```
 
+**状态：COMPLETE（2026-08-13）**
+
+**实际结果：** 已生成 `REPORT_16_切片几何采样甲片接触姿态与性能专项当前状态.md`，
+按 Current/Candidate/Default/Performance/External/Carry-in 六段收口。Stage 16 结论为工程候选完成、
+生产默认延期；Legacy/S0/P0 不变。16C-04..09 保留为后续性能优化，16C-10 保持 `INPUT_OPEN`。
+
 ### 16D-05 默认切换授权
 
 **状态：REQUIRES EXPLICIT USER AUTHORIZATION**
@@ -431,7 +437,7 @@ R-F 线与 16-00-01..04 已完成；
 16A-06 已选择 S3 作为显式诊断候选，生产默认继续为 S0；
 用户已授权同步推进，16B-03、16C-02 已完成；
 16D-01 已完成 S0/S3 受限接入；16D-02 与 16C-03 的依赖已满足；
-16D-03 统一回归 Gate 已通过，16D-04 阶段收口报告可执行；
+16D-03 统一回归 Gate 和 16D-04 阶段收口报告已完成；
 姿态接入仍等待 16B-04 单独授权，不得把 P3 或 S3 改成生产默认；
 候选和默认配置继续关闭。
 ```
@@ -440,6 +446,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-13 | v2.1 | 完成 16D-04：输出 REPORT_16 六段式收口结论；Stage 16 以工程候选完成、生产默认延期收口，16C-04..09 和正式设备预算保留后续排期，16B-04/16D-05 继续等待独立授权。 |
 | 2026-08-13 | v2.0 | 完成 16D-03：修复 Quick CI 主构建轨道和两处历史回归夹具；Debug/Release 定向 CTest 24/24、Quick CI、full regression、Stage 15 G1..G5、13G 与 Runtime 发布全部通过；16D-04 转 READY，默认仍为 Legacy/S0/P0。 |
 | 2026-08-13 | v1.9 | 完成 16D-02：Qt 显式展示 S0/S3、P0/P3 与性能 telemetry；工作区 schema v5 持久化采样策略；结果页并排显示首层 A/当前层 B 和 RGBWSV 打印像素差值，10/10 定向 CTest PASS。 |
 | 2026-08-13 | v1.8 | 完成 16C-03：支撑 island 汇总与最终 mask/type 统计分离，后处理后统一扫描一次；新增 scan count telemetry，三真实模型逐层 TIFF/hash/type totals 零差异、RIP strict 6/6 PASS，并记录同机 Release A/B 中位数。 |

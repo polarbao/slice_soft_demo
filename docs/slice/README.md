@@ -2,7 +2,7 @@
 
 > 文档状态：Formal Docs Entry
 > 更新日期：2026-08-06
-> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL（历史）；TIFF T-A-01..03 COMPLETE；03E-02 INTERNAL COMPLETE / **GO_ON_DEMAND**；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；Stage 14 SLICER-SIDE COMPLETE；Stage 15 COMPLETE / 19 OF 19；Stage 16 ACTIVE / PARTIAL GO
+> 适用阶段：Stage 12D COMPLETE；Stage 12E COMPLETE；03D COMPLETE / GO_OPTIONAL（历史）；TIFF T-A-01..03 COMPLETE；03E-02 INTERNAL COMPLETE / **GO_ON_DEMAND**；Stage 13 原 P0 17/17 COMPLETE；13B-08、13D、13E、13G COMPLETE；Stage 14 SLICER-SIDE COMPLETE；Stage 15 COMPLETE / 19 OF 19；Stage 16 ENGINEERING CANDIDATE COMPLETE / PRODUCTION DEFAULT DEFERRED
 
 本目录是 SliceSoft 从 demo 切片软件转向正式项目后的正式文档入口。文档按类型分层，避免 PRD、DEV、验证方案、路线图和决策记录混在同一目录中。
 
@@ -10,7 +10,10 @@
 
 当前状态：12C、12D 和 Stage 12E 已收口。12E-10A 已把生产 TIFF、09A Texture/Fill、W/S/V 和精确材料闭环报告按真实 layerIndex/zMm 绑定；10B 已通过 14 行真实 OBJ/3MF 双模式生产矩阵和 3 行复杂浮雕预期阻断；10C 已通过 36/36 Release 计量样本和 RIP strict，Global/Legacy core 为 1.826x..2.562x、total 为 2.244x..3.161x、峰值内存为 3.079x..4.304x；10D 已完成最终报告和用户说明。Legacy 默认，Global 显式 opt-in；复杂浮雕覆盖仍为 0/3 披露缺口。`03D-LIBTIFF` 的 `GO_OPTIONAL` 保留为历史基线；用户授权的 TIFF T-A-01..03 已于 2026-08-11 完成，默认 Writer 现为 LibTIFF 4.7.1，handwritten 仅保留显式遗留验证轨道，默认压缩仍为 `none`。`03E-02` 已完成项目内 PackBits Gate 并转为 `GO_ON_DEMAND`；这不等于目标外部 RIP/控制软件互操作已验收，T-A-04 在取得该证据前继续阻塞。12F-02..09 未激活。12G-TCWS 继续冻结（Q3.1 确认同层不需混用两种白，不需要 `p0.rgbwsv.3`）。Stage 13 原始 17 个任务和插入的 13B-08、13D、13E、13G 均已完成。**Stage 14 能力包集成已于 2026-08-04 授权激活（ACTIVE）**：14A 切片侧实现已收口，14A-03 与双视图纹理 14A-04-R1 待打印侧回签；2026-08-06 的当前入口为 14C-06A READY 与 14D-08 解阻拆分准备，后续状态以 `REPORT/REPORT_14_切片能力包封装与打印软件集成准备状态.md` 为准。S2 权威条款见 `DOC/DOC_DECISION_14_S2_RIP接口合同定案.md`。Stage 15 的 19 张任务卡已全部完成；按需补白 Profile 已启用为 production。G7 放行来源是用户在取得候选/对照包和软件证据后的明确授权，Agent 未直接观察实物打印且仓库未附照片；Stage 14 外部 RIP 和 12G 仍按独立边界处理。
 
-Stage 16 已通过 16-00 PARTIAL GO 并进入实施。16A-01..06、16B-01..03 与 16C-01..02 已完成；机器可读采样矩阵、P0/P2/P3 姿态矩阵和 S0/S3/S4 x 1/11/12/22 Release 基线已经归档。16A-06 已选择 S3 为首选诊断候选、S4 为薄特征上限对照；P2 已被 A/B 否决，P3 仅可进入 16B-04 显式 opt-in 评估。生产默认继续为 S0/P0；仅限 S3 的 16D-01 可继续，姿态接入仍等待 16B-04 单独授权，正式设备 SLA 保持 INPUT_OPEN。
+Stage 16 已完成 16A-01..06、16B-01..03、16C-01..03、16D-01..04 和统一回归 Gate。
+S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；生产默认继续为 Legacy/S0/P0。
+16C-04..09 保留为后续性能优化，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05
+仍需用户独立授权。
 
 ## 目录结构
 
@@ -123,6 +126,7 @@ Stage 16 已通过 16-00 PARTIAL GO 并进入实施。16A-01..06、16B-01..03 �
 | `REPORT/REPORT_16C_02_Release性能基线当前状态.md` | 16C-02 core-only/end-to-end、p50/p95、峰值内存、输出 hash 和 RIP strict 实测结论 |
 | `../codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md` | Stage 16 的 16-00/16A/16B/16C/16D 原子任务与当前准入状态 |
 | `../codex_task/current/CODEX_PROMPT_16_切片几何采样甲片接触姿态与性能专项执行指令.md` | Stage 16 执行硬门、不变量、验证和停止条件 |
+| `REPORT/REPORT_16_切片几何采样甲片接触姿态与性能专项当前状态.md` | Stage 16 工程候选、默认决策、性能预算、外部待确认与 carry-in 收口 |
 | `REPORT/REPORT_13_模型场景排版与TIFF原生预览准备状态.md` | Stage 13 文档准备、当前实现事实、优先级和下一任务 |
 | `REPORT/REPORT_13A_模型俯视工作区与实例变换当前状态.md` | 13A-01..05 实现、验证、M13-1 候选和后续边界 |
 | `REPORT/REPORT_13A_02_模型俯视渲染当前状态.md` | 13A-02 +Z 俯视几何、Qt 异步加载、选择和实际验证 |
