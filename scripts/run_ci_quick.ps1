@@ -32,17 +32,17 @@ function Resolve-Executable([string]$BuildRoot, [string]$BuildConfig, [string]$N
 $resolvedBuildDir = [System.IO.Path]::GetFullPath($BuildDir)
 $slicerExe = Resolve-Executable $resolvedBuildDir $Config "slicer_cli"
 $supportShapeExe = Resolve-Executable $resolvedBuildDir $Config "support_shape_unit_tests"
-$uiCandidates = @(
-  (Join-Path $resolvedBuildDir "apps/slicer_debug_ui/$Config/slicer_debug_ui.exe"),
-  (Join-Path $resolvedBuildDir "$Config/slicer_debug_ui.exe")
+$hostUiCandidates = @(
+  (Join-Path $resolvedBuildDir "apps/slicer_ui_host_sim/$Config/slicer_ui_host_sim.exe"),
+  (Join-Path $resolvedBuildDir "$Config/slicer_ui_host_sim.exe")
 )
-$uiExe = $uiCandidates |
+$hostUiExe = $hostUiCandidates |
   Where-Object { Test-Path -LiteralPath $_ } |
   Select-Object -First 1
-if ([string]::IsNullOrWhiteSpace($uiExe)) {
-  throw "missing executable slicer_debug_ui under build directory: $resolvedBuildDir"
+if ([string]::IsNullOrWhiteSpace($hostUiExe)) {
+  throw "missing executable slicer_ui_host_sim under build directory: $resolvedBuildDir"
 }
-$uiExe = (Resolve-Path -LiteralPath $uiExe).Path
+$hostUiExe = (Resolve-Path -LiteralPath $hostUiExe).Path
 
 Run-Step "source size guard" {
   if ([string]::IsNullOrWhiteSpace($SourceGuardBaseRef)) {
@@ -88,16 +88,8 @@ Run-Step "golden tests" {
     -Config $Config
 }
 
-Run-Step "ui self-test" {
-  & $uiExe --self-test
-}
-
-Run-Step "ui overlay fixture" {
-  & $slicerExe --config samples\configs\ui_smoke\ui_overlay_rgbwv_preview.json
-}
-
-Run-Step "ui overlay-load-real" {
-  & $uiExe --ui-smoke-test --case overlay-load-real --package output\UiSmokeOverlayRgbwv
+Run-Step "packaged host ui self-test" {
+  & $hostUiExe --self-test
 }
 
 Write-Host "CI quick complete."

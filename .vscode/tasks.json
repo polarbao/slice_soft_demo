@@ -74,18 +74,6 @@
       "detail": "先执行 Debug 快速增量编译，再部署完整 Debug Runtime。"
     },
     {
-      "label": "SliceSoft: Run UI (Debug)",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
-      "args": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "SliceSoft: Build Runtime (Debug)",
-      "problemMatcher": [],
-      "detail": "编译完成后直接运行 Debug UI，不附加调试器。"
-    },
-    {
       "label": "SliceSoft: Fast Build (Release)",
       "type": "shell",
       "command": "cmake",
@@ -112,40 +100,6 @@
       "group": "build",
       "problemMatcher": [],
       "detail": "先执行 Release 快速增量编译，再部署完整 Release Runtime。"
-    },
-    {
-      "label": "SliceSoft: Run UI (Release)",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
-      "args": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "SliceSoft: Build Runtime (Release)",
-      "problemMatcher": [],
-      "detail": "编译完成后直接运行 Release UI。"
-    },
-    {
-      "label": "SliceSoft: Quick Run UI (Debug, No Build)",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
-      "args": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "detail": "直接运行已部署的 Debug UI，不触发编译或部署。"
-    },
-    {
-      "label": "SliceSoft: Quick Run UI (Release, No Build)",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
-      "args": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "detail": "直接运行已部署的 Release UI，不触发编译或部署。"
     },
     {
       "label": "SliceSoft: Deploy Runtime (Release, No Build)",
@@ -182,34 +136,6 @@
       ],
       "problemMatcher": [],
       "detail": "依次构建 Debug 和 Release 两套 Runtime。"
-    },
-    {
-      "label": "SliceSoft: Test Runtime (Debug)",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_debug_ui.exe",
-      "args": [
-        "--self-test"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "SliceSoft: Build Runtime (Debug)",
-      "group": "test",
-      "problemMatcher": []
-    },
-    {
-      "label": "SliceSoft: Test Runtime (Release)",
-      "type": "shell",
-      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_debug_ui.exe",
-      "args": [
-        "--self-test"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "SliceSoft: Build Runtime (Release)",
-      "group": "test",
-      "problemMatcher": []
     },
     {
       "label": "SliceSoft 14E: Build Packaged Host UI (Debug)",
