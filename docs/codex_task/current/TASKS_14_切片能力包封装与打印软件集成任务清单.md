@@ -285,7 +285,8 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 14D-04 | **切片链路 cancel token 贯穿**（受控拆为 04A/04B）| 14B-04 | 04A 核心贯穿；04B Worker 各阶段取消 ≤2s 且无 staging 残留 | ✅ **PREPARATION_GATE PASS_WITH_SPLIT（2026-08-06）** |
 | 14D-04A | 核心 token 贯穿：阶段、逐层和长循环协作检查 | 14B-04 | 直接引擎取消 ≤2s；正常生产回归不变 | ✅ **COMPLETE（2026-08-06）**；核心链路 token、staging 清理、既有包保护和正常字节不变性 Debug/Release PASS |
 | 14D-04B | Worker 真实取消、退出与残留收口 | 14D-04A, 14D-05, 14D-08 | 退出码 8、稳定取消码、≤2s、无 staging | PREPARED / 等待后置前置 |
-| 14D-05 | staging→自检→原子发布 + 取消/崩溃清理双保险 | 14D-01 | C-SPI-09；无残留 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；缺 jobId 临时产物身份、真实 Worker 执行、模块退出后二次清理与崩溃恢复 |
+| 14D-05 | staging→自检→原子发布 + 取消/崩溃清理双保险 | 14D-01 | C-SPI-09；无残留 | ✅ **COMPLETE（2026-08-06）**；R1..R4 已闭合作业身份、真实 Worker、模块二次清理、崩溃恢复与公开 SPI 验收 |
+| 14D-05-R5 | 正常发布严格校验去重与发布证据复用 | 14D-05 | staging 全量严格校验一次；发布身份复核；异常恢复仍完整严格校验 | ✅ **COMPLETE（2026-08-14）**；MSVC 19.51 Release Writer/真实 Worker/公开 Worker 3/3 PASS，产物安全测试、Runtime 自检和 1.262 GiB 包 RIP strict PASS |
 | 14D-06 | 取消 `backend=inprocess` 切片路径；`options.backend` 收敛为 `worker` | 14D-02 | 无第二条切片路径 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；Worker 唯一路由尚不可执行，等待 14D-08/05 解阻 |
 | 14D-07 | **引擎一致性套件 E-01..08**（Worker 独立替换的准入门）| 14D-03, 14D-05 | 套件可对任意 Worker 版本运行 | ⛔ **PREPARATION_GATE BLOCKED（2026-08-06）**；E-01..08 尚未规范冻结，且缺真实 Worker 与安全发布证据 |
 | 14D-08 | Worker 独立调试入口：`slicer_worker.exe --spi-request <req.json>`（受控拆为 R1..R4） | 14D-01 | 可脱离 DLL 单独运行并附加调试器 | ⛔ **父任务 BLOCKED**；R1 共享执行基础准备门已通过，R2/R3/R4 仍等待真实映射、Facade 与安全发布 |
@@ -485,3 +486,4 @@ manifest `ripBoundIntermediate` 字段。完整作废清单见 `DOC_DECISION_14_
 | 2026-08-07 | v2.29 | 完成 14F-03 切片侧本地门禁：公开 ABI 单模型 import→transform→Worker slice→S1 strict 正例通过，7 类坏包稳定 fail-closed；打印侧 M2 外部验证保持延期，下一任务为 14F-04 |
 | 2026-08-07 | v2.30 | 完成 14F-04 S2 本地合同门禁：冻结 C1-C7 机器合同与稳定错误码，grayBits=1/2 正例及 7 类负例通过；目标 RIP、ChannelSplitter 和极性映射实证保持延期，下一任务为 14F-05 |
 | 2026-08-07 | v2.31 | 完成 14F-05 切片侧收口：重新打包并串联 14F-01..04 六步 Release 门禁，固化 12 项接口哈希；阶段状态定为 SLICER PACKAGE READY / INTERFACES FROZEN / EXTERNAL ACCEPTANCE DEFERRED |
+| 2026-08-14 | v2.32 | 受控完成 14D-05-R5：正常发布仅扫描一次 staging TIFF，发布后以轻量文件身份复核并复用内存证据清理 backup；异常/崩溃恢复仍完整严格校验，SPI/Worker 文件合同和 RGBWSV 协议不变 |

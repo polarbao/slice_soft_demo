@@ -149,7 +149,8 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 14C-07 | ✅ COMPLETE（2026-08-06） | DLL 初始化与依赖红线 | Debug/Release 5/5 定向测试、并发 call_once、32 实例、精确 11 导出和 PE 依赖红线 PASS |
 | 14D-05 | ✅ COMPLETE（2026-08-06） | 安全发布与清理双保险 | R1..R4 完成；真实 Worker 与公开 DLL 链路均验证取消/强杀后的旧包保护和 owned 临时产物清零 |
 | 14D-05-R1 | ✅ COMPLETE（2026-08-06） | 共享产物身份与恢复状态机 | job/attempt 精确 owned 路径、临时路径识别、reparse fail-closed、备份恢复与相邻作业保护通过定向门禁 |
-| 14D-05-R2 | ✅ COMPLETE（2026-08-06） | Writer owned 发布事务 | job/attempt 贯穿生产链路；精确 staging/backup、目标级租约、发布后复验、无残留证据和并发拒绝通过 Debug/Release 定向门禁 |
+| 14D-05-R2 | ✅ COMPLETE（2026-08-06） | Writer owned 发布事务 | job/attempt 贯穿生产链路；精确 staging/backup、目标级租约、发布身份复核、无残留证据和并发拒绝通过 Debug/Release 定向门禁 |
+| 14D-05-R5 | ✅ COMPLETE（2026-08-14） | 正常发布严格校验去重 | staging 保留一次全量 strict；同父目录 rename 后用 manifest/文件身份证据复核并清理 backup；异常和崩溃恢复继续全量 strict；Release 3/3、产物安全、Runtime 自检及 1.262 GiB RIP PASS |
 | 14D-05-R3 | ✅ COMPLETE（2026-08-06） | Worker/模块双重恢复与临时路径拒绝 | Worker 起止第一轮、进程退出后模块第二轮共享精确 owned 恢复；查询/RIP 拒绝临时路径，Writer 私有验证不泄漏；Debug/Release 定向门禁 PASS |
 | 14D-05-R4-A | ✅ COMPLETE（2026-08-06） | 真实 Worker 正常、取消、超时强杀与旧包保护 | Debug/Release 生产 Worker + WorkerClient 集成 PASS；有效包严格可读，取消/强杀后 manifest 字节不变且 owned staging/backup/lease 无残留 |
 | 14D-05-R4-B | ✅ COMPLETE（2026-08-06） | 公开 DLL -> Worker -> Writer 与 C-SPI-09 收口 | Debug/Release 公开 C SPI 取消返回稳定代码；既有 manifest 字节不变，owned staging/backup/lease 无残留且包仍可严格读取 |
@@ -338,3 +339,4 @@ M-MVP，14E-02..04b 已完成 Qt ABI 边界、三车道交互、带纹理俯视�
 | 2026-08-07 | v3.59 | 完成 14F-03 切片侧本地联调：公开 ABI 单模型链路生成真实 RGBWSV 包，S1 正例和 7 类负例全部通过；打印侧 M2 继续标记 EXTERNAL VALIDATION DEFERRED，下一任务为 14F-04 |
 | 2026-08-07 | v3.60 | 完成 14F-04 S2 本地合同门禁：冻结 C1-C7 机器合同、稳定错误码和 grayBits=1/2 正例，7 类负例全部 fail-closed；目标 RIP 与打印侧证据保持延期，下一任务为 14F-05 |
 | 2026-08-07 | v3.61 | 完成 14F-05 切片侧阶段收口：六步 Release 汇总门禁与 12 项冻结合同哈希通过；Stage 14 定位为能力包可交付、接口冻结、外部验收延期，不标记生产就绪 |
+| 2026-08-14 | v3.62 | 完成 14D-05-R5 校验性能修订：正常 Writer 路径由 staging/published/cleanup 多次全包扫描收敛为一次 staging strict 加轻量发布身份复核；跨进程和异常恢复安全边界保持不变 |

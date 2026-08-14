@@ -738,6 +738,116 @@ Json ReadPersistedJson(const std::filesystem::path& path)
     return Json::parse(input);
 }
 
+struct PackageFileIdentity
+{
+    std::filesystem::path relativePath;
+    std::uintmax_t size{0U};
+    std::filesystem::file_time_type lastWriteTime{};
+
+    bool operator==(const PackageFileIdentity&) const = default;
+};
+
+struct ValidatedStagingPackageEvidence
+{
+    std::filesystem::path stagingDirectory;
+    std::string manifestProjection;
+    std::vector<PackageFileIdentity> files;
+};
+
+std::vector<PackageFileIdentity> CollectPackageFileIdentity(
+    const std::filesystem::path& packageDirectory)
+{
+    std::vector<PackageFileIdentity> files;
+    for (const std::filesystem::directory_entry& entry
+         : std::filesystem::recursive_directory_iterator(packageDirectory))
+    {
+        const std::filesystem::file_status status = entry.symlink_status();
+        if (std::filesystem::is_directory(status))
+        {
+            continue;
+        }
+        if (!std::filesystem::is_regular_file(status))
+        {
+            throw std::runtime_error(
+                "RGBWSV package contains a non-regular publication artifact: "
+                + entry.path().string());
+        }
+        const std::filesystem::path relativePath =
+            entry.path().lexically_relative(packageDirectory);
+        if (relativePath.empty()
+            || *relativePath.begin() == std::filesystem::path{".."})
+        {
+            throw std::runtime_error(
+                "RGBWSV package publication artifact escaped its directory");
+        }
+        files.push_back(PackageFileIdentity{
+            relativePath,
+            entry.file_size(),
+            entry.last_write_time()});
+    }
+    std::sort(
+        files.begin(),
+        files.end(),
+        [](const PackageFileIdentity& lhs, const PackageFileIdentity& rhs)
+        {
+            return lhs.relativePath.generic_string()
+                < rhs.relativePath.generic_string();
+        });
+    return files;
+}
+
+ValidatedStagingPackageEvidence MakeValidatedStagingPackageEvidence(
+    const api::artifacts::PackageArtifactIdentity& identity,
+    const RipValidationResult& validation)
+{
+    const std::filesystem::path validatedDirectory =
+        std::filesystem::absolute(validation.package_dir).lexically_normal();
+    if (validatedDirectory != identity.staging_directory)
+    {
+        throw std::runtime_error(
+            "strict RGBWSV validation did not bind the owned staging directory");
+    }
+    return ValidatedStagingPackageEvidence{
+        validatedDirectory,
+        ReadPersistedJson(validatedDirectory / "manifest.json").dump(0),
+        CollectPackageFileIdentity(validatedDirectory)};
+}
+
+void ValidatePublishedPackageIdentity(
+    const api::artifacts::PackageArtifactIdentity& identity,
+    const ValidatedStagingPackageEvidence& evidence)
+{
+    if (evidence.stagingDirectory != identity.staging_directory
+        || std::filesystem::exists(identity.staging_directory)
+        || !std::filesystem::is_directory(identity.package_directory)
+        || ReadPersistedJson(identity.package_directory / "manifest.json").dump(0)
+            != evidence.manifestProjection
+        || CollectPackageFileIdentity(identity.package_directory)
+            != evidence.files)
+    {
+        throw api::artifacts::PackageArtifactOutputError(
+            "published RGBWSV package identity does not match validated staging evidence");
+    }
+}
+
+api::artifacts::PackageArtifactValidator MakePublishedEvidenceValidator(
+    const api::artifacts::PackageArtifactIdentity& identity)
+{
+    const std::filesystem::path validatedTarget = identity.package_directory;
+    return [validatedTarget](const std::filesystem::path& candidate)
+    {
+        try
+        {
+            return std::filesystem::absolute(candidate).lexically_normal()
+                == validatedTarget;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    };
+}
+
 void ValidatePersistedSceneExtension(
     const std::filesystem::path& stagingDir,
     const RgbwsvProductionPackageWriteRequest& request)
@@ -1135,17 +1245,25 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             request.canceltoken,
             "package_validation");
         ValidatePersistedSceneExtension(stagingDir, request);
-        (void)internal::ValidateSlicePackageArtifact(stagingDir);
+        const RipValidationResult stagingValidation =
+            internal::ValidateSlicePackageArtifact(stagingDir);
+        const ValidatedStagingPackageEvidence stagingEvidence =
+            MakeValidatedStagingPackageEvidence(
+                artifactIdentity,
+                stagingValidation);
         ThrowIfCancellationRequested(
             request.canceltoken,
             "before_package_publish");
         PublishStagedPackage(artifactIdentity);
         ValidatePersistedSceneExtension(packageDir, request);
-        (void)validate_slice_package(packageDir);
+        // A same-parent rename preserves the strictly validated bytes. Recheck
+        // lightweight file identity here; crash recovery still performs a full
+        // strict validation because it has no in-memory staging evidence.
+        ValidatePublishedPackageIdentity(artifactIdentity, stagingEvidence);
         const api::artifacts::PackageArtifactRecoveryResult cleanup =
             api::artifacts::RecoverPackageArtifacts(
                 artifactIdentity,
-                IsStrictPackageValid);
+                MakePublishedEvidenceValidator(artifactIdentity));
         if (!cleanup.success)
         {
             throw api::artifacts::PackageArtifactOutputError(

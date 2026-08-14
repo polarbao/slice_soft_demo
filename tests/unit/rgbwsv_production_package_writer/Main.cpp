@@ -729,8 +729,26 @@ bool ExistingPackageIsAtomicallyReplaced()
         MakeRequest(packageDir));
     const slicer_core::RipValidationResult rip =
         slicer_core::validate_slice_package(packageDir);
+    const auto identity =
+        slicer_core::api::artifacts::MakePackageArtifactIdentity(
+            std::filesystem::absolute(packageDir).lexically_normal(),
+            result.jobId,
+            result.attemptId);
 
     return ExpectTrue(result.productionOutputWritten, "replacement package is written")
+        && ExpectTrue(
+            result.strictProtocolValidated,
+            "replacement package reuses strict staging validation evidence")
+        && ExpectTrue(
+            result.stagingRemoved
+                && result.backupRemoved
+                && result.leaseReleased,
+            "replacement publication removes its owned transaction artifacts")
+        && ExpectTrue(
+            !std::filesystem::exists(identity.staging_directory)
+                && !std::filesystem::exists(identity.backup_directory)
+                && !std::filesystem::exists(identity.lease_directory),
+            "replacement publication leaves no owned filesystem residue")
         && ExpectTrue(
             !std::filesystem::exists(packageDir / "stale.txt"),
             "stale package content is removed")

@@ -152,9 +152,15 @@ Prepare
 1. 自检失败时不得移动旧目标；
 2. 所有 TIFF、manifest 和 report 句柄关闭后才允许自检和 rename；
 3. staging 与 target 不在同一卷时直接拒绝，不降级为 copy；
-4. 发布后发现目标身份不符时不得报告成功；
-5. backup 清理失败时，新包可保持发布，但作业必须返回失败并使用
+4. staging 完整严格校验是正常发布的唯一内容扫描；同父目录 rename 后必须使用内存中的
+   manifest 投影、相对文件清单、文件大小和写入时间复核目标身份，不得再次扫描全部 TIFF；
+5. 发布后发现目标身份不符时不得报告成功；
+6. backup 清理失败时，新包可保持发布，但作业必须返回失败并使用
    `PM-SLICER-OUTPUT-0050`，不得伪造“无残留成功”。
+
+上述证据复用只允许用于 Writer 同一进程内、刚完成严格 staging 校验并成功执行同父目录
+rename 的正常路径。Worker 启动/退出、模块退出以及异常恢复没有这份内存证据，仍必须对
+target 或 backup 执行完整严格校验后才能恢复或删除 backup。
 
 ### 4.3 失败、取消与崩溃恢复
 
@@ -381,3 +387,4 @@ ACCEPTANCE=DEBUG_RELEASE_REAL_WORKER_AND_PUBLIC_SPI_PASS
 | 2026-08-06 | v1.2 | 完成 R2：`jobId`/派生 `attemptId` 贯穿 SliceFacade、场景生产服务与 Writer；Writer 使用精确 owned staging/backup、目标级租约、发布后严格复验和无残留证据，同目标并发在写包前 fail-closed；R3/R4 继续待实施 |
 | 2026-08-06 | v1.3 | 完成 R3：生产 Worker 注册 `slice.rgbwsv`；Worker 起止与模块进程退出后使用共享 owned 恢复；PackageQuery/RIP 拒绝临时目录，Writer 使用私有严格验证；Debug/Release 定向门禁通过，R4 继续待实施 |
 | 2026-08-06 | v1.4 | 完成 R4-A/R4-B：真实 Worker 的正常、协作取消、超时强杀及公开 DLL -> Worker -> Writer 取消链路通过 Debug/Release；既有有效包保持、owned 临时产物清零，C-SPI-09 闭合，14D-05 COMPLETE |
+| 2026-08-14 | v1.5 | 受控完成 R5 校验去重：正常 Writer 路径保留一次 staging 全量严格校验，发布后改用内存 manifest 与文件身份清单复核；同进程 backup 清理复用该证据，崩溃/异常恢复继续执行完整严格校验 |
