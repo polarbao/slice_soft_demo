@@ -47,6 +47,16 @@ cd runtime\slicesoft\Debug
 .\slicer_ui_host_sim.exe --module D:\path\to\slicer_module.dll
 ```
 
+编译 `slicer_ui_host_sim` 后，CMake 会把本手册和全部截图复制到可执行文件旁的：
+
+```text
+docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md
+docs/user_guides/assets/packaged_slicer/
+```
+
+执行 `PrepareSliceSoftRuntime.ps1` 后，同一目录结构会进入
+`runtime/slicesoft/<Config>/`，并记录在 `runtime_manifest.json` 的 `resources` 中。
+
 启动后先检查窗口顶部：
 
 - “模块已就绪”表示 SPI、Profile 目录和模块能力已正常解析。

@@ -43,6 +43,16 @@ VSCode：
 SliceSoft: Debug Qt UI
 ```
 
+编译 `slicer_debug_ui` 后，CMake 会把本手册和截图复制到可执行文件旁的：
+
+```text
+docs/user_guides/QT_DEBUG_UI_操作手册.md
+docs/user_guides/assets/legacy_slicer/
+```
+
+执行旧版分支的 `PrepareSliceSoftRuntime.ps1` 后，同一目录结构会进入
+`runtime/slicesoft/<Config>/`，并记录在 `runtime_manifest.json` 的 `resources` 中。
+
 ## 3. 推荐工作流
 
 ### 3.1 使用已有场景
