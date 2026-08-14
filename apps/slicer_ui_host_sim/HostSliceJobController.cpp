@@ -10,7 +10,7 @@
 
 namespace
 {
-constexpr int kPollIntervalMs{250};
+constexpr int kPollIntervalMs{100};
 
 bool ParseObject(
     const QByteArray& bytes,
@@ -128,7 +128,7 @@ HostSliceJobController::HostSliceJobController(
       m_client(client)
 {
     m_pollTimer.setInterval(kPollIntervalMs);
-    m_pollTimer.setTimerType(Qt::CoarseTimer);
+    m_pollTimer.setTimerType(Qt::PreciseTimer);
     connect(
         &m_pollTimer,
         &QTimer::timeout,
@@ -417,6 +417,38 @@ void HostSliceJobController::RecordObservedPhase(
     m_observedPhaseStartMs = elapsedMs;
 }
 
+QJsonObject HostSliceJobController::ObservedTimingSnapshot(
+    const qint64 elapsedMs) const
+{
+    QJsonObject snapshot = m_observedTiming;
+    const QString timingKey = TimingKeyForPhase(m_observedPhase);
+    if (!timingKey.isEmpty() && elapsedMs >= m_observedPhaseStartMs)
+    {
+        snapshot.insert(
+            timingKey,
+            static_cast<double>(elapsedMs - m_observedPhaseStartMs));
+    }
+    if (snapshot.contains(QStringLiteral("layerComputeMs")))
+    {
+        snapshot.insert(
+            QStringLiteral("sliceProcessingMs"),
+            snapshot.value(QStringLiteral("layerComputeMs")));
+    }
+    snapshot.insert(QStringLiteral("available"), true);
+    snapshot.insert(QStringLiteral("approximate"), true);
+    snapshot.insert(
+        QStringLiteral("source"),
+        QStringLiteral("progress_telemetry"));
+    snapshot.insert(QStringLiteral("activePhase"), m_observedPhase);
+    snapshot.insert(
+        QStringLiteral("pollResolutionMs"),
+        kPollIntervalMs);
+    snapshot.insert(
+        QStringLiteral("totalMs"),
+        static_cast<double>(elapsedMs));
+    return snapshot;
+}
+
 QJsonObject HostSliceJobController::FinalizeObservedTiming(
     const qint64 elapsedMs)
 {
@@ -427,21 +459,7 @@ QJsonObject HostSliceJobController::FinalizeObservedTiming(
             timingKey,
             static_cast<double>(elapsedMs - m_observedPhaseStartMs));
     }
-    if (m_observedTiming.contains(QStringLiteral("layerComputeMs")))
-    {
-        m_observedTiming.insert(
-            QStringLiteral("sliceProcessingMs"),
-            m_observedTiming.value(QStringLiteral("layerComputeMs")));
-    }
-    m_observedTiming.insert(QStringLiteral("available"), true);
-    m_observedTiming.insert(QStringLiteral("approximate"), true);
-    m_observedTiming.insert(
-        QStringLiteral("source"),
-        QStringLiteral("progress_telemetry"));
-    m_observedTiming.insert(
-        QStringLiteral("totalMs"),
-        static_cast<double>(elapsedMs));
-    return m_observedTiming;
+    return ObservedTimingSnapshot(elapsedMs);
 }
 
 void HostSliceJobController::OnPollTimer()
@@ -625,6 +643,8 @@ void HostSliceJobController::PublishProgress()
         m_progress.total,
         m_progress.percent,
         m_progress.elapsedms);
+    emit SigTimingProgress(
+        ObservedTimingSnapshot(m_progress.elapsedms));
 }
 
 void HostSliceJobController::ReleaseJob()

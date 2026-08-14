@@ -286,6 +286,11 @@ void HostMainWindow::BuildInterface()
         &HostMainWindow::OnSliceJobProgress);
     connect(
         m_sliceJobController.get(),
+        &HostSliceJobController::SigTimingProgress,
+        m_sliceJobPanel,
+        &HostSliceJobPanel::UpdateLiveTiming);
+    connect(
+        m_sliceJobController.get(),
         &HostSliceJobController::SigCompleted,
         this,
         &HostMainWindow::OnSliceJobCompleted);

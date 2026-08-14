@@ -115,6 +115,22 @@ bool VerifySuccessfulJob(
         return false;
     }
     HostSliceJobController controller(client);
+    int liveTimingSnapshots = 0;
+    bool liveTimingWasApproximate = false;
+    QObject::connect(
+        &controller,
+        &HostSliceJobController::SigTimingProgress,
+        &controller,
+        [&](const QJsonObject& timing)
+        {
+            ++liveTimingSnapshots;
+            liveTimingWasApproximate = liveTimingWasApproximate
+                || (timing.value(QStringLiteral("approximate")).toBool()
+                    && timing.value(
+                        QStringLiteral("pollResolutionMs")).toInt() == 100
+                    && timing.value(
+                        QStringLiteral("totalMs")).toDouble(-1.0) >= 0.0);
+        });
     QString error;
     if (!Check(
             controller.Start(sceneHandle, profile, &error),
@@ -151,6 +167,10 @@ bool VerifySuccessfulJob(
                 && completion.timing.value(
                     QStringLiteral("tiffWriteMs")).toDouble(-1.0) >= 0.0,
             QStringLiteral("Worker 核心耗时字段不完整。"),
+            errors)
+        && Check(
+            liveTimingSnapshots > 0 && liveTimingWasApproximate,
+            QStringLiteral("切片期间未发布 100 ms 轮询耗时估算。"),
             errors)
         && Check(!controller.IsActive(),
                  QStringLiteral("终结后仍保留公开作业句柄。"),

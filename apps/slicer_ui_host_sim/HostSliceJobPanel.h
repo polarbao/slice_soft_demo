@@ -54,6 +54,12 @@ public:
         qint64 elapsedMs);
 
     /**
+     * @brief 显示由 pm_poll 阶段边界推导的非权威实时耗时。
+     * @param timing 带 approximate=true 的宿主轮询估算。
+     */
+    void UpdateLiveTiming(const QJsonObject& timing);
+
+    /**
      * @brief 显示一个最终结果并将控件返回到空闲状态。
      * @param success 已发布生产包有效时为 true。
      * @param cancelled 发生协作式取消时为 true。

@@ -118,6 +118,9 @@ signals:
         int percent,
         qint64 elapsedMs);
 
+    /** @brief 发布由现有 pm_poll 阶段边界推导的实时耗时估算。 */
+    void SigTimingProgress(QJsonObject timing);
+
     /** @brief 释放作业句柄后发布最终结果。 */
     void SigCompleted(
         bool success,
@@ -142,6 +145,8 @@ private:
         QString* error);
     bool ApplyProgress(const QJsonObject& progress, QString* error);
     void RecordObservedPhase(const QString& phase, qint64 elapsedMs);
+    [[nodiscard]] QJsonObject ObservedTimingSnapshot(
+        qint64 elapsedMs) const;
     QJsonObject FinalizeObservedTiming(qint64 elapsedMs);
     void FinishTerminal(const QString& terminalState);
     void FinishTransportFailure(const QString& message);

@@ -134,6 +134,23 @@ void SetTimingValue(
     label->setText(FormatDuration(
         timing.value(key).toDouble(-1.0)));
 }
+
+void SetLiveTimingValue(
+    QLabel* label,
+    const QJsonObject& timing,
+    const QString& key)
+{
+    if (!timing.contains(key))
+    {
+        return;
+    }
+    const double value = timing.value(key).toDouble(-1.0);
+    if (value >= 0.0)
+    {
+        label->setText(
+            QStringLiteral("%1（估算）").arg(FormatDuration(value)));
+    }
+}
 }
 
 HostSliceJobPanel::HostSliceJobPanel(QWidget* parent)
@@ -298,18 +315,22 @@ void HostSliceJobPanel::SetActive()
     m_detailView->clear();
     m_lastWorkerElapsedMs = 0;
     ResetTiming();
+    m_engineValue->setText(QStringLiteral("等待 Worker 阶段进度"));
     for (QLabel* value : {
-             m_engineValue,
              m_configLoadValue,
              m_modelLoadValue,
              m_gridSetupValue,
              m_sliceProcessingValue,
              m_layerComputeValue,
              m_layerComposeValue,
+             m_outputWriteValue})
+    {
+        value->setText(QStringLiteral("等待阶段进度"));
+    }
+    for (QLabel* value : {
              m_tiffWriteValue,
              m_previewWriteValue,
              m_reportValue,
-             m_outputWriteValue,
              m_supportStatisticsScanValue})
     {
         value->setText(QStringLiteral("终结结果返回后提供"));
@@ -344,6 +365,37 @@ void HostSliceJobPanel::UpdateProgress(
     m_workerTotalValue->setText(
         FormatDuration(static_cast<double>(elapsedMs)));
     m_lastWorkerElapsedMs = elapsedMs;
+}
+
+void HostSliceJobPanel::UpdateLiveTiming(const QJsonObject& timing)
+{
+    if (!m_active || !timing.value(QStringLiteral("approximate")).toBool())
+    {
+        return;
+    }
+    const int resolutionMs = timing.value(
+        QStringLiteral("pollResolutionMs")).toInt(100);
+    m_engineValue->setText(
+        QStringLiteral("Worker 阶段轮询估算（约 ±%1 ms）")
+            .arg(resolutionMs));
+    SetLiveTimingValue(
+        m_configLoadValue, timing, QStringLiteral("configLoadMs"));
+    SetLiveTimingValue(
+        m_modelLoadValue, timing, QStringLiteral("modelLoadMs"));
+    SetLiveTimingValue(
+        m_gridSetupValue, timing, QStringLiteral("gridSetupMs"));
+    SetLiveTimingValue(
+        m_sliceProcessingValue,
+        timing,
+        QStringLiteral("sliceProcessingMs"));
+    SetLiveTimingValue(
+        m_layerComputeValue, timing, QStringLiteral("layerComputeMs"));
+    SetLiveTimingValue(
+        m_layerComposeValue, timing, QStringLiteral("layerComposeMs"));
+    SetLiveTimingValue(
+        m_outputWriteValue, timing, QStringLiteral("outputWriteMs"));
+    SetLiveTimingValue(
+        m_workerTotalValue, timing, QStringLiteral("totalMs"));
 }
 
 void HostSliceJobPanel::ShowCompletion(
