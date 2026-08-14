@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：把已验证生产 TIFF 映射为仅显示预览；
+// 边界：预览选择不得改写生产通道语义，也不得替代生产包验证。
 namespace slicer_core::api::implementation::detail
 {
 namespace
@@ -156,8 +158,8 @@ ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
         ProductionPackageIndex package;
         {
             std::scoped_lock lock{m_layerMutex};
-            package = m_layerSource.IndexPackage(
-                absolutePackage / "manifest.json");
+            package = EnsureVerifiedPackageLocked(
+                absolutePackage, false).package;
             const std::optional<ProductionLayerRef> found =
                 m_layerSource.FindLayer(request.layer_index);
             if (!found.has_value())

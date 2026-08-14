@@ -6,6 +6,8 @@
 #include <string_view>
 #include <utility>
 
+// 文件职责：按 manifest 声明读取具名结构化报告；
+// 边界：报告路径必须落在已验证生产包内，未知名称和越界路径均失败即拒绝。
 namespace slicer_core::api::implementation::detail
 {
 
@@ -23,7 +25,10 @@ ApiResult<PackageReport> PackageQueryFacadeService::ReadReport(
         }
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(packageDir);
-        (void)validate_slice_package(absolutePackage);
+        {
+            std::scoped_lock lock{m_layerMutex};
+            (void)EnsureVerifiedPackageLocked(absolutePackage, false);
+        }
         const Json manifest = ParseObjectFile(
             absolutePackage / "manifest.json");
         if (!manifest.contains("reports")
@@ -87,6 +92,11 @@ ApiResult<PackageReport> PackageQueryFacadeService::ReadReport(
     {
         return ApiResult<PackageReport>::Failure(
             MapValidationError(error));
+    }
+    catch (const TiffLayerError& error)
+    {
+        return ApiResult<PackageReport>::Failure(
+            MapTiffLayerError(error));
     }
     catch (const std::filesystem::filesystem_error& error)
     {

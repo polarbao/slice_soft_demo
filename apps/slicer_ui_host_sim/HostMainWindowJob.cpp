@@ -5,6 +5,12 @@
 
 void HostMainWindow::RefreshSliceJobReadiness()
 {
+    if (m_resultLoadActive)
+    {
+        m_sliceJobPanel->SetReady(
+            false, QStringLiteral("正在校验并加载本次切片结果。"));
+        return;
+    }
     if (m_sliceJobController->IsActive())
     {
         m_sliceJobPanel->SetReady(false, QStringLiteral("切片作业正在运行。"));
@@ -112,22 +118,24 @@ void HostMainWindow::OnSliceJobCompleted(
         timing,
         elapsedMs,
         cancelLatencyMs);
-    SetWorkflowEditingEnabled(m_client.IsOpen());
     if (success)
     {
+        m_resultLoadActive = true;
+        SetWorkflowEditingEnabled(false);
         const hostslicesettings settings = m_sliceSettingsPanel->Settings();
         m_packageReviewPanel->SetStage16Context(
             HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
                 settings.geometrysamplingstrategy),
             timing);
         m_statusLabel->setText(
-            QStringLiteral("切片完成 · %1 ms · %2")
+            QStringLiteral("切片完成 · %1 ms · 正在后台校验并加载结果 · %2")
                 .arg(elapsedMs)
                 .arg(packageDirectory));
         LoadSliceResult(packageDirectory);
     }
     else if (cancelled)
     {
+        SetWorkflowEditingEnabled(m_client.IsOpen());
         m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
         m_statusLabel->setText(
             QStringLiteral("切片已取消 · 清理耗时 %1 ms")
@@ -135,6 +143,7 @@ void HostMainWindow::OnSliceJobCompleted(
     }
     else
     {
+        SetWorkflowEditingEnabled(m_client.IsOpen());
         m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
         m_statusLabel->setText(
             QStringLiteral("切片失败 · %1 · %2").arg(code, message));

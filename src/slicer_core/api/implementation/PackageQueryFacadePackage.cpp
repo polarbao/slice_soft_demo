@@ -1,14 +1,20 @@
 #include "slicer_core/api/implementation/PackageQueryFacadeInternal.h"
 
 #include "slicer_core/TiffReadApi.h"
+#include "slicer_core/system/Sha256.h"
 
+#include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
+// 文件职责：验证 manifest、层描述符和 TIFF 统计，并生成只读生产包摘要；
+// 边界：任何 schema、通道或极性不一致均失败即拒绝，不尝试兼容性修补。
 namespace slicer_core::api::implementation::detail
 {
 namespace
@@ -109,7 +115,77 @@ StructuredJsonObject ReadProfileEcho(const Json& manifest)
     return StructuredJsonObject{profileEcho.dump(0)};
 }
 
+std::string ReadFileBytes(const std::filesystem::path& path)
+{
+    std::ifstream input{path, std::ios::binary};
+    if (!input)
+    {
+        return {};
+    }
+    return std::string{
+        std::istreambuf_iterator<char>{input},
+        std::istreambuf_iterator<char>{}};
+}
+
+std::string FileMetadataIdentity(const std::filesystem::path& path)
+{
+    std::error_code error;
+    const std::uintmax_t bytes = std::filesystem::file_size(path, error);
+    if (error)
+    {
+        return {};
+    }
+    const auto modified = std::filesystem::last_write_time(path, error);
+    if (error)
+    {
+        return {};
+    }
+    return ComputeSha256(
+        path.generic_string() + "|" + std::to_string(bytes) + "|"
+        + std::to_string(modified.time_since_epoch().count()));
+}
+
 }  // namespace
+
+bool PackageQueryFacadeService::IsSnapshotCurrent(
+    const VerifiedPackageSnapshot& snapshot)
+{
+    const std::string manifestBytes = ReadFileBytes(
+        snapshot.package.manifestPath);
+    if (manifestBytes.empty()
+        || ComputeSha256(manifestBytes) != snapshot.package.manifestHash)
+    {
+        return false;
+    }
+    return std::all_of(
+        snapshot.package.layers.begin(),
+        snapshot.package.layers.end(),
+        [](const ProductionLayerRef& layer)
+        {
+            return FileMetadataIdentity(layer.path) == layer.checksum;
+        });
+}
+
+PackageQueryFacadeService::VerifiedPackageSnapshot
+PackageQueryFacadeService::EnsureVerifiedPackageLocked(
+    const std::filesystem::path& packageDir,
+    const bool forceValidation) const
+{
+    if (!forceValidation && m_verifiedPackage.has_value()
+        && m_verifiedPackage->packageDirectory == packageDir
+        && IsSnapshotCurrent(*m_verifiedPackage))
+    {
+        return *m_verifiedPackage;
+    }
+
+    VerifiedPackageSnapshot snapshot;
+    snapshot.packageDirectory = packageDir;
+    snapshot.validation = validate_slice_package(packageDir);
+    snapshot.package = m_layerSource.IndexPackage(
+        packageDir / "manifest.json");
+    m_verifiedPackage = snapshot;
+    return snapshot;
+}
 
 ApiResult<PackageSummary> PackageQueryFacadeService::GetSummary(
     const std::filesystem::path& packageDir) const noexcept
@@ -118,28 +194,26 @@ ApiResult<PackageSummary> PackageQueryFacadeService::GetSummary(
     {
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(packageDir);
-        const RipValidationResult validation =
-            validate_slice_package(absolutePackage);
-        ProductionPackageIndex package;
+        VerifiedPackageSnapshot snapshot;
         {
             std::scoped_lock lock{m_layerMutex};
-            package = m_layerSource.IndexPackage(
-                absolutePackage / "manifest.json");
+            snapshot = EnsureVerifiedPackageLocked(
+                absolutePackage, false);
         }
         const Json manifest = ParseObjectFile(
             absolutePackage / "manifest.json");
 
         PackageSummary summary;
         summary.package_dir = absolutePackage;
-        summary.package_identity = package.packageIdentity;
-        summary.schema = validation.schema;
-        summary.layer_count = validation.layer_count;
-        summary.grid.width_px = validation.width_px;
-        summary.grid.height_px = validation.height_px;
-        summary.grid.dpi_x = validation.dpi_x;
-        summary.grid.dpi_y = validation.dpi_y;
-        summary.channels = validation.channel_order;
-        summary.bit_depth = validation.bit_depth;
+        summary.package_identity = snapshot.package.packageIdentity;
+        summary.schema = snapshot.validation.schema;
+        summary.layer_count = snapshot.validation.layer_count;
+        summary.grid.width_px = snapshot.validation.width_px;
+        summary.grid.height_px = snapshot.validation.height_px;
+        summary.grid.dpi_x = snapshot.validation.dpi_x;
+        summary.grid.dpi_y = snapshot.validation.dpi_y;
+        summary.channels = snapshot.validation.channel_order;
+        summary.bit_depth = snapshot.validation.bit_depth;
         summary.polarity = "black_is_print";
         summary.per_instance = ReadPerInstance(manifest);
         summary.profile_echo = ReadProfileEcho(manifest);
@@ -189,14 +263,13 @@ ApiResult<LayerDescriptor> PackageQueryFacadeService::GetLayerDescriptor(
     {
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(packageDir);
-        (void)validate_slice_package(absolutePackage);
 
-        TiffLayerLoadResult loaded;
         ProductionLayerRef layer;
+        RipLayerChecksum validatedLayer;
         {
             std::scoped_lock lock{m_layerMutex};
-            (void)m_layerSource.IndexPackage(
-                absolutePackage / "manifest.json");
+            const VerifiedPackageSnapshot snapshot =
+                EnsureVerifiedPackageLocked(absolutePackage, false);
             const std::optional<ProductionLayerRef> found =
                 m_layerSource.FindLayer(layerIndex);
             if (!found.has_value())
@@ -207,7 +280,21 @@ ApiResult<LayerDescriptor> PackageQueryFacadeService::GetLayerDescriptor(
                     std::to_string(layerIndex)));
             }
             layer = *found;
-            loaded = m_layerSource.LoadLayer(layer);
+            const auto validated = std::find_if(
+                snapshot.validation.layer_checksums.begin(),
+                snapshot.validation.layer_checksums.end(),
+                [layerIndex](const RipLayerChecksum& candidate)
+                {
+                    return candidate.index == layerIndex;
+                });
+            if (validated == snapshot.validation.layer_checksums.end())
+            {
+                return ApiResult<LayerDescriptor>::Failure(MakeError(
+                    kContractError,
+                    "verified package is missing layer statistics",
+                    std::to_string(layerIndex)));
+            }
+            validatedLayer = *validated;
         }
 
         LayerDescriptor descriptor;
@@ -222,9 +309,9 @@ ApiResult<LayerDescriptor> PackageQueryFacadeService::GetLayerDescriptor(
              ++channel)
         {
             descriptor.print_pixels.at(channel) =
-                loaded.buffer->channelStats.at(channel).print_pixels;
+                validatedLayer.channel_stats.at(channel).print_pixels;
             descriptor.empty_pixels.at(channel) =
-                loaded.buffer->channelStats.at(channel).empty_pixels;
+                validatedLayer.channel_stats.at(channel).empty_pixels;
         }
         return ApiResult<LayerDescriptor>::Success(std::move(descriptor));
     }
@@ -273,8 +360,12 @@ ApiResult<VerifyResult> PackageQueryFacadeService::Verify(
         }
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(packageDir);
-        const RipValidationResult validation =
-            validate_slice_package(absolutePackage);
+        VerifiedPackageSnapshot snapshot;
+        {
+            std::scoped_lock lock{m_layerMutex};
+            snapshot = EnsureVerifiedPackageLocked(
+                absolutePackage, true);
+        }
         if (cancelToken.IsCancelRequested())
         {
             return ApiResult<VerifyResult>::Failure(MakeError(
@@ -284,10 +375,11 @@ ApiResult<VerifyResult> PackageQueryFacadeService::Verify(
 
         VerifyResult result;
         result.valid = true;
-        result.layer_count = validation.layer_count;
+        result.layer_count = snapshot.validation.layer_count;
         result.per_layer_checksum.reserve(
-            validation.layer_checksums.size());
-        for (const RipLayerChecksum& checksum : validation.layer_checksums)
+            snapshot.validation.layer_checksums.size());
+        for (const RipLayerChecksum& checksum :
+             snapshot.validation.layer_checksums)
         {
             result.per_layer_checksum.push_back(checksum.channels);
         }
@@ -307,6 +399,11 @@ ApiResult<VerifyResult> PackageQueryFacadeService::Verify(
             validation_error_code_string(error.code()),
             error.what()});
         return ApiResult<VerifyResult>::Success(std::move(result));
+    }
+    catch (const TiffLayerError& error)
+    {
+        return ApiResult<VerifyResult>::Failure(
+            MapTiffLayerError(error));
     }
     catch (const std::filesystem::filesystem_error& error)
     {

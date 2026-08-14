@@ -56,6 +56,7 @@ private:
 struct RipLayerChecksum {
     int index{0};
     std::array<std::uint64_t, 6> channels{};
+    std::array<TiffChannelStats, 6> channel_stats{};
 };
 
 /**

@@ -9,6 +9,7 @@
 #include <exception>
 #include <filesystem>
 #include <mutex>
+#include <optional>
 #include <string>
 
 namespace slicer_core::api::implementation::detail
@@ -80,8 +81,22 @@ public:
         std::string_view name) const noexcept override;
 
 private:
+    struct VerifiedPackageSnapshot
+    {
+        std::filesystem::path packageDirectory;
+        RipValidationResult validation;
+        ProductionPackageIndex package;
+    };
+
+    [[nodiscard]] VerifiedPackageSnapshot EnsureVerifiedPackageLocked(
+        const std::filesystem::path& packageDir,
+        bool forceValidation) const;
+    [[nodiscard]] static bool IsSnapshotCurrent(
+        const VerifiedPackageSnapshot& snapshot);
+
     mutable std::mutex m_layerMutex;
     mutable TiffLayerSource m_layerSource;
+    mutable std::optional<VerifiedPackageSnapshot> m_verifiedPackage;
 };
 
 }  // namespace slicer_core::api::implementation::detail

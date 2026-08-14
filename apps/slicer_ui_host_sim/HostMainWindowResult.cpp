@@ -9,17 +9,45 @@
 void HostMainWindow::LoadSliceResult(const QString& packageDirectory)
 {
     QString error;
-    if (!m_packageReviewController->Load(packageDirectory, &error))
+    const bool accepted = m_packageReviewController->LoadAsync(
+        packageDirectory,
+        [this, packageDirectory](
+            const bool loaded,
+            const QString& loadError)
+        {
+            m_resultLoadActive = false;
+            SetWorkflowEditingEnabled(m_client.IsOpen());
+            if (!loaded)
+            {
+                m_packageReviewPanel->ShowError(loadError);
+                m_statusLabel->setText(
+                    QStringLiteral("切片已完成，但结果查看失败：%1")
+                        .arg(loadError));
+                RefreshSliceJobReadiness();
+                return;
+            }
+            m_packageReviewPanel->SetPackage(
+                m_packageReviewController->Review());
+            OnResultLayerRequested(
+                0, m_packageReviewPanel->SelectedChannels());
+            OnResultReportRequested(QStringLiteral("slice"));
+            m_workspaceTabs->setCurrentWidget(m_packageReviewPanel);
+            m_statusLabel->setText(
+                QStringLiteral("切片完成 · 结果已校验并加载 · %1")
+                    .arg(packageDirectory));
+            RefreshSliceJobReadiness();
+        },
+        &error);
+    if (!accepted)
     {
+        m_resultLoadActive = false;
+        SetWorkflowEditingEnabled(m_client.IsOpen());
         m_packageReviewPanel->ShowError(error);
         m_statusLabel->setText(
             QStringLiteral("切片已完成，但结果查看失败：%1").arg(error));
+        RefreshSliceJobReadiness();
         return;
     }
-    m_packageReviewPanel->SetPackage(m_packageReviewController->Review());
-    OnResultLayerRequested(0, m_packageReviewPanel->SelectedChannels());
-    OnResultReportRequested(QStringLiteral("slice"));
-    m_workspaceTabs->setCurrentWidget(m_packageReviewPanel);
 }
 
 void HostMainWindow::OnResultLayerRequested(

@@ -3,22 +3,26 @@
 #include "ModuleClient.h"
 
 #include <QJsonObject>
+#include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QVector>
 
 #include <array>
+#include <atomic>
+#include <functional>
 #include <memory>
+#include <thread>
 
 class QTemporaryDir;
 
-/** @brief Six-channel print-pixel counts in frozen RGBWSV order. */
+/** @brief 以冻结 RGBWSV 顺序的六通道打印像素计数。 */
 struct hostchannelcounts
 {
     std::array<quint64, 6> values{};
 };
 
-/** @brief Host-owned view of one production layer descriptor. */
+/** @brief 宿主持有的单个生产层描述符视图。 */
 struct hostlayerdescriptor
 {
     int layerindex{0};
@@ -31,7 +35,7 @@ struct hostlayerdescriptor
     QString tiffpath;
 };
 
-/** @brief Verified package summary consumed by the reference host UI. */
+/** @brief 参考宿主 UI 使用的已验证包摘要。 */
 struct hostpackagereview
 {
     QString packagedirectory;
@@ -53,7 +57,7 @@ struct hostpackagereview
     QVector<hostlayerdescriptor> layers;
 };
 
-/** @brief Named report returned through package.read_report. */
+/** @brief 通过 package.read_report 返回的命名报告。 */
 struct hostpackagereport
 {
     QString name;
@@ -63,35 +67,52 @@ struct hostpackagereport
 };
 
 /**
- * @brief Reads production package results exclusively through public SPI calls.
+ * @brief 仅通过公共 SPI 调用读取生产包结果。
  */
-class HostPackageReviewController final
+class HostPackageReviewController final : public QObject
 {
 public:
+    using LoadCallback = std::function<void(bool, const QString&)>;
+
     /**
-     * @brief Creates a package review controller for one loaded module.
-     * @param client Public module ABI client.
+     * @brief 为已加载模块创建包审查控制器。
+     * @param client 公共模块 ABI 客户端。
      */
     explicit HostPackageReviewController(ModuleClient& client);
 
-    /** @brief Releases the host-owned preview cache directory. */
+    /** @brief 释放由宿主持有的预览缓存目录。 */
     ~HostPackageReviewController();
 
     /**
-     * @brief Verifies and loads summary plus all layer descriptors.
-     * @param packageDirectory Published RGBWSV package directory.
-     * @param error Receives a fail-closed validation reason.
-     * @return True when the package and frozen protocol fields are valid.
+     * @brief 验证并加载摘要以及所有层描述符。
+     * @param packageDirectory 已发布的 RGBWSV Package 目录。
+     * @param error 接收失败即拒绝的验证原因。
+     * @return 当包和冻结协议字段有效时为 true。
      */
     bool Load(const QString& packageDirectory, QString* error);
 
     /**
-     * @brief Renders one layer from production TIFF through the module ABI.
-     * @param layerIndex Zero-based production layer index.
-     * @param channels One or more channels in frozen RGBWSV spelling.
-     * @param outputPath Receives the host-cache preview image path.
-     * @param error Receives a rendering or contract error.
-     * @return True when a readable preview image was published.
+     * @brief 验证并加载包而不阻塞 Qt UI 线程。
+     * @param packageDirectory 已发布的 RGBWSV Package 目录。
+     * @param callback 加载结束后在此控制器的 Qt 线程上运行。
+     * @param error 接收本地提交错误。
+     * @return 已接受后台加载任务时返回 true。
+     */
+    bool LoadAsync(
+        const QString& packageDirectory,
+        LoadCallback callback,
+        QString* error);
+
+    /** @brief 报告后台包加载是否处于活动状态。 */
+    [[nodiscard]] bool IsLoading() const;
+
+    /**
+     * @brief 通过模块 ABI 从生产 TIFF 渲染一层。
+     * @param layerIndex 从零开始的生产层索引。
+     * @param channels 冻结 RGBWSV 拼写的一个或多个通道。
+     * @param outputPath 接收宿主缓存预览图像路径。
+     * @param error 接收渲染或合同错误。
+     * @return 当发布可读预览图像时为 true。
      */
     bool RenderPreview(
         int layerIndex,
@@ -100,11 +121,11 @@ public:
         QString* error);
 
     /**
-     * @brief Reads one manifest-registered report through public SPI.
-     * @param reportName Stable report map key such as slice.
-     * @param report Receives the structured report.
-     * @param error Receives a missing-report or contract error.
-     * @return True when the named report is available.
+     * @brief 通过公共 SPI 读取一份在 manifest 中登记的报告。
+     * @param reportName 稳定的报告映射键，例如 slice。
+     * @param report 接收结构化报告。
+     * @param error 接收缺失报告或合同错误。
+     * @return 当指定的报告可用时为 true。
      */
     bool ReadReport(
         const QString& reportName,
@@ -112,8 +133,8 @@ public:
         QString* error);
 
     /**
-     * @brief Returns the most recently loaded package review.
-     * @return Immutable host-owned package data.
+     * @brief 返回最近加载的 Package 审查结果。
+     * @return 宿主持有的不可变 Package 数据。
      */
     [[nodiscard]] const hostpackagereview& Review() const;
 
@@ -129,4 +150,6 @@ private:
     ModuleClient& m_client;
     std::unique_ptr<QTemporaryDir> m_previewCache;
     hostpackagereview m_review;
+    std::thread m_loadThread;
+    std::atomic_bool m_loading{false};
 };

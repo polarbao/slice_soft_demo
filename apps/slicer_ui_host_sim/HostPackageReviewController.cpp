@@ -5,7 +5,11 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QMetaObject>
 #include <QTemporaryDir>
+
+#include <exception>
+#include <utility>
 
 namespace
 {
@@ -67,14 +71,21 @@ bool IsFrozenChannelName(const QString& channel)
 }
 
 HostPackageReviewController::HostPackageReviewController(ModuleClient& client)
-    : m_client(client),
+    : QObject(nullptr),
+      m_client(client),
       m_previewCache(std::make_unique<QTemporaryDir>(
           QDir(QDir::tempPath()).filePath(
               QStringLiteral("slicesoft-host-preview-XXXXXX"))))
 {
 }
 
-HostPackageReviewController::~HostPackageReviewController() = default;
+HostPackageReviewController::~HostPackageReviewController()
+{
+    if (m_loadThread.joinable())
+    {
+        m_loadThread.join();
+    }
+}
 
 bool HostPackageReviewController::Load(
     const QString& packageDirectory,
@@ -97,6 +108,65 @@ bool HostPackageReviewController::Load(
     return LoadVerification(error)
         && LoadSummary(error)
         && LoadLayers(error);
+}
+
+bool HostPackageReviewController::LoadAsync(
+    const QString& packageDirectory,
+    LoadCallback callback,
+    QString* error)
+{
+    if (!callback || m_loading.exchange(true))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("结果包正在加载，不能重复提交。");
+        }
+        return false;
+    }
+    if (m_loadThread.joinable())
+    {
+        m_loadThread.join();
+    }
+    try
+    {
+        m_loadThread = std::thread(
+            [this, packageDirectory, callback = std::move(callback)]() mutable
+            {
+                QString loadError;
+                const bool loaded = Load(packageDirectory, &loadError);
+                QMetaObject::invokeMethod(
+                    this,
+                    [this,
+                     loaded,
+                     loadError = std::move(loadError),
+                     callback = std::move(callback)]() mutable
+                    {
+                        if (m_loadThread.joinable())
+                        {
+                            m_loadThread.join();
+                        }
+                        m_loading.store(false);
+                        callback(loaded, loadError);
+                    },
+                    Qt::QueuedConnection);
+            });
+    }
+    catch (const std::exception& exception)
+    {
+        m_loading.store(false);
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("无法启动结果包后台加载：%1")
+                         .arg(QString::fromUtf8(exception.what()));
+        }
+        return false;
+    }
+    return true;
+}
+
+bool HostPackageReviewController::IsLoading() const
+{
+    return m_loading.load();
 }
 
 bool HostPackageReviewController::RenderPreview(

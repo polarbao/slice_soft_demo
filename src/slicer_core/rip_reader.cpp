@@ -768,7 +768,8 @@ RipValidationResult ValidateSlicePackageImpl(
                 layer_path);
         }
         merge_channel_stats(result.total_channel_stats, tiff_result.channel_stats);
-        result.layer_checksums.push_back({index, tiff_result.channel_checksums});
+        result.layer_checksums.push_back(
+            {index, tiff_result.channel_checksums, tiff_result.channel_stats});
     }
 
     std::sort(result.layer_checksums.begin(), result.layer_checksums.end(), [](const auto& lhs, const auto& rhs) {

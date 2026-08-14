@@ -197,6 +197,35 @@ int main(int argc, char* argv[])
         }
     }
 
+    HostPackageReviewController asyncController(client);
+    QEventLoop asyncLoop;
+    bool asyncCallbackCalled = false;
+    bool asyncLoaded = false;
+    QString asyncError;
+    const bool asyncAccepted = asyncController.LoadAsync(
+        packageDirectory,
+        [&](const bool loadedResult, const QString& loadError)
+        {
+            asyncCallbackCalled = true;
+            asyncLoaded = loadedResult;
+            asyncError = loadError;
+            asyncLoop.quit();
+        },
+        &error);
+    const bool callbackWasQueued = !asyncCallbackCalled;
+    QTimer::singleShot(60000, &asyncLoop, &QEventLoop::quit);
+    asyncLoop.exec();
+    if (!Check(
+            asyncAccepted && callbackWasQueued && asyncCallbackCalled
+                && asyncLoaded && !asyncController.IsLoading()
+                && asyncController.Review().layercount == review.layercount,
+            QStringLiteral("结果包后台加载未异步闭合：%1 %2")
+                .arg(error, asyncError),
+            errors))
+    {
+        return 6;
+    }
+
     QString previewPath;
     const bool previewRendered = controller.RenderPreview(
             0,

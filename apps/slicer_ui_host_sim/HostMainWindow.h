@@ -36,21 +36,21 @@ class ViewPresentationSettings;
 class ViewWorkspaceWidget;
 
 /**
- * @brief Minimal Qt reference shell that consumes only the public module ABI.
+ * @brief 仅使用公共模块 ABI 的最小 Qt 参考宿主外壳。
  */
 class HostMainWindow final : public QMainWindow
 {
 public:
     /**
-     * @brief Creates the reference host and attempts to load the module.
-     * @param modulePath Runtime path to slicer_module.dll.
-     * @param parent Optional Qt parent widget.
+     * @brief 创建参考宿主并尝试加载模块。
+     * @param modulePath slicer_module.dll 的运行时路径。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostMainWindow(
         const QString& modulePath,
         QWidget* parent = nullptr);
 
-    /** @brief Releases host UI and session settings resources. */
+    /** @brief 释放宿主 UI 与会话设置资源。 */
     ~HostMainWindow() override;
 
 private:
@@ -168,4 +168,5 @@ private:
     QPointF m_dragStartWorld;
     quint64 m_dragCallCount{0U};
     bool m_textureWhiteWarning{false};
+    bool m_resultLoadActive{false};
 };
