@@ -63,6 +63,7 @@
 | `DOC_PREP_13_全阶段原子任务实施准备与文件所有权.md` | Stage 13 的 17 个近程原子任务依赖、建议文件所有权、测试和验收准备 |
 | `DOC_CHECKLIST_13_未决产品输入与阶段Gate.md` | Stage 13 设备/Profile/性能/3D 后端未决输入及阻断范围 |
 | `DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | 14A-04 冻结后受控补齐 top/three_d 纹理、Provider、UI Gate 与信息架构 |
+| `DOC_DECISION_14A_04_R3_不完整OBJ灰色降级与单材料准入.md` | 缺失 MTL/贴图 OBJ 的半透明灰色显示、显式元数据与白墨/光油单材料准入 |
 | `DOC_DECISION_14F_R1_HOSTFLOW场景生命周期合同受控修订.md` | HQ-01 授权的 DTO v1.5 场景生命周期受控修订；冻结 add/remove、隐式建场景与 session 生命周期 |
 | `DOC_DECISION_14F_R2_HOSTFLOW隐式场景初始化上下文受控修订.md` | H-A-02 的 Profile/buildVolume 输入缺口与已实施 `sceneContext` v1.6 受控修订 |
 | `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md` | H-A-04 的 DTO v1.7 `applyGridLayout` 规则排版受控修订 |

@@ -125,6 +125,21 @@ struct ModelReport {
     std::vector<TriangleTextureInfo> triangle_textures;
 };
 
+/** @brief 描述模型外观资源是否足以支持彩色纹理工艺。 */
+struct ModelAppearanceAssessment
+{
+    std::string status{"complete"};
+    bool single_material_only{false};
+    std::string detail;
+};
+
+/**
+ * @brief 检查模型实际使用的材质定义与纹理文件是否闭合。
+ * @param report 已加载且保留 OBJ/MTL 绑定的模型报告。
+ * @return 外观状态、单材料限制和可诊断原因。
+ */
+ModelAppearanceAssessment AssessModelAppearance(const ModelReport& report);
+
 /**
  * @brief Load a model using the narrow base-layer configuration.
  * @param config Model load configuration.

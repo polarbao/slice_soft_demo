@@ -42,6 +42,9 @@ struct ModelMetadata
     std::string source_digest;
     std::string mesh_identity;
     std::string appearance_identity;
+    std::string appearance_status{"complete"};
+    bool single_material_only{false};
+    std::string appearance_detail;
 };
 
 }  // namespace slicer_core::api

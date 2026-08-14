@@ -107,6 +107,9 @@ slicer_core::Json ModelCapabilityAdapter::MakeMetadata(
         {"hasUV", metadata.has_uv},
         {"hasNormals", metadata.has_normals},
         {"materials", slicer_core::Json{std::move(materials)}},
+        {"appearanceStatus", metadata.appearance_status},
+        {"singleMaterialOnly", metadata.single_material_only},
+        {"appearanceDetail", metadata.appearance_detail},
         {"bboxMm", MakeBounds(metadata.local_bounds_mm)},
         {"units", "mm"},
         {"sourceDigest", metadata.source_digest}});

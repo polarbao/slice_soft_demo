@@ -1,6 +1,6 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.10
+> 合同版本：1.11
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
@@ -10,7 +10,8 @@
 > `DOC_DECISION_14F_R3_HOSTFLOW规则排版合同受控修订.md`、
 > `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`、
 > `DOC_DECISION_RENDER_R_B_03_ViewData降级理由受控修订.md`、
-> `DOC_DECISION_RENDER_R_B_04_ViewData半精度传输合同修订.md`
+> `DOC_DECISION_RENDER_R_B_04_ViewData半精度传输合同修订.md`、
+> `DOC_DECISION_14A_04_R3_不完整OBJ灰色降级与单材料准入.md`
 
 ## 1. 范围
 
@@ -78,6 +79,18 @@ package.read_report
 
 失败时不得返回部分成功语义；未知字段可按 SPI minor 向前兼容，删改既有字段语义必须提升
 SPI major。
+
+### 3.0 模型外观完整性与降级准入
+
+`model.import` 与 `model.get_metadata` 必须返回 `appearanceStatus`、
+`singleMaterialOnly` 和 `appearanceDetail`。当 OBJ 实际使用 `usemtl`，但完全没有
+`mtllib`/MTL 定义，或已解析 MTL 引用的漫反射贴图文件不存在时，模块允许只读视图以
+半透明中性灰降级显示，并返回 `singleMaterialOnly=true`。宿主必须据此禁用所有 RGB
+工艺，只允许单材料白墨或单材料光油。
+
+该例外不覆盖已声明 MTL 中无法解析的材质名、存在但解码失败的贴图、无效 UV 或其他
+外观合同错误；这些情况继续 fail-closed。降级状态只影响模型显示和宿主工艺准入，
+不得改变生产 RGBWSV/TIFF 协议。
 
 ### 3.1 场景生命周期与实例操作
 
@@ -272,7 +285,7 @@ emptyValue   255
 本合同冻结对外 DTO；v1.6 的 `addInstance` / `removeInstance` 和隐式建场景已由 H-A-02 实现，
 v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可复用 `meshes[]`，
 v1.9 由 R-B-03 冻结安全简化与历史抽稀的降级理由，v1.10 由 R-B-04 增加向后兼容的
-半精度网格属性请求与响应格式；
+半精度网格属性请求与响应格式，v1.11 增加不完整 OBJ 的显式外观状态与单材料准入字段；
 H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主不透明透传到生产切片。独立 `scene.layout`
 能力仍被禁止。
 交互幂等、revision 回滚和三车道细则见

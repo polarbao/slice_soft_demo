@@ -182,13 +182,14 @@ private:
         slicer_core::Json::Array materials;
         for (const auto& material : appearance.materials)
         {
+            const bool blended = material.base_color.at(3U) < 1.0F;
             materials.emplace_back(slicer_core::Json::object({
                 {"materialId", material.material_id},
                 {"baseColorFactor", MakeNumberArray(material.base_color)},
                 {"baseColorTextureId", material.texture_id.empty()
                     ? slicer_core::Json{nullptr}
                     : slicer_core::Json{material.texture_id}},
-                {"alphaMode", "opaque"},
+                {"alphaMode", blended ? "blend" : "opaque"},
                 {"alphaCutoff", 0.5},
                 {"doubleSided", material.double_sided},
                 {"uvSet", material.uv_set},

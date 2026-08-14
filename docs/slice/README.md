@@ -102,6 +102,7 @@ S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；�
 | `DOC/DOC_DECISION_RENDER_模型显示后端选型与渲染接口冻结.md` | **独立选型专项（不属 Stage 14）**：工作负载量化、含第三方的方案全集、`IRenderBackend` 接口冻结与 R-C1..C8 条款、RD-01..04 待定项 |
 | `DOC/DOC_SCHEMA_14_SceneViewData网格DTO规格.md` | **`scene.get_viewdata` Schema v1.5**：双视图纹理、复用 mesh、LOD/blob/identity、float16 wire 与 fail-closed |
 | `DOC/DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md` | **14A-04 冻结合同受控修订**：保持 11 导出/15 能力/SPI v1，补齐双视图纹理、Provider 前置、M-MVP Gate 与 UI 信息架构 |
+| `DOC/DOC_DECISION_14A_04_R3_不完整OBJ灰色降级与单材料准入.md` | **ViewData 受控降级**：缺失 MTL/贴图 OBJ 统一半透明灰色显示，并限制为白墨或光油单材料工艺 |
 | `DOC/DOC_DECISION_14_UI_宿主模拟改造专项.md` | **14E 权威设计 v1.3**：独立参考宿主、M-MVP-CANDIDATE→M-MVP、QOpenGL 双视图、三工作区信息架构、UI-M1..M13 与 14B-03A 前置 |
 | `DOC/DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | **14B 实施准备真源**：Facade、base/engine 迁移顺序、文件所有权、验证与回滚 Gate |
 | `../../contracts/slicer_ui_view_spec.json` | 参考宿主 top/three_d 设置、1 mm/10 mm 网格、纹理对比辅助与视图切换不变量 |

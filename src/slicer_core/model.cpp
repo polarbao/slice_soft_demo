@@ -1863,6 +1863,61 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
 
 }  // namespace
 
+ModelAppearanceAssessment AssessModelAppearance(const ModelReport& report)
+{
+    std::map<std::string, const MaterialInfo*> materials;
+    for (const MaterialInfo& material : report.material_infos)
+    {
+        materials.emplace(material.name, &material);
+    }
+
+    bool hasNamedBinding{false};
+    for (const TriangleTextureInfo& binding : report.triangle_textures)
+    {
+        if (binding.material_name.empty())
+        {
+            continue;
+        }
+        hasNamedBinding = true;
+        const auto material = materials.find(binding.material_name);
+        if (material == materials.end())
+        {
+            if (report.material_libraries.empty()
+                && report.material_infos.empty())
+            {
+                return {
+                    "degraded_missing_material_definition",
+                    true,
+                    "used material '" + binding.material_name
+                        + "' has no mtllib/MTL definition"};
+            }
+            return {
+                "invalid_material_binding",
+                false,
+                "used material '" + binding.material_name
+                    + "' is not resolved by the declared material libraries"};
+        }
+        const MaterialInfo& resolved = *material->second;
+        if (resolved.has_texture
+            && (resolved.diffuse_texture_path.empty()
+                || !resolved.texture_exists))
+        {
+            return {
+                "degraded_missing_texture",
+                true,
+                "used material '" + binding.material_name
+                    + "' references a missing diffuse texture: "
+                    + resolved.diffuse_texture_path.generic_string()};
+        }
+    }
+
+    if (!hasNamedBinding && report.material_infos.empty())
+    {
+        return {"untextured", false, "model declares no material binding"};
+    }
+    return {};
+}
+
 ModelReport load_model_report(const ModelLoadConfig& config, const std::filesystem::path& config_dir) {
     const std::filesystem::path model_path = resolve_path(config.input.model_path, config_dir);
     if (!std::filesystem::exists(model_path)) {

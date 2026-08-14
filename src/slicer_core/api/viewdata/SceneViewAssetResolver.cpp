@@ -44,11 +44,12 @@ bool CanUseImplicitNeutralMaterial(
 void ApplyImplicitNeutralMaterial(ViewMaterial& material)
 {
     constexpr float neutralGray{0.6F};
+    constexpr float neutralOpacity{0.55F};
     material.base_color = {
         neutralGray,
         neutralGray,
         neutralGray,
-        1.0F};
+        neutralOpacity};
 }
 
 std::string SourceMaterialName(
@@ -128,6 +129,11 @@ ApiResult<ResolvedViewAppearance> ResolveViewAppearance(
                 model.model_path.generic_string());
         }
 
+        const ModelAppearanceAssessment appearanceAssessment =
+            AssessModelAppearance(model);
+        const bool useDegradedNeutralAppearance =
+            appearanceAssessment.single_material_only;
+
         std::map<std::string, const MaterialInfo*> sourceMaterials;
         for (const MaterialInfo& material : model.material_infos)
         {
@@ -171,7 +177,11 @@ ApiResult<ResolvedViewAppearance> ResolveViewAppearance(
                     sourceName.empty() ? "__default__" : sourceName);
 
             const MaterialInfo* source{nullptr};
-            if (!sourceName.empty())
+            if (useDegradedNeutralAppearance)
+            {
+                ApplyImplicitNeutralMaterial(resolvedMaterial.material);
+            }
+            else if (!sourceName.empty())
             {
                 const auto found = sourceMaterials.find(sourceName);
                 if (found == sourceMaterials.end())
@@ -207,7 +217,8 @@ ApiResult<ResolvedViewAppearance> ResolveViewAppearance(
                 }
             }
 
-            if (source != nullptr && source->has_texture)
+            if (!useDegradedNeutralAppearance
+                && source != nullptr && source->has_texture)
             {
                 ApiResult<ViewTexture> texture = ResolveTexture(
                     *source,

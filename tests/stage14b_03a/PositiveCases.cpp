@@ -135,8 +135,8 @@ void ImplicitObjMaterialFallsBackToNeutralGrayCase()
             "implicit neutral material must not invent a texture");
     Require(ContainsColor(
                 top.Value()->instances.front().surface_preview->rgba8,
-                {153U, 153U, 153U, 255U}),
-            "implicit neutral material should render as gray");
+                {153U, 153U, 153U, 140U}),
+            "implicit neutral material should render as translucent gray");
 
     const auto threeD = provider->GetViewData(
         MakeRequest(slicer_core::api::ViewMode::ThreeD),
@@ -148,8 +148,39 @@ void ImplicitObjMaterialFallsBackToNeutralGrayCase()
         .materials.front();
     Require(material.base_color.at(0U) == 0.6F
                 && material.base_color.at(1U) == 0.6F
-                && material.base_color.at(2U) == 0.6F,
-            "three_d implicit material should retain neutral gray");
+                && material.base_color.at(2U) == 0.6F
+                && material.base_color.at(3U) == 0.55F,
+            "three_d implicit material should retain translucent neutral gray");
+}
+
+void MissingTextureFallsBackToNeutralGrayCase()
+{
+    auto model = MakeTexturedQuad(
+        "missing-texture.obj",
+        "used",
+        "missing.png");
+    model.material_infos.front().texture_exists = false;
+    const auto provider = MakeProvider(
+        {{103U, std::make_shared<const slicer_core::SceneModel>(
+                    std::move(model))}},
+        std::make_shared<TestTextureSource>());
+    const TestCancelToken active;
+
+    const auto top = provider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::Top),
+        MakeSnapshot({{"missing-texture", 103U}}),
+        active);
+    Require(top.IsOk(),
+            "used missing texture should use an explicit neutral fallback");
+    Require(top.Value()->instances.front().texture_status
+                == slicer_core::api::TextureStatus::NotProvided,
+            "missing texture fallback must not claim texture availability");
+    Require(top.Value()->appearances.front().textures.empty(),
+            "missing texture fallback must not invent texture data");
+    Require(ContainsColor(
+                top.Value()->instances.front().surface_preview->rgba8,
+                {153U, 153U, 153U, 140U}),
+            "missing texture fallback should render as translucent gray");
 }
 
 void UvSeamPreservationCase()
@@ -521,6 +552,7 @@ void RunPositiveCases()
 {
     CheckerThreeMfSemanticCase();
     ImplicitObjMaterialFallsBackToNeutralGrayCase();
+    MissingTextureFallsBackToNeutralGrayCase();
     ShengdanjieUsedMaterialClosureCase();
     WhiteAndNearWhiteTextureCase();
     TextureBaseColorFactorCase();

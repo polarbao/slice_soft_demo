@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.10",
+  "contractVersion": "1.11",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -31,6 +31,9 @@
         { "path": "materials[].name", "type": "string", "required": true },
         { "path": "materials[].diffuseRgb", "type": "number[3]", "required": true },
         { "path": "materials[].texturePath", "type": "string|null", "required": true },
+        { "path": "appearanceStatus", "type": "enum:complete|untextured|degraded_missing_material_definition|degraded_missing_texture|invalid_material_binding", "required": true },
+        { "path": "singleMaterialOnly", "type": "boolean", "required": true },
+        { "path": "appearanceDetail", "type": "string", "required": true },
         { "path": "bboxMm.min", "type": "number[3]", "required": true },
         { "path": "bboxMm.max", "type": "number[3]", "required": true },
         { "path": "units", "type": "string", "const": "mm", "required": true },
@@ -53,6 +56,9 @@
         { "path": "hasUV", "type": "boolean", "required": true },
         { "path": "hasNormals", "type": "boolean", "required": true },
         { "path": "materials", "type": "array", "required": true },
+        { "path": "appearanceStatus", "type": "enum:complete|untextured|degraded_missing_material_definition|degraded_missing_texture|invalid_material_binding", "required": true },
+        { "path": "singleMaterialOnly", "type": "boolean", "required": true },
+        { "path": "appearanceDetail", "type": "string", "required": true },
         { "path": "bboxMm.min", "type": "number[3]", "required": true },
         { "path": "bboxMm.max", "type": "number[3]", "required": true },
         { "path": "units", "type": "string", "const": "mm", "required": true },

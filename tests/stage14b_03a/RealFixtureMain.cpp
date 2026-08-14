@@ -118,7 +118,7 @@ std::size_t CountOpaqueColors(const std::vector<std::uint8_t>& rgba)
     return colors.size();
 }
 
-bool ContainsOpaqueColor(
+bool ContainsColor(
     const std::vector<std::uint8_t>& rgba,
     const std::array<std::uint8_t, 4>& expected)
 {
@@ -165,10 +165,10 @@ void VerifyTopView(const slicer_core::api::SceneViewData& viewData)
             "OBJ top preview did not retain real texture variation");
     const auto& realityPreview =
         viewData.instances.at(2U).surface_preview->rgba8;
-    Require(ContainsOpaqueColor(
+    Require(ContainsColor(
                 realityPreview,
-                {153U, 153U, 153U, 255U}),
-            "untextured reality OBJ did not use neutral gray fallback");
+                {153U, 153U, 153U, 140U}),
+            "untextured reality OBJ did not use translucent gray fallback");
 }
 
 void VerifyThreeDView(const slicer_core::api::SceneViewData& viewData)

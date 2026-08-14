@@ -27,13 +27,6 @@ slicer_core::api::ApiResult<slicer_core::api::SceneViewData> RunSingle(
 
 void MissingAndDecodeFailures()
 {
-    auto missingTextures = std::make_shared<TestTextureSource>();
-    auto missingModel = MakeTexturedQuad(
-        "missing.obj", "used", "missing.png");
-    const auto missing = RunSingle(std::move(missingModel), missingTextures);
-    RequireError(missing.Error(), "PM-SLICER-INPUT-0001",
-                 "missing used texture");
-
     auto decodeTextures = std::make_shared<TestTextureSource>();
     decodeTextures->AddError(
         "broken.png",

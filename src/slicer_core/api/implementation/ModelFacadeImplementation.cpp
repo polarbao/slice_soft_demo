@@ -134,6 +134,11 @@ ModelMetadata MakeMetadata(
     metadata.source_digest = std::move(sourceDigest);
     metadata.mesh_identity = ComputeMeshIdentity(report);
     metadata.appearance_identity = ComputeSceneResourceHash(report);
+    const ModelAppearanceAssessment appearance =
+        AssessModelAppearance(report);
+    metadata.appearance_status = appearance.status;
+    metadata.single_material_only = appearance.single_material_only;
+    metadata.appearance_detail = appearance.detail;
 
     for (const MaterialInfo& material : report.material_infos)
     {

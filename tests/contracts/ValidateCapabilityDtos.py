@@ -57,8 +57,8 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.10":
-        raise AssertionError("expected the half-precision ViewData contract")
+    if contract["contractVersion"] != "1.11":
+        raise AssertionError("expected the incomplete OBJ appearance contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -89,6 +89,16 @@ def Main() -> int:
             )
 
     byId = {capability["id"]: capability for capability in capabilities}
+    for modelCapability in ("model.import", "model.get_metadata"):
+        RequirePaths(
+            byId[modelCapability],
+            "responseFields",
+            {
+                "appearanceStatus",
+                "singleMaterialOnly",
+                "appearanceDetail",
+            },
+        )
     RequirePaths(
         byId["scene.apply_operation"],
         "requestFields",
@@ -620,7 +630,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus ViewData v1.10 half contract: PASS")
+    print("15 capability DTOs plus model appearance v1.11 contract: PASS")
     return 0
 
 
