@@ -92,6 +92,23 @@ struct ErrorContext
     std::string message;
 };
 
+#ifdef _WIN32
+std::wstring ExtendedLengthPath(const std::filesystem::path& path)
+{
+    const std::wstring absolutePath =
+        std::filesystem::absolute(path).lexically_normal().native();
+    if (absolutePath.starts_with(L"\\\\?\\"))
+    {
+        return absolutePath;
+    }
+    if (absolutePath.starts_with(L"\\\\"))
+    {
+        return L"\\\\?\\UNC\\" + absolutePath.substr(2U);
+    }
+    return L"\\\\?\\" + absolutePath;
+}
+#endif
+
 using TiffHandle = std::unique_ptr<TIFF, TiffHandleDeleter>;
 using TiffOpenOptionsHandle =
     std::unique_ptr<TIFFOpenOptions, TiffOpenOptionsDeleter>;
@@ -197,14 +214,29 @@ std::filesystem::path MakeTemporaryPath(
     const std::filesystem::path& path)
 {
     static std::atomic_uint64_t sequence{0U};
-    std::filesystem::path temporaryName = path.filename();
-    temporaryName += ".tmp.";
-    temporaryName += std::to_string(
-        std::chrono::steady_clock::now()
-            .time_since_epoch()
-            .count());
-    temporaryName += ".";
-    temporaryName += std::to_string(++sequence);
+    static const std::uint32_t processToken = []()
+    {
+#ifdef _WIN32
+        return static_cast<std::uint32_t>(GetCurrentProcessId());
+#else
+        const std::uint64_t ticks = static_cast<std::uint64_t>(
+            std::chrono::steady_clock::now()
+                .time_since_epoch()
+                .count());
+        return static_cast<std::uint32_t>(ticks ^ (ticks >> 32U));
+#endif
+    }();
+    const std::uint64_t ticket = ++sequence;
+    // 继续采用同目录原子发布，但将临时文件基本名限制为 27 个字符，
+    // 避免其中再次包含完整的最终层文件名。
+    static_assert(sizeof("~t00000000.0000000000000000") - 1U == 27U);
+    char temporaryName[32]{};
+    (void)std::snprintf(
+        temporaryName,
+        sizeof(temporaryName),
+        "~t%08x.%016llx",
+        static_cast<unsigned int>(processToken),
+        static_cast<unsigned long long>(ticket));
     return path.parent_path() / temporaryName;
 }
 
@@ -241,7 +273,11 @@ TiffHandle OpenTiff(
         &errorContext);
 
 #ifdef _WIN32
-    TiffHandle handle{TIFFOpenWExt(path.c_str(), "w", options.get())};
+    const std::wstring nativePath = ExtendedLengthPath(path);
+    TiffHandle handle{TIFFOpenWExt(
+        nativePath.c_str(),
+        "w",
+        options.get())};
 #else
     TiffHandle handle{
         TIFFOpenExt(path.string().c_str(), "w", options.get())};
@@ -461,9 +497,13 @@ void PublishTemporaryFile(
     const std::filesystem::path& destinationPath)
 {
 #ifdef _WIN32
+    const std::wstring nativeTemporaryPath =
+        ExtendedLengthPath(temporaryPath);
+    const std::wstring nativeDestinationPath =
+        ExtendedLengthPath(destinationPath);
     if (MoveFileExW(
-            temporaryPath.c_str(),
-            destinationPath.c_str(),
+            nativeTemporaryPath.c_str(),
+            nativeDestinationPath.c_str(),
             MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)
         == 0)
     {

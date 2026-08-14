@@ -249,6 +249,30 @@ int main()
             {
                 return Fail("LibTIFF stripped writer did not preserve pixels");
             }
+#ifdef _WIN32
+            std::filesystem::path longPathDirectory = directory;
+            constexpr std::size_t targetDirectoryLength{230U};
+            const std::size_t currentLength =
+                longPathDirectory.native().size();
+            if (currentLength + 1U < targetDirectoryLength)
+            {
+                longPathDirectory /=
+                    std::string(
+                        targetDirectoryLength - currentLength - 1U,
+                        'a');
+            }
+            const std::filesystem::path longPath =
+                longPathDirectory / "layer_000000.tiff";
+            if (!WriteAndDecode(
+                    slicer_core::TiffWriterBackend::LibTiff,
+                    longPath,
+                    spec,
+                    pixels))
+            {
+                return Fail(
+                    "LibTIFF long-path writer did not preserve pixels");
+            }
+#endif
             slicer_core::TiffImageSpec tiledSpec = spec;
             tiledSpec.storage_mode = slicer_core::TiffStorageMode::Tiled;
             tiledSpec.tile_width = 16U;

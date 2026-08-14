@@ -15,10 +15,33 @@
 #include <Windows.h>
 #endif
 
+// 文件职责：管理单目标发布租约、作业专属暂存/备份路径和崩溃恢复；
+// 边界：所有权不明、租约损坏或验证不完整时保留可疑产物并失败即拒绝。
 namespace slicer_core::api::artifacts
 {
 namespace
 {
+
+std::filesystem::path FilesystemPath(
+    const std::filesystem::path& path)
+{
+#ifdef _WIN32
+    const std::wstring absolutePath =
+        std::filesystem::absolute(path).lexically_normal().native();
+    if (absolutePath.starts_with(L"\\\\?\\"))
+    {
+        return std::filesystem::path{absolutePath};
+    }
+    if (absolutePath.starts_with(L"\\\\"))
+    {
+        return std::filesystem::path{
+            L"\\\\?\\UNC\\" + absolutePath.substr(2U)};
+    }
+    return std::filesystem::path{L"\\\\?\\" + absolutePath};
+#else
+    return path;
+#endif
+}
 
 bool IsSafeToken(const std::string& value)
 {
@@ -41,12 +64,14 @@ bool IsReparsePoint(const std::filesystem::path& path)
 {
     std::error_code error;
     if (std::filesystem::is_symlink(
-            std::filesystem::symlink_status(path, error)))
+            std::filesystem::symlink_status(
+                FilesystemPath(path), error)))
     {
         return true;
     }
 #ifdef _WIN32
-    const DWORD attributes = GetFileAttributesW(path.c_str());
+    const std::filesystem::path filesystemPath = FilesystemPath(path);
+    const DWORD attributes = GetFileAttributesW(filesystemPath.c_str());
     return attributes != INVALID_FILE_ATTRIBUTES
         && (attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0U;
 #else
@@ -60,7 +85,8 @@ bool RemoveOwnedDirectory(
     std::string& errorMessage)
 {
     std::error_code error;
-    const bool exists = std::filesystem::exists(path, error);
+    const std::filesystem::path filesystemPath = FilesystemPath(path);
+    const bool exists = std::filesystem::exists(filesystemPath, error);
     if (error)
     {
         errorMessage = "failed to inspect owned artifact: " + path.generic_string();
@@ -76,8 +102,8 @@ bool RemoveOwnedDirectory(
         errorMessage = "owned artifact is a reparse point: " + path.generic_string();
         return false;
     }
-    std::filesystem::remove_all(path, error);
-    if (error || std::filesystem::exists(path))
+    std::filesystem::remove_all(filesystemPath, error);
+    if (error || std::filesystem::exists(filesystemPath))
     {
         errorMessage = "failed to remove owned artifact: " + path.generic_string();
         return false;
@@ -99,7 +125,9 @@ std::string LeaseOwnerText(const PackageArtifactIdentity& identity)
 
 bool LeaseMatchesOwner(const PackageArtifactIdentity& identity)
 {
-    std::ifstream input(LeaseOwnerPath(identity), std::ios::binary);
+    std::ifstream input(
+        FilesystemPath(LeaseOwnerPath(identity)),
+        std::ios::binary);
     if (!input)
     {
         return false;
@@ -116,7 +144,8 @@ bool RemoveOwnedLease(
     std::string& errorMessage)
 {
     std::error_code error;
-    if (!std::filesystem::exists(identity.lease_directory, error))
+    if (!std::filesystem::exists(
+            FilesystemPath(identity.lease_directory), error))
     {
         if (error)
         {
@@ -144,7 +173,8 @@ bool RecoverOwnedLease(
     std::string& errorMessage)
 {
     std::error_code error;
-    if (!std::filesystem::exists(identity.lease_directory, error))
+    if (!std::filesystem::exists(
+            FilesystemPath(identity.lease_directory), error))
     {
         if (error)
         {
@@ -175,7 +205,7 @@ void AddResidual(
     std::vector<std::filesystem::path>& residuals)
 {
     std::error_code error;
-    if (std::filesystem::exists(path, error) || error)
+    if (std::filesystem::exists(FilesystemPath(path), error) || error)
     {
         residuals.push_back(path);
     }
@@ -268,7 +298,8 @@ PackageArtifactLeaseResult AcquirePackageArtifactLease(
             return result;
         }
         std::error_code error;
-        if (!std::filesystem::create_directory(identity.lease_directory, error))
+        if (!std::filesystem::create_directory(
+                FilesystemPath(identity.lease_directory), error))
         {
             result.conflict = !error;
             result.error = error
@@ -277,14 +308,15 @@ PackageArtifactLeaseResult AcquirePackageArtifactLease(
             return result;
         }
         std::ofstream output(
-            LeaseOwnerPath(identity),
+            FilesystemPath(LeaseOwnerPath(identity)),
             std::ios::binary | std::ios::trunc);
         output << LeaseOwnerText(identity);
         output.close();
         if (!output)
         {
             std::error_code ignored;
-            std::filesystem::remove_all(identity.lease_directory, ignored);
+            std::filesystem::remove_all(
+                FilesystemPath(identity.lease_directory), ignored);
             result.error = "failed to persist package lease owner";
             return result;
         }
@@ -329,11 +361,11 @@ PackageArtifactRecoveryResult RecoverPackageArtifacts(
 
         std::error_code targetError;
         const bool targetExists = std::filesystem::exists(
-            identity.package_directory,
+            FilesystemPath(identity.package_directory),
             targetError);
         std::error_code backupError;
         const bool backupExists = std::filesystem::exists(
-            identity.backup_directory,
+            FilesystemPath(identity.backup_directory),
             backupError);
         if (targetError || backupError)
         {
@@ -351,8 +383,8 @@ PackageArtifactRecoveryResult RecoverPackageArtifacts(
             }
             std::error_code renameError;
             std::filesystem::rename(
-                identity.backup_directory,
-                identity.package_directory,
+                FilesystemPath(identity.backup_directory),
+                FilesystemPath(identity.package_directory),
                 renameError);
             if (renameError)
             {

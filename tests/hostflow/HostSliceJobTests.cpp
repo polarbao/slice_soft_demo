@@ -264,6 +264,8 @@ int main(int argc, char* argv[])
 
     HostSliceJobController invalidController(client);
     const quint64 callsBeforeInvalid = client.CallCount();
+    const QString longSessionName = QStringLiteral("host-test-")
+        + QString(20, QLatin1Char('a'));
     const hosteffectiveprofile invalidProfile = BuildProfile(
         modelPath,
         QDir(outputRoot.path()).filePath(QStringLiteral("invalid-package")),
@@ -278,7 +280,8 @@ int main(int argc, char* argv[])
             workflow.SceneHandle(),
             modelPath,
             QDir(outputRoot.path()).filePath(
-                QStringLiteral("ui_sessions/host-test/package")),
+                QStringLiteral("ui_sessions/%1/package")
+                    .arg(longSessionName)),
             errors)
         || !VerifyCancellation(
             client,
