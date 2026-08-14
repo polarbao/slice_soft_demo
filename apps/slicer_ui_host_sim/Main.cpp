@@ -1,9 +1,11 @@
 #include "CapabilityCoverageRunner.h"
 #include "HostMainWindow.h"
+#include "HostProcessPresetCatalog.h"
 #include "HostWorkspaceState.h"
 #include "ModuleClient.h"
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QDir>
@@ -175,11 +177,23 @@ int RunHostFlowSettingsUiSmoke(const QString& modulePath)
         QStringLiteral("hostSliceValidationLabel"));
     const auto* whitePreflightLabel = window.findChild<QLabel*>(
         QStringLiteral("hostTextureWhitePreflightLabel"));
+    const auto* processPreset = window.findChild<QComboBox*>(
+        QStringLiteral("hostProcessPresetCombo"));
+    const auto* tiffCompressionCheck = window.findChild<QCheckBox*>(
+        QStringLiteral("hostTiffCompressionCheck"));
+    const auto* tiffCompressionCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostTiffCompressionCombo"));
     if (dpiXSpin == nullptr || dpiYSpin == nullptr || layerSpin == nullptr
         || profilePreview == nullptr || validationLabel == nullptr
-        || whitePreflightLabel == nullptr
+        || whitePreflightLabel == nullptr || processPreset == nullptr
+        || tiffCompressionCheck == nullptr
+        || tiffCompressionCombo == nullptr
         || dpiXSpin->value() != 635 || dpiYSpin->value() != 600
         || std::abs(layerSpin->value() - 0.038) > 1.0e-9
+        || processPreset->currentData().toString()
+            != HostProcessPresetCatalog::DefaultPresetId()
+        || tiffCompressionCheck->isChecked()
+        || tiffCompressionCombo->isEnabled()
         || validationLabel->text().isEmpty()
         || whitePreflightLabel->text().isEmpty())
     {
@@ -336,7 +350,7 @@ int RunHostFlowWorkspaceUiSmoke(const QString& modulePath)
     if (workspaceTabs == nullptr || inspectorTabs == nullptr
         || splitter == nullptr || workspaceTabs->count() < 4
         || inspectorTabs->count() < 5 || splitter->count() != 2
-        || HostWorkspaceState::SchemaVersion() != 5)
+        || HostWorkspaceState::SchemaVersion() != 6)
     {
         QTextStream(stderr)
             << "HOSTFLOW_HB08_UI_FAILED: workspace state is incomplete"

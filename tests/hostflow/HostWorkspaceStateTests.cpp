@@ -83,12 +83,14 @@ int main(int argc, char* argv[])
     source.splitter->setSizes(QList<int>{620, 280});
     hostslicesettings expected;
     expected.profileid = QStringLiteral("host-reference-white");
+    expected.processpresetid = QStringLiteral("custom");
     expected.outputdirectory = temporaryRoot.path();
     expected.dpix = 720;
     expected.dpiy = 600;
     expected.layerthicknessmm = 0.05;
     expected.geometrysamplingstrategy = HostGeometrySamplingStrategy::
         LayerSlabSupersample2x2AtLeastTwoCandidate;
+    expected.tiffcompression = HostTiffCompression::PackBits;
     expected.materialstrategy = HostMaterialStrategy::RgbWhiteVarnish;
     expected.materialprocess.rolemappingenabled = true;
     expected.materialprocess.defaultrole = HostMaterialRole::Ignore;
@@ -160,12 +162,16 @@ int main(int argc, char* argv[])
                       && restored.splitter->sizes().at(1) > 0,
                   QStringLiteral("工作区分栏尺寸未恢复。"), errors)
         || !Check(actual.profileid == expected.profileid
+                      && actual.processpresetid
+                          == expected.processpresetid
                       && actual.dpix == expected.dpix
                       && actual.dpiy == expected.dpiy
                       && std::abs(actual.layerthicknessmm
                                    - expected.layerthicknessmm) < 1.0e-9
                       && actual.geometrysamplingstrategy
                           == expected.geometrysamplingstrategy
+                      && actual.tiffcompression
+                          == expected.tiffcompression
                       && actual.outputdirectory == expected.outputdirectory
                       && actual.materialstrategy
                           == HostMaterialStrategy::RgbWhiteVarnish,

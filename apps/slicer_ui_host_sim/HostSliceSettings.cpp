@@ -115,6 +115,19 @@ enum hostgeometrysamplingstrategy ToHostGeometrySamplingStrategy(
     return static_cast<enum hostgeometrysamplingstrategy>(-1);
 }
 
+enum hosttiffcompression ToHostTiffCompression(
+    const HostTiffCompression compression)
+{
+    switch (compression)
+    {
+    case HostTiffCompression::None:
+        return HOST_TIFF_COMPRESSION_NONE;
+    case HostTiffCompression::PackBits:
+        return HOST_TIFF_COMPRESSION_PACKBITS;
+    }
+    return static_cast<enum hosttiffcompression>(-1);
+}
+
 }
 
 bool HostEffectiveProfileBuilder::Validate(
@@ -297,6 +310,8 @@ bool HostEffectiveProfileBuilder::Validate(
     }
     if (GeometrySamplingStrategyId(settings.geometrysamplingstrategy)
             == QStringLiteral("unknown")
+        || TiffCompressionId(settings.tiffcompression)
+            == QStringLiteral("unknown")
         || (settings.geometrysamplingstrategy
                 == HostGeometrySamplingStrategy::
                     LayerSlabSupersample2x2AtLeastTwoCandidate
@@ -380,6 +395,7 @@ bool HostEffectiveProfileBuilder::Build(
         HostTextureProfileBridge::ToWhitePolicy(settings.texture.whitepolicy),
         settings.texture.whiteinkthreshold,
         settings.texture.whitevalue,
+        ToHostTiffCompression(settings.tiffcompression),
         ToHostGeometrySamplingStrategy(
             settings.geometrysamplingstrategy)};
     char profileHash[72] = {};
@@ -493,6 +509,19 @@ QString HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
             LayerSlabSupersample2x2AtLeastTwoCandidate:
         return QStringLiteral(
             "layer_slab_supersample_2x2_at_least_two_candidate");
+    }
+    return QStringLiteral("unknown");
+}
+
+QString HostEffectiveProfileBuilder::TiffCompressionId(
+    const HostTiffCompression compression)
+{
+    switch (compression)
+    {
+    case HostTiffCompression::None:
+        return QStringLiteral("none");
+    case HostTiffCompression::PackBits:
+        return QStringLiteral("packbits");
     }
     return QStringLiteral("unknown");
 }

@@ -5,7 +5,7 @@ extern "C"
 {
 #endif
 
-/** @brief Host-owned material strategy for an effective slice Profile. */
+/** @brief 由宿主持有的有效切片 Profile 材料策略。 */
 enum hostmaterialstrategy
 {
     HOST_MATERIAL_RGB_SOLID = 0,
@@ -16,7 +16,7 @@ enum hostmaterialstrategy
     HOST_MATERIAL_VARNISH_SOLID = 5
 };
 
-/** @brief Host-owned default role for input material mapping. */
+/** @brief 由宿主持有的输入材料映射默认角色。 */
 enum hostmaterialrole
 {
     HOST_MATERIAL_ROLE_RGB = 0,
@@ -26,7 +26,7 @@ enum hostmaterialrole
     HOST_MATERIAL_ROLE_SUPPORT_CANDIDATE = 4
 };
 
-/** @brief Host-owned support mode written to the effective Profile. */
+/** @brief 由宿主持有并写入有效 Profile 的支撑模式。 */
 enum hostsupportmode
 {
     HOST_SUPPORT_NONE = 0,
@@ -36,7 +36,7 @@ enum hostsupportmode
     HOST_SUPPORT_FULL_VERTICAL_PROJECTION = 4
 };
 
-/** @brief C-compatible texture application mode. */
+/** @brief 与 C 兼容的纹理应用模式。 */
 enum hosttextureapplymode
 {
     HOST_TEXTURE_SOLID_VOLUME_FROM_TOP = 0,
@@ -44,49 +44,56 @@ enum hosttextureapplymode
     HOST_TEXTURE_TOP_SURFACE_BAND = 2
 };
 
-/** @brief C-compatible texture sampler. */
+/** @brief 与 C 兼容的纹理采样器。 */
 enum hosttexturesampler
 {
     HOST_TEXTURE_NEAREST = 0,
     HOST_TEXTURE_BILINEAR = 1
 };
 
-/** @brief C-compatible UV address mode. */
+/** @brief 与 C 兼容的 UV 寻址模式。 */
 enum hosttextureuvaddressmode
 {
     HOST_TEXTURE_UV_CLAMP = 0,
     HOST_TEXTURE_UV_REPEAT = 1
 };
 
-/** @brief C-compatible missing-texture policy. */
+/** @brief 与 C 兼容的纹理缺失策略。 */
 enum hosttexturemissingpolicy
 {
     HOST_TEXTURE_WARN_AND_FALLBACK = 0,
     HOST_TEXTURE_FAIL_FAST = 1
 };
 
-/** @brief C-compatible non-surface RGB policy. */
+/** @brief 与 C 兼容的非表面 RGB 策略。 */
 enum hosttexturenonsurfacepolicy
 {
     HOST_TEXTURE_NON_SURFACE_MODEL_MATERIAL = 0,
     HOST_TEXTURE_NON_SURFACE_EMPTY = 1
 };
 
-/** @brief C-compatible unprintable-white policy. */
+/** @brief 与 C 兼容的不可打印白色策略。 */
 enum hosttexturewhitepolicy
 {
     HOST_TEXTURE_WHITE_FAIL_CLOSED = 0,
     HOST_TEXTURE_WHITE_UNDERBASE = 1
 };
 
-/** @brief C-compatible geometry occupancy sampling strategy. */
+/** @brief 与 C 兼容的几何占用采样策略。 */
 enum hostgeometrysamplingstrategy
 {
     HOST_GEOMETRY_SAMPLING_LEGACY_CENTER = 0,
     HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO = 1
 };
 
-/** @brief C-compatible inputs used to build one effective slice Profile. */
+/** @brief 与 C 兼容的 TIFF 压缩算法。 */
+enum hosttiffcompression
+{
+    HOST_TIFF_COMPRESSION_NONE = 0,
+    HOST_TIFF_COMPRESSION_PACKBITS = 1
+};
+
+/** @brief 用于构建有效切片 Profile 的 C 兼容输入。 */
 struct hosteffectiveprofilesettings
 {
     const char* modelpath;
@@ -128,16 +135,17 @@ struct hosteffectiveprofilesettings
     enum hosttexturewhitepolicy texturewhitepolicy;
     int texturewhiteinkthreshold;
     int texturewhitevalue;
+    enum hosttiffcompression tiffcompression;
     enum hostgeometrysamplingstrategy geometrysamplingstrategy;
 };
 
 /**
- * @brief Builds a self-hashed effective Profile for the reference slice.
- * @param modelPath Normalized absolute model path.
- * @param packageDirectory Normalized absolute package directory.
- * @param profileHash Receives `sha256:` plus 64 lowercase hex characters.
- * @param profileHashCapacity Output buffer capacity.
- * @return Heap JSON string owned by the caller, or NULL on failure.
+ * @brief 为参考切片构建包含自身哈希的有效 Profile。
+ * @param modelPath 规范化的模型绝对路径。
+ * @param packageDirectory 规范化的 Package 绝对目录。
+ * @param profileHash 接收 `sha256:` 与 64 个小写十六进制字符。
+ * @param profileHashCapacity 输出缓冲区容量。
+ * @return 由调用方持有的堆分配 JSON 字符串；失败时返回 NULL。
  */
 char* HostBuildProfile(
     const char* modelPath,
@@ -146,13 +154,13 @@ char* HostBuildProfile(
     unsigned long profileHashCapacity);
 
 /**
- * @brief Builds a self-hashed effective Profile with an explicit layer height.
- * @param modelPath Normalized absolute model path.
- * @param packageDirectory Normalized absolute package directory.
- * @param layerThicknessMm Positive layer thickness in millimetres.
- * @param profileHash Receives `sha256:` plus 64 lowercase hex characters.
- * @param profileHashCapacity Output buffer capacity.
- * @return Heap JSON string owned by the caller, or NULL on failure.
+ * @brief 使用显式层高构建包含自身哈希的有效 Profile。
+ * @param modelPath 规范化的模型绝对路径。
+ * @param packageDirectory 规范化的 Package 绝对目录。
+ * @param layerThicknessMm 以毫米为单位的正数层厚。
+ * @param profileHash 接收 `sha256:` 与 64 个小写十六进制字符。
+ * @param profileHashCapacity 输出缓冲区容量。
+ * @return 由调用方持有的堆分配 JSON 字符串；失败时返回 NULL。
  */
 char* HostBuildProfileWithLayerThickness(
     const char* modelPath,
@@ -162,11 +170,11 @@ char* HostBuildProfileWithLayerThickness(
     unsigned long profileHashCapacity);
 
 /**
- * @brief Builds a parameterized self-hashed effective Profile.
- * @param settings Valid host-owned model, output and material settings.
- * @param profileHash Receives `sha256:` plus 64 lowercase hex characters.
- * @param profileHashCapacity Output buffer capacity.
- * @return Heap JSON string owned by the caller, or NULL on validation failure.
+ * @brief 构建参数化且包含自身哈希的有效 Profile。
+ * @param settings 有效的宿主侧模型、输出与材料设置。
+ * @param profileHash 接收 `sha256:` 与 64 个小写十六进制字符。
+ * @param profileHashCapacity 输出缓冲区容量。
+ * @return 由调用方持有的堆分配 JSON 字符串；校验失败时返回 NULL。
  */
 char* HostBuildEffectiveProfile(
     const struct hosteffectiveprofilesettings* settings,

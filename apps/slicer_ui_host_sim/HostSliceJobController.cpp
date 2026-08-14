@@ -90,6 +90,35 @@ QString NormalizePathIdentity(const QString& value)
 #endif
     return QDir::cleanPath(result);
 }
+
+QString TimingKeyForPhase(const QString& phase)
+{
+    if (phase == QStringLiteral("scene_config_load"))
+    {
+        return QStringLiteral("configLoadMs");
+    }
+    if (phase == QStringLiteral("scene_model_load"))
+    {
+        return QStringLiteral("modelLoadMs");
+    }
+    if (phase == QStringLiteral("scene_admission"))
+    {
+        return QStringLiteral("gridSetupMs");
+    }
+    if (phase == QStringLiteral("scene_instance_slice"))
+    {
+        return QStringLiteral("layerComputeMs");
+    }
+    if (phase == QStringLiteral("scene_composition"))
+    {
+        return QStringLiteral("layerComposeMs");
+    }
+    if (phase == QStringLiteral("scene_package_write"))
+    {
+        return QStringLiteral("outputWriteMs");
+    }
+    return {};
+}
 }
 
 HostSliceJobController::HostSliceJobController(
@@ -158,6 +187,9 @@ bool HostSliceJobController::Start(
     m_progress = {};
     m_progress.state = HostSliceJobState::Queued;
     m_progress.phase = QStringLiteral("queued");
+    m_observedTiming = {};
+    m_observedPhase.clear();
+    m_observedPhaseStartMs = 0;
     m_jobTimer.start();
     PublishProgress();
     m_pollTimer.start();
@@ -351,15 +383,65 @@ bool HostSliceJobController::ApplyProgress(
         }
         return false;
     }
+    const QString phase = progress.value(
+        QStringLiteral("phase")).toString();
+    const qint64 elapsedMs = progress.value(
+        QStringLiteral("elapsedMs")).toVariant().toLongLong();
+    RecordObservedPhase(phase, elapsedMs);
     m_progress.state = state;
-    m_progress.phase = progress.value(QStringLiteral("phase")).toString();
+    m_progress.phase = phase;
     m_progress.current = progress.value(QStringLiteral("current")).toInt();
     m_progress.total = progress.value(QStringLiteral("total")).toInt();
     m_progress.percent = percent;
-    m_progress.elapsedms = progress.value(
-        QStringLiteral("elapsedMs")).toVariant().toLongLong();
+    m_progress.elapsedms = elapsedMs;
     PublishProgress();
     return true;
+}
+
+void HostSliceJobController::RecordObservedPhase(
+    const QString& phase,
+    const qint64 elapsedMs)
+{
+    if (phase == m_observedPhase)
+    {
+        return;
+    }
+    const QString timingKey = TimingKeyForPhase(m_observedPhase);
+    if (!timingKey.isEmpty() && elapsedMs >= m_observedPhaseStartMs)
+    {
+        m_observedTiming.insert(
+            timingKey,
+            static_cast<double>(elapsedMs - m_observedPhaseStartMs));
+    }
+    m_observedPhase = phase;
+    m_observedPhaseStartMs = elapsedMs;
+}
+
+QJsonObject HostSliceJobController::FinalizeObservedTiming(
+    const qint64 elapsedMs)
+{
+    const QString timingKey = TimingKeyForPhase(m_observedPhase);
+    if (!timingKey.isEmpty() && elapsedMs >= m_observedPhaseStartMs)
+    {
+        m_observedTiming.insert(
+            timingKey,
+            static_cast<double>(elapsedMs - m_observedPhaseStartMs));
+    }
+    if (m_observedTiming.contains(QStringLiteral("layerComputeMs")))
+    {
+        m_observedTiming.insert(
+            QStringLiteral("sliceProcessingMs"),
+            m_observedTiming.value(QStringLiteral("layerComputeMs")));
+    }
+    m_observedTiming.insert(QStringLiteral("available"), true);
+    m_observedTiming.insert(QStringLiteral("approximate"), true);
+    m_observedTiming.insert(
+        QStringLiteral("source"),
+        QStringLiteral("progress_telemetry"));
+    m_observedTiming.insert(
+        QStringLiteral("totalMs"),
+        static_cast<double>(elapsedMs));
+    return m_observedTiming;
 }
 
 void HostSliceJobController::OnPollTimer()
@@ -411,14 +493,48 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
         QStringLiteral("detail")).toString();
     m_completion.timing = result.value(
         QStringLiteral("timing")).toObject();
+    const qint64 workerElapsedMs = m_progress.elapsedms > 0
+        ? m_progress.elapsedms : m_completion.elapsedms;
+    const QJsonObject observedTiming = FinalizeObservedTiming(
+        workerElapsedMs);
+    bool supplementedTiming = false;
+    for (const QString& key : {
+             QStringLiteral("configLoadMs"),
+             QStringLiteral("modelLoadMs"),
+             QStringLiteral("gridSetupMs"),
+             QStringLiteral("sliceProcessingMs"),
+             QStringLiteral("layerComputeMs"),
+             QStringLiteral("layerComposeMs"),
+             QStringLiteral("outputWriteMs")})
+    {
+        if (!m_completion.timing.contains(key)
+            && observedTiming.contains(key))
+        {
+            m_completion.timing.insert(key, observedTiming.value(key));
+            supplementedTiming = true;
+        }
+    }
+    if (!m_completion.timing.value(
+            QStringLiteral("available")).toBool())
+    {
+        m_completion.timing.insert(QStringLiteral("available"), true);
+        supplementedTiming = true;
+    }
+    if (supplementedTiming)
+    {
+        m_completion.timing.insert(QStringLiteral("approximate"), true);
+        m_completion.timing.insert(
+            QStringLiteral("source"),
+            QStringLiteral("worker_result+progress_telemetry"));
+    }
     if (!m_completion.timing.contains(QStringLiteral("totalMs")))
     {
-        const double workerElapsedMs = result.value(
+        const double resultElapsedMs = result.value(
             QStringLiteral("elapsedMs")).toDouble(-1.0);
-        if (workerElapsedMs >= 0.0)
+        if (resultElapsedMs >= 0.0)
         {
             m_completion.timing.insert(
-                QStringLiteral("totalMs"), workerElapsedMs);
+                QStringLiteral("totalMs"), resultElapsedMs);
         }
     }
     if (result.value(QStringLiteral("error")).isObject())
@@ -485,6 +601,9 @@ void HostSliceJobController::FinishTransportFailure(const QString& message)
     m_completion.message = message.isEmpty()
         ? QStringLiteral("切片作业通信失败。") : message;
     m_completion.elapsedms = m_jobTimer.isValid() ? m_jobTimer.elapsed() : 0;
+    m_completion.timing = FinalizeObservedTiming(
+        m_progress.elapsedms > 0
+            ? m_progress.elapsedms : m_completion.elapsedms);
     emit SigCompleted(
         false,
         false,
@@ -492,7 +611,7 @@ void HostSliceJobController::FinishTransportFailure(const QString& message)
         m_completion.message,
         QString{},
         QString{},
-        QJsonObject{},
+        m_completion.timing,
         m_completion.elapsedms,
         -1);
 }

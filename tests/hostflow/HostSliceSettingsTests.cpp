@@ -19,6 +19,7 @@
 #include <QJsonObject>
 #include <QLineEdit>
 #include <QLabel>
+#include <QProgressBar>
 #include <QSpinBox>
 #include <QStringList>
 #include <QTemporaryDir>
@@ -547,6 +548,10 @@ bool VerifyPanelIsLocal(
         QStringLiteral("hostSliceDpiXSpin"));
     auto* geometrySampling = panel.findChild<QComboBox*>(
         QStringLiteral("hostGeometrySamplingCombo"));
+    auto* tiffCompressionCheck = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostTiffCompressionCheck"));
+    auto* tiffCompressionCombo = panel.findChild<QComboBox*>(
+        QStringLiteral("hostTiffCompressionCombo"));
     auto* materialCombo = panel.findChild<QComboBox*>(
         QStringLiteral("hostSliceMaterialCombo"));
     auto* supportEnabled = panel.findChild<QCheckBox*>(
@@ -569,6 +574,8 @@ bool VerifyPanelIsLocal(
             outputEdit != nullptr && processPreset != nullptr
                 && dpiXSpin != nullptr
                 && geometrySampling != nullptr
+                && tiffCompressionCheck != nullptr
+                && tiffCompressionCombo != nullptr
                 && materialCombo != nullptr && supportEnabled != nullptr
                 && supportMode != nullptr && supportOffset != nullptr
                 && roleMapping != nullptr && whiteExpand != nullptr
@@ -576,6 +583,22 @@ bool VerifyPanelIsLocal(
                 && textureApplyMode != nullptr
                 && textureWhitePolicy != nullptr,
             QStringLiteral("切片设置面板控件不完整。"),
+            errors))
+    {
+        return false;
+    }
+    if (!Check(
+            processPreset->currentData().toString()
+                    == HostProcessPresetCatalog::DefaultPresetId()
+                && processPreset->currentText()
+                    == QStringLiteral(
+                        "彩色纹理｜全实体 RGB + 按需补白墨｜下表面支撑"),
+            QStringLiteral("新版宿主默认常用工艺未指向按需补白生产方案。"),
+            errors)
+        || !Check(
+            !tiffCompressionCheck->isChecked()
+                && !tiffCompressionCombo->isEnabled(),
+            QStringLiteral("TIFF 压缩必须默认关闭以保持 RIP 兼容基线。"),
             errors))
     {
         return false;
@@ -599,16 +622,19 @@ bool VerifyPanelIsLocal(
     if (!Check(
             QFileInfo(defaultOutput).isAbsolute()
                 && defaultOutput.contains(
-                    QStringLiteral("/output/ui_sessions/"))
+                    QStringLiteral("/output/h"))
+                && !defaultOutput.contains(QStringLiteral("/out/"))
                 && defaultOutput.endsWith(QStringLiteral("/package")),
             QStringLiteral(
-                "参考宿主默认输出目录未对齐旧版 output/ui_sessions/<session>/package。"),
+                "参考宿主默认输出目录未使用 output/h<session>/package。"),
             errors))
     {
         return false;
     }
-    const QDir sharedSessionRoot(
+    const QDir outputRoot(
         QFileInfo(QFileInfo(defaultOutput).absolutePath()).absolutePath());
+    const QDir sharedSessionRoot(
+        outputRoot.filePath(QStringLiteral("ui_sessions")));
     hostslicesettings persistedSettings;
     persistedSettings.outputdirectory = sharedSessionRoot.absolutePath();
     panel.SetPersistentSettings(persistedSettings);
@@ -618,10 +644,26 @@ bool VerifyPanelIsLocal(
             migratedOutput != QDir::fromNativeSeparators(
                 sharedSessionRoot.absolutePath())
                 && migratedOutput.contains(
-                    QStringLiteral("/output/ui_sessions/"))
+                    QStringLiteral("/output/h"))
+                && !migratedOutput.contains(QStringLiteral("/out/"))
                 && migratedOutput.endsWith(QStringLiteral("/package")),
             QStringLiteral(
-                "持久化的共享 ui_sessions 根目录未迁移到独立会话包目录。"),
+                "持久化的共享 ui_sessions 根目录未迁移到短会话包目录。"),
+            errors))
+    {
+        return false;
+    }
+    persistedSettings.outputdirectory = QDir(sharedSessionRoot).filePath(
+        QStringLiteral("host_20260814_113641_837/package"));
+    panel.SetPersistentSettings(persistedSettings);
+    const QString migratedLegacyOutput = QDir::fromNativeSeparators(
+        outputEdit->text());
+    if (!Check(
+            migratedLegacyOutput.contains(QStringLiteral("/output/h"))
+                && !migratedLegacyOutput.contains(
+                    QStringLiteral("/output/ui_sessions/"))
+                && migratedLegacyOutput.endsWith(QStringLiteral("/package")),
+            QStringLiteral("旧版自动会话目录未迁移到缩短后的默认目录。"),
             errors))
     {
         return false;
@@ -629,6 +671,33 @@ bool VerifyPanelIsLocal(
     outputEdit->setText(outputDirectory);
     panel.SetModelPath(modelPath);
     client.ResetCallCount();
+
+    tiffCompressionCheck->setChecked(true);
+    QCoreApplication::processEvents();
+    const hostslicesettings compressedSettings = panel.Settings();
+    hosteffectiveprofile compressedProfile;
+    QString compressedError;
+    if (!Check(
+            tiffCompressionCombo->isEnabled()
+                && compressedSettings.tiffcompression
+                    == HostTiffCompression::PackBits
+                && HostEffectiveProfileBuilder::Build(
+                    compressedSettings,
+                    &compressedProfile,
+                    &compressedError)
+                && compressedProfile.profile.value(
+                    QStringLiteral("output")).toObject().value(
+                        QStringLiteral("tiffCompression")).toObject().value(
+                            QStringLiteral("algorithm")).toString()
+                    == QStringLiteral("packbits"),
+            QStringLiteral("TIFF PackBits UI 选项未进入有效 Profile：%1")
+                .arg(compressedError),
+            errors))
+    {
+        return false;
+    }
+    tiffCompressionCheck->setChecked(false);
+    QCoreApplication::processEvents();
 
     if (!Check(
             geometrySampling->currentData().toString()
@@ -739,9 +808,29 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         "layer_slab_supersample_2x2_at_least_two_candidate"));
     auto* jobContext = jobPanel.findChild<QLabel*>(
         QStringLiteral("hostStage16JobContextLabel"));
+    auto* progressBar = jobPanel.findChild<QProgressBar*>(
+        QStringLiteral("hostSliceJobProgressBar"));
+    auto* pendingConfigLoadValue = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingConfigLoadValue"));
+    jobPanel.SetActive();
+    jobPanel.UpdateProgress(
+        QStringLiteral("running"),
+        QStringLiteral("completed"),
+        1,
+        1,
+        100,
+        18);
+    const bool runningStateIsHonest = progressBar != nullptr
+        && progressBar->value() == 99
+        && pendingConfigLoadValue != nullptr
+        && pendingConfigLoadValue->text()
+            == QStringLiteral("终结结果返回后提供");
     QJsonObject timing{
         {QStringLiteral("available"), true},
+        {QStringLiteral("approximate"), true},
         {QStringLiteral("engine"), QStringLiteral("legacy-scene")},
+        {QStringLiteral("configLoadMs"), 1.5},
+        {QStringLiteral("modelLoadMs"), 2.5},
         {QStringLiteral("sliceProcessingMs"), 12.5},
         {QStringLiteral("supportStatisticsScanCount"), 3},
         {QStringLiteral("totalMs"), 18.0}};
@@ -757,6 +846,12 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         -1);
     auto* scanValue = jobPanel.findChild<QLabel*>(
         QStringLiteral("hostSupportStatisticsScanValue"));
+    auto* engineValue = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingEngineValue"));
+    auto* configLoadValue = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingConfigLoadValue"));
+    auto* modelLoadValue = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingModelLoadValue"));
 
     HostPackageReviewPanel reviewPanel;
     hostpackagereview review;
@@ -784,6 +879,11 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
     QCoreApplication::processEvents();
 
     return Check(
+               runningStateIsHonest,
+               QStringLiteral(
+                   "非终结态不得显示 100%，分项耗时应明确等待终结结果。"),
+               errors)
+        && Check(
                jobContext != nullptr
                    && jobContext->text().contains(QStringLiteral("S3"))
                    && jobContext->text().contains(QStringLiteral("P3")),
@@ -793,6 +893,15 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                scanValue != nullptr
                    && scanValue->text().contains(QStringLiteral("3 次")),
                QStringLiteral("支撑统计扫描 telemetry 未显示。"),
+               errors)
+        && Check(
+               engineValue != nullptr && configLoadValue != nullptr
+                   && modelLoadValue != nullptr
+                   && engineValue->text().contains(
+                       QStringLiteral("失败前阶段进度估算"))
+                   && configLoadValue->text() != QStringLiteral("未提供")
+                   && modelLoadValue->text() != QStringLiteral("未提供"),
+               QStringLiteral("失败作业的阶段耗时估算未显示。"),
                errors)
         && Check(
                summary != nullptr && referencePreview != nullptr

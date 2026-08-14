@@ -3,7 +3,7 @@
 #include <QJsonObject>
 #include <QString>
 
-/** @brief Material channel used for the host's solid model fill. */
+/** @brief 宿主实体模型填充使用的材料通道。 */
 enum class HostMaterialStrategy
 {
     RgbSolid,
@@ -14,7 +14,7 @@ enum class HostMaterialStrategy
     VarnishSolid
 };
 
-/** @brief Material role used when resolving OBJ/3MF input materials. */
+/** @brief 解析 OBJ/3MF 输入材料时使用的材料角色。 */
 enum class HostMaterialRole
 {
     Rgb,
@@ -24,7 +24,7 @@ enum class HostMaterialRole
     SupportCandidate
 };
 
-/** @brief Host-owned material policy and role-mapping parameters. */
+/** @brief 由宿主持有的材料策略与角色映射参数。 */
 struct hostmaterialprocesssettings
 {
     bool rolemappingenabled{false};
@@ -38,7 +38,7 @@ struct hostmaterialprocesssettings
     int maxunexpectedoverlappixels{0};
 };
 
-/** @brief Support generation mode exposed by the reference host Profile. */
+/** @brief 参考宿主 Profile 暴露的支撑生成模式。 */
 enum class HostSupportMode
 {
     None,
@@ -48,21 +48,21 @@ enum class HostSupportMode
     FullVerticalProjection
 };
 
-/** @brief Host-owned internal-void support parameters. */
+/** @brief 由宿主持有的内部空洞支撑参数。 */
 struct hostinternalvoidsettings
 {
     bool enabled{true};
     int minareapx{16};
 };
 
-/** @brief Host-owned maximum-footprint support base parameters. */
+/** @brief 由宿主持有的最大足迹支撑基底参数。 */
 struct hostbaseprojectionsettings
 {
     bool enabled{false};
     int layercount{30};
 };
 
-/** @brief Host-owned editable support parameters. */
+/** @brief 由宿主持有的可编辑支撑参数。 */
 struct hostsupportsettings
 {
     bool enabled{true};
@@ -73,7 +73,7 @@ struct hostsupportsettings
     hostbaseprojectionsettings baseprojection;
 };
 
-/** @brief Production texture application mode exposed by the host Profile. */
+/** @brief 宿主 Profile 暴露的生产纹理应用模式。 */
 enum class HostTextureApplyMode
 {
     SolidVolumeFromTopSurface,
@@ -81,49 +81,56 @@ enum class HostTextureApplyMode
     TopSurfaceBand
 };
 
-/** @brief Texture filtering mode used while sampling UV coordinates. */
+/** @brief 采样 UV 坐标时使用的纹理过滤模式。 */
 enum class HostTextureSampler
 {
     Nearest,
     Bilinear
 };
 
-/** @brief Texture addressing mode used outside the normalized UV range. */
+/** @brief 超出规范化 UV 范围时使用的纹理寻址模式。 */
 enum class HostTextureUvAddressMode
 {
     Clamp,
     Repeat
 };
 
-/** @brief Fail-closed behavior for missing or invalid texture assets. */
+/** @brief 纹理资产缺失或无效时的失败即拒绝行为。 */
 enum class HostTextureMissingPolicy
 {
     WarnAndFallback,
     FailFast
 };
 
-/** @brief RGB behavior below a limited texture surface band. */
+/** @brief 有限纹理表面带下方的 RGB 行为。 */
 enum class HostTextureNonSurfacePolicy
 {
     ModelMaterial,
     Empty
 };
 
-/** @brief Carrier policy for texture pixels that are all channel-empty. */
+/** @brief 所有通道均为空的纹理像素载体策略。 */
 enum class HostTextureWhitePolicy
 {
     FailClosed,
     WhiteUnderbase
 };
 
-/** @brief Geometry occupancy sampling strategy exposed by host code. */
+/** @brief 宿主代码暴露的几何占用采样策略。 */
 enum class HostGeometrySamplingStrategy
 {
     LegacyCenterSample,
     LayerSlabSupersample2x2AtLeastTwoCandidate
 };
 
-/** @brief Host-owned production texture and Stage 15 white-carrier settings. */
+/** @brief 宿主为生产层选择的 TIFF 压缩方式。 */
+enum class HostTiffCompression
+{
+    None,
+    PackBits
+};
+
+/** @brief 由宿主持有的生产纹理与 Stage 15 白色载体设置。 */
 struct hosttexturesettings
 {
     bool enabled{false};
@@ -147,7 +154,7 @@ struct hosttexturesettings
     int whitevalue{0};
 };
 
-/** @brief Device-owned build volume injected into the first scene Commit. */
+/** @brief 由设备持有并注入首次场景 Commit 的构建体积。 */
 struct hostbuildvolume
 {
     double widthmm{230.0};
@@ -158,10 +165,11 @@ struct hostbuildvolume
     QString ydirection{QStringLiteral("positive")};
 };
 
-/** @brief Host-owned editable slice parameters. */
+/** @brief 由宿主持有的可编辑切片参数。 */
 struct hostslicesettings
 {
     QString profileid;
+    QString processpresetid{QStringLiteral("custom")};
     QString modelpath;
     QString modelformat;
     QString outputdirectory;
@@ -173,37 +181,38 @@ struct hostslicesettings
     hostbuildvolume buildvolume;
     hostsupportsettings support;
     hosttexturesettings texture;
+    HostTiffCompression tiffcompression{HostTiffCompression::None};
     HostGeometrySamplingStrategy geometrysamplingstrategy{
         HostGeometrySamplingStrategy::LegacyCenterSample};
 };
 
-/** @brief Validated Profile preview ready for a future slice request. */
+/** @brief 已校验且可用于后续切片请求的 Profile 预览。 */
 struct hosteffectiveprofile
 {
     QJsonObject profile;
     QString profilehash;
 };
 
-/** @brief Builds and validates host-owned effective slice Profiles. */
+/** @brief 构建并校验由宿主持有的有效切片 Profile。 */
 class HostEffectiveProfileBuilder final
 {
 public:
     /**
-     * @brief Validates editable host settings without calling the module.
-     * @param settings Host-owned settings to inspect.
-     * @param error Receives a user-readable validation reason.
-     * @return True when settings can produce an effective Profile.
+     * @brief 不调用模块，仅校验可编辑宿主设置。
+     * @param settings 待检查的宿主侧设置。
+     * @param error 接收用户可读的校验原因。
+     * @return 设置能够生成有效 Profile 时返回 true。
      */
     static bool Validate(
         const hostslicesettings& settings,
         QString* error);
 
     /**
-     * @brief Builds a self-hashed effective Profile from host settings.
-     * @param settings Valid host-owned settings.
-     * @param effectiveProfile Receives parsed Profile JSON and hash.
-     * @param error Receives a fail-closed reason.
-     * @return True when the exact future submission Profile was built.
+     * @brief 根据宿主设置构建包含自身哈希的有效 Profile。
+     * @param settings 有效的宿主侧设置。
+     * @param effectiveProfile 接收解析后的 Profile JSON 与哈希。
+     * @param error 接收失败即拒绝原因。
+     * @return 成功构建后续提交所用的精确 Profile 时返回 true。
      */
     static bool Build(
         const hostslicesettings& settings,
@@ -211,39 +220,46 @@ public:
         QString* error);
 
     /**
-     * @brief Converts a material strategy to a stable host identifier.
-     * @param strategy Strategy selected by the operator.
-     * @return Stable lowercase identifier used by UI tests and persistence.
+     * @brief 将材料策略转换为稳定宿主标识。
+     * @param strategy 操作员选择的策略。
+     * @return UI 测试与持久化使用的稳定小写标识。
      */
     static QString MaterialStrategyId(HostMaterialStrategy strategy);
 
     /**
-     * @brief Converts a material role to a stable Profile value.
-     * @param role Material role selected by the operator.
-     * @return Stable identifier written to `materialRoleMapping`.
+     * @brief 将材料角色转换为稳定 Profile 值。
+     * @param role 操作员选择的材料角色。
+     * @return 写入 `materialRoleMapping` 的稳定标识。
      */
     static QString MaterialRoleId(HostMaterialRole role);
 
     /**
-     * @brief Converts a support mode to a stable production Profile value.
-     * @param mode Support mode selected by the operator.
-     * @return Stable identifier written to `support.mode`.
+     * @brief 将支撑模式转换为稳定生产 Profile 值。
+     * @param mode 操作员选择的支撑模式。
+     * @return 写入 `support.mode` 的稳定标识。
      */
     static QString SupportModeId(HostSupportMode mode);
 
     /**
-     * @brief Converts geometry sampling to its stable Profile value.
-     * @param strategy Geometry sampling selected by host code.
-     * @return Approved Profile identifier, or `unknown`.
+     * @brief 将几何采样策略转换为稳定 Profile 值。
+     * @param strategy 宿主代码选择的几何采样策略。
+     * @return 已批准的 Profile 标识；无法识别时返回 `unknown`。
      */
     static QString GeometrySamplingStrategyId(
         HostGeometrySamplingStrategy strategy);
 
     /**
-     * @brief Compares two build volumes using the frozen scene semantics.
-     * @param left First host volume.
-     * @param right Second host volume.
-     * @return True when dimensions, origin and axes are equal.
+     * @brief 将 TIFF 压缩方式转换为 Profile 算法值。
+     * @param compression 宿主选择的无损压缩模式。
+     * @return `none`、`packbits` 或 `unknown`。
+     */
+    static QString TiffCompressionId(HostTiffCompression compression);
+
+    /**
+     * @brief 按冻结的场景语义比较两个构建体积。
+     * @param left 第一个宿主体积。
+     * @param right 第二个宿主体积。
+     * @return 尺寸、原点与坐标轴一致时返回 true。
      */
     static bool BuildVolumesEqual(
         const hostbuildvolume& left,

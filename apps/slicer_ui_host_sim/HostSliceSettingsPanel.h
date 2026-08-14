@@ -5,6 +5,7 @@
 #include <QWidget>
 
 class QDoubleSpinBox;
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QLineEdit;
@@ -15,38 +16,38 @@ class HostMaterialSettingsPanel;
 class HostSupportSettingsPanel;
 class HostTextureSettingsPanel;
 
-/** @brief Host-owned slice settings editor and effective Profile preview. */
+/** @brief 由宿主持有的切片设置编辑器和有效的Profile 预览。 */
 class HostSliceSettingsPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Creates an editor with production-oriented reference defaults.
-     * @param parent Optional Qt parent widget.
+     * @brief 创建具有面向生产的参考默认值的编辑器。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostSliceSettingsPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Updates the host Profile selected by H-B-04.
-     * @param profileId Available host Profile identity.
-     * @param supportsSlice True when the Profile requires slice.rgbwsv.
+     * @brief 更新 H-B-04 选择的宿主Profile。
+     * @param profileId 可用的宿主Profile 标识。
+     * @param supportsSlice 当Profile需要 slice.rgbwsv 时为 true。
      */
     void SetSelectedProfileId(
         const QString& profileId,
         bool supportsSlice = true);
 
     /**
-     * @brief Updates the model used by the effective Profile preview.
-     * @param modelPath Existing imported OBJ, 3MF, or STL path, or empty.
+     * @brief 更新有效Profile 预览所使用的模型。
+     * @param modelPath 现有导入的 OBJ、3MF 或 STL 路径，或者为空。
      */
     void SetModelPath(const QString& modelPath);
 
     /**
-     * @brief Records the authoritative context of an already-created scene.
-     * @param bound True when scene context is immutable for this session.
-     * @param profileId Profile identity committed with the scene.
-     * @param buildVolume Device build volume committed with the scene.
+     * @brief 记录已创建场景的权威上下文。
+     * @param bound 当场景上下文对于此会话不可变时为 true。
+     * @param profileId Profile 标识与场景相关。
+     * @param buildVolume 随场景提交的设备构建体积。
      */
     void SetSceneAuthority(
         bool bound,
@@ -54,41 +55,41 @@ public:
         const hostbuildvolume& buildVolume);
 
     /**
-     * @brief Applies validated user preferences before a scene is created.
-     * @param settings Persisted host-owned parameters; model identity is ignored.
-     * @return This function does not return a value.
+     * @brief 在创建场景之前应用经过验证的用户首选项。
+     * @param settings 保留由宿主持有的参数；模型标识被忽略。
+     * @return 该函数不返回值。
      */
     void SetPersistentSettings(const hostslicesettings& settings);
 
     /**
-     * @brief Returns all host-owned values currently shown in the editor.
-     * @return Settings snapshot independent from module state.
+     * @brief 返回编辑器中当前显示的所有由宿主持有的值。
+     * @return 设置快照独立于模块状态。
      */
     [[nodiscard]] hostslicesettings Settings() const;
 
     /**
-     * @brief Returns whether an exact effective Profile is ready.
-     * @return True only after model, path and scene-binding validation pass.
+     * @brief 返回精确有效 Profile 是否已准备就绪。
+     * @return 仅在模型、路径和场景绑定验证通过后才为 true。
      */
     [[nodiscard]] bool IsReady() const;
 
     /**
-     * @brief Returns the latest validated effective Profile.
-     * @return Empty object when IsReady is false.
+     * @brief 返回最新验证的有效 Profile。
+     * @return 当 IsReady 为 false 时为空对象。
      */
     [[nodiscard]] hosteffectiveprofile EffectiveProfile() const;
 
     /**
-     * @brief Shows the current non-blocking source texture white preflight.
-     * @param message User-readable identity-bound preflight state.
-     * @param warning True when exact-white evidence needs operator attention.
+     * @brief 显示当前非阻塞的源纹理纯白预检。
+     * @param message 用户可读的标识绑定预检状态。
+     * @param warning 当纯白色证据需要操作员注意时，这是正确的。
      */
     void SetTextureWhitePreflightStatus(
         const QString& message,
         bool warning);
 
 signals:
-    /** @brief Emitted after an operator changes a local slice setting. */
+    /** @brief 在操作员更改本地切片设置后发出。 */
     void SigSettingsChanged();
 
 private:
@@ -106,6 +107,8 @@ private:
     QSpinBox* m_dpiYSpin{nullptr};
     QDoubleSpinBox* m_layerThicknessSpin{nullptr};
     QComboBox* m_geometrySamplingCombo{nullptr};
+    QCheckBox* m_tiffCompressionCheck{nullptr};
+    QComboBox* m_tiffCompressionCombo{nullptr};
     QLineEdit* m_outputEdit{nullptr};
     QPushButton* m_outputBrowseButton{nullptr};
     QDoubleSpinBox* m_buildWidthSpin{nullptr};

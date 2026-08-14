@@ -10,6 +10,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <cmath>
 
 namespace
@@ -98,7 +99,7 @@ QString PhaseText(const QString& phase)
     }
     if (phase == QStringLiteral("scene_package_write"))
     {
-        return QStringLiteral("保存 TIFF、预览与报告");
+        return QStringLiteral("保存并严格校验 TIFF、预览与报告");
     }
     if (phase == QStringLiteral("scene_package_validation"))
     {
@@ -106,7 +107,7 @@ QString PhaseText(const QString& phase)
     }
     if (phase == QStringLiteral("completed"))
     {
-        return QStringLiteral("Worker 核心处理完成");
+        return QStringLiteral("Worker 核心完成，等待模块终结结果");
     }
     if (phase == QStringLiteral("cancelling"))
     {
@@ -297,6 +298,24 @@ void HostSliceJobPanel::SetActive()
     m_detailView->clear();
     m_lastWorkerElapsedMs = 0;
     ResetTiming();
+    for (QLabel* value : {
+             m_engineValue,
+             m_configLoadValue,
+             m_modelLoadValue,
+             m_gridSetupValue,
+             m_sliceProcessingValue,
+             m_layerComputeValue,
+             m_layerComposeValue,
+             m_tiffWriteValue,
+             m_previewWriteValue,
+             m_reportValue,
+             m_outputWriteValue,
+             m_supportStatisticsScanValue})
+    {
+        value->setText(QStringLiteral("终结结果返回后提供"));
+    }
+    m_workerTotalValue->setText(QStringLiteral("0.0 ms"));
+    m_hostTotalValue->setText(QStringLiteral("计时中"));
     UpdateButtons();
 }
 
@@ -308,10 +327,14 @@ void HostSliceJobPanel::UpdateProgress(
     const int percent,
     const qint64 elapsedMs)
 {
-    m_progressBar->setValue(percent);
+    const bool terminal = state == QStringLiteral("succeeded")
+        || state == QStringLiteral("failed")
+        || state == QStringLiteral("cancelled");
+    const int displayPercent = terminal ? percent : std::min(percent, 99);
+    m_progressBar->setValue(displayPercent);
     m_statusLabel->setText(QStringLiteral("状态：%1 · %2%")
                                .arg(StateText(state))
-                               .arg(percent));
+                               .arg(displayPercent));
     m_phaseLabel->setText(
         QStringLiteral("阶段：%1 · %2/%3 · 已用 %4")
             .arg(PhaseText(phase))
@@ -400,7 +423,9 @@ void HostSliceJobPanel::ApplyTiming(
     const QString engine = timing.value(
         QStringLiteral("engine")).toString();
     m_engineValue->setText(
-        engine.isEmpty() ? QStringLiteral("未提供") : engine);
+        timing.value(QStringLiteral("approximate")).toBool()
+            ? QStringLiteral("失败前阶段进度估算")
+            : engine.isEmpty() ? QStringLiteral("未提供") : engine);
     if (timing.value(QStringLiteral("available")).toBool())
     {
         SetTimingValue(

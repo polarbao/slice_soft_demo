@@ -8,6 +8,7 @@
 #include <QCoreApplication>
 #include <QAbstractItemView>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QDateTime>
 #include <QDir>
 #include <QDoubleSpinBox>
@@ -42,11 +43,13 @@ QString LegacyCompatibleApplicationRoot()
 
 QString DefaultOutputDirectory()
 {
-    const QString sessionName = QStringLiteral("host_")
+    const QString sessionName = QStringLiteral("h")
         + QDateTime::currentDateTime().toString(
-            QStringLiteral("yyyyMMdd_HHmmss_zzz"));
+            QStringLiteral("yyMMddHHmmsszzz"));
+    // “output”是稳定的应用输出根，不能是
+    // 缩写为“出”；仅内部会话组件被缩短。
     return QDir(LegacyCompatibleApplicationRoot()).filePath(
-        QStringLiteral("output/ui_sessions/%1/package").arg(sessionName));
+        QStringLiteral("output/%1/package").arg(sessionName));
 }
 
 QString LegacyDefaultOutputDirectory()
@@ -67,6 +70,23 @@ bool IsSharedUiSessionRoot(const QString& path)
         QDir::cleanPath(QFileInfo(path).absoluteFilePath())).endsWith(
             QStringLiteral("/output/ui_sessions"),
             Qt::CaseInsensitive);
+}
+
+bool IsLegacyGeneratedUiSessionPackage(const QString& path)
+{
+    const QFileInfo packageInfo(
+        QDir::cleanPath(QFileInfo(path).absoluteFilePath()));
+    const QFileInfo sessionInfo(packageInfo.absolutePath());
+    const QFileInfo sessionRootInfo(sessionInfo.absolutePath());
+    const QFileInfo outputRootInfo(sessionRootInfo.absolutePath());
+    return packageInfo.fileName().compare(
+               QStringLiteral("package"), Qt::CaseInsensitive) == 0
+        && sessionInfo.fileName().startsWith(
+            QStringLiteral("host_"), Qt::CaseInsensitive)
+        && sessionRootInfo.fileName().compare(
+               QStringLiteral("ui_sessions"), Qt::CaseInsensitive) == 0
+        && outputRootInfo.fileName().compare(
+               QStringLiteral("output"), Qt::CaseInsensitive) == 0;
 }
 
 int GeometrySamplingIndex(
@@ -99,6 +119,12 @@ HostSliceSettingsPanel::HostSliceSettingsPanel(QWidget* parent)
 {
     m_defaultOutputDirectory = DefaultOutputDirectory();
     BuildInterface();
+    const int defaultPresetIndex = m_processPresetCombo->findData(
+        HostProcessPresetCatalog::DefaultPresetId());
+    if (defaultPresetIndex > 0)
+    {
+        m_processPresetCombo->setCurrentIndex(defaultPresetIndex);
+    }
     RefreshPreview();
 }
 
@@ -172,6 +198,29 @@ void HostSliceSettingsPanel::BuildInterface()
         0,
         QStringLiteral("现有生产基线；适用于全部已支持 Profile。"),
         Qt::ToolTipRole);
+
+    auto* compressionRow = new QWidget(processGroup);
+    auto* compressionLayout = new QHBoxLayout(compressionRow);
+    compressionLayout->setContentsMargins(0, 0, 0, 0);
+    m_tiffCompressionCheck = new QCheckBox(
+        QStringLiteral("启用无损压缩"), compressionRow);
+    m_tiffCompressionCheck->setObjectName(
+        QStringLiteral("hostTiffCompressionCheck"));
+    m_tiffCompressionCheck->setChecked(false);
+    m_tiffCompressionCheck->setToolTip(QStringLiteral(
+        "默认关闭以保持现有 RIP 兼容基线；启用前请确认 RIP 支持 PackBits。"));
+    m_tiffCompressionCombo = new QComboBox(compressionRow);
+    m_tiffCompressionCombo->setObjectName(
+        QStringLiteral("hostTiffCompressionCombo"));
+    m_tiffCompressionCombo->addItem(
+        QStringLiteral("PackBits（无损）"),
+        HostEffectiveProfileBuilder::TiffCompressionId(
+            HostTiffCompression::PackBits));
+    m_tiffCompressionCombo->setEnabled(false);
+    m_tiffCompressionCombo->setToolTip(QStringLiteral(
+        "当前生产合同仅支持 none 与 PackBits；压缩不会改变 RGBWSV 像素语义。"));
+    compressionLayout->addWidget(m_tiffCompressionCheck);
+    compressionLayout->addWidget(m_tiffCompressionCombo, 1);
     m_geometrySamplingCombo->addItem(
         QStringLiteral("诊断候选｜S3 层体积 2×2（至少 2/4）"),
         HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
@@ -203,6 +252,8 @@ void HostSliceSettingsPanel::BuildInterface()
     processForm->addRow(QStringLiteral("层厚"), m_layerThicknessSpin);
     processForm->addRow(
         QStringLiteral("几何采样"), m_geometrySamplingCombo);
+    processForm->addRow(
+        QStringLiteral("TIFF 压缩"), compressionRow);
     processForm->addRow(QStringLiteral("输出目录"), outputRow);
     layout->addWidget(processGroup);
 
@@ -304,6 +355,21 @@ void HostSliceSettingsPanel::BuildInterface()
         this,
         &HostSliceSettingsPanel::OnSettingsEdited);
     connect(
+        m_tiffCompressionCheck,
+        &QCheckBox::toggled,
+        m_tiffCompressionCombo,
+        &QWidget::setEnabled);
+    connect(
+        m_tiffCompressionCheck,
+        &QCheckBox::toggled,
+        this,
+        &HostSliceSettingsPanel::OnSettingsEdited);
+    connect(
+        m_tiffCompressionCombo,
+        qOverload<int>(&QComboBox::currentIndexChanged),
+        this,
+        &HostSliceSettingsPanel::OnSettingsEdited);
+    connect(
         m_outputEdit,
         &QLineEdit::textChanged,
         this,
@@ -374,6 +440,8 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     const QSignalBlocker zBlocker(m_buildZSpin);
     const QSignalBlocker presetBlocker(m_processPresetCombo);
     const QSignalBlocker samplingBlocker(m_geometrySamplingCombo);
+    const QSignalBlocker compressionCheckBlocker(m_tiffCompressionCheck);
+    const QSignalBlocker compressionComboBlocker(m_tiffCompressionCombo);
     m_dpiXSpin->setValue(settings.dpix);
     m_dpiYSpin->setValue(settings.dpiy);
     m_layerThicknessSpin->setValue(settings.layerthicknessmm);
@@ -384,13 +452,21 @@ void HostSliceSettingsPanel::SetPersistentSettings(
                 persistedOutput,
                 LegacyDefaultOutputDirectory())
             || IsSharedUiSessionRoot(persistedOutput)
+            || IsLegacyGeneratedUiSessionPackage(persistedOutput)
             ? QDir::toNativeSeparators(m_defaultOutputDirectory)
             : persistedOutput);
-    m_processPresetCombo->setCurrentIndex(0);
+    const int presetIndex = m_processPresetCombo->findData(
+        settings.processpresetid);
+    m_processPresetCombo->setCurrentIndex(
+        presetIndex >= 0 ? presetIndex : 0);
     const int samplingIndex = GeometrySamplingIndex(
         m_geometrySamplingCombo, settings.geometrysamplingstrategy);
     m_geometrySamplingCombo->setCurrentIndex(
         samplingIndex >= 0 ? samplingIndex : 0);
+    const bool compressionEnabled = settings.tiffcompression
+        == HostTiffCompression::PackBits;
+    m_tiffCompressionCheck->setChecked(compressionEnabled);
+    m_tiffCompressionCombo->setEnabled(compressionEnabled);
     m_materialPanel->SetSettings(
         settings.materialstrategy, settings.materialprocess);
     m_texturePanel->SetSettings(settings.texture);
@@ -405,6 +481,8 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
 {
     hostslicesettings settings;
     settings.profileid = m_profileId;
+    settings.processpresetid =
+        m_processPresetCombo->currentData().toString();
     settings.modelpath = m_modelPath;
     settings.modelformat = QFileInfo(m_modelPath).suffix().toLower();
     settings.outputdirectory = m_outputEdit->text().trimmed();
@@ -419,6 +497,9 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
         ? HostGeometrySamplingStrategy::
             LayerSlabSupersample2x2AtLeastTwoCandidate
         : HostGeometrySamplingStrategy::LegacyCenterSample;
+    settings.tiffcompression = m_tiffCompressionCheck->isChecked()
+        ? HostTiffCompression::PackBits
+        : HostTiffCompression::None;
     settings.materialstrategy = m_materialPanel->Strategy();
     settings.materialprocess = m_materialPanel->Settings();
     settings.texture = m_texturePanel->Settings();

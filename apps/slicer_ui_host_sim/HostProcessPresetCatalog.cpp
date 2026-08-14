@@ -35,6 +35,12 @@ hostprocesspreset MakeSingleMaterialPreset(
 }
 }
 
+QString HostProcessPresetCatalog::DefaultPresetId()
+{
+    return QStringLiteral(
+        "textured_nail_rgb_white_ondemand_lower_support");
+}
+
 QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
 {
     QVector<hostprocesspreset> presets;

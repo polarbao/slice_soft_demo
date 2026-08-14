@@ -5,7 +5,7 @@
 #include <QString>
 #include <QVector>
 
-/** @brief One host-owned common process preset shown by the reference UI. */
+/** @brief 参考 UI 展示的单个宿主侧常用工艺预设。 */
 struct hostprocesspreset
 {
     QString id;
@@ -17,21 +17,27 @@ struct hostprocesspreset
     hostsupportsettings support;
 };
 
-/** @brief Provides common process presets without reading slicer fixtures. */
+/** @brief 在不读取切片器 fixture 的前提下提供常用工艺预设。 */
 class HostProcessPresetCatalog final
 {
 public:
     /**
-     * @brief Returns the stable common-process presets in display order.
-     * @return Host-owned presets equivalent to the old UI's common workflows.
+     * @brief 返回默认生产工艺预设标识。
+     * @return 稳定的 Stage 15 按需补白预设标识。
+     */
+    static QString DefaultPresetId();
+
+    /**
+     * @brief 按显示顺序返回稳定的常用工艺预设。
+     * @return 与旧 UI 常用流程等价的宿主侧预设。
      */
     static QVector<hostprocesspreset> Presets();
 
     /**
-     * @brief Resolves one preset by its stable identity.
-     * @param presetId Stable preset identity.
-     * @param preset Receives the resolved preset when found.
-     * @return True when the preset exists.
+     * @brief 按稳定标识解析一个预设。
+     * @param presetId 稳定预设标识。
+     * @param preset 找到时接收解析后的预设。
+     * @return 预设存在时返回 true。
      */
     static bool Resolve(
         const QString& presetId,

@@ -232,6 +232,7 @@ char* HostBuildEffectiveProfile(
     const char* supportMode = NULL;
     const char* slicingMode = NULL;
     const char* geometrySamplingStrategy = NULL;
+    const char* tiffCompression = NULL;
     const char* supportPlacementCanonical = "";
     const char* supportPlacementCompact = "";
     char* escapedModel = NULL;
@@ -323,6 +324,17 @@ char* HostBuildEffectiveProfile(
     default:
         return NULL;
     }
+    switch (settings->tiffcompression)
+    {
+    case HOST_TIFF_COMPRESSION_NONE:
+        tiffCompression = "none";
+        break;
+    case HOST_TIFF_COMPRESSION_PACKBITS:
+        tiffCompression = "packbits";
+        break;
+    default:
+        return NULL;
+    }
     if (settings->supportmode == HOST_SUPPORT_BOTTOM_PROJECTION)
     {
         supportPlacementCanonical = "\"placement\": \"lower\",\n";
@@ -403,7 +415,10 @@ char* HostBuildEffectiveProfile(
         "\"packageDir\": \"%s\",\n"
         "\"planarConfig\": \"contiguous\",\n"
         "\"rowsPerStrip\": 64,\n"
-        "\"storageMode\": \"stripped\"\n"
+        "\"storageMode\": \"stripped\",\n"
+        "\"tiffCompression\": {\n"
+        "\"algorithm\": \"%s\"\n"
+        "}\n"
         "},\n"
         "\"preview\": {\n"
         "\"enabled\": false\n"
@@ -442,6 +457,7 @@ char* HostBuildEffectiveProfile(
         settings->dpiy,
         settings->layerthicknessmm,
         escapedPackage,
+        tiffCompression,
         slicingMode,
         settings->baseprojectionenabled != 0 ? "true" : "false",
         settings->baseprojectionlayercount,
@@ -472,7 +488,8 @@ char* HostBuildEffectiveProfile(
         "\"channelOrder\":[\"R\",\"G\",\"B\",\"W\",\"S\",\"V\"],"
         "\"dpiX\":%d,\"dpiY\":%d,\"layerThicknessMm\":%.15g,"
         "\"packageDir\":\"%s\",\"planarConfig\":\"contiguous\","
-        "\"rowsPerStrip\":64,\"storageMode\":\"stripped\"},"
+        "\"rowsPerStrip\":64,\"storageMode\":\"stripped\","
+        "\"tiffCompression\":{\"algorithm\":\"%s\"}},"
         "\"preview\":{\"enabled\":false},\"profileHash\":\"%s\","
         "\"profileVersion\":\"1.0\","
         "\"slicePipeline\":{\"mode\":\"legacy\"},"
@@ -493,6 +510,7 @@ char* HostBuildEffectiveProfile(
         settings->dpiy,
         settings->layerthicknessmm,
         escapedPackage,
+        tiffCompression,
         profileHash,
         slicingMode,
         settings->baseprojectionenabled != 0 ? "true" : "false",
