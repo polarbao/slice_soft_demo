@@ -1,8 +1,11 @@
+// 本文件使用仓库真实资产执行独立夹具门禁，补充合成用例无法覆盖的材质解析和
+// 视图预算组合；它只验证只读 ViewData，不参与生产切片或写包。
 #include "slicer_core/api/viewdata/TexturedSceneViewDataProvider.h"
 #include "slicer_core/model.h"
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -68,6 +71,12 @@ slicer_core::api::SceneSnapshot MakeSnapshot()
     shengdanjie.instance.model_id = 140302U;
     shengdanjie.instance.world_matrix.values.at(3U) = 30.0;
     snapshot.instances.push_back(shengdanjie);
+
+    slicer_core::api::SceneInstanceState reality;
+    reality.instance.instance_id = "reality-obj";
+    reality.instance.model_id = 140303U;
+    reality.instance.world_matrix.values.at(3U) = 60.0;
+    snapshot.instances.push_back(reality);
     return snapshot;
 }
 
@@ -109,19 +118,40 @@ std::size_t CountOpaqueColors(const std::vector<std::uint8_t>& rgba)
     return colors.size();
 }
 
+bool ContainsOpaqueColor(
+    const std::vector<std::uint8_t>& rgba,
+    const std::array<std::uint8_t, 4>& expected)
+{
+    for (std::size_t offset{0U}; offset + 3U < rgba.size(); offset += 4U)
+    {
+        if (std::equal(
+                expected.begin(),
+                expected.end(),
+                rgba.begin() + static_cast<std::ptrdiff_t>(offset)))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void VerifyTopView(const slicer_core::api::SceneViewData& viewData)
 {
     Require(viewData.view_mode == slicer_core::api::ViewMode::Top,
             "top request returned the wrong mode");
-    Require(viewData.instances.size() == 2U,
-            "top response did not retain both real models");
-    Require(viewData.appearances.size() == 2U,
-            "top response did not retain two real appearances");
-    for (const slicer_core::api::ViewInstance& instance : viewData.instances)
+    Require(viewData.instances.size() == 3U,
+            "top response did not retain all real models");
+    Require(viewData.appearances.size() == 3U,
+            "top response did not retain all real appearances");
+    for (std::size_t index{0U}; index < viewData.instances.size(); ++index)
     {
-        Require(instance.texture_status
-                    == slicer_core::api::TextureStatus::Available,
-                "textured real model was reported as untextured");
+        const slicer_core::api::ViewInstance& instance =
+            viewData.instances.at(index);
+        const slicer_core::api::TextureStatus expectedStatus = index < 2U
+            ? slicer_core::api::TextureStatus::Available
+            : slicer_core::api::TextureStatus::NotProvided;
+        Require(instance.texture_status == expectedStatus,
+                "real model texture status did not match its assets");
         Require(instance.surface_preview.has_value(),
                 "top response did not contain surfacePreview");
         Require(!instance.surface_preview->rgba8.empty(),
@@ -133,14 +163,20 @@ void VerifyTopView(const slicer_core::api::SceneViewData& viewData)
     Require(CountOpaqueColors(
                 viewData.instances.at(1U).surface_preview->rgba8) >= 2U,
             "OBJ top preview did not retain real texture variation");
+    const auto& realityPreview =
+        viewData.instances.at(2U).surface_preview->rgba8;
+    Require(ContainsOpaqueColor(
+                realityPreview,
+                {153U, 153U, 153U, 255U}),
+            "untextured reality OBJ did not use neutral gray fallback");
 }
 
 void VerifyThreeDView(const slicer_core::api::SceneViewData& viewData)
 {
     Require(viewData.view_mode == slicer_core::api::ViewMode::ThreeD,
             "three_d request returned the wrong mode");
-    Require(viewData.instances.size() == 2U,
-            "three_d response did not retain both real models");
+    Require(viewData.instances.size() == 3U,
+            "three_d response did not retain all real models");
     for (const slicer_core::api::ViewInstance& instance : viewData.instances)
     {
         Require(!instance.mesh.has_value(),
@@ -162,13 +198,17 @@ void VerifyThreeDView(const slicer_core::api::SceneViewData& viewData)
         Require(!mesh.submeshes.empty(),
                 "three_d mesh had no material submesh");
     }
-    for (const slicer_core::api::ViewAppearance& appearance :
-         viewData.appearances)
+    Require(viewData.appearances.size() == 3U,
+            "three_d response did not retain all appearances");
+    for (std::size_t index{0U}; index < viewData.appearances.size(); ++index)
     {
+        const slicer_core::api::ViewAppearance& appearance =
+            viewData.appearances.at(index);
         Require(!appearance.materials.empty(),
                 "real appearance had no materials");
-        Require(!appearance.textures.empty(),
-                "real textured appearance had no texture resources");
+        Require(index < 2U ? !appearance.textures.empty()
+                           : appearance.textures.empty(),
+                "real appearance texture resources did not match assets");
     }
 }
 
@@ -193,10 +233,19 @@ int main()
             "MF_shengdanjie_zhongzhi_R_fy02.obj",
             "obj",
             "shengdanjie"));
+    auto reality = std::make_shared<const slicer_core::SceneModel>(
+        LoadFixture(
+            sourceRoot,
+            binaryRoot,
+            "model/obj/reality/"
+            "260805-11-51-15-122-segment_105.txt.obj",
+            "obj",
+            "reality"));
 
     const auto repository = slicer_core::api::CreateSceneViewModelRepository({
         {140301U, std::move(checker)},
         {140302U, std::move(shengdanjie)},
+        {140303U, std::move(reality)},
     });
     Require(repository.IsOk(), "real model repository creation failed");
     const auto provider = slicer_core::api::CreateTexturedSceneViewDataProvider(

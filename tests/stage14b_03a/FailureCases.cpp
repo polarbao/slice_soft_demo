@@ -1,3 +1,5 @@
+// 本文件集中验证 ViewData 资源缺失、解码失败与预算越界等拒绝路径；
+// 失败必须保持可诊断且不得退化为不完整的成功结果。
 #include "TestSupport.h"
 
 #include <algorithm>
@@ -62,6 +64,15 @@ void UvAndMaterialFailures()
         std::move(badMaterial), textures);
     RequireError(badMaterialResult.Error(), "PM-SLICER-INPUT-0002",
                  "unknown material binding");
+
+    auto missingLibraryMaterial = MakeTexturedQuad(
+        "missing-library-material.obj", "mtl0", "unused.png");
+    missingLibraryMaterial.material_infos.clear();
+    missingLibraryMaterial.material_libraries.push_back("missing.mtl");
+    const auto missingLibraryResult = RunSingle(
+        std::move(missingLibraryMaterial), textures);
+    RequireError(missingLibraryResult.Error(), "PM-SLICER-INPUT-0002",
+                 "declared library with unresolved material binding");
 }
 
 void BudgetAndRequestFailures()

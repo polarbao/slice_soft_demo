@@ -32,6 +32,25 @@ bool IsFinite(const TexCoord& uv)
     return std::isfinite(uv.u) && std::isfinite(uv.v);
 }
 
+bool CanUseImplicitNeutralMaterial(
+    const SceneModel& model,
+    const std::string& sourceName)
+{
+    return !sourceName.empty()
+        && model.material_libraries.empty()
+        && model.material_infos.empty();
+}
+
+void ApplyImplicitNeutralMaterial(ViewMaterial& material)
+{
+    constexpr float neutralGray{0.6F};
+    material.base_color = {
+        neutralGray,
+        neutralGray,
+        neutralGray,
+        1.0F};
+}
+
 std::string SourceMaterialName(
     const SceneModel& model,
     const std::size_t triangleIndex)
@@ -157,25 +176,33 @@ ApiResult<ResolvedViewAppearance> ResolveViewAppearance(
                 const auto found = sourceMaterials.find(sourceName);
                 if (found == sourceMaterials.end())
                 {
-                    return Failure<ResolvedViewAppearance>(
-                        "PM-SLICER-INPUT-0002",
-                        "triangle references an unknown ViewData material",
-                        sourceName);
-                }
-                source = found->second;
-                // Some production OBJ exporters write black Kd beside map_Kd.
-                const bool hasNeutralizedTexturedBlack =
-                    source->has_texture
-                    && source->diffuse_rgb.at(0U) == 0U
-                    && source->diffuse_rgb.at(1U) == 0U
-                    && source->diffuse_rgb.at(2U) == 0U;
-                if (source->has_diffuse && !hasNeutralizedTexturedBlack)
-                {
-                    for (std::size_t channel{0U}; channel < 3U; ++channel)
+                    if (!CanUseImplicitNeutralMaterial(model, sourceName))
                     {
-                        resolvedMaterial.material.base_color.at(channel) =
-                            static_cast<float>(
-                                source->diffuse_rgb.at(channel)) / 255.0F;
+                        return Failure<ResolvedViewAppearance>(
+                            "PM-SLICER-INPUT-0002",
+                            "triangle references an unknown ViewData material",
+                            sourceName);
+                    }
+                    ApplyImplicitNeutralMaterial(
+                        resolvedMaterial.material);
+                }
+                else
+                {
+                    source = found->second;
+// 部分生产 OBJ 导出器会在 map_Kd 旁写入黑色 Kd；此处保留纹理优先语义。
+                    const bool hasNeutralizedTexturedBlack =
+                        source->has_texture
+                        && source->diffuse_rgb.at(0U) == 0U
+                        && source->diffuse_rgb.at(1U) == 0U
+                        && source->diffuse_rgb.at(2U) == 0U;
+                    if (source->has_diffuse && !hasNeutralizedTexturedBlack)
+                    {
+                        for (std::size_t channel{0U}; channel < 3U; ++channel)
+                        {
+                            resolvedMaterial.material.base_color.at(channel) =
+                                static_cast<float>(
+                                    source->diffuse_rgb.at(channel)) / 255.0F;
+                        }
                     }
                 }
             }

@@ -1,3 +1,5 @@
+// 本文件覆盖 ViewData 正向装配与纹理保真场景；与失败、量化和简化用例分离，
+// 便于分别定位资源解析错误和网格预算策略漂移。
 #include "TestSupport.h"
 
 #include <algorithm>
@@ -104,6 +106,50 @@ void CheckerThreeMfSemanticCase()
     Require(instance.appearance_identity
                 == threeD.Value()->appearances.front().appearance_identity,
             "checker instance appearance should close");
+}
+
+void ImplicitObjMaterialFallsBackToNeutralGrayCase()
+{
+    auto model = MakeTexturedQuad(
+        "implicit-material.obj",
+        "mtl0",
+        "unused.png");
+    model.material_infos.clear();
+    model.material_libraries.clear();
+    const auto provider = MakeProvider(
+        {{102U, std::make_shared<const slicer_core::SceneModel>(
+                    std::move(model))}},
+        std::make_shared<TestTextureSource>());
+    const TestCancelToken active;
+
+    const auto top = provider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::Top),
+        MakeSnapshot({{"implicit-material", 102U}}),
+        active);
+    Require(top.IsOk(),
+            "OBJ usemtl without mtllib should use a neutral material");
+    Require(top.Value()->instances.front().texture_status
+                == slicer_core::api::TextureStatus::NotProvided,
+            "implicit neutral material must remain untextured");
+    Require(top.Value()->appearances.front().textures.empty(),
+            "implicit neutral material must not invent a texture");
+    Require(ContainsColor(
+                top.Value()->instances.front().surface_preview->rgba8,
+                {153U, 153U, 153U, 255U}),
+            "implicit neutral material should render as gray");
+
+    const auto threeD = provider->GetViewData(
+        MakeRequest(slicer_core::api::ViewMode::ThreeD),
+        MakeSnapshot({{"implicit-material", 102U}}),
+        active);
+    Require(threeD.IsOk(),
+            "implicit neutral material should close in three_d");
+    const auto& material = threeD.Value()->appearances.front()
+        .materials.front();
+    Require(material.base_color.at(0U) == 0.6F
+                && material.base_color.at(1U) == 0.6F
+                && material.base_color.at(2U) == 0.6F,
+            "three_d implicit material should retain neutral gray");
 }
 
 void UvSeamPreservationCase()
@@ -474,6 +520,7 @@ void DualAppearanceAndIdentityCase()
 void RunPositiveCases()
 {
     CheckerThreeMfSemanticCase();
+    ImplicitObjMaterialFallsBackToNeutralGrayCase();
     ShengdanjieUsedMaterialClosureCase();
     WhiteAndNearWhiteTextureCase();
     TextureBaseColorFactorCase();
