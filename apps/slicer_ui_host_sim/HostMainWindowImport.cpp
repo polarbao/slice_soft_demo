@@ -72,6 +72,18 @@ void HostMainWindow::OnImportModel()
         ShowImportResult(result);
     }
     const bool autoLayoutRequired = m_importWorkflow->InstanceCount() > 1;
+    const bool singleMaterialOnly =
+        m_importWorkflow->RequiresSingleMaterialProcess();
+    const QString materialRestriction = singleMaterialOnly
+        ? QStringLiteral(
+              "\n外观资源不完整的模型已使用半透明灰色预览；"
+              "当前场景只允许单材料白墨或光油。%1")
+              .arg(m_importWorkflow->SingleMaterialRestrictionSummary().isEmpty()
+                       ? QString{}
+                       : QStringLiteral(" 原因：%1")
+                             .arg(m_importWorkflow
+                                      ->SingleMaterialRestrictionSummary()))
+        : QString{};
     const QString layoutSummary = !autoLayoutRequired
         ? QStringLiteral("单模型无需自动排版")
         : autoLayoutApplied
@@ -85,13 +97,17 @@ void HostMainWindow::OnImportModel()
     m_importSummaryLabel->setText(
         QStringLiteral(
             "已按选择顺序导入 %1 个模型；一次原子提交完成。\n"
-            "%2；场景 revision=%3。预检表显示最后一个模型。")
+            "%2；场景 revision=%3。预检表显示最后一个模型。%4")
             .arg(results.size())
             .arg(layoutSummary)
-            .arg(m_importWorkflow->SceneRevision()));
+            .arg(m_importWorkflow->SceneRevision())
+            .arg(materialRestriction));
     m_statusLabel->setText(
-        QStringLiteral("批量模型已导入 · %1 · ABI 调用 %2 次")
+        QStringLiteral("批量模型已导入 · %1%2 · ABI 调用 %3 次")
             .arg(layoutSummary)
+            .arg(singleMaterialOnly
+                     ? QStringLiteral(" · 单材料限定")
+                     : QString{})
             .arg(m_client.CallCount()));
     if (autoLayoutRequired && !autoLayoutApplied)
     {
@@ -114,6 +130,15 @@ void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
         : result.admission == QStringLiteral("manual_repair_required")
             ? QStringLiteral("需要人工修复")
             : QStringLiteral("阻断");
+    const QString appearanceText = result.singlematerialonly
+        ? QStringLiteral(
+              "\n外观资源不完整：已使用半透明灰色预览；"
+              "打印工艺仅允许单材料白墨或光油。%1")
+              .arg(result.appearancedetail.isEmpty()
+                       ? QString{}
+                       : QStringLiteral(" 原因：%1")
+                             .arg(result.appearancedetail))
+        : QString{};
     m_modelListPanel->AddModel(result);
     m_transformLayoutPanel->SetSceneState(
         m_importWorkflow->InstanceCount(),
@@ -122,7 +147,7 @@ void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
         QStringLiteral(
             "%1\nOBJ/3MF/STL 元数据：%2 三角形，%3 顶点，"
             "%4 × %5 × %6 mm，UV=%7，法线=%8\n"
-            "快速预检：%9；场景 revision=%10")
+            "快速预检：%9；场景 revision=%10%11")
             .arg(source.fileName())
             .arg(result.trianglecount)
             .arg(result.vertexcount)
@@ -132,7 +157,8 @@ void HostMainWindow::ShowImportResult(const hostmodelimportresult& result)
             .arg(result.hasuv ? QStringLiteral("有") : QStringLiteral("无"))
             .arg(result.hasnormals ? QStringLiteral("有") : QStringLiteral("无"))
             .arg(admissionText)
-            .arg(m_importWorkflow->SceneRevision()));
+            .arg(m_importWorkflow->SceneRevision())
+            .arg(appearanceText));
 
     m_preflightTable->setRowCount(result.issues.size());
     for (int rowIndex = 0; rowIndex < result.issues.size(); ++rowIndex)

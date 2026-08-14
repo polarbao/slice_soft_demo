@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QStringList>
 #include <QTextStream>
@@ -28,6 +29,13 @@ bool Check(
         errors << message << Qt::endl;
     }
     return condition;
+}
+
+bool WriteTextFile(const QString& path, const QByteArray& content)
+{
+    QFile file(path);
+    return file.open(QIODevice::WriteOnly | QIODevice::Truncate)
+        && file.write(content) == content.size();
 }
 }
 
@@ -247,6 +255,109 @@ int main(int argc, char* argv[])
                   errors))
     {
         return 13;
+    }
+
+    const QString degradedObjPath = importBase.filePath(
+        QStringLiteral("missing-material.obj"));
+    if (!Check(
+            WriteTextFile(
+                degradedObjPath,
+                QByteArrayLiteral(
+                    "v 0 0 0\n"
+                    "v 10 0 0\n"
+                    "v 0 10 0\n"
+                    "vt 0 0\n"
+                    "vt 1 0\n"
+                    "vt 0 1\n"
+                    "usemtl mtl0\n"
+                    "f 1/1 2/2 3/3\n")),
+            QStringLiteral("无法创建缺失 MTL 的 OBJ 夹具。"),
+            errors))
+    {
+        return 15;
+    }
+    hostmodelimportresult degradedResult;
+    error.clear();
+    if (!workflow.ImportModel(
+            degradedObjPath, &degradedResult, &error))
+    {
+        errors << "缺失 MTL 的 OBJ 应降级导入：" << error << Qt::endl;
+        return 16;
+    }
+    if (!Check(
+            degradedResult.singlematerialonly
+                && degradedResult.appearancestatus
+                    == QStringLiteral(
+                        "degraded_missing_material_definition")
+                && !degradedResult.appearancedetail.isEmpty()
+                && workflow.RequiresSingleMaterialProcess(),
+            QStringLiteral(
+                "缺失 MTL 的 OBJ 未声明半透明灰色/单材料限制。"),
+            errors))
+    {
+        return 17;
+    }
+
+    const QString missingTextureMtlPath = importBase.filePath(
+        QStringLiteral("missing-texture.mtl"));
+    const QString missingTextureObjPath = importBase.filePath(
+        QStringLiteral("missing-texture.obj"));
+    if (!Check(
+            WriteTextFile(
+                missingTextureMtlPath,
+                QByteArrayLiteral(
+                    "newmtl mtl0\n"
+                    "Kd 1 1 1\n"
+                    "map_Kd absent-texture.png\n"))
+                && WriteTextFile(
+                    missingTextureObjPath,
+                    QByteArrayLiteral(
+                        "mtllib missing-texture.mtl\n"
+                        "v 0 0 0\n"
+                        "v 10 0 0\n"
+                        "v 0 10 0\n"
+                        "vt 0 0\n"
+                        "vt 1 0\n"
+                        "vt 0 1\n"
+                        "usemtl mtl0\n"
+                        "f 1/1 2/2 3/3\n")),
+            QStringLiteral("无法创建缺失纹理的 OBJ/MTL 夹具。"),
+            errors))
+    {
+        return 18;
+    }
+    hostmodelimportresult missingTextureResult;
+    error.clear();
+    if (!workflow.ImportModel(
+            missingTextureObjPath, &missingTextureResult, &error))
+    {
+        errors << "缺失贴图的 OBJ 应降级导入：" << error << Qt::endl;
+        return 19;
+    }
+    if (!Check(
+            missingTextureResult.singlematerialonly
+                && missingTextureResult.appearancestatus
+                    == QStringLiteral("degraded_missing_texture"),
+            QStringLiteral("缺失贴图的 OBJ 未声明单材料限制。"),
+            errors))
+    {
+        return 20;
+    }
+
+    error.clear();
+    if (!Check(
+            workflow.RemoveInstances(
+                QStringList{
+                    degradedResult.instanceid,
+                    missingTextureResult.instanceid},
+                &error)
+                && !workflow.RequiresSingleMaterialProcess()
+                && workflow.SingleMaterialRestrictionSummary().isEmpty(),
+            QStringLiteral("移除降级模型后单材料限制未解除：%1")
+                .arg(error),
+            errors))
+    {
+        return 21;
     }
 
     QTextStream(stdout)

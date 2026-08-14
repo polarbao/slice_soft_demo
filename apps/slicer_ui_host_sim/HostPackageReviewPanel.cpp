@@ -145,8 +145,9 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo->addItem(
         QStringLiteral("RGB + 光油"), Channels({"R", "G", "B", "V"}));
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 白墨 + 支撑 + 光油"),
+        QStringLiteral("RGB + 支撑 + 白墨 + 光油"),
         Channels({"R", "G", "B", "W", "S", "V"}));
+    m_previewModeCombo->setCurrentIndex(4);
     for (const char* channel : {"R", "G", "B", "W", "S", "V"})
     {
         m_previewModeCombo->addItem(
@@ -176,43 +177,15 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
         Qt::TextSelectableByMouse);
     previewLayout->addWidget(m_stage16SummaryLabel);
 
-    auto* comparisonLayout = new QHBoxLayout();
-    auto* referenceLayout = new QVBoxLayout();
-    auto* referenceCaption = new QLabel(
-        QStringLiteral("A · 首层基准"), previewPage);
-    referenceCaption->setObjectName(
-        QStringLiteral("hostPackageReferencePreviewCaption"));
-    referenceLayout->addWidget(referenceCaption);
-    auto* referenceArea = new QScrollArea(previewPage);
-    referenceArea->setObjectName(
-        QStringLiteral("hostPackageReferencePreviewScroll"));
-    referenceArea->setWidgetResizable(true);
-    referenceArea->setAlignment(Qt::AlignCenter);
-    m_referencePreviewLabel = new FitPreviewLabel(
-        QStringLiteral("首层 A：尚无预览"), referenceArea);
-    m_referencePreviewLabel->setObjectName(
-        QStringLiteral("hostPackageReferencePreviewImage"));
-    referenceArea->setWidget(m_referencePreviewLabel);
-    referenceLayout->addWidget(referenceArea, 1);
-    comparisonLayout->addLayout(referenceLayout, 1);
-
-    auto* currentLayout = new QVBoxLayout();
-    auto* currentCaption = new QLabel(
-        QStringLiteral("B · 当前层"), previewPage);
-    currentCaption->setObjectName(
-        QStringLiteral("hostPackageCurrentPreviewCaption"));
-    currentLayout->addWidget(currentCaption);
     auto* currentArea = new QScrollArea(previewPage);
     currentArea->setObjectName(QStringLiteral("hostPackagePreviewScroll"));
     currentArea->setWidgetResizable(true);
     currentArea->setAlignment(Qt::AlignCenter);
     m_previewLabel = new FitPreviewLabel(
-        QStringLiteral("当前层 B：尚无预览"), currentArea);
+        QStringLiteral("尚无生产层预览"), currentArea);
     m_previewLabel->setObjectName(QStringLiteral("hostPackagePreviewImage"));
     currentArea->setWidget(m_previewLabel);
-    currentLayout->addWidget(currentArea, 1);
-    comparisonLayout->addLayout(currentLayout, 1);
-    previewLayout->addLayout(comparisonLayout, 2);
+    previewLayout->addWidget(currentArea, 2);
     m_channelChart = new HostChannelChartWidget(previewPage);
     previewLayout->addWidget(m_channelChart, 1);
     splitter->addWidget(previewPage);
@@ -374,24 +347,6 @@ void HostPackageReviewPanel::ShowPreview(
     RefreshStage16Summary(layer.layerindex);
 }
 
-void HostPackageReviewPanel::ShowReferencePreview(
-    const QString& imagePath,
-    const hostlayerdescriptor& layer)
-{
-    const QImage image(imagePath);
-    if (image.isNull())
-    {
-        ShowError(QStringLiteral("宿主无法读取首层 A 预览：%1")
-                      .arg(imagePath));
-        return;
-    }
-    static_cast<FitPreviewLabel*>(m_referencePreviewLabel)->SetImage(image);
-    m_referencePreviewLabel->setToolTip(
-        QStringLiteral("首层 A · layer=%1 · z=%2 mm")
-            .arg(layer.layerindex)
-            .arg(layer.zmm, 0, 'f', 3));
-}
-
 void HostPackageReviewPanel::ShowReport(const hostpackagereport& report)
 {
     m_reportView->setPlainText(
@@ -475,17 +430,13 @@ void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
         return;
     }
 
-    const hostlayerdescriptor& first = m_review.layers.first();
     const hostlayerdescriptor& current = m_review.layers.at(layerIndex);
-    QStringList channelDeltas;
+    QStringList channelPixels;
     for (const QString& channel : Channels({"R", "G", "B", "W", "S", "V"}))
     {
-        const qint64 delta = PrintPixels(current, channel)
-            - PrintPixels(first, channel);
-        channelDeltas.append(QStringLiteral("%1=%2%3")
+        channelPixels.append(QStringLiteral("%1=%2")
                                  .arg(channel)
-                                 .arg(delta >= 0 ? QStringLiteral("+") : QString{})
-                                 .arg(delta));
+                                 .arg(PrintPixels(current, channel)));
     }
     const int scanCount = m_timing.value(
         QStringLiteral("supportStatisticsScanCount")).toInt(-1);
@@ -494,12 +445,11 @@ void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
     m_stage16SummaryLabel->setText(
         QStringLiteral(
             "几何采样：%1｜姿态：P0 生产默认，P3 仅诊断未应用\n"
-            "A 首层 layer=%2 → B 当前层 layer=%3｜打印像素差 Δ：%4\n"
-            "性能：sliceProcessing=%5｜支撑统计扫描=%6")
+            "当前生产层 layer=%2｜打印像素：%3\n"
+            "性能：sliceProcessing=%4｜支撑统计扫描=%5")
             .arg(SamplingStrategyText(m_samplingStrategyId))
-            .arg(first.layerindex)
             .arg(current.layerindex)
-            .arg(channelDeltas.join(QStringLiteral("  ")))
+            .arg(channelPixels.join(QStringLiteral("  ")))
             .arg(sliceProcessingMs >= 0.0
                     ? QStringLiteral("%1 ms").arg(
                         sliceProcessingMs, 0, 'f', 1)

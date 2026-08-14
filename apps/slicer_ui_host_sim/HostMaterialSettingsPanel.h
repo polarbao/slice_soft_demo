@@ -31,6 +31,13 @@ public:
         const hostmaterialprocesssettings& settings);
 
     /**
+     * @brief 限定材料策略只允许单材料白墨或单材料光油。
+     * @param enabled true 时禁用所有 RGB 相关策略。
+     * @param reason 显示给操作员的外观资源不完整原因。
+     */
+    void SetSingleMaterialOnly(bool enabled, const QString& reason);
+
+    /**
      * @brief 返回选中的材料输出策略。
      * @return 控件当前表示的宿主材料策略。
      */
@@ -65,4 +72,6 @@ private:
     QSpinBox* m_whiteShrinkSpin{nullptr};
     QSpinBox* m_varnishTopLayersSpin{nullptr};
     QSpinBox* m_maxOverlapSpin{nullptr};
+    bool m_singleMaterialOnly{false};
+    QString m_singleMaterialReason;
 };

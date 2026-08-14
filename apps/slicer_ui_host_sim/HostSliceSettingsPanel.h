@@ -88,6 +88,23 @@ public:
         const QString& message,
         bool warning);
 
+    /**
+     * @brief 根据当前场景外观资源限制可选打印工艺。
+     * @param restricted true 时只允许单材料白墨或光油。
+     * @param reason 用于 UI 诊断的限制原因。
+     */
+    void SetSingleMaterialRestriction(
+        bool restricted,
+        const QString& reason);
+
+    /**
+     * @brief 成功作业结束后为自动管理的输出路径准备下一次会话。
+     * @param completedPackageDirectory 刚完成作业实际发布的生产包目录。
+     * @return 自动路径已轮换时为 true；自定义路径或身份不匹配时为 false。
+     */
+    bool PrepareNextAutomaticOutputDirectory(
+        const QString& completedPackageDirectory);
+
 signals:
     /** @brief 在操作员更改本地切片设置后发出。 */
     void SigSettingsChanged();
@@ -128,5 +145,8 @@ private:
     hostbuildvolume m_sceneBuildVolume;
     hosteffectiveprofile m_effectiveProfile;
     QString m_defaultOutputDirectory;
+    bool m_outputUsesAutomaticDirectory{true};
     bool m_applyingProcessPreset{false};
+    bool m_singleMaterialRestricted{false};
+    QString m_singleMaterialRestrictionReason;
 };

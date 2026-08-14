@@ -224,6 +224,37 @@ MaterialPreviewResult ResizePreview(
     return source;
 }
 
+MaterialPreviewResult OrientPreviewPositiveYUp(
+    MaterialPreviewResult source)
+{
+    const std::size_t rowBytes =
+        static_cast<std::size_t>(source.width) * 4U;
+    const std::size_t expectedBytes = rowBytes
+        * static_cast<std::size_t>(source.height);
+    if (source.width == 0U || source.height == 0U
+        || source.rgba.size() != expectedBytes)
+    {
+        throw std::runtime_error(
+            "preview orientation requires a complete RGBA image");
+    }
+    for (std::uint32_t top = 0U, bottom = source.height - 1U;
+         top < bottom;
+         ++top, --bottom)
+    {
+        const auto topBegin = source.rgba.begin()
+            + static_cast<std::ptrdiff_t>(
+                static_cast<std::size_t>(top) * rowBytes);
+        const auto bottomBegin = source.rgba.begin()
+            + static_cast<std::ptrdiff_t>(
+                static_cast<std::size_t>(bottom) * rowBytes);
+        std::swap_ranges(
+            topBegin,
+            topBegin + static_cast<std::ptrdiff_t>(rowBytes),
+            bottomBegin);
+    }
+    return source;
+}
+
 void WritePreviewImage(
     const std::filesystem::path& path,
     const MaterialPreviewResult& preview)

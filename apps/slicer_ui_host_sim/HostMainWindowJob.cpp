@@ -127,6 +127,11 @@ void HostMainWindow::OnSliceJobCompleted(
             HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
                 settings.geometrysamplingstrategy),
             timing);
+        (void)m_sliceSettingsPanel->PrepareNextAutomaticOutputDirectory(
+            packageDirectory);
+        // 重新绑定仍在场景中的模型与权威场景上下文，避免一次作业的
+        // 终结态或自动输出路径残留到下一次提交。
+        RefreshSliceSettings();
         m_statusLabel->setText(
             QStringLiteral("切片完成 · %1 ms · 正在后台校验并加载结果 · %2")
                 .arg(elapsedMs)

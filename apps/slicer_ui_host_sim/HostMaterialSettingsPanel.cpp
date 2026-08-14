@@ -6,6 +6,7 @@
 #include <QHBoxLayout>
 #include <QSignalBlocker>
 #include <QSpinBox>
+#include <QStandardItemModel>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -55,6 +56,12 @@ HostMaterialRole RoleFromId(const QString& identifier)
         return HostMaterialRole::SupportCandidate;
     }
     return HostMaterialRole::Rgb;
+}
+
+bool IsSingleMaterialStrategy(const HostMaterialStrategy strategy)
+{
+    return strategy == HostMaterialStrategy::WhiteSolid
+        || strategy == HostMaterialStrategy::VarnishSolid;
 }
 }
 
@@ -254,6 +261,42 @@ void HostMaterialSettingsPanel::SetSettings(
     m_varnishTopLayersSpin->setValue(settings.varnishtoplayers);
     m_maxOverlapSpin->setValue(settings.maxunexpectedoverlappixels);
     RefreshEnabledState();
+}
+
+void HostMaterialSettingsPanel::SetSingleMaterialOnly(
+    const bool enabled,
+    const QString& reason)
+{
+    m_singleMaterialOnly = enabled;
+    m_singleMaterialReason = reason;
+    auto* model = qobject_cast<QStandardItemModel*>(m_strategyCombo->model());
+    if (model != nullptr)
+    {
+        for (int index = 0; index < m_strategyCombo->count(); ++index)
+        {
+            QStandardItem* item = model->item(index);
+            if (item != nullptr)
+            {
+                item->setEnabled(
+                    !enabled
+                    || IsSingleMaterialStrategy(StrategyFromId(
+                        m_strategyCombo->itemData(index).toString())));
+            }
+        }
+    }
+
+    if (enabled && !IsSingleMaterialStrategy(Strategy()))
+    {
+        const QSignalBlocker blocker(m_strategyCombo);
+        m_strategyCombo->setCurrentIndex(m_strategyCombo->findData(
+            QStringLiteral("white_solid")));
+    }
+    m_strategyCombo->setToolTip(
+        enabled
+            ? QStringLiteral(
+                  "模型缺少可用的 MTL/纹理资源，只能选择单材料白墨或光油。\n%1")
+                  .arg(reason)
+            : QString{});
 }
 
 HostMaterialStrategy HostMaterialSettingsPanel::Strategy() const

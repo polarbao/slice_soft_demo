@@ -21,6 +21,7 @@
 #include <QLabel>
 #include <QProgressBar>
 #include <QSpinBox>
+#include <QStandardItemModel>
 #include <QStringList>
 #include <QTemporaryDir>
 #include <QTextStream>
@@ -216,7 +217,8 @@ bool VerifyEffectiveProfiles(
                     QStringLiteral("layerThicknessMm")).toDouble() == 0.038
                 && geometrySampling.value(
                     QStringLiteral("strategy")).toString()
-                    == QStringLiteral("legacy_center_sample"),
+                    == QStringLiteral("legacy_center_sample")
+                && !first.profile.contains(QStringLiteral("relief")),
             QStringLiteral("参考默认 DPI/层厚/Legacy 采样未进入有效 Profile。"),
             errors)
         || !Check(
@@ -372,6 +374,8 @@ bool VerifyEffectiveProfiles(
     }
     const QJsonObject texture = textured.profile.value(
         QStringLiteral("texture")).toObject();
+    const QJsonObject relief = textured.profile.value(
+        QStringLiteral("relief")).toObject();
     if (!Check(
             textured.profile.value(QStringLiteral("slicingMode")).toString()
                     == QStringLiteral("relief_heightfield")
@@ -389,7 +393,10 @@ bool VerifyEffectiveProfiles(
                     QStringLiteral("nonSurfaceRgbPolicy")).toString()
                     == QStringLiteral("empty")
                 && texture.value(QStringLiteral("fallbackRgb")).toArray()
-                    == QJsonArray{12, 34, 56},
+                    == QJsonArray{12, 34, 56}
+                && relief.value(QStringLiteral("fillMode")).toString()
+                    == QStringLiteral("intersection_range")
+                && relief.value(QStringLiteral("baseZMm")).toDouble() == 0.0,
             QStringLiteral("纹理应用、UV 或回退策略未进入有效 Profile。"),
             errors))
     {
@@ -668,8 +675,41 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
-    outputEdit->setText(outputDirectory);
     panel.SetModelPath(modelPath);
+    const QString completedAutomaticOutput = QDir::fromNativeSeparators(
+        outputEdit->text());
+    if (!Check(
+            panel.IsReady()
+                && panel.PrepareNextAutomaticOutputDirectory(
+                    completedAutomaticOutput),
+            QStringLiteral("成功作业后自动输出目录未进入下一会话。"),
+            errors))
+    {
+        return false;
+    }
+    const QString nextAutomaticOutput = QDir::fromNativeSeparators(
+        outputEdit->text());
+    if (!Check(
+            panel.IsReady()
+                && nextAutomaticOutput != completedAutomaticOutput
+                && nextAutomaticOutput.contains(QStringLiteral("/output/h"))
+                && !nextAutomaticOutput.contains(QStringLiteral("/out/"))
+                && nextAutomaticOutput.endsWith(QStringLiteral("/package")),
+            QStringLiteral(
+                "下一切片会话未保留 output 根或未获得独立短路径。"),
+            errors))
+    {
+        return false;
+    }
+    outputEdit->setText(outputDirectory);
+    if (!Check(
+            !panel.PrepareNextAutomaticOutputDirectory(outputDirectory)
+                && outputEdit->text() == outputDirectory,
+            QStringLiteral("用户自定义输出目录不应被自动轮换。"),
+            errors))
+    {
+        return false;
+    }
     client.ResetCallCount();
 
     tiffCompressionCheck->setChecked(true);
@@ -793,6 +833,47 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
+
+    panel.SetSingleMaterialRestriction(
+        true,
+        QStringLiteral("测试模型缺少 MTL 定义"));
+    auto* processModel = qobject_cast<QStandardItemModel*>(
+        processPreset->model());
+    auto* materialModel = qobject_cast<QStandardItemModel*>(
+        materialCombo->model());
+    const int rgbPresetIndex = processPreset->findData(
+        QStringLiteral("textured_nail_rgb_only_lower_support"));
+    const int whitePresetIndex = processPreset->findData(
+        QStringLiteral("single_material_relief_white"));
+    const int rgbMaterialIndex = materialCombo->findData(
+        QStringLiteral("rgb_solid"));
+    const int whiteMaterialIndex = materialCombo->findData(
+        QStringLiteral("white_solid"));
+    if (!Check(
+            processModel != nullptr && materialModel != nullptr
+                && rgbPresetIndex >= 0 && whitePresetIndex >= 0
+                && rgbMaterialIndex >= 0 && whiteMaterialIndex >= 0
+                && !processModel->item(rgbPresetIndex)->isEnabled()
+                && processModel->item(whitePresetIndex)->isEnabled()
+                && !materialModel->item(rgbMaterialIndex)->isEnabled()
+                && materialModel->item(whiteMaterialIndex)->isEnabled()
+                && panel.Settings().materialstrategy
+                    == HostMaterialStrategy::WhiteSolid,
+            QStringLiteral(
+                "外观资源不完整时未把工艺限定为单材料白墨/光油。"),
+            errors))
+    {
+        return false;
+    }
+    panel.SetSingleMaterialRestriction(false, QString{});
+    if (!Check(
+            processModel->item(rgbPresetIndex)->isEnabled()
+                && materialModel->item(rgbMaterialIndex)->isEnabled(),
+            QStringLiteral("清除单材料限制后 RGB 工艺未恢复可选。"),
+            errors))
+    {
+        return false;
+    }
     panel.SetSelectedProfileId(
         QStringLiteral("host-reference-package-review"), false);
     return Check(
@@ -877,6 +958,8 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         QStringLiteral("hostPackageLayerSpin"));
     auto* summary = reviewPanel.findChild<QLabel*>(
         QStringLiteral("hostPackageStage16SummaryLabel"));
+    auto* previewImage = reviewPanel.findChild<QLabel*>(
+        QStringLiteral("hostPackagePreviewImage"));
     auto* referencePreview = reviewPanel.findChild<QLabel*>(
         QStringLiteral("hostPackageReferencePreviewImage"));
     auto* previewMode = reviewPanel.findChild<QComboBox*>(
@@ -917,23 +1000,28 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                errors)
         && Check(
                previewMode != nullptr
-                   && previewMode->currentData().toStringList()
-                       == QStringList({
-                           QStringLiteral("R"),
-                           QStringLiteral("G"),
-                           QStringLiteral("B")})
-                   && referenceCaption != nullptr
-                   && currentCaption != nullptr,
+                    && previewMode->currentData().toStringList()
+                        == QStringList({
+                            QStringLiteral("R"),
+                            QStringLiteral("G"),
+                            QStringLiteral("B"),
+                            QStringLiteral("W"),
+                            QStringLiteral("S"),
+                            QStringLiteral("V")})
+                    && previewImage != nullptr
+                    && referencePreview == nullptr
+                    && referenceCaption == nullptr
+                    && currentCaption == nullptr,
                QStringLiteral(
-                   "结果预览应默认显示纯 RGB，并明确标识 A/B 视图。"),
+                    "结果预览应恢复单视图并默认显示 RGBWSV 合成。"),
                errors)
         && Check(
-               summary != nullptr && referencePreview != nullptr
-                   && summary->text().contains(QStringLiteral("A 首层 layer=0"))
-                   && summary->text().contains(QStringLiteral("B 当前层 layer=1"))
-                   && summary->text().contains(QStringLiteral("R=+5"))
-                   && summary->text().contains(QStringLiteral("S=-5")),
-               QStringLiteral("首层/当前层 A/B 差值摘要缺失：%1")
+               summary != nullptr
+                    && summary->text().contains(
+                        QStringLiteral("当前生产层 layer=1"))
+                    && summary->text().contains(QStringLiteral("R=15"))
+                    && summary->text().contains(QStringLiteral("S=45")),
+               QStringLiteral("当前生产层通道摘要缺失：%1")
                    .arg(summary != nullptr
                        ? summary->text()
                        : QStringLiteral("summary=null")),

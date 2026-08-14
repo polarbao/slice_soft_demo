@@ -140,7 +140,8 @@ bool VerifySuccessfulJob(
         return false;
     }
     hostslicejobcompletion completion;
-    return WaitForCompletion(controller, 60000, &completion, errors)
+    const bool firstCompleted =
+        WaitForCompletion(controller, 60000, &completion, errors)
         && Check(completion.success && !completion.cancelled,
                  QStringLiteral("生产切片未成功：%1 %2 %3 result=%4")
                      .arg(
@@ -175,6 +176,57 @@ bool VerifySuccessfulJob(
         && Check(!controller.IsActive(),
                  QStringLiteral("终结后仍保留公开作业句柄。"),
                  errors);
+    if (!firstCompleted)
+    {
+        return false;
+    }
+
+    const QString secondPackageDirectory = QDir(
+        QFileInfo(packageDirectory).absolutePath()).filePath(
+            QStringLiteral("p2"));
+    const hosteffectiveprofile secondProfile = BuildProfile(
+        modelPath, secondPackageDirectory, 0.2, errors);
+    if (secondProfile.profile.isEmpty())
+    {
+        return false;
+    }
+    liveTimingSnapshots = 0;
+    liveTimingWasApproximate = false;
+    error.clear();
+    if (!Check(
+            controller.Start(sceneHandle, secondProfile, &error),
+            QStringLiteral("同一控制器第二次切片提交失败：%1").arg(error),
+            errors))
+    {
+        return false;
+    }
+    completion = {};
+    return WaitForCompletion(controller, 60000, &completion, errors)
+        && Check(
+            completion.success && !completion.cancelled,
+            QStringLiteral("同一控制器第二次切片未成功：%1 %2 %3")
+                .arg(
+                    completion.code,
+                    completion.message,
+                    completion.detail),
+            errors)
+        && Check(
+            completion.packagedirectory == secondPackageDirectory,
+            QStringLiteral("第二次切片返回了错误的生产包目录。"),
+            errors)
+        && Check(
+            QFileInfo(QDir(secondPackageDirectory).filePath(
+                QStringLiteral("manifest.json"))).isFile(),
+            QStringLiteral("第二次切片未发布独立 manifest.json。"),
+            errors)
+        && Check(
+            liveTimingSnapshots > 0 && liveTimingWasApproximate,
+            QStringLiteral("第二次切片未重新发布轮询耗时。"),
+            errors)
+        && Check(
+            !controller.IsActive(),
+            QStringLiteral("第二次终结后仍保留公开作业句柄。"),
+            errors);
 }
 
 bool VerifyCancellation(
@@ -314,7 +366,8 @@ int main(int argc, char* argv[])
     }
 
     QTextStream(stdout)
-        << "HOSTFLOW_HB06_PASS success=1 cancelLatency<=2000ms residues=0"
+        << "HOSTFLOW_HB06_PASS sequentialSuccess=2 "
+        << "cancelLatency<=2000ms residues=0"
         << Qt::endl;
     return 0;
 }

@@ -1,9 +1,11 @@
+#include "slicer_core/api/implementation/PackageQueryFacadeInternal.h"
 #include "slicer_core/preview/MaterialPreviewComposer.h"
 
 #include <array>
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
@@ -315,6 +317,32 @@ bool InvalidBufferAndProbeFailClosed()
         && ExpectTrue(invalidModeRejected, "unsupported mode is rejected");
 }
 
+bool PackagePreviewUsesPositiveYUpDisplayRows()
+{
+    slicer_core::MaterialPreviewResult source;
+    source.width = 2U;
+    source.height = 3U;
+    source.rgba = {
+        10U, 0U, 0U, 255U, 11U, 0U, 0U, 255U,
+        20U, 0U, 0U, 255U, 21U, 0U, 0U, 255U,
+        30U, 0U, 0U, 255U, 31U, 0U, 0U, 255U};
+    const auto oriented =
+        slicer_core::api::implementation::detail::
+            OrientPreviewPositiveYUp(std::move(source));
+    return ExpectTrue(
+               DisplayPixel(oriented, 0U, 0U)
+                   == std::array<std::uint8_t, 4>{30U, 0U, 0U, 255U},
+               "positive-Y display maps the raw maximum-Y row to the top")
+        && ExpectTrue(
+            DisplayPixel(oriented, 1U, 1U)
+                == std::array<std::uint8_t, 4>{21U, 0U, 0U, 255U},
+            "positive-Y display preserves the middle row")
+        && ExpectTrue(
+            DisplayPixel(oriented, 0U, 2U)
+                == std::array<std::uint8_t, 4>{10U, 0U, 0U, 255U},
+            "positive-Y display maps the raw minimum-Y row to the bottom");
+}
+
 }  // namespace
 
 int main()
@@ -324,7 +352,8 @@ int main()
         && RemainingChannelAndCombinationModesAreCovered()
         && PartialCoverageBlendsAgainstEmpty()
         && MetadataStatsAndProbeRemainAuthoritative()
-        && InvalidBufferAndProbeFailClosed();
+        && InvalidBufferAndProbeFailClosed()
+        && PackagePreviewUsesPositiveYUpDisplayRows();
     if (!ok)
     {
         return 1;

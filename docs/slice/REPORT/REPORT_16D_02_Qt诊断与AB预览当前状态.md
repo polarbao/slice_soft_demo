@@ -2,6 +2,7 @@
 
 > 状态：COMPLETE
 > 日期：2026-08-13
+> 2026-08-14 补充：用户裁定取消结果页双预览，当前状态以下文为准。
 
 ## 1. 当前实现
 
@@ -9,7 +10,7 @@
 2. S3 继续只允许 `relief_heightfield` 纹理 Profile；错误组合沿用 16D-01 fail-closed。
 3. 采样策略进入有效 Profile/hash，并随工作区 schema v5 持久化。
 4. “切片作业”展示本次采样策略、P0/P3 姿态边界和 `supportStatisticsScanCount`。
-5. “结果”并排展示首层 A 与当前层 B；RGBWSV 差值来自 manifest layer 统计，预览来自生产 TIFF 渲染。
+5. “结果”只展示当前生产层，默认按 RGBWSV 合成；通道像素统计来自当前 manifest layer，预览来自生产 TIFF 渲染。
 6. 性能摘要只读取 Worker timing，不在 Qt 重算几何。
 
 ## 2. 默认与边界
@@ -17,6 +18,7 @@
 - S0/P0 仍是生产默认。
 - S3 只是显式诊断候选，不会因打开 UI 自动启用。
 - P3 只展示“诊断未应用”，未执行姿态修改。
+- 首层/当前层双预览属于已被用户裁定替代的历史呈现，不再额外渲染首层。
 - SPI v1、11 个导出、15 项能力与 RGBWSV Package 协议未变化。
 
 ## 3. 验证
@@ -30,7 +32,14 @@ Debug build:
 CTest filter:
   hostflow_hb05|hostflow_hb08|hostflow_he03|hostflow_he04|hostflow_he05
 
-结果：10/10 PASS
+原始 16D-02：10/10 PASS
+
+2026-08-14 补充验证：
+  hostflow_hb05_slice_settings
+  hostflow_hb05_settings_ui_smoke
+  hostflow_hb07_package_review
+  hostflow_hb07_result_ui_smoke
+结果：4/4 PASS；运行时 self-test 与结果 UI smoke PASS
 ```
 
 ## 4. 下一步

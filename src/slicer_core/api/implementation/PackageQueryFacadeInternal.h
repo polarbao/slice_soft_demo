@@ -43,6 +43,9 @@ MaterialPreviewResult ResizePreview(
     MaterialPreviewResult source,
     int maxWidth);
 
+MaterialPreviewResult OrientPreviewPositiveYUp(
+    MaterialPreviewResult source);
+
 void WritePreviewImage(
     const std::filesystem::path& path,
     const MaterialPreviewResult& preview);

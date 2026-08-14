@@ -17,7 +17,7 @@ namespace slicer_core::api::implementation::detail
 namespace
 {
 
-constexpr const char* kPreviewSemanticVersion{"1"};
+constexpr const char* kPreviewSemanticVersion{"2"};
 
 MaterialPreviewMode SingleChannelMode(const std::string& channel)
 {
@@ -183,6 +183,9 @@ ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
         MaterialPreviewResult preview = MaterialPreviewComposer::Compose(
             *loaded.buffer,
             composeRequest);
+        // 生产 TIFF 的第 0 行对应最小 Y；显示图像的第 0 行位于顶部。
+        // 垂直翻转只改变预览表达，使结果页与工作区统一为 +Y 向上。
+        preview = OrientPreviewPositiveYUp(std::move(preview));
         preview = ResizePreview(
             std::move(preview),
             request.max_width_px);

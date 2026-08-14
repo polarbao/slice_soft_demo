@@ -235,6 +235,8 @@ char* HostBuildEffectiveProfile(
     const char* tiffCompression = NULL;
     const char* supportPlacementCanonical = "";
     const char* supportPlacementCompact = "";
+    const char* reliefCanonical = "";
+    const char* reliefCompact = "";
     char* escapedModel = NULL;
     char* escapedFormat = NULL;
     char* escapedPackage = NULL;
@@ -351,6 +353,17 @@ char* HostBuildEffectiveProfile(
     }
     slicingMode = settings->textureenabled != 0
         ? "relief_heightfield" : "closed_mesh_scanline";
+    if (settings->textureenabled != 0)
+    {
+        reliefCanonical =
+            "\"relief\": {\n"
+            "\"baseZMm\": 0,\n"
+            "\"fillMode\": \"intersection_range\"\n"
+            "},\n";
+        reliefCompact =
+            "\"relief\":{\"baseZMm\":0,"
+            "\"fillMode\":\"intersection_range\"},";
+    }
     if (settings->geometrysamplingstrategy
             == HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO
         && settings->textureenabled == 0)
@@ -424,6 +437,7 @@ char* HostBuildEffectiveProfile(
         "\"enabled\": false\n"
         "},\n"
         "\"profileVersion\": \"1.0\",\n"
+        "%s"
         "\"slicePipeline\": {\n"
         "\"mode\": \"legacy\"\n"
         "},\n"
@@ -458,6 +472,7 @@ char* HostBuildEffectiveProfile(
         settings->layerthicknessmm,
         escapedPackage,
         tiffCompression,
+        reliefCanonical,
         slicingMode,
         settings->baseprojectionenabled != 0 ? "true" : "false",
         settings->baseprojectionlayercount,
@@ -492,6 +507,7 @@ char* HostBuildEffectiveProfile(
         "\"tiffCompression\":{\"algorithm\":\"%s\"}},"
         "\"preview\":{\"enabled\":false},\"profileHash\":\"%s\","
         "\"profileVersion\":\"1.0\","
+        "%s"
         "\"slicePipeline\":{\"mode\":\"legacy\"},"
         "\"slicingMode\":\"%s\","
         "\"support\":{\"baseProjection\":{\"enabled\":%s,"
@@ -512,6 +528,7 @@ char* HostBuildEffectiveProfile(
         escapedPackage,
         tiffCompression,
         profileHash,
+        reliefCompact,
         slicingMode,
         settings->baseprojectionenabled != 0 ? "true" : "false",
         settings->baseprojectionlayercount,

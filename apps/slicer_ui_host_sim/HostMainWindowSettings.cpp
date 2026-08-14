@@ -15,6 +15,9 @@ void HostMainWindow::RefreshSliceSettings()
 {
     m_sliceSettingsPanel->SetModelPath(
         m_importWorkflow->ReferenceModelPath());
+    m_sliceSettingsPanel->SetSingleMaterialRestriction(
+        m_importWorkflow->RequiresSingleMaterialProcess(),
+        m_importWorkflow->SingleMaterialRestrictionSummary());
     m_sliceSettingsPanel->SetSceneAuthority(
         m_importWorkflow->SceneHandle() != 0U,
         m_importWorkflow->SceneProfileId(),
@@ -44,7 +47,7 @@ void HostMainWindow::OnSliceSettingsChanged()
     m_statusLabel->setText(
         m_sliceSettingsPanel->IsReady()
             ? QStringLiteral("有效 Profile 已更新 · 未调用切片模块")
-            : QStringLiteral("切片参数草稿已更新 · 等待导入模型"));
+            : QStringLiteral("切片参数草稿已更新 · 请检查有效 Profile"));
     RefreshSliceJobReadiness();
     RefreshTextureWhitePreflight();
 }

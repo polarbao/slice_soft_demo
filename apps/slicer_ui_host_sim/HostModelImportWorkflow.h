@@ -34,6 +34,9 @@ struct hostmodelimportresult
     double widthmm{0.0};
     double heightmm{0.0};
     double depthmm{0.0};
+    QString appearancestatus;
+    bool singlematerialonly{false};
+    QString appearancedetail;
     QStringList texturepaths;
     QList<hostpreflightissue> issues;
 };
@@ -190,6 +193,18 @@ public:
     [[nodiscard]] QStringList TexturePaths() const;
 
     /**
+     * @brief 判断当前场景是否包含只能采用单材料工艺的模型。
+     * @return 任一实例的彩色外观资源不完整时返回 true。
+     */
+    [[nodiscard]] bool RequiresSingleMaterialProcess() const;
+
+    /**
+     * @brief 返回当前场景单材料限制的确定性诊断摘要。
+     * @return 无限制时返回空字符串，否则返回去重并排序后的原因。
+     */
+    [[nodiscard]] QString SingleMaterialRestrictionSummary() const;
+
+    /**
      * @brief 采用另一个宿主控制器提交的场景修订。
      * @param sceneHandle 现有模块拥有的场景句柄。
      * @param sceneRevision 提交或恢复后的新权威修订号。
@@ -228,6 +243,7 @@ private:
     QHash<QString, QString> m_instanceModels;
     QHash<QString, QString> m_instanceSources;
     QHash<QString, QStringList> m_instanceTexturePaths;
+    QHash<QString, QString> m_instanceMaterialRestrictions;
     QString m_pendingProfileId{QStringLiteral("host-reference-default")};
     hostbuildvolume m_pendingBuildVolume;
     QString m_sceneProfileId;

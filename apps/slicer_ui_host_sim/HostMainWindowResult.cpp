@@ -62,18 +62,6 @@ void HostMainWindow::OnResultLayerRequested(
         m_packageReviewPanel->ShowError(error);
         return;
     }
-    QString referencePreviewPath;
-    if (layerIndex == 0)
-    {
-        referencePreviewPath = previewPath;
-    }
-    else if (!m_packageReviewController->RenderPreview(
-                 0, channels, &referencePreviewPath, &error))
-    {
-        m_packageReviewPanel->ShowError(
-            QStringLiteral("首层 A 对照预览失败：%1").arg(error));
-        return;
-    }
     const hostpackagereview& review = m_packageReviewController->Review();
     if (layerIndex < 0 || layerIndex >= review.layers.size())
     {
@@ -83,8 +71,6 @@ void HostMainWindow::OnResultLayerRequested(
     }
     m_packageReviewPanel->ShowPreview(
         previewPath, review.layers.at(layerIndex));
-    m_packageReviewPanel->ShowReferencePreview(
-        referencePreviewPath, review.layers.first());
 }
 
 void HostMainWindow::OnResultReportRequested(const QString& reportName)

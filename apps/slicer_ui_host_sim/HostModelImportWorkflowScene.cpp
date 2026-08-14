@@ -152,6 +152,20 @@ QStringList HostModelImportWorkflow::TexturePaths() const
     return paths;
 }
 
+bool HostModelImportWorkflow::RequiresSingleMaterialProcess() const
+{
+    return !m_instanceMaterialRestrictions.isEmpty();
+}
+
+QString HostModelImportWorkflow::SingleMaterialRestrictionSummary() const
+{
+    QStringList reasons = m_instanceMaterialRestrictions.values();
+    reasons.removeAll(QString{});
+    reasons.removeDuplicates();
+    reasons.sort();
+    return reasons.join(QStringLiteral("；"));
+}
+
 bool HostModelImportWorkflow::AdoptSceneState(
     const quint64 sceneHandle,
     const quint64 sceneRevision,

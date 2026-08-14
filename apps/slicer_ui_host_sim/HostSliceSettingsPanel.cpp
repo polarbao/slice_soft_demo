@@ -24,8 +24,11 @@
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QSpinBox>
+#include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 namespace
 {
@@ -43,11 +46,16 @@ QString LegacyCompatibleApplicationRoot()
 
 QString DefaultOutputDirectory()
 {
+    static qint64 lastSessionTimestampMs{0};
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    const qint64 sessionTimestampMs = (std::max)(
+        nowMs, lastSessionTimestampMs + 1);
+    lastSessionTimestampMs = sessionTimestampMs;
     const QString sessionName = QStringLiteral("h")
-        + QDateTime::currentDateTime().toString(
+        + QDateTime::fromMSecsSinceEpoch(sessionTimestampMs).toString(
             QStringLiteral("yyMMddHHmmsszzz"));
-    // “output”是稳定的应用输出根，不能是
-    // 缩写为“出”；仅内部会话组件被缩短。
+    // "output" 是稳定的应用输出根，明确不得缩写为 "out"；
+    // 只缩短其下方的临时会话目录名。
     return QDir(LegacyCompatibleApplicationRoot()).filePath(
         QStringLiteral("output/%1/package").arg(sessionName));
 }
@@ -111,6 +119,38 @@ void ConfigureVolumeSpin(QDoubleSpinBox* spin, const double value)
     spin->setSingleStep(1.0);
     spin->setSuffix(QStringLiteral(" mm"));
     spin->setValue(value);
+}
+
+bool IsCompactGeneratedOutputPackage(const QString& path)
+{
+    const QFileInfo packageInfo(
+        QDir::cleanPath(QFileInfo(path).absoluteFilePath()));
+    const QFileInfo sessionInfo(packageInfo.absolutePath());
+    const QFileInfo outputRootInfo(sessionInfo.absolutePath());
+    const QString sessionName = sessionInfo.fileName();
+    if (packageInfo.fileName().compare(
+            QStringLiteral("package"), Qt::CaseInsensitive) != 0
+        || outputRootInfo.fileName().compare(
+            QStringLiteral("output"), Qt::CaseInsensitive) != 0
+        || sessionName.size() != 16
+        || !sessionName.startsWith(QLatin1Char('h')))
+    {
+        return false;
+    }
+    for (const QChar value : sessionName.mid(1))
+    {
+        if (!value.isDigit())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool IsSingleMaterialStrategy(const HostMaterialStrategy strategy)
+{
+    return strategy == HostMaterialStrategy::WhiteSolid
+        || strategy == HostMaterialStrategy::VarnishSolid;
 }
 }
 
@@ -446,13 +486,13 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_dpiYSpin->setValue(settings.dpiy);
     m_layerThicknessSpin->setValue(settings.layerthicknessmm);
     const QString persistedOutput = settings.outputdirectory.trimmed();
+    m_outputUsesAutomaticDirectory = persistedOutput.isEmpty()
+        || PathsEqual(persistedOutput, LegacyDefaultOutputDirectory())
+        || IsSharedUiSessionRoot(persistedOutput)
+        || IsLegacyGeneratedUiSessionPackage(persistedOutput)
+        || IsCompactGeneratedOutputPackage(persistedOutput);
     m_outputEdit->setText(
-        persistedOutput.isEmpty()
-            || PathsEqual(
-                persistedOutput,
-                LegacyDefaultOutputDirectory())
-            || IsSharedUiSessionRoot(persistedOutput)
-            || IsLegacyGeneratedUiSessionPackage(persistedOutput)
+        m_outputUsesAutomaticDirectory
             ? QDir::toNativeSeparators(m_defaultOutputDirectory)
             : persistedOutput);
     const int presetIndex = m_processPresetCombo->findData(
@@ -532,6 +572,79 @@ void HostSliceSettingsPanel::SetTextureWhitePreflightStatus(
         warning ? QStringLiteral("color: #9c4f00;") : QString{});
 }
 
+void HostSliceSettingsPanel::SetSingleMaterialRestriction(
+    const bool restricted,
+    const QString& reason)
+{
+    m_singleMaterialRestricted = restricted;
+    m_singleMaterialRestrictionReason = reason;
+
+    auto* model = qobject_cast<QStandardItemModel*>(
+        m_processPresetCombo->model());
+    if (model != nullptr)
+    {
+        for (int index = 1; index < m_processPresetCombo->count(); ++index)
+        {
+            hostprocesspreset preset;
+            const bool resolved = HostProcessPresetCatalog::Resolve(
+                m_processPresetCombo->itemData(index).toString(),
+                &preset);
+            QStandardItem* item = model->item(index);
+            if (item != nullptr)
+            {
+                item->setEnabled(
+                    !restricted
+                    || (resolved
+                        && IsSingleMaterialStrategy(
+                            preset.materialstrategy)));
+            }
+        }
+    }
+
+    hostprocesspreset selectedPreset;
+    const bool selectedResolved = HostProcessPresetCatalog::Resolve(
+        m_processPresetCombo->currentData().toString(),
+        &selectedPreset);
+    if (restricted && selectedResolved
+        && !IsSingleMaterialStrategy(selectedPreset.materialstrategy))
+    {
+        const int whitePresetIndex = m_processPresetCombo->findData(
+            QStringLiteral("single_material_relief_white"));
+        if (whitePresetIndex >= 0)
+        {
+            const QSignalBlocker blocker(m_processPresetCombo);
+            m_processPresetCombo->setCurrentIndex(whitePresetIndex);
+            HostProcessPresetCatalog::Resolve(
+                QStringLiteral("single_material_relief_white"),
+                &selectedPreset);
+            m_materialPanel->SetSettings(
+                selectedPreset.materialstrategy,
+                selectedPreset.materialprocess);
+            m_texturePanel->SetSettings(selectedPreset.texture);
+            m_supportPanel->SetSettings(selectedPreset.support);
+        }
+    }
+    m_materialPanel->SetSingleMaterialOnly(restricted, reason);
+    RefreshPreview();
+}
+
+bool HostSliceSettingsPanel::PrepareNextAutomaticOutputDirectory(
+    const QString& completedPackageDirectory)
+{
+    if (!m_outputUsesAutomaticDirectory
+        || !PathsEqual(
+            m_outputEdit->text().trimmed(), completedPackageDirectory))
+    {
+        return false;
+    }
+    m_defaultOutputDirectory = DefaultOutputDirectory();
+    const QSignalBlocker blocker(m_outputEdit);
+    m_outputEdit->setText(
+        QDir::toNativeSeparators(m_defaultOutputDirectory));
+    RefreshPreview();
+    return true;
+}
+
 void HostSliceSettingsPanel::OnBrowseOutput()
 {
     const QString directory = QFileDialog::getExistingDirectory(
@@ -579,6 +692,11 @@ void HostSliceSettingsPanel::OnProcessSettingsEdited()
 
 void HostSliceSettingsPanel::OnSettingsEdited()
 {
+    if (sender() == m_outputEdit)
+    {
+        m_outputUsesAutomaticDirectory = PathsEqual(
+            m_outputEdit->text().trimmed(), m_defaultOutputDirectory);
+    }
     RefreshPreview();
     emit SigSettingsChanged();
 }
@@ -622,6 +740,19 @@ void HostSliceSettingsPanel::RefreshPreview()
         return;
     }
 
+    if (m_singleMaterialRestricted
+        && !IsSingleMaterialStrategy(Settings().materialstrategy))
+    {
+        m_validationLabel->setText(QStringLiteral(
+            "配置不可提交：当前模型外观资源不完整，只允许单材料白墨或光油。%1")
+            .arg(m_singleMaterialRestrictionReason.isEmpty()
+                     ? QString{}
+                     : QStringLiteral(" 原因：%1")
+                           .arg(m_singleMaterialRestrictionReason)));
+        m_profilePreview->clear();
+        return;
+    }
+
     QString error;
     if (!ValidateSceneBinding(&error)
         || !HostEffectiveProfileBuilder::Build(
@@ -632,8 +763,13 @@ void HostSliceSettingsPanel::RefreshPreview()
         m_profilePreview->clear();
         return;
     }
-    m_validationLabel->setText(QStringLiteral(
-        "有效 Profile 已通过宿主校验；参数编辑期间未调用切片模块。"));
+    m_validationLabel->setText(
+        m_singleMaterialRestricted
+            ? QStringLiteral(
+                  "有效 Profile 已通过宿主校验；模型以半透明灰色降级显示，"
+                  "生产工艺限定为单材料白墨或光油。")
+            : QStringLiteral(
+                  "有效 Profile 已通过宿主校验；参数编辑期间未调用切片模块。"));
     m_profilePreview->setPlainText(QString::fromUtf8(
         QJsonDocument(m_effectiveProfile.profile).toJson(
             QJsonDocument::Indented)));

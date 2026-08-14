@@ -182,6 +182,12 @@ bool HostModelImportWorkflow::ImportResource(
         QStringLiteral("vertexCount")).toDouble());
     result->hasuv = imported.value(QStringLiteral("hasUV")).toBool();
     result->hasnormals = imported.value(QStringLiteral("hasNormals")).toBool();
+    result->appearancestatus = imported.value(
+        QStringLiteral("appearanceStatus")).toString();
+    result->singlematerialonly = imported.value(
+        QStringLiteral("singleMaterialOnly")).toBool();
+    result->appearancedetail = imported.value(
+        QStringLiteral("appearanceDetail")).toString();
     const QJsonArray materials = imported.value(QStringLiteral("materials")).toArray();
     for (const QJsonValue& materialValue : materials)
     {
@@ -284,6 +290,7 @@ bool HostModelImportWorkflow::RemoveInstances(
         const QString modelId = m_instanceModels.take(instanceId);
         m_instanceSources.remove(instanceId);
         m_instanceTexturePaths.remove(instanceId);
+        m_instanceMaterialRestrictions.remove(instanceId);
         QJsonObject ignoredResponse;
         QString ignoredError;
         (void)ExecuteObject(
@@ -434,6 +441,14 @@ bool HostModelImportWorkflow::CommitImportedInstances(
         m_instanceSources.insert(result.instanceid, result.sourcepath);
         m_instanceTexturePaths.insert(
             result.instanceid, result.texturepaths);
+        if (result.singlematerialonly)
+        {
+            m_instanceMaterialRestrictions.insert(
+                result.instanceid,
+                result.appearancedetail.isEmpty()
+                    ? result.appearancestatus
+                    : result.appearancedetail);
+        }
     }
     return true;
 }

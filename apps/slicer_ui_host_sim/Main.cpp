@@ -276,6 +276,14 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
             << Qt::endl;
         return 11;
     }
+    jobPanel->SetReady(true, QStringLiteral("下一次切片已就绪"));
+    if (!startButton->isEnabled() || cancelButton->isEnabled())
+    {
+        QTextStream(stderr)
+            << "HOSTFLOW_HB06_UI_FAILED: completion state cannot re-arm"
+            << Qt::endl;
+        return 11;
+    }
     jobPanel->SetActive();
     jobPanel->UpdateProgress(
         QStringLiteral("running"),
@@ -323,6 +331,8 @@ int RunHostFlowResultUiSmoke(const QString& modulePath)
         QStringLiteral("hostPackageChannelChart"));
     const auto* openPackageButton = window.findChild<QPushButton*>(
         QStringLiteral("hostOpenPackageDirectoryButton"));
+    const auto* previewImage = window.findChild<QLabel*>(
+        QStringLiteral("hostPackagePreviewImage"));
     const auto* referenceCaption = window.findChild<QLabel*>(
         QStringLiteral("hostPackageReferencePreviewCaption"));
     const auto* currentCaption = window.findChild<QLabel*>(
@@ -330,13 +340,17 @@ int RunHostFlowResultUiSmoke(const QString& modulePath)
     if (panel == nullptr || layerSlider == nullptr || previewMode == nullptr
         || reportCombo == nullptr || chart == nullptr
         || openPackageButton == nullptr
-        || referenceCaption == nullptr || currentCaption == nullptr
+        || previewImage == nullptr
+        || referenceCaption != nullptr || currentCaption != nullptr
         || layerSlider->isEnabled() || previewMode->count() < 7
         || previewMode->currentData().toStringList()
             != QStringList({
                 QStringLiteral("R"),
                 QStringLiteral("G"),
-                QStringLiteral("B")})
+                QStringLiteral("B"),
+                QStringLiteral("W"),
+                QStringLiteral("S"),
+                QStringLiteral("V")})
         || reportCombo->count() < 3 || openPackageButton->isEnabled())
     {
         QTextStream(stderr)

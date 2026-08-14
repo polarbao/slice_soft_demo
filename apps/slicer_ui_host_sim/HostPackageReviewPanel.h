@@ -51,15 +51,6 @@ public:
         const hostlayerdescriptor& layer);
 
     /**
-     * @brief 显示用作 A 面参考的第一个生产层。
-     * @param imagePath 模块返回的宿主缓存路径。
-     * @param layer 已验证的第一层描述符。
-     */
-    void ShowReferencePreview(
-        const QString& imagePath,
-        const hostlayerdescriptor& layer);
-
-    /**
      * @brief 显示一份结构化包报告。
      * @param report 通过 package.read_report 返回的报告。
      * @return 该函数不返回值。
@@ -104,7 +95,6 @@ private:
     QLabel* m_layerLabel{nullptr};
     QLabel* m_stage16SummaryLabel{nullptr};
     QLabel* m_previewLabel{nullptr};
-    QLabel* m_referencePreviewLabel{nullptr};
     QPlainTextEdit* m_summaryView{nullptr};
     QPlainTextEdit* m_reportView{nullptr};
     QSlider* m_layerSlider{nullptr};

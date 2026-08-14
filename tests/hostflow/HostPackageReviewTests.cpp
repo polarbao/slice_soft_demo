@@ -102,6 +102,7 @@ bool ProducePackage(
     settings.modelformat = QStringLiteral("obj");
     settings.outputdirectory = packageDirectory;
     settings.layerthicknessmm = 0.2;
+    settings.texture.enabled = true;
     hosteffectiveprofile profile;
     if (!HostEffectiveProfileBuilder::Build(settings, &profile, &error))
     {
@@ -133,7 +134,7 @@ int main(int argc, char* argv[])
     const QString repositoryRoot = ArgumentValue(
         application.arguments(), QStringLiteral("--repo-root"));
     const QString modelPath = QDir(repositoryRoot).filePath(QStringLiteral(
-        "samples/models/openvdb/surface_shell_cube_no_uv.obj"));
+        "samples/models/texture_fill_partition/closed_support_overhang.obj"));
     QTemporaryDir outputRoot;
     if (!Check(QFileInfo(modulePath).isFile(),
                QStringLiteral("slicer_module.dll 不存在。"), errors)
@@ -195,6 +196,19 @@ int main(int argc, char* argv[])
         {
             return 6;
         }
+    }
+    quint64 supportPrintPixels = 0;
+    for (const hostlayerdescriptor& layer : review.layers)
+    {
+        supportPrintPixels += layer.printpixels.values.at(4);
+    }
+    if (!Check(
+            supportPrintPixels > 0,
+            QStringLiteral(
+                "intersection_range 纹理 Profile 未保留悬空体 lower support。"),
+            errors))
+    {
+        return 6;
     }
 
     HostPackageReviewController asyncController(client);
