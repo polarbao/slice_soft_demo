@@ -1,3 +1,5 @@
+// 本文件编排生产引擎一致性 Gate：通过真实 Worker 进程验证请求、产物与 RIP 结果。
+// 夹具构造和通用断言留在 EngineConformanceSupport，避免 Gate 重复实现生产判断。
 #include "EngineConformanceSupport.h"
 
 #include "slicer_core/rip_reader.h"

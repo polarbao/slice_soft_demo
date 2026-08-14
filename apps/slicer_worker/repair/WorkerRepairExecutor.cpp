@@ -31,7 +31,7 @@ public:
     {
     }
 
-    /** @brief Returns the stable error code. @return PM-SLICER code. */
+    /** @brief 返回稳定错误码。@return PM-SLICER 错误码。 */
     [[nodiscard]] const std::string& Code() const noexcept
     {
         return m_code;

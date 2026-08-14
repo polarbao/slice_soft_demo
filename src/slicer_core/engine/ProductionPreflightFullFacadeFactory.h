@@ -8,8 +8,8 @@ namespace slicer_core::engine
 {
 
 /**
- * @brief Create the authoritative full-preflight facade bound to production import rules.
- * @return Owning facade pointer that validates scene/Profile identity before geometry audit.
+ * @brief 创建绑定生产导入规则的权威 PreflightFullFacade。
+ * @return 由调用方独占持有的 Facade；几何审计前会验证场景和 Profile 标识。
  */
 [[nodiscard]] std::unique_ptr<api::PreflightFullFacade>
 CreateProductionPreflightFullFacade();

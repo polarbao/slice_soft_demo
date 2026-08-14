@@ -26,6 +26,8 @@
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 #endif
 
+// 文件职责：跨线程持有 Worker 作业、进程客户端、进度和终态输出；
+// 边界：切片引擎只允许在 Worker 进程内运行，释放时必须先取消并等待线程结束。
 namespace slicesoft::module
 {
 namespace

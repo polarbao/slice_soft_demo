@@ -13,6 +13,8 @@
 #include <string_view>
 #include <utility>
 
+// 文件职责：按预算组装闭合 ViewData 候选项并记录显式降级原因；
+// 边界：资源、材质或标识引用不闭合时不得返回部分结果。
 namespace slicer_core::api::viewdata_detail
 {
 namespace

@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <vector>
 
+// 文件职责：基于规范内容计算纹理、外观、网格和快照标识；
+// 边界：标识只依赖序列化语义，不包含地址或进程瞬态状态。
 namespace slicer_core::api::viewdata_detail
 {
 namespace

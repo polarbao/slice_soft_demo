@@ -13,30 +13,29 @@
 #include <atomic>
 
 /**
- * @brief Runtime-loaded client for the frozen SliceSoft public C SPI.
+ * @brief 用于冻结 SliceSoft 公共 C SPI 的运行时加载客户端。
  *
- * The client deliberately owns no slicer implementation types. It resolves
- * all eleven pm_* exports at runtime so the reference host remains loadable
- * when the capability DLL is absent.
+ * 客户端有意不依赖任何切片实现类型。11 个 pm_* 符号全部在运行时解析，
+ * 使参考宿主无需链接模块导入库即可加载；能力 DLL 缺失时也能明确报告错误。
  */
 class ModuleClient final
 {
 public:
-    /** @brief Constructs an unloaded client. */
+    /** @brief 构造尚未加载模块的客户端。 */
     ModuleClient();
 
-    /** @brief Releases the module instance and unloads the DLL. */
+    /** @brief 释放模块实例并卸载 DLL。 */
     ~ModuleClient();
 
     ModuleClient(const ModuleClient&) = delete;
     ModuleClient& operator=(const ModuleClient&) = delete;
 
     /**
-     * @brief Loads the public module and creates one isolated module instance.
-     * @param modulePath Absolute or relative path to slicer_module.dll.
-     * @param optionsJson UTF-8 module options, normally an empty JSON object.
-     * @param error Receives a user-readable failure reason.
-     * @return True when SPI version, capabilities and instance creation pass.
+     * @brief 加载公共模块并创建一个独立的模块实例。
+     * @param modulePath slicer_module.dll 的绝对或相对路径。
+     * @param optionsJson UTF-8 模块选项，通常是一个空的 JSON 对象。
+     * @param error 接收用户可读的失败原因。
+     * @return SPI 版本、能力和实例创建均通过时返回 true。
      */
     bool Open(
         const QString& modulePath,
@@ -44,37 +43,37 @@ public:
         QString* error);
 
     /**
-     * @brief Destroys the module instance and unloads the runtime DLL.
-     * @return This function does not return a value.
+     * @brief 销毁模块实例并卸载运行时 DLL。
+     * @return 该函数不返回值。
      */
     void Close();
 
     /**
-     * @brief Reports whether a module instance is ready for submissions.
-     * @return True when both DLL and module instance are valid.
+     * @brief 报告模块实例是否已准备好接收请求。
+     * @return 当 DLL 和模块实例都有效时为 true。
      */
     bool IsOpen() const;
 
     /**
-     * @brief Returns the immutable pm_module_info response captured at load.
-     * @return UTF-8 module information JSON, or an empty value when unloaded.
+     * @brief 返回加载时捕获的不可变 pm_module_info 响应。
+     * @return UTF-8 模块信息 JSON；未加载时返回空值。
      */
     QByteArray ModuleInfo() const;
 
     /**
-     * @brief Runs the public no-side-effect module health check.
-     * @param report Receives the UTF-8 health report JSON.
-     * @param error Receives a user-readable failure reason.
-     * @return True when pm_self_test succeeds.
+     * @brief 运行公共无副作用模块运行状况检查。
+     * @param report 接收 UTF-8 健康报告 JSON。
+     * @param error 接收用户可读的失败原因。
+     * @return pm_self_test 成功时返回 true。
      */
     bool SelfTest(QByteArray* report, QString* error);
 
     /**
-     * @brief Executes one capability request to its terminal byte result.
-     * @param requestJson UTF-8 request matching a frozen capability DTO.
-     * @param result Receives JSON text or a binary blob chunk.
-     * @param error Receives a user-readable failure reason.
-     * @return True when submit, poll and result retrieval all succeed.
+     * @brief 执行一项能力请求，直至获取最终字节结果。
+     * @param requestJson 符合冻结能力 DTO 的 UTF-8 请求。
+     * @param result 接收 JSON 文本或二进制 blob 块。
+     * @param error 接收用户可读的失败原因。
+     * @return 当提交、轮询和结果检索均成功时为 true。
      */
     bool Execute(
         const QByteArray& requestJson,
@@ -82,55 +81,55 @@ public:
         QString* error);
 
     /**
-     * @brief Submits a capability request through pm_submit.
-     * @param requestJson UTF-8 request matching a frozen capability DTO.
-     * @param error Receives the thread-local public error on rejection.
-     * @return Opaque public job handle, or nullptr on failure.
+     * @brief 通过 pm_submit 提交能力请求。
+     * @param requestJson 符合冻结能力 DTO 的 UTF-8 请求。
+     * @param error 请求被拒绝时，接收线程局部的公共错误信息。
+     * @return 不透明的公共作业句柄，或失败时为 nullptr。
      */
     pm_job_t* Submit(const QByteArray& requestJson, QString* error);
 
     /**
-     * @brief Reads the latest progress snapshot for a job.
-     * @param job Opaque public job handle returned by Submit.
-     * @param progress Receives UTF-8 progress JSON.
-     * @param error Receives a user-readable failure reason.
-     * @return True when the progress snapshot was read.
+     * @brief 读取作业的最新进度快照。
+     * @param job 提交返回的不透明公共作业句柄。
+     * @param progress 接收 UTF-8 进度 JSON。
+     * @param error 接收用户可读的失败原因。
+     * @return 成功读取进度快照时返回 true。
      */
     bool Poll(pm_job_t* job, QByteArray* progress, QString* error);
 
     /**
-     * @brief Reads a terminal job result.
-     * @param job Opaque public job handle returned by Submit.
-     * @param result Receives UTF-8 result JSON.
-     * @param error Receives a user-readable failure reason.
-     * @return True when the terminal result was read.
+     * @brief 读取作业的最终结果。
+     * @param job 提交返回的不透明公共作业句柄。
+     * @param result 接收 UTF-8 结果 JSON。
+     * @param error 接收用户可读的失败原因。
+     * @return 成功读取最终结果时返回 true。
      */
     bool Result(pm_job_t* job, QByteArray* result, QString* error);
 
     /**
-     * @brief Requests cooperative cancellation of a public job.
-     * @param job Opaque public job handle returned by Submit.
-     * @param error Receives a user-readable failure reason.
-     * @return True when the idempotent cancellation request was accepted.
+     * @brief 请求以协作方式取消公共作业。
+     * @param job 提交返回的不透明公共作业句柄。
+     * @param error 接收用户可读的失败原因。
+     * @return 幂等取消请求被接受时返回 true。
      */
     bool Cancel(pm_job_t* job, QString* error);
 
     /**
-     * @brief Releases a public job handle through its owning DLL.
-     * @param job Opaque public job handle; nullptr is accepted.
-     * @return This function does not return a value.
+     * @brief 通过其所属的 DLL 释放公共作业句柄。
+     * @param job 不透明的公共作业句柄；允许为 nullptr。
+     * @return 该函数不返回值。
      */
     void Release(pm_job_t* job);
 
     /**
-     * @brief Returns the number of public ABI calls made by this client.
-     * @return Monotonic call count used by later UI zero-call assertions.
+     * @brief 返回此客户端进行的公共 ABI 调用的数量。
+     * @return 供后续 UI 零调用断言使用的单调递增调用计数。
      */
     quint64 CallCount() const;
 
     /**
-     * @brief Resets the public ABI call counter to zero.
-     * @return This function does not return a value.
+     * @brief 将公共 ABI 调用计数器重置为零。
+     * @return 该函数不返回值。
      */
     void ResetCallCount();
 

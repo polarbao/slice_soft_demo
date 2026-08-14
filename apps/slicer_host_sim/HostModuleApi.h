@@ -20,7 +20,7 @@ typedef void (PM_CALL *HostReleaseFunction)(pm_job_t*);
 typedef int (PM_CALL *HostSelfTestFunction)(pm_module_t*, char*, int, int*);
 typedef int (PM_CALL *HostLastErrorFunction)(char*, int, int*);
 
-/** @brief Runtime-loaded view of the frozen SPI v1 export table. */
+/** @brief 运行时加载的冻结 SPI v1 导出表视图。 */
 typedef struct HostModuleApi
 {
     HMODULE m_library;
@@ -38,12 +38,12 @@ typedef struct HostModuleApi
 } HostModuleApi;
 
 /**
- * @brief Loads a DLL and resolves exactly the frozen public SPI symbols.
- * @param api Destination table.
- * @param libraryPath Absolute or relative DLL path.
- * @param error Buffer receiving a readable error.
- * @param errorCapacity Error buffer size.
- * @return Non-zero on success.
+ * @brief 加载 DLL，并严格解析冻结的公共 SPI 符号。
+ * @param api 目标函数表。
+ * @param libraryPath DLL 的绝对或相对路径。
+ * @param error 接收可读错误信息的缓冲区。
+ * @param errorCapacity 错误缓冲区容量。
+ * @return 成功时返回非零值。
  */
 int HostModuleApiLoad(
     HostModuleApi* api,
@@ -52,26 +52,26 @@ int HostModuleApiLoad(
     size_t errorCapacity);
 
 /**
- * @brief Unloads a previously loaded module DLL.
- * @param api API table to clear after unloading.
- * @return This function does not return a value.
+ * @brief 卸载此前加载的模块 DLL。
+ * @param api 卸载后需要清空的 API 表。
+ * @return 本函数无返回值。
  */
 void HostModuleApiUnload(HostModuleApi* api);
 
 /**
- * @brief Reads pm_module_info using the three-state buffer contract.
- * @param api Loaded public SPI table.
- * @param output Receives a heap UTF-8 string owned by the caller.
- * @return Non-zero when the module information was read successfully.
+ * @brief 按三态缓冲区合同读取 pm_module_info。
+ * @param api 已加载的公共 SPI 表。
+ * @param output 接收由调用方持有的堆分配 UTF-8 字符串。
+ * @return 成功读取模块信息时返回非零值。
  */
 int HostModuleApiReadInfo(const HostModuleApi* api, char** output);
 
 /**
- * @brief Reads pm_poll using the three-state buffer contract.
- * @param api Loaded public SPI table.
- * @param job Active public SPI job handle.
- * @param output Receives a heap UTF-8 string owned by the caller.
- * @return Non-zero when the job status was read successfully.
+ * @brief 按三态缓冲区合同读取 pm_poll。
+ * @param api 已加载的公共 SPI 表。
+ * @param job 活动中的公共 SPI 作业句柄。
+ * @param output 接收由调用方持有的堆分配 UTF-8 字符串。
+ * @return 成功读取作业状态时返回非零值。
  */
 int HostModuleApiReadPoll(
     const HostModuleApi* api,
@@ -79,11 +79,11 @@ int HostModuleApiReadPoll(
     char** output);
 
 /**
- * @brief Reads pm_result using the three-state buffer contract.
- * @param api Loaded public SPI table.
- * @param job Completed public SPI job handle.
- * @param output Receives a heap UTF-8 string owned by the caller.
- * @return Non-zero when the job result was read successfully.
+ * @brief 按三态缓冲区合同读取 pm_result。
+ * @param api 已加载的公共 SPI 表。
+ * @param job 已完成的公共 SPI 作业句柄。
+ * @param output 接收由调用方持有的堆分配 UTF-8 字符串。
+ * @return 成功读取作业结果时返回非零值。
  */
 int HostModuleApiReadResult(
     const HostModuleApi* api,
@@ -91,11 +91,11 @@ int HostModuleApiReadResult(
     char** output);
 
 /**
- * @brief Reads pm_self_test using the three-state buffer contract.
- * @param api Loaded public SPI table.
- * @param module Public SPI module instance.
- * @param output Receives a heap UTF-8 string owned by the caller.
- * @return Non-zero when the self-test response was read successfully.
+ * @brief 按三态缓冲区合同读取 pm_self_test。
+ * @param api 已加载的公共 SPI 表。
+ * @param module 公共 SPI 模块实例。
+ * @param output 接收由调用方持有的堆分配 UTF-8 字符串。
+ * @return 成功读取自检响应时返回非零值。
  */
 int HostModuleApiReadSelfTest(
     const HostModuleApi* api,
@@ -103,9 +103,9 @@ int HostModuleApiReadSelfTest(
     char** output);
 
 /**
- * @brief Reads pm_last_error using the three-state buffer contract.
- * @param api Loaded public SPI table.
- * @param output Receives a heap UTF-8 string owned by the caller.
- * @return Non-zero when the last-error response was read successfully.
+ * @brief 按三态缓冲区合同读取 pm_last_error。
+ * @param api 已加载的公共 SPI 表。
+ * @param output 接收由调用方持有的堆分配 UTF-8 字符串。
+ * @return 成功读取最近错误响应时返回非零值。
  */
 int HostModuleApiReadLastError(const HostModuleApi* api, char** output);

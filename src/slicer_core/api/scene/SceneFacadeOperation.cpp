@@ -13,6 +13,8 @@
 #include <string_view>
 #include <utility>
 
+// 文件职责：规范化场景操作、计算重放标识并构造原子候选状态；
+// 边界：取消、版本冲突或任一操作失败时不得修改当前权威场景。
 namespace slicer_core::api::scene_facade_detail
 {
 namespace

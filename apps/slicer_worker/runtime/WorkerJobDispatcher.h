@@ -10,24 +10,24 @@
 namespace slicesoft::worker
 {
 
-/** @brief Exact one-job capability registry and fail-closed dispatcher. */
+/** @brief 单作业精确能力注册表与失败即拒绝分派器。 */
 class WorkerJobDispatcher final
 {
 public:
     /**
-     * @brief Registers one executor for an exact frozen capability.
-     * @param capability Exact capability name.
-     * @param executor Unique production or test executor implementation.
-     * @throws std::invalid_argument For unknown, null, or duplicate registration.
+     * @brief 为一项冻结能力注册唯一执行器。
+     * @param capability 精确能力名称。
+     * @param executor 独占的生产或测试执行器实现。
+     * @throws std::invalid_argument 能力未知、执行器为空或重复注册时抛出。
      */
     void Register(
         std::string capability,
         std::unique_ptr<IWorkerCapabilityExecutor> executor);
 
     /**
-     * @brief Dispatches one request and creates an identity-closed result.
-     * @param request Immutable validated request.
-     * @return Success from the exact executor or a stable fail-closed result.
+     * @brief 分派一个请求并创建标识闭合的结果。
+     * @param request 不可变的已校验请求。
+     * @return 精确执行器的成功结果或稳定的失败即拒绝结果。
      */
     [[nodiscard]] WorkerResultEnvelope Dispatch(
         const WorkerRequestEnvelope& request) const;

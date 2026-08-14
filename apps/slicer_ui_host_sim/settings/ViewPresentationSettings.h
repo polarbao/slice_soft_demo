@@ -6,36 +6,36 @@
 #include <QString>
 
 /**
- * @brief Persists display-only view preferences in a session config file.
+ * @brief 在会话配置文件中持久化纯显示视图偏好。
  */
 class ViewPresentationSettings final
 {
 public:
     /**
-     * @brief Creates settings bound to one session config path.
-     * @param sessionConfigPath JSON file used for round-trip persistence.
+     * @brief 创建绑定到会话配置路径的设置。
+     * @param sessionConfigPath 用于往返持久化的 JSON 文件。
      */
     explicit ViewPresentationSettings(const QString& sessionConfigPath);
 
-    /** @brief Loads settings or contract defaults when the file is absent. */
+    /** @brief 加载设置；文件不存在时加载合同默认值。 */
     bool Load(QString* error);
 
-    /** @brief Atomically saves the current display preferences. */
+    /** @brief 原子保存当前显示偏好。 */
     bool Save(QString* error) const;
 
-    /** @brief Returns the configured default presentation mode. */
+    /** @brief 返回配置的默认展示模式。 */
     [[nodiscard]] HostViewMode DefaultViewMode() const;
 
-    /** @brief Updates the configured default presentation mode. */
+    /** @brief 更新配置的默认展示模式。 */
     void SetDefaultViewMode(HostViewMode mode);
 
-    /** @brief Returns the configured three-dimensional projection. */
+    /** @brief 返回配置的三维投影。 */
     [[nodiscard]] slicer::render::Projection ThreeDProjection() const;
 
-    /** @brief Updates the three-dimensional projection preference. */
+    /** @brief 更新三维投影偏好。 */
     void SetThreeDProjection(slicer::render::Projection projection);
 
-    /** @brief Returns the bound session config path. */
+    /** @brief 返回绑定的会话配置路径。 */
     [[nodiscard]] QString SessionConfigPath() const;
 
 private:

@@ -8,31 +8,31 @@
 namespace slicesoft::worker
 {
 
-/** @brief Stable result publication failure with output-category semantics. */
+/** @brief 具有输出类别语义的稳定结果发布失败。 */
 class WorkerResultWriteError final : public std::runtime_error
 {
 public:
-    /** @brief Creates a PM-SLICER-OUTPUT-0050 result publication failure. */
+    /** @brief 创建 PM-SLICER-OUTPUT-0050 结果发布失败。 */
     explicit WorkerResultWriteError(const std::string& message);
 
-    /** @brief Returns the stable public error code. */
+    /** @brief 返回稳定公共错误码。 */
     [[nodiscard]] const std::string& StableCode() const noexcept;
 
-    /** @brief Returns the frozen output-category process exit code. */
+    /** @brief 返回冻结的输出类别进程退出码。 */
     [[nodiscard]] int ProcessExitCode() const noexcept;
 
 private:
     std::string m_stableCode{"PM-SLICER-OUTPUT-0050"};
 };
 
-/** @brief Publishes result.json through a same-directory atomic replacement. */
+/** @brief 通过同目录原子替换发布 result.json。 */
 class WorkerResultWriter final
 {
 public:
     /**
-     * @brief Writes and atomically replaces the identity-owned result.json.
-     * @param result Valid identity-closed result envelope.
-     * @throws WorkerResultWriteError When temporary write or atomic replace fails.
+     * @brief 写入并原子替换由标识持有的 result.json。
+     * @param result 有效且标识闭合的结果信封。
+     * @throws WorkerResultWriteError 临时写入或原子替换失败时抛出。
      */
     static void WriteAtomically(const WorkerResultEnvelope& result);
 };

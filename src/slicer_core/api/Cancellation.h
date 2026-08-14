@@ -5,17 +5,17 @@
 
 namespace slicer_core::api {
 
-/** @brief Cooperative cancellation source required by long-running facades. */
+/** @brief 长耗时 Facade 调用所需的协作式取消源。 */
 class ICancelToken
 {
 public:
     virtual ~ICancelToken() = default;
 
-    /** @brief Tests whether cancellation was requested. @return True when work should stop. */
+    /** @brief 检查是否已请求取消。 @return 工作应停止时返回 true。 */
     [[nodiscard]] virtual bool IsCancelRequested() const noexcept = 0;
 };
 
-/** @brief Progress event shared by Worker and in-process facade callers. */
+/** @brief Worker 与进程内 Facade 调用方共享的进度事件。 */
 struct ProgressEvent
 {
     std::string stage;
@@ -25,7 +25,7 @@ struct ProgressEvent
     std::string current_instance_id;
 };
 
-/** @brief Callback receiving monotonic facade progress events. */
+/** @brief 接收 Facade 单调递进进度事件的回调。 */
 using ProgressSink = std::function<void(const ProgressEvent&)>;
 
 }  // namespace slicer_core::api

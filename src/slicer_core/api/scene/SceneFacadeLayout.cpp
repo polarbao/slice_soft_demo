@@ -8,6 +8,8 @@
 #include <string_view>
 #include <utility>
 
+// 文件职责：将冻结排版策略应用到隔离候选场景；
+// 边界：只有整批排版验证通过后才允许候选状态进入提交阶段。
 namespace slicer_core::api::scene_facade_detail
 {
 namespace

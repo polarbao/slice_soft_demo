@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：编排保守修复、确定性产物写入、重新导入和严格复核；
+// 边界：只有全部证据闭合的修复产物才能作为成功结果发布。
 namespace slicer_core::engine
 {
 namespace

@@ -9,49 +9,49 @@ class QSettings;
 class QSplitter;
 class QTabWidget;
 
-/** @brief Host preferences restored before a new runtime scene is created. */
+/** @brief 在创建新的运行时场景之前恢复宿主偏好。 */
 struct hostworkspacepreferences
 {
     hostslicesettings slicesettings;
 };
 
-/** @brief Persists versioned host preferences and safe workspace layout. */
+/** @brief 保留版本化的宿主偏好和安全的工作区布局。 */
 class HostWorkspaceState final
 {
 public:
     /**
-     * @brief Returns the current host workspace schema version.
-     * @return Stable integer schema version.
+     * @brief 返回当前宿主工作区架构版本。
+     * @return 稳定的整数模式版本。
      */
     static int SchemaVersion();
 
     /**
-     * @brief Returns the production QSettings organization name.
-     * @return Stable organization identifier.
+     * @brief 返回生产 QSettings 组织名称。
+     * @return 稳定的组织标识符。
      */
     static QString OrganizationName();
 
     /**
-     * @brief Returns the production QSettings application name.
-     * @return Stable application identifier.
+     * @brief 返回生产 QSettings 应用程序名称。
+     * @return 稳定的应用程序标识符。
      */
     static QString ApplicationName();
 
     /**
-     * @brief Reports whether this process may access real user settings.
-     * @return False for all self-test processes.
+     * @brief 报告此进程是否可以访问真实的用户设置。
+     * @return 对于所有自测试过程都是错误的。
      */
     static bool PersistenceEnabled();
 
     /**
-     * @brief Saves validated host preferences and workspace geometry.
-     * @param settings Destination settings store.
-     * @param window Reference host main window.
-     * @param workspaceSplitter Main work-area splitter.
-     * @param workspaceTabs Top-level workspace tabs.
-     * @param inspectorTabs Host business inspector tabs.
-     * @param sliceSettings Current host-owned slice settings.
-     * @return This function does not return a value.
+     * @brief 保存经过验证的宿主偏好和工作区几何形状。
+     * @param settings 目的地设置存储。
+     * @param window 参考宿主主窗口。
+     * @param workspaceSplitter 主工作区分配器。
+     * @param workspaceTabs 顶级工作区选项卡。
+     * @param inspectorTabs 托管业务检查器选项卡。
+     * @param sliceSettings 当前由宿主持有的切片设置。
+     * @return 该函数不返回值。
      */
     static void Save(
         QSettings& settings,
@@ -62,14 +62,14 @@ public:
         const hostslicesettings& sliceSettings);
 
     /**
-     * @brief Restores a valid workspace or applies safe defaults.
-     * @param settings Source settings store.
-     * @param window Reference host main window.
-     * @param workspaceSplitter Main work-area splitter.
-     * @param workspaceTabs Top-level workspace tabs.
-     * @param inspectorTabs Host business inspector tabs.
-     * @param preferences Receives validated host-owned preferences.
-     * @return True only when the complete saved state was restored.
+     * @brief 恢复有效的工作区或应用安全默认值。
+     * @param settings 源设置存储。
+     * @param window 参考宿主主窗口。
+     * @param workspaceSplitter 主工作区分配器。
+     * @param workspaceTabs 顶级工作区选项卡。
+     * @param inspectorTabs 托管业务检查器选项卡。
+     * @param preferences 接收经过验证的由宿主持有的首选项。
+     * @return 仅当完整恢复已保存状态时返回 true。
      */
     static bool Restore(
         QSettings& settings,
@@ -80,12 +80,12 @@ public:
         hostworkspacepreferences* preferences);
 
     /**
-     * @brief Applies the safe reference-host workspace layout.
-     * @param window Reference host main window.
-     * @param workspaceSplitter Main work-area splitter.
-     * @param workspaceTabs Top-level workspace tabs.
-     * @param inspectorTabs Host business inspector tabs.
-     * @return This function does not return a value.
+     * @brief 应用安全参考宿主工作区布局。
+     * @param window 参考宿主主窗口。
+     * @param workspaceSplitter 主工作区分配器。
+     * @param workspaceTabs 顶级工作区选项卡。
+     * @param inspectorTabs 托管业务检查器选项卡。
+     * @return 该函数不返回值。
      */
     static void Reset(
         QMainWindow* window,

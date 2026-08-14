@@ -9,36 +9,36 @@
 namespace slicesoft::module::worker_detail
 {
 
-/** @brief Parses the reserved Worker stdout protocol while retaining ordinary logs. */
+/** @brief 解析 Worker 保留的标准输出协议，同时保留普通日志。 */
 class WorkerProtocolParser final
 {
 public:
     /**
-     * @brief Binds the parser to one run result and optional progress callback.
-     * @param result Mutable result receiving parsed events and ordinary log lines.
-     * @param progressSink Optional callback invoked for every valid progress event.
+     * @brief 将解析器绑定到一次运行结果和可选进度回调。
+     * @param result 接收已解析事件和普通日志行的可变结果。
+     * @param progressSink 每个有效进度事件触发的可选回调。
      */
     WorkerProtocolParser(WorkerRunResult* result, WorkerProgressSink progressSink);
 
-    /** @brief Feeds an arbitrary stdout byte chunk into the line parser. */
+    /** @brief 向行解析器送入任意标准输出字节块。 */
     void ProcessStdoutChunk(std::string_view chunk);
 
-    /** @brief Feeds an arbitrary stderr byte chunk into the line parser. */
+    /** @brief 向行解析器送入任意标准错误字节块。 */
     void ProcessStderrChunk(std::string_view chunk);
 
-    /** @brief Flushes final unterminated stdout and stderr lines. */
+    /** @brief 刷新标准输出和标准错误中末尾未换行的内容。 */
     void Finish();
 
-    /** @brief Reports whether a reserved line violated the file contract. */
+    /** @brief 报告保留行是否违反文件合同。 */
     [[nodiscard]] bool HasContractError() const noexcept;
 
-    /** @brief Reports whether the progress callback threw an exception. */
+    /** @brief 报告进度回调是否抛出异常。 */
     [[nodiscard]] bool HasCallbackError() const noexcept;
 
-    /** @brief Reports whether the last accepted progress event reached 100 percent. */
+    /** @brief 报告最后接受的进度事件是否达到 100%。 */
     [[nodiscard]] bool HasTerminalProgress() const noexcept;
 
-    /** @brief Returns the first protocol or callback diagnostic. */
+    /** @brief 返回第一条协议或回调诊断。 */
     [[nodiscard]] const std::string& ErrorMessage() const noexcept;
 
 private:

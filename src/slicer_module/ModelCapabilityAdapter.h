@@ -14,41 +14,41 @@
 namespace slicesoft::module
 {
 
-/** @brief Cancellation token used by synchronous light operations. */
+/** @brief 同步轻量操作使用的取消令牌。 */
 class NeverCancelToken final : public slicer_core::api::ICancelToken
 {
 public:
-    /** @brief Reports that synchronous work remains active. @return Always false. */
+    /** @brief 报告同步工作仍在继续。 @return 始终返回 false。 */
     [[nodiscard]] bool IsCancelRequested() const noexcept override;
 };
 
-/** @brief Imported model resources retained for scene and ViewData facades. */
+/** @brief 为场景和 ViewData Facade 保留的已导入模型资源。 */
 struct ImportedModelResource
 {
     slicer_core::api::ModelMetadata metadata;
     std::shared_ptr<const slicer_core::SceneModel> scenemodel;
 };
 
-/** @brief Wires model and fast-preflight capability DTOs to base services. */
+/** @brief 将模型及快速预检能力 DTO 接入基础服务。 */
 class ModelCapabilityAdapter final
 {
 public:
-    /** @brief Creates an adapter with the production model facade. */
+    /** @brief 使用生产 ModelFacade 创建适配器。 */
     ModelCapabilityAdapter();
 
-    /** @brief Destroys the retained facade and model resources. */
+    /** @brief 销毁所持 ModelFacade 和模型资源。 */
     ~ModelCapabilityAdapter();
 
-    /** @brief Executes a model capability. @param capability Frozen ID. @param request DTO object. @return Result envelope. */
+    /** @brief 执行模型能力。 @param capability 冻结 ID。 @param request DTO 对象。 @return 结果对象。 */
     [[nodiscard]] slicer_core::Json Execute(
         const std::string& capability,
         const slicer_core::Json& request);
 
-    /** @brief Finds one retained model. @param modelId Numeric API identity. @return Shared resource or nullptr. */
+    /** @brief 查找一个保留模型。 @param modelId 数值 API 标识。 @return 共享资源或 nullptr。 */
     [[nodiscard]] std::shared_ptr<const ImportedModelResource> Find(
         slicer_core::api::ModelId modelId) const;
 
-    /** @brief Resolves an imported model by source path. @param path Source path. @return Shared resource or nullptr. */
+    /** @brief 按源路径解析已导入模型。 @param path 源路径。 @return 共享资源或 nullptr。 */
     [[nodiscard]] std::shared_ptr<const ImportedModelResource> FindByPath(
         const std::filesystem::path& path) const;
 

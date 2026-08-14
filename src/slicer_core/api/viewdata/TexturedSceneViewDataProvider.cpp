@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：协调模型仓库、纹理源、预算策略和闭合验证以提供 ViewData；
+// 边界：纹理缺失或解码失败必须显式返回错误，禁止静默回退为错误外观。
 namespace slicer_core::api
 {
 namespace

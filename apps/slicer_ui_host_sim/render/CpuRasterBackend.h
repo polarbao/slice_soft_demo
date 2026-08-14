@@ -5,15 +5,15 @@
 #include <memory>
 
 /**
- * @brief Deterministic Stage 14E reference renderer with no graphics API.
+ * @brief 不依赖图形 API 的确定性 Stage 14E 参考渲染器。
  */
 class CpuRasterBackend final : public slicer::render::IRenderBackend
 {
 public:
-    /** @brief Creates an empty deterministic software renderer. */
+    /** @brief 创建空的确定性软件渲染器。 */
     CpuRasterBackend();
 
-    /** @brief Releases all cached host rendering resources. */
+    /** @brief 释放所有缓存的宿主渲染资源。 */
     ~CpuRasterBackend() override;
 
     CpuRasterBackend(const CpuRasterBackend&) = delete;

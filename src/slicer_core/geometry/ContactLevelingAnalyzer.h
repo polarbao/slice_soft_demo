@@ -7,7 +7,7 @@
 namespace slicer_core
 {
 
-/** @brief Stable diagnostic-only policy for Stage 16 contact leveling. */
+/** @brief Stage 16 接触调平的稳定仅诊断策略。 */
 struct ContactLevelingPolicy
 {
     double minimumangledeg{-12.0};
@@ -19,7 +19,7 @@ struct ContactLevelingPolicy
     double maximumfootprintincreasemm{0.5};
 };
 
-/** @brief One read-only contact-leveling candidate and its constraints. */
+/** @brief 一个只读接触调平候选项及其约束。 */
 struct ContactLevelingCandidate
 {
     bool available{false};
@@ -45,11 +45,11 @@ struct ContactLevelingCandidate
 };
 
 /**
- * @brief Analyze a bounded roll candidate without changing the input model.
- * @param model Imported, auto-oriented and grounded model report.
- * @param metricpolicy Frozen Stage 16 contact measurement policy.
- * @param levelingpolicy Deterministic bounded search policy.
- * @return Best diagnostic candidate or a stable rejection reason.
+ * @brief 在不改变输入模型的前提下分析有界横滚候选项。
+ * @param model 已导入、自动定向并落地的模型报告。
+ * @param metricpolicy 冻结的 Stage 16 接触测量策略。
+ * @param levelingpolicy 确定性有界搜索策略。
+ * @return 最佳诊断候选项或稳定拒绝原因。
  */
 ContactLevelingCandidate AnalyzeContactLeveling(
     const ModelReport& model,
@@ -57,10 +57,10 @@ ContactLevelingCandidate AnalyzeContactLeveling(
     const ContactLevelingPolicy& levelingpolicy = {});
 
 /**
- * @brief Apply a diagnostic roll angle and ground the copied model at Z=0.
- * @param model Imported, auto-oriented and grounded source model.
- * @param angledeg Roll angle around the positive Y long axis in degrees.
- * @return Transformed copy; the source model is not modified.
+ * @brief 应用诊断横滚角，并将复制模型落地到 Z=0。
+ * @param model 已导入、自动定向并落地的源模型。
+ * @param angledeg 绕 Y 正向长轴旋转的角度，单位为度。
+ * @return 变换后的副本；源模型不被修改。
  */
 ModelReport ApplyContactLevelingAngle(
     const ModelReport& model,

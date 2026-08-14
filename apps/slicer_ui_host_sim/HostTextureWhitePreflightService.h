@@ -7,7 +7,7 @@
 
 #include <memory>
 
-/** @brief Identity and Profile context for one host texture-white scan. */
+/** @brief 单次宿主纹理纯白扫描的标识与 Profile 上下文。 */
 struct hosttexturewhitepreflightrequest
 {
     QString sceneid;
@@ -22,7 +22,7 @@ struct hosttexturewhitepreflightrequest
         QStringLiteral("彩色纹理甲片 - 全实体 RGB + 按需补白 + 下表面支撑")};
 };
 
-/** @brief Cached exact-white evidence for one source texture. */
+/** @brief 缓存单个源纹理的严格纯白证据。 */
 struct hosttexturewhiteassetresult
 {
     QString normalizedpath;
@@ -34,7 +34,7 @@ struct hosttexturewhiteassetresult
     QString error;
 };
 
-/** @brief Non-blocking preflight result bound to one scene/Profile identity. */
+/** @brief 非阻塞预检结果绑定到一个场景/Profile 标识。 */
 struct hosttexturewhitepreflightresult
 {
     quint64 generation{0U};
@@ -53,13 +53,13 @@ struct hosttexturewhitepreflightresult
     bool blocking{false};
 
     /**
-     * @brief Reports whether this result contains a user-visible warning.
-     * @return True only for exact-white evidence without carrier support.
+     * @brief 报告此结果是否包含用户可见的警告。
+     * @return 仅适用于没有载体支持的纯白证据。
      */
     [[nodiscard]] bool HasWarning() const;
 };
 
-/** @brief Cache counters exposed for deterministic host tests. */
+/** @brief 为确定性宿主测试公开的缓存计数器。 */
 struct hosttexturewhitecachediagnostics
 {
     qsizetype cacheentries{0};
@@ -68,10 +68,10 @@ struct hosttexturewhitecachediagnostics
 };
 
 /**
- * @brief Asynchronously scans imported source textures for exact RGB white.
+ * @brief 异步扫描导入的源纹理，查找严格 RGB 纯白像素。
  *
- * The service mirrors the frozen Stage 15 strict-white semantics. It only
- * emits conservative guidance and never blocks slicing or mutates a Profile.
+ * 该服务遵循冻结的 Stage 15 严格纯白语义，只发出保守提示，
+ * 绝不阻断切片或改变 Profile。
  */
 class HostTextureWhitePreflightService final : public QObject
 {
@@ -79,42 +79,42 @@ class HostTextureWhitePreflightService final : public QObject
 
 public:
     /**
-     * @brief Creates a host-owned white preflight service.
-     * @param parent Optional QObject owner.
+     * @brief 创建由宿主持有的白色预检服务。
+     * @param parent 可选的 QObject 所有者。
      */
     explicit HostTextureWhitePreflightService(QObject* parent = nullptr);
     ~HostTextureWhitePreflightService() override;
 
     /**
-     * @brief Starts a scan for the supplied scene and Profile identity.
-     * @param request Immutable source texture and identity context.
-     * @return Monotonic request generation.
+     * @brief 开始扫描指定的场景与 Profile 标识。
+     * @param request 不可变的源纹理和标识上下文。
+     * @return 单调递增的请求代次。
      */
     quint64 RequestScan(const hosttexturewhitepreflightrequest& request);
 
-    /** @brief Cancels logical delivery of the newest request. */
+    /** @brief 取消最新请求的逻辑交付。 */
     void Cancel();
 
     /**
-     * @brief Reports whether the newest request is still running.
-     * @return True until its result is accepted or cancelled.
+     * @brief 报告最新的请求是否仍在运行。
+     * @return 结果被接受或请求被取消前返回 true。
      */
     [[nodiscard]] bool IsRunning() const;
 
     /**
-     * @brief Returns cache and decode counters.
-     * @return Thread-safe diagnostic snapshot.
+     * @brief 返回缓存和解码计数器。
+     * @return 线程安全的诊断快照。
      */
     [[nodiscard]] hosttexturewhitecachediagnostics CacheDiagnostics() const;
 
 signals:
-    /** @brief Emitted when a new preflight generation starts. */
+    /** @brief 新的预检代次开始时发出。 */
     void SigPreflightStarted(quint64 generation);
 
-    /** @brief Emitted only for the newest matching scene/Profile identity. */
+    /** @brief 仅针对最新匹配的场景/Profile 标识发出。 */
     void SigPreflightFinished(const hosttexturewhitepreflightresult& result);
 
-    /** @brief Emitted when a stale or cancelled generation is discarded. */
+    /** @brief 过期或已取消的代次被丢弃时发出。 */
     void SigPreflightDiscarded(quint64 generation);
 
 private:

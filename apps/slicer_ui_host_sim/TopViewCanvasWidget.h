@@ -12,62 +12,62 @@ class QPaintEvent;
 class QWheelEvent;
 
 /**
- * @brief Presents one host-local top-view image with local pan and zoom.
+ * @brief 显示支持本地平移与缩放的宿主俯视图像。
  *
- * The widget never calls the slicer module. It only transforms a retained
- * QImage produced from an authoritative ViewData snapshot.
+ * 该控件绝不调用切片模块，只对已保留的 QImage 执行显示变换；
+ * QImage 必须由权威 ViewData 快照生成。
  */
 class TopViewCanvasWidget final : public QWidget
 {
 public:
-    /** @brief Creates an empty top-view canvas. */
+    /** @brief 创建一个空的俯视画布。 */
     explicit TopViewCanvasWidget(QWidget* parent = nullptr);
 
     /**
-     * @brief Replaces the retained top-view image and resets navigation.
-     * @param image Complete display-only image rendered from ViewData.
+     * @brief 替换保留的俯视图像并重置导航。
+     * @param image 从 ViewData 渲染的完整的仅显示图像。
      */
     void SetImage(const QImage& image);
 
     /**
-     * @brief Replaces pixels while preserving local pan and zoom.
-     * @param image Complete display-only image with the current viewport size.
+     * @brief 替换像素，同时保留局部平移和缩放。
+     * @param image 具有当前视口大小的完整仅显示图像。
      */
     void UpdateImage(const QImage& image);
 
-    /** @brief Clears the retained image and returns to the empty state. */
+    /** @brief 清除保留图像并返回到空状态。 */
     void ClearImage();
 
-    /** @brief Restores the image-fit zoom and centered pan position. */
+    /** @brief 恢复适合图像的缩放和平移居中位置。 */
     void ResetView();
 
     /**
-     * @brief Applies a host-local zoom around one canvas position.
-     * @param factor Positive relative zoom multiplier.
-     * @param anchor Canvas coordinate that remains visually fixed.
+     * @brief 以指定画布位置为中心应用宿主本地缩放。
+     * @param factor 正相对缩放倍数。
+     * @param anchor 视觉上保持固定的画布坐标。
      */
     void ZoomAt(double factor, const QPointF& anchor);
 
     /**
-     * @brief Applies a host-local pan delta.
-     * @param delta Canvas-space movement in pixels.
+     * @brief 应用宿主本地平移增量。
+     * @param delta 画布空间移动（以像素为单位）。
      */
     void PanBy(const QPointF& delta);
 
-    /** @brief Returns true when a complete image is retained. */
+    /** @brief 当保留完整图像时返回 true。 */
     [[nodiscard]] bool HasImage() const;
 
-    /** @brief Returns the current relative zoom factor. */
+    /** @brief 返回当前的相对缩放系数。 */
     [[nodiscard]] double ZoomFactor() const;
 
-    /** @brief Returns the current canvas-space pan offset. */
+    /** @brief 返回当前画布空间平移偏移量。 */
     [[nodiscard]] QPointF PanOffset() const;
 
     /**
-     * @brief Installs host-local model drag callbacks.
-     * @param begin Called with rendered-image pixels and returns whether drag starts.
-     * @param update Called for each local pointer move in rendered-image pixels.
-     * @param finish Called once when the accepted drag is released.
+     * @brief 安装宿主本地模型拖动回调。
+     * @param begin 使用渲染图像像素调用并返回拖动是否开始。
+     * @param update 为渲染图像像素中的每个本地指针移动而调用。
+     * @param finish 当接受的拖动被释放时调用一次。
      */
     void SetModelDragCallbacks(
         std::function<bool(const QPointF&)> begin,

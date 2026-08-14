@@ -12,81 +12,81 @@ class QSlider;
 class QSpinBox;
 class HostChannelChartWidget;
 
-/** @brief Reference-host result workspace for one verified RGBWSV package. */
+/** @brief 参考宿主中用于已验证 RGBWSV Package 的结果工作区。 */
 class HostPackageReviewPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Creates an empty package review workspace.
-     * @param parent Optional Qt parent widget.
+     * @brief 创建一个空的包审阅工作区。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostPackageReviewPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Displays a verified package summary and channel chart.
-     * @param review Host-owned production package data.
-     * @return This function does not return a value.
+     * @brief 显示经过验证的包摘要和通道图表。
+     * @param review 由宿主持有的生产包数据。
+     * @return 该函数不返回值。
      */
     void SetPackage(const hostpackagereview& review);
 
     /**
-     * @brief Stores Stage 16 strategy and Worker timing for result diagnostics.
-     * @param samplingStrategyId Effective Profile geometry strategy identity.
-     * @param timing Worker timing object returned by the completed job.
+     * @brief 保存 Stage 16 策略与 Worker 计时，用于结果诊断。
+     * @param samplingStrategyId 有效 Profile 的几何策略标识。
+     * @param timing 已完成作业返回的 Worker 计时对象。
      */
     void SetStage16Context(
         const QString& samplingStrategyId,
         const QJsonObject& timing);
 
     /**
-     * @brief Displays a module-rendered production layer preview.
-     * @param imagePath Host cache path returned by the module.
-     * @param layer Layer descriptor corresponding to the image.
-     * @return This function does not return a value.
+     * @brief 显示模块渲染的生产层预览。
+     * @param imagePath 模块返回的宿主缓存路径。
+     * @param layer 与图像对应的层描述符。
+     * @return 该函数不返回值。
      */
     void ShowPreview(
         const QString& imagePath,
         const hostlayerdescriptor& layer);
 
     /**
-     * @brief Displays the first production layer used as A-side reference.
-     * @param imagePath Host cache path returned by the module.
-     * @param layer Verified first-layer descriptor.
+     * @brief 显示用作 A 面参考的第一个生产层。
+     * @param imagePath 模块返回的宿主缓存路径。
+     * @param layer 已验证的第一层描述符。
      */
     void ShowReferencePreview(
         const QString& imagePath,
         const hostlayerdescriptor& layer);
 
     /**
-     * @brief Displays one structured package report.
-     * @param report Report returned through package.read_report.
-     * @return This function does not return a value.
+     * @brief 显示一份结构化包报告。
+     * @param report 通过 package.read_report 返回的报告。
+     * @return 该函数不返回值。
      */
     void ShowReport(const hostpackagereport& report);
 
     /**
-     * @brief Displays a non-destructive result-view error.
-     * @param message User-readable error text.
-     * @return This function does not return a value.
+     * @brief 显示非破坏性结果查看错误。
+     * @param message 用户可读的错误文本。
+     * @return 该函数不返回值。
      */
     void ShowError(const QString& message);
 
     /**
-     * @brief Returns the currently requested preview channels.
-     * @return One or more RGBWSV channel names.
+     * @brief 返回当前请求的预览通道。
+     * @return 一个或多个 RGBWSV 通道名称。
      */
     [[nodiscard]] QStringList SelectedChannels() const;
 
 signals:
-    /** @brief Requests a new production TIFF preview. */
+    /** @brief 请求新的生产 TIFF 预览。 */
     void SigLayerPreviewRequested(int layerIndex, QStringList channels);
 
-    /** @brief Requests one manifest-registered named report. */
+    /** @brief 请求一份在 manifest 中登记的命名报告。 */
     void SigReportRequested(QString reportName);
 
-    /** @brief Requests opening the exact verified production package directory. */
+    /** @brief 请求打开已精确验证的生产 Package 目录。 */
     void SigOpenPackageDirectoryRequested(QString packageDirectory);
 
 private slots:

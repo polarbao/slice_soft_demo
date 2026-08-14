@@ -18,6 +18,8 @@
 #include <optional>
 #include <string>
 
+// 文件职责：把冻结场景能力 DTO 路由到 SceneFacade，并管理会话与 ViewData 存储；
+// 边界：适配层只做合同转换，不在宿主侧重算几何、姿态或生产语义。
 namespace slicesoft::module
 {
 

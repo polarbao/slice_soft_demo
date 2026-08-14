@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-/** @brief Host-owned three-dimensional frame for one scene revision. */
+/** @brief 由宿主持有的单场景修订三维帧。 */
 struct ThreeDFrame final
 {
     QString viewDataIdentity;
@@ -24,16 +24,16 @@ struct ThreeDFrame final
 };
 
 /**
- * @brief Fetches frozen three_d ViewData and submits only local frames.
+ * @brief 获取冻结的 three_d ViewData，并且仅提交本地帧。
  */
 class SceneRenderPolicy final
 {
 public:
     /**
-     * @brief Creates a policy over the public module and one renderer backend.
-     * @param client Runtime-loaded module client.
-     * @param backend Backend-neutral renderer implementation.
-     * @param maxViewDataBytes Maximum accepted three-dimensional ViewData bytes.
+     * @brief 基于公共模块与指定渲染后端创建策略。
+     * @param client 运行时加载的模块客户端。
+     * @param backend 后端中立的渲染器实现。
+     * @param maxViewDataBytes 可接受的三维 ViewData 最大字节数。
      */
     SceneRenderPolicy(
         ModuleClient& client,
@@ -41,12 +41,12 @@ public:
         qint64 maxViewDataBytes = 128LL * 1024LL * 1024LL);
 
     /**
-     * @brief Refreshes authoritative three_d ViewData and resource caches.
-     * @param sceneHandle Module-owned scene handle.
-     * @param sceneRevision Expected authoritative scene revision.
-     * @param frame Receives local frame resources and authoritative flags.
-     * @param error Receives a fail-closed DTO or resource diagnostic.
-     * @return True when mesh, UV, submesh, material and texture close.
+     * @brief 刷新权威 three_d ViewData 与资源缓存。
+     * @param sceneHandle 模块持有的场景句柄。
+     * @param sceneRevision 预期的权威场景修订号。
+     * @param frame 接收本地帧资源与权威标志。
+     * @param error 接收失败即拒绝的 DTO 或资源诊断。
+     * @return 网格、UV、子网格、材料与纹理均闭合时返回 true。
      */
     bool Refresh(
         quint64 sceneHandle,
@@ -55,13 +55,13 @@ public:
         QString* error);
 
     /**
-     * @brief Renders one frame without crossing the public module boundary.
-     * @param frame Previously refreshed local frame.
-     * @param camera Host-local camera state.
-     * @param widthPx Output width in pixels.
-     * @param heightPx Output height in pixels.
-     * @param output Receives RGBA8 pixels.
-     * @return Backend frame result and timing data.
+     * @brief 在不跨越公共模块边界的前提下渲染一帧。
+     * @param frame 先前刷新得到的本地帧。
+     * @param camera 宿主本地相机状态。
+     * @param widthPx 输出像素宽度。
+     * @param heightPx 输出像素高度。
+     * @param output 接收 RGBA8 像素。
+     * @return 后端帧结果与耗时数据。
      */
     [[nodiscard]] slicer::render::FrameResult Render(
         const ThreeDFrame& frame,
@@ -70,13 +70,13 @@ public:
         std::uint32_t heightPx,
         slicer::render::ImageOut* output);
 
-    /** @brief Returns real mesh uploads performed by the local cache. */
+    /** @brief 返回本地缓存执行的实际网格上传次数。 */
     [[nodiscard]] std::uint64_t MeshUploadCount() const;
 
-    /** @brief Returns real texture uploads performed by the local cache. */
+    /** @brief 返回本地缓存执行的实际纹理上传次数。 */
     [[nodiscard]] std::uint64_t TextureUploadCount() const;
 
-    /** @brief Returns ViewData blob chunks fetched through the public ABI. */
+    /** @brief 返回通过公共 ABI 获取的 ViewData blob 分块数。 */
     [[nodiscard]] quint64 BlobReadCount() const;
 
 private:

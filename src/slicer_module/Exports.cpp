@@ -13,6 +13,8 @@
 #include <string_view>
 #include <utility>
 
+// 文件职责：实现冻结公共 C SPI，并把请求路由到同步 Facade 或 Worker 作业；
+// 边界：导出函数不允许异常外泄，句柄和缓冲区必须先通过注册表与三态协议验证。
 namespace
 {
 

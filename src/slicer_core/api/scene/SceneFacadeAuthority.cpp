@@ -13,6 +13,8 @@
 #include <string_view>
 #include <utility>
 
+// 文件职责：维护场景权威候选状态并执行整批原子准入；
+// 边界：任何操作失败、取消或修订冲突都必须保留原状态。
 namespace slicer_core::api::scene_facade_detail
 {
 namespace

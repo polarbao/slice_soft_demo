@@ -12,16 +12,16 @@
 namespace slicesoft::module::scene_lifecycle
 {
 
-/** @brief Thread-safe model repository that accepts models after scene creation. */
+/** @brief 场景创建后仍可接收模型的线程安全模型仓库。 */
 class MutableSceneViewModelRepository final
     : public slicer_core::api::ISceneViewModelRepository
 {
 public:
     /**
-     * @brief Registers or validates one immutable model resource.
-     * @param modelId Numeric model identity returned by model.import.
-     * @param model Immutable model resource.
-     * @return Success or an identity/resource conflict.
+     * @brief 注册或验证一个不可变模型资源。
+     * @param modelId model.import 返回的数值模型标识。
+     * @param model 不可变模型资源。
+     * @return 成功结果或标识/资源冲突。
      */
     [[nodiscard]] slicer_core::api::ApiResult<void> Register(
         slicer_core::api::ModelId modelId,
@@ -40,10 +40,10 @@ private:
 };
 
 /**
- * @brief Builds a production empty-scene seed from host-owned context.
- * @param sceneContext DTO v1.6 sceneContext object.
- * @param sceneId Numeric facade identity.
- * @return Validated seed or a stable input error.
+ * @brief 从宿主持有的上下文构造生产空场景种子。
+ * @param sceneContext DTO v1.6 的 sceneContext 对象。
+ * @param sceneId 数值 SceneFacade 标识。
+ * @return 已验证种子或稳定输入错误。
  */
 [[nodiscard]] slicer_core::api::ApiResult<
     slicer_core::api::SceneFacadeSeed> BuildImplicitSceneSeed(
@@ -51,9 +51,9 @@ private:
     slicer_core::api::SceneId sceneId) noexcept;
 
 /**
- * @brief Maps an imported model resource to one scene registration.
- * @param resource Model retained by ModelCapabilityAdapter.
- * @return Registration suitable for SceneFacadeService::RegisterModel.
+ * @brief 将已导入模型资源映射为一个场景注册项。
+ * @param resource ModelCapabilityAdapter 保留的模型。
+ * @return 可传给 SceneFacadeService::RegisterModel 的注册项。
  */
 [[nodiscard]] slicer_core::api::ApiResult<
     slicer_core::api::SceneFacadeModelRegistration> BuildModelRegistration(

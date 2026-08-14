@@ -8,36 +8,36 @@
 #include <vector>
 
 /**
- * @brief Applies ViewData identity caching before resources reach a backend.
+ * @brief 在资源到达后端前应用 ViewData 标识缓存。
  */
 class AppearanceCache final
 {
 public:
-    /** @brief Creates an empty cache over one renderer backend. */
+/** @brief 为指定渲染后端创建空缓存。 */
     explicit AppearanceCache(slicer::render::IRenderBackend& backend);
 
-    /** @brief Uploads a mesh only when its identity is not cached. */
+    /** @brief 仅在标识未缓存时上传网格。 */
     bool UploadMesh(const slicer::render::MeshDesc& mesh);
 
-    /** @brief Uploads a texture only when its identity is not cached. */
+    /** @brief 仅在标识未缓存时上传纹理。 */
     bool UploadTexture(const slicer::render::TextureDesc& texture);
 
-    /** @brief Uploads a material only when its appearance binding is new. */
+    /** @brief 仅在外观绑定为新值时上传材料。 */
     bool UploadMaterial(const slicer::render::MaterialDesc& material);
 
-    /** @brief Reports whether a mesh identity is already resident. */
+    /** @brief 报告网格标识是否已驻留。 */
     [[nodiscard]] bool HasMesh(const std::string& identity) const;
 
-    /** @brief Reports whether a texture identity is already resident. */
+    /** @brief 报告纹理标识是否已驻留。 */
     [[nodiscard]] bool HasTexture(const std::string& identity) const;
 
-    /** @brief Releases resources outside the current live identity set. */
+    /** @brief 释放当前活动标识集合之外的资源。 */
     void ReleaseUnused(const std::vector<std::string>& liveIdentities);
 
-    /** @brief Returns the number of real mesh backend uploads. */
+    /** @brief 返回实际网格后端上传次数。 */
     [[nodiscard]] std::uint64_t MeshUploadCount() const;
 
-    /** @brief Returns the number of real texture backend uploads. */
+    /** @brief 返回实际纹理后端上传次数。 */
     [[nodiscard]] std::uint64_t TextureUploadCount() const;
 
 private:

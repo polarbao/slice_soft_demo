@@ -11,7 +11,7 @@ namespace slicesoft::module
 {
 
 /**
- * @brief Minimal lifecycle states shared by the module ABI shell.
+ * @brief 模块 ABI 外壳共享的精简生命周期状态。
  */
 enum class JobLifecycleState
 {
@@ -24,26 +24,26 @@ enum class JobLifecycleState
 };
 
 /**
- * @brief Validated state associated with one opaque module handle.
+ * @brief 与一个不透明模块句柄关联的已验证状态。
  */
 class ModuleHandleState final
 {
 public:
     /**
-     * @brief Creates state for a registry-assigned module identity.
-     * @param id Registry-local module identity.
+     * @brief 为注册表分配的模块标识创建状态。
+     * @param id 注册表内的模块标识。
      */
     explicit ModuleHandleState(std::uint64_t id) noexcept;
 
     /**
-     * @brief Returns the registry-local module identity.
-     * @return Monotonically increasing module identity.
+     * @brief 返回注册表内的模块标识。
+     * @return 单调递增的模块标识。
      */
     [[nodiscard]] std::uint64_t Id() const noexcept;
 
     /**
-     * @brief Reports whether the handle remains registered.
-     * @return True while the module handle is live.
+     * @brief 报告句柄是否仍在注册表中。
+     * @return 模块句柄有效时返回 true。
      */
     [[nodiscard]] bool IsActive() const noexcept;
 
@@ -57,45 +57,45 @@ private:
 };
 
 /**
- * @brief Validated state associated with one opaque job handle.
+ * @brief 与一个不透明作业句柄关联的已验证状态。
  */
 class JobHandleState final
 {
 public:
     /**
-     * @brief Creates state for a registry-assigned job and owner identity.
-     * @param id Registry-local job identity.
-     * @param ownerModuleId Registry-local owner module identity.
+     * @brief 为注册表分配的作业及其所有者标识创建状态。
+     * @param id 注册表内的作业标识。
+     * @param ownerModuleId 注册表内的所有者模块标识。
      */
     JobHandleState(std::uint64_t id, std::uint64_t ownerModuleId) noexcept;
 
     /**
-     * @brief Returns the registry-local job identity.
-     * @return Monotonically increasing job identity.
+     * @brief 返回注册表内的作业标识。
+     * @return 单调递增的作业标识。
      */
     [[nodiscard]] std::uint64_t Id() const noexcept;
 
     /**
-     * @brief Returns the identity of the owning module.
-     * @return Registry-local module identity.
+     * @brief 返回所属模块的标识。
+     * @return 注册表内的模块标识。
      */
     [[nodiscard]] std::uint64_t OwnerModuleId() const noexcept;
 
     /**
-     * @brief Reports whether the job handle remains registered.
-     * @return True while the job handle is live.
+     * @brief 报告作业句柄是否仍在注册表中。
+     * @return 作业句柄有效时返回 true。
      */
     [[nodiscard]] bool IsActive() const noexcept;
 
     /**
-     * @brief Returns the current minimal job lifecycle state.
-     * @return Current job lifecycle state.
+     * @brief 返回当前精简作业生命周期状态。
+     * @return 当前作业生命周期状态。
      */
     [[nodiscard]] JobLifecycleState LifecycleState() const noexcept;
 
     /**
-     * @brief Reports whether cooperative cancellation was requested.
-     * @return True after the first accepted cancellation request.
+     * @brief 报告是否已请求协作式取消。
+     * @return 首次接受取消请求后返回 true。
      */
     [[nodiscard]] bool IsCancellationRequested() const noexcept;
 
@@ -115,22 +115,21 @@ private:
 };
 
 /**
- * @brief Owns and validates opaque module and job handles.
+ * @brief 持有并验证不透明模块句柄和作业句柄。
  *
- * Handle tokens are never dereferenced before a live-registry lookup. Retired
- * tokens remain uniquely owned by the registry until its destruction so a
- * stale pointer cannot become valid again through allocator address reuse.
+ * 查找有效注册项之前绝不解引用句柄令牌。注册表销毁前始终独占已退役令牌，
+ * 避免失效指针因分配器复用地址而再次变成有效句柄。
  */
 class HandleRegistry final
 {
 public:
     /**
-     * @brief Creates an empty registry.
+     * @brief 创建空注册表。
      */
     HandleRegistry();
 
     /**
-     * @brief Releases all live states and retained opaque tokens.
+     * @brief 释放所有有效状态和保留的不透明令牌。
      */
     ~HandleRegistry();
 
@@ -140,92 +139,92 @@ public:
     HandleRegistry& operator=(HandleRegistry&&) = delete;
 
     /**
-     * @brief Returns the process-wide registry used by exported SPI functions.
-     * @return Process-wide registry instance.
+     * @brief 返回导出 SPI 函数使用的进程级注册表。
+     * @return 进程级注册表实例。
      */
     [[nodiscard]] static HandleRegistry& Instance();
 
     /**
-     * @brief Creates and registers one opaque module handle.
-     * @return Live module handle.
-     * @throws std::bad_alloc if registry storage cannot be allocated.
+     * @brief 创建并注册一个不透明模块句柄。
+     * @return 有效模块句柄。
+     * @throws std::bad_alloc 注册表存储分配失败时抛出。
      */
     [[nodiscard]] pm_module_t* CreateModule();
 
     /**
-     * @brief Destroys a module and retires all jobs that it still owns.
-     * @param module Opaque module handle; nullptr is a successful no-op.
-     * @return True for a live handle or nullptr, false for a stale/foreign one.
+     * @brief 销毁模块并退役其仍持有的所有作业。
+     * @param module 不透明模块句柄；nullptr 视为成功的空操作。
+     * @return 有效句柄或 nullptr 返回 true，失效句柄或非本注册表句柄返回 false。
      */
     [[nodiscard]] bool DestroyModule(pm_module_t* module);
 
     /**
-     * @brief Creates a queued job owned by a live module.
-     * @param module Live owner module handle.
-     * @return Live job handle, or nullptr for an invalid owner.
-     * @throws std::bad_alloc if registry storage cannot be allocated.
+     * @brief 为有效模块创建一个排队中的作业。
+     * @param module 持有新作业的有效模块句柄。
+     * @return 有效作业句柄；所属模块无效时返回 nullptr。
+     * @throws std::bad_alloc 注册表存储分配失败时抛出。
      */
     [[nodiscard]] pm_job_t* CreateJob(pm_module_t* module);
 
     /**
-     * @brief Releases a job, forcing unfinished minimal state to cancelled.
-     * @param job Opaque job handle; nullptr is a successful no-op.
-     * @return True for a live handle or nullptr, false for a stale/foreign one.
+     * @brief 释放作业，并将尚未结束的精简生命周期状态强制置为已取消。
+     * @param job 不透明作业句柄；nullptr 视为成功的空操作。
+     * @return 有效句柄或 nullptr 返回 true，失效句柄或非本注册表句柄返回 false。
      */
     [[nodiscard]] bool ReleaseJob(pm_job_t* job);
 
     /**
-     * @brief Resolves a live module handle without dereferencing caller memory.
-     * @param module Opaque module handle.
-     * @return Shared state for a live handle, otherwise nullptr.
+     * @brief 不解引用调用方内存，解析有效模块句柄。
+     * @param module 不透明模块句柄。
+     * @return 有效句柄的共享状态，否则返回 nullptr。
      */
     [[nodiscard]] std::shared_ptr<const ModuleHandleState> FindModule(
         pm_module_t* module) const;
 
     /**
-     * @brief Resolves a live job handle without dereferencing caller memory.
-     * @param job Opaque job handle.
-     * @return Shared state for a live handle, otherwise nullptr.
+     * @brief 不解引用调用方内存，解析有效作业句柄。
+     * @param job 不透明作业句柄。
+     * @return 有效句柄的共享状态，否则返回 nullptr。
      */
     [[nodiscard]] std::shared_ptr<const JobHandleState> FindJob(
         pm_job_t* job) const;
 
     /**
-     * @brief Resolves a live job only when it belongs to the supplied module.
-     * @param module Expected owner module handle.
-     * @param job Opaque job handle.
-     * @return Shared state for a matching live pair, otherwise nullptr.
+     * @brief 仅当作业属于指定模块时解析该有效作业。
+     * @param module 预期的所有者模块句柄。
+     * @param job 不透明作业句柄。
+     * @return 匹配且有效的句柄对所对应的共享状态，否则返回 nullptr。
      */
     [[nodiscard]] std::shared_ptr<const JobHandleState> FindJob(
         pm_module_t* module,
         pm_job_t* job) const;
 
     /**
-     * @brief Requests idempotent cooperative cancellation for a live job.
-     * @param job Opaque job handle.
-     * @return True if the handle is live, including already-terminal jobs.
+     * @brief 对有效作业请求幂等的协作式取消。
+     * @param job 不透明作业句柄。
+     * @return 句柄有效时返回 true，包括已经结束的作业。
      */
     [[nodiscard]] bool RequestCancel(pm_job_t* job);
 
     /**
-     * @brief Advances the minimal state model for a live job.
-     * @param job Opaque job handle.
-     * @param state Requested lifecycle state.
-     * @return True when the transition is valid and accepted.
+     * @brief 推进有效作业的精简生命周期状态机。
+     * @param job 不透明作业句柄。
+     * @param state 请求进入的生命周期状态。
+     * @return 状态转换有效并被接受时返回 true。
      */
     [[nodiscard]] bool SetJobLifecycleState(
         pm_job_t* job,
         JobLifecycleState state);
 
     /**
-     * @brief Returns the number of currently live module handles.
-     * @return Live module count.
+     * @brief 返回当前有效模块句柄数量。
+     * @return 有效模块数量。
      */
     [[nodiscard]] std::size_t ActiveModuleCount() const;
 
     /**
-     * @brief Returns the number of currently live job handles.
-     * @return Live job count.
+     * @brief 返回当前有效作业句柄数量。
+     * @return 有效作业数量。
      */
     [[nodiscard]] std::size_t ActiveJobCount() const;
 

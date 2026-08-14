@@ -7,9 +7,9 @@ namespace slicer_core::api::viewdata_detail
 {
 
 /**
- * @brief Quantizes IEEE-754 float attributes to IEEE-754 binary16 values.
- * @param values Source float attributes.
- * @return Binary16 bit patterns in source order.
+ * @brief 将 IEEE-754 浮点属性量化为 IEEE-754 binary16 值。
+ * @param values 源浮点属性。
+ * @return 按源顺序排列的 binary16 位模式。
  */
 [[nodiscard]] std::vector<std::uint16_t> QuantizeMeshAttributesToHalf(
     const std::vector<float>& values);

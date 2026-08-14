@@ -15,7 +15,7 @@
 namespace slicesoft::module::worker_detail
 {
 
-/** @brief Move-only owner for a Win32 HANDLE. */
+/** @brief 仅可移动的 Win32 HANDLE 所有者。 */
 class UniqueHandle final
 {
 public:
@@ -37,7 +37,7 @@ private:
     HANDLE m_handle{nullptr};
 };
 
-/** @brief Owns the process handle-inheritance attribute list. */
+/** @brief 封装用于限制子进程 HANDLE 继承范围的属性列表。 */
 class ProcessAttributeList final
 {
 public:
@@ -47,10 +47,10 @@ public:
     ProcessAttributeList(const ProcessAttributeList&) = delete;
     ProcessAttributeList& operator=(const ProcessAttributeList&) = delete;
 
-    /** @brief Initializes an explicit two-handle inheritance list. */
+    /** @brief 初始化仅允许两个指定 HANDLE 继承的属性列表。 */
     bool Initialize(const std::array<HANDLE, 2>& inheritedHandles);
 
-    /** @brief Returns the initialized Win32 attribute list. */
+    /** @brief 返回已初始化的 Win32 属性列表。 */
     [[nodiscard]] PPROC_THREAD_ATTRIBUTE_LIST Get() const noexcept;
 
 private:
@@ -58,16 +58,16 @@ private:
     PPROC_THREAD_ATTRIBUTE_LIST m_list{nullptr};
 };
 
-/** @brief Builds a Windows command line from one executable and UTF-8 arguments. */
+/** @brief 根据可执行文件和 UTF-8 参数构造 Windows 命令行。 */
 bool BuildCommandLine(const WorkerLaunchOptions& options, std::wstring* commandLine);
 
-/** @brief Formats a Win32 error using the stable system category text. */
+/** @brief 使用稳定的系统分类文本格式化 Win32 错误。 */
 std::string WindowsError(std::string_view action, DWORD code = GetLastError());
 
-/** @brief Creates one inheritable write / non-inheritable read anonymous pipe pair. */
+/** @brief 创建写端可继承、读端不可继承的匿名管道对。 */
 bool CreatePipePair(UniqueHandle* read, UniqueHandle* write);
 
-/** @brief Atomically creates or replaces the cooperative cancellation marker. */
+/** @brief 原子创建或替换协作式取消标记。 */
 bool WriteCancellationMarker(const std::filesystem::path& marker);
 
 }  // namespace slicesoft::module::worker_detail

@@ -3,12 +3,12 @@
 #include "HostModuleApi.h"
 
 /**
- * @brief Runs the HOSTFLOW H-A-03 empty-scene production closure.
- * @param api Loaded public SPI function table.
- * @param module Live module instance.
- * @param repository UTF-8 repository root containing the reference model.
- * @param outputRoot UTF-8 host-owned evidence directory.
- * @return Non-zero when import, scene edits, slice, and verification succeed.
+ * @brief 执行 HOSTFLOW H-A-03 空场景生产闭环。
+ * @param api 已加载的公共 SPI 函数表。
+ * @param module 有效的模块实例。
+ * @param repository 包含参考模型的 UTF-8 仓库根目录。
+ * @param outputRoot 由宿主管理的 UTF-8 证据目录。
+ * @return 导入、场景编辑、切片与验证全部成功时返回非零值。
  */
 int HostFlowRunEndToEnd(
     const HostModuleApi* api,

@@ -24,11 +24,11 @@ struct MeshSimplificationResult
 };
 
 /**
- * @brief Simplifies one material group without exposing third-party types.
- * @param input Indexed positions, UVs, and triangles for one material group.
- * @param targetTriangleCount Maximum accepted output triangle count.
- * @param cancelToken Cooperative cancellation token.
- * @return Topology-preserving simplified indices or a stable ViewData error.
+ * @brief 在不暴露第三方类型的前提下简化一个材质组。
+ * @param input 一个材质组的索引位置、UV 和三角形。
+ * @param targetTriangleCount 可接受的最大输出三角形数。
+ * @param cancelToken 协作式取消令牌。
+ * @return 保持拓扑的简化索引或稳定 ViewData 错误。
  */
 [[nodiscard]] ApiResult<MeshSimplificationResult> SimplifyViewMesh(
     const MeshSimplificationInput& input,

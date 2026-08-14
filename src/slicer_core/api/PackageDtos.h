@@ -10,7 +10,7 @@
 
 namespace slicer_core::api {
 
-/** @brief Output grid carried by a package summary. */
+/** @brief 生产包摘要携带的输出栅格。 */
 struct PackageGrid
 {
     int width_px{0};
@@ -19,7 +19,7 @@ struct PackageGrid
     int dpi_y{0};
 };
 
-/** @brief Summary of a validated RGBWSV package. */
+/** @brief 已验证 RGBWSV 生产包的摘要。 */
 struct PackageSummary
 {
     std::filesystem::path package_dir;
@@ -34,7 +34,7 @@ struct PackageSummary
     StructuredJsonObject profile_echo;
 };
 
-/** @brief Descriptor for one production TIFF layer. */
+/** @brief 一个生产 TIFF 层的描述符。 */
 struct LayerDescriptor
 {
     int layer_index{0};
@@ -47,7 +47,7 @@ struct LayerDescriptor
     std::string storage_mode;
 };
 
-/** @brief Request for a display-only preview decoded from production TIFF. */
+/** @brief 从生产 TIFF 解码仅供显示预览的请求。 */
 struct PreviewRequest
 {
     std::filesystem::path package_dir;
@@ -58,7 +58,7 @@ struct PreviewRequest
     std::filesystem::path output_path;
 };
 
-/** @brief Result of production TIFF preview rendering. */
+/** @brief 生产 TIFF 预览渲染结果。 */
 struct PreviewResult
 {
     std::filesystem::path output_path;
@@ -67,14 +67,14 @@ struct PreviewResult
     std::string cache_key;
 };
 
-/** @brief Structured validation failure reported by package verification. */
+/** @brief 生产包验证报告中的结构化失败项。 */
 struct PackageValidationError
 {
     std::string code;
     std::string message;
 };
 
-/** @brief Strict package verification result. */
+/** @brief 生产包严格验证结果。 */
 struct VerifyResult
 {
     bool valid{false};
@@ -84,7 +84,7 @@ struct VerifyResult
     std::vector<std::string> warnings;
 };
 
-/** @brief Named package report with its schema and validated object payload. */
+/** @brief 携带 schema 和已验证 JSON 对象的具名生产包报告。 */
 struct PackageReport
 {
     std::string report_name;

@@ -12,21 +12,21 @@
 namespace slicesoft::worker
 {
 
-/** @brief Validated file_contract_v1 request without algorithm-specific interpretation. */
+/** @brief 不含算法专属解释且已校验的 file_contract_v1 请求。 */
 class WorkerRequestEnvelope final
 {
 public:
     /**
-     * @brief Creates a validated request envelope.
-     * @param identity Immutable request identity and owned paths.
-     * @param major File-contract major version.
-     * @param minor File-contract minor version.
-     * @param timeout Finite worker timeout.
-     * @param sceneHash Optional validated scene hash.
-     * @param scene Raw scene object or JSON null when absent.
-     * @param profile Raw profile object or JSON null when absent.
-     * @param input Raw input object or JSON null when absent.
-     * @param output Raw output object or JSON null when absent.
+     * @brief 创建已校验的请求信封。
+     * @param identity 不可变请求标识与所持路径。
+     * @param major 文件合同主版本号。
+     * @param minor 文件合同次版本号。
+     * @param timeout 有限的 Worker 超时时间。
+     * @param sceneHash 可选的已校验场景哈希。
+     * @param scene 原始场景对象；不存在时为 JSON null。
+     * @param profile 原始 Profile 对象；不存在时为 JSON null。
+     * @param input 原始输入对象；不存在时为 JSON null。
+     * @param output 原始输出对象；不存在时为 JSON null。
      */
     WorkerRequestEnvelope(
         WorkerJobIdentity identity,
@@ -39,43 +39,43 @@ public:
         slicer_core::Json input,
         slicer_core::Json output);
 
-    /** @brief Returns the immutable job identity. */
+    /** @brief 返回不可变作业标识。 */
     [[nodiscard]] const WorkerJobIdentity& Identity() const noexcept;
 
-    /** @brief Returns the file-contract major version. */
+    /** @brief 返回文件合同主版本号。 */
     [[nodiscard]] std::uint32_t Major() const noexcept;
 
-    /** @brief Returns the file-contract minor version. */
+    /** @brief 返回文件合同次版本号。 */
     [[nodiscard]] std::uint32_t Minor() const noexcept;
 
-    /** @brief Returns the finite execution timeout. */
+    /** @brief 返回有限执行超时时间。 */
     [[nodiscard]] std::chrono::milliseconds Timeout() const noexcept;
 
-    /** @brief Returns the optional validated scene hash. */
+    /** @brief 返回可选的已校验场景哈希。 */
     [[nodiscard]] const std::optional<std::string>& SceneHash() const noexcept;
 
-    /** @brief Returns whether a raw scene object is present. */
+    /** @brief 返回是否存在原始场景对象。 */
     [[nodiscard]] bool HasScene() const noexcept;
 
-    /** @brief Returns the raw scene object or JSON null. */
+    /** @brief 返回原始场景对象；不存在时返回 JSON null。 */
     [[nodiscard]] const slicer_core::Json& Scene() const noexcept;
 
-    /** @brief Returns whether a raw profile object is present. */
+    /** @brief 返回是否存在原始 Profile 对象。 */
     [[nodiscard]] bool HasProfile() const noexcept;
 
-    /** @brief Returns the raw profile object or JSON null. */
+    /** @brief 返回原始 Profile 对象；不存在时返回 JSON null。 */
     [[nodiscard]] const slicer_core::Json& Profile() const noexcept;
 
-    /** @brief Returns whether a raw input object is present. */
+    /** @brief 返回是否存在原始输入对象。 */
     [[nodiscard]] bool HasInput() const noexcept;
 
-    /** @brief Returns the raw input object or JSON null. */
+    /** @brief 返回原始输入对象；不存在时返回 JSON null。 */
     [[nodiscard]] const slicer_core::Json& Input() const noexcept;
 
-    /** @brief Returns whether a raw output object is present. */
+    /** @brief 返回是否存在原始输出对象。 */
     [[nodiscard]] bool HasOutput() const noexcept;
 
-    /** @brief Returns the raw output object or JSON null. */
+    /** @brief 返回原始输出对象；不存在时返回 JSON null。 */
     [[nodiscard]] const slicer_core::Json& Output() const noexcept;
 
 private:

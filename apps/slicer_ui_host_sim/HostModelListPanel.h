@@ -9,57 +9,57 @@ class QLabel;
 class QListWidget;
 class QToolButton;
 
-/** @brief Host-owned model instance list with local multi-selection commands. */
+/** @brief 带本地多选命令的宿主侧模型实例列表。 */
 class HostModelListPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Creates the model list used by the public-SPI reference host.
-     * @param parent Optional Qt parent widget.
+     * @brief 创建公共 SPI 参考宿主使用的模型列表。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostModelListPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Appends one successfully imported model instance.
-     * @param result Import metadata returned by HostModelImportWorkflow.
+     * @brief 追加一个成功导入的模型实例。
+     * @param result HostModelImportWorkflow 返回的导入元数据。
      */
     void AddModel(const hostmodelimportresult& result);
 
     /**
-     * @brief Removes committed instances from the local presentation list.
-     * @param instanceIds Stable instance identities removed by the module.
+     * @brief 从本地展示列表移除已提交实例。
+     * @param instanceIds 模块已移除的稳定实例标识。
      */
     void RemoveInstances(const QStringList& instanceIds);
 
     /**
-     * @brief Enables or disables commands that cross the public module boundary.
-     * @param enabled True when the module is ready and no command is active.
+     * @brief 启用或禁用跨越公共模块边界的命令。
+     * @param enabled 模块就绪且无活动命令时为 true。
      */
     void SetCommandsEnabled(bool enabled);
 
-    /** @brief Returns the selected stable instance identities. */
+    /** @brief 返回选中的稳定实例标识。 */
     [[nodiscard]] QStringList SelectedInstanceIds() const;
 
-    /** @brief Returns the number of imported instances displayed by the host. */
+    /** @brief 返回宿主显示的已导入实例数。 */
     [[nodiscard]] int ModelCount() const;
 
     /**
-     * @brief Selects one instance picked from a host-local canvas.
-     * @param instanceId Stable scene instance identity.
-     * @return True when the instance exists in the presentation list.
+     * @brief 选择从宿主本地画布拾取的实例。
+     * @param instanceId 稳定场景实例标识。
+     * @return 实例存在于展示列表时返回 true。
      */
     bool SelectInstance(const QString& instanceId);
 
 signals:
-    /** @brief Requests opening the model import workflow. */
+    /** @brief 请求打开模型导入流程。 */
     void SigAddRequested();
 
-    /** @brief Requests atomically removing selected module instances. */
+    /** @brief 请求原子移除选中的模块实例。 */
     void SigRemoveRequested(const QStringList& instanceIds);
 
-    /** @brief Publishes host-local selection for view highlighting. */
+    /** @brief 发布用于视图高亮的宿主本地选择。 */
     void SigSelectionChanged(const QStringList& instanceIds);
 
 private slots:

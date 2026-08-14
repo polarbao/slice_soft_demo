@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：从表面预览提取确定性的闭合局部轮廓；
+// 边界：轮廓仅供视图与诊断使用，不替代生产几何边界。
 namespace slicer_core::api::viewdata_detail
 {
 namespace

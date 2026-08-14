@@ -12,37 +12,37 @@
 namespace slicesoft::worker
 {
 
-/** @brief Algorithm result without authority to rewrite worker job identity. */
+/** @brief 无权改写 Worker 作业标识的算法结果。 */
 class WorkerCapabilityExecutionResult final
 {
 public:
-    /** @brief Creates an executor success with a non-empty business output object. */
+    /** @brief 使用非空业务输出对象创建执行成功结果。 */
     [[nodiscard]] static WorkerCapabilityExecutionResult Success(
         slicer_core::Json output);
 
-    /** @brief Creates an executor failure with a stable code and message. */
+    /** @brief 使用稳定错误码与消息创建执行失败结果。 */
     [[nodiscard]] static WorkerCapabilityExecutionResult Failure(
         std::string code,
         std::string message,
         std::optional<std::string> detail = std::nullopt,
         std::optional<WorkerResultCleanup> cleanup = std::nullopt);
 
-    /** @brief Returns whether execution succeeded. */
+    /** @brief 返回执行是否成功。 */
     [[nodiscard]] bool Ok() const noexcept;
 
-    /** @brief Returns business output without an identity envelope. */
+    /** @brief 返回不含标识信封的业务输出。 */
     [[nodiscard]] const slicer_core::Json& Output() const noexcept;
 
-    /** @brief Returns the stable failure code. */
+    /** @brief 返回稳定失败码。 */
     [[nodiscard]] const std::string& Code() const noexcept;
 
-    /** @brief Returns the failure message. */
+    /** @brief 返回失败消息。 */
     [[nodiscard]] const std::string& Message() const noexcept;
 
-    /** @brief Returns optional diagnostic detail. */
+    /** @brief 返回可选诊断详情。 */
     [[nodiscard]] const std::optional<std::string>& Detail() const noexcept;
 
-    /** @brief Returns optional cleanup evidence. */
+    /** @brief 返回可选清理证据。 */
     [[nodiscard]] const std::optional<WorkerResultCleanup>& Cleanup() const noexcept;
 
 private:
@@ -62,17 +62,17 @@ private:
     std::optional<WorkerResultCleanup> m_cleanup;
 };
 
-/** @brief Worker-private execution port for one exact heavy capability. */
+/** @brief 单项重型能力的 Worker 私有执行端口。 */
 class IWorkerCapabilityExecutor
 {
 public:
     virtual ~IWorkerCapabilityExecutor() = default;
 
     /**
-     * @brief Executes one validated request without owning result identity.
-     * @param request Immutable validated request.
-     * @param cancelToken Cooperative cancellation token owned by the dispatcher.
-     * @return Business result used by the dispatcher to build the result envelope.
+     * @brief 执行已校验请求，但不持有结果标识。
+     * @param request 不可变的已校验请求。
+     * @param cancelToken 由分派器持有的协作式取消令牌。
+     * @return 供分派器构建结果信封的业务结果。
      */
     [[nodiscard]] virtual WorkerCapabilityExecutionResult Execute(
         const WorkerRequestEnvelope& request,

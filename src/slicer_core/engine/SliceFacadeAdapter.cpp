@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <utility>
 
+// 文件职责：将生产场景切片入口适配为可取消、可观测的 SliceFacade；
+// 边界：仅转发已验证合同，不持有材质、栅格、TIFF 或发布策略。
 namespace slicer_core::engine
 {
 namespace

@@ -8,10 +8,10 @@ namespace slicer_core::api
 {
 
 /**
- * @brief Compute the canonical effective-Profile identity used by Worker requests.
- * @param profile Profile JSON with or without its self-declared profileHash field.
- * @return `sha256:` followed by the lowercase canonical document digest.
- * @throws std::invalid_argument When profile is not a JSON object.
+ * @brief 计算 Worker 请求使用的规范有效 Profile 标识。
+ * @param profile 可包含或不包含自声明 profileHash 字段的 Profile JSON。
+ * @return `sha256:` 后接小写的规范文档摘要。
+ * @throws std::invalid_argument profile 不是 JSON 对象时抛出。
  */
 [[nodiscard]] std::string ComputeProfileDocumentHash(
     const Json& profile);

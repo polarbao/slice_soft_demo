@@ -10,7 +10,7 @@
 namespace slicer_core::api::artifacts
 {
 
-/** @brief Job-owned paths used by one package publication attempt. */
+/** @brief 一次生产包发布尝试所使用的作业专属路径。 */
 struct PackageArtifactIdentity
 {
     std::filesystem::path package_directory;
@@ -21,7 +21,7 @@ struct PackageArtifactIdentity
     std::string attempt_id;
 };
 
-/** @brief Outcome of one idempotent cleanup or crash-recovery pass. */
+/** @brief 一次幂等清理或崩溃恢复的结果。 */
 struct PackageArtifactRecoveryResult
 {
     bool success{false};
@@ -33,11 +33,11 @@ struct PackageArtifactRecoveryResult
     std::vector<std::filesystem::path> residual_paths;
 };
 
-/** @brief Callback that accepts only a complete published RGBWSV package. */
+/** @brief 仅接受完整且已发布 RGBWSV 生产包的验证回调。 */
 using PackageArtifactValidator =
     std::function<bool(const std::filesystem::path&)>;
 
-/** @brief Result of acquiring or releasing the single-target filesystem lease. */
+/** @brief 获取或释放单目标文件系统租约的结果。 */
 struct PackageArtifactLeaseResult
 {
     bool success{false};
@@ -45,13 +45,13 @@ struct PackageArtifactLeaseResult
     std::string error;
 };
 
-/** @brief Stable output failure raised by job-owned publication handling. */
+/** @brief 作业专属发布处理引发的稳定输出失败。 */
 class PackageArtifactOutputError final : public std::runtime_error
 {
 public:
     /**
-     * @brief Construct one stable publication failure.
-     * @param message Diagnostic message without user-controlled formatting.
+     * @brief 构造一个稳定发布失败。
+     * @param message 不受用户格式控制的诊断消息。
      */
     explicit PackageArtifactOutputError(const std::string& message)
         : std::runtime_error(message)
@@ -59,13 +59,13 @@ public:
     }
 };
 
-/** @brief Stable conflict raised when another job owns the package target. */
+/** @brief 生产包目标被其他作业持有时抛出的稳定冲突。 */
 class PackageArtifactLeaseConflict final : public std::runtime_error
 {
 public:
     /**
-     * @brief Construct one target lease conflict.
-     * @param message Diagnostic message without user-controlled formatting.
+     * @brief 构造一个目标租约冲突。
+     * @param message 不受用户格式控制的诊断消息。
      */
     explicit PackageArtifactLeaseConflict(const std::string& message)
         : std::runtime_error(message)
@@ -74,12 +74,12 @@ public:
 };
 
 /**
- * @brief Build normalized job-owned package artifact paths.
- * @param packageDirectory Absolute final package directory.
- * @param jobId File-contract job identifier.
- * @param attemptId Unique identifier for this package attempt.
- * @return Validated target, staging, backup, and lease paths.
- * @throws std::invalid_argument When a path or identity is unsafe.
+ * @brief 构造规范化的作业专属生产包产物路径。
+ * @param packageDirectory 最终 Package 目录的绝对路径。
+ * @param jobId 文件合同作业标识。
+ * @param attemptId 本次发布尝试的唯一标识。
+ * @return 已验证的目标、暂存、备份和租约路径。
+ * @throws std::invalid_argument 路径或标识不安全时抛出。
  */
 [[nodiscard]] PackageArtifactIdentity MakePackageArtifactIdentity(
     const std::filesystem::path& packageDirectory,
@@ -87,42 +87,42 @@ public:
     const std::string& attemptId);
 
 /**
- * @brief Derive the deterministic filesystem-safe attempt ID for a request.
- * @param correlationId Non-empty file-contract correlation identity.
- * @return Stable lowercase SHA-256 based attempt token.
+ * @brief 为请求派生确定性且可安全用作文件名的尝试 ID。
+ * @param correlationId 非空的文件合同关联标识。
+ * @return 基于小写 SHA-256 的稳定尝试令牌。
  */
 [[nodiscard]] std::string MakePackageAttemptId(
     std::string_view correlationId);
 
 /**
- * @brief Report whether a package path names staging, backup, lease, tmp, or bak data.
- * @param path Candidate package path.
- * @return True when the filename has a reserved temporary-artifact marker.
+ * @brief 报告 Package 路径是否指向暂存、备份、租约、tmp 或 bak 数据。
+ * @param path 候选 Package 路径。
+ * @return 文件名包含保留临时产物标记时返回 true。
  */
 [[nodiscard]] bool IsTemporaryPackagePath(
     const std::filesystem::path& path) noexcept;
 
 /**
- * @brief Acquire the target-wide publication lease for one owner.
- * @param identity Validated job-owned artifact identity.
- * @return Lease result; conflict is true when another owner already holds it.
+ * @brief 为指定所有者获取目标级发布租约。
+ * @param identity 已验证的作业专属产物标识。
+ * @return 租约结果；已被其他所有者持有时 conflict 为 true。
  */
 [[nodiscard]] PackageArtifactLeaseResult AcquirePackageArtifactLease(
     const PackageArtifactIdentity& identity) noexcept;
 
 /**
- * @brief Release the target-wide lease only when its owner matches the identity.
- * @param identity Validated job-owned artifact identity.
- * @return Lease result; a foreign or malformed owner fails closed.
+ * @brief 仅在租约所有者与产物标识匹配时释放目标级租约。
+ * @param identity 已验证的作业专属产物标识。
+ * @return 租约结果；所有者不匹配或租约记录格式错误时失败即拒绝。
  */
 [[nodiscard]] PackageArtifactLeaseResult ReleasePackageArtifactLease(
     const PackageArtifactIdentity& identity) noexcept;
 
 /**
- * @brief Recover or clean only the exact artifacts owned by one attempt.
- * @param identity Validated job-owned artifact identity.
- * @param validator Strict package validator used before backup removal or restoration.
- * @return Idempotent recovery evidence; failures preserve uncertain artifacts.
+ * @brief 仅恢复或清理某次尝试明确持有的产物。
+ * @param identity 已验证的作业专属产物标识。
+ * @param validator 删除或恢复备份前使用的严格生产包验证器。
+ * @return 幂等恢复证据；失败时保留状态不确定的产物。
  */
 [[nodiscard]] PackageArtifactRecoveryResult RecoverPackageArtifacts(
     const PackageArtifactIdentity& identity,

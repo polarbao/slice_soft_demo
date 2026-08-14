@@ -12,37 +12,37 @@ namespace slicer_core::api
 {
 
 /**
- * @brief Immutable imported model registration available to addInstance.
+ * @brief 可供 addInstance 使用的不可变已导入模型注册项。
  */
 struct SceneFacadeModelRegistration
 {
-    /** @brief Numeric model identity returned by model.import. */
+    /** @brief model.import 返回的数值模型标识。 */
     ModelId api_model_id{0};
-    /** @brief Stable scene-local model identity. */
+    /** @brief 稳定的场景内模型标识。 */
     std::string scene_model_id;
-    /** @brief Source and resource hashes retained by the scene. */
+    /** @brief 场景保留的源哈希和资源哈希。 */
     ModelSource source;
-    /** @brief Resource boundary used to resolve adjacent model assets. */
+    /** @brief 用于解析模型文件相邻附属资源的作用域。 */
     ResourceScope scope;
-    /** @brief Immutable geometry and appearance resource. */
+    /** @brief 不可变的几何和外观资源。 */
     std::shared_ptr<const SceneModel> model;
 };
 
 /**
- * @brief Provider boundary implemented by Stage 14B-03A for contract-v1.2 views.
+ * @brief Stage 14B-03A 为 contract-v1.2 视图实现的提供者边界。
  */
 class ITexturedSceneViewDataProvider
 {
 public:
-    /** @brief Destroys the provider through its interface. */
+    /** @brief 通过接口销毁提供者。 */
     virtual ~ITexturedSceneViewDataProvider() = default;
 
     /**
-     * @brief Builds fail-closed textured view data for one authoritative snapshot.
-     * @param request Requested view mode, revision, instances, LOD, and budget.
-     * @param snapshot Authoritative committed scene snapshot.
-     * @param cancelToken Cooperative cancellation token.
-     * @return ViewData v1.2 payload or a stable PM-SLICER error.
+     * @brief 为一个权威快照构造失败即拒绝的纹理视图数据。
+     * @param request 请求的视图模式、修订号、实例、LOD 和预算。
+     * @param snapshot 权威已提交场景快照。
+     * @param cancelToken 协作式取消令牌。
+     * @return ViewData v1.2 载荷或稳定的 PM-SLICER 错误。
      */
     [[nodiscard]] virtual ApiResult<SceneViewData> GetViewData(
         const SceneViewDataRequest& request,
@@ -51,49 +51,49 @@ public:
 };
 
 /**
- * @brief Dependencies and authoritative state used to create one SceneFacade.
+ * @brief 创建 SceneFacade 所需的依赖和权威状态。
  */
 struct SceneFacadeSeed
 {
-    /** @brief Numeric API identity owned by the facade instance. */
+    /** @brief SceneFacade 实例持有的数值 API 标识。 */
     SceneId scene_id{0};
-    /** @brief Existing authoritative scene representation. */
+    /** @brief 现有权威场景表示。 */
     MultiModelScene scene;
-    /** @brief Immutable source geometry keyed by scene model identity. */
+    /** @brief 以场景模型标识为键的不可变源几何。 */
     std::map<std::string, std::shared_ptr<const SceneModel>> models_by_id;
-    /** @brief Numeric API model identities keyed by scene model identity. */
+    /** @brief 以场景模型标识为键的数值 API 模型标识。 */
     std::map<std::string, ModelId> api_model_ids;
-    /** @brief Imported models that may be added after facade creation. */
+    /** @brief SceneFacade 创建后仍可添加的已导入模型。 */
     std::map<ModelId, SceneFacadeModelRegistration> registered_models;
-    /** @brief Existing scene/layout admission purpose to reuse. */
+    /** @brief 要复用的现有场景/排版准入用途。 */
     SceneValidationPurpose validation_purpose{SceneValidationPurpose::Draft};
-    /** @brief Existing collision contact tolerance in millimetres. */
+    /** @brief 以毫米表示的现有碰撞接触容差。 */
     double contact_epsilon_mm{0.0};
 };
 
 /**
- * @brief Qt-free authoritative scene service for the three-lane Commit contract.
+ * @brief 面向三通道 Commit 合同的无 Qt 权威场景服务。
  */
 class SceneFacadeService final : public SceneFacade
 {
 public:
     /**
-     * @brief Creates a validated facade without mutating the supplied scene.
-     * @param seed Scene state, source models, identities, and validation purpose.
-     * @param viewDataProvider Optional Stage 14B-03A textured ViewData provider.
-     * @return Ready facade or a stable PM-SLICER error.
+     * @brief 在不修改所给场景的前提下创建已验证 SceneFacade。
+     * @param seed 场景状态、源模型、标识和验证用途。
+     * @param viewDataProvider 可选的 Stage 14B-03A 纹理 ViewData 提供者。
+     * @return 就绪的 SceneFacade 或稳定的 PM-SLICER 错误。
      */
     [[nodiscard]] static ApiResult<std::shared_ptr<SceneFacadeService>> Create(
         SceneFacadeSeed seed,
         std::shared_ptr<const ITexturedSceneViewDataProvider> viewDataProvider = {}) noexcept;
 
-    /** @brief Destroys the facade and its authoritative scene state. */
+    /** @brief 销毁 SceneFacade 及其权威场景状态。 */
     ~SceneFacadeService() override;
 
     /**
-     * @brief Registers one imported model for a future addInstance operation.
-     * @param registration Stable source, scope, geometry, and API identity.
-     * @return Success or a fail-closed identity/resource conflict.
+     * @brief 为后续 addInstance 操作注册一个已导入模型。
+     * @param registration 稳定的源、作用域、几何和 API 标识。
+     * @return 成功结果或失败即拒绝的标识/资源冲突。
      */
     [[nodiscard]] ApiResult<void> RegisterModel(
         SceneFacadeModelRegistration registration) noexcept;

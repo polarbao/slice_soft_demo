@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：增量解析 Worker 保留协议行，同时原样收集普通输出日志；
+// 边界：进度回退、字段缺失或回调异常均记为合同错误，不吞掉诊断。
 namespace slicesoft::module::worker_detail
 {
 namespace

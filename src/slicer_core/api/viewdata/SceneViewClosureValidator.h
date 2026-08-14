@@ -7,9 +7,9 @@ namespace slicer_core::api::viewdata_detail
 {
 
 /**
- * @brief Validates all ViewData resource and material identity references.
- * @param viewData Candidate response.
- * @return Success when the payload is closed, otherwise a stable error.
+ * @brief 验证所有 ViewData 资源和材质标识引用。
+ * @param viewData 候选响应。
+ * @return 载荷闭合时返回成功结果，否则返回稳定错误。
  */
 [[nodiscard]] ApiResult<void> ValidateViewDataClosure(
     const SceneViewData& viewData) noexcept;

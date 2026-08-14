@@ -2,16 +2,16 @@
 
 #include <QString>
 
-/** @brief Resolves the initial model directory for the reference host. */
+/** @brief 解析参考宿主的初始模型目录。 */
 class HostImportDirectoryPolicy final
 {
 public:
     /**
-     * @brief Chooses an existing model import directory in stable priority order.
-     * @param applicationDirectory Directory containing the running executable.
-     * @param workingDirectory Current process working directory.
-     * @param previousDirectory Most recently used directory in this session.
-     * @return Absolute existing directory suitable for a model file dialog.
+     * @brief 按稳定优先级选择已存在的模型导入目录。
+     * @param applicationDirectory 当前可执行文件所在目录。
+     * @param workingDirectory 当前进程工作目录。
+     * @param previousDirectory 本会话最近使用的目录。
+     * @return 适用于模型文件对话框且已存在的绝对目录。
      */
     [[nodiscard]] static QString Resolve(
         const QString& applicationDirectory,

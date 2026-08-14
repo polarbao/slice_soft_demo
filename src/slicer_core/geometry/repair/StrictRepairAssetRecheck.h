@@ -11,7 +11,7 @@ namespace slicer_core
 {
 
 /**
- * @brief Inputs that bind one staged repair asset to its effective Profile.
+ * @brief 使用有效 Profile 复核一个暂存修复产物的输入。
  */
 struct StrictRepairAssetRecheckRequest
 {
@@ -23,7 +23,7 @@ struct StrictRepairAssetRecheckRequest
 };
 
 /**
- * @brief Complete reimport, attribute and strict-topology evidence.
+ * @brief 完整的重新导入、属性和严格拓扑证据。
  */
 struct StrictRepairAssetRecheckResult
 {
@@ -37,10 +37,10 @@ struct StrictRepairAssetRecheckResult
 };
 
 /**
- * @brief Reimport one staged OBJ with effective Profile resource rules and run strict audit.
- * @param request Staged asset, Profile identity, expected in-memory candidate and cancellation.
- * @return Complete reimport and strict topology evidence.
- * @throws std::runtime_error on stale identity, import failure, cancellation or incomplete audit.
+ * @brief 按有效 Profile 资源规则重新导入暂存 OBJ，并运行严格审计。
+ * @param request 暂存修复产物、Profile 标识、预期内存候选项和取消状态。
+ * @return 完整的重新导入和严格拓扑证据。
+ * @throws std::runtime_error 标识过期、导入失败、取消或审计不完整时抛出。
  */
 StrictRepairAssetRecheckResult RecheckStrictRepairAsset(
     const StrictRepairAssetRecheckRequest& request);

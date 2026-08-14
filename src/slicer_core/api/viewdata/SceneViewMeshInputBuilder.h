@@ -14,13 +14,13 @@ namespace slicer_core::api::viewdata_detail
 {
 
 /**
- * @brief Builds shared topology for one material before LOD simplification.
- * @param model Immutable imported model.
- * @param triangleIndices Source triangles owned by one material.
- * @param worldMatrix Authoritative instance transform.
- * @param meshTransform Local or world buffer semantics.
- * @param cancelToken Cooperative cancellation token.
- * @return Indexed positions and UVs or a stable geometry error.
+ * @brief 在 LOD 简化前为一个材质构造共享拓扑。
+ * @param model 不可变的已导入模型。
+ * @param triangleIndices 属于一个材质的源三角形。
+ * @param worldMatrix 权威实例变换。
+ * @param meshTransform 局部或世界缓冲区语义。
+ * @param cancelToken 协作式取消令牌。
+ * @return 索引位置与 UV，或稳定几何错误。
  */
 [[nodiscard]] ApiResult<MeshSimplificationInput> BuildViewMeshGroupInput(
     const SceneModel& model,
@@ -30,20 +30,20 @@ namespace slicer_core::api::viewdata_detail
     const ICancelToken& cancelToken);
 
 /**
- * @brief Reads one position from a validated simplification input.
- * @param input Validated simplification input.
- * @param index Vertex index.
- * @return Position value.
+ * @brief 从已验证的简化输入读取一个位置。
+ * @param input 已验证的简化输入。
+ * @param index 顶点索引。
+ * @return 位置值。
  */
 [[nodiscard]] Vec3 ReadSimplificationPoint(
     const MeshSimplificationInput& input,
     std::uint32_t index);
 
 /**
- * @brief Reads one UV coordinate from a validated simplification input.
- * @param input Validated simplification input.
- * @param index Vertex index.
- * @return UV value.
+ * @brief 从已验证的简化输入读取一个 UV 坐标。
+ * @param input 已验证的简化输入。
+ * @param index 顶点索引。
+ * @return UV 值。
  */
 [[nodiscard]] TexCoord ReadSimplificationUv(
     const MeshSimplificationInput& input,

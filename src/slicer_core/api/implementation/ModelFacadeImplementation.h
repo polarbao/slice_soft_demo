@@ -8,8 +8,8 @@ namespace slicer_core::api::implementation
 {
 
 /**
- * @brief Create the Qt-free model facade backed by the existing model loader.
- * @return Owning model facade instance.
+ * @brief 创建由现有模型加载器支撑的无 Qt ModelFacade。
+ * @return 由调用方独占持有的 ModelFacade 实例。
  */
 std::unique_ptr<ModelFacade> CreateModelFacade();
 

@@ -6,7 +6,7 @@
 
 namespace slicer_core::api {
 
-/** @brief Stable error payload returned by every facade boundary. */
+/** @brief 每个 Facade 边界返回的稳定错误载荷。 */
 struct ApiError
 {
     std::string code;
@@ -14,12 +14,12 @@ struct ApiError
     std::string detail;
 };
 
-/** @brief Value-or-error result that prevents exceptions crossing a facade. */
+/** @brief 以值或错误表示调用结果，阻止异常跨越 Facade 边界。 */
 template <class T>
 class ApiResult
 {
 public:
-    /** @brief Creates a successful result. @param value Returned value. @return Success result. */
+    /** @brief 创建成功结果。 @param value 返回值。 @return 成功结果。 */
     static ApiResult Success(T value)
     {
         return ApiResult(
@@ -28,7 +28,7 @@ public:
             std::nullopt);
     }
 
-    /** @brief Creates a failed result. @param error Stable PM-SLICER error. @return Failure result. */
+    /** @brief 创建失败结果。 @param error 稳定的 PM-SLICER 错误。 @return 失败结果。 */
     static ApiResult Failure(ApiError error)
     {
         return ApiResult(
@@ -37,19 +37,19 @@ public:
             std::optional<ApiError>(std::move(error)));
     }
 
-    /** @brief Reports whether the call succeeded. @return True for a value result. */
+    /** @brief 报告调用是否成功。 @return 存在结果值时返回 true。 */
     [[nodiscard]] bool IsOk() const noexcept
     {
         return m_ok;
     }
 
-    /** @brief Returns the value without throwing. @return Value pointer or nullptr. */
+    /** @brief 不抛异常地返回结果值。 @return 值指针或 nullptr。 */
     [[nodiscard]] const T* Value() const noexcept
     {
         return m_value ? &*m_value : nullptr;
     }
 
-    /** @brief Returns the error without throwing. @return Error pointer or nullptr. */
+    /** @brief 不抛异常地返回错误。 @return 错误指针或 nullptr。 */
     [[nodiscard]] const ApiError* Error() const noexcept
     {
         return m_error ? &*m_error : nullptr;
@@ -66,18 +66,18 @@ private:
     std::optional<ApiError> m_error;
 };
 
-/** @brief Void specialization used by release and command operations. */
+/** @brief 供释放和命令操作使用的 void 特化。 */
 template <>
 class ApiResult<void>
 {
 public:
-    /** @brief Creates a successful void result. @return Success result. */
+    /** @brief 创建成功的 void 结果。 @return 成功结果。 */
     static ApiResult Success()
     {
         return ApiResult(true, std::nullopt);
     }
 
-    /** @brief Creates a failed void result. @param error Stable PM-SLICER error. @return Failure result. */
+    /** @brief 创建失败的 void 结果。 @param error 稳定的 PM-SLICER 错误。 @return 失败结果。 */
     static ApiResult Failure(ApiError error)
     {
         return ApiResult(
@@ -85,13 +85,13 @@ public:
             std::optional<ApiError>(std::move(error)));
     }
 
-    /** @brief Reports whether the call succeeded. @return True on success. */
+    /** @brief 报告调用是否成功。 @return 成功时返回 true。 */
     [[nodiscard]] bool IsOk() const noexcept
     {
         return m_ok;
     }
 
-    /** @brief Returns the error without throwing. @return Error pointer or nullptr. */
+    /** @brief 不抛异常地返回错误。 @return 错误指针或 nullptr。 */
     [[nodiscard]] const ApiError* Error() const noexcept
     {
         return m_error ? &*m_error : nullptr;

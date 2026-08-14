@@ -7,22 +7,22 @@
 namespace slicer_core::api::viewdata_detail
 {
 
-/** @brief Computes a content identity for decoded texture pixels. */
+/** @brief 计算已解码纹理像素的内容标识。 */
 [[nodiscard]] std::string ComputeTextureIdentity(
     const ViewTexture& texture);
 
-/** @brief Computes a material-binding identity for one appearance. */
+/** @brief 计算一个外观的材质绑定标识。 */
 [[nodiscard]] std::string ComputeAppearanceIdentity(
     const ViewAppearance& appearance);
 
-/** @brief Computes a geometry and LOD identity for one mesh. */
+/** @brief 计算一个网格的几何和 LOD 标识。 */
 [[nodiscard]] std::string ComputeMeshIdentity(const ViewMesh& mesh);
 
-/** @brief Computes a local-space textured top-preview identity. */
+/** @brief 计算局部空间纹理俯视预览标识。 */
 [[nodiscard]] std::string ComputePreviewIdentity(
     const SurfacePreview& preview);
 
-/** @brief Computes the identity of a complete scene view snapshot. */
+/** @brief 计算完整场景视图快照的标识。 */
 [[nodiscard]] std::string ComputeViewDataIdentity(
     const SceneViewData& viewData);
 

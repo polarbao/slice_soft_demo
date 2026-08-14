@@ -10,10 +10,10 @@ namespace slicer_core::api::viewdata_detail
 {
 
 /**
- * @brief Controls derived vertex-normal smoothing for display meshes.
+ * @brief 控制显示网格派生顶点法线的平滑策略。
  *
- * This is an internal ViewData build policy. It does not extend the public
- * SPI request DTO and therefore keeps existing hosts source-compatible.
+ * 这是 ViewData 内部构造策略，不扩展公共 SPI 请求 DTO，
+ * 因而保持现有宿主的源码兼容性。
  */
 struct ViewMeshNormalOptions
 {
@@ -21,16 +21,16 @@ struct ViewMeshNormalOptions
 };
 
 /**
- * @brief Builds a seam-safe indexed mesh with complete material bindings.
- * @param model Immutable imported model.
- * @param appearance Closed appearance resources.
- * @param worldMatrix Authoritative instance transform.
- * @param lod Requested actual mesh LOD.
- * @param meshTransform Local or world buffer semantics.
- * @param attributeFormat Serialized mesh attribute scalar encoding.
- * @param cancelToken Cooperative cancellation token.
- * @param normalOptions Derived display-normal smoothing policy.
- * @return Mesh payload or a stable geometry/material error.
+ * @brief 构造接缝安全且材质绑定完整的索引网格。
+ * @param model 不可变的已导入模型。
+ * @param appearance 闭合的外观资源。
+ * @param worldMatrix 权威实例变换。
+ * @param lod 请求的实际网格 LOD。
+ * @param meshTransform 局部或世界缓冲区语义。
+ * @param attributeFormat 序列化网格属性的标量编码。
+ * @param cancelToken 协作式取消令牌。
+ * @param normalOptions 派生显示法线的平滑策略。
+ * @return 网格载荷或稳定的几何/材质错误。
  */
 [[nodiscard]] ApiResult<ViewMesh> BuildViewMesh(
     const SceneModel& model,

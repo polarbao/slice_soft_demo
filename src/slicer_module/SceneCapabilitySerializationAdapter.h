@@ -8,19 +8,19 @@
 namespace slicesoft::module
 {
 
-/** @brief Serializes authoritative SceneFacade results to frozen capability DTOs. */
+/** @brief 将权威 SceneFacade 结果序列化为冻结能力 DTO。 */
 class SceneCapabilitySerializationAdapter final
 {
 public:
-    /** @brief Serializes a committed scene operation. @param result Facade result. @return Capability envelope. */
+    /** @brief 序列化已提交的场景操作。 @param result Facade 返回结果。 @return 能力响应对象。 */
     [[nodiscard]] static slicer_core::Json SerializeCommit(
         const slicer_core::api::SceneCommitResult& result);
 
-    /** @brief Serializes a scene snapshot. @param snapshot Facade snapshot. @return Capability envelope. */
+    /** @brief 序列化场景快照。 @param snapshot Facade 返回的快照。 @return 能力响应对象。 */
     [[nodiscard]] static slicer_core::Json SerializeSnapshot(
         const slicer_core::api::SceneSnapshot& snapshot);
 
-    /** @brief Serializes a collision report. @param revision Scene revision. @param report Report. @return Capability envelope. */
+    /** @brief 序列化碰撞报告。 @param revision 场景修订号。 @param report 报告。 @return 能力响应对象。 */
     [[nodiscard]] static slicer_core::Json SerializeCollision(
         std::uint64_t revision,
         const slicer_core::api::CollisionReport& report);

@@ -11,48 +11,48 @@ class QLabel;
 class QPushButton;
 class QSpinBox;
 
-/** @brief Host-side controls for committed instance transforms and grid layout. */
+/** @brief 用于提交实例变换与网格布局的宿主侧控件。 */
 class HostTransformLayoutPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Creates the transform and layout controls.
-     * @param parent Optional Qt parent widget.
+     * @brief 创建变换和布局控件。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostTransformLayoutPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Updates the host-local instance selection without a module call.
-     * @param instanceIds Stable selected instance identities.
+     * @brief 无需模块调用即可更新宿主本地实例选择。
+     * @param instanceIds 稳定选定的实例标识。
      */
     void SetSelectedInstances(const QStringList& instanceIds);
 
     /**
-     * @brief Updates the authoritative scene summary shown by the panel.
-     * @param instanceCount Number of host-tracked scene instances.
-     * @param sceneRevision Latest committed scene revision.
+     * @brief 更新面板显示的权威场景摘要。
+     * @param instanceCount 宿主跟踪的场景实例的数量。
+     * @param sceneRevision 最新已 Commit 的场景修订号。
      */
     void SetSceneState(int instanceCount, quint64 sceneRevision);
 
     /**
-     * @brief Enables commands that cross the public module boundary.
-     * @param enabled True when the module is ready and no command is active.
+     * @brief 启用跨越公共模块边界的命令。
+     * @param enabled 模块就绪且没有活动命令时为 true。
      */
     void SetCommandsEnabled(bool enabled);
 
-    /** @brief Resets incremental transform inputs after a successful Commit. */
+    /** @brief 成功 Commit 后重置增量变换输入。 */
     void ResetTransformInputs();
 
     /**
-     * @brief Returns the grid values currently shown to the operator.
-     * @return Host-owned layout request used by automatic and manual layout.
+     * @brief 返回当前显示给操作员的网格值。
+     * @return 自动和手动布局使用的由宿主持有的布局请求。
      */
     [[nodiscard]] hostgridlayoutrequest LayoutRequest() const;
 
 signals:
-    /** @brief Requests one atomic Commit for selected instance transforms. */
+    /** @brief 请求对所选实例变换执行一次原子 Commit。 */
     void SigTransformRequested(
         const QStringList& instanceIds,
         double deltaXMm,
@@ -63,7 +63,7 @@ signals:
         bool mirrorX,
         bool mirrorY);
 
-    /** @brief Requests one authoritative applyGridLayout Commit. */
+    /** @brief 请求一次权威的 applyGridLayout 提交。 */
     void SigLayoutRequested(
         int maxColumns,
         int maxRows,

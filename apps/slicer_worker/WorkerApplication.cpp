@@ -93,7 +93,7 @@ void WorkerApplication::PrintHelp(std::ostream& output)
 
 int WorkerApplication::PrintContractInfo(std::ostream& output)
 {
-    // Contract discovery owns stdout exclusively so callers can parse one JSON object.
+    // 合同发现独占 stdout，确保调用方只需解析一个 JSON 对象。
     output
         << "{\"contract\":\"file_contract\","
         << "\"major\":1,\"minor\":0,"

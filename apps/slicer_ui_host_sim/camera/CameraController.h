@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-/** @brief Enumerates the seven Stage 14E camera presets. */
+/** @brief 枚举七个 Stage 14E 摄像机预设。 */
 enum class CameraPreset
 {
     Top,
@@ -16,7 +16,7 @@ enum class CameraPreset
     Isometric
 };
 
-/** @brief Axis-aligned world bounds used to fit the local camera. */
+/** @brief 用于适应本地相机的轴对齐世界边界。 */
 struct CameraBounds final
 {
     float minX{0.0F};
@@ -28,19 +28,19 @@ struct CameraBounds final
 };
 
 /**
- * @brief Owns all host-local 3D camera state without module dependencies.
+ * @brief 持有全部宿主本地 3D 相机状态，不依赖切片模块。
  */
 class CameraController final
 {
 public:
-    /** @brief Creates an orthographic isometric camera. */
+    /** @brief 创建正交等距相机。 */
     CameraController();
 
     /**
-     * @brief Fits the camera to world bounds and viewport dimensions.
-     * @param bounds World-space scene bounds in millimetres.
-     * @param viewportWidthPx Viewport width in pixels.
-     * @param viewportHeightPx Viewport height in pixels.
+     * @brief 使相机适合世界边界和视口尺寸。
+     * @param bounds 世界空间场景以毫米为单位。
+     * @param viewportWidthPx 视口宽度（以像素为单位）。
+     * @param viewportHeightPx 视口高度（以像素为单位）。
      */
     void Fit(
         const CameraBounds& bounds,
@@ -48,43 +48,43 @@ public:
         std::uint32_t viewportHeightPx);
 
     /**
-     * @brief Updates viewport dimensions without changing the current pose.
-     * @param viewportWidthPx Viewport width in pixels.
-     * @param viewportHeightPx Viewport height in pixels.
+     * @brief 更新视口尺寸而不更改当前姿势。
+     * @param viewportWidthPx 视口宽度（以像素为单位）。
+     * @param viewportHeightPx 视口高度（以像素为单位）。
      */
     void SetViewportSize(
         std::uint32_t viewportWidthPx,
         std::uint32_t viewportHeightPx);
 
-    /** @brief Applies local orbit deltas in degrees. */
+    /** @brief 应用局部轨道增量（以度为单位）。 */
     void Orbit(float yawDeltaDeg, float pitchDeltaDeg);
 
-    /** @brief Applies local camera-plane translation in millimetres. */
+    /** @brief 应用局部相机平面平移（以毫米为单位）。 */
     void Pan(float rightMm, float upMm);
 
     /**
-     * @brief Zooms around a normalized cursor position.
-     * @param wheelSteps Positive values zoom in.
-     * @param normalizedX Cursor X in the range [-1, 1].
-     * @param normalizedY Cursor Y in the range [-1, 1].
+     * @brief 围绕标准化光标位置进行缩放。
+     * @param wheelSteps 正值放大。
+     * @param normalizedX 光标 X 在 [-1, 1] 范围内。
+     * @param normalizedY 光标 Y 在 [-1, 1] 范围内。
      */
     void ZoomAtCursor(
         float wheelSteps,
         float normalizedX,
         float normalizedY);
 
-    /** @brief Applies one of the seven frozen camera presets. */
+    /** @brief 应用七个冻结摄像机预设之一。 */
     void SetPreset(CameraPreset preset);
 
-    /** @brief Selects orthographic or perspective projection. */
+    /** @brief 选择正交或透视投影。 */
     void SetProjection(slicer::render::Projection projection);
 
-    /** @brief Returns the current projection type. */
+    /** @brief 返回当前的投影类型。 */
     [[nodiscard]] slicer::render::Projection ProjectionMode() const;
 
     /**
-     * @brief Builds backend-neutral camera matrices for the current viewport.
-     * @return Row-major view and projection matrices.
+     * @brief 为当前视口构建后端中性相机矩阵。
+     * @return 行主视图和投影矩阵。
      */
     [[nodiscard]] slicer::render::CameraDesc BuildCamera() const;
 

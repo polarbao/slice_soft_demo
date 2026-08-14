@@ -17,17 +17,17 @@ struct capabilitycoveragefixture
     QJsonObject profile;
 };
 
-/** @brief Host-only builders for the frozen capability request DTOs. */
+/** @brief 用于冻结能力请求 DTO 的宿主侧构建器。 */
 class CapabilityCoverageRequests final
 {
 public:
     /**
-     * @brief Initializes fixture paths before model import.
-     * @param repositoryRoot SliceSoft repository root.
-     * @param evidenceRoot Writable host evidence root.
-     * @param fixture Receives normalized fixture paths.
-     * @param error Receives a path validation error.
-     * @return True when the reference model exists and output paths are valid.
+     * @brief 在模型导入前初始化测试夹具路径。
+     * @param repositoryRoot SliceSoft 仓库根目录。
+     * @param evidenceRoot 宿主可写的证据根目录。
+     * @param fixture 接收规范化后的测试夹具路径。
+     * @param error 接收路径验证错误。
+     * @return 当参考模型存在且输出路径有效时为 true。
      */
     static bool InitializePaths(
         const QString& repositoryRoot,
@@ -36,11 +36,11 @@ public:
         QString* error);
 
     /**
-     * @brief Binds imported model identity and builds the reference Profile.
-     * @param imported Successful model.import response.
-     * @param fixture In/out host fixture state.
-     * @param error Receives malformed metadata or Profile-builder failure.
-     * @return True when the model identity and default Profile are ready.
+     * @brief 绑定已导入模型的标识，并构建参考 Profile。
+     * @param imported 成功的 model.import 响应。
+     * @param fixture 输入并接收更新后的宿主测试夹具状态。
+     * @param error 接收元数据格式错误或 Profile 构建失败信息。
+     * @return 模型标识与默认 Profile 均已就绪时返回 true。
      */
     static bool BindImportedModel(
         const QJsonObject& imported,
@@ -48,13 +48,13 @@ public:
         QString* error);
 
     /**
-     * @brief Builds a self-hashed Profile with a requested layer thickness.
-     * @param fixture Bound host fixture.
-     * @param layerThicknessMm Positive layer thickness in millimetres.
-     * @param profile Receives the Profile object.
-     * @param profileHash Receives the frozen Profile identity.
-     * @param error Receives a builder or JSON error.
-     * @return True when the Profile is valid JSON.
+     * @brief 按指定层厚构建包含自身哈希的 Profile。
+     * @param fixture 已绑定的宿主测试夹具。
+     * @param layerThicknessMm 以毫米为单位的正数层厚。
+     * @param profile 接收 Profile 对象。
+     * @param profileHash 接收冻结的 Profile 标识。
+     * @param error 接收构建器或 JSON 错误。
+     * @return Profile 是有效 JSON 时返回 true。
      */
     static bool BuildProfile(
         const capabilitycoveragefixture& fixture,

@@ -9,22 +9,22 @@
 namespace slicesoft::worker
 {
 
-/** @brief Production executor for the frozen geometry.repair Worker capability. */
+/** @brief 冻结的 geometry.repair Worker 能力生产执行器。 */
 class WorkerRepairExecutor final : public IWorkerCapabilityExecutor
 {
 public:
     /**
-     * @brief Creates an executor over one production repair facade.
-     * @param facade Owning repair facade; must not be null.
+     * @brief 基于生产修复 Facade 接口创建执行器。
+     * @param facade 独占持有的修复 Facade，不得为空。
      */
     explicit WorkerRepairExecutor(
         std::unique_ptr<slicer_core::api::RepairFacade> facade);
 
     /**
-     * @brief Materializes, executes, and publishes one job-owned repair asset.
-     * @param request Immutable Worker request envelope.
-     * @param cancelToken Cooperative cancellation token.
-     * @return Structured repair result or stable fail-closed error.
+     * @brief 实体化、执行并发布一个由作业持有的修复资产。
+     * @param request 不可变的 Worker 请求信封。
+     * @param cancelToken 协作式取消令牌。
+     * @return 结构化修复结果或稳定的失败即拒绝错误。
      */
     [[nodiscard]] WorkerCapabilityExecutionResult Execute(
         const WorkerRequestEnvelope& request,
@@ -35,8 +35,8 @@ private:
 };
 
 /**
- * @brief Creates the production geometry.repair Worker executor.
- * @return Owning executor wired to the production repair facade.
+ * @brief 创建 geometry.repair 的生产 Worker 执行器。
+ * @return 已接入生产修复 Facade 的独占执行器。
  */
 [[nodiscard]] std::unique_ptr<IWorkerCapabilityExecutor>
 CreateProductionWorkerRepairExecutor();

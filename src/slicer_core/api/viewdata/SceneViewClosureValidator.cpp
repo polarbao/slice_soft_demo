@@ -7,6 +7,8 @@
 #include <string>
 #include <string_view>
 
+// 文件职责：验证 ViewData 内网格、材质、纹理和实例引用的闭合性；
+// 边界：只做结构准入，不修补缺失资源或猜测绑定关系。
 namespace slicer_core::api::viewdata_detail
 {
 namespace

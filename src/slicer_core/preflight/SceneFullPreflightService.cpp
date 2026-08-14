@@ -8,6 +8,8 @@
 #include <tuple>
 #include <utility>
 
+// 文件职责：聚合源拓扑、变换后几何、构建体积和碰撞的权威预检证据；
+// 边界：资源解析失败、取消或证据不完整时必须明确阻断生产准入。
 namespace slicer_core
 {
 namespace

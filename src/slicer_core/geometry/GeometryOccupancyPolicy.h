@@ -3,21 +3,21 @@
 namespace slicer_core
 {
 
-/** @brief Selects how a vertical geometry interval is mapped to output layers. */
+/** @brief 选择垂直几何区间如何映射到输出层。 */
 enum class LayerOccupancyMode
 {
     LegacyCenterSample,
     LayerSlabCoverage
 };
 
-/** @brief Selects the XY coverage sampling mode for geometry occupancy. */
+/** @brief 选择几何占用的 XY 覆盖采样模式。 */
 enum class XyCoverageMode
 {
     PixelCenter,
     Supersample2x2
 };
 
-/** @brief Geometry-only occupancy strategy shared by sampling providers. */
+/** @brief 采样提供者共享的纯几何占用策略。 */
 struct GeometryOccupancyPolicy
 {
     LayerOccupancyMode layerMode{LayerOccupancyMode::LegacyCenterSample};
@@ -26,8 +26,8 @@ struct GeometryOccupancyPolicy
 };
 
 /**
- * @brief Build the production-compatible legacy occupancy policy.
- * @return Policy using center-sampled layers and center-sampled XY coverage.
+ * @brief 构造兼容生产的旧版占用策略。
+ * @return 层和 XY 覆盖均使用中心采样的策略。
  */
 constexpr GeometryOccupancyPolicy MakeLegacyGeometryOccupancyPolicy() noexcept
 {
@@ -35,8 +35,8 @@ constexpr GeometryOccupancyPolicy MakeLegacyGeometryOccupancyPolicy() noexcept
 }
 
 /**
- * @brief Build the Stage 16A-03 layer-slab, pixel-center candidate policy.
- * @return Policy using half-open layer slabs and existing XY pixel centers.
+ * @brief 构造 Stage 16A-03 层薄片、像素中心候选策略。
+ * @return 使用半开层薄片和现有 XY 像素中心的策略。
  */
 constexpr GeometryOccupancyPolicy MakeLayerSlabGeometryOccupancyPolicy() noexcept
 {
@@ -46,9 +46,9 @@ constexpr GeometryOccupancyPolicy MakeLayerSlabGeometryOccupancyPolicy() noexcep
 }
 
 /**
- * @brief Build a Stage 16A-04 layer-slab, fixed 2x2 coverage candidate policy.
- * @param minimumCoveredSubsamples Required covered samples per output pixel and layer.
- * @return Policy using half-open layer slabs and fixed 2x2 XY coverage.
+ * @brief 构造 Stage 16A-04 层薄片、固定 2x2 覆盖候选策略。
+ * @param minimumCoveredSubsamples 每个输出像素和层要求覆盖的子采样数。
+ * @return 使用半开层薄片和固定 2x2 XY 覆盖的策略。
  */
 constexpr GeometryOccupancyPolicy MakeLayerSlabSupersample2x2GeometryOccupancyPolicy(
     const unsigned minimumCoveredSubsamples) noexcept

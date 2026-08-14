@@ -16,6 +16,8 @@
 #include <mutex>
 #include <string_view>
 
+// 文件职责：独占管理一个 Windows Worker 进程树，并解析文件合同文本传输；
+// 边界：超时或取消后必须终止整个作业对象，并保留明确的停止原因和清理证据。
 namespace slicesoft::module
 {
 namespace

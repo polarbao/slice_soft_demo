@@ -15,6 +15,8 @@ struct pm_job_s
     std::uint64_t identity{0U};
 };
 
+// 文件职责：持有不透明模块/作业令牌及其精简生命周期状态；
+// 边界：查表成功前绝不解引用调用方指针，退役令牌保留到注册表销毁。
 namespace slicesoft::module
 {
 namespace

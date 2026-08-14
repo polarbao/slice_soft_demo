@@ -14,7 +14,7 @@
 namespace slicesoft::module
 {
 
-/** @brief Terminal bytes and status produced by one accepted light capability. */
+/** @brief 一个已接受轻量能力请求的终态字节与状态。 */
 struct CapabilityOutput
 {
     bool succeeded{false};
@@ -22,71 +22,71 @@ struct CapabilityOutput
     std::string bytes;
 };
 
-/** @brief Error raised when a capability request violates the frozen DTO. */
+/** @brief 能力请求不符合冻结 DTO 时抛出的错误。 */
 class CapabilityRequestError final : public std::runtime_error
 {
 public:
-    /** @brief Creates one deterministic request error. @param message Diagnostic text. */
+    /** @brief 创建确定性的请求错误。 @param message 诊断文本。 */
     explicit CapabilityRequestError(const std::string& message);
 };
 
-/** @brief Parses one UTF-8 JSON capability request. @param text Request bytes. @return JSON object. */
+/** @brief 解析 UTF-8 JSON 能力请求。 @param text 请求字节。 @return JSON 对象。 */
 [[nodiscard]] slicer_core::Json ParseCapabilityRequest(std::string_view text);
 
-/** @brief Reads a required object field. @param object Source object. @param name Field name. @return Field value. */
+/** @brief 读取必需的对象字段。 @param object 源对象。 @param name 字段名。 @return 字段值。 */
 [[nodiscard]] const slicer_core::Json& RequireField(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads a required non-empty string. @param object Source object. @param name Field name. @return String value. */
+/** @brief 读取必需的非空字符串。 @param object 源对象。 @param name 字段名。 @return 字符串值。 */
 [[nodiscard]] std::string RequireString(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads an optional string. @param object Source object. @param name Field name. @param fallback Missing value. @return String value. */
+/** @brief 读取可选字符串。 @param object 源对象。 @param name 字段名。 @param fallback 缺省值。 @return 字符串值。 */
 [[nodiscard]] std::string OptionalString(
     const slicer_core::Json& object,
     const std::string& name,
     const std::string& fallback = {});
 
-/** @brief Reads a required integer. @param object Source object. @param name Field name. @return Integer value. */
+/** @brief 读取必需的整数。 @param object 源对象。 @param name 字段名。 @return 整数值。 */
 [[nodiscard]] int RequireInteger(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads a required unsigned integer. @param object Source object. @param name Field name. @return Unsigned value. */
+/** @brief 读取必需的无符号整数。 @param object 源对象。 @param name 字段名。 @return 无符号值。 */
 [[nodiscard]] std::uint64_t RequireUnsigned(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads a required boolean. @param object Source object. @param name Field name. @return Boolean value. */
+/** @brief 读取必需的布尔值。 @param object 源对象。 @param name 字段名。 @return 布尔值。 */
 [[nodiscard]] bool RequireBoolean(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads a required number. @param object Source object. @param name Field name. @return Number value. */
+/** @brief 读取必需的数值。 @param object 源对象。 @param name 字段名。 @return 数值。 */
 [[nodiscard]] double RequireNumber(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads a required array. @param object Source object. @param name Field name. @return Array value. */
+/** @brief 读取必需的数组。 @param object 源对象。 @param name 字段名。 @return 数组值。 */
 [[nodiscard]] const slicer_core::Json::Array& RequireArray(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads a required object. @param object Source object. @param name Field name. @return Object value. */
+/** @brief 读取必需的对象。 @param object 源对象。 @param name 字段名。 @return 对象值。 */
 [[nodiscard]] const slicer_core::Json& RequireObject(
     const slicer_core::Json& object,
     const std::string& name);
 
-/** @brief Reads exactly three numbers. @param value JSON array. @return Three values. */
+/** @brief 精确读取三个数值。 @param value JSON 数组。 @return 三个数值。 */
 [[nodiscard]] std::array<double, 3> ReadNumber3(const slicer_core::Json& value);
 
-/** @brief Serializes strings as a JSON array. @param values Strings. @return JSON array. */
+/** @brief 将字符串序列化为 JSON 数组。 @param values 字符串集合。 @return JSON 数组。 */
 [[nodiscard]] slicer_core::Json MakeStringArray(
     const std::vector<std::string>& values);
 
-/** @brief Serializes a fixed numeric array. @param values Numbers. @return JSON array. */
+/** @brief 序列化定长数值数组。 @param values 数值集合。 @return JSON 数组。 */
 template <typename T, std::size_t Size>
 [[nodiscard]] slicer_core::Json MakeNumberArray(
     const std::array<T, Size>& values)
@@ -100,7 +100,7 @@ template <typename T, std::size_t Size>
     return slicer_core::Json{std::move(result)};
 }
 
-/** @brief Serializes a numeric vector. @param values Numbers. @return JSON array. */
+/** @brief 序列化数值向量。 @param values 数值集合。 @return JSON 数组。 */
 template <typename T>
 [[nodiscard]] slicer_core::Json MakeNumberArray(const std::vector<T>& values)
 {
@@ -113,37 +113,37 @@ template <typename T>
     return slicer_core::Json{std::move(result)};
 }
 
-/** @brief Serializes local bounds. @param bounds Bounds value. @return JSON object. */
+/** @brief 序列化局部边界。 @param bounds 边界值。 @return JSON 对象。 */
 [[nodiscard]] slicer_core::Json MakeBounds(
     const slicer_core::api::Bounds3d& bounds);
 
-/** @brief Serializes a row-major matrix. @param matrix Matrix value. @return JSON array. */
+/** @brief 序列化行主序矩阵。 @param matrix 矩阵值。 @return JSON 数组。 */
 [[nodiscard]] slicer_core::Json MakeMatrix(
     const slicer_core::api::Matrix4d& matrix);
 
-/** @brief Builds a successful result envelope. @param fields Capability fields. @return Result object. */
+/** @brief 构造成功结果对象。 @param fields 能力字段。 @return 结果对象。 */
 [[nodiscard]] slicer_core::Json MakeSuccess(
     slicer_core::Json::Object fields = {});
 
-/** @brief Builds a failed result envelope. @param code Stable code. @param message Message. @param detail Detail. @return Result object. */
+/** @brief 构造失败结果对象。 @param code 稳定错误码。 @param message 消息。 @param detail 详情。 @return 结果对象。 */
 [[nodiscard]] slicer_core::Json MakeFailure(
     std::string_view code,
     std::string_view message,
     std::string_view detail = {});
 
-/** @brief Builds a failed result envelope. @param error API error. @return Result object. */
+/** @brief 从 API 错误构造失败结果对象。 @param error API 错误。 @return 结果对象。 */
 [[nodiscard]] slicer_core::Json MakeFailure(
     const slicer_core::api::ApiError& error);
 
-/** @brief Converts a result envelope into terminal output. @param result Result envelope. @return Serialized output. */
+/** @brief 将结果对象转换为终态输出。 @param result 结果对象。 @return 序列化输出。 */
 [[nodiscard]] CapabilityOutput MakeCapabilityOutput(
     const slicer_core::Json& result);
 
-/** @brief Parses an internal structured object. @param value UTF-8 object. @return Parsed object. */
+/** @brief 解析内部结构化对象。 @param value UTF-8 对象。 @return 解析后的对象。 */
 [[nodiscard]] slicer_core::Json ParseStructuredObject(
     const slicer_core::api::StructuredJsonObject& value);
 
-/** @brief Parses a decimal model identity. @param value Identity text. @return Numeric identity. */
+/** @brief 解析十进制模型标识。 @param value 标识文本。 @return 数值标识。 */
 [[nodiscard]] std::uint64_t ParseModelId(const std::string& value);
 
 }  // namespace slicesoft::module

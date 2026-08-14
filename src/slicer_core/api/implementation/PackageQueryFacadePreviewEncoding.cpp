@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：编码预览文件所需的底层字节格式；
+// 边界：仅处理显示产物，禁止写入或重编码生产 RGBWSV TIFF。
 namespace slicer_core::api::implementation::detail
 {
 namespace

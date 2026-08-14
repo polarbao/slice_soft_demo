@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：隔离第三方网格简化器并保持材质组拓扑边界；
+// 边界：无效索引、取消或不可接受结果均返回稳定错误，不静默降级。
 namespace slicer_core::api::viewdata_detail
 {
 namespace

@@ -19,14 +19,14 @@ enum class TiffStorageMode
 };
 
 /**
- * @brief Converts a TIFF storage mode to its stable protocol name.
- * @param mode Storage mode.
- * @return `stripped`, `tiled`, or `unknown`.
+ * @brief 将 TIFF 存储模式转换为稳定协议名。
+ * @param mode 存储模式。
+ * @return `stripped`、`tiled` 或 `unknown`。
  */
 std::string tiff_storage_mode_string(TiffStorageMode mode);
 
 /**
- * @brief Identifies the TIFF payload compression used by each strip or tile.
+ * @brief 标识每个条带或分块使用的 TIFF 载荷压缩方式。
  */
 enum class TiffCompressionMode
 {
@@ -35,22 +35,22 @@ enum class TiffCompressionMode
 };
 
 /**
- * @brief Converts a TIFF compression mode to its stable configuration name.
- * @param mode Compression mode.
- * @return `none` or `packbits`.
+ * @brief 将 TIFF 压缩模式转换为稳定配置名。
+ * @param mode 压缩模式。
+ * @return `none` 或 `packbits`。
  */
 std::string TiffCompressionModeString(TiffCompressionMode mode);
 
 /**
- * @brief Parses a stable TIFF compression configuration name.
- * @param name Compression name (`none` or `packbits`).
- * @return Matching compression mode.
- * @throws std::invalid_argument When the name is unsupported.
+ * @brief 解析稳定的 TIFF 压缩配置名。
+ * @param name 压缩名称（`none` 或 `packbits`）。
+ * @return 匹配的压缩模式。
+ * @throws std::invalid_argument 名称不受支持时抛出。
  */
 TiffCompressionMode ParseTiffCompressionMode(std::string_view name);
 
 /**
- * @brief Describes one six-channel RGBWSV TIFF image and storage layout.
+ * @brief 描述一幅六通道 RGBWSV TIFF 图像及其存储布局。
  */
 struct TiffImageSpec
 {
@@ -67,7 +67,7 @@ struct TiffImageSpec
 };
 
 /**
- * @brief Contains production-polarity statistics for one TIFF channel.
+ * @brief 包含按生产极性计算的单个 TIFF 通道统计。
  */
 struct TiffChannelStats
 {
@@ -80,7 +80,7 @@ struct TiffChannelStats
 };
 
 /**
- * @brief Contains a decoded RGBWSV image and its authoritative statistics.
+ * @brief 包含已解码 RGBWSV 图像及其权威统计。
  */
 struct TiffReadResult
 {
@@ -91,23 +91,23 @@ struct TiffReadResult
 };
 
 /**
- * @brief Reads one tiled RGBWSV uint8 TIFF.
- * @param path Source TIFF path.
- * @return Decoded image, storage metadata, checksums, and channel statistics.
+ * @brief 读取一幅分块存储的 RGBWSV uint8 TIFF。
+ * @param path 源 TIFF 路径。
+ * @return 已解码图像、存储元数据、校验和及通道统计。
  */
 TiffReadResult read_rgbwsv_tiled_tiff(const std::filesystem::path& path);
 
 /**
- * @brief Reads one stripped RGBWSV uint8 TIFF.
- * @param path Source TIFF path.
- * @return Decoded image, storage metadata, checksums, and channel statistics.
+ * @brief 读取一幅条带存储的 RGBWSV uint8 TIFF。
+ * @param path 源 TIFF 路径。
+ * @return 已解码图像、存储元数据、校验和及通道统计。
  */
 TiffReadResult read_rgbwsv_stripped_tiff(const std::filesystem::path& path);
 
 /**
- * @brief Reads one supported RGBWSV uint8 TIFF storage layout.
- * @param path Source TIFF path.
- * @return Decoded image, storage metadata, checksums, and channel statistics.
+ * @brief 读取一种受支持存储布局的 RGBWSV uint8 TIFF。
+ * @param path 源 TIFF 路径。
+ * @return 已解码图像、存储元数据、校验和及通道统计。
  */
 TiffReadResult read_rgbwsv_tiff(const std::filesystem::path& path);
 

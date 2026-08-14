@@ -8,6 +8,8 @@
 #include <string_view>
 #include <utility>
 
+// 文件职责：持有权威场景并协调 Commit、快照、碰撞和 ViewData 三条通道；
+// 边界：几何与 ViewData 由下层服务提供，本文件不在宿主侧重复计算策略。
 namespace slicer_core::api
 {
 namespace

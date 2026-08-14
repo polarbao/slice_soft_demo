@@ -23,7 +23,7 @@ enum class SceneOperationType
     MirrorY
 };
 
-/** @brief One canonical scene edit submitted on the Commit lane. */
+/** @brief 在 Commit 通道提交的一个规范场景编辑。 */
 struct SceneOperation
 {
     SceneOperationType type{SceneOperationType::Translate};
@@ -36,7 +36,7 @@ struct SceneOperation
     double value_z{0.0};
 };
 
-/** @brief Atomic scene operation request with optimistic concurrency. */
+/** @brief 带乐观并发控制的原子场景操作请求。 */
 struct SceneOperationRequest
 {
     SceneId scene_id{0};
@@ -47,7 +47,7 @@ struct SceneOperationRequest
     std::vector<SceneOperation> operations;
 };
 
-/** @brief Resolved build-volume dimensions returned with authoritative state. */
+/** @brief 随权威状态返回的已解析构建体积尺寸。 */
 struct SceneBuildVolumeDescriptor
 {
     double width_mm{0.0};
@@ -55,7 +55,7 @@ struct SceneBuildVolumeDescriptor
     std::optional<double> z_limit_mm;
 };
 
-/** @brief Authoritative committed state for one instance. */
+/** @brief 一个实例的权威已提交状态。 */
 struct SceneInstanceState
 {
     InstanceReference instance;
@@ -63,7 +63,7 @@ struct SceneInstanceState
     bool out_of_bounds{false};
 };
 
-/** @brief Authoritative scene snapshot returned by base services. */
+/** @brief 基础服务返回的权威场景快照。 */
 struct SceneSnapshot
 {
     SceneId scene_id{0};
@@ -74,21 +74,21 @@ struct SceneSnapshot
     std::vector<SceneInstanceState> instances;
 };
 
-/** @brief Authoritative collision pair. */
+/** @brief 权威碰撞对。 */
 struct CollisionPair
 {
     std::string instance_a;
     std::string instance_b;
 };
 
-/** @brief Collision and build-volume evaluation result. */
+/** @brief 碰撞及构建体积评估结果。 */
 struct CollisionReport
 {
     std::vector<CollisionPair> collisions;
     std::vector<std::string> out_of_bounds_instances;
 };
 
-/** @brief Complete normal-Commit response without a follow-up snapshot query. */
+/** @brief 无需后续查询快照的完整 Commit 响应。 */
 struct SceneCommitResult
 {
     SceneSnapshot snapshot;

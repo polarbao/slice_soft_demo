@@ -8,7 +8,7 @@
 namespace slicesoft::worker
 {
 
-/** @brief Stable parser failure categories before a trusted job identity exists. */
+/** @brief 建立可信作业标识前的稳定解析失败类别。 */
 enum class WorkerRequestParseErrorCode
 {
     InvalidPath,
@@ -18,35 +18,35 @@ enum class WorkerRequestParseErrorCode
     ContractViolation
 };
 
-/** @brief Describes a fail-closed request parsing or validation failure. */
+/** @brief 描述请求解析或校验触发的失败即拒绝结果。 */
 class WorkerRequestParseError final : public std::runtime_error
 {
 public:
     /**
-     * @brief Creates a parser error with a stable category.
-     * @param code Stable parser failure category.
-     * @param message Human-readable diagnostic without request secrets.
+     * @brief 使用稳定类别创建解析错误。
+     * @param code 稳定解析失败类别。
+     * @param message 不含请求秘密的可读诊断信息。
      */
     WorkerRequestParseError(
         WorkerRequestParseErrorCode code,
         const std::string& message);
 
-    /** @brief Returns the stable parser failure category. */
+    /** @brief 返回稳定解析失败类别。 */
     [[nodiscard]] WorkerRequestParseErrorCode Code() const noexcept;
 
 private:
     WorkerRequestParseErrorCode m_code;
 };
 
-/** @brief Strict file_contract_v1 request parser and semantic validator. */
+/** @brief 严格的 file_contract_v1 请求解析器与语义校验器。 */
 class WorkerRequestParser final
 {
 public:
     /**
-     * @brief Parses one absolute request.json into an immutable envelope.
-     * @param requestPath Existing absolute regular-file path.
-     * @return Validated request envelope with canonical owned paths.
-     * @throws WorkerRequestParseError When path, encoding, JSON, or contract validation fails.
+     * @brief 将一个 request.json 绝对路径解析为不可变信封。
+     * @param requestPath 已存在的普通文件绝对路径。
+     * @return 带有规范化所持路径的已校验请求信封。
+     * @throws WorkerRequestParseError 路径、编码、JSON 或合同校验失败时抛出。
      */
     [[nodiscard]] static WorkerRequestEnvelope Parse(
         const std::filesystem::path& requestPath);

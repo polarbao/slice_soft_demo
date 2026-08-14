@@ -12,7 +12,7 @@
 
 namespace slicer_core::api {
 
-/** @brief Fast or full model preflight request. */
+/** @brief 快速或完整模型预检请求。 */
 struct PreflightRequest
 {
     std::filesystem::path scene_config_path;
@@ -24,7 +24,7 @@ struct PreflightRequest
     bool authoritative{true};
 };
 
-/** @brief One stable structured issue returned by authoritative preflight. */
+/** @brief 权威预检返回的一条稳定结构化问题。 */
 struct PreflightIssue
 {
     std::string code;
@@ -36,7 +36,7 @@ struct PreflightIssue
     Json context{Json::object({})};
 };
 
-/** @brief Stable topology counters for one model or aggregate scene. */
+/** @brief 单模型或聚合场景的稳定拓扑计数。 */
 struct PreflightTopology
 {
     bool available{false};
@@ -51,7 +51,7 @@ struct PreflightTopology
     std::uint64_t self_intersection_pairs{0U};
 };
 
-/** @brief Stable axis-aligned bounds in millimetres. */
+/** @brief 以毫米表示的稳定轴对齐边界。 */
 struct PreflightBounds
 {
     bool valid{false};
@@ -59,7 +59,7 @@ struct PreflightBounds
     std::array<double, 3> max_mm{};
 };
 
-/** @brief Full preflight evidence for one committed scene instance. */
+/** @brief 一个已提交场景实例的完整预检证据。 */
 struct PreflightInstanceResult
 {
     std::string model_id;
@@ -80,14 +80,14 @@ struct PreflightInstanceResult
     std::vector<PreflightIssue> issues;
 };
 
-/** @brief One deterministic positive-area collision pair. */
+/** @brief 一个确定性的正面积碰撞对。 */
 struct PreflightCollision
 {
     std::string first_instance_id;
     std::string second_instance_id;
 };
 
-/** @brief Preflight admission result with stable error codes. */
+/** @brief 携带稳定错误码的预检准入结果。 */
 struct PreflightResult
 {
     bool admitted{false};
@@ -112,7 +112,7 @@ struct PreflightResult
     std::vector<std::string> out_of_bounds_instances;
 };
 
-/** @brief Production slice request. All output paths are caller-owned. */
+/** @brief 生产切片请求；所有输出路径均由调用方持有。 */
 struct SliceRequest
 {
     std::string job_id;
@@ -122,7 +122,7 @@ struct SliceRequest
     std::filesystem::path package_dir;
 };
 
-/** @brief Production slice output summary. */
+/** @brief 生产切片输出摘要。 */
 struct SliceResult
 {
     std::filesystem::path package_dir;
@@ -134,7 +134,7 @@ struct SliceResult
     SliceRunProfile profile;
 };
 
-/** @brief Geometry repair request owned by the Worker lane. */
+/** @brief 由 Worker 通道持有的几何修复请求。 */
 struct RepairRequest
 {
     std::string job_id;
@@ -152,7 +152,7 @@ struct RepairRequest
     bool require_strict_pass{true};
 };
 
-/** @brief Geometry repair evidence. */
+/** @brief 几何修复证据。 */
 struct RepairResult
 {
     std::filesystem::path repaired_model_path;

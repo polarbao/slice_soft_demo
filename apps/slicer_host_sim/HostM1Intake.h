@@ -4,18 +4,18 @@
 #include "HostModuleApi.h"
 
 /**
- * @brief Validates SPI v1 and the frozen fifteen-capability module list.
- * @param api Loaded host-side module function table.
- * @return Non-zero when the module information satisfies the M1 contract.
+ * @brief 校验 SPI v1 与冻结的十五项模块能力清单。
+ * @param api 已加载的宿主侧模块函数表。
+ * @return 模块信息满足 M1 合同时返回非零值。
  */
 int HostM1IntakeCheckModuleInfo(const HostModuleApi* api);
 
 /**
- * @brief Runs the M1 self-test and unknown-capability fail-closed probe.
- * @param api Loaded host-side module function table.
- * @param module Live module instance created through pm_create.
- * @param selfTest Receives the allocated UTF-8 self-test response.
- * @return Non-zero when both M1 checks pass.
+ * @brief 执行 M1 自检与未知能力的失败即拒绝探测。
+ * @param api 已加载的宿主侧模块函数表。
+ * @param module 通过 pm_create 创建的有效模块实例。
+ * @param selfTest 接收已分配的 UTF-8 自检响应。
+ * @return 两项 M1 检查均通过时返回非零值。
  */
 int HostM1IntakeRun(
     const HostModuleApi* api,

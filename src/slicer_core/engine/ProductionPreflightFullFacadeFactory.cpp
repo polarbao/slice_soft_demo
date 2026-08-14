@@ -16,6 +16,8 @@
 #include <stdexcept>
 #include <utility>
 
+// 文件职责：把生产导入规则和完整场景预检服务组装为权威 PreflightFullFacade；
+// 边界：场景/Profile 标识不一致时失败即拒绝，不进入几何审计。
 namespace slicer_core::engine
 {
 namespace

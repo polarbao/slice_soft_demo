@@ -24,13 +24,13 @@ using slicer_core::engine::SliceSubmissionContract;
 class MutableCancelToken final : public slicer_core::api::ICancelToken
 {
 public:
-    /** @brief Returns the test cancellation state. @return Current state. */
+    /** @brief 返回测试使用的取消状态。 @return 当前取消状态。 */
     [[nodiscard]] bool IsCancelRequested() const noexcept override
     {
         return m_requested.load();
     }
 
-    /** @brief Changes the test cancellation state. @param requested New state. */
+    /** @brief 修改测试使用的取消状态。 @param requested 新的取消状态。 */
     void SetRequested(const bool requested) noexcept
     {
         m_requested.store(requested);

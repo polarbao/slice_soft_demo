@@ -1,3 +1,5 @@
+// 本文件验证网格简化后的拓扑、边界和确定性；这些断言用于阻止按步长丢三角的
+// 历史实现重新进入视图数据路径。
 #include "TestSupport.h"
 
 #include <algorithm>

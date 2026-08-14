@@ -6,13 +6,13 @@ namespace slicesoft::module
 {
 
 /**
- * @brief Writes UTF-8 content using the print module SPI three-state buffer protocol.
- * @param content Content to write, without an implicit trailing NUL byte.
- * @param output Caller-owned output buffer, or nullptr for a size probe.
- * @param capacity Output-buffer capacity in bytes; zero also requests a size probe.
- * @param outRequired Optional destination for the required byte count, excluding NUL.
- * @return The written byte count on success, or a PM_ERR_* value on failure.
- * @note A buffer smaller than content.size() + 1 is never modified.
+ * @brief 按打印模块 SPI 三态缓冲区协议写入 UTF-8 内容。
+ * @param content 待写内容，不隐含尾部 NUL 字节。
+ * @param output 调用方持有的输出缓冲区；nullptr 表示仅探测大小。
+ * @param capacity 输出缓冲区字节容量；零同样表示仅探测大小。
+ * @param outRequired 可选的所需字节数输出指针，不含 NUL。
+ * @return 成功时返回写入字节数，失败时返回 PM_ERR_* 值。
+ * @note 小于 content.size() + 1 的缓冲区绝不会被修改。
  */
 [[nodiscard]] int WriteOut(
     std::string_view content,

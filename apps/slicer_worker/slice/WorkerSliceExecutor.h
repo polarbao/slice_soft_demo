@@ -10,15 +10,15 @@
 namespace slicesoft::worker
 {
 
-/** @brief Controlled production executor for the frozen slice.rgbwsv capability. */
+/** @brief 冻结的 slice.rgbwsv 能力受控生产执行器。 */
 class WorkerSliceExecutor final : public IWorkerCapabilityExecutor
 {
 public:
     /**
-     * @brief Creates an executor over the authoritative preflight and slice facades.
-     * @param preflightFacade Owning production preflight facade; must not be null.
-     * @param sliceFacade Owning production slice facade; must not be null.
-     * @param protocolOutput Stream receiving reserved progress and timing lines.
+     * @brief 基于权威预检与切片 Facade 接口创建执行器。
+     * @param preflightFacade 独占持有的生产预检 Facade，不得为空。
+     * @param sliceFacade 独占持有的生产切片 Facade，不得为空。
+     * @param protocolOutput 接收保留进度与耗时行的输出流。
      */
     WorkerSliceExecutor(
         std::unique_ptr<slicer_core::api::PreflightFullFacade> preflightFacade,
@@ -26,10 +26,10 @@ public:
         std::ostream& protocolOutput);
 
     /**
-     * @brief Materializes, preflights, and slices one committed scene.
-     * @param request Immutable Worker envelope.
-     * @param cancelToken Cooperative cancellation token.
-     * @return Basic production package evidence or a stable fail-closed error.
+     * @brief 实体化、预检并切片一个已提交场景。
+     * @param request 不可变的 Worker 信封。
+     * @param cancelToken 协作式取消令牌。
+     * @return 基础生产 Package 证据或稳定的失败即拒绝错误。
      */
     [[nodiscard]] WorkerCapabilityExecutionResult Execute(
         const WorkerRequestEnvelope& request,
@@ -42,9 +42,9 @@ private:
 };
 
 /**
- * @brief Creates the controlled production slice executor.
- * @param protocolOutput Stream receiving reserved protocol lines.
- * @return Owning executor wired to the only production facades.
+ * @brief 创建受控生产切片执行器。
+ * @param protocolOutput 接收保留协议行的输出流。
+ * @return 已接入唯一生产 Facade 的独占执行器。
  */
 [[nodiscard]] std::unique_ptr<IWorkerCapabilityExecutor>
 CreateProductionWorkerSliceExecutor(std::ostream& protocolOutput);

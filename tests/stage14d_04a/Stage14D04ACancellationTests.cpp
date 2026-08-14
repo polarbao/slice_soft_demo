@@ -24,8 +24,8 @@ class CountingCancelToken final : public slicer_core::api::ICancelToken
 {
 public:
     /**
-     * @brief Creates a token that permits a fixed number of checks.
-     * @param allowedChecks Number of false results before cancellation.
+     * @brief 创建允许固定检查次数的取消令牌。
+     * @param allowedChecks 触发取消前返回 false 的次数。
      */
     explicit CountingCancelToken(const std::size_t allowedChecks) noexcept
         : m_allowedChecks(allowedChecks)
@@ -33,8 +33,8 @@ public:
     }
 
     /**
-     * @brief Requests cancellation after the configured number of checks.
-     * @return True after the configured check budget is exhausted.
+     * @brief 在达到配置的检查次数后请求取消。
+     * @return 检查预算耗尽后返回 true。
      */
     [[nodiscard]] bool IsCancelRequested() const noexcept override
     {
@@ -50,8 +50,8 @@ class NeverCancelToken final : public slicer_core::api::ICancelToken
 {
 public:
     /**
-     * @brief Keeps normal production on the cancellable execution path.
-     * @return Always false.
+     * @brief 让正常生产流程继续走可取消执行路径。
+     * @return 始终返回 false。
      */
     [[nodiscard]] bool IsCancelRequested() const noexcept override
     {

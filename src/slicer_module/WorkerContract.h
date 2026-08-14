@@ -10,7 +10,7 @@
 namespace slicesoft::module
 {
 
-/** @brief Stable outcomes from file_contract_v1 discovery and compatibility checks. */
+/** @brief file_contract_v1 发现及兼容性检查的稳定结果分类。 */
 enum class WorkerContractDecision
 {
     Compatible,
@@ -22,7 +22,7 @@ enum class WorkerContractDecision
     MissingCapability
 };
 
-/** @brief Validated worker identity returned by --contract-info. */
+/** @brief --contract-info 返回的已验证 Worker 标识。 */
 struct WorkerContractInfo
 {
     std::uint32_t major{0};
@@ -32,7 +32,7 @@ struct WorkerContractInfo
     std::vector<std::string> capabilities;
 };
 
-/** @brief Module requirements applied before a worker job may be launched. */
+/** @brief 启动 Worker 作业前必须满足的模块要求。 */
 struct WorkerContractRequirement
 {
     std::uint32_t major{1};
@@ -41,7 +41,7 @@ struct WorkerContractRequirement
     std::vector<std::string> requiredCapabilities;
 };
 
-/** @brief Complete discovery transport and compatibility result. */
+/** @brief 完整的发现握手传输与兼容性结果。 */
 struct WorkerContractResult
 {
     bool compatible{false};
@@ -52,21 +52,21 @@ struct WorkerContractResult
     WorkerRunResult transport;
 };
 
-/** @brief Executes and validates the private file_contract_v1 discovery handshake. */
+/** @brief 执行并验证私有 file_contract_v1 发现握手。 */
 class WorkerContractNegotiator final
 {
 public:
     /**
-     * @brief Binds negotiation to an existing WorkerClient process owner.
-     * @param client Client that preserves Stage 14D-02 timeout and process-tree semantics.
+     * @brief 将协商绑定到负责进程生命周期的现有 WorkerClient。
+     * @param client 保持 Stage 14D-02 超时和进程树语义的客户端。
      */
     explicit WorkerContractNegotiator(WorkerClient& client) noexcept;
 
     /**
-     * @brief Runs --contract-info and applies fail-closed compatibility rules.
-     * @param workerExecutable Absolute path to slicer_worker.exe or a test worker.
-     * @param requirement Required major/minor, production contracts, and capabilities.
-     * @return Validated worker information or a stable rejection diagnostic.
+     * @brief 运行 --contract-info 并应用失败即拒绝的兼容规则。
+     * @param workerExecutable slicer_worker.exe 或测试 Worker 的绝对路径。
+     * @param requirement 必需的主/次版本、生产合同和能力。
+     * @return 已验证 Worker 信息或稳定拒绝诊断。
      */
     [[nodiscard]] WorkerContractResult Negotiate(
         const std::filesystem::path& workerExecutable,

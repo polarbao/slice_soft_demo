@@ -8,7 +8,7 @@
 namespace slicesoft::worker
 {
 
-/** @brief Complete one-process/one-job runtime outcome for the command shell. */
+/** @brief 命令行外壳的一进程一作业完整运行结果。 */
 struct WorkerJobRuntimeResult
 {
     int processexitcode{1};
@@ -18,15 +18,15 @@ struct WorkerJobRuntimeResult
     bool resultwritten{false};
 };
 
-/** @brief Shared parser-dispatcher-result pipeline used by every Worker entry. */
+/** @brief 所有 Worker 入口共用的解析、分派与结果流水线。 */
 class WorkerJobRuntime final
 {
 public:
     /**
-     * @brief Executes one absolute request path through the shared runtime.
-     * @param requestPath Absolute request.json path.
-     * @param dispatcher Exact capability registry for this process.
-     * @return Stable process outcome and result publication evidence.
+     * @brief 通过共享运行时执行一个请求绝对路径。
+     * @param requestPath request.json 的绝对路径。
+     * @param dispatcher 本进程的精确能力注册表。
+     * @return 稳定进程结果与结果发布证据。
      */
     [[nodiscard]] static WorkerJobRuntimeResult Run(
         const std::filesystem::path& requestPath,

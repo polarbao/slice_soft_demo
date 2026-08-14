@@ -11,17 +11,17 @@ inline constexpr double kMillimetersPerInch{25.4};
 inline constexpr double kOutputPixelSizeToleranceMm{1.0e-9};
 
 /**
- * @brief Check whether one output-axis DPI value is supported.
- * @param dpi Output resolution for one raster axis.
- * @return True when dpi is inside the shared defensive range.
+ * @brief 检查一个输出轴 DPI 值是否受支持。
+ * @param dpi 一个栅格轴的输出分辨率。
+ * @return dpi 位于统一的防御性取值范围内时返回 true。
  */
 bool IsSupportedOutputDpi(int dpi) noexcept;
 
 /**
- * @brief Check whether a physical pixel size matches one output-axis DPI.
- * @param dpi Output resolution for one raster axis.
- * @param pixelSizeMm Physical pixel size in millimeters.
- * @return True when both values are valid and consistent within protocol tolerance.
+ * @brief 检查物理像素尺寸是否与一个输出轴 DPI 匹配。
+ * @param dpi 一个栅格轴的输出分辨率。
+ * @param pixelSizeMm 以毫米表示的物理像素尺寸。
+ * @return 两个值均有效且在协议容差内一致时返回 true。
  */
 bool IsOutputPixelSizeConsistent(
     int dpi,

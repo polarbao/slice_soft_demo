@@ -17,6 +17,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：按材质接缝构造显示网格，并派生可控平滑的顶点法线；
+// 边界：显示法线不得回写源模型，也不得改变生产切片几何。
 namespace slicer_core::api::viewdata_detail
 {
 namespace

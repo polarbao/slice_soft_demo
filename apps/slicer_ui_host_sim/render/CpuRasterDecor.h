@@ -5,7 +5,7 @@
 namespace cpu_raster_detail
 {
 
-/** @brief Draws the host-local grid, build volume and XYZ axes. */
+/** @brief 绘制宿主本地网格、构建体积与 XYZ 坐标轴。 */
 void DrawSceneDecor(
     const slicer::render::FrameDesc& frame,
     slicer::render::ImageOut* output);

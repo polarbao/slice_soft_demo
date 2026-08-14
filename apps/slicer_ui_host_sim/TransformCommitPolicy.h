@@ -4,30 +4,30 @@
 #include <QString>
 
 /**
- * @brief Host-local transient transform and Commit request policy.
+ * @brief 宿主本地瞬态变换与提交请求策略。
  *
- * Transient methods never receive a ModuleClient and therefore cannot cross
- * the DLL boundary during pointer movement.
+ * 瞬态方法不接收 ModuleClient，因此指针移动期间
+ * 不会跨越 DLL 边界。
  */
 class TransformCommitPolicy final
 {
 public:
-    /** @brief Creates an inactive transient policy. */
+    /** @brief 创建尚未激活的瞬态策略。 */
     TransformCommitPolicy();
 
     /**
-     * @brief Starts a local transient translation for one instance.
-     * @param instanceId Stable scene instance identity.
-     * @return True when the transient state was initialized.
+     * @brief 为单个实例启动本地瞬态平移。
+     * @param instanceId 稳定的场景实例标识。
+     * @return 瞬态状态初始化成功时返回 true。
      */
     bool Begin(const QString& instanceId);
 
     /**
-     * @brief Replaces the current local translation preview.
-     * @param deltaXMm Translation along device X in millimetres.
-     * @param deltaYMm Translation along device Y in millimetres.
-     * @param deltaZMm Translation along device Z in millimetres.
-     * @return True when an active transient state was updated.
+     * @brief 替换当前的本地平移预览。
+     * @param deltaXMm 沿设备 X 的平移（以毫米为单位）。
+     * @param deltaYMm 沿设备 Y 的平移（以毫米为单位）。
+     * @param deltaZMm 沿设备 Z 的平移（以毫米为单位）。
+     * @return 活动瞬态状态已更新时返回 true。
      */
     bool UpdateTranslation(
         double deltaXMm,
@@ -35,23 +35,23 @@ public:
         double deltaZMm);
 
     /**
-     * @brief Discards the local transient state.
-     * @return This function does not return a value.
+     * @brief 丢弃本地瞬态。
+     * @return 该函数不返回值。
      */
     void Reset();
 
     /**
-     * @brief Reports whether a transient transform is active.
-     * @return True while local feedback is waiting for Commit or discard.
+     * @brief 报告瞬态变换是否处于活动状态。
+     * @return 本地反馈正等待提交或丢弃时返回 true。
      */
     bool IsActive() const;
 
     /**
-     * @brief Builds one atomic scene.apply_operation request.
-     * @param sceneHandle Module-owned scene handle established at bootstrap.
-     * @param sceneRevision Current and expected authoritative scene revision.
-     * @param operationId Unique idempotency identity for this payload.
-     * @return Frozen Commit-lane request, or an empty object when inactive.
+     * @brief 构建一个原子 scene.apply_operation 请求。
+     * @param sceneHandle 引导阶段建立的模块持有场景句柄。
+     * @param sceneRevision 当前和预期的权威场景修订。
+     * @param operationId 当前请求载荷的唯一幂等标识。
+     * @return 冻结提交通道请求，或不活动时为空对象。
      */
     QJsonObject BuildRequest(
         quint64 sceneHandle,
@@ -59,9 +59,9 @@ public:
         const QString& operationId) const;
 
     /**
-     * @brief Detects the frozen SceneRevisionStale public error.
-     * @param response Terminal scene.apply_operation result.
-     * @return True only for PM-SLICER-LAYOUT-0022.
+     * @brief 检测冻结的 SceneRevisionStale 公共错误。
+     * @param response 终端 scene.apply_operation 结果。
+     * @return 仅当结果为 PM-SLICER-LAYOUT-0022 时返回 true。
      */
     static bool IsStale(const QJsonObject& response);
 

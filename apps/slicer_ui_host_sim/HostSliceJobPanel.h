@@ -8,42 +8,42 @@ class QPlainTextEdit;
 class QProgressBar;
 class QPushButton;
 
-/** @brief Operator controls and diagnostics for one reference-host slice job. */
+/** @brief 针对一项参考宿主切片作业的操作员控制和诊断。 */
 class HostSliceJobPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Creates an idle slice job panel.
-     * @param parent Optional Qt parent widget.
+     * @brief 创建一个空闲切片作业面板。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostSliceJobPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Updates whether a validated scene and effective Profile are ready.
-     * @param ready True when the start command may be enabled.
-     * @param reason User-facing readiness explanation.
+     * @brief 更新已验证场景和有效 Profile 的就绪状态。
+     * @param ready 当可以启用启动命令时为 true。
+     * @param reason 面向用户的准备情况说明。
      */
     void SetReady(bool ready, const QString& reason);
 
     /**
-     * @brief Displays the Stage 16 strategy and frozen posture state.
-     * @param samplingStrategyId Effective Profile geometry strategy identity.
+     * @brief 显示 Stage 16 策略和冻结姿态状态。
+     * @param samplingStrategyId 有效 Profile 的几何策略标识。
      */
     void SetStage16Context(const QString& samplingStrategyId);
 
-    /** @brief Marks the panel active after the module accepts a job. */
+    /** @brief 模块接受作业后将面板标记为活动。 */
     void SetActive();
 
     /**
-     * @brief Updates monotonic public job progress.
-     * @param state Frozen lowercase lifecycle state.
-     * @param phase Worker progress phase.
-     * @param current Completed work units.
-     * @param total Total work units.
-     * @param percent Monotonic percentage in [0, 100].
-     * @param elapsedMs Worker elapsed time in milliseconds.
+     * @brief 更新单调递增的公共作业进度。
+     * @param state 冻结的小写生命周期状态。
+     * @param phase Worker 进度阶段。
+     * @param current 已完成工作单元数。
+     * @param total 工作单元总数。
+     * @param percent [0, 100] 中的单调百分比。
+     * @param elapsedMs Worker 已运行时间，单位为毫秒。
      */
     void UpdateProgress(
         const QString& state,
@@ -54,16 +54,16 @@ public:
         qint64 elapsedMs);
 
     /**
-     * @brief Displays one terminal result and returns controls to idle.
-     * @param success True for a valid published package.
-     * @param cancelled True for cooperative cancellation.
-     * @param code Stable result/error code.
-     * @param message User-facing detail.
-     * @param detail Additional Worker or preflight diagnostic.
-     * @param packageDirectory Published package directory, if any.
-     * @param timing Worker-core detailed timing telemetry, if available.
-     * @param elapsedMs Host-observed total job time.
-     * @param cancelLatencyMs Host-observed cancellation latency, or -1.
+     * @brief 显示一个最终结果并将控件返回到空闲状态。
+     * @param success 已发布生产包有效时为 true。
+     * @param cancelled 发生协作式取消时为 true。
+     * @param code 稳定的结果/错误代码。
+     * @param message 面向用户的细节。
+     * @param detail 附加 Worker 或预检诊断。
+     * @param packageDirectory 已发布的包目录（如果有）。
+     * @param timing Worker 核心阶段耗时 telemetry（如果有）。
+     * @param elapsedMs 宿主观测的总作业时间。
+     * @param cancelLatencyMs 宿主观测的取消延迟，未测量时为 -1。
      */
     void ShowCompletion(
         bool success,
@@ -77,10 +77,10 @@ public:
         qint64 cancelLatencyMs);
 
 signals:
-    /** @brief Requests submission of the current committed scene. */
+    /** @brief 请求提交当前提交的场景。 */
     void SigStartRequested();
 
-    /** @brief Requests cooperative cancellation of the active job. */
+    /** @brief 请求协作式取消活动作业。 */
     void SigCancelRequested();
 
 private slots:

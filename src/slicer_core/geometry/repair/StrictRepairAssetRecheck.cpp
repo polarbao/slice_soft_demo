@@ -63,9 +63,8 @@ SliceConfig MakeCanonicalAssetReimportConfig(
     config.input.model_path = request.stagedObjPath;
     config.input.format = "obj";
 
-    // Repair candidates are serialized in canonical final millimetre space.
-    // Reimport keeps Profile resource/material policy but must not apply the
-    // source instance transform a second time.
+    // 修复候选项已经按最终毫米坐标序列化。重新导入时沿用 Profile 的资源与
+    // 材质策略，但绝不能再次应用源实例变换。
     config.transform.unit = "mm";
     config.transform.scale = {1.0, 1.0, 1.0};
     config.transform.rotation_deg = {0.0, 0.0, 0.0};

@@ -10,7 +10,7 @@
 
 namespace slicer_core::api {
 
-/** @brief Narrow import options that do not expose the engine SliceConfig. */
+/** @brief 仅包含导入所需字段，避免向外暴露引擎 SliceConfig。 */
 struct ModelImportRequest
 {
     std::filesystem::path model_path;
@@ -18,7 +18,7 @@ struct ModelImportRequest
     bool extract_materials{true};
 };
 
-/** @brief Imported material metadata used by model and view facades. */
+/** @brief 模型与视图 Facade 使用的已导入材质元数据。 */
 struct ModelMaterial
 {
     std::string name;
@@ -26,7 +26,7 @@ struct ModelMaterial
     std::filesystem::path texture_path;
 };
 
-/** @brief Stable metadata returned for an imported model handle. */
+/** @brief 为已导入模型句柄返回的稳定元数据。 */
 struct ModelMetadata
 {
     ModelId model_id{0};

@@ -8,21 +8,21 @@
 namespace slicesoft::module
 {
 
-/** @brief Serializes the frozen ViewData DTO and owns bounded blob storage. */
+/** @brief 序列化冻结 ViewData DTO，并持有有界二进制对象存储。 */
 class SceneViewDataAdapter final
 {
 public:
-    /** @brief Creates an empty bounded ViewData blob store. */
+    /** @brief 创建空的有界 ViewData 二进制对象存储。 */
     SceneViewDataAdapter();
 
-    /** @brief Releases all retained ViewData blobs. */
+    /** @brief 释放所有保留的 ViewData 二进制对象。 */
     ~SceneViewDataAdapter();
 
-    /** @brief Serializes provider output without another DTO. @param data Provider result. @return v1.2 envelope. */
+    /** @brief 不引入额外 DTO，直接序列化提供者输出。 @param data 提供者结果。 @return v1.2 响应对象。 */
     [[nodiscard]] slicer_core::Json Serialize(
         const slicer_core::api::SceneViewData& data);
 
-    /** @brief Reads one frozen ViewData blob chunk. @param request Read request. @return Binary output. */
+    /** @brief 读取一个冻结 ViewData 二进制对象分块。 @param request 读取请求。 @return 二进制输出。 */
     [[nodiscard]] CapabilityOutput ReadBlob(const slicer_core::Json& request);
 
 private:

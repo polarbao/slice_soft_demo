@@ -3,15 +3,15 @@
 #include <wchar.h>
 
 /**
- * @brief Creates an absolute Windows directory path recursively.
- * @param path Directory path to create.
- * @return Non-zero when the directory exists after the call.
+ * @brief 递归创建 Windows 绝对目录路径。
+ * @param path 待创建的目录路径。
+ * @return 调用后目录存在时返回非零值。
  */
 int HostEnsureDirectoryTree(const wchar_t* path);
 
 /**
- * @brief Converts a UTF-16 Windows path to normalized UTF-8.
- * @param value UTF-16 input value.
- * @return Heap UTF-8 string owned by the caller, or NULL on failure.
+ * @brief 将 UTF-16 Windows 路径转换为规范化的 UTF-8 路径。
+ * @param value UTF-16 输入值。
+ * @return 由调用方持有的堆分配 UTF-8 字符串；失败时返回 NULL。
  */
 char* HostUtf8FromWide(const wchar_t* value);

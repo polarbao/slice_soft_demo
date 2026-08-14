@@ -124,8 +124,8 @@ class CurrentDirectoryGuard final
 {
 public:
     /**
-     * @brief Switches the process to a temporary self-test sandbox.
-     * @param target Existing directory used as the temporary working directory.
+     * @brief 将进程切换到临时自检沙箱。
+     * @param target 用作临时工作目录的现有目录。
      */
     explicit CurrentDirectoryGuard(const std::filesystem::path& target)
         : m_original{std::filesystem::current_path()}
@@ -133,7 +133,7 @@ public:
         std::filesystem::current_path(target);
     }
 
-    /** @brief Restores the process working directory. */
+    /** @brief 恢复进程原工作目录。 */
     ~CurrentDirectoryGuard()
     {
         std::error_code error;

@@ -8,8 +8,8 @@ namespace slicer_core::engine
 {
 
 /**
- * @brief Creates the engine SliceFacade bound to the existing scene producer.
- * @return Owning facade pointer using the production Legacy scene entry.
+ * @brief 创建绑定现有场景生产器的引擎 SliceFacade。
+ * @return 使用生产 Legacy 场景入口、由调用方独占持有的 SliceFacade。
  */
 [[nodiscard]] std::unique_ptr<api::SliceFacade>
 CreateProductionSliceFacade();

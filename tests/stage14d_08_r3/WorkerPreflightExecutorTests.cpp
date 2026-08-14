@@ -34,7 +34,7 @@ public:
     {
     }
 
-    /** @brief Return the deterministic cancellation state. */
+    /** @brief 返回确定性的取消状态。 */
     [[nodiscard]] bool IsCancelRequested() const noexcept override
     {
         return m_cancelled;

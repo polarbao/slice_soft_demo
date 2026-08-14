@@ -8,10 +8,10 @@ namespace slicesoft::tests
 {
 
 /**
- * @brief Verifies Worker lifecycle behavior through the frozen public C ABI.
- * @param api Runtime-loaded module API.
- * @param module Live module handle that owns the submitted jobs.
- * @param repository Absolute repository root used to locate the test fixture.
+ * @brief 通过冻结的公开 C ABI 验证 Worker 生命周期行为。
+ * @param api 运行时加载的模块 API。
+ * @param module 持有所提交任务的有效模块句柄。
+ * @param repository 用于定位测试夹具的仓库绝对根目录。
  */
 void TestWorkerLifecycleConformance(
     const SpiModuleApi& api,

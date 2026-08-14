@@ -8,18 +8,15 @@ namespace slicer_core::api::viewdata_detail
 {
 
 /**
- * @brief Downsamples appearance textures to a maximum edge length.
+ * @brief 将外观纹理降采样到最大边长。
  *
- * The returned appearance preserves RGBA8 texture semantics and material
- * bindings. Texture and appearance identities are recomputed from the
- * resulting content. Textures that become identical after downsampling are
- * deduplicated while all material references remain closed.
+ * 返回的外观保持 RGBA8 纹理语义和材质绑定。纹理与外观标识根据结果内容
+ * 重新计算；降采样后相同的纹理会去重，同时保证所有材质引用闭合。
  *
- * @param appearance Closed resolved appearance to copy and downsample.
- * @param maxTextureEdgePx Maximum texture width or height in pixels; must be
- * greater than zero.
- * @return Independent appearance copy with closed texture references.
- * @throws std::invalid_argument When a source texture or binding is invalid.
+ * @param appearance 要复制并降采样的闭合已解析外观。
+ * @param maxTextureEdgePx 以像素为单位的纹理最大宽度或高度，必须大于零。
+ * @return 纹理引用闭合的独立外观副本。
+ * @throws std::invalid_argument 源纹理或绑定无效时抛出。
  */
 [[nodiscard]] ResolvedViewAppearance DownsampleAppearanceTextures(
     const ResolvedViewAppearance& appearance,

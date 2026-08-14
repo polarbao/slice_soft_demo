@@ -6,22 +6,22 @@
 
 namespace slicer_core::api {
 
-/** @brief Qt-free facade for model import and handle lifetime. */
+/** @brief 管理模型导入及句柄生命周期的无 Qt Facade。 */
 class ModelFacade
 {
 public:
     virtual ~ModelFacade() = default;
 
-    /** @brief Imports one model. @param request Caller-owned import options. @param cancel_token Cancellation source. @return Metadata or PM-SLICER error. */
+    /** @brief 导入一个模型。 @param request 调用方持有的导入选项。 @param cancel_token 取消源。 @return 元数据或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<ModelMetadata> Import(
         const ModelImportRequest& request,
         const ICancelToken& cancel_token) noexcept = 0;
 
-    /** @brief Gets cached metadata. @param model_id Imported handle. @return Metadata or PM-SLICER error. */
+    /** @brief 获取缓存元数据。 @param model_id 已导入句柄。 @return 元数据或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<ModelMetadata> GetMetadata(
         ModelId model_id) const noexcept = 0;
 
-    /** @brief Releases an imported handle. @param model_id Imported handle. @return Success or PM-SLICER error. */
+    /** @brief 释放已导入句柄。 @param model_id 已导入句柄。 @return 成功结果或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<void> Release(ModelId model_id) noexcept = 0;
 };
 

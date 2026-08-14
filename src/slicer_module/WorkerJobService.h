@@ -11,7 +11,7 @@
 namespace slicesoft::module
 {
 
-/** @brief Outcome of accepting one heavy capability into the Worker carrier. */
+/** @brief 将一个重型能力接入 Worker 载体的结果。 */
 struct WorkerJobSubmission
 {
     bool accepted{false};
@@ -21,26 +21,25 @@ struct WorkerJobSubmission
 };
 
 /**
- * @brief Owns asynchronous Worker jobs behind the frozen public C SPI.
+ * @brief 管理冻结公共 C SPI 背后的异步 Worker 作业。
  *
- * The service owns process clients, private file-contract directories, cached
- * progress, terminal results, cancellation, and module/job cleanup. It never
- * links or calls the slicing engine in-process.
+ * 本服务管理进程客户端、私有文件合同目录、缓存进度、终态结果、取消状态，
+ * 并负责模块和作业清理；它绝不在进程内链接或调用切片引擎。
  */
 class WorkerJobService final
 {
 public:
-    /** @brief Returns the process-wide Worker job service. @return Shared service. */
+    /** @brief 返回进程级 Worker 作业服务。 @return 共享服务。 */
     [[nodiscard]] static WorkerJobService& Instance();
 
     /**
-     * @brief Accepts one validated Worker route and starts it asynchronously.
-     * @param job Live public job handle.
-     * @param module Live owner module handle.
-     * @param route Validated Worker carrier route.
-     * @param moduleId Registry-local module identity.
-     * @param jobId Registry-local job identity.
-     * @return Acceptance result; failures occur before a thread is retained.
+     * @brief 接受已验证的 Worker 路由并异步启动。
+     * @param job 有效的公共 SPI 作业句柄。
+     * @param module 持有该作业的有效模块句柄。
+     * @param route 已验证的 Worker 载体路由。
+     * @param moduleId 注册表内的模块标识。
+     * @param jobId 注册表内的作业标识。
+     * @return 接受结果；若失败，则尚未创建纳入服务管理的后台线程。
      */
     [[nodiscard]] WorkerJobSubmission Submit(
         pm_job_t* job,
@@ -49,23 +48,23 @@ public:
         std::uint64_t moduleId,
         std::uint64_t jobId);
 
-    /** @brief Reports whether the job is Worker-owned. @param job Job handle. @return True when retained. */
+    /** @brief 报告服务是否仍持有该 Worker 作业。 @param job 作业句柄。 @return 服务仍持有时返回 true。 */
     [[nodiscard]] bool HasJob(pm_job_t* job) const;
 
-    /** @brief Returns the cached progress JSON. @param job Job handle. @return Progress or empty. */
+    /** @brief 返回缓存的进度 JSON。 @param job 作业句柄。 @return 进度或空字符串。 */
     [[nodiscard]] std::string Poll(pm_job_t* job) const;
 
-    /** @brief Returns terminal public result bytes. @param job Job handle. @return Result or null before terminal. */
+    /** @brief 返回公共 SPI 终态结果字节。 @param job 作业句柄。 @return 结果；终态前为空。 */
     [[nodiscard]] std::shared_ptr<const CapabilityOutput> Result(
         pm_job_t* job) const;
 
-    /** @brief Requests cooperative cancellation. @param job Job handle. @return True for a retained job. */
+    /** @brief 请求协作式取消。 @param job 作业句柄。 @return 作业已保留时返回 true。 */
     bool RequestCancel(pm_job_t* job) noexcept;
 
-    /** @brief Cancels, joins, and removes one Worker job. @param job Job handle. */
+    /** @brief 取消、等待并移除一个 Worker 作业。 @param job 作业句柄。 */
     void ReleaseJob(pm_job_t* job) noexcept;
 
-    /** @brief Cancels, joins, and removes all Worker jobs owned by a module. @param module Module handle. */
+    /** @brief 取消、等待并移除模块持有的所有 Worker 作业。 @param module 模块句柄。 */
     void RemoveModule(pm_module_t* module) noexcept;
 
 private:

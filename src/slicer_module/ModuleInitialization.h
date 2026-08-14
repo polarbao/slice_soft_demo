@@ -8,7 +8,7 @@ namespace slicesoft::module
 {
 
 /**
- * @brief Process initialization state used inside the module DLL.
+ * @brief 模块 DLL 内部使用的进程初始化状态。
  */
 enum class ModuleInitializationState
 {
@@ -18,41 +18,41 @@ enum class ModuleInitializationState
 };
 
 /**
- * @brief No-throw action invoked once by ModuleInitialization.
- * @return True when the process infrastructure is ready.
+ * @brief 由 ModuleInitialization 调用一次且不抛异常的动作。
+ * @return 进程基础设施就绪时返回 true。
  */
 using ModuleInitializationAction = bool (*)() noexcept;
 
 /**
- * @brief Owns one call-once initialization boundary.
+ * @brief 封装一个仅执行一次的初始化边界。
  *
- * The class is internal to slicer_module. It deliberately owns no Worker,
- * engine, thread, file, or module-handle state.
+ * 此类仅供 slicer_module 内部使用，不持有 Worker、引擎、线程、
+ * 文件或模块句柄状态。
  */
 class ModuleInitialization final
 {
 public:
     /**
-     * @brief Creates an initialization boundary around an action.
-     * @param action No-throw process initialization action.
+     * @brief 围绕一个动作创建初始化边界。
+     * @param action 不抛异常的进程初始化动作。
      */
     explicit ModuleInitialization(ModuleInitializationAction action) noexcept;
 
     /**
-     * @brief Ensures the action has run once for this boundary.
-     * @return True only when initialization completed successfully.
+     * @brief 确保此边界内的动作只运行一次。
+     * @return 仅当初始化成功完成时返回 true。
      */
     [[nodiscard]] bool EnsureInitialized() noexcept;
 
     /**
-     * @brief Returns the terminal or pending initialization state.
-     * @return Current initialization state.
+     * @brief 返回未初始化、成功或失败状态。
+     * @return 当前初始化状态。
      */
     [[nodiscard]] ModuleInitializationState GetState() const noexcept;
 
     /**
-     * @brief Returns how many times the protected action was invoked.
-     * @return Zero before initialization and one after its first attempt.
+     * @brief 返回受保护动作的调用次数。
+     * @return 初始化前为零，首次尝试后为一。
      */
     [[nodiscard]] std::size_t GetInvocationCount() const noexcept;
 
@@ -67,8 +67,8 @@ private:
 };
 
 /**
- * @brief Ensures slicer_module process infrastructure is initialized once.
- * @return True when the process infrastructure is ready.
+ * @brief 确保 slicer_module 进程基础设施仅初始化一次。
+ * @return 进程基础设施就绪时返回 true。
  */
 [[nodiscard]] bool EnsureProcessModuleInitialized() noexcept;
 

@@ -9,41 +9,41 @@ class QComboBox;
 class QSpinBox;
 class QToolButton;
 
-/** @brief Collapsible host-owned material process Profile editor. */
+/** @brief 可折叠的宿主侧材料工艺 Profile 编辑器。 */
 class HostMaterialSettingsPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Creates the editor with RGB solid production defaults.
-     * @param parent Optional Qt parent widget.
+     * @brief 使用 RGB 实体生产默认值创建编辑器。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostMaterialSettingsPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Applies a validated material process draft to the controls.
-     * @param strategy Host material output strategy.
-     * @param settings Host-owned role mapping and process parameters.
+     * @brief 将已校验的材料工艺草稿应用到控件。
+     * @param strategy 宿主材料输出策略。
+     * @param settings 由宿主持有的角色映射与工艺参数。
      */
     void SetSettings(
         HostMaterialStrategy strategy,
         const hostmaterialprocesssettings& settings);
 
     /**
-     * @brief Returns the selected material output strategy.
-     * @return Host material strategy represented by the controls.
+     * @brief 返回选中的材料输出策略。
+     * @return 控件当前表示的宿主材料策略。
      */
     [[nodiscard]] HostMaterialStrategy Strategy() const;
 
     /**
-     * @brief Returns the material process draft represented by the controls.
-     * @return Host-owned material process parameters without module state.
+     * @brief 返回控件当前表示的材料工艺草稿。
+     * @return 不含模块状态的宿主侧材料工艺参数。
      */
     [[nodiscard]] hostmaterialprocesssettings Settings() const;
 
 signals:
-    /** @brief Emitted after an operator changes a material setting. */
+    /** @brief 操作员更改材料设置后发出。 */
     void SigSettingsChanged();
 
 private:

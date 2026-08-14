@@ -6,7 +6,7 @@
 #include <QJsonObject>
 #include <QString>
 
-/** @brief Terminal outcome of one user transform Commit. */
+/** @brief 一次用户变换提交的最终结果。 */
 enum class CommitOutcome
 {
     Committed,
@@ -15,46 +15,46 @@ enum class CommitOutcome
 };
 
 /**
- * @brief Coordinates local transient transforms and authoritative scene commits.
+ * @brief 协调本地瞬态变换和权威场景提交。
  */
 class SceneInteractionController final
 {
 public:
     /**
-     * @brief Creates a controller over one already loaded public module client.
-     * @param client Runtime-loaded public ABI client.
+     * @brief 在已加载的公共模块客户端上创建控制器。
+     * @param client 运行时加载的公共 ABI 客户端。
      */
     explicit SceneInteractionController(ModuleClient& client);
 
     /**
-     * @brief Bootstraps a module scene and captures its authoritative snapshot.
-     * @param scene Frozen multimodel scene JSON.
-     * @param error Receives a user-readable failure reason.
-     * @return True when scene handle, revision and hash are established.
+     * @brief 引导模块场景并捕获其权威快照。
+     * @param scene 冻结的多模型场景 JSON。
+     * @param error 接收用户可读的失败原因。
+     * @return 场景句柄、修订号和哈希均建立时返回 true。
      */
     bool Initialize(const QJsonObject& scene, QString* error);
 
     /**
-     * @brief Attaches transient interaction to an existing host-owned scene.
-     * @param sceneHandle Module-owned scene handle.
-     * @param sceneRevision Latest host-adopted authoritative revision.
-     * @return True when the existing scene identity is valid.
+     * @brief 将瞬态交互附加到现有的宿主持有场景。
+     * @param sceneHandle 模块拥有的场景句柄。
+     * @param sceneRevision 宿主已接受的最新权威修订号。
+     * @return 当现有场景标识有效时为 true。
      */
     bool Attach(quint64 sceneHandle, quint64 sceneRevision);
 
     /**
-     * @brief Starts local-only transient feedback for an instance.
-     * @param instanceId Stable scene instance identity.
-     * @return True when the transient state was initialized.
+     * @brief 启动实例的本地瞬态反馈。
+     * @param instanceId 稳定的场景实例标识。
+     * @return 瞬态状态初始化成功时返回 true。
      */
     bool BeginTransient(const QString& instanceId);
 
     /**
-     * @brief Updates local-only translation without a module call.
-     * @param deltaXMm Translation along device X in millimetres.
-     * @param deltaYMm Translation along device Y in millimetres.
-     * @param deltaZMm Translation along device Z in millimetres.
-     * @return True when the active transient preview was updated.
+     * @brief 更新仅存在于本地的平移预览，不调用模块。
+     * @param deltaXMm 沿设备 X 轴的平移量，单位为毫米。
+     * @param deltaYMm 沿设备 Y 轴的平移量，单位为毫米。
+     * @param deltaZMm 沿设备 Z 轴的平移量，单位为毫米。
+     * @return 当活动瞬态预览已更新时为 true。
      */
     bool UpdateTransientTranslation(
         double deltaXMm,
@@ -62,55 +62,55 @@ public:
         double deltaZMm);
 
     /**
-     * @brief Atomically commits the active transform or performs Stale recovery.
-     * @param error Receives a public error or recovery diagnostic.
-     * @return Commit result; Stale recovery never auto-retries changed payload.
+     * @brief 以原子方式提交活动转换或执行过时恢复。
+     * @param error 接收公共错误或恢复诊断。
+     * @return 提交结果；发生 stale 恢复时绝不自动重试已变更载荷。
      */
     CommitOutcome CommitTransient(QString* error);
 
-    /** @brief Discards local transient state without a module call. */
+    /** @brief 丢弃本地瞬态而不进行模块调用。 */
     void DiscardTransient();
 
     /**
-     * @brief Reports whether local transient state is active.
-     * @return True between BeginTransient and Commit/discard.
+     * @brief 报告本地瞬态是否处于活动状态。
+     * @return BeginTransient 之后、Commit 或 Discard 之前返回 true。
      */
     bool HasTransient() const;
 
     /**
-     * @brief Returns the latest authoritative scene revision.
-     * @return Current module revision adopted by the host.
+     * @brief 返回最新的权威场景修订版。
+     * @return 宿主已接受的当前模块修订号。
      */
     quint64 SceneRevision() const;
 
     /**
-     * @brief Returns the module-owned scene handle.
-     * @return Non-zero scene handle after successful initialization.
+     * @brief 返回模块拥有的场景句柄。
+     * @return 成功初始化后的非零场景句柄。
      */
     quint64 SceneHandle() const;
 
     /**
-     * @brief Returns the latest authoritative scene hash.
-     * @return Public production identity for the committed scene.
+     * @brief 返回最新的权威场景哈希。
+     * @return 已提交场景的公开生产标识。
      */
     QString SceneHash() const;
 
     /**
-     * @brief Returns the ViewData identity adopted from the latest Commit.
-     * @return Empty after a snapshot refresh, otherwise the committed identity.
+     * @brief 返回最新提交中采用的 ViewData 标识。
+     * @return 快照刷新后为空；提交成功后为对应的 ViewData 标识。
      */
     QString ViewDataIdentity() const;
 
     /**
-     * @brief Returns the number of explicit snapshot recovery/refresh reads.
-     * @return Snapshot count; normal Commit must not increment it.
+     * @brief 返回显式快照恢复/刷新读取的数量。
+     * @return 快照计数；正常提交不得增加它。
      */
     quint64 SnapshotReadCount() const;
 
-    /** @brief Returns authoritative collision count from the latest Commit. */
+    /** @brief 返回来自最新提交的权威冲突计数。 */
     [[nodiscard]] int CollisionCount() const;
 
-    /** @brief Returns authoritative out-of-bounds count from the latest Commit. */
+    /** @brief 返回最新提交的权威越界计数。 */
     [[nodiscard]] int OutOfBoundsCount() const;
 
 private:

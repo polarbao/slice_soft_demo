@@ -9,9 +9,9 @@ namespace slicer_core::api::viewdata_detail
 {
 
 /**
- * @brief Extracts deterministic closed local-XY outlines from a surface preview.
- * @param preview Valid straight-alpha RGBA8 surface preview in local bounds.
- * @return Closed outline loops, including disconnected components and holes, or a stable error.
+ * @brief 从表面预览提取确定性的局部 XY 闭合轮廓。
+ * @param preview 局部边界内有效的直通 Alpha RGBA8 表面预览。
+ * @return 包含非连通分量和孔洞的闭合轮廓环，或稳定错误。
  */
 [[nodiscard]] ApiResult<std::vector<ViewOutline>> BuildViewOutlines(
     const SurfacePreview& preview) noexcept;

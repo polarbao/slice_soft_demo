@@ -9,10 +9,10 @@ namespace slicer_core::api
 {
 
 /**
- * @brief Creates the Stage 14B-03A fail-closed textured ViewData provider.
- * @param models Immutable imported model repository.
- * @param textures Texture decoder/source used for declared texture assets.
- * @return Provider implementing the existing SceneFacade boundary.
+ * @brief 创建 Stage 14B-03A 失败即拒绝的纹理 ViewData 提供者。
+ * @param models 不可变的已导入模型仓库。
+ * @param textures 已声明纹理资源使用的纹理解码器/来源。
+ * @return 实现现有 SceneFacade 边界的提供者。
  */
 [[nodiscard]] ApiResult<
     std::shared_ptr<const ITexturedSceneViewDataProvider>>

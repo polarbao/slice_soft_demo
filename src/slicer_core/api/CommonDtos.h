@@ -9,14 +9,14 @@ namespace slicer_core::api {
 using ModelId = std::uint64_t;
 using SceneId = std::uint64_t;
 
-/** @brief Axis-aligned bounds in millimeters. */
+/** @brief 以毫米表示的轴对齐边界。 */
 struct Bounds3d
 {
     std::array<double, 3> min_mm{};
     std::array<double, 3> max_mm{};
 };
 
-/** @brief Canonical row-major 4x4 transform matrix. */
+/** @brief 规范的行主序 4x4 变换矩阵。 */
 struct Matrix4d
 {
     std::array<double, 16> values{
@@ -26,13 +26,13 @@ struct Matrix4d
         0.0, 0.0, 0.0, 1.0};
 };
 
-/** @brief Validated JSON object kept opaque across the Qt-free facade boundary. */
+/** @brief 跨无 Qt Facade 边界保持不透明的已验证 JSON 对象。 */
 struct StructuredJsonObject
 {
     std::string utf8_json{"{}"};
 };
 
-/** @brief Stable reference to a cached model instance. */
+/** @brief 对缓存模型实例的稳定引用。 */
 struct InstanceReference
 {
     std::string instance_id;

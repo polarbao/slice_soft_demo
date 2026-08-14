@@ -12,23 +12,22 @@ namespace slicesoft::tests
 {
 
 /**
- * @brief Runtime-loaded view of the frozen print-module C ABI.
+ * @brief 冻结打印模块 C ABI 的运行时加载视图。
  *
- * The conformance executable deliberately owns no import-library dependency on
- * slicer_module. Every operation resolves and calls one of the 11 public C ABI
- * exports from the supplied DLL.
+ * 一致性测试程序有意不链接 slicer_module 导入库；所有操作都从指定 DLL
+ * 动态解析并调用 11 个公开 C ABI 导出符号，以验证真实部署边界。
  */
 class SpiModuleApi final
 {
 public:
     /**
-     * @brief Loads a module DLL and resolves the exact SPI v1 export set.
-     * @param libraryPath Absolute or relative path to slicer_module.dll.
+     * @brief 加载模块 DLL 并解析完整的 SPI v1 导出集合。
+     * @param libraryPath slicer_module.dll 的绝对或相对路径。
      */
     explicit SpiModuleApi(const std::filesystem::path& libraryPath);
 
     /**
-     * @brief Unloads the runtime-loaded module DLL.
+     * @brief 卸载运行时加载的模块 DLL。
      */
     ~SpiModuleApi();
 
@@ -37,62 +36,62 @@ public:
     SpiModuleApi(SpiModuleApi&&) = delete;
     SpiModuleApi& operator=(SpiModuleApi&&) = delete;
 
-    /** @brief Calls pm_spi_version. @return Module SPI version. */
+    /** @brief 调用 pm_spi_version。 @return 模块 SPI 版本。 */
     [[nodiscard]] int SpiVersion() const;
 
-    /** @brief Calls pm_module_info. @return SPI return value. */
+    /** @brief 调用 pm_module_info。 @return SPI 返回值。 */
     [[nodiscard]] int ModuleInfo(char* output, int capacity, int* required) const;
 
-    /** @brief Calls pm_create. @return Opaque module handle or nullptr. */
+    /** @brief 调用 pm_create。 @return 不透明模块句柄，失败时为 nullptr。 */
     [[nodiscard]] pm_module_t* Create(const char* optionsJson) const;
 
-    /** @brief Calls pm_destroy. @param module Opaque module handle. */
+    /** @brief 调用 pm_destroy。 @param module 不透明模块句柄。 */
     void Destroy(pm_module_t* module) const;
 
-    /** @brief Calls pm_submit. @return Opaque job handle or nullptr. */
+    /** @brief 调用 pm_submit。 @return 不透明任务句柄，失败时为 nullptr。 */
     [[nodiscard]] pm_job_t* Submit(
         pm_module_t* module,
         const char* requestJson) const;
 
-    /** @brief Calls pm_poll. @return SPI return value. */
+    /** @brief 调用 pm_poll。 @return SPI 返回值。 */
     [[nodiscard]] int Poll(
         pm_job_t* job,
         char* output,
         int capacity,
         int* required) const;
 
-    /** @brief Calls pm_cancel. @return SPI return value. */
+    /** @brief 调用 pm_cancel。 @return SPI 返回值。 */
     [[nodiscard]] int Cancel(pm_job_t* job) const;
 
-    /** @brief Calls pm_result. @return SPI return value. */
+    /** @brief 调用 pm_result。 @return SPI 返回值。 */
     [[nodiscard]] int Result(
         pm_job_t* job,
         char* output,
         int capacity,
         int* required) const;
 
-    /** @brief Calls pm_release. @param job Opaque job handle. */
+    /** @brief 调用 pm_release。 @param job 不透明任务句柄。 */
     void Release(pm_job_t* job) const;
 
-    /** @brief Calls pm_self_test. @return SPI return value. */
+    /** @brief 调用 pm_self_test。 @return SPI 返回值。 */
     [[nodiscard]] int SelfTest(
         pm_module_t* module,
         char* output,
         int capacity,
         int* required) const;
 
-    /** @brief Calls pm_last_error. @return SPI return value. */
+    /** @brief 调用 pm_last_error。 @return SPI 返回值。 */
     [[nodiscard]] int LastError(char* output, int capacity, int* required) const;
 
     /**
-     * @brief Enumerates names from the loaded PE export directory.
-     * @return Sorted export names.
+     * @brief 枚举已加载 PE 的导出目录名称。
+     * @return 排序后的导出名称。
      */
     [[nodiscard]] std::vector<std::string> ExportNames() const;
 
     /**
-     * @brief Enumerates DLL names from the loaded PE import directory.
-     * @return Sorted imported DLL names.
+     * @brief 枚举已加载 PE 的导入目录 DLL 名称。
+     * @return 排序后的导入 DLL 名称。
      */
     [[nodiscard]] std::vector<std::string> ImportedDllNames() const;
 

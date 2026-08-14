@@ -5,7 +5,7 @@
 #include <QString>
 #include <QStringList>
 
-/** @brief Host-owned description of one selectable production Profile. */
+/** @brief 由宿主持有的单个可选生产 Profile 描述。 */
 struct hostprofiledescriptor
 {
     QString profileid;
@@ -20,7 +20,7 @@ struct hostprofiledescriptor
     QString limitations;
 };
 
-/** @brief Capability-intersection result for one host Profile. */
+/** @brief 单个宿主 Profile 的能力交集结果。 */
 struct hostprofileavailability
 {
     hostprofiledescriptor profile;
@@ -28,7 +28,7 @@ struct hostprofileavailability
     QStringList missingcapabilities;
 };
 
-/** @brief Resolved module capabilities and host Profile availability. */
+/** @brief 已解析的模块能力与宿主 Profile 可用性。 */
 struct hostprofilecatalogresolution
 {
     QStringList modulecapabilities;
@@ -36,46 +36,46 @@ struct hostprofilecatalogresolution
 };
 
 /**
- * @brief Abstract host-owned Profile directory.
+ * @brief 抽象的宿主侧 Profile 目录。
  *
- * The public slicer module declares capabilities only. The printing host owns
- * device/material Profiles and supplies them through this interface.
+ * 公共切片模块仅声明能力。打印宿主持有设备/材料 Profile，
+ * 并通过本接口提供这些 Profile。
  */
 class IHostProfileCatalog
 {
 public:
-    /** @brief Releases a host Profile provider. */
+    /** @brief 释放宿主 Profile 提供者。 */
     virtual ~IHostProfileCatalog() = default;
 
     /**
-     * @brief Returns the Profiles owned by the host application.
-     * @return Stable Profile descriptors for the current host session.
+     * @brief 返回宿主应用持有的 Profile。
+     * @return 当前宿主会话的稳定 Profile 描述符。
      */
     virtual QList<hostprofiledescriptor> Profiles() const = 0;
 };
 
-/** @brief Reference-host Profile fixture independent from slicer internals. */
+/** @brief 独立于切片器内部实现的参考宿主 Profile fixture。 */
 class ReferenceHostProfileCatalog final : public IHostProfileCatalog
 {
 public:
     /**
-     * @brief Returns the reference host's public Profile fixtures.
-     * @return Production, restricted and diagnostic Profile descriptors.
+     * @brief 返回参考宿主的公共 Profile fixture。
+     * @return 生产、受限与诊断 Profile 描述符。
      */
     QList<hostprofiledescriptor> Profiles() const override;
 };
 
-/** @brief Resolves host Profiles against structured module information. */
+/** @brief 根据结构化模块信息解析宿主 Profile。 */
 class HostProfileCapabilityResolver final
 {
 public:
     /**
-     * @brief Intersects host Profile requirements with pm_module_info provides.
-     * @param catalog Host-owned Profile directory.
-     * @param moduleInfo UTF-8 slicesoft.module_info.1 payload.
-     * @param resolution Receives capabilities and per-Profile availability.
-     * @param error Receives a fail-closed validation reason.
-     * @return True when both inputs are structurally valid.
+     * @brief 计算宿主 Profile 要求与 pm_module_info 提供能力的交集。
+     * @param catalog 由宿主持有的 Profile 目录。
+     * @param moduleInfo UTF-8 slicesoft.module_info.1 载荷。
+     * @param resolution 接收能力与逐 Profile 可用性。
+     * @param error 接收失败即拒绝的校验原因。
+     * @return 两项输入结构均有效时返回 true。
      */
     static bool Resolve(
         const IHostProfileCatalog& catalog,

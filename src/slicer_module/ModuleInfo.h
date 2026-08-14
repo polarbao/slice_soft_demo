@@ -6,33 +6,33 @@ namespace slicesoft::module
 {
 
 /**
- * @brief Returns the frozen module identifier.
- * @return The constant identifier `slicer`.
+ * @brief 返回冻结的模块标识。
+ * @return 常量标识 `slicer`。
  */
 [[nodiscard]] std::string_view GetModuleId() noexcept;
 
 /**
- * @brief Returns the frozen semantic module version.
- * @return The constant semantic version `0.1.0`.
+ * @brief 返回冻结的模块语义版本。
+ * @return 常量语义版本 `0.1.0`。
  */
 [[nodiscard]] std::string_view GetModuleVersion() noexcept;
 
 /**
- * @brief Returns the MSVC runtime identity of the current binary.
- * @return `MSVC-x64-MD` for Release or `MSVC-x64-MDd` for Debug.
+ * @brief 返回当前二进制的 MSVC 运行库标识。
+ * @return Release 为 `MSVC-x64-MD`，Debug 为 `MSVC-x64-MDd`。
  */
 [[nodiscard]] std::string_view GetModuleRuntime() noexcept;
 
 /**
- * @brief Returns the supported build configuration of the current binary.
- * @return `Release` or `Debug`.
+ * @brief 返回当前二进制支持的构建配置。
+ * @return `Release` 或 `Debug`。
  */
 [[nodiscard]] std::string_view GetModuleBuildConfig() noexcept;
 
 /**
- * @brief Returns the immutable UTF-8 module-information JSON.
- * @return A process-lifetime view of the `slicesoft.module_info.1` object.
- * @note The function performs no allocation, persistence, or Worker startup.
+ * @brief 返回不可变的 UTF-8 模块信息 JSON。
+ * @return 有效期与进程相同的 `slicesoft.module_info.1` 对象视图。
+ * @note 此函数不执行分配、持久化或 Worker 启动。
  */
 [[nodiscard]] std::string_view GetModuleInfoJson() noexcept;
 

@@ -50,8 +50,8 @@ bool SceneInteractionController::Initialize(
         return false;
     }
 
-    // Scene bootstrap is followed by one explicit initial refresh to obtain
-    // the documented sceneHandle used by all later Commit requests.
+    // 场景引导之后是一次显式初始刷新以获得
+    // 所有后续提交请求使用的记录的 sceneHandle。
     return RefreshSnapshot(error);
 }
 

@@ -1,3 +1,5 @@
+// 本文件实现 EngineConformanceGate 共享的夹具、请求写入和结果核验支撑；
+// 所有生产结论仍由公开合同与 RIP Reader 给出，测试辅助层不自行放宽准入规则。
 #include "EngineConformanceSupport.h"
 
 #include "slicer_core/api/ProfileIdentity.h"

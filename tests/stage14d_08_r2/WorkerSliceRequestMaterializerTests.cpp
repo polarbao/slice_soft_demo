@@ -26,7 +26,7 @@ public:
     {
     }
 
-    /** @brief Returns the configured deterministic cancellation state. */
+    /** @brief 返回已配置的确定性取消状态。 */
     [[nodiscard]] bool IsCancelRequested() const noexcept override
     {
         return m_cancelled;

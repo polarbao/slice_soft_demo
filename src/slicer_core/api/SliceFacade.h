@@ -6,38 +6,38 @@
 
 namespace slicer_core::api {
 
-/** @brief Engine-only facade for production RGBWSV slicing. */
+/** @brief 仅供引擎使用的生产 RGBWSV 切片 Facade。 */
 class SliceFacade
 {
 public:
     virtual ~SliceFacade() = default;
 
-    /** @brief Runs production slicing. @param request Caller-owned paths and scene hash. @param cancel_token Cancellation source. @param progress_sink Progress callback. @return Package result or PM-SLICER error. */
+    /** @brief 运行生产切片。 @param request 调用方持有的路径和场景哈希。 @param cancel_token 取消源。 @param progress_sink 进度回调。 @return 生产包结果或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<SliceResult> Run(
         const SliceRequest& request,
         const ICancelToken& cancel_token,
         const ProgressSink& progress_sink) noexcept = 0;
 };
 
-/** @brief Engine-only authoritative preflight facade. */
+/** @brief 仅供引擎使用的权威预检 Facade。 */
 class PreflightFullFacade
 {
 public:
     virtual ~PreflightFullFacade() = default;
 
-    /** @brief Runs full preflight. @param request Preflight input. @param cancel_token Cancellation source. @return Authoritative result or PM-SLICER error. */
+    /** @brief 运行完整预检。 @param request 预检输入。 @param cancel_token 取消源。 @return 权威结果或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<PreflightResult> RunFull(
         const PreflightRequest& request,
         const ICancelToken& cancel_token) const noexcept = 0;
 };
 
-/** @brief Engine-only facade for explicit geometry repair. */
+/** @brief 仅供引擎使用的显式几何修复 Facade。 */
 class RepairFacade
 {
 public:
     virtual ~RepairFacade() = default;
 
-    /** @brief Repairs one model. @param request Caller-owned source and destination. @param cancel_token Cancellation source. @return Repair evidence or PM-SLICER error. */
+    /** @brief 修复一个模型。 @param request 调用方持有的源和目标。 @param cancel_token 取消源。 @return 修复证据或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<RepairResult> Run(
         const RepairRequest& request,
         const ICancelToken& cancel_token) noexcept = 0;

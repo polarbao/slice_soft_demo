@@ -7,7 +7,7 @@
 namespace slicer::render
 {
 
-/** @brief Describes renderer capabilities without exposing an implementation API. */
+/** @brief 在不暴露实现 API 的前提下描述渲染器能力。 */
 struct BackendCaps
 {
     std::string backendId;
@@ -18,7 +18,7 @@ struct BackendCaps
     std::uint64_t vramBudgetBytes{0U};
 };
 
-/** @brief Binds one contiguous index range to a ViewData material identity. */
+/** @brief 将连续索引范围绑定到 ViewData 材料标识。 */
 struct SubmeshDesc
 {
     std::uint32_t firstIndex{0U};
@@ -26,7 +26,7 @@ struct SubmeshDesc
     std::string materialId;
 };
 
-/** @brief Describes one immutable ViewData mesh upload. */
+/** @brief 描述一次不可变 ViewData 网格上传。 */
 struct MeshDesc
 {
     std::string meshIdentity;
@@ -40,7 +40,7 @@ struct MeshDesc
     std::vector<SubmeshDesc> submeshes;
 };
 
-/** @brief Describes one immutable RGBA8 ViewData texture upload. */
+/** @brief 描述一次不可变 RGBA8 ViewData 纹理上传。 */
 struct TextureDesc
 {
     std::string textureIdentity;
@@ -50,7 +50,7 @@ struct TextureDesc
     bool rowOriginTopLeft{true};
 };
 
-/** @brief Describes one material within a reusable appearance. */
+/** @brief 描述可复用外观中的一个材料。 */
 struct MaterialDesc
 {
     std::string appearanceIdentity;
@@ -66,21 +66,21 @@ struct MaterialDesc
         0.0F, 0.0F, 1.0F};
 };
 
-/** @brief Selects the host-local presentation mode. */
+/** @brief 选择宿主本地展示模式。 */
 enum class ViewMode
 {
     Top,
     ThreeD
 };
 
-/** @brief Selects orthographic or perspective host-local projection. */
+/** @brief 选择宿主本地正交或透视投影。 */
 enum class Projection
 {
     Orthographic,
     Perspective
 };
 
-/** @brief Carries host-local view and projection matrices. */
+/** @brief 承载宿主本地视图与投影矩阵。 */
 struct CameraDesc
 {
     Projection projection{Projection::Orthographic};
@@ -88,7 +88,7 @@ struct CameraDesc
     float projMatrix[16]{};
 };
 
-/** @brief Describes one authoritative instance draw using cached resources. */
+/** @brief 描述使用缓存资源的一次权威实例绘制。 */
 struct InstanceDraw
 {
     std::string instanceId;
@@ -101,7 +101,7 @@ struct InstanceDraw
     bool outOfBuildVolume{false};
 };
 
-/** @brief Describes build-volume and grid presentation only. */
+/** @brief 仅描述构建体积与网格展示。 */
 struct SceneDecorDesc
 {
     bool showBuildVolume{true};
@@ -113,7 +113,7 @@ struct SceneDecorDesc
     bool showWhiteContrastAid{true};
 };
 
-/** @brief Fully local frame submitted to a renderer. */
+/** @brief 提交给渲染器的完全本地帧。 */
 struct FrameDesc
 {
     ViewMode viewMode{ViewMode::ThreeD};
@@ -124,7 +124,7 @@ struct FrameDesc
     SceneDecorDesc decor;
 };
 
-/** @brief Reports one rendering operation without backend-specific types. */
+/** @brief 在不使用后端专属类型的前提下报告一次渲染操作。 */
 struct FrameResult
 {
     bool ok{false};
@@ -134,7 +134,7 @@ struct FrameResult
     std::uint32_t drawCallCount{0U};
 };
 
-/** @brief Reports host-local picking output. */
+/** @brief 报告宿主本地拾取输出。 */
 struct PickResult
 {
     bool hit{false};
@@ -142,7 +142,7 @@ struct PickResult
     float worldPosMm[3]{};
 };
 
-/** @brief Owns an RGBA8 off-screen rendering result. */
+/** @brief 持有 RGBA8 离屏渲染结果。 */
 struct ImageOut
 {
     std::uint32_t widthPx{0U};
@@ -150,38 +150,38 @@ struct ImageOut
     std::vector<std::uint8_t> rgba8;
 };
 
-/** @brief Backend-neutral host rendering interface frozen for Stage 14E. */
+/** @brief Stage 14E 冻结的后端中立宿主渲染接口。 */
 class IRenderBackend
 {
 public:
     virtual ~IRenderBackend() = default;
 
-    /** @brief Returns immutable backend capability metadata. */
+    /** @brief 返回不可变后端能力元数据。 */
     [[nodiscard]] virtual BackendCaps Caps() const = 0;
 
-    /** @brief Idempotently uploads one ViewData mesh. */
+    /** @brief 幂等上传一个 ViewData 网格。 */
     virtual bool UploadMesh(const MeshDesc& mesh) = 0;
 
-    /** @brief Idempotently uploads one ViewData texture. */
+    /** @brief 幂等上传一个 ViewData 纹理。 */
     virtual bool UploadTexture(const TextureDesc& texture) = 0;
 
-    /** @brief Idempotently uploads one ViewData material. */
+    /** @brief 幂等上传一个 ViewData 材料。 */
     virtual bool UploadMaterial(const MaterialDesc& material) = 0;
 
-    /** @brief Releases resources absent from the supplied live identity set. */
+    /** @brief 释放给定活动标识集合中不存在的资源。 */
     virtual void ReleaseUnused(
         const std::vector<std::string>& liveIdentities) = 0;
 
-    /** @brief Renders one local frame and returns timing diagnostics. */
+    /** @brief 渲染一个本地帧并返回耗时诊断。 */
     [[nodiscard]] virtual FrameResult RenderFrame(
         const FrameDesc& frame) = 0;
 
-    /** @brief Renders one deterministic off-screen RGBA8 image. */
+    /** @brief 渲染一张确定性的离屏 RGBA8 图像。 */
     virtual bool RenderToImage(
         const FrameDesc& frame,
         ImageOut& output) = 0;
 
-    /** @brief Performs backend-local picking without module calls. */
+    /** @brief 在不调用模块的前提下执行后端本地拾取。 */
     [[nodiscard]] virtual PickResult Pick(
         const FrameDesc& frame,
         int xPx,

@@ -18,6 +18,8 @@
 #include <unordered_map>
 #include <utility>
 
+// 文件职责：把既有模型加载与快速预检能力封装为无 Qt Facade；
+// 边界：句柄、取消和错误必须在 Facade 内收敛，异常不得跨 API 边界。
 namespace slicer_core::api::implementation
 {
 namespace

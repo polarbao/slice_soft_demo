@@ -38,14 +38,14 @@ enum class MeshTransform
     World
 };
 
-/** @brief Selects the scalar encoding used by serialized mesh attributes. */
+/** @brief 选择序列化网格属性使用的标量编码。 */
 enum class MeshAttributeFormat
 {
     Float32,
     Float16
 };
 
-/** @brief Selectable payload categories for one ViewData query. */
+/** @brief 一次 ViewData 查询可选择的载荷类别。 */
 enum class ViewContent
 {
     Bbox,
@@ -55,13 +55,13 @@ enum class ViewContent
     Appearance
 };
 
-/** @brief Texture resolution policy for a ViewData query. */
+/** @brief ViewData 查询的纹理分辨率策略。 */
 enum class TexturePolicy
 {
     RequireIfPresent
 };
 
-/** @brief RGBA8 top-view preview with straight alpha. */
+/** @brief 使用直通 Alpha 的 RGBA8 俯视预览。 */
 struct SurfacePreview
 {
     int width_px{0};
@@ -72,7 +72,7 @@ struct SurfacePreview
     std::string appearance_identity;
 };
 
-/** @brief Material range within the indexed mesh. */
+/** @brief 索引网格中的材质范围。 */
 struct ViewSubmesh
 {
     std::uint32_t first_index{0};
@@ -80,7 +80,7 @@ struct ViewSubmesh
     std::string material_id;
 };
 
-/** @brief Indexed triangle mesh used by the three-dimensional view. */
+/** @brief 三维视图使用的索引三角网格。 */
 struct ViewMesh
 {
     std::vector<float> positions;
@@ -94,7 +94,7 @@ struct ViewMesh
     MeshAttributeFormat attribute_format{MeshAttributeFormat::Float32};
 };
 
-/** @brief Embedded or referenced sRGB texture payload. */
+/** @brief 内嵌或引用的 sRGB 纹理载荷。 */
 struct ViewTexture
 {
     std::string texture_id;
@@ -104,7 +104,7 @@ struct ViewTexture
     std::vector<std::uint8_t> rgba8;
 };
 
-/** @brief Material-to-texture binding for textured views. */
+/** @brief 纹理视图的材质到纹理绑定。 */
 struct ViewMaterial
 {
     std::string material_id;
@@ -118,7 +118,7 @@ struct ViewMaterial
     bool double_sided{false};
 };
 
-/** @brief Reusable appearance resolved by an instance identity. */
+/** @brief 由实例标识解析出的可复用外观。 */
 struct ViewAppearance
 {
     std::string appearance_identity;
@@ -126,13 +126,13 @@ struct ViewAppearance
     std::vector<ViewTexture> textures;
 };
 
-/** @brief One closed local-space outline loop. */
+/** @brief 一条闭合的局部空间轮廓环。 */
 struct ViewOutline
 {
     std::vector<std::array<double, 2>> points_mm;
 };
 
-/** @brief Per-instance view binding using local bounds plus world transform. */
+/** @brief 使用局部边界和世界变换的逐实例视图绑定。 */
 struct ViewInstance
 {
     std::string instance_id;
@@ -145,25 +145,25 @@ struct ViewInstance
     std::string preview_identity;
     std::vector<ViewOutline> outlines;
     std::optional<SurfacePreview> surface_preview;
-    /** @brief Deprecated inline compatibility payload; canonical data uses SceneViewData::meshes. */
+    /** @brief 已弃用的内联兼容载荷；规范数据使用 SceneViewData::meshes。 */
     std::optional<ViewMesh> mesh;
 };
 
-/** @brief Textured scene data for top or three-dimensional rendering. */
+/** @brief 用于俯视或三维渲染的纹理场景数据。 */
 struct SceneViewData
 {
     ViewMode view_mode{ViewMode::Top};
     std::uint64_t scene_revision{0};
     std::string viewdata_identity;
     std::vector<ViewAppearance> appearances;
-    /** @brief Reusable meshes keyed by ViewMesh::mesh_identity. */
+    /** @brief 以 ViewMesh::mesh_identity 为键的可复用网格。 */
     std::vector<ViewMesh> meshes;
     std::vector<ViewInstance> instances;
     bool truncated{false};
     std::string truncation_reason;
 };
 
-/** @brief Request for bounded, cacheable scene view data. */
+/** @brief 请求有界且可缓存的场景视图数据。 */
 struct SceneViewDataRequest
 {
     SceneId scene_id{0};

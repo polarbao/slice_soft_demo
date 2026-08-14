@@ -1,5 +1,8 @@
 #pragma once
 
+// Stage 14B-03A 各拆分测试共享的夹具、断言和内存纹理源。
+// 这里仅提供确定性测试支撑，不复制生产策略或替代公开 ViewData 接口。
+
 #include "slicer_core/api/viewdata/TexturedSceneViewDataProvider.h"
 
 #include <algorithm>

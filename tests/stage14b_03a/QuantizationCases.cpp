@@ -1,3 +1,4 @@
+// 本文件仅验证视图网格属性量化及其字节预算，不承担拓扑简化正确性验证。
 #include "TestSupport.h"
 
 #include "slicer_core/api/viewdata/MeshAttributeQuantizer.h"

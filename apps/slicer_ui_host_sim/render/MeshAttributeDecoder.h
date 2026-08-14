@@ -10,15 +10,15 @@ namespace slicer::render
 {
 
 /**
- * @brief Decodes one float32 or float16 mesh attribute into host-local floats.
- * @param blob Complete little-endian mesh blob.
- * @param buffers ViewData buffers descriptor.
- * @param name Attribute name in the descriptor.
- * @param componentCount Components per vertex.
- * @param vertexCount Expected vertex count.
- * @param values Destination host-local float values.
- * @param error Optional localized failure text.
- * @return True when the descriptor and decoded values are valid.
+ * @brief 将一个 float32 或 float16 网格属性解码为宿主本地浮点值。
+ * @param blob 完整的小端网格 blob。
+ * @param buffers ViewData 缓冲区描述符。
+ * @param name 描述符中的属性名称。
+ * @param componentCount 每个顶点的分量数。
+ * @param vertexCount 预期顶点数。
+ * @param values 目标宿主本地浮点值。
+ * @param error 可选的本地化失败文本。
+ * @return 描述符与解码值均有效时返回 true。
  */
 [[nodiscard]] bool DecodeMeshAttribute(
     const QByteArray& blob,

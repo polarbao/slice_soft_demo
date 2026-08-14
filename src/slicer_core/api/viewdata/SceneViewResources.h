@@ -13,53 +13,53 @@ namespace slicer_core::api
 {
 
 /**
- * @brief Read-only model resource boundary used by textured ViewData.
+ * @brief 纹理 ViewData 使用的只读模型资源边界。
  */
 class ISceneViewModelRepository
 {
 public:
-    /** @brief Destroys the repository through its interface. */
+    /** @brief 通过接口销毁仓库。 */
     virtual ~ISceneViewModelRepository() = default;
 
     /**
-     * @brief Resolves one immutable imported model.
-     * @param modelId Numeric API model identity from the scene snapshot.
-     * @return Shared model resource or a stable PM-SLICER error.
+     * @brief 解析一个不可变的已导入模型。
+     * @param modelId 场景快照中的数值 API 模型标识。
+     * @return 共享模型资源或稳定的 PM-SLICER 错误。
      */
     [[nodiscard]] virtual ApiResult<std::shared_ptr<const SceneModel>> GetModel(
         ModelId modelId) const noexcept = 0;
 };
 
 /**
- * @brief Read-only texture decoder boundary used by fail-closed ViewData.
+ * @brief 失败即拒绝的 ViewData 所使用的只读纹理解码器边界。
  */
 class ISceneViewTextureSource
 {
 public:
-    /** @brief Destroys the texture source through its interface. */
+    /** @brief 通过接口销毁纹理源。 */
     virtual ~ISceneViewTextureSource() = default;
 
     /**
-     * @brief Loads one declared texture as straight-alpha RGBA8.
-     * @param path Texture path retained by the imported model.
-     * @return Decoded pixels or a stable missing/decode error.
+     * @brief 将一个已声明纹理加载为直通 Alpha RGBA8。
+     * @param path 已导入模型保留的纹理路径。
+     * @return 已解码像素或稳定的缺失/解码错误。
      */
     [[nodiscard]] virtual ApiResult<TextureImage> Load(
         const std::filesystem::path& path) const noexcept = 0;
 };
 
 /**
- * @brief Creates an immutable map-backed model repository.
- * @param models Models keyed by numeric API identity.
- * @return Ready repository or a stable PM-SLICER error.
+ * @brief 创建由映射支撑的不可变模型仓库。
+ * @param models 以数值 API 标识为键的模型。
+ * @return 就绪仓库或稳定的 PM-SLICER 错误。
  */
 [[nodiscard]] ApiResult<std::shared_ptr<const ISceneViewModelRepository>>
 CreateSceneViewModelRepository(
     std::map<ModelId, std::shared_ptr<const SceneModel>> models) noexcept;
 
 /**
- * @brief Creates the filesystem/WIC texture source used by production hosts.
- * @return Ready read-only texture source.
+ * @brief 创建生产宿主使用的文件系统/WIC 纹理源。
+ * @return 就绪的只读纹理源。
  */
 [[nodiscard]] std::shared_ptr<const ISceneViewTextureSource>
 CreateFileSceneViewTextureSource();

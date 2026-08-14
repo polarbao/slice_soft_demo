@@ -8,17 +8,17 @@ namespace slicer_core::api::viewdata_detail
 {
 
 /**
- * @brief Estimates one mesh's serialized descriptor and binary payload bytes.
- * @param mesh Mesh with its requested wire attribute format.
- * @return Conservative serialized mesh byte estimate.
+ * @brief 估算一个网格的序列化描述符和二进制载荷字节数。
+ * @param mesh 按请求传输格式编码属性的网格。
+ * @return 保守的序列化网格字节估算值。
  */
 [[nodiscard]] std::uint64_t EstimateViewMeshBytes(
     const ViewMesh& mesh) noexcept;
 
 /**
- * @brief Estimates the serialized payload bytes of inline ViewData resources.
- * @param viewData Complete candidate response.
- * @return Conservative byte estimate including resource payloads.
+ * @brief 估算内联 ViewData 资源的序列化载荷字节数。
+ * @param viewData 完整候选响应。
+ * @return 包含资源载荷的保守字节估算值。
  */
 [[nodiscard]] std::uint64_t EstimateViewDataBytes(
     const SceneViewData& viewData) noexcept;

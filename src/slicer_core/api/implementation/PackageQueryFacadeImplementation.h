@@ -8,8 +8,8 @@ namespace slicer_core::api::implementation
 {
 
 /**
- * @brief Create the Qt-free read-only package facade.
- * @return Owning package-query facade instance.
+ * @brief 创建无 Qt 的只读 PackageQueryFacade。
+ * @return 由调用方独占持有的 PackageQueryFacade 实例。
  */
 std::unique_ptr<PackageQueryFacade> CreatePackageQueryFacade();
 

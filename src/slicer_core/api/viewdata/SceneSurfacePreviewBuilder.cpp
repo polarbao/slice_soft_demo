@@ -13,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+// 文件职责：从已闭合模型与外观资源生成局部空间表面预览；
+// 边界：只生成显示载荷，不参与生产几何或 RGBWSV 合成。
 namespace slicer_core::api::viewdata_detail
 {
 namespace

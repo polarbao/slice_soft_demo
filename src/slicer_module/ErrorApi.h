@@ -6,13 +6,13 @@ namespace slicesoft::module
 {
 
 /**
- * @brief Replaces this thread's most recent SPI failure JSON.
- * @param code Stable PM-SLICER error code.
- * @param message Human-readable UTF-8 error summary.
- * @param detail Human-readable UTF-8 diagnostic detail.
+ * @brief 替换当前线程最近一次 SPI 失败 JSON。
+ * @param code 稳定的 PM-SLICER 错误码。
+ * @param message 人类可读的 UTF-8 错误摘要。
+ * @param detail 人类可读的 UTF-8 诊断详情。
  *
- * Successful operations deliberately do not call this function, so the last
- * failure remains available until the next failure on the same thread.
+ * 成功操作不会调用此函数，因此最近一次失败会一直保留，
+ * 直到同一线程出现下一次失败。
  */
 void SetThreadLastError(
     std::string_view code,
@@ -20,8 +20,8 @@ void SetThreadLastError(
     std::string_view detail) noexcept;
 
 /**
- * @brief Returns this thread's most recent SPI failure as stable JSON.
- * @return A view valid until SetThreadLastError is next called on this thread.
+ * @brief 以稳定 JSON 返回当前线程最近一次 SPI 失败。
+ * @return 在当前线程下次调用 SetThreadLastError 前始终有效的视图。
  */
 [[nodiscard]] std::string_view GetThreadLastErrorJson() noexcept;
 

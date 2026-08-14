@@ -8,6 +8,8 @@
 #include <string>
 #include <utility>
 
+// 文件职责：集中实现 PackageQueryFacade 各分片共享的 JSON、路径和错误转换；
+// 边界：只做严格读取与验证，不解释 UI 策略，也不修改生产包。
 namespace slicer_core::api::implementation::detail
 {
 

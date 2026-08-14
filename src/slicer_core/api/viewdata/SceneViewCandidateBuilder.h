@@ -14,21 +14,21 @@
 namespace slicer_core::api::viewdata_detail
 {
 
-/** @brief Imported model and its fail-closed resolved appearance. */
+/** @brief 已导入模型及其按失败即拒绝规则解析的外观。 */
 struct PreparedViewModel
 {
     std::shared_ptr<const SceneModel> model;
     ResolvedViewAppearance appearance;
 };
 
-/** @brief Scene instance bound to one prepared model. */
+/** @brief 绑定到一个已准备模型的场景实例。 */
 struct PreparedViewInstance
 {
     SceneInstanceState state;
     std::shared_ptr<const PreparedViewModel> model;
 };
 
-/** @brief One bounded candidate requested by the ViewData budget policy. */
+/** @brief ViewData 预算策略请求的一个有界候选项。 */
 struct ViewCandidateOptions
 {
     int preview_dimension{0};
@@ -39,13 +39,13 @@ struct ViewCandidateOptions
 };
 
 /**
- * @brief Builds a closed textured ViewData candidate.
- * @param request Validated ViewData request.
- * @param snapshot Authoritative scene snapshot.
- * @param prepared Selected and prepared scene instances.
- * @param options Resolution and degradation choices for this candidate.
- * @param cancelToken Cooperative cancellation token.
- * @return Closed candidate or a stable PM-SLICER error.
+ * @brief 构造闭合的纹理 ViewData 候选项。
+ * @param request 已验证的 ViewData 请求。
+ * @param snapshot 权威场景快照。
+ * @param prepared 已选择并准备的场景实例。
+ * @param options 此候选项的分辨率和降级选择。
+ * @param cancelToken 协作式取消令牌。
+ * @return 闭合候选项或稳定的 PM-SLICER 错误。
  */
 [[nodiscard]] ApiResult<SceneViewData> BuildViewCandidate(
     const SceneViewDataRequest& request,

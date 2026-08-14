@@ -16,7 +16,7 @@ namespace slicer_core
 {
 
 /**
- * @brief Stable model-resolution failures used by authoritative scene preflight.
+ * @brief 权威场景预检使用的稳定模型解析失败分类。
  */
 enum class SceneFullPreflightResolutionErrorCode
 {
@@ -26,7 +26,7 @@ enum class SceneFullPreflightResolutionErrorCode
 };
 
 /**
- * @brief Immutable model returned by the caller-owned resource resolver.
+ * @brief 调用方持有的资源解析器返回的不可变模型。
  */
 struct SceneFullPreflightResolvedModel
 {
@@ -36,8 +36,8 @@ struct SceneFullPreflightResolvedModel
     std::string detail;
 
     /**
-     * @brief Report whether resolution returned usable immutable geometry.
-     * @return True when a model exists and no resolution error is present.
+     * @brief 报告解析是否返回可用的不可变几何。
+     * @return 模型存在且无解析错误时返回 true。
      */
     bool IsValid() const;
 };
@@ -46,7 +46,7 @@ using SceneFullPreflightModelResolver = std::function<
     SceneFullPreflightResolvedModel(const ModelSource&)>;
 
 /**
- * @brief One stable scene or instance issue from authoritative preflight.
+ * @brief 权威预检产生的一条稳定场景或实例问题。
  */
 struct SceneFullPreflightIssue
 {
@@ -61,7 +61,7 @@ struct SceneFullPreflightIssue
 };
 
 /**
- * @brief Full source and transformed evidence for one scene instance.
+ * @brief 一个场景实例的完整源证据和变换后证据。
  */
 struct SceneFullPreflightInstanceResult
 {
@@ -88,7 +88,7 @@ struct SceneFullPreflightInstanceResult
 };
 
 /**
- * @brief Complete input for one scene-wide authoritative preflight run.
+ * @brief 一次全场景权威预检运行的完整输入。
  */
 struct SceneFullPreflightRequest
 {
@@ -104,7 +104,7 @@ struct SceneFullPreflightRequest
 };
 
 /**
- * @brief Stable scene-wide result without Worker or package concerns.
+ * @brief 不承担 Worker 或生产包职责的稳定全场景预检结果。
  */
 struct SceneFullPreflightResult
 {
@@ -128,21 +128,21 @@ struct SceneFullPreflightResult
 };
 
 /**
- * @brief Run full topology, transformed geometry, and collision preflight.
+ * @brief 运行完整拓扑、变换后几何和碰撞预检。
  */
 class SceneFullPreflightService final
 {
 public:
     /**
-     * @brief Audit every visible instance in one immutable committed scene.
-     * @param request Scene identity, mode, resolver, options, and cancellation.
-     * @return Stable authoritative or explicitly incomplete scene evidence.
+     * @brief 审计一个不可变已提交场景中的每个可见实例。
+     * @param request 场景标识、模式、解析器、选项和取消状态。
+     * @return 稳定的权威场景证据，或明确标记不完整的证据。
      */
     SceneFullPreflightResult Run(
         const SceneFullPreflightRequest& request);
 
     /**
-     * @brief Remove reusable transformed-model diagnostics.
+     * @brief 移除可复用的变换后模型诊断缓存。
      */
     void ClearCache();
 

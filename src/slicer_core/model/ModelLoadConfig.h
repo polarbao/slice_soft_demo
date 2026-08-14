@@ -6,14 +6,14 @@
 
 namespace slicer_core {
 
-/** @brief Model source path and explicit format hint. */
+/** @brief 模型源路径和显式格式提示。 */
 struct InputConfig
 {
     std::filesystem::path model_path;
     std::string format{"auto"};
 };
 
-/** @brief Unit, scale, rotation and translation applied during import. */
+/** @brief 导入时应用的单位、缩放、旋转和平移。 */
 struct TransformConfig
 {
     std::string unit{"mm"};
@@ -22,7 +22,7 @@ struct TransformConfig
     std::array<double, 3> translation_mm{0.0, 0.0, 0.0};
 };
 
-/** @brief Deterministic right-angle auto-orientation options. */
+/** @brief 确定性的直角自动定向选项。 */
 struct AutoOrientConfig
 {
     bool enabled{true};
@@ -30,7 +30,7 @@ struct AutoOrientConfig
     std::string strategy{"minimize_height_by_right_angle_rotation"};
 };
 
-/** @brief Narrow model-loader configuration independent from SliceConfig. */
+/** @brief 独立于 SliceConfig、仅包含模型加载所需字段的配置。 */
 struct ModelLoadConfig
 {
     InputConfig input;

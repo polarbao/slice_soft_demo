@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-// Qt 5.15.2 references checked-array helpers removed in MSVC 19.50.
+// Qt 5.15.2 引用了 MSVC 19.50 中删除的检查数组助手。
 #if defined(_MSC_VER) && _MSC_VER >= 1950
 namespace stdext
 {

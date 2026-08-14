@@ -10,32 +10,32 @@
 
 namespace slicer_core::api {
 
-/** @brief Qt-free read-only facade for RGBWSV packages. */
+/** @brief 提供 RGBWSV 生产包只读查询能力的无 Qt Facade。 */
 class PackageQueryFacade
 {
 public:
     virtual ~PackageQueryFacade() = default;
 
-    /** @brief Reads package summary. @param package_dir Package root. @return Summary or PM-SLICER error. */
+    /** @brief 读取生产包摘要。 @param package_dir Package 根目录。 @return 摘要或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<PackageSummary> GetSummary(
         const std::filesystem::path& package_dir) const noexcept = 0;
 
-    /** @brief Reads one layer descriptor. @param package_dir Package root. @param layer_index Layer index. @return Descriptor or PM-SLICER error. */
+    /** @brief 读取一个层描述符。 @param package_dir Package 根目录。 @param layer_index 层索引。 @return 描述符或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<LayerDescriptor> GetLayerDescriptor(
         const std::filesystem::path& package_dir,
         int layer_index) const noexcept = 0;
 
-    /** @brief Renders a display preview from production TIFF. @param request Preview request. @param cancel_token Cancellation source. @return Preview or PM-SLICER error. */
+    /** @brief 从生产 TIFF 渲染显示预览。 @param request 预览请求。 @param cancel_token 取消源。 @return 预览或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<PreviewResult> RenderLayerPreview(
         const PreviewRequest& request,
         const ICancelToken& cancel_token) const noexcept = 0;
 
-    /** @brief Strictly verifies a package. @param package_dir Package root. @param cancel_token Cancellation source. @return Verification or PM-SLICER error. */
+    /** @brief 严格验证生产包。 @param package_dir Package 根目录。 @param cancel_token 取消源。 @return 验证结果或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<VerifyResult> Verify(
         const std::filesystem::path& package_dir,
         const ICancelToken& cancel_token) const noexcept = 0;
 
-    /** @brief Reads a named report without interpreting UI policy. @param package_dir Package root. @param name Report name. @return Structured report or PM-SLICER error. */
+    /** @brief 不解释 UI 策略地读取具名报告。 @param package_dir Package 根目录。 @param name 报告名。 @return 结构化报告或 PM-SLICER 错误。 */
     [[nodiscard]] virtual ApiResult<PackageReport> ReadReport(
         const std::filesystem::path& package_dir,
         std::string_view name) const noexcept = 0;

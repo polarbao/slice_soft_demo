@@ -10,32 +10,32 @@ class QLabel;
 class QSpinBox;
 class QToolButton;
 
-/** @brief Host-owned editor for production texture and white-carrier fields. */
+/** @brief 由宿主持有的生产纹理与白色载体字段编辑器。 */
 class HostTextureSettingsPanel final : public QWidget
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Creates an independent texture Profile editor.
-     * @param parent Optional Qt parent widget.
+     * @brief 创建独立纹理 Profile 编辑器。
+     * @param parent 可选的 Qt 父控件。
      */
     explicit HostTextureSettingsPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Applies a validated host texture draft.
-     * @param settings Texture settings to display.
+     * @brief 应用已校验的宿主纹理草稿。
+     * @param settings 待显示的纹理设置。
      */
     void SetSettings(const hosttexturesettings& settings);
 
     /**
-     * @brief Returns the currently edited texture settings.
-     * @return Host-owned settings without module state.
+     * @brief 返回当前编辑的纹理设置。
+     * @return 不含模块状态的宿主侧设置。
      */
     [[nodiscard]] hosttexturesettings Settings() const;
 
 signals:
-    /** @brief Emitted after a local texture setting changes. */
+    /** @brief 本地纹理设置变化后发出。 */
     void SigSettingsChanged();
 
 private:

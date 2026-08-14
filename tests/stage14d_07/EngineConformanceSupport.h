@@ -1,5 +1,8 @@
 #pragma once
 
+// EngineConformanceGate 的共享测试 DTO 与辅助入口。
+// 该头文件只服务测试可执行文件，不构成 slicer_core 或模块 ABI 的公开接口。
+
 #include "slicer_module/WorkerClient.h"
 
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
