@@ -820,11 +820,17 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         1,
         100,
         18);
+    jobPanel.UpdateLiveTiming(QJsonObject{
+        {QStringLiteral("approximate"), true},
+        {QStringLiteral("pollResolutionMs"), 100},
+        {QStringLiteral("configLoadMs"), 1.5},
+        {QStringLiteral("modelLoadMs"), 2.5},
+        {QStringLiteral("totalMs"), 18.0}});
     const bool runningStateIsHonest = progressBar != nullptr
         && progressBar->value() == 99
         && pendingConfigLoadValue != nullptr
         && pendingConfigLoadValue->text()
-            == QStringLiteral("终结结果返回后提供");
+            .contains(QStringLiteral("估算"));
     QJsonObject timing{
         {QStringLiteral("available"), true},
         {QStringLiteral("approximate"), true},
@@ -873,6 +879,12 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         QStringLiteral("hostPackageStage16SummaryLabel"));
     auto* referencePreview = reviewPanel.findChild<QLabel*>(
         QStringLiteral("hostPackageReferencePreviewImage"));
+    auto* previewMode = reviewPanel.findChild<QComboBox*>(
+        QStringLiteral("hostPackagePreviewModeCombo"));
+    auto* referenceCaption = reviewPanel.findChild<QLabel*>(
+        QStringLiteral("hostPackageReferencePreviewCaption"));
+    auto* currentCaption = reviewPanel.findChild<QLabel*>(
+        QStringLiteral("hostPackageCurrentPreviewCaption"));
     reviewPanel.SetStage16Context(
         QStringLiteral("legacy_center_sample"), timing);
     layerSpin->setValue(1);
@@ -881,7 +893,7 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
     return Check(
                runningStateIsHonest,
                QStringLiteral(
-                   "非终结态不得显示 100%，分项耗时应明确等待终结结果。"),
+                   "非终结态不得显示 100%，已观测阶段应显示实时估算。"),
                errors)
         && Check(
                jobContext != nullptr
@@ -902,6 +914,18 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                    && configLoadValue->text() != QStringLiteral("未提供")
                    && modelLoadValue->text() != QStringLiteral("未提供"),
                QStringLiteral("失败作业的阶段耗时估算未显示。"),
+               errors)
+        && Check(
+               previewMode != nullptr
+                   && previewMode->currentData().toStringList()
+                       == QStringList({
+                           QStringLiteral("R"),
+                           QStringLiteral("G"),
+                           QStringLiteral("B")})
+                   && referenceCaption != nullptr
+                   && currentCaption != nullptr,
+               QStringLiteral(
+                   "结果预览应默认显示纯 RGB，并明确标识 A/B 视图。"),
                errors)
         && Check(
                summary != nullptr && referencePreview != nullptr

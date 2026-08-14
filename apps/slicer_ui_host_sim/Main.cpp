@@ -323,10 +323,20 @@ int RunHostFlowResultUiSmoke(const QString& modulePath)
         QStringLiteral("hostPackageChannelChart"));
     const auto* openPackageButton = window.findChild<QPushButton*>(
         QStringLiteral("hostOpenPackageDirectoryButton"));
+    const auto* referenceCaption = window.findChild<QLabel*>(
+        QStringLiteral("hostPackageReferencePreviewCaption"));
+    const auto* currentCaption = window.findChild<QLabel*>(
+        QStringLiteral("hostPackageCurrentPreviewCaption"));
     if (panel == nullptr || layerSlider == nullptr || previewMode == nullptr
         || reportCombo == nullptr || chart == nullptr
         || openPackageButton == nullptr
+        || referenceCaption == nullptr || currentCaption == nullptr
         || layerSlider->isEnabled() || previewMode->count() < 7
+        || previewMode->currentData().toStringList()
+            != QStringList({
+                QStringLiteral("R"),
+                QStringLiteral("G"),
+                QStringLiteral("B")})
         || reportCombo->count() < 3 || openPackageButton->isEnabled())
     {
         QTextStream(stderr)

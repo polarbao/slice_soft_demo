@@ -14,8 +14,10 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QPixmap>
+#include <QResizeEvent>
 #include <QScrollArea>
 #include <QSignalBlocker>
+#include <QSizePolicy>
 #include <QSlider>
 #include <QSpinBox>
 #include <QSplitter>
@@ -25,6 +27,44 @@
 
 namespace
 {
+class FitPreviewLabel final : public QLabel
+{
+public:
+    explicit FitPreviewLabel(const QString& placeholder, QWidget* parent)
+        : QLabel(placeholder, parent)
+    {
+        setAlignment(Qt::AlignCenter);
+        setMinimumSize(240, 200);
+        setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    }
+
+    void SetImage(const QImage& image)
+    {
+        m_image = image;
+        RefreshPixmap();
+    }
+
+protected:
+    void resizeEvent(QResizeEvent* event) override
+    {
+        QLabel::resizeEvent(event);
+        RefreshPixmap();
+    }
+
+private:
+    void RefreshPixmap()
+    {
+        if (m_image.isNull() || width() <= 0 || height() <= 0)
+        {
+            return;
+        }
+        setPixmap(QPixmap::fromImage(m_image).scaled(
+            size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+
+    QImage m_image;
+};
+
 QStringList Channels(std::initializer_list<const char*> names)
 {
     QStringList channels;
@@ -97,15 +137,16 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo->setObjectName(
         QStringLiteral("hostPackagePreviewModeCombo"));
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB + W + S + V"), Channels({"R", "G", "B", "W", "S", "V"}));
+        QStringLiteral("RGB（纹理）"), Channels({"R", "G", "B"}));
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB"), Channels({"R", "G", "B"}));
+        QStringLiteral("RGB + 白墨"), Channels({"R", "G", "B", "W"}));
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB + W"), Channels({"R", "G", "B", "W"}));
+        QStringLiteral("RGB + 支撑"), Channels({"R", "G", "B", "S"}));
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB + S"), Channels({"R", "G", "B", "S"}));
+        QStringLiteral("RGB + 光油"), Channels({"R", "G", "B", "V"}));
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB + V"), Channels({"R", "G", "B", "V"}));
+        QStringLiteral("RGB + 白墨 + 支撑 + 光油"),
+        Channels({"R", "G", "B", "W", "S", "V"}));
     for (const char* channel : {"R", "G", "B", "W", "S", "V"})
     {
         m_previewModeCombo->addItem(
@@ -136,31 +177,41 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     previewLayout->addWidget(m_stage16SummaryLabel);
 
     auto* comparisonLayout = new QHBoxLayout();
+    auto* referenceLayout = new QVBoxLayout();
+    auto* referenceCaption = new QLabel(
+        QStringLiteral("A · 首层基准"), previewPage);
+    referenceCaption->setObjectName(
+        QStringLiteral("hostPackageReferencePreviewCaption"));
+    referenceLayout->addWidget(referenceCaption);
     auto* referenceArea = new QScrollArea(previewPage);
     referenceArea->setObjectName(
         QStringLiteral("hostPackageReferencePreviewScroll"));
     referenceArea->setWidgetResizable(true);
     referenceArea->setAlignment(Qt::AlignCenter);
-    m_referencePreviewLabel = new QLabel(
+    m_referencePreviewLabel = new FitPreviewLabel(
         QStringLiteral("首层 A：尚无预览"), referenceArea);
     m_referencePreviewLabel->setObjectName(
         QStringLiteral("hostPackageReferencePreviewImage"));
-    m_referencePreviewLabel->setAlignment(Qt::AlignCenter);
-    m_referencePreviewLabel->setMinimumSize(240, 200);
     referenceArea->setWidget(m_referencePreviewLabel);
-    comparisonLayout->addWidget(referenceArea, 1);
+    referenceLayout->addWidget(referenceArea, 1);
+    comparisonLayout->addLayout(referenceLayout, 1);
 
+    auto* currentLayout = new QVBoxLayout();
+    auto* currentCaption = new QLabel(
+        QStringLiteral("B · 当前层"), previewPage);
+    currentCaption->setObjectName(
+        QStringLiteral("hostPackageCurrentPreviewCaption"));
+    currentLayout->addWidget(currentCaption);
     auto* currentArea = new QScrollArea(previewPage);
     currentArea->setObjectName(QStringLiteral("hostPackagePreviewScroll"));
     currentArea->setWidgetResizable(true);
     currentArea->setAlignment(Qt::AlignCenter);
-    m_previewLabel = new QLabel(
+    m_previewLabel = new FitPreviewLabel(
         QStringLiteral("当前层 B：尚无预览"), currentArea);
     m_previewLabel->setObjectName(QStringLiteral("hostPackagePreviewImage"));
-    m_previewLabel->setAlignment(Qt::AlignCenter);
-    m_previewLabel->setMinimumSize(240, 200);
     currentArea->setWidget(m_previewLabel);
-    comparisonLayout->addWidget(currentArea, 1);
+    currentLayout->addWidget(currentArea, 1);
+    comparisonLayout->addLayout(currentLayout, 1);
     previewLayout->addLayout(comparisonLayout, 2);
     m_channelChart = new HostChannelChartWidget(previewPage);
     previewLayout->addWidget(m_channelChart, 1);
@@ -312,8 +363,7 @@ void HostPackageReviewPanel::ShowPreview(
                       .arg(imagePath));
         return;
     }
-    m_previewLabel->setPixmap(QPixmap::fromImage(image));
-    m_previewLabel->resize(image.size());
+    static_cast<FitPreviewLabel*>(m_previewLabel)->SetImage(image);
     m_layerLabel->setText(
         QStringLiteral("layer=%1 · z=%2 mm · %3 × %4 px · %5")
             .arg(layer.layerindex)
@@ -335,8 +385,7 @@ void HostPackageReviewPanel::ShowReferencePreview(
                       .arg(imagePath));
         return;
     }
-    m_referencePreviewLabel->setPixmap(QPixmap::fromImage(image));
-    m_referencePreviewLabel->resize(image.size());
+    static_cast<FitPreviewLabel*>(m_referencePreviewLabel)->SetImage(image);
     m_referencePreviewLabel->setToolTip(
         QStringLiteral("首层 A · layer=%1 · z=%2 mm")
             .arg(layer.layerindex)
