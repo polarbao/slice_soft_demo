@@ -796,6 +796,48 @@ try
             -LiteralPath (Join-Path $repoRoot "licenses") `
             -Destination $stagingDir `
             -Recurse
+        $userGuideRelativePath =
+            "docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md"
+        $userGuideAssetRelativePath =
+            "docs/user_guides/assets/packaged_slicer"
+        $userGuideSource = Join-Path $repoRoot $userGuideRelativePath
+        $userGuideAssetSource = Join-Path $repoRoot $userGuideAssetRelativePath
+        if (-not (Test-Path -LiteralPath $userGuideSource -PathType Leaf))
+        {
+            throw "Packaged slicer user guide was not found: $userGuideSource"
+        }
+        if (-not (Test-Path -LiteralPath $userGuideAssetSource -PathType Container))
+        {
+            throw "Packaged slicer user guide assets were not found: $userGuideAssetSource"
+        }
+        $userGuideDestination = Join-Path $stagingDir $userGuideRelativePath
+        $userGuideAssetDestination =
+            Join-Path $stagingDir $userGuideAssetRelativePath
+        New-Item `
+            -ItemType Directory `
+            -Path (Split-Path -Parent $userGuideDestination) `
+            -Force | Out-Null
+        New-Item `
+            -ItemType Directory `
+            -Path $userGuideAssetDestination `
+            -Force | Out-Null
+        Copy-Item `
+            -LiteralPath $userGuideSource `
+            -Destination $userGuideDestination
+        Copy-Item `
+            -Path (Join-Path $userGuideAssetSource "*") `
+            -Destination $userGuideAssetDestination `
+            -Recurse
+        $userGuideAssetCount = @(
+            Get-ChildItem `
+                -LiteralPath $userGuideAssetDestination `
+                -File `
+                -Recurse
+        ).Count
+        if ($userGuideAssetCount -eq 0)
+        {
+            throw "Packaged slicer user guide contains no screenshot assets."
+        }
         $tiffRuntimeLibraries = @()
         $tiffLicenseRelativePath = $null
         if ($TiffBackend -eq "libtiff")
@@ -915,6 +957,9 @@ try
                 sampleTree = "samples"
                 modelTree = "model"
                 profileDocumentCount = $profileResourceCopy.profileDocumentCount
+                userGuide = $userGuideRelativePath
+                userGuideAssetRoot = $userGuideAssetRelativePath
+                userGuideAssetCount = $userGuideAssetCount
             }
         }
         $manifest | ConvertTo-Json -Depth 4 | Set-Content `

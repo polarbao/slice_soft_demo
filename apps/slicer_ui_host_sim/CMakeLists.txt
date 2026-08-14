@@ -159,10 +159,35 @@ if(_slicesoft_tiff_runtime_file)
     )
 endif()
 
+set(slicesoftPackagedUserGuide
+    "${CMAKE_SOURCE_DIR}/docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md"
+)
+set(slicesoftPackagedUserGuideAssets
+    "${CMAKE_SOURCE_DIR}/docs/user_guides/assets/packaged_slicer"
+)
+if(NOT EXISTS "${slicesoftPackagedUserGuide}")
+    message(FATAL_ERROR
+        "Packaged slicer user guide is missing: ${slicesoftPackagedUserGuide}"
+    )
+endif()
+if(NOT IS_DIRECTORY "${slicesoftPackagedUserGuideAssets}")
+    message(FATAL_ERROR
+        "Packaged slicer user guide assets are missing: ${slicesoftPackagedUserGuideAssets}"
+    )
+endif()
+
 add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${slicesoftHostRuntimeFiles}
         $<TARGET_FILE_DIR:slicer_ui_host_sim>
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/assets/packaged_slicer"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${slicesoftPackagedUserGuide}"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/SLICE_PRODUCT_PACKAGED_新版切片软件使用手册.md"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${slicesoftPackagedUserGuideAssets}"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/assets/packaged_slicer"
     COMMAND_EXPAND_LISTS
     VERBATIM
 )

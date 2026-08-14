@@ -1,12 +1,16 @@
-# QT_DEBUG_UI_操作手册
+# SliceSoft 旧版切片软件使用手册
 
-> 日期：2026-07-29
+> 日期：2026-08-14
+> 适用分支：`product/legacy-slicer`
 > 适用程序：`slicer_debug_ui`
 > 适用对象：切片 Demo 调试、样例验证、模型导入、层预览、报告查看。
 
 ## 1. 软件定位
 
 `slicer_debug_ui` 是 SliceSoft 的本地调试 UI。它负责组织配置、调用命令行工具、加载输出包和展示报告，不直接实现喷头控制、RIP 半色调或设备通信。
+
+本手册描述旧版单体调试工作台。新版 `product/packaged-slicer` 已改为参考宿主、切片模块和
+Worker 分层结构，日常新版操作请改用单独发布的《SliceSoft 新版切片软件使用手册》。
 
 固定输出协议仍为：
 
@@ -18,6 +22,11 @@ polarity = black_is_print
 printValue = 0
 emptyValue = 255
 ```
+
+![旧版调试工作台总览](assets/legacy_slicer/01_调试工作台总览.png)
+
+图 1：旧版调试工作台总览。顶部是导入、保存、工艺模式和当前场景切片；中央是模型、预览和配置；
+右侧分别是场景检查器与任务详情。
 
 ## 2. 启动方式
 
@@ -125,6 +134,10 @@ map_Kd texture.png
 | 排版 | 设置 11 x 2 规则排版和 10/10 mm 默认净距。 |
 | 切片当前场景 | 冻结当前全部可见实例并产生一个联合 RGBWSV Package。 |
 | 停止切片 | 终止当前场景进程，不接受或回载取消后的 Package。 |
+
+![旧版模型导入与俯视工作区](assets/legacy_slicer/02_模型导入与工作区.png)
+
+图 2：导入 3MF 后的 +Z 俯视工作区。中央显示模型纹理与工作台网格，右侧模型列表显示实例和选择状态。
 
 画布坐标固定为：
 
@@ -258,6 +271,11 @@ output/ui_sessions/<模型名_时间戳>_openvdb/reports/experimental_openvdb_sh
 | 总耗时 | 切片核心整次运行墙钟耗时；失败或旧版 CLI 无细分数据时回退为界面等待的进程耗时。 |
 
 这些数据用于诊断性能，不改变 `RGBWSV` 通道、位深、极性或材料策略。“切片处理”与 `--benchmark-core-only` 的严格基准口径相关但不等同，正式引擎性能对比仍应使用 core-only benchmark。
+
+![旧版切片失败与耗时诊断](assets/legacy_slicer/03_切片结果与任务详情.png)
+
+图 3：旧版任务详情中的失败诊断示例。进度停在非终结阶段或显示“处理失败”时，应查看“日志”页的
+命令、退出码和错误详情；此画面不是成功 Package 证据。
 
 ## 5. 中央页面说明
 
