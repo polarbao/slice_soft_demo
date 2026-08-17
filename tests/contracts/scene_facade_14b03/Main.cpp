@@ -583,10 +583,10 @@ void VerifiesGridLayoutCommitAndAtomicity()
     Require(
         committed.Value()->snapshot.instances.at(0U)
                 .effective_bounds_mm.min_mm[0]
-            == 0.0
+            == slicer_core::kDefaultSceneBoundaryMarginMm
             && committed.Value()->snapshot.instances.at(1U)
                     .effective_bounds_mm.min_mm[0]
-                == 20.0
+                == slicer_core::kDefaultSceneBoundaryMarginMm + 20.0
             && committed.Value()->collision_report.collisions.empty(),
         "grid layout should reuse row-major edge-clearance semantics");
 
