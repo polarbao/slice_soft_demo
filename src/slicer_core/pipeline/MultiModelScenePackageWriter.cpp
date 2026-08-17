@@ -30,14 +30,15 @@ void ValidateScenePackageRequest(
     const RgbwsvProductionPackageWriteRequest& request,
     const SceneLayerComposeResult& composition,
     const MultiModelScene& scene,
-    const SceneCollisionResult& admission)
+    const SceneCollisionResult& admission,
+    const bool compositionAlreadyValidated = false)
 {
     const std::string effectiveMode =
         SlicePipelineModeName(
             composition.effectivepipelinemode);
     if (!request.layers.empty()
         || request.scene.has_value()
-        || !composition.IsValid()
+        || (!compositionAlreadyValidated && !composition.IsValid())
         || composition.sceneid.empty()
         || composition.sceneid != scene.sceneid
         || composition.sceneid != admission.sceneid
@@ -105,6 +106,56 @@ WriteMultiModelSceneProductionPackage(
         request.profileecho = capabilitySummary->profileecho;
     }
     request.layers = std::move(composition.layers);
+    return WriteRgbwsvProductionPackage(request);
+}
+
+RgbwsvProductionPackageWriteResult
+WriteValidatedMultiModelSceneProductionPackage(
+    RgbwsvProductionPackageWriteRequest request,
+    ValidatedSceneLayerComposeResult composition,
+    const MultiModelScene& scene,
+    const SceneCollisionResult& admission,
+    const std::filesystem::path& profileConfigPath)
+{
+    if (!composition.IsValid())
+    {
+        throw std::invalid_argument(
+            "validated multi-model scene composition is unavailable");
+    }
+    const SceneLayerComposeResult& value = composition.Value();
+    ValidateScenePackageRequest(
+        request,
+        value,
+        scene,
+        admission,
+        true);
+
+    request.grid.widthPx = value.grid.widthpx;
+    request.grid.heightPx = value.grid.heightpx;
+    request.grid.layerCount = value.grid.layercount;
+    request.grid.pixelSizeXmm = value.grid.pitchxmm;
+    request.grid.pixelSizeYmm = value.grid.pitchymm;
+    request.grid.layerThicknessMm = value.grid.layerthicknessmm;
+    request.grid.originXmm = value.grid.originxmm;
+    request.grid.originYmm = value.grid.originymm;
+    request.grid.originZmm = value.grid.originzmm;
+    request.scene = BuildValidatedMultiModelSceneReport(
+        scene,
+        admission,
+        composition,
+        request.requestedPipelineMode,
+        request.packageDir);
+    const auto capabilitySummary = BuildSceneCapabilitySummary(
+        scene, value.statistics, profileConfigPath);
+    if (capabilitySummary.has_value())
+    {
+        request.perinstance = capabilitySummary->perinstance;
+        request.profileecho = capabilitySummary->profileecho;
+    }
+
+    SceneLayerComposeResult owned = std::move(composition).Release();
+    request.layerStatistics = std::move(owned.layerstatistics);
+    request.layers = std::move(owned.layers);
     return WriteRgbwsvProductionPackage(request);
 }
 

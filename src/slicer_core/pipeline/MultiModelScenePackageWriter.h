@@ -2,7 +2,7 @@
 
 #include "slicer_core/layout/SceneCollisionService.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
-#include "slicer_core/pipeline/SceneRasterTypes.h"
+#include "slicer_core/pipeline/SceneLayerComposer.h"
 #include "slicer_core/scene/MultiModelScene.h"
 
 #include <filesystem>
@@ -29,6 +29,20 @@ WriteMultiModelSceneProductionPackage(
     const MultiModelScene& scene,
     const SceneCollisionResult& admission,
     const std::vector<SceneInstanceRaster>& instanceRasters = {},
+    const std::filesystem::path& profileConfigPath = {});
+
+/**
+ * @brief Publish composer-validated scene evidence without redundant byte scans.
+ *
+ * The persisted staging package is still independently decoded and strictly
+ * validated before publication.
+ */
+RgbwsvProductionPackageWriteResult
+WriteValidatedMultiModelSceneProductionPackage(
+    RgbwsvProductionPackageWriteRequest request,
+    ValidatedSceneLayerComposeResult composition,
+    const MultiModelScene& scene,
+    const SceneCollisionResult& admission,
     const std::filesystem::path& profileConfigPath = {});
 
 }  // namespace slicer_core

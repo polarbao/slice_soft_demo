@@ -113,6 +113,7 @@ struct RgbwsvProductionPackageWriteRequest
     RgbwsvProductionStorageSpec storage;
     RgbwsvProductionPreviewSpec preview;
     std::vector<RgbwsvProductionLayer> layers;
+    std::vector<RgbwsvProductionLayerStatistics> layerStatistics;
     std::optional<MultiModelSceneReportDocument> scene;
     std::optional<Json> perinstance;
     std::optional<Json> profileecho;

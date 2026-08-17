@@ -50,4 +50,16 @@ std::optional<SceneCapabilitySummaryDocument> BuildSceneCapabilitySummary(
     const std::vector<SceneInstanceRaster>& rasters,
     const std::filesystem::path& profileConfigPath);
 
+/**
+ * @brief Build capability-v1.2 metadata from statistics fused into composition.
+ * @param scene Canonical scene and instance transforms.
+ * @param statistics Composer-validated per-instance raster statistics.
+ * @param profileConfigPath Effective Profile JSON identity source.
+ * @return Summary evidence without rescanning retained RGBWSV raster buffers.
+ */
+std::optional<SceneCapabilitySummaryDocument> BuildSceneCapabilitySummary(
+    const MultiModelScene& scene,
+    const SceneLayerComposeStatistics& statistics,
+    const std::filesystem::path& profileConfigPath);
+
 }  // namespace slicer_core

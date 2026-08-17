@@ -1,9 +1,9 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16D-01..04 COMPLETE；工程候选已收口；16B-04 / 16D-05 待单独授权**
-> 版本：v1.9
-> 日期：2026-08-13
+> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16C-05 / 16D-01..04 / 16D-02-R1 已实施；16C-05 等待同请求五模型性能复测；16B-04 / 16D-05 待单独授权**
+> 版本：v2.3
+> 日期：2026-08-17
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
 ## 0. 🔴 2026-08-11 用户裁定：准入 Gate 口径与开工条件
@@ -311,6 +311,19 @@ SHA-256 完全一致，RIP strict 6/6 PASS。三模型 Release 交替 A/B 各 3 
 **carry-in：** 12F-05
 **出口：** RGBWSV 逐层 hash、report totals、Stage 15 闭合和 RIP strict 一致。
 
+**状态：IMPLEMENTATION COMPLETE / PERFORMANCE RE-MEASURE PENDING（2026-08-17）**
+
+**实际结果：** Composer 在既有源层闭合扫描中同步形成逐实例六通道统计与包围盒，在最终输出
+闭合扫描中同步形成逐层六通道统计；生产服务通过不可伪造的 validated result 复用该证据，删除
+服务、报告和写包阶段对同一 RGBWSV buffer 的重复深扫描。Orchestrator 改为同步借用权威 raster，
+不再复制全部实例层 buffer；统计证据形成后提前释放实例 raster。持久化后仍由严格 RIP Reader
+独立解码 TIFF，并新增 manifest 层统计与 TIFF 实际统计不一致的 fail-closed 错误码。
+
+Release 定向门禁 8/8 PASS，263 层 PackBits 历史包使用新严格 Reader 三次均 PASS；Runtime
+模块、Worker、Reader、宿主与本次构建 SHA-256 一致，self-test PASS。原始 0.021 mm 五模型
+请求快照未保留，故本卡不虚构完整 before/after；需由参考宿主以相同模型、变换、Profile、层厚、
+DPI 和压缩再运行一次后补齐性能数字，再将状态改为 COMPLETE。
+
 ### 16C-06 Occupancy Provider 分块/流式化
 
 **carry-in：** 12F-06
@@ -365,6 +378,20 @@ S3+非 relief 组合以及 Profile/contract 不一致执行 fail-closed。Qt 本
 **实际结果：** Reference Host 已提供 S0/S3 显式选择与 schema v5 持久化；作业页展示策略、
 P0/P3 边界和支撑统计扫描次数。2026-08-14 用户裁定结果页恢复旧版单预览，因此首层 A/当前层 B
 并排显示已取消，改为当前生产层 RGBWSV 合成预览及 manifest 通道统计。S0/P0 默认不变，Qt 未重算几何。
+
+### 16D-02-R1 单材料浮雕 S3 显式适用修订
+
+**依赖：** 16D-01、16D-02、用户明确授权
+**内容：** 修正 Qt/Host 把 `relief_heightfield` 错误等同于启用纹理的问题；允许单材料 W/V
+浮雕显式选择 S3，保持纹理关闭和 S0 默认不变。
+
+**状态：COMPLETE / PASS（2026-08-14）**
+
+**实际结果：** 白墨 W、光油 V 单材料 Profile 在显式选择 S3 时生成
+`relief_heightfield + texture.enabled=false`；普通无纹理 RGB + S3 仍 fail-closed。Release
+HostFlow/Qt 定向测试 3/3 PASS；单材料光油 S3 样例生成 306×718×192 RGBWSV Package，
+RIP strict PASS，V=5,662,741、S=17,388,073，R/G/B/W=0；Release Runtime 已发布，
+`HOSTFLOW_HB05_UI_PASS`。
 
 ### 16D-03 统一回归 Gate
 
@@ -446,6 +473,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-17 | v2.3 | 完成 16C-05 代码与功能门禁：Layer Composer 融合逐实例/逐层统计，生产链复用 validated evidence，Orchestrator 借用 raster 并提前释放输入 buffer，严格 Reader 独立核对持久化层统计。Release 定向 8/8、263 层历史包严格校验和 Runtime self-test PASS；因原始 0.021 mm 五模型请求快照未保留，性能状态保留为 RE-MEASURE PENDING，不虚构完整 A/B。 |
 | 2026-08-14 | v2.2 | 用户裁定覆盖 16D-02 的双预览呈现：结果页取消首层 A/当前层 B 并排渲染，恢复旧版单个当前生产层预览，默认显示 RGBWSV 合成；策略、姿态边界、性能和当前层 manifest 通道统计保留。生产 TIFF、采样和姿态默认值不变。 |
 | 2026-08-13 | v2.1 | 完成 16D-04：输出 REPORT_16 六段式收口结论；Stage 16 以工程候选完成、生产默认延期收口，16C-04..09 和正式设备预算保留后续排期，16B-04/16D-05 继续等待独立授权。 |
 | 2026-08-13 | v2.0 | 完成 16D-03：修复 Quick CI 主构建轨道和两处历史回归夹具；Debug/Release 定向 CTest 24/24、Quick CI、full regression、Stage 15 G1..G5、13G 与 Runtime 发布全部通过；16D-04 转 READY，默认仍为 Legacy/S0/P0。 |

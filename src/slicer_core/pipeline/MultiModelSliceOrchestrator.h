@@ -34,4 +34,12 @@ struct MultiModelLayerComposeRequest
 SceneLayerComposeResult ComposeAdmittedSceneRasters(
     const MultiModelLayerComposeRequest& request);
 
+/**
+ * @brief Compose admitted rasters and preserve in-loop closure evidence.
+ * @param request Scene admission evidence, revision, mode, and rasters.
+ * @return Immutable validated composition, or a structured blocked result.
+ */
+ValidatedSceneLayerComposeResult ComposeAdmittedSceneRastersValidated(
+    const MultiModelLayerComposeRequest& request);
+
 }  // namespace slicer_core

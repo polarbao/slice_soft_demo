@@ -275,14 +275,13 @@ bool HasValidAdmissionEvidence(
             == admission.statistics.hiddeninstancecount;
 }
 
-}  // namespace
-
-MultiModelSceneReportDocument BuildMultiModelSceneReport(
+MultiModelSceneReportDocument BuildMultiModelSceneReportImpl(
     const MultiModelScene& scene,
     const SceneCollisionResult& admission,
     const SceneLayerComposeResult& composition,
     const std::string_view requestedPipelineMode,
-    const std::filesystem::path& packageDir)
+    const std::filesystem::path& packageDir,
+    const bool compositionAlreadyValidated)
 {
     if (!ValidateMultiModelScene(
              scene,
@@ -304,7 +303,7 @@ MultiModelSceneReportDocument BuildMultiModelSceneReport(
             && (admission.functionalallowed
                 || !admission.productionallowed))
         || (admission.purpose == SceneValidationPurpose::Draft)
-        || !composition.IsValid()
+        || (!compositionAlreadyValidated && !composition.IsValid())
         || requestedPipelineMode.empty()
         || requestedPipelineMode
             != SlicePipelineModeName(
@@ -524,6 +523,45 @@ MultiModelSceneReportDocument BuildMultiModelSceneReport(
             "multi-model scene report document failed validation");
     }
     return document;
+}
+
+}  // namespace
+
+MultiModelSceneReportDocument BuildMultiModelSceneReport(
+    const MultiModelScene& scene,
+    const SceneCollisionResult& admission,
+    const SceneLayerComposeResult& composition,
+    const std::string_view requestedPipelineMode,
+    const std::filesystem::path& packageDir)
+{
+    return BuildMultiModelSceneReportImpl(
+        scene,
+        admission,
+        composition,
+        requestedPipelineMode,
+        packageDir,
+        false);
+}
+
+MultiModelSceneReportDocument BuildValidatedMultiModelSceneReport(
+    const MultiModelScene& scene,
+    const SceneCollisionResult& admission,
+    const ValidatedSceneLayerComposeResult& composition,
+    const std::string_view requestedPipelineMode,
+    const std::filesystem::path& packageDir)
+{
+    if (!composition.IsValid())
+    {
+        throw std::invalid_argument(
+            "validated multi-model scene composition is unavailable");
+    }
+    return BuildMultiModelSceneReportImpl(
+        scene,
+        admission,
+        composition.Value(),
+        requestedPipelineMode,
+        packageDir,
+        true);
 }
 
 }  // namespace slicer_core

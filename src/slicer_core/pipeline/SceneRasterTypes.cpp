@@ -171,7 +171,9 @@ bool HasValidComposedLayers(
             result.grid.heightpx,
             pixelCount)
         || result.layers.size()
-            != static_cast<std::size_t>(result.grid.layercount))
+            != static_cast<std::size_t>(result.grid.layercount)
+        || (!result.layerstatistics.empty()
+            && result.layerstatistics.size() != result.layers.size()))
     {
         return false;
     }
@@ -188,6 +190,11 @@ bool HasValidComposedLayers(
         }
         const RgbwsvProductionLayer& layer =
             result.layers.at(static_cast<std::size_t>(layerIndex));
+        const RgbwsvProductionLayerStatistics* expectedStatistics =
+            result.layerstatistics.empty()
+                ? nullptr
+                : &result.layerstatistics.at(
+                    static_cast<std::size_t>(layerIndex));
         const double expectedZ = result.grid.originzmm
             + (static_cast<double>(layerIndex) + 0.5)
                 * result.grid.layerthicknessmm;
@@ -197,11 +204,15 @@ bool HasValidComposedLayers(
             || layer.channelOrder != result.protocol.channel_order
             || !std::isfinite(layer.zMm)
             || std::abs(layer.zMm - expectedZ) > zTolerance
-            || layer.channels.size() != pixelCount * kChannelCount)
+            || layer.channels.size() != pixelCount * kChannelCount
+            || (expectedStatistics != nullptr
+                && expectedStatistics->layerIndex != layerIndex))
         {
             return false;
         }
 
+        RgbwsvProductionLayerStatistics actualStatistics;
+        actualStatistics.layerIndex = layerIndex;
         for (std::size_t pixelIndex{0U};
              pixelIndex < pixelCount;
              ++pixelIndex)
@@ -212,6 +223,18 @@ bool HasValidComposedLayers(
                 return false;
             }
             const std::size_t base = pixelIndex * kChannelCount;
+            actualStatistics.emptyPixels[0U] +=
+                layer.channels[base] == result.protocol.empty_value;
+            actualStatistics.emptyPixels[1U] +=
+                layer.channels[base + 1U] == result.protocol.empty_value;
+            actualStatistics.emptyPixels[2U] +=
+                layer.channels[base + 2U] == result.protocol.empty_value;
+            actualStatistics.emptyPixels[3U] +=
+                layer.channels[base + 3U] == result.protocol.empty_value;
+            actualStatistics.emptyPixels[4U] +=
+                layer.channels[base + 4U] == result.protocol.empty_value;
+            actualStatistics.emptyPixels[5U] +=
+                layer.channels[base + 5U] == result.protocol.empty_value;
             const bool occupied = std::any_of(
                 layer.channels.begin()
                     + static_cast<std::ptrdiff_t>(base),
@@ -238,6 +261,20 @@ bool HasValidComposedLayers(
             {
                 emptyPixels = next;
             }
+        }
+        for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+        {
+            actualStatistics.printPixels[channel] =
+                static_cast<std::uint64_t>(pixelCount)
+                - actualStatistics.emptyPixels[channel];
+        }
+        if (expectedStatistics != nullptr
+            && (actualStatistics.printPixels
+                    != expectedStatistics->printPixels
+                || actualStatistics.emptyPixels
+                    != expectedStatistics->emptyPixels))
+        {
+            return false;
         }
     }
     return true;

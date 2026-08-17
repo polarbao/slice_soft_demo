@@ -35,6 +35,20 @@ struct RgbwsvProductionLayer
 };
 
 /**
+ * @brief Per-channel production-polarity counts for one final RGBWSV layer.
+ *
+ * These counts may be collected while composing a layer and reused by the
+ * package report builder. The strict persisted-package validator remains the
+ * authority and compares them with the TIFF bytes before publication.
+ */
+struct RgbwsvProductionLayerStatistics
+{
+    int layerIndex{0};
+    std::array<std::uint64_t, 6> printPixels{};
+    std::array<std::uint64_t, 6> emptyPixels{};
+};
+
+/**
  * @brief Return the current production RGBWSV protocol constants.
  * @return RGBWSV protocol descriptor.
  */

@@ -1,7 +1,7 @@
 # REPORT_16 切片几何采样、甲片接触姿态与性能专项当前状态
 
 > 状态：**ENGINEERING CANDIDATE COMPLETE / PRODUCTION DEFAULT DEFERRED**
-> 日期：2026-08-13
+> 日期：2026-08-17
 > 当前默认：**Legacy + S0 + P0**
 
 ## 1. Current State
@@ -14,6 +14,7 @@ Stage 16 已完成准入审计、采样合同与候选、姿态诊断、性能 t
 16A-01..06         COMPLETE
 16B-01..03         COMPLETE
 16C-01..03         COMPLETE
+16C-05             IMPLEMENTATION COMPLETE / PERFORMANCE RE-MEASURE PENDING
 16D-01..04         COMPLETE
 16D-05             NOT AUTHORIZED
 ```
@@ -27,7 +28,7 @@ Stage 16 已完成准入审计、采样合同与候选、姿态诊断、性能 t
 | 候选 | 当前结论 | 可用范围 |
 |---|---|---|
 | S0 Legacy center sample | 生产默认 | 全部既有生产路径 |
-| S3 adaptive 2x2 `>=2/4` | 工程候选 | 仅 `relief_heightfield` 且必须显式 opt-in |
+| S3 adaptive 2x2 `>=2/4` | 工程候选 | 仅 `relief_heightfield` 且必须显式 opt-in；覆盖彩色纹理及单材料 W/V 浮雕 |
 | S4 adaptive 2x2 `>=1/4` | 上限对照 | 诊断/矩阵，不接生产 |
 | P0 当前姿态 | 生产默认 | 全部既有生产路径 |
 | P3 接触面积候选 | 只读诊断 | Qt 展示和 A/B 评估；未授权写回姿态 |
@@ -45,11 +46,21 @@ P3 继续保持诊断状态。
 3. Qt 只展示策略、候选姿态与生产 TIFF A/B，不在 UI 重算几何；
 4. 未执行 16D-05，不得把候选可用描述为生产默认完成。
 
+2026-08-14 的 16D-02-R1 只修正了 Host 对单材料 W/V 浮雕的 S3 准入：显式选择 S3
+会使用 `relief_heightfield`，但纹理保持关闭，W/V 材料通道和 S0 默认均不变。单材料光油
+样例已完成 Package/RIP strict 验证。
+
 ## 4. Performance Budget State
 
 16C-02 已完成 S0/S3/S4 x 1/11/12/22 的 Release cold/warm、core/end-to-end、峰值内存、
 确定性 hash 与 RIP strict。S3/S4 没有在所有场景中显著快于 S0，当前价值是几何语义候选，
 不是通用性能替代。
+
+16C-05 已把逐实例统计和逐层统计融合进 Composer 既有闭合扫描，并让生产报告、Package Writer
+复用不可伪造的 validated evidence；Orchestrator 同步借用实例 raster，统计形成后提前释放输入
+buffer。持久化 TIFF 仍由严格 Reader 独立解码核验，不以内部证据替代落盘校验。Release 定向
+功能门禁和 Runtime 发布均通过；由于原始 0.021 mm 五模型请求快照未保留，完整同请求性能 A/B
+仍待复测，不将理论消除的扫描次数伪装成实测秒数。
 
 该矩阵使用 127 dpi / 0.2 mm 功能场景；正式设备 buildVolume、原点、轴向、22 实例目标时限和
 峰值内存预算尚未冻结，故生产预算状态保持 `INPUT_OPEN`。
@@ -73,7 +84,8 @@ P3 继续保持诊断状态。
 | Reality 定向与旧 Writer 基线 | 定向已满足；性能基线由 16C-02 替代 |
 | 平移实例复用 | Stage 13B 已满足既定范围 |
 | Bottom Projection Range Provider | 未实现，保留后续优化 |
-| Compose/Buffer 复用、Occupancy 流式化 | 未实现，保留后续优化 |
+| Compose/Buffer 复用 | 16C-05 已实施并通过功能门禁；完整五模型同请求性能复测待补 |
+| Occupancy 流式化 | 未实现，保留后续优化 |
 | 生产几何/支撑缓存 | 未实现，保留后续优化 |
 | Preview/I/O 解耦、自适应 Preview | 未实现，保留后续优化 |
 | 有内存预算的有限并行 | 未实现，等待内存预算 |

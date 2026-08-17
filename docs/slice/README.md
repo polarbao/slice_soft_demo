@@ -86,8 +86,12 @@ S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；�
 | `REPORT/REPORT_14F_04_S2本地合同门禁当前状态.md` | 14F-04 S2 C1-C7 机器合同、正负例、CTest 与外部 RIP 延期边界 |
 | `REPORT/REPORT_14F_切片能力包本地交付与外部验收延期当前状态.md` | **Stage 14F 收口真源**：能力包可交付、接口冻结、六步本地门禁和外部验收延期边界 |
 | `../../contracts/slicer_rip_s2_contract.json` | 冻结的 S2 本地机器合同：输入协议、量化、白区、输出组织、混合和外部状态 |
-| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（LOCAL COMPLETE）**：H-A..H-E 完成；H-F-01 操作流回归收口完成 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A..H-E、H-F-01..09 完成；H-F-10 已实现，Runtime 部署待关闭占用进程 |
 | `REPORT/REPORT_HOSTFLOW_H_F_01_参考宿主操作流回归收口当前状态.md` | H-F-01 默认导入目录、Profile 说明、自动排版和切片错误可见性收口 |
+| `REPORT/REPORT_HOSTFLOW_H_F_08_五模型切片耗时分析与优化.md` | H-F-08 五模型参数差异、报告统计与严格 TIFF 校验耗时分析及优化证据 |
+| `REPORT/REPORT_HOSTFLOW_H_F_09_宿主连续计时与Worker快照分离.md` | H-F-09 宿主连续计时、Worker 快照分离与第二次作业计时重置 |
+| `REPORT/REPORT_HOSTFLOW_H_F_10_Reality批量导入碰撞加速.md` | H-F-10 Reality 十模型批量导入碰撞准入热点与 BVH 宽相位加速证据 |
+| `REPORT/REPORT_16C_05_LayerCompose扫描融合与Buffer复用当前状态.md` | 16C-05 逐层/逐实例统计扫描融合、validated evidence 与 Buffer 复用 |
 | `DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md` | H-D-02 完成证据、H-D-03..06 准备、刷新矩阵和人工验收边界 |
 | `REPORT/REPORT_HOSTFLOW_H_D_02_三维画布与RB_P1当前状态.md` | H-D-02 真实纹理 3D 画布、UI-M7 零 DLL 调用、RB-P1 与 36 资产矩阵结果 |
 | `REPORT/REPORT_HOSTFLOW_H_D_03_三车道拖拽接线当前状态.md` | H-D-03 俯视拾取、本地拖拽、单次 Commit、Stale 恢复与 Debug/Release 门禁 |
@@ -122,6 +126,7 @@ S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；�
 | `DEV/DEV_16_层体积采样接触调平与性能治理设计.md` | Stage 16 采样 Provider、调平分析器、Telemetry 和性能治理设计 |
 | `DOC/DOC_PREP_16_切片几何采样甲片接触姿态与性能实施准备.md` | Stage 16 当前证据、离线模拟、资产边界和开工停止条件 |
 | `DOC/DOC_PREP_16A_05_机器可读候选矩阵实施准备.md` | 16A-05 S0/S2/S3/S4 资产、逐层差异、RIP 与性能证据边界 |
+| `DOC/DOC_DECISION_16D_02_R1_单材料浮雕S3适用范围修订.md` | 16D-02-R1 单材料白墨 W/光油 V 浮雕的 S3 显式适用范围修订 |
 | `REPORT/REPORT_16A_05_机器可读候选矩阵当前状态.md` | 16A-05 Reality/Stage 15/Package-RIP 实测矩阵与后续 Gate |
 | `DOC/DOC_PREP_16C_02_Release性能基线实施准备.md` | 16C-02 S0/S3/S4 与 1/11/12/22 Release cold/warm 性能和确定性证据合同 |
 | `REPORT/REPORT_16C_02_Release性能基线当前状态.md` | 16C-02 core-only/end-to-end、p50/p95、峰值内存、输出 hash 和 RIP strict 实测结论 |

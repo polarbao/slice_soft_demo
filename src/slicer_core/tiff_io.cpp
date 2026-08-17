@@ -5,7 +5,7 @@
 
 #include <algorithm>
 #include <fstream>
-#include <iterator>
+#include <limits>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -77,6 +77,40 @@ void UpdateChannelStats(
     }
 }
 
+void AccumulateContiguousChannelStats(
+    TiffReadResult& result,
+    const std::span<const std::uint8_t> pixels)
+{
+    if ((pixels.size() % rgbwsv_channel_count) != 0U)
+    {
+        throw std::runtime_error(
+            "TIFF contiguous RGBWSV payload is not pixel aligned");
+    }
+    for (std::size_t offset{0U};
+         offset < pixels.size();
+         offset += rgbwsv_channel_count)
+    {
+        for (std::size_t channel{0U};
+             channel < rgbwsv_channel_count;
+             ++channel)
+        {
+            const std::uint8_t value = pixels[offset + channel];
+            result.channel_checksums[channel] += value;
+            TiffChannelStats& stats = result.channel_stats[channel];
+            stats.min_value = std::min(
+                stats.min_value,
+                static_cast<int>(value));
+            stats.max_value = std::max(
+                stats.max_value,
+                static_cast<int>(value));
+            stats.empty_pixels += value == 255U;
+            stats.print_pixels += value != 255U;
+            stats.full_print_pixels += value == 0U;
+            stats.partial_print_pixels += value != 0U && value != 255U;
+        }
+    }
+}
+
 void InitializeReadPixels(TiffReadResult& result)
 {
     const std::size_t byteCount = static_cast<std::size_t>(result.spec.width)
@@ -106,14 +140,37 @@ TiffCompressionMode ReadTiffCompressionMode(
 
 std::vector<std::uint8_t> ReadFile(const std::filesystem::path& path)
 {
-    std::ifstream input{path, std::ios::binary};
+    std::ifstream input{path, std::ios::binary | std::ios::ate};
     if (!input)
     {
         throw std::runtime_error(
             "failed to open TIFF for reading: " + path.string());
     }
-    return {std::istreambuf_iterator<char>{input},
-            std::istreambuf_iterator<char>{}};
+    const std::streampos end = input.tellg();
+    if (end < 0)
+    {
+        throw std::runtime_error(
+            "failed to determine TIFF byte count: " + path.string());
+    }
+    const auto byteCount = static_cast<std::uintmax_t>(end);
+    if (byteCount
+        > static_cast<std::uintmax_t>(
+            std::numeric_limits<std::streamsize>::max()))
+    {
+        throw std::runtime_error(
+            "TIFF is too large for one buffered read: " + path.string());
+    }
+    std::vector<std::uint8_t> data(static_cast<std::size_t>(byteCount));
+    input.seekg(0, std::ios::beg);
+    if (!data.empty()
+        && !input.read(
+            reinterpret_cast<char*>(data.data()),
+            static_cast<std::streamsize>(data.size())))
+    {
+        throw std::runtime_error(
+            "failed to read complete TIFF payload: " + path.string());
+    }
+    return data;
 }
 
 void DecodeTile(
@@ -165,29 +222,21 @@ void DecodeStrip(
     const std::uint32_t startRow,
     const std::uint32_t rows)
 {
-    for (std::uint32_t y{0U}; y < rows; ++y)
+    const std::size_t expectedBytes = static_cast<std::size_t>(rows)
+        * result.spec.width * result.spec.samples_per_pixel;
+    const std::size_t targetOffset = static_cast<std::size_t>(startRow)
+        * result.spec.width * result.spec.samples_per_pixel;
+    if (strip.size() != expectedBytes
+        || targetOffset + expectedBytes > result.pixels.size())
     {
-        const std::uint32_t imageY{startRow + y};
-        for (std::uint32_t x{0U}; x < result.spec.width; ++x)
-        {
-            for (std::uint16_t channel{0U};
-                 channel < result.spec.samples_per_pixel;
-                 ++channel)
-            {
-                const std::size_t sourceIndex =
-                    (static_cast<std::size_t>(y) * result.spec.width + x)
-                        * result.spec.samples_per_pixel
-                    + channel;
-                const std::size_t targetIndex =
-                    (static_cast<std::size_t>(imageY) * result.spec.width + x)
-                        * result.spec.samples_per_pixel
-                    + channel;
-                const std::uint8_t value = strip[sourceIndex];
-                result.pixels.at(targetIndex) = value;
-                UpdateChannelStats(result, channel, value);
-            }
-        }
+        throw std::runtime_error(
+            "TIFF strip payload does not match the decoded image range");
     }
+    std::copy(
+        strip.begin(),
+        strip.end(),
+        result.pixels.begin() + static_cast<std::ptrdiff_t>(targetOffset));
+    AccumulateContiguousChannelStats(result, strip);
 }
 
 }  // namespace

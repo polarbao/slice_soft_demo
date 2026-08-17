@@ -28,6 +28,7 @@ enum class ValidationErrorCode {
     LayerCountMismatch,
     LayerMissing,
     LayerSizeMismatch,
+    LayerStatisticsMismatch,
     TiffOpenFailed,
     TiffSampleCountInvalid,
     TiffBitDepthInvalid,

@@ -96,6 +96,22 @@ void MutateManifestWhiteSemantics(
     WriteJson(manifestPath, slicer_core::Json{std::move(root)});
 }
 
+void MutateFirstLayerPrintPixels(
+    const std::filesystem::path& packageDir)
+{
+    const std::filesystem::path manifestPath = packageDir / "manifest.json";
+    slicer_core::Json::Object root = ReadJson(manifestPath).as_object();
+    slicer_core::Json::Array layers = root.at("layers").as_array();
+    slicer_core::Json::Object first = layers.at(0U).as_object();
+    slicer_core::Json::Object printPixels =
+        first.at("printPixels").as_object();
+    printPixels["R"] = 2;
+    first["printPixels"] = slicer_core::Json{std::move(printPixels)};
+    layers.at(0U) = slicer_core::Json{std::move(first)};
+    root["layers"] = slicer_core::Json{std::move(layers)};
+    WriteJson(manifestPath, slicer_core::Json{std::move(root)});
+}
+
 std::size_t ChannelIndex(
     const int x,
     const int y,
@@ -176,6 +192,10 @@ bool AdmittedGlobalPackagePassesRipAndReports()
         ReadJson(packageDir / "reports" / "slice_report.json");
     const slicer_core::Json previewReport =
         ReadJson(packageDir / "reports" / "preview_report.json");
+    const slicer_core::Json& firstLayerStats =
+        sliceReport.at("layerStats").at(0U);
+    const slicer_core::RipLayerChecksum& firstRipLayer =
+        rip.layer_checksums.at(0U);
 
     return ExpectTrue(result.productionOutputWritten, "writer reports production output")
         && ExpectTrue(!result.fallbackApplied, "writer applies no fallback")
@@ -226,6 +246,19 @@ bool AdmittedGlobalPackagePassesRipAndReports()
         && ExpectTrue(
             sliceReport.at("productionOutputWritten").as_bool(),
             "slice report records production output")
+        && ExpectTrue(
+            firstLayerStats.at("printPixels").at("R").as_int() == 1
+                && firstLayerStats.at("emptyPixels").at("R").as_int() == 23
+                && firstLayerStats.at("printPixels").at("W").as_int() == 1
+                && firstLayerStats.at("emptyPixels").at("W").as_int() == 23,
+            "slice report preserves exact per-channel layer statistics")
+        && ExpectTrue(
+            firstRipLayer.channels.at(0U) == 5885U
+                && firstRipLayer.channel_stats.at(0U).print_pixels == 1U
+                && firstRipLayer.channel_stats.at(0U).empty_pixels == 23U
+                && firstRipLayer.channel_stats.at(0U).partial_print_pixels == 1U
+                && firstRipLayer.channel_stats.at(3U).full_print_pixels == 1U,
+            "strict TIFF reader preserves checksums and print statistics")
         && ExpectTrue(
             previewReport.at("generated").size() == 8U,
             "preview report contains four views per layer")
@@ -755,6 +788,28 @@ bool ExistingPackageIsAtomicallyReplaced()
         && ExpectTrue(rip.layer_count == kLayerCount, "replacement package passes RIP");
 }
 
+bool PersistedLayerStatisticsMismatchFailsClosed()
+{
+    const std::filesystem::path directory =
+        MakeTestDirectory("layer_statistics_mismatch");
+    const std::filesystem::path packageDir = directory / "package";
+    (void)slicer_core::WriteRgbwsvProductionPackage(MakeRequest(packageDir));
+    MutateFirstLayerPrintPixels(packageDir);
+
+    try
+    {
+        (void)slicer_core::validate_slice_package(packageDir);
+    }
+    catch (const slicer_core::ValidationError& error)
+    {
+        return ExpectTrue(
+            error.code()
+                == slicer_core::ValidationErrorCode::LayerStatisticsMismatch,
+            "persisted statistics mismatch has a stable fail-closed code");
+    }
+    return ExpectTrue(false, "persisted statistics mismatch must fail closed");
+}
+
 bool ConcurrentPackageTargetIsRejectedBeforeWriting()
 {
     const std::filesystem::path directory = MakeTestDirectory("lease_conflict");
@@ -800,6 +855,7 @@ int main()
         {"tiled_package_uses_the_same_protocol", TiledPackageUsesTheSameProtocol},
         {"packbits_package_uses_the_declared_compression", PackBitsPackageUsesTheDeclaredCompression},
         {"compression_manifest_failures_are_stable", CompressionManifestFailuresAreStable},
+        {"persisted_layer_statistics_mismatch_fails_closed", PersistedLayerStatisticsMismatchFailsClosed},
         {"historical_manifest_without_compression_defaults_to_none", HistoricalManifestWithoutCompressionDefaultsToNone},
         {"white_semantics_uses_manifest_authority", WhiteSemanticsUsesManifestAuthority},
         {"profile_white_semantics_provides_the_default", ProfileWhiteSemanticsProvidesTheDefault},

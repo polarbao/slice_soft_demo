@@ -236,6 +236,11 @@ bool SingleInstancePreservesWriterReadyBytes()
     return ExpectTrue(result.IsValid(), "single instance result is valid")
         && ExpectTrue(result.layers.size() == 1U, "single output layer")
         && ExpectTrue(
+            result.layerstatistics.size() == 1U
+                && result.layerstatistics.at(0U).printPixels.at(0U) == 1U
+                && result.layerstatistics.at(0U).printPixels.at(4U) == 1U,
+            "composer fuses exact per-channel report statistics")
+        && ExpectTrue(
             result.layers.at(0).channels
                 == instance.layers.at(0).output.channels,
             "single instance bytes are unchanged")

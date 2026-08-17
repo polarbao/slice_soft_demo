@@ -387,11 +387,21 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
         request.effectivepipelinemode;
     compose.globalgrid = global;
     compose.protocol = FixedSceneRasterProtocol();
-    compose.instances = request.instances;
+    // The orchestration call is synchronous. Borrow the authoritative raster
+    // buffers instead of copying every RGBWSV byte into a second vector.
     compose.quantizationtolerance =
         request.quantizationtolerance;
     compose.canceltoken = request.canceltoken;
-    return ComposeSceneLayers(compose);
+    return internal::ComposeSceneLayersBorrowed(
+        compose,
+        request.instances);
+}
+
+ValidatedSceneLayerComposeResult ComposeAdmittedSceneRastersValidated(
+    const MultiModelLayerComposeRequest& request)
+{
+    return ValidatedSceneLayerComposeResult{
+        ComposeAdmittedSceneRasters(request)};
 }
 
 }  // namespace slicer_core

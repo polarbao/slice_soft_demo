@@ -976,24 +976,30 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
     composeRequest.quantizationtolerance =
         kRasterQuantizationTolerance;
     composeRequest.canceltoken = request.canceltoken;
-    SceneLayerComposeResult composition =
-        ComposeAdmittedSceneRasters(composeRequest);
-    if (!composition.IsValid(request.canceltoken))
+    ValidatedSceneLayerComposeResult composition =
+        ComposeAdmittedSceneRastersValidated(composeRequest);
+    if (!composition.IsValid())
     {
+        const SceneLayerComposeResult& blockedComposition =
+            composition.Value();
         ThrowIfCancellationRequested(request, "scene_composition");
         return Block(
             request,
             MultiModelProductionErrorCode::
                 ProductionPackageInvalid,
-            composition.error.has_value()
-                ? composition.error->field
+            blockedComposition.error.has_value()
+                ? blockedComposition.error->field
                 : "sceneComposition",
-            composition.error.has_value()
-                ? composition.error->message
+            blockedComposition.error.has_value()
+                ? blockedComposition.error->message
                 : "scene layer composition failed",
             scene.sceneid);
     }
 
+    // Per-instance capability statistics were fused into the immutable
+    // composition evidence, so release the large local raster buffers before
+    // package publication.
+    composeRequest.instances.clear();
     runProfile.layer_compose_ms =
         ElapsedMilliseconds(phaseStart);
     ReportProgress(
@@ -1001,7 +1007,7 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
         runStart,
         "scene_package_write",
         0,
-        composition.grid.layercount,
+        composition.Value().grid.layercount,
         78);
     RgbwsvProductionPackageWriteRequest writeRequest;
     writeRequest.packageDir = contract.outputpackagedir;
@@ -1090,11 +1096,12 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
     RgbwsvProductionPackageWriteResult written;
     try
     {
-        written = WriteMultiModelSceneProductionPackage(
+        written = WriteValidatedMultiModelSceneProductionPackage(
             std::move(writeRequest),
             std::move(composition),
             scene,
-            admission, composeRequest.instances, contract.profileconfigpath);
+            admission,
+            contract.profileconfigpath);
         runProfile.tiff_write_ms =
             written.profile.tiffwritems;
         runProfile.preview_write_ms =

@@ -40,7 +40,11 @@
 | `REPORT_12E_09A_02_SceneAwareDiagnosticEffectiveConfig当前状态.md` | 12E-09A-02 single_model/scene Diagnostic Effective Config |
 | `REPORT_03D_07_LibTIFF可选后端阶段收口.md` | 03D-07 LibTIFF 可选后端、Runtime、性能和回归收口 |
 | `REPORT_HOSTFLOW_HX阶段准备状态.md` | HOSTFLOW H-A/H-B/H-C 准备矩阵；H-A 已收口，H-B-01 为下一候选 |
+| `REPORT_HOSTFLOW_H_F_08_五模型切片耗时分析与优化.md` | H-F-08 五模型参数差异、报告统计与严格 TIFF 校验耗时分析及优化证据 |
+| `REPORT_HOSTFLOW_H_F_09_宿主连续计时与Worker快照分离.md` | H-F-09 宿主连续墙钟、Worker 快照分离与第二次作业计时重置 |
+| `REPORT_HOSTFLOW_H_F_10_Reality批量导入碰撞加速.md` | H-F-10 Reality 十模型批量导入碰撞准入热点与 BVH 宽相位加速证据 |
 | `REPORT_16C_01_分项Telemetry收口当前状态.md` | 16C-01 import 与单实例分项计时、null 语义和 Worker 加法 schema |
+| `REPORT_16C_05_LayerCompose扫描融合与Buffer复用当前状态.md` | 16C-05 Layer Compose 扫描融合、validated evidence 与 Buffer 复用 |
 | `REPORT_16B_02_ContactLevelingAnalyzer当前状态.md` | 16B-02 只读长轴调平候选、约束和确定性诊断矩阵 |
 | `REPORT_16B_03_姿态AB矩阵当前状态.md` | 16B-03 P0/P2/P3 Reality 支撑矩阵和候选结论 |
 | `REPORT_16D_03_统一回归Gate当前状态.md` | 16D-03 Debug/Release、Quick CI、Stage 15、13G、Runtime 与协议统一 Gate |

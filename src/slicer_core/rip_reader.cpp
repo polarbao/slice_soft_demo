@@ -137,6 +137,84 @@ int RequireInteger(
     return RequireIntegerValue(object.at(key), code, field);
 }
 
+std::uint64_t RequirePixelCount(
+    const Json& object,
+    const std::string& key,
+    const std::string& field)
+{
+    const double actual = RequireNumber(
+        object,
+        key,
+        ValidationErrorCode::LayerStatisticsMismatch,
+        field);
+    if (std::floor(actual) != actual
+        || actual < 0.0
+        || actual > static_cast<double>(
+            std::numeric_limits<std::uint64_t>::max()))
+    {
+        fail(
+            ValidationErrorCode::LayerStatisticsMismatch,
+            field,
+            "non-negative integer",
+            NumberToString(actual));
+    }
+    return static_cast<std::uint64_t>(actual);
+}
+
+void ValidateLayerStatistics(
+    const Json& layer,
+    const std::array<TiffChannelStats, 6>& actual,
+    const int layerIndex,
+    const std::filesystem::path& path)
+{
+    const bool hasPrint = layer.contains("printPixels");
+    const bool hasEmpty = layer.contains("emptyPixels");
+    if (!hasPrint && !hasEmpty)
+    {
+        return;
+    }
+    if (!hasPrint || !hasEmpty
+        || !layer.at("printPixels").is_object()
+        || !layer.at("emptyPixels").is_object())
+    {
+        fail(
+            ValidationErrorCode::LayerStatisticsMismatch,
+            "manifest.layers[" + std::to_string(layerIndex)
+                + "].statistics",
+            "printPixels and emptyPixels objects",
+            "missing or invalid",
+            path);
+    }
+
+    constexpr std::array<const char*, 6> channels{
+        "R", "G", "B", "W", "S", "V"};
+    for (std::size_t channel{0U}; channel < channels.size(); ++channel)
+    {
+        const std::string base = "manifest.layers["
+            + std::to_string(layerIndex) + "]";
+        const std::uint64_t expectedPrint = RequirePixelCount(
+            layer.at("printPixels"),
+            channels[channel],
+            base + ".printPixels." + channels[channel]);
+        const std::uint64_t expectedEmpty = RequirePixelCount(
+            layer.at("emptyPixels"),
+            channels[channel],
+            base + ".emptyPixels." + channels[channel]);
+        if (expectedPrint != actual[channel].print_pixels
+            || expectedEmpty != actual[channel].empty_pixels)
+        {
+            fail(
+                ValidationErrorCode::LayerStatisticsMismatch,
+                base + ".channelStatistics." + channels[channel],
+                std::to_string(actual[channel].print_pixels)
+                    + "/" + std::to_string(actual[channel].empty_pixels),
+                std::to_string(expectedPrint)
+                    + "/" + std::to_string(expectedEmpty),
+                path);
+        }
+    }
+}
+
 void require_channel_order(const Json& channel_order) {
     const std::array<const char*, 6> expected{"R", "G", "B", "W", "S", "V"};
     if (!channel_order.is_array() || channel_order.size() != expected.size()) {
@@ -565,6 +643,8 @@ std::string validation_error_code_string(const ValidationErrorCode code) {
             return "E_LAYER_MISSING";
         case ValidationErrorCode::LayerSizeMismatch:
             return "E_LAYER_SIZE_MISMATCH";
+        case ValidationErrorCode::LayerStatisticsMismatch:
+            return "E_LAYER_STATISTICS_MISMATCH";
         case ValidationErrorCode::TiffOpenFailed:
             return "E_TIFF_OPEN_FAILED";
         case ValidationErrorCode::TiffSampleCountInvalid:
@@ -767,6 +847,11 @@ RipValidationResult ValidateSlicePackageImpl(
                 std::to_string(tiff_result.spec.width) + "x" + std::to_string(tiff_result.spec.height),
                 layer_path);
         }
+        ValidateLayerStatistics(
+            layer,
+            tiff_result.channel_stats,
+            index,
+            layer_path);
         merge_channel_stats(result.total_channel_stats, tiff_result.channel_stats);
         result.layer_checksums.push_back(
             {index, tiff_result.channel_checksums, tiff_result.channel_stats});

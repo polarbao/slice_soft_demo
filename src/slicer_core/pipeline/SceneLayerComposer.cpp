@@ -305,6 +305,7 @@ void Block(
     result.available = false;
     result.status = "blocked";
     result.layers.clear();
+    result.layerstatistics.clear();
     result.statistics.outputlayercount = 0U;
     result.statistics.modelpixels = 0U;
     result.statistics.outervarnishpixels = 0U;
@@ -394,7 +395,8 @@ bool ValidateLayer(
     const int expectedLayerIndex,
     const std::size_t pixelCount,
     const std::size_t byteCount,
-    SceneLayerComposeResult& result)
+    SceneLayerComposeResult& result,
+    SceneInstanceComposeStatistics::RasterStatistics& statistics)
 {
     if (StopIfCancellationRequested(
             request, result, "composition.layer_validation", expectedLayerIndex))
@@ -530,6 +532,39 @@ bool ValidateLayer(
                 expectedLayerIndex);
             return false;
         }
+        const std::size_t byteOffset = pixelIndex * kChannelCount;
+        statistics.printpixels[0U] +=
+            layer.output.channels[byteOffset] != request.protocol.empty_value;
+        statistics.printpixels[1U] +=
+            layer.output.channels[byteOffset + 1U] != request.protocol.empty_value;
+        statistics.printpixels[2U] +=
+            layer.output.channels[byteOffset + 2U] != request.protocol.empty_value;
+        statistics.printpixels[3U] +=
+            layer.output.channels[byteOffset + 3U] != request.protocol.empty_value;
+        statistics.printpixels[4U] +=
+            layer.output.channels[byteOffset + 4U] != request.protocol.empty_value;
+        statistics.printpixels[5U] +=
+            layer.output.channels[byteOffset + 5U] != request.protocol.empty_value;
+        if (layer.modelownership[pixelIndex] != 0U
+            || layer.modelvarnishownership[pixelIndex] != 0U
+            || layer.outervarnishownership[pixelIndex] != 0U
+            || layer.supportownership[pixelIndex] != 0U)
+        {
+            const int x = static_cast<int>(
+                pixelIndex % static_cast<std::size_t>(
+                    instance.localgrid.widthpx));
+            const int y = static_cast<int>(
+                pixelIndex / static_cast<std::size_t>(
+                    instance.localgrid.widthpx));
+            statistics.minimumx = std::min(statistics.minimumx, x);
+            statistics.minimumy = std::min(statistics.minimumy, y);
+            statistics.minimumlayer = std::min(
+                statistics.minimumlayer, expectedLayerIndex);
+            statistics.maximumx = std::max(statistics.maximumx, x);
+            statistics.maximumy = std::max(statistics.maximumy, y);
+            statistics.maximumlayer = std::max(
+                statistics.maximumlayer, expectedLayerIndex);
+        }
     }
     return true;
 }
@@ -539,7 +574,8 @@ bool ValidateInstance(
     const SceneInstanceRaster& instance,
     const std::unordered_set<std::string>& knownInstanceIds,
     SceneLayerComposeResult& result,
-    InstancePlacement& placement)
+    InstancePlacement& placement,
+    SceneInstanceComposeStatistics& instanceStatistics)
 {
     if (instance.sceneid != request.sceneid
         || instance.modelid.empty()
@@ -701,6 +737,11 @@ bool ValidateInstance(
             &instance);
         return false;
     }
+    instanceStatistics.instanceid = instance.instanceid;
+    instanceStatistics.raster.grid = instance.localgrid;
+    instanceStatistics.raster.minimumx = instance.localgrid.widthpx;
+    instanceStatistics.raster.minimumy = instance.localgrid.heightpx;
+    instanceStatistics.raster.minimumlayer = instance.localgrid.layercount;
     for (int layerIndex{0};
          layerIndex < instance.localgrid.layercount;
          ++layerIndex)
@@ -717,11 +758,21 @@ bool ValidateInstance(
                 layerIndex,
                 pixelCount,
                 byteCount,
-                result))
+                result,
+                instanceStatistics.raster))
         {
             return false;
         }
     }
+    const std::uint64_t sampleCount =
+        static_cast<std::uint64_t>(pixelCount)
+        * static_cast<std::uint64_t>(instance.layers.size());
+    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+    {
+        instanceStatistics.raster.emptypixels[channel] =
+            sampleCount - instanceStatistics.raster.printpixels[channel];
+    }
+    instanceStatistics.raster.available = true;
     placement.instance = &instance;
     return true;
 }
@@ -881,8 +932,9 @@ void CountInstanceOutputPixel(
 
 }  // namespace
 
-SceneLayerComposeResult ComposeSceneLayers(
-    const SceneLayerComposeRequest& request)
+static SceneLayerComposeResult ComposeSceneLayersWithInstances(
+    const SceneLayerComposeRequest& request,
+    const std::span<const SceneInstanceRaster> instances)
 {
     const auto start = std::chrono::steady_clock::now();
     SceneLayerComposeResult result;
@@ -892,7 +944,7 @@ SceneLayerComposeResult ComposeSceneLayers(
     result.protocol = request.protocol;
     result.effectivepipelinemode =
         request.effectivepipelinemode;
-    result.statistics.totalinstancecount = request.instances.size();
+    result.statistics.totalinstancecount = instances.size();
 
     if (StopIfCancellationRequested(request, result, "composition.start"))
     {
@@ -944,9 +996,9 @@ SceneLayerComposeResult ComposeSceneLayers(
     }
 
     std::vector<InstancePlacement> placements;
-    placements.reserve(request.instances.size());
+    placements.reserve(instances.size());
     std::unordered_set<std::string> knownInstanceIds;
-    for (const SceneInstanceRaster& instance : request.instances)
+    for (const SceneInstanceRaster& instance : instances)
     {
         if (StopIfCancellationRequested(request, result, "composition.instances"))
         {
@@ -960,20 +1012,20 @@ SceneLayerComposeResult ComposeSceneLayers(
 
         InstancePlacement placement;
         placement.statisticsindex = placements.size();
+        SceneInstanceComposeStatistics instanceStatistics;
         if (!ValidateInstance(
                 request,
                 instance,
                 knownInstanceIds,
                 result,
-                placement))
+                placement,
+                instanceStatistics))
         {
             result.composems = std::chrono::duration<double, std::milli>(
                 std::chrono::steady_clock::now() - start).count();
             return result;
         }
         knownInstanceIds.insert(instance.instanceid);
-        SceneInstanceComposeStatistics instanceStatistics;
-        instanceStatistics.instanceid = instance.instanceid;
         result.statistics.instances.push_back(std::move(instanceStatistics));
         placements.push_back(placement);
         ++result.statistics.visibleinstancecount;
@@ -992,6 +1044,8 @@ SceneLayerComposeResult ComposeSceneLayers(
     }
 
     result.layers.reserve(
+        static_cast<std::size_t>(request.globalgrid.layercount));
+    result.layerstatistics.reserve(
         static_cast<std::size_t>(request.globalgrid.layercount));
     std::vector<SceneRasterOwnership> ownership(
         globalPixelCount,
@@ -1021,6 +1075,8 @@ SceneLayerComposeResult ComposeSceneLayers(
         output.heightPx = request.globalgrid.heightpx;
         output.channelOrder = request.protocol.channel_order;
         output.channels.assign(globalByteCount, request.protocol.empty_value);
+        RgbwsvProductionLayerStatistics layerStatistics;
+        layerStatistics.layerIndex = globalLayerIndex;
 
         for (const InstancePlacement& placement : placements)
         {
@@ -1131,6 +1187,19 @@ SceneLayerComposeResult ComposeSceneLayers(
                 return result;
             }
             CountOutputPixel(pixelOwnership, result.statistics);
+            const std::size_t channelBase = pixelIndex * kChannelCount;
+            layerStatistics.emptyPixels[0U] +=
+                output.channels[channelBase] == request.protocol.empty_value;
+            layerStatistics.emptyPixels[1U] +=
+                output.channels[channelBase + 1U] == request.protocol.empty_value;
+            layerStatistics.emptyPixels[2U] +=
+                output.channels[channelBase + 2U] == request.protocol.empty_value;
+            layerStatistics.emptyPixels[3U] +=
+                output.channels[channelBase + 3U] == request.protocol.empty_value;
+            layerStatistics.emptyPixels[4U] +=
+                output.channels[channelBase + 4U] == request.protocol.empty_value;
+            layerStatistics.emptyPixels[5U] +=
+                output.channels[channelBase + 5U] == request.protocol.empty_value;
             const int owner = ownerindices.at(pixelIndex);
             if (owner >= 0)
             {
@@ -1140,7 +1209,14 @@ SceneLayerComposeResult ComposeSceneLayers(
                         static_cast<std::size_t>(owner)));
             }
         }
+        for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+        {
+            layerStatistics.printPixels[channel] =
+                static_cast<std::uint64_t>(globalPixelCount)
+                - layerStatistics.emptyPixels[channel];
+        }
         result.layers.push_back(std::move(output));
+        result.layerstatistics.push_back(std::move(layerStatistics));
         if (StopIfCancellationRequested(
                 request, result, "composition.layer_complete", globalLayerIndex))
         {
@@ -1154,6 +1230,62 @@ SceneLayerComposeResult ComposeSceneLayers(
     result.composems = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - start).count();
     return result;
+}
+
+SceneLayerComposeResult ComposeSceneLayers(
+    const SceneLayerComposeRequest& request)
+{
+    return ComposeSceneLayersWithInstances(request, request.instances);
+}
+
+namespace internal
+{
+
+SceneLayerComposeResult ComposeSceneLayersBorrowed(
+    const SceneLayerComposeRequest& request,
+    const std::span<const SceneInstanceRaster> instances)
+{
+    return ComposeSceneLayersWithInstances(request, instances);
+}
+
+}  // namespace internal
+
+ValidatedSceneLayerComposeResult::ValidatedSceneLayerComposeResult(
+    SceneLayerComposeResult result) noexcept
+    : m_result(std::move(result)),
+      m_validated(
+          m_result.available
+          && m_result.status == "ready_for_writer"
+          && !m_result.error.has_value()
+          && m_result.grid.IsValid()
+          && m_result.layers.size()
+              == static_cast<std::size_t>(m_result.grid.layercount)
+          && m_result.layerstatistics.size() == m_result.layers.size())
+{
+}
+
+bool ValidatedSceneLayerComposeResult::IsValid() const noexcept
+{
+    return m_validated;
+}
+
+const SceneLayerComposeResult&
+ValidatedSceneLayerComposeResult::Value() const noexcept
+{
+    return m_result;
+}
+
+SceneLayerComposeResult
+ValidatedSceneLayerComposeResult::Release() && noexcept
+{
+    m_validated = false;
+    return std::move(m_result);
+}
+
+ValidatedSceneLayerComposeResult ComposeValidatedSceneLayers(
+    const SceneLayerComposeRequest& request)
+{
+    return ValidatedSceneLayerComposeResult{ComposeSceneLayers(request)};
 }
 
 }  // namespace slicer_core

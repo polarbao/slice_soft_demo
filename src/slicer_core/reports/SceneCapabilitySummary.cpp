@@ -62,7 +62,7 @@ Json EmptyBounds()
 }
 
 Json RasterBounds(
-    const SceneInstanceRaster& raster,
+    const SceneRasterGrid& grid,
     const int minimumX,
     const int minimumY,
     const int minimumLayer,
@@ -74,7 +74,6 @@ Json RasterBounds(
     {
         return EmptyBounds();
     }
-    const SceneRasterGrid& grid = raster.localgrid;
     return Json::object({
         {"valid", true},
         {"min",
@@ -182,13 +181,59 @@ Json BuildVisibleInstance(
         {"emptyPixels", ChannelCountsToJson(emptyPixels)},
         {"bboxMm",
          RasterBounds(
-             raster,
+             raster.localgrid,
              minimumX,
              minimumY,
              firstLayer,
              maximumX,
              maximumY,
              maximumLayer)},
+        {"transformApplied", TransformToJson(sceneInstance.effectivetransform)},
+    });
+}
+
+Json BuildVisibleInstance(
+    const SceneModelInstance& sceneInstance,
+    const SceneInstanceComposeStatistics& statistics)
+{
+    const auto& raster = statistics.raster;
+    if (!raster.available || !raster.grid.IsValid())
+    {
+        throw std::invalid_argument(
+            "scene capability summary requires fused raster statistics");
+    }
+    const std::uint64_t sampleCount =
+        static_cast<std::uint64_t>(raster.grid.widthpx)
+        * static_cast<std::uint64_t>(raster.grid.heightpx)
+        * static_cast<std::uint64_t>(raster.grid.layercount);
+    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+    {
+        if (raster.printpixels[channel] > sampleCount
+            || raster.emptypixels[channel] > sampleCount
+            || raster.printpixels[channel] + raster.emptypixels[channel]
+                != sampleCount)
+        {
+            throw std::invalid_argument(
+                "scene capability summary fused channel counts are invalid");
+        }
+    }
+    const int firstLayer = raster.maximumlayer < 0
+        ? -1 : raster.minimumlayer;
+    return Json::object({
+        {"instanceId", sceneInstance.instance.instanceid},
+        {"modelId", sceneInstance.instance.modelid},
+        {"layerRange", Json::array({firstLayer, raster.maximumlayer})},
+        {"printPixels", ChannelCountsToJson(raster.printpixels)},
+        {"emptyPixels", ChannelCountsToJson(raster.emptypixels)},
+        {"bboxMm",
+         RasterBounds(
+             raster.grid,
+             raster.minimumx,
+             raster.minimumy,
+             firstLayer,
+             raster.maximumx,
+             raster.maximumy,
+             raster.maximumlayer)},
         {"transformApplied", TransformToJson(sceneInstance.effectivetransform)},
     });
 }
@@ -307,6 +352,94 @@ std::optional<SceneCapabilitySummaryDocument> BuildSceneCapabilitySummary(
             "scene capability summary Profile cannot be read");
     }
     return BuildSceneCapabilitySummary(scene, rasters, Json::parse(input));
+}
+
+std::optional<SceneCapabilitySummaryDocument> BuildSceneCapabilitySummary(
+    const MultiModelScene& scene,
+    const SceneLayerComposeStatistics& statistics,
+    const std::filesystem::path& profileConfigPath)
+{
+    if (profileConfigPath.empty())
+    {
+        return std::nullopt;
+    }
+    std::ifstream input{profileConfigPath, std::ios::binary};
+    if (!input)
+    {
+        throw std::invalid_argument(
+            "scene capability summary Profile cannot be read");
+    }
+    const Json profileDocument = Json::parse(input);
+    if (!profileDocument.is_object()
+        || !profileDocument.contains("profileVersion")
+        || !profileDocument.contains("profileHash"))
+    {
+        return std::nullopt;
+    }
+    if (!profileDocument.at("profileVersion").is_string()
+        || profileDocument.at("profileVersion").as_string().empty()
+        || !profileDocument.at("profileHash").is_string()
+        || profileDocument.at("profileHash").as_string().empty())
+    {
+        throw std::invalid_argument(
+            "scene capability summary Profile identity is invalid");
+    }
+
+    std::unordered_map<
+        std::string,
+        const SceneInstanceComposeStatistics*> byInstanceId;
+    byInstanceId.reserve(statistics.instances.size());
+    for (const SceneInstanceComposeStatistics& instance : statistics.instances)
+    {
+        if (instance.instanceid.empty()
+            || !byInstanceId.emplace(instance.instanceid, &instance).second)
+        {
+            throw std::invalid_argument(
+                "scene capability summary fused instance identity is invalid");
+        }
+    }
+
+    Json::Array perInstance;
+    perInstance.reserve(scene.instances.size());
+    std::size_t visibleCount{0U};
+    for (const SceneModelInstance& sceneInstance : scene.instances)
+    {
+        if (!sceneInstance.instance.visible)
+        {
+            perInstance.push_back(BuildHiddenInstance(sceneInstance));
+            continue;
+        }
+        ++visibleCount;
+        const auto found = byInstanceId.find(
+            sceneInstance.instance.instanceid);
+        if (found == byInstanceId.end())
+        {
+            throw std::invalid_argument(
+                "scene capability summary is missing fused visible-instance evidence");
+        }
+        perInstance.push_back(
+            BuildVisibleInstance(sceneInstance, *found->second));
+    }
+    if (visibleCount != byInstanceId.size()
+        || visibleCount != statistics.visibleinstancecount
+        || scene.instances.size() != statistics.totalinstancecount)
+    {
+        throw std::invalid_argument(
+            "scene capability summary fused instance counts do not match");
+    }
+
+    SceneCapabilitySummaryDocument result;
+    result.perinstance = Json{std::move(perInstance)};
+    result.profileecho = Json::object({
+        {"profileVersion", profileDocument.at("profileVersion")},
+        {"profileHash", profileDocument.at("profileHash")},
+    });
+    if (!result.IsValid())
+    {
+        throw std::invalid_argument(
+            "scene capability summary failed validation");
+    }
+    return result;
 }
 
 }  // namespace slicer_core

@@ -166,10 +166,25 @@ struct SceneRasterError
  */
 struct SceneInstanceComposeStatistics
 {
+    struct RasterStatistics
+    {
+        bool available{false};
+        SceneRasterGrid grid;
+        std::array<std::uint64_t, 6> printpixels{};
+        std::array<std::uint64_t, 6> emptypixels{};
+        int minimumx{0};
+        int minimumy{0};
+        int minimumlayer{0};
+        int maximumx{-1};
+        int maximumy{-1};
+        int maximumlayer{-1};
+    };
+
     std::string instanceid;
     std::size_t modelpixels{0U};
     std::size_t outervarnishpixels{0U};
     std::size_t supportpixels{0U};
+    RasterStatistics raster;
 };
 
 /**
@@ -202,6 +217,7 @@ struct SceneLayerComposeResult
     SlicePipelineMode effectivepipelinemode{
         SlicePipelineMode::Legacy};
     std::vector<RgbwsvProductionLayer> layers;
+    std::vector<RgbwsvProductionLayerStatistics> layerstatistics;
     SceneLayerComposeStatistics statistics;
     std::optional<SceneRasterError> error;
     double composems{0.0};

@@ -47,11 +47,7 @@ double ElapsedMilliseconds(const WriterClock::time_point& start)
         .count();
 }
 
-struct LayerChannelStats
-{
-    std::array<std::uint64_t, kChannelCount> printPixels{};
-    std::array<std::uint64_t, kChannelCount> emptyPixels{};
-};
+using LayerChannelStats = RgbwsvProductionLayerStatistics;
 
 bool HasFixedChannelOrder(const std::array<std::string, 6>& channelOrder)
 {
@@ -283,6 +279,12 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
         throw std::invalid_argument(
             "RGBWSV production package layer count does not match grid");
     }
+    if (!request.layerStatistics.empty()
+        && request.layerStatistics.size() != request.layers.size())
+    {
+        throw std::invalid_argument(
+            "RGBWSV production package layer statistics count does not match layers");
+    }
     if (request.outerVarnish.enabled
         && (request.outerVarnish.requested_thickness_mm <= 0.0
             || request.outerVarnish.radius_x_px <= 0
@@ -334,6 +336,32 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
             throw std::invalid_argument(
                 "RGBWSV production package contains an invalid or non-contiguous layer");
         }
+        if (!request.layerStatistics.empty())
+        {
+            const RgbwsvProductionLayerStatistics& statistics =
+                request.layerStatistics.at(
+                    static_cast<std::size_t>(layerIndex));
+            const std::uint64_t pixelCount =
+                static_cast<std::uint64_t>(request.grid.widthPx)
+                * static_cast<std::uint64_t>(request.grid.heightPx);
+            if (statistics.layerIndex != layerIndex)
+            {
+                throw std::invalid_argument(
+                    "RGBWSV production package layer statistics are non-contiguous");
+            }
+            for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+            {
+                if (statistics.printPixels[channel] > pixelCount
+                    || statistics.emptyPixels[channel] > pixelCount
+                    || statistics.printPixels[channel]
+                            + statistics.emptyPixels[channel]
+                        != pixelCount)
+                {
+                    throw std::invalid_argument(
+                        "RGBWSV production package layer statistics are invalid");
+                }
+            }
+        }
     }
 }
 
@@ -363,23 +391,32 @@ LayerChannelStats CalculateLayerStats(
     const api::ICancelToken* cancelToken)
 {
     LayerChannelStats stats;
-    for (std::size_t offset{0U}; offset < channels.size(); ++offset)
+    const std::size_t pixelCount = channels.size() / kChannelCount;
+    constexpr std::size_t pixelsPerCancellationCheck =
+        kCancellationCheckStride / kChannelCount;
+    for (std::size_t pixelBegin{0U};
+         pixelBegin < pixelCount;
+         pixelBegin += pixelsPerCancellationCheck)
     {
-        if ((offset % kCancellationCheckStride) == 0U)
+        ThrowIfCancellationRequested(cancelToken, "layer_statistics");
+        const std::size_t pixelEnd = std::min(
+            pixelCount,
+            pixelBegin + pixelsPerCancellationCheck);
+        for (std::size_t pixel{pixelBegin}; pixel < pixelEnd; ++pixel)
         {
-            ThrowIfCancellationRequested(
-                cancelToken,
-                "layer_statistics");
+            const std::size_t offset = pixel * kChannelCount;
+            stats.emptyPixels[0U] += channels[offset] == 255U;
+            stats.emptyPixels[1U] += channels[offset + 1U] == 255U;
+            stats.emptyPixels[2U] += channels[offset + 2U] == 255U;
+            stats.emptyPixels[3U] += channels[offset + 3U] == 255U;
+            stats.emptyPixels[4U] += channels[offset + 4U] == 255U;
+            stats.emptyPixels[5U] += channels[offset + 5U] == 255U;
         }
-        const std::size_t channel = offset % kChannelCount;
-        if (channels[offset] == 255U)
-        {
-            ++stats.emptyPixels.at(channel);
-        }
-        else
-        {
-            ++stats.printPixels.at(channel);
-        }
+    }
+    for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+    {
+        stats.printPixels[channel] =
+            pixelCount - stats.emptyPixels[channel];
     }
     return stats;
 }
@@ -1077,10 +1114,19 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
 
             const WriterClock::time_point layerReportStart =
                 WriterClock::now();
-            const LayerChannelStats stats =
-                CalculateLayerStats(
+            LayerChannelStats stats;
+            if (request.layerStatistics.empty())
+            {
+                stats = CalculateLayerStats(
                     layer.channels,
                     request.canceltoken);
+                stats.layerIndex = layer.layerIndex;
+            }
+            else
+            {
+                stats = request.layerStatistics.at(
+                    static_cast<std::size_t>(layer.layerIndex));
+            }
             for (std::size_t channel{0U};
                  channel < kChannelCount;
                  ++channel)
