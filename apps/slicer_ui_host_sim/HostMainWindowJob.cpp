@@ -16,6 +16,11 @@ void HostMainWindow::RefreshSliceJobReadiness()
         m_sliceJobPanel->SetReady(false, QStringLiteral("切片作业正在运行。"));
         return;
     }
+    if (m_ripJobController->IsActive())
+    {
+        m_sliceJobPanel->SetReady(false, QStringLiteral("RIP 作业正在运行。"));
+        return;
+    }
     if (!m_client.IsOpen())
     {
         m_sliceJobPanel->SetReady(false, QStringLiteral("切片模块尚未加载。"));
@@ -39,6 +44,12 @@ void HostMainWindow::RefreshSliceJobReadiness()
 
 void HostMainWindow::OnStartSlice()
 {
+    if (m_ripJobController->IsActive())
+    {
+        m_statusLabel->setText(QStringLiteral("RIP 作业运行中，暂不能开始新切片。"));
+        RefreshSliceJobReadiness();
+        return;
+    }
     QString error;
     hosteffectiveprofile submissionProfile;
     if (!m_sliceSettingsPanel->BuildSubmissionProfile(

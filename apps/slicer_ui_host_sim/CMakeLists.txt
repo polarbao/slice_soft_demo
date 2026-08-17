@@ -20,6 +20,14 @@ add_executable(slicer_ui_host_sim
     HostPackageReviewController.h
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
+    HostRipJobController.cpp
+    HostRipJobController.h
+    HostRipSafety.cpp
+    HostRipSafety.h
+    HostRipSettingsPanel.cpp
+    HostRipSettingsPanel.h
+    HostRipSettingsStore.cpp
+    HostRipSettingsStore.h
     HostProfileCatalog.cpp
     HostProfileCatalog.h
     HostProfilePanel.cpp
@@ -37,6 +45,7 @@ add_executable(slicer_ui_host_sim
     HostMainWindowImport.cpp
     HostMainWindowJob.cpp
     HostMainWindowProfile.cpp
+    HostMainWindowRip.cpp
     HostMainWindowResult.cpp
     HostMainWindowScene.cpp
     HostMainWindowSettings.cpp
@@ -127,6 +136,7 @@ target_include_directories(slicer_ui_host_sim PRIVATE
 
 target_link_libraries(slicer_ui_host_sim PRIVATE
     Qt5::Widgets
+    slicesoft_rip_integration
     bcrypt
 )
 
@@ -192,6 +202,24 @@ add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
     VERBATIM
 )
 
+if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/rip_project/rip_cli.exe")
+    find_program(slicesoftPowerShellExecutable NAMES powershell pwsh REQUIRED)
+    add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
+        COMMAND ${slicesoftPowerShellExecutable}
+            -NoProfile
+            -ExecutionPolicy Bypass
+            -File "${CMAKE_SOURCE_DIR}/scripts/PackageRipModule.ps1"
+            -SourceRoot "${CMAKE_SOURCE_DIR}/rip_project"
+            -Destination "$<TARGET_FILE_DIR:slicer_ui_host_sim>/modules/rip"
+            -ReplaceOwnedDestination
+        VERBATIM
+    )
+else()
+    message(WARNING
+        "External RIP SDK is absent; the host will keep RIP disabled at runtime."
+    )
+endif()
+
 if(MSVC)
     target_compile_options(slicer_ui_host_sim PRIVATE
         /MP
@@ -214,6 +242,12 @@ if(MSVC)
 endif()
 
 if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME ripflow_host_wiring_contract
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_SOURCE_DIR}/tests/ripflow/ValidateRipflowWiring.py
+            ${CMAKE_SOURCE_DIR}
+    )
     add_test(
         NAME slicer_stage14e02_qt_host_boundary_test
         COMMAND ${Python3_EXECUTABLE}
@@ -242,6 +276,89 @@ add_test(
     COMMAND slicer_ui_host_sim --self-test
 )
 
+
+add_executable(ripflow_settings_unit_tests
+    HostRipSettingsStore.cpp
+    HostRipSettingsStore.h
+    ${CMAKE_SOURCE_DIR}/tests/ripflow/HostRipSettingsTests.cpp
+)
+set_target_properties(ripflow_settings_unit_tests PROPERTIES AUTOMOC ON)
+target_include_directories(ripflow_settings_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(ripflow_settings_unit_tests PRIVATE Qt5::Core)
+if(MSVC)
+    target_compile_options(ripflow_settings_unit_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(ripflow_settings_unit_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(ripflow_settings_unit_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+add_test(NAME ripflow_settings_unit_tests COMMAND ripflow_settings_unit_tests)
+
+add_executable(ripflow_safety_unit_tests
+    HostRipSafety.cpp
+    HostRipSafety.h
+    ${CMAKE_SOURCE_DIR}/tests/ripflow/HostRipSafetyTests.cpp
+)
+target_include_directories(ripflow_safety_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(ripflow_safety_unit_tests PRIVATE Qt5::Core)
+if(MSVC)
+    target_compile_options(ripflow_safety_unit_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(ripflow_safety_unit_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(ripflow_safety_unit_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+add_test(NAME ripflow_safety_unit_tests COMMAND ripflow_safety_unit_tests)
+
+add_executable(ripflow_fake_cli EXCLUDE_FROM_ALL
+    ${CMAKE_SOURCE_DIR}/tests/ripflow/FakeRipCli.cpp
+)
+if(MSVC)
+    target_compile_options(ripflow_fake_cli PRIVATE /W4 /WX /utf-8)
+endif()
+
+if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/rip_project/rip_cli.exe")
+    add_test(
+        NAME ripflow_module_self_test
+        COMMAND slicer_ui_host_sim --rip-module-self-test
+    )
+    set_tests_properties(
+        ripflow_module_self_test
+        PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+    )
+endif()
+add_test(
+    NAME ripflow_ui_self_test
+    COMMAND slicer_ui_host_sim
+        --rip-ui-self-test
+        --module $<TARGET_FILE:slicer_module>
+)
+set_tests_properties(
+    ripflow_ui_self_test
+    PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+)
 add_test(
     NAME slicer_stage14e04b_capability_coverage_test
     COMMAND slicer_ui_host_sim

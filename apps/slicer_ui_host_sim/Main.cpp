@@ -1,6 +1,7 @@
 #include "CapabilityCoverageRunner.h"
 #include "HostMainWindow.h"
 #include "HostProcessPresetCatalog.h"
+#include "HostRipJobController.h"
 #include "HostWorkspaceState.h"
 #include "ModuleClient.h"
 
@@ -11,6 +12,7 @@
 #include <QDir>
 #include <QLabel>
 #include <QDoubleSpinBox>
+#include <QEventLoop>
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
@@ -20,6 +22,7 @@
 #include <QStringList>
 #include <QTabWidget>
 #include <QTextStream>
+#include <QTimer>
 #include <QVariant>
 
 #include <cmath>
@@ -386,6 +389,144 @@ int RunHostFlowWorkspaceUiSmoke(const QString& modulePath)
         << "/" << inspectorTabs->count() << Qt::endl;
     return 0;
 }
+
+int RunRipModuleSelfTest(const QString& moduleDirectory)
+{
+    HostRipJobController controller;
+    QString error;
+    if (!controller.CheckRuntime(moduleDirectory, &error))
+    {
+        QTextStream(stderr)
+            << "RIPFLOW_MODULE_SELF_TEST_FAILED: " << error << Qt::endl;
+        return 14;
+    }
+    QTextStream(stdout)
+        << "RIPFLOW_MODULE_SELF_TEST_PASS path=" << moduleDirectory
+        << Qt::endl;
+    return 0;
+}
+
+int RunRipUiSmoke(const QString& modulePath)
+{
+    HostMainWindow window(modulePath);
+    const auto* autoCheck = window.findChild<QCheckBox*>(
+        QStringLiteral("hostRipAutoAfterSliceCheck"));
+    const auto* intentCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostRipIntentCombo"));
+    const auto* transparentCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostRipTransparentModeCombo"));
+    const auto* colorModeCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostRipColorModeCombo"));
+    const auto* runButton = window.findChild<QPushButton*>(
+        QStringLiteral("hostRipRunButton"));
+    const auto* cancelButton = window.findChild<QPushButton*>(
+        QStringLiteral("hostRipCancelButton"));
+    const auto* runtimeStatus = window.findChild<QLabel*>(
+        QStringLiteral("hostRipRuntimeStatus"));
+    if (autoCheck == nullptr || intentCombo == nullptr
+        || transparentCombo == nullptr || colorModeCombo == nullptr
+        || runButton == nullptr || cancelButton == nullptr
+        || runtimeStatus == nullptr || autoCheck->isChecked()
+        || intentCombo->count() != 4 || transparentCombo->count() != 3
+        || colorModeCombo->count() != 1 || runButton->isEnabled()
+        || cancelButton->isEnabled() || runtimeStatus->text().isEmpty())
+    {
+        QTextStream(stderr)
+            << "RIPFLOW_UI_SELF_TEST_FAILED: RIP settings page is incomplete"
+            << Qt::endl;
+        return 15;
+    }
+    QTextStream(stdout) << "RIPFLOW_UI_SELF_TEST_PASS" << Qt::endl;
+    return 0;
+}
+
+int RunRipJobSelfTest(
+    const QString& packageDirectory,
+    const QString& moduleDirectory,
+    const QString& transparentMode,
+    const int grayBits,
+    const int timeoutSeconds,
+    const int cancelAfterMs,
+    const QString& expectedOutcome)
+{
+    if (packageDirectory.isEmpty() || moduleDirectory.isEmpty())
+    {
+        QTextStream(stderr)
+            << "RIPFLOW_JOB_SELF_TEST_ARGUMENT_FAILED: "
+            << "--package and --rip-module are required" << Qt::endl;
+        return 16;
+    }
+    hostripsettings settings = HostRipSettingsStore::Defaults();
+    settings.transparentmode = transparentMode;
+    settings.devicegraybits = grayBits;
+    settings.timeoutseconds = timeoutSeconds;
+    HostRipJobController controller;
+    QEventLoop loop;
+    int result = 17;
+    QObject::connect(
+        &controller,
+        &HostRipJobController::SigCompleted,
+        &loop,
+        [&](const bool success,
+            const bool cancelled,
+            const QString& code,
+            const QString& message,
+            const QString& outputDirectory,
+            const qint64 elapsedMs)
+        {
+            const bool expectedSuccess = expectedOutcome
+                    == QStringLiteral("success")
+                && success && !cancelled;
+            const bool expectedCancel = expectedOutcome
+                    == QStringLiteral("cancel")
+                && !success && cancelled
+                && code == QStringLiteral("RIP_CANCELLED");
+            const bool expectedTimeout = expectedOutcome
+                    == QStringLiteral("timeout")
+                && !success && cancelled
+                && code == QStringLiteral("RIP_TIMEOUT");
+            const bool expectedFailure = expectedOutcome
+                    == QStringLiteral("failure")
+                && !success && !cancelled
+                && code == QStringLiteral("RIP_PROCESS_EXIT_FAILED");
+            if (expectedSuccess || expectedCancel || expectedTimeout
+                || expectedFailure)
+            {
+                QTextStream(stdout)
+                    << "RIPFLOW_JOB_SELF_TEST_PASS outcome="
+                    << expectedOutcome << " code=" << code
+                    << " elapsedMs=" << elapsedMs
+                    << " output=" << outputDirectory << Qt::endl;
+                result = 0;
+            }
+            else
+            {
+                QTextStream(stderr)
+                    << "RIPFLOW_JOB_SELF_TEST_FAILED code=" << code
+                    << " cancelled=" << cancelled
+                    << " message=" << message << Qt::endl;
+            }
+            loop.quit();
+        });
+    QString error;
+    if (!controller.Start(
+            packageDirectory, moduleDirectory, settings, &error))
+    {
+        QTextStream(stderr)
+            << "RIPFLOW_JOB_SELF_TEST_START_FAILED: " << error << Qt::endl;
+        return 18;
+    }
+    if (cancelAfterMs >= 0)
+    {
+        QTimer::singleShot(cancelAfterMs, &controller, [&controller]()
+        {
+            QString ignored;
+            (void)controller.Cancel(&ignored);
+        });
+    }
+    loop.exec();
+    return result;
+}
 }
 
 int main(int argc, char* argv[])
@@ -438,7 +579,14 @@ int main(int argc, char* argv[])
             << "--hostflow-settings-ui-self-test | "
             << "--hostflow-job-ui-self-test | "
             << "--hostflow-result-ui-self-test | "
-            << "--hostflow-workspace-ui-self-test]"
+            << "--hostflow-workspace-ui-self-test | "
+            << "--rip-module-self-test [--rip-module <path>] | "
+            << "--rip-ui-self-test | "
+            << "--rip-job-self-test --package <path> "
+            << "--rip-module <path> [--transparent-mode <mode>] "
+            << "[--gray-bits <1|2>] [--timeout-seconds <n>] "
+            << "[--cancel-after-ms <n>] "
+            << "[--expect <success|cancel|timeout|failure>]]"
             << Qt::endl;
         return 0;
     }
@@ -483,6 +631,50 @@ int main(int argc, char* argv[])
             QStringLiteral("--hostflow-workspace-ui-self-test")))
     {
         return RunHostFlowWorkspaceUiSmoke(modulePath);
+    }
+    if (HasArgument(arguments, QStringLiteral("--rip-module-self-test")))
+    {
+        const QString requestedRipModule = FindArgumentValue(
+            arguments, QStringLiteral("--rip-module"));
+        return RunRipModuleSelfTest(
+            requestedRipModule.isEmpty()
+                ? HostRipJobController::DefaultModuleDirectory()
+                : requestedRipModule);
+    }
+    if (HasArgument(arguments, QStringLiteral("--rip-ui-self-test")))
+    {
+        return RunRipUiSmoke(modulePath);
+    }
+    if (HasArgument(arguments, QStringLiteral("--rip-job-self-test")))
+    {
+        const QString transparentMode = FindArgumentValue(
+            arguments, QStringLiteral("--transparent-mode"));
+        bool grayBitsValid{false};
+        const int grayBits = FindArgumentValue(
+            arguments, QStringLiteral("--gray-bits")).toInt(
+                &grayBitsValid);
+        bool timeoutValid{false};
+        const int timeoutSeconds = FindArgumentValue(
+            arguments, QStringLiteral("--timeout-seconds")).toInt(
+                &timeoutValid);
+        bool cancelValid{false};
+        const int cancelAfterMs = FindArgumentValue(
+            arguments, QStringLiteral("--cancel-after-ms")).toInt(
+                &cancelValid);
+        const QString expectedOutcome = FindArgumentValue(
+            arguments, QStringLiteral("--expect"));
+        return RunRipJobSelfTest(
+            FindArgumentValue(arguments, QStringLiteral("--package")),
+            FindArgumentValue(arguments, QStringLiteral("--rip-module")),
+            transparentMode.isEmpty()
+                ? QStringLiteral("explicit_transparent")
+                : transparentMode,
+            grayBitsValid ? grayBits : 2,
+            timeoutValid ? timeoutSeconds : 60,
+            cancelValid ? cancelAfterMs : -1,
+            expectedOutcome.isEmpty()
+                ? QStringLiteral("success")
+                : expectedOutcome);
     }
     HostMainWindow window(modulePath);
     window.show();

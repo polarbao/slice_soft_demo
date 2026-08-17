@@ -20,6 +20,23 @@ HostMainWindow::~HostMainWindow()
 
 void HostMainWindow::RestoreWorkspaceState()
 {
+    hostripsettings ripSettings = HostRipSettingsStore::Defaults();
+    QString ripSettingsError;
+    if (HostWorkspaceState::PersistenceEnabled())
+    {
+        QSettings settings(
+            HostWorkspaceState::OrganizationName(),
+            HostWorkspaceState::ApplicationName());
+        (void)HostRipSettingsStore::Load(
+            settings, &ripSettings, &ripSettingsError);
+    }
+    m_ripSettingsPanel->SetSettings(ripSettings);
+    if (!ripSettingsError.isEmpty())
+    {
+        m_ripSettingsPanel->ShowJobState(
+            QStringLiteral("配置无效"), ripSettingsError);
+    }
+
     if (!HostWorkspaceState::PersistenceEnabled())
     {
         HostWorkspaceState::Reset(
@@ -54,11 +71,16 @@ bool HostMainWindow::SaveWorkspaceState()
     QSettings settings(
         HostWorkspaceState::OrganizationName(),
         HostWorkspaceState::ApplicationName());
-    return HostWorkspaceState::Save(
+    const bool workspaceSaved = HostWorkspaceState::Save(
         settings,
         this,
         m_workspaceSplitter,
         m_workspaceTabs,
         m_inspectorTabs,
         m_sliceSettingsPanel->Settings());
+    QString ignored;
+    const bool ripSaved = m_ripSettingsPanel == nullptr
+        || HostRipSettingsStore::Save(
+            settings, m_ripSettingsPanel->Settings(), &ignored);
+    return workspaceSaved && ripSaved;
 }

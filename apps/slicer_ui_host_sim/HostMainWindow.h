@@ -6,6 +6,8 @@
 #include "HostProfilePanel.h"
 #include "HostPackageReviewController.h"
 #include "HostPackageReviewPanel.h"
+#include "HostRipJobController.h"
+#include "HostRipSettingsPanel.h"
 #include "HostSliceJobController.h"
 #include "HostSliceJobPanel.h"
 #include "HostSliceSettingsPanel.h"
@@ -68,6 +70,23 @@ private:
     void OnSliceSettingsChanged();
     void OnStartSlice();
     void OnCancelSlice();
+    void OnRipSettingsChanged();
+    void OnRunRip();
+    void OnCancelRip();
+    void OnRipStateChanged(const QString& state, const QString& message);
+    void OnRipCompleted(
+        bool success,
+        bool cancelled,
+        const QString& code,
+        const QString& message,
+        const QString& outputDirectory,
+        qint64 elapsedMs);
+    void OnOpenRipOutputRequested(const QString& outputDirectory);
+    void RefreshRipRuntimeStatus();
+    void RefreshRipRequestStatus();
+    bool StartRipForPackage(
+        const QString& packageDirectory,
+        bool automatic);
     void OnSliceJobProgress(
         const QString& state,
         const QString& phase,
@@ -136,6 +155,7 @@ private:
     ModuleClient m_client;
     std::unique_ptr<HostModelImportWorkflow> m_importWorkflow;
     std::unique_ptr<HostSliceJobController> m_sliceJobController;
+    std::unique_ptr<HostRipJobController> m_ripJobController;
     std::unique_ptr<HostPackageReviewController> m_packageReviewController;
     std::unique_ptr<IHostProfileCatalog> m_profileCatalog;
     std::unique_ptr<ViewPresentationSettings> m_viewSettings;
@@ -160,6 +180,7 @@ private:
     HostProfilePanel* m_profilePanel{nullptr};
     HostSliceSettingsPanel* m_sliceSettingsPanel{nullptr};
     HostSliceJobPanel* m_sliceJobPanel{nullptr};
+    HostRipSettingsPanel* m_ripSettingsPanel{nullptr};
     HostPackageReviewPanel* m_packageReviewPanel{nullptr};
     HostTransformLayoutPanel* m_transformLayoutPanel{nullptr};
     QLabel* m_importSummaryLabel{nullptr};
@@ -168,6 +189,7 @@ private:
     QString m_selectedProfileId;
     QString m_restoredProfileId;
     QString m_modelImportDirectory;
+    QString m_ripModuleDirectory;
     QPointF m_dragStartWorld;
     quint64 m_dragCallCount{0U};
     bool m_textureWhiteWarning{false};

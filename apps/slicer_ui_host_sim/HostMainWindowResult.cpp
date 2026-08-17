@@ -28,6 +28,8 @@ void HostMainWindow::LoadSliceResult(const QString& packageDirectory)
             }
             m_packageReviewPanel->SetPackage(
                 m_packageReviewController->Review());
+            m_ripSettingsPanel->SetPackageDirectory(packageDirectory);
+            RefreshRipRequestStatus();
             OnResultLayerRequested(
                 0, m_packageReviewPanel->SelectedChannels());
             OnResultReportRequested(QStringLiteral("slice"));
@@ -35,6 +37,16 @@ void HostMainWindow::LoadSliceResult(const QString& packageDirectory)
             m_statusLabel->setText(
                 QStringLiteral("切片完成 · 结果已校验并加载 · %1")
                     .arg(packageDirectory));
+            if (m_ripSettingsPanel->Settings().autoafterslice)
+            {
+                (void)StartRipForPackage(packageDirectory, true);
+            }
+            else
+            {
+                m_ripSettingsPanel->ShowJobState(
+                    QStringLiteral("未请求"),
+                    QStringLiteral("自动 RIP 已关闭，可手动运行"));
+            }
             RefreshSliceJobReadiness();
         },
         &error);

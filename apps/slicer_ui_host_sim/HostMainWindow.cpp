@@ -51,6 +51,8 @@ HostMainWindow::HostMainWindow(
         DefaultSessionConfigPath());
     m_importWorkflow = std::make_unique<HostModelImportWorkflow>(m_client);
     m_sliceJobController = std::make_unique<HostSliceJobController>(m_client);
+    m_ripJobController = std::make_unique<HostRipJobController>();
+    m_ripModuleDirectory = HostRipJobController::DefaultModuleDirectory();
     m_packageReviewController =
         std::make_unique<HostPackageReviewController>(m_client);
     m_textureWhitePreflightService =
@@ -155,6 +157,11 @@ void HostMainWindow::BuildInterface()
     m_transformLayoutPanel = new HostTransformLayoutPanel(m_inspectorTabs);
     m_inspectorTabs->addTab(
         m_transformLayoutPanel, QStringLiteral("变换与排版"));
+
+    m_ripSettingsPanel = new HostRipSettingsPanel(m_inspectorTabs);
+    m_ripSettingsPanel->setObjectName(QStringLiteral("hostRipSettingsPanel"));
+    m_ripSettingsPanel->SetModuleDirectory(m_ripModuleDirectory);
+    m_inspectorTabs->addTab(m_ripSettingsPanel, QStringLiteral("RIP 设置"));
     importLayout->addWidget(m_inspectorTabs, 1);
 
     m_workspaceSplitter->addWidget(m_workspace);
@@ -295,6 +302,36 @@ void HostMainWindow::BuildInterface()
         this,
         &HostMainWindow::OnSliceJobCompleted);
     connect(
+        m_ripSettingsPanel,
+        &HostRipSettingsPanel::SigSettingsChanged,
+        this,
+        &HostMainWindow::OnRipSettingsChanged);
+    connect(
+        m_ripSettingsPanel,
+        &HostRipSettingsPanel::SigRunRequested,
+        this,
+        &HostMainWindow::OnRunRip);
+    connect(
+        m_ripSettingsPanel,
+        &HostRipSettingsPanel::SigCancelRequested,
+        this,
+        &HostMainWindow::OnCancelRip);
+    connect(
+        m_ripSettingsPanel,
+        &HostRipSettingsPanel::SigOpenOutputRequested,
+        this,
+        &HostMainWindow::OnOpenRipOutputRequested);
+    connect(
+        m_ripJobController.get(),
+        &HostRipJobController::SigStateChanged,
+        this,
+        &HostMainWindow::OnRipStateChanged);
+    connect(
+        m_ripJobController.get(),
+        &HostRipJobController::SigCompleted,
+        this,
+        &HostMainWindow::OnRipCompleted);
+    connect(
         m_packageReviewPanel,
         &HostPackageReviewPanel::SigLayerPreviewRequested,
         this,
@@ -324,6 +361,7 @@ void HostMainWindow::BuildInterface()
         &HostTransformLayoutPanel::SigLayoutRequested,
         this,
         &HostMainWindow::OnLayoutRequested);
+    RefreshRipRuntimeStatus();
 }
 
 void HostMainWindow::LoadModule(const QString& modulePath)
