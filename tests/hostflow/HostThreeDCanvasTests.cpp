@@ -14,12 +14,15 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QImage>
+#include <QMouseEvent>
 #include <QSet>
 #include <QTextStream>
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdlib>
+#include <numeric>
 
 namespace
 {
@@ -144,6 +147,105 @@ QString ArgumentValue(const QStringList& arguments, const QString& name)
     const int index = arguments.indexOf(name);
     return index >= 0 && index + 1 < arguments.size()
         ? arguments.at(index + 1) : QString{};
+}
+
+double ElapsedMilliseconds(const QElapsedTimer& timer)
+{
+    return static_cast<double>(timer.nsecsElapsed()) / 1.0e6;
+}
+
+void BenchmarkImportDirectory(
+    const QString& modulePath,
+    const QString& modelDirectory)
+{
+    const QDir directory(modelDirectory);
+    const QFileInfoList files = directory.entryInfoList(
+        QStringList{QStringLiteral("*.obj")},
+        QDir::Files,
+        QDir::Name | QDir::IgnoreCase);
+    Require(!files.isEmpty(),
+            QStringLiteral("benchmark model directory contains no OBJ files"));
+    Require(files.size() <= 22,
+            QStringLiteral("benchmark model directory exceeds scene capacity"));
+
+    QStringList modelPaths;
+    modelPaths.reserve(files.size());
+    for (const QFileInfo& file : files)
+    {
+        modelPaths.push_back(file.absoluteFilePath());
+    }
+
+    ModuleClient client;
+    QString error;
+    Require(client.Open(modulePath, QByteArrayLiteral("{}"), &error), error);
+    HostModelImportWorkflow workflow(client);
+    QList<hostmodelimportresult> imported;
+
+    QElapsedTimer totalTimer;
+    totalTimer.start();
+    QElapsedTimer timer;
+    timer.start();
+    Require(workflow.ImportModels(modelPaths, &imported, &error), error);
+    const double importMs = ElapsedMilliseconds(timer);
+
+    hostgridlayoutrequest layoutRequest;
+    hostsceneeditresult layoutResult;
+    timer.restart();
+    Require(workflow.ApplyGridLayout(layoutRequest, &layoutResult, &error),
+            error);
+    const double layoutMs = ElapsedMilliseconds(timer);
+
+    TopViewRenderPolicy topRenderer(client);
+    TopViewFrame topFrame;
+    timer.restart();
+    Require(topRenderer.Refresh(
+                workflow.SceneHandle(), workflow.SceneRevision(),
+                &topFrame, &error),
+            error);
+    const double topRefreshMs = ElapsedMilliseconds(timer);
+    timer.restart();
+    const QImage topImage = topRenderer.Render(topFrame, QSize(1100, 700));
+    Require(!topImage.isNull(), QStringLiteral("benchmark top render failed"));
+    const double topRenderMs = ElapsedMilliseconds(timer);
+
+    CpuRasterBackend backend;
+    SceneRenderPolicy threeDRenderer(client, backend);
+    ThreeDFrame threeDFrame;
+    timer.restart();
+    Require(threeDRenderer.Refresh(
+                workflow.SceneHandle(), workflow.SceneRevision(),
+                &threeDFrame, &error),
+            error);
+    const double threeDRefreshMs = ElapsedMilliseconds(timer);
+
+    CameraController camera;
+    camera.Fit(threeDFrame.worldBounds, 1100U, 700U);
+    slicer::render::ImageOut image;
+    timer.restart();
+    Require(threeDRenderer.Render(
+                threeDFrame, camera, 1100U, 700U, &image).ok,
+            QStringLiteral("benchmark 3D render failed"));
+    const double threeDRenderMs = ElapsedMilliseconds(timer);
+
+    QTextStream output(stdout);
+    output.setRealNumberNotation(QTextStream::FixedNotation);
+    output.setRealNumberPrecision(3);
+    output << "HOSTFLOW_IMPORT_BENCHMARK models=" << imported.size()
+        << " triangles="
+        << std::accumulate(
+               imported.cbegin(), imported.cend(), quint64{0U},
+               [](const quint64 total, const hostmodelimportresult& item)
+               {
+                   return total + item.trianglecount;
+               })
+        << " importMs=" << importMs
+        << " layoutMs=" << layoutMs
+        << " topRefreshMs=" << topRefreshMs
+        << " topRenderMs=" << topRenderMs
+        << " threeDRefreshMs=" << threeDRefreshMs
+        << " threeDRenderMs=" << threeDRenderMs
+        << " totalMs=" << ElapsedMilliseconds(totalTimer)
+        << Qt::endl;
 }
 
 QImage ToImage(const slicer::render::ImageOut& output)
@@ -400,6 +502,13 @@ int main(int argc, char* argv[])
         application.arguments(), QStringLiteral("--evidence-root"));
     Require(!modulePath.isEmpty() && !repositoryRoot.isEmpty(),
             QStringLiteral("--module and --repo-root are required"));
+    const QString benchmarkModelDirectory = ArgumentValue(
+        application.arguments(), QStringLiteral("--benchmark-model-dir"));
+    if (!benchmarkModelDirectory.isEmpty())
+    {
+        BenchmarkImportDirectory(modulePath, benchmarkModelDirectory);
+        return 0;
+    }
 
     const QString modelPath = QDir(repositoryRoot).filePath(QStringLiteral(
         "model/obj/小马物语/小马物语小指/MF_Xiao_ma_Xiaozhi_ty03.obj"));
@@ -469,6 +578,56 @@ int main(int argc, char* argv[])
     Require(presetCombo != nullptr && presetCombo->count() == 7
             && projectionCombo != nullptr && projectionCombo->count() == 2,
             QStringLiteral("seven presets or projection controls are missing"));
+
+    const auto dragOrbit = [&](const QPoint& from, const QPoint& to)
+    {
+        QMouseEvent press(
+            QEvent::MouseButtonPress,
+            QPointF(from),
+            Qt::LeftButton,
+            Qt::LeftButton,
+            Qt::NoModifier);
+        QApplication::sendEvent(canvas, &press);
+        QMouseEvent move(
+            QEvent::MouseMove,
+            QPointF(to),
+            Qt::NoButton,
+            Qt::LeftButton,
+            Qt::NoModifier);
+        QApplication::sendEvent(canvas, &move);
+        QMouseEvent release(
+            QEvent::MouseButtonRelease,
+            QPointF(to),
+            Qt::LeftButton,
+            Qt::NoButton,
+            Qt::NoModifier);
+        QApplication::sendEvent(canvas, &release);
+    };
+    const QPoint orbitStart(canvas->width() / 2, canvas->height() / 2);
+    constexpr int kOrbitTestDragPixels{100};
+    canvas->SetPreset(CameraPreset::Isometric);
+    const float initialYawDeg = canvas->Camera().YawDegrees();
+    dragOrbit(orbitStart, orbitStart + QPoint(kOrbitTestDragPixels, 0));
+    const float actualYawDeltaDeg =
+        canvas->Camera().YawDegrees() - initialYawDeg;
+    const float expectedYawDeltaDeg = 180.0F
+        * static_cast<float>(kOrbitTestDragPixels)
+        / static_cast<float>((std::max)(canvas->width(), 1));
+    Require(std::abs(actualYawDeltaDeg - expectedYawDeltaDeg) < 0.05F,
+            QStringLiteral("horizontal orbit is not viewport-normalized"));
+
+    canvas->SetPreset(CameraPreset::Isometric);
+    const float initialPitchDeg = canvas->Camera().PitchDegrees();
+    dragOrbit(orbitStart, orbitStart + QPoint(0, kOrbitTestDragPixels));
+    const float actualPitchDeltaDeg =
+        canvas->Camera().PitchDegrees() - initialPitchDeg;
+    const float expectedPitchDeltaDeg = 180.0F
+        * static_cast<float>(kOrbitTestDragPixels)
+        / static_cast<float>((std::max)(canvas->height(), 1));
+    Require(std::abs(actualPitchDeltaDeg - expectedPitchDeltaDeg) < 0.05F
+                && actualYawDeltaDeg < actualPitchDeltaDeg,
+            QStringLiteral(
+                "wide 3D viewport did not reduce horizontal orbit sensitivity"));
 
     CameraController continuityCamera;
     continuityCamera.Fit(frame.worldBounds, 1100U, 700U);

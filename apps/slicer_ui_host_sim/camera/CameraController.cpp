@@ -237,6 +237,16 @@ slicer::render::Projection CameraController::ProjectionMode() const
     return m_projection;
 }
 
+float CameraController::YawDegrees() const
+{
+    return m_yawDeg;
+}
+
+float CameraController::PitchDegrees() const
+{
+    return m_pitchDeg;
+}
+
 slicer::render::CameraDesc CameraController::BuildCamera() const
 {
     const float yaw = Radians(m_yawDeg);

@@ -82,6 +82,12 @@ public:
     /** @brief 返回当前的投影类型。 */
     [[nodiscard]] slicer::render::Projection ProjectionMode() const;
 
+    /** @brief 返回当前水平轨道角度，单位为度。 */
+    [[nodiscard]] float YawDegrees() const;
+
+    /** @brief 返回当前垂直轨道角度，单位为度。 */
+    [[nodiscard]] float PitchDegrees() const;
+
     /**
      * @brief 为当前视口构建后端中性相机矩阵。
      * @return 行主视图和投影矩阵。

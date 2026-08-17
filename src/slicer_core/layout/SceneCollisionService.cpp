@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 #include <utility>
+#include <vector>
 
 namespace slicer_core
 {
@@ -509,22 +511,179 @@ bool TrianglesOverlapWithPositiveArea(
     return PolygonArea(intersection) > minimumArea;
 }
 
+struct TriangleBounds2d
+{
+    double minx{0.0};
+    double miny{0.0};
+    double maxx{0.0};
+    double maxy{0.0};
+    std::size_t triangleindex{0U};
+};
+
+TriangleBounds2d MakeTriangleBounds(
+    const SceneViewTriangle& triangle,
+    const std::size_t triangleIndex)
+{
+    return {
+        std::min({triangle.a.xmm, triangle.b.xmm, triangle.c.xmm}),
+        std::min({triangle.a.ymm, triangle.b.ymm, triangle.c.ymm}),
+        std::max({triangle.a.xmm, triangle.b.xmm, triangle.c.xmm}),
+        std::max({triangle.a.ymm, triangle.b.ymm, triangle.c.ymm}),
+        triangleIndex};
+}
+
+bool BoundsOverlapWithPositiveArea(
+    const TriangleBounds2d& left,
+    const TriangleBounds2d& right)
+{
+    return std::min(left.maxx, right.maxx)
+            > std::max(left.minx, right.minx)
+        && std::min(left.maxy, right.maxy)
+            > std::max(left.miny, right.miny);
+}
+
+struct TriangleIndexNode
+{
+    TriangleBounds2d bounds;
+    std::size_t begin{0U};
+    std::size_t end{0U};
+    int left{-1};
+    int right{-1};
+};
+
+class TriangleSpatialIndex final
+{
+public:
+    explicit TriangleSpatialIndex(
+        const std::vector<SceneViewTriangle>& triangles)
+        : m_triangles(triangles)
+    {
+        m_items.reserve(triangles.size());
+        for (std::size_t index = 0U; index < triangles.size(); ++index)
+        {
+            m_items.push_back(MakeTriangleBounds(triangles[index], index));
+        }
+        m_nodes.reserve(triangles.size() * 2U);
+        if (!m_items.empty())
+        {
+            m_root = Build(0U, m_items.size());
+        }
+    }
+
+    [[nodiscard]] bool Overlaps(
+        const SceneViewTriangle& triangle,
+        const double contactEpsilon) const
+    {
+        if (m_root < 0)
+        {
+            return false;
+        }
+        const TriangleBounds2d bounds = MakeTriangleBounds(triangle, 0U);
+        return Query(m_root, bounds, triangle, contactEpsilon);
+    }
+
+private:
+    static constexpr std::size_t kLeafSize{8U};
+
+    int Build(const std::size_t begin, const std::size_t end)
+    {
+        TriangleIndexNode node;
+        node.begin = begin;
+        node.end = end;
+        node.bounds.minx = std::numeric_limits<double>::max();
+        node.bounds.miny = std::numeric_limits<double>::max();
+        node.bounds.maxx = std::numeric_limits<double>::lowest();
+        node.bounds.maxy = std::numeric_limits<double>::lowest();
+        for (std::size_t index = begin; index < end; ++index)
+        {
+            const TriangleBounds2d& item = m_items[index];
+            node.bounds.minx = std::min(node.bounds.minx, item.minx);
+            node.bounds.miny = std::min(node.bounds.miny, item.miny);
+            node.bounds.maxx = std::max(node.bounds.maxx, item.maxx);
+            node.bounds.maxy = std::max(node.bounds.maxy, item.maxy);
+        }
+
+        const int nodeIndex = static_cast<int>(m_nodes.size());
+        m_nodes.push_back(node);
+        if (end - begin <= kLeafSize)
+        {
+            return nodeIndex;
+        }
+
+        const bool splitX = node.bounds.maxx - node.bounds.minx
+            >= node.bounds.maxy - node.bounds.miny;
+        std::sort(
+            m_items.begin() + static_cast<std::ptrdiff_t>(begin),
+            m_items.begin() + static_cast<std::ptrdiff_t>(end),
+            [splitX](const TriangleBounds2d& left,
+                     const TriangleBounds2d& right)
+            {
+                const double leftCenter = splitX
+                    ? left.minx + left.maxx : left.miny + left.maxy;
+                const double rightCenter = splitX
+                    ? right.minx + right.maxx : right.miny + right.maxy;
+                return leftCenter != rightCenter
+                    ? leftCenter < rightCenter
+                    : left.triangleindex < right.triangleindex;
+            });
+        const std::size_t middle = begin + (end - begin) / 2U;
+        const int left = Build(begin, middle);
+        const int right = Build(middle, end);
+        m_nodes[static_cast<std::size_t>(nodeIndex)].left = left;
+        m_nodes[static_cast<std::size_t>(nodeIndex)].right = right;
+        return nodeIndex;
+    }
+
+    [[nodiscard]] bool Query(
+        const int nodeIndex,
+        const TriangleBounds2d& bounds,
+        const SceneViewTriangle& triangle,
+        const double contactEpsilon) const
+    {
+        const TriangleIndexNode& node =
+            m_nodes[static_cast<std::size_t>(nodeIndex)];
+        if (!BoundsOverlapWithPositiveArea(bounds, node.bounds))
+        {
+            return false;
+        }
+        if (node.left < 0)
+        {
+            for (std::size_t index = node.begin; index < node.end; ++index)
+            {
+                const TriangleBounds2d& item = m_items[index];
+                // The index only narrows candidates; exact clipping stays authoritative.
+                if (BoundsOverlapWithPositiveArea(bounds, item)
+                    && TrianglesOverlapWithPositiveArea(
+                        triangle,
+                        m_triangles[item.triangleindex],
+                        contactEpsilon))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return Query(node.left, bounds, triangle, contactEpsilon)
+            || Query(node.right, bounds, triangle, contactEpsilon);
+    }
+
+    const std::vector<SceneViewTriangle>& m_triangles;
+    std::vector<TriangleBounds2d> m_items;
+    std::vector<TriangleIndexNode> m_nodes;
+    int m_root{-1};
+};
+
 bool GeometriesOverlap(
     const SceneViewGeometry& left,
     const SceneViewGeometry& right,
     const double contactEpsilon)
 {
+    const TriangleSpatialIndex rightIndex(right.triangles);
     for (const SceneViewTriangle& leftTriangle : left.triangles)
     {
-        for (const SceneViewTriangle& rightTriangle : right.triangles)
+        if (rightIndex.Overlaps(leftTriangle, contactEpsilon))
         {
-            if (TrianglesOverlapWithPositiveArea(
-                    leftTriangle,
-                    rightTriangle,
-                    contactEpsilon))
-            {
-                return true;
-            }
+            return true;
         }
     }
     return false;

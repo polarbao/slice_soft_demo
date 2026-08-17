@@ -9,6 +9,19 @@
 #include <cmath>
 #include <utility>
 
+namespace
+{
+constexpr float kOrbitDegreesPerViewport{180.0F};
+
+float OrbitDegreesForPointerDelta(
+    const int deltaPixels,
+    const int viewportPixels)
+{
+    return static_cast<float>(deltaPixels) * kOrbitDegreesPerViewport
+        / static_cast<float>((std::max)(viewportPixels, 1));
+}
+}
+
 ThreeDCanvasWidget::ThreeDCanvasWidget(QWidget* parent)
     : QWidget(parent)
 {
@@ -161,8 +174,9 @@ void ThreeDCanvasWidget::mouseMoveEvent(QMouseEvent* event)
     m_lastMousePosition = event->pos();
     if (m_orbiting)
     {
-        Orbit(static_cast<float>(delta.x()) * 0.4F,
-              static_cast<float>(delta.y()) * 0.4F);
+        Orbit(
+            OrbitDegreesForPointerDelta(delta.x(), width()),
+            OrbitDegreesForPointerDelta(delta.y(), height()));
     }
     else
     {
