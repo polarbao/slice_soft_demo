@@ -893,6 +893,29 @@ try
             -RepoRoot $repoRoot `
             -StagingDir $stagingDir
 
+        $ripSourceRoot = Join-Path $repoRoot "rip_project"
+        $ripModuleRelativePath = "modules/rip"
+        $ripModuleDestination = Join-Path $stagingDir $ripModuleRelativePath
+        $ripModuleAvailable = Test-Path `
+            -LiteralPath (Join-Path $ripSourceRoot "rip_cli.exe") `
+            -PathType Leaf
+        if ($ripModuleAvailable)
+        {
+            & (Join-Path $repoRoot "scripts/PackageRipModule.ps1") `
+                -SourceRoot $ripSourceRoot `
+                -Destination $ripModuleDestination
+            if ($LASTEXITCODE -ne 0)
+            {
+                throw "RIP module packaging failed with exit code $LASTEXITCODE."
+            }
+            & (Join-Path $repoRoot "scripts/TestRipModulePackage.ps1") `
+                -ModuleDirectory $ripModuleDestination
+            if ($LASTEXITCODE -ne 0)
+            {
+                throw "RIP module package test failed with exit code $LASTEXITCODE."
+            }
+        }
+
         $deployMode = if ($Config -eq "Debug") { "--debug" } else { "--release" }
         InvokeNativeStep `
             -Name "deploy Qt runtime ($Config)" `
@@ -915,6 +938,25 @@ try
         if ($LASTEXITCODE -ne 0)
         {
             throw "Packaged host module self-test failed with exit code $LASTEXITCODE."
+        }
+        $ripModuleSelfTestOutput = @()
+        if ($ripModuleAvailable)
+        {
+            $ripModuleSelfTestOutput = & `
+                (Join-Path $stagingDir "slicer_ui_host_sim.exe") `
+                --rip-module-self-test `
+                --rip-module $ripModuleDestination
+            if ($LASTEXITCODE -ne 0)
+            {
+                throw "Packaged RIP module self-test failed with exit code $LASTEXITCODE."
+            }
+        }
+        $ripRuntimeDirectoryValue = $null
+        $ripRuntimeStatus = "NOT_INSTALLED"
+        if ($ripModuleAvailable)
+        {
+            $ripRuntimeDirectoryValue = $ripModuleRelativePath
+            $ripRuntimeStatus = "LOCAL_ENGINEERING_ONLY"
         }
 
         $profileResourceValidation = TestPortableProfileResources -RuntimeRoot $stagingDir
@@ -949,6 +991,13 @@ try
                 manifest = "module.json"
                 runtimeLibraries = $moduleRuntimeInventory
                 selfTest = ($hostSelfTestOutput -join [Environment]::NewLine)
+            }
+            externalRip = [ordered]@{
+                available = [bool]$ripModuleAvailable
+                moduleDirectory = $ripRuntimeDirectoryValue
+                status = $ripRuntimeStatus
+                externalValidation = "EXTERNAL_VALIDATION_DEFERRED"
+                selfTest = ($ripModuleSelfTestOutput -join [Environment]::NewLine)
             }
             resources = [ordered]@{
                 profileRegistry = $profileResourceValidation.registry
