@@ -98,11 +98,14 @@ private:
         const QStringList& instanceIds,
         double deltaXMm,
         double deltaYMm,
-        double deltaZMm,
+        double rotateXDegrees,
+        double rotateYDegrees,
         double rotateZDegrees,
         double uniformScaleFactor,
         bool mirrorX,
-        bool mirrorY);
+        bool mirrorY,
+        bool landOnBuildPlate);
+    void OnLandOnBuildPlateRequested(const QStringList& instanceIds);
     void OnLayoutRequested(
         int maxColumns,
         int maxRows,

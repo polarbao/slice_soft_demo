@@ -37,8 +37,7 @@ void AppendInstanceOperations(
     QJsonArray* operations)
 {
     if (!IsZero(request.deltaxmm)
-        || !IsZero(request.deltaymm)
-        || !IsZero(request.deltazmm))
+        || !IsZero(request.deltaymm))
     {
         operations->append(QJsonObject{
             {QStringLiteral("type"), QStringLiteral("translate")},
@@ -46,7 +45,21 @@ void AppendInstanceOperations(
             {QStringLiteral("deltaMm"), QJsonArray{
                  request.deltaxmm,
                  request.deltaymm,
-                 request.deltazmm}}});
+                 0.0}}});
+    }
+    if (!IsZero(request.rotatexdegrees))
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("rotateX")},
+            {QStringLiteral("instanceId"), instanceId},
+            {QStringLiteral("degrees"), request.rotatexdegrees}});
+    }
+    if (!IsZero(request.rotateydegrees))
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("rotateY")},
+            {QStringLiteral("instanceId"), instanceId},
+            {QStringLiteral("degrees"), request.rotateydegrees}});
     }
     if (!IsZero(request.rotatezdegrees))
     {
@@ -75,6 +88,12 @@ void AppendInstanceOperations(
             {QStringLiteral("type"), QStringLiteral("mirror")},
             {QStringLiteral("instanceId"), instanceId},
             {QStringLiteral("axis"), QStringLiteral("y")}});
+    }
+    if (request.landonbuildplate)
+    {
+        operations->append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("landOnBuildPlate")},
+            {QStringLiteral("instanceId"), instanceId}});
     }
 }
 }
@@ -193,7 +212,8 @@ bool HostModelImportWorkflow::ApplyTransforms(
 {
     if (!std::isfinite(request.deltaxmm)
         || !std::isfinite(request.deltaymm)
-        || !std::isfinite(request.deltazmm)
+        || !std::isfinite(request.rotatexdegrees)
+        || !std::isfinite(request.rotateydegrees)
         || !std::isfinite(request.rotatezdegrees)
         || !std::isfinite(request.uniformscalefactor)
         || request.uniformscalefactor <= 0.0)
@@ -236,6 +256,46 @@ bool HostModelImportWorkflow::ApplyTransforms(
         if (error != nullptr)
         {
             *error = QStringLiteral("实例变换没有产生可提交的变化。");
+        }
+        return false;
+    }
+    return CommitSceneOperations(operations, result, error);
+}
+
+bool HostModelImportWorkflow::LandOnBuildPlate(
+    const QStringList& instanceIds,
+    hostsceneeditresult* result,
+    QString* error)
+{
+    QStringList uniqueIds;
+    for (const QString& instanceId : instanceIds)
+    {
+        if (!instanceId.isEmpty() && !uniqueIds.contains(instanceId))
+        {
+            uniqueIds.append(instanceId);
+        }
+    }
+    QJsonArray operations;
+    for (const QString& instanceId : uniqueIds)
+    {
+        if (!m_instanceModels.contains(instanceId))
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral("当前场景不存在实例：%1")
+                             .arg(instanceId);
+            }
+            return false;
+        }
+        operations.append(QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("landOnBuildPlate")},
+            {QStringLiteral("instanceId"), instanceId}});
+    }
+    if (operations.isEmpty())
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("请先选择需要触底的模型实例。");
         }
         return false;
     }

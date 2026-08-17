@@ -5,6 +5,11 @@
 > 任务：HOSTFLOW H-B-03
 > 范围：多选实例精确移动、旋转、缩放、镜像，以及模块权威规则排版入口。
 
+> 2026-08-17 R1 修订：经用户授权，封装版宿主新增绕 X/Y 旋转、导入默认触底、
+> 变换后自动触底开关和显式“将选中实例触底”命令。
+> 权威语义与验证范围见
+> `DOC_DECISION_HOSTFLOW_H_B_03_R1_三轴旋转合同受控修订.md`；本文件其余历史验证结论保留。
+
 ## 1. 准入与边界
 
 H-B-03 所需的 H-B-02 选择集与 H-A-04 `applyGridLayout` 均已完成。实现只使用公开
@@ -13,7 +18,7 @@ RGBWSV/TIFF 协议，也不修改 `apps/slicer_debug_ui`。
 
 主干行为基线为 `ModelTransformPanel` 与 `SceneLayoutPanel`。参考宿主只补齐核心作业入口：
 
-- 精确输入 X/Y/Z 增量、绕 Z 旋转角度和等比缩放因子；
+- 精确输入 X/Y/Z 增量、绕 X/Y/Z 旋转角度和等比缩放因子；
 - 对当前多选实例执行 X/Y 镜像；
 - 配置 1..11 列、1..2 行、列间/行间净距并执行规则排版；
 - 参数编辑和选择联动保持宿主本地，不跨 DLL；
@@ -42,6 +47,9 @@ Recovery：仅 Stale/显式恢复使用 snapshot；正常 Commit 不追加 snaps
 | `apps/slicer_ui_host_sim/SceneInteractionController.cpp` | snapshot 响应返回 sceneHandle 时采用权威句柄，恢复既有 14E-03 回归 |
 | `tests/hostflow/HostTransformLayoutPanelTests.cpp` | 多选变换、规则排版、零调用编辑、单 revision 与容量负例 |
 
+R1 还修改 `ModelTransform`、`TransformedModelAdapter` 和 Scene Facade：X/Y 倾斜不是 UI
+显示专用状态，而是进入权威场景、ViewData 与生产切片的同一 canonical transform。
+
 ## 4. 验证结果
 
 Debug 与 Release 均通过八项联合门禁：
@@ -60,6 +68,17 @@ slicer_stage14e04d_dual_view_contract_test
 两种配置均为 `8/8 PASS`。H-B-03 定向测试同时确认：本地参数编辑为零 DLL 调用；
 两实例组合变换只递增一次 revision；规则排版只递增一次 revision 且无碰撞/越界；容量不足
 负例不跨 DLL 且 revision 不变。
+
+2026-08-17 R1 三轴旋转修订已完成追加验证：
+
+```text
+ValidateCapabilityDtos.py: PASS（DTO v1.12，15 项能力不变）
+Debug: model_transform / scene_facade_14b03 / scene_view_geometry /
+       hostflow_ha02_scene_lifecycle / hostflow_hb03_transform_layout = 5/5 PASS
+Release: 同组测试 = 5/5 PASS
+Release: textured_scene_viewdata / grid_layout_policy /
+         translated_scene_raster_reuse / multi_model_scene_matrix_report = 6/6 PASS
+```
 
 主干 A/B 行为基线使用本次源码构建的 `slicer_debug_ui` 执行：
 

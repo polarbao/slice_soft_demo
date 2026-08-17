@@ -57,11 +57,16 @@ signals:
         const QStringList& instanceIds,
         double deltaXMm,
         double deltaYMm,
-        double deltaZMm,
+        double rotateXDegrees,
+        double rotateYDegrees,
         double rotateZDegrees,
         double uniformScaleFactor,
         bool mirrorX,
-        bool mirrorY);
+        bool mirrorY,
+        bool landOnBuildPlate);
+
+    /** @brief 请求将选中实例立即贴到构建平台 Z=0。 */
+    void SigLandOnBuildPlateRequested(const QStringList& instanceIds);
 
     /** @brief 请求一次权威的 applyGridLayout 提交。 */
     void SigLayoutRequested(
@@ -72,6 +77,7 @@ signals:
 
 private slots:
     void OnApplyTransform();
+    void OnLandOnBuildPlate();
     void OnApplyLayout();
 
 private:
@@ -82,12 +88,15 @@ private:
     QLabel* m_sceneLabel{nullptr};
     QDoubleSpinBox* m_deltaXSpin{nullptr};
     QDoubleSpinBox* m_deltaYSpin{nullptr};
-    QDoubleSpinBox* m_deltaZSpin{nullptr};
+    QDoubleSpinBox* m_rotateXSpin{nullptr};
+    QDoubleSpinBox* m_rotateYSpin{nullptr};
     QDoubleSpinBox* m_rotateZSpin{nullptr};
     QDoubleSpinBox* m_scaleSpin{nullptr};
     QCheckBox* m_mirrorXCheck{nullptr};
     QCheckBox* m_mirrorYCheck{nullptr};
+    QCheckBox* m_autoLandCheck{nullptr};
     QPushButton* m_applyTransformButton{nullptr};
+    QPushButton* m_landOnBuildPlateButton{nullptr};
     QSpinBox* m_columnsSpin{nullptr};
     QSpinBox* m_rowsSpin{nullptr};
     QDoubleSpinBox* m_columnGapSpin{nullptr};

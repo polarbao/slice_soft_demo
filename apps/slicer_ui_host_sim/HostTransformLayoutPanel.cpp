@@ -35,6 +35,18 @@ QDoubleSpinBox* CreateGapSpin(const QString& objectName, QWidget* parent)
     spin->setKeyboardTracking(false);
     return spin;
 }
+
+QDoubleSpinBox* CreateAngleSpin(const QString& objectName, QWidget* parent)
+{
+    auto* spin = new QDoubleSpinBox(parent);
+    spin->setObjectName(objectName);
+    spin->setRange(-360.0, 360.0);
+    spin->setDecimals(2);
+    spin->setSingleStep(1.0);
+    spin->setSuffix(QStringLiteral(" deg"));
+    spin->setKeyboardTracking(false);
+    return spin;
+}
 }
 
 HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
@@ -57,15 +69,16 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
         QStringLiteral("hostTransformDeltaXSpin"), transformGroup);
     m_deltaYSpin = CreateDistanceSpin(
         QStringLiteral("hostTransformDeltaYSpin"), transformGroup);
-    m_deltaZSpin = CreateDistanceSpin(
-        QStringLiteral("hostTransformDeltaZSpin"), transformGroup);
-    m_rotateZSpin = new QDoubleSpinBox(transformGroup);
-    m_rotateZSpin->setObjectName(QStringLiteral("hostTransformRotateZSpin"));
-    m_rotateZSpin->setRange(-360.0, 360.0);
-    m_rotateZSpin->setDecimals(2);
-    m_rotateZSpin->setSingleStep(1.0);
-    m_rotateZSpin->setSuffix(QStringLiteral(" deg"));
-    m_rotateZSpin->setKeyboardTracking(false);
+    m_rotateXSpin = CreateAngleSpin(
+        QStringLiteral("hostTransformRotateXSpin"), transformGroup);
+    m_rotateYSpin = CreateAngleSpin(
+        QStringLiteral("hostTransformRotateYSpin"), transformGroup);
+    m_rotateZSpin = CreateAngleSpin(
+        QStringLiteral("hostTransformRotateZSpin"), transformGroup);
+    const QString tiltToolTip = QStringLiteral(
+        "绕 X/Y 旋转可调整模型姿态；勾选自动触底后会贴到构建平台 Z=0");
+    m_rotateXSpin->setToolTip(tiltToolTip);
+    m_rotateYSpin->setToolTip(tiltToolTip);
     m_scaleSpin = new QDoubleSpinBox(transformGroup);
     m_scaleSpin->setObjectName(QStringLiteral("hostTransformScaleSpin"));
     m_scaleSpin->setRange(0.01, 100.0);
@@ -80,12 +93,21 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
     auto* mirrorLayout = new QVBoxLayout();
     mirrorLayout->addWidget(m_mirrorXCheck);
     mirrorLayout->addWidget(m_mirrorYCheck);
+    m_autoLandCheck = new QCheckBox(
+        QStringLiteral("变换后自动触底"), transformGroup);
+    m_autoLandCheck->setObjectName(
+        QStringLiteral("hostTransformAutoLandCheck"));
+    m_autoLandCheck->setChecked(true);
+    m_autoLandCheck->setToolTip(QStringLiteral(
+        "提交旋转、缩放或镜像后，由切片模块将最终模型最低点贴到 Z=0"));
     transformForm->addRow(QStringLiteral("X 增量"), m_deltaXSpin);
     transformForm->addRow(QStringLiteral("Y 增量"), m_deltaYSpin);
-    transformForm->addRow(QStringLiteral("Z 增量"), m_deltaZSpin);
+    transformForm->addRow(QStringLiteral("绕 X 旋转"), m_rotateXSpin);
+    transformForm->addRow(QStringLiteral("绕 Y 旋转"), m_rotateYSpin);
     transformForm->addRow(QStringLiteral("绕 Z 旋转"), m_rotateZSpin);
     transformForm->addRow(QStringLiteral("等比缩放因子"), m_scaleSpin);
     transformForm->addRow(QStringLiteral("镜像"), mirrorLayout);
+    transformForm->addRow(QStringLiteral("触底"), m_autoLandCheck);
     m_applyTransformButton = new QPushButton(
         QStringLiteral("提交选中实例变换"), transformGroup);
     m_applyTransformButton->setObjectName(
@@ -93,6 +115,13 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
     m_applyTransformButton->setToolTip(QStringLiteral(
         "输入仅在宿主本地编辑；点击后经一次原子 Commit 应用于全部选中实例"));
     transformForm->addRow(m_applyTransformButton);
+    m_landOnBuildPlateButton = new QPushButton(
+        QStringLiteral("将选中实例触底"), transformGroup);
+    m_landOnBuildPlateButton->setObjectName(
+        QStringLiteral("hostTransformLandButton"));
+    m_landOnBuildPlateButton->setToolTip(QStringLiteral(
+        "不改变当前角度和 XY 位置，只将模型最低点贴到构建平台 Z=0"));
+    transformForm->addRow(m_landOnBuildPlateButton);
     root->addWidget(transformGroup);
 
     auto* layoutGroup = new QGroupBox(QStringLiteral("规则排版"), this);
@@ -134,6 +163,11 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
         &QPushButton::clicked,
         this,
         &HostTransformLayoutPanel::OnApplyTransform);
+    connect(
+        m_landOnBuildPlateButton,
+        &QPushButton::clicked,
+        this,
+        &HostTransformLayoutPanel::OnLandOnBuildPlate);
     connect(
         m_applyLayoutButton,
         &QPushButton::clicked,
@@ -179,7 +213,8 @@ void HostTransformLayoutPanel::ResetTransformInputs()
 {
     m_deltaXSpin->setValue(0.0);
     m_deltaYSpin->setValue(0.0);
-    m_deltaZSpin->setValue(0.0);
+    m_rotateXSpin->setValue(0.0);
+    m_rotateYSpin->setValue(0.0);
     m_rotateZSpin->setValue(0.0);
     m_scaleSpin->setValue(1.0);
     m_mirrorXCheck->setChecked(false);
@@ -201,11 +236,18 @@ void HostTransformLayoutPanel::OnApplyTransform()
         m_selectedInstanceIds,
         m_deltaXSpin->value(),
         m_deltaYSpin->value(),
-        m_deltaZSpin->value(),
+        m_rotateXSpin->value(),
+        m_rotateYSpin->value(),
         m_rotateZSpin->value(),
         m_scaleSpin->value(),
         m_mirrorXCheck->isChecked(),
-        m_mirrorYCheck->isChecked());
+        m_mirrorYCheck->isChecked(),
+        m_autoLandCheck->isChecked());
+}
+
+void HostTransformLayoutPanel::OnLandOnBuildPlate()
+{
+    emit SigLandOnBuildPlateRequested(m_selectedInstanceIds);
 }
 
 void HostTransformLayoutPanel::OnApplyLayout()
@@ -222,6 +264,8 @@ void HostTransformLayoutPanel::UpdateControls()
 {
     const bool hasSelection = !m_selectedInstanceIds.isEmpty();
     m_applyTransformButton->setEnabled(m_commandsEnabled && hasSelection);
+    m_landOnBuildPlateButton->setEnabled(
+        m_commandsEnabled && hasSelection);
     m_applyLayoutButton->setEnabled(
         m_commandsEnabled && m_instanceCount > 0);
 }

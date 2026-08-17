@@ -7,11 +7,13 @@ void HostMainWindow::OnTransformRequested(
     const QStringList& instanceIds,
     const double deltaXMm,
     const double deltaYMm,
-    const double deltaZMm,
+    const double rotateXDegrees,
+    const double rotateYDegrees,
     const double rotateZDegrees,
     const double uniformScaleFactor,
     const bool mirrorX,
-    const bool mirrorY)
+    const bool mirrorY,
+    const bool landOnBuildPlate)
 {
     SetSceneCommandsEnabled(false);
     hostsceneeditresult result;
@@ -21,11 +23,13 @@ void HostMainWindow::OnTransformRequested(
         hosttransformrequest{
             deltaXMm,
             deltaYMm,
-            deltaZMm,
+            rotateXDegrees,
+            rotateYDegrees,
             rotateZDegrees,
             uniformScaleFactor,
             mirrorX,
-            mirrorY},
+            mirrorY,
+            landOnBuildPlate},
         &result,
         &error);
     SetSceneCommandsEnabled(m_client.IsOpen());
@@ -36,6 +40,24 @@ void HostMainWindow::OnTransformRequested(
     }
     m_transformLayoutPanel->ResetTransformInputs();
     ShowSceneEditResult(QStringLiteral("实例变换"), result);
+    RefreshSceneViews();
+}
+
+void HostMainWindow::OnLandOnBuildPlateRequested(
+    const QStringList& instanceIds)
+{
+    SetSceneCommandsEnabled(false);
+    hostsceneeditresult result;
+    QString error;
+    const bool committed = m_importWorkflow->LandOnBuildPlate(
+        instanceIds, &result, &error);
+    SetSceneCommandsEnabled(m_client.IsOpen());
+    if (!committed)
+    {
+        ShowSceneEditError(QStringLiteral("实例触底"), error);
+        return;
+    }
+    ShowSceneEditResult(QStringLiteral("实例触底"), result);
     RefreshSceneViews();
 }
 

@@ -379,7 +379,9 @@ bool HostModelImportWorkflow::CommitImportedInstances(
         operations.append(QJsonObject{
             {QStringLiteral("type"), QStringLiteral("addInstance")},
             {QStringLiteral("modelId"), result.modelid},
-            {QStringLiteral("assignInstanceId"), result.instanceid}});
+            {QStringLiteral("assignInstanceId"), result.instanceid},
+            {QStringLiteral("initialTransform"), QJsonObject{
+                 {QStringLiteral("landOnBuildPlate"), true}}}});
     }
     QJsonObject request{
         {QStringLiteral("capability"),

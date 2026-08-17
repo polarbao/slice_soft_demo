@@ -73,6 +73,7 @@
 | `DOC_PREP_HOSTFLOW_H_B_01_模型导入业务流程准备.md` | H-B-01 OBJ/3MF 导入、实例入场、快速预检、UI 展示与联合门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_02_模型实例列表与选择准备.md` | H-B-02 实例列表、原子删除、多选、全选、视图联动与主干 A/B 门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_03_实例变换与规则排版准备.md` | H-B-03 精确变换、镜像、规则排版、三车道调用边界与联合门禁 |
+| `DOC_DECISION_HOSTFLOW_H_B_03_R1_三轴旋转合同受控修订.md` | H-B-03-R1 封装版三轴旋转、导入/变换显式触底与合同兼容边界 |
 | `DOC_PREP_HOSTFLOW_H_B_04_Profile目录与能力查询准备.md` | H-B-04 宿主 Profile 目录、模块能力求交、实现结果和冻结边界 |
 | `DOC_PREP_HOSTFLOW_H_B_05_切片参数与有效Profile准备.md` | H-B-05 参数合同、设备 buildVolume、有效 Profile、场景绑定和联合门禁 |
 | `DOC_PREP_HOSTFLOW_H_B_06_切片提交与作业管理准备.md` | H-B-06 Worker 作业提交、进度、协作取消、终态结果、错误诊断与联合门禁 |

@@ -130,7 +130,8 @@ std::string AddRequest(
         request << ",\"assignInstanceId\":\"" << assignedId << "\"";
     }
     request << ",\"initialTransform\":{\"translateXMm\":10,"
-            << "\"translateYMm\":12,\"rotateZDeg\":5,"
+            << "\"translateYMm\":12,\"rotateXDeg\":2,"
+            << "\"rotateYDeg\":-3,\"rotateZDeg\":5,"
             << "\"uniformScale\":1,\"mirrorX\":false,"
             << "\"mirrorY\":false}}]}";
     return request.str();
@@ -187,7 +188,13 @@ void VerifiesImplicitSceneLifecycle(
         + ",\"currentSceneRevision\":1,\"expectedSceneRevision\":1,"
           "\"operations\":[{\"type\":\"translate\","
           "\"instanceId\":\"" + instanceId
-        + "\",\"deltaMm\":[3,4,0]}]}";
+        + "\",\"deltaMm\":[3,4,0]},{\"type\":\"rotateX\","
+          "\"instanceId\":\"" + instanceId
+        + "\",\"degrees\":8},{\"type\":\"rotateY\","
+          "\"instanceId\":\"" + instanceId
+        + "\",\"degrees\":-6},{\"type\":\"rotateZ\","
+          "\"instanceId\":\"" + instanceId
+        + "\",\"degrees\":15}]}";
     const slicer_core::Json transformed = Parse(RunJob(
         module,
         transformRequest));

@@ -316,6 +316,11 @@ void HostMainWindow::BuildInterface()
         &HostMainWindow::OnTransformRequested);
     connect(
         m_transformLayoutPanel,
+        &HostTransformLayoutPanel::SigLandOnBuildPlateRequested,
+        this,
+        &HostMainWindow::OnLandOnBuildPlateRequested);
+    connect(
+        m_transformLayoutPanel,
         &HostTransformLayoutPanel::SigLayoutRequested,
         this,
         &HostMainWindow::OnLayoutRequested);

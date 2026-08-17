@@ -79,6 +79,7 @@ int main(int argc, char* argv[])
     panel.SetSceneState(workflow.InstanceCount(), workflow.SceneRevision());
     panel.SetSelectedInstances(QStringList{first.instanceid, second.instanceid});
     bool transformCommitted = false;
+    bool landCommitted = false;
     bool layoutCommitted = false;
     hostsceneeditresult transformResult;
     hostsceneeditresult layoutResult;
@@ -88,24 +89,36 @@ int main(int argc, char* argv[])
         [&](const QStringList& instanceIds,
             const double deltaXMm,
             const double deltaYMm,
-            const double deltaZMm,
+            const double rotateXDegrees,
+            const double rotateYDegrees,
             const double rotateZDegrees,
             const double scaleFactor,
             const bool mirrorX,
-            const bool mirrorY)
+            const bool mirrorY,
+            const bool landOnBuildPlate)
         {
             transformCommitted = workflow.ApplyTransforms(
                 instanceIds,
                 hosttransformrequest{
                     deltaXMm,
                     deltaYMm,
-                    deltaZMm,
+                    rotateXDegrees,
+                    rotateYDegrees,
                     rotateZDegrees,
                     scaleFactor,
                     mirrorX,
-                    mirrorY},
+                    mirrorY,
+                    landOnBuildPlate},
                 &transformResult,
                 &error);
+        });
+    QObject::connect(
+        &panel,
+        &HostTransformLayoutPanel::SigLandOnBuildPlateRequested,
+        [&](const QStringList& instanceIds)
+        {
+            landCommitted = workflow.LandOnBuildPlate(
+                instanceIds, &transformResult, &error);
         });
     QObject::connect(
         &panel,
@@ -124,22 +137,34 @@ int main(int argc, char* argv[])
 
     auto* deltaX = panel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostTransformDeltaXSpin"));
-    auto* rotate = panel.findChild<QDoubleSpinBox*>(
+    auto* rotateX = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("hostTransformRotateXSpin"));
+    auto* rotateY = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("hostTransformRotateYSpin"));
+    auto* rotateZ = panel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostTransformRotateZSpin"));
     auto* scale = panel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostTransformScaleSpin"));
     auto* mirrorX = panel.findChild<QCheckBox*>(
         QStringLiteral("hostTransformMirrorXCheck"));
+    auto* autoLand = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostTransformAutoLandCheck"));
     auto* applyTransform = panel.findChild<QPushButton*>(
         QStringLiteral("hostTransformApplyButton"));
+    auto* land = panel.findChild<QPushButton*>(
+        QStringLiteral("hostTransformLandButton"));
     auto* columns = panel.findChild<QSpinBox*>(
         QStringLiteral("hostLayoutColumnsSpin"));
     auto* rows = panel.findChild<QSpinBox*>(
         QStringLiteral("hostLayoutRowsSpin"));
     auto* applyLayout = panel.findChild<QPushButton*>(
         QStringLiteral("hostLayoutApplyButton"));
-    if (!Check(deltaX != nullptr && rotate != nullptr && scale != nullptr
-                   && mirrorX != nullptr && applyTransform != nullptr
+    if (!Check(deltaX != nullptr && rotateX != nullptr
+                   && rotateY != nullptr && rotateZ != nullptr
+                   && scale != nullptr
+                   && mirrorX != nullptr && autoLand != nullptr
+                   && autoLand->isChecked() && applyTransform != nullptr
+                   && land != nullptr
                    && columns != nullptr && rows != nullptr
                    && applyLayout != nullptr,
                QStringLiteral("变换或排版控件不完整。"), errors))
@@ -161,7 +186,9 @@ int main(int argc, char* argv[])
 
     client.ResetCallCount();
     deltaX->setValue(4.0);
-    rotate->setValue(15.0);
+    rotateX->setValue(8.0);
+    rotateY->setValue(-6.0);
+    rotateZ->setValue(15.0);
     scale->setValue(1.05);
     mirrorX->setChecked(true);
     if (!Check(client.CallCount() == 0U,
@@ -183,6 +210,15 @@ int main(int argc, char* argv[])
         return 7;
     }
 
+    land->click();
+    if (!Check(landCommitted,
+               QStringLiteral("显式触底 Commit 失败：%1").arg(error), errors)
+        || !Check(workflow.SceneRevision() == 4U,
+                  QStringLiteral("显式触底只应递增一次 revision。"), errors))
+    {
+        return 12;
+    }
+
     client.ResetCallCount();
     columns->setValue(2);
     rows->setValue(1);
@@ -194,7 +230,7 @@ int main(int argc, char* argv[])
     applyLayout->click();
     if (!Check(layoutCommitted,
                QStringLiteral("规则排版 Commit 失败：%1").arg(error), errors)
-        || !Check(workflow.SceneRevision() == 4U,
+        || !Check(workflow.SceneRevision() == 5U,
                   QStringLiteral("规则排版只应递增一次 revision。"), errors)
         || !Check(layoutResult.collisioncount == 0,
                   QStringLiteral("规则排版后不应存在模型碰撞。"), errors)
@@ -214,7 +250,7 @@ int main(int argc, char* argv[])
                QStringLiteral("容量不足的排版必须 fail-closed。"), errors)
         || !Check(client.CallCount() == 0U,
                   QStringLiteral("宿主可判定的排版负例不得跨 DLL。"), errors)
-        || !Check(workflow.SceneRevision() == 4U,
+        || !Check(workflow.SceneRevision() == 5U,
                   QStringLiteral("排版负例不得改变 revision。"), errors))
     {
         return 10;

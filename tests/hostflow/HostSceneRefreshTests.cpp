@@ -134,7 +134,15 @@ int main(int argc, char* argv[])
     hostsceneeditresult transformResult;
     Require(workflow.ApplyTransforms(
                 QStringList{instanceIds.front()},
-                hosttransformrequest{0.5, 0.0, 0.0, 0.0, 1.0, false, false},
+                hosttransformrequest{
+                    0.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    false,
+                    false},
                 &transformResult, &error),
             error);
 

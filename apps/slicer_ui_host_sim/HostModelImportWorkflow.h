@@ -46,11 +46,13 @@ struct hosttransformrequest
 {
     double deltaxmm{0.0};
     double deltaymm{0.0};
-    double deltazmm{0.0};
+    double rotatexdegrees{0.0};
+    double rotateydegrees{0.0};
     double rotatezdegrees{0.0};
     double uniformscalefactor{1.0};
     bool mirrorx{false};
     bool mirrory{false};
+    bool landonbuildplate{true};
 };
 
 /** @brief 宿主 UI 拥有的确定性网格布局值。 */
@@ -132,6 +134,12 @@ public:
     bool ApplyTransforms(
         const QStringList& instanceIds,
         const hosttransformrequest& request,
+        hostsceneeditresult* result,
+        QString* error);
+
+    /** @brief 将选中实例的最终包围盒最低点贴到构建平台 Z=0。 */
+    bool LandOnBuildPlate(
+        const QStringList& instanceIds,
         hostsceneeditresult* result,
         QString* error);
 

@@ -10,11 +10,14 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QTemporaryDir>
 #include <QTextStream>
 #include <QTimer>
 
 #include <array>
+#include <cmath>
 
 namespace
 {
@@ -277,6 +280,69 @@ bool VerifyNegativeInputs(
         && Check(workflow.SceneRevision() == 0U,
                  QStringLiteral("未知格式不得推进场景 revision。"), errors);
 }
+
+bool VerifyExternalStlLanding(
+    const QString& modulePath,
+    const QString& modelPath,
+    QTextStream& errors)
+{
+    if (modelPath.isEmpty())
+    {
+        return true;
+    }
+    ModuleClient client;
+    QString error;
+    if (!client.Open(modulePath, QByteArrayLiteral("{}"), &error))
+    {
+        errors << "外部 STL 模块加载失败：" << error << Qt::endl;
+        return false;
+    }
+    HostModelImportWorkflow workflow(client);
+    hostmodelimportresult imported;
+    if (!workflow.ImportModel(modelPath, &imported, &error))
+    {
+        errors << "外部 STL 导入失败：" << error << Qt::endl;
+        return false;
+    }
+    const QJsonObject request{
+        {QStringLiteral("capability"), QStringLiteral("scene.get_snapshot")},
+        {QStringLiteral("sceneHandle"),
+         static_cast<qint64>(workflow.SceneHandle())}};
+    QByteArray responseBytes;
+    if (!client.Execute(
+            QJsonDocument(request).toJson(QJsonDocument::Compact),
+            &responseBytes,
+            &error))
+    {
+        errors << "外部 STL 场景快照失败：" << error << Qt::endl;
+        return false;
+    }
+    const QJsonObject scene = QJsonDocument::fromJson(responseBytes)
+        .object().value(QStringLiteral("scene")).toObject();
+    const QJsonArray instances = scene.value(
+        QStringLiteral("instances")).toArray();
+    if (instances.size() != 1)
+    {
+        errors << "外部 STL 场景实例数量不正确。" << Qt::endl;
+        return false;
+    }
+    const QJsonObject instance = instances.at(0).toObject();
+    const QJsonObject requested = instance.value(
+        QStringLiteral("requestedTransform")).toObject();
+    const double minimumZ = instance.value(
+        QStringLiteral("effectiveBboxMm")).toObject()
+        .value(QStringLiteral("min")).toObject()
+        .value(QStringLiteral("z")).toDouble();
+    const bool passed = imported.trianglecount > 0U
+        && requested.value(QStringLiteral("landOnBuildPlate")).toBool()
+        && std::abs(minimumZ) <= 1.0e-9;
+    if (!passed)
+    {
+        errors << "外部 STL 未以 minZ=0 的触底状态进入权威场景。"
+               << Qt::endl;
+    }
+    return passed;
+}
 }
 
 int main(int argc, char* argv[])
@@ -286,6 +352,8 @@ int main(int argc, char* argv[])
         application.arguments(), QStringLiteral("--module"));
     const QString repositoryRoot = ArgumentValue(
         application.arguments(), QStringLiteral("--repo-root"));
+    const QString externalStl = ArgumentValue(
+        application.arguments(), QStringLiteral("--external-stl"));
     QTextStream errors(stderr);
     QTemporaryDir root;
     const QString asciiPath = QDir(repositoryRoot).filePath(
@@ -314,12 +382,14 @@ int main(int argc, char* argv[])
             QDir(root.path()).filePath(QStringLiteral("binary-package")),
             4U,
             errors)
-        || !VerifyNegativeInputs(modulePath, root.path(), errors))
+        || !VerifyNegativeInputs(modulePath, root.path(), errors)
+        || !VerifyExternalStlLanding(modulePath, externalStl, errors))
     {
         return 2;
     }
     QTextStream(stdout)
         << "HOSTFLOW_H_E_01_STL_PASS ascii=1 binary=1 slices=2 negatives=3"
+        << " external=" << (externalStl.isEmpty() ? 0 : 1)
         << Qt::endl;
     return 0;
 }
