@@ -40,25 +40,52 @@ Vec3 TransformPoint(
 {
     const double mirrorX = transform.mirrorx ? -1.0 : 1.0;
     const double mirrorY = transform.mirrory ? -1.0 : 1.0;
-    const double radians =
+    const double radiansX =
+        transform.rotatexdeg * std::numbers::pi_v<double> / 180.0;
+    const double radiansY =
+        transform.rotateydeg * std::numbers::pi_v<double> / 180.0;
+    const double radiansZ =
         transform.rotatezdeg * std::numbers::pi_v<double> / 180.0;
-    const double cosine = std::cos(radians);
-    const double sine = std::sin(radians);
 
-    const double scaledX =
-        (point.x - pivot.x) * transform.uniformscale * mirrorX;
-    const double scaledY =
-        (point.y - pivot.y) * transform.uniformscale * mirrorY;
-    const double scaledZ =
-        (point.z - pivot.z) * transform.uniformscale;
+    Vec3 transformed{
+        (point.x - pivot.x) * transform.uniformscale * mirrorX,
+        (point.y - pivot.y) * transform.uniformscale * mirrorY,
+        (point.z - pivot.z) * transform.uniformscale,
+    };
+    const double cosineX = std::cos(radiansX);
+    const double sineX = std::sin(radiansX);
+    transformed = {
+        transformed.x,
+        transformed.y * cosineX - transformed.z * sineX,
+        transformed.y * sineX + transformed.z * cosineX,
+    };
+    const double cosineY = std::cos(radiansY);
+    const double sineY = std::sin(radiansY);
+    transformed = {
+        transformed.x * cosineY + transformed.z * sineY,
+        transformed.y,
+        -transformed.x * sineY + transformed.z * cosineY,
+    };
+    const double cosineZ = std::cos(radiansZ);
+    const double sineZ = std::sin(radiansZ);
+    transformed = {
+        transformed.x * cosineZ - transformed.y * sineZ,
+        transformed.x * sineZ + transformed.y * cosineZ,
+        transformed.z,
+    };
 
     return {
-        pivot.x + cosine * scaledX - sine * scaledY
-            + transform.translatexmm,
-        pivot.y + sine * scaledX + cosine * scaledY
-            + transform.translateymm,
-        pivot.z + scaledZ,
+        pivot.x + transformed.x + transform.translatexmm,
+        pivot.y + transformed.y + transform.translateymm,
+        pivot.z + transformed.z,
     };
+}
+
+void TranslateTriangleZ(Triangle& triangle, const double offset)
+{
+    triangle.a.z += offset;
+    triangle.b.z += offset;
+    triangle.c.z += offset;
 }
 
 void IncludePoint(BoundingBox& bbox, const Vec3& point)
@@ -179,6 +206,25 @@ TransformedModelResult AdaptTransformedModel(
         IncludePoint(geometry.bboxmm, transformedTriangle.b);
         IncludePoint(geometry.bboxmm, transformedTriangle.c);
         geometry.triangles.push_back(transformedTriangle);
+    }
+
+    const bool tilted = transform.rotatexdeg != 0.0
+        || transform.rotateydeg != 0.0;
+    if (tilted || transform.landonbuildplate)
+    {
+        const double targetMinZ = transform.landonbuildplate
+            ? 0.0
+            : source.bbox_mm.min.z;
+        geometry.landingoffsetzmm = targetMinZ - geometry.bboxmm.min.z;
+        if (geometry.landingoffsetzmm != 0.0)
+        {
+            for (Triangle& triangle : geometry.triangles)
+            {
+                TranslateTriangleZ(triangle, geometry.landingoffsetzmm);
+            }
+            geometry.bboxmm.min.z += geometry.landingoffsetzmm;
+            geometry.bboxmm.max.z += geometry.landingoffsetzmm;
+        }
     }
 
     return {std::move(geometry), std::nullopt};

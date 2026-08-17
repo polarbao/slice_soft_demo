@@ -2,6 +2,7 @@
 
 #include "slicer_core/system/Sha256.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iomanip>
@@ -16,7 +17,9 @@ namespace
 {
 
 constexpr std::string_view kModelTransformSchema{
-    "slicesoft.model_transform.1"};
+    "slicesoft.model_transform.2"};
+
+using Matrix3 = std::array<double, 9>;
 
 ModelTransformError MakeError(
     const ModelTransformErrorCode code,
@@ -37,6 +40,121 @@ ModelTransformError MakeError(
 double NormalizeSignedZero(const double value)
 {
     return value == 0.0 ? 0.0 : value;
+}
+
+double NormalizeDegrees(const double value)
+{
+    double normalized = std::fmod(value, 360.0);
+    if (normalized < 0.0)
+    {
+        normalized += 360.0;
+    }
+    return NormalizeSignedZero(normalized);
+}
+
+Matrix3 Multiply(const Matrix3& left, const Matrix3& right)
+{
+    Matrix3 result{};
+    for (std::size_t row = 0U; row < 3U; ++row)
+    {
+        for (std::size_t column = 0U; column < 3U; ++column)
+        {
+            for (std::size_t index = 0U; index < 3U; ++index)
+            {
+                result.at(row * 3U + column) +=
+                    left.at(row * 3U + index)
+                    * right.at(index * 3U + column);
+            }
+        }
+    }
+    return result;
+}
+
+Matrix3 BuildLinear(const ModelTransform& transform)
+{
+    const double radiansX =
+        transform.rotatexdeg * std::numbers::pi_v<double> / 180.0;
+    const double radiansY =
+        transform.rotateydeg * std::numbers::pi_v<double> / 180.0;
+    const double radiansZ =
+        transform.rotatezdeg * std::numbers::pi_v<double> / 180.0;
+    const double cosineX = std::cos(radiansX);
+    const double sineX = std::sin(radiansX);
+    const double cosineY = std::cos(radiansY);
+    const double sineY = std::sin(radiansY);
+    const double cosineZ = std::cos(radiansZ);
+    const double sineZ = std::sin(radiansZ);
+
+    const Matrix3 mirrorScale{
+        (transform.mirrorx ? -1.0 : 1.0) * transform.uniformscale,
+        0.0,
+        0.0,
+        0.0,
+        (transform.mirrory ? -1.0 : 1.0) * transform.uniformscale,
+        0.0,
+        0.0,
+        0.0,
+        transform.uniformscale,
+    };
+    const Matrix3 rotationX{
+        1.0, 0.0, 0.0,
+        0.0, cosineX, -sineX,
+        0.0, sineX, cosineX,
+    };
+    const Matrix3 rotationY{
+        cosineY, 0.0, sineY,
+        0.0, 1.0, 0.0,
+        -sineY, 0.0, cosineY,
+    };
+    const Matrix3 rotationZ{
+        cosineZ, -sineZ, 0.0,
+        sineZ, cosineZ, 0.0,
+        0.0, 0.0, 1.0,
+    };
+    return Multiply(
+        rotationZ,
+        Multiply(rotationY, Multiply(rotationX, mirrorScale)));
+}
+
+double Determinant(const Matrix3& matrix)
+{
+    return matrix.at(0U)
+            * (matrix.at(4U) * matrix.at(8U)
+               - matrix.at(5U) * matrix.at(7U))
+        - matrix.at(1U)
+            * (matrix.at(3U) * matrix.at(8U)
+               - matrix.at(5U) * matrix.at(6U))
+        + matrix.at(2U)
+            * (matrix.at(3U) * matrix.at(7U)
+               - matrix.at(4U) * matrix.at(6U));
+}
+
+void SetEulerAnglesFromRotation(
+    const Matrix3& rotation,
+    ModelTransform& transform)
+{
+    constexpr double kGimbalTolerance{1.0e-12};
+    const double sineY = std::clamp(-rotation.at(6U), -1.0, 1.0);
+    const double radiansY = std::asin(sineY);
+    const double cosineY = std::cos(radiansY);
+    double radiansX{0.0};
+    double radiansZ{0.0};
+    if (std::abs(cosineY) > kGimbalTolerance)
+    {
+        radiansX = std::atan2(rotation.at(7U), rotation.at(8U));
+        radiansZ = std::atan2(rotation.at(3U), rotation.at(0U));
+    }
+    else
+    {
+        radiansZ = std::atan2(-rotation.at(1U), rotation.at(4U));
+    }
+
+    transform.rotatexdeg =
+        radiansX * 180.0 / std::numbers::pi_v<double>;
+    transform.rotateydeg =
+        radiansY * 180.0 / std::numbers::pi_v<double>;
+    transform.rotatezdeg =
+        radiansZ * 180.0 / std::numbers::pi_v<double>;
 }
 
 void AppendLengthPrefixed(
@@ -95,6 +213,8 @@ ModelTransformValidationResult ValidateModelTransform(
     } finiteValues[]{
         {"translatexmm", transform.translatexmm},
         {"translateymm", transform.translateymm},
+        {"rotatexdeg", transform.rotatexdeg},
+        {"rotateydeg", transform.rotateydeg},
         {"rotatezdeg", transform.rotatezdeg},
         {"uniformscale", transform.uniformscale},
     };
@@ -132,12 +252,9 @@ ModelTransform NormalizeModelTransform(const ModelTransform& transform)
     normalized.translatexmm = NormalizeSignedZero(normalized.translatexmm);
     normalized.translateymm = NormalizeSignedZero(normalized.translateymm);
     normalized.uniformscale = NormalizeSignedZero(normalized.uniformscale);
-    normalized.rotatezdeg = std::fmod(normalized.rotatezdeg, 360.0);
-    if (normalized.rotatezdeg < 0.0)
-    {
-        normalized.rotatezdeg += 360.0;
-    }
-    normalized.rotatezdeg = NormalizeSignedZero(normalized.rotatezdeg);
+    normalized.rotatexdeg = NormalizeDegrees(normalized.rotatexdeg);
+    normalized.rotateydeg = NormalizeDegrees(normalized.rotateydeg);
+    normalized.rotatezdeg = NormalizeDegrees(normalized.rotatezdeg);
     return normalized;
 }
 
@@ -149,10 +266,14 @@ bool ModelTransformsEquivalent(
     const ModelTransform normalizedRight = NormalizeModelTransform(right);
     return normalizedLeft.translatexmm == normalizedRight.translatexmm
         && normalizedLeft.translateymm == normalizedRight.translateymm
+        && normalizedLeft.rotatexdeg == normalizedRight.rotatexdeg
+        && normalizedLeft.rotateydeg == normalizedRight.rotateydeg
         && normalizedLeft.rotatezdeg == normalizedRight.rotatezdeg
         && normalizedLeft.uniformscale == normalizedRight.uniformscale
         && normalizedLeft.mirrorx == normalizedRight.mirrorx
-        && normalizedLeft.mirrory == normalizedRight.mirrory;
+        && normalizedLeft.mirrory == normalizedRight.mirrory
+        && normalizedLeft.landonbuildplate
+            == normalizedRight.landonbuildplate;
 }
 
 ModelTransform ComposeModelTransforms(
@@ -164,67 +285,57 @@ ModelTransform ComposeModelTransforms(
     const ModelTransform normalizedInner =
         NormalizeModelTransform(inner);
 
-    const auto buildLinear =
-        [](const ModelTransform& transform)
+    const bool outerIsTranslationOnly =
+        normalizedOuter.rotatexdeg == 0.0
+        && normalizedOuter.rotateydeg == 0.0
+        && normalizedOuter.rotatezdeg == 0.0
+        && normalizedOuter.uniformscale == 1.0
+        && !normalizedOuter.mirrorx
+        && !normalizedOuter.mirrory;
+    if (outerIsTranslationOnly)
     {
-        const double radians =
-            transform.rotatezdeg
-            * std::numbers::pi_v<double> / 180.0;
-        const double cosine = std::cos(radians);
-        const double sine = std::sin(radians);
-        const double mirrorX = transform.mirrorx ? -1.0 : 1.0;
-        const double mirrorY = transform.mirrory ? -1.0 : 1.0;
-        const double scale = transform.uniformscale;
-        return std::array<double, 4>{
-            cosine * mirrorX * scale,
-            -sine * mirrorY * scale,
-            sine * mirrorX * scale,
-            cosine * mirrorY * scale,
-        };
-    };
+        ModelTransform result = normalizedInner;
+        result.translatexmm += normalizedOuter.translatexmm;
+        result.translateymm += normalizedOuter.translateymm;
+        result.landonbuildplate =
+            normalizedOuter.landonbuildplate
+            || normalizedInner.landonbuildplate;
+        return NormalizeModelTransform(result);
+    }
 
-    const std::array<double, 4> outerLinear =
-        buildLinear(normalizedOuter);
-    const std::array<double, 4> innerLinear =
-        buildLinear(normalizedInner);
-    const std::array<double, 4> combined{
-        outerLinear.at(0U) * innerLinear.at(0U)
-            + outerLinear.at(1U) * innerLinear.at(2U),
-        outerLinear.at(0U) * innerLinear.at(1U)
-            + outerLinear.at(1U) * innerLinear.at(3U),
-        outerLinear.at(2U) * innerLinear.at(0U)
-            + outerLinear.at(3U) * innerLinear.at(2U),
-        outerLinear.at(2U) * innerLinear.at(1U)
-            + outerLinear.at(3U) * innerLinear.at(3U),
-    };
+    const Matrix3 outerLinear = BuildLinear(normalizedOuter);
+    const Matrix3 innerLinear = BuildLinear(normalizedInner);
+    const Matrix3 combined = Multiply(outerLinear, innerLinear);
 
     ModelTransform result;
     result.uniformscale =
         normalizedOuter.uniformscale
         * normalizedInner.uniformscale;
-    const double determinant =
-        combined.at(0U) * combined.at(3U)
-        - combined.at(1U) * combined.at(2U);
-    result.mirrorx = determinant < 0.0;
+    result.mirrorx = Determinant(combined) < 0.0;
     result.mirrory = false;
-    const double inverseScale = 1.0 / result.uniformscale;
-    const double radians = result.mirrorx
-        ? std::atan2(
-              -combined.at(2U) * inverseScale,
-              -combined.at(0U) * inverseScale)
-        : std::atan2(
-              combined.at(2U) * inverseScale,
-              combined.at(0U) * inverseScale);
-    result.rotatezdeg =
-        radians * 180.0 / std::numbers::pi_v<double>;
+    Matrix3 rotation = combined;
+    for (double& value : rotation)
+    {
+        value /= result.uniformscale;
+    }
+    if (result.mirrorx)
+    {
+        rotation.at(0U) *= -1.0;
+        rotation.at(3U) *= -1.0;
+        rotation.at(6U) *= -1.0;
+    }
+    SetEulerAnglesFromRotation(rotation, result);
     result.translatexmm =
         outerLinear.at(0U) * normalizedInner.translatexmm
         + outerLinear.at(1U) * normalizedInner.translateymm
         + normalizedOuter.translatexmm;
     result.translateymm =
-        outerLinear.at(2U) * normalizedInner.translatexmm
-        + outerLinear.at(3U) * normalizedInner.translateymm
+        outerLinear.at(3U) * normalizedInner.translatexmm
+        + outerLinear.at(4U) * normalizedInner.translateymm
         + normalizedOuter.translateymm;
+    result.landonbuildplate =
+        normalizedOuter.landonbuildplate
+        || normalizedInner.landonbuildplate;
     return NormalizeModelTransform(result);
 }
 
@@ -262,10 +373,13 @@ ModelTransformHashResult ComputeModelTransformHash(
     payload << std::setprecision(std::numeric_limits<double>::max_digits10)
             << normalized.translatexmm << '\n'
             << normalized.translateymm << '\n'
+            << normalized.rotatexdeg << '\n'
+            << normalized.rotateydeg << '\n'
             << normalized.rotatezdeg << '\n'
             << normalized.uniformscale << '\n'
             << (normalized.mirrorx ? 1 : 0) << '\n'
-            << (normalized.mirrory ? 1 : 0);
+            << (normalized.mirrory ? 1 : 0) << '\n'
+            << (normalized.landonbuildplate ? 1 : 0);
     return {ComputeSha256(payload.str()), std::nullopt};
 }
 

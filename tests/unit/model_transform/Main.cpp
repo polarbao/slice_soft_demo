@@ -172,6 +172,20 @@ bool StableErrorsAndValidation()
              "non-positive scale is rejected")
         && ok;
 
+    slicer_core::ModelTransform nonFiniteRotation;
+    nonFiniteRotation.rotatexdeg =
+        std::numeric_limits<double>::infinity();
+    const auto rotationValidation =
+        slicer_core::ValidateModelTransform(
+            nonFiniteRotation,
+            "instance-1",
+            "model-1");
+    ok = ExpectTrue(
+             !rotationValidation.IsValid()
+                 && rotationValidation.error->field == "rotatexdeg",
+             "non-finite X rotation is rejected with field")
+        && ok;
+
     slicer_core::ModelInstance missingInstanceId = MakeInstance();
     missingInstanceId.instanceid.clear();
     const auto instanceError =
@@ -231,6 +245,8 @@ bool TransformHashIsStableAndSensitive()
 
     slicer_core::ModelTransform equivalent = identity;
     equivalent.translatexmm = -0.0;
+    equivalent.rotatexdeg = 360.0;
+    equivalent.rotateydeg = -0.0;
     equivalent.rotatezdeg = 360.0;
     const auto normalized = slicer_core::ComputeModelTransformHash(
         equivalent,
@@ -239,7 +255,7 @@ bool TransformHashIsStableAndSensitive()
         "model-1");
 
     slicer_core::ModelTransform changed = identity;
-    changed.mirrorx = true;
+    changed.rotatexdeg = 90.0;
     const auto changedTransform = slicer_core::ComputeModelTransformHash(
         changed,
         "source-transform-1",
@@ -517,6 +533,50 @@ bool DoubleMirrorKeepsWinding()
             "double mirror keeps winding and UV order");
 }
 
+bool TiltRotationsUseXyzOrderAndExplicitlyLandOnPlate()
+{
+    const slicer_core::SceneModel source = MakeScene();
+
+    slicer_core::ModelInstance rotatedX = MakeInstance();
+    rotatedX.transform.rotatexdeg = 90.0;
+    rotatedX.transform.landonbuildplate = true;
+    const auto rotatedXResult =
+        slicer_core::AdaptTransformedModel(source, rotatedX);
+
+    slicer_core::ModelInstance rotatedY = MakeInstance();
+    rotatedY.transform.rotateydeg = 90.0;
+    rotatedY.transform.landonbuildplate = true;
+    const auto rotatedYResult =
+        slicer_core::AdaptTransformedModel(source, rotatedY);
+
+    slicer_core::ModelInstance grounded = MakeInstance();
+    grounded.transform.landonbuildplate = true;
+    const auto groundedResult =
+        slicer_core::AdaptTransformedModel(source, grounded);
+
+    return ExpectTrue(
+               rotatedXResult.IsValid()
+                   && NearlyEqual(
+                       rotatedXResult.geometry.bboxmm.min.z, 0.0)
+                   && NearlyEqual(
+                       rotatedXResult.geometry.bboxmm.max.z, 4.0),
+               "X rotation changes standing orientation")
+        && ExpectTrue(
+            NearlyEqual(rotatedXResult.geometry.bboxmm.min.z, 0.0),
+            "explicit landing places X rotation on build plate Z=0")
+        && ExpectTrue(
+            rotatedYResult.IsValid()
+                && NearlyEqual(
+                    rotatedYResult.geometry.bboxmm.min.z, 0.0),
+            "Y rotation uses the same pivot and explicit landing policy")
+        && ExpectTrue(
+            groundedResult.IsValid()
+                && NearlyEqual(groundedResult.geometry.bboxmm.min.z, 0.0)
+                && NearlyEqual(
+                    groundedResult.geometry.landingoffsetzmm, -2.0),
+            "explicit landing also grounds an unrotated offset source");
+}
+
 bool MissingSourceGeometryIsRejected()
 {
     const slicer_core::SceneModel empty;
@@ -540,6 +600,7 @@ int main()
         && TransformOrderPivotWindingAndUvAreCorrect()
         && IndividualTransformCasesAreCorrect()
         && DoubleMirrorKeepsWinding()
+        && TiltRotationsUseXyzOrderAndExplicitlyLandOnPlate()
         && MissingSourceGeometryIsRejected();
     if (!ok)
     {

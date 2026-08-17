@@ -34,10 +34,13 @@ bool SameNonTranslationTransform(
     const ModelTransform& first,
     const ModelTransform& second)
 {
-    return first.rotatezdeg == second.rotatezdeg
+    return first.rotatexdeg == second.rotatexdeg
+        && first.rotateydeg == second.rotateydeg
+        && first.rotatezdeg == second.rotatezdeg
         && first.uniformscale == second.uniformscale
         && first.mirrorx == second.mirrorx
-        && first.mirrory == second.mirrory;
+        && first.mirrory == second.mirrory
+        && first.landonbuildplate == second.landonbuildplate;
 }
 
 bool HasValidTargetIdentity(
@@ -146,7 +149,7 @@ SceneRasterAdapterResult ReuseTranslatedSceneRaster(
             request,
             SceneRasterErrorCode::ProducerFailed,
             "targetinstance.transform",
-            "rotation, scale, or mirror changes require a new local layer producer run");
+            "rotation, scale, mirror, or landing changes require a new local layer producer run");
         return result;
     }
 
@@ -209,4 +212,3 @@ SceneRasterAdapterResult ReuseTranslatedSceneRaster(
 }
 
 }  // namespace slicer_core
-

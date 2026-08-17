@@ -22,10 +22,13 @@ Json TransformToJson(const ModelTransform& transform)
     return Json::object({
         {"translateXmm", transform.translatexmm},
         {"translateYmm", transform.translateymm},
+        {"rotateXdeg", transform.rotatexdeg},
+        {"rotateYdeg", transform.rotateydeg},
         {"rotateZdeg", transform.rotatezdeg},
         {"uniformScale", transform.uniformscale},
         {"mirrorX", transform.mirrorx},
         {"mirrorY", transform.mirrory},
+        {"landOnBuildPlate", transform.landonbuildplate},
     });
 }
 

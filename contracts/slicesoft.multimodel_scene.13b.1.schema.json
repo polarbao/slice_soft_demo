@@ -197,6 +197,12 @@
         "translateYMm": {
           "type": "number"
         },
+        "rotateXDeg": {
+          "type": "number"
+        },
+        "rotateYDeg": {
+          "type": "number"
+        },
         "rotateZDeg": {
           "type": "number"
         },
@@ -208,6 +214,9 @@
           "type": "boolean"
         },
         "mirrorY": {
+          "type": "boolean"
+        },
+        "landOnBuildPlate": {
           "type": "boolean"
         }
       },

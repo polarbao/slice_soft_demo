@@ -2,6 +2,7 @@
 #include "slicer_core/scene/MultiModelScene.h"
 
 #include <cstdlib>
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -370,6 +371,44 @@ void VerifiesAuthoritativeCollisionAndBounds()
                  "stale collision snapshot");
 }
 
+void VerifiesExplicitBuildPlateLanding()
+{
+    const TestCancelToken active;
+    const auto facade = CreateFacade();
+    slicer_core::api::SceneOperationRequest request;
+    request.scene_id = 42U;
+    request.operation_id = "operation-rotate-and-land";
+    request.current_scene_revision = 7U;
+    request.expected_scene_revision = 7U;
+
+    slicer_core::api::SceneOperation rotate;
+    rotate.type = slicer_core::api::SceneOperationType::RotateX;
+    rotate.instance_id = "instance-a";
+    rotate.value_x = 45.0;
+    request.operations.push_back(rotate);
+
+    slicer_core::api::SceneOperation land;
+    land.type = slicer_core::api::SceneOperationType::LandOnBuildPlate;
+    land.instance_id = "instance-a";
+    request.operations.push_back(land);
+
+    const auto committed = facade->ApplyOperation(request, active);
+    Require(committed.IsOk(), "rotate-and-land operation should commit");
+    const auto& state = committed.Value()->snapshot.instances.front();
+    Require(
+        std::abs(state.effective_bounds_mm.min_mm.at(2U)) <= 1.0e-9,
+        "landOnBuildPlate should produce authoritative minZ=0");
+    Require(
+        std::abs(state.instance.world_matrix.values.at(9U)) > 1.0e-9,
+        "ViewData world matrix should retain the X rotation");
+    Require(
+        std::abs(state.instance.world_matrix.values.at(11U)) <= 1.0e-9,
+        "ViewData world matrix should place the source lower corner at Z=0");
+    Require(
+        committed.Value()->snapshot.scene_revision == 8U,
+        "rotate-and-land batch should increment revision once");
+}
+
 void VerifiesAddRemoveReplayAndAtomicity()
 {
     const TestCancelToken active;
@@ -633,6 +672,7 @@ int main()
     VerifiesCanonicalSignedZeroHash();
     VerifiesRevisionReplayAndAtomicity();
     VerifiesAuthoritativeCollisionAndBounds();
+    VerifiesExplicitBuildPlateLanding();
     VerifiesAddRemoveReplayAndAtomicity();
     VerifiesGridLayoutCommitAndAtomicity();
     VerifiesCancellationAndProviderBoundary();

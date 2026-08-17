@@ -17,10 +17,13 @@ enum class SceneOperationType
     RemoveInstance,
     ApplyGridLayout,
     Translate,
+    RotateX,
+    RotateY,
     RotateZ,
     UniformScale,
     MirrorX,
-    MirrorY
+    MirrorY,
+    LandOnBuildPlate
 };
 
 /** @brief 在 Commit 通道提交的一个规范场景编辑。 */

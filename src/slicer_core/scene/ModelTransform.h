@@ -14,10 +14,13 @@ struct ModelTransform
 {
     double translatexmm{0.0};
     double translateymm{0.0};
+    double rotatexdeg{0.0};
+    double rotateydeg{0.0};
     double rotatezdeg{0.0};
     double uniformscale{1.0};
     bool mirrorx{false};
     bool mirrory{false};
+    bool landonbuildplate{false};
 };
 
 /**

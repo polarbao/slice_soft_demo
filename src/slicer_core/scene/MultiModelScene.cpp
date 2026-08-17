@@ -238,10 +238,13 @@ Json SerializeTransform(const ModelTransform& value)
     return Json::object({
         {"translateXMm", normalized.translatexmm},
         {"translateYMm", normalized.translateymm},
+        {"rotateXDeg", normalized.rotatexdeg},
+        {"rotateYDeg", normalized.rotateydeg},
         {"rotateZDeg", normalized.rotatezdeg},
         {"uniformScale", normalized.uniformscale},
         {"mirrorX", normalized.mirrorx},
         {"mirrorY", normalized.mirrory},
+        {"landOnBuildPlate", normalized.landonbuildplate},
     });
 }
 
@@ -250,10 +253,14 @@ ModelTransform DeserializeTransform(const Json& value)
     ModelTransform transform;
     transform.translatexmm = value.at("translateXMm").as_double();
     transform.translateymm = value.at("translateYMm").as_double();
+    transform.rotatexdeg = value.value("rotateXDeg", 0.0);
+    transform.rotateydeg = value.value("rotateYDeg", 0.0);
     transform.rotatezdeg = value.at("rotateZDeg").as_double();
     transform.uniformscale = value.at("uniformScale").as_double();
     transform.mirrorx = value.at("mirrorX").as_bool();
     transform.mirrory = value.at("mirrorY").as_bool();
+    transform.landonbuildplate =
+        value.value("landOnBuildPlate", false);
     return NormalizeModelTransform(transform);
 }
 
@@ -551,34 +558,61 @@ bool TransformsApproximatelyEquivalent(
     const auto buildLinear =
         [](const ModelTransform& transform)
     {
-        const double radians =
+        const double radiansX =
+            transform.rotatexdeg
+            * std::numbers::pi_v<double> / 180.0;
+        const double radiansY =
+            transform.rotateydeg
+            * std::numbers::pi_v<double> / 180.0;
+        const double radiansZ =
             transform.rotatezdeg
             * std::numbers::pi_v<double> / 180.0;
-        const double cosine = std::cos(radians);
-        const double sine = std::sin(radians);
+        const double cosineX = std::cos(radiansX);
+        const double sineX = std::sin(radiansX);
+        const double cosineY = std::cos(radiansY);
+        const double sineY = std::sin(radiansY);
+        const double cosineZ = std::cos(radiansZ);
+        const double sineZ = std::sin(radiansZ);
         const double mirrorX = transform.mirrorx ? -1.0 : 1.0;
         const double mirrorY = transform.mirrory ? -1.0 : 1.0;
-        return std::array<double, 4>{
-            cosine * mirrorX * transform.uniformscale,
-            -sine * mirrorY * transform.uniformscale,
-            sine * mirrorX * transform.uniformscale,
-            cosine * mirrorY * transform.uniformscale,
+        const double scale = transform.uniformscale;
+        return std::array<double, 9>{
+            cosineZ * cosineY * mirrorX * scale,
+            (cosineZ * sineY * sineX - sineZ * cosineX)
+                * mirrorY * scale,
+            (cosineZ * sineY * cosineX + sineZ * sineX) * scale,
+            sineZ * cosineY * mirrorX * scale,
+            (sineZ * sineY * sineX + cosineZ * cosineX)
+                * mirrorY * scale,
+            (sineZ * sineY * cosineX - cosineZ * sineX) * scale,
+            -sineY * mirrorX * scale,
+            cosineY * sineX * mirrorY * scale,
+            cosineY * cosineX * scale,
         };
     };
-    const std::array<double, 4> leftLinear =
+    const std::array<double, 9> leftLinear =
         buildLinear(normalizedLeft);
-    const std::array<double, 4> rightLinear =
+    const std::array<double, 9> rightLinear =
         buildLinear(normalizedRight);
-    return close(
-               normalizedLeft.translatexmm,
-               normalizedRight.translatexmm)
-        && close(
+    if (normalizedLeft.landonbuildplate
+            != normalizedRight.landonbuildplate
+        || !close(
+            normalizedLeft.translatexmm,
+            normalizedRight.translatexmm)
+        || !close(
             normalizedLeft.translateymm,
-            normalizedRight.translateymm)
-        && close(leftLinear.at(0U), rightLinear.at(0U))
-        && close(leftLinear.at(1U), rightLinear.at(1U))
-        && close(leftLinear.at(2U), rightLinear.at(2U))
-        && close(leftLinear.at(3U), rightLinear.at(3U));
+            normalizedRight.translateymm))
+    {
+        return false;
+    }
+    for (std::size_t index = 0U; index < leftLinear.size(); ++index)
+    {
+        if (!close(leftLinear.at(index), rightLinear.at(index)))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 }  // namespace

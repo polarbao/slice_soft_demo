@@ -57,8 +57,8 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.11":
-        raise AssertionError("expected the incomplete OBJ appearance contract")
+    if contract["contractVersion"] != "1.12":
+        raise AssertionError("expected the XYZ scene transform contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -122,10 +122,13 @@ def Main() -> int:
             "operations[].initialTransform",
             "operations[].initialTransform.translateXMm",
             "operations[].initialTransform.translateYMm",
+            "operations[].initialTransform.rotateXDeg",
+            "operations[].initialTransform.rotateYDeg",
             "operations[].initialTransform.rotateZDeg",
             "operations[].initialTransform.uniformScale",
             "operations[].initialTransform.mirrorX",
             "operations[].initialTransform.mirrorY",
+            "operations[].initialTransform.landOnBuildPlate",
             "operations[].layout",
             "operations[].layout.policy",
             "operations[].layout.maxColumns",
@@ -284,7 +287,7 @@ def Main() -> int:
         sceneOperation, "requestFields", "operations[].type"
     )
     expectedOperationType = (
-        "enum:addInstance|removeInstance|applyGridLayout|translate|rotateZ|uniformScale|mirror"
+        "enum:addInstance|removeInstance|applyGridLayout|translate|rotateX|rotateY|rotateZ|uniformScale|mirror|landOnBuildPlate"
     )
     if operationType != {
         "path": "operations[].type",
@@ -299,7 +302,7 @@ def Main() -> int:
     if instanceId != {
         "path": "operations[].instanceId",
         "type": "string",
-        "requiredFor": "removeInstance|translate|rotateZ|uniformScale|mirror",
+        "requiredFor": "removeInstance|translate|rotateX|rotateY|rotateZ|uniformScale|mirror|landOnBuildPlate",
     }:
         raise AssertionError("instanceId conditional requirement drifted")
     modelId = FieldSpec(sceneOperation, "requestFields", "operations[].modelId")
@@ -366,6 +369,15 @@ def Main() -> int:
         raise AssertionError("removeInstance required fields drifted")
     if requirements["removeInstance"]["modelRelease"] != "not_implied":
         raise AssertionError("removeInstance must not release the model")
+    for rotation in ("rotateX", "rotateY"):
+        if requirements[rotation] != {"required": ["instanceId", "degrees"]}:
+            raise AssertionError(f"{rotation} contract drifted")
+    if requirements["landOnBuildPlate"] != {
+        "required": ["instanceId"],
+        "targetPlane": "z_equals_zero",
+        "persistentForSubsequentTransforms": True,
+    }:
+        raise AssertionError("explicit build-plate landing contract drifted")
     gridLayout = requirements["applyGridLayout"]
     if gridLayout["batchMode"] != "sole_operation":
         raise AssertionError("applyGridLayout must remain an atomic sole operation")
@@ -393,6 +405,12 @@ def Main() -> int:
         "mirror",
     ]:
         raise AssertionError("legacy scene operation order drifted")
+    if compatibility["addedOperationTypes"] != [
+        "rotateX",
+        "rotateY",
+        "landOnBuildPlate",
+    ]:
+        raise AssertionError("XYZ transform extension drifted")
     if compatibility["legacyRequestResponseSemantics"] != "unchanged":
         raise AssertionError("legacy request compatibility must remain explicit")
     if (
@@ -630,7 +648,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus model appearance v1.11 contract: PASS")
+    print("15 capability DTOs plus XYZ transform v1.12 contract: PASS")
     return 0
 
 

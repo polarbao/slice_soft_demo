@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.11",
+  "contractVersion": "1.12",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -103,17 +103,20 @@
         { "path": "currentSceneRevision", "type": "integer", "required": true },
         { "path": "expectedSceneRevision", "type": "integer", "required": true },
         { "path": "operations", "type": "array", "required": true },
-        { "path": "operations[].type", "type": "enum:addInstance|removeInstance|applyGridLayout|translate|rotateZ|uniformScale|mirror", "required": true },
-        { "path": "operations[].instanceId", "type": "string", "requiredFor": "removeInstance|translate|rotateZ|uniformScale|mirror" },
+        { "path": "operations[].type", "type": "enum:addInstance|removeInstance|applyGridLayout|translate|rotateX|rotateY|rotateZ|uniformScale|mirror|landOnBuildPlate", "required": true },
+        { "path": "operations[].instanceId", "type": "string", "requiredFor": "removeInstance|translate|rotateX|rotateY|rotateZ|uniformScale|mirror|landOnBuildPlate" },
         { "path": "operations[].modelId", "type": "string", "requiredFor": "addInstance" },
         { "path": "operations[].assignInstanceId", "type": "string", "required": false },
         { "path": "operations[].initialTransform", "type": "object", "required": false },
         { "path": "operations[].initialTransform.translateXMm", "type": "number", "required": false },
         { "path": "operations[].initialTransform.translateYMm", "type": "number", "required": false },
+        { "path": "operations[].initialTransform.rotateXDeg", "type": "number", "required": false },
+        { "path": "operations[].initialTransform.rotateYDeg", "type": "number", "required": false },
         { "path": "operations[].initialTransform.rotateZDeg", "type": "number", "required": false },
         { "path": "operations[].initialTransform.uniformScale", "type": "number", "exclusiveMinimum": 0, "required": false },
         { "path": "operations[].initialTransform.mirrorX", "type": "boolean", "required": false },
         { "path": "operations[].initialTransform.mirrorY", "type": "boolean", "required": false },
+        { "path": "operations[].initialTransform.landOnBuildPlate", "type": "boolean", "required": false },
         { "path": "operations[].deltaMm", "type": "number[3]", "required": false },
         { "path": "operations[].degrees", "type": "number", "required": false },
         { "path": "operations[].factor", "type": "number", "required": false },
@@ -588,10 +591,13 @@
         "defaultInitialTransform": {
           "translateXMm": 0,
           "translateYMm": 0,
+          "rotateXDeg": 0,
+          "rotateYDeg": 0,
           "rotateZDeg": 0,
           "uniformScale": 1,
           "mirrorX": false,
-          "mirrorY": false
+          "mirrorY": false,
+          "landOnBuildPlate": false
         }
       },
       "removeInstance": {
@@ -617,9 +623,16 @@
         "resultIncludesCollisionAndOutOfBounds": true
       },
       "translate": { "required": ["instanceId", "deltaMm"] },
+      "rotateX": { "required": ["instanceId", "degrees"] },
+      "rotateY": { "required": ["instanceId", "degrees"] },
       "rotateZ": { "required": ["instanceId", "degrees"] },
       "uniformScale": { "required": ["instanceId", "factor"] },
-      "mirror": { "required": ["instanceId", "axis"] }
+      "mirror": { "required": ["instanceId", "axis"] },
+      "landOnBuildPlate": {
+        "required": ["instanceId"],
+        "targetPlane": "z_equals_zero",
+        "persistentForSubsequentTransforms": true
+      }
     },
     "sessionLifetime": {
       "scope": "pm_module_t",
@@ -629,6 +642,7 @@
     },
     "backwardCompatibility": {
       "legacyOperationTypes": ["translate", "rotateZ", "uniformScale", "mirror"],
+      "addedOperationTypes": ["rotateX", "rotateY", "landOnBuildPlate"],
       "legacyRequestResponseSemantics": "unchanged",
       "newResponseSceneHandleOnlyFor": "implicit_scene_create",
       "standaloneSceneLayoutCapability": "forbidden_use_scene.apply_operation"

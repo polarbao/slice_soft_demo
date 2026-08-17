@@ -101,19 +101,26 @@ addInstance
 removeInstance
 applyGridLayout
 translate
+rotateX
+rotateY
 rotateZ
 uniformScale
 mirror
+landOnBuildPlate
 ```
 
 `addInstance` 条件必填 `modelId`。该 id 必须由同一个模块实例内成功的 `model.import` 返回，
 且尚未执行 `model.release`。`assignInstanceId` 可选；缺省时由模块分配唯一实例 id。
 `initialTransform` 可选，字段与 scene 的 canonical model transform 一致：
-`translateXMm`、`translateYMm`、`rotateZDeg`、`uniformScale`、`mirrorX`、`mirrorY`；
+`translateXMm`、`translateYMm`、`rotateXDeg`、`rotateYDeg`、`rotateZDeg`、
+`uniformScale`、`mirrorX`、`mirrorY`、`landOnBuildPlate`；
 缺省为 identity。`addInstance` 禁止同时提供 `instanceId`，避免实例 id 双重来源。
 
 `removeInstance` 条件必填 `instanceId`，只移除场景实例，不隐式释放 `modelId`。既有四种变换仍按
 v1.4 字段工作：`translate.deltaMm`、`rotateZ.degrees`、`uniformScale.factor` 和 `mirror.axis`。
+v1.12 增量增加 `rotateX.degrees`、`rotateY.degrees` 与 `landOnBuildPlate`。旋转的规范几何顺序固定为
+`X -> Y -> Z`；`landOnBuildPlate` 由模块计算 Z 偏移，使实例最终 `minZ=0`。触底状态会持久化，
+后续旋转或缩放仍重新贴合平台。该偏移同时进入权威包围盒与 ViewData `worldMatrix`，不得只在 UI 中模拟。
 多个 operation 按请求数组顺序原子执行，任一操作失败不得暴露部分提交。
 
 `applyGridLayout` 通过 `layout` 条件必填对象提交 11×2 行优先规则排版：`policy=grid`、
@@ -286,6 +293,7 @@ emptyValue   255
 v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可复用 `meshes[]`，
 v1.9 由 R-B-03 冻结安全简化与历史抽稀的降级理由，v1.10 由 R-B-04 增加向后兼容的
 半精度网格属性请求与响应格式，v1.11 增加不完整 OBJ 的显式外观状态与单材料准入字段；
+v1.12 以加法方式增加 X/Y 实例旋转和显式触底操作，既有 Z 旋转与全部生产协议保持不变。
 H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主不透明透传到生产切片。独立 `scene.layout`
 能力仍被禁止。
 交互幂等、revision 回滚和三车道细则见

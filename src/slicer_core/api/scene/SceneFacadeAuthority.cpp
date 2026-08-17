@@ -6,11 +6,13 @@
 #include "slicer_core/system/Sha256.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <numbers>
 #include <set>
 #include <stdexcept>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 
 // 文件职责：维护场景权威候选状态并执行整批原子准入；
@@ -39,35 +41,87 @@ ApiResult<T> Failure(
 
 Matrix4d BuildWorldMatrix(
     const BoundingBox& sourceBounds,
-    const ModelTransform& transform)
+    const ModelTransform& transform,
+    const double landingOffsetZMm)
 {
+    using Matrix3 = std::array<double, 9>;
+    const auto multiply = [](const Matrix3& left, const Matrix3& right)
+    {
+        Matrix3 result{};
+        for (std::size_t row = 0U; row < 3U; ++row)
+        {
+            for (std::size_t column = 0U; column < 3U; ++column)
+            {
+                for (std::size_t index = 0U; index < 3U; ++index)
+                {
+                    result.at(row * 3U + column) +=
+                        left.at(row * 3U + index)
+                        * right.at(index * 3U + column);
+                }
+            }
+        }
+        return result;
+    };
+
     const ModelTransform canonical = NormalizeModelTransform(transform);
     const double pivotX = (sourceBounds.min.x + sourceBounds.max.x) * 0.5;
     const double pivotY = (sourceBounds.min.y + sourceBounds.max.y) * 0.5;
     const double pivotZ = sourceBounds.min.z;
-    const double radians = canonical.rotatezdeg
+    const double radiansX = canonical.rotatexdeg
         * std::numbers::pi_v<double> / 180.0;
-    const double cosine = std::cos(radians);
-    const double sine = std::sin(radians);
-    const double scaleX = canonical.uniformscale
-        * (canonical.mirrorx ? -1.0 : 1.0);
-    const double scaleY = canonical.uniformscale
-        * (canonical.mirrory ? -1.0 : 1.0);
-    const double m00 = cosine * scaleX;
-    const double m01 = -sine * scaleY;
-    const double m10 = sine * scaleX;
-    const double m11 = cosine * scaleY;
-    const double m22 = canonical.uniformscale;
+    const double radiansY = canonical.rotateydeg
+        * std::numbers::pi_v<double> / 180.0;
+    const double radiansZ = canonical.rotatezdeg
+        * std::numbers::pi_v<double> / 180.0;
+    const double cosineX = std::cos(radiansX);
+    const double sineX = std::sin(radiansX);
+    const double cosineY = std::cos(radiansY);
+    const double sineY = std::sin(radiansY);
+    const double cosineZ = std::cos(radiansZ);
+    const double sineZ = std::sin(radiansZ);
+    const Matrix3 mirrorScale{
+        canonical.uniformscale * (canonical.mirrorx ? -1.0 : 1.0),
+        0.0,
+        0.0,
+        0.0,
+        canonical.uniformscale * (canonical.mirrory ? -1.0 : 1.0),
+        0.0,
+        0.0,
+        0.0,
+        canonical.uniformscale};
+    const Matrix3 rotationX{
+        1.0, 0.0, 0.0,
+        0.0, cosineX, -sineX,
+        0.0, sineX, cosineX};
+    const Matrix3 rotationY{
+        cosineY, 0.0, sineY,
+        0.0, 1.0, 0.0,
+        -sineY, 0.0, cosineY};
+    const Matrix3 rotationZ{
+        cosineZ, -sineZ, 0.0,
+        sineZ, cosineZ, 0.0,
+        0.0, 0.0, 1.0};
+    const Matrix3 linear = multiply(
+        rotationZ,
+        multiply(rotationY, multiply(rotationX, mirrorScale)));
 
     Matrix4d matrix;
     matrix.values = {
-        m00, m01, 0.0,
-        pivotX - m00 * pivotX - m01 * pivotY
+        linear.at(0U), linear.at(1U), linear.at(2U),
+        pivotX - linear.at(0U) * pivotX
+            - linear.at(1U) * pivotY
+            - linear.at(2U) * pivotZ
             + canonical.translatexmm,
-        m10, m11, 0.0,
-        pivotY - m10 * pivotX - m11 * pivotY
+        linear.at(3U), linear.at(4U), linear.at(5U),
+        pivotY - linear.at(3U) * pivotX
+            - linear.at(4U) * pivotY
+            - linear.at(5U) * pivotZ
             + canonical.translateymm,
-        0.0, 0.0, m22, pivotZ - m22 * pivotZ,
+        linear.at(6U), linear.at(7U), linear.at(8U),
+        pivotZ - linear.at(6U) * pivotX
+            - linear.at(7U) * pivotY
+            - linear.at(8U) * pivotZ
+            + landingOffsetZMm,
         0.0, 0.0, 0.0, 1.0};
     return matrix;
 }
@@ -143,6 +197,8 @@ bool IsReportableCollisionError(const SceneCollisionErrorCode code)
 
 ApiResult<AuthorityState> EvaluateCandidate(SceneFacadeSeed seed)
 {
+    std::unordered_map<std::string, double> landingOffsetsMm;
+    landingOffsetsMm.reserve(seed.scene.instances.size());
     SceneCollisionRequest collisionRequest;
     collisionRequest.sceneid = seed.scene.sceneid;
     collisionRequest.currentscenerevision = seed.scene.scenerevision;
@@ -174,6 +230,9 @@ ApiResult<AuthorityState> EvaluateCandidate(SceneFacadeSeed seed)
                 transformed.error->field);
         }
         sceneInstance.instance.effectivebboxmm = transformed.geometry.bboxmm;
+        landingOffsetsMm.insert_or_assign(
+            sceneInstance.instance.instanceid,
+            transformed.geometry.landingoffsetzmm);
 
         SceneCollisionItem item;
         item.instance = sceneInstance.instance;
@@ -258,7 +317,8 @@ ApiResult<AuthorityState> EvaluateCandidate(SceneFacadeSeed seed)
         instanceState.instance.model_id = apiModel->second;
         instanceState.instance.world_matrix = BuildWorldMatrix(
             sceneInstance.instance.sourcebboxmm,
-            sceneInstance.instance.transform);
+            sceneInstance.instance.transform,
+            landingOffsetsMm.at(sceneInstance.instance.instanceid));
         instanceState.effective_bounds_mm.min_mm = {
             sceneInstance.instance.effectivebboxmm.min.x,
             sceneInstance.instance.effectivebboxmm.min.y,

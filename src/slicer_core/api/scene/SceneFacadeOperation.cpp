@@ -94,6 +94,10 @@ std::string OperationTypeName(const SceneOperationType type)
         return "applyGridLayout";
     case SceneOperationType::Translate:
         return "translate";
+    case SceneOperationType::RotateX:
+        return "rotateX";
+    case SceneOperationType::RotateY:
+        return "rotateY";
     case SceneOperationType::RotateZ:
         return "rotateZ";
     case SceneOperationType::UniformScale:
@@ -102,6 +106,8 @@ std::string OperationTypeName(const SceneOperationType type)
         return "mirrorX";
     case SceneOperationType::MirrorY:
         return "mirrorY";
+    case SceneOperationType::LandOnBuildPlate:
+        return "landOnBuildPlate";
     }
     return "invalid";
 }
@@ -269,6 +275,12 @@ ApiResult<ModelTransform> ApplyDelta(
         candidate.translatexmm += operation.value_x;
         candidate.translateymm += operation.value_y;
         break;
+    case SceneOperationType::RotateX:
+        candidate.rotatexdeg += operation.value_x;
+        break;
+    case SceneOperationType::RotateY:
+        candidate.rotateydeg += operation.value_y;
+        break;
     case SceneOperationType::RotateZ:
         candidate.rotatezdeg += operation.value_z;
         break;
@@ -287,6 +299,9 @@ ApiResult<ModelTransform> ApplyDelta(
         break;
     case SceneOperationType::MirrorY:
         candidate.mirrory = !candidate.mirrory;
+        break;
+    case SceneOperationType::LandOnBuildPlate:
+        candidate.landonbuildplate = true;
         break;
     default:
         return Failure<ModelTransform>(
@@ -534,6 +549,10 @@ std::string ComputeOperationFingerprint(const SceneOperationRequest& request)
                   << FormatNumber(operation.initial_transform.translatexmm)
                   << ",\"translateYMm\":"
                   << FormatNumber(operation.initial_transform.translateymm)
+                  << ",\"rotateXDeg\":"
+                  << FormatNumber(operation.initial_transform.rotatexdeg)
+                  << ",\"rotateYDeg\":"
+                  << FormatNumber(operation.initial_transform.rotateydeg)
                   << ",\"rotateZDeg\":"
                   << FormatNumber(operation.initial_transform.rotatezdeg)
                   << ",\"uniformScale\":"
@@ -542,6 +561,9 @@ std::string ComputeOperationFingerprint(const SceneOperationRequest& request)
                   << (operation.initial_transform.mirrorx ? "true" : "false")
                   << ",\"mirrorY\":"
                   << (operation.initial_transform.mirrory ? "true" : "false")
+                  << ",\"landOnBuildPlate\":"
+                  << (operation.initial_transform.landonbuildplate
+                          ? "true" : "false")
                   << '}'
                   << ",\"valueX\":" << FormatNumber(operation.value_x)
                   << ",\"valueY\":" << FormatNumber(operation.value_y)

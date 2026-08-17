@@ -204,6 +204,31 @@ bool ExistingTransformIsProjectedReadOnly()
             "scale, rotate and translate affect projected bounds");
 }
 
+bool StandingRotationIsProjectedAndExplicitlyGrounded()
+{
+    const slicer_core::SceneModel source = MakeScene();
+    slicer_core::SceneViewGeometryRequest request = MakeRequest();
+    request.instance.transform.rotatexdeg = 90.0;
+    request.instance.transform.landonbuildplate = true;
+
+    const slicer_core::SceneViewGeometryResult result =
+        slicer_core::BuildSceneViewGeometry(source, request);
+    return ExpectTrue(result.IsValid(), "standing transform projects")
+        && ExpectTrue(
+            NearlyEqual(result.geometry.worldboundsmm.min.xmm, 0.0)
+                && NearlyEqual(result.geometry.worldboundsmm.max.xmm, 2.0)
+                && NearlyEqual(result.geometry.worldboundsmm.min.ymm, 0.0)
+                && NearlyEqual(result.geometry.worldboundsmm.max.ymm, 2.0),
+            "X rotation changes the projected footprint")
+        && ExpectTrue(
+            NearlyEqual(
+                result.geometry.effectivebboxmm.min.z, 0.0)
+                && NearlyEqual(
+                    result.geometry.effectivebboxmm.max.z,
+                    4.0),
+            "standing projection is explicitly landed on Z=0");
+}
+
 bool DisplayResourceLocationDoesNotChangeGeometryHash()
 {
     slicer_core::SceneModel first = MakeScene();
@@ -430,6 +455,7 @@ int main()
     const bool ok = ErrorNamesAreStable()
         && IdentityProjectionPreservesXyAndIdentity()
         && ExistingTransformIsProjectedReadOnly()
+        && StandingRotationIsProjectedAndExplicitlyGrounded()
         && DisplayResourceLocationDoesNotChangeGeometryHash()
         && TopSurfacePreviewUsesHighestMaterial()
         && NonFiniteUvIsRejected()

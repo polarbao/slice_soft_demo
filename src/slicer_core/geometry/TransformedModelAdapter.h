@@ -19,6 +19,7 @@ struct TransformedModelGeometry
     std::vector<TriangleTextureInfo> triangletextures;
     BoundingBox bboxmm;
     Vec3 pivotmm;
+    double landingoffsetzmm{0.0};
     int determinantsign{1};
     bool mirrored{false};
     std::uint64_t transformrevision{0U};

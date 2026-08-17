@@ -264,7 +264,13 @@ bool IdentityAndResourceValidation()
 
 bool SchemaRoundTripAndHash()
 {
-    const slicer_core::MultiModelScene original = MakeDraftScene();
+    slicer_core::MultiModelScene original = MakeDraftScene();
+    original.instances.front().requestedtransform.rotatexdeg = 90.0;
+    original.instances.front().requestedtransform.rotateydeg = 15.0;
+    original.instances.front().effectivetransform =
+        original.instances.front().requestedtransform;
+    original.instances.front().instance.transform =
+        original.instances.front().effectivetransform;
     const slicer_core::Json document =
         slicer_core::SerializeMultiModelScene(original);
     const auto decoded = slicer_core::DeserializeMultiModelScene(document);
@@ -289,6 +295,17 @@ bool SchemaRoundTripAndHash()
     return ExpectTrue(
                document.dump(0) == encodedAgain.dump(0),
                "scene serialization is canonical")
+        && ExpectTrue(
+            document.at("instances")
+                    .at(0U)
+                    .at("requestedTransform")
+                    .at("rotateXDeg")
+                    .as_double()
+                    == 90.0
+                && decoded.scene.instances.front()
+                       .requestedtransform.rotateydeg
+                    == 15.0,
+            "scene serialization retains X and Y rotations")
         && ExpectTrue(
             firstHash.size() == 64U && firstHash == secondHash,
             "scene hash is stable across round-trip")
@@ -390,6 +407,24 @@ bool EffectiveTransformCompositionIsFrozen()
                 && std::abs(effective.translateymm - 5.0) < 1.0e-9
                 && std::abs(effective.rotatezdeg - 90.0) < 1.0e-9,
             "effective transform uses derived * requested order"))
+    {
+        return false;
+    }
+
+    slicer_core::ModelTransform tiltedRequested;
+    tiltedRequested.rotatexdeg = 90.0;
+    tiltedRequested.rotateydeg = 15.0;
+    slicer_core::ModelTransform layoutTranslation;
+    layoutTranslation.translatexmm = 20.0;
+    const slicer_core::ModelTransform tiltedEffective =
+        slicer_core::ComposeModelTransforms(
+            layoutTranslation,
+            tiltedRequested);
+    if (!ExpectTrue(
+            tiltedEffective.rotatexdeg == 90.0
+                && tiltedEffective.rotateydeg == 15.0
+                && tiltedEffective.translatexmm == 20.0,
+            "layout translation preserves requested Euler angles"))
     {
         return false;
     }

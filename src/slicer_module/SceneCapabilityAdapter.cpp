@@ -522,6 +522,16 @@ private:
             result.value_y = delta[1];
             result.value_z = delta[2];
         }
+        else if (type == "rotateX")
+        {
+            result.type = slicer_core::api::SceneOperationType::RotateX;
+            result.value_x = RequireNumber(operation, "degrees");
+        }
+        else if (type == "rotateY")
+        {
+            result.type = slicer_core::api::SceneOperationType::RotateY;
+            result.value_y = RequireNumber(operation, "degrees");
+        }
         else if (type == "rotateZ")
         {
             result.type = slicer_core::api::SceneOperationType::RotateZ;
@@ -542,6 +552,11 @@ private:
             {
                 throw CapabilityRequestError("mirror axis must be x or y");
             }
+        }
+        else if (type == "landOnBuildPlate")
+        {
+            result.type =
+                slicer_core::api::SceneOperationType::LandOnBuildPlate;
         }
         else if (type != "addInstance" && type != "applyGridLayout")
         {
@@ -586,6 +601,14 @@ private:
         {
             transform.translateymm = RequireNumber(value, "translateYMm");
         }
+        if (value.contains("rotateXDeg"))
+        {
+            transform.rotatexdeg = RequireNumber(value, "rotateXDeg");
+        }
+        if (value.contains("rotateYDeg"))
+        {
+            transform.rotateydeg = RequireNumber(value, "rotateYDeg");
+        }
         if (value.contains("rotateZDeg"))
         {
             transform.rotatezdeg = RequireNumber(value, "rotateZDeg");
@@ -601,6 +624,11 @@ private:
         if (value.contains("mirrorY"))
         {
             transform.mirrory = RequireBoolean(value, "mirrorY");
+        }
+        if (value.contains("landOnBuildPlate"))
+        {
+            transform.landonbuildplate =
+                RequireBoolean(value, "landOnBuildPlate");
         }
         return transform;
     }
