@@ -49,5 +49,6 @@
 | `REPORT_16B_03_姿态AB矩阵当前状态.md` | 16B-03 P0/P2/P3 Reality 支撑矩阵和候选结论 |
 | `REPORT_16D_03_统一回归Gate当前状态.md` | 16D-03 Debug/Release、Quick CI、Stage 15、13G、Runtime 与协议统一 Gate |
 | `REPORT_16_切片几何采样甲片接触姿态与性能专项当前状态.md` | Stage 16 工程候选收口、默认延期、性能预算和外部待确认 |
+| `REPORT_VERSION_切片软件与切片库版本治理当前状态.md` | VERSION 插入专项：软件/切片库版本事实源、展示、打包与回归状态 |
 
 历史 report 已归档到 `docs/archive/2026-06-30_slicer_legacy/reports`，只作为 C 级历史证据。

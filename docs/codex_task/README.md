@@ -27,6 +27,13 @@ docs/codex_task/archive/handoff
 
 ## 切片侧收口后的接续专项（2026-08-07 新增）
 
+2026-08-17 新增不占阶段编号的 VERSION 插入专项，用户已授权先完成文档准备再进入开发：
+
+```text
+docs/codex_task/current/TASKS_VERSION_切片软件与切片库版本治理任务清单.md
+docs/codex_task/current/CODEX_PROMPT_VERSION_切片软件与切片库版本治理执行指令.md
+```
+
 Stage 14 切片侧已收口、`CURRENT_NEXT_TASK = NONE`，外部验收延期。
 以下两个**独立补充专项**不占阶段编号，与 Stage 16 互不依赖，是接续执行的候选：
 

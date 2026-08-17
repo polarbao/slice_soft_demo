@@ -85,6 +85,8 @@
 | `DOC_PREP_14B_核心Facade与BaseEngine分层实施准备.md` | 14B Facade、base/engine 分层、执行顺序、验证矩阵与回滚边界 |
 | `DOC_PREP_14C_04_同步轻能力接线实施准备.md` | 14C-04 同步能力承载、终态 job、Facade/Provider 复用和 Worker fail-closed 边界 |
 | `DOC_PREP_14C_05_模块自述与部署清单实施准备.md` | 14C-05 module_info/module.json 双 Schema、版本/CRT 与一致性门禁 |
+| `DOC_DECISION_VERSION_切片软件与切片库统一版本治理.md` | VERSION 插入专项：双组件 lockstep、0.2.0-dev 基线、单一事实源、展示与发布边界 |
+| `DOC_PREP_VERSION_切片软件与切片库版本实施准备.md` | VERSION-00..06 代码触点、文件所有权、测试矩阵与停止条件 |
 | `DOC_PREP_14D_03_文件合同协商实施准备.md` | 14D-03 Worker file-contract 发现、版本兼容与日志边界 |
 | `DOC_PREP_14D_04_取消令牌贯穿实施准备.md` | 14D-04A 核心 token 贯穿及 14D-04B Worker E2E 的受控拆分 |
 | `DOC_PREP_14C_07_DLL初始化与依赖红线实施准备.md` | 14C-07 Loader Lock、call_once、状态机和依赖红线门禁 |
