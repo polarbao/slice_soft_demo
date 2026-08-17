@@ -1,4 +1,5 @@
 #include "slicer_module/ModuleInfo.h"
+#include "SliceSoftBuildVersion.h"
 
 #if !defined(_MSC_VER) || !defined(_M_X64)
 #error SliceSoft module metadata requires the frozen MSVC x64 runtime.
@@ -14,7 +15,8 @@ namespace
 {
 
 constexpr std::string_view ModuleId{"slicer"};
-constexpr std::string_view ModuleVersion{"0.1.0"};
+constexpr std::string_view ModuleVersion{
+    SLICESOFT_SLICER_IMPLEMENTATION_VERSION};
 
 #if defined(_DEBUG)
 constexpr std::string_view ModuleRuntime{"MSVC-x64-MDd"};
@@ -29,7 +31,9 @@ constexpr std::string_view ModuleBuildConfig{"Release"};
 #endif
 
 constexpr std::string_view ModuleInfoJson{
-    R"json({"schema":"slicesoft.module_info.1","id":"slicer","name":"SliceSoft Geometry Slicer","version":"0.1.0","spi":1,"runtime":")json"
+    R"json({"schema":"slicesoft.module_info.1","id":"slicer","name":"SliceSoft Geometry Slicer","version":")json"
+    SLICESOFT_SLICER_IMPLEMENTATION_VERSION
+    R"json(","spi":1,"runtime":")json"
     SLICESOFT_MODULE_RUNTIME_JSON
     R"json(","buildConfig":")json"
     SLICESOFT_MODULE_BUILD_CONFIG_JSON

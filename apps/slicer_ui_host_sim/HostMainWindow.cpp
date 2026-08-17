@@ -1,6 +1,7 @@
 #include "HostMainWindow.h"
 
 #include "HostTextureWhitePreflightService.h"
+#include "HostVersionInfo.h"
 #include "MoveOptimizationPolicy.h"
 #include "SceneInteractionController.h"
 #include "ViewWorkspaceWidget.h"
@@ -71,13 +72,20 @@ HostMainWindow::HostMainWindow(
 
 void HostMainWindow::BuildInterface()
 {
-    setWindowTitle(QStringLiteral("SliceSoft 打印宿主参考实现"));
+    setWindowTitle(HostVersionInfo::ApplicationTitle());
     resize(1080, 720);
 
     auto* centralWidget = new QWidget(this);
     auto* layout = new QVBoxLayout(centralWidget);
     layout->setContentsMargins(16, 16, 16, 16);
     layout->setSpacing(10);
+
+    m_versionLabel = new QLabel(centralWidget);
+    m_versionLabel->setObjectName(QStringLiteral("applicationVersionLabel"));
+    m_versionLabel->setText(
+        QStringLiteral("SliceSoft %1 · 切片库加载中")
+            .arg(HostVersionInfo::ApplicationVersion()));
+    m_versionLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     m_statusLabel = new QLabel(centralWidget);
     m_statusLabel->setObjectName(QStringLiteral("moduleStatusLabel"));
@@ -222,6 +230,7 @@ void HostMainWindow::BuildInterface()
     diagnosticLayout->addWidget(m_moduleInfoView);
     m_workspaceTabs->addTab(diagnosticPage, QStringLiteral("模块诊断"));
 
+    layout->addWidget(m_versionLabel);
     layout->addWidget(m_statusLabel);
     layout->addWidget(m_pathLabel);
     layout->addWidget(m_workspaceTabs, 1);
@@ -371,32 +380,58 @@ void HostMainWindow::LoadModule(const QString& modulePath)
     QString error;
     if (!m_client.Open(modulePath, QByteArrayLiteral("{}"), &error))
     {
-        m_statusLabel->setText(QStringLiteral("模块不可用"));
-        m_moduleInfoView->setPlainText(error);
+        m_versionLabel->setText(
+            QStringLiteral("SliceSoft %1 · 切片库不可用")
+                .arg(HostVersionInfo::ApplicationVersion()));
+        m_statusLabel->setText(
+            QStringLiteral("SliceSoft %1 · 切片库不可用")
+                .arg(HostVersionInfo::ApplicationVersion()));
+        m_moduleInfoView->setPlainText(
+            QStringLiteral("%1\n\n切片库\n  状态：不可用\n  原因：%2")
+                .arg(HostVersionInfo::ApplicationDiagnosticText(), error));
         return;
     }
 
     QByteArray selfTestReport;
     if (!m_client.SelfTest(&selfTestReport, &error))
     {
-        m_statusLabel->setText(QStringLiteral("模块自检失败"));
-        m_moduleInfoView->setPlainText(error);
+        m_versionLabel->setText(
+            QStringLiteral("SliceSoft %1 · 切片库自检失败")
+                .arg(HostVersionInfo::ApplicationVersion()));
+        m_statusLabel->setText(
+            QStringLiteral("SliceSoft %1 · 切片库自检失败")
+                .arg(HostVersionInfo::ApplicationVersion()));
+        m_moduleInfoView->setPlainText(
+            QStringLiteral("%1\n\n切片库自检失败\n%2")
+                .arg(HostVersionInfo::ApplicationDiagnosticText(), error));
         return;
     }
 
     ConfigureProfiles();
 
+    const QByteArray moduleInfo = m_client.ModuleInfo();
+    const QString slicerVersion =
+        HostVersionInfo::SlicerVersionFromModuleInfo(moduleInfo);
+    m_versionLabel->setText(
+        QStringLiteral("SliceSoft %1 · 切片库 %2 · SPI v%3")
+            .arg(HostVersionInfo::ApplicationVersion())
+            .arg(slicerVersion.isEmpty() ? QStringLiteral("未知") : slicerVersion)
+            .arg(PM_SPI_VERSION));
     m_statusLabel->setText(
-        QStringLiteral("模块已就绪 · SPI v%1 · Profile %2 · ABI 调用 %3 次")
+        QStringLiteral(
+            "SliceSoft %1 · 切片库 %2 · SPI v%3 · Profile %4 · ABI 调用 %5 次")
+            .arg(HostVersionInfo::ApplicationVersion())
+            .arg(slicerVersion.isEmpty() ? QStringLiteral("未知") : slicerVersion)
             .arg(PM_SPI_VERSION)
             .arg(m_selectedProfileId)
             .arg(m_client.CallCount()));
     SetSceneCommandsEnabled(true);
     RefreshSliceJobReadiness();
     m_moduleInfoView->setPlainText(
-        QStringLiteral("模块信息\n%1\n\n自检报告\n%2")
+        QStringLiteral("%1\n\n切片库模块信息\n%2\n\n自检报告\n%3")
             .arg(
-                QString::fromUtf8(m_client.ModuleInfo()),
+                HostVersionInfo::ApplicationDiagnosticText(),
+                QString::fromUtf8(moduleInfo),
                 QString::fromUtf8(selfTestReport)));
 }
 

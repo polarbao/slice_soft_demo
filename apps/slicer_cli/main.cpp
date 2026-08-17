@@ -10,6 +10,7 @@
 #include "slicer_core/scene/SceneEffectiveConfig.h"
 #include "slicer_core/slicer.h"
 #include "slicer_core/system/ProcessMemoryStats.h"
+#include "SliceSoftBuildVersion.h"
 
 #include <algorithm>
 #include <chrono>
@@ -38,6 +39,7 @@ struct CliOptions
     bool inspect_model{false};
     bool preview_only{false};
     bool show_help{false};
+    bool show_version{false};
     bool experimental_openvdb_shell{false};
     bool openvdb_candidate_slice{false};
     bool benchmark_core_only{false};
@@ -62,7 +64,8 @@ void PrintUsage()
         << "       slicer_cli --config <path> --benchmark-core-only "
         << "--engine legacy|openvdb-candidate\n"
         << "       slicer_cli --openvdb-capability-json\n"
-        << "       slicer_cli --tiff-backend-info-json\n";
+        << "       slicer_cli --tiff-backend-info-json\n"
+        << "       slicer_cli --version\n";
 }
 
 CliOptions ParseOptions(const int argc, char** argv)
@@ -121,6 +124,11 @@ CliOptions ParseOptions(const int argc, char** argv)
         {
             options.openvdb_capability_json = true;
             continue;
+        }
+        if (arg == "--version")
+        {
+            options.show_version = true;
+            return options;
         }
         if (arg == "--tiff-backend-info-json")
         {
@@ -1048,6 +1056,14 @@ int main(int argc, char** argv)
         if (options.openvdb_capability_json)
         {
             return PrintOpenVdbCapabilityJson();
+        }
+        if (options.show_version)
+        {
+            std::cout
+                << SLICESOFT_APP_NAME << ' '
+                << SLICESOFT_APP_IMPLEMENTATION_VERSION << '\n'
+                << "build " << SLICESOFT_APP_FULL_BUILD_VERSION << '\n';
+            return 0;
         }
         if (options.tiff_backend_info_json)
         {

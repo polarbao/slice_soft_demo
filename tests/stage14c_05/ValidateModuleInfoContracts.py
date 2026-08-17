@@ -91,13 +91,18 @@ def ExpectInvalid(
     raise AssertionError(f"{label} should be rejected")
 
 
-def BuildModuleInfo(buildConfig: str) -> dict[str, Any]:
+def ImplementationVersion(component: dict[str, Any]) -> str:
+    prerelease = component["preRelease"]
+    return component["version"] + (f"-{prerelease}" if prerelease else "")
+
+
+def BuildModuleInfo(buildConfig: str, version: str) -> dict[str, Any]:
     runtime = "MSVC-x64-MDd" if buildConfig == "Debug" else "MSVC-x64-MD"
     return {
         "schema": "slicesoft.module_info.1",
         "id": "slicer",
         "name": "SliceSoft Geometry Slicer",
-        "version": "0.1.0",
+        "version": version,
         "spi": 1,
         "runtime": runtime,
         "buildConfig": buildConfig,
@@ -112,11 +117,16 @@ def BuildModuleInfo(buildConfig: str) -> dict[str, Any]:
     }
 
 
-def RenderManifest(templatePath: Path, buildConfig: str) -> dict[str, Any]:
+def RenderManifest(
+    templatePath: Path,
+    buildConfig: str,
+    version: str,
+) -> dict[str, Any]:
     runtime = "MSVC-x64-MDd" if buildConfig == "Debug" else "MSVC-x64-MD"
     text = templatePath.read_text(encoding="utf-8")
     text = text.replace("@SLICESOFT_MODULE_RUNTIME@", runtime)
     text = text.replace("@SLICESOFT_MODULE_BUILD_CONFIG@", buildConfig)
+    text = text.replace("@SLICESOFT_SLICER_IMPLEMENTATION_VERSION@", version)
     if re.search(r"@[A-Z0-9_]+@", text):
         raise AssertionError("module.json.in contains an unresolved placeholder")
     return json.loads(text)
@@ -245,23 +255,27 @@ def Main() -> int:
         repo / "contracts/slicer_module_manifest.schema.json"
     )
     templatePath = repo / "src/slicer_module/module.json.in"
+    versionManifest = LoadJson(repo / "version-manifest.json")
+    slicerVersion = ImplementationVersion(
+        versionManifest["components"]["slicer"]
+    )
 
     ValidateFrozenSources(repo)
     for buildConfig, probePath in (
         ("Debug", arguments.debug_probe),
         ("Release", arguments.release_probe),
     ):
-        expectedInfo = BuildModuleInfo(buildConfig)
+        expectedInfo = BuildModuleInfo(buildConfig, slicerVersion)
         moduleInfo = RunProbe(probePath) if probePath else expectedInfo
-        manifest = RenderManifest(templatePath, buildConfig)
+        manifest = RenderManifest(templatePath, buildConfig, slicerVersion)
         ExpectValid(infoValidator, moduleInfo, f"{buildConfig} module info")
         ExpectValid(manifestValidator, manifest, f"{buildConfig} manifest")
         ValidateCrossConsistency(moduleInfo, manifest)
         if moduleInfo != expectedInfo:
             raise AssertionError(f"{buildConfig} runtime module info drifted")
 
-    debugInfo = BuildModuleInfo("Debug")
-    debugManifest = RenderManifest(templatePath, "Debug")
+    debugInfo = BuildModuleInfo("Debug", slicerVersion)
+    debugManifest = RenderManifest(templatePath, "Debug", slicerVersion)
     ValidateTamperCases(
         infoValidator,
         manifestValidator,

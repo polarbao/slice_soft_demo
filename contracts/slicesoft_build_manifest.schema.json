@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/slicesoft_build_manifest.schema.json",
+  "title": "SliceSoft configuration build manifest",
+  "type": "object",
+  "required": [
+    "schema",
+    "releasePolicy",
+    "releaseStatus",
+    "source",
+    "build",
+    "components",
+    "compatibility"
+  ],
+  "properties": {
+    "schema": { "const": "slicesoft.build.1" },
+    "releasePolicy": { "const": "lockstep" },
+    "releaseStatus": {
+      "enum": ["development", "prerelease", "stable", "deprecated"]
+    },
+    "source": {
+      "type": "object",
+      "required": ["revision", "state"],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^(?:unknown|[0-9a-f]{12})$"
+        },
+        "state": { "enum": ["clean", "dirty", "unknown"] }
+      },
+      "additionalProperties": false
+    },
+    "build": {
+      "type": "object",
+      "required": ["config", "runtime", "triplet", "tiffBackend", "openVdb"],
+      "properties": {
+        "config": { "enum": ["Debug", "Release"] },
+        "runtime": { "enum": ["MSVC-x64-MDd", "MSVC-x64-MD"] },
+        "triplet": { "type": "string", "minLength": 1 },
+        "tiffBackend": { "enum": ["libtiff", "handwritten"] },
+        "openVdb": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "components": {
+      "type": "object",
+      "required": ["application", "slicer"],
+      "properties": {
+        "application": {
+          "allOf": [
+            { "$ref": "#/$defs/buildComponent" },
+            {
+              "properties": {
+                "id": { "const": "slicesoft-app" },
+                "name": { "const": "SliceSoft" }
+              }
+            }
+          ]
+        },
+        "slicer": {
+          "allOf": [
+            { "$ref": "#/$defs/buildComponent" },
+            {
+              "properties": {
+                "id": { "const": "slicer" },
+                "name": { "const": "SliceSoft Geometry Slicer" }
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["contracts"],
+      "properties": {
+        "contracts": {
+          "const": [
+            "slicer-module.spi.v1",
+            "file_contract_v1",
+            "p0.rgbwsv.2"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "buildComponent": {
+      "type": "object",
+      "required": ["id", "name", "version", "fullBuildVersion"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?$"
+        },
+        "fullBuildVersion": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "build": {
+            "properties": { "config": { "const": "Debug" } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "build": {
+            "properties": { "runtime": { "const": "MSVC-x64-MDd" } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "build": {
+            "properties": { "config": { "const": "Release" } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "build": {
+            "properties": { "runtime": { "const": "MSVC-x64-MD" } }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

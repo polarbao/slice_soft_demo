@@ -1,10 +1,21 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(SliceSoftDemo LANGUAGES C CXX)
+include(cmake/SliceSoftVersion.cmake)
+slicesoft_load_version_manifest("${CMAKE_CURRENT_SOURCE_DIR}/version-manifest.json")
+
+project(SliceSoftDemo VERSION ${SLICESOFT_APP_VERSION_CORE} LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# MSBuild already schedules projects in parallel. MSVC 19.51 can strand /MP
+# worker processes when it is driven through the Visual Studio generator, so
+# reserve compiler-level parallelism for single-config generators.
+set(SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION "")
+if(MSVC AND NOT CMAKE_GENERATOR MATCHES "^Visual Studio")
+    set(SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION /MP)
+endif()
 
 option(BUILD_SLICER_DEBUG_UI "Build legacy Qt slicer debug UI" OFF)
 option(BUILD_SLICER_UI_HOST_SIM "Build packaged Qt public-ABI host" ON)
@@ -32,6 +43,8 @@ if(SLICESOFT_TIFF_BACKEND STREQUAL "handwritten")
         "used for production output. Use libtiff; the legacy lane remains "
         "temporarily available only for T-A-05 migration evidence.")
 endif()
+
+slicesoft_initialize_version_build()
 
 set(SLICESOFT_CORE_SOURCES
     src/third_party/miniz/miniz.c
@@ -477,8 +490,10 @@ target_compile_definitions(
 )
 
 if(MSVC)
-    target_compile_options(slicer_base PRIVATE /bigobj /MP)
-    target_compile_options(slicer_engine PRIVATE /bigobj /MP)
+    target_compile_options(
+        slicer_base PRIVATE /bigobj ${SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION})
+    target_compile_options(
+        slicer_engine PRIVATE /bigobj ${SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION})
 endif()
 
 if(WIN32)
@@ -627,6 +642,13 @@ target_include_directories(slicer_module PRIVATE
 target_compile_definitions(slicer_module PRIVATE PM_MODULE_BUILD_SHARED)
 target_link_libraries(slicer_module PRIVATE slicer_base)
 set_target_properties(slicer_module PROPERTIES PREFIX "")
+slicesoft_add_windows_version_resource(
+    slicer_module
+    slicer
+    "SliceSoft Geometry Slicer Module"
+    "slicer_module.dll"
+)
+slicesoft_copy_version_manifests(slicer_module)
 
 set(SLICESOFT_MODULE_RUNTIME "MSVC-x64-MDd")
 set(SLICESOFT_MODULE_BUILD_CONFIG "Debug")
@@ -692,6 +714,7 @@ target_include_directories(stage14c05_module_info_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(stage14c05_module_info_tests PRIVATE slicer_module)
+slicesoft_use_version(stage14c05_module_info_tests)
 if(MSVC)
     target_compile_options(stage14c05_module_info_tests PRIVATE /W4 /WX)
 endif()
@@ -762,6 +785,7 @@ target_include_directories(stage14d03_worker_contract_unit_tests PRIVATE
 )
 target_link_libraries(stage14d03_worker_contract_unit_tests PRIVATE slicer_base)
 add_dependencies(stage14d03_worker_contract_unit_tests slicer_worker)
+slicesoft_use_version(stage14d03_worker_contract_unit_tests)
 if(MSVC)
     target_compile_options(stage14d03_worker_contract_unit_tests PRIVATE /W4 /WX)
 endif()
@@ -976,6 +1000,12 @@ add_executable(slicer_cli
 )
 
 target_link_libraries(slicer_cli PRIVATE slicer_core)
+slicesoft_add_windows_version_resource(
+    slicer_cli
+    application
+    "SliceSoft Command Line Slicer"
+    "slicer_cli.exe"
+)
 
 add_library(slicer_worker_runtime STATIC
     apps/slicer_worker/runtime/WorkerCapabilityExecutor.cpp
@@ -1254,6 +1284,12 @@ target_link_libraries(slicer_worker PRIVATE
     slicer_worker_preflight_runtime
     slicer_worker_repair_runtime
     slicer_worker_slice_runtime
+)
+slicesoft_add_windows_version_resource(
+    slicer_worker
+    slicer
+    "SliceSoft Slicer Worker"
+    "slicer_worker.exe"
 )
 add_dependencies(stage14d05_real_worker_artifact_tests slicer_worker)
 add_dependencies(stage14d07_engine_conformance_gate slicer_worker)
@@ -2705,17 +2741,50 @@ if(BUILD_SLICER_UI_HOST_SIM)
             NAME rip_integration_unit_tests
             COMMAND rip_integration_unit_tests
         )
+
         add_subdirectory(apps/slicer_ui_host_sim)
     else()
         message(STATUS "Qt5 Widgets not found; slicer_ui_host_sim target is skipped.")
     endif()
 endif()
 
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME slicesoft_build_version_fixture_test
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/version/ValidateBuildVersionFixtures.py"
+            --cmake "${CMAKE_COMMAND}"
+            --generator-script
+                "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateSliceSoftBuildManifest.cmake"
+            --parser-script
+                "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SliceSoftVersion.cmake"
+            --source-manifest
+                "${CMAKE_CURRENT_SOURCE_DIR}/version-manifest.json"
+    )
+endif()
+
 if(TARGET slicer_ui_host_sim)
+    if(Python3_Interpreter_FOUND)
+        add_test(
+            NAME slicesoft_version_contract_test
+            COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/version/ValidateVersionContracts.py"
+                --repo "${CMAKE_CURRENT_SOURCE_DIR}"
+                --config $<CONFIG>
+                --build-manifest
+                    "${SLICESOFT_VERSION_GENERATED_ROOT}/$<CONFIG>/slicesoft_build_manifest.json"
+                --module-manifest "$<TARGET_FILE_DIR:slicer_module>/module.json"
+                --module-probe $<TARGET_FILE:stage14c05_module_info_tests>
+                --worker $<TARGET_FILE:slicer_worker>
+                --cli $<TARGET_FILE:slicer_cli>
+                --ui $<TARGET_FILE:slicer_ui_host_sim>
+        )
+    endif()
     set(slicesoftRuntimeTargets
         slicer_cli
         rip_reader_test
         slicer_ui_host_sim
+        slicer_host_sim
         slicer_module
         slicer_worker
     )

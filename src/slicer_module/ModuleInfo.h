@@ -13,7 +13,7 @@ namespace slicesoft::module
 
 /**
  * @brief 返回冻结的模块语义版本。
- * @return 常量语义版本 `0.1.0`。
+ * @return 从根版本清单派生的常量语义版本。
  */
 [[nodiscard]] std::string_view GetModuleVersion() noexcept;
 

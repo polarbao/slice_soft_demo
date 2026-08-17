@@ -3,6 +3,7 @@
 #include "HostProcessPresetCatalog.h"
 #include "HostRipJobController.h"
 #include "HostWorkspaceState.h"
+#include "HostVersionInfo.h"
 #include "ModuleClient.h"
 
 #include <QApplication>
@@ -118,12 +119,43 @@ int RunCapabilityCoverage(
 int RunHostFlowImportUiSmoke(const QString& modulePath)
 {
     HostMainWindow window(modulePath);
+    const auto* versionLabel = window.findChild<QLabel*>(
+        QStringLiteral("applicationVersionLabel"));
     const QObject* importButton = window.findChild<QObject*>(
         QStringLiteral("hostImportModelButton"));
     const QObject* modelList = window.findChild<QObject*>(
         QStringLiteral("hostImportedModelList"));
     const QObject* preflightTable = window.findChild<QObject*>(
         QStringLiteral("hostImportPreflightTable"));
+    if (versionLabel == nullptr
+        || !versionLabel->text().contains(HostVersionInfo::ApplicationVersion())
+        || !versionLabel->text().contains(QStringLiteral("切片库")))
+    {
+        QTextStream(stderr)
+            << "VERSION_UI_FAILED: persistent version label is incomplete"
+            << Qt::endl;
+        return 8;
+    }
+    if (versionLabel->text().contains(QStringLiteral("切片库不可用")))
+    {
+        QTextStream(stdout)
+            << "VERSION_UI_UNAVAILABLE_PASS" << Qt::endl;
+        return 0;
+    }
+    const QString expectedVersionPrefix =
+        QStringLiteral("SliceSoft %1 · 切片库 %2 · SPI v1")
+            .arg(
+                HostVersionInfo::ApplicationVersion(),
+                HostVersionInfo::SlicerImplementationVersion());
+    if (versionLabel->text() != expectedVersionPrefix
+        && !versionLabel->text().startsWith(
+            expectedVersionPrefix + QStringLiteral(" · ")))
+    {
+        QTextStream(stderr)
+            << "VERSION_UI_FAILED: loaded slicer version or SPI is missing"
+            << Qt::endl;
+        return 9;
+    }
     if (importButton == nullptr || modelList == nullptr
         || preflightTable == nullptr
         || !importButton->property("enabled").toBool())
@@ -131,7 +163,7 @@ int RunHostFlowImportUiSmoke(const QString& modulePath)
         QTextStream(stderr)
             << "HOSTFLOW_HB01_UI_FAILED: import panel is incomplete"
             << Qt::endl;
-        return 8;
+        return 9;
     }
     QTextStream(stdout)
         << "HOSTFLOW_HB01_UI_PASS" << Qt::endl;
@@ -531,6 +563,11 @@ int RunRipJobSelfTest(
 
 int main(int argc, char* argv[])
 {
+    int versionExitCode = 0;
+    if (HostVersionInfo::TryRunVersionCommand(argc, argv, &versionExitCode))
+    {
+        return versionExitCode;
+    }
     bool selfTestRequested = false;
     bool capabilityCoverageRequested = false;
     for (int index = 1; index < argc; ++index)
@@ -549,6 +586,7 @@ int main(int argc, char* argv[])
     if (selfTestRequested || capabilityCoverageRequested)
     {
         QCoreApplication application(argc, argv);
+        HostVersionInfo::ApplyApplicationMetadata(application);
         const QStringList arguments = application.arguments();
         const QString requestedPath = FindArgumentValue(
             arguments,
@@ -567,6 +605,7 @@ int main(int argc, char* argv[])
     }
 
     QApplication application(argc, argv);
+    HostVersionInfo::ApplyApplicationMetadata(application);
     const QStringList arguments = application.arguments();
     if (HasArgument(arguments, QStringLiteral("--help")))
     {

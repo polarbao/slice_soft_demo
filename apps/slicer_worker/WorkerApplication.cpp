@@ -1,4 +1,5 @@
 #include "WorkerApplication.h"
+#include "SliceSoftBuildVersion.h"
 
 #include "slicer_worker/preflight/WorkerPreflightExecutor.h"
 #include "slicer_worker/repair/WorkerRepairExecutor.h"
@@ -17,7 +18,8 @@ namespace
 {
 
 constexpr std::string_view InvalidArgumentsCode{"invalid_arguments"};
-constexpr std::string_view EngineVersion{"0.1.0"};
+constexpr std::string_view EngineVersion{
+    SLICESOFT_SLICER_IMPLEMENTATION_VERSION};
 
 }  // namespace
 

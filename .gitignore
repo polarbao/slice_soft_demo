@@ -26,3 +26,6 @@ tests/*
 !tests/ripflow/**
 !tests/rip_integration/
 !tests/rip_integration/**
+!tests/version/
+!tests/version/*.py
+/tests/version/__pycache__/

@@ -1,5 +1,6 @@
 #include "slicer_module/ModuleInfo.h"
 #include "contracts/print_module_spi.h"
+#include "SliceSoftBuildVersion.h"
 
 #include <iostream>
 #include <string_view>
@@ -77,7 +78,8 @@ int main(const int argc, char* argv[])
                  "module id drifted")
         && passed;
     passed = Expect(
-                 slicesoft::module::GetModuleVersion() == "0.1.0",
+                 slicesoft::module::GetModuleVersion()
+                     == SLICESOFT_SLICER_IMPLEMENTATION_VERSION,
                  "module version drifted")
         && passed;
 

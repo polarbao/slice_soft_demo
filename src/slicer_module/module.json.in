@@ -4,7 +4,7 @@
   "name": "SliceSoft Geometry Slicer",
   "dll": "slicer_module.dll",
   "spi": 1,
-  "version": "0.1.0",
+  "version": "@SLICESOFT_SLICER_IMPLEMENTATION_VERSION@",
   "runtime": "@SLICESOFT_MODULE_RUNTIME@",
   "buildConfig": "@SLICESOFT_MODULE_BUILD_CONFIG@",
   "provides": [

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/slicesoft_version_manifest.schema.json",
+  "title": "SliceSoft source version manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "versionScheme",
+    "releasePolicy",
+    "release",
+    "components",
+    "compatibility"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "versionScheme": { "const": "semver-2.0.0" },
+    "releasePolicy": { "const": "lockstep" },
+    "release": {
+      "$ref": "#/$defs/release"
+    },
+    "components": {
+      "type": "object",
+      "required": ["application", "slicer"],
+      "properties": {
+        "application": {
+          "allOf": [
+            { "$ref": "#/$defs/component" },
+            {
+              "type": "object",
+              "properties": {
+                "id": { "const": "slicesoft-app" },
+                "name": { "const": "SliceSoft" }
+              }
+            }
+          ]
+        },
+        "slicer": {
+          "allOf": [
+            { "$ref": "#/$defs/component" },
+            {
+              "type": "object",
+              "required": ["contractVersion"],
+              "properties": {
+                "id": { "const": "slicer" },
+                "name": { "const": "SliceSoft Geometry Slicer" },
+                "contractVersion": { "const": "slicer-module.spi.v1" }
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["contracts"],
+      "properties": {
+        "contracts": {
+          "const": [
+            "slicer-module.spi.v1",
+            "file_contract_v1",
+            "p0.rgbwsv.2"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "coreVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "preRelease": {
+      "type": "string",
+      "pattern": "^(?:|(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)$"
+    },
+    "release": {
+      "type": "object",
+      "required": ["status", "version", "preRelease"],
+      "properties": {
+        "status": {
+          "enum": ["development", "prerelease", "stable", "deprecated"]
+        },
+        "version": { "$ref": "#/$defs/coreVersion" },
+        "preRelease": { "$ref": "#/$defs/preRelease" }
+      },
+      "additionalProperties": false
+    },
+    "component": {
+      "type": "object",
+      "required": ["id", "name", "version", "preRelease", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/coreVersion" },
+        "preRelease": { "$ref": "#/$defs/preRelease" },
+        "contractVersion": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["available", "unavailable", "deprecated"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

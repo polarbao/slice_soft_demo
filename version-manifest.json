@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "versionScheme": "semver-2.0.0",
+  "releasePolicy": "lockstep",
+  "release": {
+    "status": "development",
+    "version": "0.2.0",
+    "preRelease": "dev"
+  },
+  "components": {
+    "application": {
+      "id": "slicesoft-app",
+      "name": "SliceSoft",
+      "version": "0.2.0",
+      "preRelease": "dev",
+      "status": "available"
+    },
+    "slicer": {
+      "id": "slicer",
+      "name": "SliceSoft Geometry Slicer",
+      "version": "0.2.0",
+      "preRelease": "dev",
+      "contractVersion": "slicer-module.spi.v1",
+      "status": "available"
+    }
+  },
+  "compatibility": {
+    "contracts": [
+      "slicer-module.spi.v1",
+      "file_contract_v1",
+      "p0.rgbwsv.2"
+    ]
+  }
+}

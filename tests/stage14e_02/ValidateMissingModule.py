@@ -44,6 +44,24 @@ def Main():
         Fail(f"expected exit code 3, got {result.returncode}: {combinedOutput}")
     if "MODULE_LOAD_FAILED" not in combinedOutput:
         Fail(f"stable fail-closed marker is missing: {combinedOutput}")
+
+    uiResult = subprocess.run(
+        [
+            str(hostPath),
+            "--hostflow-import-ui-self-test",
+            "--module",
+            str(missingPath),
+        ],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+        env=environment,
+        timeout=20,
+    )
+    uiOutput = uiResult.stdout + uiResult.stderr
+    if uiResult.returncode != 0 or "VERSION_UI_UNAVAILABLE_PASS" not in uiOutput:
+        Fail(f"software/library unavailable UI state is missing: {uiOutput}")
     print("14E-02 missing-module test: PASS")
 
 

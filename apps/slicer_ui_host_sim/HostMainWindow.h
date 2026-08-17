@@ -174,6 +174,7 @@ private:
     QTabWidget* m_inspectorTabs{nullptr};
     QComboBox* m_defaultViewCombo{nullptr};
     QComboBox* m_projectionCombo{nullptr};
+    QLabel* m_versionLabel{nullptr};
     QLabel* m_statusLabel{nullptr};
     QLabel* m_pathLabel{nullptr};
     HostModelListPanel* m_modelListPanel{nullptr};

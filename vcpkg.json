@@ -1,6 +1,6 @@
 {
   "name": "slice-soft-demo",
-  "version-string": "0.1.0",
+  "version-string": "0.2.0-dev",
   "builtin-baseline": "d13fa75214c258099923cf25a5e6311e58c07f3b",
   "dependencies": [
     "nlohmann-json",

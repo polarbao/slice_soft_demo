@@ -40,6 +40,8 @@ add_executable(slicer_ui_host_sim
     HostWorkspaceState.h
     HostWorkspaceTextureState.cpp
     HostWorkspaceTextureState.h
+    HostVersionInfo.cpp
+    HostVersionInfo.h
     HostMainWindow.cpp
     HostMainWindow.h
     HostMainWindowImport.cpp
@@ -116,6 +118,14 @@ add_executable(slicer_ui_host_sim
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.h
 )
+
+slicesoft_add_windows_version_resource(
+    slicer_ui_host_sim
+    application
+    "SliceSoft Packaged Slicer"
+    "slicer_ui_host_sim.exe"
+)
+slicesoft_copy_version_manifests(slicer_ui_host_sim)
 
 set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
@@ -222,7 +232,7 @@ endif()
 
 if(MSVC)
     target_compile_options(slicer_ui_host_sim PRIVATE
-        /MP
+        ${SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION}
         /W4
         /WX
         /utf-8
@@ -275,7 +285,6 @@ add_test(
     NAME slicer_stage14e02_qt_host_default_module_test
     COMMAND slicer_ui_host_sim --self-test
 )
-
 
 add_executable(ripflow_settings_unit_tests
     HostRipSettingsStore.cpp
@@ -359,6 +368,7 @@ set_tests_properties(
     ripflow_ui_self_test
     PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+
 add_test(
     NAME slicer_stage14e04b_capability_coverage_test
     COMMAND slicer_ui_host_sim

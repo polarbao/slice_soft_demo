@@ -1,4 +1,5 @@
 #include "slicer_module/WorkerContract.h"
+#include "SliceSoftBuildVersion.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -121,7 +122,9 @@ void TestRealWorker(const std::filesystem::path& workerExecutable)
         "real worker returns compatible decision");
     Check(result.info.major == 1 && result.info.minor == 0,
         "real worker reports file_contract_v1 version 1.0");
-    Check(result.info.engineVersion == "0.1.0", "real worker reports engine version");
+    Check(
+        result.info.engineVersion == SLICESOFT_SLICER_IMPLEMENTATION_VERSION,
+        "real worker reports the manifest-derived engine version");
     Check(result.transport.stdoutLogLines.size() == 1,
         "real worker emits exactly one stdout JSON object");
     Check(result.transport.stderrLogLines.empty(),
