@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import re
 import struct
 import sys
 
@@ -41,17 +42,33 @@ def ValidateSources(repoRoot):
         Fail("apps/slicer_ui_host_sim is missing")
 
     sourcePaths, sourceText = ReadSources(appDirectory)
+    implementationText = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sourcePaths
+        if path.name != "CMakeLists.txt"
+    )
     forbidden = (
         '#include "slicer_core/',
         "#include <slicer_core/",
         "slicer_core",
         "slicer_base",
         "slicer_engine",
-        "target_link_libraries(slicer_ui_host_sim PRIVATE Qt5::Widgets slicer_module",
     )
     for token in forbidden:
-        if token in sourceText:
+        if token in implementationText:
             Fail(f"forbidden internal dependency found: {token}")
+
+    cmakeText = (appDirectory / "CMakeLists.txt").read_text(encoding="utf-8")
+    productionLinks = re.search(
+        r"target_link_libraries\(slicer_ui_host_sim\s+PRIVATE(?P<body>.*?)\)",
+        cmakeText,
+        re.DOTALL,
+    )
+    if productionLinks is None:
+        Fail("production host target_link_libraries block is missing")
+    for token in ("slicer_module", "slicer_core", "slicer_base", "slicer_engine"):
+        if re.search(rf"\b{token}\b", productionLinks.group("body")):
+            Fail(f"production host links a forbidden dependency: {token}")
 
     for required in ("LoadLibraryW", "GetProcAddress", "Qt5::Widgets"):
         if required not in sourceText:
