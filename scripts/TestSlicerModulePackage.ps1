@@ -67,6 +67,8 @@ $requiredFiles = @(
     "slicer_module.dll",
     "slicer_worker.exe",
     "module.json",
+    "version-manifest.json",
+    "slicesoft_build_manifest.json",
     "runtime_dependencies.json",
     "checksums.sha256",
     "THIRD_PARTY_NOTICES.txt",
@@ -94,6 +96,61 @@ $moduleManifestValid = $moduleManifest.schema -eq "slicesoft.module_manifest.1" 
 if (-not $moduleManifestValid)
 {
     throw "module.json failed the frozen Stage 14 deployment contract."
+}
+$sourceVersionManifest =
+    Get-Content -LiteralPath (Join-Path $resolvedPackageDir "version-manifest.json") -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+$buildVersionManifest =
+    Get-Content -LiteralPath (Join-Path $resolvedPackageDir "slicesoft_build_manifest.json") -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+$sourceApplicationVersion = [string]$sourceVersionManifest.components.application.version
+if (-not [string]::IsNullOrWhiteSpace(
+        [string]$sourceVersionManifest.components.application.preRelease))
+{
+    $sourceApplicationVersion +=
+        "-" + [string]$sourceVersionManifest.components.application.preRelease
+}
+$sourceSlicerVersion = [string]$sourceVersionManifest.components.slicer.version
+if (-not [string]::IsNullOrWhiteSpace(
+        [string]$sourceVersionManifest.components.slicer.preRelease))
+{
+    $sourceSlicerVersion +=
+        "-" + [string]$sourceVersionManifest.components.slicer.preRelease
+}
+$versionSnapshotValid =
+    $sourceVersionManifest.schemaVersion -eq 1 -and
+    $sourceVersionManifest.releasePolicy -eq "lockstep" -and
+    $buildVersionManifest.schema -eq "slicesoft.build.1" -and
+    $buildVersionManifest.build.config -eq $Config -and
+    $buildVersionManifest.components.application.version -eq $sourceApplicationVersion -and
+    $buildVersionManifest.components.slicer.id -eq "slicer" -and
+    $buildVersionManifest.components.slicer.version -eq $sourceSlicerVersion -and
+    $sourceApplicationVersion -eq $sourceSlicerVersion -and
+    $sourceSlicerVersion -eq $moduleManifest.version
+if (-not $versionSnapshotValid)
+{
+    throw "Package version snapshot is inconsistent."
+}
+
+foreach ($binaryName in @("slicer_module.dll", "slicer_worker.exe"))
+{
+    $versionInfo = (Get-Item -LiteralPath (Join-Path $resolvedPackageDir $binaryName)).VersionInfo
+    if ($versionInfo.FileVersion -ne $sourceSlicerVersion -or
+        $versionInfo.ProductVersion -ne $sourceSlicerVersion -or
+        $versionInfo.PrivateBuild -ne
+            [string]$buildVersionManifest.components.slicer.fullBuildVersion)
+    {
+        throw "Windows version resource drifted from the slicer version: $binaryName"
+    }
+}
+
+if ([string]$sourceVersionManifest.release.status -eq "stable" -and
+    (-not [string]::IsNullOrWhiteSpace(
+        [string]$sourceVersionManifest.release.preRelease) -or
+     [string]$buildVersionManifest.source.state -ne "clean" -or
+     [string]$buildVersionManifest.source.revision -eq "unknown"))
+{
+    throw "A stable packaged module requires an unqualified version and known clean source."
 }
 
 $runtimeInventory = Get-Content -LiteralPath (Join-Path $resolvedPackageDir "runtime_dependencies.json") -Raw -Encoding UTF8 |
@@ -157,15 +214,29 @@ if ($LASTEXITCODE -ne 0)
     throw "Packaged slicer_worker --contract-info failed with exit code $LASTEXITCODE."
 }
 $workerContract = $workerContractText | ConvertFrom-Json
-if ($workerContract.contract -ne "file_contract" -or $workerContract.major -ne 1)
+if ($workerContract.contract -ne "file_contract" -or
+    $workerContract.major -ne 1 -or
+    $workerContract.engineVersion -ne $sourceSlicerVersion)
 {
-    throw "Packaged worker returned an incompatible file contract."
+    throw "Packaged worker returned an incompatible contract or implementation version."
 }
 
 $hostExecutable = Join-Path (Join-Path $resolvedBuildDir $Config) "slicer_host_sim.exe"
 if (-not (Test-Path -LiteralPath $hostExecutable -PathType Leaf))
 {
     throw "Pure C host simulator is missing: $hostExecutable"
+}
+$packagedModuleInfoText =
+    & $hostExecutable --module-info (Join-Path $resolvedPackageDir "slicer_module.dll")
+if ($LASTEXITCODE -ne 0)
+{
+    throw "Packaged pm_module_info probe failed with exit code $LASTEXITCODE."
+}
+$packagedModuleInfo = $packagedModuleInfoText | ConvertFrom-Json
+if ($packagedModuleInfo.version -ne $sourceSlicerVersion -or
+    $packagedModuleInfo.spi -ne 1)
+{
+    throw "Packaged pm_module_info version or SPI drifted."
 }
 if (Test-Path -LiteralPath $resolvedEvidenceRoot)
 {

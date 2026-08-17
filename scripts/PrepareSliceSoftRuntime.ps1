@@ -110,6 +110,44 @@ function ResolveVsDevCmd
     throw "VsDevCmd.bat was not found. Install the MSVC x64 build tools or run from a VS developer shell."
 }
 
+function ResolveMsvcX64ToolPath
+{
+    $vsDevCmd = ResolveVsDevCmd
+    $toolsDirectory = Split-Path -Parent $vsDevCmd
+    $common7Directory = Split-Path -Parent $toolsDirectory
+    $installationRoot = Split-Path -Parent $common7Directory
+    $toolsets = Get-ChildItem `
+        -LiteralPath (Join-Path $installationRoot "VC/Tools/MSVC") `
+        -Directory |
+        Sort-Object { [version]$_.Name } -Descending
+    foreach ($toolset in $toolsets)
+    {
+        $candidate = Join-Path $toolset.FullName "bin/Hostx64/x64"
+        if (Test-Path -LiteralPath (Join-Path $candidate "cl.exe") -PathType Leaf)
+        {
+            return $candidate
+        }
+    }
+    throw "The MSVC Hostx64/x64 tool directory was not found."
+}
+
+function ResolveWindowsSdkX64ToolPath
+{
+    $sdkBinRoot = Join-Path ${env:ProgramFiles(x86)} "Windows Kits/10/bin"
+    $versions = Get-ChildItem -LiteralPath $sdkBinRoot -Directory |
+        Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
+        Sort-Object { [version]$_.Name } -Descending
+    foreach ($version in $versions)
+    {
+        $candidate = Join-Path $version.FullName "x64"
+        if (Test-Path -LiteralPath (Join-Path $candidate "rc.exe") -PathType Leaf)
+        {
+            return $candidate
+        }
+    }
+    throw "The Windows SDK x64 tool directory was not found."
+}
+
 function ImportVisualStudioX64Environment
 {
     $vsDevCmd = ResolveVsDevCmd
@@ -215,6 +253,10 @@ function GetRuntimeBuildInputFingerprint
                 -File
         }
     }
+    $versionBuildFiles = @(
+        Get-ChildItem -LiteralPath (Join-Path $RepoRoot "cmake") -Recurse -File |
+            Where-Object { $_.Extension -in @(".cmake", ".in") }
+    )
 
     $inputFiles = @(
         Get-ChildItem -LiteralPath (Join-Path $RepoRoot "src") -Recurse -File |
@@ -232,8 +274,10 @@ function GetRuntimeBuildInputFingerprint
         # Never recurse through volatile build/runtime/output trees while the UI
         # may be replacing session directories. Build inputs only live here.
         $cmakeInputFiles
+        $versionBuildFiles
         Get-Item -LiteralPath (Join-Path $RepoRoot "CMakeLists.txt")
         Get-Item -LiteralPath (Join-Path $RepoRoot "vcpkg.json")
+        Get-Item -LiteralPath (Join-Path $RepoRoot "version-manifest.json")
         Get-Item -LiteralPath $PSCommandPath
     ) | Sort-Object FullName -Unique
 
@@ -603,7 +647,10 @@ try
             }
             else
             {
-                $ForceClean.IsPresent
+                # VS 2026 file tracking is disabled below because its tracker can
+                # strand compiler/linker processes. A clean build keeps header and
+                # generated-version dependencies authoritative.
+                $true
             }
 
         $dependencyTriplet = if ($TiffBackend -eq "libtiff")
@@ -630,7 +677,8 @@ try
         {
             $configureArguments += @(
                 "-G", "Visual Studio 18 2026",
-                "-A", "x64"
+                "-A", "x64",
+                "-T", "host=x64"
             )
         }
         $configureArguments += @(
@@ -663,9 +711,9 @@ try
         }
         if ($cleanBuildRequired)
         {
-            if ($isNMakeBuild -and -not $ForceClean)
+            if (-not $ForceClean)
             {
-                Write-Host "Runtime inputs changed; performing one clean NMake rebuild to prevent stale objects."
+                Write-Host "Performing one clean runtime rebuild to prevent stale objects."
             }
             else
             {
@@ -677,6 +725,32 @@ try
             "--parallel", [string]$Jobs,
             "--target", "slicesoft_runtime"
         )
+        if (-not $isNMakeBuild)
+        {
+            $msvcHostToolPath = ResolveMsvcX64ToolPath
+            $rcToolPath = ResolveWindowsSdkX64ToolPath
+            foreach ($requiredTool in @(
+                (Join-Path $msvcHostToolPath "cl.exe"),
+                (Join-Path $msvcHostToolPath "lib.exe"),
+                (Join-Path $msvcHostToolPath "link.exe"),
+                (Join-Path $rcToolPath "rc.exe")))
+            {
+                if (-not (Test-Path -LiteralPath $requiredTool -PathType Leaf))
+                {
+                    throw "Required x64 build tool was not found: $requiredTool"
+                }
+            }
+            $buildArguments += @(
+                "--",
+                "/p:TrackFileAccess=false",
+                "/p:CLToolPath=$msvcHostToolPath",
+                "/p:CLToolExe=cl.exe",
+                "/p:LibToolPath=$msvcHostToolPath",
+                "/p:LibToolExe=lib.exe",
+                "/p:LinkToolPath=$msvcHostToolPath",
+                "/p:LinkToolExe=link.exe",
+                "/p:RCToolPath=$rcToolPath")
+        }
         InvokeNativeStep `
             -Name "build SliceSoft runtime targets ($Config)" `
             -Executable "cmake" `
@@ -730,9 +804,118 @@ try
     $workerExecutable = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
         -Candidates @("$Config/slicer_worker.exe", "slicer_worker.exe")
+    $moduleInfoProbe = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @("$Config/slicer_host_sim.exe", "slicer_host_sim.exe")
     $moduleManifest = ResolveBuiltExecutable `
         -BuildRoot $resolvedConfigBuildDir `
         -Candidates @("$Config/module.json", "module.json")
+    $sourceVersionManifest = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @(
+            "$Config/version-manifest.json",
+            "version-manifest.json",
+            "apps/slicer_ui_host_sim/$Config/version-manifest.json",
+            "apps/slicer_ui_host_sim/version-manifest.json"
+        )
+    $buildVersionManifest = ResolveBuiltExecutable `
+        -BuildRoot $resolvedConfigBuildDir `
+        -Candidates @(
+            "$Config/slicesoft_build_manifest.json",
+            "slicesoft_build_manifest.json",
+            "apps/slicer_ui_host_sim/$Config/slicesoft_build_manifest.json",
+            "apps/slicer_ui_host_sim/slicesoft_build_manifest.json"
+        )
+    $sourceVersionSnapshot =
+        Get-Content -LiteralPath $sourceVersionManifest -Raw -Encoding UTF8 |
+            ConvertFrom-Json
+    $buildVersionSnapshot =
+        Get-Content -LiteralPath $buildVersionManifest -Raw -Encoding UTF8 |
+            ConvertFrom-Json
+    $moduleVersionSnapshot =
+        Get-Content -LiteralPath $moduleManifest -Raw -Encoding UTF8 |
+            ConvertFrom-Json
+    $sourceApplicationVersion = [string]$sourceVersionSnapshot.components.application.version
+    if (-not [string]::IsNullOrWhiteSpace(
+            [string]$sourceVersionSnapshot.components.application.preRelease))
+    {
+        $sourceApplicationVersion +=
+            "-" + [string]$sourceVersionSnapshot.components.application.preRelease
+    }
+    $sourceSlicerVersion = [string]$sourceVersionSnapshot.components.slicer.version
+    if (-not [string]::IsNullOrWhiteSpace(
+            [string]$sourceVersionSnapshot.components.slicer.preRelease))
+    {
+        $sourceSlicerVersion +=
+            "-" + [string]$sourceVersionSnapshot.components.slicer.preRelease
+    }
+    $versionSnapshotValid =
+        $sourceVersionSnapshot.schemaVersion -eq 1 -and
+        $sourceVersionSnapshot.releasePolicy -eq "lockstep" -and
+        $buildVersionSnapshot.schema -eq "slicesoft.build.1" -and
+        $buildVersionSnapshot.build.config -eq $Config -and
+        $buildVersionSnapshot.components.application.version -eq $sourceApplicationVersion -and
+        $buildVersionSnapshot.components.slicer.version -eq $sourceSlicerVersion -and
+        $sourceApplicationVersion -eq $sourceSlicerVersion -and
+        $sourceSlicerVersion -eq $moduleVersionSnapshot.version
+    if (-not $versionSnapshotValid)
+    {
+        throw "SliceSoft source/build/module version snapshot is inconsistent."
+    }
+    if ([string]$sourceVersionSnapshot.release.status -eq "stable")
+    {
+        if (-not [string]::IsNullOrWhiteSpace(
+                [string]$sourceVersionSnapshot.release.preRelease) -or
+            [string]$buildVersionSnapshot.source.state -ne "clean" -or
+            [string]$buildVersionSnapshot.source.revision -eq "unknown")
+        {
+            throw "A stable SliceSoft runtime requires an unqualified version and known clean source."
+        }
+        $expectedTag = "v" + [string]$sourceVersionSnapshot.release.version
+        $tagObject = & git -C $repoRoot rev-parse --verify "refs/tags/$expectedTag^{tag}" 2>$null
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw "Stable SliceSoft runtime requires annotated tag $expectedTag."
+        }
+        $tagRevision = & git -C $repoRoot rev-parse --short=12 "$expectedTag^{commit}" 2>$null
+        if ($LASTEXITCODE -ne 0 -or
+            [string]$tagRevision -ne [string]$buildVersionSnapshot.source.revision)
+        {
+            throw "Stable SliceSoft tag $expectedTag does not match the build revision."
+        }
+    }
+
+    $versionedBinaries = @(
+        [pscustomobject]@{
+            path = $slicerCli
+            version = $sourceApplicationVersion
+            fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
+        },
+        [pscustomobject]@{
+            path = $hostUiExecutable
+            version = $sourceApplicationVersion
+            fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
+        },
+        [pscustomobject]@{
+            path = $moduleLibrary
+            version = $sourceSlicerVersion
+            fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
+        },
+        [pscustomobject]@{
+            path = $workerExecutable
+            version = $sourceSlicerVersion
+            fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
+        })
+    foreach ($binary in $versionedBinaries)
+    {
+        $versionInfo = (Get-Item -LiteralPath $binary.path).VersionInfo
+        if ($versionInfo.FileVersion -ne $binary.version -or
+            $versionInfo.ProductVersion -ne $binary.version -or
+            $versionInfo.PrivateBuild -ne $binary.fullVersion)
+        {
+            throw "Built runtime binary version identity drifted: $($binary.path)"
+        }
+    }
     $moduleRuntimeLibraries = @()
     foreach ($candidate in @(
         (Join-Path $resolvedConfigBuildDir "$Config/meshoptimizer.dll"),
@@ -776,6 +959,8 @@ try
         Copy-Item -LiteralPath $moduleLibrary -Destination (Join-Path $stagingDir "slicer_module.dll")
         Copy-Item -LiteralPath $workerExecutable -Destination (Join-Path $stagingDir "slicer_worker.exe")
         Copy-Item -LiteralPath $moduleManifest -Destination (Join-Path $stagingDir "module.json")
+        Copy-Item -LiteralPath $sourceVersionManifest -Destination (Join-Path $stagingDir "version-manifest.json")
+        Copy-Item -LiteralPath $buildVersionManifest -Destination (Join-Path $stagingDir "slicesoft_build_manifest.json")
         $moduleRuntimeInventory = @()
         foreach ($runtimeLibrary in $moduleRuntimeLibraries)
         {
@@ -933,6 +1118,114 @@ try
             "Plugins=."
         ) | Set-Content -LiteralPath (Join-Path $stagingDir "qt.conf") -Encoding Ascii
 
+        $expectedApplicationVersionOutput =
+            "SliceSoft $sourceApplicationVersion`n" +
+            "build $([string]$buildVersionSnapshot.components.application.fullBuildVersion)"
+        foreach ($applicationBinary in @("slicer_cli.exe", "slicer_ui_host_sim.exe"))
+        {
+            $actualVersionOutput =
+                (& (Join-Path $stagingDir $applicationBinary) --version) -join "`n"
+            if ($LASTEXITCODE -ne 0 -or
+                $actualVersionOutput.Trim() -ne $expectedApplicationVersionOutput)
+            {
+                throw "Deployed application version query drifted: $applicationBinary"
+            }
+        }
+
+        $stagedVersionedBinaries = @(
+            [pscustomobject]@{
+                path = Join-Path $stagingDir "slicer_cli.exe"
+                version = $sourceApplicationVersion
+                fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
+            },
+            [pscustomobject]@{
+                path = Join-Path $stagingDir "slicer_ui_host_sim.exe"
+                version = $sourceApplicationVersion
+                fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
+            },
+            [pscustomobject]@{
+                path = Join-Path $stagingDir "slicer_module.dll"
+                version = $sourceSlicerVersion
+                fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
+            },
+            [pscustomobject]@{
+                path = Join-Path $stagingDir "slicer_worker.exe"
+                version = $sourceSlicerVersion
+                fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
+            })
+        foreach ($binary in $stagedVersionedBinaries)
+        {
+            $versionInfo = (Get-Item -LiteralPath $binary.path).VersionInfo
+            if ($versionInfo.FileVersion -ne $binary.version -or
+                $versionInfo.ProductVersion -ne $binary.version -or
+                $versionInfo.PrivateBuild -ne $binary.fullVersion)
+            {
+                throw "Deployed runtime binary version identity drifted: $($binary.path)"
+            }
+        }
+
+        $workerContractText =
+            (& (Join-Path $stagingDir "slicer_worker.exe") --contract-info) -join "`n"
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw "Deployed worker contract query failed with exit code $LASTEXITCODE."
+        }
+        try
+        {
+            $workerContract = $workerContractText | ConvertFrom-Json
+        }
+        catch
+        {
+            throw "Deployed worker contract query returned invalid JSON: $($_.Exception.Message)"
+        }
+        $workerPropertyNames = @($workerContract.PSObject.Properties.Name)
+        $workerProduces = @($workerContract.produces)
+        if ($workerPropertyNames -notcontains "major" -or
+            $workerPropertyNames -notcontains "minor" -or
+            -not (($workerContract.major -is [int]) -or
+                ($workerContract.major -is [long])) -or
+            -not (($workerContract.minor -is [int]) -or
+                ($workerContract.minor -is [long])) -or
+            [string]$workerContract.contract -ne "file_contract" -or
+            $workerContract.major -ne 1 -or
+            $workerContract.minor -ne 0 -or
+            [string]$workerContract.engineVersion -ne $sourceSlicerVersion -or
+            $workerProduces.Count -ne 1 -or
+            [string]$workerProduces[0] -ne "p0.rgbwsv.2")
+        {
+            throw "Deployed worker discovery contract or version drifted."
+        }
+
+        $moduleInfoText =
+            (& $moduleInfoProbe --module-info (Join-Path $stagingDir "slicer_module.dll")) -join "`n"
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw "Deployed module info query failed with exit code $LASTEXITCODE."
+        }
+        try
+        {
+            $deployedModuleInfo = $moduleInfoText | ConvertFrom-Json
+        }
+        catch
+        {
+            throw "Deployed module info query returned invalid JSON: $($_.Exception.Message)"
+        }
+        $modulePropertyNames = @($deployedModuleInfo.PSObject.Properties.Name)
+        $moduleProduces = @($deployedModuleInfo.produces)
+        if ($modulePropertyNames -notcontains "spi" -or
+            -not (($deployedModuleInfo.spi -is [int]) -or
+                ($deployedModuleInfo.spi -is [long])) -or
+            [string]$deployedModuleInfo.schema -ne "slicesoft.module_info.1" -or
+            [string]$deployedModuleInfo.id -ne "slicer" -or
+            [string]$deployedModuleInfo.version -ne $sourceSlicerVersion -or
+            $deployedModuleInfo.spi -ne 1 -or
+            $moduleProduces.Count -ne 1 -or
+            [string]$moduleProduces[0].contract -ne "p0.rgbwsv.2" -or
+            [string]$moduleProduces[0].kind -ne "package")
+        {
+            throw "Deployed module info contract or version drifted."
+        }
+
         $hostSelfTestOutput =
             & (Join-Path $stagingDir "slicer_ui_host_sim.exe") --self-test
         if ($LASTEXITCODE -ne 0)
@@ -969,6 +1262,16 @@ try
             buildDir = $resolvedConfigBuildDir
             qt5Dir = $resolvedQt5Dir
             useOpenVdb = $false
+            version = [ordered]@{
+                sourceManifest = "version-manifest.json"
+                buildManifest = "slicesoft_build_manifest.json"
+                releasePolicy = [string]$buildVersionSnapshot.releasePolicy
+                releaseStatus = [string]$buildVersionSnapshot.releaseStatus
+                application = $buildVersionSnapshot.components.application
+                slicer = $buildVersionSnapshot.components.slicer
+                source = $buildVersionSnapshot.source
+                build = $buildVersionSnapshot.build
+            }
             tiffWriter = [ordered]@{
                 configuredBackend = [string]$tiffBackendInfo.configuredBackend
                 handwrittenAvailable = [bool]$tiffBackendInfo.handwrittenAvailable
@@ -1011,7 +1314,7 @@ try
                 userGuideAssetCount = $userGuideAssetCount
             }
         }
-        $manifest | ConvertTo-Json -Depth 4 | Set-Content `
+        $manifest | ConvertTo-Json -Depth 8 | Set-Content `
             -LiteralPath (Join-Path $stagingDir "runtime_manifest.json") `
             -Encoding UTF8
 

@@ -33,8 +33,10 @@ int wmain(int argumentCount, wchar_t* arguments[])
     char* repository = NULL;
     char* outputRoot = NULL;
     char* selfTest = NULL;
+    char* moduleInfo = NULL;
     const wchar_t* modulePath = NULL;
     int m1IntakeOnly = 0;
+    int moduleInfoOnly = 0;
     int result = 1;
     memset(&api, 0, sizeof(api));
     loadError[0] = '\0';
@@ -42,6 +44,12 @@ int wmain(int argumentCount, wchar_t* arguments[])
         && wcscmp(arguments[1], L"--m1-self-test") == 0)
     {
         m1IntakeOnly = 1;
+        modulePath = arguments[2];
+    }
+    else if (argumentCount == 3
+        && wcscmp(arguments[1], L"--module-info") == 0)
+    {
+        moduleInfoOnly = 1;
         modulePath = arguments[2];
     }
     else if (argumentCount == 4)
@@ -54,15 +62,17 @@ int wmain(int argumentCount, wchar_t* arguments[])
             stderr,
             L"usage:\n"
             L"  slicer_host_sim --m1-self-test <slicer_module.dll>\n"
+            L"  slicer_host_sim --module-info <slicer_module.dll>\n"
             L"  slicer_host_sim <slicer_module.dll> <repository> <output-root>\n");
         return 2;
     }
-    if (!m1IntakeOnly && !HostEnsureDirectoryTree(arguments[3]))
+    if (!m1IntakeOnly && !moduleInfoOnly
+        && !HostEnsureDirectoryTree(arguments[3]))
     {
         fprintf(stderr, "[14E-01] failed to create output root\n");
         goto cleanup;
     }
-    if (!m1IntakeOnly)
+    if (!m1IntakeOnly && !moduleInfoOnly)
     {
         repository = HostUtf8FromWide(arguments[2]);
         outputRoot = HostUtf8FromWide(arguments[3]);
@@ -79,6 +89,17 @@ int wmain(int argumentCount, wchar_t* arguments[])
                sizeof(loadError)))
     {
         fprintf(stderr, "[14E-01] load failed: %s\n", loadError);
+        goto cleanup;
+    }
+    if (moduleInfoOnly)
+    {
+        if (!HostModuleApiReadInfo(&api, &moduleInfo))
+        {
+            fprintf(stderr, "[14E-01] module info query failed\n");
+            goto cleanup;
+        }
+        printf("%s\n", moduleInfo);
+        result = 0;
         goto cleanup;
     }
     if (!HostM1IntakeCheckModuleInfo(&api))
@@ -110,6 +131,7 @@ int wmain(int argumentCount, wchar_t* arguments[])
     result = 0;
 
 cleanup:
+    free(moduleInfo);
     free(selfTest);
     if (module != NULL)
     {

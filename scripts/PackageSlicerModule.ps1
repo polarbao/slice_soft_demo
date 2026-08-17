@@ -245,6 +245,9 @@ $sourceArtifacts = [ordered]@{
     "slicer_module.dll" = Join-Path $binaryRoot "slicer_module.dll"
     "slicer_worker.exe" = Join-Path $binaryRoot "slicer_worker.exe"
     "module.json" = Join-Path $binaryRoot "module.json"
+    "version-manifest.json" = Join-Path $binaryRoot "version-manifest.json"
+    "slicesoft_build_manifest.json" =
+        Join-Path $binaryRoot "slicesoft_build_manifest.json"
 }
 foreach ($entry in $sourceArtifacts.GetEnumerator())
 {
@@ -264,6 +267,76 @@ $moduleManifestValid = $moduleManifest.schema -eq "slicesoft.module_manifest.1" 
 if (-not $moduleManifestValid)
 {
     throw "module.json does not match the frozen Stage 14 deployment contract."
+}
+$sourceVersionManifest =
+    Get-Content -LiteralPath $sourceArtifacts["version-manifest.json"] -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+$buildVersionManifest =
+    Get-Content -LiteralPath $sourceArtifacts["slicesoft_build_manifest.json"] -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+$sourceApplicationVersion = [string]$sourceVersionManifest.components.application.version
+if (-not [string]::IsNullOrWhiteSpace(
+        [string]$sourceVersionManifest.components.application.preRelease))
+{
+    $sourceApplicationVersion +=
+        "-" + [string]$sourceVersionManifest.components.application.preRelease
+}
+$sourceSlicerVersion = [string]$sourceVersionManifest.components.slicer.version
+if (-not [string]::IsNullOrWhiteSpace(
+        [string]$sourceVersionManifest.components.slicer.preRelease))
+{
+    $sourceSlicerVersion +=
+        "-" + [string]$sourceVersionManifest.components.slicer.preRelease
+}
+$versionManifestValid =
+    $sourceVersionManifest.schemaVersion -eq 1 -and
+    $sourceVersionManifest.releasePolicy -eq "lockstep" -and
+    $buildVersionManifest.schema -eq "slicesoft.build.1" -and
+    $buildVersionManifest.build.config -eq $Config -and
+    $buildVersionManifest.components.application.version -eq $sourceApplicationVersion -and
+    $buildVersionManifest.components.slicer.id -eq "slicer" -and
+    $buildVersionManifest.components.slicer.version -eq $sourceSlicerVersion -and
+    $sourceApplicationVersion -eq $sourceSlicerVersion -and
+    $sourceSlicerVersion -eq $moduleManifest.version
+if (-not $versionManifestValid)
+{
+    throw "SliceSoft source/build/module version manifests are inconsistent."
+}
+
+if ([string]$sourceVersionManifest.release.status -eq "stable")
+{
+    if (-not [string]::IsNullOrWhiteSpace(
+            [string]$sourceVersionManifest.release.preRelease) -or
+        [string]$buildVersionManifest.source.state -ne "clean" -or
+        [string]$buildVersionManifest.source.revision -eq "unknown")
+    {
+        throw "A stable SliceSoft package requires an unqualified version and known clean source."
+    }
+    $expectedTag = "v" + [string]$sourceVersionManifest.release.version
+    $tagObject = & git -C $repoRoot rev-parse --verify "refs/tags/$expectedTag^{tag}" 2>$null
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "Stable SliceSoft package requires annotated tag $expectedTag."
+    }
+    $tagRevision = & git -C $repoRoot rev-parse --short=12 "$expectedTag^{commit}" 2>$null
+    if ($LASTEXITCODE -ne 0 -or
+        [string]$tagRevision -ne [string]$buildVersionManifest.source.revision)
+    {
+        throw "Stable SliceSoft tag $expectedTag does not match the build revision."
+    }
+}
+
+$expectedSlicerFullVersion =
+    [string]$buildVersionManifest.components.slicer.fullBuildVersion
+foreach ($binaryName in @("slicer_module.dll", "slicer_worker.exe"))
+{
+    $versionInfo = (Get-Item -LiteralPath $sourceArtifacts[$binaryName]).VersionInfo
+    if ($versionInfo.FileVersion -ne $sourceSlicerVersion -or
+        $versionInfo.ProductVersion -ne $sourceSlicerVersion -or
+        $versionInfo.PrivateBuild -ne $expectedSlicerFullVersion)
+    {
+        throw "Built slicer binary version identity drifted: $binaryName"
+    }
 }
 
 $vsInstallation = ResolveVisualStudioInstallation
