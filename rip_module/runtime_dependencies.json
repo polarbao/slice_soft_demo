@@ -1,0 +1,14 @@
+{
+  "schema": "slicesoft.rip.runtime_dependencies.1",
+  "entrypoint": "rip_cli.exe",
+  "privateLibraries": [
+    "RipSlicer.dll",
+    "tiff.dll"
+  ],
+  "resourceDirectory": "CmykFiles",
+  "loadPolicy": "isolated_child_process",
+  "hostRootDeploymentForbidden": [
+    "tiff.dll"
+  ],
+  "redistributionStatus": "BLOCKED_EXTERNAL_LICENSE_EVIDENCE"
+}

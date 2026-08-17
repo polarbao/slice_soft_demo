@@ -1,0 +1,38 @@
+{
+  "schema": "slicesoft.rip.module.1",
+  "moduleId": "slicesoft.external_rip",
+  "version": "1.0.0",
+  "status": "LOCAL_ENGINEERING_ONLY",
+  "architecture": "x86_64-windows",
+  "entrypoint": "rip_cli.exe",
+  "library": "RipSlicer.dll",
+  "resourceDirectory": "CmykFiles",
+  "files": [
+    { "path": "rip_cli.exe", "size": 88233, "sha256": "2e440d8745ddaaf75bce33ea0c7dcd1729aa5cf2aa1caec966b295b55c143851" },
+    { "path": "RipSlicer.dll", "size": 1507840, "sha256": "4747087cbb1b1a54bc6a23083a0be3947f7e011b3b12bc8fe3bb6d5e700b9630" },
+    { "path": "tiff.dll", "size": 368128, "sha256": "9a5be042edca9849628b4c9457c26c8eed61e2d681be8d9a17fce1fffb938be1" },
+    { "path": "CmykFiles/0.matrix", "size": 1048576, "sha256": "8ad4408c69d1bda826938caedbc1506b8a450908becb08226c35a6cd2620cd1a" },
+    { "path": "CmykFiles/1.matrix", "size": 1048576, "sha256": "ca69e86e5633511bf86d09a0013ebc69aa1d1866839ff323ba88c82aa861f424" },
+    { "path": "CmykFiles/2.matrix", "size": 1048576, "sha256": "9122d440ea02a5639021a888c31db53e861da56e5a19c90d6670582d0d9cf7ac" },
+    { "path": "CmykFiles/3.matrix", "size": 1048576, "sha256": "dc6bf08bb95a60e8af4a730cafe6a9bff5c0563f92458741189da60fa34e2f1a" },
+    { "path": "CmykFiles/linear.csv", "size": 10316, "sha256": "f0230e5460a3b6704e3699d100da3b0f9eac1d82ea66e84e54be476a92625cdf" },
+    { "path": "CmykFiles/CIERGB.icc", "size": 552, "sha256": "20148894e54a46a97c958dccc73c87ecd076c0ffec527ac93568fa75b6656d41" },
+    { "path": "CmykFiles/CMYK.icc", "size": 701748, "sha256": "c555629e048f2c90a7738436850d8e1f47f61b3da35bb31fd220fc715d017088" },
+    { "path": "CmykFiles/JapanColor2001Coated.icc", "size": 1219908, "sha256": "2b43f4ffb7c3ef0e2e98368b5bf5b71cc1d8aa3f8b54d4d6ca521ea5dd1fa212" }
+  ],
+  "input": {
+    "schema": "p0.rgbwsv.2",
+    "bitDepth": 8,
+    "samplesPerPixel": 6,
+    "planar": "contiguous",
+    "storage": "stripped"
+  },
+  "output": {
+    "samplesPerPixel": 7,
+    "bitDepth": 8,
+    "storage": "stripped",
+    "rawPattern": "slice.N.tiff",
+    "publishedPattern": "rip_%06d.tif"
+  },
+  "externalValidation": "EXTERNAL_VALIDATION_DEFERRED"
+}

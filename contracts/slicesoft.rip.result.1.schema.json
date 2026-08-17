@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "slicesoft.rip.result.1",
+  "title": "SliceSoft external RIP result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "externalValidation",
+    "sourcePackage",
+    "sourceManifestSha256",
+    "module",
+    "settings",
+    "process",
+    "output"
+  ],
+  "properties": {
+    "schema": { "const": "slicesoft.rip.result.1" },
+    "status": { "enum": ["succeeded", "failed", "cancelled"] },
+    "externalValidation": { "const": "EXTERNAL_VALIDATION_DEFERRED" },
+    "sourcePackage": { "type": "string", "minLength": 1 },
+    "sourceManifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleId", "version", "manifestSha256"],
+      "properties": {
+        "moduleId": { "const": "slicesoft.external_rip" },
+        "version": { "type": "string", "minLength": 1 },
+        "manifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "settings": { "$ref": "slicesoft.rip.settings.1.schema.json" },
+    "process": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exitCode", "elapsedMs"],
+      "properties": {
+        "exitCode": { "type": "integer" },
+        "elapsedMs": { "type": "integer", "minimum": 0 },
+        "stdout": { "type": "string" },
+        "stderr": { "type": "string" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directory", "layerCount", "filePattern", "minimum", "maximum"],
+      "properties": {
+        "directory": { "const": "rip" },
+        "layerCount": { "type": "integer", "minimum": 0 },
+        "filePattern": { "const": "rip_%06d.tif" },
+        "minimum": { "$ref": "#/$defs/channelRange" },
+        "maximum": { "$ref": "#/$defs/channelRange" }
+      }
+    }
+  },
+  "$defs": {
+    "channelRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["W", "S", "V"],
+      "properties": {
+        "W": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "S": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "V": { "type": "integer", "minimum": 0, "maximum": 255 }
+      }
+    }
+  }
+}

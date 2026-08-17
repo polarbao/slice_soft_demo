@@ -1,0 +1,39 @@
+{
+  "schema": "slicesoft.rip.result.1",
+  "status": "succeeded",
+  "externalValidation": "EXTERNAL_VALIDATION_DEFERRED",
+  "sourcePackage": "package",
+  "sourceManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "module": {
+    "moduleId": "slicesoft.external_rip",
+    "version": "1.0.0",
+    "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "settings": {
+    "schema": "slicesoft.rip.settings.1",
+    "autoAfterSlice": false,
+    "renderIntent": 0,
+    "transparentMode": "follow_manifest",
+    "colorMode": 0,
+    "inputIcc": "CmykFiles/CIERGB.icc",
+    "outputIcc": "CmykFiles/CMYK.icc",
+    "continueOnError": false,
+    "deviceGrayBits": 2,
+    "timeoutSeconds": 3600,
+    "outputDirectoryName": "rip",
+    "existingOutputPolicy": "fail_closed"
+  },
+  "process": {
+    "exitCode": 0,
+    "elapsedMs": 1250,
+    "stdout": "RIP completed",
+    "stderr": ""
+  },
+  "output": {
+    "directory": "rip",
+    "layerCount": 2,
+    "filePattern": "rip_%06d.tif",
+    "minimum": { "W": 0, "S": 0, "V": 0 },
+    "maximum": { "W": 6, "S": 9, "V": 9 }
+  }
+}

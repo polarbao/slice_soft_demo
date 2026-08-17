@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "slicesoft.rip.module.1",
+  "title": "SliceSoft external RIP module",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "moduleId",
+    "version",
+    "status",
+    "architecture",
+    "entrypoint",
+    "library",
+    "resourceDirectory",
+    "files",
+    "input",
+    "output",
+    "externalValidation"
+  ],
+  "properties": {
+    "schema": { "const": "slicesoft.rip.module.1" },
+    "moduleId": { "const": "slicesoft.external_rip" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "status": { "const": "LOCAL_ENGINEERING_ONLY" },
+    "architecture": { "const": "x86_64-windows" },
+    "entrypoint": { "$ref": "#/$defs/moduleRelativePath" },
+    "library": { "$ref": "#/$defs/moduleRelativePath" },
+    "resourceDirectory": { "$ref": "#/$defs/moduleRelativePath" },
+    "files": {
+      "type": "array",
+      "minItems": 11,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "size", "sha256"],
+        "properties": {
+          "path": { "$ref": "#/$defs/moduleRelativePath" },
+          "size": { "type": "integer", "minimum": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "bitDepth", "samplesPerPixel", "planar", "storage"],
+      "properties": {
+        "schema": { "const": "p0.rgbwsv.2" },
+        "bitDepth": { "const": 8 },
+        "samplesPerPixel": { "const": 6 },
+        "planar": { "const": "contiguous" },
+        "storage": { "const": "stripped" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["samplesPerPixel", "bitDepth", "storage", "rawPattern", "publishedPattern"],
+      "properties": {
+        "samplesPerPixel": { "minimum": 7, "type": "integer" },
+        "bitDepth": { "const": 8 },
+        "storage": { "const": "stripped" },
+        "rawPattern": { "const": "slice.N.tiff" },
+        "publishedPattern": { "const": "rip_%06d.tif" }
+      }
+    },
+    "externalValidation": { "const": "EXTERNAL_VALIDATION_DEFERRED" }
+  },
+  "$defs": {
+    "moduleRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+$"
+    }
+  }
+}

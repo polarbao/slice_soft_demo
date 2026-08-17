@@ -2658,6 +2658,53 @@ endif()
 
 if(BUILD_SLICER_UI_HOST_SIM)
     if(Qt5Widgets_FOUND)
+        if(NOT TARGET TIFF::TIFF)
+            find_package(TIFF REQUIRED)
+        endif()
+        add_library(slicesoft_rip_integration STATIC
+            src/rip_integration/RipArtifactPublisher.cpp
+            src/rip_integration/RipArtifactPublisher.h
+            src/rip_integration/RipCommandBuilder.cpp
+            src/rip_integration/RipCommandBuilder.h
+            src/rip_integration/RipInputValidator.cpp
+            src/rip_integration/RipInputValidator.h
+            src/rip_integration/RipOutputValidator.cpp
+            src/rip_integration/RipOutputValidator.h
+            src/rip_integration/RipSettings.cpp
+            src/rip_integration/RipSettings.h
+        )
+        target_include_directories(slicesoft_rip_integration PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+        )
+        target_link_libraries(slicesoft_rip_integration PRIVATE TIFF::TIFF)
+        if(MSVC)
+            target_compile_options(slicesoft_rip_integration PRIVATE
+                ${SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION}
+                /W4
+                /WX
+                /utf-8
+            )
+        endif()
+
+        add_executable(rip_integration_unit_tests
+            tests/rip_integration/RipIntegrationTests.cpp
+        )
+        target_link_libraries(rip_integration_unit_tests PRIVATE
+            slicesoft_rip_integration
+            TIFF::TIFF
+        )
+        if(MSVC)
+            target_compile_options(rip_integration_unit_tests PRIVATE
+                /MP
+                /W4
+                /WX
+                /utf-8
+            )
+        endif()
+        add_test(
+            NAME rip_integration_unit_tests
+            COMMAND rip_integration_unit_tests
+        )
         add_subdirectory(apps/slicer_ui_host_sim)
     else()
         message(STATUS "Qt5 Widgets not found; slicer_ui_host_sim target is skipped.")

@@ -22,3 +22,7 @@ tests/*
 !tests/unit/**
 !tests/hostflow/
 !tests/hostflow/**
+!tests/ripflow/
+!tests/ripflow/**
+!tests/rip_integration/
+!tests/rip_integration/**

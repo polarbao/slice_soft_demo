@@ -1,0 +1,14 @@
+{
+  "schema": "slicesoft.rip.settings.1",
+  "autoAfterSlice": false,
+  "renderIntent": 0,
+  "transparentMode": "follow_manifest",
+  "colorMode": 0,
+  "inputIcc": "CmykFiles/CIERGB.icc",
+  "outputIcc": "CmykFiles/CMYK.icc",
+  "continueOnError": false,
+  "deviceGrayBits": 2,
+  "timeoutSeconds": 3600,
+  "outputDirectoryName": "rip",
+  "existingOutputPolicy": "fail_closed"
+}
