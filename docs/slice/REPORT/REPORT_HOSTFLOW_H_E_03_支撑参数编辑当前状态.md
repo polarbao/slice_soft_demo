@@ -25,7 +25,8 @@ HostSupportSettingsPanel
 - 提供内部闭合镂空开关/最小面积、最大支撑投影铺底开关/层数；
 - 默认下表面投影显式写 `placement=lower`；高级 mode 省略 placement，避免生产解析器
   以显式 placement 覆盖 mode。UI 不开放 upper/both；`value=0`、`fillRule=all_internal_voids`、
-  `source=max_support_footprint` 和 `layerPlacement=overlay_existing` 保持冻结；
+  `source=max_support_footprint` 保持冻结；参考宿主的生产 Legacy 入口固定写入
+  `layerPlacement=prepend_below_model`，使铺底成为模型下方新增的物理层；
 - 关闭支撑时强制 `mode=none`、关闭内部镂空/铺底，并同步
   `materialProcessProfile.support.expected=false`；
 - 支撑任一字段变化都会改变有效 Profile 自哈希；不支持组合和越界值 fail-closed；
@@ -49,6 +50,15 @@ ctest --test-dir build -C Release -R "^(hostflow_he03_support_settings|hostflow_
 HOSTFLOW_HE03_PASS profile=host-reference-default dpi=635x600 layer=0.038 support=editable
 HOSTFLOW_HE03_PERSISTENCE_PASS schema=2 runtimeHandles=persisted:false
 ```
+
+### 3.1 2026-08-17 生产铺底链路更正
+
+用户生产包证据确认，UI 已写入 `baseProjection.enabled=true` 和
+`layerCount=30`，但宿主 Profile builder 仍写入历史兼容值
+`overlay_existing`，因此没有在模型下方新增 30 个物理 TIFF 层。当前已改为
+`prepend_below_model`，并增加端到端回归：开启铺底后总层数必须增加 30，
+且前 30 张 TIFF 必须只包含非空 S 通道。Release 相关宿主回归 `7/7 PASS`，
+13G 铺底 Package/RIP 专项 PASS（`46 = 16 + 30` 层）。
 
 ## 4. 边界与下一步
 

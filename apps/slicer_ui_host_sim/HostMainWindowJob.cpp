@@ -40,10 +40,12 @@ void HostMainWindow::RefreshSliceJobReadiness()
 void HostMainWindow::OnStartSlice()
 {
     QString error;
-    if (!m_sliceSettingsPanel->IsReady()
+    hosteffectiveprofile submissionProfile;
+    if (!m_sliceSettingsPanel->BuildSubmissionProfile(
+            &submissionProfile, &error)
         || !m_sliceJobController->Start(
             m_importWorkflow->SceneHandle(),
-            m_sliceSettingsPanel->EffectiveProfile(),
+            submissionProfile,
             &error))
     {
         const QString detail = error.isEmpty()

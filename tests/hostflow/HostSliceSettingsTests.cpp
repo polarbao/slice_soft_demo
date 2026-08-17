@@ -210,6 +210,8 @@ bool VerifyEffectiveProfiles(
     const QJsonObject processSupport = first.profile.value(
         QStringLiteral("materialProcessProfile")).toObject().value(
             QStringLiteral("support")).toObject();
+    const QJsonObject baseProjection = support.value(
+        QStringLiteral("baseProjection")).toObject();
     if (!Check(
             output.value(QStringLiteral("dpiX")).toInt() == 635
                 && output.value(QStringLiteral("dpiY")).toInt() == 600
@@ -235,6 +237,9 @@ bool VerifyEffectiveProfiles(
                 && support.value(QStringLiteral("value")).toInt(-1) == 0
                 && support.value(QStringLiteral("internalVoid")).toObject()
                     .value(QStringLiteral("enabled")).toBool()
+                && baseProjection.value(
+                    QStringLiteral("layerPlacement")).toString()
+                    == QStringLiteral("prepend_below_model")
                 && processSupport.value(
                     QStringLiteral("expected")).toBool(),
             QStringLiteral("默认 lower support Profile 段不完整。"),
@@ -288,7 +293,11 @@ bool VerifyEffectiveProfiles(
                 && !changedSupport.contains(QStringLiteral("placement"))
                 && changedSupport.value(
                     QStringLiteral("baseProjection")).toObject().value(
-                        QStringLiteral("layerCount")).toInt() == 30,
+                        QStringLiteral("layerCount")).toInt() == 30
+                && changedSupport.value(
+                    QStringLiteral("baseProjection")).toObject().value(
+                        QStringLiteral("layerPlacement")).toString()
+                    == QStringLiteral("prepend_below_model"),
             QStringLiteral("高级支撑参数未进入有效 Profile。"),
             errors))
     {
@@ -431,7 +440,57 @@ bool VerifyEffectiveProfiles(
     error.clear();
     if (!Check(
             !HostEffectiveProfileBuilder::Validate(settings, &error),
-            QStringLiteral("S3 与非 relief Profile 组合必须 fail-closed。"),
+            QStringLiteral("S3 与普通非 relief Profile 组合必须 fail-closed。"),
+            errors))
+    {
+        return false;
+    }
+
+    settings.materialstrategy = HostMaterialStrategy::WhiteSolid;
+    hosteffectiveprofile whiteReliefSampled;
+    error.clear();
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &whiteReliefSampled, &error)
+                && whiteReliefSampled.profile.value(
+                    QStringLiteral("slicingMode")).toString()
+                    == QStringLiteral("relief_heightfield")
+                && !whiteReliefSampled.profile.value(
+                    QStringLiteral("texture")).toObject().value(
+                    QStringLiteral("enabled")).toBool()
+                && whiteReliefSampled.profile.value(
+                    QStringLiteral("modelMaterial")).toObject().value(
+                    QStringLiteral("materialChannel")).toString()
+                    == QStringLiteral("W")
+                && ComputeWorkerProfileHash(whiteReliefSampled.profile)
+                    == whiteReliefSampled.profilehash,
+            QStringLiteral("单材料白墨 S3 浮雕 Profile 构造失败：%1")
+                .arg(error),
+            errors))
+    {
+        return false;
+    }
+
+    settings.materialstrategy = HostMaterialStrategy::VarnishSolid;
+    hosteffectiveprofile varnishReliefSampled;
+    error.clear();
+    if (!Check(
+            HostEffectiveProfileBuilder::Build(
+                settings, &varnishReliefSampled, &error)
+                && varnishReliefSampled.profile.value(
+                    QStringLiteral("slicingMode")).toString()
+                    == QStringLiteral("relief_heightfield")
+                && !varnishReliefSampled.profile.value(
+                    QStringLiteral("texture")).toObject().value(
+                    QStringLiteral("enabled")).toBool()
+                && varnishReliefSampled.profile.value(
+                    QStringLiteral("modelMaterial")).toObject().value(
+                    QStringLiteral("materialChannel")).toString()
+                    == QStringLiteral("V")
+                && ComputeWorkerProfileHash(varnishReliefSampled.profile)
+                    == varnishReliefSampled.profilehash,
+            QStringLiteral("单材料光油 S3 浮雕 Profile 构造失败：%1")
+                .arg(error),
             errors))
     {
         return false;
@@ -567,6 +626,10 @@ bool VerifyPanelIsLocal(
         QStringLiteral("hostSupportModeCombo"));
     auto* supportOffset = panel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostSupportOffsetSpin"));
+    auto* supportBaseProjection = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostSupportBaseProjectionCheck"));
+    auto* supportBaseProjectionLayers = panel.findChild<QSpinBox*>(
+        QStringLiteral("hostSupportBaseProjectionLayersSpin"));
     auto* roleMapping = panel.findChild<QCheckBox*>(
         QStringLiteral("hostMaterialRoleMappingCheck"));
     auto* whiteExpand = panel.findChild<QSpinBox*>(
@@ -585,6 +648,8 @@ bool VerifyPanelIsLocal(
                 && tiffCompressionCombo != nullptr
                 && materialCombo != nullptr && supportEnabled != nullptr
                 && supportMode != nullptr && supportOffset != nullptr
+                && supportBaseProjection != nullptr
+                && supportBaseProjectionLayers != nullptr
                 && roleMapping != nullptr && whiteExpand != nullptr
                 && textureEnabled != nullptr
                 && textureApplyMode != nullptr
@@ -610,6 +675,7 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
+
     const int rgbWhiteIndex = materialCombo->findData(
         QStringLiteral("rgb_white"));
     if (!Check(
@@ -775,6 +841,48 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
+
+    const int rgbOnlyIndex = processPreset->findData(
+        QStringLiteral("textured_nail_rgb_only_lower_support"));
+    processPreset->setCurrentIndex(rgbOnlyIndex);
+    supportEnabled->setChecked(false);
+    QCoreApplication::processEvents();
+    supportEnabled->setChecked(true);
+    supportBaseProjection->setChecked(true);
+    QCoreApplication::processEvents();
+    const hostslicesettings baseProjectionSettings = panel.Settings();
+    hosteffectiveprofile baseProjectionProfile;
+    QString baseProjectionError;
+    if (!Check(
+            rgbOnlyIndex > 0
+                && processPreset->currentData().toString()
+                    == QStringLiteral(
+                        "textured_nail_rgb_only_lower_support")
+                && baseProjectionSettings.support.enabled
+                && baseProjectionSettings.support.baseprojection.enabled
+                && baseProjectionSettings.support.baseprojection.layercount
+                    == supportBaseProjectionLayers->value()
+                && panel.BuildSubmissionProfile(
+                    &baseProjectionProfile, &baseProjectionError)
+                && [&baseProjectionProfile]()
+                {
+                    const QJsonObject submittedBase =
+                        baseProjectionProfile.profile.value(
+                            QStringLiteral("support")).toObject().value(
+                            QStringLiteral("baseProjection")).toObject();
+                    return submittedBase.value(
+                               QStringLiteral("enabled")).toBool()
+                        && submittedBase.value(
+                               QStringLiteral("layerPlacement")).toString()
+                            == QStringLiteral("prepend_below_model");
+                }(),
+            QStringLiteral(
+                "全实体 RGB 工艺重新开启支撑和投影铺底后不应切换为自定义，且必须保持可提交：%1")
+                .arg(baseProjectionError),
+            errors))
+    {
+        return false;
+    }
     const int varnishIndex = processPreset->findData(
         QStringLiteral("single_material_relief_varnish"));
     processPreset->setCurrentIndex(varnishIndex);
@@ -791,6 +899,36 @@ bool VerifyPanelIsLocal(
         return false;
     }
 
+    const int s3Index = geometrySampling->findData(QStringLiteral(
+        "layer_slab_supersample_2x2_at_least_two_candidate"));
+    geometrySampling->setCurrentIndex(s3Index);
+    QCoreApplication::processEvents();
+    const hostslicesettings singleMaterialSamplingSettings = panel.Settings();
+    hosteffectiveprofile singleMaterialSamplingProfile;
+    QString singleMaterialSamplingError;
+    if (!Check(
+            s3Index >= 0
+                && HostEffectiveProfileBuilder::Build(
+                    singleMaterialSamplingSettings,
+                    &singleMaterialSamplingProfile,
+                    &singleMaterialSamplingError)
+                && singleMaterialSamplingProfile.profile.value(
+                    QStringLiteral("slicingMode")).toString()
+                    == QStringLiteral("relief_heightfield")
+                && !singleMaterialSamplingProfile.profile.value(
+                    QStringLiteral("texture")).toObject().value(
+                    QStringLiteral("enabled")).toBool()
+                && singleMaterialSamplingProfile.profile.value(
+                    QStringLiteral("modelMaterial")).toObject().value(
+                    QStringLiteral("materialChannel")).toString()
+                    == QStringLiteral("V"),
+            QStringLiteral("UI 单材料光油 S3 Profile 构造失败：%1")
+                .arg(singleMaterialSamplingError),
+            errors))
+    {
+        return false;
+    }
+
     dpiXSpin->setValue(700);
     materialCombo->setCurrentIndex(1);
     roleMapping->setChecked(true);
@@ -802,8 +940,6 @@ bool VerifyPanelIsLocal(
     textureEnabled->setChecked(true);
     textureApplyMode->setCurrentIndex(0);
     textureWhitePolicy->setCurrentIndex(1);
-    const int s3Index = geometrySampling->findData(QStringLiteral(
-        "layer_slab_supersample_2x2_at_least_two_candidate"));
     geometrySampling->setCurrentIndex(s3Index);
     QCoreApplication::processEvents();
     const hostslicesettings samplingSettings = panel.Settings();
@@ -893,6 +1029,10 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         QStringLiteral("hostSliceJobProgressBar"));
     auto* pendingConfigLoadValue = jobPanel.findChild<QLabel*>(
         QStringLiteral("hostSliceTimingConfigLoadValue"));
+    auto* liveWorkerTotalValue = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingWorkerTotalValue"));
+    auto* liveHostTotalValue = jobPanel.findChild<QLabel*>(
+        QStringLiteral("hostSliceTimingHostTotalValue"));
     jobPanel.SetActive();
     jobPanel.UpdateProgress(
         QStringLiteral("running"),
@@ -906,12 +1046,18 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         {QStringLiteral("pollResolutionMs"), 100},
         {QStringLiteral("configLoadMs"), 1.5},
         {QStringLiteral("modelLoadMs"), 2.5},
-        {QStringLiteral("totalMs"), 18.0}});
+        {QStringLiteral("totalMs"), 7.0},
+        {QStringLiteral("workerElapsedMs"), 7.0},
+        {QStringLiteral("hostElapsedMs"), 18.0}});
     const bool runningStateIsHonest = progressBar != nullptr
         && progressBar->value() == 99
         && pendingConfigLoadValue != nullptr
         && pendingConfigLoadValue->text()
-            .contains(QStringLiteral("估算"));
+            .contains(QStringLiteral("估算"))
+        && liveWorkerTotalValue != nullptr
+        && liveWorkerTotalValue->text().contains(QStringLiteral("7.0 ms"))
+        && liveHostTotalValue != nullptr
+        && liveHostTotalValue->text().contains(QStringLiteral("18.0 ms"));
     QJsonObject timing{
         {QStringLiteral("available"), true},
         {QStringLiteral("approximate"), true},

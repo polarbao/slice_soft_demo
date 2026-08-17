@@ -269,7 +269,8 @@ void HostSliceSettingsPanel::BuildInterface()
     m_geometrySamplingCombo->setItemData(
         1,
         QStringLiteral(
-            "仅限 relief_heightfield 纹理 Profile；不会自动替换生产默认。"),
+            "仅限彩色纹理或单材料 W/V 浮雕 Profile；显式选择时使用 "
+            "relief_heightfield，不会替换 S0 生产默认。"),
         Qt::ToolTipRole);
 
     auto* outputRow = new QWidget(processGroup);
@@ -437,7 +438,7 @@ void HostSliceSettingsPanel::BuildInterface()
         m_supportPanel,
         &HostSupportSettingsPanel::SigSettingsChanged,
         this,
-        &HostSliceSettingsPanel::OnProcessSettingsEdited);
+        &HostSliceSettingsPanel::OnSettingsEdited);
 }
 
 void HostSliceSettingsPanel::SetSelectedProfileId(
@@ -561,6 +562,51 @@ bool HostSliceSettingsPanel::IsReady() const
 hosteffectiveprofile HostSliceSettingsPanel::EffectiveProfile() const
 {
     return m_effectiveProfile;
+}
+
+bool HostSliceSettingsPanel::BuildSubmissionProfile(
+    hosteffectiveprofile* effectiveProfile,
+    QString* error) const
+{
+    if (effectiveProfile == nullptr)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("切片提交 Profile 输出目标不能为空。");
+        }
+        return false;
+    }
+    *effectiveProfile = {};
+    if (!m_profileSupportsSlice)
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("当前 Profile 不支持 RGBWSV 切片。");
+        }
+        return false;
+    }
+    if (m_modelPath.isEmpty())
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral("请先导入 OBJ、3MF 或 STL 模型。");
+        }
+        return false;
+    }
+    const hostslicesettings settings = Settings();
+    if (m_singleMaterialRestricted
+        && !IsSingleMaterialStrategy(settings.materialstrategy))
+    {
+        if (error != nullptr)
+        {
+            *error = QStringLiteral(
+                "当前模型外观资源不完整，只允许单材料白墨或光油。");
+        }
+        return false;
+    }
+    return ValidateSceneBinding(error)
+        && HostEffectiveProfileBuilder::Build(
+            settings, effectiveProfile, error);
 }
 
 void HostSliceSettingsPanel::SetTextureWhitePreflightStatus(
@@ -754,9 +800,7 @@ void HostSliceSettingsPanel::RefreshPreview()
     }
 
     QString error;
-    if (!ValidateSceneBinding(&error)
-        || !HostEffectiveProfileBuilder::Build(
-            Settings(), &m_effectiveProfile, &error))
+    if (!BuildSubmissionProfile(&m_effectiveProfile, &error))
     {
         m_validationLabel->setText(
             QStringLiteral("配置不可提交：%1").arg(error));
@@ -767,9 +811,9 @@ void HostSliceSettingsPanel::RefreshPreview()
         m_singleMaterialRestricted
             ? QStringLiteral(
                   "有效 Profile 已通过宿主校验；模型以半透明灰色降级显示，"
-                  "生产工艺限定为单材料白墨或光油。")
+                  "生产工艺限定为单材料白墨或光油；当前参数会直接用于下一次切片。")
             : QStringLiteral(
-                  "有效 Profile 已通过宿主校验；参数编辑期间未调用切片模块。"));
+                  "有效 Profile 已通过宿主校验；当前参数会直接用于下一次切片，无需另行确认。"));
     m_profilePreview->setPlainText(QString::fromUtf8(
         QJsonDocument(m_effectiveProfile.profile).toJson(
             QJsonDocument::Indented)));

@@ -314,6 +314,7 @@ void HostSliceJobPanel::SetActive()
     m_phaseLabel->setText(QStringLiteral("排队中"));
     m_detailView->clear();
     m_lastWorkerElapsedMs = 0;
+    m_hasWorkerElapsed = false;
     ResetTiming();
     m_engineValue->setText(QStringLiteral("等待 Worker 阶段进度"));
     for (QLabel* value : {
@@ -335,8 +336,8 @@ void HostSliceJobPanel::SetActive()
     {
         value->setText(QStringLiteral("终结结果返回后提供"));
     }
-    m_workerTotalValue->setText(QStringLiteral("0.0 ms"));
-    m_hostTotalValue->setText(QStringLiteral("计时中"));
+    m_workerTotalValue->setText(QStringLiteral("等待 Worker 快照"));
+    m_hostTotalValue->setText(QStringLiteral("0.0 ms"));
     UpdateButtons();
 }
 
@@ -362,9 +363,8 @@ void HostSliceJobPanel::UpdateProgress(
             .arg(current)
             .arg(total)
             .arg(FormatDuration(static_cast<double>(elapsedMs))));
-    m_workerTotalValue->setText(
+    m_hostTotalValue->setText(
         FormatDuration(static_cast<double>(elapsedMs)));
-    m_lastWorkerElapsedMs = elapsedMs;
 }
 
 void HostSliceJobPanel::UpdateLiveTiming(const QJsonObject& timing)
@@ -376,7 +376,7 @@ void HostSliceJobPanel::UpdateLiveTiming(const QJsonObject& timing)
     const int resolutionMs = timing.value(
         QStringLiteral("pollResolutionMs")).toInt(100);
     m_engineValue->setText(
-        QStringLiteral("Worker 阶段轮询估算（约 ±%1 ms）")
+        QStringLiteral("宿主阶段轮询估算（约 ±%1 ms）")
             .arg(resolutionMs));
     SetLiveTimingValue(
         m_configLoadValue, timing, QStringLiteral("configLoadMs"));
@@ -394,8 +394,20 @@ void HostSliceJobPanel::UpdateLiveTiming(const QJsonObject& timing)
         m_layerComposeValue, timing, QStringLiteral("layerComposeMs"));
     SetLiveTimingValue(
         m_outputWriteValue, timing, QStringLiteral("outputWriteMs"));
-    SetLiveTimingValue(
-        m_workerTotalValue, timing, QStringLiteral("totalMs"));
+    const double workerElapsedMs = timing.value(
+        QStringLiteral("workerElapsedMs")).toDouble(-1.0);
+    if (workerElapsedMs >= 0.0)
+    {
+        m_workerTotalValue->setText(FormatDuration(workerElapsedMs));
+        m_lastWorkerElapsedMs = static_cast<qint64>(workerElapsedMs);
+        m_hasWorkerElapsed = true;
+    }
+    const double hostElapsedMs = timing.value(
+        QStringLiteral("hostElapsedMs")).toDouble(-1.0);
+    if (hostElapsedMs >= 0.0)
+    {
+        m_hostTotalValue->setText(FormatDuration(hostElapsedMs));
+    }
 }
 
 void HostSliceJobPanel::ShowCompletion(
@@ -422,7 +434,8 @@ void HostSliceJobPanel::ShowCompletion(
                             : QStringLiteral(
                                   "作业失败，请检查下方错误码与详细信息。"));
     QJsonObject displayTiming = timing;
-    if (!displayTiming.contains(QStringLiteral("totalMs")))
+    if (!displayTiming.contains(QStringLiteral("totalMs"))
+        && m_hasWorkerElapsed)
     {
         displayTiming.insert(
             QStringLiteral("totalMs"),

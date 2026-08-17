@@ -59,7 +59,7 @@ private:
     void ConfigureProfiles();
     void SaveViewSettings();
     void RestoreWorkspaceState();
-    void SaveWorkspaceState();
+    bool SaveWorkspaceState();
     void OnImportModel();
     void OnRemoveModels(const QStringList& instanceIds);
     void OnModelSelectionChanged(const QStringList& instanceIds);

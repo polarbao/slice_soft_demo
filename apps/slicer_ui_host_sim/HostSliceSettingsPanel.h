@@ -80,6 +80,16 @@ public:
     [[nodiscard]] hosteffectiveprofile EffectiveProfile() const;
 
     /**
+     * @brief 按当前控件值重新构造本次提交使用的有效 Profile。
+     * @param effectiveProfile 接收重新校验后的提交快照。
+     * @param error 接收当前设置无法提交的原因。
+     * @return 当前设置与场景绑定均可提交时返回 true。
+     */
+    [[nodiscard]] bool BuildSubmissionProfile(
+        hosteffectiveprofile* effectiveProfile,
+        QString* error) const;
+
+    /**
      * @brief 显示当前非阻塞的源纹理纯白预检。
      * @param message 用户可读的标识绑定预检状态。
      * @param warning 当纯白色证据需要操作员注意时，这是正确的。

@@ -387,7 +387,9 @@ bool HostSliceJobController::ApplyProgress(
         QStringLiteral("phase")).toString();
     const qint64 elapsedMs = progress.value(
         QStringLiteral("elapsedMs")).toVariant().toLongLong();
-    RecordObservedPhase(phase, elapsedMs);
+    const qint64 hostElapsedMs = m_jobTimer.isValid()
+        ? m_jobTimer.elapsed() : 0;
+    RecordObservedPhase(phase, hostElapsedMs);
     m_progress.state = state;
     m_progress.phase = phase;
     m_progress.current = progress.value(QStringLiteral("current")).toInt();
@@ -400,33 +402,33 @@ bool HostSliceJobController::ApplyProgress(
 
 void HostSliceJobController::RecordObservedPhase(
     const QString& phase,
-    const qint64 elapsedMs)
+    const qint64 hostElapsedMs)
 {
     if (phase == m_observedPhase)
     {
         return;
     }
     const QString timingKey = TimingKeyForPhase(m_observedPhase);
-    if (!timingKey.isEmpty() && elapsedMs >= m_observedPhaseStartMs)
+    if (!timingKey.isEmpty() && hostElapsedMs >= m_observedPhaseStartMs)
     {
         m_observedTiming.insert(
             timingKey,
-            static_cast<double>(elapsedMs - m_observedPhaseStartMs));
+            static_cast<double>(hostElapsedMs - m_observedPhaseStartMs));
     }
     m_observedPhase = phase;
-    m_observedPhaseStartMs = elapsedMs;
+    m_observedPhaseStartMs = hostElapsedMs;
 }
 
 QJsonObject HostSliceJobController::ObservedTimingSnapshot(
-    const qint64 elapsedMs) const
+    const qint64 hostElapsedMs) const
 {
     QJsonObject snapshot = m_observedTiming;
     const QString timingKey = TimingKeyForPhase(m_observedPhase);
-    if (!timingKey.isEmpty() && elapsedMs >= m_observedPhaseStartMs)
+    if (!timingKey.isEmpty() && hostElapsedMs >= m_observedPhaseStartMs)
     {
         snapshot.insert(
             timingKey,
-            static_cast<double>(elapsedMs - m_observedPhaseStartMs));
+            static_cast<double>(hostElapsedMs - m_observedPhaseStartMs));
     }
     if (snapshot.contains(QStringLiteral("layerComputeMs")))
     {
@@ -445,21 +447,27 @@ QJsonObject HostSliceJobController::ObservedTimingSnapshot(
         kPollIntervalMs);
     snapshot.insert(
         QStringLiteral("totalMs"),
-        static_cast<double>(elapsedMs));
+        static_cast<double>(m_progress.elapsedms));
+    snapshot.insert(
+        QStringLiteral("workerElapsedMs"),
+        static_cast<double>(m_progress.elapsedms));
+    snapshot.insert(
+        QStringLiteral("hostElapsedMs"),
+        static_cast<double>(hostElapsedMs));
     return snapshot;
 }
 
 QJsonObject HostSliceJobController::FinalizeObservedTiming(
-    const qint64 elapsedMs)
+    const qint64 hostElapsedMs)
 {
     const QString timingKey = TimingKeyForPhase(m_observedPhase);
-    if (!timingKey.isEmpty() && elapsedMs >= m_observedPhaseStartMs)
+    if (!timingKey.isEmpty() && hostElapsedMs >= m_observedPhaseStartMs)
     {
         m_observedTiming.insert(
             timingKey,
-            static_cast<double>(elapsedMs - m_observedPhaseStartMs));
+            static_cast<double>(hostElapsedMs - m_observedPhaseStartMs));
     }
-    return ObservedTimingSnapshot(elapsedMs);
+    return ObservedTimingSnapshot(hostElapsedMs);
 }
 
 void HostSliceJobController::OnPollTimer()
@@ -511,10 +519,8 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
         QStringLiteral("detail")).toString();
     m_completion.timing = result.value(
         QStringLiteral("timing")).toObject();
-    const qint64 workerElapsedMs = m_progress.elapsedms > 0
-        ? m_progress.elapsedms : m_completion.elapsedms;
     const QJsonObject observedTiming = FinalizeObservedTiming(
-        workerElapsedMs);
+        m_completion.elapsedms);
     bool supplementedTiming = false;
     for (const QString& key : {
              QStringLiteral("configLoadMs"),
@@ -620,8 +626,7 @@ void HostSliceJobController::FinishTransportFailure(const QString& message)
         ? QStringLiteral("切片作业通信失败。") : message;
     m_completion.elapsedms = m_jobTimer.isValid() ? m_jobTimer.elapsed() : 0;
     m_completion.timing = FinalizeObservedTiming(
-        m_progress.elapsedms > 0
-            ? m_progress.elapsedms : m_completion.elapsedms);
+        m_completion.elapsedms);
     emit SigCompleted(
         false,
         false,
@@ -636,15 +641,17 @@ void HostSliceJobController::FinishTransportFailure(const QString& message)
 
 void HostSliceJobController::PublishProgress()
 {
+    const qint64 hostElapsedMs = m_jobTimer.isValid()
+        ? m_jobTimer.elapsed() : 0;
     emit SigProgressChanged(
         StateId(m_progress.state),
         m_progress.phase,
         m_progress.current,
         m_progress.total,
         m_progress.percent,
-        m_progress.elapsedms);
+        hostElapsedMs);
     emit SigTimingProgress(
-        ObservedTimingSnapshot(m_progress.elapsedms));
+        ObservedTimingSnapshot(hostElapsedMs));
 }
 
 void HostSliceJobController::ReleaseJob()

@@ -43,7 +43,7 @@ public:
      * @param current 已完成工作单元数。
      * @param total 工作单元总数。
      * @param percent [0, 100] 中的单调百分比。
-     * @param elapsedMs Worker 已运行时间，单位为毫秒。
+     * @param elapsedMs 从宿主提交成功起连续递增的墙钟时间，单位为毫秒。
      */
     void UpdateProgress(
         const QString& state,
@@ -123,5 +123,6 @@ private:
     bool m_ready{false};
     bool m_active{false};
     bool m_hasCompletion{false};
+    bool m_hasWorkerElapsed{false};
     qint64 m_lastWorkerElapsedMs{0};
 };

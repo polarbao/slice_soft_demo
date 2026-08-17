@@ -308,6 +308,9 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
+    const bool singleMaterialRelief =
+        settings.materialstrategy == HostMaterialStrategy::WhiteSolid
+        || settings.materialstrategy == HostMaterialStrategy::VarnishSolid;
     if (GeometrySamplingStrategyId(settings.geometrysamplingstrategy)
             == QStringLiteral("unknown")
         || TiffCompressionId(settings.tiffcompression)
@@ -315,12 +318,12 @@ bool HostEffectiveProfileBuilder::Validate(
         || (settings.geometrysamplingstrategy
                 == HostGeometrySamplingStrategy::
                     LayerSlabSupersample2x2AtLeastTwoCandidate
-            && !texture.enabled))
+            && !texture.enabled && !singleMaterialRelief))
     {
         if (error != nullptr)
         {
             *error = QStringLiteral(
-                "S3 几何采样候选只允许用于 relief_heightfield 纹理 Profile。");
+                "S3 几何采样候选只允许用于彩色纹理或单材料 W/V 浮雕 Profile。");
         }
         return false;
     }

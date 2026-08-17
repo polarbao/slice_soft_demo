@@ -303,7 +303,7 @@ int RunHostFlowJobUiSmoke(const QString& modulePath)
         22,
         -1);
     if (modelLoadValue->text() != QStringLiteral("未提供")
-        || workerTotalValue->text() != QStringLiteral("17.0 ms")
+        || workerTotalValue->text() != QStringLiteral("未提供")
         || hostTotalValue->text() != QStringLiteral("22.0 ms"))
     {
         QTextStream(stderr)

@@ -125,9 +125,10 @@ int main(int argc, char* argv[])
     expected.texture.whitepolicy = HostTextureWhitePolicy::FailClosed;
     expected.texture.whiteinkthreshold = 5;
     expected.texture.whitevalue = 6;
+    bool saved = false;
     {
         QSettings settings(settingsPath, QSettings::IniFormat);
-        HostWorkspaceState::Save(
+        saved = HostWorkspaceState::Save(
             settings,
             &source.window,
             source.splitter,
@@ -153,7 +154,8 @@ int main(int argc, char* argv[])
     restored.window.show();
     application.processEvents();
     const hostslicesettings& actual = preferences.slicesettings;
-    if (!Check(loaded, QStringLiteral("合法工作区状态恢复失败。"), errors)
+    if (!Check(saved, QStringLiteral("合法工作区状态同步失败。"), errors)
+        || !Check(loaded, QStringLiteral("合法工作区状态恢复失败。"), errors)
         || !Check(restored.workspacetabs->currentIndex() == 2
                       && restored.inspectortabs->currentIndex() == 3,
                   QStringLiteral("工作区或业务页索引未恢复。"), errors)

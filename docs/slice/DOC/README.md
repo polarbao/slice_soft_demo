@@ -96,6 +96,7 @@
 | `DOC_PREP_16C_01_分项Telemetry收口实施准备.md` | 16C-01 单实例 core/compose 与 import parse/texture/preview/hash 真实计时边界 |
 | `DOC_PREP_16C_02_Release性能基线实施准备.md` | 16C-02 S0/S3/S4 与 1/11/12/22 场景的 Release cold/warm、core/end-to-end、内存和确定性基线合同 |
 | `DOC_DECISION_16A_06_采样候选决策刷新.md` | 16A-06 选择 S3 诊断候选、S4 上限对照并保持 S0 生产默认的权威决策 |
+| `DOC_DECISION_16D_02_R1_单材料浮雕S3适用范围修订.md` | 16D-02-R1 允许单材料 W/V 浮雕显式使用 S3，同时保持纹理关闭和 S0 默认 |
 | `DOC_PREP_14C_06_SPI一致性套件实施准备.md` | 14C-06 受控拆分为模块本地 06A 与 Worker 生命周期 06B |
 | `DOC_PREP_14D_05_安全发布与清理双保险实施准备.md` | 14D-05 staging、自检、原子发布、崩溃恢复与双保险清理准备审计 |
 | `DOC_PREP_14D_06_重能力Worker唯一路由实施准备.md` | 14D-06 重能力 Worker 唯一路由、backend 收敛与无回退准备审计 |

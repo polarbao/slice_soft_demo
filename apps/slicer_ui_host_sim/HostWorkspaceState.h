@@ -51,9 +51,9 @@ public:
      * @param workspaceTabs 顶级工作区选项卡。
      * @param inspectorTabs 托管业务检查器选项卡。
      * @param sliceSettings 当前由宿主持有的切片设置。
-     * @return 该函数不返回值。
+     * @return 设置同步到存储后返回 true。
      */
-    static void Save(
+    static bool Save(
         QSettings& settings,
         QMainWindow* window,
         QSplitter* workspaceSplitter,

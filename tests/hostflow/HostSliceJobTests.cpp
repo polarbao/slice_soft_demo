@@ -7,7 +7,9 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QEventLoop>
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QTemporaryDir>
 #include <QTextStream>
@@ -35,7 +37,8 @@ hosteffectiveprofile BuildProfile(
     const QString& modelPath,
     const QString& packageDirectory,
     const double layerThicknessMm,
-    QTextStream& errors)
+    QTextStream& errors,
+    const bool baseProjectionEnabled = false)
 {
     hostslicesettings settings;
     settings.profileid = QStringLiteral("host-reference-default");
@@ -43,6 +46,7 @@ hosteffectiveprofile BuildProfile(
     settings.modelformat = QStringLiteral("obj");
     settings.outputdirectory = packageDirectory;
     settings.layerthicknessmm = layerThicknessMm;
+    settings.support.baseprojection.enabled = baseProjectionEnabled;
     hosteffectiveprofile profile;
     QString error;
     if (!HostEffectiveProfileBuilder::Build(settings, &profile, &error))
@@ -101,6 +105,55 @@ bool HasTemporaryResidue(const QString& root)
     return false;
 }
 
+bool ReadManifest(
+    const QString& packageDirectory,
+    QJsonObject* manifest,
+    QTextStream& errors)
+{
+    QFile file(QDir(packageDirectory).filePath(QStringLiteral("manifest.json")));
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        errors << "无法读取生产 manifest：" << file.fileName() << Qt::endl;
+        return false;
+    }
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll());
+    if (!document.isObject())
+    {
+        errors << "生产 manifest 不是 JSON 对象：" << file.fileName()
+               << Qt::endl;
+        return false;
+    }
+    *manifest = document.object();
+    return true;
+}
+
+bool HasSupportOnlyBaseLayers(
+    const QJsonObject& manifest,
+    const int layerCount)
+{
+    const QJsonArray layers = manifest.value(
+        QStringLiteral("layers")).toArray();
+    if (layerCount <= 0 || layers.size() < layerCount)
+    {
+        return false;
+    }
+    for (int layerIndex{0}; layerIndex < layerCount; ++layerIndex)
+    {
+        const QJsonObject printPixels = layers.at(layerIndex).toObject().value(
+            QStringLiteral("printPixels")).toObject();
+        if (printPixels.value(QStringLiteral("S")).toInt() <= 0
+            || printPixels.value(QStringLiteral("R")).toInt() != 0
+            || printPixels.value(QStringLiteral("G")).toInt() != 0
+            || printPixels.value(QStringLiteral("B")).toInt() != 0
+            || printPixels.value(QStringLiteral("W")).toInt() != 0
+            || printPixels.value(QStringLiteral("V")).toInt() != 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool VerifySuccessfulJob(
     ModuleClient& client,
     const quint64 sceneHandle,
@@ -117,6 +170,9 @@ bool VerifySuccessfulJob(
     HostSliceJobController controller(client);
     int liveTimingSnapshots = 0;
     bool liveTimingWasApproximate = false;
+    bool hostClockMonotonic = true;
+    qint64 firstHostElapsedMs = -1;
+    qint64 lastHostElapsedMs = -1;
     QObject::connect(
         &controller,
         &HostSliceJobController::SigTimingProgress,
@@ -124,12 +180,22 @@ bool VerifySuccessfulJob(
         [&](const QJsonObject& timing)
         {
             ++liveTimingSnapshots;
+            const qint64 hostElapsedMs = timing.value(
+                QStringLiteral("hostElapsedMs")).toVariant().toLongLong();
+            if (firstHostElapsedMs < 0)
+            {
+                firstHostElapsedMs = hostElapsedMs;
+            }
+            hostClockMonotonic = hostClockMonotonic
+                && hostElapsedMs >= lastHostElapsedMs;
+            lastHostElapsedMs = hostElapsedMs;
             liveTimingWasApproximate = liveTimingWasApproximate
                 || (timing.value(QStringLiteral("approximate")).toBool()
                     && timing.value(
                         QStringLiteral("pollResolutionMs")).toInt() == 100
                     && timing.value(
-                        QStringLiteral("totalMs")).toDouble(-1.0) >= 0.0);
+                        QStringLiteral("workerElapsedMs")).toDouble(-1.0) >= 0.0
+                    && hostElapsedMs >= 0);
         });
     QString error;
     if (!Check(
@@ -173,6 +239,13 @@ bool VerifySuccessfulJob(
             liveTimingSnapshots > 0 && liveTimingWasApproximate,
             QStringLiteral("切片期间未发布 100 ms 轮询耗时估算。"),
             errors)
+        && Check(
+            hostClockMonotonic
+                && firstHostElapsedMs >= 0
+                && firstHostElapsedMs <= 100
+                && lastHostElapsedMs > firstHostElapsedMs,
+            QStringLiteral("宿主墙钟未从接近 0 ms 连续单调推进。"),
+            errors)
         && Check(!controller.IsActive(),
                  QStringLiteral("终结后仍保留公开作业句柄。"),
                  errors);
@@ -180,18 +253,29 @@ bool VerifySuccessfulJob(
     {
         return false;
     }
+    QJsonObject firstManifest;
+    if (!ReadManifest(packageDirectory, &firstManifest, errors))
+    {
+        return false;
+    }
+    const int firstLayerCount = firstManifest.value(
+        QStringLiteral("grid")).toObject().value(
+            QStringLiteral("layerCount")).toInt(-1);
 
     const QString secondPackageDirectory = QDir(
         QFileInfo(packageDirectory).absolutePath()).filePath(
             QStringLiteral("p2"));
     const hosteffectiveprofile secondProfile = BuildProfile(
-        modelPath, secondPackageDirectory, 0.2, errors);
+        modelPath, secondPackageDirectory, 0.2, errors, true);
     if (secondProfile.profile.isEmpty())
     {
         return false;
     }
     liveTimingSnapshots = 0;
     liveTimingWasApproximate = false;
+    hostClockMonotonic = true;
+    firstHostElapsedMs = -1;
+    lastHostElapsedMs = -1;
     error.clear();
     if (!Check(
             controller.Start(sceneHandle, secondProfile, &error),
@@ -201,7 +285,8 @@ bool VerifySuccessfulJob(
         return false;
     }
     completion = {};
-    return WaitForCompletion(controller, 60000, &completion, errors)
+    const bool secondCompleted =
+        WaitForCompletion(controller, 60000, &completion, errors)
         && Check(
             completion.success && !completion.cancelled,
             QStringLiteral("同一控制器第二次切片未成功：%1 %2 %3")
@@ -217,15 +302,49 @@ bool VerifySuccessfulJob(
         && Check(
             QFileInfo(QDir(secondPackageDirectory).filePath(
                 QStringLiteral("manifest.json"))).isFile(),
-            QStringLiteral("第二次切片未发布独立 manifest.json。"),
+            QStringLiteral("开启投影铺底后的第二次切片未发布独立 manifest.json。"),
             errors)
         && Check(
             liveTimingSnapshots > 0 && liveTimingWasApproximate,
             QStringLiteral("第二次切片未重新发布轮询耗时。"),
             errors)
         && Check(
+            hostClockMonotonic
+                && firstHostElapsedMs >= 0
+                && firstHostElapsedMs <= 100
+                && lastHostElapsedMs > firstHostElapsedMs,
+            QStringLiteral("第二次切片宿主墙钟未从 0 ms 重新连续计时。"),
+            errors)
+        && Check(
             !controller.IsActive(),
             QStringLiteral("第二次终结后仍保留公开作业句柄。"),
+            errors);
+    if (!secondCompleted)
+    {
+        return false;
+    }
+
+    QJsonObject secondManifest;
+    if (!ReadManifest(secondPackageDirectory, &secondManifest, errors))
+    {
+        return false;
+    }
+    constexpr int kBaseLayerCount{30};
+    const int secondLayerCount = secondManifest.value(
+        QStringLiteral("grid")).toObject().value(
+            QStringLiteral("layerCount")).toInt(-1);
+    return Check(
+               firstLayerCount > 0
+                   && secondLayerCount == firstLayerCount + kBaseLayerCount,
+               QStringLiteral(
+                   "开启铺底后必须新增 30 个物理层：before=%1, after=%2")
+                   .arg(firstLayerCount)
+                   .arg(secondLayerCount),
+               errors)
+        && Check(
+            HasSupportOnlyBaseLayers(secondManifest, kBaseLayerCount),
+            QStringLiteral(
+                "开启铺底后的前 30 张 TIFF 必须仅包含非空 S 通道数据。"),
             errors);
 }
 
@@ -282,7 +401,7 @@ int main(int argc, char* argv[])
     const QString repositoryRoot = ArgumentValue(
         application.arguments(), QStringLiteral("--repo-root"));
     const QString modelPath = QDir(repositoryRoot).filePath(QStringLiteral(
-        "samples/models/openvdb/surface_shell_cube_no_uv.obj"));
+        "samples/models/support/base_projection_steps.obj"));
     QTemporaryDir outputRoot;
     if (!Check(QFileInfo(modulePath).isFile(),
                QStringLiteral("slicer_module.dll 不存在。"), errors)

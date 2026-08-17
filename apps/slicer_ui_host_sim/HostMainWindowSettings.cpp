@@ -44,10 +44,15 @@ void HostMainWindow::OnSliceSettingsChanged()
         RefreshTextureWhitePreflight();
         return;
     }
+    const bool saved = SaveWorkspaceState();
     m_statusLabel->setText(
         m_sliceSettingsPanel->IsReady()
-            ? QStringLiteral("有效 Profile 已更新 · 未调用切片模块")
-            : QStringLiteral("切片参数草稿已更新 · 请检查有效 Profile"));
+            ? saved
+                ? QStringLiteral("有效 Profile 已更新并自动保存 · 可开始切片")
+                : QStringLiteral("有效 Profile 已更新 · 自动保存失败")
+            : saved
+                ? QStringLiteral("切片参数草稿已自动保存 · 请检查有效 Profile")
+                : QStringLiteral("切片参数草稿已更新 · 自动保存失败"));
     RefreshSliceJobReadiness();
     RefreshTextureWhitePreflight();
 }

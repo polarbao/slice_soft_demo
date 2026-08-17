@@ -1,0 +1,56 @@
+{
+  "slicingMode": "relief_heightfield",
+  "geometrySampling": {
+    "strategy": "layer_slab_supersample_2x2_at_least_two_candidate"
+  },
+  "input": {
+    "modelPath": "samples/models/relief/relief_nail_arched.obj",
+    "format": "auto"
+  },
+  "output": {
+    "packageDir": "output/Stage16SingleMaterialVarnishSupersample2x2Candidate",
+    "dpiX": 635,
+    "dpiY": 600,
+    "layerThicknessMm": 0.038,
+    "channelOrder": ["R", "G", "B", "W", "S", "V"],
+    "bitDepth": 8,
+    "planarConfig": "contiguous",
+    "storageMode": "stripped",
+    "rowsPerStrip": 64
+  },
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 9.0,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "modelMaterial": {
+    "materialChannel": "V",
+    "applyMode": "solid_volume",
+    "rgb": [255, 255, 255],
+    "whiteValue": 255,
+    "varnishValue": 0
+  },
+  "texture": {
+    "enabled": false
+  },
+  "support": {
+    "enabled": true,
+    "mode": "bottom_projection",
+    "value": 0,
+    "offsetMm": 0.0,
+    "minAreaPx": 0
+  },
+  "relief": {
+    "fillMode": "intersection_range",
+    "baseZMm": 0.0
+  },
+  "preview": {
+    "enabled": false,
+    "format": "png",
+    "interval": 20,
+    "channels": ["varnish", "support"]
+  }
+}

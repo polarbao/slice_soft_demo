@@ -109,7 +109,7 @@ public:
     static QString StateId(HostSliceJobState state);
 
 signals:
-    /** @brief 发布一份经过验证的单调进度快照。 */
+    /** @brief 发布进度以及从提交时零点连续递增的宿主墙钟。 */
     void SigProgressChanged(
         QString state,
         QString phase,
@@ -118,7 +118,7 @@ signals:
         int percent,
         qint64 elapsedMs);
 
-    /** @brief 发布由现有 pm_poll 阶段边界推导的实时耗时估算。 */
+    /** @brief 发布由 pm_poll 阶段边界和宿主单调时钟推导的实时耗时。 */
     void SigTimingProgress(QJsonObject timing);
 
     /** @brief 释放作业句柄后发布最终结果。 */
@@ -144,10 +144,10 @@ private:
         QString* packageDirectory,
         QString* error);
     bool ApplyProgress(const QJsonObject& progress, QString* error);
-    void RecordObservedPhase(const QString& phase, qint64 elapsedMs);
+    void RecordObservedPhase(const QString& phase, qint64 hostElapsedMs);
     [[nodiscard]] QJsonObject ObservedTimingSnapshot(
-        qint64 elapsedMs) const;
-    QJsonObject FinalizeObservedTiming(qint64 elapsedMs);
+        qint64 hostElapsedMs) const;
+    QJsonObject FinalizeObservedTiming(qint64 hostElapsedMs);
     void FinishTerminal(const QString& terminalState);
     void FinishTransportFailure(const QString& message);
     void PublishProgress();

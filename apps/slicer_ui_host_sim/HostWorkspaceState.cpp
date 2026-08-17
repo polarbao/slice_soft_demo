@@ -213,7 +213,7 @@ bool HostWorkspaceState::PersistenceEnabled()
     return true;
 }
 
-void HostWorkspaceState::Save(
+bool HostWorkspaceState::Save(
     QSettings& settings,
     QMainWindow* window,
     QSplitter* workspaceSplitter,
@@ -224,7 +224,7 @@ void HostWorkspaceState::Save(
     if (window == nullptr || workspaceSplitter == nullptr
         || workspaceTabs == nullptr || inspectorTabs == nullptr)
     {
-        return;
+        return false;
     }
     QVariantList splitterSizes;
     for (const int size : workspaceSplitter->sizes())
@@ -337,6 +337,7 @@ void HostWorkspaceState::Save(
     HostWorkspaceTextureState::Save(settings, sliceSettings.texture);
     settings.endGroup();
     settings.sync();
+    return settings.status() == QSettings::NoError;
 }
 
 bool HostWorkspaceState::Restore(

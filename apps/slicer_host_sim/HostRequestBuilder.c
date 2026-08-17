@@ -237,6 +237,7 @@ char* HostBuildEffectiveProfile(
     const char* supportPlacementCompact = "";
     const char* reliefCanonical = "";
     const char* reliefCompact = "";
+    int useReliefHeightfield = 0;
     char* escapedModel = NULL;
     char* escapedFormat = NULL;
     char* escapedPackage = NULL;
@@ -351,9 +352,15 @@ char* HostBuildEffectiveProfile(
     {
         return NULL;
     }
-    slicingMode = settings->textureenabled != 0
+    useReliefHeightfield = settings->textureenabled != 0
+        || (settings->geometrysamplingstrategy
+                == HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO
+            && (settings->materialstrategy == HOST_MATERIAL_WHITE_SOLID
+                || settings->materialstrategy
+                    == HOST_MATERIAL_VARNISH_SOLID));
+    slicingMode = useReliefHeightfield != 0
         ? "relief_heightfield" : "closed_mesh_scanline";
-    if (settings->textureenabled != 0)
+    if (useReliefHeightfield != 0)
     {
         reliefCanonical =
             "\"relief\": {\n"
@@ -366,7 +373,7 @@ char* HostBuildEffectiveProfile(
     }
     if (settings->geometrysamplingstrategy
             == HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO
-        && settings->textureenabled == 0)
+        && useReliefHeightfield == 0)
     {
         return NULL;
     }
@@ -446,7 +453,7 @@ char* HostBuildEffectiveProfile(
         "\"baseProjection\": {\n"
         "\"enabled\": %s,\n"
         "\"layerCount\": %d,\n"
-        "\"layerPlacement\": \"overlay_existing\",\n"
+        "\"layerPlacement\": \"prepend_below_model\",\n"
         "\"source\": \"max_support_footprint\"\n"
         "},\n"
         "\"enabled\": %s,\n"
@@ -512,7 +519,7 @@ char* HostBuildEffectiveProfile(
         "\"slicingMode\":\"%s\","
         "\"support\":{\"baseProjection\":{\"enabled\":%s,"
         "\"layerCount\":%d,"
-        "\"layerPlacement\":\"overlay_existing\","
+        "\"layerPlacement\":\"prepend_below_model\","
         "\"source\":\"max_support_footprint\"},\"enabled\":%s,"
         "\"internalVoid\":{\"enabled\":%s,"
         "\"fillRule\":\"all_internal_voids\",\"minAreaPx\":%d},"

@@ -15,7 +15,7 @@
 
 HostMainWindow::~HostMainWindow()
 {
-    SaveWorkspaceState();
+    (void)SaveWorkspaceState();
 }
 
 void HostMainWindow::RestoreWorkspaceState()
@@ -44,17 +44,17 @@ void HostMainWindow::RestoreWorkspaceState()
     }
 }
 
-void HostMainWindow::SaveWorkspaceState()
+bool HostMainWindow::SaveWorkspaceState()
 {
     if (!HostWorkspaceState::PersistenceEnabled()
         || m_sliceSettingsPanel == nullptr)
     {
-        return;
+        return true;
     }
     QSettings settings(
         HostWorkspaceState::OrganizationName(),
         HostWorkspaceState::ApplicationName());
-    HostWorkspaceState::Save(
+    return HostWorkspaceState::Save(
         settings,
         this,
         m_workspaceSplitter,
