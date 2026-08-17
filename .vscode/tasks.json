@@ -139,47 +139,19 @@
     },
     {
       "label": "SliceSoft 14E: Build Packaged Host UI (Debug)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/PrepareSliceSoftRuntime.ps1",
-        "-Config",
-        "Debug",
-        "-RuntimeDir",
-        "runtime/slicesoft"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
+      "dependsOrder": "sequence",
+      "dependsOn": "SliceSoft: Build Runtime (Debug)",
       "group": "build",
-      "problemMatcher": "$msCompile",
-      "detail": "构建并部署 Debug 宿主、能力模块、Worker 与完整运行时到 runtime/slicesoft/Debug。"
+      "problemMatcher": [],
+      "detail": "复用统一 Debug 增量构建与部署入口，准备封装宿主运行时。"
     },
     {
       "label": "SliceSoft 14E: Build Packaged Host UI (Release)",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/PrepareSliceSoftRuntime.ps1",
-        "-Config",
-        "Release",
-        "-RuntimeDir",
-        "runtime/slicesoft"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
+      "dependsOrder": "sequence",
+      "dependsOn": "SliceSoft: Build Runtime (Release)",
       "group": "build",
-      "problemMatcher": "$msCompile",
-      "detail": "构建并部署 Release 宿主、能力模块、Worker 与完整运行时到 runtime/slicesoft/Release。"
+      "problemMatcher": [],
+      "detail": "复用统一 Release 增量构建与部署入口，准备封装宿主运行时。"
     },
     {
       "label": "SliceSoft 14E: Run Packaged Host UI (Debug)",
