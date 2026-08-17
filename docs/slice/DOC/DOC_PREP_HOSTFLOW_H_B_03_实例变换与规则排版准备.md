@@ -12,13 +12,17 @@
 
 ## 1. 准入与边界
 
-H-B-03 所需的 H-B-02 选择集与 H-A-04 `applyGridLayout` 均已完成。实现只使用公开
-SPI v1 和冻结的 `scene.apply_operation`，不新增导出、能力或 DTO 字段，不修改
-RGBWSV/TIFF 协议，也不修改 `apps/slicer_debug_ui`。
+H-B-03 所需的 H-B-02 选择集与 H-A-04 `applyGridLayout` 均已完成。初始实现只使用
+公开 SPI v1 和当时的 `scene.apply_operation` DTO，不新增导出、能力或 DTO 字段。
+2026-08-17 R1 以向后兼容的 DTO v1.12 增量增加 X/Y 旋转和触底字段；SPI v1、
+11 个导出、15 项能力和 RGBWSV/TIFF 协议仍保持不变，也不修改
+`apps/slicer_debug_ui`。
 
 主干行为基线为 `ModelTransformPanel` 与 `SceneLayoutPanel`。参考宿主只补齐核心作业入口：
 
-- 精确输入 X/Y/Z 增量、绕 X/Y/Z 旋转角度和等比缩放因子；
+- 精确输入 X/Y 位移增量、绕 X/Y/Z 旋转角度和等比缩放因子；
+- 任意 Z 位移不对操作员开放；变换后的 Z 定位由 `landOnBuildPlate` 统一保证
+  `minZ=0`；
 - 对当前多选实例执行 X/Y 镜像；
 - 配置 1..11 列、1..2 行、列间/行间净距并执行规则排版；
 - 参数编辑和选择联动保持宿主本地，不跨 DLL；
@@ -78,6 +82,9 @@ Debug: model_transform / scene_facade_14b03 / scene_view_geometry /
 Release: 同组测试 = 5/5 PASS
 Release: textured_scene_viewdata / grid_layout_policy /
          translated_scene_raster_reuse / multi_model_scene_matrix_report = 6/6 PASS
+Release: 本次触底定向门禁 = 10/10 PASS
+Runtime: slicer_ui_host_sim --self-test = PASS
+真实资产: C:\Users\admin\Downloads\123.stl，external=1，effectiveBbox.min.z=0
 ```
 
 主干 A/B 行为基线使用本次源码构建的 `slicer_debug_ui` 执行：
