@@ -40,6 +40,18 @@
       "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
     },
     {
+      "name": "SliceSoft 14E: Quick Run Packaged Host UI (Release, No Build)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/runtime/slicesoft/Release/slicer_ui_host_sim.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}/runtime/slicesoft/Release",
+      "environment": [],
+      "noDebug": true,
+      "console": "integratedTerminal",
+      "visualizerFile": "c:\\Users\\admin\\AppData\\Roaming\\Code\\User\\workspaceStorage\\b0f435ccd0db336fc05e239acbc5be77\\tonka3000.qtvsctools\\qt.natvis.xml"
+    },
+    {
       "name": "SliceSoft: Advanced - Debug CLI",
       "type": "cppvsdbg",
       "request": "launch",

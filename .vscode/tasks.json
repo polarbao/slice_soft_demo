@@ -178,6 +178,17 @@
       "detail": "从完整 Release 运行时启动宿主；能力模块与依赖均从应用目录加载。"
     },
     {
+      "label": "SliceSoft 14E: Quick Run Packaged Host UI (Release, No Build)",
+      "type": "process",
+      "command": "${workspaceFolder}/runtime/slicesoft/Release/slicer_ui_host_sim.exe",
+      "args": [],
+      "options": {
+        "cwd": "${workspaceFolder}/runtime/slicesoft/Release"
+      },
+      "problemMatcher": [],
+      "detail": "直接启动已部署的 Release Runtime；不配置、不编译、不复制资源，也不运行 windeployqt。"
+    },
+    {
       "label": "SliceSoft 14E: Self-Test Packaged Host UI (Debug)",
       "type": "shell",
       "command": "${workspaceFolder}/runtime/slicesoft/Debug/slicer_ui_host_sim.exe",

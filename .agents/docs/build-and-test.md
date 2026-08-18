@@ -173,10 +173,15 @@ Configure Main Build
 Fast Build (Debug/Release)
 Build Runtime (Debug)  -> Run UI (Debug) / Debug UI (Debug)
 Build Runtime (Release) -> Run UI (Release)
-Quick Run UI (Debug/Release, No Build)
+Quick Run Packaged Host UI (Release, No Build)
 Deploy Runtime (Release, No Build)
 Build All Runtimes      -> Debug followed by Release
 ```
+
+`Quick Run Packaged Host UI (Release, No Build)` 直接启动已经部署到
+`runtime/slicesoft/Release` 的程序，不执行 CMake configure/build，也不复制 `model`、`samples`
+或 Qt 运行库。它适合重复启动验证；源代码或运行资源修改后，必须先执行一次
+`Build Runtime (Release)`，不能把 Quick Run 当作发布步骤。
 
 Legacy `build` / CTest / sample matrix tasks are retained under the `Advanced` prefix and are not the default UI compilation path.
 
