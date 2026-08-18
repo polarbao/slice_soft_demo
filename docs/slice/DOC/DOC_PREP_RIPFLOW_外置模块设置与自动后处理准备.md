@@ -1,7 +1,7 @@
 # DOC_PREP_RIPFLOW 外置模块、设置与自动后处理准备
 
 > 状态：**PREPARATION GATE PASS / IMPLEMENTATION READY**
-> 版本：v1.1 ｜ 日期：2026-08-17
+> 版本：v1.2 ｜ 日期：2026-08-17
 > 对应专项：`RIPFLOW`
 > 首张开发卡：`RIPFLOW-A-01`
 > 权威决策：`DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
@@ -204,13 +204,13 @@ RIP 运行时禁用重复 RIP 提交，但不篡改切片终态。切片后结�
 | 运行时 | 全文件/hash 正确 | EXE/DLL/TIFF/matrix/CSV/ICC 缺失或篡改 |
 | S1 输入 | stripped、grayBits 1/2、合法白语义 | tiled、坏 TIFF、缺层、manifest/Profile 冲突 |
 | 进程 | exit 0、完整日志 | 启动失败、exit 1/2、崩溃、超时、取消、关闭窗口 |
-| S2 输出 | 7ch、连续、stripped、层数/尺寸/范围正确 | `slice.N` 缺口、坏层、tiled、尺寸扩宽、W/S/V 超限 |
+| S2 输出 | 7ch、连续、stripped、层数/范围正确；固定 4 像素补齐可裁回 Package 原宽 | `slice.N` 缺口、坏层、tiled、非确定性尺寸差异、W/S/V 超限 |
 | 发布 | staging -> `rip` 原子完成 | 半成品、已有结果、取消残留、跨卷失败 |
 | 回归 | `layers`/manifest/hash 不变 | 自动关闭仍启动、RIP 失败破坏切片结果 |
 | 迁移 | 整个 `modules/rip` 在隔离运行时自检 | 依赖宿主 PATH、加载宿主 tiff.dll、仓库绝对路径 |
 
 至少覆盖既有实测异常：tiled 输入失败、95 像素扩为 96、`transparent=0` 时 W 可到 9，以及
-`colorMode` 非 0 无权威语义。异常不能只记 warning 后发布。
+`colorMode` 非 0 无权威语义。95 -> 96 只允许按受控规则裁回 95；其他异常不能只记 warning 后发布。
 
 ## 9. 原子开发顺序与并行边界
 
@@ -246,3 +246,4 @@ owner。每张卡完成后停止并更新任务真源，不自动占用下一卡
 |---|---|---|
 | 2026-08-17 | v1.0 | 完成分层、文件所有权、配置、状态机、路径、真实 TIFF 验证、自动接缝、矩阵、并行边界和停止条件准备；Gate PASS，A-01 可开发 |
 | 2026-08-17 | v1.1 | 补齐 `deviceGrayBits`/超时字段及验证属性，明确 600 x 600 本地子集与 S1 DPI 权威来源 |
+| 2026-08-17 | v1.2 | 增补 4 像素对齐宽度归一化 Gate：只裁掉 RIP 在右侧新增的 1..3 列，发布 TIFF 仍须精确匹配 Package Grid |

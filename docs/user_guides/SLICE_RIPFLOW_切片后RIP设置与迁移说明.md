@@ -40,7 +40,10 @@ canonical path、大小和 SHA-256，发布 `rip` 前再次核对；外部 RIP �
 命名：rip_%06d.tif
 ```
 
-635 x 600、tiled、缺层、尺寸扩宽、输出 W/S/V 超限、灰阶 1 实测超限、opaque 灰阶 2 实测
+当前 RIP 会把非 4 对齐宽度向右补齐 1..3 像素；程序只在高度不变且补齐值精确等于 4 像素对齐
+结果时裁回 Package 原宽。其他缩放、扩宽或高度变化仍视为数据错误。
+
+635 x 600、tiled、缺层、非确定性尺寸差异、输出 W/S/V 超限、灰阶 1 实测超限、opaque 灰阶 2 实测
 W 超限及白语义冲突均不会发布 `rip`。
 
 ## 3. 迁移
@@ -81,6 +84,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/TestRipModulePackage
 
 清理 staging 前会拒绝 junction、符号链接和 Windows reparse point；不安全目录不会递归删除，而是
 保留现场并报告 `RIP_STAGING_CLEANUP_REFUSED`。
+
+若界面报告 `RIP_OUTPUT_DROP_LIMIT_EXCEEDED`，详细信息会包含层号、W/S/V 通道、实际值、上限和
+像素坐标。值 255 不能在当前合同下由切片侧静默改成 0 滴，须由 RIP/打印软件确认极性与量化后再
+调整；这与 4 像素宽度补齐是两个独立问题。
 
 外部分发仍等待 RipSlicer/CLI、lcms2、ICC 和私有 LibTIFF 的来源与再分发材料；打印侧还需完成
 白语义、极性、ChannelSplitter、干净机、实物打印和长稳验收。

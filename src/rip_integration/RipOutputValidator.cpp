@@ -214,6 +214,231 @@ TiffHandle OpenTiff(const std::filesystem::path& path)
 #endif
 }
 
+TiffHandle OpenTiffForWrite(const std::filesystem::path& path)
+{
+#ifdef _WIN32
+    return TiffHandle{TIFFOpenW(path.c_str(), "w")};
+#else
+    return TiffHandle{TIFFOpen(path.c_str(), "w")};
+#endif
+}
+
+bool IsVendorAlignedWidth(
+    const std::uint32_t actualWidth,
+    const std::uint32_t expectedWidth)
+{
+    const std::uint64_t alignedWidth =
+        (static_cast<std::uint64_t>(expectedWidth) + 3U) & ~3ULL;
+    return actualWidth > expectedWidth
+        && static_cast<std::uint64_t>(actualWidth) == alignedWidth;
+}
+
+RipStatus RewriteWithExpectedWidth(
+    const StagedLayer& staged,
+    const RipOutputValidationRequest& request,
+    const std::filesystem::path& destination)
+{
+    TiffHandle input = OpenTiff(staged.source);
+    if (!input)
+    {
+        return RipStatus::Failure(
+            "RIP_OUTPUT_WIDTH_NORMALIZE_OPEN_FAILED",
+            "the padded RIP TIFF cannot be reopened for width normalization");
+    }
+
+    std::uint32_t width{0U};
+    std::uint32_t height{0U};
+    std::uint16_t bitsPerSample{0U};
+    std::uint16_t sampleFormat{SAMPLEFORMAT_UINT};
+    std::uint16_t samplesPerPixel{0U};
+    std::uint16_t planarConfig{0U};
+    std::uint16_t compression{COMPRESSION_NONE};
+    std::uint16_t photometric{0U};
+    std::uint32_t rowsPerStrip{0U};
+    if (TIFFGetField(input.get(), TIFFTAG_IMAGEWIDTH, &width) != 1
+        || TIFFGetField(input.get(), TIFFTAG_IMAGELENGTH, &height) != 1
+        || TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_BITSPERSAMPLE, &bitsPerSample) != 1
+        || TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_SAMPLEFORMAT, &sampleFormat) != 1
+        || TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel) != 1
+        || TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_PLANARCONFIG, &planarConfig) != 1
+        || TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_COMPRESSION, &compression) != 1
+        || TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_PHOTOMETRIC, &photometric) != 1
+        || TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_ROWSPERSTRIP, &rowsPerStrip) != 1
+        || height != request.expected_height_px
+        || !IsVendorAlignedWidth(width, request.expected_width_px)
+        || bitsPerSample != 8U
+        || sampleFormat != SAMPLEFORMAT_UINT
+        || samplesPerPixel < 7U
+        || planarConfig != PLANARCONFIG_CONTIG
+        || rowsPerStrip == 0U
+        || TIFFIsTiled(input.get()) != 0)
+    {
+        return RipStatus::Failure(
+            "RIP_OUTPUT_WIDTH_NORMALIZE_SOURCE_CHANGED",
+            "the padded RIP TIFF changed after validation");
+    }
+
+    TiffHandle output = OpenTiffForWrite(destination);
+    if (!output)
+    {
+        return RipStatus::Failure(
+            "RIP_OUTPUT_WIDTH_NORMALIZE_CREATE_FAILED",
+            "the normalized RIP TIFF cannot be created in staging");
+    }
+
+    bool tagsWritten =
+        TIFFSetField(
+            output.get(), TIFFTAG_IMAGEWIDTH,
+            request.expected_width_px) == 1
+        && TIFFSetField(output.get(), TIFFTAG_IMAGELENGTH, height) == 1
+        && TIFFSetField(
+            output.get(), TIFFTAG_BITSPERSAMPLE, bitsPerSample) == 1
+        && TIFFSetField(
+            output.get(), TIFFTAG_SAMPLEFORMAT, sampleFormat) == 1
+        && TIFFSetField(
+            output.get(), TIFFTAG_SAMPLESPERPIXEL, samplesPerPixel) == 1
+        && TIFFSetField(
+            output.get(), TIFFTAG_PLANARCONFIG, planarConfig) == 1
+        && TIFFSetField(
+            output.get(), TIFFTAG_PHOTOMETRIC, photometric) == 1
+        && TIFFSetField(
+            output.get(), TIFFTAG_COMPRESSION, compression) == 1
+        && TIFFSetField(
+            output.get(), TIFFTAG_ROWSPERSTRIP, rowsPerStrip) == 1;
+
+    std::uint16_t extraSampleCount{0U};
+    std::uint16_t* extraSampleTypes{nullptr};
+    std::vector<std::uint16_t> defaultExtraSamples;
+    if (TIFFGetField(
+            input.get(), TIFFTAG_EXTRASAMPLES,
+            &extraSampleCount, &extraSampleTypes) == 1
+        && extraSampleCount > 0U)
+    {
+        tagsWritten = tagsWritten
+            && TIFFSetField(
+                output.get(), TIFFTAG_EXTRASAMPLES,
+                extraSampleCount, extraSampleTypes) == 1;
+    }
+    else if (samplesPerPixel > 4U)
+    {
+        defaultExtraSamples.assign(
+            samplesPerPixel - 4U, EXTRASAMPLE_UNSPECIFIED);
+        tagsWritten = tagsWritten
+            && TIFFSetField(
+                output.get(), TIFFTAG_EXTRASAMPLES,
+                static_cast<std::uint16_t>(defaultExtraSamples.size()),
+                defaultExtraSamples.data()) == 1;
+    }
+
+    float xResolution{0.0F};
+    float yResolution{0.0F};
+    std::uint16_t resolutionUnit{RESUNIT_INCH};
+    if (TIFFGetField(input.get(), TIFFTAG_XRESOLUTION, &xResolution) == 1
+        && TIFFGetField(input.get(), TIFFTAG_YRESOLUTION, &yResolution) == 1
+        && TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_RESOLUTIONUNIT, &resolutionUnit) == 1)
+    {
+        tagsWritten = tagsWritten
+            && TIFFSetField(
+                output.get(), TIFFTAG_XRESOLUTION, xResolution) == 1
+            && TIFFSetField(
+                output.get(), TIFFTAG_YRESOLUTION, yResolution) == 1
+            && TIFFSetField(
+                output.get(), TIFFTAG_RESOLUTIONUNIT, resolutionUnit) == 1;
+    }
+
+    std::uint16_t orientation{ORIENTATION_TOPLEFT};
+    std::uint16_t fillOrder{FILLORDER_MSB2LSB};
+    if (TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_ORIENTATION, &orientation) == 1)
+    {
+        tagsWritten = tagsWritten
+            && TIFFSetField(
+                output.get(), TIFFTAG_ORIENTATION, orientation) == 1;
+    }
+    if (TIFFGetFieldDefaulted(
+            input.get(), TIFFTAG_FILLORDER, &fillOrder) == 1)
+    {
+        tagsWritten = tagsWritten
+            && TIFFSetField(
+                output.get(), TIFFTAG_FILLORDER, fillOrder) == 1;
+    }
+
+    std::uint16_t predictor{PREDICTOR_NONE};
+    if (TIFFGetField(input.get(), TIFFTAG_PREDICTOR, &predictor) == 1)
+    {
+        tagsWritten = tagsWritten
+            && TIFFSetField(
+                output.get(), TIFFTAG_PREDICTOR, predictor) == 1;
+    }
+
+    std::uint32_t profileSize{0U};
+    void* profileData{nullptr};
+    if (TIFFGetField(
+            input.get(), TIFFTAG_ICCPROFILE,
+            &profileSize, &profileData) == 1
+        && profileSize > 0U && profileData != nullptr)
+    {
+        tagsWritten = tagsWritten
+            && TIFFSetField(
+                output.get(), TIFFTAG_ICCPROFILE,
+                profileSize, profileData) == 1;
+    }
+    if (!tagsWritten)
+    {
+        return RipStatus::Failure(
+            "RIP_OUTPUT_WIDTH_NORMALIZE_TAG_FAILED",
+            "required TIFF tags cannot be written during width normalization");
+    }
+
+    const tmsize_t inputScanlineSize = TIFFScanlineSize(input.get());
+    const tmsize_t outputScanlineSize = TIFFScanlineSize(output.get());
+    const std::uint64_t logicalBytes =
+        static_cast<std::uint64_t>(request.expected_width_px)
+        * samplesPerPixel;
+    if (inputScanlineSize <= 0 || outputScanlineSize <= 0
+        || static_cast<std::uint64_t>(inputScanlineSize) < logicalBytes
+        || static_cast<std::uint64_t>(outputScanlineSize) != logicalBytes)
+    {
+        return RipStatus::Failure(
+            "RIP_OUTPUT_WIDTH_NORMALIZE_SCANLINE_INVALID",
+            "TIFF scanline storage is invalid during width normalization");
+    }
+
+    std::vector<std::uint8_t> row(
+        static_cast<std::size_t>(inputScanlineSize));
+    for (std::uint32_t y{0U}; y < height; ++y)
+    {
+        if (IsCancelled(request))
+        {
+            return RipStatus::Failure(
+                "RIP_VALIDATION_CANCELLED",
+                "RIP output width normalization was cancelled");
+        }
+        if (TIFFReadScanline(input.get(), row.data(), y, 0U) < 0
+            || TIFFWriteScanline(output.get(), row.data(), y, 0U) < 0)
+        {
+            return RipStatus::Failure(
+                "RIP_OUTPUT_WIDTH_NORMALIZE_SCANLINE_FAILED",
+                "a RIP TIFF scanline cannot be rewritten at the Package width");
+        }
+    }
+    if (TIFFWriteDirectory(output.get()) != 1)
+    {
+        return RipStatus::Failure(
+            "RIP_OUTPUT_WIDTH_NORMALIZE_FINALIZE_FAILED",
+            "the normalized RIP TIFF directory cannot be finalized");
+    }
+    return RipStatus::Success();
+}
+
 RipStatus ValidateDpi(
     TIFF* handle,
     const double expectedX,
@@ -254,11 +479,11 @@ RipStatus ValidateDpi(
     }
     return RipStatus::Success();
 }
-
 RipStatus ValidateLayer(
     const StagedLayer& staged,
     const RipOutputValidationRequest& request,
-    RipOutputLayer* output)
+    RipOutputLayer* output,
+    bool* requiresWidthNormalization)
 {
     TiffHandle handle = OpenTiff(staged.source);
     if (!handle)
@@ -291,12 +516,17 @@ RipStatus ValidateLayer(
             "RIP_OUTPUT_TIFF_TAG_MISSING",
             "a staged RIP TIFF is missing required image tags");
     }
-    if (width != request.expected_width_px
+    const bool vendorAlignedWidth =
+        IsVendorAlignedWidth(width, request.expected_width_px);
+    if ((width != request.expected_width_px && !vendorAlignedWidth)
         || height != request.expected_height_px)
     {
         return RipStatus::Failure(
             "RIP_OUTPUT_DIMENSION_MISMATCH",
-            "RIP output dimensions do not match the source Package grid");
+            "RIP output dimensions " + std::to_string(width) + "x"
+                + std::to_string(height) + " do not match Package grid "
+                + std::to_string(request.expected_width_px) + "x"
+                + std::to_string(request.expected_height_px));
     }
     if (bitsPerSample != 8U || sampleFormat != SAMPLEFORMAT_UINT
         || samplesPerPixel < 7U
@@ -318,10 +548,11 @@ RipStatus ValidateLayer(
     {
         return dpiStatus;
     }
-
     const std::array<std::uint8_t, 3> limits = request.gray_bits == 1
         ? std::array<std::uint8_t, 3>{2U, 3U, 3U}
         : std::array<std::uint8_t, 3>{6U, 9U, 9U};
+    constexpr std::array<std::string_view, 3> channelNames{
+        "W", "S", "V"};
     const tmsize_t scanlineSize = TIFFScanlineSize(handle.get());
     const std::uint64_t requiredBytes =
         static_cast<std::uint64_t>(width) * samplesPerPixel;
@@ -349,7 +580,7 @@ RipStatus ValidateLayer(
                 "RIP_OUTPUT_SCANLINE_READ_FAILED",
                 "a staged RIP TIFF scanline cannot be decoded");
         }
-        for (std::uint32_t x{0U}; x < width; ++x)
+        for (std::uint32_t x{0U}; x < request.expected_width_px; ++x)
         {
             const std::size_t offset =
                 static_cast<std::size_t>(x) * samplesPerPixel;
@@ -362,7 +593,14 @@ RipStatus ValidateLayer(
                 {
                     return RipStatus::Failure(
                         "RIP_OUTPUT_DROP_LIMIT_EXCEEDED",
-                        "RIP output W/S/V samples exceed the selected grayBits limits");
+                        "RIP output layer "
+                            + std::to_string(staged.index) + " channel "
+                            + std::string(channelNames[channel]) + " sample "
+                            + std::to_string(value) + " exceeds grayBits="
+                            + std::to_string(request.gray_bits) + " limit "
+                            + std::to_string(limits[channel]) + " at ("
+                            + std::to_string(x) + ","
+                            + std::to_string(y) + ")");
                 }
             }
         }
@@ -382,6 +620,7 @@ RipStatus ValidateLayer(
     output->maximum_white = maxima[0];
     output->maximum_support = maxima[1];
     output->maximum_varnish = maxima[2];
+    *requiresWidthNormalization = vendorAlignedWidth;
     return RipStatus::Success();
 }
 
@@ -497,6 +736,8 @@ RipOutputValidationResult ValidateAndNormalizeRipOutput(
             "the staged RIP layer count does not match the source Package");
         return result;
     }
+    std::vector<bool> requiresWidthNormalization;
+    requiresWidthNormalization.reserve(stagedLayers.size());
     for (std::size_t index{0U}; index < stagedLayers.size(); ++index)
     {
         if (IsCancelled(request))
@@ -515,8 +756,9 @@ RipOutputValidationResult ValidateAndNormalizeRipOutput(
             return result;
         }
         RipOutputLayer layer;
+        bool normalizeWidth{false};
         const RipStatus layerStatus = ValidateLayer(
-            stagedLayers[index], request, &layer);
+            stagedLayers[index], request, &layer, &normalizeWidth);
         if (!layerStatus.ok)
         {
             result.status = layerStatus;
@@ -535,17 +777,44 @@ RipOutputValidationResult ValidateAndNormalizeRipOutput(
             return result;
         }
         result.layers.push_back(std::move(layer));
+        requiresWidthNormalization.push_back(normalizeWidth);
     }
 
     for (std::size_t index{0U}; index < stagedLayers.size(); ++index)
     {
-        std::filesystem::rename(
-            stagedLayers[index].source, result.layers[index].path, error);
-        if (error)
+        if (!requiresWidthNormalization[index])
+        {
+            continue;
+        }
+        const RipStatus normalizeStatus = RewriteWithExpectedWidth(
+            stagedLayers[index], request, result.layers[index].path);
+        if (!normalizeStatus.ok)
+        {
+            result.status = normalizeStatus;
+            result.layers.clear();
+            return result;
+        }
+    }
+
+    for (std::size_t index{0U}; index < stagedLayers.size(); ++index)
+    {
+        bool normalized{false};
+        if (requiresWidthNormalization[index])
+        {
+            normalized = std::filesystem::remove(
+                stagedLayers[index].source, error);
+        }
+        else
+        {
+            std::filesystem::rename(
+                stagedLayers[index].source, result.layers[index].path, error);
+            normalized = !error;
+        }
+        if (error || !normalized)
         {
             result.status = RipStatus::Failure(
                 "RIP_OUTPUT_NORMALIZE_RENAME_FAILED",
-                "a validated RIP layer could not be normalized in staging");
+                "a validated RIP layer could not replace its vendor staging file");
             result.layers.clear();
             return result;
         }

@@ -95,6 +95,9 @@ struct TiffFixture
     float dpi_x{600.0F};
     float dpi_y{600.0F};
     bool tiled{false};
+    bool declare_extra_samples{true};
+    bool declare_resolution_unit{true};
+    std::uint16_t compression{COMPRESSION_NONE};
     std::uint8_t white{6U};
     std::uint8_t support{9U};
     std::uint8_t varnish{9U};
@@ -125,12 +128,18 @@ bool WriteTiff(
         && TIFFSetField(output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG) == 1
         && TIFFSetField(
             output, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_SEPARATED) == 1
-        && TIFFSetField(output, TIFFTAG_COMPRESSION, COMPRESSION_NONE) == 1
+        && TIFFSetField(
+            output, TIFFTAG_COMPRESSION, fixture.compression) == 1
         && TIFFSetField(output, TIFFTAG_XRESOLUTION, fixture.dpi_x) == 1
-        && TIFFSetField(output, TIFFTAG_YRESOLUTION, fixture.dpi_y) == 1
-        && TIFFSetField(output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_INCH) == 1;
+        && TIFFSetField(output, TIFFTAG_YRESOLUTION, fixture.dpi_y) == 1;
+    if (fixture.declare_resolution_unit)
+    {
+        ok = ok
+            && TIFFSetField(
+                output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_INCH) == 1;
+    }
     std::vector<std::uint16_t> extraSamples;
-    if (fixture.samples_per_pixel > 4U)
+    if (fixture.declare_extra_samples && fixture.samples_per_pixel > 4U)
     {
         extraSamples.assign(
             fixture.samples_per_pixel - 4U, EXTRASAMPLE_UNSPECIFIED);
@@ -206,6 +215,26 @@ bool WriteTiff(
         }
     }
     close();
+    return ok;
+}
+
+bool ReadTiffDimensions(
+    const std::filesystem::path& path,
+    std::uint32_t* width,
+    std::uint32_t* height)
+{
+#ifdef _WIN32
+    TIFF* input = TIFFOpenW(path.c_str(), "r");
+#else
+    TIFF* input = TIFFOpen(path.c_str(), "r");
+#endif
+    if (input == nullptr)
+    {
+        return false;
+    }
+    const bool ok = TIFFGetField(input, TIFFTAG_IMAGEWIDTH, width) == 1
+        && TIFFGetField(input, TIFFTAG_IMAGELENGTH, height) == 1;
+    TIFFClose(input);
     return ok;
 }
 
@@ -332,6 +361,49 @@ bool TestPositiveValidationAndNumericOrdering()
                 "normalized layer exists")
             && pass;
     }
+    return pass;
+}
+
+bool TestVendorAlignedWidthNormalization()
+{
+    TemporaryRoot root("vendor-width");
+    const std::filesystem::path package = root.Path() / "package";
+    const std::filesystem::path stage =
+        package / ".rip.staging.vendor-width";
+    std::filesystem::create_directories(stage);
+    TiffFixture fixture;
+    fixture.width = 96U;
+    fixture.height = 3U;
+    fixture.compression = COMPRESSION_LZW;
+    fixture.declare_extra_samples = false;
+    fixture.declare_resolution_unit = false;
+    const std::filesystem::path vendorPath = stage / "slice.0.tiff";
+    bool pass = Expect(
+        WriteTiff(vendorPath, fixture),
+        "vendor-aligned fixture TIFF is written");
+
+    const auto result = ValidateAndNormalizeRipOutput(
+        ValidationRequest(package, stage, 1U, 95U, 3U));
+    const std::filesystem::path normalized = stage / "rip_000000.tif";
+    std::uint32_t normalizedWidth{0U};
+    std::uint32_t normalizedHeight{0U};
+    pass = Expect(
+        result.status.ok,
+        "one-to-three-pixel vendor alignment is normalized")
+        && Expect(
+            result.layers.size() == 1U,
+            "normalized vendor output returns one layer")
+        && Expect(
+            !std::filesystem::exists(vendorPath),
+            "padded vendor source is consumed")
+        && Expect(
+            ReadTiffDimensions(
+                normalized, &normalizedWidth, &normalizedHeight),
+            "normalized vendor output is readable")
+        && Expect(
+            normalizedWidth == 95U && normalizedHeight == 3U,
+            "normalized vendor output matches the Package grid")
+        && pass;
     return pass;
 }
 
@@ -491,7 +563,6 @@ bool TestNegativeOutputValidation()
         ValidationRequest(
             package, package / ".rip.staging.dpi", 1U),
         "RIP_OUTPUT_DPI_MISMATCH") && pass;
-
     TiffFixture dimensionFixture;
     pass = ExpectValidationFailure(
         "dimension mismatch",
@@ -499,6 +570,16 @@ bool TestNegativeOutputValidation()
         ValidationRequest(
             package, package / ".rip.staging.dimension", 1U,
             3U, 2U),
+        "RIP_OUTPUT_DIMENSION_MISMATCH") && pass;
+
+    TiffFixture excessiveWidthFixture;
+    excessiveWidthFixture.width = 97U;
+    pass = ExpectValidationFailure(
+        "non-alignment width mismatch",
+        excessiveWidthFixture,
+        ValidationRequest(
+            package, package / ".rip.staging.excessive-width", 1U,
+            95U, 2U),
         "RIP_OUTPUT_DIMENSION_MISMATCH") && pass;
 
     TiffFixture gapFixture;
@@ -565,6 +646,7 @@ int main()
     const bool pass = TestSettingsAndCommand()
         && TestInputValidation()
         && TestPositiveValidationAndNumericOrdering()
+        && TestVendorAlignedWidthNormalization()
         && TestNegativeOutputValidation()
         && TestArtifactPublication();
     if (pass)

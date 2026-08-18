@@ -1,7 +1,7 @@
 # TASKS_RIPFLOW 切片后外置 RIP 集成专项任务清单
 
 > 文档状态：**SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED**
-> 版本：v1.8 ｜ 日期：2026-08-17 ｜ 用户授权：2026-08-17
+> 版本：v1.9 ｜ 日期：2026-08-17 ｜ 用户授权：2026-08-17
 > 定位：独立补充专项，不占 Stage 编号
 > 权威决策：`docs/slice/DOC/DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
 > 准备文档：`docs/slice/DOC/DOC_PREP_RIPFLOW_外置模块设置与自动后处理准备.md`
@@ -60,7 +60,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 | RIPFLOW-A | 可迁移运行时与机器合同 | A-01..03 | COMPLETE |
 | RIPFLOW-B | 设置、持久化和 UI | B-01..03 | COMPLETE |
 | RIPFLOW-C | 执行、验证、发布和自动接线 | C-01..04 | COMPLETE |
-| RIPFLOW-D | 矩阵、Runtime 迁移和本地收口 | D-01..03 | COMPLETE |
+| RIPFLOW-D | 矩阵、Runtime 迁移、本地收口和缺陷修复 | D-01..04 | COMPLETE |
 | RIPFLOW-E | 外部分发与生产验收 | E-01..02 | BLOCKED_EXTERNAL |
 
 依赖主链：
@@ -69,7 +69,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 00 -> A-01 -> A-02 -> A-03
           \-> B-01 -> B-02 -> B-03
 A-03 + B-03 -> C-01 -> C-02 -> C-03 -> C-04
-C-04 -> D-01 -> D-02 -> D-03
+C-04 -> D-01 -> D-02 -> D-03 -> D-04
 D-03 + 外部材料 -> E-01/E-02
 ```
 
@@ -354,6 +354,27 @@ transparent grayBits1、635x600、tiled/坏布局稳定 fail-closed；cancel/tim
 迁移步骤和外部阻塞。最终本地状态为 `SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED`；
 E-01/E-02 保持 `BLOCKED_EXTERNAL`，未写生产或外部分发 PASS。
 
+### RIPFLOW-D-04 非 4 对齐宽度归一化缺陷修复
+
+**状态：COMPLETE / PASS（2026-08-17）**
+
+**依赖：** D-03；运行时缺陷 `RIP_OUTPUT_DIMENSION_MISMATCH`
+
+**内容：** 修复当前 RIP 将非 4 对齐输入宽度向上补齐后被 S2 尺寸 Gate 拒绝的问题，同时保持
+最终 `rip_%06d.tif` 与 Package Grid 精确一致。
+
+**验收：** 只接受高度不变且 `actualWidth == align_up(packageWidth, 4)` 的 1..3 像素右侧补齐；
+先完成真实 TIFF/逻辑像素校验，再在 staging 中裁回 Package 原宽；其他尺寸差异、重写失败和取消
+继续 fail-closed；输入 `layers` 不变。
+
+**实际结果：** 用户样例实测 Package 为 `1842 x 623`，当前 RIP 输出为 `1844 x 623`，确认错误
+来自 DLL 固定的 4 像素行宽对齐而非切片 Grid 损坏。适配层已增加受限重写，95 -> 96 合成 LZW
+回归可归一化为 95，97 -> 95 等非对齐差异仍以 `RIP_OUTPUT_DIMENSION_MISMATCH` 拒绝；
+`rip_integration_unit_tests` 与 Release 宿主构建 PASS；用户包前 30 层真实 RIP 由 1844 裁回
+1842，30/30 层发布及结果合同 PASS。对完整 175 层数据继续实测后，尺寸 Gate 已通过，但第 30 层
+出现 `W=255`，随后按冻结 C6 上限以 `RIP_OUTPUT_DROP_LIMIT_EXCEEDED`
+拒绝且不发布 `rip`；该独立语义问题不得通过放宽上限或猜测极性绕过。
+
 ## 9. RIPFLOW-E 外部阻塞
 
 ### RIPFLOW-E-01 二进制、lcms2、ICC 与私有 LibTIFF 分发闭合
@@ -406,3 +427,4 @@ E-01/E-02 未完成不阻止本地专项标记 `SLICER_SIDE_COMPLETE`，但阻�
 | 2026-08-17 | v1.6 | D-02 完成：中文/空格隔离 Runtime 相对发现、模块私有 TIFF、真实 20 层迁移运行 PASS |
 | 2026-08-17 | v1.7 | D-03 完成：状态报告与用户/迁移指南收口；本地专项完成，E-01/E-02 继续 BLOCKED_EXTERNAL |
 | 2026-08-17 | v1.8 | P1 安全复核闭合：S1/S2 后台可取消验证、源 Package 运行时身份复验、junction/reparse 安全清理及 unsigned sample Gate；Debug/Release 各 12/12 定向 CTest、Release Runtime 与真实 local/lifecycle/migration Gate PASS |
+| 2026-08-17 | v1.9 | D-04 完成：定位 1842 -> 1844 为 RIP 固定 4 像素对齐并在 staging 裁回 Package 原宽，用户包前 30 层真实发布 PASS；非确定性尺寸差异继续拒绝；完整包随后暴露的 W=255 仍按 S2 C6 fail-closed |

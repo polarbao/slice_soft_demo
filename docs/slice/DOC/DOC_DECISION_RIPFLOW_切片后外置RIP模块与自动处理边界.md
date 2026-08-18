@@ -1,7 +1,7 @@
 # DOC_DECISION_RIPFLOW 切片后外置 RIP 模块与自动处理边界
 
 > 文档状态：**ACCEPTED / USER AUTHORIZED**
-> 版本：v1.1 ｜ 日期：2026-08-17
+> 版本：v1.2 ｜ 日期：2026-08-17
 > 定位：独立补充专项 `RIPFLOW` 的权威边界；不占 Stage 编号，不改写 Stage 14 历史结论
 > 任务真源：`docs/codex_task/current/TASKS_RIPFLOW_切片后外置RIP集成专项任务清单.md`
 > 上游合同：`DOC_DECISION_14_S2_RIP接口合同定案.md`、`DOC_DECISION_14F_外部验证延期与接口冻结.md`
@@ -64,7 +64,7 @@ README 所述完整实现源文件、CMake/qmake 工程、导入库、示例和�
 | 进程依赖 | 私有 `tiff.dll` 4.1.0 | 当前应用使用 LibTIFF 4.7.1，文件同名 | 必须进程隔离，不在宿主 `LoadLibrary` |
 | 输入存储 | scanline/stripped 可用，tiled 实测失败 | S1 允许 stripped 或 tiled | 首版只声明 stripped 子集，tiled fail-closed |
 | 输出命名 | `slice.N.tiff` | S2 要求 `rip_%06d.tif` | 校验后仅重命名，不改写像素 |
-| 输出宽度 | 非 4 对齐宽度存在扩宽实测 | 输出应与输入 Grid 身份一致 | 发布前逐层尺寸一致性检查 |
+| 输出宽度 | 非 4 对齐宽度会向上扩到 4 像素边界 | 发布结果必须与输入 Grid 身份一致 | 只允许该确定性右侧补齐，完整校验后裁掉 1..3 列；其他尺寸差异 fail-closed |
 | W 上限 | `transparent=0` 实测可出现 W=9 | grayBits=2 时 W 必须 `<=6` | 真实像素扫描，不合格不发布 |
 | 白语义 | CLI 只有 `transparent 0|1` | manifest `whiteSemantics` 为权威 | 映射未定前只允许显式候选并 fail-closed |
 | 颜色模式 | `colormode` 默认 0 | 未提供枚举和值域语义 | 首版只允许 0；其他值外部阻塞 |
@@ -95,6 +95,11 @@ slicer_ui_host_sim
 - 子进程私有依赖不复制到宿主根目录，避免覆盖当前 LibTIFF 4.7.1；
 - 不修改 `PM_SPI_VERSION`、11 个导出、15 项能力、Worker 文件合同或 slicer module ABI；
 - RIP 设置不进入切片 Profile hash，不改变切片结果或 `p0.rgbwsv.2`。
+
+非 4 对齐宽度适配属于进程外边界归一化，不修改输入 Package：仅当输出高度不变且
+`actualWidth == align_up(packageWidth, 4)` 时，适配层在 staging 中重写每行前
+`packageWidth` 个像素，并以 Package 原宽发布。重写前仍须通过层数、索引、布局和逻辑
+宽度内 W/S/V 扫描；其他扩宽、缩窄或高度变化继续 fail-closed。该规则不改变 S2 最终尺寸合同。
 
 ### 3.2 未采用方案
 
@@ -274,3 +279,4 @@ W/S/V 上限；需要把私有 TIFF DLL 装入宿主进程；需要在许可证�
 |---|---|---|
 | 2026-08-17 | v1.0 | 建立 RIPFLOW 专项；冻结进程外适配、`modules/rip`、`layers`/`rip` 同级、独立设置、自动默认关闭、真实输出 fail-closed、S1/S2 与外部分发边界；计划与准备 Gate 通过 |
 | 2026-08-17 | v1.1 | 明确 `deviceGrayBits` 仅为输出校验期望、当前二进制固定 600 x 600 DPI、S1 TIFF 的 DPI 由 Package grid 持有；本地支持范围不得外推 |
+| 2026-08-17 | v1.2 | 受控接纳 RIP 固定的 4 像素右侧补齐：只在高度一致且宽度等于 `align_up(packageWidth,4)` 时裁回 Package 原宽；其余尺寸差异继续 fail-closed，不改变 S2 最终 Grid |
