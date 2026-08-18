@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
-#include <cmath>
 #include <cstdio>
 #include <limits>
 #include <memory>
@@ -439,46 +438,6 @@ RipStatus RewriteWithExpectedWidth(
     return RipStatus::Success();
 }
 
-RipStatus ValidateDpi(
-    TIFF* handle,
-    const double expectedX,
-    const double expectedY)
-{
-    float xResolution{0.0F};
-    float yResolution{0.0F};
-    std::uint16_t resolutionUnit{RESUNIT_NONE};
-    if (TIFFGetField(handle, TIFFTAG_XRESOLUTION, &xResolution) != 1
-        || TIFFGetField(handle, TIFFTAG_YRESOLUTION, &yResolution) != 1
-        || TIFFGetFieldDefaulted(
-            handle, TIFFTAG_RESOLUTIONUNIT, &resolutionUnit) != 1)
-    {
-        return RipStatus::Failure(
-            "RIP_OUTPUT_DPI_MISSING",
-            "RIP output must declare X/Y resolution and its unit");
-    }
-    double actualX = xResolution;
-    double actualY = yResolution;
-    if (resolutionUnit == RESUNIT_CENTIMETER)
-    {
-        actualX *= 2.54;
-        actualY *= 2.54;
-    }
-    else if (resolutionUnit != RESUNIT_INCH)
-    {
-        return RipStatus::Failure(
-            "RIP_OUTPUT_DPI_UNIT_INVALID",
-            "RIP output resolution must use inches or centimeters");
-    }
-    constexpr double tolerance{0.01};
-    if (std::abs(actualX - expectedX) > tolerance
-        || std::abs(actualY - expectedY) > tolerance)
-    {
-        return RipStatus::Failure(
-            "RIP_OUTPUT_DPI_MISMATCH",
-            "RIP output DPI does not match the source Package grid");
-    }
-    return RipStatus::Success();
-}
 RipStatus ValidateLayer(
     const StagedLayer& staged,
     const RipOutputValidationRequest& request,
@@ -541,12 +500,6 @@ RipStatus ValidateLayer(
         return RipStatus::Failure(
             "RIP_OUTPUT_STORAGE_INVALID",
             "RIP output must be stripped and must not be tiled");
-    }
-    const RipStatus dpiStatus = ValidateDpi(
-        handle.get(), request.expected_dpi_x, request.expected_dpi_y);
-    if (!dpiStatus.ok)
-    {
-        return dpiStatus;
     }
     const std::array<std::uint8_t, 3> limits = request.gray_bits == 1
         ? std::array<std::uint8_t, 3>{2U, 3U, 3U}
@@ -642,11 +595,7 @@ RipOutputValidationResult ValidateAndNormalizeRipOutput(
         || request.expected_layer_count == 0U
         || request.expected_layer_count > 1000000U
         || request.expected_width_px == 0U
-        || request.expected_height_px == 0U
-        || !std::isfinite(request.expected_dpi_x)
-        || !std::isfinite(request.expected_dpi_y)
-        || request.expected_dpi_x <= 0.0
-        || request.expected_dpi_y <= 0.0)
+        || request.expected_height_px == 0U)
     {
         result.status = RipStatus::Failure(
             "RIP_OUTPUT_REQUEST_INVALID",

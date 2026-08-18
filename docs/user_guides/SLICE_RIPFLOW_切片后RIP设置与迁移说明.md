@@ -34,16 +34,19 @@ canonical path、大小和 SHA-256，发布 `rip` 前再次核对；外部 RIP �
 当前已验证的本地子集：
 
 ```text
-输入：p0.rgbwsv.2、unsigned 8bit、RGBWSV、contiguous、stripped、600 x 600 DPI
+输入：p0.rgbwsv.2、unsigned 8bit、RGBWSV、contiguous、stripped
 设置：explicit_transparent、colorMode=0、deviceGrayBits=2
-输出：至少 7 通道、unsigned 8bit、contiguous、stripped、600 x 600 DPI
+输出：至少 7 通道、unsigned 8bit、contiguous、stripped
 命名：rip_%06d.tif
 ```
+
+DPI 不是当前 RIP API/CLI 的输入参数，也不参与 RIP 前置或发布判断。外部二进制目前会
+在输出 TIFF 中写入 600 x 600 数值标签，该元数据不代表对 Package DPI 的限制。
 
 当前 RIP 会把非 4 对齐宽度向右补齐 1..3 像素；程序只在高度不变且补齐值精确等于 4 像素对齐
 结果时裁回 Package 原宽。其他缩放、扩宽或高度变化仍视为数据错误。
 
-635 x 600、tiled、缺层、非确定性尺寸差异、输出 W/S/V 超限、灰阶 1 实测超限、opaque 灰阶 2 实测
+tiled、缺层、非确定性尺寸差异、输出 W/S/V 超限、灰阶 1 实测超限、opaque 灰阶 2 实测
 W 超限及白语义冲突均不会发布 `rip`。
 
 ## 3. 迁移

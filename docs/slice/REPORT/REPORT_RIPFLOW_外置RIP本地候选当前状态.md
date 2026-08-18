@@ -1,6 +1,6 @@
 # REPORT_RIPFLOW 外置 RIP 本地候选当前状态
 
-> 日期：2026-08-17
+> 日期：2026-08-18
 > 结论：**SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED**
 > 禁止外推：不是 `EXTERNAL_ACCEPTED`，不是 `PRODUCTION_READY`
 
@@ -12,6 +12,7 @@
 - 应用相对发现 `modules/rip`，私有 `tiff.dll` 与宿主 LibTIFF 4.7.1 进程隔离；
 - `layers` 不变；输出先进入 `.rip.staging.<id>`，真实校验后发布同级 `rip`；
 - RIP 固定的 4 像素右侧补齐只在确定匹配时于 staging 裁回 Package 原宽，最终 Grid 不变；
+- DPI 不参与 RIP 前置或输出发布 Gate；宿主不再把外部二进制写出的 600 x 600 标签解释为输入限制；
 - S1/S2 解码与逐文件身份检查在后台线程执行，验证期可取消；发布前强制复验 manifest 与全部输入层；
 - staging 清理要求同父目录、固定前缀且全树无 junction/reparse point，拒绝不安全递归删除并保留现场；
 - 自动开关默认关闭，且只接在 `HostPackageReviewController::LoadAsync` 成功回调之后。
@@ -27,9 +28,10 @@
 | 真实 RIP 正例 | 20/20 层，600 x 600、透明、grayBits=2；真实 7 通道 TIFF 校验并发布 PASS |
 | 中文/空格路径 | 同一 20 层矩阵 PASS |
 | 生命周期 | cancel、timeout、exit 1、exit 2 均无 `rip`/staging 残留 PASS |
-| fail-closed | follow_manifest 缺权威字段、opaque grayBits=2 W 超限、grayBits=1 超限、635 x 600、tiled/坏布局均拒绝 |
+| fail-closed | follow_manifest 缺权威字段、opaque grayBits=2 W 超限、grayBits=1 超限、tiled/坏布局均拒绝 |
 | 输入身份 | 控制器发布前重验 manifest 与 20 个 `layers` 的 canonical path/size/SHA-256；正例不变 |
 | 宽度归一化修复 | 用户样例确认 `1842 x 623 -> 1844 x 623`；前 30 层真实 RIP 全部裁回 1842 并发布 PASS；95 -> 96 LZW 回归 PASS，97 -> 95 仍拒绝；Release Runtime 已部署 |
+| DPI 限制剔除 | 原始 `rip_project` 处理 635x600 Package 成功；非 600 与缺失 DPI 标签单测 PASS；Release Hostx64 构建、RIP 6/6 CTest 及真实 635x600 Package 取消作业 PASS |
 
 定向构建使用 VS 2026 x64 编译器、Qt 5.15.2、Debug Ninja、LibTIFF 4.7.1，目标
 `rip_integration_unit_tests`、`ripflow_settings_unit_tests`、`ripflow_safety_unit_tests`、
@@ -41,8 +43,9 @@
 
 ## 3. 支持边界
 
-当前可发布的只是 `explicit_transparent + colorMode=0 + deviceGrayBits=2 + 600 x 600 DPI + stripped`
-本地候选。当前 CLI 没有 grayBits 参数，grayBits 设置只做输出准入；当前二进制固定输出 600 DPI。
+当前可发布的只是 `explicit_transparent + colorMode=0 + deviceGrayBits=2 + stripped`
+本地候选。当前 CLI 没有 grayBits 参数，grayBits 设置只做输出准入。DPI 不是 CLI 或 DLL 的
+输入参数；二进制写入的 600 x 600 TIFF 标签保留为外部元数据，不再限制 Package DPI。
 `follow_manifest` 等待切片包权威 `whiteSemantics`，opaque/grayBits=1 在现有实测中因 W/S/V 上限
 失败。这些失败是预期保护，不得绕过检查发布。
 

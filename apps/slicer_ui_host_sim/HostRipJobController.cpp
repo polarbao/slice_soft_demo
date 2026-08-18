@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
-#include <cmath>
 #include <limits>
 #include <memory>
 
@@ -356,8 +355,6 @@ bool HostRipJobController::InspectPackage(
     const int width = grid.value(QStringLiteral("widthPx")).toInt();
     const int height = grid.value(QStringLiteral("heightPx")).toInt();
     const int layerCount = grid.value(QStringLiteral("layerCount")).toInt();
-    const double dpiX = grid.value(QStringLiteral("dpiX")).toDouble();
-    const double dpiY = grid.value(QStringLiteral("dpiY")).toDouble();
     if (manifest.value(QStringLiteral("schema")).toString()
             != QStringLiteral("p0.rgbwsv.2")
         || !manifest.value(
@@ -374,24 +371,12 @@ bool HostRipJobController::InspectPackage(
             != QStringLiteral("stripped")
         || tiff.value(QStringLiteral("tiled")).toBool(true)
         || width <= 0 || height <= 0 || layerCount <= 0
-        || layers.size() != layerCount || dpiX <= 0.0 || dpiY <= 0.0)
+        || layers.size() != layerCount)
     {
         if (error != nullptr)
         {
             *error = QStringLiteral(
                 "RIP 输入包必须是有效的 stripped、8bit、contiguous RGBWSV 包。");
-        }
-        return false;
-    }
-    if (std::abs(dpiX - 600.0) > 0.01
-        || std::abs(dpiY - 600.0) > 0.01)
-    {
-        if (error != nullptr)
-        {
-            *error = QStringLiteral(
-                "当前外置 RIP 固定输出 600 x 600 DPI；输入包为 %1 x %2 DPI。")
-                         .arg(dpiX, 0, 'f', 2)
-                         .arg(dpiY, 0, 'f', 2);
         }
         return false;
     }
@@ -466,8 +451,6 @@ bool HostRipJobController::InspectPackage(
     metadata->layerCount = layerCount;
     metadata->widthPx = static_cast<std::uint32_t>(width);
     metadata->heightPx = static_cast<std::uint32_t>(height);
-    metadata->dpiX = dpiX;
-    metadata->dpiY = dpiY;
     metadata->transparent = transparent;
     metadata->whiteSemanticsFromManifest = hasManifestWhite;
     return true;
@@ -549,8 +532,6 @@ void HostRipJobController::StartInputValidation()
         std::move(inputLayers),
         m_package.widthPx,
         m_package.heightPx,
-        m_package.dpiX,
-        m_package.dpiY,
         [cancelToken]()
         {
             return cancelToken->load(std::memory_order_relaxed);
@@ -592,8 +573,6 @@ void HostRipJobController::StartInputValidation()
                     {layerPath},
                     request.expected_width_px,
                     request.expected_height_px,
-                    request.expected_dpi_x,
-                    request.expected_dpi_y,
                     request.is_cancelled};
                 state->status = slicesoft::rip::ValidateRipInput(layerRequest);
                 if (!state->status.ok)
@@ -851,8 +830,6 @@ void HostRipJobController::StartOutputValidation(const int exitCode)
         static_cast<std::size_t>(m_package.layerCount),
         m_package.widthPx,
         m_package.heightPx,
-        m_package.dpiX,
-        m_package.dpiY,
         m_settings.devicegraybits,
         [cancelToken]()
         {

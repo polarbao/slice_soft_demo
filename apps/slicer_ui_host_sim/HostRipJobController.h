@@ -78,8 +78,6 @@ private:
         int layerCount{0};
         std::uint32_t widthPx{0U};
         std::uint32_t heightPx{0U};
-        double dpiX{0.0};
-        double dpiY{0.0};
         bool transparent{true};
         bool whiteSemanticsFromManifest{false};
     };

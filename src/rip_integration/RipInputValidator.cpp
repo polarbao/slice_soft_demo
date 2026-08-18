@@ -2,7 +2,6 @@
 
 #include <tiffio.h>
 
-#include <cmath>
 #include <memory>
 #include <system_error>
 #include <vector>
@@ -112,54 +111,6 @@ TiffHandle OpenTiff(const std::filesystem::path& path)
 #endif
 }
 
-RipStatus ValidateDpi(
-    TIFF* handle,
-    const double expectedX,
-    const double expectedY)
-{
-    float xResolution{0.0F};
-    float yResolution{0.0F};
-    std::uint16_t unit{RESUNIT_NONE};
-    const bool hasX = TIFFGetField(
-        handle, TIFFTAG_XRESOLUTION, &xResolution) == 1;
-    const bool hasY = TIFFGetField(
-        handle, TIFFTAG_YRESOLUTION, &yResolution) == 1;
-    if (!hasX && !hasY)
-    {
-        // S1 keeps DPI in the Package grid; current layer TIFFs omit it.
-        return RipStatus::Success();
-    }
-    if (!hasX || !hasY
-        || TIFFGetFieldDefaulted(
-            handle, TIFFTAG_RESOLUTIONUNIT, &unit) != 1)
-    {
-        return RipStatus::Failure(
-            "RIP_INPUT_DPI_MISSING",
-            "each RIP input layer must declare X/Y resolution");
-    }
-    double actualX = xResolution;
-    double actualY = yResolution;
-    if (unit == RESUNIT_CENTIMETER)
-    {
-        actualX *= 2.54;
-        actualY *= 2.54;
-    }
-    else if (unit != RESUNIT_INCH)
-    {
-        return RipStatus::Failure(
-            "RIP_INPUT_DPI_UNIT_INVALID",
-            "RIP input resolution must use inches or centimeters");
-    }
-    constexpr double tolerance{0.01};
-    if (std::abs(actualX - expectedX) > tolerance
-        || std::abs(actualY - expectedY) > tolerance)
-    {
-        return RipStatus::Failure(
-            "RIP_INPUT_DPI_MISMATCH",
-            "RIP input DPI does not match the Package grid");
-    }
-    return RipStatus::Success();
-}
 }
 
 RipStatus ValidateRipInput(const RipInputValidationRequest& request)
@@ -170,10 +121,6 @@ RipStatus ValidateRipInput(const RipInputValidationRequest& request)
         || request.layer_paths.size() > 1000000U
         || request.expected_width_px == 0U
         || request.expected_height_px == 0U
-        || !std::isfinite(request.expected_dpi_x)
-        || !std::isfinite(request.expected_dpi_y)
-        || request.expected_dpi_x <= 0.0
-        || request.expected_dpi_y <= 0.0
         || !IsContained(
             request.package_directory, request.input_directory))
     {
@@ -257,12 +204,6 @@ RipStatus ValidateRipInput(const RipInputValidationRequest& request)
             return RipStatus::Failure(
                 "RIP_INPUT_STORAGE_UNSUPPORTED",
                 "the current external RIP only accepts stripped input");
-        }
-        const RipStatus dpi = ValidateDpi(
-            handle.get(), request.expected_dpi_x, request.expected_dpi_y);
-        if (!dpi.ok)
-        {
-            return dpi;
         }
         const tmsize_t scanlineSize = TIFFScanlineSize(handle.get());
         const std::uint64_t requiredBytes =

@@ -17,8 +17,6 @@ struct RipInputValidationRequest
     std::vector<std::filesystem::path> layer_paths;
     std::uint32_t expected_width_px{0U};
     std::uint32_t expected_height_px{0U};
-    double expected_dpi_x{0.0};
-    double expected_dpi_y{0.0};
     std::function<bool()> is_cancelled;
 };
 

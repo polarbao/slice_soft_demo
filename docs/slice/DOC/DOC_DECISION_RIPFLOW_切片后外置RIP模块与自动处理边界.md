@@ -1,7 +1,7 @@
 # DOC_DECISION_RIPFLOW 切片后外置 RIP 模块与自动处理边界
 
 > 文档状态：**ACCEPTED / USER AUTHORIZED**
-> 版本：v1.2 ｜ 日期：2026-08-17
+> 版本：v1.3 ｜ 日期：2026-08-18
 > 定位：独立补充专项 `RIPFLOW` 的权威边界；不占 Stage 编号，不改写 Stage 14 历史结论
 > 任务真源：`docs/codex_task/current/TASKS_RIPFLOW_切片后外置RIP集成专项任务清单.md`
 > 上游合同：`DOC_DECISION_14_S2_RIP接口合同定案.md`、`DOC_DECISION_14F_外部验证延期与接口冻结.md`
@@ -68,7 +68,7 @@ README 所述完整实现源文件、CMake/qmake 工程、导入库、示例和�
 | W 上限 | `transparent=0` 实测可出现 W=9 | grayBits=2 时 W 必须 `<=6` | 真实像素扫描，不合格不发布 |
 | 白语义 | CLI 只有 `transparent 0|1` | manifest `whiteSemantics` 为权威 | 映射未定前只允许显式候选并 fail-closed |
 | 颜色模式 | `colormode` 默认 0 | 未提供枚举和值域语义 | 首版只允许 0；其他值外部阻塞 |
-| 输出合同 | 固定 7 通道、LZW、600 dpi 自述 | S2 还要求 stripped、层数、量化和外部极性 | 从真实 TIFF 提取证据，不信任描述符 |
+| 输出合同 | 固定 7 通道、LZW，实测写入 600 x 600 元数据 | S2 还要求 stripped、层数、量化和外部极性 | 从真实 TIFF 提取像素证据；DPI 标签不作 RIP 准入或发布 Gate |
 
 Stage 14 的 `RipOutputValidator.ps1` 当前验证的是机器描述符，不是目标 RIP 真实 TIFF。
 本专项必须补真实输出检查，不能把既有 C1-C7 描述符门禁直接记作目标二进制 PASS。
@@ -224,9 +224,11 @@ S2 输出每层一个 >=7 samples 的 stripped 交错 TIFF；
 grayBits=2: W<=6、S<=9、V<=9；grayBits=1: W<=2、S<=3、V<=3。
 ```
 
-当前二进制固定写出 600 x 600 DPI，故本地候选在进程启动前只接收 600 x 600 DPI Package；
-635 x 600 等其他 Grid 直接 fail-closed。当前 S1 层 TIFF 不含 DPI 标签，输入 DPI 以 Package grid
-为权威；输出 DPI 仍从真实 RIP TIFF 标签读取并校验。`deviceGrayBits` 是输出准入期望，不是 CLI
+当前 RIP API/CLI 没有 DPI 输入，真实 S1 层 TIFF 也不含 DPI 标签。直接使用原始
+`rip_project` 处理 Package grid 为 635 x 600 的切片已成功，二进制只是在输出 TIFF 中写入
+600 x 600 数值标签。该标签不代表对输入 Package DPI 的识别或限制，因此切片宿主不再
+以 Package DPI 拒绝启动，S1/S2 验证也不再检查 DPI 标签。Package 宽高像素 Grid 仍是尺寸身份
+的权威。`deviceGrayBits` 是输出准入期望，不是 CLI
 控制项：本地实测只证明 `explicit_transparent + grayBits=2` 子集，其他组合按真实结果决定是否发布。
 
 以下状态不得因本地开发而升级：
@@ -280,3 +282,4 @@ W/S/V 上限；需要把私有 TIFF DLL 装入宿主进程；需要在许可证�
 | 2026-08-17 | v1.0 | 建立 RIPFLOW 专项；冻结进程外适配、`modules/rip`、`layers`/`rip` 同级、独立设置、自动默认关闭、真实输出 fail-closed、S1/S2 与外部分发边界；计划与准备 Gate 通过 |
 | 2026-08-17 | v1.1 | 明确 `deviceGrayBits` 仅为输出校验期望、当前二进制固定 600 x 600 DPI、S1 TIFF 的 DPI 由 Package grid 持有；本地支持范围不得外推 |
 | 2026-08-17 | v1.2 | 受控接纳 RIP 固定的 4 像素右侧补齐：只在高度一致且宽度等于 `align_up(packageWidth,4)` 时裁回 Package 原宽；其余尺寸差异继续 fail-closed，不改变 S2 最终 Grid |
+| 2026-08-18 | v1.3 | 根据原始 `rip_project` 处理 635x600 Package 的实测，废止将输出 600x600 标签误解为输入限制；剔除宿主硬编码准入和 S1/S2 DPI Gate，宽高像素 Grid 、TIFF 布局与 W/S/V 限制不变 |

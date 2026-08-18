@@ -1,7 +1,7 @@
 # TASKS_RIPFLOW 切片后外置 RIP 集成专项任务清单
 
 > 文档状态：**SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED**
-> 版本：v1.9 ｜ 日期：2026-08-17 ｜ 用户授权：2026-08-17
+> 版本：v2.0 ｜ 日期：2026-08-18 ｜ 用户授权：2026-08-17
 > 定位：独立补充专项，不占 Stage 编号
 > 权威决策：`docs/slice/DOC/DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
 > 准备文档：`docs/slice/DOC/DOC_PREP_RIPFLOW_外置模块设置与自动后处理准备.md`
@@ -60,7 +60,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 | RIPFLOW-A | 可迁移运行时与机器合同 | A-01..03 | COMPLETE |
 | RIPFLOW-B | 设置、持久化和 UI | B-01..03 | COMPLETE |
 | RIPFLOW-C | 执行、验证、发布和自动接线 | C-01..04 | COMPLETE |
-| RIPFLOW-D | 矩阵、Runtime 迁移、本地收口和缺陷修复 | D-01..04 | COMPLETE |
+| RIPFLOW-D | 矩阵、Runtime 迁移、本地收口和缺陷修复 | D-01..05 | COMPLETE |
 | RIPFLOW-E | 外部分发与生产验收 | E-01..02 | BLOCKED_EXTERNAL |
 
 依赖主链：
@@ -69,7 +69,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 00 -> A-01 -> A-02 -> A-03
           \-> B-01 -> B-02 -> B-03
 A-03 + B-03 -> C-01 -> C-02 -> C-03 -> C-04
-C-04 -> D-01 -> D-02 -> D-03 -> D-04
+C-04 -> D-01 -> D-02 -> D-03 -> D-04 -> D-05
 D-03 + 外部材料 -> E-01/E-02
 ```
 
@@ -224,7 +224,7 @@ Profile hash 或 `HostWorkspaceState` v6。
 
 **实际结果：** 右侧新增独立“RIP 设置”页，提供自动开关、intent、白语义、固定 colorMode、ICC、
 失败继续、grayBits 输出校验、超时、只读 `layers -> rip` 路径、运行时/前置状态、运行/取消/打开。
-无严格包、无模块、语义/DPI 不支持、已有输出或作业运行时按钮禁用；`ripflow_ui_self_test` 与既有
+无严格包、无模块、语义不支持、已有输出或作业运行时按钮禁用；`ripflow_ui_self_test` 与既有
 HostFlow 设置/作业/结果/workspace UI 定向回归 PASS。
 
 ## 7. RIPFLOW-C 执行、验证、发布与自动接线
@@ -271,14 +271,14 @@ exit 1、exit 2 全部 PASS，未发布 `rip` 且无安全 staging 残留；RIP 
 **内容：** 校验 package/manifest/layers，运行到 `.rip.staging.<jobId>`，解析真实 7 通道 TIFF，
 归一化为 `rip_%06d.tif`，生成 `rip_result.json` 并发布 `rip`。
 
-**验收：** 层数、索引、宽高、DPI/Grid、8bit、samples、planar、stripped、W/S/V 范围全通过；
+**验收：** 层数、索引、宽高/Grid 像素身份、8bit、samples、planar、stripped、W/S/V 范围全通过；
 tiled、扩宽、缺层、坏层、超限全部拒绝；原 layers/manifest/hash 前后不变；已有未知 `rip` 不覆盖。
 
 **实际结果：** 启动前复核 production Package、层清单、真实 unsigned 8bit/6ch/contiguous/stripped
 TIFF、尺寸和可解码性，并冻结 manifest 与逐层 canonical path/size/SHA-256；输出逐层检查层数/索引、
-unsigned 8bit/>=7ch/contiguous/stripped/尺寸/600 DPI/WSV 上限。发布前重新计算全部源身份，任一变化
+unsigned 8bit/>=7ch/contiguous/stripped/尺寸/WSV 上限，DPI 不参与 RIP 准入或发布判断。发布前重新计算全部源身份，任一变化
 以 `RIP_SOURCE_PACKAGE_CHANGED` fail-closed，再归一化 `rip_%06d.tif`、写结果合同并同父目录 rename
-发布。core 与安全清理正负例 PASS；真实 20 层发布 PASS；signed sample、tiled、缺层、尺寸/DPI/范围、
+发布。core 与安全清理正负例 PASS；真实 20 层发布 PASS；signed sample、tiled、缺层、尺寸/范围、
 输入篡改及已有输出均 fail-closed。
 
 ### RIPFLOW-C-04 切片完成后的自动 RIP
@@ -315,8 +315,9 @@ Package/RIP Reader/HostFlow Debug 与 Release 定向回归通过。
 **实际结果：** 合同 3 正/4 负、Debug 与 Release 各 12/12 focused CTest（core、settings、safety、
 module/UI、wiring 与 HostFlow 回归）全部 PASS；真实矩阵
 验证 transparent+grayBits2 与中文/空格路径 PASS，follow_manifest 缺权威值、opaque grayBits2、
-transparent grayBits1、635x600、tiled/坏布局稳定 fail-closed；cancel/timeout/exit1/exit2 均无残留。
-当前支持面明确收窄为 600x600、stripped、explicit_transparent、colorMode0、grayBits2 本地候选。
+transparent grayBits1、tiled/坏布局稳定 fail-closed；cancel/timeout/exit1/exit2 均无残留。
+当前支持面明确收窄为 stripped、explicit_transparent、colorMode0、grayBits2 本地候选；
+历史 635x600 拒绝项已由 D-05 废止。
 
 ### RIPFLOW-D-02 Runtime 与打印软件目录迁移验证
 
@@ -375,6 +376,25 @@ E-01/E-02 保持 `BLOCKED_EXTERNAL`，未写生产或外部分发 PASS。
 出现 `W=255`，随后按冻结 C6 上限以 `RIP_OUTPUT_DROP_LIMIT_EXCEEDED`
 拒绝且不发布 `rip`；该独立语义问题不得通过放宽上限或猜测极性绕过。
 
+### RIPFLOW-D-05 剔除切片侧 RIP DPI 准入限制
+
+**状态：COMPLETE / PASS（2026-08-18）**
+
+**依赖：** D-04；用户确认 RIP 不以 DPI 作为当前切片项目的输入条件
+
+**内容：** 剔除宿主硬编码 `600 x 600` 拒绝、S1 层 TIFF DPI 比对和 S2 输出 DPI
+一致性 Gate；DPI 不再进入可迁移 RIP 验证请求。仍保留 Package 自身 Grid 数据和外部
+RIP 写出的 TIFF 元数据，不改切片像素尺寸、通道或墨滴验证。
+
+**验收：** 带非 600 DPI 标签和不带 DPI 标签的合法 RIP TIFF 均通过输出验证；
+`635 x 600` Package 能进入后台验证/执行状态；其他 TIFF、路径、尺寸和 W/S/V Gate 不变。
+
+**实际结果：** `rip_integration_unit_tests` 新增 635 DPI 标签与缺失 DPI 标签正例；
+Release Hostx64 的 `rip_integration_unit_tests`、RIP settings/safety 与 `slicer_ui_host_sim` 构建 PASS，
+RIP 定向 CTest 6/6 PASS；`PrepareSliceSoftRuntime.ps1 -Config Release` 完成 Runtime 部署，部署后的
+module/UI self-test PASS，且宿主二进制 SHA-256 与构建产物一致。真实 `635 x 600` Package 的
+`--rip-job-self-test` 已穿过同步前置检查并按 0 ms 取消，结果 `RIP_CANCELLED` PASS，未再返回 DPI 准入错误。
+
 ## 9. RIPFLOW-E 外部阻塞
 
 ### RIPFLOW-E-01 二进制、lcms2、ICC 与私有 LibTIFF 分发闭合
@@ -428,3 +448,4 @@ E-01/E-02 未完成不阻止本地专项标记 `SLICER_SIDE_COMPLETE`，但阻�
 | 2026-08-17 | v1.7 | D-03 完成：状态报告与用户/迁移指南收口；本地专项完成，E-01/E-02 继续 BLOCKED_EXTERNAL |
 | 2026-08-17 | v1.8 | P1 安全复核闭合：S1/S2 后台可取消验证、源 Package 运行时身份复验、junction/reparse 安全清理及 unsigned sample Gate；Debug/Release 各 12/12 定向 CTest、Release Runtime 与真实 local/lifecycle/migration Gate PASS |
 | 2026-08-17 | v1.9 | D-04 完成：定位 1842 -> 1844 为 RIP 固定 4 像素对齐并在 staging 裁回 Package 原宽，用户包前 30 层真实发布 PASS；非确定性尺寸差异继续拒绝；完整包随后暴露的 W=255 仍按 S2 C6 fail-closed |
+| 2026-08-18 | v2.0 | D-05 完成：确认 RIP 不读取输入 DPI，剔除切片宿主 600x600 前置限制与 S1/S2 DPI Gate；非 600/缺失 DPI 元数据单测、Release 构建、6/6 CTest 及真实 635x600 Package 取消作业 PASS |

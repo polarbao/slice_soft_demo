@@ -96,6 +96,7 @@ struct TiffFixture
     float dpi_y{600.0F};
     bool tiled{false};
     bool declare_extra_samples{true};
+    bool declare_resolution{true};
     bool declare_resolution_unit{true};
     std::uint16_t compression{COMPRESSION_NONE};
     std::uint8_t white{6U};
@@ -129,10 +130,16 @@ bool WriteTiff(
         && TIFFSetField(
             output, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_SEPARATED) == 1
         && TIFFSetField(
-            output, TIFFTAG_COMPRESSION, fixture.compression) == 1
-        && TIFFSetField(output, TIFFTAG_XRESOLUTION, fixture.dpi_x) == 1
-        && TIFFSetField(output, TIFFTAG_YRESOLUTION, fixture.dpi_y) == 1;
-    if (fixture.declare_resolution_unit)
+            output, TIFFTAG_COMPRESSION, fixture.compression) == 1;
+    if (fixture.declare_resolution)
+    {
+        ok = ok
+            && TIFFSetField(
+                output, TIFFTAG_XRESOLUTION, fixture.dpi_x) == 1
+            && TIFFSetField(
+                output, TIFFTAG_YRESOLUTION, fixture.dpi_y) == 1;
+    }
+    if (fixture.declare_resolution && fixture.declare_resolution_unit)
     {
         ok = ok
             && TIFFSetField(
@@ -252,12 +259,10 @@ RipOutputValidationRequest ValidationRequest(
     const std::size_t count,
     const std::uint32_t width = 2U,
     const std::uint32_t height = 2U,
-    const double dpiX = 600.0,
-    const double dpiY = 600.0,
     const int grayBits = 2)
 {
     return RipOutputValidationRequest{
-        package, stage, count, width, height, dpiX, dpiY, grayBits};
+        package, stage, count, width, height, grayBits};
 }
 
 bool TestSettingsAndCommand()
@@ -407,6 +412,42 @@ bool TestVendorAlignedWidthNormalization()
     return pass;
 }
 
+bool TestDpiMetadataDoesNotGateRipOutput()
+{
+    TemporaryRoot root("dpi-metadata");
+    const std::filesystem::path package = root.Path() / "package";
+    const std::filesystem::path declaredStage =
+        package / ".rip.staging.dpi-declared";
+    const std::filesystem::path missingStage =
+        package / ".rip.staging.dpi-missing";
+    std::filesystem::create_directories(declaredStage);
+    std::filesystem::create_directories(missingStage);
+
+    TiffFixture declaredFixture;
+    declaredFixture.dpi_x = 635.0F;
+    bool pass = Expect(
+        WriteTiff(declaredStage / "slice.0.tiff", declaredFixture),
+        "non-600 DPI metadata fixture is written");
+    const auto declaredResult = ValidateAndNormalizeRipOutput(
+        ValidationRequest(package, declaredStage, 1U));
+    pass = Expect(
+        declaredResult.status.ok,
+        "non-600 DPI metadata does not gate RIP output") && pass;
+
+    TiffFixture missingFixture;
+    missingFixture.declare_resolution = false;
+    missingFixture.declare_resolution_unit = false;
+    pass = Expect(
+        WriteTiff(missingStage / "slice.0.tiff", missingFixture),
+        "missing DPI metadata fixture is written") && pass;
+    const auto missingResult = ValidateAndNormalizeRipOutput(
+        ValidationRequest(package, missingStage, 1U));
+    pass = Expect(
+        missingResult.status.ok,
+        "missing DPI metadata does not gate RIP output") && pass;
+    return pass;
+}
+
 bool TestInputValidation()
 {
     TemporaryRoot root("input");
@@ -415,10 +456,11 @@ bool TestInputValidation()
     std::filesystem::create_directories(layers);
     TiffFixture fixture;
     fixture.samples_per_pixel = 6U;
+    fixture.dpi_x = 635.0F;
     const std::filesystem::path valid = layers / "layer_000000.tiff";
     bool pass = Expect(WriteTiff(valid, fixture), "input fixture is written");
     RipInputValidationRequest request{
-        package, layers, {valid}, 2U, 2U, 600.0, 600.0};
+        package, layers, {valid}, 2U, 2U};
     pass = Expect(ValidateRipInput(request).ok, "valid S1 input passes")
         && pass;
 
@@ -503,7 +545,7 @@ bool TestNegativeOutputValidation()
         dropFixture,
         ValidationRequest(
             package, package / ".rip.staging.drop", 1U,
-            2U, 2U, 600.0, 600.0, 1),
+            2U, 2U, 1),
         "RIP_OUTPUT_DROP_LIMIT_EXCEEDED") && pass;
 
     TiffFixture cancelledFixture;
@@ -555,14 +597,6 @@ bool TestNegativeOutputValidation()
             16U, 16U),
         "RIP_OUTPUT_STORAGE_INVALID") && pass;
 
-    TiffFixture dpiFixture;
-    dpiFixture.dpi_x = 635.0F;
-    pass = ExpectValidationFailure(
-        "DPI mismatch",
-        dpiFixture,
-        ValidationRequest(
-            package, package / ".rip.staging.dpi", 1U),
-        "RIP_OUTPUT_DPI_MISMATCH") && pass;
     TiffFixture dimensionFixture;
     pass = ExpectValidationFailure(
         "dimension mismatch",
@@ -647,6 +681,7 @@ int main()
         && TestInputValidation()
         && TestPositiveValidationAndNumericOrdering()
         && TestVendorAlignedWidthNormalization()
+        && TestDpiMetadataDoesNotGateRipOutput()
         && TestNegativeOutputValidation()
         && TestArtifactPublication();
     if (pass)

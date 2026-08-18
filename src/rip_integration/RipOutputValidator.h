@@ -19,8 +19,6 @@ struct RipOutputValidationRequest
     std::size_t expected_layer_count{0U};
     std::uint32_t expected_width_px{0U};
     std::uint32_t expected_height_px{0U};
-    double expected_dpi_x{0.0};
-    double expected_dpi_y{0.0};
     int gray_bits{2};
     std::function<bool()> is_cancelled;
 };

@@ -1,7 +1,7 @@
 # DOC_PREP_RIPFLOW 外置模块、设置与自动后处理准备
 
 > 状态：**PREPARATION GATE PASS / IMPLEMENTATION READY**
-> 版本：v1.2 ｜ 日期：2026-08-17
+> 版本：v1.3 ｜ 日期：2026-08-18
 > 对应专项：`RIPFLOW`
 > 首张开发卡：`RIPFLOW-A-01`
 > 权威决策：`DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
@@ -151,8 +151,9 @@ final  = <package>/rip
 独立 RIP `deviceGrayBits` 输出期望、层列表、每层存在、8bit/6ch/contiguous/stripped、Grid、模块
 manifest/hash/资源/ICC 完整。tiled、缺层、冲突白语义或 grayBits 缺失立即失败。
 
-当前 S1 层 TIFF 不写 DPI 标签，输入 DPI 读取 Package grid；当前外置二进制真实输出固定为
-600 x 600 DPI，因此非 600 x 600 Package 在启动前拒绝。S2 外部合同未来仍须由打印侧权威
+当前 S1 层 TIFF 不写 DPI 标签，RIP API/CLI 也无 DPI 输入。外置二进制在输出 TIFF
+中写入 600 x 600 数值标签，但原始 `rip_project` 已实测可处理 Package grid 为 635 x 600
+的切片。DPI 因此不作为 RIP 前置或输出发布 Gate；S2 外部合同未来仍须由打印侧权威
 `profile.device.grayBits` 闭合；本地设置不得被误解为打印 Profile 已回签。
 
 ### 6.3 子进程和取消
@@ -171,7 +172,7 @@ manifest/hash/资源/ICC 完整。tiled、缺层、冲突白语义或 grayBits �
 ```text
 层数与 manifest 一致；索引连续且一一对应；
 8bit；samplesPerPixel >= 7；planar contiguous；stripped；非 tiled；
-宽高与输入层一致；输出 DPI/物理网格符合准入规则；
+宽高与输入层一致；DPI 标签不参与 RIP 准入；
 W/S/V 实际最小/最大不越 grayBits 上限；
 文件可完整逐行读取且无额外未知层。
 ```
@@ -247,3 +248,4 @@ owner。每张卡完成后停止并更新任务真源，不自动占用下一卡
 | 2026-08-17 | v1.0 | 完成分层、文件所有权、配置、状态机、路径、真实 TIFF 验证、自动接缝、矩阵、并行边界和停止条件准备；Gate PASS，A-01 可开发 |
 | 2026-08-17 | v1.1 | 补齐 `deviceGrayBits`/超时字段及验证属性，明确 600 x 600 本地子集与 S1 DPI 权威来源 |
 | 2026-08-17 | v1.2 | 增补 4 像素对齐宽度归一化 Gate：只裁掉 RIP 在右侧新增的 1..3 列，发布 TIFF 仍须精确匹配 Package Grid |
+| 2026-08-18 | v1.3 | 废止 600x600 RIP 前置限制：DPI 不再进入可迁移验证请求，非 600 或缺失 DPI 标签不阻断 RIP；像素尺寸、布局和墨滴 Gate 不变 |
