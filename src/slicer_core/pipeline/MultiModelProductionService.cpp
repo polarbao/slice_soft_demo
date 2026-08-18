@@ -977,7 +977,7 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
         kRasterQuantizationTolerance;
     composeRequest.canceltoken = request.canceltoken;
     ValidatedSceneLayerComposeResult composition =
-        ComposeAdmittedSceneRastersValidated(composeRequest);
+        ComposeAdmittedSceneRastersValidated(std::move(composeRequest));
     if (!composition.IsValid())
     {
         const SceneLayerComposeResult& blockedComposition =
@@ -996,10 +996,6 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
             scene.sceneid);
     }
 
-    // Per-instance capability statistics were fused into the immutable
-    // composition evidence, so release the large local raster buffers before
-    // package publication.
-    composeRequest.instances.clear();
     runProfile.layer_compose_ms =
         ElapsedMilliseconds(phaseStart);
     ReportProgress(
@@ -1206,6 +1202,7 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
 MultiModelProductionResult RunMultiModelProductionService(
     const MultiModelProductionRequest& request)
 {
+    std::fprintf(stderr, "ENTER RunMultiModelProductionService\n");
     try
     {
         return RunMultiModelProductionServiceImpl(request);

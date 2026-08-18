@@ -863,10 +863,6 @@ std::vector<std::vector<std::uint8_t>> BuildOuterVarnishMasks(
     const GridSpec& grid,
     const std::vector<std::vector<std::uint8_t>>& modelMasks)
 {
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    std::vector<std::vector<std::uint8_t>> outerVarnishMasks(
-        static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixelCount, 0));
     const OuterVarnishDiscretization discretization =
         ComputeOuterVarnishDiscretization(
             config.outer_varnish,
@@ -874,8 +870,13 @@ std::vector<std::vector<std::uint8_t>> BuildOuterVarnishMasks(
             grid.pixel_size_y_mm);
     if (!discretization.enabled)
     {
-        return outerVarnishMasks;
+        return {};
     }
+
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::vector<std::uint8_t>> outerVarnishMasks(
+        static_cast<std::size_t>(grid.layer_count),
+        std::vector<std::uint8_t>(pixelCount, 0));
 
     for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
     {
@@ -926,7 +927,7 @@ std::vector<std::vector<std::uint8_t>> BuildUpperSupportBoundaryMasks(
 {
     if (!boundaryInfo.includes_outer_varnish_shell)
     {
-        return modelMasks;
+        return {};
     }
 
     const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
@@ -951,19 +952,20 @@ SurfaceVarnishMasks BuildSurfaceVarnishMasks(
     const GridSpec& grid,
     const std::vector<std::vector<std::uint8_t>>& modelMasks)
 {
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
     SurfaceVarnishMasks masks;
+    if (!config.surface_varnish.enabled
+        || (!config.surface_varnish.outer_surface && !config.surface_varnish.inner_surface))
+    {
+        return masks;
+    }
+
+    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
     masks.outer_surface_masks.resize(
         static_cast<std::size_t>(grid.layer_count),
         std::vector<std::uint8_t>(pixelCount, 0));
     masks.inner_surface_masks.resize(
         static_cast<std::size_t>(grid.layer_count),
         std::vector<std::uint8_t>(pixelCount, 0));
-    if (!config.surface_varnish.enabled
-        || (!config.surface_varnish.outer_surface && !config.surface_varnish.inner_surface))
-    {
-        return masks;
-    }
 
     const int radiusPx = std::max(1, config.surface_varnish.thickness_px);
     for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
@@ -1045,6 +1047,11 @@ int ApplyOuterVarnishSupportPriority(
     if (clearedSupportIndices != nullptr)
     {
         clearedSupportIndices->assign(supportGeneration.support_masks.size(), {});
+    }
+
+    if (outerVarnishMasks.empty())
+    {
+        return 0;
     }
 
     int clearedSupportPixels{0};
@@ -4495,8 +4502,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         BuildOuterVarnishMasks(config, grid, model_masks);
     const UpperSupportBoundaryInfo upper_support_boundary_info =
         ResolveUpperSupportBoundaryInfo(config);
-    const std::vector<std::vector<std::uint8_t>> upper_support_boundary_masks =
+    const std::vector<std::vector<std::uint8_t>> owned_upper_support_boundary_masks =
         BuildUpperSupportBoundaryMasks(grid, model_masks, outer_varnish_masks, upper_support_boundary_info);
+    const std::vector<std::vector<std::uint8_t>>& upper_support_boundary_masks =
+        owned_upper_support_boundary_masks.empty()
+        ? model_masks
+        : owned_upper_support_boundary_masks;
     const std::vector<ColumnLayerRange> upper_support_boundary_column_ranges =
         compute_mask_column_ranges(upper_support_boundary_masks, grid);
     const SurfaceVarnishMasks surface_varnish_masks =
@@ -4631,11 +4642,27 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
     MaterialPolicyReportData material_policy_report;
     material_policy_report.enabled = config.material_policy.enabled;
+    const std::size_t layerPixelCount =
+        static_cast<std::size_t>(grid.width_px)
+        * static_cast<std::size_t>(grid.height_px);
+    const std::vector<std::uint8_t> emptyOptionalMask(layerPixelCount, 0U);
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         const auto layerComputeStart = SlicerClock::now();
         int layer_model_pixels{0};
         int layer_support_pixels{0};
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
+        const std::vector<std::uint8_t>& outerVarnishMask =
+            outer_varnish_masks.empty()
+            ? emptyOptionalMask
+            : outer_varnish_masks.at(layer_index);
+        const std::vector<std::uint8_t>& outerSurfaceVarnishMask =
+            surface_varnish_masks.outer_surface_masks.empty()
+            ? emptyOptionalMask
+            : surface_varnish_masks.outer_surface_masks.at(layer_index);
+        const std::vector<std::uint8_t>& innerSurfaceVarnishMask =
+            surface_varnish_masks.inner_surface_masks.empty()
+            ? emptyOptionalMask
+            : surface_varnish_masks.inner_surface_masks.at(layer_index);
         MaterialClosureSemanticLayerInput materialClosureInput;
         MaterialClosureSemanticLayerInput* materialClosureInputPointer{nullptr};
         if (collectMaterialClosureSemantic)
@@ -4647,16 +4674,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 model_masks.at(layer_index),
                 support_generation.support_masks.at(layer_index),
                 clearedOuterVarnishSupportIndices.at(layer_index),
-                outer_varnish_masks.at(layer_index));
+                outerVarnishMask);
             materialClosureInputPointer = &materialClosureInput;
         }
         std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
             model_masks.at(layer_index),
-            outer_varnish_masks.at(layer_index),
-            surface_varnish_masks.outer_surface_masks.at(layer_index),
-            surface_varnish_masks.inner_surface_masks.at(layer_index),
+            outerVarnishMask,
+            outerSurfaceVarnishMask,
+            innerSurfaceVarnishMask,
             support_generation.support_masks.at(layer_index),
             support_generation.support_type_maps.at(layer_index),
             config.texture.enabled ? &texture_columns : nullptr,

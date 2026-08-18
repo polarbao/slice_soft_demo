@@ -1,7 +1,7 @@
 # REPORT_16C-05 Layer Compose 扫描融合与 Buffer 复用当前状态
 
 > 状态：**IMPLEMENTATION COMPLETE / PERFORMANCE RE-MEASURE PENDING**
-> 日期：2026-08-17
+> 日期：2026-08-18
 > 对应任务：`16C-05`
 
 ## 1. 当前结论
@@ -16,10 +16,12 @@
 2. Composer 在最终层闭合扫描中同步累计每层六通道打印/空白计数；
 3. 生产链使用 `ValidatedSceneLayerComposeResult` 传递不可伪造的闭合证据，报告与写包不再重复
    调用深扫描 `SceneLayerComposeResult::IsValid()`；
-4. Orchestrator 使用同步 borrowed span 读取权威 raster，不再复制多 GB 实例层 buffer；融合统计形成
-   后，生产服务在发布 Package 前释放实例 raster；
+4. 生产服务转移其拥有的 compose request；exact-single/full-grid 场景在严格校验中同步形成统计，
+   并将权威 RGBWSV 层 buffer 直接移动到输出。多实例或 offset 场景仍回退同步 borrowed composer；
 5. 持久化安全边界不放松：严格 RIP Reader 仍独立解码 TIFF，并核对 manifest 层统计与 TIFF
-   实际统计；不一致返回 `E_LAYER_STATISTICS_MISMATCH`。
+   实际统计；不一致返回 `E_LAYER_STATISTICS_MISMATCH`；
+6. 默认关闭的外层光油和表面光油不再按层物化全零 mask；上支撑边界未包含外层光油时借用
+   model mask，逐层合成共享单个只读空 mask。
 
 ## 2. 影响边界
 
@@ -36,8 +38,8 @@ TIFF 压缩和字节写入规则
 SPI v1、Worker 文件合同和 Profile hash
 ```
 
-公共 `SceneLayerComposeRequest` 继续拥有实例 vector；borrowed span 只作为同步内部入口，避免把
-非拥有生命周期暴露给普通调用方。
+公共 `SceneLayerComposeRequest` 继续拥有实例 vector，并提供显式 rvalue 重载表达消费语义；
+borrowed span 和 consuming fast path 都只作为同步内部入口，不把非拥有生命周期暴露给普通调用方。
 
 ## 3. 功能验证
 
@@ -65,7 +67,14 @@ manifest 层统计后的稳定 fail-closed 错误，以及连续宿主计时。
 补充 17 项矩阵为 16/17 PASS；唯一失败是既有
 `scene_layer_adapters_unit_tests::legacy_adapter_applies_admitted_instance_transform` 对平移前后局部
 layer 字节完全相等的断言。该用例不经过本次 validated evidence、融合统计或 Writer 路径，且相关
-Adapter/测试源文件本次未修改，作为独立残留回归记录，不据此改写本卡实现。
+Adapter 路径与失败断言本次未修改，作为独立残留回归记录，不据此改写本卡实现。
+
+2026-08-18 补充验证：Release 相关目标构建通过；`multi_model_layer_composer_unit_tests`、
+`multi_model_package_writer_unit_tests`、`multi_model_production_service_unit_tests`、
+`rgbwsv_production_package_writer_unit_tests` 为 4/4 PASS。新增
+`orchestrator_consumes_exact_single_instance_without_copy` 用例 PASS，确认输出 buffer 地址被移动，
+且 RGBWSV、逐层统计和场景统计与 borrowed 路径一致。Golden 全套与 Stage 10 output contract
+PASS。上述 scene adapter 既有平移断言仍失败，因此不将其整套测试误记为 PASS。
 
 ## 4. Runtime 发布
 

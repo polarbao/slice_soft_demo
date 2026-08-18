@@ -2,8 +2,8 @@
 
 > 阶段：Stage 16
 > 状态：**16A-06 / 16B-03 / 16C-01..03 / 16C-05 / 16D-01..04 / 16D-02-R1 已实施；16C-05 等待同请求五模型性能复测；16B-04 / 16D-05 待单独授权**
-> 版本：v2.3
-> 日期：2026-08-17
+> 版本：v2.4
+> 日期：2026-08-18
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
 ## 0. 🔴 2026-08-11 用户裁定：准入 Gate 口径与开工条件
@@ -311,7 +311,7 @@ SHA-256 完全一致，RIP strict 6/6 PASS。三模型 Release 交替 A/B 各 3 
 **carry-in：** 12F-05
 **出口：** RGBWSV 逐层 hash、report totals、Stage 15 闭合和 RIP strict 一致。
 
-**状态：IMPLEMENTATION COMPLETE / PERFORMANCE RE-MEASURE PENDING（2026-08-17）**
+**状态：IMPLEMENTATION COMPLETE / PERFORMANCE RE-MEASURE PENDING（2026-08-18）**
 
 **实际结果：** Composer 在既有源层闭合扫描中同步形成逐实例六通道统计与包围盒，在最终输出
 闭合扫描中同步形成逐层六通道统计；生产服务通过不可伪造的 validated result 复用该证据，删除
@@ -319,10 +319,22 @@ SHA-256 完全一致，RIP strict 6/6 PASS。三模型 Release 交替 A/B 各 3 
 不再复制全部实例层 buffer；统计证据形成后提前释放实例 raster。持久化后仍由严格 RIP Reader
 独立解码 TIFF，并新增 manifest 层统计与 TIFF 实际统计不一致的 fail-closed 错误码。
 
+补充优化已让生产服务转移其拥有的 compose request；仅在“单个可见实例且局部 Grid 与全局 Grid
+完全一致”时，Composer 在同一次严格校验中形成逐层/场景统计，并将权威 RGBWSV 层 buffer 直接
+移动到输出。多实例或存在 offset 的场景仍显式回退既有 borrowed composer。默认关闭的外层光油、
+表面光油不再按层物化全零 mask，上支撑边界未包含外层光油时直接借用 model mask；逐层合成共享
+单个只读空 mask，不改变任何输出字节或材料优先级。
+
 Release 定向门禁 8/8 PASS，263 层 PackBits 历史包使用新严格 Reader 三次均 PASS；Runtime
 模块、Worker、Reader、宿主与本次构建 SHA-256 一致，self-test PASS。原始 0.021 mm 五模型
 请求快照未保留，故本卡不虚构完整 before/after；需由参考宿主以相同模型、变换、Profile、层厚、
 DPI 和压缩再运行一次后补齐性能数字，再将状态改为 COMPLETE。
+
+2026-08-18 补充门禁：Release 相关目标构建通过；Layer Composer、Package Writer、Production
+Service、RGBWSV Writer 定向 CTest 4/4 PASS；新增 exact-single consuming 用例确认输出 buffer
+地址被移动且 RGBWSV/逐层/场景统计与 borrowed 路径一致。Golden 全套和 Stage 10 output contract
+PASS。`scene_layer_adapters_unit_tests` 的新增用例 PASS，但整套仍保留本卡原已记录的
+`legacy_adapter_applies_admitted_instance_transform` 独立失败，不据此虚构 16C-05 全量 Gate PASS。
 
 ### 16C-06 Occupancy Provider 分块/流式化
 
@@ -473,6 +485,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-18 | v2.4 | 补充 16C-05 内存复用：生产服务转移拥有的 compose request，exact-single/full-grid 路径在严格校验中形成统计并移动权威 RGBWSV layer buffer，多实例/offset 保持 borrowed fallback；默认关闭的可选光油 mask 改为按需物化并跨层复用只读空 mask。Release 定向 4/4、Golden 与 Stage 10 output contract PASS；原有 scene adapter 平移断言失败继续单列，性能状态仍为 RE-MEASURE PENDING。 |
 | 2026-08-17 | v2.3 | 完成 16C-05 代码与功能门禁：Layer Composer 融合逐实例/逐层统计，生产链复用 validated evidence，Orchestrator 借用 raster 并提前释放输入 buffer，严格 Reader 独立核对持久化层统计。Release 定向 8/8、263 层历史包严格校验和 Runtime self-test PASS；因原始 0.021 mm 五模型请求快照未保留，性能状态保留为 RE-MEASURE PENDING，不虚构完整 A/B。 |
 | 2026-08-14 | v2.2 | 用户裁定覆盖 16D-02 的双预览呈现：结果页取消首层 A/当前层 B 并排渲染，恢复旧版单个当前生产层预览，默认显示 RGBWSV 合成；策略、姿态边界、性能和当前层 manifest 通道统计保留。生产 TIFF、采样和姿态默认值不变。 |
 | 2026-08-13 | v2.1 | 完成 16D-04：输出 REPORT_16 六段式收口结论；Stage 16 以工程候选完成、生产默认延期收口，16C-04..09 和正式设备预算保留后续排期，16B-04/16D-05 继续等待独立授权。 |

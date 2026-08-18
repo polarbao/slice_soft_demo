@@ -127,8 +127,9 @@ bool ExtendExtent(
 
 }  // namespace
 
-SceneLayerComposeResult ComposeAdmittedSceneRasters(
-    const MultiModelLayerComposeRequest& request)
+template <bool Consume, typename RequestType>
+SceneLayerComposeResult ComposeAdmittedSceneRastersImpl(
+    RequestType& request)
 {
     if (IsCancellationRequested(request))
     {
@@ -392,9 +393,30 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
     compose.quantizationtolerance =
         request.quantizationtolerance;
     compose.canceltoken = request.canceltoken;
-    return internal::ComposeSceneLayersBorrowed(
-        compose,
-        request.instances);
+    if constexpr (Consume)
+    {
+        return internal::ComposeSceneLayersConsuming(
+            compose,
+            std::move(request.instances));
+    }
+    else
+    {
+        return internal::ComposeSceneLayersBorrowed(
+            compose,
+            request.instances);
+    }
+}
+
+SceneLayerComposeResult ComposeAdmittedSceneRasters(
+    const MultiModelLayerComposeRequest& request)
+{
+    return ComposeAdmittedSceneRastersImpl<false>(request);
+}
+
+SceneLayerComposeResult ComposeAdmittedSceneRasters(
+    MultiModelLayerComposeRequest&& request)
+{
+    return ComposeAdmittedSceneRastersImpl<true>(request);
 }
 
 ValidatedSceneLayerComposeResult ComposeAdmittedSceneRastersValidated(
@@ -402,6 +424,13 @@ ValidatedSceneLayerComposeResult ComposeAdmittedSceneRastersValidated(
 {
     return ValidatedSceneLayerComposeResult{
         ComposeAdmittedSceneRasters(request)};
+}
+
+ValidatedSceneLayerComposeResult ComposeAdmittedSceneRastersValidated(
+    MultiModelLayerComposeRequest&& request)
+{
+    return ValidatedSceneLayerComposeResult{
+        ComposeAdmittedSceneRasters(std::move(request))};
 }
 
 }  // namespace slicer_core

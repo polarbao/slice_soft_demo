@@ -45,6 +45,9 @@ private:
     friend ValidatedSceneLayerComposeResult
     ComposeAdmittedSceneRastersValidated(
         const MultiModelLayerComposeRequest& request);
+    friend ValidatedSceneLayerComposeResult
+    ComposeAdmittedSceneRastersValidated(
+        MultiModelLayerComposeRequest&& request);
 };
 
 /**
@@ -75,6 +78,15 @@ namespace internal
 SceneLayerComposeResult ComposeSceneLayersBorrowed(
     const SceneLayerComposeRequest& request,
     std::span<const SceneInstanceRaster> instances);
+
+/**
+ * @brief Consume an owned raster list when an exact single-instance fast path is available.
+ *
+ * Multi-instance and offset scenes retain the established borrowed composer.
+ */
+SceneLayerComposeResult ComposeSceneLayersConsuming(
+    const SceneLayerComposeRequest& request,
+    std::vector<SceneInstanceRaster>&& instances);
 
 }  // namespace internal
 

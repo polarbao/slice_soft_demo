@@ -35,11 +35,27 @@ SceneLayerComposeResult ComposeAdmittedSceneRasters(
     const MultiModelLayerComposeRequest& request);
 
 /**
+ * @brief Compose an owned request and consume exact single-instance layer buffers.
+ * @param request Scene admission evidence and owned rasters.
+ * @return Writer-ready layers or a fail-closed error.
+ */
+SceneLayerComposeResult ComposeAdmittedSceneRasters(
+    MultiModelLayerComposeRequest&& request);
+
+/**
  * @brief Compose admitted rasters and preserve in-loop closure evidence.
  * @param request Scene admission evidence, revision, mode, and rasters.
  * @return Immutable validated composition, or a structured blocked result.
  */
 ValidatedSceneLayerComposeResult ComposeAdmittedSceneRastersValidated(
     const MultiModelLayerComposeRequest& request);
+
+/**
+ * @brief Compose an owned request while retaining immutable validation evidence.
+ * @param request Scene admission evidence and owned rasters.
+ * @return Immutable validated composition or a structured blocked result.
+ */
+ValidatedSceneLayerComposeResult ComposeAdmittedSceneRastersValidated(
+    MultiModelLayerComposeRequest&& request);
 
 }  // namespace slicer_core

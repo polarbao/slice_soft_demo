@@ -721,6 +721,64 @@ bool OrchestratorBuildsSharedGridAndComposes()
             "right instance maps to global offset");
 }
 
+bool OrchestratorConsumesExactSingleInstanceWithoutCopy()
+{
+    std::vector<slicer_core::SceneInstanceRaster> rasters{
+        MakeRaster(
+            "single-owned",
+            slicer_core::SlicePipelineMode::Legacy,
+            MakeGrid(3, 2, 2, 1.0, 2.0),
+            {10U, 20U, 30U, 255U}),
+    };
+    slicer_core::MultiModelLayerComposeRequest borrowedRequest;
+    borrowedRequest.admission = MakeAdmission(rasters);
+    borrowedRequest.currentscenerevision = 17U;
+    borrowedRequest.effectivepipelinemode =
+        slicer_core::SlicePipelineMode::Legacy;
+    borrowedRequest.instances = rasters;
+    const slicer_core::SceneLayerComposeResult borrowed =
+        slicer_core::ComposeAdmittedSceneRasters(borrowedRequest);
+
+    slicer_core::MultiModelLayerComposeRequest ownedRequest;
+    ownedRequest.admission = MakeAdmission(rasters);
+    ownedRequest.currentscenerevision = 17U;
+    ownedRequest.effectivepipelinemode =
+        slicer_core::SlicePipelineMode::Legacy;
+    ownedRequest.instances = std::move(rasters);
+    const std::uint8_t* const originalLayerBytes =
+        ownedRequest.instances.front().layers.front().output.channels.data();
+    const slicer_core::SceneLayerComposeResult consumed =
+        slicer_core::ComposeAdmittedSceneRasters(std::move(ownedRequest));
+
+    return ExpectTrue(
+               borrowed.IsValid() && consumed.IsValid(),
+               "borrowed and consuming single-instance paths are valid")
+        && ExpectTrue(
+            consumed.layers.front().channels.data() == originalLayerBytes,
+            "consuming path moves the authoritative RGBWSV buffer")
+        && ExpectTrue(
+            consumed.layers.size() == borrowed.layers.size()
+                && consumed.layers.at(0).channels
+                    == borrowed.layers.at(0).channels
+                && consumed.layers.at(1).channels
+                    == borrowed.layers.at(1).channels,
+            "consuming path preserves every RGBWSV byte")
+        && ExpectTrue(
+            consumed.layerstatistics.size()
+                    == borrowed.layerstatistics.size()
+                && consumed.layerstatistics.at(0).printPixels
+                    == borrowed.layerstatistics.at(0).printPixels
+                && consumed.layerstatistics.at(0).emptyPixels
+                    == borrowed.layerstatistics.at(0).emptyPixels
+                && consumed.statistics.modelpixels
+                    == borrowed.statistics.modelpixels
+                && consumed.statistics.supportpixels
+                    == borrowed.statistics.supportpixels
+                && consumed.statistics.emptypixels
+                    == borrowed.statistics.emptypixels,
+            "consuming path preserves layer and scene statistics");
+}
+
 bool MixedModeAndMissingAdmissionFailClosed()
 {
     std::vector<slicer_core::SceneInstanceRaster> rasters{
@@ -777,6 +835,7 @@ int main()
         {"global_adapter_rejects_protocol_mutation", GlobalAdapterRejectsProtocolMutation},
         {"global_adapter_rejects_malformed_layer_without_throwing", GlobalAdapterRejectsMalformedLayerWithoutThrowing},
         {"orchestrator_builds_shared_grid_and_composes", OrchestratorBuildsSharedGridAndComposes},
+        {"orchestrator_consumes_exact_single_instance_without_copy", OrchestratorConsumesExactSingleInstanceWithoutCopy},
         {"orchestrator_uses_bed_zero_and_checked_extents", OrchestratorUsesBedZeroAndCheckedExtents},
         {"orchestrator_rejects_stale_transform_evidence", OrchestratorRejectsStaleTransformEvidence},
         {"orchestrator_rejects_duplicate_admission_identity", OrchestratorRejectsDuplicateAdmissionIdentity},
