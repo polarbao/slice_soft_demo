@@ -117,6 +117,7 @@ private:
         const QStringList& instanceIds,
         double deltaXMm,
         double deltaYMm,
+        double deltaZMm,
         double rotateXDegrees,
         double rotateYDegrees,
         double rotateZDegrees,

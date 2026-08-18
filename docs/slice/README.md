@@ -84,13 +84,14 @@ S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；�
 | `DOC/DOC_PREP_HOSTFLOW_H_B_02_模型实例列表与选择准备.md` | H-B-02 参考宿主模型列表、原子删除、多选、全选、视图联动与 A/B Gate |
 | `DOC/DOC_PREP_HOSTFLOW_H_B_03_实例变换与规则排版准备.md` | H-B-03 多选实例精确变换、镜像、规则排版、三车道边界与联合 Gate |
 | `DOC/DOC_DECISION_HOSTFLOW_H_B_03_R1_三轴旋转合同受控修订.md` | H-B-03-R1 封装版 X/Y/Z 三轴旋转、导入/变换显式触底及生产几何闭环 |
+| `DOC/DOC_DECISION_HOSTFLOW_H_B_03_R2_Z轴平移与主体触底受控修订.md` | H-B-03-R2 开放受控 Z 平移，并修复孤立微小组件误导主体触底 |
 | `DOC/DOC_PREP_HOSTFLOW_H_B_04_Profile目录与能力查询准备.md` | H-B-04 宿主 Profile 目录、ABI 能力求交、实现结果与验证 Gate |
 | `DOC/DOC_PREP_HOSTFLOW_H_B_05_切片参数与有效Profile准备.md` | H-B-05 宿主参数、设备 buildVolume、有效 Profile 预览、场景绑定与验证 Gate |
 | `DOC/DOC_DECISION_HOSTFLOW_H_B_04_R1_Profile发现协议缺口.md` | HQ-08-A 已授权：Profile 归宿主，模块能力经既有 ABI 求交 |
 | `REPORT/REPORT_14F_04_S2本地合同门禁当前状态.md` | 14F-04 S2 C1-C7 机器合同、正负例、CTest 与外部 RIP 延期边界 |
 | `REPORT/REPORT_14F_切片能力包本地交付与外部验收延期当前状态.md` | **Stage 14F 收口真源**：能力包可交付、接口冻结、六步本地门禁和外部验收延期边界 |
 | `../../contracts/slicer_rip_s2_contract.json` | 冻结的 S2 本地机器合同：输入协议、量化、白区、输出组织、混合和外部状态 |
-| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A..H-E、H-F-01..09 完成；H-F-10 已实现，Runtime 部署待关闭占用进程 |
+| `../codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md` | **独立补充专项（ACTIVE）**：H-A..H-E 与 H-F-01..12 完成；H-G 保持延期 |
 | `REPORT/REPORT_HOSTFLOW_H_F_01_参考宿主操作流回归收口当前状态.md` | H-F-01 默认导入目录、Profile 说明、自动排版和切片错误可见性收口 |
 | `REPORT/REPORT_HOSTFLOW_H_F_08_五模型切片耗时分析与优化.md` | H-F-08 五模型参数差异、报告统计与严格 TIFF 校验耗时分析及优化证据 |
 | `REPORT/REPORT_HOSTFLOW_H_F_09_宿主连续计时与Worker快照分离.md` | H-F-09 宿主连续计时、Worker 快照分离与第二次作业计时重置 |

@@ -238,6 +238,7 @@ Json SerializeTransform(const ModelTransform& value)
     return Json::object({
         {"translateXMm", normalized.translatexmm},
         {"translateYMm", normalized.translateymm},
+        {"translateZMm", normalized.translatezmm},
         {"rotateXDeg", normalized.rotatexdeg},
         {"rotateYDeg", normalized.rotateydeg},
         {"rotateZDeg", normalized.rotatezdeg},
@@ -253,6 +254,7 @@ ModelTransform DeserializeTransform(const Json& value)
     ModelTransform transform;
     transform.translatexmm = value.at("translateXMm").as_double();
     transform.translateymm = value.at("translateYMm").as_double();
+    transform.translatezmm = value.value("translateZMm", 0.0);
     transform.rotatexdeg = value.value("rotateXDeg", 0.0);
     transform.rotateydeg = value.value("rotateYDeg", 0.0);
     transform.rotatezdeg = value.at("rotateZDeg").as_double();
@@ -601,7 +603,10 @@ bool TransformsApproximatelyEquivalent(
             normalizedRight.translatexmm)
         || !close(
             normalizedLeft.translateymm,
-            normalizedRight.translateymm))
+            normalizedRight.translateymm)
+        || !close(
+            normalizedLeft.translatezmm,
+            normalizedRight.translatezmm))
     {
         return false;
     }

@@ -197,6 +197,10 @@
         "translateYMm": {
           "type": "number"
         },
+        "translateZMm": {
+          "type": "number",
+          "default": 0
+        },
         "rotateXDeg": {
           "type": "number"
         },

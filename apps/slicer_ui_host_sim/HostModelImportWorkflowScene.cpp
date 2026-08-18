@@ -37,7 +37,8 @@ void AppendInstanceOperations(
     QJsonArray* operations)
 {
     if (!IsZero(request.deltaxmm)
-        || !IsZero(request.deltaymm))
+        || !IsZero(request.deltaymm)
+        || !IsZero(request.deltazmm))
     {
         operations->append(QJsonObject{
             {QStringLiteral("type"), QStringLiteral("translate")},
@@ -45,7 +46,7 @@ void AppendInstanceOperations(
             {QStringLiteral("deltaMm"), QJsonArray{
                  request.deltaxmm,
                  request.deltaymm,
-                 0.0}}});
+                 request.deltazmm}}});
     }
     if (!IsZero(request.rotatexdegrees))
     {
@@ -212,6 +213,7 @@ bool HostModelImportWorkflow::ApplyTransforms(
 {
     if (!std::isfinite(request.deltaxmm)
         || !std::isfinite(request.deltaymm)
+        || !std::isfinite(request.deltazmm)
         || !std::isfinite(request.rotatexdegrees)
         || !std::isfinite(request.rotateydegrees)
         || !std::isfinite(request.rotatezdegrees)

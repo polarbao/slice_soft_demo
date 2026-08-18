@@ -89,6 +89,7 @@ int main(int argc, char* argv[])
         [&](const QStringList& instanceIds,
             const double deltaXMm,
             const double deltaYMm,
+            const double deltaZMm,
             const double rotateXDegrees,
             const double rotateYDegrees,
             const double rotateZDegrees,
@@ -102,6 +103,7 @@ int main(int argc, char* argv[])
                 hosttransformrequest{
                     deltaXMm,
                     deltaYMm,
+                    deltaZMm,
                     rotateXDegrees,
                     rotateYDegrees,
                     rotateZDegrees,
@@ -137,6 +139,8 @@ int main(int argc, char* argv[])
 
     auto* deltaX = panel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostTransformDeltaXSpin"));
+    auto* deltaZ = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("hostTransformDeltaZSpin"));
     auto* rotateX = panel.findChild<QDoubleSpinBox*>(
         QStringLiteral("hostTransformRotateXSpin"));
     auto* rotateY = panel.findChild<QDoubleSpinBox*>(
@@ -159,7 +163,7 @@ int main(int argc, char* argv[])
         QStringLiteral("hostLayoutRowsSpin"));
     auto* applyLayout = panel.findChild<QPushButton*>(
         QStringLiteral("hostLayoutApplyButton"));
-    if (!Check(deltaX != nullptr && rotateX != nullptr
+    if (!Check(deltaX != nullptr && deltaZ != nullptr && rotateX != nullptr
                    && rotateY != nullptr && rotateZ != nullptr
                    && scale != nullptr
                    && mirrorX != nullptr && autoLand != nullptr
@@ -186,6 +190,12 @@ int main(int argc, char* argv[])
 
     client.ResetCallCount();
     deltaX->setValue(4.0);
+    deltaZ->setValue(3.0);
+    if (!Check(!autoLand->isChecked(),
+               QStringLiteral("非零 Z 增量必须关闭自动触底。"), errors))
+    {
+        return 13;
+    }
     rotateX->setValue(8.0);
     rotateY->setValue(-6.0);
     rotateZ->setValue(15.0);
@@ -208,6 +218,13 @@ int main(int argc, char* argv[])
                   QStringLiteral("点击提交必须跨公开 SPI。"), errors))
     {
         return 7;
+    }
+
+    autoLand->setChecked(true);
+    if (!Check(std::abs(deltaZ->value()) <= 1.0e-9,
+               QStringLiteral("重新启用自动触底必须清零 Z 增量。"), errors))
+    {
+        return 14;
     }
 
     land->click();

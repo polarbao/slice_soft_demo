@@ -121,6 +121,7 @@ Matrix4d BuildWorldMatrix(
         pivotZ - linear.at(6U) * pivotX
             - linear.at(7U) * pivotY
             - linear.at(8U) * pivotZ
+            + canonical.translatezmm
             + landingOffsetZMm,
         0.0, 0.0, 0.0, 1.0};
     return matrix;

@@ -7,6 +7,7 @@ void HostMainWindow::OnTransformRequested(
     const QStringList& instanceIds,
     const double deltaXMm,
     const double deltaYMm,
+    const double deltaZMm,
     const double rotateXDegrees,
     const double rotateYDegrees,
     const double rotateZDegrees,
@@ -23,6 +24,7 @@ void HostMainWindow::OnTransformRequested(
         hosttransformrequest{
             deltaXMm,
             deltaYMm,
+            deltaZMm,
             rotateXDegrees,
             rotateYDegrees,
             rotateZDegrees,

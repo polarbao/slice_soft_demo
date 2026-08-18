@@ -172,6 +172,19 @@ void RejectsNonTranslationAndStaleIdentity()
                 == slicer_core::SceneRasterErrorCode::ProducerFailed,
         "rotation should require a new producer run");
 
+    slicer_core::ModelInstance lifted =
+        MakeInstance("lifted", 20.0, 0.0);
+    lifted.transform.translatezmm = 1.0;
+    request.targetinstance = lifted;
+    request.targetidentity = MakeIdentity(lifted);
+    const slicer_core::SceneRasterAdapterResult liftedResult =
+        slicer_core::ReuseTranslatedSceneRaster(request);
+    Require(
+        liftedResult.error.has_value()
+            && liftedResult.error->code
+                == slicer_core::SceneRasterErrorCode::ProducerFailed,
+        "Z translation should require a new producer run");
+
     request.targetinstance = MakeInstance("stale", 20.0, 0.0);
     request.targetidentity = MakeIdentity(request.targetinstance);
     request.targetidentity.transformhash = "stale";
@@ -220,4 +233,3 @@ int main()
     std::cout << "translated_scene_raster_reuse_unit_tests passed\n";
     return 0;
 }
-

@@ -409,6 +409,60 @@ void VerifiesExplicitBuildPlateLanding()
         "rotate-and-land batch should increment revision once");
 }
 
+void VerifiesZTranslationAndLandingReset()
+{
+    const TestCancelToken active;
+    const auto facade = CreateFacade();
+    slicer_core::api::SceneOperation translate;
+    translate.type = slicer_core::api::SceneOperationType::Translate;
+    translate.instance_id = "instance-a";
+    translate.value_z = 5.0;
+
+    slicer_core::api::SceneOperationRequest translateRequest;
+    translateRequest.scene_id = 42U;
+    translateRequest.operation_id = "operation-translate-z";
+    translateRequest.current_scene_revision = 7U;
+    translateRequest.expected_scene_revision = 7U;
+    translateRequest.operations.push_back(translate);
+    const auto translated = facade->ApplyOperation(translateRequest, active);
+    Require(translated.IsOk(), "Z translation should commit");
+    const auto& translatedScene = translated.Value()->snapshot.scene;
+    Require(
+        translatedScene.instances.front().requestedtransform.translatezmm
+                == 5.0
+            && !translatedScene.instances.front()
+                    .requestedtransform.landonbuildplate,
+        "manual Z translation should disable persistent landing");
+    Require(
+        translated.Value()->snapshot.instances.front()
+                .instance.world_matrix.values.at(11U)
+            == 5.0,
+        "ViewData world matrix should carry manual Z translation");
+
+    slicer_core::api::SceneOperation land;
+    land.type = slicer_core::api::SceneOperationType::LandOnBuildPlate;
+    land.instance_id = "instance-a";
+    slicer_core::api::SceneOperationRequest landRequest;
+    landRequest.scene_id = 42U;
+    landRequest.operation_id = "operation-reset-z-by-landing";
+    landRequest.current_scene_revision = 8U;
+    landRequest.expected_scene_revision = 8U;
+    landRequest.operations.push_back(land);
+    const auto landed = facade->ApplyOperation(landRequest, active);
+    Require(landed.IsOk(), "landing after Z translation should commit");
+    const auto& landedTransform =
+        landed.Value()->snapshot.scene.instances.front().requestedtransform;
+    Require(
+        landedTransform.translatezmm == 0.0
+            && landedTransform.landonbuildplate,
+        "explicit landing should reset manual Z translation");
+    Require(
+        std::abs(landed.Value()->snapshot.instances.front()
+                     .effective_bounds_mm.min_mm.at(2U))
+            <= 1.0e-9,
+        "explicit landing should restore the body to Z=0");
+}
+
 void VerifiesAddRemoveReplayAndAtomicity()
 {
     const TestCancelToken active;
@@ -673,6 +727,7 @@ int main()
     VerifiesRevisionReplayAndAtomicity();
     VerifiesAuthoritativeCollisionAndBounds();
     VerifiesExplicitBuildPlateLanding();
+    VerifiesZTranslationAndLandingReset();
     VerifiesAddRemoveReplayAndAtomicity();
     VerifiesGridLayoutCommitAndAtomicity();
     VerifiesCancellationAndProviderBoundary();

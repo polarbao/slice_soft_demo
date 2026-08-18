@@ -21,6 +21,7 @@ struct ModelTransform
     bool mirrorx{false};
     bool mirrory{false};
     bool landonbuildplate{false};
+    double translatezmm{0.0};
 };
 
 /**

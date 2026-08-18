@@ -601,6 +601,10 @@ private:
         {
             transform.translateymm = RequireNumber(value, "translateYMm");
         }
+        if (value.contains("translateZMm"))
+        {
+            transform.translatezmm = RequireNumber(value, "translateZMm");
+        }
         if (value.contains("rotateXDeg"))
         {
             transform.rotatexdeg = RequireNumber(value, "rotateXDeg");

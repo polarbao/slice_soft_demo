@@ -317,8 +317,10 @@ bool VerifyExternalStlLanding(
         errors << "外部 STL 场景快照失败：" << error << Qt::endl;
         return false;
     }
-    const QJsonObject scene = QJsonDocument::fromJson(responseBytes)
-        .object().value(QStringLiteral("scene")).toObject();
+    const QJsonObject response = QJsonDocument::fromJson(responseBytes)
+        .object();
+    const QJsonObject scene = response.value(
+        QStringLiteral("scene")).toObject();
     const QJsonArray instances = scene.value(
         QStringLiteral("instances")).toArray();
     if (instances.size() != 1)
@@ -333,13 +335,39 @@ bool VerifyExternalStlLanding(
         QStringLiteral("effectiveBboxMm")).toObject()
         .value(QStringLiteral("min")).toObject()
         .value(QStringLiteral("z")).toDouble();
+    const double maximumZ = instance.value(
+        QStringLiteral("effectiveBboxMm")).toObject()
+        .value(QStringLiteral("max")).toObject()
+        .value(QStringLiteral("z")).toDouble();
+    const QJsonArray authorityInstances = response.value(
+        QStringLiteral("instances")).toArray();
+    const QJsonArray worldMatrix = authorityInstances.size() == 1
+        ? authorityInstances.at(0).toObject().value(
+        QStringLiteral("canonicalTransform")).toObject()
+            .value(QStringLiteral("worldMatrix")).toArray()
+        : QJsonArray{};
+    const double translationZ = worldMatrix.size() == 16
+        ? worldMatrix.at(11).toDouble()
+        : 0.0;
     const bool passed = imported.trianglecount > 0U
         && requested.value(QStringLiteral("landOnBuildPlate")).toBool()
-        && std::abs(minimumZ) <= 1.0e-9;
+        && std::abs(translationZ) <= 1.0e-9
+        && std::abs(minimumZ) <= 1.0e-9
+        && maximumZ > 3.0 && maximumZ < 6.0;
     if (!passed)
     {
-        errors << "外部 STL 未以 minZ=0 的触底状态进入权威场景。"
+        errors << "外部 STL 经既有导入清理后未以主体落点触底："
+               << " worldZ=" << translationZ
+               << " bboxZ=" << minimumZ << ".." << maximumZ
+               << " triangles=" << imported.trianglecount
                << Qt::endl;
+    }
+    else
+    {
+        QTextStream(stdout)
+            << "EXTERNAL_STL_LANDING worldZ=" << translationZ
+            << " bboxZ=" << minimumZ << ".." << maximumZ
+            << " triangles=" << imported.trianglecount << Qt::endl;
     }
     return passed;
 }

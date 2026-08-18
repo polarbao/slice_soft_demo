@@ -57,6 +57,7 @@ signals:
         const QStringList& instanceIds,
         double deltaXMm,
         double deltaYMm,
+        double deltaZMm,
         double rotateXDegrees,
         double rotateYDegrees,
         double rotateZDegrees,
@@ -88,6 +89,7 @@ private:
     QLabel* m_sceneLabel{nullptr};
     QDoubleSpinBox* m_deltaXSpin{nullptr};
     QDoubleSpinBox* m_deltaYSpin{nullptr};
+    QDoubleSpinBox* m_deltaZSpin{nullptr};
     QDoubleSpinBox* m_rotateXSpin{nullptr};
     QDoubleSpinBox* m_rotateYSpin{nullptr};
     QDoubleSpinBox* m_rotateZSpin{nullptr};

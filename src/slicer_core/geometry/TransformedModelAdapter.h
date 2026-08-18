@@ -3,6 +3,7 @@
 #include "slicer_core/scene/ModelInstance.h"
 #include "slicer_core/scene/SceneModel.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -20,6 +21,8 @@ struct TransformedModelGeometry
     BoundingBox bboxmm;
     Vec3 pivotmm;
     double landingoffsetzmm{0.0};
+    double landingreferencezmm{0.0};
+    std::size_t landingignoredcomponentcount{0U};
     int determinantsign{1};
     bool mirrored{false};
     std::uint64_t transformrevision{0U};

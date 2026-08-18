@@ -57,8 +57,8 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.12":
-        raise AssertionError("expected the XYZ scene transform contract")
+    if contract["contractVersion"] != "1.13":
+        raise AssertionError("expected the XYZ translation contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -122,6 +122,7 @@ def Main() -> int:
             "operations[].initialTransform",
             "operations[].initialTransform.translateXMm",
             "operations[].initialTransform.translateYMm",
+            "operations[].initialTransform.translateZMm",
             "operations[].initialTransform.rotateXDeg",
             "operations[].initialTransform.rotateYDeg",
             "operations[].initialTransform.rotateZDeg",
@@ -372,10 +373,18 @@ def Main() -> int:
     for rotation in ("rotateX", "rotateY"):
         if requirements[rotation] != {"required": ["instanceId", "degrees"]}:
             raise AssertionError(f"{rotation} contract drifted")
+    if requirements["translate"] != {
+        "required": ["instanceId", "deltaMm"],
+        "axes": "xyz",
+        "nonZeroZDisablesPersistentLanding": True,
+    }:
+        raise AssertionError("XYZ translation contract drifted")
     if requirements["landOnBuildPlate"] != {
         "required": ["instanceId"],
         "targetPlane": "z_equals_zero",
         "persistentForSubsequentTransforms": True,
+        "resetsTranslateZMm": True,
+        "reference": "significant_connected_components",
     }:
         raise AssertionError("explicit build-plate landing contract drifted")
     gridLayout = requirements["applyGridLayout"]
@@ -648,7 +657,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus XYZ transform v1.12 contract: PASS")
+    print("15 capability DTOs plus XYZ translation v1.13 contract: PASS")
     return 0
 
 

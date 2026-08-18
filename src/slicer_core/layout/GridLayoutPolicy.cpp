@@ -49,6 +49,8 @@ bool IsTranslationOnly(const ModelTransform& transform)
         NormalizeModelTransform(transform);
     return std::isfinite(normalized.translatexmm)
         && std::isfinite(normalized.translateymm)
+        && std::isfinite(normalized.translatezmm)
+        && std::abs(normalized.translatezmm) <= kBoundsTolerance
         && std::abs(normalized.rotatexdeg) <= kBoundsTolerance
         && std::abs(normalized.rotateydeg) <= kBoundsTolerance
         && std::abs(normalized.rotatezdeg) <= kBoundsTolerance

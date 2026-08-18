@@ -130,7 +130,8 @@ std::string AddRequest(
         request << ",\"assignInstanceId\":\"" << assignedId << "\"";
     }
     request << ",\"initialTransform\":{\"translateXMm\":10,"
-            << "\"translateYMm\":12,\"rotateXDeg\":2,"
+            << "\"translateYMm\":12,\"translateZMm\":1.5,"
+            << "\"rotateXDeg\":2,"
             << "\"rotateYDeg\":-3,\"rotateZDeg\":5,"
             << "\"uniformScale\":1,\"mirrorX\":false,"
             << "\"mirrorY\":false}}]}";

@@ -46,6 +46,7 @@ struct hosttransformrequest
 {
     double deltaxmm{0.0};
     double deltaymm{0.0};
+    double deltazmm{0.0};
     double rotatexdegrees{0.0};
     double rotateydegrees{0.0};
     double rotatezdegrees{0.0};
@@ -137,7 +138,7 @@ public:
         hostsceneeditresult* result,
         QString* error);
 
-    /** @brief 将选中实例的最终包围盒最低点贴到构建平台 Z=0。 */
+    /** @brief 将选中实例的主体落点贴到构建平台 Z=0。 */
     bool LandOnBuildPlate(
         const QStringList& instanceIds,
         hostsceneeditresult* result,

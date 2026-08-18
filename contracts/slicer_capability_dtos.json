@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.12",
+  "contractVersion": "1.13",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -110,6 +110,7 @@
         { "path": "operations[].initialTransform", "type": "object", "required": false },
         { "path": "operations[].initialTransform.translateXMm", "type": "number", "required": false },
         { "path": "operations[].initialTransform.translateYMm", "type": "number", "required": false },
+        { "path": "operations[].initialTransform.translateZMm", "type": "number", "required": false },
         { "path": "operations[].initialTransform.rotateXDeg", "type": "number", "required": false },
         { "path": "operations[].initialTransform.rotateYDeg", "type": "number", "required": false },
         { "path": "operations[].initialTransform.rotateZDeg", "type": "number", "required": false },
@@ -591,6 +592,7 @@
         "defaultInitialTransform": {
           "translateXMm": 0,
           "translateYMm": 0,
+          "translateZMm": 0,
           "rotateXDeg": 0,
           "rotateYDeg": 0,
           "rotateZDeg": 0,
@@ -622,7 +624,11 @@
         "capacityLimit": 22,
         "resultIncludesCollisionAndOutOfBounds": true
       },
-      "translate": { "required": ["instanceId", "deltaMm"] },
+      "translate": {
+        "required": ["instanceId", "deltaMm"],
+        "axes": "xyz",
+        "nonZeroZDisablesPersistentLanding": true
+      },
       "rotateX": { "required": ["instanceId", "degrees"] },
       "rotateY": { "required": ["instanceId", "degrees"] },
       "rotateZ": { "required": ["instanceId", "degrees"] },
@@ -631,7 +637,9 @@
       "landOnBuildPlate": {
         "required": ["instanceId"],
         "targetPlane": "z_equals_zero",
-        "persistentForSubsequentTransforms": true
+        "persistentForSubsequentTransforms": true,
+        "resetsTranslateZMm": true,
+        "reference": "significant_connected_components"
       }
     },
     "sessionLifetime": {

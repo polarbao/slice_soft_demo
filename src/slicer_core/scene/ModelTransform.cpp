@@ -18,6 +18,8 @@ namespace
 
 constexpr std::string_view kModelTransformSchema{
     "slicesoft.model_transform.2"};
+constexpr std::string_view kModelTransformZSchema{
+    "slicesoft.model_transform.3"};
 
 using Matrix3 = std::array<double, 9>;
 
@@ -213,6 +215,7 @@ ModelTransformValidationResult ValidateModelTransform(
     } finiteValues[]{
         {"translatexmm", transform.translatexmm},
         {"translateymm", transform.translateymm},
+        {"translatezmm", transform.translatezmm},
         {"rotatexdeg", transform.rotatexdeg},
         {"rotateydeg", transform.rotateydeg},
         {"rotatezdeg", transform.rotatezdeg},
@@ -251,6 +254,7 @@ ModelTransform NormalizeModelTransform(const ModelTransform& transform)
     ModelTransform normalized = transform;
     normalized.translatexmm = NormalizeSignedZero(normalized.translatexmm);
     normalized.translateymm = NormalizeSignedZero(normalized.translateymm);
+    normalized.translatezmm = NormalizeSignedZero(normalized.translatezmm);
     normalized.uniformscale = NormalizeSignedZero(normalized.uniformscale);
     normalized.rotatexdeg = NormalizeDegrees(normalized.rotatexdeg);
     normalized.rotateydeg = NormalizeDegrees(normalized.rotateydeg);
@@ -266,6 +270,7 @@ bool ModelTransformsEquivalent(
     const ModelTransform normalizedRight = NormalizeModelTransform(right);
     return normalizedLeft.translatexmm == normalizedRight.translatexmm
         && normalizedLeft.translateymm == normalizedRight.translateymm
+        && normalizedLeft.translatezmm == normalizedRight.translatezmm
         && normalizedLeft.rotatexdeg == normalizedRight.rotatexdeg
         && normalizedLeft.rotateydeg == normalizedRight.rotateydeg
         && normalizedLeft.rotatezdeg == normalizedRight.rotatezdeg
@@ -297,6 +302,7 @@ ModelTransform ComposeModelTransforms(
         ModelTransform result = normalizedInner;
         result.translatexmm += normalizedOuter.translatexmm;
         result.translateymm += normalizedOuter.translateymm;
+        result.translatezmm += normalizedOuter.translatezmm;
         result.landonbuildplate =
             normalizedOuter.landonbuildplate
             || normalizedInner.landonbuildplate;
@@ -328,11 +334,18 @@ ModelTransform ComposeModelTransforms(
     result.translatexmm =
         outerLinear.at(0U) * normalizedInner.translatexmm
         + outerLinear.at(1U) * normalizedInner.translateymm
+        + outerLinear.at(2U) * normalizedInner.translatezmm
         + normalizedOuter.translatexmm;
     result.translateymm =
         outerLinear.at(3U) * normalizedInner.translatexmm
         + outerLinear.at(4U) * normalizedInner.translateymm
+        + outerLinear.at(5U) * normalizedInner.translatezmm
         + normalizedOuter.translateymm;
+    result.translatezmm =
+        outerLinear.at(6U) * normalizedInner.translatexmm
+        + outerLinear.at(7U) * normalizedInner.translateymm
+        + outerLinear.at(8U) * normalizedInner.translatezmm
+        + normalizedOuter.translatezmm;
     result.landonbuildplate =
         normalizedOuter.landonbuildplate
         || normalizedInner.landonbuildplate;
@@ -366,14 +379,21 @@ ModelTransformHashResult ComputeModelTransformHash(
     const ModelTransform normalized = NormalizeModelTransform(transform);
     std::ostringstream payload;
     payload.imbue(std::locale::classic());
-    AppendLengthPrefixed(payload, kModelTransformSchema);
+    const bool hasZTranslation = normalized.translatezmm != 0.0;
+    AppendLengthPrefixed(
+        payload,
+        hasZTranslation ? kModelTransformZSchema : kModelTransformSchema);
     AppendLengthPrefixed(payload, sourceTransformIdentity);
     AppendLengthPrefixed(payload, instanceId);
     AppendLengthPrefixed(payload, modelId);
     payload << std::setprecision(std::numeric_limits<double>::max_digits10)
             << normalized.translatexmm << '\n'
-            << normalized.translateymm << '\n'
-            << normalized.rotatexdeg << '\n'
+            << normalized.translateymm << '\n';
+    if (hasZTranslation)
+    {
+        payload << normalized.translatezmm << '\n';
+    }
+    payload << normalized.rotatexdeg << '\n'
             << normalized.rotateydeg << '\n'
             << normalized.rotatezdeg << '\n'
             << normalized.uniformscale << '\n'

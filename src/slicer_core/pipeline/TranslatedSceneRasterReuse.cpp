@@ -34,7 +34,8 @@ bool SameNonTranslationTransform(
     const ModelTransform& first,
     const ModelTransform& second)
 {
-    return first.rotatexdeg == second.rotatexdeg
+    return first.translatezmm == second.translatezmm
+        && first.rotatexdeg == second.rotatexdeg
         && first.rotateydeg == second.rotateydeg
         && first.rotatezdeg == second.rotatezdeg
         && first.uniformscale == second.uniformscale
@@ -149,7 +150,7 @@ SceneRasterAdapterResult ReuseTranslatedSceneRaster(
             request,
             SceneRasterErrorCode::ProducerFailed,
             "targetinstance.transform",
-            "rotation, scale, mirror, or landing changes require a new local layer producer run");
+            "Z translation, rotation, scale, mirror, or landing changes require a new local layer producer run");
         return result;
     }
 

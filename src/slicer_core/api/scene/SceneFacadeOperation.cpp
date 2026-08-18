@@ -265,15 +265,13 @@ ApiResult<ModelTransform> ApplyDelta(
     switch (operation.type)
     {
     case SceneOperationType::Translate:
-        if (operation.value_z != 0.0)
-        {
-            return Failure<ModelTransform>(
-                "PM-SLICER-PROFILE-0031",
-                "Stage 14B scene translation is limited to XY",
-                operation.instance_id);
-        }
         candidate.translatexmm += operation.value_x;
         candidate.translateymm += operation.value_y;
+        candidate.translatezmm += operation.value_z;
+        if (operation.value_z != 0.0)
+        {
+            candidate.landonbuildplate = false;
+        }
         break;
     case SceneOperationType::RotateX:
         candidate.rotatexdeg += operation.value_x;
@@ -301,6 +299,7 @@ ApiResult<ModelTransform> ApplyDelta(
         candidate.mirrory = !candidate.mirrory;
         break;
     case SceneOperationType::LandOnBuildPlate:
+        candidate.translatezmm = 0.0;
         candidate.landonbuildplate = true;
         break;
     default:
@@ -549,6 +548,8 @@ std::string ComputeOperationFingerprint(const SceneOperationRequest& request)
                   << FormatNumber(operation.initial_transform.translatexmm)
                   << ",\"translateYMm\":"
                   << FormatNumber(operation.initial_transform.translateymm)
+                  << ",\"translateZMm\":"
+                  << FormatNumber(operation.initial_transform.translatezmm)
                   << ",\"rotateXDeg\":"
                   << FormatNumber(operation.initial_transform.rotatexdeg)
                   << ",\"rotateYDeg\":"

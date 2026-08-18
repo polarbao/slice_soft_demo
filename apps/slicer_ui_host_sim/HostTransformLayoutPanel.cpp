@@ -9,6 +9,8 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 
+#include <cmath>
+
 namespace
 {
 QDoubleSpinBox* CreateDistanceSpin(const QString& objectName, QWidget* parent)
@@ -69,6 +71,10 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
         QStringLiteral("hostTransformDeltaXSpin"), transformGroup);
     m_deltaYSpin = CreateDistanceSpin(
         QStringLiteral("hostTransformDeltaYSpin"), transformGroup);
+    m_deltaZSpin = CreateDistanceSpin(
+        QStringLiteral("hostTransformDeltaZSpin"), transformGroup);
+    m_deltaZSpin->setToolTip(QStringLiteral(
+        "沿 Z 轴增量移动；非零值会关闭自动触底，显式触底可复位到平台"));
     m_rotateXSpin = CreateAngleSpin(
         QStringLiteral("hostTransformRotateXSpin"), transformGroup);
     m_rotateYSpin = CreateAngleSpin(
@@ -99,9 +105,10 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
         QStringLiteral("hostTransformAutoLandCheck"));
     m_autoLandCheck->setChecked(true);
     m_autoLandCheck->setToolTip(QStringLiteral(
-        "提交旋转、缩放或镜像后，由切片模块将最终模型最低点贴到 Z=0"));
+        "提交旋转、缩放或镜像后，由切片模块将模型主体落点贴到 Z=0"));
     transformForm->addRow(QStringLiteral("X 增量"), m_deltaXSpin);
     transformForm->addRow(QStringLiteral("Y 增量"), m_deltaYSpin);
+    transformForm->addRow(QStringLiteral("Z 增量"), m_deltaZSpin);
     transformForm->addRow(QStringLiteral("绕 X 旋转"), m_rotateXSpin);
     transformForm->addRow(QStringLiteral("绕 Y 旋转"), m_rotateYSpin);
     transformForm->addRow(QStringLiteral("绕 Z 旋转"), m_rotateZSpin);
@@ -120,7 +127,7 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
     m_landOnBuildPlateButton->setObjectName(
         QStringLiteral("hostTransformLandButton"));
     m_landOnBuildPlateButton->setToolTip(QStringLiteral(
-        "不改变当前角度和 XY 位置，只将模型最低点贴到构建平台 Z=0"));
+        "不改变当前角度和 XY 位置，清除手动 Z 偏移并将模型主体落点贴到 Z=0"));
     transformForm->addRow(m_landOnBuildPlateButton);
     root->addWidget(transformGroup);
 
@@ -158,6 +165,28 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
     root->addWidget(m_sceneLabel);
     root->addStretch(1);
 
+    connect(
+        m_deltaZSpin,
+        qOverload<double>(&QDoubleSpinBox::valueChanged),
+        this,
+        [this](const double value)
+        {
+            if (std::abs(value) > 1.0e-12)
+            {
+                m_autoLandCheck->setChecked(false);
+            }
+        });
+    connect(
+        m_autoLandCheck,
+        &QCheckBox::toggled,
+        this,
+        [this](const bool checked)
+        {
+            if (checked)
+            {
+                m_deltaZSpin->setValue(0.0);
+            }
+        });
     connect(
         m_applyTransformButton,
         &QPushButton::clicked,
@@ -213,6 +242,7 @@ void HostTransformLayoutPanel::ResetTransformInputs()
 {
     m_deltaXSpin->setValue(0.0);
     m_deltaYSpin->setValue(0.0);
+    m_deltaZSpin->setValue(0.0);
     m_rotateXSpin->setValue(0.0);
     m_rotateYSpin->setValue(0.0);
     m_rotateZSpin->setValue(0.0);
@@ -236,6 +266,7 @@ void HostTransformLayoutPanel::OnApplyTransform()
         m_selectedInstanceIds,
         m_deltaXSpin->value(),
         m_deltaYSpin->value(),
+        m_deltaZSpin->value(),
         m_rotateXSpin->value(),
         m_rotateYSpin->value(),
         m_rotateZSpin->value(),

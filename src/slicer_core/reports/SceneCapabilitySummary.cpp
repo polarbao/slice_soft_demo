@@ -35,6 +35,7 @@ Json TransformToJson(const ModelTransform& transform)
     return Json::object({
         {"translateXmm", transform.translatexmm},
         {"translateYmm", transform.translateymm},
+        {"translateZmm", transform.translatezmm},
         {"rotateXdeg", transform.rotatexdeg},
         {"rotateYdeg", transform.rotateydeg},
         {"rotateZdeg", transform.rotatezdeg},

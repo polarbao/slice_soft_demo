@@ -7,8 +7,10 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <numbers>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -186,6 +188,17 @@ bool StableErrorsAndValidation()
              "non-finite X rotation is rejected with field")
         && ok;
 
+    slicer_core::ModelTransform nonFiniteZ;
+    nonFiniteZ.translatezmm =
+        std::numeric_limits<double>::quiet_NaN();
+    const auto zValidation = slicer_core::ValidateModelTransform(
+        nonFiniteZ, "instance-1", "model-1");
+    ok = ExpectTrue(
+             !zValidation.IsValid()
+                 && zValidation.error->field == "translatezmm",
+             "non-finite Z translation is rejected with field")
+        && ok;
+
     slicer_core::ModelInstance missingInstanceId = MakeInstance();
     missingInstanceId.instanceid.clear();
     const auto instanceError =
@@ -266,6 +279,13 @@ bool TransformHashIsStableAndSensitive()
         "source-transform-2",
         "instance-1",
         "model-1");
+    slicer_core::ModelTransform changedZ = identity;
+    changedZ.translatezmm = 1.0;
+    const auto changedZTransform = slicer_core::ComputeModelTransformHash(
+        changedZ,
+        "source-transform-1",
+        "instance-1",
+        "model-1");
     const auto missingSource = slicer_core::ComputeModelTransformHash(
         identity,
         "",
@@ -281,6 +301,9 @@ bool TransformHashIsStableAndSensitive()
         && ExpectTrue(
             first.hash != changedTransform.hash,
             "transform change affects hash")
+        && ExpectTrue(
+            first.hash != changedZTransform.hash,
+            "Z translation affects hash")
         && ExpectTrue(
             first.hash != changedSource.hash,
             "source identity affects hash")
@@ -458,6 +481,7 @@ bool IndividualTransformCasesAreCorrect()
     slicer_core::ModelInstance translated = MakeInstance();
     translated.transform.translatexmm = 3.0;
     translated.transform.translateymm = -2.0;
+    translated.transform.translatezmm = 5.0;
     const auto translatedResult =
         slicer_core::AdaptTransformedModel(source, translated);
 
@@ -485,8 +509,8 @@ bool IndividualTransformCasesAreCorrect()
                translatedResult.IsValid()
                    && VecEqual(
                        translatedResult.geometry.triangles.front().a,
-                       {5.0, 0.0, 2.0}),
-               "XY translation is applied after the pivot transform")
+                       {5.0, 0.0, 7.0}),
+               "XYZ translation is applied after the pivot transform")
         && ExpectTrue(
             rotatedResult.IsValid()
                 && VecEqual(
@@ -577,6 +601,57 @@ bool TiltRotationsUseXyzOrderAndExplicitlyLandOnPlate()
             "explicit landing also grounds an unrotated offset source");
 }
 
+bool LandingUsesSignificantComponentsInsteadOfTinyMarkers()
+{
+    slicer_core::SceneModel source;
+    source.model_path = "marker-outlier.stl";
+    constexpr std::size_t kMainTriangleCount{1200U};
+    std::vector<slicer_core::Vec3> ring;
+    ring.reserve(kMainTriangleCount);
+    for (std::size_t index = 0U; index < kMainTriangleCount; ++index)
+    {
+        const double radians = 2.0 * std::numbers::pi_v<double>
+            * static_cast<double>(index)
+            / static_cast<double>(kMainTriangleCount);
+        ring.push_back({10.0 * std::cos(radians),
+                        10.0 * std::sin(radians),
+                        20.0});
+    }
+    source.triangles.reserve(kMainTriangleCount + 1U);
+    for (std::size_t index = 0U; index < kMainTriangleCount; ++index)
+    {
+        source.triangles.push_back({
+            {0.0, 0.0, 21.0},
+            ring[index],
+            ring[(index + 1U) % ring.size()]});
+    }
+    source.triangles.push_back({
+        {30.0, 30.0, 0.0},
+        {30.01, 30.0, 0.0},
+        {30.0, 30.01, 0.0}});
+    source.bbox_mm.min = {-10.0, -10.0, 0.0};
+    source.bbox_mm.max = {30.01, 30.01, 21.0};
+    source.triangle_count = source.triangles.size();
+
+    slicer_core::ModelInstance instance = MakeInstance();
+    instance.sourcebboxmm = source.bbox_mm;
+    instance.transform.landonbuildplate = true;
+    const auto result = slicer_core::AdaptTransformedModel(source, instance);
+    return ExpectTrue(result.IsValid(), "marker-outlier landing succeeds")
+        && ExpectTrue(
+            NearlyEqual(result.geometry.landingreferencezmm, 0.0),
+            "significant body lands on Z=0")
+        && ExpectTrue(
+            result.geometry.landingignoredcomponentcount == 1U,
+            "tiny disconnected marker is ignored as landing reference")
+        && ExpectTrue(
+            NearlyEqual(result.geometry.bboxmm.min.z, -20.0),
+            "ignored marker geometry remains preserved below the plate")
+        && ExpectTrue(
+            NearlyEqual(result.geometry.triangles.front().b.z, 0.0),
+            "main body lower ring reaches the build plate");
+}
+
 bool MissingSourceGeometryIsRejected()
 {
     const slicer_core::SceneModel empty;
@@ -601,6 +676,7 @@ int main()
         && IndividualTransformCasesAreCorrect()
         && DoubleMirrorKeepsWinding()
         && TiltRotationsUseXyzOrderAndExplicitlyLandOnPlate()
+        && LandingUsesSignificantComponentsInsteadOfTinyMarkers()
         && MissingSourceGeometryIsRejected();
     if (!ok)
     {
