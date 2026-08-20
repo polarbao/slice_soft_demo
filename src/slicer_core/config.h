@@ -170,6 +170,33 @@ struct MaterialRoleMappingConfig {
     std::vector<MaterialRoleRuleConfig> rules;
 };
 
+struct MaterialVolumeOpenSurfaceConfig {
+    std::string mode{"reject"};
+    double thickness_mm{0.0};
+    std::string placement{"below_surface"};
+};
+
+struct MaterialVolumeOverlapRuleConfig {
+    std::string match_material_name;
+    int priority{0};
+};
+
+struct MaterialVolumeOverlapConfig {
+    std::string mode{"explicit_priority"};
+    std::vector<MaterialVolumeOverlapRuleConfig> rules;
+};
+
+/**
+ * @brief Per-layer per-pixel material ownership policy; safe-off by default.
+ */
+struct MaterialVolumePolicyConfig {
+    bool enabled{false};
+    std::string mode{"closed_intervals"};
+    MaterialVolumeOpenSurfaceConfig open_surface;
+    MaterialVolumeOverlapConfig overlap;
+    std::string missing_material{"fail_closed"};
+};
+
 /**
  * @brief Internal void support options for enclosed non-model regions.
  */
@@ -341,6 +368,7 @@ struct SliceConfig {
     ModelFillConfig model_fill;
     MaterialProcessProfileConfig material_process_profile;
     MaterialRoleMappingConfig material_role_mapping;
+    MaterialVolumePolicyConfig material_volume_policy;
     SupportConfig support;
     OuterVarnishShellConfig outer_varnish;
     SurfaceVarnishConfig surface_varnish;

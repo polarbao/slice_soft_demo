@@ -1,0 +1,25 @@
+{
+    "_comment": "MATVOL MV-02 解析与校验回归 fixture。默认关闭，不改变任何既有 Profile 语义；不得把本块写入既有生产预设，否则会改变其 profileHash。",
+    "input": {
+        "format": "auto",
+        "modelPath": "../../../model/obj/reality/finger_suoguo/03.obj"
+    },
+    "slicingMode": "relief_heightfield",
+    "materialVolumePolicy": {
+        "enabled": false,
+        "mode": "closed_intervals",
+        "openSurface": {
+            "mode": "reject",
+            "thicknessMm": 0.0,
+            "placement": "below_surface"
+        },
+        "overlap": {
+            "mode": "explicit_priority",
+            "rules": [
+                {"matchMaterialName": "01", "priority": 200},
+                {"matchMaterialName": "02", "priority": 100}
+            ]
+        },
+        "missingMaterial": "fail_closed"
+    }
+}

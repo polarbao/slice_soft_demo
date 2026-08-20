@@ -416,6 +416,43 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             }
         }
     }
+    if (root.contains("materialVolumePolicy")) {
+        const auto& policy = root.at("materialVolumePolicy");
+        config.material_volume_policy.enabled =
+            policy.value("enabled", config.material_volume_policy.enabled);
+        config.material_volume_policy.mode =
+            policy.value("mode", config.material_volume_policy.mode);
+        config.material_volume_policy.missing_material =
+            policy.value("missingMaterial", config.material_volume_policy.missing_material);
+        if (policy.contains("openSurface")) {
+            const auto& open_surface = policy.at("openSurface");
+            config.material_volume_policy.open_surface.mode =
+                open_surface.value("mode", config.material_volume_policy.open_surface.mode);
+            config.material_volume_policy.open_surface.thickness_mm = open_surface.value(
+                "thicknessMm", config.material_volume_policy.open_surface.thickness_mm);
+            config.material_volume_policy.open_surface.placement = open_surface.value(
+                "placement", config.material_volume_policy.open_surface.placement);
+        }
+        if (policy.contains("overlap")) {
+            const auto& overlap = policy.at("overlap");
+            config.material_volume_policy.overlap.mode =
+                overlap.value("mode", config.material_volume_policy.overlap.mode);
+            if (overlap.contains("rules")) {
+                const auto& rules = overlap.at("rules");
+                if (!rules.is_array()) {
+                    throw std::runtime_error("materialVolumePolicy.overlap.rules must be an array");
+                }
+                config.material_volume_policy.overlap.rules.clear();
+                for (const auto& rule_json : rules.as_array()) {
+                    MaterialVolumeOverlapRuleConfig rule;
+                    rule.match_material_name =
+                        rule_json.value("matchMaterialName", rule.match_material_name);
+                    rule.priority = rule_json.value("priority", rule.priority);
+                    config.material_volume_policy.overlap.rules.push_back(rule);
+                }
+            }
+        }
+    }
 
     if (root.contains("support")) {
         const auto& support = root.at("support");
@@ -1163,6 +1200,68 @@ void validate_slice_config(const SliceConfig& config) {
                 throw std::runtime_error(
                     "materialRoleMapping role=support requires allowInputSupportMaterial=true");
             }
+        }
+    }
+    if (config.material_volume_policy.enabled) {
+        if (config.material_volume_policy.mode != "closed_intervals") {
+            throw std::runtime_error("materialVolumePolicy.mode must be closed_intervals");
+        }
+        if (config.material_volume_policy.missing_material != "fail_closed") {
+            throw std::runtime_error("materialVolumePolicy.missingMaterial must be fail_closed");
+        }
+        const std::string& open_surface_mode = config.material_volume_policy.open_surface.mode;
+        if (open_surface_mode != "reject" && open_surface_mode != "surface_band") {
+            throw std::runtime_error(
+                "materialVolumePolicy.openSurface.mode must be reject or surface_band");
+        }
+        if (config.material_volume_policy.open_surface.thickness_mm < 0.0) {
+            throw std::runtime_error(
+                "materialVolumePolicy.openSurface.thicknessMm must be non-negative");
+        }
+        if (open_surface_mode == "surface_band"
+            && config.material_volume_policy.open_surface.thickness_mm <= 0.0) {
+            throw std::runtime_error(
+                "materialVolumePolicy.openSurface.mode=surface_band requires positive thicknessMm");
+        }
+        if (config.material_volume_policy.open_surface.placement != "below_surface") {
+            throw std::runtime_error(
+                "materialVolumePolicy.openSurface.placement must be below_surface");
+        }
+        if (config.material_volume_policy.overlap.mode != "explicit_priority") {
+            throw std::runtime_error("materialVolumePolicy.overlap.mode must be explicit_priority");
+        }
+        std::vector<std::string> seen_material_names;
+        for (const MaterialVolumeOverlapRuleConfig& rule :
+             config.material_volume_policy.overlap.rules) {
+            if (rule.match_material_name.empty()) {
+                throw std::runtime_error(
+                    "materialVolumePolicy.overlap.rules[].matchMaterialName must not be empty");
+            }
+            if (std::find(
+                    seen_material_names.begin(),
+                    seen_material_names.end(),
+                    rule.match_material_name)
+                != seen_material_names.end()) {
+                throw std::runtime_error(
+                    "materialVolumePolicy.overlap.rules[].matchMaterialName must be unique");
+            }
+            seen_material_names.push_back(rule.match_material_name);
+        }
+        if (config.slicing_mode != "relief_heightfield") {
+            throw std::runtime_error("materialVolumePolicy requires slicingMode=relief_heightfield");
+        }
+        if (config.slice_pipeline.mode != SlicePipelineMode::Legacy) {
+            throw std::runtime_error("materialVolumePolicy requires the Legacy slice pipeline");
+        }
+        if (config.geometry_sampling.strategy != "legacy_center_sample") {
+            throw std::runtime_error("materialVolumePolicy requires geometrySampling.strategy=legacy_center_sample");
+        }
+        if (config.material_policy.enabled) {
+            throw std::runtime_error("materialVolumePolicy does not support materialPolicy.enabled=true");
+        }
+        if (config.material_role_mapping.enabled) {
+            throw std::runtime_error(
+                "materialVolumePolicy does not support materialRoleMapping.enabled=true");
         }
     }
     if (config.support.shape_min_component_area_px < 0 || config.support.shape_xy_dilation_px < 0
