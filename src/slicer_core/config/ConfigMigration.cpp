@@ -27,11 +27,6 @@ Json NormalizeSlicerConfig1(const Json& root)
     CopyIfPresent(target, root, "outerVarnish", "outerVarnish");
     CopyIfPresent(target, root, "surfaceVarnish", "surfaceVarnish");
     CopyIfPresent(target, root, "materialClosure", "materialClosure");
-    CopyIfPresent(target, root, "support", "support");
-    CopyIfPresent(target, root, "preview", "preview");
-    CopyIfPresent(target, root, "texture", "texture");
-    CopyIfPresent(target, root, "outerVarnish", "outerVarnish");
-    CopyIfPresent(target, root, "surfaceVarnish", "surfaceVarnish");
     CopyIfPresent(target, root, "materialVolumePolicy", "materialVolumePolicy");
     CopyIfPresent(target, root, "slicePipeline", "slicePipeline");
 
