@@ -26,6 +26,10 @@ tests/*
 !tests/ripflow/**
 !tests/rip_integration/
 !tests/rip_integration/**
+!tests/stage16/
+!tests/stage16/**
+!tests/matvol/
+!tests/matvol/**
 !tests/version/
 !tests/version/*.py
 /tests/version/__pycache__/
