@@ -1,7 +1,7 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..MV-01 COMPLETE / MV-02 PREPARED / 生产语义未改**
-> 版本：v1.1 ｜ 日期：2026-08-20
+> 文档状态：**ACTIVE / MV-00..MV-02 COMPLETE / MV-03 PREPARED / 生产语义未改**
+> 版本：v1.2 ｜ 日期：2026-08-20
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
 > 决策：`docs/slice/DOC/DOC_DECISION_MATVOL_多材质纵深体积RGB与按需补白根治.md`
 > 准备：`docs/slice/DOC/DOC_PREP_MATVOL_实施准备与数据上下文.md`
@@ -27,8 +27,8 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 |---|---|---|---|---|
 | MV-00 | 专项决策、准备、DEV、任务清单、执行指令和初始报告 | COMPLETE | 用户授权创建专项 | 2026-08-20 |
 | MV-01 | 资产事实、synthetic fixture、旧顶面投影 baseline 与独立 oracle | **COMPLETE** | MV-00 | 2026-08-20 |
-| MV-02 | MaterialVolumePolicy、拓扑分类、稳定错误和配置合同 | **PREPARED** | MV-01 Gate（已满足） | - |
-| MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | PENDING | MV-02 | - |
+| MV-02 | MaterialVolumePolicy、拓扑分类、稳定错误和配置合同 | **COMPLETE** | MV-01 Gate | 2026-08-20 |
+| MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **PREPARED** | MV-02（已满足） | - |
 | MV-04 | 开放表面 surface_band 非生产候选与 `03.obj` 厚度裁决 | PENDING / INPUT OPEN | MV-03、MQ-01/MQ-02 | - |
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | PENDING | MV-03；MV-04 可选 | - |
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | PENDING | MV-05 | - |
@@ -107,6 +107,41 @@ MQ-01/MQ-02 继续 INPUT OPEN；未执行构建或生产验证。
 **验收：** unknown enum、Global/S3/S4、缺材质、open reject、non-manifold/self-intersection、重复规则、
 无优先级全部 fail closed；旧配置缺字段时行为不变；新 Profile 被旧构建拒绝而非降级。
 
+**实际结果（2026-08-20）：** 新增 `materials/volume/` 两组文件与 `matvol_topology_unit_tests`，
+Release `/W4 /WX` 构建通过，定向 CTest **8/8 PASS**。
+
+```text
+交付
+  MaterialVolumeError.*        E_MATVOL_* 九码三件套，what() 形如 `E_MATVOL_XXX: <message>`
+  MaterialTopologyClassifier.* 逐材质子网格五态分类，复用 AnalyzeMeshTopology 与
+                               AnalyzeCompleteMeshSelfIntersections，不重造边统计
+  config.h / config.cpp        materialVolumePolicy 顶层块，默认关闭，解析与校验按仓库既有约定
+  ConfigMigration.cpp          登记 CopyIfPresent，堵住 slicer.config.1 白名单重建的静默丢字段
+  samples/configs/matvol/      默认关闭的解析回归 fixture
+
+fail-closed 覆盖（逐条有用例）
+  未知 mode / missingMaterial / openSurface.mode / placement / overlap.mode
+  surface_band 缺正厚度、负厚度
+  规则名为空、规则名重复
+  slicingMode 非 relief_heightfield、S3/S4 采样、非 Legacy 管线
+  materialPolicy.enabled 与 materialRoleMapping.enabled 组合
+  关闭时即便字段非法也不阻断旧 Profile（旧配置行为不变）
+
+🔴 设计修正（由变异检验发现）
+  `AdaptSceneModelToTriangleMesh` 做全网格顶点焊接，材质交界边在子网格里会退化为边界边。
+  首版只按 boundaryEdgeCount 判 OpenSurface，导致焊接模型的交界边被误计。
+  已改为：全网格边度数表区分【真开边】与【材质交界边】，两者分列计数；
+  且【仅由交界边围成的子网格同样不是独立闭合体】（射线拿不到成对交点），
+  一并归入 OpenSurface 保持 fail-closed，由 MV-04 依据两个计数区分开放来源。
+
+变异检验
+  把交界边判定短路为恒真 → material_interface_edges_counted_separately 按预期 FAIL
+
+边界
+  未接 run_slicer；未改 p0.rgbwsv.2、RGBWSV、SPI 或既有 Profile 语义；
+  新块未写入任何既有预设，因此不改动任何现有 profileHash
+```
+
 ## 6. MV-03 封闭材质区间
 
 **目标：** 对封闭可定向材质子网格生成 compact 多区间，并物化调用方持有的单层 owner buffer。
@@ -174,5 +209,6 @@ SLA/物理打印证据缺失时只写 engineering candidate，不写 production 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-20 | v1.2 | MV-02 COMPLETE：新增 `MaterialVolumeError` 稳定错误码三件套与 `MaterialTopologyClassifier` 逐材质子网格分类；`materialVolumePolicy` 顶层配置块按仓库约定接入 `config.h`/`config.cpp`，并在 `ConfigMigration` 登记以堵住 `slicer.config.1` 的静默丢字段。13 项 fail-closed 逐条有用例，Release `/W4 /WX` 与定向 CTest 8/8 PASS。变异检验发现并修正了顶点焊接导致的材质交界边误判，改为真开边与交界边分列计数且交界边围成的子网格不视为独立闭合体。未接 `run_slicer`，未改动任何既有预设与 profileHash。MV-03 转 PREPARED。 |
 | 2026-08-20 | v1.1 | MV-01 COMPLETE：新增 `tests/matvol/MatvolFactsTests.cpp` 与 `matvol_facts_unit_tests`，Release `/W4 /WX` 构建与 11/11 CTest 通过。固化 MV-F01..F06 合成 fixture、独立 dense owner oracle、Legacy 顶面投影 baseline、owner diff schema 与重复运行摘要；复刻并冻结 XY 采样中心、重心容差、`>=` 平局规则、层换算与 Kd 量化五条既有规则；机器化 Reality 03/08/09 逐材质拓扑事实。两处变异检验证明断言有效。补 `.gitignore` negation 使 `tests/matvol/` 可入库。未新增生产 API、未改 Profile/协议、未接 `run_slicer`。MV-02 转 PREPARED。 |
 | 2026-08-20 | v1.0 | 创建 MV-00..10 原子卡、依赖、完成标准、INPUT OPEN 和收口 Gate。 |
