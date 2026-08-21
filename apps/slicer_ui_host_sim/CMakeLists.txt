@@ -109,6 +109,8 @@ add_executable(slicer_ui_host_sim
     settings/ViewPresentationSettings.h
     camera/ViewModeSwitch.cpp
     camera/ViewModeSwitch.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -128,6 +130,8 @@ slicesoft_add_windows_version_resource(
 slicesoft_copy_version_manifests(slicer_ui_host_sim)
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -463,6 +467,8 @@ add_executable(hostflow_he01_stl_import_tests
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -475,6 +481,8 @@ add_executable(hostflow_he01_stl_import_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -728,6 +736,8 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostSupportSettingsPanel.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -740,6 +750,8 @@ add_executable(hostflow_hb05_slice_settings_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -873,6 +885,8 @@ add_executable(hostflow_hb06_slice_job_tests
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -885,6 +899,8 @@ add_executable(hostflow_hb06_slice_job_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -955,6 +971,8 @@ add_executable(hostflow_hb07_package_review_tests
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -967,6 +985,8 @@ add_executable(hostflow_hb07_package_review_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -1077,6 +1097,8 @@ add_executable(hostflow_hb08_workspace_state_tests
     HostWorkspaceState.h
     HostWorkspaceTextureState.cpp
     HostWorkspaceTextureState.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -1089,6 +1111,8 @@ add_executable(hostflow_hb08_workspace_state_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c

@@ -82,6 +82,7 @@ bool VerifyPresetProfileHashClosure(
         settings.materialprocess = preset.materialprocess;
         settings.texture = preset.texture;
         settings.support = preset.support;
+        settings.materialvolume = preset.materialvolume;
 
         hosteffectiveprofile effective;
         QString error;
@@ -108,6 +109,117 @@ bool VerifyPresetProfileHashClosure(
         }
     }
     return true;
+}
+
+/// @brief MV-07A：materialVolumePolicy 必须条件产出 —— 旧六类预设的 Profile 里
+///        不得出现该块（保证其 profileHash 不变），新预设里必须出现且字段正确。
+bool VerifyMaterialVolumeConditionalEmission(
+    const QString& modelPath,
+    const QString& outputDirectory,
+    QTextStream& errors)
+{
+    bool sawLegacy = false;
+    bool sawVolumetric = false;
+    for (const hostprocesspreset& preset : HostProcessPresetCatalog::Presets())
+    {
+        hostslicesettings settings = MakeSettings(modelPath, outputDirectory);
+        settings.materialstrategy = preset.materialstrategy;
+        settings.materialprocess = preset.materialprocess;
+        settings.texture = preset.texture;
+        settings.support = preset.support;
+        settings.materialvolume = preset.materialvolume;
+
+        hosteffectiveprofile effective;
+        QString error;
+        if (!Check(
+                HostEffectiveProfileBuilder::Build(settings, &effective, &error),
+                QStringLiteral("预设 %1 的 Profile 构造失败：%2").arg(preset.id, error),
+                errors))
+        {
+            return false;
+        }
+        const bool hasBlock = effective.profile.contains(
+            QStringLiteral("materialVolumePolicy"));
+        if (!preset.materialvolume.enabled)
+        {
+            sawLegacy = true;
+            if (!Check(
+                    !hasBlock,
+                    QStringLiteral("旧预设 %1 的 Profile 不得出现 materialVolumePolicy 块。")
+                        .arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+            if (!Check(
+                    effective.profile.value(QStringLiteral("slicingMode")).toString()
+                        != QStringLiteral("relief_heightfield")
+                        || preset.texture.enabled
+                        || preset.materialstrategy == HostMaterialStrategy::WhiteSolid
+                        || preset.materialstrategy == HostMaterialStrategy::VarnishSolid,
+                    QStringLiteral("旧预设 %1 的 slicingMode 推导被意外改变。").arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+            continue;
+        }
+        sawVolumetric = true;
+        if (!Check(
+                hasBlock,
+                QStringLiteral("MATVOL 预设 %1 必须产出 materialVolumePolicy 块。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+        const QJsonObject block = effective.profile.value(
+            QStringLiteral("materialVolumePolicy")).toObject();
+        const QJsonObject openSurface = block.value(
+            QStringLiteral("openSurface")).toObject();
+        const QJsonObject overlap = block.value(QStringLiteral("overlap")).toObject();
+        const QJsonArray rules = overlap.value(QStringLiteral("rules")).toArray();
+        if (!Check(
+                block.value(QStringLiteral("enabled")).toBool()
+                    && block.value(QStringLiteral("mode")).toString()
+                        == QStringLiteral("closed_intervals")
+                    && block.value(QStringLiteral("missingMaterial")).toString()
+                        == QStringLiteral("fail_closed")
+                    && openSurface.value(QStringLiteral("mode")).toString()
+                        == QStringLiteral("reject")
+                    && overlap.value(QStringLiteral("mode")).toString()
+                        == QStringLiteral("explicit_priority")
+                    && rules.size() == 2
+                    && rules.at(0).toObject().value(
+                           QStringLiteral("matchMaterialName")).toString()
+                        == QStringLiteral("01")
+                    && rules.at(0).toObject().value(
+                           QStringLiteral("priority")).toInt() == 200
+                    && rules.at(1).toObject().value(
+                           QStringLiteral("matchMaterialName")).toString()
+                        == QStringLiteral("02")
+                    && rules.at(1).toObject().value(
+                           QStringLiteral("priority")).toInt() == 100,
+                QStringLiteral("MATVOL 预设 %1 的 materialVolumePolicy 字段不正确。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+        if (!Check(
+                effective.profile.value(QStringLiteral("slicingMode")).toString()
+                    == QStringLiteral("relief_heightfield"),
+                QStringLiteral("MATVOL 预设 %1 必须发出 relief_heightfield。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+    }
+    return Check(
+        sawLegacy && sawVolumetric,
+        QStringLiteral("预设目录必须同时包含旧工艺与 MATVOL 候选。"),
+        errors);
 }
 
 bool VerifyEffectiveProfiles(
@@ -1281,7 +1393,9 @@ int main(int argc, char* argv[])
         errors << "模块加载失败：" << error << Qt::endl;
         return 3;
     }
-    if (!VerifyPresetProfileHashClosure(
+    if (!VerifyMaterialVolumeConditionalEmission(
+            modelPath, outputDirectory, errors)
+        || !VerifyPresetProfileHashClosure(
             modelPath, outputDirectory, errors)
         || !VerifyEffectiveProfiles(modelPath, outputDirectory, errors)
         || !VerifyPanelIsLocal(

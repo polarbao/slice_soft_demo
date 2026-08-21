@@ -1316,6 +1316,8 @@ add_executable(slicer_host_sim
     apps/slicer_host_sim/HostM1Intake.h
     apps/slicer_host_sim/HostModuleApi.c
     apps/slicer_host_sim/HostModuleApi.h
+    apps/slicer_host_sim/HostVolumetricProfile.c
+    apps/slicer_host_sim/HostVolumetricProfile.h
     apps/slicer_host_sim/HostMaterialProfile.c
     apps/slicer_host_sim/HostMaterialProfile.h
     apps/slicer_host_sim/HostPath.c

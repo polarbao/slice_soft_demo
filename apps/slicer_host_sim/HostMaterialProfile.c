@@ -1,5 +1,6 @@
 #include "HostMaterialProfile.h"
 
+#include "HostVolumetricProfile.h"
 #include "JsonText.h"
 
 #include <stdlib.h>
@@ -207,6 +208,13 @@ int HostBuildMaterialProfileFragments(
     }
     *canonical = NULL;
     *compact = NULL;
+    /* MV-07A 窄放行：MATVOL 自带纵深 RGB，改由独立片段构造器产出，
+       既有工艺的片段代码路径完全不被触碰。 */
+    if (settings->materialvolumeenabled != 0)
+    {
+        return HostBuildVolumetricProfileFragments(
+            settings, escapedProfileId, canonical, compact);
+    }
     if (settings->texturewhitepolicy
         == HOST_TEXTURE_WHITE_UNDERBASE)
     {

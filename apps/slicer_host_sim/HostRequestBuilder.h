@@ -137,6 +137,11 @@ struct hosteffectiveprofilesettings
     int texturewhitevalue;
     enum hosttiffcompression tiffcompression;
     enum hostgeometrysamplingstrategy geometrysamplingstrategy;
+    int materialvolumeenabled;
+    const char* materialvolumeprimaryname;
+    int materialvolumeprimarypriority;
+    const char* materialvolumesecondaryname;
+    int materialvolumesecondarypriority;
 };
 
 /**

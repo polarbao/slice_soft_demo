@@ -165,6 +165,21 @@ struct hostbuildvolume
     QString ydirection{QStringLiteral("positive")};
 };
 
+/**
+ * @brief 由宿主持有的多材质纵深体积候选参数。
+ *
+ * 本结构体是宿主侧镜像，刻意不引用切片内核类型；序列化后的
+ * materialVolumePolicy 块由 Worker 侧解析回内核配置。
+ */
+struct hostmaterialvolumesettings
+{
+    bool enabled{false};
+    QString primarymaterialname;
+    int primarypriority{200};
+    QString secondarymaterialname;
+    int secondarypriority{100};
+};
+
 /** @brief 由宿主持有的可编辑切片参数。 */
 struct hostslicesettings
 {
@@ -184,6 +199,7 @@ struct hostslicesettings
     HostTiffCompression tiffcompression{HostTiffCompression::None};
     HostGeometrySamplingStrategy geometrysamplingstrategy{
         HostGeometrySamplingStrategy::LegacyCenterSample};
+    hostmaterialvolumesettings materialvolume;
 };
 
 /** @brief 已校验且可用于后续切片请求的 Profile 预览。 */

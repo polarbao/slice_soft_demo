@@ -15,6 +15,7 @@ struct hostprocesspreset
     hostmaterialprocesssettings materialprocess;
     hosttexturesettings texture;
     hostsupportsettings support;
+    hostmaterialvolumesettings materialvolume;
 };
 
 /** @brief 在不读取切片器 fixture 的前提下提供常用工艺预设。 */

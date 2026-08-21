@@ -44,7 +44,7 @@ QString HostProcessPresetCatalog::DefaultPresetId()
 QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
 {
     QVector<hostprocesspreset> presets;
-    presets.reserve(6);
+    presets.reserve(7);
     presets.push_back(MakeTexturedPreset(
         QStringLiteral("textured_nail_rgb_only_lower_support"),
         QStringLiteral(
@@ -103,6 +103,25 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
         QStringLiteral(
             "不采样彩色纹理，模型实体只写光油 V，并保留下表面支撑。"),
         HostMaterialStrategy::VarnishSolid));
+    hostprocesspreset volumetricRgb = MakeTexturedPreset(
+        QStringLiteral("volumetric_nail_rgb_white_ondemand_lower_support"),
+        QStringLiteral("多材质纵深｜逐层材质 RGB + 按需补白墨｜下表面支撑（候选）"),
+        QStringLiteral(
+            "候选工艺：按封闭材质子网格逐层解析材质所有权并合成 RGB，"
+            "最终 RGB 之后复用按需补白。开放材质表面默认拒绝，"
+            "材质重叠需显式优先级。生产接线未完成，仅供候选评估。"),
+        HostMaterialStrategy::RgbSolid,
+        HostTextureApplyMode::SolidVolumeFromTopSurface);
+    volumetricRgb.texture.enabled = false;
+    volumetricRgb.texture.whitepolicy =
+        HostTextureWhitePolicy::WhiteUnderbase;
+    volumetricRgb.materialvolume.enabled = true;
+    volumetricRgb.materialvolume.primarymaterialname = QStringLiteral("01");
+    volumetricRgb.materialvolume.primarypriority = 200;
+    volumetricRgb.materialvolume.secondarymaterialname = QStringLiteral("02");
+    volumetricRgb.materialvolume.secondarypriority = 100;
+    presets.push_back(volumetricRgb);
+
     return presets;
 }
 

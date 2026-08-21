@@ -294,7 +294,10 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
+    /* MV07-Q1 窄放行：MATVOL 自带纵深 RGB，不依赖纹理顶面投影路径。
+       MATVOL 未启用时本拒绝逐字不变。 */
     if (texture.whitepolicy == HostTextureWhitePolicy::WhiteUnderbase
+        && !settings.materialvolume.enabled
         && (!texture.enabled
             || texture.applymode
                 != HostTextureApplyMode::SolidVolumeFromTopSurface
@@ -307,6 +310,44 @@ bool HostEffectiveProfileBuilder::Validate(
                 "按需补白只支持 Legacy 全实体 RGB 纹理、RGB 实体材料且禁用材料角色映射。");
         }
         return false;
+    }
+    if (settings.materialvolume.enabled)
+    {
+        if (texture.whitepolicy != HostTextureWhitePolicy::WhiteUnderbase)
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "多材质纵深 RGB 候选要求按需补白策略为 white_underbase。");
+            }
+            return false;
+        }
+        if (settings.materialprocess.rolemappingenabled)
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "多材质纵深 RGB 候选不支持同时启用材料角色映射。");
+            }
+            return false;
+        }
+        const QString primary =
+            settings.materialvolume.primarymaterialname.trimmed();
+        const QString secondary =
+            settings.materialvolume.secondarymaterialname.trimmed();
+        if (primary.isEmpty()
+            || (!secondary.isEmpty() && secondary == primary)
+            || (!secondary.isEmpty()
+                && settings.materialvolume.primarypriority
+                    == settings.materialvolume.secondarypriority))
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "多材质纵深 RGB 候选要求材质名非空且不重复，优先级不得同级。");
+            }
+            return false;
+        }
     }
     const bool singleMaterialRelief =
         settings.materialstrategy == HostMaterialStrategy::WhiteSolid
@@ -355,6 +396,10 @@ bool HostEffectiveProfileBuilder::Build(
     const QByteArray outputDirectory = QDir::fromNativeSeparators(
         QFileInfo(settings.outputdirectory).absoluteFilePath()).toUtf8();
     const QByteArray profileId = settings.profileid.toUtf8();
+    const QByteArray volumePrimaryName =
+        settings.materialvolume.primarymaterialname.trimmed().toUtf8();
+    const QByteArray volumeSecondaryName =
+        settings.materialvolume.secondarymaterialname.trimmed().toUtf8();
     const struct hosteffectiveprofilesettings requestSettings{
         modelPath.constData(),
         format.constData(),
@@ -400,7 +445,12 @@ bool HostEffectiveProfileBuilder::Build(
         settings.texture.whitevalue,
         ToHostTiffCompression(settings.tiffcompression),
         ToHostGeometrySamplingStrategy(
-            settings.geometrysamplingstrategy)};
+            settings.geometrysamplingstrategy),
+        settings.materialvolume.enabled ? 1 : 0,
+        volumePrimaryName.constData(),
+        settings.materialvolume.primarypriority,
+        volumeSecondaryName.constData(),
+        settings.materialvolume.secondarypriority};
     char profileHash[72] = {};
     char* profileText = HostBuildEffectiveProfile(
         &requestSettings, profileHash, sizeof(profileHash));

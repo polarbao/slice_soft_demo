@@ -352,7 +352,9 @@ char* HostBuildEffectiveProfile(
     {
         return NULL;
     }
-    useReliefHeightfield = settings->textureenabled != 0
+    /* MV-07A：MATVOL 复用 relief 列采样求交，本身即属 relief_heightfield 路径。 */
+    useReliefHeightfield = settings->materialvolumeenabled != 0
+        || settings->textureenabled != 0
         || (settings->geometrysamplingstrategy
                 == HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO
             && (settings->materialstrategy == HOST_MATERIAL_WHITE_SOLID

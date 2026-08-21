@@ -472,6 +472,7 @@ void HostSliceSettingsPanel::SetSceneAuthority(
 void HostSliceSettingsPanel::SetPersistentSettings(
     const hostslicesettings& settings)
 {
+    m_appliedMaterialVolume = settings.materialvolume;
     const QSignalBlocker dpiXBlocker(m_dpiXSpin);
     const QSignalBlocker dpiYBlocker(m_dpiYSpin);
     const QSignalBlocker layerBlocker(m_layerThicknessSpin);
@@ -551,6 +552,7 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.buildvolume.xdirection = QStringLiteral("positive");
     settings.buildvolume.ydirection = QStringLiteral("positive");
     settings.support = m_supportPanel->Settings();
+    settings.materialvolume = m_appliedMaterialVolume;
     return settings;
 }
 
@@ -722,6 +724,7 @@ void HostSliceSettingsPanel::OnProcessPresetChanged(const int index)
         preset.materialstrategy, preset.materialprocess);
     m_texturePanel->SetSettings(preset.texture);
     m_supportPanel->SetSettings(preset.support);
+    m_appliedMaterialVolume = preset.materialvolume;
     m_applyingProcessPreset = false;
     OnSettingsEdited();
 }

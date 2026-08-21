@@ -157,6 +157,7 @@ private:
     QString m_defaultOutputDirectory;
     bool m_outputUsesAutomaticDirectory{true};
     bool m_applyingProcessPreset{false};
+    hostmaterialvolumesettings m_appliedMaterialVolume;
     bool m_singleMaterialRestricted{false};
     QString m_singleMaterialRestrictionReason;
 };
