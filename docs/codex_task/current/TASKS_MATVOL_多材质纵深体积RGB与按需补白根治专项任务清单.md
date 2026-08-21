@@ -1,7 +1,7 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..MV-03 COMPLETE / MV-04 INPUT OPEN / 生产语义未改**
-> 版本：v1.3 ｜ 日期：2026-08-20
+> 文档状态：**ACTIVE / MV-00..MV-03 与 MV-05 COMPLETE / MV-04 INPUT OPEN / 生产语义未改**
+> 版本：v1.4 ｜ 日期：2026-08-21
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
 > 决策：`docs/slice/DOC/DOC_DECISION_MATVOL_多材质纵深体积RGB与按需补白根治.md`
 > 准备：`docs/slice/DOC/DOC_PREP_MATVOL_实施准备与数据上下文.md`
@@ -30,8 +30,8 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-02 | MaterialVolumePolicy、拓扑分类、稳定错误和配置合同 | **COMPLETE** | MV-01 Gate | 2026-08-20 |
 | MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **COMPLETE** | MV-02 | 2026-08-20 |
 | MV-04 | 开放表面 surface_band 非生产候选与 `03.obj` 厚度裁决 | PENDING / INPUT OPEN | MV-03、MQ-01/MQ-02 | - |
-| MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | PENDING | MV-03；MV-04 可选 | - |
-| MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | PENDING | MV-05 | - |
+| MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | **COMPLETE** | MV-03（MV-04 可选，未纳入） | 2026-08-21 |
+| MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **PREPARED** | MV-05（已满足） | - |
 | MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | PENDING | MV-06 | - |
 | MV-08 | MEMFLOW bounded/owned 生产候选接线与 Staged Package | PENDING | MV-06、MF-03B4/MF-04 | - |
 | MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
@@ -207,6 +207,35 @@ Release `/W4 /WX` 构建通过，定向 CTest **10/10 PASS**。
 **验收：** 同级重叠阻断；顺序/线程无关；所有 model pixel 有且仅有一个有效 owner；绿色/浅桃色值
 精确为 MTL 量化值；未绑定材质按策略阻断；不写 W/S/V。
 
+**实际结果（2026-08-21）：** 新增 `MaterialLayerRgbComposer.*` 与 `matvol_rgb_compose_unit_tests`，
+Release `/W4 /WX` 构建通过，定向 CTest **5/5 PASS**；matvol 四个目标合计 4/4 PASS。
+
+```text
+交付
+  MaterialRgbTable        move-only，构建期解析并校验逐材质 RGB，附 mtl_kd / explicit_fallback 来源
+  BuildMaterialRgbTable   MTL Kd 优先，其次显式 fallback；缺 Kd 且未授权 fallback 时 fail closed
+  ComposeMaterialLayerRgb 单层 owner 到 RGB 交错写入，不分配、不跨层扫描
+
+验收逐项
+  纵深两材质 RGB 精确等于 MTL 量化值：材质 02 为 [255,220,198]，材质 01 为 [63,190,126]
+  缺 Kd 默认 E_MATVOL_MATERIAL_MISSING；显式 fallback 才写入给定颜色且来源标记 explicit_fallback
+  mask 标记为模型却无 owner 时报 E_MATVOL_MODEL_PIXEL_UNOWNED
+  mask 为 0 的像素写入调用方给定的 unownedRgb，不报错且不隐式约定背景
+  材质声明顺序反转与重复调用结果逐字节一致；重叠层由 priority 200 的绿色胜出
+  缓冲区尺寸不符显式抛 std::invalid_argument
+
+只写 RGB 的机器证据
+  用 6N 字节缓冲模拟 RGBWSV 交错，仅把前 3N 字节交给合成器，其后 3N 字节填 0xAB 哨兵；
+  合成后哨兵逐字节未变，同时 RGB 区域已正确写入，证明不触碰 W/S/V。
+
+变异检验
+  去掉未拥有的模型像素守卫后 model_pixel_without_owner_fails_closed 按预期 FAIL
+
+边界
+  未接 run_slicer；不写 W/S/V、不新增 Z 层、不改 model occupancy；
+  纹理采样未纳入本卡，当前解析链为 MTL Kd 到显式 fallback，Texture2D/UV 留待后续卡
+```
+
 ## 9. MV-06 按需补白与闭合
 
 **目标：** 在 MATVOL 最终 RGB 后复用 `ApplyUnprintableWhiteCarrier`，接入 semantic stats、closure 和
@@ -251,6 +280,7 @@ SLA/物理打印证据缺失时只写 engineering candidate，不写 production 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v1.4 | MV-05 COMPLETE：新增 move-only `MaterialRgbTable` 与 `ComposeMaterialLayerRgb`，按 owner 解析 MTL Kd 并合成单层 RGB。绿色与浅桃色精确等于量化值；缺 Kd 默认 fail closed，仅显式策略允许 fallback 且记录来源；模型像素无 owner 报 `E_MATVOL_MODEL_PIXEL_UNOWNED`；以 0xAB 哨兵证明仅写 RGB 区域、不触碰 W/S/V；声明顺序与重复调用结果逐字节一致。变异检验去掉未拥有守卫后按预期 FAIL。Release `/W4 /WX` 与定向 CTest 5/5 PASS，未接 `run_slicer`。纹理采样未纳入本卡；MV-04 仍受 MQ-01/MQ-02 阻塞，MV-06 转 PREPARED。 |
 | 2026-08-20 | v1.3 | MV-03 COMPLETE：新增 move-only `MaterialVolumePlan` 与 CSR compact 层区间布局，实现逐列有序交点、奇偶配对与 caller-owned 单层 owner 物化；开放材质、缺失优先级、同级重叠、奇数交点、未绑定材质、非法栅格与取消全部在构建期 fail closed，物化期保持纯净。MV-F01/F02/F04 逐层 owner 与独立稠密 oracle diff=0，空洞层保持无 owner，热路径零堆分配且 buffer 地址复用，compact 区间为同规模稠密栈的 1/8。两处变异检验（包络填充、优先级反向）均按预期 FAIL。物化的参数校验改为显式抛出以对齐既有 `MaterializeLayerOccupancy` 约定。Release `/W4 /WX` 与定向 CTest 10/10 PASS，未接 `run_slicer`。MV-04 仍受 MQ-01/MQ-02 输入 Gate 阻塞。 |
 | 2026-08-20 | v1.2 | MV-02 COMPLETE：新增 `MaterialVolumeError` 稳定错误码三件套与 `MaterialTopologyClassifier` 逐材质子网格分类；`materialVolumePolicy` 顶层配置块按仓库约定接入 `config.h`/`config.cpp`，并在 `ConfigMigration` 登记以堵住 `slicer.config.1` 的静默丢字段。13 项 fail-closed 逐条有用例，Release `/W4 /WX` 与定向 CTest 8/8 PASS。变异检验发现并修正了顶点焊接导致的材质交界边误判，改为真开边与交界边分列计数且交界边围成的子网格不视为独立闭合体。未接 `run_slicer`，未改动任何既有预设与 profileHash。MV-03 转 PREPARED。 |
 | 2026-08-20 | v1.1 | MV-01 COMPLETE：新增 `tests/matvol/MatvolFactsTests.cpp` 与 `matvol_facts_unit_tests`，Release `/W4 /WX` 构建与 11/11 CTest 通过。固化 MV-F01..F06 合成 fixture、独立 dense owner oracle、Legacy 顶面投影 baseline、owner diff schema 与重复运行摘要；复刻并冻结 XY 采样中心、重心容差、`>=` 平局规则、层换算与 Kd 量化五条既有规则；机器化 Reality 03/08/09 逐材质拓扑事实。两处变异检验证明断言有效。补 `.gitignore` negation 使 `tests/matvol/` 可入库。未新增生产 API、未改 Profile/协议、未接 `run_slicer`。MV-02 转 PREPARED。 |
