@@ -1,7 +1,7 @@
 # DOC_PREP_16C-06-MEMFLOW MF-02/03 开发准备补充
 
-> 状态：**MF-02/03A/03B1/03B2/03B3 IMPLEMENTED / MF-03B4 PARTIAL**
-> 日期：2026-08-19
+> 状态：**MF-02/03A/03B1/03B2/03B3 IMPLEMENTED / MF-03B4A PREPARED / MF-03B4B PREPARED**
+> 日期：2026-08-21
 > 上游：`DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`、
 > `DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
 
@@ -166,6 +166,65 @@ connectivity、负值/非 finite policy、plan identity 必须在状态修改前
 重试，未消费全部层不得 Finish。层间取消由调用方销毁 scanner 表达，不返回半结果。Mask scratch
 构造期一次分配并复用；动态 report 事件允许有界分配，但不得出现 layer x pixel Mask 栈。
 
+### 4.4 MF-03B4A 支撑最终重放合同
+
+MF-03B4A 只实现非生产 P4 的支撑侧最终化，禁止 material、RGBWSV、TIFF、preview、report 文件、
+callback、Profile、SPI、Worker 或 Production Service 接线：
+
+```text
+输入：B1 final plan、B3 completed result、严格递增的 model/upperBoundary/outerVarnish Mask
+内部：使用 B3 相同 canonical 实现重放 pre-base support/type，并在提交任何 caller output 前
+      逐层比较 B3 digest
+顺序：verified B3 replay -> BaseProjection -> outer-varnish priority
+      -> final support/type/connectivity statistics -> synchronous compact sink
+输出：caller-owned final support/type/clearedOuterOverlap Mask；Result 只保留 O(1) totals 和
+      BaseProjection summary，不保留 layer x pixel Mask 栈
+```
+
+`BoundedSupportReplayIdentity` 冻结 digest version、width/height/layerCount/inputKind、connectivity、
+InternalVoid/Shape policy fingerprint。B3 Result 携带该 identity；B4A 构造期必须验证 result、request 与
+plan identity 全等。B3 scanner 的 verified 模式在每层 report sink 与 caller output 提交前比较 expected
+digest；mismatch 使 scanner 永久失败，禁止同层输出、后续 Consume 或 Finish。
+
+BaseProjection 直接复用 B3 的 post-shape 全层 footprint。`effectiveLayerCount =
+min(config.layerCount, layerCount)`；只处理物理 `layerIndex [0, effectiveLayerCount)`。模型已在 Grid
+建立前按 `prepend_below_model` preparation 抬高，P4 不再改变物理层号。每个 footprint 像素仍遵守
+model priority 和已有 support 保留：空 support 才新增。`overlay_existing` 只把新增像素标为
+`ProjectionBase`；`prepend_below_model` 必须把有效前 N 层全部既有和新增 support type 覆盖为
+`ProjectionBase`，与 retained 当前行为一致。
+
+Base 之后才应用 outer-varnish priority：重叠 support 清零且 type 设为 `None`，同时写入 caller-owned
+`clearedOuterOverlapMask`。被清像素不进入 final support/type/connectivity totals，但 B4B closure 必须把
+该 Mask 恢复进 `supportRequiredMask` / expected occupied domain。surface varnish 位于模型像素内部，
+不清 support，不属于 B4A。
+
+错误层序、尺寸、非二值、任意输入/输出别名、GeneralMesh、非法 config、identity/digest 不匹配均
+fail closed。可校验输入错误不推进状态且允许同层修正重试；digest 或 sink 异常发生在内部 scratch 上，
+不提交 caller output，并永久终止 scanner。层间取消由销毁 scanner 表达，不返回半结果；未完整消费
+不得 Finish。所有 mask/type scratch 在构造期一次分配并复用。
+
+### 4.5 MF-03B4B 材料与闭合最终重放合同
+
+MF-03B4B 是独立的非生产材料卡，依赖 B4A COMPLETE，当前只冻结合同、不随 B4A 一并实现：
+
+```text
+输入：B4A 同层 final support/type/clearedOuterOverlap，model、outer/surface varnish，
+      texture/material-role/column facts identity，closure config
+顺序：compose material -> Stage 15 white carrier -> populate empty mask
+      -> closure exact analysis -> optional repair -> re-detect remaining gaps
+      -> repaired final channel/semantic/material totals -> synchronous layer sink
+输出：caller-owned RGBWSV 与 semantic evidence；Result 仅保留 compact totals
+```
+
+Texture/Material/Stage 15 计数只能在 B4B 最终遍累计一次。closure 的 `supportRequiredMask` 必须是
+final support OR B4A cleared overlap；outer/surface varnish ownership 保持 retained 口径。repair 后必须
+重新检测 remaining gaps，channel/semantic totals 只能读取 repair 后最终 RGBWSV。B4B 不复用
+experimental `MaterialChannelComposer`，不得把 `slicer.cpp` 匿名 DTO 暴露给 UI；实施前先提取 retained
+等价的 core DTO/helper，并以独立 oracle 校验。
+
+B4B 同样采用严格层序、caller-owned buffer、同步 sink、无半结果和 fail-closed 状态机；sink 返回前
+不得发布层，取消/错误不得留下可消费 RGBWSV。它不写文件、不接生产，MF-04 才负责 staging Writer。
+
 ## 5. 验证矩阵
 
 ### MF-02
@@ -195,6 +254,28 @@ SupportType 优先级、unsupported/baseProjection 层范围、varnish 清理次
 Stage 15 white carrier、material closure exact/repair；
 真实模型连通分量和支撑连续层不减少；
 Retained/Bounded 逐层 RGBWSV/ownership/statistics hash 全等。
+```
+
+### MF-03B4A
+
+```text
+disabled/overlay/prepend/clamp、model priority 与 prepend type 覆盖逐层全等；
+digest mismatch 在 sink/caller output 前失败，identity/policy/plan 不匹配构造期拒绝；
+Base 后 outer-varnish 清理、cleared overlap evidence、final support/type totals 全等；
+4/8 connectivity 的 component count/largest/small/tiny 与 retained oracle 全等；
+层序、尺寸、二值、别名、sink failure、提前/重复 Finish 和取消边界；
+caller buffer/scratch 地址复用，mask-only hot path 无 layer x pixel 保留；
+Release MF-03B4A、B3/B2/B1/03A/02、outer varnish、support shape 回归。
+```
+
+### MF-03B4B（实施前 Gate）
+
+```text
+support off/on、Base、outer/surface varnish、Stage 15 white_underbase；
+closure disabled/diagnostic/exact/repair_then_report，repair 后重检；
+texture/materialPolicy/materialRoleMapping/modelFill 组合；
+逐层 RGBWSV、semantic ownership、channel/support/material totals 与独立 retained oracle 全等；
+不写 TIFF/preview/report 文件，不接生产；错误/取消/sink/缓冲复用无半结果。
 ```
 
 ### MF-03B1
@@ -234,12 +315,16 @@ Release MF-03B2、MF-03B1、MF-03A、MF-02 与既有 support shape 回归。
 [x] MF-03B1 DTO、开闭边界、错误边界和独立对照矩阵已冻结
 [x] MF-03B2 P1/P2 状态机、previous-base 排除域、事件口径和 retained oracle 已冻结
 [x] MF-03B3 InternalVoid/Shape/type/footprint/digest/report sink 顺序和非生产 Gate 已冻结
+[x] MF-03B4 已拆为支撑归属 B4A 与材料归属 B4B，依赖和完成口径已冻结
+[x] B4A identity、同层 digest checkpoint、Base 物理层映射、varnish priority 和统计归属已冻结
+[x] B4A DTO/ownership、错误/取消/sink/半结果禁止和 retained oracle 矩阵已冻结
+[x] B4B compose/Stage 15/closure/repair/totals 顺序与非生产边界已冻结
 ```
 
 实施结果：MF-02、MF-03A、MF-03B1 与 MF-03B2 已按上述 Gate 完成并通过 Release 定向验证。MF-03B1
 提供 move-only compact plan、双 Mask caller-owned 单层物化、完整字节区间别名拒绝和 257 x 32
 retained oracle 全层零差异；核心源与测试均通过 `/W4 /WX`。MF-03B 的 P0..P4、统计重放顺序已
 冻结。MF-03B2 已完成非生产实现与 Release 定向 Gate；完整 Shape/Base/Varnish/Material 组合 diff
-fixture 和生产
-接线仍未达到 Gate。MF-03B3 已按冻结合同完成非生产实现和 Release 定向 Gate；MF-03B4 继续
-PENDING/PREPARATION PARTIAL。B1..B3 均未接生产路径。
+fixture 和生产接线仍未达到 Gate。MF-03B3 已按冻结合同完成非生产实现和 Release 定向 Gate；
+MF-03B4A/B 的准备 Gate 已完成，但只准先实现 B4A。B4B 需等待 B4A COMPLETE 后单独开工，MF-04
+和生产接线仍未授权。B1..B3 均未接生产路径。

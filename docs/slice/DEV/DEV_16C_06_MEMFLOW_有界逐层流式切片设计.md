@@ -1,7 +1,7 @@
 # DEV_16C-06-MEMFLOW 有界逐层流式切片设计
 
-> 状态：**ACTIVE DESIGN / MF-01..03B3 IMPLEMENTED / MF-03B4 PREPARATION PARTIAL**
-> 版本：v1.4 ｜ 日期：2026-08-21
+> 状态：**ACTIVE DESIGN / MF-01..03B3 IMPLEMENTED / MF-03B4A/B PREPARED**
+> 版本：v1.5 ｜ 日期：2026-08-21
 > 决策：`DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 
 ## 1. 设计目标
@@ -171,6 +171,31 @@ report 的 SHA-256 replay digest。
 该能力只由 Stage 16 测试引用，未连接生产路由；BaseProjection、outer/surface varnish priority、材料与
 closure 的最终逐层重放仍属于 MF-03B4。
 
+### 6.7 MF-03B4A Verified support final replay
+
+`BoundedSupportFinalReplayScanner` 位于 support 模块，只消费 B1 final plan、B3 completed result 与
+同层 model/upper/outer-varnish Mask。它通过 B3 canonical 实现先在内部 scratch 重放并验证同层
+digest，再按 B3 footprint 应用 BaseProjection、outer-varnish priority 和 final support/connectivity
+统计。输出由调用方持有；Result 不保存 Raster 层栈。
+
+```text
+support dependency direction:
+BoundedSupportDemand -> BoundedSupportShapeScan -> BoundedSupportFinalReplay
+materials/output/apps 不得成为 support 的依赖
+```
+
+`prepend_below_model` 的模型抬高发生在 Grid 建立前；B4A 只处理最终物理层 `0..N-1`，并保留前 N
+层既有 type 覆盖为 ProjectionBase 的 retained 行为。outer-varnish 清除发生在 Base 后，cleared overlap
+作为 B4B closure evidence 交接，但不计入 final support stats。任何 digest/sink 失败都发生在 caller
+output 提交前并终止 scanner。
+
+### 6.8 MF-03B4B Material/closure final replay
+
+B4B 位于 materials/pipeline core 边界，消费 B4A 同层 view 与冻结的 texture/material facts，按 retained
+顺序执行 compose、Stage 15 white carrier、closure exact/repair/re-detect 和 repair 后 totals。它只向
+同步 sink 交接 caller-owned RGBWSV/semantic evidence，不写 TIFF、preview 或 report 文件；MF-04 才把
+完成层交给 StagedPackageLayerSink。B4B 不允许反向依赖 support 私有实现，也不允许 UI 读取临时结构。
+
 ## 7. Scene Layer Barrier
 
 ### 7.1 状态机
@@ -274,7 +299,7 @@ manifest/report/preview/RIP strict
 MF-00 文档、基线和状态同步
 MF-01 RasterMemoryBudget 纯合同
 MF-02 Owned Layer Producer/Sink，仍由测试消费
-MF-03 Occupancy/Support 有界物化
+MF-03 Occupancy/Support 有界物化（B4A support final replay -> B4B material/closure replay）
 MF-04 单实例流式 Package
 MF-05 多实例 Layer Barrier
 MF-06 Sparse Tile/Span 候选

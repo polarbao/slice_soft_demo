@@ -1,6 +1,6 @@
 # REPORT_16C-06-MEMFLOW 有界流式内存根治当前状态
 
-> 状态：**ACTIVE / MF-00..03B3 COMPLETE / MF-03B4 PREPARATION PARTIAL**
+> 状态：**ACTIVE / MF-00..03B3 COMPLETE / MF-03B4A/B PREPARED**
 > 日期：2026-08-21
 > 任务真源：`TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md`
 
@@ -19,6 +19,10 @@ MF-03B2 现已提供 bounded outer-boundary 与 unsupported discovery 顺序扫�
 逐源层事件摘要；MF-03B3 进一步提供 InternalVoid/Shape、post-shape footprint、compact report sink
 和逐层 replay digest。两者都只属于非生产能力，尚未包含 BaseProjection/final varnish/material
 重放，也没有连接 Production Service。
+
+2026-08-21 的准备审计已把 MF-03B4 拆为 B4A 支撑最终重放与 B4B 材料/闭合最终重放。两张卡的
+DTO、digest checkpoint、Base/varnish 顺序、统计归属、buffer 生命周期、错误/取消边界和 retained
+oracle 已冻结；只准先实现 B4A，B4B 等待 B4A COMPLETE。生产仍为 Retained Dense。
 
 ## 2. 当前数据事实
 
@@ -121,6 +125,8 @@ mask-only ConsumeLayer 零分配并复用 caller/scratch buffer；固定 digest 
 | MF-03B2 retained oracle / 状态机 / 零分配 Gate | 7/7 PASS |
 | MF-02/03A/03B1/03B2/03B3 + outer varnish Release CTest | 6/6 PASS |
 | MF-03B3 retained oracle / digest golden / scratch / 错误 Gate | 6/6 PASS |
+| MF-03B4A/B 准备完整性审计 | PASS；B4A PREPARED，B4B WAITING |
+| MF-03B4A verified final support replay | NOT STARTED |
 | 既有 support shape / `slicer_cli` 链接 | 11/11 PASS / PASS |
 | Router / Global 兼容定向测试 | 2/2 PASS |
 | Scene Adapter 现有套件 | 11/12 PASS；修改前已存在的平移断言仍失败 |
@@ -134,6 +140,7 @@ mask-only ConsumeLayer 零分配并复用 caller/scratch buffer；固定 digest 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v1.6 | MF-03B4 准备完成并拆为 B4A/B4B；冻结支撑最终化与材料闭合边界。B4A 可开工，B4B 等待；生产仍为 Retained Dense。 |
 | 2026-08-21 | v1.5 | MF-03B3 完成：非生产 InternalVoid/Shape/footprint/compact report/replay digest Gate 通过；生产仍为 Retained Dense。 |
 | 2026-08-20 | v1.4 | MF-03B2 完成：bounded P1/P2 scanner、retained oracle、错误恢复和热路径零分配 Gate 通过；生产仍为 Retained Dense。 |
 | 2026-08-19 | v1.3 | MF-03B1 完成：move-only 支撑需求计划、双 Mask caller-owned 单层物化、retained oracle 和 fail-closed Gate 通过；仍未接生产，B2..B4 继续部分准备。 |
