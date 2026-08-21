@@ -1,10 +1,11 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B PREPARED**
-> 版本：v2.1 ｜ 日期：2026-08-21
+> 版本：v2.2 ｜ 日期：2026-08-21
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
+> B4B 准备：`docs/slice/DOC/DOC_PREP_16C_06_MEMFLOW_MF_03B4B_材料最终重放实施准备.md`
 
 ---
 
@@ -198,6 +199,13 @@ white carrier -> closure exact -> optional repair -> re-detect -> repair 后 cha
 被 outer varnish 清掉的 support 只恢复进 closure `supportRequiredMask`，不进入 final support stats。
 B4B 不写包、不接生产；只有 B4A COMPLETE 后才可单独开工。
 
+**MF-03B4B 准备补充（2026-08-21）：** 多 Agent 只读审计发现原准备未冻结 public DTO、facts
+identity、caller output 提交时机、取消/错误状态机及 closure workspace，先判定 NO-GO 并补充专项 PREP。
+现已冻结 retained canonical helper 提取、11 个 semantic mask、canonical digest、sink 成功后提交、销毁式
+取消、固定 workspace/热路径零分配、独立 retained oracle 和 Release 组合 Gate，结论转为
+`PREPARED / IMPLEMENTATION GO`。Stage 15 保留 retained eligible-branch 语义，MaterialPolicy/texture/
+Stage 15 counter 保留 compose-time 口径；生产仍为 Retained Dense。
+
 ## 8. MF-04 单实例流式 Package
 
 **目标：** 单实例 full-grid 从 Producer 逐层进入 staging Writer，释放已写层。
@@ -236,6 +244,7 @@ SLA/内存上限缺失时，只完成工程 Gate，不宣称 production SLA PASS
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v2.2 | MF-03B4B 专项准备补齐：冻结 public DTO、facts identity、retained 精确顺序、Stage 15 eligible branch、caller output/sink 强异常边界、closure 固定 workspace、独立 oracle 与实施拆分；结论 PREPARED / IMPLEMENTATION GO，生产仍未接线。 |
 | 2026-08-21 | v2.1 | MF-03B4A COMPLETE：实现 plan-bound verified replay、Base/outer-varnish 最终化、逐层 compact connectivity sink 与 fail-closed 生命周期；Release 组合 Gate 通过且生产零接线。MF-03B4B 解除依赖等待但未开工。 |
 | 2026-08-21 | v2.0 | 完成 MF-03B4 准备审计并拆为 B4A/B4B；冻结 replay identity/digest checkpoint、Base/varnish/统计、材料/Stage15/closure、生命周期与零漂移 Gate。B4A 转 PREPARED，B4B 等待 B4A。 |
 | 2026-08-21 | v1.9 | MF-03B3 COMPLETE：实现非生产 InternalVoid/Shape/footprint/compact report sink/replay digest scanner，retained oracle 与 Release 定向回归通过；B4 和生产接线仍未准入。 |

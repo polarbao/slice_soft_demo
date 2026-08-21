@@ -202,6 +202,11 @@ B4B 位于 materials/pipeline core 边界，消费 B4A 同层 view 与冻结的 
 同步 sink 交接 caller-owned RGBWSV/semantic evidence，不写 TIFF、preview 或 report 文件；MF-04 才把
 完成层交给 StagedPackageLayerSink。B4B 不允许反向依赖 support 私有实现，也不允许 UI 读取临时结构。
 
+B4B 的精确 DTO、facts canonical identity、caller output 提交时机、固定 closure workspace 与测试 Gate
+由 `DOC_PREP_16C_06_MEMFLOW_MF_03B4B_材料最终重放实施准备.md` 冻结。Stage 15 在设计图中虽表示为
+compose 后阶段，实际实现必须保持 retained eligible texture branch，不扩大到 role mapping 或 material
+policy 分支；MaterialPolicy/texture/Stage 15 counter 保持 compose-time 历史口径。
+
 ## 7. Scene Layer Barrier
 
 ### 7.1 状态机

@@ -1,6 +1,6 @@
 # DOC_PREP_16C-06-MEMFLOW MF-02/03 开发准备补充
 
-> 状态：**MF-02/03A/03B1/03B2/03B3/03B4A IMPLEMENTED / MF-03B4B PREPARED**
+> 状态：**MF-02/03A/03B1/03B2/03B3/03B4A IMPLEMENTED / MF-03B4B PREPARED（专项准备已补齐）**
 > 日期：2026-08-21
 > 上游：`DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`、
 > `DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -224,6 +224,10 @@ experimental `MaterialChannelComposer`，不得把 `slicer.cpp` 匿名 DTO 暴�
 
 B4B 同样采用严格层序、caller-owned buffer、同步 sink、无半结果和 fail-closed 状态机；sink 返回前
 不得发布层，取消/错误不得留下可消费 RGBWSV。它不写文件、不接生产，MF-04 才负责 staging Writer。
+
+DTO、identity、retained 精确顺序、Stage 15 eligible branch、closure workspace、状态机、独立 oracle 与
+Release Gate 见 `DOC_PREP_16C_06_MEMFLOW_MF_03B4B_材料最终重放实施准备.md`。该专项 PREP 为 B4B
+实施的直接合同；若与本节高层摘要有歧义，以专项 PREP 的 retained 零漂移边界为准。
 
 ## 5. 验证矩阵
 
