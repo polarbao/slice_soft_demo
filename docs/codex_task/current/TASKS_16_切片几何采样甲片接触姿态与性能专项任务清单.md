@@ -1,9 +1,9 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16C-05 / 16D-01..04 / 16D-02-R1 已实施；16C-06-MEMFLOW MF-00..03B3 完成、MF-03B4 部分准备；16B-04 / 16D-05 待单独授权**
-> 版本：v2.8
-> 日期：2026-08-18
+> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16C-05 / 16D-01..04 / 16D-02-R1 已实施；16C-06-MEMFLOW MF-00..03B4A 完成、MF-03B4B 已准备；16B-04 / 16D-05 待单独授权**
+> 版本：v2.9
+> 日期：2026-08-21
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
 ## 0. 🔴 2026-08-11 用户裁定：准入 Gate 口径与开工条件
@@ -342,7 +342,7 @@ PASS。`scene_layer_adapters_unit_tests` 的新增用例 PASS，但整套仍保�
 **依赖：** 16A 语义候选已冻结
 **出口：** 减少完整 model mask 常驻；S0/S3/S4 输出与各自未优化基线一致。
 
-**状态：ACTIVE / MF-00..03B3 COMPLETE / MF-03B4 PREPARATION PARTIAL（2026-08-21）**
+**状态：ACTIVE / MF-00..03B4A COMPLETE / MF-03B4B PREPARED（2026-08-21）**
 
 **授权与拆分：** 用户已明确授权开启根治专项，并允许准备完成后进入开发。16C-06 由
 `TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md` 作为原子状态唯一真源，按
@@ -493,6 +493,7 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v2.9 | 16C-06-MEMFLOW MF-03B4A 完成：verified support replay、Base/outer-varnish 最终化与 compact connectivity Gate 通过；生产仍为 Retained Dense，MF-03B4B 未开工。 |
 | 2026-08-21 | v2.8 | 16C-06-MEMFLOW MF-03B1..B3 完成：pre-shape demand、bounded outer-boundary/unsupported discovery 与 Shape/footprint replay 通过 retained oracle；MF-03B4 和生产接线仍未准入。 |
 | 2026-08-18 | v2.7 | 16C-06-MEMFLOW MF-02/03A 完成：Legacy owned layer 移动交接与错误/取消清理 Gate 通过；新增 compact occupancy range 和 caller-owned 单层 materializer，S0/S3/S4 与独立 Retained 对照零差异。MF-03B 仅部分准备，生产仍为 Retained Dense。 |
 | 2026-08-18 | v2.6 | 16C-06-MEMFLOW MF-01 完成：新增纯 Raster 内存预算/路由合同，123 大 Grid 估算和溢出/fail-closed 用例通过；MF-02 转 PREPARED，未改变生产路径。 |

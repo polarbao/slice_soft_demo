@@ -1,7 +1,7 @@
 # DEV_16C-06-MEMFLOW 有界逐层流式切片设计
 
-> 状态：**ACTIVE DESIGN / MF-01..03B3 IMPLEMENTED / MF-03B4A/B PREPARED**
-> 版本：v1.5 ｜ 日期：2026-08-21
+> 状态：**ACTIVE DESIGN / MF-01..03B4A IMPLEMENTED / MF-03B4B PREPARED**
+> 版本：v1.6 ｜ 日期：2026-08-21
 > 决策：`DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 
 ## 1. 设计目标
@@ -188,6 +188,12 @@ materials/output/apps 不得成为 support 的依赖
 层既有 type 覆盖为 ProjectionBase 的 retained 行为。outer-varnish 清除发生在 Base 后，cleared overlap
 作为 B4B closure evidence 交接，但不计入 final support stats。任何 digest/sink 失败都发生在 caller
 output 提交前并终止 scanner。
+
+实现结果：B3 `ReplayIdentity` 已纳入 B1 final plan 的 canonical digest，并提供 verified Consume，
+使 B4A 在 B3 report/output/state 可观察提交前完成逐层校验。B4A 使用当前层 scratch 复用完成 Base、
+outer priority、type totals 与 connectivity；组件 area/bbox 通过仅在同步 sink 调用期间有效的 span
+交接并按 retained 面积顺序排序。该实现及 10 组测试仅进入 support/CMake Stage 16 测试边界，
+未连接生产路由。
 
 ### 6.8 MF-03B4B Material/closure final replay
 

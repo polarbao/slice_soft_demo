@@ -1,6 +1,6 @@
 # REPORT_16C-06-MEMFLOW 有界流式内存根治当前状态
 
-> 状态：**ACTIVE / MF-00..03B3 COMPLETE / MF-03B4A/B PREPARED**
+> 状态：**ACTIVE / MF-00..03B4A COMPLETE / MF-03B4B PREPARED**
 > 日期：2026-08-21
 > 任务真源：`TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md`
 
@@ -20,9 +20,9 @@ MF-03B2 现已提供 bounded outer-boundary 与 unsupported discovery 顺序扫�
 和逐层 replay digest。两者都只属于非生产能力，尚未包含 BaseProjection/final varnish/material
 重放，也没有连接 Production Service。
 
-2026-08-21 的准备审计已把 MF-03B4 拆为 B4A 支撑最终重放与 B4B 材料/闭合最终重放。两张卡的
-DTO、digest checkpoint、Base/varnish 顺序、统计归属、buffer 生命周期、错误/取消边界和 retained
-oracle 已冻结；只准先实现 B4A，B4B 等待 B4A COMPLETE。生产仍为 Retained Dense。
+2026-08-21 的准备审计已把 MF-03B4 拆为 B4A 支撑最终重放与 B4B 材料/闭合最终重放。B4A 已按
+冻结合同完成 plan-bound verified replay、Base/outer-varnish 最终化与逐层 compact connectivity sink；
+B4B 仅解除依赖等待，尚未开工。生产仍为 Retained Dense。
 
 ## 2. 当前数据事实
 
@@ -103,7 +103,7 @@ P1/P2 ConsumeLayer 分配计数均为 0；新 scanner 未接生产路径
 
 ## 7. 验证状态
 
-MF-03B3 当前结果：
+MF-03B3/B4A 当前结果：
 
 ```text
 B1 final demand -> InternalVoid -> Shape -> type sync 顺序与 retained 对照全等
@@ -112,6 +112,10 @@ SHA-256 replay digest 重复确定，并覆盖 upper-boundary 与 policy/report 
 mask-only ConsumeLayer 零分配并复用 caller/scratch buffer；固定 digest golden 冻结 canonical 编码
 错误输入不推进状态；sink 异常不提交 caller output，并永久终止 scanner
 新 scanner 仅由 support 模块自身和 Stage 16 测试引用，生产零接线
+B4A 构造期绑定 B1 plan digest；逐层 digest 在任何 sink/caller output 提交前校验
+Base disabled/overlay/prepend/clamp、model priority 与 outer-varnish 次序对 dense/fixed oracle 通过
+final support/type totals 与 4/8 connectivity component area/bbox 通过同步 sink 交接
+错误输入可重试；digest/sink 失败不提交当前层并永久终止；caller buffers 跨层地址不变
 ```
 
 | Gate | 状态 |
@@ -123,10 +127,10 @@ mask-only ConsumeLayer 零分配并复用 caller/scratch buffer；固定 digest 
 | MF-03A S0/S3/S4 等价与错误 Gate | PASS |
 | MF-03B1 retained oracle / 错误与别名 Gate | PASS |
 | MF-03B2 retained oracle / 状态机 / 零分配 Gate | 7/7 PASS |
-| MF-02/03A/03B1/03B2/03B3 + outer varnish Release CTest | 6/6 PASS |
+| MF-02/03A/03B1/03B2/03B3/03B4A + outer varnish Release CTest | 7/7 PASS |
 | MF-03B3 retained oracle / digest golden / scratch / 错误 Gate | 6/6 PASS |
-| MF-03B4A/B 准备完整性审计 | PASS；B4A PREPARED，B4B WAITING |
-| MF-03B4A verified final support replay | NOT STARTED |
+| MF-03B4A/B 准备完整性审计 | PASS；B4A COMPLETE，B4B PREPARED |
+| MF-03B4A verified final support replay | 10/10 PASS；COMPLETE |
 | 既有 support shape / `slicer_cli` 链接 | 11/11 PASS / PASS |
 | Router / Global 兼容定向测试 | 2/2 PASS |
 | Scene Adapter 现有套件 | 11/12 PASS；修改前已存在的平移断言仍失败 |
@@ -140,6 +144,7 @@ mask-only ConsumeLayer 零分配并复用 caller/scratch buffer；固定 digest 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v1.7 | MF-03B4A 完成：plan-bound verified support replay、Base/outer-varnish 最终化、compact connectivity 与错误/生命周期 Gate 通过；生产仍为 Retained Dense，B4B 未开工。 |
 | 2026-08-21 | v1.6 | MF-03B4 准备完成并拆为 B4A/B4B；冻结支撑最终化与材料闭合边界。B4A 可开工，B4B 等待；生产仍为 Retained Dense。 |
 | 2026-08-21 | v1.5 | MF-03B3 完成：非生产 InternalVoid/Shape/footprint/compact report/replay digest Gate 通过；生产仍为 Retained Dense。 |
 | 2026-08-20 | v1.4 | MF-03B2 完成：bounded P1/P2 scanner、retained oracle、错误恢复和热路径零分配 Gate 通过；生产仍为 Retained Dense。 |

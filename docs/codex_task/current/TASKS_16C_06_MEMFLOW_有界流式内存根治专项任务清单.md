@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
-> 文档状态：**ACTIVE / MF-01..03B3 COMPLETE / MF-03B4A/B PREPARED**
-> 版本：v2.0 ｜ 日期：2026-08-21
+> 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B PREPARED**
+> 版本：v2.1 ｜ 日期：2026-08-21
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -31,8 +31,8 @@
 | MF-03B1 | Range-derived Support Demand 与 caller-owned pre-shape 单层物化 | COMPLETE | MF-03A、B1 合同 Gate | 2026-08-19 |
 | MF-03B2 | Geometry/outer-boundary 与 unsupported discovery 扫描 | COMPLETE | MF-03B1、B2 retained oracle Gate | 2026-08-20 |
 | MF-03B3 | Shape/footprint 扫描、compact report 与 replay digest | COMPLETE | MF-03B2、重放 Gate | 2026-08-21 |
-| MF-03B4A | Verified support/BaseProjection/outer-varnish 最终重放 | PREPARED | MF-03B3、B4A 准备 Gate | - |
-| MF-03B4B | Material/Stage 15/closure 最终重放 | PREPARED / WAITING | MF-03B4A COMPLETE、B4B 组合 Gate | - |
+| MF-03B4A | Verified support/BaseProjection/outer-varnish 最终重放 | COMPLETE | MF-03B3、B4A 准备 Gate | 2026-08-21 |
+| MF-03B4B | Material/Stage 15/closure 最终重放 | PREPARED | MF-03B4A COMPLETE、B4B 组合 Gate | - |
 | MF-04 | 单实例流式 Staged Package | PENDING | MF-03B4A/B COMPLETE | - |
 | MF-05 | 多实例 Global Layer Barrier | PENDING | MF-04 | - |
 | MF-06 | Sparse Tile/Span 显式候选 | PENDING | MF-05 | - |
@@ -182,6 +182,17 @@ cleared evidence、final totals/connectivity 与独立 retained oracle 逐层零
 尺寸、二值、别名、sink/Finish/cancel fail closed；caller buffer/scratch 复用；Release MEMFLOW、outer
 varnish、support shape 与 CLI 回归通过，生产未接线。
 
+**MF-03B4A 实际结果（2026-08-21）：** 新增 non-production
+`BoundedSupportFinalReplayScanner`。B3 replay identity 现包含 B1 final plan 的 canonical SHA-256，
+verified Consume 在内部 report sink、caller output 和状态提交前校验逐层 digest；通过后严格执行
+BaseProjection、outer-varnish support/type 清理及 final support/type/connectivity 扫描。逐组件
+area/bbox 仅以同步 span 交接，Result 只保留 Base summary 与 O(1) totals，不保留 layer x pixel 栈。
+独立用例 10/10 覆盖 disabled/overlay/prepend/clamp/model priority、dense Base oracle、4/8 连通、
+identity/digest、生命周期、别名/二值/尺寸、sink 异常与 caller buffer 地址复用。Release `/W4 /WX`
+目标构建通过；MF-02/03A/03B1/03B2/03B3/03B4A + outer-varnish CTest 7/7 PASS，既有 support shape
+11/11 PASS，`slicer_cli --version` 报告 `0.2.0-dev`。全仓生产引用检查为空，未写 Package/RIP，
+生产仍为 Retained Dense。
+
 **MF-03B4B 准备裁决（2026-08-21）：** B4B 独立消费 B4A 同层结果，顺序固定为 compose -> Stage 15
 white carrier -> closure exact -> optional repair -> re-detect -> repair 后 channel/semantic/material totals。
 被 outer varnish 清掉的 support 只恢复进 closure `supportRequiredMask`，不进入 final support stats。
@@ -225,6 +236,7 @@ SLA/内存上限缺失时，只完成工程 Gate，不宣称 production SLA PASS
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v2.1 | MF-03B4A COMPLETE：实现 plan-bound verified replay、Base/outer-varnish 最终化、逐层 compact connectivity sink 与 fail-closed 生命周期；Release 组合 Gate 通过且生产零接线。MF-03B4B 解除依赖等待但未开工。 |
 | 2026-08-21 | v2.0 | 完成 MF-03B4 准备审计并拆为 B4A/B4B；冻结 replay identity/digest checkpoint、Base/varnish/统计、材料/Stage15/closure、生命周期与零漂移 Gate。B4A 转 PREPARED，B4B 等待 B4A。 |
 | 2026-08-21 | v1.9 | MF-03B3 COMPLETE：实现非生产 InternalVoid/Shape/footprint/compact report sink/replay digest scanner，retained oracle 与 Release 定向回归通过；B4 和生产接线仍未准入。 |
 | 2026-08-20 | v1.8 | MF-03B3 转 PREPARED：冻结 InternalVoid/Shape 精确顺序、type 同步、post-shape footprint、compact report sink、canonical digest 和非生产边界。 |

@@ -1,6 +1,6 @@
 # DOC_PREP_16C-06-MEMFLOW MF-02/03 开发准备补充
 
-> 状态：**MF-02/03A/03B1/03B2/03B3 IMPLEMENTED / MF-03B4A PREPARED / MF-03B4B PREPARED**
+> 状态：**MF-02/03A/03B1/03B2/03B3/03B4A IMPLEMENTED / MF-03B4B PREPARED**
 > 日期：2026-08-21
 > 上游：`DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`、
 > `DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -326,5 +326,7 @@ Release MF-03B2、MF-03B1、MF-03A、MF-02 与既有 support shape 回归。
 retained oracle 全层零差异；核心源与测试均通过 `/W4 /WX`。MF-03B 的 P0..P4、统计重放顺序已
 冻结。MF-03B2 已完成非生产实现与 Release 定向 Gate；完整 Shape/Base/Varnish/Material 组合 diff
 fixture 和生产接线仍未达到 Gate。MF-03B3 已按冻结合同完成非生产实现和 Release 定向 Gate；
-MF-03B4A/B 的准备 Gate 已完成，但只准先实现 B4A。B4B 需等待 B4A COMPLETE 后单独开工，MF-04
-和生产接线仍未授权。B1..B3 均未接生产路径。
+MF-03B4A/B 的准备 Gate 已完成；B4A 已实现 plan-bound verified replay、Base/outer-varnish 最终化、
+compact connectivity sink 与 fail-closed 生命周期，并通过 10/10 独立用例及 Release 组合回归。
+B4B 的依赖现已满足，但仍需作为下一张独立卡执行；本轮未开工 B4B。MF-04 和生产接线仍未授权，
+B1..B4A 均未接生产路径。
