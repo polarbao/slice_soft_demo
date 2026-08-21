@@ -1,0 +1,69 @@
+{
+  "schema": "slicesoft.material_volume_report.1",
+  "packageProtocol": "p0.rgbwsv.2",
+  "enabled": true,
+  "mode": "closed_intervals",
+  "missingMaterial": "fail_closed",
+  "openSurface": {
+    "mode": "reject",
+    "requestedThicknessMm": 0.0,
+    "placement": "below_surface"
+  },
+  "overlap": {
+    "mode": "explicit_priority"
+  },
+  "materials": [
+    {
+      "materialName": "01",
+      "priority": 200,
+      "topology": "closed_orientable",
+      "triangleCount": 12,
+      "boundaryEdgeCount": 0,
+      "materialInterfaceEdgeCount": 0,
+      "nonManifoldEdgeCount": 0,
+      "rgb": [63, 190, 126],
+      "rgbSource": "mtl_kd"
+    },
+    {
+      "materialName": "02",
+      "priority": 100,
+      "topology": "closed_orientable",
+      "triangleCount": 12,
+      "boundaryEdgeCount": 0,
+      "materialInterfaceEdgeCount": 0,
+      "nonManifoldEdgeCount": 0,
+      "rgb": [255, 220, 198],
+      "rgbSource": "mtl_kd"
+    }
+  ],
+  "totals": {
+    "layerCount": 8,
+    "columnCount": 16,
+    "intervalCount": 32,
+    "ownerPixels": 32,
+    "unownedModelPixels": 0,
+    "unprintableWhiteCarrierPixels": 0
+  },
+  "layers": [
+    {
+      "layerIndex": 0,
+      "ownerPixelsByMaterial": [
+        { "materialName": "01", "pixels": 0 },
+        { "materialName": "02", "pixels": 16 }
+      ],
+      "unownedModelPixels": 0,
+      "unprintableWhiteCarrierPixels": 0
+    },
+    {
+      "layerIndex": 3,
+      "ownerPixelsByMaterial": [
+        { "materialName": "01", "pixels": 16 },
+        { "materialName": "02", "pixels": 0 }
+      ],
+      "unownedModelPixels": 0,
+      "unprintableWhiteCarrierPixels": 0
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}

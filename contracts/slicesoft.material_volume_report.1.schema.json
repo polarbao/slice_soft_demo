@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/slicesoft.material_volume_report.1.schema.json",
+  "title": "SliceSoft material volume report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "packageProtocol",
+    "enabled",
+    "mode",
+    "missingMaterial",
+    "openSurface",
+    "overlap",
+    "materials",
+    "totals",
+    "layers",
+    "warnings",
+    "errors"
+  ],
+  "properties": {
+    "schema": { "const": "slicesoft.material_volume_report.1" },
+    "packageProtocol": { "const": "p0.rgbwsv.2" },
+    "enabled": { "type": "boolean" },
+    "mode": { "enum": ["closed_intervals"] },
+    "missingMaterial": { "enum": ["fail_closed"] },
+    "openSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "requestedThicknessMm", "placement"],
+      "properties": {
+        "mode": { "enum": ["reject", "surface_band"] },
+        "requestedThicknessMm": { "type": "number", "minimum": 0.0 },
+        "placement": { "enum": ["below_surface"] }
+      }
+    },
+    "overlap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "enum": ["explicit_priority"] } }
+    },
+    "materials": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/material" }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layerCount",
+        "columnCount",
+        "intervalCount",
+        "ownerPixels",
+        "unownedModelPixels",
+        "unprintableWhiteCarrierPixels"
+      ],
+      "properties": {
+        "layerCount": { "type": "integer", "minimum": 0 },
+        "columnCount": { "type": "integer", "minimum": 0 },
+        "intervalCount": { "type": "integer", "minimum": 0 },
+        "ownerPixels": { "type": "integer", "minimum": 0 },
+        "unownedModelPixels": { "type": "integer", "minimum": 0 },
+        "unprintableWhiteCarrierPixels": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/layer" }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "errors": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "channelValue": { "type": "integer", "minimum": 0, "maximum": 255 },
+    "material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["materialName", "priority", "topology"],
+      "properties": {
+        "materialName": { "type": "string", "minLength": 1 },
+        "priority": { "type": "integer" },
+        "topology": {
+          "enum": [
+            "closed_orientable",
+            "open_surface",
+            "non_manifold",
+            "self_intersecting",
+            "invalid"
+          ]
+        },
+        "triangleCount": { "type": "integer", "minimum": 0 },
+        "boundaryEdgeCount": { "type": "integer", "minimum": 0 },
+        "materialInterfaceEdgeCount": { "type": "integer", "minimum": 0 },
+        "nonManifoldEdgeCount": { "type": "integer", "minimum": 0 },
+        "rgb": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/channelValue" }
+        },
+        "rgbSource": { "enum": ["mtl_kd", "explicit_fallback"] }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layerIndex",
+        "ownerPixelsByMaterial",
+        "unownedModelPixels",
+        "unprintableWhiteCarrierPixels"
+      ],
+      "properties": {
+        "layerIndex": { "type": "integer", "minimum": 0 },
+        "ownerPixelsByMaterial": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["materialName", "pixels"],
+            "properties": {
+              "materialName": { "type": "string", "minLength": 1 },
+              "pixels": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "unownedModelPixels": { "type": "integer", "minimum": 0 },
+        "unprintableWhiteCarrierPixels": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

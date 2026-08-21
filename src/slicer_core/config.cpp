@@ -962,7 +962,9 @@ void validate_slice_config(const SliceConfig& config) {
         throw std::runtime_error(
             "texture.unprintableWhiteValue must not equal output emptyValue 255");
     }
-    if (whiteUnderbaseEnabled
+    // MV-06 窄放行：MATVOL 自带最终 RGB，不依赖纹理顶面投影路径。
+    // 其余白区禁令（Global 管线、materialPolicy、旧 roleMapping、whiteValue 冲突、OpenVDB）保持不变。
+    if (whiteUnderbaseEnabled && !config.material_volume_policy.enabled
         && (!config.texture.enabled
             || config.texture.apply_mode != "solid_volume_from_top_surface"))
     {

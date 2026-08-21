@@ -132,6 +132,37 @@ def ValidateProfileContracts(repoRoot: Path) -> None:
     )
 
 
+def ValidateMaterialVolumeReportContracts(repoRoot: Path) -> None:
+    validator = BuildValidator(
+        repoRoot / "contracts" / "slicesoft.material_volume_report.1.schema.json"
+    )
+    report = LoadJson(
+        repoRoot / "tests" / "matvol" / "fixtures" / "material_volume_report_minimal.json"
+    )
+    ValidatePositive(validator, report, "minimal material volume report")
+
+    surfaceBand = copy.deepcopy(report)
+    surfaceBand["openSurface"]["mode"] = "surface_band"
+    surfaceBand["openSurface"]["requestedThicknessMm"] = 0.2
+    ValidatePositive(validator, surfaceBand, "material volume report with surface band")
+
+    unknownTopology = copy.deepcopy(report)
+    unknownTopology["materials"][0]["topology"] = "mystery"
+    ValidateNegative(validator, unknownTopology, "report with unknown topology kind")
+
+    negativeThickness = copy.deepcopy(report)
+    negativeThickness["openSurface"]["requestedThicknessMm"] = -1.0
+    ValidateNegative(validator, negativeThickness, "report with negative requested thickness")
+
+    unknownField = copy.deepcopy(report)
+    unknownField["unexpectedField"] = 1
+    ValidateNegative(validator, unknownField, "report with an unexpected top level field")
+
+    badChannel = copy.deepcopy(report)
+    badChannel["materials"][0]["rgb"] = [63, 190, 256]
+    ValidateNegative(validator, badChannel, "report with an out-of-range RGB channel")
+
+
 def Main() -> int:
     parser = argparse.ArgumentParser(description="Validate SliceSoft JSON contracts")
     parser.add_argument("--repo-root", type=Path, required=True)
@@ -141,6 +172,7 @@ def Main() -> int:
     ValidateManifestContracts(repoRoot)
     ValidateSceneContracts(repoRoot)
     ValidateProfileContracts(repoRoot)
+    ValidateMaterialVolumeReportContracts(repoRoot)
     print("SliceSoft JSON Schema contracts: PASS")
     return 0
 
