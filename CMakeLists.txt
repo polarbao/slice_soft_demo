@@ -412,6 +412,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/slicer.h
     src/slicer_core/support/SupportComponentAnalysis.cpp
     src/slicer_core/support/SupportComponentAnalysis.h
+    src/slicer_core/support/BoundedSupportDemand.cpp
+    src/slicer_core/support/BoundedSupportDemand.h
     src/slicer_core/support/SupportBaseProjection.cpp
     src/slicer_core/support/SupportBaseProjection.h
     src/slicer_core/support/SupportPolicy.cpp
@@ -424,6 +426,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/support/SupportShapePolicy.h
     src/slicer_core/support/SupportShapeReport.cpp
     src/slicer_core/support/SupportShapeReport.h
+    src/slicer_core/support/SupportType.h
     src/slicer_core/system/ProcessMemoryStats.cpp
     src/slicer_core/system/ProcessMemoryStats.h
     src/slicer_core/system/Sha256.cpp
@@ -492,6 +495,10 @@ target_compile_definitions(
 )
 
 if(MSVC)
+    set_source_files_properties(
+        src/slicer_core/support/BoundedSupportDemand.cpp
+        PROPERTIES COMPILE_OPTIONS "/W4;/WX"
+    )
     target_compile_options(
         slicer_base PRIVATE /bigobj ${SLICESOFT_MSVC_PARALLEL_COMPILE_OPTION})
     target_compile_options(
@@ -1654,6 +1661,15 @@ target_compile_definitions(stage16c06_owned_layer_consumer_unit_tests PRIVATE
 
 target_link_libraries(stage16c06_owned_layer_consumer_unit_tests PRIVATE slicer_core)
 
+add_executable(stage16c06_bounded_support_demand_unit_tests
+    tests/stage16/BoundedSupportDemandTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_support_demand_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_support_demand_unit_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2539,6 +2555,7 @@ add_test(NAME stage16_geometry_sampling_fixture_tests COMMAND stage16_geometry_s
 add_test(NAME stage16_layer_occupancy_provider_tests COMMAND stage16_layer_occupancy_provider_tests)
 add_test(NAME stage16c06_memory_budget_unit_tests COMMAND stage16c06_memory_budget_unit_tests)
 add_test(NAME stage16c06_owned_layer_consumer_unit_tests COMMAND stage16c06_owned_layer_consumer_unit_tests)
+add_test(NAME stage16c06_bounded_support_demand_unit_tests COMMAND stage16c06_bounded_support_demand_unit_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
