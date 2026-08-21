@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QDoubleSpinBox>
 #include <QEventLoop>
+#include <QFileInfo>
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
@@ -382,10 +383,7 @@ int RunHostFlowResultUiSmoke(const QString& modulePath)
             != QStringList({
                 QStringLiteral("R"),
                 QStringLiteral("G"),
-                QStringLiteral("B"),
-                QStringLiteral("W"),
-                QStringLiteral("S"),
-                QStringLiteral("V")})
+                QStringLiteral("B")})
         || reportCombo->count() < 3 || openPackageButton->isEnabled())
     {
         QTextStream(stderr)
@@ -449,6 +447,8 @@ int RunRipUiSmoke(const QString& modulePath)
         QStringLiteral("hostRipTransparentModeCombo"));
     const auto* colorModeCombo = window.findChild<QComboBox*>(
         QStringLiteral("hostRipColorModeCombo"));
+    const auto* outputValidationCombo = window.findChild<QComboBox*>(
+        QStringLiteral("hostRipOutputValidationCombo"));
     const auto* runButton = window.findChild<QPushButton*>(
         QStringLiteral("hostRipRunButton"));
     const auto* cancelButton = window.findChild<QPushButton*>(
@@ -457,10 +457,14 @@ int RunRipUiSmoke(const QString& modulePath)
         QStringLiteral("hostRipRuntimeStatus"));
     if (autoCheck == nullptr || intentCombo == nullptr
         || transparentCombo == nullptr || colorModeCombo == nullptr
+        || outputValidationCombo == nullptr
         || runButton == nullptr || cancelButton == nullptr
         || runtimeStatus == nullptr || autoCheck->isChecked()
         || intentCombo->count() != 4 || transparentCombo->count() != 3
         || colorModeCombo->count() != 1 || runButton->isEnabled()
+        || outputValidationCombo->count() != 2
+        || outputValidationCombo->currentData().toString()
+            != QStringLiteral("strict_s2")
         || cancelButton->isEnabled() || runtimeStatus->text().isEmpty())
     {
         QTextStream(stderr)
@@ -479,6 +483,7 @@ int RunRipJobSelfTest(
     const int grayBits,
     const int timeoutSeconds,
     const int cancelAfterMs,
+    const QString& outputValidationMode,
     const QString& expectedOutcome)
 {
     if (packageDirectory.isEmpty() || moduleDirectory.isEmpty())
@@ -492,6 +497,7 @@ int RunRipJobSelfTest(
     settings.transparentmode = transparentMode;
     settings.devicegraybits = grayBits;
     settings.timeoutseconds = timeoutSeconds;
+    settings.outputvalidationmode = outputValidationMode;
     HostRipJobController controller;
     QEventLoop loop;
     int result = 17;
@@ -508,7 +514,8 @@ int RunRipJobSelfTest(
         {
             const bool expectedSuccess = expectedOutcome
                     == QStringLiteral("success")
-                && success && !cancelled;
+                && success && !cancelled
+                && code == QStringLiteral("RIP_SUCCEEDED");
             const bool expectedCancel = expectedOutcome
                     == QStringLiteral("cancel")
                 && !success && cancelled
@@ -521,8 +528,14 @@ int RunRipJobSelfTest(
                     == QStringLiteral("failure")
                 && !success && !cancelled
                 && code == QStringLiteral("RIP_PROCESS_EXIT_FAILED");
+            const bool expectedDiagnostic = expectedOutcome
+                    == QStringLiteral("diagnostic")
+                && success && !cancelled
+                && code == QStringLiteral("RIP_DIAGNOSTIC_SAVED")
+                && QFileInfo(outputDirectory).fileName()
+                    == QStringLiteral("rip_diagnostic");
             if (expectedSuccess || expectedCancel || expectedTimeout
-                || expectedFailure)
+                || expectedFailure || expectedDiagnostic)
             {
                 QTextStream(stdout)
                     << "RIPFLOW_JOB_SELF_TEST_PASS outcome="
@@ -624,8 +637,9 @@ int main(int argc, char* argv[])
             << "--rip-job-self-test --package <path> "
             << "--rip-module <path> [--transparent-mode <mode>] "
             << "[--gray-bits <1|2>] [--timeout-seconds <n>] "
+            << "[--output-validation-mode <strict_s2|diagnostic_unvalidated>] "
             << "[--cancel-after-ms <n>] "
-            << "[--expect <success|cancel|timeout|failure>]]"
+            << "[--expect <success|diagnostic|cancel|timeout|failure>]]"
             << Qt::endl;
         return 0;
     }
@@ -702,6 +716,8 @@ int main(int argc, char* argv[])
                 &cancelValid);
         const QString expectedOutcome = FindArgumentValue(
             arguments, QStringLiteral("--expect"));
+        const QString outputValidationMode = FindArgumentValue(
+            arguments, QStringLiteral("--output-validation-mode"));
         return RunRipJobSelfTest(
             FindArgumentValue(arguments, QStringLiteral("--package")),
             FindArgumentValue(arguments, QStringLiteral("--rip-module")),
@@ -711,6 +727,9 @@ int main(int argc, char* argv[])
             grayBitsValid ? grayBits : 2,
             timeoutValid ? timeoutSeconds : 60,
             cancelValid ? cancelAfterMs : -1,
+            outputValidationMode.isEmpty()
+                ? QStringLiteral("strict_s2")
+                : outputValidationMode,
             expectedOutcome.isEmpty()
                 ? QStringLiteral("success")
                 : expectedOutcome);

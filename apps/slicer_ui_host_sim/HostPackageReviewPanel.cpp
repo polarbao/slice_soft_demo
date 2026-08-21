@@ -147,7 +147,35 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo->addItem(
         QStringLiteral("RGB + 支撑 + 白墨 + 光油"),
         Channels({"R", "G", "B", "W", "S", "V"}));
-    m_previewModeCombo->setCurrentIndex(4);
+    /* MV-07C：默认改为 RGB-only 判读入口。六通道组合会把 S 叠成纯绿伪彩色，
+       容易被误读为 RGB 材质色，因此不再作为默认。setCurrentIndex 在 connect
+       之前执行，不触发槽。 */
+    m_previewModeCombo->setCurrentIndex(0);
+    m_previewModeCombo->setItemData(
+        0,
+        QStringLiteral("仅显示 R/G/B 真实颜色，用于判读材质本色。"),
+        Qt::ToolTipRole);
+    m_previewModeCombo->setItemData(
+        1,
+        QStringLiteral(
+            "叠加 W 白墨伪彩色（青蓝 0,170,255），不代表生产 TIFF 像素值。"),
+        Qt::ToolTipRole);
+    m_previewModeCombo->setItemData(
+        2,
+        QStringLiteral(
+            "叠加 S 支撑伪彩色（纯绿 0,255,0），不代表生产 TIFF 像素值。"),
+        Qt::ToolTipRole);
+    m_previewModeCombo->setItemData(
+        3,
+        QStringLiteral(
+            "叠加 V 光油伪彩色（中灰 127,127,127），不代表生产 TIFF 像素值。"),
+        Qt::ToolTipRole);
+    m_previewModeCombo->setItemData(
+        4,
+        QStringLiteral(
+            "同时叠加 W/S/V 三种伪彩色；其中 S 为纯绿，最易被误读为 RGB 材质色。"
+            "判读材质本色请改用 RGB（纹理）。"),
+        Qt::ToolTipRole);
     for (const char* channel : {"R", "G", "B", "W", "S", "V"})
     {
         m_previewModeCombo->addItem(
@@ -446,7 +474,9 @@ void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
         QStringLiteral(
             "几何采样：%1｜姿态：P0 生产默认，P3 仅诊断未应用\n"
             "当前生产层 layer=%2｜打印像素：%3\n"
-            "性能：sliceProcessing=%4｜支撑统计扫描=%5")
+            "性能：sliceProcessing=%4｜支撑统计扫描=%5\n"
+            "通道显示：R/G/B 为真实颜色；W/S/V 为显示用伪彩色"
+            "（S 纯绿、W 青蓝、V 中灰），不代表生产 TIFF 像素值")
             .arg(SamplingStrategyText(m_samplingStrategyId))
             .arg(current.layerindex)
             .arg(channelPixels.join(QStringLiteral("  ")))

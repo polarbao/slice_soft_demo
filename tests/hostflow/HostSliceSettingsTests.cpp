@@ -1262,16 +1262,13 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                         == QStringList({
                             QStringLiteral("R"),
                             QStringLiteral("G"),
-                            QStringLiteral("B"),
-                            QStringLiteral("W"),
-                            QStringLiteral("S"),
-                            QStringLiteral("V")})
+                            QStringLiteral("B")})
                     && previewImage != nullptr
                     && referencePreview == nullptr
                     && referenceCaption == nullptr
                     && currentCaption == nullptr,
                QStringLiteral(
-                    "结果预览应恢复单视图并默认显示 RGBWSV 合成。"),
+                    "结果预览应恢复单视图并默认显示 RGB-only 判读入口。"),
                errors)
         && Check(
                summary != nullptr
@@ -1283,6 +1280,28 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                    .arg(summary != nullptr
                        ? summary->text()
                        : QStringLiteral("summary=null")),
+               errors)
+        && Check(
+               previewMode != nullptr
+                   && !previewMode->itemData(0, Qt::ToolTipRole)
+                           .toString()
+                           .isEmpty()
+                   && previewMode->itemData(4, Qt::ToolTipRole)
+                           .toString()
+                           .contains(QStringLiteral("伪彩色")),
+               QStringLiteral(
+                   "MV-07C：预览模式条目必须带伪彩色说明的 tooltip。"),
+               errors)
+        && Check(
+               summary != nullptr
+                   && summary->text().contains(
+                          QStringLiteral("通道显示："))
+                   && summary->text().contains(
+                          QStringLiteral("W/S/V 为显示用伪彩色"))
+                   && summary->text().contains(
+                          QStringLiteral("不代表生产 TIFF 像素值")),
+               QStringLiteral(
+                   "MV-07C：Stage 16 摘要必须标注 W/S/V 为伪彩色。"),
                errors);
 }
 
