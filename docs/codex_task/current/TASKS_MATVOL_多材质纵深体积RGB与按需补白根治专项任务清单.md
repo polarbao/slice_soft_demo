@@ -1,7 +1,7 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..MV-02 COMPLETE / MV-03 PREPARED / 生产语义未改**
-> 版本：v1.2 ｜ 日期：2026-08-20
+> 文档状态：**ACTIVE / MV-00..MV-03 COMPLETE / MV-04 INPUT OPEN / 生产语义未改**
+> 版本：v1.3 ｜ 日期：2026-08-20
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
 > 决策：`docs/slice/DOC/DOC_DECISION_MATVOL_多材质纵深体积RGB与按需补白根治.md`
 > 准备：`docs/slice/DOC/DOC_PREP_MATVOL_实施准备与数据上下文.md`
@@ -28,7 +28,7 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-00 | 专项决策、准备、DEV、任务清单、执行指令和初始报告 | COMPLETE | 用户授权创建专项 | 2026-08-20 |
 | MV-01 | 资产事实、synthetic fixture、旧顶面投影 baseline 与独立 oracle | **COMPLETE** | MV-00 | 2026-08-20 |
 | MV-02 | MaterialVolumePolicy、拓扑分类、稳定错误和配置合同 | **COMPLETE** | MV-01 Gate | 2026-08-20 |
-| MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **PREPARED** | MV-02（已满足） | - |
+| MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **COMPLETE** | MV-02 | 2026-08-20 |
 | MV-04 | 开放表面 surface_band 非生产候选与 `03.obj` 厚度裁决 | PENDING / INPUT OPEN | MV-03、MQ-01/MQ-02 | - |
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | PENDING | MV-03；MV-04 可选 | - |
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | PENDING | MV-05 | - |
@@ -149,6 +149,48 @@ fail-closed 覆盖（逐条有用例）
 **验收：** MV-F01/F02/F04 全层 owner diff=0；空洞不被 first/last 填满；共享边/共面确定；奇数交点
 阻断；热路径无分配、buffer 地址复用、取消无半结果；新 TU/test `/W4 /WX`。
 
+**实际结果（2026-08-20）：** 新增 `MaterialVolumePlan.*` 与 `matvol_interval_unit_tests`，
+Release `/W4 /WX` 构建通过，定向 CTest **10/10 PASS**。
+
+```text
+交付
+  MaterialVolumeGrid   自带 XY 栅格与层参数（匿名命名空间里的 GridSpec 不可复用）
+  MaterialVolumePlan   move-only、私有构造 + friend 工厂，外部无法构造半成品
+  CSR compact 布局     columnIntervalOffsets_（列数+1）+ 扁平 intervals_
+  Build/Materialize    逐列有序交点与奇偶配对；单层 owner 写入 caller buffer，热路径零分配无跨层扫描
+
+复用而非重造
+  拓扑判定复用 MV-02 的 ClassifyMaterialTopologies，仅 ClosedOrientable 进入区间求解
+  XY 采样中心、重心容差 -1e-9、退化阈值 1e-12、层换算公式全部复刻既有 S0 规则
+
+构建期 fail closed（物化期因此无需再判定）
+  开放材质 OPEN_SURFACE_REQUIRES_POLICY；缺失显式优先级与同级实际重叠 OVERLAP_UNRESOLVED；
+  奇数交点 INTERSECTION_UNPAIRED；未绑定材质 MATERIAL_MISSING；非法栅格 TOPOLOGY_INVALID；
+  取消 BUDGET_EXCEEDED —— move-only 加末尾 return 保证不留半成品
+
+验收逐项
+  MV-F01 层 0..1 归材质 02、层 3..4 归材质 01、层 2 与 5..7 无 owner，与手算一致
+  MV-F02 重叠层由 priority 200 胜出，材质声明顺序反转结论不变
+  MV-F04 空洞层 2..3 保持无 owner，每列保留两段独立区间
+  物化与独立稠密 oracle 逐层逐列 diff=0；modelMask 屏蔽像素恒为 kNoMaterialOwner
+  4 轮 x 8 层重复物化堆分配计数为 0，buffer 地址不变
+  compact 区间总数 32，为同规模稠密栈 256 的 1/8；重复构建产出逐字段相同的区间与偏移表
+  层号越界与缓冲区尺寸不符显式抛 std::invalid_argument，与既有 MaterializeLayerOccupancy 一致，
+  不采用静默无操作
+
+共面/共享边确定性
+  4x4 栅格中有 4 列的采样中心恰好落在顶/底面三角面的共享对角线上，两三角面同时命中同一 Z。
+  合并共面重复命中后仍为 2 个交点、1 段区间；若不合并会得到 4 个交点并配出两段零厚区间。
+  该路径由现有用例真实覆盖，不是构造性断言。
+
+变异检验
+  奇偶配对改成 first/last 包络 -> separated_bodies_keep_cavity_unowned 按预期 FAIL
+  优先级比较方向反向           -> overlapping_bodies_resolve_by_priority 与 oracle 对照按预期 FAIL
+
+边界
+  未接 run_slicer；未改 p0.rgbwsv.2、RGBWSV、SPI 与既有 Profile 语义；不写 RGB/W/S/V
+```
+
 ## 7. MV-04 开放表面候选
 
 **目标：** 仅在显式厚度和 placement 下把开放表面物化为有限表面带；不改变 model occupancy。
@@ -209,6 +251,7 @@ SLA/物理打印证据缺失时只写 engineering candidate，不写 production 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-20 | v1.3 | MV-03 COMPLETE：新增 move-only `MaterialVolumePlan` 与 CSR compact 层区间布局，实现逐列有序交点、奇偶配对与 caller-owned 单层 owner 物化；开放材质、缺失优先级、同级重叠、奇数交点、未绑定材质、非法栅格与取消全部在构建期 fail closed，物化期保持纯净。MV-F01/F02/F04 逐层 owner 与独立稠密 oracle diff=0，空洞层保持无 owner，热路径零堆分配且 buffer 地址复用，compact 区间为同规模稠密栈的 1/8。两处变异检验（包络填充、优先级反向）均按预期 FAIL。物化的参数校验改为显式抛出以对齐既有 `MaterializeLayerOccupancy` 约定。Release `/W4 /WX` 与定向 CTest 10/10 PASS，未接 `run_slicer`。MV-04 仍受 MQ-01/MQ-02 输入 Gate 阻塞。 |
 | 2026-08-20 | v1.2 | MV-02 COMPLETE：新增 `MaterialVolumeError` 稳定错误码三件套与 `MaterialTopologyClassifier` 逐材质子网格分类；`materialVolumePolicy` 顶层配置块按仓库约定接入 `config.h`/`config.cpp`，并在 `ConfigMigration` 登记以堵住 `slicer.config.1` 的静默丢字段。13 项 fail-closed 逐条有用例，Release `/W4 /WX` 与定向 CTest 8/8 PASS。变异检验发现并修正了顶点焊接导致的材质交界边误判，改为真开边与交界边分列计数且交界边围成的子网格不视为独立闭合体。未接 `run_slicer`，未改动任何既有预设与 profileHash。MV-03 转 PREPARED。 |
 | 2026-08-20 | v1.1 | MV-01 COMPLETE：新增 `tests/matvol/MatvolFactsTests.cpp` 与 `matvol_facts_unit_tests`，Release `/W4 /WX` 构建与 11/11 CTest 通过。固化 MV-F01..F06 合成 fixture、独立 dense owner oracle、Legacy 顶面投影 baseline、owner diff schema 与重复运行摘要；复刻并冻结 XY 采样中心、重心容差、`>=` 平局规则、层换算与 Kd 量化五条既有规则；机器化 Reality 03/08/09 逐材质拓扑事实。两处变异检验证明断言有效。补 `.gitignore` negation 使 `tests/matvol/` 可入库。未新增生产 API、未改 Profile/协议、未接 `run_slicer`。MV-02 转 PREPARED。 |
 | 2026-08-20 | v1.0 | 创建 MV-00..10 原子卡、依赖、完成标准、INPUT OPEN 和收口 Gate。 |
