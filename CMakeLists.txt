@@ -241,6 +241,16 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/material/MaterialClosureRepair.h
     src/slicer_core/materials/material_policy/MaterialPolicy.cpp
     src/slicer_core/materials/material_policy/MaterialPolicy.h
+    src/slicer_core/materials/volume/MaterialVolumeError.cpp
+    src/slicer_core/materials/volume/MaterialVolumeError.h
+    src/slicer_core/materials/volume/MaterialTopologyClassifier.cpp
+    src/slicer_core/materials/volume/MaterialTopologyClassifier.h
+    src/slicer_core/materials/volume/MaterialVolumePlan.cpp
+    src/slicer_core/materials/volume/MaterialVolumePlan.h
+    src/slicer_core/materials/volume/MaterialLayerRgbComposer.cpp
+    src/slicer_core/materials/volume/MaterialLayerRgbComposer.h
+    src/slicer_core/materials/volume/MaterialVolumeWhiteCarrier.cpp
+    src/slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h
     src/slicer_core/materials/process_profile/MaterialProcessProfile.cpp
     src/slicer_core/materials/process_profile/MaterialProcessProfile.h
     src/slicer_core/materials/process_profile/ModelFillMaterialResolver.cpp
@@ -381,6 +391,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/reports/MultiModelSceneMatrixReport.h
     src/slicer_core/reports/MaterialClosureReport.cpp
     src/slicer_core/reports/MaterialClosureReport.h
+    src/slicer_core/reports/MaterialVolumeReport.cpp
+    src/slicer_core/reports/MaterialVolumeReport.h
     src/slicer_core/reports/TextureFillPartitionReport.cpp
     src/slicer_core/reports/TextureFillPartitionReport.h
     src/slicer_core/reports/ReportSchema.cpp
@@ -1636,6 +1648,54 @@ add_executable(stage16_layer_occupancy_provider_tests
 
 target_link_libraries(stage16_layer_occupancy_provider_tests PRIVATE slicer_core)
 
+add_executable(matvol_facts_unit_tests
+    tests/matvol/MatvolFactsTests.cpp
+)
+
+target_link_libraries(matvol_facts_unit_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_facts_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_facts_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_topology_unit_tests
+    tests/matvol/MatvolTopologyTests.cpp
+)
+
+target_link_libraries(matvol_topology_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_topology_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_interval_unit_tests
+    tests/matvol/MatvolIntervalTests.cpp
+)
+
+target_link_libraries(matvol_interval_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_interval_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgb_compose_unit_tests
+    tests/matvol/MatvolRgbComposeTests.cpp
+)
+
+target_link_libraries(matvol_rgb_compose_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_rgb_compose_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_white_carrier_integration_tests
+    tests/matvol/MatvolWhiteCarrierTests.cpp
+)
+
+target_link_libraries(matvol_white_carrier_integration_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_white_carrier_integration_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2519,6 +2579,11 @@ add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME stage16_geometry_sampling_fixture_tests COMMAND stage16_geometry_sampling_fixture_tests)
 add_test(NAME stage16_layer_occupancy_provider_tests COMMAND stage16_layer_occupancy_provider_tests)
+add_test(NAME matvol_facts_unit_tests COMMAND matvol_facts_unit_tests)
+add_test(NAME matvol_topology_unit_tests COMMAND matvol_topology_unit_tests)
+add_test(NAME matvol_interval_unit_tests COMMAND matvol_interval_unit_tests)
+add_test(NAME matvol_rgb_compose_unit_tests COMMAND matvol_rgb_compose_unit_tests)
+add_test(NAME matvol_white_carrier_integration_tests COMMAND matvol_white_carrier_integration_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
