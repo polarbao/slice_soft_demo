@@ -1,7 +1,7 @@
 # DOC_PREP_MATVOL MV-07 宿主接入实施准备
 
 > 文档状态：**PREPARED / 等待生产语义变化确认**
-> 版本：v1.0 ｜ 日期：2026-08-21
+> 版本：v1.2 ｜ 日期：2026-08-21
 > 任务真源：`../../codex_task/current/TASKS_MATVOL_多材质纵深体积RGB与按需补白根治专项任务清单.md`
 > 依据：`CODEX_PROMPT_MATVOL` §2「生产语义变化卡必须先给 Implementation Plan 并等待确认」
 
@@ -132,11 +132,28 @@ revision 保持进程内，且新预设不得破坏 `HostSliceSettingsPanel::Val
 ### 5.3 RGB-only 入口已存在，缺的是默认与标注
 
 `HostPackageReviewPanel.cpp:136-157` 的预览模式 index 0 就是 `RGB（纹理）`，
-但默认停在 index 4 的六通道组合。而**全仓库 `apps/` 与 `src/` 下「伪彩」零命中** ——
-S 通道伪彩色在 UI 上完全没有说明文字，伪彩混色实际发生在
-`src/slicer_core/preview/MaterialPreviewComposer.cpp`，调色板来自 profile 的
-`preview.pseudoColors`。⇒ MV-07C 的最小改动是调整默认索引 + 用
-`Qt::ToolTipRole` 与既有 `hostPackageStage16SummaryLabel` 加标注，不必新建控件。
+但默认停在 index 4 的六通道组合（`setCurrentIndex(4)` 在 `connect` 之前执行，
+因此改索引不触发槽、无副作用）。而**全仓库 `apps/` 与 `src/` 下「伪彩」零命中** ——
+S 通道伪彩色在 UI 上完全没有说明文字。
+
+🔴 **本节 v1.0 的一处事实错误已更正**：原文写「调色板来自 profile 的 `preview.pseudoColors`」，
+这对**结果页路径不成立**。结果页走 `package.render_layer_preview` →
+`PackageQueryFacadePreview.cpp:181-185`，其 `MaterialPreviewRequest` **只赋 `mode`、
+从不赋 `palette`**，因此结果页伪彩色恒为 `MaterialPreviewComposer.h:48-59` 的硬编码默认值：
+
+```text
+S 支撑   rgb(0,255,0)    alpha 180，按覆盖率调制   ← 纯绿，最易被误认为 RGB 材质色
+W 白墨   rgb(0,170,255)  alpha 180                 青蓝
+V 光油   rgb(127,127,127) alpha 180                中灰
+R/G/B    直接取通道原值，alpha 255                 【不是】伪彩色，是真实颜色
+```
+
+`preview.pseudoColors`（`config.h:318-321`）只影响切片期诊断图、OpenVDB 候选管线
+与 preview 报告 JSON，与结果页预览无关。⇒ UI 文案不得写「伪彩色取自 profile 配置」。
+
+⇒ MV-07C 的最小改动是把默认索引改为 0，并在既有 `hostPackageStage16SummaryLabel`
+追加一行伪彩色说明（该 label 已有三处 `contains` 断言必须保留），不必新建控件。
+改默认索引须同步更新两处断言（MV-07C 已完成）：`RunHostFlowResultUiSmoke` 与 `VerifyStage16Diagnostics` 各一处 `currentData()` 六通道断言，均已迁移为 `{R,G,B}`。另有四处叙述性文档提到「默认按 RGBWSV 合成」，已随 MV-07C 同步。
 
 ## 6. 待确认事项
 
@@ -162,4 +179,6 @@ S 通道伪彩色在 UI 上完全没有说明文字，伪彩混色实际发生�
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v1.2 | MV-07C 已实施：默认预览索引改为 RGB-only、预览模式条目补伪彩色 tooltip、Stage 16 摘要追加伪彩色说明行。更新本文两处过期表述（断言行号与「伪彩零命中」的结论现已不成立），并同步四处提到「默认按 RGBWSV 合成」的叙述性文档。 |
+| 2026-08-21 | v1.1 | 更正 §5.3 的一处事实错误：结果页伪彩色调色板【不】来自 profile 的 `preview.pseudoColors`。结果页经 `PackageQueryFacadePreview.cpp:181-185` 只赋 `mode` 从不赋 `palette`，因此恒为 `MaterialPreviewComposer.h:48-59` 的硬编码默认值（S 纯绿 alpha 180、W 青蓝、V 中灰，R/G/B 为真实颜色非伪彩）。补记 `setCurrentIndex(4)` 在 connect 之前故改索引无副作用，以及改默认索引须同步的两处断言位置。 |
 | 2026-08-21 | v1.0 | 首版。固化宿主禁引 slicer_core、两套行数门禁与宿主 UI 不可白名单、必须放宽的两道白区门、slicingMode 耦合缺口、profileHash 四条规范化规则与 H-F-04 根因；提出 MV-07A/B/C 原子拆分；修正三处验收口径（禁用而非回退、revision 不持久化、RGB-only 入口已存在但缺默认与标注）；登记 MV07-Q1..Q4 待确认。 |

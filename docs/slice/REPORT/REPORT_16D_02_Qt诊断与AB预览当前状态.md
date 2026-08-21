@@ -11,7 +11,7 @@
    组合沿用 16D-01 fail-closed。
 3. 采样策略进入有效 Profile/hash，并随工作区 schema v5 持久化。
 4. “切片作业”展示本次采样策略、P0/P3 姿态边界和 `supportStatisticsScanCount`。
-5. “结果”只展示当前生产层，默认按 RGBWSV 合成；通道像素统计来自当前 manifest layer，预览来自生产 TIFF 渲染。
+5. “结果”只展示当前生产层；通道像素统计来自当前 manifest layer，预览来自生产 TIFF 渲染。**默认预览模式已于 MV-07C 由 RGBWSV 六通道组合改为 RGB-only 判读入口**，因为六通道组合会把 S 叠成纯绿伪彩色而易被误读为 RGB 材质色；六通道组合仍可显式选择。
 6. 性能摘要只读取 Worker timing，不在 Qt 重算几何。
 
 ## 2. 默认与边界

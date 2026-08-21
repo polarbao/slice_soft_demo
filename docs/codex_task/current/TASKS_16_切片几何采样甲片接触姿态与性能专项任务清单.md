@@ -1,8 +1,8 @@
 # TASKS_16 切片几何采样、甲片接触姿态与性能专项任务清单
 
 > 阶段：Stage 16
-> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16C-05 / 16D-01..04 / 16D-02-R1 已实施；16C-05 等待同请求五模型性能复测；16B-04 / 16D-05 待单独授权**
-> 版本：v2.4
+> 状态：**16A-06 / 16B-03 / 16C-01..03 / 16C-05 / 16D-01..04 / 16D-02-R1 已实施；16C-06-MEMFLOW MF-00..03A 完成、MF-03B 部分准备；16B-04 / 16D-05 待单独授权**
+> 版本：v2.7
 > 日期：2026-08-18
 > 规则：Stage 14 收口前不得执行任何 Stage 16 代码卡；收口后仍必须从 16-00 开始
 
@@ -342,6 +342,14 @@ PASS。`scene_layer_adapters_unit_tests` 的新增用例 PASS，但整套仍保�
 **依赖：** 16A 语义候选已冻结
 **出口：** 减少完整 model mask 常驻；S0/S3/S4 输出与各自未优化基线一致。
 
+**状态：ACTIVE / MF-00..03A COMPLETE / MF-03B PREPARATION PARTIAL（2026-08-18）**
+
+**授权与拆分：** 用户已明确授权开启根治专项，并允许准备完成后进入开发。16C-06 由
+`TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md` 作为原子状态唯一真源，按
+MF-00..08 执行：先内存预算合同和 Dense 有界流式，再做多实例同层 Barrier，最后才允许
+Sparse Tile/Span 候选与自适应生产接入。Retained Dense 在 Gate 完成前继续为生产路径；不改
+RGBWSV/SPI/Worker/默认采样，不把设备 SLA 缺失伪装成 production PASS。
+
 ### 16C-07 几何/支撑/平移实例缓存
 
 **carry-in：** 12F-07，13F-R1-04
@@ -389,7 +397,7 @@ S3+非 relief 组合以及 Profile/contract 不一致执行 fail-closed。Qt 本
 
 **实际结果：** Reference Host 已提供 S0/S3 显式选择与 schema v5 持久化；作业页展示策略、
 P0/P3 边界和支撑统计扫描次数。2026-08-14 用户裁定结果页恢复旧版单预览，因此首层 A/当前层 B
-并排显示已取消，改为当前生产层 RGBWSV 合成预览及 manifest 通道统计。S0/P0 默认不变，Qt 未重算几何。
+并排显示已取消，改为当前生产层单预览及 manifest 通道统计。S0/P0 默认不变，Qt 未重算几何。（默认预览模式已于 MATVOL MV-07C 改为 RGB-only，六通道组合仍可显式选择。）
 
 ### 16D-02-R1 单材料浮雕 S3 显式适用修订
 
@@ -485,6 +493,9 @@ R-F 线与 16-00-01..04 已完成；
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-18 | v2.7 | 16C-06-MEMFLOW MF-02/03A 完成：Legacy owned layer 移动交接与错误/取消清理 Gate 通过；新增 compact occupancy range 和 caller-owned 单层 materializer，S0/S3/S4 与独立 Retained 对照零差异。MF-03B 仅部分准备，生产仍为 Retained Dense。 |
+| 2026-08-18 | v2.6 | 16C-06-MEMFLOW MF-01 完成：新增纯 Raster 内存预算/路由合同，123 大 Grid 估算和溢出/fail-closed 用例通过；MF-02 转 PREPARED，未改变生产路径。 |
+| 2026-08-18 | v2.5 | 用户授权开启 16C-06-MEMFLOW 有界流式内存根治专项；建立 Decision/DEV/PREP/TASKS/执行指令/状态报告，冻结 Dense Streaming → 多实例 Layer Barrier → Sparse Candidate → 自适应接入顺序。MF-00 完成、MF-01 开工；Retained Dense 和全部冻结协议继续不变。 |
 | 2026-08-18 | v2.4 | 补充 16C-05 内存复用：生产服务转移拥有的 compose request，exact-single/full-grid 路径在严格校验中形成统计并移动权威 RGBWSV layer buffer，多实例/offset 保持 borrowed fallback；默认关闭的可选光油 mask 改为按需物化并跨层复用只读空 mask。Release 定向 4/4、Golden 与 Stage 10 output contract PASS；原有 scene adapter 平移断言失败继续单列，性能状态仍为 RE-MEASURE PENDING。 |
 | 2026-08-17 | v2.3 | 完成 16C-05 代码与功能门禁：Layer Composer 融合逐实例/逐层统计，生产链复用 validated evidence，Orchestrator 借用 raster 并提前释放输入 buffer，严格 Reader 独立核对持久化层统计。Release 定向 8/8、263 层历史包严格校验和 Runtime self-test PASS；因原始 0.021 mm 五模型请求快照未保留，性能状态保留为 RE-MEASURE PENDING，不虚构完整 A/B。 |
 | 2026-08-14 | v2.2 | 用户裁定覆盖 16D-02 的双预览呈现：结果页取消首层 A/当前层 B 并排渲染，恢复旧版单个当前生产层预览，默认显示 RGBWSV 合成；策略、姿态边界、性能和当前层 manifest 通道统计保留。生产 TIFF、采样和姿态默认值不变。 |
