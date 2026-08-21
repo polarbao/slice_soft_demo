@@ -857,6 +857,70 @@ void HashCompactReport(
     return hasher.Finalize();
 }
 
+[[nodiscard]] BoundedSupportReplayDigest ComputePlanDigest(
+    const BoundedSupportDemandPlan& plan)
+{
+    constexpr std::string_view domain{"slicesoft.memflow.support-plan.v1"};
+    detail::Sha256Hasher hasher;
+    hasher.Update(
+        reinterpret_cast<const std::uint8_t*>(domain.data()),
+        domain.size());
+    constexpr std::uint8_t separator{0U};
+    hasher.Update(&separator, 1U);
+    HashLittleEndian<std::int32_t>(hasher, plan.LayerCount());
+    HashLittleEndian<std::uint64_t>(
+        hasher,
+        static_cast<std::uint64_t>(plan.ColumnCount()));
+    HashLittleEndian<std::uint8_t>(
+        hasher,
+        static_cast<std::uint8_t>(plan.InputKind()));
+    HashBoolean(hasher, plan.LowerEnabled());
+    HashBoolean(hasher, plan.FullVerticalEnabled());
+    HashBoolean(hasher, plan.UpperEnabled());
+    HashBoolean(hasher, plan.UnsupportedEnabled());
+    const auto hashLayers = [&hasher](const std::span<const int> layers)
+    {
+        HashLittleEndian<std::uint64_t>(
+            hasher,
+            static_cast<std::uint64_t>(layers.size()));
+        for (const int layer : layers)
+        {
+            HashLittleEndian<std::int32_t>(hasher, layer);
+        }
+    };
+    hashLayers(plan.LowerSourceLayers());
+    hashLayers(plan.ModelLastLayers());
+    hashLayers(plan.UpperBoundaryLastLayers());
+    hashLayers(plan.UnsupportedTopExclusiveLayers());
+    return hasher.Finalize();
+}
+
+[[nodiscard]] BoundedSupportReplayIdentity BuildReplayIdentity(
+    const BoundedSupportShapeScanRequest& request,
+    const BoundedSupportDemandPlan& finalPlan)
+{
+    BoundedSupportReplayIdentity identity;
+    identity.widthPx = request.widthPx;
+    identity.heightPx = request.heightPx;
+    identity.layerCount = request.layerCount;
+    identity.inputKind = request.inputKind;
+    identity.connectivity = request.connectivity;
+    identity.internalVoidEnabled = request.internalVoid.enabled;
+    identity.internalVoidMinAreaPx = request.internalVoid.min_area_px;
+    identity.internalVoidFillRule = request.internalVoid.fill_rule;
+    identity.shapeEnabled = request.shape.enabled;
+    identity.shapeMinComponentAreaPx = request.shape.min_component_area_px;
+    identity.shapeXyDilationPx = request.shape.xy_dilation_px;
+    identity.shapeClosingRadiusPx = request.shape.closing_radius_px;
+    identity.shapeBridgeGapPx = request.shape.bridge_gap_px;
+    identity.shapePreserveModelPriority =
+        request.shape.preserve_model_priority;
+    identity.shapeMaxAddedSupportRatioBits =
+        std::bit_cast<std::uint64_t>(request.shape.max_added_support_ratio);
+    identity.planDigest = ComputePlanDigest(finalPlan);
+    return identity;
+}
+
 }  // namespace
 
 BoundedSupportShapeScanner::BoundedSupportShapeScanner(
@@ -866,7 +930,8 @@ BoundedSupportShapeScanner::BoundedSupportShapeScanner(
     : request_(request),
       finalPlan_(&finalPlan),
       reportSink_(reportSink),
-      pixelCount_(CheckedPixelCount(request.widthPx, request.heightPx))
+      pixelCount_(CheckedPixelCount(request.widthPx, request.heightPx)),
+      replayIdentity_(BuildReplayIdentity(request, finalPlan))
 {
     if (request.layerCount <= 0)
     {
@@ -928,6 +993,40 @@ void BoundedSupportShapeScanner::ConsumeLayer(
     const int layerIndex,
     const std::span<const std::uint8_t> modelMask,
     const std::span<const std::uint8_t> upperBoundaryMask,
+    const std::span<std::uint8_t> outputSupportMask,
+    const std::span<SupportType> outputTypeMap)
+{
+    ConsumeLayerImpl(
+        layerIndex,
+        modelMask,
+        upperBoundaryMask,
+        nullptr,
+        outputSupportMask,
+        outputTypeMap);
+}
+
+void BoundedSupportShapeScanner::ConsumeVerifiedLayer(
+    const int layerIndex,
+    const std::span<const std::uint8_t> modelMask,
+    const std::span<const std::uint8_t> upperBoundaryMask,
+    const BoundedSupportReplayDigest& expectedDigest,
+    const std::span<std::uint8_t> outputSupportMask,
+    const std::span<SupportType> outputTypeMap)
+{
+    ConsumeLayerImpl(
+        layerIndex,
+        modelMask,
+        upperBoundaryMask,
+        &expectedDigest,
+        outputSupportMask,
+        outputTypeMap);
+}
+
+void BoundedSupportShapeScanner::ConsumeLayerImpl(
+    const int layerIndex,
+    const std::span<const std::uint8_t> modelMask,
+    const std::span<const std::uint8_t> upperBoundaryMask,
+    const BoundedSupportReplayDigest* const expectedDigest,
     const std::span<std::uint8_t> outputSupportMask,
     const std::span<SupportType> outputTypeMap)
 {
@@ -995,6 +1094,13 @@ void BoundedSupportShapeScanner::ConsumeLayer(
         hasReport ? &compactReport : nullptr,
         typeDigestScratch_);
 
+    if (expectedDigest != nullptr && digest != *expectedDigest)
+    {
+        failed_ = true;
+        throw std::runtime_error(
+            "bounded support shape replay digest mismatch");
+    }
+
     if (hasReport && reportSink_ != nullptr)
     {
         try
@@ -1057,6 +1163,7 @@ BoundedSupportShapeScanResult BoundedSupportShapeScanner::Finish() &&
     result.supportFootprint_ = std::move(supportFootprint_);
     result.footprintPixels_ = footprintPixels_;
     result.replayDigests_ = std::move(replayDigests_);
+    result.replayIdentity_ = std::move(replayIdentity_);
     result.totals_ = totals_;
     return result;
 }

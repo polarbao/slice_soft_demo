@@ -104,6 +104,32 @@ struct BoundedSupportShapeScanRequest
 /** @brief Canonical SHA-256 for one post-shape support/type layer. */
 using BoundedSupportReplayDigest = std::array<std::uint8_t, 32>;
 
+/** @brief Frozen policy and grid identity for a complete replay digest set. */
+struct BoundedSupportReplayIdentity
+{
+    std::uint32_t digestVersion{1U};
+    int widthPx{0};
+    int heightPx{0};
+    int layerCount{0};
+    GeometryOccupancyInputKind inputKind{
+        GeometryOccupancyInputKind::SingleIntervalHeightfield};
+    int connectivity{8};
+    bool internalVoidEnabled{false};
+    int internalVoidMinAreaPx{0};
+    std::string internalVoidFillRule;
+    bool shapeEnabled{false};
+    int shapeMinComponentAreaPx{0};
+    int shapeXyDilationPx{0};
+    int shapeClosingRadiusPx{0};
+    int shapeBridgeGapPx{0};
+    bool shapePreserveModelPriority{true};
+    std::uint64_t shapeMaxAddedSupportRatioBits{0U};
+    BoundedSupportReplayDigest planDigest{};
+
+    [[nodiscard]] bool operator==(
+        const BoundedSupportReplayIdentity&) const = default;
+};
+
 /** @brief Aggregate P3 evidence that does not retain raster-layer stacks. */
 struct BoundedSupportShapeTotals
 {
@@ -141,6 +167,11 @@ public:
     {
         return replayDigests_;
     }
+    [[nodiscard]] const BoundedSupportReplayIdentity& ReplayIdentity()
+        const noexcept
+    {
+        return replayIdentity_;
+    }
     [[nodiscard]] const BoundedSupportShapeTotals& Totals() const noexcept
     {
         return totals_;
@@ -153,6 +184,7 @@ private:
     std::vector<std::uint8_t> supportFootprint_;
     std::size_t footprintPixels_{0U};
     std::vector<BoundedSupportReplayDigest> replayDigests_;
+    BoundedSupportReplayIdentity replayIdentity_;
     BoundedSupportShapeTotals totals_;
 };
 
@@ -192,9 +224,32 @@ public:
         return expectedLayerIndex_;
     }
 
+    /** @brief Replay one layer and verify it before any observable commit. */
+    void ConsumeVerifiedLayer(
+        int layerIndex,
+        std::span<const std::uint8_t> modelMask,
+        std::span<const std::uint8_t> upperBoundaryMask,
+        const BoundedSupportReplayDigest& expectedDigest,
+        std::span<std::uint8_t> outputSupportMask,
+        std::span<SupportType> outputTypeMap);
+
+    [[nodiscard]] const BoundedSupportReplayIdentity& ReplayIdentity()
+        const noexcept
+    {
+        return replayIdentity_;
+    }
+
     [[nodiscard]] BoundedSupportShapeScanResult Finish() &&;
 
 private:
+    void ConsumeLayerImpl(
+        int layerIndex,
+        std::span<const std::uint8_t> modelMask,
+        std::span<const std::uint8_t> upperBoundaryMask,
+        const BoundedSupportReplayDigest* expectedDigest,
+        std::span<std::uint8_t> outputSupportMask,
+        std::span<SupportType> outputTypeMap);
+
     BoundedSupportShapeScanRequest request_;
     const BoundedSupportDemandPlan* finalPlan_{nullptr};
     BoundedSupportShapeReportSink* reportSink_{nullptr};
@@ -205,6 +260,7 @@ private:
     std::vector<std::uint8_t> supportFootprint_;
     std::size_t footprintPixels_{0U};
     std::vector<BoundedSupportReplayDigest> replayDigests_;
+    BoundedSupportReplayIdentity replayIdentity_;
     BoundedSupportShapeTotals totals_;
 
     std::vector<std::uint8_t> modelScratch_;
