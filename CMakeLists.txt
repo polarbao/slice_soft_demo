@@ -299,6 +299,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.h
     src/slicer_core/pipeline/PipelineContext.cpp
     src/slicer_core/pipeline/PipelineContext.h
+    src/slicer_core/pipeline/RasterMemoryBudget.cpp
+    src/slicer_core/pipeline/RasterMemoryBudget.h
     src/slicer_core/pipeline/DiagnosticEffectiveConfig.cpp
     src/slicer_core/pipeline/DiagnosticEffectiveConfig.h
     src/slicer_core/pipeline/TextureFillPartitionDiagnosticFacade.cpp
@@ -1636,6 +1638,12 @@ add_executable(stage16_layer_occupancy_provider_tests
 
 target_link_libraries(stage16_layer_occupancy_provider_tests PRIVATE slicer_core)
 
+add_executable(stage16c06_memory_budget_unit_tests
+    tests/stage16/RasterMemoryBudgetTests.cpp
+)
+
+target_link_libraries(stage16c06_memory_budget_unit_tests PRIVATE slicer_core)
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2519,6 +2527,7 @@ add_test(NAME geometry_kernel_service_unit_tests COMMAND geometry_kernel_service
 add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_report_unit_tests)
 add_test(NAME stage16_geometry_sampling_fixture_tests COMMAND stage16_geometry_sampling_fixture_tests)
 add_test(NAME stage16_layer_occupancy_provider_tests COMMAND stage16_layer_occupancy_provider_tests)
+add_test(NAME stage16c06_memory_budget_unit_tests COMMAND stage16c06_memory_budget_unit_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
