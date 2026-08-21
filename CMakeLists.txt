@@ -416,6 +416,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/support/BoundedSupportDemand.h
     src/slicer_core/support/BoundedSupportDiscovery.cpp
     src/slicer_core/support/BoundedSupportDiscovery.h
+    src/slicer_core/support/BoundedSupportShapeScan.cpp
+    src/slicer_core/support/BoundedSupportShapeScan.h
     src/slicer_core/support/SupportBaseProjection.cpp
     src/slicer_core/support/SupportBaseProjection.h
     src/slicer_core/support/SupportPolicy.cpp
@@ -500,6 +502,7 @@ if(MSVC)
     set_source_files_properties(
         src/slicer_core/support/BoundedSupportDemand.cpp
         src/slicer_core/support/BoundedSupportDiscovery.cpp
+        src/slicer_core/support/BoundedSupportShapeScan.cpp
         PROPERTIES COMPILE_OPTIONS "/W4;/WX"
     )
     target_compile_options(
@@ -1682,6 +1685,15 @@ if(MSVC)
     target_compile_options(stage16c06_bounded_support_discovery_unit_tests PRIVATE /W4 /WX)
 endif()
 
+add_executable(stage16c06_bounded_support_shape_unit_tests
+    tests/stage16/BoundedSupportShapeScanTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_support_shape_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_support_shape_unit_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2569,6 +2581,7 @@ add_test(NAME stage16c06_memory_budget_unit_tests COMMAND stage16c06_memory_budg
 add_test(NAME stage16c06_owned_layer_consumer_unit_tests COMMAND stage16c06_owned_layer_consumer_unit_tests)
 add_test(NAME stage16c06_bounded_support_demand_unit_tests COMMAND stage16c06_bounded_support_demand_unit_tests)
 add_test(NAME stage16c06_bounded_support_discovery_unit_tests COMMAND stage16c06_bounded_support_discovery_unit_tests)
+add_test(NAME stage16c06_bounded_support_shape_unit_tests COMMAND stage16c06_bounded_support_shape_unit_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(

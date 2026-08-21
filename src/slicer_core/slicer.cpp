@@ -17,6 +17,7 @@
 #include "slicer_core/support/SupportShapePipeline.h"
 #include "slicer_core/support/SupportShapePolicy.h"
 #include "slicer_core/support/SupportShapeReport.h"
+#include "slicer_core/support/SupportType.h"
 #include "slicer_core/texture_image.h"
 #include "slicer_core/tiff_io.h"
 
@@ -209,16 +210,6 @@ struct ReliefSamplingResult {
     std::vector<std::vector<std::uint8_t>> model_masks;
     std::vector<ReliefColumnInfo> columns;
     ReliefReportData report;
-};
-
-enum class SupportType : std::uint8_t {
-    None = 0,
-    BottomProjection = 1,
-    UnsupportedIsland = 2,
-    FullVerticalProjection = 3,
-    InternalVoid = 4,
-    UpperProjection = 5,
-    ProjectionBase = 6,
 };
 
 struct SupportPlacementPolicy {
@@ -1639,26 +1630,6 @@ bool support_mode_includes_unsupported(const std::string& mode) {
     return mode == "unsupported_only" || mode == "bottom_projection_plus_unsupported";
 }
 
-int support_type_priority(const SupportType type) {
-    switch (type) {
-        case SupportType::InternalVoid:
-            return 6;
-        case SupportType::UnsupportedIsland:
-            return 5;
-        case SupportType::FullVerticalProjection:
-            return 4;
-        case SupportType::UpperProjection:
-            return 3;
-        case SupportType::BottomProjection:
-            return 2;
-        case SupportType::ProjectionBase:
-            return 1;
-        case SupportType::None:
-            return 0;
-    }
-    return 0;
-}
-
 std::string support_type_name(const SupportType type) {
     switch (type) {
         case SupportType::BottomProjection:
@@ -1712,7 +1683,7 @@ void set_support_pixel(
     const std::size_t index,
     const SupportType type) {
     support_mask.at(index) = 1;
-    if (support_type_priority(type) >= support_type_priority(support_type_map.at(index))) {
+    if (SupportTypePriority(type) >= SupportTypePriority(support_type_map.at(index))) {
         support_type_map.at(index) = type;
     }
 }
