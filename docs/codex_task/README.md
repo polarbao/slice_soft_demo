@@ -232,9 +232,15 @@ Stage 13 不改变 RGBWSV 协议，也不把多模型失败静默
 ```text
 docs/codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md
 docs/codex_task/current/CODEX_PROMPT_16_切片几何采样甲片接触姿态与性能专项执行指令.md
+docs/codex_task/current/TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md
+docs/codex_task/current/CODEX_PROMPT_16C_06_MEMFLOW_有界流式内存根治执行指令.md
 ```
 
-当前状态是 `PROPOSED / NOT ACTIVE`。Stage 14 收口前不得执行 Stage 16 代码卡；Stage 14 收口后仍需先完成 16-00 GO/DEFER/NO-GO 复核和用户授权。
+当前 Stage 16 工程候选已完成，S0 仍为生产默认；16C-05 已实施并等待同请求性能复测。用户于
+2026-08-18 显式授权 16C-06-MEMFLOW：MF-00..03B3 已完成，包含 RasterMemoryBudget、Legacy
+Owned Layer 交接、Occupancy/pre-shape Support 单层物化、bounded outer-boundary/unsupported discovery
+和非生产 Shape/footprint replay；MF-03B4 仅部分准备。专项按 Dense Streaming、多实例 Layer Barrier、Sparse
+Candidate、自适应接入顺序执行；正式设备 SLA/内存上限仍为 `INPUT_OPEN`。
 
 ## 使用规则
 

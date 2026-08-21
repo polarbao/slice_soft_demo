@@ -5,7 +5,7 @@
 ## ⚡ Active Work Entry（开工前先看这里）
 
 ```text
-▶【当前主线】16D-02-R1 单材料 W/V 浮雕 S3 显式适用已完成（2026-08-14）
+▶【当前主线】16C-06-MEMFLOW 有界流式内存根治专项已授权并开工（2026-08-18）
   ✅ R-F-01 平滑顶点法线已完成
   ✅ R-F-02 基线重固化与证据刷新（含 R-C-00）已完成
   ✅ 16-00-01..04 准入复核已完成，结论 PARTIAL GO
@@ -16,10 +16,14 @@
   ✅ 16B-01 边界带与接触指标基线已完成，Reality 5/5 + 标准甲片 6/6 PASS
   ✅ 16A-05/06、16B-02/03、16C-01/02 已完成
   ✅ 16C-03 支撑统计扫描融合完成，三真实模型逐层 TIFF/RIP 零语义漂移
+  ✅ 16C-05 Mask 按需物化、统计融合与单实例 Buffer 复用已完成，性能复测待补
   ✅ 16D-01 已完成 S0/S3 受限生产合同接入，S0 默认不变
   ✅ 16D-02-R1 已允许单材料 W/V 浮雕显式使用 S3，纹理关闭且 S0 默认不变
+  ✅ MEMFLOW MF-00..03B3 已完成：预算、Owned Layer、Occupancy、pre-shape Support、bounded discovery 与 shape replay
+  ▶ MEMFLOW MF-03B4 仅部分准备，尚未切换生产路径
   ▶ 16B-04 / 16D-05 仍需单独授权
   卡 docs/codex_task/current/TASKS_16_切片几何采样甲片接触姿态与性能专项任务清单.md
+  内存专项 docs/codex_task/current/TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md
   裁决 docs/slice/DOC/DOC_DECISION_16_00_Stage16准入Gate口径与R_F线排期裁定.md
 
 ⏸【可延后】每项均有触发条件，不满足不得开工 —— 完整表见上述裁决文 §3.5
@@ -47,6 +51,8 @@ TIFF      ⏸ 默认后端已切 libtiff，风险已关死（fail-closed+弃用�
           卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
 CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
           卡 docs/codex_task/current/TASKS_CI_冻结面工程保护任务清单.md
+MEMFLOW   ▶ MF-00..03B3 COMPLETE；MF-03B4 PREPARATION PARTIAL；生产仍为 Retained Dense
+          卡 docs/codex_task/current/TASKS_16C_06_MEMFLOW_有界流式内存根治专项任务清单.md
 
 ⛔ 外部阻塞（切片侧做不了）：14A_EXTERNAL_ACK 待打印侧书面回签
    → 它阻塞 14D-05..08、14C-06B 与 Stage 14 的 14F-02..05 外部验收

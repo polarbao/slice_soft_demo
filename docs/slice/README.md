@@ -12,8 +12,13 @@
 
 Stage 16 已完成 16A-01..06、16B-01..03、16C-01..03、16D-01..04 和统一回归 Gate。
 S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；生产默认继续为 Legacy/S0/P0。
-16C-04..09 保留为后续性能优化，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05
-仍需用户独立授权。
+16C-05 已完成低风险内存复用但等待同请求性能复测。用户于 2026-08-18 授权
+16C-06-MEMFLOW 有界流式内存根治专项：MF-00..03B3 已完成，包含 RasterMemoryBudget、Legacy
+Owned Layer 交接、Occupancy/pre-shape Support 单层物化、bounded outer-boundary/unsupported discovery
+和非生产 Shape/footprint replay；MF-03B4 仅部分准备。生产路径仍为 Retained Dense，Dense Streaming、多实例
+Barrier、Sparse Candidate 依次通过零漂移 Gate 后才可接入。
+16C-04/07..09 保留后续排期，16C-10 正式设备 SLA 保持 `INPUT_OPEN`，16B-04/16D-05 仍需
+用户独立授权。
 
 ## 目录结构
 
@@ -97,6 +102,11 @@ S3 为仅限 `relief_heightfield` 的显式候选，P3 为只读姿态诊断；�
 | `REPORT/REPORT_HOSTFLOW_H_F_09_宿主连续计时与Worker快照分离.md` | H-F-09 宿主连续计时、Worker 快照分离与第二次作业计时重置 |
 | `REPORT/REPORT_HOSTFLOW_H_F_10_Reality批量导入碰撞加速.md` | H-F-10 Reality 十模型批量导入碰撞准入热点与 BVH 宽相位加速证据 |
 | `REPORT/REPORT_16C_05_LayerCompose扫描融合与Buffer复用当前状态.md` | 16C-05 逐层/逐实例统计扫描融合、validated evidence 与 Buffer 复用 |
+| `DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md` | 16C-06-MEMFLOW 实施顺序、预算、发布与零漂移 Gate 决策 |
+| `DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md` | Dense Streaming、Layer Barrier、Sparse Candidate 和自适应路由设计 |
+| `DOC/DOC_PREP_16C_06_MEMFLOW_实施准备与数据同步.md` | 文件所有权、数据同步矩阵、回退与开工门 |
+| `DOC/DOC_PREP_16C_06_MEMFLOW_MF_02_03_开发准备补充.md` | MF-02 owned 生命周期与 MF-03A/03B 多遍支撑拆分准备 |
+| `REPORT/REPORT_16C_06_MEMFLOW_有界流式内存根治当前状态.md` | MF-00..08 当前实施和验证状态 |
 | `DOC/DOC_PREP_HOSTFLOW_H_D_02_06_视图后续任务准备审查.md` | H-D-02 完成证据、H-D-03..06 准备、刷新矩阵和人工验收边界 |
 | `REPORT/REPORT_HOSTFLOW_H_D_02_三维画布与RB_P1当前状态.md` | H-D-02 真实纹理 3D 画布、UI-M7 零 DLL 调用、RB-P1 与 36 资产矩阵结果 |
 | `REPORT/REPORT_HOSTFLOW_H_D_03_三车道拖拽接线当前状态.md` | H-D-03 俯视拾取、本地拖拽、单次 Commit、Stale 恢复与 Debug/Release 门禁 |
