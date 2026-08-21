@@ -1,7 +1,7 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..MV-03 与 MV-05 COMPLETE / MV-04 INPUT OPEN / 生产语义未改**
-> 版本：v1.4 ｜ 日期：2026-08-21
+> 文档状态：**ACTIVE / MV-00..MV-03、MV-05..MV-06 COMPLETE / MV-04 INPUT OPEN / 生产语义未改**
+> 版本：v1.5 ｜ 日期：2026-08-21
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
 > 决策：`docs/slice/DOC/DOC_DECISION_MATVOL_多材质纵深体积RGB与按需补白根治.md`
 > 准备：`docs/slice/DOC/DOC_PREP_MATVOL_实施准备与数据上下文.md`
@@ -31,8 +31,8 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **COMPLETE** | MV-02 | 2026-08-20 |
 | MV-04 | 开放表面 surface_band 非生产候选与 `03.obj` 厚度裁决 | PENDING / INPUT OPEN | MV-03、MQ-01/MQ-02 | - |
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | **COMPLETE** | MV-03（MV-04 可选，未纳入） | 2026-08-21 |
-| MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **PREPARED** | MV-05（已满足） | - |
-| MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | PENDING | MV-06 | - |
+| MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **COMPLETE** | MV-05 | 2026-08-21 |
+| MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **PREPARED** | MV-06（已满足） | - |
 | MV-08 | MEMFLOW bounded/owned 生产候选接线与 Staged Package | PENDING | MV-06、MF-03B4/MF-04 | - |
 | MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
@@ -244,6 +244,49 @@ Release `/W4 /WX` 构建通过，定向 CTest **5/5 PASS**；matvol 四个目标
 **验收：** 纯白/近白差异仅在 W；绿色/浅桃色不误补；RGB/S/V 和 Z 层数不变；旧 Stage 15 Profile
 逐层 TIFF hash 不变；materialPolicy/旧 roleMapping 非支持组合继续拒绝。
 
+**实际结果（2026-08-21）：** 新增 `MaterialVolumeWhiteCarrier.*`、`reports/MaterialVolumeReport.*`、
+`contracts/slicesoft.material_volume_report.1.schema.json` 与 `matvol_white_carrier_integration_tests`，
+Release `/W4 /WX` 构建通过，定向 CTest **5/5 PASS**，`json_schema_contract_test` PASS。
+
+```text
+交付
+  ApplyMaterialVolumeWhiteCarrierLayer  在最终 RGB 之后调用既有 ApplyUnprintableWhiteCarrier，
+                                        只写 W，逐像素判据与 Stage 15 完全同源，不复制近似实现
+  IsMaterialVolumeWhiteCarrierCombinationAllowed  组合窄放行谓词，供后续预检复用
+  BuildMaterialVolumeReport             扁平领域对象风格，与 MaterialClosureReport 一致
+  CountMaterialVolumeLayerOwners        逐层 owner 与未拥有模型像素统计
+  slicesoft.material_volume_report.1    首个具备正式 JSON Schema 文件的报告；URL 风格 $id、
+                                        additionalProperties: false、schema 用 const 钉死
+
+config.cpp 的改动只有一处条件
+  白区禁令块里给「只支持 Legacy 全实体 RGB 纹理路径」这一条加了 && !materialVolumePolicy.enabled。
+  MATVOL 自带最终 RGB，不依赖纹理顶面投影；其余禁令（Global 管线、materialPolicy、
+  旧 roleMapping、whiteValue 与 emptyValue 冲突、OpenVDB）全部原样保留，错误消息不变。
+
+一处自我修正
+  首版还加了一个正向的窄放行检查，结果它抢在既有 materialPolicy / roleMapping 禁令之前触发，
+  把原有错误消息替换掉了。既有禁令本就覆盖这两项，该检查纯属冗余且损害可审计性，已移除。
+  config.cpp 因此也不再依赖 materials/volume 头文件。
+
+验收逐项
+  纯白 [255,255,255] 与近白 [250,249,248] 命中补白；绿色与浅桃色不误补
+  逐像素结论与既有 IsUnprintableWhiteTexel 谓词一致（用同一阈值对照断言）
+  RGB 缓冲在补白前后逐字节相同；S/V 区域用 0xAB 哨兵证明未被触碰
+  策略关闭时零写入零计数；非模型像素跳过；缓冲区尺寸不符显式抛 std::invalid_argument
+  MATVOL + white_underbase 通过；旧 Stage 15 Profile 仍原样通过
+  关闭 MATVOL 时缺纹理路径的旧禁令继续生效（这是「旧禁令不得放宽」的机器证据）
+  MATVOL + materialPolicy / + 旧 roleMapping / whiteValue 冲突 三项仍以【原有错误消息】被拒
+  报告顶层字段集与 schema required 清单逐项一致且无多余字段，防止 builder 与 fixture 漂移
+  schema 契约测试：1 正例 + 1 surface_band 变体正例 + 4 反例（未知拓扑、负厚度、多余字段、越界通道）
+
+变异检验
+  把旧纹理路径禁令整体短路 -> combination_allowance_stays_narrow 按预期 FAIL
+
+边界
+  未接 run_slicer；不写 RGB/S/V、不新增 Z 层；未改 p0.rgbwsv.2、RGBWSV、SPI；
+  新块未写入任何既有预设，现有 profileHash 不变；closure 报告接入留待生产接线卡
+```
+
 ## 10. MV-07 Host 与预览
 
 **目标：** 新增显式“多材质纵深 RGB + 按需补白”候选；展示拓扑、壳层厚度和冲突诊断；结果页
@@ -280,6 +323,7 @@ SLA/物理打印证据缺失时只写 engineering candidate，不写 production 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-21 | v1.5 | MV-06 COMPLETE：在最终 RGB 之后复用既有 `ApplyUnprintableWhiteCarrier` 完成按需补白，只写 W 且逐像素判据与 Stage 15 同源；新增 `material_volume_report` 构建与首个正式报告 JSON Schema `slicesoft.material_volume_report.1`（1 正例 + 1 变体正例 + 4 反例）。`config.cpp` 的改动收敛为单一条件：只给「仅支持 Legacy 全实体 RGB 纹理路径」这一条加 `&& !materialVolumePolicy.enabled`，其余白区禁令与错误消息原样保留。首版误加的正向窄放行检查会抢占既有禁令消息，已移除。RGB 逐字节不变、S/V 以哨兵证明未触碰、旧禁令未放宽均有机器证据；变异检验短路旧禁令后按预期 FAIL。Release `/W4 /WX` 与定向 CTest 5/5、schema 契约测试 PASS，未接 `run_slicer`。MV-07 转 PREPARED。 |
 | 2026-08-21 | v1.4 | MV-05 COMPLETE：新增 move-only `MaterialRgbTable` 与 `ComposeMaterialLayerRgb`，按 owner 解析 MTL Kd 并合成单层 RGB。绿色与浅桃色精确等于量化值；缺 Kd 默认 fail closed，仅显式策略允许 fallback 且记录来源；模型像素无 owner 报 `E_MATVOL_MODEL_PIXEL_UNOWNED`；以 0xAB 哨兵证明仅写 RGB 区域、不触碰 W/S/V；声明顺序与重复调用结果逐字节一致。变异检验去掉未拥有守卫后按预期 FAIL。Release `/W4 /WX` 与定向 CTest 5/5 PASS，未接 `run_slicer`。纹理采样未纳入本卡；MV-04 仍受 MQ-01/MQ-02 阻塞，MV-06 转 PREPARED。 |
 | 2026-08-20 | v1.3 | MV-03 COMPLETE：新增 move-only `MaterialVolumePlan` 与 CSR compact 层区间布局，实现逐列有序交点、奇偶配对与 caller-owned 单层 owner 物化；开放材质、缺失优先级、同级重叠、奇数交点、未绑定材质、非法栅格与取消全部在构建期 fail closed，物化期保持纯净。MV-F01/F02/F04 逐层 owner 与独立稠密 oracle diff=0，空洞层保持无 owner，热路径零堆分配且 buffer 地址复用，compact 区间为同规模稠密栈的 1/8。两处变异检验（包络填充、优先级反向）均按预期 FAIL。物化的参数校验改为显式抛出以对齐既有 `MaterializeLayerOccupancy` 约定。Release `/W4 /WX` 与定向 CTest 10/10 PASS，未接 `run_slicer`。MV-04 仍受 MQ-01/MQ-02 输入 Gate 阻塞。 |
 | 2026-08-20 | v1.2 | MV-02 COMPLETE：新增 `MaterialVolumeError` 稳定错误码三件套与 `MaterialTopologyClassifier` 逐材质子网格分类；`materialVolumePolicy` 顶层配置块按仓库约定接入 `config.h`/`config.cpp`，并在 `ConfigMigration` 登记以堵住 `slicer.config.1` 的静默丢字段。13 项 fail-closed 逐条有用例，Release `/W4 /WX` 与定向 CTest 8/8 PASS。变异检验发现并修正了顶点焊接导致的材质交界边误判，改为真开边与交界边分列计数且交界边围成的子网格不视为独立闭合体。未接 `run_slicer`，未改动任何既有预设与 profileHash。MV-03 转 PREPARED。 |
