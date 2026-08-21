@@ -1644,6 +1644,16 @@ add_executable(stage16c06_memory_budget_unit_tests
 
 target_link_libraries(stage16c06_memory_budget_unit_tests PRIVATE slicer_core)
 
+add_executable(stage16c06_owned_layer_consumer_unit_tests
+    tests/stage16/OwnedLayerConsumerTests.cpp
+)
+
+target_compile_definitions(stage16c06_owned_layer_consumer_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+target_link_libraries(stage16c06_owned_layer_consumer_unit_tests PRIVATE slicer_core)
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2528,6 +2538,7 @@ add_test(NAME openvdb_sdf_utility_report_unit_tests COMMAND openvdb_sdf_utility_
 add_test(NAME stage16_geometry_sampling_fixture_tests COMMAND stage16_geometry_sampling_fixture_tests)
 add_test(NAME stage16_layer_occupancy_provider_tests COMMAND stage16_layer_occupancy_provider_tests)
 add_test(NAME stage16c06_memory_budget_unit_tests COMMAND stage16c06_memory_budget_unit_tests)
+add_test(NAME stage16c06_owned_layer_consumer_unit_tests COMMAND stage16c06_owned_layer_consumer_unit_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(

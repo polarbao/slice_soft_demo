@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -58,6 +59,50 @@ using SliceRunLayerCallback = std::function<void(
     const RgbwsvProductionLayer&,
     const MaterialClosureSemanticLayerInput&)>;
 
+/** @brief Outcome returned synchronously by an owned layer consumer. */
+enum class SliceRunLayerConsumeStatus
+{
+    Accepted,
+    Cancelled,
+    Failed,
+};
+
+/** @brief One final layer whose buffers are transferred to the consumer. */
+struct SliceRunOwnedLayer
+{
+    RgbwsvProductionLayer output;
+    MaterialClosureSemanticLayerInput semantic;
+};
+
+/** @brief Stable acknowledgement returned before the producer advances. */
+struct SliceRunLayerConsumeResult
+{
+    SliceRunLayerConsumeStatus status{
+        SliceRunLayerConsumeStatus::Accepted};
+    std::string detail;
+};
+
+/** @brief Typed failure raised when an owned consumer rejects a layer. */
+class SliceRunLayerConsumerError final : public std::runtime_error
+{
+public:
+    SliceRunLayerConsumerError(
+        SliceRunLayerConsumeStatus status,
+        int layerIndex,
+        std::string detail);
+
+    [[nodiscard]] SliceRunLayerConsumeStatus Status() const noexcept;
+    [[nodiscard]] int LayerIndex() const noexcept;
+
+private:
+    SliceRunLayerConsumeStatus status_;
+    int layerIndex_{-1};
+};
+
+/** @brief Synchronous backpressured callback taking ownership of one layer. */
+using SliceRunOwnedLayerCallback = std::function<SliceRunLayerConsumeResult(
+    SliceRunOwnedLayer&&)>;
+
 /**
  * @brief Explicit model source override used by scene production adapters.
  */
@@ -77,6 +122,7 @@ struct SliceRunOptions {
     SliceRunProgressCallback progress_callback;
     SliceRunGridCallback gridcallback;
     SliceRunLayerCallback layercallback;
+    SliceRunOwnedLayerCallback ownedlayercallback;
     std::optional<ModelInstance> instanceoverride;
     std::optional<SliceRunInputOverride> inputoverride;
 

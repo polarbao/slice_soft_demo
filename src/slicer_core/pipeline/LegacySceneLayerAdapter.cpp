@@ -198,27 +198,30 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
                 grid.layerthicknessmm;
             gridReceived = true;
         };
-    options.layercallback =
+    options.ownedlayercallback =
         [&request, &result](
-            const RgbwsvProductionLayer& output,
-            const MaterialClosureSemanticLayerInput& semantic)
+            SliceRunOwnedLayer&& produced)
         {
             ThrowIfCancellationRequested(request);
             SceneInstanceRasterLayer layer;
-            layer.layerindex = output.layerIndex;
-            layer.zmm = output.zMm;
-            layer.output = output;
-            layer.modelownership = semantic.modelMaterialMask;
+            layer.layerindex = produced.output.layerIndex;
+            layer.zmm = produced.output.zMm;
+            layer.modelownership =
+                std::move(produced.semantic.modelMaterialMask);
             layer.modelvarnishownership =
                 BuildModelVarnishOwnership(
-                    output,
+                    produced.output,
                     layer.modelownership,
                     result.raster.protocol);
             layer.outervarnishownership =
-                semantic.outerVarnishShellMask;
-            layer.supportownership = semantic.supportFillMask;
+                std::move(
+                    produced.semantic.outerVarnishShellMask);
+            layer.supportownership =
+                std::move(produced.semantic.supportFillMask);
+            layer.output = std::move(produced.output);
             result.raster.layers.push_back(std::move(layer));
             ThrowIfCancellationRequested(request);
+            return SliceRunLayerConsumeResult{};
         };
 
     try
@@ -245,6 +248,18 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             SceneRasterErrorCode::Cancelled,
             "canceltoken",
             "Legacy scene-layer adapter stopped at a cooperative checkpoint");
+        return result;
+    }
+    catch (const SliceRunLayerConsumerError& error)
+    {
+        BlockLegacyAdapter(
+            result,
+            request,
+            error.Status() == SliceRunLayerConsumeStatus::Cancelled
+                ? SceneRasterErrorCode::Cancelled
+                : SceneRasterErrorCode::ProducerFailed,
+            "ownedlayerconsumer",
+            error.what());
         return result;
     }
     catch (const std::exception& exception)

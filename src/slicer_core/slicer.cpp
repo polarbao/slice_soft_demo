@@ -4300,11 +4300,52 @@ bool MatchesSourceIdentity(
 
 }  // namespace
 
+SliceRunLayerConsumerError::SliceRunLayerConsumerError(
+    const SliceRunLayerConsumeStatus status,
+    const int layerIndex,
+    std::string detail)
+    : std::runtime_error(
+          "owned layer consumer "
+          + std::string(
+              status == SliceRunLayerConsumeStatus::Cancelled
+                  ? "cancelled"
+                  : "failed")
+          + " at layer " + std::to_string(layerIndex)
+          + (detail.empty() ? std::string{} : ": " + detail)),
+      status_(status),
+      layerIndex_(layerIndex)
+{
+}
+
+SliceRunLayerConsumeStatus SliceRunLayerConsumerError::Status() const noexcept
+{
+    return status_;
+}
+
+int SliceRunLayerConsumerError::LayerIndex() const noexcept
+{
+    return layerIndex_;
+}
+
 SliceRunResult run_slicer(const std::filesystem::path& config_path) {
     return run_slicer(config_path, SliceRunOptions{});
 }
 
 SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceRunOptions& options) {
+    if (options.layercallback && options.ownedlayercallback)
+    {
+        throw std::invalid_argument(
+            "legacy const and owned layer callbacks are mutually exclusive");
+    }
+    if (options.ownedlayercallback
+        && (options.write_tiff_layers
+            || options.write_preview_files
+            || options.write_reports))
+    {
+        throw std::invalid_argument(
+            "owned layer callback requires producer file output to be disabled");
+    }
+
     SliceRunProfile profile;
     profile.available = true;
     profile.profile_level = "coarse";
@@ -4596,7 +4637,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         && (options.write_reports || repairMaterialClosure);
     const bool collectMaterialClosureSemantic =
         collectMaterialClosureExact
-        || static_cast<bool>(options.layercallback);
+        || static_cast<bool>(options.layercallback)
+        || static_cast<bool>(options.ownedlayercallback);
     std::vector<std::vector<std::size_t>> clearedOuterVarnishSupportIndices;
     const int cleared_outer_varnish_support_pixels =
         ApplyOuterVarnishSupportPriority(
@@ -4842,6 +4884,34 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         slice_layers.push_back(layer_diagnostics_to_json(diagnostics));
         contour_layers.push_back(layer_diagnostics_to_json(diagnostics));
         profile.layer_compute_ms += ElapsedMsSince(layerMetadataStart);
+        if (options.ownedlayercallback)
+        {
+            SliceRunOwnedLayer ownedLayer;
+            ownedLayer.output.layerIndex = layer_index;
+            ownedLayer.output.zMm = diagnostics.z_mm;
+            ownedLayer.output.widthPx = grid.width_px;
+            ownedLayer.output.heightPx = grid.height_px;
+            ownedLayer.output.channels = std::move(layer);
+            ownedLayer.semantic = std::move(materialClosureInput);
+            const SliceRunLayerConsumeResult consumeResult =
+                options.ownedlayercallback(std::move(ownedLayer));
+            switch (consumeResult.status)
+            {
+            case SliceRunLayerConsumeStatus::Accepted:
+                break;
+            case SliceRunLayerConsumeStatus::Cancelled:
+            case SliceRunLayerConsumeStatus::Failed:
+                throw SliceRunLayerConsumerError(
+                    consumeResult.status,
+                    layer_index,
+                    consumeResult.detail);
+            default:
+                throw SliceRunLayerConsumerError(
+                    SliceRunLayerConsumeStatus::Failed,
+                    layer_index,
+                    "owned layer consumer returned an invalid status");
+            }
+        }
         const int completedLayers = layer_index + 1;
         if (ShouldNotifyLayerProgress(completedLayers, grid.layer_count))
         {

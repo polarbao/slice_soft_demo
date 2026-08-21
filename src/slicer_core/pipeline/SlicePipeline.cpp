@@ -57,6 +57,11 @@ SliceRunResult RunSlicePipeline(
     {
         return RunSlicePipelineLegacy(configPath, options);
     }
+    if (options.ownedlayercallback)
+    {
+        throw std::invalid_argument(
+            "owned layer callback is available only for the Legacy pipeline");
+    }
 
     ModelPreflightService service;
     ModelPreflightGateRequest request;
