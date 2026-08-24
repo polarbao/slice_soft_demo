@@ -1,7 +1,8 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..MV-03、MV-05..MV-06 COMPLETE / MV-04 INPUT OPEN / 生产语义未改**
-> 版本：v1.6 ｜ 日期：2026-08-21
+> 文档状态：**ACTIVE / MV-00..MV-03、MV-05..MV-06 COMPLETE / MV-07A..07C COMPLETE
+> / MV-04 INPUT OPEN（MQ-01 实测上限已给出，未回签）/ 生产默认 Profile 仍为 matvol 关闭**
+> 版本：v1.7 ｜ 日期：2026-08-24
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
 > 决策：`docs/slice/DOC/DOC_DECISION_MATVOL_多材质纵深体积RGB与按需补白根治.md`
 > 准备：`docs/slice/DOC/DOC_PREP_MATVOL_实施准备与数据上下文.md`
@@ -32,7 +33,7 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-04 | 开放表面 surface_band 非生产候选与 `03.obj` 厚度裁决 | PENDING / INPUT OPEN | MV-03、MQ-01/MQ-02 | - |
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | **COMPLETE** | MV-03（MV-04 可选，未纳入） | 2026-08-21 |
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **COMPLETE** | MV-05 | 2026-08-21 |
-| MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **PREPARED / 拆为 07A-07C；07A 待 MV07-Q1 确认** | MV-06 | - |
+| MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **COMPLETE（07A/07B/07C 全部落地）** | MV-06 | 2026-08-24 |
 | MV-08 | MEMFLOW bounded/owned 生产候选接线与 Staged Package | PENDING | MV-06、MF-03B4/MF-04 | - |
 | MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
@@ -329,6 +330,22 @@ CODEX_PROMPT_MATVOL §2 先出实施准备并等待确认，未确认前不改�
         Q4 是否可改结果页默认预览索引
 ```
 
+### 10.1 MV-07A/07B/07C 实施结论（2026-08-24 回填）
+
+三张子卡全部 **COMPLETE**，MV07-Q1..Q4 全部已回签：Q1 放宽两道宿主白区门已授权并
+单独出决策（`DOC_DECISION_MATVOL_MV_07_Q1_宿主白区门放宽授权.md`，提交 `5c37617`）；
+Q2 500 行规则改为债务台账（`DOC_DECISION_MATVOL_MV07_Q2_宿主行数门禁债务台账.md`，
+提交 `f27bdee`）；Q3 预设不固定采样与层厚；Q4 结果页默认预览索引获准改动。
+
+| 子卡 | 结论 | 提交 | 关键落点 |
+|---|---|---|---|
+| MV-07A | COMPLETE | `2c9b449` | 宿主自建 `hostmaterialvolumesettings` 镜像（不引 slicer_core 裸子串）；新增第 7 个工艺预设 `volumetric_nail_rgb_white_ondemand_lower_support`（primary `01` / secondary `02`）；独立 `HostVolumetricProfile.c` 以规范化+紧凑双模板发射 `materialVolumePolicy`，未改既有模板；`useReliefHeightfield` 补 `materialvolumeenabled` 条件修复 slicingMode 耦合缺口；按 Q1 授权只增形态条件放宽两道白区门，旧组合逐字节不变；profileHash 闭合 |
+| MV-07B | COMPLETE | `71da50e` | 独立子面板 `HostMatvolSettingsPanel`（不复用回落写法）；能力不足时 `SetCapabilityRestriction` 只禁用并给原因，不改写用户选择、不发信号；MATVOL 显式排除于静默回退分支；`HostWorkspaceMatvolState` 独立持久化段，workspace schema 6→7 |
+| MV-07C | COMPLETE | `39de313`、`00d74b0` | 结果页默认预览索引 4→0（RGB-only）；补 5 处伪彩色说明与第 4 行摘要；`00d74b0` 更正伪彩色来源为 `MaterialPreviewComposer` 硬编码调色板，并非 `preview.pseudoColors` |
+
+**MV-07 遗留边界**：生产默认 Profile 仍为 matvol 关闭，新预设为显式 opt-in；
+MV-04 壳层厚度仍受 MQ-01 阻塞（实测几何上限 0.30 mm、推荐 0.228 mm，未回签，不得写入生产 Profile）。
+
 ## 11. MV-08 生产候选接线
 
 **目标：** 消费 MEMFLOW caller-owned 单层 buffer 和 staged writer；作业开始前预算/能力选路。
@@ -357,6 +374,7 @@ SLA/物理打印证据缺失时只写 engineering candidate，不写 production 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-24 | v1.7 | MV-07 转 COMPLETE，回填 07A/07B/07C 三张子卡的落点与提交（`2c9b449`、`71da50e`、`39de313`+`00d74b0`），新增 §10.1。MV07-Q1..Q4 全部回签：Q1 白区门放宽已授权并单独出决策 `5c37617`；Q2 `ValidateQtHostBoundary` 500 行规则改为债务台账（8 个既有超限文件只许缩减不许增长），该门首次转绿，提交 `f27bdee`；Q3 预设不固定采样/层厚；Q4 结果页默认预览索引获准改为 RGB-only。MQ-01 补入实测几何上限 0.30 mm 与推荐值 0.228 mm，仍未回签，MV-04 保持 INPUT OPEN。 |
 | 2026-08-21 | v1.6 | MV-07 完成实施准备并拆为 07A/07B/07C：新增 `DOC_PREP_MATVOL_MV_07_宿主接入实施准备.md`。固化四条已实测约束（宿主禁引 slicer_core 裸子串、两套行数门禁且宿主 UI 不可白名单、必须放宽的两道白区门、slicingMode 耦合缺口）与 profileHash 四条规范化规则及 H-F-04 根因。修正三处验收口径：禁用而非回退与现状 SetSingleMaterialRestriction 自动回落冲突、scene revision 实际不持久化、RGB-only 入口已存在但缺默认索引与伪彩色标注。登记 MV07-Q1..Q4；07A 含生产语义变化，未获确认前不修改宿主既有门。 |
 | 2026-08-21 | v1.5 | MV-06 COMPLETE：在最终 RGB 之后复用既有 `ApplyUnprintableWhiteCarrier` 完成按需补白，只写 W 且逐像素判据与 Stage 15 同源；新增 `material_volume_report` 构建与首个正式报告 JSON Schema `slicesoft.material_volume_report.1`（1 正例 + 1 变体正例 + 4 反例）。`config.cpp` 的改动收敛为单一条件：只给「仅支持 Legacy 全实体 RGB 纹理路径」这一条加 `&& !materialVolumePolicy.enabled`，其余白区禁令与错误消息原样保留。首版误加的正向窄放行检查会抢占既有禁令消息，已移除。RGB 逐字节不变、S/V 以哨兵证明未触碰、旧禁令未放宽均有机器证据；变异检验短路旧禁令后按预期 FAIL。Release `/W4 /WX` 与定向 CTest 5/5、schema 契约测试 PASS，未接 `run_slicer`。MV-07 转 PREPARED。 |
 | 2026-08-21 | v1.4 | MV-05 COMPLETE：新增 move-only `MaterialRgbTable` 与 `ComposeMaterialLayerRgb`，按 owner 解析 MTL Kd 并合成单层 RGB。绿色与浅桃色精确等于量化值；缺 Kd 默认 fail closed，仅显式策略允许 fallback 且记录来源；模型像素无 owner 报 `E_MATVOL_MODEL_PIXEL_UNOWNED`；以 0xAB 哨兵证明仅写 RGB 区域、不触碰 W/S/V；声明顺序与重复调用结果逐字节一致。变异检验去掉未拥有守卫后按预期 FAIL。Release `/W4 /WX` 与定向 CTest 5/5 PASS，未接 `run_slicer`。纹理采样未纳入本卡；MV-04 仍受 MQ-01/MQ-02 阻塞，MV-06 转 PREPARED。 |

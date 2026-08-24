@@ -42,6 +42,16 @@ RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与�
           卡 docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
 HOSTFLOW  ✅ H-A..H-F 全组完成（2026-08-11）；H-G 已准备并延期实施（等 5 项产品输入）
           卡 docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
+RIPFLOW   ✅ 00 / A / B / C / D 全组完成（D-01..06），切片侧收口
+          ⛔ E-01/E-02 外部分发与生产验收 BLOCKED_EXTERNAL
+          ▶ D-06 新增 outputValidationMode=strict_s2|diagnostic_unvalidated，默认严格；
+            诊断模式只放宽墨滴上限门，产出 rip_diagnostic/ 且恒不可 S2 发布
+          卡 docs/codex_task/current/TASKS_RIPFLOW_切片后外置RIP集成专项任务清单.md
+MATVOL    ✅ MV-00..03、MV-05..06 非生产语义栈完成；MV-07A/07B/07C 宿主接入完成（2026-08-24）
+          ▶ 生产默认仍为 matvol 关闭，新预设 volumetric_nail_rgb_white_ondemand_lower_support 为显式 opt-in
+          ⏸ MV-04 卡 MQ-01 壳层厚度（实测几何上限 0.30mm、推荐 0.228mm，未回签）
+          ⏸ MV-08 生产接线依赖 MEMFLOW bounded/owned（MF-03B4/MF-04）
+          卡 docs/codex_task/current/TASKS_MATVOL_多材质纵深体积RGB与按需补白根治专项任务清单.md
 TIFF      ⏸ 默认后端已切 libtiff，风险已关死（fail-closed+弃用告警+无静默回退）
           当前【无待办】：05B-02/03 延后并捆绑（等删除确认）、T-A-04 外部阻塞
           卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
