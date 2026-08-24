@@ -12,12 +12,17 @@
 
 #include "slicer_core/config.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
+#include "slicer_core/geometry/repair/MeshCompleteSelfIntersectionAnalyzer.h"
+#include "slicer_core/geometry/repair/MeshRepairTypes.h"
 #include "slicer_core/materials/volume/MaterialTopologyClassifier.h"
 #include "slicer_core/materials/volume/MaterialVolumePlan.h"
 #include "slicer_core/model.h"
 #include "slicer_core/model/ModelLoadConfig.h"
 
 #include <algorithm>
+#include <array>
+#include <map>
+#include <cmath>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
@@ -246,6 +251,188 @@ bool RealityTopologyFactsAreReported()
     return passed;
 }
 
+// MV-08A 诊断：把材质 02 的自交分解到四类，并给出涉及区域范围。
+// 判断「能否忽略」不能只看对数：真穿透与仅接触的后果完全不同，
+// 且真正的影响面是「有多少 XY 列会因此拿到奇数交点」。
+bool SelfIntersectionIsCharacterized()
+{
+    const std::filesystem::path modelPath = RealityAsset("03.obj");
+    if (!std::filesystem::exists(modelPath))
+    {
+        std::cout << "SKIP self_intersection_characterization asset not present\n";
+        return true;
+    }
+    const slicer_core::ModelReport model = LoadProductionPosture(modelPath);
+    const slicer_core::AdaptedTriangleMesh mesh =
+        slicer_core::AdaptSceneModelToTriangleMesh(model);
+
+    // 抽出材质 02 子网格：顶点重映射，与分类器内部做法一致。
+    slicer_core::TriangleMeshData subMesh;
+    subMesh.source_name = "material_02";
+    std::map<int, int> remap;
+    for (std::size_t index{0}; index < mesh.triangle_attributes.size(); ++index)
+    {
+        if (mesh.triangle_attributes.at(index).material_name != "02")
+        {
+            continue;
+        }
+        const std::array<int, 3>& source = mesh.mesh.triangles.at(index);
+        std::array<int, 3> mapped{};
+        for (int corner{0}; corner < 3; ++corner)
+        {
+            const int sourceVertex = source.at(static_cast<std::size_t>(corner));
+            const auto found = remap.find(sourceVertex);
+            if (found != remap.end())
+            {
+                mapped.at(static_cast<std::size_t>(corner)) = found->second;
+                continue;
+            }
+            const int next = static_cast<int>(subMesh.vertices.size());
+            subMesh.vertices.push_back(
+                mesh.mesh.vertices.at(static_cast<std::size_t>(sourceVertex)));
+            remap.emplace(sourceVertex, next);
+            mapped.at(static_cast<std::size_t>(corner)) = next;
+        }
+        subMesh.triangles.push_back(mapped);
+    }
+
+    slicer_core::MeshCompleteSelfIntersectionOptions options;
+    const slicer_core::MeshCompleteSelfIntersectionAnalysis analysis =
+        slicer_core::AnalyzeCompleteMeshSelfIntersections(subMesh, options);
+    std::cout << "  material02 selfIntersection: status=" << analysis.status
+              << " complete=" << analysis.complete
+              << " tris=" << analysis.triangleCount
+              << " candidatePairs=" << analysis.candidatePairCount
+              << " testedPairs=" << analysis.testedPairCount
+              << " confirmed=" << analysis.confirmedIntersectionPairs
+              << " coplanarOverlap=" << analysis.coplanarOverlapPairs
+              << " touchingOnly=" << analysis.touchingOnlyPairs
+              << " aabbOnly=" << analysis.aabbOnlyPairs << '\n';
+    for (const slicer_core::ValidationIssue& issue : analysis.issues)
+    {
+        std::cout << "    issue " << issue.code << ": " << issue.message << '\n';
+    }
+    return ExpectTrue(analysis.complete, "self-intersection analysis completes within budget");
+}
+
+// 影响面量化：MATVOL 的封闭材质区间依赖「垂直射线拿到成对交点」。
+// 自交会破坏这一奇偶性，但只在射线穿过自交区域的那些 XY 列上破坏。
+// 本用例直接测「奇数交点列占比」，这是判断能否忽略、以及放宽后阈值取多少的唯一依据。
+bool OddParityColumnRatioIsMeasured()
+{
+    const std::filesystem::path modelPath = RealityAsset("03.obj");
+    if (!std::filesystem::exists(modelPath))
+    {
+        std::cout << "SKIP odd_parity_columns asset not present\n";
+        return true;
+    }
+    const slicer_core::ModelReport model = LoadProductionPosture(modelPath);
+    const slicer_core::AdaptedTriangleMesh mesh =
+        slicer_core::AdaptSceneModelToTriangleMesh(model);
+
+    std::vector<std::array<slicer_core::Vec3, 3>> faces;
+    for (std::size_t index{0}; index < mesh.triangle_attributes.size(); ++index)
+    {
+        if (mesh.triangle_attributes.at(index).material_name != "02")
+        {
+            continue;
+        }
+        const std::array<int, 3>& tri = mesh.mesh.triangles.at(index);
+        faces.push_back({mesh.mesh.vertices.at(static_cast<std::size_t>(tri[0])),
+                         mesh.mesh.vertices.at(static_cast<std::size_t>(tri[1])),
+                         mesh.mesh.vertices.at(static_cast<std::size_t>(tri[2]))});
+    }
+
+    for (const double pixelMm : {0.100, 0.042, 0.021})
+    {
+    const double minX = model.bbox_mm.min.x;
+    const double minY = model.bbox_mm.min.y;
+    const int width = std::max(1, static_cast<int>((model.bbox_mm.max.x - minX) / pixelMm));
+    const int height = std::max(1, static_cast<int>((model.bbox_mm.max.y - minY) / pixelMm));
+
+    // 按 XY 包围盒把三角面装桶，避免逐列遍历全部面。
+    std::vector<std::vector<std::size_t>> buckets(
+        static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+    for (std::size_t faceIndex{0}; faceIndex < faces.size(); ++faceIndex)
+    {
+        const std::array<slicer_core::Vec3, 3>& face = faces.at(faceIndex);
+        double loX = face[0].x, hiX = face[0].x, loY = face[0].y, hiY = face[0].y;
+        for (int corner{1}; corner < 3; ++corner)
+        {
+            loX = std::min(loX, face.at(static_cast<std::size_t>(corner)).x);
+            hiX = std::max(hiX, face.at(static_cast<std::size_t>(corner)).x);
+            loY = std::min(loY, face.at(static_cast<std::size_t>(corner)).y);
+            hiY = std::max(hiY, face.at(static_cast<std::size_t>(corner)).y);
+        }
+        const int x0 = std::max(0, static_cast<int>((loX - minX) / pixelMm));
+        const int x1 = std::min(width - 1, static_cast<int>((hiX - minX) / pixelMm));
+        const int y0 = std::max(0, static_cast<int>((loY - minY) / pixelMm));
+        const int y1 = std::min(height - 1, static_cast<int>((hiY - minY) / pixelMm));
+        for (int y{y0}; y <= y1; ++y)
+        {
+            for (int x{x0}; x <= x1; ++x)
+            {
+                buckets.at(static_cast<std::size_t>(y) * static_cast<std::size_t>(width)
+                           + static_cast<std::size_t>(x)).push_back(faceIndex);
+            }
+        }
+    }
+
+    std::size_t hitColumns{0};
+    std::size_t oddColumns{0};
+    for (int y{0}; y < height; ++y)
+    {
+        for (int x{0}; x < width; ++x)
+        {
+            const double px = minX + (static_cast<double>(x) + 0.5) * pixelMm;
+            const double py = minY + (static_cast<double>(y) + 0.5) * pixelMm;
+            int crossings{0};
+            for (const std::size_t faceIndex :
+                 buckets.at(static_cast<std::size_t>(y) * static_cast<std::size_t>(width)
+                            + static_cast<std::size_t>(x)))
+            {
+                const std::array<slicer_core::Vec3, 3>& f = faces.at(faceIndex);
+                // 二维重心坐标判定射线是否落在三角面 XY 投影内。
+                const double d = (f[1].y - f[2].y) * (f[0].x - f[2].x)
+                    + (f[2].x - f[1].x) * (f[0].y - f[2].y);
+                if (std::abs(d) < 1.0e-15)
+                {
+                    continue;
+                }
+                const double a = ((f[1].y - f[2].y) * (px - f[2].x)
+                    + (f[2].x - f[1].x) * (py - f[2].y)) / d;
+                const double b = ((f[2].y - f[0].y) * (px - f[2].x)
+                    + (f[0].x - f[2].x) * (py - f[2].y)) / d;
+                const double c = 1.0 - a - b;
+                if (a < 0.0 || b < 0.0 || c < 0.0)
+                {
+                    continue;
+                }
+                ++crossings;
+            }
+            if (crossings == 0)
+            {
+                continue;
+            }
+            ++hitColumns;
+            if ((crossings % 2) != 0)
+            {
+                ++oddColumns;
+            }
+        }
+    }
+    const double ratio = hitColumns == 0
+        ? 0.0
+        : static_cast<double>(oddColumns) * 100.0 / static_cast<double>(hitColumns);
+    std::cout << "  material02 parity: grid=" << width << "x" << height
+              << " pixelMm=" << pixelMm
+              << " hitColumns=" << hitColumns
+              << " oddColumns=" << oddColumns
+              << " oddRatioPercent=" << ratio << '\n';
+    }
+    return true;
+}
+
 }  // namespace
 
 int main()
@@ -259,6 +446,8 @@ int main()
         {"model_report_feeds_adapter_directly", &ModelReportFeedsTheExistingAdapterDirectly},
         {"reality_plan_build_is_deterministic", &RealityPlanBuildIsDeterministic},
         {"reality_topology_facts", &RealityTopologyFactsAreReported},
+        {"self_intersection_characterization", &SelfIntersectionIsCharacterized},
+        {"odd_parity_column_ratio", &OddParityColumnRatioIsMeasured},
     };
 
     int failures{0};
