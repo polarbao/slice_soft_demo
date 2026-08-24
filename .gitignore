@@ -35,3 +35,6 @@ tests/*
 !tests/version/
 !tests/version/*.py
 /tests/version/__pycache__/
+# Python 解释器缓存不入库：以上目录放行规则会附带放行 __pycache__。
+__pycache__/
+*.pyc
