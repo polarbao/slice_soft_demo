@@ -34,7 +34,9 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | **COMPLETE** | MV-03（MV-04 可选，未纳入） | 2026-08-21 |
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **COMPLETE** | MV-05 | 2026-08-21 |
 | MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **COMPLETE（07A/07B/07C 全部落地）** | MV-06 | 2026-08-24 |
-| MV-08 | 生产接线（真实模型测试的唯一关键路径） | **NEXT / 先出实施准备** | MV-06；MEMFLOW 依赖待查勘 | - |
+| MV-08A | `ModelReport`→网格窄适配器与 plan 结构证明（不动 slicer.cpp） | **READY / 已回签可开工** | MV-06 | - |
+| MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | PENDING | MV-08A | - |
+| MV-08C | 按需补白顺序接入与体积报告落盘 | PENDING | MV-08B | - |
 | MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
 
@@ -377,12 +379,14 @@ MV-01..07 已完成的是语义栈与宿主管道，但 `src/` 与 `apps/` 下�
 `ComposeMaterialLayerRgb`、`MaterializeMaterialOwnershipLayer` 等的引用数**全部为零**，
 没有任何生产调用方。
 
-**待查勘的依赖前提。** 初步阅读显示 `slicer.cpp` 的 `compose_material_policy_pixel` 同时接收
-`pixel_index` 与 `layer_index`，即 Legacy 合成路径本来就是逐像素逐层的，
-MATVOL 的 caller-owned 单层物化 API 可能可直接挂入，
-从而使 MV-08 对 MEMFLOW 的依赖成为**组织性而非技术性**（MEMFLOW 解决的是有界内存，
-不是能否表达 Z 向材质）。该判断**尚未证实**，须由 MV-08 实施准备文档给出接入面证据后方可写为结论；
-在此之前上文「开工门」关于 MEMFLOW 未合入的事实描述继续有效。
+**依赖前提已判定并回签（MV08-Q2）。** 实测确认 `compose_layer`（`slicer.cpp:3171`）返回单层缓冲、
+由 `:4700` 逐层调用，`compose_material_policy_pixel`（`:2960`）同时接收 `pixel_index` 与 `layer_index`；
+`texture_columns` 等三个逐列结构已有「循环前算一次、以指针传入、未启用传 nullptr」的既定形状；
+层循环以 `model_masks.at(layer_index)` 取掩码，即 Legacy 本就是 retained dense，
+MATVOL 只额外增加一个 compact CSR plan。据此判定 MV-08 对 MEMFLOW 的依赖为**组织性而非技术性**，
+用户已回签将其由「开工门」降为**可选加速项**：MV-08 不再等 MEMFLOW 合入。
+接入面、唯一缺口、三段拆分与回退方案见 `docs/slice/DOC/DOC_PREP_MATVOL_MV_08_生产接线实施准备.md`。
+上文「开工门」一段仅作为 MEMFLOW 分支暂缓合入的事实记录保留，不再构成 MV-08 的阻塞。
 
 ## 12. MV-09 回归矩阵
 
