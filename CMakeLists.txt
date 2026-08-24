@@ -1730,6 +1730,17 @@ if(MSVC)
     )
 endif()
 
+add_executable(matvol_reality_plan_tests
+    tests/matvol/MatvolRealityPlanTests.cpp
+)
+target_link_libraries(matvol_reality_plan_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_reality_plan_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_reality_plan_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2619,6 +2630,7 @@ add_test(NAME matvol_interval_unit_tests COMMAND matvol_interval_unit_tests)
 add_test(NAME matvol_rgb_compose_unit_tests COMMAND matvol_rgb_compose_unit_tests)
 add_test(NAME matvol_white_carrier_integration_tests COMMAND matvol_white_carrier_integration_tests)
 add_test(NAME matvol_host_profile_round_trip_tests COMMAND matvol_host_profile_round_trip_tests)
+add_test(NAME matvol_reality_plan_tests COMMAND matvol_reality_plan_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
