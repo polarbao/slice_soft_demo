@@ -35,8 +35,12 @@ bool HostRipSettingsStore::Validate(
             == QStringLiteral("explicit_transparent")
         || settings.transparentmode
             == QStringLiteral("explicit_opaque");
+    const bool validValidationMode = settings.outputvalidationmode
+            == QStringLiteral("strict_s2")
+        || settings.outputvalidationmode
+            == QStringLiteral("diagnostic_unvalidated");
     if (settings.renderintent < 0 || settings.renderintent > 3
-        || !validMode || settings.colormode != 0
+        || !validMode || !validValidationMode || settings.colormode != 0
         || !IsModuleRelativePath(settings.inputicc)
         || !IsModuleRelativePath(settings.outputicc)
         || (settings.devicegraybits != 1 && settings.devicegraybits != 2)
@@ -49,7 +53,7 @@ bool HostRipSettingsStore::Validate(
         {
             *error = QStringLiteral(
                 "RIP 设置无效：intent 仅允许 0..3，颜色模式仅允许 0，"
-                "grayBits 仅允许 1/2，输出目录固定为 rip。");
+                "grayBits 仅允许 1/2，输出验证仅允许严格或诊断模式。");
         }
         return false;
     }
@@ -96,6 +100,9 @@ bool HostRipSettingsStore::Load(
         QStringLiteral("deviceGrayBits"), -1).toInt();
     loaded.timeoutseconds = settings.value(
         QStringLiteral("timeoutSeconds"), -1).toInt();
+    loaded.outputvalidationmode = settings.value(
+        QStringLiteral("outputValidationMode"),
+        QStringLiteral("strict_s2")).toString();
     loaded.outputdirectoryname = settings.value(
         QStringLiteral("outputDirectoryName")).toString();
     loaded.existingoutputpolicy = settings.value(
@@ -146,6 +153,9 @@ bool HostRipSettingsStore::Save(
     settings.setValue(
         QStringLiteral("timeoutSeconds"), value.timeoutseconds);
     settings.setValue(
+        QStringLiteral("outputValidationMode"),
+        value.outputvalidationmode);
+    settings.setValue(
         QStringLiteral("outputDirectoryName"), value.outputdirectoryname);
     settings.setValue(
         QStringLiteral("existingOutputPolicy"), value.existingoutputpolicy);
@@ -160,4 +170,19 @@ bool HostRipSettingsStore::Save(
         return false;
     }
     return true;
+}
+
+bool HostRipSettingsStore::IsDiagnosticMode(
+    const hostripsettings& settings)
+{
+    return settings.outputvalidationmode
+        == QStringLiteral("diagnostic_unvalidated");
+}
+
+QString HostRipSettingsStore::EffectiveOutputDirectoryName(
+    const hostripsettings& settings)
+{
+    return IsDiagnosticMode(settings)
+        ? QStringLiteral("rip_diagnostic")
+        : QStringLiteral("rip");
 }

@@ -27,6 +27,7 @@ using slicesoft::rip::RipCommand;
 using slicesoft::rip::RipCommandRequest;
 using slicesoft::rip::RipInputValidationRequest;
 using slicesoft::rip::RipOutputValidationRequest;
+using slicesoft::rip::RipOutputValidationMode;
 using slicesoft::rip::RipSettings;
 using slicesoft::rip::ValidateAndNormalizeRipOutput;
 using slicesoft::rip::ValidateRipInput;
@@ -259,10 +260,12 @@ RipOutputValidationRequest ValidationRequest(
     const std::size_t count,
     const std::uint32_t width = 2U,
     const std::uint32_t height = 2U,
-    const int grayBits = 2)
+    const int grayBits = 2,
+    const RipOutputValidationMode mode =
+        RipOutputValidationMode::StrictS2)
 {
     return RipOutputValidationRequest{
-        package, stage, count, width, height, grayBits};
+        package, stage, count, width, height, grayBits, mode};
 }
 
 bool TestSettingsAndCommand()
@@ -445,6 +448,48 @@ bool TestDpiMetadataDoesNotGateRipOutput()
     pass = Expect(
         missingResult.status.ok,
         "missing DPI metadata does not gate RIP output") && pass;
+    return pass;
+}
+
+bool TestDiagnosticOutputRecordsDropViolations()
+{
+    TemporaryRoot root("diagnostic-drop");
+    const std::filesystem::path package = root.Path() / "package";
+    const std::filesystem::path stage =
+        package / ".rip.staging.diagnostic-drop";
+    std::filesystem::create_directories(stage);
+    TiffFixture fixture;
+    fixture.white = 255U;
+    bool pass = Expect(
+        WriteTiff(stage / "slice.0.tiff", fixture),
+        "diagnostic high-drop fixture is written");
+
+    const auto result = ValidateAndNormalizeRipOutput(
+        ValidationRequest(
+            package, stage, 1U, 2U, 2U, 2,
+            RipOutputValidationMode::DiagnosticUnvalidated));
+    pass = Expect(
+        result.status.ok,
+        "diagnostic mode preserves structurally valid high-drop output")
+        && Expect(
+            !result.s2_drop_limits_passed,
+            "diagnostic result records that S2 drop limits failed")
+        && Expect(
+            result.samples_exceeding_drop_limit[0] == 4U
+                && result.samples_exceeding_drop_limit[1] == 0U
+                && result.samples_exceeding_drop_limit[2] == 0U,
+            "diagnostic result counts W/S/V violations")
+        && Expect(
+            result.first_drop_violation.has_value()
+                && result.first_drop_violation->layer_index == 0U
+                && result.first_drop_violation->channel == "W"
+                && result.first_drop_violation->value == 255U
+                && result.first_drop_violation->limit == 6U,
+            "diagnostic result records the first violation")
+        && Expect(
+            std::filesystem::is_regular_file(stage / "rip_000000.tif"),
+            "diagnostic output is normalized for downstream inspection")
+        && pass;
     return pass;
 }
 
@@ -664,6 +709,26 @@ bool TestArtifactPublication()
             "failed publication preserves owned staging")
         && pass;
 
+    const std::filesystem::path diagnostic =
+        package / ".rip.staging.diagnostic";
+    std::filesystem::create_directories(diagnostic);
+    Touch(diagnostic / "rip_000000.tif");
+    const auto diagnosticPublished = PublishRipArtifact(
+        RipArtifactPublishRequest{package, diagnostic, "rip_diagnostic"});
+    pass = Expect(
+        diagnosticPublished.status.ok
+            && diagnosticPublished.output_directory
+                == package / "rip_diagnostic",
+        "diagnostic output publishes to its isolated sibling") && pass;
+
+    const std::filesystem::path unapproved =
+        package / ".rip.staging.unapproved";
+    std::filesystem::create_directories(unapproved);
+    pass = Expect(
+        !PublishRipArtifact(
+            RipArtifactPublishRequest{package, unapproved, "other"}).status.ok,
+        "unapproved publication directory still fails closed") && pass;
+
     const std::filesystem::path outside = root.Path() / ".rip.staging.outside";
     std::filesystem::create_directories(outside);
     pass = Expect(
@@ -682,6 +747,7 @@ int main()
         && TestPositiveValidationAndNumericOrdering()
         && TestVendorAlignedWidthNormalization()
         && TestDpiMetadataDoesNotGateRipOutput()
+        && TestDiagnosticOutputRecordsDropViolations()
         && TestNegativeOutputValidation()
         && TestArtifactPublication();
     if (pass)

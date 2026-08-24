@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDir>
 #include <QFormLayout>
 #include <QFileInfo>
 #include <QGroupBox>
@@ -65,8 +66,16 @@ void HostRipSettingsPanel::BuildInterface()
     m_continueCheck->setObjectName(QStringLiteral("hostRipContinueCheck"));
     m_grayBitsCombo = new QComboBox(processingGroup);
     m_grayBitsCombo->setObjectName(QStringLiteral("hostRipGrayBitsCombo"));
-    m_grayBitsCombo->addItem(QStringLiteral("2 bit（输出校验）"), 2);
-    m_grayBitsCombo->addItem(QStringLiteral("1 bit（输出校验）"), 1);
+    m_grayBitsCombo->addItem(QStringLiteral("2 bit（S2 参考阈值）"), 2);
+    m_grayBitsCombo->addItem(QStringLiteral("1 bit（S2 参考阈值）"), 1);
+    m_outputValidationCombo = new QComboBox(processingGroup);
+    m_outputValidationCombo->setObjectName(
+        QStringLiteral("hostRipOutputValidationCombo"));
+    m_outputValidationCombo->addItem(
+        QStringLiteral("严格 S2（可发布）"), QStringLiteral("strict_s2"));
+    m_outputValidationCombo->addItem(
+        QStringLiteral("诊断保存（不可打印）"),
+        QStringLiteral("diagnostic_unvalidated"));
     m_timeoutSpin = new QSpinBox(processingGroup);
     m_timeoutSpin->setObjectName(QStringLiteral("hostRipTimeoutSpin"));
     m_timeoutSpin->setRange(1, 86400);
@@ -77,6 +86,7 @@ void HostRipSettingsPanel::BuildInterface()
     form->addRow(QStringLiteral("颜色模式"), m_colorModeCombo);
     form->addRow(QStringLiteral("输入 ICC"), m_inputIccCombo);
     form->addRow(QStringLiteral("输出 ICC"), m_outputIccCombo);
+    form->addRow(QStringLiteral("输出验证"), m_outputValidationCombo);
     form->addRow(QStringLiteral("设备灰阶"), m_grayBitsCombo);
     form->addRow(QStringLiteral("超时"), m_timeoutSpin);
     form->addRow(m_continueCheck);
@@ -126,6 +136,7 @@ void HostRipSettingsPanel::BuildInterface()
 
     const auto settingsEdited = [this]()
     {
+        UpdateOutputPath();
         emit SigSettingsChanged();
         RefreshControls();
     };
@@ -136,6 +147,7 @@ void HostRipSettingsPanel::BuildInterface()
              m_colorModeCombo,
              m_inputIccCombo,
              m_outputIccCombo,
+             m_outputValidationCombo,
              m_grayBitsCombo})
     {
         connect(
@@ -169,6 +181,8 @@ hostripsettings HostRipSettingsPanel::Settings() const
     settings.outputicc = m_outputIccCombo->currentData().toString();
     settings.continueonerror = m_continueCheck->isChecked();
     settings.devicegraybits = m_grayBitsCombo->currentData().toInt();
+    settings.outputvalidationmode =
+        m_outputValidationCombo->currentData().toString();
     settings.timeoutseconds = m_timeoutSpin->value();
     return settings;
 }
@@ -183,6 +197,7 @@ void HostRipSettingsPanel::SetSettings(const hostripsettings& settings)
     const QSignalBlocker outputIccBlocker(m_outputIccCombo);
     const QSignalBlocker continueBlocker(m_continueCheck);
     const QSignalBlocker grayBitsBlocker(m_grayBitsCombo);
+    const QSignalBlocker outputValidationBlocker(m_outputValidationCombo);
     const QSignalBlocker timeoutBlocker(m_timeoutSpin);
     m_autoCheck->setChecked(settings.autoafterslice);
     m_intentCombo->setCurrentIndex(
@@ -198,7 +213,10 @@ void HostRipSettingsPanel::SetSettings(const hostripsettings& settings)
     m_continueCheck->setChecked(settings.continueonerror);
     m_grayBitsCombo->setCurrentIndex(
         m_grayBitsCombo->findData(settings.devicegraybits));
+    m_outputValidationCombo->setCurrentIndex(
+        m_outputValidationCombo->findData(settings.outputvalidationmode));
     m_timeoutSpin->setValue(settings.timeoutseconds);
+    UpdateOutputPath();
     RefreshControls();
 }
 
@@ -212,13 +230,20 @@ void HostRipSettingsPanel::SetPackageDirectory(const QString& directory)
     m_packageDirectory = directory;
     m_inputPathEdit->setText(
         directory.isEmpty() ? QString{} : directory + QStringLiteral("/layers"));
-    m_outputDirectory = directory.isEmpty()
-        ? QString{} : directory + QStringLiteral("/rip");
+    UpdateOutputPath();
+    m_requestValid = false;
+    RefreshControls();
+}
+
+void HostRipSettingsPanel::UpdateOutputPath()
+{
+    m_outputDirectory = m_packageDirectory.isEmpty()
+        ? QString{}
+        : QDir(m_packageDirectory).filePath(
+            HostRipSettingsStore::EffectiveOutputDirectoryName(Settings()));
     m_outputExists = !m_outputDirectory.isEmpty()
         && QFileInfo(m_outputDirectory).isDir();
     m_outputPathEdit->setText(m_outputDirectory);
-    m_requestValid = false;
-    RefreshControls();
 }
 
 QString HostRipSettingsPanel::PackageDirectory() const
@@ -289,6 +314,7 @@ void HostRipSettingsPanel::RefreshControls()
     m_inputIccCombo->setEnabled(editable);
     m_outputIccCombo->setEnabled(editable);
     m_continueCheck->setEnabled(editable);
+    m_outputValidationCombo->setEnabled(editable);
     m_grayBitsCombo->setEnabled(editable);
     m_timeoutSpin->setEnabled(editable);
     m_runButton->setEnabled(

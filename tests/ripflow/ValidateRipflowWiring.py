@@ -44,10 +44,17 @@ def main() -> int:
     )
     require(
         'QStringLiteral("/layers")' in panel
-        and 'QStringLiteral("/rip")' in panel,
-        "layers and rip are not shown as sibling Package paths",
+        and "EffectiveOutputDirectoryName" in panel
+        and 'QStringLiteral("rip_diagnostic")' in controller,
+        "strict and diagnostic outputs are not shown as sibling Package paths",
     )
-    print("RIPFLOW_WIRING_PASS strict_hook=1 shell_free=1 sibling_paths=1")
+    require(
+        "DiagnosticUnvalidated" in controller
+        and 'QStringLiteral("RIP_DIAGNOSTIC_SAVED")' in controller
+        and 'QStringLiteral("s2PublicationEligible"), false' in controller,
+        "diagnostic output is not isolated from strict S2 publication",
+    )
+    print("RIPFLOW_WIRING_PASS strict_hook=1 shell_free=1 sibling_paths=1 diagnostic_isolated=1")
     return 0
 
 

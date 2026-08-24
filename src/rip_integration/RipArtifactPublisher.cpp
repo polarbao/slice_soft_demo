@@ -62,11 +62,12 @@ RipArtifactPublishResult PublishRipArtifact(
     const RipArtifactPublishRequest& request)
 {
     RipArtifactPublishResult result;
-    if (request.output_directory_name != "rip")
+    if (request.output_directory_name != "rip"
+        && request.output_directory_name != "rip_diagnostic")
     {
         result.status = RipStatus::Failure(
             "RIP_PUBLISH_OUTPUT_DIRECTORY_INVALID",
-            "the published RIP directory name is fixed to 'rip'");
+            "the published RIP directory name must be 'rip' or 'rip_diagnostic'");
         return result;
     }
     if (!request.package_directory.is_absolute()

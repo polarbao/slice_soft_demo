@@ -15,13 +15,16 @@ package/
   rip/
     rip_result.json
     rip_000000.tif
+  rip_diagnostic/              # 仅在显式诊断模式生成，不可打印
+    rip_diagnostic_result.json
+    rip_000000.tif
 ```
 
-`layers` 保持原名，`rip` 与其同级。已有 `rip` 时不会覆盖。
+`layers` 保持原名，`rip` 和 `rip_diagnostic` 与其同级。两个输出目录都不会覆盖已有内容。
 
 ## 2. 设置与运行
 
-在右侧“RIP 设置”页配置渲染意图、白色语义、ICC、失败策略、输出 grayBits 校验期望和超时。
+在右侧“RIP 设置”页配置渲染意图、白色语义、ICC、失败策略、输出验证、grayBits 参考阈值和超时。
 “切片完成后自动处理”默认关闭；手动与自动模式使用同一个 QProcess 控制器和同一组前置/输出
 检查。自动模式只在切片成功且结果严格加载成功后启动。
 
@@ -30,6 +33,10 @@ canonical path、大小和 SHA-256，发布 `rip` 前再次核对；外部 RIP �
 
 当前 Package 尚未提供 `whiteSemantics` 时，“跟随切片包”会保持禁用；本地候选验证可显式选择
 “透明”。颜色模式只允许 0。grayBits 只校验真实输出范围，不会向当前 RIP CLI 传入算法参数。
+
+“输出验证”默认选择“严格 S2（可发布）”。只有需要采集当前 RIP 的实际通道证据时，才显式选择
+“诊断保存（不可打印）”：程序仍检查输出结构、层数、尺寸和源 Package 身份，但把 W/S/V 超限
+记入报告并保存到 `rip_diagnostic`，不会生成严格 `rip`。
 
 当前已验证的本地子集：
 
@@ -84,6 +91,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/TestRipModulePackage
 成功后 `rip_result.json` 记录输入 manifest hash、模块 hash、设置、退出码、耗时、W/S/V 最小/最大值
 以及 `EXTERNAL_VALIDATION_DEFERRED`。RIP 失败、取消或超时不回滚有效切片包，只清理本次
 `.rip.staging.*`；UI 会分别保留“切片成功”和 RIP 终态。
+
+诊断完成后读取 `rip_diagnostic/rip_diagnostic_result.json`。它固定包含
+`status=diagnostic_unvalidated`、`s2PublicationEligible=false`、参考上限、W/S/V 最小/最大值、
+逐通道超限样本数和首个超限坐标。该结果只供合同分析，不能送入打印流程。
 
 清理 staging 前会拒绝 junction、符号链接和 Windows reparse point；不安全目录不会递归删除，而是
 保留现场并报告 `RIP_STAGING_CLEANUP_REFUSED`。

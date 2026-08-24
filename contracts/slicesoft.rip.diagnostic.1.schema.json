@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "slicesoft.rip.result.1",
-  "title": "SliceSoft external RIP result",
+  "$id": "slicesoft.rip.diagnostic.1",
+  "title": "SliceSoft unvalidated external RIP diagnostic result",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -16,8 +16,8 @@
     "output"
   ],
   "properties": {
-    "schema": { "const": "slicesoft.rip.result.1" },
-    "status": { "enum": ["succeeded", "failed", "cancelled"] },
+    "schema": { "const": "slicesoft.rip.diagnostic.1" },
+    "status": { "const": "diagnostic_unvalidated" },
     "externalValidation": { "const": "EXTERNAL_VALIDATION_DEFERRED" },
     "sourcePackage": { "type": "string", "minLength": 1 },
     "sourceManifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
@@ -35,8 +35,9 @@
       "allOf": [
         { "$ref": "slicesoft.rip.settings.1.schema.json" },
         {
+          "required": ["outputValidationMode"],
           "properties": {
-            "outputValidationMode": { "const": "strict_s2" }
+            "outputValidationMode": { "const": "diagnostic_unvalidated" }
           }
         }
       ]
@@ -46,7 +47,7 @@
       "additionalProperties": false,
       "required": ["exitCode", "elapsedMs"],
       "properties": {
-        "exitCode": { "type": "integer" },
+        "exitCode": { "const": 0 },
         "elapsedMs": { "type": "integer", "minimum": 0 },
         "stdout": { "type": "string" },
         "stderr": { "type": "string" }
@@ -55,13 +56,40 @@
     "output": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["directory", "layerCount", "filePattern", "minimum", "maximum"],
+      "required": [
+        "directory",
+        "layerCount",
+        "filePattern",
+        "minimum",
+        "maximum",
+        "s2DropLimitsPassed",
+        "s2PublicationEligible",
+        "referenceDropLimit",
+        "samplesExceedingLimit"
+      ],
       "properties": {
-        "directory": { "const": "rip" },
-        "layerCount": { "type": "integer", "minimum": 0 },
+        "directory": { "const": "rip_diagnostic" },
+        "layerCount": { "type": "integer", "minimum": 1 },
         "filePattern": { "const": "rip_%06d.tif" },
         "minimum": { "$ref": "#/$defs/channelRange" },
-        "maximum": { "$ref": "#/$defs/channelRange" }
+        "maximum": { "$ref": "#/$defs/channelRange" },
+        "s2DropLimitsPassed": { "type": "boolean" },
+        "s2PublicationEligible": { "const": false },
+        "referenceDropLimit": { "$ref": "#/$defs/channelRange" },
+        "samplesExceedingLimit": { "$ref": "#/$defs/channelCount" },
+        "firstExceedance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["layerIndex", "channel", "value", "limit", "x", "y"],
+          "properties": {
+            "layerIndex": { "type": "integer", "minimum": 0 },
+            "channel": { "enum": ["W", "S", "V"] },
+            "value": { "type": "integer", "minimum": 0, "maximum": 255 },
+            "limit": { "type": "integer", "minimum": 0, "maximum": 255 },
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 }
+          }
+        }
       }
     }
   },
@@ -74,6 +102,16 @@
         "W": { "type": "integer", "minimum": 0, "maximum": 255 },
         "S": { "type": "integer", "minimum": 0, "maximum": 255 },
         "V": { "type": "integer", "minimum": 0, "maximum": 255 }
+      }
+    },
+    "channelCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["W", "S", "V"],
+      "properties": {
+        "W": { "type": "integer", "minimum": 0 },
+        "S": { "type": "integer", "minimum": 0 },
+        "V": { "type": "integer", "minimum": 0 }
       }
     }
   }

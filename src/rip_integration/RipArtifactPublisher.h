@@ -23,9 +23,11 @@ struct RipArtifactPublishResult
 };
 
 /**
- * @brief Rename a validated staging directory to Package/rip.
+ * @brief Rename a validated staging directory to an approved Package child.
  *
- * Existing output fails closed and is never removed or replaced.
+ * Approved names are `rip` for strict S2 output and `rip_diagnostic` for
+ * explicitly unvalidated evidence. Existing output fails closed and is never
+ * removed or replaced.
  */
 [[nodiscard]] RipArtifactPublishResult PublishRipArtifact(
     const RipArtifactPublishRequest& request);

@@ -1,6 +1,6 @@
 {
-  "schema": "slicesoft.rip.result.1",
-  "status": "succeeded",
+  "schema": "slicesoft.rip.diagnostic.1",
+  "status": "diagnostic_unvalidated",
   "externalValidation": "EXTERNAL_VALIDATION_DEFERRED",
   "sourcePackage": "package",
   "sourceManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -20,21 +20,33 @@
     "continueOnError": false,
     "deviceGrayBits": 2,
     "timeoutSeconds": 3600,
-    "outputValidationMode": "strict_s2",
+    "outputValidationMode": "diagnostic_unvalidated",
     "outputDirectoryName": "rip",
     "existingOutputPolicy": "fail_closed"
   },
   "process": {
     "exitCode": 0,
-    "elapsedMs": 1250,
+    "elapsedMs": 15829,
     "stdout": "RIP completed",
     "stderr": ""
   },
   "output": {
-    "directory": "rip",
-    "layerCount": 2,
+    "directory": "rip_diagnostic",
+    "layerCount": 175,
     "filePattern": "rip_%06d.tif",
     "minimum": { "W": 0, "S": 0, "V": 0 },
-    "maximum": { "W": 6, "S": 9, "V": 9 }
+    "maximum": { "W": 255, "S": 9, "V": 9 },
+    "s2DropLimitsPassed": false,
+    "s2PublicationEligible": false,
+    "referenceDropLimit": { "W": 6, "S": 9, "V": 9 },
+    "samplesExceedingLimit": { "W": 42, "S": 0, "V": 0 },
+    "firstExceedance": {
+      "layerIndex": 30,
+      "channel": "W",
+      "value": 255,
+      "limit": 6,
+      "x": 299,
+      "y": 151
+    }
   }
 }

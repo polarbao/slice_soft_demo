@@ -117,7 +117,11 @@ void HostMainWindow::OnRipCompleted(
     SetWorkflowEditingEnabled(m_client.IsOpen());
     m_statusLabel->setText(
         success
-            ? QStringLiteral("切片成功 · RIP 本地候选完成 · 外部验收延期")
+            ? (code == QStringLiteral("RIP_DIAGNOSTIC_SAVED")
+                ? QStringLiteral(
+                    "切片成功 · RIP 诊断数据已保存 · 未按 S2 发布，不可打印")
+                : QStringLiteral(
+                    "切片成功 · RIP 本地候选完成 · 外部验收延期"))
             : cancelled
                 ? QStringLiteral("切片成功 · RIP 已取消")
                 : QStringLiteral("切片成功 · RIP 失败 · %1 · %2")
@@ -131,7 +135,8 @@ void HostMainWindow::OnOpenRipOutputRequested(
     const QString packageDirectory =
         m_packageReviewController->Review().packagedirectory;
     const QString expected = QDir(packageDirectory).filePath(
-        QStringLiteral("rip"));
+        HostRipSettingsStore::EffectiveOutputDirectoryName(
+            m_ripSettingsPanel->Settings()));
     if (packageDirectory.isEmpty()
         || QDir::cleanPath(outputDirectory) != QDir::cleanPath(expected)
         || !QFileInfo(outputDirectory).isDir()
@@ -175,6 +180,11 @@ void HostMainWindow::RefreshRipRequestStatus()
     m_ripSettingsPanel->SetRequestStatus(
         valid,
         valid
-            ? QStringLiteral("RIP 已就绪 · 输出将发布到同级 rip 目录")
+            ? (HostRipSettingsStore::IsDiagnosticMode(
+                   m_ripSettingsPanel->Settings())
+                ? QStringLiteral(
+                    "RIP 已就绪 · 诊断数据将保存到同级 rip_diagnostic；不可打印")
+                : QStringLiteral(
+                    "RIP 已就绪 · 严格输出将发布到同级 rip 目录"))
             : QStringLiteral("RIP 前置检查未通过 · %1").arg(error));
 }

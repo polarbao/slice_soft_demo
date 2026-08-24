@@ -29,6 +29,9 @@ int main()
     hostripsettings defaults = HostRipSettingsStore::Defaults();
     bool pass = Expect(!defaults.autoafterslice, "automatic RIP defaults off")
         && Expect(
+            defaults.outputvalidationmode == QStringLiteral("strict_s2"),
+            "strict S2 publication is the default")
+        && Expect(
             defaults.outputdirectoryname == QStringLiteral("rip"),
             "output directory is frozen")
         && Expect(
@@ -42,6 +45,21 @@ int main()
         && Expect(!restored.autoafterslice, "restored auto remains off")
         && Expect(restored.renderintent == 0, "intent round trips")
         && Expect(restored.devicegraybits == 2, "grayBits round trips")
+        && Expect(
+            restored.outputvalidationmode == QStringLiteral("strict_s2"),
+            "validation mode round trips")
+        && pass;
+
+    hostripsettings diagnostic = defaults;
+    diagnostic.outputvalidationmode =
+        QStringLiteral("diagnostic_unvalidated");
+    pass = Expect(
+        HostRipSettingsStore::Validate(diagnostic),
+        "explicit diagnostic mode is valid")
+        && Expect(
+            HostRipSettingsStore::EffectiveOutputDirectoryName(diagnostic)
+                == QStringLiteral("rip_diagnostic"),
+            "diagnostic mode uses an isolated output directory")
         && pass;
 
     storage.beginGroup(QStringLiteral("hostflow/rip"));
@@ -65,6 +83,12 @@ int main()
     pass = Expect(
         !HostRipSettingsStore::Validate(invalid),
         "module-relative path escape fails")
+        && pass;
+    invalid = defaults;
+    invalid.outputvalidationmode = QStringLiteral("ignore_s2");
+    pass = Expect(
+        !HostRipSettingsStore::Validate(invalid),
+        "unknown output validation mode fails")
         && pass;
     if (pass)
     {

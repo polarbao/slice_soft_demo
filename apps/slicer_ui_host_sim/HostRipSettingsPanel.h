@@ -42,6 +42,7 @@ signals:
 
 private:
     void BuildInterface();
+    void UpdateOutputPath();
     void RefreshControls();
 
     QCheckBox* m_autoCheck{nullptr};
@@ -52,6 +53,7 @@ private:
     QComboBox* m_outputIccCombo{nullptr};
     QCheckBox* m_continueCheck{nullptr};
     QComboBox* m_grayBitsCombo{nullptr};
+    QComboBox* m_outputValidationCombo{nullptr};
     QSpinBox* m_timeoutSpin{nullptr};
     QLineEdit* m_modulePathEdit{nullptr};
     QLineEdit* m_inputPathEdit{nullptr};

@@ -9,6 +9,7 @@
   "continueOnError": false,
   "deviceGrayBits": 2,
   "timeoutSeconds": 3600,
+  "outputValidationMode": "strict_s2",
   "outputDirectoryName": "rip",
   "existingOutputPolicy": "fail_closed"
 }

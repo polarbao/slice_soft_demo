@@ -1,7 +1,7 @@
 # TASKS_RIPFLOW 切片后外置 RIP 集成专项任务清单
 
 > 文档状态：**SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED**
-> 版本：v2.0 ｜ 日期：2026-08-18 ｜ 用户授权：2026-08-17
+> 版本：v2.2 ｜ 日期：2026-08-18 ｜ 用户授权：2026-08-17、2026-08-18
 > 定位：独立补充专项，不占 Stage 编号
 > 权威决策：`docs/slice/DOC/DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
 > 准备文档：`docs/slice/DOC/DOC_PREP_RIPFLOW_外置模块设置与自动后处理准备.md`
@@ -43,8 +43,9 @@ RIPFLOW-00 / A / B / C / D COMPLETE
 
 ```text
 采用 QProcess 进程外调用，禁止宿主进程内加载 RipSlicer.dll；
-自动 RIP 默认关闭；手动与自动复用同一严格路径；
-保留 package/layers，不重命名、不改 manifest；同级输出固定 package/rip；
+自动 RIP 默认关闭；手动与自动复用同一进程控制器，严格 S2 发布保持默认；
+保留 package/layers，不重命名、不改 manifest；同级严格输出固定 package/rip；
+显式诊断模式只保存到 package/rip_diagnostic，绝不冒充 package/rip；
 RIP 只在切片成功且 package strict 加载成功后启动；
 RIP 设置独立于切片 Profile 和 HostWorkspaceState v6；
 S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
@@ -60,7 +61,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 | RIPFLOW-A | 可迁移运行时与机器合同 | A-01..03 | COMPLETE |
 | RIPFLOW-B | 设置、持久化和 UI | B-01..03 | COMPLETE |
 | RIPFLOW-C | 执行、验证、发布和自动接线 | C-01..04 | COMPLETE |
-| RIPFLOW-D | 矩阵、Runtime 迁移、本地收口和缺陷修复 | D-01..05 | COMPLETE |
+| RIPFLOW-D | 矩阵、Runtime 迁移、本地收口和缺陷修复 | D-01..06 | COMPLETE |
 | RIPFLOW-E | 外部分发与生产验收 | E-01..02 | BLOCKED_EXTERNAL |
 
 依赖主链：
@@ -69,7 +70,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 00 -> A-01 -> A-02 -> A-03
           \-> B-01 -> B-02 -> B-03
 A-03 + B-03 -> C-01 -> C-02 -> C-03 -> C-04
-C-04 -> D-01 -> D-02 -> D-03 -> D-04 -> D-05
+C-04 -> D-01 -> D-02 -> D-03 -> D-04 -> D-05 -> D-06
 D-03 + 外部材料 -> E-01/E-02
 ```
 
@@ -395,6 +396,37 @@ RIP 定向 CTest 6/6 PASS；`PrepareSliceSoftRuntime.ps1 -Config Release` 完成
 module/UI self-test PASS，且宿主二进制 SHA-256 与构建产物一致。真实 `635 x 600` Package 的
 `--rip-job-self-test` 已穿过同步前置检查并按 0 ms 取消，结果 `RIP_CANCELLED` PASS，未再返回 DPI 准入错误。
 
+### RIPFLOW-D-06 隔离的 RIP 诊断保存与通道证据
+
+**状态：COMPLETE / PASS（2026-08-18）**
+
+**依赖：** D-05；用户授权在不按 S2 墨滴合同发布的前提下保存 RIP 结果
+
+**内容：** 新增显式 `diagnostic_unvalidated` 输出验证模式。该模式保持进程退出码、路径、层数、
+索引、unsigned 8-bit、通道数、contiguous/stripped、尺寸归一化、单页 TIFF、取消和源 Package
+身份检查；只把 W/S/V 墨滴上限从发布 Gate 改为统计证据。结果隔离发布为同级
+`rip_diagnostic`，不得写入或冒充严格 `rip`。
+
+**验收：** 默认仍为 `strict_s2`；严格模式超限继续返回 `RIP_OUTPUT_DROP_LIMIT_EXCEEDED`；诊断
+模式对结构合法的超限输出完成全部层扫描并写出 `slicesoft.rip.diagnostic.1`；报告明确
+`s2PublicationEligible=false`、逐通道最小/最大值、超限样本计数和首个坐标；已有输出不覆盖；
+UI 和命令行均明确“不可打印”。
+
+**实际结果：** 新增诊断设置、独立 schema/fixture、核心统计、受控 `rip_diagnostic` 原子发布、
+Qt 选项与 `--output-validation-mode diagnostic_unvalidated` 自测入口。Release Hostx64 的
+`rip_integration_unit_tests`、设置测试和宿主构建 PASS，RIP 定向 CTest 6/6 PASS，合同门禁
+`positive=4 negative=5` PASS。对用户 175 层、`1842 x 623` Package 使用真实 `rip_project`
+运行，RIP 进程 `exitCode=0`，175/175 文件完成结构检查并在 42,955 ms 发布到
+`package/rip_diagnostic`；严格 `package/rip` 未生成。诊断报告确认 W/S/V 最小值均为 0、最大值
+均为 255，三个通道各有 10,875,980 个样本超过当前 grayBits=2 参考上限；首个记录为第 30 层
+W=255、limit=6、坐标 `(282,151)`。这证明此前中止发生在切片宿主的 S2 后置合同，而非 RIP
+进程未完成；同时也证明当前 255 语义不能直接按“滴数 255”发布，S2 修订仍须先确认供应方通道
+编码/极性和打印侧解释。
+
+最终收口复验再次通过合同门禁、Release Hostx64 构建与 RIP 定向 CTest 6/6。默认 Runtime 的
+再次部署因用户当前运行中的 `slicer_ui_host_sim.exe`（PID 8244）被部署脚本主动拒绝；已部署版本
+包含诊断功能，最新自测断言构建产物须在关闭该进程后再同步，未强制终止用户进程。
+
 ## 9. RIPFLOW-E 外部阻塞
 
 ### RIPFLOW-E-01 二进制、lcms2、ICC 与私有 LibTIFF 分发闭合
@@ -423,12 +455,13 @@ ChannelSplitter、干净机、并行/长稳和必要实物工艺验证。
 **验收：** 目标环境真实 `rip_%06d.tif`、层数/尺寸/量化/白语义/极性证据和双方签字完整；失败
 样例可重复；之后才允许 `EXTERNAL_ACCEPTED`。
 
-**实际结果：** 目标 RIP、打印软件和实物证据未提供，保持 `BLOCKED_EXTERNAL`。
+**实际结果：** D-06 已取得真实 175 层 W/S/V `0..255` 与逐通道超限计数，但供应方未说明 7 通道
+顺序、255 的量化/极性含义，目标打印软件和实物证据也未提供，因此保持 `BLOCKED_EXTERNAL`。
 
 ## 10. 专项完成 Gate
 
-本地完成必须同时满足：A/B/C/D 全部 `COMPLETE / PASS`；自动默认关闭；手动与自动共用唯一严格
-执行链；`modules/rip` 在隔离 Runtime 可迁移；真实 TIFF Gate 和负例矩阵通过；原 S1 package
+本地完成必须同时满足：A/B/C/D 全部 `COMPLETE / PASS`；自动默认关闭；严格发布默认不变且诊断
+输出隔离；`modules/rip` 在隔离 Runtime 可迁移；真实 TIFF Gate 和负例矩阵通过；原 S1 package
 逐文件身份无变化；报告明确外部延期。
 
 E-01/E-02 未完成不阻止本地专项标记 `SLICER_SIDE_COMPLETE`，但阻止外部分发、生产默认开启和
@@ -449,3 +482,5 @@ E-01/E-02 未完成不阻止本地专项标记 `SLICER_SIDE_COMPLETE`，但阻�
 | 2026-08-17 | v1.8 | P1 安全复核闭合：S1/S2 后台可取消验证、源 Package 运行时身份复验、junction/reparse 安全清理及 unsigned sample Gate；Debug/Release 各 12/12 定向 CTest、Release Runtime 与真实 local/lifecycle/migration Gate PASS |
 | 2026-08-17 | v1.9 | D-04 完成：定位 1842 -> 1844 为 RIP 固定 4 像素对齐并在 staging 裁回 Package 原宽，用户包前 30 层真实发布 PASS；非确定性尺寸差异继续拒绝；完整包随后暴露的 W=255 仍按 S2 C6 fail-closed |
 | 2026-08-18 | v2.0 | D-05 完成：确认 RIP 不读取输入 DPI，剔除切片宿主 600x600 前置限制与 S1/S2 DPI Gate；非 600/缺失 DPI 元数据单测、Release 构建、6/6 CTest 及真实 635x600 Package 取消作业 PASS |
+| 2026-08-18 | v2.1 | D-06 完成：新增默认关闭的隔离诊断保存；真实 175 层 RIP exitCode=0、175/175 输出保存到 `rip_diagnostic`，记录 W/S/V 各 10,875,980 个超限样本且不生成严格 `rip`；S2 语义修订继续等待供应方/打印侧解释 |
+| 2026-08-18 | v2.2 | D-06 最终复验：合同门禁、Release Hostx64 构建与 RIP 定向 CTest 6/6 PASS；记录默认 Runtime 被运行中 PID 8244 锁定，未强制终止用户进程，关闭后再同步最新自测断言构建 |

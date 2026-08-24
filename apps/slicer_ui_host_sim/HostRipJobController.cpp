@@ -489,13 +489,15 @@ bool HostRipJobController::Start(
         }
         return false;
     }
+    const QString outputDirectoryName =
+        HostRipSettingsStore::EffectiveOutputDirectoryName(settings);
     if (QFileInfo(QDir(m_package.packageDirectory).filePath(
-            settings.outputdirectoryname)).exists())
+            outputDirectoryName)).exists())
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral("RIP 输出目录已存在，首版不会覆盖：%1/rip")
-                         .arg(m_package.packageDirectory);
+            *error = QStringLiteral("RIP 输出目录已存在，不会覆盖：%1/%2")
+                         .arg(m_package.packageDirectory, outputDirectoryName);
         }
         return false;
     }
@@ -831,6 +833,9 @@ void HostRipJobController::StartOutputValidation(const int exitCode)
         m_package.widthPx,
         m_package.heightPx,
         m_settings.devicegraybits,
+        HostRipSettingsStore::IsDiagnosticMode(m_settings)
+            ? slicesoft::rip::RipOutputValidationMode::DiagnosticUnvalidated
+            : slicesoft::rip::RipOutputValidationMode::StrictS2,
         [cancelToken]()
         {
             return cancelToken->load(std::memory_order_relaxed);
@@ -919,6 +924,15 @@ void HostRipJobController::FinalizeValidatedOutput(
     const slicesoft::rip::RipOutputValidationResult& validation)
 {
     m_phase = Phase::Publishing;
+    const bool diagnostic =
+        HostRipSettingsStore::IsDiagnosticMode(m_settings);
+    if (!diagnostic && !validation.s2_drop_limits_passed)
+    {
+        FinishFailure(
+            QStringLiteral("RIP_OUTPUT_STRICT_STATE_INVALID"),
+            QStringLiteral("严格 S2 验证产生了未通过的内部状态。"));
+        return;
+    }
 
     std::array<int, 3> minima{255, 255, 255};
     std::array<int, 3> maxima{0, 0, 0};
@@ -942,38 +956,88 @@ void HostRipJobController::FinalizeValidatedOutput(
         {QStringLiteral("continueOnError"), m_settings.continueonerror},
         {QStringLiteral("deviceGrayBits"), m_settings.devicegraybits},
         {QStringLiteral("timeoutSeconds"), m_settings.timeoutseconds},
+        {QStringLiteral("outputValidationMode"),
+         m_settings.outputvalidationmode},
         {QStringLiteral("outputDirectoryName"), QStringLiteral("rip")},
         {QStringLiteral("existingOutputPolicy"), QStringLiteral("fail_closed")}};
+    const QJsonObject moduleObject{
+        {QStringLiteral("moduleId"), QStringLiteral("slicesoft.external_rip")},
+        {QStringLiteral("version"), m_runtime.version},
+        {QStringLiteral("manifestSha256"), m_runtime.manifestSha256}};
+    const QJsonObject processObject{
+        {QStringLiteral("exitCode"), exitCode},
+        {QStringLiteral("elapsedMs"), m_elapsed.elapsed()},
+        {QStringLiteral("stdout"), QString::fromUtf8(m_stdout)},
+        {QStringLiteral("stderr"), QString::fromUtf8(m_stderr)}};
+    QJsonObject outputObject{
+        {QStringLiteral("directory"), diagnostic
+             ? QStringLiteral("rip_diagnostic") : QStringLiteral("rip")},
+        {QStringLiteral("layerCount"), static_cast<int>(validation.layers.size())},
+        {QStringLiteral("filePattern"), QStringLiteral("rip_%06d.tif")},
+        {QStringLiteral("minimum"), QJsonObject{
+             {QStringLiteral("W"), minima[0]},
+             {QStringLiteral("S"), minima[1]},
+             {QStringLiteral("V"), minima[2]}}},
+        {QStringLiteral("maximum"), QJsonObject{
+             {QStringLiteral("W"), maxima[0]},
+             {QStringLiteral("S"), maxima[1]},
+             {QStringLiteral("V"), maxima[2]}}}};
+    if (diagnostic)
+    {
+        const std::array<int, 3> limits = m_settings.devicegraybits == 1
+            ? std::array<int, 3>{2, 3, 3}
+            : std::array<int, 3>{6, 9, 9};
+        outputObject.insert(
+            QStringLiteral("s2DropLimitsPassed"),
+            validation.s2_drop_limits_passed);
+        outputObject.insert(
+            QStringLiteral("s2PublicationEligible"), false);
+        outputObject.insert(
+            QStringLiteral("referenceDropLimit"), QJsonObject{
+                {QStringLiteral("W"), limits[0]},
+                {QStringLiteral("S"), limits[1]},
+                {QStringLiteral("V"), limits[2]}});
+        outputObject.insert(
+            QStringLiteral("samplesExceedingLimit"), QJsonObject{
+                {QStringLiteral("W"), static_cast<qint64>(
+                    validation.samples_exceeding_drop_limit[0])},
+                {QStringLiteral("S"), static_cast<qint64>(
+                    validation.samples_exceeding_drop_limit[1])},
+                {QStringLiteral("V"), static_cast<qint64>(
+                    validation.samples_exceeding_drop_limit[2])}});
+        if (validation.first_drop_violation.has_value())
+        {
+            const auto& violation = *validation.first_drop_violation;
+            outputObject.insert(
+                QStringLiteral("firstExceedance"), QJsonObject{
+                    {QStringLiteral("layerIndex"), static_cast<qint64>(
+                        violation.layer_index)},
+                    {QStringLiteral("channel"), QString::fromStdString(
+                        violation.channel)},
+                    {QStringLiteral("value"), violation.value},
+                    {QStringLiteral("limit"), violation.limit},
+                    {QStringLiteral("x"), static_cast<qint64>(violation.x)},
+                    {QStringLiteral("y"), static_cast<qint64>(violation.y)}});
+        }
+    }
     const QJsonObject result{
-        {QStringLiteral("schema"), QStringLiteral("slicesoft.rip.result.1")},
-        {QStringLiteral("status"), QStringLiteral("succeeded")},
+        {QStringLiteral("schema"), diagnostic
+             ? QStringLiteral("slicesoft.rip.diagnostic.1")
+             : QStringLiteral("slicesoft.rip.result.1")},
+        {QStringLiteral("status"), diagnostic
+             ? QStringLiteral("diagnostic_unvalidated")
+             : QStringLiteral("succeeded")},
         {QStringLiteral("externalValidation"), QStringLiteral("EXTERNAL_VALIDATION_DEFERRED")},
         {QStringLiteral("sourcePackage"), m_package.packageDirectory},
         {QStringLiteral("sourceManifestSha256"), m_package.manifestSha256},
-        {QStringLiteral("module"), QJsonObject{
-             {QStringLiteral("moduleId"), QStringLiteral("slicesoft.external_rip")},
-             {QStringLiteral("version"), m_runtime.version},
-             {QStringLiteral("manifestSha256"), m_runtime.manifestSha256}}},
+        {QStringLiteral("module"), moduleObject},
         {QStringLiteral("settings"), settingsObject},
-        {QStringLiteral("process"), QJsonObject{
-             {QStringLiteral("exitCode"), exitCode},
-             {QStringLiteral("elapsedMs"), m_elapsed.elapsed()},
-             {QStringLiteral("stdout"), QString::fromUtf8(m_stdout)},
-             {QStringLiteral("stderr"), QString::fromUtf8(m_stderr)}}},
-        {QStringLiteral("output"), QJsonObject{
-             {QStringLiteral("directory"), QStringLiteral("rip")},
-             {QStringLiteral("layerCount"), static_cast<int>(validation.layers.size())},
-             {QStringLiteral("filePattern"), QStringLiteral("rip_%06d.tif")},
-             {QStringLiteral("minimum"), QJsonObject{
-                  {QStringLiteral("W"), minima[0]},
-                  {QStringLiteral("S"), minima[1]},
-                  {QStringLiteral("V"), minima[2]}}},
-             {QStringLiteral("maximum"), QJsonObject{
-                  {QStringLiteral("W"), maxima[0]},
-                  {QStringLiteral("S"), maxima[1]},
-                  {QStringLiteral("V"), maxima[2]}}}}}};
+        {QStringLiteral("process"), processObject},
+        {QStringLiteral("output"), outputObject}};
     QFile resultFile(QDir(m_stagingDirectory).filePath(
-        QStringLiteral("rip_result.json")));
+        diagnostic
+            ? QStringLiteral("rip_diagnostic_result.json")
+            : QStringLiteral("rip_result.json")));
     if (!resultFile.open(QIODevice::WriteOnly | QIODevice::Truncate)
         || resultFile.write(QJsonDocument(result).toJson(QJsonDocument::Indented)) < 0
         || !resultFile.flush())
@@ -984,10 +1048,17 @@ void HostRipJobController::FinalizeValidatedOutput(
         return;
     }
     resultFile.close();
-    PublishState(QStringLiteral("publishing"), QStringLiteral("正在发布 RIP 输出"));
+    const QString outputDirectoryName =
+        HostRipSettingsStore::EffectiveOutputDirectoryName(m_settings);
+    PublishState(
+        QStringLiteral("publishing"),
+        diagnostic ? QStringLiteral("正在保存不可打印的 RIP 诊断数据")
+                   : QStringLiteral("正在发布严格 S2 RIP 输出"));
     const auto published = slicesoft::rip::PublishRipArtifact(
         slicesoft::rip::RipArtifactPublishRequest{
-            FsPath(m_package.packageDirectory), FsPath(m_stagingDirectory), "rip"});
+            FsPath(m_package.packageDirectory),
+            FsPath(m_stagingDirectory),
+            outputDirectoryName.toStdString()});
     if (!published.status.ok)
     {
         FinishFailure(RipCode(published.status), RipMessage(published.status));
@@ -1003,9 +1074,13 @@ void HostRipJobController::FinalizeValidatedOutput(
     emit SigCompleted(
         true,
         false,
-        QStringLiteral("RIP_SUCCEEDED"),
-        QStringLiteral("%1 层已校验并发布；外部验收仍延期")
-            .arg(static_cast<qulonglong>(validation.layers.size())),
+        diagnostic ? QStringLiteral("RIP_DIAGNOSTIC_SAVED")
+                   : QStringLiteral("RIP_SUCCEEDED"),
+        diagnostic
+            ? QStringLiteral("%1 层已完成结构检查并保存；未按 S2 发布，不可打印")
+                  .arg(static_cast<qulonglong>(validation.layers.size()))
+            : QStringLiteral("%1 层已校验并发布；外部验收仍延期")
+                  .arg(static_cast<qulonglong>(validation.layers.size())),
         outputDirectory,
         elapsedMs);
 }

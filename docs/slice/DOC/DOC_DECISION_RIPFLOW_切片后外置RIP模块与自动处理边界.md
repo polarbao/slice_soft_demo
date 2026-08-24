@@ -1,7 +1,7 @@
 # DOC_DECISION_RIPFLOW 切片后外置 RIP 模块与自动处理边界
 
 > 文档状态：**ACCEPTED / USER AUTHORIZED**
-> 版本：v1.3 ｜ 日期：2026-08-18
+> 版本：v1.4 ｜ 日期：2026-08-18
 > 定位：独立补充专项 `RIPFLOW` 的权威边界；不占 Stage 编号，不改写 Stage 14 历史结论
 > 任务真源：`docs/codex_task/current/TASKS_RIPFLOW_切片后外置RIP集成专项任务清单.md`
 > 上游合同：`DOC_DECISION_14_S2_RIP接口合同定案.md`、`DOC_DECISION_14F_外部验证延期与接口冻结.md`
@@ -19,6 +19,9 @@
   -> PREPARATION GATE PASS
   -> 开发阶段
 ```
+
+用户于 2026-08-18 进一步授权：在严格 S2 墨滴合同之外增加显式诊断保存路径，让 RIP 正常
+跑完并保留通道证据；验证结果不得冒充严格 S2 发布，通过诊断后再单独裁定 S2 修订。
 
 本专项交付目标：
 
@@ -65,7 +68,7 @@ README 所述完整实现源文件、CMake/qmake 工程、导入库、示例和�
 | 输入存储 | scanline/stripped 可用，tiled 实测失败 | S1 允许 stripped 或 tiled | 首版只声明 stripped 子集，tiled fail-closed |
 | 输出命名 | `slice.N.tiff` | S2 要求 `rip_%06d.tif` | 校验后仅重命名，不改写像素 |
 | 输出宽度 | 非 4 对齐宽度会向上扩到 4 像素边界 | 发布结果必须与输入 Grid 身份一致 | 只允许该确定性右侧补齐，完整校验后裁掉 1..3 列；其他尺寸差异 fail-closed |
-| W 上限 | `transparent=0` 实测可出现 W=9 | grayBits=2 时 W 必须 `<=6` | 真实像素扫描，不合格不发布 |
+| W/S/V 上限 | 完整 175 层实测可出现 255 | grayBits=2 时 W/S/V 必须 `<=6/9/9` | 严格模式不发布；显式诊断模式记录证据并隔离保存 |
 | 白语义 | CLI 只有 `transparent 0|1` | manifest `whiteSemantics` 为权威 | 映射未定前只允许显式候选并 fail-closed |
 | 颜色模式 | `colormode` 默认 0 | 未提供枚举和值域语义 | 首版只允许 0；其他值外部阻塞 |
 | 输出合同 | 固定 7 通道、LZW，实测写入 600 x 600 元数据 | S2 还要求 stripped、层数、量化和外部极性 | 从真实 TIFF 提取像素证据；DPI 标签不作 RIP 准入或发布 Gate |
@@ -111,6 +114,18 @@ slicer_ui_host_sim
 
 BAT/PowerShell 仍可作为诊断与验收入口，但不得成为 Qt 产品链的唯一执行机制。
 
+### 3.3 严格发布与诊断保存分离
+
+`strict_s2` 保持默认，继续执行现有 W/S/V 上限 Gate，只有全部检查通过才可发布 `package/rip`。
+新增 `diagnostic_unvalidated` 仅用于取得真实 RIP 证据：它仍严格检查进程退出码、受控路径、层数、
+索引、unsigned 8-bit、通道数、contiguous/stripped、尺寸、单页 TIFF、取消和源 Package 身份，
+但把 W/S/V 上限超限改为统计，不以此中止结果保存。
+
+诊断模式不是“关闭全部验证”，也不是 S2 降级发布。它只能写入 `package/rip_diagnostic`，结果
+schema 固定为 `slicesoft.rip.diagnostic.1`，并强制记录
+`status=diagnostic_unvalidated`、`s2PublicationEligible=false`、参考上限、逐通道范围/超限计数和
+首个超限坐标。打印软件不得把该目录作为可打印 `rip` 消费。
+
 ## 4. 目录与所有权决策
 
 ### 4.1 可迁移运行时模块
@@ -150,15 +165,21 @@ modules/rip/
     rip_000000.tif
     rip_000001.tif
     ...
+  rip_diagnostic/                 # 仅在显式诊断模式生成
+    rip_diagnostic_result.json
+    rip_000000.tif
+    rip_000001.tif
+    ...
 ```
 
 裁决：
 
 - `layers` 保持原名；本专项不得顺手重命名、迁移或改变其 manifest 相对路径；
-- RIP 最终目录名固定为 `rip`，与 `layers` 同级；
+- 严格 RIP 最终目录名固定为 `rip`；诊断目录固定为 `rip_diagnostic`，二者均与 `layers` 同级；
 - `layers`、manifest 和原报告归切片 Writer 所有；`rip` 归 RIPFLOW 所有；
 - `rip` 是下游派生产物，不加入或改写冻结 S1 manifest；原有层文件 SHA-256 必须前后不变；
 - 原始 CLI 输出先写到受控 `.rip.staging.<jobId>`，通过真实检查后改名并原子发布为 `rip`；
+- 诊断模式只把结构检查通过的输出原子发布为 `rip_diagnostic`，并明确标记不可打印；
 - 首版遇到已有 `rip`、无所有权标记或任一输出不合格时 fail-closed，不删除未知目录；
 - 取消/失败只能清理经路径约束证明属于本次作业的 staging，不能影响有效切片包。
 
@@ -180,6 +201,7 @@ RIP 设置使用独立 `slicesoft.rip.settings.1`，不并入 `HostSliceSettings
 | `continueOnError` | `false` | 自动流程默认失败即停 |
 | `deviceGrayBits` | `2` | 只约束真实输出 W/S/V 上限；当前 CLI 无 grayBits 参数，不得宣称它会改变 RIP 算法 |
 | `timeoutSeconds` | `3600` | 只允许 `1..86400`，超时后 terminate/kill 并清理本次 staging |
+| `outputValidationMode` | `strict_s2` | 可显式选择 `diagnostic_unvalidated`；后者只保存证据，不产生 S2 发布资格 |
 | `outputDirectoryName` | `rip` | 首版只读固定值 |
 | `existingOutputPolicy` | `fail_closed` | 不覆盖未知或既有结果 |
 
@@ -205,13 +227,15 @@ idle -> preflighting -> starting -> running -> validating -> publishing -> succe
 2. `HostPackageReviewController` 必须完成 strict 加载，不能在未验证 package 上启动 RIP；
 3. `autoAfterSlice=false` 时不创建进程、不创建目录，状态为 `not_requested`；
 4. 自动开启后先做 S1/manifest/layers/grayBits/whiteSemantics/stripped 前置检查；
-5. RIP 成功须通过真实输出 Gate 后才发布 `rip`；
+5. 严格模式须通过真实输出 Gate 后才发布 `rip`；诊断模式只可发布带不可打印标记的 `rip_diagnostic`；
 6. RIP 失败不改写“切片成功”，UI 必须分别显示“切片成功 / RIP 失败”；
 7. 关闭窗口、操作员取消或超时必须等待子进程收口，并验证无本次 staging 残留；
 8. 同一 package 同时最多一个 RIP 作业，禁止重复提交。
 
 `rip_result.json` 记录设置快照、输入 manifest/profile hash、运行时与资源 hash、命令参数的安全化
 表达、退出码、层数、时长、真实 TIFF 摘要、发布状态和 `EXTERNAL_VALIDATION_DEFERRED`。
+`rip_diagnostic_result.json` 额外记录 S2 参考上限、逐通道最小/最大值、超限样本数、首个超限
+位置和 `s2PublicationEligible=false`。
 
 ## 7. S1/S2 与外部边界
 
@@ -230,6 +254,16 @@ grayBits=2: W<=6、S<=9、V<=9；grayBits=1: W<=2、S<=3、V<=3。
 以 Package DPI 拒绝启动，S1/S2 验证也不再检查 DPI 标签。Package 宽高像素 Grid 仍是尺寸身份
 的权威。`deviceGrayBits` 是输出准入期望，不是 CLI
 控制项：本地实测只证明 `explicit_transparent + grayBits=2` 子集，其他组合按真实结果决定是否发布。
+
+2026-08-18 的隔离诊断运行进一步确认：同一 175 层 Package 的 RIP 进程正常以 `exitCode=0`
+完成，175/175 个输出 TIFF 的基础结构和源身份检查通过；此前作业是被切片宿主的 S2 后置墨滴
+Gate 中止，不是 RIP 算法未完成。诊断扫描得到 W/S/V 范围均为 `0..255`，三个通道各有
+10,875,980 个样本超过当前 grayBits=2 参考上限。该结果证明当前 S2 对“样本值直接等于滴数”的
+解释与供应方输出不一致，但尚不能独自证明 255 应解释为 1、满墨、掩码或反相值。
+
+因此严格 S2 合同本轮不改：`package/rip` 仍按原上限 fail-closed。后续修订必须至少取得供应方
+7 通道顺序/量化/极性说明，并与打印侧 ChannelSplitter 行为交叉验证；禁止只因诊断能够保存就把
+上限改成 255、截断到上限或将 255 静默映射为 0。
 
 以下状态不得因本地开发而升级：
 
@@ -268,12 +302,13 @@ grayBits=2: W<=6、S<=9、V<=9；grayBits=1: W<=2、S<=3、V<=3。
 
 ## 10. 非目标与停止条件
 
-本专项不重写 RIP 算法、不反向工程 DLL、不更改 S1/S2 冻结语义、不把 RIP 放入 slicer Worker、
+本专项不重写 RIP 算法、不反向工程 DLL；诊断模式不更改 S1/S2 冻结语义、不把 RIP 放入 slicer Worker、
 不改变 Legacy 默认切片路径、不默认开启自动 RIP、不删除原始 `layers`。
 
 出现以下任一情况必须停止并建立受控修订：需要修改 Stage 14 冻结接口；需要修改
 `p0.rgbwsv.2`、通道、位深或极性；严格包读取拒绝 `rip` 命名空间；真实输出无法满足尺寸、层数或
-W/S/V 上限；需要把私有 TIFF DLL 装入宿主进程；需要在许可证未闭合时声明外部分发可用。
+W/S/V 上限时必须停止严格发布并只保留隔离诊断；需要把私有 TIFF DLL 装入宿主进程；需要在
+许可证未闭合时声明外部分发可用。
 
 ## 11. 修订记录
 
@@ -283,3 +318,4 @@ W/S/V 上限；需要把私有 TIFF DLL 装入宿主进程；需要在许可证�
 | 2026-08-17 | v1.1 | 明确 `deviceGrayBits` 仅为输出校验期望、当前二进制固定 600 x 600 DPI、S1 TIFF 的 DPI 由 Package grid 持有；本地支持范围不得外推 |
 | 2026-08-17 | v1.2 | 受控接纳 RIP 固定的 4 像素右侧补齐：只在高度一致且宽度等于 `align_up(packageWidth,4)` 时裁回 Package 原宽；其余尺寸差异继续 fail-closed，不改变 S2 最终 Grid |
 | 2026-08-18 | v1.3 | 根据原始 `rip_project` 处理 635x600 Package 的实测，废止将输出 600x600 标签误解为输入限制；剔除宿主硬编码准入和 S1/S2 DPI Gate，宽高像素 Grid 、TIFF 布局与 W/S/V 限制不变 |
+| 2026-08-18 | v1.4 | 根据用户授权新增与严格 `rip` 隔离的 `rip_diagnostic`；真实 175 层 RIP exitCode=0 并保存 175/175 输出，记录 W/S/V `0..255` 与各 10,875,980 个超限样本；严格 S2 上限不变，后续修订等待供应方/打印侧语义证据 |
