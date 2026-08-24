@@ -30,11 +30,11 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-01 | 资产事实、synthetic fixture、旧顶面投影 baseline 与独立 oracle | **COMPLETE** | MV-00 | 2026-08-20 |
 | MV-02 | MaterialVolumePolicy、拓扑分类、稳定错误和配置合同 | **COMPLETE** | MV-01 Gate | 2026-08-20 |
 | MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **COMPLETE** | MV-02 | 2026-08-20 |
-| MV-04 | 开放表面 surface_band 非生产候选与 `03.obj` 厚度裁决 | PENDING / INPUT OPEN | MV-03、MQ-01/MQ-02 | - |
+| MV-04 | 开放表面 surface_band 非生产候选与间距趋零口径 | **DESIGNED / 让位于 MV-08** | MV-03（MQ-01/MQ-02 已回签） | - |
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | **COMPLETE** | MV-03（MV-04 可选，未纳入） | 2026-08-21 |
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **COMPLETE** | MV-05 | 2026-08-21 |
 | MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **COMPLETE（07A/07B/07C 全部落地）** | MV-06 | 2026-08-24 |
-| MV-08 | MEMFLOW bounded/owned 生产候选接线与 Staged Package | PENDING | MV-06、MF-03B4/MF-04 | - |
+| MV-08 | 生产接线（真实模型测试的唯一关键路径） | **NEXT / 先出实施准备** | MV-06；MEMFLOW 依赖待查勘 | - |
 | MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
 
@@ -360,6 +360,29 @@ MV-04 壳层厚度仍受 MQ-01 阻塞（实测几何上限 0.30 mm、推荐 0.22
 MV-08 不具备开工条件。合入冲突面已试算：仅 `CMakeLists.txt` 与 `TASKS_16` 两处。
 合入将带进 9 处行数门禁 ERROR（1 条 G2、2 条 G1 生产源、2 条 G3 头文件、4 条 G1 测试源）；
 该门禁在 CTest 中只注册 `--self-test`，仓库全扫描未进 CTest，故属静默债而非红灯。
+
+### 11.1 2026-08-24 排期与口径裁定
+
+用户当日裁定三项，直接决定后续动作：
+
+| 项 | 裁定 | 后果 |
+|---|---|---|
+| 排期 | **MV-08 优先**，且**先出实施准备文档再动手** | MV-04 让位；接入面须先由 `DOC_PREP_MATVOL_MV_08_*` 固化并回签，照 MV-07 先例 |
+| 预设可见性 | **保持可选**，以诚实错误失败 | 不做置灰；维持现状，`EnsureMaterialVolumeWiringImplemented` 给出的消息即为操作员所见 |
+| MV-04 塌缩列 | `collapsedColumnPolicy` 默认 **`explicit_priority`** | 与 DOC_DECISION §4.2A 已写口径一致，无需改动 |
+
+**为何 MV-08 是唯一关键路径。** 用户要的「03.obj 两种材料在切片数据里正确区分」只依赖生产接线：
+MV-04 是开放表面壳层候选、MV-09 是回归矩阵、MV-10 是生产准入，三者都不在这条路上。
+MV-01..07 已完成的是语义栈与宿主管道，但 `src/` 与 `apps/` 下对 `MaterialVolumePlan`、
+`ComposeMaterialLayerRgb`、`MaterializeMaterialOwnershipLayer` 等的引用数**全部为零**，
+没有任何生产调用方。
+
+**待查勘的依赖前提。** 初步阅读显示 `slicer.cpp` 的 `compose_material_policy_pixel` 同时接收
+`pixel_index` 与 `layer_index`，即 Legacy 合成路径本来就是逐像素逐层的，
+MATVOL 的 caller-owned 单层物化 API 可能可直接挂入，
+从而使 MV-08 对 MEMFLOW 的依赖成为**组织性而非技术性**（MEMFLOW 解决的是有界内存，
+不是能否表达 Z 向材质）。该判断**尚未证实**，须由 MV-08 实施准备文档给出接入面证据后方可写为结论；
+在此之前上文「开工门」关于 MEMFLOW 未合入的事实描述继续有效。
 
 ## 12. MV-09 回归矩阵
 
