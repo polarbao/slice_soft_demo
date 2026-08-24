@@ -30,12 +30,12 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-01 | 资产事实、synthetic fixture、旧顶面投影 baseline 与独立 oracle | **COMPLETE** | MV-00 | 2026-08-20 |
 | MV-02 | MaterialVolumePolicy、拓扑分类、稳定错误和配置合同 | **COMPLETE** | MV-01 Gate | 2026-08-20 |
 | MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **COMPLETE** | MV-02 | 2026-08-20 |
-| MV-04 | 开放表面 surface_band 非生产候选与间距趋零口径 | **DESIGNED / 让位于 MV-08** | MV-03（MQ-01/MQ-02 已回签） | - |
+| MV-04 | 开放表面 surface_band 非生产候选与间距趋零口径 | **DESIGNED / 触发资产待定**（03.obj 焊接后无开放表面） | MV-03 | - |
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | **COMPLETE** | MV-03（MV-04 可选，未纳入） | 2026-08-21 |
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **COMPLETE** | MV-05 | 2026-08-21 |
 | MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **COMPLETE（07A/07B/07C 全部落地）** | MV-06 | 2026-08-24 |
-| MV-08A | `ModelReport`→网格窄适配器与 plan 结构证明（不动 slicer.cpp） | **READY / 已回签可开工** | MV-06 | - |
-| MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | PENDING | MV-08A | - |
+| MV-08A | 真实资产 plan 构建证明（适配器缺口经实测证明不存在） | **COMPLETE** | MV-06 | 2026-08-24 |
+| MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | **READY**（接线可开工；真实资产验证受 MQ-05 阻塞） | MV-08A | - |
 | MV-08C | 按需补白顺序接入与体积报告落盘 | PENDING | MV-08B | - |
 | MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |

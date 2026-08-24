@@ -1,7 +1,7 @@
 # DOC_PREP_MATVOL MV-08 生产接线实施准备
 
 > 文档状态：**CONFIRMED / MV08-Q1..Q3 已回签 / 08A 可开工**
-> 版本：v1.1 ｜ 日期：2026-08-24
+> 版本：v1.2 ｜ 日期：2026-08-24
 > 任务真源：`../../codex_task/current/TASKS_MATVOL_多材质纵深体积RGB与按需补白根治专项任务清单.md`
 > 依据：`CODEX_PROMPT_MATVOL` §2「生产语义变化卡必须先给 Implementation Plan 并等待确认」
 > 排期依据：用户 2026-08-24 裁定 MV-08 优先，且先出实施准备文档再动手
@@ -56,6 +56,16 @@ retained dense 接线即可，内存代价等于现状加一个紧凑 plan。
 （原任务卡把 MV-08 依赖写成 `MF-03B4/MF-04`，据本节应改为「可选加速项」而非开工门。）
 
 ---
+
+## 2. ~~唯一的真实缺口~~：该缺口不存在（v1.2 更正）
+
+> **v1.2 更正（MV-08A 机器证据）**：本节 v1.0/v1.1 的结论**错误**。
+> `src/slicer_core/scene/SceneModel.h` 里 `using SceneModel = ModelReport;`——
+> 两者是**同一类型**，`AdaptSceneModelToTriangleMesh(model_report)` 本来就能直接调用。
+> 因此不存在缺口，MV08-Q1 选定的方案 A「窄适配器」**不需要实施**。
+> 证据见 `tests/matvol/MatvolRealityPlanTests.cpp` 的 `model_report_feeds_adapter_directly`：
+> 实测 27092 面焊接为 10346 顶点，材质 01 得 14966 面、材质 02 得 12126 面。
+> 下文保留原分析仅作留痕。
 
 ## 2. 唯一的真实缺口：plan 构建器要的网格类型，`run_slicer` 没有
 
@@ -199,5 +209,6 @@ Worker 文件合同、既有预设的字节与 `profileHash`。
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-24 | v1.2 | **更正 §2：该缺口不存在**。SceneModel 是 ModelReport 的类型别名，既有适配器可直接消费，方案 A 无需实施。MV-08A 同时暴露真实阻断点：三个资产的材质 02 均有8 对确认自交，按 DOC_DECISION §4.2 属阻断项，故阻塞真实模型测试的是【资产几何】而非接线。 |
 | 2026-08-24 | v1.1 | MV08-Q1..Q3 全部回签：方案 A 窄适配器、MEMFLOW 依赖降为可选加速项、三段拆分照此执行。**更正 §5 的 08A 口径**：v1.0 写法不可验证，因生产入口门在模型加载前即抛出，那段接线在 08B 之前是死代码；更正后 08A 完全不动 slicer.cpp。新增 §8.1 回退与分级止损。 |
 | 2026-08-24 | v1.0 | 建立 MV-08 实施准备。实测确认逐层合成本就逐像素逐层、逐列结构已有既定传参形状、Legacy 为 retained dense，据此判定 MEMFLOW 依赖为组织性而非技术性。定位唯一真实缺口为 `MaterialVolumeBuildRequest` 要求的 `AdaptedTriangleMesh` 在 `run_slicer` 中不存在，并给出两个方案。登记 MV08-Q1..Q3。 |
