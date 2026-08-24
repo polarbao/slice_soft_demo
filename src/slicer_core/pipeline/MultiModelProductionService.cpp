@@ -1202,7 +1202,6 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
 MultiModelProductionResult RunMultiModelProductionService(
     const MultiModelProductionRequest& request)
 {
-    std::fprintf(stderr, "ENTER RunMultiModelProductionService\n");
     try
     {
         return RunMultiModelProductionServiceImpl(request);
