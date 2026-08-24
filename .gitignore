@@ -30,6 +30,8 @@ tests/*
 !tests/stage16/**
 !tests/matvol/
 !tests/matvol/**
+!tests/stage14e_02/
+!tests/stage14e_02/**
 !tests/version/
 !tests/version/*.py
 /tests/version/__pycache__/
