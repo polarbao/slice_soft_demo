@@ -42,6 +42,17 @@ RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与�
           卡 docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
 HOSTFLOW  ✅ H-A..H-F 全组完成（2026-08-11）；H-G 已准备并延期实施（等 5 项产品输入）
           卡 docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
+MEMFLOW   ⏸ 分支 codex/memflow-bounded-streaming（尖端 826a170）【暂缓合入】
+            用户 2026-08-24 裁定：等该专项到稳定卡边界再合，理由是代码尚未接生产路径、
+            无功能紧迫性，且 slicer.cpp 的 G2 冻结线违规应由该专项自行处理
+          ⚠ 合入将带进 9 处行数门禁 ERROR：G2 slicer.cpp 5423→5464（>1000 行只减不增）、
+            G1 BoundedSupportShapeScan.cpp 1171 与 BoundedSupportDiscovery.cpp 619、
+            G3 两个 BoundedSupport*.h（280/223）、G1 四个 tests/stage16/BoundedSupport*Tests.cpp
+          ⚠ 该门禁在 CTest 中只注册 --self-test，仓库全扫描未进 CTest，故上述为静默债而非红灯
+          ▶ merge 冲突面已试算：仅 CMakeLists.txt 与 TASKS_16 两处，AGENTS.md 可自动合并
+          ▶ 本分支工作树中曾存在的 MEMFLOW 残留已于 2026-08-24 证明为严格过时并剔除
+            （41 文件逐一比对：24 逐字节一致、1 严格子集、其余独有行皆为更旧状态头）
+          卡 位于分支内 docs/codex_task/current/TASKS_16C_06_MEMFLOW_*.md，本分支尚无该文件
 RIPFLOW   ✅ 00 / A / B / C / D 全组完成（D-01..06），切片侧收口
           ⛔ E-01/E-02 外部分发与生产验收 BLOCKED_EXTERNAL
           ▶ D-06 新增 outputValidationMode=strict_s2|diagnostic_unvalidated，默认严格；
@@ -50,7 +61,8 @@ RIPFLOW   ✅ 00 / A / B / C / D 全组完成（D-01..06），切片侧收口
 MATVOL    ✅ MV-00..03、MV-05..06 非生产语义栈完成；MV-07A/07B/07C 宿主接入完成（2026-08-24）
           ▶ 生产默认仍为 matvol 关闭，新预设 volumetric_nail_rgb_white_ondemand_lower_support 为显式 opt-in
           ⏸ MV-04 卡 MQ-01 壳层厚度（实测几何上限 0.30mm、推荐 0.228mm，未回签）
-          ⏸ MV-08 生产接线依赖 MEMFLOW bounded/owned（MF-03B4/MF-04）
+          ⏸ MV-08 生产接线依赖 MEMFLOW bounded/owned（MF-03B4/MF-04），
+            且该分支按 2026-08-24 裁定暂缓合入，本分支暂无对应源文件
           卡 docs/codex_task/current/TASKS_MATVOL_多材质纵深体积RGB与按需补白根治专项任务清单.md
 TIFF      ⏸ 默认后端已切 libtiff，风险已关死（fail-closed+弃用告警+无静默回退）
           当前【无待办】：05B-02/03 延后并捆绑（等删除确认）、T-A-04 外部阻塞
@@ -86,7 +98,16 @@ CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
 - Codex task docs: `docs/codex_task`
 - Archived historical docs: `docs/archive/2026-06-30_slicer_legacy`
 - Tech stack: C++20, Qt 5.15 Widgets, CMake, Windows x64/MSVC, optional OpenVDB via vcpkg
-- Default test command: `ctest --test-dir build -C Debug --output-on-failure`
+- Canonical build directory: **`build-slicesoft/main`**（CMakePresets 预设 `slicesoft-main`）。
+  构建 `cmake --build build-slicesoft/main --config Debug`，
+  回归 `ctest --test-dir build-slicesoft/main -C Debug --output-on-failure`，当前共 213 项。
+  ⚠ 仓库根下的 `build/` 是**陈旧目录**：无 vcpkg toolchain、`meshoptimizer_DIR-NOTFOUND`、
+  且不含任何 matvol 目标，重配置会直接失败（find_package(meshoptimizer CONFIG REQUIRED)）。
+  它残留的 CTestTestfile 仍能让 ctest 跑起来并对陈旧二进制报出与基线不符的结果，
+  务必不要用它验证任何改动。
+- ⚠ 构建与回归必须分开判定退出码：`cmake --build ... | tail` 之类的管道会用管道末端命令的
+  退出码掩盖真实的构建失败，而失败的配置会让随后的 ctest 对陈旧二进制报 PASS。
+  先确认构建退出码为 0，再相信任何 ctest 结果。
 
 ## Current Phase
 

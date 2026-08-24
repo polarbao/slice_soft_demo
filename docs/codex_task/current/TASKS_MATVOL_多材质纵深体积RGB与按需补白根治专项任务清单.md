@@ -353,6 +353,14 @@ MV-04 壳层厚度仍受 MQ-01 阻塞（实测几何上限 0.30 mm、推荐 0.22
 **验收：** 不保留全层 owner/RGBWSV；取消/consumer/writer 失败清理 staging；不发布半包；不能满足预算
 时明确 `E_MATVOL_BUDGET_EXCEEDED`；Retained 旧路径可回滚。
 
+**开工门（2026-08-24 裁定）：** MEMFLOW 分支 `codex/memflow-bounded-streaming`（尖端 `826a170`）
+按用户裁定**暂缓合入** `product/packaged-slicer`，理由是其代码尚未接生产路径、无功能紧迫性，
+且 `src/slicer_core/slicer.cpp` 由 5423 增至 5464 行触犯 G2「>1000 行只减不增」冻结线，
+应由该专项自行处理而非在 merge 中承接。因此本分支目前**没有** bounded/owned 相关源文件，
+MV-08 不具备开工条件。合入冲突面已试算：仅 `CMakeLists.txt` 与 `TASKS_16` 两处。
+合入将带进 9 处行数门禁 ERROR（1 条 G2、2 条 G1 生产源、2 条 G3 头文件、4 条 G1 测试源）；
+该门禁在 CTest 中只注册 `--self-test`，仓库全扫描未进 CTest，故属静默债而非红灯。
+
 ## 12. MV-09 回归矩阵
 
 ```text
