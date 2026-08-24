@@ -1698,6 +1698,38 @@ if(MSVC)
     target_compile_options(matvol_white_carrier_integration_tests PRIVATE /W4 /WX)
 endif()
 
+# 宿主 Profile 往返门禁：全仓首个同时编译纯 C 宿主翻译单元并链接 slicer_core 的目标。
+# 缺了它，宿主发射的字段取值与切片侧合法集合之间的漂移没有任何门禁能发现
+# （profileHash 闭合只校验序列化，不校验接受度）。
+add_executable(matvol_host_profile_round_trip_tests
+    tests/matvol/MatvolHostProfileRoundTripTests.cpp
+    apps/slicer_host_sim/HostRequestBuilder.c
+    apps/slicer_host_sim/HostMaterialProfile.c
+    apps/slicer_host_sim/HostVolumetricProfile.c
+    apps/slicer_host_sim/HostTextureProfile.c
+    apps/slicer_host_sim/HostPath.c
+    apps/slicer_host_sim/JsonText.c
+)
+set_target_properties(matvol_host_profile_round_trip_tests PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+)
+target_include_directories(matvol_host_profile_round_trip_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_host_sim
+)
+target_link_libraries(matvol_host_profile_round_trip_tests PRIVATE slicer_core bcrypt)
+target_compile_definitions(matvol_host_profile_round_trip_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_host_profile_round_trip_tests PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:/W4>" "$<$<COMPILE_LANGUAGE:CXX>:/WX>"
+        "$<$<COMPILE_LANGUAGE:C>:/W4>" "$<$<COMPILE_LANGUAGE:C>:/WX>"
+    )
+endif()
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2586,6 +2618,7 @@ add_test(NAME matvol_topology_unit_tests COMMAND matvol_topology_unit_tests)
 add_test(NAME matvol_interval_unit_tests COMMAND matvol_interval_unit_tests)
 add_test(NAME matvol_rgb_compose_unit_tests COMMAND matvol_rgb_compose_unit_tests)
 add_test(NAME matvol_white_carrier_integration_tests COMMAND matvol_white_carrier_integration_tests)
+add_test(NAME matvol_host_profile_round_trip_tests COMMAND matvol_host_profile_round_trip_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
