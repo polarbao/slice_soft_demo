@@ -4263,6 +4263,25 @@ void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config)
         "the legacy production path must not run surface_shell_from_sdf or writeProductionRgbwsv configs");
 }
 
+// MATVOL 合同先行：validate_slice_config 只校验 materialVolumePolicy 的形状，
+// 因此 MV-02/MV-06 的契约用例可以在实现落地之前就立住。但生产执行必须 fail closed：
+// 逐层材质所有权尚未接入合成路径，materialProcessProfile.rgb.source 不驱动 Legacy 合成，
+// 而 materialVolumePolicy 又禁用 materialPolicy 与纹理路径，此时没有任何来源会产生 RGB。
+// 若放任它跑完，产出的是全黑或逐列单材质的旧结果，而不是多材质纵深 RGB。
+void EnsureMaterialVolumeWiringImplemented(const SliceConfig& config)
+{
+    if (!config.material_volume_policy.enabled)
+    {
+        return;
+    }
+
+    throw std::runtime_error(
+        "materialVolumePolicy is accepted by contract but its production wiring is not "
+        "implemented yet (MATVOL card MV-08): no RGB source is connected for this profile, "
+        "so running it would emit legacy per-column colour instead of per-layer material "
+        "ownership. Disable materialVolumePolicy to slice with the existing profiles.");
+}
+
 bool MatchesSourceIdentity(
     const std::filesystem::path& loadedModelPath,
     const std::string& sourceIdentity)
@@ -4334,6 +4353,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     phase_start = SlicerClock::now();
 
     EnsureLegacyPipelineAcceptsConfig(config);
+    EnsureMaterialVolumeWiringImplemented(config);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report;
