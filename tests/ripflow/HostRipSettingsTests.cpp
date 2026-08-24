@@ -62,6 +62,37 @@ int main()
             "diagnostic mode uses an isolated output directory")
         && pass;
 
+    // 诊断模式必须真正存盘再读回：Load 在键缺失时回落 strict_s2，
+    // 因此只往返默认值的断言即使 Save 完全不写该键也会通过。
+    const QString diagnosticPath =
+        temporary.filePath(QStringLiteral("rip_diagnostic.ini"));
+    {
+        QSettings diagnosticStorage(diagnosticPath, QSettings::IniFormat);
+        pass = Expect(
+            HostRipSettingsStore::Save(diagnosticStorage, diagnostic),
+            "diagnostic settings save")
+            && pass;
+    }
+    {
+        QSettings diagnosticStorage(diagnosticPath, QSettings::IniFormat);
+        hostripsettings restoredDiagnostic;
+        pass = Expect(
+            HostRipSettingsStore::Load(
+                diagnosticStorage, &restoredDiagnostic),
+            "diagnostic settings restore")
+            && pass;
+        pass = Expect(
+            restoredDiagnostic.outputvalidationmode
+                == QStringLiteral("diagnostic_unvalidated"),
+            "diagnostic validation mode survives a save and load")
+            && pass;
+        pass = Expect(
+            HostRipSettingsStore::EffectiveOutputDirectoryName(
+                restoredDiagnostic) == QStringLiteral("rip_diagnostic"),
+            "restored diagnostic mode still isolates the output directory")
+            && pass;
+    }
+
     storage.beginGroup(QStringLiteral("hostflow/rip"));
     storage.setValue(QStringLiteral("schemaVersion"), 999);
     storage.setValue(QStringLiteral("autoAfterSlice"), true);

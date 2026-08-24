@@ -266,6 +266,14 @@ if(Python3_Interpreter_FOUND)
             ${CMAKE_SOURCE_DIR}/tests/ripflow/ValidateRipflowWiring.py
             ${CMAKE_SOURCE_DIR}
     )
+    # 契约校验器此前只能手工跑：与上面的接线校验器不对称，
+    # 一旦 rip.settings.1 的字段闭集与 schema 失配也没有门禁会发现。
+    add_test(
+        NAME ripflow_contract_field_closure
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_SOURCE_DIR}/tests/ripflow/ValidateRipflowContracts.py
+            ${CMAKE_SOURCE_DIR}
+    )
     add_test(
         NAME slicer_stage14e02_qt_host_boundary_test
         COMMAND ${Python3_EXECUTABLE}
