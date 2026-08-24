@@ -132,6 +132,7 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
     const std::vector<MaterialTopologyFact> facts = ClassifyMaterialTopologies(*request.mesh);
     std::vector<std::string> materialNames;
     std::vector<int> materialPriorities;
+    std::vector<std::string> toleratedSelfIntersecting;
     std::map<std::string, std::uint32_t> materialIndexByName;
     for (const MaterialTopologyFact& fact : facts)
     {
@@ -148,12 +149,29 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
                 "material '" + fact.materialName + "' is an open surface and requires an explicit "
                 "openSurface policy");
         }
-        if (fact.kind != MaterialTopologyKind::ClosedOrientable)
+        // 有界放宽：仅当材质【仍是闭合曲面】（真开边与非流形边均为 0）且自交对数不超过
+        // 显式上限时放行。闭合性保证由 Jordan–Brouwer 得到偶数交点，区间形状良好；
+        // 但缠绕数大于 1 处的归属仍可能错，误差被相交面投影界住，故必须留痕供报告披露。
+        // 上限使数千至数万对的「需重建」资产仍然 fail closed，本放宽不是它们的旁路。
+        const bool toleratedSelfIntersection =
+            fact.kind == MaterialTopologyKind::SelfIntersecting
+            && request.policy->topology.self_intersection_policy
+                == "tolerate_closed_self_intersection"
+            && fact.boundaryEdgeCount == 0U
+            && fact.nonManifoldEdgeCount == 0U
+            && fact.confirmedSelfIntersectionPairs
+                <= static_cast<std::uint64_t>(
+                    request.policy->topology.max_self_intersection_pairs);
+        if (fact.kind != MaterialTopologyKind::ClosedOrientable && !toleratedSelfIntersection)
         {
             throw MaterialVolumeError(
                 MaterialVolumeErrorCode::TopologyInvalid,
                 "material '" + fact.materialName + "' topology is "
                     + MaterialTopologyKindName(fact.kind));
+        }
+        if (toleratedSelfIntersection)
+        {
+            toleratedSelfIntersecting.push_back(fact.materialName);
         }
         materialIndexByName.emplace(fact.materialName, static_cast<std::uint32_t>(materialNames.size()));
         materialNames.push_back(fact.materialName);
@@ -185,6 +203,7 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
     plan.columnCount_ = static_cast<std::size_t>(columnCount64);
     plan.materialNames_ = std::move(materialNames);
     plan.materialPriorities_ = std::move(materialPriorities);
+    plan.toleratedSelfIntersectingMaterials_ = std::move(toleratedSelfIntersecting);
     plan.columnIntervalOffsets_.assign(plan.columnCount_ + 1U, 0U);
 
     // 逐列求交所用的复用缓冲，循环外分配一次。

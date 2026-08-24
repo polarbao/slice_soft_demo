@@ -452,6 +452,15 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
                 }
             }
         }
+        if (policy.contains("topology")) {
+            const auto& topology = policy.at("topology");
+            config.material_volume_policy.topology.self_intersection_policy = topology.value(
+                "selfIntersectionPolicy",
+                config.material_volume_policy.topology.self_intersection_policy);
+            config.material_volume_policy.topology.max_self_intersection_pairs = topology.value(
+                "maxSelfIntersectionPairs",
+                config.material_volume_policy.topology.max_self_intersection_pairs);
+        }
     }
 
     if (root.contains("support")) {
@@ -1231,6 +1240,18 @@ void validate_slice_config(const SliceConfig& config) {
         }
         if (config.material_volume_policy.overlap.mode != "explicit_priority") {
             throw std::runtime_error("materialVolumePolicy.overlap.mode must be explicit_priority");
+        }
+        const std::string& self_intersection_policy =
+            config.material_volume_policy.topology.self_intersection_policy;
+        if (self_intersection_policy != "reject"
+            && self_intersection_policy != "tolerate_closed_self_intersection") {
+            throw std::runtime_error(
+                "materialVolumePolicy.topology.selfIntersectionPolicy must be reject or "
+                "tolerate_closed_self_intersection");
+        }
+        if (config.material_volume_policy.topology.max_self_intersection_pairs <= 0) {
+            throw std::runtime_error(
+                "materialVolumePolicy.topology.maxSelfIntersectionPairs must be positive");
         }
         std::vector<std::string> seen_material_names;
         for (const MaterialVolumeOverlapRuleConfig& rule :

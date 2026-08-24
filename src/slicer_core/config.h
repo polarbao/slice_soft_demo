@@ -189,11 +189,30 @@ struct MaterialVolumeOverlapConfig {
 /**
  * @brief Per-layer per-pixel material ownership policy; safe-off by default.
  */
+/// @brief 拓扑准入口径。
+///
+/// `selfIntersectionPolicy = reject`（默认）沿用既有行为：分类为 self_intersecting 即拒绝。
+///
+/// `tolerate_closed_self_intersection` 是【有界放宽】，其口径必须如实理解：
+/// - 前置：该材质必须仍是闭合曲面（真开边与非流形边均为 0）。此时由 Jordan–Brouwer，
+///   一般位置射线的交点数恒为偶数，区间因此【形状良好】，不会触发 IntersectionUnpaired。
+///   注意这意味着奇偶性对本类恒真，不能把它当作安全性证据。
+/// - 未被消除的风险：自交处缠绕数可能大于 1，而奇偶法则把双重覆盖判为外部，
+///   故【自交邻域内的材质归属可能错误】。误差范围被相交三角面的投影界住。
+/// - `maxSelfIntersectionPairs` 把放宽限制在【局部缺陷】：仓库中被判定「需重建」的资产
+///   自交对数为数千至数万，远超该上限，仍会 fail closed，本放宽不是对它们的旁路。
+/// - 放行材质名必须进入 plan 并由报告披露，不得静默。
+struct MaterialVolumeTopologyConfig {
+    std::string self_intersection_policy{"reject"};
+    int max_self_intersection_pairs{64};
+};
+
 struct MaterialVolumePolicyConfig {
     bool enabled{false};
     std::string mode{"closed_intervals"};
     MaterialVolumeOpenSurfaceConfig open_surface;
     MaterialVolumeOverlapConfig overlap;
+    MaterialVolumeTopologyConfig topology;
     std::string missing_material{"fail_closed"};
 };
 

@@ -84,7 +84,7 @@ slicer_core::MaterialVolumeGrid MakeGridForModel(
     return grid;
 }
 
-slicer_core::MaterialVolumePolicyConfig MakePolicy()
+slicer_core::MaterialVolumePolicyConfig MakePolicy(const std::string& selfIntersectionPolicy = "reject")
 {
     slicer_core::MaterialVolumePolicyConfig policy;
     policy.enabled = true;
@@ -92,6 +92,7 @@ slicer_core::MaterialVolumePolicyConfig MakePolicy()
     policy.missing_material = "fail_closed";
     policy.open_surface.mode = "reject";
     policy.overlap.mode = "explicit_priority";
+    policy.topology.self_intersection_policy = selfIntersectionPolicy;
     slicer_core::MaterialVolumeOverlapRuleConfig primary;
     primary.match_material_name = "01";
     primary.priority = 200;
@@ -433,6 +434,98 @@ bool OddParityColumnRatioIsMeasured()
     return true;
 }
 
+// 放行策略验收：把代理指标（自交对数）换成直接检查（逐列奇偶）后，
+// 03.obj 必须真正建出 plan，且放行名单必须留痕。
+bool ToleratePolicyBuildsPlanForRealityAsset()
+{
+    const std::filesystem::path modelPath = RealityAsset("03.obj");
+    if (!std::filesystem::exists(modelPath))
+    {
+        std::cout << "SKIP tolerate_policy asset not present\n";
+        return true;
+    }
+    const slicer_core::ModelReport model = LoadProductionPosture(modelPath);
+    const slicer_core::AdaptedTriangleMesh mesh =
+        slicer_core::AdaptSceneModelToTriangleMesh(model);
+    const slicer_core::MaterialVolumeGrid grid = MakeGridForModel(model, 0.038, 0.10);
+    const slicer_core::MaterialVolumePolicyConfig policy =
+        MakePolicy("tolerate_closed_self_intersection");
+    slicer_core::MaterialVolumeBuildRequest request;
+    request.mesh = &mesh;
+    request.policy = &policy;
+    request.grid = grid;
+
+    bool passed{true};
+    try
+    {
+        const slicer_core::MaterialVolumePlan plan =
+            slicer_core::BuildMaterialVolumePlan(request);
+        passed = ExpectTrue(plan.MaterialNames().size() == 2U, "both materials enter the plan")
+            && passed;
+        passed = ExpectTrue(!plan.Intervals().empty(), "plan produces intervals") && passed;
+        passed = ExpectTrue(
+                     plan.ToleratedSelfIntersectingMaterials().size() == 1U,
+                     "exactly one material is recorded as tolerated")
+            && passed;
+        if (!plan.ToleratedSelfIntersectingMaterials().empty())
+        {
+            passed = ExpectTrue(
+                         plan.ToleratedSelfIntersectingMaterials()[0] == "02",
+                         "the tolerated material is 02")
+                && passed;
+        }
+        std::cout << "  tolerate policy: intervals=" << plan.Intervals().size()
+                  << " columns=" << plan.ColumnCount()
+                  << " layers=" << plan.LayerCount()
+                  << " tolerated=" << plan.ToleratedSelfIntersectingMaterials().size()
+                  << '\n';
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "FAILED: tolerate policy still rejected: " << error.what() << '\n';
+        passed = false;
+    }
+    return passed;
+}
+
+// 上限必须真的会咬：把 maxSelfIntersectionPairs 压到 8 对以下，放行须失效。
+// 没有这条断言，「有界放宽」就名不副实，等同于无条件旁路。
+bool ToleranceBoundStillRejects()
+{
+    const std::filesystem::path modelPath = RealityAsset("03.obj");
+    if (!std::filesystem::exists(modelPath))
+    {
+        std::cout << "SKIP tolerance_bound asset not present\n";
+        return true;
+    }
+    const slicer_core::ModelReport model = LoadProductionPosture(modelPath);
+    const slicer_core::AdaptedTriangleMesh mesh =
+        slicer_core::AdaptSceneModelToTriangleMesh(model);
+    const slicer_core::MaterialVolumeGrid grid = MakeGridForModel(model, 0.038, 0.50);
+    slicer_core::MaterialVolumePolicyConfig policy =
+        MakePolicy("tolerate_closed_self_intersection");
+    policy.topology.max_self_intersection_pairs = 4;  // 实测为 8 对
+    slicer_core::MaterialVolumeBuildRequest request;
+    request.mesh = &mesh;
+    request.policy = &policy;
+    request.grid = grid;
+
+    try
+    {
+        const slicer_core::MaterialVolumePlan plan =
+            slicer_core::BuildMaterialVolumePlan(request);
+        (void)plan;
+        return ExpectTrue(false, "tolerance bound rejects pair counts above the limit");
+    }
+    catch (const std::exception& error)
+    {
+        const std::string message = error.what();
+        return ExpectTrue(
+            message.find("E_MATVOL_TOPOLOGY_INVALID") != std::string::npos,
+            "exceeding the bound still fails closed with the topology code");
+    }
+}
+
 }  // namespace
 
 int main()
@@ -448,6 +541,8 @@ int main()
         {"reality_topology_facts", &RealityTopologyFactsAreReported},
         {"self_intersection_characterization", &SelfIntersectionIsCharacterized},
         {"odd_parity_column_ratio", &OddParityColumnRatioIsMeasured},
+        {"tolerate_policy_builds_plan", &ToleratePolicyBuildsPlanForRealityAsset},
+        {"tolerance_bound_still_rejects", &ToleranceBoundStillRejects},
     };
 
     int failures{0};
