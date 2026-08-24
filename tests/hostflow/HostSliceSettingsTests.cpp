@@ -1113,6 +1113,69 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
+    /* MV-07B：MATVOL 候选在能力不足时必须【禁用而非静默回退】。 */
+    const int matvolPresetIndex = processPreset->findData(
+        QStringLiteral("volumetric_nail_rgb_white_ondemand_lower_support"));
+    auto* matvolEnabled = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostMatvolEnabledCheck"));
+    auto* matvolPrimaryName = panel.findChild<QLineEdit*>(
+        QStringLiteral("hostMatvolPrimaryNameEdit"));
+    auto* matvolHint = panel.findChild<QLabel*>(
+        QStringLiteral("hostMatvolCapabilityHint"));
+    if (!Check(
+            matvolPresetIndex > 0,
+            QStringLiteral(
+                "MV-07B：MATVOL 候选工艺未出现在工艺目录中。"),
+            errors))
+    {
+        return false;
+    }
+    {
+        processPreset->setCurrentIndex(matvolPresetIndex);
+        QCoreApplication::processEvents();
+        const hostslicesettings beforeRestriction = panel.Settings();
+        panel.SetSingleMaterialRestriction(
+            true,
+            QStringLiteral("测试模型缺少 MTL 定义"));
+        QCoreApplication::processEvents();
+        const hostslicesettings afterRestriction = panel.Settings();
+        hosteffectiveprofile blockedProfile;
+        QString blockedError;
+        if (!Check(
+                matvolEnabled != nullptr && matvolPrimaryName != nullptr
+                    && matvolHint != nullptr
+                    && beforeRestriction.materialvolume.enabled
+                    && processPreset->currentData().toString()
+                        == QStringLiteral(
+                            "volumetric_nail_rgb_white_ondemand_lower_support")
+                    && afterRestriction.materialvolume.enabled
+                    && !matvolPrimaryName->isEnabled()
+                    && !matvolEnabled->isEnabled()
+                    && matvolHint->text().contains(
+                           QStringLiteral("多材质纵深不可用"))
+                    && !panel.BuildSubmissionProfile(
+                        &blockedProfile, &blockedError)
+                    && !blockedError.isEmpty(),
+                QStringLiteral(
+                    "MV-07B：能力不足时 MATVOL 应禁用编辑并拒绝提交，而不是静默改工艺。"),
+                errors))
+        {
+            return false;
+        }
+        panel.SetSingleMaterialRestriction(false, QString{});
+        QCoreApplication::processEvents();
+        if (!Check(
+                matvolEnabled->isEnabled()
+                    && matvolPrimaryName->isEnabled(),
+                QStringLiteral(
+                    "MV-07B：清除限制后 MATVOL 编辑未恢复。"),
+                errors))
+        {
+            return false;
+        }
+        processPreset->setCurrentIndex(rgbPresetIndex);
+        QCoreApplication::processEvents();
+    }
     panel.SetSingleMaterialRestriction(false, QString{});
     if (!Check(
             processModel->item(rgbPresetIndex)->isEnabled()

@@ -40,6 +40,8 @@ add_executable(slicer_ui_host_sim
     HostWorkspaceState.h
     HostWorkspaceTextureState.cpp
     HostWorkspaceTextureState.h
+    HostWorkspaceMatvolState.cpp
+    HostWorkspaceMatvolState.h
     HostVersionInfo.cpp
     HostVersionInfo.h
     HostMainWindow.cpp
@@ -68,6 +70,8 @@ add_executable(slicer_ui_host_sim
     HostSliceSettingsPanel.h
     HostSupportSettingsPanel.cpp
     HostSupportSettingsPanel.h
+    HostMatvolSettingsPanel.cpp
+    HostMatvolSettingsPanel.h
     HostSliceJobController.cpp
     HostSliceJobController.h
     HostSliceJobPanel.cpp
@@ -734,6 +738,8 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostChannelChartWidget.h
     HostSupportSettingsPanel.cpp
     HostSupportSettingsPanel.h
+    HostMatvolSettingsPanel.cpp
+    HostMatvolSettingsPanel.h
     ModuleClient.cpp
     ModuleClient.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
@@ -1097,6 +1103,8 @@ add_executable(hostflow_hb08_workspace_state_tests
     HostWorkspaceState.h
     HostWorkspaceTextureState.cpp
     HostWorkspaceTextureState.h
+    HostWorkspaceMatvolState.cpp
+    HostWorkspaceMatvolState.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c

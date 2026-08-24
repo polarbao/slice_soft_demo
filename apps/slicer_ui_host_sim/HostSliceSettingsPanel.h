@@ -13,6 +13,7 @@ class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
 class HostMaterialSettingsPanel;
+class HostMatvolSettingsPanel;
 class HostSupportSettingsPanel;
 class HostTextureSettingsPanel;
 
@@ -142,6 +143,7 @@ private:
     QDoubleSpinBox* m_buildHeightSpin{nullptr};
     QDoubleSpinBox* m_buildZSpin{nullptr};
     HostMaterialSettingsPanel* m_materialPanel{nullptr};
+    HostMatvolSettingsPanel* m_matvolPanel{nullptr};
     HostTextureSettingsPanel* m_texturePanel{nullptr};
     HostSupportSettingsPanel* m_supportPanel{nullptr};
     QLabel* m_validationLabel{nullptr};
@@ -157,7 +159,6 @@ private:
     QString m_defaultOutputDirectory;
     bool m_outputUsesAutomaticDirectory{true};
     bool m_applyingProcessPreset{false};
-    hostmaterialvolumesettings m_appliedMaterialVolume;
     bool m_singleMaterialRestricted{false};
     QString m_singleMaterialRestrictionReason;
 };
