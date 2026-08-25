@@ -2,10 +2,13 @@
 
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
+#include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/geometry/LayerOccupancyProvider.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
+#include "slicer_core/materials/volume/MaterialLayerRgbComposer.h"
+#include "slicer_core/materials/volume/MaterialVolumePlan.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
@@ -29,6 +32,8 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <optional>
+#include <span>
 #include <map>
 #include <sstream>
 #include <stdexcept>
@@ -3180,6 +3185,7 @@ std::vector<std::uint8_t> compose_layer(
     const std::vector<TextureColumnColor>* texture_columns,
     const std::vector<MaterialRoleColumn>* material_role_columns,
     const std::vector<ColumnLayerRange>* column_ranges,
+    const std::vector<std::uint8_t>* material_volume_rgb,
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
@@ -3295,6 +3301,16 @@ std::vector<std::uint8_t> compose_layer(
                         && WriteModelFillPixel(pixels, base, config, nullptr)) {
                         model_fill_pixel = true;
                     }
+                } else if (config.material_volume_policy.enabled
+                           && material_volume_rgb != nullptr
+                           && pixel_index * 3U + 2U < material_volume_rgb->size()) {
+                    // MATVOL：逐层材质所有权已在层循环内解算为紧凑 RGB，此处按列取用。
+                    // 与旧路径的本质区别是【同一 XY 列在不同层可以属于不同材质】，
+                    // 而 relief_heightfield 每列只有一个 top_triangle_index，结构上做不到。
+                    pixels.at(base + 0U) = material_volume_rgb->at(pixel_index * 3U + 0U);
+                    pixels.at(base + 1U) = material_volume_rgb->at(pixel_index * 3U + 1U);
+                    pixels.at(base + 2U) = material_volume_rgb->at(pixel_index * 3U + 2U);
+                    counted_model_pixel = true;
                 } else {
                     if (ModelFillUsesExplicitPolicy(config)) {
                         counted_model_pixel = WriteModelFillPixel(pixels, base, config, nullptr);
@@ -4263,24 +4279,6 @@ void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config)
         "the legacy production path must not run surface_shell_from_sdf or writeProductionRgbwsv configs");
 }
 
-// MATVOL 合同先行：validate_slice_config 只校验 materialVolumePolicy 的形状，
-// 因此 MV-02/MV-06 的契约用例可以在实现落地之前就立住。但生产执行必须 fail closed：
-// 逐层材质所有权尚未接入合成路径，materialProcessProfile.rgb.source 不驱动 Legacy 合成，
-// 而 materialVolumePolicy 又禁用 materialPolicy 与纹理路径，此时没有任何来源会产生 RGB。
-// 若放任它跑完，产出的是全黑或逐列单材质的旧结果，而不是多材质纵深 RGB。
-void EnsureMaterialVolumeWiringImplemented(const SliceConfig& config)
-{
-    if (!config.material_volume_policy.enabled)
-    {
-        return;
-    }
-
-    throw std::runtime_error(
-        "materialVolumePolicy is accepted by contract but its production wiring is not "
-        "implemented yet (MATVOL card MV-08): no RGB source is connected for this profile, "
-        "so running it would emit legacy per-column colour instead of per-layer material "
-        "ownership. Disable materialVolumePolicy to slice with the existing profiles.");
-}
 
 bool MatchesSourceIdentity(
     const std::filesystem::path& loadedModelPath,
@@ -4353,7 +4351,6 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     phase_start = SlicerClock::now();
 
     EnsureLegacyPipelineAcceptsConfig(config);
-    EnsureMaterialVolumeWiringImplemented(config);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report;
@@ -4411,6 +4408,35 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             supportBaseProjectionPreparation.model_lift_mm);
     }
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
+
+    // MATVOL 生产接线（MV-08B）。必须在此处构建：model_report 已完成自动摆正、
+    // 实例变换与 LiftModelForSupportBase 的 Z 抬升，grid 亦由同一 bbox 推导，
+    // 因此 plan 的列序与层号与后续栅格化逐项对齐，无需任何补偿。
+    std::optional<MaterialVolumePlan> materialVolumePlan;
+    std::optional<MaterialRgbTable> materialVolumeRgbTable;
+    if (config.material_volume_policy.enabled)
+    {
+        // SceneModel 即 ModelReport 的别名，既有适配器可直接消费，无需适配层。
+        const AdaptedTriangleMesh matvolMesh = AdaptSceneModelToTriangleMesh(model_report);
+        MaterialVolumeGrid matvolGrid;
+        matvolGrid.widthPx = grid.width_px;
+        matvolGrid.heightPx = grid.height_px;
+        matvolGrid.originXMm = grid.origin_x_mm;
+        matvolGrid.originYMm = grid.origin_y_mm;
+        matvolGrid.pixelSizeXMm = grid.pixel_size_x_mm;
+        matvolGrid.pixelSizeYMm = grid.pixel_size_y_mm;
+        matvolGrid.layerThicknessMm = config.output.layer_thickness_mm;
+        matvolGrid.layerCount = grid.layer_count;
+        MaterialVolumeBuildRequest matvolRequest;
+        matvolRequest.mesh = &matvolMesh;
+        matvolRequest.policy = &config.material_volume_policy;
+        matvolRequest.grid = matvolGrid;
+        materialVolumePlan = BuildMaterialVolumePlan(matvolRequest);
+        MaterialRgbTableRequest tableRequest;
+        tableRequest.plan = &materialVolumePlan.value();
+        tableRequest.materialInfos = model_report.material_infos;
+        materialVolumeRgbTable = BuildMaterialRgbTable(tableRequest);
+    }
     if (options.gridcallback)
     {
         options.gridcallback(
@@ -4666,6 +4692,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         static_cast<std::size_t>(grid.width_px)
         * static_cast<std::size_t>(grid.height_px);
     const std::vector<std::uint8_t> emptyOptionalMask(layerPixelCount, 0U);
+    // MATVOL 逐层复用缓冲：owner 为每列一个材质下标，rgb 为紧凑三通道，
+    // 与 compose_layer 返回的六通道交错布局不同，需在写回时按列取用。
+    std::vector<std::uint32_t> materialVolumeOwner;
+    std::vector<std::uint8_t> materialVolumeRgb;
+    if (materialVolumePlan.has_value())
+    {
+        materialVolumeOwner.assign(layerPixelCount, kNoMaterialOwner);
+        materialVolumeRgb.assign(layerPixelCount * 3U, 0U);
+    }
+
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         const auto layerComputeStart = SlicerClock::now();
         int layer_model_pixels{0};
@@ -4697,7 +4733,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 outerVarnishMask);
             materialClosureInputPointer = &materialClosureInput;
         }
-        std::vector<std::uint8_t> layer = compose_layer(
+        if (materialVolumePlan.has_value())
+        {
+            MaterializeMaterialOwnershipLayer(
+                materialVolumePlan.value(),
+                layer_index,
+                model_masks.at(static_cast<std::size_t>(layer_index)),
+                materialVolumeOwner);
+            ComposeMaterialLayerRgb(
+                materialVolumeRgbTable.value(),
+                materialVolumeOwner,
+                model_masks.at(static_cast<std::size_t>(layer_index)),
+                materialVolumeRgb);
+        }
+                std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
             model_masks.at(layer_index),
@@ -4709,6 +4758,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             config.texture.enabled ? &texture_columns : nullptr,
             config.material_role_mapping.enabled ? &material_role_columns : nullptr,
             &column_ranges,
+            materialVolumePlan.has_value() ? &materialVolumeRgb : nullptr,
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,

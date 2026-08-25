@@ -1730,6 +1730,35 @@ if(MSVC)
     )
 endif()
 
+add_executable(matvol_production_wiring_tests
+    tests/matvol/MatvolProductionWiringTests.cpp
+    apps/slicer_host_sim/HostRequestBuilder.c
+    apps/slicer_host_sim/HostMaterialProfile.c
+    apps/slicer_host_sim/HostVolumetricProfile.c
+    apps/slicer_host_sim/HostTextureProfile.c
+    apps/slicer_host_sim/HostPath.c
+    apps/slicer_host_sim/JsonText.c
+)
+set_target_properties(matvol_production_wiring_tests PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+)
+target_include_directories(matvol_production_wiring_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_host_sim
+)
+target_link_libraries(matvol_production_wiring_tests PRIVATE slicer_core bcrypt)
+target_compile_definitions(matvol_production_wiring_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_production_wiring_tests PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:/W4>" "$<$<COMPILE_LANGUAGE:CXX>:/WX>"
+        "$<$<COMPILE_LANGUAGE:C>:/W4>" "$<$<COMPILE_LANGUAGE:C>:/WX>"
+    )
+endif()
+
 add_executable(matvol_reality_plan_tests
     tests/matvol/MatvolRealityPlanTests.cpp
 )
@@ -2631,6 +2660,7 @@ add_test(NAME matvol_rgb_compose_unit_tests COMMAND matvol_rgb_compose_unit_test
 add_test(NAME matvol_white_carrier_integration_tests COMMAND matvol_white_carrier_integration_tests)
 add_test(NAME matvol_host_profile_round_trip_tests COMMAND matvol_host_profile_round_trip_tests)
 add_test(NAME matvol_reality_plan_tests COMMAND matvol_reality_plan_tests)
+add_test(NAME matvol_production_wiring_tests COMMAND matvol_production_wiring_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
