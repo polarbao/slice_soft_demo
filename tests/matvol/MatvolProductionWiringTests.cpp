@@ -69,7 +69,7 @@ hosteffectiveprofilesettings MakeSettings(
     settings.profileid = "matvol-production-wiring";
     settings.dpix = dpi;
     settings.dpiy = dpi;
-    settings.layerthicknessmm = 0.038;
+    settings.layerthicknessmm = 0.033;
     settings.materialstrategy = HOST_MATERIAL_RGB_WHITE;
     settings.varnishtoplayers = 1;
     settings.texturetopsurfacelayers = 1;
@@ -144,7 +144,10 @@ bool ProductionWiringEmitsPerLayerMaterialOwnership()
     const std::string modelPath = model.generic_string();
     const std::string packagePath = packageDirectory.generic_string();
     // 200 dpi：约 93 x 184 列，足以覆盖两层壳且保持秒级。
-    const hosteffectiveprofilesettings settings = MakeSettings(modelPath, packagePath, 200);
+    // 分辨率与层厚取【生产实设】而非便于跑测的值：用户在 635/600 dpi、0.033 mm 下
+    // 命中的未归属缺陷，在 200 dpi / 0.038 mm 下完全触发不到。回归必须守在真实设置上。
+    hosteffectiveprofilesettings settings = MakeSettings(modelPath, packagePath, 635);
+    settings.dpiy = 600;
     if (!ExpectTrue(WriteHostProfile(settings, profilePath), "host emits a matvol profile"))
     {
         return false;

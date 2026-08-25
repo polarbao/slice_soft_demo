@@ -4738,10 +4738,34 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     // 真实触发资产（实测 46 万格中 2 格），故按同一裁定重新引入并附计数。
     // lastOwnedMaterial 随层循环自下而上推进，天然给出「下方最近的已归属材质」。
     std::vector<std::uint32_t> lastOwnedMaterial;
+    // 次级规则所需：每列最低区间的材质。位于最低区间【之下】的格子没有「下方材质」，
+    // 例如薄于一个层厚的区间会被整段丢弃（firstLayer > lastLayer），
+    // 使该列底部出现掩码为模型却无任何区间覆盖的格子。
+    std::vector<std::uint32_t> bottomMaterial;
     std::uint64_t unownedFilledCells{0};
     if (materialVolumePlan.has_value())
     {
         lastOwnedMaterial.assign(layerPixelCount, kNoMaterialOwner);
+        bottomMaterial.assign(layerPixelCount, kNoMaterialOwner);
+        const std::span<const std::uint32_t> offsets =
+            materialVolumePlan.value().ColumnIntervalOffsets();
+        const std::span<const MaterialLayerInterval> intervals =
+            materialVolumePlan.value().Intervals();
+        for (std::size_t column{0}; column < layerPixelCount; ++column)
+        {
+            int lowestFirstLayer{std::numeric_limits<int>::max()};
+            for (std::uint32_t index{offsets[column]};
+                 index < offsets[column + 1U];
+                 ++index)
+            {
+                const MaterialLayerInterval& interval = intervals[index];
+                if (interval.firstLayerInclusive < lowestFirstLayer)
+                {
+                    lowestFirstLayer = interval.firstLayerInclusive;
+                    bottomMaterial[column] = interval.materialIndex;
+                }
+            }
+        }
     }
     // MV-08C：逐层 owner 覆盖统计。逐层记录而非只记总量，
     // 是为了让「只有部分层用了 owner」这类层间突变在报告里可见。
@@ -4808,14 +4832,25 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                         lastOwnedMaterial[column] = materialVolumeOwner[column];
                         continue;
                     }
-                    if (matvolMask[column] == 0U
-                        || lastOwnedMaterial[column] == kNoMaterialOwner)
+                    if (matvolMask[column] == 0U)
                     {
-                        // 掩码非模型，或该列下方尚无已归属层：保持未归属，
-                        // 由 ComposeMaterialLayerRgb 按既有语义 fail closed，不静默填充。
                         continue;
                     }
-                    materialVolumeOwner[column] = lastOwnedMaterial[column];
+                    // 主规则：下方最近的已归属材质。
+                    std::uint32_t filler = lastOwnedMaterial[column];
+                    if (filler == kNoMaterialOwner)
+                    {
+                        // 次级规则：位于该列最低区间之下，不存在「下方材质」，
+                        // 退而取该列最低区间的材质。这是一条【独立的次级规则】，
+                        // 不是主规则的一部分。整列无任何区间时仍保持未归属，
+                        // 由 ComposeMaterialLayerRgb 按既有语义 fail closed，不静默填充。
+                        filler = bottomMaterial[column];
+                    }
+                    if (filler == kNoMaterialOwner)
+                    {
+                        continue;
+                    }
+                    materialVolumeOwner[column] = filler;
                     ++unownedFilledCells;
                 }
             }
