@@ -37,7 +37,7 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-08A | 真实资产 plan 构建证明（适配器缺口经实测证明不存在） | **COMPLETE** | MV-06 | 2026-08-24 |
 | MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | **COMPLETE**（03.obj 实测 63% 的列同列多材质） | MV-08A | 2026-08-24 |
 | MV-08C | 按需补白顺序接入与体积报告落盘 | **COMPLETE**（报告 54KB 落盘，拓扑事实与放行名单均已披露） | MV-08B | 2026-08-24 |
-| MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | **READY（约七成可做）**；`cancel` 与 `fault` 受阻，见 §12.1 | MV-07、MV-08 | - |
+| MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | **多数项已完成**：Golden 语义+字节双层、RIP strict、cancel、性能内存均已实测；cold/warm 与 CLI 路径 fault 未完成，见 §12.1-12.5 | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
 
 ## 3. MV-00 文档与上下文
@@ -505,6 +505,48 @@ TIFF 层文件真实存在，因此两个开关**必须同时打开**。只开�
 
 **另核实**：`b7c38cc` 改的预览调色板不影响层 TIFF——调色板仅被 `PackageQueryFacadePreview`
 消费（读已写好的包渲染显示图），`slicer.cpp` 不 include 该头文件。
+
+### 12.5 cancel 已贯通；fault 按路径二分处置（2026-08-24）
+
+#### cancel：已实现并验证
+
+此前判定「受阻」的真实原因是：`MaterialVolumeBuildRequest` 有 `cancellationRequested`，
+但 `SliceRunOptions` 没有任何取消字段，生产路径从未设置它。更要紧的是 **plan 构建发生在
+`gridcallback` 之前**，而适配器原本只靠回调取消，那个窗口完全覆盖不到——它恰是本路径
+最长的不可中断段（逐列遍历该材质全部三角面）。
+
+现 `SliceRunOptions` 新增 `std::function<bool()> cancellationRequested`（与
+`MaterialVolumeBuildRequest` 同型，零适配），由 `slicer.cpp` 透传给 `matvolRequest`，
+并在 `LegacySceneLayerAdapter` 从 `request.canceltoken` 接入。
+
+**避开的陷阱**：取消并不总以 `LegacyAdapterCancellation` 形式到达——透传的取消点由 plan
+构建内部检查，命中时抛的是 `MaterialVolumeError`。若不在通用异常处理里复核令牌，
+取消会被误报为 `ProducerFailed`，诊断指向完全错误的方向。现按令牌状态区分。
+
+**断言自校准**：仅「抛出取消」不足以证明是早期取消，`ThrowIfCancelled` 在列循环之后
+还有一次调用，跑完再报也会抛。上界以同一测试内未取消那次的实测耗时自校准（取 3/4）：
+未取消 18404 ms、预算 13803 ms、取消路径 2829 ms。初版曾拍 3000 ms 固定上界，
+实测 2901 ms 仅差 99 ms 即会误报，已废弃。
+
+**变异检验**：移除透传后取消完全失效，切片跑完 10999 ms 而非被中断。
+
+#### fault：结论与原计划不同，按路径二分
+
+原打算定义为「写包中途失败」并复用「不发布半包」断言。查勘推翻了该前提：
+**`run_slicer` 直接写进最终包目录**，无暂存、无原子重命名、无异常清理
+（`slicer.cpp:4492` 起约 15 处直接写 `package_dir / ...`）。第 k 层抛出即留下 k 个 TIFF
+与缺失的 manifest。
+
+| 路径 | 「不发布半包」 | 依据 |
+|---|---|---|
+| 生产路径 | **已保证，且已有测试覆盖** | `LegacySceneLayerAdapter.cpp:156-159` 把三个写盘开关全设 false，`run_slicer` 不写盘；发布由 `WriteRgbwsvProductionPackage` 完成，具备 staging→原子 rename→异常时 `RecoverPackageArtifacts`。既有断言见 `rgbwsv_production_package_writer` 的「white semantics mismatch publishes no package」 |
+| CLI 路径 | **结构性缺失** | 需给 `run_slicer` 加暂存与原子发布，牵动十几处写入点，属独立重构 |
+
+故 MATVOL 在此项上**不引入新风险**（它位于 `run_slicer` 内，而该层在生产路径不写盘）。
+写包器虽有可用注入点（`layerwritecallback` 可在第 k 层已落 staging、未发布时抛出），
+但那验证的是**写包器**而非 MATVOL，不以之冒充「MATVOL 的 fault 已验证」。
+
+**CLI 路径的 staging 重构另立卡**，不塞进 MV-09 假装完成。
 
 ## 13. MV-10 收口
 
