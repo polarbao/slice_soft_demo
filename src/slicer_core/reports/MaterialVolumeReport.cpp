@@ -138,6 +138,17 @@ Json BuildMaterialVolumeReport(const MaterialVolumeReportInput& input)
         }));
     }
 
+    // MQ-05 放行的自交材质必须在报告里披露。MaterialVolumePlan.h 明确要求
+    // 「不得静默吞掉」，若此处保持空数组，放行事实就只存在于内存里，
+    // 产出物上完全看不出这一版是在放宽策略下切出来的。
+    Json::Array warnings;
+    for (const std::string& material : input.plan->ToleratedSelfIntersectingMaterials())
+    {
+        warnings.push_back(
+            "material '" + material
+            + "' was admitted under selfIntersectionPolicy=tolerate_closed_self_intersection");
+    }
+
     return Json::object({
         {"schema", "slicesoft.material_volume_report.1"},
         {"packageProtocol", "p0.rgbwsv.2"},
@@ -162,7 +173,7 @@ Json BuildMaterialVolumeReport(const MaterialVolumeReportInput& input)
              {"unprintableWhiteCarrierPixels", Json{whiteCarrierPixels}},
          })},
         {"layers", Json{std::move(layers)}},
-        {"warnings", Json::array({})},
+        {"warnings", std::move(warnings)},
         {"errors", Json::array({})},
     });
 }

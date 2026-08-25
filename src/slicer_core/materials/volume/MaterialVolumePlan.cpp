@@ -204,6 +204,7 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
     plan.materialNames_ = std::move(materialNames);
     plan.materialPriorities_ = std::move(materialPriorities);
     plan.toleratedSelfIntersectingMaterials_ = std::move(toleratedSelfIntersecting);
+    plan.topologyFacts_ = facts;
     plan.columnIntervalOffsets_.assign(plan.columnCount_ + 1U, 0U);
 
     // 逐列求交所用的复用缓冲，循环外分配一次。

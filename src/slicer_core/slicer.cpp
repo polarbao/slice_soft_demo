@@ -9,11 +9,13 @@
 #include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/materials/volume/MaterialLayerRgbComposer.h"
 #include "slicer_core/materials/volume/MaterialVolumePlan.h"
+#include "slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
+#include "slicer_core/reports/MaterialVolumeReport.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
 #include "slicer_core/support/SupportBaseProjection.h"
@@ -3381,6 +3383,41 @@ std::vector<std::uint8_t> compose_layer(
         }
     }
 
+    // MATVOL 按需补白（MV-08C）。必须在最终 RGB 之后：补白判据逐像素读 RGB，
+    // 若在 RGB 定稿前施加，判的是中间值。此处是 compose_layer 内最后一个
+    // 仍会改动模型像素 RGB 的位置之后，故为正确插入点。
+    //
+    // 布局差异是本段的要害：补白函数要求【紧凑】单通道 W（步长 1），
+    // 而 pixels 是六通道交错（W 在 base+3、步长 6），不能直接取 span，
+    // 必须用暂存缓冲并按列散射回写。暂存缓冲以调用方现值播种，
+    // 保证未命中的像素 W 保持原值不变。
+    if (config.material_volume_policy.enabled && material_volume_rgb != nullptr
+        && whiteCarrierEnabled)
+    {
+        const std::size_t columnCount = model_mask.size();
+        if (material_volume_rgb->size() == columnCount * 3U)
+        {
+            std::vector<std::uint8_t> whiteScratch(columnCount, 0U);
+            for (std::size_t column{0}; column < columnCount; ++column)
+            {
+                whiteScratch[column] = pixels.at(column * 6U + 3U);
+            }
+            MaterialVolumeWhiteCarrierRequest carrier;
+            carrier.whiteUnderbaseEnabled = true;
+            carrier.inkThreshold = config.texture.unprintable_white_ink_threshold;
+            carrier.whiteValue = config.texture.unprintable_white_value;
+            MaterialVolumeWhiteCarrierStats carrierStats;
+            ApplyMaterialVolumeWhiteCarrierLayer(
+                carrier, *material_volume_rgb, model_mask, whiteScratch, carrierStats);
+            for (std::size_t column{0}; column < columnCount; ++column)
+            {
+                pixels.at(column * 6U + 3U) = whiteScratch[column];
+            }
+            semantic_stats.unprintable_white_carrier_pixels +=
+                carrierStats.unprintableWhiteCarrierPixels;
+        }
+    }
+
     return pixels;
 }
 
@@ -4692,6 +4729,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         static_cast<std::size_t>(grid.width_px)
         * static_cast<std::size_t>(grid.height_px);
     const std::vector<std::uint8_t> emptyOptionalMask(layerPixelCount, 0U);
+    // MV-08C：逐层 owner 覆盖统计。逐层记录而非只记总量，
+    // 是为了让「只有部分层用了 owner」这类层间突变在报告里可见。
+    std::vector<MaterialVolumeLayerStat> materialVolumeLayerStats;
+    if (materialVolumePlan.has_value())
+    {
+        materialVolumeLayerStats.reserve(static_cast<std::size_t>(grid.layer_count));
+    }
     // MATVOL 逐层复用缓冲：owner 为每列一个材质下标，rgb 为紧凑三通道，
     // 与 compose_layer 返回的六通道交错布局不同，需在写回时按列取用。
     std::vector<std::uint32_t> materialVolumeOwner;
@@ -4745,6 +4789,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 materialVolumeOwner,
                 model_masks.at(static_cast<std::size_t>(layer_index)),
                 materialVolumeRgb);
+            materialVolumeLayerStats.push_back(CountMaterialVolumeLayerOwners(
+                materialVolumePlan.value(),
+                layer_index,
+                materialVolumeOwner,
+                model_masks.at(static_cast<std::size_t>(layer_index))));
         }
                 std::vector<std::uint8_t> layer = compose_layer(
             config,
@@ -4833,6 +4882,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             options.layercallback(
                 outputLayer,
                 materialClosureInput);
+        }
+        if (!materialVolumeLayerStats.empty()
+            && materialVolumeLayerStats.back().layerIndex == layer_index)
+        {
+            // 补白计数由 compose_layer 累加进本层 semantic，此处回填到该层统计。
+            materialVolumeLayerStats.back().unprintableWhiteCarrierPixels =
+                diagnostics.semantic.unprintable_white_carrier_pixels;
         }
         update_layer_channel_stats(layer, diagnostics);
         total_model_pixels += layer_model_pixels;
@@ -4939,6 +4995,45 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             total_semantic_stats,
             support_generation,
             support_placement_policy);
+    // MV-08C：体积报告。未启用时同样产出骨架，与既有报告一致——
+    // 「报告存在但为空」与「报告缺失」在下游是两种完全不同的信号。
+    Json material_volume_report;
+    if (materialVolumePlan.has_value())
+    {
+        MaterialVolumeReportInput volumeInput;
+        volumeInput.plan = &materialVolumePlan.value();
+        volumeInput.rgbTable = &materialVolumeRgbTable.value();
+        volumeInput.policy = &config.material_volume_policy;
+        volumeInput.topologyFacts = materialVolumePlan.value().TopologyFacts();
+        volumeInput.layers = materialVolumeLayerStats;
+        material_volume_report = BuildMaterialVolumeReport(volumeInput);
+    }
+    else
+    {
+        material_volume_report = Json::object({
+            {"schema", "slicesoft.material_volume_report.1"},
+            {"packageProtocol", "p0.rgbwsv.2"},
+            {"enabled", false},
+            {"mode", "closed_intervals"},
+            {"missingMaterial", "fail_closed"},
+            {"openSurface", Json::object({
+                {"mode", "reject"},
+                {"requestedThicknessMm", 0.0},
+                {"placement", "below_surface"}})},
+            {"overlap", Json::object({{"mode", "explicit_priority"}})},
+            {"materials", Json::array({})},
+            {"totals", Json::object({
+                {"layerCount", 0},
+                {"columnCount", 0},
+                {"intervalCount", 0},
+                {"ownerPixels", 0},
+                {"unownedModelPixels", 0},
+                {"unprintableWhiteCarrierPixels", 0}})},
+            {"layers", Json::array({})},
+            {"warnings", Json::array({})},
+            {"errors", Json::array({})},
+        });
+    }
     Json material_closure_report;
     if (collectMaterialClosureExact
         && materialClosureExactLayers.size() == static_cast<std::size_t>(grid.layer_count))
@@ -5406,6 +5501,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"materialProcess", "reports/material_process_report.json"},
              {"crossSectionMaterialStack", "reports/cross_section_material_stack_report.json"},
              {"materialClosure", "reports/material_closure_report.json"},
+             {"materialVolume", "reports/material_volume_report.json"},
              {"materialRoleMapping", "reports/material_role_mapping_report.json"},
              {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
              {"threeMf", "reports/three_mf_report.json"},
@@ -5448,6 +5544,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
         write_json_file(package_dir / "reports/cross_section_material_stack_report.json", cross_section_material_stack_report);
         write_json_file(package_dir / "reports/material_closure_report.json", material_closure_report);
+        write_json_file(
+            package_dir / "reports/material_volume_report.json", material_volume_report);
         write_json_file(
             package_dir / "reports/material_role_mapping_report.json",
             material_role_mapping_report_to_json(material_role_mapping_report));

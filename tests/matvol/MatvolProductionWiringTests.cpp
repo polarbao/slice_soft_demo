@@ -305,6 +305,87 @@ bool DisablingMaterialVolumeRemovesPerLayerOwnership()
         "disabling materialVolumePolicy removes per-layer material ownership");
 }
 
+// MV-08C：体积报告必须真正落盘，且内容不得退化。
+// 两条断言各自对应一个曾经存在的缺口：
+//   - topology 不得为 invalid —— plan 内部算出的拓扑事实若不外传，报告会全体退化，
+//     schema 仍然合法但事实错误，属最难发现的一类缺陷；
+//   - warnings 必须列出被放行的自交材质 —— MQ-05 明令不得静默吞掉，
+//     否则产出物上完全看不出这一版是在放宽策略下切出来的。
+bool VolumeReportIsEmittedWithFacts()
+{
+    const std::filesystem::path model =
+        RepositoryRoot() / "model" / "obj" / "reality" / "finger_suoguo" / "03.obj";
+    if (!std::filesystem::exists(model))
+    {
+        std::cout << "SKIP volume_report asset not present" << '\n';
+        return true;
+    }
+    const std::filesystem::path workDirectory =
+        std::filesystem::temp_directory_path() / "slicesoft_matvol_report";
+    std::error_code cleanupError;
+    std::filesystem::remove_all(workDirectory, cleanupError);
+    std::filesystem::create_directories(workDirectory);
+    const std::filesystem::path packageDirectory = workDirectory / "package";
+    std::filesystem::create_directories(packageDirectory);
+    const std::filesystem::path profilePath = workDirectory / "profile.json";
+
+    const std::string modelPath = model.generic_string();
+    const std::string packagePath = packageDirectory.generic_string();
+    const hosteffectiveprofilesettings settings = MakeSettings(modelPath, packagePath, 120);
+    if (!ExpectTrue(WriteHostProfile(settings, profilePath), "host emits a matvol profile"))
+    {
+        return false;
+    }
+
+    slicer_core::SliceRunOptions options;
+    options.write_tiff_layers = false;
+    options.write_preview_files = false;
+    options.write_reports = true;
+    try
+    {
+        const slicer_core::SliceRunResult result = slicer_core::run_slicer(profilePath, options);
+        (void)result;
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "FAILED: report run threw: " << error.what() << '\n';
+        return false;
+    }
+
+    const std::filesystem::path reportPath =
+        packageDirectory / "reports" / "material_volume_report.json";
+    bool passed = ExpectTrue(
+        std::filesystem::exists(reportPath), "volume report is written into the package");
+    if (!passed)
+    {
+        return false;
+    }
+    std::ifstream input(reportPath, std::ios::binary);
+    const std::string report(
+        (std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    input.close();
+
+    passed = ExpectTrue(
+                 report.find("slicesoft.material_volume_report.1") != std::string::npos,
+                 "report declares its schema")
+        && passed;
+    passed = ExpectTrue(
+                 report.find("closed_orientable") != std::string::npos,
+                 "topology facts reach the report instead of degrading to invalid")
+        && passed;
+    passed = ExpectTrue(
+                 report.find("self_intersecting") != std::string::npos,
+                 "the self-intersecting material is reported as such")
+        && passed;
+    passed = ExpectTrue(
+                 report.find("tolerate_closed_self_intersection") != std::string::npos,
+                 "warnings disclose the tolerated self-intersecting material")
+        && passed;
+    std::cout << "  report: bytes=" << report.size() << '\n';
+    std::filesystem::remove_all(workDirectory, cleanupError);
+    return passed;
+}
+
 }  // namespace
 
 int main()
@@ -320,11 +401,16 @@ int main()
         std::cerr << "CASE FAILED: disabled_policy" << '\n';
         ++failures;
     }
+    if (!VolumeReportIsEmittedWithFacts())
+    {
+        std::cerr << "CASE FAILED: volume_report" << '\n';
+        ++failures;
+    }
     if (failures != 0)
     {
         std::cerr << "FAIL MatvolProductionWiringTests" << '\n';
         return 1;
     }
-    std::cout << "PASS MatvolProductionWiringTests 2/2" << '\n';
+    std::cout << "PASS MatvolProductionWiringTests 3/3" << '\n';
     return 0;
 }
