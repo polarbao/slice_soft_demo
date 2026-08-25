@@ -471,6 +471,41 @@ TIFF 层文件真实存在，因此两个开关**必须同时打开**。只开�
 外层捕获 `std::exception` 而非仅 `ValidationError`：`rip_reader` 对 `manifest.tiff` 用的是
 无检查的 `.at()`，缺失时抛 `std::out_of_range`，只接前者会让回归以崩溃而非失败呈现。
 
+### 12.4 字节级零漂移已实测通过（2026-08-24）
+
+**先纠正命题。** 原本要证的「MV-08B/08C 在 matvol 关闭时未改变任何输出字节」**是假的**：
+`slicer.cpp:5504` 无条件往 manifest 加 `reports.materialVolume` 键，`:5547-5548` 无条件写出
+`reports/material_volume_report.json`（关闭时为空骨架）。两处均为 MV-08C 刻意设计——
+「报告存在但为空」与「报告缺失」在下游是两种不同信号。故命题收窄为可证且有意义的形式：
+
+> **逐层 TIFF 字节逐位相同；包的增量恰好是一个 manifest 键与一个新报告文件。**
+
+**实测方法。** 仓库内**没有**任何现成设施可用：`baseline_identity.json` 名不副实，只哈希
+输入文件（配置/模型/golden 期望值），**没有一条层 TIFF 哈希**；G4 比的是同一二进制下
+「旧 Profile vs 新 Profile」两个包，证明不了版本间影响；`scripts/` 与 `tests/` 全无
+「两个构建跑同一配置再比对」的harness。因此自建：在 `d9d45ff`（MV-08B 的父提交）拉工作树，
+以**完全相同的 CMake 配置**（尤其 `SLICESOFT_TIFF_BACKEND` 是编译期宏而非配置开关）
+单独构建 `slicer_cli`，再对同一批 matvol-off 配置逐层比对 SHA-256。
+
+**结果（三例全过）：**
+
+| 用例 | 层数 | 层 TIFF 字节 | 包文件增量 | manifest.reports 增量 |
+|---|---|---|---|---|
+| `p0_basic` | 30 | 逐位相同 | `reports/material_volume_report.json` | `materialVolume` |
+| `material_process_top2` | 25 | 逐位相同 | 同上 | 同上 |
+| `support_shape_smoke` | 16 | 逐位相同 | 同上 | 同上 |
+
+三例的 removed 集合均为空，无任何多余差异。`material_process_top2` 尤其要紧——它走
+纹理/材料工艺路径，正是 MATVOL 分支插入 `compose_layer` 的位置，该例零漂移说明新分支
+确实只在 `materialVolumePolicy.enabled` 为真时生效。
+
+**比对稳定性已核实**：层 TIFF 写入的标签全为常量，未设 `TIFFTAG_DATETIME`，
+整个写入路径无时间戳或随机字段；manifest 内嵌绝对 `configPath`，故两侧顺序运行并复用
+同一配置文件路径，消除与 MATVOL 无关的差异。`autoOrient` 按 `run_golden_tests.ps1` 口径关闭。
+
+**另核实**：`b7c38cc` 改的预览调色板不影响层 TIFF——调色板仅被 `PackageQueryFacadePreview`
+消费（读已写好的包渲染显示图），`slicer.cpp` 不 include 该头文件。
+
 ## 13. MV-10 收口
 
 **出口：** 用户确认开放壳层与优先级；所有 Gate 有仓库证据；候选只在显式 Profile 可用；正式设备
