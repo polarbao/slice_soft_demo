@@ -449,6 +449,28 @@ MV-09 中风险最高的一项已完成。该条自 MV-08B 改动 `compose_layer
 字节级 SHA-256 零漂移是另一套机制（`run_stage15_white_carrier_gate.ps1` 的 G3/G4），
 MV-09 若要覆盖该层需另行执行。
 
+### 12.3 Package / RIP strict 已实测通过（2026-08-24）
+
+`validate_slice_package(result.package_dir)` 对 MATVOL 产出的包通过：
+`schema=p0.rgbwsv.2`、`grid=57x111x166`、`storage=stripped`、`compression=none`，
+且 `validation.layer_count == result.layer_count`、`bit_depth == 8`。
+
+**事先查清的风险点已排除**：MV-08C 往 `manifest.reports` 新增了 `materialVolume` 键，
+曾担心严格读取器因未知键拒绝。实测与源码核对一致——严格读取器**根本不读**
+`manifest.reports`，整个校验只触碰 `schema` / `grid` / `tiff` / `layers` 四个键；
+`contracts/p0.rgbwsv.2.schema.json` 亦为 `additionalProperties: true`。
+故 MATVOL 包不存在结构性障碍。
+
+**该校验确实会咬**（变异检验）：关闭 `write_tiff_layers` 后精确报出
+`E_LAYER_MISSING` 与缺失的具体层路径。
+
+**用例正确性前提**：`manifest.json` 仅在 `write_reports` 打开时落盘，而严格校验又要求
+TIFF 层文件真实存在，因此两个开关**必须同时打开**。只开报告不开 TIFF 会必然失败——
+这属于「测试看似在验证、实际条件不成立」的形状，已在用例注释中写明。
+
+外层捕获 `std::exception` 而非仅 `ValidationError`：`rip_reader` 对 `manifest.tiff` 用的是
+无检查的 `.at()`，缺失时抛 `std::out_of_range`，只接前者会让回归以崩溃而非失败呈现。
+
 ## 13. MV-10 收口
 
 **出口：** 用户确认开放壳层与优先级；所有 Gate 有仓库证据；候选只在显式 Profile 可用；正式设备

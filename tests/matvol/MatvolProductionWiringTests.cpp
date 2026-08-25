@@ -13,6 +13,7 @@
 
 #include "slicer_core/config.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
+#include "slicer_core/rip_reader.h"
 #include "slicer_core/slicer.h"
 
 #include <array>
@@ -338,13 +339,15 @@ bool VolumeReportIsEmittedWithFacts()
     }
 
     slicer_core::SliceRunOptions options;
-    options.write_tiff_layers = false;
+    // 严格 RIP 读取器要求 TIFF 层文件真实存在，且 manifest.json 只在 write_reports
+    // 下才落盘，故两者都必须打开；仅开报告会以 E_LAYER_MISSING 失败。
+    options.write_tiff_layers = true;
     options.write_preview_files = false;
     options.write_reports = true;
+    slicer_core::SliceRunResult result;
     try
     {
-        const slicer_core::SliceRunResult result = slicer_core::run_slicer(profilePath, options);
-        (void)result;
+        result = slicer_core::run_slicer(profilePath, options);
     }
     catch (const std::exception& error)
     {
@@ -382,6 +385,40 @@ bool VolumeReportIsEmittedWithFacts()
                  "warnings disclose the tolerated self-intersecting material")
         && passed;
     std::cout << "  report: bytes=" << report.size() << '\n';
+
+    // MV-09：Package / RIP strict。严格读取器不读 manifest.reports，故 MV-08C 新增的
+    // materialVolume 键对它不可见；本断言锁定的是「MATVOL 产出的包本身通过严格校验」。
+    // 外层捕获 std::exception 而非仅 ValidationError：rip_reader 对 manifest.tiff 用的是
+    // 无检查的 .at()，缺失时抛的是 std::out_of_range，只接前者会让回归以崩溃而非失败呈现。
+    try
+    {
+        const slicer_core::RipValidationResult validation =
+            slicer_core::validate_slice_package(result.package_dir);
+        passed = ExpectTrue(
+                     validation.layer_count == result.layer_count,
+                     "strict RIP layer count agrees with the run")
+            && passed;
+        passed = ExpectTrue(validation.bit_depth == 8, "strict RIP sees 8-bit channels")
+            && passed;
+        std::cout << "  rip strict: schema=" << validation.schema
+                  << " grid=" << validation.width_px << "x" << validation.height_px
+                  << "x" << validation.layer_count
+                  << " storage=" << validation.storage_mode
+                  << " compression=" << validation.compression << '\n';
+    }
+    catch (const slicer_core::ValidationError& error)
+    {
+        std::cerr << "FAILED: strict RIP rejected the MATVOL package: "
+                  << slicer_core::validation_error_code_string(error.code())
+                  << " " << error.what() << '\n';
+        passed = false;
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "FAILED: strict RIP validation threw: " << error.what() << '\n';
+        passed = false;
+    }
+
     std::filesystem::remove_all(workDirectory, cleanupError);
     return passed;
 }
