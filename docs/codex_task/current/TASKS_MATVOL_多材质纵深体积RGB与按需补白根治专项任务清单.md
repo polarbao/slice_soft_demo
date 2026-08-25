@@ -429,6 +429,26 @@ SHA-256 不变（机制见 `scripts/run_stage15_white_carrier_gate.ps1` 的 G3/G
 **MQ-04 不阻塞 MV-09**：按 2026-08-24 回签，设备预算只卡 MV-10；MV-09 只需**记录**
 耗时与峰值内存，不做判定。
 
+### 12.2 Golden 零漂移已实测通过（2026-08-24）
+
+MV-09 中风险最高的一项已完成。该条自 MV-08B 改动 `compose_layer`、MV-08C 改动
+`run_slicer` 报告链路后**从未验证过**，是当时唯一没有证据支撑的假定。
+
+`scripts/run_golden_tests.ps1 -BuildDir build-slicesoft/main -Config Debug` 退出码 0，
+输出 `Golden tests complete.`，逐例 PASS 包括 `TexturedMissingTextureFallback`、
+`TexturedNoUvFallback`、`ThreeMfColorGroupRgb`、`ThreeMfTexture2dChecker`、
+`MaterialPolicyRgbWhiteVarnish`。即旧路径输出未因 MATVOL 接线产生任何漂移。
+
+**该门确实会咬**（变异检验）：把 `tests/golden/expected/r2_golden_summaries.json` 的
+`p0_basic.modelPixels` 由 1440 改为 1441 后，脚本以退出码 1 失败并精确报出
+`p0_basic modelPixels expected=1441 actual=1440`。没有这一步，「通过」只说明脚本跑完了，
+不说明它在比较什么。
+
+口径提醒：本脚本是**语义 golden**（比对 manifest 网格与 `slice_report.json` 总量），
+不是字节级比对，且**不在 CTest 内**，只由 `scripts/run_ci_quick.ps1` 调用。
+字节级 SHA-256 零漂移是另一套机制（`run_stage15_white_carrier_gate.ps1` 的 G3/G4），
+MV-09 若要覆盖该层需另行执行。
+
 ## 13. MV-10 收口
 
 **出口：** 用户确认开放壳层与优先级；所有 Gate 有仓库证据；候选只在显式 Profile 可用；正式设备
