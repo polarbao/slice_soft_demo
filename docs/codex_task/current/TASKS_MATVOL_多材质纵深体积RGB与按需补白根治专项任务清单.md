@@ -1,6 +1,6 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..MV-03、MV-05..MV-06 COMPLETE / MV-07A..07C COMPLETE
+> 文档状态：**ACTIVE / MV-00..03、05..07、08A、08B COMPLETE（真实资产多材质纵深已跑通）
 > / MV-04 INPUT OPEN（MQ-01 实测上限已给出，未回签）/ 生产默认 Profile 仍为 matvol 关闭**
 > 版本：v1.7 ｜ 日期：2026-08-24
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
@@ -35,8 +35,8 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **COMPLETE** | MV-05 | 2026-08-21 |
 | MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **COMPLETE（07A/07B/07C 全部落地）** | MV-06 | 2026-08-24 |
 | MV-08A | 真实资产 plan 构建证明（适配器缺口经实测证明不存在） | **COMPLETE** | MV-06 | 2026-08-24 |
-| MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | **READY**（接线可开工；真实资产验证受 MQ-05 阻塞） | MV-08A | - |
-| MV-08C | 按需补白顺序接入与体积报告落盘 | PENDING | MV-08B | - |
+| MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | **COMPLETE**（03.obj 实测 63% 的列同列多材质） | MV-08A | 2026-08-24 |
+| MV-08C | 按需补白顺序接入与体积报告落盘 | **READY** | MV-08B | - |
 | MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
 
