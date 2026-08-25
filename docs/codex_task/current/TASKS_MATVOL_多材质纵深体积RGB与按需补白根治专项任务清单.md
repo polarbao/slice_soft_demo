@@ -1,6 +1,6 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..03、05..07、08A、08B COMPLETE（真实资产多材质纵深已跑通）
+> 文档状态：**ACTIVE / MV-00..03、05..08C COMPLETE（真实资产多材质纵深已跑通并落盘报告）
 > / MV-04 INPUT OPEN（MQ-01 实测上限已给出，未回签）/ 生产默认 Profile 仍为 matvol 关闭**
 > 版本：v1.7 ｜ 日期：2026-08-24
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
@@ -36,8 +36,8 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **COMPLETE（07A/07B/07C 全部落地）** | MV-06 | 2026-08-24 |
 | MV-08A | 真实资产 plan 构建证明（适配器缺口经实测证明不存在） | **COMPLETE** | MV-06 | 2026-08-24 |
 | MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | **COMPLETE**（03.obj 实测 63% 的列同列多材质） | MV-08A | 2026-08-24 |
-| MV-08C | 按需补白顺序接入与体积报告落盘 | **READY** | MV-08B | - |
-| MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
+| MV-08C | 按需补白顺序接入与体积报告落盘 | **COMPLETE**（报告 54KB 落盘，拓扑事实与放行名单均已披露） | MV-08B | 2026-08-24 |
+| MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | **READY（约七成可做）**；`cancel` 与 `fault` 受阻，见 §12.1 | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
 
 ## 3. MV-00 文档与上下文
@@ -399,6 +399,35 @@ wall/CPU/Peak Working Set，记录 build identity 和重复次数。
 ```
 
 无相同请求 before/after 时不得给出性能提升比例。
+
+### 12.1 可达性查勘结论（2026-08-24）
+
+**约七成可立即执行**，模板齐全：`apps/stage16_sampling_matrix` 提供「单可执行 + 
+`--source-root/--output/--quick` + CTest 注册」的矩阵形状；
+`scripts/run_stage16_release_baseline.ps1` 提供 cold/warm 协议、build identity
+（含 gitCommit 与 worktreeDirty）与峰值内存采样。
+
+**Golden 零漂移的口径**：MATVOL **不产出新 golden**，而是证明既有 28 个 golden 的
+SHA-256 不变（机制见 `scripts/run_stage15_white_carrier_gate.ps1` 的 G3/G4）。
+注意这条自 MV-08B 改动 `compose_layer` 后**从未跑过**，正是 MV-09 存在的理由。
+生产默认 matvol 关闭且五个 golden 用例均未启用它，预期零漂移，但必须实测而非假定。
+
+**Package/RIP strict**：用 `validate_slice_package()`（`rip_reader.h:91`）加
+`rip_reader_test` 两级即可，无需外部产物；`RunRipflowLocalGate.ps1` 需要已构建的 RIP 模块，
+属 MV-10 范围。
+
+**两处硬阻塞，需单独决策：**
+
+| 项 | 阻塞原因 | 可选处置 |
+|---|---|---|
+| `cancel` | `SliceRunOptions` 没有取消令牌字段，`matvolRequest.cancellationRequested` 在生产路径从未设置。贯通需**新增生产代码**，不在任何一张卡范围内 | 另开一张卡；或把本项收窄为「仅 plan 构建层取消」（MV-03 已覆盖） |
+| `fault` | 仓库没有针对 `run_slicer` 的故障注入设施，最接近的先例是取消测试的「不发布半包」字节断言 | 需先给出 fault 的定义才可测 |
+
+**新发现的输入缺口**：`materialRoleMapping` 与 `materialVolumePolicy` 的交互没有任何契约记录，
+且前者与白区路径互斥。MV-09 会**发现**而不是**验证**这个问题，预计需新立一条 MQ。
+
+**MQ-04 不阻塞 MV-09**：按 2026-08-24 回签，设备预算只卡 MV-10；MV-09 只需**记录**
+耗时与峰值内存，不做判定。
 
 ## 13. MV-10 收口
 
