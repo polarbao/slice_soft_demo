@@ -157,6 +157,14 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
     options.write_tiff_layers = false;
     options.write_preview_files = false;
     options.write_reports = false;
+    // 透传同步取消点：MaterialVolumePlan 构建发生在 gridcallback 之前，
+    // 仅靠回调取消覆盖不到那个窗口。
+    if (request.canceltoken != nullptr)
+    {
+        options.cancellationRequested = [&request]() {
+            return IsCancellationRequested(request);
+        };
+    }
     options.instanceoverride = request.instance;
     options.modelreportoverride = request.modelreportoverride;
     if (request.canceltoken == nullptr)
@@ -249,10 +257,15 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
     }
     catch (const std::exception& exception)
     {
+        // 取消并不总以 LegacyAdapterCancellation 形式到达：透传给 run_slicer 的
+        // 取消点由 MaterialVolumePlan 构建内部检查，命中时抛的是 MaterialVolumeError。
+        // 若不在此处复核令牌，取消会被误报为生产失败，诊断指向完全错误的方向。
+        const bool cancelled = IsCancellationRequested(request);
         BlockLegacyAdapter(
             result,
             request,
-            SceneRasterErrorCode::ProducerFailed,
+            cancelled ? SceneRasterErrorCode::Cancelled
+                      : SceneRasterErrorCode::ProducerFailed,
             "configpath",
             exception.what());
         return result;

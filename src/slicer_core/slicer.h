@@ -87,6 +87,18 @@ struct SliceRunOptions {
      * remain alive for the synchronous run.
      */
     const ModelReport* modelreportoverride{nullptr};
+
+    /**
+     * @brief 同步取消点；返回 true 时切片立即失败且不产出半成品。
+     *
+     * 取用 std::function 而非 api::ICancelToken*，是为了与
+     * MaterialVolumeBuildRequest、ModelPreflightRequest、TiffLayerSource 等既有形状一致，
+     * 并可零适配直接转交。上层若持有 ICancelToken，在调用点包一层 lambda 即可，
+     * 该做法在 ProductionRepairFacadeFactory 中已有先例。
+     *
+     * 未设置等同于「从不取消」，因此本字段对既有调用方完全无行为影响。
+     */
+    std::function<bool()> cancellationRequested;
 };
 
 /**

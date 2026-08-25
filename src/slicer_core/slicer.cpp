@@ -4468,6 +4468,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         matvolRequest.mesh = &matvolMesh;
         matvolRequest.policy = &config.material_volume_policy;
         matvolRequest.grid = matvolGrid;
+        // plan 构建是本路径上最长的不可中断窗口（逐列遍历全部三角面），
+        // 且发生在 gridcallback 之前，故必须显式透传取消点，
+        // 否则该窗口在生产路径上完全无法取消。
+        matvolRequest.cancellationRequested = options.cancellationRequested;
         materialVolumePlan = BuildMaterialVolumePlan(matvolRequest);
         MaterialRgbTableRequest tableRequest;
         tableRequest.plan = &materialVolumePlan.value();

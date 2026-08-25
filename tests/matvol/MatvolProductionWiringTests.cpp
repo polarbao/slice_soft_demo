@@ -14,9 +14,11 @@
 #include "slicer_core/config.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 #include "slicer_core/rip_reader.h"
+#include "slicer_core/system/ProcessMemoryStats.h"
 #include "slicer_core/slicer.h"
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -98,6 +100,8 @@ bool WriteHostProfile(
     return true;
 }
 
+std::size_t g_uncancelledMs{0};
+
 struct ColumnObservation
 {
     bool sawGreen{false};
@@ -175,6 +179,7 @@ bool ProductionWiringEmitsPerLayerMaterialOwnership()
             }
         };
 
+    const auto uncancelledStart = std::chrono::steady_clock::now();
     try
     {
         const slicer_core::SliceRunResult result = slicer_core::run_slicer(profilePath, options);
@@ -195,6 +200,9 @@ bool ProductionWiringEmitsPerLayerMaterialOwnership()
         }
     }
 
+    g_uncancelledMs = static_cast<std::size_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - uncancelledStart).count());
     std::cout << "  wiring: greenPixels=" << greenPixels
               << " peachPixels=" << peachPixels
               << " columns=" << columns.size()
@@ -419,6 +427,92 @@ bool VolumeReportIsEmittedWithFacts()
         passed = false;
     }
 
+    // MQ-04 回签要求：MV-04 起每张卡都必须把实测耗时与峰值内存记入报告。
+    // 此处只【记录】不【判定】——设备 SLA 仍为 INPUT OPEN，只卡 MV-10。
+    // 内存由调用方自行 bracket：run_slicer 不采集，SliceRunProfile 里也没有内存字段。
+    const slicer_core::ProcessMemoryStats memoryAfter =
+        slicer_core::CaptureProcessMemoryStats();
+    std::cout << "  perf: totalMs=" << result.profile.total_ms
+              << " maskSamplingMs=" << result.profile.mask_sampling_ms
+              << " layerComputeMs=" << result.profile.layer_compute_ms
+              << " peakWorkingSetBytes="
+              << (memoryAfter.available ? memoryAfter.peak_working_set_bytes : 0U)
+              << '\n';
+
+
+    std::filesystem::remove_all(workDirectory, cleanupError);
+    return passed;
+}
+
+// MV-09 cancel：生产路径的取消必须在 plan 构建窗口内生效。
+// 该窗口是本路径最长的不可中断段（逐列遍历全部三角面），且发生在 gridcallback 之前，
+// 因此仅靠既有的回调取消完全覆盖不到它——这正是此前该项被判定「受阻」的原因。
+bool ProductionCancellationStopsPlanBuild()
+{
+    const std::filesystem::path model =
+        RepositoryRoot() / "model" / "obj" / "reality" / "finger_suoguo" / "03.obj";
+    if (!std::filesystem::exists(model))
+    {
+        std::cout << "SKIP cancellation asset not present" << '\n';
+        return true;
+    }
+    const std::filesystem::path workDirectory =
+        std::filesystem::temp_directory_path() / "slicesoft_matvol_cancel";
+    std::error_code cleanupError;
+    std::filesystem::remove_all(workDirectory, cleanupError);
+    std::filesystem::create_directories(workDirectory);
+    const std::filesystem::path packageDirectory = workDirectory / "package";
+    std::filesystem::create_directories(packageDirectory);
+    const std::filesystem::path profilePath = workDirectory / "profile.json";
+
+    const std::string modelPath = model.generic_string();
+    const std::string packagePath = packageDirectory.generic_string();
+    const hosteffectiveprofilesettings settings = MakeSettings(modelPath, packagePath, 200);
+    if (!ExpectTrue(WriteHostProfile(settings, profilePath), "host emits a matvol profile"))
+    {
+        return false;
+    }
+
+    slicer_core::SliceRunOptions options;
+    options.write_tiff_layers = false;
+    options.write_preview_files = false;
+    options.write_reports = false;
+    // 立即取消：plan 构建在每条光栅行开头检查一次，故第一行即命中。
+    options.cancellationRequested = []() { return true; };
+
+    bool passed{true};
+    const auto start = std::chrono::steady_clock::now();
+    try
+    {
+        const slicer_core::SliceRunResult result = slicer_core::run_slicer(profilePath, options);
+        (void)result;
+        passed = ExpectTrue(false, "cancelled run must not complete");
+    }
+    catch (const std::exception& error)
+    {
+        const std::string message = error.what();
+        // 取消复用 E_MATVOL_BUDGET_EXCEEDED：错误码枚举属 DEV_MATVOL 冻结清单，
+        // 新增 Cancelled 值是合同变更而非代码变更，故此处按既有约定断言而不去改枚举。
+        passed = ExpectTrue(
+            message.find("E_MATVOL_BUDGET_EXCEEDED") != std::string::npos,
+            "cancellation fails closed with the frozen budget code");
+    }
+    const auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - start).count();
+    // 仅「抛出取消」不足以证明是早期取消——ThrowIfCancelled 在列循环之后还有一次调用，
+    // 跑完整个构建再报也会抛。真正区分二者的是耗时，故必须有时间断言。
+    // 上界不拍数字，而以同一测试内【未取消】那次的实测耗时自校准：
+    // 取消路径应显著短于完整路径。基准不可用时退回一个宽松固定值。
+    const std::size_t budgetMs = g_uncancelledMs > 0U
+        ? (g_uncancelledMs * 3U) / 4U
+        : 30000U;
+    passed = ExpectTrue(
+                 static_cast<std::size_t>(elapsedMs) < budgetMs,
+                 "cancellation takes effect during the plan build, not after it")
+        && passed;
+    std::cout << "  cancel budget: uncancelledMs=" << g_uncancelledMs
+              << " budgetMs=" << budgetMs << '\n';
+    std::cout << "  cancel: elapsedMs=" << elapsedMs << '\n';
     std::filesystem::remove_all(workDirectory, cleanupError);
     return passed;
 }
@@ -443,11 +537,16 @@ int main()
         std::cerr << "CASE FAILED: volume_report" << '\n';
         ++failures;
     }
+    if (!ProductionCancellationStopsPlanBuild())
+    {
+        std::cerr << "CASE FAILED: cancellation" << '\n';
+        ++failures;
+    }
     if (failures != 0)
     {
         std::cerr << "FAIL MatvolProductionWiringTests" << '\n';
         return 1;
     }
-    std::cout << "PASS MatvolProductionWiringTests 3/3" << '\n';
+    std::cout << "PASS MatvolProductionWiringTests 4/4" << '\n';
     return 0;
 }
