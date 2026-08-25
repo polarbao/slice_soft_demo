@@ -147,10 +147,13 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo->addItem(
         QStringLiteral("RGB + 支撑 + 白墨 + 光油"),
         Channels({"R", "G", "B", "W", "S", "V"}));
-    /* MV-07C：默认改为 RGB-only 判读入口。六通道组合会把 S 叠成纯绿伪彩色，
-       容易被误读为 RGB 材质色，因此不再作为默认。setCurrentIndex 在 connect
-       之前执行，不触发槽。 */
-    m_previewModeCombo->setCurrentIndex(0);
+    /* MV-07C 曾把默认改为 RGB-only，理由是六通道组合把 S 叠成纯绿、易被误读为
+       RGB 材质色。该理由已由根因修复消除：支撑伪彩色改为品红，不再与任何真实
+       材质色相撞。RGB-only 的代价是支撑在默认视图中完全不可见——MATVOL 接线后
+       用户据此报告「切片数据未显示支撑」，而实测 S 通道数据完好。故默认恢复为
+       全通道组合，使切片产出的全部内容默认可见。setCurrentIndex 在 connect 之前
+       执行，不触发槽。 */
+    m_previewModeCombo->setCurrentIndex(4);
     m_previewModeCombo->setItemData(
         0,
         QStringLiteral("仅显示 R/G/B 真实颜色，用于判读材质本色。"),
@@ -163,7 +166,7 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo->setItemData(
         2,
         QStringLiteral(
-            "叠加 S 支撑伪彩色（纯绿 0,255,0），不代表生产 TIFF 像素值。"),
+            "叠加 S 支撑伪彩色（品红 255,0,255），不代表生产 TIFF 像素值。"),
         Qt::ToolTipRole);
     m_previewModeCombo->setItemData(
         3,
@@ -173,7 +176,7 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo->setItemData(
         4,
         QStringLiteral(
-            "同时叠加 W/S/V 三种伪彩色；其中 S 为纯绿，最易被误读为 RGB 材质色。"
+            "同时叠加 W/S/V 三种伪彩色；三者均不与真实材质色相撞，为默认判读视图。"
             "判读材质本色请改用 RGB（纹理）。"),
         Qt::ToolTipRole);
     for (const char* channel : {"R", "G", "B", "W", "S", "V"})
@@ -476,7 +479,7 @@ void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
             "当前生产层 layer=%2｜打印像素：%3\n"
             "性能：sliceProcessing=%4｜支撑统计扫描=%5\n"
             "通道显示：R/G/B 为真实颜色；W/S/V 为显示用伪彩色"
-            "（S 纯绿、W 青蓝、V 中灰），不代表生产 TIFF 像素值")
+            "（S 品红、W 青蓝、V 中灰），不代表生产 TIFF 像素值")
             .arg(SamplingStrategyText(m_samplingStrategyId))
             .arg(current.layerindex)
             .arg(channelPixels.join(QStringLiteral("  ")))

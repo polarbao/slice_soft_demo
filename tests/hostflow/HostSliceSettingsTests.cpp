@@ -1325,13 +1325,16 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                         == QStringList({
                             QStringLiteral("R"),
                             QStringLiteral("G"),
-                            QStringLiteral("B")})
+                            QStringLiteral("B"),
+                            QStringLiteral("W"),
+                            QStringLiteral("S"),
+                            QStringLiteral("V")})
                     && previewImage != nullptr
                     && referencePreview == nullptr
                     && referenceCaption == nullptr
                     && currentCaption == nullptr,
                QStringLiteral(
-                    "结果预览应恢复单视图并默认显示 RGB-only 判读入口。"),
+                    "结果预览应恢复单视图并默认显示全通道组合，使支撑等非 RGB 通道默认可见。"),
                errors)
         && Check(
                summary != nullptr

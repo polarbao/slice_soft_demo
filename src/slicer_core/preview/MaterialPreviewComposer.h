@@ -54,7 +54,10 @@ struct MaterialPreviewPalette
     PreviewColor green{0U, 255U, 0U, 255U};
     PreviewColor blue{0U, 0U, 255U, 255U};
     PreviewColor white{0U, 170U, 255U, 180U};
-    PreviewColor support{0U, 255U, 0U, 180U};
+    /// 支撑伪彩色取品红。此前为纯绿 (0,255,0)，与真实材质的绿（例如 03.obj 的
+    /// 材质 01 = 63,190,126）在组合预览里难以分辨，曾迫使结果页默认退为 RGB-only、
+    /// 从而让支撑在默认视图中完全不可见。品红不会与任何真实材质色相撞。
+    PreviewColor support{255U, 0U, 255U, 180U};
     PreviewColor varnish{127U, 127U, 127U, 180U};
     PreviewColor occupancy{80U, 80U, 80U, 255U};
 };

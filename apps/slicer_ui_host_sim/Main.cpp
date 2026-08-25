@@ -381,9 +381,9 @@ int RunHostFlowResultUiSmoke(const QString& modulePath)
         || layerSlider->isEnabled() || previewMode->count() < 7
         || previewMode->currentData().toStringList()
             != QStringList({
-                QStringLiteral("R"),
-                QStringLiteral("G"),
-                QStringLiteral("B")})
+                QStringLiteral("R"), QStringLiteral("G"),
+                QStringLiteral("B"), QStringLiteral("W"),
+                QStringLiteral("S"), QStringLiteral("V")})
         || reportCombo->count() < 3 || openPackageButton->isEnabled())
     {
         QTextStream(stderr)
