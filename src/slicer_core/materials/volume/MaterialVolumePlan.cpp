@@ -157,17 +157,54 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
             fact.kind == MaterialTopologyKind::SelfIntersecting
             && request.policy->topology.self_intersection_policy
                 == "tolerate_closed_self_intersection"
-            && fact.boundaryEdgeCount == 0U
+            && fact.boundaryEdgeCount
+                <= static_cast<std::uint64_t>(
+                    request.policy->topology.max_boundary_edges)
             && fact.nonManifoldEdgeCount == 0U
             && fact.confirmedSelfIntersectionPairs
                 <= static_cast<std::uint64_t>(
                     request.policy->topology.max_self_intersection_pairs);
         if (fact.kind != MaterialTopologyKind::ClosedOrientable && !toleratedSelfIntersection)
         {
+            // 只报分类名不足以诊断：同为 self_intersecting 的两个资产可能一个放行、
+            // 一个被拒，差别在放行条件的某一项。必须说明【放行为何被拒】，
+            // 否则使用者只能看到「都是自交，为什么这个不行」。
+            std::string detail;
+            if (fact.kind == MaterialTopologyKind::SelfIntersecting
+                && request.policy->topology.self_intersection_policy
+                    == "tolerate_closed_self_intersection")
+            {
+                if (fact.boundaryEdgeCount
+                    > static_cast<std::uint64_t>(
+                        request.policy->topology.max_boundary_edges))
+                {
+                    detail += "; tolerance declined: "
+                        + std::to_string(fact.boundaryEdgeCount)
+                        + " boundary edges exceed the configured limit of "
+                        + std::to_string(
+                            request.policy->topology.max_boundary_edges);
+                }
+                if (fact.nonManifoldEdgeCount != 0U)
+                {
+                    detail += "; tolerance declined: "
+                        + std::to_string(fact.nonManifoldEdgeCount)
+                        + " non-manifold edges";
+                }
+                if (fact.confirmedSelfIntersectionPairs
+                    > static_cast<std::uint64_t>(
+                        request.policy->topology.max_self_intersection_pairs))
+                {
+                    detail += "; tolerance declined: "
+                        + std::to_string(fact.confirmedSelfIntersectionPairs)
+                        + " self-intersection pairs exceed the configured limit of "
+                        + std::to_string(
+                            request.policy->topology.max_self_intersection_pairs);
+                }
+            }
             throw MaterialVolumeError(
                 MaterialVolumeErrorCode::TopologyInvalid,
                 "material '" + fact.materialName + "' topology is "
-                    + MaterialTopologyKindName(fact.kind));
+                    + MaterialTopologyKindName(fact.kind) + detail);
         }
         if (toleratedSelfIntersection)
         {

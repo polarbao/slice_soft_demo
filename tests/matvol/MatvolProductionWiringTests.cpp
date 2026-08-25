@@ -28,12 +28,16 @@
 #include <iterator>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
 {
 constexpr std::array<std::uint8_t, 3> kGreen{63U, 190U, 126U};
 constexpr std::array<std::uint8_t, 3> kPeach{255U, 220U, 198U};
+// 08/09 的 MTL 把材质 02 定为黄色而非浅桃色。断言必须按资产取色，
+// 否则「材质缺失」与「颜色不同」会被混为一谈——本轮正是先踩了这个坑。
+constexpr std::array<std::uint8_t, 3> kYellow{255U, 255U, 0U};
 
 bool ExpectTrue(const bool condition, const char* message)
 {
@@ -111,12 +115,21 @@ struct ColumnObservation
 /// @brief 跑通生产路径并统计逐列材质观察。
 bool ProductionWiringEmitsPerLayerMaterialOwnership()
 {
+    bool allPassed{true};
+    const std::pair<std::string, std::array<std::uint8_t, 3>> assets[] = {
+        {std::string("03.obj"), kPeach},
+        {std::string("08.obj"), kYellow},
+    };
+    for (const auto& entry : assets)
+    {
+    const std::string& assetName = entry.first;
+    const std::array<std::uint8_t, 3>& secondColour = entry.second;
     const std::filesystem::path model =
-        RepositoryRoot() / "model" / "obj" / "reality" / "finger_suoguo" / "03.obj";
+        RepositoryRoot() / "model" / "obj" / "reality" / "finger_suoguo" / assetName;
     if (!std::filesystem::exists(model))
     {
         std::cout << "SKIP production_wiring asset not present: " << model.string() << '\n';
-        return true;
+        continue;
     }
 
     const std::filesystem::path workDirectory =
@@ -147,7 +160,7 @@ bool ProductionWiringEmitsPerLayerMaterialOwnership()
     options.write_preview_files = false;
     options.write_reports = false;
     options.layercallback =
-        [&columns, &greenPixels, &peachPixels](
+        [&columns, &greenPixels, &peachPixels, &secondColour](
             const slicer_core::RgbwsvProductionLayer& layer,
             const slicer_core::MaterialClosureSemanticLayerInput&) {
             const std::size_t columnCount =
@@ -171,7 +184,8 @@ bool ProductionWiringEmitsPerLayerMaterialOwnership()
                     columns[column].sawGreen = true;
                     ++greenPixels;
                 }
-                else if (r == kPeach[0] && g == kPeach[1] && b == kPeach[2])
+                else if (r == secondColour[0] && g == secondColour[1]
+                         && b == secondColour[2])
                 {
                     columns[column].sawPeach = true;
                     ++peachPixels;
@@ -203,7 +217,7 @@ bool ProductionWiringEmitsPerLayerMaterialOwnership()
     g_uncancelledMs = static_cast<std::size_t>(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - uncancelledStart).count());
-    std::cout << "  wiring: greenPixels=" << greenPixels
+    std::cout << "  wiring[" << assetName << "]: greenPixels=" << greenPixels
               << " peachPixels=" << peachPixels
               << " columns=" << columns.size()
               << " mixedColumns=" << mixedColumns << '\n';
@@ -219,7 +233,9 @@ bool ProductionWiringEmitsPerLayerMaterialOwnership()
         && passed;
 
     std::filesystem::remove_all(workDirectory, cleanupError);
-    return passed;
+    allPassed = passed && allPassed;
+    }
+    return allPassed;
 }
 // 变异检验：关闭 materialVolumePolicy 跑同一模型，同列多材质必须消失。
 // 没有这条断言，无法排除「两种颜色与同列差异来自别的路径」这一可能，

@@ -205,6 +205,11 @@ struct MaterialVolumeOverlapConfig {
 struct MaterialVolumeTopologyConfig {
     std::string self_intersection_policy{"reject"};
     int max_self_intersection_pairs{64};
+    /// 真开边数上限（MQ-06）。默认 0 即要求闭合，与放宽前行为一致。
+    /// 设为正数后允许有界开边进入区间求解，由逐列 IntersectionUnpaired 兜底——
+    /// 注意开边存在时 Jordan–Brouwer 不再保证偶数交点，故该门在本类上是
+    /// 【真检查而非恒真】，这正是本次放宽依据强于 MQ-05 的原因。
+    int max_boundary_edges{0};
 };
 
 struct MaterialVolumePolicyConfig {

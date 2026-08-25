@@ -4733,6 +4733,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         static_cast<std::size_t>(grid.width_px)
         * static_cast<std::size_t>(grid.height_px);
     const std::vector<std::uint8_t> emptyOptionalMask(layerPixelCount, 0U);
+    // 未归属模型像素的填补（用户 2026-08-24 裁定「确有间隙则填补为下层材料」）。
+    // 该逻辑曾在 03.obj 上恒不触发而被当作死代码撤除；08/09 的 3 条真开边给出了
+    // 真实触发资产（实测 46 万格中 2 格），故按同一裁定重新引入并附计数。
+    // lastOwnedMaterial 随层循环自下而上推进，天然给出「下方最近的已归属材质」。
+    std::vector<std::uint32_t> lastOwnedMaterial;
+    std::uint64_t unownedFilledCells{0};
+    if (materialVolumePlan.has_value())
+    {
+        lastOwnedMaterial.assign(layerPixelCount, kNoMaterialOwner);
+    }
     // MV-08C：逐层 owner 覆盖统计。逐层记录而非只记总量，
     // 是为了让「只有部分层用了 owner」这类层间突变在报告里可见。
     std::vector<MaterialVolumeLayerStat> materialVolumeLayerStats;
@@ -4788,6 +4798,27 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 layer_index,
                 model_masks.at(static_cast<std::size_t>(layer_index)),
                 materialVolumeOwner);
+            {
+                const std::vector<std::uint8_t>& matvolMask =
+                    model_masks.at(static_cast<std::size_t>(layer_index));
+                for (std::size_t column{0}; column < layerPixelCount; ++column)
+                {
+                    if (materialVolumeOwner[column] != kNoMaterialOwner)
+                    {
+                        lastOwnedMaterial[column] = materialVolumeOwner[column];
+                        continue;
+                    }
+                    if (matvolMask[column] == 0U
+                        || lastOwnedMaterial[column] == kNoMaterialOwner)
+                    {
+                        // 掩码非模型，或该列下方尚无已归属层：保持未归属，
+                        // 由 ComposeMaterialLayerRgb 按既有语义 fail closed，不静默填充。
+                        continue;
+                    }
+                    materialVolumeOwner[column] = lastOwnedMaterial[column];
+                    ++unownedFilledCells;
+                }
+            }
             ComposeMaterialLayerRgb(
                 materialVolumeRgbTable.value(),
                 materialVolumeOwner,

@@ -460,6 +460,9 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             config.material_volume_policy.topology.max_self_intersection_pairs = topology.value(
                 "maxSelfIntersectionPairs",
                 config.material_volume_policy.topology.max_self_intersection_pairs);
+            config.material_volume_policy.topology.max_boundary_edges = topology.value(
+                "maxBoundaryEdges",
+                config.material_volume_policy.topology.max_boundary_edges);
         }
     }
 
@@ -1252,6 +1255,10 @@ void validate_slice_config(const SliceConfig& config) {
         if (config.material_volume_policy.topology.max_self_intersection_pairs <= 0) {
             throw std::runtime_error(
                 "materialVolumePolicy.topology.maxSelfIntersectionPairs must be positive");
+        }
+        if (config.material_volume_policy.topology.max_boundary_edges < 0) {
+            throw std::runtime_error(
+                "materialVolumePolicy.topology.maxBoundaryEdges must not be negative");
         }
         std::vector<std::string> seen_material_names;
         for (const MaterialVolumeOverlapRuleConfig& rule :
