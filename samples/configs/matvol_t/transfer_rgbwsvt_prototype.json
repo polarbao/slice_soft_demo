@@ -7,7 +7,15 @@
   "output": {
     "packageDir": "../../../output/MatvolTransferPrototype",
     "packageProtocol": "p0.rgbwsvt.1",
-    "channelOrder": ["R", "G", "B", "W", "S", "V", "T"],
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V",
+      "T"
+    ],
     "bitDepth": 8,
     "planarConfig": "contiguous",
     "storageMode": "stripped",
@@ -16,13 +24,25 @@
   "transferChannelPolicy": {
     "enabled": true,
     "matchSource": "material_diffuse_rgb",
-    "materialDiffuseRgbValues": [[255, 220, 198]],
+    "materialDiffuseRgbValues": [
+      [
+        255,
+        220,
+        198
+      ],
+      [
+        255,
+        255,
+        0
+      ]
+    ],
     "missingRegion": "allow_empty",
     "multipleMatches": "fail_closed",
     "value": 0,
     "topology": {
       "selfIntersectionPolicy": "tolerate_closed_self_intersection",
-      "maxSelfIntersectionPairs": 64
+      "maxSelfIntersectionPairs": 64,
+      "maxBoundaryEdges": 8
     }
   }
 }

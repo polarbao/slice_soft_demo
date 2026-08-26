@@ -215,14 +215,24 @@
     "enabled": true,
     "matchSource": "material_diffuse_rgb",
     "materialDiffuseRgbValues": [
-      [255, 220, 198]
+      [
+        255,
+        220,
+        198
+      ],
+      [
+        255,
+        255,
+        0
+      ]
     ],
     "missingRegion": "allow_empty",
     "multipleMatches": "fail_closed",
     "value": 0,
     "topology": {
       "selfIntersectionPolicy": "tolerate_closed_self_intersection",
-      "maxSelfIntersectionPairs": 64
+      "maxSelfIntersectionPairs": 64,
+      "maxBoundaryEdges": 8
     }
   },
   "_comment": "RGBWSVT opt-in copy. The corresponding legacy process file remains unchanged."

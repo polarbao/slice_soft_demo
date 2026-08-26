@@ -102,6 +102,11 @@ void LoadTransferChannelPolicy(
             "selfIntersectionPolicy", policy.topology.self_intersection_policy);
         policy.topology.max_self_intersection_pairs = topology.value(
             "maxSelfIntersectionPairs", policy.topology.max_self_intersection_pairs);
+        // MQ-06：缩裹材质与 MATVOL 共用 MaterialVolumeTopologyConfig 与同一套区间求解，
+        // 故有界开边放宽在 T 路径上同样适用。默认 0 保持现状，须由工艺文件显式开启。
+        // 缺此解析时 08/09 的材质 02（各 3 条真开边）在 T 路径上仍会被拒。
+        policy.topology.max_boundary_edges = topology.value(
+            "maxBoundaryEdges", policy.topology.max_boundary_edges);
     }
 }
 

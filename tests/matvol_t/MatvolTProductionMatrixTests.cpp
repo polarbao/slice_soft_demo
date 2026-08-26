@@ -43,7 +43,10 @@ std::filesystem::path ModelPath(const char* fileName)
 slicer_core::Json MakeConfig(
     const std::filesystem::path& package,
     const char* modelName,
-    const std::array<int, 3>& colour)
+    const std::array<int, 3>& colour,
+    // Json 构造后只读，故有界开边上限须在构造时给定，不能事后改写。
+    // 默认 0 与生产默认一致，既有调用点行为不变。
+    const int maxBoundaryEdges = 0)
 {
     return slicer_core::Json::object({
         {"input", slicer_core::Json::object({
@@ -71,7 +74,8 @@ slicer_core::Json MakeConfig(
             {"value", 0},
             {"topology", slicer_core::Json::object({
                 {"selfIntersectionPolicy", "tolerate_closed_self_intersection"},
-                {"maxSelfIntersectionPairs", 64}})}})}});
+                {"maxSelfIntersectionPairs", 64},
+                {"maxBoundaryEdges", maxBoundaryEdges}})}})}});
 }
 
 std::filesystem::path WriteConfig(
@@ -248,6 +252,45 @@ bool CancellationRemovesReservedPackage(const std::filesystem::path& root)
 
 }  // namespace
 
+// MQ-06 有界开边放宽在 T 路径上的证明。
+//
+// 与 OpenRealityFailsWithoutPackage 构成一对：同一资产、同一配置，
+// 唯一差别是 topology.maxBoundaryEdges 由默认 0 显式设为 8。
+// 前者证明默认仍 fail closed，本用例证明显式放宽后可产出包——
+// 二者缺一，「放宽」就既可能是真生效，也可能是把门整个拆了。
+bool BoundedOpenEdgeRealityProducesPackage(
+    const std::filesystem::path& root,
+    const char* modelName)
+{
+    const std::filesystem::path package =
+        root / (std::string{"bounded_"} + modelName);
+    // 08/09 的材质 02 是黄色，不是 03 的浅桃色；断言必须按资产取色。
+    try
+    {
+        (void)slicer_core::run_slicer(
+            WriteConfig(
+                root,
+                std::string{"bounded_"} + modelName,
+                MakeConfig(package, modelName, {255, 255, 0}, 8)),
+            WriteOptions());
+    }
+    catch (const slicer_core::TransferChannelError& error)
+    {
+        return Expect(
+            false,
+            std::string{modelName}
+                + " must slice once maxBoundaryEdges is raised, got code "
+                + std::to_string(static_cast<int>(error.Code())));
+    }
+    const slicer_core::Json manifest = ReadJson(package / "manifest.json");
+    return Expect(
+               manifest.at("schema").as_string() == "p0.rgbwsvt.1",
+               std::string{modelName} + " bounded run emits rgbwsvt package")
+        && Expect(
+            manifest.at("layers").size() > 0U,
+            std::string{modelName} + " bounded run emits layers");
+}
+
 int main()
 {
     const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -261,6 +304,8 @@ int main()
         failures += InvalidAcceptanceFailsStrictReader(root) ? 0 : 1;
         failures += OpenRealityFailsWithoutPackage(root, "08.obj") ? 0 : 1;
         failures += OpenRealityFailsWithoutPackage(root, "09.obj") ? 0 : 1;
+        failures += BoundedOpenEdgeRealityProducesPackage(root, "08.obj") ? 0 : 1;
+        failures += BoundedOpenEdgeRealityProducesPackage(root, "09.obj") ? 0 : 1;
         failures += TamperedStatisticsFailStrictReader(root) ? 0 : 1;
         failures += CancellationRemovesReservedPackage(root) ? 0 : 1;
     }
