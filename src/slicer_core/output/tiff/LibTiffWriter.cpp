@@ -177,13 +177,14 @@ void ValidateInput(
             TiffWriterErrorCode::InvalidInput,
             "image width and height must be positive");
     }
-    if (spec.samples_per_pixel != rgbwsv_channel_count
+    if ((spec.samples_per_pixel != rgbwsv_channel_count
+         && spec.samples_per_pixel != 7U)
         || spec.bits_per_sample != 8U
         || spec.planar_config != PLANARCONFIG_CONTIG)
     {
         ThrowWriterError(
             TiffWriterErrorCode::InvalidInput,
-            "only RGBWSV uint8 contiguous pixels are supported");
+            "only RGBWSV or RGBWSVT uint8 contiguous pixels are supported");
     }
     if (spec.storage_mode == TiffStorageMode::Stripped
         && spec.rows_per_strip == 0U)
@@ -313,10 +314,12 @@ void SetFixedTags(
     const TiffImageSpec& spec,
     const ErrorContext& errorContext)
 {
-    std::uint16_t extraSamples[3]{
-        EXTRASAMPLE_UNSPECIFIED,
-        EXTRASAMPLE_UNSPECIFIED,
-        EXTRASAMPLE_UNSPECIFIED};
+    const std::uint16_t extraSampleCount =
+        static_cast<std::uint16_t>(spec.samples_per_pixel - 3U);
+    std::vector<std::uint16_t> extraSamples(
+        extraSampleCount, EXTRASAMPLE_UNSPECIFIED);
+    const char* imageDescription =
+        spec.samples_per_pixel == 7U ? "RGBWSVT" : "RGBWSV";
     bool configured =
         TIFFSetField(handle, TIFFTAG_IMAGEWIDTH, spec.width) == 1
         && TIFFSetField(handle, TIFFTAG_IMAGELENGTH, spec.height) == 1
@@ -341,10 +344,10 @@ void SetFixedTags(
         && TIFFSetField(
                handle,
                TIFFTAG_EXTRASAMPLES,
-               static_cast<std::uint16_t>(3U),
-               extraSamples)
+               extraSampleCount,
+               extraSamples.data())
             == 1
-        && TIFFSetField(handle, TIFFTAG_IMAGEDESCRIPTION, "RGBWSV") == 1
+        && TIFFSetField(handle, TIFFTAG_IMAGEDESCRIPTION, imageDescription) == 1
         && TIFFSetField(handle, TIFFTAG_SOFTWARE, "slice_soft_demo p0") == 1;
 
     if (spec.storage_mode == TiffStorageMode::Tiled)

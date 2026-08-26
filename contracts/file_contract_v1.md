@@ -1,20 +1,24 @@
 # file_contract_v1
 
-> Status: slicer-side frozen candidate; print-side written confirmation pending
-> Version: 1.0
+> Status: slicer-side explicit RGBWSVT production opt-in admitted
+> Version: 1.1
 > Transport: UTF-8 JSON files, stdout protocol lines, process exit code
 > Platform baseline: Windows x64
 
 ## 1. Boundary
 
 `file_contract_v1` is the private contract between `slicer_module.dll` and
-`slicer_worker.exe`. It does not change the public 11-function C ABI and does
-not change the `p0.rgbwsv.2` production package.
+`slicer_worker.exe`. It does not change the public 11-function C ABI or package
+bytes. Minor 0 retains `p0.rgbwsv.2`; minor 1 adds the explicit
+`p0.rgbwsvt.1` path without changing the legacy path. Production use of minor 1
+requires the qualified Host/Worker Scene route and an output manifest with
+`productionAcceptance=admitted`; direct CLI packages remain candidates.
 
 The worker carries only heavy operations:
 
 ```text
 slice.rgbwsv
+slice.rgbwsvt
 geometry.preflight.full
 geometry.repair
 ```
@@ -30,18 +34,28 @@ to a worker identity:
 slicer_worker.exe --contract-info
 ```
 
-The worker writes exactly one UTF-8 JSON object to stdout. It must validate
-against `file_contract_v1.contract_info.schema.json`.
+The current worker writes exactly one UTF-8 JSON object to stdout with
+`major=1`, `minor=1`. It must validate against
+`file_contract_v1.contract_info.schema.json` and declare both package contracts
+and both slice capabilities.
 
 Compatibility rules:
 
 ```text
 major differs                 reject, PM-SLICER-INTERNAL-0099
-worker minor >= module minor  accept; ignore unknown optional fields
-worker minor < module minor   accept only features declared by that minor
-missing p0.rgbwsv.2           reject, PM-SLICER-CONTRACT-0060
+worker minor >= request minor accept; ignore unknown optional fields
+slice.rgbwsv request          minor=0, requires p0.rgbwsv.2
+slice.rgbwsvt request         minor=1, requires p0.rgbwsvt.1
+missing required produces     reject, PM-SLICER-CONTRACT-0060
 missing requested capability  reject before process launch
 ```
+
+The module derives the minimum minor and required package contract from the
+requested slice capability. Callers cannot make `slice.rgbwsvt` compatible by
+supplying a lower minor or the legacy package contract. Missing minor support,
+`produces`, or capability therefore rejects the job before request
+materialization or package writing. There is no fallback from `slice.rgbwsvt`
+to `slice.rgbwsv`.
 
 ## 3. Job files and invocation
 
@@ -63,6 +77,19 @@ slicer_worker.exe --spi-request <absolute-request-json-path>
 `request.json` must validate against
 `file_contract_v1.request.schema.json`. `result.json`, when present, must
 validate against `file_contract_v1.result.schema.json`.
+
+Request and result versions are capability-specific:
+
+```text
+geometry.preflight.full  minor=0
+geometry.repair          minor=0
+slice.rgbwsv             minor=0, output.contract=p0.rgbwsv.2
+slice.rgbwsvt            minor=1, output.contract=p0.rgbwsvt.1
+```
+
+The result must echo the request capability and its corresponding minor. A
+minor 1 result for an old capability, or a minor 0 result for `slice.rgbwsvt`,
+is a contract violation.
 
 The module must reject relative request paths, job IDs containing path
 separators, and a result whose `jobId`, `correlationId`, or `capability` does
@@ -161,6 +188,7 @@ secrets              forbidden in request/result/logs
 Public ABI                 contracts/print_module_spi.h
 Error codes                contracts/slicer_error_codes.json
 Production package         contracts/p0.rgbwsv.2.schema.json
+Transfer production package  contracts/p0.rgbwsvt.1.schema.json
 Request schema             contracts/file_contract_v1.request.schema.json
 Result schema              contracts/file_contract_v1.result.schema.json
 Negotiation schema         contracts/file_contract_v1.contract_info.schema.json

@@ -16,10 +16,10 @@
 
 class QTemporaryDir;
 
-/** @brief 以冻结 RGBWSV 顺序的六通道打印像素计数。 */
+/** @brief 以冻结 RGBWSVT 超集顺序保存打印像素计数。 */
 struct hostchannelcounts
 {
-    std::array<quint64, 6> values{};
+    std::array<quint64, 7> values{};
 };
 
 /** @brief 宿主持有的单个生产层描述符视图。 */

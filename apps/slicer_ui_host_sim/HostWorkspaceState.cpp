@@ -1,7 +1,7 @@
 #include "HostWorkspaceState.h"
 #include "HostWorkspaceMatvolState.h"
 #include "HostWorkspaceTextureState.h"
-
+#include "HostWorkspaceTransferState.h"
 #include <QByteArray>
 #include <QCoreApplication>
 #include <QGuiApplication>
@@ -187,9 +187,7 @@ bool IsFiniteInRange(
 }
 
 int HostWorkspaceState::SchemaVersion()
-{
-    return 7;
-}
+{ return 8; }
 
 QString HostWorkspaceState::OrganizationName()
 {
@@ -337,6 +335,7 @@ bool HostWorkspaceState::Save(
         sliceSettings.support.baseprojection.layercount);
     HostWorkspaceTextureState::Save(settings, sliceSettings.texture);
     HostWorkspaceMatvolState::Save(settings, sliceSettings.materialvolume);
+    HostWorkspaceTransferState::Save(settings, sliceSettings.packageprotocol, sliceSettings.transferchannel);
     settings.endGroup();
     settings.sync();
     return settings.status() == QSettings::NoError;
@@ -438,6 +437,7 @@ bool HostWorkspaceState::Restore(
         settings, &restored.texture);
     const bool matvolValid = HostWorkspaceMatvolState::Restore(
         settings, &restored.materialvolume);
+    const bool transferValid = HostWorkspaceTransferState::Restore(settings, version, restored.profileid, restored.processpresetid, &restored.packageprotocol, &restored.transferchannel);
     settings.endGroup();
 
     QList<int> splitterSizes;
@@ -494,12 +494,12 @@ bool HostWorkspaceState::Restore(
         && restored.support.internalvoid.minareapx <= 1000000
         && restored.support.baseprojection.layercount >= 0
         && restored.support.baseprojection.layercount <= 1000
-        && textureValid && matvolValid
+        && textureValid && matvolValid && transferValid
         && (restored.support.enabled
             || (!restored.support.internalvoid.enabled
                 && !restored.support.baseprojection.enabled));
     const bool layoutValid = schema == kSchemaId
-        && version == SchemaVersion() && !geometry.isEmpty()
+        && (version == 7 || version == SchemaVersion()) && !geometry.isEmpty()
         && splitterValid && workspaceTab >= 0
         && workspaceTab < workspaceTabs->count() && inspectorTab >= 0
         && inspectorTab < inspectorTabs->count();

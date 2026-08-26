@@ -75,6 +75,66 @@ def ValidateManifestContracts(repoRoot: Path) -> None:
         "manifest with invalid whiteSemantics",
     )
 
+    transferValidator = BuildValidator(
+        repoRoot / "contracts" / "p0.rgbwsvt.1.schema.json"
+    )
+    transferManifest = copy.deepcopy(legacyManifest)
+    transferManifest["schema"] = "p0.rgbwsvt.1"
+    transferManifest["schemaVersion"] = "p0.rgbwsvt.1"
+    transferManifest["productionAcceptance"] = "rgbwsvt_candidate_unvalidated"
+    transferManifest["tiff"]["channelCount"] = 7
+    transferManifest["tiff"]["channelOrder"] = ["R", "G", "B", "W", "S", "V", "T"]
+    emptyChannelStats = {
+        "printPixels": 0,
+        "fullPrintPixels": 0,
+        "partialPrintPixels": 0,
+        "emptyPixels": 1,
+        "minValue": 255,
+        "maxValue": 255,
+    }
+    transferManifest["tiff"]["channelStats"] = {
+        channel: copy.deepcopy(emptyChannelStats)
+        for channel in ["R", "G", "B", "W", "S", "V", "T"]
+    }
+    transferManifest["tiff"]["statisticsSource"] = "persisted_tiff_bytes"
+    ValidatePositive(
+        transferValidator,
+        transferManifest,
+        "p0.rgbwsvt.1 manifest",
+    )
+
+    transferWithoutAcceptance = copy.deepcopy(transferManifest)
+    del transferWithoutAcceptance["productionAcceptance"]
+    ValidateNegative(
+        transferValidator,
+        transferWithoutAcceptance,
+        "RGBWSVT manifest without production acceptance",
+    )
+
+    transferUnknownAcceptance = copy.deepcopy(transferManifest)
+    transferUnknownAcceptance["productionAcceptance"] = "unknown"
+    ValidateNegative(
+        transferValidator,
+        transferUnknownAcceptance,
+        "RGBWSVT manifest with unknown production acceptance",
+    )
+
+    transferWithoutT = copy.deepcopy(transferManifest)
+    transferWithoutT["tiff"]["channelOrder"] = ["R", "G", "B", "W", "S", "V"]
+    ValidateNegative(
+        transferValidator,
+        transferWithoutT,
+        "RGBWSVT manifest without T",
+    )
+
+    transferWithoutStats = copy.deepcopy(transferManifest)
+    del transferWithoutStats["tiff"]["channelStats"]
+    ValidateNegative(
+        transferValidator,
+        transferWithoutStats,
+        "RGBWSVT manifest without persisted channel statistics",
+    )
+
 
 def ValidateSceneContracts(repoRoot: Path) -> None:
     validator = BuildValidator(
@@ -141,6 +201,14 @@ def ValidateMaterialVolumeReportContracts(repoRoot: Path) -> None:
     )
     ValidatePositive(validator, report, "minimal material volume report")
 
+    transferProtocolReport = copy.deepcopy(report)
+    transferProtocolReport["packageProtocol"] = "p0.rgbwsvt.1"
+    ValidatePositive(
+        validator,
+        transferProtocolReport,
+        "RGBWSVT material volume report",
+    )
+
     surfaceBand = copy.deepcopy(report)
     surfaceBand["openSurface"]["mode"] = "surface_band"
     surfaceBand["openSurface"]["requestedThicknessMm"] = 0.2
@@ -163,6 +231,48 @@ def ValidateMaterialVolumeReportContracts(repoRoot: Path) -> None:
     ValidateNegative(validator, badChannel, "report with an out-of-range RGB channel")
 
 
+def ValidateTransferChannelReportContracts(repoRoot: Path) -> None:
+    validator = BuildValidator(
+        repoRoot / "contracts" / "slicesoft.transfer_channel_report.1.schema.json"
+    )
+    channelStats = {
+        "printPixels": 0,
+        "fullPrintPixels": 0,
+        "partialPrintPixels": 0,
+        "emptyPixels": 1,
+        "minValue": 255,
+        "maxValue": 255,
+    }
+    report = {
+        "schema": "slicesoft.transfer_channel_report.1",
+        "packageProtocol": "p0.rgbwsvt.1",
+        "statisticsSource": "persisted_tiff_bytes",
+        "enabled": True,
+        "matchSource": "material_diffuse_rgb",
+        "configuredMaterialDiffuseRgbValues": [[255, 220, 198]],
+        "regionPresent": False,
+        "materialName": "",
+        "matchedDiffuseRgb": [0, 0, 0],
+        "value": 0,
+        "channelStats": {
+            channel: copy.deepcopy(channelStats)
+            for channel in ["R", "G", "B", "W", "S", "V", "T"]
+        },
+        "totals": {
+            "layerCount": 1,
+            "transferPrintPixels": 0,
+            "unexpectedOverlapPixels": 0,
+        },
+        "layers": [{"layerIndex": 0, "transferPrintPixels": 0}],
+        "warnings": [],
+        "errors": [],
+    }
+    ValidatePositive(validator, report, "RGBWSVT transfer channel report")
+    invalid = copy.deepcopy(report)
+    invalid["totals"]["unexpectedOverlapPixels"] = 1
+    ValidateNegative(validator, invalid, "overlapping transfer channel report")
+
+
 def Main() -> int:
     parser = argparse.ArgumentParser(description="Validate SliceSoft JSON contracts")
     parser.add_argument("--repo-root", type=Path, required=True)
@@ -173,6 +283,7 @@ def Main() -> int:
     ValidateSceneContracts(repoRoot)
     ValidateProfileContracts(repoRoot)
     ValidateMaterialVolumeReportContracts(repoRoot)
+    ValidateTransferChannelReportContracts(repoRoot)
     print("SliceSoft JSON Schema contracts: PASS")
     return 0
 

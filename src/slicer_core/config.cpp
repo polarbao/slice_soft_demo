@@ -1,6 +1,7 @@
 #include "slicer_core/config.h"
 
 #include "slicer_core/config/ConfigMigration.h"
+#include "slicer_core/config/TransferChannelConfig.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTypes.h"
@@ -12,8 +13,6 @@
 
 namespace slicer_core {
 namespace {
-
-constexpr std::array<const char*, 6> expected_channel_order{"R", "G", "B", "W", "S", "V"};
 
 std::uint8_t read_u8(const Json& object, const char* key, const std::uint8_t fallback) {
     if (!object.contains(key)) {
@@ -175,6 +174,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     if (root.contains("output")) {
         const auto& output = root.at("output");
         config.output.package_dir = output.value("packageDir", config.output.package_dir.string());
+        config.output.package_protocol = output.value("packageProtocol", config.output.package_protocol);
         config.output.dpi_x = output.value("dpiX", config.output.dpi_x);
         config.output.dpi_y = output.value("dpiY", config.output.dpi_y);
         config.output.layer_thickness_mm = output.value("layerThicknessMm", config.output.layer_thickness_mm);
@@ -462,6 +462,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
                 config.material_volume_policy.topology.max_self_intersection_pairs);
         }
     }
+    LoadTransferChannelPolicy(root, config.transfer_channel_policy);
 
     if (root.contains("support")) {
         const auto& support = root.at("support");
@@ -631,6 +632,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             config.preview.support_color = read_rgb_field(colors, "support", config.preview.support_color);
             config.preview.white_color = read_rgb_field(colors, "white", config.preview.white_color);
             config.preview.varnish_color = read_rgb_field(colors, "varnish", config.preview.varnish_color);
+            config.preview.transfer_color = read_rgb_field(colors, "transfer", config.preview.transfer_color);
         }
     }
 
@@ -1345,18 +1347,15 @@ void validate_slice_config(const SliceConfig& config) {
     for (const std::string& channel : config.preview.channels) {
         if (channel != "rgb" && channel != "model_rgb" && channel != "support" && channel != "s"
             && channel != "white" && channel != "w" && channel != "varnish" && channel != "v"
+            && channel != "transfer" && channel != "t"
             && channel != "texture_rgb" && channel != "model_rgb_true_color" && channel != "true_rgb") {
-            throw std::runtime_error("preview.channels supports rgb, texture_rgb, support, white, varnish");
+            throw std::runtime_error("preview.channels supports rgb, texture_rgb, support, white, varnish, transfer");
+        }
+        if ((channel == "transfer" || channel == "t") && config.output.package_protocol != "p0.rgbwsvt.1") {
+            throw std::runtime_error("preview transfer channel requires p0.rgbwsvt.1");
         }
     }
-    if (config.output.channel_order.size() != expected_channel_order.size()) {
-        throw std::runtime_error("P0 channelOrder must contain exactly six channels");
-    }
-    for (std::size_t i{0}; i < expected_channel_order.size(); ++i) {
-        if (config.output.channel_order.at(i) != expected_channel_order.at(i)) {
-            throw std::runtime_error("P0 channelOrder must be exactly R G B W S V");
-        }
-    }
+    ValidateTransferChannelConfiguration(config.output, config.transfer_channel_policy);
     if (config.experimental.openvdb_pipeline.engine != "legacy"
         && config.experimental.openvdb_pipeline.engine != "openvdb")
     {

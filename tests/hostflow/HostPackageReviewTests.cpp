@@ -103,6 +103,8 @@ bool ProducePackage(
     settings.outputdirectory = packageDirectory;
     settings.layerthicknessmm = 0.2;
     settings.texture.enabled = true;
+    settings.packageprotocol = HostPackageProtocol::Rgbwsv;
+    settings.transferchannel.enabled = false;
     hosteffectiveprofile profile;
     if (!HostEffectiveProfileBuilder::Build(settings, &profile, &error))
     {

@@ -6,6 +6,7 @@
 #include "slicer_core/engine/ProductionPreflightFullFacadeFactory.h"
 #include "slicer_core/engine/ProductionSliceFacadeFactory.h"
 #include "slicer_core/model.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
 #include "slicer_core/scene/MultiModelScene.h"
 #include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/system/Sha256.h"
@@ -73,6 +74,14 @@ std::filesystem::path FixturePath()
         .lexically_normal();
 }
 
+std::filesystem::path TransferFixturePath()
+{
+    return std::filesystem::absolute(
+        std::filesystem::path(SLICESOFT_SOURCE_DIR)
+        / "model/obj/reality/finger_suoguo/03.obj")
+        .lexically_normal();
+}
+
 std::string ReadFile(const std::filesystem::path& path)
 {
     std::ifstream input(path, std::ios::binary);
@@ -86,8 +95,11 @@ std::string ReadFile(const std::filesystem::path& path)
 }
 
 slicer_core::Json MakeProfile(
-    const std::filesystem::path& packageDirectory)
+    const std::filesystem::path& packageDirectory,
+    const bool transfer = false)
 {
+    const std::filesystem::path fixture =
+        transfer ? TransferFixturePath() : FixturePath();
     slicer_core::Json::Object profile{
         {"profileVersion", "1.0"},
         {"slicingMode", "closed_mesh_scanline"},
@@ -97,7 +109,7 @@ slicer_core::Json MakeProfile(
         })},
         {"slicePipeline", slicer_core::Json::object({{"mode", "legacy"}})},
         {"input", slicer_core::Json::object({
-            {"modelPath", FixturePath().generic_string()},
+            {"modelPath", fixture.generic_string()},
             {"format", "obj"},
         })},
         {"output", slicer_core::Json::object({
@@ -105,7 +117,9 @@ slicer_core::Json MakeProfile(
             {"dpiX", 127},
             {"dpiY", 127},
             {"layerThicknessMm", 0.2},
-            {"channelOrder", slicer_core::Json::array({"R", "G", "B", "W", "S", "V"})},
+            {"channelOrder", transfer
+                ? slicer_core::Json::array({"R", "G", "B", "W", "S", "V", "T"})
+                : slicer_core::Json::array({"R", "G", "B", "W", "S", "V"})},
             {"bitDepth", 8},
             {"planarConfig", "contiguous"},
             {"storageMode", "stripped"},
@@ -126,6 +140,23 @@ slicer_core::Json MakeProfile(
             {"target", "stage14d-r2-executor-fixture"},
         })},
     };
+    if (transfer)
+    {
+        slicer_core::Json::Object output = profile.at("output").as_object();
+        output["packageProtocol"] = "p0.rgbwsvt.1";
+        profile["output"] = slicer_core::Json{std::move(output)};
+        profile["transferChannelPolicy"] = slicer_core::Json::object({
+            {"enabled", true},
+            {"matchSource", "material_diffuse_rgb"},
+            {"materialDiffuseRgbValues", slicer_core::Json::array({
+                slicer_core::Json::array({255, 220, 198})})},
+            {"missingRegion", "allow_empty"},
+            {"multipleMatches", "fail_closed"},
+            {"value", 0},
+            {"topology", slicer_core::Json::object({
+                {"selfIntersectionPolicy", "tolerate_closed_self_intersection"},
+                {"maxSelfIntersectionPairs", 64}})}});
+    }
     const slicer_core::Json withoutHash(profile);
     profile.emplace(
         "profileHash",
@@ -133,8 +164,12 @@ slicer_core::Json MakeProfile(
     return slicer_core::Json(std::move(profile));
 }
 
-slicer_core::MultiModelScene MakeScene(const slicer_core::SceneModel& model)
+slicer_core::MultiModelScene MakeScene(
+    const slicer_core::SceneModel& model,
+    const bool transfer = false)
 {
+    const std::filesystem::path fixture =
+        transfer ? TransferFixturePath() : FixturePath();
     slicer_core::MultiModelScene scene;
     scene.sceneid = "scene-r2-worker-executor";
     scene.scenerevision = 12U;
@@ -144,12 +179,12 @@ slicer_core::MultiModelScene MakeScene(const slicer_core::SceneModel& model)
     slicer_core::ResourceScope scope;
     scope.resourcescopeid = "scope-r2-worker-executor";
     scope.kind = slicer_core::ResourceScopeKind::ObjDirectory;
-    scope.rootpath = FixturePath().parent_path();
+    scope.rootpath = fixture.parent_path();
     scene.resourcescopes.push_back(scope);
 
     slicer_core::ModelSource source;
     source.modelid = "model-r2-worker-executor";
-    source.sourcepath = FixturePath();
+    source.sourcepath = fixture;
     source.format = "obj";
     source.resourcescopeid = scope.resourcescopeid;
     source.sourcehash = slicer_core::ComputeSha256(ReadFile(source.sourcepath));
@@ -183,26 +218,73 @@ worker::WorkerRequestEnvelope MakeRequest(
     const std::filesystem::path& jobDirectory,
     const std::filesystem::path& packageDirectory,
     const slicer_core::MultiModelScene& scene,
-    const slicer_core::Json& profile)
+    const slicer_core::Json& profile,
+    const bool transfer = false)
 {
     std::filesystem::create_directories(jobDirectory);
     return worker::WorkerRequestEnvelope(
         worker::WorkerJobIdentity(
             jobDirectory.filename().generic_string(),
             "correlation-r2-executor",
-            "slice.rgbwsv",
+            transfer ? "slice.rgbwsvt" : "slice.rgbwsv",
             jobDirectory / "request.json"),
         1U,
-        0U,
+        transfer ? 1U : 0U,
         std::chrono::milliseconds(30000),
         "sha256:" + slicer_core::ComputeMultiModelSceneHash(scene),
         slicer_core::SerializeMultiModelScene(scene),
         profile,
         nullptr,
         slicer_core::Json::object({
-            {"contract", "p0.rgbwsv.2"},
+            {"contract", transfer ? "p0.rgbwsvt.1" : "p0.rgbwsv.2"},
             {"packageDir", packageDirectory.generic_string()},
         }));
+}
+
+void TestRealTransferProductionExecution(const std::filesystem::path& root)
+{
+    slicer_core::SliceConfig loadConfig;
+    loadConfig.input.model_path = TransferFixturePath();
+    loadConfig.input.format = "obj";
+    loadConfig.auto_orient.enabled = false;
+    const slicer_core::SceneModel model = slicer_core::load_model_report(
+        loadConfig, TransferFixturePath().parent_path());
+    const slicer_core::MultiModelScene scene = MakeScene(model, true);
+    const std::filesystem::path packageDirectory =
+        root / "package-transfer-success";
+    const slicer_core::Json profile = MakeProfile(packageDirectory, true);
+    std::ostringstream protocol;
+    worker::WorkerSliceExecutor executor(
+        slicer_core::engine::CreateProductionPreflightFullFacade(),
+        slicer_core::engine::CreateProductionSliceFacade(),
+        protocol);
+    const worker::WorkerCapabilityExecutionResult result = executor.Execute(
+        MakeRequest(
+            root / "job-transfer-success",
+            packageDirectory,
+            scene,
+            profile,
+            true),
+        TestCancelToken{});
+    if (!result.Ok())
+    {
+        std::cerr << "RGBWSVT executor failure: code=" << result.Code()
+                  << " message=" << result.Message();
+        if (result.Detail().has_value())
+        {
+            std::cerr << " detail=" << *result.Detail();
+        }
+        std::cerr << '\n';
+    }
+    Check(result.Ok(), "explicit RGBWSVT Worker Scene execution succeeds");
+    if (result.Ok())
+    {
+        const slicer_core::RgbwsvtPackageValidation package =
+            slicer_core::ValidateRgbwsvtPackage(packageDirectory);
+        Check(
+            package.productionAcceptance == "admitted",
+            "Worker Scene RGBWSVT package is explicitly admitted");
+    }
 }
 
 void TestRealProductionExecution(
@@ -351,6 +433,7 @@ int main()
             loadConfig, FixturePath().parent_path());
         const slicer_core::MultiModelScene scene = MakeScene(model);
         TestRealProductionExecution(root, scene);
+        TestRealTransferProductionExecution(root);
         TestCancelledBeforeMaterialization(root, scene);
         TestUncommittedAdmissionFailsClosed(root, scene);
     }

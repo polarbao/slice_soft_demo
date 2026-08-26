@@ -3,6 +3,7 @@
 #include "slicer_core/json_value.h"
 
 #include <chrono>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -26,6 +27,7 @@ struct CapabilityRoute
     std::string jobId;
     std::string correlationId;
     std::chrono::milliseconds timeout{3600000};
+    std::uint32_t contractMinor{0U};
     slicer_core::Json workerPayload;
     std::string errorCode;
     std::string errorMessage;

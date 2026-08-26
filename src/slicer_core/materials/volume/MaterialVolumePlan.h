@@ -51,6 +51,10 @@ struct MaterialVolumeBuildRequest
     const AdaptedTriangleMesh* mesh{nullptr};
     const MaterialVolumePolicyConfig* policy{nullptr};
     MaterialVolumeGrid grid;
+    /// Optional single-material filter. Topology is still classified against
+    /// the complete adapted mesh so material-interface edges remain distinct
+    /// from true open boundaries.
+    std::string materialNameFilter;
     /// 同步取消点；返回 true 时构建立即失败且不产出半成品 plan。
     std::function<bool()> cancellationRequested;
 };

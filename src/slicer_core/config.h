@@ -16,6 +16,7 @@ namespace slicer_core {
 
 struct OutputConfig {
     std::filesystem::path package_dir{"output/SlicePackage"};
+    std::string package_protocol{"p0.rgbwsv.2"};
     int dpi_x{kDefaultOutputDpiX};
     int dpi_y{kDefaultOutputDpiY};
     double layer_thickness_mm{kDefaultLayerThicknessMm};
@@ -217,6 +218,22 @@ struct MaterialVolumePolicyConfig {
 };
 
 /**
+ * @brief Explicit material-colour routing for the optional transfer channel.
+ *
+ * Colours are profile data. The implementation must never infer this role
+ * from a material name or a model file name.
+ */
+struct TransferChannelPolicyConfig {
+    bool enabled{false};
+    std::string match_source{"material_diffuse_rgb"};
+    std::vector<std::array<std::uint8_t, 3>> material_diffuse_rgb_values;
+    std::string missing_region{"allow_empty"};
+    std::string multiple_matches{"fail_closed"};
+    std::uint8_t value{0};
+    MaterialVolumeTopologyConfig topology;
+};
+
+/**
  * @brief Internal void support options for enclosed non-model regions.
  */
 struct InternalVoidSupportConfig {
@@ -338,6 +355,7 @@ struct PreviewConfig {
     std::array<std::uint8_t, 3> support_color{0, 255, 0};
     std::array<std::uint8_t, 3> white_color{0, 170, 255};
     std::array<std::uint8_t, 3> varnish_color{127, 127, 127};
+    std::array<std::uint8_t, 3> transfer_color{255, 0, 255};
 };
 
 struct ReliefConfig {
@@ -388,6 +406,7 @@ struct SliceConfig {
     MaterialProcessProfileConfig material_process_profile;
     MaterialRoleMappingConfig material_role_mapping;
     MaterialVolumePolicyConfig material_volume_policy;
+    TransferChannelPolicyConfig transfer_channel_policy;
     SupportConfig support;
     OuterVarnishShellConfig outer_varnish;
     SurfaceVarnishConfig surface_varnish;

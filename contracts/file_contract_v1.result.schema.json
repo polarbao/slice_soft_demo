@@ -18,7 +18,7 @@
   "properties": {
     "contract": { "const": "file_contract" },
     "major": { "const": 1 },
-    "minor": { "const": 0 },
+    "minor": { "type": "integer", "enum": [0, 1] },
     "jobId": {
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
@@ -28,6 +28,7 @@
       "type": "string",
       "enum": [
         "slice.rgbwsv",
+        "slice.rgbwsvt",
         "geometry.preflight.full",
         "geometry.repair"
       ]
@@ -59,6 +60,32 @@
     }
   },
   "allOf": [
+    {
+      "if": {
+        "properties": { "capability": { "const": "slice.rgbwsvt" } },
+        "required": ["capability"]
+      },
+      "then": {
+        "properties": { "minor": { "const": 1 } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capability": {
+            "enum": [
+              "slice.rgbwsv",
+              "geometry.preflight.full",
+              "geometry.repair"
+            ]
+          }
+        },
+        "required": ["capability"]
+      },
+      "then": {
+        "properties": { "minor": { "const": 0 } }
+      }
+    },
     {
       "if": {
         "properties": { "ok": { "const": true } },

@@ -136,6 +136,11 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
     std::map<std::string, std::uint32_t> materialIndexByName;
     for (const MaterialTopologyFact& fact : facts)
     {
+        if (!request.materialNameFilter.empty()
+            && fact.materialName != request.materialNameFilter)
+        {
+            continue;
+        }
         if (fact.materialName.empty())
         {
             throw MaterialVolumeError(
@@ -180,7 +185,10 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
     if (materialNames.empty())
     {
         throw MaterialVolumeError(
-            MaterialVolumeErrorCode::MaterialMissing, "mesh declares no usable material");
+            MaterialVolumeErrorCode::MaterialMissing,
+            request.materialNameFilter.empty()
+                ? "mesh declares no usable material"
+                : "mesh does not contain filtered material '" + request.materialNameFilter + "'");
     }
 
     // 按材质分组三角面下标，供逐列求交复用，避免每列重扫全网格属性。

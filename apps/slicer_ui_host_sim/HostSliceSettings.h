@@ -2,6 +2,7 @@
 
 #include <QJsonObject>
 #include <QString>
+#include <QVector>
 
 /** @brief 宿主实体模型填充使用的材料通道。 */
 enum class HostMaterialStrategy
@@ -130,6 +131,34 @@ enum class HostTiffCompression
     PackBits
 };
 
+/** @brief 宿主显式选择的生产 Package 协议。 */
+enum class HostPackageProtocol
+{
+    Rgbwsv,
+    Rgbwsvt
+};
+
+/** @brief 外部工艺配置提供的单个材质漫反射 RGB 值。 */
+struct hostrgbcolor
+{
+    int red{0};
+    int green{0};
+    int blue{0};
+};
+
+/** @brief 由外部工艺文件提供、由宿主持久化的 T 通道识别策略。 */
+struct hosttransferchannelsettings
+{
+    bool enabled{false};
+    QString matchsource{QStringLiteral("material_diffuse_rgb")};
+    QVector<hostrgbcolor> materialdiffusergbvalues;
+    QString missingregion{QStringLiteral("allow_empty")};
+    QString multiplematches{QStringLiteral("fail_closed")};
+    int value{0};
+    QString selfintersectionpolicy{QStringLiteral("reject")};
+    int maxselfintersectionpairs{64};
+};
+
 /** @brief 由宿主持有的生产纹理与 Stage 15 白色载体设置。 */
 struct hosttexturesettings
 {
@@ -200,6 +229,8 @@ struct hostslicesettings
     HostGeometrySamplingStrategy geometrysamplingstrategy{
         HostGeometrySamplingStrategy::LegacyCenterSample};
     hostmaterialvolumesettings materialvolume;
+    HostPackageProtocol packageprotocol{HostPackageProtocol::Rgbwsv};
+    hosttransferchannelsettings transferchannel;
 };
 
 /** @brief 已校验且可用于后续切片请求的 Profile 预览。 */
@@ -270,6 +301,13 @@ public:
      * @return `none`、`packbits` 或 `unknown`。
      */
     static QString TiffCompressionId(HostTiffCompression compression);
+
+    /**
+     * @brief 将 Package 协议转换为稳定 Profile 值。
+     * @param protocol 宿主显式选择的协议。
+     * @return 冻结协议标识；无法识别时返回 `unknown`。
+     */
+    static QString PackageProtocolId(HostPackageProtocol protocol);
 
     /**
      * @brief 按冻结的场景语义比较两个构建体积。

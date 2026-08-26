@@ -187,6 +187,22 @@ PackageQueryFacadeService::EnsureVerifiedPackageLocked(
     return snapshot;
 }
 
+RgbwsvtPackageValidation
+PackageQueryFacadeService::EnsureVerifiedRgbwsvtPackageLocked(
+    const std::filesystem::path& packageDir,
+    const bool forceValidation) const
+{
+    if (!forceValidation && m_verifiedRgbwsvtPackage.has_value()
+        && m_verifiedRgbwsvtPackage->packageDirectory == packageDir
+        && IsRgbwsvtPackageSnapshotCurrent(*m_verifiedRgbwsvtPackage))
+    {
+        return *m_verifiedRgbwsvtPackage;
+    }
+    RgbwsvtPackageValidation snapshot = ValidateRgbwsvtPackage(packageDir);
+    m_verifiedRgbwsvtPackage = snapshot;
+    return snapshot;
+}
+
 ApiResult<PackageSummary> PackageQueryFacadeService::GetSummary(
     const std::filesystem::path& packageDir) const noexcept
 {
@@ -194,6 +210,38 @@ ApiResult<PackageSummary> PackageQueryFacadeService::GetSummary(
     {
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(packageDir);
+        const std::string schema = ReadPackageManifestSchema(absolutePackage);
+        if (schema == "p0.rgbwsvt.1")
+        {
+            RgbwsvtPackageValidation snapshot;
+            {
+                std::scoped_lock lock{m_layerMutex};
+                snapshot = EnsureVerifiedRgbwsvtPackageLocked(
+                    absolutePackage, false);
+            }
+            const Json manifest = ParseObjectFile(
+                absolutePackage / "manifest.json");
+            PackageSummary summary;
+            summary.package_dir = absolutePackage;
+            summary.package_identity = snapshot.packageIdentity;
+            summary.schema = snapshot.schema;
+            summary.layer_count = snapshot.layerCount;
+            summary.grid.width_px = snapshot.widthPx;
+            summary.grid.height_px = snapshot.heightPx;
+            summary.grid.dpi_x = snapshot.dpiX;
+            summary.grid.dpi_y = snapshot.dpiY;
+            summary.channels = snapshot.channelOrder;
+            summary.bit_depth = snapshot.bitDepth;
+            summary.polarity = snapshot.polarity;
+            if (manifest.contains("perInstance"))
+            {
+                summary.per_instance = ReadPerInstance(manifest);
+            }
+            summary.profile_echo = manifest.contains("profileEcho")
+                ? ReadProfileEcho(manifest)
+                : StructuredJsonObject{"{}"};
+            return ApiResult<PackageSummary>::Success(std::move(summary));
+        }
         VerifiedPackageSnapshot snapshot;
         {
             std::scoped_lock lock{m_layerMutex};
@@ -212,7 +260,9 @@ ApiResult<PackageSummary> PackageQueryFacadeService::GetSummary(
         summary.grid.height_px = snapshot.validation.height_px;
         summary.grid.dpi_x = snapshot.validation.dpi_x;
         summary.grid.dpi_y = snapshot.validation.dpi_y;
-        summary.channels = snapshot.validation.channel_order;
+        summary.channels.assign(
+            snapshot.validation.channel_order.begin(),
+            snapshot.validation.channel_order.end());
         summary.bit_depth = snapshot.validation.bit_depth;
         summary.polarity = "black_is_print";
         summary.per_instance = ReadPerInstance(manifest);
@@ -264,6 +314,47 @@ ApiResult<LayerDescriptor> PackageQueryFacadeService::GetLayerDescriptor(
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(packageDir);
 
+        if (ReadPackageManifestSchema(absolutePackage) == "p0.rgbwsvt.1")
+        {
+            RgbwsvtPackageValidation snapshot;
+            {
+                std::scoped_lock lock{m_layerMutex};
+                snapshot = EnsureVerifiedRgbwsvtPackageLocked(
+                    absolutePackage, false);
+            }
+            const auto found = std::find_if(
+                snapshot.layers.begin(), snapshot.layers.end(),
+                [layerIndex](const RgbwsvtPackageLayer& candidate)
+                {
+                    return candidate.index == layerIndex;
+                });
+            if (found == snapshot.layers.end())
+            {
+                return ApiResult<LayerDescriptor>::Failure(MakeError(
+                    kInputError,
+                    "layer index is not listed by the package",
+                    std::to_string(layerIndex)));
+            }
+            LayerDescriptor descriptor;
+            descriptor.layer_index = found->index;
+            descriptor.z_mm = found->zMm;
+            descriptor.width_px = static_cast<int>(found->width);
+            descriptor.height_px = static_cast<int>(found->height);
+            descriptor.tiff_path = found->path;
+            descriptor.channels = snapshot.channelOrder;
+            descriptor.storage_mode = snapshot.storageMode;
+            descriptor.print_pixels.clear();
+            descriptor.empty_pixels.clear();
+            descriptor.print_pixels.reserve(found->channelStats.size());
+            descriptor.empty_pixels.reserve(found->channelStats.size());
+            for (const TiffChannelStats& channel : found->channelStats)
+            {
+                descriptor.print_pixels.push_back(channel.print_pixels);
+                descriptor.empty_pixels.push_back(channel.empty_pixels);
+            }
+            return ApiResult<LayerDescriptor>::Success(std::move(descriptor));
+        }
+
         ProductionLayerRef layer;
         RipLayerChecksum validatedLayer;
         {
@@ -304,14 +395,18 @@ ApiResult<LayerDescriptor> PackageQueryFacadeService::GetLayerDescriptor(
         descriptor.height_px = static_cast<int>(layer.height);
         descriptor.tiff_path = layer.path;
         descriptor.storage_mode = tiff_storage_mode_string(layer.storage);
+        descriptor.print_pixels.clear();
+        descriptor.empty_pixels.clear();
+        descriptor.print_pixels.reserve(validatedLayer.channel_stats.size());
+        descriptor.empty_pixels.reserve(validatedLayer.channel_stats.size());
         for (std::size_t channel = 0U;
-             channel < descriptor.print_pixels.size();
+             channel < validatedLayer.channel_stats.size();
              ++channel)
         {
-            descriptor.print_pixels.at(channel) =
-                validatedLayer.channel_stats.at(channel).print_pixels;
-            descriptor.empty_pixels.at(channel) =
-                validatedLayer.channel_stats.at(channel).empty_pixels;
+            descriptor.print_pixels.push_back(
+                validatedLayer.channel_stats.at(channel).print_pixels);
+            descriptor.empty_pixels.push_back(
+                validatedLayer.channel_stats.at(channel).empty_pixels);
         }
         return ApiResult<LayerDescriptor>::Success(std::move(descriptor));
     }
@@ -360,6 +455,31 @@ ApiResult<VerifyResult> PackageQueryFacadeService::Verify(
         }
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(packageDir);
+        const std::string schema = ReadPackageManifestSchema(absolutePackage);
+        if (schema == "p0.rgbwsvt.1")
+        {
+            RgbwsvtPackageValidation snapshot;
+            {
+                std::scoped_lock lock{m_layerMutex};
+                snapshot = EnsureVerifiedRgbwsvtPackageLocked(
+                    absolutePackage, true);
+            }
+            if (cancelToken.IsCancelRequested())
+            {
+                return ApiResult<VerifyResult>::Failure(MakeError(
+                    kCancelledError,
+                    "package verification was cancelled"));
+            }
+            VerifyResult result;
+            result.valid = true;
+            result.layer_count = snapshot.layerCount;
+            result.per_layer_checksum.reserve(snapshot.layers.size());
+            for (const RgbwsvtPackageLayer& layer : snapshot.layers)
+            {
+                result.per_layer_checksum.push_back(layer.checksums);
+            }
+            return ApiResult<VerifyResult>::Success(std::move(result));
+        }
         VerifiedPackageSnapshot snapshot;
         {
             std::scoped_lock lock{m_layerMutex};
@@ -381,7 +501,8 @@ ApiResult<VerifyResult> PackageQueryFacadeService::Verify(
         for (const RipLayerChecksum& checksum :
              snapshot.validation.layer_checksums)
         {
-            result.per_layer_checksum.push_back(checksum.channels);
+            result.per_layer_checksum.emplace_back(
+                checksum.channels.begin(), checksum.channels.end());
         }
         return ApiResult<VerifyResult>::Success(std::move(result));
     }

@@ -178,4 +178,31 @@ Json BuildMaterialVolumeReport(const MaterialVolumeReportInput& input)
     });
 }
 
+Json BuildDisabledMaterialVolumeReport()
+{
+    return Json::object({
+        {"schema", "slicesoft.material_volume_report.1"},
+        {"packageProtocol", "p0.rgbwsv.2"},
+        {"enabled", false},
+        {"mode", "closed_intervals"},
+        {"missingMaterial", "fail_closed"},
+        {"openSurface", Json::object({
+            {"mode", "reject"},
+            {"requestedThicknessMm", 0.0},
+            {"placement", "below_surface"}})},
+        {"overlap", Json::object({{"mode", "explicit_priority"}})},
+        {"materials", Json::array({})},
+        {"totals", Json::object({
+            {"layerCount", 0},
+            {"columnCount", 0},
+            {"intervalCount", 0},
+            {"ownerPixels", 0},
+            {"unownedModelPixels", 0},
+            {"unprintableWhiteCarrierPixels", 0}})},
+        {"layers", Json::array({})},
+        {"warnings", Json::array({})},
+        {"errors", Json::array({})},
+    });
+}
+
 }  // namespace slicer_core

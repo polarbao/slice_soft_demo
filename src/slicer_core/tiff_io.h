@@ -41,4 +41,14 @@ void write_rgbwsv_tiff(
     const TiffImageSpec& spec,
     std::span<const std::uint8_t> pixels);
 
+/**
+ * @brief Writes one seven-channel RGBWSVT TIFF through LibTIFF only.
+ *
+ * The handwritten compatibility backend intentionally rejects this protocol.
+ */
+void write_rgbwsvt_tiff(
+    const std::filesystem::path& path,
+    const TiffImageSpec& spec,
+    std::span<const std::uint8_t> pixels);
+
 }  // namespace slicer_core

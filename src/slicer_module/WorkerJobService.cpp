@@ -265,7 +265,9 @@ struct WorkerJobService::Implementation
         slicer_core::Json::Object document = execution.route.workerPayload.as_object();
         document.emplace("contract", "file_contract");
         document.emplace("major", 1);
-        document.emplace("minor", 0);
+        document.emplace(
+            "minor",
+            static_cast<double>(execution.route.contractMinor));
         document.emplace("jobId", execution.route.jobId);
         document.emplace("correlationId", execution.route.correlationId);
         document.emplace("capability", execution.route.workerCapability);
@@ -293,7 +295,8 @@ struct WorkerJobService::Implementation
             return slicer_core::Json{std::move(payload)};
         }
 
-        if (execution.route.workerCapability == "slice.rgbwsv")
+        if (execution.route.workerCapability == "slice.rgbwsv"
+            || execution.route.workerCapability == "slice.rgbwsvt")
         {
             const slicer_core::Json& output = document.at("output");
             const std::filesystem::path packageDirectory{
@@ -319,7 +322,8 @@ struct WorkerJobService::Implementation
             || !result.contains("contract")
             || result.at("contract").as_string() != "file_contract"
             || result.at("major").as_int() != 1
-            || result.at("minor").as_int() != 0
+            || result.at("minor").as_int()
+                != static_cast<int>(execution.route.contractMinor)
             || result.at("jobId").as_string() != execution.route.jobId
             || result.at("correlationId").as_string()
                 != execution.route.correlationId
@@ -413,7 +417,8 @@ struct WorkerJobService::Implementation
             ? std::string{InternalCode}
             : result.errorCode;
         const std::string message = result.errorMessage.empty()
-            ? "Worker process failed without a diagnostic"
+            ? "Worker process failed without a diagnostic (exitCode="
+                + std::to_string(result.processExitCode) + ")"
             : result.errorMessage;
         const auto detail = std::find_if(
             result.stderrLogLines.rbegin(),
@@ -513,7 +518,8 @@ struct WorkerJobService::Implementation
             options.timeout = execution->route.timeout;
             options.cancelGracePeriod = std::chrono::milliseconds{2000};
             options.requireTerminalProgress =
-                execution->route.workerCapability == "slice.rgbwsv";
+                execution->route.workerCapability == "slice.rgbwsv"
+                || execution->route.workerCapability == "slice.rgbwsvt";
             options.packageArtifacts = execution->packageArtifacts;
             options.progressSink = [weak = std::weak_ptr<JobExecution>{execution}](
                                        const WorkerProgressEvent& event)

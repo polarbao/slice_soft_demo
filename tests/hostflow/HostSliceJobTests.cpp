@@ -46,6 +46,8 @@ hosteffectiveprofile BuildProfile(
     settings.modelformat = QStringLiteral("obj");
     settings.outputdirectory = packageDirectory;
     settings.layerthicknessmm = layerThicknessMm;
+    settings.packageprotocol = HostPackageProtocol::Rgbwsv;
+    settings.transferchannel.enabled = false;
     settings.support.baseprojection.enabled = baseProjectionEnabled;
     hosteffectiveprofile profile;
     QString error;

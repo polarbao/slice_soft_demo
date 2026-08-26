@@ -14,6 +14,7 @@ constexpr std::string_view PreflightCapability{"geometry.preflight"};
 constexpr std::string_view WorkerPreflightCapability{"geometry.preflight.full"};
 constexpr std::string_view RepairCapability{"geometry.repair"};
 constexpr std::string_view SliceCapability{"slice.rgbwsv"};
+constexpr std::string_view TransferSliceCapability{"slice.rgbwsvt"};
 
 CapabilityRoute Reject(
     std::string capability,
@@ -166,15 +167,18 @@ CapabilityRoute RouteRepair(const slicer_core::Json& request)
     return route;
 }
 
-CapabilityRoute RouteSlice(slicer_core::Json request)
+CapabilityRoute RouteSlice(
+    slicer_core::Json request,
+    const std::string_view capability)
 {
     request = NormalizeWorkerOnlyBackend(request);
 
     CapabilityRoute route;
     route.accepted = true;
     route.carrier = CapabilityCarrier::Worker;
-    route.publicCapability = std::string{SliceCapability};
-    route.workerCapability = std::string{SliceCapability};
+    route.publicCapability = std::string{capability};
+    route.workerCapability = std::string{capability};
+    route.contractMinor = capability == TransferSliceCapability ? 1U : 0U;
     ReadWorkerIdentity(request, route, true);
 
     slicer_core::Json::Object payload;
@@ -203,9 +207,10 @@ CapabilityRoute CapabilityCarrierRouter::Route(const std::string_view requestTex
         {
             return RouteRepair(request);
         }
-        if (capability == SliceCapability)
+        if (capability == SliceCapability
+            || capability == TransferSliceCapability)
         {
-            return RouteSlice(std::move(request));
+            return RouteSlice(std::move(request), capability);
         }
 
         CapabilityRoute route;

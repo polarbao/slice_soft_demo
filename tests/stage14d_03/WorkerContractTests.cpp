@@ -4,6 +4,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -56,6 +57,11 @@ int EmitContractFixture(const std::string& fixture)
     const bool missingCapability = fixture.find("missing_capability") != std::string::npos;
     const bool unknownCapability = fixture.find("unknown_capability") != std::string::npos;
     const bool duplicateCapability = fixture.find("duplicate_capability") != std::string::npos;
+    const bool transferDeclarations = fixture.find("rgbwsvt") != std::string::npos;
+    const bool withoutTransferProduce =
+        fixture.find("without_transfer_produce") != std::string::npos;
+    const bool withoutTransferCapability =
+        fixture.find("without_transfer_capability") != std::string::npos;
 
     std::cout
         << "{\"contract\":\"file_contract\","
@@ -66,6 +72,10 @@ int EmitContractFixture(const std::string& fixture)
     if (duplicatePackage)
     {
         std::cout << ",\"p0.rgbwsv.2\"";
+    }
+    if (transferDeclarations && !withoutTransferProduce)
+    {
+        std::cout << ",\"p0.rgbwsvt.1\"";
     }
     std::cout << "],\"capabilities\":[";
     if (!missingCapability)
@@ -78,6 +88,10 @@ int EmitContractFixture(const std::string& fixture)
         if (unknownCapability)
         {
             std::cout << ",\"future.unknown\"";
+        }
+        if (transferDeclarations && !withoutTransferCapability)
+        {
+            std::cout << ",\"slice.rgbwsvt\"";
         }
     }
     else
@@ -114,14 +128,27 @@ slicer_module::WorkerContractRequirement SliceRequirement()
     return requirement;
 }
 
+slicer_module::WorkerContractRequirement TransferSliceRequirement()
+{
+    slicer_module::WorkerContractRequirement requirement;
+    requirement.requiredCapabilities = {"slice.rgbwsvt"};
+    return requirement;
+}
+
 void TestRealWorker(const std::filesystem::path& workerExecutable)
 {
     const auto result = Negotiate(workerExecutable, SliceRequirement());
     Check(result.compatible, "real worker contract-info is compatible");
     Check(result.decision == slicer_module::WorkerContractDecision::Compatible,
         "real worker returns compatible decision");
-    Check(result.info.major == 1 && result.info.minor == 0,
-        "real worker reports file_contract_v1 version 1.0");
+    Check(result.info.major == 1 && result.info.minor == 1,
+        "real worker reports file_contract_v1 discovery version 1.1");
+    Check(std::find(result.info.produces.begin(), result.info.produces.end(),
+              "p0.rgbwsvt.1") != result.info.produces.end(),
+        "real worker discovery declares the transfer package contract");
+    Check(std::find(result.info.capabilities.begin(), result.info.capabilities.end(),
+              "slice.rgbwsvt") != result.info.capabilities.end(),
+        "real worker discovery declares the transfer slice capability");
     Check(
         result.info.engineVersion == SLICESOFT_SLICER_IMPLEMENTATION_VERSION,
         "real worker reports the manifest-derived engine version");
@@ -129,6 +156,10 @@ void TestRealWorker(const std::filesystem::path& workerExecutable)
         "real worker emits exactly one stdout JSON object");
     Check(result.transport.stderrLogLines.empty(),
         "real worker successful discovery does not emit stderr diagnostics");
+
+    const auto transferResult = Negotiate(workerExecutable, TransferSliceRequirement());
+    Check(transferResult.compatible,
+        "real worker satisfies intrinsic transfer minor, produces, and capability requirements");
 }
 
 void TestVersionCompatibility(const std::filesystem::path& fixtures)
@@ -153,6 +184,14 @@ void TestVersionCompatibility(const std::filesystem::path& fixtures)
     Check(!older.compatible
         && older.decision == slicer_module::WorkerContractDecision::MinorTooOld,
         "worker minor below the required minor is rejected");
+
+    const auto transferOnMinorZero = Negotiate(
+        CreateFixtureExecutable(fixtures, "worker_rgbwsvt_minor0"),
+        TransferSliceRequirement());
+    Check(!transferOnMinorZero.compatible
+        && transferOnMinorZero.decision
+            == slicer_module::WorkerContractDecision::MinorTooOld,
+        "transfer capability intrinsically requires discovery minor 1");
 }
 
 void TestRequiredDeclarations(const std::filesystem::path& fixtures)
@@ -176,6 +215,24 @@ void TestRequiredDeclarations(const std::filesystem::path& fixtures)
         CreateFixtureExecutable(fixtures, "worker_duplicate_package"), SliceRequirement());
     Check(duplicatePackage.compatible,
         "duplicate production-contract entries allowed by the schema remain compatible");
+
+    const auto missingTransferProduce = Negotiate(
+        CreateFixtureExecutable(
+            fixtures, "worker_rgbwsvt_minor1_without_transfer_produce"),
+        TransferSliceRequirement());
+    Check(!missingTransferProduce.compatible
+        && missingTransferProduce.decision
+            == slicer_module::WorkerContractDecision::MissingProductionContract,
+        "transfer capability without p0.rgbwsvt.1 is rejected before job launch");
+
+    const auto missingTransferCapability = Negotiate(
+        CreateFixtureExecutable(
+            fixtures, "worker_rgbwsvt_minor1_without_transfer_capability"),
+        TransferSliceRequirement());
+    Check(!missingTransferCapability.compatible
+        && missingTransferCapability.decision
+            == slicer_module::WorkerContractDecision::MissingCapability,
+        "transfer package contract without slice.rgbwsvt is rejected before job launch");
 }
 
 void TestDocumentAndLogBoundary(const std::filesystem::path& fixtures)

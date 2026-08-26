@@ -1,11 +1,9 @@
 #include "HostSliceSettingsPanel.h"
-
 #include "HostMaterialSettingsPanel.h"
 #include "HostMatvolSettingsPanel.h"
 #include "HostProcessPresetCatalog.h"
 #include "HostSupportSettingsPanel.h"
 #include "HostTextureSettingsPanel.h"
-
 #include <QCoreApplication>
 #include <QAbstractItemView>
 #include <QComboBox>
@@ -28,9 +26,7 @@
 #include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QVBoxLayout>
-
 #include <algorithm>
-
 namespace
 {
 QString LegacyCompatibleApplicationRoot()
@@ -530,6 +526,7 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_buildZSpin->setValue(settings.buildvolume.zlimitmm);
     m_supportPanel->SetSettings(settings.support);
     m_matvolPanel->SetSettings(settings.materialvolume);
+    m_packageProtocol = settings.packageprotocol; m_transferChannel = settings.transferchannel;
     RefreshPreview();
 }
 
@@ -567,6 +564,7 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.buildvolume.ydirection = QStringLiteral("positive");
     settings.support = m_supportPanel->Settings();
     settings.materialvolume = m_matvolPanel->Settings();
+    settings.packageprotocol = m_packageProtocol; settings.transferchannel = m_transferChannel;
     return settings;
 }
 
@@ -698,6 +696,7 @@ void HostSliceSettingsPanel::SetSingleMaterialRestriction(
             m_texturePanel->SetSettings(selectedPreset.texture);
             m_supportPanel->SetSettings(selectedPreset.support);
             m_matvolPanel->SetSettings(selectedPreset.materialvolume);
+            m_packageProtocol = selectedPreset.packageprotocol; m_transferChannel = selectedPreset.transferchannel;
         }
     }
     m_materialPanel->SetSingleMaterialOnly(restricted, reason);
@@ -754,6 +753,7 @@ void HostSliceSettingsPanel::OnProcessPresetChanged(const int index)
     m_texturePanel->SetSettings(preset.texture);
     m_supportPanel->SetSettings(preset.support);
     m_matvolPanel->SetSettings(preset.materialvolume);
+    m_packageProtocol = preset.packageprotocol; m_transferChannel = preset.transferchannel;
     m_applyingProcessPreset = false;
     OnSettingsEdited();
 }

@@ -122,6 +122,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/config/OutputResolution.h
     src/slicer_core/config/SlicePipelineConfig.cpp
     src/slicer_core/config/SlicePipelineConfig.h
+    src/slicer_core/config/TransferChannelConfig.cpp
+    src/slicer_core/config/TransferChannelConfig.h
     src/slicer_core/config.cpp
     src/slicer_core/config.h
     src/slicer_core/diagnostics/Diagnostics.cpp
@@ -303,6 +305,15 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtProtocol.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtProtocol.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtPackageReader.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtPackageSchemaReader.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtTiffIo.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtTiffIo.h
     src/slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.cpp
     src/slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.h
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.cpp
@@ -391,6 +402,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/reports/MultiModelSceneMatrixReport.h
     src/slicer_core/reports/MaterialClosureReport.cpp
     src/slicer_core/reports/MaterialClosureReport.h
+    src/slicer_core/reports/MaterialProcessReport.cpp
+    src/slicer_core/reports/MaterialProcessReport.h
     src/slicer_core/reports/MaterialVolumeReport.cpp
     src/slicer_core/reports/MaterialVolumeReport.h
     src/slicer_core/reports/TextureFillPartitionReport.cpp
@@ -401,6 +414,14 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/reports/ReportSchemaValidator.h
     src/slicer_core/reports/ReportWriter.cpp
     src/slicer_core/reports/ReportWriter.h
+    src/slicer_core/materials/transfer/TransferChannelError.cpp
+    src/slicer_core/materials/transfer/TransferChannelError.h
+    src/slicer_core/materials/transfer/LegacyTransferChannelSession.cpp
+    src/slicer_core/materials/transfer/LegacyTransferChannelSession.h
+    src/slicer_core/materials/transfer/TransferMaterialResolver.cpp
+    src/slicer_core/materials/transfer/TransferMaterialResolver.h
+    src/slicer_core/materials/transfer/TransferMaterialVolumePlan.cpp
+    src/slicer_core/materials/transfer/TransferMaterialVolumePlan.h
     src/slicer_core/rip_reader.cpp
     src/slicer_core/rip_reader.h
     src/slicer_core/scene/SceneModel.cpp
@@ -521,7 +542,9 @@ if(SLICESOFT_TIFF_BACKEND STREQUAL "libtiff")
         message(FATAL_ERROR
             "LibTIFF was found but the TIFF::TIFF imported target is unavailable.")
     endif()
+    target_compile_definitions(slicer_base PRIVATE SLICER_CORE_HAS_LIBTIFF=1)
     target_compile_definitions(slicer_engine PRIVATE SLICER_CORE_HAS_LIBTIFF=1)
+    target_link_libraries(slicer_base PRIVATE TIFF::TIFF)
     target_link_libraries(slicer_engine PRIVATE TIFF::TIFF)
     if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
         if(WIN32)
@@ -976,9 +999,18 @@ target_include_directories(package_query_facade_14b02_base_link_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(package_query_facade_14b02_base_link_test PRIVATE slicer_base)
+
+add_executable(matvol_t_package_query_dual_protocol_tests
+    tests/matvol_t/PackageQueryDualProtocolTests.cpp
+)
+target_include_directories(matvol_t_package_query_dual_protocol_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(matvol_t_package_query_dual_protocol_tests PRIVATE slicer_engine)
 if(MSVC)
     target_compile_options(package_query_facade_14b02_unit_tests PRIVATE /bigobj /MP)
     target_compile_options(package_query_facade_14b02_base_link_test PRIVATE /bigobj /MP)
+    target_compile_options(matvol_t_package_query_dual_protocol_tests PRIVATE /bigobj /MP)
 endif()
 
 add_executable(slice_facade_14b04_unit_tests
@@ -1770,6 +1802,99 @@ if(MSVC)
     target_compile_options(matvol_reality_plan_tests PRIVATE /W4 /WX)
 endif()
 
+add_executable(matvol_transfer_resolver_unit_tests
+    tests/matvol_t/MatvolTransferResolverTests.cpp
+)
+target_link_libraries(matvol_transfer_resolver_unit_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_transfer_resolver_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_transfer_resolver_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_transfer_volume_plan_tests
+    tests/matvol_t/TransferMaterialVolumePlanTests.cpp
+)
+target_link_libraries(matvol_transfer_volume_plan_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_transfer_volume_plan_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_transfer_volume_plan_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_composer_tests
+    tests/matvol_t/RgbwsvtComposerTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_composer_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_composer_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_tiff_io_tests
+    tests/matvol_t/RgbwsvtTiffIoTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_tiff_io_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_rgbwsvt_tiff_io_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_tiff_io_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_legacy_transfer_session_tests
+    tests/matvol_t/LegacyTransferChannelSessionTests.cpp
+)
+target_link_libraries(matvol_legacy_transfer_session_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_legacy_transfer_session_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_legacy_transfer_session_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_legacy_package_metadata_tests
+    tests/matvol_t/RgbwsvtLegacyPackageMetadataTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_legacy_package_metadata_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_legacy_package_metadata_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_legacy_package_tests
+    tests/matvol_t/LegacyRgbwsvtPackageTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_legacy_package_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_rgbwsvt_legacy_package_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_legacy_package_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_cli_candidate_tests
+    tests/matvol_t/LegacyRgbwsvtCliCandidateTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_cli_candidate_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_rgbwsvt_cli_candidate_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_cli_candidate_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_t_production_matrix_tests
+    tests/matvol_t/MatvolTProductionMatrixTests.cpp
+)
+target_link_libraries(matvol_t_production_matrix_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_t_production_matrix_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_t_production_matrix_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage16_contact_posture_metrics_tests
     tests/stage16/ContactPostureMetricsTests.cpp
 )
@@ -2455,6 +2580,10 @@ add_test(
     NAME package_query_facade_14b02_base_link_test
     COMMAND package_query_facade_14b02_base_link_test
 )
+add_test(
+    NAME matvol_t_package_query_dual_protocol_tests
+    COMMAND matvol_t_package_query_dual_protocol_tests
+)
 add_test(NAME slice_facade_14b04_unit_tests COMMAND slice_facade_14b04_unit_tests)
 add_test(
     NAME slice_facade_14b04_production_binding_test
@@ -2661,6 +2790,15 @@ add_test(NAME matvol_white_carrier_integration_tests COMMAND matvol_white_carrie
 add_test(NAME matvol_host_profile_round_trip_tests COMMAND matvol_host_profile_round_trip_tests)
 add_test(NAME matvol_reality_plan_tests COMMAND matvol_reality_plan_tests)
 add_test(NAME matvol_production_wiring_tests COMMAND matvol_production_wiring_tests)
+add_test(NAME matvol_transfer_resolver_unit_tests COMMAND matvol_transfer_resolver_unit_tests)
+add_test(NAME matvol_transfer_volume_plan_tests COMMAND matvol_transfer_volume_plan_tests)
+add_test(NAME matvol_rgbwsvt_composer_tests COMMAND matvol_rgbwsvt_composer_tests)
+add_test(NAME matvol_rgbwsvt_tiff_io_tests COMMAND matvol_rgbwsvt_tiff_io_tests)
+add_test(NAME matvol_legacy_transfer_session_tests COMMAND matvol_legacy_transfer_session_tests)
+add_test(NAME matvol_rgbwsvt_legacy_package_metadata_tests COMMAND matvol_rgbwsvt_legacy_package_metadata_tests)
+add_test(NAME matvol_rgbwsvt_legacy_package_tests COMMAND matvol_rgbwsvt_legacy_package_tests)
+add_test(NAME matvol_rgbwsvt_cli_candidate_tests COMMAND matvol_rgbwsvt_cli_candidate_tests)
+add_test(NAME matvol_t_production_matrix_tests COMMAND matvol_t_production_matrix_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(

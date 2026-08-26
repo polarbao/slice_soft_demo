@@ -116,6 +116,15 @@ int main(const int argc, char* argv[])
                  "production package contract is missing")
         && passed;
     passed = Expect(
+                 Contains(first, R"json("contract":"p0.rgbwsvt.1")json"),
+                 "transfer package contract is missing")
+        && passed;
+    passed = Expect(
+                 Contains(first, R"json("slice.rgbwsv")json")
+                     && Contains(first, R"json("slice.rgbwsvt")json"),
+                 "legacy and transfer slice capabilities must both be advertised")
+        && passed;
+    passed = Expect(
                  Contains(first, R"json("maxConcurrentJobs":1)json")
                      && Contains(first, R"json("cancelLatencyMs":2000)json"),
                  "job limits are missing")

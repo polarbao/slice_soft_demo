@@ -40,6 +40,16 @@ def Main() -> int:
         "submission must resolve the committed effective config",
     )
     Require(
+        factory,
+        "options.transfer_scene_production_opt_in = true;",
+        "RGBWSVT Scene entry must carry the explicit production opt-in",
+    )
+    Forbid(
+        factory,
+        "transfer_scene_candidate",
+        "obsolete RGBWSVT candidate flag must not remain in the production factory",
+    )
+    Require(
         adapter,
         "PM-SLICER-CANCELLED-0070",
         "cooperative cancellation must use the frozen PM code",

@@ -13,6 +13,7 @@ namespace
 {
 
 constexpr std::string_view SliceCapability{"slice.rgbwsv"};
+constexpr std::string_view TransferSliceCapability{"slice.rgbwsvt"};
 constexpr std::string_view PreflightCapability{"geometry.preflight.full"};
 constexpr std::string_view RepairCapability{"geometry.repair"};
 constexpr std::string_view EngineVersion{"0.1.0"};
@@ -39,6 +40,7 @@ private:
 bool IsKnownCapability(const std::string_view capability)
 {
     return capability == SliceCapability
+        || capability == TransferSliceCapability
         || capability == PreflightCapability
         || capability == RepairCapability;
 }

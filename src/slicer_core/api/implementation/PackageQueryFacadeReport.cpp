@@ -27,7 +27,15 @@ ApiResult<PackageReport> PackageQueryFacadeService::ReadReport(
             RequirePackageDirectory(packageDir);
         {
             std::scoped_lock lock{m_layerMutex};
-            (void)EnsureVerifiedPackageLocked(absolutePackage, false);
+            if (ReadPackageManifestSchema(absolutePackage) == "p0.rgbwsvt.1")
+            {
+                (void)EnsureVerifiedRgbwsvtPackageLocked(
+                    absolutePackage, false);
+            }
+            else
+            {
+                (void)EnsureVerifiedPackageLocked(absolutePackage, false);
+            }
         }
         const Json manifest = ParseObjectFile(
             absolutePackage / "manifest.json");

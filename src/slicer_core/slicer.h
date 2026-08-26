@@ -75,10 +75,12 @@ struct SliceRunOptions {
     bool write_preview_files{true};
     bool write_reports{true};
     SliceRunProgressCallback progress_callback;
+    std::function<bool()> cancellation_requested;
     SliceRunGridCallback gridcallback;
     SliceRunLayerCallback layercallback;
     std::optional<ModelInstance> instanceoverride;
     std::optional<SliceRunInputOverride> inputoverride;
+    bool transfer_scene_production_opt_in{false};
 
     /**
      * @brief Optional already-imported model used by scene orchestration.
