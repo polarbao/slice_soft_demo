@@ -3,8 +3,12 @@
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
 #include "slicer_core/engine/SliceFacadeAdapter.h"
 #include "slicer_core/json_value.h"
+#include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 #include "slicer_core/pipeline/MultiModelProductionService.h"
 #include "slicer_core/scene/SceneEffectiveConfig.h"
+#include "slicer_core/scene/MultiModelScene.h"
+#include "slicer_core/slicer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -17,6 +21,16 @@
 
 namespace slicer_core::engine
 {
+
+class TransferProductionEntry final
+{
+public:
+    static api::ApiResult<api::SliceResult> Run(
+        const api::SliceRequest& sliceRequest,
+        const api::ICancelToken& cancelToken,
+        const api::ProgressSink& progressSink);
+};
+
 namespace
 {
 
@@ -228,13 +242,175 @@ api::ApiResult<api::SliceResult> RunExistingProductionEntry(
     }
 }
 
+api::ApiResult<api::SliceResult> RunTransferProductionEntry(
+    const api::SliceRequest& sliceRequest,
+    const api::ICancelToken& cancelToken,
+    const api::ProgressSink& progressSink,
+    const TransferSceneProductionAdmission& admission)
+{
+    if (cancelToken.IsCancelRequested())
+    {
+        return api::ApiResult<api::SliceResult>::Failure(
+            MakeError(
+                "PM-SLICER-CANCELLED-0070",
+                "slice job was cancelled before RGBWSVT production"));
+    }
+
+    const SceneEffectiveConfigResult effective =
+        ReadSceneEffectiveConfig(sliceRequest.scene_config_path);
+    if (!effective.IsValid())
+    {
+        return api::ApiResult<api::SliceResult>::Failure(
+            MakeError(
+                "PM-SLICER-PROFILE-0030",
+                "scene effective config is invalid for RGBWSVT production"));
+    }
+
+    try
+    {
+        const MultiModelSceneDecodeResult decoded =
+            DeserializeMultiModelScene(effective.document.at("sceneConfig"));
+        if (!decoded.IsValid())
+        {
+            throw std::runtime_error("effective scene cannot be decoded");
+        }
+        const SceneModelInstance* visibleInstance{nullptr};
+        for (const SceneModelInstance& instance : decoded.scene.instances)
+        {
+            if (!instance.instance.visible)
+            {
+                continue;
+            }
+            if (visibleInstance != nullptr)
+            {
+                return api::ApiResult<api::SliceResult>::Failure(
+                    MakeError(
+                        "PM-SLICER-LAYOUT-0023",
+                        "RGBWSVT scene production requires exactly one visible instance"));
+            }
+            visibleInstance = &instance;
+        }
+        if (visibleInstance == nullptr)
+        {
+            return api::ApiResult<api::SliceResult>::Failure(
+                MakeError(
+                    "PM-SLICER-LAYOUT-0023",
+                    "RGBWSVT scene production requires exactly one visible instance"));
+        }
+
+        const auto model = std::find_if(
+            decoded.scene.models.begin(),
+            decoded.scene.models.end(),
+            [visibleInstance](const ModelSource& item)
+            {
+                return item.modelid == visibleInstance->instance.modelid;
+            });
+        if (model == decoded.scene.models.end())
+        {
+            return api::ApiResult<api::SliceResult>::Failure(
+                MakeError(
+                    "PM-SLICER-INPUT-0001",
+                    "RGBWSVT scene model source is unresolved"));
+        }
+
+        const std::filesystem::path profilePath = ResolvePath(
+            effective.document
+                .at("sliceContract")
+                .at("profileConfigPath")
+                .as_string(),
+            sliceRequest.scene_config_path.parent_path());
+        SliceRunOptions options;
+        options.progress_callback =
+            [&progressSink](const SliceRunProgress& progress)
+            {
+                if (!progressSink)
+                {
+                    return;
+                }
+                progressSink(api::ProgressEvent{
+                    progress.phase,
+                    progress.percent,
+                    progress.current,
+                    progress.total});
+            };
+        options.cancellation_requested = [&cancelToken]()
+        {
+            return cancelToken.IsCancelRequested();
+        };
+        options.inputoverride = SliceRunInputOverride{
+            model->sourcepath,
+            model->format};
+        options.instanceoverride = visibleInstance->instance;
+        options.transfer_scene_production_admission = &admission;
+
+        const SliceRunResult produced = run_slicer(profilePath, options);
+        api::SliceResult result;
+        result.package_dir = produced.package_dir;
+        result.manifest_path = produced.package_dir / "manifest.json";
+        result.layer_count = produced.layer_count;
+        result.grid_px = {produced.width_px, produced.height_px};
+        result.engine_version = "legacy-rgbwsvt-scene-v1";
+        result.elapsed_ms = static_cast<std::uint64_t>(
+            std::llround(std::max(0.0, produced.profile.total_ms)));
+        result.profile = produced.profile;
+        return api::ApiResult<api::SliceResult>::Success(std::move(result));
+    }
+    catch (const std::exception& exception)
+    {
+        if (cancelToken.IsCancelRequested())
+        {
+            return api::ApiResult<api::SliceResult>::Failure(
+                MakeError(
+                    "PM-SLICER-CANCELLED-0070",
+                    "RGBWSVT scene production was cancelled",
+                    exception.what()));
+        }
+        return api::ApiResult<api::SliceResult>::Failure(
+            MakeError(
+                "PM-SLICER-CONTRACT-0060",
+                "RGBWSVT scene production failed",
+                exception.what()));
+    }
+}
+
+api::ApiResult<api::SliceResult> RunProductionEntry(
+    const api::SliceRequest& sliceRequest,
+    const api::ICancelToken& cancelToken,
+    const api::ProgressSink& progressSink)
+{
+    if (sliceRequest.output_contract == CurrentRgbwsvProtocol().schema)
+    {
+        return RunExistingProductionEntry(sliceRequest, cancelToken, progressSink);
+    }
+    if (sliceRequest.output_contract == CurrentRgbwsvtProtocol().schema)
+    {
+        return TransferProductionEntry::Run(
+            sliceRequest, cancelToken, progressSink);
+    }
+    return api::ApiResult<api::SliceResult>::Failure(
+        MakeError(
+            "PM-SLICER-CONTRACT-0060",
+            "slice output contract is not supported",
+            sliceRequest.output_contract));
+}
+
 }  // namespace
+
+api::ApiResult<api::SliceResult> TransferProductionEntry::Run(
+    const api::SliceRequest& sliceRequest,
+    const api::ICancelToken& cancelToken,
+    const api::ProgressSink& progressSink)
+{
+    const TransferSceneProductionAdmission admission;
+    return RunTransferProductionEntry(
+        sliceRequest, cancelToken, progressSink, admission);
+}
 
 std::unique_ptr<api::SliceFacade> CreateProductionSliceFacade()
 {
     return std::make_unique<SliceFacadeAdapter>(
         ResolveSubmissionContract,
-        RunExistingProductionEntry);
+        RunProductionEntry);
 }
 
 }  // namespace slicer_core::engine

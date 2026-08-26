@@ -9,12 +9,14 @@
 #include <QTemporaryDir>
 
 #include <exception>
+#include <algorithm>
+#include <iterator>
 #include <utility>
 
 namespace
 {
-constexpr std::array<const char*, 6> ChannelNames{
-    "R", "G", "B", "W", "S", "V"};
+constexpr std::array<const char*, 7> ChannelNames{
+    "R", "G", "B", "W", "S", "V", "T"};
 
 QString ResultError(const QJsonObject& response, const QString& fallback)
 {
@@ -31,16 +33,29 @@ QString ResultError(const QJsonObject& response, const QString& fallback)
 
 bool ReadChannelCounts(
     const QJsonObject& object,
+    const QStringList& channels,
     hostchannelcounts* counts)
 {
     if (counts == nullptr)
     {
         return false;
     }
-    for (std::size_t index = 0; index < ChannelNames.size(); ++index)
+    for (const QString& channel : channels)
     {
-        const QJsonValue value = object.value(
-            QString::fromLatin1(ChannelNames[index]));
+        const auto found = std::find_if(
+            ChannelNames.begin(),
+            ChannelNames.end(),
+            [&channel](const char* name)
+            {
+                return channel == QString::fromLatin1(name);
+            });
+        if (found == ChannelNames.end())
+        {
+            return false;
+        }
+        const std::size_t index = static_cast<std::size_t>(
+            std::distance(ChannelNames.begin(), found));
+        const QJsonValue value = object.value(channel);
         if (!value.isDouble() || value.toDouble() < 0.0)
         {
             return false;
@@ -52,9 +67,12 @@ bool ReadChannelCounts(
 
 bool IsFrozenChannelSet(const QStringList& channels)
 {
-    return channels == QStringList{
+    const QStringList rgbwsv{
         QStringLiteral("R"), QStringLiteral("G"), QStringLiteral("B"),
         QStringLiteral("W"), QStringLiteral("S"), QStringLiteral("V")};
+    QStringList rgbwsvt = rgbwsv;
+    rgbwsvt.append(QStringLiteral("T"));
+    return channels == rgbwsv || channels == rgbwsvt;
 }
 
 bool IsFrozenChannelName(const QString& channel)
@@ -189,7 +207,8 @@ bool HostPackageReviewController::RenderPreview(
     QStringList cacheParts;
     for (const QString& channel : channels)
     {
-        if (!IsFrozenChannelName(channel))
+        if (!IsFrozenChannelName(channel)
+            || !m_review.channels.contains(channel))
         {
             if (error != nullptr)
             {
@@ -338,6 +357,8 @@ bool HostPackageReviewController::LoadVerification(QString* error)
         return false;
     }
     m_review.valid = response.value(QStringLiteral("valid")).toBool();
+    m_review.productionacceptance = response.value(
+        QStringLiteral("productionAcceptance")).toString();
     const QJsonArray errors = response.value(QStringLiteral("errors")).toArray();
     for (const QJsonValue& value : errors)
     {
@@ -376,6 +397,8 @@ bool HostPackageReviewController::LoadSummary(QString* error)
     m_review.packageidentity = response.value(
         QStringLiteral("packageIdentity")).toString();
     m_review.schema = response.value(QStringLiteral("schema")).toString();
+    const QString summaryProductionAcceptance = response.value(
+        QStringLiteral("productionAcceptance")).toString();
     m_review.layercount = response.value(QStringLiteral("layerCount")).toInt();
     m_review.bitdepth = response.value(QStringLiteral("bitDepth")).toInt();
     m_review.polarity = response.value(QStringLiteral("polarity")).toString();
@@ -398,7 +421,18 @@ bool HostPackageReviewController::LoadSummary(QString* error)
     {
         m_review.channels.append(channel.toString());
     }
-    if (m_review.schema != QStringLiteral("p0.rgbwsv.2")
+    const bool protocolMatchesChannels =
+        (m_review.schema == QStringLiteral("p0.rgbwsv.2")
+            && m_review.channels.size() == 6)
+        || (m_review.schema == QStringLiteral("p0.rgbwsvt.1")
+            && m_review.channels.size() == 7);
+    const bool productionAcceptanceMatches =
+        !summaryProductionAcceptance.isEmpty()
+        && summaryProductionAcceptance == m_review.productionacceptance
+        && (m_review.schema != QStringLiteral("p0.rgbwsvt.1")
+            || summaryProductionAcceptance == QStringLiteral("admitted"));
+    if (!protocolMatchesChannels
+        || !productionAcceptanceMatches
         || m_review.bitdepth != 8
         || m_review.polarity != QStringLiteral("black_is_print")
         || !IsFrozenChannelSet(m_review.channels)
@@ -410,8 +444,9 @@ bool HostPackageReviewController::LoadSummary(QString* error)
         if (error != nullptr)
         {
             *error = QStringLiteral(
-                "生产包摘要违反冻结协议：schema=%1 bitDepth=%2 polarity=%3 channels=%4")
+                "生产包摘要违反冻结协议：schema=%1 acceptance=%2 bitDepth=%3 polarity=%4 channels=%5")
                          .arg(m_review.schema)
+                         .arg(summaryProductionAcceptance)
                          .arg(m_review.bitdepth)
                          .arg(m_review.polarity)
                          .arg(m_review.channels.join(QLatin1Char(',')));
@@ -450,9 +485,11 @@ bool HostPackageReviewController::LoadLayers(QString* error)
             || layer.heightpx != m_review.heightpx
             || !ReadChannelCounts(
                 response.value(QStringLiteral("printPixels")).toObject(),
+                m_review.channels,
                 &layer.printpixels)
             || !ReadChannelCounts(
                 response.value(QStringLiteral("emptyPixels")).toObject(),
+                m_review.channels,
                 &layer.emptypixels))
         {
             if (error != nullptr)

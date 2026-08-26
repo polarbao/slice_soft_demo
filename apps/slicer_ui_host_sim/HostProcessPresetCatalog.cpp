@@ -1,4 +1,5 @@
 #include "HostProcessPresetCatalog.h"
+#include "HostTransferProcessPresetLoader.h"
 
 namespace
 {
@@ -33,6 +34,28 @@ hostprocesspreset MakeSingleMaterialPreset(
     preset.texture.enabled = false;
     return preset;
 }
+
+void AppendTransferPreset(
+    const hostprocesspreset& legacyPreset,
+    const QString& configFileName,
+    QVector<hostprocesspreset>* presets)
+{
+    hosttransferchannelsettings transfer;
+    if (!HostTransferProcessPresetLoader::Load(
+            configFileName, &transfer, nullptr))
+    {
+        return;
+    }
+    hostprocesspreset preset = legacyPreset;
+    preset.id += QStringLiteral("_rgbwsvt");
+    preset.displayname += QStringLiteral("｜缩裹 T 通道");
+    preset.description += QStringLiteral(
+        " 新版工艺从外部 JSON 读取缩裹材质 RGB/Kd 与拓扑策略，"
+        "显式输出 p0.rgbwsvt.1。");
+    preset.packageprotocol = HostPackageProtocol::Rgbwsvt;
+    preset.transferchannel = transfer;
+    presets->push_back(preset);
+}
 }
 
 QString HostProcessPresetCatalog::DefaultPresetId()
@@ -44,8 +67,8 @@ QString HostProcessPresetCatalog::DefaultPresetId()
 QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
 {
     QVector<hostprocesspreset> presets;
-    presets.reserve(7);
-    presets.push_back(MakeTexturedPreset(
+    presets.reserve(10);
+    const hostprocesspreset rgbOnly = MakeTexturedPreset(
         QStringLiteral("textured_nail_rgb_only_lower_support"),
         QStringLiteral(
             "彩色纹理｜全实体 RGB｜下表面支撑（纯白阻断）"),
@@ -53,7 +76,8 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
             "对应旧版全 RGB 兼容工艺：模型实体只写 RGB，保留下表面支撑；"
             "严格纯白纹理没有可打印通道时会阻断切片。"),
         HostMaterialStrategy::RgbSolid,
-        HostTextureApplyMode::SolidVolumeFromTopSurface));
+        HostTextureApplyMode::SolidVolumeFromTopSurface);
+    presets.push_back(rgbOnly);
 
     hostprocesspreset rgbWhite = MakeTexturedPreset(
         QStringLiteral("textured_nail_rgb_white_lower_support"),
@@ -91,18 +115,20 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
     rgbVarnish.materialprocess.rolemappingenabled = true;
     presets.push_back(rgbVarnish);
 
-    presets.push_back(MakeSingleMaterialPreset(
+    const hostprocesspreset whiteOnly = MakeSingleMaterialPreset(
         QStringLiteral("single_material_relief_white"),
         QStringLiteral("单材料浮雕｜白墨 W 实体｜下表面支撑"),
         QStringLiteral(
             "不采样彩色纹理，模型实体只写白墨 W，并保留下表面支撑。"),
-        HostMaterialStrategy::WhiteSolid));
-    presets.push_back(MakeSingleMaterialPreset(
+        HostMaterialStrategy::WhiteSolid);
+    presets.push_back(whiteOnly);
+    const hostprocesspreset varnishOnly = MakeSingleMaterialPreset(
         QStringLiteral("single_material_relief_varnish"),
         QStringLiteral("单材料浮雕｜光油 V 实体｜下表面支撑"),
         QStringLiteral(
             "不采样彩色纹理，模型实体只写光油 V，并保留下表面支撑。"),
-        HostMaterialStrategy::VarnishSolid));
+        HostMaterialStrategy::VarnishSolid);
+    presets.push_back(varnishOnly);
     hostprocesspreset volumetricRgb = MakeTexturedPreset(
         QStringLiteral("volumetric_nail_rgb_white_ondemand_lower_support"),
         QStringLiteral("多材质纵深｜逐层材质 RGB + 按需补白墨｜下表面支撑（候选）"),
@@ -121,6 +147,19 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
     volumetricRgb.materialvolume.secondarymaterialname = QStringLiteral("02");
     volumetricRgb.materialvolume.secondarypriority = 100;
     presets.push_back(volumetricRgb);
+
+    AppendTransferPreset(
+        rgbOnly,
+        QStringLiteral("obj_mtl_texture_rgb_only_rgbwsvt.json"),
+        &presets);
+    AppendTransferPreset(
+        whiteOnly,
+        QStringLiteral("nail_white_underbase_only_rgbwsvt.json"),
+        &presets);
+    AppendTransferPreset(
+        varnishOnly,
+        QStringLiteral("nail_varnish_only_rgbwsvt.json"),
+        &presets);
 
     return presets;
 }

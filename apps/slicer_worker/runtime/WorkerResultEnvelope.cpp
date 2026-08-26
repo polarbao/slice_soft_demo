@@ -128,6 +128,7 @@ WorkerResultEnvelope WorkerResultEnvelope::Success(
     }
     return WorkerResultEnvelope(
         request.Identity(),
+        request.Minor(),
         true,
         std::string{SuccessCode},
         std::move(output),
@@ -169,6 +170,7 @@ WorkerResultEnvelope WorkerResultEnvelope::Failure(
     }
     return WorkerResultEnvelope(
         request.Identity(),
+        request.Minor(),
         false,
         std::move(code),
         nullptr,
@@ -181,6 +183,7 @@ WorkerResultEnvelope WorkerResultEnvelope::Failure(
 
 WorkerResultEnvelope::WorkerResultEnvelope(
     WorkerJobIdentity identity,
+    const std::uint32_t minor,
     const bool ok,
     std::string code,
     slicer_core::Json output,
@@ -190,6 +193,7 @@ WorkerResultEnvelope::WorkerResultEnvelope(
     const double elapsedMs,
     std::optional<WorkerResultCleanup> cleanup)
     : m_identity(std::move(identity)),
+      m_minor(minor),
       m_ok(ok),
       m_code(std::move(code)),
       m_output(std::move(output)),
@@ -226,7 +230,7 @@ slicer_core::Json WorkerResultEnvelope::ToJson() const
     slicer_core::Json::Object document{
         {"contract", "file_contract"},
         {"major", 1},
-        {"minor", 0},
+        {"minor", static_cast<double>(m_minor)},
         {"jobId", m_identity.JobId()},
         {"correlationId", m_identity.CorrelationId()},
         {"capability", m_identity.Capability()},

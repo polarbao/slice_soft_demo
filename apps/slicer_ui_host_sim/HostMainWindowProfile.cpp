@@ -66,7 +66,9 @@ bool HostMainWindow::ProfileSupportsSlice(const QString& profileId) const
         if (profile.profileid == profileId)
         {
             return profile.requiredcapabilities.contains(
-                QStringLiteral("slice.rgbwsv"));
+                       QStringLiteral("slice.rgbwsv"))
+                || profile.requiredcapabilities.contains(
+                       QStringLiteral("slice.rgbwsvt"));
         }
     }
     return false;

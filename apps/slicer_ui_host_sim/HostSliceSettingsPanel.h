@@ -32,7 +32,7 @@ public:
     /**
      * @brief 更新 H-B-04 选择的宿主Profile。
      * @param profileId 可用的宿主Profile 标识。
-     * @param supportsSlice 当Profile需要 slice.rgbwsv 时为 true。
+     * @param supportsSlice 当 Profile 需要受支持的切片能力时为 true。
      */
     void SetSelectedProfileId(
         const QString& profileId,
@@ -161,4 +161,6 @@ private:
     bool m_applyingProcessPreset{false};
     bool m_singleMaterialRestricted{false};
     QString m_singleMaterialRestrictionReason;
+    HostPackageProtocol m_packageProtocol{HostPackageProtocol::Rgbwsv};
+    hosttransferchannelsettings m_transferChannel;
 };

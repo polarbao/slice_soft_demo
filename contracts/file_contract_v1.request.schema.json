@@ -15,7 +15,7 @@
   "properties": {
     "contract": { "const": "file_contract" },
     "major": { "const": 1 },
-    "minor": { "const": 0 },
+    "minor": { "type": "integer", "enum": [0, 1] },
     "jobId": {
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
@@ -29,6 +29,7 @@
       "type": "string",
       "enum": [
         "slice.rgbwsv",
+        "slice.rgbwsvt",
         "geometry.preflight.full",
         "geometry.repair"
       ]
@@ -48,7 +49,10 @@
     "output": {
       "type": "object",
       "properties": {
-        "contract": { "const": "p0.rgbwsv.2" },
+        "contract": {
+          "type": "string",
+          "enum": ["p0.rgbwsv.2", "p0.rgbwsvt.1"]
+        },
         "packageDir": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": true
@@ -63,7 +67,31 @@
       "then": {
         "required": ["sceneHash", "scene", "profile", "output"],
         "properties": {
-          "output": { "required": ["contract", "packageDir"] }
+          "minor": { "const": 0 },
+          "output": {
+            "required": ["contract", "packageDir"],
+            "properties": {
+              "contract": { "const": "p0.rgbwsv.2" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "capability": { "const": "slice.rgbwsvt" } },
+        "required": ["capability"]
+      },
+      "then": {
+        "required": ["sceneHash", "scene", "profile", "output"],
+        "properties": {
+          "minor": { "const": 1 },
+          "output": {
+            "required": ["contract", "packageDir"],
+            "properties": {
+              "contract": { "const": "p0.rgbwsvt.1" }
+            }
+          }
         }
       }
     },
@@ -76,7 +104,10 @@
         },
         "required": ["capability"]
       },
-      "then": { "required": ["input"] }
+      "then": {
+        "required": ["input"],
+        "properties": { "minor": { "const": 0 } }
+      }
     }
   ],
   "additionalProperties": true

@@ -5,6 +5,8 @@
 #include "slicer_core/engine/ProductionPreflightFullFacadeFactory.h"
 #include "slicer_core/engine/ProductionSliceFacadeFactory.h"
 #include "slicer_core/api/artifacts/PackageArtifactSafety.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 #include "slicer_core/rip_reader.h"
 
 #include <algorithm>
@@ -113,9 +115,32 @@ bool IsValidPublishedPackage(const std::filesystem::path& packageDirectory)
 {
     try
     {
-        (void)slicer_core::internal::ValidateSlicePackageArtifact(
-            packageDirectory);
+        if (slicer_core::ReadPackageManifestSchema(packageDirectory)
+            == "p0.rgbwsvt.1")
+        {
+            return slicer_core::ValidateRgbwsvtPackage(packageDirectory)
+                .productionAcceptance == "admitted";
+        }
+        else
+        {
+            (void)slicer_core::internal::ValidateSlicePackageArtifact(
+                packageDirectory);
+        }
         return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
+bool IsRejectedRgbwsvtCandidatePackage(
+    const std::filesystem::path& packageDirectory)
+{
+    try
+    {
+        return slicer_core::ValidateRgbwsvtPackage(packageDirectory)
+            .productionAcceptance == "rgbwsvt_candidate_unvalidated";
     }
     catch (...)
     {
@@ -244,6 +269,7 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
     const WorkerClock::time_point start = WorkerClock::now();
     std::optional<slicer_core::api::artifacts::PackageArtifactIdentity>
         artifactIdentity;
+    bool packageExistedBeforeSlice{false};
     const auto finalize = [&artifactIdentity](
         WorkerCapabilityExecutionResult result)
     {
@@ -278,6 +304,30 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
         if (!startupRecovery.success)
         {
             return ArtifactCleanupFailure("Worker startup", startupRecovery);
+        }
+        if (request.Output().at("contract").as_string()
+            == slicer_core::CurrentRgbwsvtProtocol().schema)
+        {
+            const auto lease =
+                slicer_core::api::artifacts::AcquirePackageArtifactLease(
+                    *artifactIdentity);
+            if (!lease.success)
+            {
+                return finalize(WorkerCapabilityExecutionResult::Failure(
+                    kOutputCode,
+                    "Worker could not acquire the RGBWSVT package target lease",
+                    lease.error));
+            }
+        }
+        std::error_code packageExistsError;
+        packageExistedBeforeSlice = std::filesystem::exists(
+            materialized.PackageDirectory(), packageExistsError);
+        if (packageExistsError)
+        {
+            return finalize(WorkerCapabilityExecutionResult::Failure(
+                kOutputCode,
+                "Worker could not inspect the production package target",
+                packageExistsError.message()));
         }
 
         slicer_core::api::PreflightRequest preflightRequest;
@@ -361,6 +411,8 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
         sliceRequest.scene_hash = materialized.SceneHash();
         sliceRequest.scene_config_path = materialized.SceneConfigPath();
         sliceRequest.package_dir = materialized.PackageDirectory();
+        sliceRequest.output_contract =
+            request.Output().at("contract").as_string();
         const slicer_core::api::ApiResult<slicer_core::api::SliceResult> sliced =
             m_sliceFacade->Run(sliceRequest, cancelToken, progress);
         if (!sliced.IsOk())
@@ -389,6 +441,40 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
             return finalize(WorkerCapabilityExecutionResult::Failure(
                 kContractCode,
                 "production SliceFacade returned incomplete package evidence"));
+        }
+        if (sliceRequest.output_contract
+                == slicer_core::CurrentRgbwsvtProtocol().schema)
+        {
+            try
+            {
+                const slicer_core::RgbwsvtPackageValidation package =
+                    slicer_core::ValidateRgbwsvtPackage(result.package_dir);
+                if (package.productionAcceptance != "admitted")
+                {
+                    if (!packageExistedBeforeSlice)
+                    {
+                        const auto removal =
+                            slicer_core::api::artifacts::RemoveRejectedPublishedPackage(
+                                *artifactIdentity,
+                                IsRejectedRgbwsvtCandidatePackage);
+                        if (!removal.success)
+                        {
+                            return ArtifactCleanupFailure(
+                                "RGBWSVT candidate rejection", removal);
+                        }
+                    }
+                    return finalize(WorkerCapabilityExecutionResult::Failure(
+                        kContractCode,
+                        "RGBWSVT production package is not admitted"));
+                }
+            }
+            catch (const std::exception& error)
+            {
+                return finalize(WorkerCapabilityExecutionResult::Failure(
+                    kContractCode,
+                    "RGBWSVT production package failed strict validation",
+                    std::string(error.what())));
+            }
         }
         if (m_protocolOutput != nullptr)
         {

@@ -58,6 +58,25 @@ worker::WorkerRequestEnvelope MakeRequest(
     return worker::WorkerRequestParser::Parse(requestPath);
 }
 
+worker::WorkerRequestEnvelope MakeTransferRequest(
+    const std::filesystem::path& root,
+    const std::string& jobId)
+{
+    const std::filesystem::path requestPath = root / jobId / "request.json";
+    std::filesystem::create_directories(requestPath.parent_path());
+    std::ofstream output{requestPath, std::ios::binary | std::ios::trunc};
+    output
+        << "{\"contract\":\"file_contract\",\"major\":1,\"minor\":1,"
+        << "\"jobId\":\"" << jobId << "\","
+        << "\"correlationId\":\"correlation-" << jobId << "\","
+        << "\"capability\":\"slice.rgbwsvt\",\"timeoutMs\":5000,"
+        << "\"sceneHash\":\"sha256:1234abcd\",\"scene\":{},\"profile\":{},"
+        << "\"output\":{\"contract\":\"p0.rgbwsvt.1\","
+        << "\"packageDir\":\"C:/worker/transfer-package\"}}";
+    output.close();
+    return worker::WorkerRequestParser::Parse(requestPath);
+}
+
 slicer_core::Json ReadJson(const std::filesystem::path& path)
 {
     std::ifstream input{path, std::ios::binary};
@@ -125,6 +144,23 @@ void TestSuccessAndAtomicReplacement(const std::filesystem::path& root)
             == "production registry is empty",
         "failure result preserves optional detail");
     Check(failure.ProcessExitCode() == 1, "internal failure maps to process exit 1");
+}
+
+void TestTransferResultPreservesMinor(const std::filesystem::path& root)
+{
+    const worker::WorkerRequestEnvelope request =
+        MakeTransferRequest(root, "transfer-result-job");
+    const worker::WorkerResultEnvelope success =
+        worker::WorkerResultEnvelope::Success(
+            request,
+            slicer_core::Json::object({{"packageDir", "C:/worker/transfer-package"}}),
+            "0.1.0",
+            std::chrono::duration<double, std::milli>{3.0});
+    const slicer_core::Json document = success.ToJson();
+    Check(document.at("minor").as_int() == 1,
+        "transfer result echoes file-contract minor 1");
+    Check(document.at("capability").as_string() == "slice.rgbwsvt",
+        "transfer result preserves capability identity");
 }
 
 void TestEnvelopeValidation(const std::filesystem::path& root)
@@ -259,6 +295,7 @@ int main()
     try
     {
         TestSuccessAndAtomicReplacement(root);
+        TestTransferResultPreservesMinor(root);
         TestEnvelopeValidation(root);
         TestExitCategoryMapping(root);
         TestWriteFailures(root);

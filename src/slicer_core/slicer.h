@@ -15,6 +15,24 @@
 
 namespace slicer_core {
 
+namespace engine
+{
+class TransferProductionEntry;
+}
+
+/** @brief 仅可由生产 Facade 构造的 RGBWSVT Scene 准入令牌。 */
+class TransferSceneProductionAdmission final
+{
+private:
+    TransferSceneProductionAdmission() = default;
+    TransferSceneProductionAdmission(
+        const TransferSceneProductionAdmission&) = delete;
+    TransferSceneProductionAdmission& operator=(
+        const TransferSceneProductionAdmission&) = delete;
+
+    friend class engine::TransferProductionEntry;
+};
+
 /**
  * @brief Summary returned by an admitted production slicing pipeline.
  */
@@ -75,10 +93,13 @@ struct SliceRunOptions {
     bool write_preview_files{true};
     bool write_reports{true};
     SliceRunProgressCallback progress_callback;
+    std::function<bool()> cancellation_requested;
     SliceRunGridCallback gridcallback;
     SliceRunLayerCallback layercallback;
     std::optional<ModelInstance> instanceoverride;
     std::optional<SliceRunInputOverride> inputoverride;
+    const TransferSceneProductionAdmission*
+        transfer_scene_production_admission{nullptr};
 
     /**
      * @brief Optional already-imported model used by scene orchestration.

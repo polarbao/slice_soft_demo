@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QFile>
 #include <QMainWindow>
 #include <QSettings>
 #include <QSplitter>
@@ -82,8 +83,9 @@ int main(int argc, char* argv[])
     source.inspectortabs->setCurrentIndex(3);
     source.splitter->setSizes(QList<int>{620, 280});
     hostslicesettings expected;
-    expected.profileid = QStringLiteral("host-reference-white");
-    expected.processpresetid = QStringLiteral("custom");
+    expected.profileid = QStringLiteral("host-reference-transfer-channel");
+    expected.processpresetid = QStringLiteral(
+        "single_material_relief_white_rgbwsvt");
     expected.outputdirectory = temporaryRoot.path();
     expected.dpix = 720;
     expected.dpiy = 600;
@@ -125,6 +127,14 @@ int main(int argc, char* argv[])
     expected.texture.whitepolicy = HostTextureWhitePolicy::FailClosed;
     expected.texture.whiteinkthreshold = 5;
     expected.texture.whitevalue = 6;
+    expected.packageprotocol = HostPackageProtocol::Rgbwsvt;
+    expected.transferchannel.enabled = true;
+    expected.transferchannel.materialdiffusergbvalues = {
+        hostrgbcolor{12, 34, 56}, hostrgbcolor{78, 90, 123}};
+    expected.transferchannel.missingregion = QStringLiteral("fail_closed");
+    expected.transferchannel.selfintersectionpolicy = QStringLiteral(
+        "tolerate_closed_self_intersection");
+    expected.transferchannel.maxselfintersectionpairs = 32;
     bool saved = false;
     {
         QSettings settings(settingsPath, QSettings::IniFormat);
@@ -229,9 +239,140 @@ int main(int argc, char* argv[])
                 && actual.texture.whiteinkthreshold == 5
                 && actual.texture.whitevalue == 6,
             QStringLiteral("宿主生产纹理 Profile 草稿未完整恢复。"),
+            errors)
+        || !Check(
+            actual.packageprotocol == HostPackageProtocol::Rgbwsvt
+                && actual.transferchannel.enabled
+                && actual.transferchannel.materialdiffusergbvalues.size() == 2
+                && actual.transferchannel.materialdiffusergbvalues.at(0).red == 12
+                && actual.transferchannel.materialdiffusergbvalues.at(1).blue == 123
+                && actual.transferchannel.missingregion
+                    == QStringLiteral("fail_closed")
+                && actual.transferchannel.selfintersectionpolicy
+                    == QStringLiteral("tolerate_closed_self_intersection")
+                && actual.transferchannel.maxselfintersectionpairs == 32,
+            QStringLiteral("RGBWSVT 协议与 T 通道策略未完整恢复。"),
             errors))
     {
         return 3;
+    }
+
+    const QString v7Path = QDir(temporaryRoot.path()).filePath(
+        QStringLiteral("host-workspace-v7.ini"));
+    if (!Check(QFile::copy(settingsPath, v7Path),
+               QStringLiteral("无法创建 v7 迁移 fixture。"), errors))
+    {
+        return 4;
+    }
+    {
+        QSettings settings(v7Path, QSettings::IniFormat);
+        settings.beginGroup(QStringLiteral("hostflow/workspace"));
+        settings.setValue(QStringLiteral("schemaVersion"), 7);
+        settings.setValue(QStringLiteral("profileId"),
+                          QStringLiteral("host-reference-default"));
+        settings.setValue(QStringLiteral("processPresetId"), QStringLiteral(
+            "textured_nail_rgb_white_ondemand_lower_support"));
+        settings.remove(QStringLiteral("packageProtocol"));
+        settings.remove(QStringLiteral("transferChannel"));
+        settings.endGroup();
+        settings.sync();
+    }
+    workspacefixture migrated;
+    BuildFixture(&migrated);
+    hostworkspacepreferences migratedPreferences;
+    bool migratedLoaded = false;
+    {
+        QSettings settings(v7Path, QSettings::IniFormat);
+        migratedLoaded = HostWorkspaceState::Restore(
+            settings,
+            &migrated.window,
+            migrated.splitter,
+            migrated.workspacetabs,
+            migrated.inspectortabs,
+            &migratedPreferences);
+    }
+    if (!Check(
+            migratedLoaded
+                && migratedPreferences.slicesettings.packageprotocol
+                    == HostPackageProtocol::Rgbwsv
+                && !migratedPreferences.slicesettings.transferchannel.enabled
+                && migratedPreferences.slicesettings.processpresetid
+                    == QStringLiteral(
+                        "textured_nail_rgb_white_ondemand_lower_support"),
+            QStringLiteral("v7 workspace 未迁移为旧协议且禁用 T。"),
+            errors))
+    {
+        return 5;
+    }
+
+    const QString badV7IdentityPath = QDir(temporaryRoot.path()).filePath(
+        QStringLiteral("host-workspace-v7-transfer-identity.ini"));
+    if (!Check(QFile::copy(settingsPath, badV7IdentityPath),
+               QStringLiteral("无法创建 v7 T 标识负例。"), errors))
+    {
+        return 6;
+    }
+    {
+        QSettings settings(badV7IdentityPath, QSettings::IniFormat);
+        settings.beginGroup(QStringLiteral("hostflow/workspace"));
+        settings.setValue(QStringLiteral("schemaVersion"), 7);
+        settings.remove(QStringLiteral("packageProtocol"));
+        settings.remove(QStringLiteral("transferChannel"));
+        settings.endGroup();
+        settings.sync();
+    }
+    workspacefixture badV7Identity;
+    BuildFixture(&badV7Identity);
+    hostworkspacepreferences badV7IdentityPreferences;
+    bool badV7IdentityLoaded = true;
+    {
+        QSettings settings(badV7IdentityPath, QSettings::IniFormat);
+        badV7IdentityLoaded = HostWorkspaceState::Restore(
+            settings, &badV7Identity.window, badV7Identity.splitter,
+            badV7Identity.workspacetabs, badV7Identity.inspectortabs,
+            &badV7IdentityPreferences);
+    }
+    if (!Check(!badV7IdentityLoaded,
+               QStringLiteral("v7 不得携带后加的 RGBWSVT Profile/preset 标识。"),
+               errors))
+    {
+        return 6;
+    }
+
+    const QString badTransferPath = QDir(temporaryRoot.path()).filePath(
+        QStringLiteral("host-workspace-bad-transfer.ini"));
+    if (!Check(QFile::copy(settingsPath, badTransferPath),
+               QStringLiteral("无法创建坏 T 策略 fixture。"), errors))
+    {
+        return 6;
+    }
+    {
+        QSettings settings(badTransferPath, QSettings::IniFormat);
+        settings.beginGroup(QStringLiteral("hostflow/workspace"));
+        settings.setValue(
+            QStringLiteral("transferChannel/multipleMatches"),
+            QStringLiteral("pick_first"));
+        settings.endGroup();
+        settings.sync();
+    }
+    workspacefixture badTransfer;
+    BuildFixture(&badTransfer);
+    hostworkspacepreferences badTransferPreferences;
+    bool badTransferLoaded = true;
+    {
+        QSettings settings(badTransferPath, QSettings::IniFormat);
+        badTransferLoaded = HostWorkspaceState::Restore(
+            settings,
+            &badTransfer.window,
+            badTransfer.splitter,
+            badTransfer.workspacetabs,
+            badTransfer.inspectortabs,
+            &badTransferPreferences);
+    }
+    if (!Check(!badTransferLoaded,
+               QStringLiteral("坏 T 策略必须 fail closed。"), errors))
+    {
+        return 7;
     }
 
     {
@@ -263,7 +404,7 @@ int main(int argc, char* argv[])
                       && invalid.inspectortabs->currentIndex() == 0,
                   QStringLiteral("非法状态未回退安全默认页。"), errors))
     {
-        return 4;
+        return 8;
     }
 
     QTextStream(stdout)

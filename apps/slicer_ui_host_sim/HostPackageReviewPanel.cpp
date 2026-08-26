@@ -22,7 +22,6 @@
 #include <QSpinBox>
 #include <QSplitter>
 #include <QVBoxLayout>
-
 #include <algorithm>
 
 namespace
@@ -89,7 +88,7 @@ qint64 PrintPixels(
     const hostlayerdescriptor& layer,
     const QString& channel)
 {
-    const QStringList channels = Channels({"R", "G", "B", "W", "S", "V"});
+    const QStringList channels = Channels({"R", "G", "B", "W", "S", "V", "T"});
     const int index = channels.indexOf(channel);
     return index >= 0
         ? static_cast<qint64>(layer.printpixels.values.at(
@@ -185,6 +184,9 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
             QString::fromLatin1(channel),
             Channels({channel}));
     }
+    m_previewModeCombo->addItem(QStringLiteral("T（缩裹）"), Channels({"T"}));
+    m_previewModeCombo->addItem(QStringLiteral("RGB + 白墨 + 支撑 + 光油 + 缩裹"),
+                                Channels({"R", "G", "B", "W", "S", "V", "T"}));
     controls->addWidget(m_previewModeCombo);
     rootLayout->addLayout(controls);
 
@@ -282,6 +284,8 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
 void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
 {
     m_review = review;
+    const QStringList packageChannels = review.channels.isEmpty()
+        ? Channels({"R", "G", "B", "W", "S", "V"}) : review.channels;
     const QSignalBlocker sliderBlocker(m_layerSlider);
     const QSignalBlocker spinBlocker(m_layerSpin);
     const int maximum = (std::max)(0, review.layercount - 1);
@@ -300,12 +304,13 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
                   .arg(review.verificationerrors.join(QStringLiteral("；"))));
     m_summaryView->setPlainText(
         QStringLiteral(
-            "目录：%1\n身份：%2\n协议：%3\n通道：%4\n位深：%5\n极性：%6\n"
-            "网格：%7 × %8 px\nDPI：%9 × %10\n层数：%11\n实例：%12\n"
-            "Profile 版本：%13\nProfile Hash：%14")
+            "目录：%1\n身份：%2\n协议：%3\n生产准入：%4\n通道：%5\n位深：%6\n极性：%7\n"
+            "网格：%8 × %9 px\nDPI：%10 × %11\n层数：%12\n实例：%13\n"
+            "Profile 版本：%14\nProfile Hash：%15")
             .arg(review.packagedirectory)
             .arg(review.packageidentity)
             .arg(review.schema)
+            .arg(review.productionacceptance)
             .arg(review.channels.join(QStringLiteral(" ")))
             .arg(review.bitdepth)
             .arg(review.polarity)
@@ -317,6 +322,7 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
             .arg(review.instancecount)
             .arg(review.profileversion)
             .arg(review.profilehash));
+    m_channelChart->SetChannels(packageChannels);
     m_channelChart->SetLayers(review.layers);
     RefreshStage16Summary(0);
 
@@ -463,7 +469,9 @@ void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
 
     const hostlayerdescriptor& current = m_review.layers.at(layerIndex);
     QStringList channelPixels;
-    for (const QString& channel : Channels({"R", "G", "B", "W", "S", "V"}))
+    const QStringList packageChannels = m_review.channels.isEmpty()
+        ? Channels({"R", "G", "B", "W", "S", "V"}) : m_review.channels;
+    for (const QString& channel : packageChannels)
     {
         channelPixels.append(QStringLiteral("%1=%2")
                                  .arg(channel)

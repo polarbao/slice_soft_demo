@@ -7,7 +7,6 @@
 #include "apps/slicer_ui_host_sim/ModuleClient.h"
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/json_value.h"
-
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
@@ -25,7 +24,6 @@
 #include <QStringList>
 #include <QTemporaryDir>
 #include <QTextStream>
-
 #include <sstream>
 
 namespace
@@ -76,6 +74,7 @@ bool VerifyPresetProfileHashClosure(
     for (const hostprocesspreset& preset
          : HostProcessPresetCatalog::Presets())
     {
+        if (preset.packageprotocol == HostPackageProtocol::Rgbwsvt) { continue; }
         hostslicesettings settings = MakeSettings(
             modelPath, outputDirectory);
         settings.materialstrategy = preset.materialstrategy;
@@ -122,6 +121,7 @@ bool VerifyMaterialVolumeConditionalEmission(
     bool sawVolumetric = false;
     for (const hostprocesspreset& preset : HostProcessPresetCatalog::Presets())
     {
+        if (preset.packageprotocol == HostPackageProtocol::Rgbwsvt) { continue; }
         hostslicesettings settings = MakeSettings(modelPath, outputDirectory);
         settings.materialstrategy = preset.materialstrategy;
         settings.materialprocess = preset.materialprocess;

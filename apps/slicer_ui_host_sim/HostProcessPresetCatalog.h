@@ -16,6 +16,8 @@ struct hostprocesspreset
     hosttexturesettings texture;
     hostsupportsettings support;
     hostmaterialvolumesettings materialvolume;
+    HostPackageProtocol packageprotocol{HostPackageProtocol::Rgbwsv};
+    hosttransferchannelsettings transferchannel;
 };
 
 /** @brief 在不读取切片器 fixture 的前提下提供常用工艺预设。 */

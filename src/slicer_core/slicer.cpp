@@ -12,9 +12,12 @@
 #include "slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
+#include "slicer_core/materials/transfer/LegacyTransferChannelSession.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h"
+#include "slicer_core/reports/MaterialProcessReport.h"
 #include "slicer_core/reports/MaterialVolumeReport.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
@@ -66,6 +69,11 @@ void NotifyProgress(
     const int total,
     const int percent)
 {
+    if (options.cancellation_requested
+        && options.cancellation_requested())
+    {
+        throw std::runtime_error("cooperative slice cancellation requested");
+    }
     if (!options.progress_callback)
     {
         return;
@@ -113,14 +121,7 @@ struct RasterResult {
     int filled_spans{0};
 };
 
-struct ChannelStats {
-    std::uint64_t print_pixels{0};
-    std::uint64_t full_print_pixels{0};
-    std::uint64_t partial_print_pixels{0};
-    std::uint64_t empty_pixels{0};
-    int min_value{255};
-    int max_value{0};
-};
+using ChannelStats = TiffChannelStats;
 
 struct SupportComponentSummary {
     int area_px{0};
@@ -633,6 +634,9 @@ std::string canonical_preview_channel(const std::string& channel) {
     if (channel == "v") {
         return "varnish";
     }
+    if (channel == "t") {
+        return "transfer";
+    }
     return channel;
 }
 
@@ -641,7 +645,8 @@ PreviewImage build_preview_image(
     const GridSpec& grid,
     const PreviewConfig& preview_config,
     const std::vector<std::uint8_t>& layer,
-    const std::vector<std::uint8_t>* texture_preview_mask) {
+    const std::vector<std::uint8_t>* texture_preview_mask,
+    const bool transfer_enabled) {
     const std::string channel = canonical_preview_channel(requested_channel);
     PreviewImage image;
     image.channel = channel;
@@ -663,10 +668,13 @@ PreviewImage build_preview_image(
     } else if (channel == "varnish") {
         image.type = "varnish_v";
         image.prefix = "varnish_v";
+    } else if (channel == "transfer") {
+        image.type = "transfer_t";
+        image.prefix = "transfer_t";
     }
 
     for (std::size_t i{0}; i < image.pixels.size(); ++i) {
-        const std::size_t base{i * rgbwsv_channel_count};
+        const std::size_t base{i * (transfer_enabled ? kRgbwsvtChannelCount : rgbwsv_channel_count)};
         std::array<std::uint8_t, 3> pixel{};
         int display_value{0};
         if (channel == "rgb") {
@@ -689,13 +697,15 @@ PreviewImage build_preview_image(
             } else {
                 pixel = preview_config.empty_color;
             }
-        } else if (channel == "support" || channel == "white" || channel == "varnish") {
+        } else if (channel == "support" || channel == "white" || channel == "varnish"
+                   || channel == "transfer") {
             const std::size_t channel_offset =
-                channel == "support" ? 4U : (channel == "white" ? 3U : 5U);
+                channel == "support" ? 4U : (channel == "white" ? 3U : (channel == "varnish" ? 5U : 6U));
             const auto& print_color =
                 channel == "support"
                     ? preview_config.support_color
-                    : (channel == "white" ? preview_config.white_color : preview_config.varnish_color);
+                    : (channel == "white" ? preview_config.white_color
+                       : (channel == "varnish" ? preview_config.varnish_color : preview_config.transfer_color));
             const std::uint8_t visibility{visible_from_print_value(layer.at(base + channel_offset))};
             display_value = visibility;
             for (std::size_t c{0}; c < pixel.size(); ++c) {
@@ -720,7 +730,8 @@ Json::Array write_layer_previews(
     const GridSpec& grid,
     const int layer_index,
     const std::vector<std::uint8_t>& layer,
-    const std::vector<std::uint8_t>* texture_preview_mask) {
+    const std::vector<std::uint8_t>* texture_preview_mask,
+    const bool transfer_enabled) {
     Json::Array result;
     for (const std::string& requested_channel : preview_config.channels) {
         PreviewImage image = build_preview_image(
@@ -728,7 +739,8 @@ Json::Array write_layer_previews(
             grid,
             preview_config,
             layer,
-            texture_preview_mask);
+            texture_preview_mask,
+            transfer_enabled);
         if (preview_config.only_non_empty_layers && image.non_zero_pixels == 0) {
             continue;
         }
@@ -3499,10 +3511,6 @@ Json channel_stats_array_to_json(const std::array<ChannelStats, rgbwsv_channel_c
     return Json{object};
 }
 
-Json channel_order_json() {
-    return Json::array({"R", "G", "B", "W", "S", "V"});
-}
-
 Json support_connectivity_to_json(const SupportConnectivityDiagnostics& diagnostics) {
     constexpr int tiny_component_area_px{8};
     constexpr int small_component_area_px{512};
@@ -3945,151 +3953,6 @@ Json material_policy_report_to_json(const SliceConfig& config, const MaterialPol
     });
 }
 
-double coverage_ratio(const std::uint64_t print_pixels, const std::uint64_t denominator) {
-    if (denominator == 0U) {
-        return 0.0;
-    }
-    return static_cast<double>(print_pixels) / static_cast<double>(denominator);
-}
-
-Json material_process_report_to_json(
-    const SliceConfig& config,
-    const ModelReport& model_report,
-    const GridSpec& grid,
-    const std::vector<LayerDiagnostics>& diagnostics,
-    const std::array<ChannelStats, rgbwsv_channel_count>& total_channel_stats) {
-    const MaterialProcessProfileConfig& profile = config.material_process_profile;
-    const std::uint64_t total_pixels =
-        static_cast<std::uint64_t>(grid.width_px) * static_cast<std::uint64_t>(grid.height_px)
-        * static_cast<std::uint64_t>(grid.layer_count);
-    std::uint64_t rgb_print_pixels{0};
-    std::uint64_t unprintable_white_carrier_pixels{0};
-    const std::uint64_t white_print_pixels = total_channel_stats.at(3).print_pixels;
-    const std::uint64_t support_print_pixels = total_channel_stats.at(4).print_pixels;
-    const std::uint64_t varnish_print_pixels = total_channel_stats.at(5).print_pixels;
-
-    Json::Array layers;
-    Json::Array varnish_active_layer_indices;
-    for (const LayerDiagnostics& layer : diagnostics) {
-        const std::uint64_t layer_rgb = static_cast<std::uint64_t>(layer.rgb_non_zero_pixels);
-        const std::uint64_t layer_white = layer.channel_stats.at(3).print_pixels;
-        const std::uint64_t layer_support = layer.channel_stats.at(4).print_pixels;
-        const std::uint64_t layer_varnish = layer.channel_stats.at(5).print_pixels;
-        rgb_print_pixels += layer_rgb;
-        unprintable_white_carrier_pixels +=
-            layer.semantic.unprintable_white_carrier_pixels;
-        if (layer_varnish > 0U) {
-            varnish_active_layer_indices.push_back(layer.layer_index);
-        }
-        layers.push_back(Json::object({
-            {"layerIndex", layer.layer_index},
-            {"rgbPrintPixels", layer_rgb},
-            {"whitePrintPixels", layer_white},
-            {"unprintableWhiteCarrierPixels",
-             layer.semantic.unprintable_white_carrier_pixels},
-            {"varnishPrintPixels", layer_varnish},
-            {"supportPrintPixels", layer_support},
-        }));
-    }
-
-    const std::uint64_t missing_underbase_pixels =
-        white_print_pixels < rgb_print_pixels ? rgb_print_pixels - white_print_pixels : 0U;
-    constexpr std::uint64_t unexpected_overlap_pixels{0U};
-
-    Json::Array validation_failures;
-    Json::Array warnings;
-    if (profile.enabled) {
-        if (profile.validation.require_rgb_pixels && rgb_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_RGB");
-        }
-        if (profile.validation.require_white_pixels && white_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_WHITE");
-        }
-        if (profile.validation.require_varnish_pixels && varnish_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_VARNISH");
-        }
-        if (profile.validation.require_support_pixels && support_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_SUPPORT");
-        }
-        if (unexpected_overlap_pixels
-            > static_cast<std::uint64_t>(profile.validation.max_unexpected_overlap_pixels)) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNEXPECTED_OVERLAP");
-        }
-        if (profile.white.enabled
-            && RequiresCompleteWhiteUnderbase(profile.white.mode)
-            && missing_underbase_pixels > 0U)
-        {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNDERBASE_COVERAGE_LOW");
-        }
-        if (config.material_policy.enabled == false && config.material_role_mapping.enabled == false) {
-            warnings.push_back("materialProcessProfile is report-only; no materialPolicy or materialRoleMapping is enabled");
-        }
-    }
-
-    return Json::object({
-        {"enabled", profile.enabled},
-        {"profileName", profile.name},
-        {"target", profile.target},
-        {"inputFormat", model_report.format},
-        {"sourceModel", model_report.model_path.generic_string()},
-        {"grid",
-         Json::object({
-             {"widthPx", grid.width_px},
-             {"heightPx", grid.height_px},
-             {"layerCount", grid.layer_count},
-             {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
-             {"layerThicknessMm", config.output.layer_thickness_mm},
-         })},
-        {"layerCount", grid.layer_count},
-        {"rgb",
-         Json::object({
-             {"enabled", profile.rgb.enabled},
-             {"source", profile.rgb.source},
-             {"printPixels", rgb_print_pixels},
-             {"coverageRatio", coverage_ratio(rgb_print_pixels, total_pixels)},
-         })},
-        {"white",
-         Json::object({
-             {"enabled", profile.white.enabled},
-             {"mode", profile.white.mode},
-             {"coverage", profile.white.coverage},
-             {"value", static_cast<int>(profile.white.value)},
-             {"expandPx", profile.white.expand_px},
-             {"shrinkPx", profile.white.shrink_px},
-             {"printPixels", white_print_pixels},
-             {"unprintableWhiteCarrierPixels", unprintable_white_carrier_pixels},
-             {"coverageRatio", coverage_ratio(white_print_pixels, total_pixels)},
-             {"missingUnderbasePixels", missing_underbase_pixels},
-         })},
-        {"varnish",
-         Json::object({
-             {"enabled", profile.varnish.enabled},
-             {"mode", profile.varnish.mode},
-             {"topLayers", profile.varnish.top_layers},
-             {"value", static_cast<int>(profile.varnish.value)},
-             {"coverage", profile.varnish.coverage},
-             {"printPixels", varnish_print_pixels},
-             {"coverageRatio", coverage_ratio(varnish_print_pixels, total_pixels)},
-             {"activeLayerIndices", Json{varnish_active_layer_indices}},
-         })},
-        {"support",
-         Json::object({
-             {"expected", profile.support.expected},
-             {"mode", profile.support.mode},
-             {"printPixels", support_print_pixels},
-             {"coverageRatio", coverage_ratio(support_print_pixels, total_pixels)},
-         })},
-        {"unexpectedOverlapPixels", unexpected_overlap_pixels},
-        {"layers", Json{layers}},
-        {"validation",
-         Json::object({
-             {"pass", validation_failures.empty()},
-             {"failures", Json{validation_failures}},
-         })},
-        {"warnings", Json{warnings}},
-    });
-}
-
 Json material_role_mapping_report_to_json(const MaterialRoleMappingReportData& report) {
     return Json::object({
         {"enabled", report.enabled},
@@ -4304,8 +4167,32 @@ bool IsOpenVdbCandidateConfig(const SliceConfig& config)
         || config.experimental.openvdb_pipeline.write_production_rgbwsv;
 }
 
-void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config)
+bool IsTransferSceneProductionOptIn(
+    const SliceConfig& config,
+    const SliceRunOptions& options)
 {
+    return options.transfer_scene_production_admission != nullptr
+        && config.transfer_channel_policy.enabled
+        && options.instanceoverride.has_value()
+        && options.inputoverride.has_value()
+        && !options.gridcallback
+        && !options.layercallback
+        && options.modelreportoverride == nullptr;
+}
+
+void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config, const SliceRunOptions& options)
+{
+    const bool usesAdapter = options.gridcallback || options.layercallback
+        || options.instanceoverride || options.inputoverride
+        || options.modelreportoverride != nullptr;
+    const bool transferSceneProductionOptIn =
+        IsTransferSceneProductionOptIn(config, options);
+    ValidateLegacyTransferChannelRunBoundary(
+        config.transfer_channel_policy,
+        !options.write_tiff_layers && !options.write_preview_files
+            && !options.write_reports && !usesAdapter,
+        options.write_tiff_layers && options.write_reports
+            && (!usesAdapter || transferSceneProductionOptIn));
     if (!IsOpenVdbCandidateConfig(config))
     {
         return;
@@ -4387,7 +4274,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     NotifyProgress(options, run_start, "model_load", 0, 1, 3);
     phase_start = SlicerClock::now();
 
-    EnsureLegacyPipelineAcceptsConfig(config);
+    EnsureLegacyPipelineAcceptsConfig(config, options);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report;
@@ -4445,6 +4332,22 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             supportBaseProjectionPreparation.model_lift_mm);
     }
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
+    const MaterialVolumeGrid materialVolumeGrid{
+        grid.width_px, grid.height_px, grid.origin_x_mm, grid.origin_y_mm,
+        grid.pixel_size_x_mm, grid.pixel_size_y_mm, config.output.layer_thickness_mm,
+        grid.layer_count};
+
+    std::optional<LegacyTransferChannelSession> transferSession;
+    if (config.transfer_channel_policy.enabled)
+    {
+        const AdaptedTriangleMesh transferMesh =
+            AdaptSceneModelToTriangleMesh(model_report);
+        transferSession = BuildLegacyTransferChannelSession(
+            config.transfer_channel_policy,
+            transferMesh,
+            materialVolumeGrid,
+            options.cancellation_requested);
+    }
 
     // MATVOL 生产接线（MV-08B）。必须在此处构建：model_report 已完成自动摆正、
     // 实例变换与 LiftModelForSupportBase 的 Z 抬升，grid 亦由同一 bbox 推导，
@@ -4455,19 +4358,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     {
         // SceneModel 即 ModelReport 的别名，既有适配器可直接消费，无需适配层。
         const AdaptedTriangleMesh matvolMesh = AdaptSceneModelToTriangleMesh(model_report);
-        MaterialVolumeGrid matvolGrid;
-        matvolGrid.widthPx = grid.width_px;
-        matvolGrid.heightPx = grid.height_px;
-        matvolGrid.originXMm = grid.origin_x_mm;
-        matvolGrid.originYMm = grid.origin_y_mm;
-        matvolGrid.pixelSizeXMm = grid.pixel_size_x_mm;
-        matvolGrid.pixelSizeYMm = grid.pixel_size_y_mm;
-        matvolGrid.layerThicknessMm = config.output.layer_thickness_mm;
-        matvolGrid.layerCount = grid.layer_count;
         MaterialVolumeBuildRequest matvolRequest;
         matvolRequest.mesh = &matvolMesh;
         matvolRequest.policy = &config.material_volume_policy;
-        matvolRequest.grid = matvolGrid;
+        matvolRequest.grid = materialVolumeGrid;
         // plan 构建是本路径上最长的不可中断窗口（逐列遍历全部三角面），
         // 且发生在 gridcallback 之前，故必须显式透传取消点，
         // 否则该窗口在生产路径上完全无法取消。
@@ -4494,6 +4388,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
 
     const std::filesystem::path package_dir = config.output.package_dir;
+    std::optional<RgbwsvtCandidatePackageGuard> transferPackageGuard;
+    if (transferSession.has_value()
+        && (options.write_tiff_layers || options.write_preview_files || options.write_reports))
+    {
+        transferPackageGuard.emplace(package_dir);
+    }
     const bool automatic_diagnostic_images =
         config.preview.enabled && options.write_preview_files;
     const std::string effective_preview_output_policy =
@@ -4710,6 +4610,14 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     int total_varnish_non_zero_pixels{0};
     LayerSemanticStats total_semantic_stats;
     std::array<ChannelStats, rgbwsv_channel_count> total_channel_stats{};
+    std::optional<RgbwsvtChannelStatistics> totalTransferChannelStatistics;
+    RgbwsvtMaterialStatistics totalTransferMaterialStatistics;
+    std::vector<RgbwsvtLegacyLayerStatistics> transferLayerStatistics;
+    if (transferSession.has_value() && options.write_tiff_layers)
+    {
+        totalTransferChannelStatistics.emplace();
+        transferLayerStatistics.reserve(static_cast<std::size_t>(grid.layer_count));
+    }
     Json::Array layers;
     Json::Array slice_layers;
     Json::Array contour_layers;
@@ -4941,6 +4849,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             }
             materialClosureExactLayers.push_back(std::move(result));
         }
+        std::optional<RgbwsvtProductionLayer> transferLayer;
+        if (transferSession.has_value())
+        {
+            transferLayer = ComposeLegacyTransferChannelLayer(
+                transferSession.value(),
+                RgbwsvProductionLayer{
+                    .layerIndex = layer_index, .zMm = diagnostics.z_mm,
+                    .widthPx = grid.width_px, .heightPx = grid.height_px,
+                    .channels = layer},
+                model_masks.at(static_cast<std::size_t>(layer_index)));
+        }
         if (options.layercallback)
         {
             RgbwsvProductionLayer outputLayer;
@@ -4973,13 +4892,28 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
             const auto tiffWriteStart = SlicerClock::now();
-            WriteRgbwsvProductionLayerTiff(
-                package_dir / relative_path,
-                productionStorage,
-                RgbwsvProductionLayerView{
-                    grid.width_px,
-                    grid.height_px,
-                    layer});
+            if (transferLayer.has_value())
+            {
+                const RgbwsvtLegacyLayerWriteResult writeResult =
+                    WriteRgbwsvtLegacyProductionLayerTiff(
+                        package_dir / relative_path, productionStorage,
+                        transferLayer.value());
+                MergeRgbwsvtChannelStatistics(
+                    totalTransferChannelStatistics.value(),
+                    writeResult.channelStatistics);
+                MergeRgbwsvtMaterialStatistics(
+                    totalTransferMaterialStatistics, writeResult.materialStatistics);
+                transferLayerStatistics.push_back(RgbwsvtLegacyLayerStatistics{
+                    layer_index, writeResult.channelStatistics,
+                    writeResult.materialStatistics});
+            }
+            else
+            {
+                WriteRgbwsvProductionLayerTiff(
+                    package_dir / relative_path, productionStorage,
+                    RgbwsvProductionLayerView{
+                        grid.width_px, grid.height_px, layer});
+            }
             profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
             if (collectMaterialClosureCandidate)
             {
@@ -5009,8 +4943,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 package_dir,
                 grid,
                 layer_index,
-                layer,
-                config.texture.enabled ? &texture_preview_mask : nullptr);
+                transferLayer.has_value() ? transferLayer->channels : layer,
+                config.texture.enabled ? &texture_preview_mask : nullptr,
+                transferLayer.has_value());
             preview_files.insert(preview_files.end(), written.begin(), written.end());
             profile.preview_write_ms += ElapsedMsSince(previewWriteStart);
         }
@@ -5056,9 +4991,40 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     phase_start = SlicerClock::now();
 
     model_report.three_mf.texture_sampled_pixels = texture_runtime.report.sampled_pixels;
+    const char* productionAcceptance = transferSession.has_value()
+        ? (IsTransferSceneProductionOptIn(config, options)
+            ? "admitted"
+            : "rgbwsvt_candidate_unvalidated")
+        : "legacy_production";
 
-    const Json material_process_report =
-        material_process_report_to_json(config, model_report, grid, layer_diagnostics, total_channel_stats);
+    std::vector<MaterialProcessLayerStatistics> materialProcessLayers;
+    materialProcessLayers.reserve(layer_diagnostics.size());
+    for (const LayerDiagnostics& layer : layer_diagnostics)
+    {
+        materialProcessLayers.push_back(MaterialProcessLayerStatistics{
+            layer.layer_index, static_cast<std::uint64_t>(layer.rgb_non_zero_pixels),
+            layer.channel_stats[3U].print_pixels, layer.channel_stats[4U].print_pixels,
+            layer.channel_stats[5U].print_pixels,
+            layer.semantic.unprintable_white_carrier_pixels});
+    }
+    Json material_process_report = BuildMaterialProcessReport(MaterialProcessReportRequest{
+        &config, model_report.format, model_report.model_path,
+        grid.width_px, grid.height_px, grid.layer_count,
+        grid.pixel_size_x_mm, grid.pixel_size_y_mm,
+        materialProcessLayers, total_channel_stats});
+    Json transfer_channel_report;
+    if (transferSession.has_value() && options.write_tiff_layers)
+    {
+        const std::uint64_t totalPixels = static_cast<std::uint64_t>(grid.width_px)
+            * static_cast<std::uint64_t>(grid.height_px) * static_cast<std::uint64_t>(grid.layer_count);
+        material_process_report = BuildRgbwsvtMaterialProcessReport(
+            material_process_report, config.material_process_profile,
+            transferLayerStatistics, totalTransferMaterialStatistics, totalPixels);
+        transfer_channel_report = BuildLegacyTransferChannelReport(
+            config.transfer_channel_policy, transferSession->plan,
+            transferLayerStatistics, totalTransferChannelStatistics.value(),
+            totalTransferMaterialStatistics);
+    }
     const Json cross_section_material_stack_report =
         BuildCrossSectionMaterialStackReport(
             config,
@@ -5080,29 +5046,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
     else
     {
-        material_volume_report = Json::object({
-            {"schema", "slicesoft.material_volume_report.1"},
-            {"packageProtocol", "p0.rgbwsv.2"},
-            {"enabled", false},
-            {"mode", "closed_intervals"},
-            {"missingMaterial", "fail_closed"},
-            {"openSurface", Json::object({
-                {"mode", "reject"},
-                {"requestedThicknessMm", 0.0},
-                {"placement", "below_surface"}})},
-            {"overlap", Json::object({{"mode", "explicit_priority"}})},
-            {"materials", Json::array({})},
-            {"totals", Json::object({
-                {"layerCount", 0},
-                {"columnCount", 0},
-                {"intervalCount", 0},
-                {"ownerPixels", 0},
-                {"unownedModelPixels", 0},
-                {"unprintableWhiteCarrierPixels", 0}})},
-            {"layers", Json::array({})},
-            {"warnings", Json::array({})},
-            {"errors", Json::array({})},
-        });
+        material_volume_report = BuildDisabledMaterialVolumeReport();
+    }
+    if (transferSession.has_value())
+    {
+        Json::Object volumeFields = material_volume_report.as_object();
+        volumeFields["packageProtocol"] = "p0.rgbwsvt.1";
+        material_volume_report = Json{std::move(volumeFields)};
     }
     Json material_closure_report;
     if (collectMaterialClosureExact
@@ -5126,10 +5076,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid.layer_count);
     }
 
-    const Json slice_report = Json::object({
+    Json slice_report = Json::object({
         {"requestedPipelineMode", "legacy"},
         {"effectivePipelineMode", "legacy"},
-        {"productionAcceptance", "legacy_production"},
+        {"productionAcceptance", productionAcceptance},
         {"productionOutputWritten", options.write_tiff_layers},
         {"fallbackApplied", false},
         {"slicingMode", config.slicing_mode},
@@ -5291,6 +5241,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          })},
         {"layers", Json{slice_layers}},
     });
+    if (transferSession.has_value() && options.write_tiff_layers)
+    {
+        slice_report = BuildRgbwsvtSliceReport(
+            slice_report, transferLayerStatistics,
+            totalTransferChannelStatistics.value(), totalTransferMaterialStatistics);
+    }
 
     const Json repair_report = Json::object({
         {"status", "not_required_p0_lite"},
@@ -5409,22 +5365,25 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         return Json::array({static_cast<int>(color.at(0)), static_cast<int>(color.at(1)), static_cast<int>(color.at(2))});
     };
 
+    Json::Object previewPseudoColors = Json::object({
+        {"empty", color_json(config.preview.empty_color)},
+        {"support", color_json(config.preview.support_color)},
+        {"white", color_json(config.preview.white_color)},
+        {"varnish", color_json(config.preview.varnish_color)}}).as_object();
+    if (transferSession.has_value())
+    {
+        previewPseudoColors["transfer"] = color_json(config.preview.transfer_color);
+    }
     const Json preview_report = Json::object({
         {"schema", "p0.preview_report.1"},
         {"outputPolicy", effective_preview_output_policy},
-        {"productionSource", "rgbwsv_tiff"},
+        {"productionSource", transferSession.has_value() ? "rgbwsvt_tiff" : "rgbwsv_tiff"},
         {"automaticDiagnosticImages", automatic_diagnostic_images},
         {"enabled", automatic_diagnostic_images},
         {"format", config.preview.format},
         {"interval", config.preview.interval},
         {"channels", Json{preview_channels}},
-        {"pseudoColors",
-         Json::object({
-             {"empty", color_json(config.preview.empty_color)},
-             {"support", color_json(config.preview.support_color)},
-             {"white", color_json(config.preview.white_color)},
-             {"varnish", color_json(config.preview.varnish_color)},
-         })},
+        {"pseudoColors", Json{std::move(previewPseudoColors)}},
         {"layerRange",
          config.preview.has_layer_range ? Json::array({config.preview.layer_range.at(0), config.preview.layer_range.at(1)})
                                         : Json{}},
@@ -5496,37 +5455,44 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         Json::object({
             {"configPath", config_path.generic_string()},
             {"modelPath", model_report.model_path.generic_string()},
-            {"schema", "p0.rgbwsv.2"},
+            {"schema", config.output.package_protocol},
         }));
 
-    Json::Object tiff_json{
-        {"channelOrder", channel_order_json()},
-        {"channelCount", rgbwsv_channel_count},
-        {"bitDepth", 8},
-        {"sampleFormat", "uint"},
-        {"planarConfig", "contiguous"},
-        {"tiled", config.output.storage_mode == "tiled"},
-        {"storage", config.output.storage_mode},
-        {"storageMode", config.output.storage_mode},
-        {"compression", config.output.tiff_compression},
-        {"polarity", "black_is_print"},
-        {"printValue", 0},
-        {"emptyValue", 255},
-        {"writeTiffLayers", options.write_tiff_layers},
-        {"layers", Json{layers}},
-    };
-    if (config.output.storage_mode == "tiled") {
-        tiff_json["tileSize"] = Json::array({config.output.tile_size.at(0), config.output.tile_size.at(1)});
-    } else {
-        tiff_json["rowsPerStrip"] = config.output.rows_per_strip;
-    }
+    const RgbwsvtChannelStatistics* persistedTransferStatistics =
+        options.write_tiff_layers && totalTransferChannelStatistics.has_value()
+        ? &totalTransferChannelStatistics.value() : nullptr;
+    const Json tiff_json = BuildLegacyTiffManifestMetadata(
+        config.output, layers, options.write_tiff_layers, persistedTransferStatistics);
 
+    Json::Object reportPaths = Json::object({
+        {"package", "reports/package_report.json"},
+        {"model", "reports/model_report.json"},
+        {"slice", "reports/slice_report.json"},
+        {"repair", "reports/repair_report.json"},
+        {"support", "reports/support_report.json"},
+        {"supportShape", "reports/support_shape_report.json"},
+        {"preview", "reports/preview_report.json"},
+        {"texture", "reports/texture_report.json"},
+        {"materialPolicy", "reports/material_policy_report.json"},
+        {"materialProcess", "reports/material_process_report.json"},
+        {"crossSectionMaterialStack", "reports/cross_section_material_stack_report.json"},
+        {"materialClosure", "reports/material_closure_report.json"},
+        {"materialVolume", "reports/material_volume_report.json"},
+        {"materialRoleMapping", "reports/material_role_mapping_report.json"},
+        {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
+        {"threeMf", "reports/three_mf_report.json"},
+        {"contour", "reports/contour_report.json"},
+        {"relief", "reports/relief_report.json"}}).as_object();
+    if (transferSession.has_value())
+    {
+        reportPaths["transferChannel"] = "reports/transfer_channel_report.json";
+    }
     Json::Object manifest_fields = Json::object({
-        {"schema", "p0.rgbwsv.2"},
-        {"schemaVersion", "p0.rgbwsv.2"},
+        {"schema", config.output.package_protocol},
+        {"schemaVersion", config.output.package_protocol},
         {"requestedPipelineMode", "legacy"},
         {"effectivePipelineMode", "legacy"},
-        {"productionAcceptance", "legacy_production"},
+        {"productionAcceptance", productionAcceptance},
         {"productionOutputWritten", options.write_tiff_layers},
         {"fallbackApplied", false},
         {"source",
@@ -5555,33 +5521,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"mode", config.slicing_mode},
              {"reliefFillMode", config.relief.fill_mode},
          })},
-        {"tiff", Json{tiff_json}},
+        {"tiff", tiff_json},
         {"layers", Json{layers}},
-        {"reports",
-         Json::object({
-             {"package", "reports/package_report.json"},
-             {"model", "reports/model_report.json"},
-             {"slice", "reports/slice_report.json"},
-             {"repair", "reports/repair_report.json"},
-             {"support", "reports/support_report.json"},
-             {"supportShape", "reports/support_shape_report.json"},
-             {"preview", "reports/preview_report.json"},
-             {"texture", "reports/texture_report.json"},
-             {"materialPolicy", "reports/material_policy_report.json"},
-             {"materialProcess", "reports/material_process_report.json"},
-             {"crossSectionMaterialStack", "reports/cross_section_material_stack_report.json"},
-             {"materialClosure", "reports/material_closure_report.json"},
-             {"materialVolume", "reports/material_volume_report.json"},
-             {"materialRoleMapping", "reports/material_role_mapping_report.json"},
-             {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
-             {"threeMf", "reports/three_mf_report.json"},
-             {"contour", "reports/contour_report.json"},
-             {"relief", "reports/relief_report.json"},
-         })},
+        {"reports", Json{std::move(reportPaths)}},
         {"preview",
          Json::object({
              {"outputPolicy", effective_preview_output_policy},
-             {"productionSource", "rgbwsv_tiff"},
+             {"productionSource", transferSession.has_value() ? "rgbwsvt_tiff" : "rgbwsv_tiff"},
              {"automaticDiagnosticImages", automatic_diagnostic_images},
              {"enabled", automatic_diagnostic_images},
              {"format", config.preview.format},
@@ -5612,6 +5558,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             package_dir / "reports/material_policy_report.json",
             material_policy_report_to_json(config, material_policy_report));
         write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
+        if (transferSession.has_value())
+        {
+            write_json_file(
+                package_dir / "reports/transfer_channel_report.json",
+                transfer_channel_report);
+        }
         write_json_file(package_dir / "reports/cross_section_material_stack_report.json", cross_section_material_stack_report);
         write_json_file(package_dir / "reports/material_closure_report.json", material_closure_report);
         write_json_file(
@@ -5630,6 +5582,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             package_dir / "reports/relief_report.json",
             relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
         write_json_file(package_dir / "manifest.json", manifest);
+    }
+    if (transferPackageGuard.has_value())
+    {
+        transferPackageGuard->Commit();
     }
     profile.report_write_ms = ElapsedMsSince(phase_start);
     profile.slice_processing_ms =

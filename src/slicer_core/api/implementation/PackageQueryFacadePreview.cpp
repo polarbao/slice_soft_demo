@@ -1,6 +1,8 @@
 #include "slicer_core/api/implementation/PackageQueryFacadeInternal.h"
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <set>
@@ -134,6 +136,101 @@ std::string CanonicalChannels(const std::vector<std::string>& channels)
     return result;
 }
 
+std::set<std::string> ValidateRgbwsvtChannels(
+    const std::vector<std::string>& channels)
+{
+    if (channels.empty())
+    {
+        throw std::runtime_error("preview channels must not be empty");
+    }
+    static const std::set<std::string> kSupported{
+        "R", "G", "B", "W", "S", "V", "T"};
+    std::set<std::string> unique;
+    for (const std::string& channel : channels)
+    {
+        if (!kSupported.contains(channel))
+        {
+            throw std::runtime_error(
+                "unsupported RGBWSVT channel: " + channel);
+        }
+        if (!unique.insert(channel).second)
+        {
+            throw std::runtime_error(
+                "preview channel is duplicated: " + channel);
+        }
+    }
+    return unique;
+}
+
+std::string CanonicalRgbwsvtChannels(
+    const std::vector<std::string>& channels)
+{
+    static constexpr std::array<std::string_view, 7> kOrder{
+        "R", "G", "B", "W", "S", "V", "T"};
+    const std::set<std::string> requested =
+        ValidateRgbwsvtChannels(channels);
+    std::string result;
+    for (const std::string_view channel : kOrder)
+    {
+        if (requested.contains(std::string{channel}))
+        {
+            result.append(channel);
+        }
+    }
+    return result;
+}
+
+RgbwsvLayerBuffer DropTransferChannel(
+    const RgbwsvtDecodedPackageLayer& source,
+    const RgbwsvtPackageValidation& package)
+{
+    RgbwsvLayerBuffer result;
+    result.sourceIdentity = source.descriptor.fileIdentity;
+    result.layerIndex = source.descriptor.index;
+    result.zMm = source.descriptor.zMm;
+    result.width = source.descriptor.width;
+    result.height = source.descriptor.height;
+    result.dpiX = package.dpiX;
+    result.dpiY = package.dpiY;
+    const std::size_t pixelCount = static_cast<std::size_t>(result.width)
+        * static_cast<std::size_t>(result.height);
+    result.pixels.reserve(pixelCount * 6U);
+    for (std::size_t pixel = 0U; pixel < pixelCount; ++pixel)
+    {
+        const auto begin = source.pixels.begin()
+            + static_cast<std::ptrdiff_t>(pixel * 7U);
+        result.pixels.insert(result.pixels.end(), begin, begin + 6);
+    }
+    result.decodedBytes = result.pixels.size();
+    return result;
+}
+
+MaterialPreviewResult ComposeTransferPreview(
+    const RgbwsvtDecodedPackageLayer& source,
+    const RgbwsvtPackageValidation& package)
+{
+    MaterialPreviewResult result;
+    result.sourceIdentity = source.descriptor.fileIdentity;
+    result.layerIndex = source.descriptor.index;
+    result.zMm = source.descriptor.zMm;
+    result.width = source.descriptor.width;
+    result.height = source.descriptor.height;
+    result.dpiX = package.dpiX;
+    result.dpiY = package.dpiY;
+    const std::size_t pixelCount = static_cast<std::size_t>(result.width)
+        * static_cast<std::size_t>(result.height);
+    result.rgba.reserve(pixelCount * 4U);
+    for (std::size_t pixel = 0U; pixel < pixelCount; ++pixel)
+    {
+        const std::uint8_t value = source.pixels.at(pixel * 7U + 6U);
+        result.rgba.push_back(255U);
+        result.rgba.push_back(value);
+        result.rgba.push_back(255U);
+        result.rgba.push_back(255U);
+    }
+    return result;
+}
+
 }  // namespace
 
 ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
@@ -148,41 +245,109 @@ ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
                 kCancelledError,
                 "preview rendering was cancelled"));
         }
-        const MaterialPreviewMode previewMode =
-            ResolvePreviewMode(request);
         const std::filesystem::path absolutePackage =
             RequirePackageDirectory(request.package_dir);
-
-        TiffLayerLoadResult loaded;
-        ProductionLayerRef layer;
-        ProductionPackageIndex package;
+        const std::string schema = ReadPackageManifestSchema(absolutePackage);
+        std::string packageIdentity;
+        std::string manifestHash;
+        std::string canonicalChannels;
+        int resolvedLayerIndex{-1};
+        MaterialPreviewResult preview;
+        if (schema == "p0.rgbwsvt.1")
         {
-            std::scoped_lock lock{m_layerMutex};
-            package = EnsureVerifiedPackageLocked(
-                absolutePackage, false).package;
-            const std::optional<ProductionLayerRef> found =
-                m_layerSource.FindLayer(request.layer_index);
-            if (!found.has_value())
+            const std::set<std::string> channels =
+                ValidateRgbwsvtChannels(request.channels);
+            if (request.mode != "single_channel" && channels.contains("T"))
+            {
+                throw std::runtime_error(
+                    "T is supported only by single_channel preview");
+            }
+            if (request.mode == "single_channel" && channels.size() != 1U)
+            {
+                throw std::runtime_error(
+                    "single_channel preview requires exactly one channel");
+            }
+            RgbwsvtPackageValidation package;
+            {
+                std::scoped_lock lock{m_layerMutex};
+                package = EnsureVerifiedRgbwsvtPackageLocked(
+                    absolutePackage, false);
+            }
+            const auto found = std::find_if(
+                package.layers.begin(), package.layers.end(),
+                [&request](const RgbwsvtPackageLayer& candidate)
+                {
+                    return candidate.index == request.layer_index;
+                });
+            if (found == package.layers.end())
             {
                 return ApiResult<PreviewResult>::Failure(MakeError(
                     kInputError,
                     "layer index is not listed by the package",
                     std::to_string(request.layer_index)));
             }
-            layer = *found;
-            TiffLayerLoadControl control;
-            control.cancellationRequested = [&cancelToken]()
+            const RgbwsvtDecodedPackageLayer decoded =
+                ReadRgbwsvtPackageLayer(*found);
+            if (channels == std::set<std::string>{"T"})
             {
-                return cancelToken.IsCancelRequested();
-            };
-            loaded = m_layerSource.LoadLayer(layer, control);
+                if (request.mode != "single_channel")
+                {
+                    throw std::runtime_error(
+                        "T preview requires single_channel mode");
+                }
+                preview = ComposeTransferPreview(decoded, package);
+            }
+            else
+            {
+                MaterialPreviewRequest composeRequest;
+                composeRequest.mode = ResolvePreviewMode(request);
+                const RgbwsvLayerBuffer sixChannel =
+                    DropTransferChannel(decoded, package);
+                preview = MaterialPreviewComposer::Compose(
+                    sixChannel, composeRequest);
+            }
+            packageIdentity = package.packageIdentity;
+            manifestHash = package.manifestHash;
+            resolvedLayerIndex = found->index;
+            canonicalChannels = CanonicalRgbwsvtChannels(request.channels);
         }
-
-        MaterialPreviewRequest composeRequest;
-        composeRequest.mode = previewMode;
-        MaterialPreviewResult preview = MaterialPreviewComposer::Compose(
-            *loaded.buffer,
-            composeRequest);
+        else
+        {
+            const MaterialPreviewMode previewMode =
+                ResolvePreviewMode(request);
+            TiffLayerLoadResult loaded;
+            ProductionLayerRef layer;
+            ProductionPackageIndex package;
+            {
+                std::scoped_lock lock{m_layerMutex};
+                package = EnsureVerifiedPackageLocked(
+                    absolutePackage, false).package;
+                const std::optional<ProductionLayerRef> found =
+                    m_layerSource.FindLayer(request.layer_index);
+                if (!found.has_value())
+                {
+                    return ApiResult<PreviewResult>::Failure(MakeError(
+                        kInputError,
+                        "layer index is not listed by the package",
+                        std::to_string(request.layer_index)));
+                }
+                layer = *found;
+                TiffLayerLoadControl control;
+                control.cancellationRequested = [&cancelToken]()
+                {
+                    return cancelToken.IsCancelRequested();
+                };
+                loaded = m_layerSource.LoadLayer(layer, control);
+            }
+            MaterialPreviewRequest composeRequest;
+            composeRequest.mode = previewMode;
+            preview = MaterialPreviewComposer::Compose(
+                *loaded.buffer, composeRequest);
+            packageIdentity = package.packageIdentity;
+            manifestHash = package.manifestHash;
+            resolvedLayerIndex = layer.layerIndex;
+            canonicalChannels = CanonicalChannels(request.channels);
+        }
         // 生产 TIFF 的第 0 行对应最小 Y；显示图像的第 0 行位于顶部。
         // 垂直翻转只改变预览表达，使结果页与工作区统一为 +Y 向上。
         preview = OrientPreviewPositiveYUp(std::move(preview));
@@ -216,11 +381,11 @@ ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
         result.width_px = static_cast<int>(preview.width);
         result.height_px = static_cast<int>(preview.height);
         result.cache_key =
-            "pkg:" + package.packageIdentity
-            + "|manifest:" + package.manifestHash
-            + "|layer:" + std::to_string(layer.layerIndex)
+            "pkg:" + packageIdentity
+            + "|manifest:" + manifestHash
+            + "|layer:" + std::to_string(resolvedLayerIndex)
             + "|mode:" + request.mode
-            + "|ch:" + CanonicalChannels(request.channels)
+            + "|ch:" + canonicalChannels
             + "|w:" + std::to_string(request.max_width_px)
             + "|sem:" + kPreviewSemanticVersion;
         return ApiResult<PreviewResult>::Success(std::move(result));

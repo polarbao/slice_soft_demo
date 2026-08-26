@@ -4,9 +4,12 @@
 #include "slicer_core/api/PackageQueryFacade.h"
 #include "slicer_core/api/implementation/PackageQueryFacadeImplementation.h"
 
-#include <array>
+#include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace slicesoft::module
 {
@@ -58,15 +61,20 @@ private:
     }
 
     [[nodiscard]] static slicer_core::Json MakeChannelCounts(
-        const std::array<std::uint64_t, 6>& counts)
+        const std::vector<std::string>& channels,
+        const std::vector<std::uint64_t>& counts)
     {
-        return slicer_core::Json::object({
-            {"R", counts[0]},
-            {"G", counts[1]},
-            {"B", counts[2]},
-            {"W", counts[3]},
-            {"S", counts[4]},
-            {"V", counts[5]}});
+        if (channels.size() != counts.size())
+        {
+            throw CapabilityRequestError(
+                "package channel counts do not match channel order");
+        }
+        slicer_core::Json::Object result;
+        for (std::size_t index = 0U; index < channels.size(); ++index)
+        {
+            result.emplace(channels[index], counts[index]);
+        }
+        return slicer_core::Json{std::move(result)};
     }
 
     [[nodiscard]] slicer_core::Json Verify(
@@ -92,6 +100,7 @@ private:
         }
         return MakeSuccess({
             {"valid", result.Value()->valid},
+            {"productionAcceptance", result.Value()->production_acceptance},
             {"errors", slicer_core::Json{std::move(errors)}},
             {"perLayerChecksum", slicer_core::Json{std::move(checksums)}},
             {"layerCount", result.Value()->layer_count}});
@@ -118,6 +127,7 @@ private:
         return MakeSuccess({
             {"packageIdentity", result.Value()->package_identity},
             {"schema", result.Value()->schema},
+            {"productionAcceptance", result.Value()->production_acceptance},
             {"layerCount", result.Value()->layer_count},
             {"grid", slicer_core::Json::object({
                 {"widthPx", result.Value()->grid.width_px},
@@ -146,8 +156,10 @@ private:
             {"zMm", result.Value()->z_mm},
             {"widthPx", result.Value()->width_px},
             {"heightPx", result.Value()->height_px},
-            {"printPixels", MakeChannelCounts(result.Value()->print_pixels)},
-            {"emptyPixels", MakeChannelCounts(result.Value()->empty_pixels)},
+            {"printPixels", MakeChannelCounts(
+                result.Value()->channels, result.Value()->print_pixels)},
+            {"emptyPixels", MakeChannelCounts(
+                result.Value()->channels, result.Value()->empty_pixels)},
             {"storageMode", result.Value()->storage_mode},
             {"tiffPath", result.Value()->tiff_path.generic_string()}});
     }

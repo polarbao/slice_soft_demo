@@ -46,18 +46,21 @@ worker::WorkerRequestEnvelope MakeRequest(
     const std::string& jobId,
     const std::string& capability)
 {
+    const bool transferSlice = capability == "slice.rgbwsvt";
     const std::filesystem::path path = root / jobId / "request.json";
     std::filesystem::create_directories(path.parent_path());
     std::ofstream output{path, std::ios::binary | std::ios::trunc};
     output
-        << "{\"contract\":\"file_contract\",\"major\":1,\"minor\":0,"
+        << "{\"contract\":\"file_contract\",\"major\":1,\"minor\":"
+        << (transferSlice ? 1 : 0) << ','
         << "\"jobId\":\"" << jobId << "\",\"correlationId\":\"c-" << jobId << "\","
         << "\"capability\":\"" << capability << "\",\"timeoutMs\":5000";
-    if (capability == "slice.rgbwsv")
+    if (capability == "slice.rgbwsv" || transferSlice)
     {
         output
             << ",\"sceneHash\":\"sha256:1234abcd\",\"scene\":{},\"profile\":{},"
-            << "\"output\":{\"contract\":\"p0.rgbwsv.2\","
+            << "\"output\":{\"contract\":\""
+            << (transferSlice ? "p0.rgbwsvt.1" : "p0.rgbwsv.2") << "\","
             << "\"packageDir\":\"C:/worker/package\"}";
     }
     else
@@ -168,6 +171,22 @@ void TestExactDispatch(const std::filesystem::path& root)
         "unknown capability registration is rejected before null fallback");
 }
 
+void TestTransferSliceDispatch(const std::filesystem::path& root)
+{
+    worker::WorkerJobDispatcher dispatcher;
+    auto executor = std::make_unique<RecordingExecutor>(
+        worker::WorkerCapabilityExecutionResult::Success(
+            slicer_core::Json::object({{"package", "rgbwsvt"}})));
+    RecordingExecutor* observer = executor.get();
+    dispatcher.Register("slice.rgbwsvt", std::move(executor));
+
+    const worker::WorkerRequestEnvelope request =
+        MakeRequest(root, "transfer-job", "slice.rgbwsvt");
+    const worker::WorkerResultEnvelope result = dispatcher.Dispatch(request);
+    Check(result.Ok() && observer->Calls() == 1,
+        "RGBWSVT capability is accepted and dispatched exactly once");
+}
+
 void TestFailClosedDispatch(const std::filesystem::path& root)
 {
     const worker::WorkerRequestEnvelope request =
@@ -258,6 +277,7 @@ int main()
     try
     {
         TestExactDispatch(root);
+        TestTransferSliceDispatch(root);
         TestFailClosedDispatch(root);
         TestCancellationBeforeDispatch(root);
         TestSharedRuntime(root);

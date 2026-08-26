@@ -2,6 +2,7 @@
 
 #include "HostRequestBuilder.h"
 #include "HostTextureProfileBridge.h"
+#include "HostTransferProfileBridge.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -368,7 +369,7 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
-    return true;
+    return HostTransferProfileBridge::Validate(settings, error);
 }
 
 bool HostEffectiveProfileBuilder::Build(
@@ -478,6 +479,10 @@ bool HostEffectiveProfileBuilder::Build(
     }
     effectiveProfile->profile = document.object();
     effectiveProfile->profilehash = QString::fromLatin1(profileHash);
+    HostTransferProfileBridge::Apply(
+        settings,
+        &effectiveProfile->profile,
+        &effectiveProfile->profilehash);
     if (effectiveProfile->profile.value(
             QStringLiteral("profileHash")).toString()
         != effectiveProfile->profilehash)
@@ -512,7 +517,6 @@ QString HostEffectiveProfileBuilder::MaterialStrategyId(
     }
     return QStringLiteral("unknown");
 }
-
 QString HostEffectiveProfileBuilder::MaterialRoleId(
     const HostMaterialRole role)
 {
@@ -564,30 +568,4 @@ QString HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
             "layer_slab_supersample_2x2_at_least_two_candidate");
     }
     return QStringLiteral("unknown");
-}
-
-QString HostEffectiveProfileBuilder::TiffCompressionId(
-    const HostTiffCompression compression)
-{
-    switch (compression)
-    {
-    case HostTiffCompression::None:
-        return QStringLiteral("none");
-    case HostTiffCompression::PackBits:
-        return QStringLiteral("packbits");
-    }
-    return QStringLiteral("unknown");
-}
-
-bool HostEffectiveProfileBuilder::BuildVolumesEqual(
-    const hostbuildvolume& left,
-    const hostbuildvolume& right)
-{
-    constexpr double epsilon = 1.0e-9;
-    return std::abs(left.widthmm - right.widthmm) <= epsilon
-        && std::abs(left.heightmm - right.heightmm) <= epsilon
-        && std::abs(left.zlimitmm - right.zlimitmm) <= epsilon
-        && left.origin == right.origin
-        && left.xdirection == right.xdirection
-        && left.ydirection == right.ydirection;
 }

@@ -1,0 +1,201 @@
+{
+  "autoOrient": {
+    "enabled": true,
+    "maxHeightMm": 9,
+    "strategy": "minimize_height_by_right_angle_rotation"
+  },
+  "background": {
+    "value": 255
+  },
+  "experimental": {
+    "openvdbPipeline": {
+      "admissionMode": "strict_closed",
+      "allowNonProductionOutput": false,
+      "enabled": false,
+      "engine": "legacy",
+      "failurePolicy": "fail_fast",
+      "writeProductionRgbwsv": false
+    }
+  },
+  "input": {
+    "format": "auto",
+    "modelPath": "../../../model/obj/meigui_fudiao/04.obj"
+  },
+  "materialPolicy": {
+    "enabled": false,
+    "varnish": {
+      "enabled": false,
+      "mode": "disabled"
+    },
+    "white": {
+      "enabled": false,
+      "mode": "disabled"
+    }
+  },
+  "materialProcessProfile": {
+    "enabled": true,
+    "name": "obj_mtl_texture_rgb_white_varnish_rgbwsvt",
+    "rgb": {
+      "enabled": true,
+      "source": "texture_or_color"
+    },
+    "support": {
+      "expected": true,
+      "mode": "existing_support_pipeline"
+    },
+    "target": "uv_relief_obj_mtl_texture",
+    "validation": {
+      "maxUnexpectedOverlapPixels": 0,
+      "requireRgbPixels": true,
+      "requireSupportPixels": false,
+      "requireVarnishPixels": false,
+      "requireWhitePixels": true
+    },
+    "varnish": {
+      "coverage": "model_surface",
+      "enabled": false,
+      "mode": "disabled",
+      "topLayers": 1,
+      "value": 0
+    },
+    "white": {
+      "coverage": "all_model",
+      "enabled": false,
+      "expandPx": 0,
+      "mode": "all_model",
+      "shrinkPx": 0,
+      "value": 0
+    }
+  },
+  "materialRoleMapping": {
+    "allowInputSupportMaterial": false,
+    "defaultRole": "rgb",
+    "enabled": true,
+    "mode": "rules_then_default",
+    "rules": [
+      {
+        "matchNameContains": "white",
+        "role": "white"
+      },
+      {
+        "matchNameContains": "varnish",
+        "role": "varnish"
+      }
+    ]
+  },
+  "modelFill": {
+    "emptyAllowedInProduction": false,
+    "enabled": true,
+    "legacyRgbFallback": false,
+    "material": "white",
+    "scope": "below_texture_surface",
+    "value": 0
+  },
+  "modelMaterial": {
+    "applyMode": "solid_volume",
+    "materialChannel": "RGB",
+    "rgb": [
+      0,
+      0,
+      0
+    ],
+    "varnishValue": 255,
+    "whiteValue": 255
+  },
+  "outerVarnish": {
+    "allowXYExpansion": true,
+    "conflictPolicy": "varnish_shell_wins",
+    "enabled": false,
+    "pixelPitchUm": 42.3,
+    "thicknessMm": 0,
+    "thicknessStepMm": 0.01,
+    "value": 0
+  },
+  "output": {
+    "bitDepth": 8,
+    "channelOrder": [
+      "R",
+      "G",
+      "B",
+      "W",
+      "S",
+      "V",
+      "T"
+    ],
+    "dpiX": 600,
+    "dpiY": 600,
+    "layerThicknessMm": 0.028,
+    "packageDir": "output/ProfileTexturedNailRgbVarnishLowerSupport_rgbwsvt",
+    "planarConfig": "contiguous",
+    "rowsPerStrip": 64,
+    "storageMode": "stripped",
+    "packageProtocol": "p0.rgbwsvt.1"
+  },
+  "preview": {
+    "channels": [
+      "texture_rgb",
+      "white",
+      "varnish",
+      "support"
+    ],
+    "enabled": true,
+    "format": "png",
+    "interval": 20
+  },
+  "relief": {
+    "baseZMm": 0,
+    "fillMode": "intersection_range"
+  },
+  "slicingMode": "relief_heightfield",
+  "support": {
+    "enabled": true,
+    "internalVoid": {
+      "enabled": true,
+      "fillRule": "all_internal_voids",
+      "minAreaPx": 16
+    },
+    "minAreaPx": 0,
+    "mode": "bottom_projection",
+    "offsetMm": 0,
+    "placement": "lower",
+    "upper": {
+      "enabled": false,
+      "outside": "outer_varnish_shell",
+      "reason": "optional_detachable_surface_support"
+    },
+    "value": 0
+  },
+  "surfaceVarnish": {
+    "enabled": false,
+    "thicknessPx": 0
+  },
+  "texture": {
+    "applyMode": "top_surface_band",
+    "enabled": true,
+    "fallbackRgb": [
+      0,
+      0,
+      0
+    ],
+    "flipV": true,
+    "missingTexturePolicy": "warn_and_fallback",
+    "sampler": "bilinear",
+    "topSurfaceLayers": 1,
+    "uvAddressMode": "clamp"
+  },
+  "transferChannelPolicy": {
+    "enabled": true,
+    "matchSource": "material_diffuse_rgb",
+    "materialDiffuseRgbValues": [
+      [255, 220, 198]
+    ],
+    "missingRegion": "allow_empty",
+    "multipleMatches": "fail_closed",
+    "value": 0,
+    "topology": {
+      "selfIntersectionPolicy": "tolerate_closed_self_intersection",
+      "maxSelfIntersectionPairs": 64
+    }
+  },
+  "_comment": "RGBWSVT opt-in copy. The corresponding legacy process file remains unchanged."
+}

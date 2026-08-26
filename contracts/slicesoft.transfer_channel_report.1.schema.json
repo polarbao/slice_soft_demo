@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/slicesoft.transfer_channel_report.1.schema.json",
+  "title": "SliceSoft RGBWSVT transfer channel report",
+  "type": "object",
+  "required": [
+    "schema", "packageProtocol", "statisticsSource", "enabled", "matchSource",
+    "configuredMaterialDiffuseRgbValues", "regionPresent", "materialName",
+    "matchedDiffuseRgb", "value", "channelStats", "totals", "layers", "warnings", "errors"
+  ],
+  "properties": {
+    "schema": { "const": "slicesoft.transfer_channel_report.1" },
+    "packageProtocol": { "const": "p0.rgbwsvt.1" },
+    "statisticsSource": { "const": "persisted_tiff_bytes" },
+    "enabled": { "const": true },
+    "matchSource": { "const": "material_diffuse_rgb" },
+    "configuredMaterialDiffuseRgbValues": {
+      "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/rgb" }
+    },
+    "regionPresent": { "type": "boolean" },
+    "materialName": { "type": "string" },
+    "matchedDiffuseRgb": { "$ref": "#/$defs/rgb" },
+    "value": { "const": 0 },
+    "channelStats": {
+      "type": "object",
+      "required": ["R", "G", "B", "W", "S", "V", "T"],
+      "additionalProperties": { "$ref": "#/$defs/channelStats" }
+    },
+    "totals": {
+      "type": "object",
+      "required": ["layerCount", "transferPrintPixels", "unexpectedOverlapPixels"],
+      "properties": {
+        "layerCount": { "type": "integer", "minimum": 1 },
+        "transferPrintPixels": { "type": "integer", "minimum": 0 },
+        "unexpectedOverlapPixels": { "const": 0 }
+      },
+      "additionalProperties": false
+    },
+    "layers": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["layerIndex", "transferPrintPixels"],
+        "properties": {
+          "layerIndex": { "type": "integer", "minimum": 0 },
+          "transferPrintPixels": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "errors": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "rgb": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "integer", "minimum": 0, "maximum": 255 },
+        { "type": "integer", "minimum": 0, "maximum": 255 },
+        { "type": "integer", "minimum": 0, "maximum": 255 }
+      ],
+      "minItems": 3, "maxItems": 3
+    },
+    "channelStats": {
+      "type": "object",
+      "required": ["printPixels", "fullPrintPixels", "partialPrintPixels", "emptyPixels", "minValue", "maxValue"],
+      "properties": {
+        "printPixels": { "type": "integer", "minimum": 0 },
+        "fullPrintPixels": { "type": "integer", "minimum": 0 },
+        "partialPrintPixels": { "type": "integer", "minimum": 0 },
+        "emptyPixels": { "type": "integer", "minimum": 0 },
+        "minValue": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "maxValue": { "type": "integer", "minimum": 0, "maximum": 255 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

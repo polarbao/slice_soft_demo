@@ -7,8 +7,10 @@
 #include <QFileInfo>
 #include <QPlainTextEdit>
 #include <QStringList>
+#include <QTemporaryDir>
 #include <QTextStream>
 
+#include <algorithm>
 #include <utility>
 
 namespace
@@ -98,12 +100,12 @@ int main(int argc, char* argv[])
             QStringLiteral("参考 Profile 解析失败：%1").arg(error),
             errors)
         || !Check(
-            resolution.modulecapabilities.size() == 15,
-            QStringLiteral("模块能力必须结构化解析为冻结的 15 项。"),
+            resolution.modulecapabilities.size() == 16,
+            QStringLiteral("模块能力必须结构化解析为冻结的 16 项。"),
             errors)
         || !Check(
-            resolution.profiles.size() == 3,
-            QStringLiteral("参考宿主应提供三种 Profile。"),
+            resolution.profiles.size() == 4,
+            QStringLiteral("参考宿主应提供四种 Profile。"),
             errors))
     {
         return 4;
@@ -118,6 +120,45 @@ int main(int argc, char* argv[])
         {
             return 5;
         }
+    }
+
+    QTemporaryDir emptyProcessProfileDirectory;
+    const QByteArray previousProcessProfileDirectory = qgetenv(
+        "SLICESOFT_PROCESS_PROFILE_DIR");
+    qputenv("SLICESOFT_PROCESS_PROFILE_DIR",
+            emptyProcessProfileDirectory.path().toUtf8());
+    hostprofilecatalogresolution missingProcessProfileResolution;
+    const bool missingProcessProfileResolved =
+        HostProfileCapabilityResolver::Resolve(
+            referenceCatalog, client.ModuleInfo(),
+            &missingProcessProfileResolution, &error);
+    if (previousProcessProfileDirectory.isNull())
+    {
+        qunsetenv("SLICESOFT_PROCESS_PROFILE_DIR");
+    }
+    else
+    {
+        qputenv("SLICESOFT_PROCESS_PROFILE_DIR",
+                previousProcessProfileDirectory);
+    }
+    const auto missingTransferProfile = std::find_if(
+        missingProcessProfileResolution.profiles.cbegin(),
+        missingProcessProfileResolution.profiles.cend(),
+        [](const hostprofileavailability& profile)
+        {
+            return profile.profile.profileid
+                == QStringLiteral("host-reference-transfer-channel");
+        });
+    if (!Check(missingProcessProfileResolved
+                   && missingTransferProfile
+                       != missingProcessProfileResolution.profiles.cend()
+                   && !missingTransferProfile->available
+                   && missingTransferProfile->missingcapabilities.contains(
+                       QStringLiteral("process-profile.rgbwsvt")),
+               QStringLiteral("缺少外部 RGBWSVT 工艺时新 Profile 必须显式禁用。"),
+               errors))
+    {
+        return 5;
     }
 
     HostProfilePanel panel;
@@ -136,11 +177,11 @@ int main(int argc, char* argv[])
         QStringLiteral("hostProfileCapabilityView"));
     if (!Check(
             profileCombo != nullptr && profileDetails != nullptr
-                && profileCombo->count() == 3,
+                && profileCombo->count() == 4,
             QStringLiteral("Profile 选择控件或目录项不完整。"),
             errors)
         || !Check(
-            panel.AvailableProfileCount() == 3,
+            panel.AvailableProfileCount() == 4,
             QStringLiteral("可用 Profile 计数错误。"),
             errors)
         || !Check(

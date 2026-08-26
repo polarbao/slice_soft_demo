@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://slicesoft.local/contracts/p0.rgbwsvt.1.schema.json",
+  "title": "SliceSoft RGBWSVT production package manifest",
+  "type": "object",
+  "required": ["schema", "productionAcceptance", "grid", "layers", "tiff"],
+  "properties": {
+    "schema": {
+      "const": "p0.rgbwsvt.1"
+    },
+    "schemaVersion": {
+      "const": "p0.rgbwsvt.1"
+    },
+    "productionAcceptance": {
+      "type": "string",
+      "enum": ["admitted", "rgbwsvt_candidate_unvalidated"]
+    },
+    "whiteSemantics": {
+      "type": "string",
+      "enum": ["opaque", "transparent"]
+    },
+    "grid": {
+      "$ref": "#/$defs/grid"
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/layer"
+      }
+    },
+    "tiff": {
+      "$ref": "#/$defs/tiff"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "positiveNumber": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "grid": {
+      "type": "object",
+      "required": ["widthPx", "heightPx", "layerCount", "layerThicknessMm"],
+      "properties": {
+        "widthPx": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "heightPx": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "layerCount": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "layerThicknessMm": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "dpi": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/positiveNumber" },
+            { "$ref": "#/$defs/positiveNumber" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "dpiX": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "dpiY": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "pixelSizeMm": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/positiveNumber" },
+            { "$ref": "#/$defs/positiveNumber" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "pixelSizeXmm": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "pixelSizeYmm": {
+          "$ref": "#/$defs/positiveNumber"
+        },
+        "originMm": {
+          "type": "array",
+          "prefixItems": [
+            { "type": "number" },
+            { "type": "number" },
+            { "type": "number" }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "additionalProperties": true
+    },
+    "semanticCounts": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/nonNegativeInteger"
+      }
+    },
+    "layer": {
+      "type": "object",
+      "required": ["index", "path", "widthPx", "heightPx", "zMm"],
+      "properties": {
+        "index": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "widthPx": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "heightPx": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "zMm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "semantic": {
+          "$ref": "#/$defs/semanticCounts"
+        }
+      },
+      "additionalProperties": true
+    },
+    "channelOrder": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "R" },
+        { "const": "G" },
+        { "const": "B" },
+        { "const": "W" },
+        { "const": "S" },
+        { "const": "V" },
+        { "const": "T" }
+      ],
+      "minItems": 7,
+      "maxItems": 7
+    },
+    "channelStatistics": {
+      "type": "object",
+      "required": [
+        "printPixels",
+        "fullPrintPixels",
+        "partialPrintPixels",
+        "emptyPixels",
+        "minValue",
+        "maxValue"
+      ],
+      "properties": {
+        "printPixels": { "$ref": "#/$defs/nonNegativeInteger" },
+        "fullPrintPixels": { "$ref": "#/$defs/nonNegativeInteger" },
+        "partialPrintPixels": { "$ref": "#/$defs/nonNegativeInteger" },
+        "emptyPixels": { "$ref": "#/$defs/nonNegativeInteger" },
+        "minValue": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "maxValue": { "type": "integer", "minimum": 0, "maximum": 255 }
+      },
+      "additionalProperties": false
+    },
+    "channelStats": {
+      "type": "object",
+      "required": ["R", "G", "B", "W", "S", "V", "T"],
+      "properties": {
+        "R": { "$ref": "#/$defs/channelStatistics" },
+        "G": { "$ref": "#/$defs/channelStatistics" },
+        "B": { "$ref": "#/$defs/channelStatistics" },
+        "W": { "$ref": "#/$defs/channelStatistics" },
+        "S": { "$ref": "#/$defs/channelStatistics" },
+        "V": { "$ref": "#/$defs/channelStatistics" },
+        "T": { "$ref": "#/$defs/channelStatistics" }
+      },
+      "additionalProperties": false
+    },
+    "tiff": {
+      "type": "object",
+      "required": [
+        "channelCount",
+        "channelOrder",
+        "bitDepth",
+        "sampleFormat",
+        "planarConfig",
+        "polarity",
+        "printValue",
+        "emptyValue",
+        "storageMode",
+        "compression",
+        "channelStats",
+        "statisticsSource",
+        "layers"
+      ],
+      "properties": {
+        "channelCount": {
+          "const": 7
+        },
+        "channelOrder": {
+          "$ref": "#/$defs/channelOrder"
+        },
+        "bitDepth": {
+          "const": 8
+        },
+        "sampleFormat": {
+          "const": "uint"
+        },
+        "planarConfig": {
+          "const": "contiguous"
+        },
+        "polarity": {
+          "const": "black_is_print"
+        },
+        "printValue": {
+          "const": 0
+        },
+        "emptyValue": {
+          "const": 255
+        },
+        "storage": {
+          "type": "string",
+          "enum": ["stripped", "tiled"]
+        },
+        "storageMode": {
+          "type": "string",
+          "enum": ["stripped", "tiled"]
+        },
+        "compression": {
+          "type": "string",
+          "enum": ["none", "packbits"]
+        },
+        "channelStats": {
+          "$ref": "#/$defs/channelStats"
+        },
+        "statisticsSource": {
+          "const": "persisted_tiff_bytes"
+        },
+        "rowsPerStrip": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "tileWidth": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "tileHeight": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "tiled": {
+          "type": "boolean"
+        },
+        "writeTiffLayers": {
+          "type": "boolean"
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/layer"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
