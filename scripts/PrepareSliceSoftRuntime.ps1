@@ -466,6 +466,25 @@ function CopyProfileRuntimeResources
             -Recurse
     }
 
+    # RGBWSVT 工艺文件：宿主的 HostTransferProcessPresetLoader 固定读取
+    # <应用目录>/configs/material_process 下的 *_rgbwsvt.json，且【读不到时静默跳过】
+    # （AppendTransferPreset 在 Load 失败时直接 return，不报错）。
+    # 构建树由 apps/slicer_ui_host_sim/CMakeLists.txt 的 post-build 负责拷贝，
+    # 但运行时暂存此前只拷 samples/model 两棵树，导致部署包里三个「缩裹 T 通道」
+    # 预设在 UI 中不出现，且没有任何提示。此处补齐。
+    $transferProfileSource = Join-Path `
+        $RepoRoot "samples/configs/matvol_t/process_profiles"
+    if (-not (Test-Path -LiteralPath $transferProfileSource -PathType Container))
+    {
+        throw "RGBWSVT process profile directory was not found: $transferProfileSource"
+    }
+    $transferProfileTarget = Join-Path $StagingDir "configs/material_process"
+    New-Item -ItemType Directory -Force -Path $transferProfileTarget | Out-Null
+    Copy-Item `
+        -Path (Join-Path $transferProfileSource "*_rgbwsvt.json") `
+        -Destination $transferProfileTarget `
+        -Force
+
     $registryPath = Join-Path $StagingDir "samples/scenarios/slicer_scenarios.json"
     if (-not (Test-Path -LiteralPath $registryPath -PathType Leaf))
     {
@@ -500,6 +519,21 @@ function CopyProfileRuntimeResources
 function TestPortableProfileResources
 {
     param([string]$RuntimeRoot)
+
+    # 宿主三个「缩裹 T 通道」预设由这三份工艺文件派生；缺失时 UI 里静默少三项，
+    # 不会有任何错误提示。故在此显式校验，让缺失变成一次响亮的失败。
+    foreach ($transferProfile in @(
+        "obj_mtl_texture_rgb_only_rgbwsvt.json",
+        "nail_white_underbase_only_rgbwsvt.json",
+        "nail_varnish_only_rgbwsvt.json"))
+    {
+        $transferProfilePath = Join-Path `
+            $RuntimeRoot (Join-Path "configs/material_process" $transferProfile)
+        if (-not (Test-Path -LiteralPath $transferProfilePath -PathType Leaf))
+        {
+            throw "Packaged runtime is missing an RGBWSVT process profile: $transferProfile"
+        }
+    }
 
     $registryRelativePath = "samples/scenarios/slicer_scenarios.json"
     $registryPath = Join-Path $RuntimeRoot $registryRelativePath
@@ -1178,8 +1212,17 @@ try
         {
             throw "Deployed worker contract query returned invalid JSON: $($_.Exception.Message)"
         }
+        # 方案A：T 通道属于可选附加能力声明，基线生产合同必须保留，
+        # 且不得出现未知或重复的生产合同；声明 T 通道时 minor 必须已按约定抬升。
+        $baselinePackageContract = "p0.rgbwsv.2"
+        $transferPackageContract = "p0.rgbwsvt.1"
+        $knownPackageContracts = @($baselinePackageContract, $transferPackageContract)
         $workerPropertyNames = @($workerContract.PSObject.Properties.Name)
-        $workerProduces = @($workerContract.produces)
+        $workerProduces = @($workerContract.produces | ForEach-Object { [string]$_ })
+        $workerUnknownProduces = @(
+            $workerProduces | Where-Object { $knownPackageContracts -notcontains $_ })
+        $workerDeclaresTransfer = ($workerProduces -contains $transferPackageContract)
+        $workerRequiredMinor = if ($workerDeclaresTransfer) { 1 } else { 0 }
         if ($workerPropertyNames -notcontains "major" -or
             $workerPropertyNames -notcontains "minor" -or
             -not (($workerContract.major -is [int]) -or
@@ -1188,10 +1231,11 @@ try
                 ($workerContract.minor -is [long])) -or
             [string]$workerContract.contract -ne "file_contract" -or
             $workerContract.major -ne 1 -or
-            $workerContract.minor -ne 0 -or
+            $workerContract.minor -lt $workerRequiredMinor -or
             [string]$workerContract.engineVersion -ne $sourceSlicerVersion -or
-            $workerProduces.Count -ne 1 -or
-            [string]$workerProduces[0] -ne "p0.rgbwsv.2")
+            $workerProduces.Count -ne @($workerProduces | Select-Object -Unique).Count -or
+            $workerProduces -notcontains $baselinePackageContract -or
+            $workerUnknownProduces.Count -ne 0)
         {
             throw "Deployed worker discovery contract or version drifted."
         }
@@ -1212,6 +1256,13 @@ try
         }
         $modulePropertyNames = @($deployedModuleInfo.PSObject.Properties.Name)
         $moduleProduces = @($deployedModuleInfo.produces)
+        $moduleProduceContracts = @($moduleProduces | ForEach-Object { [string]$_.contract })
+        $moduleUnknownProduces = @(
+            $moduleProduceContracts | Where-Object { $knownPackageContracts -notcontains $_ })
+        $moduleNonPackageKinds = @(
+            $moduleProduces | Where-Object { [string]$_.kind -ne "package" })
+        $moduleDeclaresTransfer = ($moduleProduceContracts -contains $transferPackageContract)
+        $moduleUniqueProduceCount = @($moduleProduceContracts | Select-Object -Unique).Count
         if ($modulePropertyNames -notcontains "spi" -or
             -not (($deployedModuleInfo.spi -is [int]) -or
                 ($deployedModuleInfo.spi -is [long])) -or
@@ -1219,9 +1270,11 @@ try
             [string]$deployedModuleInfo.id -ne "slicer" -or
             [string]$deployedModuleInfo.version -ne $sourceSlicerVersion -or
             $deployedModuleInfo.spi -ne 1 -or
-            $moduleProduces.Count -ne 1 -or
-            [string]$moduleProduces[0].contract -ne "p0.rgbwsv.2" -or
-            [string]$moduleProduces[0].kind -ne "package")
+            $moduleProduceContracts.Count -ne $moduleUniqueProduceCount -or
+            $moduleProduceContracts -notcontains $baselinePackageContract -or
+            $moduleUnknownProduces.Count -ne 0 -or
+            $moduleNonPackageKinds.Count -ne 0 -or
+            $moduleDeclaresTransfer -ne $workerDeclaresTransfer)
         {
             throw "Deployed module info contract or version drifted."
         }
@@ -1293,6 +1346,12 @@ try
                 worker = "slicer_worker.exe"
                 manifest = "module.json"
                 runtimeLibraries = $moduleRuntimeInventory
+                fileContract = [ordered]@{
+                    major = [int]$workerContract.major
+                    minor = [int]$workerContract.minor
+                    produces = $workerProduces
+                    transferChannel = [bool]$workerDeclaresTransfer
+                }
                 selfTest = ($hostSelfTestOutput -join [Environment]::NewLine)
             }
             externalRip = [ordered]@{
