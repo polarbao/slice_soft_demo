@@ -1,7 +1,7 @@
 # DOC_ANALYSIS MATVOL-T 合并对接面与冲突清单
 
 > 文档状态：**参考件 / 供 MATVOL 与 MATVOL-T 两条线对接时使用**
-> 版本：v1.0 ｜ 日期：2026-08-24
+> 版本：v1.1 ｜ 日期：2026-08-26
 > 撰写方：MATVOL 专项（`product/packaged-slicer`）
 > 对接方：MATVOL-T 专项（`codex/matvol-t-channel-protocol`，工作树 `slice_soft_demo_matvol_t`）
 >
@@ -42,9 +42,9 @@ MATVOL 侧当前仍是 `const`（本文件 `:23`）。这是**对 MATVOL 所有�
 
 MATVOL-T 给 `MaterialVolumeBuildRequest` 增加了 `std::string materialNameFilter;`，并在 plan 构建的逐材质循环顶部加了 `continue` 守卫，另加了 filter 感知的错误消息变体。
 
-**冲突风险为高**，因为 MATVOL 在 `0bc3c75` 中改动了**同一个循环**：新增 `maxBoundaryEdges` 放行条件，并把拒绝消息改为附加「放行为何被拒」的细节。两处改动物理相邻。
+**更正（v1.1）**：本节 v1.0 曾判定「冲突风险为高，因为改动了同一个循环」。经逐行核对，该判断在**文本层面不成立**。以基线 `90a59ba` 为同一基准，MATVOL-T 的改动落在第 138 行（循环顶的过滤守卫）与第 183 行（`MaterialMissing` 消息）；MATVOL 的改动落在第 160–170 行（放行条件与拒绝消息）。三处**互不相交**，Git 可自动合并。
 
-**建议的合并顺序**：先取 MATVOL 侧的放行条件与错误消息（它们是一个整体，拆开会让诊断退化），再把 `materialNameFilter` 的 `continue` 守卫加在循环最顶端——该守卫应在拓扑判定**之前**执行，与放行条件互不干扰。
+**语义提醒仍然成立**：`materialNameFilter` 的 `continue` 守卫必须在拓扑判定**之前**执行，否则被过滤掉的材质仍会先触发拓扑拒绝。当前两侧代码天然已是该顺序（138 < 160），合并时只需**不要调换**。另外双方各自修改了**不同的**错误消息（对方改 `MaterialMissing`，MATVOL 改拓扑拒绝消息），两者都应保留。
 
 ### 2.3 `src/slicer_core/reports/MaterialVolumeReport.cpp`（MATVOL 拥有）
 
@@ -125,3 +125,4 @@ MATVOL-T 的 `obj_mtl_texture_rgb_only_rgbwsvt.json` 已给出答案：缩裹让
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-24 | v1.0 | 建立对接说明。列出四处代码冲突面与合并建议、两处需对方吸收的 MATVOL 结论（`08/09` 非永久阻塞、材质 02 为黄色）、第七通道红线的治理留痕缺口、以及 MATVOL-T 已解决的两个产品问题与共同剩余缺口。 |
+| 2026-08-26 | v1.1 | 更正 §2.2：`MaterialVolumePlan.cpp` 的两侧改动经逐行核对互不相交，v1.0 判定的「高冲突风险」在文本层面不成立；语义顺序提醒保留。另据实测，全量冲突面仅 `slicer.cpp` 一处硬冲突与 `config.cpp` 一处邻接。 |
