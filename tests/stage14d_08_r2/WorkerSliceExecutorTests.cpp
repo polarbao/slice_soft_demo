@@ -9,6 +9,7 @@
 #include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
 #include "slicer_core/scene/MultiModelScene.h"
 #include "slicer_core/scene/SceneResourceIdentity.h"
+#include "slicer_core/slicer.h"
 #include "slicer_core/system/Sha256.h"
 
 #include <chrono>
@@ -16,6 +17,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <system_error>
@@ -241,6 +243,51 @@ worker::WorkerRequestEnvelope MakeRequest(
         }));
 }
 
+class CandidateTransferFacade final : public api::SliceFacade
+{
+public:
+    [[nodiscard]] api::ApiResult<api::SliceResult> Run(
+        const api::SliceRequest& request,
+        const api::ICancelToken&,
+        const api::ProgressSink&) noexcept override
+    {
+        try
+        {
+            const std::filesystem::path profilePath =
+                request.scene_config_path.parent_path()
+                / "direct-candidate-profile.json";
+            std::ofstream output(
+                profilePath, std::ios::binary | std::ios::trunc);
+            output << MakeProfile(request.package_dir, true).dump(2) << '\n';
+            output.close();
+            if (!output)
+            {
+                throw std::runtime_error("failed to write candidate profile");
+            }
+            slicer_core::SliceRunOptions options;
+            options.write_preview_files = false;
+            const slicer_core::SliceRunResult produced =
+                slicer_core::run_slicer(profilePath, options);
+            api::SliceResult result;
+            result.package_dir = produced.package_dir;
+            result.manifest_path = produced.package_dir / "manifest.json";
+            result.layer_count = produced.layer_count;
+            result.grid_px = {produced.width_px, produced.height_px};
+            result.engine_version = "candidate-transfer-test";
+            result.profile = produced.profile;
+            return api::ApiResult<api::SliceResult>::Success(
+                std::move(result));
+        }
+        catch (const std::exception& error)
+        {
+            return api::ApiResult<api::SliceResult>::Failure(api::ApiError{
+                "PM-SLICER-INTERNAL-0099",
+                "candidate transfer test facade failed",
+                error.what()});
+        }
+    }
+};
+
 void TestRealTransferProductionExecution(const std::filesystem::path& root)
 {
     slicer_core::SliceConfig loadConfig;
@@ -285,6 +332,61 @@ void TestRealTransferProductionExecution(const std::filesystem::path& root)
             package.productionAcceptance == "admitted",
             "Worker Scene RGBWSVT package is explicitly admitted");
     }
+}
+
+void TestCandidateTransferPackageIsRejectedAndRemoved(
+    const std::filesystem::path& root)
+{
+    slicer_core::SliceConfig loadConfig;
+    loadConfig.input.model_path = TransferFixturePath();
+    loadConfig.input.format = "obj";
+    loadConfig.auto_orient.enabled = false;
+    const slicer_core::SceneModel model = slicer_core::load_model_report(
+        loadConfig, TransferFixturePath().parent_path());
+    const slicer_core::MultiModelScene scene = MakeScene(model, true);
+    const std::filesystem::path packageDirectory =
+        root / "package-transfer-candidate";
+    const std::filesystem::path jobDirectory =
+        root / "job-transfer-candidate";
+    const slicer_core::Json profile = MakeProfile(packageDirectory, true);
+    const auto artifactIdentity =
+        slicer_core::api::artifacts::MakePackageArtifactIdentity(
+            packageDirectory,
+            jobDirectory.filename().generic_string(),
+            slicer_core::api::artifacts::MakePackageAttemptId(
+                "correlation-r2-executor"));
+    std::ostringstream protocol;
+    worker::WorkerSliceExecutor executor(
+        slicer_core::engine::CreateProductionPreflightFullFacade(),
+        std::make_unique<CandidateTransferFacade>(),
+        protocol);
+    const worker::WorkerCapabilityExecutionResult result = executor.Execute(
+        MakeRequest(
+            jobDirectory,
+            packageDirectory,
+            scene,
+            profile,
+            true),
+        TestCancelToken{});
+    if (result.Ok() || result.Code() != "PM-SLICER-CONTRACT-0060")
+    {
+        std::cerr << "candidate executor result: ok=" << result.Ok()
+                  << " code=" << result.Code()
+                  << " message=" << result.Message();
+        if (result.Detail().has_value())
+        {
+            std::cerr << " detail=" << *result.Detail();
+        }
+        std::cerr << '\n';
+    }
+    Check(!result.Ok() && result.Code() == "PM-SLICER-CONTRACT-0060",
+        "Worker rejects a structurally valid RGBWSVT candidate package");
+    Check(!std::filesystem::exists(packageDirectory),
+        "Worker removes the newly published rejected candidate package");
+    Check(!std::filesystem::exists(artifactIdentity.staging_directory)
+            && !std::filesystem::exists(artifactIdentity.backup_directory)
+            && !std::filesystem::exists(artifactIdentity.lease_directory),
+        "candidate rejection leaves no owned package artifacts");
 }
 
 void TestRealProductionExecution(
@@ -434,6 +536,7 @@ int main()
         const slicer_core::MultiModelScene scene = MakeScene(model);
         TestRealProductionExecution(root, scene);
         TestRealTransferProductionExecution(root);
+        TestCandidateTransferPackageIsRejectedAndRemoved(root);
         TestCancelledBeforeMaterialization(root, scene);
         TestUncommittedAdmissionFailsClosed(root, scene);
     }

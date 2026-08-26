@@ -100,6 +100,7 @@ private:
         }
         return MakeSuccess({
             {"valid", result.Value()->valid},
+            {"productionAcceptance", result.Value()->production_acceptance},
             {"errors", slicer_core::Json{std::move(errors)}},
             {"perLayerChecksum", slicer_core::Json{std::move(checksums)}},
             {"layerCount", result.Value()->layer_count}});
@@ -126,6 +127,7 @@ private:
         return MakeSuccess({
             {"packageIdentity", result.Value()->package_identity},
             {"schema", result.Value()->schema},
+            {"productionAcceptance", result.Value()->production_acceptance},
             {"layerCount", result.Value()->layer_count},
             {"grid", slicer_core::Json::object({
                 {"widthPx", result.Value()->grid.width_px},

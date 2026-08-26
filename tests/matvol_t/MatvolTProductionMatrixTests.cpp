@@ -124,55 +124,6 @@ bool Reality03PassesStrictPackageReader(const std::filesystem::path& root)
             "03 strict T pixels");
 }
 
-bool SceneProductionOptInWritesAdmitted(const std::filesystem::path& root)
-{
-    const std::filesystem::path package = root / "scene_opt_in";
-    const std::filesystem::path configPath = WriteConfig(
-        root,
-        "scene_opt_in",
-        MakeConfig(package, "03.obj", {255, 220, 198}));
-    const slicer_core::SliceConfig config =
-        slicer_core::load_slice_config(configPath);
-    const slicer_core::ModelReport model =
-        slicer_core::load_model_report(config, configPath.parent_path());
-    slicer_core::ModelInstance instance;
-    instance.instanceid = "matvol-t-scene-instance";
-    instance.modelid = "matvol-t-scene-model";
-    instance.sourcetransformidentity = ModelPath("03.obj").generic_string();
-    instance.sourcebboxmm = model.bbox_mm;
-    instance.effectivebboxmm = model.bbox_mm;
-
-    slicer_core::SliceRunOptions options = WriteOptions();
-    options.inputoverride = slicer_core::SliceRunInputOverride{
-        ModelPath("03.obj"), "obj"};
-    options.instanceoverride = instance;
-    options.transfer_scene_production_opt_in = true;
-    (void)slicer_core::run_slicer(configPath, options);
-
-    const slicer_core::RgbwsvtPackageValidation validated =
-        slicer_core::ValidateRgbwsvtPackage(package);
-    return Expect(
-        validated.productionAcceptance == "admitted",
-        "qualified Scene RGBWSVT run is admitted");
-}
-
-bool UnqualifiedOptInRemainsCandidate(const std::filesystem::path& root)
-{
-    const std::filesystem::path package = root / "unqualified_opt_in";
-    slicer_core::SliceRunOptions options = WriteOptions();
-    options.transfer_scene_production_opt_in = true;
-    (void)slicer_core::run_slicer(
-        WriteConfig(
-            root,
-            "unqualified_opt_in",
-            MakeConfig(package, "03.obj", {255, 220, 198})),
-        options);
-    return Expect(
-        slicer_core::ValidateRgbwsvtPackage(package).productionAcceptance
-            == "rgbwsvt_candidate_unvalidated",
-        "unqualified Runner opt-in cannot admit a direct package");
-}
-
 bool InvalidAcceptanceFailsStrictReader(const std::filesystem::path& root)
 {
     const std::filesystem::path package = root / "invalid_acceptance";
@@ -307,8 +258,6 @@ int main()
     try
     {
         failures += Reality03PassesStrictPackageReader(root) ? 0 : 1;
-        failures += SceneProductionOptInWritesAdmitted(root) ? 0 : 1;
-        failures += UnqualifiedOptInRemainsCandidate(root) ? 0 : 1;
         failures += InvalidAcceptanceFailsStrictReader(root) ? 0 : 1;
         failures += OpenRealityFailsWithoutPackage(root, "08.obj") ? 0 : 1;
         failures += OpenRealityFailsWithoutPackage(root, "09.obj") ? 0 : 1;
@@ -329,6 +278,6 @@ int main()
                   << " case(s)\n";
         return 1;
     }
-    std::cout << "PASS MatvolTProductionMatrixTests 8/8\n";
+    std::cout << "PASS MatvolTProductionMatrixTests 6/6\n";
     return 0;
 }

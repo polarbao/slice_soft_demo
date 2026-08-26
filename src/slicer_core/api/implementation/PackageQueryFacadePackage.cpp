@@ -225,6 +225,7 @@ ApiResult<PackageSummary> PackageQueryFacadeService::GetSummary(
             summary.package_dir = absolutePackage;
             summary.package_identity = snapshot.packageIdentity;
             summary.schema = snapshot.schema;
+            summary.production_acceptance = snapshot.productionAcceptance;
             summary.layer_count = snapshot.layerCount;
             summary.grid.width_px = snapshot.widthPx;
             summary.grid.height_px = snapshot.heightPx;
@@ -255,6 +256,7 @@ ApiResult<PackageSummary> PackageQueryFacadeService::GetSummary(
         summary.package_dir = absolutePackage;
         summary.package_identity = snapshot.package.packageIdentity;
         summary.schema = snapshot.validation.schema;
+        summary.production_acceptance = "legacy_production";
         summary.layer_count = snapshot.validation.layer_count;
         summary.grid.width_px = snapshot.validation.width_px;
         summary.grid.height_px = snapshot.validation.height_px;
@@ -471,7 +473,14 @@ ApiResult<VerifyResult> PackageQueryFacadeService::Verify(
                     "package verification was cancelled"));
             }
             VerifyResult result;
-            result.valid = true;
+            result.production_acceptance = snapshot.productionAcceptance;
+            result.valid = snapshot.productionAcceptance == "admitted";
+            if (!result.valid)
+            {
+                result.errors.push_back(PackageValidationError{
+                    "E_PACKAGE_PRODUCTION_NOT_ADMITTED",
+                    "RGBWSVT package is structurally valid but not production admitted"});
+            }
             result.layer_count = snapshot.layerCount;
             result.per_layer_checksum.reserve(snapshot.layers.size());
             for (const RgbwsvtPackageLayer& layer : snapshot.layers)
@@ -495,6 +504,7 @@ ApiResult<VerifyResult> PackageQueryFacadeService::Verify(
 
         VerifyResult result;
         result.valid = true;
+        result.production_acceptance = "legacy_production";
         result.layer_count = snapshot.validation.layer_count;
         result.per_layer_checksum.reserve(
             snapshot.validation.layer_checksums.size());

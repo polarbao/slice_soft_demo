@@ -41,13 +41,18 @@ def Main() -> int:
     )
     Require(
         factory,
-        "options.transfer_scene_production_opt_in = true;",
-        "RGBWSVT Scene entry must carry the explicit production opt-in",
+        "TransferSceneProductionAdmission admission;",
+        "RGBWSVT Scene entry must construct the private production admission token",
     )
     Forbid(
         factory,
         "transfer_scene_candidate",
         "obsolete RGBWSVT candidate flag must not remain in the production factory",
+    )
+    Forbid(
+        factory,
+        "transfer_scene_production_opt_in",
+        "forgeable RGBWSVT production opt-in bool must not remain",
     )
     Require(
         adapter,

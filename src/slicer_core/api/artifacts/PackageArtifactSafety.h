@@ -25,6 +25,7 @@ struct PackageArtifactIdentity
 struct PackageArtifactRecoveryResult
 {
     bool success{false};
+    bool target_removed{false};
     bool target_restored{false};
     bool staging_removed{false};
     bool backup_removed{false};
@@ -125,6 +126,16 @@ public:
  * @return 幂等恢复证据；失败时保留状态不确定的产物。
  */
 [[nodiscard]] PackageArtifactRecoveryResult RecoverPackageArtifacts(
+    const PackageArtifactIdentity& identity,
+    const PackageArtifactValidator& validator) noexcept;
+
+/**
+ * @brief 删除本作业租约下新产生且经指定验证器确认的拒绝产物。
+ * @param identity 已验证且当前租约仍由本作业持有的产物标识。
+ * @param validator 只接受本次允许删除的拒绝产物的严格验证器。
+ * @return 删除证据；所有权、路径或验证不闭合时保留目标并失败。
+ */
+[[nodiscard]] PackageArtifactRecoveryResult RemoveRejectedPublishedPackage(
     const PackageArtifactIdentity& identity,
     const PackageArtifactValidator& validator) noexcept;
 

@@ -4171,7 +4171,7 @@ bool IsTransferSceneProductionOptIn(
     const SliceConfig& config,
     const SliceRunOptions& options)
 {
-    return options.transfer_scene_production_opt_in
+    return options.transfer_scene_production_admission != nullptr
         && config.transfer_channel_policy.enabled
         && options.instanceoverride.has_value()
         && options.inputoverride.has_value()

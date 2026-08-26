@@ -162,10 +162,21 @@ bool SevenChannelQueriesSucceed()
     return Expect(summary.IsOk(), "RGBWSVT summary succeeds")
         && Expect(summary.Value()->channels.size() == 7U, "summary has seven channels")
         && Expect(summary.Value()->channels.back() == "T", "summary ends with T")
+        && Expect(
+            summary.Value()->production_acceptance
+                == "rgbwsvt_candidate_unvalidated",
+            "summary exposes candidate production acceptance")
         && Expect(layer.IsOk(), "RGBWSVT descriptor succeeds")
         && Expect(layer.Value()->print_pixels.size() == 7U, "descriptor has seven counts")
         && Expect(layer.Value()->print_pixels[6U] == 1U, "descriptor sees T print")
-        && Expect(verified.IsOk() && verified.Value()->valid, "RGBWSVT verify succeeds")
+        && Expect(verified.IsOk() && !verified.Value()->valid,
+                  "candidate RGBWSVT is not production valid")
+        && Expect(
+            verified.Value()->production_acceptance
+                == "rgbwsvt_candidate_unvalidated",
+            "verify exposes candidate production acceptance")
+        && Expect(!verified.Value()->errors.empty(),
+                  "candidate verify explains production rejection")
         && Expect(verified.Value()->per_layer_checksum[0U].size() == 7U, "verify has seven checksums")
         && Expect(report.IsOk(), "RGBWSVT report read succeeds")
         && Expect(rendered.IsOk(), "T single-channel preview succeeds")

@@ -357,6 +357,8 @@ bool HostPackageReviewController::LoadVerification(QString* error)
         return false;
     }
     m_review.valid = response.value(QStringLiteral("valid")).toBool();
+    m_review.productionacceptance = response.value(
+        QStringLiteral("productionAcceptance")).toString();
     const QJsonArray errors = response.value(QStringLiteral("errors")).toArray();
     for (const QJsonValue& value : errors)
     {
@@ -395,6 +397,8 @@ bool HostPackageReviewController::LoadSummary(QString* error)
     m_review.packageidentity = response.value(
         QStringLiteral("packageIdentity")).toString();
     m_review.schema = response.value(QStringLiteral("schema")).toString();
+    const QString summaryProductionAcceptance = response.value(
+        QStringLiteral("productionAcceptance")).toString();
     m_review.layercount = response.value(QStringLiteral("layerCount")).toInt();
     m_review.bitdepth = response.value(QStringLiteral("bitDepth")).toInt();
     m_review.polarity = response.value(QStringLiteral("polarity")).toString();
@@ -422,7 +426,13 @@ bool HostPackageReviewController::LoadSummary(QString* error)
             && m_review.channels.size() == 6)
         || (m_review.schema == QStringLiteral("p0.rgbwsvt.1")
             && m_review.channels.size() == 7);
+    const bool productionAcceptanceMatches =
+        !summaryProductionAcceptance.isEmpty()
+        && summaryProductionAcceptance == m_review.productionacceptance
+        && (m_review.schema != QStringLiteral("p0.rgbwsvt.1")
+            || summaryProductionAcceptance == QStringLiteral("admitted"));
     if (!protocolMatchesChannels
+        || !productionAcceptanceMatches
         || m_review.bitdepth != 8
         || m_review.polarity != QStringLiteral("black_is_print")
         || !IsFrozenChannelSet(m_review.channels)
@@ -434,8 +444,9 @@ bool HostPackageReviewController::LoadSummary(QString* error)
         if (error != nullptr)
         {
             *error = QStringLiteral(
-                "生产包摘要违反冻结协议：schema=%1 bitDepth=%2 polarity=%3 channels=%4")
+                "生产包摘要违反冻结协议：schema=%1 acceptance=%2 bitDepth=%3 polarity=%4 channels=%5")
                          .arg(m_review.schema)
+                         .arg(summaryProductionAcceptance)
                          .arg(m_review.bitdepth)
                          .arg(m_review.polarity)
                          .arg(m_review.channels.join(QLatin1Char(',')));

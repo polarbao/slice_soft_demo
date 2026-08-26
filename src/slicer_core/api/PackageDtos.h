@@ -24,6 +24,7 @@ struct PackageSummary
     std::filesystem::path package_dir;
     std::string package_identity;
     std::string schema;
+    std::string production_acceptance;
     int layer_count{0};
     PackageGrid grid;
     std::vector<std::string> channels{"R", "G", "B", "W", "S", "V"};
@@ -78,6 +79,7 @@ struct PackageValidationError
 struct VerifyResult
 {
     bool valid{false};
+    std::string production_acceptance;
     std::vector<PackageValidationError> errors;
     std::vector<std::vector<std::uint64_t>> per_layer_checksum;
     int layer_count{0};

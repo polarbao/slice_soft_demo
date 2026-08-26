@@ -41,6 +41,7 @@ struct hostpackagereview
     QString packagedirectory;
     QString packageidentity;
     QString schema;
+    QString productionacceptance;
     QString polarity;
     QStringList channels;
     QStringList verificationerrors;

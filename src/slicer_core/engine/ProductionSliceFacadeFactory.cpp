@@ -21,6 +21,16 @@
 
 namespace slicer_core::engine
 {
+
+class TransferProductionEntry final
+{
+public:
+    static api::ApiResult<api::SliceResult> Run(
+        const api::SliceRequest& sliceRequest,
+        const api::ICancelToken& cancelToken,
+        const api::ProgressSink& progressSink);
+};
+
 namespace
 {
 
@@ -235,7 +245,8 @@ api::ApiResult<api::SliceResult> RunExistingProductionEntry(
 api::ApiResult<api::SliceResult> RunTransferProductionEntry(
     const api::SliceRequest& sliceRequest,
     const api::ICancelToken& cancelToken,
-    const api::ProgressSink& progressSink)
+    const api::ProgressSink& progressSink,
+    const TransferSceneProductionAdmission& admission)
 {
     if (cancelToken.IsCancelRequested())
     {
@@ -330,7 +341,7 @@ api::ApiResult<api::SliceResult> RunTransferProductionEntry(
             model->sourcepath,
             model->format};
         options.instanceoverride = visibleInstance->instance;
-        options.transfer_scene_production_opt_in = true;
+        options.transfer_scene_production_admission = &admission;
 
         const SliceRunResult produced = run_slicer(profilePath, options);
         api::SliceResult result;
@@ -373,7 +384,8 @@ api::ApiResult<api::SliceResult> RunProductionEntry(
     }
     if (sliceRequest.output_contract == CurrentRgbwsvtProtocol().schema)
     {
-        return RunTransferProductionEntry(sliceRequest, cancelToken, progressSink);
+        return TransferProductionEntry::Run(
+            sliceRequest, cancelToken, progressSink);
     }
     return api::ApiResult<api::SliceResult>::Failure(
         MakeError(
@@ -383,6 +395,16 @@ api::ApiResult<api::SliceResult> RunProductionEntry(
 }
 
 }  // namespace
+
+api::ApiResult<api::SliceResult> TransferProductionEntry::Run(
+    const api::SliceRequest& sliceRequest,
+    const api::ICancelToken& cancelToken,
+    const api::ProgressSink& progressSink)
+{
+    const TransferSceneProductionAdmission admission;
+    return RunTransferProductionEntry(
+        sliceRequest, cancelToken, progressSink, admission);
+}
 
 std::unique_ptr<api::SliceFacade> CreateProductionSliceFacade()
 {
