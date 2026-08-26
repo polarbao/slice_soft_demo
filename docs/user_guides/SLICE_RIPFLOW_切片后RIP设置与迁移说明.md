@@ -24,15 +24,26 @@ package/
 
 ## 2. 设置与运行
 
-在右侧“RIP 设置”页配置渲染意图、白色语义、ICC、失败策略、输出验证、grayBits 参考阈值和超时。
+在右侧“RIP 设置”页配置渲染意图、RIP 颜色模式、ICC、失败策略、输出验证、grayBits 参考阈值和超时。
 “切片完成后自动处理”默认关闭；手动与自动模式使用同一个 QProcess 控制器和同一组前置/输出
 检查。自动模式只在切片成功且结果严格加载成功后启动。
 
 输入与输出 TIFF 检查在后台执行，验证期间仍可取消。启动前会冻结 `manifest.json` 与每个输入层的
 canonical path、大小和 SHA-256，发布 `rip` 前再次核对；外部 RIP 若改写输入，结果不会发布。
 
-当前 Package 尚未提供 `whiteSemantics` 时，“跟随切片包”会保持禁用；本地候选验证可显式选择
-“透明”。颜色模式只允许 0。grayBits 只校验真实输出范围，不会向当前 RIP CLI 传入算法参数。
+RIP 颜色模式与新版 `--transparent` 参数一一对应：
+
+```text
+0 透明
+1 不透
+2 肤色
+3 白色 30
+4 白色 50
+```
+
+旧版“跟随切片包”不再参与映射；旧设置迁移时会回落到 0，并关闭自动 RIP，避免静默改变工艺。
+独立的“纹理/浮雕模式”对应 `--colormode`，当前仍只允许 0。grayBits 只校验真实输出范围，
+不会向当前 RIP CLI 传入算法参数。
 
 “输出验证”默认选择“严格 S2（可发布）”。只有需要采集当前 RIP 的实际通道证据时，才显式选择
 “诊断保存（不可打印）”：程序仍检查输出结构、层数、尺寸和源 Package 身份，但把 W/S/V 超限
@@ -42,7 +53,7 @@ canonical path、大小和 SHA-256，发布 `rip` 前再次核对；外部 RIP �
 
 ```text
 输入：p0.rgbwsv.2、unsigned 8bit、RGBWSV、contiguous、stripped
-设置：explicit_transparent、colorMode=0、deviceGrayBits=2
+设置：transparentMode=0..4、colorMode=0、deviceGrayBits=1/2（仅输出准入期望）
 输出：至少 7 通道、unsigned 8bit、contiguous、stripped
 命名：rip_%06d.tif
 ```
@@ -53,8 +64,8 @@ DPI 不是当前 RIP API/CLI 的输入参数，也不参与 RIP 前置或发布�
 当前 RIP 会把非 4 对齐宽度向右补齐 1..3 像素；程序只在高度不变且补齐值精确等于 4 像素对齐
 结果时裁回 Package 原宽。其他缩放、扩宽或高度变化仍视为数据错误。
 
-tiled、缺层、非确定性尺寸差异、输出 W/S/V 超限、灰阶 1 实测超限、opaque 灰阶 2 实测
-W 超限及白语义冲突均不会发布 `rip`。
+tiled、缺层、非确定性尺寸差异或输出 W/S/V 超限均不会发布 `rip`。0..4 五档均已验证可完成
+RIP 进程，但每档能否形成严格 `rip` 仍以该次输出验证为准。
 
 ## 3. 迁移
 

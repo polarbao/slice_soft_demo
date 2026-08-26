@@ -21,6 +21,7 @@ if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf))
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 if ($manifest.schema -ne "slicesoft.rip.module.1" -or
     $manifest.moduleId -ne "slicesoft.external_rip" -or
+    $manifest.version -ne "1.1.0" -or
     $manifest.status -ne "LOCAL_ENGINEERING_ONLY" -or
     $manifest.externalValidation -ne "EXTERNAL_VALIDATION_DEFERRED")
 {
@@ -62,7 +63,9 @@ if (-not $SkipExecutableProbe)
 {
     $entrypoint = Join-Path $moduleRoot ([string]$manifest.entrypoint)
     $output = & $entrypoint --help 2>&1
-    if ($LASTEXITCODE -ne 0 -or ($output -join "`n") -notmatch "RipSlicer")
+    if ($LASTEXITCODE -ne 0 -or
+        ($output -join "`n") -notmatch "RipSlicer" -or
+        ($output -join "`n") -notmatch '--transparent\s+<0-4>')
     {
         throw "RIP CLI help probe failed with exit code $LASTEXITCODE."
     }

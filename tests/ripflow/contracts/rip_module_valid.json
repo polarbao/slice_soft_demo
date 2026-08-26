@@ -1,7 +1,7 @@
 {
   "schema": "slicesoft.rip.module.1",
   "moduleId": "slicesoft.external_rip",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "status": "LOCAL_ENGINEERING_ONLY",
   "architecture": "x86_64-windows",
   "entrypoint": "rip_cli.exe",

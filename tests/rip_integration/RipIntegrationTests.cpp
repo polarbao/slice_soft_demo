@@ -6,6 +6,7 @@
 
 #include <tiffio.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
@@ -14,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -295,6 +297,11 @@ bool TestSettingsAndCommand()
         !ValidateRipSettings(settings).ok,
         "intent outside 0..3 fails") && pass;
     settings = ValidSettings(resources);
+    settings.transparent_mode = 5;
+    pass = Expect(
+        !ValidateRipSettings(settings).ok,
+        "transparent color mode outside 0..4 fails") && pass;
+    settings = ValidSettings(resources);
     settings.color_mode = 1;
     pass = Expect(
         !ValidateRipSettings(settings).ok,
@@ -323,6 +330,27 @@ bool TestSettingsAndCommand()
         && Expect(command.program.is_absolute(), "program is absolute")
         && Expect(command.arguments.size() == 18U, "all batch arguments exist")
         && pass;
+    const auto transparentArgument = std::find(
+        command.arguments.begin(), command.arguments.end(), "--transparent");
+    pass = Expect(
+        transparentArgument != command.arguments.end()
+            && std::next(transparentArgument) != command.arguments.end()
+            && *std::next(transparentArgument) == "0",
+        "default transparent color mode maps to CLI value 0") && pass;
+
+    for (int mode = 0; mode <= 4; ++mode)
+    {
+        request.settings.transparent_mode = mode;
+        const auto modeStatus = BuildRipCommand(request, &command);
+        const auto argument = std::find(
+            command.arguments.begin(), command.arguments.end(),
+            "--transparent");
+        pass = Expect(
+            modeStatus.ok && argument != command.arguments.end()
+                && std::next(argument) != command.arguments.end()
+                && *std::next(argument) == std::to_string(mode),
+            "transparent color mode maps losslessly to CLI") && pass;
+    }
 
     const std::filesystem::path escaped = root.Path() / "escaped";
     std::filesystem::create_directories(escaped);

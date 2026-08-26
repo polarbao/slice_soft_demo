@@ -78,8 +78,6 @@ private:
         int layerCount{0};
         std::uint32_t widthPx{0U};
         std::uint32_t heightPx{0U};
-        bool transparent{true};
-        bool whiteSemanticsFromManifest{false};
     };
 
     struct RuntimeMetadata
@@ -99,7 +97,6 @@ private:
         QString* error) const;
     [[nodiscard]] bool InspectPackage(
         const QString& packageDirectory,
-        const hostripsettings& settings,
         PackageMetadata* metadata,
         QString* error) const;
     void OnReadyStandardOutput();

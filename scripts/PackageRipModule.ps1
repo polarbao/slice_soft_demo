@@ -93,6 +93,13 @@ foreach ($relativePath in $payload)
         throw "Required RIP SDK file is missing: $candidate"
     }
 }
+$sourceCli = Join-Path $source "rip_cli.exe"
+$sourceHelp = & $sourceCli --help 2>&1
+if ($LASTEXITCODE -ne 0 -or
+    ($sourceHelp -join "`n") -notmatch '--transparent\s+<0-4>')
+{
+    throw "RIP SDK does not expose the required --transparent <0-4> contract."
+}
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $metadataRoot = Join-Path $repoRoot "rip_module"
@@ -140,7 +147,7 @@ try
     $manifest = [ordered]@{
         schema = "slicesoft.rip.module.1"
         moduleId = "slicesoft.external_rip"
-        version = "1.0.0"
+        version = "1.1.0"
         status = "LOCAL_ENGINEERING_ONLY"
         architecture = "x86_64-windows"
         entrypoint = "rip_cli.exe"

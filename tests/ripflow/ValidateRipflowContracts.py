@@ -25,16 +25,14 @@ def validate_settings(value):
     allowed = required | {"outputValidationMode"}
     if not isinstance(value, dict) or not required.issubset(value) or not set(value).issubset(allowed):
         raise ValueError("settings fields")
-    if value["schema"] != "slicesoft.rip.settings.1":
+    if value["schema"] != "slicesoft.rip.settings.2":
         raise ValueError("settings schema")
     if not isinstance(value["autoAfterSlice"], bool) or not isinstance(value["continueOnError"], bool):
         raise ValueError("settings booleans")
-    if value["renderIntent"] not in range(4) or value["colorMode"] != 0:
+    if (value["renderIntent"] not in range(4)
+            or value["transparentMode"] not in range(5)
+            or value["colorMode"] != 0):
         raise ValueError("settings numeric enum")
-    if value["transparentMode"] not in {
-        "follow_manifest", "explicit_transparent", "explicit_opaque"
-    }:
-        raise ValueError("transparent mode")
     if value["deviceGrayBits"] not in {1, 2}:
         raise ValueError("device gray bits")
     if value.get("outputValidationMode", "strict_s2") not in {
@@ -59,6 +57,8 @@ def validate_module(value):
     require_exact(value, required)
     if value["schema"] != "slicesoft.rip.module.1" or value["moduleId"] != "slicesoft.external_rip":
         raise ValueError("module identity")
+    if value["version"] != "1.1.0":
+        raise ValueError("module version")
     if value["status"] != "LOCAL_ENGINEERING_ONLY" or value["architecture"] != "x86_64-windows":
         raise ValueError("module status")
     if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED":
@@ -86,7 +86,7 @@ def validate_result(value):
         "schema", "status", "externalValidation", "sourcePackage",
         "sourceManifestSha256", "module", "settings", "process", "output",
     })
-    if value["schema"] != "slicesoft.rip.result.1" or value["status"] not in {"succeeded", "failed", "cancelled"}:
+    if value["schema"] != "slicesoft.rip.result.2" or value["status"] not in {"succeeded", "failed", "cancelled"}:
         raise ValueError("result identity")
     if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED" or not HEX64.fullmatch(value["sourceManifestSha256"]):
         raise ValueError("result external state")
@@ -102,7 +102,7 @@ def validate_diagnostic(value):
         "schema", "status", "externalValidation", "sourcePackage",
         "sourceManifestSha256", "module", "settings", "process", "output",
     })
-    if value["schema"] != "slicesoft.rip.diagnostic.1" or value["status"] != "diagnostic_unvalidated":
+    if value["schema"] != "slicesoft.rip.diagnostic.2" or value["status"] != "diagnostic_unvalidated":
         raise ValueError("diagnostic identity")
     if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED" or not HEX64.fullmatch(value["sourceManifestSha256"]):
         raise ValueError("diagnostic external state")
@@ -153,6 +153,9 @@ def main():
     validate_diagnostic(diagnostic)
 
     case = copy.deepcopy(settings)
+    case["transparentMode"] = 5
+    expect_failure(validate_settings, case, "unsupported transparent color mode")
+    case = copy.deepcopy(settings)
     case["autoAfterSlice"] = True
     case["colorMode"] = 7
     expect_failure(validate_settings, case, "unsupported color mode")
@@ -168,7 +171,7 @@ def main():
     case = copy.deepcopy(diagnostic)
     case["output"]["s2PublicationEligible"] = True
     expect_failure(validate_diagnostic, case, "diagnostic print claim")
-    print("RIPFLOW_CONTRACTS_PASS positive=4 negative=5")
+    print("RIPFLOW_CONTRACTS_PASS positive=4 negative=6")
 
 
 if __name__ == "__main__":

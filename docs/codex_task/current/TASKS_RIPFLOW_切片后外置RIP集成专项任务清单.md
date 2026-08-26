@@ -1,7 +1,7 @@
 # TASKS_RIPFLOW 切片后外置 RIP 集成专项任务清单
 
 > 文档状态：**SLICER_SIDE_COMPLETE / EXTERNAL_VALIDATION_DEFERRED**
-> 版本：v2.2 ｜ 日期：2026-08-18 ｜ 用户授权：2026-08-17、2026-08-18
+> 版本：v2.3 ｜ 日期：2026-08-25 ｜ 用户授权：2026-08-17、2026-08-18、2026-08-25
 > 定位：独立补充专项，不占 Stage 编号
 > 权威决策：`docs/slice/DOC/DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
 > 准备文档：`docs/slice/DOC/DOC_PREP_RIPFLOW_外置模块设置与自动后处理准备.md`
@@ -61,7 +61,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 | RIPFLOW-A | 可迁移运行时与机器合同 | A-01..03 | COMPLETE |
 | RIPFLOW-B | 设置、持久化和 UI | B-01..03 | COMPLETE |
 | RIPFLOW-C | 执行、验证、发布和自动接线 | C-01..04 | COMPLETE |
-| RIPFLOW-D | 矩阵、Runtime 迁移、本地收口和缺陷修复 | D-01..06 | COMPLETE |
+| RIPFLOW-D | 矩阵、Runtime 迁移、本地收口和缺陷修复 | D-01..07 | COMPLETE |
 | RIPFLOW-E | 外部分发与生产验收 | E-01..02 | BLOCKED_EXTERNAL |
 
 依赖主链：
@@ -70,7 +70,7 @@ S1/S2、PM_SPI_VERSION、11 导出、15 能力和 Worker 合同不变；
 00 -> A-01 -> A-02 -> A-03
           \-> B-01 -> B-02 -> B-03
 A-03 + B-03 -> C-01 -> C-02 -> C-03 -> C-04
-C-04 -> D-01 -> D-02 -> D-03 -> D-04 -> D-05 -> D-06
+C-04 -> D-01 -> D-02 -> D-03 -> D-04 -> D-05 -> D-06 -> D-07
 D-03 + 外部材料 -> E-01/E-02
 ```
 
@@ -427,6 +427,29 @@ W=255、limit=6、坐标 `(282,151)`。这证明此前中止发生在切片宿�
 再次部署因用户当前运行中的 `slicer_ui_host_sim.exe`（PID 8244）被部署脚本主动拒绝；已部署版本
 包含诊断功能，最新自测断言构建产物须在关闭该进程后再同步，未强制终止用户进程。
 
+### RIPFLOW-D-07 新版 RIP `--transparent 0..4` 适配
+
+**状态：COMPLETE / PASS（2026-08-25）**
+
+**依赖：** D-06；用户确认新版模式映射
+
+**内容：** 更新 `rip_project` 新版 EXE/DLL/私有 TIFF 运行库；把原二值白色语义设置升级为
+`--transparent` 五档 RIP 颜色模式：`0=透明、1=不透、2=肤色、3=白色30、4=白色50`。独立
+`--colormode` 继续固定为 0。设置/结果合同升级为 v2，旧 v1 显式模式可迁移；旧
+`follow_manifest` 因语义已不再等价而迁移到 0 并强制关闭自动 RIP。
+
+**验收：** UI 五项和值完全对应；核心设置只允许 0..4；命令参数无损传递；旧模块与非法值
+fail-closed；模块包必须探测到 `--transparent <0-4>`；新版二进制 hash 与 Runtime 一致；真实
+0..4 五档均能完成 RIP；严格/诊断隔离、自动默认关闭和 S2 Gate 不变。
+
+**实际结果：** 模块版本提升到 `1.1.0`，settings/result/diagnostic 合同提升到 v2；Release
+`ALL_BUILD` PASS，RIP 定向 CTest 7/7 PASS，合同门禁 `positive=4 negative=6` PASS。新版
+`rip_cli.exe`、`RipSlicer.dll`、`tiff.dll` 已按源文件 SHA-256 一致打入模块。使用 3 层真实
+Package 对 0..4 五档逐一运行，均为 `exitCode=0`、3/3 输出；宿主模式 4 诊断作业生成
+`slicesoft.rip.diagnostic.2`，设置快照保持 `transparentMode=4`。默认 Runtime 因用户正在运行
+其中的宿主进程未覆盖，已另外完整部署并验证 `runtime/slicesoft-rip-v1.1/Release`；未强制终止
+用户进程。外部分发和打印侧生产验收仍保持 `BLOCKED_EXTERNAL`。
+
 ## 9. RIPFLOW-E 外部阻塞
 
 ### RIPFLOW-E-01 二进制、lcms2、ICC 与私有 LibTIFF 分发闭合
@@ -484,3 +507,4 @@ E-01/E-02 未完成不阻止本地专项标记 `SLICER_SIDE_COMPLETE`，但阻�
 | 2026-08-18 | v2.0 | D-05 完成：确认 RIP 不读取输入 DPI，剔除切片宿主 600x600 前置限制与 S1/S2 DPI Gate；非 600/缺失 DPI 元数据单测、Release 构建、6/6 CTest 及真实 635x600 Package 取消作业 PASS |
 | 2026-08-18 | v2.1 | D-06 完成：新增默认关闭的隔离诊断保存；真实 175 层 RIP exitCode=0、175/175 输出保存到 `rip_diagnostic`，记录 W/S/V 各 10,875,980 个超限样本且不生成严格 `rip`；S2 语义修订继续等待供应方/打印侧解释 |
 | 2026-08-18 | v2.2 | D-06 最终复验：合同门禁、Release Hostx64 构建与 RIP 定向 CTest 6/6 PASS；记录默认 Runtime 被运行中 PID 8244 锁定，未强制终止用户进程，关闭后再同步最新自测断言构建 |
+| 2026-08-25 | v2.3 | D-07 完成：接入新版 RIP 模块与 `--transparent 0..4` 五档颜色模式；合同 v2、旧设置迁移、模块版本/能力探测、Release 全构建、7/7 定向 CTest、真实五档运行与隔离 Runtime 部署 PASS；外部状态不升级 |

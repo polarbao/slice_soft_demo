@@ -41,12 +41,11 @@ void HostRipSettingsPanel::BuildInterface()
     m_intentCombo->addItem(QStringLiteral("绝对色度"), 3);
     m_transparentCombo = new QComboBox(processingGroup);
     m_transparentCombo->setObjectName(QStringLiteral("hostRipTransparentModeCombo"));
-    m_transparentCombo->addItem(
-        QStringLiteral("跟随切片包"), QStringLiteral("follow_manifest"));
-    m_transparentCombo->addItem(
-        QStringLiteral("透明"), QStringLiteral("explicit_transparent"));
-    m_transparentCombo->addItem(
-        QStringLiteral("不透明"), QStringLiteral("explicit_opaque"));
+    m_transparentCombo->addItem(QStringLiteral("透明"), 0);
+    m_transparentCombo->addItem(QStringLiteral("不透"), 1);
+    m_transparentCombo->addItem(QStringLiteral("肤色"), 2);
+    m_transparentCombo->addItem(QStringLiteral("白色 30"), 3);
+    m_transparentCombo->addItem(QStringLiteral("白色 50"), 4);
     m_colorModeCombo = new QComboBox(processingGroup);
     m_colorModeCombo->setObjectName(QStringLiteral("hostRipColorModeCombo"));
     m_colorModeCombo->addItem(QStringLiteral("默认模式"), 0);
@@ -82,8 +81,8 @@ void HostRipSettingsPanel::BuildInterface()
     m_timeoutSpin->setSuffix(QStringLiteral(" 秒"));
     form->addRow(m_autoCheck);
     form->addRow(QStringLiteral("渲染意图"), m_intentCombo);
-    form->addRow(QStringLiteral("白色语义"), m_transparentCombo);
-    form->addRow(QStringLiteral("颜色模式"), m_colorModeCombo);
+    form->addRow(QStringLiteral("RIP 颜色模式"), m_transparentCombo);
+    form->addRow(QStringLiteral("纹理/浮雕模式"), m_colorModeCombo);
     form->addRow(QStringLiteral("输入 ICC"), m_inputIccCombo);
     form->addRow(QStringLiteral("输出 ICC"), m_outputIccCombo);
     form->addRow(QStringLiteral("输出验证"), m_outputValidationCombo);
@@ -175,7 +174,7 @@ hostripsettings HostRipSettingsPanel::Settings() const
     hostripsettings settings;
     settings.autoafterslice = m_autoCheck->isChecked();
     settings.renderintent = m_intentCombo->currentData().toInt();
-    settings.transparentmode = m_transparentCombo->currentData().toString();
+    settings.transparentmode = m_transparentCombo->currentData().toInt();
     settings.colormode = m_colorModeCombo->currentData().toInt();
     settings.inputicc = m_inputIccCombo->currentData().toString();
     settings.outputicc = m_outputIccCombo->currentData().toString();

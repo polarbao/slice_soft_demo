@@ -211,7 +211,7 @@ bool HostRipJobController::CheckRequest(
             settings, &validationError)
         && InspectRuntime(moduleDirectory, &runtime, &validationError)
         && InspectPackage(
-            packageDirectory, settings, &package, &validationError);
+            packageDirectory, &package, &validationError);
     if (!valid && error != nullptr)
     {
         *error = validationError;
@@ -247,6 +247,8 @@ bool HostRipJobController::InspectRuntime(
             != QStringLiteral("slicesoft.rip.module.1")
         || manifest.value(QStringLiteral("moduleId")).toString()
             != QStringLiteral("slicesoft.external_rip")
+        || manifest.value(QStringLiteral("version")).toString()
+            != QStringLiteral("1.1.0")
         || manifest.value(QStringLiteral("status")).toString()
             != QStringLiteral("LOCAL_ENGINEERING_ONLY")
         || manifest.value(QStringLiteral("externalValidation")).toString()
@@ -320,7 +322,6 @@ bool HostRipJobController::InspectRuntime(
 
 bool HostRipJobController::InspectPackage(
     const QString& packageDirectory,
-    const hostripsettings& settings,
     PackageMetadata* metadata,
     QString* error) const
 {
@@ -411,39 +412,6 @@ bool HostRipJobController::InspectPackage(
         metadata->layerPaths.push_back(absolutePath);
     }
 
-    const QString manifestWhite = manifest.value(
-        QStringLiteral("whiteSemantics")).toString();
-    const bool hasManifestWhite = manifestWhite == QStringLiteral("transparent")
-        || manifestWhite == QStringLiteral("opaque");
-    bool transparent = true;
-    if (settings.transparentmode == QStringLiteral("follow_manifest"))
-    {
-        if (!hasManifestWhite)
-        {
-            if (error != nullptr)
-            {
-                *error = QStringLiteral(
-                    "切片包未声明 whiteSemantics，不能使用跟随切片包模式。");
-            }
-            return false;
-        }
-        transparent = manifestWhite == QStringLiteral("transparent");
-    }
-    else
-    {
-        transparent = settings.transparentmode
-            == QStringLiteral("explicit_transparent");
-        if (hasManifestWhite
-            && transparent != (manifestWhite == QStringLiteral("transparent")))
-        {
-            if (error != nullptr)
-            {
-                *error = QStringLiteral(
-                    "RIP 白色语义设置与 manifest 权威值冲突。");
-            }
-            return false;
-        }
-    }
     metadata->packageDirectory = package;
     metadata->inputDirectory = inputDirectory;
     metadata->manifestPath = manifestPath;
@@ -451,8 +419,6 @@ bool HostRipJobController::InspectPackage(
     metadata->layerCount = layerCount;
     metadata->widthPx = static_cast<std::uint32_t>(width);
     metadata->heightPx = static_cast<std::uint32_t>(height);
-    metadata->transparent = transparent;
-    metadata->whiteSemanticsFromManifest = hasManifestWhite;
     return true;
 }
 
@@ -481,7 +447,7 @@ bool HostRipJobController::Start(
     QString validationError;
     if (!HostRipSettingsStore::Validate(settings, &validationError)
         || !InspectRuntime(moduleDirectory, &m_runtime, &validationError)
-        || !InspectPackage(packageDirectory, settings, &m_package, &validationError))
+        || !InspectPackage(packageDirectory, &m_package, &validationError))
     {
         if (error != nullptr)
         {
@@ -654,7 +620,7 @@ void HostRipJobController::StartExternalProcess()
     slicesoft::rip::RipSettings coreSettings;
     coreSettings.auto_run_after_slice = m_settings.autoafterslice;
     coreSettings.intent = m_settings.renderintent;
-    coreSettings.transparent = m_package.transparent;
+    coreSettings.transparent_mode = m_settings.transparentmode;
     coreSettings.color_mode = m_settings.colormode;
     coreSettings.continue_on_layer_error = m_settings.continueonerror;
     coreSettings.gray_bits = m_settings.devicegraybits;
@@ -946,7 +912,7 @@ void HostRipJobController::FinalizeValidatedOutput(
         maxima[2] = (std::max)(maxima[2], static_cast<int>(layer.maximum_varnish));
     }
     const QJsonObject settingsObject{
-        {QStringLiteral("schema"), QStringLiteral("slicesoft.rip.settings.1")},
+        {QStringLiteral("schema"), QStringLiteral("slicesoft.rip.settings.2")},
         {QStringLiteral("autoAfterSlice"), m_settings.autoafterslice},
         {QStringLiteral("renderIntent"), m_settings.renderintent},
         {QStringLiteral("transparentMode"), m_settings.transparentmode},
@@ -1022,8 +988,8 @@ void HostRipJobController::FinalizeValidatedOutput(
     }
     const QJsonObject result{
         {QStringLiteral("schema"), diagnostic
-             ? QStringLiteral("slicesoft.rip.diagnostic.1")
-             : QStringLiteral("slicesoft.rip.result.1")},
+             ? QStringLiteral("slicesoft.rip.diagnostic.2")
+             : QStringLiteral("slicesoft.rip.result.2")},
         {QStringLiteral("status"), diagnostic
              ? QStringLiteral("diagnostic_unvalidated")
              : QStringLiteral("succeeded")},

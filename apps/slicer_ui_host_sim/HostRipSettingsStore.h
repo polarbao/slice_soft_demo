@@ -9,7 +9,7 @@ struct hostripsettings
 {
     bool autoafterslice{false};
     int renderintent{0};
-    QString transparentmode{QStringLiteral("follow_manifest")};
+    int transparentmode{0};
     int colormode{0};
     QString inputicc{QStringLiteral("CmykFiles/CIERGB.icc")};
     QString outputicc{QStringLiteral("CmykFiles/CMYK.icc")};

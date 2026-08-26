@@ -1,7 +1,7 @@
 # DOC_DECISION_RIPFLOW 切片后外置 RIP 模块与自动处理边界
 
 > 文档状态：**ACCEPTED / USER AUTHORIZED**
-> 版本：v1.4 ｜ 日期：2026-08-18
+> 版本：v1.5 ｜ 日期：2026-08-25
 > 定位：独立补充专项 `RIPFLOW` 的权威边界；不占 Stage 编号，不改写 Stage 14 历史结论
 > 任务真源：`docs/codex_task/current/TASKS_RIPFLOW_切片后外置RIP集成专项任务清单.md`
 > 上游合同：`DOC_DECISION_14_S2_RIP接口合同定案.md`、`DOC_DECISION_14F_外部验证延期与接口冻结.md`
@@ -55,7 +55,9 @@ CmykFiles/JapanColor2001Coated.icc
 
 公开参数为 `--dll`、`--input/-i`、`--file/-f`、`--output/-o`、
 `--resource/-r`、`--number/-n`、`--rgb-icc`、`--cmyk-icc`、`--intent 0..3`、
-`--transparent 0|1`、`--colormode`、`--keep-going/-k`、`--quiet/-q`。
+`--transparent 0..4`、`--colormode`、`--keep-going/-k`、`--quiet/-q`。当前头文件明确
+`0=透明（光油走 V）、1=不透（光油走 W）、2=肤色、3=白色30、4=白色50`；旧 README 的
+`0|1` 描述已过时，不再作为实现依据。
 
 README 所述完整实现源文件、CMake/qmake 工程、导入库、示例和许可证并未全部随目录提供；
 因此构建与一致性说明只作 C 级自述，不能替代当前二进制实测或重编证据。
@@ -69,8 +71,8 @@ README 所述完整实现源文件、CMake/qmake 工程、导入库、示例和�
 | 输出命名 | `slice.N.tiff` | S2 要求 `rip_%06d.tif` | 校验后仅重命名，不改写像素 |
 | 输出宽度 | 非 4 对齐宽度会向上扩到 4 像素边界 | 发布结果必须与输入 Grid 身份一致 | 只允许该确定性右侧补齐，完整校验后裁掉 1..3 列；其他尺寸差异 fail-closed |
 | W/S/V 上限 | 完整 175 层实测可出现 255 | grayBits=2 时 W/S/V 必须 `<=6/9/9` | 严格模式不发布；显式诊断模式记录证据并隔离保存 |
-| 白语义 | CLI 只有 `transparent 0|1` | manifest `whiteSemantics` 为权威 | 映射未定前只允许显式候选并 fail-closed |
-| 颜色模式 | `colormode` 默认 0 | 未提供枚举和值域语义 | 首版只允许 0；其他值外部阻塞 |
+| RIP 颜色模式 | `transparent 0..4` | 新版供应方头文件与用户映射一致 | 五档显式选择并原样传参；不再映射 manifest `whiteSemantics` |
+| 纹理/浮雕模式 | `colormode` 默认 0 | 未提供其他枚举和值域语义 | 当前仍只允许 0；其他值外部阻塞 |
 | 输出合同 | 固定 7 通道、LZW，实测写入 600 x 600 元数据 | S2 还要求 stripped、层数、量化和外部极性 | 从真实 TIFF 提取像素证据；DPI 标签不作 RIP 准入或发布 Gate |
 
 Stage 14 的 `RipOutputValidator.ps1` 当前验证的是机器描述符，不是目标 RIP 真实 TIFF。
@@ -188,13 +190,13 @@ modules/rip/
 
 ## 5. RIP 设置合同
 
-RIP 设置使用独立 `slicesoft.rip.settings.1`，不并入 `HostSliceSettings` 或 workspace schema v6：
+RIP 设置使用独立 `slicesoft.rip.settings.2`，不并入 `HostSliceSettings` 或 workspace schema v6：
 
 | 字段 | 默认值 | UI/执行约束 |
 |---|---|---|
 | `autoAfterSlice` | `false` | 操作员显式开启后才自动运行 |
 | `renderIntent` | `0` | 只允许 `0..3` |
-| `transparentMode` | `follow_manifest` | 映射未闭合时不猜测；直接 0/1 仅候选诊断 |
+| `transparentMode` | `0` | `0=透明、1=不透、2=肤色、3=白色30、4=白色50`，原样传给 `--transparent` |
 | `colorMode` | `0` | 首版只允许 0，未知值 fail-closed |
 | `inputIcc` | `CmykFiles/CIERGB.icc` | 必须位于已校验模块资源或显式准入路径 |
 | `outputIcc` | `CmykFiles/CMYK.icc` | 可选择已准入 ICC；文件 hash 入结果 |
@@ -253,7 +255,8 @@ grayBits=2: W<=6、S<=9、V<=9；grayBits=1: W<=2、S<=3、V<=3。
 600 x 600 数值标签。该标签不代表对输入 Package DPI 的识别或限制，因此切片宿主不再
 以 Package DPI 拒绝启动，S1/S2 验证也不再检查 DPI 标签。Package 宽高像素 Grid 仍是尺寸身份
 的权威。`deviceGrayBits` 是输出准入期望，不是 CLI
-控制项：本地实测只证明 `explicit_transparent + grayBits=2` 子集，其他组合按真实结果决定是否发布。
+控制项：0..4 五档已证明可进入新版 RIP 并完成输出；是否满足严格 S2 发布仍按每次真实输出
+逐层检查，不能由“进程成功”替代。
 
 2026-08-18 的隔离诊断运行进一步确认：同一 175 层 Package 的 RIP 进程正常以 `exitCode=0`
 完成，175/175 个输出 TIFF 的基础结构和源身份检查通过；此前作业是被切片宿主的 S2 后置墨滴
@@ -268,7 +271,7 @@ Gate 中止，不是 RIP 算法未完成。诊断扫描得到 W/S/V 范围均为
 以下状态不得因本地开发而升级：
 
 - `colormode` 语义与有效范围未获权威说明；
-- `transparent` 与 manifest `whiteSemantics` 的映射未书面闭合；
+- 五档模式的目标打印工艺效果仍待打印侧验收；
 - W/S/V 极性仍由 RIP 与打印软件双边确认；
 - 目标打印软件 ChannelSplitter、干净机、实物打印和长稳未验收；
 - 当前二进制是否能覆盖全部 grayBits/白语义矩阵尚未证明。
@@ -319,3 +322,4 @@ W/S/V 上限时必须停止严格发布并只保留隔离诊断；需要把私�
 | 2026-08-17 | v1.2 | 受控接纳 RIP 固定的 4 像素右侧补齐：只在高度一致且宽度等于 `align_up(packageWidth,4)` 时裁回 Package 原宽；其余尺寸差异继续 fail-closed，不改变 S2 最终 Grid |
 | 2026-08-18 | v1.3 | 根据原始 `rip_project` 处理 635x600 Package 的实测，废止将输出 600x600 标签误解为输入限制；剔除宿主硬编码准入和 S1/S2 DPI Gate，宽高像素 Grid 、TIFF 布局与 W/S/V 限制不变 |
 | 2026-08-18 | v1.4 | 根据用户授权新增与严格 `rip` 隔离的 `rip_diagnostic`；真实 175 层 RIP exitCode=0 并保存 175/175 输出，记录 W/S/V `0..255` 与各 10,875,980 个超限样本；严格 S2 上限不变，后续修订等待供应方/打印侧语义证据 |
+| 2026-08-25 | v1.5 | 接纳新版 RIP `--transparent 0..4` 为五档颜色模式，废止与 manifest 白色语义的二值映射；设置/结果合同升级 v2，`--colormode` 仍固定 0；五档可执行不等于严格 S2 或打印侧生产验收 |

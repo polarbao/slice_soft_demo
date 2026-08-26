@@ -218,7 +218,7 @@ RipStatus BuildRipCommand(
         "--rgb-icc", PathArgument(inputIccPath),
         "--cmyk-icc", PathArgument(outputIccPath),
         "--intent", std::to_string(request.settings.intent),
-        "--transparent", request.settings.transparent ? "1" : "0",
+        "--transparent", std::to_string(request.settings.transparent_mode),
         "--colormode", std::to_string(request.settings.color_mode)};
     if (request.settings.continue_on_layer_error)
     {

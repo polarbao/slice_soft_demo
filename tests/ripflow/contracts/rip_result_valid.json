@@ -1,19 +1,19 @@
 {
-  "schema": "slicesoft.rip.result.1",
+  "schema": "slicesoft.rip.result.2",
   "status": "succeeded",
   "externalValidation": "EXTERNAL_VALIDATION_DEFERRED",
   "sourcePackage": "package",
   "sourceManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "module": {
     "moduleId": "slicesoft.external_rip",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   },
   "settings": {
-    "schema": "slicesoft.rip.settings.1",
+    "schema": "slicesoft.rip.settings.2",
     "autoAfterSlice": false,
     "renderIntent": 0,
-    "transparentMode": "follow_manifest",
+    "transparentMode": 0,
     "colorMode": 0,
     "inputIcc": "CmykFiles/CIERGB.icc",
     "outputIcc": "CmykFiles/CMYK.icc",

@@ -121,7 +121,7 @@ try
         --rip-job-self-test `
         --package $runtimePackage `
         --rip-module $runtimeModule `
-        --transparent-mode explicit_transparent `
+        --transparent-mode 0 `
         --gray-bits 2
     if ($LASTEXITCODE -ne 0)
     {

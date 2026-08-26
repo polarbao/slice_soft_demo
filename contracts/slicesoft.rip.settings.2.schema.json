@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "slicesoft.rip.settings.2",
+  "title": "SliceSoft external RIP settings v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "autoAfterSlice",
+    "renderIntent",
+    "transparentMode",
+    "colorMode",
+    "inputIcc",
+    "outputIcc",
+    "continueOnError",
+    "deviceGrayBits",
+    "timeoutSeconds",
+    "outputDirectoryName",
+    "existingOutputPolicy"
+  ],
+  "properties": {
+    "schema": { "const": "slicesoft.rip.settings.2" },
+    "autoAfterSlice": { "type": "boolean", "default": false },
+    "renderIntent": { "type": "integer", "minimum": 0, "maximum": 3, "default": 0 },
+    "transparentMode": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "default": 0,
+      "description": "RIP --transparent color mode: 0=transparent, 1=opaque, 2=skin, 3=white 30, 4=white 50"
+    },
+    "colorMode": { "const": 0 },
+    "inputIcc": { "$ref": "#/$defs/moduleRelativePath" },
+    "outputIcc": { "$ref": "#/$defs/moduleRelativePath" },
+    "continueOnError": { "type": "boolean", "default": false },
+    "deviceGrayBits": { "enum": [1, 2], "default": 2 },
+    "timeoutSeconds": { "type": "integer", "minimum": 1, "maximum": 86400, "default": 3600 },
+    "outputValidationMode": {
+      "enum": ["strict_s2", "diagnostic_unvalidated"],
+      "default": "strict_s2"
+    },
+    "outputDirectoryName": { "const": "rip" },
+    "existingOutputPolicy": { "const": "fail_closed" }
+  },
+  "$defs": {
+    "moduleRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+$"
+    }
+  }
+}

@@ -460,7 +460,9 @@ int RunRipUiSmoke(const QString& modulePath)
         || outputValidationCombo == nullptr
         || runButton == nullptr || cancelButton == nullptr
         || runtimeStatus == nullptr || autoCheck->isChecked()
-        || intentCombo->count() != 4 || transparentCombo->count() != 3
+        || intentCombo->count() != 4 || transparentCombo->count() != 5
+        || transparentCombo->itemData(0).toInt() != 0
+        || transparentCombo->itemData(4).toInt() != 4
         || colorModeCombo->count() != 1 || runButton->isEnabled()
         || outputValidationCombo->count() != 2
         || outputValidationCombo->currentData().toString()
@@ -479,7 +481,7 @@ int RunRipUiSmoke(const QString& modulePath)
 int RunRipJobSelfTest(
     const QString& packageDirectory,
     const QString& moduleDirectory,
-    const QString& transparentMode,
+    const int transparentMode,
     const int grayBits,
     const int timeoutSeconds,
     const int cancelAfterMs,
@@ -635,7 +637,7 @@ int main(int argc, char* argv[])
             << "--rip-module-self-test [--rip-module <path>] | "
             << "--rip-ui-self-test | "
             << "--rip-job-self-test --package <path> "
-            << "--rip-module <path> [--transparent-mode <mode>] "
+            << "--rip-module <path> [--transparent-mode <0-4>] "
             << "[--gray-bits <1|2>] [--timeout-seconds <n>] "
             << "[--output-validation-mode <strict_s2|diagnostic_unvalidated>] "
             << "[--cancel-after-ms <n>] "
@@ -700,8 +702,19 @@ int main(int argc, char* argv[])
     }
     if (HasArgument(arguments, QStringLiteral("--rip-job-self-test")))
     {
-        const QString transparentMode = FindArgumentValue(
+        const QString transparentModeValue = FindArgumentValue(
             arguments, QStringLiteral("--transparent-mode"));
+        bool transparentModeValid{false};
+        const int transparentMode = transparentModeValue.toInt(
+                &transparentModeValid);
+        if (!transparentModeValue.isEmpty() && !transparentModeValid)
+        {
+            QTextStream(stderr)
+                << "RIPFLOW_JOB_SELF_TEST_ARGUMENT_FAILED: "
+                << "--transparent-mode must be an integer in 0..4"
+                << Qt::endl;
+            return 16;
+        }
         bool grayBitsValid{false};
         const int grayBits = FindArgumentValue(
             arguments, QStringLiteral("--gray-bits")).toInt(
@@ -721,9 +734,7 @@ int main(int argc, char* argv[])
         return RunRipJobSelfTest(
             FindArgumentValue(arguments, QStringLiteral("--package")),
             FindArgumentValue(arguments, QStringLiteral("--rip-module")),
-            transparentMode.isEmpty()
-                ? QStringLiteral("explicit_transparent")
-                : transparentMode,
+            transparentModeValid ? transparentMode : 0,
             grayBitsValid ? grayBits : 2,
             timeoutValid ? timeoutSeconds : 60,
             cancelValid ? cancelAfterMs : -1,

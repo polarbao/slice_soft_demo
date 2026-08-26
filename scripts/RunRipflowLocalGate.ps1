@@ -7,8 +7,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$SourcePackage,
     [string]$OutputRoot = "output/ripflow/local_gate",
-    [ValidateSet("explicit_transparent", "explicit_opaque")]
-    [string]$TransparentMode = "explicit_transparent",
+    [ValidateRange(0, 4)]
+    [int]$TransparentMode = 0,
     [ValidateSet(1, 2)]
     [int]$GrayBits = 2
 )
@@ -94,7 +94,7 @@ $publishedLayers = @(
     Get-ChildItem -LiteralPath (Join-Path $package "rip") `
         -Filter "rip_*.tif" -File
 )
-if ($result.schema -ne "slicesoft.rip.result.1" -or
+if ($result.schema -ne "slicesoft.rip.result.2" -or
     $result.status -ne "succeeded" -or
     $result.externalValidation -ne "EXTERNAL_VALIDATION_DEFERRED" -or
     $publishedLayers.Count -ne [int]$result.output.layerCount)

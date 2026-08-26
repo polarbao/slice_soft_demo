@@ -54,7 +54,19 @@ def main() -> int:
         and 'QStringLiteral("s2PublicationEligible"), false' in controller,
         "diagnostic output is not isolated from strict S2 publication",
     )
-    print("RIPFLOW_WIRING_PASS strict_hook=1 shell_free=1 sibling_paths=1 diagnostic_isolated=1")
+    require(
+        all(
+            f'QStringLiteral("{label}")' in panel
+            for label in ("透明", "不透", "肤色", "白色 30", "白色 50")
+        )
+        and "coreSettings.transparent_mode = m_settings.transparentmode" in controller
+        and "manifestWhite" not in controller,
+        "RIP --transparent 0..4 modes are not wired losslessly",
+    )
+    print(
+        "RIPFLOW_WIRING_PASS strict_hook=1 shell_free=1 sibling_paths=1 "
+        "diagnostic_isolated=1 transparent_modes=5"
+    )
     return 0
 
 
