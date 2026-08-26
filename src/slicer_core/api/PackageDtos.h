@@ -43,8 +43,11 @@ struct LayerDescriptor
     int height_px{0};
     std::filesystem::path tiff_path;
     std::vector<std::string> channels{"R", "G", "B", "W", "S", "V"};
-    std::vector<std::uint64_t> print_pixels{6U, 0U};
-    std::vector<std::uint64_t> empty_pixels{6U, 0U};
+    // 注意：不可写成 {6U, 0U}——那是初始化列表构造，得到的是【两个元素 [6, 0]】，
+    // 而不是「六个 0」。原为 std::array<std::uint64_t, 6>{}，语义是六个 0；
+    // 改用 vector 时必须显式走 (count, value) 构造才能保持该语义。
+    std::vector<std::uint64_t> print_pixels = std::vector<std::uint64_t>(6U, 0U);
+    std::vector<std::uint64_t> empty_pixels = std::vector<std::uint64_t>(6U, 0U);
     std::string storage_mode;
 };
 
