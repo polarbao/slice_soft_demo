@@ -1,7 +1,7 @@
 # DOC_ANALYSIS MATVOL-T 合并对接面与冲突清单
 
 > 文档状态：**参考件 / 供 MATVOL 与 MATVOL-T 两条线对接时使用**
-> 版本：v1.1 ｜ 日期：2026-08-26
+> 版本：v1.2 ｜ 日期：2026-08-26
 > 撰写方：MATVOL 专项（`product/packaged-slicer`）
 > 对接方：MATVOL-T 专项（`codex/matvol-t-channel-protocol`，工作树 `slice_soft_demo_matvol_t`）
 >
@@ -82,6 +82,40 @@ MATVOL-T 的任务卡把 `08/09` 标为 `BLOCKED EXPECTED` 且不予修复，理
 
 此事实本轮曾让 MATVOL 侧误判为「材质 02 完全缺失」——实为断言在找一个该资产上不存在的颜色。**涉及这三个资产的任何颜色断言都必须按资产取色**。
 
+## 3.5 合并时必须同步修改 T-08 门禁的两条断言（v1.2 新增）
+
+2026-08-26 代跑 T-08 门禁（PASS）后确认：`reality08` 与 `reality09` 两条用例的断言是
+**`expected_topology_rejection`**，即门禁是靠「断言 08/09 被拒」而通过的。
+
+因此 §3.1 的处置不是单向的加法。一旦 `maxBoundaryEdges` 接入 `LoadTransferChannelPolicy`
+（该函数当前只解析 `selfIntersectionPolicy` 与 `maxSelfIntersectionPairs` 两项），
+`08/09` 将不再被拒，**该门禁随即由 PASS 转 FAIL**。
+
+⇒ 合并时须**同时**完成三件事，缺一即红：
+1. `LoadTransferChannelPolicy` 增加 `maxBoundaryEdges` 解析（结构体字段随合并自动获得，
+   因 `TransferChannelPolicyConfig` 复用的正是 MATVOL 的 `MaterialVolumeTopologyConfig`）；
+2. 样例 `materialDiffuseRgbValues` 补入黄色 `[255,255,0]`；
+3. 门禁 `reality08` / `reality09` 断言由 `expected_topology_rejection` 改为 `pass`。
+
+**且这三件事必须在合并【之后】做，不可在合并前于 T 分支上先做。** 因为
+`maxBoundaryEdges` 字段本身是 MATVOL 的 MQ-06 改动，在 T 分支上提前添加会在 `config.h`
+制造一处当前并不存在的冲突。详见 `DOC_ANALYSIS_MATVOL_T_部分合并可行性评估.md`。
+
+另据同次实测，`noTransfer = pass_rgbwsv_projection_exact` 通过，
+使「双协议 opt-in 故对既有生产零暴露」由设计推断转为实测事实。留证见
+`REPORT_MATVOL_T_T_08_门禁实测留证.md`。
+
+## 3.6 冻结契约 `contract_info` 含一处破坏性收紧（v1.2 新增）
+
+§4 原把冻结契约问题整体描述为「留痕缺口」。经逐份核对，**该描述对其中一份不准确**：
+`file_contract_v1.contract_info.schema.json` 并非加性，而含三处独立收紧
+（`minor` 由 `integer>=0` 收紧为 `const 1`；`produces` 要求同时含 `p0.rgbwsvt.1`；
+`capabilities` 要求同时含 `slice.rgbwsvt`），净效果是把「支持 T 通道」由可选变为**强制**。
+
+该破坏与本专项自身的 opt-in 前提矛盾，且影响面触及
+`scripts/Prepare14F02PrintM1Handoff.ps1:123` 的外置打印模块交付包。
+详见 `DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md`（待用户裁定方案 A / B）。
+
 ## 4. 治理留痕缺口（不是技术问题，但会卡冻结面门禁）
 
 仓库内有两处明确禁止第七通道的记载，MATVOL-T 的六份文档中**既未引用也未重新授权**：
@@ -126,3 +160,4 @@ MATVOL-T 的 `obj_mtl_texture_rgb_only_rgbwsvt.json` 已给出答案：缩裹让
 |---|---|---|
 | 2026-08-24 | v1.0 | 建立对接说明。列出四处代码冲突面与合并建议、两处需对方吸收的 MATVOL 结论（`08/09` 非永久阻塞、材质 02 为黄色）、第七通道红线的治理留痕缺口、以及 MATVOL-T 已解决的两个产品问题与共同剩余缺口。 |
 | 2026-08-26 | v1.1 | 更正 §2.2：`MaterialVolumePlan.cpp` 的两侧改动经逐行核对互不相交，v1.0 判定的「高冲突风险」在文本层面不成立；语义顺序提醒保留。另据实测，全量冲突面仅 `slicer.cpp` 一处硬冲突与 `config.cpp` 一处邻接。 |
+| 2026-08-26 | v1.2 | 代跑 T-08 门禁后新增 §3.5、§3.6：门禁 reality08/09 的断言是「期望被拒」，故 maxBoundaryEdges、黄色 Kd 与门禁断言三者须在合并【之后】同时修改，缺一即红；contract_info 经核对并非加性而含三处破坏性收紧，已另立决策件待裁。 |
