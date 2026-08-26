@@ -1,7 +1,7 @@
 # DOC_DECISION MATVOL-T 冻结契约 file_contract_v1 变更处置
 
-> 文档状态：**待用户回签 / 尚未获得授权**
-> 版本：v1.0 ｜ 日期：2026-08-26
+> 文档状态：**已裁定（用户 2026-08-26 授权由本会话决定，取方案 A）/ 已实施**
+> 版本：v1.1 ｜ 日期：2026-08-26
 > 撰写方：MATVOL 专项（代为留痕，本文内容未经 MATVOL-T 会话确认）
 > 上级依据：`DOC_DECISION_14F_外部验证延期与接口冻结.md`
 
@@ -112,9 +112,9 @@ MATVOL-T 的双协议被设计为**二选一的 opt-in**：策略关闭走 `p0.r
 
 | 编号 | 事项 | 状态 |
 |---|---|---|
-| FC-01 | `request.schema.json` 加性放宽 | 待回签（建议批准） |
-| FC-02 | `result.schema.json` 加性放宽 | 待回签（建议批准） |
-| FC-03 | `contract_info.schema.json` 破坏性收紧 | **待裁定：方案 A 或 B** |
+| FC-01 | `request.schema.json` 加性放宽 | **已批准并保留** |
+| FC-02 | `result.schema.json` 加性放宽 | **已批准并保留** |
+| FC-03 | `contract_info.schema.json` 破坏性收紧 | **已取方案 A 并实施，见 §8** |
 | FC-04 | 三条「不增加第七通道」红线的引用与处置 | 待补（见 `DOC_ANALYSIS_MATVOL_T_合并对接面与冲突清单.md` §4） |
 
 ## 7. 修订记录
@@ -122,3 +122,30 @@ MATVOL-T 的双协议被设计为**二选一的 opt-in**：策略关闭走 `p0.r
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-08-26 | v1.0 | 建立。核实三份冻结契约的逐项差异；发现 `contract_info` 并非加性而是三处独立收紧，使 T 由可选变为强制，与本专项 opt-in 前提矛盾；记录该破坏被同批 worker 改动掩盖、且影响面触及 M1 对外交付包；给出方案 A/B 与建议。 |
+
+## 8. 裁定与实施（v1.1）
+
+用户 2026-08-26 授权由本会话决定，并说明「后续协议要升级支持 T 通道生成」。**取方案 A。**
+
+**理由**：方案 A 并不妨碍将来升级——它只是不在**现在**强制。当下强制的代价是
+`Prepare14F02PrintM1Handoff` 的对外交付面与 `product/legacy-slicer` 双双失效，
+却换不到任何东西：现有功能没有一处需要 `contract_info` 强制 T。
+将来产品线真要全面要求 T，再收紧一次成本很低；而把已外发的破坏收回来成本很高。
+
+**实施内容**：
+
+- `minor`：`const 1` → `{"type":"integer","enum":[0,1]}`，与 request / result 口径一致；
+- `produces`：恢复为只强制 `p0.rgbwsv.2`，`p0.rgbwsvt.1` 允许出现但不强制；
+- `capabilities`：恢复为只强制非空且 items 受限，`slice.rgbwsvt` 加入 items 枚举但不强制；
+- 删除引入强制的整个 `allOf` 块。
+
+相对**变更前**（`90a59ba`），本文件的净差异只剩两处纯加性内容：
+capabilities 的 items 枚举增加 `slice.rgbwsvt`；`minor` 由 `minimum: 0` 改为 `enum [0,1]`
+（后者是把无上界收窄到实际存在的两个取值，无任何真实 worker 受影响）。
+
+**测试同步**：`tests/contracts/ValidateFileContract.py` 中三条「缺 T 即非法」的负例
+（`missingTransferProduce`、`missingTransferCapability`、`staleInfo`）在方案 A 下不再成立。
+已**转为正例**而非删除——它们正是本方案要保住的向后兼容性，转正例才能把该性质钉死。
+`ValidateFileContract.py` 实测 PASS。
+
+**FC-04（第七通道红线的引用与处置）仍未处置**，留待后续。

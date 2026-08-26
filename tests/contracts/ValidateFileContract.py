@@ -156,25 +156,30 @@ def Main() -> int:
     missingLegacyProduce["produces"] = ["p0.rgbwsvt.1"]
     ExpectInvalid(infoValidator, missingLegacyProduce, "missing legacy package contract")
 
-    missingTransferProduce = copy.deepcopy(info)
-    missingTransferProduce["produces"] = ["p0.rgbwsv.2"]
-    ExpectInvalid(
+    # 方案 A（见 DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md）：
+    # T 通道在 contract_info 中是【可选能力声明】，不得强制。
+    # 以下三例此前是负例，断言「缺 T 即非法」——那会把 T 由可选变成对每个 worker 的强制要求，
+    # 与本专项自身「双协议二选一 opt-in」的前提矛盾，并使 Prepare14F02PrintM1Handoff 的
+    # 对外交付面与 product/legacy-slicer 一并失效。改为正例，正是为了把该兼容性钉死。
+    legacyOnlyProduce = copy.deepcopy(info)
+    legacyOnlyProduce["produces"] = ["p0.rgbwsv.2"]
+    ExpectValid(
         infoValidator,
-        missingTransferProduce,
-        "missing transfer package contract",
+        legacyOnlyProduce,
+        "legacy-only produces stays valid",
     )
 
-    missingTransferCapability = copy.deepcopy(info)
-    missingTransferCapability["capabilities"].remove("slice.rgbwsvt")
-    ExpectInvalid(
+    legacyOnlyCapability = copy.deepcopy(info)
+    legacyOnlyCapability["capabilities"].remove("slice.rgbwsvt")
+    ExpectValid(
         infoValidator,
-        missingTransferCapability,
-        "missing transfer slice capability",
+        legacyOnlyCapability,
+        "worker without transfer capability stays valid",
     )
 
-    staleInfo = copy.deepcopy(info)
-    staleInfo["minor"] = 0
-    ExpectInvalid(infoValidator, staleInfo, "stale discovery minor")
+    legacyMinorInfo = copy.deepcopy(info)
+    legacyMinorInfo["minor"] = 0
+    ExpectValid(infoValidator, legacyMinorInfo, "minor 0 discovery stays valid")
 
     progressPattern = re.compile(
         r"^SLICE_PROGRESS phase=[A-Za-z0-9_.-]+ current=\d+ total=\d+ "

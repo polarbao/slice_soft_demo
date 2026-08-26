@@ -12,13 +12,32 @@
     "capabilities"
   ],
   "properties": {
-    "contract": { "const": "file_contract" },
-    "major": { "const": 1 },
-    "minor": { "const": 1 },
-    "engineVersion": { "type": "string", "minLength": 1 },
+    "contract": {
+      "const": "file_contract"
+    },
+    "major": {
+      "const": 1
+    },
+    "minor": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ]
+    },
+    "engineVersion": {
+      "type": "string",
+      "minLength": 1
+    },
     "produces": {
       "type": "array",
-      "items": { "type": "string" }
+      "contains": {
+        "const": "p0.rgbwsv.2"
+      },
+      "minContains": 1,
+      "items": {
+        "type": "string"
+      }
     },
     "capabilities": {
       "type": "array",
@@ -35,39 +54,5 @@
       }
     }
   },
-  "allOf": [
-    {
-      "properties": {
-        "produces": {
-          "contains": { "const": "p0.rgbwsv.2" },
-          "minContains": 1
-        }
-      }
-    },
-    {
-      "properties": {
-        "produces": {
-          "contains": { "const": "p0.rgbwsvt.1" },
-          "minContains": 1
-        }
-      }
-    },
-    {
-      "properties": {
-        "capabilities": {
-          "contains": { "const": "slice.rgbwsv" },
-          "minContains": 1
-        }
-      }
-    },
-    {
-      "properties": {
-        "capabilities": {
-          "contains": { "const": "slice.rgbwsvt" },
-          "minContains": 1
-        }
-      }
-    }
-  ],
   "additionalProperties": true
 }
