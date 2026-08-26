@@ -16,6 +16,8 @@ add_executable(slicer_ui_host_sim
     HostModelListPanel.h
     HostChannelChartWidget.cpp
     HostChannelChartWidget.h
+    HostPackageReviewChannels.cpp
+    HostPackageReviewChannels.h
     HostPackageReviewController.cpp
     HostPackageReviewController.h
     HostPackageReviewPanel.cpp
@@ -1084,6 +1086,8 @@ add_executable(hostflow_hb07_package_review_tests
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
+    HostPackageReviewChannels.cpp
+    HostPackageReviewChannels.h
     HostPackageReviewController.cpp
     HostPackageReviewController.h
     HostSliceJobController.cpp

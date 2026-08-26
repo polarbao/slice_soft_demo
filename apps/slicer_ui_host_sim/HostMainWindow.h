@@ -25,6 +25,7 @@ class QPlainTextEdit;
 class QSplitter;
 class QTableWidget;
 class QTabWidget;
+class QVBoxLayout;
 class CpuRasterBackend;
 class MoveOptimizationPolicy;
 class SceneRenderPolicy;
@@ -64,6 +65,8 @@ private:
     bool SaveWorkspaceState();
     void OnImportModel();
     void OnRemoveModels(const QStringList& instanceIds);
+    void OnResetScene();
+    void AttachSceneResetButton(QWidget* page, QVBoxLayout* layout);
     void OnModelSelectionChanged(const QStringList& instanceIds);
     void OnProfileChanged(const QString& profileId);
     bool ProfileSupportsSlice(const QString& profileId) const;

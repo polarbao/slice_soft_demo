@@ -19,6 +19,7 @@
 #include <QGroupBox>
 #include <QHeaderView>
 #include <QHBoxLayout>
+#include <QPushButton>
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QSplitter>
@@ -123,6 +124,8 @@ void HostMainWindow::BuildInterface()
     modelLayout->setContentsMargins(4, 4, 4, 4);
     m_modelListPanel = new HostModelListPanel(modelPage);
     modelLayout->addWidget(m_modelListPanel, 1);
+
+    AttachSceneResetButton(modelPage, modelLayout);
 
     m_importSummaryLabel = new QLabel(
         QStringLiteral("尚未导入模型。"), modelPage);

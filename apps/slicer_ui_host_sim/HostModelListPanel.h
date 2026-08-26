@@ -33,6 +33,9 @@ public:
      */
     void RemoveInstances(const QStringList& instanceIds);
 
+    /** @brief 清空展示列表，供「新建场景」整体解绑时使用。 */
+    void Clear();
+
     /**
      * @brief 启用或禁用跨越公共模块边界的命令。
      * @param enabled 模块就绪且无活动命令时为 true。
