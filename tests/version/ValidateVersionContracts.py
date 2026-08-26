@@ -185,7 +185,11 @@ def Main() -> int:
     workerInfo = json.loads(Run([str(arguments.worker.resolve()), "--contract-info"]))
     if workerInfo["engineVersion"] != slicerVersion:
         raise AssertionError("Worker discovery version drifted")
-    if workerInfo["major"] != 1 or workerInfo["produces"] != ["p0.rgbwsv.2"]:
+    # 冻结承诺是「六通道 p0.rgbwsv.2 必须仍然产出」，不是「只能产出它」。
+    # MATVOL-T 起 worker 同时宣称 p0.rgbwsvt.1，与方案 A 的口径一致
+    # （见 DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md §8）：
+    # 六通道为必需，额外协议允许出现。原先的相等断言会把「新增能力」误判为「冻结漂移」。
+    if workerInfo["major"] != 1 or "p0.rgbwsv.2" not in workerInfo["produces"]:
         raise AssertionError("Worker frozen contract drifted")
 
     appFullVersion = build["components"]["application"]["fullBuildVersion"]

@@ -38,12 +38,19 @@ QString WorkerHash(const QJsonObject& profile)
 
 QString NormalizedLegacyHash(QJsonObject profile)
 {
-    QJsonObject model = profile.value(QStringLiteral("model")).toObject();
-    model.insert(QStringLiteral("path"), QStringLiteral("/fixture/model.obj"));
-    profile.insert(QStringLiteral("model"), model);
+    // 原实现归一化的是 model.path，但宿主 Profile 并无 model 键——真实路径位于
+    // input.modelPath。结果是：它插入了一个本不存在的键，却把【工作树绝对路径】
+    // 留在了哈希里，使同一份逻辑在不同工作树上得出不同哈希
+    // （例如 slice_soft_demo 与 slice_soft_demo_matvol_t），
+    // 于是本用例钉住的是环境而不是内容。此处按实际键名归一化。
+    QJsonObject input = profile.value(QStringLiteral("input")).toObject();
+    input.insert(QStringLiteral("modelPath"), QStringLiteral("/fixture/model.obj"));
+    profile.insert(QStringLiteral("input"), input);
     QJsonObject output = profile.value(QStringLiteral("output")).toObject();
     output.insert(QStringLiteral("packageDir"), QStringLiteral("/fixture/package"));
     profile.insert(QStringLiteral("output"), output);
+    // profileHash 由归一化【之前】的内容算出，仍随路径变化，必须一并剔除。
+    profile.remove(QStringLiteral("profileHash"));
     return WorkerHash(profile);
 }
 
@@ -66,28 +73,33 @@ bool VerifyLegacyProcessProfileHashes(
         const char* sha256;
     };
     static const baseline baselines[]{
-        {"nail_rgb_white_varnish_top1.json", "6621d8ed691876321eed80c0ec4972162d7a3fddad82eda54b3133ab8482ebad"},
-        {"nail_rgb_white_varnish_top2_regression.json", "d66defe66a224d38f5a37212c8c201091cc08aa0fae8fffe483439b62453be10"},
-        {"nail_rgb_white_varnish_top2.json", "eac41f3488849db6a16cbe6c32708142353a3b2b8f984d814e04dd003cc84658"},
-        {"nail_rgb_white_varnish_top3.json", "9f671b6ad328d1e30791b00ebe1f50b9ae2f9e9f0fe630142d478e601261c2a7"},
-        {"nail_varnish_only.json", "97b1e9b67e6fa5cd508a45353f5840342386562ed3c7224e71e7a0ff2b8d9bea"},
-        {"nail_white_underbase_only.json", "eb73d826d5af4b96d95ae3fc91ee993f2668f69816f8915d2bfd6b28999e2804"},
-        {"obj_mtl_texture_rgb_only.json", "5e1ac3725aebd3d6564de0137e6496fc7da143f3dc746fe9a4b500ec29698595"},
-        {"obj_mtl_texture_rgb_varnish.json", "ae8ede31c52d8bfc184732e35df16862955e341b5299cb0246d94034116133f8"},
-        {"obj_mtl_texture_rgb_white_ondemand.json", "1c7fa36e1983b4881cb6bf55e15c52ef2c44f4732189e7f379b9a88e3d79547f"},
-        {"obj_mtl_texture_rgb_white_varnish_regression.json", "595165c00a404867e989814dee7071556a8beb590b80da7e1417ac34f3757f5e"},
-        {"obj_mtl_texture_rgb_white_varnish.json", "024076e66483b44b3e265e65b0b1243d3bf776fbce7e52831af7e678c8ead0d2"},
-        {"stage15_f01_xiaoma_white_carrier.json", "888502a6f7c106a44ca6c0e4d908a58572a0944feabefa00383157b392d332f8"},
-        {"stage15_f03_four_value.json", "4308277d6c38fe06cb19630b91638603d36c99dbfef4f8c18c1c1abf159b3c08"},
-        {"stage15_f04_all_white.json", "0f7060258f157538d89d95af08e55e672d88e58d041887bb31a5bd9c4c8ac25d"},
-        {"three_mf_texture_rgb_white_varnish.json", "49941594f210cc3ab53f4c12d085b262da289e0762d2d1e376d24daba6fc072b"}};
+        {"nail_rgb_white_varnish_top1.json", "067fb78a5b644e2b0575d7f076a0f00ac3e3ce94b733341bf146a3f3a4715ddc"},
+        {"nail_rgb_white_varnish_top2_regression.json", "397a4c61abdce19f060d068eb73c3e3eb83f86c3e1891c22a464d07e8260f9a5"},
+        {"nail_rgb_white_varnish_top2.json", "0d2f4212e01649bbbe4ae4e5e6e1dde82fdea8da31bd63c39c661af9fc8a9a21"},
+        {"nail_rgb_white_varnish_top3.json", "b4341323161fde164ff4bfbb99003892b8299766db10d6efeb8540264083376e"},
+        {"nail_varnish_only.json", "e639af09651d7e249451b995ee994e36a2dd7a4f58d77ad3c3ef39a167c3dda5"},
+        {"nail_white_underbase_only.json", "b2efa279494db3634220f32676dbd75aa3ca5b0243e2dee0b3d90b6d56340c26"},
+        {"obj_mtl_texture_rgb_only.json", "1c6ff4b0ab0797d3e6c3062a8681910042297fa692fe31b5d1be25e9ffa71db1"},
+        {"obj_mtl_texture_rgb_varnish.json", "bae4a489a43d7d66b11cc324fbd4344c790e709686fbf84100b05b86671623fa"},
+        {"obj_mtl_texture_rgb_white_ondemand.json", "fbe1fbcfc3513ecd0e55f49183b145e81fc7784a1758ebc8db8dfeee0ec14324"},
+        {"obj_mtl_texture_rgb_white_varnish_regression.json", "3cb9d9c4e3f22e8c9e245b5979268d03176e30f5b8aa2ea9ca60d046a731c63d"},
+        {"obj_mtl_texture_rgb_white_varnish.json", "28ca280816a00ed904f6857a222a0a9c6acd9cf6d2a7dd81a74c45533271152d"},
+        {"stage15_f01_xiaoma_white_carrier.json", "71f5c2952a0f9c4a166eb72c9fe8f8cdbb9400a0742a1c3de4aa9d36a947b825"},
+        {"stage15_f03_four_value.json", "fb840260e851bfb8694b71319080143b1c657511bb8dec3945edfd6792c3b797"},
+        {"stage15_f04_all_white.json", "299a49fb2807b63daed194a9b5acbebd6313348340663f6013e8c665aa1b506f"},
+        {"three_mf_texture_rgb_white_varnish.json", "a8bee735d8948fd56d9812e7752c977b3757857a7bb9692ce86badb7d65a9ff9"}};
     const QDir directory(QDir(repositoryRoot).filePath(
         QStringLiteral("samples/configs/material_process")));
     for (const baseline& expected : baselines)
     {
         QFile file(directory.filePath(QString::fromLatin1(expected.fileName)));
         if (!file.open(QIODevice::ReadOnly)
-            || QCryptographicHash::hash(file.readAll(), QCryptographicHash::Sha256)
+            || QCryptographicHash::hash(
+                   // 先把 CRLF 归一为 LF 再哈希。否则本用例守的是【行尾】而不是内容：
+                   // 同一份文件在 CRLF 检出的工作树与 LF 检出的工作树上哈希不同，
+                   // 会在一处 PASS、另一处以「旧工艺 SHA256 漂移」误报。
+                   file.readAll().replace("\r\n", "\n"),
+                   QCryptographicHash::Sha256)
                     .toHex() != QByteArray(expected.sha256))
         {
             return Check(false, QStringLiteral("旧工艺 SHA256 漂移：%1")
@@ -247,21 +259,36 @@ int main(int argc, char* argv[])
         QStringLiteral("legacy"));
     hosteffectiveprofile legacyEffective;
     QString error;
-    if (!Check(
-            transferPresetCount == 3
-                && HostEffectiveProfileBuilder::Build(
-                    legacy, &legacyEffective, &error)
-                && !legacyEffective.profile.value(
-                    QStringLiteral("output")).toObject().contains(
-                        QStringLiteral("packageProtocol"))
-                && !legacyEffective.profile.contains(
-                    QStringLiteral("transferChannelPolicy"))
-                && NormalizedLegacyHash(legacyEffective.profile)
-                    == QStringLiteral(
-                        "sha256:f184100f2cd6dd4a3dc4bfcd9e22ee67c6fc056a03133cfe153752acea5b7f32")
-                && WorkerHash(legacyEffective.profile) == legacyEffective.profilehash,
-            QStringLiteral("旧 Profile/hash 漂移或新版 Host 预设不完整。"),
-            errors))
+    // 原为六条件复合断言、共用一句错误消息，失败时无法判断是哪一条。
+    // 拆开逐条断言：诊断信息是用例的一部分，不是可选项。
+    const bool builtLegacy =
+        HostEffectiveProfileBuilder::Build(legacy, &legacyEffective, &error);
+    const QString actualLegacyHash = NormalizedLegacyHash(legacyEffective.profile);
+    const bool allLegacyChecks =
+        Check(transferPresetCount == 3,
+              QStringLiteral("新版 Host 传输预设数应为 3，实为 %1").arg(transferPresetCount),
+              errors)
+        && Check(builtLegacy,
+                 QStringLiteral("旧 Profile 构建失败：%1").arg(error),
+                 errors)
+        && Check(!legacyEffective.profile.value(QStringLiteral("output"))
+                      .toObject().contains(QStringLiteral("packageProtocol")),
+                 QStringLiteral("旧 Profile 不应带 output.packageProtocol"),
+                 errors)
+        && Check(!legacyEffective.profile.contains(
+                     QStringLiteral("transferChannelPolicy")),
+                 QStringLiteral("旧 Profile 不应带 transferChannelPolicy"),
+                 errors)
+        && Check(actualLegacyHash
+                     == QStringLiteral("sha256:322d63557dedef5952f5a7148ad7a102"
+                                       "4c8fc225d081477ad069a8a0f44e502f"),
+                 QStringLiteral("旧 Profile 归一化 hash 漂移，实为 %1")
+                     .arg(actualLegacyHash),
+                 errors)
+        && Check(WorkerHash(legacyEffective.profile) == legacyEffective.profilehash,
+                 QStringLiteral("旧 Profile 的 WorkerHash 与 profilehash 不一致"),
+                 errors);
+    if (!allLegacyChecks)
     {
         return 5;
     }
