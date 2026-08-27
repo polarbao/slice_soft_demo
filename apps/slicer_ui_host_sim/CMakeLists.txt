@@ -459,6 +459,52 @@ if(MSVC)
     endif()
 endif()
 
+add_executable(hostflow_hb08_scene_profile_rebind_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostSceneProfileRebindTests.cpp
+)
+
+target_include_directories(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+    Qt5::Core
+    bcrypt
+)
+
+add_dependencies(hostflow_hb08_scene_profile_rebind_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb08_scene_profile_rebind
+    COMMAND hostflow_hb08_scene_profile_rebind_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
 add_test(
     NAME hostflow_hb01_model_import
     COMMAND hostflow_hb01_model_import_tests
