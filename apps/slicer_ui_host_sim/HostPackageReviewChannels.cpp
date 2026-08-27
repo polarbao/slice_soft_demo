@@ -1,6 +1,10 @@
 #include "HostPackageReviewChannels.h"
 
+#include <QComboBox>
+#include <QSignalBlocker>
+#include <QStandardItemModel>
 #include <QJsonValue>
+#include <QSet>
 
 #include <algorithm>
 #include <array>
@@ -67,4 +71,53 @@ bool IsFrozenChannelName(const QString& channel)
         }
     }
     return false;
+}
+
+void SelectDefaultPreviewMode(
+    QComboBox* combo,
+    const QStringList& packageChannels)
+{
+    if (combo == nullptr || packageChannels.isEmpty())
+    {
+        return;
+    }
+    const QSet<QString> available(
+        packageChannels.begin(), packageChannels.end());
+    int preferred = -1;
+    int widest = -1;
+    for (int index = 0; index < combo->count(); ++index)
+    {
+        const QStringList wanted = combo->itemData(index).toStringList();
+        bool satisfiable = !wanted.isEmpty();
+        for (const QString& channel : wanted)
+        {
+            if (!available.contains(channel))
+            {
+                satisfiable = false;
+                break;
+            }
+        }
+        // 包里没有的通道一律置灰：留着可选而必然失败，等于把「这个包是几通道」
+        // 的知识推给用户，且失败信息出现在渲染阶段而非选择阶段。
+        auto* model = qobject_cast<QStandardItemModel*>(combo->model());
+        if (model != nullptr)
+        {
+            QStandardItem* item = model->item(index);
+            if (item != nullptr)
+            {
+                item->setEnabled(satisfiable);
+            }
+        }
+        // 默认取【该包能满足的最宽组合】，使切片产出的全部内容默认可见。
+        if (satisfiable && wanted.size() > widest)
+        {
+            widest = wanted.size();
+            preferred = index;
+        }
+    }
+    if (preferred >= 0)
+    {
+        const QSignalBlocker blocker(combo);
+        combo->setCurrentIndex(preferred);
+    }
 }

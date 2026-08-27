@@ -6,17 +6,18 @@
   "maxLinesForNewSource": 500,
   "knownOversized": {
     "HostRipJobController.cpp": 1181,
-    "HostSliceSettingsPanel.cpp": 852,
+    "HostSliceSettingsPanel.cpp": 857,
     "Main.cpp": 751,
     "HostSliceJobController.cpp": 664,
     "HostSliceSettings.cpp": 571,
     "HostSliceJobPanel.cpp": 590,
     "HostWorkspaceState.cpp": 573,
     "HostModelImportWorkflow.cpp": 516,
-    "HostPackageReviewPanel.cpp": 501
+    "HostPackageReviewPanel.cpp": 504
   },
   "_entryNotes": {
     "Main.cpp": "2026-08-26 由 740 上调至 751：RIPFLOW D-07 接入新版 RIP 五档 transparent 的宿主接线。该增长在 MATVOL-T 合并【之前】即已存在于基线，非合并引入。",
-    "HostPackageReviewPanel.cpp": "2026-08-26 新入台账（493 → 501）：MATVOL-T 在结果复核面板接入 T 通道（新增 T 预览项、生产准入字段、按包实际通道渲染）。改动零散、无可整块抽出的内聚单元，硬凑行数只会让代码更差，故如实入账。"
+    "HostPackageReviewPanel.cpp": "2026-08-27 由 501 上调至 504：接入按包通道自动选定预览模式（SelectDefaultPreviewMode），实现放在 HostPackageReviewChannels.cpp，面板侧只增一行调用与一行 include。",
+    "HostSliceSettingsPanel.cpp": "2026-08-27 由 852 上调至 857：新增「缩裹 T 通道｜拓扑放宽」控件的接入点（成员、构造调用、SetSettings/Settings 同步、预设应用后同步）；控件实现本体放在独立文件 HostTransferTopologyControl.cpp，未计入本文件。"
   }
 }

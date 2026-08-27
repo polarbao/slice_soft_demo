@@ -74,6 +74,7 @@ add_executable(slicer_ui_host_sim
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
     HostSliceSettings.h
+    HostTransferTopologyControl.cpp
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
     HostSupportSettingsPanel.cpp
@@ -811,6 +812,7 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostMaterialSettingsPanel.h
     HostTextureSettingsPanel.cpp
     HostTextureSettingsPanel.h
+    HostTransferTopologyControl.cpp
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
     HostSliceJobPanel.cpp

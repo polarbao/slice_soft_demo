@@ -1,5 +1,7 @@
 #include "HostPackageReviewPanel.h"
 
+#include "HostPackageReviewChannels.h"
+
 #include "HostChannelChartWidget.h"
 
 #include <QComboBox>
@@ -286,6 +288,7 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
     m_review = review;
     const QStringList packageChannels = review.channels.isEmpty()
         ? Channels({"R", "G", "B", "W", "S", "V"}) : review.channels;
+    SelectDefaultPreviewMode(m_previewModeCombo, packageChannels);
     const QSignalBlocker sliderBlocker(m_layerSlider);
     const QSignalBlocker spinBlocker(m_layerSpin);
     const int maximum = (std::max)(0, review.layercount - 1);

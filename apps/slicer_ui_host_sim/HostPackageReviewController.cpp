@@ -370,30 +370,73 @@ bool HostPackageReviewController::LoadSummary(QString* error)
             && m_review.channels.size() == 6)
         || (m_review.schema == QStringLiteral("p0.rgbwsvt.1")
             && m_review.channels.size() == 7);
+    // 准入状态必须自洽（摘要与包内一致、且非空），但【不要求已准入】。
+    //
+    // 原先七通道包被额外要求 acceptance == "admitted"，而新切出的包一律是
+    // rgbwsvt_candidate_unvalidated，于是每一个 RGBWSVT 产出都被结果页拒绝显示——
+    // 用户表现为「切完了却无法预览」。这条限制与候选态的用意相悖：
+    // 候选正是需要人眼查看后才决定是否准入，看不到就无从判断。
+    // 安全性由「显式展示准入状态」承担（面板已显示 生产准入 字段），
+    // 而不是由「拒绝显示」承担——拒绝显示既挡不住误用，又消灭了检查手段。
     const bool productionAcceptanceMatches =
         !summaryProductionAcceptance.isEmpty()
-        && summaryProductionAcceptance == m_review.productionacceptance
-        && (m_review.schema != QStringLiteral("p0.rgbwsvt.1")
-            || summaryProductionAcceptance == QStringLiteral("admitted"));
-    if (!protocolMatchesChannels
-        || !productionAcceptanceMatches
-        || m_review.bitdepth != 8
-        || m_review.polarity != QStringLiteral("black_is_print")
-        || !IsFrozenChannelSet(m_review.channels)
-        || m_review.layercount <= 0 || m_review.widthpx <= 0
-        || m_review.heightpx <= 0 || m_review.instancecount <= 0
-        || m_review.profileversion.isEmpty()
-        || m_review.profilehash.isEmpty())
+        && summaryProductionAcceptance == m_review.productionacceptance;
+    // 逐条判定并指名失败项。原实现是十一条复合判定共用一句消息，且该消息只打印其中
+    // 五个字段——当失败发生在未打印的那六条上时（层数、尺寸、实例数、Profile 版本/hash），
+    // 用户看到的是「schema/acceptance/bitDepth/polarity/channels 全都正常，却说违反协议」，
+    // 无从下手。诊断信息是功能的一部分，不是可选项。
+    QString violation;
+    if (!protocolMatchesChannels)
+    {
+        violation = QStringLiteral("协议与通道数不匹配：schema=%1 通道数=%2")
+                        .arg(m_review.schema).arg(m_review.channels.size());
+    }
+    else if (!productionAcceptanceMatches)
+    {
+        violation = QStringLiteral("生产准入状态不自洽：摘要=%1 包内=%2")
+                        .arg(summaryProductionAcceptance)
+                        .arg(m_review.productionacceptance);
+    }
+    else if (m_review.bitdepth != 8)
+    {
+        violation = QStringLiteral("位深须为 8，实为 %1").arg(m_review.bitdepth);
+    }
+    else if (m_review.polarity != QStringLiteral("black_is_print"))
+    {
+        violation = QStringLiteral("极性须为 black_is_print，实为 %1")
+                        .arg(m_review.polarity);
+    }
+    else if (!IsFrozenChannelSet(m_review.channels))
+    {
+        violation = QStringLiteral("通道集不是冻结的六通道或七通道：%1")
+                        .arg(m_review.channels.join(QLatin1Char(',')));
+    }
+    else if (m_review.layercount <= 0)
+    {
+        violation = QStringLiteral("层数须为正，实为 %1").arg(m_review.layercount);
+    }
+    else if (m_review.widthpx <= 0 || m_review.heightpx <= 0)
+    {
+        violation = QStringLiteral("网格尺寸须为正，实为 %1 x %2")
+                        .arg(m_review.widthpx).arg(m_review.heightpx);
+    }
+    else if (m_review.instancecount <= 0)
+    {
+        violation = QStringLiteral("实例数须为正，实为 %1").arg(m_review.instancecount);
+    }
+    else if (m_review.profileversion.isEmpty())
+    {
+        violation = QStringLiteral("摘要缺少 Profile 版本");
+    }
+    else if (m_review.profilehash.isEmpty())
+    {
+        violation = QStringLiteral("摘要缺少 Profile hash");
+    }
+    if (!violation.isEmpty())
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral(
-                "生产包摘要违反冻结协议：schema=%1 acceptance=%2 bitDepth=%3 polarity=%4 channels=%5")
-                         .arg(m_review.schema)
-                         .arg(summaryProductionAcceptance)
-                         .arg(m_review.bitdepth)
-                         .arg(m_review.polarity)
-                         .arg(m_review.channels.join(QLatin1Char(',')));
+            *error = QStringLiteral("生产包摘要违反冻结协议：%1").arg(violation);
         }
         return false;
     }

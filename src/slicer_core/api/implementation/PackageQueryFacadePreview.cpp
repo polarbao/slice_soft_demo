@@ -43,11 +43,15 @@ MaterialPreviewMode SingleChannelMode(const std::string& channel)
     {
         return MaterialPreviewMode::Support;
     }
+    if (channel == "T")
+    {
+        return MaterialPreviewMode::Transfer;
+    }
     if (channel == "V")
     {
         return MaterialPreviewMode::Varnish;
     }
-    throw std::runtime_error("unsupported RGBWSV channel: " + channel);
+    throw std::runtime_error("unsupported RGBWSVT channel: " + channel);
 }
 
 std::set<std::string> ValidateChannels(
@@ -60,12 +64,15 @@ std::set<std::string> ValidateChannels(
     std::set<std::string> unique;
     for (const std::string& channel : channels)
     {
+        // T 此前不在集合内，于是任何含 T 的预览请求都在此抛出，
+        // 连下方专门的 T-only 分支都成了走不到的死代码——
+        // 宿主结果页提供了「T（缩裹）」与七通道组合两个选项，两者必然失败。
         static const std::set<std::string> kSupported{
-            "R", "G", "B", "W", "S", "V"};
+            "R", "G", "B", "W", "S", "V", "T"};
         if (!kSupported.contains(channel))
         {
             throw std::runtime_error(
-                "unsupported RGBWSV channel: " + channel);
+                "unsupported RGBWSVT channel: " + channel);
         }
         if (!unique.insert(channel).second)
         {
@@ -115,6 +122,11 @@ MaterialPreviewMode ResolvePreviewMode(const PreviewRequest& request)
         == std::set<std::string>{"R", "G", "B", "W", "S", "V"})
     {
         return MaterialPreviewMode::RgbSupportWhiteVarnish;
+    }
+    if (channels
+        == std::set<std::string>{"R", "G", "B", "W", "S", "V", "T"})
+    {
+        return MaterialPreviewMode::RgbSupportWhiteVarnishTransfer;
     }
     throw std::runtime_error(
         "unsupported composite channel combination");
@@ -180,7 +192,24 @@ std::string CanonicalRgbwsvtChannels(
     return result;
 }
 
-RgbwsvLayerBuffer DropTransferChannel(
+// 取出 T 平面。此前的做法是把 T 直接丢掉（函数原名 DropTransferChannel），
+// 于是七通道包在组合预览里与六通道毫无区别，缩裹完全不可见。
+std::vector<std::uint8_t> ExtractTransferPlane(
+    const RgbwsvtDecodedPackageLayer& source)
+{
+    const std::size_t pixelCount = static_cast<std::size_t>(
+        source.descriptor.width) * static_cast<std::size_t>(
+        source.descriptor.height);
+    std::vector<std::uint8_t> plane;
+    plane.reserve(pixelCount);
+    for (std::size_t pixel = 0U; pixel < pixelCount; ++pixel)
+    {
+        plane.push_back(source.pixels.at(pixel * 7U + 6U));
+    }
+    return plane;
+}
+
+RgbwsvLayerBuffer SplitRgbwsvChannels(
     const RgbwsvtDecodedPackageLayer& source,
     const RgbwsvtPackageValidation& package)
 {
@@ -202,32 +231,6 @@ RgbwsvLayerBuffer DropTransferChannel(
         result.pixels.insert(result.pixels.end(), begin, begin + 6);
     }
     result.decodedBytes = result.pixels.size();
-    return result;
-}
-
-MaterialPreviewResult ComposeTransferPreview(
-    const RgbwsvtDecodedPackageLayer& source,
-    const RgbwsvtPackageValidation& package)
-{
-    MaterialPreviewResult result;
-    result.sourceIdentity = source.descriptor.fileIdentity;
-    result.layerIndex = source.descriptor.index;
-    result.zMm = source.descriptor.zMm;
-    result.width = source.descriptor.width;
-    result.height = source.descriptor.height;
-    result.dpiX = package.dpiX;
-    result.dpiY = package.dpiY;
-    const std::size_t pixelCount = static_cast<std::size_t>(result.width)
-        * static_cast<std::size_t>(result.height);
-    result.rgba.reserve(pixelCount * 4U);
-    for (std::size_t pixel = 0U; pixel < pixelCount; ++pixel)
-    {
-        const std::uint8_t value = source.pixels.at(pixel * 7U + 6U);
-        result.rgba.push_back(255U);
-        result.rgba.push_back(value);
-        result.rgba.push_back(255U);
-        result.rgba.push_back(255U);
-    }
     return result;
 }
 
@@ -288,23 +291,19 @@ ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
             }
             const RgbwsvtDecodedPackageLayer decoded =
                 ReadRgbwsvtPackageLayer(*found);
-            if (channels == std::set<std::string>{"T"})
             {
-                if (request.mode != "single_channel")
-                {
-                    throw std::runtime_error(
-                        "T preview requires single_channel mode");
-                }
-                preview = ComposeTransferPreview(decoded, package);
-            }
-            else
-            {
+                // T 单通道与其余模式统一走合成器：此前 T-only 另有一条硬编码
+                // (255, value, 255) 渐变分支，与调色板不一致，且因 T 未列入
+                // 受支持通道集而根本走不到。现由 SingleChannelMode 映射为
+                // MaterialPreviewMode::Transfer，与组合视图用同一个缩裹伪彩色。
                 MaterialPreviewRequest composeRequest;
                 composeRequest.mode = ResolvePreviewMode(request);
                 const RgbwsvLayerBuffer sixChannel =
-                    DropTransferChannel(decoded, package);
+                    SplitRgbwsvChannels(decoded, package);
+                const std::vector<std::uint8_t> transferPlane =
+                    ExtractTransferPlane(decoded);
                 preview = MaterialPreviewComposer::Compose(
-                    sixChannel, composeRequest);
+                    sixChannel, composeRequest, &transferPlane);
             }
             packageIdentity = package.packageIdentity;
             manifestHash = package.manifestHash;

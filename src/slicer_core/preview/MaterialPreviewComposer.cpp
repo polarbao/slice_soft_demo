@@ -27,6 +27,10 @@ struct PixelState
     bool hasSupport{false};
     bool hasVarnish{false};
     bool isEmpty{true};
+    // T 平面与前六通道不同源：它只存在于七通道包，且不进 values 数组，
+    // 以免牵动 ProductionLayerRef 里按 rgbwsv_channel_count 定尺的统计数组。
+    std::uint8_t transferValue{255U};
+    bool hasTransfer{false};
     bool multipleMaterials{false};
 };
 
@@ -71,7 +75,8 @@ std::size_t ValidateBuffer(const RgbwsvLayerBuffer& buffer)
 
 PixelState ReadPixel(
     const RgbwsvLayerBuffer& buffer,
-    const std::size_t pixelIndex)
+    const std::size_t pixelIndex,
+    const std::vector<std::uint8_t>* transferPlane)
 {
     PixelState state;
     const std::size_t offset =
@@ -88,15 +93,22 @@ PixelState ReadPixel(
     state.hasWhite = state.values.at(kW) < 255U;
     state.hasSupport = state.values.at(kS) < 255U;
     state.hasVarnish = state.values.at(kV) < 255U;
+    if (transferPlane != nullptr && pixelIndex < transferPlane->size())
+    {
+        state.transferValue = transferPlane->at(pixelIndex);
+        state.hasTransfer = state.transferValue < 255U;
+    }
     state.isEmpty = !state.hasRgb
         && !state.hasWhite
         && !state.hasSupport
-        && !state.hasVarnish;
+        && !state.hasVarnish
+        && !state.hasTransfer;
     const int materialCount =
         (state.hasRgb ? 1 : 0)
         + (state.hasWhite ? 1 : 0)
         + (state.hasSupport ? 1 : 0)
-        + (state.hasVarnish ? 1 : 0);
+        + (state.hasVarnish ? 1 : 0)
+        + (state.hasTransfer ? 1 : 0);
     state.multipleMaterials = materialCount > 1;
     return state;
 }
@@ -234,6 +246,12 @@ PreviewColor ComposePixel(
             request.palette.varnish,
             state.values.at(kV));
         break;
+    case MaterialPreviewMode::Transfer:
+        ApplyChannel(
+            display,
+            request.palette.transfer,
+            state.transferValue);
+        break;
     case MaterialPreviewMode::Rgb:
         ApplyRgb(display, state);
         break;
@@ -272,6 +290,26 @@ PreviewColor ComposePixel(
             display,
             request.palette.varnish,
             state.values.at(kV));
+        break;
+    case MaterialPreviewMode::RgbSupportWhiteVarnishTransfer:
+        ApplyRgb(display, state);
+        ApplyChannel(
+            display,
+            request.palette.white,
+            state.values.at(kW));
+        ApplyChannel(
+            display,
+            request.palette.support,
+            state.values.at(kS));
+        ApplyChannel(
+            display,
+            request.palette.varnish,
+            state.values.at(kV));
+        // 缩裹最后叠加：它是本轮新增的判读对象，压在最上层才不会被支撑盖住。
+        ApplyChannel(
+            display,
+            request.palette.transfer,
+            state.transferValue);
         break;
     case MaterialPreviewMode::Occupancy:
     case MaterialPreviewMode::Empty:
@@ -368,7 +406,8 @@ MaterialPreviewErrorCode MaterialPreviewError::Code() const noexcept
 
 MaterialPreviewResult MaterialPreviewComposer::Compose(
     const RgbwsvLayerBuffer& buffer,
-    const MaterialPreviewRequest& request)
+    const MaterialPreviewRequest& request,
+    const std::vector<std::uint8_t>* transferPlane)
 {
     const std::size_t pixelCount = ValidateBuffer(buffer);
     if (pixelCount
@@ -393,7 +432,7 @@ MaterialPreviewResult MaterialPreviewComposer::Compose(
          pixelIndex < pixelCount;
          ++pixelIndex)
     {
-        const PixelState state = ReadPixel(buffer, pixelIndex);
+        const PixelState state = ReadPixel(buffer, pixelIndex, transferPlane);
         AccumulateStats(result.stats, state);
         AppendColor(result.rgba, ComposePixel(state, request));
     }
@@ -416,7 +455,8 @@ MaterialPixelProbe MaterialPreviewComposer::Probe(
         static_cast<std::size_t>(y)
             * static_cast<std::size_t>(buffer.width)
         + static_cast<std::size_t>(x);
-    const PixelState state = ReadPixel(buffer, pixelIndex);
+    // 逐像素取值接口只读前六通道，T 平面不参与——它是显示层的叠加，不是生产值。
+    const PixelState state = ReadPixel(buffer, pixelIndex, nullptr);
 
     MaterialPixelProbe probe;
     probe.x = x;

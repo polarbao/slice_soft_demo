@@ -12,6 +12,7 @@ class QLineEdit;
 class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
+class QVBoxLayout;
 class HostMaterialSettingsPanel;
 class HostMatvolSettingsPanel;
 class HostSupportSettingsPanel;
@@ -131,6 +132,11 @@ private:
 
     QLabel* m_profileLabel{nullptr};
     QComboBox* m_processPresetCombo{nullptr};
+    void AttachTransferTopologyControl(QVBoxLayout* layout);
+    void SyncTransferTopologyControl();
+    [[nodiscard]] int ReadTransferBoundaryEdgeLimit() const;
+
+    QSpinBox* m_transferBoundaryEdgeSpin{nullptr};
     QSpinBox* m_dpiXSpin{nullptr};
     QSpinBox* m_dpiYSpin{nullptr};
     QDoubleSpinBox* m_layerThicknessSpin{nullptr};

@@ -348,6 +348,7 @@ void HostSliceSettingsPanel::BuildInterface()
     m_matvolPanel = new HostMatvolSettingsPanel(matvolGroup);
     matvolLayout->addWidget(m_matvolPanel);
     layout->addWidget(matvolGroup);
+    AttachTransferTopologyControl(layout);
 
     m_validationLabel = new QLabel(this);
     m_validationLabel->setObjectName(
@@ -527,6 +528,7 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_supportPanel->SetSettings(settings.support);
     m_matvolPanel->SetSettings(settings.materialvolume);
     m_packageProtocol = settings.packageprotocol; m_transferChannel = settings.transferchannel;
+    SyncTransferTopologyControl();
     RefreshPreview();
 }
 
@@ -565,6 +567,7 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.support = m_supportPanel->Settings();
     settings.materialvolume = m_matvolPanel->Settings();
     settings.packageprotocol = m_packageProtocol; settings.transferchannel = m_transferChannel;
+    settings.transferchannel.maxboundaryedges = ReadTransferBoundaryEdgeLimit();
     return settings;
 }
 
@@ -697,6 +700,7 @@ void HostSliceSettingsPanel::SetSingleMaterialRestriction(
             m_supportPanel->SetSettings(selectedPreset.support);
             m_matvolPanel->SetSettings(selectedPreset.materialvolume);
             m_packageProtocol = selectedPreset.packageprotocol; m_transferChannel = selectedPreset.transferchannel;
+            SyncTransferTopologyControl();
         }
     }
     m_materialPanel->SetSingleMaterialOnly(restricted, reason);
@@ -754,6 +758,7 @@ void HostSliceSettingsPanel::OnProcessPresetChanged(const int index)
     m_supportPanel->SetSettings(preset.support);
     m_matvolPanel->SetSettings(preset.materialvolume);
     m_packageProtocol = preset.packageprotocol; m_transferChannel = preset.transferchannel;
+    SyncTransferTopologyControl();
     m_applyingProcessPreset = false;
     OnSettingsEdited();
 }
