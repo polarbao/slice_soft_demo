@@ -68,7 +68,9 @@ QJsonObject TransferPolicyObject(
             {QStringLiteral("selfIntersectionPolicy"),
              transfer.selfintersectionpolicy},
             {QStringLiteral("maxSelfIntersectionPairs"),
-             transfer.maxselfintersectionpairs}}}};
+             transfer.maxselfintersectionpairs},
+            {QStringLiteral("maxBoundaryEdges"),
+             transfer.maxboundaryedges}}}};
 }
 
 QByteArray QuotedJsonString(const QString& value)

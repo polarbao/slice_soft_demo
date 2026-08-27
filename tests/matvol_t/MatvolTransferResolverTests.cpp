@@ -223,6 +223,57 @@ bool NewCraftProcessCopiesUseSevenChannelProtocol()
 
 }  // namespace
 
+// 三个真实资产的缩裹色必须都在【实际发布的工艺文件】里，而不是用例手搭的策略里。
+//
+// 这条断言防的是「Kd 漂移导致静默失效」这一类缺陷，而不是某个具体资产：
+//   03    材质 02 = Kd 1.0000/0.8627/0.7765 -> [255,220,198]
+//   08/09 材质 02 = Kd 1.0000/1.0000/0.0000 -> [255,255,0]
+//   08-03 材质 02 = Kd 1.0000/0.8588/0.7765 -> [255,219,198]
+// 08-03 与 03 仅差【绿通道 1】，而识别是精确 uint8 匹配（设计上禁止模糊距离），
+// 差 1 即完全不命中——缩裹会被当作普通模型料写进 RGB，切完才发现。
+// 导出批次不同就会产生这种漂移，故此处按资产逐一取真实 Kd 去比对发布件，
+// 下一个漂移资产会立刻在此变红，而不是在产出物里悄悄走错通道。
+bool ShippedProfileCoversEveryRealityTransferColour()
+{
+#ifdef SLICESOFT_SOURCE_DIR
+    const std::filesystem::path profilePath =
+        std::filesystem::path{SLICESOFT_SOURCE_DIR} / "samples" / "configs" / "matvol_t"
+        / "process_profiles" / "obj_mtl_texture_rgb_white_ondemand_rgbwsvt.json";
+#else
+    const std::filesystem::path profilePath =
+        std::filesystem::path{"samples"} / "configs" / "matvol_t" / "process_profiles"
+        / "obj_mtl_texture_rgb_white_ondemand_rgbwsvt.json";
+#endif
+    const slicer_core::SliceConfig config = slicer_core::load_slice_config(profilePath);
+    bool passed = ExpectTrue(
+        config.transfer_channel_policy.enabled,
+        "shipped on-demand-white profile enables the transfer policy");
+
+    for (const char* fileName : {"03.obj", "08.obj", "08-03.obj"})
+    {
+        const std::filesystem::path path = RealityAsset(fileName);
+        if (!std::filesystem::exists(path))
+        {
+            std::cout << "SKIP " << fileName << " not present\n";
+            continue;
+        }
+        const slicer_core::ModelReport model = LoadModel(path);
+        const slicer_core::TransferMaterialMatch match =
+            slicer_core::ResolveTransferMaterial(
+                config.transfer_channel_policy, model.material_infos);
+        passed = ExpectTrue(
+                     match.present,
+                     std::string{fileName}
+                         + " transfer material must be covered by the shipped profile")
+            && passed;
+        passed = ExpectTrue(
+                     match.materialName == "02",
+                     std::string{fileName} + " shrink material is 02, not the nail material")
+            && passed;
+    }
+    return passed;
+}
+
 int main()
 {
     int failures{0};
@@ -243,11 +294,12 @@ int main()
     run(NewProtocolConfigurationParsesExactColours(), "new_protocol_config");
     run(OldProcessConfigurationKeepsSixChannelProtocol(), "old_protocol_config");
     run(NewCraftProcessCopiesUseSevenChannelProtocol(), "new_craft_process_copies");
+    run(ShippedProfileCoversEveryRealityTransferColour(), "shipped_profile_covers_reality_colours");
     if (failures != 0)
     {
         std::cerr << "FAIL MatvolTransferResolverTests " << failures << " case(s)\n";
         return 1;
     }
-    std::cout << "PASS MatvolTransferResolverTests 9/9\n";
+    std::cout << "PASS MatvolTransferResolverTests 10/10\n";
     return 0;
 }

@@ -88,6 +88,9 @@ void HostWorkspaceTransferState::Save(
     settings.setValue(
         QStringLiteral("transferChannel/topology/maxSelfIntersectionPairs"),
         transfer.maxselfintersectionpairs);
+    settings.setValue(
+        QStringLiteral("transferChannel/topology/maxBoundaryEdges"),
+        transfer.maxboundaryedges);
 }
 
 bool HostWorkspaceTransferState::Restore(
@@ -144,6 +147,11 @@ bool HostWorkspaceTransferState::Restore(
     restored.maxselfintersectionpairs = settings.value(
         QStringLiteral(
             "transferChannel/topology/maxSelfIntersectionPairs"), -1).toInt();
+    // 缺省 0 而非 -1：旧工作区没有这个键，取 0 恰是「不放行开边」的生产默认；
+    // 取 -1 则会让旧工作区被判为非法而整体丢弃。
+    restored.maxboundaryedges = settings.value(
+        QStringLiteral(
+            "transferChannel/topology/maxBoundaryEdges"), 0).toInt();
     const bool coloursValid = ParseColours(
         settings.value(QStringLiteral(
             "transferChannel/materialDiffuseRgbValues")).toByteArray(),

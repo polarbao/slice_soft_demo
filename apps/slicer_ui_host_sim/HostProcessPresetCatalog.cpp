@@ -160,6 +160,13 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
         varnishOnly,
         QStringLiteral("nail_varnish_only_rgbwsvt.json"),
         &presets);
+    // 按需补白墨 + 缩裹 T 通道。工艺文件此前已随部署包发布，但宿主漏了这次派生，
+    // 于是「甲片贴图走 RGB、纯白像素补 W、缩裹走 T」这一组合在 UI 上无从选择——
+    // 而它正是带贴图甲片（如 08-03.obj，材质 01 为纯白 Kd + map_Kd）的目标工艺。
+    AppendTransferPreset(
+        onDemandWhite,
+        QStringLiteral("obj_mtl_texture_rgb_white_ondemand_rgbwsvt.json"),
+        &presets);
 
     return presets;
 }

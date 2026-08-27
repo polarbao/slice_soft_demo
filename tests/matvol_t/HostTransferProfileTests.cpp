@@ -249,6 +249,37 @@ int main(int argc, char* argv[])
         {
             return 4;
         }
+
+        // 拓扑字段必须【逐项】从工艺文件透传到发射出的 Profile。
+        // 此前 hosttransferchannelsettings 根本没有 maxBoundaryEdges 字段，
+        // 于是 JSON 里的 8 在宿主这一环被静默丢弃，slicer_core 取默认 0，
+        // 带 3 条真开边的资产被拒并报出「configured limit of 0」——
+        // 而工艺文件里明明写着 8。此处逐项比对，使任何新增拓扑字段漏传都会立刻变红。
+        const QJsonObject topology = transfer.value(
+            QStringLiteral("topology")).toObject();
+        if (!Check(
+                topology.value(QStringLiteral("selfIntersectionPolicy"))
+                        .toString()
+                    == preset.transferchannel.selfintersectionpolicy
+                && topology.value(QStringLiteral("maxSelfIntersectionPairs"))
+                        .toInt(-1)
+                    == preset.transferchannel.maxselfintersectionpairs
+                && topology.value(QStringLiteral("maxBoundaryEdges"))
+                        .toInt(-1)
+                    == preset.transferchannel.maxboundaryedges,
+                QStringLiteral("RGBWSVT 预设 %1 的拓扑字段未完整透传："
+                               "策略=%2 自交上限=%3 开边上限=%4")
+                    .arg(preset.id)
+                    .arg(topology.value(
+                        QStringLiteral("selfIntersectionPolicy")).toString())
+                    .arg(topology.value(
+                        QStringLiteral("maxSelfIntersectionPairs")).toInt(-1))
+                    .arg(topology.value(
+                        QStringLiteral("maxBoundaryEdges")).toInt(-1)),
+                errors))
+        {
+            return 5;
+        }
     }
 
     hostslicesettings legacy;
@@ -265,8 +296,8 @@ int main(int argc, char* argv[])
         HostEffectiveProfileBuilder::Build(legacy, &legacyEffective, &error);
     const QString actualLegacyHash = NormalizedLegacyHash(legacyEffective.profile);
     const bool allLegacyChecks =
-        Check(transferPresetCount == 3,
-              QStringLiteral("新版 Host 传输预设数应为 3，实为 %1").arg(transferPresetCount),
+        Check(transferPresetCount == 4,
+              QStringLiteral("新版 Host 传输预设数应为 4，实为 %1").arg(transferPresetCount),
               errors)
         && Check(builtLegacy,
                  QStringLiteral("旧 Profile 构建失败：%1").arg(error),

@@ -157,6 +157,14 @@ struct hosttransferchannelsettings
     int value{0};
     QString selfintersectionpolicy{QStringLiteral("reject")};
     int maxselfintersectionpairs{64};
+    // MQ-06 有界开边上限。默认 0 与切片库侧一致（保持现状、须显式开启）。
+    // 此前该字段【不存在】，于是工艺文件里的 maxBoundaryEdges 在宿主这一环被静默丢弃：
+    // JSON 有 8，发射出的 Profile 里没有，切片库侧取默认 0，
+    // 带 3 条真开边的资产（08/09/08-03/08-04）随即被拒，
+    // 错误消息里那句「configured limit of 0」正是这样来的。
+    // 注意：本目录的源文件【不得出现切片库内部目标名】，14E-02 边界门禁按子串匹配，
+    // 注释中提及同样会判违规——本注释即为此改写措辞。
+    int maxboundaryedges{0};
 };
 
 /** @brief 由宿主持有的生产纹理与 Stage 15 白色载体设置。 */

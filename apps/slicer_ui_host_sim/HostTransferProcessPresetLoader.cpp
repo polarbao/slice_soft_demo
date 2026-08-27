@@ -140,6 +140,10 @@ bool HostTransferProcessPresetLoader::Load(
         QStringLiteral("selfIntersectionPolicy")).toString();
     loaded.maxselfintersectionpairs = topology.value(
         QStringLiteral("maxSelfIntersectionPairs")).toInt(-1);
+    // 缺省取 0 而非 -1：0 是「不放行任何开边」的合法生产默认，
+    // 而 -1 会被下方有效性校验当作非法值，使未声明该字段的旧工艺整个加载失败。
+    loaded.maxboundaryedges = topology.value(
+        QStringLiteral("maxBoundaryEdges")).toInt(0);
     const bool valid = document.isObject()
         && output.value(QStringLiteral("packageProtocol")).toString()
             == QStringLiteral("p0.rgbwsvt.1")
