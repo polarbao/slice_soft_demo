@@ -56,6 +56,28 @@ def Run(command: list[str]) -> str:
     return result.stdout.strip()
 
 
+def SplitSemVer(value: str) -> tuple[str, str, str, str]:
+    """拆出 MAJOR、MINOR、PATCH 与预发布标识。"""
+    core, _, prerelease = value.partition("-")
+    parts = core.split(".")
+    if len(parts) != 3:
+        raise AssertionError(f"version is not a SemVer core triple: {value}")
+    return parts[0], parts[1], parts[2], prerelease
+
+
+def SameMajorMinorAndPrerelease(actual: str, expected: str) -> bool:
+    """PATCH 由 git 派生，故只比对源清单真正治理的部分。"""
+    actualMajor, actualMinor, actualPatch, actualPre = SplitSemVer(actual)
+    expectedMajor, expectedMinor, _, expectedPre = SplitSemVer(expected)
+    if not actualPatch.isdigit():
+        raise AssertionError(f"derived patch is not a non-negative integer: {actual}")
+    return (
+        actualMajor == expectedMajor
+        and actualMinor == expectedMinor
+        and actualPre == expectedPre
+    )
+
+
 def ValidateSource(repo: Path) -> tuple[str, str, str]:
     manifest = LoadJson(repo / "version-manifest.json")
     sourceSchema = LoadJson(
@@ -83,7 +105,9 @@ def ValidateSource(repo: Path) -> tuple[str, str, str]:
         raise AssertionError("lockstep release, application, and slicer versions drifted")
 
     vcpkg = LoadJson(repo / "vcpkg.json")
-    if vcpkg["version-string"] != appVersion:
+    # vcpkg.json 的 version-string 是依赖解析用的包标识，不随 PATCH 每次提交而动，
+    # 故与源清单比对 MAJOR.MINOR 与预发布标识即可。
+    if not SameMajorMinorAndPrerelease(vcpkg["version-string"], appVersion):
         raise AssertionError("vcpkg package metadata drifted from source manifest")
 
     for schemaName in (
@@ -143,8 +167,20 @@ def ValidateBuild(
     }
     for name, (componentId, version) in expected.items():
         component = components[name]
-        if component["id"] != componentId or component["version"] != version:
-            raise AssertionError(f"build component drifted: {name}")
+        # PATCH 由 git 派生（自最近 v* 标签起的提交数），源清单只维护 MAJOR.MINOR，
+        # 故此处比对 MAJOR.MINOR 与预发布标识，PATCH 另行校验为非负整数。
+        # 若在此逐字相等，每提交一次该断言就会红一次——它守的是「构建产物与源清单
+        # 同源」，不是「PATCH 恒定」。
+        if component["id"] != componentId:
+            raise AssertionError(f"build component id drifted: {name}")
+        if not SameMajorMinorAndPrerelease(component["version"], version):
+            raise AssertionError(
+                f"build component drifted: {name} "
+                f"({component['version']} vs {version})"
+            )
+    # 锁步仍逐字校验：两个组件必须派生出同一个 PATCH，否则说明它们并非同一次构建产出。
+    if components["application"]["version"] != components["slicer"]["version"]:
+        raise AssertionError("build components broke the lockstep version policy")
         fullVersion = component["fullBuildVersion"]
         if not SEMVER.fullmatch(fullVersion) or not fullVersion.startswith(version + "+"):
             raise AssertionError(f"invalid full build version: {name}")
@@ -174,17 +210,33 @@ def Main() -> int:
         arguments.config,
     )
 
+    # 以下产物【都来自同一次构建】，彼此必须逐字一致；与源清单则只需 MAJOR.MINOR
+    # 与预发布标识一致（PATCH 由 git 派生，见 SameMajorMinorAndPrerelease）。
+    # 故基准取自构建清单而非源清单——拿源清单的 PATCH 去比对构建产物，
+    # 每提交一次就会红一次，而那并不表示任何东西漂移了。
+    builtSlicerVersion = build["components"]["slicer"]["version"]
+    builtAppVersion = build["components"]["application"]["version"]
+
     moduleManifest = LoadJson(arguments.module_manifest.resolve())
-    if moduleManifest["version"] != slicerVersion:
-        raise AssertionError("module.json version drifted")
+    if moduleManifest["version"] != builtSlicerVersion:
+        raise AssertionError(
+            "module.json version drifted: "
+            f"{moduleManifest['version']} != {builtSlicerVersion}"
+        )
 
     moduleInfo = json.loads(Run([str(arguments.module_probe.resolve()), "--print-json"]))
-    if moduleInfo["version"] != slicerVersion or moduleInfo["spi"] != 1:
-        raise AssertionError("pm_module_info version or SPI drifted")
+    if moduleInfo["version"] != builtSlicerVersion or moduleInfo["spi"] != 1:
+        raise AssertionError(
+            "pm_module_info version or SPI drifted: "
+            f"{moduleInfo['version']} != {builtSlicerVersion}"
+        )
 
     workerInfo = json.loads(Run([str(arguments.worker.resolve()), "--contract-info"]))
-    if workerInfo["engineVersion"] != slicerVersion:
-        raise AssertionError("Worker discovery version drifted")
+    if workerInfo["engineVersion"] != builtSlicerVersion:
+        raise AssertionError(
+            "Worker discovery version drifted: "
+            f"{workerInfo['engineVersion']} != {builtSlicerVersion}"
+        )
     # 冻结承诺是「六通道 p0.rgbwsv.2 必须仍然产出」，不是「只能产出它」。
     # MATVOL-T 起 worker 同时宣称 p0.rgbwsvt.1，与方案 A 的口径一致
     # （见 DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md §8）：
@@ -193,7 +245,7 @@ def Main() -> int:
         raise AssertionError("Worker frozen contract drifted")
 
     appFullVersion = build["components"]["application"]["fullBuildVersion"]
-    expectedQuery = f"SliceSoft {appVersion}\nbuild {appFullVersion}"
+    expectedQuery = f"SliceSoft {builtAppVersion}\nbuild {appFullVersion}"
     if Run([str(arguments.cli.resolve()), "--version"]) != expectedQuery:
         raise AssertionError("slicer_cli --version drifted")
     if Run([str(arguments.ui.resolve()), "--version"]) != expectedQuery:

@@ -33,6 +33,57 @@ function(_slicesoft_validate_prerelease label value)
     endif()
 endfunction()
 
+# 由 git 派生 PATCH：取自最近一个 v* 标签起的提交数。
+#
+# 为什么只自动 PATCH，不自动 MINOR：MINOR 在语义化版本里表示「新增功能且向后兼容」，
+# 那是产品决策——例如本轮加 T 通道该不该从 0.2 进到 0.3，应由人判断，不该由提交数决定。
+# PATCH 表示「同一功能面上的修补」，与提交数天然对应，交给 git 更准确也免于手工遗漏。
+#
+# 约定：手工提升 MINOR 时应同时打 v<MAJOR>.<MINOR>.0 标签，PATCH 即从该标签重新计数。
+# 未打标签时会继续累计自上一个标签，版本仍然单调递增，不会倒退。
+#
+# 取不到 git 或无任何 v* 标签时退回清单中的 PATCH，使离线源码包仍可构建。
+function(_slicesoft_derive_patch output fallback_patch source_dir)
+    set(value "${fallback_patch}")
+    find_program(_slicesoft_git_executable NAMES git)
+    if(_slicesoft_git_executable)
+        execute_process(
+            COMMAND "${_slicesoft_git_executable}" -C "${source_dir}"
+                    rev-list --count HEAD
+            RESULT_VARIABLE _total_result
+            OUTPUT_VARIABLE _total_output
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        execute_process(
+            COMMAND "${_slicesoft_git_executable}" -C "${source_dir}"
+                    describe --tags --match "v*" --abbrev=0
+            RESULT_VARIABLE _tag_result
+            OUTPUT_VARIABLE _tag_output
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(_tag_result EQUAL 0 AND NOT _tag_output STREQUAL "")
+            execute_process(
+                COMMAND "${_slicesoft_git_executable}" -C "${source_dir}"
+                        rev-list --count "${_tag_output}..HEAD"
+                RESULT_VARIABLE _since_result
+                OUTPUT_VARIABLE _since_output
+                ERROR_QUIET
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+            if(_since_result EQUAL 0 AND _since_output MATCHES "^[0-9]+$")
+                set(value "${_since_output}")
+            endif()
+        elseif(_total_result EQUAL 0 AND _total_output MATCHES "^[0-9]+$")
+            set(value "${_total_output}")
+        endif()
+    endif()
+    # VERSIONINFO 的每段上限为 65535，越界会静默截断，故此处显式失败而不是悄悄写坏资源。
+    if(value GREATER 65535)
+        message(FATAL_ERROR
+            "Derived SliceSoft patch version exceeds the VERSIONINFO limit: ${value}")
+    endif()
+    set(${output} "${value}" PARENT_SCOPE)
+endfunction()
+
 function(_slicesoft_compose_implementation_version output core prerelease)
     if(prerelease STREQUAL "")
         set(value "${core}")
@@ -134,6 +185,32 @@ function(slicesoft_load_version_manifest manifest_path)
             "lockstep release requires application and slicer versions to match release")
     endif()
 
+    # PATCH 自动派生：清单只维护 MAJOR.MINOR，PATCH 由 git 决定。
+    # 在锁步校验【之后】执行，且三者用同一派生值，锁步关系不受影响。
+    # 清单里的 PATCH 退化为「取不到 git 时的回退值」，仍需保持为合法 SemVer 数字。
+    string(REPLACE "." ";" _slicesoft_version_parts "${release_version}")
+    list(GET _slicesoft_version_parts 0 _slicesoft_major)
+    list(GET _slicesoft_version_parts 1 _slicesoft_minor)
+    list(GET _slicesoft_version_parts 2 _slicesoft_manifest_patch)
+    _slicesoft_derive_patch(
+        _slicesoft_patch "${_slicesoft_manifest_patch}" "${CMAKE_CURRENT_SOURCE_DIR}")
+    set(release_version "${_slicesoft_major}.${_slicesoft_minor}.${_slicesoft_patch}")
+    set(app_version "${release_version}")
+    set(slicer_version "${release_version}")
+
+    # HEAD 变动时重新配置，否则派生出的 PATCH 会停在上次配置时的快照。
+    # .git/HEAD 记录当前分支指针，refs 目录记录各分支/标签的提交，两者足以覆盖
+    # 「提交」「切分支」「打标签」三种会改变派生结果的操作。
+    foreach(_slicesoft_git_watch IN ITEMS ".git/HEAD" ".git/refs")
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_slicesoft_git_watch}")
+            set_property(
+                DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                APPEND
+                PROPERTY CMAKE_CONFIGURE_DEPENDS
+                "${CMAKE_CURRENT_SOURCE_DIR}/${_slicesoft_git_watch}")
+        endif()
+    endforeach()
+
     _slicesoft_compose_implementation_version(
         app_implementation "${app_version}" "${app_prerelease}")
     _slicesoft_compose_implementation_version(
@@ -144,10 +221,18 @@ function(slicesoft_load_version_manifest manifest_path)
         file(READ "${vcpkg_manifest}" vcpkg_json)
         _slicesoft_version_json_get(
             vcpkg_version "${vcpkg_json}" version-string)
-        if(NOT vcpkg_version STREQUAL app_implementation)
+        # vcpkg.json 的 version-string 是【依赖解析用的包标识】，不是构建标识。
+        # PATCH 改为自动派生后，若仍要求逐字相等，等于每次提交都得改这个文件。
+        # 故只比对 MAJOR.MINOR 与预发布标识，PATCH 不参与。
+        _slicesoft_compose_implementation_version(
+            _slicesoft_vcpkg_expected
+            "${_slicesoft_major}.${_slicesoft_minor}.${_slicesoft_manifest_patch}"
+            "${app_prerelease}")
+        if(NOT vcpkg_version STREQUAL _slicesoft_vcpkg_expected)
             message(FATAL_ERROR
-                "vcpkg.json version-string must match the source version manifest: "
-                "${vcpkg_version} != ${app_implementation}")
+                "vcpkg.json version-string must match the source version manifest "
+                "major.minor and prerelease: "
+                "${vcpkg_version} != ${_slicesoft_vcpkg_expected}")
         endif()
     endif()
 

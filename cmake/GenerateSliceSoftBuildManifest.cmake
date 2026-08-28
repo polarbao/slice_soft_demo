@@ -103,7 +103,13 @@ set(manifest_content "{\n")
 string(APPEND manifest_content "  \"schema\": \"slicesoft.build.1\",\n")
 string(APPEND manifest_content "  \"releasePolicy\": \"${RELEASE_POLICY}\",\n")
 string(APPEND manifest_content "  \"releaseStatus\": \"${RELEASE_STATUS}\",\n")
+# 构建时间戳。版本号本身必须保持纯数字（VERSIONINFO 的 FILEVERSION 要求），
+# 故时间不进版本号，而作为构建元数据单独记录：既满足「产物能对上时间」的追溯需求，
+# 又不破坏版本比较。取 UTC 以免跨时区产物排序错乱。
+string(TIMESTAMP build_timestamp_utc "%Y-%m-%dT%H:%M:%SZ" UTC)
 string(APPEND manifest_content "  \"source\": {\"revision\": \"${revision}\", \"state\": \"${source_state}\"},\n")
+string(APPEND manifest_content "  \"buildTimestampUtc\": \"${build_timestamp_utc}\",
+")
 string(APPEND manifest_content "  \"build\": {\"config\": \"${CONFIG}\", \"runtime\": \"${runtime}\", \"triplet\": \"${TARGET_TRIPLET}\", \"tiffBackend\": \"${TIFF_BACKEND}\", \"openVdb\": ${openvdb_json}},\n")
 string(APPEND manifest_content "  \"components\": {\n")
 string(APPEND manifest_content "    \"application\": {\"id\": \"${APP_ID}\", \"name\": \"${APP_NAME}\", \"version\": \"${APP_VERSION}\", \"fullBuildVersion\": \"${app_full_version}\"},\n")

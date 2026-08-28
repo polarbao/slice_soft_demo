@@ -13,57 +13,121 @@
     "compatibility"
   ],
   "properties": {
-    "schema": { "const": "slicesoft.build.1" },
-    "releasePolicy": { "const": "lockstep" },
+    "schema": {
+      "const": "slicesoft.build.1"
+    },
+    "releasePolicy": {
+      "const": "lockstep"
+    },
     "releaseStatus": {
-      "enum": ["development", "prerelease", "stable", "deprecated"]
+      "enum": [
+        "development",
+        "prerelease",
+        "stable",
+        "deprecated"
+      ]
     },
     "source": {
       "type": "object",
-      "required": ["revision", "state"],
+      "required": [
+        "revision",
+        "state"
+      ],
       "properties": {
         "revision": {
           "type": "string",
           "pattern": "^(?:unknown|[0-9a-f]{12})$"
         },
-        "state": { "enum": ["clean", "dirty", "unknown"] }
+        "state": {
+          "enum": [
+            "clean",
+            "dirty",
+            "unknown"
+          ]
+        }
       },
       "additionalProperties": false
     },
+    "buildTimestampUtc": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "description": "构建产出时刻（UTC，ISO-8601）。版本号本身须为纯数字以满足 VERSIONINFO 的 FILEVERSION 要求，故时间不进版本号，而在此单独记录，用于把产物对回具体构建。"
+    },
     "build": {
       "type": "object",
-      "required": ["config", "runtime", "triplet", "tiffBackend", "openVdb"],
+      "required": [
+        "config",
+        "runtime",
+        "triplet",
+        "tiffBackend",
+        "openVdb"
+      ],
       "properties": {
-        "config": { "enum": ["Debug", "Release"] },
-        "runtime": { "enum": ["MSVC-x64-MDd", "MSVC-x64-MD"] },
-        "triplet": { "type": "string", "minLength": 1 },
-        "tiffBackend": { "enum": ["libtiff", "handwritten"] },
-        "openVdb": { "type": "boolean" }
+        "config": {
+          "enum": [
+            "Debug",
+            "Release"
+          ]
+        },
+        "runtime": {
+          "enum": [
+            "MSVC-x64-MDd",
+            "MSVC-x64-MD"
+          ]
+        },
+        "triplet": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tiffBackend": {
+          "enum": [
+            "libtiff",
+            "handwritten"
+          ]
+        },
+        "openVdb": {
+          "type": "boolean"
+        }
       },
       "additionalProperties": false
     },
     "components": {
       "type": "object",
-      "required": ["application", "slicer"],
+      "required": [
+        "application",
+        "slicer"
+      ],
       "properties": {
         "application": {
           "allOf": [
-            { "$ref": "#/$defs/buildComponent" },
+            {
+              "$ref": "#/$defs/buildComponent"
+            },
             {
               "properties": {
-                "id": { "const": "slicesoft-app" },
-                "name": { "const": "SliceSoft" }
+                "id": {
+                  "const": "slicesoft-app"
+                },
+                "name": {
+                  "const": "SliceSoft"
+                }
               }
             }
           ]
         },
         "slicer": {
           "allOf": [
-            { "$ref": "#/$defs/buildComponent" },
+            {
+              "$ref": "#/$defs/buildComponent"
+            },
             {
               "properties": {
-                "id": { "const": "slicer" },
-                "name": { "const": "SliceSoft Geometry Slicer" }
+                "id": {
+                  "const": "slicer"
+                },
+                "name": {
+                  "const": "SliceSoft Geometry Slicer"
+                }
               }
             }
           ]
@@ -73,7 +137,9 @@
     },
     "compatibility": {
       "type": "object",
-      "required": ["contracts"],
+      "required": [
+        "contracts"
+      ],
       "properties": {
         "contracts": {
           "const": [
@@ -89,10 +155,21 @@
   "$defs": {
     "buildComponent": {
       "type": "object",
-      "required": ["id", "name", "version", "fullBuildVersion"],
+      "required": [
+        "id",
+        "name",
+        "version",
+        "fullBuildVersion"
+      ],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "name": { "type": "string", "minLength": 1 },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
         "version": {
           "type": "string",
           "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?$"
@@ -110,14 +187,22 @@
       "if": {
         "properties": {
           "build": {
-            "properties": { "config": { "const": "Debug" } }
+            "properties": {
+              "config": {
+                "const": "Debug"
+              }
+            }
           }
         }
       },
       "then": {
         "properties": {
           "build": {
-            "properties": { "runtime": { "const": "MSVC-x64-MDd" } }
+            "properties": {
+              "runtime": {
+                "const": "MSVC-x64-MDd"
+              }
+            }
           }
         }
       }
@@ -126,14 +211,22 @@
       "if": {
         "properties": {
           "build": {
-            "properties": { "config": { "const": "Release" } }
+            "properties": {
+              "config": {
+                "const": "Release"
+              }
+            }
           }
         }
       },
       "then": {
         "properties": {
           "build": {
-            "properties": { "runtime": { "const": "MSVC-x64-MD" } }
+            "properties": {
+              "runtime": {
+                "const": "MSVC-x64-MD"
+              }
+            }
           }
         }
       }
