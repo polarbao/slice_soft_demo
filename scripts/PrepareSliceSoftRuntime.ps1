@@ -7,7 +7,9 @@ param(
     [ValidateSet("VisualStudio", "NMake")]
     [string]$BuildSystem = "VisualStudio",
     [ValidateRange(1, 64)]
-    [int]$Jobs = 8,
+    # 默认并行度。此前为 8，而开发机普遍 16 逻辑核以上（本机 18），
+    # 等于长期只用了一半算力。CMakePresets 的 buildPresets.jobs 已同步提到 16。
+    [int]$Jobs = 16,
     [string]$Qt5Dir = $env:Qt5_DIR,
     [ValidateSet("handwritten", "libtiff")]
     [string]$TiffBackend = "libtiff",
@@ -15,7 +17,17 @@ param(
     [switch]$ConfigureOnly,
     [switch]$DeployOnly,
     [switch]$SkipDeploy,
-    [switch]$ForceClean
+    [switch]$ForceClean,
+    # 迭代期加速：跳过 --clean-first 并【同时】重新启用 MSBuild 文件跟踪。
+    #
+    # 这两件事必须成对，不能只做前一半：VS 生成器默认关闭 TrackFileAccess
+    # （见下方 /p:TrackFileAccess=false），跟踪器一关，MSBuild 就无法建立头文件依赖，
+    # 改头文件不会触发依赖它的 .cpp 重编——此时若再跳过全量重建，
+    # 得到的就是「编译通过但用的是旧目标文件」这类最难查的问题。
+    # 故本开关把「跳过清理」与「恢复跟踪」绑在一起，让增量在依赖上仍然可信。
+    #
+    # 默认仍为全量重建，发布部署请勿使用本开关。
+    [switch]$Incremental
 )
 
 Set-StrictMode -Version Latest
@@ -679,6 +691,17 @@ try
                     -CurrentFingerprint $buildInputFingerprint `
                     -ForceClean $ForceClean.IsPresent
             }
+            elseif ($Incremental)
+            {
+                # 显式增量：跟踪器已在下方随本开关恢复，头文件依赖重新可信，
+                # 故不再需要用全量重建来兜底，只有 -ForceClean 能强制清理。
+                #
+                # 此处【不查指纹】：GetRuntimeBuildInputFingerprint 枚举 src 与 apps 下
+                # 全部源文件，任何一处改动都会让指纹变化。它的语义是「源码一变就全量」，
+                # 在活跃开发期等于恒真——用它当增量的闸门，增量永远不会发生。
+                # 而 -Incremental 的前提恰恰是「源码变了，但 MSBuild 能正确增量」。
+                $ForceClean.IsPresent
+            }
             else
             {
                 # VS 2026 file tracking is disabled below because its tracker can
@@ -774,9 +797,11 @@ try
                     throw "Required x64 build tool was not found: $requiredTool"
                 }
             }
+            # 增量模式下必须恢复文件跟踪，否则头文件依赖不成立（见参数区说明）。
+            $trackFileAccess = if ($Incremental) { "true" } else { "false" }
             $buildArguments += @(
                 "--",
-                "/p:TrackFileAccess=false",
+                "/p:TrackFileAccess=$trackFileAccess",
                 "/p:CLToolPath=$msvcHostToolPath",
                 "/p:CLToolExe=cl.exe",
                 "/p:LibToolPath=$msvcHostToolPath",

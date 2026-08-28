@@ -420,18 +420,27 @@ bool HostPackageReviewController::LoadSummary(QString* error)
         violation = QStringLiteral("网格尺寸须为正，实为 %1 x %2")
                         .arg(m_review.widthpx).arg(m_review.heightpx);
     }
-    else if (m_review.instancecount <= 0)
-    {
-        violation = QStringLiteral("实例数须为正，实为 %1").arg(m_review.instancecount);
-    }
-    else if (m_review.profileversion.isEmpty())
-    {
-        violation = QStringLiteral("摘要缺少 Profile 版本");
-    }
-    else if (m_review.profilehash.isEmpty())
-    {
-        violation = QStringLiteral("摘要缺少 Profile hash");
-    }
+    // 【不再】要求 instancecount > 0。
+    //
+    // perInstance 是 manifest 的【可选】字段：PackageQueryFacadePackage 读它时用的是
+    // `if (manifest.contains("perInstance"))`，而写它的只有六通道多模型场景写包器；
+    // 七通道包走 slicer.cpp 的 legacy 发布路径，从不写该字段。
+    // 结果页却把这个可选字段当作必需，于是每个 RGBWSVT 产出都以「实例数须为正，实为 0」
+    // 被拒——门槛比包契约本身更严，拒的是合法的包。
+    // 实例数仍在摘要中展示，只是不再作为受理条件。
+    // 【不再】要求 profileVersion / profileHash 非空——与 perInstance 同一类问题。
+    //
+    // 这两个值取自 manifest.profileEcho，而该字段在两条协议上待遇不同：
+    // 六通道路径 PackageQueryFacadePackage:271 直接 ReadProfileEcho（必需，缺则抛错）；
+    // 七通道路径 :241 是 `contains("profileEcho") ? ... : {}`（可选，缺则给空）。
+    // 而七通道写包端从不填它，于是结果页每次都以「摘要缺少 Profile 版本」拒收。
+    // 预览是诊断视图，不该要求写包端根本不产出的溯源元数据。
+    //
+    // 但七通道包缺 profileEcho / perInstance 本身【是真实缺陷】，不是可以接受的现状：
+    // RgbwsvPackageWriter 本就支持 profileecho 与 perinstance 两个可选请求字段，
+    // 六通道场景路径会填、七通道发布路径不填，属遗漏而非设计。
+    // 该缺陷位于写包端，应单独修复；此处放开的只是「预览的受理条件」，
+    // 不代表认可包的元数据可以缺失。两者一并放在 REPORT 中登记。
     if (!violation.isEmpty())
     {
         if (error != nullptr)

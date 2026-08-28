@@ -89,7 +89,7 @@
       "targets": [
         "slicesoft_runtime"
       ],
-      "jobs": 8
+      "jobs": 16
     },
     {
       "name": "slicesoft-release",
@@ -99,7 +99,7 @@
       "targets": [
         "slicesoft_runtime"
       ],
-      "jobs": 8
+      "jobs": 16
     },
     {
       "name": "slicesoft-relwithdebinfo",
@@ -109,7 +109,7 @@
       "targets": [
         "slicesoft_runtime"
       ],
-      "jobs": 8
+      "jobs": 16
     },
     {
       "name": "slicesoft-nmake-release-fallback",
@@ -128,7 +128,7 @@
         "slicesoft_runtime",
         "tiff_backend_build_info_unit_tests"
       ],
-      "jobs": 8
+      "jobs": 16
     },
     {
       "name": "slicesoft-handwritten-legacy-release",
@@ -139,7 +139,7 @@
         "tiff_writer_contract_unit_tests",
         "tiff_backend_build_info_unit_tests"
       ],
-      "jobs": 8
+      "jobs": 16
     }
   ]
 }

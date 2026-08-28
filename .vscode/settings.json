@@ -5,5 +5,10 @@
     "cmake.sourceDirectory": "${workspaceFolder}",
     "cmake.cmakePath": "${env:CMAKE}",
     "cmake.useCMakePresets": "always",
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "cmake.parallelJobs": 16,
+    "cmake.configureOnEdit": false,
+    "cmake.buildToolArgs": [
+        "/p:TrackFileAccess=true"
+    ]
 }

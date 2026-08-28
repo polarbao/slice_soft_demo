@@ -137,49 +137,18 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo = new QComboBox(this);
     m_previewModeCombo->setObjectName(
         QStringLiteral("hostPackagePreviewModeCombo"));
+    /* 下拉项由「全通道并集 + 单通道」两类构成。
+       此前另有 RGB+白墨、RGB+支撑、RGB+光油 等两两组合，共 13 项：
+       用户要在其中挑对一项，先得知道包是几通道、哪些通道有数据；
+       而这些中间组合既不是判读材质本色的最佳视图（那是 RGB 单通道），
+       也不是查看全部产出的最佳视图（那是并集）。故收敛为两类。
+       并集项的通道集由 SelectDefaultPreviewMode 按包实际通道自动选中。 */
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB（纹理）"), Channels({"R", "G", "B"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 白墨"), Channels({"R", "G", "B", "W"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 支撑"), Channels({"R", "G", "B", "S"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 光油"), Channels({"R", "G", "B", "V"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 支撑 + 白墨 + 光油"),
+        QStringLiteral("全通道并集（六通道）"),
         Channels({"R", "G", "B", "W", "S", "V"}));
-    /* MV-07C 曾把默认改为 RGB-only，理由是六通道组合把 S 叠成纯绿、易被误读为
-       RGB 材质色。该理由已由根因修复消除：支撑伪彩色改为品红，不再与任何真实
-       材质色相撞。RGB-only 的代价是支撑在默认视图中完全不可见——MATVOL 接线后
-       用户据此报告「切片数据未显示支撑」，而实测 S 通道数据完好。故默认恢复为
-       全通道组合，使切片产出的全部内容默认可见。setCurrentIndex 在 connect 之前
-       执行，不触发槽。 */
-    m_previewModeCombo->setCurrentIndex(4);
-    m_previewModeCombo->setItemData(
-        0,
-        QStringLiteral("仅显示 R/G/B 真实颜色，用于判读材质本色。"),
-        Qt::ToolTipRole);
-    m_previewModeCombo->setItemData(
-        1,
-        QStringLiteral(
-            "叠加 W 白墨伪彩色（青蓝 0,170,255），不代表生产 TIFF 像素值。"),
-        Qt::ToolTipRole);
-    m_previewModeCombo->setItemData(
-        2,
-        QStringLiteral(
-            "叠加 S 支撑伪彩色（纯绿 0,255,0），不代表生产 TIFF 像素值。"),
-        Qt::ToolTipRole);
-    m_previewModeCombo->setItemData(
-        3,
-        QStringLiteral(
-            "叠加 V 光油伪彩色（中灰 127,127,127），不代表生产 TIFF 像素值。"),
-        Qt::ToolTipRole);
-    m_previewModeCombo->setItemData(
-        4,
-        QStringLiteral(
-            "同时叠加 W/S/V 三种伪彩色；其中 S 为纯绿，判读 RGB 材质色时请切到 RGB-only。"
-            "判读材质本色请改用 RGB（纹理）。"),
-        Qt::ToolTipRole);
+    m_previewModeCombo->addItem(
+        QStringLiteral("全通道并集（七通道·含缩裹）"),
+        Channels({"R", "G", "B", "W", "S", "V", "T"}));
     for (const char* channel : {"R", "G", "B", "W", "S", "V"})
     {
         m_previewModeCombo->addItem(
@@ -187,8 +156,17 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
             Channels({channel}));
     }
     m_previewModeCombo->addItem(QStringLiteral("T（缩裹）"), Channels({"T"}));
-    m_previewModeCombo->addItem(QStringLiteral("RGB + 白墨 + 支撑 + 光油 + 缩裹"),
-                                Channels({"R", "G", "B", "W", "S", "V", "T"}));
+    m_previewModeCombo->setItemData(
+        0,
+        QStringLiteral(
+            "叠加 W 青蓝、S 纯绿、V 中灰三种伪彩色；伪彩色不代表生产 TIFF 像素值。"),
+        Qt::ToolTipRole);
+    m_previewModeCombo->setItemData(
+        1,
+        QStringLiteral(
+            "在六通道并集之上再叠加缩裹 T（品红），缩裹压在最上层以免被支撑盖住；"
+            "伪彩色不代表生产 TIFF 像素值。"),
+        Qt::ToolTipRole);
     controls->addWidget(m_previewModeCombo);
     rootLayout->addLayout(controls);
 
