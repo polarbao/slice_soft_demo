@@ -908,18 +908,46 @@ try
         $sourceSlicerVersion +=
             "-" + [string]$sourceVersionSnapshot.components.slicer.preRelease
     }
+    # PATCH 由 git 派生（自最近 v* 标签起的提交数），源清单只维护 MAJOR.MINOR。
+    # 故与源清单比对时【剔除 PATCH】，只比 MAJOR.MINOR 与预发布标识；
+    # 而构建清单与模块清单同属一次构建，彼此仍【逐字相等】，锁步照旧严格。
+    # 若在此对源清单也逐字比对，每提交一次部署就会失败一次——
+    # 而那并不表示任何东西漂移了。
+    function Get-VersionLine([string]$value)
+    {
+        $core, $prerelease = $value -split "-", 2
+        $parts = $core -split "\."
+        if ($parts.Count -ne 3)
+        {
+            return $null
+        }
+        $line = $parts[0] + "." + $parts[1]
+        if (-not [string]::IsNullOrWhiteSpace($prerelease))
+        {
+            $line += "-" + $prerelease
+        }
+        return $line
+    }
+
+    $sourceLine = Get-VersionLine $sourceApplicationVersion
+    $buildAppVersion = [string]$buildVersionSnapshot.components.application.version
+    $buildSlicerVersion = [string]$buildVersionSnapshot.components.slicer.version
     $versionSnapshotValid =
         $sourceVersionSnapshot.schemaVersion -eq 1 -and
         $sourceVersionSnapshot.releasePolicy -eq "lockstep" -and
         $buildVersionSnapshot.schema -eq "slicesoft.build.1" -and
         $buildVersionSnapshot.build.config -eq $Config -and
-        $buildVersionSnapshot.components.application.version -eq $sourceApplicationVersion -and
-        $buildVersionSnapshot.components.slicer.version -eq $sourceSlicerVersion -and
+        $null -ne $sourceLine -and
+        (Get-VersionLine $buildAppVersion) -eq $sourceLine -and
+        (Get-VersionLine $buildSlicerVersion) -eq $sourceLine -and
         $sourceApplicationVersion -eq $sourceSlicerVersion -and
-        $sourceSlicerVersion -eq $moduleVersionSnapshot.version
+        $buildAppVersion -eq $buildSlicerVersion -and
+        $buildSlicerVersion -eq [string]$moduleVersionSnapshot.version
     if (-not $versionSnapshotValid)
     {
-        throw "SliceSoft source/build/module version snapshot is inconsistent."
+        throw ("SliceSoft source/build/module version snapshot is inconsistent: " +
+            "source=$sourceApplicationVersion build=$buildAppVersion/$buildSlicerVersion " +
+            "module=$($moduleVersionSnapshot.version) config=$Config")
     }
     if ([string]$sourceVersionSnapshot.release.status -eq "stable")
     {
@@ -947,24 +975,26 @@ try
     $versionedBinaries = @(
         [pscustomobject]@{
             path = $slicerCli
-            version = $sourceApplicationVersion
+            version = $buildAppVersion
             fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
         },
         [pscustomobject]@{
             path = $hostUiExecutable
-            version = $sourceApplicationVersion
+            version = $buildAppVersion
             fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
         },
         [pscustomobject]@{
             path = $moduleLibrary
-            version = $sourceSlicerVersion
+            version = $buildSlicerVersion
             fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
         },
         [pscustomobject]@{
             path = $workerExecutable
-            version = $sourceSlicerVersion
+            version = $buildSlicerVersion
             fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
         })
+    # VERSIONINFO 由构建时写入，其 PATCH 是 git 派生值，故基准取【构建清单】而非源清单。
+    # 此前用 $sourceSlicerVersion 比对，PATCH 改为派生后每次构建都会判定为「身份漂移」。
     foreach ($binary in $versionedBinaries)
     {
         $versionInfo = (Get-Item -LiteralPath $binary.path).VersionInfo
@@ -1177,8 +1207,9 @@ try
             "Plugins=."
         ) | Set-Content -LiteralPath (Join-Path $stagingDir "qt.conf") -Encoding Ascii
 
+        # --version 打印的是二进制内嵌版本，其 PATCH 为 git 派生值，故基准取【构建清单】。
         $expectedApplicationVersionOutput =
-            "SliceSoft $sourceApplicationVersion`n" +
+            "SliceSoft $buildAppVersion`n" +
             "build $([string]$buildVersionSnapshot.components.application.fullBuildVersion)"
         foreach ($applicationBinary in @("slicer_cli.exe", "slicer_ui_host_sim.exe"))
         {
@@ -1194,22 +1225,22 @@ try
         $stagedVersionedBinaries = @(
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_cli.exe"
-                version = $sourceApplicationVersion
+                version = $buildAppVersion
                 fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
             },
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_ui_host_sim.exe"
-                version = $sourceApplicationVersion
+                version = $buildAppVersion
                 fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
             },
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_module.dll"
-                version = $sourceSlicerVersion
+                version = $buildSlicerVersion
                 fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
             },
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_worker.exe"
-                version = $sourceSlicerVersion
+                version = $buildSlicerVersion
                 fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
             })
         foreach ($binary in $stagedVersionedBinaries)
@@ -1257,7 +1288,7 @@ try
             [string]$workerContract.contract -ne "file_contract" -or
             $workerContract.major -ne 1 -or
             $workerContract.minor -lt $workerRequiredMinor -or
-            [string]$workerContract.engineVersion -ne $sourceSlicerVersion -or
+            [string]$workerContract.engineVersion -ne $buildSlicerVersion -or
             $workerProduces.Count -ne @($workerProduces | Select-Object -Unique).Count -or
             $workerProduces -notcontains $baselinePackageContract -or
             $workerUnknownProduces.Count -ne 0)
@@ -1293,7 +1324,7 @@ try
                 ($deployedModuleInfo.spi -is [long])) -or
             [string]$deployedModuleInfo.schema -ne "slicesoft.module_info.1" -or
             [string]$deployedModuleInfo.id -ne "slicer" -or
-            [string]$deployedModuleInfo.version -ne $sourceSlicerVersion -or
+            [string]$deployedModuleInfo.version -ne $buildSlicerVersion -or
             $deployedModuleInfo.spi -ne 1 -or
             $moduleProduceContracts.Count -ne $moduleUniqueProduceCount -or
             $moduleProduceContracts -notcontains $baselinePackageContract -or
