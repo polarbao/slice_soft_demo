@@ -396,6 +396,13 @@ struct ExperimentalConfig
 };
 
 struct SliceConfig {
+    // 宿主有效 Profile 顶层的溯源标识（HostRequestBuilder 发射 profileVersion 与
+    // profileHash）。此前不被保留，导致写包时无从产出 manifest.profileEcho，
+    // 而结果页与包摘要都以该字段承载「这一包由哪份 Profile 切出」。
+    // CLI 直接喂配置文件时两者为空——那种场景本就没有 Profile 溯源，
+    // 故按空处理并【不发射】该字段，既不编造也不影响既有 golden 包的字节。
+    std::string profile_version;
+    std::string profile_hash;
     std::optional<std::string> white_semantics;
     std::string slicing_mode{"closed_mesh_scanline"};
     SlicePipelineConfig slice_pipeline;

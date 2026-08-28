@@ -27,7 +27,42 @@
 #include <sstream>
 
 namespace
+{// 断言随规则而非索引：凡叠加了非 RGB 通道的条目，其 tooltip 必须写明是伪彩色。
+//
+// 原断言把「索引 4 的 tooltip 含伪彩色」写死。索引 4 当时恰是六通道组合，
+// 但那是下拉排布的实现细节：并集项由两个（六通道、七通道）合并为一个随包改写的项后，
+// 索引 4 变成了单通道，断言随即失败——而它要守的性质（伪彩色必须有说明，
+// 免得被当成生产 TIFF 的像素值）其实一条都没被破坏。
+// 钉索引会让每次合理的重排都误报，钉规则才守得住意图。
+bool AllPseudoColourItemsExplainThemselves(const QComboBox* combo)
 {
+    if (combo == nullptr)
+    {
+        return false;
+    }
+    for (int index = 0; index < combo->count(); ++index)
+    {
+        const QStringList channels = combo->itemData(index).toStringList();
+        const bool hasPseudoColourChannel =
+            channels.contains(QStringLiteral("W"))
+            || channels.contains(QStringLiteral("S"))
+            || channels.contains(QStringLiteral("V"))
+            || channels.contains(QStringLiteral("T"));
+        if (!hasPseudoColourChannel)
+        {
+            continue;
+        }
+        if (!combo->itemData(index, Qt::ToolTipRole)
+                 .toString()
+                 .contains(QStringLiteral("伪彩色")))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 bool Check(const bool condition, const QString& message, QTextStream& errors)
 {
     if (!condition)
@@ -1352,9 +1387,7 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                    && !previewMode->itemData(0, Qt::ToolTipRole)
                            .toString()
                            .isEmpty()
-                   && previewMode->itemData(4, Qt::ToolTipRole)
-                           .toString()
-                           .contains(QStringLiteral("伪彩色")),
+                   && AllPseudoColourItemsExplainThemselves(previewMode),
                QStringLiteral(
                    "MV-07C：预览模式条目必须带伪彩色说明的 tooltip。"),
                errors)

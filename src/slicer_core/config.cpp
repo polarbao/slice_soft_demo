@@ -146,6 +146,10 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     {
         config.white_semantics = root.at("whiteSemantics").as_string();
     }
+    // Profile 溯源标识。缺省为空即「本次切片无 Profile 溯源」（CLI 直接喂配置的场景），
+    // 写包时据此决定是否发射 manifest.profileEcho，避免为不存在的溯源编造内容。
+    config.profile_version = root.value("profileVersion", config.profile_version);
+    config.profile_hash = root.value("profileHash", config.profile_hash);
     config.slicing_mode = root.value("slicingMode", config.slicing_mode);
 
     if (root.contains("slicePipeline"))

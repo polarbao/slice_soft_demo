@@ -20,6 +20,8 @@ add_executable(slicer_ui_host_sim
     HostPackageReviewChannels.h
     HostPackageReviewController.cpp
     HostPackageReviewController.h
+    HostPackageReviewPreviewMode.cpp
+    HostPackageReviewPreviewMode.h
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     HostRipJobController.cpp
@@ -817,6 +819,8 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostSliceSettingsPanel.h
     HostSliceJobPanel.cpp
     HostSliceJobPanel.h
+    HostPackageReviewPreviewMode.cpp
+    HostPackageReviewPreviewMode.h
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     HostPackageReviewController.h
@@ -1226,6 +1230,8 @@ add_test(
 add_executable(hostflow_hd05_package_directory_tests
     HostChannelChartWidget.cpp
     HostChannelChartWidget.h
+    HostPackageReviewPreviewMode.cpp
+    HostPackageReviewPreviewMode.h
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     ${CMAKE_SOURCE_DIR}/tests/hostflow/HostPackageDirectoryPanelTests.cpp

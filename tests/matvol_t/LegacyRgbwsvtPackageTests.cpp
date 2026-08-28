@@ -266,6 +266,66 @@ bool DefaultPreviewCandidateUsesPersistedTransferSemantics(const std::filesystem
 
 }  // namespace
 
+// profileEcho 按 Profile 溯源【条件】发射，而不是无条件写或一律不写。
+//
+// 背景：包摘要与宿主结果页都以 manifest.profileEcho 承载「这一包由哪份 Profile 切出」，
+// 而 legacy 发布路径（七通道包的唯一出口）此前从不写它，摘要因此永远读不到。
+//
+// 本用例同时守住两侧，缺一都会退化：
+//   有溯源 → 必须发射，且内容取自 Profile 而非占位值；
+//   无溯源 → 必须【不】发射。CLI 直接喂配置的场景本就没有 Profile 溯源，
+//            写占位值会把「缺失」伪装成「有」；而既有 golden 配置均无 profileVersion，
+//            无条件发射会改变它们的包字节，冲掉 MV-09 建立的零漂移结论。
+bool ProfileEchoIsEmittedOnlyWhenTraceabilityExists(
+    const std::filesystem::path& root)
+{
+    const std::filesystem::path withPackage = root / "echo_with";
+    slicer_core::Json::Object withRoot =
+        MakeConfig(withPackage, std::array<int, 3>{255, 220, 198}).as_object();
+    withRoot["profileVersion"] = std::string{"1.0"};
+    withRoot["profileHash"] = std::string{"sha256:fixture"};
+    (void)slicer_core::run_slicer(
+        WriteConfig(root, "echo_with", slicer_core::Json{withRoot}),
+        CandidateOptions());
+
+    const std::filesystem::path withoutPackage = root / "echo_without";
+    (void)slicer_core::run_slicer(
+        WriteConfig(
+            root,
+            "echo_without",
+            MakeConfig(withoutPackage, std::array<int, 3>{255, 220, 198})),
+        CandidateOptions());
+
+    const slicer_core::Json withManifest =
+        ReadJson(withPackage / "manifest.json");
+    const slicer_core::Json withoutManifest =
+        ReadJson(withoutPackage / "manifest.json");
+
+    bool passed = ExpectTrue(
+        withManifest.contains("profileEcho"),
+        "profileEcho is emitted when the profile carries traceability");
+    if (passed)
+    {
+        const slicer_core::Json& echo = withManifest.at("profileEcho");
+        passed = ExpectTrue(
+                     echo.contains("profileVersion")
+                         && echo.at("profileVersion").as_string() == "1.0",
+                     "profileEcho carries the profile version verbatim")
+            && passed;
+        passed = ExpectTrue(
+                     echo.contains("profileHash")
+                         && echo.at("profileHash").as_string()
+                             == "sha256:fixture",
+                     "profileEcho carries the profile hash verbatim")
+            && passed;
+    }
+    passed = ExpectTrue(
+                 !withoutManifest.contains("profileEcho"),
+                 "profileEcho stays absent when the profile has no traceability")
+        && passed;
+    return passed;
+}
+
 int main()
 {
     const std::filesystem::path root = TestRoot();
@@ -276,6 +336,7 @@ int main()
         failures += Reality03ManifestMatchesPersistedBytes(root) ? 0 : 1;
         failures += MissingTransferPreservesLegacyProjection(root) ? 0 : 1;
         failures += DefaultPreviewCandidateUsesPersistedTransferSemantics(root) ? 0 : 1;
+        failures += ProfileEchoIsEmittedOnlyWhenTraceabilityExists(root) ? 0 : 1;
     }
     catch (const std::exception& error)
     {

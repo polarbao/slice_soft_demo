@@ -11,7 +11,6 @@
 #include <QString>
 #include <QStringList>
 
-class QComboBox;
 
 /// @brief 按信道名把 JSON 计数读入固定槽位；出现未知信道名即判失败。
 bool ReadChannelCounts(
@@ -25,11 +24,3 @@ bool IsFrozenChannelSet(const QStringList& channels);
 /// @brief 单个信道名是否属于冻结集合。
 bool IsFrozenChannelName(const QString& channel);
 
-/// @brief 按生产包实际通道集自动选定预览模式，并禁用该包不具备的通道项。
-///
-/// 预览模式此前固定默认为六通道组合（硬编码 setCurrentIndex(4)），
-/// 于是七通道包打开后缩裹默认不可见；而 T 相关项在六通道包上又是可选但必然失败的。
-/// 两者都要求用户先知道包是几通道、再手工挑对项——这个知识不该由用户承担。
-void SelectDefaultPreviewMode(
-    QComboBox* combo,
-    const QStringList& packageChannels);

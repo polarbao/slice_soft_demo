@@ -5540,6 +5540,24 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     {
         manifest_fields["whiteSemantics"] = *white_semantics;
     }
+    // Profile 溯源回声。包摘要与宿主结果页都以它承载「这一包由哪份 Profile 切出」；
+    // 此前 legacy 发布路径从不写，于是七通道包（该路径是其唯一出口）始终缺失该字段。
+    //
+    // 仅在两者【都】非空时发射：CLI 直接喂配置文件的场景本就没有 Profile 溯源，
+    // 此时不写比写一个占位值诚实；同时既有 golden 配置均无 profileVersion，
+    // 故此举不改变它们的包字节，MV-09 建立的零漂移结论不受影响。
+    //
+    // 注意本处【不发射】perInstance：该字段要求 instanceId/modelId/layerRange 等
+    // 场景实例信息，而宿主有效 Profile 并不携带（HostRequestBuilder 无 instanceId），
+    // legacy 发布路径也无从得知。编一个 "instance-0" 只会把「缺失」变成「伪造的溯源」，
+    // 后者更难发现。该缺口需由场景侧传入实例上下文才能真正补上。
+    if (!config.profile_version.empty() && !config.profile_hash.empty())
+    {
+        manifest_fields["profileEcho"] = Json::object({
+            {"profileVersion", config.profile_version},
+            {"profileHash", config.profile_hash},
+        });
+    }
     const Json manifest{std::move(manifest_fields)};
     profile.report_build_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "report_write", 0, 1, 95);

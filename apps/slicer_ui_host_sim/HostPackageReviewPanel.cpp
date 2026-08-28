@@ -1,6 +1,6 @@
 #include "HostPackageReviewPanel.h"
 
-#include "HostPackageReviewChannels.h"
+#include "HostPackageReviewPreviewMode.h"
 
 #include "HostChannelChartWidget.h"
 
@@ -158,6 +158,7 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
             Channels({channel}));
     }
     m_previewModeCombo->addItem(QStringLiteral("T（缩裹）"), Channels({"T"}));
+    AttachPseudoColourTooltips(m_previewModeCombo);
     m_previewModeCombo->setItemData(
         0,
         QStringLiteral(
