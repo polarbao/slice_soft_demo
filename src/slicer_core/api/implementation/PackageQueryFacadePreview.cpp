@@ -260,11 +260,11 @@ ApiResult<PreviewResult> PackageQueryFacadeService::RenderLayerPreview(
         {
             const std::set<std::string> channels =
                 ValidateRgbwsvtChannels(request.channels);
-            if (request.mode != "single_channel" && channels.contains("T"))
-            {
-                throw std::runtime_error(
-                    "T is supported only by single_channel preview");
-            }
+            // 组合视图含 T 曾在此被拒。该限制源于当时合成器不认识 T：
+            // 组合路径把 T 丢弃（DropTransferChannel），只能靠单通道另走一条硬编码分支。
+            // 现在合成器已有 RgbSupportWhiteVarnishTransfer 模式、T 平面亦透传，
+            // 组合视图能正确叠加缩裹，故该守卫失效并移除——
+            // 否则宿主的「全通道并集（七通道·含缩裹）」永远无法渲染。
             if (request.mode == "single_channel" && channels.size() != 1U)
             {
                 throw std::runtime_error(

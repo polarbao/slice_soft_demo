@@ -201,9 +201,59 @@ bool BadSevenChannelStatisticsFailClosed()
 
 }  // namespace
 
+// 七通道【组合】预览必须可渲染，且缩裹参与合成。
+//
+// 此前只有 single_channel + T 被覆盖，组合含 T 一条用例都没有——
+// 而恰恰有一道守卫写着「T is supported only by single_channel preview」，
+// 把宿主的「全通道并集（七通道·含缩裹）」整个挡在渲染之前。
+// 用户切完片看到的是空预览框，而通道统计图里 T 明明有数据。
+// 组合视图才是默认视图，只测单通道等于没测用户真正会看到的那一个。
+bool SevenChannelCompositePreviewRenders()
+{
+    TemporaryDirectory directory;
+    const std::filesystem::path package =
+        MakeRgbwsvtPackage(directory.Path(), false);
+    const std::unique_ptr<slicer_core::api::PackageQueryFacade> facade =
+        slicer_core::api::implementation::CreatePackageQueryFacade();
+    NeverCancel cancel;
+
+    slicer_core::api::PreviewRequest composite;
+    composite.package_dir = package;
+    composite.layer_index = 0;
+    composite.mode = "composite";
+    composite.channels = {"R", "G", "B", "W", "S", "V", "T"};
+    composite.max_width_px = 16;
+    composite.output_path = directory.Path() / "composite_with_transfer.png";
+    const auto rendered = facade->RenderLayerPreview(composite, cancel);
+
+    // 同层的六通道组合作为对照：证明失败不是包本身的问题。
+    slicer_core::api::PreviewRequest sixChannel = composite;
+    sixChannel.channels = {"R", "G", "B", "W", "S", "V"};
+    sixChannel.output_path = directory.Path() / "composite_six.png";
+    const auto sixRendered = facade->RenderLayerPreview(sixChannel, cancel);
+
+    return Expect(
+               rendered.IsOk(),
+               std::string{"seven-channel composite preview renders: "}
+                   + (rendered.IsOk() ? "" : rendered.Error()->message))
+        && Expect(
+            sixRendered.IsOk(),
+            "six-channel composite preview still renders")
+        && Expect(
+            rendered.Value()->width_px > 0 && rendered.Value()->height_px > 0,
+            "seven-channel composite emits a sized image")
+        && Expect(
+            std::filesystem::exists(rendered.Value()->output_path),
+            "seven-channel composite writes the preview file")
+        && Expect(
+            rendered.Value()->cache_key != sixRendered.Value()->cache_key,
+            "seven-channel composite differs from the six-channel view");
+}
+
 int main()
 {
     const bool passed = SevenChannelQueriesSucceed()
+        && SevenChannelCompositePreviewRenders()
         && BadSevenChannelStatisticsFailClosed();
     if (!passed)
     {
