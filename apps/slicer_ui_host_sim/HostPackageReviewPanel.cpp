@@ -143,12 +143,14 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
        而这些中间组合既不是判读材质本色的最佳视图（那是 RGB 单通道），
        也不是查看全部产出的最佳视图（那是并集）。故收敛为两类。
        并集项的通道集由 SelectDefaultPreviewMode 按包实际通道自动选中。 */
+    /* 并集只保留【一项】，其通道集由生产包决定，在 SelectDefaultPreviewMode 中按包改写。
+       此前是六通道、七通道两个固定项：对七通道包而言，七通道并集是六通道并集的严格超集
+       （合成器 RgbSupportWhiteVarnishTransfer 依次叠加 RGB/W/S/V，最后才是 T），
+       六通道那项纯属冗余；而对六通道包，七通道那项因缺 T 平面必然失败。
+       两个固定项都要求用户先知道包是几通道，而这恰恰是软件自己知道的事。 */
     m_previewModeCombo->addItem(
-        QStringLiteral("全通道并集（六通道）"),
+        QStringLiteral("全通道并集"),
         Channels({"R", "G", "B", "W", "S", "V"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("全通道并集（七通道·含缩裹）"),
-        Channels({"R", "G", "B", "W", "S", "V", "T"}));
     for (const char* channel : {"R", "G", "B", "W", "S", "V"})
     {
         m_previewModeCombo->addItem(
@@ -159,12 +161,8 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo->setItemData(
         0,
         QStringLiteral(
-            "叠加 W 青蓝、S 纯绿、V 中灰三种伪彩色；伪彩色不代表生产 TIFF 像素值。"),
-        Qt::ToolTipRole);
-    m_previewModeCombo->setItemData(
-        1,
-        QStringLiteral(
-            "在六通道并集之上再叠加缩裹 T（品红），缩裹压在最上层以免被支撑盖住；"
+            "叠加本包全部非 RGB 通道的伪彩色：W 青蓝、S 纯绿、V 中灰；"
+            "七通道包再叠加缩裹 T（品红，压在最上层以免被支撑盖住）。"
             "伪彩色不代表生产 TIFF 像素值。"),
         Qt::ToolTipRole);
     controls->addWidget(m_previewModeCombo);

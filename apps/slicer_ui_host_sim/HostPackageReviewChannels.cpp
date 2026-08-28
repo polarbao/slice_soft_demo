@@ -83,6 +83,20 @@ void SelectDefaultPreviewMode(
     }
     const QSet<QString> available(
         packageChannels.begin(), packageChannels.end());
+    // 并集项（索引 0）的通道集随包改写，而不是提供多个固定并集让用户去挑：
+    // 七通道并集是六通道并集的严格超集，对七通道包而言后者纯属冗余；
+    // 对六通道包，七通道并集又因缺 T 平面必然失败。包是几通道是软件知道的事。
+    if (combo->count() > 0)
+    {
+        combo->setItemData(0, packageChannels);
+        combo->setItemText(
+            0,
+            QStringLiteral("全通道并集（%1 通道%2）")
+                .arg(packageChannels.size())
+                .arg(available.contains(QStringLiteral("T"))
+                         ? QStringLiteral("·含缩裹")
+                         : QString{}));
+    }
     int preferred = -1;
     int widest = -1;
     for (int index = 0; index < combo->count(); ++index)
