@@ -188,6 +188,34 @@ modules/rip/
 严格 Reader、结果重开和恢复流程必须验证其能够容忍该下游命名空间；若事实证明冻结合同拒绝
 额外目录，停止开发并建立 Stage 14 受控修订，禁止偷偷修改 Reader 或 manifest。
 
+### 4.3 人工指定文件夹的 unbound 作业域
+
+用户授权新增一条与切片包解绑的操作员通道：人工指定切片文件夹与 RIP 输出文件夹后直接运行
+RIP。该通道与 4.2 的包内通道并存，由 `RipCommandScope` 显式区分：
+
+| 维度 | `PackageBound`（原有，不变） | `ManualUnbound`（新增） |
+|---|---|---|
+| 输入来源 | 通过严格加载的 Package 的 `layers/` | 操作员指定的任意文件夹 |
+| 输入必须位于 Package 内 | 是 | 否（唯一被放宽的约束） |
+| 输出位置 | Package 同级 `rip` / `rip_diagnostic` | 操作员指定的目标文件夹 |
+| manifest 身份冻结 | 捕获并复核 manifest SHA-256 | 无 manifest，改为逐层文件身份冻结 |
+| 像素 Grid 来源 | manifest `grid` | 首层 TIFF 实测，其余层与之逐层比对 |
+| 结果报告 `sourceBinding` | `package_bound` | `manual_unbound` |
+
+裁决：
+
+- 本次只放宽「输入必须位于 Package 内」这一条；模块 `rip_module.json` 的 11 文件
+  SHA-256 校验、二进制与资源不得逃逸模块目录、输入 TIFF 结构校验（8bit / 6 通道 /
+  contiguous / stripped / 单目录）、S2 输出校验与上限、宽度补齐裁回、`slice.N.tiff`
+  → `rip_%06d.tif` 归一化、staging 原子发布、失败与取消 fail-closed 全部保持不变；
+- staging 改为落在目标文件夹的**上级目录**下，仍命名 `.rip.staging.<jobId>`，仍只允许
+  同级原子改名发布；目标已存在一律 fail-closed，绝不覆盖或删除既有目录；
+- 目标文件夹不得与切片文件夹相同或互相嵌套，避免 RIP 读到自己刚写出的产物；
+- 无 manifest 即无 `productionOutputWritten` / `fallbackApplied` / 白色语义声明，因此
+  unbound 产物**不得**被当作已通过切片侧准入的生产件；其结果报告仍写
+  `EXTERNAL_VALIDATION_DEFERRED`，并额外以 `sourceBinding=manual_unbound` 留痕；
+- 自动化（切片完成后自动 RIP）仍只接 `PackageBound`，unbound 只能由操作员显式触发。
+
 ## 5. RIP 设置合同
 
 RIP 设置使用独立 `slicesoft.rip.settings.2`，不并入 `HostSliceSettings` 或 workspace schema v6：
@@ -323,3 +351,4 @@ W/S/V 上限时必须停止严格发布并只保留隔离诊断；需要把私�
 | 2026-08-18 | v1.3 | 根据原始 `rip_project` 处理 635x600 Package 的实测，废止将输出 600x600 标签误解为输入限制；剔除宿主硬编码准入和 S1/S2 DPI Gate，宽高像素 Grid 、TIFF 布局与 W/S/V 限制不变 |
 | 2026-08-18 | v1.4 | 根据用户授权新增与严格 `rip` 隔离的 `rip_diagnostic`；真实 175 层 RIP exitCode=0 并保存 175/175 输出，记录 W/S/V `0..255` 与各 10,875,980 个超限样本；严格 S2 上限不变，后续修订等待供应方/打印侧语义证据 |
 | 2026-08-25 | v1.5 | 接纳新版 RIP `--transparent 0..4` 为五档颜色模式，废止与 manifest 白色语义的二值映射；设置/结果合同升级 v2，`--colormode` 仍固定 0；五档可执行不等于严格 S2 或打印侧生产验收 |
+| 2026-08-27 | v1.6 | 根据用户授权新增 `ManualUnbound` 作业域（人工指定切片/输出文件夹直接运行 RIP），见 4.3。只放宽「输入必须位于 Package 内」一条，模块 SHA-256、输入 TIFF 结构、S2 输出校验、staging 原子发布与 fail-closed 全部不变；unbound 产物以 `sourceBinding=manual_unbound` 留痕，不得视为已通过切片侧准入 |

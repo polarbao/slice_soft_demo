@@ -325,6 +325,16 @@ void HostMainWindow::BuildInterface()
         &HostMainWindow::OnRunRip);
     connect(
         m_ripSettingsPanel,
+        &HostRipSettingsPanel::SigManualPathsChanged,
+        this,
+        &HostMainWindow::OnRipManualPathsChanged);
+    connect(
+        m_ripSettingsPanel,
+        &HostRipSettingsPanel::SigManualRunRequested,
+        this,
+        &HostMainWindow::OnRunManualRip);
+    connect(
+        m_ripSettingsPanel,
         &HostRipSettingsPanel::SigCancelRequested,
         this,
         &HostMainWindow::OnCancelRip);

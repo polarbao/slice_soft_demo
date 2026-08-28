@@ -21,6 +21,7 @@ void HostMainWindow::OnRipSettingsChanged()
         return;
     }
     RefreshRipRequestStatus();
+    RefreshRipManualRequestStatus();
     if (!HostWorkspaceState::PersistenceEnabled())
     {
         return;
@@ -82,6 +83,77 @@ bool HostMainWindow::StartRipForPackage(
     return true;
 }
 
+void HostMainWindow::OnRipManualPathsChanged()
+{
+    RefreshRipManualRequestStatus();
+}
+
+void HostMainWindow::OnRunManualRip()
+{
+    const QString inputDirectory =
+        m_ripSettingsPanel->ManualInputDirectory();
+    const QString outputDirectory =
+        m_ripSettingsPanel->ManualOutputDirectory();
+    QString error;
+    if (!m_ripJobController->StartManual(
+            inputDirectory,
+            outputDirectory,
+            m_ripModuleDirectory,
+            m_ripSettingsPanel->Settings(),
+            &error))
+    {
+        m_ripSettingsPanel->ShowCompletion(false, false, error, QString{});
+        m_statusLabel->setText(
+            QStringLiteral("手动 RIP 启动失败：%1").arg(error));
+        RefreshRipManualRequestStatus();
+        return;
+    }
+    m_ripManualOutputDirectory = QDir::cleanPath(
+        QFileInfo(outputDirectory).absoluteFilePath());
+    m_ripSettingsPanel->SetJobActive(true);
+    m_ripSettingsPanel->ShowJobState(
+        QStringLiteral("手动运行"),
+        QStringLiteral("RIP 已提交 · %1").arg(inputDirectory));
+    SetWorkflowEditingEnabled(false);
+    m_inspectorTabs->setCurrentWidget(m_ripSettingsPanel);
+    m_statusLabel->setText(
+        QStringLiteral("手动 RIP 正在运行 · %1 → %2")
+            .arg(inputDirectory, outputDirectory));
+    RefreshSliceJobReadiness();
+}
+
+void HostMainWindow::RefreshRipManualRequestStatus()
+{
+    const QString inputDirectory =
+        m_ripSettingsPanel->ManualInputDirectory();
+    const QString outputDirectory =
+        m_ripSettingsPanel->ManualOutputDirectory();
+    if (inputDirectory.isEmpty() || outputDirectory.isEmpty())
+    {
+        m_ripSettingsPanel->SetManualRequestStatus(
+            false,
+            QStringLiteral("手动 RIP 未就绪 · 请选择切片与输出文件夹"));
+        return;
+    }
+    QString error;
+    const bool valid = m_ripJobController->CheckManualRequest(
+        inputDirectory,
+        outputDirectory,
+        m_ripModuleDirectory,
+        m_ripSettingsPanel->Settings(),
+        &error);
+    m_ripSettingsPanel->SetManualRequestStatus(
+        valid,
+        valid
+            ? (HostRipSettingsStore::IsDiagnosticMode(
+                   m_ripSettingsPanel->Settings())
+                ? QStringLiteral(
+                    "手动 RIP 已就绪 · 诊断数据将写入所选输出文件夹；不可打印")
+                : QStringLiteral(
+                    "手动 RIP 已就绪 · 严格 S2 输出将写入所选输出文件夹"))
+            : QStringLiteral("手动 RIP 前置检查未通过 · %1").arg(error));
+}
+
 void HostMainWindow::OnCancelRip()
 {
     QString error;
@@ -115,6 +187,7 @@ void HostMainWindow::OnRipCompleted(
             .arg(elapsedMs),
         outputDirectory);
     SetWorkflowEditingEnabled(m_client.IsOpen());
+    RefreshRipManualRequestStatus();
     m_statusLabel->setText(
         success
             ? (code == QStringLiteral("RIP_DIAGNOSTIC_SAVED")
@@ -134,11 +207,17 @@ void HostMainWindow::OnOpenRipOutputRequested(
 {
     const QString packageDirectory =
         m_packageReviewController->Review().packagedirectory;
-    const QString expected = QDir(packageDirectory).filePath(
-        HostRipSettingsStore::EffectiveOutputDirectoryName(
-            m_ripSettingsPanel->Settings()));
-    if (packageDirectory.isEmpty()
-        || QDir::cleanPath(outputDirectory) != QDir::cleanPath(expected)
+    const QString expected = packageDirectory.isEmpty()
+        ? QString{}
+        : QDir(packageDirectory).filePath(
+            HostRipSettingsStore::EffectiveOutputDirectoryName(
+                m_ripSettingsPanel->Settings()));
+    const QString requested = QDir::cleanPath(outputDirectory);
+    const bool packageOutput = !packageDirectory.isEmpty()
+        && requested == QDir::cleanPath(expected);
+    const bool manualOutput = !m_ripManualOutputDirectory.isEmpty()
+        && requested == m_ripManualOutputDirectory;
+    if ((!packageOutput && !manualOutput)
         || !QFileInfo(outputDirectory).isDir()
         || !QDesktopServices::openUrl(QUrl::fromLocalFile(outputDirectory)))
     {
@@ -160,6 +239,7 @@ void HostMainWindow::RefreshRipRuntimeStatus()
                 "RIP 运行时完整性通过；仅限本地工程候选，外部验收延期。")
             : QStringLiteral("RIP 运行时不可用：%1").arg(error));
     RefreshRipRequestStatus();
+    RefreshRipManualRequestStatus();
 }
 
 void HostMainWindow::RefreshRipRequestStatus()

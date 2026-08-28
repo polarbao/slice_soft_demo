@@ -150,14 +150,27 @@ RipStatus BuildRipCommand(
             "RIP_COMMAND_RUNTIME_PATH_ESCAPE",
             "RIP binaries and resources must remain under the module directory");
     }
-    if (!IsContained(request.package_directory, request.input_directory)
+    const bool packageBound =
+        request.scope == RipCommandScope::PackageBound;
+    if ((packageBound
+            && !IsContained(
+                request.package_directory, request.input_directory))
         || !IsContained(
             request.package_directory,
             request.staging_output_directory))
     {
         return RipStatus::Failure(
             "RIP_COMMAND_PACKAGE_PATH_ESCAPE",
-            "RIP input and staging output must remain under the Package directory");
+            packageBound
+                ? "RIP input and staging output must remain under the Package directory"
+                : "RIP staging output must remain under its own parent directory");
+    }
+    if (!packageBound
+        && IsContained(request.input_directory, request.staging_output_directory, true))
+    {
+        return RipStatus::Failure(
+            "RIP_COMMAND_MANUAL_OUTPUT_INSIDE_INPUT",
+            "a manual RIP destination must not sit inside the slice input folder");
     }
     if (!IsDirectory(runtime.module_directory)
         || !IsRegularFile(runtime.cli_path)

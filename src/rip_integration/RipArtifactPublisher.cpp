@@ -56,6 +56,39 @@ bool PathsEqual(
 #endif
 }
 
+RipArtifactPublishResult RenameStagingToOutput(
+    const std::filesystem::path& stagingDirectory,
+    const std::filesystem::path& outputDirectory)
+{
+    RipArtifactPublishResult result;
+    std::error_code error;
+    constexpr int maximumAttempts{5};
+    for (int attempt{0}; attempt < maximumAttempts; ++attempt)
+    {
+        error.clear();
+        std::filesystem::rename(stagingDirectory, outputDirectory, error);
+        if (!error)
+        {
+            result.status = RipStatus::Success();
+            result.output_directory = outputDirectory;
+            return result;
+        }
+        if (std::filesystem::exists(outputDirectory))
+        {
+            result.status = RipStatus::Failure(
+                "RIP_PUBLISH_OUTPUT_ALREADY_EXISTS",
+                "another publisher created the RIP output concurrently");
+            return result;
+        }
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds{20 * (attempt + 1)});
+    }
+    result.status = RipStatus::Failure(
+        "RIP_PUBLISH_RENAME_FAILED",
+        "the validated RIP staging directory could not be atomically published");
+    return result;
+}
+
 }  // namespace
 
 RipArtifactPublishResult PublishRipArtifact(
@@ -116,31 +149,62 @@ RipArtifactPublishResult PublishRipArtifact(
         return result;
     }
 
-    constexpr int maximumAttempts{5};
-    for (int attempt{0}; attempt < maximumAttempts; ++attempt)
+    return RenameStagingToOutput(stagingDirectory, outputDirectory);
+}
+
+RipArtifactPublishResult PublishManualRipArtifact(
+    const RipManualArtifactPublishRequest& request)
+{
+    RipArtifactPublishResult result;
+    if (!request.staging_directory.is_absolute()
+        || !request.output_directory.is_absolute())
     {
-        error.clear();
-        std::filesystem::rename(stagingDirectory, outputDirectory, error);
-        if (!error)
-        {
-            result.status = RipStatus::Success();
-            result.output_directory = outputDirectory;
-            return result;
-        }
-        if (std::filesystem::exists(outputDirectory))
-        {
-            result.status = RipStatus::Failure(
-                "RIP_PUBLISH_OUTPUT_ALREADY_EXISTS",
-                "another publisher created the RIP output concurrently");
-            return result;
-        }
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds{20 * (attempt + 1)});
+        result.status = RipStatus::Failure(
+            "RIP_PUBLISH_PATH_NOT_ABSOLUTE",
+            "RIP publication paths must be absolute");
+        return result;
     }
-    result.status = RipStatus::Failure(
-        "RIP_PUBLISH_RENAME_FAILED",
-        "the validated RIP staging directory could not be atomically published");
-    return result;
+    std::error_code error;
+    const std::filesystem::path stagingDirectory =
+        CanonicalAbsolute(request.staging_directory, error);
+    if (error
+        || !std::filesystem::is_directory(stagingDirectory, error)
+        || error
+        || IsReparsePoint(stagingDirectory)
+        || !stagingDirectory.filename().string().starts_with(
+            ".rip.staging.")
+        || stagingDirectory.filename().string().size()
+            <= sizeof(".rip.staging.") - 1U)
+    {
+        result.status = RipStatus::Failure(
+            "RIP_PUBLISH_STAGING_PATH_INVALID",
+            "RIP staging must be a real directory named .rip.staging.<attempt>");
+        return result;
+    }
+    error.clear();
+    const std::filesystem::path outputDirectory =
+        request.output_directory.lexically_normal();
+    const std::filesystem::path outputParent =
+        CanonicalAbsolute(outputDirectory.parent_path(), error);
+    if (error
+        || outputDirectory.filename().empty()
+        || !PathsEqual(outputParent, stagingDirectory.parent_path())
+        || IsReparsePoint(outputParent))
+    {
+        result.status = RipStatus::Failure(
+            "RIP_PUBLISH_MANUAL_OUTPUT_PATH_INVALID",
+            "a manual RIP destination must be a named child of the staging parent");
+        return result;
+    }
+    error.clear();
+    if (std::filesystem::exists(outputDirectory, error) || error)
+    {
+        result.status = RipStatus::Failure(
+            "RIP_PUBLISH_OUTPUT_ALREADY_EXISTS",
+            "an existing RIP output is never replaced automatically");
+        return result;
+    }
+    return RenameStagingToOutput(stagingDirectory, outputDirectory);
 }
 
 }  // namespace slicesoft::rip

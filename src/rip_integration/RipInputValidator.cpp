@@ -242,4 +242,81 @@ RipStatus ValidateRipInput(const RipInputValidationRequest& request)
     return RipStatus::Success();
 }
 
+RipStatus ProbeRipInputGeometry(
+    const std::filesystem::path& layer_path,
+    RipInputGeometry* geometry)
+{
+    if (geometry == nullptr)
+    {
+        return RipStatus::Failure(
+            "RIP_INPUT_GEOMETRY_OUTPUT_MISSING",
+            "a geometry output object is required");
+    }
+    *geometry = {};
+    std::error_code error;
+    if (!layer_path.is_absolute()
+        || !std::filesystem::is_regular_file(layer_path, error)
+        || error
+        || IsReparsePoint(layer_path))
+    {
+        return RipStatus::Failure(
+            "RIP_INPUT_LAYER_PATH_INVALID",
+            "a RIP input layer is missing, linked, or not a regular file");
+    }
+    TiffHandle handle = OpenTiff(layer_path);
+    if (!handle)
+    {
+        return RipStatus::Failure(
+            "RIP_INPUT_TIFF_OPEN_FAILED",
+            "a RIP input layer cannot be opened");
+    }
+    std::uint32_t width{0U};
+    std::uint32_t height{0U};
+    std::uint16_t bitsPerSample{0U};
+    std::uint16_t sampleFormat{SAMPLEFORMAT_UINT};
+    std::uint16_t samplesPerPixel{0U};
+    std::uint16_t planarConfig{0U};
+    std::uint32_t rowsPerStrip{0U};
+    if (TIFFGetField(handle.get(), TIFFTAG_IMAGEWIDTH, &width) != 1
+        || TIFFGetField(handle.get(), TIFFTAG_IMAGELENGTH, &height) != 1
+        || TIFFGetFieldDefaulted(
+            handle.get(), TIFFTAG_BITSPERSAMPLE, &bitsPerSample) != 1
+        || TIFFGetFieldDefaulted(
+            handle.get(), TIFFTAG_SAMPLEFORMAT, &sampleFormat) != 1
+        || TIFFGetFieldDefaulted(
+            handle.get(), TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel) != 1
+        || TIFFGetFieldDefaulted(
+            handle.get(), TIFFTAG_PLANARCONFIG, &planarConfig) != 1
+        || TIFFGetFieldDefaulted(
+            handle.get(), TIFFTAG_ROWSPERSTRIP, &rowsPerStrip) != 1)
+    {
+        return RipStatus::Failure(
+            "RIP_INPUT_TIFF_TAG_MISSING",
+            "a RIP input layer is missing required TIFF tags");
+    }
+    if (width == 0U || height == 0U)
+    {
+        return RipStatus::Failure(
+            "RIP_INPUT_DIMENSION_MISMATCH",
+            "a RIP input layer declares an empty pixel grid");
+    }
+    if (bitsPerSample != 8U || sampleFormat != SAMPLEFORMAT_UINT
+        || samplesPerPixel != 6U
+        || planarConfig != PLANARCONFIG_CONTIG)
+    {
+        return RipStatus::Failure(
+            "RIP_INPUT_SAMPLE_LAYOUT_INVALID",
+            "RIP input must be unsigned 8-bit contiguous RGBWSV");
+    }
+    if (TIFFIsTiled(handle.get()) != 0 || rowsPerStrip == 0U)
+    {
+        return RipStatus::Failure(
+            "RIP_INPUT_STORAGE_UNSUPPORTED",
+            "the current external RIP only accepts stripped input");
+    }
+    geometry->width_px = width;
+    geometry->height_px = height;
+    return RipStatus::Success();
+}
+
 }  // namespace slicesoft::rip

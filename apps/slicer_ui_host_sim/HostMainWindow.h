@@ -85,8 +85,11 @@ private:
         const QString& outputDirectory,
         qint64 elapsedMs);
     void OnOpenRipOutputRequested(const QString& outputDirectory);
+    void OnRipManualPathsChanged();
+    void OnRunManualRip();
     void RefreshRipRuntimeStatus();
     void RefreshRipRequestStatus();
+    void RefreshRipManualRequestStatus();
     bool StartRipForPackage(
         const QString& packageDirectory,
         bool automatic);
@@ -195,6 +198,7 @@ private:
     QString m_restoredProfileId;
     QString m_modelImportDirectory;
     QString m_ripModuleDirectory;
+    QString m_ripManualOutputDirectory;
     QPointF m_dragStartWorld;
     quint64 m_dragCallCount{0U};
     bool m_textureWhiteWarning{false};

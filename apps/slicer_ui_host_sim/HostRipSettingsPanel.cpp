@@ -3,6 +3,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDir>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QFileInfo>
 #include <QGroupBox>
@@ -107,6 +108,48 @@ void HostRipSettingsPanel::BuildInterface()
     pathsForm->addRow(QStringLiteral("输出"), m_outputPathEdit);
     layout->addWidget(pathsGroup);
 
+    auto* manualGroup = new QGroupBox(
+        QStringLiteral("手动 RIP（人工指定文件夹）"), this);
+    manualGroup->setObjectName(QStringLiteral("hostRipManualGroup"));
+    auto* manualForm = new QFormLayout(manualGroup);
+    m_manualInputEdit = new QLineEdit(manualGroup);
+    m_manualInputEdit->setObjectName(QStringLiteral("hostRipManualInputPath"));
+    m_manualInputEdit->setPlaceholderText(
+        QStringLiteral("存放 6 通道 RGBWSV 切片 tif 的文件夹"));
+    m_manualInputBrowseButton = new QPushButton(
+        QStringLiteral("浏览"), manualGroup);
+    m_manualInputBrowseButton->setObjectName(
+        QStringLiteral("hostRipManualInputBrowseButton"));
+    auto* manualInputRow = new QHBoxLayout();
+    manualInputRow->addWidget(m_manualInputEdit, 1);
+    manualInputRow->addWidget(m_manualInputBrowseButton);
+    m_manualOutputEdit = new QLineEdit(manualGroup);
+    m_manualOutputEdit->setObjectName(QStringLiteral("hostRipManualOutputPath"));
+    m_manualOutputEdit->setPlaceholderText(
+        QStringLiteral("尚不存在的目标文件夹，运行成功后才会创建"));
+    m_manualOutputBrowseButton = new QPushButton(
+        QStringLiteral("浏览"), manualGroup);
+    m_manualOutputBrowseButton->setObjectName(
+        QStringLiteral("hostRipManualOutputBrowseButton"));
+    auto* manualOutputRow = new QHBoxLayout();
+    manualOutputRow->addWidget(m_manualOutputEdit, 1);
+    manualOutputRow->addWidget(m_manualOutputBrowseButton);
+    manualForm->addRow(QStringLiteral("切片文件夹"), manualInputRow);
+    manualForm->addRow(QStringLiteral("RIP 输出文件夹"), manualOutputRow);
+    m_manualStatusLabel = new QLabel(
+        QStringLiteral("手动 RIP 未就绪 · 请选择切片与输出文件夹"), manualGroup);
+    m_manualStatusLabel->setObjectName(QStringLiteral("hostRipManualStatus"));
+    m_manualStatusLabel->setWordWrap(true);
+    m_manualStatusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    manualForm->addRow(m_manualStatusLabel);
+    m_manualRunButton = new QPushButton(
+        QStringLiteral("运行手动 RIP"), manualGroup);
+    m_manualRunButton->setObjectName(QStringLiteral("hostRipManualRunButton"));
+    m_manualRunButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    m_manualRunButton->setEnabled(false);
+    manualForm->addRow(m_manualRunButton);
+    layout->addWidget(manualGroup);
+
     m_runtimeStatusLabel = new QLabel(this);
     m_runtimeStatusLabel->setObjectName(QStringLiteral("hostRipRuntimeStatus"));
     m_runtimeStatusLabel->setWordWrap(true);
@@ -161,6 +204,43 @@ void HostRipSettingsPanel::BuildInterface()
         qOverload<int>(&QSpinBox::valueChanged),
         this,
         settingsEdited);
+    const auto manualPathsEdited = [this]()
+    {
+        m_manualRequestValid = false;
+        emit SigManualPathsChanged();
+        RefreshControls();
+    };
+    connect(m_manualInputEdit, &QLineEdit::textChanged, this, manualPathsEdited);
+    connect(m_manualOutputEdit, &QLineEdit::textChanged, this, manualPathsEdited);
+    connect(m_manualInputBrowseButton, &QPushButton::clicked, this, [this]()
+    {
+        const QString directory = QFileDialog::getExistingDirectory(
+            this,
+            QStringLiteral("选择切片文件夹"),
+            m_manualInputEdit->text());
+        if (!directory.isEmpty())
+        {
+            m_manualInputEdit->setText(QDir::toNativeSeparators(directory));
+        }
+    });
+    connect(m_manualOutputBrowseButton, &QPushButton::clicked, this, [this]()
+    {
+        const QString directory = QFileDialog::getExistingDirectory(
+            this,
+            QStringLiteral("选择 RIP 输出文件夹的上级目录"),
+            m_manualOutputEdit->text());
+        if (!directory.isEmpty())
+        {
+            m_manualOutputEdit->setText(
+                QDir::toNativeSeparators(
+                    QDir(directory).filePath(QStringLiteral("rip"))));
+        }
+    });
+    connect(
+        m_manualRunButton,
+        &QPushButton::clicked,
+        this,
+        &HostRipSettingsPanel::SigManualRunRequested);
     connect(m_runButton, &QPushButton::clicked, this, &HostRipSettingsPanel::SigRunRequested);
     connect(m_cancelButton, &QPushButton::clicked, this, &HostRipSettingsPanel::SigCancelRequested);
     connect(m_openButton, &QPushButton::clicked, this, [this]()
@@ -250,6 +330,25 @@ QString HostRipSettingsPanel::PackageDirectory() const
     return m_packageDirectory;
 }
 
+QString HostRipSettingsPanel::ManualInputDirectory() const
+{
+    return m_manualInputEdit->text().trimmed();
+}
+
+QString HostRipSettingsPanel::ManualOutputDirectory() const
+{
+    return m_manualOutputEdit->text().trimmed();
+}
+
+void HostRipSettingsPanel::SetManualRequestStatus(
+    const bool valid,
+    const QString& message)
+{
+    m_manualRequestValid = valid;
+    m_manualStatusLabel->setText(message);
+    RefreshControls();
+}
+
 void HostRipSettingsPanel::SetRuntimeStatus(
     const bool valid,
     const QString& message)
@@ -319,6 +418,14 @@ void HostRipSettingsPanel::RefreshControls()
     m_runButton->setEnabled(
         editable && m_runtimeValid && !m_packageDirectory.isEmpty()
             && m_requestValid && !m_outputExists);
+    m_manualInputEdit->setEnabled(editable);
+    m_manualOutputEdit->setEnabled(editable);
+    m_manualInputBrowseButton->setEnabled(editable);
+    m_manualOutputBrowseButton->setEnabled(editable);
+    m_manualRunButton->setEnabled(
+        editable && m_runtimeValid && m_manualRequestValid
+            && !ManualInputDirectory().isEmpty()
+            && !ManualOutputDirectory().isEmpty());
     m_cancelButton->setEnabled(m_jobActive);
     m_openButton->setEnabled(
         !m_jobActive && m_outputExists);

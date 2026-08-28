@@ -12,6 +12,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QLabel>
+#include <QLineEdit>
 #include <QDoubleSpinBox>
 #include <QEventLoop>
 #include <QFileInfo>
@@ -455,6 +456,26 @@ int RunRipUiSmoke(const QString& modulePath)
         QStringLiteral("hostRipCancelButton"));
     const auto* runtimeStatus = window.findChild<QLabel*>(
         QStringLiteral("hostRipRuntimeStatus"));
+    const auto* manualInput = window.findChild<QLineEdit*>(
+        QStringLiteral("hostRipManualInputPath"));
+    const auto* manualOutput = window.findChild<QLineEdit*>(
+        QStringLiteral("hostRipManualOutputPath"));
+    const auto* manualRunButton = window.findChild<QPushButton*>(
+        QStringLiteral("hostRipManualRunButton"));
+    const auto* manualStatus = window.findChild<QLabel*>(
+        QStringLiteral("hostRipManualStatus"));
+    if (manualInput == nullptr || manualOutput == nullptr
+        || manualRunButton == nullptr || manualStatus == nullptr
+        || !manualInput->text().isEmpty()
+        || !manualOutput->text().isEmpty()
+        || manualRunButton->isEnabled()
+        || manualStatus->text().isEmpty())
+    {
+        QTextStream(stderr)
+            << "RIPFLOW_UI_SELF_TEST_FAILED: manual RIP controls are incomplete"
+            << Qt::endl;
+        return 15;
+    }
     if (autoCheck == nullptr || intentCombo == nullptr
         || transparentCombo == nullptr || colorModeCombo == nullptr
         || outputValidationCombo == nullptr
@@ -574,6 +595,108 @@ int RunRipJobSelfTest(
     loop.exec();
     return result;
 }
+int RunRipManualSelfTest(
+    const QString& inputDirectory,
+    const QString& outputDirectory,
+    const QString& moduleDirectory,
+    const int transparentMode,
+    const int grayBits,
+    const int timeoutSeconds,
+    const QString& outputValidationMode,
+    const QString& expectedOutcome)
+{
+    if (inputDirectory.isEmpty() || outputDirectory.isEmpty()
+        || moduleDirectory.isEmpty())
+    {
+        QTextStream(stderr)
+            << "RIPFLOW_MANUAL_SELF_TEST_ARGUMENT_FAILED: "
+            << "--rip-input, --rip-output and --rip-module are required"
+            << Qt::endl;
+        return 19;
+    }
+    hostripsettings settings = HostRipSettingsStore::Defaults();
+    settings.transparentmode = transparentMode;
+    settings.devicegraybits = grayBits;
+    settings.timeoutseconds = timeoutSeconds;
+    settings.outputvalidationmode = outputValidationMode;
+    HostRipJobController controller;
+    QEventLoop loop;
+    int result = 20;
+    QObject::connect(
+        &controller,
+        &HostRipJobController::SigCompleted,
+        &loop,
+        [&](const bool success,
+            const bool cancelled,
+            const QString& code,
+            const QString& message,
+            const QString& producedDirectory,
+            const qint64 elapsedMs)
+        {
+            const bool matched =
+                (expectedOutcome == QStringLiteral("success")
+                    && success && !cancelled
+                    && code == QStringLiteral("RIP_SUCCEEDED"))
+                || (expectedOutcome == QStringLiteral("diagnostic")
+                    && success && !cancelled
+                    && code == QStringLiteral("RIP_DIAGNOSTIC_SAVED"))
+                || (expectedOutcome == QStringLiteral("failure")
+                    && !success && !cancelled);
+            const bool destinationMatched = !success
+                || QDir::cleanPath(producedDirectory)
+                    == QDir::cleanPath(
+                        QFileInfo(outputDirectory).absoluteFilePath());
+            if (matched && destinationMatched)
+            {
+                QTextStream(stdout)
+                    << "RIPFLOW_MANUAL_SELF_TEST_PASS outcome="
+                    << expectedOutcome << " code=" << code
+                    << " elapsedMs=" << elapsedMs
+                    << " output=" << producedDirectory << Qt::endl;
+                result = 0;
+            }
+            else
+            {
+                QTextStream(stderr)
+                    << "RIPFLOW_MANUAL_SELF_TEST_FAILED code=" << code
+                    << " cancelled=" << cancelled
+                    << " output=" << producedDirectory
+                    << " message=" << message << Qt::endl;
+            }
+            loop.quit();
+        });
+    QString error;
+    if (!controller.StartManual(
+            inputDirectory,
+            outputDirectory,
+            moduleDirectory,
+            settings,
+            &error))
+    {
+        if (expectedOutcome == QStringLiteral("rejected"))
+        {
+            QTextStream(stdout)
+                << "RIPFLOW_MANUAL_SELF_TEST_PASS outcome=rejected reason="
+                << error << Qt::endl;
+            return 0;
+        }
+        QTextStream(stderr)
+            << "RIPFLOW_MANUAL_SELF_TEST_START_FAILED: " << error << Qt::endl;
+        return 21;
+    }
+    if (expectedOutcome == QStringLiteral("rejected"))
+    {
+        QTextStream(stderr)
+            << "RIPFLOW_MANUAL_SELF_TEST_FAILED: "
+            << "the request was expected to be rejected before starting"
+            << Qt::endl;
+        QString ignored;
+        (void)controller.Cancel(&ignored);
+        return 22;
+    }
+    loop.exec();
+    return result;
+}
 }
 
 int main(int argc, char* argv[])
@@ -641,7 +764,12 @@ int main(int argc, char* argv[])
             << "[--gray-bits <1|2>] [--timeout-seconds <n>] "
             << "[--output-validation-mode <strict_s2|diagnostic_unvalidated>] "
             << "[--cancel-after-ms <n>] "
-            << "[--expect <success|diagnostic|cancel|timeout|failure>]]"
+            << "[--expect <success|diagnostic|cancel|timeout|failure>] | "
+            << "--rip-manual-self-test --rip-input <dir> --rip-output <dir> "
+            << "--rip-module <path> [--transparent-mode <0-4>] "
+            << "[--gray-bits <1|2>] [--timeout-seconds <n>] "
+            << "[--output-validation-mode <strict_s2|diagnostic_unvalidated>] "
+            << "[--expect <success|diagnostic|failure|rejected>]]"
             << Qt::endl;
         return 0;
     }
@@ -699,6 +827,42 @@ int main(int argc, char* argv[])
     if (HasArgument(arguments, QStringLiteral("--rip-ui-self-test")))
     {
         return RunRipUiSmoke(modulePath);
+    }
+    if (HasArgument(arguments, QStringLiteral("--rip-manual-self-test")))
+    {
+        bool manualTransparentValid{false};
+        const int manualTransparentMode = FindArgumentValue(
+            arguments, QStringLiteral("--transparent-mode")).toInt(
+                &manualTransparentValid);
+        bool manualGrayBitsValid{false};
+        const int manualGrayBits = FindArgumentValue(
+            arguments, QStringLiteral("--gray-bits")).toInt(
+                &manualGrayBitsValid);
+        bool manualTimeoutValid{false};
+        const int manualTimeoutSeconds = FindArgumentValue(
+            arguments, QStringLiteral("--timeout-seconds")).toInt(
+                &manualTimeoutValid);
+        const QString manualValidationMode = FindArgumentValue(
+            arguments, QStringLiteral("--output-validation-mode"));
+        const QString manualExpected = FindArgumentValue(
+            arguments, QStringLiteral("--expect"));
+        const QString manualModule = FindArgumentValue(
+            arguments, QStringLiteral("--rip-module"));
+        return RunRipManualSelfTest(
+            FindArgumentValue(arguments, QStringLiteral("--rip-input")),
+            FindArgumentValue(arguments, QStringLiteral("--rip-output")),
+            manualModule.isEmpty()
+                ? HostRipJobController::DefaultModuleDirectory()
+                : manualModule,
+            manualTransparentValid ? manualTransparentMode : 0,
+            manualGrayBitsValid ? manualGrayBits : 2,
+            manualTimeoutValid ? manualTimeoutSeconds : 60,
+            manualValidationMode.isEmpty()
+                ? QStringLiteral("strict_s2")
+                : manualValidationMode,
+            manualExpected.isEmpty()
+                ? QStringLiteral("success")
+                : manualExpected);
     }
     if (HasArgument(arguments, QStringLiteral("--rip-job-self-test")))
     {
