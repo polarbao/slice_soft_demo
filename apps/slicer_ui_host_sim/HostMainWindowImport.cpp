@@ -1,6 +1,7 @@
 #include "HostMainWindow.h"
 
 #include "HostImportDirectoryPolicy.h"
+#include "HostImportPlacementPolicy.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -57,7 +58,10 @@ void HostMainWindow::OnImportModel()
     bool autoLayoutApplied = false;
     QString autoLayoutError;
     hostsceneeditresult autoLayoutResult;
-    if (m_importWorkflow->InstanceCount() > 1)
+    const bool autoLayoutRequired =
+        HostImportPlacementPolicy::RequiresGridLayout(
+            m_importWorkflow->InstanceCount());
+    if (autoLayoutRequired)
     {
         autoLayoutApplied = m_importWorkflow->ApplyGridLayout(
             m_transformLayoutPanel->LayoutRequest(),
@@ -71,7 +75,6 @@ void HostMainWindow::OnImportModel()
     {
         ShowImportResult(result);
     }
-    const bool autoLayoutRequired = m_importWorkflow->InstanceCount() > 1;
     const bool singleMaterialOnly =
         m_importWorkflow->RequiresSingleMaterialProcess();
     const QString materialRestriction = singleMaterialOnly
@@ -85,9 +88,10 @@ void HostMainWindow::OnImportModel()
                                       ->SingleMaterialRestrictionSummary()))
         : QString{};
     const QString layoutSummary = !autoLayoutRequired
-        ? QStringLiteral("单模型无需自动排版")
+        ? QStringLiteral("场景为空，未执行自动排版")
         : autoLayoutApplied
-            ? QStringLiteral("已按当前参数自动排版，碰撞=%1，越界=%2")
+            ? QStringLiteral(
+                  "已按当前参数放置到排版边界，碰撞=%1，越界=%2")
                   .arg(autoLayoutResult.collisioncount)
                   .arg(autoLayoutResult.outofboundscount)
             : QStringLiteral("自动排版失败：%1")

@@ -34,10 +34,21 @@ to a worker identity:
 slicer_worker.exe --contract-info
 ```
 
-The current worker writes exactly one UTF-8 JSON object to stdout with
-`major=1`, `minor=1`. It must validate against
-`file_contract_v1.contract_info.schema.json` and declare both package contracts
-and both slice capabilities.
+Any worker writes exactly one UTF-8 JSON object to stdout and must validate
+against `file_contract_v1.contract_info.schema.json`: `major=1`, `minor` in
+`{0, 1}`, `produces` containing `p0.rgbwsv.2`, and a non-empty `capabilities`
+subset of the four known capabilities.
+
+`slice.rgbwsvt` and `p0.rgbwsvt.1` are an **optional additive declaration**, not
+a requirement on every worker. A worker that declares neither is a conforming
+`file_contract_v1` worker and must not be rejected at discovery; it only fails
+the capability check of a `slice.rgbwsvt` job. This is the 方案 A ruling in
+`docs/slice/DOC/DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md` §8,
+and it is what keeps the M1 handoff package and `product/legacy-slicer` valid.
+
+The worker shipped in this repository declares `minor=1`, both package
+contracts, and all four capabilities — that is one conforming instance, not the
+contract minimum.
 
 Compatibility rules:
 

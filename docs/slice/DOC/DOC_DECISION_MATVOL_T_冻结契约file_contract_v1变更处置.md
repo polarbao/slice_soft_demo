@@ -1,7 +1,7 @@
 # DOC_DECISION MATVOL-T 冻结契约 file_contract_v1 变更处置
 
-> 文档状态：**已裁定（用户 2026-08-26 授权由本会话决定，取方案 A）/ 已实施**
-> 版本：v1.1 ｜ 日期：2026-08-26
+> 文档状态：**已裁定（用户 2026-08-26 授权由本会话决定，取方案 A）/ 已实施 / 已收口至打包门禁与协议正文**
+> 版本：v1.2 ｜ 日期：2026-08-26
 > 撰写方：MATVOL 专项（代为留痕，本文内容未经 MATVOL-T 会话确认）
 > 上级依据：`DOC_DECISION_14F_外部验证延期与接口冻结.md`
 
@@ -116,11 +116,13 @@ MATVOL-T 的双协议被设计为**二选一的 opt-in**：策略关闭走 `p0.r
 | FC-02 | `result.schema.json` 加性放宽 | **已批准并保留** |
 | FC-03 | `contract_info.schema.json` 破坏性收紧 | **已取方案 A 并实施，见 §8** |
 | FC-04 | 三条「不增加第七通道」红线的引用与处置 | 待补（见 `DOC_ANALYSIS_MATVOL_T_合并对接面与冲突清单.md` §4） |
+| FC-05 | 方案 A 未落到打包门禁与协议正文的两处残留 | **已批准并实施，见 §9** |
 
 ## 7. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-26 | v1.2 | 收口 FC-05：方案 A 未落到 `PrepareSliceSoftRuntime.ps1` 打包门禁与 `file_contract_v1.md` 协议正文两处，前者停留在 T 之前的单通道基线并使 Runtime 部署中止，后者停留在方案 B 的「必须双声明」口径；已分别改为「基线必含 + 白名单 + 跨组件一致性」与「T 为可选加性声明」，并在 `runtime_manifest.json` 增 `fileContract` 留痕。脚本改动未实跑。 |
 | 2026-08-26 | v1.0 | 建立。核实三份冻结契约的逐项差异；发现 `contract_info` 并非加性而是三处独立收紧，使 T 由可选变为强制，与本专项 opt-in 前提矛盾；记录该破坏被同批 worker 改动掩盖、且影响面触及 M1 对外交付包；给出方案 A/B 与建议。 |
 
 ## 8. 裁定与实施（v1.1）
@@ -149,3 +151,76 @@ capabilities 的 items 枚举增加 `slice.rgbwsvt`；`minor` 由 `minimum: 0` �
 `ValidateFileContract.py` 实测 PASS。
 
 **FC-04（第七通道红线的引用与处置）仍未处置**，留待后续。
+
+## 9. 方案 A 的两处残留与收口（v1.2）
+
+用户 2026-08-26 在打包失败排查中要求补此留痕。**FC-05 已批准并实施。**
+
+### 9.1 触发现象
+
+`scripts/PrepareSliceSoftRuntime.ps1 -DeployOnly -Config Release` 抛
+`Deployed worker discovery contract or version drifted.`（原 1196 行）而中止，Debug 同样会中止。
+这不是编译错误，也与 VisualStudio / Release 配置无关。
+
+### 9.2 定性：方案 A 落地不完整，不是新的门禁放宽
+
+`b5e6073` 把 `contract_info.schema.json` 改回向后兼容时，**只改了 schema 与其直接用例**，
+两处同样表达该协议的位置没有跟着改：
+
+| 残留位置 | 残留内容 | 与方案 A 的关系 |
+|---|---|---|
+| `scripts/PrepareSliceSoftRuntime.ps1:1181-1224` | 门禁写死 `minor -ne 0`、`produces.Count -ne 1`、`produces[0] -ne "p0.rgbwsv.2"`；module-info 侧同样写死 `Count -ne 1` | 停留在 **T 之前**的单通道基线，连方案 A 都不到 |
+| `contracts/file_contract_v1.md:37-40` | 「It must validate against … **and declare both package contracts and both slice capabilities**」 | 停留在 **方案 B** 的强制口径 |
+
+两处方向相反，但同属一类：`8a9fb95` 改了 worker 的 `--contract-info` 实际输出
+（`minor` 0→1、`produces` 增 `p0.rgbwsvt.1`），而表达该协议的其它位置各自滞后。
+这与 `4f697cc` 已修的三处用例是**同一类缺陷**——把「新增能力」误判为「冻结漂移」。
+`ValidateVersionContracts.py` 当时已按包含式断言修正，本次是同一批中被遗漏的最后一处。
+
+因此 FC-05 是**把方案 A 补齐到未覆盖的位置**，不是对已冻结门禁的新一次放宽。
+
+### 9.3 实施内容
+
+**`scripts/PrepareSliceSoftRuntime.ps1`** —— 由「逐字相等」改为「基线必含 + 白名单 + 一致性」，
+净效果是三收一放：
+
+- `produces` 必须包含 `p0.rgbwsv.2`（基线不可丢，与方案 A 同口径）；
+- `produces` **只允许** `p0.rgbwsv.2` / `p0.rgbwsvt.1`，且不得重复——**新增的收紧**，
+  未知生产合同仍判漂移；
+- 声明 `p0.rgbwsvt.1` 时 `minor` 必须 ≥ 1，未声明时保持旧基线要求——**新增的收紧**；
+- module-info 侧同样白名单化，每项 `kind` 必须为 `package`，并**新增**
+  「模块与 worker 的 T 通道声明必须一致」的跨组件校验，防止只改一边的半截漂移；
+- 放开的只有一条：不再要求 `produces` 恰好一项、`minor` 恰好为 0。
+
+该门禁只校验**本仓自己部署出来的** worker/module，不是对第三方 worker 的互操作校验，
+故其白名单严于 `contract_info.schema.json` 是有意为之：schema 定互操作下限，
+打包门禁定本产品线的出厂身份。二者不冲突。
+
+**留痕**：`runtime_manifest.json` 的 `capabilityPackage` 下新增 `fileContract`
+（`major` / `minor` / `produces` / `transferChannel`），每次部署把协商到的合同集写进产物清单，
+使「这份 Runtime 是几通道的」可从产物本身读出，不必回查脚本版本。
+
+**`contracts/file_contract_v1.md` §2** —— 删除「must declare both」的方案 B 口径，改为：
+`slice.rgbwsvt` / `p0.rgbwsvt.1` 是**可选的加性声明**；两者都不声明的 worker 仍是合规的
+`file_contract_v1` worker，发现阶段不得拒绝，只在 `slice.rgbwsvt` 作业的能力检查处失败；
+本仓 worker 声明双合同四能力，是**一个合规实例，不是合同下限**。
+
+该文件在 `Prepare14F02PrintM1Handoff.ps1:122` 随 **M1 交付包外发**（它不在
+`Run14F05StageClosureGate.ps1` 的 12 个固化 hash 之列，因此这处残留同样不会让门禁变红）。
+本次修正的方向与 §3.3 的风险一致：删去的正是那句会让对方不支持 T 的 worker 被判不合规的话。
+
+### 9.4 一并核对、确认无需改动的位置
+
+| 位置 | 结论 |
+|---|---|
+| `scripts/TestSlicerModulePackage.ps1:211-222` | 只校验 `contract` / `major` / `engineVersion`，本就宽松 |
+| `tests/stage14d_07/RunEngineConformance.py:65-71` | 已是包含式 + 子集式 |
+| `tests/version/ValidateVersionContracts.py:185-190` | `4f697cc` 已修 |
+| `src/slicer_module/WorkerContract.h` 的 `WorkerContractRequirement` 默认值 | `minor=0`、`requiredProduces={p0.rgbwsv.2}`，与方案 A 一致 |
+| `INT_10` §3.3 / `INT_16` §3.3 / `DEV_14` / `DOC_DECISION_14` | 规则本身写的就是「produces 仍含 p0.rgbwsv.2」的包含式；`INT_16` 的示例 JSON 虽为 `minor:0` 单产物，但在方案 A 下**仍是合法返回**，不构成失同步。且属对接双方共识文档，不在本次单方修订范围 |
+
+### 9.5 未完成事项
+
+本次**未能实跑**验证：重跑打包脚本被当前会话的权限策略拦截，故 §9.3 的脚本改动只经静态审查，
+`-DeployOnly` 的实跑结论由用户侧补。`contracts/file_contract_v1.md` 为文档修改，无需执行验证。
+**FC-04 仍未处置。**

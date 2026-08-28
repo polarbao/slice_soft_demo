@@ -1,5 +1,6 @@
 #include "apps/slicer_ui_host_sim/HostModelImportWorkflow.h"
 #include "apps/slicer_ui_host_sim/HostImportDirectoryPolicy.h"
+#include "apps/slicer_ui_host_sim/HostImportPlacementPolicy.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -103,6 +104,22 @@ int main(int argc, char* argv[])
     {
         return 14;
     }
+    if (!Check(
+            !HostImportPlacementPolicy::RequiresGridLayout(0),
+            QStringLiteral("空场景不得请求自动排版。"),
+            errors)
+        || !Check(
+            HostImportPlacementPolicy::RequiresGridLayout(1),
+            QStringLiteral(
+                "首个模型导入后必须请求规则排版以进入边界位置。"),
+            errors)
+        || !Check(
+            HostImportPlacementPolicy::RequiresGridLayout(22),
+            QStringLiteral("多模型导入后仍必须请求规则排版。"),
+            errors))
+    {
+        return 22;
+    }
 
     ModuleClient client;
     QString error;
@@ -140,6 +157,25 @@ int main(int argc, char* argv[])
         return 5;
     }
 
+    hostsceneeditresult initialLayoutResult;
+    error.clear();
+    if (!workflow.ApplyGridLayout(
+            hostgridlayoutrequest{}, &initialLayoutResult, &error)
+        || !Check(
+            workflow.SceneRevision() == 2U,
+            QStringLiteral("首个模型的边界排版应推进一次 revision。"),
+            errors)
+        || !Check(
+            initialLayoutResult.collisioncount == 0
+                && initialLayoutResult.outofboundscount == 0,
+            QStringLiteral(
+                "首个模型应被放入规则排版边界且不得碰撞或越界。"),
+            errors))
+    {
+        errors << "首个模型边界排版失败：" << error << Qt::endl;
+        return 23;
+    }
+
     const QString threeMfPath = QDir(repositoryRoot).filePath(QStringLiteral(
         "samples/models/3mf/single_rgb_cube_stored.3mf"));
     hostmodelimportresult threeMfResult;
@@ -154,8 +190,8 @@ int main(int argc, char* argv[])
         || !Check(threeMfResult.trianglecount > 0U,
                   QStringLiteral("3MF 三角形统计无效。"),
                   errors)
-        || !Check(workflow.SceneRevision() == 2U,
-                  QStringLiteral("3MF 导入后 revision 应为 2。"),
+        || !Check(workflow.SceneRevision() == 3U,
+                  QStringLiteral("3MF 导入后 revision 应为 3。"),
                   errors))
     {
         return 7;
@@ -170,7 +206,7 @@ int main(int argc, char* argv[])
     if (!Check(!missingAccepted && !error.isEmpty(),
                QStringLiteral("缺失模型必须 fail-closed 并返回明确原因。"),
                errors)
-        || !Check(workflow.SceneRevision() == 2U,
+        || !Check(workflow.SceneRevision() == 3U,
                   QStringLiteral("导入负例不得改变场景 revision。"),
                   errors))
     {

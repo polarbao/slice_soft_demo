@@ -12,6 +12,8 @@ add_executable(slicer_ui_host_sim
     HostModelImportWorkflowScene.cpp
     HostImportDirectoryPolicy.cpp
     HostImportDirectoryPolicy.h
+    HostImportPlacementPolicy.cpp
+    HostImportPlacementPolicy.h
     HostModelListPanel.cpp
     HostModelListPanel.h
     HostChannelChartWidget.cpp
@@ -424,6 +426,8 @@ add_test(
 add_executable(hostflow_hb01_model_import_tests
     HostImportDirectoryPolicy.cpp
     HostImportDirectoryPolicy.h
+    HostImportPlacementPolicy.cpp
+    HostImportPlacementPolicy.h
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
@@ -461,6 +465,7 @@ if(MSVC)
         )
     endif()
 endif()
+
 
 add_executable(hostflow_hb08_scene_profile_rebind_tests
     HostModelImportWorkflow.cpp

@@ -248,10 +248,35 @@ SourceSizeGuard 自测与全扫描 PASS（41 项既有 warning），Qt Host Boun
 模型均为零 diff，`git diff --check` PASS。
 完整 226 项 CTest 未在本卡重跑；设备和实物打印仍未测试，外部 RIP 适配只按用户输入接受。
 
-## 14. 修订记录
+## 14. 收口后补充验收：方案 A 落到打包门禁与协议正文（FC-05）
+
+```text
+现象：scripts/PrepareSliceSoftRuntime.ps1 -DeployOnly 在 Release/Debug 均抛
+      "Deployed worker discovery contract or version drifted." 中止，非编译错误。
+定性：T-01~T-07 把 worker --contract-info 改为 minor=1 且 produces 增 p0.rgbwsvt.1，
+      但两处表达该协议的位置未同步——打包门禁停留在 T 之前的单通道基线（写死
+      minor=0、produces 恰好一项），file_contract_v1.md §2 则停留在方案 B 的
+      "must declare both" 强制口径。二者方向相反，同属 4f697cc 已修的那一类：
+      把"新增能力"误判为"冻结漂移"，或把本仓实例当成合同下限。
+处置：不是新的门禁放宽，是把 b5e6073 的方案 A 补齐到未覆盖位置。三收一放——
+      新增未知/重复生产合同白名单、新增"声明 T 则 minor≥1"、新增模块与 worker
+      的 T 声明一致性校验；只放开"produces 恰好一项、minor 恰好为 0"。
+      runtime_manifest.json 的 capabilityPackage 增 fileContract 留痕。
+      协议正文改为"T 为可选加性声明，不声明者发现阶段不得拒绝"。
+边界：旧 Profile、旧工艺目录、slice.rgbwsv、minor=0 与 p0.rgbwsv.2 默认路径仍不变；
+      本次未改任何 C++ 源码、schema 与工艺文件。
+```
+
+验证：**本卡未实跑**。重跑打包脚本被会话权限策略拦截，脚本改动只经静态审查与 `--contract-info`
+实测输出比对（`{"contract":"file_contract","major":1,"minor":1,"produces":["p0.rgbwsv.2",
+"p0.rgbwsvt.1"],...}`），`-DeployOnly` 的实跑结论待补。协议正文为文档修改，无需执行验证。
+授权与逐项差异见 `docs/slice/DOC/DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md` §9。
+
+## 15. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-26 | v1.15 | 补充验收 FC-05：方案 A 未落到打包门禁与 `file_contract_v1.md` 协议正文，导致 Runtime 部署中止；已按「基线必含 + 白名单 + 跨组件一致性」重写门禁并同步协议口径，`runtime_manifest.json` 增 `fileContract` 留痕。脚本改动未实跑。 |
 | 2026-08-26 | v1.14 | 完成 T-09：显式 Host/Worker Scene RGBWSVT 路径准入，manifest/Reader/Worker 冻结 admitted 合同；direct CLI 保持 candidate，03 正例通过，08/09 保持 fail closed；专项 T-00..T-09 收口。 |
 | 2026-08-26 | v1.13 | 完成 T-09 独立 PREP：用户授权计入 G9，冻结仅 Scene/Worker 显式新协议 admitted、direct CLI candidate、严格 Reader 准入字段与旧默认零漂移边界。 |
 | 2026-08-26 | v1.12 | 完成 T-08：双协议 strict RIP、03 正例、08/09 稳定拒绝、无/坏 T、取消清理、TIFF 确定性与 Release 相对资源 Gate PASS；T-09 转 READY。 |
