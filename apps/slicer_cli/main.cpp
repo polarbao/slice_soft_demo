@@ -12,6 +12,9 @@
 #include "slicer_core/system/ProcessMemoryStats.h"
 #include "SliceSoftBuildVersion.h"
 
+#include "CliDiagnosticJson.h"
+#include "RepairAssetCommand.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
@@ -45,6 +48,17 @@ struct CliOptions
     bool benchmark_core_only{false};
     bool openvdb_capability_json{false};
     bool tiff_backend_info_json{false};
+    bool repair_asset{false};
+    std::filesystem::path repair_input_path;
+    std::filesystem::path repair_output_path;
+    bool repair_allow_boundary_fill{false};
+    std::uint64_t repair_max_boundary_loop_edges{0U};
+    double repair_max_hole_area_mm2{0.0};
+    double repair_max_loop_diameter_mm{0.0};
+    double repair_max_loop_perimeter_mm{0.0};
+    double repair_max_planarity_error_mm{0.0};
+    double repair_max_affected_face_ratio{0.0};
+    double repair_degenerate_area_epsilon_mm2{0.0};
     std::string engine{"legacy"};
     std::string admission_mode{"strict_closed"};
     bool no_production_rgbwsv{true};
@@ -65,6 +79,9 @@ void PrintUsage()
         << "--engine legacy|openvdb-candidate\n"
         << "       slicer_cli --openvdb-capability-json\n"
         << "       slicer_cli --tiff-backend-info-json\n"
+        << "       slicer_cli --repair-asset --input <model> --output <repaired.obj> "
+        << "[--allow-boundary-fill --max-boundary-loop-edges <n> "
+        << "--max-hole-area-mm2 <a>]\n"
         << "       slicer_cli --version\n";
 }
 
@@ -133,6 +150,61 @@ CliOptions ParseOptions(const int argc, char** argv)
         if (arg == "--tiff-backend-info-json")
         {
             options.tiff_backend_info_json = true;
+            continue;
+        }
+        if (arg == "--repair-asset")
+        {
+            options.repair_asset = true;
+            continue;
+        }
+        if (arg == "--input" && i + 1 < argc)
+        {
+            options.repair_input_path = argv[++i];
+            continue;
+        }
+        if (arg == "--output" && i + 1 < argc)
+        {
+            options.repair_output_path = argv[++i];
+            continue;
+        }
+        if (arg == "--allow-boundary-fill")
+        {
+            options.repair_allow_boundary_fill = true;
+            continue;
+        }
+        if (arg == "--max-boundary-loop-edges" && i + 1 < argc)
+        {
+            options.repair_max_boundary_loop_edges = std::stoull(argv[++i]);
+            continue;
+        }
+        if (arg == "--max-hole-area-mm2" && i + 1 < argc)
+        {
+            options.repair_max_hole_area_mm2 = std::stod(argv[++i]);
+            continue;
+        }
+        if (arg == "--max-loop-diameter-mm" && i + 1 < argc)
+        {
+            options.repair_max_loop_diameter_mm = std::stod(argv[++i]);
+            continue;
+        }
+        if (arg == "--max-loop-perimeter-mm" && i + 1 < argc)
+        {
+            options.repair_max_loop_perimeter_mm = std::stod(argv[++i]);
+            continue;
+        }
+        if (arg == "--max-planarity-error-mm" && i + 1 < argc)
+        {
+            options.repair_max_planarity_error_mm = std::stod(argv[++i]);
+            continue;
+        }
+        if (arg == "--max-affected-face-ratio" && i + 1 < argc)
+        {
+            options.repair_max_affected_face_ratio = std::stod(argv[++i]);
+            continue;
+        }
+        if (arg == "--degenerate-area-epsilon-mm2" && i + 1 < argc)
+        {
+            options.repair_degenerate_area_epsilon_mm2 = std::stod(argv[++i]);
             continue;
         }
         if (arg == "--engine" && i + 1 < argc)
@@ -226,27 +298,6 @@ void ForceExperimentalDiagnosticOnly(
     }
 }
 
-slicer_core::Json AdmissionDecisionToJson(
-    const slicer_core::ProductionAdmissionDecision& decision,
-    const slicer_core::AdmissionMode mode)
-{
-    const bool blocked =
-        !decision.blockerCodes.empty() || decision.status == slicer_core::AdmissionStatus::FailFast;
-    slicer_core::Json::Object json;
-    json["mode"] = slicer_core::AdmissionModeName(mode);
-    json["status"] = slicer_core::AdmissionStatusName(decision.status);
-    json["allowed"] = decision.productionAllowed;
-    json["blocked"] = blocked;
-    json["warning"] = !decision.warningCodes.empty();
-    json["productionAllowed"] = decision.productionAllowed;
-    json["nonProduction"] = decision.nonProduction;
-    json["reasonCodes"] = StringsToJsonArray(ReasonCodes(decision));
-    json["blockerCodes"] = StringsToJsonArray(decision.blockerCodes);
-    json["warningCodes"] = StringsToJsonArray(decision.warningCodes);
-    json["suggestedActions"] = StringsToJsonArray(decision.suggestedActions);
-    return slicer_core::Json{json};
-}
-
 slicer_core::Json ConfigSnapshotToJson(const slicer_core::SliceConfig& config)
 {
     slicer_core::Json::Object output;
@@ -278,44 +329,6 @@ slicer_core::Json ConfigSnapshotToJson(const slicer_core::SliceConfig& config)
     root["output"] = slicer_core::Json{output};
     root["experimental"] = slicer_core::Json{experimental};
     return slicer_core::Json{root};
-}
-
-slicer_core::Json MemoryStatsToJson(const slicer_core::ProcessMemoryStats& memory)
-{
-    slicer_core::Json::Object json;
-    json["available"] = memory.available;
-    json["workingSetBytes"] = memory.working_set_bytes;
-    json["peakWorkingSetBytes"] = memory.peak_working_set_bytes;
-    return slicer_core::Json{json};
-}
-
-slicer_core::Json SliceRunProfileToJson(const slicer_core::SliceRunProfile& profile)
-{
-    slicer_core::Json::Object json;
-    json["available"] = profile.available;
-    json["profileLevel"] = profile.profile_level;
-    json["configLoadMs"] = profile.config_load_ms;
-    json["modelLoadMs"] = profile.model_load_ms;
-    json["gridSetupMs"] = profile.grid_setup_ms;
-    json["maskSamplingMs"] = profile.mask_sampling_ms;
-    json["texturePrepareMs"] = profile.texture_prepare_ms;
-    json["supportGenerationMs"] = profile.support_generation_ms;
-    json["supportStatisticsScanCount"] =
-        profile.support_statistics_scan_count;
-    json["layerComputeMs"] = profile.layer_compute_ms;
-    json["tiffWriteMs"] = profile.tiff_write_ms;
-    json["previewWriteMs"] = profile.preview_write_ms;
-    json["layerComposeMs"] = profile.layer_compose_ms;
-    json["reportBuildMs"] = profile.report_build_ms;
-    json["reportWriteMs"] = profile.report_write_ms;
-    json["packagePublishMs"] = profile.package_publish_ms;
-    json["sliceProcessingMs"] = profile.slice_processing_ms;
-    json["outputWriteMs"] = profile.output_write_ms;
-    json["totalMs"] = profile.total_ms;
-    json["notes"] = StringsToJsonArray(std::vector<std::string>{
-        "Diagnostic-only coarse profile; not part of the RGBWSV production package protocol.",
-        "Core-only benchmark disables TIFF, preview, reports, and package publishing, but report JSON objects may still be built in memory."});
-    return slicer_core::Json{json};
 }
 
 std::string FormatMilliseconds(const double value)
@@ -537,7 +550,7 @@ int RunCoreBenchmark(const CliOptions& options)
         layerCount = result.layer_count;
         modelPixels = result.model_pixel_count;
         supportPixels = result.support_pixel_count;
-        profileJson = SliceRunProfileToJson(result.profile);
+        profileJson = slicer_cli::SliceRunProfileToJson(result.profile);
     }
     else if (options.engine == "openvdb-candidate")
     {
@@ -598,7 +611,7 @@ int RunCoreBenchmark(const CliOptions& options)
         {"endToEnd", elapsedMs},
         {"note", "core-only mode disables TIFF, preview, reports, and package publishing"},
     });
-    report["memory"] = MemoryStatsToJson(memory);
+    report["memory"] = slicer_cli::MemoryStatsToJson(memory);
     report["profile"] = profileJson;
     report["replacementGate"] = slicer_core::Json::object({
         {"performanceComparable", false},
@@ -687,13 +700,13 @@ int RunExperimentalOpenVdbShellDiagnostic(const CliOptions& options)
     reportJson["openvdb"] = slicer_core::Json{openvdbJson};
     reportJson["surfaceShell"] = slicer_core::Json{surfaceShellJson};
     reportJson["diagnostics"] = slicer_core::ValidationIssuesToJson(issues);
-    reportJson["productionAdmission"] = AdmissionDecisionToJson(decision, mode);
+    reportJson["productionAdmission"] = slicer_cli::AdmissionDecisionToJson(decision, mode);
     reportJson["textureTransfer"] = slicer_core::Json{textureTransferJson};
     reportJson["materialComposer"] = slicer_core::Json{materialComposerJson};
     reportJson["outputContract"] = OutputContractToJson(config, issues, decision);
     reportJson["legacyPath"] = slicer_core::Json{legacyPathJson};
     reportJson["timing"] = slicer_core::Json{timingJson};
-    reportJson["memory"] = MemoryStatsToJson(memory);
+    reportJson["memory"] = slicer_cli::MemoryStatsToJson(memory);
     reportJson["stats"] = diagnosticSummary;
     const slicer_core::Json report{reportJson};
 
@@ -1068,6 +1081,23 @@ int main(int argc, char** argv)
         if (options.tiff_backend_info_json)
         {
             return PrintTiffBackendInfoJson();
+        }
+        if (options.repair_asset)
+        {
+            slicer_cli::RepairAssetRequest repair;
+            repair.inputModelPath = options.repair_input_path;
+            repair.outputObjPath = options.repair_output_path;
+            repair.allowBoundaryFill = options.repair_allow_boundary_fill;
+            repair.maxBoundaryLoopEdges = options.repair_max_boundary_loop_edges;
+            repair.maxHoleAreaMm2 = options.repair_max_hole_area_mm2;
+            repair.maxBoundaryLoopDiameterMm = options.repair_max_loop_diameter_mm;
+            repair.maxBoundaryLoopPerimeterMm = options.repair_max_loop_perimeter_mm;
+            repair.maxBoundaryPlanarityErrorMm =
+                options.repair_max_planarity_error_mm;
+            repair.maxAffectedFaceRatio = options.repair_max_affected_face_ratio;
+            repair.degenerateAreaEpsilonMm2 =
+                options.repair_degenerate_area_epsilon_mm2;
+            return slicer_cli::RunRepairAsset(repair);
         }
         if (!options.scene_config_path.empty())
         {

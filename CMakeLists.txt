@@ -1047,6 +1047,10 @@ endif()
 
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
+    apps/slicer_cli/CliDiagnosticJson.h
+    apps/slicer_cli/CliDiagnosticJson.cpp
+    apps/slicer_cli/RepairAssetCommand.h
+    apps/slicer_cli/RepairAssetCommand.cpp
 )
 
 target_link_libraries(slicer_cli PRIVATE slicer_core)
