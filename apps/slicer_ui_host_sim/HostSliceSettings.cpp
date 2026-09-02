@@ -332,6 +332,23 @@ bool HostEffectiveProfileBuilder::Validate(
             }
             return false;
         }
+// 自动模式由材质命名推导优先级，primary/secondary 不再参与，故跳过其校验；
+// 材质数量因此不受这两个名字槽限制，这正是多图层资产需要的。
+        if (settings.materialvolume.overlapautobyname)
+        {
+            if (settings.materialvolume.opacityvarnishenabled
+                && !(settings.materialvolume.opacityvarnishmax > 0.0
+                     && settings.materialvolume.opacityvarnishmax < 1.0))
+            {
+                if (error != nullptr)
+                {
+                    *error = QStringLiteral(
+                        "光油不透明度上限须在 0 与 1 之间。");
+                }
+                return false;
+            }
+            return true;
+        }
         const QString primary =
             settings.materialvolume.primarymaterialname.trimmed();
         const QString secondary =
@@ -451,7 +468,11 @@ bool HostEffectiveProfileBuilder::Build(
         volumePrimaryName.constData(),
         settings.materialvolume.primarypriority,
         volumeSecondaryName.constData(),
-        settings.materialvolume.secondarypriority};
+        settings.materialvolume.secondarypriority,
+        settings.materialvolume.overlapautobyname ? 1 : 0,
+        settings.materialvolume.opacityvarnishenabled ? 1 : 0,
+        settings.materialvolume.opacityvarnishmax,
+        settings.materialvolume.degenerateareaepsilonmm2};
     char profileHash[72] = {};
     char* profileText = HostBuildEffectiveProfile(
         &requestSettings, profileHash, sizeof(profileHash));

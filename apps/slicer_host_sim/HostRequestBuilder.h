@@ -142,6 +142,23 @@ struct hosteffectiveprofilesettings
     int materialvolumeprimarypriority;
     const char* materialvolumesecondaryname;
     int materialvolumesecondarypriority;
+    /*
+     * MATOPQ 受控修订（用户 2026-09-01 全量授权）。以下四项一律【条件产出】：
+     * 取默认值（0）时生成的 Profile JSON 与修订前【逐字节一致】，
+     * 故既有预设的 profileHash 不变、Stage 14 门禁不受影响。
+     * 该口径与 MV-07A 的 materialVolumePolicy 条件产出一致。
+     */
+    /* 非 0 时 overlap.mode 取 auto_by_material_name，由材质命名推导逐材质优先级。
+     * 刻意不扩 primary/secondary 材质数组：HostVolumetricProfile.c 的规范化输出
+     * 须与 Profile 哈希逐字节一致，扩数组会牵动该契约；
+     * 自动模式下 rules 留空，材质数量因此不再受 ABI 限制。 */
+    int materialvolumeoverlapauto;
+    /* 非 0 时启用「不透明度判为光油」。 */
+    int materialvolumeopacityvarnishenabled;
+    /* 判为光油的不透明度上限，须在 (0, 1)；仅上一项非 0 时生效。 */
+    double materialvolumeopacityvarnishmax;
+    /* 退化面判定阈值（面积平方 mm^4）；<= 0 表示沿用适配器内建默认值。 */
+    double geometrydegenerateareaepsilonmm2;
 };
 
 /**

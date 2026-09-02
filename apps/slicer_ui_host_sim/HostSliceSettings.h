@@ -215,6 +215,27 @@ struct hostmaterialvolumesettings
     int primarypriority{200};
     QString secondarymaterialname;
     int secondarypriority{100};
+    /**
+     * @brief 由材质命名自动推导逐材质优先级，取代 primary/secondary 手填。
+     *
+     * 开启后 `overlap.mode` 取 `auto_by_material_name`，`rules` 留空，
+     * 材质数量不再受本结构两个名字槽的限制——多图层资产正需要这一点。
+     * 命名规范见 DOC_SPEC_MATERIAL_NAMING。
+     */
+    bool overlapautobyname{false};
+    /// @brief 由不透明度判为光油（V 通道体积填充）。
+    bool opacityvarnishenabled{false};
+    /// @brief 判为光油的不透明度上限，须在 (0, 1)。
+    double opacityvarnishmax{0.001};
+    /**
+     * @brief 退化面判定阈值（面积平方 mm^4）；<=0 表示沿用内建默认。
+     *
+     * 语义上属 geometrySampling 而非 materialVolume，此处随本结构携带
+     * 只是为了让工艺预设能一并带上——该阈值仅在多材质纵深场景才需要收紧。
+     * CAD/NURBS 导出含 nm^2 级合法薄面，默认门 1e-6 mm^2 会误杀它们，
+     * 使材质被判为开放表面而直接拒绝；推荐值 1e-24。
+     */
+    double degenerateareaepsilonmm2{0.0};
 };
 
 /** @brief 由宿主持有的可编辑切片参数。 */
