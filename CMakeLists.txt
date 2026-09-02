@@ -301,6 +301,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/model/ModelLoadConfigAdapter.cpp
     src/slicer_core/model/ObjFaceParser.h
     src/slicer_core/model/ObjFaceParser.cpp
+    src/slicer_core/model/MtlMaterialParser.h
+    src/slicer_core/model/MtlMaterialParser.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
@@ -2000,6 +2002,12 @@ add_executable(model_transform_unit_tests
 
 target_link_libraries(model_transform_unit_tests PRIVATE slicer_core)
 
+add_executable(mtl_material_parser_unit_tests
+    tests/unit/mtl_material_parser/Main.cpp
+)
+
+target_link_libraries(mtl_material_parser_unit_tests PRIVATE slicer_core)
+
 add_executable(auto_orient_unit_tests
     tests/unit/auto_orient/Main.cpp
 )
@@ -2835,6 +2843,7 @@ add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_comp
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
 add_test(NAME model_transform_unit_tests COMMAND model_transform_unit_tests)
+add_test(NAME mtl_material_parser_unit_tests COMMAND mtl_material_parser_unit_tests)
 add_test(NAME auto_orient_unit_tests COMMAND auto_orient_unit_tests)
 add_test(NAME scene_view_geometry_unit_tests COMMAND scene_view_geometry_unit_tests)
 add_test(NAME multimodel_scene_contract_unit_tests COMMAND multimodel_scene_contract_unit_tests)

@@ -45,6 +45,10 @@ struct MaterialInfo {
     std::string name;
     std::array<std::uint8_t, 3> diffuse_rgb{0, 0, 0};
     bool has_diffuse{false};
+    /// @brief MTL `d`/`Tr` 归一后的不透明度；1.0 为完全不透明。
+    double opacity{1.0};
+    /// @brief 源文件显式声明过不透明度；为 false 时 `opacity` 只是默认值。
+    bool has_opacity{false};
     std::filesystem::path diffuse_texture_path;
     bool has_texture{false};
     bool texture_exists{false};
