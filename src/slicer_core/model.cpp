@@ -1,6 +1,7 @@
 #include "slicer_core/model.h"
 
 #include "slicer_core/model/ObjFaceParser.h"
+#include "slicer_core/model/MtlMaterialParser.h"
 
 #include "miniz.h"
 
@@ -1686,38 +1687,6 @@ MaterialInfo& material_info(MeshData& mesh, const std::string& name) {
     return mesh.material_infos.back();
 }
 
-std::string trim_copy(const std::string& input) {
-    const auto first = std::find_if_not(input.begin(), input.end(), [](const unsigned char ch) {
-        return std::isspace(ch) != 0;
-    });
-    const auto last = std::find_if_not(input.rbegin(), input.rend(), [](const unsigned char ch) {
-        return std::isspace(ch) != 0;
-    }).base();
-    if (first >= last) {
-        return {};
-    }
-    return std::string(first, last);
-}
-
-std::uint8_t kd_component_to_u8(const double value) {
-    const double clamped = std::clamp(value, 0.0, 1.0);
-    return static_cast<std::uint8_t>(std::round(clamped * 255.0));
-}
-
-std::filesystem::path resolve_texture_path(
-    const std::filesystem::path& raw_path,
-    const std::filesystem::path& mtl_dir,
-    const std::filesystem::path& obj_dir) {
-    if (raw_path.is_absolute()) {
-        return raw_path.lexically_normal();
-    }
-    const std::filesystem::path from_mtl = (mtl_dir / raw_path).lexically_normal();
-    if (std::filesystem::exists(from_mtl)) {
-        return from_mtl;
-    }
-    return (obj_dir / raw_path).lexically_normal();
-}
-
 void load_mtl(
     const std::filesystem::path& mtl_path,
     const std::filesystem::path& obj_dir,
@@ -1727,6 +1696,7 @@ void load_mtl(
         return;
     }
 
+    const model_detail::MtlMaterialContext context{mtl_path.parent_path(), obj_dir};
     MaterialInfo* current{nullptr};
     std::string line;
     while (std::getline(input, line)) {
@@ -1737,30 +1707,17 @@ void load_mtl(
         std::istringstream stream{line};
         std::string token;
         stream >> token;
+        std::string arguments;
+        std::getline(stream, arguments);
         if (token == "newmtl") {
-            std::string name;
-            stream >> name;
+            const std::string name = model_detail::TrimMaterialName(arguments);
             current = name.empty() ? nullptr : &material_info(mesh, name);
-        } else if (token == "Kd" && current != nullptr) {
-            double r{0.0};
-            double g{0.0};
-            double b{0.0};
-            if (stream >> r >> g >> b) {
-                current->diffuse_rgb = {kd_component_to_u8(r), kd_component_to_u8(g), kd_component_to_u8(b)};
-                current->has_diffuse = true;
-            }
-        } else if (token == "map_Kd" && current != nullptr) {
-            std::string rest;
-            std::getline(stream, rest);
-            const std::string texture_name = trim_copy(rest);
-            if (!texture_name.empty()) {
-                current->diffuse_texture_path = resolve_texture_path(texture_name, mtl_path.parent_path(), obj_dir);
-                current->has_texture = true;
-                current->texture_exists = std::filesystem::exists(current->diffuse_texture_path);
-            }
+        } else if (current != nullptr) {
+            (void)model_detail::ApplyMtlMaterialLine(token, arguments, context, current);
         }
     }
 }
+
 
 void load_obj(const std::filesystem::path& path, const TransformConfig& transform, MeshData& mesh) {
     std::ifstream input{path};
@@ -1781,7 +1738,9 @@ void load_obj(const std::filesystem::path& path, const TransformConfig& transfor
                     mesh.material_libraries.push_back(library);
                 }
             } else if (token == "usemtl") {
-                stream >> active_material;
+                std::string material_line;
+                std::getline(stream, material_line);
+                active_material = model_detail::TrimMaterialName(material_line);
                 if (!active_material.empty()) {
                     (void)material_stat(mesh, active_material);
                 }

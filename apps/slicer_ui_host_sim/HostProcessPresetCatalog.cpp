@@ -148,6 +148,33 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
     volumetricRgb.materialvolume.secondarypriority = 100;
     presets.push_back(volumetricRgb);
 
+    // MATOPQ：多图层透明→光油。相对上一条候选的差别有三处，缺一不可：
+    //   1) overlap 改为按材质命名自动推导优先级——多图层素材数超过
+    //      primary/secondary 两个名字槽，手填不可行；
+    //   2) 由 MTL 的 d 值把全透明素材判入 V 通道，不依赖材质名；
+    //   3) 退化面阈值收紧到 1e-24——CAD/NURBS 导出含 nm^2 级合法薄面，
+    //      默认门 1e-6 mm^2 会误杀它们，使材质被判为开放表面而直接拒绝。
+    // 资产须遵循 DOC_SPEC_MATERIAL_NAMING 的 <素材名>-L<层号> 命名。
+    hostprocesspreset multiLayerVarnish = MakeTexturedPreset(
+        QStringLiteral("multilayer_transparent_varnish_lower_support"),
+        QStringLiteral("多图层透明→光油｜逐层材质 RGB + 按需补白墨｜下表面支撑（候选）"),
+        QStringLiteral(
+            "候选工艺：按封闭材质子网格逐层解析材质所有权；"
+            "材质优先级由 <素材名>-L<层号> 命名自动推导，无需手填；"
+            "MTL 中 d 判为全透明的素材写入光油 V 通道且不补白墨底。"
+            "退化面阈值收紧以容纳 CAD 导出的极小薄面。生产接线未完成，仅供候选评估。"),
+        HostMaterialStrategy::RgbSolid,
+        HostTextureApplyMode::SolidVolumeFromTopSurface);
+    multiLayerVarnish.texture.enabled = false;
+    multiLayerVarnish.texture.whitepolicy =
+        HostTextureWhitePolicy::WhiteUnderbase;
+    multiLayerVarnish.materialvolume.enabled = true;
+    multiLayerVarnish.materialvolume.overlapautobyname = true;
+    multiLayerVarnish.materialvolume.opacityvarnishenabled = true;
+    multiLayerVarnish.materialvolume.opacityvarnishmax = 0.001;
+    multiLayerVarnish.materialvolume.degenerateareaepsilonmm2 = 1e-24;
+    presets.push_back(multiLayerVarnish);
+
     AppendTransferPreset(
         rgbOnly,
         QStringLiteral("obj_mtl_texture_rgb_only_rgbwsvt.json"),

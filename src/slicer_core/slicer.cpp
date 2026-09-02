@@ -8,6 +8,8 @@
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
 #include "slicer_core/materials/volume/MaterialLayerRgbComposer.h"
+#include "slicer_core/materials/volume/MaterialLayerNameResolver.h"
+#include "slicer_core/materials/volume/MaterialOpacityVarnishResolver.h"
 #include "slicer_core/materials/volume/MaterialVolumePlan.h"
 #include "slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
@@ -149,6 +151,8 @@ struct LayerSemanticStats {
     int outer_varnish_pixels{0};
     int outer_surface_varnish_pixels{0};
     int inner_surface_varnish_pixels{0};
+    /// @brief MO-04：因不透明度判据改写 V 通道的像素数。
+    std::uint64_t opacity_varnish_pixels{0};
 };
 
 struct LayerDiagnostics {
@@ -3200,6 +3204,7 @@ std::vector<std::uint8_t> compose_layer(
     const std::vector<MaterialRoleColumn>* material_role_columns,
     const std::vector<ColumnLayerRange>* column_ranges,
     const std::vector<std::uint8_t>* material_volume_rgb,
+    const std::vector<std::uint8_t>* material_volume_varnish_mask,
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
@@ -3427,6 +3432,37 @@ std::vector<std::uint8_t> compose_layer(
             }
             semantic_stats.unprintable_white_carrier_pixels +=
                 carrierStats.unprintableWhiteCarrierPixels;
+        }
+    }
+
+    // MO-04：不透明度判为光油的材质，其体积改写 V 通道而非 RGB。
+    //
+    // 放在白墨载体【之后】是必须的：补白策略要观察最终 RGB 才能决定是否补 W，
+    // 若先把光油区 RGB 清空，补白会把它误看成空区。
+    //
+    // 光油区【不需要白墨底】（用户 2026-09-01 回签），故本段同时清 W：
+    // 补白载体先按最终 RGB 判过一轮，光油区那部分 W 属于误加，必须在此撤除。
+    if (config.material_volume_policy.opacity_varnish.enabled
+        && material_volume_varnish_mask != nullptr
+        && material_volume_varnish_mask->size() == model_mask.size())
+    {
+        for (std::size_t column{0}; column < model_mask.size(); ++column)
+        {
+            if (model_mask[column] == 0U
+                || material_volume_varnish_mask->at(column) == 0U)
+            {
+                continue;
+            }
+            const std::size_t base = column * rgbwsv_channel_count;
+            pixels.at(base + 0U) = config.background.value;
+            pixels.at(base + 1U) = config.background.value;
+            pixels.at(base + 2U) = config.background.value;
+            pixels.at(base + 3U) = config.background.value;
+// black_is_print：V 必须写 0（满墨）才是"打印光油"。
+// 不可用 config.material.varnish_value——它默认 255，即 emptyValue，
+// 写进去等于"此处不打光油"。与既有 MaterialRole::Varnish 落盘口径保持一致。
+            pixels.at(base + 5U) = 0U;
+            ++semantic_stats.opacity_varnish_pixels;
         }
     }
 
@@ -4337,11 +4373,20 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         grid.pixel_size_x_mm, grid.pixel_size_y_mm, config.output.layer_thickness_mm,
         grid.layer_count};
 
+    // 退化面阈值：默认沿用适配器内建值；工艺文件显式收紧时才覆盖。
+    // CAD/NURBS 导出的多材质资产常含 nm^2 级合法薄面，默认门会误杀并制造边界边。
+    SceneModelTriangleMeshAdapterOptions geometryAdapterOptions;
+    if (config.geometry_sampling.degenerate_area_epsilon_mm2 > 0.0)
+    {
+        geometryAdapterOptions.degenerate_area_epsilon_mm2 =
+            config.geometry_sampling.degenerate_area_epsilon_mm2;
+    }
+
     std::optional<LegacyTransferChannelSession> transferSession;
     if (config.transfer_channel_policy.enabled)
     {
         const AdaptedTriangleMesh transferMesh =
-            AdaptSceneModelToTriangleMesh(model_report);
+            AdaptSceneModelToTriangleMesh(model_report, geometryAdapterOptions);
         transferSession = BuildLegacyTransferChannelSession(
             config.transfer_channel_policy,
             transferMesh,
@@ -4354,13 +4399,44 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     // 因此 plan 的列序与层号与后续栅格化逐项对齐，无需任何补偿。
     std::optional<MaterialVolumePlan> materialVolumePlan;
     std::optional<MaterialRgbTable> materialVolumeRgbTable;
+    MaterialOpacityVarnishResolution opacityVarnishResolution;
+    std::vector<std::uint8_t> opacityVarnishByIndex;
     if (config.material_volume_policy.enabled)
     {
         // SceneModel 即 ModelReport 的别名，既有适配器可直接消费，无需适配层。
-        const AdaptedTriangleMesh matvolMesh = AdaptSceneModelToTriangleMesh(model_report);
+        const AdaptedTriangleMesh matvolMesh =
+            AdaptSceneModelToTriangleMesh(model_report, geometryAdapterOptions);
+        // overlap.mode=auto_by_material_name：按命名规范推导逐材质 priority，
+        // 替代人工填写的 rules。违规命名与撞号都必须 fail-closed——
+        // MATVOL 本身对「缺声明」和「同级」均拒绝，此处提前给出可读原因。
+        MaterialVolumePolicyConfig effectiveVolumePolicy = config.material_volume_policy;
+        if (effectiveVolumePolicy.overlap.mode == "auto_by_material_name")
+        {
+            const MaterialLayerNaming naming =
+                ResolveMaterialLayerNaming(model_report.material_infos);
+            if (!naming.violations.empty())
+            {
+                throw std::runtime_error(
+                    "E_MATOPQ_LAYER_NAME_INVALID: " + naming.violations.front());
+            }
+            if (!naming.collisions.empty())
+            {
+                throw std::runtime_error(
+                    "E_MATOPQ_LAYER_PRIORITY_COLLISION: " + naming.collisions.front());
+            }
+            effectiveVolumePolicy.overlap.rules.clear();
+            for (std::size_t index{0}; index < naming.names.size(); ++index)
+            {
+                effectiveVolumePolicy.overlap.rules.push_back(
+                    MaterialVolumeOverlapRuleConfig{
+                        naming.names.at(index).material_name,
+                        naming.priorities.at(index)});
+            }
+        }
+
         MaterialVolumeBuildRequest matvolRequest;
         matvolRequest.mesh = &matvolMesh;
-        matvolRequest.policy = &config.material_volume_policy;
+        matvolRequest.policy = &effectiveVolumePolicy;
         matvolRequest.grid = materialVolumeGrid;
         // plan 构建是本路径上最长的不可中断窗口（逐列遍历全部三角面），
         // 且发生在 gridcallback 之前，故必须显式透传取消点，
@@ -4371,6 +4447,21 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         tableRequest.plan = &materialVolumePlan.value();
         tableRequest.materialInfos = model_report.material_infos;
         materialVolumeRgbTable = BuildMaterialRgbTable(tableRequest);
+        // MO-04：按不透明度判据解出哪些材质归属光油，并折成按 materialIndex 的查表，
+        // 使逐层内循环只做 O(1) 索引，不做字符串比较。
+        opacityVarnishResolution = ResolveMaterialOpacityVarnish(
+            config.material_volume_policy, model_report.material_infos);
+        const std::span<const std::string> planMaterialNames =
+            materialVolumePlan.value().MaterialNames();
+        opacityVarnishByIndex.assign(planMaterialNames.size(), 0U);
+        for (std::size_t index{0}; index < planMaterialNames.size(); ++index)
+        {
+            if (opacityVarnishResolution.varnish_materials.count(
+                    std::string(planMaterialNames[index])) != 0U)
+            {
+                opacityVarnishByIndex.at(index) = 1U;
+            }
+        }
     }
     if (options.gridcallback)
     {
@@ -4686,6 +4777,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     // 与 compose_layer 返回的六通道交错布局不同，需在写回时按列取用。
     std::vector<std::uint32_t> materialVolumeOwner;
     std::vector<std::uint8_t> materialVolumeRgb;
+    std::vector<std::uint8_t> materialVolumeVarnishMask;
     if (materialVolumePlan.has_value())
     {
         materialVolumeOwner.assign(layerPixelCount, kNoMaterialOwner);
@@ -4767,6 +4859,21 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 materialVolumeOwner,
                 model_masks.at(static_cast<std::size_t>(layer_index)),
                 materialVolumeRgb);
+            if (config.material_volume_policy.opacity_varnish.enabled)
+            {
+                materialVolumeVarnishMask.assign(materialVolumeOwner.size(), 0U);
+                for (std::size_t column{0}; column < materialVolumeOwner.size(); ++column)
+                {
+                    const std::uint32_t owner = materialVolumeOwner[column];
+                    if (owner == kNoMaterialOwner
+                        || owner >= opacityVarnishByIndex.size())
+                    {
+                        continue;
+                    }
+                    materialVolumeVarnishMask[column] =
+                        opacityVarnishByIndex.at(owner);
+                }
+            }
             materialVolumeLayerStats.push_back(CountMaterialVolumeLayerOwners(
                 materialVolumePlan.value(),
                 layer_index,
@@ -4786,6 +4893,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             config.material_role_mapping.enabled ? &material_role_columns : nullptr,
             &column_ranges,
             materialVolumePlan.has_value() ? &materialVolumeRgb : nullptr,
+            config.material_volume_policy.opacity_varnish.enabled
+                ? &materialVolumeVarnishMask : nullptr,
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,
@@ -4859,6 +4968,34 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                     .widthPx = grid.width_px, .heightPx = grid.height_px,
                     .channels = layer},
                 model_masks.at(static_cast<std::size_t>(layer_index)));
+            // 光油（V）与弹性材料（T）不得占用同一像素：一个体素不可能同时是两种材料。
+            //
+            // ComposeRgbwsvtLayer 对缩裹像素【丢弃全部六通道只写 T】，
+            // 因此 V 与 T 重叠时 T 会静默胜出且不留痕——这与 K3 裁定
+            // （邻域多数表决 + V 优先兜底）相反。此处先 fail-closed 堵住静默错误。
+            //
+            // 未实施 K3 表决的理由：当前无任何 V/T 重叠资产可验证该表决逻辑，
+            // 上线跑不到的裁决不如显式拒绝。K3 七项参数已备（见策略总表 §1.6），
+            // 待出现重叠资产后再落地并用其验证。
+            if (config.material_volume_policy.opacity_varnish.enabled
+                && materialVolumeVarnishMask.size()
+                    == transferSession.value().transferMask.size())
+            {
+                for (std::size_t column{0};
+                     column < materialVolumeVarnishMask.size();
+                     ++column)
+                {
+                    if (materialVolumeVarnishMask[column] != 0U
+                        && transferSession.value().transferMask[column] != 0U)
+                    {
+                        throw std::runtime_error(
+                            "E_MATOPQ_VARNISH_TRANSFER_OVERLAP: a pixel is claimed by both "
+                            "the opacity-derived varnish (V) and the transfer material (T) "
+                            "at layer " + std::to_string(layer_index)
+                            + "; K3 neighbourhood arbitration is not implemented yet");
+                    }
+                }
+            }
         }
         if (options.layercallback)
         {

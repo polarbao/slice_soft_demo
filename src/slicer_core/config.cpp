@@ -437,6 +437,14 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             config.material_volume_policy.open_surface.placement = open_surface.value(
                 "placement", config.material_volume_policy.open_surface.placement);
         }
+        if (policy.contains("opacityVarnish")) {
+            const auto& varnish = policy.at("opacityVarnish");
+            auto& target = config.material_volume_policy.opacity_varnish;
+            target.enabled = varnish.value("enabled", target.enabled);
+            target.opacity_max = varnish.value("opacityMax", target.opacity_max);
+            target.semi_transparent_role =
+                varnish.value("semiTransparentRole", target.semi_transparent_role);
+        }
         if (policy.contains("overlap")) {
             const auto& overlap = policy.at("overlap");
             config.material_volume_policy.overlap.mode =
@@ -660,6 +668,9 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
                 "geometrySampling must be an object containing a string strategy");
         }
         config.geometry_sampling.strategy = geometrySampling.at("strategy").as_string();
+        config.geometry_sampling.degenerate_area_epsilon_mm2 = geometrySampling.value(
+            "degenerateAreaEpsilonMm2",
+            config.geometry_sampling.degenerate_area_epsilon_mm2);
     }
 
     if (root.contains("experimental"))
@@ -1226,6 +1237,22 @@ void validate_slice_config(const SliceConfig& config) {
         if (config.material_volume_policy.mode != "closed_intervals") {
             throw std::runtime_error("materialVolumePolicy.mode must be closed_intervals");
         }
+        const auto& opacityVarnish = config.material_volume_policy.opacity_varnish;
+        if (opacityVarnish.enabled) {
+// C1：判据必须走 Profile 容差，不得退化为 == 0；上限须严格小于 1，
+// 否则不透明材质也会被判为光油。
+            if (!(std::isfinite(opacityVarnish.opacity_max)
+                  && opacityVarnish.opacity_max > 0.0
+                  && opacityVarnish.opacity_max < 1.0)) {
+                throw std::runtime_error(
+                    "materialVolumePolicy.opacityVarnish.opacityMax must be finite and in (0, 1)");
+            }
+// C4：半透明不是光油，其落位角色只允许 rgb，且实施侧必须出诊断。
+            if (opacityVarnish.semi_transparent_role != "rgb") {
+                throw std::runtime_error(
+                    "materialVolumePolicy.opacityVarnish.semiTransparentRole must be rgb");
+            }
+        }
         if (config.material_volume_policy.missing_material != "fail_closed") {
             throw std::runtime_error("materialVolumePolicy.missingMaterial must be fail_closed");
         }
@@ -1247,8 +1274,16 @@ void validate_slice_config(const SliceConfig& config) {
             throw std::runtime_error(
                 "materialVolumePolicy.openSurface.placement must be below_surface");
         }
-        if (config.material_volume_policy.overlap.mode != "explicit_priority") {
-            throw std::runtime_error("materialVolumePolicy.overlap.mode must be explicit_priority");
+        const std::string& overlapMode = config.material_volume_policy.overlap.mode;
+        if (overlapMode != "explicit_priority" && overlapMode != "auto_by_material_name") {
+            throw std::runtime_error(
+                "materialVolumePolicy.overlap.mode must be explicit_priority or auto_by_material_name");
+        }
+// 两种模式互斥：自动模式下若还留着手写规则，两者谁生效会变成隐式行为。
+        if (overlapMode == "auto_by_material_name"
+            && !config.material_volume_policy.overlap.rules.empty()) {
+            throw std::runtime_error(
+                "materialVolumePolicy.overlap.mode=auto_by_material_name requires an empty rules array");
         }
         const std::string& self_intersection_policy =
             config.material_volume_policy.topology.self_intersection_policy;
@@ -1289,7 +1324,15 @@ void validate_slice_config(const SliceConfig& config) {
         if (config.slice_pipeline.mode != SlicePipelineMode::Legacy) {
             throw std::runtime_error("materialVolumePolicy requires the Legacy slice pipeline");
         }
-        if (config.geometry_sampling.strategy != "legacy_center_sample") {
+        if (config.geometry_sampling.degenerate_area_epsilon_mm2 > 0.0
+        && !(std::isfinite(config.geometry_sampling.degenerate_area_epsilon_mm2)
+             && config.geometry_sampling.degenerate_area_epsilon_mm2 <= 1.0e-6))
+    {
+// 收紧退化面阈值是显式 opt-in；放宽到 1e-6 以上会把真实薄面成片丢弃，故 fail-closed。
+        throw std::runtime_error(
+            "geometrySampling.degenerateAreaEpsilonMm2 must be finite and <= 1e-6 when set");
+    }
+    if (config.geometry_sampling.strategy != "legacy_center_sample") {
             throw std::runtime_error("materialVolumePolicy requires geometrySampling.strategy=legacy_center_sample");
         }
         if (config.material_policy.enabled) {

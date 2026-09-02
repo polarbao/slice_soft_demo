@@ -27,7 +27,8 @@
 #include <sstream>
 
 namespace
-{// 断言随规则而非索引：凡叠加了非 RGB 通道的条目，其 tooltip 必须写明是伪彩色。
+{
+// 断言随规则而非索引：凡叠加了非 RGB 通道的条目，其 tooltip 必须写明是伪彩色。
 //
 // 原断言把「索引 4 的 tooltip 含伪彩色」写死。索引 4 当时恰是六通道组合，
 // 但那是下拉排布的实现细节：并集项由两个（六通道、七通道）合并为一个随包改写的项后，
@@ -154,6 +155,7 @@ bool VerifyMaterialVolumeConditionalEmission(
 {
     bool sawLegacy = false;
     bool sawVolumetric = false;
+    bool sawVolumetricAuto = false;
     for (const hostprocesspreset& preset : HostProcessPresetCatalog::Presets())
     {
         if (preset.packageprotocol == HostPackageProtocol::Rgbwsvt) { continue; }
@@ -214,6 +216,10 @@ bool VerifyMaterialVolumeConditionalEmission(
             QStringLiteral("openSurface")).toObject();
         const QJsonObject overlap = block.value(QStringLiteral("overlap")).toObject();
         const QJsonArray rules = overlap.value(QStringLiteral("rules")).toArray();
+        // MATVOL 预设有两种 overlap 形态，各自逐项校验；共有字段先统一检查。
+        // 首版此处只写了显式优先级一种形态并硬编码 01/02 与 200/100，
+        // 于是 MATOPQ 新增自动模式预设时四个 hostflow 用例一并失败——
+        // 断言过窄而非实现出错，故按形态分支而不是放宽任何一项检查。
         if (!Check(
                 block.value(QStringLiteral("enabled")).toBool()
                     && block.value(QStringLiteral("mode")).toString()
@@ -221,8 +227,51 @@ bool VerifyMaterialVolumeConditionalEmission(
                     && block.value(QStringLiteral("missingMaterial")).toString()
                         == QStringLiteral("fail_closed")
                     && openSurface.value(QStringLiteral("mode")).toString()
-                        == QStringLiteral("reject")
-                    && overlap.value(QStringLiteral("mode")).toString()
+                        == QStringLiteral("reject"),
+                QStringLiteral("MATVOL 预设 %1 的 materialVolumePolicy 公共字段不正确。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+        if (preset.materialvolume.overlapautobyname)
+        {
+            sawVolumetricAuto = true;
+            // 自动模式：优先级由材质命名推导，故 rules 必须为空——
+            // 留着手写规则会让「谁生效」变成隐式行为。
+            if (!Check(
+                    overlap.value(QStringLiteral("mode")).toString()
+                            == QStringLiteral("auto_by_material_name")
+                        && rules.isEmpty(),
+                    QStringLiteral("MATVOL 自动模式预设 %1 的 overlap 不正确。")
+                        .arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+            const QJsonObject opacityVarnish = block.value(
+                QStringLiteral("opacityVarnish")).toObject();
+            if (!Check(
+                    preset.materialvolume.opacityvarnishenabled
+                        == opacityVarnish.value(
+                               QStringLiteral("enabled")).toBool()
+                        && (!preset.materialvolume.opacityvarnishenabled
+                            || (opacityVarnish.value(
+                                    QStringLiteral("semiTransparentRole")).toString()
+                                    == QStringLiteral("rgb")
+                                && opacityVarnish.value(
+                                       QStringLiteral("opacityMax")).toDouble() > 0.0
+                                && opacityVarnish.value(
+                                       QStringLiteral("opacityMax")).toDouble() < 1.0)),
+                    QStringLiteral("MATVOL 自动模式预设 %1 的 opacityVarnish 不正确。")
+                        .arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+        }
+        else if (!Check(
+                overlap.value(QStringLiteral("mode")).toString()
                         == QStringLiteral("explicit_priority")
                     && rules.size() == 2
                     && rules.at(0).toObject().value(
@@ -235,7 +284,7 @@ bool VerifyMaterialVolumeConditionalEmission(
                         == QStringLiteral("02")
                     && rules.at(1).toObject().value(
                            QStringLiteral("priority")).toInt() == 100,
-                QStringLiteral("MATVOL 预设 %1 的 materialVolumePolicy 字段不正确。")
+                QStringLiteral("MATVOL 显式优先级预设 %1 的 overlap 不正确。")
                     .arg(preset.id),
                 errors))
         {
@@ -251,9 +300,11 @@ bool VerifyMaterialVolumeConditionalEmission(
             return false;
         }
     }
+    // 自动模式一并纳入收口：否则将来若把该预设删掉，上面的分支会整段失效而无人察觉。
     return Check(
-        sawLegacy && sawVolumetric,
-        QStringLiteral("预设目录必须同时包含旧工艺与 MATVOL 候选。"),
+        sawLegacy && sawVolumetric && sawVolumetricAuto,
+        QStringLiteral(
+            "预设目录必须同时包含旧工艺、MATVOL 显式优先级候选与 MATVOL 自动模式候选。"),
         errors);
 }
 

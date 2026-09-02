@@ -18,6 +18,47 @@ static int HasText(const char* text)
     return text != NULL && text[0] != '\0';
 }
 
+/*
+ * MATOPQ：以下三个片段一律【条件产出】——取默认值时返回与修订前逐字节相同的内容，
+ * 故既有预设的 profileHash 不变。键序仍须字典序，与规范化输出约定一致。
+ * 数字用 %.15g 而非 %f：规范化输出取 defaultfloat + setprecision(15)
+ * （json_value.cpp 的 dump_impl），%f 的尾零会让 Profile hash 不闭合。
+ */
+static const char* OverlapModeText(
+    const struct hosteffectiveprofilesettings* settings)
+{
+    return settings->materialvolumeoverlapauto != 0
+        ? "auto_by_material_name" : "explicit_priority";
+}
+
+static char* BuildOpacityVarnishCanonical(
+    const struct hosteffectiveprofilesettings* settings)
+{
+    if (settings->materialvolumeopacityvarnishenabled == 0)
+    {
+        return HostFormat("");
+    }
+    return HostFormat(
+        "\"opacityVarnish\": {\n"
+        "\"enabled\": true,\n"
+        "\"opacityMax\": %.15g,\n"
+        "\"semiTransparentRole\": \"rgb\"\n},\n",
+        settings->materialvolumeopacityvarnishmax);
+}
+
+static char* BuildOpacityVarnishCompact(
+    const struct hosteffectiveprofilesettings* settings)
+{
+    if (settings->materialvolumeopacityvarnishenabled == 0)
+    {
+        return HostFormat("");
+    }
+    return HostFormat(
+        "\"opacityVarnish\":{\"enabled\":true,\"opacityMax\":%.15g,"
+        "\"semiTransparentRole\":\"rgb\"},",
+        settings->materialvolumeopacityvarnishmax);
+}
+
 static char* BuildVolumeRulesCanonical(
     const struct hosteffectiveprofilesettings* settings)
 {
@@ -99,6 +140,16 @@ int HostBuildVolumetricProfileFragments(
         free(rulesCompact);
         return 0;
     }
+    char* varnishCanonical = BuildOpacityVarnishCanonical(settings);
+    char* varnishCompact = BuildOpacityVarnishCompact(settings);
+    if (varnishCanonical == NULL || varnishCompact == NULL)
+    {
+        free(rulesCanonical);
+        free(rulesCompact);
+        free(varnishCanonical);
+        free(varnishCompact);
+        return 0;
+    }
     *canonical = HostFormat(
         "\"materialPolicy\": {\n"
         "\"conflictPolicy\": \"model_material_over_support\",\n"
@@ -140,12 +191,13 @@ int HostBuildVolumetricProfileFragments(
         "\"enabled\": true,\n"
         "\"missingMaterial\": \"fail_closed\",\n"
         "\"mode\": \"closed_intervals\",\n"
+        "%s"
         "\"openSurface\": {\n"
         "\"mode\": \"reject\",\n"
         "\"placement\": \"below_surface\",\n"
         "\"thicknessMm\": 0\n},\n"
         "\"overlap\": {\n"
-        "\"mode\": \"explicit_priority\",\n"
+        "\"mode\": \"%s\",\n"
         "\"rules\": %s\n},\n"
         "\"topology\": {\n"
         "\"maxBoundaryEdges\": 8,\n"
@@ -164,6 +216,8 @@ int HostBuildVolumetricProfileFragments(
         settings->maxunexpectedoverlappixels,
         settings->supportenabled != 0 ? "true" : "false",
         settings->texturewhitevalue,
+        varnishCanonical,
+        OverlapModeText(settings),
         rulesCanonical);
     *compact = HostFormat(
         "\"materialPolicy\":{\"conflictPolicy\":"
@@ -190,10 +244,10 @@ int HostBuildVolumetricProfileFragments(
         "\"enabled\":false,\"mode\":\"rules_then_default\",\"rules\":[]},"
         "\"materialVolumePolicy\":{\"enabled\":true,"
         "\"missingMaterial\":\"fail_closed\","
-        "\"mode\":\"closed_intervals\",\"openSurface\":{"
+        "\"mode\":\"closed_intervals\",%s\"openSurface\":{"
         "\"mode\":\"reject\",\"placement\":\"below_surface\","
         "\"thicknessMm\":0},\"overlap\":{"
-        "\"mode\":\"explicit_priority\",\"rules\":%s},"
+        "\"mode\":\"%s\",\"rules\":%s},"
         "\"topology\":{\"maxBoundaryEdges\":8,"
         "\"maxSelfIntersectionPairs\":64,"
         "\"selfIntersectionPolicy\":\"tolerate_closed_self_intersection\"}},"
@@ -208,9 +262,13 @@ int HostBuildVolumetricProfileFragments(
         settings->maxunexpectedoverlappixels,
         settings->supportenabled != 0 ? "true" : "false",
         settings->texturewhitevalue,
+        varnishCompact,
+        OverlapModeText(settings),
         rulesCompact);
     free(rulesCanonical);
     free(rulesCompact);
+    free(varnishCanonical);
+    free(varnishCompact);
     if (*canonical == NULL || *compact == NULL)
     {
         free(*canonical);
