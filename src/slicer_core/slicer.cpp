@@ -3191,6 +3191,35 @@ void PopulateMaterialClosureEmptyMask(
     }
 }
 
+/**
+ * @brief 判断本像素的材质所有者是否就是该 XY 列的顶面材质。
+ *
+ * MATOPQ-RGB M1：逐列顶面贴图（build_relief_texture_columns）对「被顶面遮住的
+ * 下层材质」是错误的颜色来源——它会把上层材质的色写到下层体积上（tm2-5 的
+ * nail-L2 段因此整段变成 trans 的 Kd 250）。owner 与顶面一致时该来源是对的，
+ * 不一致时才需让位给 MATVOL 的逐材质颜色。
+ *
+ * 任一侧信息缺失一律返回 true，即退回既有行为：本卡是取色修正，不是校验加严，
+ * 不得新增 fail 路径、不得改变任何资产的可切性。单材质与顶面材质像素由此
+ * 结构性零漂移——它们走的是与修订前完全相同的代码路径。
+ */
+[[nodiscard]] bool TextureColumnMatchesOwner(
+    const std::vector<std::uint32_t>* topMaterialIndex,
+    const std::vector<std::uint32_t>* owner,
+    const std::size_t pixelIndex) {
+    if (topMaterialIndex == nullptr || owner == nullptr
+        || pixelIndex >= topMaterialIndex->size()
+        || pixelIndex >= owner->size()) {
+        return true;
+    }
+    const std::uint32_t ownerIndex = owner->at(pixelIndex);
+    const std::uint32_t topIndex = topMaterialIndex->at(pixelIndex);
+    if (ownerIndex == kNoMaterialOwner || topIndex == kNoMaterialOwner) {
+        return true;
+    }
+    return ownerIndex == topIndex;
+}
+
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
@@ -3205,6 +3234,10 @@ std::vector<std::uint8_t> compose_layer(
     const std::vector<ColumnLayerRange>* column_ranges,
     const std::vector<std::uint8_t>* material_volume_rgb,
     const std::vector<std::uint8_t>* material_volume_varnish_mask,
+    // M1：逐列顶面材质下标与本层材质所有者，仅用于判断逐列顶面贴图对本像素
+    // 是否为正确来源；两者任一为空即退回既有取色路径。
+    const std::vector<std::uint32_t>* top_material_index,
+    const std::vector<std::uint32_t>* material_volume_owner,
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
@@ -3298,6 +3331,8 @@ std::vector<std::uint8_t> compose_layer(
                         }
                     }
                 } else if (config.texture.enabled
+                           && TextureColumnMatchesOwner(
+                               top_material_index, material_volume_owner, pixel_index)
                            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
                     const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
                     pixels.at(base + 0U) = color.rgb.at(0);
@@ -4775,6 +4810,36 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
     // MATVOL 逐层复用缓冲：owner 为每列一个材质下标，rgb 为紧凑三通道，
     // 与 compose_layer 返回的六通道交错布局不同，需在写回时按列取用。
+    // M1：逐列顶面材质在 plan 材质表中的下标。O(列数) 且只构建一次，
+    // 不进层循环——故不触碰 MV-03 禁止的 O(材质数 x 层数 x 像素数) 稠密栈。
+    // 构建点必须同时晚于 materialVolumePlan 建成与 relief_columns 填充：
+    // 前者提供材质名表，后者提供每列顶面三角。非 relief 模式下 relief_columns
+    // 为空，本表随之为空，判据恒真即退回既有行为。
+    std::vector<std::uint32_t> topMaterialIndexByColumn;
+    if (materialVolumePlan.has_value() && !relief_columns.empty()) {
+        const std::span<const std::string> planMaterialNames =
+            materialVolumePlan.value().MaterialNames();
+        topMaterialIndexByColumn.assign(relief_columns.size(), kNoMaterialOwner);
+        for (std::size_t column{0}; column < relief_columns.size(); ++column) {
+            const ReliefColumnInfo& columnInfo = relief_columns.at(column);
+            if (!columnInfo.has_model || columnInfo.top_triangle_index < 0
+                || columnInfo.top_triangle_index
+                       >= static_cast<int>(model_report.triangle_textures.size())) {
+                continue;
+            }
+            const std::string& topMaterialName =
+                model_report.triangle_textures
+                    .at(static_cast<std::size_t>(columnInfo.top_triangle_index))
+                    .material_name;
+            for (std::size_t index{0}; index < planMaterialNames.size(); ++index) {
+                if (planMaterialNames[index] == topMaterialName) {
+                    topMaterialIndexByColumn.at(column) =
+                        static_cast<std::uint32_t>(index);
+                    break;
+                }
+            }
+        }
+    }
     std::vector<std::uint32_t> materialVolumeOwner;
     std::vector<std::uint8_t> materialVolumeRgb;
     std::vector<std::uint8_t> materialVolumeVarnishMask;
@@ -4895,6 +4960,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             materialVolumePlan.has_value() ? &materialVolumeRgb : nullptr,
             config.material_volume_policy.opacity_varnish.enabled
                 ? &materialVolumeVarnishMask : nullptr,
+            // M1：两者同时可用才启用 owner-vs-顶面判据；owner buffer 是层循环内
+            // 复用的同一块内存，其生命周期覆盖本调用点。
+            topMaterialIndexByColumn.empty() ? nullptr : &topMaterialIndexByColumn,
+            materialVolumeOwner.empty() ? nullptr : &materialVolumeOwner,
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,
