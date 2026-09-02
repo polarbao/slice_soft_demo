@@ -269,7 +269,13 @@ struct ReliefColumnInfo {          // slicer.cpp:208
 
 改为附带逐材质顶面。两处填充点（`slicer.cpp:1375` 与 `slicer.cpp:1478`）都在三角形遍历循环内，`triangleIndex` 可用、材质名可由 `triangle_textures[triangleIndex]` 直接查，**同一遍遍历即可完成，无额外几何开销**。
 
-存储采用 CSR 形态（避免逐列 vector 的分配开销）：
+存储形态：**稠密表**（MR-03 实施时对本节的修正，见任务清单 §8.1）。
+
+索引为 ，采样热路径需要 O(1) 随机写，稠密直接满足；
+CSR 省下的内存换不回它引入的转换步骤与索引复杂度。关键在于规模为 O(材质数 x 列数)，
+**没有层数因子**，故不属于 MV-03 禁止的 O(材质数 x 层数 x 像素数) 稠密所有权栈。
+
+原拟 CSR 形态（已否决，保留备查）：
 
 ```cpp
 /// @brief 逐列逐材质顶面。offsets 长度为 列数+1，entries 按列连续存放。

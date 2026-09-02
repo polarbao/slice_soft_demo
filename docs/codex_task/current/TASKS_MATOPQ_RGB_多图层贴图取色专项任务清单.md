@@ -26,11 +26,11 @@
 | 卡号 | 任务 | 状态 | 依赖 | 完成日期 |
 |---|---|---|---|---|
 | MR-00 | 根因定位、实施设计与自审 | **COMPLETE** | 用户授权 | 2026-09-02 |
-| R-01 | 默认路径零漂移基线复核 | **TODO** | MR-00 | — |
-| R-02 | 单材质 + MATVOL + texture 基线建立 | **TODO** | MR-00 | — |
-| MR-01 | M1：owner-vs-顶面判据，取色归属修正 | **READY** | R-01、R-02 | — |
-| MR-02 | M1 验收：`nail-L2` 段变 `(167,243,255)` + 全量回归 | **TODO** | MR-01 | — |
-| MR-03 | M2-a：relief 采样记录逐材质顶面（CSR） | **TODO** | MR-02 | — |
+| R-01 | 默认路径零漂移基线复核 | **COMPLETE** | MR-00 | 2026-09-02 |
+| R-02 | `owner == 顶面` 零漂移基线 | **COMPLETE** | MR-00 | 2026-09-02 |
+| MR-01 | M1：owner-vs-顶面判据，取色归属修正 | **COMPLETE** | R-01、R-02 | 2026-09-02 |
+| MR-02 | M1 验收：`nail-L2` 段变 `(167,243,255)` + 全量回归 | **COMPLETE** | MR-01 | 2026-09-02 |
+| MR-03 | M2-a：relief 采样记录逐材质顶面（稠密表，见 §8） | **READY** | MR-02 | — |
 | MR-04 | M2-b：`MaterialLayerRgbComposer` 注入逐列颜色源 | **TODO** | MR-03 | — |
 | MR-05 | M2 验收：两层贴图均正确 + 全量回归 | **TODO** | MR-04 | — |
 | MR-06 | 文档收口与 MO-12 关闭 | **TODO** | MR-05 | — |
@@ -62,19 +62,22 @@ M1 首版方案「MATVOL 有 owner 时优先于贴图分支」**已否决**：�
 
 ---
 
-## 4. R-01 默认路径零漂移基线复核（TODO）
+## 4. R-01 默认路径零漂移（COMPLETE，2026-09-02）
 
-**目的：** 确认动代码前的基线仍成立，避免把上游漂移误判为本专项引入。
+**目的：** 确认 M1 未影响 MATVOL 关闭时的默认路径。
 
-**命令：**
+**方法：** 资产 `fenandtou_d0_clean`（MATVOL 与 texture 均未启用），Release 二进制，94 层 TIFF 拼接 sha256。
 
-```bash
-./build-slicesoft/main/Release/slicer_cli.exe --config <默认路径配置>
+**实测（M1 落地后）：**
+
+```text
+层数 = 94
+M1 后 = 3cbfdec213cfcf1a3397cfd1860c5baa7bc649b669249eddc2238f0b4f363b5f
+基线  = 3cbfdec213cfcf1a3397cfd1860c5baa7bc649b669249eddc2238f0b4f363b5f
+结果  = 逐字节一致
 ```
 
-**判据：** TIFF 逐字节哈希 `3cbfdec213cfcf1a3397cfd1860c5baa7bc649b669249eddc2238f0b4f363b5f`
-
-**说明：** 该基线取自 MATOPQ 专项，MATVOL 关闭时 `compose_layer` 不进入任何新代码路径。
+**结论：** MATVOL 关闭时 `topMaterialIndexByColumn` 为空，判据恒真，`compose_layer` 走与修订前完全相同的路径——设计文 §4.4 的结构性零漂移得到实测印证。
 
 ---
 
@@ -149,27 +152,85 @@ tm2-5  层数=124  尺寸=310x567x6
 
 ---
 
-## 7. MR-02 M1 验收（TODO）
+## 7. MR-02 M1 验收（COMPLETE，2026-09-02）
 
-| 项 | 期望 |
-|---|---|
-| `tm2-5` `nail-L2` 段唯一色 | 1 个 = `(167,243,255)` |
-| `tm2-5` `nail-L1` 段唯一色 | 14,363（不变） |
-| `V+G` | `= 2,714,451`（不变） |
-| 层数 | 124（不变） |
-| R-01 基线 | 逐字节不变 |
-| R-02 基线 | 逐项不变 |
-| 全量回归 | 231 项，失败 7 项（继承基线，逐项相同） |
+### 7.1 实测结果
 
-**统计工具：** 本会话所用脚本（`chan_stats.py` / `layer_profile.py` / `mtl_zrange.py`）在 scratchpad，若需长期保留应移入 `scripts/`。
+| 项 | 期望 | 实测 | |
+|---|---|---|---|
+| `tm2-5` `nail-L2` 段唯一色 | 1 个 = `(167,243,255)` | 1 个 = `(167,243,255)` | 通过 |
+| `tm2-5` `nail-L1` 段唯一色 | 14,363（不变） | 356,190 像素 / 14,363 色 / 均值 `[215.2 134.3 121.9]` | 通过 |
+| `V+G` | `= 2,714,451` | `2,714,451` | 通过 |
+| 层数 | 124 | 124 | 通过 |
+| R-01 基线 | 逐字节不变 | `3cbfdec2…f363b5f` 一致 | 通过 |
+| R-02 基线 | 逐项不变 | `nail-L1` 段三项全同 | 通过 |
+| 全量回归 | 231 项 / 失败 7 项 | 231 项 / 失败 7 项，逐项与继承基线相同 | 通过 |
+
+回归明细（`MATOPQ-RGB` @ `3224978`，Debug，2026-09-02 19:03）：
+
+```text
+BUILD=0   CTEST=8
+97% tests passed, 7 tests failed out of 231
+Total Test time (real) = 1215.68 sec
+
+失败 7 项（继承，非本卡引入）
+ 18 slicer_stage14c04_sync_capability_safety_test    149 scene_layer_adapters_unit_tests
+ 53 stage14f03_single_model_s1_gate                  187 slicer_stage14e02_qt_host_boundary_test
+ 55 stage14f05_local_closure_gate                    226 slicer_stage14e04d_dual_view_contract_test
+229 hostflow_hd02_real_asset_matrix
+```
+
+### 7.2 已知中间态局限（非本卡缺陷）
+
+B 通道非空像素数由 `910,676` 降为 `356,181`，差值 `554,495` 与 `nail-L2` 段像素数 `554,486` 相当。
+
+根因：`nail` 的 Kd 蓝分量为 `1.0000`，`1.0 × 255 = 255`，而 **255 正是 `emptyValue`**。在 `black_is_print` 语义下 255 既表示「空」又表示「最大值」，故该段 B 通道在统计上被计为空。R（167）与 G（243）不撞值，两者均未变。
+
+这是 **M1 中间态（Kd 单色）的固有性质**：只要材质 Kd 含 1.0 分量就会撞值。M2 改用真实贴图采样后，采样值不再是常量 255，此现象自然消失。**不作为 M1 的缺陷处理，也不为它引入特例逻辑**——引入特例会破坏 §1 的零漂移边界。
+
+### 7.3 过程失误记录
+
+M1 第一轮回归被实施方自己污染：回归跑动期间切换分支去执行 MATOPQ 合并，导致 `source_size_guard_self_test`（读工作树源文件实际行数）与 contract 测试读到不含 M1 的分支内容。该轮结果作废并重跑。**教训：回归跑动期间不得切换分支或改动工作树。**
+
+### 7.4 统计工具
+
+`chan_stats.py` / `layer_profile.py` / `mtl_zrange.py` 目前在会话 scratchpad。M2 验收仍需它们；若要长期保留应移入 `scripts/`（本卡未做，避免在验收卡里夹带非验收改动）。
 
 ---
 
-## 8. MR-03 / MR-04 M2 实施（TODO）
+## 8. MR-03 / MR-04 M2 实施（MR-03 READY）
 
 见设计文 §5。要点：
 
-- **MR-03**：`ReliefColumnInfo` 附带逐材质顶面，CSR 存储（`offsets` / `materialIndices` / `triangleIndices` / `barycentrics`）。两处填充点 `slicer.cpp:1375` 与 `:1478` 均在三角遍历循环内，同一遍完成，无额外几何开销。规模上界约 20MB。
+### 8.1 MR-03 存储形态修正：CSR 改为稠密表
+
+设计文 §5.2 原定 CSR（`offsets` / `materialIndices` / …）。落到代码后改为**稠密表**：
+
+```cpp
+// 索引 = materialIndex * columnCount + pixelIndex
+std::vector<double> zMaxByMaterial;                    // 材质数 x 列数
+std::vector<int> topTriangleByMaterial;
+std::vector<std::array<double, 3>> topBaryByMaterial;
+```
+
+理由：
+
+1. 规模为 `O(材质数 × 列数)`，**没有层数因子**。MV-03 禁止的是 `O(材质数 × 层数 × 像素数)` 稠密所有权栈，本表不在其列。
+2. `310×567 列 × 4 材质 × (8+4+24)B ≈ 25MB`，与设计文估算的 20MB 同量级。
+3. CSR 省下的内存换不回它引入的转换步骤与索引复杂度；采样热路径需要 O(1) 随机写，稠密直接满足。
+
+该修正需同步回设计文 §5.2。
+
+### 8.2 填充点
+
+两处均在三角形遍历循环内、`triangleIndex` 可用，且 `sample_relief_heightfield_masks` 已有 `model_report` 入参（`slicer.cpp:1299`），故 `triangleIndex → material_name` 可直接查 `model_report.triangle_textures`：
+
+```text
+slicer.cpp:1375   if (zMm >= zMax[pixelIndex])              { 全列顶面 }   标准档
+slicer.cpp:1478   if (zMm >= representativeTopZ[pixelIndex]) { 同上 }      超采样档
+```
+
+在同一个 `if` 旁并列一份逐材质判定即可，**同一遍遍历完成，无额外几何开销**。需预先建 `triangleIndex → materialIndex` 映射（O(三角数)，一次）。
 - **MR-04**：`MaterialLayerRgbComposer` 增可选 `MaterialColumnColorSource`，回退顺序为「该材质贴图 → 该材质 Kd → MV-05 既有 fallbackPolicy」。缺图 / 无 UV / 越界三种情形的处置见设计文 §5.4，一律不静默。
 
 ---
