@@ -182,6 +182,14 @@ struct MaterialVolumeOverlapRuleConfig {
     int priority{0};
 };
 
+/**
+ * @brief 材质体积重叠的裁决方式。
+ *
+ * `explicit_priority`（默认）要求逐材质显式声明 priority，缺声明或同级均 fail-closed。
+ * `auto_by_material_name` 改由命名规范推导：材质名形如 `<素材名>-L<层号>`，
+ * 优先级按「层序主导 + 同层类别次序」自动生成，`rules` 此时必须为空。
+ * 规范见 docs/slice/DOC/DOC_SPEC_MATERIAL_NAMING_多图层素材命名与语义标识规范.md。
+ */
 struct MaterialVolumeOverlapConfig {
     std::string mode{"explicit_priority"};
     std::vector<MaterialVolumeOverlapRuleConfig> rules;
@@ -213,6 +221,25 @@ struct MaterialVolumeTopologyConfig {
     int max_boundary_edges{0};
 };
 
+/**
+ * @brief 由材质不透明度推导光油（V）归属；默认关闭，须显式 opt-in。
+ *
+ * 判据只看 MTL 的 `d`（`Tr` 已在解析层归一为同一 opacity）。
+ * `opacity <= opacity_max` 的材质其体积改写 V 通道而非 RGB。
+ */
+struct MaterialVolumeOpacityVarnishConfig {
+    bool enabled{false};
+    /// @brief 判为光油的不透明度上限；必须为正且 < 1。
+    double opacity_max{0.001};
+    /**
+     * @brief `opacity_max < opacity < 1` 的半透明材质的落位角色。
+     *
+     * 只允许 `rgb`：半透明按工艺语义【不是】光油。取该值时必须出诊断，
+     * 不得静默丢弃设计意图——静默丢弃正是本专项要根治的原始缺陷。
+     */
+    std::string semi_transparent_role{"rgb"};
+};
+
 struct MaterialVolumePolicyConfig {
     bool enabled{false};
     std::string mode{"closed_intervals"};
@@ -220,6 +247,7 @@ struct MaterialVolumePolicyConfig {
     MaterialVolumeOverlapConfig overlap;
     MaterialVolumeTopologyConfig topology;
     std::string missing_material{"fail_closed"};
+    MaterialVolumeOpacityVarnishConfig opacity_varnish;
 };
 
 /**
@@ -372,6 +400,17 @@ struct ReliefConfig {
 struct GeometrySamplingConfig
 {
     std::string strategy{"legacy_center_sample"};
+    /**
+     * @brief 退化面判定阈值，单位为面积平方（mm^4）；面积^2 <= 该值的三角形被丢弃。
+     *
+     * 默认 1e-12 等价于面积门 1e-6 mm^2。CAD/NURBS 导出（如犀牛）的多材质资产
+     * 常含 nm^2 量级的合法薄面，默认门会把它们误判为退化面并丢弃，
+     * 从而在【本来闭合】的网格上制造出边界边，使逐材质拓扑被判为开放表面。
+     *
+     * 取 0 或负值表示沿用适配器默认值，既有工艺行为因此保持不变。
+     * 推荐值见 docs/slice/DOC/DOC_POLICY_INDEX_冲突裁决与工艺逻辑策略总表.md。
+     */
+    double degenerate_area_epsilon_mm2{0.0};
 };
 
 /**
