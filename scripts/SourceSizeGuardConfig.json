@@ -18,5 +18,30 @@
     "apps/slicer_worker/",
     "apps/slicer_ui_host_sim/"
   ],
-  "allowlist": []
+  "allowlist": [
+    {
+      "path": "apps/slicer_cli/main.cpp",
+      "rules": [
+        "G2"
+      ],
+      "reason": "用户 2026-09-01 授权放宽：CLI 选项属纯声明性增长（CliOptions 字段 + 参数解析分支），不增加逻辑复杂度；为满足 G2 而抽取无关函数属于为门禁做的无关改动。",
+      "expiresWhen": "版本重构时统一清理 main.cpp 与其他历史巨型文件"
+    },
+    {
+      "path": "src/slicer_core/config.cpp",
+      "rules": [
+        "G2"
+      ],
+      "reason": "用户 2026-09-01 授权放宽：MATOPQ 方案 A 新增 geometrySampling.degenerateAreaEpsilonMm2 的加载与校验，属纯声明性配置项增长。",
+      "expiresWhen": "版本重构时统一清理 config.cpp 与其他历史巨型文件"
+    },
+    {
+      "path": "src/slicer_core/slicer.cpp",
+      "rules": [
+        "G2"
+      ],
+      "reason": "用户 2026-09-01 授权放宽：MATOPQ 方案 A 需在 transfer 与 MATVOL 两处适配调用透传退化面阈值；MO-04 将在此文件内接入不透明度到光油通道的判据。",
+      "expiresWhen": "版本重构时统一清理 slicer.cpp（现 5645 行）"
+    }
+  ]
 }

@@ -156,9 +156,15 @@ def Main() -> int:
 
     modelSource = repoRoot / "src" / "slicer_core" / "model.cpp"
     modelIncludes = ReadProjectIncludes(repoRoot, "src/slicer_core/model.cpp")
+    # MATOPQ G-01（用户 2026-08-31 授权）：MTL 不透明度解析下沉新增 base 层解析助手。
+    # 该头与 ObjFaceParser.h 同层（BASE_PREFIXES 含 src/slicer_core/model/）、同目录、
+    # 同命名空间、同角色，未产生 base -> engine 边；且 model.cpp 因此由 1982 缩减至 1941 行，
+    # 属本合同期望的抽取方向而非依赖累积。授权留痕见
+    # docs/slice/DOC/DOC_DECISION_MATOPQ_材质不透明度识别与光油通道映射专项.md 第 12 节。
     expectedModelIncludes = [
         "src/slicer_core/model.h",
         "src/slicer_core/model/ObjFaceParser.h",
+        "src/slicer_core/model/MtlMaterialParser.h",
     ]
     if modelIncludes != expectedModelIncludes:
         raise AssertionError(
