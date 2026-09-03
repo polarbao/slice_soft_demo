@@ -48,6 +48,17 @@ void HostMatvolSettingsPanel::BuildInterface()
     auto* form = new QFormLayout(m_content);
     form->setContentsMargins(12, 0, 0, 0);
 
+    // 自动模式：由材质命名推导逐材质优先级，primary/secondary 随之停用。
+    // 多图层资产的材质数超过这两个名字槽，手填不可行，故自动模式是其唯一路径。
+    m_autoByNameCheck = new QCheckBox(
+        QStringLiteral("按材质命名自动推导优先级（多图层必选）"), m_content);
+    m_autoByNameCheck->setObjectName(
+        QStringLiteral("hostMatvolAutoByNameCheck"));
+    m_autoByNameCheck->setChecked(false);
+    m_autoByNameCheck->setToolTip(QStringLiteral(
+        "材质名须形如 <素材名>-L<层号>，优先级按层序主导自动生成，"
+        "无需填写下方两个材质名。命名违规或撞号会 fail closed。"));
+
     m_primaryNameEdit = new QLineEdit(m_content);
     m_primaryNameEdit->setObjectName(
         QStringLiteral("hostMatvolPrimaryNameEdit"));
@@ -75,6 +86,7 @@ void HostMatvolSettingsPanel::BuildInterface()
     m_capabilityHint->setText(QStringLiteral(
         "重叠必须由显式优先级裁决，数值大者胜；同级重叠一律阻断。"));
 
+    form->addRow(m_autoByNameCheck);
     form->addRow(QStringLiteral("高优先级材质名"), m_primaryNameEdit);
     form->addRow(QStringLiteral("高优先级数值"), m_primaryPrioritySpin);
     form->addRow(QStringLiteral("低优先级材质名"), m_secondaryNameEdit);
@@ -84,6 +96,11 @@ void HostMatvolSettingsPanel::BuildInterface()
 
     connect(
         m_enabledCheck,
+        &QCheckBox::toggled,
+        this,
+        &HostMatvolSettingsPanel::OnEnabledChanged);
+    connect(
+        m_autoByNameCheck,
         &QCheckBox::toggled,
         this,
         &HostMatvolSettingsPanel::OnEnabledChanged);
@@ -114,15 +131,21 @@ void HostMatvolSettingsPanel::SetSettings(
     const hostmaterialvolumesettings& settings)
 {
     const QSignalBlocker enabledBlocker(m_enabledCheck);
+    const QSignalBlocker autoByNameBlocker(m_autoByNameCheck);
     const QSignalBlocker primaryNameBlocker(m_primaryNameEdit);
     const QSignalBlocker primaryPriorityBlocker(m_primaryPrioritySpin);
     const QSignalBlocker secondaryNameBlocker(m_secondaryNameEdit);
     const QSignalBlocker secondaryPriorityBlocker(m_secondaryPrioritySpin);
     m_enabledCheck->setChecked(settings.enabled);
+    m_autoByNameCheck->setChecked(settings.overlapautobyname);
     m_primaryNameEdit->setText(settings.primarymaterialname);
     m_primaryPrioritySpin->setValue(settings.primarypriority);
     m_secondaryNameEdit->setText(settings.secondarymaterialname);
     m_secondaryPrioritySpin->setValue(settings.secondarypriority);
+    // 无控件的三项按原值透传，不得在此丢弃——见头文件的说明。
+    m_opacityVarnishEnabled = settings.opacityvarnishenabled;
+    m_opacityVarnishMax = settings.opacityvarnishmax;
+    m_degenerateAreaEpsilonMm2 = settings.degenerateareaepsilonmm2;
     RefreshEnabledState();
 }
 
@@ -130,10 +153,14 @@ hostmaterialvolumesettings HostMatvolSettingsPanel::Settings() const
 {
     hostmaterialvolumesettings settings;
     settings.enabled = m_enabledCheck->isChecked();
+    settings.overlapautobyname = m_autoByNameCheck->isChecked();
     settings.primarymaterialname = m_primaryNameEdit->text().trimmed();
     settings.primarypriority = m_primaryPrioritySpin->value();
     settings.secondarymaterialname = m_secondaryNameEdit->text().trimmed();
     settings.secondarypriority = m_secondaryPrioritySpin->value();
+    settings.opacityvarnishenabled = m_opacityVarnishEnabled;
+    settings.opacityvarnishmax = m_opacityVarnishMax;
+    settings.degenerateareaepsilonmm2 = m_degenerateAreaEpsilonMm2;
     return settings;
 }
 
@@ -186,11 +213,14 @@ void HostMatvolSettingsPanel::RefreshEnabledState()
        也不 emit 任何变更信号 —— 回退由操作员决定，不由面板代劳。 */
     const bool editable = m_enabledCheck->isChecked()
         && !m_capabilityRestricted;
+    // 自动模式下 primary/secondary 不参与裁决，停用以免误导操作员填写。
+    const bool manualEditable = editable && !m_autoByNameCheck->isChecked();
     m_enabledCheck->setEnabled(!m_capabilityRestricted);
-    m_primaryNameEdit->setEnabled(editable);
-    m_primaryPrioritySpin->setEnabled(editable);
-    m_secondaryNameEdit->setEnabled(editable);
-    m_secondaryPrioritySpin->setEnabled(editable);
+    m_autoByNameCheck->setEnabled(editable);
+    m_primaryNameEdit->setEnabled(manualEditable);
+    m_primaryPrioritySpin->setEnabled(manualEditable);
+    m_secondaryNameEdit->setEnabled(manualEditable);
+    m_secondaryPrioritySpin->setEnabled(manualEditable);
     if (m_capabilityRestricted)
     {
         m_capabilityHint->setText(QStringLiteral(

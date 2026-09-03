@@ -74,6 +74,23 @@ private:
     QSpinBox* m_primaryPrioritySpin{nullptr};
     QLineEdit* m_secondaryNameEdit{nullptr};
     QSpinBox* m_secondaryPrioritySpin{nullptr};
+    /**
+     * @brief 按材质命名自动推导优先级；勾选后 primary/secondary 两个名字槽停用。
+     *
+     * 多图层资产的材质数超过两个名字槽，手填不可行，故自动模式是其唯一可用路径。
+     */
+    QCheckBox* m_autoByNameCheck{nullptr};
+    /**
+     * @brief 以下三项由工艺预设携带，面板不提供控件但必须【透传】。
+     *
+     * MO-11 新增这些字段时只接了 ABI 与预设，未在本面板存取，
+     * 导致预设设定的值在 Settings() 处被静默替换为默认值：
+     * 自动模式退化为手填模式（进而因名字为空而校验失败），
+     * 光油映射与退化面阈值一并丢失。UI 路径的多图层能力因此完全不可用。
+     */
+    bool m_opacityVarnishEnabled{false};
+    double m_opacityVarnishMax{0.001};
+    double m_degenerateAreaEpsilonMm2{0.0};
     QLabel* m_capabilityHint{nullptr};
     bool m_capabilityRestricted{false};
     QString m_capabilityReason;
