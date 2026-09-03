@@ -1,7 +1,7 @@
 # TASKS_MATOPQ_RGB 多图层贴图取色专项任务清单
 
-> 文档状态：**M1+M2 全部 COMPLETE / MR-07 包裹型命名语义待用户裁定**
-> 版本：v1.1 ｜ 日期：2026-09-02
+> 文档状态：**M1+M2 与 UI 路径缺陷全部 COMPLETE / MR-09 静默失败兜底待裁定**
+> 版本：v1.2 ｜ 日期：2026-09-03
 > 定位：不占 Stage 编号的独立取色修正专项；**本清单是任务状态的唯一真源**
 > 分支：`MATOPQ-RGB`（分叉自 `codex/matopq-material-opacity` @ `0023dae`）
 > 设计：`docs/slice/DOC/DOC_DESIGN_MATOPQ_RGB_多图层贴图取色实施设计.md`
@@ -34,7 +34,9 @@
 | MR-04 | M2-b：按 owner 采样各材质自身 `map_Kd` | **COMPLETE** | MR-03 | 2026-09-02 |
 | MR-05 | M2 验收：两层贴图均正确 + 全量回归 | **COMPLETE** | MR-04 | 2026-09-02 |
 | MR-06 | 文档收口与 MO-12 关闭 | **COMPLETE** | MR-05 | 2026-09-02 |
-| MR-07 | 包裹型透明介质的命名语义（`yz/bg-test01`） | **BLOCKED / 待用户裁定** | MR-05 | — |
+| MR-07 | 包裹型透明介质的命名语义（`yz/bg-test01`） | **COMPLETE** | MR-05 | 2026-09-03 |
+| MR-08 | UI 路径三项缺陷修复（预设 texture / 面板接线 / 补白载体） | **COMPLETE** | MR-05 | 2026-09-03 |
+| MR-09 | 已声明材质 owner 像素为 0 时报诊断（静默失败兜底） | **待用户裁定** | MR-08 | — |
 
 ---
 
@@ -281,7 +283,85 @@ MR-02 §7.2 记录的现象（`nail` 的 Kd 蓝分量 1.0 折算 255 与 `emptyV
 - 设计文 §5.2 存储形态由 CSR 修正为稠密表（`35fdb7c`）
 - `TASKS_MATOPQ` §10.5（MO-12）状态由 BLOCKED 改为 RESOLVED，指向本专项
 
-## 9.6 MR-07 包裹型透明介质的命名语义（BLOCKED / 待用户裁定）
+## 9.55 MR-08 UI 路径三项缺陷修复（COMPLETE，2026-09-03）
+
+> **三项缺陷全部只在 UI 实机路径暴露，CLI 验证无法发现。**
+> 均由用户实机测试挖出，非本清单先前任何验收所能覆盖。
+
+### 9.55.1 缺陷一：多图层预设未开启 texture（`f35ccaf`）
+
+`HostProcessPresetCatalog` 的 `multiLayerVarnish.texture.enabled = false`，使
+`build_per_material_texture_columns` 首行即返回空表，M2 的逐材质贴图采样整个不执行，
+各图层只剩自身 Kd 单色。
+
+该值在 MO-11 建立预设时设 false 是当时正确的（M2 尚未落地，开启只会让逐列顶面取色
+写入错误颜色）；M2 落地后理由不再成立，但实施方合并时未回头检查此预设。
+
+### 9.55.2 缺陷二：MATVOL 面板未接线四字段（`7083c12`）
+
+`HostMatvolSettingsPanel::Settings()` 只返回 `enabled` 与 primary/secondary 五项，
+MO-11 新增的 `overlapautobyname` / `opacityvarnishenabled` / `opacityvarnishmax` /
+`degenerateareaepsilonmm2` 全部在此被静默替换为默认值。
+
+后果链：
+
+```text
+预设设 overlapautobyname=true
+  → 面板无对应控件，SetSettings 存不进
+  → Settings() 读回 false
+  → Validate 走 primary/secondary 分支，而多图层预设不填名字槽
+  → 校验失败 → m_effectiveProfile 为空 → IsReady()=false → 「开始切片」按钮禁用
+```
+
+用户现象为「勾选启用多材质纵深体积 RGB 后按钮不可用，取消勾选即可切片」。
+影响不止按钮：即便手填名字令按钮亮起，光油映射与退化面阈值同样丢失。
+**UI 路径的多图层能力此前完全不可用**，CLI 路径能跑通掩盖了这一点。
+
+修复新增「按材质命名自动推导优先级（多图层必选）」复选框并接入
+SetSettings/Settings/信号/启用状态；自动模式下停用 primary/secondary。
+其余三项无控件但按原值透传。
+
+### 9.55.3 缺陷三：补白载体判定输入错误（`7d470de`）
+
+UI 报错：
+
+```text
+PM-SLICER-CONTRACT-0060 / SCENE_PRODUCTION_PACKAGE_INVALID  field=layers.ownership
+pixel=70008 values=255,255,255,255,255,255 ownership=1,0,0,0
+This pixel is in a pure-white texture region.
+```
+
+根因：MV-06 的补白载体以 `material_volume_rgb`（逐材质 Kd 表）为判定输入。M2 把贴图色
+写进 `pixels`，其纯白区为 `(255,255,255)`，而该材质 Kd 未必全 255（`nail` 为 `250,250,255`），
+按 Kd 表判定遂不补 W。该像素因此 ownership 非空却六通道全 255，package 契约判不闭合。
+
+该段注释本已写明「补白策略要观察最终 RGB 才能决定是否补 W」——**M2 破坏了这一前提而实施方未同步**。
+修复即从 `pixels` 反读本层实际写入的 RGB 作为判定输入。
+
+实测：yz 的 W 由 0 变为 73（正是纯白贴图像素），R/G/B/V 分毫未变；tm2-5 全通道前后完全一致
+（其贴图无纯白区）；默认路径 94 层哈希逐字节不变。
+
+### 9.55.4 验证盲区（须记入实施纪律）
+
+| 校验 | 执行位置 | `slicer_cli` 是否覆盖 |
+|---|---|---|
+| 工艺预设参数 | UI 宿主 `HostProcessPresetCatalog` | 否 |
+| 设置面板存取 | UI 宿主 `HostMatvolSettingsPanel` | 否 |
+| package 契约（`layers.ownership`） | 宿主 / Worker 侧 | **否** |
+
+三项缺陷分别落在这三处。**涉及 UI 宿主路径的改动，单元与契约级测试通过不构成端到端结论**，
+必须由实机验证；实施方本轮连续三次以 CLI 结果替代该结论，均被实机推翻。
+
+## 9.6 MR-07 包裹型透明介质的命名语义（COMPLETE，2026-09-03）
+
+> **用户 2026-09-03 裁定：延用现有 `-L<n>` 命名，内嵌关系用不同层号表达，
+> 被包裹者层号更小。规则已写入 `DOC_SPEC_MATERIAL_NAMING` §1.2 并经实机确认。**
+>
+> 资产 `yz/bg-test01` 已按该规则改名（`trans-L2` + `nail-L1`，几何未动）。
+> CLI 实测内嵌素材 owner 由 0 变为 2,939,404、唯一色 15,096；
+> 用户实机确认「切片数据上可以看到这个内嵌部件」。
+>
+> 以下为裁定前的分析记录，保留备查。
 
 用户 2026-09-02 提供 `model/obj/multi-material/yz/bg-test01`，并指示暂缓处理。该资产暴露命名规范的一个真实缺口。
 
@@ -333,5 +413,6 @@ nail-L2       21916    7.6916  12.0840   31.72 ~ 41.49   ← 被 trans-L1 遮住
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-03 | v1.2 | MR-07 收口：用户裁定内嵌关系用不同层号表达、被包裹者层号更小，规则入 DOC_SPEC_MATERIAL_NAMING §1.2，yz 资产已改名并经实机确认内嵌部件可见。新增 MR-08 记录 UI 路径三项缺陷（预设未开 texture、面板四字段未接线、补白载体判定输入错误）及其验证盲区。新增 MR-09 待裁定：已声明材质 owner 像素为 0 时报诊断。 |
 | 2026-09-02 | v1.1 | M1+M2 收口：MR-01..06 全部 COMPLETE。nail-L2 段唯一色 1 -> 22,882（真实贴图采样），nail-L1 段三态逐项不变，V+G 三态守恒，R-01 默认路径 94 层哈希逐字节不变，全量回归 231 项失败 7 项与继承基线相同。MR-03 存储形态由 CSR 改为稠密表。新增 MR-07 记录包裹型透明介质命名语义缺口（yz/bg-test01），待用户裁定。上游 MO-12 已置 RESOLVED。 |
 | 2026-09-02 | v1.0 | 首版。建立 MR-00..06 与 R-01/R-02 两项准备卡；MR-00 完成（含设计自审与 M1 首版方案否决记录）；MR-01 标 READY。 |

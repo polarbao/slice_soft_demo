@@ -342,6 +342,23 @@ else                              → defaultfloat << setprecision(15)
 - 自动模式分支：**新增** 4 项校验（`auto_by_material_name`、`rules` 必须为空、`opacityMax ∈ (0,1)`、`semiTransparentRole == rgb`）
 - 收口断言由 2 项增至 3 项（纳入 `sawVolumetricAuto`）
 
+### 9.5.35 本卡的两项 UI 接线缺陷（2026-09-03 补记）
+
+MO-11 当时只接了 ABI、Worker 侧 Profile 产出与工艺预设，**漏了 UI 宿主侧的两处**，
+两者均在用户实机测试中暴露，详细记录见 `TASKS_MATOPQ_RGB` §9.55：
+
+| 缺陷 | 修复 | 后果 |
+|---|---|---|
+| 多图层预设 `texture.enabled = false` | `f35ccaf` | 逐材质贴图采样整个不执行，各图层只剩 Kd 单色 |
+| `HostMatvolSettingsPanel` 未接线四字段 | `7083c12` | 自动模式退化为手填模式致校验失败、按钮禁用；光油映射与退化面阈值一并丢失 |
+
+第二项使 **UI 路径的多图层能力此前完全不可用**。本卡当时的验收（hostflow 四项 + 条件产出断言）
+覆盖的是「ABI 与 Profile 产出」，未覆盖「UI 面板 → settings 结构」这一段，
+故测试全绿而功能不可用。
+
+**纪律补充：** 向 `hostmaterialvolumesettings` 之类的宿主设置结构新增字段时，
+必须同时接线 ABI、Profile 产出、工艺预设**与 UI 面板存取**四处，缺一即为静默丢值。
+
 ### 9.5.4 实测结果（本会话实际执行并观察到的输出）
 
 全量回归（Debug，`build-slicesoft/main`，2026-09-02 16:25）：
