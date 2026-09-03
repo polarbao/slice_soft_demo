@@ -3655,8 +3655,21 @@ std::vector<std::uint8_t> compose_layer(
             carrier.inkThreshold = config.texture.unprintable_white_ink_threshold;
             carrier.whiteValue = config.texture.unprintable_white_value;
             MaterialVolumeWhiteCarrierStats carrierStats;
+            // 补白必须观察【本层实际写入的】RGB，而不是 material_volume_rgb 这张
+            // 逐材质 Kd 表。M2 的逐材质贴图采样会把贴图色写进 pixels，其纯白区为
+            // (255,255,255)，而对应材质的 Kd 未必是全 255（如 nail 为 250,250,255）：
+            // 按 Kd 表判定就不会补 W，该像素遂 ownership 非空却六通道全 255，
+            // 触发 package 契约 layers.ownership 不闭合（PM-SLICER-CONTRACT-0060）。
+            // 从 pixels 反读即让本策略回到其注释所声明的「观察最终 RGB」语义。
+            std::vector<std::uint8_t> effectiveRgb(columnCount * 3U, 0U);
+            for (std::size_t column{0}; column < columnCount; ++column)
+            {
+                effectiveRgb[column * 3U + 0U] = pixels.at(column * 6U + 0U);
+                effectiveRgb[column * 3U + 1U] = pixels.at(column * 6U + 1U);
+                effectiveRgb[column * 3U + 2U] = pixels.at(column * 6U + 2U);
+            }
             ApplyMaterialVolumeWhiteCarrierLayer(
-                carrier, *material_volume_rgb, model_mask, whiteScratch, carrierStats);
+                carrier, effectiveRgb, model_mask, whiteScratch, carrierStats);
             for (std::size_t column{0}; column < columnCount; ++column)
             {
                 pixels.at(column * 6U + 3U) = whiteScratch[column];
