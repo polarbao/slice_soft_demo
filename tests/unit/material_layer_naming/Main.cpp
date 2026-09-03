@@ -116,6 +116,87 @@ bool SameLayerSameClassCollisionIsReported()
                "two regular materials in one layer collide on priority");
 }
 
+/// @brief 同层同类【同素材名】带序号：共享同一 priority，且不报撞号。
+bool SameLayerIndexedMaterialsShareOnePriority()
+{
+    const auto materials = Materials({"trans-1-L1", "trans-2-L1", "nail-L2"});
+    const auto naming = ResolveMaterialLayerNaming(materials);
+    const auto& p = naming.priorities;
+    return ExpectTrue(naming.violations.empty(), "indexed names satisfy the suffix rule")
+        && ExpectTrue(naming.collisions.empty(),
+               "same base in one layer shares a priority without collision")
+        && ExpectTrue(naming.max_layer == 2, "max layer is 2")
+        && ExpectTrue(p.at(0U) == p.at(1U),
+               "trans-1-L1 and trans-2-L1 resolve to the same priority")
+        && ExpectTrue(p.at(0U) == 220, "indexed transparent in layer 1 is 220")
+        && ExpectTrue(p.at(2U) == 110, "nail-L2 is 110")
+        && ExpectTrue(p.at(0U) > p.at(2U), "upper layer still beats lower layer");
+}
+
+/// @brief 序号被剥离后主体才能与词表精确匹配，故带序号的透明素材仍归透明类。
+bool IndexStrippedBeforeClassMatching()
+{
+    const auto naming = ResolveMaterialLayerNaming(
+        Materials({"trans-1-L1", "el-2-L1", "nail-3-L1"}));
+    return ExpectTrue(naming.names.at(0U).material_class == MaterialLayerClass::Transparent,
+               "trans-1-L1 is transparent, not regular")
+        && ExpectTrue(naming.names.at(1U).material_class == MaterialLayerClass::Elasticity,
+               "el-2-L1 is elasticity")
+        && ExpectTrue(naming.names.at(2U).material_class == MaterialLayerClass::Regular,
+               "nail-3-L1 is regular")
+        && ExpectTrue(naming.names.at(0U).base_name == "trans",
+               "index is stripped from the base name")
+        && ExpectTrue(naming.names.at(0U).layer_index == 1, "layer index is parsed")
+        && ExpectTrue(naming.names.at(2U).layer_index == 3, "layer index 3 is parsed");
+}
+
+/// @brief 省略序号时 layer_index 为 0，且与带序号形式落在同一 priority。
+bool OmittedIndexIsZeroAndMatchesIndexedForm()
+{
+    const auto naming = ResolveMaterialLayerNaming(
+        Materials({"trans-L1", "trans-1-L1"}));
+    return ExpectTrue(naming.violations.empty(), "both forms satisfy the suffix rule")
+        && ExpectTrue(naming.collisions.empty(),
+               "omitted and indexed forms of one base do not collide")
+        && ExpectTrue(naming.names.at(0U).layer_index == 0, "omitted index is 0")
+        && ExpectTrue(naming.names.at(1U).layer_index == 1, "explicit index is 1")
+        && ExpectTrue(naming.priorities.at(0U) == naming.priorities.at(1U),
+               "both forms resolve to the same priority");
+}
+
+/// @brief 序号非正整数或带前导零时不视为序号，主体因此不被截断。
+bool MalformedIndexIsNotTreatedAsIndex()
+{
+    const auto naming = ResolveMaterialLayerNaming(
+        Materials({"trans-0-L1", "trans-01-L1"}));
+    return ExpectTrue(naming.violations.empty(), "suffix itself is still valid")
+        && ExpectTrue(naming.names.at(0U).layer_index == 0,
+               "-0- is not accepted as an index")
+        && ExpectTrue(naming.names.at(0U).base_name == "trans-0",
+               "malformed index stays in the base name")
+        && ExpectTrue(naming.names.at(1U).base_name == "trans-01",
+               "leading-zero index stays in the base name")
+        && ExpectTrue(naming.names.at(0U).material_class == MaterialLayerClass::Regular,
+               "trans-0 no longer matches the transparent vocabulary");
+}
+
+/// @brief gubao04 的真实六材质三图层组合：无违规、无撞号、优先级与规范一致。
+bool Gubao04SixMaterialsResolveAsSpecified()
+{
+    const auto naming = ResolveMaterialLayerNaming(Materials(
+        {"trans-L1", "nail-2-L1", "nail-1-L1", "trans-L2", "nail-L2", "nail-L3"}));
+    const auto& p = naming.priorities;
+    return ExpectTrue(naming.violations.empty(), "gubao04 names raise no violation")
+        && ExpectTrue(naming.collisions.empty(), "gubao04 names do not collide")
+        && ExpectTrue(naming.max_layer == 3, "max layer is 3")
+        && ExpectTrue(p.at(0U) == 320, "trans-L1 is 320")
+        && ExpectTrue(p.at(1U) == 310, "nail-2-L1 is 310")
+        && ExpectTrue(p.at(2U) == 310, "nail-1-L1 shares 310 with nail-2-L1")
+        && ExpectTrue(p.at(3U) == 220, "trans-L2 is 220")
+        && ExpectTrue(p.at(4U) == 210, "nail-L2 is 210")
+        && ExpectTrue(p.at(5U) == 110, "nail-L3 is 110");
+}
+
 /// @brief 三图层时层内偏移随最大层号伸缩，仍保持上层压过下层。
 bool ThreeLayersScaleTheOffset()
 {
@@ -173,6 +254,11 @@ int main()
         && SingleLayerStillRequiresSuffix()
         && MalformedSuffixesAreRejected()
         && SameLayerSameClassCollisionIsReported()
+        && SameLayerIndexedMaterialsShareOnePriority()
+        && IndexStrippedBeforeClassMatching()
+        && OmittedIndexIsZeroAndMatchesIndexedForm()
+        && MalformedIndexIsNotTreatedAsIndex()
+        && Gubao04SixMaterialsResolveAsSpecified()
         && ThreeLayersScaleTheOffset()
         && LegacyTm23NamesAreRejectedNotGuessed()
         && NormalizedSpecLNamesAreAccepted();

@@ -24,10 +24,23 @@ enum class MaterialLayerClass
 struct MaterialLayerName
 {
     std::string material_name;
-    /// @brief 名字主体，即去掉 `-L<n>` 后缀的部分。
+    /**
+     * @brief 名字主体：去掉 `-L<n>` 后缀【与可选的 `-<同层序号>`】之后的部分。
+     *
+     * 类别判定只看本字段，故序号必须在此剥离——否则 `trans-1` 无法与 `trans`
+     * 精确匹配，透明素材会被误判为常规素材。
+     */
     std::string base_name;
     /// @brief 图层号，1 为最上层；解析失败时为 0。
     int layer{0};
+    /**
+     * @brief 同层同类素材的序号；该层同类素材唯一时为 0（名字中省略）。
+     *
+     * 序号【只用于区分】同层同类的多个素材，**不参与优先级计算**：
+     * 它们在工艺上等价，理应共享同一 priority。若两者在空间上真有重叠，
+     * 由 MATVOL 自身的同级重叠阻断兜住，而不是靠序号硬分先后。
+     */
+    int layer_index{0};
     MaterialLayerClass material_class{MaterialLayerClass::Regular};
     /// @brief 成功解出 `-L<n>` 后缀。
     bool parsed{false};
