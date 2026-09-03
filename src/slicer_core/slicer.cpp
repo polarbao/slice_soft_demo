@@ -217,9 +217,39 @@ struct ReliefColumnInfo {
     std::array<double, 3> top_barycentric{0.0, 0.0, 0.0};
 };
 
+/**
+ * @brief 逐列逐材质的顶面（MATOPQ-RGB M2）。
+ *
+ * `ReliefColumnInfo` 只记全列最高面，故被顶面遮住的下层材质取不到自己的 UV，
+ * 其贴图永远无法采样。本表按 (材质, 列) 记录该材质在该列的最高面，
+ * 使每个材质都能用自己的 UV 采自己的 map_Kd。
+ *
+ * materialIndex 与 `MaterialVolumePlan::MaterialNames()` 同序，因此与 MATVOL 的
+ * owner buffer 及 M1 的 topMaterialIndexByColumn 共用同一索引体系，无需桥接。
+ *
+ * 规模为 O(材质数 x 列数)，**没有层数因子**，故不属于 MV-03 禁止的
+ * O(材质数 x 层数 x 像素数) 稠密所有权栈。MATVOL 未启用时本表为空、不产生开销。
+ */
+struct ReliefPerMaterialTopSurface {
+    std::size_t materialCount{0};
+    std::size_t columnCount{0};
+    /// @brief 该 (材质, 列) 的最高面三角下标；-1 表示该材质未覆盖该列。
+    std::vector<int> topTriangle;
+    std::vector<std::array<double, 3>> topBarycentric;
+
+    [[nodiscard]] bool Empty() const noexcept {
+        return materialCount == 0U || columnCount == 0U;
+    }
+    [[nodiscard]] std::size_t Index(
+        const std::uint32_t materialIndex, const std::size_t column) const noexcept {
+        return static_cast<std::size_t>(materialIndex) * columnCount + column;
+    }
+};
+
 struct ReliefSamplingResult {
     std::vector<std::vector<std::uint8_t>> model_masks;
     std::vector<ReliefColumnInfo> columns;
+    ReliefPerMaterialTopSurface per_material_top;
     ReliefReportData report;
 };
 
@@ -1298,12 +1328,39 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     const SliceConfig& config,
     const ModelReport& model_report,
     const GridSpec& grid,
-    std::vector<LayerDiagnostics>& diagnostics)
+    std::vector<LayerDiagnostics>& diagnostics,
+    // M2：MATVOL 的材质名表。非空时按 (材质, 列) 记录逐材质顶面，使被遮住的
+    // 下层材质也能采到自己的贴图；为空（MATVOL 未启用）时完全不建表，零开销。
+    const std::span<const std::string>* planMaterialNames = nullptr)
 {
     const std::size_t pixelCount{static_cast<std::size_t>(grid.width_px) * grid.height_px};
     std::vector<double> zMin(pixelCount, std::numeric_limits<double>::max());
     std::vector<double> zMax(pixelCount, std::numeric_limits<double>::lowest());
     std::vector<int> hitCount(pixelCount, 0);
+    // M2：triangleIndex -> plan 材质下标。预算一次 O(三角数)，
+    // 使采样热路径内只做 O(1) 查表，不做字符串比较。
+    std::vector<std::uint32_t> planMaterialByTriangle;
+    std::vector<double> zMaxByMaterial;
+    const std::size_t planMaterialCount{
+        planMaterialNames != nullptr ? planMaterialNames->size() : 0U};
+    if (planMaterialCount > 0U && pixelCount > 0U) {
+        planMaterialByTriangle.assign(
+            model_report.triangle_textures.size(), kNoMaterialOwner);
+        for (std::size_t triangle{0}; triangle < model_report.triangle_textures.size();
+             ++triangle) {
+            const std::string& name =
+                model_report.triangle_textures.at(triangle).material_name;
+            for (std::size_t index{0}; index < planMaterialCount; ++index) {
+                if ((*planMaterialNames)[index] == name) {
+                    planMaterialByTriangle.at(triangle) =
+                        static_cast<std::uint32_t>(index);
+                    break;
+                }
+            }
+        }
+        zMaxByMaterial.assign(
+            planMaterialCount * pixelCount, std::numeric_limits<double>::lowest());
+    }
     const bool useSupersampleAtLeastTwo = config.geometry_sampling.strategy
         == "layer_slab_supersample_2x2_at_least_two_candidate";
     const bool useSupersampleAnyHit = config.geometry_sampling.strategy
@@ -1320,6 +1377,14 @@ ReliefSamplingResult sample_relief_heightfield_masks(
 
     ReliefSamplingResult result;
     result.columns.resize(pixelCount);
+    if (!zMaxByMaterial.empty()) {
+        result.per_material_top.materialCount = planMaterialCount;
+        result.per_material_top.columnCount = pixelCount;
+        result.per_material_top.topTriangle.assign(
+            planMaterialCount * pixelCount, -1);
+        result.per_material_top.topBarycentric.assign(
+            planMaterialCount * pixelCount, std::array<double, 3>{0.0, 0.0, 0.0});
+    }
     ReliefReportData& reliefReport{result.report};
     reliefReport.total_columns = static_cast<int>(pixelCount);
     std::vector<std::uint8_t> projectedCandidateMask;
@@ -1374,6 +1439,27 @@ ReliefSamplingResult sample_relief_heightfield_masks(
                     ReliefColumnInfo& column{result.columns.at(pixelIndex)};
                     column.top_triangle_index = static_cast<int>(triangleIndex);
                     column.top_barycentric = {w0, w1, w2};
+                }
+                // M2：与上面的全列顶面判定并列——同一遍遍历内再记一份逐材质顶面，
+                // 不引入额外的几何遍历开销。
+                if (!zMaxByMaterial.empty()
+                    && triangleIndex < planMaterialByTriangle.size())
+                {
+                    const std::uint32_t planMaterial =
+                        planMaterialByTriangle.at(triangleIndex);
+                    if (planMaterial != kNoMaterialOwner)
+                    {
+                        const std::size_t slot =
+                            result.per_material_top.Index(planMaterial, pixelIndex);
+                        if (zMm >= zMaxByMaterial.at(slot))
+                        {
+                            zMaxByMaterial.at(slot) = zMm;
+                            result.per_material_top.topTriangle.at(slot) =
+                                static_cast<int>(triangleIndex);
+                            result.per_material_top.topBarycentric.at(slot) =
+                                {w0, w1, w2};
+                        }
+                    }
                 }
                 ++hitCount.at(pixelIndex);
             }
@@ -1477,6 +1563,28 @@ ReliefSamplingResult sample_relief_heightfield_masks(
                             ReliefColumnInfo& column{result.columns.at(pixelIndex)};
                             column.top_triangle_index = static_cast<int>(triangleIndex);
                             column.top_barycentric = {w0, w1, w2};
+                        }
+                        // M2：超采样档的逐材质顶面。与标准档同口径——
+                        // 用与该档代表 Z 相同的比较量，避免两档产生不同的顶面选择。
+                        if (!zMaxByMaterial.empty()
+                            && triangleIndex < planMaterialByTriangle.size())
+                        {
+                            const std::uint32_t planMaterial =
+                                planMaterialByTriangle.at(triangleIndex);
+                            if (planMaterial != kNoMaterialOwner)
+                            {
+                                const std::size_t slot =
+                                    result.per_material_top.Index(
+                                        planMaterial, pixelIndex);
+                                if (zMm >= zMaxByMaterial.at(slot))
+                                {
+                                    zMaxByMaterial.at(slot) = zMm;
+                                    result.per_material_top.topTriangle.at(slot) =
+                                        static_cast<int>(triangleIndex);
+                                    result.per_material_top.topBarycentric.at(slot) =
+                                        {w0, w1, w2};
+                                }
+                            }
                         }
                     }
                 }
@@ -2650,6 +2758,61 @@ std::vector<TextureColumnColor> build_relief_texture_columns(
     return result;
 }
 
+/**
+ * @brief 按 (材质, 列) 采样各材质自己的贴图（MATOPQ-RGB M2）。
+ *
+ * 与 build_relief_texture_columns 的区别只在顶面来源：后者用全列最高面，
+ * 故被遮住的下层材质取不到自己的 UV；本函数用该材质自己的最高面。
+ *
+ * 无贴图 / 无 UV 的 (材质, 列) 保持 has_color=false，由调用方回退到该材质的 Kd
+ * （即 M1 行为），再回退到 MV-05 既有 fallbackPolicy。此处不静默填色，
+ * 以免把「该材质没有贴图」和「采样得到某个颜色」混为一谈。
+ */
+std::vector<TextureColumnColor> build_per_material_texture_columns(
+    const SliceConfig& config,
+    const ModelReport& model_report,
+    const ReliefPerMaterialTopSurface& perMaterialTop,
+    TextureRuntime& runtime) {
+    std::vector<TextureColumnColor> result;
+    if (!config.texture.enabled || perMaterialTop.Empty()) {
+        return result;
+    }
+    const TextureSampleOptions sample_options{
+        config.texture.sampler,
+        config.texture.uv_address_mode,
+        config.texture.flip_v};
+    result.assign(perMaterialTop.topTriangle.size(), TextureColumnColor{});
+    for (std::size_t slot{0}; slot < perMaterialTop.topTriangle.size(); ++slot) {
+        const int triangleIndex = perMaterialTop.topTriangle.at(slot);
+        if (triangleIndex < 0
+            || triangleIndex >= static_cast<int>(model_report.triangle_textures.size())) {
+            continue;
+        }
+        const TriangleTextureInfo& texture_info =
+            model_report.triangle_textures.at(static_cast<std::size_t>(triangleIndex));
+        const RuntimeMaterialTexture* material =
+            find_runtime_material(runtime, texture_info.material_name);
+        if (!texture_info.has_uv || material == nullptr || !material->loaded) {
+            continue;
+        }
+        const std::array<double, 3>& bary = perMaterialTop.topBarycentric.at(slot);
+        const double u = bary.at(0) * texture_info.uv.at(0).u
+            + bary.at(1) * texture_info.uv.at(1).u
+            + bary.at(2) * texture_info.uv.at(2).u;
+        const double v = bary.at(0) * texture_info.uv.at(0).v
+            + bary.at(1) * texture_info.uv.at(1).v
+            + bary.at(2) * texture_info.uv.at(2).v;
+        bool uv_out_of_range{false};
+        TextureColumnColor& color = result.at(slot);
+        color.rgb = sample_texture_rgb(
+            material->image, u, v, sample_options, uv_out_of_range);
+        color.has_color = true;
+        color.sampled_texture = true;
+        color.uv_out_of_range = uv_out_of_range;
+    }
+    return result;
+}
+
 void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base, const SliceConfig& config) {
     if (config.material.material_channel == "V") {
         pixels.at(base + 5U) = config.material.varnish_value;
@@ -3191,6 +3354,35 @@ void PopulateMaterialClosureEmptyMask(
     }
 }
 
+/**
+ * @brief 判断本像素的材质所有者是否就是该 XY 列的顶面材质。
+ *
+ * MATOPQ-RGB M1：逐列顶面贴图（build_relief_texture_columns）对「被顶面遮住的
+ * 下层材质」是错误的颜色来源——它会把上层材质的色写到下层体积上（tm2-5 的
+ * nail-L2 段因此整段变成 trans 的 Kd 250）。owner 与顶面一致时该来源是对的，
+ * 不一致时才需让位给 MATVOL 的逐材质颜色。
+ *
+ * 任一侧信息缺失一律返回 true，即退回既有行为：本卡是取色修正，不是校验加严，
+ * 不得新增 fail 路径、不得改变任何资产的可切性。单材质与顶面材质像素由此
+ * 结构性零漂移——它们走的是与修订前完全相同的代码路径。
+ */
+[[nodiscard]] bool TextureColumnMatchesOwner(
+    const std::vector<std::uint32_t>* topMaterialIndex,
+    const std::vector<std::uint32_t>* owner,
+    const std::size_t pixelIndex) {
+    if (topMaterialIndex == nullptr || owner == nullptr
+        || pixelIndex >= topMaterialIndex->size()
+        || pixelIndex >= owner->size()) {
+        return true;
+    }
+    const std::uint32_t ownerIndex = owner->at(pixelIndex);
+    const std::uint32_t topIndex = topMaterialIndex->at(pixelIndex);
+    if (ownerIndex == kNoMaterialOwner || topIndex == kNoMaterialOwner) {
+        return true;
+    }
+    return ownerIndex == topIndex;
+}
+
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
@@ -3205,6 +3397,12 @@ std::vector<std::uint8_t> compose_layer(
     const std::vector<ColumnLayerRange>* column_ranges,
     const std::vector<std::uint8_t>* material_volume_rgb,
     const std::vector<std::uint8_t>* material_volume_varnish_mask,
+    // M1：逐列顶面材质下标与本层材质所有者，仅用于判断逐列顶面贴图对本像素
+    // 是否为正确来源；两者任一为空即退回既有取色路径。
+    const std::vector<std::uint32_t>* top_material_index,
+    const std::vector<std::uint32_t>* material_volume_owner,
+    // M2：按 (材质, 列) 预采好的各材质自身贴图色；为空则 MATVOL 分支沿用 Kd（M1 行为）。
+    const std::vector<TextureColumnColor>* per_material_texture_columns,
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
@@ -3298,6 +3496,8 @@ std::vector<std::uint8_t> compose_layer(
                         }
                     }
                 } else if (config.texture.enabled
+                           && TextureColumnMatchesOwner(
+                               top_material_index, material_volume_owner, pixel_index)
                            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
                     const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
                     pixels.at(base + 0U) = color.rgb.at(0);
@@ -3326,9 +3526,40 @@ std::vector<std::uint8_t> compose_layer(
                     // MATVOL：逐层材质所有权已在层循环内解算为紧凑 RGB，此处按列取用。
                     // 与旧路径的本质区别是【同一 XY 列在不同层可以属于不同材质】，
                     // 而 relief_heightfield 每列只有一个 top_triangle_index，结构上做不到。
-                    pixels.at(base + 0U) = material_volume_rgb->at(pixel_index * 3U + 0U);
-                    pixels.at(base + 1U) = material_volume_rgb->at(pixel_index * 3U + 1U);
-                    pixels.at(base + 2U) = material_volume_rgb->at(pixel_index * 3U + 2U);
+                    //
+                    // M2：先取该 owner 材质自己的贴图色（用它自己的顶面 UV 采样，
+                    // 故被上层遮住的下层材质也能采到）；该材质无贴图或无 UV 时
+                    // 回退到 Kd 表，即 M1 行为。
+                    bool wrotePerMaterialTexture{false};
+                    if (per_material_texture_columns != nullptr
+                        && material_volume_owner != nullptr
+                        && pixel_index < material_volume_owner->size()) {
+                        const std::uint32_t owner =
+                            material_volume_owner->at(pixel_index);
+                        const std::size_t columnCount{
+                            static_cast<std::size_t>(grid.width_px)
+                            * static_cast<std::size_t>(grid.height_px)};
+                        if (owner != kNoMaterialOwner && columnCount > 0U) {
+                            const std::size_t slot =
+                                static_cast<std::size_t>(owner) * columnCount
+                                + pixel_index;
+                            if (slot < per_material_texture_columns->size()
+                                && per_material_texture_columns->at(slot).has_color) {
+                                const TextureColumnColor& color =
+                                    per_material_texture_columns->at(slot);
+                                pixels.at(base + 0U) = color.rgb.at(0);
+                                pixels.at(base + 1U) = color.rgb.at(1);
+                                pixels.at(base + 2U) = color.rgb.at(2);
+                                update_texture_report_for_color(color, texture_report);
+                                wrotePerMaterialTexture = true;
+                            }
+                        }
+                    }
+                    if (!wrotePerMaterialTexture) {
+                        pixels.at(base + 0U) = material_volume_rgb->at(pixel_index * 3U + 0U);
+                        pixels.at(base + 1U) = material_volume_rgb->at(pixel_index * 3U + 1U);
+                        pixels.at(base + 2U) = material_volume_rgb->at(pixel_index * 3U + 2U);
+                    }
                     counted_model_pixel = true;
                 } else {
                     if (ModelFillUsesExplicitPolicy(config)) {
@@ -4517,11 +4748,25 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     std::vector<LayerDiagnostics> layer_diagnostics;
     ReliefReportData relief_report;
     std::vector<ReliefColumnInfo> relief_columns;
+    ReliefPerMaterialTopSurface relief_per_material_top;
     std::vector<std::vector<std::uint8_t>> model_masks;
     if (config.slicing_mode == "relief_heightfield") {
-        ReliefSamplingResult relief_sampling = sample_relief_heightfield_masks(config, model_report, grid, layer_diagnostics);
+        // M2：MATVOL 启用时把材质名表传入采样，使其一并解出逐材质顶面。
+        // plan 在本调用之前建成（见上方 BuildMaterialVolumePlan），故此处可用。
+        std::optional<std::span<const std::string>> planMaterialNamesForSampling;
+        if (materialVolumePlan.has_value()) {
+            planMaterialNamesForSampling = materialVolumePlan.value().MaterialNames();
+        }
+        ReliefSamplingResult relief_sampling = sample_relief_heightfield_masks(
+            config,
+            model_report,
+            grid,
+            layer_diagnostics,
+            planMaterialNamesForSampling.has_value()
+                ? &planMaterialNamesForSampling.value() : nullptr);
         model_masks = std::move(relief_sampling.model_masks);
         relief_columns = std::move(relief_sampling.columns);
+        relief_per_material_top = std::move(relief_sampling.per_material_top);
         relief_report = std::move(relief_sampling.report);
     } else {
         model_masks = sample_model_masks(model_report, grid, config.output.layer_thickness_mm, layer_diagnostics);
@@ -4559,6 +4804,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     if (config.texture.enabled && config.slicing_mode == "relief_heightfield") {
         texture_columns = build_relief_texture_columns(config, model_report, relief_columns, texture_runtime);
     }
+    // M2：逐材质贴图色。仅在 MATVOL 启用（relief_per_material_top 非空）且
+    // texture 启用时才构建；否则为空，MATVOL 分支沿用 Kd 表。
+    const std::vector<TextureColumnColor> per_material_texture_columns =
+        build_per_material_texture_columns(
+            config, model_report, relief_per_material_top, texture_runtime);
     const MaterialRoleMappingReportData material_role_mapping_report =
         build_material_role_mapping_report(config, model_report);
     std::vector<MaterialRoleColumn> material_role_columns;
@@ -4775,6 +5025,36 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
     // MATVOL 逐层复用缓冲：owner 为每列一个材质下标，rgb 为紧凑三通道，
     // 与 compose_layer 返回的六通道交错布局不同，需在写回时按列取用。
+    // M1：逐列顶面材质在 plan 材质表中的下标。O(列数) 且只构建一次，
+    // 不进层循环——故不触碰 MV-03 禁止的 O(材质数 x 层数 x 像素数) 稠密栈。
+    // 构建点必须同时晚于 materialVolumePlan 建成与 relief_columns 填充：
+    // 前者提供材质名表，后者提供每列顶面三角。非 relief 模式下 relief_columns
+    // 为空，本表随之为空，判据恒真即退回既有行为。
+    std::vector<std::uint32_t> topMaterialIndexByColumn;
+    if (materialVolumePlan.has_value() && !relief_columns.empty()) {
+        const std::span<const std::string> planMaterialNames =
+            materialVolumePlan.value().MaterialNames();
+        topMaterialIndexByColumn.assign(relief_columns.size(), kNoMaterialOwner);
+        for (std::size_t column{0}; column < relief_columns.size(); ++column) {
+            const ReliefColumnInfo& columnInfo = relief_columns.at(column);
+            if (!columnInfo.has_model || columnInfo.top_triangle_index < 0
+                || columnInfo.top_triangle_index
+                       >= static_cast<int>(model_report.triangle_textures.size())) {
+                continue;
+            }
+            const std::string& topMaterialName =
+                model_report.triangle_textures
+                    .at(static_cast<std::size_t>(columnInfo.top_triangle_index))
+                    .material_name;
+            for (std::size_t index{0}; index < planMaterialNames.size(); ++index) {
+                if (planMaterialNames[index] == topMaterialName) {
+                    topMaterialIndexByColumn.at(column) =
+                        static_cast<std::uint32_t>(index);
+                    break;
+                }
+            }
+        }
+    }
     std::vector<std::uint32_t> materialVolumeOwner;
     std::vector<std::uint8_t> materialVolumeRgb;
     std::vector<std::uint8_t> materialVolumeVarnishMask;
@@ -4895,6 +5175,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             materialVolumePlan.has_value() ? &materialVolumeRgb : nullptr,
             config.material_volume_policy.opacity_varnish.enabled
                 ? &materialVolumeVarnishMask : nullptr,
+            // M1：两者同时可用才启用 owner-vs-顶面判据；owner buffer 是层循环内
+            // 复用的同一块内存，其生命周期覆盖本调用点。
+            topMaterialIndexByColumn.empty() ? nullptr : &topMaterialIndexByColumn,
+            materialVolumeOwner.empty() ? nullptr : &materialVolumeOwner,
+            per_material_texture_columns.empty()
+                ? nullptr : &per_material_texture_columns,
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,
