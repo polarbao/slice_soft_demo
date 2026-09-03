@@ -243,6 +243,43 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
         trianglesByMaterial.at(found->second).push_back(index);
     }
 
+    /*
+     * MATVOL-PERF P1：逐三角的 XY 包围盒，用于在逐列求交前剔除必然落空的三角。
+     *
+     * 逐列求交是本函数的绝对热点：它对【每一个 XY 列】遍历【全部三角面】，
+     * 复杂度 O(列数 x 三角数)，中间没有任何空间剔除。实测三角平均只覆盖
+     * 19~29 个列（占栅格约 0.01%），即 99.99% 的 PointInTriangleXy 调用
+     * 必然落空——gubao04 为 104,170 三角 x 192,960 列 = 2.01e10 次比较。
+     *
+     * 本剔除【不改变任何判定结果】：点落在三角形内必然落在其 XY 包围盒内，
+     * 故以闭区间包围盒做保守剔除不会漏掉命中。包围盒 min/max 直接取自
+     * PointInTriangleXy 所用的同一组顶点坐标，不引入 epsilon 收缩，
+     * 因此边界点（恰压在像素中心线上的三角）仍会进入原判定。
+     */
+    struct TriangleXyBounds
+    {
+        double minX{0.0};
+        double maxX{0.0};
+        double minY{0.0};
+        double maxY{0.0};
+    };
+    std::vector<TriangleXyBounds> triangleXyBounds(triangleCount);
+    for (std::size_t index{0}; index < triangleCount; ++index)
+    {
+        const std::array<int, 3>& corners = request.mesh->mesh.triangles.at(index);
+        const Vec3& a =
+            request.mesh->mesh.vertices.at(static_cast<std::size_t>(corners[0]));
+        const Vec3& b =
+            request.mesh->mesh.vertices.at(static_cast<std::size_t>(corners[1]));
+        const Vec3& c =
+            request.mesh->mesh.vertices.at(static_cast<std::size_t>(corners[2]));
+        TriangleXyBounds& bounds = triangleXyBounds.at(index);
+        bounds.minX = std::min({a.x, b.x, c.x});
+        bounds.maxX = std::max({a.x, b.x, c.x});
+        bounds.minY = std::min({a.y, b.y, c.y});
+        bounds.maxY = std::max({a.y, b.y, c.y});
+    }
+
     MaterialVolumePlan plan;
     plan.layerCount_ = grid.layerCount;
     plan.columnCount_ = static_cast<std::size_t>(columnCount64);
@@ -273,6 +310,15 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
                 hits.clear();
                 for (const std::size_t triangleIndex : trianglesByMaterial.at(material))
                 {
+// P1：包围盒剔除。四次比较即排除必然落空的三角，
+                    // 而 PointInTriangleXy 每次要算三个叉积。闭区间比较保证
+                    // 不漏边界命中，故判定结果与剔除前完全一致。
+                    const TriangleXyBounds& bounds = triangleXyBounds.at(triangleIndex);
+                    if (px < bounds.minX || px > bounds.maxX || py < bounds.minY
+                        || py > bounds.maxY)
+                    {
+                        continue;
+                    }
                     const std::array<int, 3>& corners =
                         request.mesh->mesh.triangles.at(triangleIndex);
                     const Vec3& a =
