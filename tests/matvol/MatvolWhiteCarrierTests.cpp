@@ -458,9 +458,13 @@ bool ReportCarriesSchemaRequiredFields()
     const slicer_core::Json report = BuildMaterialVolumeReport(reportInput);
 
     bool passed{true};
-    const std::array<const char*, 12> required{
+    // materialsWithoutPixels 由 MR-09 新增（被完全压掉的材质清单）。
+    // 下方 size() == required.size() 是【闭集】校验，故新增字段必须在此登记，
+    // 否则报告多一个键就红——这正是该断言要防的「字段悄悄溜进 schema」。
+    const std::array<const char*, 13> required{
         "schema", "packageProtocol", "enabled", "mode", "missingMaterial", "openSurface",
-        "overlap", "materials", "totals", "layers", "warnings", "errors"};
+        "overlap", "materials", "materialsWithoutPixels", "totals", "layers", "warnings",
+        "errors"};
     for (const char* field : required)
     {
         passed = ExpectTrue(report.contains(field), std::string{"report carries field "} + field)
