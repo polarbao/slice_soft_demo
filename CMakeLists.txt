@@ -2951,14 +2951,10 @@ add_test(
     NAME stage14d06_public_worker_routing_tests
     COMMAND stage14d06_public_worker_routing_tests
 )
-add_test(
-    NAME stage14d05_r4b_public_worker_artifact_tests
-    COMMAND stage14d06_public_worker_routing_tests
-)
-add_test(
-    NAME stage14d04b_public_worker_cancellation_tests
-    COMMAND stage14d06_public_worker_routing_tests
-)
+# 14D-05-R4B 公共 Worker 产物 与 14D-04B 公共 Worker 取消 的证据并入
+# stage14d06_public_worker_routing_tests —— 原两条 CTest 行注册的是同一个无参
+# 二进制，命令逐字相同且无区分性 test property，不含属于自己的断言。
+# 见 docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md §1.1。
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

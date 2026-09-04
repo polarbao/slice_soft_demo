@@ -520,12 +520,8 @@ add_test(
         --repo-root ${CMAKE_SOURCE_DIR}
 )
 
-add_test(
-    NAME hostflow_he02_batch_import
-    COMMAND hostflow_hb01_model_import_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
-)
+# HE-02 批量导入的证据并入 hostflow_hb01_model_import —— 原 hostflow_he02_batch_import
+# 与它命令、参数逐字相同。见 DOC_DECISION_TEST_PRESET_2026_09_03 §1.1。
 
 add_test(
     NAME hostflow_hb01_import_ui_smoke
@@ -910,26 +906,10 @@ add_test(
         --repo-root ${CMAKE_SOURCE_DIR}
 )
 
-add_test(
-    NAME hostflow_he03_support_settings
-    COMMAND hostflow_hb05_slice_settings_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
-)
-
-add_test(
-    NAME hostflow_he04_material_profile
-    COMMAND hostflow_hb05_slice_settings_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
-)
-
-add_test(
-    NAME hostflow_he05_texture_profile
-    COMMAND hostflow_hb05_slice_settings_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
-)
+# HE-03 支撑设置 / HE-04 材料工艺 / HE-05 纹理工艺的证据并入
+# hostflow_hb05_slice_settings —— 这三条曾各自注册一次，命令与参数与它逐字相同，
+# 跑的是同一个 hostflow_hb05_slice_settings_tests 且无区分性 test property，
+# 因此不含任何属于自己的断言。见 DOC_DECISION_TEST_PRESET_2026_09_03 §1.1。
 
 add_executable(matvol_t_host_profile_tests
     HostProfileCatalog.cpp
@@ -1350,20 +1330,10 @@ add_test(
     COMMAND hostflow_hb08_workspace_state_tests
 )
 
-add_test(
-    NAME hostflow_he03_support_persistence
-    COMMAND hostflow_hb08_workspace_state_tests
-)
-
-add_test(
-    NAME hostflow_he04_material_persistence
-    COMMAND hostflow_hb08_workspace_state_tests
-)
-
-add_test(
-    NAME hostflow_he05_texture_persistence
-    COMMAND hostflow_hb08_workspace_state_tests
-)
+# HE-03/HE-04/HE-05 的持久化证据并入 hostflow_hb08_workspace_state ——
+# 这三条曾各自注册一次同一个无参二进制。HostWorkspaceStateTests.cpp 全文只打
+# 一个 HOSTFLOW_HE05_PERSISTENCE_PASS token，四条 CTest 行输出完全相同。
+# 见 DOC_DECISION_TEST_PRESET_2026_09_03 §1.1。
 
 add_test(
     NAME hostflow_hb08_workspace_ui_smoke
@@ -1935,17 +1905,11 @@ set_tests_properties(
     hostflow_hb04_profile_catalog
     hostflow_hb04_profile_ui_smoke
     hostflow_hb05_slice_settings
-    hostflow_he03_support_settings
-    hostflow_he04_material_profile
-    hostflow_he05_texture_profile
     hostflow_hb05_settings_ui_smoke
     hostflow_hb06_job_ui_smoke
     hostflow_hb07_result_ui_smoke
     hostflow_hd05_package_directory
     hostflow_hb08_workspace_state
-    hostflow_he03_support_persistence
-    hostflow_he04_material_persistence
-    hostflow_he05_texture_persistence
     hostflow_hb08_workspace_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
