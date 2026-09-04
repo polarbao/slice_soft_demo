@@ -1892,7 +1892,12 @@ set_tests_properties(
     hostflow_hd02_real_asset_matrix
     PROPERTIES
         RUN_SERIAL TRUE
-        TIMEOUT 900
+        # 900 → 1800：本条按 31 个真实资产逐个 Import + Refresh，再做 22 实例的聚合
+        # 导入与三维/顶视渲染。本机实测 555.5 s 与 628.2 s（同机两次波动 13%），
+        # 对 900 s 只有 1.62~1.43 倍余量，较慢的机器上会假失败。
+        # 抬高上限不削弱任何断言；代价是真卡死时要多等一倍才暴露 ——
+        # 鉴于它此前正因假失败而被当成「卡死」误判，这个取舍是划算的。
+        TIMEOUT 1800
 )
 
 set_tests_properties(

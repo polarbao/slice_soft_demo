@@ -2,9 +2,9 @@
 
 > 文档状态：**ACTIVE / PC-01..PC-04 COMPLETE（已过 2026-09-04 全量回归，6 失败全为既有）
 > / PC-05..PC-12 PROPOSED**
-> 版本：v1.2 ｜ 日期：2026-09-04
-> ⚠ PC-04 只解决了「可复现 + 转绿」，**没有解决耗时**：它仍占全量 992.5 s 中的 555.5 s（56%），
-> 且两次实测 555/628 s 对 TIMEOUT 900 s 只有 1.43~1.62 倍余量，见 §6.7
+> 版本：v1.3 ｜ 日期：2026-09-04
+> ⚠ PC-04 只解决了「可复现 + 转绿」，**没有解决耗时**：它仍占全量 992.5 s 中的 555.5 s（56%）。
+> TIMEOUT 已按 §6.7 选项 a 抬至 1800 s（原 900 s 对实测 555/628 s 仅 1.43~1.62 倍余量）
 > 定位：不占 Stage 编号的独立专项；本清单为该专项任务状态唯一真源
 > 授权：`docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md`
 > 缘起：用户 2026-09-03 提出两问 ——「自测用例是否可删减」「常用工艺预设是否可统一合并」
@@ -34,16 +34,16 @@ samples/configs/material_process/ 下 15 个工艺文件被 SHA256 钉住
 | PC-00 | 分析、授权文档与本清单 | **COMPLETE** | 用户 2026-09-03 授权 | 2026-09-03 |
 | PC-01 | 摘除 9 个纯别名 CTest 条目 | **COMPLETE**（18:00 全量回归零新增失败） | PC-00 | 2026-09-03 |
 | PC-02 | T 通道派生改策略单次加载 + 资格位，并补两条门禁 | **COMPLETE**（`matvol_t_host_profile` PASS） | PC-00 | 2026-09-03 |
-| PC-03 | 补齐 `RgbWhiteVarnish` 工艺预设入口 | **COMPLETE**（Debug 构建零编译器诊断，定向 4/4 PASS） | PC-02 | 2026-09-03 |
-| PC-04 | `hostflow_hd02_real_asset_matrix` 改清单驱动并重固化 | **COMPLETE**（用户 2026-09-03 选定选项 A） | - | 2026-09-03 |
+| PC-03 | 补齐 `RgbWhiteVarnish` 工艺预设入口 | **COMPLETE**（Debug 构建零编译器诊断，定向 4/4 PASS） | PC-02 | 2026-09-04 |
+| PC-04 | `hostflow_hd02_real_asset_matrix` 改清单驱动并重固化 | **COMPLETE**（选项 A；含 TIMEOUT 900→1800） | - | 2026-09-04 |
 | PC-05 | 宿主 `support.placement` 接线，或判定删除 `mode`/`placement` 其中一路 | PROPOSED | PC-04 无关 | - |
 | PC-06 | 24 条组合互斥规则收成单一准入谓词，宿主改查询而非重述 | PROPOSED | PC-05 | - |
 | PC-07 | `materialPolicy` 与 `materialProcessProfile` 交叉校验 | **PROPOSED / 开工前置已完成**（25 个文件中 5 个已不一致，其中≥2 个是误报，口径待裁定，见 §9.2） | - | - |
 | PC-08 | 工艺文件 overlay 化与 top-N 参数化 | PROPOSED（受 SHA256 冻结约束） | PC-07 | - |
 | PC-09 | W/V 对称预设合并；两条 materialvolume 候选工艺收敛 | PROPOSED / 待 MATVOL 裁定 | PC-06 | - |
 | PC-10 | 8 个不在 CTest 内的验证脚本：入 CTest 或删除 | PROPOSED | - | - |
-| PC-11 | 既有 7 项回归失败的归属与处置 | PROPOSED | - | - |
-| PC-12 | 断言实参求值顺序导致失败不报原因（全仓 36 处） | PROPOSED（已扫出清单，见 §15） | PC-04 | - |
+| PC-11 | 既有 **6** 项回归失败的归属与处置 | PROPOSED | - | - |
+| PC-12 | 断言实参求值顺序导致失败不报原因（全仓 **85 处**） | PROPOSED / **低优先级**（已证非机械改动，批量改写已试并回退，见 §15.2） | PC-04 | - |
 
 ---
 
@@ -95,7 +95,7 @@ transferPresetCount == eligibleBasePresetCount
 
 ---
 
-## 5. PC-03 补齐 `RgbWhiteVarnish` 工艺预设入口 — IMPLEMENTED / 回归未覆盖
+## 5. PC-03 补齐 `RgbWhiteVarnish` 工艺预设入口 — COMPLETE
 
 ### 5.1 缺口事实
 
@@ -184,7 +184,8 @@ hostflow_hd02_real_asset_matrix  实测 555.5 秒，占全量 992.5 秒的 56%
   例：stage14d08_r2_slice_executor_tests 记 2.05 s 实为 87.5 s；
       hostflow_hd04_scene_refresh 记 1.00 s 实为 35.7 s。
   下方数字均改用 2026-09-04 全量 Debug 串行实测值。
-CTestCostData 历史            7 次运行，cost 恒为 0 —— 从未记录过一次成功耗时
+CTestCostData 历史            7 次运行 cost 恒为 0。⚠ 那是 CTestCostData 对【失败】用例的
+                              记法，不代表未执行 —— 本卡 v1.0 曾据此误判为「疑似从未执行」
 ```
 
 ### 6.2 根因：输入集是文件系统扫描，而断言是冻结数字
@@ -320,11 +321,12 @@ CTestCostData 历史            7 次运行，cost 恒为 0 —— 从未记录�
 即：想缩短回归，砍掉本条只能省一半；真正的分层策略应覆盖上面这 10 项（见下方选项 c）。
 
 ```text
-⚠ 超时余量偏薄：两次实测 555 s 与 628 s，对 TIMEOUT 900 s 只有 1.62~1.43 倍余量，
-  且同机两次就有 13% 波动。较慢的机器上有假失败风险。
-后续可选（均需另行裁定，本卡不做）：
-  a) TIMEOUT 900 → 1800。不削弱任何断言，只降低假失败率；
-     但也会推迟真正卡死的暴露时间。
+⚠ 超时余量曾偏薄：两次实测 555 s 与 628 s，对原 TIMEOUT 900 s 只有 1.62~1.43 倍余量，
+  且同机两次就有 13% 波动，较慢的机器上有假失败风险。已按下方 a) 抬至 1800 s。
+已处置与后续可选：
+  a) TIMEOUT 900 → 1800  ——【已执行】2026-09-04，用户批准。
+     不削弱任何断言，只降低假失败率；代价是真卡死要多等一倍才暴露。
+     鉴于它此前正因假失败而被当成「卡死」误判，这个取舍是划算的。
   b) 缩减清单规模 —— 属覆盖面决策，须 RENDER 专项裁定，不由本卡代劳。
   c) 分层跑：给耗时项打 label，日常回归 ctest -LE 排除、发布前全跑。
      ⚠ 只排除本条只能省 56%；要把 16.5 分钟压到 2 分钟以内，
@@ -573,29 +575,60 @@ Require(callThatWrites(&error), QStringLiteral("...: %1").arg(error));
 `H-D-02 FAIL: R-A-02 aggregate import: `，冒号后一片空白，
 而 `ImportModels` 明明设置了完整的中文错误消息。
 
-**全仓扫描结果：36 处**（已排除 `&&` 造成的误报）：
+### 15.1 全仓扫描结果：**85 处**（不是初版说的 36 处）
 
 ```text
-  9  tests/hostflow/HostSliceSettingsTests.cpp
-  5  tests/hostflow/HostThreeDCanvasTests.cpp        （PC-04 已修其中聚合段的 2 处）
+ 16  tests/hostflow/HostSliceSettingsTests.cpp
+ 11  tests/hostflow/HostThreeDCanvasTests.cpp        （PC-04 已修其中聚合段的 2 处）
+ 10  tests/hostflow/HostSceneRefreshTests.cpp
+  9  tests/stage14e_04d/Stage14E04DViewSwitchTests.cpp
+  7  tests/stage14e_04/Stage14E04TopViewTests.cpp
+  6  tests/stage14e_03/Stage14E03InteractionTests.cpp
+  6  tests/stage14e_04c/Stage14E04CThreeDTests.cpp
+  5  tests/hostflow/HostDragInteractionTests.cpp
   4  tests/hostflow/HostSliceJobTests.cpp
-  4  tests/stage14e_03/Stage14E03InteractionTests.cpp
-  3  tests/stage14e_04d/Stage14E04DViewSwitchTests.cpp
-  2  tests/hostflow/HostDragInteractionTests.cpp
+  3  tests/hostflow/HostTopViewCanvasTests.cpp
   2  tests/hostflow/HostSceneProfileRebindTests.cpp
-  2  tests/hostflow/HostSceneRefreshTests.cpp
+  2  tests/stage14c_03/ModuleAbiTests.cpp
   1  tests/hostflow/HostModelImportWorkflowTests.cpp
+  1  tests/hostflow/HostProfilePanelTests.cpp
   1  tests/hostflow/HostStlImportTests.cpp
-  1  tests/hostflow/HostTopViewCanvasTests.cpp
   1  tests/matvol_t/HostTransferProfileTests.cpp
-  1  tests/stage14e_04/Stage14E04TopViewTests.cpp
+其中 4 处位于 || / && 短路链中，提升会改变求值时机。
 ```
 
-**完成标准：** 逐处把调用结果先取到局部变量再断言（PC-04 已示范改法）。
-纯机械改动、不改任何断言语义，可一次性完成并由全量回归零新增失败佐证。
+⚠ 本卡 v1.2 曾写「36 处」。那次扫描用的正则只支持一层嵌套括号，
+漏掉了实参里还有嵌套调用的站点（如
+`topRenderer.Refresh(workflow.SceneHandle(), workflow.SceneRevision(), &frame, &error)`）。
+上表改用括号配对扫描，为准。
 
-**注意：** 这 36 处只在断言失败时才显形，因此「改完回归依然全绿」是预期结果，
-不能作为改对了的证据 —— 建议挑一处临时改坏以确认原因确实被打印出来。
+### 15.2 已尝试批量改写并**回退** —— 它不是机械改动
+
+本卡 v1.2 曾判定这是「纯机械改动，可一次性完成」。**该判断是错的**，
+2026-09-04 实际尝试脚本化改写 81 处后回退，原因：
+
+```text
+① 需要保留断言的【第二个实参】。脚本把 Require( 到匹配 ) 之间整体替换成了
+   新变量名，把失败消息一起吃掉了 —— 好在 Require 是两参签名，直接编译不过而非静默错。
+② 变量命名无法机械生成。从「最后一个 identifier(」取名会得到
+   clientQByteArrayLiteralOk、topRendererSceneRevisionOk 这类由
+   QByteArrayLiteral / SceneRevision 派生的错名字；而同一函数里
+   first.Load / restored.Load 这种同名调用还会撞名。
+③ 4 处在短路链中，提升会让原本被短路跳过的调用变成无条件执行。
+```
+
+### 15.3 修正后的完成标准
+
+```text
+不要批量脚本化。按文件逐个手工改，每文件改完单独构建 + 跑该文件对应的用例。
+改法见 PC-04 §6.5④：先把调用结果取到 const bool 局部变量，再断言。
+优先级：低 —— 它只影响【失败时】的可诊断性，不影响判定对错。
+建议按「该用例近期是否真的失败过」排序，而不是按处数多寡；
+或者干脆改为「谁将来遇到空原因就地修一处」，不单独立项推平。
+```
+
+**注意：** 这些站点只在断言失败时才显形，因此「改完回归依然全绿」是预期结果，
+不能作为改对了的证据 —— 必须挑一处临时改坏以确认原因确实被打印出来。
 
 ---
 
@@ -604,5 +637,6 @@ Require(callThatWrites(&error), QStringLiteral("...: %1").arg(error));
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-09-03 | v1.0 | 首版。固化 PC-01/PC-02 已完成事实与 18:00 回归证据；记录 PC-03 已落地内容与恢复回归后的确认清单；PC-04 给出「冻结基线无法从仓库复现」的完整证据链与 A/B/C 三个待裁定选项；PC-05..PC-11 列明各自的实测事实、完成标准与开工前置（含 PC-07 必须先扫 25 个文件测出既有不一致、PC-08 受 15 个 SHA256 冻结约束、PC-09 待 MATVOL 裁定）。 |
+| 2026-09-04 | v1.3 | PC-04 §6.7 选项 a 已执行：`hostflow_hd02_real_asset_matrix` 的 TIMEOUT 900→1800（用户批准；实测 555/628 s 对 900 s 仅 1.43~1.62 倍余量）。**PC-12 口径两处更正**：处数由 36 改为 **85**（原扫描正则只支持一层嵌套括号，漏掉实参含嵌套调用的站点）；并撤回「纯机械改动」的判断 —— 实际脚本化改写 81 处后已回退，三条失败原因记于 §15.2（吃掉第二个实参、变量名无法机械生成且会撞名、4 处在短路链中）。完成标准改为逐文件手工改、低优先级，或改为「遇到空原因就地修一处」而不单独推平。 |
 | 2026-09-04 | v1.2 | 补 2026-09-04 10:29 全量回归证据：222 项 6 失败，7→6，唯一变化是 hd02 转绿，PC-01..PC-04 零新增失败。**更正 v1.0/v1.1 的耗时数字**：原「其余 221 项合计约 22 秒」系对 `CTestCostData.txt` 的平均 cost 求和所得，而该文件对失败用例记 0，严重低估；实测全量 992.5 s，hd02 占 555.5 s（56%），前 10 项占 867 s（87%），已列出前 10 名单，并据此把 §6.7 选项 c 改为「label 必须覆盖前 10 项、且其中 6 项属别的专项」。同步更正「cost 恒 0 = 疑似从未执行」的错误推断（cost 0 是失败用例的记法）。§13 完成标准改为逐项定责，并记明 14E-02 门禁在首个失败处中止、背后可能还压着别的违规。 |
 | 2026-09-03 | v1.1 | PC-03 转 COMPLETE（Debug 零编译器诊断、定向 4/4 PASS，§5.4 落实测数据，§5.5 记明 Release 与 UI Smoke 仍未做）。PC-04 按用户选定的选项 A 执行完毕并转 COMPLETE：清单驱动、三元组 22/0/14→29/0/2 一次性重固化（含「7 个资产从 rejected 变为可渲染」的语义变化留痕）、聚合步骤对齐 22 实例产品预算、并修一处让失败不报原因的实参求值顺序缺陷；§6.7 明确耗时问题未解决且超时余量仅 1.43 倍，列出 a/b/c 三个后续可选项。新增 PC-12：该求值顺序写法全仓 36 处已扫出清单（§15）。 |
