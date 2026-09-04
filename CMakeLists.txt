@@ -221,6 +221,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/geometry/PointInClosedMeshQuery.h
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.cpp
     src/slicer_core/geometry/SceneModelTriangleMeshAdapter.h
+    src/slicer_core/geometry/SliceGridSpec.h
     src/slicer_core/geometry/TransformedModelAdapter.cpp
     src/slicer_core/geometry/TransformedModelAdapter.h
     src/slicer_core/geometry/ShellMask.cpp
@@ -299,6 +300,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/materials/texture_application/SurfaceTextureTransfer.h
     src/slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.cpp
     src/slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h
+    src/slicer_core/materials/varnish_geometry/SurfaceVarnishMasks.cpp
+    src/slicer_core/materials/varnish_geometry/SurfaceVarnishMasks.h
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.cpp
     src/slicer_core/materials/varnish_geometry/VarnishGeometryPolicy.h
     src/slicer_core/model.cpp

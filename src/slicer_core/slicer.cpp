@@ -4,6 +4,7 @@
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/geometry/LayerOccupancyProvider.h"
+#include "slicer_core/geometry/SliceGridSpec.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
@@ -17,6 +18,7 @@
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
 #include "slicer_core/materials/transfer/LegacyTransferChannelSession.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
+#include "slicer_core/materials/varnish_geometry/SurfaceVarnishMasks.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
 #include "slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h"
@@ -101,16 +103,6 @@ bool ShouldNotifyLayerProgress(const int completedLayers, const int layerCount)
     const int interval = std::max(1, (layerCount + 99) / 100);
     return completedLayers % interval == 0;
 }
-
-struct GridSpec {
-    int width_px{0};
-    int height_px{0};
-    int layer_count{0};
-    double pixel_size_x_mm{0.0};
-    double pixel_size_y_mm{0.0};
-    double origin_x_mm{0.0};
-    double origin_y_mm{0.0};
-};
 
 struct Segment2 {
     double x0{0.0};
@@ -288,11 +280,6 @@ struct UpperSupportBoundaryInfo
 {
     bool includes_outer_varnish_shell{false};
     std::string source{"model_envelope"};
-};
-
-struct SurfaceVarnishMasks {
-    std::vector<std::vector<std::uint8_t>> outer_surface_masks;
-    std::vector<std::vector<std::uint8_t>> inner_surface_masks;
 };
 
 using TextureColumnColor = BoundedTextureColumnFact;
@@ -767,64 +754,6 @@ bool should_write_preview(const PreviewConfig& preview, const int layer_index, c
     return layer_index == 0 || layer_index + 1 == layer_count || (layer_index % interval) == 0;
 }
 
-std::size_t mask_index(const GridSpec& grid, const int x, const int y) {
-    return static_cast<std::size_t>(y) * grid.width_px + x;
-}
-
-std::vector<std::uint8_t> BuildExternalEmptyMask(
-    const GridSpec& grid,
-    const std::vector<std::uint8_t>& modelMask)
-{
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    std::vector<std::uint8_t> externalEmpty(pixelCount, 0);
-    std::vector<int> stack;
-    stack.reserve(pixelCount);
-
-    const auto pushExternalEmpty = [&](const int x, const int y)
-    {
-        if (x < 0 || x >= grid.width_px || y < 0 || y >= grid.height_px)
-        {
-            return;
-        }
-        const std::size_t index = mask_index(grid, x, y);
-        if (modelMask.at(index) != 0 || externalEmpty.at(index) != 0)
-        {
-            return;
-        }
-        externalEmpty.at(index) = 1;
-        stack.push_back(static_cast<int>(index));
-    };
-
-    for (int x{0}; x < grid.width_px; ++x)
-    {
-        pushExternalEmpty(x, 0);
-        pushExternalEmpty(x, grid.height_px - 1);
-    }
-    for (int y{0}; y < grid.height_px; ++y)
-    {
-        pushExternalEmpty(0, y);
-        pushExternalEmpty(grid.width_px - 1, y);
-    }
-
-    constexpr std::array<std::array<int, 2>, 8> neighbors8{{
-        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
-    }};
-
-    while (!stack.empty())
-    {
-        const int current = stack.back();
-        stack.pop_back();
-        const int x = current % grid.width_px;
-        const int y = current / grid.width_px;
-        for (const auto& neighbor : neighbors8)
-        {
-            pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
-        }
-    }
-
-    return externalEmpty;
-}
-
 std::vector<std::uint8_t> DilateMaskPhysical(
     const GridSpec& grid,
     const std::vector<std::uint8_t>& sourceMask,
@@ -957,98 +886,6 @@ std::vector<std::vector<std::uint8_t>> BuildUpperSupportBoundaryMasks(
         }
     }
     return boundaryMasks;
-}
-
-SurfaceVarnishMasks BuildSurfaceVarnishMasks(
-    const SliceConfig& config,
-    const GridSpec& grid,
-    const std::vector<std::vector<std::uint8_t>>& modelMasks)
-{
-    SurfaceVarnishMasks masks;
-    if (!config.surface_varnish.enabled
-        || (!config.surface_varnish.outer_surface && !config.surface_varnish.inner_surface))
-    {
-        return masks;
-    }
-
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    masks.outer_surface_masks.resize(
-        static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixelCount, 0));
-    masks.inner_surface_masks.resize(
-        static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixelCount, 0));
-
-    const int radiusPx = std::max(1, config.surface_varnish.thickness_px);
-    for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
-    {
-        const std::vector<std::uint8_t>& modelMask = modelMasks.at(layerIndex);
-        const bool hasModel = std::any_of(modelMask.begin(), modelMask.end(), [](const std::uint8_t value)
-        {
-            return value != 0;
-        });
-        if (!hasModel)
-        {
-            continue;
-        }
-
-        const std::vector<std::uint8_t> externalEmpty = BuildExternalEmptyMask(grid, modelMask);
-        for (int y{0}; y < grid.height_px; ++y)
-        {
-            for (int x{0}; x < grid.width_px; ++x)
-            {
-                const std::size_t index = mask_index(grid, x, y);
-                if (modelMask.at(index) == 0)
-                {
-                    continue;
-                }
-
-                bool touchesExternalEmpty{false};
-                bool touchesInternalEmpty{false};
-                for (int dy{-radiusPx}; dy <= radiusPx; ++dy)
-                {
-                    for (int dx{-radiusPx}; dx <= radiusPx; ++dx)
-                    {
-                        if (dx == 0 && dy == 0)
-                        {
-                            continue;
-                        }
-                        const int nx{x + dx};
-                        const int ny{y + dy};
-                        if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px)
-                        {
-                            touchesExternalEmpty = true;
-                            continue;
-                        }
-                        const std::size_t neighborIndex = mask_index(grid, nx, ny);
-                        if (modelMask.at(neighborIndex) != 0)
-                        {
-                            continue;
-                        }
-                        if (externalEmpty.at(neighborIndex) != 0)
-                        {
-                            touchesExternalEmpty = true;
-                        }
-                        else
-                        {
-                            touchesInternalEmpty = true;
-                        }
-                    }
-                }
-
-                if (config.surface_varnish.outer_surface && touchesExternalEmpty)
-                {
-                    masks.outer_surface_masks.at(layerIndex).at(index) = 1;
-                }
-                if (config.surface_varnish.inner_surface && touchesInternalEmpty)
-                {
-                    masks.inner_surface_masks.at(layerIndex).at(index) = 1;
-                }
-            }
-        }
-    }
-
-    return masks;
 }
 
 int ApplyOuterVarnishSupportPriority(
@@ -4862,8 +4699,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         : owned_upper_support_boundary_masks;
     const std::vector<ColumnLayerRange> upper_support_boundary_column_ranges =
         compute_mask_column_ranges(upper_support_boundary_masks, grid);
-    const SurfaceVarnishMasks surface_varnish_masks =
-        BuildSurfaceVarnishMasks(config, grid, model_masks);
+    // MF-03X：表面光油 mask 由全层构建改为按层物化。原 BuildSurfaceVarnishMasks
+    // 一次分配 列数 x 层数 x 2 字节，10um 大幅面场景下两个容器各约 10.4 GB。
+    // 该算法逐层独立（每层只读本层 model mask），故改为下方层循环内按需物化，
+    // 缓冲跨层复用、只覆写不重分配。全层版本已无调用者，随本次改动删除。
+    const std::size_t surfaceVarnishPixelCount =
+        static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    const bool surfaceVarnishRequired = SurfaceVarnishMasksRequired(config);
+    std::vector<std::uint8_t> outerSurfaceVarnishLayer(
+        surfaceVarnishRequired ? surfaceVarnishPixelCount : 0U, 0U);
+    std::vector<std::uint8_t> innerSurfaceVarnishLayer(
+        surfaceVarnishRequired ? surfaceVarnishPixelCount : 0U, 0U);
     const OuterVarnishDiscretization outerVarnishDiscretization =
         ComputeOuterVarnishDiscretization(
             config.outer_varnish,
@@ -5100,14 +4946,21 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             outer_varnish_masks.empty()
             ? emptyOptionalMask
             : outer_varnish_masks.at(layer_index);
+        // MF-03X：本层表面光油 mask 就地物化，替代原来的全层索引。
+        if (surfaceVarnishRequired)
+        {
+            MaterializeSurfaceVarnishLayer(
+                config,
+                grid,
+                model_masks.at(static_cast<std::size_t>(layer_index)),
+                layer_index,
+                outerSurfaceVarnishLayer,
+                innerSurfaceVarnishLayer);
+        }
         const std::vector<std::uint8_t>& outerSurfaceVarnishMask =
-            surface_varnish_masks.outer_surface_masks.empty()
-            ? emptyOptionalMask
-            : surface_varnish_masks.outer_surface_masks.at(layer_index);
+            surfaceVarnishRequired ? outerSurfaceVarnishLayer : emptyOptionalMask;
         const std::vector<std::uint8_t>& innerSurfaceVarnishMask =
-            surface_varnish_masks.inner_surface_masks.empty()
-            ? emptyOptionalMask
-            : surface_varnish_masks.inner_surface_masks.at(layer_index);
+            surfaceVarnishRequired ? innerSurfaceVarnishLayer : emptyOptionalMask;
         MaterialClosureSemanticLayerInput materialClosureInput;
         MaterialClosureSemanticLayerInput* materialClosureInputPointer{nullptr};
         if (collectMaterialClosureSemantic)
