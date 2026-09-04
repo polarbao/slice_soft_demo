@@ -67,6 +67,17 @@ MATVOL    ✅ MV-00..03、MV-05..06 非生产语义栈完成；MV-07A/07B/07C �
 TIFF      ⏸ 默认后端已切 libtiff，风险已关死（fail-closed+弃用告警+无静默回退）
           当前【无待办】：05B-02/03 延后并捆绑（等删除确认）、T-A-04 外部阻塞
           卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
+PRESET    ✅ PC-01..PC-04 全部完成（2026-09-04 全量回归 222 项 6 失败，全为既有，零新增）
+            PC-01 摘 9 个纯别名 CTest 条目｜PC-02 T 通道派生收口＋两条门禁
+            PC-03 补 RgbWhiteVarnish 工艺预设入口（六个材质策略里原先唯一没有预设的一个）
+            PC-04 hd02_real_asset_matrix 改清单驱动并重固化 29/0/2 —— 自 2026-08-11 起首次转绿
+          ⚠ 回归失败集由 7 降为 6，唯一变化就是 hd02；剩余 6 项全部为既有失败，见卡 §13
+          ⚠ 全量 Debug 串行实测 992.5s，hd02 占 555.5s（56%），前 10 项占 867s（87%）。
+            hd02 对 TIMEOUT 900s 仅 1.43~1.62 倍余量，慢机器有假失败风险（卡 §6.7）
+          ⏸ PC-05..PC-12 待裁定；PC-07 开工前置已测（25 个文件 5 处不一致，≥2 处是误报）
+            PC-12 断言实参求值顺序致失败不报原因，全仓 36 处已扫出清单
+          卡 docs/codex_task/current/TASKS_PRESET_工艺可配置面收敛与自测用例收口专项任务清单.md
+          授权 docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md
 CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
           卡 docs/codex_task/current/TASKS_CI_冻结面工程保护任务清单.md
 
@@ -100,7 +111,10 @@ CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
 - Tech stack: C++20, Qt 5.15 Widgets, CMake, Windows x64/MSVC, optional OpenVDB via vcpkg
 - Canonical build directory: **`build-slicesoft/main`**（CMakePresets 预设 `slicesoft-main`）。
   构建 `cmake --build build-slicesoft/main --config Debug`，
-  回归 `ctest --test-dir build-slicesoft/main -C Debug --output-on-failure`，当前共 213 项。
+  回归 `ctest --test-dir build-slicesoft/main -C Debug --output-on-failure`，当前共 **234** 项
+  （generate 后按 CTestTestfile 实测。旧文写「213 项」已过期；2026-09-03 摘除 9 个
+  纯别名条目后由 243 降为 234，见
+  `docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md`）。
   ⚠ 仓库根下的 `build/` 是**陈旧目录**：无 vcpkg toolchain、`meshoptimizer_DIR-NOTFOUND`、
   且不含任何 matvol 目标，重配置会直接失败（find_package(meshoptimizer CONFIG REQUIRED)）。
   它残留的 CTestTestfile 仍能让 ctest 跑起来并对陈旧二进制报出与基线不符的结果，
