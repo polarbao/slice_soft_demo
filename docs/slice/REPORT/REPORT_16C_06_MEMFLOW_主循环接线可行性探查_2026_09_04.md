@@ -1,7 +1,7 @@
 # REPORT_16C_06_MEMFLOW 主循环接线可行性探查（2026-09-04）
 
-> 文档状态：**探查完成 / 首容器已接线 / 修订逐容器替换建议**
-> 版本：v1.1 ｜ 日期：2026-09-04
+> 文档状态：**探查完成 / 首容器已接线 / 修正 §3 占用表：七容器中四个是条件分配**
+> 版本：v1.3 ｜ 日期：2026-09-04
 > 定位：为解除真实生产阻塞（10um 层厚 111.4 亿 pixel-layer）而探查有界能力接入主循环的可行性。
 > 上游：`REPORT_16C_06_MEMFLOW_替代基线资产与调查结论_2026_09_03.md`（阻塞场景实测）
 > 授权：用户 2026-09-04 授予本专项最高决策权
@@ -50,24 +50,43 @@ MF-04 的价值应重新界定为「原子发布与 staging 语义」，而非�
 
 `slicer.cpp` 中按层数增长的容器：
 
-| 容器 | 声明位置 | 类型 | 10um 场景占用 |
-|---|---|---|---|
-| `model_masks` | 241 | `vector<vector<uint8_t>>` | 10.37 GB |
-| `support_masks` | 269 | 同上 | 10.37 GB |
-| `support_type_maps` | 270 | `vector<vector<SupportType>>` | 10.37 GB |
-| `outer_surface_masks` | 294 | `vector<vector<uint8_t>>` | 10.37 GB |
-| `inner_surface_masks` | 295 | 同上 | 10.37 GB |
-| `outerVarnishMasks` | 889（返回值） | 同上 | 10.37 GB |
-| `upperBoundaryMasks` | 946（返回值） | 同上 | 10.37 GB |
-| **合计** | | | **72.62 GB** |
+> **v1.2 修正。** 本表首版把七个容器都按「已分配」计入，得到 72.62 GB。
+> 复核分配条件后发现**其中四个是条件分配**，在用户的实际阻塞配置里为 0。
+> 下表已按条件重列，并给出该配置的真实合计。
 
-场景：`a-2/0.2.obj` @10um，栅格 1500 x 5197 = 7,795,500 列 x 1,429 层。
+| 容器 | 类型 | 分配条件 | 满配占用 | **用户 10um 场景** |
+|---|---|---|---|---|
+| `model_masks` | `vector<vector<uint8_t>>` | 无条件 | 10.37 GB | **10.37 GB** |
+| `support_masks` | 同上 | 无条件[^1] | 10.37 GB | **10.37 GB** |
+| `support_type_maps` | `vector<vector<SupportType>>`[^2] | 无条件[^1] | 10.37 GB | **10.37 GB** |
+| `outer_surface_masks` | `vector<vector<uint8_t>>` | `surface_varnish.enabled`（默认 **false**） | 10.37 GB | 0 |
+| `inner_surface_masks` | 同上 | 同上 | 10.37 GB | 0 |
+| `outerVarnishMasks` | 同上 | `ComputeOuterVarnishDiscretization().enabled`，否则返回 `{}` | 10.37 GB | 0 |
+| `upperBoundaryMasks` | 同上 | `boundaryInfo.includes_outer_varnish_shell`，否则返回 `{}` | 10.37 GB | 0 |
+| **合计** | | | **72.62 GB** | **31.11 GB** |
 
-实测峰值 22~34 GB 低于 72.62 GB，因这些容器并非全部同时存活，且系统在换页——
-这与「耗时 20~31 分钟」互为印证。
+[^1]: `generate_support_masks`（`slicer.cpp:2031`）的两次 `resize` 位于
+      `if (!config.support.enabled) return result;` **之前**，故即使关闭支撑也照样分配。
+[^2]: `enum class SupportType : std::uint8_t` —— 1 字节，故与 mask 同量级，非 4 倍。
 
-**同样这七个 mask 在三层有界窗口下只需 156 MB。** 差别纯粹在于「乘不乘 1429」，
+场景：`a-2/0.2.obj` @10um，栅格 1500 x 5197 = 7,795,500 列 x 1,429 层，
+配置见 `a2_probe.json`：开支撑（`bottom_projection`），**未配置 `surfaceVarnish`
+或 `outerVarnish`**。
+
+**31.11 GB 对上物理内存 31.6 GB** —— 这比首版的 72.62 GB 更能解释实测：
+峰值 22~34 GB 恰好压在物理内存线上，故大量换页，耗时 20~31 分钟。
+首版把差距归因于「容器并非全部同时存活」，真实原因更简单：**四个根本没分配。**
+
+**这三个容器在三层有界窗口下只需 67 MB。** 差别纯粹在于「乘不乘 1429」，
 这正是决策文「峰值从 O(w*h*layers) 降到 O(w*h*window)」的字面含义。
+
+### 3.1 对 MF-03X1 收益的诚实界定
+
+首容器（表面光油）接线**对用户的 10um 阻塞场景收益为零** —— 该配置下这两个容器
+本来就是空的。它的价值在于：开启光油的工艺（多图层透明→光油等预设）不再有这个
+天花板。但那些预设目前只用于 tm2-5 / gubao04 这类小幅面模型，尚未与大幅面叠加。
+
+**推论：解除用户阻塞的全部收益都在 MF-03X2（支撑耦合簇）。** 见 §5.3 与 §5.4。
 
 ---
 
@@ -205,6 +224,41 @@ SupportGenerationResult generate_support_masks(
 
 ---
 
+## 5.4 按配置收缩范围：用户阻塞档不含任何无界随机访问
+
+§5.3 说剩余六个容器是一个耦合簇、须整体改走有界路径。这对**全模式**成立，
+但用户的阻塞配置只用到其中一小部分。逐项核对 `a2_probe.json` 的实际激活项：
+
+| 耦合难点 | 守卫条件 | 用户配置（`mode = bottom_projection`） |
+|---|---|---|
+| `.at(target_layer)` 悬空岛向下回写 | `placement_policy.unsupported_only_enabled` | **false** |
+| 支撑形状优化（整栈进出） | `support_shape_policy.enabled` ← `config.h:312` `shape_enabled{false}` | **false** |
+| `outerVarnishMasks` / `upperBoundaryMasks` | 光油离散化 / `includes_outer_varnish_shell` | **false** |
+
+`support_mode_includes_unsupported()` 只对 `unsupported_only` 与
+`bottom_projection_plus_unsupported` 返回 true，故纯 `bottom_projection`
+**不进入岛发现分支** —— §4.1 那个「当前层之下全部层」的随机访问不执行。
+
+该配置下剩余的向下遍历只有 bottom-projection 自己的
+`for (layer_index in [0, lower_layer))`：每列填到该列最低模型层，
+是 `support_source_layers` / `column_ranges` 的纯函数，
+**而主循环已经在算这两个归约。**
+
+### 5.4.1 由此得到的两点结论
+
+**一、§6 第 1 条的最大风险在这一档不适用。** B2 时序等价之所以是最大风险，
+是因为悬空岛「先全层 preliminary、再顺序发现并回写」的时序必须逐字节等价。
+该分支在此档不执行，故不需要 B2/B3。所需能力只有 MF-03B1（Range-derived
+Support Demand）与 MF-03A（LayerOccupancyProvider），两者均已 COMPLETE。
+
+**二、解除阻塞的改动远小于「全模式接线」。** 据此把 MF-03X2 拆为
+MF-03X2a（本档，解除阻塞关键路径）与 MF-03X2b（岛发现 / 形状 / 光油全模式）。
+
+**必要守卫：** 非 `bottom_projection` 配置必须仍走 retained 路径，
+按 mode fail-safe 分流；不得把只在本档验证过的有界路径应用到其他档。
+
+---
+
 ## 6. 风险与未决
 
 1. **B2 时序等价是最大风险。** 悬空岛的「先全层 preliminary、再顺序发现并回写」时序
@@ -225,5 +279,7 @@ SupportGenerationResult generate_support_masks(
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-04 | v1.3 | 新增 §5.4：按配置收缩范围。逐项核对用户 `a2_probe.json` 的实际激活项，确认 `mode = bottom_projection` 下三个耦合难点全部不激活 —— 岛发现（`unsupported_only_enabled` false）、形状优化（`shape_enabled` 默认 false）、两种光油（未配置）。故该档**不含任何无界随机访问**，剩余向下遍历只有按列的 bottom-projection，是主循环已在算的 `column_ranges` 的纯函数。两点结论：§6 第 1 条「B2 时序等价是最大风险」在本档不适用（不需要 B2/B3，只需已 COMPLETE 的 B1 + A）；解除阻塞的改动远小于全模式接线。据此把 MF-03X2 拆为 X2a（本档，关键路径）与 X2b（全模式）。 |
+| 2026-09-04 | v1.2 | **修正 §3 占用表。** 首版把七个容器都按已分配计入得 72.62 GB；复核分配条件后确认四个是条件分配（`surface_varnish.enabled` 默认 false；`outerVarnishMasks` 与 `upperBoundaryMasks` 无光油时返回 `{}`），在用户实际阻塞配置下为 0。该配置真实合计 **31.11 GB**，对上物理内存 31.6 GB，比 72.62 GB 更能解释实测峰值 22~34 GB 与换页。同时确认 `SupportType` 是 `uint8_t`（非 4 字节）、`support_masks`/`support_type_maps` 的 resize 在 `support.enabled` 检查之前故无条件分配。据此新增 §3.1：MF-03X1 对 10um 阻塞场景收益为零，解除阻塞的全部收益在 MF-03X2。 |
 | 2026-09-04 | v1.1 | 首容器（`outer_surface_masks` / `inner_surface_masks`）接线完成并零漂移通过，提交 `0d2a1bf`。据此修订 §6 第 2 条：「按容器逐个替换」只对第一个容器成立——它逐层独立；剩余六个通过 `generate_support_masks`（整栈进整栈出）耦合成一个簇，且 `model_masks`/`support_masks`/`support_type_maps` 各有恰好一处 `.at(target_layer)` 且同处一个回写循环，必须同时转换。风险 3（G2 门禁）解除：同步下沉使 slicer.cpp 净减 137 行，未新增豁免。新增 §5.3 与共同前置 `geometry/SliceGridSpec.h` 说明。 |
 | 2026-09-04 | v1.0 | 首版。推翻两个认知：`slicer_cli` 的 TIFF 输出早已逐层流式（故 MF-04 的内存收益不成立），真正瓶颈为七个 mask 整栈驻留 72.62 GB。量化跨层访问模式并确认 `target_layer` 的「当前层之下全部层」随机访问是最难有界化的一环，同时确认 MF-03B2 已用 compact 事件在设计层解决。提出 MF-03X「主循环有界接线」并列出六项替代能力均已 COMPLETE，MF-04 范围重定义为原子发布语义。 |

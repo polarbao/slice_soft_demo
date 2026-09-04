@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
-> 版本：v2.3 ｜ 日期：2026-09-04
+> 版本：v2.4 ｜ 日期：2026-09-04
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -35,7 +35,8 @@
 | MF-03B4A | Verified support/BaseProjection/outer-varnish 最终重放 | COMPLETE | MF-03B3、B4A 准备 Gate | 2026-08-21 |
 | MF-03B4B | Material/Stage 15/closure 最终重放 | PREPARED | MF-03B4A COMPLETE、B4B 组合 Gate | - |
 | MF-03X1 | 主循环有界接线·表面光油容器（逐层独立） | COMPLETE | MF-03B4B 接口接线 | 2026-09-04 |
-| MF-03X2 | 主循环有界接线·支撑耦合簇（剩余六容器） | PREPARED / 范围待估算 | MF-03X1、B1/B2/B3/B4A | - |
+| MF-03X2a | 主循环有界接线·**用户阻塞配置**（bottom_projection，无岛/无形状/无光油） | PREPARED / **解除阻塞关键路径** | MF-03X1、MF-03B1、MF-03A | - |
+| MF-03X2b | 主循环有界接线·支撑耦合簇全模式（岛发现 + 形状 + 光油） | PREPARED / 范围待估算 | MF-03X2a、B2/B3/B4A | - |
 | MF-04 | 单实例流式 Staged Package | PENDING / **范围已重定义** | MF-03B4A/B COMPLETE | - |
 | MF-05 | 多实例 Global Layer Barrier | PENDING | MF-04 | - |
 | MF-06 | Sparse Tile/Span 显式候选 | PENDING | MF-05 | - |
@@ -237,6 +238,11 @@ Stage 15 counter 保留 compose-time 口径；生产仍为 Retained Dense。
         净减 137 行；ValidateSourceSizeGuard --base-ref HEAD PASS，未新增豁免
 ```
 
+**收益界定（不可夸大）：** 这两个容器仅在 `surface_varnish.enabled` 时分配，而该
+字段**默认 false**。用户的 10um 阻塞配置未开启表面光油，故本卡**对该阻塞场景收益
+为零**。它的价值是给开启光油的工艺（多图层透明→光油等预设）拆掉这个天花板。
+详见探查报告 §3.1。
+
 **副产物（后续共同前置）：** `geometry/SliceGridSpec.h` 提出 `GridSpec` 与
 `mask_index`。它们原在 `slicer.cpp` 匿名命名空间内，是**所有** mask 构建函数的
 共同参数类型；提头后，后续任何 mask 构建函数下沉都不再需要先解决符号共享。
@@ -244,7 +250,7 @@ Stage 15 counter 保留 compose-time 口径；生产仍为 Retained Dense。
 **同时删除：** 全层版 `BuildSurfaceVarnishMasks()` 与 `struct SurfaceVarnishMasks`
 —— 接线后已无调用者。原注释称「保留作零漂移对照」，但无人引用，留着只是负债。
 
-### MF-03X2 支撑耦合簇（PREPARED / 范围待估算）
+### MF-03X2 支撑耦合簇
 
 **范围：** `model_masks`、`support_masks`、`support_type_maps`、
 `outerVarnishMasks`、`upperBoundaryMasks`。
@@ -268,6 +274,47 @@ B1/B2/B3/B4A 的有界路径」。** 工作量不可按 MF-03X1 线性外推。
 **验收：** 沿用 §5.2 判据 —— 三项零漂移全等 + `a-2/0.2.obj` @10um 的
 `peakWorkingSetBytes` 由 22~34 GB 降至百 MB 级 + `model/stl/suoguo-baseline/`
 八项既有基线不上升。
+
+#### MF-03X2a 用户阻塞配置（PREPARED / 解除阻塞关键路径）
+
+**为什么可以先只做这一档：** 逐项核对用户 `a2_probe.json` 配置下的实际激活项后
+发现，本卡涉及的三个耦合难点**在该配置下全部不激活**：
+
+| 难点 | 守卫条件 | `bottom_projection` 下 |
+|---|---|---|
+| `.at(target_layer)` 悬空岛向下回写 | `placement_policy.unsupported_only_enabled` | **false**（`support_mode_includes_unsupported()` 只认 `unsupported_only` 与 `bottom_projection_plus_unsupported`） |
+| 支撑形状优化整栈进出 | `support_shape_policy.enabled` ← `shape_enabled` | **false**（`config.h:312` 默认 false，探针未设） |
+| `outerVarnishMasks` / `upperBoundaryMasks` | 光油离散化 / `includes_outer_varnish_shell` | **false**（探针未配 `outerVarnish`） |
+
+**故该配置下不存在任何无界随机访问。** 剩余的向下遍历只有 bottom-projection 的
+`for (layer_index in [0, lower_layer))`，它是**按列**的 —— 每列填到该列最低模型层，
+是 `support_source_layers` / `column_ranges` 的纯函数，而这两个归约主循环**已在算**。
+
+**关键推论：本档不需要 B2/B3，故报告 §6 第 1 条「B2 时序等价是最大风险」在本档
+不适用。** 所需能力是 MF-03B1（Range-derived Support Demand）+ MF-03A
+（LayerOccupancyProvider）—— 两者均已 COMPLETE。
+
+**目标：** 该配置下 `model_masks` / `support_masks` / `support_type_maps` 三个整栈
+（31.11 GB）改为按列区间推导 + 按层物化。
+
+**验收：**
+
+```text
+零漂移  三项既有判据全等（默认路径 94 层 / gubao04 129 层 / tm2-5 全通道）
+        —— 注意默认路径与 gubao04 均为 bottom_projection，本档直接覆盖
+阻塞    a-2/0.2.obj @10um 的 peakWorkingSetBytes 由 22~34 GB 降至百 MB 级，
+        totalMs 由 20~31 分钟显著下降（换页消失）
+        0.2.obj + 0.3.obj 双模型不再内存不足（若仍不足则需 MF-05 Barrier）
+回归    model/stl/suoguo-baseline/ 八项既有基线（2,658~3,316 MB）不得上升
+守卫    非 bottom_projection 配置必须仍走 retained 路径，按 mode fail-safe 分流，
+        不得把未验证的有界路径应用到岛发现/形状/光油档
+```
+
+#### MF-03X2b 全模式（PREPARED / 范围待估算）
+
+**范围：** X2a 之外的档 —— `unsupported_only`、
+`bottom_projection_plus_unsupported`、`full_vertical_projection`、
+形状优化开启、两种光油开启。
 
 **最大风险：** B2 时序等价。「先全层 preliminary support、再顺序发现岛并向低层
 回写」的时序必须逐字节等价，否则支撑连通性会变。B2 已有 retained oracle，但
