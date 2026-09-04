@@ -1,7 +1,7 @@
 # DOC_PREP_RIPFLOW 外置模块、设置与自动后处理准备
 
 > 状态：**PREPARATION GATE PASS / IMPLEMENTATION READY**
-> 版本：v1.3 ｜ 日期：2026-08-18
+> 版本：v1.4 ｜ 日期：2026-08-25
 > 对应专项：`RIPFLOW`
 > 首张开发卡：`RIPFLOW-A-01`
 > 权威决策：`DOC_DECISION_RIPFLOW_切片后外置RIP模块与自动处理边界.md`
@@ -72,8 +72,9 @@ scripts/
 
 ```text
 contracts/slicesoft.rip.module.1.schema.json
-contracts/slicesoft.rip.settings.1.schema.json
-contracts/slicesoft.rip.result.1.schema.json
+contracts/slicesoft.rip.settings.2.schema.json
+contracts/slicesoft.rip.result.2.schema.json
+contracts/slicesoft.rip.diagnostic.2.schema.json
 src/rip_integration/RipModuleManifest.*
 src/rip_integration/RipSettings.*
 src/rip_integration/RipOutputValidator.*
@@ -107,10 +108,10 @@ contracts/third_party_distribution_manifest.json（仅许可证闭合后）
 
 ```json
 {
-  "schema": "slicesoft.rip.settings.1",
+  "schema": "slicesoft.rip.settings.2",
   "autoAfterSlice": false,
   "renderIntent": 0,
-  "transparentMode": "follow_manifest",
+  "transparentMode": 0,
   "colorMode": 0,
   "inputIcc": "CmykFiles/CIERGB.icc",
   "outputIcc": "CmykFiles/CMYK.icc",
@@ -126,9 +127,10 @@ contracts/third_party_distribution_manifest.json（仅许可证闭合后）
 Profile hash。未知 schema、缺字段、非法枚举、越界值和资源路径逃逸全部恢复为“自动关闭 + 配置
 无效”，不得静默套用生产默认。
 
-UI 建议为独立“RIP 设置”页，至少提供：自动开关、手动运行、渲染意图、白语义映射状态、颜色
-模式、输入/输出 ICC、失败继续、运行时完整性、输出目录只读预览、状态/进度/取消/日志。未获定义
-的 `colorMode != 0` 和未闭合的白语义组合应显示但禁用，而不是伪装成可用选项。
+UI 为独立“RIP 设置”页，提供自动开关、手动运行、渲染意图、五档 RIP 颜色模式、输入/输出
+ICC、失败继续、运行时完整性、输出目录只读预览、状态/进度/取消/日志。五档按
+`0=透明、1=不透、2=肤色、3=白色30、4=白色50` 显式显示；独立 `colorMode != 0`
+仍无权威定义并保持不可选。
 
 ## 6. 作业、路径与发布准备
 
@@ -249,3 +251,4 @@ owner。每张卡完成后停止并更新任务真源，不自动占用下一卡
 | 2026-08-17 | v1.1 | 补齐 `deviceGrayBits`/超时字段及验证属性，明确 600 x 600 本地子集与 S1 DPI 权威来源 |
 | 2026-08-17 | v1.2 | 增补 4 像素对齐宽度归一化 Gate：只裁掉 RIP 在右侧新增的 1..3 列，发布 TIFF 仍须精确匹配 Package Grid |
 | 2026-08-18 | v1.3 | 废止 600x600 RIP 前置限制：DPI 不再进入可迁移验证请求，非 600 或缺失 DPI 标签不阻断 RIP；像素尺寸、布局和墨滴 Gate 不变 |
+| 2026-08-25 | v1.4 | D-07 受控修订：新版 `--transparent 0..4` 取代旧二值白语义映射；设置合同升级 v2，五档显式可选，`--colormode` 和输出安全 Gate 不变 |

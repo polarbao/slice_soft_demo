@@ -9,6 +9,7 @@
 
 #include "slicer_core/config.h"
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
+#include "slicer_core/materials/volume/MaterialTopologyClassifier.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -50,6 +51,10 @@ struct MaterialVolumeBuildRequest
     const AdaptedTriangleMesh* mesh{nullptr};
     const MaterialVolumePolicyConfig* policy{nullptr};
     MaterialVolumeGrid grid;
+    /// Optional single-material filter. Topology is still classified against
+    /// the complete adapted mesh so material-interface edges remain distinct
+    /// from true open boundaries.
+    std::string materialNameFilter;
     /// 同步取消点；返回 true 时构建立即失败且不产出半成品 plan。
     std::function<bool()> cancellationRequested;
 };
@@ -85,6 +90,23 @@ public:
     }
 
     /// @brief 扁平化的全部层区间，按列、再按 firstLayer 升序排列。
+    /// @brief 构建期算出的逐材质拓扑事实。
+    ///        构建器本就要调 ClassifyMaterialTopologies 才能判定准入，此处保留其结果，
+    ///        使报告无需二次分析——重算一遍会把自交分析的代价白付两次。
+    [[nodiscard]] std::span<const MaterialTopologyFact> TopologyFacts() const noexcept
+    {
+        return {topologyFacts_.data(), topologyFacts_.size()};
+    }
+
+    /// @brief 按 selfIntersectionPolicy=tolerate_if_parity_intact 放行的自交材质名。
+    ///        放行不等于无缺陷：其奇偶性由逐列 IntersectionUnpaired 精确把关，
+    ///        此处保留名单以便报告披露，不得静默吞掉。
+    [[nodiscard]] std::span<const std::string> ToleratedSelfIntersectingMaterials() const noexcept
+    {
+        return {toleratedSelfIntersectingMaterials_.data(),
+                toleratedSelfIntersectingMaterials_.size()};
+    }
+
     [[nodiscard]] std::span<const MaterialLayerInterval> Intervals() const noexcept
     {
         return intervals_;
@@ -105,6 +127,8 @@ private:
     std::vector<int> materialPriorities_;
     std::vector<std::uint32_t> columnIntervalOffsets_;
     std::vector<MaterialLayerInterval> intervals_;
+    std::vector<std::string> toleratedSelfIntersectingMaterials_;
+    std::vector<MaterialTopologyFact> topologyFacts_;
 };
 
 /// @brief 对封闭可定向材质子网格求有序交点并生成 compact 层区间计划。

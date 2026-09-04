@@ -117,6 +117,12 @@ void HostModelListPanel::AddModel(const hostmodelimportresult& result)
     UpdateControls();
 }
 
+void HostModelListPanel::Clear()
+{
+    const QSignalBlocker blocker(m_modelList);
+    m_modelList->clear();
+}
+
 void HostModelListPanel::RemoveInstances(const QStringList& instanceIds)
 {
     const QSignalBlocker blocker(m_modelList);

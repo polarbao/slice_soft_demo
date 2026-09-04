@@ -5,6 +5,7 @@
 #include "slicer_core/json_value.h"
 
 #include <chrono>
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -89,6 +90,7 @@ public:
 private:
     WorkerResultEnvelope(
         WorkerJobIdentity identity,
+        std::uint32_t minor,
         bool ok,
         std::string code,
         slicer_core::Json output,
@@ -99,6 +101,7 @@ private:
         std::optional<WorkerResultCleanup> cleanup);
 
     WorkerJobIdentity m_identity;
+    std::uint32_t m_minor{0U};
     bool m_ok{false};
     std::string m_code;
     slicer_core::Json m_output;

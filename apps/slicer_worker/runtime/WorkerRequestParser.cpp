@@ -21,11 +21,12 @@ namespace
 
 constexpr std::string_view ContractName{"file_contract"};
 constexpr std::string_view SliceCapability{"slice.rgbwsv"};
+constexpr std::string_view TransferSliceCapability{"slice.rgbwsvt"};
 constexpr std::string_view PreflightCapability{"geometry.preflight.full"};
 constexpr std::string_view RepairCapability{"geometry.repair"};
 constexpr std::string_view ProductionContract{"p0.rgbwsv.2"};
+constexpr std::string_view TransferProductionContract{"p0.rgbwsvt.1"};
 constexpr std::uint32_t SupportedMajor{1U};
-constexpr std::uint32_t SupportedMinor{0U};
 constexpr std::int64_t MinimumTimeoutMs{1000};
 constexpr std::int64_t MaximumTimeoutMs{86400000};
 
@@ -308,7 +309,9 @@ void RequireObject(const slicer_core::Json& document, const std::string& key)
     }
 }
 
-void ValidateSliceBranch(const slicer_core::Json& document)
+void ValidateSliceBranch(
+    const slicer_core::Json& document,
+    const std::string_view expectedContract)
 {
     const std::string sceneHash = RequireString(document, "sceneHash");
     if (!IsValidSceneHash(sceneHash))
@@ -320,10 +323,10 @@ void ValidateSliceBranch(const slicer_core::Json& document)
     RequireObject(document, "profile");
     RequireObject(document, "output");
     const slicer_core::Json& output = document.at("output");
-    if (RequireString(output, "contract") != ProductionContract)
+    if (RequireString(output, "contract") != expectedContract)
     {
         Reject(WorkerRequestParseErrorCode::ContractViolation,
-            "slice output contract must be p0.rgbwsv.2");
+            "slice output contract does not match the requested capability");
     }
     if (RequireString(output, "packageDir").empty())
     {
@@ -335,8 +338,19 @@ void ValidateSliceBranch(const slicer_core::Json& document)
 bool IsKnownCapability(const std::string& capability)
 {
     return capability == SliceCapability
+        || capability == TransferSliceCapability
         || capability == PreflightCapability
         || capability == RepairCapability;
+}
+
+bool IsSupportedVersion(
+    const std::string_view capability,
+    const std::uint32_t major,
+    const std::uint32_t minor)
+{
+    return major == SupportedMajor
+        && ((capability == TransferSliceCapability && minor == 1U)
+            || (capability != TransferSliceCapability && minor == 0U));
 }
 
 }  // namespace
@@ -366,12 +380,6 @@ WorkerRequestEnvelope WorkerRequestParser::Parse(
     }
     const std::uint32_t major = RequireVersion(document, "major");
     const std::uint32_t minor = RequireVersion(document, "minor");
-    if (major != SupportedMajor || minor != SupportedMinor)
-    {
-        Reject(WorkerRequestParseErrorCode::ContractViolation,
-            "request file-contract version is not supported");
-    }
-
     const std::string jobId = RequireString(document, "jobId");
     const std::string correlationId = RequireString(document, "correlationId");
     const std::string capability = RequireString(document, "capability");
@@ -393,10 +401,19 @@ WorkerRequestEnvelope WorkerRequestParser::Parse(
         Reject(WorkerRequestParseErrorCode::ContractViolation,
             "request capability is not supported by file_contract_v1");
     }
+    if (!IsSupportedVersion(capability, major, minor))
+    {
+        Reject(WorkerRequestParseErrorCode::ContractViolation,
+            "request file-contract version is not supported for capability");
+    }
 
     if (capability == SliceCapability)
     {
-        ValidateSliceBranch(document);
+        ValidateSliceBranch(document, ProductionContract);
+    }
+    else if (capability == TransferSliceCapability)
+    {
+        ValidateSliceBranch(document, TransferProductionContract);
     }
     else
     {

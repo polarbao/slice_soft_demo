@@ -2,15 +2,25 @@
 
 #include "slicer_core/diagnostics/MaterialClosureCandidateDetector.h"
 #include "slicer_core/diagnostics/MaterialClosureSemanticDetector.h"
+#include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/geometry/LayerOccupancyProvider.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
+#include "slicer_core/materials/volume/MaterialLayerRgbComposer.h"
+#include "slicer_core/materials/volume/MaterialLayerNameResolver.h"
+#include "slicer_core/materials/volume/MaterialOpacityVarnishResolver.h"
+#include "slicer_core/materials/volume/MaterialVolumePlan.h"
+#include "slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
+#include "slicer_core/materials/transfer/LegacyTransferChannelSession.h"
 #include "slicer_core/materials/varnish_geometry/OuterVarnishDiscretization.h"
 #include "slicer_core/model.h"
 #include "slicer_core/output/rgbwsv/RgbwsvPackageWriter.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h"
+#include "slicer_core/reports/MaterialProcessReport.h"
+#include "slicer_core/reports/MaterialVolumeReport.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
 #include "slicer_core/support/SupportBaseProjection.h"
@@ -30,6 +40,8 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <optional>
+#include <span>
 #include <map>
 #include <sstream>
 #include <stdexcept>
@@ -60,6 +72,11 @@ void NotifyProgress(
     const int total,
     const int percent)
 {
+    if (options.cancellation_requested
+        && options.cancellation_requested())
+    {
+        throw std::runtime_error("cooperative slice cancellation requested");
+    }
     if (!options.progress_callback)
     {
         return;
@@ -107,14 +124,7 @@ struct RasterResult {
     int filled_spans{0};
 };
 
-struct ChannelStats {
-    std::uint64_t print_pixels{0};
-    std::uint64_t full_print_pixels{0};
-    std::uint64_t partial_print_pixels{0};
-    std::uint64_t empty_pixels{0};
-    int min_value{255};
-    int max_value{0};
-};
+using ChannelStats = TiffChannelStats;
 
 struct SupportComponentSummary {
     int area_px{0};
@@ -142,6 +152,8 @@ struct LayerSemanticStats {
     int outer_varnish_pixels{0};
     int outer_surface_varnish_pixels{0};
     int inner_surface_varnish_pixels{0};
+    /// @brief MO-04：因不透明度判据改写 V 通道的像素数。
+    std::uint64_t opacity_varnish_pixels{0};
 };
 
 struct LayerDiagnostics {
@@ -206,9 +218,39 @@ struct ReliefColumnInfo {
     std::array<double, 3> top_barycentric{0.0, 0.0, 0.0};
 };
 
+/**
+ * @brief 逐列逐材质的顶面（MATOPQ-RGB M2）。
+ *
+ * `ReliefColumnInfo` 只记全列最高面，故被顶面遮住的下层材质取不到自己的 UV，
+ * 其贴图永远无法采样。本表按 (材质, 列) 记录该材质在该列的最高面，
+ * 使每个材质都能用自己的 UV 采自己的 map_Kd。
+ *
+ * materialIndex 与 `MaterialVolumePlan::MaterialNames()` 同序，因此与 MATVOL 的
+ * owner buffer 及 M1 的 topMaterialIndexByColumn 共用同一索引体系，无需桥接。
+ *
+ * 规模为 O(材质数 x 列数)，**没有层数因子**，故不属于 MV-03 禁止的
+ * O(材质数 x 层数 x 像素数) 稠密所有权栈。MATVOL 未启用时本表为空、不产生开销。
+ */
+struct ReliefPerMaterialTopSurface {
+    std::size_t materialCount{0};
+    std::size_t columnCount{0};
+    /// @brief 该 (材质, 列) 的最高面三角下标；-1 表示该材质未覆盖该列。
+    std::vector<int> topTriangle;
+    std::vector<std::array<double, 3>> topBarycentric;
+
+    [[nodiscard]] bool Empty() const noexcept {
+        return materialCount == 0U || columnCount == 0U;
+    }
+    [[nodiscard]] std::size_t Index(
+        const std::uint32_t materialIndex, const std::size_t column) const noexcept {
+        return static_cast<std::size_t>(materialIndex) * columnCount + column;
+    }
+};
+
 struct ReliefSamplingResult {
     std::vector<std::vector<std::uint8_t>> model_masks;
     std::vector<ReliefColumnInfo> columns;
+    ReliefPerMaterialTopSurface per_material_top;
     ReliefReportData report;
 };
 
@@ -617,6 +659,9 @@ std::string canonical_preview_channel(const std::string& channel) {
     if (channel == "v") {
         return "varnish";
     }
+    if (channel == "t") {
+        return "transfer";
+    }
     return channel;
 }
 
@@ -625,7 +670,8 @@ PreviewImage build_preview_image(
     const GridSpec& grid,
     const PreviewConfig& preview_config,
     const std::vector<std::uint8_t>& layer,
-    const std::vector<std::uint8_t>* texture_preview_mask) {
+    const std::vector<std::uint8_t>* texture_preview_mask,
+    const bool transfer_enabled) {
     const std::string channel = canonical_preview_channel(requested_channel);
     PreviewImage image;
     image.channel = channel;
@@ -647,10 +693,13 @@ PreviewImage build_preview_image(
     } else if (channel == "varnish") {
         image.type = "varnish_v";
         image.prefix = "varnish_v";
+    } else if (channel == "transfer") {
+        image.type = "transfer_t";
+        image.prefix = "transfer_t";
     }
 
     for (std::size_t i{0}; i < image.pixels.size(); ++i) {
-        const std::size_t base{i * rgbwsv_channel_count};
+        const std::size_t base{i * (transfer_enabled ? kRgbwsvtChannelCount : rgbwsv_channel_count)};
         std::array<std::uint8_t, 3> pixel{};
         int display_value{0};
         if (channel == "rgb") {
@@ -673,13 +722,15 @@ PreviewImage build_preview_image(
             } else {
                 pixel = preview_config.empty_color;
             }
-        } else if (channel == "support" || channel == "white" || channel == "varnish") {
+        } else if (channel == "support" || channel == "white" || channel == "varnish"
+                   || channel == "transfer") {
             const std::size_t channel_offset =
-                channel == "support" ? 4U : (channel == "white" ? 3U : 5U);
+                channel == "support" ? 4U : (channel == "white" ? 3U : (channel == "varnish" ? 5U : 6U));
             const auto& print_color =
                 channel == "support"
                     ? preview_config.support_color
-                    : (channel == "white" ? preview_config.white_color : preview_config.varnish_color);
+                    : (channel == "white" ? preview_config.white_color
+                       : (channel == "varnish" ? preview_config.varnish_color : preview_config.transfer_color));
             const std::uint8_t visibility{visible_from_print_value(layer.at(base + channel_offset))};
             display_value = visibility;
             for (std::size_t c{0}; c < pixel.size(); ++c) {
@@ -704,7 +755,8 @@ Json::Array write_layer_previews(
     const GridSpec& grid,
     const int layer_index,
     const std::vector<std::uint8_t>& layer,
-    const std::vector<std::uint8_t>* texture_preview_mask) {
+    const std::vector<std::uint8_t>* texture_preview_mask,
+    const bool transfer_enabled) {
     Json::Array result;
     for (const std::string& requested_channel : preview_config.channels) {
         PreviewImage image = build_preview_image(
@@ -712,7 +764,8 @@ Json::Array write_layer_previews(
             grid,
             preview_config,
             layer,
-            texture_preview_mask);
+            texture_preview_mask,
+            transfer_enabled);
         if (preview_config.only_non_empty_layers && image.non_zero_pixels == 0) {
             continue;
         }
@@ -1266,12 +1319,39 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     const SliceConfig& config,
     const ModelReport& model_report,
     const GridSpec& grid,
-    std::vector<LayerDiagnostics>& diagnostics)
+    std::vector<LayerDiagnostics>& diagnostics,
+    // M2：MATVOL 的材质名表。非空时按 (材质, 列) 记录逐材质顶面，使被遮住的
+    // 下层材质也能采到自己的贴图；为空（MATVOL 未启用）时完全不建表，零开销。
+    const std::span<const std::string>* planMaterialNames = nullptr)
 {
     const std::size_t pixelCount{static_cast<std::size_t>(grid.width_px) * grid.height_px};
     std::vector<double> zMin(pixelCount, std::numeric_limits<double>::max());
     std::vector<double> zMax(pixelCount, std::numeric_limits<double>::lowest());
     std::vector<int> hitCount(pixelCount, 0);
+    // M2：triangleIndex -> plan 材质下标。预算一次 O(三角数)，
+    // 使采样热路径内只做 O(1) 查表，不做字符串比较。
+    std::vector<std::uint32_t> planMaterialByTriangle;
+    std::vector<double> zMaxByMaterial;
+    const std::size_t planMaterialCount{
+        planMaterialNames != nullptr ? planMaterialNames->size() : 0U};
+    if (planMaterialCount > 0U && pixelCount > 0U) {
+        planMaterialByTriangle.assign(
+            model_report.triangle_textures.size(), kNoMaterialOwner);
+        for (std::size_t triangle{0}; triangle < model_report.triangle_textures.size();
+             ++triangle) {
+            const std::string& name =
+                model_report.triangle_textures.at(triangle).material_name;
+            for (std::size_t index{0}; index < planMaterialCount; ++index) {
+                if ((*planMaterialNames)[index] == name) {
+                    planMaterialByTriangle.at(triangle) =
+                        static_cast<std::uint32_t>(index);
+                    break;
+                }
+            }
+        }
+        zMaxByMaterial.assign(
+            planMaterialCount * pixelCount, std::numeric_limits<double>::lowest());
+    }
     const bool useSupersampleAtLeastTwo = config.geometry_sampling.strategy
         == "layer_slab_supersample_2x2_at_least_two_candidate";
     const bool useSupersampleAnyHit = config.geometry_sampling.strategy
@@ -1288,6 +1368,14 @@ ReliefSamplingResult sample_relief_heightfield_masks(
 
     ReliefSamplingResult result;
     result.columns.resize(pixelCount);
+    if (!zMaxByMaterial.empty()) {
+        result.per_material_top.materialCount = planMaterialCount;
+        result.per_material_top.columnCount = pixelCount;
+        result.per_material_top.topTriangle.assign(
+            planMaterialCount * pixelCount, -1);
+        result.per_material_top.topBarycentric.assign(
+            planMaterialCount * pixelCount, std::array<double, 3>{0.0, 0.0, 0.0});
+    }
     ReliefReportData& reliefReport{result.report};
     reliefReport.total_columns = static_cast<int>(pixelCount);
     std::vector<std::uint8_t> projectedCandidateMask;
@@ -1342,6 +1430,27 @@ ReliefSamplingResult sample_relief_heightfield_masks(
                     ReliefColumnInfo& column{result.columns.at(pixelIndex)};
                     column.top_triangle_index = static_cast<int>(triangleIndex);
                     column.top_barycentric = {w0, w1, w2};
+                }
+                // M2：与上面的全列顶面判定并列——同一遍遍历内再记一份逐材质顶面，
+                // 不引入额外的几何遍历开销。
+                if (!zMaxByMaterial.empty()
+                    && triangleIndex < planMaterialByTriangle.size())
+                {
+                    const std::uint32_t planMaterial =
+                        planMaterialByTriangle.at(triangleIndex);
+                    if (planMaterial != kNoMaterialOwner)
+                    {
+                        const std::size_t slot =
+                            result.per_material_top.Index(planMaterial, pixelIndex);
+                        if (zMm >= zMaxByMaterial.at(slot))
+                        {
+                            zMaxByMaterial.at(slot) = zMm;
+                            result.per_material_top.topTriangle.at(slot) =
+                                static_cast<int>(triangleIndex);
+                            result.per_material_top.topBarycentric.at(slot) =
+                                {w0, w1, w2};
+                        }
+                    }
                 }
                 ++hitCount.at(pixelIndex);
             }
@@ -1445,6 +1554,28 @@ ReliefSamplingResult sample_relief_heightfield_masks(
                             ReliefColumnInfo& column{result.columns.at(pixelIndex)};
                             column.top_triangle_index = static_cast<int>(triangleIndex);
                             column.top_barycentric = {w0, w1, w2};
+                        }
+                        // M2：超采样档的逐材质顶面。与标准档同口径——
+                        // 用与该档代表 Z 相同的比较量，避免两档产生不同的顶面选择。
+                        if (!zMaxByMaterial.empty()
+                            && triangleIndex < planMaterialByTriangle.size())
+                        {
+                            const std::uint32_t planMaterial =
+                                planMaterialByTriangle.at(triangleIndex);
+                            if (planMaterial != kNoMaterialOwner)
+                            {
+                                const std::size_t slot =
+                                    result.per_material_top.Index(
+                                        planMaterial, pixelIndex);
+                                if (zMm >= zMaxByMaterial.at(slot))
+                                {
+                                    zMaxByMaterial.at(slot) = zMm;
+                                    result.per_material_top.topTriangle.at(slot) =
+                                        static_cast<int>(triangleIndex);
+                                    result.per_material_top.topBarycentric.at(slot) =
+                                        {w0, w1, w2};
+                                }
+                            }
                         }
                     }
                 }
@@ -2598,6 +2729,61 @@ std::vector<TextureColumnColor> build_relief_texture_columns(
     return result;
 }
 
+/**
+ * @brief 按 (材质, 列) 采样各材质自己的贴图（MATOPQ-RGB M2）。
+ *
+ * 与 build_relief_texture_columns 的区别只在顶面来源：后者用全列最高面，
+ * 故被遮住的下层材质取不到自己的 UV；本函数用该材质自己的最高面。
+ *
+ * 无贴图 / 无 UV 的 (材质, 列) 保持 has_color=false，由调用方回退到该材质的 Kd
+ * （即 M1 行为），再回退到 MV-05 既有 fallbackPolicy。此处不静默填色，
+ * 以免把「该材质没有贴图」和「采样得到某个颜色」混为一谈。
+ */
+std::vector<TextureColumnColor> build_per_material_texture_columns(
+    const SliceConfig& config,
+    const ModelReport& model_report,
+    const ReliefPerMaterialTopSurface& perMaterialTop,
+    TextureRuntime& runtime) {
+    std::vector<TextureColumnColor> result;
+    if (!config.texture.enabled || perMaterialTop.Empty()) {
+        return result;
+    }
+    const TextureSampleOptions sample_options{
+        config.texture.sampler,
+        config.texture.uv_address_mode,
+        config.texture.flip_v};
+    result.assign(perMaterialTop.topTriangle.size(), TextureColumnColor{});
+    for (std::size_t slot{0}; slot < perMaterialTop.topTriangle.size(); ++slot) {
+        const int triangleIndex = perMaterialTop.topTriangle.at(slot);
+        if (triangleIndex < 0
+            || triangleIndex >= static_cast<int>(model_report.triangle_textures.size())) {
+            continue;
+        }
+        const TriangleTextureInfo& texture_info =
+            model_report.triangle_textures.at(static_cast<std::size_t>(triangleIndex));
+        const RuntimeMaterialTexture* material =
+            find_runtime_material(runtime, texture_info.material_name);
+        if (!texture_info.has_uv || material == nullptr || !material->loaded) {
+            continue;
+        }
+        const std::array<double, 3>& bary = perMaterialTop.topBarycentric.at(slot);
+        const double u = bary.at(0) * texture_info.uv.at(0).u
+            + bary.at(1) * texture_info.uv.at(1).u
+            + bary.at(2) * texture_info.uv.at(2).u;
+        const double v = bary.at(0) * texture_info.uv.at(0).v
+            + bary.at(1) * texture_info.uv.at(1).v
+            + bary.at(2) * texture_info.uv.at(2).v;
+        bool uv_out_of_range{false};
+        TextureColumnColor& color = result.at(slot);
+        color.rgb = sample_texture_rgb(
+            material->image, u, v, sample_options, uv_out_of_range);
+        color.has_color = true;
+        color.sampled_texture = true;
+        color.uv_out_of_range = uv_out_of_range;
+    }
+    return result;
+}
+
 void write_model_pixel(std::vector<std::uint8_t>& pixels, const std::size_t base, const SliceConfig& config) {
     if (config.material.material_channel == "V") {
         pixels.at(base + 5U) = config.material.varnish_value;
@@ -3139,6 +3325,35 @@ void PopulateMaterialClosureEmptyMask(
     }
 }
 
+/**
+ * @brief 判断本像素的材质所有者是否就是该 XY 列的顶面材质。
+ *
+ * MATOPQ-RGB M1：逐列顶面贴图（build_relief_texture_columns）对「被顶面遮住的
+ * 下层材质」是错误的颜色来源——它会把上层材质的色写到下层体积上（tm2-5 的
+ * nail-L2 段因此整段变成 trans 的 Kd 250）。owner 与顶面一致时该来源是对的，
+ * 不一致时才需让位给 MATVOL 的逐材质颜色。
+ *
+ * 任一侧信息缺失一律返回 true，即退回既有行为：本卡是取色修正，不是校验加严，
+ * 不得新增 fail 路径、不得改变任何资产的可切性。单材质与顶面材质像素由此
+ * 结构性零漂移——它们走的是与修订前完全相同的代码路径。
+ */
+[[nodiscard]] bool TextureColumnMatchesOwner(
+    const std::vector<std::uint32_t>* topMaterialIndex,
+    const std::vector<std::uint32_t>* owner,
+    const std::size_t pixelIndex) {
+    if (topMaterialIndex == nullptr || owner == nullptr
+        || pixelIndex >= topMaterialIndex->size()
+        || pixelIndex >= owner->size()) {
+        return true;
+    }
+    const std::uint32_t ownerIndex = owner->at(pixelIndex);
+    const std::uint32_t topIndex = topMaterialIndex->at(pixelIndex);
+    if (ownerIndex == kNoMaterialOwner || topIndex == kNoMaterialOwner) {
+        return true;
+    }
+    return ownerIndex == topIndex;
+}
+
 std::vector<std::uint8_t> compose_layer(
     const SliceConfig& config,
     const GridSpec& grid,
@@ -3151,6 +3366,14 @@ std::vector<std::uint8_t> compose_layer(
     const std::vector<TextureColumnColor>* texture_columns,
     const std::vector<MaterialRoleColumn>* material_role_columns,
     const std::vector<ColumnLayerRange>* column_ranges,
+    const std::vector<std::uint8_t>* material_volume_rgb,
+    const std::vector<std::uint8_t>* material_volume_varnish_mask,
+    // M1：逐列顶面材质下标与本层材质所有者，仅用于判断逐列顶面贴图对本像素
+    // 是否为正确来源；两者任一为空即退回既有取色路径。
+    const std::vector<std::uint32_t>* top_material_index,
+    const std::vector<std::uint32_t>* material_volume_owner,
+    // M2：按 (材质, 列) 预采好的各材质自身贴图色；为空则 MATVOL 分支沿用 Kd（M1 行为）。
+    const std::vector<TextureColumnColor>* per_material_texture_columns,
     const int layer_index,
     TextureReportData* texture_report,
     MaterialPolicyReportData* material_policy_report,
@@ -3244,6 +3467,8 @@ std::vector<std::uint8_t> compose_layer(
                         }
                     }
                 } else if (config.texture.enabled
+                           && TextureColumnMatchesOwner(
+                               top_material_index, material_volume_owner, pixel_index)
                            && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index)) {
                     const TextureColumnColor color = resolve_texture_color(config, texture_columns, pixel_index);
                     pixels.at(base + 0U) = color.rgb.at(0);
@@ -3266,6 +3491,47 @@ std::vector<std::uint8_t> compose_layer(
                         && WriteModelFillPixel(pixels, base, config, nullptr)) {
                         model_fill_pixel = true;
                     }
+                } else if (config.material_volume_policy.enabled
+                           && material_volume_rgb != nullptr
+                           && pixel_index * 3U + 2U < material_volume_rgb->size()) {
+                    // MATVOL：逐层材质所有权已在层循环内解算为紧凑 RGB，此处按列取用。
+                    // 与旧路径的本质区别是【同一 XY 列在不同层可以属于不同材质】，
+                    // 而 relief_heightfield 每列只有一个 top_triangle_index，结构上做不到。
+                    //
+                    // M2：先取该 owner 材质自己的贴图色（用它自己的顶面 UV 采样，
+                    // 故被上层遮住的下层材质也能采到）；该材质无贴图或无 UV 时
+                    // 回退到 Kd 表，即 M1 行为。
+                    bool wrotePerMaterialTexture{false};
+                    if (per_material_texture_columns != nullptr
+                        && material_volume_owner != nullptr
+                        && pixel_index < material_volume_owner->size()) {
+                        const std::uint32_t owner =
+                            material_volume_owner->at(pixel_index);
+                        const std::size_t columnCount{
+                            static_cast<std::size_t>(grid.width_px)
+                            * static_cast<std::size_t>(grid.height_px)};
+                        if (owner != kNoMaterialOwner && columnCount > 0U) {
+                            const std::size_t slot =
+                                static_cast<std::size_t>(owner) * columnCount
+                                + pixel_index;
+                            if (slot < per_material_texture_columns->size()
+                                && per_material_texture_columns->at(slot).has_color) {
+                                const TextureColumnColor& color =
+                                    per_material_texture_columns->at(slot);
+                                pixels.at(base + 0U) = color.rgb.at(0);
+                                pixels.at(base + 1U) = color.rgb.at(1);
+                                pixels.at(base + 2U) = color.rgb.at(2);
+                                update_texture_report_for_color(color, texture_report);
+                                wrotePerMaterialTexture = true;
+                            }
+                        }
+                    }
+                    if (!wrotePerMaterialTexture) {
+                        pixels.at(base + 0U) = material_volume_rgb->at(pixel_index * 3U + 0U);
+                        pixels.at(base + 1U) = material_volume_rgb->at(pixel_index * 3U + 1U);
+                        pixels.at(base + 2U) = material_volume_rgb->at(pixel_index * 3U + 2U);
+                    }
+                    counted_model_pixel = true;
                 } else {
                     if (ModelFillUsesExplicitPolicy(config)) {
                         counted_model_pixel = WriteModelFillPixel(pixels, base, config, nullptr);
@@ -3333,6 +3599,85 @@ std::vector<std::uint8_t> compose_layer(
                     }
                 }
             }
+        }
+    }
+
+    // MATVOL 按需补白（MV-08C）。必须在最终 RGB 之后：补白判据逐像素读 RGB，
+    // 若在 RGB 定稿前施加，判的是中间值。此处是 compose_layer 内最后一个
+    // 仍会改动模型像素 RGB 的位置之后，故为正确插入点。
+    //
+    // 布局差异是本段的要害：补白函数要求【紧凑】单通道 W（步长 1），
+    // 而 pixels 是六通道交错（W 在 base+3、步长 6），不能直接取 span，
+    // 必须用暂存缓冲并按列散射回写。暂存缓冲以调用方现值播种，
+    // 保证未命中的像素 W 保持原值不变。
+    if (config.material_volume_policy.enabled && material_volume_rgb != nullptr
+        && whiteCarrierEnabled)
+    {
+        const std::size_t columnCount = model_mask.size();
+        if (material_volume_rgb->size() == columnCount * 3U)
+        {
+            std::vector<std::uint8_t> whiteScratch(columnCount, 0U);
+            for (std::size_t column{0}; column < columnCount; ++column)
+            {
+                whiteScratch[column] = pixels.at(column * 6U + 3U);
+            }
+            MaterialVolumeWhiteCarrierRequest carrier;
+            carrier.whiteUnderbaseEnabled = true;
+            carrier.inkThreshold = config.texture.unprintable_white_ink_threshold;
+            carrier.whiteValue = config.texture.unprintable_white_value;
+            MaterialVolumeWhiteCarrierStats carrierStats;
+            // 补白必须观察【本层实际写入的】RGB，而不是 material_volume_rgb 这张
+            // 逐材质 Kd 表。M2 的逐材质贴图采样会把贴图色写进 pixels，其纯白区为
+            // (255,255,255)，而对应材质的 Kd 未必是全 255（如 nail 为 250,250,255）：
+            // 按 Kd 表判定就不会补 W，该像素遂 ownership 非空却六通道全 255，
+            // 触发 package 契约 layers.ownership 不闭合（PM-SLICER-CONTRACT-0060）。
+            // 从 pixels 反读即让本策略回到其注释所声明的「观察最终 RGB」语义。
+            std::vector<std::uint8_t> effectiveRgb(columnCount * 3U, 0U);
+            for (std::size_t column{0}; column < columnCount; ++column)
+            {
+                effectiveRgb[column * 3U + 0U] = pixels.at(column * 6U + 0U);
+                effectiveRgb[column * 3U + 1U] = pixels.at(column * 6U + 1U);
+                effectiveRgb[column * 3U + 2U] = pixels.at(column * 6U + 2U);
+            }
+            ApplyMaterialVolumeWhiteCarrierLayer(
+                carrier, effectiveRgb, model_mask, whiteScratch, carrierStats);
+            for (std::size_t column{0}; column < columnCount; ++column)
+            {
+                pixels.at(column * 6U + 3U) = whiteScratch[column];
+            }
+            semantic_stats.unprintable_white_carrier_pixels +=
+                carrierStats.unprintableWhiteCarrierPixels;
+        }
+    }
+
+    // MO-04：不透明度判为光油的材质，其体积改写 V 通道而非 RGB。
+    //
+    // 放在白墨载体【之后】是必须的：补白策略要观察最终 RGB 才能决定是否补 W，
+    // 若先把光油区 RGB 清空，补白会把它误看成空区。
+    //
+    // 光油区【不需要白墨底】（用户 2026-09-01 回签），故本段同时清 W：
+    // 补白载体先按最终 RGB 判过一轮，光油区那部分 W 属于误加，必须在此撤除。
+    if (config.material_volume_policy.opacity_varnish.enabled
+        && material_volume_varnish_mask != nullptr
+        && material_volume_varnish_mask->size() == model_mask.size())
+    {
+        for (std::size_t column{0}; column < model_mask.size(); ++column)
+        {
+            if (model_mask[column] == 0U
+                || material_volume_varnish_mask->at(column) == 0U)
+            {
+                continue;
+            }
+            const std::size_t base = column * rgbwsv_channel_count;
+            pixels.at(base + 0U) = config.background.value;
+            pixels.at(base + 1U) = config.background.value;
+            pixels.at(base + 2U) = config.background.value;
+            pixels.at(base + 3U) = config.background.value;
+// black_is_print：V 必须写 0（满墨）才是"打印光油"。
+// 不可用 config.material.varnish_value——它默认 255，即 emptyValue，
+// 写进去等于"此处不打光油"。与既有 MaterialRole::Varnish 落盘口径保持一致。
+            pixels.at(base + 5U) = 0U;
+            ++semantic_stats.opacity_varnish_pixels;
         }
     }
 
@@ -3415,10 +3760,6 @@ Json channel_stats_array_to_json(const std::array<ChannelStats, rgbwsv_channel_c
         object.emplace(channel_names.at(i), channel_stats_to_json(stats.at(i)));
     }
     return Json{object};
-}
-
-Json channel_order_json() {
-    return Json::array({"R", "G", "B", "W", "S", "V"});
 }
 
 Json support_connectivity_to_json(const SupportConnectivityDiagnostics& diagnostics) {
@@ -3863,151 +4204,6 @@ Json material_policy_report_to_json(const SliceConfig& config, const MaterialPol
     });
 }
 
-double coverage_ratio(const std::uint64_t print_pixels, const std::uint64_t denominator) {
-    if (denominator == 0U) {
-        return 0.0;
-    }
-    return static_cast<double>(print_pixels) / static_cast<double>(denominator);
-}
-
-Json material_process_report_to_json(
-    const SliceConfig& config,
-    const ModelReport& model_report,
-    const GridSpec& grid,
-    const std::vector<LayerDiagnostics>& diagnostics,
-    const std::array<ChannelStats, rgbwsv_channel_count>& total_channel_stats) {
-    const MaterialProcessProfileConfig& profile = config.material_process_profile;
-    const std::uint64_t total_pixels =
-        static_cast<std::uint64_t>(grid.width_px) * static_cast<std::uint64_t>(grid.height_px)
-        * static_cast<std::uint64_t>(grid.layer_count);
-    std::uint64_t rgb_print_pixels{0};
-    std::uint64_t unprintable_white_carrier_pixels{0};
-    const std::uint64_t white_print_pixels = total_channel_stats.at(3).print_pixels;
-    const std::uint64_t support_print_pixels = total_channel_stats.at(4).print_pixels;
-    const std::uint64_t varnish_print_pixels = total_channel_stats.at(5).print_pixels;
-
-    Json::Array layers;
-    Json::Array varnish_active_layer_indices;
-    for (const LayerDiagnostics& layer : diagnostics) {
-        const std::uint64_t layer_rgb = static_cast<std::uint64_t>(layer.rgb_non_zero_pixels);
-        const std::uint64_t layer_white = layer.channel_stats.at(3).print_pixels;
-        const std::uint64_t layer_support = layer.channel_stats.at(4).print_pixels;
-        const std::uint64_t layer_varnish = layer.channel_stats.at(5).print_pixels;
-        rgb_print_pixels += layer_rgb;
-        unprintable_white_carrier_pixels +=
-            layer.semantic.unprintable_white_carrier_pixels;
-        if (layer_varnish > 0U) {
-            varnish_active_layer_indices.push_back(layer.layer_index);
-        }
-        layers.push_back(Json::object({
-            {"layerIndex", layer.layer_index},
-            {"rgbPrintPixels", layer_rgb},
-            {"whitePrintPixels", layer_white},
-            {"unprintableWhiteCarrierPixels",
-             layer.semantic.unprintable_white_carrier_pixels},
-            {"varnishPrintPixels", layer_varnish},
-            {"supportPrintPixels", layer_support},
-        }));
-    }
-
-    const std::uint64_t missing_underbase_pixels =
-        white_print_pixels < rgb_print_pixels ? rgb_print_pixels - white_print_pixels : 0U;
-    constexpr std::uint64_t unexpected_overlap_pixels{0U};
-
-    Json::Array validation_failures;
-    Json::Array warnings;
-    if (profile.enabled) {
-        if (profile.validation.require_rgb_pixels && rgb_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_RGB");
-        }
-        if (profile.validation.require_white_pixels && white_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_WHITE");
-        }
-        if (profile.validation.require_varnish_pixels && varnish_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_VARNISH");
-        }
-        if (profile.validation.require_support_pixels && support_print_pixels == 0U) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_EMPTY_SUPPORT");
-        }
-        if (unexpected_overlap_pixels
-            > static_cast<std::uint64_t>(profile.validation.max_unexpected_overlap_pixels)) {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNEXPECTED_OVERLAP");
-        }
-        if (profile.white.enabled
-            && RequiresCompleteWhiteUnderbase(profile.white.mode)
-            && missing_underbase_pixels > 0U)
-        {
-            validation_failures.push_back("E_MATERIAL_PROCESS_PROFILE_UNDERBASE_COVERAGE_LOW");
-        }
-        if (config.material_policy.enabled == false && config.material_role_mapping.enabled == false) {
-            warnings.push_back("materialProcessProfile is report-only; no materialPolicy or materialRoleMapping is enabled");
-        }
-    }
-
-    return Json::object({
-        {"enabled", profile.enabled},
-        {"profileName", profile.name},
-        {"target", profile.target},
-        {"inputFormat", model_report.format},
-        {"sourceModel", model_report.model_path.generic_string()},
-        {"grid",
-         Json::object({
-             {"widthPx", grid.width_px},
-             {"heightPx", grid.height_px},
-             {"layerCount", grid.layer_count},
-             {"pixelSizeMm", Json::array({grid.pixel_size_x_mm, grid.pixel_size_y_mm})},
-             {"layerThicknessMm", config.output.layer_thickness_mm},
-         })},
-        {"layerCount", grid.layer_count},
-        {"rgb",
-         Json::object({
-             {"enabled", profile.rgb.enabled},
-             {"source", profile.rgb.source},
-             {"printPixels", rgb_print_pixels},
-             {"coverageRatio", coverage_ratio(rgb_print_pixels, total_pixels)},
-         })},
-        {"white",
-         Json::object({
-             {"enabled", profile.white.enabled},
-             {"mode", profile.white.mode},
-             {"coverage", profile.white.coverage},
-             {"value", static_cast<int>(profile.white.value)},
-             {"expandPx", profile.white.expand_px},
-             {"shrinkPx", profile.white.shrink_px},
-             {"printPixels", white_print_pixels},
-             {"unprintableWhiteCarrierPixels", unprintable_white_carrier_pixels},
-             {"coverageRatio", coverage_ratio(white_print_pixels, total_pixels)},
-             {"missingUnderbasePixels", missing_underbase_pixels},
-         })},
-        {"varnish",
-         Json::object({
-             {"enabled", profile.varnish.enabled},
-             {"mode", profile.varnish.mode},
-             {"topLayers", profile.varnish.top_layers},
-             {"value", static_cast<int>(profile.varnish.value)},
-             {"coverage", profile.varnish.coverage},
-             {"printPixels", varnish_print_pixels},
-             {"coverageRatio", coverage_ratio(varnish_print_pixels, total_pixels)},
-             {"activeLayerIndices", Json{varnish_active_layer_indices}},
-         })},
-        {"support",
-         Json::object({
-             {"expected", profile.support.expected},
-             {"mode", profile.support.mode},
-             {"printPixels", support_print_pixels},
-             {"coverageRatio", coverage_ratio(support_print_pixels, total_pixels)},
-         })},
-        {"unexpectedOverlapPixels", unexpected_overlap_pixels},
-        {"layers", Json{layers}},
-        {"validation",
-         Json::object({
-             {"pass", validation_failures.empty()},
-             {"failures", Json{validation_failures}},
-         })},
-        {"warnings", Json{warnings}},
-    });
-}
-
 Json material_role_mapping_report_to_json(const MaterialRoleMappingReportData& report) {
     return Json::object({
         {"enabled", report.enabled},
@@ -4222,8 +4418,32 @@ bool IsOpenVdbCandidateConfig(const SliceConfig& config)
         || config.experimental.openvdb_pipeline.write_production_rgbwsv;
 }
 
-void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config)
+bool IsTransferSceneProductionOptIn(
+    const SliceConfig& config,
+    const SliceRunOptions& options)
 {
+    return options.transfer_scene_production_admission != nullptr
+        && config.transfer_channel_policy.enabled
+        && options.instanceoverride.has_value()
+        && options.inputoverride.has_value()
+        && !options.gridcallback
+        && !options.layercallback
+        && options.modelreportoverride == nullptr;
+}
+
+void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config, const SliceRunOptions& options)
+{
+    const bool usesAdapter = options.gridcallback || options.layercallback
+        || options.instanceoverride || options.inputoverride
+        || options.modelreportoverride != nullptr;
+    const bool transferSceneProductionOptIn =
+        IsTransferSceneProductionOptIn(config, options);
+    ValidateLegacyTransferChannelRunBoundary(
+        config.transfer_channel_policy,
+        !options.write_tiff_layers && !options.write_preview_files
+            && !options.write_reports && !usesAdapter,
+        options.write_tiff_layers && options.write_reports
+            && (!usesAdapter || transferSceneProductionOptIn));
     if (!IsOpenVdbCandidateConfig(config))
     {
         return;
@@ -4233,6 +4453,7 @@ void EnsureLegacyPipelineAcceptsConfig(const SliceConfig& config)
         "OpenVDB candidate slicing requires the explicit --openvdb-candidate-slice path; "
         "the legacy production path must not run surface_shell_from_sdf or writeProductionRgbwsv configs");
 }
+
 
 bool MatchesSourceIdentity(
     const std::filesystem::path& loadedModelPath,
@@ -4345,7 +4566,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     NotifyProgress(options, run_start, "model_load", 0, 1, 3);
     phase_start = SlicerClock::now();
 
-    EnsureLegacyPipelineAcceptsConfig(config);
+    EnsureLegacyPipelineAcceptsConfig(config, options);
     const std::filesystem::path config_dir =
         config_path.parent_path().empty() ? std::filesystem::current_path() : config_path.parent_path();
     ModelReport model_report;
@@ -4403,6 +4624,101 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             supportBaseProjectionPreparation.model_lift_mm);
     }
     const GridSpec grid = make_grid_spec(config, model_report.bbox_mm);
+    const MaterialVolumeGrid materialVolumeGrid{
+        grid.width_px, grid.height_px, grid.origin_x_mm, grid.origin_y_mm,
+        grid.pixel_size_x_mm, grid.pixel_size_y_mm, config.output.layer_thickness_mm,
+        grid.layer_count};
+
+    // 退化面阈值：默认沿用适配器内建值；工艺文件显式收紧时才覆盖。
+    // CAD/NURBS 导出的多材质资产常含 nm^2 级合法薄面，默认门会误杀并制造边界边。
+    SceneModelTriangleMeshAdapterOptions geometryAdapterOptions;
+    if (config.geometry_sampling.degenerate_area_epsilon_mm2 > 0.0)
+    {
+        geometryAdapterOptions.degenerate_area_epsilon_mm2 =
+            config.geometry_sampling.degenerate_area_epsilon_mm2;
+    }
+
+    std::optional<LegacyTransferChannelSession> transferSession;
+    if (config.transfer_channel_policy.enabled)
+    {
+        const AdaptedTriangleMesh transferMesh =
+            AdaptSceneModelToTriangleMesh(model_report, geometryAdapterOptions);
+        transferSession = BuildLegacyTransferChannelSession(
+            config.transfer_channel_policy,
+            transferMesh,
+            materialVolumeGrid,
+            options.cancellation_requested);
+    }
+
+    // MATVOL 生产接线（MV-08B）。必须在此处构建：model_report 已完成自动摆正、
+    // 实例变换与 LiftModelForSupportBase 的 Z 抬升，grid 亦由同一 bbox 推导，
+    // 因此 plan 的列序与层号与后续栅格化逐项对齐，无需任何补偿。
+    std::optional<MaterialVolumePlan> materialVolumePlan;
+    std::optional<MaterialRgbTable> materialVolumeRgbTable;
+    MaterialOpacityVarnishResolution opacityVarnishResolution;
+    std::vector<std::uint8_t> opacityVarnishByIndex;
+    if (config.material_volume_policy.enabled)
+    {
+        // SceneModel 即 ModelReport 的别名，既有适配器可直接消费，无需适配层。
+        const AdaptedTriangleMesh matvolMesh =
+            AdaptSceneModelToTriangleMesh(model_report, geometryAdapterOptions);
+        // overlap.mode=auto_by_material_name：按命名规范推导逐材质 priority，
+        // 替代人工填写的 rules。违规命名与撞号都必须 fail-closed——
+        // MATVOL 本身对「缺声明」和「同级」均拒绝，此处提前给出可读原因。
+        MaterialVolumePolicyConfig effectiveVolumePolicy = config.material_volume_policy;
+        if (effectiveVolumePolicy.overlap.mode == "auto_by_material_name")
+        {
+            const MaterialLayerNaming naming =
+                ResolveMaterialLayerNaming(model_report.material_infos);
+            if (!naming.violations.empty())
+            {
+                throw std::runtime_error(
+                    "E_MATOPQ_LAYER_NAME_INVALID: " + naming.violations.front());
+            }
+            if (!naming.collisions.empty())
+            {
+                throw std::runtime_error(
+                    "E_MATOPQ_LAYER_PRIORITY_COLLISION: " + naming.collisions.front());
+            }
+            effectiveVolumePolicy.overlap.rules.clear();
+            for (std::size_t index{0}; index < naming.names.size(); ++index)
+            {
+                effectiveVolumePolicy.overlap.rules.push_back(
+                    MaterialVolumeOverlapRuleConfig{
+                        naming.names.at(index).material_name,
+                        naming.priorities.at(index)});
+            }
+        }
+
+        MaterialVolumeBuildRequest matvolRequest;
+        matvolRequest.mesh = &matvolMesh;
+        matvolRequest.policy = &effectiveVolumePolicy;
+        matvolRequest.grid = materialVolumeGrid;
+        // plan 构建是本路径上最长的不可中断窗口（逐列遍历全部三角面），
+        // 且发生在 gridcallback 之前，故必须显式透传取消点，
+        // 否则该窗口在生产路径上完全无法取消。
+        matvolRequest.cancellationRequested = options.cancellationRequested;
+        materialVolumePlan = BuildMaterialVolumePlan(matvolRequest);
+        MaterialRgbTableRequest tableRequest;
+        tableRequest.plan = &materialVolumePlan.value();
+        tableRequest.materialInfos = model_report.material_infos;
+        materialVolumeRgbTable = BuildMaterialRgbTable(tableRequest);
+        // MO-04：按不透明度判据解出哪些材质归属光油，并折成按 materialIndex 的查表，
+        // 使逐层内循环只做 O(1) 索引，不做字符串比较。
+        opacityVarnishResolution = ResolveMaterialOpacityVarnish(
+            config.material_volume_policy, model_report.material_infos);
+        const std::span<const std::string> planMaterialNames =
+            materialVolumePlan.value().MaterialNames();
+        opacityVarnishByIndex.assign(planMaterialNames.size(), 0U);
+        for (std::size_t index{0}; index < planMaterialNames.size(); ++index)
+        {
+            if (opacityVarnishResolution.varnish_materials.count(
+                    std::string(planMaterialNames[index])) != 0U)
+            {
+                opacityVarnishByIndex.at(index) = 1U;
+            }
+        }
+    }
     if (options.gridcallback)
     {
         options.gridcallback(
@@ -4419,6 +4735,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     }
 
     const std::filesystem::path package_dir = config.output.package_dir;
+    std::optional<RgbwsvtCandidatePackageGuard> transferPackageGuard;
+    if (transferSession.has_value()
+        && (options.write_tiff_layers || options.write_preview_files || options.write_reports))
+    {
+        transferPackageGuard.emplace(package_dir);
+    }
     const bool automatic_diagnostic_images =
         config.preview.enabled && options.write_preview_files;
     const std::string effective_preview_output_policy =
@@ -4451,11 +4773,25 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     std::vector<LayerDiagnostics> layer_diagnostics;
     ReliefReportData relief_report;
     std::vector<ReliefColumnInfo> relief_columns;
+    ReliefPerMaterialTopSurface relief_per_material_top;
     std::vector<std::vector<std::uint8_t>> model_masks;
     if (config.slicing_mode == "relief_heightfield") {
-        ReliefSamplingResult relief_sampling = sample_relief_heightfield_masks(config, model_report, grid, layer_diagnostics);
+        // M2：MATVOL 启用时把材质名表传入采样，使其一并解出逐材质顶面。
+        // plan 在本调用之前建成（见上方 BuildMaterialVolumePlan），故此处可用。
+        std::optional<std::span<const std::string>> planMaterialNamesForSampling;
+        if (materialVolumePlan.has_value()) {
+            planMaterialNamesForSampling = materialVolumePlan.value().MaterialNames();
+        }
+        ReliefSamplingResult relief_sampling = sample_relief_heightfield_masks(
+            config,
+            model_report,
+            grid,
+            layer_diagnostics,
+            planMaterialNamesForSampling.has_value()
+                ? &planMaterialNamesForSampling.value() : nullptr);
         model_masks = std::move(relief_sampling.model_masks);
         relief_columns = std::move(relief_sampling.columns);
+        relief_per_material_top = std::move(relief_sampling.per_material_top);
         relief_report = std::move(relief_sampling.report);
     } else {
         model_masks = sample_model_masks(model_report, grid, config.output.layer_thickness_mm, layer_diagnostics);
@@ -4493,6 +4829,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     if (config.texture.enabled && config.slicing_mode == "relief_heightfield") {
         texture_columns = build_relief_texture_columns(config, model_report, relief_columns, texture_runtime);
     }
+    // M2：逐材质贴图色。仅在 MATVOL 启用（relief_per_material_top 非空）且
+    // texture 启用时才构建；否则为空，MATVOL 分支沿用 Kd 表。
+    const std::vector<TextureColumnColor> per_material_texture_columns =
+        build_per_material_texture_columns(
+            config, model_report, relief_per_material_top, texture_runtime);
     const MaterialRoleMappingReportData material_role_mapping_report =
         build_material_role_mapping_report(config, model_report);
     std::vector<MaterialRoleColumn> material_role_columns;
@@ -4636,6 +4977,14 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     int total_varnish_non_zero_pixels{0};
     LayerSemanticStats total_semantic_stats;
     std::array<ChannelStats, rgbwsv_channel_count> total_channel_stats{};
+    std::optional<RgbwsvtChannelStatistics> totalTransferChannelStatistics;
+    RgbwsvtMaterialStatistics totalTransferMaterialStatistics;
+    std::vector<RgbwsvtLegacyLayerStatistics> transferLayerStatistics;
+    if (transferSession.has_value() && options.write_tiff_layers)
+    {
+        totalTransferChannelStatistics.emplace();
+        transferLayerStatistics.reserve(static_cast<std::size_t>(grid.layer_count));
+    }
     Json::Array layers;
     Json::Array slice_layers;
     Json::Array contour_layers;
@@ -4659,6 +5008,88 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         static_cast<std::size_t>(grid.width_px)
         * static_cast<std::size_t>(grid.height_px);
     const std::vector<std::uint8_t> emptyOptionalMask(layerPixelCount, 0U);
+    // 未归属模型像素的填补（用户 2026-08-24 裁定「确有间隙则填补为下层材料」）。
+    // 该逻辑曾在 03.obj 上恒不触发而被当作死代码撤除；08/09 的 3 条真开边给出了
+    // 真实触发资产（实测 46 万格中 2 格），故按同一裁定重新引入并附计数。
+    // lastOwnedMaterial 随层循环自下而上推进，天然给出「下方最近的已归属材质」。
+    std::vector<std::uint32_t> lastOwnedMaterial;
+    // 次级规则所需：每列最低区间的材质。位于最低区间【之下】的格子没有「下方材质」，
+    // 例如薄于一个层厚的区间会被整段丢弃（firstLayer > lastLayer），
+    // 使该列底部出现掩码为模型却无任何区间覆盖的格子。
+    std::vector<std::uint32_t> bottomMaterial;
+    std::uint64_t unownedFilledCells{0};
+    if (materialVolumePlan.has_value())
+    {
+        lastOwnedMaterial.assign(layerPixelCount, kNoMaterialOwner);
+        bottomMaterial.assign(layerPixelCount, kNoMaterialOwner);
+        const std::span<const std::uint32_t> offsets =
+            materialVolumePlan.value().ColumnIntervalOffsets();
+        const std::span<const MaterialLayerInterval> intervals =
+            materialVolumePlan.value().Intervals();
+        for (std::size_t column{0}; column < layerPixelCount; ++column)
+        {
+            int lowestFirstLayer{std::numeric_limits<int>::max()};
+            for (std::uint32_t index{offsets[column]};
+                 index < offsets[column + 1U];
+                 ++index)
+            {
+                const MaterialLayerInterval& interval = intervals[index];
+                if (interval.firstLayerInclusive < lowestFirstLayer)
+                {
+                    lowestFirstLayer = interval.firstLayerInclusive;
+                    bottomMaterial[column] = interval.materialIndex;
+                }
+            }
+        }
+    }
+    // MV-08C：逐层 owner 覆盖统计。逐层记录而非只记总量，
+    // 是为了让「只有部分层用了 owner」这类层间突变在报告里可见。
+    std::vector<MaterialVolumeLayerStat> materialVolumeLayerStats;
+    if (materialVolumePlan.has_value())
+    {
+        materialVolumeLayerStats.reserve(static_cast<std::size_t>(grid.layer_count));
+    }
+    // MATVOL 逐层复用缓冲：owner 为每列一个材质下标，rgb 为紧凑三通道，
+    // 与 compose_layer 返回的六通道交错布局不同，需在写回时按列取用。
+    // M1：逐列顶面材质在 plan 材质表中的下标。O(列数) 且只构建一次，
+    // 不进层循环——故不触碰 MV-03 禁止的 O(材质数 x 层数 x 像素数) 稠密栈。
+    // 构建点必须同时晚于 materialVolumePlan 建成与 relief_columns 填充：
+    // 前者提供材质名表，后者提供每列顶面三角。非 relief 模式下 relief_columns
+    // 为空，本表随之为空，判据恒真即退回既有行为。
+    std::vector<std::uint32_t> topMaterialIndexByColumn;
+    if (materialVolumePlan.has_value() && !relief_columns.empty()) {
+        const std::span<const std::string> planMaterialNames =
+            materialVolumePlan.value().MaterialNames();
+        topMaterialIndexByColumn.assign(relief_columns.size(), kNoMaterialOwner);
+        for (std::size_t column{0}; column < relief_columns.size(); ++column) {
+            const ReliefColumnInfo& columnInfo = relief_columns.at(column);
+            if (!columnInfo.has_model || columnInfo.top_triangle_index < 0
+                || columnInfo.top_triangle_index
+                       >= static_cast<int>(model_report.triangle_textures.size())) {
+                continue;
+            }
+            const std::string& topMaterialName =
+                model_report.triangle_textures
+                    .at(static_cast<std::size_t>(columnInfo.top_triangle_index))
+                    .material_name;
+            for (std::size_t index{0}; index < planMaterialNames.size(); ++index) {
+                if (planMaterialNames[index] == topMaterialName) {
+                    topMaterialIndexByColumn.at(column) =
+                        static_cast<std::uint32_t>(index);
+                    break;
+                }
+            }
+        }
+    }
+    std::vector<std::uint32_t> materialVolumeOwner;
+    std::vector<std::uint8_t> materialVolumeRgb;
+    std::vector<std::uint8_t> materialVolumeVarnishMask;
+    if (materialVolumePlan.has_value())
+    {
+        materialVolumeOwner.assign(layerPixelCount, kNoMaterialOwner);
+        materialVolumeRgb.assign(layerPixelCount * 3U, 0U);
+    }
+
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index) {
         const auto layerComputeStart = SlicerClock::now();
         int layer_model_pixels{0};
@@ -4690,7 +5121,72 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 outerVarnishMask);
             materialClosureInputPointer = &materialClosureInput;
         }
-        std::vector<std::uint8_t> layer = compose_layer(
+        if (materialVolumePlan.has_value())
+        {
+            MaterializeMaterialOwnershipLayer(
+                materialVolumePlan.value(),
+                layer_index,
+                model_masks.at(static_cast<std::size_t>(layer_index)),
+                materialVolumeOwner);
+            {
+                const std::vector<std::uint8_t>& matvolMask =
+                    model_masks.at(static_cast<std::size_t>(layer_index));
+                for (std::size_t column{0}; column < layerPixelCount; ++column)
+                {
+                    if (materialVolumeOwner[column] != kNoMaterialOwner)
+                    {
+                        lastOwnedMaterial[column] = materialVolumeOwner[column];
+                        continue;
+                    }
+                    if (matvolMask[column] == 0U)
+                    {
+                        continue;
+                    }
+                    // 主规则：下方最近的已归属材质。
+                    std::uint32_t filler = lastOwnedMaterial[column];
+                    if (filler == kNoMaterialOwner)
+                    {
+                        // 次级规则：位于该列最低区间之下，不存在「下方材质」，
+                        // 退而取该列最低区间的材质。这是一条【独立的次级规则】，
+                        // 不是主规则的一部分。整列无任何区间时仍保持未归属，
+                        // 由 ComposeMaterialLayerRgb 按既有语义 fail closed，不静默填充。
+                        filler = bottomMaterial[column];
+                    }
+                    if (filler == kNoMaterialOwner)
+                    {
+                        continue;
+                    }
+                    materialVolumeOwner[column] = filler;
+                    ++unownedFilledCells;
+                }
+            }
+            ComposeMaterialLayerRgb(
+                materialVolumeRgbTable.value(),
+                materialVolumeOwner,
+                model_masks.at(static_cast<std::size_t>(layer_index)),
+                materialVolumeRgb);
+            if (config.material_volume_policy.opacity_varnish.enabled)
+            {
+                materialVolumeVarnishMask.assign(materialVolumeOwner.size(), 0U);
+                for (std::size_t column{0}; column < materialVolumeOwner.size(); ++column)
+                {
+                    const std::uint32_t owner = materialVolumeOwner[column];
+                    if (owner == kNoMaterialOwner
+                        || owner >= opacityVarnishByIndex.size())
+                    {
+                        continue;
+                    }
+                    materialVolumeVarnishMask[column] =
+                        opacityVarnishByIndex.at(owner);
+                }
+            }
+            materialVolumeLayerStats.push_back(CountMaterialVolumeLayerOwners(
+                materialVolumePlan.value(),
+                layer_index,
+                materialVolumeOwner,
+                model_masks.at(static_cast<std::size_t>(layer_index))));
+        }
+                std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
             model_masks.at(layer_index),
@@ -4702,6 +5198,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             config.texture.enabled ? &texture_columns : nullptr,
             config.material_role_mapping.enabled ? &material_role_columns : nullptr,
             &column_ranges,
+            materialVolumePlan.has_value() ? &materialVolumeRgb : nullptr,
+            config.material_volume_policy.opacity_varnish.enabled
+                ? &materialVolumeVarnishMask : nullptr,
+            // M1：两者同时可用才启用 owner-vs-顶面判据；owner buffer 是层循环内
+            // 复用的同一块内存，其生命周期覆盖本调用点。
+            topMaterialIndexByColumn.empty() ? nullptr : &topMaterialIndexByColumn,
+            materialVolumeOwner.empty() ? nullptr : &materialVolumeOwner,
+            per_material_texture_columns.empty()
+                ? nullptr : &per_material_texture_columns,
             layer_index,
             config.texture.enabled ? &texture_runtime.report : nullptr,
             config.material_policy.enabled ? &material_policy_report : nullptr,
@@ -4765,6 +5270,45 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             }
             materialClosureExactLayers.push_back(std::move(result));
         }
+        std::optional<RgbwsvtProductionLayer> transferLayer;
+        if (transferSession.has_value())
+        {
+            transferLayer = ComposeLegacyTransferChannelLayer(
+                transferSession.value(),
+                RgbwsvProductionLayer{
+                    .layerIndex = layer_index, .zMm = diagnostics.z_mm,
+                    .widthPx = grid.width_px, .heightPx = grid.height_px,
+                    .channels = layer},
+                model_masks.at(static_cast<std::size_t>(layer_index)));
+            // 光油（V）与弹性材料（T）不得占用同一像素：一个体素不可能同时是两种材料。
+            //
+            // ComposeRgbwsvtLayer 对缩裹像素【丢弃全部六通道只写 T】，
+            // 因此 V 与 T 重叠时 T 会静默胜出且不留痕——这与 K3 裁定
+            // （邻域多数表决 + V 优先兜底）相反。此处先 fail-closed 堵住静默错误。
+            //
+            // 未实施 K3 表决的理由：当前无任何 V/T 重叠资产可验证该表决逻辑，
+            // 上线跑不到的裁决不如显式拒绝。K3 七项参数已备（见策略总表 §1.6），
+            // 待出现重叠资产后再落地并用其验证。
+            if (config.material_volume_policy.opacity_varnish.enabled
+                && materialVolumeVarnishMask.size()
+                    == transferSession.value().transferMask.size())
+            {
+                for (std::size_t column{0};
+                     column < materialVolumeVarnishMask.size();
+                     ++column)
+                {
+                    if (materialVolumeVarnishMask[column] != 0U
+                        && transferSession.value().transferMask[column] != 0U)
+                    {
+                        throw std::runtime_error(
+                            "E_MATOPQ_VARNISH_TRANSFER_OVERLAP: a pixel is claimed by both "
+                            "the opacity-derived varnish (V) and the transfer material (T) "
+                            "at layer " + std::to_string(layer_index)
+                            + "; K3 neighbourhood arbitration is not implemented yet");
+                    }
+                }
+            }
+        }
         if (options.layercallback)
         {
             RgbwsvProductionLayer outputLayer;
@@ -4776,6 +5320,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             options.layercallback(
                 outputLayer,
                 materialClosureInput);
+        }
+        if (!materialVolumeLayerStats.empty()
+            && materialVolumeLayerStats.back().layerIndex == layer_index)
+        {
+            // 补白计数由 compose_layer 累加进本层 semantic，此处回填到该层统计。
+            materialVolumeLayerStats.back().unprintableWhiteCarrierPixels =
+                diagnostics.semantic.unprintable_white_carrier_pixels;
         }
         update_layer_channel_stats(layer, diagnostics);
         total_model_pixels += layer_model_pixels;
@@ -4790,13 +5341,28 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         const std::string relative_path = layer_file_name(layer_index);
         if (options.write_tiff_layers) {
             const auto tiffWriteStart = SlicerClock::now();
-            WriteRgbwsvProductionLayerTiff(
-                package_dir / relative_path,
-                productionStorage,
-                RgbwsvProductionLayerView{
-                    grid.width_px,
-                    grid.height_px,
-                    layer});
+            if (transferLayer.has_value())
+            {
+                const RgbwsvtLegacyLayerWriteResult writeResult =
+                    WriteRgbwsvtLegacyProductionLayerTiff(
+                        package_dir / relative_path, productionStorage,
+                        transferLayer.value());
+                MergeRgbwsvtChannelStatistics(
+                    totalTransferChannelStatistics.value(),
+                    writeResult.channelStatistics);
+                MergeRgbwsvtMaterialStatistics(
+                    totalTransferMaterialStatistics, writeResult.materialStatistics);
+                transferLayerStatistics.push_back(RgbwsvtLegacyLayerStatistics{
+                    layer_index, writeResult.channelStatistics,
+                    writeResult.materialStatistics});
+            }
+            else
+            {
+                WriteRgbwsvProductionLayerTiff(
+                    package_dir / relative_path, productionStorage,
+                    RgbwsvProductionLayerView{
+                        grid.width_px, grid.height_px, layer});
+            }
             profile.tiff_write_ms += ElapsedMsSince(tiffWriteStart);
             if (collectMaterialClosureCandidate)
             {
@@ -4826,8 +5392,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 package_dir,
                 grid,
                 layer_index,
-                layer,
-                config.texture.enabled ? &texture_preview_mask : nullptr);
+                transferLayer.has_value() ? transferLayer->channels : layer,
+                config.texture.enabled ? &texture_preview_mask : nullptr,
+                transferLayer.has_value());
             preview_files.insert(preview_files.end(), written.begin(), written.end());
             profile.preview_write_ms += ElapsedMsSince(previewWriteStart);
         }
@@ -4901,15 +5468,69 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     phase_start = SlicerClock::now();
 
     model_report.three_mf.texture_sampled_pixels = texture_runtime.report.sampled_pixels;
+    const char* productionAcceptance = transferSession.has_value()
+        ? (IsTransferSceneProductionOptIn(config, options)
+            ? "admitted"
+            : "rgbwsvt_candidate_unvalidated")
+        : "legacy_production";
 
-    const Json material_process_report =
-        material_process_report_to_json(config, model_report, grid, layer_diagnostics, total_channel_stats);
+    std::vector<MaterialProcessLayerStatistics> materialProcessLayers;
+    materialProcessLayers.reserve(layer_diagnostics.size());
+    for (const LayerDiagnostics& layer : layer_diagnostics)
+    {
+        materialProcessLayers.push_back(MaterialProcessLayerStatistics{
+            layer.layer_index, static_cast<std::uint64_t>(layer.rgb_non_zero_pixels),
+            layer.channel_stats[3U].print_pixels, layer.channel_stats[4U].print_pixels,
+            layer.channel_stats[5U].print_pixels,
+            layer.semantic.unprintable_white_carrier_pixels});
+    }
+    Json material_process_report = BuildMaterialProcessReport(MaterialProcessReportRequest{
+        &config, model_report.format, model_report.model_path,
+        grid.width_px, grid.height_px, grid.layer_count,
+        grid.pixel_size_x_mm, grid.pixel_size_y_mm,
+        materialProcessLayers, total_channel_stats});
+    Json transfer_channel_report;
+    if (transferSession.has_value() && options.write_tiff_layers)
+    {
+        const std::uint64_t totalPixels = static_cast<std::uint64_t>(grid.width_px)
+            * static_cast<std::uint64_t>(grid.height_px) * static_cast<std::uint64_t>(grid.layer_count);
+        material_process_report = BuildRgbwsvtMaterialProcessReport(
+            material_process_report, config.material_process_profile,
+            transferLayerStatistics, totalTransferMaterialStatistics, totalPixels);
+        transfer_channel_report = BuildLegacyTransferChannelReport(
+            config.transfer_channel_policy, transferSession->plan,
+            transferLayerStatistics, totalTransferChannelStatistics.value(),
+            totalTransferMaterialStatistics);
+    }
     const Json cross_section_material_stack_report =
         BuildCrossSectionMaterialStackReport(
             config,
             total_semantic_stats,
             support_generation,
             support_placement_policy);
+    // MV-08C：体积报告。未启用时同样产出骨架，与既有报告一致——
+    // 「报告存在但为空」与「报告缺失」在下游是两种完全不同的信号。
+    Json material_volume_report;
+    if (materialVolumePlan.has_value())
+    {
+        MaterialVolumeReportInput volumeInput;
+        volumeInput.plan = &materialVolumePlan.value();
+        volumeInput.rgbTable = &materialVolumeRgbTable.value();
+        volumeInput.policy = &config.material_volume_policy;
+        volumeInput.topologyFacts = materialVolumePlan.value().TopologyFacts();
+        volumeInput.layers = materialVolumeLayerStats;
+        material_volume_report = BuildMaterialVolumeReport(volumeInput);
+    }
+    else
+    {
+        material_volume_report = BuildDisabledMaterialVolumeReport();
+    }
+    if (transferSession.has_value())
+    {
+        Json::Object volumeFields = material_volume_report.as_object();
+        volumeFields["packageProtocol"] = "p0.rgbwsvt.1";
+        material_volume_report = Json{std::move(volumeFields)};
+    }
     Json material_closure_report;
     if (collectMaterialClosureExact
         && materialClosureExactLayers.size() == static_cast<std::size_t>(grid.layer_count))
@@ -4932,10 +5553,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid.layer_count);
     }
 
-    const Json slice_report = Json::object({
+    Json slice_report = Json::object({
         {"requestedPipelineMode", "legacy"},
         {"effectivePipelineMode", "legacy"},
-        {"productionAcceptance", "legacy_production"},
+        {"productionAcceptance", productionAcceptance},
         {"productionOutputWritten", options.write_tiff_layers},
         {"fallbackApplied", false},
         {"slicingMode", config.slicing_mode},
@@ -5097,6 +5718,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
          })},
         {"layers", Json{slice_layers}},
     });
+    if (transferSession.has_value() && options.write_tiff_layers)
+    {
+        slice_report = BuildRgbwsvtSliceReport(
+            slice_report, transferLayerStatistics,
+            totalTransferChannelStatistics.value(), totalTransferMaterialStatistics);
+    }
 
     const Json repair_report = Json::object({
         {"status", "not_required_p0_lite"},
@@ -5215,22 +5842,25 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         return Json::array({static_cast<int>(color.at(0)), static_cast<int>(color.at(1)), static_cast<int>(color.at(2))});
     };
 
+    Json::Object previewPseudoColors = Json::object({
+        {"empty", color_json(config.preview.empty_color)},
+        {"support", color_json(config.preview.support_color)},
+        {"white", color_json(config.preview.white_color)},
+        {"varnish", color_json(config.preview.varnish_color)}}).as_object();
+    if (transferSession.has_value())
+    {
+        previewPseudoColors["transfer"] = color_json(config.preview.transfer_color);
+    }
     const Json preview_report = Json::object({
         {"schema", "p0.preview_report.1"},
         {"outputPolicy", effective_preview_output_policy},
-        {"productionSource", "rgbwsv_tiff"},
+        {"productionSource", transferSession.has_value() ? "rgbwsvt_tiff" : "rgbwsv_tiff"},
         {"automaticDiagnosticImages", automatic_diagnostic_images},
         {"enabled", automatic_diagnostic_images},
         {"format", config.preview.format},
         {"interval", config.preview.interval},
         {"channels", Json{preview_channels}},
-        {"pseudoColors",
-         Json::object({
-             {"empty", color_json(config.preview.empty_color)},
-             {"support", color_json(config.preview.support_color)},
-             {"white", color_json(config.preview.white_color)},
-             {"varnish", color_json(config.preview.varnish_color)},
-         })},
+        {"pseudoColors", Json{std::move(previewPseudoColors)}},
         {"layerRange",
          config.preview.has_layer_range ? Json::array({config.preview.layer_range.at(0), config.preview.layer_range.at(1)})
                                         : Json{}},
@@ -5302,37 +5932,44 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         Json::object({
             {"configPath", config_path.generic_string()},
             {"modelPath", model_report.model_path.generic_string()},
-            {"schema", "p0.rgbwsv.2"},
+            {"schema", config.output.package_protocol},
         }));
 
-    Json::Object tiff_json{
-        {"channelOrder", channel_order_json()},
-        {"channelCount", rgbwsv_channel_count},
-        {"bitDepth", 8},
-        {"sampleFormat", "uint"},
-        {"planarConfig", "contiguous"},
-        {"tiled", config.output.storage_mode == "tiled"},
-        {"storage", config.output.storage_mode},
-        {"storageMode", config.output.storage_mode},
-        {"compression", config.output.tiff_compression},
-        {"polarity", "black_is_print"},
-        {"printValue", 0},
-        {"emptyValue", 255},
-        {"writeTiffLayers", options.write_tiff_layers},
-        {"layers", Json{layers}},
-    };
-    if (config.output.storage_mode == "tiled") {
-        tiff_json["tileSize"] = Json::array({config.output.tile_size.at(0), config.output.tile_size.at(1)});
-    } else {
-        tiff_json["rowsPerStrip"] = config.output.rows_per_strip;
-    }
+    const RgbwsvtChannelStatistics* persistedTransferStatistics =
+        options.write_tiff_layers && totalTransferChannelStatistics.has_value()
+        ? &totalTransferChannelStatistics.value() : nullptr;
+    const Json tiff_json = BuildLegacyTiffManifestMetadata(
+        config.output, layers, options.write_tiff_layers, persistedTransferStatistics);
 
+    Json::Object reportPaths = Json::object({
+        {"package", "reports/package_report.json"},
+        {"model", "reports/model_report.json"},
+        {"slice", "reports/slice_report.json"},
+        {"repair", "reports/repair_report.json"},
+        {"support", "reports/support_report.json"},
+        {"supportShape", "reports/support_shape_report.json"},
+        {"preview", "reports/preview_report.json"},
+        {"texture", "reports/texture_report.json"},
+        {"materialPolicy", "reports/material_policy_report.json"},
+        {"materialProcess", "reports/material_process_report.json"},
+        {"crossSectionMaterialStack", "reports/cross_section_material_stack_report.json"},
+        {"materialClosure", "reports/material_closure_report.json"},
+        {"materialVolume", "reports/material_volume_report.json"},
+        {"materialRoleMapping", "reports/material_role_mapping_report.json"},
+        {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
+        {"threeMf", "reports/three_mf_report.json"},
+        {"contour", "reports/contour_report.json"},
+        {"relief", "reports/relief_report.json"}}).as_object();
+    if (transferSession.has_value())
+    {
+        reportPaths["transferChannel"] = "reports/transfer_channel_report.json";
+    }
     Json::Object manifest_fields = Json::object({
-        {"schema", "p0.rgbwsv.2"},
-        {"schemaVersion", "p0.rgbwsv.2"},
+        {"schema", config.output.package_protocol},
+        {"schemaVersion", config.output.package_protocol},
         {"requestedPipelineMode", "legacy"},
         {"effectivePipelineMode", "legacy"},
-        {"productionAcceptance", "legacy_production"},
+        {"productionAcceptance", productionAcceptance},
         {"productionOutputWritten", options.write_tiff_layers},
         {"fallbackApplied", false},
         {"source",
@@ -5361,32 +5998,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
              {"mode", config.slicing_mode},
              {"reliefFillMode", config.relief.fill_mode},
          })},
-        {"tiff", Json{tiff_json}},
+        {"tiff", tiff_json},
         {"layers", Json{layers}},
-        {"reports",
-         Json::object({
-             {"package", "reports/package_report.json"},
-             {"model", "reports/model_report.json"},
-             {"slice", "reports/slice_report.json"},
-             {"repair", "reports/repair_report.json"},
-             {"support", "reports/support_report.json"},
-             {"supportShape", "reports/support_shape_report.json"},
-             {"preview", "reports/preview_report.json"},
-             {"texture", "reports/texture_report.json"},
-             {"materialPolicy", "reports/material_policy_report.json"},
-             {"materialProcess", "reports/material_process_report.json"},
-             {"crossSectionMaterialStack", "reports/cross_section_material_stack_report.json"},
-             {"materialClosure", "reports/material_closure_report.json"},
-             {"materialRoleMapping", "reports/material_role_mapping_report.json"},
-             {"objMtlMaterial", "reports/obj_mtl_material_report.json"},
-             {"threeMf", "reports/three_mf_report.json"},
-             {"contour", "reports/contour_report.json"},
-             {"relief", "reports/relief_report.json"},
-         })},
+        {"reports", Json{std::move(reportPaths)}},
         {"preview",
          Json::object({
              {"outputPolicy", effective_preview_output_policy},
-             {"productionSource", "rgbwsv_tiff"},
+             {"productionSource", transferSession.has_value() ? "rgbwsvt_tiff" : "rgbwsv_tiff"},
              {"automaticDiagnosticImages", automatic_diagnostic_images},
              {"enabled", automatic_diagnostic_images},
              {"format", config.preview.format},
@@ -5398,6 +6016,24 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     if (white_semantics.has_value())
     {
         manifest_fields["whiteSemantics"] = *white_semantics;
+    }
+    // Profile 溯源回声。包摘要与宿主结果页都以它承载「这一包由哪份 Profile 切出」；
+    // 此前 legacy 发布路径从不写，于是七通道包（该路径是其唯一出口）始终缺失该字段。
+    //
+    // 仅在两者【都】非空时发射：CLI 直接喂配置文件的场景本就没有 Profile 溯源，
+    // 此时不写比写一个占位值诚实；同时既有 golden 配置均无 profileVersion，
+    // 故此举不改变它们的包字节，MV-09 建立的零漂移结论不受影响。
+    //
+    // 注意本处【不发射】perInstance：该字段要求 instanceId/modelId/layerRange 等
+    // 场景实例信息，而宿主有效 Profile 并不携带（HostRequestBuilder 无 instanceId），
+    // legacy 发布路径也无从得知。编一个 "instance-0" 只会把「缺失」变成「伪造的溯源」，
+    // 后者更难发现。该缺口需由场景侧传入实例上下文才能真正补上。
+    if (!config.profile_version.empty() && !config.profile_hash.empty())
+    {
+        manifest_fields["profileEcho"] = Json::object({
+            {"profileVersion", config.profile_version},
+            {"profileHash", config.profile_hash},
+        });
     }
     const Json manifest{std::move(manifest_fields)};
     profile.report_build_ms = ElapsedMsSince(phase_start);
@@ -5417,8 +6053,16 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             package_dir / "reports/material_policy_report.json",
             material_policy_report_to_json(config, material_policy_report));
         write_json_file(package_dir / "reports/material_process_report.json", material_process_report);
+        if (transferSession.has_value())
+        {
+            write_json_file(
+                package_dir / "reports/transfer_channel_report.json",
+                transfer_channel_report);
+        }
         write_json_file(package_dir / "reports/cross_section_material_stack_report.json", cross_section_material_stack_report);
         write_json_file(package_dir / "reports/material_closure_report.json", material_closure_report);
+        write_json_file(
+            package_dir / "reports/material_volume_report.json", material_volume_report);
         write_json_file(
             package_dir / "reports/material_role_mapping_report.json",
             material_role_mapping_report_to_json(material_role_mapping_report));
@@ -5433,6 +6077,10 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             package_dir / "reports/relief_report.json",
             relief_report_to_json(config, relief_report, total_support_pixels, columns_with_support));
         write_json_file(package_dir / "manifest.json", manifest);
+    }
+    if (transferPackageGuard.has_value())
+    {
+        transferPackageGuard->Commit();
     }
     profile.report_write_ms = ElapsedMsSince(phase_start);
     profile.slice_processing_ms =

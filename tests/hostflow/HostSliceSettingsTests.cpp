@@ -7,7 +7,6 @@
 #include "apps/slicer_ui_host_sim/ModuleClient.h"
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/json_value.h"
-
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
@@ -25,11 +24,46 @@
 #include <QStringList>
 #include <QTemporaryDir>
 #include <QTextStream>
-
 #include <sstream>
 
 namespace
 {
+// 断言随规则而非索引：凡叠加了非 RGB 通道的条目，其 tooltip 必须写明是伪彩色。
+//
+// 原断言把「索引 4 的 tooltip 含伪彩色」写死。索引 4 当时恰是六通道组合，
+// 但那是下拉排布的实现细节：并集项由两个（六通道、七通道）合并为一个随包改写的项后，
+// 索引 4 变成了单通道，断言随即失败——而它要守的性质（伪彩色必须有说明，
+// 免得被当成生产 TIFF 的像素值）其实一条都没被破坏。
+// 钉索引会让每次合理的重排都误报，钉规则才守得住意图。
+bool AllPseudoColourItemsExplainThemselves(const QComboBox* combo)
+{
+    if (combo == nullptr)
+    {
+        return false;
+    }
+    for (int index = 0; index < combo->count(); ++index)
+    {
+        const QStringList channels = combo->itemData(index).toStringList();
+        const bool hasPseudoColourChannel =
+            channels.contains(QStringLiteral("W"))
+            || channels.contains(QStringLiteral("S"))
+            || channels.contains(QStringLiteral("V"))
+            || channels.contains(QStringLiteral("T"));
+        if (!hasPseudoColourChannel)
+        {
+            continue;
+        }
+        if (!combo->itemData(index, Qt::ToolTipRole)
+                 .toString()
+                 .contains(QStringLiteral("伪彩色")))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 bool Check(const bool condition, const QString& message, QTextStream& errors)
 {
     if (!condition)
@@ -76,12 +110,14 @@ bool VerifyPresetProfileHashClosure(
     for (const hostprocesspreset& preset
          : HostProcessPresetCatalog::Presets())
     {
+        if (preset.packageprotocol == HostPackageProtocol::Rgbwsvt) { continue; }
         hostslicesettings settings = MakeSettings(
             modelPath, outputDirectory);
         settings.materialstrategy = preset.materialstrategy;
         settings.materialprocess = preset.materialprocess;
         settings.texture = preset.texture;
         settings.support = preset.support;
+        settings.materialvolume = preset.materialvolume;
 
         hosteffectiveprofile effective;
         QString error;
@@ -108,6 +144,168 @@ bool VerifyPresetProfileHashClosure(
         }
     }
     return true;
+}
+
+/// @brief MV-07A：materialVolumePolicy 必须条件产出 —— 旧六类预设的 Profile 里
+///        不得出现该块（保证其 profileHash 不变），新预设里必须出现且字段正确。
+bool VerifyMaterialVolumeConditionalEmission(
+    const QString& modelPath,
+    const QString& outputDirectory,
+    QTextStream& errors)
+{
+    bool sawLegacy = false;
+    bool sawVolumetric = false;
+    bool sawVolumetricAuto = false;
+    for (const hostprocesspreset& preset : HostProcessPresetCatalog::Presets())
+    {
+        if (preset.packageprotocol == HostPackageProtocol::Rgbwsvt) { continue; }
+        hostslicesettings settings = MakeSettings(modelPath, outputDirectory);
+        settings.materialstrategy = preset.materialstrategy;
+        settings.materialprocess = preset.materialprocess;
+        settings.texture = preset.texture;
+        settings.support = preset.support;
+        settings.materialvolume = preset.materialvolume;
+
+        hosteffectiveprofile effective;
+        QString error;
+        if (!Check(
+                HostEffectiveProfileBuilder::Build(settings, &effective, &error),
+                QStringLiteral("预设 %1 的 Profile 构造失败：%2").arg(preset.id, error),
+                errors))
+        {
+            return false;
+        }
+        const bool hasBlock = effective.profile.contains(
+            QStringLiteral("materialVolumePolicy"));
+        if (!preset.materialvolume.enabled)
+        {
+            sawLegacy = true;
+            if (!Check(
+                    !hasBlock,
+                    QStringLiteral("旧预设 %1 的 Profile 不得出现 materialVolumePolicy 块。")
+                        .arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+            if (!Check(
+                    effective.profile.value(QStringLiteral("slicingMode")).toString()
+                        != QStringLiteral("relief_heightfield")
+                        || preset.texture.enabled
+                        || preset.materialstrategy == HostMaterialStrategy::WhiteSolid
+                        || preset.materialstrategy == HostMaterialStrategy::VarnishSolid,
+                    QStringLiteral("旧预设 %1 的 slicingMode 推导被意外改变。").arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+            continue;
+        }
+        sawVolumetric = true;
+        if (!Check(
+                hasBlock,
+                QStringLiteral("MATVOL 预设 %1 必须产出 materialVolumePolicy 块。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+        const QJsonObject block = effective.profile.value(
+            QStringLiteral("materialVolumePolicy")).toObject();
+        const QJsonObject openSurface = block.value(
+            QStringLiteral("openSurface")).toObject();
+        const QJsonObject overlap = block.value(QStringLiteral("overlap")).toObject();
+        const QJsonArray rules = overlap.value(QStringLiteral("rules")).toArray();
+        // MATVOL 预设有两种 overlap 形态，各自逐项校验；共有字段先统一检查。
+        // 首版此处只写了显式优先级一种形态并硬编码 01/02 与 200/100，
+        // 于是 MATOPQ 新增自动模式预设时四个 hostflow 用例一并失败——
+        // 断言过窄而非实现出错，故按形态分支而不是放宽任何一项检查。
+        if (!Check(
+                block.value(QStringLiteral("enabled")).toBool()
+                    && block.value(QStringLiteral("mode")).toString()
+                        == QStringLiteral("closed_intervals")
+                    && block.value(QStringLiteral("missingMaterial")).toString()
+                        == QStringLiteral("fail_closed")
+                    && openSurface.value(QStringLiteral("mode")).toString()
+                        == QStringLiteral("reject"),
+                QStringLiteral("MATVOL 预设 %1 的 materialVolumePolicy 公共字段不正确。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+        if (preset.materialvolume.overlapautobyname)
+        {
+            sawVolumetricAuto = true;
+            // 自动模式：优先级由材质命名推导，故 rules 必须为空——
+            // 留着手写规则会让「谁生效」变成隐式行为。
+            if (!Check(
+                    overlap.value(QStringLiteral("mode")).toString()
+                            == QStringLiteral("auto_by_material_name")
+                        && rules.isEmpty(),
+                    QStringLiteral("MATVOL 自动模式预设 %1 的 overlap 不正确。")
+                        .arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+            const QJsonObject opacityVarnish = block.value(
+                QStringLiteral("opacityVarnish")).toObject();
+            if (!Check(
+                    preset.materialvolume.opacityvarnishenabled
+                        == opacityVarnish.value(
+                               QStringLiteral("enabled")).toBool()
+                        && (!preset.materialvolume.opacityvarnishenabled
+                            || (opacityVarnish.value(
+                                    QStringLiteral("semiTransparentRole")).toString()
+                                    == QStringLiteral("rgb")
+                                && opacityVarnish.value(
+                                       QStringLiteral("opacityMax")).toDouble() > 0.0
+                                && opacityVarnish.value(
+                                       QStringLiteral("opacityMax")).toDouble() < 1.0)),
+                    QStringLiteral("MATVOL 自动模式预设 %1 的 opacityVarnish 不正确。")
+                        .arg(preset.id),
+                    errors))
+            {
+                return false;
+            }
+        }
+        else if (!Check(
+                overlap.value(QStringLiteral("mode")).toString()
+                        == QStringLiteral("explicit_priority")
+                    && rules.size() == 2
+                    && rules.at(0).toObject().value(
+                           QStringLiteral("matchMaterialName")).toString()
+                        == QStringLiteral("01")
+                    && rules.at(0).toObject().value(
+                           QStringLiteral("priority")).toInt() == 200
+                    && rules.at(1).toObject().value(
+                           QStringLiteral("matchMaterialName")).toString()
+                        == QStringLiteral("02")
+                    && rules.at(1).toObject().value(
+                           QStringLiteral("priority")).toInt() == 100,
+                QStringLiteral("MATVOL 显式优先级预设 %1 的 overlap 不正确。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+        if (!Check(
+                effective.profile.value(QStringLiteral("slicingMode")).toString()
+                    == QStringLiteral("relief_heightfield"),
+                QStringLiteral("MATVOL 预设 %1 必须发出 relief_heightfield。")
+                    .arg(preset.id),
+                errors))
+        {
+            return false;
+        }
+    }
+    // 自动模式一并纳入收口：否则将来若把该预设删掉，上面的分支会整段失效而无人察觉。
+    return Check(
+        sawLegacy && sawVolumetric && sawVolumetricAuto,
+        QStringLiteral(
+            "预设目录必须同时包含旧工艺、MATVOL 显式优先级候选与 MATVOL 自动模式候选。"),
+        errors);
 }
 
 bool VerifyEffectiveProfiles(
@@ -1001,6 +1199,69 @@ bool VerifyPanelIsLocal(
     {
         return false;
     }
+    /* MV-07B：MATVOL 候选在能力不足时必须【禁用而非静默回退】。 */
+    const int matvolPresetIndex = processPreset->findData(
+        QStringLiteral("volumetric_nail_rgb_white_ondemand_lower_support"));
+    auto* matvolEnabled = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostMatvolEnabledCheck"));
+    auto* matvolPrimaryName = panel.findChild<QLineEdit*>(
+        QStringLiteral("hostMatvolPrimaryNameEdit"));
+    auto* matvolHint = panel.findChild<QLabel*>(
+        QStringLiteral("hostMatvolCapabilityHint"));
+    if (!Check(
+            matvolPresetIndex > 0,
+            QStringLiteral(
+                "MV-07B：MATVOL 候选工艺未出现在工艺目录中。"),
+            errors))
+    {
+        return false;
+    }
+    {
+        processPreset->setCurrentIndex(matvolPresetIndex);
+        QCoreApplication::processEvents();
+        const hostslicesettings beforeRestriction = panel.Settings();
+        panel.SetSingleMaterialRestriction(
+            true,
+            QStringLiteral("测试模型缺少 MTL 定义"));
+        QCoreApplication::processEvents();
+        const hostslicesettings afterRestriction = panel.Settings();
+        hosteffectiveprofile blockedProfile;
+        QString blockedError;
+        if (!Check(
+                matvolEnabled != nullptr && matvolPrimaryName != nullptr
+                    && matvolHint != nullptr
+                    && beforeRestriction.materialvolume.enabled
+                    && processPreset->currentData().toString()
+                        == QStringLiteral(
+                            "volumetric_nail_rgb_white_ondemand_lower_support")
+                    && afterRestriction.materialvolume.enabled
+                    && !matvolPrimaryName->isEnabled()
+                    && !matvolEnabled->isEnabled()
+                    && matvolHint->text().contains(
+                           QStringLiteral("多材质纵深不可用"))
+                    && !panel.BuildSubmissionProfile(
+                        &blockedProfile, &blockedError)
+                    && !blockedError.isEmpty(),
+                QStringLiteral(
+                    "MV-07B：能力不足时 MATVOL 应禁用编辑并拒绝提交，而不是静默改工艺。"),
+                errors))
+        {
+            return false;
+        }
+        panel.SetSingleMaterialRestriction(false, QString{});
+        QCoreApplication::processEvents();
+        if (!Check(
+                matvolEnabled->isEnabled()
+                    && matvolPrimaryName->isEnabled(),
+                QStringLiteral(
+                    "MV-07B：清除限制后 MATVOL 编辑未恢复。"),
+                errors))
+        {
+            return false;
+        }
+        processPreset->setCurrentIndex(rgbPresetIndex);
+        QCoreApplication::processEvents();
+    }
     panel.SetSingleMaterialRestriction(false, QString{});
     if (!Check(
             processModel->item(rgbPresetIndex)->isEnabled()
@@ -1159,7 +1420,7 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                     && referenceCaption == nullptr
                     && currentCaption == nullptr,
                QStringLiteral(
-                    "结果预览应恢复单视图并默认显示 RGBWSV 合成。"),
+                    "结果预览应恢复单视图并默认显示全通道组合，使支撑等非 RGB 通道默认可见。"),
                errors)
         && Check(
                summary != nullptr
@@ -1171,6 +1432,26 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                    .arg(summary != nullptr
                        ? summary->text()
                        : QStringLiteral("summary=null")),
+               errors)
+        && Check(
+               previewMode != nullptr
+                   && !previewMode->itemData(0, Qt::ToolTipRole)
+                           .toString()
+                           .isEmpty()
+                   && AllPseudoColourItemsExplainThemselves(previewMode),
+               QStringLiteral(
+                   "MV-07C：预览模式条目必须带伪彩色说明的 tooltip。"),
+               errors)
+        && Check(
+               summary != nullptr
+                   && summary->text().contains(
+                          QStringLiteral("通道显示："))
+                   && summary->text().contains(
+                          QStringLiteral("W/S/V 为显示用伪彩色"))
+                   && summary->text().contains(
+                          QStringLiteral("不代表生产 TIFF 像素值")),
+               QStringLiteral(
+                   "MV-07C：Stage 16 摘要必须标注 W/S/V 为伪彩色。"),
                errors);
 }
 
@@ -1281,7 +1562,9 @@ int main(int argc, char* argv[])
         errors << "模块加载失败：" << error << Qt::endl;
         return 3;
     }
-    if (!VerifyPresetProfileHashClosure(
+    if (!VerifyMaterialVolumeConditionalEmission(
+            modelPath, outputDirectory, errors)
+        || !VerifyPresetProfileHashClosure(
             modelPath, outputDirectory, errors)
         || !VerifyEffectiveProfiles(modelPath, outputDirectory, errors)
         || !VerifyPanelIsLocal(

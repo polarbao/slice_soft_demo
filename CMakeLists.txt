@@ -122,6 +122,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/config/OutputResolution.h
     src/slicer_core/config/SlicePipelineConfig.cpp
     src/slicer_core/config/SlicePipelineConfig.h
+    src/slicer_core/config/TransferChannelConfig.cpp
+    src/slicer_core/config/TransferChannelConfig.h
     src/slicer_core/config.cpp
     src/slicer_core/config.h
     src/slicer_core/diagnostics/Diagnostics.cpp
@@ -241,6 +243,20 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/material/MaterialClosureRepair.h
     src/slicer_core/materials/material_policy/MaterialPolicy.cpp
     src/slicer_core/materials/material_policy/MaterialPolicy.h
+    src/slicer_core/materials/volume/MaterialVolumeError.cpp
+    src/slicer_core/materials/volume/MaterialVolumeError.h
+    src/slicer_core/materials/volume/MaterialTopologyClassifier.cpp
+    src/slicer_core/materials/volume/MaterialTopologyClassifier.h
+    src/slicer_core/materials/volume/MaterialVolumePlan.cpp
+    src/slicer_core/materials/volume/MaterialVolumePlan.h
+    src/slicer_core/materials/volume/MaterialLayerRgbComposer.cpp
+    src/slicer_core/materials/volume/MaterialLayerRgbComposer.h
+    src/slicer_core/materials/volume/MaterialOpacityVarnishResolver.h
+    src/slicer_core/materials/volume/MaterialOpacityVarnishResolver.cpp
+    src/slicer_core/materials/volume/MaterialLayerNameResolver.h
+    src/slicer_core/materials/volume/MaterialLayerNameResolver.cpp
+    src/slicer_core/materials/volume/MaterialVolumeWhiteCarrier.cpp
+    src/slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h
     src/slicer_core/materials/process_profile/MaterialProcessProfile.cpp
     src/slicer_core/materials/process_profile/MaterialProcessProfile.h
     src/slicer_core/materials/process_profile/ModelFillMaterialResolver.cpp
@@ -289,10 +305,21 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/model/ModelLoadConfigAdapter.cpp
     src/slicer_core/model/ObjFaceParser.h
     src/slicer_core/model/ObjFaceParser.cpp
+    src/slicer_core/model/MtlMaterialParser.h
+    src/slicer_core/model/MtlMaterialParser.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackage.h
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.cpp
     src/slicer_core/output/rgbwsv/RgbwsvPackageWriter.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtProtocol.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtProtocol.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtLegacyPackageMetadata.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtPackageReader.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h
+    src/slicer_core/output/rgbwsvt/RgbwsvtPackageSchemaReader.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtTiffIo.cpp
+    src/slicer_core/output/rgbwsvt/RgbwsvtTiffIo.h
     src/slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.cpp
     src/slicer_core/output/rgbwsv/RgbwsvCapabilitySummary.h
     src/slicer_core/output/rgbwsv/RgbwsvSceneExtension.cpp
@@ -383,6 +410,10 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/reports/MultiModelSceneMatrixReport.h
     src/slicer_core/reports/MaterialClosureReport.cpp
     src/slicer_core/reports/MaterialClosureReport.h
+    src/slicer_core/reports/MaterialProcessReport.cpp
+    src/slicer_core/reports/MaterialProcessReport.h
+    src/slicer_core/reports/MaterialVolumeReport.cpp
+    src/slicer_core/reports/MaterialVolumeReport.h
     src/slicer_core/reports/TextureFillPartitionReport.cpp
     src/slicer_core/reports/TextureFillPartitionReport.h
     src/slicer_core/reports/ReportSchema.cpp
@@ -391,6 +422,14 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/reports/ReportSchemaValidator.h
     src/slicer_core/reports/ReportWriter.cpp
     src/slicer_core/reports/ReportWriter.h
+    src/slicer_core/materials/transfer/TransferChannelError.cpp
+    src/slicer_core/materials/transfer/TransferChannelError.h
+    src/slicer_core/materials/transfer/LegacyTransferChannelSession.cpp
+    src/slicer_core/materials/transfer/LegacyTransferChannelSession.h
+    src/slicer_core/materials/transfer/TransferMaterialResolver.cpp
+    src/slicer_core/materials/transfer/TransferMaterialResolver.h
+    src/slicer_core/materials/transfer/TransferMaterialVolumePlan.cpp
+    src/slicer_core/materials/transfer/TransferMaterialVolumePlan.h
     src/slicer_core/rip_reader.cpp
     src/slicer_core/rip_reader.h
     src/slicer_core/scene/SceneModel.cpp
@@ -527,7 +566,9 @@ if(SLICESOFT_TIFF_BACKEND STREQUAL "libtiff")
         message(FATAL_ERROR
             "LibTIFF was found but the TIFF::TIFF imported target is unavailable.")
     endif()
+    target_compile_definitions(slicer_base PRIVATE SLICER_CORE_HAS_LIBTIFF=1)
     target_compile_definitions(slicer_engine PRIVATE SLICER_CORE_HAS_LIBTIFF=1)
+    target_link_libraries(slicer_base PRIVATE TIFF::TIFF)
     target_link_libraries(slicer_engine PRIVATE TIFF::TIFF)
     if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
         if(WIN32)
@@ -982,9 +1023,18 @@ target_include_directories(package_query_facade_14b02_base_link_test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(package_query_facade_14b02_base_link_test PRIVATE slicer_base)
+
+add_executable(matvol_t_package_query_dual_protocol_tests
+    tests/matvol_t/PackageQueryDualProtocolTests.cpp
+)
+target_include_directories(matvol_t_package_query_dual_protocol_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(matvol_t_package_query_dual_protocol_tests PRIVATE slicer_engine)
 if(MSVC)
     target_compile_options(package_query_facade_14b02_unit_tests PRIVATE /bigobj /MP)
     target_compile_options(package_query_facade_14b02_base_link_test PRIVATE /bigobj /MP)
+    target_compile_options(matvol_t_package_query_dual_protocol_tests PRIVATE /bigobj /MP)
 endif()
 
 add_executable(slice_facade_14b04_unit_tests
@@ -1015,6 +1065,10 @@ endif()
 
 add_executable(slicer_cli
     apps/slicer_cli/main.cpp
+    apps/slicer_cli/CliDiagnosticJson.h
+    apps/slicer_cli/CliDiagnosticJson.cpp
+    apps/slicer_cli/RepairAssetCommand.h
+    apps/slicer_cli/RepairAssetCommand.cpp
 )
 
 target_link_libraries(slicer_cli PRIVATE slicer_core)
@@ -1322,6 +1376,8 @@ add_executable(slicer_host_sim
     apps/slicer_host_sim/HostM1Intake.h
     apps/slicer_host_sim/HostModuleApi.c
     apps/slicer_host_sim/HostModuleApi.h
+    apps/slicer_host_sim/HostVolumetricProfile.c
+    apps/slicer_host_sim/HostVolumetricProfile.h
     apps/slicer_host_sim/HostMaterialProfile.c
     apps/slicer_host_sim/HostMaterialProfile.h
     apps/slicer_host_sim/HostPath.c
@@ -1704,6 +1760,217 @@ add_executable(stage16c06_bounded_support_final_replay_unit_tests
 target_link_libraries(stage16c06_bounded_support_final_replay_unit_tests PRIVATE slicer_core)
 if(MSVC)
     target_compile_options(stage16c06_bounded_support_final_replay_unit_tests PRIVATE /W4 /WX)
+add_executable(matvol_facts_unit_tests
+    tests/matvol/MatvolFactsTests.cpp
+)
+
+target_link_libraries(matvol_facts_unit_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_facts_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_facts_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_topology_unit_tests
+    tests/matvol/MatvolTopologyTests.cpp
+)
+
+target_link_libraries(matvol_topology_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_topology_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_interval_unit_tests
+    tests/matvol/MatvolIntervalTests.cpp
+)
+
+target_link_libraries(matvol_interval_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_interval_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgb_compose_unit_tests
+    tests/matvol/MatvolRgbComposeTests.cpp
+)
+
+target_link_libraries(matvol_rgb_compose_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_rgb_compose_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_white_carrier_integration_tests
+    tests/matvol/MatvolWhiteCarrierTests.cpp
+)
+
+target_link_libraries(matvol_white_carrier_integration_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_white_carrier_integration_tests PRIVATE /W4 /WX)
+endif()
+
+# 宿主 Profile 往返门禁：全仓首个同时编译纯 C 宿主翻译单元并链接 slicer_core 的目标。
+# 缺了它，宿主发射的字段取值与切片侧合法集合之间的漂移没有任何门禁能发现
+# （profileHash 闭合只校验序列化，不校验接受度）。
+add_executable(matvol_host_profile_round_trip_tests
+    tests/matvol/MatvolHostProfileRoundTripTests.cpp
+    apps/slicer_host_sim/HostRequestBuilder.c
+    apps/slicer_host_sim/HostMaterialProfile.c
+    apps/slicer_host_sim/HostVolumetricProfile.c
+    apps/slicer_host_sim/HostTextureProfile.c
+    apps/slicer_host_sim/HostPath.c
+    apps/slicer_host_sim/JsonText.c
+)
+set_target_properties(matvol_host_profile_round_trip_tests PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+)
+target_include_directories(matvol_host_profile_round_trip_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_host_sim
+)
+target_link_libraries(matvol_host_profile_round_trip_tests PRIVATE slicer_core bcrypt)
+target_compile_definitions(matvol_host_profile_round_trip_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_host_profile_round_trip_tests PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:/W4>" "$<$<COMPILE_LANGUAGE:CXX>:/WX>"
+        "$<$<COMPILE_LANGUAGE:C>:/W4>" "$<$<COMPILE_LANGUAGE:C>:/WX>"
+    )
+endif()
+
+add_executable(matvol_production_wiring_tests
+    tests/matvol/MatvolProductionWiringTests.cpp
+    apps/slicer_host_sim/HostRequestBuilder.c
+    apps/slicer_host_sim/HostMaterialProfile.c
+    apps/slicer_host_sim/HostVolumetricProfile.c
+    apps/slicer_host_sim/HostTextureProfile.c
+    apps/slicer_host_sim/HostPath.c
+    apps/slicer_host_sim/JsonText.c
+)
+set_target_properties(matvol_production_wiring_tests PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED ON
+    C_EXTENSIONS OFF
+)
+target_include_directories(matvol_production_wiring_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps/slicer_host_sim
+)
+target_link_libraries(matvol_production_wiring_tests PRIVATE slicer_core bcrypt)
+target_compile_definitions(matvol_production_wiring_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_production_wiring_tests PRIVATE
+        "$<$<COMPILE_LANGUAGE:CXX>:/W4>" "$<$<COMPILE_LANGUAGE:CXX>:/WX>"
+        "$<$<COMPILE_LANGUAGE:C>:/W4>" "$<$<COMPILE_LANGUAGE:C>:/WX>"
+    )
+endif()
+
+add_executable(matvol_reality_plan_tests
+    tests/matvol/MatvolRealityPlanTests.cpp
+)
+target_link_libraries(matvol_reality_plan_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_reality_plan_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_reality_plan_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_transfer_resolver_unit_tests
+    tests/matvol_t/MatvolTransferResolverTests.cpp
+)
+target_link_libraries(matvol_transfer_resolver_unit_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_transfer_resolver_unit_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_transfer_resolver_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_transfer_volume_plan_tests
+    tests/matvol_t/TransferMaterialVolumePlanTests.cpp
+)
+target_link_libraries(matvol_transfer_volume_plan_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_transfer_volume_plan_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_transfer_volume_plan_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_composer_tests
+    tests/matvol_t/RgbwsvtComposerTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_composer_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_composer_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_tiff_io_tests
+    tests/matvol_t/RgbwsvtTiffIoTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_tiff_io_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_rgbwsvt_tiff_io_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_tiff_io_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_legacy_transfer_session_tests
+    tests/matvol_t/LegacyTransferChannelSessionTests.cpp
+)
+target_link_libraries(matvol_legacy_transfer_session_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_legacy_transfer_session_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_legacy_transfer_session_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_legacy_package_metadata_tests
+    tests/matvol_t/RgbwsvtLegacyPackageMetadataTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_legacy_package_metadata_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_legacy_package_metadata_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_legacy_package_tests
+    tests/matvol_t/LegacyRgbwsvtPackageTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_legacy_package_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_rgbwsvt_legacy_package_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_legacy_package_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_rgbwsvt_cli_candidate_tests
+    tests/matvol_t/LegacyRgbwsvtCliCandidateTests.cpp
+)
+target_link_libraries(matvol_rgbwsvt_cli_candidate_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_rgbwsvt_cli_candidate_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_rgbwsvt_cli_candidate_tests PRIVATE /W4 /WX)
+endif()
+
+add_executable(matvol_t_production_matrix_tests
+    tests/matvol_t/MatvolTProductionMatrixTests.cpp
+)
+target_link_libraries(matvol_t_production_matrix_tests PRIVATE slicer_core)
+target_compile_definitions(matvol_t_production_matrix_tests PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(MSVC)
+    target_compile_options(matvol_t_production_matrix_tests PRIVATE /W4 /WX)
 endif()
 
 add_executable(stage16_contact_posture_metrics_tests
@@ -1810,6 +2077,24 @@ add_executable(model_transform_unit_tests
 )
 
 target_link_libraries(model_transform_unit_tests PRIVATE slicer_core)
+
+add_executable(mtl_material_parser_unit_tests
+    tests/unit/mtl_material_parser/Main.cpp
+)
+
+target_link_libraries(mtl_material_parser_unit_tests PRIVATE slicer_core)
+
+add_executable(material_opacity_varnish_unit_tests
+    tests/unit/material_opacity_varnish/Main.cpp
+)
+
+target_link_libraries(material_opacity_varnish_unit_tests PRIVATE slicer_core)
+
+add_executable(material_layer_naming_unit_tests
+    tests/unit/material_layer_naming/Main.cpp
+)
+
+target_link_libraries(material_layer_naming_unit_tests PRIVATE slicer_core)
 
 add_executable(auto_orient_unit_tests
     tests/unit/auto_orient/Main.cpp
@@ -2391,6 +2676,10 @@ add_test(
     NAME package_query_facade_14b02_base_link_test
     COMMAND package_query_facade_14b02_base_link_test
 )
+add_test(
+    NAME matvol_t_package_query_dual_protocol_tests
+    COMMAND matvol_t_package_query_dual_protocol_tests
+)
 add_test(NAME slice_facade_14b04_unit_tests COMMAND slice_facade_14b04_unit_tests)
 add_test(
     NAME slice_facade_14b04_production_binding_test
@@ -2595,6 +2884,23 @@ add_test(NAME stage16c06_bounded_support_demand_unit_tests COMMAND stage16c06_bo
 add_test(NAME stage16c06_bounded_support_discovery_unit_tests COMMAND stage16c06_bounded_support_discovery_unit_tests)
 add_test(NAME stage16c06_bounded_support_shape_unit_tests COMMAND stage16c06_bounded_support_shape_unit_tests)
 add_test(NAME stage16c06_bounded_support_final_replay_unit_tests COMMAND stage16c06_bounded_support_final_replay_unit_tests)
+add_test(NAME matvol_facts_unit_tests COMMAND matvol_facts_unit_tests)
+add_test(NAME matvol_topology_unit_tests COMMAND matvol_topology_unit_tests)
+add_test(NAME matvol_interval_unit_tests COMMAND matvol_interval_unit_tests)
+add_test(NAME matvol_rgb_compose_unit_tests COMMAND matvol_rgb_compose_unit_tests)
+add_test(NAME matvol_white_carrier_integration_tests COMMAND matvol_white_carrier_integration_tests)
+add_test(NAME matvol_host_profile_round_trip_tests COMMAND matvol_host_profile_round_trip_tests)
+add_test(NAME matvol_reality_plan_tests COMMAND matvol_reality_plan_tests)
+add_test(NAME matvol_production_wiring_tests COMMAND matvol_production_wiring_tests)
+add_test(NAME matvol_transfer_resolver_unit_tests COMMAND matvol_transfer_resolver_unit_tests)
+add_test(NAME matvol_transfer_volume_plan_tests COMMAND matvol_transfer_volume_plan_tests)
+add_test(NAME matvol_rgbwsvt_composer_tests COMMAND matvol_rgbwsvt_composer_tests)
+add_test(NAME matvol_rgbwsvt_tiff_io_tests COMMAND matvol_rgbwsvt_tiff_io_tests)
+add_test(NAME matvol_legacy_transfer_session_tests COMMAND matvol_legacy_transfer_session_tests)
+add_test(NAME matvol_rgbwsvt_legacy_package_metadata_tests COMMAND matvol_rgbwsvt_legacy_package_metadata_tests)
+add_test(NAME matvol_rgbwsvt_legacy_package_tests COMMAND matvol_rgbwsvt_legacy_package_tests)
+add_test(NAME matvol_rgbwsvt_cli_candidate_tests COMMAND matvol_rgbwsvt_cli_candidate_tests)
+add_test(NAME matvol_t_production_matrix_tests COMMAND matvol_t_production_matrix_tests)
 add_test(NAME stage16_contact_posture_metrics_tests COMMAND stage16_contact_posture_metrics_tests)
 add_test(NAME stage16_contact_leveling_analyzer_tests COMMAND stage16_contact_leveling_analyzer_tests)
 add_test(
@@ -2631,6 +2937,9 @@ add_test(NAME material_channel_composer_unit_tests COMMAND material_channel_comp
 add_test(NAME mesh_repair_contract_unit_tests COMMAND mesh_repair_contract_unit_tests)
 add_test(NAME model_preflight_contract_unit_tests COMMAND model_preflight_contract_unit_tests)
 add_test(NAME model_transform_unit_tests COMMAND model_transform_unit_tests)
+add_test(NAME mtl_material_parser_unit_tests COMMAND mtl_material_parser_unit_tests)
+add_test(NAME material_opacity_varnish_unit_tests COMMAND material_opacity_varnish_unit_tests)
+add_test(NAME material_layer_naming_unit_tests COMMAND material_layer_naming_unit_tests)
 add_test(NAME auto_orient_unit_tests COMMAND auto_orient_unit_tests)
 add_test(NAME scene_view_geometry_unit_tests COMMAND scene_view_geometry_unit_tests)
 add_test(NAME multimodel_scene_contract_unit_tests COMMAND multimodel_scene_contract_unit_tests)
@@ -2716,14 +3025,10 @@ add_test(
     NAME stage14d06_public_worker_routing_tests
     COMMAND stage14d06_public_worker_routing_tests
 )
-add_test(
-    NAME stage14d05_r4b_public_worker_artifact_tests
-    COMMAND stage14d06_public_worker_routing_tests
-)
-add_test(
-    NAME stage14d04b_public_worker_cancellation_tests
-    COMMAND stage14d06_public_worker_routing_tests
-)
+# 14D-05-R4B 公共 Worker 产物 与 14D-04B 公共 Worker 取消 的证据并入
+# stage14d06_public_worker_routing_tests —— 原两条 CTest 行注册的是同一个无参
+# 二进制，命令逐字相同且无区分性 test property，不含属于自己的断言。
+# 见 docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md §1.1。
 
 if(ENABLE_GEOMETRY_KERNEL_DEMO)
     add_executable(geometry_kernel_demo

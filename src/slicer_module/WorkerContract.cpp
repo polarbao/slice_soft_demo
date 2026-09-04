@@ -19,12 +19,43 @@ namespace
 constexpr std::string_view ContractName{"file_contract"};
 constexpr std::string_view ContractError{"PM-SLICER-CONTRACT-0060"};
 constexpr std::string_view InternalError{"PM-SLICER-INTERNAL-0099"};
+constexpr std::string_view LegacySliceCapability{"slice.rgbwsv"};
+constexpr std::string_view TransferSliceCapability{"slice.rgbwsvt"};
+constexpr std::string_view LegacyPackageContract{"p0.rgbwsv.2"};
+constexpr std::string_view TransferPackageContract{"p0.rgbwsvt.1"};
 constexpr auto ContractInfoTimeout = std::chrono::milliseconds{5000};
 
 const std::unordered_set<std::string> KnownCapabilities{
-    "slice.rgbwsv",
+    std::string{LegacySliceCapability},
+    std::string{TransferSliceCapability},
     "geometry.preflight.full",
     "geometry.repair"};
+
+void AddUnique(std::vector<std::string>* values, const std::string_view value)
+{
+    if (std::find(values->begin(), values->end(), value) == values->end())
+    {
+        values->emplace_back(value);
+    }
+}
+
+WorkerContractRequirement ApplyCapabilityRequirements(
+    WorkerContractRequirement requirement)
+{
+    for (const std::string& capability : requirement.requiredCapabilities)
+    {
+        if (capability == LegacySliceCapability)
+        {
+            AddUnique(&requirement.requiredProduces, LegacyPackageContract);
+        }
+        else if (capability == TransferSliceCapability)
+        {
+            requirement.minor = (std::max)(requirement.minor, 1U);
+            AddUnique(&requirement.requiredProduces, TransferPackageContract);
+        }
+    }
+    return requirement;
+}
 
 bool ReadVersion(
     const slicer_core::Json& document,
@@ -164,8 +195,10 @@ WorkerContractNegotiator::WorkerContractNegotiator(WorkerClient& client) noexcep
 
 WorkerContractResult WorkerContractNegotiator::Negotiate(
     const std::filesystem::path& workerExecutable,
-    const WorkerContractRequirement& requirement) const
+    const WorkerContractRequirement& requestedRequirement) const
 {
+    const WorkerContractRequirement requirement =
+        ApplyCapabilityRequirements(requestedRequirement);
     WorkerContractResult result;
     WorkerLaunchOptions options;
     options.executablePath = workerExecutable;

@@ -2,6 +2,8 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDir>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QFileInfo>
 #include <QGroupBox>
@@ -40,12 +42,11 @@ void HostRipSettingsPanel::BuildInterface()
     m_intentCombo->addItem(QStringLiteral("绝对色度"), 3);
     m_transparentCombo = new QComboBox(processingGroup);
     m_transparentCombo->setObjectName(QStringLiteral("hostRipTransparentModeCombo"));
-    m_transparentCombo->addItem(
-        QStringLiteral("跟随切片包"), QStringLiteral("follow_manifest"));
-    m_transparentCombo->addItem(
-        QStringLiteral("透明"), QStringLiteral("explicit_transparent"));
-    m_transparentCombo->addItem(
-        QStringLiteral("不透明"), QStringLiteral("explicit_opaque"));
+    m_transparentCombo->addItem(QStringLiteral("透明"), 0);
+    m_transparentCombo->addItem(QStringLiteral("不透"), 1);
+    m_transparentCombo->addItem(QStringLiteral("肤色"), 2);
+    m_transparentCombo->addItem(QStringLiteral("白色 30"), 3);
+    m_transparentCombo->addItem(QStringLiteral("白色 50"), 4);
     m_colorModeCombo = new QComboBox(processingGroup);
     m_colorModeCombo->setObjectName(QStringLiteral("hostRipColorModeCombo"));
     m_colorModeCombo->addItem(QStringLiteral("默认模式"), 0);
@@ -65,18 +66,27 @@ void HostRipSettingsPanel::BuildInterface()
     m_continueCheck->setObjectName(QStringLiteral("hostRipContinueCheck"));
     m_grayBitsCombo = new QComboBox(processingGroup);
     m_grayBitsCombo->setObjectName(QStringLiteral("hostRipGrayBitsCombo"));
-    m_grayBitsCombo->addItem(QStringLiteral("2 bit（输出校验）"), 2);
-    m_grayBitsCombo->addItem(QStringLiteral("1 bit（输出校验）"), 1);
+    m_grayBitsCombo->addItem(QStringLiteral("2 bit（S2 参考阈值）"), 2);
+    m_grayBitsCombo->addItem(QStringLiteral("1 bit（S2 参考阈值）"), 1);
+    m_outputValidationCombo = new QComboBox(processingGroup);
+    m_outputValidationCombo->setObjectName(
+        QStringLiteral("hostRipOutputValidationCombo"));
+    m_outputValidationCombo->addItem(
+        QStringLiteral("严格 S2（可发布）"), QStringLiteral("strict_s2"));
+    m_outputValidationCombo->addItem(
+        QStringLiteral("诊断保存（不可打印）"),
+        QStringLiteral("diagnostic_unvalidated"));
     m_timeoutSpin = new QSpinBox(processingGroup);
     m_timeoutSpin->setObjectName(QStringLiteral("hostRipTimeoutSpin"));
     m_timeoutSpin->setRange(1, 86400);
     m_timeoutSpin->setSuffix(QStringLiteral(" 秒"));
     form->addRow(m_autoCheck);
     form->addRow(QStringLiteral("渲染意图"), m_intentCombo);
-    form->addRow(QStringLiteral("白色语义"), m_transparentCombo);
-    form->addRow(QStringLiteral("颜色模式"), m_colorModeCombo);
+    form->addRow(QStringLiteral("RIP 颜色模式"), m_transparentCombo);
+    form->addRow(QStringLiteral("纹理/浮雕模式"), m_colorModeCombo);
     form->addRow(QStringLiteral("输入 ICC"), m_inputIccCombo);
     form->addRow(QStringLiteral("输出 ICC"), m_outputIccCombo);
+    form->addRow(QStringLiteral("输出验证"), m_outputValidationCombo);
     form->addRow(QStringLiteral("设备灰阶"), m_grayBitsCombo);
     form->addRow(QStringLiteral("超时"), m_timeoutSpin);
     form->addRow(m_continueCheck);
@@ -97,6 +107,48 @@ void HostRipSettingsPanel::BuildInterface()
     pathsForm->addRow(QStringLiteral("切片"), m_inputPathEdit);
     pathsForm->addRow(QStringLiteral("输出"), m_outputPathEdit);
     layout->addWidget(pathsGroup);
+
+    auto* manualGroup = new QGroupBox(
+        QStringLiteral("手动 RIP（人工指定文件夹）"), this);
+    manualGroup->setObjectName(QStringLiteral("hostRipManualGroup"));
+    auto* manualForm = new QFormLayout(manualGroup);
+    m_manualInputEdit = new QLineEdit(manualGroup);
+    m_manualInputEdit->setObjectName(QStringLiteral("hostRipManualInputPath"));
+    m_manualInputEdit->setPlaceholderText(
+        QStringLiteral("存放 6 通道 RGBWSV 切片 tif 的文件夹"));
+    m_manualInputBrowseButton = new QPushButton(
+        QStringLiteral("浏览"), manualGroup);
+    m_manualInputBrowseButton->setObjectName(
+        QStringLiteral("hostRipManualInputBrowseButton"));
+    auto* manualInputRow = new QHBoxLayout();
+    manualInputRow->addWidget(m_manualInputEdit, 1);
+    manualInputRow->addWidget(m_manualInputBrowseButton);
+    m_manualOutputEdit = new QLineEdit(manualGroup);
+    m_manualOutputEdit->setObjectName(QStringLiteral("hostRipManualOutputPath"));
+    m_manualOutputEdit->setPlaceholderText(
+        QStringLiteral("尚不存在的目标文件夹，运行成功后才会创建"));
+    m_manualOutputBrowseButton = new QPushButton(
+        QStringLiteral("浏览"), manualGroup);
+    m_manualOutputBrowseButton->setObjectName(
+        QStringLiteral("hostRipManualOutputBrowseButton"));
+    auto* manualOutputRow = new QHBoxLayout();
+    manualOutputRow->addWidget(m_manualOutputEdit, 1);
+    manualOutputRow->addWidget(m_manualOutputBrowseButton);
+    manualForm->addRow(QStringLiteral("切片文件夹"), manualInputRow);
+    manualForm->addRow(QStringLiteral("RIP 输出文件夹"), manualOutputRow);
+    m_manualStatusLabel = new QLabel(
+        QStringLiteral("手动 RIP 未就绪 · 请选择切片与输出文件夹"), manualGroup);
+    m_manualStatusLabel->setObjectName(QStringLiteral("hostRipManualStatus"));
+    m_manualStatusLabel->setWordWrap(true);
+    m_manualStatusLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    manualForm->addRow(m_manualStatusLabel);
+    m_manualRunButton = new QPushButton(
+        QStringLiteral("运行手动 RIP"), manualGroup);
+    m_manualRunButton->setObjectName(QStringLiteral("hostRipManualRunButton"));
+    m_manualRunButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    m_manualRunButton->setEnabled(false);
+    manualForm->addRow(m_manualRunButton);
+    layout->addWidget(manualGroup);
 
     m_runtimeStatusLabel = new QLabel(this);
     m_runtimeStatusLabel->setObjectName(QStringLiteral("hostRipRuntimeStatus"));
@@ -126,6 +178,7 @@ void HostRipSettingsPanel::BuildInterface()
 
     const auto settingsEdited = [this]()
     {
+        UpdateOutputPath();
         emit SigSettingsChanged();
         RefreshControls();
     };
@@ -136,6 +189,7 @@ void HostRipSettingsPanel::BuildInterface()
              m_colorModeCombo,
              m_inputIccCombo,
              m_outputIccCombo,
+             m_outputValidationCombo,
              m_grayBitsCombo})
     {
         connect(
@@ -150,6 +204,43 @@ void HostRipSettingsPanel::BuildInterface()
         qOverload<int>(&QSpinBox::valueChanged),
         this,
         settingsEdited);
+    const auto manualPathsEdited = [this]()
+    {
+        m_manualRequestValid = false;
+        emit SigManualPathsChanged();
+        RefreshControls();
+    };
+    connect(m_manualInputEdit, &QLineEdit::textChanged, this, manualPathsEdited);
+    connect(m_manualOutputEdit, &QLineEdit::textChanged, this, manualPathsEdited);
+    connect(m_manualInputBrowseButton, &QPushButton::clicked, this, [this]()
+    {
+        const QString directory = QFileDialog::getExistingDirectory(
+            this,
+            QStringLiteral("选择切片文件夹"),
+            m_manualInputEdit->text());
+        if (!directory.isEmpty())
+        {
+            m_manualInputEdit->setText(QDir::toNativeSeparators(directory));
+        }
+    });
+    connect(m_manualOutputBrowseButton, &QPushButton::clicked, this, [this]()
+    {
+        const QString directory = QFileDialog::getExistingDirectory(
+            this,
+            QStringLiteral("选择 RIP 输出文件夹的上级目录"),
+            m_manualOutputEdit->text());
+        if (!directory.isEmpty())
+        {
+            m_manualOutputEdit->setText(
+                QDir::toNativeSeparators(
+                    QDir(directory).filePath(QStringLiteral("rip"))));
+        }
+    });
+    connect(
+        m_manualRunButton,
+        &QPushButton::clicked,
+        this,
+        &HostRipSettingsPanel::SigManualRunRequested);
     connect(m_runButton, &QPushButton::clicked, this, &HostRipSettingsPanel::SigRunRequested);
     connect(m_cancelButton, &QPushButton::clicked, this, &HostRipSettingsPanel::SigCancelRequested);
     connect(m_openButton, &QPushButton::clicked, this, [this]()
@@ -163,12 +254,14 @@ hostripsettings HostRipSettingsPanel::Settings() const
     hostripsettings settings;
     settings.autoafterslice = m_autoCheck->isChecked();
     settings.renderintent = m_intentCombo->currentData().toInt();
-    settings.transparentmode = m_transparentCombo->currentData().toString();
+    settings.transparentmode = m_transparentCombo->currentData().toInt();
     settings.colormode = m_colorModeCombo->currentData().toInt();
     settings.inputicc = m_inputIccCombo->currentData().toString();
     settings.outputicc = m_outputIccCombo->currentData().toString();
     settings.continueonerror = m_continueCheck->isChecked();
     settings.devicegraybits = m_grayBitsCombo->currentData().toInt();
+    settings.outputvalidationmode =
+        m_outputValidationCombo->currentData().toString();
     settings.timeoutseconds = m_timeoutSpin->value();
     return settings;
 }
@@ -183,6 +276,7 @@ void HostRipSettingsPanel::SetSettings(const hostripsettings& settings)
     const QSignalBlocker outputIccBlocker(m_outputIccCombo);
     const QSignalBlocker continueBlocker(m_continueCheck);
     const QSignalBlocker grayBitsBlocker(m_grayBitsCombo);
+    const QSignalBlocker outputValidationBlocker(m_outputValidationCombo);
     const QSignalBlocker timeoutBlocker(m_timeoutSpin);
     m_autoCheck->setChecked(settings.autoafterslice);
     m_intentCombo->setCurrentIndex(
@@ -198,7 +292,10 @@ void HostRipSettingsPanel::SetSettings(const hostripsettings& settings)
     m_continueCheck->setChecked(settings.continueonerror);
     m_grayBitsCombo->setCurrentIndex(
         m_grayBitsCombo->findData(settings.devicegraybits));
+    m_outputValidationCombo->setCurrentIndex(
+        m_outputValidationCombo->findData(settings.outputvalidationmode));
     m_timeoutSpin->setValue(settings.timeoutseconds);
+    UpdateOutputPath();
     RefreshControls();
 }
 
@@ -212,18 +309,44 @@ void HostRipSettingsPanel::SetPackageDirectory(const QString& directory)
     m_packageDirectory = directory;
     m_inputPathEdit->setText(
         directory.isEmpty() ? QString{} : directory + QStringLiteral("/layers"));
-    m_outputDirectory = directory.isEmpty()
-        ? QString{} : directory + QStringLiteral("/rip");
+    UpdateOutputPath();
+    m_requestValid = false;
+    RefreshControls();
+}
+
+void HostRipSettingsPanel::UpdateOutputPath()
+{
+    m_outputDirectory = m_packageDirectory.isEmpty()
+        ? QString{}
+        : QDir(m_packageDirectory).filePath(
+            HostRipSettingsStore::EffectiveOutputDirectoryName(Settings()));
     m_outputExists = !m_outputDirectory.isEmpty()
         && QFileInfo(m_outputDirectory).isDir();
     m_outputPathEdit->setText(m_outputDirectory);
-    m_requestValid = false;
-    RefreshControls();
 }
 
 QString HostRipSettingsPanel::PackageDirectory() const
 {
     return m_packageDirectory;
+}
+
+QString HostRipSettingsPanel::ManualInputDirectory() const
+{
+    return m_manualInputEdit->text().trimmed();
+}
+
+QString HostRipSettingsPanel::ManualOutputDirectory() const
+{
+    return m_manualOutputEdit->text().trimmed();
+}
+
+void HostRipSettingsPanel::SetManualRequestStatus(
+    const bool valid,
+    const QString& message)
+{
+    m_manualRequestValid = valid;
+    m_manualStatusLabel->setText(message);
+    RefreshControls();
 }
 
 void HostRipSettingsPanel::SetRuntimeStatus(
@@ -289,11 +412,20 @@ void HostRipSettingsPanel::RefreshControls()
     m_inputIccCombo->setEnabled(editable);
     m_outputIccCombo->setEnabled(editable);
     m_continueCheck->setEnabled(editable);
+    m_outputValidationCombo->setEnabled(editable);
     m_grayBitsCombo->setEnabled(editable);
     m_timeoutSpin->setEnabled(editable);
     m_runButton->setEnabled(
         editable && m_runtimeValid && !m_packageDirectory.isEmpty()
             && m_requestValid && !m_outputExists);
+    m_manualInputEdit->setEnabled(editable);
+    m_manualOutputEdit->setEnabled(editable);
+    m_manualInputBrowseButton->setEnabled(editable);
+    m_manualOutputBrowseButton->setEnabled(editable);
+    m_manualRunButton->setEnabled(
+        editable && m_runtimeValid && m_manualRequestValid
+            && !ManualInputDirectory().isEmpty()
+            && !ManualOutputDirectory().isEmpty());
     m_cancelButton->setEnabled(m_jobActive);
     m_openButton->setEnabled(
         !m_jobActive && m_outputExists);

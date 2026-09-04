@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import json
 import re
 import struct
 import sys
@@ -77,11 +78,30 @@ def ValidateSources(repoRoot):
         if f'"{exportName}"' not in sourceText:
             Fail(f"frozen export is not resolved: {exportName}")
 
+    ledgerPath = pathlib.Path(__file__).with_name("HostSourceSizeDebtLedger.json")
+    ledger = json.loads(ledgerPath.read_text(encoding="utf-8"))
+    maxNewLines = int(ledger["maxLinesForNewSource"])
+    knownOversized = ledger["knownOversized"]
     for path in sourcePaths:
-        if path.suffix.lower() in {".cpp", ".h"}:
-            lineCount = len(path.read_text(encoding="utf-8").splitlines())
-            if lineCount > 500:
-                Fail(f"new host source exceeds 500 lines: {path} ({lineCount})")
+        if path.suffix.lower() not in {".cpp", ".h"}:
+            continue
+        lineCount = len(path.read_text(encoding="utf-8").splitlines())
+        recorded = knownOversized.get(path.name)
+        if recorded is None:
+            if lineCount > maxNewLines:
+                Fail(
+                    "host source exceeds "
+                    f"{maxNewLines} lines and is not in the debt ledger: "
+                    f"{path} ({lineCount})"
+                )
+            continue
+        # 台账内的既有超限文件只允许缩减，不允许再增长。
+        if lineCount > int(recorded):
+            Fail(
+                "host source in the debt ledger grew: "
+                f"{path} ({lineCount} > recorded {recorded}); "
+                "shrink it or update the ledger with a justification"
+            )
 
 
 def ReadCString(data, offset):

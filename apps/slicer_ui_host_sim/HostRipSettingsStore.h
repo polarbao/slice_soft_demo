@@ -9,13 +9,14 @@ struct hostripsettings
 {
     bool autoafterslice{false};
     int renderintent{0};
-    QString transparentmode{QStringLiteral("follow_manifest")};
+    int transparentmode{0};
     int colormode{0};
     QString inputicc{QStringLiteral("CmykFiles/CIERGB.icc")};
     QString outputicc{QStringLiteral("CmykFiles/CMYK.icc")};
     bool continueonerror{false};
     int devicegraybits{2};
     int timeoutseconds{3600};
+    QString outputvalidationmode{QStringLiteral("strict_s2")};
     QString outputdirectoryname{QStringLiteral("rip")};
     QString existingoutputpolicy{QStringLiteral("fail_closed")};
 };
@@ -35,4 +36,8 @@ public:
         QSettings& settings,
         const hostripsettings& value,
         QString* error = nullptr);
+    [[nodiscard]] static bool IsDiagnosticMode(
+        const hostripsettings& settings);
+    [[nodiscard]] static QString EffectiveOutputDirectoryName(
+        const hostripsettings& settings);
 };

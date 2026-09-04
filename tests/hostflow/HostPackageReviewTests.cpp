@@ -103,6 +103,8 @@ bool ProducePackage(
     settings.outputdirectory = packageDirectory;
     settings.layerthicknessmm = 0.2;
     settings.texture.enabled = true;
+    settings.packageprotocol = HostPackageProtocol::Rgbwsv;
+    settings.transferchannel.enabled = false;
     hosteffectiveprofile profile;
     if (!HostEffectiveProfileBuilder::Build(settings, &profile, &error))
     {
@@ -171,6 +173,9 @@ int main(int argc, char* argv[])
     if (!Check(review.valid, QStringLiteral("生产包 verify 未通过。"), errors)
         || !Check(review.schema == QStringLiteral("p0.rgbwsv.2"),
                   QStringLiteral("生产包 schema 不闭合。"), errors)
+        || !Check(review.productionacceptance
+                      == QStringLiteral("legacy_production"),
+                  QStringLiteral("生产包准入状态未透传。"), errors)
         || !Check(review.bitdepth == 8
                       && review.polarity == QStringLiteral("black_is_print"),
                   QStringLiteral("生产包位深或极性不闭合。"), errors)

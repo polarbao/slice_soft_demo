@@ -79,7 +79,7 @@ $cancelPackage = New-TestPackage `
     --rip-job-self-test `
     --package $cancelPackage `
     --rip-module $modulePath `
-    --transparent-mode explicit_transparent `
+    --transparent-mode 0 `
     --gray-bits 2 `
     --cancel-after-ms 1 `
     --expect cancel
@@ -113,7 +113,7 @@ $timeoutPackage = New-TestPackage `
     --rip-job-self-test `
     --package $timeoutPackage `
     --rip-module $fakeModule `
-    --transparent-mode explicit_transparent `
+    --transparent-mode 0 `
     --gray-bits 2 `
     --timeout-seconds 1 `
     --expect timeout
@@ -134,7 +134,7 @@ foreach ($exitCode in @(1, 2))
             --rip-job-self-test `
             --package $exitPackage `
             --rip-module $fakeModule `
-            --transparent-mode explicit_transparent `
+            --transparent-mode 0 `
             --gray-bits 2 `
             --expect failure
         if ($LASTEXITCODE -ne 0)

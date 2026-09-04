@@ -25,6 +25,12 @@ RipStatus ValidateRipSettings(const RipSettings& settings)
             "RIP_SETTINGS_INTENT_INVALID",
             "RIP rendering intent must be in the inclusive range 0..3");
     }
+    if (settings.transparent_mode < 0 || settings.transparent_mode > 4)
+    {
+        return RipStatus::Failure(
+            "RIP_SETTINGS_TRANSPARENT_MODE_INVALID",
+            "RIP transparent color mode must be in the inclusive range 0..4");
+    }
     if (settings.color_mode != 0)
     {
         return RipStatus::Failure(

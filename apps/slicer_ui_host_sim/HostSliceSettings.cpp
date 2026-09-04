@@ -2,6 +2,7 @@
 
 #include "HostRequestBuilder.h"
 #include "HostTextureProfileBridge.h"
+#include "HostTransferProfileBridge.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -294,7 +295,10 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
+    /* MV07-Q1 窄放行：MATVOL 自带纵深 RGB，不依赖纹理顶面投影路径。
+       MATVOL 未启用时本拒绝逐字不变。 */
     if (texture.whitepolicy == HostTextureWhitePolicy::WhiteUnderbase
+        && !settings.materialvolume.enabled
         && (!texture.enabled
             || texture.applymode
                 != HostTextureApplyMode::SolidVolumeFromTopSurface
@@ -307,6 +311,61 @@ bool HostEffectiveProfileBuilder::Validate(
                 "按需补白只支持 Legacy 全实体 RGB 纹理、RGB 实体材料且禁用材料角色映射。");
         }
         return false;
+    }
+    if (settings.materialvolume.enabled)
+    {
+        if (texture.whitepolicy != HostTextureWhitePolicy::WhiteUnderbase)
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "多材质纵深 RGB 候选要求按需补白策略为 white_underbase。");
+            }
+            return false;
+        }
+        if (settings.materialprocess.rolemappingenabled)
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "多材质纵深 RGB 候选不支持同时启用材料角色映射。");
+            }
+            return false;
+        }
+// 自动模式由材质命名推导优先级，primary/secondary 不再参与，故跳过其校验；
+// 材质数量因此不受这两个名字槽限制，这正是多图层资产需要的。
+        if (settings.materialvolume.overlapautobyname)
+        {
+            if (settings.materialvolume.opacityvarnishenabled
+                && !(settings.materialvolume.opacityvarnishmax > 0.0
+                     && settings.materialvolume.opacityvarnishmax < 1.0))
+            {
+                if (error != nullptr)
+                {
+                    *error = QStringLiteral(
+                        "光油不透明度上限须在 0 与 1 之间。");
+                }
+                return false;
+            }
+            return true;
+        }
+        const QString primary =
+            settings.materialvolume.primarymaterialname.trimmed();
+        const QString secondary =
+            settings.materialvolume.secondarymaterialname.trimmed();
+        if (primary.isEmpty()
+            || (!secondary.isEmpty() && secondary == primary)
+            || (!secondary.isEmpty()
+                && settings.materialvolume.primarypriority
+                    == settings.materialvolume.secondarypriority))
+        {
+            if (error != nullptr)
+            {
+                *error = QStringLiteral(
+                    "多材质纵深 RGB 候选要求材质名非空且不重复，优先级不得同级。");
+            }
+            return false;
+        }
     }
     const bool singleMaterialRelief =
         settings.materialstrategy == HostMaterialStrategy::WhiteSolid
@@ -327,7 +386,7 @@ bool HostEffectiveProfileBuilder::Validate(
         }
         return false;
     }
-    return true;
+    return HostTransferProfileBridge::Validate(settings, error);
 }
 
 bool HostEffectiveProfileBuilder::Build(
@@ -355,6 +414,10 @@ bool HostEffectiveProfileBuilder::Build(
     const QByteArray outputDirectory = QDir::fromNativeSeparators(
         QFileInfo(settings.outputdirectory).absoluteFilePath()).toUtf8();
     const QByteArray profileId = settings.profileid.toUtf8();
+    const QByteArray volumePrimaryName =
+        settings.materialvolume.primarymaterialname.trimmed().toUtf8();
+    const QByteArray volumeSecondaryName =
+        settings.materialvolume.secondarymaterialname.trimmed().toUtf8();
     const struct hosteffectiveprofilesettings requestSettings{
         modelPath.constData(),
         format.constData(),
@@ -400,7 +463,16 @@ bool HostEffectiveProfileBuilder::Build(
         settings.texture.whitevalue,
         ToHostTiffCompression(settings.tiffcompression),
         ToHostGeometrySamplingStrategy(
-            settings.geometrysamplingstrategy)};
+            settings.geometrysamplingstrategy),
+        settings.materialvolume.enabled ? 1 : 0,
+        volumePrimaryName.constData(),
+        settings.materialvolume.primarypriority,
+        volumeSecondaryName.constData(),
+        settings.materialvolume.secondarypriority,
+        settings.materialvolume.overlapautobyname ? 1 : 0,
+        settings.materialvolume.opacityvarnishenabled ? 1 : 0,
+        settings.materialvolume.opacityvarnishmax,
+        settings.materialvolume.degenerateareaepsilonmm2};
     char profileHash[72] = {};
     char* profileText = HostBuildEffectiveProfile(
         &requestSettings, profileHash, sizeof(profileHash));
@@ -428,6 +500,10 @@ bool HostEffectiveProfileBuilder::Build(
     }
     effectiveProfile->profile = document.object();
     effectiveProfile->profilehash = QString::fromLatin1(profileHash);
+    HostTransferProfileBridge::Apply(
+        settings,
+        &effectiveProfile->profile,
+        &effectiveProfile->profilehash);
     if (effectiveProfile->profile.value(
             QStringLiteral("profileHash")).toString()
         != effectiveProfile->profilehash)
@@ -462,7 +538,6 @@ QString HostEffectiveProfileBuilder::MaterialStrategyId(
     }
     return QStringLiteral("unknown");
 }
-
 QString HostEffectiveProfileBuilder::MaterialRoleId(
     const HostMaterialRole role)
 {
@@ -514,30 +589,4 @@ QString HostEffectiveProfileBuilder::GeometrySamplingStrategyId(
             "layer_slab_supersample_2x2_at_least_two_candidate");
     }
     return QStringLiteral("unknown");
-}
-
-QString HostEffectiveProfileBuilder::TiffCompressionId(
-    const HostTiffCompression compression)
-{
-    switch (compression)
-    {
-    case HostTiffCompression::None:
-        return QStringLiteral("none");
-    case HostTiffCompression::PackBits:
-        return QStringLiteral("packbits");
-    }
-    return QStringLiteral("unknown");
-}
-
-bool HostEffectiveProfileBuilder::BuildVolumesEqual(
-    const hostbuildvolume& left,
-    const hostbuildvolume& right)
-{
-    constexpr double epsilon = 1.0e-9;
-    return std::abs(left.widthmm - right.widthmm) <= epsilon
-        && std::abs(left.heightmm - right.heightmm) <= epsilon
-        && std::abs(left.zlimitmm - right.zlimitmm) <= epsilon
-        && left.origin == right.origin
-        && left.xdirection == right.xdirection
-        && left.ydirection == right.ydirection;
 }

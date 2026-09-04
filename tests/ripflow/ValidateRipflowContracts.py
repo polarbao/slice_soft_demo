@@ -16,25 +16,29 @@ def require_exact(obj, required):
 
 
 def validate_settings(value):
-    fields = {
+    required = {
         "schema", "autoAfterSlice", "renderIntent", "transparentMode",
         "colorMode", "inputIcc", "outputIcc", "continueOnError",
         "deviceGrayBits", "timeoutSeconds", "outputDirectoryName",
         "existingOutputPolicy",
     }
-    require_exact(value, fields)
-    if value["schema"] != "slicesoft.rip.settings.1":
+    allowed = required | {"outputValidationMode"}
+    if not isinstance(value, dict) or not required.issubset(value) or not set(value).issubset(allowed):
+        raise ValueError("settings fields")
+    if value["schema"] != "slicesoft.rip.settings.2":
         raise ValueError("settings schema")
     if not isinstance(value["autoAfterSlice"], bool) or not isinstance(value["continueOnError"], bool):
         raise ValueError("settings booleans")
-    if value["renderIntent"] not in range(4) or value["colorMode"] != 0:
+    if (value["renderIntent"] not in range(4)
+            or value["transparentMode"] not in range(5)
+            or value["colorMode"] != 0):
         raise ValueError("settings numeric enum")
-    if value["transparentMode"] not in {
-        "follow_manifest", "explicit_transparent", "explicit_opaque"
-    }:
-        raise ValueError("transparent mode")
     if value["deviceGrayBits"] not in {1, 2}:
         raise ValueError("device gray bits")
+    if value.get("outputValidationMode", "strict_s2") not in {
+        "strict_s2", "diagnostic_unvalidated"
+    }:
+        raise ValueError("output validation mode")
     if not 1 <= value["timeoutSeconds"] <= 86400:
         raise ValueError("timeout")
     if value["outputDirectoryName"] != "rip" or value["existingOutputPolicy"] != "fail_closed":
@@ -53,6 +57,8 @@ def validate_module(value):
     require_exact(value, required)
     if value["schema"] != "slicesoft.rip.module.1" or value["moduleId"] != "slicesoft.external_rip":
         raise ValueError("module identity")
+    if value["version"] != "1.1.0":
+        raise ValueError("module version")
     if value["status"] != "LOCAL_ENGINEERING_ONLY" or value["architecture"] != "x86_64-windows":
         raise ValueError("module status")
     if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED":
@@ -80,13 +86,50 @@ def validate_result(value):
         "schema", "status", "externalValidation", "sourcePackage",
         "sourceManifestSha256", "module", "settings", "process", "output",
     })
-    if value["schema"] != "slicesoft.rip.result.1" or value["status"] not in {"succeeded", "failed", "cancelled"}:
+    if value["schema"] != "slicesoft.rip.result.2" or value["status"] not in {"succeeded", "failed", "cancelled"}:
         raise ValueError("result identity")
     if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED" or not HEX64.fullmatch(value["sourceManifestSha256"]):
         raise ValueError("result external state")
     validate_settings(value["settings"])
+    if value["settings"].get("outputValidationMode", "strict_s2") != "strict_s2":
+        raise ValueError("strict result settings mode")
     if value["output"]["directory"] != "rip" or value["output"]["filePattern"] != "rip_%06d.tif":
         raise ValueError("result output")
+
+
+def validate_diagnostic(value):
+    require_exact(value, {
+        "schema", "status", "externalValidation", "sourcePackage",
+        "sourceManifestSha256", "module", "settings", "process", "output",
+    })
+    if value["schema"] != "slicesoft.rip.diagnostic.2" or value["status"] != "diagnostic_unvalidated":
+        raise ValueError("diagnostic identity")
+    if value["externalValidation"] != "EXTERNAL_VALIDATION_DEFERRED" or not HEX64.fullmatch(value["sourceManifestSha256"]):
+        raise ValueError("diagnostic external state")
+    validate_settings(value["settings"])
+    if value["settings"].get("outputValidationMode") != "diagnostic_unvalidated":
+        raise ValueError("diagnostic settings mode")
+    if value["process"].get("exitCode") != 0:
+        raise ValueError("diagnostic process")
+    output = value["output"]
+    required_output = {
+        "directory", "layerCount", "filePattern", "minimum", "maximum",
+        "s2DropLimitsPassed", "s2PublicationEligible", "referenceDropLimit",
+        "samplesExceedingLimit",
+    }
+    if not required_output.issubset(output) or not set(output).issubset(required_output | {"firstExceedance"}):
+        raise ValueError("diagnostic output fields")
+    if output["directory"] != "rip_diagnostic" or output["filePattern"] != "rip_%06d.tif":
+        raise ValueError("diagnostic output identity")
+    if output["s2PublicationEligible"] is not False:
+        raise ValueError("diagnostic publication claim")
+    for field in ("minimum", "maximum", "referenceDropLimit", "samplesExceedingLimit"):
+        require_exact(output[field], {"W", "S", "V"})
+    exceeded = sum(output["samplesExceedingLimit"].values())
+    if output["s2DropLimitsPassed"] != (exceeded == 0):
+        raise ValueError("diagnostic S2 evidence consistency")
+    if (exceeded > 0) != ("firstExceedance" in output):
+        raise ValueError("diagnostic first exceedance consistency")
 
 
 def expect_failure(validator, value, name):
@@ -103,10 +146,15 @@ def main():
     settings = json.loads((fixture_root / "rip_settings_valid.json").read_text(encoding="utf-8"))
     module = json.loads((fixture_root / "rip_module_valid.json").read_text(encoding="utf-8"))
     result = json.loads((fixture_root / "rip_result_valid.json").read_text(encoding="utf-8"))
+    diagnostic = json.loads((fixture_root / "rip_diagnostic_valid.json").read_text(encoding="utf-8"))
     validate_settings(settings)
     validate_module(module)
     validate_result(result)
+    validate_diagnostic(diagnostic)
 
+    case = copy.deepcopy(settings)
+    case["transparentMode"] = 5
+    expect_failure(validate_settings, case, "unsupported transparent color mode")
     case = copy.deepcopy(settings)
     case["autoAfterSlice"] = True
     case["colorMode"] = 7
@@ -120,7 +168,10 @@ def main():
     case = copy.deepcopy(result)
     case["externalValidation"] = "PASS"
     expect_failure(validate_result, case, "external pass claim")
-    print("RIPFLOW_CONTRACTS_PASS positive=3 negative=4")
+    case = copy.deepcopy(diagnostic)
+    case["output"]["s2PublicationEligible"] = True
+    expect_failure(validate_diagnostic, case, "diagnostic print claim")
+    print("RIPFLOW_CONTRACTS_PASS positive=4 negative=6")
 
 
 if __name__ == "__main__":

@@ -52,6 +52,20 @@ void ApplyImplicitNeutralMaterial(ViewMaterial& material)
         neutralOpacity};
 }
 
+/**
+ * @brief 把材质不透明度换算为预览用 alpha。
+ *
+ * 全透明材质若按字面渲染会完全不可见、无法选中，因此预览侧设下限钳制。
+ * 这是纯显示策略：`MaterialInfo::opacity` 仍保留源文件原值，
+ * 供工艺通道判据使用，不得被本函数的结果回写污染。
+ */
+float PreviewAlphaFromOpacity(const double opacity)
+{
+    constexpr float minPreviewAlpha{0.15F};
+    const float clamped = std::clamp(static_cast<float>(opacity), 0.0F, 1.0F);
+    return clamped < minPreviewAlpha ? minPreviewAlpha : clamped;
+}
+
 std::string SourceMaterialName(
     const SceneModel& model,
     const std::size_t triangleIndex)
@@ -213,6 +227,13 @@ ApiResult<ResolvedViewAppearance> ResolveViewAppearance(
                                 static_cast<float>(
                                     source->diffuse_rgb.at(channel)) / 255.0F;
                         }
+                    }
+// 只有源文件显式声明过不透明度才写 alpha；未声明时保持 1.0，
+// 使既有不透明资产经适配层仍判为 opaque，下游行为不变。
+                    if (source->has_opacity)
+                    {
+                        resolvedMaterial.material.base_color.at(3U) =
+                            PreviewAlphaFromOpacity(source->opacity);
                     }
                 }
             }

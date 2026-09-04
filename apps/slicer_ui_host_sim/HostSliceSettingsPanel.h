@@ -12,7 +12,9 @@ class QLineEdit;
 class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
+class QVBoxLayout;
 class HostMaterialSettingsPanel;
+class HostMatvolSettingsPanel;
 class HostSupportSettingsPanel;
 class HostTextureSettingsPanel;
 
@@ -31,7 +33,7 @@ public:
     /**
      * @brief 更新 H-B-04 选择的宿主Profile。
      * @param profileId 可用的宿主Profile 标识。
-     * @param supportsSlice 当Profile需要 slice.rgbwsv 时为 true。
+     * @param supportsSlice 当 Profile 需要受支持的切片能力时为 true。
      */
     void SetSelectedProfileId(
         const QString& profileId,
@@ -130,6 +132,11 @@ private:
 
     QLabel* m_profileLabel{nullptr};
     QComboBox* m_processPresetCombo{nullptr};
+    void AttachTransferTopologyControl(QVBoxLayout* layout);
+    void SyncTransferTopologyControl();
+    [[nodiscard]] int ReadTransferBoundaryEdgeLimit() const;
+
+    QSpinBox* m_transferBoundaryEdgeSpin{nullptr};
     QSpinBox* m_dpiXSpin{nullptr};
     QSpinBox* m_dpiYSpin{nullptr};
     QDoubleSpinBox* m_layerThicknessSpin{nullptr};
@@ -142,6 +149,7 @@ private:
     QDoubleSpinBox* m_buildHeightSpin{nullptr};
     QDoubleSpinBox* m_buildZSpin{nullptr};
     HostMaterialSettingsPanel* m_materialPanel{nullptr};
+    HostMatvolSettingsPanel* m_matvolPanel{nullptr};
     HostTextureSettingsPanel* m_texturePanel{nullptr};
     HostSupportSettingsPanel* m_supportPanel{nullptr};
     QLabel* m_validationLabel{nullptr};
@@ -159,4 +167,6 @@ private:
     bool m_applyingProcessPreset{false};
     bool m_singleMaterialRestricted{false};
     QString m_singleMaterialRestrictionReason;
+    HostPackageProtocol m_packageProtocol{HostPackageProtocol::Rgbwsv};
+    hosttransferchannelsettings m_transferChannel;
 };

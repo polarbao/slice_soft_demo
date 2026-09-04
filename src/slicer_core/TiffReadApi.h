@@ -50,7 +50,7 @@ std::string TiffCompressionModeString(TiffCompressionMode mode);
 TiffCompressionMode ParseTiffCompressionMode(std::string_view name);
 
 /**
- * @brief 描述一幅六通道 RGBWSV TIFF 图像及其存储布局。
+ * @brief 描述一幅 RGBWSV/RGBWSVT TIFF 图像及其存储布局。
  */
 struct TiffImageSpec
 {

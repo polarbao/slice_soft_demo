@@ -1,6 +1,7 @@
 #include "slicer_core/config.h"
 
 #include "slicer_core/config/ConfigMigration.h"
+#include "slicer_core/config/TransferChannelConfig.h"
 #include "slicer_core/geometry/OpenVdbAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionTypes.h"
@@ -12,8 +13,6 @@
 
 namespace slicer_core {
 namespace {
-
-constexpr std::array<const char*, 6> expected_channel_order{"R", "G", "B", "W", "S", "V"};
 
 std::uint8_t read_u8(const Json& object, const char* key, const std::uint8_t fallback) {
     if (!object.contains(key)) {
@@ -147,6 +146,10 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     {
         config.white_semantics = root.at("whiteSemantics").as_string();
     }
+    // Profile 溯源标识。缺省为空即「本次切片无 Profile 溯源」（CLI 直接喂配置的场景），
+    // 写包时据此决定是否发射 manifest.profileEcho，避免为不存在的溯源编造内容。
+    config.profile_version = root.value("profileVersion", config.profile_version);
+    config.profile_hash = root.value("profileHash", config.profile_hash);
     config.slicing_mode = root.value("slicingMode", config.slicing_mode);
 
     if (root.contains("slicePipeline"))
@@ -175,6 +178,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
     if (root.contains("output")) {
         const auto& output = root.at("output");
         config.output.package_dir = output.value("packageDir", config.output.package_dir.string());
+        config.output.package_protocol = output.value("packageProtocol", config.output.package_protocol);
         config.output.dpi_x = output.value("dpiX", config.output.dpi_x);
         config.output.dpi_y = output.value("dpiY", config.output.dpi_y);
         config.output.layer_thickness_mm = output.value("layerThicknessMm", config.output.layer_thickness_mm);
@@ -433,6 +437,14 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             config.material_volume_policy.open_surface.placement = open_surface.value(
                 "placement", config.material_volume_policy.open_surface.placement);
         }
+        if (policy.contains("opacityVarnish")) {
+            const auto& varnish = policy.at("opacityVarnish");
+            auto& target = config.material_volume_policy.opacity_varnish;
+            target.enabled = varnish.value("enabled", target.enabled);
+            target.opacity_max = varnish.value("opacityMax", target.opacity_max);
+            target.semi_transparent_role =
+                varnish.value("semiTransparentRole", target.semi_transparent_role);
+        }
         if (policy.contains("overlap")) {
             const auto& overlap = policy.at("overlap");
             config.material_volume_policy.overlap.mode =
@@ -452,7 +464,20 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
                 }
             }
         }
+        if (policy.contains("topology")) {
+            const auto& topology = policy.at("topology");
+            config.material_volume_policy.topology.self_intersection_policy = topology.value(
+                "selfIntersectionPolicy",
+                config.material_volume_policy.topology.self_intersection_policy);
+            config.material_volume_policy.topology.max_self_intersection_pairs = topology.value(
+                "maxSelfIntersectionPairs",
+                config.material_volume_policy.topology.max_self_intersection_pairs);
+            config.material_volume_policy.topology.max_boundary_edges = topology.value(
+                "maxBoundaryEdges",
+                config.material_volume_policy.topology.max_boundary_edges);
+        }
     }
+    LoadTransferChannelPolicy(root, config.transfer_channel_policy);
 
     if (root.contains("support")) {
         const auto& support = root.at("support");
@@ -622,6 +647,7 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
             config.preview.support_color = read_rgb_field(colors, "support", config.preview.support_color);
             config.preview.white_color = read_rgb_field(colors, "white", config.preview.white_color);
             config.preview.varnish_color = read_rgb_field(colors, "varnish", config.preview.varnish_color);
+            config.preview.transfer_color = read_rgb_field(colors, "transfer", config.preview.transfer_color);
         }
     }
 
@@ -642,6 +668,9 @@ SliceConfig load_slice_config(const std::filesystem::path& config_path) {
                 "geometrySampling must be an object containing a string strategy");
         }
         config.geometry_sampling.strategy = geometrySampling.at("strategy").as_string();
+        config.geometry_sampling.degenerate_area_epsilon_mm2 = geometrySampling.value(
+            "degenerateAreaEpsilonMm2",
+            config.geometry_sampling.degenerate_area_epsilon_mm2);
     }
 
     if (root.contains("experimental"))
@@ -1208,6 +1237,22 @@ void validate_slice_config(const SliceConfig& config) {
         if (config.material_volume_policy.mode != "closed_intervals") {
             throw std::runtime_error("materialVolumePolicy.mode must be closed_intervals");
         }
+        const auto& opacityVarnish = config.material_volume_policy.opacity_varnish;
+        if (opacityVarnish.enabled) {
+// C1：判据必须走 Profile 容差，不得退化为 == 0；上限须严格小于 1，
+// 否则不透明材质也会被判为光油。
+            if (!(std::isfinite(opacityVarnish.opacity_max)
+                  && opacityVarnish.opacity_max > 0.0
+                  && opacityVarnish.opacity_max < 1.0)) {
+                throw std::runtime_error(
+                    "materialVolumePolicy.opacityVarnish.opacityMax must be finite and in (0, 1)");
+            }
+// C4：半透明不是光油，其落位角色只允许 rgb，且实施侧必须出诊断。
+            if (opacityVarnish.semi_transparent_role != "rgb") {
+                throw std::runtime_error(
+                    "materialVolumePolicy.opacityVarnish.semiTransparentRole must be rgb");
+            }
+        }
         if (config.material_volume_policy.missing_material != "fail_closed") {
             throw std::runtime_error("materialVolumePolicy.missingMaterial must be fail_closed");
         }
@@ -1229,8 +1274,32 @@ void validate_slice_config(const SliceConfig& config) {
             throw std::runtime_error(
                 "materialVolumePolicy.openSurface.placement must be below_surface");
         }
-        if (config.material_volume_policy.overlap.mode != "explicit_priority") {
-            throw std::runtime_error("materialVolumePolicy.overlap.mode must be explicit_priority");
+        const std::string& overlapMode = config.material_volume_policy.overlap.mode;
+        if (overlapMode != "explicit_priority" && overlapMode != "auto_by_material_name") {
+            throw std::runtime_error(
+                "materialVolumePolicy.overlap.mode must be explicit_priority or auto_by_material_name");
+        }
+// 两种模式互斥：自动模式下若还留着手写规则，两者谁生效会变成隐式行为。
+        if (overlapMode == "auto_by_material_name"
+            && !config.material_volume_policy.overlap.rules.empty()) {
+            throw std::runtime_error(
+                "materialVolumePolicy.overlap.mode=auto_by_material_name requires an empty rules array");
+        }
+        const std::string& self_intersection_policy =
+            config.material_volume_policy.topology.self_intersection_policy;
+        if (self_intersection_policy != "reject"
+            && self_intersection_policy != "tolerate_closed_self_intersection") {
+            throw std::runtime_error(
+                "materialVolumePolicy.topology.selfIntersectionPolicy must be reject or "
+                "tolerate_closed_self_intersection");
+        }
+        if (config.material_volume_policy.topology.max_self_intersection_pairs <= 0) {
+            throw std::runtime_error(
+                "materialVolumePolicy.topology.maxSelfIntersectionPairs must be positive");
+        }
+        if (config.material_volume_policy.topology.max_boundary_edges < 0) {
+            throw std::runtime_error(
+                "materialVolumePolicy.topology.maxBoundaryEdges must not be negative");
         }
         std::vector<std::string> seen_material_names;
         for (const MaterialVolumeOverlapRuleConfig& rule :
@@ -1255,7 +1324,15 @@ void validate_slice_config(const SliceConfig& config) {
         if (config.slice_pipeline.mode != SlicePipelineMode::Legacy) {
             throw std::runtime_error("materialVolumePolicy requires the Legacy slice pipeline");
         }
-        if (config.geometry_sampling.strategy != "legacy_center_sample") {
+        if (config.geometry_sampling.degenerate_area_epsilon_mm2 > 0.0
+        && !(std::isfinite(config.geometry_sampling.degenerate_area_epsilon_mm2)
+             && config.geometry_sampling.degenerate_area_epsilon_mm2 <= 1.0e-6))
+    {
+// 收紧退化面阈值是显式 opt-in；放宽到 1e-6 以上会把真实薄面成片丢弃，故 fail-closed。
+        throw std::runtime_error(
+            "geometrySampling.degenerateAreaEpsilonMm2 must be finite and <= 1e-6 when set");
+    }
+    if (config.geometry_sampling.strategy != "legacy_center_sample") {
             throw std::runtime_error("materialVolumePolicy requires geometrySampling.strategy=legacy_center_sample");
         }
         if (config.material_policy.enabled) {
@@ -1324,18 +1401,15 @@ void validate_slice_config(const SliceConfig& config) {
     for (const std::string& channel : config.preview.channels) {
         if (channel != "rgb" && channel != "model_rgb" && channel != "support" && channel != "s"
             && channel != "white" && channel != "w" && channel != "varnish" && channel != "v"
+            && channel != "transfer" && channel != "t"
             && channel != "texture_rgb" && channel != "model_rgb_true_color" && channel != "true_rgb") {
-            throw std::runtime_error("preview.channels supports rgb, texture_rgb, support, white, varnish");
+            throw std::runtime_error("preview.channels supports rgb, texture_rgb, support, white, varnish, transfer");
+        }
+        if ((channel == "transfer" || channel == "t") && config.output.package_protocol != "p0.rgbwsvt.1") {
+            throw std::runtime_error("preview transfer channel requires p0.rgbwsvt.1");
         }
     }
-    if (config.output.channel_order.size() != expected_channel_order.size()) {
-        throw std::runtime_error("P0 channelOrder must contain exactly six channels");
-    }
-    for (std::size_t i{0}; i < expected_channel_order.size(); ++i) {
-        if (config.output.channel_order.at(i) != expected_channel_order.at(i)) {
-            throw std::runtime_error("P0 channelOrder must be exactly R G B W S V");
-        }
-    }
+    ValidateTransferChannelConfiguration(config.output, config.transfer_channel_policy);
     if (config.experimental.openvdb_pipeline.engine != "legacy"
         && config.experimental.openvdb_pipeline.engine != "openvdb")
     {

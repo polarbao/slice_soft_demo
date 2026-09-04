@@ -160,6 +160,14 @@ public:
      * @brief 第一次导入后返回模块拥有的场景句柄。
      * @return 创建场景前返回零。
      */
+    /// @brief 解绑当前场景，释放全部已导入模型，使 Profile/buildVolume 可重新选择。
+    ///
+    /// 场景在首次提交时把 Profile 与 buildVolume 钉死，此后 PrepareSceneContext
+    /// 会以「当前场景已绑定 Profile/buildVolume；请新建场景后修改」拒绝变更。
+    /// 但此前【没有任何接口能新建场景】，且 RemoveInstances 只删实例、不清 m_sceneHandle，
+    /// 于是删光模型也退不出该状态——软件要求的操作在 UI 上不存在。本方法即该出口。
+    void ResetScene();
+
     [[nodiscard]] quint64 SceneHandle() const;
 
     /**

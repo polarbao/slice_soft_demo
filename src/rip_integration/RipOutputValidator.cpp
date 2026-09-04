@@ -442,7 +442,8 @@ RipStatus ValidateLayer(
     const StagedLayer& staged,
     const RipOutputValidationRequest& request,
     RipOutputLayer* output,
-    bool* requiresWidthNormalization)
+    bool* requiresWidthNormalization,
+    RipOutputDropViolation* firstViolation)
 {
     TiffHandle handle = OpenTiff(staged.source);
     if (!handle)
@@ -544,16 +545,31 @@ RipStatus ValidateLayer(
                 maxima[channel] = (std::max)(maxima[channel], value);
                 if (value > limits[channel])
                 {
-                    return RipStatus::Failure(
-                        "RIP_OUTPUT_DROP_LIMIT_EXCEEDED",
-                        "RIP output layer "
-                            + std::to_string(staged.index) + " channel "
-                            + std::string(channelNames[channel]) + " sample "
-                            + std::to_string(value) + " exceeds grayBits="
-                            + std::to_string(request.gray_bits) + " limit "
-                            + std::to_string(limits[channel]) + " at ("
-                            + std::to_string(x) + ","
-                            + std::to_string(y) + ")");
+                    ++output->samples_exceeding_drop_limit[channel];
+                    if (firstViolation->channel.empty())
+                    {
+                        *firstViolation = RipOutputDropViolation{
+                            staged.index,
+                            std::string(channelNames[channel]),
+                            value,
+                            limits[channel],
+                            x,
+                            y};
+                    }
+                    if (request.validation_mode
+                        == RipOutputValidationMode::StrictS2)
+                    {
+                        return RipStatus::Failure(
+                            "RIP_OUTPUT_DROP_LIMIT_EXCEEDED",
+                            "RIP output layer "
+                                + std::to_string(staged.index) + " channel "
+                                + std::string(channelNames[channel]) + " sample "
+                                + std::to_string(value) + " exceeds grayBits="
+                                + std::to_string(request.gray_bits) + " limit "
+                                + std::to_string(limits[channel]) + " at ("
+                                + std::to_string(x) + ","
+                                + std::to_string(y) + ")");
+                    }
                 }
             }
         }
@@ -588,6 +604,15 @@ RipOutputValidationResult ValidateAndNormalizeRipOutput(
         result.status = RipStatus::Failure(
             "RIP_SETTINGS_GRAY_BITS_INVALID",
             "RIP device gray bits must be 1 or 2");
+        return result;
+    }
+    if (request.validation_mode != RipOutputValidationMode::StrictS2
+        && request.validation_mode
+            != RipOutputValidationMode::DiagnosticUnvalidated)
+    {
+        result.status = RipStatus::Failure(
+            "RIP_OUTPUT_VALIDATION_MODE_INVALID",
+            "RIP output validation mode is unsupported");
         return result;
     }
     if (!request.package_directory.is_absolute()
@@ -706,13 +731,25 @@ RipOutputValidationResult ValidateAndNormalizeRipOutput(
         }
         RipOutputLayer layer;
         bool normalizeWidth{false};
+        RipOutputDropViolation firstViolation;
         const RipStatus layerStatus = ValidateLayer(
-            stagedLayers[index], request, &layer, &normalizeWidth);
+            stagedLayers[index], request, &layer, &normalizeWidth,
+            &firstViolation);
         if (!layerStatus.ok)
         {
             result.status = layerStatus;
             result.layers.clear();
             return result;
+        }
+        for (std::size_t channel{0U}; channel < 3U; ++channel)
+        {
+            result.samples_exceeding_drop_limit[channel] +=
+                layer.samples_exceeding_drop_limit[channel];
+        }
+        if (!firstViolation.channel.empty()
+            && !result.first_drop_violation.has_value())
+        {
+            result.first_drop_violation = std::move(firstViolation);
         }
         if (layer.path.empty()
             || !IsContained(request.staging_directory, layer.path)
@@ -768,6 +805,14 @@ RipOutputValidationResult ValidateAndNormalizeRipOutput(
             return result;
         }
     }
+    result.s2_drop_limits_passed =
+        std::all_of(
+            result.samples_exceeding_drop_limit.begin(),
+            result.samples_exceeding_drop_limit.end(),
+            [](const std::uint64_t count)
+            {
+                return count == 0U;
+            });
     result.status = RipStatus::Success();
     return result;
 }

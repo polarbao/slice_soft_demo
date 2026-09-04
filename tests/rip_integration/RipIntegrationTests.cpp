@@ -6,6 +6,7 @@
 
 #include <tiffio.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
@@ -14,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -21,12 +23,18 @@ namespace
 {
 
 using slicesoft::rip::BuildRipCommand;
+using slicesoft::rip::ProbeRipInputGeometry;
+using slicesoft::rip::PublishManualRipArtifact;
 using slicesoft::rip::PublishRipArtifact;
 using slicesoft::rip::RipArtifactPublishRequest;
 using slicesoft::rip::RipCommand;
 using slicesoft::rip::RipCommandRequest;
+using slicesoft::rip::RipCommandScope;
+using slicesoft::rip::RipInputGeometry;
+using slicesoft::rip::RipManualArtifactPublishRequest;
 using slicesoft::rip::RipInputValidationRequest;
 using slicesoft::rip::RipOutputValidationRequest;
+using slicesoft::rip::RipOutputValidationMode;
 using slicesoft::rip::RipSettings;
 using slicesoft::rip::ValidateAndNormalizeRipOutput;
 using slicesoft::rip::ValidateRipInput;
@@ -259,10 +267,12 @@ RipOutputValidationRequest ValidationRequest(
     const std::size_t count,
     const std::uint32_t width = 2U,
     const std::uint32_t height = 2U,
-    const int grayBits = 2)
+    const int grayBits = 2,
+    const RipOutputValidationMode mode =
+        RipOutputValidationMode::StrictS2)
 {
     return RipOutputValidationRequest{
-        package, stage, count, width, height, grayBits};
+        package, stage, count, width, height, grayBits, mode};
 }
 
 bool TestSettingsAndCommand()
@@ -292,6 +302,11 @@ bool TestSettingsAndCommand()
         !ValidateRipSettings(settings).ok,
         "intent outside 0..3 fails") && pass;
     settings = ValidSettings(resources);
+    settings.transparent_mode = 5;
+    pass = Expect(
+        !ValidateRipSettings(settings).ok,
+        "transparent color mode outside 0..4 fails") && pass;
+    settings = ValidSettings(resources);
     settings.color_mode = 1;
     pass = Expect(
         !ValidateRipSettings(settings).ok,
@@ -320,6 +335,27 @@ bool TestSettingsAndCommand()
         && Expect(command.program.is_absolute(), "program is absolute")
         && Expect(command.arguments.size() == 18U, "all batch arguments exist")
         && pass;
+    const auto transparentArgument = std::find(
+        command.arguments.begin(), command.arguments.end(), "--transparent");
+    pass = Expect(
+        transparentArgument != command.arguments.end()
+            && std::next(transparentArgument) != command.arguments.end()
+            && *std::next(transparentArgument) == "0",
+        "default transparent color mode maps to CLI value 0") && pass;
+
+    for (int mode = 0; mode <= 4; ++mode)
+    {
+        request.settings.transparent_mode = mode;
+        const auto modeStatus = BuildRipCommand(request, &command);
+        const auto argument = std::find(
+            command.arguments.begin(), command.arguments.end(),
+            "--transparent");
+        pass = Expect(
+            modeStatus.ok && argument != command.arguments.end()
+                && std::next(argument) != command.arguments.end()
+                && *std::next(argument) == std::to_string(mode),
+            "transparent color mode maps losslessly to CLI") && pass;
+    }
 
     const std::filesystem::path escaped = root.Path() / "escaped";
     std::filesystem::create_directories(escaped);
@@ -445,6 +481,48 @@ bool TestDpiMetadataDoesNotGateRipOutput()
     pass = Expect(
         missingResult.status.ok,
         "missing DPI metadata does not gate RIP output") && pass;
+    return pass;
+}
+
+bool TestDiagnosticOutputRecordsDropViolations()
+{
+    TemporaryRoot root("diagnostic-drop");
+    const std::filesystem::path package = root.Path() / "package";
+    const std::filesystem::path stage =
+        package / ".rip.staging.diagnostic-drop";
+    std::filesystem::create_directories(stage);
+    TiffFixture fixture;
+    fixture.white = 255U;
+    bool pass = Expect(
+        WriteTiff(stage / "slice.0.tiff", fixture),
+        "diagnostic high-drop fixture is written");
+
+    const auto result = ValidateAndNormalizeRipOutput(
+        ValidationRequest(
+            package, stage, 1U, 2U, 2U, 2,
+            RipOutputValidationMode::DiagnosticUnvalidated));
+    pass = Expect(
+        result.status.ok,
+        "diagnostic mode preserves structurally valid high-drop output")
+        && Expect(
+            !result.s2_drop_limits_passed,
+            "diagnostic result records that S2 drop limits failed")
+        && Expect(
+            result.samples_exceeding_drop_limit[0] == 4U
+                && result.samples_exceeding_drop_limit[1] == 0U
+                && result.samples_exceeding_drop_limit[2] == 0U,
+            "diagnostic result counts W/S/V violations")
+        && Expect(
+            result.first_drop_violation.has_value()
+                && result.first_drop_violation->layer_index == 0U
+                && result.first_drop_violation->channel == "W"
+                && result.first_drop_violation->value == 255U
+                && result.first_drop_violation->limit == 6U,
+            "diagnostic result records the first violation")
+        && Expect(
+            std::filesystem::is_regular_file(stage / "rip_000000.tif"),
+            "diagnostic output is normalized for downstream inspection")
+        && pass;
     return pass;
 }
 
@@ -664,12 +742,157 @@ bool TestArtifactPublication()
             "failed publication preserves owned staging")
         && pass;
 
+    const std::filesystem::path diagnostic =
+        package / ".rip.staging.diagnostic";
+    std::filesystem::create_directories(diagnostic);
+    Touch(diagnostic / "rip_000000.tif");
+    const auto diagnosticPublished = PublishRipArtifact(
+        RipArtifactPublishRequest{package, diagnostic, "rip_diagnostic"});
+    pass = Expect(
+        diagnosticPublished.status.ok
+            && diagnosticPublished.output_directory
+                == package / "rip_diagnostic",
+        "diagnostic output publishes to its isolated sibling") && pass;
+
+    const std::filesystem::path unapproved =
+        package / ".rip.staging.unapproved";
+    std::filesystem::create_directories(unapproved);
+    pass = Expect(
+        !PublishRipArtifact(
+            RipArtifactPublishRequest{package, unapproved, "other"}).status.ok,
+        "unapproved publication directory still fails closed") && pass;
+
     const std::filesystem::path outside = root.Path() / ".rip.staging.outside";
     std::filesystem::create_directories(outside);
     pass = Expect(
         !PublishRipArtifact(
             RipArtifactPublishRequest{package, outside, "rip"}).status.ok,
         "publisher rejects staging outside Package") && pass;
+    return pass;
+}
+
+bool TestManualScopeCommandAndPublication()
+{
+    TemporaryRoot root("manual");
+    const std::filesystem::path module = root.Path() / "module";
+    const std::filesystem::path bin = module / "bin";
+    const std::filesystem::path resources = module / "resources";
+    const std::filesystem::path slices = root.Path() / "operator" / "slices";
+    const std::filesystem::path destinationParent =
+        root.Path() / "operator" / "results";
+    const std::filesystem::path destination = destinationParent / "rip_out";
+    const std::filesystem::path stage =
+        destinationParent / ".rip.staging.manual";
+    std::filesystem::create_directories(bin);
+    std::filesystem::create_directories(resources);
+    std::filesystem::create_directories(slices);
+    std::filesystem::create_directories(stage);
+    Touch(bin / "rip_cli.exe");
+    Touch(bin / "RipSlicer.dll");
+    Touch(resources / "CIERGB.icc");
+    Touch(resources / "CMYK.icc");
+
+    const RipSettings settings = ValidSettings(resources);
+    RipCommand command;
+    RipCommandRequest request{
+        {module, bin / "rip_cli.exe", bin / "RipSlicer.dll", resources},
+        destinationParent,
+        slices,
+        stage,
+        settings,
+        RipCommandScope::PackageBound};
+    const auto boundStatus = BuildRipCommand(request, &command);
+    bool pass = Expect(
+        !boundStatus.ok
+            && boundStatus.code == "RIP_COMMAND_PACKAGE_PATH_ESCAPE",
+        "package-bound scope still refuses an input outside the Package");
+
+    request.scope = RipCommandScope::ManualUnbound;
+    const auto manualStatus = BuildRipCommand(request, &command);
+    pass = Expect(manualStatus.ok, "manual scope accepts an unbound input")
+        && Expect(
+            command.program == (bin / "rip_cli.exe").lexically_normal(),
+            "manual scope still launches the manifest entrypoint")
+        && pass;
+    const auto inputArgument = std::find(
+        command.arguments.begin(), command.arguments.end(), "-i");
+    pass = Expect(
+        inputArgument != command.arguments.end()
+            && std::next(inputArgument) != command.arguments.end(),
+        "manual command carries the operator input folder") && pass;
+
+    RipCommandRequest escaped = request;
+    escaped.runtime.cli_path = root.Path() / "rip_cli.exe";
+    const auto escapedStatus = BuildRipCommand(escaped, &command);
+    pass = Expect(
+        !escapedStatus.ok
+            && escapedStatus.code == "RIP_COMMAND_RUNTIME_PATH_ESCAPE",
+        "manual scope keeps the module containment gate") && pass;
+
+    RipCommandRequest nested = request;
+    const std::filesystem::path nestedStage = slices / ".rip.staging.manual";
+    std::filesystem::create_directories(nestedStage);
+    nested.package_directory = slices;
+    nested.staging_output_directory = nestedStage;
+    const auto nestedStatus = BuildRipCommand(nested, &command);
+    pass = Expect(
+        !nestedStatus.ok
+            && nestedStatus.code == "RIP_COMMAND_MANUAL_OUTPUT_INSIDE_INPUT",
+        "manual scope refuses a destination inside the slice folder") && pass;
+
+    TiffFixture fixture;
+    fixture.samples_per_pixel = 6U;
+    fixture.width = 3U;
+    fixture.height = 5U;
+    const std::filesystem::path layer = slices / "layer_000000.tiff";
+    pass = Expect(WriteTiff(layer, fixture), "manual input fixture is written")
+        && pass;
+    RipInputGeometry geometry;
+    const auto probeStatus = ProbeRipInputGeometry(layer, &geometry);
+    pass = Expect(
+        probeStatus.ok && geometry.width_px == 3U && geometry.height_px == 5U,
+        "manual geometry probe reads the grid from the first layer") && pass;
+    const std::filesystem::path tiledLayer = slices / "layer_000001.tiff";
+    fixture.width = 16U;
+    fixture.height = 16U;
+    fixture.tiled = true;
+    pass = Expect(
+        WriteTiff(tiledLayer, fixture), "tiled manual fixture is written")
+        && pass;
+    const auto tiledProbe = ProbeRipInputGeometry(tiledLayer, &geometry);
+    pass = Expect(
+        !tiledProbe.ok && tiledProbe.code == "RIP_INPUT_STORAGE_UNSUPPORTED",
+        "manual geometry probe refuses tiled input") && pass;
+
+    const auto foreignParent = PublishManualRipArtifact(
+        RipManualArtifactPublishRequest{stage, root.Path() / "elsewhere"});
+    pass = Expect(
+        !foreignParent.status.ok
+            && foreignParent.status.code
+                == "RIP_PUBLISH_MANUAL_OUTPUT_PATH_INVALID",
+        "manual publication refuses a destination outside the staging parent")
+        && pass;
+
+    std::filesystem::create_directories(destination);
+    const auto occupied = PublishManualRipArtifact(
+        RipManualArtifactPublishRequest{stage, destination});
+    pass = Expect(
+        !occupied.status.ok
+            && occupied.status.code == "RIP_PUBLISH_OUTPUT_ALREADY_EXISTS",
+        "manual publication never replaces an existing destination") && pass;
+    std::filesystem::remove(destination);
+
+    Touch(stage / "rip_000000.tif");
+    const auto publishedManual = PublishManualRipArtifact(
+        RipManualArtifactPublishRequest{stage, destination});
+    pass = Expect(
+        publishedManual.status.ok
+            && publishedManual.output_directory == destination
+            && std::filesystem::is_regular_file(
+                destination / "rip_000000.tif")
+            && !std::filesystem::exists(stage),
+        "manual publication atomically renames staging to the destination")
+        && pass;
     return pass;
 }
 
@@ -682,8 +905,10 @@ int main()
         && TestPositiveValidationAndNumericOrdering()
         && TestVendorAlignedWidthNormalization()
         && TestDpiMetadataDoesNotGateRipOutput()
+        && TestDiagnosticOutputRecordsDropViolations()
         && TestNegativeOutputValidation()
-        && TestArtifactPublication();
+        && TestArtifactPublication()
+        && TestManualScopeCommandAndPublication();
     if (pass)
     {
         std::cout << "RIP_INTEGRATION_TESTS_PASS\n";

@@ -132,9 +132,15 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
     const std::vector<MaterialTopologyFact> facts = ClassifyMaterialTopologies(*request.mesh);
     std::vector<std::string> materialNames;
     std::vector<int> materialPriorities;
+    std::vector<std::string> toleratedSelfIntersecting;
     std::map<std::string, std::uint32_t> materialIndexByName;
     for (const MaterialTopologyFact& fact : facts)
     {
+        if (!request.materialNameFilter.empty()
+            && fact.materialName != request.materialNameFilter)
+        {
+            continue;
+        }
         if (fact.materialName.empty())
         {
             throw MaterialVolumeError(
@@ -148,12 +154,66 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
                 "material '" + fact.materialName + "' is an open surface and requires an explicit "
                 "openSurface policy");
         }
-        if (fact.kind != MaterialTopologyKind::ClosedOrientable)
+        // 有界放宽：仅当材质【仍是闭合曲面】（真开边与非流形边均为 0）且自交对数不超过
+        // 显式上限时放行。闭合性保证由 Jordan–Brouwer 得到偶数交点，区间形状良好；
+        // 但缠绕数大于 1 处的归属仍可能错，误差被相交面投影界住，故必须留痕供报告披露。
+        // 上限使数千至数万对的「需重建」资产仍然 fail closed，本放宽不是它们的旁路。
+        const bool toleratedSelfIntersection =
+            fact.kind == MaterialTopologyKind::SelfIntersecting
+            && request.policy->topology.self_intersection_policy
+                == "tolerate_closed_self_intersection"
+            && fact.boundaryEdgeCount
+                <= static_cast<std::uint64_t>(
+                    request.policy->topology.max_boundary_edges)
+            && fact.nonManifoldEdgeCount == 0U
+            && fact.confirmedSelfIntersectionPairs
+                <= static_cast<std::uint64_t>(
+                    request.policy->topology.max_self_intersection_pairs);
+        if (fact.kind != MaterialTopologyKind::ClosedOrientable && !toleratedSelfIntersection)
         {
+            // 只报分类名不足以诊断：同为 self_intersecting 的两个资产可能一个放行、
+            // 一个被拒，差别在放行条件的某一项。必须说明【放行为何被拒】，
+            // 否则使用者只能看到「都是自交，为什么这个不行」。
+            std::string detail;
+            if (fact.kind == MaterialTopologyKind::SelfIntersecting
+                && request.policy->topology.self_intersection_policy
+                    == "tolerate_closed_self_intersection")
+            {
+                if (fact.boundaryEdgeCount
+                    > static_cast<std::uint64_t>(
+                        request.policy->topology.max_boundary_edges))
+                {
+                    detail += "; tolerance declined: "
+                        + std::to_string(fact.boundaryEdgeCount)
+                        + " boundary edges exceed the configured limit of "
+                        + std::to_string(
+                            request.policy->topology.max_boundary_edges);
+                }
+                if (fact.nonManifoldEdgeCount != 0U)
+                {
+                    detail += "; tolerance declined: "
+                        + std::to_string(fact.nonManifoldEdgeCount)
+                        + " non-manifold edges";
+                }
+                if (fact.confirmedSelfIntersectionPairs
+                    > static_cast<std::uint64_t>(
+                        request.policy->topology.max_self_intersection_pairs))
+                {
+                    detail += "; tolerance declined: "
+                        + std::to_string(fact.confirmedSelfIntersectionPairs)
+                        + " self-intersection pairs exceed the configured limit of "
+                        + std::to_string(
+                            request.policy->topology.max_self_intersection_pairs);
+                }
+            }
             throw MaterialVolumeError(
                 MaterialVolumeErrorCode::TopologyInvalid,
                 "material '" + fact.materialName + "' topology is "
-                    + MaterialTopologyKindName(fact.kind));
+                    + MaterialTopologyKindName(fact.kind) + detail);
+        }
+        if (toleratedSelfIntersection)
+        {
+            toleratedSelfIntersecting.push_back(fact.materialName);
         }
         materialIndexByName.emplace(fact.materialName, static_cast<std::uint32_t>(materialNames.size()));
         materialNames.push_back(fact.materialName);
@@ -162,7 +222,10 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
     if (materialNames.empty())
     {
         throw MaterialVolumeError(
-            MaterialVolumeErrorCode::MaterialMissing, "mesh declares no usable material");
+            MaterialVolumeErrorCode::MaterialMissing,
+            request.materialNameFilter.empty()
+                ? "mesh declares no usable material"
+                : "mesh does not contain filtered material '" + request.materialNameFilter + "'");
     }
 
     // 按材质分组三角面下标，供逐列求交复用，避免每列重扫全网格属性。
@@ -180,11 +243,50 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
         trianglesByMaterial.at(found->second).push_back(index);
     }
 
+    /*
+     * MATVOL-PERF P1：逐三角的 XY 包围盒，用于在逐列求交前剔除必然落空的三角。
+     *
+     * 逐列求交是本函数的绝对热点：它对【每一个 XY 列】遍历【全部三角面】，
+     * 复杂度 O(列数 x 三角数)，中间没有任何空间剔除。实测三角平均只覆盖
+     * 19~29 个列（占栅格约 0.01%），即 99.99% 的 PointInTriangleXy 调用
+     * 必然落空——gubao04 为 104,170 三角 x 192,960 列 = 2.01e10 次比较。
+     *
+     * 本剔除【不改变任何判定结果】：点落在三角形内必然落在其 XY 包围盒内，
+     * 故以闭区间包围盒做保守剔除不会漏掉命中。包围盒 min/max 直接取自
+     * PointInTriangleXy 所用的同一组顶点坐标，不引入 epsilon 收缩，
+     * 因此边界点（恰压在像素中心线上的三角）仍会进入原判定。
+     */
+    struct TriangleXyBounds
+    {
+        double minX{0.0};
+        double maxX{0.0};
+        double minY{0.0};
+        double maxY{0.0};
+    };
+    std::vector<TriangleXyBounds> triangleXyBounds(triangleCount);
+    for (std::size_t index{0}; index < triangleCount; ++index)
+    {
+        const std::array<int, 3>& corners = request.mesh->mesh.triangles.at(index);
+        const Vec3& a =
+            request.mesh->mesh.vertices.at(static_cast<std::size_t>(corners[0]));
+        const Vec3& b =
+            request.mesh->mesh.vertices.at(static_cast<std::size_t>(corners[1]));
+        const Vec3& c =
+            request.mesh->mesh.vertices.at(static_cast<std::size_t>(corners[2]));
+        TriangleXyBounds& bounds = triangleXyBounds.at(index);
+        bounds.minX = std::min({a.x, b.x, c.x});
+        bounds.maxX = std::max({a.x, b.x, c.x});
+        bounds.minY = std::min({a.y, b.y, c.y});
+        bounds.maxY = std::max({a.y, b.y, c.y});
+    }
+
     MaterialVolumePlan plan;
     plan.layerCount_ = grid.layerCount;
     plan.columnCount_ = static_cast<std::size_t>(columnCount64);
     plan.materialNames_ = std::move(materialNames);
     plan.materialPriorities_ = std::move(materialPriorities);
+    plan.toleratedSelfIntersectingMaterials_ = std::move(toleratedSelfIntersecting);
+    plan.topologyFacts_ = facts;
     plan.columnIntervalOffsets_.assign(plan.columnCount_ + 1U, 0U);
 
     // 逐列求交所用的复用缓冲，循环外分配一次。
@@ -208,6 +310,15 @@ MaterialVolumePlan BuildMaterialVolumePlan(const MaterialVolumeBuildRequest& req
                 hits.clear();
                 for (const std::size_t triangleIndex : trianglesByMaterial.at(material))
                 {
+// P1：包围盒剔除。四次比较即排除必然落空的三角，
+                    // 而 PointInTriangleXy 每次要算三个叉积。闭区间比较保证
+                    // 不漏边界命中，故判定结果与剔除前完全一致。
+                    const TriangleXyBounds& bounds = triangleXyBounds.at(triangleIndex);
+                    if (px < bounds.minX || px > bounds.maxX || py < bounds.minY
+                        || py > bounds.maxY)
+                    {
+                        continue;
+                    }
                     const std::array<int, 3>& corners =
                         request.mesh->mesh.triangles.at(triangleIndex);
                     const Vec3& a =

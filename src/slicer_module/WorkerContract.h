@@ -65,7 +65,8 @@ public:
     /**
      * @brief 运行 --contract-info 并应用失败即拒绝的兼容规则。
      * @param workerExecutable slicer_worker.exe 或测试 Worker 的绝对路径。
-     * @param requirement 必需的主/次版本、生产合同和能力。
+     * @param requirement 必需的主/次版本、生产合同和能力；已知切片能力还会
+     * 自动补齐其冻结的最低 minor 和对应生产合同要求。
      * @return 已验证 Worker 信息或稳定拒绝诊断。
      */
     [[nodiscard]] WorkerContractResult Negotiate(

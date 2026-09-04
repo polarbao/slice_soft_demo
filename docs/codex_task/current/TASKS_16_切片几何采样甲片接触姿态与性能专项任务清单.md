@@ -397,7 +397,7 @@ S3+非 relief 组合以及 Profile/contract 不一致执行 fail-closed。Qt 本
 
 **实际结果：** Reference Host 已提供 S0/S3 显式选择与 schema v5 持久化；作业页展示策略、
 P0/P3 边界和支撑统计扫描次数。2026-08-14 用户裁定结果页恢复旧版单预览，因此首层 A/当前层 B
-并排显示已取消，改为当前生产层 RGBWSV 合成预览及 manifest 通道统计。S0/P0 默认不变，Qt 未重算几何。
+并排显示已取消，改为当前生产层单预览及 manifest 通道统计。S0/P0 默认不变，Qt 未重算几何。（默认预览模式已于 MATVOL MV-07C 改为 RGB-only，六通道组合仍可显式选择。）
 
 ### 16D-02-R1 单材料浮雕 S3 显式适用修订
 

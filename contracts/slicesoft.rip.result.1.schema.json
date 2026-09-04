@@ -31,7 +31,16 @@
         "manifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
       }
     },
-    "settings": { "$ref": "slicesoft.rip.settings.1.schema.json" },
+    "settings": {
+      "allOf": [
+        { "$ref": "slicesoft.rip.settings.1.schema.json" },
+        {
+          "properties": {
+            "outputValidationMode": { "const": "strict_s2" }
+          }
+        }
+      ]
+    },
     "process": {
       "type": "object",
       "additionalProperties": false,

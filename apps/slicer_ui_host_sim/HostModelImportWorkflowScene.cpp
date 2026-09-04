@@ -136,6 +136,33 @@ bool HostModelImportWorkflow::SetPendingSceneContext(
     return true;
 }
 
+void HostModelImportWorkflow::ResetScene()
+{
+    // 逐个归还模型句柄。失败不阻断重置：模块侧句柄泄漏远好过把用户永久卡在
+    // 「已绑定 Profile、又无法新建场景」的死角里。
+    for (const QString& modelId : m_instanceModels.values())
+    {
+        QJsonObject ignoredResponse;
+        QString ignoredError;
+        (void)ExecuteObject(
+            QJsonObject{
+                {QStringLiteral("capability"), QStringLiteral("model.release")},
+                {QStringLiteral("modelId"), modelId}},
+            &ignoredResponse,
+            &ignoredError);
+    }
+    m_instanceModels.clear();
+    m_instanceSources.clear();
+    m_instanceTexturePaths.clear();
+    m_instanceMaterialRestrictions.clear();
+    // 只清【已绑定】值，保留 pending：用户当前在工艺配置里选好的 Profile
+    // 应当直接成为新场景的绑定值，而不是被退回默认。
+    m_sceneProfileId.clear();
+    m_sceneBuildVolume = hostbuildvolume{};
+    m_sceneHandle = 0U;
+    m_sceneRevision = 0U;
+}
+
 QString HostModelImportWorkflow::SceneProfileId() const
 {
     return m_sceneHandle == 0U ? m_pendingProfileId : m_sceneProfileId;

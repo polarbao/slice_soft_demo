@@ -16,6 +16,7 @@ namespace slicer_core {
 
 struct OutputConfig {
     std::filesystem::path package_dir{"output/SlicePackage"};
+    std::string package_protocol{"p0.rgbwsv.2"};
     int dpi_x{kDefaultOutputDpiX};
     int dpi_y{kDefaultOutputDpiY};
     double layer_thickness_mm{kDefaultLayerThicknessMm};
@@ -181,6 +182,14 @@ struct MaterialVolumeOverlapRuleConfig {
     int priority{0};
 };
 
+/**
+ * @brief 材质体积重叠的裁决方式。
+ *
+ * `explicit_priority`（默认）要求逐材质显式声明 priority，缺声明或同级均 fail-closed。
+ * `auto_by_material_name` 改由命名规范推导：材质名形如 `<素材名>-L<层号>`，
+ * 优先级按「层序主导 + 同层类别次序」自动生成，`rules` 此时必须为空。
+ * 规范见 docs/slice/DOC/DOC_SPEC_MATERIAL_NAMING_多图层素材命名与语义标识规范.md。
+ */
 struct MaterialVolumeOverlapConfig {
     std::string mode{"explicit_priority"};
     std::vector<MaterialVolumeOverlapRuleConfig> rules;
@@ -189,12 +198,72 @@ struct MaterialVolumeOverlapConfig {
 /**
  * @brief Per-layer per-pixel material ownership policy; safe-off by default.
  */
+/// @brief 拓扑准入口径。
+///
+/// `selfIntersectionPolicy = reject`（默认）沿用既有行为：分类为 self_intersecting 即拒绝。
+///
+/// `tolerate_closed_self_intersection` 是【有界放宽】，其口径必须如实理解：
+/// - 前置：该材质必须仍是闭合曲面（真开边与非流形边均为 0）。此时由 Jordan–Brouwer，
+///   一般位置射线的交点数恒为偶数，区间因此【形状良好】，不会触发 IntersectionUnpaired。
+///   注意这意味着奇偶性对本类恒真，不能把它当作安全性证据。
+/// - 未被消除的风险：自交处缠绕数可能大于 1，而奇偶法则把双重覆盖判为外部，
+///   故【自交邻域内的材质归属可能错误】。误差范围被相交三角面的投影界住。
+/// - `maxSelfIntersectionPairs` 把放宽限制在【局部缺陷】：仓库中被判定「需重建」的资产
+///   自交对数为数千至数万，远超该上限，仍会 fail closed，本放宽不是对它们的旁路。
+/// - 放行材质名必须进入 plan 并由报告披露，不得静默。
+struct MaterialVolumeTopologyConfig {
+    std::string self_intersection_policy{"reject"};
+    int max_self_intersection_pairs{64};
+    /// 真开边数上限（MQ-06）。默认 0 即要求闭合，与放宽前行为一致。
+    /// 设为正数后允许有界开边进入区间求解，由逐列 IntersectionUnpaired 兜底——
+    /// 注意开边存在时 Jordan–Brouwer 不再保证偶数交点，故该门在本类上是
+    /// 【真检查而非恒真】，这正是本次放宽依据强于 MQ-05 的原因。
+    int max_boundary_edges{0};
+};
+
+/**
+ * @brief 由材质不透明度推导光油（V）归属；默认关闭，须显式 opt-in。
+ *
+ * 判据只看 MTL 的 `d`（`Tr` 已在解析层归一为同一 opacity）。
+ * `opacity <= opacity_max` 的材质其体积改写 V 通道而非 RGB。
+ */
+struct MaterialVolumeOpacityVarnishConfig {
+    bool enabled{false};
+    /// @brief 判为光油的不透明度上限；必须为正且 < 1。
+    double opacity_max{0.001};
+    /**
+     * @brief `opacity_max < opacity < 1` 的半透明材质的落位角色。
+     *
+     * 只允许 `rgb`：半透明按工艺语义【不是】光油。取该值时必须出诊断，
+     * 不得静默丢弃设计意图——静默丢弃正是本专项要根治的原始缺陷。
+     */
+    std::string semi_transparent_role{"rgb"};
+};
+
 struct MaterialVolumePolicyConfig {
     bool enabled{false};
     std::string mode{"closed_intervals"};
     MaterialVolumeOpenSurfaceConfig open_surface;
     MaterialVolumeOverlapConfig overlap;
+    MaterialVolumeTopologyConfig topology;
     std::string missing_material{"fail_closed"};
+    MaterialVolumeOpacityVarnishConfig opacity_varnish;
+};
+
+/**
+ * @brief Explicit material-colour routing for the optional transfer channel.
+ *
+ * Colours are profile data. The implementation must never infer this role
+ * from a material name or a model file name.
+ */
+struct TransferChannelPolicyConfig {
+    bool enabled{false};
+    std::string match_source{"material_diffuse_rgb"};
+    std::vector<std::array<std::uint8_t, 3>> material_diffuse_rgb_values;
+    std::string missing_region{"allow_empty"};
+    std::string multiple_matches{"fail_closed"};
+    std::uint8_t value{0};
+    MaterialVolumeTopologyConfig topology;
 };
 
 /**
@@ -319,6 +388,7 @@ struct PreviewConfig {
     std::array<std::uint8_t, 3> support_color{0, 255, 0};
     std::array<std::uint8_t, 3> white_color{0, 170, 255};
     std::array<std::uint8_t, 3> varnish_color{127, 127, 127};
+    std::array<std::uint8_t, 3> transfer_color{255, 0, 255};
 };
 
 struct ReliefConfig {
@@ -330,6 +400,17 @@ struct ReliefConfig {
 struct GeometrySamplingConfig
 {
     std::string strategy{"legacy_center_sample"};
+    /**
+     * @brief 退化面判定阈值，单位为面积平方（mm^4）；面积^2 <= 该值的三角形被丢弃。
+     *
+     * 默认 1e-12 等价于面积门 1e-6 mm^2。CAD/NURBS 导出（如犀牛）的多材质资产
+     * 常含 nm^2 量级的合法薄面，默认门会把它们误判为退化面并丢弃，
+     * 从而在【本来闭合】的网格上制造出边界边，使逐材质拓扑被判为开放表面。
+     *
+     * 取 0 或负值表示沿用适配器默认值，既有工艺行为因此保持不变。
+     * 推荐值见 docs/slice/DOC/DOC_POLICY_INDEX_冲突裁决与工艺逻辑策略总表.md。
+     */
+    double degenerate_area_epsilon_mm2{0.0};
 };
 
 /**
@@ -354,6 +435,13 @@ struct ExperimentalConfig
 };
 
 struct SliceConfig {
+    // 宿主有效 Profile 顶层的溯源标识（HostRequestBuilder 发射 profileVersion 与
+    // profileHash）。此前不被保留，导致写包时无从产出 manifest.profileEcho，
+    // 而结果页与包摘要都以该字段承载「这一包由哪份 Profile 切出」。
+    // CLI 直接喂配置文件时两者为空——那种场景本就没有 Profile 溯源，
+    // 故按空处理并【不发射】该字段，既不编造也不影响既有 golden 包的字节。
+    std::string profile_version;
+    std::string profile_hash;
     std::optional<std::string> white_semantics;
     std::string slicing_mode{"closed_mesh_scanline"};
     SlicePipelineConfig slice_pipeline;
@@ -369,6 +457,7 @@ struct SliceConfig {
     MaterialProcessProfileConfig material_process_profile;
     MaterialRoleMappingConfig material_role_mapping;
     MaterialVolumePolicyConfig material_volume_policy;
+    TransferChannelPolicyConfig transfer_channel_policy;
     SupportConfig support;
     OuterVarnishShellConfig outer_varnish;
     SurfaceVarnishConfig surface_varnish;

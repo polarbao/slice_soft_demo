@@ -67,6 +67,23 @@ std::string SliceRequest(
           "\"futureEnvelope\":{\"enabled\":true}}";
 }
 
+std::string TransferSliceRequest(
+    const std::string_view capability = "slice.rgbwsvt",
+    const std::string_view outputContract = "p0.rgbwsvt.1",
+    const std::string_view minor = "1")
+{
+    return std::string{
+        "{\"contract\":\"file_contract\",\"major\":1,\"minor\":"}
+        + std::string{minor}
+        + ",\"jobId\":\"transfer-job\","
+          "\"correlationId\":\"transfer-correlation\",\"capability\":\""
+        + std::string{capability}
+        + "\",\"timeoutMs\":5000,\"sceneHash\":\"sha256:1234abcd\","
+          "\"scene\":{},\"profile\":{},\"output\":{\"contract\":\""
+        + std::string{outputContract}
+        + "\",\"packageDir\":\"C:/worker/transfer-package\"}}";
+}
+
 std::string GeometryRequest(const std::string_view capability)
 {
     return std::string{
@@ -144,6 +161,21 @@ void TestValidSliceRequest(const std::filesystem::path& root)
             && !std::filesystem::exists(identity.ResultTemporaryPath())
             && !std::filesystem::exists(identity.CancelPath()),
         "parser creates no result, cancellation, or package artifacts");
+}
+
+void TestValidTransferSliceRequest(const std::filesystem::path& root)
+{
+    const std::filesystem::path requestPath =
+        root / "transfer-slice" / "request.json";
+    WriteBytes(requestPath, TransferSliceRequest());
+    const worker::WorkerRequestEnvelope request =
+        worker::WorkerRequestParser::Parse(requestPath);
+    Check(request.Major() == 1U && request.Minor() == 1U,
+        "transfer slice uses file-contract minor 1");
+    Check(request.Identity().Capability() == "slice.rgbwsvt",
+        "transfer slice capability is preserved");
+    Check(request.Output().at("contract").as_string() == "p0.rgbwsvt.1",
+        "transfer slice output contract is preserved");
 }
 
 void TestValidGeometryRequests(const std::filesystem::path& root)
@@ -246,6 +278,14 @@ void TestContractFailures(const std::filesystem::path& root)
         "\"jobId\":\"job\",\"correlationId\":\"c\","
         "\"capability\":\"slice.rgbwsv\",\"timeoutMs\":1000,"
         "\"sceneHash\":\"sha256:1234abcd\",\"scene\":{},\"profile\":{}}");
+    CheckDocument("transfer_on_minor_zero",
+        TransferSliceRequest("slice.rgbwsvt", "p0.rgbwsvt.1", "0"));
+    CheckDocument("legacy_on_minor_one",
+        TransferSliceRequest("slice.rgbwsv", "p0.rgbwsv.2", "1"));
+    CheckDocument("transfer_with_legacy_contract",
+        TransferSliceRequest("slice.rgbwsvt", "p0.rgbwsv.2", "1"));
+    CheckDocument("legacy_with_transfer_contract",
+        TransferSliceRequest("slice.rgbwsv", "p0.rgbwsvt.1", "0"));
     CheckDocument("geometry_missing_input",
         "{\"contract\":\"file_contract\",\"major\":1,\"minor\":0,"
         "\"jobId\":\"job\",\"correlationId\":\"c\","
@@ -260,6 +300,7 @@ int main()
     try
     {
         TestValidSliceRequest(root);
+        TestValidTransferSliceRequest(root);
         TestValidGeometryRequests(root);
         TestPathAndEncodingFailures(root);
         TestContractFailures(root);

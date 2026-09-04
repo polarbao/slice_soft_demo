@@ -5,6 +5,7 @@
 #include "slicer_core/preview/MaterialPreviewComposer.h"
 #include "slicer_core/preview/TiffLayerSource.h"
 #include "slicer_core/rip_reader.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
 
 #include <exception>
 #include <filesystem>
@@ -96,10 +97,14 @@ private:
         bool forceValidation) const;
     [[nodiscard]] static bool IsSnapshotCurrent(
         const VerifiedPackageSnapshot& snapshot);
+    [[nodiscard]] RgbwsvtPackageValidation EnsureVerifiedRgbwsvtPackageLocked(
+        const std::filesystem::path& packageDir,
+        bool forceValidation) const;
 
     mutable std::mutex m_layerMutex;
     mutable TiffLayerSource m_layerSource;
     mutable std::optional<VerifiedPackageSnapshot> m_verifiedPackage;
+    mutable std::optional<RgbwsvtPackageValidation> m_verifiedRgbwsvtPackage;
 };
 
 }  // namespace slicer_core::api::implementation::detail

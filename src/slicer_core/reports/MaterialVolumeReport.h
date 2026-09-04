@@ -48,4 +48,7 @@ struct MaterialVolumeReportInput
 /// @throws std::invalid_argument 输入不完整或逐层统计与材质表长度不符。
 [[nodiscard]] Json BuildMaterialVolumeReport(const MaterialVolumeReportInput& input);
 
+/// @brief Build the stable disabled report used by non-MATVOL Legacy jobs.
+[[nodiscard]] Json BuildDisabledMaterialVolumeReport();
+
 }  // namespace slicer_core

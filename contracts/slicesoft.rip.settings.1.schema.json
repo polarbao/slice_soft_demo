@@ -33,6 +33,11 @@
     "continueOnError": { "type": "boolean", "default": false },
     "deviceGrayBits": { "type": "integer", "enum": [1, 2], "default": 2 },
     "timeoutSeconds": { "type": "integer", "minimum": 1, "maximum": 86400, "default": 3600 },
+    "outputValidationMode": {
+      "type": "string",
+      "enum": ["strict_s2", "diagnostic_unvalidated"],
+      "default": "strict_s2"
+    },
     "outputDirectoryName": { "const": "rip" },
     "existingOutputPolicy": { "const": "fail_closed" }
   },

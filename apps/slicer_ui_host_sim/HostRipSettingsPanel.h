@@ -24,8 +24,11 @@ public:
     void SetModuleDirectory(const QString& directory);
     void SetPackageDirectory(const QString& directory);
     [[nodiscard]] QString PackageDirectory() const;
+    [[nodiscard]] QString ManualInputDirectory() const;
+    [[nodiscard]] QString ManualOutputDirectory() const;
     void SetRuntimeStatus(bool valid, const QString& message);
     void SetRequestStatus(bool valid, const QString& message);
+    void SetManualRequestStatus(bool valid, const QString& message);
     void SetJobActive(bool active);
     void ShowJobState(const QString& state, const QString& message);
     void ShowCompletion(
@@ -37,11 +40,14 @@ public:
 signals:
     void SigSettingsChanged();
     void SigRunRequested();
+    void SigManualPathsChanged();
+    void SigManualRunRequested();
     void SigCancelRequested();
     void SigOpenOutputRequested(QString outputDirectory);
 
 private:
     void BuildInterface();
+    void UpdateOutputPath();
     void RefreshControls();
 
     QCheckBox* m_autoCheck{nullptr};
@@ -52,10 +58,17 @@ private:
     QComboBox* m_outputIccCombo{nullptr};
     QCheckBox* m_continueCheck{nullptr};
     QComboBox* m_grayBitsCombo{nullptr};
+    QComboBox* m_outputValidationCombo{nullptr};
     QSpinBox* m_timeoutSpin{nullptr};
     QLineEdit* m_modulePathEdit{nullptr};
     QLineEdit* m_inputPathEdit{nullptr};
     QLineEdit* m_outputPathEdit{nullptr};
+    QLineEdit* m_manualInputEdit{nullptr};
+    QLineEdit* m_manualOutputEdit{nullptr};
+    QPushButton* m_manualInputBrowseButton{nullptr};
+    QPushButton* m_manualOutputBrowseButton{nullptr};
+    QPushButton* m_manualRunButton{nullptr};
+    QLabel* m_manualStatusLabel{nullptr};
     QLabel* m_runtimeStatusLabel{nullptr};
     QLabel* m_jobStatusLabel{nullptr};
     QPushButton* m_runButton{nullptr};
@@ -66,5 +79,6 @@ private:
     bool m_outputExists{false};
     bool m_runtimeValid{false};
     bool m_requestValid{false};
+    bool m_manualRequestValid{false};
     bool m_jobActive{false};
 };

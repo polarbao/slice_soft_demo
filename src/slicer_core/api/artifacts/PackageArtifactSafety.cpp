@@ -443,4 +443,66 @@ PackageArtifactRecoveryResult RecoverPackageArtifacts(
     return result;
 }
 
+PackageArtifactRecoveryResult RemoveRejectedPublishedPackage(
+    const PackageArtifactIdentity& identity,
+    const PackageArtifactValidator& validator) noexcept
+{
+    PackageArtifactRecoveryResult result;
+    try
+    {
+        const PackageArtifactIdentity validated = MakePackageArtifactIdentity(
+            identity.package_directory,
+            identity.job_id,
+            identity.attempt_id);
+        if (validated.package_directory != identity.package_directory
+            || validated.lease_directory != identity.lease_directory
+            || !validator
+            || IsReparsePoint(identity.lease_directory)
+            || !LeaseMatchesOwner(identity))
+        {
+            result.error = "rejected package identity or lease owner is invalid";
+            return result;
+        }
+        std::error_code existsError;
+        const bool exists = std::filesystem::exists(
+            FilesystemPath(identity.package_directory), existsError);
+        if (existsError)
+        {
+            result.error = "failed to inspect rejected package target";
+            return result;
+        }
+        if (!exists)
+        {
+            result.success = true;
+            result.target_removed = true;
+            return result;
+        }
+        if (IsReparsePoint(identity.package_directory)
+            || !validator(identity.package_directory))
+        {
+            result.error = "published target is not the validated rejected package";
+            return result;
+        }
+        if (!RemoveOwnedDirectory(
+                identity.package_directory,
+                result.target_removed,
+                result.error))
+        {
+            return result;
+        }
+        result.success = true;
+        return result;
+    }
+    catch (const std::exception& error)
+    {
+        result.error = error.what();
+        return result;
+    }
+    catch (...)
+    {
+        result.error = "unknown rejected package removal failure";
+        return result;
+    }
+}
+
 }  // namespace slicer_core::api::artifacts

@@ -167,12 +167,34 @@ void BlendPixel(
     pixels->at(offset + 3U) = 255U;
 }
 
+/**
+ * @brief 一个延后到透明 pass 才绘制的三角形。
+ *
+ * 透明片元必须在全部不透明几何之后、按视深由远到近绘制，
+ * 因此它的投影结果要跨实例收集后统一排序。
+ */
+struct DeferredTriangle
+{
+    RasterVertex vertices[3];
+    const MaterialResource* material{nullptr};
+    bool selected{false};
+    bool outOfBounds{false};
+    float sortDepth{0.0F};
+};
+
+/// @brief 该材质是否走透明 pass。
+[[nodiscard]] bool IsBlended(const MaterialResource& material)
+{
+    return material.alphaMode == "blend";
+}
+
 void RasterTriangle(
     const RasterVertex (&vertices)[3],
     const Resources& resources,
     const MaterialResource& material,
     bool selected,
     bool outOfBounds,
+    bool writeDepth,
     std::vector<float>* depth,
     slicer::render::ImageOut* output)
 {
@@ -242,7 +264,11 @@ void RasterTriangle(
                 color[1] = static_cast<std::uint8_t>((color[1] + 193U) / 2U);
             }
             BlendPixel(&output->rgba8, pixel * 4U, color);
-            depth->at(pixel) = z;
+// 透明片元只做深度测试、不写深度，否则近处的透明面会遮挡其后的几何。
+            if (writeDepth)
+            {
+                depth->at(pixel) = z;
+            }
         }
     }
 }
@@ -253,7 +279,8 @@ bool DrawInstance(
     const slicer::render::InstanceDraw& instance,
     std::vector<float>* depth,
     slicer::render::ImageOut* output,
-    std::uint32_t* drawCallCount)
+    std::uint32_t* drawCallCount,
+    std::vector<DeferredTriangle>* deferred)
 {
     const auto mesh = resources.meshes.find(instance.meshIdentity);
     if (mesh == resources.meshes.end())
@@ -308,13 +335,28 @@ bool DrawInstance(
                 visible = visible && projectedValid[index] != 0U;
                 triangle[vertex] = projected[index];
             }
-            if (visible)
+            if (!visible)
             {
-                RasterTriangle(
-                    triangle, resources, material->second,
-                    instance.selected, instance.outOfBuildVolume,
-                    depth, output);
+                continue;
             }
+            if (IsBlended(material->second))
+            {
+                DeferredTriangle entry;
+                entry.vertices[0] = triangle[0];
+                entry.vertices[1] = triangle[1];
+                entry.vertices[2] = triangle[2];
+                entry.material = &material->second;
+                entry.selected = instance.selected;
+                entry.outOfBounds = instance.outOfBuildVolume;
+                entry.sortDepth = (triangle[0].z + triangle[1].z + triangle[2].z)
+                    / 3.0F;
+                deferred->push_back(entry);
+                continue;
+            }
+            RasterTriangle(
+                triangle, resources, material->second,
+                instance.selected, instance.outOfBuildVolume,
+                true, depth, output);
         }
     }
     return true;
@@ -362,14 +404,32 @@ bool Rasterize(
         ReadMatrix(frame.camera.projMatrix),
         ReadMatrix(frame.camera.viewMatrix));
     cpu_raster_detail::DrawSceneDecor(frame, output);
+// 第一趟只画不透明几何，绘制顺序与深度写入行为与引入透明 pass 之前完全一致；
+// 透明三角形被跨实例收集下来，留给第二趟处理。
+    std::vector<DeferredTriangle> deferred;
     for (const slicer::render::InstanceDraw& instance : frame.instances)
     {
         if (!DrawInstance(
-                resources, frame, instance, &depth, output, drawCallCount))
+                resources, frame, instance, &depth, output, drawCallCount,
+                &deferred))
         {
             *errorCode = "HOST-RENDER-RESOURCE-MISSING";
             return false;
         }
+    }
+// 第二趟按视深由远到近绘制透明几何，且不写深度缓冲。
+// 场景内没有 blend 材质时 deferred 为空，本段不产生任何像素写入。
+    std::stable_sort(
+        deferred.begin(),
+        deferred.end(),
+        [](const DeferredTriangle& left, const DeferredTriangle& right) {
+            return left.sortDepth > right.sortDepth;
+        });
+    for (const DeferredTriangle& entry : deferred)
+    {
+        RasterTriangle(
+            entry.vertices, resources, *entry.material,
+            entry.selected, entry.outOfBounds, false, &depth, output);
     }
     return true;
 }

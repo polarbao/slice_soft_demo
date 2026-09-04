@@ -6,19 +6,34 @@
 
 #include <algorithm>
 #include <array>
+#include <iterator>
 
 namespace
 {
-constexpr std::array<const char*, 6> ChannelNames{
-    "R", "G", "B", "W", "S", "V"};
+constexpr std::array<const char*, 7> ChannelNames{
+    "R", "G", "B", "W", "S", "V", "T"};
 
-const std::array<QColor, 6> ChannelColors{
+const std::array<QColor, 7> ChannelColors{
     QColor{210, 50, 50},
     QColor{35, 145, 75},
     QColor{45, 95, 210},
     QColor{40, 175, 205},
     QColor{70, 190, 70},
-    QColor{125, 125, 125}};
+    QColor{125, 125, 125},
+    QColor{230, 145, 30}};
+
+std::size_t ChannelIndex(const QString& channel)
+{
+    const auto found = std::find_if(
+        ChannelNames.begin(),
+        ChannelNames.end(),
+        [&channel](const char* name)
+        {
+            return channel == QString::fromLatin1(name);
+        });
+    return static_cast<std::size_t>(
+        std::distance(ChannelNames.begin(), found));
+}
 }
 
 HostChannelChartWidget::HostChannelChartWidget(QWidget* parent)
@@ -36,6 +51,12 @@ void HostChannelChartWidget::SetLayers(
     update();
 }
 
+void HostChannelChartWidget::SetChannels(const QStringList& channels)
+{
+    m_channels = channels;
+    update();
+}
+
 void HostChannelChartWidget::paintEvent(QPaintEvent* event)
 {
     QWidget::paintEvent(event);
@@ -47,9 +68,13 @@ void HostChannelChartWidget::paintEvent(QPaintEvent* event)
     painter.setPen(QPen(palette().mid().color(), 1.0));
     painter.drawRect(plot);
 
-    for (std::size_t index = 0; index < ChannelNames.size(); ++index)
+    for (int channelPosition = 0;
+         channelPosition < m_channels.size();
+         ++channelPosition)
     {
-        const int x = 12 + static_cast<int>(index) * 54;
+        const std::size_t index = ChannelIndex(
+            m_channels.at(channelPosition));
+        const int x = 12 + channelPosition * 54;
         painter.setPen(QPen(ChannelColors[index], 2.0));
         painter.drawLine(x, 13, x + 15, 13);
         painter.setPen(palette().text().color());
@@ -72,10 +97,9 @@ void HostChannelChartWidget::paintEvent(QPaintEvent* event)
     }
 
     const int pointCount = m_layers.size();
-    for (std::size_t channelIndex = 0;
-         channelIndex < ChannelNames.size();
-         ++channelIndex)
+    for (const QString& channel : m_channels)
     {
+        const std::size_t channelIndex = ChannelIndex(channel);
         QPainterPath path;
         for (int layerIndex = 0; layerIndex < pointCount; ++layerIndex)
         {

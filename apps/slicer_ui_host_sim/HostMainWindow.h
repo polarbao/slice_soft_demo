@@ -25,6 +25,7 @@ class QPlainTextEdit;
 class QSplitter;
 class QTableWidget;
 class QTabWidget;
+class QVBoxLayout;
 class CpuRasterBackend;
 class MoveOptimizationPolicy;
 class SceneRenderPolicy;
@@ -64,6 +65,8 @@ private:
     bool SaveWorkspaceState();
     void OnImportModel();
     void OnRemoveModels(const QStringList& instanceIds);
+    void OnResetScene();
+    void AttachSceneResetButton(QWidget* page, QVBoxLayout* layout);
     void OnModelSelectionChanged(const QStringList& instanceIds);
     void OnProfileChanged(const QString& profileId);
     bool ProfileSupportsSlice(const QString& profileId) const;
@@ -82,8 +85,11 @@ private:
         const QString& outputDirectory,
         qint64 elapsedMs);
     void OnOpenRipOutputRequested(const QString& outputDirectory);
+    void OnRipManualPathsChanged();
+    void OnRunManualRip();
     void RefreshRipRuntimeStatus();
     void RefreshRipRequestStatus();
+    void RefreshRipManualRequestStatus();
     bool StartRipForPackage(
         const QString& packageDirectory,
         bool automatic);
@@ -192,6 +198,7 @@ private:
     QString m_restoredProfileId;
     QString m_modelImportDirectory;
     QString m_ripModuleDirectory;
+    QString m_ripManualOutputDirectory;
     QPointF m_dragStartWorld;
     quint64 m_dragCallCount{0U};
     bool m_textureWhiteWarning{false};

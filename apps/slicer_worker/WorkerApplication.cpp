@@ -98,11 +98,12 @@ int WorkerApplication::PrintContractInfo(std::ostream& output)
     // 合同发现独占 stdout，确保调用方只需解析一个 JSON 对象。
     output
         << "{\"contract\":\"file_contract\","
-        << "\"major\":1,\"minor\":0,"
+        << "\"major\":1,\"minor\":1,"
         << "\"engineVersion\":\"" << EngineVersion << "\","
-        << "\"produces\":[\"p0.rgbwsv.2\"],"
+        << "\"produces\":[\"p0.rgbwsv.2\",\"p0.rgbwsvt.1\"],"
         << "\"capabilities\":["
         << "\"slice.rgbwsv\","
+        << "\"slice.rgbwsvt\","
         << "\"geometry.preflight.full\","
         << "\"geometry.repair\"]}\n";
     return static_cast<int>(ExitCode::Success);
@@ -149,6 +150,9 @@ int WorkerApplication::HandleSpiRequest(
         slicesoft::worker::CreateProductionWorkerPreflightExecutor());
     dispatcher.Register(
         "slice.rgbwsv",
+        slicesoft::worker::CreateProductionWorkerSliceExecutor(std::cout));
+    dispatcher.Register(
+        "slice.rgbwsvt",
         slicesoft::worker::CreateProductionWorkerSliceExecutor(std::cout));
     dispatcher.Register(
         "geometry.repair",

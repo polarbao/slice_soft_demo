@@ -64,10 +64,40 @@ def Main() -> int:
             "packageDir": "E:/jobs/package"
         }
     }
-    ExpectValid(requestValidator, request, "slice request")
+    ExpectValid(requestValidator, request, "legacy slice request")
     invalidRequest = copy.deepcopy(request)
     invalidRequest["timeoutMs"] = 0
     ExpectInvalid(requestValidator, invalidRequest, "unbounded request")
+
+    transferRequest = copy.deepcopy(request)
+    transferRequest["minor"] = 1
+    transferRequest["capability"] = "slice.rgbwsvt"
+    transferRequest["output"]["contract"] = "p0.rgbwsvt.1"
+    ExpectValid(requestValidator, transferRequest, "transfer slice request")
+
+    transferWithLegacyMinor = copy.deepcopy(transferRequest)
+    transferWithLegacyMinor["minor"] = 0
+    ExpectInvalid(
+        requestValidator,
+        transferWithLegacyMinor,
+        "transfer slice request with legacy minor",
+    )
+
+    transferWithLegacyOutput = copy.deepcopy(transferRequest)
+    transferWithLegacyOutput["output"]["contract"] = "p0.rgbwsv.2"
+    ExpectInvalid(
+        requestValidator,
+        transferWithLegacyOutput,
+        "transfer slice request with legacy output contract",
+    )
+
+    legacyWithTransferMinor = copy.deepcopy(request)
+    legacyWithTransferMinor["minor"] = 1
+    ExpectInvalid(
+        requestValidator,
+        legacyWithTransferMinor,
+        "legacy slice request with transfer minor",
+    )
 
     result = {
         "contract": "file_contract",
@@ -82,27 +112,74 @@ def Main() -> int:
         "engineVersion": "0.9.3",
         "elapsedMs": 1250.0
     }
-    ExpectValid(resultValidator, result, "successful result")
+    ExpectValid(resultValidator, result, "legacy successful result")
     invalidResult = copy.deepcopy(result)
     invalidResult["jobId"] = "../escape"
     ExpectInvalid(resultValidator, invalidResult, "path-like job id")
 
+    transferResult = copy.deepcopy(result)
+    transferResult["minor"] = 1
+    transferResult["capability"] = "slice.rgbwsvt"
+    ExpectValid(resultValidator, transferResult, "transfer successful result")
+
+    transferResultWithLegacyMinor = copy.deepcopy(transferResult)
+    transferResultWithLegacyMinor["minor"] = 0
+    ExpectInvalid(
+        resultValidator,
+        transferResultWithLegacyMinor,
+        "transfer result with legacy minor",
+    )
+
+    legacyResultWithTransferMinor = copy.deepcopy(result)
+    legacyResultWithTransferMinor["minor"] = 1
+    ExpectInvalid(
+        resultValidator,
+        legacyResultWithTransferMinor,
+        "legacy result with transfer minor",
+    )
+
     info = {
         "contract": "file_contract",
         "major": 1,
-        "minor": 0,
+        "minor": 1,
         "engineVersion": "0.9.3",
-        "produces": ["p0.rgbwsv.2"],
+        "produces": ["p0.rgbwsv.2", "p0.rgbwsvt.1"],
         "capabilities": [
             "slice.rgbwsv",
+            "slice.rgbwsvt",
             "geometry.preflight.full",
             "geometry.repair"
         ]
     }
     ExpectValid(infoValidator, info, "contract info")
-    invalidInfo = copy.deepcopy(info)
-    invalidInfo["produces"] = ["p0.rgbwsv.1"]
-    ExpectInvalid(infoValidator, invalidInfo, "unsupported package contract")
+    missingLegacyProduce = copy.deepcopy(info)
+    missingLegacyProduce["produces"] = ["p0.rgbwsvt.1"]
+    ExpectInvalid(infoValidator, missingLegacyProduce, "missing legacy package contract")
+
+    # 方案 A（见 DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md）：
+    # T 通道在 contract_info 中是【可选能力声明】，不得强制。
+    # 以下三例此前是负例，断言「缺 T 即非法」——那会把 T 由可选变成对每个 worker 的强制要求，
+    # 与本专项自身「双协议二选一 opt-in」的前提矛盾，并使 Prepare14F02PrintM1Handoff 的
+    # 对外交付面与 product/legacy-slicer 一并失效。改为正例，正是为了把该兼容性钉死。
+    legacyOnlyProduce = copy.deepcopy(info)
+    legacyOnlyProduce["produces"] = ["p0.rgbwsv.2"]
+    ExpectValid(
+        infoValidator,
+        legacyOnlyProduce,
+        "legacy-only produces stays valid",
+    )
+
+    legacyOnlyCapability = copy.deepcopy(info)
+    legacyOnlyCapability["capabilities"].remove("slice.rgbwsvt")
+    ExpectValid(
+        infoValidator,
+        legacyOnlyCapability,
+        "worker without transfer capability stays valid",
+    )
+
+    legacyMinorInfo = copy.deepcopy(info)
+    legacyMinorInfo["minor"] = 0
+    ExpectValid(infoValidator, legacyMinorInfo, "minor 0 discovery stays valid")
 
     progressPattern = re.compile(
         r"^SLICE_PROGRESS phase=[A-Za-z0-9_.-]+ current=\d+ total=\d+ "

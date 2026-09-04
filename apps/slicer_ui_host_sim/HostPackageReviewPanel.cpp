@@ -1,5 +1,7 @@
 #include "HostPackageReviewPanel.h"
 
+#include "HostPackageReviewPreviewMode.h"
+
 #include "HostChannelChartWidget.h"
 
 #include <QComboBox>
@@ -22,7 +24,6 @@
 #include <QSpinBox>
 #include <QSplitter>
 #include <QVBoxLayout>
-
 #include <algorithm>
 
 namespace
@@ -89,7 +90,7 @@ qint64 PrintPixels(
     const hostlayerdescriptor& layer,
     const QString& channel)
 {
-    const QStringList channels = Channels({"R", "G", "B", "W", "S", "V"});
+    const QStringList channels = Channels({"R", "G", "B", "W", "S", "V", "T"});
     const int index = channels.indexOf(channel);
     return index >= 0
         ? static_cast<qint64>(layer.printpixels.values.at(
@@ -136,24 +137,35 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
     m_previewModeCombo = new QComboBox(this);
     m_previewModeCombo->setObjectName(
         QStringLiteral("hostPackagePreviewModeCombo"));
+    /* 下拉项由「全通道并集 + 单通道」两类构成。
+       此前另有 RGB+白墨、RGB+支撑、RGB+光油 等两两组合，共 13 项：
+       用户要在其中挑对一项，先得知道包是几通道、哪些通道有数据；
+       而这些中间组合既不是判读材质本色的最佳视图（那是 RGB 单通道），
+       也不是查看全部产出的最佳视图（那是并集）。故收敛为两类。
+       并集项的通道集由 SelectDefaultPreviewMode 按包实际通道自动选中。 */
+    /* 并集只保留【一项】，其通道集由生产包决定，在 SelectDefaultPreviewMode 中按包改写。
+       此前是六通道、七通道两个固定项：对七通道包而言，七通道并集是六通道并集的严格超集
+       （合成器 RgbSupportWhiteVarnishTransfer 依次叠加 RGB/W/S/V，最后才是 T），
+       六通道那项纯属冗余；而对六通道包，七通道那项因缺 T 平面必然失败。
+       两个固定项都要求用户先知道包是几通道，而这恰恰是软件自己知道的事。 */
     m_previewModeCombo->addItem(
-        QStringLiteral("RGB（纹理）"), Channels({"R", "G", "B"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 白墨"), Channels({"R", "G", "B", "W"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 支撑"), Channels({"R", "G", "B", "S"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 光油"), Channels({"R", "G", "B", "V"}));
-    m_previewModeCombo->addItem(
-        QStringLiteral("RGB + 支撑 + 白墨 + 光油"),
+        QStringLiteral("全通道并集"),
         Channels({"R", "G", "B", "W", "S", "V"}));
-    m_previewModeCombo->setCurrentIndex(4);
     for (const char* channel : {"R", "G", "B", "W", "S", "V"})
     {
         m_previewModeCombo->addItem(
             QString::fromLatin1(channel),
             Channels({channel}));
     }
+    m_previewModeCombo->addItem(QStringLiteral("T（缩裹）"), Channels({"T"}));
+    AttachPseudoColourTooltips(m_previewModeCombo);
+    m_previewModeCombo->setItemData(
+        0,
+        QStringLiteral(
+            "叠加本包全部非 RGB 通道的伪彩色：W 青蓝、S 纯绿、V 中灰；"
+            "七通道包再叠加缩裹 T（品红，压在最上层以免被支撑盖住）。"
+            "伪彩色不代表生产 TIFF 像素值。"),
+        Qt::ToolTipRole);
     controls->addWidget(m_previewModeCombo);
     rootLayout->addLayout(controls);
 
@@ -251,6 +263,9 @@ HostPackageReviewPanel::HostPackageReviewPanel(QWidget* parent)
 void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
 {
     m_review = review;
+    const QStringList packageChannels = review.channels.isEmpty()
+        ? Channels({"R", "G", "B", "W", "S", "V"}) : review.channels;
+    SelectDefaultPreviewMode(m_previewModeCombo, packageChannels);
     const QSignalBlocker sliderBlocker(m_layerSlider);
     const QSignalBlocker spinBlocker(m_layerSpin);
     const int maximum = (std::max)(0, review.layercount - 1);
@@ -269,12 +284,13 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
                   .arg(review.verificationerrors.join(QStringLiteral("；"))));
     m_summaryView->setPlainText(
         QStringLiteral(
-            "目录：%1\n身份：%2\n协议：%3\n通道：%4\n位深：%5\n极性：%6\n"
-            "网格：%7 × %8 px\nDPI：%9 × %10\n层数：%11\n实例：%12\n"
-            "Profile 版本：%13\nProfile Hash：%14")
+            "目录：%1\n身份：%2\n协议：%3\n生产准入：%4\n通道：%5\n位深：%6\n极性：%7\n"
+            "网格：%8 × %9 px\nDPI：%10 × %11\n层数：%12\n实例：%13\n"
+            "Profile 版本：%14\nProfile Hash：%15")
             .arg(review.packagedirectory)
             .arg(review.packageidentity)
             .arg(review.schema)
+            .arg(review.productionacceptance)
             .arg(review.channels.join(QStringLiteral(" ")))
             .arg(review.bitdepth)
             .arg(review.polarity)
@@ -286,6 +302,7 @@ void HostPackageReviewPanel::SetPackage(const hostpackagereview& review)
             .arg(review.instancecount)
             .arg(review.profileversion)
             .arg(review.profilehash));
+    m_channelChart->SetChannels(packageChannels);
     m_channelChart->SetLayers(review.layers);
     RefreshStage16Summary(0);
 
@@ -432,7 +449,9 @@ void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
 
     const hostlayerdescriptor& current = m_review.layers.at(layerIndex);
     QStringList channelPixels;
-    for (const QString& channel : Channels({"R", "G", "B", "W", "S", "V"}))
+    const QStringList packageChannels = m_review.channels.isEmpty()
+        ? Channels({"R", "G", "B", "W", "S", "V"}) : m_review.channels;
+    for (const QString& channel : packageChannels)
     {
         channelPixels.append(QStringLiteral("%1=%2")
                                  .arg(channel)
@@ -446,7 +465,9 @@ void HostPackageReviewPanel::RefreshStage16Summary(const int layerIndex)
         QStringLiteral(
             "几何采样：%1｜姿态：P0 生产默认，P3 仅诊断未应用\n"
             "当前生产层 layer=%2｜打印像素：%3\n"
-            "性能：sliceProcessing=%4｜支撑统计扫描=%5")
+            "性能：sliceProcessing=%4｜支撑统计扫描=%5\n"
+            "通道显示：R/G/B 为真实颜色；W/S/V 为显示用伪彩色"
+            "（S 纯绿、W 青蓝、V 中灰），不代表生产 TIFF 像素值")
             .arg(SamplingStrategyText(m_samplingStrategyId))
             .arg(current.layerindex)
             .arg(channelPixels.join(QStringLiteral("  ")))

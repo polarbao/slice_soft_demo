@@ -2,7 +2,6 @@
 
 #include "slicer_core/api/CommonDtos.h"
 
-#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -25,9 +24,10 @@ struct PackageSummary
     std::filesystem::path package_dir;
     std::string package_identity;
     std::string schema;
+    std::string production_acceptance;
     int layer_count{0};
     PackageGrid grid;
-    std::array<std::string, 6> channels{"R", "G", "B", "W", "S", "V"};
+    std::vector<std::string> channels{"R", "G", "B", "W", "S", "V"};
     int bit_depth{8};
     std::string polarity{"black_is_print"};
     std::vector<StructuredJsonObject> per_instance;
@@ -42,8 +42,12 @@ struct LayerDescriptor
     int width_px{0};
     int height_px{0};
     std::filesystem::path tiff_path;
-    std::array<std::uint64_t, 6> print_pixels{};
-    std::array<std::uint64_t, 6> empty_pixels{};
+    std::vector<std::string> channels{"R", "G", "B", "W", "S", "V"};
+    // 注意：不可写成 {6U, 0U}——那是初始化列表构造，得到的是【两个元素 [6, 0]】，
+    // 而不是「六个 0」。原为 std::array<std::uint64_t, 6>{}，语义是六个 0；
+    // 改用 vector 时必须显式走 (count, value) 构造才能保持该语义。
+    std::vector<std::uint64_t> print_pixels = std::vector<std::uint64_t>(6U, 0U);
+    std::vector<std::uint64_t> empty_pixels = std::vector<std::uint64_t>(6U, 0U);
     std::string storage_mode;
 };
 
@@ -78,8 +82,9 @@ struct PackageValidationError
 struct VerifyResult
 {
     bool valid{false};
+    std::string production_acceptance;
     std::vector<PackageValidationError> errors;
-    std::vector<std::array<std::uint64_t, 6>> per_layer_checksum;
+    std::vector<std::vector<std::uint64_t>> per_layer_checksum;
     int layer_count{0};
     std::vector<std::string> warnings;
 };

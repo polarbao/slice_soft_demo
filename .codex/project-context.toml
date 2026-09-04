@@ -56,11 +56,18 @@ historical_reference_paths = [
   "docs/codex_task/archive",
 ]
 
+# 正规构建目录是 build-slicesoft/main（CMakePresets 预设 slicesoft-main）。
+# 仓库根下的 build/ 为陈旧目录：无 vcpkg toolchain、meshoptimizer 找不到、不含 matvol 目标，
+# 重配置直接失败，但残留 CTestTestfile 仍会对陈旧二进制给出与基线不符的结果，不得用于验证。
 [verification]
-build = "cmake --build build --config Debug"
-test = "ctest --test-dir build -C Debug --output-on-failure"
+build = "cmake --build build-slicesoft/main --config Debug"
+test = "ctest --test-dir build-slicesoft/main -C Debug --output-on-failure"
 quick = 'powershell -ExecutionPolicy Bypass -File .\scripts\run_ci_quick.ps1'
-ui_smoke = '.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test'
+# ui_smoke 已失效：正规预设 slicesoft-main 的 BUILD_SLICER_DEBUG_UI=OFF，
+# 两个构建目录下均不存在 slicer_debug_ui.exe。现役 UI smoke 由参考宿主承担：
+# slicer_ui_host_sim --self-test，已注册为 hostflow_hb01/hb04/hb05/hb06/hb07 等 CTest 项，
+# 走 test 一行的全量回归即可覆盖，无需单独命令。
+# ui_smoke = '.\build\apps\slicer_debug_ui\Debug\slicer_debug_ui.exe --self-test'   (stale)
 openvdb_cli = 'powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_cli_experimental_tests.ps1'
 openvdb_pipeline = 'powershell -ExecutionPolicy Bypass -File .\scripts\run_09p_experimental_pipeline_tests.ps1'
 

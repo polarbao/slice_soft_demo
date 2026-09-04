@@ -20,7 +20,7 @@
   ],
   "properties": {
     "schema": { "const": "slicesoft.material_volume_report.1" },
-    "packageProtocol": { "const": "p0.rgbwsv.2" },
+    "packageProtocol": { "enum": ["p0.rgbwsv.2", "p0.rgbwsvt.1"] },
     "enabled": { "type": "boolean" },
     "mode": { "enum": ["closed_intervals"] },
     "missingMaterial": { "enum": ["fail_closed"] },

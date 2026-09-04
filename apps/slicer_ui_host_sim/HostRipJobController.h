@@ -45,6 +45,19 @@ public:
         const QString& moduleDirectory,
         const hostripsettings& settings,
         QString* error = nullptr);
+    /** Operator-chosen slice folder and destination, with no Package. */
+    [[nodiscard]] bool CheckManualRequest(
+        const QString& inputDirectory,
+        const QString& outputDirectory,
+        const QString& moduleDirectory,
+        const hostripsettings& settings,
+        QString* error = nullptr) const;
+    [[nodiscard]] bool StartManual(
+        const QString& inputDirectory,
+        const QString& outputDirectory,
+        const QString& moduleDirectory,
+        const hostripsettings& settings,
+        QString* error = nullptr);
     [[nodiscard]] bool Cancel(QString* error = nullptr);
     [[nodiscard]] bool IsActive() const;
 
@@ -68,18 +81,29 @@ private:
         Publishing
     };
 
+    /** Package-bound keeps the frozen RIPFLOW contract; manual is unbound. */
+    enum class JobScope
+    {
+        Package,
+        Manual
+    };
+
     struct PackageMetadata
     {
         QString packageDirectory;
         QString inputDirectory;
+        /** Containment root for input layers and source identity capture. */
+        QString sourceRoot;
+        /** Directory that owns the `.rip.staging.<attempt>` child. */
+        QString stagingRoot;
+        /** Manual scope only: the operator-chosen destination directory. */
+        QString outputDirectory;
         QString manifestPath;
         QString manifestSha256;
         QStringList layerPaths;
         int layerCount{0};
         std::uint32_t widthPx{0U};
         std::uint32_t heightPx{0U};
-        bool transparent{true};
-        bool whiteSemanticsFromManifest{false};
     };
 
     struct RuntimeMetadata
@@ -99,7 +123,11 @@ private:
         QString* error) const;
     [[nodiscard]] bool InspectPackage(
         const QString& packageDirectory,
-        const hostripsettings& settings,
+        PackageMetadata* metadata,
+        QString* error) const;
+    [[nodiscard]] bool InspectManualRequest(
+        const QString& inputDirectory,
+        const QString& outputDirectory,
         PackageMetadata* metadata,
         QString* error) const;
     void OnReadyStandardOutput();
@@ -134,6 +162,7 @@ private:
     std::shared_ptr<std::atomic_bool> m_cancelToken;
     quint64 m_jobGeneration{0U};
     Phase m_phase{Phase::Idle};
+    JobScope m_scope{JobScope::Package};
     bool m_cancelRequested{false};
     bool m_timedOut{false};
 };

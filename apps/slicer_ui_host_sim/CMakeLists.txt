@@ -12,12 +12,18 @@ add_executable(slicer_ui_host_sim
     HostModelImportWorkflowScene.cpp
     HostImportDirectoryPolicy.cpp
     HostImportDirectoryPolicy.h
+    HostImportPlacementPolicy.cpp
+    HostImportPlacementPolicy.h
     HostModelListPanel.cpp
     HostModelListPanel.h
     HostChannelChartWidget.cpp
     HostChannelChartWidget.h
+    HostPackageReviewChannels.cpp
+    HostPackageReviewChannels.h
     HostPackageReviewController.cpp
     HostPackageReviewController.h
+    HostPackageReviewPreviewMode.cpp
+    HostPackageReviewPreviewMode.h
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     HostRipJobController.cpp
@@ -34,12 +40,20 @@ add_executable(slicer_ui_host_sim
     HostProfilePanel.h
     HostProcessPresetCatalog.cpp
     HostProcessPresetCatalog.h
+    HostTransferProcessPresetLoader.cpp
+    HostTransferProcessPresetLoader.h
+    HostTransferProfileBridge.cpp
+    HostTransferProfileBridge.h
     HostTransformLayoutPanel.cpp
     HostTransformLayoutPanel.h
     HostWorkspaceState.cpp
     HostWorkspaceState.h
     HostWorkspaceTextureState.cpp
     HostWorkspaceTextureState.h
+    HostWorkspaceMatvolState.cpp
+    HostWorkspaceMatvolState.h
+    HostWorkspaceTransferState.cpp
+    HostWorkspaceTransferState.h
     HostVersionInfo.cpp
     HostVersionInfo.h
     HostMainWindow.cpp
@@ -64,12 +78,17 @@ add_executable(slicer_ui_host_sim
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
     HostSliceSettings.h
+    HostTransferTopologyControl.cpp
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
     HostSupportSettingsPanel.cpp
     HostSupportSettingsPanel.h
+    HostMatvolSettingsPanel.cpp
+    HostMatvolSettingsPanel.h
     HostSliceJobController.cpp
     HostSliceJobController.h
+    HostSliceProtocolRoute.cpp
+    HostSliceProtocolRoute.h
     HostSliceJobPanel.cpp
     HostSliceJobPanel.h
     Main.cpp
@@ -109,6 +128,8 @@ add_executable(slicer_ui_host_sim
     settings/ViewPresentationSettings.h
     camera/ViewModeSwitch.cpp
     camera/ViewModeSwitch.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -128,6 +149,8 @@ slicesoft_add_windows_version_resource(
 slicesoft_copy_version_manifests(slicer_ui_host_sim)
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -208,6 +231,9 @@ add_custom_command(TARGET slicer_ui_host_sim POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${slicesoftPackagedUserGuideAssets}"
         "$<TARGET_FILE_DIR:slicer_ui_host_sim>/docs/user_guides/assets/packaged_slicer"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/samples/configs/matvol_t/process_profiles"
+        "$<TARGET_FILE_DIR:slicer_ui_host_sim>/configs/material_process"
     COMMAND_EXPAND_LISTS
     VERBATIM
 )
@@ -256,6 +282,14 @@ if(Python3_Interpreter_FOUND)
         NAME ripflow_host_wiring_contract
         COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_SOURCE_DIR}/tests/ripflow/ValidateRipflowWiring.py
+            ${CMAKE_SOURCE_DIR}
+    )
+    # 契约校验器此前只能手工跑：与上面的接线校验器不对称，
+    # 一旦 rip.settings.1 的字段闭集与 schema 失配也没有门禁会发现。
+    add_test(
+        NAME ripflow_contract_field_closure
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_SOURCE_DIR}/tests/ripflow/ValidateRipflowContracts.py
             ${CMAKE_SOURCE_DIR}
     )
     add_test(
@@ -392,6 +426,8 @@ add_test(
 add_executable(hostflow_hb01_model_import_tests
     HostImportDirectoryPolicy.cpp
     HostImportDirectoryPolicy.h
+    HostImportPlacementPolicy.cpp
+    HostImportPlacementPolicy.h
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
@@ -430,6 +466,53 @@ if(MSVC)
     endif()
 endif()
 
+
+add_executable(hostflow_hb08_scene_profile_rebind_tests
+    HostModelImportWorkflow.cpp
+    HostModelImportWorkflow.h
+    HostModelImportWorkflowScene.cpp
+    ModuleClient.cpp
+    ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/tests/hostflow/HostSceneProfileRebindTests.cpp
+)
+
+target_include_directories(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+)
+
+target_link_libraries(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+    Qt5::Core
+    bcrypt
+)
+
+add_dependencies(hostflow_hb08_scene_profile_rebind_tests slicer_module)
+
+if(MSVC)
+    target_compile_options(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+        /MP
+        /W4
+        /WX
+        /utf-8
+    )
+
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(hostflow_hb08_scene_profile_rebind_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
+
+add_test(
+    NAME hostflow_hb08_scene_profile_rebind
+    COMMAND hostflow_hb08_scene_profile_rebind_tests
+        --module $<TARGET_FILE:slicer_module>
+        --repo-root ${CMAKE_SOURCE_DIR}
+)
+
 add_test(
     NAME hostflow_hb01_model_import
     COMMAND hostflow_hb01_model_import_tests
@@ -437,12 +520,8 @@ add_test(
         --repo-root ${CMAKE_SOURCE_DIR}
 )
 
-add_test(
-    NAME hostflow_he02_batch_import
-    COMMAND hostflow_hb01_model_import_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
-)
+# HE-02 批量导入的证据并入 hostflow_hb01_model_import —— 原 hostflow_he02_batch_import
+# 与它命令、参数逐字相同。见 DOC_DECISION_TEST_PRESET_2026_09_03 §1.1。
 
 add_test(
     NAME hostflow_hb01_import_ui_smoke
@@ -457,12 +536,18 @@ add_executable(hostflow_he01_stl_import_tests
     HostModelImportWorkflowScene.cpp
     HostSliceJobController.cpp
     HostSliceJobController.h
+    HostSliceProtocolRoute.cpp
+    HostSliceProtocolRoute.h
     HostSliceSettings.cpp
+    HostTransferProfileBridge.cpp
+    HostTransferProfileBridge.h
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -475,6 +560,8 @@ add_executable(hostflow_he01_stl_import_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -647,6 +734,8 @@ add_test(
 add_executable(hostflow_hb04_profile_catalog_tests
     HostProfileCatalog.cpp
     HostProfileCatalog.h
+    HostTransferProcessPresetLoader.cpp
+    HostTransferProcessPresetLoader.h
     HostProfilePanel.cpp
     HostProfilePanel.h
     ModuleClient.cpp
@@ -669,6 +758,13 @@ target_link_libraries(hostflow_hb04_profile_catalog_tests PRIVATE
 )
 
 add_dependencies(hostflow_hb04_profile_catalog_tests slicer_module)
+
+add_custom_command(TARGET hostflow_hb04_profile_catalog_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/samples/configs/matvol_t/process_profiles"
+        "$<TARGET_FILE_DIR:hostflow_hb04_profile_catalog_tests>/configs/material_process"
+    VERBATIM
+)
 
 if(MSVC)
     target_compile_options(hostflow_hb04_profile_catalog_tests PRIVATE
@@ -707,6 +803,10 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostModelImportWorkflowScene.cpp
     HostProcessPresetCatalog.cpp
     HostProcessPresetCatalog.h
+    HostTransferProcessPresetLoader.cpp
+    HostTransferProcessPresetLoader.h
+    HostTransferProfileBridge.cpp
+    HostTransferProfileBridge.h
     HostSliceSettings.cpp
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
@@ -715,10 +815,13 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostMaterialSettingsPanel.h
     HostTextureSettingsPanel.cpp
     HostTextureSettingsPanel.h
+    HostTransferTopologyControl.cpp
     HostSliceSettingsPanel.cpp
     HostSliceSettingsPanel.h
     HostSliceJobPanel.cpp
     HostSliceJobPanel.h
+    HostPackageReviewPreviewMode.cpp
+    HostPackageReviewPreviewMode.h
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     HostPackageReviewController.h
@@ -726,8 +829,12 @@ add_executable(hostflow_hb05_slice_settings_tests
     HostChannelChartWidget.h
     HostSupportSettingsPanel.cpp
     HostSupportSettingsPanel.h
+    HostMatvolSettingsPanel.cpp
+    HostMatvolSettingsPanel.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -740,6 +847,8 @@ add_executable(hostflow_hb05_slice_settings_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -764,6 +873,13 @@ target_link_libraries(hostflow_hb05_slice_settings_tests PRIVATE
 )
 
 add_dependencies(hostflow_hb05_slice_settings_tests slicer_module)
+
+add_custom_command(TARGET hostflow_hb05_slice_settings_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/samples/configs/matvol_t/process_profiles"
+        "$<TARGET_FILE_DIR:hostflow_hb05_slice_settings_tests>/configs/material_process"
+    VERBATIM
+)
 
 if(MSVC)
     target_compile_options(hostflow_hb05_slice_settings_tests PRIVATE
@@ -790,25 +906,79 @@ add_test(
         --repo-root ${CMAKE_SOURCE_DIR}
 )
 
-add_test(
-    NAME hostflow_he03_support_settings
-    COMMAND hostflow_hb05_slice_settings_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
+# HE-03 支撑设置 / HE-04 材料工艺 / HE-05 纹理工艺的证据并入
+# hostflow_hb05_slice_settings —— 这三条曾各自注册一次，命令与参数与它逐字相同，
+# 跑的是同一个 hostflow_hb05_slice_settings_tests 且无区分性 test property，
+# 因此不含任何属于自己的断言。见 DOC_DECISION_TEST_PRESET_2026_09_03 §1.1。
+
+add_executable(matvol_t_host_profile_tests
+    HostProfileCatalog.cpp
+    HostProfileCatalog.h
+    HostProcessPresetCatalog.cpp
+    HostProcessPresetCatalog.h
+    HostTransferProcessPresetLoader.cpp
+    HostTransferProcessPresetLoader.h
+    HostTransferProfileBridge.cpp
+    HostTransferProfileBridge.h
+    HostSliceSettings.cpp
+    HostSliceSettings.h
+    HostTextureProfileBridge.cpp
+    HostTextureProfileBridge.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.h
+    ${CMAKE_SOURCE_DIR}/tests/matvol_t/HostTransferProfileTests.cpp
 )
 
-add_test(
-    NAME hostflow_he04_material_profile
-    COMMAND hostflow_hb05_slice_settings_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
+set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/JsonText.c
+    PROPERTIES LANGUAGE CXX
 )
 
+target_include_directories(matvol_t_host_profile_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim
+)
+target_link_libraries(matvol_t_host_profile_tests PRIVATE
+    Qt5::Core
+    bcrypt
+    slicer_base
+)
+add_custom_command(TARGET matvol_t_host_profile_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/samples/configs/matvol_t/process_profiles"
+        "$<TARGET_FILE_DIR:matvol_t_host_profile_tests>/configs/material_process"
+    VERBATIM
+)
+if(MSVC)
+    target_compile_options(matvol_t_host_profile_tests PRIVATE
+        /MP /W4 /WX /utf-8
+    )
+    if(MSVC_VERSION GREATER_EQUAL 1950)
+        target_sources(matvol_t_host_profile_tests PRIVATE
+            ${qt515MsvcCompatibilityHeader}
+        )
+        target_compile_options(matvol_t_host_profile_tests PRIVATE
+            "/FI${qt515MsvcCompatibilityHeader}"
+        )
+    endif()
+endif()
 add_test(
-    NAME hostflow_he05_texture_profile
-    COMMAND hostflow_hb05_slice_settings_tests
-        --module $<TARGET_FILE:slicer_module>
-        --repo-root ${CMAKE_SOURCE_DIR}
+    NAME matvol_t_host_profile
+    COMMAND matvol_t_host_profile_tests --repo-root ${CMAKE_SOURCE_DIR}
 )
 
 add_executable(hostflow_he06_texture_white_preflight_tests
@@ -867,12 +1037,18 @@ add_executable(hostflow_hb06_slice_job_tests
     HostModelImportWorkflowScene.cpp
     HostSliceJobController.cpp
     HostSliceJobController.h
+    HostSliceProtocolRoute.cpp
+    HostSliceProtocolRoute.h
     HostSliceSettings.cpp
+    HostTransferProfileBridge.cpp
+    HostTransferProfileBridge.h
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -885,6 +1061,8 @@ add_executable(hostflow_hb06_slice_job_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -945,16 +1123,24 @@ add_executable(hostflow_hb07_package_review_tests
     HostModelImportWorkflow.cpp
     HostModelImportWorkflow.h
     HostModelImportWorkflowScene.cpp
+    HostPackageReviewChannels.cpp
+    HostPackageReviewChannels.h
     HostPackageReviewController.cpp
     HostPackageReviewController.h
     HostSliceJobController.cpp
     HostSliceJobController.h
+    HostSliceProtocolRoute.cpp
+    HostSliceProtocolRoute.h
     HostSliceSettings.cpp
+    HostTransferProfileBridge.cpp
+    HostTransferProfileBridge.h
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
     HostSliceSettings.h
     ModuleClient.cpp
     ModuleClient.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -967,6 +1153,8 @@ add_executable(hostflow_hb07_package_review_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -1027,6 +1215,8 @@ add_test(
 add_executable(hostflow_hd05_package_directory_tests
     HostChannelChartWidget.cpp
     HostChannelChartWidget.h
+    HostPackageReviewPreviewMode.cpp
+    HostPackageReviewPreviewMode.h
     HostPackageReviewPanel.cpp
     HostPackageReviewPanel.h
     ${CMAKE_SOURCE_DIR}/tests/hostflow/HostPackageDirectoryPanelTests.cpp
@@ -1070,6 +1260,8 @@ add_test(
 
 add_executable(hostflow_hb08_workspace_state_tests
     HostSliceSettings.cpp
+    HostTransferProfileBridge.cpp
+    HostTransferProfileBridge.h
     HostTextureProfileBridge.cpp
     HostTextureProfileBridge.h
     HostSliceSettings.h
@@ -1077,6 +1269,12 @@ add_executable(hostflow_hb08_workspace_state_tests
     HostWorkspaceState.h
     HostWorkspaceTextureState.cpp
     HostWorkspaceTextureState.h
+    HostWorkspaceMatvolState.cpp
+    HostWorkspaceMatvolState.h
+    HostWorkspaceTransferState.cpp
+    HostWorkspaceTransferState.h
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
@@ -1089,6 +1287,8 @@ add_executable(hostflow_hb08_workspace_state_tests
 )
 
 set_source_files_properties(
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.c
+    ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostVolumetricProfile.h
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostMaterialProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostTextureProfile.c
     ${CMAKE_SOURCE_DIR}/apps/slicer_host_sim/HostRequestBuilder.c
@@ -1130,20 +1330,10 @@ add_test(
     COMMAND hostflow_hb08_workspace_state_tests
 )
 
-add_test(
-    NAME hostflow_he03_support_persistence
-    COMMAND hostflow_hb08_workspace_state_tests
-)
-
-add_test(
-    NAME hostflow_he04_material_persistence
-    COMMAND hostflow_hb08_workspace_state_tests
-)
-
-add_test(
-    NAME hostflow_he05_texture_persistence
-    COMMAND hostflow_hb08_workspace_state_tests
-)
+# HE-03/HE-04/HE-05 的持久化证据并入 hostflow_hb08_workspace_state ——
+# 这三条曾各自注册一次同一个无参二进制。HostWorkspaceStateTests.cpp 全文只打
+# 一个 HOSTFLOW_HE05_PERSISTENCE_PASS token，四条 CTest 行输出完全相同。
+# 见 DOC_DECISION_TEST_PRESET_2026_09_03 §1.1。
 
 add_test(
     NAME hostflow_hb08_workspace_ui_smoke
@@ -1702,7 +1892,12 @@ set_tests_properties(
     hostflow_hd02_real_asset_matrix
     PROPERTIES
         RUN_SERIAL TRUE
-        TIMEOUT 900
+        # 900 → 1800：本条按 31 个真实资产逐个 Import + Refresh，再做 22 实例的聚合
+        # 导入与三维/顶视渲染。本机实测 555.5 s 与 628.2 s（同机两次波动 13%），
+        # 对 900 s 只有 1.62~1.43 倍余量，较慢的机器上会假失败。
+        # 抬高上限不削弱任何断言；代价是真卡死时要多等一倍才暴露 ——
+        # 鉴于它此前正因假失败而被当成「卡死」误判，这个取舍是划算的。
+        TIMEOUT 1800
 )
 
 set_tests_properties(
@@ -1715,17 +1910,11 @@ set_tests_properties(
     hostflow_hb04_profile_catalog
     hostflow_hb04_profile_ui_smoke
     hostflow_hb05_slice_settings
-    hostflow_he03_support_settings
-    hostflow_he04_material_profile
-    hostflow_he05_texture_profile
     hostflow_hb05_settings_ui_smoke
     hostflow_hb06_job_ui_smoke
     hostflow_hb07_result_ui_smoke
     hostflow_hd05_package_directory
     hostflow_hb08_workspace_state
-    hostflow_he03_support_persistence
-    hostflow_he04_material_persistence
-    hostflow_he05_texture_persistence
     hostflow_hb08_workspace_ui_smoke
     PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
@@ -1736,6 +1925,8 @@ set_tests_properties(
     hostflow_hb06_slice_job
     hostflow_hb07_package_review
     PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:$<TARGET_FILE_DIR:slicer_module>"
         RUN_SERIAL TRUE
         TIMEOUT 180
 )

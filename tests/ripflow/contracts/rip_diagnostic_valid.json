@@ -1,0 +1,52 @@
+{
+  "schema": "slicesoft.rip.diagnostic.2",
+  "status": "diagnostic_unvalidated",
+  "externalValidation": "EXTERNAL_VALIDATION_DEFERRED",
+  "sourcePackage": "package",
+  "sourceManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "module": {
+    "moduleId": "slicesoft.external_rip",
+    "version": "1.1.0",
+    "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "settings": {
+    "schema": "slicesoft.rip.settings.2",
+    "autoAfterSlice": false,
+    "renderIntent": 0,
+    "transparentMode": 0,
+    "colorMode": 0,
+    "inputIcc": "CmykFiles/CIERGB.icc",
+    "outputIcc": "CmykFiles/CMYK.icc",
+    "continueOnError": false,
+    "deviceGrayBits": 2,
+    "timeoutSeconds": 3600,
+    "outputValidationMode": "diagnostic_unvalidated",
+    "outputDirectoryName": "rip",
+    "existingOutputPolicy": "fail_closed"
+  },
+  "process": {
+    "exitCode": 0,
+    "elapsedMs": 15829,
+    "stdout": "RIP completed",
+    "stderr": ""
+  },
+  "output": {
+    "directory": "rip_diagnostic",
+    "layerCount": 175,
+    "filePattern": "rip_%06d.tif",
+    "minimum": { "W": 0, "S": 0, "V": 0 },
+    "maximum": { "W": 255, "S": 9, "V": 9 },
+    "s2DropLimitsPassed": false,
+    "s2PublicationEligible": false,
+    "referenceDropLimit": { "W": 6, "S": 9, "V": 9 },
+    "samplesExceedingLimit": { "W": 42, "S": 0, "V": 0 },
+    "firstExceedance": {
+      "layerIndex": 30,
+      "channel": "W",
+      "value": 255,
+      "limit": 6,
+      "x": 299,
+      "y": 151
+    }
+  }
+}

@@ -92,4 +92,24 @@ void write_rgbwsv_tiff(
     WriteRgbwsvTiffWithConfiguredBackend(path, spec, pixels);
 }
 
+void write_rgbwsvt_tiff(
+    const std::filesystem::path& path,
+    const TiffImageSpec& spec,
+    const std::span<const std::uint8_t> pixels)
+{
+    if (spec.samples_per_pixel != 7U)
+    {
+        throw TiffWriterException(
+            TiffWriterErrorCode::InvalidInput,
+            "RGBWSVT TIFF requires exactly seven samples per pixel");
+    }
+    if (GetConfiguredTiffWriterBackend() != TiffWriterBackend::LibTiff)
+    {
+        throw TiffWriterException(
+            TiffWriterErrorCode::InvalidInput,
+            "RGBWSVT TIFF requires the LibTIFF backend; handwritten output is not supported");
+    }
+    CreateTiffWriter(TiffWriterBackend::LibTiff)->Write(path, spec, pixels);
+}
+
 }  // namespace slicer_core

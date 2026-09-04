@@ -12,15 +12,32 @@
     "capabilities"
   ],
   "properties": {
-    "contract": { "const": "file_contract" },
-    "major": { "const": 1 },
-    "minor": { "type": "integer", "minimum": 0 },
-    "engineVersion": { "type": "string", "minLength": 1 },
+    "contract": {
+      "const": "file_contract"
+    },
+    "major": {
+      "const": 1
+    },
+    "minor": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ]
+    },
+    "engineVersion": {
+      "type": "string",
+      "minLength": 1
+    },
     "produces": {
       "type": "array",
-      "contains": { "const": "p0.rgbwsv.2" },
+      "contains": {
+        "const": "p0.rgbwsv.2"
+      },
       "minContains": 1,
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "capabilities": {
       "type": "array",
@@ -30,6 +47,7 @@
         "type": "string",
         "enum": [
           "slice.rgbwsv",
+          "slice.rgbwsvt",
           "geometry.preflight.full",
           "geometry.repair"
         ]

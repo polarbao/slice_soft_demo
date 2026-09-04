@@ -195,9 +195,33 @@ slicer_core::Json TestModuleMetadata(const slicesoft::tests::SpiModuleApi& api)
     }
     Require(info.at("spi").as_int() == PM_SPI_VERSION,
             "C-SPI-02 module info SPI drifted");
-    Require(info.at("provides").size() == 15U,
-            "C-SPI-02 capability count drifted");
-    ReportPass("C-SPI-02", "valid module info with 15 capabilities");
+    // 冻结承诺是「这 15 项能力必须都在」，不是「只能有这 15 项」。
+    // MATVOL-T 起模块另行提供 slice.rgbwsvt，属加性新增：按名查找的消费方不受影响，
+    // 只有按数量断言的用例会红。故由精确计数改为逐项存在性检查，
+    // 与 contract_info 的方案 A 同一口径
+    // （见 DOC_DECISION_MATVOL_T_冻结契约file_contract_v1变更处置.md §9）。
+    const slicer_core::Json& provides = info.at("provides");
+    for (const std::string frozen : {
+             "model.import", "model.get_metadata", "model.release",
+             "scene.apply_operation", "scene.get_snapshot", "scene.get_viewdata",
+             "geometry.preflight", "geometry.collision", "geometry.repair",
+             "slice.rgbwsv", "package.verify", "package.get_summary",
+             "package.get_layer_descriptor", "package.render_layer_preview",
+             "package.read_report"})
+    {
+        bool found = false;
+        for (std::size_t index = 0U; index < provides.size(); ++index)
+        {
+            if (provides.at(index).as_string() == frozen)
+            {
+                found = true;
+                break;
+            }
+        }
+        Require(found, "C-SPI-02 frozen capability disappeared");
+    }
+    Require(provides.size() >= 15U, "C-SPI-02 capability count shrank");
+    ReportPass("C-SPI-02", "valid module info keeps the 15 frozen capabilities");
 
 #if defined(_DEBUG)
     constexpr std::string_view expectedRuntime{"MSVC-x64-MDd"};

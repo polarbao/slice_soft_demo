@@ -7,7 +7,9 @@ param(
     [ValidateSet("VisualStudio", "NMake")]
     [string]$BuildSystem = "VisualStudio",
     [ValidateRange(1, 64)]
-    [int]$Jobs = 8,
+    # 默认并行度。此前为 8，而开发机普遍 16 逻辑核以上（本机 18），
+    # 等于长期只用了一半算力。CMakePresets 的 buildPresets.jobs 已同步提到 16。
+    [int]$Jobs = 16,
     [string]$Qt5Dir = $env:Qt5_DIR,
     [ValidateSet("handwritten", "libtiff")]
     [string]$TiffBackend = "libtiff",
@@ -15,7 +17,17 @@ param(
     [switch]$ConfigureOnly,
     [switch]$DeployOnly,
     [switch]$SkipDeploy,
-    [switch]$ForceClean
+    [switch]$ForceClean,
+    # 迭代期加速：跳过 --clean-first 并【同时】重新启用 MSBuild 文件跟踪。
+    #
+    # 这两件事必须成对，不能只做前一半：VS 生成器默认关闭 TrackFileAccess
+    # （见下方 /p:TrackFileAccess=false），跟踪器一关，MSBuild 就无法建立头文件依赖，
+    # 改头文件不会触发依赖它的 .cpp 重编——此时若再跳过全量重建，
+    # 得到的就是「编译通过但用的是旧目标文件」这类最难查的问题。
+    # 故本开关把「跳过清理」与「恢复跟踪」绑在一起，让增量在依赖上仍然可信。
+    #
+    # 默认仍为全量重建，发布部署请勿使用本开关。
+    [switch]$Incremental
 )
 
 Set-StrictMode -Version Latest
@@ -466,6 +478,25 @@ function CopyProfileRuntimeResources
             -Recurse
     }
 
+    # RGBWSVT 工艺文件：宿主的 HostTransferProcessPresetLoader 固定读取
+    # <应用目录>/configs/material_process 下的 *_rgbwsvt.json，且【读不到时静默跳过】
+    # （AppendTransferPreset 在 Load 失败时直接 return，不报错）。
+    # 构建树由 apps/slicer_ui_host_sim/CMakeLists.txt 的 post-build 负责拷贝，
+    # 但运行时暂存此前只拷 samples/model 两棵树，导致部署包里三个「缩裹 T 通道」
+    # 预设在 UI 中不出现，且没有任何提示。此处补齐。
+    $transferProfileSource = Join-Path `
+        $RepoRoot "samples/configs/matvol_t/process_profiles"
+    if (-not (Test-Path -LiteralPath $transferProfileSource -PathType Container))
+    {
+        throw "RGBWSVT process profile directory was not found: $transferProfileSource"
+    }
+    $transferProfileTarget = Join-Path $StagingDir "configs/material_process"
+    New-Item -ItemType Directory -Force -Path $transferProfileTarget | Out-Null
+    Copy-Item `
+        -Path (Join-Path $transferProfileSource "*_rgbwsvt.json") `
+        -Destination $transferProfileTarget `
+        -Force
+
     $registryPath = Join-Path $StagingDir "samples/scenarios/slicer_scenarios.json"
     if (-not (Test-Path -LiteralPath $registryPath -PathType Leaf))
     {
@@ -500,6 +531,21 @@ function CopyProfileRuntimeResources
 function TestPortableProfileResources
 {
     param([string]$RuntimeRoot)
+
+    # 宿主三个「缩裹 T 通道」预设由这三份工艺文件派生；缺失时 UI 里静默少三项，
+    # 不会有任何错误提示。故在此显式校验，让缺失变成一次响亮的失败。
+    foreach ($transferProfile in @(
+        "obj_mtl_texture_rgb_only_rgbwsvt.json",
+        "nail_white_underbase_only_rgbwsvt.json",
+        "nail_varnish_only_rgbwsvt.json"))
+    {
+        $transferProfilePath = Join-Path `
+            $RuntimeRoot (Join-Path "configs/material_process" $transferProfile)
+        if (-not (Test-Path -LiteralPath $transferProfilePath -PathType Leaf))
+        {
+            throw "Packaged runtime is missing an RGBWSVT process profile: $transferProfile"
+        }
+    }
 
     $registryRelativePath = "samples/scenarios/slicer_scenarios.json"
     $registryPath = Join-Path $RuntimeRoot $registryRelativePath
@@ -645,6 +691,17 @@ try
                     -CurrentFingerprint $buildInputFingerprint `
                     -ForceClean $ForceClean.IsPresent
             }
+            elseif ($Incremental)
+            {
+                # 显式增量：跟踪器已在下方随本开关恢复，头文件依赖重新可信，
+                # 故不再需要用全量重建来兜底，只有 -ForceClean 能强制清理。
+                #
+                # 此处【不查指纹】：GetRuntimeBuildInputFingerprint 枚举 src 与 apps 下
+                # 全部源文件，任何一处改动都会让指纹变化。它的语义是「源码一变就全量」，
+                # 在活跃开发期等于恒真——用它当增量的闸门，增量永远不会发生。
+                # 而 -Incremental 的前提恰恰是「源码变了，但 MSBuild 能正确增量」。
+                $ForceClean.IsPresent
+            }
             else
             {
                 # VS 2026 file tracking is disabled below because its tracker can
@@ -740,9 +797,11 @@ try
                     throw "Required x64 build tool was not found: $requiredTool"
                 }
             }
+            # 增量模式下必须恢复文件跟踪，否则头文件依赖不成立（见参数区说明）。
+            $trackFileAccess = if ($Incremental) { "true" } else { "false" }
             $buildArguments += @(
                 "--",
-                "/p:TrackFileAccess=false",
+                "/p:TrackFileAccess=$trackFileAccess",
                 "/p:CLToolPath=$msvcHostToolPath",
                 "/p:CLToolExe=cl.exe",
                 "/p:LibToolPath=$msvcHostToolPath",
@@ -849,18 +908,46 @@ try
         $sourceSlicerVersion +=
             "-" + [string]$sourceVersionSnapshot.components.slicer.preRelease
     }
+    # PATCH 由 git 派生（自最近 v* 标签起的提交数），源清单只维护 MAJOR.MINOR。
+    # 故与源清单比对时【剔除 PATCH】，只比 MAJOR.MINOR 与预发布标识；
+    # 而构建清单与模块清单同属一次构建，彼此仍【逐字相等】，锁步照旧严格。
+    # 若在此对源清单也逐字比对，每提交一次部署就会失败一次——
+    # 而那并不表示任何东西漂移了。
+    function Get-VersionLine([string]$value)
+    {
+        $core, $prerelease = $value -split "-", 2
+        $parts = $core -split "\."
+        if ($parts.Count -ne 3)
+        {
+            return $null
+        }
+        $line = $parts[0] + "." + $parts[1]
+        if (-not [string]::IsNullOrWhiteSpace($prerelease))
+        {
+            $line += "-" + $prerelease
+        }
+        return $line
+    }
+
+    $sourceLine = Get-VersionLine $sourceApplicationVersion
+    $buildAppVersion = [string]$buildVersionSnapshot.components.application.version
+    $buildSlicerVersion = [string]$buildVersionSnapshot.components.slicer.version
     $versionSnapshotValid =
         $sourceVersionSnapshot.schemaVersion -eq 1 -and
         $sourceVersionSnapshot.releasePolicy -eq "lockstep" -and
         $buildVersionSnapshot.schema -eq "slicesoft.build.1" -and
         $buildVersionSnapshot.build.config -eq $Config -and
-        $buildVersionSnapshot.components.application.version -eq $sourceApplicationVersion -and
-        $buildVersionSnapshot.components.slicer.version -eq $sourceSlicerVersion -and
+        $null -ne $sourceLine -and
+        (Get-VersionLine $buildAppVersion) -eq $sourceLine -and
+        (Get-VersionLine $buildSlicerVersion) -eq $sourceLine -and
         $sourceApplicationVersion -eq $sourceSlicerVersion -and
-        $sourceSlicerVersion -eq $moduleVersionSnapshot.version
+        $buildAppVersion -eq $buildSlicerVersion -and
+        $buildSlicerVersion -eq [string]$moduleVersionSnapshot.version
     if (-not $versionSnapshotValid)
     {
-        throw "SliceSoft source/build/module version snapshot is inconsistent."
+        throw ("SliceSoft source/build/module version snapshot is inconsistent: " +
+            "source=$sourceApplicationVersion build=$buildAppVersion/$buildSlicerVersion " +
+            "module=$($moduleVersionSnapshot.version) config=$Config")
     }
     if ([string]$sourceVersionSnapshot.release.status -eq "stable")
     {
@@ -888,24 +975,26 @@ try
     $versionedBinaries = @(
         [pscustomobject]@{
             path = $slicerCli
-            version = $sourceApplicationVersion
+            version = $buildAppVersion
             fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
         },
         [pscustomobject]@{
             path = $hostUiExecutable
-            version = $sourceApplicationVersion
+            version = $buildAppVersion
             fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
         },
         [pscustomobject]@{
             path = $moduleLibrary
-            version = $sourceSlicerVersion
+            version = $buildSlicerVersion
             fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
         },
         [pscustomobject]@{
             path = $workerExecutable
-            version = $sourceSlicerVersion
+            version = $buildSlicerVersion
             fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
         })
+    # VERSIONINFO 由构建时写入，其 PATCH 是 git 派生值，故基准取【构建清单】而非源清单。
+    # 此前用 $sourceSlicerVersion 比对，PATCH 改为派生后每次构建都会判定为「身份漂移」。
     foreach ($binary in $versionedBinaries)
     {
         $versionInfo = (Get-Item -LiteralPath $binary.path).VersionInfo
@@ -1118,8 +1207,9 @@ try
             "Plugins=."
         ) | Set-Content -LiteralPath (Join-Path $stagingDir "qt.conf") -Encoding Ascii
 
+        # --version 打印的是二进制内嵌版本，其 PATCH 为 git 派生值，故基准取【构建清单】。
         $expectedApplicationVersionOutput =
-            "SliceSoft $sourceApplicationVersion`n" +
+            "SliceSoft $buildAppVersion`n" +
             "build $([string]$buildVersionSnapshot.components.application.fullBuildVersion)"
         foreach ($applicationBinary in @("slicer_cli.exe", "slicer_ui_host_sim.exe"))
         {
@@ -1135,22 +1225,22 @@ try
         $stagedVersionedBinaries = @(
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_cli.exe"
-                version = $sourceApplicationVersion
+                version = $buildAppVersion
                 fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
             },
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_ui_host_sim.exe"
-                version = $sourceApplicationVersion
+                version = $buildAppVersion
                 fullVersion = [string]$buildVersionSnapshot.components.application.fullBuildVersion
             },
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_module.dll"
-                version = $sourceSlicerVersion
+                version = $buildSlicerVersion
                 fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
             },
             [pscustomobject]@{
                 path = Join-Path $stagingDir "slicer_worker.exe"
-                version = $sourceSlicerVersion
+                version = $buildSlicerVersion
                 fullVersion = [string]$buildVersionSnapshot.components.slicer.fullBuildVersion
             })
         foreach ($binary in $stagedVersionedBinaries)
@@ -1178,8 +1268,17 @@ try
         {
             throw "Deployed worker contract query returned invalid JSON: $($_.Exception.Message)"
         }
+        # 方案A：T 通道属于可选附加能力声明，基线生产合同必须保留，
+        # 且不得出现未知或重复的生产合同；声明 T 通道时 minor 必须已按约定抬升。
+        $baselinePackageContract = "p0.rgbwsv.2"
+        $transferPackageContract = "p0.rgbwsvt.1"
+        $knownPackageContracts = @($baselinePackageContract, $transferPackageContract)
         $workerPropertyNames = @($workerContract.PSObject.Properties.Name)
-        $workerProduces = @($workerContract.produces)
+        $workerProduces = @($workerContract.produces | ForEach-Object { [string]$_ })
+        $workerUnknownProduces = @(
+            $workerProduces | Where-Object { $knownPackageContracts -notcontains $_ })
+        $workerDeclaresTransfer = ($workerProduces -contains $transferPackageContract)
+        $workerRequiredMinor = if ($workerDeclaresTransfer) { 1 } else { 0 }
         if ($workerPropertyNames -notcontains "major" -or
             $workerPropertyNames -notcontains "minor" -or
             -not (($workerContract.major -is [int]) -or
@@ -1188,10 +1287,11 @@ try
                 ($workerContract.minor -is [long])) -or
             [string]$workerContract.contract -ne "file_contract" -or
             $workerContract.major -ne 1 -or
-            $workerContract.minor -ne 0 -or
-            [string]$workerContract.engineVersion -ne $sourceSlicerVersion -or
-            $workerProduces.Count -ne 1 -or
-            [string]$workerProduces[0] -ne "p0.rgbwsv.2")
+            $workerContract.minor -lt $workerRequiredMinor -or
+            [string]$workerContract.engineVersion -ne $buildSlicerVersion -or
+            $workerProduces.Count -ne @($workerProduces | Select-Object -Unique).Count -or
+            $workerProduces -notcontains $baselinePackageContract -or
+            $workerUnknownProduces.Count -ne 0)
         {
             throw "Deployed worker discovery contract or version drifted."
         }
@@ -1212,16 +1312,25 @@ try
         }
         $modulePropertyNames = @($deployedModuleInfo.PSObject.Properties.Name)
         $moduleProduces = @($deployedModuleInfo.produces)
+        $moduleProduceContracts = @($moduleProduces | ForEach-Object { [string]$_.contract })
+        $moduleUnknownProduces = @(
+            $moduleProduceContracts | Where-Object { $knownPackageContracts -notcontains $_ })
+        $moduleNonPackageKinds = @(
+            $moduleProduces | Where-Object { [string]$_.kind -ne "package" })
+        $moduleDeclaresTransfer = ($moduleProduceContracts -contains $transferPackageContract)
+        $moduleUniqueProduceCount = @($moduleProduceContracts | Select-Object -Unique).Count
         if ($modulePropertyNames -notcontains "spi" -or
             -not (($deployedModuleInfo.spi -is [int]) -or
                 ($deployedModuleInfo.spi -is [long])) -or
             [string]$deployedModuleInfo.schema -ne "slicesoft.module_info.1" -or
             [string]$deployedModuleInfo.id -ne "slicer" -or
-            [string]$deployedModuleInfo.version -ne $sourceSlicerVersion -or
+            [string]$deployedModuleInfo.version -ne $buildSlicerVersion -or
             $deployedModuleInfo.spi -ne 1 -or
-            $moduleProduces.Count -ne 1 -or
-            [string]$moduleProduces[0].contract -ne "p0.rgbwsv.2" -or
-            [string]$moduleProduces[0].kind -ne "package")
+            $moduleProduceContracts.Count -ne $moduleUniqueProduceCount -or
+            $moduleProduceContracts -notcontains $baselinePackageContract -or
+            $moduleUnknownProduces.Count -ne 0 -or
+            $moduleNonPackageKinds.Count -ne 0 -or
+            $moduleDeclaresTransfer -ne $workerDeclaresTransfer)
         {
             throw "Deployed module info contract or version drifted."
         }
@@ -1293,6 +1402,12 @@ try
                 worker = "slicer_worker.exe"
                 manifest = "module.json"
                 runtimeLibraries = $moduleRuntimeInventory
+                fileContract = [ordered]@{
+                    major = [int]$workerContract.major
+                    minor = [int]$workerContract.minor
+                    produces = $workerProduces
+                    transferChannel = [bool]$workerDeclaresTransfer
+                }
                 selfTest = ($hostSelfTestOutput -join [Environment]::NewLine)
             }
             externalRip = [ordered]@{

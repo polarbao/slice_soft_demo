@@ -23,11 +23,31 @@ struct RipArtifactPublishResult
 };
 
 /**
- * @brief Rename a validated staging directory to Package/rip.
+ * @brief Rename a validated staging directory to an approved Package child.
  *
- * Existing output fails closed and is never removed or replaced.
+ * Approved names are `rip` for strict S2 output and `rip_diagnostic` for
+ * explicitly unvalidated evidence. Existing output fails closed and is never
+ * removed or replaced.
  */
 [[nodiscard]] RipArtifactPublishResult PublishRipArtifact(
     const RipArtifactPublishRequest& request);
+
+/** @brief Owned staging and operator-chosen destination for a manual run. */
+struct RipManualArtifactPublishRequest
+{
+    std::filesystem::path staging_directory;
+    std::filesystem::path output_directory;
+};
+
+/**
+ * @brief Rename validated staging to an operator-chosen sibling destination.
+ *
+ * The manual RIP path has no Package to publish into, so the destination is
+ * named by the operator instead of being fixed to `rip`. The same-parent
+ * atomic rename and the never-replace-existing rule are unchanged, so a
+ * failed run still leaves no partial destination behind.
+ */
+[[nodiscard]] RipArtifactPublishResult PublishManualRipArtifact(
+    const RipManualArtifactPublishRequest& request);
 
 }  // namespace slicesoft::rip

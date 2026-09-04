@@ -1,0 +1,29 @@
+# Rhino  (test variant: touming forced to fully transparent)
+# derived from fenandtou.mtl -- ONLY the touming dissolve/transmission changed
+newmtl touming
+Ka 0.0000 0.0000 0.0000
+Kd 0.9804 0.9804 0.9804
+Ks 1.0000 1.0000 1.0000
+Tf 1.0000 1.0000 1.0000
+d 0.0000
+Tr 1.0000
+Ns 0.0000
+Ni 1.0000
+newmtl sg (1)
+Ka 0.0000 0.0000 0.0000
+Kd 1.0000 0.8627 0.7765
+Ks 1.0000 1.0000 1.0000
+Tf 1.0000 1.0000 1.0000
+d 1.0000
+Tr 0.0000
+Ns 0.0000
+Ni 1.0000
+newmtl Default
+Ka 0.0000 0.0000 0.0000
+Kd 0.9804 0.9804 0.9804
+Ks 1.0000 1.0000 1.0000
+Tf 1.0000 1.0000 1.0000
+d 1.0000
+Tr 0.0000
+Ns 0.0000
+Ni 1.0000

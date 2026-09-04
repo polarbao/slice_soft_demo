@@ -1,4 +1,5 @@
 #include "slicer_core/rip_reader.h"
+#include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
 
 #include <array>
 #include <cstddef>
@@ -107,6 +108,62 @@ void print_success(const CliOptions& options, const slicer_core::RipValidationRe
     }
 }
 
+void print_verbose_result(const slicer_core::RgbwsvtPackageValidation& result) {
+    std::cout << "rip_reader_test: package valid\n";
+    std::cout << "  packageDir: " << result.packageDirectory.string() << '\n';
+    std::cout << "  productionAcceptance: "
+              << result.productionAcceptance << '\n';
+    std::cout << "  grid: " << result.widthPx << " x " << result.heightPx << " x "
+              << result.layerCount << '\n';
+    std::cout << "  dpi: " << result.dpiX << " x " << result.dpiY << '\n';
+    std::cout << "  channelOrder: R G B W S V T\n";
+    for (const auto& layer : result.layers) {
+        std::cout << "  layer " << layer.index << " checksum:";
+        for (const std::uint64_t checksum : layer.checksums) {
+            std::cout << ' ' << checksum;
+        }
+        std::cout << '\n';
+    }
+}
+
+void print_summary_result(const slicer_core::RgbwsvtPackageValidation& result) {
+    std::cout << "rip_reader_test: PASS\n";
+    std::cout << "  packageDir: " << result.packageDirectory.string() << '\n';
+    std::cout << "  schema: " << result.schema << '\n';
+    std::cout << "  productionAcceptance: "
+              << result.productionAcceptance << '\n';
+    std::cout << "  storageMode: " << result.storageMode << '\n';
+    std::cout << "  compression: " << result.compression << '\n';
+    std::cout << "  grid: " << result.widthPx << " x " << result.heightPx << " x "
+              << result.layerCount << '\n';
+    std::cout << "  dpi: " << result.dpiX << " x " << result.dpiY << '\n';
+    std::cout << "  bitDepth: " << result.bitDepth << '\n';
+    std::cout << "  channelOrder: R G B W S V T\n";
+    std::cout << "  channelPrintPixels:";
+    for (std::size_t index{0U}; index < result.channelOrder.size(); ++index) {
+        std::cout << ' ' << result.channelOrder[index] << '='
+                  << result.totalChannelStats[index].print_pixels;
+    }
+    std::cout << '\n';
+    std::cout << "  warnings: 0\n";
+}
+
+void print_success(
+    const CliOptions& options,
+    const slicer_core::RgbwsvtPackageValidation& result) {
+    switch (options.output_mode) {
+        case OutputMode::Quiet:
+            std::cout << "PASS " << result.packageDirectory.string() << '\n';
+            return;
+        case OutputMode::Summary:
+            print_summary_result(result);
+            return;
+        case OutputMode::Verbose:
+            print_verbose_result(result);
+            return;
+    }
+}
+
 void print_expected_error_success(const CliOptions& options, const std::string& code, const std::string& message) {
     if (options.output_mode == OutputMode::Quiet) {
         std::cout << "PASS expected-error " << code << '\n';
@@ -137,7 +194,20 @@ int main(int argc, char** argv) {
     }
 
     try {
-        const slicer_core::RipValidationResult result = slicer_core::validate_slice_package(options.package_path);
+        const std::string schema = slicer_core::ReadPackageManifestSchema(
+            options.package_path);
+        if (schema == "p0.rgbwsvt.1") {
+            const slicer_core::RgbwsvtPackageValidation result =
+                slicer_core::ValidateRgbwsvtPackage(options.package_path);
+            if (options.expect_error) {
+                print_failure(options, "expected validation error, but package was valid");
+                return 1;
+            }
+            print_success(options, result);
+            return 0;
+        }
+        const slicer_core::RipValidationResult result =
+            slicer_core::validate_slice_package(options.package_path);
         if (options.expect_error) {
             print_failure(options, "expected validation error, but package was valid");
             return 1;

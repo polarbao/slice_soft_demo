@@ -1,10 +1,9 @@
 #include "HostSliceSettingsPanel.h"
-
 #include "HostMaterialSettingsPanel.h"
+#include "HostMatvolSettingsPanel.h"
 #include "HostProcessPresetCatalog.h"
 #include "HostSupportSettingsPanel.h"
 #include "HostTextureSettingsPanel.h"
-
 #include <QCoreApplication>
 #include <QAbstractItemView>
 #include <QComboBox>
@@ -27,9 +26,7 @@
 #include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QVBoxLayout>
-
 #include <algorithm>
-
 namespace
 {
 QString LegacyCompatibleApplicationRoot()
@@ -344,6 +341,15 @@ void HostSliceSettingsPanel::BuildInterface()
     supportLayout->addWidget(m_supportPanel);
     layout->addWidget(supportGroup);
 
+    auto* matvolGroup = new QGroupBox(
+        QStringLiteral("宿主 Profile 多材质纵深段（候选）"), this);
+    auto* matvolLayout = new QVBoxLayout(matvolGroup);
+    matvolLayout->setContentsMargins(8, 8, 8, 8);
+    m_matvolPanel = new HostMatvolSettingsPanel(matvolGroup);
+    matvolLayout->addWidget(m_matvolPanel);
+    layout->addWidget(matvolGroup);
+    AttachTransferTopologyControl(layout);
+
     m_validationLabel = new QLabel(this);
     m_validationLabel->setObjectName(
         QStringLiteral("hostSliceValidationLabel"));
@@ -439,6 +445,11 @@ void HostSliceSettingsPanel::BuildInterface()
         &HostSupportSettingsPanel::SigSettingsChanged,
         this,
         &HostSliceSettingsPanel::OnSettingsEdited);
+    connect(
+        m_matvolPanel,
+        &HostMatvolSettingsPanel::SigSettingsChanged,
+        this,
+        &HostSliceSettingsPanel::OnProcessSettingsEdited);
 }
 
 void HostSliceSettingsPanel::SetSelectedProfileId(
@@ -515,6 +526,9 @@ void HostSliceSettingsPanel::SetPersistentSettings(
     m_buildHeightSpin->setValue(settings.buildvolume.heightmm);
     m_buildZSpin->setValue(settings.buildvolume.zlimitmm);
     m_supportPanel->SetSettings(settings.support);
+    m_matvolPanel->SetSettings(settings.materialvolume);
+    m_packageProtocol = settings.packageprotocol; m_transferChannel = settings.transferchannel;
+    SyncTransferTopologyControl();
     RefreshPreview();
 }
 
@@ -551,6 +565,9 @@ hostslicesettings HostSliceSettingsPanel::Settings() const
     settings.buildvolume.xdirection = QStringLiteral("positive");
     settings.buildvolume.ydirection = QStringLiteral("positive");
     settings.support = m_supportPanel->Settings();
+    settings.materialvolume = m_matvolPanel->Settings();
+    settings.packageprotocol = m_packageProtocol; settings.transferchannel = m_transferChannel;
+    settings.transferchannel.maxboundaryedges = ReadTransferBoundaryEdgeLimit();
     return settings;
 }
 
@@ -568,6 +585,15 @@ bool HostSliceSettingsPanel::BuildSubmissionProfile(
     hosteffectiveprofile* effectiveProfile,
     QString* error) const
 {
+    /* MV-07B：能力不足时不静默回退，而是在提交前显式拒绝并给出原因。 */
+    if (m_matvolPanel->IsBlockedByCapability())
+    {
+        if (error != nullptr)
+        {
+            *error = m_matvolPanel->CapabilityBlockReason();
+        }
+        return false;
+    }
     if (effectiveProfile == nullptr)
     {
         if (error != nullptr)
@@ -651,8 +677,12 @@ void HostSliceSettingsPanel::SetSingleMaterialRestriction(
     const bool selectedResolved = HostProcessPresetCatalog::Resolve(
         m_processPresetCombo->currentData().toString(),
         &selectedPreset);
+    /* MV-07B：MATVOL 候选工艺【不参与】这一静默回落。资产能力不足时应保持
+       用户的选择、禁用控件并给出原因，由 BuildSubmissionProfile fail closed，
+       而不是替用户改工艺。既有六类工艺的回落行为逐字不变。 */
     if (restricted && selectedResolved
-        && !IsSingleMaterialStrategy(selectedPreset.materialstrategy))
+        && !IsSingleMaterialStrategy(selectedPreset.materialstrategy)
+        && !selectedPreset.materialvolume.enabled)
     {
         const int whitePresetIndex = m_processPresetCombo->findData(
             QStringLiteral("single_material_relief_white"));
@@ -668,9 +698,13 @@ void HostSliceSettingsPanel::SetSingleMaterialRestriction(
                 selectedPreset.materialprocess);
             m_texturePanel->SetSettings(selectedPreset.texture);
             m_supportPanel->SetSettings(selectedPreset.support);
+            m_matvolPanel->SetSettings(selectedPreset.materialvolume);
+            m_packageProtocol = selectedPreset.packageprotocol; m_transferChannel = selectedPreset.transferchannel;
+            SyncTransferTopologyControl();
         }
     }
     m_materialPanel->SetSingleMaterialOnly(restricted, reason);
+    m_matvolPanel->SetCapabilityRestriction(restricted, reason);
     RefreshPreview();
 }
 
@@ -722,6 +756,9 @@ void HostSliceSettingsPanel::OnProcessPresetChanged(const int index)
         preset.materialstrategy, preset.materialprocess);
     m_texturePanel->SetSettings(preset.texture);
     m_supportPanel->SetSettings(preset.support);
+    m_matvolPanel->SetSettings(preset.materialvolume);
+    m_packageProtocol = preset.packageprotocol; m_transferChannel = preset.transferchannel;
+    SyncTransferTopologyControl();
     m_applyingProcessPreset = false;
     OnSettingsEdited();
 }

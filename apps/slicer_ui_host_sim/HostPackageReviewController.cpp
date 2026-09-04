@@ -1,5 +1,7 @@
 #include "HostPackageReviewController.h"
 
+#include "HostPackageReviewChannels.h"
+
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -9,13 +11,12 @@
 #include <QTemporaryDir>
 
 #include <exception>
+#include <algorithm>
+#include <iterator>
 #include <utility>
 
 namespace
 {
-constexpr std::array<const char*, 6> ChannelNames{
-    "R", "G", "B", "W", "S", "V"};
-
 QString ResultError(const QJsonObject& response, const QString& fallback)
 {
     const QJsonObject error = response.value(QStringLiteral("error")).toObject();
@@ -29,45 +30,6 @@ QString ResultError(const QJsonObject& response, const QString& fallback)
     return text.isEmpty() ? fallback : text;
 }
 
-bool ReadChannelCounts(
-    const QJsonObject& object,
-    hostchannelcounts* counts)
-{
-    if (counts == nullptr)
-    {
-        return false;
-    }
-    for (std::size_t index = 0; index < ChannelNames.size(); ++index)
-    {
-        const QJsonValue value = object.value(
-            QString::fromLatin1(ChannelNames[index]));
-        if (!value.isDouble() || value.toDouble() < 0.0)
-        {
-            return false;
-        }
-        counts->values[index] = static_cast<quint64>(value.toDouble());
-    }
-    return true;
-}
-
-bool IsFrozenChannelSet(const QStringList& channels)
-{
-    return channels == QStringList{
-        QStringLiteral("R"), QStringLiteral("G"), QStringLiteral("B"),
-        QStringLiteral("W"), QStringLiteral("S"), QStringLiteral("V")};
-}
-
-bool IsFrozenChannelName(const QString& channel)
-{
-    for (const char* name : ChannelNames)
-    {
-        if (channel == QString::fromLatin1(name))
-        {
-            return true;
-        }
-    }
-    return false;
-}
 }
 
 HostPackageReviewController::HostPackageReviewController(ModuleClient& client)
@@ -189,7 +151,8 @@ bool HostPackageReviewController::RenderPreview(
     QStringList cacheParts;
     for (const QString& channel : channels)
     {
-        if (!IsFrozenChannelName(channel))
+        if (!IsFrozenChannelName(channel)
+            || !m_review.channels.contains(channel))
         {
             if (error != nullptr)
             {
@@ -338,6 +301,8 @@ bool HostPackageReviewController::LoadVerification(QString* error)
         return false;
     }
     m_review.valid = response.value(QStringLiteral("valid")).toBool();
+    m_review.productionacceptance = response.value(
+        QStringLiteral("productionAcceptance")).toString();
     const QJsonArray errors = response.value(QStringLiteral("errors")).toArray();
     for (const QJsonValue& value : errors)
     {
@@ -376,6 +341,8 @@ bool HostPackageReviewController::LoadSummary(QString* error)
     m_review.packageidentity = response.value(
         QStringLiteral("packageIdentity")).toString();
     m_review.schema = response.value(QStringLiteral("schema")).toString();
+    const QString summaryProductionAcceptance = response.value(
+        QStringLiteral("productionAcceptance")).toString();
     m_review.layercount = response.value(QStringLiteral("layerCount")).toInt();
     m_review.bitdepth = response.value(QStringLiteral("bitDepth")).toInt();
     m_review.polarity = response.value(QStringLiteral("polarity")).toString();
@@ -398,23 +365,87 @@ bool HostPackageReviewController::LoadSummary(QString* error)
     {
         m_review.channels.append(channel.toString());
     }
-    if (m_review.schema != QStringLiteral("p0.rgbwsv.2")
-        || m_review.bitdepth != 8
-        || m_review.polarity != QStringLiteral("black_is_print")
-        || !IsFrozenChannelSet(m_review.channels)
-        || m_review.layercount <= 0 || m_review.widthpx <= 0
-        || m_review.heightpx <= 0 || m_review.instancecount <= 0
-        || m_review.profileversion.isEmpty()
-        || m_review.profilehash.isEmpty())
+    const bool protocolMatchesChannels =
+        (m_review.schema == QStringLiteral("p0.rgbwsv.2")
+            && m_review.channels.size() == 6)
+        || (m_review.schema == QStringLiteral("p0.rgbwsvt.1")
+            && m_review.channels.size() == 7);
+    // 准入状态必须自洽（摘要与包内一致、且非空），但【不要求已准入】。
+    //
+    // 原先七通道包被额外要求 acceptance == "admitted"，而新切出的包一律是
+    // rgbwsvt_candidate_unvalidated，于是每一个 RGBWSVT 产出都被结果页拒绝显示——
+    // 用户表现为「切完了却无法预览」。这条限制与候选态的用意相悖：
+    // 候选正是需要人眼查看后才决定是否准入，看不到就无从判断。
+    // 安全性由「显式展示准入状态」承担（面板已显示 生产准入 字段），
+    // 而不是由「拒绝显示」承担——拒绝显示既挡不住误用，又消灭了检查手段。
+    const bool productionAcceptanceMatches =
+        !summaryProductionAcceptance.isEmpty()
+        && summaryProductionAcceptance == m_review.productionacceptance;
+    // 逐条判定并指名失败项。原实现是十一条复合判定共用一句消息，且该消息只打印其中
+    // 五个字段——当失败发生在未打印的那六条上时（层数、尺寸、实例数、Profile 版本/hash），
+    // 用户看到的是「schema/acceptance/bitDepth/polarity/channels 全都正常，却说违反协议」，
+    // 无从下手。诊断信息是功能的一部分，不是可选项。
+    QString violation;
+    if (!protocolMatchesChannels)
+    {
+        violation = QStringLiteral("协议与通道数不匹配：schema=%1 通道数=%2")
+                        .arg(m_review.schema).arg(m_review.channels.size());
+    }
+    else if (!productionAcceptanceMatches)
+    {
+        violation = QStringLiteral("生产准入状态不自洽：摘要=%1 包内=%2")
+                        .arg(summaryProductionAcceptance)
+                        .arg(m_review.productionacceptance);
+    }
+    else if (m_review.bitdepth != 8)
+    {
+        violation = QStringLiteral("位深须为 8，实为 %1").arg(m_review.bitdepth);
+    }
+    else if (m_review.polarity != QStringLiteral("black_is_print"))
+    {
+        violation = QStringLiteral("极性须为 black_is_print，实为 %1")
+                        .arg(m_review.polarity);
+    }
+    else if (!IsFrozenChannelSet(m_review.channels))
+    {
+        violation = QStringLiteral("通道集不是冻结的六通道或七通道：%1")
+                        .arg(m_review.channels.join(QLatin1Char(',')));
+    }
+    else if (m_review.layercount <= 0)
+    {
+        violation = QStringLiteral("层数须为正，实为 %1").arg(m_review.layercount);
+    }
+    else if (m_review.widthpx <= 0 || m_review.heightpx <= 0)
+    {
+        violation = QStringLiteral("网格尺寸须为正，实为 %1 x %2")
+                        .arg(m_review.widthpx).arg(m_review.heightpx);
+    }
+    // 【不再】要求 instancecount > 0。
+    //
+    // perInstance 是 manifest 的【可选】字段：PackageQueryFacadePackage 读它时用的是
+    // `if (manifest.contains("perInstance"))`，而写它的只有六通道多模型场景写包器；
+    // 七通道包走 slicer.cpp 的 legacy 发布路径，从不写该字段。
+    // 结果页却把这个可选字段当作必需，于是每个 RGBWSVT 产出都以「实例数须为正，实为 0」
+    // 被拒——门槛比包契约本身更严，拒的是合法的包。
+    // 实例数仍在摘要中展示，只是不再作为受理条件。
+    // 【不再】要求 profileVersion / profileHash 非空——与 perInstance 同一类问题。
+    //
+    // 这两个值取自 manifest.profileEcho，而该字段在两条协议上待遇不同：
+    // 六通道路径 PackageQueryFacadePackage:271 直接 ReadProfileEcho（必需，缺则抛错）；
+    // 七通道路径 :241 是 `contains("profileEcho") ? ... : {}`（可选，缺则给空）。
+    // 而七通道写包端从不填它，于是结果页每次都以「摘要缺少 Profile 版本」拒收。
+    // 预览是诊断视图，不该要求写包端根本不产出的溯源元数据。
+    //
+    // 但七通道包缺 profileEcho / perInstance 本身【是真实缺陷】，不是可以接受的现状：
+    // RgbwsvPackageWriter 本就支持 profileecho 与 perinstance 两个可选请求字段，
+    // 六通道场景路径会填、七通道发布路径不填，属遗漏而非设计。
+    // 该缺陷位于写包端，应单独修复；此处放开的只是「预览的受理条件」，
+    // 不代表认可包的元数据可以缺失。两者一并放在 REPORT 中登记。
+    if (!violation.isEmpty())
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral(
-                "生产包摘要违反冻结协议：schema=%1 bitDepth=%2 polarity=%3 channels=%4")
-                         .arg(m_review.schema)
-                         .arg(m_review.bitdepth)
-                         .arg(m_review.polarity)
-                         .arg(m_review.channels.join(QLatin1Char(',')));
+            *error = QStringLiteral("生产包摘要违反冻结协议：%1").arg(violation);
         }
         return false;
     }
@@ -450,9 +481,11 @@ bool HostPackageReviewController::LoadLayers(QString* error)
             || layer.heightpx != m_review.heightpx
             || !ReadChannelCounts(
                 response.value(QStringLiteral("printPixels")).toObject(),
+                m_review.channels,
                 &layer.printpixels)
             || !ReadChannelCounts(
                 response.value(QStringLiteral("emptyPixels")).toObject(),
+                m_review.channels,
                 &layer.emptypixels))
         {
             if (error != nullptr)

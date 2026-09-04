@@ -10,6 +10,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+/*
+ * MATOPQ：退化面阈值【条件产出】——<= 0 时返回空串，
+ * 生成的 geometrySampling 块与修订前逐字节一致，profileHash 因此不变。
+ * 键序为字典序：degenerateAreaEpsilonMm2 排在 strategy 之前。
+ * 数字格式必须用 %.15g——它对应规范化输出的 defaultfloat + setprecision(15)
+ * （见 json_value.cpp 的 dump_impl）。用 %f 会写出 0.001000 之类的尾零，
+ * 与重算侧的 0.001 不一致，Profile hash 随即不闭合。
+ */
+static char* BuildDegenerateEpsilonCanonical(
+    const struct hosteffectiveprofilesettings* settings)
+{
+    if (!(settings->geometrydegenerateareaepsilonmm2 > 0.0))
+    {
+        return HostFormat("");
+    }
+    return HostFormat(
+        "\"degenerateAreaEpsilonMm2\": %.15g,\n",
+        settings->geometrydegenerateareaepsilonmm2);
+}
+
+static char* BuildDegenerateEpsilonCompact(
+    const struct hosteffectiveprofilesettings* settings)
+{
+    if (!(settings->geometrydegenerateareaepsilonmm2 > 0.0))
+    {
+        return HostFormat("");
+    }
+    return HostFormat(
+        "\"degenerateAreaEpsilonMm2\":%.15g,",
+        settings->geometrydegenerateareaepsilonmm2);
+}
+
 static int ComputeSha256(const char* input, char output[65])
 {
     BCRYPT_ALG_HANDLE algorithm = NULL;
@@ -231,6 +263,8 @@ char* HostBuildEffectiveProfile(
 {
     const char* supportMode = NULL;
     const char* slicingMode = NULL;
+    char* degenerateCanonical = NULL;
+    char* degenerateCompact = NULL;
     const char* geometrySamplingStrategy = NULL;
     const char* tiffCompression = NULL;
     const char* supportPlacementCanonical = "";
@@ -352,7 +386,9 @@ char* HostBuildEffectiveProfile(
     {
         return NULL;
     }
-    useReliefHeightfield = settings->textureenabled != 0
+    /* MV-07A：MATVOL 复用 relief 列采样求交，本身即属 relief_heightfield 路径。 */
+    useReliefHeightfield = settings->materialvolumeenabled != 0
+        || settings->textureenabled != 0
         || (settings->geometrysamplingstrategy
                 == HOST_GEOMETRY_SAMPLING_SLAB_2X2_AT_LEAST_TWO
             && (settings->materialstrategy == HOST_MATERIAL_WHITE_SOLID
@@ -402,6 +438,12 @@ char* HostBuildEffectiveProfile(
         goto cleanup;
     }
 
+    degenerateCanonical = BuildDegenerateEpsilonCanonical(settings);
+    degenerateCompact = BuildDegenerateEpsilonCompact(settings);
+    if (degenerateCanonical == NULL || degenerateCompact == NULL)
+    {
+        goto cleanup;
+    }
     canonical = HostFormat(
         "{\n"
         "\"autoOrient\": {\n"
@@ -412,6 +454,7 @@ char* HostBuildEffectiveProfile(
         "\"value\": 255\n"
         "},\n"
         "\"geometrySampling\": {\n"
+        "%s"
         "\"strategy\": \"%s\"\n"
         "},\n"
         "\"input\": {\n"
@@ -470,6 +513,7 @@ char* HostBuildEffectiveProfile(
         "},\n"
         "%s"
         "}",
+        degenerateCanonical,
         geometrySamplingStrategy,
         escapedFormat,
         escapedModel,
@@ -503,7 +547,7 @@ char* HostBuildEffectiveProfile(
     profile = HostFormat(
         "{\"autoOrient\":{\"enabled\":true,\"maxHeightMm\":9},"
         "\"background\":{\"value\":255},"
-        "\"geometrySampling\":{\"strategy\":\"%s\"},"
+        "\"geometrySampling\":{%s\"strategy\":\"%s\"},"
         "\"input\":{\"format\":\"%s\",\"modelPath\":\"%s\"},"
         "%s"
         "\"output\":{\"bitDepth\":8,"
@@ -525,6 +569,7 @@ char* HostBuildEffectiveProfile(
         "\"fillRule\":\"all_internal_voids\",\"minAreaPx\":%d},"
         "\"minAreaPx\":%d,\"mode\":\"%s\",\"offsetMm\":%.15g,"
         "%s\"value\":0},%s}",
+        degenerateCompact,
         geometrySamplingStrategy,
         escapedFormat,
         escapedModel,
@@ -556,6 +601,8 @@ cleanup:
     free(materialCompact);
     free(textureCanonical);
     free(textureCompact);
+    free(degenerateCanonical);
+    free(degenerateCompact);
     free(canonical);
     return profile;
 }

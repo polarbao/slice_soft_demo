@@ -1,17 +1,14 @@
 #include "HostSliceJobController.h"
-
+#include "HostSliceProtocolRoute.h"
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QUuid>
-
 #include <algorithm>
-
 namespace
 {
 constexpr int kPollIntervalMs{100};
-
 bool ParseObject(
     const QByteArray& bytes,
     QJsonObject* object,
@@ -31,14 +28,12 @@ bool ParseObject(
     *object = document.object();
     return true;
 }
-
 bool IsTerminalState(const QString& state)
 {
     return state == QStringLiteral("succeeded")
         || state == QStringLiteral("failed")
         || state == QStringLiteral("cancelled");
 }
-
 HostSliceJobState ParseState(const QString& state)
 {
     if (state == QStringLiteral("queued"))
@@ -67,7 +62,6 @@ HostSliceJobState ParseState(const QString& state)
     }
     return HostSliceJobState::Idle;
 }
-
 QString NewIdentity(const QString& prefix)
 {
     return prefix + QStringLiteral("-")
@@ -80,7 +74,6 @@ QString EnsureSha256Prefix(const QString& value)
         ? value
         : QStringLiteral("sha256:%1").arg(value);
 }
-
 QString NormalizePathIdentity(const QString& value)
 {
     QString result = QDir::fromNativeSeparators(
@@ -294,6 +287,13 @@ bool HostSliceJobController::BuildRequest(
 
     const QJsonObject output = effectiveProfile.profile.value(
         QStringLiteral("output")).toObject();
+    QString packageProtocol;
+    QString sliceCapability;
+    if (!HostSliceProtocolRoute::Resolve(output, m_client.ModuleInfo(), &packageProtocol,
+                                         &sliceCapability, error))
+    {
+        return false;
+    }
     const QString requestedDirectory = QDir::cleanPath(
         output.value(QStringLiteral("packageDir")).toString());
     if (requestedDirectory.isEmpty()
@@ -352,7 +352,7 @@ bool HostSliceJobController::BuildRequest(
 
     *packageDirectory = QDir::fromNativeSeparators(requestedDirectory);
     *request = QJsonObject{
-        {QStringLiteral("capability"), QStringLiteral("slice.rgbwsv")},
+        {QStringLiteral("capability"), sliceCapability},
         {QStringLiteral("jobId"), NewIdentity(QStringLiteral("host-slice"))},
         {QStringLiteral("correlationId"),
          NewIdentity(QStringLiteral("host-correlation"))},
@@ -360,7 +360,7 @@ bool HostSliceJobController::BuildRequest(
         {QStringLiteral("scene"), snapshot.value(QStringLiteral("scene"))},
         {QStringLiteral("profile"), effectiveProfile.profile},
         {QStringLiteral("output"), QJsonObject{
-             {QStringLiteral("contract"), QStringLiteral("p0.rgbwsv.2")},
+             {QStringLiteral("contract"), packageProtocol},
              {QStringLiteral("packageDir"), *packageDirectory}}},
         {QStringLiteral("options"), QJsonObject{
              {QStringLiteral("backend"), QStringLiteral("worker")}}}};

@@ -46,9 +46,61 @@ RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与�
           卡 docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
 HOSTFLOW  ✅ H-A..H-F 全组完成（2026-08-11）；H-G 已准备并延期实施（等 5 项产品输入）
           卡 docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
+MEMFLOW   ⏸ 分支 codex/memflow-bounded-streaming（尖端 826a170）【暂缓合入】【开发已重启】
+            用户 2026-08-24 裁定暂缓合入，理由三条：代码尚未接生产路径、无功能紧迫性、
+            slicer.cpp 的 G2 冻结线违规应由该专项自行处理
+          ▶ 用户 2026-09-04 授权【继续开发】并同意跳过 MF-06（Sparse）。
+            注意这是开发授权，【不是合入授权】——上述暂缓合入的裁定继续有效，
+            合入需用户另行裁定。三条理由中「无功能紧迫性」已失效（见下），
+            「未接生产路径」与「G2 违规待处理」两条仍成立。
+          ▶ 紧迫性来源（2026-09-04 实测，见 REPORT_16C_06_MEMFLOW_替代基线资产与调查结论）：
+            finger_suoguo/a-2/0.2.obj 在 10um 层厚下 1429 层 × 7,795,500 列 = 111.4 亿
+            pixel-layer，六通道 Dense 62.2 GB 对机器物理内存 31.6 GB；单模型实跑
+            450/1429 层用时 593s（全程外推约 31 分钟），双模型直接内存不足失败。
+            有界窗口目标 134 MB。该专项由预防性优化转为解除真实生产阻塞。
+          ▶ 修订实施路径：MF-03B4B → MF-04 → MF-07（MF-06 跳过，MF-05 转条件项）。
+            跳过 MF-06 的依据：上游 MF-07 依赖原文即写「MF-06 Gate 或明确跳过 Sparse」。
+            后果：G-M6（123.stl 17 个连通分量）随之失效，重启 Sparse 须重建该 Gate，
+            且 123.stl 资产已不存在，须改用缩裹测试-2 的 8 个 STL 替代。
+          ⚠ 合入将带进 12 处行数门禁 ERROR（2026-09-04 复核，原记 9 处漏列 3 项）：
+            G2 slicer.cpp 5423→5464（>1000 行只减不增）
+            G1 超 500 行：BoundedSupportShapeScan.cpp 1171、BoundedSupportDiscovery.cpp 619、
+               LayerOccupancyProvider.cpp 528、GlobalSurfaceShellProductionPipeline.cpp 502
+               及 5 个 tests/stage16 用例（1024/1005/840/643/638）
+            G3 超 200 行：BoundedSupportShapeScan.h 280、BoundedSupportDiscovery.h 223
+            原记 9 处的数值本身逐项复核一致，遗漏的是 LayerOccupancyProvider.cpp、
+            GlobalSurfaceShellProductionPipeline.cpp 与 LayerOccupancyProviderTests.cpp
+          ⚠ 该门禁在 CTest 中只注册 --self-test，仓库全扫描未进 CTest，故上述为静默债而非红灯
+          ▶ merge 冲突面已试算：仅 CMakeLists.txt 与 TASKS_16 两处，AGENTS.md 可自动合并
+          ▶ 本分支工作树中曾存在的 MEMFLOW 残留已于 2026-08-24 证明为严格过时并剔除
+            （41 文件逐一比对：24 逐字节一致、1 严格子集、其余独有行皆为更旧状态头）
+          卡 位于分支内 docs/codex_task/current/TASKS_16C_06_MEMFLOW_*.md，本分支尚无该文件
+RIPFLOW   ✅ 00 / A / B / C / D 全组完成（D-01..06），切片侧收口
+          ⛔ E-01/E-02 外部分发与生产验收 BLOCKED_EXTERNAL
+          ▶ D-06 新增 outputValidationMode=strict_s2|diagnostic_unvalidated，默认严格；
+            诊断模式只放宽墨滴上限门，产出 rip_diagnostic/ 且恒不可 S2 发布
+          卡 docs/codex_task/current/TASKS_RIPFLOW_切片后外置RIP集成专项任务清单.md
+MATVOL    ✅ MV-00..03、MV-05..06 非生产语义栈完成；MV-07A/07B/07C 宿主接入完成（2026-08-24）
+          ▶ 生产默认仍为 matvol 关闭，新预设 volumetric_nail_rgb_white_ondemand_lower_support 为显式 opt-in
+          ⏸ MV-04 卡 MQ-01 壳层厚度（实测几何上限 0.30mm、推荐 0.228mm，未回签）
+          ⏸ MV-08 生产接线依赖 MEMFLOW bounded/owned（MF-03B4/MF-04），
+            且该分支按 2026-08-24 裁定暂缓合入，本分支暂无对应源文件
+          卡 docs/codex_task/current/TASKS_MATVOL_多材质纵深体积RGB与按需补白根治专项任务清单.md
 TIFF      ⏸ 默认后端已切 libtiff，风险已关死（fail-closed+弃用告警+无静默回退）
           当前【无待办】：05B-02/03 延后并捆绑（等删除确认）、T-A-04 外部阻塞
           卡 docs/codex_task/current/TASKS_TIFF_默认后端切换与对齐根治任务清单.md
+PRESET    ✅ PC-01..PC-04 全部完成（2026-09-04 全量回归 222 项 6 失败，全为既有，零新增）
+            PC-01 摘 9 个纯别名 CTest 条目｜PC-02 T 通道派生收口＋两条门禁
+            PC-03 补 RgbWhiteVarnish 工艺预设入口（六个材质策略里原先唯一没有预设的一个）
+            PC-04 hd02_real_asset_matrix 改清单驱动并重固化 29/0/2 —— 自 2026-08-11 起首次转绿
+          ⚠ 回归失败集由 7 降为 6，唯一变化就是 hd02；剩余 6 项全部为既有失败，见卡 §13
+          ⚠ 全量 Debug 串行实测 992.5s，hd02 占 555.5s（56%），前 10 项占 867s（87%）。
+            hd02 的 TIMEOUT 已由 900s 抬至 1800s（对实测 555/628s 原仅 1.43~1.62 倍余量）
+          ⏸ PC-05..PC-12 待裁定；PC-07 开工前置已测（25 个文件 5 处不一致，≥2 处是误报）
+            PC-12 断言实参求值顺序致失败不报原因，全仓 85 处；已证【非】机械改动，
+            批量改写试过并回退，优先级低（只影响失败时的可诊断性）
+          卡 docs/codex_task/current/TASKS_PRESET_工艺可配置面收敛与自测用例收口专项任务清单.md
+          授权 docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md
 CI        ⏸ 用户 2026-08-10 裁决【暂缓】，清单保留不开工
           卡 docs/codex_task/current/TASKS_CI_冻结面工程保护任务清单.md
 MEMFLOW   ▶ MF-00..03B4A COMPLETE；MF-03B4B PREPARED；生产仍为 Retained Dense
@@ -82,7 +134,19 @@ MEMFLOW   ▶ MF-00..03B4A COMPLETE；MF-03B4B PREPARED；生产仍为 Retained 
 - Codex task docs: `docs/codex_task`
 - Archived historical docs: `docs/archive/2026-06-30_slicer_legacy`
 - Tech stack: C++20, Qt 5.15 Widgets, CMake, Windows x64/MSVC, optional OpenVDB via vcpkg
-- Default test command: `ctest --test-dir build -C Debug --output-on-failure`
+- Canonical build directory: **`build-slicesoft/main`**（CMakePresets 预设 `slicesoft-main`）。
+  构建 `cmake --build build-slicesoft/main --config Debug`，
+  回归 `ctest --test-dir build-slicesoft/main -C Debug --output-on-failure`，当前共 **234** 项
+  （generate 后按 CTestTestfile 实测。旧文写「213 项」已过期；2026-09-03 摘除 9 个
+  纯别名条目后由 243 降为 234，见
+  `docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md`）。
+  ⚠ 仓库根下的 `build/` 是**陈旧目录**：无 vcpkg toolchain、`meshoptimizer_DIR-NOTFOUND`、
+  且不含任何 matvol 目标，重配置会直接失败（find_package(meshoptimizer CONFIG REQUIRED)）。
+  它残留的 CTestTestfile 仍能让 ctest 跑起来并对陈旧二进制报出与基线不符的结果，
+  务必不要用它验证任何改动。
+- ⚠ 构建与回归必须分开判定退出码：`cmake --build ... | tail` 之类的管道会用管道末端命令的
+  退出码掩盖真实的构建失败，而失败的配置会让随后的 ctest 对陈旧二进制报 PASS。
+  先确认构建退出码为 0，再相信任何 ctest 结果。
 
 ## Current Phase
 

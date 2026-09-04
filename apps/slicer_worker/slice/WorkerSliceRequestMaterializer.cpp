@@ -350,13 +350,16 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
     const WorkerRequestEnvelope& request,
     const slicer_core::api::ICancelToken& cancelToken)
 {
-    if (request.Identity().Capability() != "slice.rgbwsv"
+    const bool transferSlice =
+        request.Identity().Capability() == "slice.rgbwsvt";
+    if ((request.Identity().Capability() != "slice.rgbwsv"
+            && !transferSlice)
         || !request.HasScene()
         || !request.HasProfile()
         || !request.HasOutput()
         || !request.SceneHash().has_value())
     {
-        Fail(kContractCode, "materializer requires a complete slice.rgbwsv request");
+        Fail(kContractCode, "materializer requires a complete slice request");
     }
     CheckCancellation(cancelToken);
 
@@ -384,6 +387,23 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
             Fail(kLayoutCode, validation.errors.front().message);
         }
         ValidateSceneResourcePaths(decoded.scene);
+        if (transferSlice)
+        {
+            const std::size_t visibleCount = static_cast<std::size_t>(
+                std::count_if(
+                    decoded.scene.instances.begin(),
+                    decoded.scene.instances.end(),
+                    [](const slicer_core::SceneModelInstance& item)
+                    {
+                        return item.instance.visible;
+                    }));
+            if (visibleCount != 1U)
+            {
+                Fail(
+                    kLayoutCode,
+                    "slice.rgbwsvt requires exactly one visible scene instance");
+            }
+        }
 
         const std::string sceneHash =
             slicer_core::ComputeMultiModelSceneHash(decoded.scene);
@@ -409,9 +429,12 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
 
         const std::string outputContract = ReadStringField(
             request.Output(), "contract", kContractCode);
-        if (outputContract != "p0.rgbwsv.2")
+        const std::string expectedOutputContract = transferSlice
+            ? "p0.rgbwsvt.1"
+            : "p0.rgbwsv.2";
+        if (outputContract != expectedOutputContract)
         {
-            Fail(kContractCode, "slice output contract must be p0.rgbwsv.2");
+            Fail(kContractCode, "slice output contract does not match capability");
         }
         const std::filesystem::path packageDirectory =
             std::filesystem::path(ReadStringField(
@@ -462,6 +485,20 @@ WorkerSliceMaterialization WorkerSliceRequestMaterializer::Materialize(
                 != decoded.scene.resolvedprofileid)
         {
             Fail(kProfileMismatchCode, "scene and Profile material identities do not match");
+        }
+        if (profile.output.package_protocol != expectedOutputContract)
+        {
+            Fail(
+                kProfileMismatchCode,
+                "Profile package protocol does not match the Worker capability");
+        }
+        if (transferSlice
+            && slicer_core::SlicePipelineModeName(profile.slice_pipeline.mode)
+                != "legacy")
+        {
+            Fail(
+                kProfileCode,
+                "slice.rgbwsvt currently admits only the Legacy pipeline");
         }
         if (!IsNormalizedAbsolute(profile.output.package_dir)
             || profile.output.package_dir.lexically_normal()

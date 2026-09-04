@@ -1,0 +1,21 @@
+{
+  "_comment": "MV07-Q2 裁定（2026-08-21）：ValidateQtHostBoundary 的 500 行规则原本对目录下每个文件生效，与其自身错误文案『new host source』矛盾，且长期红着（8 个既有文件超限）。现改为债务台账：台账内文件不得再增长，台账外文件仍受 500 行上限。台账只减不增，每次缩减后应同步下调记录值。",
+  "schemaVersion": 1,
+  "decidedOn": "2026-08-21",
+  "decision": "docs/slice/DOC/DOC_DECISION_MATVOL_MV07_Q2_宿主行数门禁债务台账.md",
+  "maxLinesForNewSource": 500,
+  "knownOversized": {
+    "HostRipJobController.cpp": 1181,
+    "HostSliceSettingsPanel.cpp": 857,
+    "Main.cpp": 751,
+    "HostSliceJobController.cpp": 664,
+    "HostSliceSettings.cpp": 571,
+    "HostSliceJobPanel.cpp": 590,
+    "HostWorkspaceState.cpp": 573,
+    "HostModelImportWorkflow.cpp": 516
+  },
+  "_entryNotes": {
+    "Main.cpp": "2026-08-26 由 740 上调至 751：RIPFLOW D-07 接入新版 RIP 五档 transparent 的宿主接线。该增长在 MATVOL-T 合并【之前】即已存在于基线，非合并引入。",
+    "HostSliceSettingsPanel.cpp": "2026-08-27 由 852 上调至 857：新增「缩裹 T 通道｜拓扑放宽」控件的接入点（成员、构造调用、SetSettings/Settings 同步、预设应用后同步）；控件实现本体放在独立文件 HostTransferTopologyControl.cpp，未计入本文件。"
+  }
+}

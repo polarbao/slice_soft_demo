@@ -118,6 +118,7 @@ struct SliceRequest
     std::string job_id;
     std::string correlation_id;
     std::string scene_hash;
+    std::string output_contract{"p0.rgbwsv.2"};
     std::filesystem::path scene_config_path;
     std::filesystem::path package_dir;
 };

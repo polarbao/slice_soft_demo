@@ -18,6 +18,21 @@ struct RipRuntimePaths
     std::filesystem::path resource_directory;
 };
 
+/**
+ * @brief Selects how strongly the command is bound to a slice Package.
+ *
+ * `PackageBound` keeps the frozen RIPFLOW contract: the layer input and the
+ * staging output must both live inside one validated Package. `ManualUnbound`
+ * serves the operator-driven path where an arbitrary slice folder is RIPped
+ * into an arbitrary destination; it relaxes only the Package containment of
+ * the input folder and keeps every runtime, staging and resource check.
+ */
+enum class RipCommandScope
+{
+    PackageBound,
+    ManualUnbound
+};
+
 /** @brief Inputs needed to construct one shell-free external RIP command. */
 struct RipCommandRequest
 {
@@ -26,6 +41,7 @@ struct RipCommandRequest
     std::filesystem::path input_directory;
     std::filesystem::path staging_output_directory;
     RipSettings settings;
+    RipCommandScope scope{RipCommandScope::PackageBound};
 };
 
 /** @brief Program, raw argv entries, and working directory for QProcess. */

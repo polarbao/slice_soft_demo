@@ -22,11 +22,15 @@ enum class MaterialPreviewMode
     White,
     Support,
     Varnish,
+    /// 缩裹材料 T 通道。仅 p0.rgbwsvt.1 包存在该平面。
+    Transfer,
     Rgb,
     RgbWhite,
     RgbSupport,
     RgbVarnish,
     RgbSupportWhiteVarnish,
+    /// 七通道组合判读视图：在 W/S/V 之上再叠加缩裹 T。
+    RgbSupportWhiteVarnishTransfer,
     Occupancy,
     Empty,
 };
@@ -56,6 +60,10 @@ struct MaterialPreviewPalette
     PreviewColor white{0U, 170U, 255U, 180U};
     PreviewColor support{0U, 255U, 0U, 180U};
     PreviewColor varnish{127U, 127U, 127U, 180U};
+    // 缩裹伪彩色取品红，与 config.h 的 preview.transfer_color 默认值一致。
+    // 选品红是因为它不与既有三色相撞：白墨青蓝、支撑纯绿、光油中灰；
+    // 也不与 03/08 系列缩裹材质的真实色（浅桃 255,220,198 与黄 255,255,0）混淆。
+    PreviewColor transfer{255U, 0U, 255U, 180U};
     PreviewColor occupancy{80U, 80U, 80U, 255U};
 };
 
@@ -171,9 +179,12 @@ public:
      * @param request Preview mode and display-only palette.
      * @return RGBA pixels, source metadata, and production statistics.
      */
+    /// @param transferPlane 可选的逐像素 T 通道平面（长度须等于像素数）。
+    ///        六通道包传 nullptr；七通道包传 T 平面，使缩裹可参与合成而非被丢弃。
     static MaterialPreviewResult Compose(
         const RgbwsvLayerBuffer& buffer,
-        const MaterialPreviewRequest& request);
+        const MaterialPreviewRequest& request,
+        const std::vector<std::uint8_t>* transferPlane = nullptr);
 
     /**
      * @brief Read exact six-channel production values at one raw TIFF pixel.

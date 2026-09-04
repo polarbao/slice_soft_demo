@@ -16,6 +16,24 @@
 
 namespace slicer_core {
 
+namespace engine
+{
+class TransferProductionEntry;
+}
+
+/** @brief 仅可由生产 Facade 构造的 RGBWSVT Scene 准入令牌。 */
+class TransferSceneProductionAdmission final
+{
+private:
+    TransferSceneProductionAdmission() = default;
+    TransferSceneProductionAdmission(
+        const TransferSceneProductionAdmission&) = delete;
+    TransferSceneProductionAdmission& operator=(
+        const TransferSceneProductionAdmission&) = delete;
+
+    friend class engine::TransferProductionEntry;
+};
+
 /**
  * @brief Summary returned by an admitted production slicing pipeline.
  */
@@ -120,11 +138,14 @@ struct SliceRunOptions {
     bool write_preview_files{true};
     bool write_reports{true};
     SliceRunProgressCallback progress_callback;
+    std::function<bool()> cancellation_requested;
     SliceRunGridCallback gridcallback;
     SliceRunLayerCallback layercallback;
     SliceRunOwnedLayerCallback ownedlayercallback;
     std::optional<ModelInstance> instanceoverride;
     std::optional<SliceRunInputOverride> inputoverride;
+    const TransferSceneProductionAdmission*
+        transfer_scene_production_admission{nullptr};
 
     /**
      * @brief Optional already-imported model used by scene orchestration.
@@ -133,6 +154,18 @@ struct SliceRunOptions {
      * remain alive for the synchronous run.
      */
     const ModelReport* modelreportoverride{nullptr};
+
+    /**
+     * @brief 同步取消点；返回 true 时切片立即失败且不产出半成品。
+     *
+     * 取用 std::function 而非 api::ICancelToken*，是为了与
+     * MaterialVolumeBuildRequest、ModelPreflightRequest、TiffLayerSource 等既有形状一致，
+     * 并可零适配直接转交。上层若持有 ICancelToken，在调用点包一层 lambda 即可，
+     * 该做法在 ProductionRepairFacadeFactory 中已有先例。
+     *
+     * 未设置等同于「从不取消」，因此本字段对既有调用方完全无行为影响。
+     */
+    std::function<bool()> cancellationRequested;
 };
 
 /**

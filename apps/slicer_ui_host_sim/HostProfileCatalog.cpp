@@ -1,4 +1,5 @@
 #include "HostProfileCatalog.h"
+#include "HostTransferProcessPresetLoader.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -164,8 +165,30 @@ QList<hostprofiledescriptor> ReferenceHostProfileCatalog::Profiles() const
                 "受限候选不等于生产准入；修复失败、严格预检失败或"
                 "材料不闭合时必须停止。")},
         hostprofiledescriptor{
+            QStringLiteral("host-reference-transfer-channel"),
+            QStringLiteral("缩裹材料 T 通道 · 显式新版协议"),
+            QStringLiteral(
+                "使用外部新版工艺配置识别闭合缩裹区域，并写入独立 T 通道。"),
+            QStringLiteral("production"),
+            {QStringLiteral("RGBWSVT"), QStringLiteral("缩裹材料")},
+            {QStringLiteral("model.import"),
+             QStringLiteral("geometry.preflight"),
+             QStringLiteral("slice.rgbwsvt"),
+             QStringLiteral("package.verify")},
+            QStringLiteral(
+                "仅在明确选择 `_rgbwsvt` 工艺并确认外部 RGB/Kd 配置后使用。"),
+            QStringLiteral(
+                "材料、纹理、白墨或光油工艺沿用对应旧预设；"
+                "缩裹识别参数从部署的 JSON 工艺文件读取。"),
+            QStringLiteral(
+                "输出 p0.rgbwsvt.1、uint8、black_is_print、"
+                "R/G/B/W/S/V/T 七通道 TIFF，并执行严格包校验。"),
+            QStringLiteral(
+                "不得回退 slice.rgbwsv；无匹配区域按工艺允许为空，"
+                "多匹配或拓扑不合格时失败即拒绝。")},
+        hostprofiledescriptor{
             QStringLiteral("host-reference-package-review"),
-            QStringLiteral("生产包与六通道检查 · 只读"),
+            QStringLiteral("生产包与通道检查 · 只读"),
             QStringLiteral("只读检查生产包摘要、报告和层预览。"),
             QStringLiteral("diagnostic"),
             {QStringLiteral("包检查"), QStringLiteral("只读")},
@@ -177,7 +200,7 @@ QList<hostprofiledescriptor> ReferenceHostProfileCatalog::Profiles() const
                 "加载既有生产包，检查 manifest、报告和逐层通道。"),
             QStringLiteral("不提交模型切片，不修改任何生产参数。"),
             QStringLiteral(
-                "读取并校验 p0.rgbwsv.2 包，提供层预览和报告摘要。"),
+                "读取并校验 p0.rgbwsv.2 或 p0.rgbwsvt.1 包，提供层预览和报告摘要。"),
             QStringLiteral(
                 "该 Profile 仅用于结果检查，不能作为模型切片入口。")}};
 }
@@ -216,6 +239,8 @@ bool HostProfileCapabilityResolver::Resolve(
     const QSet<QString> moduleCapabilities(
         resolution->modulecapabilities.cbegin(),
         resolution->modulecapabilities.cend());
+    const bool hasTransferProcessProfile =
+        HostTransferProcessPresetLoader::HasAnyDeployedProfile(nullptr);
     QSet<QString> knownProfileIds;
     for (const hostprofiledescriptor& profile : profiles)
     {
@@ -232,6 +257,12 @@ bool HostProfileCapabilityResolver::Resolve(
             {
                 availability.missingcapabilities.append(requirement);
             }
+        }
+        if (profile.profileid == QStringLiteral("host-reference-transfer-channel")
+            && !hasTransferProcessProfile)
+        {
+            availability.missingcapabilities.append(
+                QStringLiteral("process-profile.rgbwsvt"));
         }
         availability.available = availability.missingcapabilities.isEmpty();
         resolution->profiles.append(availability);

@@ -1,0 +1,642 @@
+# TASKS_PRESET 工艺可配置面收敛与自测用例收口专项任务清单
+
+> 文档状态：**ACTIVE / PC-01..PC-04 COMPLETE（已过 2026-09-04 全量回归，6 失败全为既有）
+> / PC-05..PC-12 PROPOSED**
+> 版本：v1.3 ｜ 日期：2026-09-04
+> ⚠ PC-04 只解决了「可复现 + 转绿」，**没有解决耗时**：它仍占全量 992.5 s 中的 555.5 s（56%）。
+> TIMEOUT 已按 §6.7 选项 a 抬至 1800 s（原 900 s 对实测 555/628 s 仅 1.43~1.62 倍余量）
+> 定位：不占 Stage 编号的独立专项；本清单为该专项任务状态唯一真源
+> 授权：`docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md`
+> 缘起：用户 2026-09-03 提出两问 ——「自测用例是否可删减」「常用工艺预设是否可统一合并」
+
+---
+
+## 1. 固定边界
+
+```text
+不删除任何测试源文件、断言或二进制目标；只在证明「无自己的断言」时摘 CTest 注册行。
+不改既有工艺预设的 id、显示名、描述与任何材质/纹理/支撑/matvol 字段。
+不改 DefaultPresetId。
+不改 p0.rgbwsv.2 / p0.rgbwsvt.1、通道顺序、uint8 位深、black_is_print 极性。
+不放宽 SourceSizeGuard 与 14E-02 的任何阈值或白名单。
+samples/configs/material_process/ 下 15 个工艺文件被 SHA256 钉住
+  （HostTransferProfileTests::VerifyLegacyProcessProfileHashes），
+  改动必须与该基线同步更新，且必须能跑回归才允许动。
+工艺面的任何扩张走「先补预设入口、后合并维度」，不得先合并再补。
+```
+
+---
+
+## 2. 状态表
+
+| 卡号 | 任务 | 状态 | 依赖 | 完成日期 |
+|---|---|---|---|---|
+| PC-00 | 分析、授权文档与本清单 | **COMPLETE** | 用户 2026-09-03 授权 | 2026-09-03 |
+| PC-01 | 摘除 9 个纯别名 CTest 条目 | **COMPLETE**（18:00 全量回归零新增失败） | PC-00 | 2026-09-03 |
+| PC-02 | T 通道派生改策略单次加载 + 资格位，并补两条门禁 | **COMPLETE**（`matvol_t_host_profile` PASS） | PC-00 | 2026-09-03 |
+| PC-03 | 补齐 `RgbWhiteVarnish` 工艺预设入口 | **COMPLETE**（Debug 构建零编译器诊断，定向 4/4 PASS） | PC-02 | 2026-09-04 |
+| PC-04 | `hostflow_hd02_real_asset_matrix` 改清单驱动并重固化 | **COMPLETE**（选项 A；含 TIMEOUT 900→1800） | - | 2026-09-04 |
+| PC-05 | 宿主 `support.placement` 接线，或判定删除 `mode`/`placement` 其中一路 | PROPOSED | PC-04 无关 | - |
+| PC-06 | 24 条组合互斥规则收成单一准入谓词，宿主改查询而非重述 | PROPOSED | PC-05 | - |
+| PC-07 | `materialPolicy` 与 `materialProcessProfile` 交叉校验 | **PROPOSED / 开工前置已完成**（25 个文件中 5 个已不一致，其中≥2 个是误报，口径待裁定，见 §9.2） | - | - |
+| PC-08 | 工艺文件 overlay 化与 top-N 参数化 | PROPOSED（受 SHA256 冻结约束） | PC-07 | - |
+| PC-09 | W/V 对称预设合并；两条 materialvolume 候选工艺收敛 | PROPOSED / 待 MATVOL 裁定 | PC-06 | - |
+| PC-10 | 8 个不在 CTest 内的验证脚本：入 CTest 或删除 | PROPOSED | - | - |
+| PC-11 | 既有 **6** 项回归失败的归属与处置 | PROPOSED | - | - |
+| PC-12 | 断言实参求值顺序导致失败不报原因（全仓 **85 处**） | PROPOSED / **低优先级**（已证非机械改动，批量改写已试并回退，见 §15.2） | PC-04 | - |
+
+---
+
+## 3. PC-01 摘除 9 个纯别名 CTest 条目 — COMPLETE
+
+判定口径：**同一可执行 + 同一参数 + 无区分性 test property**。
+
+| 实际执行的二进制 | 保留 | 摘除 |
+|---|---|---|
+| `hostflow_hb05_slice_settings_tests` | `hostflow_hb05_slice_settings` | `he03_support_settings`、`he04_material_profile`、`he05_texture_profile` |
+| `hostflow_hb08_workspace_state_tests` | `hostflow_hb08_workspace_state` | `he03_support_persistence`、`he04_material_persistence`、`he05_texture_persistence` |
+| `stage14d06_public_worker_routing_tests` | 本名 | `stage14d05_r4b_public_worker_artifact_tests`、`stage14d04b_public_worker_cancellation_tests` |
+| `hostflow_hb01_model_import_tests` | `hostflow_hb01_model_import` | `hostflow_he02_batch_import` |
+
+**证据：** Debug 全量 231 → 222；全配置唯一名 243 → 234；两个 delta 均恰为 −9。
+任务卡证据重映射见授权文档 §1.1。
+
+**未摘除：** `tiff_writer_handwritten_alignment_known_failure_unit_tests` 与
+`tiff_writer_alignment_conformance_unit_tests` 命令逐字相同但位于 `if/else` 两支，
+互斥且后者带 `WILL_FAIL TRUE`，不是重复。它应随 handwritten 后端退场，属 TIFF 专项。
+
+---
+
+## 4. PC-02 T 通道派生收口 — COMPLETE
+
+**改前的两个问题：**
+
+```text
+1) 部署目录 10 个 *_rgbwsvt.json 的 transferChannelPolicy 块逐字节相同，
+   而宿主只读这一个块 —— 它们是同一条 T 策略的 10 份副本，
+   把文件名写进调用方是虚假的精确；
+2) 新增一条基线工艺就必须记得补一次调用。MO-11 时期按需补白正是这么漏掉的。
+```
+
+**改后：** `LoadDeployedPolicy()` 按文件名取第一个可严格加载的文件，策略只加载一次；
+派生对象由 `hostprocesspreset::transfereligible` 决定，该位与基线工艺定义写在同一处。
+
+**新增两条门禁：**
+
+```text
+VerifyDeployedTransferPolicyCopiesAgree
+    全部可加载的 *_rgbwsvt.json 的 transferChannelPolicy 必须一致
+    —— 「十份副本相同」是「按文件名取第一个」的成立前提，副本漂移属静默故障。
+transferPresetCount == eligibleBasePresetCount
+    T 工艺条数必须等于标了资格位的基线工艺条数 —— 漏派生会被直接指名。
+```
+
+**证据：** 18:00 全量回归 `matvol_t_host_profile` PASS，`transferPresetCount` 仍为 4。
+
+---
+
+## 5. PC-03 补齐 `RgbWhiteVarnish` 工艺预设入口 — COMPLETE
+
+### 5.1 缺口事实
+
+```text
+HostMaterialStrategy 六个值中，RgbWhiteVarnish 是【唯一】没有工艺预设入口的一个：
+  可在材料面板手工选出（HostMaterialSettingsPanel.cpp:27）
+  被 workspace state 持久化（HostWorkspaceState.cpp:35/75）
+  有测试覆盖（HostSliceSettingsTests.cpp:328、HostWorkspaceStateTests.cpp:96/189）
+  但 8 条基线预设无一使用它
+
+而切片侧早已把它当一等工艺：
+  samples/configs/material_process/ 下 6 个 *rgb_white_varnish* 工艺文件
+    nail_rgb_white_varnish_top1 / top2 / top3 / top2_regression、
+    obj_mtl_texture_rgb_white_varnish、其 _regression、three_mf_texture_rgb_white_varnish
+  全部被 VerifyLegacyProcessProfileHashes 的 SHA256 钉住
+  samples/scenarios/slicer_scenarios.json 按路径在跑 top1 与 top3
+```
+
+### 5.2 已落地内容
+
+新增第 9 条基线工艺，字段按 `obj_mtl_texture_rgb_white_varnish.json` 取：
+
+```text
+id           textured_nail_rgb_white_varnish_lower_support
+显示名       彩色纹理｜RGB 表层 + 白墨与光油实体填充｜下表面支撑
+strategy     HostMaterialStrategy::RgbWhiteVarnish
+texture      enabled，top_surface_band（对应工艺文件的 topSurfaceLayers 1）
+角色映射     rolemappingenabled = true
+             （hostmaterialprocesssettings 的 mapwhitenames / mapvarnishnames 默认 true、
+               defaultrole 默认 Rgb，与该工艺 rules_then_default 的三条规则一致）
+光油层数     varnishtoplayers 默认 1，对应 top1；top2/top3 由用户在面板改
+派生 T       否（与 rgbWhite / rgbVarnish 同因：rolemapping 与 T 的组合未经 MATVOL-T 评审）
+插入位置     rgbVarnish 之后，与 RGB+X 家族相邻
+```
+
+### 5.3 已完成的静态确认
+
+```text
+✔ 不撞任何预设条数断言 —— 全仓仅 HostThreeDCanvasTests.cpp:578 有 count()==7，
+  但那是 threeDCameraPresetCombo（相机视角下拉），与工艺下拉无关
+✔ 不撞 transferPresetCount == 4 —— 新预设 transfereligible = false
+✔ 宿主组合校验不拒绝该组合 —— HostSliceSettings.cpp:300 的按需补白门只在
+  whitepolicy == WhiteUnderbase 时触发，新预设用默认 FailClosed；materialvolume 关闭
+✔ SourceSizeGuard --self-test PASS，全仓扫描对 HostProcessPresetCatalog.cpp（265 行）零命中
+✔ 14E-02 禁止子串（slicer_core / slicer_base / slicer_engine）零命中
+```
+
+### 5.4 验证结果（2026-09-03 实测）
+
+```text
+✔ Debug 构建退出码 0，编译器诊断 0 条（/W4 /WX）
+✔ 定向回归 4/4 PASS
+    hostflow_hb01_model_import ....... 0.17 s
+    hostflow_hb05_slice_settings ..... 0.36 s   ← 含 VerifyPresetProfileHashClosure
+    matvol_t_host_profile ............ 0.11 s   ← transferPresetCount 仍为 4
+    hostflow_hb08_workspace_state .... 0.22 s
+```
+
+`hostflow_hb05_slice_settings` 通过即证明 9 条基线工艺逐条 Worker 同算法哈希闭合；
+`matvol_t_host_profile` 通过即证明 `transferPresetCount == eligibleBasePresetCount == 4`
+在新增第 9 条基线工艺后仍成立（新工艺 `transfereligible=false`）。
+
+### 5.5 仍未做的确认
+
+```text
+✘ Release /W4 /WX 未跑（本次只验 Debug）
+✘ UI Smoke 未做：工艺下拉应为 13 项，新项可选、切换后各面板取值正确
+建议  用 model/obj 下任一带 white/varnish 命名材质的资产实跑一次，
+      核对 W 与 V 通道确实分别按材料名落位
+```
+
+---
+
+## 6. PC-04 `hostflow_hd02_real_asset_matrix` 改清单驱动并重固化 — COMPLETE
+
+> 用户 2026-09-03 在 A/B/C 中选定**选项 A（清单驱动）**并授权执行。
+> §6.1–6.3 为诊断记录，§6.5 起为实施与实测结果。
+
+### 6.1 它是回归时长的唯一主导项
+
+```text
+hostflow_hd02_real_asset_matrix  实测 555.5 秒，占全量 992.5 秒的 56%
+其余 221 项合计                  437 秒
+⚠ 更正：本卡 v1.0 曾写「其余 221 项合计约 22 秒」。那是把 CTestCostData.txt 里的
+  【平均】cost 求和得来的，而该文件对从未跑完的用例记 0，严重低估真实串行耗时。
+  例：stage14d08_r2_slice_executor_tests 记 2.05 s 实为 87.5 s；
+      hostflow_hd04_scene_refresh 记 1.00 s 实为 35.7 s。
+  下方数字均改用 2026-09-04 全量 Debug 串行实测值。
+CTestCostData 历史            7 次运行 cost 恒为 0。⚠ 那是 CTestCostData 对【失败】用例的
+                              记法，不代表未执行 —— 本卡 v1.0 曾据此误判为「疑似从未执行」
+```
+
+### 6.2 根因：输入集是文件系统扫描，而断言是冻结数字
+
+`tests/hostflow/HostThreeDCanvasTests.cpp` `VerifyRealAssetMatrix()`：
+
+```text
+输入  QDirIterator(model/obj, "*.obj", QDir::Files, QDirIterator::Subdirectories)
+      —— 递归扫盘，逐个 ImportModel + Refresh
+下限  Require(modelPaths.size() >= 36)
+断言  Require(renderedCount == 22 && budgetRejectedCount == 0 && assetRejectedCount == 14)
+实测  rendered=93 budget=0 asset=2
+```
+
+所以往 `model/obj/` 放任何 OBJ，都会**静默改变本用例的输入集**并按资产数线性增加耗时。
+
+### 6.3 关键发现：该冻结基线无法从仓库复现
+
+```text
+冻结提交  03b08bb  2026-08-11  test(render): 【R-F-02预算重测】重固化真实资产显示基线
+冻结期望  22 + 0 + 14 = 36 个模型
+但 03b08bb 时 model/obj 下 git 跟踪的 .obj 只有 31 个
+  → 差额 5 个必定来自当时工作树里【未提交】的资产
+今天      93 个已跟踪 + 4 个未跟踪（gubao03/gb03.obj、gubao04/gb04.obj、
+          finger_suoguo/b-厚度不同/00a.obj、00b.obj）= 97 个
+```
+
+**结论：** 这不是今天引入的回归，而是自 2026-08-11 冻结起就一直红的用例；
+且因为冻结时的输入集含未入库文件，**任何人都无法从仓库重建那 36 个资产的清单**。
+（`03b08bb` 时的 31 个已跟踪资产今天全部仍存在，缺的正是那 5 个从未入库的。）
+
+### 6.4 曾提出的三个选项（用户选 A）
+
+```text
+选项 A  改为清单驱动 —— 【已采纳】
+选项 B  按今天的 97 个资产重固化 22/0/14 —— 未采纳（每加资产都要再固化一次）
+选项 C  移出默认回归 —— 未采纳（把红灯变成静默债）
+```
+
+### 6.5 实施内容
+
+**① 输入改为仓库内的冻结清单**
+
+```text
+新增  tests/hostflow/fixtures/render_ra02_asset_manifest.txt
+      31 行资产路径 + 文件头注释（记明清单来历与「原 22/0/14 为何不可复现」）
+      格式：一行一个仓库相对路径；空行与 # 开头的行忽略
+改写  VerifyRealAssetMatrix 不再用 QDirIterator 递归扫 model/obj，改读该清单；
+      逐条 Require 条目存在；并把原 >= 36 的下限改成 == 31 的精确校验
+清单内容取自冻结提交 03b08bb 当时【git 已跟踪】的 31 个 OBJ（今天全部仍存在）
+保留  modelRoot 仅用于把证据 CSV 的路径写成相对 model/obj 的形式
+```
+
+**② 三元组一次性重固化：22 / 0 / 14 → 29 / 0 / 2**
+
+```text
+实测（31 个资产）  rendered=29  budget=0  asset=2   ← 合 31 ✓
+```
+
+顺带记录一处**语义变化**：同一批资产里有 7 个从 asset-rejected 变为可渲染，
+即资产准入自 2026-08-11 起明显放宽（mesh repair / importer 侧的改进）。
+这正是重固化必须留痕、而不能当作「修回去」的原因。
+
+**③ 聚合步骤对齐 22 实例产品预算**
+
+改①②之后暴露出一条此前从未执行到的断言失败：`R-A-02 aggregate import`。
+根因是 `HostModelImportWorkflow::ImportModels`（`HostModelImportWorkflow.cpp:94`）
+有 `m_instanceModels.size() + modelPaths.size() > 22` 的硬上限 ——
+即**场景实例预算 22**，而这个 22 正是 AGENTS.md 记载的
+「13B 尚未回签的 22-instance production budget」，不得为迁就用例而抬高。
+
+```text
+为什么以前没暴露  2026-08-11 冻结时 renderedCount 恰好就是 22，正顶在预算上；
+                  准入放宽后可渲染数升到 29，聚合导入随即被预算拒绝。
+                  而在①②修好之前，用例根本走不到聚合这一步（先在三元组处就红了）。
+改法              聚合步骤只取前 22 个可渲染资产（kSceneInstanceBudget）。
+                  用满预算而非用满资产才是这一步该测的 —— 真实场景放不下 29 个实例。
+                  证据文件新增一行 aggregatePaths= 以便区分「可渲染数」与「入场景数」。
+影响面            聚合步骤下游【没有任何冻结数字】，只有证据落盘与
+                  Require(aggregateRendered) / Require(aggregateTopRendered) 两个布尔断言，
+                  因此本改动不触及其他冻结期望。
+```
+
+**④ 顺带修一处让失败不报原因的缺陷**
+
+```text
+原写法  Require(client.Open(..., &err), err)
+        Require(workflow.ImportModels(paths, &imports, &err),
+                QStringLiteral("...: %1").arg(err))
+问题    把调用写成 Require 的第一个实参、第二个实参又读同一个 err 变量，
+        属未指定的实参求值顺序 —— 消息可能在调用写入 err【之前】就构造好，
+        失败时打出一个空原因。
+实证    首次跑到该断言时的输出正是「H-D-02 FAIL: R-A-02 aggregate import: 」，
+        冒号后一片空白，而 ImportModels 明明设置了完整的中文错误消息。
+改法    先把调用结果取到 const bool 局部变量，再断言。本函数两处都已改。
+        ⚠ 该写法在本仓库其他用例中可能同样存在，值得单独扫一遍（见 PC-12）。
+```
+
+### 6.6 实测结果
+
+```text
+✔ Debug 构建退出码 0，编译器诊断 0 条
+✔ hostflow_hd02_three_d_canvas ....... PASS   12.36 s
+✔ hostflow_hd02_real_asset_matrix .... PASS  628.19 s   ← 自 2026-08-11 起首次转绿
+```
+
+### 6.7 未解决：耗时问题并没有被这张卡解决
+
+```text
+改前  FAIL @ 558 s        —— 从未跑到聚合步骤
+改后  PASS @ 628 / 555 s  —— 两次实测（定向 628 s、全量 555 s），波动约 13%
+                             不比改前快，因为现在真的执行了聚合导入 + 三维/顶视渲染
+```
+
+**收益是「可复现 + 转绿 + 新增资产不再静默改动它」，不是「变快」。**
+
+全量 Debug 串行实测 992.5 秒，本条占 555.5 秒（**56%**）；前 10 项合计 867 秒（87%）：
+
+```text
+  555.46 s  hostflow_hd02_real_asset_matrix     ← 本卡
+   87.51 s  stage14d08_r2_slice_executor_tests
+   49.45 s  matvol_production_wiring_tests
+   45.94 s  stage16_contact_leveling_diagnostic_tests
+   35.71 s  hostflow_hd04_scene_refresh
+   31.47 s  stage16_posture_matrix_tests
+   17.44 s  matvol_t_production_matrix_tests
+   15.77 s  matvol_reality_plan_tests
+   15.30 s  matvol_rgbwsvt_legacy_package_tests
+   13.13 s  textured_scene_viewdata_14b03a_unit_tests
+  其余 212 项合计 125.3 s
+```
+
+即：想缩短回归，砍掉本条只能省一半；真正的分层策略应覆盖上面这 10 项（见下方选项 c）。
+
+```text
+⚠ 超时余量曾偏薄：两次实测 555 s 与 628 s，对原 TIMEOUT 900 s 只有 1.62~1.43 倍余量，
+  且同机两次就有 13% 波动，较慢的机器上有假失败风险。已按下方 a) 抬至 1800 s。
+已处置与后续可选：
+  a) TIMEOUT 900 → 1800  ——【已执行】2026-09-04，用户批准。
+     不削弱任何断言，只降低假失败率；代价是真卡死要多等一倍才暴露。
+     鉴于它此前正因假失败而被当成「卡死」误判，这个取舍是划算的。
+  b) 缩减清单规模 —— 属覆盖面决策，须 RENDER 专项裁定，不由本卡代劳。
+  c) 分层跑：给耗时项打 label，日常回归 ctest -LE 排除、发布前全跑。
+     ⚠ 只排除本条只能省 56%；要把 16.5 分钟压到 2 分钟以内，
+       label 必须覆盖上面前 10 项（867 s / 87%），而其中 6 项属 matvol / stage16 专项，
+       需各专项分别同意，不是本卡能单方面决定的。
+```
+
+---
+
+## 7. PC-05 支撑维度双表达 — PROPOSED
+
+```text
+切片侧同时存在两套支撑方向/范围表达，值域部分重叠：
+  support.mode       bottom_projection / unsupported_only /
+                     bottom_projection_plus_unsupported / full_vertical_projection
+  support.placement  lower / upper / both / unsupported_only / full_vertical_projection
+  由 support.placement_explicit 决定用哪套；不显式时 slicer.cpp:1830 走
+  requested_placement = "legacy_mode"，即回落到 mode。
+
+宿主只暴露 mode（HostSupportMode 五值与 mode 一一对应），
+而 samples/configs 下 31 个工艺文件用的是 placement。
+后果：宿主表达不了 placement 的 upper 与 both。
+```
+
+**完成标准（二择一，需先裁定）：**
+① 宿主接线 `placement`，把 upper/both 暴露出来，并明确 `mode` 与 `placement` 的优先级；
+② 判定只支持一套，删除另一套并同步 31 个工艺文件（触及 SHA256 冻结，见固定边界）。
+
+---
+
+## 8. PC-06 组合互斥规则收成单一准入谓词 — PROPOSED
+
+```text
+「哪些组合合法」这一份知识现存三处：
+  ① src/slicer_core/config.cpp   145 条 throw，其中约 24 条是组合互斥 —— 唯一权威
+  ② apps/.../HostSliceSettings.cpp  宿主用中文重述（:311 按需补白、:331 matvol+角色映射）
+  ③ HostProcessPresetCatalog.cpp    9 条基线预设 = 「已知可行组合」以数据形式再写一遍
+
+②必然不全：核心 24 条，宿主只重述了 4 句。
+结构上必然存在「宿主校验通过、切片期才被拒」的组合。
+```
+
+**完成标准：** 24 条互斥规则收成一个可查询的准入谓词，作为唯一表达；
+宿主改为查询该谓词并在 UI 上置灰，而不是各自重述；
+预设目录退化为「该谓词的若干命名解」。
+
+**注意：** `config.cpp` 已在 SourceSizeGuard 的 G2 白名单内，本卡会继续增长该文件，
+需在授权文档里说明，或借本卡把谓词抽到独立文件。
+
+---
+
+## 9. PC-07 `materialPolicy` / `materialProcessProfile` 交叉校验 — PROPOSED
+
+```text
+samples/configs 下 41 个文件有 materialProcessProfile、33 个有 materialPolicy、
+25 个【同时有两个】，二者平行重述同一意图（rgb/white/varnish 的 enabled + mode + 值）。
+
+分工是不对称的：
+  只有 materialPolicy（或旧 materialRoleMapping）驱动产出；
+  materialProcessProfile 是 report-only —— MaterialProcessReport.cpp:78 在 policy
+    关闭时只发一条 warning；
+  但 profile.validation.require*Pixels 确实驱动 report 的 pass/fail。
+
+而 config.cpp 的校验（1166-1211 行）只逐块检查各自合法性，从不交叉比对。
+即：policy 写 topLayers=1、profile 写 topLayers=2，配置校验全绿，
+产出按 1 走、验收断言按 2 判，26 个文件全靠手工同步。
+```
+
+### 9.1 开工前置已完成：25 个文件中 5 个已存在不一致
+
+```text
+samples/configs/material_closure/real_model_diagnostic_template.json
+    white.enabled  policy=false      profile=true
+    white.mode     policy=disabled   profile=all_model
+samples/configs/material_process/obj_mtl_texture_rgb_varnish.json
+    white.mode     policy=disabled   profile=all_model
+samples/configs/material_process/obj_mtl_texture_rgb_white_ondemand.json
+    white.enabled  policy=false      profile=true
+    white.mode     policy=disabled   profile=unprintable_white_underbase
+samples/configs/matvol_t/process_profiles/obj_mtl_texture_rgb_varnish_rgbwsvt.json
+    white.mode     policy=disabled   profile=all_model
+samples/configs/matvol_t/process_profiles/obj_mtl_texture_rgb_white_ondemand_rgbwsvt.json
+    white.enabled  policy=false      profile=true
+    white.mode     policy=disabled   profile=unprintable_white_underbase
+```
+
+### 9.2 该结果推翻了「两块是纯重复」的初判 —— 口径必须先改
+
+两条 `*_ondemand` 的不一致**不是缺陷，是正确的**：
+`config.cpp:1012` 明令 `texture.unprintableWhitePolicy=white_underbase`
+**不允许** `materialPolicy.enabled=true`。所以按需补白工艺里白墨根本不由
+`materialPolicy` 驱动，而是由 `texture.unprintableWhitePolicy` 驱动；
+`materialPolicy.white` 必须关闭，而 report-only 的 `materialProcessProfile.white`
+如实描述「白墨来自不可打印纯白底衬」。两块在此处**各说各的事，本就应当不同**。
+
+因此 PC-07 不能是「把 profile 从 policy 派生」，而必须先分清：
+
+```text
+待裁定 A  哪些字段【必须】一致（两块都在描述同一驱动源时）
+待裁定 B  哪些字段【本就独立】（白墨/光油由 texture 或 matvol 驱动时，
+          profile 描述的是最终效果，policy 描述的是它自己不驱动该通道）
+待裁定 C  两条 obj_mtl_texture_rgb_varnish 的 white.mode
+          policy=disabled / profile=all_model 属于 A 还是 B —— 需逐个核实
+          该工艺的白墨实际由谁驱动；若无人驱动则 profile 写错了
+```
+
+**完成标准：** 先产出 A/B 字段分类，再只对 A 类加交叉校验；
+C 类 2 个文件逐个核实并修正（注意这两个文件在 SHA256 冻结名单内，见固定边界）。
+
+**不要**直接加一条全字段交叉校验：按 9.1 的实测，那会立刻让 5 个文件变红，
+其中至少 2 个是误报。
+
+---
+
+## 10. PC-08 工艺文件 overlay 化与 top-N 参数化 — PROPOSED
+
+```text
+机械重复（逐条已实测）：
+  top1/top2/top3       三个 114 行文件，语义差异只有一个整数 topLayers（1/2/3），
+                       且该整数在同一文件内要写两遍（materialPolicy 与 materialProcessProfile）
+  *_regression         只差模型路径与 preview 开关；
+                       nail_rgb_white_varnish_top2_regression 等价于「top1 + topLayers=2」
+  *_rgbwsvt            纯叠加层：= 非 T 版 + channelOrder 追加 "T"
+                       + packageProtocol: p0.rgbwsvt.1 + 一个 transferChannelPolicy 块
+                       10 个各约 170 行的整体拷贝，表达的是一个 overlay
+```
+
+**受约束：** `VerifyLegacyProcessProfileHashes` 钉住 `material_process/` 下 15 个文件的
+SHA256；`slicer_scenarios.json` 按路径引用 top1/top3。改动必须同步更新哈希基线，
+且必须能跑回归才允许动 —— 见固定边界。
+
+**完成标准：** 引入 base + overlay 的工艺表达，10 个 T 文件退化为 1 个 overlay；
+top1/2/3 退化为 1 个模板 + 1 个参数；15 个 SHA 基线同步更新并跑通。
+
+---
+
+## 11. PC-09 预设合并 — PROPOSED / 待 MATVOL 裁定
+
+```text
+① W/V 对称的两对，形状完全一致、只差填充通道：
+     textured_nail_rgb_white_lower_support ／ textured_nail_rgb_varnish_lower_support
+       （均 TopSurfaceBand + rolemappingenabled=true）
+     single_material_relief_white ／ single_material_relief_varnish
+       （均 texture off + 实体单通道）
+   可合为 2 条 + 一个「内部填充通道 W/V」选择器。W 与 V 在 materialPolicy 里是对称通道。
+   代价：需给 UI 加通道选择器；会改被测试按 id 断言的预设，属工艺面改动。
+   注：PC-03 落地后本组还多出 RgbWhiteVarnish 这一「W 与 V 同时」的第三态，
+       合并时应一并纳入设计，避免把它又切成第三条独立预设。
+
+② volumetric_nail_rgb_white_ondemand_lower_support 与
+   multilayer_transparent_varnish_lower_support（两条候选、生产接线均未完成）：
+   后者在四处严格更强 —— 命名自动推导优先级（而非 primary/secondary 两个名字槽手填）、
+   由 MTL d 值判 V 通道、退化面阈值 1e-24、texture 开启。
+   且前者 texture=false 的理由已由后者的代码注释记明「M2 落地后已不成立」。
+   唯一真实阻碍：前者服务【不遵循 <素材名>-L<层号> 命名】的资产（手填 01/02 优先级）。
+   开工前置：MATVOL 裁定这类资产的去向；MV-08 生产接线未完成。
+```
+
+---
+
+## 12. PC-10 CTest 之外的验证脚本 — PROPOSED
+
+```text
+以下 8 个脚本不被任何 CMakeLists 引用，构建与回归都不会碰到，
+只被 docs/slice/REPORT/ 下的报告当手工步骤引用 —— 记不起来就永远不跑：
+
+  tests/contracts/RunSceneFacade14B03Tests.ps1
+  tests/contracts/ValidateSceneFacade14B03.py
+  tests/contracts/ValidateUiHostPortabilityManifest.py
+  tests/stage14b_02/RunTests.ps1
+  tests/stage14b_03a/RunIndependent.ps1
+  tests/stage14b_03a/ValidateRealFixtures.py
+  tests/stage14d_06/ValidateWorkerOnlyHeavyRouting.py
+  tests/stage14d_07/RunEngineConformance.py
+```
+
+**完成标准：** 逐个判定「入 CTest」或「删除并同步报告文档」，不留中间态。
+
+---
+
+## 13. PC-11 既有回归失败的归属与处置 — PROPOSED
+
+三次全量回归逐条比对（改前 231 项 → 收口后 222 项）：
+
+| 失败项 | 09-03 10:57 改前 | 09-03 18:00 中途 | **09-04 10:29 收口** | 归属 |
+|---|---|---|---|---|
+| `slicer_stage14c04_sync_capability_safety_test` | FAIL | FAIL | **FAIL** | 既有 |
+| `stage14f03_single_model_s1_gate` | FAIL | FAIL | **FAIL** | 既有 |
+| `stage14f05_local_closure_gate` | FAIL | FAIL | **FAIL** | 既有 |
+| `scene_layer_adapters_unit_tests` | FAIL | FAIL | **FAIL** | 既有 |
+| `slicer_stage14e02_qt_host_boundary_test` | FAIL | FAIL | **FAIL** | 既有（`HostMainWindow.cpp` 502 行未入债务台账） |
+| `slicer_stage14e04d_dual_view_contract_test` | FAIL | FAIL | **FAIL** | 既有 |
+| `hostflow_hd02_real_asset_matrix` | FAIL | FAIL | **PASS** | 由 **PC-04** 修复 |
+| `matvol_white_carrier_integration_tests` | — | FAIL | **PASS** | 非本专项，由 `5d3061a` 修复 |
+
+**结论：7 → 6，唯一变化是 hd02 转绿；PC-01..PC-04 零新增失败。**
+`ctest` 退出码 8（6 项失败），222 项中 216 通过，总耗时 992.5 s。
+
+原 v1.0 曾把 stage14f03 / f05 / scene_layer_adapters / hd02 记为「cost 恒为 0，
+疑似从未执行」。现已查明：cost 为 0 是 `CTestCostData.txt` 对**失败**用例的记法，
+不代表未执行 —— 这四项都确实在跑（hd02 已转绿即为反证）。
+下方完成标准据此修正。
+
+**新增项根因已定位：** `MaterialVolumeReport.cpp:201` 加了第 13 个字段
+`materialsWithoutPixels`（commit `186c14a`），而 `tests/matvol/MatvolWhiteCarrierTests.cpp:461`
+的 `required` 仍是 12 项，第 470 行 `report.as_object().size() == required.size()` 是闭集校验。
+该目标只编译 `tests/matvol/MatvolWhiteCarrierTests.cpp` + `slicer_core`，
+与 PC-01/02/03 零源码交集。已于 2026-09-03 同步给 slice-soft-demo-0e 与 -54 两个会话，
+并由对方于 18:21 以 `5d3061a fix(test): 【闭集登记】materialsWithoutPixels 补入报告必备字段集`
+修复 —— 修法是把新字段登记进 `required` 并改为 13 项，而非放宽该闭集断言
+（闭集校验的作用正是拦住悄悄溜进 schema 的字段，本次它抓对了）。
+该提交经 `fa103b7` 合并已进入 `product/packaged-slicer`，故失败集应回到 7 项，
+下一次全量回归可确认。
+
+**结论：PC-01 与 PC-02 零新增失败。** PC-03 落地于本次回归之后，尚未被覆盖。
+
+**完成标准：** 剩余 6 项逐个定责并给出处置，其中两项已有明确线索：
+
+```text
+slicer_stage14e02_qt_host_boundary_test
+    失败原因单一且已知：apps/slicer_ui_host_sim/HostMainWindow.cpp 502 行
+    超过 500 行上限且未入债务台账。该门禁在首个失败处即中止，
+    因此它背后【可能还压着别的违规】—— 修掉这一条才能看到全貌。
+stage14f03 / stage14f05
+    两条 powershell 门禁脚本，需单独跑并读其输出，CTest 只给退出码。
+```
+
+其余三项（`slicer_stage14c04_sync_capability_safety_test`、
+`scene_layer_adapters_unit_tests`、`slicer_stage14e04d_dual_view_contract_test`）
+尚无线索，需各自读输出定责。
+
+---
+
+## 15. PC-12 断言实参求值顺序导致失败不报原因 — PROPOSED
+
+由 PC-04 §6.5④ 引出。写法：
+
+```cpp
+Require(callThatWrites(&error), QStringLiteral("...: %1").arg(error));
+//      ^^^^ 第一个实参写 error            ^^^^ 第二个实参读 error
+// 两个实参的求值顺序在 C++ 里是未指定的：消息可能在调用写入 error 之前就构造好。
+```
+
+**影响：** 只影响**失败时的可诊断性**（打出空的或过期的原因），不影响判定对错。
+但它正是本次多花时间的直接原因 —— PC-04 首次跑到聚合断言时输出的是
+`H-D-02 FAIL: R-A-02 aggregate import: `，冒号后一片空白，
+而 `ImportModels` 明明设置了完整的中文错误消息。
+
+### 15.1 全仓扫描结果：**85 处**（不是初版说的 36 处）
+
+```text
+ 16  tests/hostflow/HostSliceSettingsTests.cpp
+ 11  tests/hostflow/HostThreeDCanvasTests.cpp        （PC-04 已修其中聚合段的 2 处）
+ 10  tests/hostflow/HostSceneRefreshTests.cpp
+  9  tests/stage14e_04d/Stage14E04DViewSwitchTests.cpp
+  7  tests/stage14e_04/Stage14E04TopViewTests.cpp
+  6  tests/stage14e_03/Stage14E03InteractionTests.cpp
+  6  tests/stage14e_04c/Stage14E04CThreeDTests.cpp
+  5  tests/hostflow/HostDragInteractionTests.cpp
+  4  tests/hostflow/HostSliceJobTests.cpp
+  3  tests/hostflow/HostTopViewCanvasTests.cpp
+  2  tests/hostflow/HostSceneProfileRebindTests.cpp
+  2  tests/stage14c_03/ModuleAbiTests.cpp
+  1  tests/hostflow/HostModelImportWorkflowTests.cpp
+  1  tests/hostflow/HostProfilePanelTests.cpp
+  1  tests/hostflow/HostStlImportTests.cpp
+  1  tests/matvol_t/HostTransferProfileTests.cpp
+其中 4 处位于 || / && 短路链中，提升会改变求值时机。
+```
+
+⚠ 本卡 v1.2 曾写「36 处」。那次扫描用的正则只支持一层嵌套括号，
+漏掉了实参里还有嵌套调用的站点（如
+`topRenderer.Refresh(workflow.SceneHandle(), workflow.SceneRevision(), &frame, &error)`）。
+上表改用括号配对扫描，为准。
+
+### 15.2 已尝试批量改写并**回退** —— 它不是机械改动
+
+本卡 v1.2 曾判定这是「纯机械改动，可一次性完成」。**该判断是错的**，
+2026-09-04 实际尝试脚本化改写 81 处后回退，原因：
+
+```text
+① 需要保留断言的【第二个实参】。脚本把 Require( 到匹配 ) 之间整体替换成了
+   新变量名，把失败消息一起吃掉了 —— 好在 Require 是两参签名，直接编译不过而非静默错。
+② 变量命名无法机械生成。从「最后一个 identifier(」取名会得到
+   clientQByteArrayLiteralOk、topRendererSceneRevisionOk 这类由
+   QByteArrayLiteral / SceneRevision 派生的错名字；而同一函数里
+   first.Load / restored.Load 这种同名调用还会撞名。
+③ 4 处在短路链中，提升会让原本被短路跳过的调用变成无条件执行。
+```
+
+### 15.3 修正后的完成标准
+
+```text
+不要批量脚本化。按文件逐个手工改，每文件改完单独构建 + 跑该文件对应的用例。
+改法见 PC-04 §6.5④：先把调用结果取到 const bool 局部变量，再断言。
+优先级：低 —— 它只影响【失败时】的可诊断性，不影响判定对错。
+建议按「该用例近期是否真的失败过」排序，而不是按处数多寡；
+或者干脆改为「谁将来遇到空原因就地修一处」，不单独立项推平。
+```
+
+**注意：** 这些站点只在断言失败时才显形，因此「改完回归依然全绿」是预期结果，
+不能作为改对了的证据 —— 必须挑一处临时改坏以确认原因确实被打印出来。
+
+---
+
+## 14. 修订记录
+
+| 日期 | 版本 | 变更 |
+|---|---|---|
+| 2026-09-03 | v1.0 | 首版。固化 PC-01/PC-02 已完成事实与 18:00 回归证据；记录 PC-03 已落地内容与恢复回归后的确认清单；PC-04 给出「冻结基线无法从仓库复现」的完整证据链与 A/B/C 三个待裁定选项；PC-05..PC-11 列明各自的实测事实、完成标准与开工前置（含 PC-07 必须先扫 25 个文件测出既有不一致、PC-08 受 15 个 SHA256 冻结约束、PC-09 待 MATVOL 裁定）。 |
+| 2026-09-04 | v1.3 | PC-04 §6.7 选项 a 已执行：`hostflow_hd02_real_asset_matrix` 的 TIMEOUT 900→1800（用户批准；实测 555/628 s 对 900 s 仅 1.43~1.62 倍余量）。**PC-12 口径两处更正**：处数由 36 改为 **85**（原扫描正则只支持一层嵌套括号，漏掉实参含嵌套调用的站点）；并撤回「纯机械改动」的判断 —— 实际脚本化改写 81 处后已回退，三条失败原因记于 §15.2（吃掉第二个实参、变量名无法机械生成且会撞名、4 处在短路链中）。完成标准改为逐文件手工改、低优先级，或改为「遇到空原因就地修一处」而不单独推平。 |
+| 2026-09-04 | v1.2 | 补 2026-09-04 10:29 全量回归证据：222 项 6 失败，7→6，唯一变化是 hd02 转绿，PC-01..PC-04 零新增失败。**更正 v1.0/v1.1 的耗时数字**：原「其余 221 项合计约 22 秒」系对 `CTestCostData.txt` 的平均 cost 求和所得，而该文件对失败用例记 0，严重低估；实测全量 992.5 s，hd02 占 555.5 s（56%），前 10 项占 867 s（87%），已列出前 10 名单，并据此把 §6.7 选项 c 改为「label 必须覆盖前 10 项、且其中 6 项属别的专项」。同步更正「cost 恒 0 = 疑似从未执行」的错误推断（cost 0 是失败用例的记法）。§13 完成标准改为逐项定责，并记明 14E-02 门禁在首个失败处中止、背后可能还压着别的违规。 |
+| 2026-09-03 | v1.1 | PC-03 转 COMPLETE（Debug 零编译器诊断、定向 4/4 PASS，§5.4 落实测数据，§5.5 记明 Release 与 UI Smoke 仍未做）。PC-04 按用户选定的选项 A 执行完毕并转 COMPLETE：清单驱动、三元组 22/0/14→29/0/2 一次性重固化（含「7 个资产从 rejected 变为可渲染」的语义变化留痕）、聚合步骤对齐 22 实例产品预算、并修一处让失败不报原因的实参求值顺序缺陷；§6.7 明确耗时问题未解决且超时余量仅 1.43 倍，列出 a/b/c 三个后续可选项。新增 PC-12：该求值顺序写法全仓 36 处已扫出清单（§15）。 |

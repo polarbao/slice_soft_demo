@@ -1,7 +1,8 @@
 # TASKS_MATVOL 多材质纵深体积 RGB 与按需补白根治专项任务清单
 
-> 文档状态：**ACTIVE / MV-00..MV-03、MV-05..MV-06 COMPLETE / MV-04 INPUT OPEN / 生产语义未改**
-> 版本：v1.5 ｜ 日期：2026-08-21
+> 文档状态：**ACTIVE / MV-00..03、05..08C COMPLETE（真实资产多材质纵深已跑通并落盘报告）
+> / MV-04 INPUT OPEN（MQ-01 实测上限已给出，未回签）/ 生产默认 Profile 仍为 matvol 关闭**
+> 版本：v1.7 ｜ 日期：2026-08-24
 > 定位：不占 Stage 编号的独立材料体积专项；任务状态唯一真源
 > 决策：`docs/slice/DOC/DOC_DECISION_MATVOL_多材质纵深体积RGB与按需补白根治.md`
 > 准备：`docs/slice/DOC/DOC_PREP_MATVOL_实施准备与数据上下文.md`
@@ -29,12 +30,14 @@ S3/S4、Global、OpenVDB 不进入首批生产范围。
 | MV-01 | 资产事实、synthetic fixture、旧顶面投影 baseline 与独立 oracle | **COMPLETE** | MV-00 | 2026-08-20 |
 | MV-02 | MaterialVolumePolicy、拓扑分类、稳定错误和配置合同 | **COMPLETE** | MV-01 Gate | 2026-08-20 |
 | MV-03 | 封闭材质有序交点、compact interval plan 与单层物化 | **COMPLETE** | MV-02 | 2026-08-20 |
-| MV-04 | 开放表面 surface_band 非生产候选与 `03.obj` 厚度裁决 | PENDING / INPUT OPEN | MV-03、MQ-01/MQ-02 | - |
+| MV-04 | 开放表面 surface_band 非生产候选与间距趋零口径 | **DESIGNED / 触发资产待定**（03.obj 焊接后无开放表面） | MV-03 | - |
 | MV-05 | 单层材质 owner、显式重叠优先级和 RGB 合成 | **COMPLETE** | MV-03（MV-04 可选，未纳入） | 2026-08-21 |
 | MV-06 | Stage 15 按需补白、closure、报告和组合 Gate | **COMPLETE** | MV-05 | 2026-08-21 |
-| MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **PREPARED** | MV-06（已满足） | - |
-| MV-08 | MEMFLOW bounded/owned 生产候选接线与 Staged Package | PENDING | MV-06、MF-03B4/MF-04 | - |
-| MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | PENDING | MV-07、MV-08 | - |
+| MV-07 | 参考宿主 Profile/UI/预检和 RGB-only 结果表达 | **COMPLETE（07A/07B/07C 全部落地）** | MV-06 | 2026-08-24 |
+| MV-08A | 真实资产 plan 构建证明（适配器缺口经实测证明不存在） | **COMPLETE** | MV-06 | 2026-08-24 |
+| MV-08B | `compose_layer` 合成接线并移除生产入口门（生产语义变化） | **COMPLETE**（03.obj 实测 63% 的列同列多材质） | MV-08A | 2026-08-24 |
+| MV-08C | 按需补白顺序接入与体积报告落盘 | **COMPLETE**（报告 54KB 落盘，拓扑事实与放行名单均已披露） | MV-08B | 2026-08-24 |
+| MV-09 | Reality/Golden/Package/RIP/取消/内存性能矩阵 | **多数项已完成**：Golden 语义+字节双层、RIP strict、cancel、性能内存均已实测；cold/warm 与 CLI 路径 fault 未完成，见 §12.1-12.5 | MV-07、MV-08 | - |
 | MV-10 | 生产 opt-in 准入、用户回签和专项收口 | PENDING / INPUT OPEN | MV-09、设备输入 | - |
 
 ## 3. MV-00 文档与上下文
@@ -295,12 +298,95 @@ config.cpp 的改动只有一处条件
 **验收：** workspace/profile/scene revision 持久化一致；旧预设不变；无资产能力时禁用而非静默回退；
 UI smoke 覆盖 Profile 生效和错误解释。
 
+**实施准备（2026-08-21）：** 见 `docs/slice/DOC/DOC_PREP_MATVOL_MV_07_宿主接入实施准备.md`。
+
+```text
+本卡与 MV-01..06 性质不同：它必须放宽参考宿主两道既有生产校验门，因此按
+CODEX_PROMPT_MATVOL §2 先出实施准备并等待确认，未确认前不改宿主既有门。
+
+四条已实测约束
+  ① 宿主禁止出现 slicer_core / slicer_base / slicer_engine 裸子串（含注释），
+     不能复用 MaterialVolumePolicyConfig，必须自建镜像并由 Worker 解析回来
+  ② 两套行数门禁：ValidateQtHostBoundary 的 500 行规则在 HEAD 上已失败（8 文件超限）；
+     ValidateSourceSizeGuard 的 protectedPrefixes 含 apps/slicer_ui_host_sim/ 且不可白名单；
+     HostSliceSettingsPanel.cpp 已 820 行，距 G2 永久冻结线仅剩 180 行
+  ③ 必须显式放宽 HostSliceSettings.cpp:297-310 与 HostMaterialProfile.c:79-86/210-215
+     两道白区门，且只增加 materialvolumeenabled 形态条件以保旧组合逐字节不变
+  ④ slicingMode 耦合缺口：宿主由 textureenabled 推导 relief_heightfield，而 MATVOL
+     本意是不走纹理路径；需在 useReliefHeightfield 增加 materialvolumeenabled 条件
+
+原子拆分
+  MV-07A  设置镜像、双模板 Profile 发射、slicingMode 修复、放宽两门、预设与哈希闭合   含生产语义变化
+  MV-07B  独立子面板、能力不足禁用而非回退、UI smoke、持久化                          纯 UI 增量
+  MV-07C  结果页 RGB-only 判读入口与 S 伪彩色标注                                      纯 UI 增量
+
+验收口径的三处修正
+  「禁用而非静默回退」与现状冲突：SetSingleMaterialRestriction 当前确实自动回落，
+    新预设应照 HostProfilePanel::SetProfiles 的禁用加原因形状，不沿用回落写法
+  「scene revision 持久化」无对应实现：revision 只在进程内，应理解为 workspace/profile
+    经 HostWorkspaceState 持久化且新预设不破坏 ValidateSceneBinding
+  「RGB-only 入口」已存在（预览模式 index 0），缺的是默认索引与伪彩色标注；
+    全仓 apps/ 与 src/ 下「伪彩」零命中，S 通道伪彩色在 UI 上没有任何说明文字
+
+待确认 MV07-Q1 放宽两道宿主门 / Q2 500 行规则处置 / Q3 预设是否需固定采样或层厚 /
+        Q4 是否可改结果页默认预览索引
+```
+
+### 10.1 MV-07A/07B/07C 实施结论（2026-08-24 回填）
+
+三张子卡全部 **COMPLETE**，MV07-Q1..Q4 全部已回签：Q1 放宽两道宿主白区门已授权并
+单独出决策（`DOC_DECISION_MATVOL_MV_07_Q1_宿主白区门放宽授权.md`，提交 `5c37617`）；
+Q2 500 行规则改为债务台账（`DOC_DECISION_MATVOL_MV07_Q2_宿主行数门禁债务台账.md`，
+提交 `f27bdee`）；Q3 预设不固定采样与层厚；Q4 结果页默认预览索引获准改动。
+
+| 子卡 | 结论 | 提交 | 关键落点 |
+|---|---|---|---|
+| MV-07A | COMPLETE | `2c9b449` | 宿主自建 `hostmaterialvolumesettings` 镜像（不引 slicer_core 裸子串）；新增第 7 个工艺预设 `volumetric_nail_rgb_white_ondemand_lower_support`（primary `01` / secondary `02`）；独立 `HostVolumetricProfile.c` 以规范化+紧凑双模板发射 `materialVolumePolicy`，未改既有模板；`useReliefHeightfield` 补 `materialvolumeenabled` 条件修复 slicingMode 耦合缺口；按 Q1 授权只增形态条件放宽两道白区门，旧组合逐字节不变；profileHash 闭合 |
+| MV-07B | COMPLETE | `71da50e` | 独立子面板 `HostMatvolSettingsPanel`（不复用回落写法）；能力不足时 `SetCapabilityRestriction` 只禁用并给原因，不改写用户选择、不发信号；MATVOL 显式排除于静默回退分支；`HostWorkspaceMatvolState` 独立持久化段，workspace schema 6→7 |
+| MV-07C | COMPLETE | `39de313`、`00d74b0` | 结果页默认预览索引 4→0（RGB-only）；补 5 处伪彩色说明与第 4 行摘要；`00d74b0` 更正伪彩色来源为 `MaterialPreviewComposer` 硬编码调色板，并非 `preview.pseudoColors` |
+
+**MV-07 遗留边界**：生产默认 Profile 仍为 matvol 关闭，新预设为显式 opt-in；
+MV-04 壳层厚度仍受 MQ-01 阻塞（实测几何上限 0.30 mm、推荐 0.228 mm，未回签，不得写入生产 Profile）。
+
 ## 11. MV-08 生产候选接线
 
 **目标：** 消费 MEMFLOW caller-owned 单层 buffer 和 staged writer；作业开始前预算/能力选路。
 
 **验收：** 不保留全层 owner/RGBWSV；取消/consumer/writer 失败清理 staging；不发布半包；不能满足预算
 时明确 `E_MATVOL_BUDGET_EXCEEDED`；Retained 旧路径可回滚。
+
+**开工门（2026-08-24 裁定）：** MEMFLOW 分支 `codex/memflow-bounded-streaming`（尖端 `826a170`）
+按用户裁定**暂缓合入** `product/packaged-slicer`，理由是其代码尚未接生产路径、无功能紧迫性，
+且 `src/slicer_core/slicer.cpp` 由 5423 增至 5464 行触犯 G2「>1000 行只减不增」冻结线，
+应由该专项自行处理而非在 merge 中承接。因此本分支目前**没有** bounded/owned 相关源文件，
+MV-08 不具备开工条件。合入冲突面已试算：仅 `CMakeLists.txt` 与 `TASKS_16` 两处。
+合入将带进 9 处行数门禁 ERROR（1 条 G2、2 条 G1 生产源、2 条 G3 头文件、4 条 G1 测试源）；
+该门禁在 CTest 中只注册 `--self-test`，仓库全扫描未进 CTest，故属静默债而非红灯。
+
+### 11.1 2026-08-24 排期与口径裁定
+
+用户当日裁定三项，直接决定后续动作：
+
+| 项 | 裁定 | 后果 |
+|---|---|---|
+| 排期 | **MV-08 优先**，且**先出实施准备文档再动手** | MV-04 让位；接入面须先由 `DOC_PREP_MATVOL_MV_08_*` 固化并回签，照 MV-07 先例 |
+| 预设可见性 | **保持可选**，以诚实错误失败 | 不做置灰；维持现状，`EnsureMaterialVolumeWiringImplemented` 给出的消息即为操作员所见 |
+| MV-04 塌缩列 | `collapsedColumnPolicy` 默认 **`explicit_priority`** | 与 DOC_DECISION §4.2A 已写口径一致，无需改动 |
+
+**为何 MV-08 是唯一关键路径。** 用户要的「03.obj 两种材料在切片数据里正确区分」只依赖生产接线：
+MV-04 是开放表面壳层候选、MV-09 是回归矩阵、MV-10 是生产准入，三者都不在这条路上。
+MV-01..07 已完成的是语义栈与宿主管道，但 `src/` 与 `apps/` 下对 `MaterialVolumePlan`、
+`ComposeMaterialLayerRgb`、`MaterializeMaterialOwnershipLayer` 等的引用数**全部为零**，
+没有任何生产调用方。
+
+**依赖前提已判定并回签（MV08-Q2）。** 实测确认 `compose_layer`（`slicer.cpp:3171`）返回单层缓冲、
+由 `:4700` 逐层调用，`compose_material_policy_pixel`（`:2960`）同时接收 `pixel_index` 与 `layer_index`；
+`texture_columns` 等三个逐列结构已有「循环前算一次、以指针传入、未启用传 nullptr」的既定形状；
+层循环以 `model_masks.at(layer_index)` 取掩码，即 Legacy 本就是 retained dense，
+MATVOL 只额外增加一个 compact CSR plan。据此判定 MV-08 对 MEMFLOW 的依赖为**组织性而非技术性**，
+用户已回签将其由「开工门」降为**可选加速项**：MV-08 不再等 MEMFLOW 合入。
+接入面、唯一缺口、三段拆分与回退方案见 `docs/slice/DOC/DOC_PREP_MATVOL_MV_08_生产接线实施准备.md`。
+上文「开工门」一段仅作为 MEMFLOW 分支暂缓合入的事实记录保留，不再构成 MV-08 的阻塞。
 
 ## 12. MV-09 回归矩阵
 
@@ -314,6 +400,154 @@ wall/CPU/Peak Working Set，记录 build identity 和重复次数。
 
 无相同请求 before/after 时不得给出性能提升比例。
 
+### 12.1 可达性查勘结论（2026-08-24）
+
+**约七成可立即执行**，模板齐全：`apps/stage16_sampling_matrix` 提供「单可执行 + 
+`--source-root/--output/--quick` + CTest 注册」的矩阵形状；
+`scripts/run_stage16_release_baseline.ps1` 提供 cold/warm 协议、build identity
+（含 gitCommit 与 worktreeDirty）与峰值内存采样。
+
+**Golden 零漂移的口径**：MATVOL **不产出新 golden**，而是证明既有 28 个 golden 的
+SHA-256 不变（机制见 `scripts/run_stage15_white_carrier_gate.ps1` 的 G3/G4）。
+注意这条自 MV-08B 改动 `compose_layer` 后**从未跑过**，正是 MV-09 存在的理由。
+生产默认 matvol 关闭且五个 golden 用例均未启用它，预期零漂移，但必须实测而非假定。
+
+**Package/RIP strict**：用 `validate_slice_package()`（`rip_reader.h:91`）加
+`rip_reader_test` 两级即可，无需外部产物；`RunRipflowLocalGate.ps1` 需要已构建的 RIP 模块，
+属 MV-10 范围。
+
+**两处硬阻塞，需单独决策：**
+
+| 项 | 阻塞原因 | 可选处置 |
+|---|---|---|
+| `cancel` | `SliceRunOptions` 没有取消令牌字段，`matvolRequest.cancellationRequested` 在生产路径从未设置。贯通需**新增生产代码**，不在任何一张卡范围内 | 另开一张卡；或把本项收窄为「仅 plan 构建层取消」（MV-03 已覆盖） |
+| `fault` | 仓库没有针对 `run_slicer` 的故障注入设施，最接近的先例是取消测试的「不发布半包」字节断言 | 需先给出 fault 的定义才可测 |
+
+**新发现的输入缺口**：`materialRoleMapping` 与 `materialVolumePolicy` 的交互没有任何契约记录，
+且前者与白区路径互斥。MV-09 会**发现**而不是**验证**这个问题，预计需新立一条 MQ。
+
+**MQ-04 不阻塞 MV-09**：按 2026-08-24 回签，设备预算只卡 MV-10；MV-09 只需**记录**
+耗时与峰值内存，不做判定。
+
+### 12.2 Golden 零漂移已实测通过（2026-08-24）
+
+MV-09 中风险最高的一项已完成。该条自 MV-08B 改动 `compose_layer`、MV-08C 改动
+`run_slicer` 报告链路后**从未验证过**，是当时唯一没有证据支撑的假定。
+
+`scripts/run_golden_tests.ps1 -BuildDir build-slicesoft/main -Config Debug` 退出码 0，
+输出 `Golden tests complete.`，逐例 PASS 包括 `TexturedMissingTextureFallback`、
+`TexturedNoUvFallback`、`ThreeMfColorGroupRgb`、`ThreeMfTexture2dChecker`、
+`MaterialPolicyRgbWhiteVarnish`。即旧路径输出未因 MATVOL 接线产生任何漂移。
+
+**该门确实会咬**（变异检验）：把 `tests/golden/expected/r2_golden_summaries.json` 的
+`p0_basic.modelPixels` 由 1440 改为 1441 后，脚本以退出码 1 失败并精确报出
+`p0_basic modelPixels expected=1441 actual=1440`。没有这一步，「通过」只说明脚本跑完了，
+不说明它在比较什么。
+
+口径提醒：本脚本是**语义 golden**（比对 manifest 网格与 `slice_report.json` 总量），
+不是字节级比对，且**不在 CTest 内**，只由 `scripts/run_ci_quick.ps1` 调用。
+字节级 SHA-256 零漂移是另一套机制（`run_stage15_white_carrier_gate.ps1` 的 G3/G4），
+MV-09 若要覆盖该层需另行执行。
+
+### 12.3 Package / RIP strict 已实测通过（2026-08-24）
+
+`validate_slice_package(result.package_dir)` 对 MATVOL 产出的包通过：
+`schema=p0.rgbwsv.2`、`grid=57x111x166`、`storage=stripped`、`compression=none`，
+且 `validation.layer_count == result.layer_count`、`bit_depth == 8`。
+
+**事先查清的风险点已排除**：MV-08C 往 `manifest.reports` 新增了 `materialVolume` 键，
+曾担心严格读取器因未知键拒绝。实测与源码核对一致——严格读取器**根本不读**
+`manifest.reports`，整个校验只触碰 `schema` / `grid` / `tiff` / `layers` 四个键；
+`contracts/p0.rgbwsv.2.schema.json` 亦为 `additionalProperties: true`。
+故 MATVOL 包不存在结构性障碍。
+
+**该校验确实会咬**（变异检验）：关闭 `write_tiff_layers` 后精确报出
+`E_LAYER_MISSING` 与缺失的具体层路径。
+
+**用例正确性前提**：`manifest.json` 仅在 `write_reports` 打开时落盘，而严格校验又要求
+TIFF 层文件真实存在，因此两个开关**必须同时打开**。只开报告不开 TIFF 会必然失败——
+这属于「测试看似在验证、实际条件不成立」的形状，已在用例注释中写明。
+
+外层捕获 `std::exception` 而非仅 `ValidationError`：`rip_reader` 对 `manifest.tiff` 用的是
+无检查的 `.at()`，缺失时抛 `std::out_of_range`，只接前者会让回归以崩溃而非失败呈现。
+
+### 12.4 字节级零漂移已实测通过（2026-08-24）
+
+**先纠正命题。** 原本要证的「MV-08B/08C 在 matvol 关闭时未改变任何输出字节」**是假的**：
+`slicer.cpp:5504` 无条件往 manifest 加 `reports.materialVolume` 键，`:5547-5548` 无条件写出
+`reports/material_volume_report.json`（关闭时为空骨架）。两处均为 MV-08C 刻意设计——
+「报告存在但为空」与「报告缺失」在下游是两种不同信号。故命题收窄为可证且有意义的形式：
+
+> **逐层 TIFF 字节逐位相同；包的增量恰好是一个 manifest 键与一个新报告文件。**
+
+**实测方法。** 仓库内**没有**任何现成设施可用：`baseline_identity.json` 名不副实，只哈希
+输入文件（配置/模型/golden 期望值），**没有一条层 TIFF 哈希**；G4 比的是同一二进制下
+「旧 Profile vs 新 Profile」两个包，证明不了版本间影响；`scripts/` 与 `tests/` 全无
+「两个构建跑同一配置再比对」的harness。因此自建：在 `d9d45ff`（MV-08B 的父提交）拉工作树，
+以**完全相同的 CMake 配置**（尤其 `SLICESOFT_TIFF_BACKEND` 是编译期宏而非配置开关）
+单独构建 `slicer_cli`，再对同一批 matvol-off 配置逐层比对 SHA-256。
+
+**结果（三例全过）：**
+
+| 用例 | 层数 | 层 TIFF 字节 | 包文件增量 | manifest.reports 增量 |
+|---|---|---|---|---|
+| `p0_basic` | 30 | 逐位相同 | `reports/material_volume_report.json` | `materialVolume` |
+| `material_process_top2` | 25 | 逐位相同 | 同上 | 同上 |
+| `support_shape_smoke` | 16 | 逐位相同 | 同上 | 同上 |
+
+三例的 removed 集合均为空，无任何多余差异。`material_process_top2` 尤其要紧——它走
+纹理/材料工艺路径，正是 MATVOL 分支插入 `compose_layer` 的位置，该例零漂移说明新分支
+确实只在 `materialVolumePolicy.enabled` 为真时生效。
+
+**比对稳定性已核实**：层 TIFF 写入的标签全为常量，未设 `TIFFTAG_DATETIME`，
+整个写入路径无时间戳或随机字段；manifest 内嵌绝对 `configPath`，故两侧顺序运行并复用
+同一配置文件路径，消除与 MATVOL 无关的差异。`autoOrient` 按 `run_golden_tests.ps1` 口径关闭。
+
+**另核实**：`b7c38cc` 改的预览调色板不影响层 TIFF——调色板仅被 `PackageQueryFacadePreview`
+消费（读已写好的包渲染显示图），`slicer.cpp` 不 include 该头文件。
+
+### 12.5 cancel 已贯通；fault 按路径二分处置（2026-08-24）
+
+#### cancel：已实现并验证
+
+此前判定「受阻」的真实原因是：`MaterialVolumeBuildRequest` 有 `cancellationRequested`，
+但 `SliceRunOptions` 没有任何取消字段，生产路径从未设置它。更要紧的是 **plan 构建发生在
+`gridcallback` 之前**，而适配器原本只靠回调取消，那个窗口完全覆盖不到——它恰是本路径
+最长的不可中断段（逐列遍历该材质全部三角面）。
+
+现 `SliceRunOptions` 新增 `std::function<bool()> cancellationRequested`（与
+`MaterialVolumeBuildRequest` 同型，零适配），由 `slicer.cpp` 透传给 `matvolRequest`，
+并在 `LegacySceneLayerAdapter` 从 `request.canceltoken` 接入。
+
+**避开的陷阱**：取消并不总以 `LegacyAdapterCancellation` 形式到达——透传的取消点由 plan
+构建内部检查，命中时抛的是 `MaterialVolumeError`。若不在通用异常处理里复核令牌，
+取消会被误报为 `ProducerFailed`，诊断指向完全错误的方向。现按令牌状态区分。
+
+**断言自校准**：仅「抛出取消」不足以证明是早期取消，`ThrowIfCancelled` 在列循环之后
+还有一次调用，跑完再报也会抛。上界以同一测试内未取消那次的实测耗时自校准（取 3/4）：
+未取消 18404 ms、预算 13803 ms、取消路径 2829 ms。初版曾拍 3000 ms 固定上界，
+实测 2901 ms 仅差 99 ms 即会误报，已废弃。
+
+**变异检验**：移除透传后取消完全失效，切片跑完 10999 ms 而非被中断。
+
+#### fault：结论与原计划不同，按路径二分
+
+原打算定义为「写包中途失败」并复用「不发布半包」断言。查勘推翻了该前提：
+**`run_slicer` 直接写进最终包目录**，无暂存、无原子重命名、无异常清理
+（`slicer.cpp:4492` 起约 15 处直接写 `package_dir / ...`）。第 k 层抛出即留下 k 个 TIFF
+与缺失的 manifest。
+
+| 路径 | 「不发布半包」 | 依据 |
+|---|---|---|
+| 生产路径 | **已保证，且已有测试覆盖** | `LegacySceneLayerAdapter.cpp:156-159` 把三个写盘开关全设 false，`run_slicer` 不写盘；发布由 `WriteRgbwsvProductionPackage` 完成，具备 staging→原子 rename→异常时 `RecoverPackageArtifacts`。既有断言见 `rgbwsv_production_package_writer` 的「white semantics mismatch publishes no package」 |
+| CLI 路径 | **结构性缺失** | 需给 `run_slicer` 加暂存与原子发布，牵动十几处写入点，属独立重构 |
+
+故 MATVOL 在此项上**不引入新风险**（它位于 `run_slicer` 内，而该层在生产路径不写盘）。
+写包器虽有可用注入点（`layerwritecallback` 可在第 k 层已落 staging、未发布时抛出），
+但那验证的是**写包器**而非 MATVOL，不以之冒充「MATVOL 的 fault 已验证」。
+
+**CLI 路径的 staging 重构另立卡**，不塞进 MV-09 假装完成。
+
 ## 13. MV-10 收口
 
 **出口：** 用户确认开放壳层与优先级；所有 Gate 有仓库证据；候选只在显式 Profile 可用；正式设备
@@ -323,6 +557,8 @@ SLA/物理打印证据缺失时只写 engineering candidate，不写 production 
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-08-24 | v1.7 | MV-07 转 COMPLETE，回填 07A/07B/07C 三张子卡的落点与提交（`2c9b449`、`71da50e`、`39de313`+`00d74b0`），新增 §10.1。MV07-Q1..Q4 全部回签：Q1 白区门放宽已授权并单独出决策 `5c37617`；Q2 `ValidateQtHostBoundary` 500 行规则改为债务台账（8 个既有超限文件只许缩减不许增长），该门首次转绿，提交 `f27bdee`；Q3 预设不固定采样/层厚；Q4 结果页默认预览索引获准改为 RGB-only。MQ-01 补入实测几何上限 0.30 mm 与推荐值 0.228 mm，仍未回签，MV-04 保持 INPUT OPEN。 |
+| 2026-08-21 | v1.6 | MV-07 完成实施准备并拆为 07A/07B/07C：新增 `DOC_PREP_MATVOL_MV_07_宿主接入实施准备.md`。固化四条已实测约束（宿主禁引 slicer_core 裸子串、两套行数门禁且宿主 UI 不可白名单、必须放宽的两道白区门、slicingMode 耦合缺口）与 profileHash 四条规范化规则及 H-F-04 根因。修正三处验收口径：禁用而非回退与现状 SetSingleMaterialRestriction 自动回落冲突、scene revision 实际不持久化、RGB-only 入口已存在但缺默认索引与伪彩色标注。登记 MV07-Q1..Q4；07A 含生产语义变化，未获确认前不修改宿主既有门。 |
 | 2026-08-21 | v1.5 | MV-06 COMPLETE：在最终 RGB 之后复用既有 `ApplyUnprintableWhiteCarrier` 完成按需补白，只写 W 且逐像素判据与 Stage 15 同源；新增 `material_volume_report` 构建与首个正式报告 JSON Schema `slicesoft.material_volume_report.1`（1 正例 + 1 变体正例 + 4 反例）。`config.cpp` 的改动收敛为单一条件：只给「仅支持 Legacy 全实体 RGB 纹理路径」这一条加 `&& !materialVolumePolicy.enabled`，其余白区禁令与错误消息原样保留。首版误加的正向窄放行检查会抢占既有禁令消息，已移除。RGB 逐字节不变、S/V 以哨兵证明未触碰、旧禁令未放宽均有机器证据；变异检验短路旧禁令后按预期 FAIL。Release `/W4 /WX` 与定向 CTest 5/5、schema 契约测试 PASS，未接 `run_slicer`。MV-07 转 PREPARED。 |
 | 2026-08-21 | v1.4 | MV-05 COMPLETE：新增 move-only `MaterialRgbTable` 与 `ComposeMaterialLayerRgb`，按 owner 解析 MTL Kd 并合成单层 RGB。绿色与浅桃色精确等于量化值；缺 Kd 默认 fail closed，仅显式策略允许 fallback 且记录来源；模型像素无 owner 报 `E_MATVOL_MODEL_PIXEL_UNOWNED`；以 0xAB 哨兵证明仅写 RGB 区域、不触碰 W/S/V；声明顺序与重复调用结果逐字节一致。变异检验去掉未拥有守卫后按预期 FAIL。Release `/W4 /WX` 与定向 CTest 5/5 PASS，未接 `run_slicer`。纹理采样未纳入本卡；MV-04 仍受 MQ-01/MQ-02 阻塞，MV-06 转 PREPARED。 |
 | 2026-08-20 | v1.3 | MV-03 COMPLETE：新增 move-only `MaterialVolumePlan` 与 CSR compact 层区间布局，实现逐列有序交点、奇偶配对与 caller-owned 单层 owner 物化；开放材质、缺失优先级、同级重叠、奇数交点、未绑定材质、非法栅格与取消全部在构建期 fail closed，物化期保持纯净。MV-F01/F02/F04 逐层 owner 与独立稠密 oracle diff=0，空洞层保持无 owner，热路径零堆分配且 buffer 地址复用，compact 区间为同规模稠密栈的 1/8。两处变异检验（包络填充、优先级反向）均按预期 FAIL。物化的参数校验改为显式抛出以对齐既有 `MaterializeLayerOccupancy` 约定。Release `/W4 /WX` 与定向 CTest 10/10 PASS，未接 `run_slicer`。MV-04 仍受 MQ-01/MQ-02 输入 Gate 阻塞。 |
