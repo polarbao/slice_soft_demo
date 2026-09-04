@@ -1,8 +1,10 @@
 # TASKS_PRESET 工艺可配置面收敛与自测用例收口专项任务清单
 
 > 文档状态：**ACTIVE / PC-01..PC-04 COMPLETE（已过 2026-09-04 全量回归，6 失败全为既有）
-> / PC-11 定责完成、处置已分派各专项 / PC-05..PC-10、PC-12 PROPOSED**
-> 版本：v1.4 ｜ 日期：2026-09-04
+> / PC-11 定责完成（其中 `stage14f05` 已修，Debug 失败集 6→5）
+> / PC-05 方向已定待产品输入 / PC-06 已拆出 `TASKS_ADMISSION_*` 独立专项
+> / PC-07..PC-10、PC-12 PROPOSED**
+> 版本：v1.5 ｜ 日期：2026-09-04
 > ⚠ PC-04 只解决了「可复现 + 转绿」，**没有解决耗时**：它仍占全量 992.5 s 中的 555.5 s（56%）。
 > TIMEOUT 已按 §6.7 选项 a 抬至 1800 s（原 900 s 对实测 555/628 s 仅 1.43~1.62 倍余量）
 > 定位：不占 Stage 编号的独立专项；本清单为该专项任务状态唯一真源
@@ -36,13 +38,13 @@ samples/configs/material_process/ 下 15 个工艺文件被 SHA256 钉住
 | PC-02 | T 通道派生改策略单次加载 + 资格位，并补两条门禁 | **COMPLETE**（`matvol_t_host_profile` PASS） | PC-00 | 2026-09-03 |
 | PC-03 | 补齐 `RgbWhiteVarnish` 工艺预设入口 | **COMPLETE**（Debug 构建零编译器诊断，定向 4/4 PASS） | PC-02 | 2026-09-04 |
 | PC-04 | `hostflow_hd02_real_asset_matrix` 改清单驱动并重固化 | **COMPLETE**（选项 A；含 TIMEOUT 900→1800） | - | 2026-09-04 |
-| PC-05 | 宿主 `support.placement` 接线，或判定删除 `mode`/`placement` 其中一路 | PROPOSED | PC-04 无关 | - |
-| PC-06 | 24 条组合互斥规则收成单一准入谓词，宿主改查询而非重述 | PROPOSED | PC-05 | - |
+| PC-05 | 宿主 `support.placement` 接线 | **方向已定 / INPUT_OPEN**（取值分布实测排除「删一路」，剩范围待产品输入，见 §7.3-7.4） | - | - |
+| PC-06 | 组合准入规则收成单一真源（实测 **29** 条，非 24 条） | **已拆出独立专项** `TASKS_ADMISSION_*`，未开工待立项 | PC-05 建议先收口 | - |
 | PC-07 | `materialPolicy` 与 `materialProcessProfile` 交叉校验 | **PROPOSED / 开工前置已完成**（25 个文件中 5 个已不一致，其中≥2 个是误报，口径待裁定，见 §9.2） | - | - |
 | PC-08 | 工艺文件 overlay 化与 top-N 参数化 | PROPOSED（受 SHA256 冻结约束） | PC-07 | - |
 | PC-09 | W/V 对称预设合并；两条 materialvolume 候选工艺收敛 | PROPOSED / 待 MATVOL 裁定 | PC-06 | - |
 | PC-10 | 8 个不在 CTest 内的验证脚本：入 CTest 或删除 | PROPOSED | - | - |
-| PC-11 | 既有 6 项回归失败的归属与处置 | **定责 COMPLETE**（6 项逐条读输出定责，处置分派各专项，见 §13） | - | 2026-09-04 |
+| PC-11 | 既有 6 项回归失败的归属与处置 | **定责 COMPLETE**；其中 `stage14f05` 已修（Debug 失败集 6→5），余 5 项分派各专项，见 §13 | - | 2026-09-04 |
 | PC-12 | 断言实参求值顺序导致失败不报原因（全仓 **85 处**） | PROPOSED / **低优先级**（已证非机械改动，批量改写已试并回退，见 §15.2） | PC-04 | - |
 
 ---
@@ -336,7 +338,7 @@ CTestCostData 历史            7 次运行 cost 恒为 0。⚠ 那是 CTestCost
 
 ---
 
-## 7. PC-05 支撑维度双表达 — PROPOSED
+## 7. PC-05 支撑维度双表达 — **方向已定（不删 placement）/ 范围待产品输入**
 
 ```text
 切片侧同时存在两套支撑方向/范围表达，值域部分重叠：
@@ -351,13 +353,81 @@ CTestCostData 历史            7 次运行 cost 恒为 0。⚠ 那是 CTestCost
 后果：宿主表达不了 placement 的 upper 与 both。
 ```
 
-**完成标准（二择一，需先裁定）：**
-① 宿主接线 `placement`，把 upper/both 暴露出来，并明确 `mode` 与 `placement` 的优先级；
-② 判定只支持一套，删除另一套并同步 31 个工艺文件（触及 SHA256 冻结，见固定边界）。
+### 7.1 为什么本卡转 INPUT_OPEN 而不是直接开工
+
+原完成标准写成「二择一」：
+① 宿主接线 `placement` 暴露 upper/both，并明确两套的优先级；
+② 判定只支持一套，删掉另一套并同步 31 个工艺文件（触及 SHA256 冻结）。
+
+**这两条都不是工程判断能决定的**，它们取决于同一个未回答的产品问题：
+
+```text
+❓ 产品是否需要「上表面支撑」与「上下双面支撑」？
+     需要 → 走①，宿主必须接线 placement，缺它就是真实能力缺口
+     不需要 → 走②，placement 的 upper/both 是从未被产品要求过的多余维度，
+              连同 placement_explicit 的双轨机制一起删掉才是收敛
+```
+
+在答案未知的情况下选任何一条都是赌：选①会为一个可能没人要的能力增加 UI 面与
+互斥规则；选②会删掉一个可能正在被某台设备需要的能力，且要动 31 个被哈希钉住的工艺文件。
+
+因此本卡按本仓库既有惯例（参照 13B 的 `buildVolume` / 22-instance 预算）
+**标为 INPUT_OPEN，而不是留在 PROPOSED 让人误以为前置已满足**。
+
+### 7.2 回答该问题需要的信息
+
+```text
+- 设备侧是否存在需要上表面支撑的打印姿态？（甲片类模型通常只需下表面）
+- placement 的 upper/both 是否曾被任何真实工艺用过？
+  已知：samples/configs 下 31 个文件用 placement，但未逐个核对取值分布 ——
+  这一步可由本专项代做，属纯统计，不需要产品输入。见下方「可先做的准备」
+```
+
+### 7.3 取值分布已实测（2026-09-04）—— 方向因此收窄，②被排除
+
+```text
+含 support.placement 的工艺文件共 30 个，取值分布：
+   23  lower
+    3  both   support_placement_both.json
+              support_outer_varnish_shell_2px_with_support.json
+              cross_section_material_stack_real_obj.json
+    2  upper  support_placement_upper.json
+              support_upper_surface_outer_varnish_shell.json
+    1  full_vertical_projection
+    1  unsupported_only
+```
+
+**结论：`upper` / `both` 不是无人使用的多余维度**，因此**②（删掉 placement 一路）被排除**。
+更关键的是这 5 个非 lower 用例里有 3 个与**外侧光油壳层**语义相关
+（`*outer_varnish_shell*`、`cross_section_material_stack_real_obj`）——
+上表面光油自然需要上侧支撑，这条能力与 12A 的材料/光油语义是配套的，不是孤立开关。
+
+**顺带纠正一处我在本卡草拟时的误判：** 30 个文件里没有任何一个写 `placementExplicit`，
+一度让我怀疑 placement 在运行期根本没生效（`slicer.cpp:1820` 要求
+`placement_explicit` 为真才让 placement 驱动 lower/upper/both，否则回落 legacy）。
+核实后**该怀疑不成立**：`config.cpp:486-488` 在 JSON 里出现 `placement` 键时
+**自动**把 `placement_explicit` 置为 true —— 它不是 JSON 字段，而是「键是否出现」
+的内部推导标志。因此这 30 个文件的 placement 全部生效。
+
+### 7.4 收窄后仍未决的那一问
+
+方向已定为①（不删 placement），但**范围**仍需产品输入：
+
+```text
+❓ 宿主 UI 是否需要现在就暴露 upper / both？
+   生产甲片模型通常只需下表面支撑，而 upper/both 目前只出现在 samples/configs/support/
+   的样例工艺里，尚无证据表明某台设备的生产工艺需要它。
+   要 → A：宿主接线 placement，暴露 upper/both，并明确 mode 与 placement 的优先级
+   不要 → B：保持宿主只暴露 mode，但在卡里明确记「宿主表达不了 upper/both 是
+            已知且被接受的缺口」，而不是当作待修缺陷挂着
+```
+
+⚠ 无论 A 还是 B，都**不要**再把它写成「二择一的完成标准」然后搁置 ——
+现状是它既没被判为缺口也没被判为接受，这种中间态正是本专项想消除的东西。
 
 ---
 
-## 8. PC-06 组合互斥规则收成单一准入谓词 — PROPOSED
+## 8. PC-06 组合互斥规则收成单一准入谓词 — **已拆出独立专项**
 
 ```text
 「哪些组合合法」这一份知识现存三处：
@@ -711,6 +781,7 @@ Require(callThatWrites(&error), QStringLiteral("...: %1").arg(error));
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-09-03 | v1.0 | 首版。固化 PC-01/PC-02 已完成事实与 18:00 回归证据；记录 PC-03 已落地内容与恢复回归后的确认清单；PC-04 给出「冻结基线无法从仓库复现」的完整证据链与 A/B/C 三个待裁定选项；PC-05..PC-11 列明各自的实测事实、完成标准与开工前置（含 PC-07 必须先扫 25 个文件测出既有不一致、PC-08 受 15 个 SHA256 冻结约束、PC-09 待 MATVOL 裁定）。 |
+| 2026-09-04 | v1.5 | 三项后续落地：①`stage14f05_local_closure_gate` 已修 —— 改由脚本在非 Release 时以 `SKIP_RETURN_CODE 111` 跳过，CTest 报 Skipped 而非 Failed，Debug 失败集 6→5；不用 CTest 的 `CONFIGURATIONS` 属性是因为 CTest 4.3.1 下实测它已解析到该属性却仍执行，滤不掉，且「显式跳过」优于「静默缺席」。②PC-06 按建议拆出独立专项 `TASKS_ADMISSION_组合准入规则单一真源收敛专项任务清单.md`，规则条数更正 24→29 并逐条列出。③PC-05 取值分布实测（30 个文件：23 lower、3 both、2 upper、各 1 full_vertical/unsupported_only）**排除了「删掉 placement 一路」**，且非 lower 用例中 3 个与外侧光油壳层语义配套；同时纠正「placementExplicit 未写故 placement 未生效」的误判 —— `config.cpp:486-488` 依 JSON 键是否出现自动置该标志。剩下的是范围问题（宿主是否现在就暴露 upper/both），已写成 A/B 两个明确出口而非搁置的二择一。 |
 | 2026-09-04 | v1.4 | PC-11 定责完成：6 项既有失败逐条实跑读输出。关键发现 —— `stage14f05_local_closure_gate` 的脚本给 `-Config` 加了 `ValidateSet("Release")` 而 CTest 传的是 `$<CONFIG>`，在任何 Debug 回归里【结构上永远不可能通过】，是一条零信号红灯，应最先修；`slicer_stage14e02_qt_host_boundary_test` 验证了「门禁首个失败即中止」的预测 —— 报 1 项而实际 5 项（3 项台账内增长未同步下调，来自 RIPFLOW/MATVOL-T/HOSTFLOW，另 2 项台账外超 500 行）；`slicer_stage14e04d_dual_view_contract_test` 是缺纹理静默降级为灰模的 fail-closed 违规；`stage14f03` 流程本身全绿、疑似门禁侧路径期望过时；`scene_layer_adapters_unit_tests` 为 13 过 12 失 1 的窄缺陷；`slicer_stage14c04` 需 14C 判定期望是否已过时。§13.2 给出性质、归属与优先级，并明确本专项不代劳任何一项。 |
 | 2026-09-04 | v1.3 | PC-04 §6.7 选项 a 已执行：`hostflow_hd02_real_asset_matrix` 的 TIMEOUT 900→1800（用户批准；实测 555/628 s 对 900 s 仅 1.43~1.62 倍余量）。**PC-12 口径两处更正**：处数由 36 改为 **85**（原扫描正则只支持一层嵌套括号，漏掉实参含嵌套调用的站点）；并撤回「纯机械改动」的判断 —— 实际脚本化改写 81 处后已回退，三条失败原因记于 §15.2（吃掉第二个实参、变量名无法机械生成且会撞名、4 处在短路链中）。完成标准改为逐文件手工改、低优先级，或改为「遇到空原因就地修一处」而不单独推平。 |
 | 2026-09-04 | v1.2 | 补 2026-09-04 10:29 全量回归证据：222 项 6 失败，7→6，唯一变化是 hd02 转绿，PC-01..PC-04 零新增失败。**更正 v1.0/v1.1 的耗时数字**：原「其余 221 项合计约 22 秒」系对 `CTestCostData.txt` 的平均 cost 求和所得，而该文件对失败用例记 0，严重低估；实测全量 992.5 s，hd02 占 555.5 s（56%），前 10 项占 867 s（87%），已列出前 10 名单，并据此把 §6.7 选项 c 改为「label 必须覆盖前 10 项、且其中 6 项属别的专项」。同步更正「cost 恒 0 = 疑似从未执行」的错误推断（cost 0 是失败用例的记法）。§13 完成标准改为逐项定责，并记明 14E-02 门禁在首个失败处中止、背后可能还压着别的违规。 |
