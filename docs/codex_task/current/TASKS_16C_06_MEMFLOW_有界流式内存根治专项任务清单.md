@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
-> 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B PREPARED**
-> 版本：v2.2 ｜ 日期：2026-08-21
+> 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
+> 版本：v2.3 ｜ 日期：2026-09-04
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -34,7 +34,9 @@
 | MF-03B3 | Shape/footprint 扫描、compact report 与 replay digest | COMPLETE | MF-03B2、重放 Gate | 2026-08-21 |
 | MF-03B4A | Verified support/BaseProjection/outer-varnish 最终重放 | COMPLETE | MF-03B3、B4A 准备 Gate | 2026-08-21 |
 | MF-03B4B | Material/Stage 15/closure 最终重放 | PREPARED | MF-03B4A COMPLETE、B4B 组合 Gate | - |
-| MF-04 | 单实例流式 Staged Package | PENDING | MF-03B4A/B COMPLETE | - |
+| MF-03X1 | 主循环有界接线·表面光油容器（逐层独立） | COMPLETE | MF-03B4B 接口接线 | 2026-09-04 |
+| MF-03X2 | 主循环有界接线·支撑耦合簇（剩余六容器） | PREPARED / 范围待估算 | MF-03X1、B1/B2/B3/B4A | - |
+| MF-04 | 单实例流式 Staged Package | PENDING / **范围已重定义** | MF-03B4A/B COMPLETE | - |
 | MF-05 | 多实例 Global Layer Barrier | PENDING | MF-04 | - |
 | MF-06 | Sparse Tile/Span 显式候选 | PENDING | MF-05 | - |
 | MF-07 | 自适应生产路由与 Telemetry 接入 | PENDING | MF-06 Gate 或明确跳过 Sparse | - |
@@ -206,12 +208,86 @@ identity、caller output 提交时机、取消/错误状态机及 closure worksp
 `PREPARED / IMPLEMENTATION GO`。Stage 15 保留 retained eligible-branch 语义，MaterialPolicy/texture/
 Stage 15 counter 保留 compose-time 口径；生产仍为 Retained Dense。
 
+## 7.1 MF-03X 主循环有界接线
+
+来源：`docs/slice/REPORT/REPORT_16C_06_MEMFLOW_主循环接线可行性探查_2026_09_04.md`。
+
+该探查推翻两个此前认知：`slicer_cli` 的 TIFF 输出**早已逐层流式**（故 MF-04 的
+内存收益不成立，其范围重定义为原子发布/staging 语义），真正瓶颈是七个 mask
+整栈驻留 —— 10um 场景下合计 **72.62 GB**，而三层窗口只需 156 MB。
+
+**故 MF-03X 是接线工作，不是新能力开发**：B1/B2/B3/B4A/B4B 的有界替代品全部
+已 COMPLETE 且各有 retained oracle，但此前没有一处接进 `slicer.cpp` 主循环。
+
+### MF-03X1 表面光油容器（COMPLETE，`0d2a1bf`）
+
+**目标：** `outer_surface_masks` / `inner_surface_masks` 由全层构建改为按层物化。
+
+**选它作起点的理由：** 该算法逐层独立 —— 每层只读本层 model mask，层间无依赖，
+故**不涉及** MF-03B2「悬空岛向下回写」那类时序等价风险；两容器各只有 4 个使用点。
+
+**验收（已通过）：**
+
+```text
+零漂移  默认路径 94 层 3cbfdec213cfcf1a3397cfd1860c5baa7bc649b669249eddc2238f0b4f363b5f
+        与长期基线一致
+        gubao04 六材质 129 层 8315b63c42e3f6a90faef6aa693f4d9f3443e95af1245268b86d8cf812a2aee1
+        与接线前逐字节一致
+门禁    slicer.cpp 属 G2 只减不增。接线净增 127 行，同步下沉表面光油几何簇后
+        净减 137 行；ValidateSourceSizeGuard --base-ref HEAD PASS，未新增豁免
+```
+
+**副产物（后续共同前置）：** `geometry/SliceGridSpec.h` 提出 `GridSpec` 与
+`mask_index`。它们原在 `slicer.cpp` 匿名命名空间内，是**所有** mask 构建函数的
+共同参数类型；提头后，后续任何 mask 构建函数下沉都不再需要先解决符号共享。
+
+**同时删除：** 全层版 `BuildSurfaceVarnishMasks()` 与 `struct SurfaceVarnishMasks`
+—— 接线后已无调用者。原注释称「保留作零漂移对照」，但无人引用，留着只是负债。
+
+### MF-03X2 支撑耦合簇（PREPARED / 范围待估算）
+
+**范围：** `model_masks`、`support_masks`、`support_type_maps`、
+`outerVarnishMasks`、`upperBoundaryMasks`。
+
+**为什么不能继续「逐容器替换」：** 这六个全部通过一个整栈进、整栈出的函数耦合：
+
+```cpp
+// slicer.cpp:2031
+SupportGenerationResult generate_support_masks(
+    ..., const std::vector<std::vector<std::uint8_t>>& model_masks,
+         const std::vector<std::vector<std::uint8_t>>& upper_boundary_masks, ...);
+```
+
+且 `model_masks`（41 处引用）、`support_masks`（19 处）、`support_type_maps`
+（12 处）**各有恰好一处** `.at(target_layer)`，都落在同一个悬空岛向下回写循环内。
+只换其中之一，那处回写就会失去其余两者的整栈视图。
+
+**故替换单元不是「容器」，而是「把 `generate_support_masks` 整体改走
+B1/B2/B3/B4A 的有界路径」。** 工作量不可按 MF-03X1 线性外推。
+
+**验收：** 沿用 §5.2 判据 —— 三项零漂移全等 + `a-2/0.2.obj` @10um 的
+`peakWorkingSetBytes` 由 22~34 GB 降至百 MB 级 + `model/stl/suoguo-baseline/`
+八项既有基线不上升。
+
+**最大风险：** B2 时序等价。「先全层 preliminary support、再顺序发现岛并向低层
+回写」的时序必须逐字节等价，否则支撑连通性会变。B2 已有 retained oracle，但
+**接线时的调用顺序**仍需逐层 digest 比对。
+
 ## 8. MF-04 单实例流式 Package
 
-**目标：** 单实例 full-grid 从 Producer 逐层进入 staging Writer，释放已写层。
+> **范围已重定义（2026-09-04）。** 探查报告实测 `slicer.cpp:5364` 的
+> `WriteRgbwsvProductionLayerTiff` 位于层循环【内部】，`layer` 为本层局部变量、
+> 写完即释放，`RgbwsvProductionLayerView` 只持 `std::span` 不拷贝 ——
+> **`slicer_cli` 的生产路径早已逐层流式，不累积。**
+> 原描述「Writer 累积全部层后逐层写」只对整包发布入口
+> `WriteRgbwsvProductionPackage` 成立，CLI 不经过它。
+> 故本卡的**内存收益不成立**，价值重定义为「原子发布与 staging 语义」。
+> 内存收益由 MF-03X 承担。
+
+**目标：** 单实例 full-grid 从 Producer 逐层进入 staging Writer，取消与故障不发布半包。
 
 **验收：** TIFF/manifest/report/preview/RIP strict 与 Retained Dense 全等；取消和 Writer 故障不发布
-半包；Peak Working Set 明显下降。
+半包。~~Peak Working Set 明显下降~~ —— 该判据移交 MF-03X2。
 
 ## 9. MF-05 多实例 Layer Barrier
 

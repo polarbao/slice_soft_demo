@@ -1,7 +1,7 @@
 # REPORT_16C_06_MEMFLOW 主循环接线可行性探查（2026-09-04）
 
-> 文档状态：**探查完成 / 修订 MF-04 范围判断**
-> 版本：v1.0 ｜ 日期：2026-09-04
+> 文档状态：**探查完成 / 首容器已接线 / 修订逐容器替换建议**
+> 版本：v1.1 ｜ 日期：2026-09-04
 > 定位：为解除真实生产阻塞（10um 层厚 111.4 亿 pixel-layer）而探查有界能力接入主循环的可行性。
 > 上游：`REPORT_16C_06_MEMFLOW_替代基线资产与调查结论_2026_09_03.md`（阻塞场景实测）
 > 授权：用户 2026-09-04 授予本专项最高决策权
@@ -132,7 +132,7 @@ previous support「仅重放 Bottom/Full/Upper，不含本遍此前发现的 Uns
 | `support_masks` / `support_type_maps` | `BoundedSupportDemand`（B1）+ `FinalReplay`（B4A） | COMPLETE |
 | 悬空岛向下回写 | `BoundedSupportDiscovery`（B2）compact 事件 | COMPLETE |
 | 形状/footprint | `BoundedSupportShapeScan`（B3） | COMPLETE |
-| `outer_surface_masks` / `inner_surface_masks` | B1 的 upper-boundary 抑制 + P1 scanner scratch | COMPLETE |
+| `outer_surface_masks` / `inner_surface_masks` | `MaterializeSurfaceVarnishLayer`（本次新增，逐层物化） | **已接线 `0d2a1bf`** |
 | material/closure | `RetainedMaterialLayerComposer`（B4B） | 接口已接线 |
 
 **所有替代能力均已存在。MF-03X 是接线工作，不是新能力开发。**
@@ -150,14 +150,72 @@ previous support「仅重放 Bottom/Full/Upper，不含本遍此前发现的 Uns
 
 ---
 
+## 5.3 首容器接线结果与【逐容器替换建议的修订】
+
+`outer_surface_masks` / `inner_surface_masks` 已于 `0d2a1bf` 完成接线，
+两项零漂移逐字节通过（默认路径 94 层哈希与长期基线 `3cbfdec…` 一致；
+gubao04 六材质 129 层 `8315b63c…` 与接线前一致）。
+
+**但由此发现 §6 第 2 条「按容器逐个替换」只对第一个容器成立。**
+
+选中的第一个容器之所以可独立替换，是因为它**逐层独立**——每层只读本层 model
+mask，层间无依赖。剩余六个容器不具备该性质：它们全部通过同一个函数耦合。
+
+```cpp
+// slicer.cpp:2031 —— 整栈进、整栈出
+SupportGenerationResult generate_support_masks(
+    ..., const std::vector<std::vector<std::uint8_t>>& model_masks,
+         const std::vector<std::vector<std::uint8_t>>& upper_boundary_masks, ...);
+//   返回 result.support_masks / result.support_type_maps，均按 layer_count 预分配
+```
+
+`outer_varnish_masks` 亦然：它被 `BuildUpperSupportBoundaryMasks` 与
+`ApplyOuterVarnishSupportPriority` 两个整栈函数消费，其产物
+`upper_support_boundary_masks` 再整栈喂给 `generate_support_masks`。
+
+### 5.3.1 剩余容器的下标形式实测
+
+| 容器 | 引用处数 | `.at(layer_index)` | `.at(layer_index - 1)` | **`.at(target_layer)`** |
+|---|---|---|---|---|
+| `model_masks` | 41 | 16 | 1 | **1** |
+| `support_masks` | 19 | 7 | 1 | **1** |
+| `support_type_maps` | 12 | 6 | 0 | **1** |
+
+三者各有**恰好一处** `.at(target_layer)`，且都位于同一个悬空岛向下回写循环内
+（§4.1）。这意味着它们**必须同时**转换——只换其中之一，那一处回写就会失去
+其余两者的整栈视图。
+
+### 5.3.2 修订后的剩余范围
+
+```text
+原建议   七个容器逐个替换、每次一个并验证零漂移
+修订     第一个容器（表面光油）已按此完成 —— 逐层独立，无耦合
+         剩余六个是【一个耦合簇】，替换单元不是「容器」而是
+         「把 generate_support_masks 整体改走 B1/B2/B3/B4A 的有界路径」
+```
+
+故剩余工作的粒度远大于「再换一个容器」，应作为独立任务卡估算，
+不宜按首容器的工作量线性外推。
+
+### 5.3.3 已就位的共同前置
+
+本次为满足 G2 而下沉的 `geometry/SliceGridSpec.h`（`GridSpec` + `mask_index`）
+是**所有** mask 构建函数的共同参数类型。它已提为共享头，后续任何一个 mask 构建
+函数下沉都不再需要先解决这两个符号的共享问题。
+
+---
+
 ## 6. 风险与未决
 
 1. **B2 时序等价是最大风险。** 悬空岛的「先全层 preliminary、再顺序发现并回写」时序
    必须逐字节等价，否则支撑连通性会变。B2 已有 retained oracle，但**接线时的调用顺序**
    仍需逐层 digest 比对。
 2. **接线范围大。** 七个容器分布在主循环各处，`model_masks` 在 `slicer.cpp` 有 5 种下标形式。
-   建议按容器逐个替换、每次一个容器并验证零漂移，而非一次全换。
-3. **`slicer.cpp` 属 G2 只减不增名单。** 接线会净增行数，需按现状登记豁免或在接线中同步下沉。
+   ~~建议按容器逐个替换~~ —— **见 §5.3 修订**：只有第一个容器逐层独立、可独立替换；
+   剩余六个通过 `generate_support_masks` 耦合成一个簇，须整体改走有界路径。
+3. ~~**`slicer.cpp` 属 G2 只减不增名单。**~~ **已解除。** 首容器接线净增 127 行，
+   同步下沉表面光油几何簇后净减 137 行，`ValidateSourceSizeGuard --base-ref HEAD`
+   判定 PASS，**未新增任何豁免登记**（AGENTS.md 已记 12 处门禁 ERROR，不再增加）。
 4. **多实例场景未覆盖。** 用户的双模型场景（`0.2+0.3`）需 MF-05 的 Barrier；
    本报告只覆盖单实例。
 
@@ -167,4 +225,5 @@ previous support「仅重放 Bottom/Full/Upper，不含本遍此前发现的 Uns
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-04 | v1.1 | 首容器（`outer_surface_masks` / `inner_surface_masks`）接线完成并零漂移通过，提交 `0d2a1bf`。据此修订 §6 第 2 条：「按容器逐个替换」只对第一个容器成立——它逐层独立；剩余六个通过 `generate_support_masks`（整栈进整栈出）耦合成一个簇，且 `model_masks`/`support_masks`/`support_type_maps` 各有恰好一处 `.at(target_layer)` 且同处一个回写循环，必须同时转换。风险 3（G2 门禁）解除：同步下沉使 slicer.cpp 净减 137 行，未新增豁免。新增 §5.3 与共同前置 `geometry/SliceGridSpec.h` 说明。 |
 | 2026-09-04 | v1.0 | 首版。推翻两个认知：`slicer_cli` 的 TIFF 输出早已逐层流式（故 MF-04 的内存收益不成立），真正瓶颈为七个 mask 整栈驻留 72.62 GB。量化跨层访问模式并确认 `target_layer` 的「当前层之下全部层」随机访问是最难有界化的一环，同时确认 MF-03B2 已用 compact 事件在设计层解决。提出 MF-03X「主循环有界接线」并列出六项替代能力均已 COMPLETE，MF-04 范围重定义为原子发布语义。 |
