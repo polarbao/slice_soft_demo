@@ -1,0 +1,50 @@
+# R-A-02 / R-F-02 真实资产显示矩阵 —— 冻结输入清单
+#
+# 为什么要有这份清单：
+#   VerifyRealAssetMatrix 原先用 QDirIterator 递归扫 model/obj/**/*.obj 取输入，
+#   而它的断言是冻结数字（renderedCount / budgetRejectedCount / assetRejectedCount）。
+#   两者不相容：往 model/obj/ 放任何 OBJ 都会静默改变输入集并按资产数线性增加耗时。
+#   实测后果是该用例自 2026-08-11 冻结（03b08bb）起每次回归都红。
+#   它同时主导回归墙钟时间：2026-09-04 全量 Debug 串行实测 992.5 秒，
+#   本条占 555.5 秒（56%），其余 221 项合计 437 秒。
+#
+# 清单内容取自冻结提交 03b08bb 当时 model/obj 下【git 已跟踪】的 31 个 OBJ，
+# 该 31 个文件今天全部仍存在（逐个核实）。
+# 注意：03b08bb 的冻结期望是 22+0+14=36 个模型，比这 31 个多 5 个 ——
+# 差额来自当时工作树里【从未入库】的资产，任何人都无法从仓库重建，
+# 因此原 22/0/14 三元组不可复现，已按本清单一次性重新固化。
+#
+# 规则：一行一个仓库相对路径；空行与 # 开头的行忽略。
+# 新增资产【不会】自动进入本矩阵 —— 这正是本清单的目的；
+# 要纳入新资产，显式加行并同步重固化期望三元组。
+model/obj/aishen_fudiao/MF_ai_shen_shizhi_L_tx03.obj
+model/obj/aishen_fudiao/MF_aishen_damuzhi_L_tx02.obj
+model/obj/aishen_fudiao/MF_aishen_xiaozhi_L.obj
+model/obj/aishen_fudiao/MF_aishen_zhongzhi_L_tx03.obj
+model/obj/aishen_fudiao/ai_shen_wumingzhi_L_tx03.obj
+model/obj/caihong/5mm.obj
+model/obj/meigui_fudiao/02.obj
+model/obj/meigui_fudiao/03.obj
+model/obj/meigui_fudiao/04.obj
+model/obj/meigui_fudiao/MF_Mei_gui_wumingzhi_fx04.obj
+model/obj/nai_you_new/MF_nai_you.obj
+model/obj/reality/260729-16-39-21-792-segment_101.txt.obj
+model/obj/reality/260729-16-39-48-086-segment_102.txt.obj
+model/obj/reality/260729-16-39-55-435-segment_103.txt.obj
+model/obj/reality/260729-16-40-09-567-segment_104.txt.obj
+model/obj/reality/260729-16-40-21-739-segment_105.txt.obj
+model/obj/reality/260730-13-35-10-849-segment_101.txt.obj
+model/obj/reality/260805-11-50-11-034-segment_101.txt.obj
+model/obj/reality/260805-11-50-54-330-segment_102.txt.obj
+model/obj/reality/260805-11-51-02-243-segment_103.txt.obj
+model/obj/reality/260805-11-51-08-746-segment_104.txt.obj
+model/obj/reality/260805-11-51-15-122-segment_105.txt.obj
+model/obj/shengdanjie_fudiao/star/MF_shengdanjie_zhongzhi_R_fy02.obj
+model/obj/titian_fudiao/dmz.obj
+model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Damuzhi_ty02.obj
+model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Shizhi_ty03.obj
+model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Wumingzhi_ty03.obj
+model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Xiaozhi_ty03.obj
+model/obj/xiao_ma_wu_yu_new/MF_Xiao_ma_Zhongzhi_ty03.obj
+model/obj/yecan/3.obj
+model/obj/yecan/4.obj

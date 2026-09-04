@@ -9,7 +9,6 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QDir>
-#include <QDirIterator>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
@@ -287,21 +286,44 @@ void VerifyRealAssetMatrix(
     const QString& repositoryRoot,
     const QString& evidenceRoot)
 {
+    // 输入取自仓库内的冻结清单，【不】递归扫 model/obj。
+    // 原实现用 QDirIterator 扫盘，而本用例的断言是冻结三元组，两者不相容：
+    // 往 model/obj/ 放任何 OBJ 都会静默改变输入集并按资产数线性增加耗时。
+    // 实测后果是它自 2026-08-11 冻结起每次回归都红（rendered=93 而期望 22）。
+    // 它同时主导回归墙钟时间：2026-09-04 全量 Debug 串行实测 992.5 秒，
+    // 本条占 555.5 秒（56%），其余 221 项合计 437 秒。
+    // 清单来历与「原 22/0/14 为何不可复现」见清单文件头部注释。
+    // 仅用于把证据 CSV 里的路径写成相对 model/obj 的形式，不再参与取输入。
     const QString modelRoot = QDir(repositoryRoot).filePath(
         QStringLiteral("model/obj"));
+    const QString manifestPath = QDir(repositoryRoot).filePath(QStringLiteral(
+        "tests/hostflow/fixtures/render_ra02_asset_manifest.txt"));
+    QFile manifestFile(manifestPath);
+    Require(manifestFile.open(QIODevice::ReadOnly | QIODevice::Text),
+            QStringLiteral("R-A-02 asset manifest is unreadable: %1")
+                .arg(manifestPath));
     QStringList modelPaths;
-    QDirIterator iterator(
-        modelRoot,
-        QStringList{QStringLiteral("*.obj")},
-        QDir::Files,
-        QDirIterator::Subdirectories);
-    while (iterator.hasNext())
     {
-        modelPaths.append(iterator.next());
+        QTextStream manifest(&manifestFile);
+        while (!manifest.atEnd())
+        {
+            const QString line = manifest.readLine().trimmed();
+            if (line.isEmpty() || line.startsWith(QLatin1Char('#')))
+            {
+                continue;
+            }
+            const QString modelPath = QDir(repositoryRoot).filePath(line);
+            Require(QFileInfo(modelPath).isFile(),
+                    QStringLiteral("R-A-02 manifest entry is missing: %1")
+                        .arg(line));
+            modelPaths.append(modelPath);
+        }
     }
     modelPaths.sort(Qt::CaseInsensitive);
-    Require(modelPaths.size() >= 36,
-            QStringLiteral("RB-P1 real-asset matrix contains fewer than 36 OBJ files"));
+    Require(modelPaths.size() == 31,
+            QStringLiteral(
+                "R-A-02 asset manifest must list exactly 31 OBJ files, found %1")
+                .arg(modelPaths.size()));
 
     int renderedCount{0};
     int budgetRejectedCount{0};
@@ -385,9 +407,15 @@ void VerifyRealAssetMatrix(
         renderedPaths.push_back(modelPath);
         ++renderedCount;
     }
-    Require(renderedCount == 22
+    // 2026-09-03 按上方冻结清单（31 个资产）一次性重新固化：29 / 0 / 2。
+    // 旧值 22 / 0 / 14 系 2026-08-11（03b08bb）对 36 个资产测得，其中 5 个从未入库，
+    // 因此那组数字不可复现，只能重固化而非"修回去"。
+    // 顺带记录一处语义变化：同一批资产里有 7 个从 asset-rejected 变为可渲染，
+    // 即资产准入自 8 月 11 日起明显放宽（mesh repair / importer 侧的改进），
+    // 这正是重固化必须留痕的原因。
+    Require(renderedCount == 29
                 && budgetRejectedCount == 0
-                && assetRejectedCount == 14,
+                && assetRejectedCount == 2,
             QStringLiteral(
                 "R-F-02 frozen matrix changed: rendered=%1 budget=%2 asset=%3")
                 .arg(renderedCount)
@@ -396,14 +424,32 @@ void VerifyRealAssetMatrix(
 
     ModuleClient aggregateClient;
     QString aggregateError;
-    Require(aggregateClient.Open(
-                modulePath, QByteArrayLiteral("{}"), &aggregateError),
-            aggregateError);
+    // 先取结果再断言：把调用直接写成 Require 的第一个实参、而第二个实参又读同一个
+    // error 变量，属于未指定的实参求值顺序 —— 消息可能在调用写入 error【之前】就已构造，
+    // 失败时打出一个空原因。本函数原先两处都是这么写的，
+    // 「R-A-02 aggregate import: 」后面那片空白就是这样来的。
+    const bool aggregateOpened = aggregateClient.Open(
+        modulePath, QByteArrayLiteral("{}"), &aggregateError);
+    Require(aggregateOpened,
+            QStringLiteral("R-A-02 aggregate open: %1").arg(aggregateError));
     HostModelImportWorkflow aggregateWorkflow(aggregateClient);
     QList<hostmodelimportresult> aggregateImports;
-    Require(aggregateWorkflow.ImportModels(
-                renderedPaths, &aggregateImports, &aggregateError),
-            QStringLiteral("R-A-02 aggregate import: %1").arg(aggregateError));
+    // 场景实例预算为 22（HostModelImportWorkflow::ImportModels 的上限），
+    // 且该 22 是 13B 尚未回签的产品输入（见 AGENTS.md「22-instance production budget」），
+    // 不得为迁就本用例而抬高，故聚合步骤只取前 22 个可渲染资产。
+    //
+    // 为什么原先没暴露这个上限：2026-08-11 冻结时 renderedCount 恰好就是 22，
+    // 正顶在预算上。资产准入放宽后可渲染数升到 29，聚合导入随即被预算拒绝。
+    // 用满预算而非用满资产，才是这一步该测的东西 —— 真实场景里放不下 29 个实例。
+    constexpr int kSceneInstanceBudget{22};
+    const QStringList aggregatePaths =
+        renderedPaths.mid(0, kSceneInstanceBudget);
+    const bool aggregateImported = aggregateWorkflow.ImportModels(
+        aggregatePaths, &aggregateImports, &aggregateError);
+    Require(aggregateImported,
+            QStringLiteral("R-A-02 aggregate import (%1 paths): %2")
+                .arg(aggregatePaths.size())
+                .arg(aggregateError));
     MeasuringRenderBackend aggregateBackend;
     SceneRenderPolicy aggregateRenderer(aggregateClient, aggregateBackend);
     ThreeDFrame aggregateFrame;
@@ -450,6 +496,7 @@ void VerifyRealAssetMatrix(
         QTextStream aggregateEvidence(&aggregateFile);
         aggregateEvidence
             << "validAssets=" << renderedPaths.size() << '\n'
+            << "aggregatePaths=" << aggregatePaths.size() << '\n'
             << "sceneInstances=" << aggregateImports.size() << '\n'
             << "rendered=" << (aggregateRendered ? "true" : "false") << '\n'
             << "lod=" << aggregateFrame.meshLod << '\n'
