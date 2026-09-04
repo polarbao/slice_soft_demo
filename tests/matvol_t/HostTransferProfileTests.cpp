@@ -1,6 +1,7 @@
 #include "apps/slicer_ui_host_sim/HostProcessPresetCatalog.h"
 #include "apps/slicer_ui_host_sim/HostProfileCatalog.h"
 #include "apps/slicer_ui_host_sim/HostSliceSettings.h"
+#include "apps/slicer_ui_host_sim/HostTransferProcessPresetLoader.h"
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/json_value.h"
 
@@ -110,6 +111,79 @@ bool VerifyLegacyProcessProfileHashes(
     return true;
 }
 
+bool SameTransferPolicy(
+    const hosttransferchannelsettings& left,
+    const hosttransferchannelsettings& right)
+{
+    if (left.materialdiffusergbvalues.size()
+        != right.materialdiffusergbvalues.size())
+    {
+        return false;
+    }
+    for (int index = 0; index < left.materialdiffusergbvalues.size(); ++index)
+    {
+        const hostrgbcolor& leftColour = left.materialdiffusergbvalues.at(index);
+        const hostrgbcolor& rightColour =
+            right.materialdiffusergbvalues.at(index);
+        if (leftColour.red != rightColour.red
+            || leftColour.green != rightColour.green
+            || leftColour.blue != rightColour.blue)
+        {
+            return false;
+        }
+    }
+    return left.enabled == right.enabled
+        && left.matchsource == right.matchsource
+        && left.missingregion == right.missingregion
+        && left.multiplematches == right.multiplematches
+        && left.value == right.value
+        && left.selfintersectionpolicy == right.selfintersectionpolicy
+        && left.maxselfintersectionpairs == right.maxselfintersectionpairs
+        && left.maxboundaryedges == right.maxboundaryedges;
+}
+
+/// @brief 部署目录里每个 *_rgbwsvt.json 都整体拷了一份旧工艺，但宿主只读其中的
+///        transferChannelPolicy 块，且 T 变体派生假定这些块是同一条策略的副本
+///        —— 正因如此，派生才可以按文件名取第一个可加载文件，而不必把文件名写死
+///        在预设目录里。此处守住该前提：任一副本漂移，UI 上的 T 工艺就会随目录
+///        排序而变，且不会有任何报错，属于静默故障。
+bool VerifyDeployedTransferPolicyCopiesAgree(QTextStream& errors)
+{
+    hosttransferchannelsettings shared;
+    QString sharedFileName;
+    int loadable = 0;
+    for (const QString& fileName :
+         HostTransferProcessPresetLoader::DeployedProfileFileNames())
+    {
+        hosttransferchannelsettings loaded;
+        if (!HostTransferProcessPresetLoader::Load(fileName, &loaded, nullptr))
+        {
+            continue;
+        }
+        ++loadable;
+        if (sharedFileName.isEmpty())
+        {
+            shared = loaded;
+            sharedFileName = fileName;
+            continue;
+        }
+        if (!Check(
+                SameTransferPolicy(shared, loaded),
+                QStringLiteral(
+                    "部署 T 工艺副本漂移：%1 与 %2 的 transferChannelPolicy 不一致，"
+                    "宿主派生所取策略将随目录排序而变。")
+                    .arg(sharedFileName, fileName),
+                errors))
+        {
+            return false;
+        }
+    }
+    return Check(
+        loadable > 0,
+        QStringLiteral("部署目录中没有可严格加载的 RGBWSVT 工艺。"),
+        errors);
+}
+
 bool VerifyTransferProfileOutputDirectories(
     const QString& repositoryRoot,
     QTextStream& errors)
@@ -188,6 +262,7 @@ int main(int argc, char* argv[])
         "samples/models/openvdb/surface_shell_cube_no_uv.obj"));
     QTemporaryDir outputRoot;
     if (!VerifyLegacyProcessProfileHashes(repositoryRoot, errors)
+        || !VerifyDeployedTransferPolicyCopiesAgree(errors)
         || !VerifyTransferProfileOutputDirectories(repositoryRoot, errors)
         || !VerifyTransferProfileProductionSafety(errors)
         || !Check(QFileInfo(modelPath).isFile(),
@@ -199,10 +274,15 @@ int main(int argc, char* argv[])
     }
 
     int transferPresetCount = 0;
+    int eligibleBasePresetCount = 0;
     for (const hostprocesspreset& preset : HostProcessPresetCatalog::Presets())
     {
         if (preset.packageprotocol != HostPackageProtocol::Rgbwsvt)
         {
+            if (preset.transfereligible)
+            {
+                ++eligibleBasePresetCount;
+            }
             continue;
         }
         ++transferPresetCount;
@@ -299,6 +379,15 @@ int main(int argc, char* argv[])
         Check(transferPresetCount == 4,
               QStringLiteral("新版 Host 传输预设数应为 4，实为 %1").arg(transferPresetCount),
               errors)
+        // 上一条钉住 UI 上的 T 工艺条数不变；这一条钉住它们确实【逐条派生自】
+        // 标记为 transfereligible 的基线工艺。缺了它，漏派生一条就只表现为
+        // 上一条断言的数字对不上，而看不出漏的是哪一环 —— MO-11 就是这样漏掉的。
+        && Check(transferPresetCount == eligibleBasePresetCount,
+                 QStringLiteral(
+                     "T 工艺条数(%1)与标记 transfereligible 的基线工艺条数(%2)不符，"
+                     "存在漏派生或多派生。")
+                     .arg(transferPresetCount).arg(eligibleBasePresetCount),
+                 errors)
         && Check(builtLegacy,
                  QStringLiteral("旧 Profile 构建失败：%1").arg(error),
                  errors)

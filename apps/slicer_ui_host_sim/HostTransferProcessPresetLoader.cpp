@@ -78,14 +78,19 @@ bool ReadRgbValues(
 }
 }
 
-bool HostTransferProcessPresetLoader::HasAnyDeployedProfile(QString* error)
+QStringList HostTransferProcessPresetLoader::DeployedProfileFileNames()
 {
-    const QStringList files = QDir(ProcessProfileDirectory()).entryList(
+    return QDir(ProcessProfileDirectory()).entryList(
         QStringList{QStringLiteral("*_rgbwsvt.json")}, QDir::Files, QDir::Name);
-    for (const QString& fileName : files)
+}
+
+bool HostTransferProcessPresetLoader::LoadDeployedPolicy(
+    hosttransferchannelsettings* transferSettings,
+    QString* error)
+{
+    for (const QString& fileName : DeployedProfileFileNames())
     {
-        hosttransferchannelsettings transfer;
-        if (Load(fileName, &transfer, nullptr))
+        if (Load(fileName, transferSettings, nullptr))
         {
             return true;
         }
@@ -95,6 +100,12 @@ bool HostTransferProcessPresetLoader::HasAnyDeployedProfile(QString* error)
         *error = QStringLiteral("部署目录中没有有效的 RGBWSVT 工艺配置。");
     }
     return false;
+}
+
+bool HostTransferProcessPresetLoader::HasAnyDeployedProfile(QString* error)
+{
+    hosttransferchannelsettings transfer;
+    return LoadDeployedPolicy(&transfer, error);
 }
 
 bool HostTransferProcessPresetLoader::Load(

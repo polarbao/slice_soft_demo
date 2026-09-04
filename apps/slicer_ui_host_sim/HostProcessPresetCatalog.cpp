@@ -35,18 +35,14 @@ hostprocesspreset MakeSingleMaterialPreset(
     return preset;
 }
 
+// 取值传参而非引用：调用方传进来的往往是 presets 里的元素，而本函数末尾就向
+// presets 追加元素。按值先拷一份，追加导致的重分配便与入参无关。
 void AppendTransferPreset(
-    const hostprocesspreset& legacyPreset,
-    const QString& configFileName,
+    hostprocesspreset preset,
+    const hosttransferchannelsettings& transfer,
     QVector<hostprocesspreset>* presets)
 {
-    hosttransferchannelsettings transfer;
-    if (!HostTransferProcessPresetLoader::Load(
-            configFileName, &transfer, nullptr))
-    {
-        return;
-    }
-    hostprocesspreset preset = legacyPreset;
+    preset.transfereligible = false;
     preset.id += QStringLiteral("_rgbwsvt");
     preset.displayname += QStringLiteral("｜缩裹 T 通道");
     preset.description += QStringLiteral(
@@ -67,8 +63,9 @@ QString HostProcessPresetCatalog::DefaultPresetId()
 QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
 {
     QVector<hostprocesspreset> presets;
-    presets.reserve(10);
-    const hostprocesspreset rgbOnly = MakeTexturedPreset(
+    // 9 条基线工艺 + 其中 4 条派生的缩裹 T 变体。
+    presets.reserve(13);
+    hostprocesspreset rgbOnly = MakeTexturedPreset(
         QStringLiteral("textured_nail_rgb_only_lower_support"),
         QStringLiteral(
             "彩色纹理｜全实体 RGB｜下表面支撑（纯白阻断）"),
@@ -77,6 +74,7 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
             "严格纯白纹理没有可打印通道时会阻断切片。"),
         HostMaterialStrategy::RgbSolid,
         HostTextureApplyMode::SolidVolumeFromTopSurface);
+    rgbOnly.transfereligible = true;
     presets.push_back(rgbOnly);
 
     hostprocesspreset rgbWhite = MakeTexturedPreset(
@@ -102,6 +100,7 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
         HostTextureApplyMode::SolidVolumeFromTopSurface);
     onDemandWhite.texture.whitepolicy =
         HostTextureWhitePolicy::WhiteUnderbase;
+    onDemandWhite.transfereligible = true;
     presets.push_back(onDemandWhite);
 
     hostprocesspreset rgbVarnish = MakeTexturedPreset(
@@ -115,19 +114,47 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
     rgbVarnish.materialprocess.rolemappingenabled = true;
     presets.push_back(rgbVarnish);
 
-    const hostprocesspreset whiteOnly = MakeSingleMaterialPreset(
+    // 切片侧早已把「RGB 表层 + 白墨与光油实体」当一等工艺：
+    // samples/configs/material_process/ 下有 6 个 *rgb_white_varnish* 工艺文件
+    // （nail_..._top1/2/3、obj_mtl_texture_...、其 _regression、three_mf_...），
+    // 全部被 VerifyLegacyProcessProfileHashes 的 SHA256 钉住，
+    // samples/scenarios/slicer_scenarios.json 也按路径在跑 top1/top3。
+    // 而宿主这边 HostMaterialStrategy::RgbWhiteVarnish 只能在材料面板里手工选出来，
+    // 没有任何常用工艺预设覆盖它 —— 六个策略里唯一没有预设入口的一个。
+    // 字段按 obj_mtl_texture_rgb_white_varnish.json 取：
+    //   texture   top_surface_band，topSurfaceLayers 1
+    //   角色映射  rules_then_default，white→白墨、varnish→光油，其余落 RGB
+    //             （hostmaterialprocesssettings 的 mapwhitenames / mapvarnishnames
+    //              默认即 true，defaultrole 默认即 Rgb，与该工艺的 rules 一致）
+    // 光油层数沿用 varnishtoplayers 默认 1，对应 top1；top2/top3 由用户在面板上改。
+    hostprocesspreset rgbWhiteVarnish = MakeTexturedPreset(
+        QStringLiteral("textured_nail_rgb_white_varnish_lower_support"),
+        QStringLiteral(
+            "彩色纹理｜RGB 表层 + 白墨与光油实体填充｜下表面支撑"),
+        QStringLiteral(
+            "对应切片侧 obj_mtl_texture_rgb_white_varnish 工艺：顶面纹理写 RGB，"
+            "模型内部按材料名分别写白墨 W 与光油 V，"
+            "并生成下表面及内部镂空支撑。光油默认只覆盖顶部 1 层。"),
+        HostMaterialStrategy::RgbWhiteVarnish,
+        HostTextureApplyMode::TopSurfaceBand);
+    rgbWhiteVarnish.materialprocess.rolemappingenabled = true;
+    presets.push_back(rgbWhiteVarnish);
+
+    hostprocesspreset whiteOnly = MakeSingleMaterialPreset(
         QStringLiteral("single_material_relief_white"),
         QStringLiteral("单材料浮雕｜白墨 W 实体｜下表面支撑"),
         QStringLiteral(
             "不采样彩色纹理，模型实体只写白墨 W，并保留下表面支撑。"),
         HostMaterialStrategy::WhiteSolid);
+    whiteOnly.transfereligible = true;
     presets.push_back(whiteOnly);
-    const hostprocesspreset varnishOnly = MakeSingleMaterialPreset(
+    hostprocesspreset varnishOnly = MakeSingleMaterialPreset(
         QStringLiteral("single_material_relief_varnish"),
         QStringLiteral("单材料浮雕｜光油 V 实体｜下表面支撑"),
         QStringLiteral(
             "不采样彩色纹理，模型实体只写光油 V，并保留下表面支撑。"),
         HostMaterialStrategy::VarnishSolid);
+    varnishOnly.transfereligible = true;
     presets.push_back(varnishOnly);
     hostprocesspreset volumetricRgb = MakeTexturedPreset(
         QStringLiteral("volumetric_nail_rgb_white_ondemand_lower_support"),
@@ -185,25 +212,35 @@ QVector<hostprocesspreset> HostProcessPresetCatalog::Presets()
     multiLayerVarnish.materialvolume.degenerateareaepsilonmm2 = 1e-24;
     presets.push_back(multiLayerVarnish);
 
-    AppendTransferPreset(
-        rgbOnly,
-        QStringLiteral("obj_mtl_texture_rgb_only_rgbwsvt.json"),
-        &presets);
-    AppendTransferPreset(
-        whiteOnly,
-        QStringLiteral("nail_white_underbase_only_rgbwsvt.json"),
-        &presets);
-    AppendTransferPreset(
-        varnishOnly,
-        QStringLiteral("nail_varnish_only_rgbwsvt.json"),
-        &presets);
-    // 按需补白墨 + 缩裹 T 通道。工艺文件此前已随部署包发布，但宿主漏了这次派生，
-    // 于是「甲片贴图走 RGB、纯白像素补 W、缩裹走 T」这一组合在 UI 上无从选择——
-    // 而它正是带贴图甲片（如 08-03.obj，材质 01 为纯白 Kd + map_Kd）的目标工艺。
-    AppendTransferPreset(
-        onDemandWhite,
-        QStringLiteral("obj_mtl_texture_rgb_white_ondemand_rgbwsvt.json"),
-        &presets);
+    // T 通道派生。此前这里是 4 次「基线预设 + 工艺文件名」硬编码配对，有两处问题：
+    //   1) 部署目录里 10 个 *_rgbwsvt.json 的 transferChannelPolicy 块彼此逐字节
+    //      相同，而本类只读这一个块 —— 它们是同一条 T 策略的 10 份副本，选哪个
+    //      文件对派生结果毫无影响，把文件名写进调用方只是虚假的精确；
+    //   2) 新增一条基线工艺就必须记得再补一次调用。MO-11 时期按需补白正是这么
+    //      漏掉的：工艺文件早已随部署包发布，但宿主没派生，于是「甲片贴图走 RGB、
+    //      纯白像素补 W、缩裹走 T」这一组合在 UI 上无从选择 —— 而它正是带贴图
+    //      甲片（如 08-03.obj，材质 01 为纯白 Kd + map_Kd）的目标工艺。
+    // 现改为策略只加载一次，派生对象由各基线工艺自己的 transfereligible 决定，
+    // 「要不要派生 T」因此成为定义现场必须回答的问题，而不是此处一张易漏的清单。
+    //
+    // 当前未派生的五条及其原因（改这些需另行授权）：
+    //   rgbWhite / rgbVarnish / rgbWhiteVarnish
+    //                                      rolemappingenabled=true 与 T 通道的组合
+    //                                      尚未经 MATVOL-T 评审；
+    //   volumetricRgb / multiLayerVarnish  materialvolume 候选工艺走 matvol_t 自己
+    //                                      的接线，生产接线 MV-08 未完成。
+    const int baseCount = presets.size();
+    hosttransferchannelsettings transfer;
+    if (HostTransferProcessPresetLoader::LoadDeployedPolicy(&transfer, nullptr))
+    {
+        for (int index = 0; index < baseCount; ++index)
+        {
+            if (presets.at(index).transfereligible)
+            {
+                AppendTransferPreset(presets.at(index), transfer, &presets);
+            }
+        }
+    }
 
     return presets;
 }

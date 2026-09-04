@@ -18,6 +18,15 @@ struct hostprocesspreset
     hostmaterialvolumesettings materialvolume;
     HostPackageProtocol packageprotocol{HostPackageProtocol::Rgbwsv};
     hosttransferchannelsettings transferchannel;
+    /**
+     * @brief 该基线工艺是否派生出对应的「缩裹 T 通道」变体。
+     *
+     * 与基线工艺定义写在同一处，目的是让「新增一条基线工艺时要不要派生 T」
+     * 成为定义现场必须回答的问题。此前派生靠 4 次「预设 + 工艺文件名」硬编码
+     * 配对，漏写一次就会让某个组合在 UI 上无从选择 —— MO-11 时期的按需补白
+     * 正是这么漏掉的。对派生出的 T 变体自身恒为 false。
+     */
+    bool transfereligible{false};
 };
 
 /** @brief 在不读取切片器 fixture 的前提下提供常用工艺预设。 */
