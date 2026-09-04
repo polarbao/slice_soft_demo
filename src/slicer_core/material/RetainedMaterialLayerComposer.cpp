@@ -616,6 +616,35 @@ std::uint8_t ResolveRetainedSurfaceVarnishValue(
     return policy.surfaceVarnishValue;
 }
 
+/**
+ * @brief M1：判断本像素的材质所有者是否就是该 XY 列的顶面材质。
+ *
+ * 与 slicer.cpp 的 TextureColumnMatchesOwner 语义【逐字一致】，两处必须同步修改，
+ * 否则 retained 与 bounded 两条路径会给出不同的取色归属，逐层 digest 随之失配。
+ *
+ * 任一侧视图为空即返回 true，即退回既有取色路径：本判据是取色修正，
+ * 不是校验加严，不得新增 fail 路径。
+ */
+[[nodiscard]] bool RetainedTextureColumnMatchesOwner(
+    const std::span<const std::uint32_t> topMaterialIndex,
+    const std::span<const std::uint32_t> owner,
+    const std::size_t pixelIndex)
+{
+    if (topMaterialIndex.empty() || owner.empty()
+        || pixelIndex >= topMaterialIndex.size() || pixelIndex >= owner.size())
+    {
+        return true;
+    }
+    const std::uint32_t ownerIndex{owner[pixelIndex]};
+    const std::uint32_t topIndex{topMaterialIndex[pixelIndex]};
+    if (ownerIndex == kRetainedNoMaterialOwner
+        || topIndex == kRetainedNoMaterialOwner)
+    {
+        return true;
+    }
+    return ownerIndex == topIndex;
+}
+
 bool ShouldApplyRetainedTextureToLayer(
     const BoundedMaterialReplayPolicy& policy,
     const std::span<const BoundedMaterialColumnRangeFact> columnRanges,
@@ -910,6 +939,10 @@ BoundedMaterialLayerComposeResult ComposeRetainedMaterialLayer(
                 }
             }
             else if (policy.textureEnabled
+                     && RetainedTextureColumnMatchesOwner(
+                         request.topMaterialIndexByColumn,
+                         request.materialVolumeOwner,
+                         pixelIndex)
                      && ShouldApplyRetainedTextureToLayer(
                          policy,
                          request.columnRanges,
@@ -942,6 +975,51 @@ BoundedMaterialLayerComposeResult ComposeRetainedMaterialLayer(
                 {
                     modelFillPixel = true;
                 }
+            }
+            else if (policy.materialVolumeEnabled
+                     && !request.materialVolumeRgb.empty()
+                     && pixelIndex * 3U + 2U < request.materialVolumeRgb.size())
+            {
+                // MATVOL：逐层材质所有权已解算为紧凑 RGB，此处按列取用。与逐列顶面
+                // 取色的本质区别是【同一 XY 列在不同层可以属于不同材质】。
+                //
+                // M2：先取该 owner 材质自己的贴图色（用它自己的顶面 UV 采样，故被
+                // 上层遮住的下层材质也能采到）；该材质无贴图或无 UV 时回退 Kd 表。
+                bool wrotePerMaterialTexture{false};
+                if (!request.perMaterialTextureColumns.empty()
+                    && !request.materialVolumeOwner.empty()
+                    && pixelIndex < request.materialVolumeOwner.size())
+                {
+                    const std::uint32_t owner{
+                        request.materialVolumeOwner[pixelIndex]};
+                    if (owner != kRetainedNoMaterialOwner && pixelCount > 0U)
+                    {
+                        const std::size_t slot{
+                            static_cast<std::size_t>(owner) * pixelCount
+                            + pixelIndex};
+                        if (slot < request.perMaterialTextureColumns.size()
+                            && request.perMaterialTextureColumns[slot].hasColor)
+                        {
+                            const BoundedTextureColumnFact& perMaterial{
+                                request.perMaterialTextureColumns[slot]};
+                            outputRgbwsv[base + 0U] = perMaterial.rgb[0U];
+                            outputRgbwsv[base + 1U] = perMaterial.rgb[1U];
+                            outputRgbwsv[base + 2U] = perMaterial.rgb[2U];
+                            AccumulateTextureColor(perMaterial, result.texture);
+                            wrotePerMaterialTexture = true;
+                        }
+                    }
+                }
+                if (!wrotePerMaterialTexture)
+                {
+                    outputRgbwsv[base + 0U] =
+                        request.materialVolumeRgb[pixelIndex * 3U + 0U];
+                    outputRgbwsv[base + 1U] =
+                        request.materialVolumeRgb[pixelIndex * 3U + 1U];
+                    outputRgbwsv[base + 2U] =
+                        request.materialVolumeRgb[pixelIndex * 3U + 2U];
+                }
+                countedModelPixel = true;
             }
             else
             {

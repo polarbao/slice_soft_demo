@@ -16,6 +16,16 @@ namespace slicer_core
 
 inline constexpr std::size_t kRetainedMaterialChannelCount{6U};
 
+/**
+ * @brief 「无材质所有者」哨兵值，与 MaterialVolumePlan 的 kNoMaterialOwner 同值。
+ *
+ * 刻意【不】include MaterialVolumePlan.h：materials/pipeline 边界不得反向依赖
+ * materials/volume 的私有实现（DEV 第 3 节模块禁止事项）。两处同值由本注释与
+ * 下方 static_assert 之外的一致性检查保证——若 MATVOL 侧改动该值，
+ * 接线处的 span 转换会立刻暴露不匹配。
+ */
+inline constexpr std::uint32_t kRetainedNoMaterialOwner{0xFFFFFFFFU};
+
 struct BoundedMaterialColumnRangeFact
 {
     bool hasModel{false};
@@ -99,6 +109,17 @@ struct BoundedMaterialReplayPolicy
     std::string surfaceVarnishSource{"explicit"};
     std::uint8_t surfaceVarnishValue{0U};
 
+    /**
+     * @brief MATVOL 相关开关。本组由 2026-09-04 接线补入。
+     *
+     * 本 policy 原系 2026-08-21 照当时的 compose_layer 抽取，彼时 MATVOL 的
+     * 三条能力（M1 owner-vs-顶面判据、M2 逐材质贴图、MO-04 不透明度判光油）
+     * 尚未落地，故整组缺失。缺失的后果不是编译失败而是【静默降级】：
+     * bounded 路径会退回逐列顶面取色，多图层资产的下层贴图与光油映射一起丢。
+     */
+    bool materialVolumeEnabled{false};
+    bool opacityVarnishEnabled{false};
+
     MaterialClosureConfig closure;
 };
 
@@ -181,6 +202,32 @@ struct BoundedMaterialLayerComposeRequest
     std::span<const BoundedTextureColumnFact> textureColumns;
     std::span<const BoundedMaterialRoleColumnFact> materialRoleColumns;
     std::span<const BoundedMaterialColumnRangeFact> columnRanges;
+
+    /**
+     * @brief MATVOL 逐层材质 RGB（长度为 列数*3）；空则该分支不参与。
+     *
+     * 与 textureColumns 的区别是它【按层重算】——同一 XY 列在不同层可属不同材质，
+     * 这正是多材质纵深的核心，逐列顶面取色表达不了。
+     */
+    std::span<const std::uint8_t> materialVolumeRgb;
+    /// @brief MO-04：本层判为光油的列掩码；空则不改写 V 通道。
+    std::span<const std::uint8_t> materialVolumeVarnishMask;
+    /**
+     * @brief M1：逐列顶面材质在 plan 材质表中的下标；kNoMaterialOwner 表示未知。
+     *
+     * 与 materialVolumeOwner 成对使用：两者一致说明逐列顶面贴图对本像素是
+     * 正确来源，不一致则说明本像素属于被顶面遮住的下层材质，须让位给 MATVOL。
+     */
+    std::span<const std::uint32_t> topMaterialIndexByColumn;
+    /// @brief M1：本层逐列材质所有者。
+    std::span<const std::uint32_t> materialVolumeOwner;
+    /**
+     * @brief M2：按 (材质, 列) 预采的各材质自身贴图色，长度为 材质数*列数。
+     *
+     * 索引为 materialIndex * columnCount + column。空则 MATVOL 分支沿用
+     * materialVolumeRgb 的逐材质 Kd。
+     */
+    std::span<const BoundedTextureColumnFact> perMaterialTextureColumns;
 };
 
 [[nodiscard]] BoundedMaterialReplayPolicy MakeBoundedMaterialReplayPolicy(
