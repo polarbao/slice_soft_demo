@@ -1,9 +1,10 @@
 #include "slicer_core/material/MaterialClosureRepair.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <deque>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -49,7 +50,7 @@ bool IsInside(const int widthPx, const int heightPx, const int x, const int y)
 }
 
 void ValidateMask(
-    const std::vector<std::uint8_t>& mask,
+    const std::span<const std::uint8_t> mask,
     const std::size_t pixelCount,
     const char* name)
 {
@@ -60,8 +61,8 @@ void ValidateMask(
 }
 
 void ValidatePlanInput(
-    const MaterialClosureSemanticLayerInput& input,
-    const MaterialClosureSemanticLayerAnalysis& analysis,
+    const MaterialClosureSemanticLayerInputView& input,
+    const MaterialClosureSemanticLayerAnalysisView& analysis,
     const int connectivity)
 {
     if (input.widthPx <= 0 || input.heightPx <= 0
@@ -94,7 +95,7 @@ void ValidatePlanInput(
 
 template <std::size_t DirectionCount>
 bool HasMaskNeighbor(
-    const std::vector<std::uint8_t>& mask,
+    const std::span<const std::uint8_t> mask,
     const int widthPx,
     const int heightPx,
     const std::size_t index,
@@ -107,7 +108,7 @@ bool HasMaskNeighbor(
         const int nextX = x + direction.dx;
         const int nextY = y + direction.dy;
         if (IsInside(widthPx, heightPx, nextX, nextY)
-            && mask.at(PixelIndex(widthPx, nextX, nextY)) != 0U)
+            && mask[PixelIndex(widthPx, nextX, nextY)] != 0U)
         {
             return true;
         }
@@ -116,7 +117,7 @@ bool HasMaskNeighbor(
 }
 
 bool ContainsTwoByTwoBlock(
-    const std::vector<std::uint8_t>& componentMask,
+    const std::span<const std::uint8_t> componentMask,
     const int widthPx,
     const int heightPx)
 {
@@ -124,10 +125,10 @@ bool ContainsTwoByTwoBlock(
     {
         for (int x{0}; x + 1 < widthPx; ++x)
         {
-            if (componentMask.at(PixelIndex(widthPx, x, y)) != 0U
-                && componentMask.at(PixelIndex(widthPx, x + 1, y)) != 0U
-                && componentMask.at(PixelIndex(widthPx, x, y + 1)) != 0U
-                && componentMask.at(PixelIndex(widthPx, x + 1, y + 1)) != 0U)
+            if (componentMask[PixelIndex(widthPx, x, y)] != 0U
+                && componentMask[PixelIndex(widthPx, x + 1, y)] != 0U
+                && componentMask[PixelIndex(widthPx, x, y + 1)] != 0U
+                && componentMask[PixelIndex(widthPx, x + 1, y + 1)] != 0U)
             {
                 return true;
             }
@@ -137,23 +138,21 @@ bool ContainsTwoByTwoBlock(
 }
 
 template <std::size_t DirectionCount>
-std::vector<std::size_t> CollectComponent(
-    const std::vector<std::uint8_t>& candidateGapMask,
+void CollectComponent(
+    const std::span<const std::uint8_t> candidateGapMask,
     const int widthPx,
     const int heightPx,
     const std::size_t startIndex,
     const std::array<Direction, DirectionCount>& directions,
-    std::vector<std::uint8_t>& visited)
+    std::vector<std::uint8_t>& visited,
+    std::vector<std::size_t>& component)
 {
-    std::vector<std::size_t> component;
-    std::deque<std::size_t> pending;
+    component.clear();
     visited.at(startIndex) = 1U;
-    pending.push_back(startIndex);
-    while (!pending.empty())
+    component.push_back(startIndex);
+    for (std::size_t cursor{0U}; cursor < component.size(); ++cursor)
     {
-        const std::size_t index = pending.front();
-        pending.pop_front();
-        component.push_back(index);
+        const std::size_t index = component[cursor];
         const int x = static_cast<int>(index % static_cast<std::size_t>(widthPx));
         const int y = static_cast<int>(index / static_cast<std::size_t>(widthPx));
         for (const Direction& direction : directions)
@@ -165,24 +164,23 @@ std::vector<std::size_t> CollectComponent(
                 continue;
             }
             const std::size_t nextIndex = PixelIndex(widthPx, nextX, nextY);
-            if (candidateGapMask.at(nextIndex) != 0U && visited.at(nextIndex) == 0U)
+            if (candidateGapMask[nextIndex] != 0U && visited.at(nextIndex) == 0U)
             {
                 visited.at(nextIndex) = 1U;
-                pending.push_back(nextIndex);
+                component.push_back(nextIndex);
             }
         }
     }
-    return component;
 }
 
 template <std::size_t DirectionCount>
 void AddComponentToPlan(
-    const MaterialClosureSemanticLayerInput& input,
-    const MaterialClosureSemanticLayerAnalysis& analysis,
-    const std::vector<std::size_t>& component,
+    const MaterialClosureSemanticLayerInputView& input,
+    const MaterialClosureSemanticLayerAnalysisView& analysis,
+    const std::span<const std::size_t> component,
     const std::array<Direction, DirectionCount>& directions,
-    std::vector<std::uint8_t>& componentMask,
-    MaterialClosureRepairPlan& plan)
+    MaterialClosureRepairWorkspace& workspace,
+    int& rejectedTooWidePixels)
 {
     bool allPixelsExplicitlyClassified{true};
     bool nearTexture{false};
@@ -193,10 +191,10 @@ void AddComponentToPlan(
 
     for (const std::size_t index : component)
     {
-        componentMask.at(index) = 1U;
-        const bool explicitlyRepairable = analysis.colorFillGapMask.at(index) != 0U
-            || analysis.modelSupportGapMask.at(index) != 0U
-            || analysis.varnishSupportGapMask.at(index) != 0U;
+        workspace.componentMask.at(index) = 1U;
+        const bool explicitlyRepairable = analysis.colorFillGapMask[index] != 0U
+            || analysis.modelSupportGapMask[index] != 0U
+            || analysis.varnishSupportGapMask[index] != 0U;
         allPixelsExplicitlyClassified =
             allPixelsExplicitlyClassified && explicitlyRepairable;
         nearTexture = nearTexture || HasMaskNeighbor(
@@ -234,78 +232,81 @@ void AddComponentToPlan(
     const bool hasExplicitRepairRelationship = (nearTexture && nearModelFill)
         || (nearModel && nearSupport)
         || (nearOuterVarnish && nearSupport);
-    const bool tooWide = ContainsTwoByTwoBlock(componentMask, input.widthPx, input.heightPx)
+    const bool tooWide = ContainsTwoByTwoBlock(
+                             workspace.componentMask,
+                             input.widthPx,
+                             input.heightPx)
         || (hasExplicitRepairRelationship && !allPixelsExplicitlyClassified);
     if (tooWide)
     {
         for (const std::size_t index : component)
         {
-            plan.rejectedTooWideMask.at(index) = 1U;
-            ++plan.rejectedTooWidePixels;
-            componentMask.at(index) = 0U;
+            workspace.rejectedTooWideMask.at(index) = 1U;
+            ++rejectedTooWidePixels;
+            workspace.componentMask.at(index) = 0U;
         }
         return;
     }
 
     for (const std::size_t index : component)
     {
-        if (analysis.externalBackgroundMask.at(index) != 0U
-            || input.expectedOccupiedDomainMask.at(index) == 0U)
+        if (analysis.externalBackgroundMask[index] != 0U
+            || input.expectedOccupiedDomainMask[index] == 0U)
         {
-            componentMask.at(index) = 0U;
+            workspace.componentMask.at(index) = 0U;
             continue;
         }
 
-        if (analysis.colorFillGapMask.at(index) != 0U)
+        if (analysis.colorFillGapMask[index] != 0U)
         {
-            plan.modelFillRepairMask.at(index) = 1U;
-            plan.colorFillRepairMask.at(index) = 1U;
+            workspace.modelFillRepairMask.at(index) = 1U;
+            workspace.colorFillRepairMask.at(index) = 1U;
         }
-        else if (analysis.modelSupportGapMask.at(index) != 0U)
+        else if (analysis.modelSupportGapMask[index] != 0U)
         {
-            plan.modelSupportRepairMask.at(index) = 1U;
-            if (input.modelEnvelopeMask.at(index) != 0U)
+            workspace.modelSupportRepairMask.at(index) = 1U;
+            if (input.modelEnvelopeMask[index] != 0U)
             {
-                plan.modelFillRepairMask.at(index) = 1U;
+                workspace.modelFillRepairMask.at(index) = 1U;
             }
-            else if (input.supportRequiredMask.at(index) != 0U)
+            else if (input.supportRequiredMask[index] != 0U)
             {
-                plan.supportRepairMask.at(index) = 1U;
+                workspace.supportRepairMask.at(index) = 1U;
             }
         }
-        else if (analysis.varnishSupportGapMask.at(index) != 0U
-                 && input.supportRequiredMask.at(index) != 0U)
+        else if (analysis.varnishSupportGapMask[index] != 0U
+                 && input.supportRequiredMask[index] != 0U)
         {
-            plan.supportRepairMask.at(index) = 1U;
-            plan.varnishSupportRepairMask.at(index) = 1U;
+            workspace.supportRepairMask.at(index) = 1U;
+            workspace.varnishSupportRepairMask.at(index) = 1U;
         }
-        else if (analysis.internalVoidGapMask.at(index) != 0U
-                 && analysis.colorSupportGapMask.at(index) == 0U)
+        else if (analysis.internalVoidGapMask[index] != 0U
+                 && analysis.colorSupportGapMask[index] == 0U)
         {
-            plan.supportRepairMask.at(index) = 1U;
-            plan.internalVoidSupportRepairMask.at(index) = 1U;
+            workspace.supportRepairMask.at(index) = 1U;
+            workspace.internalVoidSupportRepairMask.at(index) = 1U;
         }
-        componentMask.at(index) = 0U;
+        workspace.componentMask.at(index) = 0U;
     }
 }
 
 void WriteModelFill(
     const MaterialClosureRepairValues& values,
     const std::size_t base,
-    std::vector<std::uint8_t>& layer)
+    const std::span<std::uint8_t> layer)
 {
     switch (values.modelFillMaterial)
     {
         case MaterialClosureModelFillMaterial::Rgb:
-            layer.at(base + 0U) = values.modelFillRgb.at(0);
-            layer.at(base + 1U) = values.modelFillRgb.at(1);
-            layer.at(base + 2U) = values.modelFillRgb.at(2);
+            layer[base + 0U] = values.modelFillRgb.at(0);
+            layer[base + 1U] = values.modelFillRgb.at(1);
+            layer[base + 2U] = values.modelFillRgb.at(2);
             return;
         case MaterialClosureModelFillMaterial::White:
-            layer.at(base + 3U) = values.modelFillValue;
+            layer[base + 3U] = values.modelFillValue;
             return;
         case MaterialClosureModelFillMaterial::Varnish:
-            layer.at(base + 5U) = values.modelFillValue;
+            layer[base + 5U] = values.modelFillValue;
             return;
         case MaterialClosureModelFillMaterial::None:
             return;
@@ -314,83 +315,163 @@ void WriteModelFill(
 
 }  // namespace
 
-MaterialClosureRepairPlan BuildMaterialClosureRepairPlan(
-    const MaterialClosureSemanticLayerInput& input,
-    const MaterialClosureSemanticLayerAnalysis& analysis,
-    const int connectivity)
+void MaterialClosureRepairWorkspace::Prepare(const std::size_t pixelCount)
+{
+    externalBackgroundMask.resize(pixelCount);
+    expectedOccupiedDomainMask.resize(pixelCount);
+    modelFillRepairMask.resize(pixelCount);
+    supportRepairMask.resize(pixelCount);
+    internalVoidSupportRepairMask.resize(pixelCount);
+    colorFillRepairMask.resize(pixelCount);
+    modelSupportRepairMask.resize(pixelCount);
+    varnishSupportRepairMask.resize(pixelCount);
+    rejectedTooWideMask.resize(pixelCount);
+    visited.resize(pixelCount);
+    componentMask.resize(pixelCount);
+    componentPixels.reserve(pixelCount);
+}
+
+MaterialClosureSemanticLayerMutableInputView
+ViewMaterialClosureSemanticLayerInput(
+    MaterialClosureSemanticLayerInput& input) noexcept
+{
+    return MaterialClosureSemanticLayerMutableInputView{
+        input.layerIndex,
+        input.zMm,
+        input.widthPx,
+        input.heightPx,
+        input.textureSurfaceMask,
+        input.modelFillMask,
+        input.modelMaterialMask,
+        input.supportFillMask,
+        input.internalVoidSupportMask,
+        input.surfaceVarnishMask,
+        input.outerVarnishShellMask,
+        input.modelEnvelopeMask,
+        input.supportRequiredMask,
+        input.expectedOccupiedDomainMask,
+        input.layerEmptyMask};
+}
+
+MaterialClosureRepairPlanView BuildMaterialClosureRepairPlan(
+    const MaterialClosureSemanticLayerInputView& input,
+    const MaterialClosureSemanticLayerAnalysisView& analysis,
+    const int connectivity,
+    MaterialClosureRepairWorkspace& workspace)
 {
     ValidatePlanInput(input, analysis, connectivity);
     const std::size_t pixelCount = analysis.candidateGapMask.size();
-    MaterialClosureRepairPlan plan;
-    plan.widthPx = input.widthPx;
-    plan.heightPx = input.heightPx;
-    plan.externalBackgroundMask = analysis.externalBackgroundMask;
-    plan.expectedOccupiedDomainMask = input.expectedOccupiedDomainMask;
-    plan.modelFillRepairMask.assign(pixelCount, 0U);
-    plan.supportRepairMask.assign(pixelCount, 0U);
-    plan.internalVoidSupportRepairMask.assign(pixelCount, 0U);
-    plan.colorFillRepairMask.assign(pixelCount, 0U);
-    plan.modelSupportRepairMask.assign(pixelCount, 0U);
-    plan.varnishSupportRepairMask.assign(pixelCount, 0U);
-    plan.rejectedTooWideMask.assign(pixelCount, 0U);
-    plan.externalBackgroundProtectedPixels =
-        analysis.summary.externalBackgroundProtectedPixels;
+    ValidateMask(workspace.externalBackgroundMask, pixelCount, "workspace.externalBackgroundMask");
+    ValidateMask(workspace.expectedOccupiedDomainMask, pixelCount, "workspace.expectedOccupiedDomainMask");
+    ValidateMask(workspace.modelFillRepairMask, pixelCount, "workspace.modelFillRepairMask");
+    ValidateMask(workspace.supportRepairMask, pixelCount, "workspace.supportRepairMask");
+    ValidateMask(workspace.internalVoidSupportRepairMask, pixelCount, "workspace.internalVoidSupportRepairMask");
+    ValidateMask(workspace.colorFillRepairMask, pixelCount, "workspace.colorFillRepairMask");
+    ValidateMask(workspace.modelSupportRepairMask, pixelCount, "workspace.modelSupportRepairMask");
+    ValidateMask(workspace.varnishSupportRepairMask, pixelCount, "workspace.varnishSupportRepairMask");
+    ValidateMask(workspace.rejectedTooWideMask, pixelCount, "workspace.rejectedTooWideMask");
+    ValidateMask(workspace.visited, pixelCount, "workspace.visited");
+    ValidateMask(workspace.componentMask, pixelCount, "workspace.componentMask");
+    if (workspace.componentPixels.capacity() < pixelCount)
+    {
+        throw std::invalid_argument(
+            "material closure repair component workspace is not prepared");
+    }
 
-    std::vector<std::uint8_t> visited(pixelCount, 0U);
-    std::vector<std::uint8_t> componentMask(pixelCount, 0U);
+    std::copy(
+        analysis.externalBackgroundMask.begin(),
+        analysis.externalBackgroundMask.end(),
+        workspace.externalBackgroundMask.begin());
+    std::copy(
+        input.expectedOccupiedDomainMask.begin(),
+        input.expectedOccupiedDomainMask.end(),
+        workspace.expectedOccupiedDomainMask.begin());
+    std::fill(workspace.modelFillRepairMask.begin(), workspace.modelFillRepairMask.end(), 0U);
+    std::fill(workspace.supportRepairMask.begin(), workspace.supportRepairMask.end(), 0U);
+    std::fill(workspace.internalVoidSupportRepairMask.begin(), workspace.internalVoidSupportRepairMask.end(), 0U);
+    std::fill(workspace.colorFillRepairMask.begin(), workspace.colorFillRepairMask.end(), 0U);
+    std::fill(workspace.modelSupportRepairMask.begin(), workspace.modelSupportRepairMask.end(), 0U);
+    std::fill(workspace.varnishSupportRepairMask.begin(), workspace.varnishSupportRepairMask.end(), 0U);
+    std::fill(workspace.rejectedTooWideMask.begin(), workspace.rejectedTooWideMask.end(), 0U);
+    std::fill(workspace.visited.begin(), workspace.visited.end(), 0U);
+    std::fill(workspace.componentMask.begin(), workspace.componentMask.end(), 0U);
+
+    int rejectedTooWidePixels{0};
     for (std::size_t index{0U}; index < pixelCount; ++index)
     {
-        if (analysis.candidateGapMask.at(index) == 0U || visited.at(index) != 0U)
+        if (analysis.candidateGapMask[index] == 0U
+            || workspace.visited.at(index) != 0U)
         {
             continue;
         }
         if (connectivity == 8)
         {
+            CollectComponent(
+                analysis.candidateGapMask,
+                input.widthPx,
+                input.heightPx,
+                index,
+                directions8,
+                workspace.visited,
+                workspace.componentPixels);
             AddComponentToPlan(
                 input,
                 analysis,
-                CollectComponent(
-                    analysis.candidateGapMask,
-                    input.widthPx,
-                    input.heightPx,
-                    index,
-                    directions8,
-                    visited),
+                workspace.componentPixels,
                 directions8,
-                componentMask,
-                plan);
+                workspace,
+                rejectedTooWidePixels);
         }
         else
         {
+            CollectComponent(
+                analysis.candidateGapMask,
+                input.widthPx,
+                input.heightPx,
+                index,
+                directions4,
+                workspace.visited,
+                workspace.componentPixels);
             AddComponentToPlan(
                 input,
                 analysis,
-                CollectComponent(
-                    analysis.candidateGapMask,
-                    input.widthPx,
-                    input.heightPx,
-                    index,
-                    directions4,
-                    visited),
+                workspace.componentPixels,
                 directions4,
-                componentMask,
-                plan);
+                workspace,
+                rejectedTooWidePixels);
         }
     }
 
+    int modelFillRepairPixels{0};
+    int supportRepairPixels{0};
     for (std::size_t index{0U}; index < pixelCount; ++index)
     {
-        plan.modelFillRepairPixels += plan.modelFillRepairMask.at(index) != 0U ? 1 : 0;
-        plan.supportRepairPixels += plan.supportRepairMask.at(index) != 0U ? 1 : 0;
+        modelFillRepairPixels += workspace.modelFillRepairMask.at(index) != 0U ? 1 : 0;
+        supportRepairPixels += workspace.supportRepairMask.at(index) != 0U ? 1 : 0;
     }
-    return plan;
+    return MaterialClosureRepairPlanView{
+        input.widthPx,
+        input.heightPx,
+        workspace.externalBackgroundMask,
+        workspace.expectedOccupiedDomainMask,
+        workspace.modelFillRepairMask,
+        workspace.supportRepairMask,
+        workspace.internalVoidSupportRepairMask,
+        workspace.colorFillRepairMask,
+        workspace.modelSupportRepairMask,
+        workspace.varnishSupportRepairMask,
+        workspace.rejectedTooWideMask,
+        modelFillRepairPixels,
+        supportRepairPixels,
+        rejectedTooWidePixels,
+        analysis.summary.externalBackgroundProtectedPixels};
 }
 
 MaterialClosureRepairApplicationResult ApplyMaterialClosureRepair(
-    const MaterialClosureRepairPlan& plan,
+    const MaterialClosureRepairPlanView& plan,
     const MaterialClosureRepairValues& values,
-    std::vector<std::uint8_t>& layer,
-    MaterialClosureSemanticLayerInput& input)
+    const std::span<std::uint8_t> layer,
+    MaterialClosureSemanticLayerMutableInputView& input)
 {
     constexpr std::size_t channelCount{6U};
     if (plan.widthPx != input.widthPx || plan.heightPx != input.heightPx)
@@ -444,27 +525,27 @@ MaterialClosureRepairApplicationResult ApplyMaterialClosureRepair(
     MaterialClosureRepairApplicationResult result;
     for (std::size_t index{0U}; index < pixelCount; ++index)
     {
-        if (input.layerEmptyMask.at(index) == 0U)
+        if (input.layerEmptyMask[index] == 0U)
         {
             continue;
         }
-        const bool repairModelFill = plan.modelFillRepairMask.at(index) != 0U;
-        const bool repairSupport = plan.supportRepairMask.at(index) != 0U;
+        const bool repairModelFill = plan.modelFillRepairMask[index] != 0U;
+        const bool repairSupport = plan.supportRepairMask[index] != 0U;
         if (!repairModelFill && !repairSupport)
         {
             continue;
         }
-        if (plan.externalBackgroundMask.at(index) != 0U)
+        if (plan.externalBackgroundMask[index] != 0U)
         {
             ++result.blockedExternalBackgroundRepairPixels;
             continue;
         }
-        if (plan.expectedOccupiedDomainMask.at(index) == 0U)
+        if (plan.expectedOccupiedDomainMask[index] == 0U)
         {
             ++result.blockedOutsideExpectedDomainRepairPixels;
             continue;
         }
-        if (plan.rejectedTooWideMask.at(index) != 0U)
+        if (plan.rejectedTooWideMask[index] != 0U)
         {
             ++result.blockedRejectedTooWideRepairPixels;
             continue;
@@ -478,30 +559,114 @@ MaterialClosureRepairApplicationResult ApplyMaterialClosureRepair(
                 continue;
             }
             WriteModelFill(values, base, layer);
-            input.modelFillMask.at(index) = 1U;
-            input.modelMaterialMask.at(index) = 1U;
+            input.modelFillMask[index] = 1U;
+            input.modelMaterialMask[index] = 1U;
             ++result.repairedModelFillPixels;
         }
         else
         {
-            layer.at(base + 4U) = values.supportValue;
-            input.supportFillMask.at(index) = 1U;
+            layer[base + 4U] = values.supportValue;
+            input.supportFillMask[index] = 1U;
             ++result.repairedSupportPixels;
-            if (plan.internalVoidSupportRepairMask.at(index) != 0U)
+            if (plan.internalVoidSupportRepairMask[index] != 0U)
             {
-                input.internalVoidSupportMask.at(index) = 1U;
+                input.internalVoidSupportMask[index] = 1U;
             }
         }
-        input.layerEmptyMask.at(index) = 0U;
+        input.layerEmptyMask[index] = 0U;
         ++result.repairedPixels;
-        result.repairedColorFillPixels += plan.colorFillRepairMask.at(index) != 0U ? 1 : 0;
-        result.repairedModelSupportPixels += plan.modelSupportRepairMask.at(index) != 0U ? 1 : 0;
+        result.repairedColorFillPixels += plan.colorFillRepairMask[index] != 0U ? 1 : 0;
+        result.repairedModelSupportPixels += plan.modelSupportRepairMask[index] != 0U ? 1 : 0;
         result.repairedInternalVoidPixels +=
-            plan.internalVoidSupportRepairMask.at(index) != 0U ? 1 : 0;
+            plan.internalVoidSupportRepairMask[index] != 0U ? 1 : 0;
         result.repairedVarnishSupportPixels +=
-            plan.varnishSupportRepairMask.at(index) != 0U ? 1 : 0;
+            plan.varnishSupportRepairMask[index] != 0U ? 1 : 0;
     }
     return result;
+}
+
+MaterialClosureRepairPlan BuildMaterialClosureRepairPlan(
+    const MaterialClosureSemanticLayerInput& input,
+    const MaterialClosureSemanticLayerAnalysis& analysis,
+    const int connectivity)
+{
+    const MaterialClosureSemanticLayerInputView inputView =
+        ViewMaterialClosureSemanticLayerInput(
+            static_cast<const MaterialClosureSemanticLayerInput&>(input));
+    const MaterialClosureSemanticLayerAnalysisView analysisView{
+        analysis.widthPx,
+        analysis.heightPx,
+        analysis.summary,
+        analysis.externalBackgroundMask,
+        analysis.candidateGapMask,
+        analysis.colorFillGapMask,
+        analysis.modelSupportGapMask,
+        analysis.colorSupportGapMask,
+        analysis.internalVoidGapMask,
+        analysis.varnishSupportGapMask};
+    ValidatePlanInput(inputView, analysisView, connectivity);
+
+    MaterialClosureRepairWorkspace workspace;
+    workspace.Prepare(analysis.candidateGapMask.size());
+    const MaterialClosureRepairPlanView view = BuildMaterialClosureRepairPlan(
+        inputView,
+        analysisView,
+        connectivity,
+        workspace);
+
+    MaterialClosureRepairPlan plan;
+    plan.widthPx = view.widthPx;
+    plan.heightPx = view.heightPx;
+    plan.externalBackgroundMask.assign(
+        view.externalBackgroundMask.begin(), view.externalBackgroundMask.end());
+    plan.expectedOccupiedDomainMask.assign(
+        view.expectedOccupiedDomainMask.begin(), view.expectedOccupiedDomainMask.end());
+    plan.modelFillRepairMask.assign(
+        view.modelFillRepairMask.begin(), view.modelFillRepairMask.end());
+    plan.supportRepairMask.assign(
+        view.supportRepairMask.begin(), view.supportRepairMask.end());
+    plan.internalVoidSupportRepairMask.assign(
+        view.internalVoidSupportRepairMask.begin(), view.internalVoidSupportRepairMask.end());
+    plan.colorFillRepairMask.assign(
+        view.colorFillRepairMask.begin(), view.colorFillRepairMask.end());
+    plan.modelSupportRepairMask.assign(
+        view.modelSupportRepairMask.begin(), view.modelSupportRepairMask.end());
+    plan.varnishSupportRepairMask.assign(
+        view.varnishSupportRepairMask.begin(), view.varnishSupportRepairMask.end());
+    plan.rejectedTooWideMask.assign(
+        view.rejectedTooWideMask.begin(), view.rejectedTooWideMask.end());
+    plan.modelFillRepairPixels = view.modelFillRepairPixels;
+    plan.supportRepairPixels = view.supportRepairPixels;
+    plan.rejectedTooWidePixels = view.rejectedTooWidePixels;
+    plan.externalBackgroundProtectedPixels = view.externalBackgroundProtectedPixels;
+    return plan;
+}
+
+MaterialClosureRepairApplicationResult ApplyMaterialClosureRepair(
+    const MaterialClosureRepairPlan& plan,
+    const MaterialClosureRepairValues& values,
+    std::vector<std::uint8_t>& layer,
+    MaterialClosureSemanticLayerInput& input)
+{
+    const MaterialClosureRepairPlanView planView{
+        plan.widthPx,
+        plan.heightPx,
+        plan.externalBackgroundMask,
+        plan.expectedOccupiedDomainMask,
+        plan.modelFillRepairMask,
+        plan.supportRepairMask,
+        plan.internalVoidSupportRepairMask,
+        plan.colorFillRepairMask,
+        plan.modelSupportRepairMask,
+        plan.varnishSupportRepairMask,
+        plan.rejectedTooWideMask,
+        plan.modelFillRepairPixels,
+        plan.supportRepairPixels,
+        plan.rejectedTooWidePixels,
+        plan.externalBackgroundProtectedPixels};
+    MaterialClosureSemanticLayerMutableInputView inputView =
+        ViewMaterialClosureSemanticLayerInput(input);
+    return ApplyMaterialClosureRepair(planView, values, layer, inputView);
 }
 
 }  // namespace slicer_core

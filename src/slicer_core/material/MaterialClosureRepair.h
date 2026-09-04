@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace slicer_core
@@ -53,6 +54,77 @@ struct MaterialClosureRepairPlan
     int externalBackgroundProtectedPixels{0};
 };
 
+/** @brief Borrowed repair plan valid until its workspace is reused. */
+struct MaterialClosureRepairPlanView
+{
+    int widthPx{0};
+    int heightPx{0};
+    std::span<const std::uint8_t> externalBackgroundMask;
+    std::span<const std::uint8_t> expectedOccupiedDomainMask;
+    std::span<const std::uint8_t> modelFillRepairMask;
+    std::span<const std::uint8_t> supportRepairMask;
+    std::span<const std::uint8_t> internalVoidSupportRepairMask;
+    std::span<const std::uint8_t> colorFillRepairMask;
+    std::span<const std::uint8_t> modelSupportRepairMask;
+    std::span<const std::uint8_t> varnishSupportRepairMask;
+    std::span<const std::uint8_t> rejectedTooWideMask;
+    int modelFillRepairPixels{0};
+    int supportRepairPixels{0};
+    int rejectedTooWidePixels{0};
+    int externalBackgroundProtectedPixels{0};
+};
+
+/** @brief Caller-owned storage reused while building repair plans. */
+struct MaterialClosureRepairWorkspace
+{
+    void Prepare(std::size_t pixelCount);
+
+    std::vector<std::uint8_t> externalBackgroundMask;
+    std::vector<std::uint8_t> expectedOccupiedDomainMask;
+    std::vector<std::uint8_t> modelFillRepairMask;
+    std::vector<std::uint8_t> supportRepairMask;
+    std::vector<std::uint8_t> internalVoidSupportRepairMask;
+    std::vector<std::uint8_t> colorFillRepairMask;
+    std::vector<std::uint8_t> modelSupportRepairMask;
+    std::vector<std::uint8_t> varnishSupportRepairMask;
+    std::vector<std::uint8_t> rejectedTooWideMask;
+    std::vector<std::uint8_t> visited;
+    std::vector<std::uint8_t> componentMask;
+    std::vector<std::size_t> componentPixels;
+};
+
+/** @brief Mutable borrowed semantic masks updated by repair application. */
+struct MaterialClosureSemanticLayerMutableInputView
+{
+    int layerIndex{0};
+    double zMm{0.0};
+    int widthPx{0};
+    int heightPx{0};
+    std::span<std::uint8_t> textureSurfaceMask;
+    std::span<std::uint8_t> modelFillMask;
+    std::span<std::uint8_t> modelMaterialMask;
+    std::span<std::uint8_t> supportFillMask;
+    std::span<std::uint8_t> internalVoidSupportMask;
+    std::span<std::uint8_t> surfaceVarnishMask;
+    std::span<std::uint8_t> outerVarnishShellMask;
+    std::span<std::uint8_t> modelEnvelopeMask;
+    std::span<std::uint8_t> supportRequiredMask;
+    std::span<std::uint8_t> expectedOccupiedDomainMask;
+    std::span<std::uint8_t> layerEmptyMask;
+};
+
+/** @brief Create a mutable borrowed view over the existing owning semantic DTO. */
+[[nodiscard]] MaterialClosureSemanticLayerMutableInputView
+ViewMaterialClosureSemanticLayerInput(
+    MaterialClosureSemanticLayerInput& input) noexcept;
+
+/** @brief Build a repair plan using caller-prepared reusable storage. */
+MaterialClosureRepairPlanView BuildMaterialClosureRepairPlan(
+    const MaterialClosureSemanticLayerInputView& input,
+    const MaterialClosureSemanticLayerAnalysisView& analysis,
+    int connectivity,
+    MaterialClosureRepairWorkspace& workspace);
+
 /**
  * @brief Actual channel and semantic-mask changes made by a repair plan.
  */
@@ -69,6 +141,13 @@ struct MaterialClosureRepairApplicationResult
     int blockedOutsideExpectedDomainRepairPixels{0};
     int blockedRejectedTooWideRepairPixels{0};
 };
+
+/** @brief Apply a borrowed repair plan without allocating. */
+MaterialClosureRepairApplicationResult ApplyMaterialClosureRepair(
+    const MaterialClosureRepairPlanView& plan,
+    const MaterialClosureRepairValues& values,
+    std::span<std::uint8_t> layer,
+    MaterialClosureSemanticLayerMutableInputView& input);
 
 /**
  * @brief Builds a conservative one-pixel repair plan from exact semantic evidence.

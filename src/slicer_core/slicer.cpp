@@ -12,6 +12,7 @@
 #include "slicer_core/materials/volume/MaterialOpacityVarnishResolver.h"
 #include "slicer_core/materials/volume/MaterialVolumePlan.h"
 #include "slicer_core/materials/volume/MaterialVolumeWhiteCarrier.h"
+#include "slicer_core/material/RetainedMaterialLayerComposer.h"
 #include "slicer_core/materials/texture_application/TextureFillPartitionAdmission.h"
 #include "slicer_core/materials/texture_application/TextureWhiteCarrierPolicy.h"
 #include "slicer_core/materials/transfer/LegacyTransferChannelSession.h"
@@ -124,7 +125,7 @@ struct RasterResult {
     int filled_spans{0};
 };
 
-using ChannelStats = TiffChannelStats;
+using ChannelStats = BoundedMaterialChannelStats;
 
 struct SupportComponentSummary {
     int area_px{0};
@@ -143,18 +144,7 @@ struct SupportConnectivityDiagnostics {
     std::vector<SupportComponentSummary> components;
 };
 
-struct LayerSemanticStats {
-    int texture_surface_pixels{0};
-    std::uint64_t unprintable_white_carrier_pixels{0};
-    int model_fill_pixels{0};
-    int support_pixels{0};
-    int internal_void_support_pixels{0};
-    int outer_varnish_pixels{0};
-    int outer_surface_varnish_pixels{0};
-    int inner_surface_varnish_pixels{0};
-    /// @brief MO-04：因不透明度判据改写 V 通道的像素数。
-    std::uint64_t opacity_varnish_pixels{0};
-};
+using LayerSemanticStats = BoundedMaterialLayerSemanticStats;
 
 struct LayerDiagnostics {
     int layer_index{0};
@@ -305,13 +295,7 @@ struct SurfaceVarnishMasks {
     std::vector<std::vector<std::uint8_t>> inner_surface_masks;
 };
 
-struct TextureColumnColor {
-    bool has_color{false};
-    std::array<std::uint8_t, 3> rgb{0, 0, 0};
-    bool sampled_texture{false};
-    bool used_fallback{false};
-    bool uv_out_of_range{false};
-};
+using TextureColumnColor = BoundedTextureColumnFact;
 
 struct TextureReportData {
     bool enabled{false};
@@ -331,11 +315,7 @@ struct TextureReportData {
     Json::Array warnings;
 };
 
-struct ColumnLayerRange {
-    bool has_model{false};
-    int lower_layer{-1};
-    int upper_layer{-1};
-};
+using ColumnLayerRange = BoundedMaterialColumnRangeFact;
 
 struct MaterialPixel {
     std::uint8_t r{255};
@@ -361,20 +341,8 @@ struct MaterialPolicyReportData {
     Json::Array warnings;
 };
 
-enum class MaterialRole {
-    Rgb,
-    White,
-    Varnish,
-    Ignore,
-    SupportCandidate,
-    Support,
-};
-
-struct MaterialRoleColumn {
-    bool has_role{false};
-    MaterialRole role{MaterialRole::Rgb};
-    std::array<std::uint8_t, 3> rgb{0, 0, 0};
-};
+using MaterialRole = BoundedMaterialRole;
+using MaterialRoleColumn = BoundedMaterialRoleColumnFact;
 
 struct MaterialRoleMappingReportData {
     bool enabled{false};
@@ -1743,11 +1711,11 @@ std::vector<ColumnLayerRange> compute_mask_column_ranges(
                 continue;
             }
             ColumnLayerRange& range = ranges.at(i);
-            if (!range.has_model) {
-                range.has_model = true;
-                range.lower_layer = layer_index;
+            if (!range.hasModel) {
+                range.hasModel = true;
+                range.lowerLayer = layer_index;
             }
-            range.upper_layer = layer_index;
+            range.upperLayer = layer_index;
         }
     }
     return ranges;
@@ -1988,11 +1956,11 @@ void AddUpperProjectionSupport(
     for (std::size_t index{0}; index < columnRanges.size(); ++index)
     {
         const ColumnLayerRange& range = columnRanges.at(index);
-        if (!range.has_model || range.upper_layer < 0)
+        if (!range.hasModel || range.upperLayer < 0)
         {
             continue;
         }
-        for (int layerIndex{range.upper_layer + 1}; layerIndex < grid.layer_count; ++layerIndex)
+        for (int layerIndex{range.upperLayer + 1}; layerIndex < grid.layer_count; ++layerIndex)
         {
             if (modelMasks.at(layerIndex).at(index) != 0)
             {
@@ -2533,7 +2501,7 @@ std::array<std::uint8_t, 3> material_rgb_for_role(
     const std::vector<TextureColumnColor>* texture_columns,
     const std::size_t pixel_index,
     const std::string& material_name) {
-    if (texture_columns != nullptr && pixel_index < texture_columns->size() && texture_columns->at(pixel_index).has_color) {
+    if (texture_columns != nullptr && pixel_index < texture_columns->size() && texture_columns->at(pixel_index).hasColor) {
         return texture_columns->at(pixel_index).rgb;
     }
     const MaterialInfo* material = find_material_info_by_name(model_report, material_name);
@@ -2607,7 +2575,7 @@ std::vector<MaterialRoleColumn> build_material_role_columns(
         const TriangleTextureInfo& texture_info =
             model_report.triangle_textures.at(static_cast<std::size_t>(column.top_triangle_index));
         MaterialRoleColumn& role_column = result.at(index);
-        role_column.has_role = true;
+        role_column.hasRole = true;
         role_column.role = map_input_material_to_role(texture_info.material_name, config.material_role_mapping);
         role_column.rgb = material_rgb_for_role(config, model_report, texture_columns, index, texture_info.material_name);
     }
@@ -2708,7 +2676,7 @@ std::vector<TextureColumnColor> build_relief_texture_columns(
             model_report.triangle_textures.at(static_cast<std::size_t>(column.top_triangle_index));
         const RuntimeMaterialTexture* material = find_runtime_material(runtime, texture_info.material_name);
         TextureColumnColor& color = result.at(index);
-        color.has_color = true;
+        color.hasColor = true;
 
         if (texture_info.has_uv && material != nullptr && material->loaded) {
             const double u = column.top_barycentric.at(0) * texture_info.uv.at(0).u
@@ -2719,11 +2687,11 @@ std::vector<TextureColumnColor> build_relief_texture_columns(
                 + column.top_barycentric.at(2) * texture_info.uv.at(2).v;
             bool uv_out_of_range{false};
             color.rgb = sample_texture_rgb(material->image, u, v, sample_options, uv_out_of_range);
-            color.sampled_texture = true;
-            color.uv_out_of_range = uv_out_of_range;
+            color.sampledTexture = true;
+            color.uvOutOfRange = uv_out_of_range;
         } else {
             color.rgb = fallback_texture_rgb(config, material);
-            color.used_fallback = true;
+            color.usedFallback = true;
         }
     }
     return result;
@@ -2777,9 +2745,9 @@ std::vector<TextureColumnColor> build_per_material_texture_columns(
         TextureColumnColor& color = result.at(slot);
         color.rgb = sample_texture_rgb(
             material->image, u, v, sample_options, uv_out_of_range);
-        color.has_color = true;
-        color.sampled_texture = true;
-        color.uv_out_of_range = uv_out_of_range;
+        color.hasColor = true;
+        color.sampledTexture = true;
+        color.uvOutOfRange = uv_out_of_range;
     }
     return result;
 }
@@ -2930,7 +2898,7 @@ ModelFillMaterial ResolveModelFillMaterial(
     }
     if (config.model_fill.material == "material_role")
     {
-        if (roleColumn == nullptr || !roleColumn->has_role)
+        if (roleColumn == nullptr || !roleColumn->hasRole)
         {
             return ResolveProfileDefaultModelFillMaterial(config);
         }
@@ -2981,7 +2949,7 @@ bool WriteModelFillPixel(
     switch (material)
     {
         case ModelFillMaterial::Rgb:
-            if (roleColumn != nullptr && roleColumn->has_role && roleColumn->role == MaterialRole::Rgb
+            if (roleColumn != nullptr && roleColumn->hasRole && roleColumn->role == MaterialRole::Rgb
                 && config.model_fill.material == "material_role")
             {
                 pixels.at(base + 0U) = roleColumn->rgb.at(0);
@@ -3048,11 +3016,11 @@ TextureColumnColor resolve_texture_color(
     const std::vector<TextureColumnColor>* texture_columns,
     const std::size_t pixel_index) {
     TextureColumnColor color;
-    color.has_color = true;
+    color.hasColor = true;
     color.rgb = config.texture.fallback_rgb;
-    color.used_fallback = true;
+    color.usedFallback = true;
     if (texture_columns != nullptr && pixel_index < texture_columns->size()
-        && texture_columns->at(pixel_index).has_color) {
+        && texture_columns->at(pixel_index).hasColor) {
         color = texture_columns->at(pixel_index);
     }
     return color;
@@ -3062,13 +3030,13 @@ void update_texture_report_for_color(const TextureColumnColor& color, TextureRep
     if (texture_report == nullptr) {
         return;
     }
-    if (color.sampled_texture) {
+    if (color.sampledTexture) {
         ++texture_report->sampled_pixels;
     }
-    if (color.used_fallback) {
+    if (color.usedFallback) {
         ++texture_report->fallback_pixels;
     }
-    if (color.uv_out_of_range) {
+    if (color.uvOutOfRange) {
         ++texture_report->uv_out_of_range_pixels;
     }
 }
@@ -3082,11 +3050,11 @@ bool is_top_material_layer(
         return false;
     }
     const ColumnLayerRange& range = column_ranges->at(pixel_index);
-    if (!range.has_model || range.upper_layer < range.lower_layer) {
+    if (!range.hasModel || range.upperLayer < range.lowerLayer) {
         return false;
     }
-    const int first_top_layer = std::max(range.lower_layer, range.upper_layer - top_layers + 1);
-    return layer_index >= first_top_layer && layer_index <= range.upper_layer;
+    const int first_top_layer = std::max(range.lowerLayer, range.upperLayer - top_layers + 1);
+    return layer_index >= first_top_layer && layer_index <= range.upperLayer;
 }
 
 bool ShouldApplyTextureToLayer(
@@ -3188,7 +3156,7 @@ bool write_material_role_pixel(
     std::vector<std::uint8_t>& pixels,
     const std::size_t base,
     const MaterialRoleColumn& role_column) {
-    if (!role_column.has_role) {
+    if (!role_column.hasRole) {
         pixels.at(base + 0U) = role_column.rgb.at(0);
         pixels.at(base + 1U) = role_column.rgb.at(1);
         pixels.at(base + 2U) = role_column.rgb.at(2);
@@ -3245,7 +3213,7 @@ std::vector<std::uint8_t> build_texture_preview_mask(
                 && pixel_index < material_role_columns->size())
             {
                 const MaterialRoleColumn& role_column = material_role_columns->at(pixel_index);
-                rgb_role = !role_column.has_role || role_column.role == MaterialRole::Rgb;
+                rgb_role = !role_column.hasRole || role_column.role == MaterialRole::Rgb;
             }
             if (rgb_role && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index))
             {
@@ -3402,7 +3370,7 @@ std::vector<std::uint8_t> compose_layer(
                     bool wrote_model{false};
                     const bool apply_texture =
                         config.texture.enabled && ShouldApplyTextureToLayer(config, column_ranges, pixel_index, layer_index);
-                    if (role_column.has_role && role_column.role == MaterialRole::Rgb && config.texture.enabled
+                    if (role_column.hasRole && role_column.role == MaterialRole::Rgb && config.texture.enabled
                         && !apply_texture) {
                         if (ModelFillUsesExplicitPolicy(config)) {
                             wrote_model = WriteModelFillPixel(pixels, base, config, &role_column);
@@ -3419,13 +3387,13 @@ std::vector<std::uint8_t> compose_layer(
                     }
                     if (wrote_model) {
                         counted_model_pixel = true;
-                        if (role_column.has_role && role_column.role == MaterialRole::Rgb && apply_texture) {
+                        if (role_column.hasRole && role_column.role == MaterialRole::Rgb && apply_texture) {
                             const TextureColumnColor color =
                                 resolve_texture_color(config, texture_columns, pixel_index);
                             update_texture_report_for_color(color, texture_report);
                             texture_surface_pixel = true;
                         } else if (config.model_fill.enabled) {
-                            model_fill_pixel = !role_column.has_role
+                            model_fill_pixel = !role_column.hasRole
                                 || role_column.role == MaterialRole::Rgb
                                 || (role_column.role == MaterialRole::White && config.model_fill.material == "white")
                                 || (role_column.role == MaterialRole::Varnish && config.model_fill.material == "varnish");
@@ -3515,7 +3483,7 @@ std::vector<std::uint8_t> compose_layer(
                                 static_cast<std::size_t>(owner) * columnCount
                                 + pixel_index;
                             if (slot < per_material_texture_columns->size()
-                                && per_material_texture_columns->at(slot).has_color) {
+                                && per_material_texture_columns->at(slot).hasColor) {
                                 const TextureColumnColor& color =
                                     per_material_texture_columns->at(slot);
                                 pixels.at(base + 0U) = color.rgb.at(0);
@@ -3684,63 +3652,94 @@ std::vector<std::uint8_t> compose_layer(
     return pixels;
 }
 
-void update_layer_channel_stats(const std::vector<std::uint8_t>& layer, LayerDiagnostics& diagnostics) {
-    const std::size_t pixel_count = layer.size() / rgbwsv_channel_count;
-    for (std::size_t i{0}; i < pixel_count; ++i) {
-        const std::size_t base{i * rgbwsv_channel_count};
-        for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel) {
-            const int value = layer.at(base + channel);
-            ChannelStats& stats = diagnostics.channel_stats.at(channel);
-            stats.min_value = std::min(stats.min_value, value);
-            stats.max_value = std::max(stats.max_value, value);
-            if (value == 255) {
-                ++stats.empty_pixels;
-            } else {
-                ++stats.print_pixels;
-                if (value == 0) {
-                    ++stats.full_print_pixels;
-                } else {
-                    ++stats.partial_print_pixels;
-                }
-            }
-        }
-        if (layer.at(base + 0U) < 255U || layer.at(base + 1U) < 255U || layer.at(base + 2U) < 255U) {
-            ++diagnostics.rgb_non_zero_pixels;
-        }
-        if (layer.at(base + 3U) < 255U) {
-            ++diagnostics.white_non_zero_pixels;
-        }
-        if (layer.at(base + 4U) < 255U) {
-            ++diagnostics.support_non_zero_pixels;
-        }
-        if (layer.at(base + 5U) < 255U) {
-            ++diagnostics.varnish_non_zero_pixels;
-        }
+std::vector<std::uint8_t> compose_retained_layer(
+    const BoundedMaterialReplayPolicy& policy,
+    const GridSpec& grid,
+    const std::vector<std::uint8_t>& model_mask,
+    const std::vector<std::uint8_t>& outer_varnish_mask,
+    const std::vector<std::uint8_t>& outer_surface_varnish_mask,
+    const std::vector<std::uint8_t>& inner_surface_varnish_mask,
+    const std::vector<std::uint8_t>& support_mask,
+    const std::vector<SupportType>& support_type_map,
+    const std::vector<TextureColumnColor>* texture_columns,
+    const std::vector<MaterialRoleColumn>* material_role_columns,
+    const std::vector<ColumnLayerRange>& column_ranges,
+    const int layer_index,
+    TextureReportData* const texture_report,
+    MaterialPolicyReportData* const material_policy_report,
+    MaterialClosureSemanticLayerInput* const materialClosureInput,
+    LayerSemanticStats& semantic_stats,
+    int& model_pixels,
+    int& support_pixels)
+{
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    std::vector<std::uint8_t> pixels(
+        pixelCount * kRetainedMaterialChannelCount,
+        policy.backgroundValue);
+    const std::span<const TextureColumnColor> textureFacts =
+        texture_columns == nullptr
+        ? std::span<const TextureColumnColor>{}
+        : std::span<const TextureColumnColor>{*texture_columns};
+    const std::span<const MaterialRoleColumn> roleFacts =
+        material_role_columns == nullptr
+        ? std::span<const MaterialRoleColumn>{}
+        : std::span<const MaterialRoleColumn>{*material_role_columns};
+    const BoundedMaterialLayerComposeResult result =
+        ComposeRetainedMaterialLayer(
+            BoundedMaterialLayerComposeRequest{
+                &policy,
+                grid.width_px,
+                grid.height_px,
+                layer_index,
+                model_mask,
+                outer_varnish_mask,
+                outer_surface_varnish_mask,
+                inner_surface_varnish_mask,
+                support_mask,
+                support_type_map,
+                textureFacts,
+                roleFacts,
+                column_ranges},
+            pixels,
+            materialClosureInput);
+    semantic_stats = result.semantic;
+    model_pixels = result.modelPixels;
+    support_pixels = result.supportPixels;
+    if (texture_report != nullptr)
+    {
+        texture_report->sampled_pixels += result.texture.sampledPixels;
+        texture_report->fallback_pixels += result.texture.fallbackPixels;
+        texture_report->uv_out_of_range_pixels +=
+            result.texture.uvOutOfRangePixels;
     }
+    if (material_policy_report != nullptr)
+    {
+        material_policy_report->rgb_print_pixels +=
+            result.materialPolicy.rgbPrintPixels;
+        material_policy_report->white_print_pixels +=
+            result.materialPolicy.whitePrintPixels;
+        material_policy_report->varnish_print_pixels +=
+            result.materialPolicy.varnishPrintPixels;
+    }
+    return pixels;
+}
+
+void update_layer_channel_stats(const std::vector<std::uint8_t>& layer, LayerDiagnostics& diagnostics) {
+    const auto stats = AnalyzeRetainedMaterialLayerChannels(layer);
+    diagnostics.channel_stats = stats.channels;
+    diagnostics.rgb_non_zero_pixels = stats.rgbNonZeroPixels;
+    diagnostics.white_non_zero_pixels = stats.whiteNonZeroPixels;
+    diagnostics.support_non_zero_pixels = stats.supportNonZeroPixels;
+    diagnostics.varnish_non_zero_pixels = stats.varnishNonZeroPixels;
 }
 
 void merge_channel_stats(std::array<ChannelStats, rgbwsv_channel_count>& totals, const LayerDiagnostics& diagnostics) {
-    for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel) {
-        ChannelStats& total = totals.at(channel);
-        const ChannelStats& layer = diagnostics.channel_stats.at(channel);
-        total.print_pixels += layer.print_pixels;
-        total.full_print_pixels += layer.full_print_pixels;
-        total.partial_print_pixels += layer.partial_print_pixels;
-        total.empty_pixels += layer.empty_pixels;
-        total.min_value = std::min(total.min_value, layer.min_value);
-        total.max_value = std::max(total.max_value, layer.max_value);
-    }
+    AccumulateRetainedMaterialChannelStats(totals, diagnostics.channel_stats);
 }
 
 void merge_semantic_stats(LayerSemanticStats& totals, const LayerSemanticStats& layer) {
-    totals.texture_surface_pixels += layer.texture_surface_pixels;
-    totals.unprintable_white_carrier_pixels += layer.unprintable_white_carrier_pixels;
-    totals.model_fill_pixels += layer.model_fill_pixels;
-    totals.support_pixels += layer.support_pixels;
-    totals.internal_void_support_pixels += layer.internal_void_support_pixels;
-    totals.outer_varnish_pixels += layer.outer_varnish_pixels;
-    totals.outer_surface_varnish_pixels += layer.outer_surface_varnish_pixels;
-    totals.inner_surface_varnish_pixels += layer.inner_surface_varnish_pixels;
+    AccumulateRetainedMaterialSemanticStats(totals, layer);
 }
 
 Json channel_stats_to_json(const ChannelStats& stats) {
@@ -5007,6 +5006,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     const std::size_t layerPixelCount =
         static_cast<std::size_t>(grid.width_px)
         * static_cast<std::size_t>(grid.height_px);
+    const BoundedMaterialReplayPolicy retainedMaterialPolicy =
+        MakeBoundedMaterialReplayPolicy(config);
     const std::vector<std::uint8_t> emptyOptionalMask(layerPixelCount, 0U);
     // 未归属模型像素的填补（用户 2026-08-24 裁定「确有间隙则填补为下层材料」）。
     // 该逻辑曾在 03.obj 上恒不触发而被当作死代码撤除；08/09 的 3 条真开边给出了
@@ -5111,10 +5112,12 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         MaterialClosureSemanticLayerInput* materialClosureInputPointer{nullptr};
         if (collectMaterialClosureSemantic)
         {
-            materialClosureInput = InitializeMaterialClosureSemanticInput(
-                grid,
+            materialClosureInput =
+                InitializeRetainedMaterialClosureSemanticInputFromIndices(
                 layer_index,
                 diagnostics.z_mm,
+                grid.width_px,
+                grid.height_px,
                 model_masks.at(layer_index),
                 support_generation.support_masks.at(layer_index),
                 clearedOuterVarnishSupportIndices.at(layer_index),
@@ -5218,7 +5221,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         diagnostics.support_pixels = layer_support_pixels;
         if (collectMaterialClosureSemantic)
         {
-            PopulateMaterialClosureEmptyMask(layer, materialClosureInput);
+            PopulateRetainedMaterialClosureEmptyMask(layer, materialClosureInput);
         }
         if (collectMaterialClosureExact)
         {
@@ -5484,11 +5487,27 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             layer.channel_stats[5U].print_pixels,
             layer.semantic.unprintable_white_carrier_pixels});
     }
+    // MF-03B4B：ChannelStats 已从 TiffChannelStats 改为 BoundedMaterialChannelStats，
+    // 使 bounded 路径的统计不再依赖 TiffReadApi.h。两者字段【逐项相同】（6 个字段、
+    // 类型与默认值一致），故此处按字段显式转换而非 reinterpret——布局相同不等于
+    // 标准保证可互相解释，显式转换才经得起将来任一侧增删字段。
+    std::array<TiffChannelStats, rgbwsv_channel_count> reportChannelTotals{};
+    for (std::size_t channel{0}; channel < rgbwsv_channel_count; ++channel)
+    {
+        const ChannelStats& src = total_channel_stats.at(channel);
+        TiffChannelStats& dst = reportChannelTotals.at(channel);
+        dst.print_pixels = src.print_pixels;
+        dst.full_print_pixels = src.full_print_pixels;
+        dst.partial_print_pixels = src.partial_print_pixels;
+        dst.empty_pixels = src.empty_pixels;
+        dst.min_value = src.min_value;
+        dst.max_value = src.max_value;
+    }
     Json material_process_report = BuildMaterialProcessReport(MaterialProcessReportRequest{
         &config, model_report.format, model_report.model_path,
         grid.width_px, grid.height_px, grid.layer_count,
         grid.pixel_size_x_mm, grid.pixel_size_y_mm,
-        materialProcessLayers, total_channel_stats});
+        materialProcessLayers, reportChannelTotals});
     Json transfer_channel_report;
     if (transferSession.has_value() && options.write_tiff_layers)
     {

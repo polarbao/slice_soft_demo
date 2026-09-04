@@ -241,6 +241,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/material/MaterialChannelComposer.h
     src/slicer_core/material/MaterialClosureRepair.cpp
     src/slicer_core/material/MaterialClosureRepair.h
+    src/slicer_core/material/RetainedMaterialLayerComposer.cpp
+    src/slicer_core/material/RetainedMaterialLayerComposer.h
     src/slicer_core/materials/material_policy/MaterialPolicy.cpp
     src/slicer_core/materials/material_policy/MaterialPolicy.h
     src/slicer_core/materials/volume/MaterialVolumeError.cpp
@@ -545,6 +547,7 @@ if(MSVC)
         src/slicer_core/support/BoundedSupportDiscovery.cpp
         src/slicer_core/support/BoundedSupportFinalReplay.cpp
         src/slicer_core/support/BoundedSupportShapeScan.cpp
+        src/slicer_core/material/RetainedMaterialLayerComposer.cpp
         PROPERTIES COMPILE_OPTIONS "/W4;/WX"
     )
     target_compile_options(
@@ -1760,6 +1763,8 @@ add_executable(stage16c06_bounded_support_final_replay_unit_tests
 target_link_libraries(stage16c06_bounded_support_final_replay_unit_tests PRIVATE slicer_core)
 if(MSVC)
     target_compile_options(stage16c06_bounded_support_final_replay_unit_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(matvol_facts_unit_tests
     tests/matvol/MatvolFactsTests.cpp
 )
