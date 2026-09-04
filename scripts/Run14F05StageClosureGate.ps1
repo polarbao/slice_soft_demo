@@ -1,7 +1,16 @@
 [CmdletBinding()]
 param(
     [string]$BuildDirectory = "build-slicesoft/main",
-    [ValidateSet("Release")]
+    # 接受 Debug 只是为了能【显式跳过】，不是为了在 Debug 上验收。
+    # 原先这里是 ValidateSet("Release")，而 CTest 用 $<CONFIG> 无条件注册本门禁，
+    # 于是 Debug 回归里传进来的 Debug 被参数校验直接拒绝 —— 这条门禁在任何
+    # Debug 回归里都必然失败，且失败原因与被测对象无关，纯属注册与脚本契约不一致。
+    # 它长期红着，让 Debug 失败集恒定多一条噪音，掩盖真实问题。
+    # 现改为：非 Release 时以 SKIP_RETURN_CODE 退出，CTest 报「Skipped」而非 Failed。
+    # 之所以不用 CTest 的 CONFIGURATIONS 属性：CTest 4.3.1 下实测它确实解析到了
+    # CONFIGURATIONS=Release 却仍然执行该条，滤不掉；且「显式跳过」比「静默缺席」更好 ——
+    # 后者会让一条门禁悄悄从回归里消失，正是本仓库反复踩的那类隐性债。
+    [ValidateSet("Debug", "Release")]
     [string]$Config = "Release",
     [string]$RepositoryRoot = ".",
     [string]$OutputRoot = "",
@@ -10,6 +19,16 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# 与 CMakeLists 里的 SKIP_RETURN_CODE 对应，改动时必须两处同步。
+$script:SkipReturnCode = 111
+
+if ($Config -ne "Release")
+{
+    Write-Host ("14F05 SKIP: 阶段封口门禁只验 Release 分发包 " +
+        "output/distribution/<Config>/modules/slicer，当前 Config=$Config，跳过。")
+    exit $script:SkipReturnCode
+}
 
 function Resolve-AbsolutePath
 {

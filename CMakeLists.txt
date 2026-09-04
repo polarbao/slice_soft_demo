@@ -2590,6 +2590,18 @@ set_tests_properties(
     PROPERTIES
         RUN_SERIAL TRUE
         TIMEOUT 300
+        # 本门禁只验 Release 分发包 output/distribution/$Config/modules/slicer，
+        # 那是 Release 产物；对比 Run14F03 明确写 ("Debug","Release")、
+        # Run14F04 根本没有 -Config，可见 14F05 只收 Release 是有意的。
+        # 而这里用 $<CONFIG> 无条件注册，于是 Debug 回归里传进去 Debug 被脚本拒绝，
+        # 使它在任何 Debug 回归里都必然失败，且失败原因与被测对象无关。
+        # 现由脚本在非 Release 时以该退出码跳过，CTest 报 Skipped 而非 Failed。
+        # 该数值与 Run14F05StageClosureGate.ps1 的 $script:SkipReturnCode 一一对应，
+        # 改动时必须两处同步。
+        # 不用 CTest 的 CONFIGURATIONS 属性：CTest 4.3.1 下实测它已解析到
+        # CONFIGURATIONS=Release 却仍然执行该条，滤不掉；且「显式跳过」优于
+        # 「静默缺席」—— 后者会让一条门禁悄悄从回归里消失。
+        SKIP_RETURN_CODE 111
 )
 add_test(NAME scene_facade_14b03_unit_tests COMMAND scene_facade_14b03_unit_tests)
 add_test(
