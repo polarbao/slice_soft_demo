@@ -2,7 +2,7 @@
 
 > 文档状态：**ACTIVE / PC-01..PC-04 COMPLETE（已过 2026-09-04 全量回归，6 失败全为既有）
 > / PC-05..PC-12 PROPOSED**
-> 版本：v1.3 ｜ 日期：2026-09-04
+> 版本：v1.4 ｜ 日期：2026-09-04
 > ⚠ PC-04 只解决了「可复现 + 转绿」，**没有解决耗时**：它仍占全量 992.5 s 中的 555.5 s（56%）。
 > TIMEOUT 已按 §6.7 选项 a 抬至 1800 s（原 900 s 对实测 555/628 s 仅 1.43~1.62 倍余量）
 > 定位：不占 Stage 编号的独立专项；本清单为该专项任务状态唯一真源
@@ -42,7 +42,7 @@ samples/configs/material_process/ 下 15 个工艺文件被 SHA256 钉住
 | PC-08 | 工艺文件 overlay 化与 top-N 参数化 | PROPOSED（受 SHA256 冻结约束） | PC-07 | - |
 | PC-09 | W/V 对称预设合并；两条 materialvolume 候选工艺收敛 | PROPOSED / 待 MATVOL 裁定 | PC-06 | - |
 | PC-10 | 8 个不在 CTest 内的验证脚本：入 CTest 或删除 | PROPOSED | - | - |
-| PC-11 | 既有 **6** 项回归失败的归属与处置 | PROPOSED | - | - |
+| PC-11 | 既有 6 项回归失败的归属与处置 | **定责 COMPLETE**（6 项逐条读输出定责，处置分派各专项，见 §13） | - | 2026-09-04 |
 | PC-12 | 断言实参求值顺序导致失败不报原因（全仓 **85 处**） | PROPOSED / **低优先级**（已证非机械改动，批量改写已试并回退，见 §15.2） | PC-04 | - |
 
 ---
@@ -507,7 +507,7 @@ top1/2/3 退化为 1 个模板 + 1 个参数；15 个 SHA 基线同步更新并�
 
 ---
 
-## 13. PC-11 既有回归失败的归属与处置 — PROPOSED
+## 13. PC-11 既有回归失败的归属与处置 — **定责完成 / 处置分派各专项**
 
 三次全量回归逐条比对（改前 231 项 → 收口后 222 项）：
 
@@ -543,20 +543,94 @@ top1/2/3 退化为 1 个模板 + 1 个参数；15 个 SHA 基线同步更新并�
 
 **结论：PC-01 与 PC-02 零新增失败。** PC-03 落地于本次回归之后，尚未被覆盖。
 
-**完成标准：** 剩余 6 项逐个定责并给出处置，其中两项已有明确线索：
+### 13.1 六项定责结果（2026-09-04 逐条实跑读输出）
+
+**① `stage14f05_local_closure_gate` —— 零信号红灯，结构上永远不可能通过**
 
 ```text
-slicer_stage14e02_qt_host_boundary_test
-    失败原因单一且已知：apps/slicer_ui_host_sim/HostMainWindow.cpp 502 行
-    超过 500 行上限且未入债务台账。该门禁在首个失败处即中止，
-    因此它背后【可能还压着别的违规】—— 修掉这一条才能看到全貌。
-stage14f03 / stage14f05
-    两条 powershell 门禁脚本，需单独跑并读其输出，CTest 只给退出码。
+Run14F05StageClosureGate.ps1 : Cannot validate argument on parameter 'Config'.
+The argument "Debug" does not belong to the set "Release" specified by the ValidateSet attribute.
 ```
 
-其余三项（`slicer_stage14c04_sync_capability_safety_test`、
-`scene_layer_adapters_unit_tests`、`slicer_stage14e04d_dual_view_contract_test`）
-尚无线索，需各自读输出定责。
+脚本给 `-Config` 加了 `[ValidateSet("Release")]`，而 CTest 注册时传的是 `$<CONFIG>`，
+Debug 回归里就是 `Debug`。**它在任何 Debug 回归里都必然失败，且与被测对象无关。**
+处置二择一（属 Stage 14F）：把该条只在 Release 配置下注册，或让脚本接受 Debug。
+⚠ 它长期红着，等于让 Debug 回归的失败集里恒定多一条噪音，掩盖真实问题。
+
+**② `stage14f03_single_model_s1_gate` —— 疑似门禁侧路径期望过时，产品侧看起来是好的**
+
+```text
+[H-A-03] slice.rgbwsv 100%   package.verify 100%   model.release 100%
+HOSTFLOW_HA03_PASS sceneHandle=1 revision=3 layers=3
+→ Run14F03SingleModelS1Gate.ps1:99  throw "Single-model flow did not publish manifest.json"
+```
+
+切片与验包全部走完并报 PASS，随后门禁在第 99 行找不到 `manifest.json`。
+优先怀疑门禁脚本的输出路径期望与当前包布局不一致，而非产品缺陷。属 Stage 14F。
+
+**③ `slicer_stage14e02_qt_host_boundary_test` —— 门禁只报 1 项，实际 5 项**
+
+预测已验证：该门禁在首个失败处即中止。逐项核对
+`tests/stage14e_02/HostSourceSizeDebtLedger.json` 与实际行数后：
+
+```text
+台账内【增长】而未同步下调记录值（台账规则为「只减不增」）：
+  HostRipJobController.cpp   登记 1181 → 实际 1377  (+196)   27581fb 2026-08-28 ripflow 手动RIP
+  Main.cpp                   登记  751 → 实际  915  (+164)   27581fb / c0b1cf3 matvol-t 合并
+  HostSliceSettings.cpp      登记  571 → 实际  592  (+ 21)   931a50f 2026-09-02 hostflow ABI 四字段
+台账外且超 500 行：
+  HostMainWindow.cpp              502   ← 门禁唯一报出的那一项
+  HostPackageReviewController.cpp 501   d0b48d5 2026-08-28
+```
+
+三处增长分别来自 RIPFLOW、MATVOL-T、HOSTFLOW 的提交，**均非本专项**；
+共同点是改动时没有同步更新债务台账。这正是 MV07-Q2 台账机制想防的静默债，
+而它之所以没被发现，是因为门禁首个失败即中止、且长期红着无人看后续。
+处置：由各来源专项按 MV07-Q2 的口径补台账（属**门禁放宽，须出授权文档**）或缩减文件。
+
+**④ `scene_layer_adapters_unit_tests` —— 真实窄缺陷，13 个子用例 12 过 1 失**
+
+```text
+FAILED: translation preserves local layer bytes and dimensions
+FAIL:   legacy_adapter_applies_admitted_instance_transform
+（其余 11 项含 orchestrator / global_adapter 全部 PASS）
+```
+
+平移后本应保持不变的 local layer 字节与尺寸发生了变化。范围窄、指向明确，
+属 `src/slicer_core/pipeline/LegacySceneLayerAdapter.cpp` 一侧。
+
+**⑤ `slicer_stage14e04d_dual_view_contract_test` —— fail-closed 违规**
+
+```text
+14E-04d FAIL: missing texture silently became a gray model
+```
+
+缺纹理的模型被静默降级成灰模，而非按 fail-closed 拒绝或显式标注。
+在一个到处强调「失败即拒绝、不得静默降级」的仓库里，这条的性质比行数门禁严重。
+
+**⑥ `slicer_stage14c04_sync_capability_safety_test` —— 同步能力安全合同被破**
+
+```text
+FAIL: scene.get_viewdata first poll was succeeded, expected failed
+（随后打印了完整 viewdata，code=PM-SLICER-OK-0000）
+```
+
+`scene.get_viewdata` 的首次 poll 本应失败（该能力不得同步应答），现在直接成功返回。
+需 Stage 14C 判定是实现回归、还是该期望本身已随异步改造过时。
+
+### 13.2 处置建议与归属
+
+| 失败项 | 性质 | 归属 | 建议 |
+|---|---|---|---|
+| `stage14f05_local_closure_gate` | 注册/参数 bug，零信号 | Stage 14F | **最先修**，它污染每次 Debug 回归的失败集 |
+| `slicer_stage14e04d_dual_view_contract_test` | fail-closed 违规 | Stage 14E / RENDER | 次之，性质最重 |
+| `scene_layer_adapters_unit_tests` | 真实窄缺陷 | 切片核心 pipeline | 范围窄，可直接查 |
+| `slicer_stage14c04_sync_capability_safety_test` | 合同 vs 实现，需裁定 | Stage 14C | 先判定期望是否过时 |
+| `stage14f03_single_model_s1_gate` | 疑似门禁侧路径过时 | Stage 14F | 与①一并处理 |
+| `slicer_stage14e02_qt_host_boundary_test` | 静默债，5 项 | RIPFLOW / MATVOL-T / HOSTFLOW | 各自补台账，须授权文档 |
+
+**本专项不代劳任何一项**：①②属 14F，③需各来源专项在自己的授权下补台账，
+④⑤⑥分属切片核心与 14C/14E 的语义判断。本卡只负责把定责结论落到这里。
 
 ---
 
@@ -637,6 +711,7 @@ Require(callThatWrites(&error), QStringLiteral("...: %1").arg(error));
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-09-03 | v1.0 | 首版。固化 PC-01/PC-02 已完成事实与 18:00 回归证据；记录 PC-03 已落地内容与恢复回归后的确认清单；PC-04 给出「冻结基线无法从仓库复现」的完整证据链与 A/B/C 三个待裁定选项；PC-05..PC-11 列明各自的实测事实、完成标准与开工前置（含 PC-07 必须先扫 25 个文件测出既有不一致、PC-08 受 15 个 SHA256 冻结约束、PC-09 待 MATVOL 裁定）。 |
+| 2026-09-04 | v1.4 | PC-11 定责完成：6 项既有失败逐条实跑读输出。关键发现 —— `stage14f05_local_closure_gate` 的脚本给 `-Config` 加了 `ValidateSet("Release")` 而 CTest 传的是 `$<CONFIG>`，在任何 Debug 回归里【结构上永远不可能通过】，是一条零信号红灯，应最先修；`slicer_stage14e02_qt_host_boundary_test` 验证了「门禁首个失败即中止」的预测 —— 报 1 项而实际 5 项（3 项台账内增长未同步下调，来自 RIPFLOW/MATVOL-T/HOSTFLOW，另 2 项台账外超 500 行）；`slicer_stage14e04d_dual_view_contract_test` 是缺纹理静默降级为灰模的 fail-closed 违规；`stage14f03` 流程本身全绿、疑似门禁侧路径期望过时；`scene_layer_adapters_unit_tests` 为 13 过 12 失 1 的窄缺陷；`slicer_stage14c04` 需 14C 判定期望是否已过时。§13.2 给出性质、归属与优先级，并明确本专项不代劳任何一项。 |
 | 2026-09-04 | v1.3 | PC-04 §6.7 选项 a 已执行：`hostflow_hd02_real_asset_matrix` 的 TIMEOUT 900→1800（用户批准；实测 555/628 s 对 900 s 仅 1.43~1.62 倍余量）。**PC-12 口径两处更正**：处数由 36 改为 **85**（原扫描正则只支持一层嵌套括号，漏掉实参含嵌套调用的站点）；并撤回「纯机械改动」的判断 —— 实际脚本化改写 81 处后已回退，三条失败原因记于 §15.2（吃掉第二个实参、变量名无法机械生成且会撞名、4 处在短路链中）。完成标准改为逐文件手工改、低优先级，或改为「遇到空原因就地修一处」而不单独推平。 |
 | 2026-09-04 | v1.2 | 补 2026-09-04 10:29 全量回归证据：222 项 6 失败，7→6，唯一变化是 hd02 转绿，PC-01..PC-04 零新增失败。**更正 v1.0/v1.1 的耗时数字**：原「其余 221 项合计约 22 秒」系对 `CTestCostData.txt` 的平均 cost 求和所得，而该文件对失败用例记 0，严重低估；实测全量 992.5 s，hd02 占 555.5 s（56%），前 10 项占 867 s（87%），已列出前 10 名单，并据此把 §6.7 选项 c 改为「label 必须覆盖前 10 项、且其中 6 项属别的专项」。同步更正「cost 恒 0 = 疑似从未执行」的错误推断（cost 0 是失败用例的记法）。§13 完成标准改为逐项定责，并记明 14E-02 门禁在首个失败处中止、背后可能还压着别的违规。 |
 | 2026-09-03 | v1.1 | PC-03 转 COMPLETE（Debug 零编译器诊断、定向 4/4 PASS，§5.4 落实测数据，§5.5 记明 Release 与 UI Smoke 仍未做）。PC-04 按用户选定的选项 A 执行完毕并转 COMPLETE：清单驱动、三元组 22/0/14→29/0/2 一次性重固化（含「7 个资产从 rejected 变为可渲染」的语义变化留痕）、聚合步骤对齐 22 实例产品预算、并修一处让失败不报原因的实参求值顺序缺陷；§6.7 明确耗时问题未解决且超时余量仅 1.43 倍，列出 a/b/c 三个后续可选项。新增 PC-12：该求值顺序写法全仓 36 处已扫出清单（§15）。 |
