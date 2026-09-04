@@ -42,12 +42,30 @@ RENDER    ✅ R-A / R-B / R-F 收口（含 meshoptimizer 1.1、平滑法线与�
           卡 docs/codex_task/current/TASKS_RENDER_模型显示与LOD修复补充任务清单.md
 HOSTFLOW  ✅ H-A..H-F 全组完成（2026-08-11）；H-G 已准备并延期实施（等 5 项产品输入）
           卡 docs/codex_task/current/TASKS_HOSTFLOW_宿主业务流程与场景生命周期补齐任务清单.md
-MEMFLOW   ⏸ 分支 codex/memflow-bounded-streaming（尖端 826a170）【暂缓合入】
-            用户 2026-08-24 裁定：等该专项到稳定卡边界再合，理由是代码尚未接生产路径、
-            无功能紧迫性，且 slicer.cpp 的 G2 冻结线违规应由该专项自行处理
-          ⚠ 合入将带进 9 处行数门禁 ERROR：G2 slicer.cpp 5423→5464（>1000 行只减不增）、
-            G1 BoundedSupportShapeScan.cpp 1171 与 BoundedSupportDiscovery.cpp 619、
-            G3 两个 BoundedSupport*.h（280/223）、G1 四个 tests/stage16/BoundedSupport*Tests.cpp
+MEMFLOW   ⏸ 分支 codex/memflow-bounded-streaming（尖端 826a170）【暂缓合入】【开发已重启】
+            用户 2026-08-24 裁定暂缓合入，理由三条：代码尚未接生产路径、无功能紧迫性、
+            slicer.cpp 的 G2 冻结线违规应由该专项自行处理
+          ▶ 用户 2026-09-04 授权【继续开发】并同意跳过 MF-06（Sparse）。
+            注意这是开发授权，【不是合入授权】——上述暂缓合入的裁定继续有效，
+            合入需用户另行裁定。三条理由中「无功能紧迫性」已失效（见下），
+            「未接生产路径」与「G2 违规待处理」两条仍成立。
+          ▶ 紧迫性来源（2026-09-04 实测，见 REPORT_16C_06_MEMFLOW_替代基线资产与调查结论）：
+            finger_suoguo/a-2/0.2.obj 在 10um 层厚下 1429 层 × 7,795,500 列 = 111.4 亿
+            pixel-layer，六通道 Dense 62.2 GB 对机器物理内存 31.6 GB；单模型实跑
+            450/1429 层用时 593s（全程外推约 31 分钟），双模型直接内存不足失败。
+            有界窗口目标 134 MB。该专项由预防性优化转为解除真实生产阻塞。
+          ▶ 修订实施路径：MF-03B4B → MF-04 → MF-07（MF-06 跳过，MF-05 转条件项）。
+            跳过 MF-06 的依据：上游 MF-07 依赖原文即写「MF-06 Gate 或明确跳过 Sparse」。
+            后果：G-M6（123.stl 17 个连通分量）随之失效，重启 Sparse 须重建该 Gate，
+            且 123.stl 资产已不存在，须改用缩裹测试-2 的 8 个 STL 替代。
+          ⚠ 合入将带进 12 处行数门禁 ERROR（2026-09-04 复核，原记 9 处漏列 3 项）：
+            G2 slicer.cpp 5423→5464（>1000 行只减不增）
+            G1 超 500 行：BoundedSupportShapeScan.cpp 1171、BoundedSupportDiscovery.cpp 619、
+               LayerOccupancyProvider.cpp 528、GlobalSurfaceShellProductionPipeline.cpp 502
+               及 5 个 tests/stage16 用例（1024/1005/840/643/638）
+            G3 超 200 行：BoundedSupportShapeScan.h 280、BoundedSupportDiscovery.h 223
+            原记 9 处的数值本身逐项复核一致，遗漏的是 LayerOccupancyProvider.cpp、
+            GlobalSurfaceShellProductionPipeline.cpp 与 LayerOccupancyProviderTests.cpp
           ⚠ 该门禁在 CTest 中只注册 --self-test，仓库全扫描未进 CTest，故上述为静默债而非红灯
           ▶ merge 冲突面已试算：仅 CMakeLists.txt 与 TASKS_16 两处，AGENTS.md 可自动合并
           ▶ 本分支工作树中曾存在的 MEMFLOW 残留已于 2026-08-24 证明为严格过时并剔除
