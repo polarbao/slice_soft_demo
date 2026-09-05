@@ -395,11 +395,20 @@ SceneLayerComposeResult ComposeAdmittedSceneRastersImpl(
     compose.canceltoken = request.canceltoken;
     compose.layerprovider = request.layerprovider;
     compose.layersink = request.layersink;
+    // MF-05：ComposeSceneLayersConsuming 实为单实例快路径的转发，
+    // 它直接 move 每层的 output、不经 layerprovider。流式下 instances 的
+    // layers 为空，走快路径必然报「层数不齐」，故此时统一走 Borrowed 主路径。
     if constexpr (Consume)
     {
-        return internal::ComposeSceneLayersConsuming(
+        if (!compose.layerprovider)
+        {
+            return internal::ComposeSceneLayersConsuming(
+                compose,
+                std::move(request.instances));
+        }
+        return internal::ComposeSceneLayersBorrowed(
             compose,
-            std::move(request.instances));
+            request.instances);
     }
     else
     {

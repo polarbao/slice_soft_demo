@@ -317,11 +317,15 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
         return result;
     }
 
+    // MF-05：设置 layersink 时层已逐层交出，raster.layers 恒为空，
+    // 故此处只校验栅格；「层数齐备」改由消费方在合成时按已校验层数断言。
+    const bool layersStreamed = static_cast<bool>(request.layersink);
     if (!gridReceived
         || !result.raster.localgrid.IsValid()
-        || result.raster.layers.size()
-            != static_cast<std::size_t>(
-                result.raster.localgrid.layercount))
+        || (!layersStreamed
+            && result.raster.layers.size()
+                != static_cast<std::size_t>(
+                    result.raster.localgrid.layercount)))
     {
         BlockLegacyAdapter(
             result,

@@ -32,11 +32,16 @@ bool SceneLayerBarrier::DepositAndWait(
     {
         return false;
     }
+    if (m_draining)
+    {
+        // 消费方已正常结束，生产者不必再等对齐 —— 直接放行让它跑完收尾。
+        return true;
+    }
     state.pendingLayer = globalLayerIndex;
     m_producerReady.notify_all();
-    // 等到本层被消费者放行；失效时立刻返回，避免生产者永久挂住。
+    // 等到本层被消费者放行；失效或收尾时立刻返回，避免生产者永久挂住。
     m_consumerReleased.wait(lock, [this, &state] {
-        return m_failed || state.pendingLayer < 0;
+        return m_failed || m_draining || state.pendingLayer < 0;
     });
     return !m_failed;
 }
@@ -121,6 +126,20 @@ void SceneLayerBarrier::ReleaseLayer(const int globalLayerIndex)
         }
     }
     m_consumerReleased.notify_all();
+}
+
+void SceneLayerBarrier::Drain()
+{
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_draining = true;
+        for (InstanceState& state : m_instances)
+        {
+            state.pendingLayer = -1;
+        }
+    }
+    m_consumerReleased.notify_all();
+    m_producerReady.notify_all();
 }
 
 void SceneLayerBarrier::Fail()

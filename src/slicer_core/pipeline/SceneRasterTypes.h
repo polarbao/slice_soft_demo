@@ -289,6 +289,18 @@ struct SceneRasterAdapterResult
      * @return False when invalid or cancellation was requested.
      */
     bool IsValid(const api::ICancelToken* cancelToken) const;
+
+    /**
+     * @brief 同上，但可声明「层已逐层交出」。
+     * @param layersStreamed 为真时跳过层序列检查（`raster.layers` 恒为空）。
+     *
+     * 这是第三处藏在校验里的整栈假设 —— 另两处是合成侧 `ValidateInstance` 的
+     * 层数前置检查、以及 adapter 返回前的 `layers.size()` 检查。流式化时三处都
+     * 要显式放行，且都把「层数齐备」的责任交给合成侧的逐层计数断言。
+     */
+    bool IsValid(
+        const api::ICancelToken* cancelToken,
+        bool layersStreamed) const;
 };
 
 /**

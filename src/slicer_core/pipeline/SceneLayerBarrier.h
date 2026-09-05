@@ -51,6 +51,18 @@ public:
     /// 消费者：本层消费完毕，放行停在本层的生产者。
     void ReleaseLayer(int globalLayerIndex);
 
+    /**
+     * @brief 正常收尾：放行所有仍在等待的生产者，此后 DepositAndWait 立即返回 true。
+     *
+     * 与 `Fail()` 的区别是语义：Drain 表示【消费方已正常结束】，生产者应跑完剩余
+     * 动作并自行 Finish；Fail 表示【中止】，生产者应立即退出。
+     *
+     * 少了这个入口就只能在合成结束后直接 Fail，而 ReleaseLayer 与 Fail 之间没有
+     * 同步 —— 生产者若尚未从最后一层的等待中醒来，就会把 Fail 读成「被取消」并
+     * 抛出，把一次正常收尾变成失败。3 实例场景实测踩到过该竞态。
+     */
+    void Drain();
+
     /// 使屏障失效并唤醒所有等待者。取消与异常传播共用此入口。
     void Fail();
 
@@ -68,6 +80,7 @@ private:
     std::condition_variable m_consumerReleased;
     std::vector<InstanceState> m_instances;
     bool m_failed{false};
+    bool m_draining{false};
 };
 
 }  // namespace slicer_core
