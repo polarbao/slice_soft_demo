@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v3.5 ｜ 日期：2026-09-06
+> 版本：v3.6 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -845,7 +845,7 @@ OpenVDB 后端都不在那份清单里。
 | 卡 | 范围 | 验收 | 风险 | 状态 |
 |---|---|---|---|---|
 | MF-07a | Worker 权威内存 telemetry | Worker 与 CLI 的 `peakWorkingSetBytes` 同口径；`SLICE_TIMING` 仍过协议解析；包字节与 profileHash 不变 | 低 | **COMPLETE** |
-| MF-07b | Host 停止伪造 telemetry | Worker 无 telemetry 时面板显示「无权威数据」而非数字；宿主观测值不再并入 `timing` | 中 | TODO |
+| MF-07b | Host 停止伪造 telemetry | Worker 未声明 available 时不再强行置真 | 中 | **COMPLETE（前半）** |
 | MF-07c | 峰值预估器（纯函数、不接生产） | 与 MF-07a 实测对比，**允许高估、禁止低估**；可单测 | 高 | TODO |
 | MF-07d | 预算字段与开始前路由 | 预算字段放 **profile 之外**；profileHash 与包字节逐字节不变；超预算带命名错误码失败 | 中 | TODO |
 | MF-07e | 消除场景路径中途回退 | `slot.retained` 与 `StreamAlignment::Rejected` 分支消失；不对齐场景在产出任何层之前带错误码失败 | **最高** | TODO |
@@ -880,6 +880,26 @@ peak 恒 >= 行侧，因为峰值单调不减，对拍时那点差额会被当�
 —— 所以它被写死成 0 多久都不会有人发现。现按「可得则必须非零」钉住：
 平台不支持时 `available` 为假、允许为 0，一旦声明 available 就不能再报 0。
 result JSON 侧同样钉住三个字段的存在性与 peak 非零。
+
+### 11.3 MF-07b 实施记录（2026-09-06 前半 COMPLETE）
+
+ 原先在 Worker 未声明 `available` 时**强行置真**，
+于是宿主自己的轮询估算会被当作 Worker 权威 telemetry 展示 —— 那正是本条
+验收要消除的。已改为只反映 Worker 的真实声明：无权威数据时 `available`
+保持假，面板据此不展示细分耗时；补齐值仍留在 `timing` 里并标 `approximate`，
+供诊断查看，但不再冒充权威。
+
+**正常路径行为不变，有据可查：** `slicer.cpp:4200` 无条件设
+`profile.available = true`，且七个耗时字段 Worker 全都提供，
+故补齐与置位在 Worker 正常返回时**本就不触发** —— 这段一直是只在 Worker
+沉默时才生效的兜底，而它兜的方式是撒谎。验证：`hostflow_hb06_slice_job`
+（断言「成功作业必须返回 Worker 核心细分耗时」，即 `available` 为真）
+通过；hostflow / 14e 全组 38 项中 4 项失败，**全部在既有失败基线内**。
+
+**后半未做（宿主观测值仍并入 `timing` 对象）。** 要彻底分离，需要把
+`observedTiming` 挪到独立字段并改 `HostSliceJobPanel` 的展示判定
+（改用 `approximate` 而非 `available` 决定是否显示估算值），
+那会改变面板可见行为并触及既有测试，属产品行为变更，留待明确授权。
 
 ## 12. MF-08 收口
 

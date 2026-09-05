@@ -538,12 +538,17 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
             supplementedTiming = true;
         }
     }
-    if (!m_completion.timing.value(
-            QStringLiteral("available")).toBool())
-    {
-        m_completion.timing.insert(QStringLiteral("available"), true);
-        supplementedTiming = true;
-    }
+    // MF-07b：此处原先在 Worker 未声明 available 时【强行置真】，于是宿主
+    // 自己的轮询估算会被当作 Worker 权威 telemetry 展示 —— 那正是
+    // 「Host 只展示 Worker 权威 telemetry」这条验收要消除的。现改为只反映
+    // Worker 的真实声明：无权威数据时 available 保持假，面板据此不展示细分
+    // 耗时（见 HostSliceJobPanel 对 available 的判定），补齐值仍留在 timing
+    // 里并标 approximate，供诊断查看，但不再冒充权威。
+    //
+    // 正常路径行为不变：`slicer.cpp` 无条件设 `profile.available = true`，
+    // 且七个耗时字段 Worker 全都提供，故补齐与置位在 Worker 正常返回时
+    // 本就不触发 —— 这段一直是只在 Worker 沉默时才生效的兜底，
+    // 而它兜的方式是撒谎。
     if (supplementedTiming)
     {
         m_completion.timing.insert(QStringLiteral("approximate"), true);
