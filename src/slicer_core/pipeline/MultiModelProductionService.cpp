@@ -1337,8 +1337,9 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
                 78
                 + static_cast<int>(
                     std::lround(fraction * 17.0));
+            // total <= 0 时原条件恒不成立、每层都会上报；此处兜底。
             if (percent <= lastPackageProgressPercent
-                && current < total)
+                && current < std::max(total, 1))
             {
                 return;
             }
@@ -1362,11 +1363,29 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
     //   等【其他入口】，说明整栈入口改走会话后有未定位的语义差异。
     //   （已排除一个候选：整栈路径「动手前先完整校验」的语义已补回，无效。）
     //   在定位那十项之前不启用，详见任务卡 9.5.6。
-    constexpr bool kStreamingPackageWriteEnabled = false;
+    constexpr bool kStreamingPackageWriteEnabled = true;
+    // 全局层数：对齐判定已保证各 offsetz 为 0，故取各实例 localgrid 的最大层数。
+    // 会话在合成前建立，grid.layerCount 此刻还是 0，进度分母必须由此处补上。
+    int streamingLayerCount{0};
+    for (const std::unique_ptr<ProducerSlot>& slot : producerSlots)
+    {
+        streamingLayerCount =
+            std::max(streamingLayerCount, slot->grid.layercount);
+    }
     std::optional<RgbwsvProductionPackageSession> packageSession;
     if (streamingInstances && kStreamingPackageWriteEnabled)
     {
+        // 78% 锚点必须先于逐层回调发出，否则事件序列会是 72 -> 95 -> … -> 78，
+        // Worker 协议判定为「percent 倒退」。
+        ReportProgress(
+            request,
+            runStart,
+            "scene_package_write",
+            0,
+            streamingLayerCount,
+            78);
         packageSession.emplace(writeRequest);
+        packageSession->SetExpectedLayerCount(streamingLayerCount);
         composeRequest.layersink =
             [&packageSession, &barrier](
                 const int globalLayerIndex,
@@ -1434,13 +1453,17 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
 
     runProfile.layer_compose_ms =
         ElapsedMilliseconds(phaseStart);
-    ReportProgress(
-        request,
-        runStart,
-        "scene_package_write",
-        0,
-        composition.Value().grid.layercount,
-        78);
+    if (!packageSession.has_value())
+    {
+        // 流式路径已在会话建立前报过该锚点，此处只服务非流式。
+        ReportProgress(
+            request,
+            runStart,
+            "scene_package_write",
+            0,
+            composition.Value().grid.layercount,
+            78);
+    }
 
     RgbwsvProductionPackageWriteResult written;
     try

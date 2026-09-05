@@ -204,6 +204,16 @@ public:
     /// 写一层 TIFF 并累积 manifest 条目与通道统计。
     void AppendLayer(const RgbwsvProductionLayer& layer);
 
+    /**
+     * @brief 显式告知期望层数（进度回调的分母）。
+     *
+     * 会话在合成【之前】建立时 `request.grid.layerCount` 尚未补齐、恒为 0，
+     * 于是逐层进度会报成 `current=N total=0`。Worker 协议把 `current > total`
+     * 判为 file_contract_v1 语法违规，宿主随即写取消标记，包写到一半被协作式
+     * 取消 —— 一个分母把整条发布链拖垮。故流式路径必须在首层之前设好它。
+     */
+    void SetExpectedLayerCount(int layerCount);
+
     /// 写 manifest/report 并原子发布。成功后析构不再回滚。
     RgbwsvProductionPackageWriteResult Finish();
 

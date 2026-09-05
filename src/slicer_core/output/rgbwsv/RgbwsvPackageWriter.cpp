@@ -1194,6 +1194,15 @@ RgbwsvProductionPackageSession::~RgbwsvProductionPackageSession()
     }
 }
 
+void RgbwsvProductionPackageSession::SetExpectedLayerCount(
+    const int layerCount)
+{
+    if (layerCount > 0)
+    {
+        m_state->expectedLayerCount = layerCount;
+    }
+}
+
 void RgbwsvProductionPackageSession::AppendLayer(
     const RgbwsvProductionLayer& layer)
 {
@@ -1495,6 +1504,11 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
             result.backupRemoved = cleanup.backup_removed;
             result.leaseReleased = cleanup.lease_removed;
             result.profile = profile;
+            // 成功发布后必须置位，否则析构仍会跑一遍 RecoverPackageArtifacts。
+            // 当前那次恢复恰好是无害空操作（staging/backup/lease 都已被上面的
+            // cleanup 清掉），但它与「成功 Finish 后不再回滚」的约定不符，
+            // 且一旦恢复语义变化就会变成删已发布的包。
+            s.finished = true;
             return result;
     }
     catch (...)
