@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v3.4 ｜ 日期：2026-09-06
+> 版本：v3.5 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -803,8 +803,83 @@ instanceStatistics   min/max 与通道统计改为逐层累积，收尾部分移
 
 **目标：** 在作业开始前按显式内存预算和已实现能力选路；Host 只展示 Worker 权威 telemetry。
 
-**验收：** 小作业 retained、大作业 bounded；无法满足预算时明确失败；不运行中途回退；Profile hash
-和输出协议不变。
+**原验收：** 小作业 retained、大作业 bounded；无法满足预算时明确失败；不运行中途回退；
+Profile hash 和输出协议不变。
+
+### 11.0 对原验收的三条质疑（2026-09-06 调研后提出）
+
+动工前做了一次只读现状调研，结论是**原验收有两条需要改写、一条需要点名**。
+先写在这里，因为按字面实现会做出错的东西。
+
+**质疑一：「小作业 retained、大作业 bounded」这条方向可疑。**
+bounded 与 retained 在输出上逐字等价，而 bounded 内存严格更低。那么
+「小作业为什么要故意用更多内存」？按内存预算路由，答案永远是「能 bounded
+就 bounded」—— **预算根本选不出 retained**。能不能 bounded 是由
+`EvaluateBoundedReliefSupportPath` 的能力准入决定的，与预算无关。
+
+若保留 retained 的真实理由是**速度**（小作业省掉逐层重建的开销），
+那这条的准则是耗时、不是内存，与同卡的「无法满足预算时失败」不是一个维度。
+**处置：拆成两条独立准则，能力准入与预算准入各自表述。**
+在有实测证明「小作业 retained 更快」之前，不实现按大小切换 —— 那是一个
+没有依据的门限。
+
+**质疑二：「无法满足预算时明确失败」目前只能降格。**
+`slicer_core` 全程不观测自身内存（`ProcessMemoryStats.h` 在 `slicer.cpp`、
+`pipeline/`、`support/` 里零引用），预算只能对着**分配清单的解析模型**判，
+而分配器开销、TIFF 写出缓冲、`texture_runtime`、`materialVolumePlan`、
+OpenVDB 后端都不在那份清单里。
+**处置：改写为「按已建模的分配项估算，估算不满足即失败」**，
+否则是一个兑现不了的承诺。且预估器的验收必须是**单向的（允许高估、禁止低估）**
+—— 低估的表现形式恰恰是「承诺了预算然后 OOM」，比不做路由更糟。
+
+**质疑三：「不运行中途回退」这条只关于场景路径，卡面没点名。**
+单模型路径已经合规：准入在采样之前判定，层循环里只读同一个已定结论，
+没有任何改路点。真正的活全在 `MultiModelProductionService`：生产者线程
+**先启动**，主线程再按各实例 `originzmm` 是否相等判 Streaming / Rejected，
+而每个生产者的 layersink 在每一层都等这个决定再分流。
+走进 `Rejected` 的作业会静默退回累积整栈（实测斜率 189 MB/层），
+**任何预算承诺当场失效且用户看不到提示**。这一条才是该验收的确切目标。
+
+### 11.1 子卡拆分
+
+| 卡 | 范围 | 验收 | 风险 | 状态 |
+|---|---|---|---|---|
+| MF-07a | Worker 权威内存 telemetry | Worker 与 CLI 的 `peakWorkingSetBytes` 同口径；`SLICE_TIMING` 仍过协议解析；包字节与 profileHash 不变 | 低 | **COMPLETE** |
+| MF-07b | Host 停止伪造 telemetry | Worker 无 telemetry 时面板显示「无权威数据」而非数字；宿主观测值不再并入 `timing` | 中 | TODO |
+| MF-07c | 峰值预估器（纯函数、不接生产） | 与 MF-07a 实测对比，**允许高估、禁止低估**；可单测 | 高 | TODO |
+| MF-07d | 预算字段与开始前路由 | 预算字段放 **profile 之外**；profileHash 与包字节逐字节不变；超预算带命名错误码失败 | 中 | TODO |
+| MF-07e | 消除场景路径中途回退 | `slot.retained` 与 `StreamAlignment::Rejected` 分支消失；不对齐场景在产出任何层之前带错误码失败 | **最高** | TODO |
+
+**MF-07d 的一条硬约束（已查证）：** profileHash 是对**整份 profile JSON 文档**
+（剔除自声明的 `profileHash` 键）做 sha256，不是白名单字段。故预算字段
+**绝不能加进 profile**，否则 hash 必变、六处强制点会 fail-closed。
+放在 Worker 请求顶层或 CLI 参数则完全不受影响
+（`file_contract_v1.request.schema.json` 顶层是 `additionalProperties: true`）。
+`SLICE_TIMING` 同理：解析器是 required-keys + 首字段必须 `engine=`，
+对额外键宽容，故增补字段是向后兼容的。
+
+**MF-07e 为何风险最高：** 它要把 localgrid 的 originz 语义复制到
+`run_slicer` 之外（第二份实现，正是本专项反复警告的静默漂移来源）；
+删掉 fallback 等于**把今天能跑（只是吃内存）的场景变成硬失败**，
+那是行为回归、需要用户明确同意，不是纯优化。
+
+### 11.2 MF-07a 实施记录（2026-09-06 COMPLETE）
+
+**修的是一处真缺陷，不是新功能。** Worker 的 `SLICE_TIMING` 行把内存
+硬编码成 `workingSetBytes=0 peakWorkingSetBytes=0`，且 result JSON 的
+`timing` 对象里连内存字段都没有。于是「Host 只展示 Worker 权威 telemetry」
+从源头就无从谈起 —— 宿主只能拿自己的轮询观测值补齐，再把结果标成
+`available: true`（`HostSliceJobController`），那正是 MF-07b 要拆掉的。
+
+改动：Worker 在收尾处采一次 `CaptureProcessMemoryStats()`，
+**SLICE_TIMING 行与 result JSON 共用同一组数**（分两次采会让 JSON 侧的
+peak 恒 >= 行侧，因为峰值单调不减，对拍时那点差额会被当成两条通道不一致），
+并补上此前缺失的 `memoryAvailable=` 字段，口径与 `slicer_cli` 完全一致。
+
+**一并补了断言。** 原测试只查 `SLICE_TIMING` 这个字符串是否存在、不查值
+—— 所以它被写死成 0 多久都不会有人发现。现按「可得则必须非零」钉住：
+平台不支持时 `available` 为假、允许为 0，一旦声明 available 就不能再报 0。
+result JSON 侧同样钉住三个字段的存在性与 peak 非零。
 
 ## 12. MF-08 收口
 

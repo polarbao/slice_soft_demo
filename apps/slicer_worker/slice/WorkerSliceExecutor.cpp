@@ -8,6 +8,7 @@
 #include "slicer_core/output/rgbwsvt/RgbwsvtPackageReader.h"
 #include "slicer_core/output/rgbwsvt/RgbwsvtProtocol.h"
 #include "slicer_core/rip_reader.h"
+#include "slicer_core/system/ProcessMemoryStats.h"
 
 #include <algorithm>
 #include <chrono>
@@ -196,7 +197,8 @@ std::optional<std::string> AdmissionFailureDetail(
 
 slicer_core::Json BuildBasicOutput(
     const slicer_core::api::SliceResult& result,
-    const WorkerSliceMaterialization& materialized)
+    const WorkerSliceMaterialization& materialized,
+    const slicer_core::ProcessMemoryStats& memory)
 {
     const slicer_core::SliceRunProfile& profile = result.profile;
     return slicer_core::Json::object({
@@ -238,6 +240,14 @@ slicer_core::Json BuildBasicOutput(
             {"packagePublishMs", profile.package_publish_ms},
             {"outputWriteMs", profile.output_write_ms},
             {"totalMs", profile.total_ms},
+            // MF-07a：Worker 此前把内存硬编码为 0，且 result 的 timing 里连字段
+            // 都没有 —— 于是「Host 只展示 Worker 权威 telemetry」无从谈起，
+            // 宿主只能拿自测值补齐。口径与 slicer_cli 一致（同一个
+            // CaptureProcessMemoryStats，同一个进程），两者可直接对拍。
+            {"memoryAvailable", memory.available},
+            {"workingSetBytes", static_cast<double>(memory.working_set_bytes)},
+            {"peakWorkingSetBytes",
+             static_cast<double>(memory.peak_working_set_bytes)},
             {"imports", BuildImportTimings(profile)},
             {"instances", BuildInstanceTimings(profile)},
         })},
@@ -476,6 +486,11 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
                     std::string(error.what())));
             }
         }
+        // 只采一次，SLICE_TIMING 行与 result JSON 共用同一组数。
+        // 分两次采会让 JSON 侧的 peak 恒 >= 行侧（峰值单调不减），
+        // 对拍时那点差额会被当成两条通道不一致。
+        const slicer_core::ProcessMemoryStats memory =
+            slicer_core::CaptureProcessMemoryStats();
         if (m_protocolOutput != nullptr)
         {
             if (lastPercent < 100)
@@ -507,11 +522,14 @@ WorkerCapabilityExecutionResult WorkerSliceExecutor::Execute(
                 << result.profile.package_publish_ms
                 << " outputWriteMs=" << result.profile.output_write_ms
                 << " totalMs=" << ElapsedMilliseconds(start)
-                << " workingSetBytes=0 peakWorkingSetBytes=0\n";
+                << " memoryAvailable=" << (memory.available ? 1 : 0)
+                << " workingSetBytes=" << memory.working_set_bytes
+                << " peakWorkingSetBytes=" << memory.peak_working_set_bytes
+                << "\n";
             m_protocolOutput->flush();
         }
         return finalize(WorkerCapabilityExecutionResult::Success(
-            BuildBasicOutput(result, materialized)));
+            BuildBasicOutput(result, materialized, memory)));
     }
     catch (const WorkerSliceRequestMaterializationError& error)
     {
