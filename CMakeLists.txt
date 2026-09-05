@@ -464,6 +464,10 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/support/BoundedSupportFinalReplay.h
     src/slicer_core/support/BoundedSupportShapeScan.cpp
     src/slicer_core/support/BoundedSupportShapeScan.h
+    src/slicer_core/support/BoundedReliefSupportPlan.cpp
+    src/slicer_core/support/BoundedReliefSupportPlan.h
+    src/slicer_core/support/InternalVoidSupport.cpp
+    src/slicer_core/support/InternalVoidSupport.h
     src/slicer_core/support/SupportBaseProjection.cpp
     src/slicer_core/support/SupportBaseProjection.h
     src/slicer_core/support/SupportPolicy.cpp
@@ -1741,6 +1745,15 @@ if(MSVC)
     target_compile_options(stage16c06_bounded_support_demand_unit_tests PRIVATE /W4 /WX)
 endif()
 
+add_executable(stage16c06_bounded_relief_support_plan_unit_tests
+    tests/stage16/BoundedReliefSupportPlanTests.cpp
+)
+
+target_link_libraries(stage16c06_bounded_relief_support_plan_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_bounded_relief_support_plan_unit_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage16c06_bounded_support_discovery_unit_tests
     tests/stage16/BoundedSupportDiscoveryTests.cpp
 )
@@ -2889,6 +2902,7 @@ add_test(NAME stage16_layer_occupancy_provider_tests COMMAND stage16_layer_occup
 add_test(NAME stage16c06_memory_budget_unit_tests COMMAND stage16c06_memory_budget_unit_tests)
 add_test(NAME stage16c06_owned_layer_consumer_unit_tests COMMAND stage16c06_owned_layer_consumer_unit_tests)
 add_test(NAME stage16c06_bounded_support_demand_unit_tests COMMAND stage16c06_bounded_support_demand_unit_tests)
+add_test(NAME stage16c06_bounded_relief_support_plan_unit_tests COMMAND stage16c06_bounded_relief_support_plan_unit_tests)
 add_test(NAME stage16c06_bounded_support_discovery_unit_tests COMMAND stage16c06_bounded_support_discovery_unit_tests)
 add_test(NAME stage16c06_bounded_support_shape_unit_tests COMMAND stage16c06_bounded_support_shape_unit_tests)
 add_test(NAME stage16c06_bounded_support_final_replay_unit_tests COMMAND stage16c06_bounded_support_final_replay_unit_tests)

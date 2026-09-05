@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
-> 版本：v2.4 ｜ 日期：2026-09-04
+> 版本：v2.5 ｜ 日期：2026-09-04
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -234,8 +234,10 @@ Stage 15 counter 保留 compose-time 口径；生产仍为 Retained Dense。
         与长期基线一致
         gubao04 六材质 129 层 8315b63c42e3f6a90faef6aa693f4d9f3443e95af1245268b86d8cf812a2aee1
         与接线前逐字节一致
-门禁    slicer.cpp 属 G2 只减不增。接线净增 127 行，同步下沉表面光油几何簇后
-        净减 137 行；ValidateSourceSizeGuard --base-ref HEAD PASS，未新增豁免
+门禁    接线净增 127 行，同步下沉表面光油几何簇后净减 137 行（5,988 行）
+        注：slicer.cpp 早在 642d29e 已登记 G2 豁免，门禁两种情况都会 PASS，
+        下沉并非门禁所迫；但该豁免 reason 只覆盖 MATOPQ，不含 MEMFLOW，
+        故本专项不依赖它，坚持每次接线同步下沉（见报告 §6 第 3 条）
 ```
 
 **收益界定（不可夸大）：** 这两个容器仅在 `surface_varnish.enabled` 时分配，而该

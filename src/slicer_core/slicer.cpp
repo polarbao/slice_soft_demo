@@ -26,6 +26,8 @@
 #include "slicer_core/reports/MaterialVolumeReport.h"
 #include "slicer_core/reports/MaterialClosureReport.h"
 #include "slicer_core/reports/ReportBase.h"
+#include "slicer_core/support/BoundedReliefSupportPlan.h"
+#include "slicer_core/support/InternalVoidSupport.h"
 #include "slicer_core/support/SupportBaseProjection.h"
 #include "slicer_core/support/SupportShapePipeline.h"
 #include "slicer_core/support/SupportShapePolicy.h"
@@ -1127,7 +1129,11 @@ ReliefSamplingResult sample_relief_heightfield_masks(
     std::vector<LayerDiagnostics>& diagnostics,
     // M2：MATVOL 的材质名表。非空时按 (材质, 列) 记录逐材质顶面，使被遮住的
     // 下层材质也能采到自己的贴图；为空（MATVOL 未启用）时完全不建表，零开销。
-    const std::span<const std::string>* planMaterialNames = nullptr)
+    const std::span<const std::string>* planMaterialNames = nullptr,
+    // MF-03X2a：false 时【不分配也不填充】整栈 model mask，只产出 columns。
+    // 10um 大幅面场景该整栈约 10.4 GB，是三个无条件分配之一。
+    // 列区间仍照常写入 columns，主循环据此按层重建（见 BoundedReliefSupportPlan）。
+    const bool materializeModelMaskStack = true)
 {
     const std::size_t pixelCount{static_cast<std::size_t>(grid.width_px) * grid.height_px};
     std::vector<double> zMin(pixelCount, std::numeric_limits<double>::max());
@@ -1403,9 +1409,12 @@ ReliefSamplingResult sample_relief_heightfield_masks(
         }
     }
 
-    result.model_masks.resize(
-        static_cast<std::size_t>(grid.layer_count),
-        std::vector<std::uint8_t>(pixelCount, 0));
+    if (materializeModelMaskStack)
+    {
+        result.model_masks.resize(
+            static_cast<std::size_t>(grid.layer_count),
+            std::vector<std::uint8_t>(pixelCount, 0));
+    }
     diagnostics.clear();
     diagnostics.reserve(grid.layer_count);
     for (int layerIndex{0}; layerIndex < grid.layer_count; ++layerIndex)
@@ -1460,6 +1469,11 @@ ReliefSamplingResult sample_relief_heightfield_masks(
         }
         column.lower_layer = startLayer;
         column.upper_layer = endLayer;
+        if (!materializeModelMaskStack)
+        {
+            // MF-03X2a：列区间已写入 column，整栈由主循环按层重建。
+            continue;
+        }
         for (int layerIndex{startLayer}; layerIndex <= endLayer; ++layerIndex)
         {
             result.model_masks.at(layerIndex).at(pixelIndex) = 1;
@@ -1613,17 +1627,6 @@ SupportPlacementPolicy ResolveSupportPlacementPolicy(const SliceConfig& config)
     return policy;
 }
 
-void set_support_pixel(
-    std::vector<std::uint8_t>& support_mask,
-    std::vector<SupportType>& support_type_map,
-    const std::size_t index,
-    const SupportType type) {
-    support_mask.at(index) = 1;
-    if (SupportTypePriority(type) >= SupportTypePriority(support_type_map.at(index))) {
-        support_type_map.at(index) = type;
-    }
-}
-
 void SynchronizeSupportShapeTypeMaps(
     const std::vector<std::vector<std::uint8_t>>& originalSupportMasks,
     const std::vector<std::vector<std::uint8_t>>& optimizedSupportMasks,
@@ -1644,141 +1647,6 @@ void SynchronizeSupportShapeTypeMaps(
             {
                 typeMap.at(index) = SupportType::BottomProjection;
             }
-        }
-    }
-}
-
-void AddInternalVoidSupportForLayer(
-    const SliceConfig& config,
-    const GridSpec& grid,
-    const std::vector<std::uint8_t>& modelMask,
-    std::vector<std::uint8_t>& supportMask,
-    std::vector<SupportType>& supportTypeMap)
-{
-    if (!config.support.internal_void.enabled)
-    {
-        return;
-    }
-
-    const std::size_t pixelCount = static_cast<std::size_t>(grid.width_px) * grid.height_px;
-    std::vector<std::uint8_t> externalEmpty(pixelCount, 0);
-    std::vector<int> stack;
-    stack.reserve(pixelCount);
-
-    const auto pushExternalEmpty = [&](const int x, const int y)
-    {
-        if (x < 0 || x >= grid.width_px || y < 0 || y >= grid.height_px)
-        {
-            return;
-        }
-        const std::size_t index = mask_index(grid, x, y);
-        if (modelMask.at(index) != 0 || externalEmpty.at(index) != 0)
-        {
-            return;
-        }
-        externalEmpty.at(index) = 1;
-        stack.push_back(static_cast<int>(index));
-    };
-
-    for (int x{0}; x < grid.width_px; ++x)
-    {
-        pushExternalEmpty(x, 0);
-        pushExternalEmpty(x, grid.height_px - 1);
-    }
-    for (int y{0}; y < grid.height_px; ++y)
-    {
-        pushExternalEmpty(0, y);
-        pushExternalEmpty(grid.width_px - 1, y);
-    }
-
-    const std::array<std::array<int, 2>, 8> neighbors8{{
-        {{-1, -1}}, {{0, -1}}, {{1, -1}}, {{-1, 0}}, {{1, 0}}, {{-1, 1}}, {{0, 1}}, {{1, 1}},
-    }};
-    const std::array<std::array<int, 2>, 4> neighbors4{{
-        {{0, -1}}, {{-1, 0}}, {{1, 0}}, {{0, 1}},
-    }};
-
-    while (!stack.empty())
-    {
-        const int current = stack.back();
-        stack.pop_back();
-        const int x = current % grid.width_px;
-        const int y = current / grid.width_px;
-        if (config.support.connectivity == 8)
-        {
-            for (const auto& neighbor : neighbors8)
-            {
-                pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
-            }
-        }
-        else
-        {
-            for (const auto& neighbor : neighbors4)
-            {
-                pushExternalEmpty(x + neighbor.at(0), y + neighbor.at(1));
-            }
-        }
-    }
-
-    std::vector<std::uint8_t> visited(pixelCount, 0);
-    for (std::size_t start{0}; start < pixelCount; ++start)
-    {
-        if (modelMask.at(start) != 0 || externalEmpty.at(start) != 0 || visited.at(start) != 0)
-        {
-            continue;
-        }
-
-        std::vector<int> component;
-        component.reserve(64);
-        stack.push_back(static_cast<int>(start));
-        visited.at(start) = 1;
-        while (!stack.empty())
-        {
-            const int current = stack.back();
-            stack.pop_back();
-            component.push_back(current);
-            const int x = current % grid.width_px;
-            const int y = current / grid.width_px;
-            const auto pushComponentNeighbor = [&](const int nx, const int ny)
-            {
-                if (nx < 0 || nx >= grid.width_px || ny < 0 || ny >= grid.height_px)
-                {
-                    return;
-                }
-                const std::size_t next = mask_index(grid, nx, ny);
-                if (modelMask.at(next) == 0 && externalEmpty.at(next) == 0 && visited.at(next) == 0)
-                {
-                    visited.at(next) = 1;
-                    stack.push_back(static_cast<int>(next));
-                }
-            };
-            if (config.support.connectivity == 8)
-            {
-                for (const auto& neighbor : neighbors8)
-                {
-                    pushComponentNeighbor(x + neighbor.at(0), y + neighbor.at(1));
-                }
-            }
-            else
-            {
-                for (const auto& neighbor : neighbors4)
-                {
-                    pushComponentNeighbor(x + neighbor.at(0), y + neighbor.at(1));
-                }
-            }
-        }
-
-        if (static_cast<int>(component.size()) < config.support.internal_void.min_area_px)
-        {
-            continue;
-        }
-        for (const int pixel : component)
-        {
-            set_support_pixel(
-                supportMask,
-                supportTypeMap,
-                static_cast<std::size_t>(pixel),
-                SupportType::InternalVoid);
         }
     }
 }
@@ -2154,11 +2022,77 @@ SupportGenerationResult generate_support_masks(
     return result;
 }
 
-void CalculateSupportGenerationStats(
+/**
+ * @brief 把逐层支撑统计累加进 result 与该层 diagnostics。
+ *
+ * MF-03X2a 从 CalculateSupportGenerationStats 原样抽出，使有界路径能在层循环内
+ * 逐层累积，而不必先物化整栈。retained 路径由下方包装函数逐层调用本函数，
+ * 累加顺序与原实现一致，故统计值逐字不变。
+ */
+void AccumulateSupportLayerStats(
     SupportGenerationResult& result,
-    std::vector<LayerDiagnostics>& diagnostics,
+    LayerDiagnostics& layerDiagnostics,
+    const std::vector<std::uint8_t>& support_mask,
+    const std::vector<SupportType>& support_type_map,
     const GridSpec& grid,
     const SliceConfig& config)
+{
+    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+    bool layer_has_support{false};
+    layerDiagnostics.bottom_projection_support_pixels = 0;
+    layerDiagnostics.unsupported_island_support_pixels = 0;
+    layerDiagnostics.full_vertical_projection_support_pixels = 0;
+    layerDiagnostics.internal_void_support_pixels = 0;
+    layerDiagnostics.upper_projection_support_pixels = 0;
+    layerDiagnostics.projection_base_support_pixels = 0;
+    for (std::size_t index{0}; index < pixel_count; ++index)
+    {
+        if (support_mask.at(index) == 0)
+        {
+            continue;
+        }
+        layer_has_support = true;
+        ++result.support_pixels;
+        switch (support_type_map.at(index))
+        {
+            case SupportType::BottomProjection:
+                ++result.bottom_projection_support_pixels;
+                ++layerDiagnostics.bottom_projection_support_pixels;
+                break;
+            case SupportType::UnsupportedIsland:
+                ++result.unsupported_island_support_pixels;
+                ++layerDiagnostics.unsupported_island_support_pixels;
+                break;
+            case SupportType::FullVerticalProjection:
+                ++result.full_vertical_projection_support_pixels;
+                ++layerDiagnostics.full_vertical_projection_support_pixels;
+                break;
+            case SupportType::InternalVoid:
+                ++result.internal_void_support_pixels;
+                ++layerDiagnostics.internal_void_support_pixels;
+                break;
+            case SupportType::UpperProjection:
+                ++result.upper_projection_support_pixels;
+                ++layerDiagnostics.upper_projection_support_pixels;
+                break;
+            case SupportType::ProjectionBase:
+                ++result.projection_base_support_pixels;
+                ++layerDiagnostics.projection_base_support_pixels;
+                break;
+            case SupportType::None:
+                break;
+        }
+    }
+    if (layer_has_support)
+    {
+        ++result.layers_with_support;
+    }
+    layerDiagnostics.support_connectivity =
+        analyze_support_connectivity(support_mask, grid, config.support.connectivity);
+}
+
+/// 统计累加前的清零。retained 与有界两条路径共用，避免两处漂移。
+void ResetSupportGenerationStats(SupportGenerationResult& result)
 {
     result.support_pixels = 0;
     result.bottom_projection_support_pixels = 0;
@@ -2168,62 +2102,24 @@ void CalculateSupportGenerationStats(
     result.upper_projection_support_pixels = 0;
     result.projection_base_support_pixels = 0;
     result.layers_with_support = 0;
-    const std::size_t pixel_count = static_cast<std::size_t>(grid.width_px) * grid.height_px;
+}
+
+void CalculateSupportGenerationStats(
+    SupportGenerationResult& result,
+    std::vector<LayerDiagnostics>& diagnostics,
+    const GridSpec& grid,
+    const SliceConfig& config)
+{
+    ResetSupportGenerationStats(result);
     for (int layer_index{0}; layer_index < grid.layer_count; ++layer_index)
     {
-        bool layer_has_support{false};
-        diagnostics.at(layer_index).bottom_projection_support_pixels = 0;
-        diagnostics.at(layer_index).unsupported_island_support_pixels = 0;
-        diagnostics.at(layer_index).full_vertical_projection_support_pixels = 0;
-        diagnostics.at(layer_index).internal_void_support_pixels = 0;
-        diagnostics.at(layer_index).upper_projection_support_pixels = 0;
-        diagnostics.at(layer_index).projection_base_support_pixels = 0;
-        const auto& support_mask = result.support_masks.at(layer_index);
-        const auto& support_type_map = result.support_type_maps.at(layer_index);
-        for (std::size_t index{0}; index < pixel_count; ++index)
-        {
-            if (support_mask.at(index) == 0)
-            {
-                continue;
-            }
-            layer_has_support = true;
-            ++result.support_pixels;
-            switch (support_type_map.at(index))
-            {
-                case SupportType::BottomProjection:
-                    ++result.bottom_projection_support_pixels;
-                    ++diagnostics.at(layer_index).bottom_projection_support_pixels;
-                    break;
-                case SupportType::UnsupportedIsland:
-                    ++result.unsupported_island_support_pixels;
-                    ++diagnostics.at(layer_index).unsupported_island_support_pixels;
-                    break;
-                case SupportType::FullVerticalProjection:
-                    ++result.full_vertical_projection_support_pixels;
-                    ++diagnostics.at(layer_index).full_vertical_projection_support_pixels;
-                    break;
-                case SupportType::InternalVoid:
-                    ++result.internal_void_support_pixels;
-                    ++diagnostics.at(layer_index).internal_void_support_pixels;
-                    break;
-                case SupportType::UpperProjection:
-                    ++result.upper_projection_support_pixels;
-                    ++diagnostics.at(layer_index).upper_projection_support_pixels;
-                    break;
-                case SupportType::ProjectionBase:
-                    ++result.projection_base_support_pixels;
-                    ++diagnostics.at(layer_index).projection_base_support_pixels;
-                    break;
-                case SupportType::None:
-                    break;
-            }
-        }
-        if (layer_has_support)
-        {
-            ++result.layers_with_support;
-        }
-        diagnostics.at(layer_index).support_connectivity =
-            analyze_support_connectivity(support_mask, grid, config.support.connectivity);
+        AccumulateSupportLayerStats(
+            result,
+            diagnostics.at(layer_index),
+            result.support_masks.at(layer_index),
+            result.support_type_maps.at(layer_index),
+            grid,
+            config);
     }
 }
 
@@ -4611,6 +4507,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
     std::vector<ReliefColumnInfo> relief_columns;
     ReliefPerMaterialTopSurface relief_per_material_top;
     std::vector<std::vector<std::uint8_t>> model_masks;
+    // MF-03X2a：判定本次配置能否走有界路径。判定只看配置，故可在采样【之前】求出，
+    // 从而连采样阶段的整栈分配（10um 场景约 10.4 GB）一起省掉。
+    const BoundedReliefSupportEligibility boundedReliefSupport =
+        EvaluateBoundedReliefSupportPath(config);
+    std::vector<BoundedReliefColumnSpan> boundedReliefSpans;
     if (config.slicing_mode == "relief_heightfield") {
         // M2：MATVOL 启用时把材质名表传入采样，使其一并解出逐材质顶面。
         // plan 在本调用之前建成（见上方 BuildMaterialVolumePlan），故此处可用。
@@ -4624,9 +4525,21 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             grid,
             layer_diagnostics,
             planMaterialNamesForSampling.has_value()
-                ? &planMaterialNamesForSampling.value() : nullptr);
+                ? &planMaterialNamesForSampling.value() : nullptr,
+            !boundedReliefSupport.eligible);
         model_masks = std::move(relief_sampling.model_masks);
         relief_columns = std::move(relief_sampling.columns);
+        if (boundedReliefSupport.eligible)
+        {
+            // 整栈未物化，改为留下逐列闭区间；主循环按层重建。
+            boundedReliefSpans.resize(relief_columns.size());
+            for (std::size_t column{0}; column < relief_columns.size(); ++column)
+            {
+                const ReliefColumnInfo& info = relief_columns.at(column);
+                boundedReliefSpans.at(column) = BoundedReliefColumnSpan{
+                    info.has_model, info.lower_layer, info.upper_layer};
+            }
+        }
         relief_per_material_top = std::move(relief_sampling.per_material_top);
         relief_report = std::move(relief_sampling.report);
     } else {
@@ -4710,6 +4623,15 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         surfaceVarnishRequired ? surfaceVarnishPixelCount : 0U, 0U);
     std::vector<std::uint8_t> innerSurfaceVarnishLayer(
         surfaceVarnishRequired ? surfaceVarnishPixelCount : 0U, 0U);
+    // MF-03X2a：有界路径的三个单层缓冲，跨层复用、只覆写不重分配。
+    // 峰值由 O(列数 x 层数) x 3 降为 O(列数) x 3 —— 10um 场景 31.11 GB -> 约 23 MB。
+    std::vector<std::uint8_t> boundedModelLayer(
+        boundedReliefSupport.eligible ? surfaceVarnishPixelCount : 0U, 0U);
+    std::vector<std::uint8_t> boundedSupportLayer(
+        boundedReliefSupport.eligible ? surfaceVarnishPixelCount : 0U, 0U);
+    std::vector<SupportType> boundedSupportTypeLayer(
+        boundedReliefSupport.eligible ? surfaceVarnishPixelCount : 0U,
+        SupportType::None);
     const OuterVarnishDiscretization outerVarnishDiscretization =
         ComputeOuterVarnishDiscretization(
             config.outer_varnish,
@@ -4720,16 +4642,23 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
               return layer > 0;
           }))
         : 0;
-    SupportGenerationResult support_generation =
-        generate_support_masks(
-            config,
-            grid,
-            model_masks,
-            upper_support_boundary_masks,
-            support_source_layers,
-            column_ranges,
-            upper_support_boundary_column_ranges,
-            layer_diagnostics);
+    // MF-03X2a：有界路径下 support_masks / support_type_maps 保持为空，
+    // 由层循环内按 bottom projection 谓词逐层物化（该谓词只依赖本层 model mask
+    // 与按列标量 support_source_layers，无任何跨层数据）。
+    SupportGenerationResult support_generation;
+    if (!boundedReliefSupport.eligible)
+    {
+        support_generation =
+            generate_support_masks(
+                config,
+                grid,
+                model_masks,
+                upper_support_boundary_masks,
+                support_source_layers,
+                column_ranges,
+                upper_support_boundary_column_ranges,
+                layer_diagnostics);
+    }
     const SupportShapePolicy support_shape_policy = MakeSupportShapePolicy(config.support);
     SupportShapeOptimizationResult support_shape_result;
     if (support_shape_policy.enabled)
@@ -4804,11 +4733,27 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             collectMaterialClosureSemantic
                 ? &clearedOuterVarnishSupportIndices
                 : nullptr);
-    CalculateSupportGenerationStats(
-        support_generation,
-        layer_diagnostics,
-        grid,
-        config);
+    if (boundedReliefSupport.eligible)
+    {
+        // ApplyOuterVarnishSupportPriority 按 support_masks.size() 定尺，
+        // 有界路径下整栈为空会得到 0 长度，使层循环内 .at(layer_index) 抛异常。
+        // 此处按层数补尺；有界路径已排除外光油，故内容必为空集。
+        if (collectMaterialClosureSemantic)
+        {
+            clearedOuterVarnishSupportIndices.assign(
+                static_cast<std::size_t>(grid.layer_count), {});
+        }
+        // 统计改为层循环内逐层累积，此处只清零。
+        ResetSupportGenerationStats(support_generation);
+    }
+    else
+    {
+        CalculateSupportGenerationStats(
+            support_generation,
+            layer_diagnostics,
+            grid,
+            config);
+    }
     profile.support_statistics_scan_count = 1;
     profile.support_generation_ms = ElapsedMsSince(phase_start);
     NotifyProgress(options, run_start, "layer_processing", 0, grid.layer_count, 36);
@@ -4942,6 +4887,57 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
         int layer_model_pixels{0};
         int layer_support_pixels{0};
         LayerDiagnostics& diagnostics = layer_diagnostics.at(layer_index);
+        // MF-03X2a：有界路径下三个整栈均未物化，此处按层重建。
+        // model mask 由逐列闭区间重建；support 由 bottom projection 谓词重建
+        // （只依赖本层 model mask 与按列标量）；统计逐层累积，语义与 retained 一致。
+        if (boundedReliefSupport.eligible)
+        {
+            MaterializeReliefModelLayer(
+                boundedReliefSpans, layer_index, boundedModelLayer);
+            MaterializeBottomProjectionSupportLayer(
+                support_source_layers,
+                boundedModelLayer,
+                config.support.enabled,
+                layer_index,
+                boundedSupportLayer,
+                boundedSupportTypeLayer);
+            if (config.support.enabled)
+            {
+                // 与 retained 的 generate_support_masks 同序：放置分支之后逐层补
+                // 内部空腔支撑。该函数【逐层独立】（只读本层 model mask、只改本层
+                // support），故有界路径可原样复用；`internal_void.enabled` 默认为
+                // true，漏掉它会把本应 InternalVoid 的像素误标成 BottomProjection。
+                // retained 在 support.enabled 为 false 时提前返回、不跑本段，
+                // 故此处同样以该开关为守卫。
+                AddInternalVoidSupportForLayer(
+                    config,
+                    grid,
+                    boundedModelLayer,
+                    boundedSupportLayer,
+                    boundedSupportTypeLayer);
+            }
+            AccumulateSupportLayerStats(
+                support_generation,
+                diagnostics,
+                boundedSupportLayer,
+                boundedSupportTypeLayer,
+                grid,
+                config);
+        }
+        const std::vector<std::uint8_t>& current_model_mask =
+            boundedReliefSupport.eligible
+            ? boundedModelLayer
+            : model_masks.at(static_cast<std::size_t>(layer_index));
+        const std::vector<std::uint8_t>& current_support_mask =
+            boundedReliefSupport.eligible
+            ? boundedSupportLayer
+            : support_generation.support_masks.at(
+                static_cast<std::size_t>(layer_index));
+        const std::vector<SupportType>& current_support_type_map =
+            boundedReliefSupport.eligible
+            ? boundedSupportTypeLayer
+            : support_generation.support_type_maps.at(
+                static_cast<std::size_t>(layer_index));
         const std::vector<std::uint8_t>& outerVarnishMask =
             outer_varnish_masks.empty()
             ? emptyOptionalMask
@@ -4952,7 +4948,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             MaterializeSurfaceVarnishLayer(
                 config,
                 grid,
-                model_masks.at(static_cast<std::size_t>(layer_index)),
+                current_model_mask,
                 layer_index,
                 outerSurfaceVarnishLayer,
                 innerSurfaceVarnishLayer);
@@ -4971,8 +4967,8 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 diagnostics.z_mm,
                 grid.width_px,
                 grid.height_px,
-                model_masks.at(layer_index),
-                support_generation.support_masks.at(layer_index),
+                current_model_mask,
+                current_support_mask,
                 clearedOuterVarnishSupportIndices.at(layer_index),
                 outerVarnishMask);
             materialClosureInputPointer = &materialClosureInput;
@@ -4982,11 +4978,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             MaterializeMaterialOwnershipLayer(
                 materialVolumePlan.value(),
                 layer_index,
-                model_masks.at(static_cast<std::size_t>(layer_index)),
+                current_model_mask,
                 materialVolumeOwner);
             {
                 const std::vector<std::uint8_t>& matvolMask =
-                    model_masks.at(static_cast<std::size_t>(layer_index));
+                    current_model_mask;
                 for (std::size_t column{0}; column < layerPixelCount; ++column)
                 {
                     if (materialVolumeOwner[column] != kNoMaterialOwner)
@@ -5019,7 +5015,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             ComposeMaterialLayerRgb(
                 materialVolumeRgbTable.value(),
                 materialVolumeOwner,
-                model_masks.at(static_cast<std::size_t>(layer_index)),
+                current_model_mask,
                 materialVolumeRgb);
             if (config.material_volume_policy.opacity_varnish.enabled)
             {
@@ -5040,17 +5036,17 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                 materialVolumePlan.value(),
                 layer_index,
                 materialVolumeOwner,
-                model_masks.at(static_cast<std::size_t>(layer_index))));
+                current_model_mask));
         }
                 std::vector<std::uint8_t> layer = compose_layer(
             config,
             grid,
-            model_masks.at(layer_index),
+            current_model_mask,
             outerVarnishMask,
             outerSurfaceVarnishMask,
             innerSurfaceVarnishMask,
-            support_generation.support_masks.at(layer_index),
-            support_generation.support_type_maps.at(layer_index),
+            current_support_mask,
+            current_support_type_map,
             config.texture.enabled ? &texture_columns : nullptr,
             config.material_role_mapping.enabled ? &material_role_columns : nullptr,
             &column_ranges,
@@ -5135,7 +5131,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
                     .layerIndex = layer_index, .zMm = diagnostics.z_mm,
                     .widthPx = grid.width_px, .heightPx = grid.height_px,
                     .channels = layer},
-                model_masks.at(static_cast<std::size_t>(layer_index)));
+                current_model_mask);
             // 光油（V）与弹性材料（T）不得占用同一像素：一个体素不可能同时是两种材料。
             //
             // ComposeRgbwsvtLayer 对缩裹像素【丢弃全部六通道只写 T】，
@@ -5239,7 +5235,7 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             const std::vector<std::uint8_t> texture_preview_mask = build_texture_preview_mask(
                 config,
                 grid,
-                model_masks.at(layer_index),
+                current_model_mask,
                 config.material_role_mapping.enabled ? &material_role_columns : nullptr,
                 &column_ranges,
                 layer_index);

@@ -1,7 +1,7 @@
 # REPORT_16C_06_MEMFLOW 主循环接线可行性探查（2026-09-04）
 
-> 文档状态：**探查完成 / 首容器已接线 / 修正 §3 占用表：七容器中四个是条件分配**
-> 版本：v1.3 ｜ 日期：2026-09-04
+> 文档状态：**MF-03X2a 已接线并解除用户阻塞（峰值 22~34 GB -> 1.14 GiB）**
+> 版本：v1.5 ｜ 日期：2026-09-04
 > 定位：为解除真实生产阻塞（10um 层厚 111.4 亿 pixel-layer）而探查有界能力接入主循环的可行性。
 > 上游：`REPORT_16C_06_MEMFLOW_替代基线资产与调查结论_2026_09_03.md`（阻塞场景实测）
 > 授权：用户 2026-09-04 授予本专项最高决策权
@@ -259,6 +259,139 @@ MF-03X2a（本档，解除阻塞关键路径）与 MF-03X2b（岛发现 / 形状
 
 ---
 
+## 5.5 MF-03X2a 实施与验证
+
+### 5.5.1 三个整栈的有界替代
+
+| 整栈容器 | 有界替代 | 依据 |
+|---|---|---|
+| `model_masks` | `MaterializeReliefModelLayer(spans, L, buf)` | relief legacy 采样按列写闭区间 `[startLayer, endLayer]`，故整栈是列区间的**纯函数** |
+| `support_masks` | `MaterializeBottomProjectionSupportLayer(...)` | 谓词 `L < support_source_layers[col] && model[L][col] == 0` 只依赖本层 mask 与按列标量 |
+| `support_type_maps` | 同上（`SupportType::BottomProjection`） | 同上；类型仲裁沿用 `set_support_pixel` 的优先级判据 |
+| 内部空腔补写 | `AddInternalVoidSupportForLayer(...)`（原实现下沉后复用） | 该函数逐层独立：只读本层 model mask、只改本层 support |
+| 支撑统计 | `AccumulateSupportLayerStats(...)` | 从 `CalculateSupportGenerationStats` 原样抽出的逐层主体；retained 由包装函数逐层调用，累加顺序不变 |
+
+按列归约无需改造：`relief_heightfield` 模式下 `support_source_layers` 与
+`column_ranges` 分别由 `compute_relief_lower_layers` / `compute_relief_column_ranges`
+从 `relief_columns` 求出，**本来就不读 `model_masks` 整栈**。
+
+采样阶段也一并省掉分配：`sample_relief_heightfield_masks` 新增
+`materializeModelMaskStack` 参数，为 false 时不 resize、不填充，只写列区间。
+这一步是关键 —— 10.37 GB 的分配发生在采样内，事后 `clear()` 救不回峰值。
+
+### 5.5.2 准入判定与守卫
+
+`EvaluateBoundedReliefSupportPath(config)` 只看配置，故可在采样前求出。
+任何一项不满足即退回 retained，并记下 `reason`：
+
+```text
+slicing_mode_not_relief_heightfield          非 relief 模式
+geometry_sampling_strategy_not_legacy_...    supersample / layer_slab 候选另走 BuildLayerOccupancy
+support_placement_not_lower                  显式 placement 非 lower
+support_mode_without_bottom_projection       模式不含 bottom projection
+support_mode_includes_unsupported            含悬空岛发现（需 B2）
+support_shape_enabled                        形状优化整栈进出
+support_base_projection_enabled              base projection 整栈进出
+outer_varnish_enabled                        会带出两个整栈光油容器
+```
+
+外光油这一项是**保守判据**：实际用到的两个开关都严格更窄 ——
+`ComputeOuterVarnishDiscretization` 要求 `enabled && thickness_mm > 0`，
+`ResolveUpperSupportBoundaryInfo` 要求 `enabled && thickness_mm > 0` 且
+`upper.outside == "outer_varnish_shell"`。故 `enabled` 为假时两者必假，无缺口。
+
+### 5.5.3 一次真实漏项：内部空腔
+
+首次接线后 gubao04 逐字节一致，但 **r01 的 20 个层各差 1 个字节**。逐字段比报告
+定位到：retained 把 79,086 个支撑像素标为 `InternalVoid`，而我的有界路径全标成
+`bottom_projection`，且少了 1 个像素。
+
+根因是我枚举 `generate_support_masks` 的分支时**只看了四个 `placement_policy`
+条件分支，漏掉其后一个无条件的逐层循环** —— `AddInternalVoidSupportForLayer`，
+而 `internal_void.enabled` **默认为 true**。
+
+补救后重列该函数的全部六个顶层块并逐条对照，才确认无其他遗漏：
+
+```text
+1  !config.support.enabled 提前返回        -> supportEnabled 形参
+2  placement_policy.lower_enabled          -> MaterializeBottomProjectionSupportLayer
+3  ..full_vertical_projection_enabled      -> 准入排除
+4  ..upper_enabled                         -> 准入排除
+5  ..unsupported_only_enabled              -> 准入排除
+6  内部空腔逐层循环（无条件，默认开启）    -> 复用原实现，逐层调用
+7  layers_with_islands 累加                -> 无岛时恒为 0
+```
+
+**教训：按「条件分支」枚举会漏掉无条件语句。** 该函数的分支清单应按顶层语句
+逐条核对，而非只找 `if`。
+
+### 5.5.4 验证结果
+
+四判据逐字节 + 报告全等（`package_report.json` 仅差 configPath / packageDir，
+即我用的不同输入输出路径，非漂移）：
+
+```text
+默认路径 r01    94 层  3cbfdec213cfcf1a3397cfd1860c5baa7bc649b669249eddc2238f0b4f363b5f
+                       与长期基线一致
+gubao04         129 层 8315b63c42e3f6a90faef6aa693f4d9f3443e95af1245268b86d8cf812a2aee1
+```
+
+峰值内存（同一 build，接线前后同配置对照）：
+
+四判据逐字节全等（`x2a_tm25` / `x2a_yz` 同时与主仓 P1 基线相同，
+即 memflow @ X2a 与 `product/packaged-slicer` 对这两项资产输出等价）：
+
+```text
+默认路径 r01     94 层  3cbfdec213cfcf1a3397cfd1860c5baa7bc649b669249eddc2238f0b4f363b5f
+gubao04         129 层  8315b63c42e3f6a90faef6aa693f4d9f3443e95af1245268b86d8cf812a2aee1
+tm2-5           124 层  f0d8e429afd3e385f6a6742945a8c6fe…
+yz 内嵌         474 层  6bfc4959681111d23ae1ea4e460681f6…
+```
+
+单元测试 `stage16c06_bounded_relief_support_plan_unit_tests` PASS，
+含准入判定十项拒绝理由、闭区间边界、半开支撑区间、缓冲复用与尺寸 fail-closed，
+以及对 retained 参考实现（整栈物化 + `lower_enabled` 双层循环）的
+40 组随机夹具暴力等价比对。
+
+### 5.5.5 解除用户阻塞的实测
+
+场景：`model/obj/reality/finger_suoguo/a-2/0.2.obj` @ **10um**，
+栅格 1500 x 5197 = 7,795,500 列 x 1,429 层 = 111.4 亿 pixel-layer。
+
+```text
+retained   峰值 22~34 GB（压在物理内存 31.6 GB 线上，大量换页）
+           进入层处理前耗时 277,200 ms
+           实跑到 450/1429 层用 593,671 ms 后被中止，从未跑完
+bounded    峰值 peakWorkingSetBytes = 1,225,912,320  ->  1.14 GiB
+           进入层处理前耗时 642 ms
+           totalMs = 1,135,091  ->  18.9 分钟，完整跑完 1,429 层
+```
+
+| 指标 | retained | bounded | 变化 |
+|---|---|---|---|
+| 峰值内存 | 22~34 GB | **1.14 GiB** | **约 -95%（20~30 倍）** |
+| 层处理前序幕 | 277,200 ms | 642 ms | **-99.8%（432 倍）** |
+| 总耗时 | 从未跑完（用户实测约 20 分钟） | 1,135,091 ms（18.9 分钟） | 略优 |
+
+**零漂移（真实资产、真实层厚）：** retained 那次被中止的运行留下了前 457 层输出，
+与 bounded 的同层输出**457/457 层逐字节一致**。
+
+### 5.5.6 对时间与内存的诚实界定
+
+**内存是本次的实质改变，时间只是略优。** 原因是本改动把内部空腔洪泛与支撑统计
+从「序幕一次性全层」搬到了「主循环逐层」—— 总工作量不变，只是不再需要整栈驻留。
+时间的收益来自两处：省掉的 277 s 序幕，以及换页消失。同窗口逐层速率
+（第 225~375 层）retained 878 ms/层 vs bounded 913 ms/层，基本持平。
+
+若还要压时间，下一步应优化逐层热循环本身，而非继续搬动：
+`AddInternalVoidSupportForLayer` 每层重新分配 `externalEmpty`（7.8 MB）与
+`stack.reserve(pixelCount)`（31 MB），1,429 层累计约 5.6 万 MB 的分配/释放；
+三个物化循环与统计循环合计每层约 3,100 万次 `.at()` 边界检查。
+两者都可在不改语义的前提下收敛（缓冲提为调用方持有、热循环改索引访问）。
+**但这属独立的性能任务，不应与本次的语义等价改动混在一起。**
+
+---
+
 ## 6. 风险与未决
 
 1. **B2 时序等价是最大风险。** 悬空岛的「先全层 preliminary、再顺序发现并回写」时序
@@ -267,9 +400,27 @@ MF-03X2a（本档，解除阻塞关键路径）与 MF-03X2b（岛发现 / 形状
 2. **接线范围大。** 七个容器分布在主循环各处，`model_masks` 在 `slicer.cpp` 有 5 种下标形式。
    ~~建议按容器逐个替换~~ —— **见 §5.3 修订**：只有第一个容器逐层独立、可独立替换；
    剩余六个通过 `generate_support_masks` 耦合成一个簇，须整体改走有界路径。
-3. ~~**`slicer.cpp` 属 G2 只减不增名单。**~~ **已解除。** 首容器接线净增 127 行，
-   同步下沉表面光油几何簇后净减 137 行，`ValidateSourceSizeGuard --base-ref HEAD`
-   判定 PASS，**未新增任何豁免登记**（AGENTS.md 已记 12 处门禁 ERROR，不再增加）。
+3. **`slicer.cpp` 与 G2 的真实关系（v1.4 更正）。**
+
+   `0d2a1bf` 的提交信息写「同步下沉使门禁 PASS、未新增豁免登记」，**表述有误导**：
+   `src/slicer_core/slicer.cpp` 早在 `642d29e` 就已登记进 G2 豁免清单，
+   故门禁在下沉与不下沉两种情况下都会 PASS —— 下沉并非门禁所迫。
+
+   ```json
+   { "path": "src/slicer_core/slicer.cpp", "rules": ["G2"],
+     "reason": "用户 2026-09-01 授权放宽：MATOPQ 方案 A 需在 transfer 与 MATVOL
+                两处适配调用透传退化面阈值；MO-04 将在此文件内接入不透明度到
+                光油通道的判据。",
+     "expiresWhen": "版本重构时统一清理 slicer.cpp（现 5645 行）" }
+   ```
+
+   下沉本身仍然正确（删除无调用者的死代码、提高内聚），只是**理由不成立**。
+
+   更要紧的是：**那条豁免的 reason 只覆盖 MATOPQ 方案 A 与 MO-04，不含 MEMFLOW。**
+   靠它为本专项的行数增长背书，等于悄悄借用别的专项的债额度。故本专项的处置是
+   **不依赖该豁免**：每次接线都同步下沉，使 `slicer.cpp` 实测净减 ——
+   MF-03X1 后 5,988 行，MF-03X2a 后 5,981 行（较 MF-03X1 再减 7 行，
+   接线本身的 +137 行由内部空腔函数簇下沉全额抵掉）。
 4. **多实例场景未覆盖。** 用户的双模型场景（`0.2+0.3`）需 MF-05 的 Barrier；
    本报告只覆盖单实例。
 
@@ -279,6 +430,8 @@ MF-03X2a（本档，解除阻塞关键路径）与 MF-03X2b（岛发现 / 形状
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-04 | v1.5 | 新增 §5.5：MF-03X2a 实施与验证。三个整栈（`model_masks`/`support_masks`/`support_type_maps`）改按列区间推导 + 按层物化，采样阶段一并跳过 10.37 GB 分配。四判据逐字节全等（tm2-5/yz 同时与主仓 P1 基线相同）、单元测试含对 retained 参考实现的 40 组暴力等价比对。**解除用户阻塞实测：`a-2/0.2.obj` @10um 峰值由 22~34 GB 降至 1.14 GiB（约 -95%），序幕由 277,200 ms 降至 642 ms，完整跑完 1,429 层用 18.9 分钟；retained 那次中止运行留下的前 457 层与 bounded 逐字节 457/457 一致。** 记录一次真实漏项（`AddInternalVoidSupportForLayer` 无条件逐层块被漏，`internal_void.enabled` 默认 true，导致 r01 二十层各差一字节）及其教训：按条件分支枚举会漏掉无条件语句。并诚实界定收益：内存是实质改变，时间仅略优，进一步压时间需另立性能任务。 |
+| 2026-09-04 | v1.4 | **更正 §6 第 3 条。** `0d2a1bf` 提交信息称「同步下沉使门禁 PASS、未新增豁免」有误导：`slicer.cpp` 早在 `642d29e` 已登记 G2 豁免，门禁两种情况都会 PASS，下沉并非门禁所迫（下沉本身仍正确，只是理由不成立）。更要紧的是该豁免 reason 只覆盖 MATOPQ 方案 A 与 MO-04、不含 MEMFLOW，靠它背书等于借用别的专项的债额度。故本专项处置为不依赖该豁免：每次接线同步下沉使 slicer.cpp 实测净减（X1 后 5,988 行、X2a 后 5,981 行）。 |
 | 2026-09-04 | v1.3 | 新增 §5.4：按配置收缩范围。逐项核对用户 `a2_probe.json` 的实际激活项，确认 `mode = bottom_projection` 下三个耦合难点全部不激活 —— 岛发现（`unsupported_only_enabled` false）、形状优化（`shape_enabled` 默认 false）、两种光油（未配置）。故该档**不含任何无界随机访问**，剩余向下遍历只有按列的 bottom-projection，是主循环已在算的 `column_ranges` 的纯函数。两点结论：§6 第 1 条「B2 时序等价是最大风险」在本档不适用（不需要 B2/B3，只需已 COMPLETE 的 B1 + A）；解除阻塞的改动远小于全模式接线。据此把 MF-03X2 拆为 X2a（本档，关键路径）与 X2b（全模式）。 |
 | 2026-09-04 | v1.2 | **修正 §3 占用表。** 首版把七个容器都按已分配计入得 72.62 GB；复核分配条件后确认四个是条件分配（`surface_varnish.enabled` 默认 false；`outerVarnishMasks` 与 `upperBoundaryMasks` 无光油时返回 `{}`），在用户实际阻塞配置下为 0。该配置真实合计 **31.11 GB**，对上物理内存 31.6 GB，比 72.62 GB 更能解释实测峰值 22~34 GB 与换页。同时确认 `SupportType` 是 `uint8_t`（非 4 字节）、`support_masks`/`support_type_maps` 的 resize 在 `support.enabled` 检查之前故无条件分配。据此新增 §3.1：MF-03X1 对 10um 阻塞场景收益为零，解除阻塞的全部收益在 MF-03X2。 |
 | 2026-09-04 | v1.1 | 首容器（`outer_surface_masks` / `inner_surface_masks`）接线完成并零漂移通过，提交 `0d2a1bf`。据此修订 §6 第 2 条：「按容器逐个替换」只对第一个容器成立——它逐层独立；剩余六个通过 `generate_support_masks`（整栈进整栈出）耦合成一个簇，且 `model_masks`/`support_masks`/`support_type_maps` 各有恰好一处 `.at(target_layer)` 且同处一个回写循环，必须同时转换。风险 3（G2 门禁）解除：同步下沉使 slicer.cpp 净减 137 行，未新增豁免。新增 §5.3 与共同前置 `geometry/SliceGridSpec.h` 说明。 |
