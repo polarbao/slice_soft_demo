@@ -1,7 +1,7 @@
 # REPORT_16C_06_MEMFLOW 主循环接线可行性探查（2026-09-04）
 
-> 文档状态：**MF-03X2a 已接线并解除用户阻塞（峰值 22~34 GB -> 1.14 GiB）**
-> 版本：v1.5 ｜ 日期：2026-09-04
+> 文档状态：**MF-03X2a 已接线（单模型 CLI 峰值 22~34 GB -> 1.14 GiB）／双模型另有更大根因，见 §5.6**
+> 版本：v1.6 ｜ 日期：2026-09-05
 > 定位：为解除真实生产阻塞（10um 层厚 111.4 亿 pixel-layer）而探查有界能力接入主循环的可行性。
 > 上游：`REPORT_16C_06_MEMFLOW_替代基线资产与调查结论_2026_09_03.md`（阻塞场景实测）
 > 授权：用户 2026-09-04 授予本专项最高决策权
@@ -392,6 +392,84 @@ bounded    峰值 peakWorkingSetBytes = 1,225,912,320  ->  1.14 GiB
 
 ---
 
+## 5.6 双模型场景的根因【不是】三个 mask 栈
+
+X2a 完成后回头验证用户的第二个诉求（`0.2.obj + 0.3.obj` 一起切片内存不足），
+读多模型路径的代码得到一个必须纠正的结论：**该失败与三个 mask 栈无关。**
+
+### 5.6.1 场景路径把全部实例的全部层都留在内存里
+
+`MultiModelProductionService.cpp:813` 起：
+
+```cpp
+std::vector<SceneInstanceRaster> rasters;
+rasters.reserve(scene.instances.size());
+for (const SceneModelInstance& item : scene.instances) { ... rasters.push_back(...); }
+...
+composeRequest.instances = std::move(rasters);   // 全部切完才合成
+```
+
+而单个实例的 raster 持有**全部层**（`SceneRasterTypes.h:107`）：
+
+```cpp
+struct SceneInstanceRaster { ...; std::vector<SceneInstanceRasterLayer> layers; };
+struct SceneInstanceRasterLayer {
+    RgbwsvProductionLayer output;                  // channels = w*h*6
+    std::vector<std::uint8_t> modelownership;      // w*h
+    std::vector<std::uint8_t> modelvarnishownership;
+    std::vector<std::uint8_t> outervarnishownership;
+    std::vector<std::uint8_t> supportownership;
+};
+```
+
+`LegacySceneLayerAdapter.cpp:230` 的 `ownedlayercallback` 对**每一层**
+`push_back` 且不释放任何一层。四张归属 mask 必然填充 —— 设置了
+`ownedlayercallback` 就使 `collectMaterialClosureSemantic` 为真。
+
+### 5.6.2 量级对比
+
+```text
+每列每层字节数
+  三个 mask 栈（X2a 已解决）   3 B      model + support + support_type
+  场景实例栅格（未解决）      10 B      6 通道 + 4 张归属 mask，【每实例】
+
+用户 10um 场景（1418 x 5197 = 7,368,146 列 x 1,429 层）
+  三个 mask 栈                31.11 GiB   -> 已降至约 21 MB（三个单层缓冲）
+  场景实例栅格               103.7 GiB /实例   -> 未动
+```
+
+**故场景路径比本次修好的部分还大一个量级，且按实例线性叠加。**
+双模型即 207 GB —— 这才是用户「内存不够、切片失败」的直接原因。
+
+### 5.6.3 这正是 MF-02 合同要解决而 sink 没做到的事
+
+`ownedlayercallback` 就是 MF-02「Owned Layer Producer/Sink」合同的落点，
+合同的用意是让 sink **消费即释放**。`LegacySceneLayerAdapter` 却把每层都囤起来，
+使合同的收益归零。
+
+合成本身**不需要**全部层同时在内存：合成第 L 层只要各实例的第 L 层。
+障碍在于实例是**按实例顺序**切的（instance-major），而合成需要 layer-major。
+消除该错位有两条路：
+
+```text
+A  MF-05 Layer Barrier   各实例按 global layer 交错推进，同层到齐即合成并释放
+                         峰值 O(实例数 x 列数)，与层数无关
+B  逐实例落盘再流式合成   实例仍顺序切，但每层写入 staging 后释放，
+                         合成阶段按层读回。峰值同样与层数无关，代价是 I/O
+```
+
+A 是决策文原定方向且能同时解掉 MF-04 的 staging 语义；B 改动小但引入磁盘往返。
+**建议 A**，并按 X2a 的做法先只覆盖用户档、以 fail-safe 准入分流。
+
+### 5.6.4 对上游判断的修正
+
+§2 曾结论「`slicer_cli` 的 TIFF 输出早已逐层流式，故 MF-04 的内存收益不成立」。
+该结论对 **CLI 单模型路径**成立，但**不适用于场景路径** —— 后者经
+`LegacySceneLayerAdapter` 全量囤积，MF-04/MF-05 在这条路径上的内存收益是实打实的。
+故 §5.1 表中「MF-04 降级」只应理解为「对 CLI 路径降级」。
+
+---
+
 ## 6. 风险与未决
 
 1. **B2 时序等价是最大风险。** 悬空岛的「先全层 preliminary、再顺序发现并回写」时序
@@ -430,6 +508,7 @@ bounded    峰值 peakWorkingSetBytes = 1,225,912,320  ->  1.14 GiB
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-05 | v1.6 | 新增 §5.6：回头验证用户第二个诉求（双模型内存不足）时发现**该失败与三个 mask 栈无关**。场景路径 `MultiModelProductionService` 把全部实例的全部层留到最后一起合成，单实例 raster 每层持有 6 通道 + 4 张归属 mask = 每列每层 10 B，用户场景下 **103.7 GiB/实例**，比 X2a 修好的 31.11 GiB 还大一个量级且按实例线性叠加。根因是 `LegacySceneLayerAdapter` 的 `ownedlayercallback` 逐层 `push_back` 不释放，使 MF-02「消费即释放」合同收益归零。合成本身只需各实例的同一层，障碍是 instance-major 切片与 layer-major 合成的错位，建议走 MF-05 Barrier。同时修正 §2：「MF-04 内存收益不成立」只对 CLI 单模型路径成立，对场景路径不成立。 |
 | 2026-09-04 | v1.5 | 新增 §5.5：MF-03X2a 实施与验证。三个整栈（`model_masks`/`support_masks`/`support_type_maps`）改按列区间推导 + 按层物化，采样阶段一并跳过 10.37 GB 分配。四判据逐字节全等（tm2-5/yz 同时与主仓 P1 基线相同）、单元测试含对 retained 参考实现的 40 组暴力等价比对。**解除用户阻塞实测：`a-2/0.2.obj` @10um 峰值由 22~34 GB 降至 1.14 GiB（约 -95%），序幕由 277,200 ms 降至 642 ms，完整跑完 1,429 层用 18.9 分钟；retained 那次中止运行留下的前 457 层与 bounded 逐字节 457/457 一致。** 记录一次真实漏项（`AddInternalVoidSupportForLayer` 无条件逐层块被漏，`internal_void.enabled` 默认 true，导致 r01 二十层各差一字节）及其教训：按条件分支枚举会漏掉无条件语句。并诚实界定收益：内存是实质改变，时间仅略优，进一步压时间需另立性能任务。 |
 | 2026-09-04 | v1.4 | **更正 §6 第 3 条。** `0d2a1bf` 提交信息称「同步下沉使门禁 PASS、未新增豁免」有误导：`slicer.cpp` 早在 `642d29e` 已登记 G2 豁免，门禁两种情况都会 PASS，下沉并非门禁所迫（下沉本身仍正确，只是理由不成立）。更要紧的是该豁免 reason 只覆盖 MATOPQ 方案 A 与 MO-04、不含 MEMFLOW，靠它背书等于借用别的专项的债额度。故本专项处置为不依赖该豁免：每次接线同步下沉使 slicer.cpp 实测净减（X1 后 5,988 行、X2a 后 5,981 行）。 |
 | 2026-09-04 | v1.3 | 新增 §5.4：按配置收缩范围。逐项核对用户 `a2_probe.json` 的实际激活项，确认 `mode = bottom_projection` 下三个耦合难点全部不激活 —— 岛发现（`unsupported_only_enabled` false）、形状优化（`shape_enabled` 默认 false）、两种光油（未配置）。故该档**不含任何无界随机访问**，剩余向下遍历只有按列的 bottom-projection，是主循环已在算的 `column_ranges` 的纯函数。两点结论：§6 第 1 条「B2 时序等价是最大风险」在本档不适用（不需要 B2/B3，只需已 COMPLETE 的 B1 + A）；解除阻塞的改动远小于全模式接线。据此把 MF-03X2 拆为 X2a（本档，关键路径）与 X2b（全模式）。 |
