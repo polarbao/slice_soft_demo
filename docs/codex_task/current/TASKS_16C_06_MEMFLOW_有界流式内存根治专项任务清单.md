@@ -883,7 +883,7 @@ result JSON 侧同样钉住三个字段的存在性与 peak 非零。
 
 ### 11.3 MF-07b 实施记录（2026-09-06 前半 COMPLETE）
 
- 原先在 Worker 未声明 `available` 时**强行置真**，
+`HostSliceJobController` 原先在 Worker 未声明 `available` 时**强行置真**，
 于是宿主自己的轮询估算会被当作 Worker 权威 telemetry 展示 —— 那正是本条
 验收要消除的。已改为只反映 Worker 的真实声明：无权威数据时 `available`
 保持假，面板据此不展示细分耗时；补齐值仍留在 `timing` 里并标 `approximate`，
