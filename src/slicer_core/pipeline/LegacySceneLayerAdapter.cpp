@@ -227,7 +227,23 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             layer.supportownership =
                 std::move(produced.semantic.supportFillMask);
             layer.output = std::move(produced.output);
-            result.raster.layers.push_back(std::move(layer));
+            if (request.layersink)
+            {
+                // MF-05：交出即释放，不再累积整栈。
+                if (!request.layersink(std::move(layer)))
+                {
+                    // 消费方已中止：按合同回 Cancelled，使产线停下，
+                    // 避免生产者空转或挂在屏障上。
+                    SliceRunLayerConsumeResult aborted;
+                    aborted.status = SliceRunLayerConsumeStatus::Cancelled;
+                    aborted.detail = "scene layer barrier aborted";
+                    return aborted;
+                }
+            }
+            else
+            {
+                result.raster.layers.push_back(std::move(layer));
+            }
             ThrowIfCancellationRequested(request);
             return SliceRunLayerConsumeResult{};
         };
