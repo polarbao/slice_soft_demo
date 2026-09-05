@@ -46,26 +46,49 @@ BoundedReliefSupportEligibility EvaluateBoundedReliefSupportPath(
 
     // 放置策略：显式 placement 与 legacy mode 两条解析路径都要覆盖，
     // 判据与 slicer.cpp ResolveSupportPlacementPolicy 一一对应。
+    // MF-03X2b 放开 full_vertical_projection —— 它与 lower 同构，只是上界
+    // 由按列标量换成列区间的 upperLayer。upper 与 unsupported_only 仍拒绝。
+    BoundedSupportPlacement placement{BoundedSupportPlacement::BottomProjection};
     if (config.support.placement_explicit)
     {
-        if (config.support.placement != "lower")
+        if (config.support.placement == "lower")
         {
-            return Reject("support_placement_not_lower");
+            placement = BoundedSupportPlacement::BottomProjection;
+        }
+        else if (config.support.placement == "full_vertical_projection")
+        {
+            placement = BoundedSupportPlacement::FullVerticalProjection;
+        }
+        else
+        {
+            // upper 需要 upper boundary 整栈；both 含 upper。
+            return Reject("support_placement_not_bounded");
         }
     }
     else
     {
-        if (!ModeIncludesBottomProjection(config.support.mode))
+        // full_vertical_projection 必须【最先】判：它不含 bottom_projection，
+        // 排在 ModeIncludesBottomProjection 之后就会被拒成
+        // support_mode_without_bottom_projection —— 原实现正是如此，使其后那条
+        // support_mode_full_vertical_projection 分支【永不可达】（本次一并删去）。
+        // 其余两条的先后与原实现保持一致，以免改掉既有的拒绝理由：
+        // unsupported_only 仍报 without_bottom_projection，
+        // bottom_projection_plus_unsupported 仍报 includes_unsupported。
+        if (config.support.mode == "full_vertical_projection")
+        {
+            placement = BoundedSupportPlacement::FullVerticalProjection;
+        }
+        else if (!ModeIncludesBottomProjection(config.support.mode))
         {
             return Reject("support_mode_without_bottom_projection");
         }
-        if (ModeIncludesUnsupported(config.support.mode))
+        else if (ModeIncludesUnsupported(config.support.mode))
         {
             return Reject("support_mode_includes_unsupported");
         }
-        if (config.support.mode == "full_vertical_projection")
+        else
         {
-            return Reject("support_mode_full_vertical_projection");
+            placement = BoundedSupportPlacement::BottomProjection;
         }
     }
 
@@ -84,8 +107,41 @@ BoundedReliefSupportEligibility EvaluateBoundedReliefSupportPath(
 
     BoundedReliefSupportEligibility result;
     result.eligible = true;
-    result.reason = "relief_bottom_projection_bounded";
+    result.placement = placement;
+    result.reason = placement == BoundedSupportPlacement::FullVerticalProjection
+        ? "relief_full_vertical_projection_bounded"
+        : "relief_bottom_projection_bounded";
     return result;
+}
+
+std::vector<int> ComputeRetainedLastModelLayers(
+    const std::vector<std::vector<std::uint8_t>>& modelMasks,
+    const GridSpec& grid)
+{
+    std::vector<int> lastModelLayer(
+        static_cast<std::size_t>(grid.width_px) * grid.height_px, -1);
+    for (int layerIndex{0}; layerIndex < static_cast<int>(modelMasks.size());
+         ++layerIndex)
+    {
+        const std::vector<std::uint8_t>& mask = modelMasks.at(layerIndex);
+        for (std::size_t index{0}; index < mask.size(); ++index)
+        {
+            if (mask.at(index) != 0)
+            {
+                lastModelLayer.at(index) = layerIndex;
+            }
+        }
+    }
+    return lastModelLayer;
+}
+
+int BoundedSpanLastModelLayer(const BoundedReliefColumnSpan& span)
+{
+    if (!span.hasModel || span.lowerLayer < 0 || span.upperLayer < 0)
+    {
+        return -1;
+    }
+    return span.upperLayer;
 }
 
 std::vector<std::uint32_t> BuildBoundedActiveColumns(
@@ -192,6 +248,29 @@ void MaterializeReliefModelLayer(
     }
 }
 
+void ResetBoundedSupportLayer(
+    std::vector<std::uint8_t>& outSupportMask,
+    std::vector<SupportType>& outSupportTypeMap,
+    const std::vector<std::uint32_t>* activeColumns)
+{
+    if (activeColumns == nullptr)
+    {
+        std::fill(
+            outSupportMask.begin(),
+            outSupportMask.end(),
+            static_cast<std::uint8_t>(0));
+        std::fill(
+            outSupportTypeMap.begin(), outSupportTypeMap.end(), SupportType::None);
+        return;
+    }
+    // 表外的列在任何层都不会被写，故跨层复用的缓冲里它们恒为空。
+    for (const std::uint32_t column : *activeColumns)
+    {
+        outSupportMask.at(column) = 0;
+        outSupportTypeMap.at(column) = SupportType::None;
+    }
+}
+
 void MaterializeBottomProjectionSupportLayer(
     const std::vector<int>& supportSourceLayers,
     const std::vector<std::uint8_t>& modelMask,
@@ -211,19 +290,7 @@ void MaterializeBottomProjectionSupportLayer(
     }
     const std::size_t iterationCount =
         activeColumns != nullptr ? activeColumns->size() : modelMask.size();
-    if (activeColumns == nullptr)
-    {
-        std::fill(outSupportMask.begin(), outSupportMask.end(), static_cast<std::uint8_t>(0));
-        std::fill(outSupportTypeMap.begin(), outSupportTypeMap.end(), SupportType::None);
-    }
-    else
-    {
-        for (const std::uint32_t column : *activeColumns)
-        {
-            outSupportMask.at(column) = 0;
-            outSupportTypeMap.at(column) = SupportType::None;
-        }
-    }
+    ResetBoundedSupportLayer(outSupportMask, outSupportTypeMap, activeColumns);
     if (!supportEnabled)
     {
         return;
@@ -250,6 +317,90 @@ void MaterializeBottomProjectionSupportLayer(
             outSupportTypeMap.at(index) = SupportType::BottomProjection;
         }
     }
+}
+
+void MaterializeFullVerticalProjectionSupportLayer(
+    const std::vector<BoundedReliefColumnSpan>& spans,
+    const std::vector<std::uint8_t>& modelMask,
+    const bool supportEnabled,
+    const int layerIndex,
+    std::vector<std::uint8_t>& outSupportMask,
+    std::vector<SupportType>& outSupportTypeMap,
+    const std::vector<std::uint32_t>* activeColumns)
+{
+    if (outSupportMask.size() != modelMask.size()
+        || outSupportTypeMap.size() != modelMask.size()
+        || spans.size() != modelMask.size())
+    {
+        throw std::runtime_error(
+            "MaterializeFullVerticalProjectionSupportLayer received buffers whose"
+            " sizes do not agree");
+    }
+    const std::size_t iterationCount =
+        activeColumns != nullptr ? activeColumns->size() : modelMask.size();
+    ResetBoundedSupportLayer(outSupportMask, outSupportTypeMap, activeColumns);
+    if (!supportEnabled)
+    {
+        return;
+    }
+    for (std::size_t iteration{0}; iteration < iterationCount; ++iteration)
+    {
+        const std::size_t index = activeColumns != nullptr
+            ? static_cast<std::size_t>(activeColumns->at(iteration))
+            : iteration;
+        // 半开区间 [0, lastLayer)，与 retained 的 for (L < last_layer) 一致。
+        // lastLayer 为 -1（无模型或区间无效）时本条恒成立、该列全层不写。
+        if (layerIndex >= BoundedSpanLastModelLayer(spans.at(index)))
+        {
+            continue;
+        }
+        if (modelMask.at(index) != 0)
+        {
+            continue;
+        }
+        outSupportMask.at(index) = 1;
+        if (SupportTypePriority(SupportType::FullVerticalProjection)
+            >= SupportTypePriority(outSupportTypeMap.at(index)))
+        {
+            outSupportTypeMap.at(index) = SupportType::FullVerticalProjection;
+        }
+    }
+}
+
+void MaterializeBoundedSupportLayer(
+    const BoundedSupportPlacement placement,
+    const std::vector<BoundedReliefColumnSpan>& spans,
+    const std::vector<int>& supportSourceLayers,
+    const std::vector<std::uint8_t>& modelMask,
+    const bool supportEnabled,
+    const int layerIndex,
+    std::vector<std::uint8_t>& outSupportMask,
+    std::vector<SupportType>& outSupportTypeMap,
+    const std::vector<std::uint32_t>* activeColumns)
+{
+    // 两档互斥（见 BoundedSupportPlacement），故是二选一而非两段顺序写入。
+    // 将来放开 upper（可与 lower 并存）时，这里要改成：先 ResetBoundedSupportLayer
+    // 一次，再让各段都不自重置 —— 否则后一段会把前一段清掉，且不报错。
+    if (placement == BoundedSupportPlacement::FullVerticalProjection)
+    {
+        MaterializeFullVerticalProjectionSupportLayer(
+            spans,
+            modelMask,
+            supportEnabled,
+            layerIndex,
+            outSupportMask,
+            outSupportTypeMap,
+            activeColumns);
+        return;
+    }
+    MaterializeBottomProjectionSupportLayer(
+        supportSourceLayers,
+        modelMask,
+        supportEnabled,
+        layerIndex,
+        outSupportMask,
+        outSupportTypeMap,
+        activeColumns);
 }
 
 }  // namespace slicer_core

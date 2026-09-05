@@ -12,9 +12,14 @@ namespace
 {
 
 using slicer_core::BoundedReliefColumnSpan;
+using slicer_core::BoundedSpanLastModelLayer;
+using slicer_core::BoundedSupportPlacement;
 using slicer_core::BuildBoundedActiveColumns;
+using slicer_core::ComputeRetainedLastModelLayers;
 using slicer_core::EvaluateBoundedReliefSupportPath;
+using slicer_core::GridSpec;
 using slicer_core::MaterializeBottomProjectionSupportLayer;
+using slicer_core::MaterializeFullVerticalProjectionSupportLayer;
 using slicer_core::MaterializeReliefModelLayer;
 using slicer_core::SliceConfig;
 using slicer_core::SupportType;
@@ -70,11 +75,17 @@ bool EligibilityAcceptsOnlyTheBoundedConfiguration()
              c.geometry_sampling.strategy =
                  "layer_slab_supersample_2x2_any_hit_candidate";
          }},
-        {"explicit non-lower placement", "support_placement_not_lower",
+        {"explicit both placement", "support_placement_not_bounded",
          [](SliceConfig& c)
          {
              c.support.placement_explicit = true;
              c.support.placement = "both";
+         }},
+        {"explicit upper placement", "support_placement_not_bounded",
+         [](SliceConfig& c)
+         {
+             c.support.placement_explicit = true;
+             c.support.placement = "upper";
          }},
         {"mode without bottom projection", "support_mode_without_bottom_projection",
          [](SliceConfig& c) { c.support.mode = "unsupported_only"; }},
@@ -103,9 +114,215 @@ bool EligibilityAcceptsOnlyTheBoundedConfiguration()
     SliceConfig explicitLower = EligibleConfig();
     explicitLower.support.placement_explicit = true;
     explicitLower.support.placement = "lower";
+    const auto lowerVerdict = EvaluateBoundedReliefSupportPath(explicitLower);
     passed = ExpectTrue(
-        EvaluateBoundedReliefSupportPath(explicitLower).eligible,
-        "explicit lower placement stays eligible") && passed;
+        lowerVerdict.eligible, "explicit lower placement stays eligible") && passed;
+    passed = ExpectTrue(
+        lowerVerdict.placement == BoundedSupportPlacement::BottomProjection,
+        "explicit lower placement resolves to bottom projection") && passed;
+
+    // MF-03X2b：full vertical projection 的两条解析路径都要准入，且都要判成
+    // FullVerticalProjection —— 判错档位不会报错，只会把支撑上界算成另一个。
+    SliceConfig explicitFullVertical = EligibleConfig();
+    explicitFullVertical.support.placement_explicit = true;
+    explicitFullVertical.support.placement = "full_vertical_projection";
+    const auto explicitVerdict =
+        EvaluateBoundedReliefSupportPath(explicitFullVertical);
+    passed = ExpectTrue(
+        explicitVerdict.eligible, "explicit full vertical placement is eligible")
+        && passed;
+    passed = ExpectTrue(
+        explicitVerdict.placement == BoundedSupportPlacement::FullVerticalProjection,
+        "explicit full vertical placement resolves to full vertical") && passed;
+
+    // legacy mode 路径。这一支原先【永不可达】：full_vertical_projection 不含
+    // bottom_projection，会先被拒成 support_mode_without_bottom_projection。
+    SliceConfig legacyFullVertical = EligibleConfig();
+    legacyFullVertical.support.placement_explicit = false;
+    legacyFullVertical.support.mode = "full_vertical_projection";
+    const auto legacyVerdict = EvaluateBoundedReliefSupportPath(legacyFullVertical);
+    passed = ExpectTrue(
+        legacyVerdict.eligible, "legacy full vertical mode is eligible") && passed;
+    passed = ExpectTrue(
+        legacyVerdict.placement == BoundedSupportPlacement::FullVerticalProjection,
+        "legacy full vertical mode resolves to full vertical") && passed;
+    return passed;
+}
+
+/**
+ * @brief 归一化守卫：`hasModel` 为真但区间无效的列，最后模型层必须是 -1。
+ *
+ * 这类列真实存在 —— 采样在 `startLayer > endLayer` 时 `continue`，而
+ * `has_model` 已在此之前置真。直接读 `upperLayer` 会得到 -1 之外的脏值，
+ * 或（更隐蔽地）让 `[0, upperLayer)` 变成一个本不该存在的区间。
+ */
+bool LastModelLayerMatchesRetainedReduction()
+{
+    std::mt19937 rng{20260906U};
+    bool passed{true};
+    for (int trial{0}; trial < 40; ++trial)
+    {
+        const int layerCount = 1 + static_cast<int>(rng() % 12U);
+        const int columnCount = 1 + static_cast<int>(rng() % 24U);
+        std::vector<BoundedReliefColumnSpan> spans(
+            static_cast<std::size_t>(columnCount));
+        std::vector<std::vector<std::uint8_t>> referenceModel(
+            static_cast<std::size_t>(layerCount),
+            std::vector<std::uint8_t>(static_cast<std::size_t>(columnCount), 0));
+        for (std::size_t column{0};
+             column < static_cast<std::size_t>(columnCount);
+             ++column)
+        {
+            const unsigned int kind = rng() % 4U;
+            if (kind == 0U)
+            {
+                spans.at(column) = {false, -1, -1};
+                continue;
+            }
+            if (kind == 1U)
+            {
+                // 有模型标记但区间无效 —— 正是那条 continue 留下的形状。
+                spans.at(column) = {true, -1, -1};
+                continue;
+            }
+            const int lower =
+                static_cast<int>(rng() % static_cast<unsigned int>(layerCount));
+            const int upper = lower
+                + static_cast<int>(
+                    rng() % static_cast<unsigned int>(layerCount - lower));
+            spans.at(column) = {true, lower, upper};
+            for (int layerIndex{lower}; layerIndex <= upper; ++layerIndex)
+            {
+                referenceModel.at(static_cast<std::size_t>(layerIndex)).at(column) = 1;
+            }
+        }
+        GridSpec grid;
+        grid.width_px = columnCount;
+        grid.height_px = 1;
+        grid.layer_count = layerCount;
+        const std::vector<int> reference =
+            ComputeRetainedLastModelLayers(referenceModel, grid);
+        for (std::size_t column{0};
+             column < static_cast<std::size_t>(columnCount);
+             ++column)
+        {
+            if (BoundedSpanLastModelLayer(spans.at(column)) != reference.at(column))
+            {
+                passed = ExpectTrue(
+                    false,
+                    "bounded last model layer matches the retained reduction at trial "
+                        + std::to_string(trial) + " column "
+                        + std::to_string(column)) && passed;
+                break;
+            }
+        }
+    }
+    return passed;
+}
+
+/**
+ * @brief full vertical projection 档与 retained 分支的逐层暴力等价。
+ *
+ * 参考实现照抄 `generate_support_masks` 的 full_vertical_projection 分支：
+ * 先对整栈归约出 last model layer，再按半开区间 `[0, lastLayer)` 写。
+ */
+bool FullVerticalProjectionMatchesRetainedReference()
+{
+    std::mt19937 rng{20260907U};
+    bool passed{true};
+    for (int trial{0}; trial < 40; ++trial)
+    {
+        const int layerCount = 1 + static_cast<int>(rng() % 12U);
+        const int columnCount = 1 + static_cast<int>(rng() % 24U);
+        const auto columns = static_cast<std::size_t>(columnCount);
+        std::vector<BoundedReliefColumnSpan> spans(columns);
+        std::vector<std::vector<std::uint8_t>> referenceModel(
+            static_cast<std::size_t>(layerCount),
+            std::vector<std::uint8_t>(columns, 0));
+        for (std::size_t column{0}; column < columns; ++column)
+        {
+            const unsigned int kind = rng() % 4U;
+            if (kind == 0U)
+            {
+                spans.at(column) = {false, -1, -1};
+                continue;
+            }
+            if (kind == 1U)
+            {
+                spans.at(column) = {true, -1, -1};
+                continue;
+            }
+            const int lower =
+                static_cast<int>(rng() % static_cast<unsigned int>(layerCount));
+            const int upper = lower
+                + static_cast<int>(
+                    rng() % static_cast<unsigned int>(layerCount - lower));
+            spans.at(column) = {true, lower, upper};
+            for (int layerIndex{lower}; layerIndex <= upper; ++layerIndex)
+            {
+                referenceModel.at(static_cast<std::size_t>(layerIndex)).at(column) = 1;
+            }
+        }
+        GridSpec grid;
+        grid.width_px = columnCount;
+        grid.height_px = 1;
+        grid.layer_count = layerCount;
+
+        // 参考：retained 的 full_vertical_projection 分支。
+        const std::vector<int> lastModelLayers =
+            ComputeRetainedLastModelLayers(referenceModel, grid);
+        std::vector<std::vector<std::uint8_t>> referenceSupport(
+            static_cast<std::size_t>(layerCount),
+            std::vector<std::uint8_t>(columns, 0));
+        for (std::size_t column{0}; column < columns; ++column)
+        {
+            const int lastLayer = lastModelLayers.at(column);
+            for (int layerIndex{0}; layerIndex < lastLayer; ++layerIndex)
+            {
+                if (referenceModel.at(static_cast<std::size_t>(layerIndex)).at(column)
+                    == 0)
+                {
+                    referenceSupport.at(static_cast<std::size_t>(layerIndex))
+                        .at(column) = 1;
+                }
+            }
+        }
+
+        std::vector<std::uint8_t> modelLayer(columns, 0);
+        std::vector<std::uint8_t> supportLayer(columns, 0);
+        std::vector<SupportType> typeLayer(columns, SupportType::None);
+        for (int layerIndex{0}; layerIndex < layerCount; ++layerIndex)
+        {
+            MaterializeReliefModelLayer(spans, layerIndex, modelLayer);
+            MaterializeFullVerticalProjectionSupportLayer(
+                spans, modelLayer, true, layerIndex, supportLayer, typeLayer);
+            const auto layer = static_cast<std::size_t>(layerIndex);
+            if (modelLayer != referenceModel.at(layer)
+                || supportLayer != referenceSupport.at(layer))
+            {
+                passed = ExpectTrue(
+                    false,
+                    "full vertical projection matches the retained reference at trial "
+                        + std::to_string(trial) + " layer "
+                        + std::to_string(layerIndex)) && passed;
+                break;
+            }
+            for (std::size_t column{0}; column < columns; ++column)
+            {
+                const SupportType expected = supportLayer.at(column) != 0
+                    ? SupportType::FullVerticalProjection
+                    : SupportType::None;
+                if (typeLayer.at(column) != expected)
+                {
+                    passed = ExpectTrue(
+                        false,
+                        "full vertical projection stamps its own support type at trial "
+                            + std::to_string(trial)) && passed;
+                    break;
+                }
+            }
+        }
+    }
     return passed;
 }
 
@@ -381,10 +598,12 @@ int main()
     passed = ModelLayerReproducesClosedInterval() && passed;
     passed = SupportLayerFollowsBottomProjectionPredicate() && passed;
     passed = BruteForceMatchesRetainedReference() && passed;
+    passed = LastModelLayerMatchesRetainedReduction() && passed;
+    passed = FullVerticalProjectionMatchesRetainedReference() && passed;
     passed = ActiveColumnsKeepEnclosedHoles() && passed;
     if (passed)
     {
-        std::cout << "PASS MF-03X2a bounded relief support plan tests\n";
+        std::cout << "PASS MF-03X2a/X2b bounded relief support plan tests\n";
         return 0;
     }
     return 1;

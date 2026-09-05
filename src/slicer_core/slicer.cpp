@@ -1666,19 +1666,6 @@ void AddUpperProjectionSupport(
 }
 
 
-std::vector<int> compute_last_model_layers(const std::vector<std::vector<std::uint8_t>>& model_masks, const GridSpec& grid) {
-    std::vector<int> last_model_layer(static_cast<std::size_t>(grid.width_px) * grid.height_px, -1);
-    for (int layer_index{0}; layer_index < static_cast<int>(model_masks.size()); ++layer_index) {
-        const auto& mask = model_masks.at(layer_index);
-        for (std::size_t i{0}; i < mask.size(); ++i) {
-            if (mask.at(i) != 0) {
-                last_model_layer.at(i) = layer_index;
-            }
-        }
-    }
-    return last_model_layer;
-}
-
 std::vector<std::uint8_t> make_supported_base_mask(
     const std::vector<std::uint8_t>& previous_model_mask,
     const std::vector<std::uint8_t>& previous_support_mask,
@@ -1835,7 +1822,8 @@ SupportGenerationResult generate_support_masks(
     }
 
     if (placement_policy.full_vertical_projection_enabled) {
-        const std::vector<int> last_model_layers = compute_last_model_layers(model_masks, grid);
+        const std::vector<int> last_model_layers =
+            ComputeRetainedLastModelLayers(model_masks, grid);
         for (std::size_t index{0}; index < last_model_layers.size(); ++index) {
             const int last_layer = last_model_layers.at(index);
             for (int layer_index{0}; layer_index < last_layer; ++layer_index) {
@@ -4851,7 +4839,9 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             MaterializeReliefModelLayer(
                 boundedReliefSpans, layer_index, boundedModelLayer,
                 &boundedActiveColumns);
-            MaterializeBottomProjectionSupportLayer(
+            MaterializeBoundedSupportLayer(
+                boundedReliefSupport.placement,
+                boundedReliefSpans,
                 support_source_layers,
                 boundedModelLayer,
                 config.support.enabled,
