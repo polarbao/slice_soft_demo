@@ -3391,8 +3391,13 @@ std::vector<std::uint8_t> compose_retained_layer(
     return pixels;
 }
 
-void update_layer_channel_stats(const std::vector<std::uint8_t>& layer, LayerDiagnostics& diagnostics) {
-    const auto stats = AnalyzeRetainedMaterialLayerChannels(layer);
+void update_layer_channel_stats(
+    const std::vector<std::uint8_t>& layer,
+    LayerDiagnostics& diagnostics,
+    const std::vector<std::uint32_t>* active_columns = nullptr,
+    const std::uint8_t background_value = 255U) {
+    const auto stats = AnalyzeRetainedMaterialLayerChannels(
+        layer, active_columns, background_value);
     diagnostics.channel_stats = stats.channels;
     diagnostics.rgb_non_zero_pixels = stats.rgbNonZeroPixels;
     diagnostics.white_non_zero_pixels = stats.whiteNonZeroPixels;
@@ -5137,7 +5142,11 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             materialVolumeLayerStats.back().unprintableWhiteCarrierPixels =
                 diagnostics.semantic.unprintable_white_carrier_pixels;
         }
-        update_layer_channel_stats(layer, diagnostics);
+        update_layer_channel_stats(
+            layer,
+            diagnostics,
+            boundedReliefSupport.eligible ? &boundedActiveColumns : nullptr,
+            config.background.value);
         total_model_pixels += layer_model_pixels;
         total_support_pixels += layer_support_pixels;
         total_rgb_non_zero_pixels += diagnostics.rgb_non_zero_pixels;

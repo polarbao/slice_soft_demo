@@ -1110,7 +1110,9 @@ BoundedMaterialLayerComposeResult ComposeRetainedMaterialLayer(
 }
 
 BoundedMaterialLayerChannelStats AnalyzeRetainedMaterialLayerChannels(
-    const std::span<const std::uint8_t> rgbwsv)
+    const std::span<const std::uint8_t> rgbwsv,
+    const std::vector<std::uint32_t>* activeColumns,
+    const std::uint8_t backgroundValue)
 {
     if (rgbwsv.size() % kRetainedMaterialChannelCount != 0U)
     {
@@ -1120,8 +1122,16 @@ BoundedMaterialLayerChannelStats AnalyzeRetainedMaterialLayerChannels(
     BoundedMaterialLayerChannelStats result;
     const std::size_t pixelCount{
         rgbwsv.size() / kRetainedMaterialChannelCount};
-    for (std::size_t index{0U}; index < pixelCount; ++index)
+    // MF-03X5：表外的列每个通道恒为 backgroundValue，其对统计的贡献是【常数】，
+    // 故只逐列扫活动列，空列的份额在循环之后解析补齐。10um 大幅面场景下这省掉
+    // 每层一次 w*h*6（44.2 MB）的整幅面读。
+    const std::size_t iterationCount =
+        activeColumns != nullptr ? activeColumns->size() : pixelCount;
+    for (std::size_t iteration{0U}; iteration < iterationCount; ++iteration)
     {
+        const std::size_t index = activeColumns != nullptr
+            ? static_cast<std::size_t>(activeColumns->at(iteration))
+            : iteration;
         const std::size_t base{index * kRetainedMaterialChannelCount};
         for (std::size_t channel{0U};
              channel < kRetainedMaterialChannelCount;
@@ -1156,6 +1166,44 @@ BoundedMaterialLayerChannelStats AnalyzeRetainedMaterialLayerChannels(
         result.whiteNonZeroPixels += rgbwsv[base + 3U] < 255U ? 1 : 0;
         result.supportNonZeroPixels += rgbwsv[base + 4U] < 255U ? 1 : 0;
         result.varnishNonZeroPixels += rgbwsv[base + 5U] < 255U ? 1 : 0;
+    }
+    if (activeColumns != nullptr && activeColumns->size() < pixelCount)
+    {
+        // 空列份额：每列每通道都是 backgroundValue，判定与上面逐字一致。
+        const auto emptyColumnCount =
+            static_cast<int>(pixelCount - activeColumns->size());
+        const int value{backgroundValue};
+        for (std::size_t channel{0U};
+             channel < kRetainedMaterialChannelCount;
+             ++channel)
+        {
+            auto& stats{result.channels[channel]};
+            stats.min_value = std::min(stats.min_value, value);
+            stats.max_value = std::max(stats.max_value, value);
+            if (value == 255)
+            {
+                stats.empty_pixels += emptyColumnCount;
+            }
+            else
+            {
+                stats.print_pixels += emptyColumnCount;
+                if (value == 0)
+                {
+                    stats.full_print_pixels += emptyColumnCount;
+                }
+                else
+                {
+                    stats.partial_print_pixels += emptyColumnCount;
+                }
+            }
+        }
+        if (value < 255)
+        {
+            result.rgbNonZeroPixels += emptyColumnCount;
+            result.whiteNonZeroPixels += emptyColumnCount;
+            result.supportNonZeroPixels += emptyColumnCount;
+            result.varnishNonZeroPixels += emptyColumnCount;
+        }
     }
     return result;
 }

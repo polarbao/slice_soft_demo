@@ -284,8 +284,16 @@ void PopulateRetainedMaterialClosureEmptyMask(
     std::span<std::uint8_t> outputRgbwsv,
     MaterialClosureSemanticLayerInput* semantic);
 
+/**
+ * @param activeColumns 非空时只逐列扫这些列；表外的列按 backgroundValue 解析补齐。
+ *        调用方须保证表外的列每个通道确实都等于 backgroundValue。
+ * @param backgroundValue 空列的通道值（config.background.value）。
+ */
 [[nodiscard]] BoundedMaterialLayerChannelStats
-AnalyzeRetainedMaterialLayerChannels(std::span<const std::uint8_t> rgbwsv);
+AnalyzeRetainedMaterialLayerChannels(
+    std::span<const std::uint8_t> rgbwsv,
+    const std::vector<std::uint32_t>* activeColumns = nullptr,
+    std::uint8_t backgroundValue = 255U);
 
 void AccumulateRetainedMaterialChannelStats(
     std::array<BoundedMaterialChannelStats, kRetainedMaterialChannelCount>& totals,
