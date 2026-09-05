@@ -354,6 +354,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/pipeline/SceneLayerComposer.cpp
     src/slicer_core/pipeline/SceneLayerComposer.h
     src/slicer_core/pipeline/SceneRasterTypes.cpp
+    src/slicer_core/pipeline/SceneLayerBarrier.cpp
+    src/slicer_core/pipeline/SceneLayerBarrier.h
     src/slicer_core/pipeline/SceneRasterTypes.h
     src/slicer_core/pipeline/TranslatedSceneRasterReuse.cpp
     src/slicer_core/pipeline/TranslatedSceneRasterReuse.h
@@ -1746,6 +1748,17 @@ target_link_libraries(stage16c06_bounded_support_demand_unit_tests PRIVATE slice
 if(MSVC)
     target_compile_options(stage16c06_bounded_support_demand_unit_tests PRIVATE /W4 /WX)
 endif()
+
+add_executable(stage16c06_scene_layer_barrier_unit_tests
+    tests/stage16/SceneLayerBarrierTests.cpp
+)
+
+target_link_libraries(stage16c06_scene_layer_barrier_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_scene_layer_barrier_unit_tests PRIVATE /W4 /WX)
+endif()
+
+add_test(NAME stage16c06_scene_layer_barrier_unit_tests COMMAND stage16c06_scene_layer_barrier_unit_tests)
 
 add_executable(stage16c06_bounded_relief_support_plan_unit_tests
     tests/stage16/BoundedReliefSupportPlanTests.cpp
