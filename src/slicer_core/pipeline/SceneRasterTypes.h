@@ -138,6 +138,19 @@ struct SceneLayerComposeRequest
     std::function<void(int, RgbwsvProductionLayer&&, const RgbwsvProductionLayerStatistics&)>
         layersink;
 
+    /**
+     * @brief MF-05 步骤 2b：逐层入口。非空时按 (实例, 本地层号) 现取层，
+     *        `instances` 里的 `layers` 允许为空。
+     *
+     * 返回空指针表示该实例在该层没有内容（层数不齐时的正常情形）。
+     * 设置本回调后，实例校验由「先整实例走一遍层」改为「逐层校验」：
+     * `ValidateLayer` 的调用点移进合成的层循环，层数齐备改为在循环结束时
+     * 断言【已校验层数 == layercount】，`instanceStatistics` 逐层累积、收尾后移。
+     * 语义不降级 —— 每层仍走同一个 `ValidateLayer`，只是时机不同。
+     */
+    std::function<const SceneInstanceRasterLayer*(const SceneInstanceRaster&, int)>
+        layerprovider;
+
     /** @brief Synchronous, non-owning cancellation source for long loops. */
     const api::ICancelToken* canceltoken{nullptr};
 };

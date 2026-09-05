@@ -594,7 +594,10 @@ bool ValidateInstance(
     InstancePlacement& placement,
     SceneInstanceComposeStatistics& instanceStatistics,
     std::vector<RgbwsvProductionLayerStatistics>* layerStatistics = nullptr,
-    SceneLayerComposeStatistics* sceneStatistics = nullptr)
+    SceneLayerComposeStatistics* sceneStatistics = nullptr,
+    // MF-05：流式模式下 instance.layers 为空，层数齐备与逐层校验都移到
+    // 合成的层循环里做，本函数只做身份校验与统计初始化。
+    const bool streaming = false)
 {
     if (instance.sceneid != request.sceneid
         || instance.modelid.empty()
@@ -744,8 +747,9 @@ bool ValidateInstance(
     std::size_t pixelCount{0U};
     std::size_t byteCount{0U};
     if (!ComputeLayerSizes(instance.localgrid, pixelCount, byteCount)
-        || instance.layers.size()
-            != static_cast<std::size_t>(instance.localgrid.layercount))
+        || (!streaming
+            && instance.layers.size()
+                != static_cast<std::size_t>(instance.localgrid.layercount)))
     {
         Block(
             result,
@@ -761,6 +765,12 @@ bool ValidateInstance(
     instanceStatistics.raster.minimumx = instance.localgrid.widthpx;
     instanceStatistics.raster.minimumy = instance.localgrid.heightpx;
     instanceStatistics.raster.minimumlayer = instance.localgrid.layercount;
+    if (streaming)
+    {
+        // 逐层校验与统计收尾都在合成层循环中完成，此处只交出 placement。
+        placement.instance = &instance;
+        return true;
+    }
     for (int layerIndex{0};
          layerIndex < instance.localgrid.layercount;
          ++layerIndex)
@@ -1025,6 +1035,9 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
         return result;
     }
 
+    // MF-05：设置 layerprovider 即进入流式合成 —— 实例侧不再持有整栈，
+    // 逐层校验与统计累积改在下方层循环内完成。
+    const bool composeStreaming = static_cast<bool>(request.layerprovider);
     std::vector<InstancePlacement> placements;
     placements.reserve(instances.size());
     std::unordered_set<std::string> knownInstanceIds;
@@ -1049,7 +1062,10 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
                 knownInstanceIds,
                 result,
                 placement,
-                instanceStatistics))
+                instanceStatistics,
+                nullptr,
+                nullptr,
+                composeStreaming))
         {
             result.composems = std::chrono::duration<double, std::milli>(
                 std::chrono::steady_clock::now() - start).count();
@@ -1080,6 +1096,8 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
     }
     result.layerstatistics.reserve(
         static_cast<std::size_t>(request.globalgrid.layercount));
+    // 流式模式下「层数齐备」由这里累计、循环结束后断言，替代原先的前置检查。
+    std::vector<int> validatedLayerCounts(placements.size(), 0);
     std::vector<SceneRasterOwnership> ownership(
         globalPixelCount,
         SceneRasterOwnership::Empty);
@@ -1125,9 +1143,44 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
             {
                 continue;
             }
-            const SceneInstanceRasterLayer& sourceLayer =
-                placement.instance->layers.at(
+            const SceneInstanceRasterLayer* sourceLayerPointer =
+                composeStreaming
+                ? request.layerprovider(*placement.instance, localLayerIndex)
+                : &placement.instance->layers.at(
                     static_cast<std::size_t>(localLayerIndex));
+            if (sourceLayerPointer == nullptr)
+            {
+                // 该实例在本层没有内容（层数不齐时的正常情形）。
+                continue;
+            }
+            const SceneInstanceRasterLayer& sourceLayer = *sourceLayerPointer;
+            if (composeStreaming)
+            {
+                // 与 retained 同一个 ValidateLayer，只是时机由「先整实例走一遍」
+                // 改为「到本层时校验本层」，故校验强度不降级。
+                std::size_t streamPixelCount{0U};
+                std::size_t streamByteCount{0U};
+                if (!ComputeLayerSizes(
+                        placement.instance->localgrid,
+                        streamPixelCount,
+                        streamByteCount)
+                    || !ValidateLayer(
+                        request,
+                        *placement.instance,
+                        sourceLayer,
+                        localLayerIndex,
+                        streamPixelCount,
+                        streamByteCount,
+                        result,
+                        result.statistics.instances.at(
+                            placement.statisticsindex),
+                        nullptr,
+                        nullptr))
+                {
+                    return result;
+                }
+                ++validatedLayerCounts.at(placement.statisticsindex);
+            }
             const int localWidth = placement.instance->localgrid.widthpx;
             const int localHeight = placement.instance->localgrid.heightpx;
             for (int y{0}; y < localHeight; ++y)
@@ -1263,6 +1316,49 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
                 request, result, "composition.layer_complete", globalLayerIndex))
         {
             return result;
+        }
+    }
+
+    if (composeStreaming)
+    {
+        // retained 路径在 ValidateInstance 里做这两件事；流式下推迟到此处，
+        // 语义一致：层数必须齐备，emptypixels 由已校验层数推出。
+        for (const InstancePlacement& placement : placements)
+        {
+            SceneInstanceComposeStatistics& instanceStatistics =
+                result.statistics.instances.at(placement.statisticsindex);
+            const int expectedLayers =
+                placement.instance->localgrid.layercount;
+            if (validatedLayerCounts.at(placement.statisticsindex)
+                != expectedLayers)
+            {
+                Block(
+                    result,
+                    SceneRasterErrorCode::LayerSequenceMismatch,
+                    request,
+                    "instances.layers",
+                    "visible instance requires exactly one layer for every local layer index",
+                    placement.instance);
+                return result;
+            }
+            std::size_t streamPixelCount{0U};
+            std::size_t streamByteCount{0U};
+            if (!ComputeLayerSizes(
+                    placement.instance->localgrid,
+                    streamPixelCount,
+                    streamByteCount))
+            {
+                return result;
+            }
+            const std::uint64_t sampleCount =
+                static_cast<std::uint64_t>(streamPixelCount)
+                * static_cast<std::uint64_t>(expectedLayers);
+            for (std::size_t channel{0U}; channel < kChannelCount; ++channel)
+            {
+                instanceStatistics.raster.emptypixels[channel] =
+                    sampleCount - instanceStatistics.raster.printpixels[channel];
+            }
+            instanceStatistics.raster.available = true;
         }
     }
 
