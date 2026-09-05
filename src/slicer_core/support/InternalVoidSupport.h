@@ -42,11 +42,37 @@ inline void set_support_pixel(
  * `internal_void.enabled` 默认为 **true**，漏调本函数会把本应 InternalVoid 的
  * 像素误标成 BottomProjection —— 这正是 X2a 首次接线时 r01 漂移的原因。
  */
+/**
+ * @brief 跨层复用的洪泛暂存。
+ *
+ * 原实现每层新建两个 `pixelCount` 字节的缓冲，10um 大幅面场景下等于每层触碰
+ * 约 22 MB 新页 —— 实测这才是该函数的主要开销（剪枝后仍占 143 ms/层）。
+ * 复用后配合 activeColumns，每层只需重置表内的列。
+ *
+ * 由调用方持有；首次使用时按幅面初始化，之后只增量重置。
+ */
+struct InternalVoidScratch
+{
+    std::vector<std::uint8_t> externalEmpty;
+    std::vector<std::uint8_t> visited;
+    std::vector<int> stack;
+    bool initialized{false};
+};
+
+/**
+ * @param activeColumns 非空时只在这些列内洪泛与找分量，其余列直接视为外部空白。
+ *        调用方须保证表外的列在【任何层】都无模型且能连到幅面边界
+ *        （`BuildBoundedActiveColumns` 正是按此判据求出）。这是精确等价的剪枝：
+ *        表外的列在本层同样为空，原实现的洪泛必然也会把它们标成外部。
+ *        实测 a-2/0.2.obj 只有 2.53% 的列在表内，其余 97.47% 无需逐层重算。
+ */
 void AddInternalVoidSupportForLayer(
     const SliceConfig& config,
     const GridSpec& grid,
     const std::vector<std::uint8_t>& modelMask,
     std::vector<std::uint8_t>& supportMask,
-    std::vector<SupportType>& supportTypeMap);
+    std::vector<SupportType>& supportTypeMap,
+    const std::vector<std::uint32_t>* activeColumns = nullptr,
+    InternalVoidScratch* scratch = nullptr);
 
 }  // namespace slicer_core

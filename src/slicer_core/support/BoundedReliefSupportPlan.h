@@ -59,14 +59,45 @@ struct BoundedReliefSupportEligibility
     const SliceConfig& config);
 
 /**
+ * @brief 求出 compose 稀疏遍历的活动列表。
+ *
+ * compose_layer 的分支链是 `if (model) … else if (outer_varnish) … else if (support)`，
+ * **没有末尾 else**，故三者皆零的列不写任何字节、保持预填的 background。
+ * 因此只要活动列表覆盖三者的并集，稀疏遍历就是精确等价。
+ *
+ * 直接取「有模型的列」并**不够**：`AddInternalVoidSupportForLayer` 会给面内被模型
+ * 围住的空腔写支撑，而环形件孔心那类列在【所有层】都没有模型。
+ *
+ * 判据：无模型的列若能经由其他无模型列连到幅面边界，则它在任何一层都是外部空白
+ * ——那些列在该层同样为空，洪泛必然经它们抵达。故这类列可以安全排除，其余全部保留。
+ * 用 4 邻接求连通是保守方向：若空腔洪泛用 8 邻接，只会让更多列被判为外部，
+ * 而本函数少判外部只会让活动表偏大，不会漏列。
+ *
+ * @param spans 逐列闭区间。
+ * @param widthPx 幅面宽。
+ * @param heightPx 幅面高。
+ * @return 升序排列的活动列下标。
+ */
+[[nodiscard]] std::vector<std::uint32_t> BuildBoundedActiveColumns(
+    const std::vector<BoundedReliefColumnSpan>& spans,
+    int widthPx,
+    int heightPx);
+
+/**
  * @brief 按列区间物化【单层】model mask。缓冲由调用方持有并跨层复用。
  *
  * 尺寸不符即抛异常而非静默截断。
  */
+/**
+ * @param activeColumns 非空时只重置并只写这些列。表外的列在任何层都无模型，
+ *        故调用方跨层复用的缓冲里它们恒为 0，无需每层重填整幅面
+ *        —— 这是按幅面计的固定开销，与模型占多少列无关。
+ */
 void MaterializeReliefModelLayer(
     const std::vector<BoundedReliefColumnSpan>& spans,
     int layerIndex,
-    std::vector<std::uint8_t>& outModelMask);
+    std::vector<std::uint8_t>& outModelMask,
+    const std::vector<std::uint32_t>* activeColumns = nullptr);
 
 /**
  * @brief 按 bottom projection 语义物化【单层】support mask 与 type map。
@@ -88,6 +119,7 @@ void MaterializeBottomProjectionSupportLayer(
     bool supportEnabled,
     int layerIndex,
     std::vector<std::uint8_t>& outSupportMask,
-    std::vector<SupportType>& outSupportTypeMap);
+    std::vector<SupportType>& outSupportTypeMap,
+    const std::vector<std::uint32_t>* activeColumns = nullptr);
 
 }  // namespace slicer_core

@@ -12,6 +12,7 @@ namespace
 {
 
 using slicer_core::BoundedReliefColumnSpan;
+using slicer_core::BuildBoundedActiveColumns;
 using slicer_core::EvaluateBoundedReliefSupportPath;
 using slicer_core::MaterializeBottomProjectionSupportLayer;
 using slicer_core::MaterializeReliefModelLayer;
@@ -313,6 +314,66 @@ bool BruteForceMatchesRetainedReference()
 
 }  // namespace
 
+/**
+ * @brief 活动列表必须包含【面内被围住】的空列。
+ *
+ * MF-03X3 首版把活动列表取成「有模型的列」，结果 r01 二十层各差一字节 ——
+ * 环形件孔心那类列在【所有层】都没有模型，却要写内部空腔支撑。
+ * 本用例用一个 7x7 的环把该场景固化下来：孔心必须在表内，环外必须在表外。
+ */
+bool ActiveColumnsKeepEnclosedHoles()
+{
+    constexpr int width{7};
+    constexpr int height{7};
+    std::vector<BoundedReliefColumnSpan> spans(
+        static_cast<std::size_t>(width) * height);
+    // 在 (2,2)-(4,4) 画一个环：外圈有模型，正中 (3,3) 是孔。
+    for (int y{2}; y <= 4; ++y)
+    {
+        for (int x{2}; x <= 4; ++x)
+        {
+            if (x == 3 && y == 3)
+            {
+                continue;
+            }
+            spans.at(static_cast<std::size_t>(y) * width + x) = {true, 0, 3};
+        }
+    }
+    const std::vector<std::uint32_t> active =
+        BuildBoundedActiveColumns(spans, width, height);
+    const auto contains = [&active](const int x, const int y) {
+        const auto wanted = static_cast<std::uint32_t>(y * width + x);
+        for (const std::uint32_t column : active)
+        {
+            if (column == wanted)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    bool passed{true};
+    passed = ExpectTrue(contains(3, 3), "active columns keep the enclosed hole") && passed;
+    passed = ExpectTrue(contains(2, 2), "active columns keep model columns") && passed;
+    passed = ExpectTrue(!contains(0, 0), "active columns drop the border") && passed;
+    passed = ExpectTrue(!contains(6, 6), "active columns drop the far corner") && passed;
+    passed = ExpectTrue(
+        active.size() == 9U,
+        "active columns are exactly the ring plus its hole") && passed;
+    // 尺寸不符必须抛异常而非静默算错。
+    bool threw{false};
+    try
+    {
+        (void)BuildBoundedActiveColumns(spans, width, height + 1);
+    }
+    catch (const std::exception&)
+    {
+        threw = true;
+    }
+    return ExpectTrue(threw, "active columns reject a mismatched grid") && passed;
+}
+
 int main()
 {
     bool passed{true};
@@ -320,6 +381,7 @@ int main()
     passed = ModelLayerReproducesClosedInterval() && passed;
     passed = SupportLayerFollowsBottomProjectionPredicate() && passed;
     passed = BruteForceMatchesRetainedReference() && passed;
+    passed = ActiveColumnsKeepEnclosedHoles() && passed;
     if (passed)
     {
         std::cout << "PASS MF-03X2a bounded relief support plan tests\n";

@@ -88,10 +88,76 @@ BoundedReliefSupportEligibility EvaluateBoundedReliefSupportPath(
     return result;
 }
 
+std::vector<std::uint32_t> BuildBoundedActiveColumns(
+    const std::vector<BoundedReliefColumnSpan>& spans,
+    const int widthPx,
+    const int heightPx)
+{
+    const std::size_t columnCount =
+        static_cast<std::size_t>(widthPx) * static_cast<std::size_t>(heightPx);
+    if (widthPx <= 0 || heightPx <= 0 || spans.size() != columnCount)
+    {
+        throw std::runtime_error(
+            "BuildBoundedActiveColumns received spans that do not match the grid");
+    }
+
+    const auto neverHasModel = [&spans](const std::size_t index) {
+        const BoundedReliefColumnSpan& span = spans[index];
+        return !span.hasModel || span.lowerLayer < 0;
+    };
+
+    // 从幅面边界出发，在【所有层都无模型】的列上做 4 邻接洪泛。
+    std::vector<std::uint8_t> alwaysExternal(columnCount, 0U);
+    std::vector<std::uint32_t> stack;
+    const auto push = [&](const int x, const int y) {
+        const std::size_t index =
+            static_cast<std::size_t>(y) * static_cast<std::size_t>(widthPx)
+            + static_cast<std::size_t>(x);
+        if (alwaysExternal[index] != 0U || !neverHasModel(index))
+        {
+            return;
+        }
+        alwaysExternal[index] = 1U;
+        stack.push_back(static_cast<std::uint32_t>(index));
+    };
+    for (int x{0}; x < widthPx; ++x)
+    {
+        push(x, 0);
+        push(x, heightPx - 1);
+    }
+    for (int y{0}; y < heightPx; ++y)
+    {
+        push(0, y);
+        push(widthPx - 1, y);
+    }
+    while (!stack.empty())
+    {
+        const std::size_t index = stack.back();
+        stack.pop_back();
+        const int x = static_cast<int>(index % static_cast<std::size_t>(widthPx));
+        const int y = static_cast<int>(index / static_cast<std::size_t>(widthPx));
+        if (x > 0) { push(x - 1, y); }
+        if (x + 1 < widthPx) { push(x + 1, y); }
+        if (y > 0) { push(x, y - 1); }
+        if (y + 1 < heightPx) { push(x, y + 1); }
+    }
+
+    std::vector<std::uint32_t> active;
+    for (std::size_t index{0}; index < columnCount; ++index)
+    {
+        if (alwaysExternal[index] == 0U)
+        {
+            active.push_back(static_cast<std::uint32_t>(index));
+        }
+    }
+    return active;
+}
+
 void MaterializeReliefModelLayer(
     const std::vector<BoundedReliefColumnSpan>& spans,
     const int layerIndex,
-    std::vector<std::uint8_t>& outModelMask)
+    std::vector<std::uint8_t>& outModelMask,
+    const std::vector<std::uint32_t>* activeColumns)
 {
     if (outModelMask.size() != spans.size())
     {
@@ -99,9 +165,21 @@ void MaterializeReliefModelLayer(
             "MaterializeReliefModelLayer received a mask buffer whose size does not"
             " match the column span count");
     }
-    std::fill(outModelMask.begin(), outModelMask.end(), static_cast<std::uint8_t>(0));
-    for (std::size_t index{0}; index < spans.size(); ++index)
+    if (activeColumns == nullptr)
     {
+        std::fill(outModelMask.begin(), outModelMask.end(), static_cast<std::uint8_t>(0));
+    }
+    const std::size_t iterationCount =
+        activeColumns != nullptr ? activeColumns->size() : spans.size();
+    for (std::size_t iteration{0}; iteration < iterationCount; ++iteration)
+    {
+        const std::size_t index = activeColumns != nullptr
+            ? static_cast<std::size_t>(activeColumns->at(iteration))
+            : iteration;
+        if (activeColumns != nullptr)
+        {
+            outModelMask.at(index) = 0;
+        }
         const BoundedReliefColumnSpan& span = spans.at(index);
         if (!span.hasModel || span.lowerLayer < 0)
         {
@@ -120,7 +198,8 @@ void MaterializeBottomProjectionSupportLayer(
     const bool supportEnabled,
     const int layerIndex,
     std::vector<std::uint8_t>& outSupportMask,
-    std::vector<SupportType>& outSupportTypeMap)
+    std::vector<SupportType>& outSupportTypeMap,
+    const std::vector<std::uint32_t>* activeColumns)
 {
     if (outSupportMask.size() != modelMask.size()
         || outSupportTypeMap.size() != modelMask.size()
@@ -130,14 +209,30 @@ void MaterializeBottomProjectionSupportLayer(
             "MaterializeBottomProjectionSupportLayer received buffers whose sizes do"
             " not agree");
     }
-    std::fill(outSupportMask.begin(), outSupportMask.end(), static_cast<std::uint8_t>(0));
-    std::fill(outSupportTypeMap.begin(), outSupportTypeMap.end(), SupportType::None);
+    const std::size_t iterationCount =
+        activeColumns != nullptr ? activeColumns->size() : modelMask.size();
+    if (activeColumns == nullptr)
+    {
+        std::fill(outSupportMask.begin(), outSupportMask.end(), static_cast<std::uint8_t>(0));
+        std::fill(outSupportTypeMap.begin(), outSupportTypeMap.end(), SupportType::None);
+    }
+    else
+    {
+        for (const std::uint32_t column : *activeColumns)
+        {
+            outSupportMask.at(column) = 0;
+            outSupportTypeMap.at(column) = SupportType::None;
+        }
+    }
     if (!supportEnabled)
     {
         return;
     }
-    for (std::size_t index{0}; index < modelMask.size(); ++index)
+    for (std::size_t iteration{0}; iteration < iterationCount; ++iteration)
     {
+        const std::size_t index = activeColumns != nullptr
+            ? static_cast<std::size_t>(activeColumns->at(iteration))
+            : iteration;
         if (layerIndex >= supportSourceLayers.at(index))
         {
             continue;

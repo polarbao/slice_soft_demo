@@ -468,6 +468,8 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/support/BoundedReliefSupportPlan.h
     src/slicer_core/support/InternalVoidSupport.cpp
     src/slicer_core/support/InternalVoidSupport.h
+    src/slicer_core/support/SupportConnectivityAnalysis.cpp
+    src/slicer_core/support/SupportConnectivityAnalysis.h
     src/slicer_core/support/SupportBaseProjection.cpp
     src/slicer_core/support/SupportBaseProjection.h
     src/slicer_core/support/SupportPolicy.cpp
