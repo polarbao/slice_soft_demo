@@ -22,6 +22,18 @@ struct MultiModelLayerComposeRequest
     std::vector<SceneInstanceRaster> instances;
     double quantizationtolerance{1.0e-6};
 
+    /**
+     * @brief MF-05：逐层出入口，原样透传给 SceneLayerComposeRequest。
+     *
+     * 两者同时设置即进入流式合成：`instances` 里的 layers 允许为空、由 provider
+     * 现取，合成结果也不再累积 layers、每层经 sink 交出。语义见
+     * `SceneRasterTypes.h` 中同名字段的注释。
+     */
+    std::function<const SceneInstanceRasterLayer*(const SceneInstanceRaster&, int)>
+        layerprovider;
+    std::function<void(int, RgbwsvProductionLayer&&, const RgbwsvProductionLayerStatistics&)>
+        layersink;
+
     /** @brief Synchronous, non-owning cancellation source for composition. */
     const api::ICancelToken* canceltoken{nullptr};
 };

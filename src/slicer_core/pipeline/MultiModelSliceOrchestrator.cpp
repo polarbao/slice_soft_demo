@@ -393,6 +393,8 @@ SceneLayerComposeResult ComposeAdmittedSceneRastersImpl(
     compose.quantizationtolerance =
         request.quantizationtolerance;
     compose.canceltoken = request.canceltoken;
+    compose.layerprovider = request.layerprovider;
+    compose.layersink = request.layersink;
     if constexpr (Consume)
     {
         return internal::ComposeSceneLayersConsuming(
