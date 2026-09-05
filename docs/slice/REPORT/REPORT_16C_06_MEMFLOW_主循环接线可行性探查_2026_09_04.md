@@ -1,7 +1,7 @@
 # REPORT_16C_06_MEMFLOW 主循环接线可行性探查（2026-09-04）
 
 > 文档状态：**MF-03X2a 已接线（单模型 CLI 峰值 22~34 GB -> 1.14 GiB）／双模型另有更大根因，见 §5.6**
-> 版本：v1.7 ｜ 日期：2026-09-05
+> 版本：v1.8 ｜ 日期：2026-09-05
 > 定位：为解除真实生产阻塞（10um 层厚 111.4 亿 pixel-layer）而探查有界能力接入主循环的可行性。
 > 上游：`REPORT_16C_06_MEMFLOW_替代基线资产与调查结论_2026_09_03.md`（阻塞场景实测）
 > 授权：用户 2026-09-04 授予本专项最高决策权
@@ -559,6 +559,73 @@ analyze_support_connectivity 每层新建 w*h 的 visited（已下沉为独立 T
 
 ---
 
+## 5.8 修正 §5.6：场景路径是【三份】整栈，且合成侧受校验契约约束
+
+§5.6 只算了每实例栅格，**低估了**。实施 MF-05 前逐段读代码，完整的驻留链是：
+
+```text
+1  N 份 每实例 SceneInstanceRaster      10 B/列/层  x N
+   （6 通道 + 4 张归属 mask，LegacySceneLayerAdapter 逐层 push_back 不释放）
+
+2  1 份 SceneLayerComposeResult.layers   6 B/列/层  （global 幅面）
+   MultiModelProductionService.cpp:975
+     composeRequest.instances = std::move(rasters);
+     composition = ComposeAdmittedSceneRastersValidated(std::move(composeRequest));
+   两者在合成期间【同时驻留】
+
+用户 0.2+0.3 @10um
+  每实例 103.7 GiB x 2 = 207.4 GiB
+  合成结果            ≈  62.2 GiB
+  合计               ≈ 269.6 GiB   （物理内存 31.6 GB）
+```
+
+### 5.8.1 「Consuming」不等于边合成边释放
+
+`ComposeSceneLayersConsuming` 实为 `ComposeSingleInstanceConsuming` 的转发，
+仅覆盖**单实例快路径**；多实例仍走 `ComposeSceneLayersBorrowed`，
+借用而不释放。故多实例场景下第 1 份不会随合成推进而缩小。
+
+### 5.8.2 合成侧流式化受【类型不变量】阻挡
+
+```cpp
+// SceneLayerComposer.cpp:1427  ValidatedSceneLayerComposeResult 构造
+m_validated(
+    m_result.available && m_result.status == "ready_for_writer"
+    && !m_result.error.has_value() && m_result.grid.IsValid()
+    && m_result.layers.size() == static_cast<std::size_t>(m_result.grid.layercount)
+    && m_result.layerstatistics.size() == m_result.layers.size())
+```
+
+「**全部层同时在场**」是写进该类型的不变量，不是实现细节 —— 它存在的目的正是
+让下游 report/package 阶段复用合成器的闭合证据，而不必重扫每个 RGBWSV 字节
+（见 `SceneLayerComposer.h` 的类注释）。
+
+**故合成侧流式化必须先把该证据契约由「一次性全量」改为「逐层累积」**，
+否则要么破坏不变量、要么让下游退回全量重扫（那会把省下的内存换成一次全量扫描）。
+
+### 5.8.3 对 MF-05 范围与工期的修正
+
+```text
+原估   实例侧加层屏障即可，峰值 -> 约 132 MB
+修正   必须三处一起流式，且第 3 处要改类型不变量：
+       a 实例侧   ownedlayercallback 存单层槽 + 层屏障      （步骤 1 已完成）
+       b 合成侧   逐层合成、合成即写出、不累积 layers
+       c 证据侧   ValidatedSceneLayerComposeResult 的闭合证据改为逐层累积，
+                  使「已验证」不再等价于「全部层在内存里」
+```
+
+**这是一次触及既有架构不变量的改动，不是接线量级。** 分步与验收见任务清单
+MF-05；在其落地前，用户可用「两个模型分两次作业」规避（单模型路径已达
+1.18 GiB / 10.7 分钟）。
+
+### 5.8.4 为什么不先做半截
+
+只修 a（实例侧）后峰值仍有约 62.2 GiB（合成结果），**依旧超物理内存**，
+用户的双模型场景不会因此可用。故 a/b/c 必须一起交付才有意义，
+不宜为了看得见进度而先合入半截。
+
+---
+
 ## 6. 风险与未决
 
 1. **B2 时序等价是最大风险。** 悬空岛的「先全层 preliminary、再顺序发现并回写」时序
@@ -597,6 +664,7 @@ analyze_support_connectivity 每层新建 w*h 的 visited（已下沉为独立 T
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-05 | v1.8 | 新增 §5.8，**修正 §5.6 的低估**。实施 MF-05 前逐段读代码，确认场景路径是三份整栈而非一份：N 份每实例栅格（10 B/列/层）+ 一份合成结果（6 B/列/层），两者在合成期间同时驻留，用户双模型 10um 合计约 269.6 GiB。另确认 `ComposeSceneLayersConsuming` 只覆盖单实例快路径，多实例仍走 Borrowed 不释放。最关键的修正：合成侧流式化受**类型不变量**阻挡 —— `ValidatedSceneLayerComposeResult` 的构造要求 `layers.size() == grid.layercount`，「全部层同时在场」是该类型存在的证据契约（让下游免于重扫每字节），故必须先把它改为逐层累积。据此把 MF-05 范围由「实例侧加屏障」修正为「实例侧 + 合成侧 + 证据侧三处一起」，并说明为何不宜先合入半截（只修实例侧仍有 62.2 GiB，依旧超物理内存）。 |
 | 2026-09-05 | v1.7 | 新增 §5.7：应用户要求处理切片耗时。先插子计时器测出热点（compose 55.9%、内部空腔 32.5%），再据 `relief_report` 实测确认根因是「为占 2.53% 列的稀疏模型做满幅面扫描」，且包围盒剔除无效（bbox 就是整幅面）。给出精确等价的列集合剪枝判据（compose 的 else 链无末尾 else；活动表须含面内被围空腔列，故按「无模型且能连到边界」排除而非按「有模型」保留）。三处改动使 a-2@0.1mm 的 layerComputeMs 由 101,014 降至 46,726（-53.7%），三判据逐字节全等。记录一处反直觉发现：只做剪枝而不复用缓冲，内部空腔耗时几乎不降 —— 按幅面计的固定开销与按占用计的工作量是两笔账。并明确列出仍未处理的三处按幅面开销及未做原因。 |
 | 2026-09-05 | v1.6 | 新增 §5.6：回头验证用户第二个诉求（双模型内存不足）时发现**该失败与三个 mask 栈无关**。场景路径 `MultiModelProductionService` 把全部实例的全部层留到最后一起合成，单实例 raster 每层持有 6 通道 + 4 张归属 mask = 每列每层 10 B，用户场景下 **103.7 GiB/实例**，比 X2a 修好的 31.11 GiB 还大一个量级且按实例线性叠加。根因是 `LegacySceneLayerAdapter` 的 `ownedlayercallback` 逐层 `push_back` 不释放，使 MF-02「消费即释放」合同收益归零。合成本身只需各实例的同一层，障碍是 instance-major 切片与 layer-major 合成的错位，建议走 MF-05 Barrier。同时修正 §2：「MF-04 内存收益不成立」只对 CLI 单模型路径成立，对场景路径不成立。 |
 | 2026-09-04 | v1.5 | 新增 §5.5：MF-03X2a 实施与验证。三个整栈（`model_masks`/`support_masks`/`support_type_maps`）改按列区间推导 + 按层物化，采样阶段一并跳过 10.37 GB 分配。四判据逐字节全等（tm2-5/yz 同时与主仓 P1 基线相同）、单元测试含对 retained 参考实现的 40 组暴力等价比对。**解除用户阻塞实测：`a-2/0.2.obj` @10um 峰值由 22~34 GB 降至 1.14 GiB（约 -95%），序幕由 277,200 ms 降至 642 ms，完整跑完 1,429 层用 18.9 分钟；retained 那次中止运行留下的前 457 层与 bounded 逐字节 457/457 一致。** 记录一次真实漏项（`AddInternalVoidSupportForLayer` 无条件逐层块被漏，`internal_void.enabled` 默认 true，导致 r01 二十层各差一字节）及其教训：按条件分支枚举会漏掉无条件语句。并诚实界定收益：内存是实质改变，时间仅略优，进一步压时间需另立性能任务。 |

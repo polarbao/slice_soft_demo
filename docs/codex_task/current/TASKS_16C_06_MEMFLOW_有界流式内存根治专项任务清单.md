@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
-> 版本：v2.7 ｜ 日期：2026-09-05
+> 版本：v2.8 ｜ 日期：2026-09-05
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -427,13 +427,42 @@ fail closed  重叠/冲突/stale/层缺失沿用既有 admission 判据，不因
           缺层的实例在该层贡献空槽而非阻塞
 ```
 
-### 9.4 分步与验收
+### 9.4 范围修正（2026-09-05，实施前逐段读代码后）
+
+§9.1 只算了每实例栅格，**低估了**。完整驻留链是三份整栈，且合成期间同时在场：
 
 ```text
-步骤 1  抽出 SceneLayerBarrier（纯同步原语 + 单元测试：确定性/取消/异常/不齐层）
+N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
+1 份 SceneLayerComposeResult      6 B/列/层        ->        62.2 GiB
+                                                   合计 ≈ 269.6 GiB
+```
+
+`ComposeSceneLayersConsuming` 只覆盖**单实例快路径**（实为
+`ComposeSingleInstanceConsuming` 的转发），多实例仍走 Borrowed，借用不释放。
+
+**最关键的约束：合成侧流式化受类型不变量阻挡。**
+`ValidatedSceneLayerComposeResult` 的构造要求
+`layers.size() == grid.layercount` —— 「全部层同时在场」是该类型的**证据契约**，
+存在目的是让下游 report/package 免于重扫每个 RGBWSV 字节。
+故必须先把该证据由「一次性全量」改为「逐层累积」，否则要么破坏不变量，
+要么让下游退回全量重扫（把省下的内存换成一次全量扫描）。
+
+**这是触及既有架构不变量的改动，不是接线量级。**
+
+### 9.5 分步与验收
+
+```text
+步骤 1  SceneLayerBarrier 纯同步原语 + 并发单测          COMPLETE 94fafd8
 步骤 2  LegacySceneLayerAdapter 的 ownedlayercallback 改为存单层槽并等屏障
-步骤 3  MultiModelProductionService 改 layer-major 合成，逐层写出即释放
-步骤 4  实测用户双模型 0.2 + 0.3 @10um
+步骤 3  合成侧改逐层合成、合成即写出、不累积 layers
+步骤 4  ValidatedSceneLayerComposeResult 的闭合证据改为逐层累积，
+        使「已验证」不再等价于「全部层在内存里」
+步骤 5  实测用户双模型 0.2 + 0.3 @10um
+```
+
+**不宜先合入半截：** 只做步骤 2 后峰值仍有约 62.2 GiB（合成结果），
+依旧超物理内存 31.6 GB，用户场景不会因此可用。
+步骤 2/3/4 必须一起交付才产生实际收益。
 
 验收   单实例场景输出与现状逐字节全等（先用单实例跑通屏障，N=1 退化为直通）
        双实例 0.2+0.3 @10um 不再内存不足，peakWorkingSet 百 MB 级
@@ -441,7 +470,7 @@ fail closed  重叠/冲突/stale/层缺失沿用既有 admission 判据，不因
        既有 scene 相关回归不新增失败
 ```
 
-### 9.5 用户当前可用的规避
+### 9.6 用户当前可用的规避
 
 单模型路径已可用：`0.2.obj` 与 `0.3.obj` **分两次作业**各自切片，
 每次峰值 1.18 GiB、耗时 10.7 分钟，合计约 21 分钟即可拿到两份包。
