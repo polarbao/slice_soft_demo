@@ -67,10 +67,9 @@ void ValidateScenePackageRequest(
 
 }  // namespace
 
-RgbwsvProductionPackageWriteResult
-WriteMultiModelSceneProductionPackage(
-    RgbwsvProductionPackageWriteRequest request,
-    SceneLayerComposeResult composition,
+void PrepareMultiModelScenePackageRequest(
+    RgbwsvProductionPackageWriteRequest& request,
+    const SceneLayerComposeResult& composition,
     const MultiModelScene& scene,
     const SceneCollisionResult& admission,
     const std::vector<SceneInstanceRaster>& instanceRasters,
@@ -105,6 +104,26 @@ WriteMultiModelSceneProductionPackage(
         request.perinstance = capabilitySummary->perinstance;
         request.profileecho = capabilitySummary->profileecho;
     }
+}
+
+RgbwsvProductionPackageWriteResult
+WriteMultiModelSceneProductionPackage(
+    RgbwsvProductionPackageWriteRequest request,
+    SceneLayerComposeResult composition,
+    const MultiModelScene& scene,
+    const SceneCollisionResult& admission,
+    const std::vector<SceneInstanceRaster>& instanceRasters,
+    const std::filesystem::path& profileConfigPath)
+{
+    // MF-05：补齐与写出拆开，使流式路径可以「先建会话逐层写、最后补齐再发布」。
+    // 本入口保持原语义不变：补齐后把整栈交给写入器。
+    PrepareMultiModelScenePackageRequest(
+        request,
+        composition,
+        scene,
+        admission,
+        instanceRasters,
+        profileConfigPath);
     request.layers = std::move(composition.layers);
     return WriteRgbwsvProductionPackage(request);
 }

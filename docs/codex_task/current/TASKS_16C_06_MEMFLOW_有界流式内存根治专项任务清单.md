@@ -494,6 +494,37 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 **两条独立路径（读代码估算、跑基准外推）得到同一数量级，故根因判断可采信。**
 修好后的判据：同样四组的峰值应与层数**无关**（只随实例数与列数变化）。
 
+### 9.5.5 步骤 4 第二步（写入侧流式）的形状
+
+第一步（实例侧流式）已合入 `853bf14`：单实例斜率 73.7 -> 44.2 MB/层。
+剩余斜率来自合成结果累积（6 B/列/层），需让写入也逐层。
+
+**已就位：** 写入会话 `46fedc2`、合成逐层出口 `c6e88aa`、
+补齐与写出分离（本次）。
+
+**时序难点与解法：** `PrepareMultiModelScenePackageRequest` 依赖 composition，
+而会话必须在合成【之前】建立（layersink 要用它）。解法是利用会话持有 request
+引用的特性 —— Begin 只用发布身份（packageDir/jobId/attemptId/preview），
+合成后再补齐 grid/scene/能力摘要，Finish 时可见。
+
+**第四处整栈假设（本次发现）：** `BuildSceneCapabilitySummary` 会遍历
+`raster.layers` 统计每实例的 printPixels 与 min/max x/y/layer，流式下骨架为空。
+这次不是校验而是**实质计算**，本以为要新造逐层统计。
+
+**但不必新造：** `SceneInstanceComposeStatistics::RasterStatistics` 的字段
+（`printpixels`/`emptypixels`/`minimumx|y|layer`/`maximumx|y|layer`/`grid`）
+**完全覆盖**能力摘要所需，而合成侧的 `ValidateLayer` 在流式下已经逐层累积它们
+（步骤 2b 的改动）。故只需让能力摘要在 `raster.layers` 为空时改用
+`composition.statistics.instances` 里对应实例的统计。
+
+**剩余清单：**
+
+```text
+1  BuildSceneCapabilitySummary 支持从合成统计取数（raster.layers 为空时）
+2  服务：合成前建会话、layersink 里 AppendLayer、合成后 Prepare + Finish
+3  验收：验证台四组峰值与层数【脱钩】；回归不新增失败
+```
+
 ### 9.5.4 步骤 4：编排层的最终设计（三块前置已全部就位）
 
 实例侧（2a）、合成侧（2b）、写入器侧（4b）均已合入且行为中性，

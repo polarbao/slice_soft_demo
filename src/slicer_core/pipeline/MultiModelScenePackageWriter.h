@@ -22,6 +22,21 @@ namespace slicer_core
  * @return Atomic package publication summary.
  * @throws std::invalid_argument when scene evidence is invalid or stale.
  */
+/**
+ * @brief 按合成结果补齐写请求（栅格、场景报告、能力摘要），不写任何字节。
+ *
+ * MF-05 步骤 4 第二步需要「先建发布会话逐层写层、最后补齐再发布」，
+ * 故把补齐从写出里分离出来。`WriteMultiModelSceneProductionPackage`
+ * 现在是「补齐 + 整栈写出」的组合，语义不变。
+ */
+void PrepareMultiModelScenePackageRequest(
+    RgbwsvProductionPackageWriteRequest& request,
+    const SceneLayerComposeResult& composition,
+    const MultiModelScene& scene,
+    const SceneCollisionResult& admission,
+    const std::vector<SceneInstanceRaster>& instanceRasters,
+    const std::filesystem::path& profileConfigPath);
+
 RgbwsvProductionPackageWriteResult
 WriteMultiModelSceneProductionPackage(
     RgbwsvProductionPackageWriteRequest request,
