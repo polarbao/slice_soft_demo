@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
-> 版本：v2.8 ｜ 日期：2026-09-05
+> 版本：v2.9 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -35,16 +35,61 @@
 | MF-03B4A | Verified support/BaseProjection/outer-varnish 最终重放 | COMPLETE | MF-03B3、B4A 准备 Gate | 2026-08-21 |
 | MF-03B4B | Material/Stage 15/closure 最终重放 | PREPARED | MF-03B4A COMPLETE、B4B 组合 Gate | - |
 | MF-03X1 | 主循环有界接线·表面光油容器（逐层独立） | COMPLETE | MF-03B4B 接口接线 | 2026-09-04 |
-| MF-03X2a | 主循环有界接线·**用户阻塞配置**（bottom_projection，无岛/无形状/无光油） | PREPARED / **解除阻塞关键路径** | MF-03X1、MF-03B1、MF-03A | - |
+| MF-03X2a | 主循环有界接线·**用户阻塞配置**（bottom_projection，无岛/无形状/无光油） | COMPLETE `6787930` | MF-03X1、MF-03B1、MF-03A | 2026-09-04 |
 | MF-03X2b | 主循环有界接线·支撑耦合簇全模式（岛发现 + 形状 + 光油） | PREPARED / 范围待估算 | MF-03X2a、B2/B3/B4A | - |
 | MF-03X3 | 稀疏列剪枝·compose 与内部空腔（用户 2026-09-05 提出耗时优化） | COMPLETE（第一批） | MF-03X2a | 2026-09-05 |
-| MF-03X4 | 按幅面固定开销清理·三处每层整幅面缓冲 | PREPARED / 已量化 | MF-03X3 | - |
+| MF-03X4 | 按幅面固定开销清理·relief_columns 归还与 compose 缓冲稀疏重置 | COMPLETE `5c6b8b7` | MF-03X3 | 2026-09-05 |
+| MF-03X5 | 通道统计稀疏化（`update_layer_channel_stats` 整幅面读） | PREPARED / 已量化 | MF-03X4 | - |
 | MF-04 | 单实例流式 Staged Package | PENDING / **范围已重定义** | MF-03B4A/B COMPLETE | - |
-| MF-05 | 多实例 Global Layer Barrier | PREPARED / **双模型阻塞关键路径** | MF-03X2a（依赖已解除，不再等 MF-04） | - |
+| MF-05 | 多实例 Global Layer Barrier | **进行中：0/1/2a/2b/3/4b 与步骤4第一步已合入；余第二步** | MF-03X2a | - |
 | MF-06 | Sparse Tile/Span 显式候选 | PENDING | MF-05 | - |
 | MF-07 | 自适应生产路由与 Telemetry 接入 | PENDING | MF-06 Gate 或明确跳过 Sparse | - |
 | MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
 
+## 2.1 当前可继续的任务（2026-09-06 盘点）
+
+> 盘点口径：以 git 提交为准核对，而非沿用表内旧状态 —— 本次盘点前
+> MF-03X2a 与 MF-03X4 已完成却仍标 PREPARED，MF-05 的六个子步骤也未反映。
+
+### A. 直接解除用户阻塞（最高优先）
+
+| 任务 | 内容 | 剩余量 | 收益 |
+|---|---|---|---|
+| **MF-05 步骤4 第二步** | 写入侧流式：能力摘要改用合成统计 + 服务接线 | 两处改动 + 一轮验证 | 双模型峰值 130 GB -> 百 MB 级，**用户双模型可用** |
+
+这是本专项唯一还在「直接失败」的问题。前置全部就位（写入会话、合成逐层出入口、
+补齐与写出分离），且已确认能力摘要不必新造统计（见 9.5.5）。
+
+### B. 收益明确但不解阻塞
+
+| 任务 | 内容 | 剩余量 | 收益 |
+|---|---|---|---|
+| MF-03X5 | 通道统计稀疏化 | 一处改动 + 一轮验证 | 单模型耗时再降约 1/3 的一份整幅面往返 |
+| MF-03X2b | 支撑耦合簇全模式（岛发现/形状/光油档） | 未估算 | 让这些档也享受 X2a 的内存收益 |
+
+MF-03X5 的风险已登记：改错会让通道统计**悄悄偏差**而非报错，需单独一轮验。
+
+### C. 专项收口类
+
+| 任务 | 内容 | 说明 |
+|---|---|---|
+| MF-03B4B | Material/Stage 15/closure 最终重放 | 接口已接线（`77b19cf`），主体未做 |
+| MF-04 | 单实例流式 Staged Package | **范围已重定义**：CLI 路径本就逐层流式，本卡只剩原子发布/staging 语义，而那已由写入器 session 化（`46fedc2`）覆盖大半 |
+| MF-06 | Sparse Tile/Span | 用户 2026-09-04 已同意跳过；X3 的稀疏列剪枝已取走其核心收益 |
+| MF-07 | 自适应生产路由与 Telemetry | 需先有 MF-05 完整落地作为路由目标 |
+| MF-08 | 真实模型/RIP/恢复/性能收口 | INPUT OPEN：正式设备 SLA 与内存上限仍缺 |
+
+### D. 建议顺序
+
+```text
+1  MF-05 步骤4 第二步      解除双模型阻塞，唯一还在失败的问题
+2  MF-03X5                收益明确、范围小，且已量化
+3  MF-07                  有了 1 才有路由目标
+4  MF-03X2b / MF-03B4B    扩大适用档位，非阻塞
+5  MF-08                  待设备输入
+```
+
+---
 ## 3. MF-00 文档与上下文同步
 
 **目标：** 把对话中的根因、范围、顺序、风险、数据同步和验收转为仓库真源。
