@@ -2994,9 +2994,26 @@ void compose_layer(
     LayerSemanticStats& semantic_stats,
     int& model_pixels,
     int& support_pixels) {
-    pixels.assign(
-        static_cast<std::size_t>(grid.width_px) * grid.height_px * rgbwsv_channel_count,
-        config.background.value);
+    const std::size_t composeByteCount =
+        static_cast<std::size_t>(grid.width_px) * grid.height_px * rgbwsv_channel_count;
+    if (active_columns == nullptr || pixels.size() != composeByteCount)
+    {
+        pixels.assign(composeByteCount, config.background.value);
+    }
+    else
+    {
+        // MF-03X4：稀疏遍历下只有活动列会被写，表外的列自上次填充后恒为背景值，
+        // 故每层只需重置活动列 —— 省掉每层一次 w*h*6（10um 场景 44.2 MB）的整幅面写。
+        for (const std::uint32_t column : *active_columns)
+        {
+            std::fill_n(
+                pixels.begin()
+                    + static_cast<std::ptrdiff_t>(
+                        static_cast<std::size_t>(column) * rgbwsv_channel_count),
+                rgbwsv_channel_count,
+                config.background.value);
+        }
+    }
     const bool whiteCarrierEnabled =
         config.texture.unprintable_white_policy == "white_underbase";
 
@@ -4800,6 +4817,13 @@ SliceRunResult run_slicer(const std::filesystem::path& config_path, const SliceR
             }
         }
     }
+    // MF-03X4：relief_columns 是 64 B/列的结构，10um 大幅面场景约 450 MB ——
+    // 单模型峰值 1.18 GiB 里最大的一块。它的全部消费者（贴图列、角色列、列区间、
+    // 支撑起始层、逐列闭区间、MATVOL 顶面索引）都在层循环【之前】跑完，
+    // 层循环只用 12 B/列的 boundedReliefSpans，故此处即可归还。
+    relief_columns.clear();
+    relief_columns.shrink_to_fit();
+
     std::vector<std::uint32_t> materialVolumeOwner;
     std::vector<std::uint8_t> materialVolumeRgb;
     std::vector<std::uint8_t> materialVolumeVarnishMask;
