@@ -482,6 +482,29 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 **两条独立路径（读代码估算、跑基准外推）得到同一数量级，故根因判断可采信。**
 修好后的判据：同样四组的峰值应与层数**无关**（只随实例数与列数变化）。
 
+### 9.5.2 步骤 2/4 的已知形状（下次接手直接用）
+
+```text
+现状  MultiModelProductionService.cpp:817
+        for (instance) { adapted = AdaptLegacySceneLayers(...); rasters.push_back(...); }
+        composeRequest.instances = std::move(rasters);   // 全部切完才合成
+
+目标  SceneLayerBarrier barrier(visibleCount);
+        每实例一个线程跑 AdaptLegacySceneLayers，回调内写单层槽后 DepositAndWait
+        消费者 for (L) { ready = barrier.AwaitLayer(L); 合成第 L 层; 交给 layersink;
+                         barrier.ReleaseLayer(L); }
+```
+
+**关键前置已确认可行：** 合成器的实例校验本就是逐层的 ——
+`SceneLayerComposer.cpp` 的 `ValidateInstance` 内部是
+`for (layerIndex) { ValidateLayer(...); layerStatistics->push_back(...); }`。
+故「先整实例校验、再整体合成」可折成「逐层校验 + 逐层合成」，
+不需要新造校验逻辑，只需把 `ValidateLayer` 的调用点移进合成的层循环。
+
+**仍需处理：** 实例的 `localgrid` 与 placement 要在第一层到达前就位
+（gridcallback 先于 ownedlayercallback 触发，可在屏障之外先收齐），
+以及 admission 判据（重叠/冲突/stale）保持在开跑前一次性完成、不因并发放宽。
+
 **不宜先合入半截：** 只做步骤 2 后峰值仍有约 62.2 GiB（合成结果），
 依旧超物理内存 31.6 GB，用户场景不会因此可用。
 步骤 2/3/4 必须一起交付才产生实际收益。
