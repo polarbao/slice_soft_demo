@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
-> 版本：v2.9 ｜ 日期：2026-09-06
+> 版本：v3.0 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -41,7 +41,7 @@
 | MF-03X4 | 按幅面固定开销清理·relief_columns 归还与 compose 缓冲稀疏重置 | COMPLETE `5c6b8b7` | MF-03X3 | 2026-09-05 |
 | MF-03X5 | 通道统计稀疏化（`update_layer_channel_stats` 整幅面读） | PREPARED / 已量化 | MF-03X4 | - |
 | MF-04 | 单实例流式 Staged Package | PENDING / **范围已重定义** | MF-03B4A/B COMPLETE | - |
-| MF-05 | 多实例 Global Layer Barrier | **进行中：0/1/2a/2b/3/4b 与步骤4第一步已合入；余第二步** | MF-03X2a | - |
+| MF-05 | 多实例 Global Layer Barrier | **进行中：步骤4第一步已生效；第二步已成形但【默认关闭】，见 9.5.6** | MF-03X2a | - |
 | MF-06 | Sparse Tile/Span 显式候选 | PENDING | MF-05 | - |
 | MF-07 | 自适应生产路由与 Telemetry 接入 | PENDING | MF-06 Gate 或明确跳过 Sparse | - |
 | MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
@@ -539,6 +539,76 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 **两条独立路径（读代码估算、跑基准外推）得到同一数量级，故根因判断可采信。**
 修好后的判据：同样四组的峰值应与层数**无关**（只随实例数与列数变化）。
 
+### 9.5.6 ⚠ 流式发布当前【默认关闭】（2026-09-06）
+
+`MultiModelProductionService.cpp` 内：
+
+```cpp
+constexpr bool kStreamingPackageWriteEnabled = false;
+if (streamingInstances && kStreamingPackageWriteEnabled) { /* 建会话、接 layersink */ }
+```
+
+#### 现状
+
+写入侧流式的代码**已全部接线并能编译**（`2cd7bc6`），但**未启用**。
+
+| | 关闭（当前主线） | 打开（已实测但未通过） |
+|---|---|---|
+| 单实例 1.0 / 0.25mm 峰值 | 1.33 / 3.23 GB | **1.02 / 1.02 GB** |
+| 峰值是否随层数增长 | 是（44.2 MB/层） | **否，已脱钩** |
+| 四组验证台 | 全部 `valid=1` | `valid=0` |
+| 全量回归 | 11 失败 / 229，与既有清单一致 | 未跑（发布链路先失败） |
+
+**即：目标效果已经在数据上确认可达，只差发布收尾这一道门。**
+
+#### 为什么关闭
+
+`RgbwsvProductionPackageSession::Finish()` 内有一处**未定位的 `.at()` 越界**
+（`BENCH_ERROR invalid vector subscript`）。已用分段诊断确认：
+
+```text
+补齐阶段  通过   （"prepared ok, session=1" 打印）
+进入 Finish  是   （"entering Finish" 打印）
+离开 Finish  否   （"Finish ok" 未打印）-> 越界在 Finish 体内
+```
+
+**已排除的候选**（查过、不是它们）：
+
+```text
+RgbwsvPackageWriter.cpp:1204-1213  layerStatistics 取用
+    流式下 request.layerStatistics 为空 -> 走 CalculateLayerStats 分支，不索引
+MultiModelSceneReport.cpp:503      场景报告 layerCount 原取 composition.layers.size()
+    流式下为 0。已改为 statistics.outputlayercount（该处本就该修），但越界依旧
+```
+
+#### 下一步怎么定位
+
+越界只可能在 `Finish()` 体内按索引访问的几处，按嫌疑排序：
+
+```text
+1  internal::ValidateSlicePackageArtifact(stagingDir)
+   独立读回落盘包做严格校验。若 manifest 写的层数与实际写出的 TIFF 数不符，
+   或按 manifest 的 layerCount 索引 layers 数组，就会越界。
+   查法：先只跑到 staging 写完（把 publish 之后的都跳过），看是否已越界。
+
+2  ValidatePersistedSceneExtension(stagingDir/packageDir, request)
+   读场景扩展报告并核对。9.5.6 已修的 layerCount 属于这一族，可能还有同类字段。
+
+3  MakeValidatedStagingPackageEvidence / ValidatePublishedPackageIdentity
+   按层枚举 staging 文件。
+```
+
+**建议手段**：在 Finish 体内这四个调用之间插临时 `std::cerr` 断点
+（注意：`MultiModelProductionCancellation.h` 是在匿名命名空间内被 include 的，
+不能在那里加 `<iostream>`；本轮已踩过），二分到具体调用，再看其内部索引。
+
+#### 打开前必须验的
+
+```text
+验证台四组 valid=1，且峰值与层数【脱钩】（1.0mm 与 0.25mm 单实例应同为约 1.02 GB）
+全量回归不新增失败
+取消与写失败路径不发半包（会话的 RAII 回滚仍生效）
+```
 ### 9.5.5 步骤 4 第二步（写入侧流式）的形状
 
 第一步（实例侧流式）已合入 `853bf14`：单实例斜率 73.7 -> 44.2 MB/层。
