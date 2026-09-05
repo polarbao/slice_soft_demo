@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <functional>
 #include <optional>
 #include <span>
@@ -167,5 +168,48 @@ void WriteRgbwsvProductionLayerTiff(
  */
 RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
     const RgbwsvProductionPackageWriteRequest& request);
+
+/**
+ * @brief 逐层发布会话（MF-05 步骤 4b）。
+ *
+ * `WriteRgbwsvProductionPackage` 要求全部层先在内存里；场景路径按此每实例持有
+ * 整栈，用户 0.2+0.3 @10um 实测斜率 189 MB/层。本类把同一套发布流程拆成三段，
+ * 使上游可以「合成一层就交出一层」，层写完即释放。
+ *
+ * **本类不是新写的发布逻辑** —— `WriteRgbwsvProductionPackage` 已改写为本类的
+ * 薄封装（构造、逐层 Append、Finish），故两条路径共用同一份实现，不会漂移。
+ *
+ * **RAII 是这里的关键。** 原实现用 `try/catch(...)` 包住 staging 到发布的全程，
+ * 失败时 `RecoverPackageArtifacts` 释放租约并清理 staging。拆成三段后，调用方
+ * 可能在 Append 中途抛出而永远不调 Finish —— 那样租约会泄漏、staging 会残留。
+ * 故未成功 `Finish()` 时由析构函数执行同一套回滚。析构不抛：回滚失败只吞掉，
+ * 因为此时通常已在栈展开中。
+ *
+ * 生命周期：持有 `request` 的引用，调用方须保证其存活到 `Finish()` 之后。
+ */
+class RgbwsvProductionPackageSession final
+{
+public:
+    explicit RgbwsvProductionPackageSession(
+        const RgbwsvProductionPackageWriteRequest& request);
+    ~RgbwsvProductionPackageSession();
+
+    RgbwsvProductionPackageSession(const RgbwsvProductionPackageSession&) = delete;
+    RgbwsvProductionPackageSession& operator=(
+        const RgbwsvProductionPackageSession&) = delete;
+    RgbwsvProductionPackageSession(RgbwsvProductionPackageSession&&) = delete;
+    RgbwsvProductionPackageSession& operator=(
+        RgbwsvProductionPackageSession&&) = delete;
+
+    /// 写一层 TIFF 并累积 manifest 条目与通道统计。
+    void AppendLayer(const RgbwsvProductionLayer& layer);
+
+    /// 写 manifest/report 并原子发布。成功后析构不再回滚。
+    RgbwsvProductionPackageWriteResult Finish();
+
+private:
+    struct State;
+    std::unique_ptr<State> m_state;
+};
 
 }  // namespace slicer_core

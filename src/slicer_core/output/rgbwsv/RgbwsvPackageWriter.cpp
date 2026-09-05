@@ -1021,19 +1021,50 @@ void WriteRgbwsvProductionLayerTiff(
     write_rgbwsv_tiff(path, spec, layer.channels);
 }
 
-RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
-    const RgbwsvProductionPackageWriteRequest& request)
+/**
+ * @brief 会话内部状态。
+ *
+ * 全部字段都是原 WriteRgbwsvProductionPackage 里跨「建 staging / 写层 / 发布」
+ * 三个阶段使用的局部变量；只在这三段之间流转的才提到这里，
+ * 仅在构造函数内用到的（如 initialRecovery、lease）仍是局部变量。
+ */
+struct RgbwsvProductionPackageSession::State
 {
-    const WriterClock::time_point totalStart = WriterClock::now();
-    RgbwsvProductionPackageWriteProfile profile;
-    ValidateRequest(request);
-    const std::optional<std::string> whiteSemantics =
-        ResolveWhiteSemantics(request);
+    const RgbwsvProductionPackageWriteRequest& request;
+    WriterClock::time_point totalStart{};
+    RgbwsvProductionPackageWriteProfile profile{};
+    std::optional<std::string> whiteSemantics;
+    std::filesystem::path packageDir;
+    api::artifacts::PackageArtifactIdentity artifactIdentity;
+    RgbwsvProtocol protocol{};
+    Json::Array layers;
+    Json::Array layerStats;
+    Json::Array generatedPreviews;
+    std::array<std::uint64_t, kChannelCount> totalPrintPixels{};
+    std::array<std::uint64_t, kChannelCount> totalEmptyPixels{};
+    int writtenLayerCount{0};
+    /// 进度回调的分母。整栈模式取 layers.size()，逐层模式取 grid.layerCount，
+    /// 两者在整栈模式下相等，故现有行为不变。
+    int expectedLayerCount{0};
+    bool finished{false};
+};
 
-    const std::filesystem::path packageDir =
+RgbwsvProductionPackageSession::RgbwsvProductionPackageSession(
+    const RgbwsvProductionPackageWriteRequest& request)
+    : m_state(std::make_unique<State>(State{request}))
+{
+    State& s = *m_state;
+    s.totalStart = WriterClock::now();
+    ValidateRequest(request);
+    s.whiteSemantics = ResolveWhiteSemantics(request);
+    s.packageDir =
         std::filesystem::absolute(request.packageDir).lexically_normal();
-    const api::artifacts::PackageArtifactIdentity artifactIdentity =
-        MakeWriterArtifactIdentity(request, packageDir);
+    s.artifactIdentity = MakeWriterArtifactIdentity(request, s.packageDir);
+    s.expectedLayerCount = request.layers.empty()
+        ? request.grid.layerCount
+        : static_cast<int>(request.layers.size());
+    const api::artifacts::PackageArtifactIdentity& artifactIdentity =
+        s.artifactIdentity;
     const std::filesystem::path& stagingDir =
         artifactIdentity.staging_directory;
 
@@ -1070,28 +1101,56 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
                 : lease.error);
     }
 
+
+    // 以下原属 try 块开头；拆成三段后由析构函数承担回滚，见类注释。
+    ThrowIfCancellationRequested(
+        request.canceltoken,
+        "staging_setup");
+    std::filesystem::create_directories(stagingDir / "layers");
+    std::filesystem::create_directories(stagingDir / "reports");
+    if (request.preview.enabled)
+    {
+        std::filesystem::create_directories(stagingDir / "preview");
+    }
+    s.protocol = CurrentRgbwsvProtocol();
+}
+
+RgbwsvProductionPackageSession::~RgbwsvProductionPackageSession()
+{
+    if (m_state == nullptr || m_state->finished)
+    {
+        return;
+    }
+    // 与原 catch(...) 同一套回滚：释放租约、清理 staging，避免发出半包。
+    // 析构不得抛 —— 此处通常已在栈展开中，故回滚失败只能吞掉。
     try
     {
-        ThrowIfCancellationRequested(
-            request.canceltoken,
-            "staging_setup");
-        std::filesystem::create_directories(stagingDir / "layers");
-        std::filesystem::create_directories(stagingDir / "reports");
-        if (request.preview.enabled)
-        {
-            std::filesystem::create_directories(stagingDir / "preview");
-        }
+        (void)api::artifacts::RecoverPackageArtifacts(
+            m_state->artifactIdentity,
+            IsStrictPackageValid);
+    }
+    catch (...)
+    {
+    }
+}
 
-        const RgbwsvProtocol protocol = CurrentRgbwsvProtocol();
-        Json::Array layers;
-        Json::Array layerStats;
-        Json::Array generatedPreviews;
-        std::array<std::uint64_t, kChannelCount> totalPrintPixels{};
-        std::array<std::uint64_t, kChannelCount> totalEmptyPixels{};
+void RgbwsvProductionPackageSession::AppendLayer(
+    const RgbwsvProductionLayer& layer)
+{
+    State& s = *m_state;
+    const RgbwsvProductionPackageWriteRequest& request = s.request;
+    RgbwsvProductionPackageWriteProfile& profile = s.profile;
+    const std::filesystem::path& stagingDir =
+        s.artifactIdentity.staging_directory;
+    Json::Array& layers = s.layers;
+    Json::Array& layerStats = s.layerStats;
+    Json::Array& generatedPreviews = s.generatedPreviews;
+    std::array<std::uint64_t, kChannelCount>& totalPrintPixels =
+        s.totalPrintPixels;
+    std::array<std::uint64_t, kChannelCount>& totalEmptyPixels =
+        s.totalEmptyPixels;
+    int& writtenLayerCount = s.writtenLayerCount;
 
-        int writtenLayerCount{0};
-        for (const RgbwsvProductionLayer& layer : request.layers)
-        {
             ThrowIfCancellationRequested(
                 request.canceltoken,
                 "before_layer_tiff");
@@ -1157,199 +1216,234 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
             {
                 request.layerwritecallback(
                     writtenLayerCount,
-                    static_cast<int>(request.layers.size()));
+                    static_cast<int>(s.expectedLayerCount));
             }
-        }
+}
 
-        const WriterClock::time_point reportBuildStart =
-            WriterClock::now();
-        ThrowIfCancellationRequested(
-            request.canceltoken,
-            "report_build");
-        const Json previewReport = Json::object({
-            {"schema", "p0.preview_report.1"},
-            {"outputPolicy", request.preview.outputpolicy},
-            {"productionSource", "rgbwsv_tiff"},
-            {"automaticDiagnosticImages", request.preview.enabled},
-            {"enabled", request.preview.enabled},
-            {"format", request.preview.format},
-            {"interval", request.preview.interval},
-            {"displayOnly", true},
-            {"productionValuesReinterpreted", true},
-            {"channels", Json::array({"RGB", "W", "S", "V"})},
-            {"generated", Json{generatedPreviews}},
-            {"files", Json{generatedPreviews}},
-        });
-        Json::Object sliceReportFields{
-            {"schema", "p0.slice_report.1"},
-            {"status",
-             request.scene.has_value()
-                     && !request.scene->manifestsummary
-                             .at("productionReady")
-                             .as_bool()
-                 ? "functional_fixture_written"
-                 : "production_written"},
-            {"requestedPipelineMode", request.requestedPipelineMode},
-            {"effectivePipelineMode", request.effectivePipelineMode},
-            {"productionAcceptance", request.productionAcceptance},
-            {"productionOutputWritten", true},
-            {"fallbackApplied", false},
-            {"productionTiffLayerCount", request.grid.layerCount},
-            {"materialSemantics",
-             Json::object({
-                 {"outerVarnish",
-                  MakeOuterVarnishJson(request.outerVarnish)},
-             })},
-            {"layerStats", Json{layerStats}},
-            {"totals",
-             Json::object({
-                 {"printPixels", ChannelCountsToJson(totalPrintPixels)},
-                 {"emptyPixels", ChannelCountsToJson(totalEmptyPixels)},
-            })},
-        };
-        if (request.productionSettings.has_value())
-        {
-            sliceReportFields["productionSettings"] =
-                *request.productionSettings;
-        }
-        const Json sliceReport{std::move(sliceReportFields)};
-        Json::Object reportLinks{
-            {"slice", "reports/slice_report.json"},
-            {"preview", "reports/preview_report.json"},
-        };
-        if (request.scene.has_value())
-        {
-            reportLinks["scene"] =
-                MultiModelSceneReportRelativePath().generic_string();
-        }
-        Json::Object manifestObject{
-            {"schema", protocol.schema},
-            {"schemaVersion", protocol.schema},
-            {"requestedPipelineMode", request.requestedPipelineMode},
-            {"effectivePipelineMode", request.effectivePipelineMode},
-            {"productionAcceptance", request.productionAcceptance},
-            {"productionOutputWritten", true},
-            {"fallbackApplied", false},
-            {"source",
-             Json::object({
-                 {"configPath", request.sourceConfigPath.generic_string()},
-                 {"modelPath", request.sourceModelPath.generic_string()},
-                 {"format", request.sourceFormat},
-                 {"engine", request.effectivePipelineMode},
-             })},
-            {"grid", MakeGridJson(request.grid)},
-            {"tiff", MakeTiffJson(protocol, request.storage, layers)},
-            {"layers", Json{layers}},
-            {"reports", Json{std::move(reportLinks)}},
-            {"preview",
-             Json::object({
-                 {"outputPolicy", request.preview.outputpolicy},
-                 {"productionSource", "rgbwsv_tiff"},
-                 {"automaticDiagnosticImages", request.preview.enabled},
-                 {"enabled", request.preview.enabled},
-                 {"format", request.preview.format},
-                 {"files", Json{generatedPreviews}},
-            })},
-        };
-        if (whiteSemantics.has_value())
-        {
-            manifestObject["whiteSemantics"] = *whiteSemantics;
-        }
-        if (request.scene.has_value())
-        {
-            manifestObject["scene"] =
-                request.scene->manifestsummary;
-        }
-        AppendRgbwsvCapabilitySummary(manifestObject, request);
-        const Json manifest{std::move(manifestObject)};
-        profile.reportbuildms += ElapsedMilliseconds(reportBuildStart);
+RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
+{
+    State& s = *m_state;
+    const RgbwsvProductionPackageWriteRequest& request = s.request;
+    const WriterClock::time_point totalStart = s.totalStart;
+    RgbwsvProductionPackageWriteProfile& profile = s.profile;
+    const std::optional<std::string>& whiteSemantics = s.whiteSemantics;
+    const std::filesystem::path& packageDir = s.packageDir;
+    const api::artifacts::PackageArtifactIdentity& artifactIdentity =
+        s.artifactIdentity;
+    const std::filesystem::path& stagingDir =
+        artifactIdentity.staging_directory;
+    const RgbwsvProtocol& protocol = s.protocol;
+    Json::Array& layers = s.layers;
+    Json::Array& layerStats = s.layerStats;
+    Json::Array& generatedPreviews = s.generatedPreviews;
+    std::array<std::uint64_t, kChannelCount>& totalPrintPixels =
+        s.totalPrintPixels;
+    std::array<std::uint64_t, kChannelCount>& totalEmptyPixels =
+        s.totalEmptyPixels;
 
-        const WriterClock::time_point reportWriteStart =
-            WriterClock::now();
-        ThrowIfCancellationRequested(
-            request.canceltoken,
-            "report_write");
-        WriteReportJsonFile(stagingDir / "manifest.json", manifest);
-        WriteReportJsonFile(
-            stagingDir / "reports" / "slice_report.json",
-            sliceReport);
-        WriteReportJsonFile(
-            stagingDir / "reports" / "preview_report.json",
-            previewReport);
-        if (request.scene.has_value())
-        {
+    try
+    {
+            const WriterClock::time_point reportBuildStart =
+                WriterClock::now();
+            ThrowIfCancellationRequested(
+                request.canceltoken,
+                "report_build");
+            const Json previewReport = Json::object({
+                {"schema", "p0.preview_report.1"},
+                {"outputPolicy", request.preview.outputpolicy},
+                {"productionSource", "rgbwsv_tiff"},
+                {"automaticDiagnosticImages", request.preview.enabled},
+                {"enabled", request.preview.enabled},
+                {"format", request.preview.format},
+                {"interval", request.preview.interval},
+                {"displayOnly", true},
+                {"productionValuesReinterpreted", true},
+                {"channels", Json::array({"RGB", "W", "S", "V"})},
+                {"generated", Json{generatedPreviews}},
+                {"files", Json{generatedPreviews}},
+            });
+            Json::Object sliceReportFields{
+                {"schema", "p0.slice_report.1"},
+                {"status",
+                 request.scene.has_value()
+                         && !request.scene->manifestsummary
+                                 .at("productionReady")
+                                 .as_bool()
+                     ? "functional_fixture_written"
+                     : "production_written"},
+                {"requestedPipelineMode", request.requestedPipelineMode},
+                {"effectivePipelineMode", request.effectivePipelineMode},
+                {"productionAcceptance", request.productionAcceptance},
+                {"productionOutputWritten", true},
+                {"fallbackApplied", false},
+                {"productionTiffLayerCount", request.grid.layerCount},
+                {"materialSemantics",
+                 Json::object({
+                     {"outerVarnish",
+                      MakeOuterVarnishJson(request.outerVarnish)},
+                 })},
+                {"layerStats", Json{layerStats}},
+                {"totals",
+                 Json::object({
+                     {"printPixels", ChannelCountsToJson(totalPrintPixels)},
+                     {"emptyPixels", ChannelCountsToJson(totalEmptyPixels)},
+                })},
+            };
+            if (request.productionSettings.has_value())
+            {
+                sliceReportFields["productionSettings"] =
+                    *request.productionSettings;
+            }
+            const Json sliceReport{std::move(sliceReportFields)};
+            Json::Object reportLinks{
+                {"slice", "reports/slice_report.json"},
+                {"preview", "reports/preview_report.json"},
+            };
+            if (request.scene.has_value())
+            {
+                reportLinks["scene"] =
+                    MultiModelSceneReportRelativePath().generic_string();
+            }
+            Json::Object manifestObject{
+                {"schema", protocol.schema},
+                {"schemaVersion", protocol.schema},
+                {"requestedPipelineMode", request.requestedPipelineMode},
+                {"effectivePipelineMode", request.effectivePipelineMode},
+                {"productionAcceptance", request.productionAcceptance},
+                {"productionOutputWritten", true},
+                {"fallbackApplied", false},
+                {"source",
+                 Json::object({
+                     {"configPath", request.sourceConfigPath.generic_string()},
+                     {"modelPath", request.sourceModelPath.generic_string()},
+                     {"format", request.sourceFormat},
+                     {"engine", request.effectivePipelineMode},
+                 })},
+                {"grid", MakeGridJson(request.grid)},
+                {"tiff", MakeTiffJson(protocol, request.storage, layers)},
+                {"layers", Json{layers}},
+                {"reports", Json{std::move(reportLinks)}},
+                {"preview",
+                 Json::object({
+                     {"outputPolicy", request.preview.outputpolicy},
+                     {"productionSource", "rgbwsv_tiff"},
+                     {"automaticDiagnosticImages", request.preview.enabled},
+                     {"enabled", request.preview.enabled},
+                     {"format", request.preview.format},
+                     {"files", Json{generatedPreviews}},
+                })},
+            };
+            if (whiteSemantics.has_value())
+            {
+                manifestObject["whiteSemantics"] = *whiteSemantics;
+            }
+            if (request.scene.has_value())
+            {
+                manifestObject["scene"] =
+                    request.scene->manifestsummary;
+            }
+            AppendRgbwsvCapabilitySummary(manifestObject, request);
+            const Json manifest{std::move(manifestObject)};
+            profile.reportbuildms += ElapsedMilliseconds(reportBuildStart);
+
+            const WriterClock::time_point reportWriteStart =
+                WriterClock::now();
+            ThrowIfCancellationRequested(
+                request.canceltoken,
+                "report_write");
+            WriteReportJsonFile(stagingDir / "manifest.json", manifest);
             WriteReportJsonFile(
-                stagingDir / MultiModelSceneReportRelativePath(),
-                request.scene->report);
-        }
-        profile.reportwritems =
-            ElapsedMilliseconds(reportWriteStart);
+                stagingDir / "reports" / "slice_report.json",
+                sliceReport);
+            WriteReportJsonFile(
+                stagingDir / "reports" / "preview_report.json",
+                previewReport);
+            if (request.scene.has_value())
+            {
+                WriteReportJsonFile(
+                    stagingDir / MultiModelSceneReportRelativePath(),
+                    request.scene->report);
+            }
+            profile.reportwritems =
+                ElapsedMilliseconds(reportWriteStart);
 
-        const WriterClock::time_point publishStart =
-            WriterClock::now();
-        ThrowIfCancellationRequested(
-            request.canceltoken,
-            "package_validation");
-        ValidatePersistedSceneExtension(stagingDir, request);
-        const RipValidationResult stagingValidation =
-            internal::ValidateSlicePackageArtifact(stagingDir);
-        const ValidatedStagingPackageEvidence stagingEvidence =
-            MakeValidatedStagingPackageEvidence(
-                artifactIdentity,
-                stagingValidation);
-        ThrowIfCancellationRequested(
-            request.canceltoken,
-            "before_package_publish");
-        PublishStagedPackage(artifactIdentity);
-        ValidatePersistedSceneExtension(packageDir, request);
-        // A same-parent rename preserves the strictly validated bytes. Recheck
-        // lightweight file identity here; crash recovery still performs a full
-        // strict validation because it has no in-memory staging evidence.
-        ValidatePublishedPackageIdentity(artifactIdentity, stagingEvidence);
-        const api::artifacts::PackageArtifactRecoveryResult cleanup =
-            api::artifacts::RecoverPackageArtifacts(
-                artifactIdentity,
-                MakePublishedEvidenceValidator(artifactIdentity));
-        if (!cleanup.success)
-        {
-            throw api::artifacts::PackageArtifactOutputError(
-                cleanup.error.empty()
-                    ? "failed to remove owned package publication artifacts"
-                    : cleanup.error);
-        }
-        profile.packagepublishms =
-            ElapsedMilliseconds(publishStart);
-        profile.totalms = ElapsedMilliseconds(totalStart);
+            const WriterClock::time_point publishStart =
+                WriterClock::now();
+            ThrowIfCancellationRequested(
+                request.canceltoken,
+                "package_validation");
+            ValidatePersistedSceneExtension(stagingDir, request);
+            const RipValidationResult stagingValidation =
+                internal::ValidateSlicePackageArtifact(stagingDir);
+            const ValidatedStagingPackageEvidence stagingEvidence =
+                MakeValidatedStagingPackageEvidence(
+                    artifactIdentity,
+                    stagingValidation);
+            ThrowIfCancellationRequested(
+                request.canceltoken,
+                "before_package_publish");
+            PublishStagedPackage(artifactIdentity);
+            ValidatePersistedSceneExtension(packageDir, request);
+            // A same-parent rename preserves the strictly validated bytes. Recheck
+            // lightweight file identity here; crash recovery still performs a full
+            // strict validation because it has no in-memory staging evidence.
+            ValidatePublishedPackageIdentity(artifactIdentity, stagingEvidence);
+            const api::artifacts::PackageArtifactRecoveryResult cleanup =
+                api::artifacts::RecoverPackageArtifacts(
+                    artifactIdentity,
+                    MakePublishedEvidenceValidator(artifactIdentity));
+            if (!cleanup.success)
+            {
+                throw api::artifacts::PackageArtifactOutputError(
+                    cleanup.error.empty()
+                        ? "failed to remove owned package publication artifacts"
+                        : cleanup.error);
+            }
+            profile.packagepublishms =
+                ElapsedMilliseconds(publishStart);
+            profile.totalms = ElapsedMilliseconds(totalStart);
 
-        RgbwsvProductionPackageWriteResult result;
-        result.productionOutputWritten = true;
-        result.fallbackApplied = false;
-        result.strictProtocolValidated = true;
-        result.layerCount = request.grid.layerCount;
-        result.jobId = artifactIdentity.job_id;
-        result.attemptId = artifactIdentity.attempt_id;
-        result.packageDir = packageDir;
-        result.stagingRemoved = cleanup.staging_removed;
-        result.backupRemoved = cleanup.backup_removed;
-        result.leaseReleased = cleanup.lease_removed;
-        result.profile = profile;
-        return result;
+            RgbwsvProductionPackageWriteResult result;
+            result.productionOutputWritten = true;
+            result.fallbackApplied = false;
+            result.strictProtocolValidated = true;
+            result.layerCount = request.grid.layerCount;
+            result.jobId = artifactIdentity.job_id;
+            result.attemptId = artifactIdentity.attempt_id;
+            result.packageDir = packageDir;
+            result.stagingRemoved = cleanup.staging_removed;
+            result.backupRemoved = cleanup.backup_removed;
+            result.leaseReleased = cleanup.lease_removed;
+            result.profile = profile;
+            return result;
     }
     catch (...)
     {
-        const api::artifacts::PackageArtifactRecoveryResult recovery =
-            api::artifacts::RecoverPackageArtifacts(
-                artifactIdentity,
-                IsStrictPackageValid);
-        if (!recovery.success)
-        {
-            throw api::artifacts::PackageArtifactOutputError(
-                recovery.error.empty()
-                    ? "failed to recover package artifacts after publication failure"
-                    : recovery.error);
-        }
-        throw;
+            const api::artifacts::PackageArtifactRecoveryResult recovery =
+                api::artifacts::RecoverPackageArtifacts(
+                    artifactIdentity,
+                    IsStrictPackageValid);
+            if (!recovery.success)
+            {
+                throw api::artifacts::PackageArtifactOutputError(
+                    recovery.error.empty()
+                        ? "failed to recover package artifacts after publication failure"
+                        : recovery.error);
+            }
+            throw;
     }
+}
+
+RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
+    const RgbwsvProductionPackageWriteRequest& request)
+{
+    // 整栈入口现在是逐层会话的薄封装 —— 两条路径共用同一份发布实现，不会漂移。
+    RgbwsvProductionPackageSession session(request);
+    for (const RgbwsvProductionLayer& layer : request.layers)
+    {
+        session.AppendLayer(layer);
+    }
+    return session.Finish();
 }
 
 }  // namespace slicer_core
