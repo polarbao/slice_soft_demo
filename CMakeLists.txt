@@ -2186,6 +2186,20 @@ add_executable(multi_model_package_writer_unit_tests
 
 target_link_libraries(multi_model_package_writer_unit_tests PRIVATE slicer_core)
 
+# MF-05 多实例内存验证台：不是回归用例，不注册 add_test。
+# 它按 <层厚> <实例数> 跑场景生产，用于观察峰值随层数的斜率。
+add_executable(stage16c06_scene_memory_bench
+    tests/stage16/SceneMemoryBench.cpp
+)
+
+target_link_libraries(stage16c06_scene_memory_bench PRIVATE slicer_core)
+target_compile_definitions(stage16c06_scene_memory_bench PRIVATE
+    SLICESOFT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+if(WIN32)
+    target_link_libraries(stage16c06_scene_memory_bench PRIVATE psapi)
+endif()
+
 add_executable(multi_model_production_service_unit_tests
     tests/unit/multi_model_production_service/Main.cpp
 )
