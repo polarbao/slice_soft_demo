@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
-> 版本：v2.6 ｜ 日期：2026-09-05
+> 版本：v2.7 ｜ 日期：2026-09-05
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -40,7 +40,7 @@
 | MF-03X3 | 稀疏列剪枝·compose 与内部空腔（用户 2026-09-05 提出耗时优化） | COMPLETE（第一批） | MF-03X2a | 2026-09-05 |
 | MF-03X4 | 按幅面固定开销清理·三处每层整幅面缓冲 | PREPARED / 已量化 | MF-03X3 | - |
 | MF-04 | 单实例流式 Staged Package | PENDING / **范围已重定义** | MF-03B4A/B COMPLETE | - |
-| MF-05 | 多实例 Global Layer Barrier | PENDING | MF-04 | - |
+| MF-05 | 多实例 Global Layer Barrier | PREPARED / **双模型阻塞关键路径** | MF-03X2a（依赖已解除，不再等 MF-04） | - |
 | MF-06 | Sparse Tile/Span 显式候选 | PENDING | MF-05 | - |
 | MF-07 | 自适应生产路由与 Telemetry 接入 | PENDING | MF-06 Gate 或明确跳过 Sparse | - |
 | MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
@@ -382,9 +382,70 @@ analyze_support_connectivity   每层新建 w*h 的 visited
 
 ## 9. MF-05 多实例 Layer Barrier
 
+> **升级为双模型阻塞的关键路径（2026-09-05）。** 依赖改为 MF-03X2a，不再等 MF-04
+> —— MF-04 的范围已重定义为 CLI 路径的原子发布语义，与本卡无先后关系。
+
 **目标：** 1/11/12/22 场景按 global layer 同步合成，释放同层所有实例 buffer。
 
-**验收：** scene 顺序确定、重叠/冲突/stale/层缺失 fail closed；实例完成顺序不影响输出 hash。
+### 9.1 为什么必须做（量化根因见报告 §5.6）
+
+`MultiModelProductionService.cpp:813` 把**全部实例切完**才一起合成，而单实例
+`SceneInstanceRaster` 持有**全部层**，每层含 6 通道输出加 4 张归属 mask：
+
+```text
+每列每层 10 B/实例
+用户场景 1418 x 5197 x 1429  ->  103.7 GiB【每实例】，双模型 207 GiB
+```
+
+`LegacySceneLayerAdapter.cpp` 的 `ownedlayercallback` 逐层 `push_back` 且不释放，
+使 MF-02「Owned Layer Producer/Sink」合同「消费即释放」的用意归零。
+
+### 9.2 设计：生产者线程 + 层屏障
+
+合成第 L 层只需各实例的第 L 层。障碍在于实例是 **instance-major** 切的，
+而合成要 **layer-major**。`ownedlayercallback` 本来就是逐层交付的，
+故只需让每个实例在自己的线程里跑，并在回调内等屏障：
+
+```text
+每实例一个生产者线程
+  产出第 L 层 -> 存入该实例的单层槽 -> 等待「本层已被消费」信号
+合成线程
+  等齐全部 N 个槽 -> 合成为 global 第 L 层 -> 写出 -> 释放全部槽 -> 放行生产者
+
+峰值 O(实例数 x 列数)，与层数无关
+用户双模型 10um：2 x 44.2 MB + 合成缓冲 ≈ 132 MB（现为 207 GiB）
+```
+
+### 9.3 必须守住的语义
+
+```text
+确定性   合成顺序按 scene 内实例次序，【不按线程完成先后】，否则输出 hash 会抖
+取消     任一线程 ThrowIfCancellationRequested 后，屏障须唤醒全部等待者并传播
+异常     单实例抛错必须让屏障失效并让其余线程尽快退出，不得死锁
+fail closed  重叠/冲突/stale/层缺失沿用既有 admission 判据，不因并发放宽
+层数不齐  各实例 localgrid.layercount 可不同，屏障须按 global layer 对齐，
+          缺层的实例在该层贡献空槽而非阻塞
+```
+
+### 9.4 分步与验收
+
+```text
+步骤 1  抽出 SceneLayerBarrier（纯同步原语 + 单元测试：确定性/取消/异常/不齐层）
+步骤 2  LegacySceneLayerAdapter 的 ownedlayercallback 改为存单层槽并等屏障
+步骤 3  MultiModelProductionService 改 layer-major 合成，逐层写出即释放
+步骤 4  实测用户双模型 0.2 + 0.3 @10um
+
+验收   单实例场景输出与现状逐字节全等（先用单实例跑通屏障，N=1 退化为直通）
+       双实例 0.2+0.3 @10um 不再内存不足，peakWorkingSet 百 MB 级
+       实例完成顺序不影响输出 hash（用不同线程调度跑多次比对）
+       既有 scene 相关回归不新增失败
+```
+
+### 9.5 用户当前可用的规避
+
+单模型路径已可用：`0.2.obj` 与 `0.3.obj` **分两次作业**各自切片，
+每次峰值 1.18 GiB、耗时 10.7 分钟，合计约 21 分钟即可拿到两份包。
+这不是修复，只是在 MF-05 落地前的可行替代。
 
 ## 10. MF-06 Sparse Tile/Span 候选
 
