@@ -494,6 +494,50 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 **两条独立路径（读代码估算、跑基准外推）得到同一数量级，故根因判断可采信。**
 修好后的判据：同样四组的峰值应与层数**无关**（只随实例数与列数变化）。
 
+### 9.5.4 步骤 4：编排层的最终设计（三块前置已全部就位）
+
+实例侧（2a）、合成侧（2b）、写入器侧（4b）均已合入且行为中性，
+`MultiModelLayerComposeRequest` 的出入口透传也已打通。剩下只是把它们串起来。
+
+**两处环形依赖，解法已确定：**
+
+```text
+一、屏障要按全局层号对齐，而 offsetz 由实例与全局栅格原点之差算出，
+    全局栅格又要等所有实例的局部栅格就位。
+    解：先跑栅格相位（adapter 的 gridready 在第一层之前触发），
+        主线程等齐后检查【所有实例 localgrid.originzmm 相等】——
+        相等则各 offsetz 必为 0，局部层号即全局层号，屏障可直接对齐。
+        判据只看各实例自身，不需要先有全局栅格。
+
+二、写入会话要在合成之前建立（layersink 要用它），而 writeRequest 里
+    grid.widthPx/heightPx/layerCount 看似要等合成结果。
+    解：实测 writeRequest 其余字段全部来自 contract 与 request，不依赖
+        composition；故把会话【延迟到 layersink 首次调用】时创建 ——
+        那时层的宽高已随层送达，全局层数由各实例 localgrid 推出。
+```
+
+**退回方案（最后一个设计点）：** z 原点不一致时不能报错（那会让本来能工作的
+场景失败），也不能重跑切片。故让 sink 读一个已稳定的标志分流：
+
+```cpp
+adapterRequest.layersink = [&](SceneInstanceRasterLayer&& layer) -> bool {
+    WaitUntilAlignmentDecided();          // 栅格相位在第一层之前完成，故不会久等
+    if (streamingRejected) {              // 退回 retained：照旧累积整栈
+        rasterSlots[i].layers.push_back(std::move(layer));
+        return true;
+    }
+    slots[i] = std::move(layer);
+    return barrier.DepositAndWait(i, layerIndex);
+};
+```
+
+**验收：** 验证台四组峰值应与层数【脱钩】（当前斜率 73.7 MB/层，
+单实例 1.0/0.5/0.25mm 三档现为 1.59 / 2.62 / 4.76 GB）；
+全量回归不新增失败；实例完成顺序不影响输出（不同调度多跑几次比对）。
+
+**风险：** 并发接线 + 退回分流，改错的表现是【挂住作业】或【发半包】
+而非报错，需独占一轮的验证预算（回归 + 斜率验证约 25 分钟）。
+
 ### 9.5.3 步骤 4b：写入器 session 化（形状与风险）
 
 `WriteRgbwsvProductionPackage`（`RgbwsvPackageWriter.cpp:1024`，共 **330 行**）
