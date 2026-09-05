@@ -205,6 +205,10 @@ SceneRasterAdapterResult AdaptLegacySceneLayers(
             result.raster.localgrid.layerthicknessmm =
                 grid.layerthicknessmm;
             gridReceived = true;
+            if (request.gridready)
+            {
+                request.gridready(result.raster.localgrid);
+            }
         };
     options.ownedlayercallback =
         [&request, &result](

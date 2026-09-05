@@ -451,6 +451,17 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 
 ### 9.5 分步与验收
 
+> **范围第三次修正（2026-09-05）。** 实施编排层前查依赖，发现还有【写入器侧】：
+> `WriteValidatedMultiModelSceneProductionPackage` 接收整个 `composition`，
+> 内部交给 `WriteRgbwsvProductionPackage`（整包入口）。
+> 好消息是逐层写 TIFF 的能力早就存在（`WriteRgbwsvProductionLayerTiff`，
+> CLI 单模型路径一直在用），故这块是「让场景路径改用已有入口 + manifest/report
+> 改逐层累积」，不是从零造能力。
+
+> 三次修正的规律值得记下：**每次都发现范围比预想大，但同时也发现让工作变小的
+> 东西**（合成主循环本就 layer-major、实例校验本就逐层、逐层写 TIFF 本就存在）。
+> 隔着推测估工作量两个方向都会偏，只有读代码才准。
+
 ```text
 步骤 0  SceneMemoryBench 多实例验证台                    COMPLETE
 步骤 1  SceneLayerBarrier 纯同步原语 + 并发单测          COMPLETE 94fafd8
@@ -458,6 +469,8 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 步骤 3  合成侧改逐层合成、合成即写出、不累积 layers
 步骤 4  ValidatedSceneLayerComposeResult 的闭合证据改为逐层累积，
         使「已验证」不再等价于「全部层在内存里」
+步骤 4b 写入器侧改用已有的逐层入口 WriteRgbwsvProductionLayerTiff，
+        manifest/report 由「拿到全部层后统计」改为逐层累积
 步骤 5  实测用户双模型 0.2 + 0.3 @10um
 ```
 
