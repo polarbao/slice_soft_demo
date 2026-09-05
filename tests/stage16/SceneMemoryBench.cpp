@@ -20,14 +20,20 @@
 #include "slicer_core/scene/SceneResourceIdentity.h"
 #include "slicer_core/system/Sha256.h"
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <vector>
 
 #if defined(_WIN32)
+// windows.h 会定义 max/min 宏，与 std::max 冲突。
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #include <psapi.h>
 #endif
@@ -91,23 +97,44 @@ std::uint64_t PeakWorkingSetBytes()
 }
 
 slicer_core::MultiModelScene BuildScene(
-    const std::filesystem::path& profileConfigPath,
+    const std::vector<std::filesystem::path>& profileConfigPaths,
     const int instanceCount)
 {
-    const slicer_core::SliceConfig profile =
-        slicer_core::load_slice_config(profileConfigPath);
-    const slicer_core::SceneModel model =
-        slicer_core::load_model_report(profile, profileConfigPath.parent_path());
-    const std::filesystem::path modelPath =
-        std::filesystem::absolute(model.model_path).lexically_normal();
+    // 每个 profile 对应一个模型；实例按 instanceCount 轮转取用，故
+    // 「一个模型 N 个实例」与「N 个不同模型各一个实例」都能表达。
+    std::vector<slicer_core::SliceConfig> profiles;
+    std::vector<slicer_core::SceneModel> models;
+    std::vector<std::filesystem::path> modelPaths;
+    for (const std::filesystem::path& configPath : profileConfigPaths)
+    {
+        slicer_core::SliceConfig profile =
+            slicer_core::load_slice_config(configPath);
+        slicer_core::SceneModel model =
+            slicer_core::load_model_report(profile, configPath.parent_path());
+        modelPaths.push_back(
+            std::filesystem::absolute(model.model_path).lexically_normal());
+        profiles.push_back(std::move(profile));
+        models.push_back(std::move(model));
+    }
+    const slicer_core::SliceConfig& profile = profiles.front();
+    const slicer_core::SceneModel& model = models.front();
+    const std::filesystem::path& modelPath = modelPaths.front();
 
     slicer_core::MultiModelScene scene;
     scene.sceneid = "scene-memflow-bench";
     scene.scenerevision = 1U;
     scene.resolvedprofileid = profile.material_process_profile.name;
 
-    const double modelWidth = model.bbox_mm.max.x - model.bbox_mm.min.x;
-    const double modelHeight = model.bbox_mm.max.y - model.bbox_mm.min.y;
+    // 幅面按【所有模型】的最大尺寸铺开，保证任一实例都放得下。
+    double modelWidth{0.0};
+    double modelHeight{0.0};
+    for (const slicer_core::SceneModel& item : models)
+    {
+        modelWidth =
+            std::max(modelWidth, item.bbox_mm.max.x - item.bbox_mm.min.x);
+        modelHeight =
+            std::max(modelHeight, item.bbox_mm.max.y - item.bbox_mm.min.y);
+    }
     constexpr double marginMm{2.0};
     constexpr double gapMm{2.0};
     scene.buildvolume.source = slicer_core::BuildVolumeSource::Fixture;
@@ -119,34 +146,45 @@ slicer_core::MultiModelScene BuildScene(
     scene.buildvolume.ydirection = slicer_core::BuildVolumeAxisDirection::Positive;
     scene.buildvolume.isfixture = true;
 
-    slicer_core::ResourceScope scope;
-    scope.resourcescopeid = "scope-bench";
-    scope.kind = slicer_core::ResourceScopeKind::ObjDirectory;
-    scope.rootpath = modelPath.parent_path();
-    scene.resourcescopes.push_back(scope);
+    for (std::size_t index{0}; index < modelPaths.size(); ++index)
+    {
+        slicer_core::ResourceScope scope;
+        scope.resourcescopeid = "scope-bench-" + std::to_string(index);
+        scope.kind = slicer_core::ResourceScopeKind::ObjDirectory;
+        scope.rootpath = modelPaths.at(index).parent_path();
+        scene.resourcescopes.push_back(scope);
 
-    slicer_core::ModelSource source;
-    source.modelid = "model-bench";
-    source.sourcepath = modelPath;
-    source.format = "obj";
-    source.resourcescopeid = scope.resourcescopeid;
-    source.sourcehash = slicer_core::ComputeSha256(ReadFile(modelPath));
-    source.resourcehash = slicer_core::ComputeSceneResourceHash(model);
-    source.displayname = "bench";
-    scene.models.push_back(source);
+        slicer_core::ModelSource source;
+        source.modelid = "model-bench-" + std::to_string(index);
+        source.sourcepath = modelPaths.at(index);
+        source.format = "obj";
+        source.resourcescopeid = scope.resourcescopeid;
+        source.sourcehash =
+            slicer_core::ComputeSha256(ReadFile(modelPaths.at(index)));
+        source.resourcehash =
+            slicer_core::ComputeSceneResourceHash(models.at(index));
+        source.displayname = "bench-" + std::to_string(index);
+        scene.models.push_back(std::move(source));
+    }
 
     for (int index{0}; index < instanceCount; ++index)
     {
+        // 实例轮转取用模型：instanceCount 大于模型数时重复取用。
+        const std::size_t modelIndex =
+            static_cast<std::size_t>(index) % scene.models.size();
+        const slicer_core::SceneModel& boundModel = models.at(modelIndex);
         slicer_core::SceneModelInstance item;
         item.instance.instanceid = "instance-" + std::to_string(index + 1);
-        item.instance.modelid = source.modelid;
-        item.instance.sourcetransformidentity = modelPath.generic_string();
-        item.instance.sourcebboxmm = model.bbox_mm;
+        item.instance.modelid = scene.models.at(modelIndex).modelid;
+        item.instance.sourcetransformidentity =
+            modelPaths.at(modelIndex).generic_string();
+        item.instance.sourcebboxmm = boundModel.bbox_mm;
         item.instance.transform.translatexmm =
-            marginMm - model.bbox_mm.min.x
+            marginMm - boundModel.bbox_mm.min.x
             + static_cast<double>(index) * (modelWidth + gapMm);
-        item.instance.transform.translateymm = marginMm - model.bbox_mm.min.y;
-        item.instance.effectivebboxmm = model.bbox_mm;
+        item.instance.transform.translateymm =
+            marginMm - boundModel.bbox_mm.min.y;
+        item.instance.effectivebboxmm = boundModel.bbox_mm;
         item.instance.effectivebboxmm.min.x += item.instance.transform.translatexmm;
         item.instance.effectivebboxmm.max.x += item.instance.transform.translatexmm;
         item.instance.effectivebboxmm.min.y += item.instance.transform.translateymm;
@@ -174,9 +212,16 @@ int main(const int argc, char** argv)
         const double layerHeightMm = std::stod(argv[1]);
         const int instanceCount = std::stoi(argv[2]);
         const std::filesystem::path sourceRoot{SLICESOFT_SOURCE_DIR};
-        const std::filesystem::path modelPath = argc >= 4
-            ? std::filesystem::path(argv[3])
-            : sourceRoot / "model/obj/reality/finger_suoguo/a-2/0.2.obj";
+        std::vector<std::filesystem::path> modelPaths;
+        for (int index{3}; index < argc; ++index)
+        {
+            modelPaths.emplace_back(argv[index]);
+        }
+        if (modelPaths.empty())
+        {
+            modelPaths.push_back(
+                sourceRoot / "model/obj/reality/finger_suoguo/a-2/0.2.obj");
+        }
 
         const std::filesystem::path root =
             std::filesystem::temp_directory_path() / "slicesoft_memflow_bench";
@@ -184,15 +229,23 @@ int main(const int argc, char** argv)
         std::filesystem::remove_all(root, cleanup);
         std::filesystem::create_directories(root);
 
-        const std::filesystem::path profileConfigPath = WriteBenchProfile(
-            sourceRoot / "samples/configs/golden/material_process_top2_fixture.json",
-            root / "bench_profile.json",
-            modelPath,
-            layerHeightMm,
-            600);
+        std::vector<std::filesystem::path> profileConfigPaths;
+        for (std::size_t index{0}; index < modelPaths.size(); ++index)
+        {
+            profileConfigPaths.push_back(WriteBenchProfile(
+                sourceRoot
+                    / "samples/configs/golden/material_process_top2_fixture.json",
+                root / ("bench_profile_" + std::to_string(index) + ".json"),
+                modelPaths.at(index),
+                layerHeightMm,
+                600));
+        }
+        const std::filesystem::path& profileConfigPath =
+            profileConfigPaths.front();
 
         slicer_core::SceneEffectiveConfigRequest effectiveRequest;
-        effectiveRequest.scene = BuildScene(profileConfigPath, instanceCount);
+        effectiveRequest.scene =
+            BuildScene(profileConfigPaths, instanceCount);
         effectiveRequest.sourcescenepath = root / "scene_config.draft.json";
         effectiveRequest.generatedconfigpath = root / "scene_config.effective.json";
         effectiveRequest.sourceprofileid = effectiveRequest.scene.resolvedprofileid;
@@ -222,6 +275,7 @@ int main(const int argc, char** argv)
                 std::chrono::steady_clock::now() - start).count();
 
         std::cout << "BENCH layerHeightMm=" << layerHeightMm
+                  << " models=" << modelPaths.size()
                   << " instances=" << instanceCount
                   << " valid=" << (result.IsValid() ? 1 : 0)
                   << " elapsedMs=" << elapsedMs
