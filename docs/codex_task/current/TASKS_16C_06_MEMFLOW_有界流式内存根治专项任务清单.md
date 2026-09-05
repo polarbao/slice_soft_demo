@@ -469,8 +469,7 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 步骤 3  合成侧改逐层合成、合成即写出、不累积 layers
 步骤 4  ValidatedSceneLayerComposeResult 的闭合证据改为逐层累积，
         使「已验证」不再等价于「全部层在内存里」
-步骤 4b 写入器侧改用已有的逐层入口 WriteRgbwsvProductionLayerTiff，
-        manifest/report 由「拿到全部层后统计」改为逐层累积
+步骤 4b 写入器侧 session 化（见 §9.5.3）
 步骤 5  实测用户双模型 0.2 + 0.3 @10um
 ```
 
@@ -494,6 +493,34 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 
 **两条独立路径（读代码估算、跑基准外推）得到同一数量级，故根因判断可采信。**
 修好后的判据：同样四组的峰值应与层数**无关**（只随实例数与列数变化）。
+
+### 9.5.3 步骤 4b：写入器 session 化（形状与风险）
+
+`WriteRgbwsvProductionPackage`（`RgbwsvPackageWriter.cpp:1024`，共 **330 行**）
+内部本就是逐层写：
+
+```cpp
+for (const RgbwsvProductionLayer& layer : request.layers) {
+    WriteRgbwsvProductionLayerTiff(stagingDir / relativePath, ...);
+    // 累积 manifest 条目、逐层 report
+}
+```
+
+**拆法：** 三段可单独调用，现有整包入口变成三段的薄封装（行为逐字不变）：
+
+```text
+BeginRgbwsvProductionPackage(request) -> Session   建 staging 目录与 identity
+AppendRgbwsvProductionLayer(session, layer)        写一层 TIFF + 累积 manifest 条目
+FinishRgbwsvProductionPackage(session) -> Result   写 manifest/report + 原子发布
+```
+
+场景路径的 `composeRequest.layersink` 直接调第二段，层写完即释放。
+
+**风险（为何单独一轮）：** 这 330 行承载 **staging 与原子发布**语义 ——
+取消与写失败时不得发布半包。把大量局部状态（stagingDir、profile、manifest
+数组、identity）提进 session 结构，容易在错误路径上漏掉回滚。
+**改错的后果是发出半包，而不是报错**，故必须配合取消/失败注入用例一起验，
+不适合与其他改动混在一批里。
 
 ### 9.5.2 步骤 2/4 的已知形状（下次接手直接用）
 
