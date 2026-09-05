@@ -501,6 +501,34 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 故「先整实例校验、再整体合成」可折成「逐层校验 + 逐层合成」，
 不需要新造校验逻辑，只需把 `ValidateLayer` 的调用点移进合成的层循环。
 
+**已完成的两半（均行为中性、可独立合入）：**
+
+```text
+步骤 3   SceneLayerComposeRequest.layersink    合成侧逐层交出   c6e88aa
+步骤 2a  LegacySceneLayerAdapterRequest.layersink  实例侧逐层交出  c5ebdcf
+```
+
+**剩下的是一处需要小心的手术（步骤 2b）：**
+
+合成器的 `ValidateInstance`（`SceneLayerComposer.cpp:589`）现在先整实例
+走一遍层：它同时做三件事 —— 校验层数齐备（`layers.size() == layercount`）、
+逐层调 `ValidateLayer`、累积 `instanceStatistics`（min/max x/y/layer 与通道统计）。
+流式化后 `instance.layers` 为空，这三件都要改：
+
+```text
+层数齐备   改为在层循环结束时断言「已校验层数 == layercount」
+ValidateLayer   调用点移进合成的层循环（该函数本就是逐层的，不必新造）
+instanceStatistics   min/max 与通道统计改为逐层累积，收尾部分移到层循环之后
+```
+
+另外合成主循环里的
+`placement.instance->layers.at(localLayerIndex)`（`SceneLayerComposer.cpp:1128`）
+要换成 provider 回调，返回空指针表示该实例本层无内容。
+
+**为什么单独标出来：** 这处改错【不会崩】，而是悄悄写出错误的场景报告
+（统计值偏差、闭合证据失真）。必须配合验证台与全量回归一起验，
+不适合在长会话尾段赶工。
+
 **仍需处理：** 实例的 `localgrid` 与 placement 要在第一层到达前就位
 （gridcallback 先于 ownedlayercallback 触发，可在屏障之外先收齐），
 以及 admission 判据（重叠/冲突/stale）保持在开跑前一次性完成、不因并发放宽。
