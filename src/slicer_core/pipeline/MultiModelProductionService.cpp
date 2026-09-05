@@ -1355,16 +1355,11 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
 
     // 逐层发布：每合成完一层立刻写盘并放行屏障，合成结果不再累积。
     // 会话此刻建立（staging 与租约就位），依赖 composition 的补齐留到合成之后。
-    //
-    // 已启用（MF-05 完成，`7d7a627`）：单实例 1.0/0.5/0.25mm 三档峰值同为
-    // 1.019 GB，峰值与层数彻底脱钩；用户 0.2+0.3 @10um 实测 1.91 GB 出包。
-    //
-    // 启用前曾挡住它的那十一项回归已全部定位并修复，根因是一条完整因果链，
-    // 起点只是一个分母：会话在合成【之前】建立 -> grid.layerCount 此刻为 0
-    // -> 逐层进度报成 current=N total=0 -> WorkerProtocol 判为语法违规
-    // -> 宿主写取消标记 -> 包写一半被协作式取消 -> 会话 RAII 回滚清 staging
-    // -> 包从未发布。修法见下方 SetExpectedLayerCount 与 78% 锚点上移，
-    // 详见 REPORT §9.5.6 / 任务卡 9.5.6。
+    // 已启用（MF-05，`7d7a627`）：峰值与层数脱钩，双模型 10um 实测 1.91 GB。
+    // 启用前挡住它的十一项回归已全部定位修复，根因是一条以「进度分母为 0」
+    // 起头的因果链（分母 0 -> 协议判违规 -> 写取消标记 -> 包写一半被取消 ->
+    // RAII 回滚清 staging -> 包从未发布）。修法是下方的 SetExpectedLayerCount
+    // 与 78% 锚点上移；完整链条见 REPORT §9.5.6 与任务卡 9.5.6。
     constexpr bool kStreamingPackageWriteEnabled = true;
     // 全局层数：对齐判定已保证各 offsetz 为 0，故取各实例 localgrid 的最大层数。
     // 会话在合成前建立，grid.layerCount 此刻还是 0，进度分母必须由此处补上。
