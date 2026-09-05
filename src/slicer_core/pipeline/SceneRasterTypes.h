@@ -6,6 +6,7 @@
 #include "slicer_core/output/rgbwsv/RgbwsvPackage.h"
 
 #include <cstddef>
+#include <functional>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -122,6 +123,20 @@ struct SceneLayerComposeRequest
     RgbwsvProtocol protocol;
     std::vector<SceneInstanceRaster> instances;
     double quantizationtolerance{1.0e-6};
+
+    /**
+     * @brief MF-05 步骤 3：逐层出口。设置后合成【不再累积】`result.layers`。
+     *
+     * 合成主循环本就是 layer-major（外层全局层、内层实例），逐层闭合校验也在
+     * 循环内完成，故「全部层同时在场」只是末尾的计数校验，不是证据本身的需要。
+     * 设置本回调后，每层合成完即交出并释放；`statistics.outputlayercount` 继续
+     * 如实累加，`layerstatistics`（每层一条小结构）仍保留。
+     *
+     * 用户 0.2+0.3 @10um 场景下 `result.layers` 占约 62.2 GiB。
+     * 未设置时行为【逐字节不变】，故可先落地、后接线。
+     */
+    std::function<void(int, RgbwsvProductionLayer&&, const RgbwsvProductionLayerStatistics&)>
+        layersink;
 
     /** @brief Synchronous, non-owning cancellation source for long loops. */
     const api::ICancelToken* canceltoken{nullptr};

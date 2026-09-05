@@ -1073,8 +1073,11 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
         return result;
     }
 
-    result.layers.reserve(
-        static_cast<std::size_t>(request.globalgrid.layercount));
+    if (!request.layersink)
+    {
+        result.layers.reserve(
+            static_cast<std::size_t>(request.globalgrid.layercount));
+    }
     result.layerstatistics.reserve(
         static_cast<std::size_t>(request.globalgrid.layercount));
     std::vector<SceneRasterOwnership> ownership(
@@ -1245,7 +1248,16 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
                 static_cast<std::uint64_t>(globalPixelCount)
                 - layerStatistics.emptyPixels[channel];
         }
-        result.layers.push_back(std::move(output));
+        if (request.layersink)
+        {
+            // MF-05：本层已通过循环内的逐层闭合校验，交出即释放，不再累积。
+            request.layersink(
+                globalLayerIndex, std::move(output), layerStatistics);
+        }
+        else
+        {
+            result.layers.push_back(std::move(output));
+        }
         result.layerstatistics.push_back(std::move(layerStatistics));
         if (StopIfCancellationRequested(
                 request, result, "composition.layer_complete", globalLayerIndex))
@@ -1256,7 +1268,7 @@ static SceneLayerComposeResult ComposeSceneLayersWithInstances(
 
     result.available = true;
     result.status = "ready_for_writer";
-    result.statistics.outputlayercount = result.layers.size();
+    result.statistics.outputlayercount = result.layerstatistics.size();
     result.composems = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - start).count();
     return result;
@@ -1385,15 +1397,30 @@ static SceneLayerComposeResult ComposeSingleInstanceConsuming(
 
     result.statistics.visibleinstancecount = 1U;
     result.statistics.instances.push_back(std::move(instanceStatistics));
-    result.layers.reserve(visibleInstance->layers.size());
+    if (!request.layersink)
+    {
+        result.layers.reserve(visibleInstance->layers.size());
+    }
+    int singleInstanceLayerIndex{0};
     for (SceneInstanceRasterLayer& sourceLayer : visibleInstance->layers)
     {
+        if (request.layersink)
+        {
+            request.layersink(
+                singleInstanceLayerIndex,
+                std::move(sourceLayer.output),
+                result.layerstatistics.empty()
+                    ? RgbwsvProductionLayerStatistics{}
+                    : result.layerstatistics.back());
+            ++singleInstanceLayerIndex;
+            continue;
+        }
         result.layers.push_back(std::move(sourceLayer.output));
     }
     result.layerstatistics = std::move(layerStatistics);
     result.available = true;
     result.status = "ready_for_writer";
-    result.statistics.outputlayercount = result.layers.size();
+    result.statistics.outputlayercount = result.layerstatistics.size();
     result.composems = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - start).count();
     return result;
@@ -1432,9 +1459,13 @@ ValidatedSceneLayerComposeResult::ValidatedSceneLayerComposeResult(
           && m_result.status == "ready_for_writer"
           && !m_result.error.has_value()
           && m_result.grid.IsValid()
-          && m_result.layers.size()
+          // MF-05：证据由「全部层字节同时在场」改为「每层都通过了循环内的逐层
+          // 闭合校验」—— layerstatistics 只在该校验通过后逐层追加，故其条数即
+          // 已验证层数。设置 layersink 时字节已逐层交出，layers 为空属正常。
+          && m_result.layerstatistics.size()
               == static_cast<std::size_t>(m_result.grid.layercount)
-          && m_result.layerstatistics.size() == m_result.layers.size())
+          && (m_result.layers.empty()
+              || m_result.layers.size() == m_result.layerstatistics.size()))
 {
 }
 
