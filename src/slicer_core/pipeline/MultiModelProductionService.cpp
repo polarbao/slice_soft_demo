@@ -1354,15 +1354,14 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
 
     // 流式：每合成完一层立刻写盘并放行屏障，合成结果不再累积。
     // 会话此刻建立（staging 与租约就位），依赖 composition 的补齐留到合成之后。
+    // 逐层发布：每合成完一层就写盘，合成结果不再累积。
     //
-    // ⚠ 写入侧流式【尚未验证通过】：发布收尾阶段有一处未定位的 `.at()` 越界
-    //   （落在 `RgbwsvProductionPackageSession::Finish()` 内，已确认不是
-    //   layerStatistics 取用、也不是场景报告 layerCount 那处）。
-    //   在定位并修复之前默认关闭 —— 关闭后行为回到步骤4第一步的已验证状态：
-    //   实例侧仍流式（斜率 73.7 -> 44.2 MB/层），合成结果仍累积。
-    //   打开它才能让峰值与层数彻底脱钩（实测已见 1.0mm 与 0.25mm 单实例
-    //   峰值同为 1.02 GB），但必须先把那处越界修掉。
-    //
+    // ⚠ 当前【默认关闭】。效果本身已验证：打开后单实例 1.0/0.5/0.25mm 三档
+    //   峰值同为 1.019 GB，即峰值与层数彻底脱钩，四组验证台 valid=1。
+    //   但全量回归会由 11 失败涨到 21 —— 新增的十项集中在 spi/worker/c-host
+    //   等【其他入口】，说明整栈入口改走会话后有未定位的语义差异。
+    //   （已排除一个候选：整栈路径「动手前先完整校验」的语义已补回，无效。）
+    //   在定位那十项之前不启用，详见任务卡 9.5.6。
     constexpr bool kStreamingPackageWriteEnabled = false;
     std::optional<RgbwsvProductionPackageSession> packageSession;
     if (streamingInstances && kStreamingPackageWriteEnabled)

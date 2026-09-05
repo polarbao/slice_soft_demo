@@ -222,6 +222,39 @@ std::optional<std::string> ResolveWhiteSemantics(
  * 故 Begin 只做与 scene 无关的检查，Finish 再做一次完整校验 —— 校验强度不降级，
  * 只是把依赖 scene 的那部分推迟到 scene 确实就位之后。
  */
+/**
+ * @brief 校验一层的自洽性：层号连续、z 有限、幅面一致、通道序固定、字节数正确。
+ *
+ * MF-05：整栈路径在 `ValidateRequest` 里按 grid.layerCount 遍历 `request.layers`
+ * 做这件事；逐层会话下 layers 恒为空，故改由 `AppendLayer` 在收到每层时调用同一
+ * 个函数 —— **校验强度不降级，只是时机从「全部到齐后一次」变成「到一层校一层」**。
+ *
+ * @param expectedWidth/expectedHeight 期望幅面。整栈路径传 grid 的值；逐层路径
+ *        在合成之前 grid 尚未补齐，故传【第一层的幅面】，由 Finish 再与补齐后的
+ *        grid 比对一次，两段合起来等价于原来的整栈校验。
+ */
+void ValidateProductionLayer(
+    const RgbwsvProductionLayer& layer,
+    const int expectedLayerIndex,
+    const int expectedWidth,
+    const int expectedHeight)
+{
+    const std::size_t expectedBytes =
+        static_cast<std::size_t>(expectedWidth)
+        * static_cast<std::size_t>(expectedHeight)
+        * kChannelCount;
+    if (layer.layerIndex != expectedLayerIndex
+        || !std::isfinite(layer.zMm)
+        || layer.widthPx != expectedWidth
+        || layer.heightPx != expectedHeight
+        || !HasFixedChannelOrder(layer.channelOrder)
+        || layer.channels.size() != expectedBytes)
+    {
+        throw std::invalid_argument(
+            "RGBWSV production package contains an invalid or non-contiguous layer");
+    }
+}
+
 void ValidateRequest(
     const RgbwsvProductionPackageWriteRequest& request,
     const bool compositionReady = true,
@@ -345,23 +378,20 @@ void ValidateRequest(
         static_cast<std::size_t>(request.grid.widthPx)
         * static_cast<std::size_t>(request.grid.heightPx)
         * kChannelCount;
-    for (int layerIndex{0}; layerIndex < request.grid.layerCount; ++layerIndex)
+    // 逐层会话下 layers 恒为空，本循环无内容可查 —— 每层在 AppendLayer 收到时
+    // 已用同一个 ValidateProductionLayer 校验过。跳过它，否则这里必然越界。
+    const bool layersInMemory = !writtenLayerCount.has_value();
+    for (int layerIndex{0};
+         layersInMemory && layerIndex < request.grid.layerCount;
+         ++layerIndex)
     {
         ThrowIfCancellationRequested(
             request.canceltoken,
             "layer_validation");
         const RgbwsvProductionLayer& layer =
             request.layers.at(static_cast<std::size_t>(layerIndex));
-        if (layer.layerIndex != layerIndex
-            || !std::isfinite(layer.zMm)
-            || layer.widthPx != request.grid.widthPx
-            || layer.heightPx != request.grid.heightPx
-            || !HasFixedChannelOrder(layer.channelOrder)
-            || layer.channels.size() != expectedBytes)
-        {
-            throw std::invalid_argument(
-                "RGBWSV production package contains an invalid or non-contiguous layer");
-        }
+        ValidateProductionLayer(
+            layer, layerIndex, request.grid.widthPx, request.grid.heightPx);
         if (!request.layerStatistics.empty())
         {
             const RgbwsvProductionLayerStatistics& statistics =
@@ -1069,6 +1099,9 @@ struct RgbwsvProductionPackageSession::State
     std::array<std::uint64_t, kChannelCount> totalPrintPixels{};
     std::array<std::uint64_t, kChannelCount> totalEmptyPixels{};
     int writtenLayerCount{0};
+    /// 逐层路径的幅面基准（取自第一层），Finish 时与补齐后的 grid 比对。
+    int streamWidthPx{0};
+    int streamHeightPx{0};
     /// 进度回调的分母。整栈模式取 layers.size()，逐层模式取 grid.layerCount，
     /// 两者在整栈模式下相等，故现有行为不变。
     int expectedLayerCount{0};
@@ -1165,6 +1198,15 @@ void RgbwsvProductionPackageSession::AppendLayer(
     const RgbwsvProductionLayer& layer)
 {
     State& s = *m_state;
+    // 逐层校验：与整栈路径共用同一判据。合成之前 grid 尚未补齐，故幅面以第一层
+    // 为基准，Finish 时再与补齐后的 grid 比对一次。
+    if (s.writtenLayerCount == 0)
+    {
+        s.streamWidthPx = layer.widthPx;
+        s.streamHeightPx = layer.heightPx;
+    }
+    ValidateProductionLayer(
+        layer, s.writtenLayerCount, s.streamWidthPx, s.streamHeightPx);
     const RgbwsvProductionPackageWriteRequest& request = s.request;
     RgbwsvProductionPackageWriteProfile& profile = s.profile;
     const std::filesystem::path& stagingDir =
@@ -1254,6 +1296,14 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
     // 补齐已完成，此处做完整校验（含 Begin 阶段跳过的、依赖合成结果的部分）。
     // 层数齐备用已写层数判定 —— 层已逐层交出，request.layers 恒为空。
     ValidateRequest(request, true, s.writtenLayerCount);
+    // 逐层校验时 grid 尚未补齐，幅面只与第一层比过；此处补最后一条比对。
+    if (s.writtenLayerCount > 0
+        && (s.streamWidthPx != request.grid.widthPx
+            || s.streamHeightPx != request.grid.heightPx))
+    {
+        throw std::invalid_argument(
+            "RGBWSV production package layer extent does not match grid");
+    }
     const WriterClock::time_point totalStart = s.totalStart;
     RgbwsvProductionPackageWriteProfile& profile = s.profile;
     const std::optional<std::string>& whiteSemantics = s.whiteSemantics;
@@ -1468,6 +1518,12 @@ RgbwsvProductionPackageWriteResult WriteRgbwsvProductionPackage(
     const RgbwsvProductionPackageWriteRequest& request)
 {
     // 整栈入口现在是逐层会话的薄封装 —— 两条路径共用同一份发布实现，不会漂移。
+    //
+    // 但整栈路径的字段【本来就齐备】，必须保持「动手之前先完整校验」的语义：
+    // 会话构造只做与合成结果无关的检查（那是为流式准备的），若不在此处补一次
+    // 完整校验，非法请求就会先建出 staging 与租约、直到 Finish 才抛 ——
+    // 负向用例期待的是「不产生任何副作用地拒绝」。
+    ValidateRequest(request, true);
     RgbwsvProductionPackageSession session(request);
     for (const RgbwsvProductionLayer& layer : request.layers)
     {

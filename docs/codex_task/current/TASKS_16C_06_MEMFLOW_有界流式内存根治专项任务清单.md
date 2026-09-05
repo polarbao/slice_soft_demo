@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / MF-01..03B4A COMPLETE / MF-03B4B 接口已接线 / MF-03X1 COMPLETE**
-> 版本：v3.0 ｜ 日期：2026-09-06
+> 版本：v3.1 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -539,75 +539,82 @@ N 份 每实例 SceneInstanceRaster   10 B/列/层 x N   -> 双模型 207.4 GiB
 **两条独立路径（读代码估算、跑基准外推）得到同一数量级，故根因判断可采信。**
 修好后的判据：同样四组的峰值应与层数**无关**（只随实例数与列数变化）。
 
-### 9.5.6 ⚠ 流式发布当前【默认关闭】（2026-09-06）
+### 9.5.6 ⚠ 流式发布当前【默认关闭】（2026-09-06 更新）
 
-`MultiModelProductionService.cpp` 内：
+`MultiModelProductionService.cpp`：`kStreamingPackageWriteEnabled = false`。
+
+#### 本轮进展：越界已定位并修复
+
+上一版记的「Finish() 内未定位的 `.at()` 越界」**已解决**。
+根因是**第九处整栈假设**：
 
 ```cpp
-constexpr bool kStreamingPackageWriteEnabled = false;
-if (streamingInstances && kStreamingPackageWriteEnabled) { /* 建会话、接 layersink */ }
+// RgbwsvPackageWriter.cpp  ValidateRequest 内
+for (int layerIndex{0}; layerIndex < request.grid.layerCount; ++layerIndex) {
+    const RgbwsvProductionLayer& layer =
+        request.layers.at(static_cast<std::size_t>(layerIndex));   // 逐层路径下 layers 为空
 ```
 
-#### 现状
+**修法（校验强度不降级）**：把这段逐层内容校验抽成 `ValidateProductionLayer`，
+整栈路径在 `ValidateRequest` 里照旧逐层调用；逐层路径改由 `AppendLayer` 在收到
+每层时调用**同一个函数** —— 时机从「全部到齐后一次」变成「到一层校一层」。
+幅面基准在合成前取不到 grid，故以第一层为准，`Finish` 再与补齐后的 grid 比对一次，
+两段合起来等价于原来的整栈校验。
 
-写入侧流式的代码**已全部接线并能编译**（`2cd7bc6`），但**未启用**。
+**效果已验证**（打开开关实测）：
 
-| | 关闭（当前主线） | 打开（已实测但未通过） |
+| 层厚 | 层数 | 峰值 |
 |---|---|---|
-| 单实例 1.0 / 0.25mm 峰值 | 1.33 / 3.23 GB | **1.02 / 1.02 GB** |
-| 峰值是否随层数增长 | 是（44.2 MB/层） | **否，已脱钩** |
-| 四组验证台 | 全部 `valid=1` | `valid=0` |
-| 全量回归 | 11 失败 / 229，与既有清单一致 | 未跑（发布链路先失败） |
+| 1.0mm | 15 | 1.019 GB |
+| 0.5mm | 29 | **1.019 GB** |
+| 0.25mm | 58 | **1.019 GB** |
 
-**即：目标效果已经在数据上确认可达，只差发布收尾这一道门。**
+**峰值与层数彻底脱钩**，四组验证台 `valid=1`。这正是 MF-05 的目标。
 
-#### 为什么关闭
+#### 为什么仍然关闭：另一批回归
 
-`RgbwsvProductionPackageSession::Finish()` 内有一处**未定位的 `.at()` 越界**
-（`BENCH_ERROR invalid vector subscript`）。已用分段诊断确认：
+打开开关后全量回归由 **11 失败涨到 21**，新增十项集中在**其他入口**：
 
 ```text
-补齐阶段  通过   （"prepared ok, session=1" 打印）
-进入 Finish  是   （"entering Finish" 打印）
-离开 Finish  否   （"Finish ok" 未打印）-> 越界在 Finish 体内
+stage14c06_spi_conformance              SPI 合同
+stage14d05_real_worker_artifact_tests   worker 产物
+stage14d07_r2_engine_conformance_test   引擎合同
+stage14e01_c_host_end_to_end            C host 端到端
+hostflow_ha03_c_end_to_end              hostflow C 端到端
+stage14d06_public_worker_routing_tests  worker 路由
+multi_model_production_service_unit_tests
+…（共十项）
 ```
 
-**已排除的候选**（查过、不是它们）：
+这些入口都不走场景流式路径，却因**整栈入口 `WriteRgbwsvProductionPackage`
+改成了会话三段的封装**而受影响 —— 说明会话化本身与原实现存在未定位的语义差异。
+
+**已排除的候选**：怀疑是「非法请求不再动手前就抛、而是先建了 staging 才抛」，
+故在整栈入口补了一次 `ValidateRequest(request, true)` 恢复先校验语义 —— **无效**，
+仍是 21 项。
+
+#### 下一步怎么查
 
 ```text
-RgbwsvPackageWriter.cpp:1204-1213  layerStatistics 取用
-    流式下 request.layerStatistics 为空 -> 走 CalculateLayerStats 分支，不索引
-MultiModelSceneReport.cpp:503      场景报告 layerCount 原取 composition.layers.size()
-    流式下为 0。已改为 statistics.outputlayercount（该处本就该修），但越界依旧
+1  逐项读这十项的失败输出（不要猜），先看它们是同一根因还是多个
+   优先看 stage14c06_spi_conformance 与 stage14d05_real_worker_artifact_tests：
+   它们最接近写入器本身，噪音最小
+2  重点比对会话三段与原整包实现的差异面：
+   - Begin 的 recover/acquire 顺序是否与原来一致
+   - AppendLayer 新增的 ValidateProductionLayer 是否比原校验更严
+     （原循环用循环变量作 expectedLayerIndex，新版用 writtenLayerCount，
+      对「层号不从 0 连续」的用例判定会不同）
+   - Finish 里 ValidateRequest 被调了第二次，某些一次性副作用可能重复
+3  确认关闭状态下这十项全部恢复（本轮已确认：关闭后 10 失败 / 229，
+   比既有清单的 11 项还少一项）
 ```
-
-#### 下一步怎么定位
-
-越界只可能在 `Finish()` 体内按索引访问的几处，按嫌疑排序：
-
-```text
-1  internal::ValidateSlicePackageArtifact(stagingDir)
-   独立读回落盘包做严格校验。若 manifest 写的层数与实际写出的 TIFF 数不符，
-   或按 manifest 的 layerCount 索引 layers 数组，就会越界。
-   查法：先只跑到 staging 写完（把 publish 之后的都跳过），看是否已越界。
-
-2  ValidatePersistedSceneExtension(stagingDir/packageDir, request)
-   读场景扩展报告并核对。9.5.6 已修的 layerCount 属于这一族，可能还有同类字段。
-
-3  MakeValidatedStagingPackageEvidence / ValidatePublishedPackageIdentity
-   按层枚举 staging 文件。
-```
-
-**建议手段**：在 Finish 体内这四个调用之间插临时 `std::cerr` 断点
-（注意：`MultiModelProductionCancellation.h` 是在匿名命名空间内被 include 的，
-不能在那里加 `<iostream>`；本轮已踩过），二分到具体调用，再看其内部索引。
 
 #### 打开前必须验的
 
 ```text
-验证台四组 valid=1，且峰值与层数【脱钩】（1.0mm 与 0.25mm 单实例应同为约 1.02 GB）
-全量回归不新增失败
-取消与写失败路径不发半包（会话的 RAII 回滚仍生效）
+验证台四组 valid=1，且峰值与层数脱钩（三档同为约 1.019 GB）——【本轮已达成】
+全量回归不新增失败 ——【当前未达成：11 -> 21】
+取消与写失败路径不发半包（会话 RAII 回滚仍生效）
 ```
 ### 9.5.5 步骤 4 第二步（写入侧流式）的形状
 
