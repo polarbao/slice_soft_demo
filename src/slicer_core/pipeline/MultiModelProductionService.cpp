@@ -1262,68 +1262,12 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
                 return nullptr;
             };
     }
-    ValidatedSceneLayerComposeResult composition =
-        ComposeAdmittedSceneRastersValidated(std::move(composeRequest));
-    if (streamingInstances)
-    {
-        // 放行最后一层并收束生产者。屏障失效也要 join，否则线程对象析构即终止进程。
-        if (barrierLayer >= 0)
-        {
-            barrier.ReleaseLayer(barrierLayer);
-        }
-        // 合成成功即正常收尾（Drain 放行生产者跑完）；失败才中止（Fail 让其退出）。
-        // 两者都必须在 join 之前，否则仍在等待的生产者会让 join 永久挂住。
-        if (composition.IsValid())
-        {
-            barrier.Drain();
-        }
-        else
-        {
-            barrier.Fail();
-        }
-        for (std::thread& producer : producers)
-        {
-            producer.join();
-        }
-        producers.clear();
-    }
-    // 生产者结果在【合成判定之后】才收：合成失败时我们会主动 Fail 屏障，
-    // 生产者随即抛「被取消」——先收生产者就会用那个异常盖住合成的真实错误。
-    if (composition.IsValid() && streamingInstances)
-    {
-        if (const std::optional<MultiModelProductionResult> blocked =
-                collectProducerResults())
-        {
-            return blocked.value();
-        }
-    }
-    if (!composition.IsValid())
-    {
-        const SceneLayerComposeResult& blockedComposition =
-            composition.Value();
-        ThrowIfCancellationRequested(request, "scene_composition");
-        return Block(
-            request,
-            MultiModelProductionErrorCode::
-                ProductionPackageInvalid,
-            blockedComposition.error.has_value()
-                ? blockedComposition.error->field
-                : "sceneComposition",
-            blockedComposition.error.has_value()
-                ? blockedComposition.error->message
-                : "scene layer composition failed",
-            scene.sceneid);
-    }
-
-    runProfile.layer_compose_ms =
-        ElapsedMilliseconds(phaseStart);
-    ReportProgress(
-        request,
-        runStart,
-        "scene_package_write",
-        0,
-        composition.Value().grid.layercount,
-        78);
+    // MF-05 步骤4 第二步：写请求与发布会话都要在合成【之前】就位 ——
+    // layersink 每合成完一层就立刻写盘，会话必须已建好 staging 与租约。
+    // 本块原在合成之后，实测其字段全部来自 contract 与 request、不依赖
+    // composition，故可整体上移；依赖 composition 的 grid/scene/能力摘要
+    // 由合成后的 WriteValidatedMultiModelSceneProductionPackage 补齐 ——
+    // 会话持有 writeRequest 的引用，那时补齐对 Finish 可见。
     RgbwsvProductionPackageWriteRequest writeRequest;
     writeRequest.packageDir = contract.outputpackagedir;
     writeRequest.jobId = request.jobid;
@@ -1408,15 +1352,107 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
                 percent);
         };
 
+    // 流式：每合成完一层立刻写盘并放行屏障，合成结果不再累积。
+    // 会话此刻建立（staging 与租约就位），依赖 composition 的补齐留到合成之后。
+    //
+    // ⚠ 写入侧流式【尚未验证通过】：发布收尾阶段有一处未定位的 `.at()` 越界
+    //   （落在 `RgbwsvProductionPackageSession::Finish()` 内，已确认不是
+    //   layerStatistics 取用、也不是场景报告 layerCount 那处）。
+    //   在定位并修复之前默认关闭 —— 关闭后行为回到步骤4第一步的已验证状态：
+    //   实例侧仍流式（斜率 73.7 -> 44.2 MB/层），合成结果仍累积。
+    //   打开它才能让峰值与层数彻底脱钩（实测已见 1.0mm 与 0.25mm 单实例
+    //   峰值同为 1.02 GB），但必须先把那处越界修掉。
+    //
+    constexpr bool kStreamingPackageWriteEnabled = false;
+    std::optional<RgbwsvProductionPackageSession> packageSession;
+    if (streamingInstances && kStreamingPackageWriteEnabled)
+    {
+        packageSession.emplace(writeRequest);
+        composeRequest.layersink =
+            [&packageSession, &barrier](
+                const int globalLayerIndex,
+                RgbwsvProductionLayer&& layer,
+                const RgbwsvProductionLayerStatistics&)
+            {
+                packageSession->AppendLayer(layer);
+                // provider 也会在进入下一层前放行上一层；两处都调是幂等的
+                // （ReleaseLayer 只清 pendingLayer 恰等于该层的实例）。
+                barrier.ReleaseLayer(globalLayerIndex);
+            };
+    }
+    ValidatedSceneLayerComposeResult composition =
+        ComposeAdmittedSceneRastersValidated(std::move(composeRequest));
+    if (streamingInstances)
+    {
+        // 放行最后一层并收束生产者。屏障失效也要 join，否则线程对象析构即终止进程。
+        if (barrierLayer >= 0)
+        {
+            barrier.ReleaseLayer(barrierLayer);
+        }
+        // 合成成功即正常收尾（Drain 放行生产者跑完）；失败才中止（Fail 让其退出）。
+        // 两者都必须在 join 之前，否则仍在等待的生产者会让 join 永久挂住。
+        if (composition.IsValid())
+        {
+            barrier.Drain();
+        }
+        else
+        {
+            barrier.Fail();
+        }
+        for (std::thread& producer : producers)
+        {
+            producer.join();
+        }
+        producers.clear();
+    }
+    // 生产者结果在【合成判定之后】才收：合成失败时我们会主动 Fail 屏障，
+    // 生产者随即抛「被取消」——先收生产者就会用那个异常盖住合成的真实错误。
+    if (composition.IsValid() && streamingInstances)
+    {
+        if (const std::optional<MultiModelProductionResult> blocked =
+                collectProducerResults())
+        {
+            return blocked.value();
+        }
+    }
+    if (!composition.IsValid())
+    {
+        const SceneLayerComposeResult& blockedComposition =
+            composition.Value();
+        ThrowIfCancellationRequested(request, "scene_composition");
+        return Block(
+            request,
+            MultiModelProductionErrorCode::
+                ProductionPackageInvalid,
+            blockedComposition.error.has_value()
+                ? blockedComposition.error->field
+                : "sceneComposition",
+            blockedComposition.error.has_value()
+                ? blockedComposition.error->message
+                : "scene layer composition failed",
+            scene.sceneid);
+    }
+
+    runProfile.layer_compose_ms =
+        ElapsedMilliseconds(phaseStart);
+    ReportProgress(
+        request,
+        runStart,
+        "scene_package_write",
+        0,
+        composition.Value().grid.layercount,
+        78);
+
     RgbwsvProductionPackageWriteResult written;
     try
     {
         written = WriteValidatedMultiModelSceneProductionPackage(
-            std::move(writeRequest),
+            writeRequest,
             std::move(composition),
             scene,
             admission,
-            contract.profileconfigpath);
+            contract.profileconfigpath,
+            packageSession.has_value() ? &packageSession.value() : nullptr);
         runProfile.tiff_write_ms =
             written.profile.tiffwritems;
         runProfile.preview_write_ms =

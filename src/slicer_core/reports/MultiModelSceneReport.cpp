@@ -416,8 +416,11 @@ MultiModelSceneReportDocument BuildMultiModelSceneReportImpl(
             != composition.statistics.visibleinstancecount
         || scene.instances.size()
             != composition.statistics.totalinstancecount
-        || composition.statistics.outputlayercount
-            != composition.layers.size()
+        // MF-05：逐层交出时 layers 恒为空，而 outputlayercount 仍如实累计。
+        // 与 ValidatedSceneLayerComposeResult 的不变量同一处理：空则不比。
+        || (!composition.layers.empty()
+            && composition.statistics.outputlayercount
+                != composition.layers.size())
         || composition.statistics.hiddeninstancecount
             != scene.instances.size() - visibleCount
         || composeById.size() != visibleCount)
@@ -496,8 +499,11 @@ MultiModelSceneReportDocument BuildMultiModelSceneReportImpl(
          Json::object({
              {"grid", GridToJson(composition.grid)},
              {"protocol", ProtocolToJson(composition.protocol)},
+             // MF-05：逐层交出时 layers 恒为空，层数取如实累计的
+             // outputlayercount —— 写 0 会让持久化校验按错误层数索引。
              {"layerCount",
-              static_cast<int>(composition.layers.size())},
+              static_cast<int>(
+                  composition.statistics.outputlayercount)},
              {"totalInstanceCount",
               static_cast<std::uint64_t>(
                   composition.statistics.totalinstancecount)},

@@ -130,11 +130,12 @@ WriteMultiModelSceneProductionPackage(
 
 RgbwsvProductionPackageWriteResult
 WriteValidatedMultiModelSceneProductionPackage(
-    RgbwsvProductionPackageWriteRequest request,
+    RgbwsvProductionPackageWriteRequest& request,
     ValidatedSceneLayerComposeResult composition,
     const MultiModelScene& scene,
     const SceneCollisionResult& admission,
-    const std::filesystem::path& profileConfigPath)
+    const std::filesystem::path& profileConfigPath,
+    RgbwsvProductionPackageSession* session)
 {
     if (!composition.IsValid())
     {
@@ -170,6 +171,13 @@ WriteValidatedMultiModelSceneProductionPackage(
     {
         request.perinstance = capabilitySummary->perinstance;
         request.profileecho = capabilitySummary->profileecho;
+    }
+
+    if (session != nullptr)
+    {
+        // 层已在合成过程中逐层写入会话，此处只收尾发布。
+        // 上面补齐的 grid/scene/能力摘要经 request 引用对 Finish 可见。
+        return session->Finish();
     }
 
     SceneLayerComposeResult owned = std::move(composition).Release();

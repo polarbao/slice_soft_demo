@@ -17,6 +17,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <optional>
 #include <stdexcept>
 #include <system_error>
 #include <thread>
@@ -207,7 +208,25 @@ std::optional<std::string> ResolveWhiteSemantics(
     return request.profileWhiteSemantics;
 }
 
-void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
+/**
+ * @param compositionReady 为 false 时跳过依赖【合成结果】的检查。
+ *
+ * 合成后才补齐的字段有三组：`grid` 的 widthPx/heightPx/layerCount、
+ * `scene` 报告、以及由 scene 推出的 productionAcceptance；此外整栈模式下
+ * `layers` 也要到那时才有。
+ *
+ * MF-05：逐层会话在合成【之前】建立，那时 scene 报告尚未补齐 ——
+ * 而 `ExpectedProductionAcceptance` 正是按 scene 的 productionReady 推期望值，
+ * 无 scene 时恒为 "admitted"，于是 fixture 场景在 Begin 阶段必然误判为
+ * 「acceptance does not match scene readiness」。
+ * 故 Begin 只做与 scene 无关的检查，Finish 再做一次完整校验 —— 校验强度不降级，
+ * 只是把依赖 scene 的那部分推迟到 scene 确实就位之后。
+ */
+void ValidateRequest(
+    const RgbwsvProductionPackageWriteRequest& request,
+    const bool compositionReady = true,
+    // 逐层会话下 request.layers 恒为空，「层数齐备」改由【已写层数】保证。
+    const std::optional<int> writtenLayerCount = std::nullopt)
 {
     ThrowIfCancellationRequested(
         request.canceltoken,
@@ -219,7 +238,7 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
         throw std::invalid_argument(
             "RGBWSV production package directory is required");
     }
-    if (request.scene.has_value())
+    if (compositionReady && request.scene.has_value())
     {
         const std::string expectedPackagePath =
             std::filesystem::absolute(request.packageDir)
@@ -239,8 +258,9 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
                 "RGBWSV production package scene extension is invalid");
         }
     }
-    if (request.productionAcceptance
-        != ExpectedProductionAcceptance(request))
+    if (compositionReady
+        && request.productionAcceptance
+            != ExpectedProductionAcceptance(request))
     {
         throw std::runtime_error(
             "RGBWSV production package is blocked: acceptance does not match scene readiness");
@@ -257,9 +277,10 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
         throw std::invalid_argument(
             "RGBWSV production package pipeline mode is unsupported");
     }
-    if (request.grid.widthPx <= 0
-        || request.grid.heightPx <= 0
-        || request.grid.layerCount <= 0
+    if ((compositionReady
+            && (request.grid.widthPx <= 0
+                || request.grid.heightPx <= 0
+                || request.grid.layerCount <= 0))
         || !IsSupportedOutputDpi(request.grid.dpiX)
         || !IsSupportedOutputDpi(request.grid.dpiY)
         || !IsOutputPixelSizeConsistent(
@@ -273,8 +294,13 @@ void ValidateRequest(const RgbwsvProductionPackageWriteRequest& request)
         throw std::invalid_argument(
             "RGBWSV production package grid is invalid");
     }
-    if (request.layers.size()
-        != static_cast<std::size_t>(request.grid.layerCount))
+    const std::size_t effectiveLayerCount =
+        writtenLayerCount.has_value()
+        ? static_cast<std::size_t>(writtenLayerCount.value())
+        : request.layers.size();
+    if (compositionReady
+        && effectiveLayerCount
+            != static_cast<std::size_t>(request.grid.layerCount))
     {
         throw std::invalid_argument(
             "RGBWSV production package layer count does not match grid");
@@ -1055,7 +1081,8 @@ RgbwsvProductionPackageSession::RgbwsvProductionPackageSession(
 {
     State& s = *m_state;
     s.totalStart = WriterClock::now();
-    ValidateRequest(request);
+    // Begin 阶段 scene 尚未补齐，故跳过依赖它的检查；Finish 会再校验一次。
+    ValidateRequest(request, false);
     s.whiteSemantics = ResolveWhiteSemantics(request);
     s.packageDir =
         std::filesystem::absolute(request.packageDir).lexically_normal();
@@ -1224,6 +1251,9 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
 {
     State& s = *m_state;
     const RgbwsvProductionPackageWriteRequest& request = s.request;
+    // 补齐已完成，此处做完整校验（含 Begin 阶段跳过的、依赖合成结果的部分）。
+    // 层数齐备用已写层数判定 —— 层已逐层交出，request.layers 恒为空。
+    ValidateRequest(request, true, s.writtenLayerCount);
     const WriterClock::time_point totalStart = s.totalStart;
     RgbwsvProductionPackageWriteProfile& profile = s.profile;
     const std::optional<std::string>& whiteSemantics = s.whiteSemantics;
