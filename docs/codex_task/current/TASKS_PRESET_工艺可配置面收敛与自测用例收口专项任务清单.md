@@ -4,12 +4,86 @@
 > / PC-11 定责完成（其中 `stage14f05` 已修，Debug 失败集 6→5）
 > / PC-05 方向已定待产品输入 / PC-06 已拆出 `TASKS_ADMISSION_*` 独立专项
 > / PC-07..PC-10、PC-12 PROPOSED**
-> 版本：v1.5 ｜ 日期：2026-09-04
+> 版本：v1.6 ｜ 日期：2026-09-06
 > ⚠ PC-04 只解决了「可复现 + 转绿」，**没有解决耗时**：它仍占全量 992.5 s 中的 555.5 s（56%）。
 > TIMEOUT 已按 §6.7 选项 a 抬至 1800 s（原 900 s 对实测 555/628 s 仅 1.43~1.62 倍余量）
 > 定位：不占 Stage 编号的独立专项；本清单为该专项任务状态唯一真源
 > 授权：`docs/slice/DOC/DOC_DECISION_TEST_PRESET_2026_09_03_自测用例去别名与T派生收口授权.md`
 > 缘起：用户 2026-09-03 提出两问 ——「自测用例是否可删减」「常用工艺预设是否可统一合并」
+
+---
+
+## 0. 恢复点（2026-09-06 交接）
+
+### 0.1 本专项当前状态：已收口，工作树零残留
+
+```text
+最后一次提交  cc04b2a
+本专项提交    c05c9a6 12023f4 5fac4c0 aa83a45 ece3027 76f3d8e e1f9512 9b2842d 7d31402 cc04b2a
+工作树        本专项【无任何未提交改动】
+```
+
+### 0.2 唯一未做的验证
+
+```text
+✘ 14F05 修复（7d31402）之后【未跑全量回归】。
+  已验的是：定向跑原 6 项失败 → 5 失败 + stage14f05 转 Skipped；
+            Debug 下 ctest -R stage14f05 报 ***Skipped 并列入「did not run」；
+            PowerShell AST 解析 OK、ValidateSet 仍拒绝非法值。
+  未验的是：全量 222 项的失败集是否确实由 6 降为 5、且无其他连带影响。
+  这一项【应在分支合并完成之后】连同合并复验一起做，单独再跑一次 16.5 分钟不划算。
+```
+
+### 0.3 分支合并完成后必须复验的三点
+
+`CMakeLists.txt` 是本专项与 `codex/memflow-bounded-streaming` **唯一的共同改动文件**。
+`git merge-tree --write-tree` 判定该合并零冲突（返回单一 tree OID、退出码 0），
+但零文本冲突不等于零语义影响，合并后需逐条复验：
+
+```text
+① CTest 注册条目数
+   本专项收口后 Debug 全量为 222 项（全配置唯一名 234）。
+   memflow 会新增 tests/stage16 的 BoundedSupport* 等目标，数字必然上升 ——
+   要确认的是「上升量恰等于 memflow 新增的目标数」，而不是把我摘掉的
+   9 个纯别名条目又带了回来。核对方式见 §3 的摘除清单。
+② stage14f05_local_closure_gate 在 Debug 下仍报 Skipped 而非 Failed
+   该行为依赖 CMakeLists 的 SKIP_RETURN_CODE 111 与脚本内
+   $script:SkipReturnCode 两处数值一致，合并可能只带来其中一处。
+③ hostflow_hd02_real_asset_matrix 仍读清单而非扫盘，且 TIMEOUT 为 1800
+   memflow 分支的 tests/hostflow/HostThreeDCanvasTests.cpp 是合并前的旧版本，
+   若合并策略偏向该侧，会把 PC-04 的清单驱动改动整体回退。
+   判据：tests/hostflow/fixtures/render_ra02_asset_manifest.txt 必须仍存在，
+         且该用例在 Debug 下 PASS 而非以 rendered=93 失败。
+```
+
+### 0.4 本次「无法合并」的事实记录
+
+用户 2026-09-06 报告无法合并其他分支数据，并归因于本专项的改动。**实测不成立**：
+
+```text
+git merge-tree --write-tree HEAD codex/memflow-bounded-streaming
+  → 单一 tree OID + 退出码 0，即文本合并零冲突
+真实阻塞源  工作树里 2 个【未提交】文件同时出现在 incoming 改动集中：
+              docs/slice/README.md
+              src/slicer_core/pipeline/MultiModelProductionService.cpp
+            git merge 会以「local changes would be overwritten by merge」拒绝。
+            这 2 个文件属于并行会话的 HOSTFLOW H-F 工作（当时共 26 个未提交文件），
+            与本专项无关；本专项的 10 次提交全部已落盘、工作树零残留。
+处置        由 HOSTFLOW 一侧提交或 stash 这 26 个改动后即可合并，本专项无需回退任何提交。
+```
+
+留此记录是为了避免后来人在同类情形下先去回退 PRESET 的提交 —— 那不会解除阻塞。
+
+### 0.5 恢复后的下一步
+
+```text
+优先  §0.2 的全量回归 + §0.3 的三点合并复验（应合并后一次做完）
+其次  PC-05 —— 方向已定（不删 placement），只剩「宿主是否现在暴露 upper/both」
+        这一个产品问题，出口已写成 §7.4 的 A/B 两条，等用户择一
+其次  TASKS_ADMISSION 专项是否立项（PC-06 拆出，未开工）
+其余  PC-07（口径待裁定）、PC-08（受 SHA256 冻结）、PC-09（待 MATVOL 裁定）、
+      PC-10、PC-12（低优先级）
+```
 
 ---
 
@@ -781,6 +855,7 @@ Require(callThatWrites(&error), QStringLiteral("...: %1").arg(error));
 | 日期 | 版本 | 变更 |
 |---|---|---|
 | 2026-09-03 | v1.0 | 首版。固化 PC-01/PC-02 已完成事实与 18:00 回归证据；记录 PC-03 已落地内容与恢复回归后的确认清单；PC-04 给出「冻结基线无法从仓库复现」的完整证据链与 A/B/C 三个待裁定选项；PC-05..PC-11 列明各自的实测事实、完成标准与开工前置（含 PC-07 必须先扫 25 个文件测出既有不一致、PC-08 受 15 个 SHA256 冻结约束、PC-09 待 MATVOL 裁定）。 |
+| 2026-09-06 | v1.6 | 新增 §0 恢复点：本专项已在 cc04b2a 收口、工作树零残留；记明唯一未做的验证是 14F05 修复后未跑全量回归（应与合并复验合并进行）；列出合并后必须复验的三点（CTest 条目数上升量、14F05 仍 Skipped、PC-04 清单驱动未被回退），因为 `CMakeLists.txt` 是本专项与 memflow 唯一的共同改动文件；并记录 2026-09-06「无法合并」的实测归因 —— merge-tree 判定零冲突，真实阻塞是 2 个未提交的 HOSTFLOW 文件与 incoming 改动集重叠，回退 PRESET 提交不会解除阻塞。 |
 | 2026-09-04 | v1.5 | 三项后续落地：①`stage14f05_local_closure_gate` 已修 —— 改由脚本在非 Release 时以 `SKIP_RETURN_CODE 111` 跳过，CTest 报 Skipped 而非 Failed，Debug 失败集 6→5；不用 CTest 的 `CONFIGURATIONS` 属性是因为 CTest 4.3.1 下实测它已解析到该属性却仍执行，滤不掉，且「显式跳过」优于「静默缺席」。②PC-06 按建议拆出独立专项 `TASKS_ADMISSION_组合准入规则单一真源收敛专项任务清单.md`，规则条数更正 24→29 并逐条列出。③PC-05 取值分布实测（30 个文件：23 lower、3 both、2 upper、各 1 full_vertical/unsupported_only）**排除了「删掉 placement 一路」**，且非 lower 用例中 3 个与外侧光油壳层语义配套；同时纠正「placementExplicit 未写故 placement 未生效」的误判 —— `config.cpp:486-488` 依 JSON 键是否出现自动置该标志。剩下的是范围问题（宿主是否现在就暴露 upper/both），已写成 A/B 两个明确出口而非搁置的二择一。 |
 | 2026-09-04 | v1.4 | PC-11 定责完成：6 项既有失败逐条实跑读输出。关键发现 —— `stage14f05_local_closure_gate` 的脚本给 `-Config` 加了 `ValidateSet("Release")` 而 CTest 传的是 `$<CONFIG>`，在任何 Debug 回归里【结构上永远不可能通过】，是一条零信号红灯，应最先修；`slicer_stage14e02_qt_host_boundary_test` 验证了「门禁首个失败即中止」的预测 —— 报 1 项而实际 5 项（3 项台账内增长未同步下调，来自 RIPFLOW/MATVOL-T/HOSTFLOW，另 2 项台账外超 500 行）；`slicer_stage14e04d_dual_view_contract_test` 是缺纹理静默降级为灰模的 fail-closed 违规；`stage14f03` 流程本身全绿、疑似门禁侧路径期望过时；`scene_layer_adapters_unit_tests` 为 13 过 12 失 1 的窄缺陷；`slicer_stage14c04` 需 14C 判定期望是否已过时。§13.2 给出性质、归属与优先级，并明确本专项不代劳任何一项。 |
 | 2026-09-04 | v1.3 | PC-04 §6.7 选项 a 已执行：`hostflow_hd02_real_asset_matrix` 的 TIMEOUT 900→1800（用户批准；实测 555/628 s 对 900 s 仅 1.43~1.62 倍余量）。**PC-12 口径两处更正**：处数由 36 改为 **85**（原扫描正则只支持一层嵌套括号，漏掉实参含嵌套调用的站点）；并撤回「纯机械改动」的判断 —— 实际脚本化改写 81 处后已回退，三条失败原因记于 §15.2（吃掉第二个实参、变量名无法机械生成且会撞名、4 处在短路链中）。完成标准改为逐文件手工改、低优先级，或改为「遇到空原因就地修一处」而不单独推平。 |
