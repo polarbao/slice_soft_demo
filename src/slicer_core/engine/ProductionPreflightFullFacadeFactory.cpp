@@ -334,7 +334,7 @@ public:
                     SliceConfig modelConfig = profile;
                     modelConfig.input.model_path = source.sourcepath;
                     modelConfig.input.format = source.format;
-                    modelConfig.auto_orient.enabled =
+                    modelConfig.auto_orient.enabled &=
                         source.autoorientenabled;
                     validate_slice_config(modelConfig);
                     SceneModel model = load_model_report(
