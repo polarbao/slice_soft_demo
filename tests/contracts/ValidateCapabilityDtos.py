@@ -57,8 +57,8 @@ def FieldSpec(
 def Main() -> int:
     repoRoot = Path(__file__).resolve().parents[2]
     contract = LoadJson(repoRoot / "contracts" / "slicer_capability_dtos.json")
-    if contract["contractVersion"] != "1.13":
-        raise AssertionError("expected the XYZ translation contract")
+    if contract["contractVersion"] != "1.14":
+        raise AssertionError("expected the import pose contract")
     capabilities = contract["capabilities"]
     capabilityIds = [capability["id"] for capability in capabilities]
 
@@ -89,6 +89,16 @@ def Main() -> int:
             )
 
     byId = {capability["id"]: capability for capability in capabilities}
+    autoOrient = FieldSpec(
+        byId["model.import"], "requestFields", "options.autoOrient"
+    )
+    if autoOrient != {
+        "path": "options.autoOrient",
+        "type": "boolean",
+        "required": False,
+        "default": True,
+    }:
+        raise AssertionError("model.import autoOrient compatibility drifted")
     for modelCapability in ("model.import", "model.get_metadata"):
         RequirePaths(
             byId[modelCapability],
@@ -657,7 +667,7 @@ def Main() -> int:
         if not switchInvariants[key]:
             raise AssertionError(f"view switch invariant drifted: {key}")
 
-    print("15 capability DTOs plus XYZ translation v1.13 contract: PASS")
+    print("15 capability DTOs plus import pose v1.14 contract: PASS")
     return 0
 
 

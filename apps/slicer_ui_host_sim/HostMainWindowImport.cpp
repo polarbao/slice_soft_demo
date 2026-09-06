@@ -46,8 +46,10 @@ void HostMainWindow::OnImportModel()
 
     QList<hostmodelimportresult> results;
     QString error;
+    const hostmodelimportoptions importOptions =
+        m_transformLayoutPanel->ImportOptions();
     const bool imported = m_importWorkflow->ImportModels(
-        modelPaths, &results, &error);
+        modelPaths, &results, &error, importOptions);
     if (!imported)
     {
         SetSceneCommandsEnabled(m_client.IsOpen());
@@ -58,9 +60,12 @@ void HostMainWindow::OnImportModel()
     bool autoLayoutApplied = false;
     QString autoLayoutError;
     hostsceneeditresult autoLayoutResult;
+    const bool autoLayoutEnabled =
+        m_transformLayoutPanel->AutoLayoutEnabled();
     const bool autoLayoutRequired =
         HostImportPlacementPolicy::RequiresGridLayout(
-            m_importWorkflow->InstanceCount());
+            m_importWorkflow->InstanceCount(),
+            autoLayoutEnabled);
     if (autoLayoutRequired)
     {
         autoLayoutApplied = m_importWorkflow->ApplyGridLayout(
@@ -87,8 +92,14 @@ void HostMainWindow::OnImportModel()
                              .arg(m_importWorkflow
                                       ->SingleMaterialRestrictionSummary()))
         : QString{};
-    const QString layoutSummary = !autoLayoutRequired
-        ? QStringLiteral("场景为空，未执行自动排版")
+    const QString layoutSummary = !autoLayoutEnabled
+        ? QStringLiteral(
+              "已使用%1并应用批次原点偏移 (%2, %3) mm")
+             .arg(importOptions.autoorientenabled
+                      ? QStringLiteral("自动定向后的 XY")
+                      : QStringLiteral("源姿态与源 XY"))
+             .arg(importOptions.originxmm, 0, 'f', 2)
+             .arg(importOptions.originymm, 0, 'f', 2)
         : autoLayoutApplied
             ? QStringLiteral(
                   "已按当前参数放置到排版边界，碰撞=%1，越界=%2")
@@ -113,7 +124,7 @@ void HostMainWindow::OnImportModel()
                      ? QStringLiteral(" · 单材料限定")
                      : QString{})
             .arg(m_client.CallCount()));
-    if (autoLayoutRequired && !autoLayoutApplied)
+    if (autoLayoutEnabled && autoLayoutRequired && !autoLayoutApplied)
     {
         QMessageBox::warning(
             this,

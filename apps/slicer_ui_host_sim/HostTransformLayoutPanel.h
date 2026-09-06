@@ -51,6 +51,12 @@ public:
      */
     [[nodiscard]] hostgridlayoutrequest LayoutRequest() const;
 
+    /** @brief 返回操作员是否启用了导入后的自动规则排版。 */
+    [[nodiscard]] bool AutoLayoutEnabled() const;
+
+    /** @brief 返回下一批模型的自动定向与 XY 原点偏移。 */
+    [[nodiscard]] hostmodelimportoptions ImportOptions() const;
+
 signals:
     /** @brief 请求对所选实例变换执行一次原子 Commit。 */
     void SigTransformRequested(
@@ -103,6 +109,10 @@ private:
     QSpinBox* m_rowsSpin{nullptr};
     QDoubleSpinBox* m_columnGapSpin{nullptr};
     QDoubleSpinBox* m_rowGapSpin{nullptr};
+    QCheckBox* m_autoOrientCheck{nullptr};
+    QCheckBox* m_autoLayoutCheck{nullptr};
+    QDoubleSpinBox* m_importOriginXSpin{nullptr};
+    QDoubleSpinBox* m_importOriginYSpin{nullptr};
     QPushButton* m_applyLayoutButton{nullptr};
     int m_instanceCount{0};
     quint64 m_sceneRevision{0};

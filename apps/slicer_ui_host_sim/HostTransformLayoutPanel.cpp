@@ -131,7 +131,8 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
     transformForm->addRow(m_landOnBuildPlateButton);
     root->addWidget(transformGroup);
 
-    auto* layoutGroup = new QGroupBox(QStringLiteral("规则排版"), this);
+    auto* layoutGroup = new QGroupBox(
+        QStringLiteral("导入落位与规则排版"), this);
     auto* layoutForm = new QFormLayout(layoutGroup);
     m_columnsSpin = new QSpinBox(layoutGroup);
     m_columnsSpin->setObjectName(QStringLiteral("hostLayoutColumnsSpin"));
@@ -147,6 +148,32 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
         QStringLiteral("hostLayoutColumnGapSpin"), layoutGroup);
     m_rowGapSpin = CreateGapSpin(
         QStringLiteral("hostLayoutRowGapSpin"), layoutGroup);
+    m_autoOrientCheck = new QCheckBox(
+        QStringLiteral("导入时自动定向"), layoutGroup);
+    m_autoOrientCheck->setObjectName(
+        QStringLiteral("hostImportAutoOrientCheck"));
+    m_autoOrientCheck->setChecked(true);
+    m_autoOrientCheck->setToolTip(QStringLiteral(
+        "取消后保留模型源姿态；Z 轴仍在添加实例时自动触底"));
+    m_autoLayoutCheck = new QCheckBox(
+        QStringLiteral("导入后自动排版"), layoutGroup);
+    m_autoLayoutCheck->setObjectName(
+        QStringLiteral("hostLayoutAutoApplyCheck"));
+    m_autoLayoutCheck->setChecked(true);
+    m_autoLayoutCheck->setToolTip(QStringLiteral(
+        "取消后使用模型源 XY 坐标及下方批次原点偏移；仍可手动执行规则排版"));
+    m_importOriginXSpin = CreateDistanceSpin(
+        QStringLiteral("hostImportOriginXSpin"), layoutGroup);
+    m_importOriginYSpin = CreateDistanceSpin(
+        QStringLiteral("hostImportOriginYSpin"), layoutGroup);
+    m_importOriginXSpin->setToolTip(QStringLiteral(
+        "对下一批导入模型统一增加 X 偏移，保持模型之间的相对位置"));
+    m_importOriginYSpin->setToolTip(QStringLiteral(
+        "对下一批导入模型统一增加 Y 偏移，保持模型之间的相对位置"));
+    layoutForm->addRow(QStringLiteral("源姿态"), m_autoOrientCheck);
+    layoutForm->addRow(QStringLiteral("导入落位"), m_autoLayoutCheck);
+    layoutForm->addRow(QStringLiteral("批次原点 X"), m_importOriginXSpin);
+    layoutForm->addRow(QStringLiteral("批次原点 Y"), m_importOriginYSpin);
     layoutForm->addRow(QStringLiteral("每行模型数"), m_columnsSpin);
     layoutForm->addRow(QStringLiteral("最大行数"), m_rowsSpin);
     layoutForm->addRow(QStringLiteral("列间净距"), m_columnGapSpin);
@@ -186,6 +213,14 @@ HostTransformLayoutPanel::HostTransformLayoutPanel(QWidget* parent)
             {
                 m_deltaZSpin->setValue(0.0);
             }
+        });
+    connect(
+        m_autoLayoutCheck,
+        &QCheckBox::toggled,
+        this,
+        [this]
+        {
+            UpdateControls();
         });
     connect(
         m_applyTransformButton,
@@ -260,6 +295,19 @@ hostgridlayoutrequest HostTransformLayoutPanel::LayoutRequest() const
         m_rowGapSpin->value()};
 }
 
+bool HostTransformLayoutPanel::AutoLayoutEnabled() const
+{
+    return m_autoLayoutCheck->isChecked();
+}
+
+hostmodelimportoptions HostTransformLayoutPanel::ImportOptions() const
+{
+    return hostmodelimportoptions{
+        m_autoOrientCheck->isChecked(),
+        m_autoLayoutCheck->isChecked() ? 0.0 : m_importOriginXSpin->value(),
+        m_autoLayoutCheck->isChecked() ? 0.0 : m_importOriginYSpin->value()};
+}
+
 void HostTransformLayoutPanel::OnApplyTransform()
 {
     emit SigTransformRequested(
@@ -299,4 +347,7 @@ void HostTransformLayoutPanel::UpdateControls()
         m_commandsEnabled && hasSelection);
     m_applyLayoutButton->setEnabled(
         m_commandsEnabled && m_instanceCount > 0);
+    const bool sourcePlacementEnabled = !m_autoLayoutCheck->isChecked();
+    m_importOriginXSpin->setEnabled(sourcePlacementEnabled);
+    m_importOriginYSpin->setEnabled(sourcePlacementEnabled);
 }

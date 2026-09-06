@@ -123,6 +123,11 @@ slicer_core::Json ModelCapabilityAdapter::Import(
     const slicer_core::Json& options = RequireObject(request, "options");
     importRequest.compute_bbox = RequireBoolean(options, "computeBBox");
     importRequest.extract_materials = RequireBoolean(options, "extractMaterials");
+    if (options.contains("autoOrient"))
+    {
+        importRequest.auto_orient_enabled =
+            RequireBoolean(options, "autoOrient");
+    }
 
     NeverCancelToken cancelToken;
     const auto result = m_facade->Import(importRequest, cancelToken);
@@ -135,6 +140,7 @@ slicer_core::Json ModelCapabilityAdapter::Import(
     {
         slicer_core::ModelLoadConfig config;
         config.input.model_path = result.Value()->source_path;
+        config.auto_orient.enabled = importRequest.auto_orient_enabled;
         auto sceneModel = std::make_shared<const slicer_core::SceneModel>(
             slicer_core::load_model_report(
                 config,

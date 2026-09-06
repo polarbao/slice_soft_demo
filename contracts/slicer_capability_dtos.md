@@ -1,6 +1,6 @@
 # SliceSoft 能力 DTO 合同
 
-> 合同版本：1.11
+> 合同版本：1.14
 > SPI 版本：`PM_SPI_VERSION=1`
 > 机器可读真源：`contracts/slicer_capability_dtos.json`
 > 受控修订：`DOC_DECISION_14A_04_R1_双视图纹理ViewData合同修订.md`、
@@ -11,7 +11,10 @@
 > `DOC_DECISION_RENDER_R_B_00_ViewMesh复用DTO受控修订.md`、
 > `DOC_DECISION_RENDER_R_B_03_ViewData降级理由受控修订.md`、
 > `DOC_DECISION_RENDER_R_B_04_ViewData半精度传输合同修订.md`、
-> `DOC_DECISION_14A_04_R3_不完整OBJ灰色降级与单材料准入.md`
+> `DOC_DECISION_14A_04_R3_不完整OBJ灰色降级与单材料准入.md`、
+> `DOC_DECISION_HOSTFLOW_H_B_03_R1_三轴旋转合同受控修订.md`、
+> `DOC_DECISION_HOSTFLOW_H_B_03_R2_Z轴平移与主体触底受控修订.md`、
+> `DOC_DECISION_HOSTFLOW_H_F_15_导入姿态与批次原点受控修订.md`
 
 ## 1. 范围
 
@@ -81,6 +84,13 @@ package.read_report
 SPI major。
 
 ### 3.0 模型外观完整性与降级准入
+
+`model.import.options.autoOrient` 是可选布尔值，缺省为 `true`，以保持 v1.13 及更早调用方
+行为。显式 `false` 时，导入元数据、保留 SceneModel、快速预检、ViewData 与后续生产切片
+均使用同一源姿态；该选项不关闭实例 `landOnBuildPlate`，Z 触底仍由场景变换独立完成。
+场景内部 `models[].autoOrient` 仅在值为 `false` 时写入；旧场景缺少该字段时按 `true` 读取，
+因此默认路径的 canonical scene JSON 与 scene hash 不变。Worker 的完整预检和生产模型重载必须
+采用该场景值，不得重新回退到 Profile 的自动定向开关。
 
 `model.import` 与 `model.get_metadata` 必须返回 `appearanceStatus`、
 `singleMaterialOnly` 和 `appearanceDetail`。当 OBJ 实际使用 `usemtl`，但完全没有
@@ -296,7 +306,8 @@ v1.7 的 `applyGridLayout` 由 H-A-04 实现，v1.8 由 R-B-00 增加顶层可�
 v1.9 由 R-B-03 冻结安全简化与历史抽稀的降级理由，v1.10 由 R-B-04 增加向后兼容的
 半精度网格属性请求与响应格式，v1.11 增加不完整 OBJ 的显式外观状态与单材料准入字段；
 v1.12 以加法方式增加 X/Y 实例旋转和显式触底操作；v1.13 增加 Z 平移与抗微小孤立标记的
-主体触底判定。既有 Z 旋转与全部生产协议保持不变。
+主体触底判定；v1.14 增加可选导入自动定向开关，并将该选择带入场景和 Worker 模型重载。
+既有 Z 旋转与全部生产协议保持不变。
 H-A-03 已验证权威 scene 快照可由纯 C/Qt 宿主不透明透传到生产切片。独立 `scene.layout`
 能力仍被禁止。
 交互幂等、revision 回滚和三车道细则见

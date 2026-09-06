@@ -1,7 +1,8 @@
 #include "HostImportPlacementPolicy.h"
 
 bool HostImportPlacementPolicy::RequiresGridLayout(
-    const int instanceCount) noexcept
+    const int instanceCount,
+    const bool autoLayoutEnabled) noexcept
 {
-    return instanceCount > 0;
+    return autoLayoutEnabled && instanceCount > 0;
 }

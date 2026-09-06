@@ -236,10 +236,10 @@ std::map<std::string, LoadedSceneModel> LoadSceneModels(
                 "scene model source is missing: "
                 + sourcePath.generic_string());
         }
-
         SliceConfig modelConfig = profile;
         modelConfig.input.model_path = sourcePath;
         modelConfig.input.format = source.format;
+        modelConfig.auto_orient.enabled = source.autoorientenabled;
         validate_slice_config(modelConfig);
         const ProductionClock::time_point parseStart =
             ProductionClock::now();

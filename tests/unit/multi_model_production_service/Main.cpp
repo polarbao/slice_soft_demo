@@ -265,6 +265,206 @@ slicer_core::SceneEffectiveConfigRequest MakeEffectiveRequest(
     return request;
 }
 
+class ControlledCancelToken final
+    : public slicer_core::api::ICancelToken
+{
+public:
+    [[nodiscard]] bool IsCancelRequested() const noexcept override
+    {
+        return m_cancelled;
+    }
+
+    void RequestCancel() noexcept
+    {
+        m_cancelled = true;
+    }
+
+private:
+    bool m_cancelled{false};
+};
+
+std::filesystem::path WriteTallTexturedFixture(
+    const std::filesystem::path& root)
+{
+    const std::filesystem::path texturePath =
+        std::filesystem::path(SLICESOFT_SOURCE_DIR)
+        / "samples/models/textured/textures/gradient.png";
+    const std::filesystem::path modelPath = root / "tall_source_pose.obj";
+    std::filesystem::create_directories(root);
+    {
+        std::ofstream material(root / "tall_source_pose.mtl");
+        material
+            << "newmtl policy_tex\n"
+            << "Kd 1.0 1.0 1.0\n"
+            << "map_Kd " << texturePath.generic_string() << '\n';
+    }
+    {
+        std::ofstream model(modelPath);
+        model
+            << "mtllib tall_source_pose.mtl\n"
+            << "usemtl policy_tex\n"
+            << "v 0 0 0.05\n"
+            << "v 2 0 0.05\n"
+            << "v 2 1 0.05\n"
+            << "v 0 1 0.05\n"
+            << "v 0 0 10.05\n"
+            << "v 2 0 10.05\n"
+            << "v 2 1 10.05\n"
+            << "v 0 1 10.05\n"
+            << "vt 0 0\n"
+            << "vt 1 0\n"
+            << "vt 1 1\n"
+            << "vt 0 1\n"
+            << "f 1/1 2/2 3/3\n"
+            << "f 1/1 3/3 4/4\n"
+            << "f 5/1 7/3 6/2\n"
+            << "f 5/1 8/4 7/3\n";
+    }
+    return modelPath;
+}
+
+bool SourcePoseSurvivesWorkerReload()
+{
+    const std::filesystem::path sourceRoot{SLICESOFT_SOURCE_DIR};
+    const std::filesystem::path profileConfigPath =
+        sourceRoot
+        / "samples/configs/golden/material_process_top2_fixture.json";
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path()
+        / "slicesoft_scene_source_pose_worker_reload";
+    std::error_code cleanupError;
+    std::filesystem::remove_all(root, cleanupError);
+    const std::filesystem::path modelPath =
+        WriteTallTexturedFixture(root / "asset");
+
+    slicer_core::SliceConfig sourcePoseConfig =
+        slicer_core::load_slice_config(profileConfigPath);
+    sourcePoseConfig.input.model_path = modelPath;
+    sourcePoseConfig.input.format = "obj";
+    sourcePoseConfig.auto_orient.enabled = false;
+    const slicer_core::SceneModel sourcePoseModel =
+        slicer_core::load_model_report(
+            sourcePoseConfig, modelPath.parent_path());
+
+    slicer_core::SliceConfig autoOrientConfig = sourcePoseConfig;
+    autoOrientConfig.auto_orient.enabled = true;
+    const slicer_core::SceneModel autoOrientedModel =
+        slicer_core::load_model_report(
+            autoOrientConfig, modelPath.parent_path());
+    const double sourceDepth =
+        sourcePoseModel.bbox_mm.max.z - sourcePoseModel.bbox_mm.min.z;
+    const double orientedDepth =
+        autoOrientedModel.bbox_mm.max.z - autoOrientedModel.bbox_mm.min.z;
+
+    slicer_core::MultiModelScene scene;
+    scene.sceneid = "scene-source-pose-worker-reload";
+    scene.scenerevision = 1U;
+    scene.resolvedprofileid =
+        sourcePoseConfig.material_process_profile.name;
+    scene.buildvolume.source = slicer_core::BuildVolumeSource::Fixture;
+    scene.buildvolume.widthmm = 5.0;
+    scene.buildvolume.heightmm = 5.0;
+    scene.buildvolume.zlimitmm = 12.0;
+    scene.buildvolume.origin = slicer_core::BuildVolumeOrigin::LowerLeft;
+    scene.buildvolume.xdirection =
+        slicer_core::BuildVolumeAxisDirection::Positive;
+    scene.buildvolume.ydirection =
+        slicer_core::BuildVolumeAxisDirection::Positive;
+    scene.buildvolume.isfixture = true;
+
+    slicer_core::ResourceScope scope;
+    scope.resourcescopeid = "scope-source-pose";
+    scope.kind = slicer_core::ResourceScopeKind::ObjDirectory;
+    scope.rootpath = modelPath.parent_path();
+    scene.resourcescopes.push_back(scope);
+
+    slicer_core::ModelSource source;
+    source.modelid = "model-source-pose";
+    source.sourcepath = modelPath;
+    source.format = "obj";
+    source.autoorientenabled = false;
+    source.resourcescopeid = scope.resourcescopeid;
+    source.sourcehash = slicer_core::ComputeSha256(ReadFile(modelPath));
+    source.resourcehash =
+        slicer_core::ComputeSceneResourceHash(sourcePoseModel);
+    source.displayname = "tall_source_pose";
+    scene.models.push_back(source);
+
+    slicer_core::SceneModelInstance item;
+    item.instance.instanceid = "instance-source-pose";
+    item.instance.modelid = source.modelid;
+    item.instance.sourcetransformidentity = modelPath.generic_string();
+    item.instance.sourcebboxmm = sourcePoseModel.bbox_mm;
+    item.instance.transform.translatexmm =
+        1.0 - sourcePoseModel.bbox_mm.min.x;
+    item.instance.transform.translateymm =
+        1.0 - sourcePoseModel.bbox_mm.min.y;
+    item.instance.transform.translatezmm =
+        -sourcePoseModel.bbox_mm.min.z;
+    item.instance.effectivebboxmm = sourcePoseModel.bbox_mm;
+    item.instance.effectivebboxmm.min.x +=
+        item.instance.transform.translatexmm;
+    item.instance.effectivebboxmm.max.x +=
+        item.instance.transform.translatexmm;
+    item.instance.effectivebboxmm.min.y +=
+        item.instance.transform.translateymm;
+    item.instance.effectivebboxmm.max.y +=
+        item.instance.transform.translateymm;
+    item.instance.effectivebboxmm.min.z +=
+        item.instance.transform.translatezmm;
+    item.instance.effectivebboxmm.max.z +=
+        item.instance.transform.translatezmm;
+    item.requestedtransform = item.instance.transform;
+    item.effectivetransform = item.instance.transform;
+    item.admissionstatus =
+        slicer_core::SceneInstanceAdmissionStatus::Admitted;
+    item.resolvedprofileid = scene.resolvedprofileid;
+    scene.instances.push_back(item);
+
+    slicer_core::SceneEffectiveConfigRequest effectiveRequest =
+        MakeEffectiveRequest(root, profileConfigPath);
+    effectiveRequest.scene = scene;
+    effectiveRequest.sourceprofileid = scene.resolvedprofileid;
+    const slicer_core::SceneEffectiveConfigResult effective =
+        slicer_core::WriteSceneEffectiveConfig(effectiveRequest);
+    if (!ExpectTrue(
+            sourceDepth > 9.9 && orientedDepth < 6.0,
+            "source-pose fixture distinguishes disabled auto-orient")
+        || !ExpectTrue(
+            effective.IsValid(),
+            "source-pose effective config writes"))
+    {
+        std::filesystem::remove_all(root, cleanupError);
+        return false;
+    }
+
+    ControlledCancelToken cancelToken;
+    slicer_core::MultiModelProductionRequest request;
+    request.effectiveconfigpath = effectiveRequest.generatedconfigpath;
+    request.canceltoken = &cancelToken;
+    request.progresscallback =
+        [&cancelToken](const slicer_core::SliceRunProgress& progress)
+        {
+            if (progress.phase == "scene_instance_slice")
+            {
+                cancelToken.RequestCancel();
+            }
+        };
+    const slicer_core::MultiModelProductionResult result =
+        slicer_core::RunMultiModelProductionService(request);
+    const bool ok = ExpectTrue(
+        !result.IsValid() && result.error.has_value()
+            && result.error->code
+                == slicer_core::MultiModelProductionErrorCode::Cancelled,
+        "Worker reload keeps source pose through scene admission");
+    if (!ok && result.error.has_value())
+    {
+        std::cerr << "  error: " << result.error->message << '\n';
+    }
+    std::filesystem::remove_all(root, cleanupError);
+    return ok;
+}
+
 bool StableErrorNames()
 {
     using slicer_core::MultiModelProductionErrorCode;
@@ -749,6 +949,7 @@ int main(const int argc, char** argv)
 
     const bool ok =
         StableThreeMfResourceIdentityIgnoresExtractionRoot()
+        && SourcePoseSurvivesWorkerReload()
         && StableErrorNames()
         && ThreeInstanceSceneWritesOneStrictPackage()
         && HiddenInstanceIsReportedAndNotProduced()

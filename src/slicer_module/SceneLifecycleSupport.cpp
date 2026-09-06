@@ -220,6 +220,8 @@ BuildModelRegistration(const ImportedModelResource& resource) noexcept
         registration.source.modelid = registration.scene_model_id;
         registration.source.sourcepath = sourcePath;
         registration.source.format = format;
+        registration.source.autoorientenabled =
+            metadata.auto_orient_enabled;
         registration.source.resourcescopeid =
             registration.scope.resourcescopeid;
         registration.source.sourcehash = metadata.source_digest;

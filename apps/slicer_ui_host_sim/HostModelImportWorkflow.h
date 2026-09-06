@@ -65,6 +65,14 @@ struct hostgridlayoutrequest
     double rowgapmm{10.0};
 };
 
+/** @brief 宿主在本次导入前冻结的模型姿态与批次原点选项。 */
+struct hostmodelimportoptions
+{
+    bool autoorientenabled{true};
+    double originxmm{0.0};
+    double originymm{0.0};
+};
+
 /** @brief 单次场景提交返回的权威摘要。 */
 struct hostsceneeditresult
 {
@@ -95,24 +103,28 @@ public:
      * @param modelPath 操作员选择的现有模型路径。
      * @param result 接收模型元数据、实例标识与预检数据。
      * @param error 接收用户可读的失败即拒绝原因。
+     * @param options 自动定向和批次 XY 原点选项；缺省保持旧行为。
      * @return 当导入、addInstance 和快速预检全部完成时为 true。
      */
     bool ImportModel(
         const QString& modelPath,
         hostmodelimportresult* result,
-        QString* error);
+        QString* error,
+        const hostmodelimportoptions& options = {});
 
     /**
      * @brief 通过一个原子场景提交导入并接纳多个模型。
      * @param modelPaths 按操作员顺序排列的现有 OBJ、3MF 或 STL 路径。
      * @param results 按路径接收对应的元数据与预检结果。
      * @param error 接收失败即拒绝原因；失败时不会添加任何实例。
+     * @param options 整批模型共享的自动定向和 XY 原点选项。
      * @return 当每个资源都通过预检并且所有实例都提交时为 true。
      */
     bool ImportModels(
         const QStringList& modelPaths,
         QList<hostmodelimportresult>* results,
-        QString* error);
+        QString* error,
+        const hostmodelimportoptions& options = {});
 
     /**
      * @brief 以原子方式删除现有场景实例。
@@ -240,10 +252,12 @@ private:
         QString* error);
     bool ImportResource(
         const QString& modelPath,
+        const hostmodelimportoptions& options,
         hostmodelimportresult* result,
         QString* error);
     bool CommitImportedInstances(
         QList<hostmodelimportresult>* results,
+        const hostmodelimportoptions& options,
         QString* error);
     bool RunFastPreflight(
         const QString& modelId,

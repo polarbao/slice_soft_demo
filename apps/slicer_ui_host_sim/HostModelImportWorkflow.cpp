@@ -7,6 +7,8 @@
 #include <QJsonParseError>
 #include <QStringList>
 #include <QUuid>
+
+#include <cmath>
 namespace
 {
 QByteArray Compact(const QJsonObject& value)
@@ -39,6 +41,12 @@ double ArrayValue(const QJsonArray& values, const int index)
         ? values.at(index).toDouble()
         : 0.0;
 }
+
+bool IsZero(const double value)
+{
+    return std::abs(value) <= 1.0e-12;
+}
+
 QJsonObject BuildSceneContext(
     const QString& profileId,
     const hostbuildvolume& volume)
@@ -66,7 +74,8 @@ HostModelImportWorkflow::HostModelImportWorkflow(ModuleClient& client)
 bool HostModelImportWorkflow::ImportModel(
     const QString& modelPath,
     hostmodelimportresult* result,
-    QString* error)
+    QString* error,
+    const hostmodelimportoptions& options)
 {
     if (result == nullptr)
     {
@@ -77,7 +86,7 @@ bool HostModelImportWorkflow::ImportModel(
         return false;
     }
     QList<hostmodelimportresult> results;
-    if (!ImportModels(QStringList{modelPath}, &results, error))
+    if (!ImportModels(QStringList{modelPath}, &results, error, options))
     {
         return false;
     }
@@ -88,16 +97,22 @@ bool HostModelImportWorkflow::ImportModel(
 bool HostModelImportWorkflow::ImportModels(
     const QStringList& modelPaths,
     QList<hostmodelimportresult>* results,
-    QString* error)
+    QString* error,
+    const hostmodelimportoptions& options)
 {
     if (results == nullptr || modelPaths.isEmpty()
-        || m_instanceModels.size() + modelPaths.size() > 22)
+        || m_instanceModels.size() + modelPaths.size() > 22
+        || !std::isfinite(options.originxmm)
+        || !std::isfinite(options.originymm))
     {
         if (error != nullptr)
         {
-            *error = QStringLiteral(
-                "批量导入需要 1..%1 个模型且场景总数不得超过 22。")
-                         .arg(qMax(0, 22 - m_instanceModels.size()));
+            *error = !std::isfinite(options.originxmm)
+                    || !std::isfinite(options.originymm)
+                ? QStringLiteral("批次原点 X/Y 必须是有限毫米值。")
+                : QStringLiteral(
+                      "批量导入需要 1..%1 个模型且场景总数不得超过 22。")
+                      .arg(qMax(0, 22 - m_instanceModels.size()));
         }
         return false;
     }
@@ -124,14 +139,14 @@ bool HostModelImportWorkflow::ImportModels(
     for (const QString& modelPath : modelPaths)
     {
         hostmodelimportresult result;
-        if (!ImportResource(modelPath, &result, error))
+        if (!ImportResource(modelPath, options, &result, error))
         {
             ReleaseImportedModels(imported);
             return false;
         }
         imported.append(result);
     }
-    if (!CommitImportedInstances(&imported, error))
+    if (!CommitImportedInstances(&imported, options, error))
     {
         ReleaseImportedModels(imported);
         return false;
@@ -142,6 +157,7 @@ bool HostModelImportWorkflow::ImportModels(
 
 bool HostModelImportWorkflow::ImportResource(
     const QString& modelPath,
+    const hostmodelimportoptions& options,
     hostmodelimportresult* result,
     QString* error)
 {
@@ -169,7 +185,9 @@ bool HostModelImportWorkflow::ImportResource(
                 {QStringLiteral("modelPath"), result->sourcepath},
                 {QStringLiteral("options"), QJsonObject{
                      {QStringLiteral("computeBBox"), true},
-                     {QStringLiteral("extractMaterials"), true}}}},
+                     {QStringLiteral("extractMaterials"), true},
+                     {QStringLiteral("autoOrient"),
+                      options.autoorientenabled}}}},
             &imported,
             error))
     {
@@ -365,6 +383,7 @@ bool HostModelImportWorkflow::ExecuteObject(
 
 bool HostModelImportWorkflow::CommitImportedInstances(
     QList<hostmodelimportresult>* results,
+    const hostmodelimportoptions& options,
     QString* error)
 {
     if (results == nullptr || results->isEmpty())
@@ -376,12 +395,23 @@ bool HostModelImportWorkflow::CommitImportedInstances(
     {
         result.instanceid = QStringLiteral("instance-%1").arg(
             QUuid::createUuid().toString(QUuid::WithoutBraces));
+        QJsonObject initialTransform{
+            {QStringLiteral("landOnBuildPlate"), true}};
+        if (!IsZero(options.originxmm))
+        {
+            initialTransform.insert(
+                QStringLiteral("translateXMm"), options.originxmm);
+        }
+        if (!IsZero(options.originymm))
+        {
+            initialTransform.insert(
+                QStringLiteral("translateYMm"), options.originymm);
+        }
         operations.append(QJsonObject{
             {QStringLiteral("type"), QStringLiteral("addInstance")},
             {QStringLiteral("modelId"), result.modelid},
             {QStringLiteral("assignInstanceId"), result.instanceid},
-            {QStringLiteral("initialTransform"), QJsonObject{
-                 {QStringLiteral("landOnBuildPlate"), true}}}});
+            {QStringLiteral("initialTransform"), initialTransform}});
     }
     QJsonObject request{
         {QStringLiteral("capability"),

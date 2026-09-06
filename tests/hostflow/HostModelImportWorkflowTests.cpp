@@ -6,9 +6,14 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QStringList>
 #include <QTextStream>
 #include <QTemporaryDir>
+
+#include <cmath>
 
 namespace
 {
@@ -37,6 +42,25 @@ bool WriteTextFile(const QString& path, const QByteArray& content)
     QFile file(path);
     return file.open(QIODevice::WriteOnly | QIODevice::Truncate)
         && file.write(content) == content.size();
+}
+
+QJsonObject ReadSceneSnapshot(
+    ModuleClient& client,
+    const quint64 sceneHandle,
+    QString* error)
+{
+    const QJsonObject request{
+        {QStringLiteral("capability"), QStringLiteral("scene.get_snapshot")},
+        {QStringLiteral("sceneHandle"), static_cast<qint64>(sceneHandle)}};
+    QByteArray response;
+    if (!client.Execute(
+            QJsonDocument(request).toJson(QJsonDocument::Compact),
+            &response,
+            error))
+    {
+        return {};
+    }
+    return QJsonDocument::fromJson(response).object();
 }
 }
 
@@ -105,17 +129,22 @@ int main(int argc, char* argv[])
         return 14;
     }
     if (!Check(
-            !HostImportPlacementPolicy::RequiresGridLayout(0),
+            !HostImportPlacementPolicy::RequiresGridLayout(0, true),
             QStringLiteral("空场景不得请求自动排版。"),
             errors)
         || !Check(
-            HostImportPlacementPolicy::RequiresGridLayout(1),
+            HostImportPlacementPolicy::RequiresGridLayout(1, true),
             QStringLiteral(
                 "首个模型导入后必须请求规则排版以进入边界位置。"),
             errors)
         || !Check(
-            HostImportPlacementPolicy::RequiresGridLayout(22),
+            HostImportPlacementPolicy::RequiresGridLayout(22, true),
             QStringLiteral("多模型导入后仍必须请求规则排版。"),
+            errors)
+        || !Check(
+            !HostImportPlacementPolicy::RequiresGridLayout(1, false)
+                && !HostImportPlacementPolicy::RequiresGridLayout(22, false),
+            QStringLiteral("取消勾选后单模型和多模型都不得自动排版。"),
             errors))
     {
         return 22;
@@ -394,6 +423,102 @@ int main(int argc, char* argv[])
             errors))
     {
         return 21;
+    }
+
+    const QString tallModelPath = importBase.filePath(
+        QStringLiteral("source-pose-tall-tetra.obj"));
+    if (!Check(
+            WriteTextFile(
+                tallModelPath,
+                QByteArrayLiteral(
+                    "v 10 20 5\n"
+                    "v 12 20 5\n"
+                    "v 10 21 5\n"
+                    "v 10 20 15\n"
+                    "f 1 3 2\n"
+                    "f 1 2 4\n"
+                    "f 2 3 4\n"
+                    "f 3 1 4\n")),
+            QStringLiteral("无法创建自动定向开关夹具。"),
+            errors))
+    {
+        return 23;
+    }
+
+    ModuleClient poseClient;
+    error.clear();
+    if (!poseClient.Open(modulePath, QByteArrayLiteral("{}"), &error))
+    {
+        errors << "姿态验证模块加载失败：" << error << Qt::endl;
+        return 24;
+    }
+    HostModelImportWorkflow poseWorkflow(poseClient);
+    hostmodelimportresult orientedResult;
+    if (!poseWorkflow.ImportModel(
+            tallModelPath, &orientedResult, &error)
+        || !Check(
+            orientedResult.depthmm < 9.0,
+            QStringLiteral("缺省调用必须继续执行自动定向。"),
+            errors))
+    {
+        return 25;
+    }
+
+    hostmodelimportresult sourceResult;
+    const hostmodelimportoptions sourceOptions{
+        false,
+        -9.0,
+        -19.0};
+    if (!poseWorkflow.ImportModel(
+            tallModelPath, &sourceResult, &error, sourceOptions)
+        || !Check(
+            std::abs(sourceResult.depthmm - 10.0) < 1.0e-9,
+            QStringLiteral("关闭自动定向后必须保留源 Z 尺寸。"),
+            errors))
+    {
+        return 26;
+    }
+
+    const QJsonObject snapshot = ReadSceneSnapshot(
+        poseClient, poseWorkflow.SceneHandle(), &error);
+    const QJsonArray instances = snapshot.value(
+        QStringLiteral("scene")).toObject().value(
+        QStringLiteral("instances")).toArray();
+    QJsonObject sourceInstance;
+    for (const QJsonValue& value : instances)
+    {
+        const QJsonObject candidate = value.toObject();
+        if (candidate.value(QStringLiteral("instanceId")).toString()
+            == sourceResult.instanceid)
+        {
+            sourceInstance = candidate;
+            break;
+        }
+    }
+    const QJsonObject requested = sourceInstance.value(
+        QStringLiteral("requestedTransform")).toObject();
+    const QJsonObject minimum = sourceInstance.value(
+        QStringLiteral("effectiveBboxMm")).toObject().value(
+        QStringLiteral("min")).toObject();
+    if (!Check(
+            !sourceInstance.isEmpty()
+                && requested.value(QStringLiteral("landOnBuildPlate")).toBool()
+                && std::abs(requested.value(
+                    QStringLiteral("translateXMm")).toDouble() + 9.0) < 1.0e-9
+                && std::abs(requested.value(
+                    QStringLiteral("translateYMm")).toDouble() + 19.0) < 1.0e-9
+                && std::abs(minimum.value(QStringLiteral("x")).toDouble() - 1.0)
+                    < 1.0e-9
+                && std::abs(minimum.value(QStringLiteral("y")).toDouble() - 1.0)
+                    < 1.0e-9
+                && std::abs(minimum.value(QStringLiteral("z")).toDouble())
+                    < 1.0e-9,
+            QStringLiteral(
+                "批次原点必须整体平移 XY，同时保持源姿态模型 Z 触底：%1")
+                .arg(error),
+            errors))
+    {
+        return 27;
     }
 
     QTextStream(stdout)

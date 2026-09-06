@@ -139,6 +139,8 @@ ApiResult<void> SceneFacadeService::RegisterModel(
                 && current.source.sourcehash == registration.source.sourcehash
                 && current.source.resourcehash
                     == registration.source.resourcehash
+                && current.source.autoorientenabled
+                    == registration.source.autoorientenabled
                 && current.scope.resourcescopeid
                     == registration.scope.resourcescopeid;
             return equivalent

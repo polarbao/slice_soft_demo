@@ -157,6 +157,7 @@ struct ModelSource
     std::string modelid;
     std::filesystem::path sourcepath;
     std::string format;
+    bool autoorientenabled{true};
     std::string resourcescopeid;
     std::string sourcehash;
     std::string resourcehash;

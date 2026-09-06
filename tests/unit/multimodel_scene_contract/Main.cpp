@@ -317,6 +317,38 @@ bool SchemaRoundTripAndHash()
             "unsupported schema fails closed");
 }
 
+bool ModelSourceAutoOrientContract()
+{
+    const slicer_core::MultiModelScene legacyScene = MakeDraftScene();
+    const slicer_core::Json legacyDocument =
+        slicer_core::SerializeMultiModelScene(legacyScene);
+    const auto legacyDecoded =
+        slicer_core::DeserializeMultiModelScene(legacyDocument);
+
+    slicer_core::MultiModelScene sourcePoseScene = MakeDraftScene();
+    sourcePoseScene.models.front().autoorientenabled = false;
+    const slicer_core::Json sourcePoseDocument =
+        slicer_core::SerializeMultiModelScene(sourcePoseScene);
+    const auto sourcePoseDecoded =
+        slicer_core::DeserializeMultiModelScene(sourcePoseDocument);
+
+    return ExpectTrue(
+               !legacyDocument.at("models").at(0U).contains("autoOrient")
+                   && legacyDecoded.IsValid()
+                   && legacyDecoded.scene.models.front().autoorientenabled,
+               "legacy scene bytes omit the default auto-orient choice")
+        && ExpectTrue(
+            sourcePoseDocument.at("models")
+                    .at(0U)
+                    .at("autoOrient")
+                    .as_bool()
+                == false
+                && sourcePoseDecoded.IsValid()
+                && !sourcePoseDecoded.scene.models.front()
+                        .autoorientenabled,
+            "source-pose choice is serialized and round-trips");
+}
+
 bool BuildVolumeZLimitContract()
 {
     const slicer_core::MultiModelScene legacyScene = MakeDraftScene();
@@ -765,6 +797,7 @@ int main()
         && DraftAndProductionValidation()
         && IdentityAndResourceValidation()
         && SchemaRoundTripAndHash()
+        && ModelSourceAutoOrientContract()
         && BuildVolumeZLimitContract()
         && EffectiveTransformCompositionIsFrozen()
         && SceneRevisionIsOptimistic()

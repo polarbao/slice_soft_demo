@@ -16,6 +16,7 @@ struct ModelImportRequest
     std::filesystem::path model_path;
     bool compute_bbox{true};
     bool extract_materials{true};
+    bool auto_orient_enabled{true};
 };
 
 /** @brief 模型与视图 Facade 使用的已导入材质元数据。 */
@@ -32,6 +33,7 @@ struct ModelMetadata
     ModelId model_id{0};
     std::filesystem::path source_path;
     std::string format;
+    bool auto_orient_enabled{true};
     std::size_t vertex_count{0};
     std::size_t triangle_count{0};
     bool has_uv{false};

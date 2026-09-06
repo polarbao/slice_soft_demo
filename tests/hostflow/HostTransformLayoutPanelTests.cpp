@@ -161,6 +161,14 @@ int main(int argc, char* argv[])
         QStringLiteral("hostLayoutColumnsSpin"));
     auto* rows = panel.findChild<QSpinBox*>(
         QStringLiteral("hostLayoutRowsSpin"));
+    auto* autoLayout = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostLayoutAutoApplyCheck"));
+    auto* autoOrient = panel.findChild<QCheckBox*>(
+        QStringLiteral("hostImportAutoOrientCheck"));
+    auto* importOriginX = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("hostImportOriginXSpin"));
+    auto* importOriginY = panel.findChild<QDoubleSpinBox*>(
+        QStringLiteral("hostImportOriginYSpin"));
     auto* applyLayout = panel.findChild<QPushButton*>(
         QStringLiteral("hostLayoutApplyButton"));
     if (!Check(deltaX != nullptr && deltaZ != nullptr && rotateX != nullptr
@@ -170,6 +178,10 @@ int main(int argc, char* argv[])
                    && autoLand->isChecked() && applyTransform != nullptr
                    && land != nullptr
                    && columns != nullptr && rows != nullptr
+                   && autoOrient != nullptr && autoOrient->isChecked()
+                   && autoLayout != nullptr && autoLayout->isChecked()
+                   && importOriginX != nullptr && !importOriginX->isEnabled()
+                   && importOriginY != nullptr && !importOriginY->isEnabled()
                    && applyLayout != nullptr,
                QStringLiteral("变换或排版控件不完整。"), errors))
     {
@@ -186,6 +198,42 @@ int main(int argc, char* argv[])
             errors))
     {
         return 11;
+    }
+    client.ResetCallCount();
+    autoLayout->setChecked(false);
+    autoOrient->setChecked(false);
+    importOriginX->setValue(4.5);
+    importOriginY->setValue(-1.25);
+    const hostmodelimportoptions sourceOptions = panel.ImportOptions();
+    if (!Check(
+            !panel.AutoLayoutEnabled()
+                && !sourceOptions.autoorientenabled
+                && std::abs(sourceOptions.originxmm - 4.5) < 1.0e-9
+                && std::abs(sourceOptions.originymm + 1.25) < 1.0e-9
+                && importOriginX->isEnabled()
+                && importOriginY->isEnabled()
+                && client.CallCount() == 0U,
+            QStringLiteral(
+                "源姿态开关和批次原点应只更新宿主状态且不跨 DLL。"),
+            errors))
+    {
+        return 15;
+    }
+    autoLayout->setChecked(true);
+    const hostmodelimportoptions layoutOptions = panel.ImportOptions();
+    if (!Check(
+            panel.AutoLayoutEnabled()
+                && !layoutOptions.autoorientenabled
+                && std::abs(layoutOptions.originxmm) < 1.0e-9
+                && std::abs(layoutOptions.originymm) < 1.0e-9
+                && !importOriginX->isEnabled()
+                && !importOriginY->isEnabled()
+                && client.CallCount() == 0U,
+            QStringLiteral(
+                "自动排版开启时应停用批次原点但保留定向选择。"),
+            errors))
+    {
+        return 16;
     }
 
     client.ResetCallCount();

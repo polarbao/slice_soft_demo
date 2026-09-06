@@ -126,6 +126,7 @@ ModelMetadata MakeMetadata(
     metadata.model_id = modelId;
     metadata.source_path = report.model_path;
     metadata.format = report.format;
+    metadata.auto_orient_enabled = request.auto_orient_enabled;
     metadata.vertex_count = report.vertex_count;
     metadata.triangle_count = report.triangle_count;
     metadata.has_uv = report.faces_with_uv > 0U;
@@ -186,6 +187,7 @@ public:
 
             ModelLoadConfig config;
             config.input.model_path = sourcePath;
+            config.auto_orient.enabled = request.auto_orient_enabled;
             const ModelReport report = load_model_report(
                 config,
                 sourcePath.parent_path());

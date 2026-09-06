@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.13",
+  "contractVersion": "1.14",
   "spiVersion": 1,
   "encoding": "UTF-8",
   "resultEnvelope": {
@@ -19,7 +19,8 @@
         { "path": "capability", "type": "string", "const": "model.import", "required": true },
         { "path": "modelPath", "type": "string", "required": true },
         { "path": "options.computeBBox", "type": "boolean", "required": true },
-        { "path": "options.extractMaterials", "type": "boolean", "required": true }
+        { "path": "options.extractMaterials", "type": "boolean", "required": true },
+        { "path": "options.autoOrient", "type": "boolean", "required": false, "default": true }
       ],
       "responseFields": [
         { "path": "modelId", "type": "string", "required": true },

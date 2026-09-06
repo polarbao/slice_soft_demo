@@ -389,7 +389,7 @@ ResourceScope DeserializeResourceScope(const Json& value)
 
 Json SerializeModelSource(const ModelSource& value)
 {
-    return Json::object({
+    Json::Object result{
         {"modelId", value.modelid},
         {"sourcePath", value.sourcepath.generic_string()},
         {"format", value.format},
@@ -397,23 +397,23 @@ Json SerializeModelSource(const ModelSource& value)
         {"sourceHash", value.sourcehash},
         {"resourceHash", value.resourcehash},
         {"displayName", value.displayname},
-    });
+    };
+    if (!value.autoorientenabled) result["autoOrient"] = false;
+    return Json{std::move(result)};
 }
-
 ModelSource DeserializeModelSource(const Json& value)
 {
     ModelSource source;
     source.modelid = value.at("modelId").as_string();
     source.sourcepath = value.at("sourcePath").as_string();
     source.format = value.at("format").as_string();
-    source.resourcescopeid =
-        value.at("resourceScopeId").as_string();
+    source.autoorientenabled = value.value("autoOrient", true);
+    source.resourcescopeid = value.at("resourceScopeId").as_string();
     source.sourcehash = value.at("sourceHash").as_string();
     source.resourcehash = value.at("resourceHash").as_string();
     source.displayname = value.at("displayName").as_string();
     return source;
 }
-
 Json SerializeSceneInstance(const SceneModelInstance& value)
 {
     return Json::object({
