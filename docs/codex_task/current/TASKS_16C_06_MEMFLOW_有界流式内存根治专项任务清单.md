@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.3 ｜ 日期：2026-09-06
+> 版本：v4.5 ｜ 日期：2026-09-07
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -52,6 +52,9 @@
 | MF-07d | 预算字段与开始前路由 | TODO —— 接生产前须先有多材质大幅面实测点 | MF-07c | - |
 | MF-07e | 消除场景路径中途回退 | **CLOSED**：验收已实质满足，见 11.4 | MF-05 | 2026-09-06 |
 | MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
+| MF-09 | 层循环耗时优化 | **已测量定位；一次尝试失败已记录** | MF-03X3 | - |
+| MF-10 | MATVOL 逐列求交优化（多材质大栅格 gridSetup 占 92%） | **NEW / 待估** | - | - |
+| MF-11 | 层循环并行化 | **DEFERRED / 已定责**：产品路径被屏障锁步，见 §14.3 | MF-09 实测曲线 | - |
 
 ## 2.1 当前可继续的任务（2026-09-06 盘点）
 
@@ -1270,10 +1273,165 @@ OpenVDB 开启的配置下可能超过 256 MiB 的余量。接进生产前应当
 **出口：** 逐层 hash、RIP strict、取消恢复、wall/CPU/Peak Working Set 和 build identity。正式设备
 SLA/内存上限缺失时，只完成工程 Gate，不宣称 production SLA PASS。
 
+## 14. MF-09/10/11 耗时优化（2026-09-07 立卡）
+
+用户 2026-09-06 提出：**不改硬件的前提下，大画幅切片耗时还有多少空间**。
+本节是核查结论与据此拆出的三张卡。
+
+### 14.0 先更正我自己的一个判断
+
+初次答复时我看到「18 核机器、层循环完全串行、`layerComputeMs` 占 91.2%」，
+就给出了「并行化可拿 3~5 倍」的预期。**只读核查之后这个判断要收回**，
+理由见 14.3 —— 产品路径上那个循环**本来就被屏障锁步**，并行它拿不到吞吐。
+
+留下这段而不是抹掉，是因为那个错误有代表性：**看到「串行 + 占比高 + 多核空闲」
+就断定可以并行，漏掉了「它为什么串行」**。这里的答案是「因为下游要求按层序消费」，
+而那不是循环自己的性质。
+
+### 14.1 MF-09：层循环剩余整幅面 pass 剪枝（先做这张）
+
+MEMFLOW 的 2.53% 活动列剪枝**只覆盖了四处**：`compose_layer` 主循环、
+`MaterializeReliefModelLayer`、`AddInternalVoidSupportForLayer`、
+`AnalyzeRetainedMaterialLayerChannels`。层循环里**至少还有六处整幅面 pass 漏网**：
+
+| 位置 | 说明 |
+|---|---|
+| `SupportConnectivityAnalysis.cpp:19,27` | 每层新建并清零 7.37 MB 的 `visited`，再做整幅面扫描；**且 `slicer.cpp` 的调用点在 `config.support.enabled` 守卫【之外】**，支撑关闭时它照跑不误、全命中 continue |
+| `MaterialVolumePlan.cpp:451` | `MaterializeMaterialOwnershipLayer` 整幅面 |
+| `slicer.cpp` MATVOL 填补循环 | 整幅面 |
+| `slicer.cpp` compose 的 `whiteScratch` / `effectiveRgb` | 两次整幅面读 + 一次整幅面写，**外加每层两次新分配** |
+| `slicer.cpp` opacity varnish 循环 | 整幅面 |
+| `build_texture_preview_mask` | 双重整幅面循环（仅 preview 层） |
+
+**为什么先做这张：** 等价性论证与 MF-03X2b 已做过的是同一套
+（「分支链没有末尾 else，故表外列不写任何字节」），
+风险已知、验证路径已趟熟；且它**不增内存、不碰屏障、不碰进度协议、
+不引入任何数据竞争** —— 与并行化正相反。
+
+**第一步必须是量，不是改。** 在层循环内加细粒度计时，把 `layerComputeMs`
+这 516 秒拆到上述各段。剪枝能吃掉多少，先有数再动手 ——
+本专项已经吃过一次「凭直觉优化」的亏（§5.7 记录：只做剪枝而不复用缓冲，
+内部空腔耗时几乎不降，因为按幅面计的固定开销与按占用计的工作量是两笔账）。
+
+### 14.1.1 测量结果：瓶颈不是我们以为的那六处（2026-09-07）
+
+按「先量后改」插桩实测（a-2/0.2.obj，143 层快速档，`layerCompute` 约 45 秒）：
+
+| 段 | 耗时 | 占比 |
+|---|---|---|
+| **材料闭合语义分析** | **38,723 ms** | **约 86%** |
+| 支撑连通性统计 | 2,336 ms | 5% |
+| 物化三件套（X2a 已剪枝） | 948 ms | 2% |
+| 通道统计（X5 已剪枝） | 216 ms | 0.5% |
+| compose（X3 已剪枝） | 182 ms | 0.4% |
+
+**已经剪过的三处合计只占 3%。** 若按 14.1 原计划去剪那六处整幅面 pass，
+几乎白干 —— 这正是「先量后改」要防的事，本专项 §5.7 已经吃过一次同类的亏。
+
+**根因是一个没人预料会激活的默认值：**
+
+```text
+config.h 里 MaterialClosureConfig::enabled 默认 = true   <- 配置文件里根本没写这一项
+  -> collectMaterialClosureExact = enabled && write_reports = true
+  -> MaterialClosureSemanticLayerInput 声明在层循环【内】
+  -> 11 个 mask 各 assign(pixelCount, 0)
+  -> 736 万列 x 11 B = 81 MB/层，1429 层合计约 116 GB
+```
+
+即**任何不显式关闭它的作业都在付这笔钱**。
+
+生产路径（DLL -> Worker -> 场景路径）还要更贵：那里有 `ownedlayercallback`，
+`collectMaterialClosureSemantic` **恒为真**，比 CLI 多跑一段
+`PopulateRetainedMaterialClosureEmptyMask`。
+
+### 14.1.2 一次失败的尝试，及它证伪了什么
+
+**做法**：把 `MaterialClosureSemanticLayerInput` 提到层循环外跨层复用
+（新增就地填充入口 `Reset...InPlace`，因为 `input = Initialize(...)` 是移动赋值、
+会丢弃已有 buffer）。思路与 MF-03X4 对 compose 输出缓冲的处理同源。
+
+**结果：没有收益。** 公平 A/B（同一快速档，各跑三次取最小）：
+
+```text
+改前  75,338 / 62,389 / 61,579  ->  min = 61,579 ms
+改后  73,274 / 68,940 / 78,808  ->  min = 68,940 ms
+```
+
+两组波动范围重叠（22% 与 14%），故不能断言它更慢；但**可以断言没有任何证据
+支持它更快**。据此回退，不留无收益的复杂度。
+
+**它证伪的假设**：我以为那 86% 的开销在 `malloc/free`。**不是。**
+开销在 `assign(pixelCount, 0)` 的**写入本身** —— 那 81 MB/层无论对象复不复用
+都要写；复用只省掉分配器的簿记，相比之下微不足道。
+
+**因此正确方向只剩一条：不写那些字节**，即给闭合语义输入加活动列剪枝
+（实测该场景只有 2.53% 的列有模型）。前置是等价性验证：
+表外的列在闭合语义上是否恒为空、下游分析是否不依赖它们 ——
+判据与 X3「compose 的分支链没有末尾 else」同源，但**必须独立验证**，
+不能沿用。
+
+**还有一处未拆分**：那 38.7 秒里，`assign` 的写入与
+`InitializeSemantic` 末尾那个逐像素循环（算 `expectedOccupiedDomainMask`，
+7.37M 次/层）各占多少，尚未分开测。剪枝方案要同时覆盖两者才有意义，
+故下一步应先把这两段拆开量。
+
+### 14.2 MF-10：MATVOL 逐列求交
+
+多材质大栅格实测 `gridSetupMs` 占 **92%**（gubao04 XY 放大 4 倍，639 秒 / 691 秒），
+而层计算只占 5%。**这条路径的瓶颈根本不在层循环**，MF-09/MF-11 对它都无效。
+`MaterializeMaterialOwnershipLayer` 是 O(列数 × 三角数)。需要独立方案，待估。
+
+### 14.3 MF-11：层循环并行化 —— DEFERRED，四条理由
+
+**一（决定性）：产品路径上该循环已被屏障锁步。**
+
+```text
+slicer.cpp 的 ownedlayercallback
+  -> LegacySceneLayerAdapter 的 layersink
+  -> MultiModelProductionService 的 barrier.DepositAndWait(slotIndex, layerIndex)
+```
+
+`SceneLayerBarrier` 的语义是：生产者写完第 L 层后**阻塞**，直到消费者
+（合成 + 写包）消费掉第 L 层才放行；类注释明写「每实例一个生产者线程、
+一个消费者线程」，`AwaitLayer` 还特意注明「按实例序升序 —— 否则输出 hash 会抖」。
+
+**故并行 18 路的结果是 18 个线程全堵在 `DepositAndWait` 上：吞吐不变、内存 ×18。**
+要真拿到加速，得同时改造屏障（允许乱序 deposit）+ `SceneLayerComposer`
++ `RgbwsvProductionPackageSession`（其 State 里 `layers`/`writtenLayerCount`
+全是顺序流式的）—— 那是三个模块的重构，不是「给循环加个并行」。
+
+那个 91.2% 的实测来自 **`slicer_cli` 单模型直写路径**（无 ownedlayercallback、
+TIFF 直接写盘）。那条路径确实能并行，但**它不是产品路径** ——
+立卡前必须先确认用户的实际生产路径走哪条。
+
+**二：与本专项目标直接冲突。** 专项的全部价值是把峰值压到百 MB 级；
+按跨层复用缓冲清单估算，18 路并行会推回 **1.6~4.6 GB**
+（最小配置约 12 B/列 x 736 万列 x 18；开 MATVOL + closure 则约 35 B/列）。
+在同一个专项分支上做，等于自己拆自己的验收判据。
+
+**三：内存带宽大概率先饱和。** 该循环算术强度极低（全是 uint8 掩码的逐列读写、
+`fill_n`、洪泛），每层要流过 44 MB 的 compose 输出加若干整幅面 pass。
+桌面双通道内存下，3~6 线程可能就打满。**这条无法靠只读核查证实 ——
+必须先用 2/4/8/12/18 五个点实测扩展曲线**（且按既有规矩，短基准要多次取最小值）。
+
+**四：Amdahl 上限没有 18×。** 串行余量 8.8%（1 - 516,877/566,649），
+18 线程理论加速约 7.2×，无限线程也只有 11.4×。
+
+**若将来重启，核查已列出必须处理的清单**（择要）：
+`lastOwnedMaterial` 是唯一的真·串行前缀依赖（MATVOL 路径，直接影响落盘 RGB）；
+八个顺序敏感的 `push_back` 容器需改按下标预分配；`texture_runtime.report` 与
+`material_policy_report` 的裸 `++` 是最容易被漏掉的竞争点（顺序无关 ≠ 无竞争）；
+进度上报有**两条**协议规则（percent 与 current 各一条，且 `current` 未被钳位）；
+`profile.*_ms` 是逐层墙钟求和，并行后会变成 N 倍虚数，让人误判「并行没效果」。
+
+---
+
 ## 13. 修订记录
 
 | 日期 | 版本 | 变更 |
 |---|---|---|
+| 2026-09-07 | v4.5 | 新增 §14.1.1/14.1.2：MF-09 按「先量后改」插桩实测，**结果推翻原计划** —— 瓶颈不是那六处整幅面 pass（已剪过的三处合计仅占 3%），而是**材料闭合语义分析占 86%**；根因是 `MaterialClosureConfig::enabled` 默认为 true 而配置文件从不写它，导致每层新建 11 个整幅面 mask（81 MB/层、1429 层约 116 GB）。并**如实记录一次失败的尝试**：把该对象提到循环外跨层复用，公平 A/B（各三次取最小）显示 61,579 -> 68,940 ms，无任何收益证据，已回退。它证伪的假设是「开销在 malloc/free」—— 实际在 `assign` 的写入本身，那些字节无论复不复用都要写。故正确方向只剩活动列剪枝，且需独立做等价性验证；另标注 38.7 秒里 `assign` 写入与逐像素循环尚未分开量。 |
+| 2026-09-07 | v4.4 | 新增 §14：应用户「不改硬件、大画幅耗时还有多少空间」的提问立三张卡。**并更正我自己的初次判断** —— 当时看到「18 核、层循环串行、layerCompute 占 91.2%」就断言并行可拿 3~5 倍，只读核查后收回：产品路径上该循环被 `SceneLayerBarrier` 锁步（生产者写完一层即阻塞等消费），并行 18 路只会全堵在 `DepositAndWait`，吞吐不变而内存 ×18；那个 91.2% 来自 `slicer_cli` 直写路径，不是产品路径。据此 MF-11（并行化）DEFERRED 并记下重启时必须处理的清单。改为先做 MF-09：层循环里还有至少六处整幅面 pass 是 MEMFLOW 剪枝的漏网之鱼（其中 `analyze_support_connectivity` 每层新建清零 7.37 MB 且调用点在 support.enabled 守卫之外），等价性论证与 X2b 同一套、不增内存不碰屏障。MF-09 第一步是**加细粒度计时先把 516 秒拆开**，不是直接改。另立 MF-10：多材质大栅格的瓶颈在 MATVOL 逐列求交（gridSetup 占 92%），与层循环无关。 |
 | 2026-08-21 | v2.2 | MF-03B4B 专项准备补齐：冻结 public DTO、facts identity、retained 精确顺序、Stage 15 eligible branch、caller output/sink 强异常边界、closure 固定 workspace、独立 oracle 与实施拆分；结论 PREPARED / IMPLEMENTATION GO，生产仍未接线。 |
 | 2026-08-21 | v2.1 | MF-03B4A COMPLETE：实现 plan-bound verified replay、Base/outer-varnish 最终化、逐层 compact connectivity sink 与 fail-closed 生命周期；Release 组合 Gate 通过且生产零接线。MF-03B4B 解除依赖等待但未开工。 |
 | 2026-08-21 | v2.0 | 完成 MF-03B4 准备审计并拆为 B4A/B4B；冻结 replay identity/digest checkpoint、Base/varnish/统计、材料/Stage15/closure、生命周期与零漂移 Gate。B4A 转 PREPARED，B4B 等待 B4A。 |
