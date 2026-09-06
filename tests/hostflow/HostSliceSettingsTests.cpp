@@ -7,7 +7,6 @@
 #include "apps/slicer_ui_host_sim/ModuleClient.h"
 #include "slicer_core/api/ProfileIdentity.h"
 #include "slicer_core/json_value.h"
-#include <cstdio>
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
@@ -1336,8 +1335,7 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
         QString{},
         QString{},
         QStringLiteral("package"),
-        timing,
-        QJsonObject{},
+        timing, QJsonObject{},
         20,
         -1);
     auto* scanValue = jobPanel.findChild<QLabel*>(
@@ -1400,20 +1398,12 @@ bool VerifyStage16Diagnostics(QTextStream& errors)
                errors)
         && Check(
                engineValue != nullptr && configLoadValue != nullptr
-                   && modelLoadValue != nullptr,
-               QStringLiteral("耗时控件缺失。"),
-               errors)
-        && Check(
-               engineValue->text().contains(
-                   QStringLiteral("失败前阶段进度估算")),
-               QStringLiteral("引擎栏未标注为阶段进度估算，实为：%1")
-                   .arg(engineValue->text()),
-               errors)
-        && Check(
-               configLoadValue->text() != QStringLiteral("未提供")
+                   && modelLoadValue != nullptr
+                   && engineValue->text().contains(
+                       QStringLiteral("失败前阶段进度估算"))
+                   && configLoadValue->text() != QStringLiteral("未提供")
                    && modelLoadValue->text() != QStringLiteral("未提供"),
-               QStringLiteral("失败作业的阶段耗时估算未显示：configLoad=%1 modelLoad=%2")
-                   .arg(configLoadValue->text(), modelLoadValue->text()),
+               QStringLiteral("失败作业的阶段耗时估算未显示。"),
                errors)
         && Check(
                previewMode != nullptr
