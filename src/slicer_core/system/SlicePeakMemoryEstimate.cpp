@@ -137,6 +137,32 @@ SlicePeakMemoryEstimate EstimateSlicePeakMemory(
     AddTerm(estimate.retained, "unmodelled_reserve", kUnmodelledReserveBytes, false);
     AddTerm(estimate.bounded, "unmodelled_reserve", kUnmodelledReserveBytes, false);
 
+    // ---- 多材质的每列附加余量 ----
+    //
+    // 2026-09-06 补的多材质大栅格基线直接推翻了「一笔常数余量够用」这个假设。
+    // 同一个 gubao04（六材质 + 贴图 + MATVOL 逐列求交），只把 XY 放大 4 倍：
+    //
+    //   列数 19.3 万 -> 已建模 23 MiB，实测 126 MiB，未建模 103 MiB
+    //   列数 308.5 万 -> 已建模 367 MiB，实测 1,167 MiB，未建模 800 MiB
+    //
+    // 未建模部分涨了 7.8 倍，而列数涨了 16 倍 —— 它是 O(列数)，不是常数。
+    // 两点连线得 253 B/列、截距约 56 MiB（截距由上面那 256 MiB 覆盖）。
+    // 取 320 B/列，即约 1.26 倍安全系数。
+    //
+    // ⚠ 这条是【拟合】出来的，不是从分配点推导的：我没有把那 800 MiB 逐项
+    //   拆开（MaterialVolumePlan 的两个容器算下来上界仅约 234 MiB，
+    //   其余在 MATVOL 求交的中间结果、纹理运行时与网格里）。故凡是走到这一支
+    //   的估算都标 empiricalOnly，外推到远离这两点的规模时必须重新验证。
+    //   要去掉这个标记，得先插桩把那 800 MiB 拆清楚 —— 那是独立一件事。
+    if (config.material_volume_policy.enabled)
+    {
+        const std::uint64_t multiMaterial =
+            columns * kMultiMaterialReserveBytesPerColumn;
+        AddTerm(estimate.retained, "multi_material_empirical", multiMaterial, false);
+        AddTerm(estimate.bounded, "multi_material_empirical", multiMaterial, false);
+        estimate.empiricalOnly = true;
+    }
+
     return estimate;
 }
 

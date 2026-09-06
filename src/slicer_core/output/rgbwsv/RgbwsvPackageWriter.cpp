@@ -1115,7 +1115,13 @@ RgbwsvProductionPackageSession::RgbwsvProductionPackageSession(
     State& s = *m_state;
     s.totalStart = WriterClock::now();
     // Begin 阶段 scene 尚未补齐，故跳过依赖它的检查；Finish 会再校验一次。
-    ValidateRequest(request, false);
+    // 第三参数必须显式给 0：它表示「逐层模式、目前已写 0 层」。缺了它，
+    // ValidateRequest 会把本次当成整栈路径，转而按 grid.layerCount 遍历
+    // request.layers —— 而逐层路径下那个容器恒为空，必然越界。
+    // 生产至今没踩到，只因会话建立时 grid.layerCount 恰好还是 0
+    // （见 MultiModelProductionService：grid 由合成后补齐）。那是巧合，
+    // 不是保证：一旦把 grid 的补齐提前，Begin 就会当场崩。
+    ValidateRequest(request, false, 0);
     s.whiteSemantics = ResolveWhiteSemantics(request);
     s.packageDir =
         std::filesystem::absolute(request.packageDir).lexically_normal();

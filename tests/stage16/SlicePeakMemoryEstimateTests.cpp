@@ -37,6 +37,15 @@ SliceConfig BoundedConfig()
     return config;
 }
 
+/// 多材质配置：gubao04 那一类（六材质 + 贴图 + MATVOL 逐列求交）。
+SliceConfig MultiMaterialConfig()
+{
+    SliceConfig config = BoundedConfig();
+    config.material_volume_policy.enabled = true;
+    config.texture.enabled = true;
+    return config;
+}
+
 GridSpec MakeGrid(const int width, const int height, const int layers)
 {
     GridSpec grid;
@@ -67,24 +76,32 @@ bool NeverUnderestimatesMeasuredRuns()
         int layers;
         std::uint64_t measuredBytes;
         bool bounded;
+        bool multiMaterial;
     };
     const std::vector<Case> cases{
-        // r01：94 层，实测 90,050,560 B。
-        {"r01 @0.05mm", 293, 567, 94, 90050560ULL, true},
-        // gubao04：129 层六材质，实测 132,276,224 B。
-        {"gubao04 @0.05mm", 335, 576, 129, 132276224ULL, true},
+        // 单材料点。r01：94 层，实测 90,050,560 B。
+        {"r01 @0.05mm", 293, 567, 94, 90050560ULL, true, false},
         // a-2/0.2.obj @10um：1429 层，实测 0.84 GiB。本专项的主力场景。
-        {"a-2 @10um", 1418, 5197, 1429, 902ULL * kMiB, true},
+        {"a-2 @10um", 1418, 5197, 1429, 902ULL * kMiB, true, false},
         // 同一场景在专项介入前走 retained，实测峰值 22~34 GB。
         // 取下界 22 GB 作判据：估算必须不低于它，否则就是低估。
-        {"a-2 @10um retained", 1418, 5197, 1429, 22ULL * 1024ULL * kMiB, false},
+        {"a-2 @10um retained", 1418, 5197, 1429, 22ULL * 1024ULL * kMiB, false,
+         false},
+        // 多材质点（六材质 + 贴图 + MATVOL 逐列求交）。
+        // gubao04 原尺寸：129 层，实测 132,276,224 B。
+        {"gubao04 @0.05mm", 335, 576, 129, 132276224ULL, true, true},
+        // 同一模型 XY 放大 4 倍（列数 x16、层数不变）：实测 1,224,708,096 B。
+        // 这个点是 2026-09-06 补的多材质大栅格基线 —— 正是它证明未建模项
+        // 在多材质路径下随【列数】增长，而不是一笔常数余量兜得住的。
+        {"gubao04 xy4 (308 万列)", 1340, 2303, 129, 1224708096ULL, true, true},
     };
 
     bool passed{true};
     for (const Case& item : cases)
     {
         const SlicePeakMemoryEstimate estimate = EstimateSlicePeakMemory(
-            BoundedConfig(), MakeGrid(item.width, item.height, item.layers));
+            item.multiMaterial ? MultiMaterialConfig() : BoundedConfig(),
+            MakeGrid(item.width, item.height, item.layers));
         const std::uint64_t predicted = item.bounded
             ? estimate.bounded.totalBytes
             : estimate.retained.totalBytes;
@@ -96,6 +113,12 @@ bool NeverUnderestimatesMeasuredRuns()
                   << (static_cast<double>(predicted)
                       / static_cast<double>(item.measuredBytes))
                   << "x" << std::endl;
+        // 依据强度必须如实标注：多材质那一支含拟合项，单材料那一支不含。
+        // 少了这条，将来把附加项误加到单材料路径上也不会被发现。
+        passed = ExpectTrue(
+            estimate.empiricalOnly == item.multiMaterial,
+            item.what + " declares whether it rests on empirical fitting")
+            && passed;
         passed = ExpectTrue(
             predicted >= item.measuredBytes,
             "never underestimates " + item.what + " (predicted "

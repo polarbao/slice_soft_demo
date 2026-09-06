@@ -39,6 +39,15 @@ struct SlicePeakMemoryEstimate
     bool boundedEligible{false};
     /// 未准入时的原因，与 `EvaluateBoundedReliefSupportPath` 的 reason 一致。
     std::string boundedRejectReason;
+    /**
+     * @brief 本次估算是否**只**由经验拟合支撑（而非按分配点推导）。
+     *
+     * 多材质路径为真。此时结果里含 `multi_material_empirical` 一项，
+     * 它是拿两个实测点拟合出来的斜率，不是从代码里的分配点推出来的
+     * —— 见 .cpp 的标定记录。外推到远离那两点的规模时要重新验证。
+     * 单材料路径为假：那条路径上每一项都对得上具体的分配语句。
+     */
+    bool empiricalOnly{false};
 };
 
 /**
@@ -79,5 +88,19 @@ struct SlicePeakMemoryEstimate
 
 /// 未建模项的固定余量。见上方说明与 .cpp 里的标定记录。
 inline constexpr std::uint64_t kUnmodelledReserveBytes{256ULL * 1024ULL * 1024ULL};
+
+/**
+ * @brief 多材质路径的**每列**附加余量。
+ *
+ * 多材质（`material_volume_policy.enabled`）会引入一批随列数增长的开销：
+ * `MaterialVolumePlan` 的 `columnIntervalOffsets_`（每列一个 uint32）与
+ * `intervals_`（每列每材质一个 12 字节区间），加上 MATVOL 逐列求交的中间结果。
+ * 这些都不在上面那份「已建模」清单里，而它们是 **O(列数)** 的
+ * —— 一笔常数余量兜不住。
+ *
+ * 取值 320 见 .cpp 的标定记录：由两个实测点拟合出 253 B/列，
+ * 再乘约 1.26 的安全系数取整。
+ */
+inline constexpr std::uint64_t kMultiMaterialReserveBytesPerColumn{320ULL};
 
 }  // namespace slicer_core

@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.0 ｜ 日期：2026-09-06
+> 版本：v4.2 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -43,10 +43,14 @@
 | MF-03X3 | 稀疏列剪枝·compose 与内部空腔（用户 2026-09-05 提出耗时优化） | COMPLETE（第一批） | MF-03X2a | 2026-09-05 |
 | MF-03X4 | 按幅面固定开销清理·relief_columns 归还与 compose 缓冲稀疏重置 | COMPLETE `5c6b8b7` | MF-03X3 | 2026-09-05 |
 | MF-03X5 | 通道统计稀疏化（空列份额解析补齐） | COMPLETE `b8e082e` | MF-03X4 | 2026-09-06 |
-| MF-04 | 单实例流式 Staged Package | PENDING / **范围已重定义** | MF-03B4A/B COMPLETE | - |
+| MF-04 | 单实例流式 Staged Package | **COMPLETE**（补测试时顺带修掉一处 Begin 阶段越界，见 8.2） | MF-03B4A/B COMPLETE | 2026-09-06 |
 | MF-05 | 多实例 Global Layer Barrier | **COMPLETE** `7d7a627`（峰值与层数脱钩） | MF-03X2a | 2026-09-06 |
-| MF-06 | Sparse Tile/Span 显式候选 | PENDING | MF-05 | - |
-| MF-07 | 自适应生产路由与 Telemetry 接入 | PENDING | MF-06 Gate 或明确跳过 Sparse | - |
+| MF-06 | Sparse Tile/Span 显式候选 | **已跳过**（用户 2026-09-04 同意；X3 稀疏列剪枝已取走核心收益） | MF-05 | - |
+| MF-07a | Worker 权威内存 telemetry | COMPLETE（此前硬编码为 0） | MF-05 | 2026-09-06 |
+| MF-07b | Host 停止伪造 telemetry | 前半 COMPLETE；后半需授权（产品行为变更） | MF-07a | 2026-09-06 |
+| MF-07c | 峰值预估器（纯函数） | COMPLETE（四实测点全部高估覆盖） | MF-07a | 2026-09-06 |
+| MF-07d | 预算字段与开始前路由 | TODO —— 接生产前须先有多材质大幅面实测点 | MF-07c | - |
+| MF-07e | 消除场景路径中途回退 | **CLOSED**：验收已实质满足，见 11.4 | MF-05 | 2026-09-06 |
 | MF-08 | 真实模型、RIP、恢复与性能收口 | PENDING / INPUT OPEN | MF-07、设备输入 | - |
 
 ## 2.1 当前可继续的任务（2026-09-06 盘点）
@@ -452,6 +456,63 @@ analyze_support_connectivity   每层新建 w*h 的 visited
 
 **验收：** TIFF/manifest/report/preview/RIP strict 与 Retained Dense 全等；取消和 Writer 故障不发布
 半包。~~Peak Working Set 明显下降~~ —— 该判据移交 MF-03X2。
+
+### 8.1 复核：功能已由 MF-05 覆盖，缺的是测试（2026-09-06）
+
+逐条对验收：
+
+| 验收项 | 现状 |
+|---|---|
+| 逐层进入 staging Writer | **已实现**：`RgbwsvProductionPackageSession` 的 Begin/AppendLayer/Finish 三段，MF-05 已把它接进场景路径并默认启用 |
+| 输出与 Retained Dense 全等 | **已验证**：四判据逐字节全等，digest 与长期基线相同 |
+| 故障不发布半包 | **已实现**：会话未 Finish 即析构时 RAII 回滚清 staging；MF-05 期间顺带修掉「`Finish()` 从未置 `State::finished`，成功发布后析构仍跑一遍恢复」这处遗漏 |
+| 取消不发布半包 | **行为已存在但缺专门测试**。MF-05 定位那十一项回归时，整条因果链的末端正是「包写一半被协作式取消 -> 会话 RAII 回滚清 staging -> 包从未发布」—— 那次是被误触发的，但它反过来证明该语义确实生效 |
+
+**故本卡的剩余工作只有一项：补两个专门测试**（作业中途取消、Writer 故障注入），
+把上表最后两行从「被一次误触发间接证明」变成「被断言直接钉住」。
+不补也不影响现有功能，补了才能把这张卡关掉。
+
+### 8.2 补测试时撞到一处真实缺陷（2026-09-06，本卡 COMPLETE）
+
+先说一个查证结果：**`RgbwsvProductionPackageSession` 此前在测试里零覆盖。**
+它是 MF-05 引入并【默认启用】的逐层发布入口，却只被场景路径的端到端用例
+间接带到过。补测试的第一个动作就是给它写直接用例。
+
+新增两条：
+
+| 用例 | 钉住什么 |
+|---|---|
+| `abandoned_session_publishes_nothing` | 写一半层后**不调用 Finish** 直接析构 -> 不得留 manifest、不得留任何 `package.staging.*` 目录 |
+| `finished_session_survives_destruction` | 正常 Finish 后包已发布；**并在会话析构之后**才检查产物，从而一并钉住「成功 Finish 后析构不再回滚」——那正是 MF-05 顺带修掉的 `State::finished` 遗漏 |
+
+#### 缺陷：Begin 阶段会按 `grid.layerCount` 遍历空的 `request.layers`
+
+第一条用例照生产用法写（逐层路径不预置整栈，`request.layers` 清空），
+一跑就是 `0xc0000409`。查下去是真缺陷，不是用法不当：
+
+```text
+会话构造 -> ValidateRequest(request, false)      // 只关了 compositionReady
+        -> writtenLayerCount 仍是 nullopt
+        -> layersInMemory = !writtenLayerCount.has_value() = true
+        -> for (layerIndex < request.grid.layerCount)
+               request.layers.at(layerIndex)      // layers 恒为空 -> 越界
+```
+
+该循环上方的注释写着「逐层会话下 layers 恒为空……跳过它，否则这里必然越界」
+—— **但跳过的判据在 Begin 阶段并不成立**。
+
+**生产至今没踩到，纯属巧合**：会话建立时 `writeRequest.grid.layerCount` 恰好
+还是 0（grid 由合成后补齐，见 `MultiModelProductionService` 的注释），
+循环遍历 0 次。那是巧合不是保证 —— **一旦把 grid 的补齐提前（一个完全合理的
+重构方向），Begin 就会当场崩**。
+
+**修法一行**：`ValidateRequest(request, false, 0)`，显式声明「逐层模式、
+已写 0 层」。第三参数为 0 时 `layersInMemory` 为假，循环被正确跳过；
+而「层数齐备」那条校验由 `compositionReady` 守卫，Begin 时本就不执行，
+故传 0 不会误判层数不足。
+
+测试保持「清空 `request.layers`」的生产语义 —— 改成预置整栈也能过，
+但那样这条回归保护就没了。
 
 ## 9. MF-05 多实例 Layer Barrier
 

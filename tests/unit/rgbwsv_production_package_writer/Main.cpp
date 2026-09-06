@@ -179,6 +179,111 @@ slicer_core::RgbwsvProductionPackageWriteRequest MakeRequest(
     return request;
 }
 
+/**
+ * @brief MF-04：会话未 Finish 就析构时，不得留下 staging，也不得发布半个包。
+ *
+ * `RgbwsvProductionPackageSession` 是 MF-05 引入并【默认启用】的逐层发布入口，
+ * 但在此之前它**没有任何直接测试** —— 只被场景路径的端到端用例间接覆盖。
+ * 而 MF-04 的验收「取消和 Writer 故障不发布半包」正落在这个类上。
+ *
+ * 这一条也是 MF-05 那十一项回归的末端：当时整条因果链走到
+ * 「包写一半被协作式取消 -> 会话 RAII 回滚清 staging -> 包从未发布」，
+ * 那次是被误触发的，但反过来证明该语义确实生效。此处把它从
+ * 「被一次误触发间接证明」变成被断言直接钉住。
+ */
+bool AbandonedSessionPublishesNothing()
+{
+    const std::filesystem::path root{
+        MakeTestDirectory("session-abandoned")};
+    const std::filesystem::path packageDir{root / "package"};
+    slicer_core::RgbwsvProductionPackageWriteRequest request{
+        MakeRequest(packageDir)};
+    // 逐层路径下 layers 由 AppendLayer 逐个交付，请求里【不预置整栈】——
+    // 这正是生产的用法（MultiModelProductionService 从不给 writeRequest.layers
+    // 赋值）。本用例最初就是这么写的，并因此暴露出 Begin 阶段会按
+    // grid.layerCount 遍历空 layers 而越界；修复见 RgbwsvPackageWriter 的
+    // ValidateRequest(request, false, 0)。故这里必须保持「清空」，
+    // 否则这条回归保护就没了。
+    const std::vector<slicer_core::RgbwsvProductionLayer> layers{
+        std::move(request.layers)};
+    request.layers.clear();
+
+    bool passed{true};
+    {
+        slicer_core::RgbwsvProductionPackageSession session{request};
+        session.SetExpectedLayerCount(kLayerCount);
+        // 只写一半的层，然后【不调用 Finish】直接让它析构。
+        for (int layerIndex{0}; layerIndex < kLayerCount / 2; ++layerIndex)
+        {
+            session.AppendLayer(layers.at(static_cast<std::size_t>(layerIndex)));
+        }
+    }
+
+    passed = ExpectTrue(
+        !std::filesystem::exists(packageDir / "manifest.json"),
+        "abandoned session publishes no manifest") && passed;
+    // staging 目录名带 job/attempt 后缀，故按前缀扫父目录，不猜具体名字。
+    bool stagingLeft{false};
+    if (std::filesystem::exists(packageDir.parent_path()))
+    {
+        for (const auto& entry :
+             std::filesystem::directory_iterator(packageDir.parent_path()))
+        {
+            const std::string name{entry.path().filename().string()};
+            if (name.rfind("package.staging.", 0U) == 0U)
+            {
+                stagingLeft = true;
+            }
+        }
+    }
+    passed = ExpectTrue(
+        !stagingLeft, "abandoned session leaves no staging directory") && passed;
+    return passed;
+}
+
+/**
+ * @brief MF-04：正常 Finish 之后包必须发布，且析构不得再动它。
+ *
+ * 后半条针对一处真实缺陷：`Finish()` 曾从未把 `State::finished` 置真，
+ * 于是成功发布后析构仍会跑一遍 `RecoverPackageArtifacts`。当时那次恢复恰是
+ * 无害空操作，但与「成功 Finish 后不再回滚」的约定不符 ——
+ * 一旦恢复语义变化，它就会变成删掉已发布的包。故此处在会话析构【之后】
+ * 才检查产物，把「析构不动已发布的包」一并钉住。
+ */
+bool FinishedSessionSurvivesDestruction()
+{
+    const std::filesystem::path root{MakeTestDirectory("session-finished")};
+    const std::filesystem::path packageDir{root / "package"};
+    slicer_core::RgbwsvProductionPackageWriteRequest request{
+        MakeRequest(packageDir)};
+    const std::vector<slicer_core::RgbwsvProductionLayer> layers{
+        std::move(request.layers)};
+    request.layers.clear();
+
+    bool passed{true};
+    bool finished{false};
+    {
+        slicer_core::RgbwsvProductionPackageSession session{request};
+        session.SetExpectedLayerCount(kLayerCount);
+        for (const slicer_core::RgbwsvProductionLayer& layer : layers)
+        {
+            session.AppendLayer(layer);
+        }
+        const auto result = session.Finish();
+        // 三项一起判：产物写出、strict 协议校验通过、staging 已回收。
+        finished = result.productionOutputWritten
+            && result.strictProtocolValidated
+            && result.stagingRemoved;
+    }
+    passed = ExpectTrue(finished, "finished session reports a written package")
+        && passed;
+    // 关键：在析构【之后】检查，故这同时验证了析构没有回滚已发布的包。
+    passed = ExpectTrue(
+        std::filesystem::exists(packageDir / "manifest.json"),
+        "finished package survives session destruction") && passed;
+    return passed;
+}
+
 bool AdmittedGlobalPackagePassesRipAndReports()
 {
     const std::filesystem::path directory = MakeTestDirectory("global");
@@ -851,6 +956,8 @@ bool ConcurrentPackageTargetIsRejectedBeforeWriting()
 int main()
 {
     const std::vector<std::pair<std::string, bool (*)()>> tests{
+        {"abandoned_session_publishes_nothing", AbandonedSessionPublishesNothing},
+        {"finished_session_survives_destruction", FinishedSessionSurvivesDestruction},
         {"admitted_global_package_passes_rip_and_reports", AdmittedGlobalPackagePassesRipAndReports},
         {"tiled_package_uses_the_same_protocol", TiledPackageUsesTheSameProtocol},
         {"packbits_package_uses_the_declared_compression", PackBitsPackageUsesTheDeclaredCompression},

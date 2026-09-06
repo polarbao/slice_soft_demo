@@ -21,6 +21,7 @@
 #include "slicer_core/system/Sha256.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -223,8 +224,14 @@ int main(const int argc, char** argv)
                 sourceRoot / "model/obj/reality/finger_suoguo/a-2/0.2.obj");
         }
 
-        const std::filesystem::path root =
-            std::filesystem::temp_directory_path() / "slicesoft_memflow_bench";
+        // 输出根目录。默认走系统 temp，但**允许用 SLICESOFT_BENCH_ROOT 覆盖**
+        // —— 本机系统 temp 在 C 盘，而 C 盘常年 98% 满，
+        // 而本 bench 的输出是 `列数 x 6 x 层数`：a-2@10um 单次就是 120 GB。
+        // 大规模跑请先把该变量指到空间充裕的盘。
+        const char* const rootOverride{std::getenv("SLICESOFT_BENCH_ROOT")};
+        const std::filesystem::path root = rootOverride != nullptr
+            ? std::filesystem::path(rootOverride)
+            : std::filesystem::temp_directory_path() / "slicesoft_memflow_bench";
         std::error_code cleanup;
         std::filesystem::remove_all(root, cleanup);
         std::filesystem::create_directories(root);
@@ -283,9 +290,17 @@ int main(const int argc, char** argv)
                   << "\n";
         if (!result.IsValid() && result.error.has_value())
         {
+            // 失败时【保留】现场并把路径打出来 —— 那时输出包是诊断材料。
             std::cerr << "BENCH_ERROR " << result.error->message << "\n";
+            std::cerr << "BENCH_ARTIFACTS_KEPT " << root.string() << "\n";
             return 1;
         }
+        // 成功时清掉输出包。本 bench 的产物只有上面那行 BENCH 统计，
+        // 层文件是过程数据 —— 而它们能到 120 GB：此前一次 a-2@10um 的跑留在
+        // 系统 temp 里，直到把 C 盘从 133 GB 可用压到 12 GB 才被发现。
+        // 开头那次 remove_all 只清上一轮，管不住「最后一轮」。
+        std::error_code finalCleanup;
+        std::filesystem::remove_all(root, finalCleanup);
         return result.IsValid() ? 0 : 1;
     }
     catch (const std::exception& error)
