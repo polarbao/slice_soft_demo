@@ -87,6 +87,14 @@ bool NeverUnderestimatesMeasuredRuns()
         // 取下界 22 GB 作判据：估算必须不低于它，否则就是低估。
         {"a-2 @10um retained", 1418, 5197, 1429, 22ULL * 1024ULL * kMiB, false,
          false},
+        // 入库资产的大幅面真实点（`model/stl/suoguo-baseline/`，635x600 DPI、
+        // 层厚 0.038）。这三条不是放大出来的合成场景，而是 2026-09-03 那批
+        // 替代基线资产本身 —— 它们同时是专项收益的直接对照：
+        // 同资产同参数在 retained 时代分别是 2,853 MB 与 3,316 MB。
+        {"suoguo qiegejiapian-zxl", 1500, 5197, 116, 953479168ULL, true, false},
+        {"suoguo qiegejiapian-hcc", 1500, 5315, 138, 1006039040ULL, true, false},
+        // finger_suoguo/a-3 @0.1mm：与 a-2 同构的真实资产，配置同为单材料路径。
+        {"a-3 @0.1mm", 1418, 5197, 143, 906366976ULL, true, false},
         // 多材质点（六材质 + 贴图 + MATVOL 逐列求交）。
         // gubao04 原尺寸：129 层，实测 132,276,224 B。
         {"gubao04 @0.05mm", 335, 576, 129, 132276224ULL, true, true},
