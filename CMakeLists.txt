@@ -479,6 +479,7 @@ set(SLICESOFT_CORE_SOURCES
     src/slicer_core/support/SupportShapeOptimizer.cpp
     src/slicer_core/support/SupportShapeOptimizer.h
     src/slicer_core/support/SupportShapePipeline.cpp
+    src/slicer_core/system/SlicePeakMemoryEstimate.cpp
     src/slicer_core/support/SupportShapePipeline.h
     src/slicer_core/support/SupportShapePolicy.cpp
     src/slicer_core/support/SupportShapePolicy.h
@@ -1760,6 +1761,15 @@ endif()
 
 add_test(NAME stage16c06_scene_layer_barrier_unit_tests COMMAND stage16c06_scene_layer_barrier_unit_tests)
 
+add_executable(stage16c06_slice_peak_memory_estimate_unit_tests
+    tests/stage16/SlicePeakMemoryEstimateTests.cpp
+)
+
+target_link_libraries(stage16c06_slice_peak_memory_estimate_unit_tests PRIVATE slicer_core)
+if(MSVC)
+    target_compile_options(stage16c06_slice_peak_memory_estimate_unit_tests PRIVATE /W4 /WX)
+endif()
+
 add_executable(stage16c06_bounded_relief_support_plan_unit_tests
     tests/stage16/BoundedReliefSupportPlanTests.cpp
 )
@@ -2932,6 +2942,7 @@ add_test(NAME stage16c06_memory_budget_unit_tests COMMAND stage16c06_memory_budg
 add_test(NAME stage16c06_owned_layer_consumer_unit_tests COMMAND stage16c06_owned_layer_consumer_unit_tests)
 add_test(NAME stage16c06_bounded_support_demand_unit_tests COMMAND stage16c06_bounded_support_demand_unit_tests)
 add_test(NAME stage16c06_bounded_relief_support_plan_unit_tests COMMAND stage16c06_bounded_relief_support_plan_unit_tests)
+add_test(NAME stage16c06_slice_peak_memory_estimate_unit_tests COMMAND stage16c06_slice_peak_memory_estimate_unit_tests)
 add_test(NAME stage16c06_bounded_support_discovery_unit_tests COMMAND stage16c06_bounded_support_discovery_unit_tests)
 add_test(NAME stage16c06_bounded_support_shape_unit_tests COMMAND stage16c06_bounded_support_shape_unit_tests)
 add_test(NAME stage16c06_bounded_support_final_replay_unit_tests COMMAND stage16c06_bounded_support_final_replay_unit_tests)

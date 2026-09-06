@@ -5,6 +5,7 @@
 #include "slicer_core/geometry/SceneModelTriangleMeshAdapter.h"
 #include "slicer_core/geometry/LayerOccupancyProvider.h"
 #include "slicer_core/geometry/SliceGridSpec.h"
+#include "slicer_core/geometry/ReliefColumnInfo.h"
 #include "slicer_core/geometry/TransformedModelAdapter.h"
 #include "slicer_core/json_value.h"
 #include "slicer_core/material/MaterialClosureRepair.h"
@@ -173,18 +174,6 @@ struct ReliefReportData {
     double thickness_max_mm{0.0};
     bool has_hits{false};
     Json::Array warnings;
-};
-
-struct ReliefColumnInfo {
-    bool has_model{false};
-    int lower_layer{-1};
-    int upper_layer{-1};
-    double z_min_mm{0.0};
-    double z_max_mm{0.0};
-    int hit_count{0};
-    bool multi_hit{false};
-    int top_triangle_index{-1};
-    std::array<double, 3> top_barycentric{0.0, 0.0, 0.0};
 };
 
 /**
