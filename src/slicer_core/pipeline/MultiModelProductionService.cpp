@@ -901,10 +901,10 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
 
     const std::size_t producerCount = producerSlots.size();
 
-    // 对齐判定：屏障按全局层号推进，而 offsetz 由实例与全局栅格原点之差算出、
-    // 全局栅格又要等所有实例的局部栅格就位 —— 环形依赖。解法是先跑「栅格相位」：
-    // 各生产者报出 localgrid 后等待，主线程检查【所有实例 originzmm 相等】，
-    // 相等则各 offsetz 必为 0、局部层号即全局层号。该判据只看各实例自身。
+    // 对齐判定：屏障按全局层号推进，offsetz 由实例与全局栅格原点之差算出，而全局
+    // 栅格要等所有局部栅格就位 —— 环形依赖。解法是先跑「栅格相位」：各生产者报出
+    // localgrid 后等待，主线程检查所有实例 originzmm 相等。⚠ 该值在生产路径【恒为
+    // 0】（slicer.cpp 写的是字面量），故判据恒真、无中途改路。详见任务卡 MF-07e。
     enum class StreamAlignment
     {
         Pending,
@@ -957,8 +957,8 @@ MultiModelProductionResult RunMultiModelProductionServiceImpl(
                 }
                 if (decided == StreamAlignment::Rejected)
                 {
-                    // 退回 retained：照旧累积整栈。既不能报错（那会让本来能工作的
-                    // 场景失败），也不能重跑切片，故在此分流。
+                    // 退回 retained：累积整栈，不能重跑切片，故在此分流。「不能报错
+                    // 否则会让能工作的场景失败」这条旧理由已不成立，见上方判定处。
                     slot.retained.push_back(std::move(produced));
                     return true;
                 }
