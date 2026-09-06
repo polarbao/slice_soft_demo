@@ -1114,13 +1114,9 @@ RgbwsvProductionPackageSession::RgbwsvProductionPackageSession(
 {
     State& s = *m_state;
     s.totalStart = WriterClock::now();
-    // Begin 阶段 scene 尚未补齐，故跳过依赖它的检查；Finish 会再校验一次。
-    // 第三参数必须显式给 0：它表示「逐层模式、目前已写 0 层」。缺了它，
-    // ValidateRequest 会把本次当成整栈路径，转而按 grid.layerCount 遍历
-    // request.layers —— 而逐层路径下那个容器恒为空，必然越界。
-    // 生产至今没踩到，只因会话建立时 grid.layerCount 恰好还是 0
-    // （见 MultiModelProductionService：grid 由合成后补齐）。那是巧合，
-    // 不是保证：一旦把 grid 的补齐提前，Begin 就会当场崩。
+    // Begin 跳过依赖 scene 的检查（Finish 再校验）。第三参数 0 = 「逐层模式、
+    // 已写 0 层」，缺它会按 grid.layerCount 遍历恒为空的 layers 而越界 ——
+    // 生产至今没踩到只因那时 layerCount 恰为 0。详见任务卡 8.2。
     ValidateRequest(request, false, 0);
     s.whiteSemantics = ResolveWhiteSemantics(request);
     s.packageDir =
@@ -1510,10 +1506,8 @@ RgbwsvProductionPackageWriteResult RgbwsvProductionPackageSession::Finish()
             result.backupRemoved = cleanup.backup_removed;
             result.leaseReleased = cleanup.lease_removed;
             result.profile = profile;
-            // 成功发布后必须置位，否则析构仍会跑一遍 RecoverPackageArtifacts。
-            // 当前那次恢复恰好是无害空操作（staging/backup/lease 都已被上面的
-            // cleanup 清掉），但它与「成功 Finish 后不再回滚」的约定不符，
-            // 且一旦恢复语义变化就会变成删已发布的包。
+            // 必须置位，否则析构会再跑一遍 RecoverPackageArtifacts。当前那次
+            // 恢复恰是无害空操作，但一旦恢复语义变化就会删掉已发布的包。
             s.finished = true;
             return result;
     }
