@@ -108,6 +108,7 @@ private:
         const QString& detail,
         const QString& packageDirectory,
         const QJsonObject& timing,
+        const QJsonObject& observedTiming,
         qint64 elapsedMs,
         qint64 cancelLatencyMs);
     void LoadSliceResult(const QString& packageDirectory);

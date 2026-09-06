@@ -42,6 +42,14 @@ struct hostslicejobcompletion
     QString detail;
     QString packagedirectory;
     QJsonObject timing;
+    /**
+     * @brief 宿主自己的轮询观测值，**与 Worker 权威 telemetry 分开存放**。
+     *
+     * 此前这批值被并进 `timing`，于是面板无法分辨哪些数字来自 Worker、
+     * 哪些是宿主按 `pollResolutionMs` 估出来的。分开之后：
+     * `timing` 只装 Worker 给的，本字段只装宿主估的，各自带自己的来源标记。
+     */
+    QJsonObject observedtiming;
     qint64 elapsedms{0};
     qint64 cancellatencyms{-1};
     QJsonObject result;
@@ -130,6 +138,7 @@ signals:
         QString detail,
         QString packageDirectory,
         QJsonObject timing,
+        QJsonObject observedTiming,
         qint64 elapsedMs,
         qint64 cancelLatencyMs);
 

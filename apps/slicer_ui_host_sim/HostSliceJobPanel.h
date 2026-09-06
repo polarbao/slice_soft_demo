@@ -71,6 +71,7 @@ public:
      * @param elapsedMs 宿主观测的总作业时间。
      * @param cancelLatencyMs 宿主观测的取消延迟，未测量时为 -1。
      */
+    /// @param observedTiming 宿主轮询估算，仅在 Worker 无权威 telemetry 时用于填表。
     void ShowCompletion(
         bool success,
         bool cancelled,
@@ -79,6 +80,7 @@ public:
         const QString& detail,
         const QString& packageDirectory,
         const QJsonObject& timing,
+        const QJsonObject& observedTiming,
         qint64 elapsedMs,
         qint64 cancelLatencyMs);
 
@@ -95,7 +97,15 @@ private slots:
 
 private:
     void BuildInterface();
-    void ApplyTiming(const QJsonObject& timing, qint64 hostElapsedMs);
+    /**
+     * @param timing Worker 权威 telemetry。
+     * @param observedTiming 宿主自己的轮询估算；仅在 Worker 未提供权威数据时
+     *        用于填表，并在引擎栏明确标注来源 —— 两类数字不混用同一来源。
+     */
+    void ApplyTiming(
+        const QJsonObject& timing,
+        const QJsonObject& observedTiming,
+        qint64 hostElapsedMs);
     void ResetTiming();
     void UpdateButtons();
 

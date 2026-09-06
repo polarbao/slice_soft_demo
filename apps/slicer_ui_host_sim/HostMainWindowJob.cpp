@@ -71,6 +71,7 @@ void HostMainWindow::OnStartSlice()
             QString{},
             QString{},
             QJsonObject{},
+            QJsonObject{},
             0,
             -1);
         m_inspectorTabs->setCurrentWidget(m_sliceJobPanel);
@@ -118,6 +119,7 @@ void HostMainWindow::OnSliceJobCompleted(
     const QString& detail,
     const QString& packageDirectory,
     const QJsonObject& timing,
+    const QJsonObject& observedTiming,
     const qint64 elapsedMs,
     const qint64 cancelLatencyMs)
 {
@@ -129,6 +131,7 @@ void HostMainWindow::OnSliceJobCompleted(
         detail,
         packageDirectory,
         timing,
+        observedTiming,
         elapsedMs,
         cancelLatencyMs);
     if (success)

@@ -1,7 +1,7 @@
 # TASKS_16C-06-MEMFLOW 有界流式内存根治专项任务清单
 
 > 文档状态：**ACTIVE / 两项原始阻塞均已实测解除 / 余 MF-03X2b、MF-07、MF-08（均非阻塞）**
-> 版本：v4.2 ｜ 日期：2026-09-06
+> 版本：v4.3 ｜ 日期：2026-09-06
 > 定位：Stage 16C-06 的唯一原子任务状态真源；承接 12F-06 和 13B-05 流式化债务
 > 决策：`docs/slice/DOC/DOC_DECISION_16C_06_MEMFLOW_有界逐层流式内存根治.md`
 > 方案：`docs/slice/DEV/DEV_16C_06_MEMFLOW_有界逐层流式切片设计.md`
@@ -47,7 +47,7 @@
 | MF-05 | 多实例 Global Layer Barrier | **COMPLETE** `7d7a627`（峰值与层数脱钩） | MF-03X2a | 2026-09-06 |
 | MF-06 | Sparse Tile/Span 显式候选 | **已跳过**（用户 2026-09-04 同意；X3 稀疏列剪枝已取走核心收益） | MF-05 | - |
 | MF-07a | Worker 权威内存 telemetry | COMPLETE（此前硬编码为 0） | MF-05 | 2026-09-06 |
-| MF-07b | Host 停止伪造 telemetry | 前半 COMPLETE；后半需授权（产品行为变更） | MF-07a | 2026-09-06 |
+| MF-07b | Host 停止伪造 telemetry | **COMPLETE**（前半不再伪造 available；后半两类数据分区展示） | MF-07a | 2026-09-06 |
 | MF-07c | 峰值预估器（纯函数） | COMPLETE（四实测点全部高估覆盖） | MF-07a | 2026-09-06 |
 | MF-07d | 预算字段与开始前路由 | TODO —— 接生产前须先有多材质大幅面实测点 | MF-07c | - |
 | MF-07e | 消除场景路径中途回退 | **CLOSED**：验收已实质满足，见 11.4 | MF-05 | 2026-09-06 |
@@ -1057,10 +1057,52 @@ result JSON 侧同样钉住三个字段的存在性与 peak 非零。
 （断言「成功作业必须返回 Worker 核心细分耗时」，即 `available` 为真）
 通过；hostflow / 14e 全组 38 项中 4 项失败，**全部在既有失败基线内**。
 
-**后半未做（宿主观测值仍并入 `timing` 对象）。** 要彻底分离，需要把
-`observedTiming` 挪到独立字段并改 `HostSliceJobPanel` 的展示判定
-（改用 `approximate` 而非 `available` 决定是否显示估算值），
-那会改变面板可见行为并触及既有测试，属产品行为变更，留待明确授权。
+**后半已完成（2026-09-06，用户授权后实施）。** 见 11.3.1。
+
+#### 11.3.1 后半：两类数据分区，而不是一概不显示
+
+**先说一个前半引入的退步。** 前半只是不再伪造 `available`，补齐值仍混在
+`timing` 里；而面板的判定是 `if (timing.available)`，于是这些值一概不显示
+—— **作业失败时用户什么诊断信息都看不到，而那恰是最需要信息的时候**。
+把「不诚实」换成「什么都不说」并不是正确的终点。
+
+后半的做法是让两类数据**分开存放、分区展示**：
+
+| | 原始 | 前半之后 | 现在 |
+|---|---|---|---|
+| `timing.available` | **`true`（伪造）** | `false` | `false` |
+| 宿主观测值位置 | 混在 `timing` 内 | 仍混在 `timing` 内 | **独立字段 `observedtiming`** |
+| 面板细分耗时 | 显示，**当作权威** | **完全不显示** | 显示，**引擎栏标注非权威** |
+| 引擎栏文案 | `失败前阶段进度估算` | 同左 | `宿主估算·非 Worker 权威（失败前阶段进度）` |
+
+`timing` 从此只装 Worker 自己报的东西；`observedtiming` 装宿主按
+`pollResolutionMs` 轮询估出来的，并原样带上 `approximate` / `source` /
+`activePhase` / `hostElapsedMs`，让面板能说明这些数字是怎么来的。
+
+#### 11.3.2 顺带发现第二处冒充
+
+改到一半发现 `FinishTransportFailure`（通信失败路径）里有一句
+`m_completion.timing = FinalizeObservedTiming(...)` —— **把宿主观测值
+直接赋给 `timing`**。那是与补齐处同一类的冒充，只是走的是另一条分支，
+前半没有覆盖到。已一并改为赋给 `observedtiming`，`timing` 保持空。
+
+这一处也说明「Host 只展示 Worker 权威 telemetry」这条验收，
+光看一处赋值是判断不了的 —— 得把所有给 `timing` 赋值的路径都过一遍。
+
+#### 11.3.3 改动面与验证
+
+调用链需要贯通：`SigCompleted` 信号 -> `HostMainWindow::OnSliceJobCompleted`
+-> `HostSliceJobPanel::ShowCompletion` -> `ApplyTiming`，四处签名各加一个
+`observedTiming` 参数；`ApplyTiming` 内部据 `authoritative / estimated`
+选择取值源。
+
+验证：`slicer_host_sim` 编译通过；`hostflow_hb06_slice_job`
+（断言「成功作业必须返回 Worker 核心细分耗时」，即 `available` 为真）通过
+—— 即正常路径行为未变，这与前半的判断一致：
+`slicer.cpp` 无条件设 `profile.available = true`，
+故补齐与分区在 Worker 正常返回时本就不触发。
+
+---
 
 ### 11.4 MF-07e 重估：那条验收已实质满足（2026-09-06）
 

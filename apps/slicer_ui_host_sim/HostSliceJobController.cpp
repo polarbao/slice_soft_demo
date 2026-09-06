@@ -521,6 +521,12 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
         QStringLiteral("timing")).toObject();
     const QJsonObject observedTiming = FinalizeObservedTiming(
         m_completion.elapsedms);
+    // MF-07b 后半：宿主观测值【不再并进 timing】，改放独立字段。
+    //
+    // 前半只是不再伪造 available，补齐值仍混在 timing 里；面板 `if (available)`
+    // 一概拦掉，等于作业失败时用户什么诊断信息都看不到 —— 而那恰是最需要
+    // 信息的时候。那是前半引入的退步，此处一并修掉：两类数据分开存放，
+    // 面板可以分区展示，Worker 权威归 Worker，宿主估算明确标为估算。
     bool supplementedTiming = false;
     for (const QString& key : {
              QStringLiteral("configLoadMs"),
@@ -534,9 +540,14 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
         if (!m_completion.timing.contains(key)
             && observedTiming.contains(key))
         {
-            m_completion.timing.insert(key, observedTiming.value(key));
             supplementedTiming = true;
         }
+    }
+    if (supplementedTiming)
+    {
+        // 整份观测快照原样交出（含 approximate / source / pollResolutionMs /
+        // activePhase / hostElapsedMs），面板据此说明这些数字是怎么来的。
+        m_completion.observedtiming = observedTiming;
     }
     // MF-07b：此处原先在 Worker 未声明 available 时【强行置真】，于是宿主
     // 自己的轮询估算会被当作 Worker 权威 telemetry 展示 —— 那正是
@@ -549,13 +560,8 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
     // 且七个耗时字段 Worker 全都提供，故补齐与置位在 Worker 正常返回时
     // 本就不触发 —— 这段一直是只在 Worker 沉默时才生效的兜底，
     // 而它兜的方式是撒谎。
-    if (supplementedTiming)
-    {
-        m_completion.timing.insert(QStringLiteral("approximate"), true);
-        m_completion.timing.insert(
-            QStringLiteral("source"),
-            QStringLiteral("worker_result+progress_telemetry"));
-    }
+    // approximate/source 随观测值一起留在 observedtiming 里，不再写进 timing
+    // —— timing 从此只描述 Worker 自己报的东西。
     if (!m_completion.timing.contains(QStringLiteral("totalMs")))
     {
         const double resultElapsedMs = result.value(
@@ -611,6 +617,7 @@ void HostSliceJobController::FinishTerminal(const QString& terminalState)
         m_completion.detail,
         m_completion.packagedirectory,
         m_completion.timing,
+        m_completion.observedtiming,
         m_completion.elapsedms,
         m_completion.cancellatencyms);
 }
@@ -630,7 +637,9 @@ void HostSliceJobController::FinishTransportFailure(const QString& message)
     m_completion.message = message.isEmpty()
         ? QStringLiteral("切片作业通信失败。") : message;
     m_completion.elapsedms = m_jobTimer.isValid() ? m_jobTimer.elapsed() : 0;
-    m_completion.timing = FinalizeObservedTiming(
+    // 通信失败时 Worker 什么都没给，这里能拿到的只有宿主自己的轮询估算。
+    // 它此前被【直接赋给 timing】—— 与补齐那处是同一类冒充，一并分开。
+    m_completion.observedtiming = FinalizeObservedTiming(
         m_completion.elapsedms);
     emit SigCompleted(
         false,
@@ -640,6 +649,7 @@ void HostSliceJobController::FinishTransportFailure(const QString& message)
         QString{},
         QString{},
         m_completion.timing,
+        m_completion.observedtiming,
         m_completion.elapsedms,
         -1);
 }
